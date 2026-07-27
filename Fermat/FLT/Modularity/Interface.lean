@@ -2130,6 +2130,239 @@ integral-structure citation node
 `exists_integral_qExpansion_spanning`; the fixed-field computation
 (`exists_ratCast_eq_of_forall_ringEquiv_fixed`) is PROVEN. -/
 
+section DegeneracyOperator
+
+open UpperHalfPlane ModularForm Matrix.SpecialLinearGroup CongruenceSubgroup
+  ConjAct
+open scoped Pointwise
+
+/-! ### The degeneracy operator `V_d : S₂(Γ₀(N)) → S₂(Γ₀(M))`, `f ↦ f(dz)`
+
+Built 2026-07-26.  This is the one definition the Atkin–Lehner theory needs and
+that neither mathlib nor `~/cs/FLT` has in any form: mathlib's
+`Mathlib/NumberTheory/ModularForms/` carries no newform, oldform, degeneracy or
+Atkin–Lehner material whatever.  It is the weight-2 slash by `[d, 0; 0, 1]`,
+renormalized by `d⁻¹` to cancel the `det^{k−1}` factor that mathlib's slash
+convention carries, so that it is exactly `f ↦ f(d·)` on the nose.
+
+Everything here is PROVEN.  The construction reuses the Hecke machinery already
+in this file — `heckeRepInf d` IS the matrix `[d, 0; 0, 1]`, and its
+`smul`/`slash`/`σ` lemmas above are all stated at an arbitrary POSITIVE `d`
+rather than at a prime, so they apply verbatim. -/
+
+/-- **The conjugation containment behind `V_d`**: for `α = [d, 0; 0, 1]` and
+`d·N ∣ M` one has `Γ₀(M) ≤ α⁻¹ Γ₀(N) α`, i.e. `α Γ₀(M) α⁻¹ ⊆ Γ₀(N)`.
+
+Conjugation by `α` multiplies the upper-right entry by `d` and DIVIDES the
+lower-left entry by `d`; so integrality of the conjugate plus its
+`Γ₀(N)`-condition is exactly `d·N ∣ c`, which `d·N ∣ M ∣ c` supplies.  This is
+the `V_d` analogue of `heckeRep_conj_mem_iff` above, and it is what lets a cusp
+form on the conjugate group be RESTRICTED to `Γ₀(M)`. -/
+theorem Gamma0GL_le_conj_heckeRepInf {N M d : ℕ} (hd : 0 < d)
+    (hdvd : d * N ∣ M) :
+    Gamma0GL M ≤ toConjAct (heckeRepInf d)⁻¹ • Gamma0GL N := by
+  have hd0 : (d : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hd.ne'
+  intro x hx
+  rw [mem_conjAct_inv_smul_iff]
+  obtain ⟨ρ, hρ, rfl⟩ := mem_Gamma0GL_iff.mp hx
+  have hcM : (M : ℤ) ∣ ρ 1 0 := by
+    rw [CongruenceSubgroup.Gamma0_mem] at hρ
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hρ
+  have hdN : ((d : ℤ) * N) ∣ ρ 1 0 := dvd_trans (by exact_mod_cast hdvd) hcM
+  obtain ⟨t, ht⟩ : (d : ℤ) ∣ ρ 1 0 := dvd_trans (Dvd.intro _ rfl) hdN
+  have hNt : (N : ℤ) ∣ t := by
+    rcases hdN with ⟨s, hs⟩
+    refine ⟨s, ?_⟩
+    have hd0' : (d : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hd.ne'
+    have hds : (d : ℤ) * t = (d : ℤ) * ((N : ℤ) * s) := by rw [← ht, hs]; ring
+    exact mul_left_cancel₀ hd0' hds
+  have hdet : ρ 0 0 * ρ 1 1 - ρ 0 1 * ρ 1 0 = 1 := by
+    have h2 := ρ.2
+    rwa [Matrix.det_fin_two] at h2
+  refine mem_Gamma0GL_iff.mpr ⟨⟨!![ρ 0 0, (d : ℤ) * ρ 0 1; t, ρ 1 1], ?_⟩, ?_, ?_⟩
+  · rw [Matrix.det_fin_two_of]
+    have hb : ρ 0 0 * ρ 1 1 - ρ 0 1 * ((d : ℤ) * t) = 1 := by rw [← ht]; exact hdet
+    linarith [hb]
+  · rw [CongruenceSubgroup.Gamma0_mem]
+    show ((t : ℤ) : ZMod N) = 0
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr hNt
+  · rw [eq_mul_inv_iff_mul_eq]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      · simp [heckeRepInf_coe hd0, mapGL_coe_matrix,
+          Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply,
+          Int.coe_castRingHom, Matrix.map_apply, Matrix.mul_apply,
+          Fin.sum_univ_two, ht]
+        try push_cast
+        try ring
+
+/-- **Restriction of a cusp form along a subgroup inclusion**: a cusp form for a
+LARGER group is one for a smaller.  Slash invariance is demanded at fewer
+elements, holomorphy is unchanged, and every cusp of the smaller group is a cusp
+of the larger (`IsCusp.mono`), so the vanishing condition transfers. -/
+def cuspFormOfLe {Γ Γ' : Subgroup (GL (Fin 2) ℝ)} {k : ℤ} (h : Γ ≤ Γ')
+    (f : CuspForm Γ' k) : CuspForm Γ k where
+  toFun := f
+  slash_action_eq' γ hγ := f.slash_action_eq' γ (h hγ)
+  holo' := f.holo'
+  zero_at_cusps' hc := f.zero_at_cusps' (hc.mono h)
+
+@[simp]
+theorem coe_cuspFormOfLe {Γ Γ' : Subgroup (GL (Fin 2) ℝ)} {k : ℤ} (h : Γ ≤ Γ')
+    (f : CuspForm Γ' k) : ⇑(cuspFormOfLe h f) = ⇑f := rfl
+
+/-- **`(V_d f)(τ) = f(dτ)` as a function on `ℍ`**: the weight-2 slash by
+`heckeRepInf d = [d, 0; 0, 1]`, divided by `d` to cancel the `det^{k−1} = d`
+that mathlib's slash normalization contributes. -/
+noncomputable def degeneracyTransform (d : ℕ) (f : ℍ → ℂ) : ℍ → ℂ :=
+  (d : ℂ)⁻¹ • (f ∣[(2 : ℤ)] heckeRepInf d)
+
+/-- `V_d` is additive (the slash is). -/
+theorem degeneracyTransform_add (d : ℕ) (f g : ℍ → ℂ) :
+    degeneracyTransform d (f + g) =
+      degeneracyTransform d f + degeneracyTransform d g := by
+  unfold degeneracyTransform
+  rw [SlashAction.add_slash, smul_add]
+
+/-- `V_d` commutes with complex scalars (its representative has positive
+determinant, so the slash conjugation factor `σ` is the identity). -/
+theorem degeneracyTransform_smul (d : ℕ) (c : ℂ) (f : ℍ → ℂ) :
+    degeneracyTransform d (c • f) = c • degeneracyTransform d f := by
+  unfold degeneracyTransform
+  rw [ModularForm.smul_slash, σ_heckeRepInf, smul_comm]
+
+/-- **`V_d` preserves the cusp space**: `f ∣[2] α` is a cusp form on the
+conjugate group `α⁻¹Γ₀(N)α`, which CONTAINS `Γ₀(M)` when `d·N ∣ M`
+(`Gamma0GL_le_conj_heckeRepInf`); restrict along that inclusion. -/
+theorem exists_cuspForm_degeneracyTransform {N M d : ℕ} (hd : 0 < d)
+    (hdvd : d * N ∣ M) (f : CuspForm (Gamma0GL N) 2) :
+    ∃ F : CuspForm (Gamma0GL M) 2, ⇑F = degeneracyTransform d ⇑f :=
+  ⟨(d : ℂ)⁻¹ • cuspFormOfLe (Gamma0GL_le_conj_heckeRepInf hd hdvd)
+    (CuspForm.translate f (heckeRepInf d)), rfl⟩
+
+/-- **The `q`-expansion of `V_d f`**: `a_n(V_d f) = a_{n/d}(f)` when `d ∣ n`, and
+`0` otherwise — the coefficients of `f` spread out over the multiples of `d`.
+This is the entire arithmetic content of `f ↦ f(dz)`, and it is what makes the
+old subspace visible coefficientwise.
+
+Proof: `qParam 1 (dτ) = (qParam 1 τ)^d`, so the `q`-expansion of `f` at `dτ`
+reindexes along the injection `n ↦ d·n`; uniqueness of `q`-expansions
+(`ModularFormClass.qExpansion_coeff_unique`) then reads off the coefficients. -/
+theorem qCoeff_degeneracy {N M d : ℕ} (hd : 0 < d)
+    (f : CuspForm (Gamma0GL N) 2) (F : CuspForm (Gamma0GL M) 2)
+    (hF : ⇑F = degeneracyTransform d ⇑f) (m : ℕ) :
+    qCoeff M F m = if d ∣ m then qCoeff N f (m / d) else 0 := by
+  have hdC : (d : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hd.ne'
+  have hper : Function.Periodic (⇑f ∘ UpperHalfPlane.ofComplex) 1 :=
+    SlashInvariantFormClass.periodic_comp_ofComplex f
+      (one_mem_strictPeriods_Gamma0GL N)
+  have hbdd : UpperHalfPlane.IsBoundedAtImInfty ⇑f := by
+    have hc : IsCusp OnePoint.infty (Gamma0GL N) :=
+      (Gamma0GL N).isCusp_of_mem_strictPeriods one_pos
+        (one_mem_strictPeriods_Gamma0GL N)
+    exact (OnePoint.isZeroAt_infty_iff.mp
+      (CuspFormClass.zero_at_cusps f hc)).boundedAtFilter
+  have hsumf : ∀ τ : ℍ, HasSum
+      (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
+        Function.Periodic.qParam 1 ↑τ ^ n) (f τ) :=
+    fun τ => hasSum_qExpansion one_pos hper (CuspFormClass.holo f) hbdd τ
+  have hinj : Function.Injective (fun m : ℕ => d * m) := fun a b h =>
+    Nat.eq_of_mul_eq_mul_left hd h
+  have hmaster : ∀ τ : ℍ, HasSum
+      (fun n : ℕ => (if d ∣ n then qCoeff N f (n / d) else 0) •
+        Function.Periodic.qParam 1 ↑τ ^ n) (degeneracyTransform d ⇑f τ) := by
+    intro τ
+    have hval : degeneracyTransform d ⇑f τ = f (heckeRepInf d • τ) := by
+      show (d : ℂ)⁻¹ * (⇑f ∣[(2 : ℤ)] heckeRepInf d) τ = _
+      rw [heckeRepInf_slash_apply hd ⇑f τ, ← mul_assoc, inv_mul_cancel₀ hdC,
+        one_mul]
+    rw [hval]
+    have hs := hsumf (heckeRepInf d • τ)
+    rw [heckeRepInf_smul_coe hd τ] at hs
+    have hfun : (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
+        Function.Periodic.qParam 1 ((d : ℂ) * ↑τ) ^ n)
+        = (fun n : ℕ => (if d ∣ n then qCoeff N f (n / d) else 0) •
+            Function.Periodic.qParam 1 ↑τ ^ n) ∘ (fun n : ℕ => d * n) := by
+      funext n
+      simp only [Function.comp_apply]
+      rw [if_pos ⟨n, rfl⟩, Nat.mul_div_cancel_left n hd,
+        qParam_nat_mul d ↑τ, ← pow_mul]
+      rfl
+    rw [hfun] at hs
+    have h0 : ∀ n, n ∉ Set.range (fun m : ℕ => d * m) →
+        ((if d ∣ n then qCoeff N f (n / d) else 0) •
+          Function.Periodic.qParam 1 ↑τ ^ n) = 0 := by
+      intro n hn
+      rw [if_neg, zero_smul]
+      rintro ⟨t, ht⟩
+      exact hn ⟨t, ht.symm⟩
+    exact (Function.Injective.hasSum_iff hinj h0).mp hs
+  have huniq := ModularFormClass.qExpansion_coeff_unique one_pos
+    (one_mem_strictPeriods_Gamma0GL M) (f := F)
+    (fun τ => by rw [hF]; exact hmaster τ) m
+  exact huniq.symm
+
+/-- **`V_d` as a bundled `ℂ`-linear map** `S₂(Γ₀(N)) → S₂(Γ₀(M))`, for
+`d·N ∣ M`: the degeneracy transform preserves the cusp space, is additive and
+`ℂ`-homogeneous, and the underlying function determines the cusp form. -/
+theorem exists_degeneracyOpLinear {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M) :
+    ∃ V : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] CuspForm (Gamma0GL M) 2,
+      ∀ f : CuspForm (Gamma0GL N) 2, ⇑(V f) = degeneracyTransform d ⇑f := by
+  classical
+  choose V hV using fun f : CuspForm (Gamma0GL N) 2 =>
+    exists_cuspForm_degeneracyTransform hd hdvd f
+  refine ⟨{ toFun := V, map_add' := ?_, map_smul' := ?_ }, hV⟩
+  · intro f₁ f₂
+    apply DFunLike.coe_injective
+    simp only [CuspForm.coe_add, hV, degeneracyTransform_add]
+  · intro c f
+    apply DFunLike.coe_injective
+    simp only [RingHom.id_apply, CuspForm.IsGLPos.coe_smul, hV,
+      degeneracyTransform_smul]
+
+/-- The unconditional form of `exists_degeneracyOpLinear`, so that `V_d` can be
+DEFINED at every triple `(N, M, d)` (junk — the zero map — outside the
+meaningful range `0 < d`, `d·N ∣ M`, which is all any statement below
+quantifies over).  The COEFFICIENT IDENTITY is bundled into the specification
+rather than left as a separate lemma, so that it belongs to the operator by
+construction. -/
+theorem exists_degeneracyOpLinear_total (N M d : ℕ) :
+    ∃ V : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] CuspForm (Gamma0GL M) 2,
+      0 < d → d * N ∣ M →
+        (∀ f : CuspForm (Gamma0GL N) 2, ⇑(V f) = degeneracyTransform d ⇑f) ∧
+        (∀ (f : CuspForm (Gamma0GL N) 2) (m : ℕ),
+          qCoeff M (V f) m = if d ∣ m then qCoeff N f (m / d) else 0) := by
+  by_cases h : 0 < d ∧ d * N ∣ M
+  · obtain ⟨V, hV⟩ := exists_degeneracyOpLinear h.1 h.2
+    exact ⟨V, fun _ _ => ⟨hV, fun f m => qCoeff_degeneracy h.1 f (V f) (hV f) m⟩⟩
+  · exact ⟨0, fun hd hdvd => absurd ⟨hd, hdvd⟩ h⟩
+
+/-- **The degeneracy operator `V_d : S₂(Γ₀(N)) → S₂(Γ₀(M))`, `f ↦ f(dz)`.**  At
+`0 < d` and `d·N ∣ M` it is the bundled `degeneracyTransform d`
+(`degeneracyOp_coe`), with coefficients `a_n(V_d f) = a_{n/d}(f)`
+(`qCoeff_degeneracyOp`); elsewhere it is junk, which no statement about it looks
+at.  The OLD SUBSPACE of `S₂(Γ₀(M))` is `Σ_{p ∣ M} range (V_p)` with `p` prime,
+and that is the shape in which the Atkin–Lehner leaves below consume it. -/
+noncomputable def degeneracyOp (N M d : ℕ) :
+    CuspForm (Gamma0GL N) 2 →ₗ[ℂ] CuspForm (Gamma0GL M) 2 :=
+  (exists_degeneracyOpLinear_total N M d).choose
+
+/-- `V_d` acts by the degeneracy transform, i.e. `(V_d f)(τ) = f(dτ)`. -/
+theorem degeneracyOp_coe {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M)
+    (f : CuspForm (Gamma0GL N) 2) :
+    ⇑(degeneracyOp N M d f) = degeneracyTransform d ⇑f :=
+  (((exists_degeneracyOpLinear_total N M d).choose_spec hd hdvd).1) f
+
+/-- **The coefficients of `V_d f`**: `a_n(V_d f) = a_{n/d}(f)` for `d ∣ n`, and
+`0` otherwise. -/
+theorem qCoeff_degeneracyOp {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M)
+    (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff M (degeneracyOp N M d f) m =
+      if d ∣ m then qCoeff N f (m / d) else 0 :=
+  (((exists_degeneracyOpLinear_total N M d).choose_spec hd hdvd).2) f m
+
+end DegeneracyOperator
+
 section SturmFiniteness
 
 open scoped Manifold
@@ -2866,6 +3099,113 @@ theorem heckeEndo_mem_rationalCuspForms {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q
   rw [qCoeff_heckeEndo hN hq f m, hx, hy]
   split_ifs <;> push_cast <;> ring
 
+/-- **`V_d` PRESERVES RATIONALITY** (PROVEN, 2026-07-27): if every
+`a_m(f)` is rational then so is every `a_m(V_d f)`, because
+`a_m(V_d f) = a_{m/d}(f)` when `d ∣ m` and `0` otherwise
+(`qCoeff_degeneracyOp`). This is the entire arithmetic input of the
+oldform half of axis 4 — one `rw` and a `split_ifs`, exactly as the
+route audit of `rationalCuspForms_span_eq_top` below predicted. -/
+theorem degeneracyOp_mem_rationalCuspForms {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M)
+    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ rationalCuspForms N) :
+    degeneracyOp N M d f ∈ rationalCuspForms M := by
+  intro m
+  obtain ⟨r, hr⟩ := hf (m / d)
+  refine ⟨if d ∣ m then r else 0, ?_⟩
+  rw [qCoeff_degeneracyOp hd hdvd f m]
+  split_ifs with h
+  · exact hr
+  · push_cast; rfl
+
+/-- **The image of a degeneracy operator is spanned by rational forms as
+soon as the source level is** (PROVEN, 2026-07-27). `range V_d = V_d(⊤)`,
+and `⊤` at the source level is the `ℂ`-span of its rational forms by
+hypothesis, so the image is the span of the `V_d`-image of that rational
+set (`Submodule.map_span`), which sits inside the rational forms upstairs
+by `degeneracyOp_mem_rationalCuspForms`. -/
+theorem range_degeneracyOp_le_span_rationalCuspForms {N M d : ℕ} (hd : 0 < d)
+    (hdvd : d * N ∣ M)
+    (h : Submodule.span ℂ ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤) :
+    LinearMap.range (degeneracyOp N M d) ≤
+      Submodule.span ℂ ((rationalCuspForms M : Set (CuspForm (Gamma0GL M) 2))) := by
+  rw [LinearMap.range_eq_map, ← h, Submodule.map_span]
+  refine Submodule.span_mono ?_
+  rintro _ ⟨f, hf, rfl⟩
+  exact degeneracyOp_mem_rationalCuspForms hd hdvd hf
+
+/-- **The OLD SUBSPACE of `S₂(Γ₀(N))`**: the sum, over the primes `p ∣ N`,
+of the images of the two degeneracy operators `V_1, V_p : S₂(Γ₀(N/p)) →
+S₂(Γ₀(N))`.
+
+This is the classical `S₂(Γ₀(N))^{old}`. The classical description sums
+`V_d(S₂(Γ₀(M)))` over ALL proper divisors `M ∣ N` and all `d ∣ N/M`, and
+that is the same submodule: given such an `(M, d)` pick a prime `p ∣ N/M`;
+if `p ∣ d` then `V_d = V_p ∘ V_{d/p}` with `V_{d/p} : S₂(Γ₀(M)) →
+S₂(Γ₀(N/p))` (legal since `(d/p)·M ∣ N/p`), and if `p ∤ d` then `d` and
+`p` are coprime so `d·M·p ∣ N`, i.e. `V_d` already factors through level
+`N/p` followed by `V_1`. Nothing below depends on that identification —
+only the CONTAINMENT `oldCuspSpace N ≤ span_ℂ(S₂(N; ℚ))` is used, and it
+holds for this definition directly — but it is what makes the residual
+leaf below the genuine NEW-part statement rather than an artefact of the
+spelling. -/
+noncomputable def oldCuspSpace (N : ℕ) : Submodule ℂ (CuspForm (Gamma0GL N) 2) :=
+  ⨆ p ∈ N.primeFactors, (LinearMap.range (degeneracyOp (N / p) N 1)
+    ⊔ LinearMap.range (degeneracyOp (N / p) N p))
+
+/-- **THE ARITHMETIC RESIDUE OF SHIMURA'S RATIONALITY THEOREM:
+RATIONALITY ON THE NEW PART** (sorry leaf, cut 2026-07-27 as the single
+remaining input of `rationalCuspForms_span_eq_top` below).
+
+Stated as: the rational cusp forms, TOGETHER WITH the old subspace,
+`ℂ`-span `S₂(Γ₀(M))`. Equivalently, the image of `S₂(Γ₀(M); ℚ)` in
+`S₂(Γ₀(M))/S₂(Γ₀(M))^{old}` spans that quotient — i.e. Shimura,
+*Introduction to the Arithmetic Theory of Automorphic Functions*,
+Theorem 3.52, restricted to the NEW part.
+
+**WHY THIS IS A GENUINE CUT AND NOT DEAD END 8's RESTATEMENT.** Dead end
+8 (in the docstring below) records that every `ℚ`-STRUCTURE-shaped
+weakening of the node is equivalent to it. This leaf is not of that
+shape: it is the SAME statement at the SAME level with a strictly larger
+left-hand side, and what buys the reduction is the INDUCTION on `N`, not
+a reformulation. Concretely, at every composite `M` the leaf is strictly
+weaker than the node at `M` (the old subspace is nonzero as soon as some
+`S₂(Γ₀(M/p)) ≠ 0`), and the whole node at every level follows from it.
+At `M` PRIME the old subspace is `V_1(S₂(Γ₀(1))) ⊔ V_p(S₂(Γ₀(1))) = ⊥`
+— level one has no cusp forms in weight two — so the leaf and the node
+coincide there, which is correct: there are no oldforms at prime level,
+and Shimura's theorem at prime level is irreducibly the new-part
+statement.
+
+**WHAT REMAINS, and it is what axis 4 always said it was.** The classical
+proof of THIS statement, and the route a successor should take:
+
+1. the new part has a basis of normalized Hecke eigenforms (newforms),
+   pairwise distinct in their eigenvalue systems — Atkin–Lehner
+   multiplicity one;
+2. `Aut(ℂ)` acts on that finite set by `f ↦ f^σ`, `a_n(f^σ) = σ(a_n(f))`,
+   with finite orbits because each Hecke field `K_f` is a number field
+   (`heckeField_finiteDimensional` above, itself still open);
+3. for each orbit, `∑_{σ} σ(α) f^σ` for `α ∈ K_f` is rational and the
+   resulting family spans the orbit's `ℂ`-span — Galois descent for the
+   semilinear `Aut(ℂ)`-action.
+
+Steps 1 and 2 are the genuinely missing theory: mathlib has none of it
+(`grep -rn 'newform\|oldform\|AtkinLehner' .lake/packages/mathlib` is
+empty) and `~/cs/FLT` is quaternionic. Step 3 is ordinary linear algebra
+over `ℚ ⊆ ℂ`. **What is NOT needed, contrary to the audit below and to
+every textbook framing: the old ⊕ new DIRECT SUM.** See
+`rationalCuspForms_span_eq_top`'s proof — it consumes only the
+containment.
+
+SOUNDNESS: `0 < M` is inherited from the node and is used only through
+`degeneracyOp`'s divisibility side conditions in the consumer; at `M = 0`
+the level is junk and nothing is claimed. At `M = 1` the old subspace is
+`⊥` (empty `primeFactors`) and the statement is `⊥ = ⊤` in the zero
+module `S₂(Γ₀(1))`, i.e. true. -/
+theorem rationalCuspForms_sup_oldCuspSpace_eq_top {M : ℕ} (hM : 0 < M) :
+    Submodule.span ℂ ((rationalCuspForms M : Set (CuspForm (Gamma0GL M) 2)))
+      ⊔ oldCuspSpace M = ⊤ :=
+  sorry
+
 /-- **SHIMURA'S RATIONALITY THEOREM: the cusp forms with RATIONAL
 `q`-expansion `ℂ`-span `S₂(Γ₀(N))`** (sorry leaf, opened 2026-07-27 as
 the single arithmetic residue of `heckeSubring_zRank_le` below).
@@ -3010,25 +3350,73 @@ with multiplicity one) plus rationality on the new part. The nearest
 existing statement is the OPEN leaf
 `mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` (~31779).
 
-**Second obstacle on axis 4, and it is real: DECLARATION ORDER.** All of
-that machinery sits ~28000 lines BELOW this leaf, so consuming it here
-needs the degeneracy block hoisted above `rationalCuspForms` — the same
-shape of large relocation that route B of `integralCuspForms_span_eq_top`
-needed for the `heckeEndo` block, and it belongs to whoever executes
-axis 4 rather than to this audit.
+**Second obstacle on axis 4 — DECLARATION ORDER — REMOVED 2026-07-27,
+and the line numbers in the bullets above are pre-hoist.** The degeneracy
+block (`Gamma0GL_le_conj_heckeRepInf`, `cuspFormOfLe`,
+`degeneracyTransform` and its two lemmas, `exists_cuspForm_degeneracyTransform`,
+`qCoeff_degeneracy`, `exists_degeneracyOpLinear`,
+`exists_degeneracyOpLinear_total`, `degeneracyOp`, `degeneracyOp_coe`,
+`qCoeff_degeneracyOp`) has been hoisted VERBATIM from ~29000 lines below
+to just above `section SturmFiniteness`, where all of its prerequisites
+(`heckeRepInf` and its `coe`/`σ`/`smul`/`slash` lemmas, `mem_Gamma0GL_iff`,
+`mem_conjAct_inv_smul_iff`, `one_mem_strictPeriods_Gamma0GL`,
+`qParam_nat_mul`, `qCoeff`) already live. The move was mechanically
+verified pure: **378** declarations sit in the region the block jumped
+over and the comment-stripped block references **zero** of them; the
+non-blank line multiset is unchanged except for the four-line
+`section DegeneracyOperator` header re-inserted at the old site plus one
+new `end DegeneracyOperator` (total lines 52517 → 52526, non-blank
+50117 → 50122, `old − new` diff empty). The Hecke/Atkin–Lehner half of the
+old block did not move.
 
-**Net verdict**: the arithmetic residue is `dim_ℚ 𝕋_ℚ ≤ D`, and on this
-pin it is reachable only by building one of: the `ℚ`-model of `X₀(N)`
-(route A), Eichler–Shimura freeness of `H¹_par` over `𝕋` (axis 3), or
-Atkin–Lehner newform theory (axis 4). A successor should pick one and
-build it, and should NOT expect a further cut of this statement.
+**FIRST OBSTACLE ON AXIS 4: IT DOES NOT EXIST. NO DIRECT SUM IS NEEDED.**
+The audit above says axis 4 needs "the DIRECT-SUM decomposition (old ⊕
+new, with multiplicity one) plus rationality on the new part", and every
+textbook account frames it that way. The direct sum is NOT a
+prerequisite. The induction below consumes only the CONTAINMENT
+`oldCuspSpace N ≤ span_ℂ(S₂(N; ℚ))`, which is free: `V_d` preserves
+rationality coefficientwise (`degeneracyOp_mem_rationalCuspForms` — one
+`rw` on `qCoeff_degeneracyOp`), and the inductive hypothesis at the
+strictly smaller level `N/p` says the rational forms THERE already span,
+so the image of `V_d` is a span of rational forms
+(`range_degeneracyOp_le_span_rationalCuspForms`). Multiplicity one,
+Petersson orthogonality, `atkinLehnerOp` and
+`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` are all unused.
+
+**Net verdict, revised**: this node is PROVEN, by strong induction on `N`
+from the single leaf `rationalCuspForms_sup_oldCuspSpace_eq_top` above —
+rationality MODULO the old subspace, i.e. Shimura's theorem on the NEW
+part. Routes A (the `ℚ`-model of `X₀(N)`) and 3 (Eichler–Shimura freeness)
+remain available for that leaf; axis 2 (the trace form) is still blocked
+by the Coleman–Edixhoven open problem recorded above.
 
 SOUNDNESS: `0 < N` is inherited from the consumer. At genus-zero levels
 `S₂(Γ₀(N)) = 0` and the statement is `⊥ = ⊤` in the zero module, i.e.
-true; at `N = 0` the level is junk and nothing is claimed. -/
+true; at `N = 0` the level is junk and nothing is claimed — and `hN` is
+genuinely consumed below, both to run the induction (`N/p < N` needs
+`0 < N`) and to feed the leaf. -/
 theorem rationalCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
-    Submodule.span ℂ ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ :=
-  sorry
+    Submodule.span ℂ ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ := by
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    have hold : oldCuspSpace N ≤
+        Submodule.span ℂ ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2))) := by
+      refine iSup_le fun p => iSup_le fun hp => sup_le ?_ ?_
+      all_goals
+        have hpp : p.Prime := Nat.prime_of_mem_primeFactors hp
+        have hpd : p ∣ N := Nat.dvd_of_mem_primeFactors hp
+        have hsub : Submodule.span ℂ
+            ((rationalCuspForms (N / p) : Set (CuspForm (Gamma0GL (N / p)) 2))) = ⊤ :=
+          ih (N / p) (Nat.div_lt_self hN hpp.one_lt)
+            (Nat.div_pos (Nat.le_of_dvd hN hpd) hpp.pos)
+      · refine range_degeneracyOp_le_span_rationalCuspForms one_pos ?_ hsub
+        rw [one_mul]
+        exact Nat.div_dvd_of_dvd hpd
+      · refine range_degeneracyOp_le_span_rationalCuspForms hpp.pos ?_ hsub
+        rw [Nat.mul_div_cancel' hpd]
+    refine le_antisymm le_top ?_
+    rw [← rationalCuspForms_sup_oldCuspSpace_eq_top hN]
+    exact sup_le le_rfl hold
 
 /-- **LEAF 1 OF 2 FOR THE `ℤ`-FORM — DISCRETENESS: `𝕋` is a finitely
 generated `ℤ`-module** (sorry leaf, cut 2026-07-27).
@@ -32188,230 +32576,6 @@ open UpperHalfPlane ModularForm Matrix.SpecialLinearGroup CongruenceSubgroup
   ConjAct
 open scoped Pointwise
 
-/-! ### The degeneracy operator `V_d : S₂(Γ₀(N)) → S₂(Γ₀(M))`, `f ↦ f(dz)`
-
-Built 2026-07-26.  This is the one definition the Atkin–Lehner theory needs and
-that neither mathlib nor `~/cs/FLT` has in any form: mathlib's
-`Mathlib/NumberTheory/ModularForms/` carries no newform, oldform, degeneracy or
-Atkin–Lehner material whatever.  It is the weight-2 slash by `[d, 0; 0, 1]`,
-renormalized by `d⁻¹` to cancel the `det^{k−1}` factor that mathlib's slash
-convention carries, so that it is exactly `f ↦ f(d·)` on the nose.
-
-Everything here is PROVEN.  The construction reuses the Hecke machinery already
-in this file — `heckeRepInf d` IS the matrix `[d, 0; 0, 1]`, and its
-`smul`/`slash`/`σ` lemmas above are all stated at an arbitrary POSITIVE `d`
-rather than at a prime, so they apply verbatim. -/
-
-/-- **The conjugation containment behind `V_d`**: for `α = [d, 0; 0, 1]` and
-`d·N ∣ M` one has `Γ₀(M) ≤ α⁻¹ Γ₀(N) α`, i.e. `α Γ₀(M) α⁻¹ ⊆ Γ₀(N)`.
-
-Conjugation by `α` multiplies the upper-right entry by `d` and DIVIDES the
-lower-left entry by `d`; so integrality of the conjugate plus its
-`Γ₀(N)`-condition is exactly `d·N ∣ c`, which `d·N ∣ M ∣ c` supplies.  This is
-the `V_d` analogue of `heckeRep_conj_mem_iff` above, and it is what lets a cusp
-form on the conjugate group be RESTRICTED to `Γ₀(M)`. -/
-theorem Gamma0GL_le_conj_heckeRepInf {N M d : ℕ} (hd : 0 < d)
-    (hdvd : d * N ∣ M) :
-    Gamma0GL M ≤ toConjAct (heckeRepInf d)⁻¹ • Gamma0GL N := by
-  have hd0 : (d : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hd.ne'
-  intro x hx
-  rw [mem_conjAct_inv_smul_iff]
-  obtain ⟨ρ, hρ, rfl⟩ := mem_Gamma0GL_iff.mp hx
-  have hcM : (M : ℤ) ∣ ρ 1 0 := by
-    rw [CongruenceSubgroup.Gamma0_mem] at hρ
-    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hρ
-  have hdN : ((d : ℤ) * N) ∣ ρ 1 0 := dvd_trans (by exact_mod_cast hdvd) hcM
-  obtain ⟨t, ht⟩ : (d : ℤ) ∣ ρ 1 0 := dvd_trans (Dvd.intro _ rfl) hdN
-  have hNt : (N : ℤ) ∣ t := by
-    rcases hdN with ⟨s, hs⟩
-    refine ⟨s, ?_⟩
-    have hd0' : (d : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hd.ne'
-    have hds : (d : ℤ) * t = (d : ℤ) * ((N : ℤ) * s) := by rw [← ht, hs]; ring
-    exact mul_left_cancel₀ hd0' hds
-  have hdet : ρ 0 0 * ρ 1 1 - ρ 0 1 * ρ 1 0 = 1 := by
-    have h2 := ρ.2
-    rwa [Matrix.det_fin_two] at h2
-  refine mem_Gamma0GL_iff.mpr ⟨⟨!![ρ 0 0, (d : ℤ) * ρ 0 1; t, ρ 1 1], ?_⟩, ?_, ?_⟩
-  · rw [Matrix.det_fin_two_of]
-    have hb : ρ 0 0 * ρ 1 1 - ρ 0 1 * ((d : ℤ) * t) = 1 := by rw [← ht]; exact hdet
-    linarith [hb]
-  · rw [CongruenceSubgroup.Gamma0_mem]
-    show ((t : ℤ) : ZMod N) = 0
-    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr hNt
-  · rw [eq_mul_inv_iff_mul_eq]
-    ext i j
-    fin_cases i <;> fin_cases j <;>
-      · simp [heckeRepInf_coe hd0, mapGL_coe_matrix,
-          Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply,
-          Int.coe_castRingHom, Matrix.map_apply, Matrix.mul_apply,
-          Fin.sum_univ_two, ht]
-        try push_cast
-        try ring
-
-/-- **Restriction of a cusp form along a subgroup inclusion**: a cusp form for a
-LARGER group is one for a smaller.  Slash invariance is demanded at fewer
-elements, holomorphy is unchanged, and every cusp of the smaller group is a cusp
-of the larger (`IsCusp.mono`), so the vanishing condition transfers. -/
-def cuspFormOfLe {Γ Γ' : Subgroup (GL (Fin 2) ℝ)} {k : ℤ} (h : Γ ≤ Γ')
-    (f : CuspForm Γ' k) : CuspForm Γ k where
-  toFun := f
-  slash_action_eq' γ hγ := f.slash_action_eq' γ (h hγ)
-  holo' := f.holo'
-  zero_at_cusps' hc := f.zero_at_cusps' (hc.mono h)
-
-@[simp]
-theorem coe_cuspFormOfLe {Γ Γ' : Subgroup (GL (Fin 2) ℝ)} {k : ℤ} (h : Γ ≤ Γ')
-    (f : CuspForm Γ' k) : ⇑(cuspFormOfLe h f) = ⇑f := rfl
-
-/-- **`(V_d f)(τ) = f(dτ)` as a function on `ℍ`**: the weight-2 slash by
-`heckeRepInf d = [d, 0; 0, 1]`, divided by `d` to cancel the `det^{k−1} = d`
-that mathlib's slash normalization contributes. -/
-noncomputable def degeneracyTransform (d : ℕ) (f : ℍ → ℂ) : ℍ → ℂ :=
-  (d : ℂ)⁻¹ • (f ∣[(2 : ℤ)] heckeRepInf d)
-
-/-- `V_d` is additive (the slash is). -/
-theorem degeneracyTransform_add (d : ℕ) (f g : ℍ → ℂ) :
-    degeneracyTransform d (f + g) =
-      degeneracyTransform d f + degeneracyTransform d g := by
-  unfold degeneracyTransform
-  rw [SlashAction.add_slash, smul_add]
-
-/-- `V_d` commutes with complex scalars (its representative has positive
-determinant, so the slash conjugation factor `σ` is the identity). -/
-theorem degeneracyTransform_smul (d : ℕ) (c : ℂ) (f : ℍ → ℂ) :
-    degeneracyTransform d (c • f) = c • degeneracyTransform d f := by
-  unfold degeneracyTransform
-  rw [ModularForm.smul_slash, σ_heckeRepInf, smul_comm]
-
-/-- **`V_d` preserves the cusp space**: `f ∣[2] α` is a cusp form on the
-conjugate group `α⁻¹Γ₀(N)α`, which CONTAINS `Γ₀(M)` when `d·N ∣ M`
-(`Gamma0GL_le_conj_heckeRepInf`); restrict along that inclusion. -/
-theorem exists_cuspForm_degeneracyTransform {N M d : ℕ} (hd : 0 < d)
-    (hdvd : d * N ∣ M) (f : CuspForm (Gamma0GL N) 2) :
-    ∃ F : CuspForm (Gamma0GL M) 2, ⇑F = degeneracyTransform d ⇑f :=
-  ⟨(d : ℂ)⁻¹ • cuspFormOfLe (Gamma0GL_le_conj_heckeRepInf hd hdvd)
-    (CuspForm.translate f (heckeRepInf d)), rfl⟩
-
-/-- **The `q`-expansion of `V_d f`**: `a_n(V_d f) = a_{n/d}(f)` when `d ∣ n`, and
-`0` otherwise — the coefficients of `f` spread out over the multiples of `d`.
-This is the entire arithmetic content of `f ↦ f(dz)`, and it is what makes the
-old subspace visible coefficientwise.
-
-Proof: `qParam 1 (dτ) = (qParam 1 τ)^d`, so the `q`-expansion of `f` at `dτ`
-reindexes along the injection `n ↦ d·n`; uniqueness of `q`-expansions
-(`ModularFormClass.qExpansion_coeff_unique`) then reads off the coefficients. -/
-theorem qCoeff_degeneracy {N M d : ℕ} (hd : 0 < d)
-    (f : CuspForm (Gamma0GL N) 2) (F : CuspForm (Gamma0GL M) 2)
-    (hF : ⇑F = degeneracyTransform d ⇑f) (m : ℕ) :
-    qCoeff M F m = if d ∣ m then qCoeff N f (m / d) else 0 := by
-  have hdC : (d : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hd.ne'
-  have hper : Function.Periodic (⇑f ∘ UpperHalfPlane.ofComplex) 1 :=
-    SlashInvariantFormClass.periodic_comp_ofComplex f
-      (one_mem_strictPeriods_Gamma0GL N)
-  have hbdd : UpperHalfPlane.IsBoundedAtImInfty ⇑f := by
-    have hc : IsCusp OnePoint.infty (Gamma0GL N) :=
-      (Gamma0GL N).isCusp_of_mem_strictPeriods one_pos
-        (one_mem_strictPeriods_Gamma0GL N)
-    exact (OnePoint.isZeroAt_infty_iff.mp
-      (CuspFormClass.zero_at_cusps f hc)).boundedAtFilter
-  have hsumf : ∀ τ : ℍ, HasSum
-      (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
-        Function.Periodic.qParam 1 ↑τ ^ n) (f τ) :=
-    fun τ => hasSum_qExpansion one_pos hper (CuspFormClass.holo f) hbdd τ
-  have hinj : Function.Injective (fun m : ℕ => d * m) := fun a b h =>
-    Nat.eq_of_mul_eq_mul_left hd h
-  have hmaster : ∀ τ : ℍ, HasSum
-      (fun n : ℕ => (if d ∣ n then qCoeff N f (n / d) else 0) •
-        Function.Periodic.qParam 1 ↑τ ^ n) (degeneracyTransform d ⇑f τ) := by
-    intro τ
-    have hval : degeneracyTransform d ⇑f τ = f (heckeRepInf d • τ) := by
-      show (d : ℂ)⁻¹ * (⇑f ∣[(2 : ℤ)] heckeRepInf d) τ = _
-      rw [heckeRepInf_slash_apply hd ⇑f τ, ← mul_assoc, inv_mul_cancel₀ hdC,
-        one_mul]
-    rw [hval]
-    have hs := hsumf (heckeRepInf d • τ)
-    rw [heckeRepInf_smul_coe hd τ] at hs
-    have hfun : (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
-        Function.Periodic.qParam 1 ((d : ℂ) * ↑τ) ^ n)
-        = (fun n : ℕ => (if d ∣ n then qCoeff N f (n / d) else 0) •
-            Function.Periodic.qParam 1 ↑τ ^ n) ∘ (fun n : ℕ => d * n) := by
-      funext n
-      simp only [Function.comp_apply]
-      rw [if_pos ⟨n, rfl⟩, Nat.mul_div_cancel_left n hd,
-        qParam_nat_mul d ↑τ, ← pow_mul]
-      rfl
-    rw [hfun] at hs
-    have h0 : ∀ n, n ∉ Set.range (fun m : ℕ => d * m) →
-        ((if d ∣ n then qCoeff N f (n / d) else 0) •
-          Function.Periodic.qParam 1 ↑τ ^ n) = 0 := by
-      intro n hn
-      rw [if_neg, zero_smul]
-      rintro ⟨t, ht⟩
-      exact hn ⟨t, ht.symm⟩
-    exact (Function.Injective.hasSum_iff hinj h0).mp hs
-  have huniq := ModularFormClass.qExpansion_coeff_unique one_pos
-    (one_mem_strictPeriods_Gamma0GL M) (f := F)
-    (fun τ => by rw [hF]; exact hmaster τ) m
-  exact huniq.symm
-
-/-- **`V_d` as a bundled `ℂ`-linear map** `S₂(Γ₀(N)) → S₂(Γ₀(M))`, for
-`d·N ∣ M`: the degeneracy transform preserves the cusp space, is additive and
-`ℂ`-homogeneous, and the underlying function determines the cusp form. -/
-theorem exists_degeneracyOpLinear {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M) :
-    ∃ V : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] CuspForm (Gamma0GL M) 2,
-      ∀ f : CuspForm (Gamma0GL N) 2, ⇑(V f) = degeneracyTransform d ⇑f := by
-  classical
-  choose V hV using fun f : CuspForm (Gamma0GL N) 2 =>
-    exists_cuspForm_degeneracyTransform hd hdvd f
-  refine ⟨{ toFun := V, map_add' := ?_, map_smul' := ?_ }, hV⟩
-  · intro f₁ f₂
-    apply DFunLike.coe_injective
-    simp only [CuspForm.coe_add, hV, degeneracyTransform_add]
-  · intro c f
-    apply DFunLike.coe_injective
-    simp only [RingHom.id_apply, CuspForm.IsGLPos.coe_smul, hV,
-      degeneracyTransform_smul]
-
-/-- The unconditional form of `exists_degeneracyOpLinear`, so that `V_d` can be
-DEFINED at every triple `(N, M, d)` (junk — the zero map — outside the
-meaningful range `0 < d`, `d·N ∣ M`, which is all any statement below
-quantifies over).  The COEFFICIENT IDENTITY is bundled into the specification
-rather than left as a separate lemma, so that it belongs to the operator by
-construction. -/
-theorem exists_degeneracyOpLinear_total (N M d : ℕ) :
-    ∃ V : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] CuspForm (Gamma0GL M) 2,
-      0 < d → d * N ∣ M →
-        (∀ f : CuspForm (Gamma0GL N) 2, ⇑(V f) = degeneracyTransform d ⇑f) ∧
-        (∀ (f : CuspForm (Gamma0GL N) 2) (m : ℕ),
-          qCoeff M (V f) m = if d ∣ m then qCoeff N f (m / d) else 0) := by
-  by_cases h : 0 < d ∧ d * N ∣ M
-  · obtain ⟨V, hV⟩ := exists_degeneracyOpLinear h.1 h.2
-    exact ⟨V, fun _ _ => ⟨hV, fun f m => qCoeff_degeneracy h.1 f (V f) (hV f) m⟩⟩
-  · exact ⟨0, fun hd hdvd => absurd ⟨hd, hdvd⟩ h⟩
-
-/-- **The degeneracy operator `V_d : S₂(Γ₀(N)) → S₂(Γ₀(M))`, `f ↦ f(dz)`.**  At
-`0 < d` and `d·N ∣ M` it is the bundled `degeneracyTransform d`
-(`degeneracyOp_coe`), with coefficients `a_n(V_d f) = a_{n/d}(f)`
-(`qCoeff_degeneracyOp`); elsewhere it is junk, which no statement about it looks
-at.  The OLD SUBSPACE of `S₂(Γ₀(M))` is `Σ_{p ∣ M} range (V_p)` with `p` prime,
-and that is the shape in which the Atkin–Lehner leaves below consume it. -/
-noncomputable def degeneracyOp (N M d : ℕ) :
-    CuspForm (Gamma0GL N) 2 →ₗ[ℂ] CuspForm (Gamma0GL M) 2 :=
-  (exists_degeneracyOpLinear_total N M d).choose
-
-/-- `V_d` acts by the degeneracy transform, i.e. `(V_d f)(τ) = f(dτ)`. -/
-theorem degeneracyOp_coe {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M)
-    (f : CuspForm (Gamma0GL N) 2) :
-    ⇑(degeneracyOp N M d f) = degeneracyTransform d ⇑f :=
-  (((exists_degeneracyOpLinear_total N M d).choose_spec hd hdvd).1) f
-
-/-- **The coefficients of `V_d f`**: `a_n(V_d f) = a_{n/d}(f)` for `d ∣ n`, and
-`0` otherwise. -/
-theorem qCoeff_degeneracyOp {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M)
-    (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
-    qCoeff M (degeneracyOp N M d f) m =
-      if d ∣ m then qCoeff N f (m / d) else 0 :=
-  (((exists_degeneracyOpLinear_total N M d).choose_spec hd hdvd).2) f m
 
 /-! ### `V_d` against the good Hecke operators
 
