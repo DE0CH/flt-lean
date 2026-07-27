@@ -64,7 +64,9 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
 3. `i.fromNormalization : X ⟶ P` is integral, and it is *finite* because normalization is of
    finite type for schemes of finite type over a field
    (`locallyOfFiniteType_fromNormalization`, PROVEN over the affine-local ring statement
-   `finiteType_integralClosure_sections`, LEAF); finite ⟹ proper, so `X` is proper over `K`;
+   `finiteType_integralClosure_sections`, itself PROVEN 2026-07-27 over the single classical
+   leaf `module_finite_integralClosure_of_isFractionRing` — E. Noether's finiteness theorem);
+   finite ⟹ proper, so `X` is proper over `K`;
 4. `X` is normal of dimension one over a perfect field, hence smooth
    (`smoothOfRelativeDimension_one_fromNormalization`, LEAF);
 5. the complement of a dense open in an irreducible noetherian curve is finite — proven
@@ -86,11 +88,13 @@ Every one of the original five leaves has now been cut down; the remaining leave
 | `nonempty_projChart_mvPolynomial` | dehomogenisation: the standard affine chart of `ℙⁿ` |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) |
-| `locallyOfFiniteType_fromNormalization` | Nagata/Japanese rings: the normalization of a finite-type `K`-algebra is of finite type |
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
 | `exists_isOpenImmersion_isProper` | Nagata compactification (unchanged — a single citation, no cut available) |
 | `finiteType_integralClosure_sections` | Nagata/Japanese rings: the integral closure of a finite-type `K`-algebra in the sections of `Y` over an affine chart is of finite type |
 | `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one` | a locally standard smooth `K`-algebra of relative dimension one has Krull dimension `≤ 1` (all that is left of "a smooth curve over a field is one-dimensional", 2026-07-27) |
+| `module_finite_integralClosure_of_isFractionRing` | E. Noether: the normalization of a finite-type domain over a field is a finite module (Stacks `0335`); only the INSEPARABLE case is genuinely missing from the pin |
+| `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
+| `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
 | `infinite_of_smoothOfRelativeDimension_one` | a nonempty smooth curve over a field has infinitely many points (added 2026-07-27; the only input to the density subsection at the end of this file) |
 
@@ -564,9 +568,157 @@ theorem exists_isOpenImmersion_isProper {Y : Scheme.{u}}
     letI := hZ; letI := hft
     exact exists_isOpenImmersion_isProper_of_isAffine strZ
 
+/-! ### E. Noether's finiteness theorem for the normalization
+
+The two ring-theoretic statements below are what `finiteType_integralClosure_sections` is
+really about; they are kept inside `AlgebraicGeometry` for the same reason as the
+topological preliminaries above — so that this module adds no root-level names to the cone
+of everything that `public import`s it. -/
+
+/-- **E. Noether's finiteness theorem for the normalization of a finite-type domain over a
+field** (sorry leaf — the ONE genuinely classical input of
+`finiteType_integralClosure_sections` below, and, after the 2026-07-27 cut, all that is left
+of it).
+
+`A` is a domain of finite type over a field `k` and `L = Frac A`.  Then the integral closure
+of `A` in `L` — the normalization of `A` — is a FINITE `A`-module.  Stacks `0335` (a
+finite-type algebra over a field is Nagata) / `032E`.
+
+**Why the pin does not supply it.**  `Mathlib` has `IsIntegralClosure.finite`
+(`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean:174`), but only under
+`[IsIntegrallyClosed A] [IsNoetherianRing A]` *and* `[Algebra.IsSeparable K L]`.  There is no
+Nagata/Japanese theory anywhere at this pin: `grep -rn "Japanese\|IsNagata" Mathlib/` returns
+only the analytic "Japanese bracket" and a citation of Nagata's Euclidean-algorithm paper.
+
+**The classical route, and where the residue is** (Stacks `0335` ⟸ `0334` ⟸ `032L`):
+
+1. Noether normalization — `exists_finite_inj_algHom_of_fg`
+   (`Mathlib/RingTheory/NoetherNormalization.lean`), PRESENT at the pin — gives
+   `A₀ = MvPolynomial (Fin s) k ↪ A` with `A` finite over `A₀`.  Then
+   `integralClosure A L = integralClosure A₀ L`, so it is enough to be `A₀`-finite.
+2. `A₀` is a UFD, hence `IsIntegrallyClosed`, and Noetherian; `L` is a finite extension of
+   `Frac A₀`.
+3. If `L / Frac A₀` is SEPARABLE, `IsIntegralClosure.finite` closes it verbatim.
+4. The residue is the INSEPARABLE case: with `q = pᵉ` killing the purely inseparable part,
+   `L` embeds in `k'(x₁^{1/q}, …, x_s^{1/q})` for a finite purely inseparable `k'/k`, whose
+   integral closure over `A₀` is the polynomial ring `k'[x₁^{1/q}, …, x_s^{1/q}]` — finite
+   over `A₀` — and a submodule of a finite module over a Noetherian ring is finite.
+
+So step 4 is the whole gap.  **A `PerfectField k` hypothesis would NOT remove it**: over
+`k = 𝔽_p` the domain `A = k[x,y]/(yᵖ - x)` is finite over `A₀ = k[x]` with `Frac A / Frac A₀`
+purely inseparable, and `k` is perfect.
+
+**A PROVEN CHARACTERISTIC-ZERO TWIN ALREADY EXISTS IN THIS TREE — do not redevelop it**
+(found 2026-07-27).  `Fermat/FLT/Modularity/MoretBailly.lean` carries
+`module_finite_integralClosure_of_finiteType`, PROVEN over `[Field k] [CharZero k]`, together
+with `module_finite_integralClosure_of_isIntegrallyClosed`,
+`module_finite_integralClosure_of_isDomain_of_faithfulSMul`,
+`module_finite_integralClosure_of_isDomain`, and even a globalisation over one affine open of
+the target, `module_finite_integralClosure_sections_of_isReduced`, which is the `ULift ℚ`
+analogue of `finiteType_integralClosure_sections` below (its route is different: a finite
+affine cover of `g ⁻¹ᵁ U` plus the sheaf axiom, Stacks `03GR`, rather than the function
+field).  Its steps 1–3 are characteristic-free and `CharZero` enters at exactly one place —
+to make the residue extension separable so that `IsIntegralClosure.finite` applies, i.e.
+precisely step 4 above.
+
+That cluster cannot be consumed from here as it stands: it lives in the `Modularity` cone,
+strictly downstream of this shim module, and it is written over `ULift ℚ`.  The right repair,
+for that file's owner, is to HOIST its pure-commutative-algebra half into the shim tree and
+generalise `ULift ℚ` to a field; this leaf and that theorem then become one declaration and
+the tree stops carrying three copies of Noether's theorem (`Modularity/KhareWintenberger.lean`
+has a third).  Whoever closes step 4 should close it there, not here. -/
+theorem module_finite_integralClosure_of_isFractionRing
+    {k A L : Type*} [Field k] [CommRing A] [IsDomain A] [Algebra k A]
+    [Algebra.FiniteType k A] [Field L] [Algebra A L] [IsFractionRing A L] :
+    Module.Finite A (integralClosure A L) :=
+  sorry
+
+/-- **Noether's finiteness theorem at a prime** (PROVEN over
+`module_finite_integralClosure_of_isFractionRing`).
+
+The same conclusion without assuming `A` a domain: it is enough that `L` be the localization
+of the finite-type `k`-algebra `A` at a prime `q` **and** a field.  Being a field forces
+`q A_q = 0`, so `q` is exactly the kernel of `A → L` and `L = Frac (A ⧸ q)`.  This is the
+shape the scheme-level statement actually produces — there `L` is the stalk of an affine
+chart at a generic point, and the chart's ring is not a domain because `P` is not assumed
+integral — so the quotient reduction is done once, here.  It goes:
+
+* `q` is exactly `ker (algebraMap A L)`, by `IsLocalization.AtPrime.isUnit_to_map_iff` in
+  both directions (outside `q` the image is a unit, hence nonzero; inside `q` a nonzero
+  image would be a unit in the field `L`, hence outside `q`);
+* so `A ⧸ q` embeds in `L`, and `IsLocalization.surj` at `q.primeCompl` writes every element
+  of `L` as a fraction from `A ⧸ q`, which is `IsFractionRing (A ⧸ q) L`;
+* `integralClosure A L ⊆ integralClosure (A ⧸ q) L` by `IsIntegral.tower_top`; the latter is
+  `(A ⧸ q)`-finite by the leaf, hence `A`-finite because `A ↠ A ⧸ q`, and `A` is Noetherian
+  (finite type over a field), so the submodule is finite. -/
+theorem module_finite_integralClosure_of_isLocalizationAtPrime
+    (k : Type*) {A L : Type*} [Field k] [CommRing A] [Algebra k A] [Algebra.FiniteType k A]
+    [Field L] [Algebra A L] (q : Ideal A) [q.IsPrime] [IsLocalization.AtPrime L q] :
+    Module.Finite A (integralClosure A L) := by
+  classical
+  haveI : IsNoetherianRing A := Algebra.FiniteType.isNoetherianRing k A
+  have hker : ∀ x : A, algebraMap A L x = 0 ↔ x ∈ q := by
+    intro x
+    constructor
+    · intro hx
+      by_contra hxq
+      have hu : IsUnit (algebraMap A L x) :=
+        (IsLocalization.AtPrime.isUnit_to_map_iff L q x).mpr hxq
+      rw [hx] at hu
+      exact not_isUnit_zero hu
+    · intro hx
+      by_contra hx0
+      have hu : IsUnit (algebraMap A L x) := isUnit_iff_ne_zero.mpr hx0
+      exact ((IsLocalization.AtPrime.isUnit_to_map_iff L q x).mp hu) hx
+  letI : Algebra (A ⧸ q) L :=
+    (Ideal.Quotient.lift q (algebraMap A L) (fun a ha => (hker a).mpr ha)).toAlgebra
+  have hmapq : ∀ x : A, algebraMap (A ⧸ q) L (Ideal.Quotient.mk q x) = algebraMap A L x :=
+    fun x => rfl
+  haveI : IsScalarTower A (A ⧸ q) L :=
+    IsScalarTower.of_algebraMap_eq (fun x => (hmapq x).symm)
+  have hinj : Function.Injective (algebraMap (A ⧸ q) L) := by
+    intro x y hxy
+    induction x using Quotient.inductionOn' with
+    | h x =>
+      induction y using Quotient.inductionOn' with
+      | h y =>
+        have h0 : algebraMap A L (x - y) = 0 := by
+          rw [map_sub, ← hmapq x, ← hmapq y]
+          exact sub_eq_zero_of_eq hxy
+        exact (Ideal.Quotient.mk_eq_mk_iff_sub_mem x y).mpr ((hker _).mp h0)
+  haveI : IsFractionRing (A ⧸ q) L := by
+    refine (isLocalization_iff (nonZeroDivisors (A ⧸ q)) L).mpr ⟨?_, ?_, ?_⟩
+    · rintro ⟨y, hy⟩
+      refine isUnit_iff_ne_zero.mpr ?_
+      simpa using fun h => (mem_nonZeroDivisors_iff_ne_zero.mp hy) (hinj (by simpa using h))
+    · intro z
+      obtain ⟨⟨a, s, hs⟩, hz⟩ := IsLocalization.surj (M := q.primeCompl) z
+      refine ⟨⟨Ideal.Quotient.mk q a, ⟨Ideal.Quotient.mk q s, ?_⟩⟩, ?_⟩
+      · exact mem_nonZeroDivisors_iff_ne_zero.mpr
+          (fun h => hs ((Ideal.Quotient.eq_zero_iff_mem).mp h))
+      · simpa [hmapq] using hz
+    · intro x y hxy
+      exact ⟨1, by rw [hinj hxy]⟩
+  haveI : Module.Finite (A ⧸ q) (integralClosure (A ⧸ q) L) :=
+    module_finite_integralClosure_of_isFractionRing (k := k)
+  haveI : Module.Finite A (A ⧸ q) :=
+    Module.Finite.of_surjective (Algebra.linearMap A (A ⧸ q)) Ideal.Quotient.mk_surjective
+  haveI : Module.Finite A (integralClosure (A ⧸ q) L) := Module.Finite.trans (A ⧸ q) _
+  refine Module.Finite.of_injective
+    ({ toFun := fun x => ⟨(x : L), x.2.tower_top⟩
+       map_add' := fun _ _ => rfl
+       map_smul' := fun _ _ => rfl } : integralClosure A L →ₗ[A] integralClosure (A ⧸ q) L)
+    ?_
+  intro x y h
+  apply Subtype.ext
+  have h2 := congrArg (fun z : integralClosure (A ⧸ q) L => (z : L)) h
+  simpa using h2
+
 /-- **The integral closure of an affine chart of `P` in the sections of `Y` over its preimage is
-a finite-type algebra** (sorry leaf — the Nagata/Japanese input, and, after the 2026-07-27 cut
-below, all that is left of the old `isFinite_fromNormalization`).
+a finite-type algebra** (**PROVEN 2026-07-27** over
+`module_finite_integralClosure_of_isFractionRing`, the single classical leaf above — this was
+the Nagata/Japanese input, and, after the 2026-07-27 cut below, all that was left of the old
+`isFinite_fromNormalization`).
 
 TRUE and classical.  Write `A := Γ(P, U)` and `B := Γ(Y, i ⁻¹ᵁ U)`.  A domain of finite type
 over a field is a Nagata (universally Japanese) ring, so its integral closure in a finite
@@ -589,48 +741,111 @@ the integral closure of `A` in `B` (`AlgebraicGeometry.Scheme.Hom.normalizationO
 this one over every affine `U`.  That descent is now PROVEN — see
 `locallyOfFiniteType_fromNormalization` immediately below — so no scheme theory is owed here.
 
-**THE FURTHER CUT THIS ADMITS, and everything a next owner needs to know.**  Only one classical
-theorem is genuinely missing from the pin; the rest is available and is named here.
+**HOW IT IS PROVEN (2026-07-27), and what is left.**  Everything below is now written out; the
+only thing still owed is `module_finite_integralClosure_of_isFractionRing` above.
 
-* `B` is a DOMAIN whenever `i ⁻¹ᵁ U` is nonempty: `IsIntegral Y` gives
-  `IsIntegral.component_integral`, i.e. `IsDomain Γ(Y, V)` for every nonempty open `V`.  When
-  `i ⁻¹ᵁ U` is EMPTY, `B` is the trivial ring — `instance {X : Scheme.{u}} : Subsingleton Γ(X, ⊥)`
-  in `Mathlib/AlgebraicGeometry/Scheme.lean` — the integral closure is everything, and the
-  algebra map is surjective, so the statement is immediate; that case must be split off first.
-* `B` embeds in the FUNCTION FIELD `L := Y.functionField`, injectively, by
+* When `i ⁻¹ᵁ U` is EMPTY the open is `⊥`, so `B` is the trivial ring —
+  `instance {X : Scheme.{u}} : Subsingleton Γ(X, ⊥)` in `Mathlib/AlgebraicGeometry/Scheme.lean`
+  — hence so is `integralClosure A B`, and `Algebra.FiniteType` is automatic.  That case is
+  split off first.
+* Otherwise `B` embeds in the FUNCTION FIELD `L := Y.functionField`, injectively, by
   `Scheme.germToFunctionField_injective` (`Mathlib/AlgebraicGeometry/FunctionField.lean`).
-* `L` is the fraction field of the image `A'` of `A` in `B`: `i` is an open immersion, so
-  `i ⁻¹ᵁ U` is an open subscheme of the affine `U`, dense in `Spec A'` because `Y` is
-  irreducible, and the stalk of `Spec A` at the generic point is `A'`-localized to a field,
-  which is `L`.  `functionField_isFractionRing_of_isAffineOpen` is the affine form of this.
+* `L` is the LOCALIZATION OF `A` AT A PRIME, namely at
+  `U.2.primeIdealOf ⟨i.base (genericPoint Y), _⟩`.  This is where the geometry is spent, and it
+  is a cleaner route than the "fraction field of the image of `A`" one this docstring used to
+  describe: `U.2.isLocalization_stalk` says the stalk of `P` at that point is the localization
+  of `A` at that prime, and `i.stalkMap (genericPoint Y)` is an ISO because `i` is an open
+  immersion, so it transports the `IsLocalization.AtPrime` along
+  `IsLocalization.isLocalization_iff_of_algEquiv`.  That the transport is an *algebra* equiv
+  over `A` is exactly `Scheme.Hom.germ_stalkMap`.  Note this needs no affineness of
+  `i ⁻¹ᵁ U`, which is the reason `functionField_isFractionRing_of_isAffineOpen` — the obvious
+  first thing to reach for — does NOT apply: an open subscheme of an affine scheme is not
+  affine in general.
 * `A` is of FINITE TYPE over `K`, hence NOETHERIAN: `IsProper strP` gives
-  `LocallyOfFiniteType strP`, and `HasRingHomProperty.appLE` reads that off at `U`.
-* Hence `integralClosure A B` injects, as an `A`-module, into `integralClosure A L` — the map is
-  `AlgHom.mapIntegralClosure`, which is already in the pin — and it is enough to know that the
-  latter is a FINITE `A`-module, since a submodule of a finite module over a Noetherian ring is
-  finite.
+  `LocallyOfFiniteType strP`, and `HasRingHomProperty.appLE` reads that off at `U`, after
+  transporting the base along `Scheme.ΓSpecIso (CommRingCat.of K)`.
+* `integralClosure A B` then injects, as an `A`-module, into `integralClosure A L` — the map is
+  `AlgHom.mapIntegralClosure`, already in the pin — and the latter is a FINITE `A`-module by
+  `module_finite_integralClosure_of_isLocalizationAtPrime`, so the submodule is finite because
+  `A` is Noetherian (`Module.Finite.of_injective`).
 * The final conversion is `RingHom.finiteType_algebraMap`
   (`Mathlib/RingTheory/FiniteType.lean`): `(algebraMap A C).FiniteType ↔ Algebra.FiniteType A C`,
-  and `Module.Finite A C → Algebra.FiniteType A C`.
+  together with the instance `Module.Finite A C → Algebra.FiniteType A C`.
 
-So the one missing classical input, and the only thing a next owner has to import or prove, is
-
-    A a finite-type algebra over a field, L a field which is the fraction field of the image
-    of A  ⟹  `Module.Finite A (integralClosure A L)`
-
-(Noether's finiteness of the integral closure; Stacks `0335`, `032E`).  `Mathlib` has it only
-in the SEPARABLE case, as `IsIntegralClosure.finite`
-(`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean`, which needs `[IsIntegrallyClosed A]`,
-`[IsNoetherianRing A]` and separability of the residue extension); the general case needs
-Noether normalization — which IS at the pin, `Mathlib/RingTheory/NoetherNormalization.lean`,
-`exists_finite_inj_algHom_of_fg` — plus the inseparable descent.  That is the genuine gap. -/
+`IsIntegral Y` is used twice and only twice: for the generic point to exist and lie in every
+nonempty open, and for `germToFunctionField` to be injective.  `IsDomain B` is never needed —
+`IsIntegral.component_integral` is not used — because the quotient reduction happens one level
+down, inside `module_finite_integralClosure_of_isLocalizationAtPrime`, where it is a statement
+about `A` rather than about `B`.  `QuasiCompact i` is not used by this proof at all; it is kept
+because every consumer already carries it and because Zariski's Main Theorem needs it. -/
 theorem finiteType_integralClosure_sections {Y P : Scheme.{u}}
     (strP : P ⟶ Spec (CommRingCat.of K)) [IsProper strP]
     (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y] (U : P.affineOpens) :
     letI := (i.app U.1).hom.toAlgebra
     RingHom.FiniteType
-      (algebraMap Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1))) :=
-  sorry
+      (algebraMap Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1))) := by
+  letI algB : Algebra Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1) := (i.app U.1).hom.toAlgebra
+  show RingHom.FiniteType (algebraMap Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1)))
+  rw [RingHom.finiteType_algebraMap]
+  -- The affine chart is a finite-type `K`-algebra, hence Noetherian.
+  have hle : U.1 ≤ strP ⁻¹ᵁ ⊤ := by simp
+  letI algKA : Algebra K Γ(P, U.1) :=
+    ((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strP.appLE ⊤ U.1 hle).hom.toAlgebra
+  haveI hftA : Algebra.FiniteType K Γ(P, U.1) := by
+    rw [← RingHom.finiteType_algebraMap]
+    show RingHom.FiniteType
+      (((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strP.appLE ⊤ U.1 hle).hom)
+    rw [CommRingCat.hom_comp]
+    exact RingHom.FiniteType.comp
+      (HasRingHomProperty.appLE (P := @LocallyOfFiniteType) strP inferInstance
+        ⟨⊤, isAffineOpen_top _⟩ U hle)
+      (RingHom.FiniteType.of_surjective _
+        (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (CommRingCat.of K)).inv).2)
+  haveI : IsNoetherianRing Γ(P, U.1) := Algebra.FiniteType.isNoetherianRing K _
+  rcases isEmpty_or_nonempty (i ⁻¹ᵁ U.1) with hV | hV
+  · -- Empty preimage: the sections ring is trivial, so there is nothing to generate.
+    have hbot : (i ⁻¹ᵁ U.1) = ⊥ := by
+      ext x
+      simp only [Opens.coe_bot, Set.mem_empty_iff_false, iff_false]
+      exact fun hx => hV.false ⟨x, hx⟩
+    haveI : Subsingleton Γ(Y, i ⁻¹ᵁ U.1) := by rw [hbot]; infer_instance
+    haveI : Subsingleton ↥(integralClosure Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1)) := inferInstance
+    infer_instance
+  · -- Nonempty preimage: everything embeds in the function field of `Y`.
+    haveI := hV
+    have hη : genericPoint Y ∈ (i ⁻¹ᵁ U.1) :=
+      ((genericPoint_spec Y).mem_open_set_iff (i ⁻¹ᵁ U.1).isOpen).mpr (by simpa using hV)
+    letI algAL : Algebra Γ(P, U.1) Y.functionField :=
+      ((i.app U.1) ≫ Y.germToFunctionField (i ⁻¹ᵁ U.1)).hom.toAlgebra
+    haveI : IsScalarTower Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1) Y.functionField :=
+      IsScalarTower.of_algebraMap_eq (fun x => rfl)
+    -- The function field is the stalk of `P` at the image of the generic point, hence the
+    -- localization of the chart at the corresponding prime.
+    letI algAS : Algebra Γ(P, U.1) (P.presheaf.stalk (i.base (genericPoint Y))) :=
+      TopCat.Presheaf.algebra_section_stalk P.presheaf
+        (⟨i.base (genericPoint Y), hη⟩ : U.1)
+    have hstalk : IsLocalization.AtPrime (P.presheaf.stalk (i.base (genericPoint Y)))
+        (U.2.primeIdealOf ⟨i.base (genericPoint Y), hη⟩).asIdeal :=
+      U.2.isLocalization_stalk ⟨i.base (genericPoint Y), hη⟩
+    letI e : P.presheaf.stalk (i.base (genericPoint Y)) ≃ₐ[Γ(P, U.1)] Y.functionField :=
+      { (asIso (i.stalkMap (genericPoint Y))).commRingCatIsoToRingEquiv with
+        commutes' := fun r => by
+          have := Scheme.Hom.germ_stalkMap i U.1 (genericPoint Y) hη
+          exact congrArg (fun (f : Γ(P, U.1) ⟶ Y.functionField) => f.hom r) this }
+    haveI : IsLocalization.AtPrime Y.functionField
+        (U.2.primeIdealOf ⟨i.base (genericPoint Y), hη⟩).asIdeal :=
+      (IsLocalization.isLocalization_iff_of_algEquiv _ e).mp hstalk
+    haveI : Module.Finite Γ(P, U.1) ↥(integralClosure Γ(P, U.1) Y.functionField) :=
+      module_finite_integralClosure_of_isLocalizationAtPrime K
+        (U.2.primeIdealOf ⟨i.base (genericPoint Y), hη⟩).asIdeal
+    haveI : Module.Finite Γ(P, U.1) ↥(integralClosure Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1)) := by
+      refine Module.Finite.of_injective
+        (AlgHom.mapIntegralClosure
+          (IsScalarTower.toAlgHom Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1) Y.functionField)).toLinearMap ?_
+      intro a b h
+      apply Subtype.ext
+      exact Y.germToFunctionField_injective (i ⁻¹ᵁ U.1) (congrArg Subtype.val h)
+    infer_instance
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The normalization of a scheme of finite type over a field is of finite type over it**
