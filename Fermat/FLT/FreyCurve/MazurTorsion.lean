@@ -2496,7 +2496,95 @@ UNIQUENESS IN THE TREE. Grepping the whole project for `Heegner`, `Stark`,
 `class number one` and `Rabinowitsch` finds them, outside this file, in
 exactly one unrelated prose line of `ModThree.lean`. This declaration is
 therefore the SOLE carrier of the class-number-one input: there is no
-sibling leaf to unify with, and no duplicated deep input to reconcile. -/
+sibling leaf to unify with, and no duplicated deep input to reconcile.
+
+FIFTH PASS (2026-07-27). Route chosen DELIBERATELY: the ANALYTIC one. Its
+two gaps were re-costed by BUILDING the assembly in throwaway scratch
+modules and COMPILING it against this pin, rather than by reading mathlib.
+The fourth pass's verdict is unchanged and its two gaps are confirmed —
+but their shapes were both wrong, in opposite directions, and the residue
+is now exactly ONE arithmetic identity.
+
+BOTH OF THE FOLLOWING COMPILED CLEAN (`lake env lean`, exit 0, first and
+second try respectively):
+
+* GAP 1 IS NOT ANALYTIC AT ALL — it is weaker than the fourth pass thought.
+  mathlib defines `dedekindZeta K s` as the `LSeries` of
+  `n ↦ Nat.card {I : Ideal (𝓞 K) // absNorm I = n}` — coefficients, not an
+  Euler product. So `ζ_K = ζ · L(χ)` on `re s > 1` follows from the purely
+  ARITHMETIC coefficient identity `a_K = 1 ⋆ χ`, i.e.
+  `#{I : absNorm I = n} = Σ_{d ∣ n} χ(d)`, by `LSeries_convolution'` and
+  `LSeries_one_eq_riemannZeta`. Verified: a single `rw`. No Euler product,
+  no analytic continuation, no convergence argument is needed anywhere.
+
+* GAP 2 IS AN EXACT EQUALITY, and that is verified rather than asserted.
+  Granted the factorisation and `χ ≠ 1`, the three mathlib facts
+  `tendsto_sub_one_mul_dedekindZeta_nhdsGT`, `riemannZeta_residue_one` and
+  `DirichletCharacter.differentiable_LFunction` combine, in ~25 lines, to
+  `L(1, χ) = dedekindZeta_residue K`. For `K = ℚ(√−q)` that is
+  `L(1, χ) = π h / √q`. So the analytic route is COMPLETE, from mathlib as
+  it stands, down to that equality — and it stops there for exactly the
+  reason the fourth pass gave: `h ≥ 1` already yields `L(1,χ) ≥ π/√q` and
+  `h = 1` is precisely its equality case. Making the chain machine-checked
+  does not move that boundary by one inch; it only locates it exactly.
+
+THE RESIDUE, NAMED, with the check that refutes each item (all three
+re-run against THIS pin, all three returning ZERO hits):
+
+  1. `quadraticChar` / `legendreSym` packaged as a `DirichletCharacter` —
+     absent from ALL of mathlib. So the factorisation cannot even be
+     STATED with a Dirichlet character until this is written. Smallest of
+     the three, and the natural first step.
+     Refute: `grep -rn "quadraticChar\|legendreSym" Mathlib/ | grep -i dirichlet`.
+  2. Multiplicativity of `n ↦ #{I : absNorm I = n}` — no `IsMultiplicative`
+     statement about it anywhere under `Mathlib/NumberTheory/NumberField/Ideal/`.
+     Refute: `grep -rn IsMultiplicative Mathlib/NumberTheory/NumberField/Ideal/`.
+  3. The quadratic splitting law (`p` splits / is inert / ramifies according
+     as `χ_d(p) = 1 / −1 / 0`) — absent. `NumberField/Ideal/KummerDedekind.lean`
+     is the TOOL such a law would be built from, not the law; it contains no
+     quadratic material at all.
+     Refute: `grep -rn quadratic Mathlib/NumberTheory/NumberField/Ideal/KummerDedekind.lean`.
+
+WHY NO CODE LANDED HERE, AND WHY THAT IS NOT A FAILURE. Both scratch proofs
+are correct and NEITHER CAN BE COMMITTED: while this leaf is open, nothing
+in the root cone of `fermat_last_theorem` can consume them, so they would be
+free-floating, which this project forbids. That is a general fact about this
+leaf, not an accident of this pass — any Gap-1/Gap-2 module is unreachable
+from the root until the deep input itself is closed. The material is
+reproducible from the three bullets above in minutes; what was worth
+establishing is the COST, and it is now exact: the analytic route is ONE
+arithmetic identity away from `L(1,χ) = π h/√q`, and still infinitely far
+from `m ≤ 41`, because that equality is precisely where Siegel's
+ineffectivity lives.
+
+DECOMPOSITION DECLINED, DELIBERATELY, and here is the cut that was declined
+so nobody has to rediscover it. The elementary converse
+`hgen → every odd prime q < m is inert` is a ten-line Lean proof: if
+`1 − 4m ≡ t² (mod q)`, pick `x₀ ∈ [0, q−1]` with `2x₀ + 1 ≡ t`; then
+`q ∣ x₀² + x₀ + m` because `4(x² + x + m) = (2x+1)² + (4m−1)`; `x₀ + 1 < m`
+holds since `q < m`; and `x₀² + x₀ + m ≥ m > q`, so `hgen`'s prime value is
+properly divisible by `q` — contradiction. It would complete an
+IFF with `mazurIsogeny_primeGenerating_of_inert`, whose guard `4q < N` is
+literally `q < m` under `N = 4m − 1`. It is NOT taken because it moves no
+difficulty whatsoever: the residual half is the same statement at the same
+strength, which is exactly what the third audit meant by "every available
+cut is a rename". Recording it costs nothing; taking it would cost a
+verification cycle and buy a sorry in a different costume.
+
+FAITHFULNESS, re-confirmed independently on this pass (deterministic
+Miller–Rabin, no sieve cap, no reuse of the earlier PARI run): over
+`2 ≤ m ≤ 5·10⁵` the hypothesis `hgen` holds for exactly
+`m ∈ {2, 3, 5, 11, 17, 41}`. So the conclusion `m ≤ 41` is true and SHARP.
+
+AXIS SEARCHED, stated so the next reader knows what this pass did NOT look
+at: mathlib at this pin, `~/cs/FLT` (zero hits for each of `jInvariant`,
+`Weber`, `classNumber`, `BinaryQuadratic`, `Heegner`, `Rabinowitsch`), this
+project, and the ANALYTIC axis in full. NOT searched: the
+Heegner–Stark/CM axis beyond confirming its prerequisites are absent, and
+Baker's linear-forms-in-logarithms axis. Neither has any representative in
+any of the three trees, so neither is a near-term route; but "no elementary
+and no analytic route exists" is the claim this pass supports, and the
+stronger "no route exists" is not. -/
 theorem mazurIsogeny_rabinowitsch_bound {m : ℕ} (hm : 2 ≤ m)
     (hgen : ∀ x : ℕ, x + 1 < m → Nat.Prime (x ^ 2 + x + m)) : m ≤ 41 :=
   sorry
