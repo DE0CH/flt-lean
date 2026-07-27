@@ -24060,11 +24060,24 @@ which is the atom in disguise.
 
 *Amended 2026-07-27 (flt-lean-37).*  `card_y0Le_thirtySeven` is now PROVEN,
 over the `∃`-form leaf `exists_coarseModuliY0_thirtySeven_cardLe` through
-the initiality transport `card_y0Le_of_exists_coarseModuli`; the open leaf
-at `37` is the `∃`-form, and the audit of every axis searched — including
-the two axes RE-REFUTED that day, with the explicit genus-`2` model and the
-action of all three involutions on the four rational points — stays on
-`card_y0Le_thirtySeven`.
+the initiality transport `card_y0Le_of_exists_coarseModuli`; the audit of
+every axis searched — including the two axes RE-REFUTED that day, with the
+explicit genus-`2` model and the action of all three involutions on the four
+rational points — stays on `card_y0Le_thirtySeven`.
+
+*Amended again 2026-07-27 (flt-lean-55).*  The `∃`-form
+`exists_coarseModuliY0_thirtySeven_cardLe` is now PROVEN too, and the open
+leaf at `37` is the COMPACT bound
+`exists_x0Compactification_thirtySeven_cardLe` (`#X_0(37)(ℚ) ≤ 4`).  This
+is the split's own cut-level observation acted on: at this level the
+elementary argument — the fibre count over the rank-`0` quotient `37b`,
+whose only deep input is `rank 37b(ℚ) = 0` — bounds `X` and not `Y`, so the
+arithmetic belongs on the compact side, and the cusps are put BACK with the
+PROVEN lower bound `Fermat.exists_rationalCusps` rather than taken away with
+the open upper bound.  Net effect at `37`: the affine half no longer holds
+any arithmetic, and `card_le_numRationalCusps_of_isCusp` is in principle
+unnecessary there — see the note on the `∃`-form for why removing it is not
+immediate, and note that `43, 67, 163` still need it.
 
 **Why the affine half is TWO leaves and not one.**  The four levels do not
 share an argument, and the split is exactly `37` against `43, 67, 163`.
@@ -24216,8 +24229,95 @@ theorem card_y0Le_of_exists_coarseModuli {N k : ℕ}
   calc t.card = (t.image e).card := (Finset.card_image_of_injective t e.injective).symm
     _ ≤ k := hb _
 
+/-- **SOME compactification of `Y_0(37)` has at most `4` rational points**
+(sorry leaf, introduced 2026-07-27 by flt-lean-55; the COMPACT form, and
+the leaf that now carries all of level `37`'s arithmetic).
+
+TRUE and sharp: `#X_0(37)(ℚ) = 4` exactly — the two rational cusps `0` and
+`∞` together with the two Mazur–Swinnerton-Dyer points of `j`-invariants
+`−7·11³` and `−7·137³·2083³`.
+
+**Why the arithmetic was MOVED here from the affine leaf.**  The cut-level
+observation recorded on `card_y0Le_thirtySeven` — that the elementary
+argument available at this level bounds `X` and not `Y`, so "the arithmetic
+wants to live on the COMPACT side" — is acted on here.  The affine leaf
+`exists_coarseModuliY0_thirtySeven_cardLe` is now PROVEN over this one by
+putting the two rational cusps back (`Fermat.exists_rationalCusps`, PROVEN,
+and a LOWER bound on the cusps, so it is not the open cusp-upper-bound leaf
+`card_le_numRationalCusps_of_isCusp` in disguise).
+
+**This is NOT `card_le_of_isogenyPrimeHigherGenus 37 4`**, which states the
+same bound and is proven OVER the affine leaf; routing through *that*
+declaration would be circular, which is exactly why this is a separate leaf
+with its own statement.  Two further differences make it strictly weaker
+than that theorem, and both matter: this one is EXISTENTIAL in the
+compactification, and it is stated at `37` only.
+
+## THE ARGUMENT, and its only deep input is `rank 37b(ℚ) = 0`
+
+No Chabauty, no formal immersion, no Coleman integration, and no reduction
+map.  On the simplified genus-`2` model of `X_0(37)`
+
+    S : y² = f(x),  f = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4
+
+the quotient by `σ = ι ∘ w₃₇` is given by `u = x²/(x − 1)` and
+`V = y((x−1)³ − 1)/((x−1)³(u − 1))`, landing on
+
+    C : V² = u⁴ + 4u³ − 44u² + 52u − 16 .
+
+`S(ℚ) → C(ℚ)` has degree `2`, so every fibre carries at most two rational
+points, and `C(ℚ)` has exactly three elements; enumerating the three fibres
+gives `2 + 2 + 0 = 4`:
+
+* `u = ∞` — two rational points of `C`, since the leading coefficient `1`
+  is a square — has the two fibres `x = ∞` and `x = 1`, and both carry two
+  rational points (`f` is monic of even degree, and `f(1) = 1`);
+* `(u, V) = (4, 0)` pulls back to `x² − 4x + 4 = 0`, i.e. `x = 2`, where
+  `y² = f(2) = 148 = 4·37` is NOT a square in `ℚ`.  That fibre is the
+  conjugate pair `(2, ±2√37)` and contributes NOTHING.
+
+**Re-verified independently in PARI/GP 2.17.4 on 2026-07-27 (flt-lean-55),
+not quoted from the reconnaissance block:**
+
+* `V² − (u⁴ + 4u³ − 44u² + 52u − 16)` under the substitution above is the
+  ZERO rational function — so the quotient map is exactly as stated, and
+  the reconnaissance is not being taken on trust;
+* `C` has minimal model `[0, 1, 1, −23, −50]`, conductor `37`, torsion
+  `ℤ/3` and `ellrank = [0, 0]` — i.e. it IS `37b`, of rank `0`, whence
+  `#C(ℚ) = 3` exactly;
+* `f(1) = 1` and `f(2) = 148 = 4·37`.
+
+**This is the elementary specialisation of the open axis**, not a fourth
+axis.  `card_y0Le_thirtySeven`'s audit names the rank-`0`-QUOTIENT
+Mordell–Weil sieve as the one axis open, with witness `ℓ = 5`; the sieve at
+`ℓ = 5` also returns `4`.  The fibre count reaches the same bound with no
+reduction map, no `IsX0ReductionAt` and no Néron model, because the
+"sieved-out" fibre is already visibly irrational over `ℚ` itself.  So the
+sieve is available as a fallback and is not needed.
+
+**What proving this needs**, and the template is in this very file: an
+explicit model of `X_0(37)` tied to the coarse space, exactly as
+`exists_planeModel_x0ThirtyTwo` ties one to `X_0(32)` and lets
+`y0HasNoRationalPoint_thirtyTwo` be fully proven here.  Concretely three
+pieces — (i) an injection of `X_0(37)(ℚ)` into the points of `S`, (ii) the
+degree-`2` map to `C` with the fibre analysis above, (iii)
+`#C(ℚ) = 3` from `rank 37b(ℚ) = 0`.  Only (iii) is deep, and it is the
+single arithmetic input of the whole level.
+
+**The check that would refute this**: a fifth rational point on `S`; or an
+`ellrank` call returning a positive rank for `[0, 1, 1, −23, −50]`; or a
+rational `u` with `u ≠ 4`, `u ≠ ∞` and `u⁴ + 4u³ − 44u² + 52u − 16` a
+square. -/
+theorem exists_x0Compactification_thirtySeven_cardLe :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X)
+      (_hX : IsX0Compactification 37 strX strY jY),
+      ∀ s : Finset (RelPoint strX (𝟙 SpecQ)), s.card ≤ 4 :=
+  sorry
+
 /-- **SOME coarse moduli space of `Γ_0(37)` has at most `2` rational
-points** (sorry leaf, introduced 2026-07-27, flt-lean-37; the `∃`-form of
+points** (PROVEN 2026-07-27, flt-lean-55, over the COMPACT leaf
+`exists_x0Compactification_thirtySeven_cardLe`; introduced as a sorry leaf
+earlier the same day by flt-lean-37, as the `∃`-form of
 `card_y0Le_thirtySeven`, which is proven over it by
 `card_y0Le_of_exists_coarseModuli`).
 
@@ -24226,11 +24326,58 @@ spaces `ℚ`-isomorphic — but it is the form every actual route needs, since
 every route runs on one explicit model.  The full audit, the explicit model,
 the four rational points with their `j`-invariants and the three involutions
 acting on them, and the state of every axis searched are on
-`card_y0Le_thirtySeven` immediately below; read that first. -/
+`card_y0Le_thirtySeven` immediately below; read that first.
+
+**The proof is the cusp/affine split run BACKWARDS**, which is the whole
+content of this relocation.  The compact leaf supplies a compactification
+`Y ⊆ X` with `#X(ℚ) ≤ 4`; `Y` is then a coarse moduli space
+(`hX.coarse`), and `Fermat.exists_rationalCusps` supplies a `Finset` of
+`numRationalCusps 37 = 2` rational points of `X`, none of them in the image
+of `Y(ℚ)`.  `sectionAlong_injective` makes the image of any `Finset` of
+`Y(ℚ)` as large as the `Finset` itself, and the two parts are disjoint, so
+`2 + t.card ≤ 4`.
+
+**Why this is not circular, and the two things to check.**  The cusp input
+is `exists_rationalCusps`, which is PROVEN and is a LOWER bound on the
+rational cusps; the open leaf `card_le_numRationalCusps_of_isCusp` is the
+UPPER bound and is NOT used here.  And the compact bound consumed is a leaf
+of its own, NOT `card_le_of_isogenyPrimeHigherGenus 37 4` — that theorem is
+proven over `card_y0Le_thirtySeven`, hence over this declaration, so citing
+it would close a cycle.
+
+**A CUT-LEVEL consequence for whoever owns `card_le_of_isogenyPrimeHigherGenus`,
+recorded and deliberately NOT acted on.**  With the compact leaf in place,
+the cusp-UPPER-bound leaf `card_le_numRationalCusps_of_isCusp` is no longer
+needed at level `37` in principle — but it is NOT immediately removable, and
+the reason is precise rather than a matter of taste: the compact leaf is
+EXISTENTIAL in the compactification, while `card_le_of_isogenyPrimeHigherGenus`
+quantifies over every one, and the transport between two `X_0(N)`
+compactifications is available in this development only over `SpecF ℓ`
+(`Fermat.nonempty_relPointEquiv_of_isX0Compactification`, whose `_hℓ` is
+load-bearing), not over `ℚ`.  This leaf sidesteps that by transporting along
+`IsCoarseModuliY0` initiality instead, which IS available over `ℚ`.  So the
+simplification is real but costs a `ℚ`-analogue of that transport; it belongs
+to that declaration's owner, and levels `43, 67, 163` need the cuspidal half
+regardless. -/
 theorem exists_coarseModuliY0_thirtySeven_cardLe :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (_ : IsCoarseModuliY0 37 strY),
-      ∀ t : Finset (RelPoint strY (𝟙 SpecQ)), t.card ≤ 2 :=
-  sorry
+      ∀ t : Finset (RelPoint strY (𝟙 SpecQ)), t.card ≤ 2 := by
+  classical
+  obtain ⟨X, Y, strX, strY, jY, hX, hb⟩ := exists_x0Compactification_thirtySeven_cardLe
+  refine ⟨Y, strY, hX.coarse, fun t => ?_⟩
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps 37 hX
+  have hfinj : Function.Injective (sectionAlong jY hX.comm) := sectionAlong_injective hX
+  have hdisj : Disjoint s (t.image (sectionAlong jY hX.comm)) := by
+    refine Finset.disjoint_left.mpr ?_
+    intro a ha ha'
+    obtain ⟨z, -, rfl⟩ := Finset.mem_image.mp ha'
+    exact hsnot _ ha z rfl
+  have hcard : (s ∪ t.image (sectionAlong jY hX.comm)).card = numRationalCusps 37 + t.card := by
+    rw [Finset.card_union_of_disjoint hdisj, Finset.card_image_of_injective _ hfinj, hscard]
+  have hle := hb (s ∪ t.image (sectionAlong jY hX.comm))
+  rw [hcard] at hle
+  have hnum : numRationalCusps 37 = 2 := by decide
+  omega
 
 /-- **`#Y_0(37)(ℚ) ≤ 2`** (PROVEN 2026-07-27, flt-lean-37, over the
 `∃`-form leaf `exists_coarseModuliY0_thirtySeven_cardLe` through
@@ -24363,20 +24510,29 @@ gives `8` and the sieved count gives `4`.  The consistency check at `ℓ = 3`,
 where `37 ≡ 1` IS a square, is that the third fibre survives and
 `4 + 2 = 6 = #X_0(37)(𝔽₃)` — the whole special fibre lies over `C(𝔽₃)`.
 
-**A CUT-LEVEL observation for whoever owns the cusp/affine split, recorded
-and deliberately NOT acted on.**  The fibre count above is elementary and
+**A CUT-LEVEL observation for whoever owns the cusp/affine split.**
+*(ACTED ON 2026-07-27 by flt-lean-55, in the direction this paragraph
+points but WITHOUT the circularity it warns of: the compact bound is now
+the separate leaf `exists_x0Compactification_thirtySeven_cardLe`, and
+`exists_coarseModuliY0_thirtySeven_cardLe` is PROVEN over it by putting the
+two cusps back with `Fermat.exists_rationalCusps` — a LOWER bound on the
+cusps, PROVEN, and therefore not the open cusp-upper-bound leaf.  Nothing
+below is retracted; only its closing sentence is, and it is corrected in
+place.)*  The fibre count above is elementary and
 needs no Chabauty, no formal immersion and no Coleman integration: on the
 model `S`, for `P = (x, y) ∈ S(ℚ)` the value `u = x²/(x−1)` is a rational
 point of `C`, hence `u ∈ {∞, 4}`; `u = 4` forces `x = 2` and `y² = 148`,
 not a square in `ℚ`; `u = ∞` forces `x ∈ {1, ∞}`, giving exactly the four
 points.  Its only deep input is `rank 37b(ℚ) = 0`, whence `#C(ℚ) = 3`.  But
 it bounds `X`, not `Y`, and converting it needs the two rational cusps
-back — `Fermat.exists_rationalCusps` is PROVEN and would supply them, yet
-the resulting sub-leaf `#X_0(37)(ℚ) ≤ 4` is literally
-`card_le_of_isogenyPrimeHigherGenus 37 4`, which is proven OVER this leaf.
-Routing this leaf through it would re-merge the atom the split exists to
-break, so it is not done here.  If the split is ever revisited, this is the
-argument that says the arithmetic wants to live on the COMPACT side. -/
+back — `Fermat.exists_rationalCusps` is PROVEN and supplies them.  The
+sub-leaf `#X_0(37)(ℚ) ≤ 4` STATES what `card_le_of_isogenyPrimeHigherGenus
+37 4` states, and that theorem is proven OVER this leaf, so *citing it*
+would close a cycle; stating the compact bound as a leaf of its OWN does
+not, and that is the distinction this paragraph originally missed.  It is
+now `exists_x0Compactification_thirtySeven_cardLe`, and the arithmetic of
+level `37` lives there — on the COMPACT side, as this argument says it
+wants to. -/
 theorem card_y0Le_thirtySeven {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
     (hc : IsCoarseModuliY0 37 strY)
     (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 2 :=
