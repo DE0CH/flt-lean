@@ -7148,8 +7148,172 @@ structure IsGeometricallyBijectiveY0 {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ Spe
     M.classify (specAlgClos ℚ) d₁ = M.classify (specAlgClos ℚ) d₂ →
       Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂)
 
+/-- **A `K`-point of `Spec` of a ring of invariants lifts to a `K`-point of
+`Spec A`, for `K` algebraically closed** (PROVEN 2026-07-27) — pure commutative
+algebra: no scheme, no moduli problem, no modular curve.
+
+Stated on the ring side, where it is provable: a ring map `f : B →+* K` into an
+algebraically closed field extends along `algebraMap B A` whenever `B ↪ A` is
+the inclusion of the invariants of a FINITE group action.  On the scheme side
+this says the quotient map `Spec A ⟶ Spec A^G` is surjective on `K`-points,
+which is the whole content of the `surjective` half of
+`exists_isGeometricallyBijectiveY0` below.
+
+Three inputs, all in the pin.  `Algebra.IsInvariant.isIntegral` makes `A`
+integral over `B` (each `a` is a root of `∏_{σ} (X - σ a)`, whose coefficients
+are `G`-fixed hence in `B`); `Ideal.exists_ideal_over_prime_of_isIntegral` is
+lying over, producing a prime `Q ⊆ A` contracting to `ker f`; and
+`IsAlgClosed.lift` embeds the domain `A ⧸ Q`, algebraic over `B ⧸ ker f`, into
+`K` compatibly.  `hinj` is used only to see `ker (algebraMap B A) ≤ ker f`, and
+it is available in `Gamma0GITPresentation` as `injective_algebraMap`.
+
+It is stated for EVERY triple `(B, A, G)` rather than as a hypothesis, exactly
+as `specInvariants_universal_specTarget` is, and it belongs beside that lemma
+rather than here; it is placed here only because it was written for the leaf
+below.  Nothing stops a later reader hoisting it. -/
+theorem exists_ringHom_comp_algebraMap_of_isInvariant {B A : Type} [CommRing B] [CommRing A]
+    [Algebra B A] (G : Type) [Group G] [Finite G] [MulSemiringAction G A]
+    [SMulCommClass G B A] [Algebra.IsInvariant B A G]
+    (hinj : Function.Injective (algebraMap B A))
+    {K : Type} [Field K] [IsAlgClosed K] (f : B →+* K) :
+    ∃ g : A →+* K, g.comp (algebraMap B A) = f := by
+  classical
+  haveI : Algebra.IsIntegral B A := Algebra.IsInvariant.isIntegral B A G
+  haveI : (RingHom.ker f).IsPrime := RingHom.ker_isPrime f
+  obtain ⟨Q, -, hQp, hQ⟩ := Ideal.exists_ideal_over_prime_of_isIntegral
+    (RingHom.ker f) (⊥ : Ideal A)
+    (by
+      rw [← RingHom.ker_eq_comap_bot]
+      intro x hx
+      have hx0 : (algebraMap B A) x = 0 := hx
+      have : x = 0 := hinj (by simpa using hx0)
+      simp [this])
+  haveI := hQp
+  haveI : (Q.comap (algebraMap B A)).IsPrime := hQp.comap _
+  haveI : Function.Injective (algebraMap (B ⧸ Q.comap (algebraMap B A)) (A ⧸ Q)) :=
+    Ideal.algebraMap_quotient_injective
+  haveI : FaithfulSMul (B ⧸ Q.comap (algebraMap B A)) (A ⧸ Q) :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr this
+  -- `f` factors through `B ⧸ P` because `P` is exactly its kernel
+  let f' : (B ⧸ Q.comap (algebraMap B A)) →+* K :=
+    Ideal.Quotient.lift _ f (fun b hb => by rwa [hQ] at hb)
+  have hf'inj : Function.Injective f' := by
+    rw [RingHom.injective_iff_ker_eq_bot]
+    refine (Submodule.eq_bot_iff _).2 ?_
+    intro x hx
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective x
+    have : f b = 0 := hx
+    exact (Ideal.Quotient.eq_zero_iff_mem).2 (by rw [hQ]; exact this)
+  letI : Algebra (B ⧸ Q.comap (algebraMap B A)) K := f'.toAlgebra
+  haveI : FaithfulSMul (B ⧸ Q.comap (algebraMap B A)) K :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr hf'inj
+  haveI : Algebra.IsAlgebraic (B ⧸ Q.comap (algebraMap B A)) (A ⧸ Q) :=
+    Algebra.IsIntegral.isAlgebraic
+  let ψ : (A ⧸ Q) →ₐ[B ⧸ Q.comap (algebraMap B A)] K := IsAlgClosed.lift
+  refine ⟨ψ.toRingHom.comp (Ideal.Quotient.mk Q), RingHom.ext fun b => ?_⟩
+  show ψ (Ideal.Quotient.mk Q (algebraMap B A b)) = f b
+  have hmk : Ideal.Quotient.mk Q (algebraMap B A b)
+      = algebraMap (B ⧸ Q.comap (algebraMap B A)) (A ⧸ Q)
+          (Ideal.Quotient.mk (Q.comap (algebraMap B A)) b) :=
+    (Ideal.quotientMap_mk (I := Q) (f := algebraMap B A) (H := le_rfl) (x := b)).symm
+  rw [hmk, AlgHom.commutes]
+  show f' (Ideal.Quotient.mk _ b) = f b
+  simp [f']
+
+/-- **A Katz–Mazur GIT presentation, together with what its rigidification does
+over `ℚ̄`** — the structure `exists_isGeometricallyBijectiveY0` is proven from,
+in exactly the relation `Gamma0AffineModel` bears to `Gamma0Atlas`.
+
+The parent fields are `Gamma0GITPresentation`'s and are documented there.  The
+two new ones are the *only* genuinely new input to geometric bijectivity, and
+both are statements about `ℚ̄` alone — nothing here constrains the moduli
+problem over any other base.
+
+**Why they are not derivable from `cover`.**  `Gamma0GITPresentation.cover`
+rigidifies a datum only after a base change that is flat, surjective and
+quasi-compact — fpqc, NOT fppf.  Over `Spec ℚ̄` an fpqc cover need not split:
+`Spec ℚ̄(t) ⟶ Spec ℚ̄` is flat, surjective and quasi-compact and has no section,
+because a `ℚ̄`-algebra map out of the field `ℚ̄(t)` is injective and `t` is
+transcendental.  So "pull the cover back along a section" is not available, and
+`cover_algClos` has to be asked for.  (The `finite presentation` that
+Nullstellensatz needs is exactly what `cover` does not carry; see the docstring
+of `exists_isGeometricallyBijectiveY0`, where the previously recorded route is
+refuted in detail.)
+
+**Why they are true.**  Over an algebraically closed field of characteristic
+zero an elliptic curve has `E[n](ℚ̄) ≅ (ℤ/n)²`, so a full level-`n` structure
+exists outright — that is `cover_algClos`.  And the fibres of
+`𝔐([Γ₀(N)],[Γ(n)]) ⟶ Y_0(N)` are the `GL₂(ℤ/n)`-orbits, so two `ℚ̄`-points of
+`M` with the same image differ by a deck transformation, under which `dM` is
+invariant (`dM_equivariant`) — that is `deck_algClos`. -/
+structure Gamma0GeometricModel (N : ℕ) extends Gamma0GITPresentation N where
+  /-- **over `ℚ̄` the rigidification splits ON THE NOSE**: every `Γ₀(N)`-datum
+  over `Spec ℚ̄` is a base change of the universal family `dM` along a
+  `ℚ̄`-point of the rigidified moduli scheme — no fppf cover, no descent. -/
+  cover_algClos : ∀ d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+    ∃ m : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ toGamma0GITPresentation.toGamma0Atlas.M,
+      Nonempty (IsBaseChangeOf m d toGamma0GITPresentation.toGamma0Atlas.dM)
+  /-- **the fibres of `M(ℚ̄) ⟶ Y(ℚ̄)` are the deck-group orbits**, in the only
+  form this development can consume: two `ℚ̄`-points of `M` with the same image
+  under the classifying map of `dM` pull `dM` back to ISOMORPHIC data. -/
+  deck_algClos : ∀ (m₁ m₂ : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶
+        toGamma0GITPresentation.toGamma0Atlas.M)
+      (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf m₁ d₁ toGamma0GITPresentation.toGamma0Atlas.dM →
+      IsBaseChangeOf m₂ d₂ toGamma0GITPresentation.toGamma0Atlas.dM →
+      m₁ ≫ (toGamma0GITPresentation.classify toGamma0GITPresentation.strM
+              toGamma0GITPresentation.dM).1
+        = m₂ ≫ (toGamma0GITPresentation.classify toGamma0GITPresentation.strM
+              toGamma0GITPresentation.dM).1 →
+      Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂)
+
+/-- **Existence of a Katz–Mazur GIT presentation whose rigidification behaves
+over `ℚ̄` as Katz–Mazur (8.1.1) says it does** (sorry leaf, opened 2026-07-27) —
+the single modular input to `exists_isGeometricallyBijectiveY0`.
+
+TRUE and classical for `N ≥ 1`, and both new fields are read off the SAME
+construction the parent structure comes from; see `Gamma0GeometricModel`'s
+docstring for the mathematics.
+
+**What a successor owes, and what is already done.**  The parent fields are
+exactly `exists_gamma0GITPresentation`'s content, already reduced to
+`exists_gamma0GITPresentation_of_cover` (representability) plus
+`exists_fullLevelStructure_cover` (the level-`n` torsor).  So the new content is
+only the two `ℚ̄`-clauses, and the honest way to close this leaf is to produce
+the presentation by that route and read them off — not to re-prove the parent.
+
+**The natural sub-cut, and the API it will want.**  `cover_algClos` is "an
+elliptic curve over `ℚ̄` admits a full level-`n` structure", which is
+`E[n](ℚ̄) ≅ (ℤ/n)²` in characteristic zero and needs no moduli theory.
+`deck_algClos` is the substantial half, and its proof runs: the classifying map
+of `dM` is `Spec (algebraMap B A)` (`classify_dM`), so `m₁` and `m₂` are two
+`ℚ̄`-points of `Spec A` over one `ℚ̄`-point of `Spec A^G`; `G` acts transitively
+on those (the `ℚ̄`-algebra-map version of
+`Algebra.IsInvariant.exists_smul_of_under_eq`, which mathlib has only for
+primes — the upgrade to points is a genuine, standalone piece of algebra); so
+`m₁ = m₂ ≫ Spec σ` for some `σ : G`, and `dM_equivariant σ` finishes.
+
+That last step needs a groupoid API for `IsBaseChangeOf` which THIS FILE DOES
+NOT YET HAVE, and a successor should expect to write it: `refl`, `symm` (the
+comparison map of a base change along `𝟙` is an isomorphism, because the square
+is cartesian over `𝟙`), `comp` (paste two cartesian squares; note the base
+points need `Category.assoc` transported through `RelPoint.along`), and
+UNIQUENESS (two base changes of one datum along one morphism are isomorphic).
+`IsBaseChangeOf.ofDvd` is the only existing constructor and it does not help
+here.  *Refuting check for "the API is needed"*: exhibit a proof of
+`deck_algClos` that never composes two `IsBaseChangeOf`s.
+
+**Why the leaf is existential**, and why that costs nothing: see
+`exists_isGeometricallyBijectiveY0`'s docstring and
+`IsGeometricallyBijectiveY0.transport`.  `hN : 0 < N` is required because
+`exists_gamma0GITPresentation` requires it. -/
+theorem exists_gamma0GeometricModel (N : ℕ) (hN : 0 < N) :
+    Nonempty (Gamma0GeometricModel N) :=
+  sorry
+
 /-- **Geometric bijectivity holds for SOME coarse moduli space of the
-`Γ₀(N)`-problem** (sorry node, introduced 2026-07-27).
+`Γ₀(N)`-problem** (PROVEN 2026-07-27 over the single modular leaf
+`exists_gamma0GeometricModel`; formerly a sorry leaf itself).
 
 TRUE, and it is nothing more than the second half of the standard definition of
 a coarse moduli space, which `IsCoarseModuliY0` omits by design (see its
@@ -7166,32 +7330,103 @@ is discharged by exhibiting the Katz–Mazur model and reading the property off
 the construction, and `IsGeometricallyBijectiveY0.transport` — PROVEN below —
 carries it to every other coarse space.
 
-**The route.**  `Gamma0Atlas` / `Gamma0GITPresentation`, both already in this
-file, present `Y_0(N)` as the GIT quotient `M/GL₂(ℤ/n)` with `M` the rigidified
-moduli scheme `𝔐([Γ₀(N)], [Γ(n)])`.  Over `ℚ̄` the fibres of `M ⟶ Y` are the
-`GL₂(ℤ/n)`-orbits of level-`n` structures on one datum, which gives both halves
-at once: `surjective` because `M(ℚ̄) ⟶ Y(ℚ̄)` is surjective over an
-algebraically closed field, `injective` because two data with the same image
-differ by a deck transformation, which is an isomorphism of the underlying
-`Γ₀(N)`-data.  `exists_gamma0Atlas` supplies the atlas for `0 < N`.
+**The route, corrected 2026-07-27 — and the route previously recorded here is
+REFUTED, at exactly the check it named.**  `Gamma0Atlas` /
+`Gamma0GITPresentation` do present `Y_0(N)` as the GIT quotient `M/GL₂(ℤ/n)`
+with `M` the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])`, and over `ℚ̄` the
+fibres of `M ⟶ Y` are the `GL₂(ℤ/n)`-orbits of level-`n` structures on one
+datum.  That much stands, and it is what `Gamma0GeometricModel` above records.
 
-**The one input the atlas fields do not already contain**, and the place a
-successor should expect to do work: `Gamma0Atlas.cover` supplies the
-rigidification only after a faithfully flat quasi-compact base change
-`p : T' ⟶ T`.  At `T = Spec ℚ̄` such a `p` has a section — an fppf cover of the
-spectrum of an algebraically closed field is split — and that section is where
-algebraic closedness enters.  **The check that would refute this route**: exhibit
-a faithfully flat quasi-compact `T' ⟶ Spec ℚ̄` with `T'` nonempty admitting no
-section; there is none, since `T'` has a closed point whose residue field is a
-finite extension of `ℚ̄`, hence `ℚ̄` itself.
+What does NOT stand is the claim that the atlas fields already contain the one
+missing input.  The previous version of this docstring said `Gamma0Atlas.cover`
+rigidifies "only after a faithfully flat quasi-compact base change `p : T' ⟶ T`",
+that at `T = Spec ℚ̄` such a `p` has a section because "an fppf cover of the
+spectrum of an algebraically closed field is split", and invited a refutation by
+"a faithfully flat quasi-compact `T' ⟶ Spec ℚ̄` with `T'` nonempty admitting no
+section".  **That refutation exists.**  Take `T' = Spec ℚ̄(t)`.  The map
+`Spec ℚ̄(t) ⟶ Spec ℚ̄` is flat (every module over a field is flat), surjective
+(both schemes have exactly one point) and quasi-compact (both are affine), and
+it admits no section: a `ℚ̄`-algebra map `ℚ̄(t) ⟶ ℚ̄` out of a field would be
+injective, and `t` is transcendental over `ℚ̄`.  The splitting argument that was
+quoted — "`T'` has a closed point whose residue field is a finite extension of
+`ℚ̄`" — is the Nullstellensatz and needs `p` LOCALLY OF FINITE PRESENTATION;
+`Gamma0Atlas.cover` requires only *fpqc*, and fpqc covers of `Spec ℚ̄` do not
+split.  fppf ⇒ split, fpqc ⇏ split, and `cover` is the weaker one.
 
-`hN : N ≠ 0` is genuinely needed by the route (`exists_gamma0Atlas` requires
-`0 < N`), though the statement is also true at `N = 0` for the degenerate
-reason that `isEmpty_of_isCoarseModuliY0_zero` makes both clauses vacuous. -/
+So the input is genuinely new.  It is carried by the two extra fields of
+`Gamma0GeometricModel`, `cover_algClos` (over `ℚ̄` the rigidification splits on
+the nose, because `E[n](ℚ̄) ≅ (ℤ/n)²` in characteristic zero) and `deck_algClos`
+(the fibres of `M(ℚ̄) ⟶ Y(ℚ̄)` are the `G`-orbits), and by nothing else; both
+are documented there, and `exists_gamma0GeometricModel` is the resulting leaf.
+
+**What is NOT new, and is proven rather than assumed.**  The `surjective` clause
+needs only that a `ℚ̄`-point of `Y = Spec A^G` lifts to a `ℚ̄`-point of
+`M = Spec A`, and over the GIT presentation that is pure commutative algebra —
+`exists_ringHom_comp_algebraMap_of_isInvariant` above, PROVEN from
+`Algebra.IsInvariant.isIntegral`, lying over and `IsAlgClosed.lift`.  Nothing
+modular enters it, and it is why the cut is at the GIT presentation rather than
+at the bare atlas: an arbitrary `Gamma0Atlas` carries no reason for `M ⟶ Y` to
+be surjective on `ℚ̄`-points, since its `quotient` field forces only that
+`M ⟶ Y` be an epimorphism, and epimorphisms of schemes (flat monomorphisms, for
+instance) need not be surjective.
+
+`hN : N ≠ 0` is genuinely needed by the route (`exists_gamma0GeometricModel`
+requires `0 < N`), though the statement is also true at `N = 0` for the
+degenerate reason that `isEmpty_of_isCoarseModuliY0_zero` makes both clauses
+vacuous. -/
 theorem exists_isGeometricallyBijectiveY0 (N : ℕ) (hN : N ≠ 0) :
     ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ) (M : IsCoarseModuliY0 N str),
-      IsGeometricallyBijectiveY0 M :=
-  sorry
+      IsGeometricallyBijectiveY0 M := by
+  classical
+  obtain ⟨P⟩ := exists_gamma0GeometricModel N (Nat.pos_of_ne_zero hN)
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  letI := P.isInvariant_BAG
+  haveI : ∀ Z : Scheme.{0}, Subsingleton (Z ⟶ SpecQ) := subsingleton_hom_specQ
+  refine ⟨_, P.str, P.toGamma0GITPresentation.toGamma0Atlas.toIsCoarseModuliY0, ?_⟩
+  constructor
+  · intro x
+    -- lift the `ℚ̄`-point `x` of `Y = Spec A^G` to a `ℚ̄`-point of `M = Spec A`,
+    -- and classify the pullback of the universal family along it
+    obtain ⟨g, hg⟩ := exists_ringHom_comp_algebraMap_of_isInvariant P.G P.injective_algebraMap
+      (K := AlgebraicClosure ℚ) (Spec.preimage x.1).hom
+    have hmq : Spec.map (CommRingCat.ofHom g) ≫
+        Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) = x.1 := by
+      rw [← Spec.map_comp]
+      have hcomp : CommRingCat.ofHom (algebraMap P.B P.A) ≫ CommRingCat.ofHom g
+          = Spec.preimage x.1 := CommRingCat.hom_ext (by simpa using hg)
+      rw [hcomp, Spec.map_preimage]
+    obtain ⟨d, ⟨hd⟩⟩ := exists_gamma0Datum_baseChange (Spec.map (CommRingCat.ofHom g)) P.dM
+    refine ⟨d, Subtype.ext ?_⟩
+    have hval : (P.classify (specAlgClos ℚ) d).1
+        = Spec.map (CommRingCat.ofHom g) ≫ (P.classify P.strM P.dM).1 :=
+      congrArg Subtype.val
+        (P.classify_natural (Spec.map (CommRingCat.ofHom g))
+          (Subsingleton.elim (Spec.map (CommRingCat.ofHom g) ≫ P.strM) (specAlgClos ℚ)) hd)
+    show (P.classify (specAlgClos ℚ) d).1 = x.1
+    rw [hval, P.classify_dM, hmq]
+  · intro d₁ d₂ hcl
+    -- rigidify both data over `ℚ̄`; naturality turns equality of classes into
+    -- equality of the images of the two `ℚ̄`-points of `M`, and `deck_algClos`
+    -- turns that into an isomorphism of the data
+    obtain ⟨m₁, ⟨b₁⟩⟩ := P.cover_algClos d₁
+    obtain ⟨m₂, ⟨b₂⟩⟩ := P.cover_algClos d₂
+    refine P.deck_algClos m₁ m₂ d₁ d₂ b₁ b₂ ?_
+    have h1 : (P.classify (specAlgClos ℚ) d₁).1 = m₁ ≫ (P.classify P.strM P.dM).1 :=
+      congrArg Subtype.val
+        (P.classify_natural m₁ (Subsingleton.elim (m₁ ≫ P.strM) (specAlgClos ℚ)) b₁)
+    have h2 : (P.classify (specAlgClos ℚ) d₂).1 = m₂ ≫ (P.classify P.strM P.dM).1 :=
+      congrArg Subtype.val
+        (P.classify_natural m₂ (Subsingleton.elim (m₂ ≫ P.strM) (specAlgClos ℚ)) b₂)
+    have hc : (P.classify (specAlgClos ℚ) d₁).1 = (P.classify (specAlgClos ℚ) d₂).1 :=
+      congrArg Subtype.val hcl
+    rw [h1, h2] at hc
+    exact hc
 
 /-- **Geometric bijectivity transports to every coarse moduli space** (PROVEN
 2026-07-27) — pure initiality, no modular-curve input.
@@ -7385,7 +7620,8 @@ would refute it.
 The three leaves above, plus the two steps that are genuinely about this
 statement and are carried out here:
 
-1. `exists_isGeometricallyBijectiveY0` (LEAF) gives geometric bijectivity for
+1. `exists_isGeometricallyBijectiveY0` (PROVEN 2026-07-27 over the leaf
+   `exists_gamma0GeometricModel`) gives geometric bijectivity for
    one coarse space, and `IsGeometricallyBijectiveY0.transport` (PROVEN) carries
    it to the arbitrary `M` that `Y0HasNoRationalPoint` hands us.  This is
    precisely the half of the coarse-moduli definition that `IsCoarseModuliY0`
