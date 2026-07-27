@@ -19300,4 +19300,527 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
     (IsIntegral.of_finite ℤ_[ℓ] ((𝒟.ρ σ).charpoly.coeff 1))
   rw [RingHom.comp_id, hfalg]
 
+/-! ## The RAISED-LEVEL interface: what makes a RING/HECKE cut safe
+
+(New 2026-07-27. This section is a STATING task and nothing here is claimed
+to be proven beyond the two small PROVEN items marked as such.)
+
+# WHY THIS SECTION EXISTS
+
+The "axis NOT taken" paragraph in the CUT AUDIT of
+`exists_hilbertTaylorWilesLevels` above records that the natural RING/HECKE
+cut of `exists_hilbertTaylorWilesLevelRaw` — separate the auxiliary
+deformation ring `R_{Q_n}` (Greenberg–Wiles plus local class field theory at
+`Q_n`) from the auxiliary Hecke module `M_{Q_n}` (the Taylor–Wiles freeness
+lemma) — is **UNSAFE AS THINGS STAND, and would plant a FALSE leaf**. The
+reason is not effort. `Modularity.TaylorWilesLevelRaw` couples the two sides
+through the instance field `moduleRM` and the compatibility `projM_smul`, so a
+Hecke-side leaf would receive `R_{Q_n}` as an ABSTRACT ring satisfying only the
+structural fields `pres` / `diamond` / `toRuniv` / `ker_toRuniv` — and **a junk
+ring satisfying those has no attached Hilbert modular forms**, so the demand for
+an `R_{Q_n}`-module `M_{Q_n}` with a Taylor–Wiles freeness certificate is not
+merely hard, it is false.
+
+The audit also records the repair, and — per the standing rule that STATING a
+theory is not PROVING it — the repair needs only three pieces of interface
+WRITTEN, not proven:
+
+1. a raised-level local-condition predicate: hardly ramified away from `Q`,
+   split-torus at each `w ∈ Q`;
+2. a `HilbertAuxDeformationDatum` bundling that predicate with its weak
+   universality, in the shape of `HilbertDeformationDatum` /
+   `HilbertDeformationDatum.IsWeaklyUniversal` above;
+3. a raised-level `HilbertHeckeAlgebra` carrying the auxiliary Hecke module and
+   hence SUPPLYING the map that makes it an `R_{Q_n}`-module.
+
+This section is exactly those three, plus the PROVEN glue
+`exists_module_of_hilbertAuxHeckeAlgebra` that closes the loop: it is the
+one-line consequence of (2) and (3) that produces the `R_Q`-module structure on
+the Hecke module, i.e. the very field whose absence makes the naive cut false.
+With it in hand the RING/HECKE cut becomes a separate, safe piece of work.
+
+**THE CUT ITSELF IS DELIBERATELY NOT TAKEN HERE.** Nothing in this section is
+consumed yet; it is free-floating until the cut is made, which is the intended
+and authorized state of a preparation step.
+
+# THE ONE FAITHFULNESS LESSON REPEATED FROM ABOVE
+
+`exists_isWeaklyUniversal_hilbertAuxDeformationDatum` below takes a datum
+`𝒟₀ : HilbertAuxDeformationDatum ℓ F Q ρbar` as a HYPOTHESIS, for exactly the
+reason recorded in the FAITHFULNESS REPAIR of
+`exists_isWeaklyUniversal_hilbertDeformationDatum`: an existential over a
+category is FALSE as soon as the category is EMPTY, and the raised-level
+category is empty for the same two reasons (dimension — `resid` forces
+`finrank k V = 2`; and arithmetic — no deformation exists unless `ρbar|_{G_F}`
+itself satisfies the local conditions). Restating the leaf without `𝒟₀` would
+reproduce a refuted statement one level up.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Diamond, Invent. Math.
+128 (1997), Thm. 2.1; Fujiwara, *Deformation rings and Hecke algebras in the
+totally real case*, §3; Wiles, Ann. of Math. 141 (1995), ch. 2–3. -/
+
+/-- **The RAISED-LEVEL local condition over `F`** (new 2026-07-27; piece 1 of
+the three the RING/HECKE cut needs stated).
+
+`IsHilbertHardlyRamified ℓ F hdim ρ` with the level RAISED at a finite set `Q`
+of places: the four hardly-ramified clauses are kept verbatim except that
+`isUnramified` is now asked only away from `Q`, and a fifth clause pins what
+happens AT `Q`.
+
+* **`det`, `isFlat`, `isTameAtTwo`** — unchanged. Raising the level at a
+  Taylor–Wiles prime set `Q` touches neither the determinant nor the places
+  above `2` and `ℓ`: `IsHilbertTaylorWilesPrimeSet` demands `w ∤ 2ℓ` for every
+  `w ∈ Q`, so `Q` is disjoint from both bad sets and these three clauses cannot
+  interact with it.
+* **`isUnramified`** — asked away from `2`, `ℓ` **and `Q`**. This is the whole
+  "raising": ramification is newly permitted exactly at `Q`.
+* **`isSplitTorusAt`** — the new clause. At each `w ∈ Q` the local
+  representation is DIAGONAL: an `R`-linear identification `M ≃ R × R` under
+  which `ρ|_{G_{F_w}}` acts by a pair of characters `(χ, δ)`, with `δ`
+  UNRAMIFIED.
+
+**Why the split-torus clause has this shape, and why it may not be weakened to
+"unrestricted at `Q`".** At a Taylor–Wiles prime the residual `ρbar(Frob_w)`
+has two DISTINCT eigenvalues (the third clause of
+`IsHilbertTaylorWilesPrimeSet`), so the local deformation functor at `w` splits
+as a product of two character-deformation functors — this is Wiles ch. 3 and it
+is what makes the condition representable at all. Two things depend on it:
+
+* the DIAMOND action. `χ|_{I_w}` factors through the tame quotient of `I_w`,
+  i.e. through `(𝓞_F/w)ˣ`, whose `ℓ`-Sylow is `Δ_w`; the diamond structure map
+  `Λ → R_{Q_n}` of `Modularity.TaylorWilesLevelRaw` is nothing but this action.
+  Drop the clause and there are no diamond operators, hence no `diamond` field
+  and no control identification `R_{Q_n}/𝔫 ≅ R_F`.
+* the CONTROL identification itself. `δ` unramified plus `χ` trivial on `I_w`
+  is precisely "level not actually raised at `w`", which is the condition
+  `𝔫 · R_{Q_n}` cuts out.
+
+So the clause is not decoration: it is the ONLY place the Taylor–Wiles primes
+enter the deformation problem, and `isHilbertRaisedLevelHardlyRamified_empty_iff`
+below records that at `Q = ∅` nothing has changed.
+
+**FORMAL-CONTENT NOTE (deliberate weakness, stated rather than hidden).** The
+clause asks the split to exist over `R` with `δ` unramified; it does NOT ask
+that `χ`, `δ` reduce to the two distinct residual eigenvalues in a prescribed
+order, nor that `χ|_{I_w}` factor through the `ℓ`-Sylow `Δ_w`. Both are
+consequences of the residual distinctness in the intended instantiation, and
+both are properties of the CONSTRUCTION rather than of the local condition; a
+consumer that needs them must derive them from `resid` together with `hQ`, not
+read them off here. Recorded so that nobody downstream mistakes this clause for
+the stronger one. -/
+structure IsHilbertRaisedLevelHardlyRamified (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M] (hdim : Module.rank R M = 2)
+    (ρ : GaloisRep F R M) : Prop where
+  /-- The determinant is the restriction to `G_F` of the `ℓ`-adic cyclotomic
+  character of `ℚ`. Verbatim `IsHilbertHardlyRamified.det`. -/
+  det : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] R
+    (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv)
+  /-- Unramified at every place not above `2` or `ℓ` **and not in `Q`**. This
+  single change from `IsHilbertHardlyRamified.isUnramified` is the level
+  raising. -/
+  isUnramified : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ Q →
+    ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal → ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal →
+    ρ.IsUnramifiedAt w
+  /-- Flat at every place above `ℓ`. Verbatim. -/
+  isFlat : ∀ w : HeightOneSpectrum (𝓞 F), ((ℓ : ℕ) : 𝓞 F) ∈ w.asIdeal →
+    ρ.IsFlatAt w
+  /-- Tame with a square-trivial unramified quotient character at every place
+  above `2`. Verbatim `IsHilbertHardlyRamified.isTameAtTwo`. -/
+  isTameAtTwo : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+    ∃ (p : M →ₗ[R] R) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) R R),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : M, p (ρ.toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1
+  /-- **The SPLIT-TORUS condition at the raised places.** At each `w ∈ Q` the
+  restriction `ρ|_{G_{F_w}}` is DIAGONAL in some `R`-basis — `M ≃ₗ[R] R × R`
+  carrying it to `(χ, δ)` — with the second character `δ` UNRAMIFIED.
+
+  Written as a linear equivalence to `R × R` rather than as a sub/quotient
+  pair on purpose: a sub together with a splitting quotient forces the two
+  characters to COINCIDE (the splitting identifies the quotient with the sub),
+  which is not the split torus but its diagonal. The equivalence says exactly
+  `ρ|_{G_{F_w}} ≅ χ ⊕ δ` and nothing more. -/
+  isSplitTorusAt : ∀ w ∈ Q,
+    ∃ (e : M ≃ₗ[R] R × R) (χ δ : GaloisRep (w.adicCompletion F) R R),
+      (∀ (g : Γ (w.adicCompletion F)) (v : M),
+        e (ρ.toLocal w g v) = (χ g (e v).1, δ g (e v).2)) ∧
+      localInertiaGroup w ≤ δ.ker
+
+/-- **At `Q = ∅` the raised-level condition IS the hardly ramified condition**
+(PROVEN — the consistency check that the new predicate is a genuine extension
+of the old one and not a differently-shaped junk condition).
+
+Both directions are immediate: the split-torus clause quantifies over an empty
+set, and the `w ∉ ∅` hypothesis of `isUnramified` is discharged by
+`Finset.notMem_empty`. Kept because a raised-level predicate that failed to
+specialise back would be a silent restatement, and because it is the
+one-command refutation of "the new clause changed the base-level problem". -/
+theorem isHilbertRaisedLevelHardlyRamified_empty_iff (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M] {hdim : Module.rank R M = 2}
+    {ρ : GaloisRep F R M} :
+    IsHilbertRaisedLevelHardlyRamified ℓ F ∅ hdim ρ ↔
+      IsHilbertHardlyRamified ℓ F hdim ρ :=
+  ⟨fun h => ⟨h.det, fun w => h.isUnramified w (Finset.notMem_empty w), h.isFlat,
+      h.isTameAtTwo⟩,
+    fun h => ⟨h.det, fun w _ => h.isUnramified w, h.isFlat, h.isTameAtTwo,
+      fun w hw => absurd hw (Finset.notMem_empty w)⟩⟩
+
+/-- **Mazur's deformation category over `F` AT RAISED LEVEL `Q`** (new
+2026-07-27; piece 2 of the three the RING/HECKE cut needs stated).
+
+Field for field this is `HilbertDeformationDatum` above, with its
+`isHilbertHardlyRamified` field replaced by the raised-level
+`IsHilbertRaisedLevelHardlyRamified ℓ F Q`. Following that structure verbatim
+is deliberate — the whole point of this interface is that the raised-level ring
+`R_Q` is pinned by a UNIVERSAL PROPERTY of the same shape as the one that pins
+`R_F`, so that a Hecke-side leaf receives a ring it can recognise instead of an
+abstract carrier satisfying four structural equations.
+
+`Q = ∅` gives back `HilbertDeformationDatum` up to the propositional
+identification `isHilbertRaisedLevelHardlyRamified_empty_iff` above; the two
+are not made definitionally equal, since a `structure` with a differently-typed
+field cannot be.
+
+The instance fields are the same six, and the same two topological pins
+(`isAdic`, `isAdicComplete`) are carried: per the standing rule that an
+algebraic pin never constrains a topological conclusion, and because `ρ` is a
+`GaloisRep` and therefore continuous, dropping them would make the datum
+satisfiable by a discrete ring. -/
+structure HilbertAuxDeformationDatum (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (ρbar : GaloisRep ℚ k V) where
+  /-- The coefficient ring of the raised-level deformation, `R_Q`. -/
+  R : Type u
+  [commRing : CommRing R]
+  [topologicalSpace : TopologicalSpace R]
+  [isTopologicalRing : IsTopologicalRing R]
+  [isLocalRing : IsLocalRing R]
+  [algebra : Algebra ℤ_[ℓ] R]
+  [isNoetherianRing : IsNoetherianRing R]
+  /-- The topology of the coefficient ring is the maximal-adic one. -/
+  isAdic : IsAdic (IsLocalRing.maximalIdeal R)
+  /-- The coefficient ring is maximal-adically complete and separated. -/
+  isAdicComplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R
+  /-- The deformation of `ρbar|_{G_F}`, framed by the standard basis. -/
+  ρ : FramedGaloisRep F R (Fin 2)
+  /-- The deformation satisfies the RAISED-LEVEL local conditions. -/
+  isHilbertRaisedLevelHardlyRamified :
+    IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi R) ρ
+  /-- The reduction map onto the residual coefficient field. -/
+  π : R →+* k
+  /-- `k` IS the residue field of `R_Q`. -/
+  π_surjective : Function.Surjective π
+  /-- The deformation reduces to `ρbar|_{G_F}`, at every group element. -/
+  resid : ∀ g : Γ F, ((ρ g).charpoly).map π =
+    ((ρbar.map (algebraMap ℚ F)) g).charpoly
+
+attribute [instance] HilbertAuxDeformationDatum.commRing
+  HilbertAuxDeformationDatum.topologicalSpace
+  HilbertAuxDeformationDatum.isTopologicalRing
+  HilbertAuxDeformationDatum.isLocalRing
+  HilbertAuxDeformationDatum.algebra
+  HilbertAuxDeformationDatum.isNoetherianRing
+
+/-- **Weak universality of a RAISED-LEVEL deformation datum** — verbatim
+`HilbertDeformationDatum.IsWeaklyUniversal` at raised level: every datum
+receives a `ℤ_ℓ`-algebra homomorphism from `𝒟` compatible with the reductions
+and with the characteristic polynomials at every element of `G_F`.
+
+Only the EXISTENCE half is asked, as above. That is exactly enough for the
+consumer this interface exists for: `exists_module_of_hilbertAuxHeckeAlgebra`
+below needs one classifying map `R_Q → T_Q`, never a comparison of two. -/
+def HilbertAuxDeformationDatum.IsWeaklyUniversal {ℓ : ℕ} [Fact ℓ.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {Q : Finset (HeightOneSpectrum (𝓞 F))}
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertAuxDeformationDatum ℓ F Q ρbar) : Prop :=
+  ∀ 𝒟' : HilbertAuxDeformationDatum ℓ F Q ρbar,
+    ∃ f : 𝒟.R →+* 𝒟'.R,
+      f.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟'.R ∧
+      𝒟'.π.comp f = 𝒟.π ∧
+      ∀ g : Γ F, ((𝒟.ρ g).charpoly).map f = (𝒟'.ρ g).charpoly
+
+/-- **The RAISED-LEVEL Hecke algebra over `F`** (new 2026-07-27; piece 3 of the
+three, and **the piece whose absence makes the naive RING/HECKE split false**).
+
+`T_Q` is the Hecke algebra of Hilbert modular forms over `F` at the level of
+`HilbertHeckeAlgebra` raised at `Q`, localised at the maximal ideal cut out by
+`ρbar|_{G_F}`, TOGETHER WITH the module `M` it acts on. That last field is the
+whole point: `Modularity.TaylorWilesLevelRaw` demands an `R_{Q_n}`-module, and
+what makes such a module exist is not any property of `R_{Q_n}` as a bare ring
+but the fact that `R_{Q_n}` maps to a ring that genuinely acts on a space of
+Hilbert modular forms. Bundling `M` here and deriving the `R_Q`-action in
+`exists_module_of_hilbertAuxHeckeAlgebra` below is precisely the repair the CUT
+AUDIT of `exists_hilbertTaylorWilesLevels` asks for.
+
+**WHAT IS POSITED HERE AND WHAT IS NOT, stated so the difference from
+`HilbertHeckeAlgebra` is not mistaken for an oversight.** The base-level
+structure was NARROWED on 2026-07-27 to present `T` as the local factor of
+`W(k) ⊗_{ℤ_[ℓ]} (ℤ_[ℓ] ⊗_ℤ T₀)` at a maximal ideal, which turns `IsLocalRing`,
+`Module.Finite`, `Module.Free` and `IsAdicComplete` into THEOREMS. This
+structure does **not** repeat that presentation: it posits `IsLocalRing`,
+`Module.Finite ℤ_[ℓ]`, `isAdic` and `isAdicComplete` directly, as the base-level
+structure did before that narrowing. That is a deliberate scope choice for a
+STATING task — the narrowing is an orthogonal refactor of the same four
+properties, it is worth doing here too, and it is recorded as the next
+reduction of this structure rather than half-done. Nothing downstream is
+weakened by the delay: the four properties are exactly what a consumer needs,
+however they are obtained.
+
+Likewise omitted: the `ℤ`-form `T₀` and `adjoin_heckeT`. The `ℤ`-form exists to
+put Hecke eigenvalues in a NUMBER FIELD, which is a question about the bottom
+level and its newform, not about an auxiliary level; and `adjoin_heckeT` exists
+to make `πT` surjective derivable, which is posited here as `πT_surjective`.
+Both are recorded as available strengthenings, not as things believed false.
+
+**Non-vacuity.** `subset_bad` forbids `bad = ∅` whenever `Q ≠ ∅`, `charFrobT`
+ties `heckeT` to the Frobenius traces of `ρT` at every good place, `residT` ties
+`ρT` to `ρbar|_{G_F}` at every element, `nontrivialM` forbids `M = 0`, and
+`isHilbertRaisedLevelHardlyRamified` bounds the level. A carrier meeting all of
+those is a Hecke algebra of bounded level with a nonzero module, not a junk
+ring. -/
+structure HilbertAuxHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (ρbar : GaloisRep ℚ k V) where
+  /-- The raised-level Hecke algebra `T_Q`. -/
+  T : Type u
+  [commRing : CommRing T]
+  [topologicalSpace : TopologicalSpace T]
+  [isTopologicalRing : IsTopologicalRing T]
+  [isLocalRing : IsLocalRing T]
+  [algebra : Algebra ℤ_[ℓ] T]
+  [moduleFinite : Module.Finite ℤ_[ℓ] T]
+  /-- The topology of `T_Q` is the maximal-adic one. -/
+  isAdic : IsAdic (IsLocalRing.maximalIdeal T)
+  /-- `T_Q` is maximal-adically complete and separated. -/
+  isAdicComplete : IsAdicComplete (IsLocalRing.maximalIdeal T) T
+  /-- The Hecke-valued Galois representation `ρ_{T_Q} : G_F → GL₂(T_Q)`. -/
+  ρT : FramedGaloisRep F T (Fin 2)
+  /-- `ρ_{T_Q}` satisfies the RAISED-LEVEL local conditions — this is what pins
+  the level of the auxiliary Hilbert modular forms to the raised deformation
+  problem, and it is what makes the classifying map of
+  `exists_module_of_hilbertAuxHeckeAlgebra` exist. -/
+  isHilbertRaisedLevelHardlyRamified :
+    IsHilbertRaisedLevelHardlyRamified ℓ F Q (rank_finTwoPi T) ρT
+  /-- The reduction map onto the residual coefficient field. -/
+  πT : T →+* k
+  /-- `k` IS the residue field of `T_Q`. -/
+  πT_surjective : Function.Surjective πT
+  /-- Residual modularity: `ρ_{T_Q}` reduces to `ρbar|_{G_F}` at every element
+  of `G_F`. -/
+  residT : ∀ g : Γ F, ((ρT g).charpoly).map πT =
+    ((ρbar.map (algebraMap ℚ F)) g).charpoly
+  /-- The finite bad set: the raised level together with the places over `2`
+  and `ℓ`. -/
+  bad : Finset (HeightOneSpectrum (𝓞 F))
+  /-- **The level really is raised at `Q`**: the raised places are bad. -/
+  subset_bad : Q ⊆ bad
+  /-- The Hecke operator at a place. -/
+  heckeT : HeightOneSpectrum (𝓞 F) → T
+  /-- **Hecke = Frobenius trace** at a good place (`charFrob` is monic of
+  degree `2`, so its `coeff 1` is minus the trace). -/
+  charFrobT : ∀ w ∉ bad, (ρT.charFrob w).coeff 1 = -heckeT w
+  /-- **The auxiliary Hecke module `M_Q`** — the space of Hilbert modular forms
+  at raised level on which `T_Q` acts. Classically the cohomology of the
+  Shimura variety attached to a quaternion algebra over `F` at level raised by
+  `Q`, localised at `𝔪`. This is the field that carries the arithmetic content
+  the ring alone cannot. -/
+  M : Type u
+  [addCommGroupM : AddCommGroup M]
+  [moduleM : Module T M]
+  [nontrivialM : Nontrivial M]
+
+attribute [instance] HilbertAuxHeckeAlgebra.commRing
+  HilbertAuxHeckeAlgebra.topologicalSpace
+  HilbertAuxHeckeAlgebra.isTopologicalRing
+  HilbertAuxHeckeAlgebra.isLocalRing
+  HilbertAuxHeckeAlgebra.algebra
+  HilbertAuxHeckeAlgebra.moduleFinite
+  HilbertAuxHeckeAlgebra.addCommGroupM
+  HilbertAuxHeckeAlgebra.moduleM
+  HilbertAuxHeckeAlgebra.nontrivialM
+
+/-- **A raised-level Hecke algebra IS a raised-level deformation datum**
+(PROVEN — the raised-level twin of
+`exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` above, and the only step
+between pieces 2 and 3).
+
+Every field is transported verbatim. The single field a
+`HilbertAuxDeformationDatum` demands that `HilbertAuxHeckeAlgebra` does not
+carry is `IsNoetherianRing`, which follows from `Module.Finite ℤ_[ℓ] T` since
+`ℤ_[ℓ]` is Noetherian. -/
+def HilbertAuxHeckeAlgebra.datum {ℓ : ℕ} [Fact ℓ.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {Q : Finset (HeightOneSpectrum (𝓞 F))}
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) :
+    HilbertAuxDeformationDatum ℓ F Q ρbar :=
+  haveI : IsNoetherianRing H.T := IsNoetherianRing.of_finite ℤ_[ℓ] H.T
+  { R := H.T
+    isAdic := H.isAdic
+    isAdicComplete := H.isAdicComplete
+    ρ := H.ρT
+    isHilbertRaisedLevelHardlyRamified := H.isHilbertRaisedLevelHardlyRamified
+    π := H.πT
+    π_surjective := H.πT_surjective
+    resid := H.residT }
+
+/-- **The raised-level deformation ring exists and is weakly universal**
+(LEAF — new 2026-07-27).
+
+Mazur's representability theorem for the raised-level deformation problem of
+`ρbar|_{G_F}`: hardly ramified away from `Q`, split-torus at `w ∈ Q`. The
+classical route is Schlessinger's criterion, exactly as for
+`exists_isWeaklyUniversal_hilbertDeformationDatum` above, with one extra local
+computation — the local deformation functor at `w ∈ Q` is representable
+BECAUSE `ρbar(Frob_w)` has distinct eigenvalues, which splits it into a product
+of two character-deformation functors (Wiles, Ann. of Math. 141 (1995), ch. 3;
+Diamond–Darmon–Taylor §5.3). **That is why `hQ` is a hypothesis and not
+decoration**: without residual distinctness at `w` the split-torus clause is
+not a deformation condition at all, and the leaf would be false.
+
+**`𝒟₀` IS A GENUINE HYPOTHESIS, for the reason recorded at
+`exists_isWeaklyUniversal_hilbertDeformationDatum`'s FAITHFULNESS REPAIR.** An
+existential over a category is FALSE as soon as the category is EMPTY, and the
+raised-level category is empty for the same two independent reasons (dimension:
+`resid` forces `finrank k V = 2`; arithmetic: `ρbar|_{G_F}` must itself satisfy
+the local conditions). Restating this leaf without `𝒟₀` would reproduce a
+statement that was already refuted one level up. It is discharged for free at
+every intended use site, since the raised level is always reached from a datum
+that is already there.
+
+`hw2` and `hℓ5` are carried because the base-level route consumes them through
+`isHilbertFibreProductClause`, whose gluing step at the places over `2` is
+untouched by raising the level at `Q` (which is disjoint from those places).
+
+References: as for `exists_isWeaklyUniversal_hilbertDeformationDatum` above,
+plus Wiles ch. 3 and Fujiwara §3 for the local condition at `Q`. -/
+theorem exists_isWeaklyUniversal_hilbertAuxDeformationDatum
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (𝒟₀ : HilbertAuxDeformationDatum ℓ F Q ρbar) :
+    ∃ 𝒟 : HilbertAuxDeformationDatum ℓ F Q ρbar, 𝒟.IsWeaklyUniversal :=
+  sorry
+
+/-- **The raised-level Hecke algebra exists** (LEAF — new 2026-07-27).
+
+Level raising at a Taylor–Wiles prime set: out of the bottom Hecke algebra `T`
+of Hilbert modular forms over `F`, produce the Hecke algebra at the level
+raised at `Q`, together with the module it acts on. Classically this is the
+localisation at `𝔪` of the Hecke algebra acting on the cohomology of the
+Shimura variety attached to a quaternion algebra over `F` at level `Γ₀`-raised
+by `Q`; the conclusion `T.bad ⊆ H.bad` records that the level is raised, never
+lowered.
+
+The residual eigensystem does occur at raised level — the point of a
+Taylor–Wiles prime is that `ρbar(Frob_w)` has distinct eigenvalues, so `𝔪`
+survives level raising at `w` and the localisation is nonzero, which is what
+`nontrivialM` asks for. **That is what `hQ` is for.** `htr` and `hgal` are
+carried because the objects are Hilbert modular forms over a totally real `F`
+and the identification of their Hecke action with the given `ρbar` descends
+through Brauer induction over `Gal(F/ℚ)`, exactly as recorded for
+`exists_hilbertTaylorWilesBottomLevel` above.
+
+**WHAT THIS LEAF DELIBERATELY DOES NOT ASK, and where it will be needed.** The
+sharp link between the two levels — `H.bad = T.bad ∪ Q`, and the degeneracy
+maps realising `M_Q ↠ M_∅^{2^{#Q}}` — is not asked here. Those belong to the
+CONTROL half of `Modularity.TaylorWilesLevelRaw` (`projM`, `projM_surjective`,
+`projM_eq_zero`), which the RING/HECKE cut will state on its own leaves; asking
+them here would pre-empt that cut, which this section is preparing rather than
+taking.
+
+References: Taylor–Wiles §2; Diamond, Invent. Math. 128 (1997), Thm. 2.1;
+Fujiwara §3. -/
+theorem exists_hilbertAuxHeckeAlgebra
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (T : HilbertHeckeAlgebra ℓ F ρbar)
+    (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    ∃ H : HilbertAuxHeckeAlgebra ℓ F Q ρbar, T.bad ⊆ H.bad :=
+  sorry
+
+/-- **THE POINT OF THIS SECTION** (PROVEN): a weakly universal raised-level
+deformation ring `R_Q` ACTS on the raised-level Hecke module `M_Q`, through the
+classifying map `R_Q → T_Q`.
+
+This is the field `Modularity.TaylorWilesLevelRaw.moduleRM` — together with the
+`ψ`-compatibility that `projM_smul` is stated against — obtained as a
+CONSEQUENCE rather than assumed of an abstract ring. It is exactly what the CUT
+AUDIT of `exists_hilbertTaylorWilesLevels` identifies as missing:
+
+> the two sides are coupled through `moduleRM` and `projM_smul`, so the Hecke
+> leaf would receive `R_{Q_n}` as an abstract ring satisfying only the
+> structural fields `pres`/`diamond`/`toRuniv`/`ker_toRuniv` — and for such a
+> junk `R` there are no attached Hilbert modular forms, so the Hecke leaf would
+> be FALSE.
+
+With `HilbertAuxDeformationDatum.IsWeaklyUniversal` in hand the junk ring is
+excluded by construction: `R_Q` is weakly universal, `T_Q` is a raised-level
+deformation datum (`HilbertAuxHeckeAlgebra.datum`), so a classifying map exists,
+and `M_Q` is an `R_Q`-module through it. A RING/HECKE cut stated over this
+interface therefore hands its Hecke leaf a ring that has attached Hilbert
+modular forms BY HYPOTHESIS, and the falsity the audit found does not arise.
+
+The proof is one application of weak universality. The `smul` clause is `rfl`:
+`Module.compHom` is defined by transport along the ring map. -/
+theorem exists_module_of_hilbertAuxHeckeAlgebra {ℓ : ℕ} [Fact ℓ.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {Q : Finset (HeightOneSpectrum (𝓞 F))}
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal)
+    (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) :
+    ∃ (f : 𝒟.R →+* H.T) (_ : Module 𝒟.R H.M),
+      (∀ (x : 𝒟.R) (m : H.M), x • m = f x • m) ∧
+      f.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] H.T ∧
+      H.πT.comp f = 𝒟.π ∧
+      ∀ g : Γ F, ((𝒟.ρ g).charpoly).map f = (H.ρT g).charpoly := by
+  obtain ⟨f, halg, hπ, hρ⟩ := h𝒟 H.datum
+  exact ⟨show 𝒟.R →+* H.T from f, Module.compHom H.M (show 𝒟.R →+* H.T from f),
+    fun _ _ => rfl, halg, hπ, hρ⟩
+
 end GaloisRepresentation
