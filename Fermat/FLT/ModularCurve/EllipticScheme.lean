@@ -114,7 +114,7 @@ correct on its own branch and wrong once the others landed:
   node and is listed here only so that this count matches the compiler's:
   `exists_affineComplement_zeroSection`,
   `exists_weierstrassRingEquiv_of_affineComplement`,
-  `isElliptic_of_isOpenImmersion_coordinateRing`, `relPointPost_add` and
+  `isElliptic_of_isOpenImmersion_coordinateRing`, `rigidityFactors` and
   `exists_isIso_of_affineChart`.  Both
   `exists_weierstrassModel_of_ellipticScheme` and
   `exists_geomFibreAddEquiv_of_weierstrassModel` were leaves here until
@@ -5109,7 +5109,12 @@ concrete projective model and TRANSPORT it — leaving
 `exists_isIso_of_affineChart` (curve geometry: two charts glue) and
 `relPointPost_add` (rigidity proper, for arbitrary abelian schemes over
 `Spec ℚ`).  See the "Transport along an isomorphism of models" subsection
-below. -/
+below.
+
+**`relPointPost_add` in turn is now PROVEN** (2026-07-27) from
+`rigidityFactors`, Mumford's *rigidity lemma* itself — a pure statement
+about schemes, with no group structure in it — so the remaining leaves of
+this node are `exists_isIso_of_affineChart` and `rigidityFactors`. -/
 
 /-! #### The three leaves of `exists_weierstrassModel_of_ellipticScheme`
 
@@ -5402,8 +5407,17 @@ stability in `X0.lean`.  What is genuinely open is
 
 * `exists_isIso_of_affineChart` — that the two charts glue to an
   isomorphism of the proper models, and
-* `relPointPost_add` — that an isomorphism carrying zero to zero is a
-  homomorphism, i.e. the RIGIDITY theorem.
+* `rigidityFactors` — Mumford's RIGIDITY LEMMA: a morphism out of
+  `X ×_ℚ Z` that is constant on one fibre `X × {z₀}` of the second
+  projection factors through that projection.
+
+`relPointPost_add` — that a morphism of abelian schemes carrying zero to
+zero is a homomorphism — was the leaf here until 2026-07-27 and is now
+PROVEN from `rigidityFactors`: Yoneda collapses its `∀ T` to the single
+instance at the two projections of `A ×_ℚ A`, and rigidity applied to the
+defect `u(p + q) − u(p) − u(q)`, which vanishes on both axes by `hzero`,
+closes it.  What is left is a statement about SCHEMES with no group
+structure in it, which is why it is worth having separated.
 
 The third input, `hom_specRat_eq_of_range_eq`, is PROVEN here: it is what
 turns "the isomorphism matches the two charts" into "it matches the two
@@ -5503,61 +5517,201 @@ theorem hom_specRat_eq_of_range_eq {A : Scheme.{0}}
   rw [Scheme.SpecToEquivOfField_eq_iff]
   exact ⟨hpt, CommRingCat.hom_ext (@Subsingleton.elim _ subsingleton_ringHom_rat _ _)⟩
 
+/-- **Naturality of inversion** (PROVEN).
+
+`AbelianSchemeStruct` carries `pre_add` and `pre_zero` only, but naturality
+of `neg` follows from them by cancellation, `neg x` being the unique
+solution of `add · x = zero`.
+
+DUPLICATION NOTE: `X0.lean` proves the same statement as
+`AbelianSchemeStruct.pre_neg`, but `X0.lean` is DOWNSTREAM of this file, so
+that declaration is not available here and reusing its name would make
+`X0.lean` fail with "has already been declared".  The two should be
+unified by hoisting X0's copy here once nobody is editing that region. -/
+theorem relPointPre_neg {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint f g) :
+    RelPoint.pre h hg (ab.neg x) = ab.neg (RelPoint.pre h hg x) := by
+  letI := ab.addCommGroup g'
+  have h1 : ab.add (RelPoint.pre h hg (ab.neg x)) (RelPoint.pre h hg x) = ab.zero g' := by
+    rw [← ab.pre_add h hg, ab.neg_add, ab.pre_zero]
+  have h2 : ab.add (ab.neg (RelPoint.pre h hg x)) (RelPoint.pre h hg x) = ab.zero g' :=
+    ab.neg_add _
+  exact add_right_cancel (a := RelPoint.pre h hg (ab.neg x))
+    (b := RelPoint.pre h hg x) (c := ab.neg (RelPoint.pre h hg x)) (h1.trans h2.symm)
+
+/-- **The zero section at an arbitrary base point is the base point
+composed with the zero section over the base** (PROVEN — this is
+`pre_zero` read at `h = g`, `g = 𝟙 S`).
+
+It is what makes "the zero section over `Spec ℚ`" enough data: the whole
+zero *family* `ab.zero g` is determined by the single morphism
+`(ab.zero (𝟙 S)).1 : S ⟶ A`. -/
+theorem AbelianSchemeStruct.zero_val_eq {A S : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S) :
+    (ab.zero g).1 = g ≫ (ab.zero (𝟙 S)).1 :=
+  (congrArg Subtype.val (ab.pre_zero g (g := 𝟙 S) (g' := g) (Category.comp_id g))).symm
+
+/-- **A zero-preserving morphism over the base carries the zero section to
+the zero section, at EVERY base point** (PROVEN).
+
+The hypothesis `hzero` is only about the zero section over `Spec ℚ`
+itself; `AbelianSchemeStruct.zero_val_eq` propagates it to every `g`. -/
+theorem relPointPost_zero {A B S : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S}
+    (abA : AbelianSchemeStruct fA) (abB : AbelianSchemeStruct fB) (u : A ⟶ B)
+    (hu : u ≫ fB = fA)
+    (hzero : (abA.zero (𝟙 S)).1 ≫ u = (abB.zero (𝟙 S)).1)
+    {T : Scheme.{u}} (g : T ⟶ S) :
+    relPointPost u hu (abA.zero g) = abB.zero g := by
+  apply Subtype.ext
+  rw [relPointPost_val, abA.zero_val_eq, abB.zero_val_eq, Category.assoc, hzero]
+
+/-- **THE RIGIDITY LEMMA** (sorry node, introduced 2026-07-27; this is the
+single remaining input of `relPointPost_add`).
+
+Mumford, *Abelian Varieties* §4, the *rigidity lemma* itself (Milne,
+*Abelian Varieties*, Thm 1.1 states the same thing for varieties):
+
+> Let `X` be a complete variety, `Z` and `Y` any varieties and
+> `φ : X × Z ⟶ Y` a morphism.  If `φ(X × {z₀})` is a single point for some
+> `z₀ ∈ Z`, then `φ` factors through the projection `X × Z ⟶ Z`.
+
+Here `X × Z` is the fibre product over `Spec ℚ`, `z₀` is the point named by
+the section `eZ`, `y₀` names the single point, and `h1` says exactly that
+`φ` restricted to `X × {z₀}` — i.e. precomposed with
+`x ↦ (x, z₀) = pullback.lift (𝟙 X) (fX ≫ eZ)` — is constant equal to `y₀`.
+
+**The classical proof, which a prover should follow.**  Pick an affine open
+`U ∋ y₀` of `Y`.  Since `fX` is proper, `pullback.snd` is a closed map, so
+`W := pullback.snd '' (φ⁻¹ (Y \ U))` is closed in `Z` and misses `z₀`.  For
+`z ∉ W` the fibre `X × {z}` maps into the affine `U`; it is proper and
+geometrically connected over `κ(z)`, so its image is proper AND affine,
+hence finite, hence — being connected — a single point.  Therefore `φ` and
+`pullback.snd ≫ ψ`, where `ψ := (z ↦ φ(x₀, z))` for any section `x₀`, agree
+on the dense open `pullback.snd ⁻¹ (Z \ W)`; `X ×_ℚ Z` is reduced and `Y` is
+separated, so they agree everywhere.
+
+**WHAT IS AVAILABLE AT THIS PIN — the standing verdict is HALF WRONG.**  The
+audit on `exists_projGroupLaw_geomFibreAddEquiv` records "the rigidity
+theorem is in neither mathlib nor `~/cs/FLT`".  That is true of the *theorem*
+and FALSE of the *argument*.  `Mathlib/AlgebraicGeometry/Group/Abelian.lean`
+(Andrew Yang, Christian Merten) proves
+`isCommMonObj_of_isProper_of_geometricallyIntegral` — a proper geometrically
+integral group scheme over a field is commutative, Stacks tag `0BFD` — and
+**its proof IS this argument**, run on the commutator map
+`γ : (x, y) ↦ xyx⁻¹y⁻¹` rather than on a defect map.  The pieces it
+exercises, all present at our pin, are
+
+* `subsingleton_image_closure_of_finite_of_isPreirreducible` — "the image of
+  an irreducible fibre is finite, hence a point";
+* `exists_finite_imageι_comp_morphismRestrict_of_finite_image_preimage` —
+  Zariski's main theorem in the form the argument needs;
+* `ext_of_apply_eq`, `ext_of_apply_closedPoint_eq`, `pointEquivClosedPoint`,
+  `pointOfClosedPoint` — the reduction to closed points;
+* the base change to `AlgebraicClosure ℚ` at the end of that file — the
+  reduction of the general case to the algebraically closed one.
+
+Adapting it needs `Mathlib.AlgebraicGeometry.Group.Abelian` (and
+`.ZariskisMainTheorem`, `.Geometrically.Integral`, `.AlgClosed.Basic`) added
+to this module's imports.  Note that the mathlib proof is written for
+`GrpObj (Over (Spec K))`; **that presentational gap does NOT arise here**,
+because this statement mentions no group structure at all — the group
+structure has already been eliminated by `relPointPost_add` below, which is
+what makes this leaf a pure statement about schemes.
+
+`_hXs`/`_hZs`/`_hZc` are stated but unused by the *statement*; they are what
+the *proof* needs, and they are exactly what an `AbelianSchemeStruct`
+supplies: smooth + geometrically connected over a field gives geometrically
+integral (smooth ⟹ geometrically normal and reduced; normal + connected ⟹
+irreducible), which is what makes `X ×_ℚ Z` integral and the density
+argument valid.  A prover may weaken them but must not need more.
+
+WHAT WOULD REFUTE THE "OPEN" DIAGNOSIS: a declaration anywhere producing a
+factorisation of a morphism out of a fibre product through one projection
+from constancy on a fibre of the other.  Searched 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT`: `0BFD` above is the closest, and it
+concludes commutativity of ONE group scheme rather than a factorisation.
+
+NOT VACUOUS: dropping `h1` makes it FALSE — take `X = Z = Y = A` an elliptic
+curve and `φ = pullback.fst`, which does not factor through `pullback.snd`. -/
+theorem rigidityFactors {X Z Y : Scheme.{0}}
+    {fX : X ⟶ Spec (CommRingCat.of ℚ)} {fZ : Z ⟶ Spec (CommRingCat.of ℚ)}
+    {fY : Y ⟶ Spec (CommRingCat.of ℚ)}
+    (_hXp : IsProper fX) (_hXs : Smooth fX) (_hXc : GeometricallyConnected fX)
+    (_hZs : Smooth fZ) (_hZc : GeometricallyConnected fZ)
+    (_hY : IsSeparated fY)
+    (eZ : Spec (CommRingCat.of ℚ) ⟶ Z) (heZ : eZ ≫ fZ = 𝟙 _)
+    (φ : Limits.pullback fX fZ ⟶ Y)
+    (_hφ : φ ≫ fY = Limits.pullback.fst fX fZ ≫ fX)
+    (y₀ : Spec (CommRingCat.of ℚ) ⟶ Y)
+    (_h1 : Limits.pullback.lift (𝟙 X) (fX ≫ eZ)
+        (by rw [Category.id_comp, Category.assoc, heZ, Category.comp_id]) ≫ φ = fX ≫ y₀) :
+    ∃ ψ : Z ⟶ Y, φ = Limits.pullback.snd fX fZ ≫ ψ :=
+  sorry
+
+/-- **Rigidity, constant form** (PROVEN from `rigidityFactors`).
+
+If `φ : X ×_ℚ Z ⟶ Y` is constant equal to `y₀` on BOTH axes `X × {z₀}` and
+`{x₀} × Z`, it is constant equal to `y₀`.  The factorisation `φ = pr_Z ≫ ψ`
+supplied by the rigidity lemma is evaluated at the section `eX`, which
+identifies `ψ` with `fZ ≫ y₀`. -/
+theorem rigidityEqConst {X Z Y : Scheme.{0}}
+    {fX : X ⟶ Spec (CommRingCat.of ℚ)} {fZ : Z ⟶ Spec (CommRingCat.of ℚ)}
+    {fY : Y ⟶ Spec (CommRingCat.of ℚ)}
+    (hXp : IsProper fX) (hXs : Smooth fX) (hXc : GeometricallyConnected fX)
+    (hZs : Smooth fZ) (hZc : GeometricallyConnected fZ)
+    (hY : IsSeparated fY)
+    (eX : Spec (CommRingCat.of ℚ) ⟶ X) (heX : eX ≫ fX = 𝟙 _)
+    (eZ : Spec (CommRingCat.of ℚ) ⟶ Z) (heZ : eZ ≫ fZ = 𝟙 _)
+    (φ : Limits.pullback fX fZ ⟶ Y)
+    (hφ : φ ≫ fY = Limits.pullback.fst fX fZ ≫ fX)
+    (y₀ : Spec (CommRingCat.of ℚ) ⟶ Y)
+    (h1 : Limits.pullback.lift (𝟙 X) (fX ≫ eZ)
+        (by rw [Category.id_comp, Category.assoc, heZ, Category.comp_id]) ≫ φ = fX ≫ y₀)
+    (h2 : Limits.pullback.lift (fZ ≫ eX) (𝟙 Z)
+        (by rw [Category.id_comp, Category.assoc, heX, Category.comp_id]) ≫ φ = fZ ≫ y₀) :
+    φ = Limits.pullback.fst fX fZ ≫ fX ≫ y₀ := by
+  obtain ⟨ψ, hψ⟩ := rigidityFactors hXp hXs hXc hZs hZc hY eZ heZ φ hφ y₀ h1
+  have hψ2 : ψ = fZ ≫ y₀ := by
+    rw [hψ, ← Category.assoc, Limits.pullback.lift_snd, Category.id_comp] at h2
+    exact h2
+  rw [hψ, hψ2, ← Category.assoc, ← Limits.pullback.condition, Category.assoc]
+
 /-- **RIGIDITY: a morphism of abelian schemes over `Spec ℚ` carrying zero
-to zero is a homomorphism** (sorry node, introduced 2026-07-27).
+to zero is a homomorphism** (PROVEN 2026-07-27 over `rigidityFactors`).
 
-TRUE — this is Mumford, *Abelian Varieties* §4, Cor. 1 (the corollary of
-the rigidity lemma), and it is the ONLY genuinely deep input of the
-reverse bridge that is not curve geometry.  `abA` and `abB` make `fA` and
-`fB` proper, smooth and geometrically connected, `hu` makes `u` a morphism
-over the base and `hzero` makes it carry the zero section to the zero
-section; the conclusion is additivity of the induced map on `T`-points for
-EVERY test scheme `T`, which by Yoneda is exactly "u is a homomorphism of
-group schemes".
+This is Mumford, *Abelian Varieties* §4, Cor. 1 — the corollary of the
+rigidity lemma.  `abA` and `abB` make `fA` and `fB` proper, smooth and
+geometrically connected, `hu` makes `u` a morphism over the base and
+`hzero` makes it carry the zero section to the zero section; the conclusion
+is additivity of the induced map on `T`-points for EVERY test scheme `T`,
+which by Yoneda is exactly "`u` is a homomorphism of group schemes".
 
-**Only the zero section over the base itself is hypothesised**, and that
-is not a weakening: `AbelianSchemeStruct.pre_zero` gives
+**Only the zero section over the base itself is hypothesised**, and that is
+not a weakening: `AbelianSchemeStruct.zero_val_eq` gives
 `(ab.zero g).1 = g ≫ (ab.zero (𝟙 S)).1` for every base point `g`, so
 `hzero` at `𝟙 (Spec ℚ)` already determines the zero section everywhere.
 
-## WHAT IS AVAILABLE AT THIS PIN — the previous verdict was too pessimistic
+## THE PROOF, in two halves — and only the second half is deep
 
-The audit on `exists_projGroupLaw_geomFibreAddEquiv` records "the rigidity
-theorem is in neither mathlib nor `~/cs/FLT`".  That is true of the theorem
-and FALSE of the argument, which matters more.  `Mathlib/AlgebraicGeometry/`
-`Group/Abelian.lean` (Andrew Yang, Christian Merten) proves
-`isCommMonObj_of_isProper_of_geometricallyIntegral` — *a proper
-geometrically integral group scheme over a field is commutative*, Stacks
-tag `0BFD` — and its proof IS the rigidity argument, run on the commutator
-map `γ : (x, y) ↦ xyx⁻¹y⁻¹` instead of on the defect map.  The reusable
-pieces it exercises, all at our pin, are
+**Half 1, Yoneda: the `∀ T` disappears.**  Let `P := A ×_ℚ A` and let
+`p, q : RelPoint fA (pr₁ ≫ fA)` be its two projections read as relative
+points.  Every instance of the statement is the image of the SINGLE instance
+at `(p, q)` under `RelPoint.pre w`, where
+`w := pullback.lift x.1 y.1 : T ⟶ P` classifies the pair `(x, y)`; the
+transfer uses nothing but `pre_add` (naturality of the group law) and
+`relPointPost_pre` (postcomposition commutes with precomposition, which is
+`Category.assoc`).  So the whole `∀ T, ∀ g, ∀ x y` statement collapses to one
+equation between two morphisms `P ⟶ B`.
 
-* `subsingleton_image_closure_of_finite_of_isPreirreducible` — the step
-  "the image of an irreducible fibre is finite, hence a point";
-* `exists_finite_imageι_comp_morphismRestrict_of_finite_image_preimage` —
-  Zariski's main theorem in the form the argument needs;
-* `ext_of_apply_eq`, `ext_of_apply_closedPoint_eq`, `pointEquivClosedPoint`
-  and `pointOfClosedPoint` — the reduction to closed points.
-
-So the shape of the intended proof is: apply the same template to
-`δ : (x, y) ↦ u(x + y) - u(x) - u(y) : A ×_S A ⟶ B`, which by `hzero` is
-zero on `{0} × A` and on `A × {0}`, and conclude `δ = 0`.
-
-**The one real obstruction is presentational, not mathematical**: mathlib
-states this for `GrpObj (G : Over (Spec K))` in a cartesian monoidal
-category, while `AbelianSchemeStruct` is the functor-of-points
-presentation.  `AbelianSchemeStruct.ofMorphisms` above already goes one way
-between morphism-level and point-level data, so the bridge to build is
-`AbelianSchemeStruct f → GrpObj (Over.mk f)`; that, and adding
-`public import Mathlib.AlgebraicGeometry.Group.Abelian`, is what a prover
-at this leaf should cost.
-
-WHAT WOULD REFUTE THE "OPEN" DIAGNOSIS: a declaration anywhere stating
-that a base-point-preserving morphism of abelian schemes (or of proper
-geometrically integral group schemes) is a group homomorphism.  Searched
-2026-07-27 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: the
-`0BFD` proof above is the closest, and it concludes commutativity of ONE
-group scheme, not functoriality between two.
+**Half 2, rigidity: the defect vanishes.**  Form the defect
+`D := u∘(p+q) − (u∘p + u∘q) : RelPoint fB (pr₁ ≫ fA)` — a morphism
+`A ×_ℚ A ⟶ B` — using the group structure of `B`'s relative points.
+Restricting along the two axis maps `j₁ = (𝟙, 0)` and `j₂ = (0, 𝟙)` and
+using `hzero` (through `relPointPost_zero`) makes `D` vanish on both axes;
+`rigidityEqConst` then forces `D` to be the constant zero section, and
+cancellation in the group `RelPoint fB (pr₁ ≫ fA)` turns that into the
+required identity.
 
 NOT VACUOUS: dropping `hzero` makes the statement FALSE — translation by a
 nonzero rational point of `A` is an isomorphism over `Spec ℚ` and is not
@@ -5570,8 +5724,117 @@ theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ
       = (abB.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1)
     {T : Scheme.{0}} {g : T ⟶ Spec (CommRingCat.of ℚ)} (x y : RelPoint fA g) :
     relPointPost u hu (abA.add x y)
-      = abB.add (relPointPost u hu x) (relPointPost u hu y) :=
-  sorry
+      = abB.add (relPointPost u hu x) (relPointPost u hu y) := by
+  have hq2 : Limits.pullback.snd fA fA ≫ fA = Limits.pullback.fst fA fA ≫ fA :=
+    Limits.pullback.condition.symm
+  set p : RelPoint fA (Limits.pullback.fst fA fA ≫ fA) :=
+    ⟨Limits.pullback.fst fA fA, rfl⟩
+  set q : RelPoint fA (Limits.pullback.fst fA fA ≫ fA) :=
+    ⟨Limits.pullback.snd fA fA, hq2⟩
+  -- pointwise group facts, in the two abelian schemes
+  have haddzeroA : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+      (z : RelPoint fA g'), abA.add z (abA.zero g') = z := by
+    intro T' g' z; rw [abA.add_comm, abA.zero_add]
+  have haddzeroB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+      (z : RelPoint fB g'), abB.add z (abB.zero g') = z := by
+    intro T' g' z; rw [abB.add_comm, abB.zero_add]
+  have haddnegB : ∀ {T' : Scheme.{0}} {g' : T' ⟶ Spec (CommRingCat.of ℚ)}
+      (z : RelPoint fB g'), abB.add z (abB.neg z) = abB.zero g' := by
+    intro T' g' z; rw [abB.add_comm, abB.neg_add]
+  -- HALF 2: the universal instance, at the two projections of `A ×_ℚ A`
+  have key : relPointPost u hu (abA.add p q)
+      = abB.add (relPointPost u hu p) (relPointPost u hu q) := by
+    have heA : (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1 ≫ fA = 𝟙 _ :=
+      (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).2
+    set eA := (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+    set eB := (abB.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+    set D : RelPoint fB (Limits.pullback.fst fA fA ≫ fA) :=
+      abB.add (relPointPost u hu (abA.add p q))
+        (abB.neg (abB.add (relPointPost u hu p) (relPointPost u hu q))) with hDdef
+    -- the two axis maps `(𝟙, 0)` and `(0, 𝟙)`
+    have hj1c : (𝟙 A) ≫ fA = (fA ≫ eA) ≫ fA := by
+      rw [Category.id_comp, Category.assoc, heA, Category.comp_id]
+    have hj2c : (fA ≫ eA) ≫ fA = (𝟙 A) ≫ fA := hj1c.symm
+    set j₁ : A ⟶ Limits.pullback fA fA := Limits.pullback.lift (𝟙 A) (fA ≫ eA) hj1c with hj1def
+    set j₂ : A ⟶ Limits.pullback fA fA := Limits.pullback.lift (fA ≫ eA) (𝟙 A) hj2c with hj2def
+    have hj1b : j₁ ≫ (Limits.pullback.fst fA fA ≫ fA) = fA := by
+      rw [← Category.assoc, hj1def, Limits.pullback.lift_fst, Category.id_comp]
+    have hj2b : j₂ ≫ (Limits.pullback.fst fA fA ≫ fA) = fA := by
+      rw [← Category.assoc, hj2def, Limits.pullback.lift_fst, Category.assoc, heA,
+        Category.comp_id]
+    set idPt : RelPoint fA fA := ⟨𝟙 A, Category.id_comp fA⟩
+    have hp1 : RelPoint.pre j₁ hj1b p = idPt := by
+      apply Subtype.ext
+      show j₁ ≫ Limits.pullback.fst fA fA = 𝟙 A
+      rw [hj1def, Limits.pullback.lift_fst]
+    have hq1 : RelPoint.pre j₁ hj1b q = abA.zero fA := by
+      apply Subtype.ext
+      show j₁ ≫ Limits.pullback.snd fA fA = (abA.zero fA).1
+      rw [hj1def, Limits.pullback.lift_snd, abA.zero_val_eq]
+    have hp2 : RelPoint.pre j₂ hj2b p = abA.zero fA := by
+      apply Subtype.ext
+      show j₂ ≫ Limits.pullback.fst fA fA = (abA.zero fA).1
+      rw [hj2def, Limits.pullback.lift_fst, abA.zero_val_eq]
+    have hq2' : RelPoint.pre j₂ hj2b q = idPt := by
+      apply Subtype.ext
+      show j₂ ≫ Limits.pullback.snd fA fA = 𝟙 A
+      rw [hj2def, Limits.pullback.lift_snd]
+    -- the defect vanishes on both axes
+    have hD1 : RelPoint.pre j₁ hj1b D = abB.zero fA := by
+      rw [hDdef, abB.pre_add, relPointPre_neg, abB.pre_add, ← relPointPost_pre,
+        ← relPointPost_pre, ← relPointPost_pre, abA.pre_add, hp1, hq1,
+        relPointPost_zero abA abB u hu hzero, haddzeroA, haddzeroB, haddnegB]
+    have hD2 : RelPoint.pre j₂ hj2b D = abB.zero fA := by
+      rw [hDdef, abB.pre_add, relPointPre_neg, abB.pre_add, ← relPointPost_pre,
+        ← relPointPost_pre, ← relPointPost_pre, abA.pre_add, hp2, hq2',
+        relPointPost_zero abA abB u hu hzero, abA.zero_add, abB.zero_add, haddnegB]
+    have h1 : j₁ ≫ D.1 = fA ≫ eB := by
+      have h := congrArg Subtype.val hD1
+      rw [abB.zero_val_eq] at h
+      exact h
+    have h2 : j₂ ≫ D.1 = fA ≫ eB := by
+      have h := congrArg Subtype.val hD2
+      rw [abB.zero_val_eq] at h
+      exact h
+    have hsepB : IsSeparated fB := by haveI := abB.proper; infer_instance
+    -- rigidity forces the defect to be the constant zero section
+    have hDconst : D.1 = Limits.pullback.fst fA fA ≫ fA ≫ eB :=
+      rigidityEqConst abA.proper abA.smooth abA.connected abA.smooth abA.connected hsepB
+        eA heA eA heA D.1 D.2 eB h1 h2
+    have hDzero : D = abB.zero (Limits.pullback.fst fA fA ≫ fA) := by
+      apply Subtype.ext
+      rw [hDconst, abB.zero_val_eq, Category.assoc]
+    letI := abB.addCommGroup (Limits.pullback.fst fA fA ≫ fA)
+    exact add_right_cancel
+      (a := relPointPost u hu (abA.add p q))
+      (b := abB.neg (abB.add (relPointPost u hu p) (relPointPost u hu q)))
+      (c := abB.add (relPointPost u hu p) (relPointPost u hu q))
+      (hDzero.trans (haddnegB _).symm)
+  -- HALF 1: transfer the universal instance along the classifying map of `(x, y)`
+  have hxy : x.1 ≫ fA = y.1 ≫ fA := by rw [x.2, y.2]
+  set w : T ⟶ Limits.pullback fA fA := Limits.pullback.lift x.1 y.1 hxy with hw
+  have hwb : w ≫ (Limits.pullback.fst fA fA ≫ fA) = g := by
+    rw [← Category.assoc, hw, Limits.pullback.lift_fst, x.2]
+  have hp : RelPoint.pre w hwb p = x := by
+    apply Subtype.ext
+    show w ≫ Limits.pullback.fst fA fA = x.1
+    rw [hw, Limits.pullback.lift_fst]
+  have hq : RelPoint.pre w hwb q = y := by
+    apply Subtype.ext
+    show w ≫ Limits.pullback.snd fA fA = y.1
+    rw [hw, Limits.pullback.lift_snd]
+  calc relPointPost u hu (abA.add x y)
+      = relPointPost u hu (abA.add (RelPoint.pre w hwb p) (RelPoint.pre w hwb q)) := by
+        rw [hp, hq]
+    _ = relPointPost u hu (RelPoint.pre w hwb (abA.add p q)) := by rw [abA.pre_add]
+    _ = RelPoint.pre w hwb (relPointPost u hu (abA.add p q)) := relPointPost_pre u hu w hwb _
+    _ = RelPoint.pre w hwb (abB.add (relPointPost u hu p) (relPointPost u hu q)) := by rw [key]
+    _ = abB.add (RelPoint.pre w hwb (relPointPost u hu p))
+          (RelPoint.pre w hwb (relPointPost u hu q)) := abB.pre_add _ _ _ _
+    _ = abB.add (relPointPost u hu (RelPoint.pre w hwb p))
+          (relPointPost u hu (RelPoint.pre w hwb q)) := by
+        rw [← relPointPost_pre, ← relPointPost_pre]
+    _ = abB.add (relPointPost u hu x) (relPointPost u hu y) := by rw [hp, hq]
 
 /-- **Two Weierstrass charts of the same affine curve glue to an
 isomorphism of the proper models** (sorry node, introduced 2026-07-27).
@@ -5687,8 +5950,10 @@ taken here, and it decomposes the leaf into three:
 * `hom_specRat_eq_of_range_eq` — a `ℚ`-point is determined by its image, so
   matching charts force matching zero SECTIONS (PROVEN here);
 * `relPointPost_add` — rigidity: a base-point-preserving morphism of
-  abelian schemes is a homomorphism (OPEN, but see its docstring: mathlib's
-  `0BFD` proof is the same argument and is reusable).
+  abelian schemes is a homomorphism (PROVEN 2026-07-27 from
+  `rigidityFactors`, Mumford's rigidity lemma, which is the one leaf left
+  of that third — see its docstring: mathlib's `0BFD` proof is the same
+  argument and is reusable).
 
 The Galois clause survives the cut for free, for the structural reason the
 consumer in `X0.lean` already exploits: `galSMul` IS precomposition, so it
