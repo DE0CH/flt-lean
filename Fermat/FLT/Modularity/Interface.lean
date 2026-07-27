@@ -32153,8 +32153,285 @@ theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
     calc ‖α + β‖ ≤ ‖α‖ + ‖β‖ := norm_add_le _ _
       _ = 2 * Real.sqrt q := by rw [hα, hβ]; ring
 
-/-- **Ribet irreducibility, as a theorem about the frame** (sorry node,
-NINTH decomposition 2026-07-26): the `κ`-eigencomponent of the concrete
+/-- **The `κ`-eigencomponent of the concrete Tate space is a PLANE**
+(sorry leaf, ELEVENTH decomposition 2026-07-27, cut out of
+`irred_eigenspace_modularTateSpace` below): the joint eigenspace of the
+prime-indexed Hecke family on `(𝕋_ℚ ⊗ ℚ̄_p)²` at the eigenvalue system
+`κ(a(g))` of a weight-two newform `g` of exact level `M` has dimension
+exactly two over `ℚ̄_p`.
+
+This is step 1 of the Ribet argument, and it contains NO Galois theory:
+the frame is free of rank two over `𝕋_ℚ ⊗ ℚ̄_p` by construction
+(`frame_span`, `frame_indep` in `Modularity/HeckeFrame.lean`), so the
+statement reduces to the `κ`-eigencomponent of `𝕋_ℚ ⊗ ℚ̄_p` being a
+LINE — which is étaleness of `𝕋_ℚ` at the maximal ideal of a newform of
+exact level `M`.
+
+ROUTE, and it is already written down once in this file. The argument
+is the `hspan_eq` half of `nonempty_eichlerShimuraPackage` below: the
+newform idempotent `e` cuts the joint eigenspace out as the span of
+`e basis₁, e basis₂`, joint eigen-elements of the Hecke subalgebra are
+`ℚ̄_p`-multiples of `e` (`exists_smul_of_mem_heckeSubalgebra`), and
+freeness turns that into the two-element span. That proof CANNOT be
+cited here — it runs over `nonempty_modularJacobianPackage`, which is
+assembled downstream of this leaf's own consumer, so citing it would be
+circular. What it can be is COPIED, with `J.span_free` / `J.indep_free`
+replaced by the concrete `frame_span` / `frame_indep` and the
+idempotent supplied by `exists_newformFactor_modularHeckeAlgebraQ`
+above, which is PROVEN and whose whole purpose is to produce the
+`heckeField M g`-factor of `𝕋_ℚ` at `g`.
+
+THE ONE GAP IN THAT COPY, stated so it can be checked rather than
+rediscovered: `exists_newformFactor_modularHeckeAlgebraQ` takes the
+COMPLEX newform idempotent `eC` as a hypothesis (`heCmem`, `heC0`,
+`heCidem`, `heCeig`, `heCline`). Producing `eC` above this line is the
+only part of the route not already available; `newformEtaleIdempotent_spec`
+and `exists_isIdempotentElem_of_isMaximal` are what a successor should
+reach for. If `eC` turns out to be unavailable above this point, the
+honest repair is to hoist its construction, not to weaken this leaf.
+
+FAITHFULNESS. Two is the classical dimension of the `p`-adic Galois
+representation attached to a weight-two newform, so a proof returning
+anything else refutes the surrounding cut rather than this leaf. -/
+theorem finrank_heckeEigenspace_modularTateSpace_eq_two {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]) :
+    Module.finrank (AlgebraicClosure ℚ_[p])
+        ↥(heckeEigenspace
+            (fun m => modularTatePadic (p := p) M (modularTateGen M m))
+            (fun m => κ (heckeCoeff M g m))) = 2 :=
+  sorry
+
+/-- **The twisted Weil pairing restricts NONDEGENERATELY to the
+`κ`-eigencomponent** (sorry leaf, ELEVENTH decomposition 2026-07-27,
+cut out of `irred_eigenspace_modularTateSpace` below): if an
+`ℚ̄_p`-bilinear form on the concrete Tate space is nondegenerate on the
+whole space and every prime-indexed Hecke operator is SELF-ADJOINT for
+it, then it is already nondegenerate on the joint `κ(a(g))`-eigenspace.
+
+WHY THIS IS A SEPARATE LEAF, and why it is not a corollary of the
+ambient nondegeneracy. Nondegeneracy does not restrict to a subspace in
+general; what makes it restrict here is that self-adjointness makes
+eigencomponents for DISTINCT eigenvalue systems orthogonal. For `x` in
+the `κ(a(g))`-component and `y` in the `λ`-component with
+`λ q ≠ κ (a_q)` at some prime `q`,
+
+  `κ(a_q) · pair x y = pair (T_q x) y = pair x (T_q y) = λ q · pair x y`,
+
+so `pair x y = 0`. Since `𝕋_ℚ ⊗ ℚ̄_p` is a finite-dimensional
+commutative algebra, the space is the direct sum of its generalized
+joint eigencomponents, so `pair x (whole space) = pair x (eigenspace)`,
+and ambient nondegeneracy finishes it. The one point needing care is
+that the decomposition is into GENERALIZED components; self-adjointness
+still pairs distinct generalized components to zero, by induction on
+the nilpotency index.
+
+This is the `pair`-half of what `nonempty_eichlerShimuraPackage` below
+establishes for the abstract Jacobian package ("the twisted Weil
+pairing restricts to a symplectic form on it"); as with the plane leaf
+above, that proof is downstream of this leaf's consumer and so can be
+copied but not cited.
+
+Note `hpairself` is deliberately NOT a hypothesis here: alternation
+plays no role in the restriction argument, only self-adjointness and
+ambient nondegeneracy do. -/
+theorem pair_nondegenerate_heckeEigenspace_modularTateSpace {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (pair : modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
+      modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
+        AlgebraicClosure ℚ_[p])
+    (hpairnondeg : ∀ x : modularTateSpace (p := p) M,
+      (∀ y : modularTateSpace (p := p) M, pair x y = 0) → x = 0)
+    (hpairhecke : ∀ (q : ℕ), q.Prime →
+      ∀ x y : modularTateSpace (p := p) M,
+        pair (modularTatePadic (p := p) M (modularTateGen M q) x) y =
+          pair x (modularTatePadic (p := p) M (modularTateGen M q) y)) :
+    ∀ x ∈ heckeEigenspace
+        (fun m => modularTatePadic (p := p) M (modularTateGen M m))
+        (fun m => κ (heckeCoeff M g m)),
+      (∀ y ∈ heckeEigenspace
+          (fun m => modularTatePadic (p := p) M (modularTateGen M m))
+          (fun m => κ (heckeCoeff M g m)), pair x y = 0) → x = 0 :=
+  sorry
+
+/-- **Reducibility of a two-dimensional Galois plane produces two
+characters with the classical Frobenius invariants** (sorry leaf,
+ELEVENTH decomposition 2026-07-27, cut out of
+`irred_eigenspace_modularTateSpace` below): if `E` is a
+Galois-stable PLANE inside a continuous representation `τ`, the
+Frobenius at every `q ∉ S` satisfies the Eichler–Shimura congruence ON
+`E` with scalar `κ(a_q)`, the alternating form `pair` is nondegenerate
+on `E` and multiplies by `q` under `Frob_q`, and `U` is a PROPER
+NONZERO stable subspace of `E`, then there are two continuous nowhere-
+vanishing multiplicative characters `δ₁, δ₂ : Γℚ → ℚ̄_pˣ` with
+
+  `δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q`
+
+at every `q ∉ S`.
+
+This is steps 1–5 of the Ribet argument and it is PURE LINEAR ALGEBRA
+over `ℚ̄_p` together with the continuity already carried by `τ`. `U` is
+forced to be a LINE (`hEdim`, `hU0`, `hUne`), `δ₁` is the action on
+`U`, `δ₂` the action on `E/U`, and both are continuous because `τ` is
+and because passing to a stable line and to the quotient are continuous
+operations on `Module.End`.
+
+THE TWO INVARIANTS, and where each comes from — this is the part worth
+getting right, because "each of `δ₁(Frob_q)`, `δ₂(Frob_q)` is A ROOT of
+`X² − κ(a_q)X + q`" is NOT enough to conclude the displayed identities
+(if the quadratic has distinct roots, nothing so far prevents both
+characters from picking the SAME one, and then the sum is not
+`κ(a_q)`). The pair must be pinned as the multiset of roots:
+
+* the PRODUCT is the determinant of `τ(Frob_q)|E`, and it is `q`
+  because `pair` restricts to a nondegenerate alternating form on the
+  plane `E` (`hpairnondegE`, `hpairself`) and `τ(Frob_q)|E` is a
+  symplectic similitude of multiplier `q` (`hpairfrob`) — in dimension
+  two a symplectic similitude of multiplier `q` has determinant `q`;
+* the SUM is then forced: in a triangular basis adapted to `U` the
+  determinant is `δ₁(Frob_q)·δ₂(Frob_q)` and the trace is
+  `δ₁(Frob_q) + δ₂(Frob_q)`, and Cayley–Hamilton against `hcongE`
+  identifies the characteristic polynomial of `τ(Frob_q)|E` with
+  `X² − κ(a_q)X + q` once the constant terms already agree.
+
+`g`, `hg` and `κ` enter only as the source of the scalar `κ(a_q)`;
+nothing about modular curves is used. -/
+theorem exists_characters_of_reducible_charFrob {M : ℕ} (hM : 0 < M)
+    {V : Type v} [AddCommGroup V] [Module (AlgebraicClosure ℚ_[p]) V]
+    (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (E : Submodule (AlgebraicClosure ℚ_[p]) V)
+    (hEstable : ∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ E, τ γ x ∈ E)
+    (hEdim : Module.finrank (AlgebraicClosure ℚ_[p]) ↥E = 2)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (hcongE : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      ∀ x ∈ E,
+        τ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            (τ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          - κ (heckeCoeff M g q) •
+              τ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x
+          + (q : AlgebraicClosure ℚ_[p]) • x = 0)
+    (pair : V →ₗ[AlgebraicClosure ℚ_[p]] V →ₗ[AlgebraicClosure ℚ_[p]]
+      AlgebraicClosure ℚ_[p])
+    (hpairself : ∀ x : V, pair x x = 0)
+    (hpairnondegE : ∀ x ∈ E, (∀ y ∈ E, pair x y = 0) → x = 0)
+    (hpairfrob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      ∀ x y : V,
+        pair (τ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+            (τ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+          (q : AlgebraicClosure ℚ_[p]) * pair x y)
+    (U : Submodule (AlgebraicClosure ℚ_[p]) V) (hUE : U ≤ E)
+    (hU0 : U ≠ ⊥) (hUne : U ≠ E)
+    (hUstable : ∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τ γ x ∈ U) :
+    ∃ δ₁ δ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p],
+      Continuous δ₁ ∧ Continuous δ₂ ∧
+      (∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ ≠ 0) ∧
+      (∀ γ : Field.absoluteGaloisGroup ℚ, δ₂ γ ≠ 0) ∧
+      (∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₁ (γ * γ') = δ₁ γ * δ₁ γ') ∧
+      (∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₂ (γ * γ') = δ₂ γ * δ₂ γ') ∧
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            + δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+              = κ (heckeCoeff M g q) ∧
+          δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            * δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+              = (q : AlgebraicClosure ℚ_[p]) :=
+  sorry
+
+/-- **No pair of continuous characters of `Γℚ` carries a newform's
+Frobenius invariants** (sorry leaf, ELEVENTH decomposition 2026-07-27,
+cut out of `irred_eigenspace_modularTateSpace` below): there are no
+continuous nowhere-vanishing multiplicative `δ₁, δ₂ : Γℚ → ℚ̄_p` with
+`δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q` for
+every prime `q ∉ S`, given the Weil bound `|a_q| ≤ 2√q`.
+
+**THIS IS THE GENUINELY MISSING HALF** — step 6 of the Ribet argument,
+and the NINTH/TENTH decomposition's own docstring below says a
+successor should attack it there rather than at the whole statement.
+Nothing in this statement mentions a module, a Hecke algebra or a
+modular curve: it is a statement about characters of `Γℚ`, and `g`/`κ`
+appear only to name the number field `heckeField M g` in which the
+traces live and to carry the archimedean bound.
+
+THE ROUTE, and the trap the tenth decomposition already documented. By
+Chebotarev density (`dense_conjClasses_globalFrob`, PROVEN in
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) and continuity, the
+product `δ₁δ₂` is forced to BE the `p`-adic cyclotomic character, since
+the two agree at every `Frob_q` with `q ∉ S`. The contradiction then
+needs each `δᵢ` classified as a finite-order character times an
+INTEGRAL power of `χ_cyc`, whereupon `κ(a_q)` has shape `ζ₁ + ζ₂·q` up
+to roots of unity and outgrows `2√q`. That classification does NOT
+follow from continuity and unramifiedness alone — the tenth
+decomposition's counterexample `⟨χ_cyc⟩^s` for `s ∈ ℤ_p ∖ ℤ` is
+continuous, unramified outside `{p}`, and neither finite-order nor an
+integral power. The extra input available here is ALGEBRAICITY of the
+Frobenius values: `δ₁(Frob_q)` and `δ₂(Frob_q)` are the two roots of
+`X² − κ(a_q)X + q`, whose coefficients come from the NUMBER FIELD
+`heckeField M g` (`heckeField_finiteDimensional`), so Serre's theory of
+locally algebraic abelian representations (*Abelian ℓ-adic
+Representations and Elliptic Curves*, Ch. III §§1–3: type `A₀`)
+applies. Hodge–Tate-ness, the route Ribet himself takes, is NOT
+available — the surrounding cut deliberately hypothesizes no `p`-adic
+Hodge theory.
+
+**AN OBSTRUCTION TO CHECK FIRST, WITH THE CHECK THAT WOULD REFUTE IT**
+(2026-07-27, and it is why this leaf is stated with continuity but
+without any unramifiedness hypothesis). Serre's classification is
+normally quoted for a character unramified outside a FINITE set, and
+the surrounding leaf `irred_eigenspace_modularTateSpace` supplies **no
+unramifiedness hypothesis at all** — `τJ` is only assumed continuous,
+so no ramification bound propagates to `δ₁, δ₂`, not even outside `S`.
+Two possibilities, and a successor must settle which:
+
+* finiteness of the ramification set is AUTOMATIC from continuity plus
+  compactness of `Γℚ`, in which case nothing is missing and this leaf
+  stands as stated. The check: does a continuous homomorphism
+  `Γℚ → ℚ̄_pˣ` necessarily have finite image on inertia at all but
+  finitely many `ℓ`? Note `ℚ̄_pˣ` DOES have arbitrarily small
+  subgroups (`1 + {v > c}` is one for every `c > 0`), so the usual
+  no-small-subgroups argument is NOT available and the question is a
+  real one;
+* or it is not automatic, in which case this leaf is FALSE as stated
+  and the repair belongs one level up: the consumer must be given a
+  ramification hypothesis on `τJ` (the classical inhabitant, the Tate
+  module of `J₀(M)`, is unramified outside `Mp`, so such a hypothesis
+  costs nothing and the surrounding cut survives).
+
+Reporting a refutation with an explicit counterexample is a fully
+successful outcome for this leaf, and is worth strictly more than a
+proof of a repaired restatement made silently. -/
+theorem not_exists_characters_charFrob_weilBound {M : ℕ} (hM : 0 < M)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (hweil : ∀ (g' : CuspForm (Gamma0GL M) 2), IsWeightTwoNewform M g' →
+      ∀ q : ℕ, q.Prime → ‖qCoeff M g' q‖ ≤ 2 * Real.sqrt q)
+    (δ₁ δ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hδ₁cont : Continuous δ₁) (hδ₂cont : Continuous δ₂)
+    (hδ₁ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ ≠ 0)
+    (hδ₂ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₂ γ ≠ 0)
+    (hδ₁mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₁ (γ * γ') = δ₁ γ * δ₁ γ')
+    (hδ₂mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₂ (γ * γ') = δ₂ γ * δ₂ γ')
+    (hfrob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = κ (heckeCoeff M g q) ∧
+        δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = (q : AlgebraicClosure ℚ_[p])) :
+    False :=
+  sorry
+
+/-- **Ribet irreducibility, as a theorem about the frame** (PROVEN
+2026-07-27 as glue over four leaves — the ELEVENTH decomposition, see
+the note at the end of this docstring; NINTH decomposition
+2026-07-26): the `κ`-eigencomponent of the concrete
 Tate space `(𝕋_ℚ ⊗ ℚ̄_p)²` attached to a weight-two newform `g` has NO
 proper nonzero Galois-stable submodule — and this follows from the
 Eichler–Shimura congruence, the twisted Weil pairing and the Weil bound
@@ -32268,7 +32545,46 @@ remaining fields of that structure passed as hypotheses and nothing
 else added beyond `hweil`. So this leaf is no stronger than the field
 it replaces, and `ModularTateGaloisData` is strictly weaker than it
 was — the assembly `nonempty_modularTateModuleData` below rebuilds the
-old conclusion, so nothing is lost. -/
+old conclusion, so nothing is lost.
+
+THE ELEVENTH DECOMPOSITION, EXECUTED (2026-07-27). This declaration is
+now PROVEN, as glue over the four leaves stated directly above, split
+along the seam the STEP 6 CORRECTION above already identified. In
+dependency order:
+
+* `finrank_heckeEigenspace_modularTateSpace_eq_two` — step 1, the
+  eigencomponent is a PLANE. Hecke-algebra linear algebra, no Galois
+  theory;
+* `pair_nondegenerate_heckeEigenspace_modularTateSpace` — the twisted
+  Weil pairing restricts nondegenerately to that plane. Also pure
+  Hecke-algebra linear algebra, and separate from the leaf above
+  because self-adjointness, not freeness, is what makes it work;
+* `exists_characters_of_reducible_charFrob` — steps 1–5, reducibility
+  produces the two characters together with the classical Frobenius
+  trace and determinant. Linear algebra over `ℚ̄_p` plus the continuity
+  already carried by `τJ`;
+* `not_exists_characters_charFrob_weilBound` — step 6, THE GENUINELY
+  MISSING HALF, and now stated with no module, no Hecke algebra and no
+  modular curve in it: a statement purely about continuous characters
+  of `Γℚ`. Its docstring records the Serre type-`A₀` route and one
+  obstruction that must be checked before that route is adopted.
+
+WHAT THE GLUE BELOW ACTUALLY PROVES, as opposed to relocates. Two
+things, and neither was previously written down anywhere:
+
+* the eigenspace is Galois-STABLE — immediate from `hcomm`, but it is
+  what makes the whole argument type-check, since without it there is
+  no representation on `E` to be irreducible;
+* the ambient Eichler–Shimura congruence, which is an identity in
+  `Module.End` involving the Hecke OPERATOR, becomes on `E` an identity
+  involving the SCALAR `κ(a_q)`. That transport is what lets step 6 be
+  stated without any Hecke vocabulary at all, and it is the reason the
+  final leaf could be made module-free.
+
+The four leaves block on three disjoint bodies of mathematics —
+étaleness of `𝕋_ℚ` at a newform, two-dimensional symplectic linear
+algebra, and Serre's locally algebraic abelian representations — where
+before there was one entangled node. -/
 theorem irred_eigenspace_modularTateSpace {M : ℕ} (hM : 0 < M)
     (τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M))
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
@@ -32308,8 +32624,59 @@ theorem irred_eigenspace_modularTateSpace {M : ℕ} (hM : 0 < M)
     (hUstable : ∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) :
     U = ⊥ ∨ U = heckeEigenspace
           (fun m => modularTatePadic (p := p) M (modularTateGen M m))
-          (fun m => κ (heckeCoeff M g m)) :=
-  sorry
+          (fun m => κ (heckeCoeff M g m)) := by
+  set E := heckeEigenspace
+      (fun m => modularTatePadic (p := p) M (modularTateGen M m))
+      (fun m => κ (heckeCoeff M g m)) with hE
+  -- (1) The eigenspace is Galois-stable, because the Galois action commutes
+  -- with every Hecke operator (`hcomm`).
+  have hEstable : ∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ E, τJ γ x ∈ E := by
+    intro γ x hx
+    rw [hE, mem_heckeEigenspace_iff] at hx ⊢
+    intro q hq
+    have hstep : modularTatePadic (p := p) M (modularTateGen M q) (τJ γ x) =
+        (modularTatePadic (p := p) M (modularTateGen M q) * τJ γ) x := rfl
+    rw [hstep, hcomm q γ, Module.End.mul_apply, hx q hq, map_smul]
+  -- (2) The ambient Eichler–Shimura congruence, evaluated on the eigenspace,
+  -- where the Hecke operator acts by the scalar `κ (a_q)`.
+  have hcongE : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      ∀ x ∈ E,
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          - κ (heckeCoeff M g q) •
+              τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x
+          + (q : AlgebraicClosure ℚ_[p]) • x = 0 := by
+    intro q hq hqS x hx
+    have h := hcong q hq hqS
+    rw [pow_two] at h
+    have happ := congrArg
+      (fun φ : Module.End (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M) =>
+        φ x) h
+    simp only [LinearMap.add_apply, LinearMap.sub_apply, LinearMap.zero_apply,
+      Module.End.mul_apply, LinearMap.smul_apply, Module.End.one_apply] at happ
+    have hmem := hEstable (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x hx
+    rw [hE, mem_heckeEigenspace_iff] at hmem
+    rw [hmem q hq] at happ
+    exact happ
+  -- (3) The pairing is nondegenerate on the eigenspace.
+  have hpairnondegE : ∀ x ∈ E, (∀ y ∈ E, pair x y = 0) → x = 0 :=
+    pair_nondegenerate_heckeEigenspace_modularTateSpace hM g hg κ pair
+      hpairnondeg hpairhecke
+  -- (4) The eigenspace is a plane.
+  have hEdim : Module.finrank (AlgebraicClosure ℚ_[p]) ↥E = 2 :=
+    finrank_heckeEigenspace_modularTateSpace_eq_two hM g hg κ
+  -- (5) A proper nonzero stable subspace would produce two characters
+  -- carrying the newform's Frobenius invariants, and there are none.
+  rcases eq_or_ne U ⊥ with hU0 | hU0
+  · exact Or.inl hU0
+  refine Or.inr ?_
+  by_contra hUne
+  obtain ⟨δ₁, δ₂, hc1, hc2, hne1, hne2, hm1, hm2, hfrob⟩ :=
+    exists_characters_of_reducible_charFrob hM τJ S E hEstable hEdim g hg κ
+      hcongE pair hpairself hpairnondegE hpairfrob U hU hU0 hUne hUstable
+  exact not_exists_characters_charFrob_weilBound hM S g hg κ hweil δ₁ δ₂
+    hc1 hc2 hne1 hne2 hm1 hm2 hfrob
 
 /-- **The residual ARITHMETIC of the geometric leaf** (2026-07-26,
 eighth decomposition; NINTH decomposition the same day removed its
