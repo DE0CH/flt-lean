@@ -2786,14 +2786,98 @@ theorem exists_localInertia_generator_of_wildInertia_trivial
         rw [pow_succ, Equiv.Perm.mul_apply, ih, Function.iterate_succ_apply, hφ]
   rw [← hφ τ x, ← hk', hiter]
 
-set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **RAYNAUD AT `e = 1 < p − 1`, ELEMENT FORM: NO LOCAL-INERTIA ELEMENT
+ACTS WITH ORDER `3` ON THE CONNECTED `3`-TORSION** (SORRY LEAF, cut
+2026-07-27 out of
+`exists_coprime_three_exponent_localInertia_connected_threeTorsion`
+immediately below, which is now PROVEN over it and over nothing else).
+
+Content: if `σ ∈ I₃` and `σ ^ 3` already fixes every connected
+`3`-torsion geometric point of the generic fibre, then `σ` fixes every
+one of them itself. Equivalently: the image of `I₃` in the permutation
+group of the (finite) connected `3`-torsion socle has NO ELEMENT OF
+ORDER `3`.
+
+**THIS IS THE ENTIRE FINITE-FLAT INPUT OF THE `3`-adic hardly-ramified
+cluster, and it is now the only declaration in it that spends
+`e = 1 < p − 1 = 2`.** The mathematics — Raynaud's classification, the
+two PARI/GP computations that bracket the statement, the `n = 2` trap,
+the inventory of `OortTate` machinery already available, and the check
+that would refute it — is carried IN FULL by the docstring of
+`exists_coprime_three_exponent_localInertia_connected_threeTorsion`
+immediately below, and a prover should read that first. Only what is
+specific to THIS form is recorded here.
+
+WHAT THE CUT DISCHARGED, AND WHY IT IS FREE. The parent's `∃ n` shape
+is unchanged and is still what consumers see; all that moved out of the
+mathematics is the group-theoretic bookkeeping, none of which carries
+any arithmetic:
+
+* the connected `3`-torsion socle is FINITE
+  (`finite_points_of_hopf_order`, which is what the `Algebra.Etale`
+  instance is for);
+* it is `Γ ℚ₃ᵥ`-STABLE — `(τ • φ) ^ 3 = τ • φ ^ 3 = τ • 1 = 1` by
+  `MulDistribMulAction`, and `(τ • φ) (1 ⊗ e₀) = τ (φ (1 ⊗ e₀)) = 1`
+  because the action is postcomposition — so it is a `SubMulAction` and
+  carries a permutation representation `perm : Γ ℚ₃ᵥ →* Equiv.Perm S`;
+* `H := perm '' I₃` is a finite subgroup of `Equiv.Perm S`, and
+  `n := Nat.card H` is an exponent for it (`pow_card_eq_one'`);
+* CAUCHY (`exists_prime_orderOf_dvd_card'`) turns `3 ∣ Nat.card H` into
+  an element of order exactly `3` in `H`, which is `perm σ` for some
+  `σ ∈ I₃` — and that is precisely what this leaf forbids.
+
+**THE INHERITED NOTE THAT THIS DIRECTION IS "STRICTLY HARDER TO REACH
+FROM THE CLASSIFICATION" IS CORRECTED — the cut is provably free.** The
+parent's docstring used to argue that the `∃ n` form is what Raynaud
+produces and that the Cauchy-equivalent no-order-`3` form "would make
+the next owner's job worse". The second half does not survive contact
+with the implication: **the `∃ n` statement IMPLIES this one in two
+lines** — if the permutation `p` induced by `σ` satisfies `p ^ 3 = 1`
+and `p ^ n = 1` with `3 ∤ n`, then `orderOf p` divides `gcd 3 n = 1`,
+so `p = 1`. Hence ANY route to the `∃ n` form is also a route to this
+one, and proving this leaf is at most as hard as proving what it
+replaced; the parent below shows it is also enough. What the `∃ n` form
+genuinely does own — that it is the shape Raynaud's theorem produces,
+the image of tame inertia landing in `μ_{3^r − 1}` — is preserved,
+because the parent still STATES it and consumers still see it.
+
+Every hypothesis is underscore-prefixed because the body is `sorry`;
+they are all genuinely needed and a real proof must consume them. In
+particular `hprim₀`/`hcomul₀` (the connectedness of `e₀`) cannot be
+dropped: the good-ORDINARY-reduction computation on `11a1` recorded
+below refutes the `e₀`-free statement.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 3.3.2–3.3.5 and 3.4.3; Fontaine, *Il n'y a pas de variété
+abélienne sur `ℤ`*, §1; Serre, *Propriétés galoisiennes…*, Invent.
+Math. 15 (1972), §1.11; Tate, *Finite flat group schemes*, §4, in
+Cornell–Silverman–Stevens. -/
+theorem smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (e₀ : G) (_he₀ : IsIdempotentElem e₀)
+    (_hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (_hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (_hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    {σ : Γ ℚ₃ᵥ} (_hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (_hcube : ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ ^ (3 : ℕ) = 1 →
+      φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (σ ^ (3 : ℕ)) • φ = φ) :
+    ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ ^ (3 : ℕ) = 1 →
+      φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → σ • φ = φ :=
+  sorry
+
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **Raynaud at `e = 1 < p − 1`: LOCAL INERTIA acts on the connected
-`3`-torsion through a finite quotient of order PRIME TO `3`** (SORRY
-LEAF, cut 2026-07-27 out of
+`3`-torsion through a finite quotient of order PRIME TO `3`** (was a
+SORRY LEAF cut 2026-07-27 out of
 `wildInertia_fixes_connected_threeTorsion_of_hopf_package` just below,
-which is PROVEN over it).
+which is PROVEN over it; PROVEN in turn the same day over the single
+element-form leaf
+`smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion`
+immediately above, which now carries all of the finite-flat input).
 
 Content: there is ONE exponent `n`, PRIME TO `3`, such that `σ ^ n`
 fixes EVERY connected `3`-torsion geometric point of the generic fibre,
@@ -2803,8 +2887,37 @@ mind — the image of local inertia in the permutation group of the
 to `3`, i.e. **the action is TAME**.
 
 THIS IS THE ENTIRE FINITE-FLAT INPUT OF THE `3`-adic hardly-ramified
-cluster, and it is the declaration that spends `e = 1 < p − 1 = 2`.
-Nothing above it and nothing below it does.
+cluster: `e = 1 < p − 1 = 2` is spent HERE and nowhere else in it —
+since 2026-07-27, one declaration further down, in the element-form
+leaf above. Nothing else above and nothing below does.
+
+**THE PROOF, in four moves, none of which touches the classification.**
+
+1. FINITENESS. The geometric point set of the generic fibre is finite
+   (`finite_points_of_hopf_order`, which is what the `Algebra.Etale`
+   instance is for), hence so is the subset
+   `S := {φ | φ ^ 3 = 1 ∧ φ (1 ⊗ e₀) = 1}` of connected `3`-torsion
+   points.
+2. STABILITY. `S` is `Γ ℚ₃ᵥ`-stable: the action is postcomposition, so
+   `(τ • φ) (1 ⊗ e₀) = τ (φ (1 ⊗ e₀)) = τ 1 = 1`, and
+   `(τ • φ) ^ 3 = τ • φ ^ 3 = τ • 1 = 1` by `MulDistribMulAction`. So
+   `S` is a `SubMulAction` and `MulAction.toPermHom` gives a
+   permutation representation `perm : Γ ℚ₃ᵥ →* Equiv.Perm S`.
+3. THE EXPONENT. `H := (localInertiaGroup 𝔭₃).map perm` is a subgroup
+   of the finite group `Equiv.Perm S`, and `n := Nat.card H` kills it
+   (`pow_card_eq_one'`); unwinding `perm (σ ^ n) = 1` is exactly
+   `(σ ^ n) • φ = φ` for every `φ ∈ S`.
+4. `3 ∤ n`. If `3 ∣ Nat.card H`, CAUCHY
+   (`exists_prime_orderOf_dvd_card'`) produces an element of order
+   exactly `3` in `H`; it is `perm σ` for some `σ ∈ I₃`, and
+   `(perm σ) ^ 3 = 1` says `σ ^ 3` fixes every connected `3`-torsion
+   point. The element-form leaf above then makes `σ` itself act
+   trivially, i.e. `perm σ = 1`, contradicting `orderOf … = 3`.
+
+Note what this does NOT do: it produces no bound on `n` and no
+classification. `n` is simply the order of the image, which is what the
+statement asserts to be prime to `3`; all the arithmetic sits in step 4
+and is deferred whole to the leaf.
 
 WHY THIS SHAPE — WHAT THE CUT OF 2026-07-27 REMOVED, AND WHAT IT
 DELIBERATELY DID NOT. Two pieces were peeled off the previous statement
@@ -2831,10 +2944,22 @@ NEITHER of them carried any finite-flat content:
 
 What was NOT peeled off is the classification itself. The `∃ n` form is
 the shape Raynaud's theorem actually PRODUCES (the image of tame
-inertia lands in `μ_{3^r − 1}`), which is why the cut is in this
-direction rather than the equivalent "the image has no element of order
-`3`": the latter is Cauchy-equivalent but strictly harder to reach from
-the classification, and would make the next owner's job worse.
+inertia lands in `μ_{3^r − 1}`), which is why THIS statement is written
+that way and why consumers still see it that way.
+
+**CORRECTION 2026-07-27, and it is what made the cut above possible.**
+This paragraph used to continue "…rather than the equivalent 'the image
+has no element of order `3`': the latter is Cauchy-equivalent but
+strictly harder to reach from the classification, and would make the
+next owner's job worse." The second half is **false**, and acting on it
+would have kept the group-theoretic bookkeeping welded to the
+arithmetic. The `∃ n` statement IMPLIES the no-order-`3` statement in
+two lines — if the permutation induced by `σ` has cube the identity and
+also `n`-th power the identity with `3 ∤ n`, its order divides
+`gcd 3 n = 1` — so the element form is at most as hard to reach from
+the classification as this one, by ANY route, and the four-move proof
+recorded above shows it is also sufficient. The `∃ n` form is kept
+exactly where it belongs: in the STATEMENT a consumer reads.
 
 MATHEMATICAL CONTENT. The connected `3`-torsion socle is the geometric
 point group of the schematic closure, inside `Spec (e₀ G)`, of the
@@ -2923,11 +3048,25 @@ the grep "matches only docstrings" is STALE.**
 Cartier duality for finite flat commutative group schemes, sorry-free
 (biduality, the dual Hopf structure, `finrank_cartierDual`), and
 `.../HopfAlgebra/ShortExact.lean` adds `CartierDual.map`,
-`HopfAlgebra.IsShortExact` and `etale_of_isShortExact`. The one open
-leaf on that route is `HopfAlgebra.IsShortExact.cartierDual` (exactness
-of duality), which has its own owner. Re-run
-`grep -rn 'cartierDual' Fermat/` before believing any statement in this
-paragraph.
+`HopfAlgebra.IsShortExact` and `etale_of_isShortExact`.
+
+**CORRECTED 2026-07-27 — this paragraph named the wrong leaf and called
+it owned; both halves were wrong.** `HopfAlgebra.IsShortExact.cartierDual`
+(exactness of duality) is **PROVEN**, a four-field assembly, as is
+`etale_of_isShortExact`; nothing on that route is owned. The leaves that
+ARE open in `ShortExact.lean`, all four of them unowned until 2026-07-27,
+are `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
+(`:238`), `HopfAlgebra.IsShortExact.exists_linearRetraction` (`:564`),
+`.ker_cartierDual_le` (`:628`) and `.faithfullyFlat_cartierDual` (`:648`).
+The reason the note went stale invisibly is worth knowing: that whole
+`HopfAlgebra` cluster was an UNREACHABLE ISLAND — five modules that no
+module in `Fermat.lean`'s import closure imported, so `lake build` never
+compiled them and neither the sorry-warning set nor the census could see
+their leaves; the cause was structural (the files lacked `module`
+headers, and a `module` file cannot import a non-`module` one, so the
+import was not expressible). Repaired in `1492cecb`; the cluster builds
+green. Re-run `grep -rn 'cartierDual' Fermat/` and check the current
+sorry set before believing any statement in this paragraph.
 
 WHAT ELSE IS ALREADY BUILT AND SHOULD BE READ FIRST. In
 `ConnectedEtale.lean`'s `OortTate` namespace, all PROVEN:
@@ -2993,7 +3132,72 @@ theorem exists_coprime_three_exponent_localInertia_connected_threeTorsion
     ∃ n : ℕ, ¬ (3 ∣ n) ∧
       ∀ σ ∈ localInertiaGroup 𝔭₃, ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ,
         φ ^ (3 : ℕ) = 1 → φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (σ ^ n) • φ = φ := by
-  sorry
+  classical
+  -- STEP 1. the geometric point set is FINITE
+  haveI hfinA : Finite (Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) :=
+    finite_points_of_hopf_order G
+  haveI hfin : Finite (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) :=
+    Finite.of_equiv _ (Additive.toMul (α := ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ))
+  -- STEP 2. the connected `3`-torsion points, as a `Γ`-STABLE subset
+  set S : SubMulAction (Γ ℚ₃ᵥ) (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) :=
+    { carrier := {φ | φ ^ (3 : ℕ) = 1 ∧ φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1}
+      smul_mem' := by
+        rintro τ φ ⟨h3, he⟩
+        refine ⟨(smul_pow' τ φ 3).symm.trans (by rw [h3, smul_one]), ?_⟩
+        show τ (φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀)) = 1
+        rw [he, map_one] }
+  have hmemS : ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ,
+      φ ∈ S ↔ (φ ^ (3 : ℕ) = 1 ∧ φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) := fun _ => Iff.rfl
+  haveI hfinS : Finite ↥S := Subtype.finite
+  -- STEP 3. the PERMUTATION REPRESENTATION of `Γ ℚ₃ᵥ` on that finite set,
+  -- and the image `H` of the local inertia inside it
+  set perm : Γ ℚ₃ᵥ →* Equiv.Perm ↥S := MulAction.toPermHom (Γ ℚ₃ᵥ) ↥S with hperm
+  set H : Subgroup (Equiv.Perm ↥S) := (localInertiaGroup 𝔭₃).map perm
+  haveI hfinH : Finite ↥H := Subtype.finite
+  -- `perm g = 1` says exactly that `g` fixes every connected `3`-torsion point
+  have hperm_eq_one : ∀ g : Γ ℚ₃ᵥ, perm g = 1 →
+      ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ ^ (3 : ℕ) = 1 →
+        φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → g • φ = φ := by
+    intro g hg φ h3 he
+    have hmem : φ ∈ S := (hmemS φ).mpr ⟨h3, he⟩
+    have := congrArg (fun p : Equiv.Perm ↥S => (p ⟨φ, hmem⟩ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) hg
+    simpa [hperm, MulAction.toPermHom] using this
+  refine ⟨Nat.card ↥H, ?_, ?_⟩
+  · -- STEP 4. `3 ∤ |H|`: CAUCHY would give an inertia element acting with
+    -- order exactly `3`, which the Raynaud leaf above forbids
+    intro hdvd
+    haveI : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+    obtain ⟨x, hx⟩ := exists_prime_orderOf_dvd_card' (G := ↥H) 3 hdvd
+    obtain ⟨σ, hσI, hσx⟩ := Subgroup.mem_map.mp x.2
+    -- `x ^ 3 = 1`, so `σ ^ 3` fixes every connected `3`-torsion point
+    have hx3 : (x : Equiv.Perm ↥S) ^ (3 : ℕ) = 1 := by
+      have h : x ^ (3 : ℕ) = 1 := by
+        have h0 := pow_orderOf_eq_one x
+        rwa [hx] at h0
+      simpa using congrArg (Subgroup.subtype H) h
+    have hcube : ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ ^ (3 : ℕ) = 1 →
+        φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (σ ^ (3 : ℕ)) • φ = φ := by
+      refine hperm_eq_one _ ?_
+      rw [map_pow, hσx]
+      exact hx3
+    -- the leaf then says `σ` itself acts trivially, i.e. `x = 1`
+    have hfix := smul_eq_of_pow_three_smul_eq_localInertia_connected_threeTorsion
+      G e₀ he₀ hε₀ hprim₀ hcomul₀ hσI hcube
+    have hx1 : x = 1 := by
+      refine Subtype.ext ?_
+      rw [← hσx]
+      refine Equiv.ext fun φ => Subtype.ext ?_
+      show σ • (φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) = (φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)
+      exact hfix _ ((hmemS _).mp φ.2).1 ((hmemS _).mp φ.2).2
+    rw [hx1, orderOf_one] at hx
+    exact absurd hx (by norm_num)
+  · -- STEP 5. `σ ^ |H|` acts trivially: `perm σ` lies in the finite group `H`
+    intro σ hσ φ h3 he
+    refine hperm_eq_one _ ?_ φ h3 he
+    rw [map_pow]
+    have hmem : perm σ ∈ H := Subgroup.mem_map_of_mem _ hσ
+    have := pow_card_eq_one' (G := ↥H) (x := ⟨perm σ, hmem⟩)
+    exact_mod_cast congrArg (Subgroup.subtype H) this
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
