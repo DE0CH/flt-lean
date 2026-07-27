@@ -6425,10 +6425,414 @@ def HasXCoord {W : WeierstrassCurve ℚ}
   ∀ x y (hxy : (W⁄(AlgebraicClosure ℚ)).Nonsingular x y),
     P = Affine.Point.some x y hxy → x = x₀
 
-/-- **Steps 2–3 of the `X_0(16)` route: the `X_0(8)` normal form** (SORRY
-LEAF, cut 2026-07-26 out of `exists_univCurveV_param_of_ratTwoTorsion`
-below, which is now PROVEN over this leaf together with
-`exists_sq_of_chainModel_stable`).
+/-! #### The `2`-torsion normal form, and the twist that produces `chainModel`
+
+(Added 2026-07-27, cutting `exists_chainModel_of_ratTwoTorsion` into three
+smaller leaves.  Step 2 and the algebraic glue are PROVEN here.)
+
+**A STALE "MISSING MACHINERY" NOTE, CORRECTED.**  The docstring of
+`exists_chainModel_of_ratTwoTorsion` used to record that the pin has "**no
+transport of `Affine.Point` along a `VariableChange`**", and named building it
+as the one piece of new infrastructure the leaf needs.  That is FALSE of this
+project, and has been since before the leaf was cut: the transport lives in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` as
+
+* `Affine.Point.equivVariableChange : (C • W).Point ≃+ W.Point` (with
+  `equivVariableChange_some` computing it, and `equivOfEq` for transport along
+  an equality of curves), and
+* `Affine.Point.equivVariableChangeBaseChange` together with
+  `equivVariableChangeBaseChange_galois`, which is the `Gal(Ω/K)`-equivariance
+  of the base-changed transport for `C` defined over the base field.
+
+Both are already used heavily in `Semistable.lean`, `TateNormalForm.lean` and
+this file.  The grep recorded in the old note looked only in mathlib.
+
+**THE ROUTE, RESTATED CORRECTLY — the missing step is a QUADRATIC TWIST, not
+a square.**  The old step-3 sketch said "Stability of `C[8]` then forces `β`
+itself to be a square `δ²`".  That is **not** what stability gives, and it
+cannot be: the square class of `β` is an *invariant* of the pair
+(curve, model), because a `VariableChange` over `ℚ` scales `a₂` by `u⁻²` — a
+square — so no change of variables can move `β` between square classes.
+
+What `C[8]`-stability actually gives, writing `β = x(4 • h)` and `b = β²`, is
+that `β(a + 2β)` is a rational SQUARE.  Indeed on `y² = x(x² + a x + b)` the
+duplication formula is `x(2P) = ((x² − b)/(2y))²`, so the four halvings of
+`(β, y₄)` have `x`-coordinates the roots of
+
+  `(x² − b)² − 4β x(x² + a x + b)`,
+
+which factors as `(x² − p x + b)(x² − q x + b)` with `p, q = 2β ± 2μ` and
+`μ² = β(a + 2β)`; the pair `{x(2h), x(6h)}` is Galois-stable (the character
+`λ` of `exists_isogenyCharacter` is odd, and `2λ ∈ {2,6,10,14} mod 16`) AND has
+product `b` (since `10h = 2h + (0,0)` and adding `(0,0)` is `x ↦ b/x`), so it
+is one of those two factors and its sum `2β ± 2μ` is rational.  (The
+factorization identity is verified: with `b = β²` it is
+`linear_combination (4 * x ^ 2) * hμ`, and in the `β = δ², μ = δγ` coordinates
+`(x² − δ⁴)² − 4δ²x(x² + (γ² − 2δ²)x + δ⁴) = (x² − 2δ(δ − γ)x + δ⁴)(x² − 2δ(δ + γ)x + δ⁴)`
+is a bare `ring`.)
+
+`β` and `a + 2β` are therefore in the SAME square class, but neither need be a
+square.  The leaf survives only because its conclusion asks for equality of
+`j`-invariants, which is twist-invariant — and the twist to use is completely
+explicit: **twist by `d = β`.**  The quadratic twist of `y² = x(x² + a x + b)`
+by `d` is `y² = x(x² + a d x + b d²)`, so twisting `twoTorsionModel a β²` by
+`β` gives `twoTorsionModel (aβ) (β⁴)`, and
+
+  `chainModel μ β = ⟨0, μ² − 2β², 0, β⁴, 0⟩ = ⟨0, aβ, 0, β⁴, 0⟩`
+
+because `μ² = β(a + 2β) = aβ + 2β²`.  So `γ = μ` and `δ = β`, with no
+squarefree decomposition anywhere.  The twist multiplies `x`-coordinates by
+`β`, so `x(4 • h) = β · β = β² = δ²`, which is exactly the tie the consumer
+needs.  `j` is unchanged, and the denominator-free form of that is
+`j_chainModel_of_twoTorsionModel` below (`Δ` scales by `β⁶`, `c₄` by `β²`),
+PROVEN.
+
+**MACHINERY FOR THE TWIST ALSO ALREADY EXISTS**, in
+`Fermat/FLT/KnownIn1980s/EllipticCurves/QuadraticTwists/QuadraticTwists.lean`:
+`WeierstrassCurve.quadraticTwistOf t n` (explicit model, with
+`c₄_quadraticTwistOf`, `Δ_quadraticTwistOf`, `j_quadraticTwistOf`),
+`quadraticTwistPointEquiv : (Eᴸ⁄M).Point ≃+ (E⁄M).Point`, and above all
+`quadraticTwistPointEquiv_galois`, which says the transport intertwines the
+Galois actions up to the quadratic character — i.e. up to `±1`, which
+preserves `AddSubgroup.zmultiples` and every `x`-coordinate.  That is exactly
+what `exists_chainModel_chain_of_halvingParams` needs.  (Check the import is
+PUBLIC before relying on it from here; that module reaches this file only
+through `QuadraticTwists.SplitMultiplicativeReduction`.)
+-/
+
+/-- **The `2`-torsion normal form** `y² = x(x² + a x + b)`, i.e. `⟨0, a, 0, b, 0⟩`:
+the model in which a chosen rational point of order `2` sits at the origin.
+
+`chainModel γ δ` is the special case `a = γ² − 2δ²`, `b = δ⁴`
+(`chainModel_eq_twoTorsionModel`), and the whole of steps 2–4 happens inside
+this family: step 2 puts `E` here, step 3 pins `b = β²` and
+`μ² = β(a + 2β)`, and the twist by `β` moves `(a, β²)` to `(aβ, β⁴)`, which
+is `chainModel μ β`. -/
+def twoTorsionModel {K : Type*} [CommRing K] (a b : K) : WeierstrassCurve K :=
+  ⟨0, a, 0, b, 0⟩
+
+/-- `chainModel` is the `2`-torsion normal form at `a = γ² − 2δ²`, `b = δ⁴`. -/
+lemma chainModel_eq_twoTorsionModel {K : Type*} [CommRing K] (γ δ : K) :
+    chainModel γ δ = twoTorsionModel (γ ^ 2 - 2 * δ ^ 2) (δ ^ 4) := rfl
+
+/-- **`c₄` of the `2`-torsion normal form** (PROVEN): `c₄ = 16(a² − 3b)`. -/
+lemma twoTorsionModel_c₄ {K : Type*} [CommRing K] (a b : K) :
+    (twoTorsionModel a b).c₄ = 16 * (a ^ 2 - 3 * b) := by
+  simp only [twoTorsionModel, WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+  ring
+
+/-- **The discriminant of the `2`-torsion normal form** (PROVEN):
+`Δ = 16b²(a² − 4b)`.  In particular `b ≠ 0` on a nonsingular model, which is
+why `(0, 0)` is a nonsingular point there. -/
+lemma twoTorsionModel_Δ {K : Type*} [CommRing K] (a b : K) :
+    (twoTorsionModel a b).Δ = 16 * b ^ 2 * (a ^ 2 - 4 * b) := by
+  simp only [twoTorsionModel, WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- **The `j`-invariant survives the passage to the `2`-torsion normal form**
+(PROVEN): the analogue of `MazurLevel9.jInvariant_of_variableChange` for the
+shape `⟨0, a, 0, b, 0⟩`.  Stated separately because `rw [← hEq]` cannot
+transport the `IsElliptic` instance; taking the instance as a binder and using
+`simp_rw` is what makes it go through. -/
+lemma jInvariant_of_twoTorsionModel {K : Type*} [Field K] (V : WeierstrassCurve K) [V.IsElliptic]
+    (C : VariableChange K) (a b : K) [(twoTorsionModel a b).IsElliptic]
+    (hEq : C • V = twoTorsionModel a b) : V.j = (twoTorsionModel a b).j := by
+  simp_rw [← hEq, WeierstrassCurve.variableChange_j]
+
+/-- **Step 2 of the `X_0(16)` route: a rational point of order `2` goes to the
+origin** (PROVEN 2026-07-27, over an ARBITRARY field in which `2 ≠ 0`).
+
+If `Q` has order `2` on `V`, then `V` is isomorphic over its own base field to
+`twoTorsionModel a b` by a change of variables carrying `(0, 0)` to `Q`.
+
+The change of variables is completely explicit and needs no case analysis:
+writing `Q = (X, Y)`, take `C = ⟨1, X, −a₁/2, Y⟩`.  Then
+
+* `a₁' = a₁ + 2s = 0` by the choice of `s` (this is where `2 ≠ 0` is used);
+* `a₃' = a₃ + X a₁ + 2Y = 0` **because `Q` has order `2`**, i.e.
+  `Y = negY X Y`; this is the only place the order enters, and it is what
+  makes the shear and the translation combine into a single step;
+* `a₆' = a₆ + X a₄ + X² a₂ + X³ − Y a₃ − Y² − X Y a₁ = 0` because `(X, Y)` is
+  on the curve.
+
+`b ≠ 0` then follows from `Δ ≠ 0` through `twoTorsionModel_Δ`, and gives the
+nonsingularity of `(0, 0)`.
+
+The conclusion returns the change of variables and the GEOMETRIC identity
+`equivVariableChange V C (equivOfEq _ (0,0)) = Q`, not an abstract `≃+`.  That
+is deliberate, and for the reason recorded at length in the `IsTateParam`
+docstring above: over an algebraically closed field an abstract isomorphism of
+point groups carries no geometry at all and pins nothing down. -/
+theorem exists_twoTorsionModel_of_order_two {K : Type*} [Field K] [DecidableEq K]
+    (h2 : (2 : K) ≠ 0)
+    (V : WeierstrassCurve K) [V.IsElliptic] (Q : V.toAffine.Point) (hQ : addOrderOf Q = 2) :
+    ∃ (a b : K) (_hb : b ≠ 0) (C : VariableChange K) (hC : C • V = twoTorsionModel a b)
+      (h00 : (twoTorsionModel a b).toAffine.Nonsingular 0 0),
+      Affine.Point.equivVariableChange V C
+          (Affine.Point.equivOfEq hC.symm (Affine.Point.some 0 0 h00)) = Q ∧
+        V.j * (twoTorsionModel a b).Δ = (twoTorsionModel a b).c₄ ^ 3 := by
+  have hQ0 : Q ≠ 0 := by rintro rfl; simp at hQ
+  obtain ⟨X, Y, hns, hQxy⟩ :
+      ∃ (X Y : K) (h : V.toAffine.Nonsingular X Y), Q = Affine.Point.some X Y h := by
+    rcases hcase : Q with _ | ⟨X, Y, h⟩
+    · exact absurd hcase hQ0
+    · exact ⟨X, Y, h, rfl⟩
+  have hQQ : Q + Q = 0 := by
+    have h2Q : (2 : ℕ) • Q = 0 := by rw [← hQ]; exact addOrderOf_nsmul_eq_zero Q
+    rwa [two_nsmul] at h2Q
+  have hY : Y = V.toAffine.negY X Y := by
+    have hneg : -Q = Q := by rw [neg_eq_iff_add_eq_zero]; exact hQQ
+    rw [hQxy, Affine.Point.neg_some] at hneg
+    simp only [Affine.Point.some.injEq] at hneg
+    exact hneg.2.symm
+  have hYeq : V.a₃ + X * V.a₁ + 2 * Y = 0 := by
+    rw [Affine.negY] at hY; linear_combination hY
+  set s₀ : K := -(V.a₁ / 2) with hs₀
+  set C : VariableChange K := ⟨1, X, s₀, Y⟩ with hC
+  have ha1 : (C • V).a₁ = 0 := by
+    rw [WeierstrassCurve.variableChange_a₁, hC]
+    simp only [inv_one, Units.val_one, one_mul, hs₀]
+    field_simp
+    ring
+  have ha3 : (C • V).a₃ = 0 := by
+    rw [WeierstrassCurve.variableChange_a₃, hC]
+    simp only [inv_one, Units.val_one, one_pow, one_mul]
+    linear_combination hYeq
+  have ha6 : (C • V).a₆ = 0 := by
+    have heq := hns.1
+    rw [Affine.equation_iff] at heq
+    rw [WeierstrassCurve.variableChange_a₆, hC]
+    simp only [inv_one, Units.val_one, one_pow, one_mul]
+    linear_combination -heq
+  set a : K := (C • V).a₂ with ha
+  set b : K := (C • V).a₄ with hb
+  have hCeq : C • V = twoTorsionModel a b := by
+    ext <;> simp [twoTorsionModel, ha1, ha3, ha6, ha, hb]
+  have hΔV : V.Δ ≠ 0 := (WeierstrassCurve.isUnit_Δ (W := V)).ne_zero
+  have hΔC : (C • V).Δ ≠ 0 := by
+    rw [WeierstrassCurve.variableChange_Δ]
+    exact mul_ne_zero (pow_ne_zero _ (Units.ne_zero _)) hΔV
+  have hΔM : (twoTorsionModel a b).Δ ≠ 0 := hCeq ▸ hΔC
+  have hbne : b ≠ 0 := by
+    intro hz
+    apply hΔM
+    rw [twoTorsionModel_Δ, hz]
+    ring
+  have h00 : (twoTorsionModel a b).toAffine.Nonsingular 0 0 :=
+    Affine.nonsingular_zero.mpr ⟨rfl, Or.inr hbne⟩
+  haveI hellM : (twoTorsionModel a b).IsElliptic := hCeq ▸ (inferInstance : (C • V).IsElliptic)
+  have hjM : V.j = (twoTorsionModel a b).j := jInvariant_of_twoTorsionModel V C a b hCeq
+  refine ⟨a, b, hbne, C, hCeq, h00, ?_, by rw [hjM]; exact MazurLevel9.cFour_cube_eq _⟩
+  have h00' : (C • V).toAffine.Nonsingular 0 0 := hCeq ▸ h00
+  have hmap : Affine.Point.equivVariableChange V C (Affine.Point.some 0 0 h00') = Q := by
+    rw [Affine.Point.equivVariableChange_some, hQxy]
+    exact Affine.Point.some_eq_some _ (by simp [hC]) (by simp [hC])
+  rw [Affine.Point.equivOfEq_some]
+  rw [← hmap]
+
+/-- **The `j`-transport across the quadratic twist by `β`** (PROVEN 2026-07-27):
+the twist of `twoTorsionModel a β²` by `β` is `chainModel μ β` whenever
+`μ² = β(a + 2β)`, and `j` is a twist invariant.
+
+Denominator-free, in the same style as
+`exists_univCurveV_param_of_chainModel`.  The computation is that the twist
+scales the weight-`4` invariant `c₄` by `β²` and the weight-`12` invariant `Δ`
+by `β⁶`:
+
+  `c₄(chainModel μ β) = 16(μ⁴ − 4μ²β² + β⁴) = 16β²(a² − 3β²) = β² c₄(twoTorsionModel a β²)`,
+  `Δ(chainModel μ β) = 16β⁸μ²(μ² − 4β²) = 16β¹⁰(a² − 4β²) = β⁶ Δ(twoTorsionModel a β²)`,
+
+both after substituting `μ² = aβ + 2β²`, and `(β²)³ = β⁶` makes the two
+weights cancel in `j`.  Note that no hypothesis `β ≠ 0` is needed: the identity
+is polynomial. -/
+lemma j_chainModel_of_twoTorsionModel (J a β μ : ℚ)
+    (hμ : μ ^ 2 = β * (a + 2 * β))
+    (hj : J * (twoTorsionModel a (β ^ 2)).Δ = (twoTorsionModel a (β ^ 2)).c₄ ^ 3) :
+    J * (chainModel μ β).Δ = (chainModel μ β).c₄ ^ 3 := by
+  have hΔ : (chainModel μ β).Δ = β ^ 6 * (twoTorsionModel a (β ^ 2)).Δ := by
+    rw [chainModel_Δ, twoTorsionModel_Δ]
+    linear_combination (16 * β ^ 8 * (μ ^ 2 + a * β - 2 * β ^ 2)) * hμ
+  have hc : (chainModel μ β).c₄ = β ^ 2 * (twoTorsionModel a (β ^ 2)).c₄ := by
+    rw [chainModel_c₄, twoTorsionModel_c₄]
+    linear_combination (16 * (μ ^ 2 + a * β - 2 * β ^ 2)) * hμ
+  rw [hΔ, hc]
+  linear_combination β ^ 6 * hj
+
+/-- **Transport of the `16`-chain onto the `2`-torsion normal form** (SORRY
+LEAF, cut 2026-07-27 out of `exists_chainModel_of_ratTwoTorsion`): the second
+half of step 2, which is pure plumbing rather than mathematics.
+
+`exists_twoTorsionModel_of_order_two` (PROVEN, just above) hands us a change of
+variables `C` over `ℚ` with `C • (E⁄ℚ) = twoTorsionModel a b` carrying `(0,0)`
+to `Q`.  This leaf says that the whole `16`-chain travels with it: `⟨g⟩` maps
+to a Galois-stable cyclic `16`-subgroup of the normal form whose `2`-torsion
+point is the origin.
+
+**ALL THE MACHINERY EXISTS; NOTHING HAS TO BE INVENTED.**  Take
+
+  `Φ := (equivOfEq (congrArg (·⁄ℚ̄) hCeq).symm).trans (equivVariableChangeBaseChange (E⁄ℚ) C ℚ̄)`
+
+and set `h₀ := Φ.symm g`.  Then
+
+* `addOrderOf h₀ = 16` because `Φ` is an `AddEquiv`;
+* stability transfers because `Φ` is Galois-equivariant, which is exactly
+  `Affine.Point.equivVariableChangeBaseChange_galois` — `C` is defined over
+  `ℚ`, so its coefficients are Galois-fixed and NO sign appears here (the sign
+  appears only in the twist leaf below, where `u = √β ∉ ℚ`);
+* `HasXCoord ((8 : ℕ) • h₀) 0` from `hQg` and `hQ0`: `8 • h₀ = Φ.symm (8 • g) =
+  Φ.symm (Q ⊗ ℚ̄)` and `Q` is the image of the origin.
+
+The one genuinely fiddly point, and the reason this is a leaf rather than three
+lines of the consumer's proof, is that the last bullet needs
+`equivVariableChange` to COMMUTE WITH BASE CHANGE — the `ℚ`-level statement
+`hQ0` has to be pushed to `ℚ̄`.  That compatibility is not in the pin; it is a
+`rcases P; simp [equivVariableChange_some, Point.map_some]` proof, since both
+sides are the same explicit formula with coefficients in `ℚ`, and it belongs
+next to `equivVariableChangeBaseChange` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`.
+
+**WHY `HasXCoord _ 0` IS ENOUGH TO SAY "THE ORIGIN".**  On
+`twoTorsionModel a b` the fibre over `x = 0` is `y² = 0`, a single point, so an
+affine point with `x`-coordinate `0` IS `(0,0)`.  Stating it this way avoids
+having to base-change the nonsingularity witness, which is pure friction. -/
+theorem exists_twoTorsionChain_of_variableChange (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (a b : ℚ) (C : VariableChange ℚ) (hCeq : C • (E⁄ℚ) = twoTorsionModel a b)
+    (h00 : (twoTorsionModel a b).toAffine.Nonsingular 0 0)
+    (Q : (E⁄ℚ).Point)
+    (hQ0 : Affine.Point.equivVariableChange (E⁄ℚ) C
+      (Affine.Point.equivOfEq hCeq.symm (Affine.Point.some 0 0 h00)) = Q)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (hQg : Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = (8 : ℕ) • g) :
+    ∃ h₀ : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).Point,
+      addOrderOf h₀ = 16 ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ AddSubgroup.zmultiples h₀,
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples h₀) ∧
+      HasXCoord ((8 : ℕ) • h₀) 0 :=
+  sorry
+
+/-- **Step 3 of the `X_0(16)` route: the two halving conditions** (SORRY LEAF,
+cut 2026-07-27 out of `exists_chainModel_of_ratTwoTorsion`).  This is the whole
+Galois content of steps 2–3, and it is where `X_0(4)` and `X_0(8)` are used.
+
+On `twoTorsionModel a b` carrying a Galois-stable cyclic `16`-subgroup `⟨h₀⟩`
+whose `2`-torsion point is the origin, there are rationals `β` (the
+`x`-coordinate of the `4`-torsion point `4 • h₀`) and `μ` with
+
+  `b = β²`  and  `μ² = β(a + 2β)`.
+
+**WHERE EACH COMES FROM.**  `exists_isogenyCharacter` (PROVEN far above) gives
+`σ(h₀) = λ(σ) • h₀` with `λ(σ) ∈ (ℤ/16)ˣ`, hence `λ(σ)` odd.
+
+* `β ∈ ℚ`: `λ ≡ ±1 (mod 4)` on `4 • h₀`, so `σ(4 • h₀) = ±(4 • h₀)` and its
+  `x`-coordinate is Galois-fixed; `exists_rat_of_galois_fixed` (PROVEN above)
+  descends it to `ℚ`.
+* `b = β²`: the duplication formula on `y² = x(x² + a x + b)` is
+  `x(2P) = ((x² − b)/(2y))²`, and `2 • (4 • h₀) = 8 • h₀ = (0,0)` forces the
+  numerator to vanish, i.e. `β² = b`.  (This is also the identity that makes
+  the tie `HasXCoord ((4 : ℕ) • h) δ²` force `8 • h = (0,0)` for the consumer
+  `exists_sq_of_chainModel_stable` — see the section note above.)
+* `μ`: the two order-`8` `x`-coordinates `x(2 • h₀) = x(14 • h₀)` and
+  `x(6 • h₀) = x(10 • h₀)` form a Galois-stable pair (`2λ mod 16 ∈ {2,6,10,14}`
+  for `λ` odd) whose product is `b` (adding the origin is `x ↦ b/x`, and
+  `10 • h₀ = 2 • h₀ + (0,0)`).  So their sum is rational, and by the halving
+  quartic recorded in the section note above that sum is `2β ± 2μ` with
+  `μ² = β(a + 2β)`.
+
+**WHAT THIS LEAF DELIBERATELY DOES NOT CLAIM.**  It does NOT claim `β` is a
+square.  See the section note: `β`'s square class is an invariant of the model,
+so no change of variables can make it a square, and the passage to
+`chainModel` is a quadratic TWIST, handled by
+`exists_chainModel_chain_of_halvingParams` below.  An earlier version of the
+route asserted `β = δ²` here; that assertion is not provable, and building on
+it would have produced a false intermediate. -/
+theorem exists_halvingParams_of_twoTorsionChain (a b : ℚ)
+    (h₀ : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).Point)
+    (hh : addOrderOf h₀ = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h₀,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h₀)
+    (h8 : HasXCoord ((8 : ℕ) • h₀) 0) :
+    ∃ β μ : ℚ, β ≠ 0 ∧ b = β ^ 2 ∧ μ ^ 2 = β * (a + 2 * β) ∧
+      HasXCoord ((4 : ℕ) • h₀) (algebraMap ℚ (AlgebraicClosure ℚ) β) :=
+  sorry
+
+/-- **The quadratic twist by `β`, carrying the `16`-chain onto `chainModel μ β`**
+(SORRY LEAF, cut 2026-07-27 out of `exists_chainModel_of_ratTwoTorsion`).
+
+Given the two halving conditions of the previous leaf, the twist of
+`twoTorsionModel a β²` by `β` is LITERALLY `chainModel μ β`, and the chain
+travels with it, with the tie `HasXCoord ((4 : ℕ) • h) β²` — note `β²`, not
+`β`, because the twist multiplies `x`-coordinates by `β`.
+
+**THIS IS AN IDENTITY OF MODELS, NOT AN ISOMORPHISM TO BE CHOSEN.**  Twisting
+`y² = x(x² + a x + b)` by `d` gives `y² = x(x² + a d x + b d²)`; at `d = β`,
+`b = β²` that is `⟨0, aβ, 0, β⁴, 0⟩`, and `μ² = aβ + 2β²` turns
+`chainModel μ β = ⟨0, μ² − 2β², 0, β⁴, 0⟩` into the same tuple.  So the
+`Weierstrass` half of this leaf is `rfl` after one `linear_combination` on
+`hμ`; all the work is transporting the points.
+
+**THE POINT TRANSPORT ALREADY EXISTS**, in
+`Fermat/FLT/KnownIn1980s/EllipticCurves/QuadraticTwists/QuadraticTwists.lean`:
+`WeierstrassCurve.quadraticTwistPointEquiv : (Eᴸ⁄M).Point ≃+ (E⁄M).Point`
+together with
+
+  `quadraticTwistPointEquiv_galois : Φ (σ • P) = χ(σ) • (σ • Φ P)`,
+
+`χ` the quadratic character of `L/K`.  Since `χ(σ) = ±1` and negation
+preserves both `AddSubgroup.zmultiples` and every `x`-coordinate, stability and
+the `HasXCoord` tie transfer unchanged.  Concretely `L = ℚ(√β)`; over `ℚ̄` the
+change of variables is `⟨u, 0, 0, 0⟩` with `u² = 1/β`, and `σ(u) = ±u` is the
+whole source of the sign.
+
+**TWO THINGS TO CHECK BEFORE STARTING.**  (i) Whether
+`QuadraticTwists.QuadraticTwists` reaches this file through a PUBLIC import —
+it currently arrives only via `QuadraticTwists.SplitMultiplicativeReduction`,
+and a private import upstream makes names unavailable even in proof BODIES
+(see the doctrine's two shapes of that trap).  (ii) The DEGENERATE CASE
+`β ∈ ℚ*²`: then `ℚ(√β) = ℚ` is not a quadratic extension and
+`quadraticTwist` does not apply — but nothing is needed there, since the twist
+by a square is isomorphic to the curve itself over `ℚ` (take
+`C = ⟨Units.mk0 √β _, 0, 0, 0⟩` over `ℚ`, and `equivVariableChangeBaseChange`
+with no sign at all).  Split on `IsSquare β` first. -/
+theorem exists_chainModel_chain_of_halvingParams (a β μ : ℚ) (hβ : β ≠ 0)
+    (hμ : μ ^ 2 = β * (a + 2 * β))
+    (h₀ : ((twoTorsionModel a (β ^ 2))⁄(AlgebraicClosure ℚ)).Point)
+    (hh : addOrderOf h₀ = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h₀,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h₀)
+    (hx : HasXCoord ((4 : ℕ) • h₀) (algebraMap ℚ (AlgebraicClosure ℚ) β)) :
+    ∃ h : ((chainModel μ β)⁄(AlgebraicClosure ℚ)).Point,
+      addOrderOf h = 16 ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ AddSubgroup.zmultiples h,
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples h) ∧
+      HasXCoord ((4 : ℕ) • h) (algebraMap ℚ (AlgebraicClosure ℚ) (β ^ 2)) :=
+  sorry
+
+/-- **Steps 2–3 of the `X_0(16)` route: the `X_0(8)` normal form** (PROVEN
+2026-07-27 over the three leaves `exists_twoTorsionChain_of_variableChange`,
+`exists_halvingParams_of_twoTorsionChain` and
+`exists_chainModel_chain_of_halvingParams`, by discharging step 2
+(`exists_twoTorsionModel_of_order_two`) and the twist's `j`-transport
+(`j_chainModel_of_twoTorsionModel`); was itself a sorry leaf, cut 2026-07-26
+out of `exists_univCurveV_param_of_ratTwoTorsion` below, which is PROVEN over
+this leaf together with `exists_sq_of_chainModel_stable`).
 
 Given the rational `2`-torsion point `Q = 8 • g` produced by step 1, move
 it to the origin and run the `X_0(4)` and `X_0(8)` halvings: the outcome
@@ -6436,35 +6840,33 @@ is a pair of rationals `γ, δ` with `δ ≠ 0` such that `E` has the same
 `j`-invariant as `chainModel γ δ` — written denominator-free — together
 with the whole `16`-chain transported onto that model.
 
-**WHAT HAS TO BE PROVED.**
+**HOW IT IS NOW PROVED, and what is left.**  The proof below is four lines:
+step 2 is `exists_twoTorsionModel_of_order_two`, PROVEN; the chain is carried
+onto the normal form by `exists_twoTorsionChain_of_variableChange`; the two
+halving conditions `b = β²` and `μ² = β(a + 2β)` are
+`exists_halvingParams_of_twoTorsionChain`; and the quadratic twist by `β`,
+which is what actually produces `chainModel μ β = chainModel γ δ`, is
+`exists_chainModel_chain_of_halvingParams`.  The `j`-identity is discharged
+here by `j_chainModel_of_twoTorsionModel`, PROVEN.
 
-1. *Step 2, elementary.*  `Q` is rational of order `2`, so `E` is
-   `ℚ`-isomorphic to some `⟨0, a, 0, b, 0⟩`: kill `a₁, a₃` by
-   `WeierstrassCurve.toCharNeTwoNF` (available in the pin, char `ℚ ≠ 2`),
-   then translate `x` by `x(Q)` to move `Q` to the origin, which kills
-   `a₆`.  `j` is invariant under all of this by
-   `WeierstrassCurve.variableChange_j`.
-2. *Step 3, the `X_0(4)` and `X_0(8)` halvings.*  `4 • g` has order `4`
-   and doubles to `8 • g`, and `λ(σ) ≡ ±1 (mod 4)` for the character of
-   `exists_isogenyCharacter`, so `4 • g` is fixed up to sign and its
-   `x`-coordinate is Galois-fixed, hence rational: that is `β`, and
-   halving `(0,0)` needs `β² = b`.  Stability of `C[8]` then forces `β`
-   itself to be a square `δ²` — the quartic halving `(β, βγ)` splits into
-   the two rational quadratics `x² − 2δ(δ ∓ γ)x + δ⁴` exactly when
-   `δ = √β` is rational, and `C[8]` is one of the two — and `a + 2β = γ²`
-   is the remaining halving condition.  Substituting `b = δ⁴` and
-   `a = γ² − 2δ²` gives `chainModel γ δ`.
+So the witnesses are `γ = μ`, `δ = β` — the `X_0(8)` Hauptmodul numerator and
+the `x`-coordinate of `4 • g`, NOT its square root.
 
-**THE MISSING MACHINERY, named so the next owner does not have to find
-it.**  The pin has `WeierstrassCurve.VariableChange`, `variableChange_j`,
-`variableChange_c₄`, `variableChange_Δ` and the `IsCharNeTwoNF` normal
-form, but it has **no transport of `Affine.Point` along a
-`VariableChange`** — checked 2026-07-26 by grep over
-`Mathlib/AlgebraicGeometry/EllipticCurve/`, which has `Point.map` along a
-ring hom and `Point.pointEquiv`, and nothing along a variable change.
-That transport is what carries `g` from `E` to `chainModel γ δ`, so it is
-the one genuinely new piece of infrastructure this leaf needs, and it is
-reusable well beyond here.
+**TWO CORRECTIONS TO THE OLD ROUTE SKETCH, both recorded in full in the
+section note above.**
+
+1. The old sketch said the pin has *no* transport of `Affine.Point` along a
+   `VariableChange` and named building it as this leaf's one new piece of
+   infrastructure.  That grep looked only in mathlib: this PROJECT has
+   `Affine.Point.equivVariableChange`, `equivVariableChangeBaseChange` and
+   `equivVariableChangeBaseChange_galois`, already used in three files.
+2. The old sketch said stability of `C[8]` "forces `β` itself to be a square
+   `δ²`".  It does not, and cannot — the square class of `β` is invariant
+   under every `VariableChange` over `ℚ`, since `a₂` scales by `u⁻²`.  What
+   stability gives is that `β(a + 2β)` is a rational square, i.e. `β` and
+   `a + 2β` lie in the same square class; the passage to `chainModel` is
+   therefore a quadratic TWIST (by `β`), which is legitimate here precisely
+   because the conclusion only compares `j`-invariants.
 
 **WHY THE TIE `HasXCoord ((4 : ℕ) • h) δ²` IS PART OF THE CONCLUSION.**
 See the section note just above: without it the consumer
@@ -6493,8 +6895,18 @@ theorem exists_chainModel_of_ratTwoTorsion (E : WeierstrassCurve ℚ)
               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
               AddSubgroup.zmultiples h) ∧
         HasXCoord ((4 : ℕ) • h)
-          (algebraMap ℚ (AlgebraicClosure ℚ) (δ ^ 2)) :=
-  sorry
+          (algebraMap ℚ (AlgebraicClosure ℚ) (δ ^ 2)) := by
+  obtain ⟨a, b, hbne, C, hCeq, h00, hQ0, hj⟩ :=
+    exists_twoTorsionModel_of_order_two (K := ℚ) two_ne_zero (E⁄ℚ) Q hQ2
+  have hjE : (E⁄ℚ).j = E.j := by simp [WeierstrassCurve.baseChange]
+  rw [hjE] at hj
+  obtain ⟨h₀, hh₀16, hh₀st, hh₀8⟩ :=
+    exists_twoTorsionChain_of_variableChange E a b C hCeq h00 Q hQ0 g hg hstable hQg
+  obtain ⟨β, μ, hβ, rfl, hμ, hx⟩ :=
+    exists_halvingParams_of_twoTorsionChain a b h₀ hh₀16 hh₀st hh₀8
+  obtain ⟨h, hh16, hhst, hhx⟩ :=
+    exists_chainModel_chain_of_halvingParams a β μ hβ hμ h₀ hh₀16 hh₀st hx
+  exact ⟨μ, β, hβ, j_chainModel_of_twoTorsionModel E.j a β μ hμ hj, h, hh16, hhst, hhx⟩
 
 /-- **Step 4 of the `X_0(16)` route: the `X_0(8)` Hauptmodul is twice a
 square** (SORRY LEAF, cut 2026-07-26 out of
