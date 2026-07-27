@@ -45215,6 +45215,113 @@ theorem exists_globalFrob_generator_ray_class
   rw [← hUval (globalFrob v), ← hUval (globalFrob v₀), ← he, Units.val_zpow_eq_zpow_val]
 
 set_option maxHeartbeats 1000000 in
+/-- **ARTIN RECIPROCITY FOR A CYCLOTOMIC EXTENSION, IN THE DIRECTION
+`ker ⊆ ray · norms`** (sorry node, created 2026-07-27 as the CUT-LEVEL
+REPAIR of `hcycl` demanded by the ROUTE AUDIT on
+`exists_artinNormSubgroups_ray_class` just below): if `χ' : Γ E → 𝔽̄₃` is
+multiplicative and CYCLOTOMIC of level `m` — trivial on every `σ` fixing
+`μ_m`, so that the abelian extension `L/E` it cuts out lies inside
+`E(ζ_m)` — and `mmE` is any nonzero modulus divisible by `(m)`, then the
+kernel of the divisor-group Artin map, intersected with the divisors
+prime to `mmE`, lies in the narrow ray times the norms:
+`ker φ' ⊓ I_E(mmE) ≤ P⁺_{E,mmE} ⊔ N_{L/E} I_L(mmE)`.
+
+**WHY THIS LEAF EXISTS: it is the repair of `hcycl`'s DIRECTION.** The
+old `hcycl` concluded `c' (span {δ}) = 1` for totally positive
+`δ ≡ 1 (mod m)`, i.e. `ray ⊆ ker`. That is the CONVERSE of what Childress
+pp. 121–123 consumes at the auxiliary field: step 4 of the descent needs
+`𝔄 ∈ ker c_E ⟹ 𝔄 = (α) · N 𝔅`, which is `ker ⊆ ray · norms`. Since
+`norms ⊆ ker` is free from the definition of `N`, the old hypothesis gave
+only `[I_E : P_E ⊔ N_E] ≥ n`, and no amount of it yields the reverse
+inclusion without the Universal Norm Index Inequality at `E` — an input
+this cluster has at `F` alone (`exists_artinDivisorNormIndex_le_ray_class`,
+and there only in the opposite inequality). So `hcycl` was strengthened to
+the statement below, which IS the sentence Childress cites on p. 123:
+*Artin reciprocity holds for the cyclotomic extension `E(ζ_m)/E`.*
+
+**WHY THIS SHAPE AND NOT THE NORM-INDEX SHAPE.** The audit offered a
+second repair — add `(P_E ⊔ N_E).relIndex Im_E ≤ (ker c_E ⊓ Im_E).relIndex Im_E`
+at every `E`. It was rejected, and the reason is worth recording so it is
+not re-proposed: that hypothesis alone does NOT give the leaf what it
+needs. Converting an index inequality into an inclusion needs BOTH
+`P_E ⊔ N_E ≤ ker c_E ⊓ Im_E` (available) AND finiteness
+`(ker c_E ⊓ Im_E).relIndex Im_E ≠ 0`, which is Chebotarev/surjectivity AT
+`E` — a THIRD hypothesis the audit did not name. Worse, its supplier
+would be the analogue at every `E` of
+`exists_artinDivisorNormIndex_le_ray_class`, whose own docstring records
+that its content (Herbrand quotients, the idele class group, the local
+norm index) is absent from mathlib, from `~/cs/FLT` and from this
+project. The shape below has one supplier, one hypothesis, and it is
+exactly the object the descent consumes.
+
+**Route.** `hcyc` forces `ker χ' ⊇ Gal(Ē/E(ζ_m))`, which is open, so the
+fixed field `L` of `ker χ'` is a finite abelian extension of `E` inside
+`E(ζ_m)`; its conductor therefore divides that of `E(ζ_m)/E`, which
+divides `m·∞`, so every multiple `mmE` of `(m)` is an ADMISSIBLE modulus
+(this is what `hmdvd` is for, and it is what makes the statement true
+rather than merely plausible). Reciprocity for cyclotomic extensions is
+then Childress ch. 5.1: over `ℚ` the ray class group mod `m∞` IS
+`(ℤ/m)ˣ`, so `ker c_ℚ = P⁺_{ℚ,m}` with no norms at all, and the general
+`E` follows from the Consistency Property together with the norm index at
+`E`. Only the inclusion is asserted here; the reverse one is free.
+
+**Why `NE` really is the norm group, i.e. why the exponent
+`orderOf (χ' (globalFrob w))` is the right one.** `L` is the fixed field
+of `ker χ'`, so `χ'` is INJECTIVE on `Gal(L/E)`; for `w ∤ mmE` the prime
+`w` is unramified in `L` (the ramified ones divide `(m) ∣ mmE`), so its
+residue degree is the order of its Frobenius, which is
+`orderOf (χ' (globalFrob w))`. Hence `N_{L/E} 𝔚 = w ^ f(w)` for `𝔚 ∣ w`,
+and those are exactly the generators of `NE`. This is the same device the
+`F`-level statements use, and it is what lets the whole cluster avoid ever
+naming `L`, its ideal group, or its norm map.
+
+**FAITHFULNESS: TRUE as stated, and NOT vacuous.** True by the route
+above. Not vacuous: `φ'`, `d'`, `ImE`, `PE`, `NE` are pinned by intrinsic
+clauses — `φ'` by its values on the basis of the free abelian divisor
+group (`hφv'`), `d'` by `w ^ n ∣ (δ) ↔ n ≤ (d' δ) w` (`hd'`), `ImE` by its
+support condition, and `PE`/`NE` as named closures — so no junk witness
+discharges it; and taking `mmE = (m)` with `χ'` the quadratic character of
+`ℚ(i)` over `E = ℚ`, `m = 4` already makes the conclusion a nontrivial
+statement about `I_ℚ((4))`.
+
+**Check that would refute it**: a number field `E`, a cyclotomic `χ'` of
+level `m`, a modulus `mmE` divisible by `(m)`, and a divisor prime to
+`mmE` in `ker φ'` exhibited outside `PE ⊔ NE`. -/
+theorem artinDivisorKernel_le_sup_of_cyclotomic_ray_class
+    (E : Type*) [Field E] [NumberField E]
+    (χ' : Γ E → Dickson.K 3)
+    (hmul' : ∀ a b : Γ E, χ' (a * b) = χ' a * χ' b)
+    (m : ℕ) (hm : 0 < m)
+    (hcyc : ∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ' σ = 1)
+    (mmE : Ideal (NumberField.RingOfIntegers E)) (hmmE : mmE ≠ ⊥)
+    (hmdvd : Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE)
+    (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+    (d' : NumberField.RingOfIntegers E → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+    (ImE PE NE : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ)))
+    (hd' : ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+          (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w))
+    (hφv' : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+        = χ' (globalFrob w))
+    (hImE : ∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+        Multiplicative.toAdd x w = 0)
+    (hPE : PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+      (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+      δ - 1 ∈ mmE ∧ y = d' δ})
+    (hNE : NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+      y = Multiplicative.ofAdd
+        (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))}) :
+    φ'.ker ⊓ ImE ≤ PE ⊔ NE :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **THE COMMON NORM BASE AND THE TWO AUXILIARY NORM SUBGROUPS OF
 CHILDRESS pp. 121–123** (sorry node, created 2026-07-27 as the sole
 sub-leaf (A3b-2-b-i) of `divisorRatio_mem_sup_ray_class` just below,
@@ -45274,13 +45381,13 @@ must be built.**
    applying `N_{E₁/F}` sends `(α)` into `P` (`N (α) ≫ 0` and
    `≡ 1 (mod mm)`) and the norm part into `N`.
 
-**ROUTE AUDIT — THE ONE INPUT THAT IS NOT IN THIS BINDER LIST, stated so
-the next owner does not rediscover it at the end of a task.** Step 4
-consumes Artin Reciprocity at `E₁` in the direction
-`ker ⊆ ray · norms`. `hcycl` supplies only the OTHER direction — it
-concludes `c' (span {δ}) = 1`, i.e. `ray ⊆ ker`, for a cyclotomic `χ'`
-(and it is PROVEN, as `artinSymbol_span_eq_one_of_cyclotomic_ray_class`).
-`norms ⊆ ker` is free, by the very definition of `N`. So `hcycl` gives
+**ROUTE AUDIT — RESOLVED 2026-07-27; the missing input is now IN this
+binder list, as clause (ii) of `hcycl`.** The audit read: step 4 consumes
+Artin Reciprocity at `E₁` in the direction `ker ⊆ ray · norms`, whereas
+`hcycl` supplied only the OTHER direction — it concluded
+`c' (span {δ}) = 1`, i.e. `ray ⊆ ker`, for a cyclotomic `χ'` (PROVEN, as
+`artinSymbol_span_eq_one_of_cyclotomic_ray_class`). `norms ⊆ ker` is
+free, by the very definition of `N`. So the old `hcycl` gave
 `P_E ⊔ N_E ≤ ker c_E`, hence `[I_E : P_E ⊔ N_E] ≥ n`; turning that into
 `ker c_E ≤ P_E ⊔ N_E` needs `[I_E : P_E ⊔ N_E] ≤ n`, which is the
 **Universal/Global Norm Index Inequality at `E₁`** (Childress p. 112,
@@ -45291,23 +45398,42 @@ case the *opposite* inequality (`[Im : A] ≤ [Im : P ⊔ N]`), used one
 level up by `le_of_le_of_relIndex_le_ray_class` to convert this cluster's
 conclusion `A ≤ P ⊔ N` back into `P ⊔ N ≤ A`.
 
-*The repair is a CUT-LEVEL one and is not made here*, because it changes
-the binder list of five theorems and of the package leaf that discharges
-them. Either shape works:
+**THE REPAIR THAT WAS MADE, and it is the FIRST of the two shapes the
+audit offered.** `hcycl` is now the CONJUNCTION of the two directions —
+full cyclotomic reciprocity, the sentence Childress actually cites on
+p. 123 — quantified over every number field `E : Type u`:
 
-* strengthen `hcycl` from "`c' (span {δ}) = 1`" to the full cyclotomic
-  reciprocity "`ker c' ⊓ Im_E ≤ P_E ⊔ N_E`" — this is the honest
-  statement of "Artin Reciprocity is true for `E(ζ_m)/E`", the sentence
-  Childress actually cites on p. 123; or
-* add a hypothesis quantified over every number field `E : Type u` that
-  is the analogue of `exists_artinDivisorNormIndex_le_ray_class` at `E`,
-  namely `(P_E ⊔ N_E).relIndex Im_E ≤ (ker c_E ⊓ Im_E).relIndex Im_E`.
+* clause (i) is the OLD statement verbatim, `c' (span {δ}) = 1` for
+  totally positive `δ ≡ 1 (mod m)`; it is still discharged by
+  `artinSymbol_span_eq_one_of_cyclotomic_ray_class` over
+  `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`, which is why
+  those two proven nodes are still CONSUMED and not left floating;
+* clause (ii) is the new one, `ker φ' ⊓ I_E(mmE) ≤ P⁺_{E,mmE} ⊔ N_E` for
+  any nonzero modulus `mmE` divisible by `(m)`, stated in the same
+  divisor-group language and with the same intrinsic pinning clauses as
+  the `F`-level statements here. Its supplier is the new sorry leaf
+  `artinDivisorKernel_le_sup_of_cyclotomic_ray_class` above; read its
+  docstring for the route and the faithfulness audit.
 
-*Check that would refute this audit*: exhibit a derivation of
-`ker c_E ⊓ Im_E ≤ P_E ⊔ N_E` for a cyclotomic `χ'` from `hcycl` alone —
-equivalently, a proof that a character of the ray class group of `E`
-mod `m·mm` that kills the norms of `K E` is determined by its values on
-a cyclic quotient of the right order, with no index input.
+**THE SECOND SHAPE WAS REJECTED, and the reason is not stylistic** — a
+hypothesis quantified over every `E` that is the analogue of
+`exists_artinDivisorNormIndex_le_ray_class`, namely
+`(P_E ⊔ N_E).relIndex Im_E ≤ (ker c_E ⊓ Im_E).relIndex Im_E`, does NOT
+by itself give step 4 what it needs. Converting that index inequality
+into the inclusion also requires `(ker c_E ⊓ Im_E).relIndex Im_E ≠ 0`,
+i.e. surjectivity of the Artin map (Chebotarev) AT `E` — a third
+hypothesis the audit did not name — and its own supplier would be the
+First Inequality at every `E`, whose content
+`exists_artinDivisorNormIndex_le_ray_class` records as absent from
+mathlib, from `~/cs/FLT` and from this project. One hypothesis with an
+attackable supplier beats two with a blocked one.
+
+*Check that would refute the resolved form*: exhibit a derivation of
+`ker c_E ⊓ Im_E ≤ P_E ⊔ N_E` for a cyclotomic `χ'` from clause (i)
+alone — equivalently, a proof that a character of the ray class group of
+`E` mod `m·mm` that kills the norms of `K E` is determined by its values
+on a cyclic quotient of the right order, with no index input. That would
+make clause (ii) redundant and the new leaf deletable.
 
 **FAITHFULNESS (audited 2026-07-27): TRUE as stated, and NOT vacuous.**
 True because the objects of steps 1–4 exist (this is Childress's own
@@ -45357,11 +45483,42 @@ theorem exists_artinNormSubgroups_ray_class
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1)
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE))
     (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
     (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
@@ -45423,9 +45580,12 @@ lies in `P ⊔ N`.
 common norm base `β = b_F`. The reason that base cannot be eliminated —
 Artin's Lemma at `v` says nothing about `v₀`, so a single auxiliary
 field never sees both primes — is recorded in the sub-leaf's docstring,
-together with a ROUTE AUDIT naming the one input the binder list does
+together with a ROUTE AUDIT that named the one input the binder list did
 not carry (cyclotomic reciprocity at the auxiliary field `E` in the
-`ker ⊆ ray · norms` direction; `hcycl` gives only the converse).
+`ker ⊆ ray · norms` direction). **That audit was RESOLVED 2026-07-27**:
+`hcycl` is now the conjunction of both directions, clause (ii) being the
+`ker ⊆ ray · norms` one, supplied by the new leaf
+`artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
 
 **THIS WAS THE WHOLE REMAINING MATHEMATICAL CONTENT OF THE CRUX**, and the
 cut is a genuine equivalence rather than a repackaging: the crux implies
@@ -45519,11 +45679,42 @@ theorem divisorRatio_mem_sup_ray_class
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1)
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE))
     (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
     (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
@@ -45662,8 +45853,12 @@ unity have finite positive order. So it is outside `Im ⊇ P ⊔ N`.
 `V = ⊤`, `ℓ = 2`, `k = 0`, `mm = (5)`, `φ` the trivial homomorphism, `d`
 the divisor map, `Im` as pinned. Every hypothesis holds: `hunr` and
 `hmmram` are vacuous because `χ` is trivial; `hartin` holds with `m = 1`
-and `H = ⊤`; `hcycl` is the file's own
-`artinSymbol_span_eq_one_of_cyclotomic_ray_class`; `A = ker φ = ⊤` gives
+and `H = ⊤`; `hcycl` holds because it is TRUE (clause (i) is the file's
+own `artinSymbol_span_eq_one_of_cyclotomic_ray_class`; clause (ii),
+added 2026-07-27, is true by Childress ch. 5.1 and is open here as
+`artinDivisorKernel_le_sup_of_cyclotomic_ray_class` — a refutation may
+use a true-but-unproven hypothesis, since falsity of the conclusion
+under satisfiable hypotheses is what is at issue); `A = ker φ = ⊤` gives
 `hidx₁` as `1 ≠ 0`, and `N = Im` (its generators `single v 1`, `v ∤ (5)`,
 generate `Im`) gives `hidx₂` as `1 ≤ 1`. The conclusion `⊤ ≤ P ⊔ N` is
 false because `P ⊔ N ≤ Im` and `single (5) 1 ∉ Im`.
@@ -45769,11 +45964,42 @@ theorem artinDivisorKernel_le_sup_ray_class
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1)
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE))
     (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
     (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
@@ -46053,11 +46279,42 @@ theorem exists_artinIdealGroup_relIndex_ray_class
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1) :
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE)) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
         v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
@@ -46154,11 +46411,19 @@ set_option maxHeartbeats 1000000 in
 above — see the DECOMPOSED note at the end of this docstring; it was
 created 2026-07-26 as sub-leaf (A3) of
 `exists_conductor_artinSymbol_span_eq_one_ray_class` below; it IS that
-leaf, with the cyclotomic base case
-`artinSymbol_span_eq_one_of_cyclotomic_ray_class` — at EVERY number
-field `E`, not merely at `F` — added as the explicit hypothesis
-`hcycl`). This is the unbounded remainder of the reciprocity law, and
-the hypothesis is exactly the input the literature's proof consumes.
+leaf, with CYCLOTOMIC RECIPROCITY — at EVERY number field `E`, not
+merely at `F` — added as the explicit hypothesis `hcycl`). This is the
+unbounded remainder of the reciprocity law, and the hypothesis is
+exactly the input the literature's proof consumes.
+
+**`hcycl` CARRIES BOTH DIRECTIONS since 2026-07-27.** It used to be
+clause (i) alone — `artinSymbol_span_eq_one_of_cyclotomic_ray_class`,
+`ray ⊆ ker` — which is the CONVERSE of what Childress pp. 121–123
+consumes, so the descent leaf beneath could never have been proven from
+it. It is now the conjunction of (i) with (ii) `ker ⊆ ray · norms`, the
+latter open as `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`. See
+the RESOLVED ROUTE AUDIT on `exists_artinNormSubgroups_ray_class` for
+the full argument and for the shape that was rejected.
 
 **Why the hypothesis quantifies over all `E`, and why it is not a
 cheat.** Artin's proof of reciprocity for `M/F` does NOT reduce `M` to a
@@ -46214,8 +46479,9 @@ IS in the pin (`Nat.forall_exists_prime_gt_and_eq_mod`,
 `𝔟_F/(K/F) = σ`. Then `p_i^{γ_i} 𝔟_F^{−d_i}` is a norm from `E_i`
 (clause (iv): `p_i` splits completely in `E_i/F`), say
 `= N_{E_i/F} 𝔄_{E_i}`, and `𝔄_{E_i} ∈ ker (I_{E_i} → Gal(K E_i/E_i))`
-by the Consistency Property. Since `K E_i ⊆ E_i(ζ_{m_i})`, the base case
-`hcycl` at `E := E_i` applies and yields
+by the Consistency Property. Since `K E_i ⊆ E_i(ζ_{m_i})`, CLAUSE (ii)
+of `hcycl` at `E := E_i` applies — this step is the whole reason clause
+(ii) exists, and clause (i) alone cannot supply it — and yields
 `𝔄_{E_i} = (α_{E_i}) · N_{K E_i/E_i} 𝔄_{K E_i}` with `α_{E_i} ≫ 0` and
 `α_{E_i} ≡ 1 (mod m_i m 𝓞_{E_i})`. Taking `N_{E_i/F}` and multiplying
 over `i` gives `𝔞 𝔟_F^{-∑d_i} ∈ P⁺_{F,m} N_{K/F}(m)`, and `n ∣ ∑ d_i`
@@ -46304,11 +46570,42 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1) :
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE)) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
         v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
@@ -46322,8 +46619,9 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
   -- (A3a) Artin's Lemma 5.2.8 supplies, at every finite place `p` and away
   -- from any finite set of rational primes, an auxiliary field `E/F` in
   -- which `p` splits completely and with `M E ⊆ E(ζ_m)`.
-  -- (A3b) Prop 5.2.2 (`A ≤ P ⊔ N`, which consumes Artin's Lemma and the
-  -- cyclotomic base case `hcycl` at `E`, NOT at `F`) together with the
+  -- (A3b) Prop 5.2.2 (`A ≤ P ⊔ N`, which consumes Artin's Lemma and
+  -- cyclotomic reciprocity `hcycl` at `E`, NOT at `F` — and clause (ii)
+  -- of it, `ker ⊆ ray · norms`, not the converse) together with the
   -- Global Cyclic Norm Index Equality (`A.relIndex Im ≤ (P ⊔ N).relIndex Im`)
   -- and the surjectivity of the Artin map (`A.relIndex Im ≠ 0`, Chebotarev).
   obtain ⟨mm, hmm, hmmsupp, Im, A, P, N, d, hAPN, hPNIm, _hNA, hAidx, hidx, hd⟩ :=
@@ -46499,17 +46797,26 @@ theorem exists_conductor_artinSymbol_span_eq_one_ray_class
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
         δ - 1 ∈ mm → c (Ideal.span {δ}) = 1 := by
-  -- (A3) Artin's descent, which needs the cyclotomic base case at every
-  -- number field `E` — not merely at `F`, because the descent runs over the
-  -- auxiliary field supplied by Artin's Lemma
+  -- (A3) Artin's descent, which needs CYCLOTOMIC RECIPROCITY at every number
+  -- field `E` — not merely at `F`, because the descent runs over the auxiliary
+  -- field supplied by Artin's Lemma.  Since 2026-07-27 the hypothesis is the
+  -- `ker ⊆ ray · norms` direction (the one Childress pp. 121–123 consumes),
+  -- not the converse `ray ⊆ ker` that
+  -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class` supplies.
   refine exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class F χ hmul
     V hVopen hVker hunr ℓ hℓ hℓ3 k hord c hcmul hcfrob ?_
-  intro E _ _ χ' hmul' m hm hcyc c' hcmul' hcfrob' δ hδ0 hδpos hδcong
-  -- (A2) the cyclotomic base case, over (A1) the Frobenius action on `μ_m`
-  exact artinSymbol_span_eq_one_of_cyclotomic_ray_class E χ' hmul' m hm hcyc
-    (fun v hv ζ hζ =>
-      globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
-    c' hcmul' hcfrob' δ hδ0 hδpos hδcong
+  intro E _ _ χ' hmul' m hm hcyc c' hcmul' hcfrob'
+  refine ⟨?_, ?_⟩
+  · -- (A2) `ray ⊆ ker`, over (A1) the Frobenius action on `μ_m`
+    intro δ hδ0 hδpos hδcong
+    exact artinSymbol_span_eq_one_of_cyclotomic_ray_class E χ' hmul' m hm hcyc
+      (fun v hv ζ hζ =>
+        globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
+      c' hcmul' hcfrob' δ hδ0 hδpos hδcong
+  · -- (A2') `ker ⊆ ray · norms`, the direction the descent consumes
+    intro mmE hmmE hmdvd φ' d' ImE PE NE hd' hφv' hImE hPE hNE
+    exact artinDivisorKernel_le_sup_of_cyclotomic_ray_class E χ' hmul' m hm hcyc
+      mmE hmmE hmdvd φ' d' ImE PE NE hd' hφv' hImE hPE hNE
 
 /-- **`mm` is an ADMISSIBLE MODULUS for the Artin symbol `c`** (created
 2026-07-26 as step (1) of the ray-class API demanded by
@@ -47841,6 +48148,17 @@ AXIS SEARCHED: the descent axis as Childress runs it, plus a grep of all
 three trees for the norm and fixed-field machinery; NOT a cohomological
 reproof of 5.2.2.
 
+**A SECOND GATE, CLOSED THE SAME DAY: `hcycl`'s DIRECTION.** The
+auxiliary-field construction is necessary but was not sufficient. Once
+you have `E` and `χ' := χ ∘ ι`, the descent needs Artin reciprocity at
+`E` in the direction `ker ⊆ ray · norms` — and `hcycl` used to conclude
+only `c' (span {δ}) = 1`, i.e. `ray ⊆ ker`, which is the CONVERSE. Since
+2026-07-27 `hcycl` is the CONJUNCTION of both directions; **clause (ii)
+is the one this leaf consumes**, and it is open as
+`artinDivisorKernel_le_sup_of_cyclotomic_ray_class`. See the RESOLVED
+ROUTE AUDIT on `exists_artinNormSubgroups_ray_class` above for why the
+index-inequality alternative was rejected.
+
 **Check that would refute it**: hypotheses as stated together with a
 `v`, `v₀`, `e` for which `ofAdd (single v 1 - e • single v₀ 1)` is
 exhibited outside `P ⊔ N`. -/
@@ -47877,11 +48195,42 @@ theorem divisorRatio_mem_sup_ramified_ray_class
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1)
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE))
     (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
     (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
@@ -48009,9 +48358,12 @@ i.e. into reciprocity itself; `hidx₁`/`hidx₂` are carried as hypotheses
 precisely to exclude a too-coarse `mm` (at `F = ℚ`, `M = ℚ(i)`,
 `mm = (2)` the clause `hidx₂` reads `2 ≤ 1` and fails, while the true
 conductor `(4)` gives `2 ≤ 2`); and `hartin`/`hcycl` are the two
-genuinely unbounded inputs — Artin's Lemma 5.2.8, and the cyclotomic
-base case at EVERY number field `E`, not merely at `F`, because the
-descent runs over the auxiliary field.
+genuinely unbounded inputs — Artin's Lemma 5.2.8, and CYCLOTOMIC
+RECIPROCITY at EVERY number field `E`, not merely at `F`, because the
+descent runs over the auxiliary field. Since 2026-07-27 `hcycl` carries
+BOTH directions; clause (ii), `ker ⊆ ray · norms`, is the one this leaf
+consumes and it is open as
+`artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
 
 **Mathlib survey (2026-07-27), corrected on one point.** As on the
 sibling: ray class groups, the Artin map, global norm groups and
@@ -48057,11 +48409,42 @@ theorem artinDivisorKernel_le_sup_ramified_ray_class
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1)
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE))
     (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
     (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
@@ -48335,11 +48718,42 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_clas
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1) :
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE)) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
         v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
@@ -48517,7 +48931,7 @@ theorem exists_isAdmissibleModulus_primePow_ray_class
     ∃ mm : Ideal (NumberField.RingOfIntegers F), IsAdmissibleModulusRayClass F c mm ∧
       ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
         v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v := by
-  -- Artin's descent, ramification allowed, over the cyclotomic base case at
+  -- Artin's descent, ramification allowed, over CYCLOTOMIC RECIPROCITY at
   -- EVERY number field `E` — not merely at `F`, because the descent runs over
   -- the auxiliary field supplied by Artin's Lemma.  This is the exact assembly
   -- of `exists_conductor_artinSymbol_span_eq_one_ray_class` above with the
@@ -48525,11 +48939,15 @@ theorem exists_isAdmissibleModulus_primePow_ray_class
   obtain ⟨mm, hmm, hsupp, hkill⟩ :=
     exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class F χ hmul
       V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul hcfrob
-      (fun E _ _ χ' hmul' m hm hcyc c' hcmul' hcfrob' δ hδ0 hδpos hδcong =>
-        artinSymbol_span_eq_one_of_cyclotomic_ray_class E χ' hmul' m hm hcyc
-          (fun v hv ζ hζ =>
-            globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
-          c' hcmul' hcfrob' δ hδ0 hδpos hδcong)
+      (fun E _ _ χ' hmul' m hm hcyc c' hcmul' hcfrob' =>
+        ⟨fun δ hδ0 hδpos hδcong =>
+          artinSymbol_span_eq_one_of_cyclotomic_ray_class E χ' hmul' m hm hcyc
+            (fun v hv ζ hζ =>
+              globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
+            c' hcmul' hcfrob' δ hδ0 hδpos hδcong,
+         fun mmE hmmE hmdvd φ' d' ImE PE NE hd' hφv' hImE hPE hNE =>
+          artinDivisorKernel_le_sup_of_cyclotomic_ray_class E χ' hmul' m hm hcyc
+            mmE hmmE hmdvd φ' d' ImE PE NE hd' hφv' hImE hPE hNE⟩)
   -- `IsAdmissibleModulusRayClass` is exactly the pair produced above, and the
   -- support clause is carried through unchanged.
   exact ⟨mm, ⟨hmm, hkill⟩, hsupp⟩
