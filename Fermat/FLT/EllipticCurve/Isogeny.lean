@@ -931,8 +931,117 @@ theorem eq_zero_of_constX [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.P
   simp only [Polynomial.eval_mul, Polynomial.eval_C] at hx
   exact mul_right_cancel₀ hBP hx
 
-/-- **LEAF.** The pointwise sum of two rational maps is rational, over an
-algebraically closed field and for an **elliptic** `W`.
+/-! ### The two branches of `IsRationalMap.add`
+
+`IsRationalMap.add` below is now an ASSEMBLY: it is proven from exactly two leaves,
+`IsRationalMap.add_self` (the doubling branch) and `IsRationalMap.add_of_ne` (the
+chord branch), plus three free reductions (`φ = 0`, `ψ = 0`, `φ + ψ = 0`).
+
+Why this is the right cut, and not an arbitrary one. The affine group law on `W'`
+has two formulas, and which applies at `P` is decided by whether
+`x (φ P) = x (ψ P)`. That condition is `A₁ B₂ - A₂ B₁ = 0` at `x P`, a polynomial
+condition — so on the chord branch its vanishing locus is a *finite* set of
+`x`-values and technique 1 of the module docstring absorbs it (multiply the witness
+through by `A₁ B₂ - A₂ B₁`). What technique 1 cannot absorb is the case where that
+polynomial vanishes IDENTICALLY, i.e. `x ∘ φ` and `x ∘ ψ` are the same rational
+function. Since `x (φ P) = x (ψ P)` forces `φ P = ψ P` or `φ P = -(ψ P)`
+(`eq_or_eq_neg_of_veluPointX_eq`), and `W.Point` is not the union of two proper
+subgroups plus a finite set, that happens exactly when `φ = ψ` or `φ = -ψ`. The
+second is the free reduction `φ + ψ = 0`; the first is genuinely a different
+formula and is `add_self`. So the split is forced by the geometry, not chosen.
+
+The two leaves are INDEPENDENT and can be owned separately. -/
+
+/-- **LEAF.** The doubling branch: twice a rational map is rational.
+
+Equivalently `IsRationalMap (mulByHom W' 2 |>.comp φ)`, since
+`(mulByHom W' 2).comp φ P = 2 • φ P = (φ + φ) P` — so with `IsRationalMap.comp`
+already PROVEN, **this leaf reduces to the single statement that duplication
+`[2]` on `W'` is a rational map**, which is the classical duplication formula
+`x ([2] Q) = (x⁴ - b₄x² - 2b₆x - b₈) / (4x³ + b₂x² + 2b₄x + b₆)` together with its
+`y`-companion. That is the route to prefer: it is reusable (`[n]` for every `n`),
+it is what the division-polynomial development in `TorsionCard.lean` /
+`PhiPsiCoprime.lean` is already about (`WeierstrassCurve.Φ`, `WeierstrassCurve.ΨSq`,
+and `TorsionCard.exists_smul_some_eq`, which computes `n • (x₀, y₀)` explicitly),
+and it avoids redoing the tangent-line algebra by hand.
+
+**One caveat that route must confront, and it is the reason this is stated as
+`add_self` rather than as `IsRationalMap (mulByHom W' 2)`.** The ambient statement
+carries `[W.IsElliptic]` but says NOTHING about `W'`, and the division-polynomial
+API needs `[W'.IsElliptic]`. That is not an oversight in the statement: `add` is
+believed TRUE for singular `W'` as well, but for a boring reason — with
+`[IsAlgClosed F] [W.IsElliptic]` a nonzero rational `φ` is surjective
+(`IsRationalMap.isIsogeny`) with finite kernel, so `W'.Point` would be an elliptic
+curve group modulo a finite subgroup, which has `(ℤ/ℓ)²` for every `ℓ ≠ char F`,
+whereas the smooth locus of a singular Weierstrass cubic is `𝔾ₐ` or `𝔾ₘ` and has
+cyclic `ℓ`-torsion. So the honest shape of this leaf is: *either* prove that
+dichotomy and reduce to `[W'.IsElliptic]`, *or* return to the cut and ask whether
+`[W'.IsElliptic]` should be a hypothesis of `IsRationalMap.add` itself (every
+consumer has it — they all work with `W' = W`). **Do not silently add it here**;
+that is a cut-level decision. -/
+theorem IsRationalMap.add_self [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    (hφ : IsRationalMap φ) : IsRationalMap (φ + φ) :=
+  sorry
+
+/-- **LEAF.** The chord branch: the sum of two rational maps that are not `0` and
+not equal or opposite to one another is rational.
+
+The four hypotheses are exactly what makes `x ∘ φ` and `x ∘ ψ` DIFFERENT rational
+functions, so that the chord formula applies away from a finite set. See the
+section docstring above for why that is the correct dividing line.
+
+**The plan, from having closed `IsRationalMap.comp` and `IsRationalMap.isIsogeny`.**
+Write `t = x P`, `y = y P`, and abbreviate the two certificates as
+`x₁ B₁ = A₁`, `y₁ E₁ = C₁ y + D₁` and likewise with subscript `2`, all evaluated at
+`t`. Put
+
+  `K = B₁ B₂`,  `G = A₂ B₁ - A₁ B₂`,  `H = E₁ E₂ G`,
+  `N = C₂ E₁ - C₁ E₂`,  `M = D₂ E₁ - D₁ E₂`,
+
+so that the chord slope is `λ = K (N y + M) / H`.
+
+*Step 1: `G ≠ 0`.* If `G = 0` then `x (φ P) = x (ψ P)` off a finite set, hence
+`φ P = ψ P` or `φ P = -(ψ P)` there, so `W.Point` is covered by
+`ker (φ - ψ) ∪ ker (φ + ψ)` together with a finite set. If either subgroup is
+finite the other has finite index, so the corresponding map has finite image and is
+ZERO by `eq_zero_of_finite_range` — contradicting `hdiff` or `hsum`. The remaining
+case is the classical "a group is not the union of two proper subgroups", with a
+finite exceptional set absorbed by infinitude of `W.Point`.
+
+*Step 2: the pointwise identity.* Substituting into `Affine.addX` and clearing
+denominators gives, on the locus where `K H ≠ 0` and all four points are nonzero,
+
+  `x ((φ + ψ) P) · (H² K) (t) = U(t) · y + V(t)`
+
+with `U = K³ (2 N M - N² (a₁ t + a₃)) + a₁ K² H N` and `V` the corresponding
+`y`-free part; the `y²` produced by `λ²` is reduced by the Weierstrass equation
+`y² = -(a₁ t + a₃) y + (t³ + a₂ t² + a₄ t + a₆)`, which is what leaves `y` to
+degree ONE.
+
+*Step 3: `U = 0`, and this is the crux.* Apply the identity at `-P` as well:
+`x (-P) = x P`, `y (-P) = -y - a₁ t - a₃`, and `(φ + ψ) (-P) = -((φ + ψ) P)` has
+the SAME `x`. Subtracting the two identities gives `U(t) · (2 y + a₁ t + a₃) = 0`,
+and `2 y + a₁ t + a₃ = y - negY (x P) (y P)` vanishes exactly on the 2-torsion,
+which is FINITE (`finite_nsmulKer` at `n = 2`). So `U` vanishes at infinitely many
+`t` — `exists_point_veluPointX_eq` supplies a point over every `t` — hence `U = 0`.
+This is the step the leaf's difficulty really lives in; it is not the branch
+analysis.
+
+*Step 4:* `(V, H² K)` is then the `x`-witness, `H² K ≠ 0` by Step 1, and the
+`y`-witness comes out of `Affine.negAddY` by the same substitution, this time with
+no cancellation needed because `y ((φ + ψ) P)` is genuinely affine in `y P`.
+
+*Step 5:* multiply both witnesses through by the polynomial cutting out the finite
+bad locus (technique 1 of the module docstring), so that the certificate holds at
+EVERY point rather than off it. -/
+theorem IsRationalMap.add_of_ne [IsAlgClosed F] [W.IsElliptic] {φ ψ : W.Point →+ W'.Point}
+    (hφ : IsRationalMap φ) (hψ : IsRationalMap ψ)
+    (h0φ : φ ≠ 0) (h0ψ : ψ ≠ 0) (hsum : φ + ψ ≠ 0) (hdiff : φ ≠ ψ) :
+    IsRationalMap (φ + ψ) :=
+  sorry
+
+/-- **PROVEN** (assembly, 2026-07-27). The pointwise sum of two rational maps is
+rational, over an algebraically closed field and for an **elliptic** `W`.
 
 **Both hypotheses were added on 2026-07-26 after the unqualified statement was
 REFUTED.** See the FALSITY AUDIT of `IsRationalMap.add` below (namespace
@@ -948,37 +1057,29 @@ target `x`-coordinates have a non-rational sum.
 they make `W.Point` divisible (`nsmul_surjective`), hence free of proper
 finite-index subgroups, hence free of homomorphisms with finite image.
 
-This is the affine addition formula on `W'` applied to the two images: `x` and
-`y` of `φ P + ψ P` are rational in `x(φ P), y(φ P), x(ψ P), y(ψ P)`, each of
-which is rational in `x P, y P`, and `y P` occurs to degree at most one after
-reduction by the Weierstrass equation. The case analysis is over the three
-branches of the group law.
+**What is left open, and what is not.** The statement itself is CLOSED here: the
+three free reductions (`φ = 0` gives `ψ`, `ψ = 0` gives `φ`, `φ + ψ = 0` gives `0`,
+all already rational) are discharged below, and the two remaining branches are the
+named leaves `IsRationalMap.add_self` and `IsRationalMap.add_of_ne` immediately
+above, where the geometry actually lives. The instance hypotheses are unchanged and
+are still exactly what the FALSITY AUDIT requires: they enter through
+`eq_zero_of_finite_range`, inside `add_of_ne`'s Step 1.
 
-Notes for whoever closes it, from having closed `IsRationalMap.comp`.
-
-*The real obstruction is not the algebra, it is that `x` must come out a function
-of `x P` alone.* The certificate demands `x((φ+ψ)P) = A(x P) / B(x P)` with no
-`y P` in sight. That is true — `(φ+ψ)(-P) = -((φ+ψ)P)` and `x` is `±`-invariant, so
-`x ∘ (φ+ψ)` really does factor through `x` — but it is not visible in the chord
-formula: the slope `λ = (y₂-y₁)/(x₂-x₁)` is affine in `y P`, and `λ²` produces a
-`(y P)²` that must be reduced by the Weierstrass equation before the residual
-`y P`-dependence cancels. Budget for that cancellation; it is the step that makes
-this leaf harder than `comp`, not the branch analysis.
-
-*The branch analysis is cheaper than it looks*, because of technique 1 in the module
-docstring. The branches are cut out by polynomial conditions in `x P`:
-`x(φ P) = x(ψ P)` is `A₁ B₂ - A₂ B₁ = 0` at `x P`. So a witness valid only on
-`{A₁B₂ - A₂B₁ ≠ 0}` becomes valid everywhere after multiplying through by
-`A₁B₂ - A₂B₁`; there is no need to make one formula cover the doubling branch.
-
-*Reductions that are free*: `φ = 0` gives `φ + ψ = ψ`, `ψ = 0` gives `φ`, and
-`ψ = -φ` gives `0` — all three already rational (`IsRationalMap.zero`).
-
-*The `≠ 0` side conditions* will degenerate in exactly the same way as in `comp`;
-`exists_const_of_homogSubst_eq_zero` above is available and is the tool for them. -/
+Note the case split is on the HOMOMORPHISMS, not pointwise on `P` — `φ = ψ` as
+maps, not `φ P = ψ P` — which is what makes each branch a statement with a single
+uniform formula and therefore a single pair of witness polynomials. -/
 theorem IsRationalMap.add [IsAlgClosed F] [W.IsElliptic] {φ ψ : W.Point →+ W'.Point}
-    (hφ : IsRationalMap φ) (hψ : IsRationalMap ψ) : IsRationalMap (φ + ψ) :=
-  sorry
+    (hφ : IsRationalMap φ) (hψ : IsRationalMap ψ) : IsRationalMap (φ + ψ) := by
+  classical
+  by_cases hφ0 : φ = 0
+  · rw [hφ0, zero_add]; exact hψ
+  by_cases hψ0 : ψ = 0
+  · rw [hψ0, add_zero]; exact hφ
+  by_cases hsum : φ + ψ = 0
+  · rw [hsum]; exact IsRationalMap.zero
+  by_cases hdiff : φ = ψ
+  · rw [hdiff]; exact hψ.add_self
+  exact hφ.add_of_ne hψ hφ0 hψ0 hsum hdiff
 
 /-! ### Isogenies -/
 
