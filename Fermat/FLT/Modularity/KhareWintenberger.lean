@@ -7202,7 +7202,378 @@ theorem stepanov_derivative_ne_zero_of_monic {R : Type*} [CommRing R] [Nontrivia
   rw [← hcast]
   exact hcoeff
 
-/-- **ITEM 2a: SCHMIDT'S NORMALISATION** (SORRY LEAF, cut 2026-07-27), his
+section StepanovShear
+
+variable {R : Type*} [CommRing R]
+
+/-! #### The shear: infrastructure (all PROVEN 2026-07-27)
+
+The one piece the API survey flagged as genuinely absent from the pin — a total
+degree bound for a LINEAR `aeval` substitution — is `stepanov_totalDegree_aeval_le`
+below. Everything else in this subsection is packaging: `stepanovNest` is the
+isomorphism `R[X₀,X₁] ≃+* R[X][Y]` used to turn the `MvPolynomial (Fin 2)`
+presentation of the curve into the `Polynomial (Polynomial ·)` presentation that
+`exists_stepanovNormalisation` returns, and `stepanovNest_coeff_coeff` is the
+master coefficient dictionary from which the degree bounds, the base-change
+commutation, and the leading-coefficient computation all follow. -/
+
+/-- **THE MISSING PIN LEMMA** (PROVEN): a substitution by polynomials of total
+degree at most one does not raise total degree.
+
+`Mathlib` has `totalDegree_rename_le` for a substitution by VARIABLES and
+`totalDegree_pow`/`totalDegree_mul`/`totalDegree_finsetProd` for the pieces, but no
+`totalDegree_aeval_le`. This is the bound the shear `X₀ ↦ X₀ + c·X₁` needs, and it
+is what makes the total degree `d` of the curve survive the normalisation. -/
+theorem stepanov_totalDegree_aeval_le {σ τ : Type*}
+    (v : σ → _root_.MvPolynomial τ R) (hv : ∀ i, (v i).totalDegree ≤ 1)
+    (f : _root_.MvPolynomial σ R) :
+    (_root_.MvPolynomial.aeval v f).totalDegree ≤ f.totalDegree := by
+  classical
+  rw [_root_.MvPolynomial.aeval_def, _root_.MvPolynomial.eval₂_eq]
+  refine _root_.MvPolynomial.totalDegree_finsetSum_le ?_
+  intro s hs
+  refine le_trans (_root_.MvPolynomial.totalDegree_mul _ _) ?_
+  have hC : (algebraMap R (_root_.MvPolynomial τ R)
+      (_root_.MvPolynomial.coeff s f)).totalDegree = 0 := by
+    rw [_root_.MvPolynomial.algebraMap_eq]
+    exact _root_.MvPolynomial.totalDegree_C _
+  have hprod : (∏ i ∈ s.support, v i ^ s i).totalDegree ≤ ∑ i ∈ s.support, s i := by
+    refine le_trans (_root_.MvPolynomial.totalDegree_finsetProd _ _) (Finset.sum_le_sum ?_)
+    intro i _
+    calc (v i ^ s i).totalDegree ≤ s i * (v i).totalDegree :=
+          _root_.MvPolynomial.totalDegree_pow _ _
+      _ ≤ s i * 1 := Nat.mul_le_mul_left _ (hv i)
+      _ = s i := mul_one _
+  have hle : (s.sum fun _ e => e) ≤ f.totalDegree := _root_.MvPolynomial.le_totalDegree hs
+  simp only [Finsupp.sum] at hle
+  omega
+
+/-- The exponent vector of the monomial `X₀^a X₁^b` (PROVEN packaging). -/
+noncomputable def stepanovExp (a b : ℕ) : Fin 2 →₀ ℕ := Finsupp.cons a (Finsupp.cons b 0)
+
+@[simp] theorem stepanovExp_zero (a b : ℕ) : stepanovExp a b 0 = a := Finsupp.cons_zero _ _
+
+@[simp] theorem stepanovExp_one (a b : ℕ) : stepanovExp a b 1 = b := by
+  show (Finsupp.cons a (Finsupp.cons b (0 : Fin 0 →₀ ℕ))) (Fin.succ 0) = b
+  rw [Finsupp.cons_succ, Finsupp.cons_zero]
+
+theorem stepanovExp_eq_iff (s : Fin 2 →₀ ℕ) (a b : ℕ) :
+    s = stepanovExp a b ↔ s 0 = a ∧ s 1 = b := by
+  constructor
+  · rintro rfl; exact ⟨stepanovExp_zero a b, stepanovExp_one a b⟩
+  · rintro ⟨h0, h1⟩
+    refine Finsupp.ext fun k => ?_
+    fin_cases k
+    · simpa using h0
+    · simpa using h1
+
+theorem stepanovExp_sum (a b : ℕ) : ((stepanovExp a b).sum fun _ e => e) = a + b := by
+  rw [Finsupp.sum_fintype _ _ (fun _ => rfl), Fin.sum_univ_two, stepanovExp_zero, stepanovExp_one]
+
+/-- `X₀ ↦ X` (inner variable), `X₁ ↦ Y` (outer variable). -/
+noncomputable def stepanovNestHom (R : Type*) [CommRing R] :
+    _root_.MvPolynomial (Fin 2) R →+* Polynomial (Polynomial R) :=
+  _root_.MvPolynomial.eval₂Hom (Polynomial.C.comp Polynomial.C) ![Polynomial.C Polynomial.X,
+    Polynomial.X]
+
+/-- Inverse of `stepanovNestHom`. -/
+noncomputable def stepanovUnnestHom (R : Type*) [CommRing R] :
+    Polynomial (Polynomial R) →+* _root_.MvPolynomial (Fin 2) R :=
+  Polynomial.eval₂RingHom
+    (Polynomial.eval₂RingHom (_root_.MvPolynomial.C) (_root_.MvPolynomial.X 0))
+    (_root_.MvPolynomial.X 1)
+
+/-- **THE PACKAGING ISOMORPHISM** `R[X₀,X₁] ≃+* R[X][Y]` (PROVEN). Being a ring
+EQUIVALENCE is what transports irreducibility in both directions. -/
+noncomputable def stepanovNest (R : Type*) [CommRing R] :
+    _root_.MvPolynomial (Fin 2) R ≃+* Polynomial (Polynomial R) :=
+  RingEquiv.ofRingHom (stepanovNestHom R) (stepanovUnnestHom R)
+    (by
+      refine Polynomial.ringHom_ext' (Polynomial.ringHom_ext' ?_ ?_) ?_
+      · ext r
+        simp [stepanovNestHom, stepanovUnnestHom]
+      · simp [stepanovNestHom, stepanovUnnestHom]
+      · simp [stepanovNestHom, stepanovUnnestHom])
+    (by
+      refine _root_.MvPolynomial.ringHom_ext ?_ ?_
+      · intro r; simp [stepanovNestHom, stepanovUnnestHom]
+      · intro i
+        fin_cases i <;> simp [stepanovNestHom, stepanovUnnestHom])
+
+theorem stepanovNest_apply (h : _root_.MvPolynomial (Fin 2) R) :
+    stepanovNest R h = stepanovNestHom R h := rfl
+
+@[simp] theorem stepanovNest_C (r : R) :
+    stepanovNest R (_root_.MvPolynomial.C r) = C (C r) := by
+  simp [stepanovNest_apply, stepanovNestHom]
+
+@[simp] theorem stepanovNest_X_zero :
+    stepanovNest R (_root_.MvPolynomial.X 0) = C X := by
+  simp [stepanovNest_apply, stepanovNestHom]
+
+@[simp] theorem stepanovNest_X_one :
+    stepanovNest R (_root_.MvPolynomial.X 1) = X := by
+  simp [stepanovNest_apply, stepanovNestHom]
+
+theorem stepanovNest_monomial (s : Fin 2 →₀ ℕ) (a : R) :
+    stepanovNest R (_root_.MvPolynomial.monomial s a) = C (C a * X ^ s 0) * X ^ s 1 := by
+  rw [stepanovNest_apply]
+  simp only [stepanovNestHom, _root_.MvPolynomial.coe_eval₂Hom,
+    _root_.MvPolynomial.eval₂_monomial]
+  rw [Finsupp.prod_fintype _ _ (fun _ => pow_zero _), Fin.prod_univ_two]
+  simp [Polynomial.C_pow, mul_assoc]
+
+/-- **THE MASTER COEFFICIENT DICTIONARY** (PROVEN): the `j`-th coefficient of the
+`i`-th coefficient of the nesting of `h` is the coefficient of `X₀^j X₁^i` in `h`. -/
+theorem stepanovNest_coeff_coeff (h : _root_.MvPolynomial (Fin 2) R) (i j : ℕ) :
+    ((stepanovNest R h).coeff i).coeff j = _root_.MvPolynomial.coeff (stepanovExp j i) h := by
+  refine _root_.MvPolynomial.induction_on' h ?_ ?_
+  · intro s a
+    rw [stepanovNest_monomial, Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial,
+      _root_.MvPolynomial.coeff_monomial]
+    by_cases h1 : s 1 = i
+    · by_cases h0 : s 0 = j
+      · have hs : s = stepanovExp j i := (stepanovExp_eq_iff s j i).mpr ⟨h0, h1⟩
+        rw [if_pos h1, Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial,
+          if_pos h0, if_pos hs]
+      · have hs : s ≠ stepanovExp j i := by
+          intro hh; exact h0 (by rw [hh]; exact stepanovExp_zero j i)
+        rw [if_pos h1, Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial,
+          if_neg h0, if_neg hs]
+    · have hs : s ≠ stepanovExp j i := by
+        intro hh; exact h1 (by rw [hh]; exact stepanovExp_one j i)
+      rw [if_neg h1, if_neg hs, Polynomial.coeff_zero]
+  · intro P Q hP hQ
+    simp [hP, hQ]
+
+theorem stepanovNest_coeff_eq_zero (h : _root_.MvPolynomial (Fin 2) R) (i : ℕ)
+    (hi : h.totalDegree < i) : (stepanovNest R h).coeff i = 0 := by
+  refine Polynomial.ext fun j => ?_
+  rw [stepanovNest_coeff_coeff, Polynomial.coeff_zero]
+  by_contra hc
+  have hmem : stepanovExp j i ∈ h.support := _root_.MvPolynomial.mem_support_iff.mpr hc
+  have := _root_.MvPolynomial.le_totalDegree hmem
+  rw [stepanovExp_sum] at this
+  omega
+
+theorem stepanovNest_natDegree_le (h : _root_.MvPolynomial (Fin 2) R) :
+    (stepanovNest R h).natDegree ≤ h.totalDegree :=
+  Polynomial.natDegree_le_iff_coeff_eq_zero.mpr fun m hm => stepanovNest_coeff_eq_zero h m hm
+
+/-- **`deg gᵢ ≤ d − i` IS AUTOMATIC** (PROVEN): the per-coefficient degree bound
+that the normal form asks for is a consequence of total degree alone. -/
+theorem stepanovNest_natDegree_coeff_le (h : _root_.MvPolynomial (Fin 2) R) (i : ℕ) :
+    ((stepanovNest R h).coeff i).natDegree ≤ h.totalDegree - i := by
+  refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr fun j hj => ?_
+  rw [stepanovNest_coeff_coeff]
+  by_contra hc
+  have hmem : stepanovExp j i ∈ h.support := _root_.MvPolynomial.mem_support_iff.mpr hc
+  have := _root_.MvPolynomial.le_totalDegree hmem
+  rw [stepanovExp_sum] at this
+  omega
+
+theorem stepanovNest_map {S : Type*} [CommRing S] (φ : R →+* S)
+    (h : _root_.MvPolynomial (Fin 2) R) :
+    stepanovNest S (_root_.MvPolynomial.map φ h)
+      = Polynomial.map (Polynomial.mapRingHom φ) (stepanovNest R h) := by
+  refine Polynomial.ext fun i => Polynomial.ext fun j => ?_
+  rw [stepanovNest_coeff_coeff, _root_.MvPolynomial.coeff_map, Polynomial.coeff_map,
+    Polynomial.coe_mapRingHom, Polynomial.coeff_map, stepanovNest_coeff_coeff]
+
+theorem stepanovNest_eval (h : _root_.MvPolynomial (Fin 2) R) (x y : R) :
+    Polynomial.eval y (Polynomial.map (Polynomial.evalRingHom x) (stepanovNest R h))
+      = _root_.MvPolynomial.eval ![x, y] h := by
+  have key : ((Polynomial.evalRingHom y).comp
+      ((Polynomial.mapRingHom (Polynomial.evalRingHom x)).comp (stepanovNest R).toRingHom))
+      = (_root_.MvPolynomial.eval ![x, y] : _root_.MvPolynomial (Fin 2) R →+* R) := by
+    refine _root_.MvPolynomial.ringHom_ext ?_ ?_
+    · intro r; simp
+    · intro i; fin_cases i <;> simp
+  exact RingHom.congr_fun key h
+
+/-- The shear `X₀ ↦ X₀ + c·X₁`, `X₁ ↦ X₁`. -/
+noncomputable def stepanovShearHom (c : R) :
+    _root_.MvPolynomial (Fin 2) R →ₐ[R] _root_.MvPolynomial (Fin 2) R :=
+  _root_.MvPolynomial.aeval
+    ![_root_.MvPolynomial.X 0 + _root_.MvPolynomial.C c * _root_.MvPolynomial.X 1,
+      _root_.MvPolynomial.X 1]
+
+@[simp] theorem stepanovShearHom_X_zero (c : R) :
+    stepanovShearHom c (_root_.MvPolynomial.X 0)
+      = _root_.MvPolynomial.X 0 + _root_.MvPolynomial.C c * _root_.MvPolynomial.X 1 := by
+  simp [stepanovShearHom]
+
+@[simp] theorem stepanovShearHom_X_one (c : R) :
+    stepanovShearHom c (_root_.MvPolynomial.X 1) = (_root_.MvPolynomial.X 1 :
+      _root_.MvPolynomial (Fin 2) R) := by
+  simp [stepanovShearHom]
+
+@[simp] theorem stepanovShearHom_C (c r : R) :
+    stepanovShearHom c (_root_.MvPolynomial.C r) = _root_.MvPolynomial.C r := by
+  simp [stepanovShearHom]
+
+/-- **THE SHEAR IS AN AUTOMORPHISM** (PROVEN), with inverse the shear by `-c`.
+This is the ONLY property of the shear the argument uses: it transports
+irreducibility, and — being a bijection of `𝔽_p²` on points — it transports the
+zero COUNT. No coordinate is ever pinned; see the leaf docstring. -/
+noncomputable def stepanovShear (c : R) :
+    _root_.MvPolynomial (Fin 2) R ≃ₐ[R] _root_.MvPolynomial (Fin 2) R :=
+  AlgEquiv.ofAlgHom (stepanovShearHom c) (stepanovShearHom (-c))
+    (by
+      refine _root_.MvPolynomial.algHom_ext fun i => ?_
+      fin_cases i <;> simp)
+    (by
+      refine _root_.MvPolynomial.algHom_ext fun i => ?_
+      fin_cases i <;> simp)
+
+theorem stepanovShear_apply (c : R) (g : _root_.MvPolynomial (Fin 2) R) :
+    stepanovShear c g = stepanovShearHom c g := rfl
+
+theorem stepanov_totalDegree_X_le {σ : Type*} (i : σ) :
+    (_root_.MvPolynomial.X i : _root_.MvPolynomial σ R).totalDegree ≤ 1 := by
+  simp only [_root_.MvPolynomial.X]
+  refine le_trans (_root_.MvPolynomial.totalDegree_monomial_le _ _) ?_
+  simp
+
+/-- **THE SHEAR PRESERVES TOTAL DEGREE** (PROVEN), via the missing pin lemma.
+This is what lets every downstream bound be stated in `d` rather than in a
+possibly smaller reduced degree. -/
+theorem stepanovShear_totalDegree_le (c : R) (g : _root_.MvPolynomial (Fin 2) R) :
+    (stepanovShear c g).totalDegree ≤ g.totalDegree := by
+  rw [stepanovShear_apply, stepanovShearHom]
+  refine stepanov_totalDegree_aeval_le _ (fun i => ?_) g
+  fin_cases i
+  · refine le_trans (_root_.MvPolynomial.totalDegree_add _ _) (max_le ?_ ?_)
+    · exact stepanov_totalDegree_X_le 0
+    · refine le_trans (_root_.MvPolynomial.totalDegree_mul _ _) ?_
+      have h1 := _root_.MvPolynomial.totalDegree_C (σ := Fin 2) c
+      have h2 := stepanov_totalDegree_X_le (R := R) (1 : Fin 2)
+      omega
+  · exact stepanov_totalDegree_X_le 1
+
+theorem stepanovShear_eval (c : R) (g : _root_.MvPolynomial (Fin 2) R) (x y : R) :
+    _root_.MvPolynomial.eval ![x, y] (stepanovShear c g)
+      = _root_.MvPolynomial.eval ![x + c * y, y] g := by
+  have key : ((_root_.MvPolynomial.eval ![x, y] :
+        _root_.MvPolynomial (Fin 2) R →+* R).comp (stepanovShearHom c).toRingHom)
+      = (_root_.MvPolynomial.eval ![x + c * y, y] :
+        _root_.MvPolynomial (Fin 2) R →+* R) := by
+    refine _root_.MvPolynomial.ringHom_ext ?_ ?_
+    · intro r; simp
+    · intro i; fin_cases i <;> simp
+  exact RingHom.congr_fun key g
+
+theorem stepanovShear_map {S : Type*} [CommRing S] (φ : R →+* S) (c : R)
+    (g : _root_.MvPolynomial (Fin 2) R) :
+    _root_.MvPolynomial.map φ (stepanovShear c g)
+      = stepanovShear (φ c) (_root_.MvPolynomial.map φ g) := by
+  have key : ((_root_.MvPolynomial.map φ :
+        _root_.MvPolynomial (Fin 2) R →+* _root_.MvPolynomial (Fin 2) S).comp
+        (stepanovShearHom c).toRingHom)
+      = ((stepanovShearHom (φ c)).toRingHom.comp
+        (_root_.MvPolynomial.map φ : _root_.MvPolynomial (Fin 2) R →+*
+          _root_.MvPolynomial (Fin 2) S)) := by
+    refine _root_.MvPolynomial.ringHom_ext ?_ ?_
+    · intro r; simp
+    · intro i; fin_cases i <;> simp
+  exact RingHom.congr_fun key g
+
+/-- `X₀ ↦ c·T`, `X₁ ↦ T`, with `T` the outer and `c` the inner variable: the
+shear parameter kept GENERIC, so that the leading coefficient of the sheared
+curve becomes a polynomial in `c`. -/
+noncomputable def stepanovGenericLine (R : Type*) [CommRing R] :
+    _root_.MvPolynomial (Fin 2) R →+* Polynomial (Polynomial R) :=
+  _root_.MvPolynomial.eval₂Hom (Polynomial.C.comp Polynomial.C)
+    ![Polynomial.C Polynomial.X * Polynomial.X, Polynomial.X]
+
+/-- `X₀ ↦ 0`, `X₁ ↦ T`: restriction to the line `X₀ = 0`, which reads off exactly
+the coefficients of `X₁^k`. -/
+noncomputable def stepanovRestrict (R : Type*) [CommRing R] :
+    _root_.MvPolynomial (Fin 2) R →+* Polynomial R :=
+  _root_.MvPolynomial.eval₂Hom Polynomial.C ![0, Polynomial.X]
+
+theorem stepanovRestrict_coeff (h : _root_.MvPolynomial (Fin 2) R) (k : ℕ) :
+    (stepanovRestrict R h).coeff k = _root_.MvPolynomial.coeff (stepanovExp 0 k) h := by
+  refine _root_.MvPolynomial.induction_on' h ?_ ?_
+  · intro s a
+    have hval : stepanovRestrict R (_root_.MvPolynomial.monomial s a)
+        = C a * (0 : Polynomial R) ^ s 0 * X ^ s 1 := by
+      simp only [stepanovRestrict, _root_.MvPolynomial.coe_eval₂Hom,
+        _root_.MvPolynomial.eval₂_monomial]
+      rw [Finsupp.prod_fintype _ _ (fun _ => pow_zero _), Fin.prod_univ_two]
+      simp [mul_assoc]
+    rw [hval, _root_.MvPolynomial.coeff_monomial]
+    by_cases h0 : s 0 = 0
+    · rw [h0, pow_zero, mul_one]
+      rw [Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial]
+      by_cases h1 : s 1 = k
+      · rw [if_pos h1, if_pos ((stepanovExp_eq_iff s 0 k).mpr ⟨h0, h1⟩)]
+      · rw [if_neg h1, if_neg (fun hh => h1 (by rw [hh]; exact stepanovExp_one 0 k))]
+    · rw [zero_pow h0, mul_zero, zero_mul, Polynomial.coeff_zero,
+        if_neg (fun hh => h0 (by rw [hh]; exact stepanovExp_zero 0 k))]
+  · intro P Q hP hQ
+    simp [hP, hQ]
+
+theorem stepanovGenericLine_coeff_coeff (h : _root_.MvPolynomial (Fin 2) R) (k i : ℕ) :
+    ((stepanovGenericLine R h).coeff k).coeff i
+      = if i ≤ k then _root_.MvPolynomial.coeff (stepanovExp i (k - i)) h else 0 := by
+  refine _root_.MvPolynomial.induction_on' h ?_ ?_
+  · intro s a
+    have hval : stepanovGenericLine R (_root_.MvPolynomial.monomial s a)
+        = C (C a * X ^ s 0) * X ^ (s 0 + s 1) := by
+      simp only [stepanovGenericLine, _root_.MvPolynomial.coe_eval₂Hom,
+        _root_.MvPolynomial.eval₂_monomial]
+      rw [Finsupp.prod_fintype _ _ (fun _ => pow_zero _), Fin.prod_univ_two]
+      simp only [Matrix.cons_val_zero, Matrix.cons_val_one, RingHom.comp_apply,
+        mul_pow, Polynomial.C_mul, Polynomial.C_pow, pow_add]
+      ring
+    rw [hval, Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial,
+      _root_.MvPolynomial.coeff_monomial]
+    by_cases hk : s 0 + s 1 = k
+    · rw [if_pos hk, Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial]
+      by_cases h0 : s 0 = i
+      · have hle : i ≤ k := by omega
+        rw [if_pos h0, if_pos hle,
+          if_pos ((stepanovExp_eq_iff s i (k - i)).mpr ⟨h0, by omega⟩)]
+      · rw [if_neg h0]
+        by_cases hle : i ≤ k
+        · rw [if_pos hle, if_neg (fun hh => h0 (by rw [hh]; exact stepanovExp_zero i (k - i)))]
+        · rw [if_neg hle]
+    · rw [if_neg hk, Polynomial.coeff_zero]
+      by_cases hle : i ≤ k
+      · rw [if_pos hle]
+        refine (if_neg fun hh => hk ?_).symm
+        rw [hh, stepanovExp_zero, stepanovExp_one]
+        omega
+      · rw [if_neg hle]
+  · intro P Q hP hQ
+    by_cases hle : i ≤ k <;> simp [hP, hQ, hle]
+
+theorem stepanovRestrict_comp_shear (c : R) :
+    (stepanovRestrict R).comp ((stepanovShearHom c).toRingHom)
+      = (Polynomial.mapRingHom (Polynomial.evalRingHom c)).comp (stepanovGenericLine R) := by
+  refine _root_.MvPolynomial.ringHom_ext ?_ ?_
+  · intro r; simp [stepanovRestrict, stepanovGenericLine]
+  · intro i
+    fin_cases i <;> simp [stepanovRestrict, stepanovGenericLine]
+
+/-- **THE LEADING COEFFICIENT AS A POLYNOMIAL IN THE SHEAR PARAMETER** (PROVEN):
+the coefficient of `X₁^d` in `g(X₀ + c·X₁, X₁)` is the value at `c` of a fixed
+polynomial, namely the `d`-th coefficient of the generic line. Schmidt's "some
+`c ∈ 𝔽_p` avoids the zeros of the top-degree form" is exactly a nonvanishing
+statement about THAT polynomial. -/
+theorem stepanovShear_coeff_eq_eval (c : R) (g : _root_.MvPolynomial (Fin 2) R) (d : ℕ) :
+    _root_.MvPolynomial.coeff (stepanovExp 0 d) (stepanovShear c g)
+      = Polynomial.eval c ((stepanovGenericLine R g).coeff d) := by
+  rw [← stepanovRestrict_coeff, stepanovShear_apply]
+  have := RingHom.congr_fun (stepanovRestrict_comp_shear (R := R) c) g
+  simp only [RingHom.coe_comp, Function.comp_apply, AlgHom.toRingHom_eq_coe,
+    AlgHom.coe_toRingHom] at this
+  rw [this, Polynomial.coe_mapRingHom, Polynomial.coeff_map, Polynomial.coe_evalRingHom]
+
+end StepanovShear
+
+/-- **ITEM 2a: SCHMIDT'S NORMALISATION** (PROVEN 2026-07-27), his
 Chapter III §1 "Reduction", (4.1)–(4.2).
 
 An absolutely irreducible plane curve may be moved by a SHEAR
@@ -7243,27 +7614,41 @@ forces `deg_Y g = 0`, and `g ∈ 𝔽_p[X]` of total degree `d ≥ 2` is reducib
 in particular the total degree `d` is PRESERVED, which is why every bound below
 may be stated in `d`.
 
-API RECONNAISSANCE (2026-07-27, grepped in the pin on the host owning this
-worktree's `.lake`; these names were CONFIRMED to exist, not guessed):
+HOW IT WAS PROVEN (2026-07-27). The API survey was right that the one piece
+genuinely absent from the pin is a total-degree bound for a linear `aeval`
+substitution; it is now `stepanov_totalDegree_aeval_le` in the subsection above,
+proven from `totalDegree_finsetSum_le` / `totalDegree_mul` / `totalDegree_pow` /
+`totalDegree_finsetProd` / `le_totalDegree`.
 
-* `MvPolynomial.finSuccEquiv R n : MvPolynomial (Fin (n+1)) R ≃ₐ[R]
-  Polynomial (MvPolynomial (Fin n) R)` (`Mathlib/Algebra/MvPolynomial/Equiv.lean`),
-  with `natDegree_finSuccEquiv`, `degreeOf_coeff_finSuccEquiv` and
-  `support_finSuccEquiv`. Applied twice (plus `MvPolynomial.finZeroEquiv` /
-  `isEmptyAlgEquiv` at the bottom) this is the bridge from the `MvPolynomial
-  (Fin 2)` packaging of `g` to the `Polynomial (Polynomial (ZMod p))` packaging
-  of `F` that the conclusion demands, and `degreeOf_coeff_finSuccEquiv` is what
-  turns `totalDegree g = d` into the per-coefficient bound `deg gᵢ ≤ i`.
-* `MvPolynomial.totalDegree_rename_le` and `totalDegree_renameEquiv`
-  (`Mathlib/Algebra/MvPolynomial/Degrees.lean`) for the coordinate permutation.
-  The SHEAR itself, `X₀ ↦ X₀ + c·X₁`, is an `aeval`, and no
-  `totalDegree_aeval_le` for a linear substitution was found — that bound looks
-  like the one genuinely new piece this leaf needs, and it is elementary.
-* Nothing named `[Ss]tepanov` in `Fermat/`, `.lake/packages/mathlib/` or
-  `~/cs/FLT/`, so no existing shear-normalisation to vendor.
+The survey's suggested BRIDGE — `MvPolynomial.finSuccEquiv` applied twice, with
+`degreeOf_coeff_finSuccEquiv` for the per-coefficient bound — was NOT the route
+taken, and the note is corrected here so the next reader does not re-attempt it.
+Composing `finSuccEquiv` with a coordinate `renameEquiv`, with a second
+`finSuccEquiv`, and with `isEmptyAlgEquiv` leaves one holding an equivalence
+whose coefficient behaviour still has to be computed at every level. It is
+strictly cheaper to define the bridge directly as `stepanovNest`, a
+`RingEquiv.ofRingHom` between two `eval₂Hom`s, and prove ONE master dictionary,
+`stepanovNest_coeff_coeff`, by monomial induction:
 
-The refuting check for the last bullet is a one-line grep; run it before
-believing this note, which is dated.
+    ((stepanovNest R h).coeff i).coeff j = MvPolynomial.coeff (X₀^j X₁^i) h .
+
+Every remaining obligation is a corollary of that single identity:
+`deg gᵢ ≤ d − i` and `natDegree ≤ d` (a monomial of total degree `i + j` above
+`totalDegree h` has coefficient zero), the base-change commutation
+`stepanovNest_map`, and the value of the leading coefficient. Only the
+evaluation compatibility `stepanovNest_eval` needs a separate argument, and it
+is one `MvPolynomial.ringHom_ext`.
+
+Schmidt's "some `c` avoids the zeros of the top-degree form" is formalised by
+keeping `c` GENERIC: `stepanovGenericLine` sends `X₀ ↦ c·T`, `X₁ ↦ T`, and
+`stepanovShear_coeff_eq_eval` identifies the coefficient of `X₁^d` in the
+sheared curve with the value at `c` of the fixed polynomial
+`(stepanovGenericLine R g).coeff d`, which has degree `≤ d < p` and is nonzero
+because `totalDegree g = d`. `Polynomial.exists_eval_ne_zero_of_natDegree_lt_card`
+then supplies `c`.
+
+* Nothing named `[Ss]tepanov` was in `Fermat/`, `.lake/packages/mathlib/` or
+  `~/cs/FLT/` at the time of the cut, so nothing was vendored.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_stepanovNormalisation (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
@@ -7279,8 +7664,144 @@ theorem exists_stepanovNormalisation (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.
         (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))) ∧
       (∀ S : Finset (ZMod p), (∑ x ∈ S, (Finset.univ.filter
           (fun y : ZMod p => (F.map (Polynomial.evalRingHom x)).eval y = 0)).card) ≤
-        (Finset.univ.filter (fun a : Fin 2 → ZMod p => MvPolynomial.eval a g = 0)).card) :=
-  sorry
+        (Finset.univ.filter (fun a : Fin 2 → ZMod p => MvPolynomial.eval a g = 0)).card) := by
+  -- `d < p`, from `250 d⁵ < p` and `d ≤ d⁵`.
+  have hdp : d < p := by
+    have h5 : d ≤ d ^ 5 := Nat.le_self_pow (by norm_num) d
+    omega
+  -- a monomial of `g` of top total degree
+  obtain ⟨s, hs, hseq⟩ : ∃ s ∈ g.support, (s.sum fun _ e => e) = d := by
+    have hg0 : g ≠ 0 := by
+      intro h0
+      rw [h0, _root_.MvPolynomial.totalDegree_zero] at hdeg
+      omega
+    have hsup : g.support.Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty, ne_eq, _root_.MvPolynomial.support_eq_empty]
+      exact hg0
+    obtain ⟨b, hb, hbeq⟩ := Finset.exists_mem_eq_sup g.support hsup (fun m => m.sum fun _ e => e)
+    exact ⟨b, hb, by rw [← hbeq, ← hdeg]; rfl⟩
+  have hssum : s 0 + s 1 = d := by
+    rw [← hseq, Finsupp.sum_fintype _ _ (fun _ => rfl), Fin.sum_univ_two]
+  have hsexp : s = stepanovExp (s 0) (d - s 0) := (stepanovExp_eq_iff _ _ _).mpr ⟨rfl, by omega⟩
+  -- the coefficient of `X₁^d` in the sheared curve, as a polynomial in the shear parameter
+  set Pg : Polynomial (ZMod p) := (stepanovGenericLine (ZMod p) g).coeff d with hPgdef
+  have hPg0 : Pg ≠ 0 := by
+    intro h0
+    have hco := stepanovGenericLine_coeff_coeff g d (s 0)
+    rw [← hPgdef, h0, Polynomial.coeff_zero, if_pos (by omega : s 0 ≤ d)] at hco
+    exact (_root_.MvPolynomial.mem_support_iff.mp hs) (by rw [hsexp]; exact hco.symm)
+  have hPgdeg : Pg.natDegree ≤ d := by
+    refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr fun m hm => ?_
+    rw [hPgdef, stepanovGenericLine_coeff_coeff, if_neg (by omega)]
+  obtain ⟨c, hc⟩ : ∃ c, Polynomial.eval c Pg ≠ 0 := by
+    refine Pg.exists_eval_ne_zero_of_natDegree_lt_card hPg0 ?_
+    rw [Cardinal.mk_fintype, ZMod.card]
+    exact_mod_cast lt_of_le_of_lt hPgdeg hdp
+  set u : ZMod p := Polynomial.eval c Pg with hudef
+  -- the sheared curve, of the same total degree `d`
+  set h : MvPolynomial (Fin 2) (ZMod p) := stepanovShear c g with hhdef
+  have hu : MvPolynomial.coeff (stepanovExp 0 d) h = u := by
+    rw [hhdef, hudef, hPgdef, stepanovShear_coeff_eq_eval]
+  have htd : h.totalDegree = d := by
+    refine le_antisymm ?_ ?_
+    · rw [hhdef]; exact le_trans (stepanovShear_totalDegree_le c g) (le_of_eq hdeg)
+    · have hmem : stepanovExp 0 d ∈ h.support :=
+        _root_.MvPolynomial.mem_support_iff.mpr (by rw [hu]; exact hc)
+      have := _root_.MvPolynomial.le_totalDegree hmem
+      rw [stepanovExp_sum] at this
+      omega
+  -- the nested packaging, whose `d`-th coefficient is the CONSTANT `u`
+  set G : Polynomial (Polynomial (ZMod p)) := stepanovNest (ZMod p) h with hGdef
+  have hGd : G.coeff d = C u := by
+    refine Polynomial.ext fun j => ?_
+    rw [hGdef, stepanovNest_coeff_coeff, Polynomial.coeff_C]
+    rcases Nat.eq_zero_or_pos j with rfl | hj
+    · rw [if_pos rfl]; exact hu
+    · rw [if_neg (by omega)]
+      by_contra hcon
+      have := _root_.MvPolynomial.le_totalDegree
+        (_root_.MvPolynomial.mem_support_iff.mpr hcon)
+      rw [stepanovExp_sum, htd] at this
+      omega
+  have hGnd_le : G.natDegree ≤ d := by
+    rw [hGdef]; exact le_trans (stepanovNest_natDegree_le h) (le_of_eq htd)
+  -- divide by the leading coefficient
+  have hFd : (C (C u⁻¹) * G).coeff d = 1 := by
+    rw [Polynomial.coeff_C_mul, hGd, ← Polynomial.C_mul, inv_mul_cancel₀ hc, Polynomial.C_1]
+  have hFnd_le : (C (C u⁻¹) * G).natDegree ≤ d :=
+    le_trans (Polynomial.natDegree_C_mul_le _ _) hGnd_le
+  refine ⟨C (C u⁻¹) * G, Polynomial.monic_of_natDegree_le_of_coeff_eq_one d hFnd_le hFd,
+    Polynomial.natDegree_eq_of_le_of_coeff_ne_zero hFnd_le (by rw [hFd]; exact one_ne_zero),
+    ?_, ?_, ?_⟩
+  · -- `deg gᵢ ≤ d − i`
+    intro i
+    rw [Polynomial.coeff_C_mul]
+    refine le_trans (Polynomial.natDegree_C_mul_le _ _) ?_
+    have hb := stepanovNest_natDegree_coeff_le h i
+    rw [htd] at hb
+    rw [hGdef]
+    exact hb
+  · -- absolute irreducibility, transported along the shear and the packaging
+    have hmapG : Polynomial.map (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) G
+        = stepanovNest (AlgebraicClosure (ZMod p))
+          (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) := by
+      rw [hGdef, stepanovNest_map]
+    have hirrh : Irreducible (MvPolynomial.map
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) := by
+      rw [hhdef, stepanovShear_map]
+      exact (MulEquiv.irreducible_iff
+        (f := stepanovShear (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) c))).mpr hirr
+    have hirrG : Irreducible (Polynomial.map (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) G) := by
+      rw [hmapG]
+      exact (MulEquiv.irreducible_iff
+        (f := stepanovNest (AlgebraicClosure (ZMod p)))).mpr hirrh
+    have hv : (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) u⁻¹ ≠ 0 := by
+      rw [ne_eq, map_eq_zero]
+      exact inv_ne_zero hc
+    have hunit : IsUnit (C (C ((algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) u⁻¹)) :
+        Polynomial (Polynomial (AlgebraicClosure (ZMod p)))) :=
+      Polynomial.isUnit_C.mpr (Polynomial.isUnit_C.mpr (isUnit_iff_ne_zero.mpr hv))
+    have hmapF : Polynomial.map (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) (C (C u⁻¹) * G)
+        = C (C ((algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) u⁻¹)) *
+          Polynomial.map (Polynomial.mapRingHom
+            (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) G := by
+      rw [Polynomial.map_mul, Polynomial.map_C, Polynomial.coe_mapRingHom, Polynomial.map_C]
+    rw [hmapF, mul_comm, irreducible_mul_isUnit hunit]
+    exact hirrG
+  · -- the zero COUNT transports, because the shear is a bijection of `𝔽_p²`
+    intro S
+    have hzero : ∀ x y : ZMod p,
+        (Polynomial.map (Polynomial.evalRingHom x) (C (C u⁻¹) * G)).eval y = 0
+          ↔ MvPolynomial.eval ![x + c * y, y] g = 0 := by
+      intro x y
+      have h1 : Polynomial.map (Polynomial.evalRingHom x) (C (C u⁻¹) * G)
+          = C u⁻¹ * Polynomial.map (Polynomial.evalRingHom x) G := by
+        rw [Polynomial.map_mul, Polynomial.map_C, Polynomial.coe_evalRingHom, Polynomial.eval_C]
+      rw [h1, Polynomial.eval_mul, Polynomial.eval_C, hGdef, stepanovNest_eval, hhdef,
+        stepanovShear_eval]
+      constructor
+      · intro hz
+        rcases mul_eq_zero.mp hz with hz' | hz'
+        · exact absurd hz' (inv_ne_zero hc)
+        · exact hz'
+      · intro hz; rw [hz, mul_zero]
+    rw [← Finset.card_sigma]
+    refine Finset.card_le_card_of_injOn (fun q => ![q.1 + c * q.2, q.2]) ?_ ?_
+    · rintro ⟨x, y⟩ hq
+      simp only [Finset.mem_coe, Finset.mem_sigma, Finset.mem_filter, Finset.mem_univ,
+        true_and] at hq
+      simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and]
+      exact (hzero x y).mp hq.2
+    · rintro ⟨x1, y1⟩ _ ⟨x2, y2⟩ _ hEq
+      have hy : y1 = y2 := by simpa using congrFun hEq 1
+      have hx : x1 + c * y1 = x2 + c * y2 := by simpa using congrFun hEq 0
+      subst hy
+      have hxx : x1 = x2 := add_right_cancel hx
+      subst hxx
+      rfl
 
 /-- **A WEIGHTED-DEGREE BOUND FOR DETERMINANTS** (PROVEN 2026-07-27). If every
 entry of a square matrix over `S[X]` obeys `deg Mᵢⱼ + rᵢ ≤ cⱼ` for row weights
@@ -9424,6 +9945,15 @@ five-item route is realised in the file rather than merely described):
   and `exists_stepanovNormPolynomial` (Lemmas 4A + 5A). The last of these is
   the genuinely hard one, a dimension count over `𝔽_p(X, η)`; the first two are
   classical and self-contained.
+  **`exists_stepanovNormalisation` is itself PROVEN as of 2026-07-27** — do not
+  dispatch at it — over `stepanov_totalDegree_aeval_le` (the one lemma the API
+  survey correctly identified as absent from the pin), the packaging isomorphism
+  `stepanovNest` with its master dictionary `stepanovNest_coeff_coeff`, the shear
+  automorphism `stepanovShear`, and `stepanovShear_coeff_eq_eval`, which turns
+  Schmidt's "some `c` avoids the zeros of the top-degree form" into
+  `Polynomial.exists_eval_ne_zero_of_natDegree_lt_card` applied to a fixed
+  polynomial of degree `≤ d < p`. See its docstring for why the `finSuccEquiv`
+  bridge the survey suggested was NOT the cheap route.
   **`exists_stepanovDiscriminant` is itself PROVEN as of 2026-07-27** — do not
   dispatch at it — over `stepanov_natDegree_det_le_of_weights`,
   `stepanov_sum_range_add_eq`, `stepanov_natDegree_resultant_le` (Schmidt (4.1),
@@ -9482,12 +10012,13 @@ five-item route is realised in the file rather than merely described):
   lets the counting leaf be stated with no algebraic closure in its signature.
 
 So after the 2026-07-27 work the remaining open leaves under this node are
-`exists_stepanovNormalisation`, `exists_stepanovAuxiliaryFunction`,
+`exists_stepanovAuxiliaryFunction`,
 `stepanov_pow_sub_dvd_resultant`, `exists_bertiniNoetherWitness`,
 `exists_spreadOutHypersurfaceModel` and `exists_bound_badLocusCount`; all the
 glue between them is written and compiles, and this leaf itself has nothing left to
 prove.  (This list is stated from the file's ACTUAL sorry set as merged,
-2026-07-27.  `exists_stepanovDiscriminant` was on it and is now PROVEN, and so is
+2026-07-27.  `exists_stepanovDiscriminant` and `exists_stepanovNormalisation` were
+on it and are now PROVEN, and so is
 `exists_stepanovNormPolynomial`, over the two sub-leaves
 `exists_stepanovAuxiliaryFunction` and `stepanov_pow_sub_dvd_resultant`; so is
 `exists_bertiniGoodPlaneCount`, over `exists_bertiniNoetherWitness`; so is
