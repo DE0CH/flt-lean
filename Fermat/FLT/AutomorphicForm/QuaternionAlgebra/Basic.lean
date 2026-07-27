@@ -7,6 +7,7 @@ module
 
 public import Fermat.FLT.Mathlib.NumberTheory.NumberField.FiniteAdeleRing
 public import Fermat.FLT.QuaternionAlgebra.NumberField
+public import Fermat.FLT.DivisionAlgebra.Finiteness
 public import Fermat.FLT.AutomorphicForm.GroupTheoryStuff
 public import Fermat.FLT.AutomorphicForm.Stuff
 public import Fermat.FLT.Mathlib.GroupTheory.DoubleCoset
@@ -54,7 +55,18 @@ vendored; the single use became an ordinary sorried leaf.
 statements, `index_ray_ne_zero` (finiteness of a ray class group of `F` — no `D`,
 no definiteness) and `relIndex_unitsOrder_ne_zero` (Voight 17.7.13: the unit
 group of an order in a TOTALLY DEFINITE quaternion algebra is finite modulo the
-centre). Those two are the ONLY unproven statements in the closure.
+centre).
+
+**`index_ray_ne_zero` PROVEN 2026-07-27**, from Fujisaki's lemma at `D = F`
+(`NumberField.FiniteAdeleRing.DivisionAlgebra.finiteDoubleCoset F F`) via the
+transport `tensorLid` and the abelian double-coset surjection
+`index_sup_ne_zero_of_finite_doubleCoset`. This required adding
+`public import Fermat.FLT.DivisionAlgebra.Finiteness` to this module; that adds
+NO modules to any consumer's cone, since the only module importing this one
+(`…/QuaternionAlgebra/FiniteDimensional.lean`) already imported `Finiteness`.
+
+So `relIndex_unitsOrder_ne_zero` is now the ONLY unproven statement in the
+closure.
 
 **This subtree is currently FREE-FLOATING.** Nothing in the transitive cone of
 `fermat_last_theorem` consumes it yet. It was vendored to close the "the pin has
@@ -606,7 +618,52 @@ theorem relIndex_sup_inf_ne_zero_of_le_center {G : Type*} [Group G]
         (le_inf (inf_le_right.trans le_sup_right) inf_le_left))) h
 
 /--
-**(sorry leaf — finiteness of a ray class group.)**
+In a COMMUTATIVE group, finiteness of the double-coset space `H ＼ G ／ K` implies
+that `H ⊔ K` has finite index.
+
+The map is `H a K ↦ a (H ⊔ K)`; it is well defined because `a⁻¹ (h a k) = h k`
+by commutativity, and it is visibly surjective, so `G ⧸ (H ⊔ K)` is a quotient of
+the finite double-coset space. (Commutativity — or normality of `H` — is genuinely
+needed: `a⁻¹ h a` need not lie in `H` otherwise.) -/
+theorem index_sup_ne_zero_of_finite_doubleCoset {G : Type*} [CommGroup G] (H K : Subgroup G)
+    (hfin : Finite (DoubleCoset.Quotient (H : Set G) (K : Set G))) :
+    (H ⊔ K).index ≠ 0 := by
+  haveI := hfin
+  refine Subgroup.index_ne_zero_iff_finite.mpr (Finite.of_surjective
+    (α := DoubleCoset.Quotient (H : Set G) (K : Set G))
+    (Quotient.lift (fun a : G => (QuotientGroup.mk a : G ⧸ (H ⊔ K))) ?_) ?_)
+  · intro a b hab
+    obtain ⟨x, hx, y, hy, rfl⟩ := DoubleCoset.rel_iff.mp hab
+    refine QuotientGroup.eq.mpr ?_
+    have h : a⁻¹ * (x * a * y) = x * y := by
+      rw [mul_comm x a, mul_assoc, inv_mul_cancel_left]
+    rw [h]
+    exact mul_mem (Subgroup.mem_sup_left hx) (Subgroup.mem_sup_right hy)
+  · intro q
+    obtain ⟨a, rfl⟩ := QuotientGroup.mk_surjective q
+    exact ⟨DoubleCoset.mk H K a, rfl⟩
+
+variable (F) in
+open scoped TensorProduct.RightActions in
+/--
+The `𝔸ᶠ`-algebra isomorphism `F ⊗[F] 𝔸ᶠ ≃ 𝔸ᶠ`, where the source carries the
+RIGHT-action `𝔸ᶠ`-algebra structure. This is the `D = F` case of
+`WithRigidification.algEquiv`, and it is built the same way: commute the factors
+(an `𝔸ᶠ`-algebra map by `rfl`, since both algebra maps send `s` to the tensor with
+`s` in the `𝔸ᶠ` slot), then apply `Algebra.TensorProduct.rid`.
+
+`Algebra.TensorProduct.lid F 𝔸ᶠ` will not do here: it is only `F`-linear, whereas
+the module topology on `F ⊗[F] 𝔸ᶠ` is the `𝔸ᶠ`-module topology, so continuity is
+obtained from `IsModuleTopology.continuous_of_linearMap` only for an `𝔸ᶠ`-linear
+map. -/
+noncomputable def tensorLid : F ⊗[F] 𝔸ᶠ[F] ≃ₐ[𝔸ᶠ[F]] 𝔸ᶠ[F] :=
+  AlgEquiv.trans
+    { __ := Algebra.TensorProduct.comm F F 𝔸ᶠ[F], commutes' := fun _ => rfl }
+    (Algebra.TensorProduct.rid F 𝔸ᶠ[F] 𝔸ᶠ[F])
+
+open scoped TensorProduct.RightActions in
+/--
+**(PROVEN 2026-07-27 — finiteness of a ray class group.)**
 
 For every OPEN subgroup `W ≤ 𝔸ᶠ[F]ˣ`, the subgroup `Fˣ · W` has finite index in
 `𝔸ᶠ[F]ˣ`. Equivalently `Finite (Fˣ ＼ 𝔸ᶠ[F]ˣ ／ W)`: the ray class group of `F`
@@ -618,25 +675,36 @@ the COMPACT group `𝒪̂ˣ`, hence of finite index there, and
 `𝔸ᶠ[F]ˣ / (Fˣ · 𝒪̂ˣ) ≅ Cl(F)` is finite; so
 `[𝔸ᶠ[F]ˣ : Fˣ · W] ≤ |Cl(F)| · [𝒪̂ˣ : W ⊓ 𝒪̂ˣ] < ∞`.
 
-**Route.** This is Fujisaki's lemma for the (one-dimensional, commutative)
+**Proof.** This is Fujisaki's lemma for the (one-dimensional, commutative)
 division algebra `D = F` over itself:
-`NumberField.FiniteAdeleRing.DivisionAlgebra.finiteDoubleCoset F F`, already
-proven in `Fermat/FLT/DivisionAlgebra/Finiteness.lean`. Two transports are needed:
-(i) `F ⊗[F] 𝔸ᶠ ≃ 𝔸ᶠ` (`Algebra.TensorProduct.lid`), continuous for the module
-topology, carrying `incl₁ F F` to `Units.map (algebraMap F 𝔸ᶠ)`; and (ii) in an
-ABELIAN group `DoubleCoset.Quotient H K` surjects onto `G ⧸ (H ⊔ K)` (send the
-double coset of `a` to the coset of `a`; well defined because
-`a⁻¹ (h a k) = h k ∈ H ⊔ K` by commutativity), so finiteness of the double coset
-space gives `(H ⊔ K).index ≠ 0` via `Subgroup.index_ne_zero_iff_finite`.
-Compare `TotallyDefiniteQuaternionAlgebra.finite_doubleCoset` in
+`NumberField.FiniteAdeleRing.DivisionAlgebra.finiteDoubleCoset F F`, proven in
+`Fermat/FLT/DivisionAlgebra/Finiteness.lean`. Two transports are used:
+(i) `tensorLid F : F ⊗[F] 𝔸ᶠ ≃ₐ[𝔸ᶠ] 𝔸ᶠ` above, continuous for the module
+topology, carrying `incl₁ F F` to `Units.map (algebraMap F 𝔸ᶠ)`; and (ii)
+`index_sup_ne_zero_of_finite_doubleCoset` above, the abelian double-coset-to-quotient
+surjection. Compare `TotallyDefiniteQuaternionAlgebra.finite_doubleCoset` in
 `Fermat/FLT/AutomorphicForm/QuaternionAlgebra/FiniteDimensional.lean`, which
 performs exactly transport (i) for the quaternionic `D`.
 
-Note this leaf does NOT mention `D` at all, nor total definiteness: it is a
+The openness of `W` is consumed exactly once, as the hypothesis of
+`finiteDoubleCoset` applied to the pullback of `W` along `Units.map (tensorLid F)`.
+
+Note this statement does NOT mention `D` at all, nor total definiteness: it is a
 statement about `F` alone. -/
 theorem index_ray_ne_zero (W : Subgroup 𝔸ᶠ[F]ˣ) (hW : IsOpen (W : Set 𝔸ᶠ[F]ˣ)) :
-    (MonoidHom.range (Units.map (RingHom.toMonoidHom (algebraMap F 𝔸ᶠ[F]))) ⊔ W).index ≠ 0 :=
-  sorry
+    (MonoidHom.range (Units.map (RingHom.toMonoidHom (algebraMap F 𝔸ᶠ[F]))) ⊔ W).index ≠ 0 := by
+  refine index_sup_ne_zero_of_finite_doubleCoset _ _ ?_
+  refine (NumberField.FiniteAdeleRing.DivisionAlgebra.finiteDoubleCoset F F
+    (U := W.comap (Units.map (tensorLid F).toMonoidHom))
+    (hW.preimage (Units.continuous_map (by
+      exact IsModuleTopology.continuous_of_linearMap (tensorLid F).toLinearMap)))).of_equiv _
+    (DoubleCoset.quotientEquiv _ _ _ _ (Units.mapEquiv (tensorLid F).toMulEquiv) ?_ rfl)
+  rw [← MulEquiv.coe_toEquiv, Equiv.preimage_eq_iff_eq_image, ← Set.range_comp]
+  dsimp
+  congr 1
+  ext x : 2
+  simp [tensorLid]
+  exact Algebra.algebraMap_eq_smul_one _
 
 /-- The form of `index_ray_ne_zero` consumed by `isFiniteRelIndex_Δ`: `Fˣ · (𝔸ᶠˣ ∩ U)`
 has finite index in `𝔸ᶠˣ`, both viewed inside `GL₂(𝔸ᶠ)` as scalar matrices.
@@ -720,18 +788,18 @@ ordinary sorried leaf with its statement written out in full.
 **DECOMPOSED 2026-07-27.** This instance is now PROVEN from the lemmas above.
 The group theory (`relIndex_sup_ne_zero_of_le_center`,
 `relIndex_sup_inf_ne_zero_of_le_center`) and the transport
-`relIndex_ray_ne_zero` are proven; exactly TWO sorried leaves remain, and they
-are the two arithmetic inputs:
+`relIndex_ray_ne_zero` are proven. Of the two arithmetic inputs:
 
 * `index_ray_ne_zero` — finiteness of a ray class group of `F`. Does not mention
-  `D`; available from the already-proven Fujisaki lemma at `D = F`
-  (`NumberField.FiniteAdeleRing.DivisionAlgebra.finiteDoubleCoset`), needing only
-  a tensor-product transport and the abelian double-coset identification.
+  `D`. **PROVEN 2026-07-27** from the Fujisaki lemma at `D = F`
+  (`NumberField.FiniteAdeleRing.DivisionAlgebra.finiteDoubleCoset`), via the
+  tensor-product transport `tensorLid` and the abelian double-coset surjection
+  `index_sup_ne_zero_of_finite_doubleCoset`.
 * `relIndex_unitsOrder_ne_zero` — Voight 17.7.13, the genuinely
   definite-quaternionic input, and the only consumer of
-  `IsQuaternionAlgebra.IsTotallyDefinite` in this file.
+  `IsQuaternionAlgebra.IsTotallyDefinite` in this file. STILL OPEN.
 
-Those two are now the only unproven statements in the vendored closure;
+That second one is now the only unproven statement in the vendored closure;
 everything else is proven. -/
 @[nolint unusedArguments]
 instance isFiniteRelIndex_Δ [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
