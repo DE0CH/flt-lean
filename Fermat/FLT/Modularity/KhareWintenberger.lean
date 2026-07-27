@@ -401,8 +401,16 @@ import Mathlib.LinearAlgebra.Charpoly.BaseChange
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 -- pillar-γ proof-only imports (see the module docstring's import note):
 -- the Family-free Chebotarev/Brauer–Nesbitt machinery and its Kolchin
--- ingredients
-import Fermat.FLT.GaloisRepresentation.Chebotarev
+-- ingredients.
+-- PROMOTED TO `public` 2026-07-27 (the Eichler–Shimura cut of STEP 2a): the
+-- global Frobenius element `GaloisRepresentation.globalFrob` now appears in
+-- SIGNATURE position, in the `congruence` and `det_frob` fields of
+-- `CarayolPackage` below, and a non-public import does not re-export it.
+-- Refuting check for cone growth, one line —
+-- `grep -n 'GaloisRepresentation.Chebotarev' Fermat/FLT/Modularity/{Interface,Patching}.lean`:
+-- BOTH consumers of this module already `public import` it, so this adds ZERO
+-- modules to any cone.
+public import Fermat.FLT.GaloisRepresentation.Chebotarev
 import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
 import Mathlib.Tactic.NoncommRing
 -- flatness-transfer proof-only imports (2026-07-24, the open-ideal
@@ -3679,10 +3687,661 @@ theorem isTopologicalRing_moduleTopology_of_finite_padic (p : ℕ) [Fact p.Prime
   letI := moduleTopology ℚ_[p] L
   IsModuleTopology.isTopologicalRing ℚ_[p] L
 
+/-! #### The Eichler–Shimura cut of STEP 2a (2026-07-27)
+
+`exists_threeadicField_realization_of_totallyDefinite_heckeCharacter` was a
+single sorry carrying the whole of Carayol 1986 §0.9–0.11. The pin has NO
+Shimura curves, NO étale cohomology, NO Hilbert modular forms and NO
+automorphic forms on an INDEFINITE quaternion algebra (refuting checks, run
+2026-07-27 over `Fermat/`, each returning nothing but prose:
+`grep -rn 'ShimuraCurve\|ShimuraVariety' --include=*.lean Fermat/`,
+`grep -rniE 'etale[A-Za-z]*cohomolog|EtaleSite|SheafCohomology' --include=*.lean Fermat/`,
+`grep -rn 'HilbertModularForm' --include=*.lean Fermat/`,
+`grep -rn 'IsIndefinite' --include=*.lean Fermat/`. Note the FIRST of these
+must be spelled with the full name: a bare `grep Shimura` hits
+`EichlerShimuraPackage` in `Interface.lean`, which is a Tate-module carrier
+for GL₂/ℚ and not a curve.) So the quaternionic Shimura curve enters as an
+INTERFACE STRUCTURE, `CarayolPackage`, in exactly the style
+`Modularity/Interface.lean` already uses for the GL₂/ℚ analogue
+(`EichlerShimuraPackage`, five successive decompositions of the attachment
+leaf `exists_galoisRep_charFrob_of_weightTwoNewform`): its fields are the
+classically-true cited facts about the `λ`-adic cohomology of the Shimura
+curve that the classical proof consumes, and everything from those facts to
+the STEP 2a statement is PROVEN here.
+
+The toolkit below (`Carayol.jointEigenspace`, `Carayol.compressEnd`,
+`Carayol.eq_quadratic_of_monic_natDegree_two`) is a PLACE-INDEXED
+re-development of `Interface.lean`'s prime-indexed
+`heckeEigenspace`/`compressEnd`/`eq_quadratic_of_monic_natDegree_two`. The
+duplication is forced, not chosen: `Interface.lean` IMPORTS this module, so
+its copies are downstream and unusable here, and this node's CIRCULARITY
+GUARD forbids discharge through it in any case. It is deliberately stated
+over an ARBITRARY index type `ι` and an arbitrary index subset `S`, so that
+`Interface.lean`'s `ℕ`-indexed versions can later be replaced by
+instantiations of these rather than the reverse; that hoist is a separate,
+purely mechanical task and is NOT attempted here (it would edit another
+owner's region of a 60k-line file).
+
+`compressEnd` is the load-bearing device and the reason a bare restriction
+will not do: the compressed representation must be CONTINUOUS for the module
+topologies, and the module topology sees LINEAR maps
+(`IsModuleTopology.continuous_of_linearMap`) while a restriction to an
+abstract submodule has no continuity API. Compression is linear on the whole
+endomorphism algebra and multiplicative only on the stabiliser of the
+subspace (`compressEnd_mul`), which is exactly enough. -/
+
+namespace Carayol
+
+section JointEigenspace
+
+variable {A : Type*} [CommRing A] {V₀ : Type*} [AddCommGroup V₀] [Module A V₀]
+  {ι : Type*}
+
+/-- The joint eigenspace of a family `t` of commuting operators indexed by
+`ι`, taken over the index subset `S`, for the eigenvalue system `a`: the
+intersection over `i ∈ S` of `ker (t i − a i)`. For the `CarayolPackage`
+below this carves the `θ`-eigencomponent of the eigensystem out of the
+`λ`-adic cohomology of the Shimura curve. -/
+def jointEigenspace (S : Set ι) (t : ι → Module.End A V₀) (a : ι → A) :
+    Submodule A V₀ :=
+  ⨅ (i : ι) (_ : i ∈ S), LinearMap.ker (t i - a i • (1 : Module.End A V₀))
+
+/-- Membership in `jointEigenspace`: a simultaneous eigenvector at every
+index in `S`. -/
+theorem mem_jointEigenspace_iff {S : Set ι} {t : ι → Module.End A V₀}
+    {a : ι → A} {x : V₀} :
+    x ∈ jointEigenspace S t a ↔ ∀ i ∈ S, t i x = a i • x := by
+  simp [jointEigenspace, Submodule.mem_iInf, LinearMap.mem_ker,
+    LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply, sub_eq_zero]
+
+end JointEigenspace
+
+section CompressEnd
+
+variable {A : Type*} [CommRing A] {V₀ : Type*} [AddCommGroup V₀]
+    [Module A V₀] {n : ℕ} (W : Submodule A V₀) (πW : V₀ →ₗ[A] W)
+    (e : W ≃ₗ[A] (Fin n → A))
+
+/-- Compression of an endomorphism of `V₀` to the standard frame of a
+distinguished subspace `W`, through a chosen projection `πW` and a chosen
+frame `e`. As a map of endomorphism ALGEBRAS it is only multiplicative on the
+stabiliser of `W` (`compressEnd_mul`), but as a LINEAR map it is everywhere
+defined — which is what makes the compressed Galois representation of the
+Carayol assembly continuous for the module topologies. -/
+def compressEnd :
+    Module.End A V₀ →ₗ[A] Module.End A (Fin n → A) where
+  toFun φ :=
+    e.toLinearMap ∘ₗ πW ∘ₗ φ ∘ₗ W.subtype ∘ₗ e.symm.toLinearMap
+  map_add' φ ψ := by ext x; simp
+  map_smul' c φ := by ext x; simp
+
+/-- Evaluation of the compression. -/
+theorem compressEnd_apply (φ : Module.End A V₀) (x : Fin n → A) :
+    compressEnd W πW e φ x = e (πW (φ ↑(e.symm x))) := rfl
+
+/-- The compression sends the identity to the identity, given that `πW`
+retracts the inclusion of `W`. -/
+theorem compressEnd_one (hπ : ∀ w : W, πW (w : V₀) = w) :
+    compressEnd W πW e 1 = 1 := by
+  refine LinearMap.ext fun x => ?_
+  rw [compressEnd_apply, Module.End.one_apply, hπ (e.symm x),
+    LinearEquiv.apply_symm_apply, Module.End.one_apply]
+
+/-- The compression is multiplicative when the right factor stabilises
+`W`. -/
+theorem compressEnd_mul (hπ : ∀ w : W, πW (w : V₀) = w)
+    (φ ψ : Module.End A V₀) (hψ : ∀ x ∈ W, ψ x ∈ W) :
+    compressEnd W πW e (φ * ψ) =
+      compressEnd W πW e φ * compressEnd W πW e ψ := by
+  refine LinearMap.ext fun x => ?_
+  simp only [Module.End.mul_apply, compressEnd_apply,
+    LinearEquiv.symm_apply_apply]
+  have hmem : ψ ↑(e.symm x) ∈ W := hψ _ (SetLike.coe_mem (e.symm x))
+  have hproj : πW (ψ ↑(e.symm x)) = ⟨ψ ↑(e.symm x), hmem⟩ :=
+    hπ ⟨_, hmem⟩
+  rw [hproj]
+
+/-- The compression of an operator acting on `W` as the scalar `c` is the
+scalar `c`. -/
+theorem compressEnd_eq_smul_one (hπ : ∀ w : W, πW (w : V₀) = w)
+    {φ : Module.End A V₀} {c : A} (hφ : ∀ x ∈ W, φ x = c • x) :
+    compressEnd W πW e φ = c • 1 := by
+  refine LinearMap.ext fun x => ?_
+  rw [compressEnd_apply, hφ _ (SetLike.coe_mem (e.symm x)), map_smul,
+    hπ (e.symm x), map_smul, LinearEquiv.apply_symm_apply,
+    LinearMap.smul_apply, Module.End.one_apply]
+
+/-- On the stabiliser of `W` the compression is conjugation of the
+restriction by the frame — the bridge to `LinearMap.det_conj` for the
+determinant transport of the Carayol assembly. -/
+theorem compressEnd_eq_conj_restrict (hπ : ∀ w : W, πW (w : V₀) = w)
+    {φ : Module.End A V₀} (hφ : ∀ x ∈ W, φ x ∈ W) :
+    compressEnd W πW e φ =
+      (e : W →ₗ[A] (Fin n → A)) ∘ₗ φ.restrict hφ ∘ₗ
+        (e.symm : (Fin n → A) →ₗ[A] W) := by
+  refine LinearMap.ext fun x => ?_
+  simp only [compressEnd_apply, LinearMap.comp_apply,
+    LinearEquiv.coe_coe, LinearMap.restrict_apply]
+  exact congrArg e
+    (hπ ⟨φ ↑(e.symm x), hφ _ (SetLike.coe_mem (e.symm x))⟩)
+
+end CompressEnd
+
+/-- Quadratic decomposition of a monic degree-2 polynomial (PROVEN glue):
+`P = X² + P₁·X + P₀`. Applied to the Frobenius characteristic polynomial and
+to the target Hecke polynomial, it turns the coefficientwise information the
+Cayley–Hamilton comparison produces into the polynomial identity STEP 2a
+demands. The `map`-flavoured companion is
+`map_eq_quadratic_of_monic_natDegree_two` above; this is the identity-map
+case, stated separately because going through `Polynomial.map_id` costs a
+rewrite that `simp` would have to be trusted with (and the project simp set
+contains sorried lemmas). -/
+theorem eq_quadratic_of_monic_natDegree_two {A : Type*} [CommRing A]
+    {p : Polynomial A} (hm : p.Monic) (hd : p.natDegree = 2) :
+    p = X ^ 2 + C (p.coeff 1) * X + C (p.coeff 0) := by
+  ext n
+  match n with
+  | 0 => simp
+  | 1 => simp
+  | 2 =>
+      have h2 : p.coeff 2 = 1 := by
+        have hlc := hm.coeff_natDegree
+        rwa [hd] at hlc
+      simp [h2, Polynomial.coeff_X_pow]
+  | (m + 3) =>
+      have hzero : p.coeff (m + 3) = 0 :=
+        Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+      simp [hzero, Polynomial.coeff_X_pow]
+
+end Carayol
+
+open Carayol in
+/-- **The quaternionic Shimura-curve package at a place `λ` of `E`** — the
+carrier through which Carayol's Théorème (A) enters this development
+(2026-07-27, the Eichler–Shimura cut of STEP 2a).
+
+The intended inhabitant is Carayol 1986 §0.10–0.11: `Vlam` is the `λ`-adic
+étale cohomology `H¹(M_K ⊗_F F̄, ℱ_λ)` of the Shimura curve `M_K` attached to
+a quaternion algebra over `F` split at exactly one infinite place, `tauJ` is
+its continuous `Γ_F`-action, `hecke` are the Hecke correspondences, and
+`badF` is the exceptional set. Each field is a classically-true cited
+assertion about that inhabitant:
+
+* `hecke_comm` — the Hecke correspondences are defined over `F`, hence
+  commute with the whole Galois action;
+* `congruence` — the EICHLER–SHIMURA congruence relation at a good place:
+  `Frob_w² − T_w·Frob_w + N(w) = 0` on the cohomology (the constant is
+  written `(P w).coeff 0`, which for the intended inhabitant IS `N(w)`);
+* `rank_eigenspace` — MULTIPLICITY ONE: the joint `θ`-eigenspace of the
+  Hecke operators is 2-dimensional;
+* `det_frob` — the Weil-pairing determinant: `det Frob_w = N(w)` on that
+  eigenspace.
+
+`P` is the family of target Hecke polynomials, carried as a PARAMETER rather
+than built from `N(w)` and an eigenvalue system: that keeps the whole
+integrality/normalisation bookkeeping (`P w` monic of degree `2`, constant
+coefficient `N(w)`) inside the package, where it is a fact about the
+inhabitant, instead of forcing the consumer to re-derive the shape of
+`heckeF w` from `hmod` and the cyclotomic determinant.
+
+FORMAL-CONTENT AUDIT, and it must not be skipped by anyone reading this as a
+reduction. **`Nonempty (CarayolPackage F L badF P)` is EQUIVALENT to the
+conclusion of STEP 2a over the same `L` and `P`, not weaker than it.** One
+direction is `exists_galoisRep_charFrob_of_carayolPackage` below. For the
+other, the explicit witness — checked by hand, deliberately NOT committed as
+a declaration since nothing would consume it and it would be free-floating —
+is: given `τ : GaloisRep F L (Fin 2 → L)` with `τ.charFrob w = P w`, take
+`Vlam := Fin 2 → L`, `tauJ := τ`, `hecke w := (-(P w).coeff 1) • 1`. Then
+`hecke_comm` is commutation with a scalar, `congruence` is Cayley–Hamilton
+(`LinearMap.aeval_self_charpoly`) for `τ (globalFrob w)`, the joint
+eigenspace of a family of scalars is everything so `rank_eigenspace` is
+`hfr2`, and `det_frob` is `LinearMap.det_eq_sign_charpoly_coeff`.
+
+So this cut RELOCATES the citation rather than shrinking it, and the honest
+statement of what it buys is this: the derivation *Eichler–Shimura relation +
+multiplicity one + Weil-pairing determinant ⟹ the Frobenius characteristic
+polynomial is the Hecke polynomial* — which is the entire content of the
+classical argument once the cohomology is in hand — is now MACHINE-CHECKED
+instead of assumed, and what remains to be believed is stated in the
+vocabulary of the object Carayol actually constructs. That is the same trade
+`Interface.lean` took for `EichlerShimuraPackage`, whose own inhabitation is
+likewise equivalent-plus-one-field to the attachment statement it feeds.
+
+THE NEXT CUT, recorded so the next owner does not have to find it: follow
+`Interface.lean`'s `ModularJacobianPackage`, i.e. replace `rank_eigenspace`
+(multiplicity one, a spectral fact) by sharper `θ`-independent module theory
+— freeness of `Vlam` of rank `2` over the subalgebra generated by `hecke`,
+plus a nonzero idempotent cutting out the `θ`-eigensystem — and PROVE
+`rank_eigenspace` from it. That is a genuine reduction rather than a
+relocation, and `Interface.lean` carries the proven coordinate lemmas
+(`exists_ne_zero_mem_heckeEigenspace_of_free`, `mem_heckeEigenspace_of_free`)
+that do it, which would have to be re-developed here for the same
+circularity reason as the toolkit above. -/
+structure CarayolPackage
+    (F : Type u) [Field F] [NumberField F]
+    (L : Type u) [Field L] [TopologicalSpace L] [IsTopologicalRing L]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L) where
+  /-- The Galois module: intended `H¹(M_K ⊗_F F̄, ℱ_λ)`. -/
+  Vlam : Type u
+  [addCommGroup : AddCommGroup Vlam]
+  [module : Module L Vlam]
+  [moduleFinite : Module.Finite L Vlam]
+  /-- The continuous Galois action on the cohomology. -/
+  tauJ : GaloisRep F L Vlam
+  /-- The Hecke correspondences, acting on the cohomology. -/
+  hecke : HeightOneSpectrum (NumberField.RingOfIntegers F) → Module.End L Vlam
+  /-- The Hecke correspondences are defined over `F`, so they commute with
+  the whole Galois action. -/
+  hecke_comm : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (γ : Field.absoluteGaloisGroup F), hecke w * tauJ γ = tauJ γ * hecke w
+  /-- The target Hecke polynomial is monic … -/
+  monic : ∀ w ∉ badF, (P w).Monic
+  /-- … of degree two. -/
+  natDegree_eq : ∀ w ∉ badF, (P w).natDegree = 2
+  /-- The Eichler–Shimura congruence relation at a good place:
+  `Frob_w² − T_w·Frob_w + N(w) = 0`. -/
+  congruence : ∀ w ∉ badF,
+    tauJ (globalFrob w) ^ 2 - hecke w * tauJ (globalFrob w)
+      + (P w).coeff 0 • 1 = 0
+  /-- Multiplicity one: the joint eigenspace of the Hecke operators for the
+  eigensystem `w ↦ −(P w).coeff 1` is 2-dimensional. -/
+  rank_eigenspace :
+    Module.rank L
+      (jointEigenspace {w | w ∉ badF} hecke (fun w => -(P w).coeff 1)) = 2
+  /-- The Weil-pairing determinant: the Galois determinant on the eigenspace
+  is `N(w)` at the `w`-Frobenius. -/
+  det_frob : ∀ w ∉ badF,
+    ∀ hst : ∀ x ∈ jointEigenspace {w | w ∉ badF} hecke
+        (fun w => -(P w).coeff 1),
+      tauJ (globalFrob w) x ∈ jointEigenspace {w | w ∉ badF} hecke
+        (fun w => -(P w).coeff 1),
+    LinearMap.det ((tauJ (globalFrob w)).restrict hst) = (P w).coeff 0
+
+attribute [instance] CarayolPackage.addCommGroup CarayolPackage.module
+  CarayolPackage.moduleFinite
+
+open Carayol in
+/-- **From the Shimura-curve package to the Galois representation** (PROVEN,
+2026-07-27): the `θ`-eigenspace of the `λ`-adic cohomology carries a
+continuous 2-dimensional representation of `Γ_F` whose Frobenius
+characteristic polynomial at every good place is the target Hecke
+polynomial.
+
+This is the whole content of the classical argument once the cohomology is in
+hand, and it is the half of Carayol's Théorème (A) that this development
+verifies rather than cites. The steps:
+
+1. the eigenspace `W` is `Γ_F`-STABLE, because the Hecke correspondences are
+  defined over `F` (`hecke_comm`);
+2. `W` is 2-dimensional (`rank_eigenspace`), so it carries a frame
+  `e : W ≃ₗ[L] (Fin 2 → L)`; choose a projection `πW` onto it from a
+  complement (`Submodule.exists_isCompl`);
+3. the compressed map `γ ↦ compressEnd W πW e (tauJ γ)` is a MONOID
+  homomorphism, because compression is multiplicative on the stabiliser of
+  `W` and every `tauJ γ` stabilises it, and it is CONTINUOUS because
+  compression is `L`-LINEAR and the module topology sees linear maps —
+  this is why the proof goes through `compressEnd` and not through
+  `LinearMap.restrict`, which has no continuity API;
+4. on `W` the Hecke operator acts as the scalar `−(P w).coeff 1`, so the
+  Eichler–Shimura relation compresses to
+  `Φ² + (P w).coeff 1 • Φ + (P w).coeff 0 • 1 = 0`;
+5. Cayley–Hamilton (`LinearMap.aeval_self_charpoly`) gives the same identity
+  with the charpoly's own coefficients; the constant terms agree by
+  `det_frob` and `LinearMap.det_eq_sign_charpoly_coeff`, so the difference is
+  `(c₁ − (P w).coeff 1) • Φ = 0`, and `Φ` is INVERTIBLE (it is the
+  compression of a group element, and compression is multiplicative on the
+  stabiliser), so the scalar vanishes;
+6. both polynomials are monic of degree `2`, so agreeing in both
+  coefficients makes them equal (`eq_quadratic_of_monic_natDegree_two`).
+
+Step 5's invertibility is where the argument would fail for a general
+operator: it is exactly what turns "annihilated by two monic quadratics with
+equal constant terms" into "equal linear terms". -/
+theorem exists_galoisRep_charFrob_of_carayolPackage
+    {F : Type u} [Field F] [NumberField F]
+    {L : Type u} [Field L] [TopologicalSpace L] [IsTopologicalRing L]
+    {badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))}
+    {P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L}
+    (C : CarayolPackage F L badF P) :
+    ∃ τ : GaloisRep F L (Fin 2 → L), ∀ w ∉ badF, τ.charFrob w = P w := by
+  classical
+  set W : Submodule L C.Vlam :=
+    jointEigenspace {w | w ∉ badF} C.hecke (fun w => -(P w).coeff 1) with hWdef
+  -- 1. Galois stability of the eigenspace (rationality of the Hecke
+  -- correspondences)
+  have hstab : ∀ γ : Field.absoluteGaloisGroup F, ∀ x ∈ W, C.tauJ γ x ∈ W := by
+    intro γ x hx
+    rw [hWdef, mem_jointEigenspace_iff] at hx ⊢
+    intro w hw
+    have hcomm := LinearMap.congr_fun (C.hecke_comm w γ) x
+    rw [Module.End.mul_apply, Module.End.mul_apply, hx w hw, map_smul] at hcomm
+    exact hcomm
+  -- 2. the eigenspace is 2-dimensional; frame it, and pick a projection
+  have hfrW : Module.finrank L W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast C.rank_eigenspace)
+  let e : W ≃ₗ[L] (Fin 2 → L) := (Module.finBasisOfFinrankEq L W hfrW).equivFun
+  obtain ⟨W', hWc⟩ := Submodule.exists_isCompl W
+  let πW : C.Vlam →ₗ[L] W := Submodule.projectionOnto W W' hWc
+  have hπ : ∀ w : W, πW (w : C.Vlam) = w := fun w =>
+    Submodule.projectionOnto_apply_left hWc w
+  -- 3. module topologies on the two endomorphism algebras, and continuity of
+  -- the compression
+  letI : TopologicalSpace (Module.End L C.Vlam) := moduleTopology L _
+  haveI : IsModuleTopology L (Module.End L C.Vlam) := ⟨rfl⟩
+  letI : TopologicalSpace (Module.End L (Fin 2 → L)) := moduleTopology L _
+  haveI : IsModuleTopology L (Module.End L (Fin 2 → L)) := ⟨rfl⟩
+  haveI := IsModuleTopology.toContinuousAdd L (Module.End L (Fin 2 → L))
+  have hτc : Continuous fun γ : Field.absoluteGaloisGroup F => C.tauJ γ :=
+    ContinuousMonoidHom.continuous_toFun C.tauJ
+  have hΛc : Continuous (compressEnd W πW e) :=
+    IsModuleTopology.continuous_of_linearMap _
+  have hcont : Continuous fun γ : Field.absoluteGaloisGroup F =>
+      compressEnd W πW e (C.tauJ γ) := hΛc.comp hτc
+  let τmh : Field.absoluteGaloisGroup F →* Module.End L (Fin 2 → L) :=
+    { toFun := fun γ => compressEnd W πW e (C.tauJ γ)
+      map_one' := by
+        show compressEnd W πW e (C.tauJ 1) = 1
+        rw [map_one]
+        exact compressEnd_one W πW e hπ
+      map_mul' := fun γ δ => by
+        show compressEnd W πW e (C.tauJ (γ * δ)) =
+          compressEnd W πW e (C.tauJ γ) * compressEnd W πW e (C.tauJ δ)
+        rw [map_mul]
+        exact compressEnd_mul W πW e hπ _ _ (hstab δ) }
+  let τ' : GaloisRep F L (Fin 2 → L) := ⟨τmh, hcont⟩
+  refine ⟨τ', fun w hw => ?_⟩
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
+  have happ : τ' (globalFrob w) = compressEnd W πW e (C.tauJ (globalFrob w)) :=
+    rfl
+  rw [happ]
+  -- the compressed Frobenius is invertible …
+  have hinv : compressEnd W πW e (C.tauJ (globalFrob w)) *
+      compressEnd W πW e (C.tauJ ((globalFrob w)⁻¹)) = 1 := by
+    rw [← compressEnd_mul W πW e hπ _ _ (hstab _), ← map_mul,
+      mul_inv_cancel, map_one]
+    exact compressEnd_one W πW e hπ
+  -- 4. … the Hecke operator acts on the eigenspace as its eigenvalue …
+  have hΛt : compressEnd W πW e (C.hecke w) = (-(P w).coeff 1) • 1 :=
+    compressEnd_eq_smul_one W πW e hπ fun x hx =>
+      mem_jointEigenspace_iff.mp hx w hw
+  have hcong := C.congruence w hw
+  have hQ : compressEnd W πW e (C.tauJ (globalFrob w)) ^ 2
+      - (-(P w).coeff 1) • compressEnd W πW e (C.tauJ (globalFrob w))
+      + (P w).coeff 0 • 1 = 0 := by
+    have h₀ : compressEnd W πW e (C.tauJ (globalFrob w) ^ 2)
+        - compressEnd W πW e (C.hecke w * C.tauJ (globalFrob w))
+        + (P w).coeff 0 • compressEnd W πW e 1 = 0 := by
+      rw [← map_smul, ← map_sub, ← map_add, hcong, map_zero]
+    rw [pow_two, compressEnd_mul W πW e hπ _ _ (hstab _),
+      compressEnd_mul W πW e hπ _ _ (hstab _), hΛt,
+      compressEnd_one W πW e hπ, smul_mul_assoc, one_mul, ← pow_two] at h₀
+    exact h₀
+  -- … and has determinant `(P w).coeff 0` by the Weil pairing
+  have hdet : LinearMap.det (compressEnd W πW e (C.tauJ (globalFrob w))) =
+      (P w).coeff 0 := by
+    rw [compressEnd_eq_conj_restrict W πW e hπ (hstab _), LinearMap.det_conj]
+    exact C.det_frob w hw (hstab _)
+  -- 5. Cayley–Hamilton against the congruence pins the charpoly
+  have hfr2 : Module.finrank L (Fin 2 → L) = 2 := by simp
+  have hmon : (compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.Monic :=
+    LinearMap.charpoly_monic _
+  have hdeg : (compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.natDegree
+      = 2 := by
+    rw [LinearMap.charpoly_natDegree]
+    exact hfr2
+  have hP2 := eq_quadratic_of_monic_natDegree_two hmon hdeg
+  have hc0 : (compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 0
+      = (P w).coeff 0 := by
+    have hsign := LinearMap.det_eq_sign_charpoly_coeff
+      (compressEnd W πW e (C.tauJ (globalFrob w)))
+    rw [hfr2, hdet] at hsign
+    have hpow : ((-1 : L)) ^ 2 *
+        (compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 0 =
+        (compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 0 := by
+      ring
+    rw [hpow] at hsign
+    exact hsign.symm
+  have hCH := LinearMap.aeval_self_charpoly
+    (compressEnd W πW e (C.tauJ (globalFrob w)))
+  rw [hP2] at hCH
+  simp only [map_add, map_mul, map_pow, Polynomial.aeval_X,
+    Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one,
+    smul_mul_assoc, one_mul] at hCH
+  rw [hc0] at hCH
+  have hsub : ((compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 1
+      + -(P w).coeff 1) • compressEnd W πW e (C.tauJ (globalFrob w)) = 0 := by
+    have hmod : ((compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 1
+        + -(P w).coeff 1) • compressEnd W πW e (C.tauJ (globalFrob w)) =
+        (compressEnd W πW e (C.tauJ (globalFrob w)) ^ 2
+          + (compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 1
+            • compressEnd W πW e (C.tauJ (globalFrob w))
+          + (P w).coeff 0 • 1)
+        - (compressEnd W πW e (C.tauJ (globalFrob w)) ^ 2
+          - (-(P w).coeff 1) • compressEnd W πW e (C.tauJ (globalFrob w))
+          + (P w).coeff 0 • 1) := by
+      rw [add_smul]
+      abel
+    rw [hmod, hCH, hQ, sub_zero]
+  have hone : ((compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 1
+      + -(P w).coeff 1) • (1 : Module.End L (Fin 2 → L)) = 0 := by
+    have h2 : ((compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 1
+        + -(P w).coeff 1) •
+        (compressEnd W πW e (C.tauJ (globalFrob w)) *
+          compressEnd W πW e (C.tauJ ((globalFrob w)⁻¹))) = 0 := by
+      rw [← smul_mul_assoc, hsub, zero_mul]
+    rwa [hinv] at h2
+  have hker : ((compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 1
+      + -(P w).coeff 1) • (Pi.single (0 : Fin 2) (1 : L) : Fin 2 → L) = 0 := by
+    have h3 := congrArg (fun ψ : Module.End L (Fin 2 → L) =>
+      ψ (Pi.single (0 : Fin 2) (1 : L))) hone
+    simpa using h3
+  have hc1 : (compressEnd W πW e (C.tauJ (globalFrob w))).charpoly.coeff 1
+      = -(-(P w).coeff 1) := by
+    rcases smul_eq_zero.mp hker with h | h
+    · exact add_eq_zero_iff_eq_neg.mp h
+    · have h4 : (1 : L) = 0 := by simpa using congrFun h 0
+      exact absurd h4 one_ne_zero
+  -- 6. two monic quadratics agreeing in both coefficients are equal
+  rw [hP2, hc1, hc0, neg_neg]
+  exact (eq_quadratic_of_monic_natDegree_two (C.monic w hw)
+    (C.natDegree_eq w hw)).symm
+
+/-- **STEP 2a′ — INHABITATION of the quaternionic Shimura-curve package**
+(sorry leaf, CUT 2026-07-27 out of
+`exists_threeadicField_realization_of_totallyDefinite_heckeCharacter`, which
+is now a PROVEN assembly over this leaf and
+`exists_galoisRep_charFrob_of_carayolPackage`).
+
+This is Carayol's Théorème (A) stated in the vocabulary of the object Carayol
+actually constructs: the `3`-adic cohomology of the Shimura curve attached to
+the quaternion algebra, with its Hecke action, its Eichler–Shimura congruence
+relation, multiplicity one, and the Weil-pairing determinant. Everything from
+those data to the STEP 2a statement is PROVEN above; what remains here is the
+geometry.
+
+HYPOTHESES ARE BYTE-IDENTICAL to STEP 2a's, `hJL` included; nothing on the
+hypothesis side moved, so the round-2/3/4/5 hypothesis audits recorded in
+`carayol_threeadic_realization_of_heckePackage`'s docstring apply here
+unchanged. In particular `hbad2`/`hbad3`/`hbadℓ` still delete the places
+where the `3`-adic member ramifies, and `hirrF` is still the non-Eisenstein
+condition without which Théorème (A) is not a theorem about this eigensystem
+— and, by the ROUND-5 INTERLOCK, is also what makes the three `hbad`
+exclusions SUFFICIENT.
+
+INTEGRALITY IS STILL ABSENT from the conclusion, and must stay absent: `σ_λ`
+is `E_λ`-adic and `E_λ` is a FIELD, so `Module.Finite ℤ_3 B` was never
+something the citation could supply. That obligation lives in the sibling
+`exists_stableLattice_galoisRep_of_finiteDimensional_padic`, where it is
+elementary (Serre, *Abelian ℓ-adic representations* I §1).
+
+Literature: Carayol, *Sur les représentations `ℓ`-adiques associées aux
+formes modulaires de Hilbert*, Ann. Sci. ÉNS (4) **19** (1986) 409–468,
+Théorème (A) (§0.7), its even-degree quaternionic predecessor Théorème (B)
+(§0.9), and the cohomological construction of §0.10–0.11; Taylor, *On Galois
+representations associated to Hilbert modular forms*, Invent. Math. **98**
+(1989), for the cases Carayol's Shimura-curve route does not reach: `[F:ℚ]`
+even with `π` not discrete series at any finite place. **Taylor is a live part
+of this citation, not a footnote**, and the reason is worth stating because it
+is invisible from this signature alone: for even `[F:ℚ]` the quaternion
+algebra Carayol needs — split at exactly ONE infinite place — must ramify at
+some FINITE place too, which forces `π` to be discrete series there. In the
+intended chain `[F:ℚ] IS` even: `hFeven` is the hypothesis STEP 1
+(`exists_totallyDefinite_heckeCharacter_of_heckePackage`) consumes to build
+the definite quaternion algebra. (This leaf does not itself carry `hFeven`,
+and `hJL` does not force evenness either — a totally definite `D` over an
+odd-degree `F` ramifies at an odd number of finite places — so an odd-degree
+instance is formally admissible here and is the EASY case for the citation.)
+
+ROUND-6 DECOMPOSITION AUDIT (2026-07-27) — why the cut went THIS way and not
+another. Rounds 2–5 audited the HYPOTHESIS side and the conclusion-side
+SHRINKS; round 6 asked the different question of how to DECOMPOSE what is
+left. Axes searched, each with the check that would refute the verdict:
+
+(a) COEFFICIENT-FIELD SELECTION — cutting out "produce `L`, `ψ₃`, `ι`" as an
+  elementary leaf (a number field embeds in `ℚ̄_3`, and the `ℚ_3`-algebra it
+  generates is finite). REJECTED, and this is the sharp point: the current
+  conclusion `∃ L, …` is ALREADY maximally weak in `L`, so every way of
+  moving the choice out makes the remainder STRONGER — `∀ L` receiving `E`
+  additionally demands base change from `E_λ`; pinning `L = ℚ_3(ψ₃ E)` is
+  Théorème (A) verbatim, which is route (2) of the ROUND-3 audit, already
+  rejected there for asserting more. Refuting check: exhibit a factorisation
+  of the coefficient-field choice under which the residue is WEAKER than the
+  present statement. None was found.
+
+(b) THE CARRIER — returning the representation on an abstract 2-dimensional
+  `L`-module instead of `Fin 2 → L`, with a basis-transport leaf. It IS a
+  strict weakening, and it is REJECTED by the ROUND-3 route-(3) test: it
+  removes no INPUT, since the construction that proves the weak form is the
+  same construction in full. (It is also exactly what
+  `exists_galoisRep_charFrob_of_carayolPackage` now does internally, for
+  free.)
+
+(c) THE `ℚ̄_3` FORM — weakening the conclusion to a representation over
+  `AlgebraicClosure ℚ_[3]`, with an elementary re-ascent leaf. The re-ascent
+  is TRUE and its proof is worth recording since it is not obvious: `Γ_F` is
+  compact, `GL₂(ℚ̄_3) = ⋃_L GL₂(L)` over the COUNTABLY many finite extensions
+  `L/ℚ_3` (finitely many of each degree), each closed since `L` is complete;
+  Baire on the compact image gives one `GL₂(L) ∩ image` with nonempty
+  interior, hence an open — so finite-index — subgroup, and adjoining the
+  entries of finitely many coset representatives gives the field. REJECTED
+  anyway, on two independent grounds: it fails the same route-(3) test (the
+  `E_λ`-adic construction is what produces both forms), and the re-ascent
+  needs "finitely many extensions of `ℚ_3` of each degree", which is Krasner
+  and is not at this pin.
+
+(d) THE LITERATURE'S OWN CASE SPLIT — Carayol §0.9 (a finite place where `π`
+  is discrete series) versus Taylor 1989 (the rest). NOT STATEABLE: the case
+  distinction is a condition on the local components of an automorphic
+  representation, and the pin has no automorphic representations of `GL₂/F`.
+
+(e) THE GEOMETRIC ROUTE — taken, and it is this cut. Note what it does NOT
+  do: see the FORMAL-CONTENT AUDIT on `CarayolPackage`, which records that
+  the package is EQUIVALENT to the STEP 2a conclusion and therefore
+  RELOCATES the citation into geometric vocabulary rather than shrinking it.
+  The genuine shrink is the next cut, also recorded there.
+
+AXES NOT SEARCHED, so that the next owner starts where this one stopped: the
+CONSUMER side (whether `carayol_threeadic_realization_of_heckePackage` and
+its own consumers could be restructured to need less than a full compatible
+member at `3` — that is a cut-level change above this node and belongs to its
+owner), and the `R = 𝕋` route (stating the package over the Hecke algebra
+`TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮` and specialising along
+`θ`, as `Modularity/Patching.lean` would want it — a STRONGER statement, so
+rejected here, but possibly the right shape if a consumer ever needs the
+family rather than one specialisation).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_carayolPackage_of_totallyDefinite_heckeCharacter
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
+      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
+      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) :
+    ∃ (L : Type u) (_ : Field L) (_ : Algebra ℚ_[3] L)
+      (_ : Module.Finite ℚ_[3] L),
+      letI : TopologicalSpace L := moduleTopology ℚ_[3] L
+      letI : IsTopologicalRing L :=
+        isTopologicalRing_moduleTopology_of_finite_padic 3 L
+      ∃ (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+        (ι : L →+* AlgebraicClosure ℚ_[3])
+        (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L),
+        (∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) ∧
+          Nonempty (CarayolPackage F L badF P) := by
+  sorry
+
 /-- **STEP 2a — CARAYOL's Théorème (A) in its FIELD form: the `3`-adic
-realization over a finite extension of `ℚ_3`** (sorry leaf, CUT 2026-07-27 out
-of `carayol_threeadic_of_totallyDefinite_heckeCharacter`, which is now a proven
-assembly of this leaf and the stable-lattice leaf below).
+realization over a finite extension of `ℚ_3`** (CUT 2026-07-27 out of
+`carayol_threeadic_of_totallyDefinite_heckeCharacter`, which is now a proven
+assembly of this leaf and the stable-lattice leaf below; and PROVEN ITSELF
+since 2026-07-27, by the Eichler–Shimura cut, over
+`exists_carayolPackage_of_totallyDefinite_heckeCharacter` — the geometric
+inhabitation leaf — and the machine-checked extraction
+`exists_galoisRep_charFrob_of_carayolPackage`).
+
+ASSEMBLY. The citation now enters as the quaternionic Shimura-curve package
+`CarayolPackage` (the `λ`-adic cohomology with its Hecke action, the
+Eichler–Shimura congruence relation, multiplicity one and the Weil-pairing
+determinant); the passage from those data to the statement below — the
+`θ`-eigenspace is Galois-stable and 2-dimensional, the compressed
+representation is a continuous 2-dimensional representation, and
+Cayley–Hamilton against the congruence relation pins its Frobenius
+characteristic polynomial — is PROVEN. All that is left here is composing the
+comparison embeddings, through `Polynomial.map`. The frontier count is
+UNCHANGED by this cut (one leaf in, one leaf out); what moved is where the
+faith sits. Read the FORMAL-CONTENT AUDIT on `CarayolPackage` before treating
+the cut as a reduction: it is a RELOCATION, and the genuine reduction — a
+`ModularJacobianPackage`-style second level replacing multiplicity one by
+freeness over the Hecke subalgebra — is recorded there as the next cut. The
+ROUND-6 DECOMPOSITION AUDIT on
+`exists_carayolPackage_of_totallyDefinite_heckeCharacter` records the four
+other axes searched and why each was rejected.
+
+The prose below is the statement's own audit trail and is UNCHANGED by the
+Eichler–Shimura cut, since neither the hypotheses nor the conclusion moved.
 
 This is verbatim STEP 2 with ONE component deleted from the conclusion:
 INTEGRALITY. Where STEP 2 asks for a coefficient ring `B` module-finite over
@@ -3787,7 +4446,20 @@ theorem exists_threeadicField_realization_of_totallyDefinite_heckeCharacter
         (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
         (ι : L →+* AlgebraicClosure ℚ_[3]),
         ∀ w ∉ badF, (τ.charFrob w).map ι = (heckeF w).map ψ₃ := by
-  sorry
+  -- STEP 2a′ — the GEOMETRIC half: the quaternionic Shimura curve, its
+  -- `3`-adic cohomology, and the four classical facts about it.
+  obtain ⟨L, hFieldL, hAlgL, hFinL, ψ₃, ι, P, hPmatch, ⟨C⟩⟩ :=
+    exists_carayolPackage_of_totallyDefinite_heckeCharacter hℓodd hℓ5
+      hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF
+      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+  refine ⟨L, hFieldL, hAlgL, hFinL, ?_⟩
+  -- the topology on `L` is not a choice — `Module.Finite ℚ_3 L` pins it
+  letI : TopologicalSpace L := moduleTopology ℚ_[3] L
+  haveI : IsTopologicalRing L :=
+    isTopologicalRing_moduleTopology_of_finite_padic 3 L
+  -- the PROVEN half: eigenspace, compression, Cayley–Hamilton
+  obtain ⟨τ, hτ⟩ := exists_galoisRep_charFrob_of_carayolPackage C
+  exact ⟨τ, ψ₃, ι, fun w hw => by rw [hτ w hw, hPmatch w hw]⟩
 
 /-- **STEP 2b — THE GALOIS-STABLE LATTICE (Serre, *Abelian `ℓ`-adic
 representations*, I §1)** (sorry leaf, CUT 2026-07-27): a continuous
