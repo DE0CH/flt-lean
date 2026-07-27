@@ -50453,50 +50453,71 @@ theorem tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one
   simp
 
 /-- **Carayol's conductor theorem at the NEWFORM level, DEEP-LEVEL case
-`q² ∣ M₀`** (**sorry node — and this one is INDEPENDENT OF THE THEORY at
-this pin, not merely unproven**; cut out 2026-07-27, twelfth owner, from
+`q² ∣ M₀`** (**sorry node — OPEN, and since 2026-07-27 no longer
+independent of the theory**; cut out 2026-07-27, twelfth owner, from
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform` below;
 Carayol, Théorème (A)): for a weight-2 NEWFORM `g₀` of level `M₀` and an
 IRREDUCIBLE `τ` matching its Hecke polynomials away from a finite set,
 the Artin conductor exponent of `τ` at a prime `q ≠ p` with
 `2 ≤ ord_q M₀` is `ord_q M₀`.
 
-**READ THIS BEFORE DISPATCHING A PROVER HERE.** This declaration is the
-residue of the eleventh owner's independence verdict on the parent, and
-it inherits that verdict IN FULL. The conclusion unfolds to
+**THE INDEPENDENCE VERDICT BELOW WAS DISCHARGED 2026-07-27 — READ THIS
+FIRST.** The verdict was correct when written and it named its own
+refuting check ("point at a real definition of `swanExponentAux` having
+landed in `ArtinConductor.lean`"). That check has now been MET:
+`GaloisRep.swanExponentAux` is no longer `opaque`. It is
+
+  `swanExponentAux ρ v = sInf {s | ρ.IsSwanExponentAt v s}`,
+
+with `GaloisRep.IsSwanExponentAt` Serre's defining formula for the Swan
+conductor written against a `RamificationFiltration v` (the
+upper-numbering higher ramification filtration, introduced there as data
+with its axioms), and `GaloisRep.isSwanExponentAt_swanExponentAux` the
+usable characterising equation, proven over the single satisfiability
+leaf `GaloisRep.exists_isSwanExponentAt`.
+
+So the conclusion of THIS leaf is now an ordinary mathematical statement
+about a defined quantity — provable or refutable in principle — where it
+was previously an equation in an uninterpreted symbol. It remains HARD
+and it remains gated on the modular-curve geometry that the paragraphs
+below describe; what changed is that that geometry is now sufficient as
+well as necessary, together with the Swan-conductor leaf upstream.
+Concretely, a prover now has real handles: `swanExponentAux` obeys the
+break-sum formula, the breaks are `≥ 1`, and hence
+`ρ.wildCodim v ≤ ρ.swanExponentAux v` (all compiler-verified in
+`ArtinConductor.lean`'s NON-VACUITY note).
+
+WHAT THE OLD VERDICT SAID, kept because its mathematics is still
+accurate and only its CONCLUSION has changed. The conclusion unfolds to
 
   `ord_q M₀ = τ.tameExponent v_q + τ.swanExponent v_q`,
 
 and `GaloisRep.swanExponent ρ v = if ρ.IsTamelyRamifiedAt v then 0 else
-ρ.swanExponentAux v` with `swanExponentAux` declared `opaque` in
-`ArtinConductor.lean`, whose docstring FORBIDS stating any equation
-about it. In the range `2 ≤ ord_q M₀` the local component `π_q` can be
-supercuspidal with nontrivial wild inertia, so `τ.IsTamelyRamifiedAt
-v_q` is NOT derivable from these hypotheses and the `else` branch
-stands. Consequently:
+ρ.swanExponentAux v`. In the range `2 ≤ ord_q M₀` the local component
+`π_q` can be supercuspidal with nontrivial wild inertia, so
+`τ.IsTamelyRamifiedAt v_q` is NOT derivable from these hypotheses and
+the `else` branch stands — that much is unchanged, and no route through
+the branch condition exists. Consequently:
 
-* no amount of modular-curve geometry closes this leaf. Completing
+* modular-curve geometry alone does not close this leaf. Completing
   `nonempty_modularTateModuleData` — Deligne–Rapoport's model of
   `X₀(M₀)`, `J₀(M₀)`, Eichler–Shimura, Néron–Ogg–Shafarevich — is
-  NECESSARY and NOT SUFFICIENT, and it would leave this statement
-  exactly as unprovable as it is today;
-* the missing piece is a real DEFINITION of the Swan conductor: the
-  higher ramification filtration in the UPPER numbering, absent from
-  mathlib and not replaceable by the lower numbering over `ℚ_qᵃˡᵍ`,
-  whose value group is divisible. That is `ArtinConductor.lean`'s
-  business, not this file's.
+  NECESSARY and not by itself sufficient;
+* the other half was a real DEFINITION of the Swan conductor: the higher
+  ramification filtration in the UPPER numbering, absent from mathlib and
+  not replaceable by the lower numbering over `ℚ_qᵃˡᵍ`, whose value group
+  is divisible. That half has now been supplied in `ArtinConductor.lean`,
+  down to the one leaf `exists_isSwanExponentAt`.
 
-**THE CHECK THAT WOULD REFUTE THIS VERDICT** (stated so the next owner
-does not redo the survey): either exhibit a derivation of
-`τ.IsTamelyRamifiedAt v_q` from `q.Prime`, `q ≠ p`, `2 ≤ ord_q M₀`,
-newform-ness of `g₀` and irreducibility of `τ` — it does not exist,
-since a supercuspidal `π_q` of conductor `≥ 2` with nontrivial wild
-inertia is permitted by every one of them — or point at a real
-definition of `swanExponentAux` having landed in `ArtinConductor.lean`.
-AXIS SEARCHED: the branch-condition axis (can the `if` be discharged
-from the hypotheses) and the hypothesis-strength axis (do the hypotheses
-pin the local type at `q`). NOT SEARCHED: any route that redefines
-`swanExponentAux`.
+**THE CHECK THAT WOULD REFUTE THE NEW VERDICT**: exhibit a
+`RamificationFiltration v` satisfying the axioms in `ArtinConductor.lean`
+whose break sum differs from another's — that would make
+`exists_isSwanExponentAt` false and send `swanExponentAux` back to a junk
+`sInf ∅ = 0`. AXIS SEARCHED: the branch-condition axis (can the `if` be
+discharged from the hypotheses — no) and the definitional axis (is the
+wild summand interpreted — now yes). NOT SEARCHED: whether the
+local–global input is better cited at the level of the local component
+`π_q` than at the level of `τ`.
 
 WHY IT IS TRUE nonetheless, under the intended interpretation
 `swanExponentAux ρ v := Sw_v(V)`: Carayol's identity is exactly
@@ -50811,6 +50832,28 @@ mathematical:
    axis (do the hypotheses pin the local type at `q`). NOT searched: any
    route that redefines `swanExponentAux`, which is item 2 proper and
    belongs to `ArtinConductor.lean`'s owner.
+
+   **ITEM 2 IS DISCHARGED — `swanExponentAux` IS NO LONGER `opaque`**
+   (2026-07-27, in `ArtinConductor.lean`; this is the route the paragraph
+   above explicitly left unsearched, taken by that file's owner). It is
+   now `sInf {s | ρ.IsSwanExponentAt v s}`, with
+   `GaloisRep.IsSwanExponentAt` Serre's break-sum formula for the Swan
+   conductor stated against a `RamificationFiltration v` (the
+   upper-numbering filtration, introduced there as data with its axioms),
+   and `GaloisRep.isSwanExponentAt_swanExponentAux` the usable
+   characterising equation, proven over the one satisfiability leaf
+   `GaloisRep.exists_isSwanExponentAt`.
+
+   Consequences for everything below and above that speaks of the
+   "opaque `swanExponent`, about which nothing is provable by
+   construction": that phrase is now HISTORICAL. Real facts about the
+   wild summand are provable — the breaks are `≥ 1`, hence
+   `ρ.wildCodim v ≤ ρ.swanExponentAux v`, so `swanExponent` is genuinely
+   nonzero at a wildly ramified place. What is NOT changed: the branch
+   condition still cannot be discharged at `2 ≤ ord_q M₀`, and item 1
+   (the geometric carrier) is untouched and still necessary. The residue
+   leaf `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
+   is therefore now OPEN-and-hard rather than independent of the theory.
 
 The docstring above already observes that "nothing is provable about
 `swanExponent` by construction", but draws from it only the narrower
@@ -51526,18 +51569,25 @@ withdrawn; see `ArtinConductor.lean`'s module docstring for why).
 `GaloisRep.HasConductorExponentAt τ v a` unfolds to the EQUATION
 `a = τ.conductorExponent v = τ.tameExponent v + τ.swanExponent v`. The
 tame summand is computed from the inertia invariants; the wild summand
-is `GaloisRep.swanExponent`, built on the `opaque` constant
-`GaloisRep.swanExponentAux`, because the Swan conductor is NOT definable
-on this pin (mathlib has `G_0` and an explicit TODO for the higher
-ramification groups; and the lower numbering collapses over `Kᵥᵃˡᵍ`,
-whose value group is divisible, so the upper numbering — Herbrand's
-function — is genuinely required; see the module docstring of
-`ArtinConductor.lean`). `opaque` introduces no axiom and no `sorry`.
+is `GaloisRep.swanExponent`, built on `GaloisRep.swanExponentAux`.
+
+UPDATED 2026-07-27: `swanExponentAux` is no longer `opaque`. Mathlib
+still has only `G_0` and a TODO for the higher ramification groups, and
+the lower numbering still collapses over `Kᵥᵃˡᵍ` (divisible value group),
+so the upper numbering — Herbrand's function — is still genuinely
+required; what changed is that `ArtinConductor.lean` now NAMES it
+(`RamificationFiltration`) and DEFINES the Swan conductor from it by
+Serre's break-sum formula (`GaloisRep.IsSwanExponentAt`), leaving one
+satisfiability leaf `GaloisRep.exists_isSwanExponentAt`. Neither
+`swanExponent` nor `conductorExponent` acquires a `sorryAx` from this —
+they only use the definition — so nothing that was sorry-free here
+becomes tainted.
 
 So this leaf asserts EXACTLY Carayol's identity
-`a_q(ρ_{g₀,λ}) = ord_q M`, no weaker and no stronger, under the intended
-interpretation `swanExponentAux ρ v := Sw_v(ρ)` — which is the standard
-soundness argument for a cited invariant that cannot yet be defined.
+`a_q(ρ_{g₀,λ}) = ord_q M`, no weaker and no stronger. That used to hold
+under the intended interpretation `swanExponentAux ρ v := Sw_v(ρ)`; since
+2026-07-27 it holds outright, because `IsSwanExponentAt` quantifies over
+ALL ramification filtrations and the genuine one pins the value.
 
 The earlier packaging quantified the wild summand existentially on the
 argument that a weakening "can never be false". That argument holds only

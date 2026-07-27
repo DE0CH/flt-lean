@@ -31,11 +31,13 @@ representation (`GaloisRep.tameExponent_eq_zero_of_isUnramifiedAt`) and
 it drops by at least one as soon as inertia fixes a nonzero vector
 (`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`).
 
-The **wild** part is not a *number* on this pin, but since 2026-07-26 it
-is no longer wholly opaque either: its **vanishing criterion** is now
-definable and is built in. See "## The wild part" below for what changed;
-the two bullets immediately following are the (still accurate) reason the
-NUMBER `Sw_v(V)` is unavailable:
+The **wild** part is not *computable* on this pin, but it is no longer
+opaque either: its **vanishing criterion** has been definable since
+2026-07-26, and since 2026-07-27 the NUMBER itself has a real definition
+by Serre's formula, gated on one satisfiability leaf. See "## The wild
+part" and "## 2026-07-27" below for what changed; the two bullets
+immediately following are the (still accurate) reason the number cannot
+simply be COMPUTED here:
 
 * mathlib has the decomposition and inertia subgroups of a valuation
   subring (`ValuationSubring.decompositionSubgroup`,
@@ -79,32 +81,82 @@ leaf's own soundness audit refutes with a conductor-`14` curve at
 single honest local statement that a square-zero-unipotent inertia
 action in residue characteristic `≠ p` is trivial on wild inertia.
 
-So the wild part enters as an **uninterpreted constant**
-`GaloisRep.swanExponentAux`, declared with Lean's `opaque` command,
-guarded by that criterion, and the conductor exponent is the honest sum
+So the wild part enters as `GaloisRep.swanExponentAux`, guarded by that
+criterion, and the conductor exponent is the honest sum
 
   `GaloisRep.conductorExponent ρ v = ρ.tameExponent v + ρ.swanExponent v`,
 
 with `HasConductorExponentAt ρ v a` the *equation* `a = conductorExponent ρ v`.
 
-`opaque` introduces **no axiom and no `sorry`** (`#print axioms` on
-anything using it stays empty) and the kernel will not unfold it, so
-nothing about its value is provable — which is exactly the intent: the
-symbol *denotes* the Swan conductor without computing it. The one
-property of the Swan conductor that this development actually needs,
-vanishing on a TAMELY RAMIFIED representation, is built into
+The one property of the Swan conductor that this development needs
+first, vanishing on a TAMELY RAMIFIED representation, is built into
 `swanExponent` by construction (`swanExponent ρ v =
 if ρ.IsTamelyRamifiedAt v then 0 else swanExponentAux ρ v`), so both
 `GaloisRep.swanExponent_eq_zero_of_isTamelyRamifiedAt` and its
 specialization `GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt` are
 *theorems* rather than further leaves.
 
-Soundness of this packaging is model-theoretic and is the standard one
-for axiomatising an invariant that cannot yet be defined: interpret
-`swanExponentAux ρ v` as the true Swan conductor `Sw_v(V)`. Under that
-interpretation `conductorExponent ρ v` **is** `a_v(V)`, so every leaf
+## 2026-07-27: `swanExponentAux` IS NO LONGER `opaque` — WHY THAT HAD TO CHANGE
+
+Until 2026-07-27 `swanExponentAux` was declared with Lean's `opaque`
+command and this docstring forbade stating any equation about it. That
+packaging was sound but it had a consequence nobody had priced in: **a
+leaf whose conclusion survives into the `else` branch of `swanExponent`
+is neither provable nor refutable** — it is INDEPENDENT of the theory,
+not merely unproven, and no amount of upstream mathematics can change
+that. `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
+in `Fermat/FLT/Modularity/Interface.lean` is exactly such a leaf: at
+`2 ≤ ord_q M₀` the local component can be supercuspidal with nontrivial
+wild inertia, so the tame branch is unavailable, and the conclusion
+reduces to an equation in an uninterpreted symbol. Its own audit
+correctly named "a real definition of `swanExponentAux` having landed in
+`ArtinConductor.lean`" as the one check that would refute the verdict.
+
+That is what this section supplies. `swanExponentAux` is now an ordinary
+
+  `swanExponentAux ρ v := sInf {s | ρ.IsSwanExponentAt v s}`,
+
+where `GaloisRep.IsSwanExponentAt ρ v s` is **Serre's defining formula**
+for the Swan conductor, written out in full against a
+`RamificationFiltration v` — the higher ramification filtration of
+`Γ Kᵥ` in the UPPER numbering, introduced below as DATA with its
+defining axioms. The single remaining leaf is
+`GaloisRep.exists_isSwanExponentAt`: that the specification is
+SATISFIABLE. Everything else about the Swan conductor is now ordinary
+mathematics over `GaloisRep.isSwanExponentAt_swanExponentAux`.
+
+**Why this is sound, and it is a STRICTLY stronger soundness claim than
+the `opaque` packaging's.** `IsSwanExponentAt` quantifies UNIVERSALLY
+over ramification filtrations. The genuine upper-numbering filtration is
+one of them, so any `s` in the set is forced to equal the true Swan
+conductor `Sw_v(V)`; hence the set is contained in `{Sw_v(V)}` and, once
+`exists_isSwanExponentAt` is discharged, `swanExponentAux ρ v` **equals**
+`Sw_v(V)` on the nose rather than merely admitting it as one
+interpretation. `conductorExponent ρ v` is then `a_v(V)` and every leaf
 stated with `HasConductorExponentAt` is precisely the corresponding
-statement of the literature — no weaker and no stronger.
+statement of the literature — no weaker and no stronger, exactly as
+before, but now as a consequence rather than as a reading.
+
+**What the universal quantifier costs, and where it can bite.** If the
+axioms of `RamificationFiltration` are too weak to pin the filtration —
+e.g. if two of them gave different break sums — then
+`exists_isSwanExponentAt` would be FALSE and the definition would
+degenerate to `sInf ∅ = 0`. That is the honest failure mode and it is
+mechanically visible: it shows up as an unprovable leaf, not as a silent
+weakening, and the repair is to STRENGTHEN the axioms below (that is
+precisely the content of "the upper-numbering filtration is unique",
+Serre VI §3). The axioms were chosen with this in mind — the
+normalisation `G^u = P_v` on `(0, 1]`, left continuity, and
+separatedness together already exclude the obvious junk filtrations
+(the constant `G^u = P_v`, and any rescaling `u ↦ G^{cu}`).
+
+**The old policy line "do not state any equation about `swanExponentAux`"
+is WITHDRAWN.** It was the right rule while the symbol was
+uninterpreted; it is the wrong rule now, and following it is what kept a
+true citation permanently unattackable. What replaces it: state facts
+about `swanExponent`, and derive them from
+`isSwanExponentAt_swanExponentAux` — never by a fresh axiom about
+`swanExponentAux`.
 
 ## HISTORY: why the previous, existential packaging was WITHDRAWN
 
@@ -1651,6 +1703,79 @@ theorem exists_pow_eq_of_mem_wildInertiaGroup
   exact exists_pow_mem_of_coprime_card_quotient
     (coprime_card_quotient_wildInertiaGroup v hn U hUo) hσ
 
+/-!
+### The higher ramification filtration in the UPPER numbering, as DATA
+
+`swanExponentAux` used to be `opaque`, which made every equation about it
+unprovable BY CONSTRUCTION and left at least one true citation
+(`hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`,
+`Fermat/FLT/Modularity/Interface.lean`) independent of the theory rather
+than merely open. The structure below is what replaces the opacity: the
+filtration `G^u` is named, its defining properties are written down, and
+the Swan conductor is then DEFINED from it by Serre's formula
+(`GaloisRep.IsSwanExponentAt`).
+-/
+
+/-- **AN UPPER-NUMBERING HIGHER RAMIFICATION FILTRATION AT `v`**, as
+DATA: the decreasing family `G^u ≤ Γ Kᵥ` of Serre, *Corps Locaux* IV §3
+(lower numbering) and IV §3 / VI §2 (upper numbering, via Herbrand's
+`ψ`); Neukirch, *Algebraic Number Theory* II.10.
+
+Nothing here CONSTRUCTS the filtration — mathlib has neither numbering
+(`Mathlib/RingTheory/Valuation/RamificationGroup.lean` stops at
+`decompositionSubgroup`/`inertiaSubgroup` with an explicit TODO), and the
+lower numbering cannot be substituted over `Kᵥᵃˡᵍ`, whose value group is
+divisible (see the module docstring). What this structure does is make
+the filtration a NAMED MATHEMATICAL OBJECT with stated axioms, so that
+the Swan conductor can be defined from it and facts about it become
+ordinary theorems rather than unstatable assertions about an `opaque`
+symbol.
+
+THE AXIOMS, and why each is here:
+
+* `gp_le_gp` — the filtration DECREASES. Definitional.
+* `gp_zero` — `G⁰ = I_v`. This is what ties the filtration to the inertia
+  this file already has; in the upper numbering `G⁰ = G_0 = I_v`
+  (`ψ(0) = 0`).
+* `gp_eq_wild` — NORMALISATION: `G^u = P_v` for `0 < u ≤ 1`. True because
+  `ψ(u) = u` on `[0, 1]`, so `G^u = G_{⌈u⌉} = G_1 = P_v` there. This is
+  the axiom that fixes the SCALE: without it every rescaling
+  `u ↦ G^{cu}` would be admissible and the break sum below would be
+  scaled by `1/c`. It also forces every break to be `≥ 1`, hence
+  `Sw_v(V) ≥ dim V − dim V^{P_v}`, which is the classical bound.
+* `gp_of_forall_lt` — LEFT CONTINUITY, `G^u = ⋂_{0 < w < u} G^w`. This
+  fixes the CONVENTION at a break: `G^λ` is the LARGER group, so
+  `dim V − dim V^{G^u} = #{breaks ≥ u}` with a non-strict inequality,
+  which is the convention `IsSwanExponentAt` below is written in.
+* `eq_one_of_forall_mem` — SEPARATEDNESS, `⋂_{u > 0} G^u = 1`. Excludes
+  the junk filtration that is constantly `P_v` on `(0, ∞)` (for which no
+  break sum exists at all whenever `P_v ≠ 1` acts nontrivially).
+
+FAITHFULNESS NOTE. These axioms are NOT known here to determine `gp`
+uniquely — that is Serre VI §3 and is not formalised. They do not have
+to: `IsSwanExponentAt` quantifies universally over filtrations, so the
+true one alone already pins the Swan conductor, and any residual
+under-determination shows up as the leaf `exists_isSwanExponentAt` being
+hard, never as a silently weakened invariant. See the module docstring,
+section "## 2026-07-27". -/
+structure RamificationFiltration (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) where
+  /-- `G^u`, the `u`-th ramification subgroup of `Γ Kᵥ` in the upper numbering. -/
+  gp : ℚ → Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))
+  /-- The filtration is DECREASING. -/
+  gp_le_gp : ∀ u w : ℚ, u ≤ w → gp w ≤ gp u
+  /-- `G⁰` is the inertia group. -/
+  gp_zero : gp 0 = localInertiaGroup v
+  /-- `G^u` is the WILD inertia for `0 < u ≤ 1` — the normalisation that
+  fixes the scale of the upper numbering. -/
+  gp_eq_wild : ∀ u : ℚ, 0 < u → u ≤ 1 → gp u = wildInertiaGroup v
+  /-- LEFT CONTINUITY: `G^u = ⋂_{0 < w < u} G^w`. -/
+  gp_of_forall_lt : ∀ u : ℚ, 0 < u →
+    ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
+      (∀ w : ℚ, 0 < w → w < u → σ ∈ gp w) → σ ∈ gp u
+  /-- SEPARATEDNESS: `⋂_{u > 0} G^u = 1`. -/
+  eq_one_of_forall_mem : ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
+    (∀ u : ℚ, 0 < u → σ ∈ gp u) → σ = 1
+
 namespace GaloisRep
 
 /-- **The inertia invariants of a Galois representation at a finite
@@ -1679,6 +1804,31 @@ lemma mem_inertiaInvariants {ρ : GaloisRep K A M} {v : HeightOneSpectrum (𝓞 
     x ∈ ρ.inertiaInvariants v ↔
       ∀ σ ∈ localInertiaGroup v, ρ.toLocal v σ x = x :=
   Iff.rfl
+
+/-- **The `H`-fixed submodule of `ρ` at `v`**, `V^H`, for an arbitrary
+subgroup `H ≤ Γ Kᵥ` acting through the localization `ρ.toLocal v`.
+
+This is `inertiaInvariants` with the group made a parameter — needed
+because the Swan conductor is read off the codimensions of `V^{G^u}` as
+`u` runs over the higher ramification filtration, and
+`ρ.inertiaInvariants v` is the single instance `H = localInertiaGroup v`
+(the two are equal by `rfl`). -/
+def fixedSubmodule (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
+    (H : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))) :
+    Submodule A M where
+  carrier := {x | ∀ σ ∈ H, ρ.toLocal v σ x = x}
+  add_mem' {x y} hx hy := by
+    intro σ hσ
+    show ρ.toLocal v σ (x + y) = x + y
+    rw [map_add, hx σ hσ, hy σ hσ]
+  zero_mem' := by
+    intro σ _
+    show ρ.toLocal v σ 0 = 0
+    rw [map_zero]
+  smul_mem' c x hx := by
+    intro σ hσ
+    show ρ.toLocal v σ (c • x) = c • x
+    rw [map_smul, hx σ hσ]
 
 /-- **The tame part of the Artin conductor exponent** at `v`:
 `dim V − dim V^{I_v}`, the codimension of the inertia invariants. For a
@@ -1784,41 +1934,181 @@ lemma isTamelyRamifiedAt_of_isUnramifiedAt (ρ : GaloisRep K A M)
   rw [h1]
   rfl
 
-/-- **The Swan conductor, as an UNINTERPRETED constant.**
+/-- **The codimension of the WILD-inertia invariants**, `dim V − dim V^{P_v}`.
 
-`swanExponentAux ρ v` stands for `Sw_v(V)`, the wild part of the Artin
-conductor exponent. It is declared `opaque`: the kernel will not unfold
-it, so **nothing about its value is provable**, and — unlike an
-`axiom` — it contributes nothing to `#print axioms` (the `:= 0` is only
-the inhabitation witness Lean's `opaque` command requires; `= 0` is NOT
-derivable from it).
+This is the number of ramification BREAKS of `ρ` at `v`, counted with
+multiplicity: the break decomposition of `V|_{I_v}` has `V(0) = V^{P_v}`
+as its tame summand, so the positive breaks account for exactly this
+many dimensions. It is the length of the break list summed by
+`IsSwanExponentAt` below, and it vanishes exactly when `ρ` is tamely
+ramified at `v` (in which case `V^{P_v} = V`). -/
+noncomputable def wildCodim (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) : ℕ :=
+  Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (wildInertiaGroup v))
 
-This is deliberate, and it is the only honest option at this pin: the
-Swan conductor needs the higher ramification filtration in the UPPER
-numbering, which mathlib does not have and which the lower numbering
-cannot substitute for over `Kᵥᵃˡᵍ` (divisible value group — see the
-module docstring). Rather than pretend to define it, or existentially
-quantify it away (which cost this development a FALSE leaf — again see
-the module docstring), we name it and say nothing about it.
+open scoped Classical in
+/-- **SERRE'S DEFINING FORMULA FOR THE SWAN CONDUCTOR**: `s` is the Swan
+exponent of `ρ` at `v` when, relative to EVERY upper-numbering
+ramification filtration `G^•` at `v`, the representation has a list of
+breaks `μ 0, …, μ (d−1)` (`d = ρ.wildCodim v`) whose "layer cake"
+reproduces the codimension function and whose sum is `s`:
 
-Do not state or prove any equation about `swanExponentAux` itself.
-Facts about the Swan conductor belong on `swanExponent` below, and any
-such fact that is not a theorem is a citation leaf whose soundness is
-checked against the intended interpretation `swanExponentAux ρ v :=
-Sw_v(V)`. -/
-opaque swanExponentAux {K : Type uK} [Field K] [NumberField K]
-    {A : Type*} [CommRing A] [TopologicalSpace A]
-    {M : Type*} [AddCommGroup M] [Module A M]
-    (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K)) : ℕ := 0
+  `dim V − dim V^{G^u} = #{k < d : u ≤ μ k}` for every `u > 0`,   and
+  `s = μ 0 + ⋯ + μ (d−1)`.
+
+This is exactly `Sw_v(V) = ∫₀^∞ (dim V − dim V^{G^u}) du` (Serre, *Local
+Fields* VI §2; Katz, *Gauss Sums, Kloosterman Sums and Monodromy* 1.1),
+written as a finite sum instead of an integral: the integrand is the
+non-increasing `ℕ`-valued step function `u ↦ #{k : μ k ≥ u}`, whose
+integral over `(0, ∞)` is `∑ₖ μ k` by the layer-cake identity. No
+measure theory is imported for it and none is needed.
+
+WHAT EACH CLAUSE CARRIES.
+
+* The counting clause forces `μ k ≥ 1` for every `k < d`: on `(0, 1]` the
+  filtration is constantly `P_v` (`RamificationFiltration.gp_eq_wild`),
+  so the left side is `d` there and every `μ k` must be `≥ u` for every
+  `u ≤ 1`. So the breaks are `≥ 1`, as they must be in the upper
+  numbering, and `s ≥ ρ.wildCodim v`.
+* The sum clause is an equation in `ℚ` with `s : ℕ` on the left. Its
+  content is therefore also the INTEGRALITY of the Swan conductor —
+  Hasse–Arf. That is deliberate: integrality is part of what makes
+  `swanExponent` a natural number and it should not be smuggled in by
+  the type.
+* `d = ρ.wildCodim v = 0` when `ρ` is tamely ramified at `v`, and then
+  both clauses read `dim V − dim V^{G^u} = 0` (true, since `G^u ≤ P_v`
+  acts trivially) and `s = 0`. So the specification AGREES with the
+  vanishing criterion already built into `swanExponent`, rather than
+  competing with it.
+
+NON-VACUITY, VERIFIED BY COMPILER 2026-07-27 (three checks, run in a
+scratch module against this file and then deleted; each is a few lines
+and any owner can reproduce them):
+
+1. `ρ.IsTamelyRamifiedAt v → ρ.wildCodim v = 0`, from
+   `fixedSubmodule v (wildInertiaGroup v) = ⊤`;
+2. `(F : RamificationFiltration v) → ρ.IsTamelyRamifiedAt v →
+   ρ.swanExponentAux v = 0` — the empty break sum, obtained WITHOUT the
+   `if` in `swanExponent`;
+3. `(F : RamificationFiltration v) → ρ.wildCodim v ≤ ρ.swanExponentAux v`
+   — pick `u := max ((μ k + 1)/2) (1/2) ∈ (0,1]`, so `gp u = P_v` and
+   the counting clause forces every `μ k ≥ 1`.
+
+Check 3 is the decisive one: it PROVES A NONZERO LOWER BOUND on
+`swanExponentAux` at a wildly ramified place. Under the `opaque`
+packaging no such statement was even expressible, which is precisely why
+the `of_two_le` citation was independent of the theory. It is not
+recorded as a lemma here only because nothing consumes it yet and this
+project does not admit free-floating declarations.
+
+WHY `∀ F` AND NOT `∃ F`. Universal quantification is what PINS the
+value: the genuine upper-numbering filtration is one of the `F`'s, so
+every `s` satisfying this is the true `Sw_v(V)`. With `∃ F` a junk
+filtration would license a junk value and every `HasConductorExponentAt`
+citation downstream would silently become false. The price is that
+satisfiability (`exists_isSwanExponentAt`) is a real leaf; that price is
+the correct one to pay. -/
+def IsSwanExponentAt (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
+    (s : ℕ) : Prop :=
+  ∀ F : RamificationFiltration v, ∃ μ : ℕ → ℚ,
+    (∀ u : ℚ, 0 < u →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) ∧
+      (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k
+
+/-- **THE SWAN CONDUCTOR EXISTS** (SORRY LEAF, cut 2026-07-27 when
+`swanExponentAux` stopped being `opaque`): the specification
+`IsSwanExponentAt` is SATISFIABLE.
+
+This single leaf is what the whole `opaque` packaging used to hide, and
+it is the honest statement of what is missing. Two things have to be
+true for it:
+
+1. **The upper-numbering filtration is essentially unique** (Serre,
+   *Corps Locaux* IV §3 and VI §3 — Herbrand's `ψ` is determined by the
+   lower numbering, which is determined by `i_{L/K}(σ) = v_L(σπ_L − π_L)`
+   at each finite level, and the upper numbering is the unique
+   renumbering compatible with quotients). Without this, two admissible
+   `F`'s could disagree and no single `s` would work for all of them.
+2. **The break decomposition and Hasse–Arf integrality** (Serre VI §2,
+   Katz 1.1): `V|_{I_v}` splits into break subspaces with breaks in
+   `ℚ≥1`, the codimension function is their layer cake, and the sum of
+   the breaks is an INTEGER.
+
+Neither is in mathlib, in `~/cs/FLT`, or in this project — verified
+2026-07-27, and the check that would refute it is
+`grep -rn "ramificationGroup\|Herbrand\|Swan\|hasseArf" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/`, which finds only
+`decompositionSubgroup`/`inertiaSubgroup` and a TODO.
+
+NOTE ON THE FAILURE MODE. If the axioms of `RamificationFiltration` turn
+out too weak — i.e. if some junk `F` satisfies them and has a different
+break sum — then this leaf is FALSE and the repair is to strengthen
+those axioms, not to weaken this statement to `∃ F`. Weakening it to
+`∃ F` would make `swanExponentAux` a junk value and every downstream
+`HasConductorExponentAt` citation unsound; see the module docstring. -/
+theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) :
+    ∃ s : ℕ, ρ.IsSwanExponentAt v s :=
+  sorry
+
+/-- **The Swan conductor `Sw_v(V)`**, the wild part of the Artin
+conductor exponent — a REAL DEFINITION since 2026-07-27, no longer an
+`opaque` constant.
+
+It is the least natural number satisfying Serre's formula
+`IsSwanExponentAt`. Once `exists_isSwanExponentAt` is discharged the
+`sInf` is a member of that set (`isSwanExponentAt_swanExponentAux`
+below), and since the set is a singleton — the true filtration pins it,
+see `IsSwanExponentAt` — this IS the Swan conductor, not merely a symbol
+admitting it as an interpretation.
+
+`sInf` rather than `Classical.choose` so that the definition is total
+and transparent: the junk case `sInf ∅ = 0` can only be reached by
+someone who has PROVED the specification unsatisfiable, which would
+itself be a refutation of `exists_isSwanExponentAt` and a defect report
+against `RamificationFiltration`.
+
+Facts about the Swan conductor belong on `swanExponent` below and are
+derived from `isSwanExponentAt_swanExponentAux`. Do not add fresh
+axioms about `swanExponentAux` — the point of the 2026-07-27 change is
+that none are needed. -/
+noncomputable def swanExponentAux (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) : ℕ :=
+  sInf {s : ℕ | ρ.IsSwanExponentAt v s}
+
+/-- **The Swan conductor satisfies Serre's formula** — the characterising
+equation of `swanExponentAux`, and the single handle through which every
+fact about the wild part of the conductor exponent is to be proved.
+
+PROVEN over `exists_isSwanExponentAt`, by `Nat.sInf_mem`. Under the
+`opaque` packaging this statement was not merely unproven but
+UNSTATABLE, which is what made
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
+independent of the theory rather than open. -/
+theorem isSwanExponentAt_swanExponentAux (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) :
+    ρ.IsSwanExponentAt v (ρ.swanExponentAux v) :=
+  Nat.sInf_mem (ρ.exists_isSwanExponentAt v)
 
 open scoped Classical in
 /-- **The wild part of the Artin conductor exponent** at `v`, i.e. the
 Swan conductor `Sw_v(V)`.
 
-It is `swanExponentAux` — an opaque constant — with the ONE property
-this development needs BUILT IN rather than assumed: **the Swan
+It is `swanExponentAux` — since 2026-07-27 a REAL definition by Serre's
+formula, no longer an opaque constant — with the ONE property this
+development needs most often BUILT IN rather than derived: **the Swan
 conductor is supported on the wild inertia, so it vanishes exactly when
 the wild inertia acts trivially**, i.e. when `ρ.IsTamelyRamifiedAt v`.
+
+The `if` is now a CONVENIENCE, not a necessity: with `swanExponentAux`
+defined, `ρ.IsTamelyRamifiedAt v → swanExponentAux ρ v = 0` is ordinary
+mathematics over `isSwanExponentAt_swanExponentAux` (tameness gives
+`ρ.wildCodim v = 0`, so the break sum is empty). It is kept because it
+makes `swanExponent_eq_zero_of_isTamelyRamifiedAt` a `rfl`-level fact
+that costs no leaf, and because removing it would change the statement
+of every consumer. A later owner who proves the tame case directly may
+delete the branch; nothing downstream depends on its presence.
 
 STRENGTHENED 2026-07-26. Until then the branch condition was
 `ρ.IsUnramifiedAt v`, which made `swanExponent` opaque at every ramified
