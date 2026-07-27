@@ -13947,486 +13947,6 @@ theorem isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve
   exact isIntegrallyClosed_stalk_normalization_of_isIntegrallyClosed_sections g
     (fun W hW => @isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk C _ hstalks W hW) x
 
-open CategoryTheory AlgebraicGeometry in
-/-- **LEAF C1b — THE NORMALIZED MODEL HAS DIMENSION `≤ 1`** (SORRY LEAF).
-
-The DIMENSION half of "the model is regular", stated at the SPACE — the stalk
-form it needs is supplied by the PROVEN
-`krullDimLE_stalk_of_topologicalKrullDim_le` above.
-
-`g.toNormalization : C ⟶ X̄` is an OPEN IMMERSION by Zariski's Main Theorem
-and is DOMINANT (`instance : IsDominant f.toNormalization`), so `C` is a dense
-open subscheme of `X̄`; `X̄` is integral, hence irreducible, so `X̄` and `C`
-have the same generic point and the same function field, and `hdim` bounds the
-dimension of `C`. Since `X̄` is of finite type over a field, its dimension is
-the transcendence degree of that common function field, whence `dim X̄ ≤ 1`.
-
-WHAT MAKES THIS A LEAF RATHER THAN BOOKKEEPING. `topologicalKrullDim` is
-monotone only in the WRONG direction for this: mathlib's
-`topologicalKrullDim_subspace_le` gives `dim C ≤ dim X̄`, and the reverse
-inequality for a DENSE open is FALSE for general topological spaces — it needs
-that `X̄` is of finite type over a field, where dimension is computed by the
-transcendence degree of the function field. Mathlib has no dimension =
-transcendence degree theorem; the check that would refute this is
-`grep -rn "transcendence\|trdeg" .lake/packages/mathlib/Mathlib/RingTheory/KrullDimension/`,
-which is empty at this pin.
-
-**THE PARAGRAPH ABOVE IS STILL TRUE OF MATHLIB AND IS NO LONGER TRUE OF THIS
-FILE (correction, 2026-07-27 — re-run its checks before believing it).** The
-dense-open dimension transfer it says this leaf owes is **already PROVEN here**,
-~550 lines BELOW this point, as
-
-    topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType
-
-(PROVEN, over the single leaf `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`,
-via `topologicalKrullDim_eq_iSup_coheight` and `schemeIrreducibleClosedsOrderIso`,
-also PROVEN here). Its conclusion is literally `dim X̄ ≤ dim C` for an open
-immersion `j : C ⟶ X̄` into an irreducible `ℚ`-scheme of finite type. Instantiated
-at `j = g.toNormalization` it discharges this leaf outright, because that map is
-an OPEN IMMERSION under exactly this statement's four hypotheses — the instance
-`[LocallyQuasiFinite f] [LocallyOfFiniteType f] [IsSeparated f] [QuasiCompact f] :
-IsOpenImmersion f.toNormalization` in
-`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean` — and `X̄` is locally of
-finite type over `ℚ` from `hfin` plus `hPproper`, exactly as the consumer below
-already derives it. **So no transcendence-degree theory is owed here, and the
-"cheaper route" that used to be proposed in this docstring — a finite-fibres
-argument on `X̄ \ C` — should NOT be attempted; it would re-derive a lemma this
-file already has.**
-
-TWO THINGS DO BLOCK IT, and neither is mathematical content of this leaf:
-
-1. **DECLARATION ORDER.** The transfer lemma is ~550 lines below its consumer
-   here, and Lean has no forward references. The repair is a HOIST of four
-   declarations — `schemeIrreducibleClosedsOrderIso`,
-   `topologicalKrullDim_eq_iSup_coheight`,
-   `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` and
-   `topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType` — to above
-   `smooth_of_isRegularLocalRing_stalk_of_perfectField`. It is a pure relocation
-   with no content change. **It must be COORDINATED**: as of 2026-07-27 the
-   worker on `flt-lean-36` owns
-   `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` and is actively
-   proving it, so hoisting it out from under that agent buys a conflict for
-   nothing. Whoever closes that leaf should do the hoist in the same commit.
-2. **A MISSING HYPOTHESIS.** The transfer lemma needs `IrreducibleSpace X̄`, and
-   THIS statement cannot supply it: `hsmooth` gives reducedness of `C` (smooth
-   over a field ⟹ the stalks are domains ⟹ `IsReduced`) but nothing gives
-   irreducibility, and mathlib's `instance [IsIntegral X] : IsIntegral f.normalization`
-   needs `IsIntegral C`. The sole consumer,
-   `smooth_normalizationModel_of_smooth_affine_curve` below, HAS
-   `hgi : GeometricallyIrreducible fC` — from which it already derives
-   `IrreducibleSpace ↥C`, `IsIntegral C` and `IsIntegral g.normalization` in its
-   own proof — and simply does not pass it here. So the cut repair is to thread
-   `hgi` (or `IsIntegral C`) into this signature. Without it the leaf is still
-   TRUE — `g.toNormalization` is dominant, so `C` is a DENSE open, and the
-   dimension of a dense open equals that of the ambient space componentwise for
-   a finite-type scheme over a field — but proving it then additionally needs the
-   reduction to irreducible components, which is strictly more work than the
-   consumer requires. -/
-theorem topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve
-    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
-    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
-    (hsmooth : AlgebraicGeometry.Smooth fC)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hdim : topologicalKrullDim ↥C ≤ 1)
-    (hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
-    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
-    (hgsep : AlgebraicGeometry.IsSeparated g)
-    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
-    (hgqc : AlgebraicGeometry.QuasiCompact g)
-    (hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
-    topologicalKrullDim ↥(g.normalization : AlgebraicGeometry.Scheme.{u}) ≤ 1 :=
-  sorry
-
-open CategoryTheory AlgebraicGeometry in
-/-- **LEAF C — the normalized model is smooth over `ℚ`** (SORRY LEAF).
-
-`g.normalization` is normal and integral: `C` is smooth over `ℚ`, hence
-regular, hence a normal integral scheme, and the relative normalization of
-`P` in a normal integral `C` is again normal integral (Stacks 035Q — the
-integral closure `A'` of `A` inside a normal domain `B` is integrally closed
-in `Frac A'`, because an element of `Frac A'` integral over `A'` is integral
-over `B`, hence in `B`, hence in `A'`).
-
-It has dimension `≤ 1`, because `C` is a DENSE open subscheme of it
-(`g.toNormalization` is an open immersion by Zariski's Main Theorem and is
-dominant by `instance : IsDominant f.toNormalization`), and `hdim` bounds the
-dimension of `C`.
-
-So the content is: **a normal integral scheme of dimension `≤ 1`, of finite
-type over a perfect field, is smooth over that field.** In dimension `1` this
-is "normal Noetherian local domain of dimension one is a DVR, hence regular"
-(mathlib has this through `IsDiscreteValuationRing` and
-`Mathlib/RingTheory/DiscreteValuationRing/TFAE.lean`) plus "regular over a
-perfect field implies smooth"; in dimension `0` the local rings are fields,
-finite and separable over `ℚ` since `char ℚ = 0`.
-
-**DECOMPOSED 2026-07-27 — this is no longer a bare leaf.** The scheme-theoretic
-glue is PROVEN here and three named sub-leaves remain, stated immediately
-above. What this node's proof now does, every step out of mathlib or out of
-this file:
-
-* `C` is REDUCED, because `isDomain_stalk_of_smooth_over_field` (PROVEN above)
-  makes each of its stalks a domain and `isReduced_of_isReduced_stalk` glues
-  that to `IsReduced C`;
-* `C` is IRREDUCIBLE, because `Spec (ULift ℚ)` is a one-point space and
-  `GeometricallyIrreducible.irreducibleSpace_of_subsingleton` turns geometric
-  irreducibility over a point into irreducibility;
-* hence `IsIntegral C` (`isIntegral_of_irreducibleSpace_of_isReduced`), hence
-  `IsIntegral g.normalization` by mathlib's
-  `instance [IsIntegral X] : IsIntegral f.normalization`, which is what makes
-  every stalk of the model a DOMAIN
-  (`instance [IsIntegral X] {x : X} : IsDomain (X.presheaf.stalk x)`);
-* `fX = g.fromNormalization ≫ fP` is LOCALLY OF FINITE TYPE — `hfin` gives it
-  for `g.fromNormalization`, `hPproper` for `fP` — hence LOCALLY OF FINITE
-  PRESENTATION by `locallyOfFinitePresentation_of_locallyOfFiniteType_over_field`
-  (PROVEN above), which is the form `Smooth` is stated in; and hence the model
-  is LOCALLY NOETHERIAN (`LocallyOfFiniteType.isLocallyNoetherian`), which is
-  what makes every stalk a NOETHERIAN local ring;
-* `ULift ℚ` is a PERFECT field, being of characteristic zero;
-* the model has dimension `≤ 1` (LEAF C1b), and that bounds the Krull
-  dimension of every stalk by `krullDimLE_stalk_of_topologicalKrullDim_le`
-  (PROVEN above);
-* each stalk is then NOETHERIAN, LOCAL, a DOMAIN, INTEGRALLY CLOSED (LEAF C1a)
-  and of dimension `≤ 1`, so it is REGULAR by
-  `isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one` (PROVEN above);
-* and regular stalks over a perfect field give smoothness by LEAF C2.
-
-THE RESIDUAL LEAVES, UPDATED 2026-07-27 — the list below has changed, and the
-first entry is no longer one of them:
-
-* ~~`smooth_of_isRegularLocalRing_stalk_of_perfectField`~~ — **PROVEN
-  2026-07-27**. It is scheme bookkeeping over
-  `Scheme.Hom.smoothLocus_eq_top_iff` plus the single shared classical leaf
-  `formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`
-  (Stacks 07EC), which is stated ~7500 lines above beside the OTHER consumer of
-  the same theorem, `formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero`
-  (also PROVEN 2026-07-27 over it). So "regular ⟹ smooth over a perfect field"
-  is still the one genuinely missing THEORY in this cluster, but it is now a
-  SINGLE named leaf serving two consumers instead of two independent nodes, and
-  its docstring — not this one — is where its status is maintained.
-* `topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve` — the
-  model has dimension `≤ 1`; the content is "a dense open of an integral
-  finite-type scheme has the same dimension". **This is now the only one left.**
-* ~~`isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve`~~ —
-  **PROVEN 2026-07-27**, once `hdim` was threaded through to it from here. In
-  dimension `≤ 1` "regular ⟹ integrally closed" is field-or-DVR
-  (`isIntegrallyClosed_of_isRegularLocalRing_of_krullDimLE_one`), and the rest is
-  the Stacks 035Q descent
-  (`isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk` and
-  `isIntegrallyClosed_stalk_normalization_of_isIntegrallyClosed_sections`, both
-  PROVEN and both reusable general scheme theory).
-
-The earlier version of this docstring said the missing theory was the ONLY
-gap. That was optimistic: mathlib has **no notion of a normal scheme at all**
-(`grep -rn "IsIntegrallyClosed" Mathlib/AlgebraicGeometry/` is empty), so
-normality of the model was a separate obligation and not a free consequence —
-it just turned out to be a dischargeable one, because normality is LOCAL and
-the stalks of `C` are normal for dimension reasons.
-
-ONE CLAIM MADE IN THE FIRST VERSION OF THIS DECOMPOSITION IS RETRACTED, by
-its own author and within the same day. It said mathlib had no comparison
-between a stalk's Krull dimension and the space's, and stated the dimension
-leaf at the STALK for that reason. **That was wrong**: `@[stacks 02IZ]`
-`AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` and
-`AlgebraicGeometry.krullDimLE_of_coheight_le` are both in
-`Mathlib/AlgebraicGeometry/Properties.lean`, and composing them with
-`Order.coheight_le_krullDim` proves the comparison in three lines — it is
-`krullDimLE_stalk_of_topologicalKrullDim_le` above, PROVEN. The dimension
-leaf is now stated at the SPACE where it belongs. The grep that produced the
-false claim searched `topologicalKrullDim` against `stalk`; the lemma is
-phrased in `coheight` and so did not match. **Search the CONCEPT, not one
-spelling of it.**
-
-`hfin` is supplied so that the model is already known to be of finite type
-over `ℚ` — smoothness is a property of finitely presented morphisms, so
-without it the statement would not even be in normal form. -/
-theorem smooth_normalizationModel_of_smooth_affine_curve
-    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
-    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
-    (hsmooth : AlgebraicGeometry.Smooth fC)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
-    (hdim : topologicalKrullDim ↥C ≤ 1)
-    (hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
-    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
-    (hgsep : AlgebraicGeometry.IsSeparated g)
-    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
-    (hgqc : AlgebraicGeometry.QuasiCompact g)
-    (hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
-    AlgebraicGeometry.Smooth (g.fromNormalization ≫ fP) := by
-  haveI := hgi
-  haveI := hPproper
-  haveI := hfin
-  -- `C` is reduced: its stalks are domains because it is smooth over a field.
-  haveI : ∀ c : C, _root_.IsReduced (C.presheaf.stalk c) := fun c =>
-    haveI := isDomain_stalk_of_smooth_over_field fC hsmooth c
-    inferInstance
-  haveI : AlgebraicGeometry.IsReduced C := AlgebraicGeometry.isReduced_of_isReduced_stalk C
-  -- `C` is irreducible: it is geometrically irreducible over a one-point base.
-  haveI : IrreducibleSpace ↥C :=
-    AlgebraicGeometry.GeometricallyIrreducible.irreducibleSpace_of_subsingleton fC
-  haveI : AlgebraicGeometry.IsIntegral C :=
-    AlgebraicGeometry.isIntegral_of_irreducibleSpace_of_isReduced C
-  haveI : AlgebraicGeometry.IsIntegral g.normalization := inferInstance
-  -- the model is locally of finite type over `ℚ`, hence of finite presentation
-  haveI : AlgebraicGeometry.LocallyOfFiniteType (g.fromNormalization ≫ fP) := inferInstance
-  haveI hfp : AlgebraicGeometry.LocallyOfFinitePresentation (g.fromNormalization ≫ fP) :=
-    locallyOfFinitePresentation_of_locallyOfFiniteType_over_field _ inferInstance
-  haveI : AlgebraicGeometry.IsLocallyNoetherian (g.normalization) :=
-    AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian (g.fromNormalization ≫ fP)
-  haveI : CharZero (ULift.{u} ℚ) := charZero_uliftRat
-  refine smooth_of_isRegularLocalRing_stalk_of_perfectField _ hfp (fun x => ?_)
-  haveI := isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
-    hft hdim hPproper hcomm hgqf hgsep hgft hgqc x
-  haveI := krullDimLE_stalk_of_topologicalKrullDim_le
-    (topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve fC fP g hsmooth
-      hft hdim hPproper hcomm hgqf hgsep hgft hgqc hfin) x
-  exact isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one _
-
-open CategoryTheory AlgebraicGeometry in
-/-- **LEAF D — the normalized model is geometrically irreducible**
-(**PROVEN 2026-07-27**, entirely out of mathlib; no curve theory is used).
-
-`g.toNormalization : C ⟶ g.normalization` is an open immersion (Zariski's
-Main Theorem) and dominant (`instance : IsDominant f.toNormalization`), so
-`C` is a DENSE open subscheme of the model, and geometric irreducibility
-transfers along that dense open immersion.
-
-THE CHAIN, each step a named mathlib result at this pin:
-
-* unfolding `GeometricallyIrreducible` with
-  `geometrically_iff_of_isClosedUnderIsomorphisms` reduces the goal to
-  `IrreducibleSpace (pullback fX y)` for every field `K` and every
-  `y : Spec K ⟶ Spec (ULift ℚ)`;
-* `pullbackRightPullbackFstIso fX y g.toNormalization` identifies
-  `pullback g.toNormalization (pullback.fst fX y)` with
-  `pullback (g.toNormalization ≫ fX) y = pullback fC y`, which is
-  irreducible by `hgi`;
-* `pullback.snd g.toNormalization (pullback.fst fX y)` is an open immersion
-  (base change of one), and `Scheme.Pullback.range_snd` computes its range as
-  `(pullback.fst fX y) ⁻¹' Set.range g.toNormalization`;
-* **the load-bearing openness step**: `pullback.fst fX y` is the base change
-  of `y`, whose TARGET is `Spec` of a field, and mathlib has
-  `instance [IsIntegral Y] [Subsingleton Y] : UniversallyOpen f`
-  (`Morphisms/UniversallyOpen.lean`). So `pullback.fst fX y` is an open map
-  and `Dense.preimage` carries density of `Set.range g.toNormalization`
-  (which is `IsDominant.denseRange`) across the base change. This is the one
-  place a naive proof stalls, and it needs NO finite-presentation hypothesis
-  precisely because the base is a field;
-* an irreducible dense subset forces the whole space irreducible
-  (`IsIrreducible.closure` plus `Dense.closure_eq`).
-
-FORMAL-CONTENT NOTE: `_hsmooth`, `_hft`, `_hdim`, `_hPproper` and `_hfin` are
-underscore-prefixed because the proof genuinely does not use them — geometric
-irreducibility of the model needs only that `C` is geometrically irreducible
-and that `g.toNormalization` is a dense open immersion, which is exactly the
-four `g`-hypotheses plus Zariski's Main Theorem. They are kept in the
-signature so the leaf's shape matches its three siblings and the positional
-call in `exists_smoothProperModel_of_affine_curve` is undisturbed. -/
-theorem geometricallyIrreducible_normalizationModel_of_smooth_affine_curve
-    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
-    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
-    (_hsmooth : AlgebraicGeometry.Smooth fC)
-    (_hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
-    (_hdim : topologicalKrullDim ↥C ≤ 1)
-    (_hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
-    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
-    (hgsep : AlgebraicGeometry.IsSeparated g)
-    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
-    (hgqc : AlgebraicGeometry.QuasiCompact g)
-    (_hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
-    AlgebraicGeometry.GeometricallyIrreducible (g.fromNormalization ≫ fP) := by
-  haveI := hgqf; haveI := hgsep; haveI := hgft; haveI := hgqc
-  haveI : IsDomain (CommRingCat.of (ULift.{u} ℚ)) := inferInstanceAs (IsDomain (ULift.{u} ℚ))
-  haveI : Subsingleton ↥(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) :=
-    inferInstanceAs (Subsingleton (PrimeSpectrum (ULift.{u} ℚ)))
-  have hj : g.toNormalization ≫ (g.fromNormalization ≫ fP) = fC := by
-    rw [← Category.assoc, AlgebraicGeometry.Scheme.Hom.toNormalization_fromNormalization, hcomm]
-  constructor
-  rw [AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms]
-  intro K _ y
-  set fX := g.fromNormalization ≫ fP with hfXdef
-  set p := Limits.pullback.fst fX y with hpdef
-  -- `C ×_ℚ K` sits inside `X̄ ×_ℚ K` as an open subscheme
-  have e := Limits.pullbackRightPullbackFstIso fX y g.toNormalization
-  have hCK : IrreducibleSpace ↥(Limits.pullback (g.toNormalization ≫ fX) y) := by
-    rw [hj]
-    exact AlgebraicGeometry.pullback_of_geometrically hgi.geometrically_irreducibleSpace K y
-  have hW : IrreducibleSpace ↥(Limits.pullback g.toNormalization p) :=
-    e.hom.homeomorph.irreducibleSpace_iff.mpr hCK
-  have hq : AlgebraicGeometry.IsOpenImmersion (Limits.pullback.snd g.toNormalization p) :=
-    inferInstance
-  have hrange : Set.range ⇑(Limits.pullback.snd g.toNormalization p) =
-      ⇑p ⁻¹' Set.range ⇑g.toNormalization :=
-    AlgebraicGeometry.Scheme.Pullback.range_snd _ _
-  have hdense : Dense (Set.range ⇑(Limits.pullback.snd g.toNormalization p)) := by
-    rw [hrange]
-    exact (AlgebraicGeometry.IsDominant.denseRange
-      (f := g.toNormalization)).preimage p.isOpenMap
-  rw [irreducibleSpace_def]
-  have h1 : IsIrreducible (Set.range ⇑(Limits.pullback.snd g.toNormalization p)) := by
-    rw [← Set.image_univ]
-    exact (IrreducibleSpace.isIrreducible_univ _).image _
-      (Limits.pullback.snd g.toNormalization p).continuous.continuousOn
-  have h2 := h1.closure
-  rwa [hdense.closure_eq] at h2
-
-open CategoryTheory AlgebraicGeometry in
-/-- **Moret–Bailly §3.1, the geometric half: the smooth proper model**
-(**DECOMPOSED 2026-07-26** — no longer a bare leaf: the model is CONSTRUCTED
-and the open immersion is PROVEN here, and the dimension-`0` case is closed
-outright).
-
-A smooth, geometrically irreducible affine curve over `ℚ` is a dense open
-subscheme of a smooth proper geometrically irreducible curve over `ℚ`.
-
-WHAT IS PROVEN HERE.
-
-* The `dim C ≤ 0` branch is UNCONDITIONAL: `C` is then already proper over
-  `ℚ` by `isProper_of_isAffine_of_krullDim_le_zero` above, so the model is
-  `C` itself with `j = 𝟙 C`. This branch uses none of the leaves.
-* In the remaining branch the model is exhibited as
-  `X̄ = g.normalization`, `fX = g.fromNormalization ≫ fP`,
-  `j = g.toNormalization`, for `g` produced by LEAF A. That `j` is an OPEN
-  IMMERSION is Zariski's Main Theorem out of mathlib, and `j ≫ fX = fC` is
-  `Scheme.Hom.toNormalization_fromNormalization` — both discharged here.
-  `IsProper fX` is likewise discharged here, modulo LEAF B, from
-  `[IsFinite f] : IsProper f` and stability of properness under composition.
-
-WHAT REMAINS (updated 2026-07-27 — LEAF D, LEAF A1 and hence LEAF A are all
-PROVEN; only B and C are open), in decreasing order of expected cost:
-
-* LEAF C `smooth_normalizationModel_of_smooth_affine_curve` — normal of
-  dimension `≤ 1` over a perfect field implies smooth. The one place where
-  mathlib genuinely lacks a theorem (regular ⟹ smooth over a perfect field).
-* ~~LEAF B `isFinite_fromNormalization_of_smooth_affine`~~ — **DECOMPOSED
-  2026-07-27** and proven over three smaller leaves. Its scheme-theoretic half
-  turned out to be free (`isFinite_fromNormalization_of_forall_affineOpens`,
-  PROVEN, is mathlib's own `IsIntegralHom f.fromNormalization` argument with
-  `IsFinite` substituted throughout). LEAF B-i `isReduced_of_smooth_over_rat`
-  is **PROVEN 2026-07-27** too, over one mechanical sub-leaf
-  (`exists_isDomain_etale_of_isStandardSmooth`); regularity theory, which the
-  audit called the blocker, is not on the route at all. What survives is
-  LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` (the gluing
-  step over one affine open, needed because `g ⁻¹ᵁ U` is not affine — **PROVEN
-  2026-07-27**, so it no longer survives), and
-  LEAF B-ii `module_finite_integralClosure_of_finiteType` (E. Noether's
-  finiteness theorem, pure commutative algebra — the real content, and still
-  the most expensive item under this node). The 2026-07-27 audit's verdict that
-  NAGATA is absent from the pin STANDS; its corollary that no foothold exists
-  does not — see the correction in LEAF B-ii's docstring, which routes step 4
-  through `IsIntegralClosure.finite` applied to the POLYNOMIAL subring produced
-  by Noether normalization, where `[IsIntegrallyClosed]` is free.
-* ~~LEAF A1 `exists_properCompactification_affineSpace`~~ — PROVEN 2026-07-27.
-  `P := Proj ℚ[X₀,…,Xₙ]`; the costing was accurate, the whole content being
-  the ring isomorphism `HomogeneousLocalization.Away 𝒜 X₀ ≅ MvPolynomial
-  (Fin n) ℚ`, built as `projSpaceAwayEquiv` above (injective by an explicit
-  dehomogenization left inverse, surjective by the key identity
-  `ψ(dehom a)·X₀ᵏ = a`).
-* ~~LEAF A `exists_quasiFinite_toProper_of_isAffine_finiteType`~~ — PROVEN
-  over LEAF A1, which is itself now proven.
-* ~~LEAF D `geometricallyIrreducible_normalizationModel_of_smooth_affine_curve`~~
-  — PROVEN outright, out of mathlib, using that base change along
-  `Spec K → Spec ℚ` is an OPEN map because the base is a field.
-
-`hpos` is deliberately NOT a hypothesis: the smooth proper model exists in
-dimension `0` too, and positivity is needed only for nonemptiness of the
-complement, which is `nonempty_compl_range_of_isProper_of_isAffine` above.
-
-`hsep` and `hqc` are consumed by LEAF A. -/
-theorem exists_smoothProperModel_of_affine_curve
-    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
-    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (hsmooth : AlgebraicGeometry.Smooth fC)
-    (hsep : AlgebraicGeometry.IsSeparated fC)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hqc : AlgebraicGeometry.QuasiCompact fC)
-    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
-    (hdim : topologicalKrullDim ↥C ≤ 1) :
-    ∃ (Xbar : AlgebraicGeometry.Scheme.{u})
-      (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-      (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
-      j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
-        AlgebraicGeometry.GeometricallyIrreducible fX := by
-  by_cases hzero : topologicalKrullDim ↥C ≤ 0
-  · exact ⟨C, fC, 𝟙 C, inferInstance, Category.id_comp _, hsmooth,
-      isProper_of_isAffine_of_krullDim_le_zero fC hft hzero, hgi⟩
-  · obtain ⟨P, fP, g, hPproper, hcomm, hgqf, hgsep, hgft, hgqc⟩ :=
-      exists_quasiFinite_toProper_of_isAffine_finiteType fC hsep hft hqc
-    haveI := hPproper
-    haveI := hgqf
-    haveI := hgsep
-    haveI := hgft
-    haveI := hgqc
-    haveI : AlgebraicGeometry.IsFinite g.fromNormalization :=
-      isFinite_fromNormalization_of_smooth_affine fC fP g hsmooth hft hPproper hcomm
-        hgqf hgsep hgft hgqc
-    refine ⟨g.normalization, g.fromNormalization ≫ fP, g.toNormalization, inferInstance,
-      ?_, ?_, inferInstance, ?_⟩
-    · rw [← Category.assoc, AlgebraicGeometry.Scheme.Hom.toNormalization_fromNormalization]
-      exact hcomm
-    · exact smooth_normalizationModel_of_smooth_affine_curve fC fP g hsmooth hft hgi hdim
-        hPproper hcomm hgqf hgsep hgft hgqc ‹_›
-    · exact geometricallyIrreducible_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
-        hft hgi hdim hPproper hcomm hgqf hgsep hgft hgqc ‹_›
-
-open CategoryTheory AlgebraicGeometry in
-/-- **Moret–Bailly §3.1: the compactification datum** (**PROVEN 2026-07-26**
-as an ASSEMBLY: the geometric half is the leaf
-`exists_smoothProperModel_of_affine_curve` above, the arithmetic half —
-nonemptiness of the complement — is `nonempty_compl_range_of_isProper_of_isAffine`,
-which is proven outright).
-
-Moret–Bailly, *Groupes de Picard et problèmes de Skolem II*, §3.1: one
-chooses a dense open immersion `j : X ↪ X̄` with `X̄ → B` projective and
-`X̄` normal, and puts `Z = X̄ - X` with its reduced structure. Over the
-generic fibre — which is all that is used here, the base being `Spec ℚ`
-rather than `Spec R` — this is exactly the statement that a smooth affine
-geometrically irreducible curve over `ℚ` is a dense open subscheme of a
-smooth proper geometrically irreducible curve, with nonempty complement.
-
-The complement is nonempty because `C` is AFFINE of positive dimension: a
-proper scheme over a field that is also affine is finite, hence
-`dim ≤ 0`, contradicting `hpos`. That is why `hpos` appears — it is not
-decoration, it is what makes `Z ≠ ∅`, and `z = deg Z_K > 0` is used
-throughout §3.5–3.9. **That argument is now formalized** — see
-`topologicalKrullDim_le_zero_of_isProper_of_isAffine` and
-`nonempty_compl_range_of_isProper_of_isAffine` above — so `hpos` is consumed
-HERE and does not appear in the residual geometric leaf at all.
-
-WHAT IS MISSING AT THIS PIN: only the smooth proper model, i.e. exactly
-`exists_smoothProperModel_of_affine_curve` — which is itself no longer a bare
-leaf. As of 2026-07-26 its model is CONSTRUCTED (relative normalization of a
-proper `ℚ`-scheme, with the open immersion supplied by Zariski's Main Theorem
-out of mathlib) and its dimension-`0` case is closed outright; four named
-residual leaves remain, listed in its docstring. The earlier note here that
-the construction "is not available and is a chapter-sized job" was wrong and
-is retracted. -/
-theorem exists_projectiveCompactification_of_affine_curve
-    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
-    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (hsmooth : AlgebraicGeometry.Smooth fC)
-    (hsep : AlgebraicGeometry.IsSeparated fC)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hqc : AlgebraicGeometry.QuasiCompact fC)
-    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
-    (hdim : topologicalKrullDim ↥C ≤ 1)
-    (hpos : ¬ topologicalKrullDim ↥C ≤ 0) :
-    ∃ (Xbar : AlgebraicGeometry.Scheme.{u})
-      (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-      (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
-      j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
-        AlgebraicGeometry.GeometricallyIrreducible fX ∧
-        (Set.range j.base)ᶜ.Nonempty := by
-  obtain ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi⟩ :=
-    exists_smoothProperModel_of_affine_curve fC hsmooth hsep hft hqc hgi hdim
-  exact ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi,
-    nonempty_compl_range_of_isProper_of_isAffine fC fX j hjimm hjcomm hXpr hpos⟩
-
 /-! ##### The dense-open dimension transfer — the CUT AUDIT's budgeted obligation
 
 (2026-07-27.) The CUT AUDIT on `exists_totallySplitPoint_of_projectiveCompactification`
@@ -15071,6 +14591,561 @@ theorem topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType
   refine le_trans ?_ (le_iSup (fun y : ↥C => (Order.coheight y : WithBot ℕ∞)) y)
   rw [← AlgebraicGeometry.coheight_eq_of_isOpenImmersion (x := y) j]
   exact_mod_cast hy
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF C1b — THE NORMALIZED MODEL HAS DIMENSION `≤ 1`**
+(**PROVEN 2026-07-27**, over the dense-open dimension transfer proven in the block
+immediately above; no new mathematics and no new leaf).
+
+The DIMENSION half of "the model is regular", stated at the SPACE — the stalk
+form it needs is supplied by the PROVEN
+`krullDimLE_stalk_of_topologicalKrullDim_le` above.
+
+`g.toNormalization : C ⟶ X̄` is an OPEN IMMERSION by Zariski's Main Theorem
+and is DOMINANT (`instance : IsDominant f.toNormalization`), so `C` is a dense
+open subscheme of `X̄`; `X̄` is integral, hence irreducible, so `X̄` and `C`
+have the same generic point and the same function field, and `hdim` bounds the
+dimension of `C`. Since `X̄` is of finite type over a field, its dimension is
+the transcendence degree of that common function field, whence `dim X̄ ≤ 1`.
+
+WHAT MAKES THIS A LEAF RATHER THAN BOOKKEEPING. `topologicalKrullDim` is
+monotone only in the WRONG direction for this: mathlib's
+`topologicalKrullDim_subspace_le` gives `dim C ≤ dim X̄`, and the reverse
+inequality for a DENSE open is FALSE for general topological spaces — it needs
+that `X̄` is of finite type over a field, where dimension is computed by the
+transcendence degree of the function field. Mathlib has no dimension =
+transcendence degree theorem; the check that would refute this is
+`grep -rn "transcendence\|trdeg" .lake/packages/mathlib/Mathlib/RingTheory/KrullDimension/`,
+which is empty at this pin.
+
+**THE PARAGRAPH ABOVE IS STILL TRUE OF MATHLIB AND IS NO LONGER TRUE OF THIS
+FILE (correction, 2026-07-27 — re-run its checks before believing it).** The
+dense-open dimension transfer it says this leaf owes is **already PROVEN here**,
+in the block immediately ABOVE this point (it was ~550 lines below until the
+relocation recorded at the end of this docstring), as
+
+    topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType
+
+(PROVEN, over the single leaf `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`,
+via `topologicalKrullDim_eq_iSup_coheight` and `schemeIrreducibleClosedsOrderIso`,
+also PROVEN here). Its conclusion is literally `dim X̄ ≤ dim C` for an open
+immersion `j : C ⟶ X̄` into an irreducible `ℚ`-scheme of finite type. Instantiated
+at `j = g.toNormalization` it discharges this leaf outright, because that map is
+an OPEN IMMERSION under exactly this statement's four hypotheses — the instance
+`[LocallyQuasiFinite f] [LocallyOfFiniteType f] [IsSeparated f] [QuasiCompact f] :
+IsOpenImmersion f.toNormalization` in
+`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean` — and `X̄` is locally of
+finite type over `ℚ` from `hfin` plus `hPproper`, exactly as the consumer below
+already derives it. **So no transcendence-degree theory is owed here, and the
+"cheaper route" that used to be proposed in this docstring — a finite-fibres
+argument on `X̄ \ C` — should NOT be attempted; it would re-derive a lemma this
+file already has.**
+
+TWO THINGS USED TO BLOCK IT, neither of them mathematical content of this leaf.
+**Both were repaired on 2026-07-27 and this is the record of how**, because both
+repairs are visible in the file's SHAPE rather than in any proof and would
+otherwise look unmotivated.
+
+1. **DECLARATION ORDER (repaired by RELOCATION, not by the hoist that was
+   proposed).** The transfer lemma used to sit ~550 lines BELOW its consumer here,
+   and Lean has no forward references. The recorded repair was a HOIST of the
+   transfer block up past this cluster. **The opposite move was made instead**: the
+   CURVE cluster — this leaf, `smooth_normalizationModel_of_smooth_affine_curve`,
+   `geometricallyIrreducible_normalizationModel_of_smooth_affine_curve`,
+   `exists_smoothProperModel_of_affine_curve` and
+   `exists_projectiveCompactification_of_affine_curve` — was moved DOWN past the
+   transfer block, which now sits immediately above.
+
+   Why that direction, since both orders compile: the two regions are independent
+   in BOTH directions (the transfer block references none of the five curve
+   declarations, and none of them referenced the block), so the choice is purely
+   about who gets disturbed. Moving the curve cluster relocates 535 lines whose
+   only open leaf was THIS one; hoisting the transfer block would have relocated
+   645 lines containing `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`,
+   an OPEN leaf that will be dispatched to somebody. Relocating another owner's
+   open leaf is exactly what the coordination note below was warning against, so
+   the smaller move — the one that makes no textual change whatever to that
+   declaration — was taken instead.
+
+   One caveat worth knowing before trusting that reasoning too far: a relocation
+   is symmetric, and `git diff` picks whichever side it finds cheaper to describe,
+   so it renders parts of this change as if the transfer block had moved. The
+   guarantee that actually holds is about CONTENT, and it was checked mechanically
+   rather than by eye: the file's multiset of lines is identical before and after,
+   so the move introduced, dropped and altered exactly nothing. Everything else
+   here — including this leaf's new proof — is a separate, ordinary edit.
+
+   **THE COORDINATION NOTE THAT USED TO STAND HERE WAS STALE, and this is the
+   check that refuted it.** It said the worker on `flt-lean-36` owned
+   `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` and was actively
+   proving it. As of 2026-07-27 that worktree had been reallocated: its current
+   in-flight task is `divisorRatio_mem_sup_ray_class` in `ModThree.lean`, dispatched
+   in the same wave as the task that closed this leaf. The refuting check is to
+   read the LATEST record per worktree in `~/.flt-inflight.jsonl` and grep the
+   `prompt` field (not `targets`, which is regex-harvested and unreliable) for the
+   declaration name: no in-flight task TARGETS that leaf, so it is currently
+   UNOWNED rather than owned. A worktree number recorded in a docstring names an
+   allocation, and allocations are recycled within hours — so an ownership claim
+   must be re-checked against the live file, never believed from the docstring.
+
+2. **A MISSING HYPOTHESIS (repaired by threading `hgi`).** The transfer lemma needs
+   `IrreducibleSpace X̄`, and the old statement could not supply it: `hsmooth` gives
+   reducedness of `C` (smooth over a field ⟹ the stalks are domains ⟹ `IsReduced`)
+   but nothing gave irreducibility, and mathlib's
+   `instance [IsIntegral X] : IsIntegral f.normalization` needs `IsIntegral C`. The
+   sole consumer, `smooth_normalizationModel_of_smooth_affine_curve` below, HAS
+   `hgi : GeometricallyIrreducible fC` and already derived `IrreducibleSpace ↥C`,
+   `IsIntegral C` and `IsIntegral g.normalization` in its own proof — it simply did
+   not pass it. `hgi` is now a hypothesis here and the four-line derivation moved
+   with it; the consumer passes its own `hgi` through unchanged.
+
+TWO HYPOTHESES ARE NOT USED and are underscore-prefixed so that this is mechanically
+visible rather than merely asserted. `_hft` (finite type of `fC`) is not needed
+because the finite-type input the transfer wants is about the MODEL, and that comes
+from `hfin` and `hPproper`; `_hcomm` is not needed because the transfer argument
+never compares `g ≫ fP` with `fC`. Both are kept in the signature because they are
+part of this cluster's established interface and every sibling carries them. -/
+theorem topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve
+    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (_hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hPproper : AlgebraicGeometry.IsProper fP) (_hcomm : g ≫ fP = fC)
+    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
+    (hgsep : AlgebraicGeometry.IsSeparated g)
+    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgqc : AlgebraicGeometry.QuasiCompact g)
+    (hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
+    topologicalKrullDim ↥(g.normalization : AlgebraicGeometry.Scheme.{u}) ≤ 1 := by
+  haveI := hgi
+  haveI := hPproper
+  haveI := hfin
+  haveI := hgqf
+  haveI := hgsep
+  haveI := hgft
+  haveI := hgqc
+  -- `C` is REDUCED: smooth over a field makes every stalk a domain.
+  haveI : ∀ c : C, _root_.IsReduced (C.presheaf.stalk c) := fun c =>
+    haveI := isDomain_stalk_of_smooth_over_field fC hsmooth c
+    inferInstance
+  haveI : AlgebraicGeometry.IsReduced C := AlgebraicGeometry.isReduced_of_isReduced_stalk C
+  -- `C` is IRREDUCIBLE: geometrically irreducible over the one-point base `Spec (ULift ℚ)`.
+  haveI : IrreducibleSpace ↥C :=
+    AlgebraicGeometry.GeometricallyIrreducible.irreducibleSpace_of_subsingleton fC
+  haveI : AlgebraicGeometry.IsIntegral C :=
+    AlgebraicGeometry.isIntegral_of_irreducibleSpace_of_isReduced C
+  -- hence the model is INTEGRAL, hence irreducible (`irreducibleSpace_of_isIntegral`).
+  haveI : AlgebraicGeometry.IsIntegral g.normalization := inferInstance
+  -- the model is LOCALLY OF FINITE TYPE over `ℚ` (`hfin` for `g.fromNormalization`,
+  -- `hPproper` for `fP`).
+  haveI : AlgebraicGeometry.LocallyOfFiniteType (g.fromNormalization ≫ fP) := inferInstance
+  -- `g.toNormalization` is an open immersion (Zariski's Main Theorem, from the four
+  -- hypotheses on `g`), so the transfer applies and `dim X̄ ≤ dim C ≤ 1`.
+  exact le_trans (topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType
+    (g.fromNormalization ≫ fP) inferInstance inferInstance g.toNormalization inferInstance
+    inferInstance) hdim
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF C — the normalized model is smooth over `ℚ`** (SORRY LEAF).
+
+`g.normalization` is normal and integral: `C` is smooth over `ℚ`, hence
+regular, hence a normal integral scheme, and the relative normalization of
+`P` in a normal integral `C` is again normal integral (Stacks 035Q — the
+integral closure `A'` of `A` inside a normal domain `B` is integrally closed
+in `Frac A'`, because an element of `Frac A'` integral over `A'` is integral
+over `B`, hence in `B`, hence in `A'`).
+
+It has dimension `≤ 1`, because `C` is a DENSE open subscheme of it
+(`g.toNormalization` is an open immersion by Zariski's Main Theorem and is
+dominant by `instance : IsDominant f.toNormalization`), and `hdim` bounds the
+dimension of `C`.
+
+So the content is: **a normal integral scheme of dimension `≤ 1`, of finite
+type over a perfect field, is smooth over that field.** In dimension `1` this
+is "normal Noetherian local domain of dimension one is a DVR, hence regular"
+(mathlib has this through `IsDiscreteValuationRing` and
+`Mathlib/RingTheory/DiscreteValuationRing/TFAE.lean`) plus "regular over a
+perfect field implies smooth"; in dimension `0` the local rings are fields,
+finite and separable over `ℚ` since `char ℚ = 0`.
+
+**DECOMPOSED 2026-07-27 — this is no longer a bare leaf.** The scheme-theoretic
+glue is PROVEN here and three named sub-leaves remain, stated immediately
+above. What this node's proof now does, every step out of mathlib or out of
+this file:
+
+* `C` is REDUCED, because `isDomain_stalk_of_smooth_over_field` (PROVEN above)
+  makes each of its stalks a domain and `isReduced_of_isReduced_stalk` glues
+  that to `IsReduced C`;
+* `C` is IRREDUCIBLE, because `Spec (ULift ℚ)` is a one-point space and
+  `GeometricallyIrreducible.irreducibleSpace_of_subsingleton` turns geometric
+  irreducibility over a point into irreducibility;
+* hence `IsIntegral C` (`isIntegral_of_irreducibleSpace_of_isReduced`), hence
+  `IsIntegral g.normalization` by mathlib's
+  `instance [IsIntegral X] : IsIntegral f.normalization`, which is what makes
+  every stalk of the model a DOMAIN
+  (`instance [IsIntegral X] {x : X} : IsDomain (X.presheaf.stalk x)`);
+* `fX = g.fromNormalization ≫ fP` is LOCALLY OF FINITE TYPE — `hfin` gives it
+  for `g.fromNormalization`, `hPproper` for `fP` — hence LOCALLY OF FINITE
+  PRESENTATION by `locallyOfFinitePresentation_of_locallyOfFiniteType_over_field`
+  (PROVEN above), which is the form `Smooth` is stated in; and hence the model
+  is LOCALLY NOETHERIAN (`LocallyOfFiniteType.isLocallyNoetherian`), which is
+  what makes every stalk a NOETHERIAN local ring;
+* `ULift ℚ` is a PERFECT field, being of characteristic zero;
+* the model has dimension `≤ 1` (LEAF C1b), and that bounds the Krull
+  dimension of every stalk by `krullDimLE_stalk_of_topologicalKrullDim_le`
+  (PROVEN above);
+* each stalk is then NOETHERIAN, LOCAL, a DOMAIN, INTEGRALLY CLOSED (LEAF C1a)
+  and of dimension `≤ 1`, so it is REGULAR by
+  `isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one` (PROVEN above);
+* and regular stalks over a perfect field give smoothness by LEAF C2.
+
+THE RESIDUAL LEAVES, UPDATED 2026-07-27 — the list below has changed, and the
+first entry is no longer one of them:
+
+* ~~`smooth_of_isRegularLocalRing_stalk_of_perfectField`~~ — **PROVEN
+  2026-07-27**. It is scheme bookkeeping over
+  `Scheme.Hom.smoothLocus_eq_top_iff` plus the single shared classical leaf
+  `formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`
+  (Stacks 07EC), which is stated ~7500 lines above beside the OTHER consumer of
+  the same theorem, `formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero`
+  (also PROVEN 2026-07-27 over it). So "regular ⟹ smooth over a perfect field"
+  is still the one genuinely missing THEORY in this cluster, but it is now a
+  SINGLE named leaf serving two consumers instead of two independent nodes, and
+  its docstring — not this one — is where its status is maintained.
+* ~~`topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve`~~ —
+  **PROVEN 2026-07-27**, and it introduced no new leaf. The content — "a nonempty
+  open of an irreducible finite-type scheme has the same dimension" — is
+  `topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType`, which is
+  proven in the transfer block now sitting immediately above this cluster, over
+  the single open commutative-algebra leaf
+  `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`. So this node's
+  residual dependency on the dimension side is that ONE leaf, not a dimension
+  theory. It took one new hypothesis, `hgi`, which this proof already had and now
+  passes through.
+* ~~`isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve`~~ —
+  **PROVEN 2026-07-27**, once `hdim` was threaded through to it from here. In
+  dimension `≤ 1` "regular ⟹ integrally closed" is field-or-DVR
+  (`isIntegrallyClosed_of_isRegularLocalRing_of_krullDimLE_one`), and the rest is
+  the Stacks 035Q descent
+  (`isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk` and
+  `isIntegrallyClosed_stalk_normalization_of_isIntegrallyClosed_sections`, both
+  PROVEN and both reusable general scheme theory).
+
+**Both of this node's own obligations are therefore discharged**, and what is
+left under it is the single transfer leaf named above.
+
+The earlier version of this docstring said the missing theory was the ONLY
+gap. That was optimistic: mathlib has **no notion of a normal scheme at all**
+(`grep -rn "IsIntegrallyClosed" Mathlib/AlgebraicGeometry/` is empty), so
+normality of the model was a separate obligation and not a free consequence —
+it just turned out to be a dischargeable one, because normality is LOCAL and
+the stalks of `C` are normal for dimension reasons.
+
+ONE CLAIM MADE IN THE FIRST VERSION OF THIS DECOMPOSITION IS RETRACTED, by
+its own author and within the same day. It said mathlib had no comparison
+between a stalk's Krull dimension and the space's, and stated the dimension
+leaf at the STALK for that reason. **That was wrong**: `@[stacks 02IZ]`
+`AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` and
+`AlgebraicGeometry.krullDimLE_of_coheight_le` are both in
+`Mathlib/AlgebraicGeometry/Properties.lean`, and composing them with
+`Order.coheight_le_krullDim` proves the comparison in three lines — it is
+`krullDimLE_stalk_of_topologicalKrullDim_le` above, PROVEN. The dimension
+leaf is now stated at the SPACE where it belongs. The grep that produced the
+false claim searched `topologicalKrullDim` against `stalk`; the lemma is
+phrased in `coheight` and so did not match. **Search the CONCEPT, not one
+spelling of it.**
+
+`hfin` is supplied so that the model is already known to be of finite type
+over `ℚ` — smoothness is a property of finitely presented morphisms, so
+without it the statement would not even be in normal form. -/
+theorem smooth_normalizationModel_of_smooth_affine_curve
+    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
+    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
+    (hgsep : AlgebraicGeometry.IsSeparated g)
+    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgqc : AlgebraicGeometry.QuasiCompact g)
+    (hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
+    AlgebraicGeometry.Smooth (g.fromNormalization ≫ fP) := by
+  haveI := hgi
+  haveI := hPproper
+  haveI := hfin
+  -- `C` is reduced: its stalks are domains because it is smooth over a field.
+  haveI : ∀ c : C, _root_.IsReduced (C.presheaf.stalk c) := fun c =>
+    haveI := isDomain_stalk_of_smooth_over_field fC hsmooth c
+    inferInstance
+  haveI : AlgebraicGeometry.IsReduced C := AlgebraicGeometry.isReduced_of_isReduced_stalk C
+  -- `C` is irreducible: it is geometrically irreducible over a one-point base.
+  haveI : IrreducibleSpace ↥C :=
+    AlgebraicGeometry.GeometricallyIrreducible.irreducibleSpace_of_subsingleton fC
+  haveI : AlgebraicGeometry.IsIntegral C :=
+    AlgebraicGeometry.isIntegral_of_irreducibleSpace_of_isReduced C
+  haveI : AlgebraicGeometry.IsIntegral g.normalization := inferInstance
+  -- the model is locally of finite type over `ℚ`, hence of finite presentation
+  haveI : AlgebraicGeometry.LocallyOfFiniteType (g.fromNormalization ≫ fP) := inferInstance
+  haveI hfp : AlgebraicGeometry.LocallyOfFinitePresentation (g.fromNormalization ≫ fP) :=
+    locallyOfFinitePresentation_of_locallyOfFiniteType_over_field _ inferInstance
+  haveI : AlgebraicGeometry.IsLocallyNoetherian (g.normalization) :=
+    AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian (g.fromNormalization ≫ fP)
+  haveI : CharZero (ULift.{u} ℚ) := charZero_uliftRat
+  refine smooth_of_isRegularLocalRing_stalk_of_perfectField _ hfp (fun x => ?_)
+  haveI := isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
+    hft hdim hPproper hcomm hgqf hgsep hgft hgqc x
+  haveI := krullDimLE_stalk_of_topologicalKrullDim_le
+    (topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve fC fP g hsmooth
+      hft hgi hdim hPproper hcomm hgqf hgsep hgft hgqc hfin) x
+  exact isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one _
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF D — the normalized model is geometrically irreducible**
+(**PROVEN 2026-07-27**, entirely out of mathlib; no curve theory is used).
+
+`g.toNormalization : C ⟶ g.normalization` is an open immersion (Zariski's
+Main Theorem) and dominant (`instance : IsDominant f.toNormalization`), so
+`C` is a DENSE open subscheme of the model, and geometric irreducibility
+transfers along that dense open immersion.
+
+THE CHAIN, each step a named mathlib result at this pin:
+
+* unfolding `GeometricallyIrreducible` with
+  `geometrically_iff_of_isClosedUnderIsomorphisms` reduces the goal to
+  `IrreducibleSpace (pullback fX y)` for every field `K` and every
+  `y : Spec K ⟶ Spec (ULift ℚ)`;
+* `pullbackRightPullbackFstIso fX y g.toNormalization` identifies
+  `pullback g.toNormalization (pullback.fst fX y)` with
+  `pullback (g.toNormalization ≫ fX) y = pullback fC y`, which is
+  irreducible by `hgi`;
+* `pullback.snd g.toNormalization (pullback.fst fX y)` is an open immersion
+  (base change of one), and `Scheme.Pullback.range_snd` computes its range as
+  `(pullback.fst fX y) ⁻¹' Set.range g.toNormalization`;
+* **the load-bearing openness step**: `pullback.fst fX y` is the base change
+  of `y`, whose TARGET is `Spec` of a field, and mathlib has
+  `instance [IsIntegral Y] [Subsingleton Y] : UniversallyOpen f`
+  (`Morphisms/UniversallyOpen.lean`). So `pullback.fst fX y` is an open map
+  and `Dense.preimage` carries density of `Set.range g.toNormalization`
+  (which is `IsDominant.denseRange`) across the base change. This is the one
+  place a naive proof stalls, and it needs NO finite-presentation hypothesis
+  precisely because the base is a field;
+* an irreducible dense subset forces the whole space irreducible
+  (`IsIrreducible.closure` plus `Dense.closure_eq`).
+
+FORMAL-CONTENT NOTE: `_hsmooth`, `_hft`, `_hdim`, `_hPproper` and `_hfin` are
+underscore-prefixed because the proof genuinely does not use them — geometric
+irreducibility of the model needs only that `C` is geometrically irreducible
+and that `g.toNormalization` is a dense open immersion, which is exactly the
+four `g`-hypotheses plus Zariski's Main Theorem. They are kept in the
+signature so the leaf's shape matches its three siblings and the positional
+call in `exists_smoothProperModel_of_affine_curve` is undisturbed. -/
+theorem geometricallyIrreducible_normalizationModel_of_smooth_affine_curve
+    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
+    (_hsmooth : AlgebraicGeometry.Smooth fC)
+    (_hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (_hdim : topologicalKrullDim ↥C ≤ 1)
+    (_hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
+    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
+    (hgsep : AlgebraicGeometry.IsSeparated g)
+    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgqc : AlgebraicGeometry.QuasiCompact g)
+    (_hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
+    AlgebraicGeometry.GeometricallyIrreducible (g.fromNormalization ≫ fP) := by
+  haveI := hgqf; haveI := hgsep; haveI := hgft; haveI := hgqc
+  haveI : IsDomain (CommRingCat.of (ULift.{u} ℚ)) := inferInstanceAs (IsDomain (ULift.{u} ℚ))
+  haveI : Subsingleton ↥(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum (ULift.{u} ℚ)))
+  have hj : g.toNormalization ≫ (g.fromNormalization ≫ fP) = fC := by
+    rw [← Category.assoc, AlgebraicGeometry.Scheme.Hom.toNormalization_fromNormalization, hcomm]
+  constructor
+  rw [AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms]
+  intro K _ y
+  set fX := g.fromNormalization ≫ fP with hfXdef
+  set p := Limits.pullback.fst fX y with hpdef
+  -- `C ×_ℚ K` sits inside `X̄ ×_ℚ K` as an open subscheme
+  have e := Limits.pullbackRightPullbackFstIso fX y g.toNormalization
+  have hCK : IrreducibleSpace ↥(Limits.pullback (g.toNormalization ≫ fX) y) := by
+    rw [hj]
+    exact AlgebraicGeometry.pullback_of_geometrically hgi.geometrically_irreducibleSpace K y
+  have hW : IrreducibleSpace ↥(Limits.pullback g.toNormalization p) :=
+    e.hom.homeomorph.irreducibleSpace_iff.mpr hCK
+  have hq : AlgebraicGeometry.IsOpenImmersion (Limits.pullback.snd g.toNormalization p) :=
+    inferInstance
+  have hrange : Set.range ⇑(Limits.pullback.snd g.toNormalization p) =
+      ⇑p ⁻¹' Set.range ⇑g.toNormalization :=
+    AlgebraicGeometry.Scheme.Pullback.range_snd _ _
+  have hdense : Dense (Set.range ⇑(Limits.pullback.snd g.toNormalization p)) := by
+    rw [hrange]
+    exact (AlgebraicGeometry.IsDominant.denseRange
+      (f := g.toNormalization)).preimage p.isOpenMap
+  rw [irreducibleSpace_def]
+  have h1 : IsIrreducible (Set.range ⇑(Limits.pullback.snd g.toNormalization p)) := by
+    rw [← Set.image_univ]
+    exact (IrreducibleSpace.isIrreducible_univ _).image _
+      (Limits.pullback.snd g.toNormalization p).continuous.continuousOn
+  have h2 := h1.closure
+  rwa [hdense.closure_eq] at h2
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.1, the geometric half: the smooth proper model**
+(**DECOMPOSED 2026-07-26** — no longer a bare leaf: the model is CONSTRUCTED
+and the open immersion is PROVEN here, and the dimension-`0` case is closed
+outright).
+
+A smooth, geometrically irreducible affine curve over `ℚ` is a dense open
+subscheme of a smooth proper geometrically irreducible curve over `ℚ`.
+
+WHAT IS PROVEN HERE.
+
+* The `dim C ≤ 0` branch is UNCONDITIONAL: `C` is then already proper over
+  `ℚ` by `isProper_of_isAffine_of_krullDim_le_zero` above, so the model is
+  `C` itself with `j = 𝟙 C`. This branch uses none of the leaves.
+* In the remaining branch the model is exhibited as
+  `X̄ = g.normalization`, `fX = g.fromNormalization ≫ fP`,
+  `j = g.toNormalization`, for `g` produced by LEAF A. That `j` is an OPEN
+  IMMERSION is Zariski's Main Theorem out of mathlib, and `j ≫ fX = fC` is
+  `Scheme.Hom.toNormalization_fromNormalization` — both discharged here.
+  `IsProper fX` is likewise discharged here, modulo LEAF B, from
+  `[IsFinite f] : IsProper f` and stability of properness under composition.
+
+WHAT REMAINS (updated 2026-07-27 — LEAF D, LEAF A1 and hence LEAF A are all
+PROVEN; only B and C are open), in decreasing order of expected cost:
+
+* LEAF C `smooth_normalizationModel_of_smooth_affine_curve` — normal of
+  dimension `≤ 1` over a perfect field implies smooth. The one place where
+  mathlib genuinely lacks a theorem (regular ⟹ smooth over a perfect field).
+* ~~LEAF B `isFinite_fromNormalization_of_smooth_affine`~~ — **DECOMPOSED
+  2026-07-27** and proven over three smaller leaves. Its scheme-theoretic half
+  turned out to be free (`isFinite_fromNormalization_of_forall_affineOpens`,
+  PROVEN, is mathlib's own `IsIntegralHom f.fromNormalization` argument with
+  `IsFinite` substituted throughout). LEAF B-i `isReduced_of_smooth_over_rat`
+  is **PROVEN 2026-07-27** too, over one mechanical sub-leaf
+  (`exists_isDomain_etale_of_isStandardSmooth`); regularity theory, which the
+  audit called the blocker, is not on the route at all. What survives is
+  LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` (the gluing
+  step over one affine open, needed because `g ⁻¹ᵁ U` is not affine — **PROVEN
+  2026-07-27**, so it no longer survives), and
+  LEAF B-ii `module_finite_integralClosure_of_finiteType` (E. Noether's
+  finiteness theorem, pure commutative algebra — the real content, and still
+  the most expensive item under this node). The 2026-07-27 audit's verdict that
+  NAGATA is absent from the pin STANDS; its corollary that no foothold exists
+  does not — see the correction in LEAF B-ii's docstring, which routes step 4
+  through `IsIntegralClosure.finite` applied to the POLYNOMIAL subring produced
+  by Noether normalization, where `[IsIntegrallyClosed]` is free.
+* ~~LEAF A1 `exists_properCompactification_affineSpace`~~ — PROVEN 2026-07-27.
+  `P := Proj ℚ[X₀,…,Xₙ]`; the costing was accurate, the whole content being
+  the ring isomorphism `HomogeneousLocalization.Away 𝒜 X₀ ≅ MvPolynomial
+  (Fin n) ℚ`, built as `projSpaceAwayEquiv` above (injective by an explicit
+  dehomogenization left inverse, surjective by the key identity
+  `ψ(dehom a)·X₀ᵏ = a`).
+* ~~LEAF A `exists_quasiFinite_toProper_of_isAffine_finiteType`~~ — PROVEN
+  over LEAF A1, which is itself now proven.
+* ~~LEAF D `geometricallyIrreducible_normalizationModel_of_smooth_affine_curve`~~
+  — PROVEN outright, out of mathlib, using that base change along
+  `Spec K → Spec ℚ` is an OPEN map because the base is a field.
+
+`hpos` is deliberately NOT a hypothesis: the smooth proper model exists in
+dimension `0` too, and positivity is needed only for nonemptiness of the
+complement, which is `nonempty_compl_range_of_isProper_of_isAffine` above.
+
+`hsep` and `hqc` are consumed by LEAF A. -/
+theorem exists_smoothProperModel_of_affine_curve
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1) :
+    ∃ (Xbar : AlgebraicGeometry.Scheme.{u})
+      (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
+      j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
+        AlgebraicGeometry.GeometricallyIrreducible fX := by
+  by_cases hzero : topologicalKrullDim ↥C ≤ 0
+  · exact ⟨C, fC, 𝟙 C, inferInstance, Category.id_comp _, hsmooth,
+      isProper_of_isAffine_of_krullDim_le_zero fC hft hzero, hgi⟩
+  · obtain ⟨P, fP, g, hPproper, hcomm, hgqf, hgsep, hgft, hgqc⟩ :=
+      exists_quasiFinite_toProper_of_isAffine_finiteType fC hsep hft hqc
+    haveI := hPproper
+    haveI := hgqf
+    haveI := hgsep
+    haveI := hgft
+    haveI := hgqc
+    haveI : AlgebraicGeometry.IsFinite g.fromNormalization :=
+      isFinite_fromNormalization_of_smooth_affine fC fP g hsmooth hft hPproper hcomm
+        hgqf hgsep hgft hgqc
+    refine ⟨g.normalization, g.fromNormalization ≫ fP, g.toNormalization, inferInstance,
+      ?_, ?_, inferInstance, ?_⟩
+    · rw [← Category.assoc, AlgebraicGeometry.Scheme.Hom.toNormalization_fromNormalization]
+      exact hcomm
+    · exact smooth_normalizationModel_of_smooth_affine_curve fC fP g hsmooth hft hgi hdim
+        hPproper hcomm hgqf hgsep hgft hgqc ‹_›
+    · exact geometricallyIrreducible_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
+        hft hgi hdim hPproper hcomm hgqf hgsep hgft hgqc ‹_›
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.1: the compactification datum** (**PROVEN 2026-07-26**
+as an ASSEMBLY: the geometric half is the leaf
+`exists_smoothProperModel_of_affine_curve` above, the arithmetic half —
+nonemptiness of the complement — is `nonempty_compl_range_of_isProper_of_isAffine`,
+which is proven outright).
+
+Moret–Bailly, *Groupes de Picard et problèmes de Skolem II*, §3.1: one
+chooses a dense open immersion `j : X ↪ X̄` with `X̄ → B` projective and
+`X̄` normal, and puts `Z = X̄ - X` with its reduced structure. Over the
+generic fibre — which is all that is used here, the base being `Spec ℚ`
+rather than `Spec R` — this is exactly the statement that a smooth affine
+geometrically irreducible curve over `ℚ` is a dense open subscheme of a
+smooth proper geometrically irreducible curve, with nonempty complement.
+
+The complement is nonempty because `C` is AFFINE of positive dimension: a
+proper scheme over a field that is also affine is finite, hence
+`dim ≤ 0`, contradicting `hpos`. That is why `hpos` appears — it is not
+decoration, it is what makes `Z ≠ ∅`, and `z = deg Z_K > 0` is used
+throughout §3.5–3.9. **That argument is now formalized** — see
+`topologicalKrullDim_le_zero_of_isProper_of_isAffine` and
+`nonempty_compl_range_of_isProper_of_isAffine` above — so `hpos` is consumed
+HERE and does not appear in the residual geometric leaf at all.
+
+WHAT IS MISSING AT THIS PIN: only the smooth proper model, i.e. exactly
+`exists_smoothProperModel_of_affine_curve` — which is itself no longer a bare
+leaf. As of 2026-07-26 its model is CONSTRUCTED (relative normalization of a
+proper `ℚ`-scheme, with the open immersion supplied by Zariski's Main Theorem
+out of mathlib) and its dimension-`0` case is closed outright; four named
+residual leaves remain, listed in its docstring. The earlier note here that
+the construction "is not available and is a chapter-sized job" was wrong and
+is retracted. -/
+theorem exists_projectiveCompactification_of_affine_curve
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hpos : ¬ topologicalKrullDim ↥C ≤ 0) :
+    ∃ (Xbar : AlgebraicGeometry.Scheme.{u})
+      (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
+      j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
+        AlgebraicGeometry.GeometricallyIrreducible fX ∧
+        (Set.range j.base)ᶜ.Nonempty := by
+  obtain ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi⟩ :=
+    exists_smoothProperModel_of_affine_curve fC hsmooth hsep hft hqc hgi hdim
+  exact ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi,
+    nonempty_compl_range_of_isProper_of_isAffine fC fX j hjimm hjcomm hXpr hpos⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.10: the arithmetic core, on the
