@@ -107,6 +107,30 @@ both levels now have the same shape: an unconditional enumeration is the
 leaf, and finiteness is DERIVED from it rather than assumed for it. That is
 what breaks the circle at each level.
 
+UPDATE 2026-07-26 (level `11`, merged from `flt-lean-86`): level `11`'s leaf
+moved ONE LEVEL DOWN, to `MazurLevel11.integral_leaf`.
+`WeierstrassCurve.curve11a3_rational_points` — the four affine rational points
+of `y² + y = x³ − x²`, unconditionally — is PROVEN from it. The Weierstrass API
+and the rationals have been stripped off: with `U = 4x`, `W = 8y + 4` the curve
+is the monic integral model `W² = U³ − 4U² + 16`, and
+`RationalPointDescent.exists_int_model` turns a rational point into an integral
+one, so what is left is the pure integer statement
+
+    n² = p³ − 4p²e² + 16e⁶,  gcd(p, e) = 1,  e > 0   ⟹   (p,e) = (0,1) or (4,1).
+
+That is the whole arithmetic content of level `11` and nothing else. See the
+`MazurLevel11` section docstring for why no elementary descent reaches it.
+
+**`11a3` gets no such route, and this is not a matter of effort.**
+`4x³ − 4x² + 1` is irreducible over `ℚ` (the candidates `±1, ±1/2, ±1/4` all
+fail), so `E[2]` is irreducible and the isogeny class `11a` contains no
+`2`-isogeny at all. The descent there is by the rational `5`-isogeny, whose
+dual side is `H¹(ℚ, ℤ/5)` — cyclic quintic extensions unramified outside
+`{5, 11}` with local conditions — and that needs class field theory, not a
+`gcd` argument. The alternative, a `2`-descent over the cubic field
+`ℚ[s]/(s³ − 2s² + 2)` of discriminant `−44`, needs that field's class group and
+unit group. Neither is in the pin. See `curve11a3_rational_points`.
+
 The `X_1(11)` plane model itself — the birational passage between
 `tateNormalForm b c` with an order-`11` origin and a rational point of
 `curve11a3` — lives in `MazurTorsion.lean`, next to its consumer. That
@@ -126,6 +150,89 @@ public import Mathlib.GroupTheory.FiniteAbelian.Basic
 @[expose] public section
 
 namespace WeierstrassCurve
+
+/-! ### Rational points of a monic integral cubic are integral points
+
+The one piece of plumbing that every curve in this module needs, and that
+nothing in the pin provides: a rational solution of `V² = T³ + AT² + BT + C`
+with `A, B, C ∈ ℤ` has `T = p/e²` and `V = n/e³` with `gcd(p, e) = 1`. It is
+used at level `11` (`MazurLevel11`) and at level `14` (`MazurLevel14`). -/
+
+namespace RationalPointDescent
+
+/-- **The denominator of a rational point on a monic integral cubic is a
+square** (PROVEN 2026-07-26).
+
+If `V² = T³ + AT² + BT + C` with `A, B, C` integers, then writing
+`T = T.num / T.den` in lowest terms, `T.den` is coprime to
+`T.num³ + A T.num² T.den + B T.num T.den² + C T.den³`, which forces
+`V.den² = T.den³` and hence `T.den = e²`, `V.den = e³`. Clearing denominators
+then gives the integral equation below.
+
+This is the standard first step of any descent on a Weierstrass curve and it is
+stated once here rather than per curve. -/
+theorem exists_int_model {A B C : ℤ} {T V : ℚ}
+    (h : V ^ 2 = T ^ 3 + (A : ℚ) * T ^ 2 + (B : ℚ) * T + (C : ℚ)) :
+    ∃ p e n : ℤ, 0 < e ∧ IsCoprime p e ∧ T = (p : ℚ) / (e : ℚ) ^ 2 ∧
+      n ^ 2 = p ^ 3 + A * p ^ 2 * e ^ 2 + B * p * e ^ 4 + C * e ^ 6 := by
+  have hTn : (T.num : ℚ) = T * ((T.den : ℤ) : ℚ) := by
+    push_cast; exact (div_eq_iff (by exact_mod_cast T.den_nz)).mp (Rat.num_div_den T)
+  have hVn : (V.num : ℚ) = V * ((V.den : ℤ) : ℚ) := by
+    push_cast; exact (div_eq_iff (by exact_mod_cast V.den_nz)).mp (Rat.num_div_den V)
+  have hrel : V.num ^ 2 * (T.den : ℤ) ^ 3 =
+      (V.den : ℤ) ^ 2 * (T.num ^ 3 + A * T.num ^ 2 * (T.den : ℤ)
+        + B * T.num * (T.den : ℤ) ^ 2 + C * (T.den : ℤ) ^ 3) := by
+    have hq : ((V.num : ℚ)) ^ 2 * (((T.den : ℤ) : ℚ)) ^ 3 =
+        (((V.den : ℤ) : ℚ)) ^ 2 * ((T.num : ℚ) ^ 3
+          + (A : ℚ) * (T.num : ℚ) ^ 2 * (((T.den : ℤ) : ℚ))
+          + (B : ℚ) * (T.num : ℚ) * (((T.den : ℤ) : ℚ)) ^ 2
+          + (C : ℚ) * (((T.den : ℤ) : ℚ)) ^ 3) := by
+      rw [hTn, hVn]
+      linear_combination (((V.den : ℤ) : ℚ)) ^ 2 * (((T.den : ℤ) : ℚ)) ^ 3 * h
+    exact_mod_cast hq
+  have hpq : IsCoprime T.num ((T.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]; simpa [Int.gcd] using T.reduced
+  have hrs : IsCoprime V.num ((V.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]; simpa [Int.gcd] using V.reduced
+  have hqN : IsCoprime ((T.den : ℤ))
+      (T.num ^ 3 + A * T.num ^ 2 * (T.den : ℤ) + B * T.num * (T.den : ℤ) ^ 2
+        + C * (T.den : ℤ) ^ 3) := by
+    have h3 : IsCoprime ((T.den : ℤ)) (T.num ^ 3) := (hpq.symm).pow_right
+    have hrw : T.num ^ 3 + A * T.num ^ 2 * (T.den : ℤ) + B * T.num * (T.den : ℤ) ^ 2
+          + C * (T.den : ℤ) ^ 3
+        = T.num ^ 3 + (T.den : ℤ) * (A * T.num ^ 2 + B * T.num * (T.den : ℤ)
+          + C * (T.den : ℤ) ^ 2) := by ring
+    rw [hrw]; exact h3.add_mul_left_right _
+  have hd1 : ((V.den : ℤ)) ^ 2 ∣ ((T.den : ℤ)) ^ 3 := by
+    have hdv : ((V.den : ℤ)) ^ 2 ∣ V.num ^ 2 * ((T.den : ℤ)) ^ 3 := ⟨_, hrel⟩
+    exact ((hrs.symm).pow (m := 2) (n := 2)).dvd_of_dvd_mul_left hdv
+  have hd2 : ((T.den : ℤ)) ^ 3 ∣ ((V.den : ℤ)) ^ 2 := by
+    have hdv : ((T.den : ℤ)) ^ 3 ∣ ((V.den : ℤ)) ^ 2 *
+        (T.num ^ 3 + A * T.num ^ 2 * (T.den : ℤ) + B * T.num * (T.den : ℤ) ^ 2
+          + C * (T.den : ℤ) ^ 3) := ⟨V.num ^ 2, by linarith [hrel]⟩
+    exact hqN.pow_left.dvd_of_dvd_mul_right hdv
+  have hqs : ((T.den : ℤ)) ^ 3 = ((V.den : ℤ)) ^ 2 :=
+    Int.dvd_antisymm (by positivity) (by positivity) hd2 hd1
+  have hnat : T.den ^ 3 = V.den ^ 2 := by exact_mod_cast hqs
+  obtain ⟨c, hc1, hc2⟩ := Nat.exists_eq_pow_of_pow_eq_pow (Or.inl (three_ne_zero)) hnat
+  norm_num at hc1 hc2
+  have hc0 : 0 < c := Nat.pos_of_ne_zero fun hzero => T.den_nz (by simp [hc1, hzero])
+  refine ⟨T.num, (c : ℤ), V.num, by exact_mod_cast hc0, ?_, ?_, ?_⟩
+  · have hqe : ((T.den : ℤ)) = (c : ℤ) ^ 2 := by exact_mod_cast hc1
+    rw [hqe] at hpq
+    exact hpq.of_isCoprime_of_dvd_right (dvd_pow_self _ two_ne_zero)
+  · have hqe : ((T.den : ℚ)) = ((c : ℚ)) ^ 2 := by exact_mod_cast hc1
+    push_cast
+    rw [← hqe]
+    exact (Rat.num_div_den T).symm
+  · have hqe : ((T.den : ℤ)) = (c : ℤ) ^ 2 := by exact_mod_cast hc1
+    have hse : ((V.den : ℤ)) = (c : ℤ) ^ 3 := by exact_mod_cast hc2
+    rw [hqe, hse] at hrel
+    have hcne : ((c : ℤ)) ^ 6 ≠ 0 := by positivity
+    refine mul_left_cancel₀ hcne ?_
+    linear_combination hrel
+
+end RationalPointDescent
 
 /-! ### `X_1(11)` as the elliptic curve 11a3 -/
 
@@ -150,8 +257,176 @@ instance instIsEllipticCurve11a3 : curve11a3.IsElliptic := by
     WeierstrassCurve.b₆, WeierstrassCurve.b₈]
   norm_num
 
-/-- **The rational points of `11a3`** (THE sorry leaf of this module,
-restated 2026-07-26): the affine rational points of `y² + y = x³ − x²` are
+/-! ### The level-`11` reduction to a pure integer statement (2026-07-26)
+
+`11a3` admits NO elementary `2`-isogeny descent, and this is structural rather
+than a matter of effort: its `2`-division polynomial `4x³ − 4x² + 1` has no
+rational root (the candidates `±1, ±1/2, ±1/4` all fail), so `E[2]` is
+irreducible over `ℚ` and the whole isogeny class `11a` — `{11a1, 11a2, 11a3}`,
+linked by `5`- and `25`-isogenies — contains no `2`-isogeny at all. That is
+exactly the hypothesis the conductor-`15` and conductor-`14` descents consume,
+so their route is unavailable here; contrast `MazurLevel14`, which works
+precisely because `14a4` has the rational `2`-torsion point `(−1, 0)`.
+
+What IS done here is the part that any attack must do anyway, and that is now
+PROVEN: strip the Weierstrass API and the rationals off the statement. With
+`U = 4x` and `W = 8y + 4` the curve becomes the monic integral model
+
+    W² = U³ − 4U² + 16
+
+(the four affine points are `U ∈ {0, 4}`, `W = ±4`), and
+`RationalPointDescent.exists_int_model` turns a rational point into an integral
+one. So `curve11a3_rational_points` is now a corollary of the single integer
+statement `integral_leaf` below.
+
+WHAT REMAINS is the rank-`0` statement itself. The two candidate routes — the
+`5`-isogeny descent, whose dual side is `H¹(ℚ, ℤ/5)` and so needs class field
+theory, and a `2`-descent over the cubic `2`-division field
+`ℚ[s]/(s³ − 2s² + 2)` — are audited under `integral_leaf` below. That audit was
+redone on 2026-07-27 with the cubic field's arithmetic actually COMPUTED rather
+than guessed, and it CORRECTS the previous version of this paragraph in both
+directions: the class-group/unit-group half of route (ii) is *cheap* (one
+mathlib lemma, no ideal enumeration), and the genuinely expensive ingredient is
+one this docstring did not name. -/
+
+namespace MazurLevel11
+
+/-- **THE level-`11` leaf** (sorry leaf, 2026-07-26): the only coprime integral
+points of the monic model `W² = U³ − 4U² + 16` of `11a3` are `(p, e) = (0, 1)`
+and `(4, 1)`, i.e. `U = 0` and `U = 4`.
+
+This is `curve11a3_rational_points` with the Weierstrass API and the rationals
+removed; the reduction is PROVEN (`U_dichotomy`), so this statement carries the
+ENTIRE arithmetic content of level `11` — rank `0` for one explicit curve — and
+nothing else.
+
+Verified by exhaustive search (`|p| < 6000`, `1 ≤ e < 260`, coprime): `(0, 1)`
+and `(4, 1)` are the only solutions, so the statement is true as written.
+
+CHECKED EXTERNALLY (PARI/GP, untrusted searcher — not a proof).
+`ellinit([0,-1,1,0,0])` gives `disc = −11`, conductor `11`,
+`j = −4096/11`; `ellrank` returns rank `0` with matching lower and upper
+bounds, i.e. it *proves* rank `0`; `elltors` returns `ℤ/5`; and
+`ellratpoints(E, 1000)` returns exactly the four affine points.
+
+## FAITHFULNESS: this leaf is EXACTLY rank `0`, neither weaker nor stronger
+
+Worth recording because a stripped-down restatement is where content usually
+leaks. Forwards is `U_dichotomy`. Backwards: given coprime `(p, e)` with
+`e > 0` and `n² = p³ − 4p²e² + 16e⁶`, the pair `U = p/e²`, `W = n/e³` is a
+rational point of `W² = U³ − 4U² + 16`; rank `0` gives `U ∈ {0, 4}`; `U = 0`
+forces `p = 0` and then `IsCoprime 0 e` forces `e = 1`, and `U = 4` forces
+`p = 4e²` and then `IsCoprime p e` again forces `e = 1`. So the two statements
+are equivalent, and no arithmetic was dropped in the reduction.
+
+## ROUTE AUDIT, 2026-07-27 — REPLACES the earlier one, which was wrong twice
+
+The previous audit said route (ii), the `2`-descent over the cubic `2`-division
+field `K = ℚ[s]/(s³ − 2s² + 2)`, "needs that field's class group and unit
+group … Neither is in the pin", and the dispatch built on it called route (ii)
+"likely the cheaper one". Both halves of that are now checked, and both are
+wrong — in opposite directions.
+
+**(a) The class-group half is CHEAP, and it IS in the pin.** `K` has
+`poldisc(s³ − 2s² + 2) = −44` and field discriminant `−44`, so the index
+`[𝓞_K : ℤ[s]]` is `1` and `ℤ[s] = 𝓞_K` on the nose. Mathlib then gives
+`h(K) = 1` in ONE lemma with no ideal enumeration at all:
+`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`
+(`Mathlib/NumberTheory/NumberField/ClassNumber.lean`) asks for
+`|discr K| < (2 * (π/4) ^ nrComplexPlaces K * (n ^ n / n !)) ^ 2`. Here `n = 3`
+and `nrComplexPlaces K = 1` (signature `(1, 1)`), so the bound is
+`(2 · (π/4) · (27/6))² = (9π/4)² = 81π²/16 ≈ 49.96`, and `44 < 49.96`. The
+inequality needs only `π > 2.949`, so it is a `norm_num`-with-`pi_gt_3141592`
+step. Equivalently: the Minkowski bound of `K` is `≈ 1.877 < 2`, so every ideal
+class contains an ideal of norm `1`.
+*Refuting check*: recompute `81π²/16` and compare with `44`; or evaluate
+`M K = (4/π)^{r₂} · (n!/n^n) · √|discr K|` and check it is `< 2`.
+
+Units are equally concrete: signature `(1,1)` gives unit rank `1`, torsion
+`{±1}`, and PARI's fundamental unit is `ε = −s² + s + 1`, with `N(ε) = −1` and
+`ε⁻¹ = s − 1` — i.e. the Lean-side certificate is the single `ring` identity
+`(−s² + s + 1)(s − 1) = 1` modulo `s³ − 2s² + 2`, which is not a class-group
+computation at all. Two more units drop out of `N(a − s) = f(a)`:
+`N(1 − s) = f(1) = 1` and `N(−1 − s) = f(−1) = −1`.
+
+Ramification, all `ring`-checkable rather than looked up: `N(s) = −2` and
+`s³ = 2(s² − 1)` with `s² − 1 = −(1 − s)(1 + s)` a unit, so `2 = s³/(s² − 1)`
+and `(2) = (s)³` is TOTALLY RAMIFIED with `𝔭₂ = (s)`; and
+`s³ − 2s² + 2 ≡ (s − 5)²(s − 3) (mod 11)`, so `(11) = 𝔭²𝔮`.
+
+**(b) The expensive ingredient is FINITE GENERATION, which this module
+deleted.** This is the correction that matters, and it applies to BOTH routes.
+A complete `2`-descent proves `E(ℚ)/2E(ℚ) = 0`; a complete `5`-isogeny descent
+proves `E(ℚ) = 5E(ℚ)`. Neither conclusion implies that `E(ℚ)` is finite. With
+`E(ℚ)[2] = 0` (the `2`-division polynomial `4x³ − 4x² + 1` is irreducible),
+`E(ℚ)/2E(ℚ) = 0` says exactly that `E(ℚ)` is uniquely `2`-divisible, which an
+infinite group can perfectly well be. Rank `0` follows only after
+`AddGroup.FG E(ℚ)` — or after an explicit height/descent argument that re-does
+that content by hand. The module docstring's FRONTIER RESTRUCTURE note is right
+that finite generation alone never yields rank `0`; the converse it did not
+state is that descent alone never yields it either. `mordellWeil` was deleted
+as "not on the critical path", and for `curve11a3_rational_points` that was
+true only because the leaf moved down; for `integral_leaf` itself, some form of
+descent-with-height is unavoidable. `MazurLevel14`/`MazurLevel15` supply that
+form elementarily via a well-founded recursion, and they can only do so because
+a rational `2`-isogeny is available; here the same recursion would have to run
+over `ℤ[s]`.
+*Refuting check*: exhibit an argument that concludes `Finite 11a3(ℚ)` from the
+triviality of a Selmer group without finite generation and without a height. If
+one exists, this audit is wrong and route (ii) really is short.
+
+**(c) Reconnaissance for whoever runs route (ii), so it need not be redone.**
+Write `β = p − 2s·e² ∈ ℤ[s]`; then `N(β) = p³ − 4p²e² + 16e⁶ = n²`, because
+`∏(p − θᵢq) = p³ − 4p²q + 16q³` for `θ³ − 4θ² + 16 = 0`, `θ = 2s`, `q = e²`.
+With `h(K) = 1` and unit group `⟨−1⟩ × ⟨ε⟩`, `β` is a unit times a square times
+a factor supported on `𝔭₂` and the primes over `11`. For the TRIVIAL square
+class, `γ = a + bs + cs²` and `s³ = 2s² − 2`, `s⁴ = 4s² − 2s − 4` give
+
+    γ² = (a² − 4c² − 4bc) + (2ab − 2c²)·s + (b² + 2ac + 4bc + 4c²)·s²,
+
+so `β = γ²` holds exactly when `b² + 2ac + 4bc + 4c² = 0`, and then
+`p = a² − 4c² − 4bc` and `e² = c² − ab`. BOTH known solutions live in this
+trivial class, with witnesses verified by `ring`:
+
+    (a,b,c) = (−2, 0, 1):  γ = s² − 2,   γ² = −2s      ↔ (p,e) = (0,1);
+    (a,b,c) = ( 0,−2, 1):  γ = s² − 2s,  γ² = 4 − 2s   ↔ (p,e) = (4,1).
+
+That is the structural reason (b) bites: the `2`-Selmer group is trivial, so
+every NONTRIVIAL square class dies to a local condition (a congruence), and the
+whole difficulty is concentrated in the trivial class — whose homogeneous space
+is `E` itself, mapped by `P ↦ 2P`. Killing it is precisely the height descent.
+*Refuting check*: find a coprime solution of the displayed system with
+`e² = c² − ab` a positive square other than the two above.
+
+CHECKED EXTERNALLY 2026-07-27 (PARI/GP, untrusted searcher — none of this is a
+proof): `bnfinit(s^3-2*s^2+2,1)` returns `disc = −44`, `no = 1`, `cyc = []`,
+`sign = [1,1]`, `fu = [-s^2+s+1]`, `tu = [2,-1]`, integral basis of index `1`;
+`ellrank(ellinit([0,-1,1,0,0]))` returns `[0,0,0,[]]`, matching bounds. Every
+identity quoted above (`ε(s−1) = 1`, `s³ = 2(s²−1)`, `(s²−2)² = −2s`,
+`(s²−2s)² = 4−2s`) is a polynomial identity modulo `s³ − 2s² + 2` and is
+therefore Lean-checkable by `ring`, independently of PARI.
+
+See the section docstring above for why no elementary descent reaches this. -/
+theorem integral_leaf {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6) :
+    (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := sorry
+
+/-- **The two rational `U`-values of `W² = U³ − 4U² + 16`** (PROVEN 2026-07-26
+from `integral_leaf`): `U ∈ {0, 4}`. These are `U = 4x` for the two
+`x`-coordinates `0` and `1` of the four affine rational points of `11a3`. -/
+theorem U_dichotomy {U W : ℚ} (h : W ^ 2 = U ^ 3 - 4 * U ^ 2 + 16) :
+    U = 0 ∨ U = 4 := by
+  obtain ⟨p, e, n, he, hcop, hUeq, hn⟩ :=
+    RationalPointDescent.exists_int_model (A := -4) (B := 0) (C := 16) (T := U) (V := W)
+      (by push_cast; linear_combination h)
+  rcases integral_leaf (n := n) he hcop (by linear_combination hn) with ⟨hp, he1⟩ | ⟨hp, he1⟩
+  · left; rw [hUeq, hp, he1]; norm_num
+  · right; rw [hUeq, hp, he1]; norm_num
+
+end MazurLevel11
+
+/-- **The rational points of `11a3`** (PROVEN 2026-07-26 from
+`MazurLevel11.integral_leaf`): the affine rational points of `y² + y = x³ − x²` are
 exactly `(0,0)`, `(0,−1)`, `(1,0)`, `(1,−1)`. With the point at infinity
 these are the five elements of `11a3(ℚ) ≅ ℤ/5`, generated by `(0,0)`.
 
@@ -204,12 +479,33 @@ curve concretely, using `f` above and unique factorisation to run the
 descent by hand on the coprime factorisation of
 `(2y+1)² = 4x³ − 4x² + 1`; or (ii) develop the general descent machinery.
 Route (i) is the smaller of the two and is what the concrete data above is
-for. -/
+for.
+
+DECOMPOSED 2026-07-26. This is no longer the leaf: the Weierstrass-API layer
+has been stripped off and PROVEN, leaving the pure integer statement
+`MazurLevel11.integral_leaf`. See that declaration and the `MazurLevel11`
+section docstring. -/
 theorem curve11a3_rational_points (x y : ℚ)
-    (_h : curve11a3.toAffine.Nonsingular x y) :
+    (h : curve11a3.toAffine.Nonsingular x y) :
     (x, y) = ((0 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
-      (x, y) = ((1 : ℚ), (0 : ℚ)) ∨ (x, y) = ((1 : ℚ), (-1 : ℚ)) :=
-  sorry
+      (x, y) = ((1 : ℚ), (0 : ℚ)) ∨ (x, y) = ((1 : ℚ), (-1 : ℚ)) := by
+  have he := h.left
+  rw [WeierstrassCurve.Affine.equation_iff] at he
+  simp only [curve11a3, WeierstrassCurve.toAffine] at he
+  have hWU : (8 * y + 4) ^ 2 = (4 * x) ^ 3 - 4 * (4 * x) ^ 2 + 16 := by
+    linear_combination (64 : ℚ) * he
+  have hsq : (8 * y + 4) ^ 2 = 16 := by
+    rcases MazurLevel11.U_dichotomy hWU with hU | hU <;> rw [hWU, hU] <;> norm_num
+  have hW : (8 * y + 4 - 4) * (8 * y + 4 + 4) = 0 := by linear_combination hsq
+  have hy : y = 0 ∨ y = -1 := by
+    rcases mul_eq_zero.mp hW with hz | hz
+    · exact Or.inl (by linarith)
+    · exact Or.inr (by linarith)
+  have hx : x = 0 ∨ x = 1 := by
+    rcases MazurLevel11.U_dichotomy hWU with hU | hU
+    · exact Or.inl (by linarith)
+    · exact Or.inr (by linarith)
+  rcases hx with hx | hx <;> rcases hy with hy | hy <;> simp [hx, hy]
 
 /-- **`11a3(ℚ)` is finite** (PROVEN 2026-07-26, directly from
 `curve11a3_rational_points`).
