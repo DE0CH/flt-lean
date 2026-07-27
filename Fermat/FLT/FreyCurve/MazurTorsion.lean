@@ -870,22 +870,6 @@ precisely why Mazur's argument is global, and why this leaf — alone among
 the four — needs `X_0(N)`, `J_0(N)` and the Eisenstein ideal rather than
 local theory that this development could plausibly build.
 
-**CIRCULARITY HAZARD — DO NOT CLOSE THIS LEAF WITH `X0.lean`** (recorded
-2026-07-26 after an owner checked and declined to). `X0.lean` states
-`y0HasNoRationalPoint_prime` — for a prime `p ∉ mazurIsogenyPrimes =
-{2,3,5,7,11,13,17,19,37,43,67,163}`, `Y_0(p)(ℚ) = ∅` — as its OWN sorry
-node, and it is exactly Mazur 1978, Theorem 1. Combined with
-`nonempty_gamma0Datum_of_stable` and `false_of_stable_of_y0HasNoRationalPoint`
-it would discharge this leaf for every `N` outside the four exceptional
-primes in about ten lines, leaving only `N ∈ {37, 43, 67, 163}`. Lean
-would accept it — the two sorries are formally independent, so there is
-no dependency cycle to detect — but it would be MATHEMATICALLY CIRCULAR:
-this leaf exists precisely to PROVE Mazur's isogeny theorem, via steps
-1–3 above, and deriving it from that theorem makes the entire chain
-vacuous while leaving the sorry count unchanged. A green build would not
-notice. Anyone tempted by that route should close `X0.lean`'s node
-instead, and then delete this chain rather than route it through itself.
-
 FAITHFULNESS AUDIT B (2026-07-26, PARI as an untrusted searcher). The
 statement is TRUE and NON-VACUOUS, and it is strictly weaker than the
 truth:
@@ -903,7 +887,89 @@ truth:
   in the statement because Mazur's *proof* needs `q ≠ 2` (the formal
   immersion is a formal immersion only in characteristic `≠ 2`) and
   `q ≠ N`. Leaving them in keeps the leaf as weak as possible, which is
-  the direction that makes it easier to discharge. -/
+  the direction that makes it easier to discharge.
+
+**EISENSTEIN-QUOTIENT REQUIREMENTS AUDIT (2026-07-26).** A dispatch asked
+for the Eisenstein-quotient material to be built at this leaf. The finding
+is that the blocker is at the level of the STATEMENT, not of the proof,
+and that is a stronger and more actionable fact than "this is hard".
+
+Mazur's Cor 4.4 rests on five inputs. Sorted by what this tree has:
+
+1. *A mod-`q` reduction of `X_0(N)` and of `J_0(N)`, with reduction
+   injective on a rank-`0` `J_0(N)(ℚ)`.* PRESENT AND RELEASED — it landed
+   on `main` while this audit was being written. `X0.lean` carries
+   `SpecF ℓ := Spec (ZMod ℓ)` and a structure `IsX0ReductionAt` with
+   fields `redX`, `redJ`, `redJ_add`, `redJ_inj` and `red_aj`. Owned by
+   the `exists_x0Sieve` dispatch. Do NOT build a second one.
+2. *The dictionary `v_q(j) < 0` implies the moduli point reduces INTO the
+   cuspidal locus mod `q`.* ABSENT, and it is the TRUE blocker for this
+   leaf in particular — see below.
+3. *Eisenstein ideal in the Hecke algebra, the Eisenstein quotient
+   `J_e(N)`, and `rank J_e(N)(ℚ) = 0`* (Mazur, IHÉS 47 (1977), Thm 4).
+   ABSENT, and genuinely unowned. This is the piece the dispatch named.
+4. *`f = π ∘ aj_∞` is a formal immersion at `∞` in characteristic
+   `q ≠ 2`* — the `a₁ ≠ 0` computation. ABSENT; needs (1) and (3).
+5. *Reduction is injective on the torsion of an abelian variety with good
+   reduction at odd `q`.* SUPPLIED, released, by
+   `IsX0ReductionAt.redJ_inj`.
+
+So (1) and (5) are in the released tree TODAY, and (3), (4) are therefore
+statable today:
+`redX` and `redJ` are maps out of `RelPoint … (𝟙 SpecQ)`, so the formal
+immersion at the cusp `o` can be written without any `ℤ_q`-points at all,
+as `∀ x, redX x = redX o → f x = f o → x = o` — Mazur's method needs the
+residue disc only to *prove* that, not to state it.
+
+WHAT STILL BLOCKS THIS LEAF, PRECISELY, IS (2), AND IT IS NOT A MATTER OF
+EFFORT. Two independent reasons, both checkable in one grep each:
+
+* There is no `j`-map on `X_0(N)` anywhere in this tree — `X0.lean`
+  contains no `jInvariant`/`jMap` on the curve — so "the moduli point has
+  potentially multiplicative reduction at `q`" cannot be said about a
+  point of `X_0(N)`.
+* `IsX0ReductionAt.redX` is an unconstrained field: only `red_aj` ties it
+  to anything, so it is NOT pinned to be the genuine reduction. Even with
+  a `j`-map, the dictionary could not be PROVEN against that interface —
+  it would have to be added as a further field, which is a cut-level
+  change to a structure this owner does not own.
+
+Consequently every formulation of Cor 4.4 available today — over
+`Y_0(N)(ℚ)`, over `Gamma0Datum N SpecQ`, or over the pair `(E, ⟨g⟩)`
+directly — is a RESTATEMENT of this leaf rather than a decomposition of
+it, since "potentially multiplicative at `q`" is expressible only through
+`j`. An Eisenstein-quotient interface written today would therefore have
+no consumer that compiles, i.e. would be free-floating, which this
+project forbids. That is why this leaf is left as a single `sorry` rather
+than decomposed.
+
+THE CHECKS THAT REFUTE THIS, each one command: (a) `grep -n 'jInvariant\|
+jMap' Fermat/FLT/ModularCurve/X0.lean` returning a `j`-map on the curve;
+(b) a field of `IsX0ReductionAt` pinning `redX` to the genuine reduction
+(a Néron/integral model, or a cuspidal-locus clause). Either one makes
+(2) statable, and then (3) and (4) are the whole remaining job and this
+leaf becomes attackable by an ordinary prover dispatch.
+
+CIRCULARITY, RE-CHECKED AND STILL BINDING. `X0.lean`'s Mazur Theorem 1
+node has MOVED: `y0HasNoRationalPoint_prime` is now PROVEN, and the sorry
+sits at `cuspidal_x0_prime`. Discharging this leaf from either would
+compile — the two sorries are formally independent, so Lean sees no cycle
+— and would make the chain VACUOUS, because
+`not_isogenyCharacter_of_prime_ge_twentyThree` consumes this leaf and is
+in turn what proves `prime_mem_cyclicIsogenyDegrees`, the elliptic-curve
+form of Theorem 1. Mazur proves Cor 4.4 as a STEP TOWARD Theorem 1, and
+this development must keep that order. Do not take that route.
+
+FAITHFULNESS RE-VERIFIED (PARI/GP, `ellisomat` on `ellfromj`, independent
+of the table above): the two `N = 17` curves have `v₂(j) = −1` and
+`v₂(j) = −17`, and `j` integral for `N = 37, 43, 67, 163`; all six carry
+the asserted isogeny. One PRECISION CORRECTION to the paragraph above:
+`2` is the ONLY prime in either `N = 17` denominator, so with `q ≠ 2`
+retained the hypothesis `19 < N` could in fact be relaxed to `17 ≤ N` and
+the statement would remain true. The two hypotheses are therefore not
+independently sharp — `N = 17` witnesses the necessity of `q ≠ 2` only.
+This is recorded for accuracy, NOT as a suggested restatement: relaxing
+it buys nothing, since every `N` in range still needs Mazur. -/
 theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
