@@ -2244,8 +2244,9 @@ leaves need is downstream of that, by the commutative algebra in
 
 WHY IT IS STATED AS CARDINALITIES.  The three consumers are cardinality
 statements, so this is exactly what they need, and it is the weakest
-clause that supplies them — which makes the geometric leaf
-`exists_bettiFrame` as easy as it can honestly be.  A successor that
+clause that supplies them — which makes the geometric leaf beneath
+`exists_bettiFrame` (`card_torsion_isMaximal_of_isAlgClosed`) as easy as
+it can honestly be.  A successor that
 needs the GALOIS module structure of `A[I]` (rather than only its size)
 should strengthen `card_torsion` to a `𝒪_D`-linear equivalence
 `H₁ ⧸ I H₁ ≃ₗ A[I]`; every consumer below goes through unchanged.
@@ -2413,10 +2414,234 @@ theorem card_tors_eq_sq_of_ne_bot
 
 end LevelFrame
 
+/-! #### Base change of a multiplication, and the reduction of the Betti
+input to an abelian VARIETY over an algebraically closed field
+
+The residue of `exists_bettiFrame` below is a single statement about the
+torsion of a geometric FIBRE of `f : A ⟶ S`.  Every classical source
+states it about an abelian VARIETY over an algebraically closed field,
+and the two are separated by nothing but base change: the geometric
+fibre of `f` at `x : Spec F ⟶ S` is the abelian scheme
+`pullback.snd f (specAlgClos F ≫ x)` over `Spec F̄`, and its `F̄`-points
+are the geometric points of the fibre.
+
+`AbelianSchemeStruct.baseChange`
+(`Modularity/AbelianSchemeIsogeny.lean`) already transports the group
+law.  What was missing — and is supplied here — is the same transport
+for the real multiplication, `Mult.baseChange`, together with the one
+consequence the count needs: `Mult.cardTorsion_baseChange`, that the
+`I`-torsion count of the base change over `h` is the `I`-torsion count of
+the original over `h ≫ g`.  Nothing here is specific to abelian
+varieties or to number fields; it is the `Mult` analogue of the six
+`RelPoint.baseChange*` lemmas.
+-/
+
+section FibreReduction
+
+open _root_.CategoryTheory.Limits
+
+variable {A S : Scheme.{u}} {f : A ⟶ S}
+
+namespace Mult
+
+variable {ab : AbelianSchemeStruct f} {R : Type u} [CommRing R]
+
+/-- **The number of `I`-torsion relative points over a base point `g`**,
+as a bare natural number.  Bundling the two `letI`-bound instances into a
+definition is what lets the torsion count be compared across a change of
+base point, where the module structures on the two sides are literally
+different instances on literally different types. -/
+noncomputable def cardTorsion (m : Mult ab R) {T : Scheme.{u}} (g : T ⟶ S) (I : Ideal R) : ℕ :=
+  letI := ab.addCommGroup g
+  letI := m.module g
+  Nat.card (Submodule.torsionBySet R (RelPoint f g) (I : Set R))
+
+/-- `Mult.torsion` IS `Mult.cardTorsion` at the geometric base point —
+the two are the same set, so this is `rfl`. -/
+theorem cardTorsion_geomFibre (m : Mult ab R) {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S) (I : Ideal R) :
+    Nat.card (m.torsion x I).1 = m.cardTorsion (specAlgClos F ≫ x) I := rfl
+
+/-- **Membership in the `I`-torsion, unfolded**, at an ARBITRARY base
+point: the `mem_torsion_iff` above is this at the geometric one. -/
+theorem mem_torsionBySet_iff (m : Mult ab R) {T : Scheme.{u}} (g : T ⟶ S) (I : Ideal R)
+    (y : RelPoint f g) :
+    letI := ab.addCommGroup g
+    letI := m.module g
+    y ∈ Submodule.torsionBySet R (RelPoint f g) (I : Set R) ↔
+      ∀ a ∈ I, m.act a y = ab.zero g := by
+  letI := ab.addCommGroup g
+  letI := m.module g
+  constructor
+  · intro hy a ha
+    exact (Submodule.mem_torsionBySet_iff _ _).mp hy ⟨a, ha⟩
+  · intro h
+    exact (Submodule.mem_torsionBySet_iff _ _).mpr fun a => h a a.2
+
+/-- **Base change of a multiplication along `g : T ⟶ S`**: the exact
+`Mult` analogue of `AbelianSchemeStruct.baseChange`, and proven the same
+way — conjugate by the bijection
+`RelPoint (pullback.snd f g) h ≃ RelPoint f (h ≫ g)` and read every
+axiom off the corresponding axiom of `m`. -/
+noncomputable def baseChange (m : Mult ab R) {T : Scheme.{u}} (g : T ⟶ S) :
+    Mult (ab.baseChange g) R where
+  act := fun {_} {_} a x =>
+    RelPoint.baseChangeUp g (m.act a (RelPoint.baseChangeDown g x))
+  act_add := by
+    intro U h a b y
+    simp only [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp]
+    rw [m.act_add]
+  act_mul := by
+    intro U h a b y
+    rw [RelPoint.baseChangeDown_baseChangeUp, m.act_mul]
+  act_one := by
+    intro U h y
+    rw [m.act_one, RelPoint.baseChangeUp_baseChangeDown]
+  act_addPt := by
+    intro U h a y z
+    simp only [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp]
+    rw [m.act_addPt]
+  pre_act := by
+    intro U' U h k k' hk a y
+    apply RelPoint.baseChangeDown_injective g
+    simp only [RelPoint.baseChangeDown_pre, RelPoint.baseChangeDown_baseChangeUp]
+    exact m.pre_act h _ a _
+
+/-- The defining equation of `Mult.baseChange`. -/
+theorem baseChange_act (m : Mult ab R) {T : Scheme.{u}} (g : T ⟶ S)
+    {U : Scheme.{u}} {h : U ⟶ T} (a : R) (y : RelPoint (pullback.snd f g) h) :
+    (m.baseChange g).act a y
+      = RelPoint.baseChangeUp g (m.act a (RelPoint.baseChangeDown g y)) := rfl
+
+/-- **`baseChangeDown` is `R`-linear**, which is the whole point of
+`Mult.baseChange`. -/
+@[simp] theorem baseChangeDown_act (m : Mult ab R) {T : Scheme.{u}} (g : T ⟶ S)
+    {U : Scheme.{u}} {h : U ⟶ T} (a : R) (y : RelPoint (pullback.snd f g) h) :
+    RelPoint.baseChangeDown g ((m.baseChange g).act a y)
+      = m.act a (RelPoint.baseChangeDown g y) :=
+  RelPoint.baseChangeDown_baseChangeUp g _
+
+/-- **`baseChangeDown` sends zero to zero.** -/
+theorem baseChangeDown_zero (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S)
+    {U : Scheme.{u}} (h : U ⟶ T) :
+    RelPoint.baseChangeDown g ((ab.baseChange g).zero h) = ab.zero (h ≫ g) := by
+  rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+
+/-- **THE TORSION COUNT IS INSENSITIVE TO BASE CHANGE**: `A[I]` computed
+on `A ×_S T` over `h` is `A[I]` computed on `A` over `h ≫ g`.  The
+bijection is `RelPoint.baseChangeDown`, which is additive and `R`-linear,
+so it carries torsion to torsion in both directions. -/
+theorem cardTorsion_baseChange (m : Mult ab R) {T : Scheme.{u}} (g : T ⟶ S)
+    {U : Scheme.{u}} (h : U ⟶ T) (I : Ideal R) :
+    (m.baseChange g).cardTorsion h I = m.cardTorsion (h ≫ g) I := by
+  letI := (ab.baseChange g).addCommGroup h
+  letI := (m.baseChange g).module h
+  letI := ab.addCommGroup (h ≫ g)
+  letI := m.module (h ≫ g)
+  unfold cardTorsion
+  refine Nat.card_congr ⟨fun y => ⟨RelPoint.baseChangeDown g y.1, ?_⟩,
+    fun z => ⟨RelPoint.baseChangeUp g z.1, ?_⟩, fun y => ?_, fun z => ?_⟩
+  · refine (mem_torsionBySet_iff m (h ≫ g) I _).mpr fun a ha => ?_
+    rw [← baseChangeDown_act m g a y.1,
+      (mem_torsionBySet_iff (m.baseChange g) h I y.1).mp y.2 a ha]
+    exact baseChangeDown_zero ab g h
+  · refine (mem_torsionBySet_iff (m.baseChange g) h I _).mpr fun a ha => ?_
+    apply RelPoint.baseChangeDown_injective g
+    rw [baseChangeDown_act m g a _, RelPoint.baseChangeDown_baseChangeUp,
+      (mem_torsionBySet_iff m (h ≫ g) I z.1).mp z.2 a ha, baseChangeDown_zero ab g h]
+  · exact Subtype.ext (RelPoint.baseChangeUp_baseChangeDown g y.1)
+  · exact Subtype.ext (RelPoint.baseChangeDown_baseChangeUp g z.1)
+
+end Mult
+
 open _root_.NumberField in
-/-- **The homology of a geometric fibre exists** (DECOMPOSED 2026-07-27;
-one sorried `have` remains, and it is NO LONGER A HOMOLOGY STATEMENT —
-see below.  Mumford *Abelian Varieties* §1, §6, §19, Milne *Abelian
+/-- **`#A[J] = #(𝒪_D/J)²` FOR AN ABELIAN VARIETY WITH REAL
+MULTIPLICATION OVER AN ALGEBRAICALLY CLOSED FIELD OF CHARACTERISTIC
+ZERO** (sorry leaf, created 2026-07-27; it is the whole geometric content
+of `exists_bettiFrame` below, hoisted out of a sorried `have` and
+restated over a FIELD.  Mumford *Abelian Varieties* §1, §6, §19, Milne
+*Abelian Varieties* I.1–I.7, Shimura, Goren *Lectures on Hilbert Modular
+Varieties* I.1).
+
+`A` is an abelian variety over an algebraically closed field `K` of
+characteristic zero, of dimension `g = [D : ℚ]`, with an action of `𝒪_D`;
+`A(K) = RelPoint fK (𝟙 (Spec K))` is its group of points.  The claim is
+that its `J`-torsion has exactly `#(𝒪_D/J)²` points, at every maximal
+`J`.
+
+**WHY IT IS TRUE, and what the residue actually is.**  `H₁(A, ℤ)` is a
+lattice of rank `2g` carrying the `𝒪_D`-action, and `A[I] ≅ H₁/I H₁` for
+every nonzero `I`.  Everything after that is FREE and needs no
+hypothesis beyond `[D : ℚ] = g`:
+
+* `H₁ ⊗ ℚ` is a `D`-vector space of `ℚ`-dimension `2g = 2[D : ℚ]`, hence
+  of `D`-dimension exactly `2` — this is where the relative dimension is
+  consumed, and it pins ALL the local ranks at once;
+* `H₁` is a finitely generated torsion-free module over the Dedekind
+  domain `𝒪_D`, hence projective, hence `≅ 𝒪_D ⊕ 𝔞` with `𝔞`
+  invertible, so `H₁/J H₁ ≅ (𝒪_D/J)²`.
+
+So the residue is exactly the first Betti number, `dim_ℚ H₁(A, ℚ) = 2g`,
+and the three classical inputs it used to be cut into (the degree of
+`[N]`, parity from a polarization, nonvanishing from
+`End(A) ↪ End(T_p A)`) are three DIFFERENT ways of reaching the same
+place; see the docstring of `exists_bettiFrame` for all three, and the
+audit under `card_torsion_ne_one_of_isMaximal` for why no combination of
+integer counts can replace the rational input.
+
+**`[CharZero K]` IS LOAD-BEARING, AND NOTHING IN THE OLD PHRASING SHOWED
+IT** (recorded 2026-07-27, at the hoist).  In characteristic `p` the
+statement is FALSE at every `J` above `p`: for an ordinary abelian
+variety `#A[p](K) = p^g`, not `p^(2g)`, and correspondingly `A[J]` drops
+rank at `J ∣ p`.  In the scheme-level form the hypothesis arrives ONLY
+through `[NumberField F]` — the geometric fibre is taken over
+`F̄` — which is why the dependence deserves to be written down here
+rather than inferred.  A successor must not weaken it; the honest
+weakening, if one is ever wanted, is `J` above a residue characteristic
+INVERTIBLE in `K`, not `IsAlgClosed` alone.
+
+**`IsTotallyReal D` IS NOT NEEDED AND IS DELIBERATELY ABSENT.**  The
+consumer has it; the classical proof does not use it.  Nor is
+faithfulness of `𝒪_D → End(A)` a hypothesis: it is automatic here, since
+a nonzero kernel would make `𝒪_D/ker` a FINITE ring mapping unitally
+into the torsion-free `End(A)`, and `End(A) ≠ 0` because `g ≥ 1`.
+Recording either as a hypothesis would record a dependence that does not
+exist.
+
+**WHAT THE HOIST BUYS, AND WHAT IT DOES NOT.**  It does not touch the
+mathematics: the residue is unchanged and still needs one of the three
+routes, each of which is a mathlib-scale build (there is no degree of a
+finite locally free morphism, no theorem of the cube, no singular or
+étale homology at this pin).  What it buys is that the statement is now
+the one the sources prove — an abelian VARIETY over an algebraically
+closed field, its group of points, no relative bookkeeping — and that
+the descent from it to the geometric fibre of an abelian SCHEME is
+PROVEN, by `Mult.cardTorsion_baseChange` above.  A prover here may work
+entirely over `K`.
+
+**DO NOT ALSO DISPATCH AT `card_torsion_of_isMaximal`.**  That theorem's
+statement is this one at the geometric base point, and the whole
+five-theorem cluster between them (`exists_bettiFrame`,
+`card_torsion_span_natCast`, `even_dim_torsion_of_isMaximal`,
+`card_torsion_ne_one_of_isMaximal`, `card_torsion_of_isMaximal`) is
+PROVEN over this single leaf.  They are one node, not five. -/
+theorem card_torsion_isMaximal_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Field K]
+    [IsAlgClosed K] [CharZero K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    {abK : AbelianSchemeStruct fK} {D : Type u} [Field D] [NumberField D]
+    (m : Mult abK (NumberField.RingOfIntegers D))
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) fK)
+    (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal) :
+    m.cardTorsion (𝟙 (Spec (CommRingCat.of K))) J
+      = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ 2 := sorry
+
+end FibreReduction
+
+open _root_.NumberField in
+/-- **The homology of a geometric fibre exists** (PROVEN 2026-07-27 over
+the single geometric leaf `card_torsion_isMaximal_of_isAlgClosed` above,
+which is what the sorried `have` of the 2026-07-27 decomposition became
+when it was hoisted to a named statement over an algebraically closed
+FIELD.  Mumford *Abelian Varieties* §1, §6, §19, Milne *Abelian
 Varieties* I.1–I.7, Silverman *AEC* VI for the elliptic case).
 
 **NO HOMOLOGY IS NEEDED, AND THIS IS THE POINT OF THE DECOMPOSITION.**
@@ -2432,7 +2657,11 @@ of the leaf is the single `card_torsion` clause, and the homology is
 merely one way of producing it.
 
 WHAT ACTUALLY REMAINS, in full: `#A[J] = #(𝒪_D/J)²` at every MAXIMAL
-`J`.  Two proven steps carry that to the stated frame:
+`J` — and that is now the NAMED leaf
+`card_torsion_isMaximal_of_isAlgClosed` above, stated over an
+algebraically closed field of characteristic zero, with the descent from
+it to the geometric fibre PROVEN here by `Mult.cardTorsion_baseChange`.
+Two further proven steps carry it to the stated frame:
 
 * `LevelFrame.card_tors_eq_sq_of_ne_bot` (above) propagates the maximal
   count to every NONZERO ideal, by the factorisation `I = ∏ J^(e_J)`,
@@ -2445,16 +2674,17 @@ WHAT ACTUALLY REMAINS, in full: `#A[J] = #(𝒪_D/J)²` at every MAXIMAL
   enough here, since `Ideal.span {(N : 𝒪_D)}` is what
   `card_torsion_span_natCast` feeds in).
 
-**CIRCULARITY WARNING — DO NOT DISCHARGE THE REMAINING `have` FROM THIS
-FILE.**  Its statement is verbatim that of `card_torsion_of_isMaximal`
-below, which is proven from `card_torsion_span_natCast`,
-`even_dim_torsion_of_isMaximal` and `card_torsion_ne_one_of_isMaximal`
-— and all three of those are proven from THIS leaf.  So the whole
-downstream chain is unavailable as an input here; citing any of it would
-close the loop and prove nothing.  This is not a defect introduced by
-the decomposition: it is a fact about the cluster that the decomposition
-makes visible, namely that `BettiFrame` carries exactly the information
-of `card_torsion_of_isMaximal` and no more.
+**CIRCULARITY WARNING — DO NOT DISCHARGE THE LEAF FROM THIS FILE.**  Its
+statement is that of `card_torsion_of_isMaximal` below, which is proven
+from `card_torsion_span_natCast`, `even_dim_torsion_of_isMaximal` and
+`card_torsion_ne_one_of_isMaximal` — and all three of those are proven
+from THIS theorem.  So the whole downstream chain is unavailable as an
+input to the leaf; citing any of it would close the loop and prove
+nothing.  This is not a defect introduced by the decomposition: it is a
+fact about the cluster that the decomposition makes visible, namely that
+`BettiFrame` carries exactly the information of
+`card_torsion_of_isMaximal` and no more.  The five theorems named here
+are ONE node with one owner, not five.
 
 THE THREE HONEST ROUTES, all of which are inputs from OUTSIDE this
 cluster, and any ONE of which closes it:
@@ -2476,12 +2706,19 @@ cluster, and any ONE of which closes it:
 WHY `hdim` IS PRESENT, AND WHERE IT IS CONSUMED.  It is what makes the
 count `#(𝒪_D/J)²` rather than `1`: without it the ambient statement is
 FALSE at relative dimension `0`, where `f = 𝟙 S` gives one-point
-geometric fibres (see the section note above).  It is therefore threaded
-INTO the sorried `have` as an explicit hypothesis rather than left
-dangling, so that the dependence is visible in the goal a successor
-sees.  Note that nothing else in the assembly uses it: the free witness
-`Fin 2 → 𝒪_D` and the propagation lemma are dimension-blind, exactly as
-they should be. -/
+geometric fibres (see the section note above).  It is therefore passed
+INTO the geometric leaf as an explicit hypothesis rather than left
+dangling — and it survives the base change to the fibre because
+`SmoothOfRelativeDimension n` is stable under base change in mathlib
+(`smoothOfRelativeDimension_isStableUnderBaseChange`).  Note that
+nothing else in the assembly uses it: the free witness `Fin 2 → 𝒪_D` and
+the propagation lemma are dimension-blind, exactly as they should be.
+
+WHERE CHARACTERISTIC ZERO ENTERS, since it is invisible in the statement
+of this theorem: only through `[NumberField F]`, which makes the
+geometric fibre live over the characteristic-zero field `F̄`.  The
+geometric leaf carries it as `[CharZero K]`, where it is load-bearing —
+see that leaf's docstring. -/
 theorem exists_bettiFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
     (m : Mult ab (NumberField.RingOfIntegers D))
@@ -2493,22 +2730,34 @@ theorem exists_bettiFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeSt
   letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
   letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
     m.module (specAlgClos F ≫ x)
-  /- **THE ONE REMAINING GEOMETRIC INPUT**: the `J`-torsion of a
-  geometric fibre of an abelian scheme of relative dimension `[D:ℚ]`
-  with real multiplication by `𝒪_D` has exactly `#(𝒪_D/J)²` points, at
-  every maximal `J`.  See the CIRCULARITY WARNING in the docstring: this
-  must be proven from outside the cluster. -/
-  have hres : SmoothOfRelativeDimension (Module.finrank ℚ D) f →
-      ∀ J : Ideal (NumberField.RingOfIntegers D), J.IsMaximal →
-        Nat.card (m.torsion x J).1
-          = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ 2 := sorry
+  /- **THE ONE GEOMETRIC INPUT, read off the fibre.**  The `J`-torsion of
+  the geometric fibre is the `J`-torsion of the abelian variety
+  `A ×_S Spec F̄` over `F̄` — `Mult.cardTorsion_baseChange` — and that is
+  the leaf `card_torsion_isMaximal_of_isAlgClosed`.  The relative
+  dimension travels with the base change, and `F̄` has characteristic
+  zero because `F` is a number field. -/
+  have hres : ∀ J : Ideal (NumberField.RingOfIntegers D), J.IsMaximal →
+      Nat.card (m.torsion x J).1
+        = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ 2 := by
+    intro J hJ
+    haveI : CharZero (AlgebraicClosure F) :=
+      charZero_of_injective_algebraMap (algebraMap F (AlgebraicClosure F)).injective
+    haveI hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D)
+        (CategoryTheory.Limits.pullback.snd f (specAlgClos F ≫ x)) := by
+      haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := Module.finrank ℚ D)
+      exact MorphismProperty.pullback_snd f (specAlgClos F ≫ x) hdim
+    have h := card_torsion_isMaximal_of_isAlgClosed (K := AlgebraicClosure F)
+      (m.baseChange (specAlgClos F ≫ x)) hdim' J hJ
+    rw [Mult.cardTorsion_baseChange m (specAlgClos F ≫ x) (𝟙 _) J, Category.id_comp] at h
+    rw [Mult.cardTorsion_geomFibre m x J]
+    exact h
   have hall : ∀ I : Ideal (NumberField.RingOfIntegers D), I ≠ ⊥ →
       Nat.card (m.torsion x I).1
         = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ 2 := fun I hI =>
     LevelFrame.card_tors_eq_sq_of_ne_bot (P := GeomFibrePt f x)
       (fun J hJ π hπ hπ2 k y hy =>
         exists_mem_torsion_act_uniformizer_eq m x J hJ π hπ hπ2 k y hy)
-      (hres hdim) I hI
+      hres I hI
   refine ⟨{ H := Fin 2 → NumberField.RingOfIntegers D
             finrank_int := ?_
             card_torsion := fun I hI => ?_ }⟩
@@ -8227,7 +8476,9 @@ anywhere beneath this declaration is `exists_tateWeilSystem_of_mult`
 (the `I`-adic Weil SYSTEM — the compatible family of level-`I^n`
 pairings, before the inverse limit).  This declaration and the whole
 chain between it and that leaf are proven; do NOT dispatch a prover
-here.  The module's other direct sorries (`exists_bettiFrame`,
+here.  The module's other direct sorries
+(`card_torsion_isMaximal_of_isAlgClosed` — the geometric residue of the
+now-proven `exists_bettiFrame` —,
 `exists_finset_frobSpecialization_of_mult`,
 `exists_frobEndoCharEq_of_mult_finiteBase`) are outside this chain.
 
