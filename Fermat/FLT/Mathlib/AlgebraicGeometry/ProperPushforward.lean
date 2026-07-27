@@ -45,11 +45,48 @@ direct images of quasi-coherent sheaves at all.
   is the form every consumer in this development actually applies, because an abelian
   scheme and a smooth proper curve are both given as *smooth* rather than as *flat with
   reduced fibres*.
-* `exists_comp_snd_eq_of_slice_const` — **LEAF**: the RIGIDITY LEMMA (Mumford *AV* §4;
-  BLR *Néron Models* 8.4 in the relative case).
+* `HasTrivialPushforward.existsUnique_comp_eq` — PROVEN: **a morphism from `X` to an AFFINE
+  scheme factors uniquely through `S`.**  This is the `Γ ⊣ Spec` half of the rigidity
+  argument and it needs nothing but `IsIso (p.app ⊤)`.
+* `exists_comp_snd_eq_of_isAffine` — PROVEN: **rigidity with an affine target**, and it needs
+  neither the section `σ`, nor `[GeometricallyConnected q]`, nor `[IsSeparated r]`.  The
+  universal pushforward hypothesis base-changes to `pullback.snd p q`, and then the previous
+  item applies verbatim.
+* `exists_comp_snd_eq_of_isAffine_pullback` — PROVEN: **rigidity with a target AFFINE OVER
+  THE BASE**, i.e. whenever `Y ×_S Z` is affine (in particular for `[IsAffine Y]`
+  `[IsAffineHom r]`).  This is the form the classical proof consumes.
+* `exists_comp_snd_eq_of_slice_const` — the RIGIDITY LEMMA (Mumford *AV* §4;
+  BLR *Néron Models* 8.4 in the relative case), PROVEN over the two leaves below.
+* `exists_isAffineOver_cover_of_slice_const` — **LEAF**: `Y` is covered by opens over each of
+  which `m` factors through a scheme affine over the base.  This is where properness of
+  `pullback.snd`, the section `σ` and `[GeometricallyConnected q]` are consumed.
+* `exists_comp_snd_eq_of_open_cover` — **LEAF**: local factorizations through the projection,
+  over an open cover of `Y`, glue to a global one.
 * `eq_comp_of_rigidity_axes` — PROVEN from the rigidity lemma: a morphism
   `A ×_S A ⟶ B` vanishing on both axes vanishes.  This is the form in which rigidity is
   used to prove that a pointed morphism of abelian schemes is a homomorphism.
+
+## The cut of the rigidity lemma, and why it is where it is (2026-07-27)
+
+The affine-target case is **not** a special case that has to wait for the topology: it is
+complete, and it consumes the ENTIRE pushforward hypothesis.  What the section `σ`, the
+properness of the projection and the connectedness of the fibres of `q` are actually for is
+the single statement *"`m` maps each `q`-fibre into a piece of `Z` that is affine over the
+base"* — the topological argument runs there and nowhere else.  So the leaf splits into
+
+1. **the covering** (`exists_isAffineOver_cover_of_slice_const`) — genuinely the classical
+   argument: `pullback.snd p q` is proper (base change of `p`), so the image of
+   `m ⁻¹(Z ∖ U)` is closed in `Y` and misses `σ(S)`; the resulting open `V` is where the
+   affine case applies, and `GeometricallyConnected q` is what makes the `V`s cover `Y`
+   rather than a proper clopen part of it (see the FAITHFULNESS NOTE — with `Y` two points
+   they do not);
+2. **the gluing** (`exists_comp_snd_eq_of_open_cover`) — bookkeeping, but not free: the local
+   factorizations agree on overlaps because `HasUniversallyTrivialPushforward p` makes the
+   factorization through the projection UNIQUE (`exists_comp_snd_eq_of_isAffine` is stated as
+   an `∃!` for exactly this reason).
+
+Both leaves are stated with `sliceOverOpen p q V : X ×_S V ⟶ X ×_S Y`, the canonical map
+induced by an open `V ⊆ Y`.
 
 ## FAITHFULNESS NOTE on the rigidity lemma: the second factor MUST be connected
 
@@ -115,6 +152,49 @@ def HasUniversallyTrivialPushforward (f : X ⟶ S) : Prop :=
 theorem HasUniversallyTrivialPushforward.hasTrivialPushforward {f : X ⟶ S}
     (hf : HasUniversallyTrivialPushforward f) : HasTrivialPushforward f :=
   MorphismProperty.universally_le _ f hf
+
+/-! ### Morphisms to an affine target factor through the base
+
+The `Γ ⊣ Spec` half of the rigidity argument.  Nothing here needs properness, flatness or
+any hypothesis on the fibres: `IsIso (p.app ⊤)` alone already makes
+`(p ≫ ·) : (S ⟶ Z) → (X ⟶ Z)` a bijection for every affine `Z`, because both sides are
+`Hom` out of a global-sections ring and `p.app ⊤` is the comparison between them. -/
+
+/-- **`(p ≫ ·)` is injective on morphisms into an affine scheme**, as soon as
+`p.app ⊤ : Γ(S, ⊤) ⟶ Γ(X, ⊤)` is an isomorphism.
+
+A morphism into an affine scheme is determined by its action on global sections
+(`ext_of_isAffine`), and `(p ≫ c).app ⊤ = c.app ⊤ ≫ p.app ⊤`, so the claim is exactly that
+`p.app ⊤` is a monomorphism. -/
+theorem eq_of_comp_eq_of_isAffine {X S Z : Scheme.{u}} {p : X ⟶ S} [IsIso p.appTop]
+    [IsAffine Z] {c₁ c₂ : S ⟶ Z} (h : p ≫ c₁ = p ≫ c₂) : c₁ = c₂ := by
+  apply ext_of_isAffine
+  have h' := congrArg Scheme.Hom.appTop h
+  rw [Scheme.Hom.comp_appTop, Scheme.Hom.comp_appTop] at h'
+  exact (cancel_mono p.appTop).mp h'
+
+/-- **AN `S`-MORPHISM FROM `X` TO AN AFFINE SCHEME FACTORS UNIQUELY THROUGH `S`** — the
+corollary of `p_*𝒪_X = 𝒪_S` that the rigidity lemma runs on.
+
+The factorization is written down explicitly rather than extracted from an abstract
+adjunction argument: the ring map is `φ = m.app ⊤ ≫ (p.app ⊤)⁻¹ : Γ(Z, ⊤) ⟶ Γ(S, ⊤)`, and
+the morphism is `S ⟶ Spec Γ(S, ⊤) ⟶ Spec Γ(Z, ⊤) ≅ Z`.  The verification is then
+`Scheme.toSpecΓ_naturality` twice, once in each direction, with `Spec.map_comp` in between.
+
+Only `HasTrivialPushforward` at the single open `⊤` is used.  Note that the corresponding
+statement for a target merely *affine over `S`* is `exists_comp_snd_eq_of_isAffine_pullback`
+below, which is obtained from this one by a base change rather than by a relative `Spec`
+(`Mathlib` has no relative `Spec` at this pin). -/
+theorem HasTrivialPushforward.existsUnique_comp_eq {X S Z : Scheme.{u}} {p : X ⟶ S}
+    (hp : HasTrivialPushforward p) [IsAffine Z] (m : X ⟶ Z) :
+    ∃! c : S ⟶ Z, p ≫ c = m := by
+  haveI : IsIso p.appTop := hp ⊤
+  have key : p ≫ (S.toSpecΓ ≫ Spec.map (m.appTop ≫ inv p.appTop) ≫ Z.isoSpec.inv) = m := by
+    rw [← Category.assoc, Scheme.toSpecΓ_naturality]
+    simp only [Category.assoc]
+    rw [← Spec.map_comp_assoc, Category.assoc, IsIso.inv_hom_id, Category.comp_id,
+      ← Scheme.toSpecΓ_naturality_assoc, Scheme.toSpecΓ_isoSpec_inv, Category.comp_id]
+  exact ⟨_, key, fun c hc => eq_of_comp_eq_of_isAffine (p := p) (by rw [hc, key])⟩
 
 /-! ### The theorem -/
 
@@ -198,8 +278,127 @@ theorem sliceIncl_snd {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (σ : S �
     (hσ : σ ≫ q = 𝟙 S) : sliceIncl p q σ hσ ≫ pullback.snd p q = p ≫ σ :=
   pullback.lift_snd _ _ _
 
-/-- **THE RIGIDITY LEMMA** (sorry node — Mumford *Abelian Varieties* §4; BLR *Néron
-Models* 8.4 in the relative case; Mumford *GIT* Prop. 6.1 over a general base).
+/-- **RIGIDITY WITH AN AFFINE TARGET** (PROVEN).
+
+`HasUniversallyTrivialPushforward p` base-changes along `q` to `HasTrivialPushforward` for
+the projection `pullback.snd p q : X ×_S Y ⟶ Y`, and then
+`HasTrivialPushforward.existsUnique_comp_eq` factors `m` through `Y` — uniquely.
+
+**No section, no connectedness, no separatedness.**  None of `σ`, `hconst`,
+`[GeometricallyConnected q]` or `[IsSeparated r]` appears: for an affine target the whole
+statement is the pushforward hypothesis and nothing else.  That is what localises the
+remaining content of the rigidity lemma onto the covering step.
+
+The uniqueness is load-bearing downstream: it is what makes local factorizations over an
+open cover of `Y` agree on overlaps (`exists_comp_snd_eq_of_open_cover`). -/
+theorem exists_comp_snd_eq_of_isAffine {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    (hpush : HasUniversallyTrivialPushforward p) [IsAffine Z] (m : pullback p q ⟶ Z) :
+    ∃! d : Y ⟶ Z, m = pullback.snd p q ≫ d := by
+  have h : HasTrivialPushforward (pullback.snd p q) :=
+    hpush (pullback.fst p q) q (pullback.snd p q) (IsPullback.of_hasPullback p q).flip
+  obtain ⟨d, hd, hu⟩ := h.existsUnique_comp_eq m
+  exact ⟨d, hd.symm, fun d' hd' => hu d' hd'.symm⟩
+
+/-- **RIGIDITY WITH A TARGET AFFINE OVER THE BASE** (PROVEN) — the relative form of the
+`Γ ⊣ Spec` corollary, obtained by a base change instead of by a relative `Spec`.
+
+`Mathlib` has no relative `Spec` at this pin, so "affine over `S`" cannot be turned into a
+sheaf of algebras and split off directly.  It does not need to be: an `S`-morphism
+`m : X ×_S Y ⟶ Z` is the same thing as a `Y`-morphism `X ×_S Y ⟶ Y ×_S Z`, and *that*
+target is an honest affine scheme as soon as `Y ×_S Z` is one — which is exactly what
+"`Z` is affine over `S`" gives over an affine `Y`.  So the hypothesis is stated as
+`[IsAffine (pullback q r)]`, which is what the proof needs and is implied by
+`[IsAffine Y] [IsAffineHom r]`.
+
+This is the form the classical proof consumes, and it is consumed by
+`exists_comp_snd_eq_of_slice_const` below. -/
+theorem exists_comp_snd_eq_of_isAffine_pullback {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    {r : Z ⟶ S} (hpush : HasUniversallyTrivialPushforward p) [IsAffine (pullback q r)]
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p) :
+    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d := by
+  have hcomm : pullback.snd p q ≫ q = m ≫ r := by rw [hm, ← pullback.condition]
+  obtain ⟨e, he⟩ :=
+    (exists_comp_snd_eq_of_isAffine (q := q) hpush (pullback.lift _ _ hcomm)).exists
+  refine ⟨e ≫ pullback.snd q r, ?_⟩
+  rw [← Category.assoc, ← he, pullback.lift_snd]
+
+/-- **The canonical map `X ×_S V ⟶ X ×_S Y` induced by an open subscheme `V ⊆ Y`.**
+
+This is how "the restriction of `m` to the part of `X ×_S Y` lying over `V`" is written in
+the two leaves below, without ever forming an open subscheme of `X ×_S Y`. -/
+noncomputable def sliceOverOpen {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
+    pullback p (V.ι ≫ q) ⟶ pullback p q :=
+  pullback.map p (V.ι ≫ q) p q (𝟙 X) V.ι (𝟙 S) (by simp) (by simp)
+
+/-- **THE COVERING STEP OF THE RIGIDITY LEMMA** (sorry node) — the whole topological content,
+and the ONLY place where `σ`, `hconst` and `[GeometricallyConnected q]` are used.
+
+The assertion is that `Y` is covered by opens `V i` over each of which `m` factors through a
+scheme `W i` that is **affine over the base**, in the sense that `V i ×_S W i` is an affine
+scheme.  Given that, `exists_comp_snd_eq_of_isAffine_pullback` factors `m` over each `V i`,
+and `exists_comp_snd_eq_of_open_cover` glues.
+
+**The proof** (Mumford *AV* §4; BLR 8.4).  Fix `s ∈ S`, an affine open `S₀ ⊆ S` around it,
+and an affine open `U ⊆ Z` with `c(S₀) ⊆ U` and `r(U) ⊆ S₀`.  Then `m ⁻¹(Z ∖ U)` is closed
+in `X ×_S Y`, and `pullback.snd p q` is proper (base change of `p`), hence a closed map, so
+its image is closed in `Y` and — by `hconst`, which puts the slice `σ(S)` into `U` — misses
+`σ(S₀)`.  The complement is an open `V ∋ σ(s)` over which `m` lands in `U`; refine `V` to an
+affine open inside `q ⁻¹ S₀` and take `W = U`, so that `V ×_S W = V ×_{S₀} U` is a fibre
+product of affines over an affine, hence affine.
+
+**Where the connectedness is consumed, and why the leaf is FALSE without it**: the opens
+produced this way a priori cover only the part of `Y` reachable from the section.  Their
+union is open, and the argument above run at every point of it shows it is also closed in
+each fibre of `q`; `[GeometricallyConnected q]` is what upgrades "clopen in each fibre and
+meets each fibre (via `σ`)" to `⨆ i, V i = ⊤`.  With `Y` two points over `S = Spec k` the
+union is a single point and the conclusion fails — see the FAITHFULNESS NOTE in the module
+docstring.
+
+**AXIS SEARCHED**: the affine and affine-over-the-base cases are DONE and are not what is
+missing here (`exists_comp_snd_eq_of_isAffine`, `exists_comp_snd_eq_of_isAffine_pullback`);
+so is the `Γ ⊣ Spec` corollary.  What is missing is purely the scheme-theoretic topology:
+`IsProper → IsClosedMap` for the base-changed projection, and the `GeometricallyConnected`
+clopen argument.  The étale axis (`section_eq_of_formallyUnramified`, diagonal
+simultaneously open and closed) is searched and DEAD: `Δ_{B/S}` is an open immersion iff
+`Ω_{B/S} = 0`, which fails in relative dimension `> 0`. -/
+theorem exists_isAffineOver_cover_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : Y ⟶ S} {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
+    (hpush : HasUniversallyTrivialPushforward p)
+    (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
+    (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) :
+    ∃ (ι : Type u) (V : ι → Y.Opens) (W : ι → Scheme.{u}) (w : ∀ i, W i ⟶ S)
+      (j : ∀ i, W i ⟶ Z) (n : ∀ i, pullback p ((V i).ι ≫ q) ⟶ W i),
+      (⨆ i, V i) = ⊤ ∧ (∀ i, IsAffine (pullback ((V i).ι ≫ q) (w i))) ∧
+      (∀ i, n i ≫ w i = pullback.fst p ((V i).ι ≫ q) ≫ p) ∧
+      (∀ i, n i ≫ j i = sliceOverOpen p q (V i) ≫ m) :=
+  sorry
+
+/-- **THE GLUING STEP OF THE RIGIDITY LEMMA** (sorry node): local factorizations of `m`
+through the projection, over an open cover of `Y`, glue to a global one.
+
+**The proof.**  The local data `d i : V i ⟶ Z` agree on overlaps because the factorization
+is UNIQUE: over `V i ⊓ V j`, two factorizations of the same morphism through the projection
+agree after composing with the projection, and `HasUniversallyTrivialPushforward p`
+base-changes to make that projection an epimorphism — concretely, both restrict over each
+affine open of `Z` to the situation of `exists_comp_snd_eq_of_isAffine`, whose conclusion is
+an `∃!`.  Then `Scheme.OpenCover.glueMorphisms` on the cover `V` of `Y` produces `d`, and
+`m = pullback.snd p q ≫ d` is checked on the cover of `X ×_S Y` by the
+`pullback.snd p q ⁻¹ᵁ V i`.
+
+This is bookkeeping rather than mathematics, but it is not free: it is the reason
+`exists_comp_snd_eq_of_isAffine` is stated as an `∃!` rather than an `∃`. -/
+theorem exists_comp_snd_eq_of_open_cover {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    (hpush : HasUniversallyTrivialPushforward p) {m : pullback p q ⟶ Z}
+    {ι : Type u} (V : ι → Y.Opens) (hV : (⨆ i, V i) = ⊤)
+    (hd : ∀ i, ∃ d : (V i).toScheme ⟶ Z,
+      sliceOverOpen p q (V i) ≫ m = pullback.snd p ((V i).ι ≫ q) ≫ d) :
+    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d :=
+  sorry
+
+/-- **THE RIGIDITY LEMMA** (PROVEN over the covering and gluing leaves above — Mumford
+*Abelian Varieties* §4; BLR *Néron Models* 8.4 in the relative case; Mumford *GIT* Prop. 6.1
+over a general base).
 
 Let `p : X ⟶ S` be proper with `𝒪_S = p_*𝒪_X` universally, let `q : Y ⟶ S` have
 geometrically connected fibres, and let `r : Z ⟶ S` be separated.  An `S`-morphism
@@ -207,8 +406,9 @@ geometrically connected fibres, and let `r : Z ⟶ S` be separated.  An `S`-morp
 restriction along `sliceIncl` factors through `p` — factors through the projection to `Y`.
 
 **The proof.**  Fix `s ∈ S` and an affine open `U ⊆ Z` containing the image of the
-contracted slice.  `m⁻¹(Z ∖ U)` is closed in `X ×_S Y`, and `pullback.fst p q` is proper
-(base change of `p`), so its image in `Y` is closed and misses `σ(S)`; on the open
+contracted slice.  `m⁻¹(Z ∖ U)` is closed in `X ×_S Y`, and `pullback.snd p q` is proper
+(base change of `p`; the earlier version of this note said `pullback.fst`, which is the base
+change of `q` and lands in `X`), so its image in `Y` is closed and misses `σ(S)`; on the open
 complement `V` the whole slice `X ×_S V` maps into the affine `U`, and a morphism from a
 proper scheme with `p_*𝒪 = 𝒪` to an affine scheme over the base factors through the base
 — this is where the pushforward hypothesis is consumed, and it is consumed after a base
@@ -219,19 +419,29 @@ change to `V`, which is why the hypothesis is the UNIVERSAL one.  So `m` factors
 **WHY `[GeometricallyConnected q]` IS NOT DECORATION**: see the FAITHFULNESS NOTE in the
 module docstring — with `Y = {y₀, y₁}` two points the statement is false.
 
-**THE CHECK THAT WOULD REFUTE ANY "THIS IS IRREDUCIBLE" VERDICT** on this leaf: land
-`hasUniversallyTrivialPushforward_of_isProper_of_flat`, and add the corollary "an
-`S`-morphism from `X` to a scheme affine over `S` factors uniquely through `S`" (that
-corollary is short — it is the `Γ ⊣ Spec` adjunction plus `IsIso (f.app ⊤)`).  With those
-two in hand this leaf is the topological argument above and nothing more. -/
+**STATUS (2026-07-27).**  The check recorded here — "add the corollary *an `S`-morphism from
+`X` to a scheme affine over `S` factors uniquely through `S`*, and this leaf is the
+topological argument and nothing more" — has been RUN, and it came out as predicted.  The
+corollary is `HasTrivialPushforward.existsUnique_comp_eq`, its relative form is
+`exists_comp_snd_eq_of_isAffine_pullback`, and both are PROVEN above and consumed below,
+**without** `hasUniversallyTrivialPushforward_of_isProper_of_flat` having landed (that leaf
+is an input to the *hypothesis* `hpush`, not to this proof).  What is left is exactly the
+topology, split into `exists_isAffineOver_cover_of_slice_const` (the covering — properness,
+`σ`, connectedness) and `exists_comp_snd_eq_of_open_cover` (the gluing). -/
 theorem exists_comp_snd_eq_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
     (hpush : HasUniversallyTrivialPushforward p)
     (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
     {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
     (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) :
-    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d :=
-  sorry
+    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d := by
+  obtain ⟨ι, V, W, w, j, n, hVtop, hWaff, hnw, hnj⟩ :=
+    exists_isAffineOver_cover_of_slice_const hpush σ hσ hm c hconst
+  refine exists_comp_snd_eq_of_open_cover hpush V hVtop fun i => ?_
+  haveI := hWaff i
+  obtain ⟨e, he⟩ := exists_comp_snd_eq_of_isAffine_pullback (p := p) (q := (V i).ι ≫ q)
+    (r := w i) hpush (hnw i)
+  exact ⟨e ≫ j i, by rw [← hnj i, he, Category.assoc]⟩
 
 /-- **A morphism `A ×_S A ⟶ B` vanishing on BOTH AXES vanishes** (PROVEN, over the
 rigidity lemma).
