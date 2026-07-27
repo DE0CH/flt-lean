@@ -263,8 +263,11 @@ this pin:
   of `X_0(N)` with their field of definition
   (`exists_x0Compactification`, `exists_rationalCusps`);
 * `J_0(N)` as an actual abelian scheme, its Mordell–Weil group, and the
-  reduction map with its formal-group kernel
-  (`card_le_of_rankZeroJacobian`);
+  reduction map with its formal-group kernel — `neronKernel_torsionFree`
+  for the kernel, `exists_x0NeronDatum_of_base` for the models, and
+  `exists_isX0Compactification_specialFibre` for the identification of
+  the special fibre.  `card_le_of_rankZeroJacobian` itself is PROVEN over
+  those, as of 2026-07-27;
 * `S_2(Γ_0(N))`, the Hecke algebra, `L`-functions of modular abelian
   varieties and Kolyvagin–Logachev, which supply the rank-`0` input
   (`hasRankZeroJacobian_of_kenkuLevel`), and Eichler–Shimura, which
@@ -3602,9 +3605,14 @@ This subsection therefore builds, in the order that observation forces:
    smooth proper curve with finite complement;
 2. `IsJacobianOf` and `HasRankZeroJacobian` — `J_0(N)` by its Albanese
    universal property, and the two arithmetic inputs;
-3. `card_le_of_rankZeroJacobian` — the reduction bound;
+3. `card_le_of_rankZeroJacobian` — the reduction bound, PROVEN;
 4. `y0HasNoRationalPoint_of_witnessPrime` — the assembly, PROVEN, and
    what the seven single-prime levels below call.
+
+Items 3 and 4 are **declared further down**, after the Néron subsection,
+because the reduction bound is proven over the integral models built
+there; see the `#### The single-prime counting bound` heading for why
+that turned out to be the right place for them rather than here.
 
 The arithmetic that feeds it is the Magma reconnaissance recorded in the
 `#### Reconnaissance` block below. -/
@@ -4132,81 +4140,6 @@ theorem exists_x0Compactification_mod_prime (N ℓ m : ℕ)
         Finite (RelPoint strX (𝟙 (SpecF ℓ))) ∧
         Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
   sorry
-
-/-- **The rank-`0` reduction bound, `#X_0(N)(ℚ) ≤ #X_0(N)(𝔽_ℓ)`** (sorry
-node — this is the criterion).
-
-TRUE, and classical.  `hJ` makes `J_0(N)(ℚ)` finite, hence torsion; for
-`ℓ` an odd prime of good reduction the reduction map on torsion
-`J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` is INJECTIVE, its kernel being the points of a
-formal group over `ℤ_ℓ`, which is torsion-free for `ℓ` odd; Abel–Jacobi
-based at a rational point embeds `X_0(N)(ℚ)` into `J_0(N)(ℚ)` and
-commutes with reduction; so `X_0(N)(ℚ)` injects into `X_0(N)(𝔽_ℓ)`.
-
-**Every hypothesis is load-bearing**, and the leaf is false without any
-one of them — which is why none is trimmed:
-
-* without finiteness in `hJ`, a positive-rank Jacobian gives infinitely
-  many rational points already in genus `1`;
-* without injectivity in `hJ`, `N = 1` refutes it: `X_0(1) = ℙ¹` has
-  trivial Jacobian and infinitely many rational points;
-* without `hℓ2` the formal-group argument fails at `ℓ = 2`, where
-  `2`-torsion can die under reduction;
-* without `hℓN` there is no good reduction at `ℓ` and the special fibre
-  is not a smooth curve.
-
-The conclusion bounds every `Finset` of rational points rather than
-`Nat.card`, because `Nat.card` of an infinite type is `0` and the bound
-would then hold vacuously; the `Finset` form also carries finiteness.
-
-IRREDUCIBLE at this pin: it needs the integral model of `X_0(N)`, the
-reduction map on the Jacobian, and the formal group of an abelian
-scheme. -/
-theorem card_le_of_rankZeroJacobian {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
-    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (hX : IsX0Compactification N strX strY j)
-    (hJ : HasRankZeroJacobian strX) {ℓ : ℕ} (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2)
-    (hℓN : ¬ ℓ ∣ N) {X' Y' : Scheme.{0}} {strX' : X' ⟶ SpecF ℓ}
-    {strY' : Y' ⟶ SpecF ℓ} {j' : Y' ⟶ X'}
-    (hX' : IsX0Compactification N strX' strY' j') (m : ℕ)
-    (hfin : Finite (RelPoint strX' (𝟙 (SpecF ℓ))))
-    (hm : Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m)
-    (s : Finset (RelPoint strX (𝟙 SpecQ))) : s.card ≤ m :=
-  sorry
-
-/-- **The single-prime criterion** (PROVEN): at a level whose Jacobian
-has rank `0`, and which has a witness prime whose point count equals the
-number of rational cusps, `Y_0(N)(ℚ) = ∅`.
-
-The argument is pure counting, and it is the reason the interface above
-is shaped as it is.  Take the compactification `Y ⊆ X` over `ℚ` and the
-reduction `X'` over `𝔽_ℓ`.  The `c = numRationalCusps N` rational cusps
-are `c` distinct rational points of `X`, none of them the image of a
-rational point of `Y`.  A rational point of `Y` would therefore push
-forward to a `(c+1)`-st one, giving a `Finset` of `X(ℚ)` of size
-`c + 1`; but the reduction bound caps every such `Finset` by
-`#X'(𝔽_ℓ) = c`.  So `Y(ℚ)` is empty — and
-`y0HasNoRationalPoint_of_isEmpty` propagates that to every coarse moduli
-space at once.
-
-This is exactly the step that cannot be taken on the affine curve: rank
-`0` bounds `#X_0(N)(ℚ)`, and only the cusp count turns that bound into
-emptiness of `Y_0(N)(ℚ)`. -/
-theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
-    (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2) (hℓN : ¬ ℓ ∣ N) (hlevel : N ∈ kenkuLevels)
-    (htable : (N, ℓ, numRationalCusps N) ∈ x0WitnessTable) :
-    Y0HasNoRationalPoint N := by
-  classical
-  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
-  obtain ⟨X', Y', strX', strY', j', ⟨hX'⟩, hfin, hcard⟩ :=
-    exists_x0Compactification_mod_prime N ℓ (numRationalCusps N) htable
-  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
-  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
-  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
-  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
-    card_le_of_rankZeroJacobian hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX)
-      hℓ hℓ2 hℓN hX' _ hfin hcard _
-  rw [Finset.card_insert_of_notMem hp, hscard] at hle
-  omega
 
 /-! #### The multi-prime Mordell–Weil sieve
 
@@ -5207,6 +5140,257 @@ theorem y0HasNoRationalPoint_of_sieveLevel (N : ℕ) (hN : 0 < N)
   have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
   have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
     card_le_of_sieve hsieve hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX) _
+  rw [Finset.card_insert_of_notMem hp, hscard] at hle
+  omega
+
+/-! #### The single-prime counting bound
+
+`card_le_of_rankZeroJacobian` — the criterion the seven single-prime
+levels rest on — is PROVEN here, over the Néron pinning built above.  It
+used to sit beside `exists_x0Compactification_mod_prime`, before the
+sieve subsection existed; **it was moved down to this point on
+2026-07-27 for the only reason Lean ever forces a relocation**, namely
+that its proof consumes `exists_x0NeronDatum`, `neronReduction_injective`
+and `IsX0NeronDatum.toReduction`, all of which are declared above.
+`y0HasNoRationalPoint_of_witnessPrime` moved with it, unchanged, because
+it is its sole consumer; nothing in between referred to either.
+
+**What the move bought, and it is the point of doing it.**  The
+reduction bound and the sieve bound were being developed as if they were
+two theories.  They are one: both are "reduction at a good odd prime is
+injective on a rank-`0` Jacobian, and Abel–Jacobi is injective in
+positive genus, so `X_0(N)(ℚ)` injects into `X_0(N)(𝔽_ℓ)`".  The sieve
+half then *bounds the image by the surviving set*; the counting half
+merely bounds it by the whole of `X_0(N)(𝔽_ℓ)`.  So the counting bound
+is the WEAKER of the two, and once the sieve's machinery exists it is a
+corollary rather than an independent leaf — exactly as
+`exists_x0NeronDatum_of_base`'s docstring predicted when it said that
+factoring the models out is "a genuine reduction in the total work
+rather than a repackaging".
+
+**What genuinely remained**, and it is the mismatch between the two
+statements rather than any missing formal-group theory.
+`exists_x0NeronDatum` manufactures its OWN special fibre, whereas
+`card_le_of_rankZeroJacobian` is handed an ARBITRARY `X_0(N)_{𝔽_ℓ}` by
+its caller and must bound by *that* curve's point count.  Bridging the
+two needs precisely the two leaves below: the special fibre of the smooth
+model IS `X_0(N)` over `𝔽_ℓ` (good reduction), and any two `X_0(N)`'s
+over `𝔽_ℓ` have the same rational points (uniqueness).  Neither is
+formal-group theory, and neither was previously stated anywhere.
+-/
+
+/-- **The special fibre of the smooth model over `ℤ_(ℓ)` is `X_0(N)` over
+`𝔽_ℓ`** (sorry node — good reduction, on the curve side).
+
+TRUE, and it is the defining property of good reduction: for `ℓ ∤ N` the
+Deligne–Rapoport/Igusa model `𝒳` over `ℤ_(ℓ)` has `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ` the
+coarse space of the same `Γ₀(N)`-moduli problem over `𝔽_ℓ`, and it is
+smooth, proper and geometrically connected there because those properties
+are fibrewise for a smooth proper model.  So the datum's special fibre
+`X'` carries an `IsX0Compactification N` over `𝔽_ℓ`, its open part being
+the special fibre of the model's own open part.
+
+**The hypothesis that does the work is `d`**, and it cannot be weakened
+to "`X'` is *some* scheme whose points biject with the model's".  It is
+`d.model` that says the integral curve is the smooth model of `X_0(N)`,
+and `d.spX` *together with* `d.spX_nat` that identify `X'` as its special
+fibre — as an isomorphism of FUNCTORS of points over `𝔽_ℓ`, hence by
+Yoneda as `X' ≅ 𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ` rather than as a bare bijection of
+point sets.  Dropping naturality would leave `X'` free to be any scheme
+abstractly equinumerous with the special fibre, which is not a modular
+curve and would make this leaf FALSE.  The same reasoning is recorded at
+`exists_sharpSievePrime` for why quantifying over `IsX0NeronDatum` is
+safe where quantifying over `IsX0ReductionAt` would not be.
+
+`_hℓN` is load-bearing for the same reason it is in
+`exists_x0NeronDatum_of_base`: at `ℓ ∣ N` there is no smooth model and
+the special fibre is not a smooth curve.  The hypotheses carry
+underscores only because the body is `sorry`.
+
+IRREDUCIBLE at this pin: it is the curve half of the statement that
+`exists_x0NeronDatum_of_base` is the model half of, and neither the
+integral model of `X_0(N)` nor base change of coarse moduli spaces exists
+here. -/
+theorem exists_isX0Compactification_specialFibre {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+    (_d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
+    ∃ (Y'' : Scheme.{0}) (strY'' : Y'' ⟶ SpecF ℓ) (j'' : Y'' ⟶ X'),
+      Nonempty (IsX0Compactification N strX' strY'' j'') :=
+  sorry
+
+/-- **`X_0(N)` over `𝔽_ℓ` is unique up to isomorphism, hence its rational
+points up to bijection** (sorry node).
+
+TRUE, and classical, in two steps — and both steps are already *stated*
+in this file, which is why this is a small leaf rather than a theory:
+
+* `IsCoarseModuliY0` is an INITIALITY property, so it determines
+  `(Y, classify)` up to unique isomorphism over the base.  Its own
+  docstring says exactly this, and `Y0HasNoRationalPoint` is quantified
+  over all coarse moduli spaces for precisely this reason.  So
+  `Y₁ ≅ Y₂` over `𝔽_ℓ`.
+* Over a FIELD, a smooth curve has a unique smooth proper
+  compactification: two smooth proper geometrically connected curves
+  containing a common dense open glue along it, the closure of the graph
+  in `X₁ ×_k X₂` being proper and birational over both.  This is what the
+  docstring of `IsX0Compactification` means by "`finite_compl` is what
+  makes `X` the unique smooth compactification".  So `X₁ ≅ X₂` over
+  `𝔽_ℓ`, and an isomorphism over the base induces a bijection on
+  `𝔽_ℓ`-points.
+
+**Why `𝔽_ℓ` and not a general base.**  The compactification is stated
+here only over `Spec 𝔽_ℓ`, with `ℓ` prime, because that is the base at
+which the second step is unconditionally true.  Over a general base — a
+non-normal or non-reduced one, say — the closure-of-the-graph argument
+fails, and stating the leaf there would risk a FALSE statement for the
+sake of a generality nothing consumes.  `_hℓ` is what makes `ZMod ℓ` a
+field and is load-bearing for exactly that reason.
+
+**Not vacuous, and not silently degenerate.**  At `N = 0` the hypotheses
+are unsatisfiable — `isEmpty_of_gamma0Datum_zero` forces `Y` initial,
+hence empty, while `finite_compl` then makes the whole space of `X`
+finite, which a smooth proper curve over a field is not — so the leaf is
+vacuously true there and carries no content it should not.  At the levels
+that matter it is satisfied, by `exists_x0Compactification_mod_prime`.
+
+The conclusion is `Nonempty (… ≃ …)` on points rather than an
+isomorphism of schemes: that is all any consumer needs, it is implied by
+the scheme-level statement, and it avoids committing this file to a
+transport of `RelPoint` along an isomorphism that nothing else here uses.
+
+IRREDUCIBLE at this pin: no smooth-compactification theorem for curves
+exists in `Mathlib`, which is the same obstruction recorded at
+`exists_x0Compactification`. -/
+theorem nonempty_relPointEquiv_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+    {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
+    {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
+    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
+    (_h₂ : IsX0Compactification N strX₂ strY₂ jY₂) :
+    Nonempty (RelPoint strX₁ (𝟙 (SpecF ℓ)) ≃ RelPoint strX₂ (𝟙 (SpecF ℓ))) :=
+  sorry
+
+/-- **The rank-`0` reduction bound, `#X_0(N)(ℚ) ≤ #X_0(N)(𝔽_ℓ)`**
+(PROVEN 2026-07-27 — this is the criterion).
+
+Classical, and the proof here is the classical one, assembled from the
+Néron pinning above rather than from anything new.  `hJ` makes
+`J_0(N)(ℚ)` finite, hence torsion; for `ℓ` an odd prime of good reduction
+the reduction map on torsion `J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` is INJECTIVE, its
+kernel being the points of a formal group over `ℤ_ℓ`, which is
+torsion-free for `ℓ` odd; Abel–Jacobi based at a rational point embeds
+`X_0(N)(ℚ)` into `J_0(N)(ℚ)` and commutes with reduction; so
+`X_0(N)(ℚ)` injects into `X_0(N)(𝔽_ℓ)`.
+
+Each clause is now a named declaration:
+`exists_x0NeronDatum` supplies the models, `neronReduction_injective`
+(over `neronKernel_torsionFree`) the injectivity, and
+`IsX0NeronDatum.toReduction` packages them as `redX`, `redJ`, `red_aj`.
+`redX` is then injective because it is sandwiched between two injections,
+which is the identical two-line argument that `card_le_of_sieve` runs —
+the two theorems differ only in what they bound the image by.
+
+**Every hypothesis is load-bearing**, the leaf is false without any one
+of them, and the proof consumes each exactly where the refutation says it
+must:
+
+* without finiteness in `hJ`, a positive-rank Jacobian gives infinitely
+  many rational points already in genus `1` — consumed as
+  `d.finite_intPoints`, feeding `neronReduction_injective`;
+* without injectivity in `hJ`, `N = 1` refutes it: `X_0(1) = ℙ¹` has
+  trivial Jacobian and infinitely many rational points — consumed as
+  `hajinj`, the outer of the two injections;
+* without `hℓ2` the formal-group argument fails at `ℓ = 2`, where
+  `2`-torsion can die under reduction — consumed twice, by
+  `exists_x0NeronDatum` and by `neronReduction_injective`;
+* without `hℓN` there is no good reduction at `ℓ` and the special fibre
+  is not a smooth curve — consumed by `exists_x0NeronDatum`.
+
+The conclusion bounds every `Finset` of rational points rather than
+`Nat.card`, because `Nat.card` of an infinite type is `0` and the bound
+would then hold vacuously; the `Finset` form also carries finiteness.
+`hfin` is what turns the bound on a `Finset` into a bound by `Nat.card`,
+and it is used for nothing else.
+
+What is left open is not this argument but its two geometric inputs, and
+they are the two leaves directly above: the caller's `X'` and the
+datum's own special fibre are both `X_0(N)` over `𝔽_ℓ`
+(`exists_isX0Compactification_specialFibre`), and any two such have the
+same points (`nonempty_relPointEquiv_of_isX0Compactification`). -/
+theorem card_le_of_rankZeroJacobian {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (hX : IsX0Compactification N strX strY j)
+    (hJ : HasRankZeroJacobian strX) {ℓ : ℕ} (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2)
+    (hℓN : ¬ ℓ ∣ N) {X' Y' : Scheme.{0}} {strX' : X' ⟶ SpecF ℓ}
+    {strY' : Y' ⟶ SpecF ℓ} {j' : Y' ⟶ X'}
+    (hX' : IsX0Compactification N strX' strY' j') (m : ℕ)
+    (hfin : Finite (RelPoint strX' (𝟙 (SpecF ℓ))))
+    (hm : Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) : s.card ≤ m := by
+  classical
+  obtain ⟨J, jstr, ab, o, jac, hJfin, hajinj⟩ := hJ
+  obtain ⟨R, toF, X'', J'', XZ, YZ, JZ, strX'', jstr'', ab'', o'', jac'', xstr, ystr,
+    jZ, jstrZ, abZ, oZ, jacZ, ⟨d⟩⟩ := exists_x0NeronDatum N ℓ hℓ hℓ2 hℓN hX jac
+  -- the special fibre of the smooth model is `X_0(N)` over `𝔽_ℓ` …
+  obtain ⟨Y'', strY'', j'', ⟨hX''⟩⟩ :=
+    exists_isX0Compactification_specialFibre (jac := jac) hℓ hℓN d
+  -- … hence has the same rational points as the reduction we were handed
+  obtain ⟨e⟩ := nonempty_relPointEquiv_of_isX0Compactification hℓ hX'' hX'
+  have hinj := neronReduction_injective ℓ R toF d.base hℓ2 abZ (d.finite_intPoints hJfin)
+  have red : IsX0ReductionAt jac jac'' := d.toReduction hinj
+  -- `redX` is injective because it is sandwiched between two injections
+  have hFinj : Function.Injective fun x => e (red.redX x) := by
+    intro a b hab
+    refine hajinj (red.redJ_inj ?_)
+    rw [red.red_aj, red.red_aj, e.injective hab]
+  haveI := hfin
+  haveI : Fintype (RelPoint strX' (𝟙 (SpecF ℓ))) := Fintype.ofFinite _
+  calc s.card = (s.image fun x => e (red.redX x)).card :=
+        (Finset.card_image_of_injective s hFinj).symm
+    _ ≤ Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) := by
+        rw [Nat.card_eq_fintype_card, ← Finset.card_univ]
+        exact Finset.card_le_univ _
+    _ = m := hm
+
+/-- **The single-prime criterion** (PROVEN): at a level whose Jacobian
+has rank `0`, and which has a witness prime whose point count equals the
+number of rational cusps, `Y_0(N)(ℚ) = ∅`.
+
+The argument is pure counting, and it is the reason the interface above
+is shaped as it is.  Take the compactification `Y ⊆ X` over `ℚ` and the
+reduction `X'` over `𝔽_ℓ`.  The `c = numRationalCusps N` rational cusps
+are `c` distinct rational points of `X`, none of them the image of a
+rational point of `Y`.  A rational point of `Y` would therefore push
+forward to a `(c+1)`-st one, giving a `Finset` of `X(ℚ)` of size
+`c + 1`; but the reduction bound caps every such `Finset` by
+`#X'(𝔽_ℓ) = c`.  So `Y(ℚ)` is empty — and
+`y0HasNoRationalPoint_of_isEmpty` propagates that to every coarse moduli
+space at once.
+
+This is exactly the step that cannot be taken on the affine curve: rank
+`0` bounds `#X_0(N)(ℚ)`, and only the cusp count turns that bound into
+emptiness of `Y_0(N)(ℚ)`. -/
+theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
+    (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2) (hℓN : ¬ ℓ ∣ N) (hlevel : N ∈ kenkuLevels)
+    (htable : (N, ℓ, numRationalCusps N) ∈ x0WitnessTable) :
+    Y0HasNoRationalPoint N := by
+  classical
+  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
+  obtain ⟨X', Y', strX', strY', j', ⟨hX'⟩, hfin, hcard⟩ :=
+    exists_x0Compactification_mod_prime N ℓ (numRationalCusps N) htable
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
+  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
+  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
+  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
+    card_le_of_rankZeroJacobian hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX)
+      hℓ hℓ2 hℓN hX' _ hfin hcard _
   rw [Finset.card_insert_of_notMem hp, hscard] at hle
   omega
 
