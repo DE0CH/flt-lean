@@ -20083,10 +20083,261 @@ theorem forall_jm_mem_of_pointBound {N m : ℕ} {T : List (ℕ × ℚ)}
     (cusps ∪ pts.image (sectionAlong jY hX.comm)))
   omega
 
-/-- **`#X_0(p)(ℚ) ≤ m` at the four higher-genus isogeny primes** (sorry
-leaf, introduced 2026-07-27; the BOUNDING half of the higher-genus
-decomposition, and the ONLY place the deep arithmetic of these four levels
-now lives).
+/-! #### Cutting the bound into a CUSPIDAL half and an AFFINE half
+
+(2026-07-27, flt-lean-25.)  `card_le_of_isogenyPrimeHigherGenus` was
+introduced earlier the same day as an atom, with an audit recording three
+refuted axes and naming Mazur's Eisenstein ideal as the one not searched.
+That audit is preserved below, on the leaf where the arithmetic now lives.
+What it did not consider is that the bound splits along `X = Y ⊔ cusps`
+before any arithmetic is done at all:
+
+`#X_0(p)(ℚ) = #(rational cusps) + #Y_0(p)(ℚ)`, and at every prime `p` the
+first summand is `numRationalCusps p = 2` (verified by `decide` at all
+four levels below, and independently in PARI/GP).  Since the table's
+counts are `4, 3, 3, 3`, the affine halves are `2, 1, 1, 1`.
+
+Net effect: one atom becomes two PROVEN theorems and three leaves, none of
+which is the atom in disguise.
+
+* the CUSPIDAL half, `card_le_numRationalCusps_of_isCusp`, general in the
+  level and carrying no arithmetic of the four primes whatever — it is the
+  converse of a leaf `X0.lean` already has, and the two should be
+  discharged together;
+* the AFFINE half, `card_y0Le_thirtySeven` and
+  `card_y0Le_classNumberOne`, which is where ALL the deep arithmetic goes;
+* `card_le_of_cuspBound_of_y0Bound`, the splitting itself, PROVEN and
+  generic in the level and in both bounds.
+
+**Why the affine half is TWO leaves and not one.**  The four levels do not
+share an argument, and the split is exactly `37` against `43, 67, 163`.
+At `43, 67, 163` the single non-cuspidal point is CM by the maximal order
+of discriminant `−p`, and `h(−p) = 1` is what makes it unique — one
+uniform argument.  At `37` the two non-cuspidal points are NOT CM
+(`j = −7·11³` and `−7·137³·2083³`), so no class-number argument can reach
+them, and the classical source is Mazur–Swinnerton-Dyer instead of Mazur.
+Stating one leaf over all four levels would therefore hand a successor two
+unrelated problems under one name; stating two lets each be dispatched at
+its own classical theorem.
+
+**What the split does NOT do.**  It does not weaken the arithmetic, and it
+is not the rank-`0` axis in disguise: the affine leaves are still the full
+strength of Mazur's isogeny theorem at these levels.  The gain is that the
+cuspidal half — which is pure Deligne–Rapoport bookkeeping, uniform in the
+level, and shared with an existing `X0.lean` leaf — no longer has to be
+proven by whoever attacks the arithmetic. -/
+
+/-- **The rational cusps of `X_0(N)` number at most `numRationalCusps N`**
+(sorry leaf, introduced 2026-07-27; the CUSPIDAL half, general in the
+level).
+
+TRUE and classical, and it is precisely the CONVERSE of a leaf `X0.lean`
+already carries.  `Fermat.nonempty_cuspIndexing_of_ne_zero` produces a
+rational cusp above every divisor `d ∣ N` with `φ(gcd(d, N/d)) = 1` and
+proves them pairwise distinct — a LOWER bound of `numRationalCusps N` on
+the rational cusps.  This is the matching UPPER bound: there are no
+others.
+
+**Discharge the two TOGETHER.**  Both directions are the same piece of
+mathematics — the identification of `X ∖ Y` with `Γ_0(N)∖ℙ¹(ℚ)`
+compatibly with the `Γ_ℚ`-action, i.e. the cuspidal part of the
+Deligne–Rapoport model (Ogg; Deligne–Rapoport VI.6; Diamond–Im §9.3).
+Concretely, adding one field to `Fermat.IsX0Compactification.CuspIndexing`
+
+    surj : ∀ x, h.IsCusp x → ∃ d, ∃ hd : d ∈ rationalCuspDivisors N, cusp d hd = x
+
+discharges this leaf in three lines, and it is the natural field to add
+when that identification lands.  It is not added here only because
+`CuspIndexing` is another owner's declaration.
+
+**Why this does not already follow.**  The axis note under
+`nonempty_cuspIndexing_of_ne_zero` records that `CuspIndexing` and
+`Fermat.exists_rationalCusps` are interderivable — but both of those are
+the `≥` direction, so their interderivability says nothing here.  Within
+`IsX0Compactification` the only constraint on the cusp locus is
+`finite_compl`, which gives finiteness with no count at all; and the
+structure's fields do not even forbid `jY` from being an isomorphism, so
+without moduli input the cusp count is unbounded below as well as above.
+
+**`_hN` is carried for safety, not because the leaf is known false without
+it.**  At `N = 0` the hypotheses are in fact UNSATISFIABLE: `coarse`
+forces `Y` empty (`Fermat.isEmpty_of_isCoarseModuliY0_zero`), so
+`finite_compl` makes the space of `X` finite, while `smooth`, `isProper`
+and `connected` make it a curve.  So the leaf is vacuously true at `N = 0`
+too — but that argument is not available in this file, and
+`numRationalCusps 0 = 0` makes `N = 0` the one level at which the
+conclusion has no slack whatever.  Every call site has `N` prime, so the
+hypothesis costs a `decide` and removes the risk entirely. -/
+theorem card_le_numRationalCusps_of_isCusp {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_hN : N ≠ 0) (_hX : IsX0Compactification N strX strY jY)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) (_hs : ∀ x ∈ s, _hX.IsCusp x) :
+    s.card ≤ numRationalCusps N :=
+  sorry
+
+/-- **THE SPLITTING** (PROVEN): a bound `c` on the rational cusps of `X`
+and a bound `k` on the rational points of `Y` give the bound `c + k` on
+the rational points of `X`.
+
+Generic in the level and in both bounds, and it carries no arithmetic: it
+is the observation that `IsCusp` is by definition the complement of the
+image of `sectionAlong`, so the two halves of the `Finset` partition are
+bounded by exactly the two hypotheses.
+
+The argument.  Split `s` by `hX.IsCusp`.  The cuspidal part is bounded by
+`hcusp` directly.  For the other part, every `x` in it satisfies
+`¬ ¬ ∃ y, sectionAlong jY hX.comm y = x`, so a choice function `g` lifts
+it to `Y`; `g` is injective on that part because `sectionAlong ∘ g` is the
+identity there, so the lifted `Finset` has the same cardinality and
+`hy0` bounds it.  `Finset.card_filter_add_card_filter_not` then adds the
+two.
+
+Note the lift needs no injectivity of `sectionAlong` — `sectionAlong_injective`
+is not used.  Injectivity of `g` comes for free from the fact that it is a
+section of `sectionAlong` over the non-cuspidal part, which is weaker and
+is available with no hypothesis on `jY`.  (`sectionAlong_injective` is
+still what the sibling counting arguments in this file need, since they
+push a `Finset` of `Y` FORWARD rather than pulling one back.) -/
+theorem card_le_of_cuspBound_of_y0Bound {N c k : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY)
+    (hcusp : ∀ s : Finset (RelPoint strX (𝟙 SpecQ)),
+      (∀ x ∈ s, hX.IsCusp x) → s.card ≤ c)
+    (hy0 : ∀ t : Finset (RelPoint strY (𝟙 SpecQ)), t.card ≤ k)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) : s.card ≤ c + k := by
+  classical
+  have hsplit :
+      (s.filter fun x => hX.IsCusp x).card + (s.filter fun x => ¬ hX.IsCusp x).card = s.card :=
+    Finset.card_filter_add_card_filter_not _
+  have h1 : (s.filter fun x => hX.IsCusp x).card ≤ c :=
+    hcusp _ fun x hx => (Finset.mem_filter.mp hx).2
+  have hex : ∀ x ∈ s.filter fun x => ¬ hX.IsCusp x,
+      ∃ y : RelPoint strY (𝟙 SpecQ), sectionAlong jY hX.comm y = x := fun x hx =>
+    not_not.mp (Finset.mem_filter.mp hx).2
+  choose g hg using hex
+  have himg : ((s.filter fun x => ¬ hX.IsCusp x).attach.image fun x => g x.1 x.2).card
+      = (s.filter fun x => ¬ hX.IsCusp x).card := by
+    rw [Finset.card_image_of_injOn, Finset.card_attach]
+    intro a _ b _ hab
+    have h := congrArg (sectionAlong jY hX.comm) hab
+    rw [hg a.1 a.2, hg b.1 b.2] at h
+    exact Subtype.ext h
+  have h2 : (s.filter fun x => ¬ hX.IsCusp x).card ≤ k := himg ▸ hy0 _
+  omega
+
+/-- **`#Y_0(37)(ℚ) ≤ 2`** (sorry leaf, introduced 2026-07-27; the affine
+half at `p = 37`, and the level that does NOT share an argument with the
+other three).
+
+TRUE, and sharp: `Y_0(37)(ℚ)` has exactly two points, of `j`-invariants
+`−7·11³ = −9317` and `−7·137³·2083³ = −162677523113838677`
+(Mazur–Swinnerton-Dyer, *Arithmetic of Weil curves*, Invent. Math. 25
+(1974), §5; Mazur–Vélu, *Courbes de Weil de conducteur 37*).  Both values
+were re-verified in the reconnaissance block above.
+
+**Why `37` is separated from `43, 67, 163`.**  Neither point is CM.  The
+class-number argument that closes the other three levels — every
+non-cuspidal rational point is CM by the maximal order of discriminant
+`−p`, and `h(−p) = 1` — therefore has nothing to say here, and the
+classical source is a different paper.  `X_0(37)` has genus `2` and
+`J_0(37)` has rank `1`.
+
+`_hc` is unused by the (absent) proof and is LOAD-BEARING in the
+statement: without it `strY` is an arbitrary `ℚ`-scheme and the leaf is
+wildly false.  `IsCoarseModuliY0 37 strY` — rather than the
+compactification — is what pins `Y` as `Y_0(37)`, and it is deliberately
+the weakest pinning that does so: this leaf is about the AFFINE curve and
+mentions no cusps, no compactification and no `j`-map.
+
+**AXES SEARCHED for the four levels together, inherited verbatim from the
+atom this leaf was cut out of, and all three still refuted:**
+
+1. *The rank-`0` counting layer of `X0.lean`* — inapplicable, and its
+   `HasRankZeroJacobian` hypothesis is FALSE here, not merely unavailable
+   (ranks `1, 1, 2, 6`, recomputed in the reconnaissance block above).
+   The check that would refute it: `ellrank`/`RankBound` returning `0` for
+   any of the four Jacobians.
+2. *The effective-Chabauty criterion* — REFUTED WITH NUMBERS in the block
+   above, and that is the reason to read it before working here:
+   Coleman's `#X(𝔽_ℓ) + 2g − 2` gives `10, 15, 19, 64` against
+   `4, 3, 3, 3`, and even `#X(𝔽_ℓ) + 2r` gives `10, 8, 10, 20`.  Writing
+   that criterion as a general interface would be correct mathematics that
+   discharges NOTHING here.
+3. *A rank-`0` isogeny factor or Atkin–Lehner quotient of `J_0(p)`
+   receiving `X_0(p)(ℚ)` injectively* — fails at `37`, which is the level
+   where it looks most promising: `J_0(37) ~ 37a × 37b` with `37b` of rank
+   `0`, but `#37b(ℚ) = 3 < 4 = #X_0(37)(ℚ)`, so no injection exists; and
+   the quotient `X_0(37)/w_37` has genus `1` with Jacobian the `w`-invariant
+   factor `37a`, of rank `1`, hence infinitely many rational points.
+
+Note that the cusp/affine split SHARPENS objection 3 rather than escaping
+it: this leaf now asks only for `#Y_0(37)(ℚ) ≤ 2` against `#37b(ℚ) = 3`,
+so a rank-`0` quotient receiving the AFFINE points injectively is no
+longer refuted on cardinality alone.  **That is the check worth running
+first**, and it is the one axis the split reopens: does
+`Y_0(37)(ℚ) → 37b(ℚ)` separate the two non-cuspidal points?  If it does,
+this leaf closes by the existing `neronReduction_injective` route with no
+formal-immersion theory at all.
+
+AXIS NOT SEARCHED, and the fallback if that check fails: **Mazur's
+formal-immersion criterion** at the cusp `∞` in characteristic `ℓ ≠ 2`
+(*Rational isogenies of prime degree*, Invent. Math. 44 (1978), §4).
+`X0.lean` names the same missing objects in the docstring of
+`Fermat.exists_cuspidalReduction_of_padicValRat_neg`. -/
+theorem card_y0Le_thirtySeven {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (_hc : IsCoarseModuliY0 37 strY)
+    (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 2 :=
+  sorry
+
+/-- **`#Y_0(p)(ℚ) ≤ 1` at `p = 43, 67, 163`** (sorry leaf, introduced
+2026-07-27; the affine half at the three class-number-one levels, and
+uniform across them).
+
+TRUE, and sharp: each of `Y_0(43)`, `Y_0(67)`, `Y_0(163)` has exactly one
+rational point, of `j`-invariant `−884736000`, `−147197952000` and
+`−262537412640768000` respectively — the roots of the LINEAR Hilbert class
+polynomials `polclass(−43)`, `polclass(−67)`, `polclass(−163)`, each
+re-verified in the reconnaissance block above.
+
+**The uniform argument, and why these three go together.**  Mazur's
+isogeny theorem (*Rational isogenies of prime degree*, Invent. Math. 44
+(1978), Theorem 1 and the table following it) determines `Y_0(p)(ℚ)` at
+every prime; at `p = 43, 67, 163` — and, among the higher-genus levels,
+ONLY at these three — every rational point is a CM point for the maximal
+order of discriminant `−p`.  Since `p ≡ 3 mod 4` and `h(−43) = h(−67) =
+h(−163) = 1`, that order has a single class, so there is exactly one such
+`j`-invariant and hence at most one such point.  The class-number-one
+input is the same one the sibling `classNumberOneJTable` records, and it
+is the reason the bound is `1` rather than `h(−p)`.
+
+`37` is excluded because its two rational points are NOT CM — see
+`card_y0Le_thirtySeven`, which carries the four-level axis audit.
+
+`_hp` and `_hc` are both LOAD-BEARING in the statement.  Without `_hp` the
+leaf claims `#Y_0(N)(ℚ) ≤ 1` at every level, which is false at `N = 1`
+(where `Y_0(1)` is the `j`-line and has infinitely many rational points)
+and at `N = 37`.  Without `_hc`, `strY` is an arbitrary `ℚ`-scheme.  As
+with the sibling, `IsCoarseModuliY0` rather than `IsX0Compactification` is
+the pinning, because this leaf is about the affine curve and mentions no
+cusps.
+
+**The route a successor should take, and the check that would refute it.**
+The CM half is the hard half and it is Mazur's theorem; the class-number
+half is finite computation.  So the cut worth making next is
+`Y_0(p)(ℚ) → (the point is CM by disc −p)` as one leaf and
+`h(−p) = 1 → at most one such point` as another.  Refuted if some rational
+point of `Y_0(p)` for `p` in this list is non-CM — which is exactly what
+happens at `37`, so the check is not vacuous and the list may not be
+widened. -/
+theorem card_y0Le_classNumberOne (p : ℕ) (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (_hc : IsCoarseModuliY0 p strY)
+    (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 1 :=
+  sorry
+
+/-- **`#X_0(p)(ℚ) ≤ m` at the four higher-genus isogeny primes** (PROVEN
+2026-07-27 by the cusp/affine split, over
+`card_le_numRationalCusps_of_isCusp`, `card_le_of_cuspBound_of_y0Bound`,
+`card_y0Le_thirtySeven` and `card_y0Le_classNumberOne`).
 
 TRUE, and sharp: `#X_0(p)(ℚ)` is exactly `4, 3, 3, 3` at `p = 37, 43, 67,
 163` — the two rational cusps plus the two Mazur–Swinnerton-Dyer points at
@@ -20097,45 +20348,39 @@ This is the exact analogue of the conclusion of
 deliberately mentions NO `j`-map, NO table and NO moduli interpretation:
 it is a bare statement about the rational points of a curve, which is the
 shape Chabauty–Coleman, the Eisenstein ideal and a Mordell–Weil sieve all
-consume.  `_hX` is unused by the (absent) proof but is LOAD-BEARING in the
-statement — without it `strX` is an arbitrary `ℚ`-scheme and the leaf is
-wildly false; `IsX0Compactification` is what pins it as `X_0(p)`.
+consume.
 
-**IRREDUCIBLE at this pin, and the AXES SEARCHED are three, not one:**
+`_h` and `_hX` lost their underscores when this became a theorem: both are
+now genuinely consumed.  `_h` is case-split to supply the level and the
+count, and `hX` supplies `hX.coarse` to the affine leaves and the cusp
+structure to the splitting.  `hX` was already LOAD-BEARING in the
+statement — without it `strX` is an arbitrary `ℚ`-scheme and the claim is
+wildly false.
 
-1. *The rank-`0` counting layer of `X0.lean`* — inapplicable, and its
-   `HasRankZeroJacobian` hypothesis is FALSE here, not merely unavailable
-   (ranks `1, 1, 2, 6`, recomputed in the reconnaissance block above).
-   The check that would refute it: `ellrank`/`RankBound` returning `0` for
-   any of the four Jacobians.
-2. *The effective-Chabauty criterion* — this axis is REFUTED WITH NUMBERS
-   in the block above, and that is the reason to read it before working
-   here: Coleman's `#X(𝔽_ℓ) + 2g − 2` gives `10, 15, 19, 64` against
-   `4, 3, 3, 3`, and even `#X(𝔽_ℓ) + 2r` gives `10, 8, 10, 20`.  Writing
-   that criterion as a general interface would be correct mathematics that
-   discharges NOTHING here.
-3. *A rank-`0` isogeny factor or Atkin–Lehner quotient of `J_0(p)`,
-   receiving `X_0(p)(ℚ)` injectively* — fails at `37`, which is the level
-   where it looks most promising: `J_0(37) ~ 37a × 37b` with `37b` of rank
-   `0`, but `#37b(ℚ) = 3 < 4 = #X_0(37)(ℚ)`, so no injection exists; and
-   the quotient `X_0(37)/w_37` has genus `1` with Jacobian the `w`-invariant
-   factor `37a`, of rank `1`, hence infinitely many rational points.
-
-AXIS NOT SEARCHED, and the one a successor should take: **Mazur's
-Eisenstein ideal** (*Rational isogenies of prime degree*, Invent. Math. 44
-(1978), and *Modular curves and the Eisenstein ideal*, IHES 47) — the
-rank-`0` Eisenstein quotient `J_e(p)` together with the formal-immersion
-criterion at the cusp `∞` in characteristic `ℓ ≠ 2`.  `X0.lean` already
-names both as its two missing objects, in the docstring of
-`Fermat.exists_cuspidalReduction_of_padicValRat_neg`, so this leaf and
-that one are blocked on the SAME two objects and a successor should build
-them once.  At `37` the classical source is instead Mazur–Swinnerton-Dyer,
-*Arithmetic of Weil curves*, Invent. Math. 25 (1974), §5. -/
-theorem card_le_of_isogenyPrimeHigherGenus (p m : ℕ) (_h : (p, m) ∈ higherGenusCountTable)
+**Where the content went.**  All four levels' arithmetic is now in the two
+affine leaves, and `numRationalCusps p = 2` is discharged by `decide` at
+each level, so the `2 + k` arithmetic is mechanical.  The subsection
+docstring above records why the affine half is two leaves rather than one,
+and `card_y0Le_thirtySeven` carries the audit of the three refuted axes
+inherited from the atom this was cut out of. -/
+theorem card_le_of_isogenyPrimeHigherGenus (p m : ℕ) (h : (p, m) ∈ higherGenusCountTable)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification p strX strY jY)
-    (s : Finset (RelPoint strX (𝟙 SpecQ))) : s.card ≤ m :=
-  sorry
+    (hX : IsX0Compactification p strX strY jY)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) : s.card ≤ m := by
+  classical
+  have key : ∀ k : ℕ, p ≠ 0 → numRationalCusps p = 2 → m = 2 + k →
+      (∀ t : Finset (RelPoint strY (𝟙 SpecQ)), t.card ≤ k) → s.card ≤ m := by
+    intro k hp0 hc hm hy0
+    subst hm
+    exact card_le_of_cuspBound_of_y0Bound hX
+      (fun s hs => hc ▸ card_le_numRationalCusps_of_isCusp hp0 hX s hs) hy0 s
+  simp only [higherGenusCountTable, List.mem_cons, List.not_mem_nil, or_false,
+    Prod.mk.injEq] at h
+  rcases h with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · exact key 2 (by decide) (by decide) rfl (card_y0Le_thirtySeven hX.coarse)
+  · exact key 1 (by decide) (by decide) rfl (card_y0Le_classNumberOne 43 (by decide) hX.coarse)
+  · exact key 1 (by decide) (by decide) rfl (card_y0Le_classNumberOne 67 (by decide) hX.coarse)
+  · exact key 1 (by decide) (by decide) rfl (card_y0Le_classNumberOne 163 (by decide) hX.coarse)
 
 /-- **The rational points of `X_0(37)` with their `j`-invariants** (sorry
 leaf, introduced 2026-07-27; the CONSTRUCTIVE half at `p = 37`).
