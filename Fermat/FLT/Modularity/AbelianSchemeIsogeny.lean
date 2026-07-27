@@ -2626,6 +2626,84 @@ theorem locallyQuasiFinite_of_formallyUnramified {X Y : Scheme.{u}} (u : X ⟶ Y
 of `finite_preimage_mulByNat_of_field_prime_to_char`, and the only thing
 in that half of the old cube leaf that mathlib does not already have).
 
+**FALSITY AUDIT (2026-07-27): THIS LEAF IS FALSE AS STATED, AND SO IS ITS
+CONSUMER `eq_zero_of_nsmul_eq_zero_of_squareZero`.  DO NOT ATTEMPT A PROOF
+BEFORE THE STATEMENT IS REPAIRED.**  The defect is an INSTANCE DIAMOND in
+the binder `(K : CommRingCat.{u}) [Field K]`, and it is invisible to every
+reader because the two halves of the statement never meet in any of the
+already-proven declarations of this cluster — this leaf is the first place
+that needs to bridge them.
+
+*The two structures.*  `set_option pp.explicit` on this very declaration
+shows the conclusion's scalars are
+
+    @Module ↑K _ (DivisionSemiring.toSemiring (Semifield.toDivisionSemiring
+                    (Field.toSemifield ↑K inst)))
+
+i.e. they come from the `[Field ↑K]` BINDER, while `Spec K` — and hence
+`fK`, `ab`, `q`, and all the geometry — uses `K`'s OWN ring structure
+`K.commRing`.  Nothing in the statement forces `Field.toCommRing` and
+`K.commRing` to agree, and Lean cannot bridge them: mathlib's
+`instance {K} [Field K] : Unique (Spec (.of K))` fails to apply to
+`Spec K` here for exactly this reason (checked: `Subsingleton ↥(Spec K)`
+is not synthesizable, and `Subsingleton (PrimeSpectrum ↑K)` is not even
+kernel-defeq to it, the mismatch being
+`Field.toSemifield.toCommSemiring` against `CommRing.toCommSemiring`).
+Note `CommRingCat.of ↑K = K` is `rfl` and therefore pins NOTHING — the
+`CommRing` search picks `K.commRing`, the `Semiring`/`CommSemiring` search
+picks the `Field` path.  A pin written that way is vacuous.
+
+*The counterexample.*  Let `↑K = 𝔽_p[t]` (`p > 3`) with `K.commRing` its
+usual ring structure, and let the `[Field ↑K]` instance be a field
+structure TRANSPORTED FROM `ℚ` along any bijection of the two countably
+infinite underlying sets.  Take `X = E₀ ×_{𝔽_p} 𝔽_p[t]` for `E₀` an
+elliptic curve over `𝔽_p` with good reduction, so `fK` is a genuine
+abelian scheme (proper, smooth, geometrically connected fibres).  Take
+`R = 𝔽_p[t][ε]/(ε²)`, `R₀ = 𝔽_p[t]`, `φ` the reduction; `φ` is surjective
+and `ker φ = (ε)` satisfies `ker φ ^ 2 = ⊥`.  Then
+
+    ab.infKernel (Spec.map φ) rfl  ≅  Lie(E₀) ⊗ (ε)  ≅  𝔽_p[t] ≠ 0,
+
+which is killed by `p`.  But the conclusion demands a module over the
+`[Field ↑K]` structure, which is `ℚ` — and a `ℚ`-vector space is
+torsion-free, so a nonzero `p`-torsion group admits no `ℚ`-module
+structure.  Conclusion FALSE.
+
+*The same counterexample refutes the consumer.*  In it,
+`eq_zero_of_nsmul_eq_zero_of_squareZero` at `n = p` has
+`(p : ↑K) = (p : ℚ) ≠ 0` and `p • d = 0` for every `d`, yet `d ≠ 0` for
+`d` a nonzero element of the kernel.  That declaration is marked PROVEN
+only because it rests on this false leaf; the six-line module argument in
+it is correct, and it is the LEAF that is wrong.
+
+*The repair, and it is a CUT-LEVEL repair, not a leaf-level one.*  Pin the
+field structure by taking the base field UNBUNDLED, exactly as
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field`
+(`Fermat/FLT/Modularity/KhareWintenberger.lean:4113`) already does in this
+project for the same reason:
+
+    {K : Type u} [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
+
+Then `Spec (.of K)`'s ring structure IS `Field.toCommRing`, mathlib's
+`Unique (Spec (.of K))` applies, and the scalars of the conclusion are the
+scalars of the geometry.  The change must be threaded through the five
+statements of this cluster — this leaf,
+`eq_zero_of_nsmul_eq_zero_of_squareZero`, `formallyUnramified_mulByNat`,
+`finite_preimage_mulByNat_of_field_prime_to_char` and
+`finite_preimage_mulByNat_of_field` — and it TERMINATES: the top consumer
+`finite_preimage_mulByNat` instantiates `K := S.residueField (f a)`, and
+`Scheme.residueField` is *defined* as
+`CommRingCat.of (IsLocalRing.ResidueField _)`
+(`Mathlib/AlgebraicGeometry/ResidueField.lean:45`), so the new form is
+discharged there by `rfl`.  No proof body needs to change; only the five
+binders.  `finite_preimage_mulByNat_of_field_char` is NOT in the chain and
+needs no edit.
+
+*The check that would refute this audit*: `pp.explicit` on this
+declaration showing the `Module` instance built from `K.commRing` rather
+than from `Field.toSemifield`, or `Subsingleton ↥(Spec K)` becoming
+synthesizable from `[Field ↑K]` alone.
+
 *The infinitesimal kernel of an abelian scheme is a `K`-VECTOR SPACE.*
 Concretely: `Spec R₀ ⟶ Spec R` is a square-zero thickening (`φ`
 surjective, `ker φ ^ 2 = ⊥`), and `ab.infKernel (Spec.map φ) rfl` is the
@@ -2696,6 +2774,62 @@ has become cheap.  Be warned that the module AXIOMS are not free once
 patching exists — additivity in `c` and `(c c') • d = c • (c' • d)` each
 need a further patching diagram and the group law — so "prove Milnor
 patching" is a necessary but not sufficient plan.
+
+**ROUTE CORRECTION (2026-07-27).  BOTH HALVES OF THE PARAGRAPH ABOVE ARE
+WRONG, AND THE ROUTE IS MUCH CHEAPER THAN IT RECORDS.  This assumes the
+FALSITY AUDIT's repair has been applied, since step 1 is exactly what the
+unpinned `[Field K]` blocks.**
+
+*1. Milnor patching FOR SCHEMES is not needed — the problem is
+AFFINE-LOCAL.*  Once the field structure is pinned, `Spec K` is a ONE-POINT
+space, so the unit section `e := (ab.zero (𝟙 (Spec K))).1` has a single
+point `x₀` in its image.  Every `d` in the infinitesimal kernel satisfies
+`Spec.map φ ≫ d.1 = (Spec.map φ ≫ q) ≫ e` (that is `pre_zero` plus
+`d ∈ ker`), and `Spec.map φ` is SURJECTIVE on points because `ker φ ^ 2 = ⊥`
+puts `ker φ` inside every prime.  Hence the underlying map of `d.1` is
+CONSTANT at `x₀` — for *every* `d` at once.  Choosing an affine open
+`U ∋ x₀` (`exists_isAffineOpen_mem_and_subset`), every kernel point factors
+through `U` (`IsOpenImmersion.lift`), so with `B := Γ(X, U)` the whole leaf
+becomes a statement about RING HOMOMORPHISMS `B ⟶ R`.  Patching is then the
+universal property of a fibre product of RINGS — `Hom(B, R ×_{R₀} R) =
+Hom(B,R) ×_{Hom(B,R₀)} Hom(B,R)` — and needs no Ferrand pushout, no
+scheme-level Milnor patching, and nothing absent from the pin.
+
+These five steps are Lean-verified (worktree `flt-lean-164`, 2026-07-27,
+against this pin; they compile with `Subsingleton ↥(Spec K)` supplied as an
+argument, which is precisely what the repair makes free):
+`(ab.zero g).1 = g ≫ (ab.zero (𝟙 S)).1` from `pre_zero` and
+`Category.comp_id`; `ker φ ≤ p.asIdeal` from `Ideal.pow_mem_pow` and
+`p.isPrime.mem_of_pow_mem`; surjectivity of `(Spec.map φ).base` from
+`range_comap_of_surjective` (ROOT namespace, not `PrimeSpectrum`);
+constancy of `⇑d.1`; and the affine open.
+
+*2. The group-law crux DISSOLVES — patching plus naturality is
+sufficient, and no differentials are needed.*  Write `Δ(x) := ψ_x − ψ_e`
+for the ring hom attached to `x`.  The one hard-looking point is that the
+ABELIAN SCHEME's group law agrees with addition of the `Δ`'s, which is
+classically proven from `m : A ×_S A ⟶ A` by a Taylor expansion.  It is not
+needed.  Put `J := R ×_{R₀} R ×_{R₀} R` with projections `pr₁ pr₂ pr₃`, and
+note `σ (a,b,c) := b + c − a` is a RING HOM `J ⟶ R` (multiplicativity is
+`(b−a)(b'−a') = 0` from `I ^ 2 = ⊥`, the same computation as for `α_c`).
+Affine patching gives points `patch(0,x,0)`, `patch(0,0,y)`,
+`patch(0,x,y)` of `A` over `Spec J`, and patching is INJECTIVE on
+restrictions.  Now `ab.pre_add` along each `pr_i` gives
+
+    pr₁*(patch(0,x,0) + patch(0,0,y)) = 0 + 0 = 0
+    pr₂*(…) = x + 0 = x        pr₃*(…) = 0 + y = y
+
+so by injectivity `patch(0,x,0) + patch(0,0,y) = patch(0,x,y)`.  Applying
+`σ*` and `ab.pre_add` once more, and using `σ*(patch(0,x,0)) = x`,
+`σ*(patch(0,0,y)) = y`, `σ*(patch(0,x,y)) = ψ_x + ψ_y − ψ_e`, yields
+`Δ(x + y) = Δ(x) + Δ(y)` — from the structure's own naturality axioms
+alone.  With `Δ` injective (affineness) the remaining module axioms are
+then bookkeeping on functions `B → I`: `add_smul` is
+`Δ((c + c') • d) = (c + c')Δ(d) = Δ(c • d) + Δ(c' • d)`, and `mul_smul`,
+`one_smul`, `zero_smul`, `smul_zero`, `smul_add` likewise.  So the
+"necessary but not sufficient" warning above is retired: for THIS leaf
+patching is sufficient, and the missing theory is not Milnor patching but
+only the affine bookkeeping.
 
 **A GENERALISATION THAT IS ALSO TRUE**, recorded so a prover is not misled
 into thinking the field is essential: the kernel is a module over `R₀`
