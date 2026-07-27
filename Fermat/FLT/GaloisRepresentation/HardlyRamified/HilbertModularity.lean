@@ -7000,6 +7000,84 @@ lemma natCast_eq_zero_of_finite_algebra (ℓ : ℕ) [Fact ℓ.Prime]
     rw [hzero] at hu
     exact not_isUnit_zero hu
 
+/-- **Existence of Teichmüller roots** (PROVEN, Hensel; local copy of
+`Deformation.lean`'s `exists_mem_teichmullerRoots_map_eq`, which lives
+DOWNSTREAM of this module): every element of a FINITE residue field `k` of
+characteristic `ℓ` is the residue of a Teichmüller root of a complete local
+ring `R` surjecting onto `k`.
+
+Apply Hensel's lemma to the monic `X ^ ℓ ^ n − X` where `ℓ ^ n = |k|`: it
+kills every element of `k` (`FiniteField.pow_card`), and its derivative
+`ℓ ^ n · X ^ (ℓ ^ n − 1) − 1` reduces to `−1`, a unit, because `k` has
+characteristic `ℓ`.
+
+This is what makes the residue field of Carayol's trace subring equal to
+`k` on the nose once the Teichmüller roots are among its generators, and it
+is the reason the target below carries `[Finite k]`; see the faithfulness
+note above. -/
+lemma exists_mem_teichmullerRootSet_map_eq {ℓ : ℕ} [Fact ℓ.Prime]
+    {R : Type u} [CommRing R] [IsLocalRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {k : Type u} [Field k] [Finite k] (hlk : ((ℓ : ℕ) : k) = 0)
+    (π : R →+* k) (hπ : Function.Surjective π) (a : k) :
+    ∃ x ∈ teichmullerRootSet ℓ R, π x = a := by
+  classical
+  haveI : Fintype k := Fintype.ofFinite k
+  haveI hchar : CharP k ℓ := by
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hdvd : ringChar k ∣ ℓ := (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp hlk
+    have heq : ringChar k = ℓ :=
+      (Nat.prime_dvd_prime_iff_eq hp (Fact.out : ℓ.Prime)).mp hdvd
+    exact heq ▸ ringChar.charP k
+  obtain ⟨n, -, hcard⟩ := FiniteField.card k ℓ
+  set M : ℕ := ℓ ^ (n : ℕ) with hM
+  have hMcard : Fintype.card k = M := hcard
+  have hpow : ∀ b : k, b ^ M = b := fun b => by
+    rw [← hMcard]; exact FiniteField.pow_card b
+  have hM2 : 1 < M := by
+    rw [hM]; exact Nat.one_lt_pow n.2.ne' (Fact.out : ℓ.Prime).one_lt
+  haveI : HenselianLocalRing R := by
+    constructor
+    intro f hf a₀ h₁ h₂
+    exact HenselianRing.is_henselian (I := IsLocalRing.maximalIdeal R) f hf a₀ h₁
+      (h₂.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)))
+  have hmono : (Polynomial.X ^ M - Polynomial.X : Polynomial R).Monic := by
+    refine (Polynomial.monic_X_pow M).sub_of_left ?_
+    rw [Polynomial.degree_X_pow, Polynomial.degree_X]
+    exact_mod_cast hM2
+  have hMz : ((M : ℕ) : k) = 0 := by
+    rw [hM, Nat.cast_pow, CharP.cast_eq_zero k ℓ]
+    exact zero_pow n.2.ne'
+  obtain ⟨a₀, ha₀⟩ := hπ a
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hπ
+  have hev : (Polynomial.X ^ M - Polynomial.X : Polynomial R).eval a₀
+      ∈ IsLocalRing.maximalIdeal R := by
+    rw [← hker, RingHom.mem_ker, Polynomial.eval_sub, Polynomial.eval_pow,
+      Polynomial.eval_X, map_sub, map_pow, ha₀, hpow a, sub_self]
+  have hder : IsUnit ((Polynomial.X ^ M - Polynomial.X :
+      Polynomial R).derivative.eval a₀) := by
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    rw [← hker, RingHom.mem_ker, Polynomial.derivative_sub,
+      Polynomial.derivative_X_pow, Polynomial.derivative_X, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow,
+      Polynomial.eval_X, Polynomial.eval_one, map_sub, map_mul, map_pow,
+      map_natCast, map_one, hMz, zero_mul, zero_sub]
+    exact fun hcontra => one_ne_zero (neg_eq_zero.mp hcontra)
+  obtain ⟨x, hroot, hsub⟩ :=
+    HenselianLocalRing.is_henselian (Polynomial.X ^ M - Polynomial.X) hmono a₀
+      hev hder
+  refine ⟨x, ⟨(n : ℕ), n.2, ?_⟩, ?_⟩
+  · rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_pow,
+      Polynomial.eval_X] at hroot
+    rw [← hM]
+    exact sub_eq_zero.mp hroot
+  · have hmem : x - a₀ ∈ RingHom.ker π := hker ▸ hsub
+    rw [RingHom.mem_ker, map_sub, sub_eq_zero] at hmem
+    rw [hmem, ha₀]
+
 /-- An adically-topologized, adically-separated ring is Hausdorff: `{0}`
 is the intersection of the open (hence closed) subgroups `I ^ n`. Local
 copy of `Deformation.lean`'s `t2Space_of_isAdic`. -/
@@ -7084,6 +7162,276 @@ lemma continuous_of_isOpen_ker_of_discreteTopology {R S : Type*} [CommRing R]
     rw [hempty]
     exact isOpen_empty
 
+/-! #### Teichmüller closure properties, and the multiplicative section
+
+Added 2026-07-27 for `hilbertFrameLevels_classification` below, which needs
+a multiplicative set-theoretic section of `πA` on Teichmüller roots exactly
+as the `ℚ`-level `frameLevels_classification` does.
+
+**AUDIT CORRECTION.** The `CUT AUDIT` on that leaf records that "the
+hoisted `teichmullerRootSet` block above already supplies its inputs". That
+is half right: the block supplied UNIQUENESS
+(`eq_of_mem_teichmullerRootSet`) but NOT EXISTENCE — the Hensel lemma
+`exists_mem_teichmullerRootSet_map_eq` was still sited at its old home ~3400
+lines BELOW the frame-ring section, where the section cannot see it. It has
+now been hoisted into the block too (verified line-for-line as a pure
+relocation, exactly as the earlier hoist was), together with the three
+closure lemmas below, which the `ℚ` level gets from `teichmullerRoots`
+being closed under multiplication and containing `0` and `1`. -/
+
+/-- `1` is a Teichmüller root (`1 ^ ℓ ^ 1 = 1`). -/
+lemma one_mem_teichmullerRootSet {ℓ : ℕ} {R : Type*} [CommRing R] :
+    (1 : R) ∈ teichmullerRootSet ℓ R :=
+  ⟨1, Nat.one_pos, one_pow _⟩
+
+/-- `0` is a Teichmüller root (`0 ^ ℓ = 0`, using `ℓ ≠ 0`). -/
+lemma zero_mem_teichmullerRootSet {ℓ : ℕ} [Fact ℓ.Prime] {R : Type*} [CommRing R] :
+    (0 : R) ∈ teichmullerRootSet ℓ R :=
+  ⟨1, Nat.one_pos, by
+    rw [pow_one]
+    exact zero_pow (Fact.out : ℓ.Prime).pos.ne'⟩
+
+/-- Teichmüller roots are closed under multiplication: if `x` is fixed by
+the `ℓ ^ n`-power map and `y` by the `ℓ ^ m`-power map, both are fixed by
+the `ℓ ^ (n * m)`-power map (`pow_pow_mul_of_pow_pow_eq`), hence so is
+`x * y`. -/
+lemma mul_mem_teichmullerRootSet {ℓ : ℕ} {R : Type*} [CommRing R] {x y : R}
+    (hx : x ∈ teichmullerRootSet ℓ R) (hy : y ∈ teichmullerRootSet ℓ R) :
+    x * y ∈ teichmullerRootSet ℓ R := by
+  obtain ⟨n, hn, hxe⟩ := hx
+  obtain ⟨m, hm, hye⟩ := hy
+  refine ⟨n * m, Nat.mul_pos hn hm, ?_⟩
+  have h1 : x ^ ℓ ^ (n * m) = x := pow_pow_mul_of_pow_pow_eq hxe m
+  have h2 : y ^ ℓ ^ (n * m) = y := by
+    have h := pow_pow_mul_of_pow_pow_eq hye n
+    rwa [Nat.mul_comm m n] at h
+  rw [mul_pow, h1, h2]
+
+/-- **A MULTIPLICATIVE TEICHMÜLLER SECTION OF `πA`** (PROVEN 2026-07-27;
+item 2 of the `CUT AUDIT` decomposition on
+`hilbertFrameLevels_classification`, and the `F`-level twin of
+`Deformation.lean`'s `exists_teichmuller_section`).
+
+Every element of `k` has a Teichmüller root above it
+(`exists_mem_teichmullerRootSet_map_eq`, Hensel), and a Teichmüller root of
+a local ring in which `ℓ` is a nonunit is pinned by its residue
+(`eq_of_mem_teichmullerRootSet`). So the chosen lifts are FORCED, and the
+multiplicativity identities `t x * t y = t (x * y)`, `t 0 = 0`, `t 1 = 1`
+are all instances of that uniqueness: both sides of each are Teichmüller
+roots with the same residue.
+
+Surjectivity of `πA` is genuinely needed — it is what makes a Teichmüller
+root exist above EVERY element of `k`. -/
+lemma exists_hilbertTeichmullerSection (ℓ : ℕ) [Fact ℓ.Prime]
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    {A : Type u} [CommRing A] [IsLocalRing A] [Finite A]
+    (πA : A →+* k) (hπ : Function.Surjective πA) :
+    ∃ t : k → A, (∀ x, t x ∈ teichmullerRootSet ℓ A) ∧ (∀ x, πA (t x) = x) ∧
+      (∀ x y : k, t x * t y = t (x * y)) ∧ t 0 = 0 ∧ t 1 = 1 := by
+  classical
+  haveI : IsArtinianRing A := inferInstance
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal A) A := inferInstance
+  have hlk : ((ℓ : ℕ) : k) = 0 := natCast_eq_zero_of_finite_algebra ℓ k
+  have hlA : ((ℓ : ℕ) : A) ∈ IsLocalRing.maximalIdeal A :=
+    natCast_mem_maximalIdeal_of_surjective πA hπ hlk
+  have hker : RingHom.ker πA = IsLocalRing.maximalIdeal A :=
+    IsLocalRing.ker_eq_maximalIdeal πA hπ
+  choose t htroot htres using fun x : k =>
+    exists_mem_teichmullerRootSet_map_eq (ℓ := ℓ) hlk πA hπ x
+  have key : ∀ a b : A, a ∈ teichmullerRootSet ℓ A → b ∈ teichmullerRootSet ℓ A →
+      πA a = πA b → a = b := by
+    intro a b ha hb hab
+    refine eq_of_mem_teichmullerRootSet hlA ha hb ?_
+    rw [← hker, RingHom.mem_ker, map_sub, hab, sub_self]
+  refine ⟨t, htroot, htres, ?_, ?_, ?_⟩
+  · intro x y
+    refine key _ _ (mul_mem_teichmullerRootSet (htroot x) (htroot y)) (htroot (x * y)) ?_
+    rw [map_mul, htres, htres, htres]
+  · exact key _ _ (htroot 0) zero_mem_teichmullerRootSet (by rw [htres, map_zero])
+  · exact key _ _ (htroot 1) one_mem_teichmullerRootSet (by rw [htres, map_one])
+
+/-- **A FINITE RING EMBEDDING IN A LOCAL RING IS LOCAL** (PROVEN
+2026-07-27; the `F`-level copy of `Deformation.lean`'s
+`isLocalRing_of_injective_of_finite`, which lives DOWNSTREAM of this module
+and therefore may not be imported — hence the `hilbert` prefix, which keeps
+the two names distinct in the shared `GaloisRepresentation` namespace).
+
+This is what makes the quotient `P ⧸ ker f` of
+`hilbertFrameLevels_classification` a legal level, `P ⧸ ker f` being the
+image subring of `f` inside the test object `A`.
+
+The nonunits of `C` are exactly `ι ⁻¹' 𝔪 A`, hence an ideal: if `ι c ∉ 𝔪 A`
+then `ι c` is a unit, so `x ↦ c * x` is injective on `C` and therefore — `C`
+being FINITE — surjective, which produces an inverse of `c` inside `C`.
+Note that `ι` is NOT assumed surjective; this is a descent statement, and
+finiteness is what replaces the usual faithful flatness. -/
+lemma hilbertIsLocalRing_of_injective_of_finite {C : Type*} [CommRing C] [Finite C]
+    [Nontrivial C] {A : Type*} [CommRing A] [IsLocalRing A] (ι : C →+* A)
+    (hι : Function.Injective ι) : IsLocalRing C := by
+  have hunit : ∀ c : C, ι c ∉ IsLocalRing.maximalIdeal A → IsUnit c := by
+    intro c hc
+    have hu : IsUnit (ι c) := by
+      by_contra hcon
+      exact hc (IsLocalRing.mem_maximalIdeal _ |>.mpr hcon)
+    have hinj : Function.Injective (fun x : C => c * x) := by
+      intro x y hxy
+      refine hι (hu.mul_left_cancel ?_)
+      simpa only [map_mul] using congrArg ι hxy
+    obtain ⟨y, hy⟩ := (Finite.injective_iff_surjective.mp hinj) 1
+    exact isUnit_iff_exists_inv.mpr ⟨y, hy⟩
+  have hnon : ∀ c : C, c ∈ nonunits C → ι c ∈ IsLocalRing.maximalIdeal A := by
+    intro c hc
+    by_contra hcon
+    exact hc (hunit c hcon)
+  refine IsLocalRing.of_nonunits_add fun a b ha hb => ?_
+  intro hcon
+  have h1 : ι (a + b) ∈ IsLocalRing.maximalIdeal A := by
+    rw [map_add]
+    exact Ideal.add_mem _ (hnon a ha) (hnon b hb)
+  exact (IsLocalRing.mem_maximalIdeal _ |>.mp h1) (hcon.map ι)
+
+/-! #### Matrix conjugation, and the `GL₂` lift of the Brauer–Nesbitt
+conjugator
+
+Added 2026-07-27 for `hilbertFrameLevels_classification`. This is the
+"missing step" the `CUT AUDIT` on that leaf identifies: the `F`-level
+statement identifies its test object only by CHARPOLYS, so residual
+rigidity conjugates the reduction of `ρA` onto the framed residual model by
+some `U ∈ GL₂(k)` rather than making them equal, and `ρA` must be replaced
+by a conjugate whose reduction is the residual model ON THE NOSE. That
+needs `U` lifted to `GL₂(A)`, which is `exists_hilbertGLTwoLift_of_surjective`
+below.
+
+Everything here is stated for an arbitrary index type `n` and an arbitrary
+commutative ring, because — per the module's own elaboration rule — keeping
+concrete modules out of these steps is what keeps them cheap. -/
+
+/-- The unit of `Mₙ(R)` attached to a linear automorphism of `n → R`, with
+its inverse supplied by the inverse automorphism (so no `nonsing_inv`
+computation is ever needed). -/
+noncomputable def matUnitOfLinearEquiv {R : Type*} [CommRing R] {n : Type*}
+    [Fintype n] [DecidableEq n] (E : (n → R) ≃ₗ[R] (n → R)) : (Matrix n n R)ˣ where
+  val := LinearMap.toMatrix' (E : (n → R) →ₗ[R] (n → R))
+  inv := LinearMap.toMatrix' (E.symm : (n → R) →ₗ[R] (n → R))
+  val_inv := by
+    rw [← LinearMap.toMatrix'_mul,
+      show ((E : (n → R) →ₗ[R] (n → R)) * (E.symm : (n → R) →ₗ[R] (n → R))) = 1 from by
+        ext x; simp, LinearMap.toMatrix'_one]
+  inv_val := by
+    rw [← LinearMap.toMatrix'_mul,
+      show ((E.symm : (n → R) →ₗ[R] (n → R)) * (E : (n → R) →ₗ[R] (n → R))) = 1 from by
+        ext x; simp, LinearMap.toMatrix'_one]
+
+/-- `toMatrix'` turns `LinearEquiv.conj` into matrix conjugation by
+`matUnitOfLinearEquiv`. -/
+lemma toMatrix'_conj_matUnit {R : Type*} [CommRing R] {n : Type*} [Fintype n]
+    [DecidableEq n] (E : (n → R) ≃ₗ[R] (n → R)) (φ : Module.End R (n → R)) :
+    LinearMap.toMatrix' (E.conj φ) =
+      (matUnitOfLinearEquiv E).val * LinearMap.toMatrix' φ *
+        (matUnitOfLinearEquiv E).val⁻¹ := by
+  have hinv : (matUnitOfLinearEquiv E).val⁻¹ = (matUnitOfLinearEquiv E).inv :=
+    Matrix.inv_eq_right_inv (matUnitOfLinearEquiv E).val_inv
+  rw [hinv]
+  show LinearMap.toMatrix' (E.conj φ) =
+    LinearMap.toMatrix' (E : (n → R) →ₗ[R] (n → R)) * LinearMap.toMatrix' φ *
+      LinearMap.toMatrix' (E.symm : (n → R) →ₗ[R] (n → R))
+  rw [← LinearMap.toMatrix'_mul, ← LinearMap.toMatrix'_mul]
+  congr 1
+
+/-- The linear automorphism of `n → R` attached to a unit of `Mₙ(R)` — the
+inverse construction to `matUnitOfLinearEquiv`. This is what turns the
+lifted conjugator `W ∈ GL₂(A)` back into something `GaloisRep.conj` (and
+hence `isHilbertHardlyRamified_conj`) can be applied to. -/
+noncomputable def linearEquivOfMatrixUnit {R : Type*} [CommRing R] {n : Type*}
+    [Fintype n] [DecidableEq n] (W : (Matrix n n R)ˣ) : (n → R) ≃ₗ[R] (n → R) :=
+  LinearEquiv.ofLinear (Matrix.toLin' W.val) (Matrix.toLin' W.inv)
+    (by rw [← Matrix.toLin'_mul, W.val_inv, Matrix.toLin'_one])
+    (by rw [← Matrix.toLin'_mul, W.inv_val, Matrix.toLin'_one])
+
+/-- `matUnitOfLinearEquiv` and `linearEquivOfMatrixUnit` are mutually
+inverse (the direction this development needs). -/
+@[simp] lemma matUnitOfLinearEquiv_linearEquivOfMatrixUnit {R : Type*} [CommRing R]
+    {n : Type*} [Fintype n] [DecidableEq n] (W : (Matrix n n R)ˣ) :
+    matUnitOfLinearEquiv (linearEquivOfMatrixUnit W) = W := by
+  refine Units.ext ?_
+  show LinearMap.toMatrix' (Matrix.toLin' W.val) = W.val
+  exact LinearMap.toMatrix'_toLin' _
+
+/-- Conjugation by a unit is multiplicative. -/
+lemma matrixConj_mul {A : Type*} [CommRing A] {n : Type*} [Fintype n]
+    [DecidableEq n] (W : (Matrix n n A)ˣ) (X Y : Matrix n n A) :
+    (W.val * (X * Y) * W.val⁻¹) =
+      (W.val * X * W.val⁻¹) * (W.val * Y * W.val⁻¹) := by
+  have hinv : W.val⁻¹ = W.inv := Matrix.inv_eq_right_inv W.val_inv
+  rw [hinv]
+  have h : W.inv * W.val = 1 := W.inv_val
+  calc W.val * (X * Y) * W.inv
+      = W.val * X * (W.inv * W.val) * Y * W.inv := by rw [h]; noncomm_ring
+    _ = W.val * X * W.inv * (W.val * Y * W.inv) := by noncomm_ring
+
+/-- Conjugation by a unit fixes the identity. -/
+lemma matrixConj_one {A : Type*} [CommRing A] {n : Type*} [Fintype n]
+    [DecidableEq n] (W : (Matrix n n A)ˣ) : (W.val * 1 * W.val⁻¹) = 1 := by
+  have hinv : W.val⁻¹ = W.inv := Matrix.inv_eq_right_inv W.val_inv
+  rw [hinv, mul_one]
+  exact W.val_inv
+
+/-- The reduction of the inverse of a lifted unit is the inverse of the
+reduction — proven by cancelling against the reduced unit, so no
+`nonsing_inv` identity over `A` is needed. -/
+lemma map_matrixInv_of_map_eq {A : Type*} [CommRing A] {B : Type*} [CommRing B]
+    {n : Type*} [Fintype n] [DecidableEq n] (π : A →+* B)
+    (W : (Matrix n n A)ˣ) (V : (Matrix n n B)ˣ)
+    (hWV : (W.val).map ⇑π = V.val) : (W.val⁻¹).map ⇑π = V.val⁻¹ := by
+  have hWinv : W.val⁻¹ = W.inv := Matrix.inv_eq_right_inv W.val_inv
+  have hVinv : V.val⁻¹ = V.inv := Matrix.inv_eq_right_inv V.val_inv
+  rw [hWinv, hVinv]
+  have h1 : V.val * (W.inv.map ⇑π) = 1 := by
+    rw [← hWV, ← Matrix.map_mul, W.val_inv, Matrix.map_one _ (map_zero π) (map_one π)]
+  calc W.inv.map ⇑π
+      = (V.inv * V.val) * (W.inv.map ⇑π) := by rw [V.inv_val, one_mul]
+    _ = V.inv * (V.val * (W.inv.map ⇑π)) := by rw [mul_assoc]
+    _ = V.inv := by rw [h1, mul_one]
+
+/-- Reduction of a conjugated matrix along a ring map is the conjugate of
+the reduction. -/
+lemma map_matrixConj {A : Type*} [CommRing A] {B : Type*} [CommRing B]
+    {n : Type*} [Fintype n] [DecidableEq n] (π : A →+* B)
+    (W : (Matrix n n A)ˣ) (V : (Matrix n n B)ˣ) (X : Matrix n n A)
+    (hWV : (W.val).map ⇑π = V.val) :
+    ((W.val * X * W.val⁻¹).map ⇑π) = V.val * (X.map ⇑π) * V.val⁻¹ := by
+  rw [Matrix.map_mul, Matrix.map_mul, hWV, map_matrixInv_of_map_eq π W V hWV]
+
+/-- **AN INVERTIBLE MATRIX OVER THE RESIDUE FIELD LIFTS TO AN INVERTIBLE
+MATRIX OVER THE FINITE LOCAL RING** (PROVEN 2026-07-27; item 1 of the
+`CUT AUDIT` decomposition on `hilbertFrameLevels_classification`).
+
+Pure commutative algebra, no Galois theory: lift the entries along the
+surjection `πA`, and observe that the determinant of the lift reduces to
+`det U`, which is a unit of the field `k`; an element of a LOCAL ring whose
+residue is nonzero lies outside the maximal ideal (`πA` being surjective
+onto a field makes `ker πA = 𝔪`, `IsLocalRing.ker_eq_maximalIdeal`), hence
+is a unit, hence the lifted matrix is invertible
+(`Matrix.isUnit_iff_isUnit_det`). -/
+lemma exists_hilbertGLTwoLift_of_surjective {A : Type*} [CommRing A] [IsLocalRing A]
+    {k : Type*} [Field k] (πA : A →+* k) (hπ : Function.Surjective πA)
+    {n : Type*} [Fintype n] [DecidableEq n]
+    (U : Matrix n n k) (hU : IsUnit U.det) :
+    ∃ W : (Matrix n n A)ˣ, (W : Matrix n n A).map ⇑πA = U := by
+  classical
+  have hker : RingHom.ker πA = IsLocalRing.maximalIdeal A :=
+    IsLocalRing.ker_eq_maximalIdeal πA hπ
+  choose lift hlift using hπ
+  set W₀ : Matrix n n A := Matrix.of fun i j => lift (U i j) with hW₀
+  have hmap : W₀.map ⇑πA = U := by
+    ext i j
+    simp [hW₀, hlift]
+  have hdet : IsUnit W₀.det := by
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    rw [← hker, RingHom.mem_ker, RingHom.map_det, RingHom.mapMatrix_apply, hmap]
+    exact hU.ne_zero
+  exact ⟨(Matrix.isUnit_iff_isUnit_det W₀).mpr hdet |>.unit, by simpa using hmap⟩
+
 section HilbertFrameRing
 
 -- The tautological ring and its evaluation maps are PURE ALGEBRA: they need
@@ -7145,13 +7493,26 @@ omit [Field k] [Algebra ℤ_[ℓ] k] in
     hilbertFramePolyEval ℓ F k N t (MvPolynomial.X (Sum.inr x)) = t x := by
   simp [hilbertFramePolyEval]
 
--- NOTE: the `ℚ`-level `framePolyEval_comp_algebraMap` has deliberately NOT
--- been ported. Its only `ℚ`-level consumer is `frameEv_comp_algebraMap`, and
--- the corresponding clause is ABSENT from this module's level system: `k` is
--- FINITE here, so it receives exactly one ring map from `ℤ_ℓ`
--- (`hilbertRingHom_padicInt_ext_finite`) and the compatibility is automatic.
--- Porting it now would be free-floating code. `hilbertFrameLevels_classification`
--- will need it when it is proven; it is six lines and is re-derived then.
+-- NOTE (superseded 2026-07-27): the `ℚ`-level `framePolyEval_comp_algebraMap`
+-- had deliberately NOT been ported, because its only `ℚ`-level consumer is
+-- `frameEv_comp_algebraMap` and the corresponding clause is ABSENT from this
+-- module's level system (`k` is FINITE here, so it receives exactly one ring
+-- map from `ℤ_ℓ`, `hilbertRingHom_padicInt_ext_finite`, and the compatibility
+-- is automatic). It is now ported, exactly as that note predicted, because
+-- `hilbertFrameLevels_classification` below consumes it — so it is no longer
+-- free-floating.
+
+omit [Field k] in
+/-- **The tautological evaluation is a `ℤ_ℓ`-algebra map** (PROVEN
+2026-07-27; item 3 of the `CUT AUDIT` decomposition on
+`hilbertFrameLevels_classification`, and the `F`-level twin of
+`Deformation.lean`'s `framePolyEval_comp_algebraMap`). -/
+lemma hilbertFramePolyEval_comp_algebraMap {A : Type*} [CommRing A] [Algebra ℤ_[ℓ] A]
+    (N : Γ F → Matrix (Fin 2) (Fin 2) A) (t : k → A) :
+    (hilbertFramePolyEval ℓ F k N t).comp
+        (algebraMap ℤ_[ℓ] (hilbertFramePoly ℓ F k)) = algebraMap ℤ_[ℓ] A := by
+  ext r
+  simp [hilbertFramePolyEval, MvPolynomial.algebraMap_eq]
 
 omit [Algebra ℤ_[ℓ] k] in
 /-- The relations are killed by any multiplicative pair `(N, t)`. -/
@@ -7851,7 +8212,12 @@ theorem hilbertQuotient_inf_isLevel {P : Type u} [CommRing P] [Algebra ℤ_[ℓ]
         rw [hxu]
         exact hv
 
-/-! ### The four leaves of the F-level construction -/
+/-! ### The four leaves of the F-level construction
+
+All four are now PROVEN (three on 2026-07-26, `hilbertFrameLevels_classification`
+on 2026-07-27). The only sorried declaration left in this section is
+`hilbertFrameLevels_repClause_ker`, which the classification leaf was cut
+over. -/
 
 /-- **THE `F`-LEVEL LEVEL FAMILY IS NONEMPTY** (PROVEN 2026-07-26; the
 `F`-level twin of `Deformation.lean`'s PROVEN `frameLevels_nonempty`).
@@ -7959,9 +8325,89 @@ theorem hilbertFrameLevels_directed {ρbar : GaloisRep ℚ k V}
     hglue h1ker h1fin h1loc h1rep h2ker h2fin h2loc h2rep
   exact ⟨J₁ ⊓ J₂, ⟨le_trans inf_le_left h1ker, hfin, hloc, hrep⟩, le_refl _⟩
 
+/-- **THE REPRESENTATION CLAUSE FOR `ker f`** (OPEN — item 5 of the
+`CUT AUDIT` decomposition above, and the only leaf that decomposition leaves
+after the assembly below; the `F`-level twin of `Deformation.lean`'s PROVEN
+`frameLevels_repClause_ker`).
+
+`P ⧸ ker f` is, through `f`, the IMAGE SUBRING of `f` inside the test object
+`A` — a finite local subring carrying every matrix entry of `ρA`. What is
+needed is that the framed representation descends to it and stays hardly
+ramified.
+
+**EXPECTED SUB-LEAF, and it is a task of its own.** The `ℚ`-level proof
+runs: form `C := f.range`, note `C` is finite and local
+(`hilbertIsLocalRing_of_injective_of_finite`, ported above), produce the
+framed representation over `C` from the matrices (the `F`-level twin of
+`exists_framedGaloisRep_of_matrices`), make it hardly ramified by the
+subring descent `isHardlyRamified_of_subring_entries`, and transport it
+along `C ≃ P ⧸ ker f` (`exists_framedGaloisRep_transport`). Item 4 of the
+audit — `isHilbertHardlyRamified_of_subring_entries` — is that descent, and
+it is explicitly NOT a transcription: it is about 340 lines at the `ℚ`
+level, and `IsHilbertHardlyRamified` has different fields from
+`IsHardlyRamified` (determinant through `Field.absoluteGaloisGroup.map`, and
+local conditions indexed by places `w` of `F` rather than by rational
+primes). It is deliberately NOT stated here, because nothing would consume
+it yet and it would be free-floating; whoever proves this leaf should state
+it as part of that work.
+
+`hbase`, `hglue` and `hfin` are threaded in because — exactly as the audit
+records — this is the only place in the cut that can need them: they are
+passed by `hilbertFrameLevels_classification` and used by NOTHING else in
+its assembly. -/
+theorem hilbertFrameLevels_repClause_ker {ρbar : GaloisRep ℚ k V}
+    (e0 : V ≃ₗ[k] (Fin 2 → k))
+    (hbase : IsHilbertBaseChangeClause ℓ F) (hglue : IsHilbertFibreProductClause ℓ F)
+    (hfin : IsHilbertFiniteFramesClause ℓ F)
+    (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
+    (πA : A →+* k) (hπsurj : Function.Surjective πA)
+    (ρA : FramedGaloisRep F A (Fin 2))
+    (hHRA : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA)
+    (f : hilbertFrameRing ℓ F k →+* A)
+    (hres : πA.comp f = hilbertFrameEv ℓ F k ρbar e0)
+    (hmat : ∀ g : Γ F, (hilbertFrameMat ℓ F k g).map ⇑f =
+      LinearMap.toMatrix' (ρA g)) :
+    ∀ [Finite (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)]
+      [IsLocalRing (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)]
+      [TopologicalSpace (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)]
+      [DiscreteTopology (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)]
+      [IsTopologicalRing (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)],
+      ∃ ρJ : FramedGaloisRep F (hilbertFrameRing ℓ F k ⧸ RingHom.ker f) (Fin 2),
+        (∀ g : Γ F, LinearMap.toMatrix' (ρJ g) =
+          (hilbertFrameMat ℓ F k g).map ⇑(Ideal.Quotient.mk (RingHom.ker f))) ∧
+        IsHilbertHardlyRamified ℓ F
+          (rank_finTwoPi (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)) ρJ :=
+  sorry
+
 /-- **CLASSIFICATION: EVERY CHARPOLY-IDENTIFIED FINITE DISCRETE TEST OBJECT
-RECEIVES A MAP FROM `P` KILLING A LEVEL** (OPEN; the three sibling leaves of
-this section were closed 2026-07-26, this one was not).
+RECEIVES A MAP FROM `P` KILLING A LEVEL** (PROVEN 2026-07-27 as an ASSEMBLY
+over ONE new leaf, `hilbertFrameLevels_repClause_ker` above; the three
+sibling leaves of this section were closed 2026-07-26, this one was not).
+
+**HOW IT IS NOW PROVEN.** The `CUT AUDIT` below was written when this leaf
+was opaque and is preserved because its diagnosis was right; items 1, 2 and
+3 of its decomposition are now PROVEN and live above
+(`exists_hilbertGLTwoLift_of_surjective`,
+`exists_hilbertTeichmullerSection`,
+`hilbertFramePolyEval_comp_algebraMap`), and the assembly below is exactly
+the `ℚ`-level proof of `frameLevels_classification` with the conjugation
+lift spliced in, as the audit predicted. Item 5 is the single remaining
+leaf; item 4 is deliberately NOT stated, because nothing would consume it
+yet — see `hilbertFrameLevels_repClause_ker`'s docstring.
+
+**ONE CORRECTION TO THE AUDIT, found while executing it.** Item 2 is
+recorded as needing nothing new because "the hoisted `teichmullerRootSet`
+block above already supplies its inputs". That block supplied UNIQUENESS
+(`eq_of_mem_teichmullerRootSet`) but not EXISTENCE: the Hensel lemma
+`exists_mem_teichmullerRootSet_map_eq` was still sited ~3400 lines BELOW
+this section, where it is invisible. It has now been hoisted into that
+block as well (verified line-for-line as a pure relocation), along with the
+three closure lemmas `one_`/`zero_`/`mul_mem_teichmullerRootSet`, which the
+`ℚ` level gets for free from its own `teichmullerRoots` API. A second port
+was needed for the same reason: `isLocalRing_of_injective_of_finite` lives
+in the DOWNSTREAM `Deformation.lean`, so the level's local-ring clause goes
+through the new `hilbertIsLocalRing_of_injective_of_finite`.
 
 **CUT AUDIT 2026-07-26 — THIS LEAF IS NOT A MECHANICAL PORT, and the
 dispatch that grouped it with its three siblings as one was wrong about
@@ -8054,8 +8500,152 @@ theorem hilbertFrameLevels_classification {ρbar : GaloisRep ℚ k V}
         πA.comp f = hilbertFrameEv ℓ F k ρbar e0 ∧
         (∀ g : Γ F, ((hilbertFrameMat ℓ F k g).map ⇑f).charpoly =
           (LinearMap.toMatrix' (ρA g)).charpoly) ∧
-        ∃ J ∈ hilbertFrameLevels ℓ F k ρbar e0, J ≤ RingHom.ker f :=
-  sorry
+        ∃ J ∈ hilbertFrameLevels ℓ F k ρbar e0, J ≤ RingHom.ker f := by
+  intro A _ _ _ _ _ _ _ πA hπsurj ρA hHRA halg hcpA
+  classical
+  have hπA : Continuous πA := continuous_of_discreteTopology
+  have hrk : Module.rank k V = 2 := rank_eq_two_of_hilbertDeformationDatum 𝒟₀
+  -- STEP 1: reduce `ρA` along `πA` and match charpolys with the residual model.
+  have hcp : ∀ g : Γ F, ((framePushforward πA hπA ρA) g).charpoly =
+      ((ρbar.map (algebraMap ℚ F)) g).charpoly := by
+    intro g
+    rw [charpoly_eq_charpoly_toMatrix', toMatrix'_framePushforward,
+      Matrix.charpoly_map, ← charpoly_eq_charpoly_toMatrix']
+    exact hcpA g
+  -- STEP 2: Brauer–Nesbitt conjugates that reduction onto `ρbar|_{G_F}`.
+  obtain ⟨e, he⟩ := hrig hrk hirrF (framePushforward πA hπA ρA) hcp
+  set E : (Fin 2 → k) ≃ₗ[k] (Fin 2 → k) := e.trans e0 with hE
+  set U : (Matrix (Fin 2) (Fin 2) k)ˣ := matUnitOfLinearEquiv E with hU
+  -- STEP 3: lift the conjugator to `GL₂(A)` (the step absent from the `ℚ` proof).
+  obtain ⟨W, hWmap⟩ := exists_hilbertGLTwoLift_of_surjective πA hπsurj
+    (U : Matrix (Fin 2) (Fin 2) k) ((Matrix.isUnit_iff_isUnit_det _).mp U.isUnit)
+  -- STEP 4: the conjugated matrix family, whose reduction is the residual
+  -- model ON THE NOSE.
+  set N : Γ F → Matrix (Fin 2) (Fin 2) A :=
+    fun g => W.val * (LinearMap.toMatrix' (ρA g)) * W.val⁻¹ with hN
+  have hNmul : ∀ g h, N (g * h) = N g * N h := by
+    intro g h
+    simp only [hN, map_mul, LinearMap.toMatrix'_mul]
+    exact matrixConj_mul W _ _
+  have hN1 : N 1 = 1 := by
+    simp only [hN, map_one, LinearMap.toMatrix'_one]
+    exact matrixConj_one W
+  have hNred : ∀ g : Γ F, (N g).map ⇑πA = hilbertFrameResMat F k ρbar e0 g := by
+    intro g
+    have hEconj : E.conj ((framePushforward πA hπA ρA) g) =
+        ((ρbar.map (algebraMap ℚ F)).conj e0) g := by
+      have h2 : (ρbar.map (algebraMap ℚ F)) g =
+          e.conj ((framePushforward πA hπA ρA) g) := by
+        rw [← GaloisRep.conj_apply, he]
+      rw [GaloisRep.conj_apply, h2, hE]
+      ext x
+      simp [LinearEquiv.conj_apply_apply]
+    calc (N g).map ⇑πA
+        = U.val * ((LinearMap.toMatrix' (ρA g)).map ⇑πA) * U.val⁻¹ :=
+          map_matrixConj πA W U _ hWmap
+      _ = U.val * LinearMap.toMatrix' ((framePushforward πA hπA ρA) g) * U.val⁻¹ := by
+          rw [toMatrix'_framePushforward]
+      _ = LinearMap.toMatrix' (E.conj ((framePushforward πA hπA ρA) g)) := by
+          rw [hU, toMatrix'_conj_matUnit]
+      _ = LinearMap.toMatrix' (((ρbar.map (algebraMap ℚ F)).conj e0) g) := by
+          rw [hEconj]
+      _ = hilbertFrameResMat F k ρbar e0 g := rfl
+  -- STEP 5: the Teichmüller section, and the classifying map `f`.
+  obtain ⟨t, -, htres, htmul, ht0, ht1⟩ := exists_hilbertTeichmullerSection ℓ πA hπsurj
+  have hrel := hilbertFrameRel_le_ker ℓ F k N t hNmul hN1 htmul ht0 ht1
+  set f := hilbertFrameEval ℓ F k N t hrel with hf
+  have hc1 : f.comp (algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k)) = algebraMap ℤ_[ℓ] A := by
+    ext r
+    show f (algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k) r) = _
+    rw [IsScalarTower.algebraMap_apply ℤ_[ℓ] (hilbertFramePoly ℓ F k)
+      (hilbertFrameRing ℓ F k) r]
+    show f (Ideal.Quotient.mk (hilbertFrameRel ℓ F k)
+      (algebraMap ℤ_[ℓ] (hilbertFramePoly ℓ F k) r)) = _
+    rw [hf, hilbertFrameEval_mk]
+    exact congrFun (congrArg (fun Φ : ℤ_[ℓ] →+* A => (Φ : ℤ_[ℓ] → A))
+      (hilbertFramePolyEval_comp_algebraMap ℓ F k N t)) r
+  have hmatf : ∀ g : Γ F, (hilbertFrameMat ℓ F k g).map ⇑f = N g := by
+    intro g
+    ext i j
+    simp only [hilbertFrameMat, hilbertFramePolyMat, Matrix.map_apply, Matrix.of_apply,
+      hf, hilbertFrameEval_mk, hilbertFramePolyEval_X_inl]
+  -- CLAUSE 3 is charpoly-valued, which is exactly what makes STEP 3 harmless.
+  have hc3 : ∀ g : Γ F, ((hilbertFrameMat ℓ F k g).map ⇑f).charpoly =
+      (LinearMap.toMatrix' (ρA g)).charpoly := by
+    intro g
+    rw [hmatf g, hN]
+    exact Matrix.charpoly_units_conj W _
+  -- CLAUSE 2 is a MATRIX equation, and is what STEP 3 exists to discharge.
+  have hc2 : πA.comp f = hilbertFrameEv ℓ F k ρbar e0 := by
+    have hq : (πA.comp f).comp (Ideal.Quotient.mk (hilbertFrameRel ℓ F k)) =
+        (hilbertFrameEv ℓ F k ρbar e0).comp
+          (Ideal.Quotient.mk (hilbertFrameRel ℓ F k)) := by
+      refine MvPolynomial.ringHom_ext ?_ ?_
+      · intro r
+        have hmk : (Ideal.Quotient.mk (hilbertFrameRel ℓ F k)) (MvPolynomial.C r) =
+            algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k) r := rfl
+        simp only [RingHom.coe_comp, Function.comp_apply, hmk]
+        have h₁ : f (algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k) r) =
+            algebraMap ℤ_[ℓ] A r := RingHom.congr_fun hc1 r
+        have h₂ : hilbertFrameEv ℓ F k ρbar e0
+            (algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k) r) = algebraMap ℤ_[ℓ] k r :=
+          RingHom.congr_fun (hilbertRingHom_padicInt_ext_finite
+            ((hilbertFrameEv ℓ F k ρbar e0).comp
+              (algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k))) (algebraMap ℤ_[ℓ] k)) r
+        rw [h₁, h₂]
+        exact RingHom.congr_fun halg r
+      · rintro (⟨g, i, j⟩ | x)
+        · have h : ((N g).map ⇑πA) i j = hilbertFrameResMat F k ρbar e0 g i j := by
+            rw [hNred g]
+          simp only [RingHom.coe_comp, Function.comp_apply, hf, hilbertFrameEval_mk,
+            hilbertFramePolyEval_X_inl, hilbertFrameEv]
+          simpa only [Matrix.map_apply] using h
+        · simp only [RingHom.coe_comp, Function.comp_apply, hf, hilbertFrameEval_mk,
+            hilbertFramePolyEval_X_inr, hilbertFrameEv, id_eq]
+          exact htres x
+    refine RingHom.ext fun z => ?_
+    obtain ⟨w, rfl⟩ := Ideal.Quotient.mk_surjective z
+    exact RingHom.congr_fun hq w
+  -- STEP 6: the CONJUGATED test object, which is what the level's
+  -- representation clause is about — `hilbertFrameMat` maps under `f` to the
+  -- conjugated family `N`, not to `ρA`'s own matrices. Conjugation is
+  -- harmless here precisely because clause 3 above is charpoly-valued.
+  set EA : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A) := linearEquivOfMatrixUnit W with hEA
+  set ρA' : FramedGaloisRep F A (Fin 2) := ρA.conj EA with hρA'
+  have hρA'mat : ∀ g : Γ F, LinearMap.toMatrix' (ρA' g) = N g := by
+    intro g
+    rw [hρA', GaloisRep.conj_apply, toMatrix'_conj_matUnit, hEA,
+      matUnitOfLinearEquiv_linearEquivOfMatrixUnit, hN]
+  have hHRA' : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA' :=
+    isHilbertHardlyRamified_conj ℓ F (rank_finTwoPi A) hHRA EA
+  -- STEP 7: `ker f` is a level.
+  refine ⟨f, hc1, hc2, hc3, RingHom.ker f, ⟨?_, ?_, ?_, ?_⟩, le_refl _⟩
+  · intro z hz
+    rw [RingHom.mem_ker] at hz ⊢
+    rw [← hc2, RingHom.comp_apply, hz, map_zero]
+  · haveI : Finite ↥f.range := Subtype.finite
+    exact Finite.of_equiv _ (RingHom.quotientKerEquivRange f).toEquiv.symm
+  · haveI : Finite ↥f.range := Subtype.finite
+    haveI : Finite (hilbertFrameRing ℓ F k ⧸ RingHom.ker f) :=
+      Finite.of_equiv _ (RingHom.quotientKerEquivRange f).toEquiv.symm
+    haveI : Nontrivial (hilbertFrameRing ℓ F k ⧸ RingHom.ker f) := by
+      refine ⟨⟨1, 0, fun h => one_ne_zero (?_ : (1 : A) = 0)⟩⟩
+      have h1 : (1 : hilbertFrameRing ℓ F k) ∈ RingHom.ker f := by
+        rw [← Ideal.Quotient.eq_zero_iff_mem, map_one]
+        exact h
+      rw [RingHom.mem_ker, map_one] at h1
+      exact h1
+    refine hilbertIsLocalRing_of_injective_of_finite
+      (C := hilbertFrameRing ℓ F k ⧸ RingHom.ker f) (A := A)
+      (Ideal.Quotient.lift (RingHom.ker f) f fun a ha => RingHom.mem_ker.mp ha) ?_
+    intro x y hxy
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk] at hxy
+    rw [Ideal.Quotient.eq, RingHom.mem_ker, map_sub, hxy, sub_self]
+  · intro _ _ _ _ _
+    exact hilbertFrameLevels_repClause_ker ℓ F k e0 hbase hglue hfin A πA hπsurj ρA'
+      hHRA' f hc2 (fun g => by rw [hmatf g, ← hρA'mat g])
 
 omit [DiscreteTopology k] [Module.Finite k V] [Module.Free k V] in
 /-- **RIGIDITY OF THE `F`-LEVEL TAUTOLOGICAL FRAME RING** (PROVEN
@@ -8152,16 +8742,20 @@ equation replaced by the corresponding CHARPOLY equation).
 conclusion clauses, FOUR are discharged outright here — `hker`, `hlev`
 and `hrep` are definitional for `hilbertFrameLevels`, and the residual
 charpoly clause is `hilbertFrameMat_map_frameEv` followed by
-`LinearEquiv.charpoly_conj`. The remaining four are the four leaves of
-that section, each of which has a PROVEN `ℚ`-level twin in
-`Deformation.lean` and is therefore a mechanical port, not new
-mathematics: `hilbertFrameLevels_nonempty`, `hilbertFrameLevels_directed`,
-`hilbertFrameLevels_classification` and `hilbertFrameRing_rigid`.
+`LinearEquiv.charpoly_conj`. The remaining four were the four leaves of
+that section, and **all four are now PROVEN** —
+`hilbertFrameLevels_nonempty`, `hilbertFrameLevels_directed` and
+`hilbertFrameRing_rigid` on 2026-07-26 as mechanical ports of their
+`ℚ`-level twins, and `hilbertFrameLevels_classification` on 2026-07-27,
+which was NOT a mechanical port (see its `CUT AUDIT`) and which is an
+assembly over ONE remaining leaf, `hilbertFrameLevels_repClause_ker`.
 
 So the Schlessinger content has not been discharged — it has been
-LOCALISED. What was one leaf whose statement quantified over every test
-object is now four leaves with named `ℚ`-level models, and the plumbing
-between them is compiled rather than assumed.
+LOCALISED, and then reduced. What was one leaf whose statement quantified
+over every test object became four leaves with named `ℚ`-level models, and
+is now a single leaf: the descent of `IsHilbertHardlyRamified` to the image
+subring `P ⧸ ker f`. All the plumbing between them is compiled rather than
+assumed.
 
 Everything Schlessinger's inductive small-extension argument produces,
 BEFORE any passage to a limit: a single coefficient ring `P`, a
@@ -10558,83 +11152,6 @@ downstream changes. `hℓ5` is carried for the same reason
 soft half consumes none of it, but the arithmetic leaves underneath are
 the Carayol package, whose hypotheses this module has no way to check. -/
 
-/-- **Existence of Teichmüller roots** (PROVEN, Hensel; local copy of
-`Deformation.lean`'s `exists_mem_teichmullerRoots_map_eq`, which lives
-DOWNSTREAM of this module): every element of a FINITE residue field `k` of
-characteristic `ℓ` is the residue of a Teichmüller root of a complete local
-ring `R` surjecting onto `k`.
-
-Apply Hensel's lemma to the monic `X ^ ℓ ^ n − X` where `ℓ ^ n = |k|`: it
-kills every element of `k` (`FiniteField.pow_card`), and its derivative
-`ℓ ^ n · X ^ (ℓ ^ n − 1) − 1` reduces to `−1`, a unit, because `k` has
-characteristic `ℓ`.
-
-This is what makes the residue field of Carayol's trace subring equal to
-`k` on the nose once the Teichmüller roots are among its generators, and it
-is the reason the target below carries `[Finite k]`; see the faithfulness
-note above. -/
-lemma exists_mem_teichmullerRootSet_map_eq {ℓ : ℕ} [Fact ℓ.Prime]
-    {R : Type u} [CommRing R] [IsLocalRing R]
-    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
-    {k : Type u} [Field k] [Finite k] (hlk : ((ℓ : ℕ) : k) = 0)
-    (π : R →+* k) (hπ : Function.Surjective π) (a : k) :
-    ∃ x ∈ teichmullerRootSet ℓ R, π x = a := by
-  classical
-  haveI : Fintype k := Fintype.ofFinite k
-  haveI hchar : CharP k ℓ := by
-    have hp : (ringChar k).Prime :=
-      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
-        (CharP.char_ne_zero_of_finite k (ringChar k))
-    have hdvd : ringChar k ∣ ℓ := (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp hlk
-    have heq : ringChar k = ℓ :=
-      (Nat.prime_dvd_prime_iff_eq hp (Fact.out : ℓ.Prime)).mp hdvd
-    exact heq ▸ ringChar.charP k
-  obtain ⟨n, -, hcard⟩ := FiniteField.card k ℓ
-  set M : ℕ := ℓ ^ (n : ℕ) with hM
-  have hMcard : Fintype.card k = M := hcard
-  have hpow : ∀ b : k, b ^ M = b := fun b => by
-    rw [← hMcard]; exact FiniteField.pow_card b
-  have hM2 : 1 < M := by
-    rw [hM]; exact Nat.one_lt_pow n.2.ne' (Fact.out : ℓ.Prime).one_lt
-  haveI : HenselianLocalRing R := by
-    constructor
-    intro f hf a₀ h₁ h₂
-    exact HenselianRing.is_henselian (I := IsLocalRing.maximalIdeal R) f hf a₀ h₁
-      (h₂.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)))
-  have hmono : (Polynomial.X ^ M - Polynomial.X : Polynomial R).Monic := by
-    refine (Polynomial.monic_X_pow M).sub_of_left ?_
-    rw [Polynomial.degree_X_pow, Polynomial.degree_X]
-    exact_mod_cast hM2
-  have hMz : ((M : ℕ) : k) = 0 := by
-    rw [hM, Nat.cast_pow, CharP.cast_eq_zero k ℓ]
-    exact zero_pow n.2.ne'
-  obtain ⟨a₀, ha₀⟩ := hπ a
-  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
-    IsLocalRing.ker_eq_maximalIdeal π hπ
-  have hev : (Polynomial.X ^ M - Polynomial.X : Polynomial R).eval a₀
-      ∈ IsLocalRing.maximalIdeal R := by
-    rw [← hker, RingHom.mem_ker, Polynomial.eval_sub, Polynomial.eval_pow,
-      Polynomial.eval_X, map_sub, map_pow, ha₀, hpow a, sub_self]
-  have hder : IsUnit ((Polynomial.X ^ M - Polynomial.X :
-      Polynomial R).derivative.eval a₀) := by
-    refine IsLocalRing.notMem_maximalIdeal.mp ?_
-    rw [← hker, RingHom.mem_ker, Polynomial.derivative_sub,
-      Polynomial.derivative_X_pow, Polynomial.derivative_X, Polynomial.eval_sub,
-      Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow,
-      Polynomial.eval_X, Polynomial.eval_one, map_sub, map_mul, map_pow,
-      map_natCast, map_one, hMz, zero_mul, zero_sub]
-    exact fun hcontra => one_ne_zero (neg_eq_zero.mp hcontra)
-  obtain ⟨x, hroot, hsub⟩ :=
-    HenselianLocalRing.is_henselian (Polynomial.X ^ M - Polynomial.X) hmono a₀
-      hev hder
-  refine ⟨x, ⟨(n : ℕ), n.2, ?_⟩, ?_⟩
-  · rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_pow,
-      Polynomial.eval_X] at hroot
-    rw [← hM]
-    exact sub_eq_zero.mp hroot
-  · have hmem : x - a₀ ∈ RingHom.ker π := hker ▸ hsub
-    rw [RingHom.mem_ker, map_sub, sub_eq_zero] at hmem
-    rw [hmem, ha₀]
 
 /-- **A subring whose image under a topological embedding is dense in the
 ambient subring is everything** (PROVEN, elementary topology; local copy of
