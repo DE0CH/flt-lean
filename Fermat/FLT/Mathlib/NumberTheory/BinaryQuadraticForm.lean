@@ -156,7 +156,7 @@ lemma IsPosDef.act {f : BinaryQuadraticForm} (hf : f.IsPosDef) {p q r s : ℤ}
 
 /-- The translation step of Gauss reduction: applying `T^(-k)` moves `b` into
 the window `[-a, a)` without changing `a`. -/
-private lemma exists_abs_b_le {f : BinaryQuadraticForm} (hf : f.IsPosDef) :
+lemma exists_abs_b_le {f : BinaryQuadraticForm} (hf : f.IsPosDef) :
     ∃ g, f.Equivalent g ∧ g.a = f.a ∧ |g.b| ≤ g.a := by
   have ha : 0 < f.a := hf.a_pos
   have h2a : (0 : ℤ) < 2 * f.a := by linarith
@@ -172,7 +172,11 @@ private lemma exists_abs_b_le {f : BinaryQuadraticForm} (hf : f.IsPosDef) :
     rw [hA, hB, abs_le]
     constructor <;> linarith
 
-private lemma exists_reduced_aux : ∀ (n : ℕ) (f : BinaryQuadraticForm), f.IsPosDef →
+/-- Gauss reduction, in the form the descent is actually run: induction on a
+bound `n` for the leading coefficient. Each round translates `b` into the
+window `[-a, a)` and, if `c < a`, swaps by `S`, which strictly decreases `a`.
+Use `exists_reduced_equivalent` instead. -/
+lemma exists_reduced_aux : ∀ (n : ℕ) (f : BinaryQuadraticForm), f.IsPosDef →
     f.a.toNat ≤ n → ∃ g, f.Equivalent g ∧ g.IsPosDef ∧ g.IsReduced := by
   intro n
   induction n with
