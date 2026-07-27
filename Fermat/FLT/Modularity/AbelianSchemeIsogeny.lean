@@ -556,10 +556,113 @@ noncomputable def fiberMapOver {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     (by rw [Category.comp_id]; exact h.symm)
     (by rw [Category.comp_id, Category.id_comp])
 
-/-- **The fibrewise criterion of flatness** (sorry leaf — general scheme
-theory, NO abelian varieties: EGA IV 11.3.10, *critère de platitude par
-fibres*; Stacks 039E; Matsumura *Commutative Ring Theory* §23 for the
-local-algebra form).
+/-- **The fibrewise criterion of flatness, AT A POINT** (sorry leaf —
+general scheme theory, NO abelian varieties: Stacks 039C = Stacks Theorem
+37.16.2, of which the global `flat_of_flat_fiberMap` below is the
+specialization Stacks 039E; EGA IV 11.3.10, *critère de platitude par
+fibres*).
+
+`Flat` of a morphism is exactly flatness of every stalk map
+(`AlgebraicGeometry.Flat.iff_flat_stalkMap`), so this is the statement the
+global one reduces to, and it is the form in which the literature actually
+proves it.  Fix `x : X`, put `s = p x` and `y = u x`.  Given that `X` is
+flat over `S` at `x` and that the fibre morphism `X_s ⟶ Y_s` is flat at
+`x`, conclude that `u` is flat at `x`.
+
+**FAITHFULNESS — this is Stacks 039C verbatim, with hypotheses CHECKED
+against the source on 2026-07-27** (not reconstructed from memory).  039C
+reads: *`X` locally of finite presentation over `S`; `F` an `O_X`-module
+of finite presentation; `Y` locally of finite type over `S`.  Let
+`x ∈ X`, `y = f x`, `s` the image in `S`.  If `F_x ≠ 0` then (1) `F` flat
+over `S` at `x` and `F_s` flat over `Y_s` at `x`, is equivalent to (2) `Y`
+flat over `S` at `y` and `F` flat over `Y` at `x`.*  Instantiate
+`F = O_X` (finitely presented as a module over itself, and `O_{X,x} ≠ 0`
+because a stalk of a scheme is a local ring, hence nontrivial) and take
+the direction (1) ⟹ (2), keeping only the second half of (2).  So:
+
+* `hp` is "`F` flat over `S` at `x`";
+* `hfib` is "`F_s` flat over `Y_s` at `x`" — the fibre `p.fiber (p x)` is
+  `X_s`, `Scheme.Hom.asFiber` is the canonical point of it above `x`, and
+  `fiberMapOver` is `f_s`;
+* the conclusion is "`F` flat over `Y` at `x`".
+
+Two hypotheses of the CONSUMER are deliberately **not** taken here,
+because 039C does not use them: `Flat q` (039C *produces* flatness of `Y`
+over `S` at `y` — it is the discarded first half of (2)), and
+`LocallyOfFinitePresentation u`.  `LocallyOfFiniteType q` is what 039C
+asks for and is weaker than the consumer's
+`LocallyOfFinitePresentation q`; mathlib supplies the instance, so the
+consumer still applies.  This leaf is therefore strictly STRONGER than
+what `flat_of_flat_fiberMap` needs, and correspondingly reusable.
+
+**ROUTE, and what is missing — surveyed 2026-07-27, each claim paired
+with the check that would refute it.**  The classical proof has two
+layers, and *only the first* is Noetherian:
+
+1. *The Noetherian local engine* is Stacks 00MP, checked verbatim: `R`,
+   `S`, `S'` **Noetherian** local, `R → S → S'` local, `M` a finite
+   `S'`-module, `M ≠ 0`, `M/𝔪M` flat over `S/𝔪S`, `M` flat over `R`;
+   then `S` is flat over `R` and `M` is flat over `S`.  Taking
+   `M = S' = O_{X,x}` makes the finiteness hypothesis automatic, so at
+   this level the ONLY real hypothesis is Noetherian-ness.  Its proof
+   runs through the **local criterion of flatness** (`Tor₁` vanishing).
+2. *`S` here is an ARBITRARY scheme*, so layer 1 does not apply directly.
+   That is exactly why 039C carries finite-presentation hypotheses
+   instead of Noetherian ones, and why its proof needs a **limit /
+   spreading-out** argument (absolute Noetherian approximation) to
+   descend to the Noetherian case.  Do not plan a proof that stops at
+   00MP; it does not reach this statement.
+
+ABSENT from the pin, each with its refuting grep over
+`.lake/packages/mathlib`:
+
+* **Tor of modules over a ring.**  `grep -rn "^def Tor"` finds only the
+  categorical `CategoryTheory.Monoidal.Tor` and the group-homology
+  `Rep k G` version — there is no `Tor R M N` for modules, hence no
+  local criterion of flatness.  `grep -rn "local criterion"` returns
+  nothing at all.
+* **Cohen–Macaulay and depth.**  `grep -rn CohenMacaulay` returns
+  literally nothing; `RingTheory/Regular/Depth.lean` is a 10-line stub.
+  (Re-verified 2026-07-27.)
+* **Generic flatness and openness of the flat locus.**
+  `grep -rln flatLocus` returns nothing.
+* **Stalks of pullbacks and of fibres.**  `grep -n stalk` over
+  `AlgebraicGeometry/Fiber.lean` and over
+  `AlgebraicGeometry/PullbackCarrier.lean` each return NOTHING.  This is
+  the reason this leaf was not cut further: the natural next seam is
+  "the stalk of `p.fiber s` at `p.asFiber x` is `O_{X,x} ⧸ 𝔪_s O_{X,x}`,
+  compatibly with `u`", and that identification would have to be built
+  from scratch before the local algebra could even be stated over plain
+  rings.  A hit on either grep means that seam is now cheap and this
+  leaf should be re-cut along it.
+* **Essentially of finite presentation.**  `Algebra.EssFiniteType` exists
+  (`RingTheory/EssentialFiniteness.lean`) but there is no
+  essentially-of-finite-*presentation* notion, which is what
+  `LocallyOfFinitePresentation p` becomes at a stalk.  This is the second
+  reason the leaf is not stated over abstract local rings: the honest
+  ring-level statement cannot currently be written down.  Do **not**
+  weaken it to `EssFiniteType` — finite type is strictly weaker than
+  finite presentation and the criterion is not known in that generality,
+  so that would risk a FALSE leaf.
+
+`~/cs/FLT` has none of this either (checked 2026-07-26: no
+`AbelianVariety`, no cube, no `CohenMacaulay`), so there is nothing to
+vendor. -/
+theorem flat_stalkMap_of_flat_stalkMap_fiberMapOver
+    {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    (u : X ⟶ Y) (h : u ≫ q = p)
+    [LocallyOfFinitePresentation p] [LocallyOfFiniteType q]
+    (x : X)
+    (hp : (p.stalkMap x).hom.Flat)
+    (hfib : ((fiberMapOver u h (p x)).stalkMap (p.asFiber x)).hom.Flat) :
+    (u.stalkMap x).hom.Flat :=
+  sorry
+
+/-- **The fibrewise criterion of flatness** (PROVEN 2026-07-27 over the
+single pointwise leaf `flat_stalkMap_of_flat_stalkMap_fiberMapOver` above
+— general scheme theory, NO abelian varieties: EGA IV 11.3.10, *critère
+de platitude par fibres*; Stacks 039E; Matsumura *Commutative Ring
+Theory* §23 for the local-algebra form).
 
 Let `u : X ⟶ Y` be a morphism over a base `S`, with both `X` and `Y`
 flat and locally of finite presentation over `S`.  If the induced map on
@@ -577,6 +680,28 @@ from an arbitrary base to a field, and it has no group-scheme content
 whatsoever.  Whoever proves it proves a general theorem, and the
 abelian-variety work in `flat_fiberMap_mulByNat` then happens over
 `κ(s)`, where a smooth scheme really is regular.
+
+**HOW IT IS PROVEN, and why the cut is where it is.**  Flatness of a
+morphism is flatness of every stalk map
+(`AlgebraicGeometry.Flat.of_stalkMap`), so the global statement follows
+from the statement AT A POINT.  At `x : X` the fibre hypothesis is
+consumed at exactly ONE fibre, `p.fiber (p x)`, and at exactly one point
+of it, `Scheme.Hom.asFiber p x` — flatness of that fibre morphism gives
+flatness of its stalk map there (`AlgebraicGeometry.Flat.stalkMap`).
+Nothing is lost: Stacks 039C, the theorem the literature actually proves,
+IS pointwise, and 039E is its global specialization.  All the remaining
+mathematics is in
+`flat_stalkMap_of_flat_stalkMap_fiberMapOver`, whose docstring carries
+the route survey and the refuting greps.
+
+**Checked against the source 2026-07-27: Stacks 039E does NOT require `Y`
+flat over `S`** — its hypotheses are `X` locally of finite presentation
+over `S`, `X` flat over `S`, `f_s` flat for every `s`, and `Y` locally of
+finite **type** over `S`; flatness of `Y` over `S` is part of the
+*conclusion*.  So the `[Flat q]` and `[LocallyOfFinitePresentation u]`
+instances here are redundant, and the pointwise leaf drops them.  They
+are harmless: extra hypotheses only weaken this statement, and the
+consumer `flat_mulByNat` supplies them anyway.
 
 **What the pin gives a prover, checked 2026-07-26** (this corrects the
 survey that used to stand in `flat_mulByNat`'s docstring, which said
@@ -614,8 +739,11 @@ theorem flat_of_flat_fiberMap {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     (u : X ⟶ Y) (h : u ≫ q = p) [Flat p] [Flat q]
     [LocallyOfFinitePresentation p] [LocallyOfFinitePresentation q]
     [LocallyOfFinitePresentation u]
-    (H : ∀ s : S, Flat (fiberMapOver u h s)) : Flat u :=
-  sorry
+    (H : ∀ s : S, Flat (fiberMapOver u h s)) : Flat u := by
+  refine Flat.of_stalkMap u fun x => ?_
+  haveI := H (p x)
+  exact flat_stalkMap_of_flat_stalkMap_fiberMapOver u h x (Flat.stalkMap p x)
+    (Flat.stalkMap (fiberMapOver u h (p x)) (p.asFiber x))
 
 /-- **`[p]` is FLAT ON EVERY FIBRE, for `p` prime** (sorry leaf — abelian
 varieties; Mumford *Abelian Varieties* §6 (Application 2 of the theorem
