@@ -31798,8 +31798,12 @@ theorem mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd {M p : ℕ}
   · rw [if_pos hn, hg (n / p), Nat.mul_div_cancel' hn]
   · rw [if_neg hn, (hf n hn).symm]
 
-/-- **MIYAKE'S PEELING STEP: ONE PRIME COMES OFF THE MAIN LEMMA'S MODULUS**
-(sorry leaf — cut 2026-07-27 out of
+/-! ### Miyake's peeling step, and the trace bookkeeping it reduces to
+
+**MIYAKE'S PEELING STEP: ONE PRIME COMES OFF THE MAIN LEMMA'S MODULUS**
+(the statement itself is `exists_sub_degeneracyOp_qCoeff_coprime_eq_zero` at the
+END of this block, PROVEN there over the three Miyake leaves cut below; cut
+2026-07-27 out of
 `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` below; Miyake,
 *Modular Forms*, the induction step in the proof of Theorem 4.6.8, pp. 160–162):
 let `p ∣ M` be prime and let `L > 1` be prime to `p`.  If every `q`-expansion
@@ -31839,8 +31843,23 @@ route audit above.)  Move 2 is likewise DONE: it is
 `mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` above, now PROVEN.  What
 remains of this leaf is exactly moves 3 and 4 — the coefficient bookkeeping of
 the trace — and that residue is isolated below as
-`exists_smul_traceOp_qCoeff_coprime_eq_zero`, which this leaf then discharges in
-one line.
+`exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero`, which this leaf then
+discharges in one line.
+
+**CORRECTION 2026-07-27 — THE FIRST CUT OF THAT RESIDUE WAS FALSE.**  The residue
+was originally isolated as `exists_smul_traceOp_qCoeff_coprime_eq_zero`, pinning
+the witness to a scalar multiple of `traceOp M (M/p) f`, the trace of `f` ITSELF.
+That statement is FALSE; it is now REFUTED IN LEAN by
+`not_exists_smul_traceOp_qCoeff_coprime_eq_zero` below.  The error was a misread
+of Miyake's operator: his witness is the double coset
+`Γ₀(M) · [1, 0; 0, p] · Γ₀(M/p)`, NOT `Γ₀(M) · 1 · Γ₀(M/p)`.  The `δ_p` in the
+middle is not decoration — `Γ₀(M) δ_p Γ₀(M) = ⊔_{j<p} Γ₀(M)[1, j; 0, p]` is
+exactly `U_p`, so Miyake's operator is `U_p` FOLLOWED BY the descent to level
+`M/p`, whereas the honest trace is `U_p`-free.  The repaired leaf therefore
+traces `U_p f = heckeOp M p f`, not `f`; since
+`Tr ∘ U_p = p · [Γ₀(M) δ_p Γ₀(M/p)]` (one double coset in the product, with
+multiplicity `p·(d+1)/(d+1)`), that is Miyake's witness up to the constant, which
+is existential here anyway.
 
 FAITHFULNESS.  `1 < L` is what makes this the COMPOSITE case of Miyake's
 induction; at `L = 1` the statement degenerates to
@@ -31850,19 +31869,407 @@ and is the base case of the induction.  `¬ p ∣ L` is Miyake's square-freeness
 reduction and is used in move 3.  The statement is NOT vacuous: `f = 0` gives
 `g = 0`, and for `f = V_p u + V_q w` with `q ∣ L` the witness `g = u` is
 forced. -/
-theorem exists_smul_traceOp_qCoeff_coprime_eq_zero {M p L : ℕ}
+section MiyakeTraceBookkeeping
+
+open UpperHalfPlane ModularForm Matrix.SpecialLinearGroup CongruenceSubgroup
+
+/-! ### Miyake §4.6, moves 3–4: the coefficient bookkeeping of the trace
+
+Everything in this block was written 2026-07-27 while REFUTING the first cut of
+the residue (see `not_exists_smul_traceOp_qCoeff_coprime_eq_zero`) and replacing
+it by the faithful one (`exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero`).
+The small lemmas here — `V_1` is the level-raising inclusion, and the trace of a
+form induced from the smaller level is `[Γ₀(B) : Γ₀(A)]` times it — are the two
+facts that make the trace computable at all, and both are reusable. -/
+
+/-- `V_1` is the identity transform on functions: `heckeRepInf 1` is the identity
+matrix and the slash by it is trivial. -/
+theorem degeneracyTransform_one (f : ℍ → ℂ) : degeneracyTransform 1 f = f := by
+  have hne : ((1 : ℕ) : ℝ) ≠ 0 := by norm_num
+  have h1 : heckeRepInf 1 = 1 := by
+    have hc := heckeRepInf_coe hne
+    ext i j
+    rw [hc]
+    fin_cases i <;> fin_cases j <;> simp
+  unfold degeneracyTransform
+  rw [h1]
+  simp
+
+/-- **`V_1` IS THE LEVEL-RAISING INCLUSION, ON COEFFICIENTS**: `a_m(V_1 f) =
+a_m(f)`.  This is the operator that views a level-`N` form at the larger level
+`M`, and it is how Miyake's argument moves `f` up to level `M L²` and the answer
+back down. -/
+theorem qCoeff_degeneracyOp_one {N M : ℕ} (hdvd : N ∣ M)
+    (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff M (degeneracyOp N M 1 f) m = qCoeff N f m := by
+  rw [qCoeff_degeneracyOp one_pos (by simpa using hdvd) f m]
+  simp
+
+/-- `V_1` does not change the underlying function either. -/
+theorem coe_degeneracyOp_one {N M : ℕ} (hdvd : N ∣ M) (f : CuspForm (Gamma0GL N) 2) :
+    ⇑(degeneracyOp N M 1 f) = ⇑f := by
+  rw [degeneracyOp_coe one_pos (by simpa using hdvd) f, degeneracyTransform_one]
+
+/-- Additivity of the `q`-expansion coefficients, through `qCoeffL`. -/
+theorem qCoeff_add {N : ℕ} (f g : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff N (f + g) m = qCoeff N f m + qCoeff N g m := by
+  have h := (qCoeffL N m).map_add f g
+  simpa using h
+
+/-- Subtractivity of the `q`-expansion coefficients, through `qCoeffL`. -/
+theorem qCoeff_sub {N : ℕ} (f g : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff N (f - g) m = qCoeff N f m - qCoeff N g m := by
+  have h := (qCoeffL N m).map_sub f g
+  simpa using h
+
+/-- **THE TRACE OF A FORM INDUCED FROM THE SMALLER LEVEL IS A NONZERO MULTIPLE OF
+IT** (PROVEN): `Tr^A_B (V_1 u) = [Γ₀(B) : Γ₀(A)] · u`.
+
+`CuspForm.trace` sums `⇑F ∣[2] γ⁻¹` over `Γ₀(B) ⧸ Γ₀(A).subgroupOf Γ₀(B)`, and
+when `F` is induced from level `B` every summand is `⇑u` itself, so the sum is
+the index times `u`.  The index is a nonzero natural number because the quotient
+is finite (`isFiniteRelIndex_of_isArithmetic`) and nonempty.
+
+This is the lemma that makes the trace COMPUTABLE at the one place Miyake needs
+it, and it is also exactly what refutes the `traceOp`-pinned leaf below: a form
+that is already `Γ₀(M/p)`-invariant has trace a multiple of ITSELF, which is far
+too little information to recover `a_{pm}(f)`. -/
+theorem exists_smul_traceOp_degeneracyOp_one {A B : ℕ} [NeZero A] [NeZero B]
+    (hdvd : B ∣ A) :
+    ∃ κ : ℂ, κ ≠ 0 ∧ ∀ u : CuspForm (Gamma0GL B) 2,
+      traceOp A B (degeneracyOp B A 1 u) = κ • u := by
+  haveI : Subgroup.IsFiniteRelIndex (Gamma0GL A) (Gamma0GL B) :=
+    isFiniteRelIndex_of_isArithmetic _ _
+  letI : Fintype (Gamma0GL B ⧸ (Gamma0GL A).subgroupOf (Gamma0GL B)) := Fintype.ofFinite _
+  refine ⟨(Fintype.card (Gamma0GL B ⧸ (Gamma0GL A).subgroupOf (Gamma0GL B)) : ℂ), ?_, ?_⟩
+  · have : 0 < Fintype.card (Gamma0GL B ⧸ (Gamma0GL A).subgroupOf (Gamma0GL B)) :=
+      Fintype.card_pos
+    exact_mod_cast this.ne'
+  · intro u
+    refine DFunLike.coe_injective ?_
+    have hcoe : ⇑(degeneracyOp B A 1 u) = ⇑u := coe_degeneracyOp_one hdvd u
+    show ⇑(CuspForm.trace (Gamma0GL B) (degeneracyOp B A 1 u)) = _
+    rw [CuspForm.coe_trace, CuspForm.IsGLPos.coe_smul]
+    have hq : ∀ q : Gamma0GL B ⧸ (Gamma0GL A).subgroupOf (Gamma0GL B),
+        SlashInvariantForm.quotientFunc (degeneracyOp B A 1 u) q = ⇑u := by
+      intro q
+      induction q using Quotient.inductionOn with
+      | h r =>
+        rw [SlashInvariantForm.quotientFunc_mk, hcoe]
+        exact SlashInvariantFormClass.slash_action_eq u r.val⁻¹ (inv_mem r.2)
+    rw [Finset.sum_congr rfl fun q _ => hq q]
+    funext x
+    simp [Finset.sum_apply, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+
+/-- **FALSITY AUDIT (2026-07-27): THE `traceOp`-PINNED RESIDUE IS FALSE, AND HERE
+IS THE COUNTEREXAMPLE, MACHINE-CHECKED.**
+
+The residue of Miyake's peeling step was first cut as
+
+    exists_smul_traceOp_qCoeff_coprime_eq_zero :
+      ∃ c : ℂ, ∀ n, (n, L) = 1 →
+        a_n (f − V_p (c · Tr^M_{M/p} f)) = 0
+
+pinning the witness to a scalar multiple of the trace of `f` ITSELF.  That is a
+misreading of Miyake (4.6.13): his witness is
+`f_p = p(d+1)⁻¹ · (f ∣ Γ₀(M) · [1, 0; 0, p] · Γ₀(M/p))`, and the middle matrix
+`δ_p = [1, 0; 0, p]` is load-bearing — `Γ₀(M) δ_p Γ₀(M) = ⊔_{j<p} Γ₀(M)[1, j; 0, p]`
+is `U_p`, so Miyake's operator is `U_p` followed by the descent, while
+`Γ₀(M) · 1 · Γ₀(M/p)` is the `U_p`-free honest trace.  No scalar repairs the
+difference.
+
+THE COUNTEREXAMPLE.  Take `p = 2`, `K = 11`, `M = p²K = 44`, `L = 3`
+(so `1 < L` and `p ∤ L`), and let `u ∈ S₂(Γ₀(11))` be the newform `f₁₁`, whose
+first coefficient is `1`.  Put `f = V_p u = u(pz)`, which lies in
+`S₂(Γ₀(22)) ⊆ S₂(Γ₀(44))`, so `f` is already `Γ₀(M/p)`-invariant.  Then
+
+* `f` SATISFIES the hypothesis: `a_n(f) = 0` for every `n` with `p ∤ n`, hence in
+  particular for every such `n` coprime to `L`;
+* `Tr^M_{M/p} f = κ · f` with `κ = [Γ₀(22) : Γ₀(44)] = 2`, by
+  `exists_smul_traceOp_degeneracyOp_one` above — the trace of an already-invariant
+  form is just the index times it;
+* so `a_1(Tr f) = κ · a_1(f) = 0`, because `p ∤ 1`;
+* while `a_p(f) = a_1(u) = 1 ≠ 0`.
+
+At `n = p` (coprime to `L = 3`) the conclusion therefore reads
+`a_p(f) − c · a_1(Tr f) = 1 − c · 0 = 1 ≠ 0` for EVERY `c`.  Refuted.
+
+The theorem below is that argument in Lean, stated conditionally on the one input
+it needs from the analytic theory — a level-`K` cusp form with `a_1 ≠ 0`, which
+`K = 11` supplies.  It is proven, sorry-free, and axiom-clean.
+
+Note the refutation does not use `1 < L` at all, so it kills the leaf for every
+admissible `L`, not just for `L = 3`.
+
+WHAT SURVIVES.  Only the OPERATOR was wrong, not the route: Miyake's moves 3–4
+are correct, and the repaired leaf
+`exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero` below traces `U_p f` instead
+of `f`.  Since `Tr ∘ U_p` and `[Γ₀(M) δ_p Γ₀(M/p)]` differ by the factor `p`
+(their product is a single double coset, with multiplicity
+`p(d+1)/(d+1) = p`), and the constant is existential, that leaf IS Miyake's
+statement. -/
+theorem not_exists_smul_traceOp_qCoeff_coprime_eq_zero {M p L K : ℕ}
+    [NeZero M] [NeZero (M / p)]
+    (hp : p.Prime) (hpL : ¬ p ∣ L)
+    (hK : M = p * p * K)
+    (u : CuspForm (Gamma0GL K) 2) (hu : qCoeff K u 1 ≠ 0) :
+    ∃ f : CuspForm (Gamma0GL M) 2,
+      (∀ n : ℕ, ¬ p ∣ n → Nat.Coprime n L → qCoeff M f n = 0) ∧
+      ¬ ∃ c : ℂ, ∀ n : ℕ, Nat.Coprime n L →
+        qCoeff M (f - degeneracyOp (M / p) M p (c • traceOp M (M / p) f)) n = 0 := by
+  have hpM : p ∣ M := ⟨p * K, by rw [hK]; ring⟩
+  have hpMd : p * (M / p) = M := Nat.mul_div_cancel' hpM
+  have hMp : M / p = p * K := by rw [hK, mul_assoc, Nat.mul_div_cancel_left _ hp.pos]
+  have hdvdMp : M / p ∣ M := ⟨p, by rw [mul_comm]; exact hpMd.symm⟩
+  have hpMdvd : p * (M / p) ∣ M := ⟨1, by rw [mul_one]; exact hpMd.symm⟩
+  have hpK : p * K ∣ M / p := by rw [hMp]
+  have hp1 : ¬ p ∣ 1 := fun hd => absurd (Nat.le_of_dvd one_pos hd) (by have := hp.two_le; omega)
+  set v : CuspForm (Gamma0GL (M / p)) 2 := degeneracyOp K (M / p) p u with hvdef
+  have hv : ∀ n : ℕ, qCoeff (M / p) v n = if p ∣ n then qCoeff K u (n / p) else 0 :=
+    fun n => qCoeff_degeneracyOp hp.pos hpK u n
+  set f : CuspForm (Gamma0GL M) 2 := degeneracyOp (M / p) M 1 v with hfdef
+  have hfc : ∀ n : ℕ, qCoeff M f n = qCoeff (M / p) v n :=
+    fun n => qCoeff_degeneracyOp_one hdvdMp v n
+  refine ⟨f, fun n hn _ => by rw [hfc n, hv n, if_neg hn], ?_⟩
+  rintro ⟨c, hc⟩
+  obtain ⟨κ, hκ0, hκ⟩ := exists_smul_traceOp_degeneracyOp_one (A := M) (B := M / p) hdvdMp
+  have hfp : qCoeff M f p = qCoeff K u 1 := by
+    rw [hfc p, hv p, if_pos dvd_rfl, Nat.div_self hp.pos]
+  have htr : traceOp M (M / p) f = κ • v := by rw [hfdef]; exact hκ v
+  have h := hc p ((Nat.Prime.coprime_iff_not_dvd hp).mpr hpL)
+  rw [qCoeff_sub, qCoeff_degeneracyOp hp.pos hpMdvd _ p, if_pos dvd_rfl,
+    Nat.div_self hp.pos, qCoeff_smul, htr, qCoeff_smul, hv 1, if_neg hp1,
+    mul_zero, mul_zero, sub_zero, hfp] at h
+  exact hu h
+
+/-- **MIYAKE LEMMA 4.6.5 — THE `L`-SIEVE RAISES THE LEVEL BY `L²`** (sorry leaf,
+cut 2026-07-27; Miyake, *Modular Forms*, Lemma 4.6.5, pp. 157–158): for
+`f ∈ S₂(Γ₀(A))` and `L ≥ 1`, the series obtained by KEEPING ONLY the coefficients
+at indices coprime to `L`,
+
+    g(z) = Σ_{(n, L) = 1} a_n(f) qⁿ,
+
+is again a cusp form, of level `A L²`.
+
+Miyake's level is the sharper `A · Π_{p ∣ L, p ∣ A} p · Π_{p ∣ L, p ∤ A} p²`,
+which divides `A L²`; `A L²` is all the peeling step needs and it keeps the
+statement free of factorization bookkeeping.  The level is passed as a VARIABLE
+`B` with the defining equation `A * L ^ 2 = B` so that consumers can instantiate
+it at whatever normal form their arithmetic produces, without a dependent-type
+rewrite of `CuspForm (Gamma0GL ·) 2`.
+
+PROOF (Miyake, pp. 157–158).  Reduce to `L = p` prime.  The sieve is then
+`g = f − (f ∣ T(p))(pz)`, where `f ∣ T(p)` is the Hecke double-coset operator at
+level `A'` (`A' = A` if `p ∣ A`, else `A' = pA`) — the identity
+`(f ∣ T(p))(z) = p⁻¹ Σ_{m<p} Σ_n a_n e^{2πi(n+mA'/p)z/p}` collapses the inner sum
+to `p` at `p ∣ n` and to `0` otherwise, so `(f ∣ T(p))(pz) = Σ_{p ∣ n} a_n qⁿ` is
+exactly the part being REMOVED.  Both terms are cusp forms of level `A' p ∣ A p²`,
+and the general `L` follows by iterating over its prime factors.
+
+WHY THE LEVEL MUST GO UP, and why the naive inclusion–exclusion sieve fails: this
+is the only step of Miyake's induction that leaves level `A`, and move 3 is what
+brings the answer back down.  Recorded because two audits of the peeling step
+mistook it for avoidable. -/
+theorem exists_cuspForm_qCoeff_sieve {A B L : ℕ} (hA : 0 < A) (hL : 0 < L)
+    (hB : A * L ^ 2 = B) (f : CuspForm (Gamma0GL A) 2) :
+    ∃ g : CuspForm (Gamma0GL B) 2,
+      ∀ n : ℕ, qCoeff B g n = if Nat.Coprime n L then qCoeff A f n else 0 :=
+  sorry
+
+/-- **MIYAKE LEMMA 4.6.6(1) — THE TRACE COMMUTES WITH LEVEL-RAISING BY `L²` WHEN
+`p ∤ L`** (sorry leaf, cut 2026-07-27; Miyake, *Modular Forms*, Lemma 4.6.6(1),
+p. 158, and the step (4.6.13) that uses it):
+
+    Tr^{A L²}_{Ap L²} ∘ V_1  =  V_1 ∘ Tr^A_{Ap}        (`A = p · Ap`,  `p ∤ L`).
+
+This is the move that lets Miyake compute the trace at the RAISED level `A L²`
+— where Theorem 4.6.4 is available — and read the answer off at level `A`, where
+the peeling step's witness must live.
+
+`p ∤ L` is exactly what makes it true, and is the only place in the peeling step
+where that hypothesis is consumed: the index is `[Γ₀(Ap) : Γ₀(A)] = p` if
+`p² ∣ A` and `p + 1` otherwise, and since `p ∤ L` the same dichotomy holds at
+level `A L²` (`p² ∣ A L² ↔ p² ∣ A`), so the two traces have the same number of
+cosets and the coset representatives match up.  Drop `p ∤ L` and the two indices
+can differ, so no diagram commutes on the nose.
+
+The four levels are passed as VARIABLES with defining equations rather than as
+`A / p`, `A * L ^ 2`, … so that instantiating this needs no rewriting inside
+`CuspForm (Gamma0GL ·) 2`. -/
+theorem traceOp_degeneracyOp_one_comm {A Ap B Bp L p : ℕ}
+    [NeZero A] [NeZero Ap] [NeZero B] [NeZero Bp]
+    (hA : 0 < A) (hp : p.Prime) (hpL : ¬ p ∣ L) (hL : 0 < L)
+    (hAp : p * Ap = A) (hB : A * L ^ 2 = B) (hBp : Ap * L ^ 2 = Bp)
+    (F : CuspForm (Gamma0GL A) 2) :
+    traceOp B Bp (degeneracyOp A B 1 F) = degeneracyOp Ap Bp 1 (traceOp A Ap F) :=
+  sorry
+
+/-- **MIYAKE LEMMA 4.6.7 + LEMMA 4.6.6(2) — THE TRACE OF THE COMPLEMENTARY PART
+STILL HAS NO PRIME-TO-`L` COEFFICIENTS** (sorry leaf, cut 2026-07-27; Miyake,
+*Modular Forms*, Lemma 4.6.7 p. 159 and the estimate closing (4.6.14),
+pp. 161–162): if every `q`-expansion coefficient of `h ∈ S₂(Γ₀(B))` at an index
+COPRIME TO `L` vanishes, then the same is true of `Tr^B_{Bp}(U_p h)`.
+
+This is move 4, and it is the whole reason the peeling step's error term is
+invisible: `h` is `f` minus its `L`-sieve, so by construction `h` is supported on
+the indices NOT coprime to `L`, and the claim is that neither `U_p` nor the trace
+can move mass back onto the coprime indices.
+
+PROOF (Miyake).  By Lemma 4.6.7, `h = Σ_{q ∣ L, q prime} h_q(qz)` with
+`h_q ∈ S₂(Γ₀(B L))` — a form supported off the prime-to-`L` indices is a sum of
+`V_q`-images over the primes `q ∣ L`.  Lemma 4.6.6(1) then commutes the trace past
+each `V_q` (legitimate because `q ∣ L` and `p ∤ L`, so `q ≠ p`), and Lemma 4.6.6(2)
+identifies the result as `V_q` of a trace at the smaller level.  Every summand is
+therefore again a `V_q`-image with `q ∣ L`, and a `V_q`-image has vanishing
+coefficients at every index prime to `q`, hence at every index coprime to `L`.
+
+Note `U_p` is spelled `heckeOp B p` here, which is legitimate exactly because
+`p ∣ B`: `qCoeff_heckeOp` then reads `a_m(heckeOp B p h) = a_{pm}(h)` with no
+correction term, i.e. `heckeOp B p` IS `U_p` at that level. -/
+theorem qCoeff_traceOp_heckeOp_eq_zero {B Bp p L : ℕ} [NeZero B] [NeZero Bp]
+    (hB : 0 < B) (hp : p.Prime) (hBp : p * Bp = B) (hL : 1 < L) (hpL : ¬ p ∣ L)
+    {h : CuspForm (Gamma0GL B) 2}
+    (hh : ∀ n : ℕ, Nat.Coprime n L → qCoeff B h n = 0) :
+    ∀ m : ℕ, Nat.Coprime m L →
+      qCoeff Bp (traceOp B Bp (heckeOp B p h)) m = 0 :=
+  sorry
+
+/-- **MIYAKE'S PEELING RESIDUE, REPAIRED: MOVES 3–4, THE COEFFICIENT BOOKKEEPING
+OF THE TRACE** (PROVEN 2026-07-27 over the three Miyake leaves above; Miyake,
+*Modular Forms*, (4.6.12)–(4.6.14), pp. 160–162).
+
+This replaces `exists_smul_traceOp_qCoeff_coprime_eq_zero`, which was FALSE — see
+the FALSITY AUDIT on `not_exists_smul_traceOp_qCoeff_coprime_eq_zero` above.  The
+witness traces `U_p f = heckeOp M p f`, not `f`: Miyake's operator is the double
+coset `Γ₀(M) [1, 0; 0, p] Γ₀(M/p)`, and `Tr ∘ U_p` is `p` times it (their product
+is a single double coset, with multiplicity `p(d+1)/(d+1) = p`), so with the
+constant existential this IS Miyake's witness.
+
+PROOF, in Miyake's four moves, with only moves 1, 3-partial and 4 left open:
+
+1. `g` = the `L`-sieve of `f` at level `B = M L²`
+   (`exists_cuspForm_qCoeff_sieve`, LEAF).  Its coefficients vanish at every
+   `p ∤ n`: at `(n, L) = 1` by the hypothesis `hf`, and off that by construction.
+2. Theorem 4.6.4 at level `B` — `mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd`
+   above, PROVEN — writes `g = V_p g_p` with `g_p ∈ S₂(Γ₀(Bp))`, `Bp = (M/p) L²`.
+3. `U_p g = V_1 g_p` (a two-line coefficient computation: `a_m(U_p g) = a_{pm}(g)
+   = a_m(g_p)`), so `Tr^B_{Bp}(U_p g) = κ · g_p` with `κ ≠ 0` by
+   `exists_smul_traceOp_degeneracyOp_one`.  This is (4.6.12), and it is where the
+   level comes back DOWN.  Lemma 4.6.6(1) (`traceOp_degeneracyOp_one_comm`, LEAF)
+   then identifies the trace computed at level `B` with the one at level `M`,
+   which is (4.6.13) and the only place `p ∤ L` is used.
+4. `h = V_1 f − g` is the complementary part, supported off the indices coprime to
+   `L`; `qCoeff_traceOp_heckeOp_eq_zero` (LEAF) says its trace contributes nothing
+   at those indices.  That is (4.6.14), and it closes the estimate.
+
+Assembling: for `m` coprime to `L`, `a_m(Tr^M_{M/p}(U_p f)) = κ · a_{pm}(f)`, so
+`c = κ⁻¹` works — at `p ∤ n` the conclusion is the hypothesis `hf` itself, and at
+`n = pm` it is that identity.
+
+FAITHFULNESS.  The constant is left existential deliberately, so no normalization
+convention can make the leaf false; the OPERATOR is what the previous cut got
+wrong, and `not_exists_smul_traceOp_qCoeff_coprime_eq_zero` is the machine-checked
+record of that.  `1 < L` marks the composite case of Miyake's induction and `¬ p ∣ L`
+is his square-freeness reduction, consumed in move 3.  NOT vacuous: `f = 0` gives
+`c` arbitrary, and for `f = V_p u + V_q w` with `q ∣ L` the trace genuinely
+recovers `u`. -/
+theorem exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero {M p L : ℕ}
     [NeZero M] [NeZero (M / p)]
     (hM : 0 < M) (hp : p.Prime) (hpM : p ∣ M) (hL : 1 < L) (hpL : ¬ p ∣ L)
     {f : CuspForm (Gamma0GL M) 2}
     (hf : ∀ n : ℕ, ¬ p ∣ n → Nat.Coprime n L → qCoeff M f n = 0) :
     ∃ c : ℂ, ∀ n : ℕ, Nat.Coprime n L →
-      qCoeff M (f - degeneracyOp (M / p) M p (c • traceOp M (M / p) f)) n = 0 :=
-  sorry
+      qCoeff M (f - degeneracyOp (M / p) M p
+        (c • traceOp M (M / p) (heckeOp M p f))) n = 0 := by
+  have hL0 : 0 < L := by omega
+  set N := M / p with hNdef
+  have hpN : p * N = M := Nat.mul_div_cancel' hpM
+  have hN0 : 0 < N := Nat.div_pos (Nat.le_of_dvd hM hpM) hp.pos
+  set B := M * L ^ 2 with hBdef
+  set Bp := N * L ^ 2 with hBpdef
+  have hB0 : 0 < B := by rw [hBdef]; positivity
+  have hBp0 : 0 < Bp := by rw [hBpdef]; positivity
+  haveI : NeZero B := ⟨hB0.ne'⟩
+  haveI : NeZero Bp := ⟨hBp0.ne'⟩
+  have hpBp : p * Bp = B := by rw [hBdef, hBpdef, ← hpN]; ring
+  have hpB : p ∣ B := ⟨Bp, hpBp.symm⟩
+  have hBdiv : B / p = Bp := by rw [← hpBp, Nat.mul_div_cancel_left _ hp.pos]
+  have hBpdvdB : Bp ∣ B := ⟨p, by rw [← hpBp]; ring⟩
+  have hMB : M ∣ B := ⟨L ^ 2, hBdef⟩
+  have hNBp : N ∣ Bp := ⟨L ^ 2, hBpdef⟩
+  have hpcop : Nat.Coprime p L := (Nat.Prime.coprime_iff_not_dvd hp).mpr hpL
+  -- MOVE 1: the `L`-sieve of `f`, at level `B = M L²`
+  obtain ⟨g, hg⟩ := exists_cuspForm_qCoeff_sieve hM hL0 hBdef.symm f
+  have hgz : ∀ n : ℕ, ¬ p ∣ n → qCoeff B g n = 0 := by
+    intro n hn
+    rw [hg n]
+    split_ifs with hc
+    · exact hf n hn hc
+    · rfl
+  -- MOVE 2: Theorem 4.6.4 at level `B`
+  have hmem := mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd hB0 hp hpB hgz
+  rw [hBdiv] at hmem
+  obtain ⟨gp, hgp⟩ := hmem
+  have hpBpdvd : p * Bp ∣ B := ⟨1, by rw [mul_one]; exact hpBp.symm⟩
+  -- MOVE 3: `U_p g` is induced from level `Bp`, so its trace is `κ · g_p`
+  have hUg : heckeOp B p g = degeneracyOp Bp B 1 gp := by
+    refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+    rw [qCoeff_heckeOp hB0 hp g m, if_pos hpB, add_zero, ← hgp,
+      qCoeff_degeneracyOp hp.pos hpBpdvd gp (p * m), if_pos ⟨m, rfl⟩,
+      Nat.mul_div_cancel_left m hp.pos, qCoeff_degeneracyOp_one hBpdvdB gp m]
+  obtain ⟨κ, hκ0, hκ⟩ := exists_smul_traceOp_degeneracyOp_one (A := B) (B := Bp) hBpdvdB
+  have htrg : traceOp B Bp (heckeOp B p g) = κ • gp := by rw [hUg, hκ]
+  -- MOVE 4: the complementary part contributes nothing at indices coprime to `L`
+  set h := degeneracyOp M B 1 f - g with hhdef
+  have hh : ∀ n : ℕ, Nat.Coprime n L → qCoeff B h n = 0 := by
+    intro n hc
+    rw [hhdef, qCoeff_sub, qCoeff_degeneracyOp_one hMB f n, hg n, if_pos hc, sub_self]
+  have hC := qCoeff_traceOp_heckeOp_eq_zero hB0 hp hpBp hL hpL hh
+  have hsplit : degeneracyOp M B 1 f = g + h := by rw [hhdef]; abel
+  have hkey : traceOp B Bp (heckeOp B p (degeneracyOp M B 1 f))
+      = κ • gp + traceOp B Bp (heckeOp B p h) := by
+    rw [hsplit, map_add, map_add, htrg]
+  -- (4.6.13): the trace at level `B` is the trace at level `M`, since `p ∤ L`
+  have hB6 := traceOp_degeneracyOp_one_comm (A := M) (Ap := N) (B := B) (Bp := Bp)
+    (L := L) (p := p) hM hp hpL hL0 hpN hBdef.symm hBpdef.symm (heckeOp M p f)
+  have hcomm : heckeOp B p (degeneracyOp M B 1 f)
+      = degeneracyOp M B 1 (heckeOp M p f) := by
+    refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+    rw [qCoeff_heckeOp hB0 hp _ m, if_pos hpB, add_zero,
+      qCoeff_degeneracyOp_one hMB f (p * m),
+      qCoeff_degeneracyOp_one hMB (heckeOp M p f) m,
+      qCoeff_heckeOp hM hp f m, if_pos hpM, add_zero]
+  have hmain : ∀ m : ℕ, Nat.Coprime m L →
+      qCoeff N (traceOp M N (heckeOp M p f)) m = κ * qCoeff M f (p * m) := by
+    intro m hm
+    have h1 : qCoeff Bp (degeneracyOp N Bp 1 (traceOp M N (heckeOp M p f))) m
+        = qCoeff N (traceOp M N (heckeOp M p f)) m :=
+      qCoeff_degeneracyOp_one hNBp _ m
+    have hpm : Nat.Coprime (p * m) L := Nat.coprime_mul_iff_left.mpr ⟨hpcop, hm⟩
+    have hgpm : qCoeff Bp gp m = qCoeff M f (p * m) := by
+      have h2 := hg (p * m)
+      rw [if_pos hpm] at h2
+      rw [← h2, ← hgp, qCoeff_degeneracyOp hp.pos hpBpdvd gp (p * m), if_pos ⟨m, rfl⟩,
+        Nat.mul_div_cancel_left m hp.pos]
+    rw [← h1, ← hB6, ← hcomm, hkey, qCoeff_add, qCoeff_smul, hC m hm, add_zero, hgpm]
+  refine ⟨κ⁻¹, fun n hn => ?_⟩
+  rw [qCoeff_sub, qCoeff_degeneracyOp hp.pos ⟨1, by rw [mul_one]; exact hpN.symm⟩ _ n]
+  by_cases hpn : p ∣ n
+  · rw [if_pos hpn, qCoeff_smul]
+    obtain ⟨m, rfl⟩ := hpn
+    rw [Nat.mul_div_cancel_left m hp.pos]
+    have hm : Nat.Coprime m L := Nat.Coprime.coprime_dvd_left ⟨p, mul_comm p m⟩ hn
+    rw [hmain m hm, ← mul_assoc, inv_mul_cancel₀ hκ0, one_mul, sub_self]
+  · rw [if_neg hpn, sub_zero]
+    exact hf n hpn hn
+
+end MiyakeTraceBookkeeping
 
 /-- **MIYAKE'S PEELING STEP** (Theorem 4.6.8's induction step), assembled from
 the residual leaf above: the witness is Miyake's own,
-`f_p = p(d+1)⁻¹ · (f ∣ Γ₀(M) · 1 · Γ₀(M/p))` — a scalar multiple of the TRACE of
-`f` itself, not of anything built from the sieve. -/
+`f_p = p(d+1)⁻¹ · (f ∣ Γ₀(M) · [1, 0; 0, p] · Γ₀(M/p))` — a scalar multiple of the
+trace of `U_p f`, not of `f` itself (see the FALSITY AUDIT above) and not of
+anything built from the sieve. -/
 theorem exists_sub_degeneracyOp_qCoeff_coprime_eq_zero {M p L : ℕ}
     (hM : 0 < M) (hp : p.Prime) (hpM : p ∣ M) (hL : 1 < L) (hpL : ¬ p ∣ L)
     {f : CuspForm (Gamma0GL M) 2}
@@ -31874,8 +32281,8 @@ theorem exists_sub_degeneracyOp_qCoeff_coprime_eq_zero {M p L : ℕ}
   haveI : NeZero (M / p) :=
     ⟨(Nat.div_pos (Nat.le_of_dvd hM hpM) hp.pos).ne'⟩
   obtain ⟨c, hc⟩ :=
-    exists_smul_traceOp_qCoeff_coprime_eq_zero hM hp hpM hL hpL hf
-  exact ⟨c • traceOp M (M / p) f, hc⟩
+    exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero hM hp hpM hL hpL hf
+  exact ⟨c • traceOp M (M / p) (heckeOp M p f), hc⟩
 
 /-- **THE MAIN LEMMA, INDUCTED OVER THE PRIME FACTORS OF A DIVISOR OF THE LEVEL**
 (PROVEN 2026-07-27 over the two leaves above; Miyake, *Modular Forms*, Theorem
