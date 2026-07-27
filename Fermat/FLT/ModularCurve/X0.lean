@@ -7152,12 +7152,18 @@ split between
   Weierstrass model of a given `E` — `exists_weierstrassModel_gamma0Datum`.
 
 The second is not a `j`-statement at all.  It is the projective
-Weierstrass construction, which is *already* an owned, in-flight item:
-it is exactly what `exists_ellipticScheme_of_weierstrass` is blocked on
-(its ITEM 1, the graded quotient ring needed to form `Proj`), recorded
-there in detail.  So the cut moves one of the two halves of this leaf
-onto work that is already being done, and leaves behind a leaf that is
-purely the moduli-theoretic `j`-theory.
+Weierstrass construction, which was *already* an owned item when this cut
+was written.  **UPDATE 2026-07-27: it has since landed, and that half is
+now CLOSED.**  `exists_weierstrassModel_gamma0Datum` is PROVEN below,
+from `exists_ellipticScheme_isWeierstrassModel_of_projModel`
+(`Fermat/FLT/ModularCurve/EllipticScheme.lean`), which is
+`exists_ellipticScheme_of_projModel` with the coordinate conjunct
+retained.  Its one residual leaf, `exists_affineChart_projModel`, is a
+concrete statement about `Proj` — the basic open `D₊(Z)` is `Spec` of the
+affine coordinate ring and its complement is the unit section — and it
+lives with the other five projective-model leaves rather than here.  So
+what is left in THIS subsection is purely the moduli-theoretic `j`-theory,
+`exists_jSection`.
 
 **Why the pinning is by MODELS and not by the Galois-module relation.**
 `nonempty_gamma0Datum_of_stable` does supply a datum built from `E`, but
@@ -7264,29 +7270,210 @@ structure IsJSection where
   jt_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
     IsWeierstrassModel d.ab W → jLineVal (jt (𝟙 SpecQ) d) = W.j
 
-/-- **Existence of the `j`-invariant of an elliptic scheme** (sorry node).
+/-! #### The cut of `exists_jSection`: affine bases, and Zariski descent
+
+`exists_jSection` asks for the `j`-invariant over EVERY `ℚ`-scheme `T`,
+and that is two different difficulties welded together:
+
+* over an AFFINE base the question is elliptic-curve geometry — an
+  elliptic scheme over `Spec R` acquires a Weierstrass model after
+  inverting finitely many elements of `R`, `c₄³/Δ` is a well-defined
+  element of each localization, and the pieces agree because two models
+  of one elliptic scheme differ by a variable change;
+* over a GENERAL base the question is descent — a natural transformation
+  defined on affines extends uniquely to all schemes, because
+  `Hom(-, 𝔸¹_ℚ)` is a Zariski sheaf.
+
+Nothing about elliptic curves enters the second, and nothing about
+schemes-in-general enters the first.  So they are cut apart below into
+`exists_jSectionOnAffine` and `exists_jTransformation_of_affine`, with a
+third leaf, `exists_gamma0Datum_baseChange`, supplying the one piece of
+infrastructure both of them need and neither of them is about.
+
+**Why a third leaf for base change, and why it is not pedantry.**
+`IsBaseChangeOf` is *stated* in this file, never CONSTRUCTED — the module
+docstring for it says so explicitly, and every consumer so far has
+received one as a hypothesis.  But the descent argument has to RESTRICT a
+datum to an affine open before it can apply the affine theory, and there
+is nothing at this pin that produces the restricted datum.  That gap is
+invisible in the statement of `exists_jSection` and would have been
+discovered only by whoever tried to prove it, which is exactly the kind
+of thing a cut should surface.  It is also reusable: any future argument
+that localizes a moduli problem needs it.
+
+**What the assembly actually contributes**, so that this is visibly not a
+repackaging: `exists_jTransformation_of_affine` produces only the first
+TWO fields of `IsJSection` — the transformation and its naturality —
+together with the statement that it AGREES with the affine one on affine
+bases.  The pinning field `jt_model` is not among them, and is derived
+below by instantiating the agreement at `R = ℚ` and composing with
+`IsJSectionOnAffine.jt_model`.  Had the descent leaf been allowed to
+return an `IsJSection` outright it would have been the whole theorem
+again under a new name, and the agreement clause would have been an
+unconsumed binding.
+
+**Why the agreement clause also makes the descent leaf non-vacuous.**
+`IsJTransformation` on its own is satisfiable by junk — take `jt` to be
+the constant section `0`, which is natural.  It is the agreement on
+affines that gives the leaf content, and it gives it FULLY: every scheme
+has an affine open cover, so naturality plus agreement on affines
+determines `jt` on all of `T`.  So the leaf is neither vacuous nor
+under-determined. -/
+
+/-- **The `j`-invariant of an elliptic scheme over an AFFINE base.**
+
+This is `IsJSection` with the base restricted to affine schemes in the
+first two fields, and with the third — the pinning against
+`WeierstrassCurve.j` — unchanged, since `SpecQ` is itself affine.
+
+The restriction is a genuine weakening and not a reformulation: `jt` is
+asked for only at `Spec R`, and `jt_natural` only for morphisms of affine
+schemes, so a witness carries no information about a general `T`.  Adding
+that information back is exactly `exists_jTransformation_of_affine`.
+
+`R : Type` rather than `R : Type u`: everything in this file lives in
+`Scheme.{0}`, and `Spec : CommRingCat.{0}ᵒᵖ ⥤ Scheme.{0}` needs its ring
+in `Type 0`. -/
+structure IsJSectionOnAffine where
+  /-- the `j`-invariant of an elliptic scheme over an affine base -/
+  jt : ∀ {R : Type} [CommRing R] (g : Spec (CommRingCat.of R) ⟶ SpecQ),
+    Gamma0Datum 1 (Spec (CommRingCat.of R)) → RelPoint jLineStr g
+  /-- `j` is natural for base changes between affine bases -/
+  jt_natural : ∀ {R' R : Type} [CommRing R'] [CommRing R]
+    (h : Spec (CommRingCat.of R') ⟶ Spec (CommRingCat.of R))
+    {g : Spec (CommRingCat.of R) ⟶ SpecQ} {g' : Spec (CommRingCat.of R') ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum 1 (Spec (CommRingCat.of R'))}
+    {d : Gamma0Datum 1 (Spec (CommRingCat.of R))},
+    IsBaseChangeOf h d' d → jt g' d' = RelPoint.pre h hg (jt g d)
+  /-- `j` agrees with `WeierstrassCurve.j` on every Weierstrass model -/
+  jt_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
+    IsWeierstrassModel d.ab W → jLineVal (jt (R := ℚ) (𝟙 SpecQ) d) = W.j
+
+/-- **A natural transformation from `[Γ₀(1)]` to the points of the
+`j`-line, with NO pinning.**
+
+`IsJSection` minus its `jt_model` field.  Alone it is satisfiable by junk
+— the constant section is natural — which is deliberate: it is the target
+of the DESCENT leaf, whose content lies entirely in the accompanying
+agreement clause, and keeping the pinning out of it is what stops that
+leaf from being `exists_jSection` under another name. -/
+structure IsJTransformation where
+  /-- the transformation -/
+  jt : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum 1 T → RelPoint jLineStr g
+  /-- naturality: a base change of data is sent to the precomposed point -/
+  jt_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+    IsBaseChangeOf h d' d → jt g' d' = RelPoint.pre h hg (jt g d)
+
+/-- **A `Γ₀(N)`-datum can be based-changed along any morphism** (sorry
+node).
+
+TRUE, and it is the ordinary fibre product: pull the elliptic scheme back
+along `h`, and pull the level structure back with it.  Every clause of
+`Gamma0Datum` is stable under base change, and each for a reason already
+present at this pin —
+
+* `AbelianSchemeStruct` — `IsProper`, `Smooth` and `GeometricallyConnected`
+  are all `MorphismProperty.IsStableUnderBaseChange` in mathlib; the zero
+  section, the group law and their axioms transport because
+  `RelPoint (pullback.fst) g` is canonically `RelPoint f (g ≫ h)`, which
+  is the universal property of the pullback and nothing more;
+* `SmoothOfRelativeDimension 1` — likewise stable under base change;
+* `CyclicSubgroupOfOrder` — the pullback of a closed immersion is a closed
+  immersion, of a finite flat morphism a finite flat morphism, and the
+  GEOMETRIC FIBRES are unchanged: a geometric point of `T'` is a geometric
+  point of `T` composed with `h`, so "cyclic of order exactly `N` on every
+  geometric fibre" is literally the same family of conditions re-indexed.
+
+`Nonempty` and not `∃ … , IsBaseChangeOf …`: `IsBaseChangeOf` is a
+`structure` in `Type`, not a `Prop`, so it cannot be the body of an `∃`.
+
+WHY IT IS OPEN.  `IsBaseChangeOf` is *stated* in this file and never
+constructed — see its own docstring, which says so and explains that the
+development has so far only ever consumed one.  This leaf is the first
+producer, and it is pure infrastructure: it mentions no `j`, no
+Weierstrass equation and no modular curve.
+
+THE CHECK THAT WOULD REFUTE "OPEN": any declaration in this project or in
+mathlib constructing a `Gamma0Datum` over `T'` out of one over `T`, or
+more generally an `AbelianSchemeStruct` on a pullback of a morphism
+carrying one. -/
+theorem exists_gamma0Datum_baseChange {N : ℕ} {T' T : Scheme.{0}} (h : T' ⟶ T)
+    (d : Gamma0Datum N T) :
+    ∃ d' : Gamma0Datum N T', Nonempty (IsBaseChangeOf h d' d) :=
+  sorry
+
+/-- **Zariski descent for the `j`-invariant: an affine `j`-theory extends
+to all bases** (sorry node).
+
+TRUE, and it is descent and nothing else — no elliptic curve enters the
+argument, which is the point of cutting here.
+
+THE ARGUMENT.  Let `T` be any `ℚ`-scheme and `d` a `Γ₀(1)`-datum on it.
+Choose an affine open cover `T = ⋃ Uᵢ`; by `hbc` restrict `d` to each
+`Uᵢ`, giving `dᵢ`, and apply `ja.jt` there to get `uᵢ : Uᵢ ⟶ 𝔸¹_ℚ` over
+`ℚ`.  On an overlap `Uᵢ ∩ Uⱼ`, restrict `dᵢ` and `dⱼ` further; both
+results are base changes of `d` along the same morphism, hence pullbacks
+of the same object, hence carry an `IsBaseChangeOf 𝟙` between them by the
+universal property — so `ja.jt_natural` (twice, plus once at `𝟙`) makes
+`uᵢ` and `uⱼ` agree there.  `Hom(-, 𝔸¹_ℚ)` is a Zariski sheaf, so the
+`uᵢ` glue to a unique `u : T ⟶ 𝔸¹_ℚ`; uniqueness of the gluing gives both
+the naturality of `d ↦ u` for arbitrary morphisms of schemes and its
+agreement with `ja.jt` when `T` is already affine.
+
+WHAT IS MISSING, precisely: the "two base changes along the same morphism
+differ by an `IsBaseChangeOf 𝟙`" step, which is `IsBaseChangeOf.isPullback`
+plus `IsPullback.isoIsPullback` — available at this pin, but the transport
+of `map_zero`, `map_add` and `liesIn_iff` across that isomorphism has to be
+written; and the sheaf gluing itself, for which
+`AlgebraicGeometry.Scheme.OpenCover` and the fact that morphisms glue are
+the relevant mathlib API.
+
+WHY `hbc` IS A HYPOTHESIS RATHER THAN A CALL.  So that the base-change
+leaf is visibly consumed at the assembly site below, and so that this leaf
+and `exists_gamma0Datum_baseChange` can be worked on by different owners
+without either waiting on the other.
+
+NOT VACUOUS.  See the subsection docstring: `IsJTransformation` alone is
+junk-satisfiable, and the agreement clause is what removes that — and
+removes it completely, since every scheme has an affine open cover. -/
+theorem exists_jTransformation_of_affine (ja : IsJSectionOnAffine)
+    (hbc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) (d : Gamma0Datum 1 T),
+      ∃ d' : Gamma0Datum 1 T', Nonempty (IsBaseChangeOf h d' d)) :
+    ∃ jtr : IsJTransformation, ∀ {R : Type} [CommRing R]
+      (g : Spec (CommRingCat.of R) ⟶ SpecQ) (d : Gamma0Datum 1 (Spec (CommRingCat.of R))),
+      jtr.jt g d = ja.jt g d :=
+  sorry
+
+/-- **Existence of the `j`-invariant of an elliptic scheme over an affine
+base** (sorry node).
 
 TRUE and classical — this is `Y_0(1) ≅ 𝔸¹_j`, Deligne–Rapoport VI, or
-Silverman *AEC* III.1 plus descent.
+Silverman *AEC* III.1 plus descent.  **This leaf carries all of the
+elliptic-curve geometry of `exists_jSection`**; what it no longer carries
+is the passage to non-affine bases, which is
+`exists_jTransformation_of_affine`.
 
 WHAT IT NEEDS.  A Weierstrass presentation of an elliptic scheme
-`f : E ⟶ T` Zariski-locally on `T`, so that `c₄³/Δ` glues to a global
-function; equivalently, the line bundle `ω = f_* Ω¹_{E/T}` and the
-classical formulas for `c₄, c₆, Δ` as sections of its powers.  None of
-that exists at this pin: `AbelianSchemeStruct` is a functor-of-points
-presentation with no coordinates anywhere, and mathlib's
-`WeierstrassCurve.j` is defined only for a Weierstrass EQUATION over a
-ring, not for a scheme.  Searched 2026-07-27 over `Fermat/`,
+`f : E ⟶ Spec R` after inverting finitely many elements of `R`, so that
+`c₄³/Δ` is defined on each piece; equivalently, the line bundle
+`ω = f_* Ω¹_{E/T}` and the classical formulas for `c₄, c₆, Δ` as sections
+of its powers.  None of that exists at this pin: `AbelianSchemeStruct` is
+a functor-of-points presentation with no coordinates anywhere, and
+mathlib's `WeierstrassCurve.j` is defined only for a Weierstrass EQUATION
+over a ring, not for a scheme.  Searched 2026-07-27 over `Fermat/`,
 `.lake/packages/mathlib` and `~/cs/FLT`: mathlib has NO file mentioning
 an elliptic scheme at all, `~/cs/FLT` has no `jInvariant`, and the only
 `j` anywhere is `WeierstrassCurve.j`
 (`Mathlib/AlgebraicGeometry/EllipticCurve/Weierstrass.lean:385`).
 
-THE AXIS THIS VERDICT RANGES OVER, stated so the next reader can see what
+THE AXIS THAT VERDICT RANGES OVER, stated so the next reader can see what
 it does not cover: presentations of elliptic schemes.  It does NOT cover
-the split between the `j`-theory and the existence of models over `ℚ`;
-that split is the cut recorded in the subsection docstring above, and it
-is what removed `exists_weierstrassModel_gamma0Datum` from this node.
+the split between the `j`-theory and the existence of models over `ℚ` —
+that was the earlier cut, and it produced
+`exists_weierstrassModel_gamma0Datum`, now PROVEN.  Nor does it cover the
+split between affine and general bases, which is the cut this leaf is the
+residue of.
 
 THE CHECK THAT WOULD REFUTE THIS.  Any construction attaching a global
 section of `𝒪_T` to an `AbelianSchemeStruct` of relative dimension `1`,
@@ -7294,12 +7481,31 @@ natural in `T`; equivalently, a `grep` for a Weierstrass presentation of
 `AbelianSchemeStruct` or for `ω`/`c₄`/`Δ` on a relative curve.
 
 THE FURTHER CUT, when someone attacks this.  Three steps, of which the
-middle one is nearly free at this pin: (i) Zariski-locally on `T` an
-elliptic scheme is a Weierstrass model; (ii) two models of one elliptic
-scheme differ by a `VariableChange`, so `WeierstrassCurve.variableChange_j`
-makes the local `j`'s agree on overlaps, and `WeierstrassCurve.map_j`
-makes them compatible with base change; (iii) the local sections glue.
-Only (i) and the variable-change half of (ii) are genuinely missing.
+middle one is nearly free at this pin, and only the FIRST is now genuinely
+missing:
+
+* (i) after inverting finitely many elements of `R`, an elliptic scheme
+  over `Spec R` is a Weierstrass model — i.e. `IsWeierstrassModel` holds
+  for a base change of the datum to `Spec (Localization.Away a)`.  This
+  needs `exists_gamma0Datum_baseChange` to even state, which is why that
+  leaf is worth having independently of the descent one.
+* (ii) two Weierstrass models of ONE elliptic scheme have the same `j`.
+  `WeierstrassCurve.variableChange_j`
+  (`Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean:246`,
+  `(C • W).j = W.j`) and `WeierstrassCurve.map_j` (`Weierstrass.lean:470`,
+  `(W.map f).j = f W.j`, naturality of `j` under base change) are BOTH
+  already in the pin, so what is missing here is only "two models of one
+  elliptic scheme differ by a variable change" — and the argument for
+  that is written out in the docstring of `IsWeierstrassModel` above.
+* (iii) the finitely many local values glue over `Spec R`.  This is
+  ordinary commutative algebra — an equalizer over a cover by basic opens
+  `D(aᵢ)` with `span {aᵢ} = ⊤` — and is much lighter than the
+  scheme-level gluing, which has already been factored out into
+  `exists_jTransformation_of_affine`.
+
+Step (ii) is deliberately NOT a separate declaration: nothing else would
+consume it, so it would be free-floating.  Whoever proves (i) and (iii)
+should write it as a `have` inside this proof.
 
 NOT VACUOUS, and not satisfiable by junk.  Two independent reasons.
 First, `jLineVal` is the honest coordinate (see its docstring), so the
@@ -7307,41 +7513,112 @@ value condition has content.  Second — and this is the sharper one — a
 `jt` whose value is a CONSTANT section cannot satisfy `jt_model`: pull a
 model back along the fibres of any nonisotrivial family and naturality
 forces every fibre to take the same value, while `jt_model` demands the
-fibre's own `j`.  So `jt` must genuinely vary. -/
-theorem exists_jSection : Nonempty IsJSection :=
+fibre's own `j`.  So `jt` must genuinely vary.  Both reasons survive the
+restriction to affine bases, since the pinning field is unchanged and
+`SpecQ` is affine. -/
+theorem exists_jSectionOnAffine : Nonempty IsJSectionOnAffine :=
   sorry
 
+/-- **Existence of the `j`-invariant of an elliptic scheme** (PROVEN
+2026-07-27, over the three-leaf cut of the subsection above; formerly a
+sorry node carrying an IRREDUCIBLE verdict).
+
+The proof is the assembly and nothing else, and it is worth reading for
+what it does rather than for its length: the descent leaf hands back a
+natural transformation over ALL bases together with the promise that it
+agrees with the affine one on affine bases, and `SpecQ` is affine — so
+instantiating the agreement at `R = ℚ` rewrites the pinning goal into
+`IsJSectionOnAffine.jt_model`, which is where the elliptic-curve content
+lives.  That step is the whole reason the descent leaf is stated with an
+agreement clause and returns an `IsJTransformation` rather than an
+`IsJSection`; see the subsection docstring.
+
+The earlier IRREDUCIBLE verdict on this node is RETIRED, for the same
+reason the one on `exists_jLine` was: it was not wrong, it was narrow.
+It ranged over *presentations of elliptic schemes*, and both axes that
+actually split this node — models-over-`ℚ` versus `j`-theory, then affine
+versus general base — lay outside it.  The verdict, with that axis now
+named explicitly, is preserved verbatim on `exists_jSectionOnAffine`,
+which is where it still applies. -/
+theorem exists_jSection : Nonempty IsJSection := by
+  obtain ⟨ja⟩ := exists_jSectionOnAffine
+  obtain ⟨jtr, hagree⟩ :=
+    exists_jTransformation_of_affine ja fun h d => exists_gamma0Datum_baseChange h d
+  refine ⟨{ jt := jtr.jt, jt_natural := jtr.jt_natural, jt_model := ?_ }⟩
+  intro W _ d hd
+  rw [hagree (R := ℚ) (𝟙 SpecQ) d]
+  exact ja.jt_model W d hd
+
 /-- **Existence of a `Γ₀(N)`-datum over `ℚ` with a prescribed Weierstrass
-model** (sorry node).
+model** (PROVEN 2026-07-27; formerly a sorry node).
 
 TRUE: take the projective Weierstrass curve of `E`, whose complement of
 the point at infinity is `Spec ℚ[E]` by construction, with the subgroup
 scheme generated by `g` — which descends to `ℚ` precisely because
-`hstable` says the Galois action preserves `⟨g⟩`.
+`hstable` says the Galois action preserves `⟨g⟩`.  The proof below is
+exactly that sentence.
 
-This is the SAME missing construction as
-`exists_ellipticScheme_of_weierstrass`, not a new one: both need the
-projective Weierstrass scheme, i.e. that theorem's ITEM 1, the grading on
-a graded quotient ring needed to form `Proj`, recorded there as in flight
-and unreleased.  The difference is only in what is remembered about the
-result — that theorem remembers a Galois-equivariant `≃+` on geometric
-points, this one remembers the coordinates.  **Whoever closes one should
-close both**, and the datum's level structure is exactly the one
-`nonempty_gamma0Datum_of_stable` already builds.
+**THE PREVIOUS VERSION OF THIS DOCSTRING WAS STALE AND IS RETRACTED.**
+It said that this leaf needs `exists_ellipticScheme_of_weierstrass`'s
+ITEM 1 — the grading on a graded quotient ring — and recorded that item
+as "in flight and unreleased", i.e. it instructed the reader to WAIT.
+Both halves have since landed: `HomogeneousIdeal.quotientGrading` is item
+1, `WeierstrassCurve.Projective.proj` is item 2, and
+`exists_ellipticScheme_of_weierstrass` has been ASSEMBLED over the five
+leaves of `Fermat/FLT/ModularCurve/EllipticScheme.lean`.  So the blocking
+construction exists; what this leaf needed beyond it was never ITEM 1 at
+all, but the identification of the affine chart, which is now the single
+named leaf `exists_affineChart_projModel` in that module.
+
+**Why this is not just `nonempty_gamma0Datum_of_stable`.**  That theorem
+consumes `exists_ellipticScheme_of_weierstrass`, whose statement is
+existential over the scheme and remembers `E` only through a
+Galois-equivariant `≃+` on geometric points — which, as the docstring at
+`IsJMapOn.classify_jm` records, is **not** known to determine `E.j`.  So
+its datum cannot be shown to satisfy `IsWeierstrassModel`, and using it
+here would leave `IsJSection.jt_model` with nothing to fire on.  This
+proof instead consumes `exists_ellipticScheme_isWeierstrassModel_of_projModel`,
+the same statement with the COORDINATE conjunct retained.  Everything else
+— the transport of the order and of the stability of `g` along the `≃+`,
+and the appeal to `exists_cyclicSubgroupOfOrder_of_galoisStable` — is
+`nonempty_gamma0Datum_of_stable`'s proof verbatim, and the two should be
+kept in step.
 
 The hypotheses are load-bearing and are the same three as everywhere else
 in this file: without a Galois-stable cyclic subgroup of order `N` there
 is no `Γ₀(N)`-structure on `E` over `ℚ` at all, so the statement would be
-false.  They are underscore-prefixed only because the sorry does not
-consume them. -/
+false.  They are no longer underscore-prefixed, because the proof now
+consumes all three: `hN` and `hg` feed the order of the generator and
+`hstable` its Galois stability. -/
 theorem exists_weierstrassModel_gamma0Datum (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (N : ℕ) (_hN : N ≠ 0) (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = N)
-    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+    (N : ℕ) (hN : N ≠ 0) (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    ∃ d : Gamma0Datum N SpecQ, IsWeierstrassModel d.ab E :=
-  sorry
+    ∃ d : Gamma0Datum N SpecQ, IsWeierstrassModel d.ab E := by
+  obtain ⟨A, f, ab, hdim, hmodel, e, he⟩ :=
+    exists_ellipticScheme_isWeierstrassModel_of_projModel E
+  -- The `AddCommGroup` structure on the geometric fibre.  As in
+  -- `nonempty_gamma0Datum_of_stable`, this binding is load-bearing: the
+  -- `letI`s inside the two `have`s below scope over those statements only.
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- The order of the generator transports along the additive equivalence.
+  have hord : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+      addOrderOf (e g) = N := by
+    rw [AddEquiv.addOrderOf_eq]
+    exact hg
+  -- So does its Galois stability.
+  have hst : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ab.galSMul (𝟙 SpecQ) σ (e g) ∈ AddSubgroup.zmultiples (e g) := by
+    intro σ
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ g (AddSubgroup.mem_zmultiples g))
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+    rw [← he σ g, ← hk, map_zsmul]
+  obtain ⟨cyc⟩ := exists_cyclicSubgroupOfOrder_of_galoisStable ab N hN (e g) hord hst
+  exact ⟨{ E := A, f := f, ab := ab, relativeDimensionOne := hdim, cyc := cyc }, hmodel⟩
 
 /-- **Existence of the `j`-invariant of an elliptic scheme, in the form
 `exists_jMap` consumes it** (PROVEN 2026-07-27, over `exists_jSection`
