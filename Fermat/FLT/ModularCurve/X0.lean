@@ -14507,6 +14507,330 @@ theorem lFunction_apply_one_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLev
     (L : ℂ → ℂ) (hL : IsLFunctionOf a L) : L 1 ≠ 0 :=
   sorry
 
+/-! #### The Eichler–Shimura seam of `isTorsion_jacobian_of_lFunction_ne_zero`
+
+The declarations in this block exist to cut `isTorsion_jacobian_of_lFunction_ne_zero`
+below.  `RelPoint.post` and `IsAdditiveOn` were HOISTED here verbatim from ~4000
+lines down (see the note at their old site); the rest is new on 2026-07-27. -/
+
+/-- **Postcomposition of a relative point along an `S`-morphism**
+(PROVEN — the dual of `RelPoint.pre`, which precomposes in the TEST
+scheme; this one postcomposes in the TARGET).
+
+Together with `RelPoint.pre` it is everything needed to say that a
+morphism of abelian schemes is a homomorphism, which is what
+`IsAdditiveOn` below does.  The development had no such notion before
+2026-07-27 — `grep` for `RelPoint.post` and `IsAdditiveOn` returned
+nothing in this project, in mathlib and in `~/cs/FLT`. -/
+def RelPoint.post {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ bf = af) {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
+    RelPoint bf g :=
+  ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩
+
+/-- **`u : A ⟶ B` is a HOMOMORPHISM of abelian schemes**, read on the
+functor of points: postcomposition by `u` carries sums to sums, at every
+test scheme and every base point.
+
+By Yoneda this is exactly the classical condition that `u` commute with
+the two group laws, and it is stated on points rather than as an
+equation of morphisms `A ×_S A ⟶ B` for the same reason
+`AbelianSchemeStruct` itself is: the group law of an abelian scheme in
+this development is primitively a functor-of-points datum, and
+`addHom` — the morphism-level multiplication — is currently available
+only over the base `SpecQ`. -/
+def IsAdditiveOn {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
+    (u : A ⟶ B) (hu : u ≫ bf = af) : Prop :=
+  ∀ {T : Scheme.{0}} {g : T ⟶ S} (x y : RelPoint af g),
+    RelPoint.post u hu (abA.add x y)
+      = abB.add (RelPoint.post u hu x) (RelPoint.post u hu y)
+
+/-- **ISOGENY INVARIANCE OF TORSION, in the only form the argument needs**
+(PROVEN 2026-07-27) — pure group theory, no geometry: if a group maps to
+finitely many torsion groups with FINITE joint kernel, it is torsion.
+
+This is the elementary third step of Kolyvagin–Logachev's classical
+assembly ("a `ℚ`-isogeny has finite kernel, so torsion pulls back"),
+extracted so that it is proven once rather than reproduced inside a
+geometric argument.  It is stated for an arbitrary family rather than for
+a product because the product of abelian schemes is not available in this
+development — a family of quotient maps with finite joint kernel is
+exactly the content of "the map to the product is an isogeny", written in
+the one form that is expressible here.
+
+The proof: for `x` pick `k i > 0` killing `φ i x`, set `n = ∏ k i`, then
+`n • x` lies in the joint kernel, which is a FINITE subgroup, so
+`m • (n • x) = 0` for some `m > 0` and `x` has order dividing `m * n`.
+`Fintype ι` is what makes `n` exist; the statement is false for an
+infinite family (take `G = ℤ`, `H i = ℤ/i`).
+
+Note the kernel hypothesis is `Set.Finite` rather than `Finite` of a
+subtype, because that is the shape `IsHeckeIsotypicDecomposition` below
+can state without first bundling the `φ i` as `AddMonoidHom`s. -/
+theorem isTorsion_of_finite_jointKer {G : Type*} [AddCommGroup G] {ι : Type*} [Fintype ι]
+    {H : ι → Type*} [∀ i, AddCommGroup (H i)] (φ : ∀ i, G →+ H i)
+    (htor : ∀ i, AddMonoid.IsTorsion (H i))
+    (hker : {x : G | ∀ i, φ i x = 0}.Finite) :
+    AddMonoid.IsTorsion G := by
+  have hset : ((⨅ i, (φ i).ker : AddSubgroup G) : Set G) = {x : G | ∀ i, φ i x = 0} := by
+    ext y
+    simp [AddMonoidHom.mem_ker]
+  haveI : Finite ((⨅ i, (φ i).ker : AddSubgroup G)) := by
+    have h2 : (((⨅ i, (φ i).ker : AddSubgroup G) : Set G)).Finite := hset ▸ hker
+    exact h2.to_subtype
+  intro x
+  rw [isOfFinAddOrder_iff_nsmul_eq_zero]
+  choose k hk hkx using fun i => isOfFinAddOrder_iff_nsmul_eq_zero.mp (htor i (φ i x))
+  set n : ℕ := ∏ i, k i
+  have hnpos : 0 < n := Finset.prod_pos fun i _ => hk i
+  have hmem : n • x ∈ (⨅ i, (φ i).ker : AddSubgroup G) := by
+    rw [AddSubgroup.mem_iInf]
+    intro i
+    rw [AddMonoidHom.mem_ker, map_nsmul]
+    obtain ⟨m, hm⟩ : k i ∣ n := Finset.dvd_prod_of_mem k (Finset.mem_univ i)
+    rw [hm, mul_comm, ← smul_smul, hkx i, smul_zero]
+  obtain ⟨m, hmpos, hmz⟩ := isOfFinAddOrder_iff_nsmul_eq_zero.mp
+    (isOfFinAddOrder_of_finite (⟨n • x, hmem⟩ : (⨅ i, (φ i).ker : AddSubgroup G)))
+  refine ⟨m * n, Nat.mul_pos hmpos hnpos, ?_⟩
+  have hcoe : ((m • (⟨n • x, hmem⟩ : (⨅ i, (φ i).ker : AddSubgroup G)) : _) : G) = 0 := by
+    rw [hmz]; rfl
+  rw [← smul_smul]
+  simpa using hcoe
+
+/-- **EICHLER–SHIMURA, as a datum: the Hecke-isotypic decomposition of
+`J₀(N)`** (new 2026-07-27).
+
+`J₀(N)` is `ℚ`-isogenous to a product `∏ A_i` in which each factor is
+cut out by ONE system of Hecke eigenvalues.  Written here as a family of
+quotient maps `u i : J ⟶ A i` with finite joint kernel on rational
+points, because the product of abelian schemes is not available in this
+development and is not needed: "the map to the product is an isogeny" is
+`finite_ker`, and nothing downstream inspects the product itself.
+
+The fields, in blocks:
+
+* `T`, `T_comp`, `T_add` — the Hecke operators `T_n` as endomorphisms of
+  `J₀(N)` over `ℚ`;
+* `idx`, `fintypeIdx`, `A`, `astr`, `abA` — the factors, finitely many;
+* `u`, `u_comp`, `u_add`, `u_surj` — the optimal quotient maps, which are
+  surjective homomorphisms;
+* `form`, `coeff`, `isEigen` — the eigenform each factor is labelled by;
+* `S`, `S_comp`, `S_add`, `equivariant` — the descended Hecke action, and
+  the equivariance `u i ∘ T n = S i n ∘ u i` that says `u i` is a map of
+  Hecke modules;
+* `integral`, `isotypic` — `A i` is ISOTYPIC for the system `coeff i`
+  away from `N`: `T n` acts on it as a root of `minpoly ℤ (coeff i n)`;
+* `cover` — every eigenform of level `N` labels some factor;
+* `finite_ker` — the joint kernel on `ℚ`-points is finite.
+
+**WHY IT IS TRUE.**  Take `idx` to be, for each newform `g` of each level
+`M ∣ N`, `σ₀(N/M)` copies, with `A` the modular abelian variety `A_g` and
+the `σ₀(N/M)` maps `u` the distinct degeneracy-twisted optimal quotients
+`J₀(N) ↠ A_g`; those cut out everything, which is `finite_ker`.  Label
+the copies by the eigenforms of `S₂(Γ₀(N))` lying above `g`, of which
+there are at most `σ₀(N/M) = dim` of the `g`-old space (distinct
+eigenforms are independent), so every eigenform gets a label and `cover`
+holds.  `isotypic` holds because `T_n` acts on `A_g` through
+`a_n(g) ∈ O_g` and `ℤ[a_n] ≅ ℤ[X]/(minpoly ℤ a_n)`; `integral` is
+Shimura's theorem that the `a_n` are algebraic integers.
+
+**WHY `isotypic` IS RESTRICTED TO `n` COPRIME TO `N`.**  It is FALSE for
+`n ∣ N`: a `p`-stabilization and its newform share every `a_n` with
+`(n, N) = 1` but not `a_p`, and `U_p` is not semisimple on the old part,
+so `A_g` is not `U_p`-isotypic as a quotient of `J₀(N)`.  The anemic
+Hecke algebra is exactly the part that does descend.
+
+**DEGENERACY AUDIT — this is NOT the cut the 2026-07-27 audit rejected.**
+That audit rejected "isogeny decomposition + each factor torsion" because
+the empty product (`idx` empty) makes the first half assert the
+conclusion.  Two fields kill that here, and both are load-bearing even
+though the assembly consumes neither:
+
+* `cover` makes `idx` empty only when `S₂(Γ₀(N))` has no eigenform at
+  all, in which case `J₀(N)` is trivial and there is nothing to prove.
+* `isotypic` kills the residual "one factor, `A = J`, `u = 𝟙`" witness:
+  if two eigenforms differ at some `a_n` with `(n, N) = 1`, their
+  `minpoly`s are distinct monic irreducibles over `ℚ`, hence coprime, so
+  `P(T_n) = Q(T_n) = 0` on the SAME `J` forces `c • x = 0` for a nonzero
+  integer `c` and every `x ∈ J(ℚ)` — i.e. that witness already proves the
+  conclusion and is not a cheaper route.  The one case it does not
+  exclude is a level whose eigenforms all share the anemic system, and
+  there `J₀(N)` really is isotypic and the decomposition has nothing to
+  say.
+
+**WHAT IS NOT PINNED, and it is the crux.**  `T` is an ARBITRARY family
+of endomorphisms; nothing here says it is the family of genuine Hecke
+correspondences.  Pinning it needs the modular interpretation (`T_ℓ` on
+`Y₀(N)` sends `(E, C)` to `∑_D (E/D, (C+D)/D)`), and quotients of
+elliptic curves by finite subgroups do not exist at this pin — there is
+no isogeny theory for elliptic curves in this project, in mathlib or in
+`~/cs/FLT` (`Modularity/TateModule.lean` records the same absence).  The
+consequence is carried honestly by
+`isTorsion_factor_of_heckeIsotypic` below, which therefore keeps the FULL
+analytic hypothesis rather than the single value `L(form i, 1) ≠ 0`; see
+its docstring for the counterexample that makes the sharper statement
+false.  **The check that would let the sharper statement be written:
+land a pin for `T` — either elliptic-curve isogenies (for the moduli
+description) or the action of `T_n` on `H⁰(J, Ω¹) ≅ S₂(Γ₀(N))` against
+`heckeOp N n`, which already exists in
+`Fermat/FLT/Modularity/HeckeOperator.lean`.** -/
+structure IsHeckeIsotypicDecomposition (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) where
+  /-- the Hecke operators `T_n`, as endomorphisms of `J₀(N)` -/
+  T : ℕ → (J ⟶ J)
+  /-- they are endomorphisms over the base -/
+  T_comp : ∀ n, T n ≫ jstr = jstr
+  /-- they are homomorphisms -/
+  T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n)
+  /-- the index set of the isogeny factors -/
+  idx : Type
+  /-- there are finitely many factors -/
+  fintypeIdx : Fintype idx
+  /-- the factors -/
+  A : idx → Scheme.{0}
+  /-- their structure morphisms -/
+  astr : ∀ i, A i ⟶ SpecQ
+  /-- each factor is an abelian scheme over `ℚ` -/
+  abA : ∀ i, AbelianSchemeStruct (astr i)
+  /-- the optimal quotient maps -/
+  u : ∀ i, J ⟶ A i
+  /-- they are morphisms over the base -/
+  u_comp : ∀ i, u i ≫ astr i = jstr
+  /-- they are homomorphisms -/
+  u_add : ∀ i, IsAdditiveOn ab (abA i) (u i) (u_comp i)
+  /-- they are surjective; this is what bounds the rank of a factor by
+  the rank of `J₀(N)` -/
+  u_surj : ∀ i, AlgebraicGeometry.Surjective (u i)
+  /-- the eigenform labelling the factor -/
+  form : idx → CuspForm (Gamma0GL N) 2
+  /-- its `q`-expansion -/
+  coeff : idx → (ℕ → ℂ)
+  /-- the labels really are eigenforms of `S₂(Γ₀(N))` -/
+  isEigen : ∀ i, IsWeightTwoEigenform N (form i) (coeff i)
+  /-- the Hecke action descended to the factor -/
+  S : ∀ i, ℕ → (A i ⟶ A i)
+  /-- over the base -/
+  S_comp : ∀ i n, S i n ≫ astr i = astr i
+  /-- homomorphisms -/
+  S_add : ∀ i n, IsAdditiveOn (abA i) (abA i) (S i n) (S_comp i n)
+  /-- `u i` is a map of Hecke modules: `u i ∘ T n = S i n ∘ u i` -/
+  equivariant : ∀ i n, T n ≫ u i = u i ≫ S i n
+  /-- the Hecke eigenvalues are algebraic integers (Shimura); without
+  this `minpoly ℤ (coeff i n)` would be `0` and `isotypic` vacuous -/
+  integral : ∀ i n, IsIntegral ℤ (coeff i n)
+  /-- **`A i` is isotypic for the eigenvalue system `coeff i`**: for `n`
+  coprime to `N`, the descended `T n` is annihilated by the minimal
+  polynomial of `coeff i n`, read on relative points over every base -/
+  isotypic : ∀ (i : idx) (n : ℕ), Nat.Coprime n N →
+    ∀ {T' : Scheme.{0}} (g : T' ⟶ SpecQ) (x : RelPoint (astr i) g),
+      letI := (abA i).addCommGroup g
+      ∑ k ∈ Finset.range ((minpoly ℤ (coeff i n)).natDegree + 1),
+        (minpoly ℤ (coeff i n)).coeff k •
+          ((fun y : RelPoint (astr i) g => RelPoint.post (S i n) (S_comp i n) y)^[k] x) = 0
+  /-- **every eigenform of level `N` labels some factor** — the field
+  that makes an empty decomposition unavailable -/
+  cover : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+    ∃ i, coeff i = a
+  /-- **the joint kernel on rational points is finite** — i.e. the map to
+  the product of the factors is an isogeny, in the one form expressible
+  without the product -/
+  finite_ker : {x : RelPoint jstr (𝟙 SpecQ) |
+      ∀ i, RelPoint.post (u i) (u_comp i) x = (abA i).zero (𝟙 SpecQ)}.Finite
+
+/-- **EICHLER–SHIMURA: the Hecke-isotypic decomposition exists** (sorry
+node, new 2026-07-27) — the first of the two leaves
+`isTorsion_jacobian_of_lFunction_ne_zero` decomposes into, and the one
+carrying Eichler–Shimura.
+
+TRUE; the witness is spelled out in `IsHeckeIsotypicDecomposition`'s
+docstring ("WHY IT IS TRUE"), and it is the classical statement
+`J₀(N) ∼ ∏_{M ∣ N} ∏_{g new of level M} A_g^{σ₀(N/M)}` together with the
+Hecke action on each factor.
+
+**REFERENCES.** Shimura, *Introduction to the arithmetic theory of
+automorphic functions*, §7.5 (the abelian variety `A_g` attached to a
+newform, as `J₀(M)/I_g J₀(M)`); Diamond–Shurman, *A first course in
+modular forms*, §6.6 and Thm 6.6.6 (`J₀(N)` up to isogeny, and the
+Eichler–Shimura relation); Cornell–Silverman–Stevens, *Modular forms and
+Fermat's Last Theorem*, Ch. V.
+
+**WHAT IS GENUINELY MISSING, checked by name 2026-07-27.**  Neither the
+Hecke algebra acting on a Jacobian, nor `A_g`, nor an old/new
+decomposition of `S₂(Γ₀(N))`, exists in this project, in mathlib at this
+pin, or in `~/cs/FLT` — the Hecke algebras there
+(`AutomorphicForm/QuaternionAlgebra/HeckeOperators/`) act on spaces of
+automorphic forms, not on abelian varieties.  There is also no isogeny
+theory for abelian schemes here: `Modularity/AbelianSchemeIsogeny.lean`
+supplies `[n] : A ⟶ A` and its flatness, nothing more.  The check that
+would refute this:
+`grep -rn "heckeAlgebra\|HeckeAlgebra\|AbelianVarietyAttachedTo" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/`. -/
+theorem exists_heckeIsotypicDecomposition (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    Nonempty (IsHeckeIsotypicDecomposition N h jac) :=
+  sorry
+
+/-- **KOLYVAGIN–LOGACHEV: a Hecke-isotypic factor of `J₀(N)` has torsion
+Mordell–Weil group** (sorry node, new 2026-07-27) — the second of the two
+leaves `isTorsion_jacobian_of_lFunction_ne_zero` decomposes into, and the
+one carrying the Euler system.
+
+The intended proof uses only `hL (D.form i) (D.coeff i) (D.isEigen i)`:
+`A i` is the modular abelian variety attached to the newform underlying
+`D.form i`, its `L`-function is `∏_σ L(g^σ, s)`, and Kolyvagin–Logachev
+(*Finiteness of the Shafarevich–Tate group and the group of rational
+points for some modular abelian varieties*, 1989) turns `L(g, 1) ≠ 0`
+into finiteness of `A_g(ℚ)` via Heegner points and Gross–Zagier.  The
+passage from the eigenform `D.form i` of level `N` to its newform `g` of
+level `M ∣ N` is free in the direction needed: `L(f, s)` differs from
+`L(g, s)` by Euler factors, so `L(f, 1) ≠ 0` implies `L(g, 1) ≠ 0`
+without any appeal to Deligne (Deligne is needed only for the converse,
+which is what `lFunction_apply_one_ne_zero_of_kenkuLevel` uses).
+
+**WHY THE HYPOTHESIS IS THE WHOLE OF `hL` AND NOT `L(form i, 1) ≠ 0`.**
+Because `IsHeckeIsotypicDecomposition.T` is not pinned to be the genuine
+Hecke correspondences (see that structure's docstring), and with an
+unpinned `T` the sharper statement is **FALSE**.  The counterexample, at
+`N = 37`: `J₀(37) ∼ E_{37a} × E_{37b}` with `rank E_{37a}(ℚ) = 1` and
+`rank E_{37b}(ℚ) = 0`, and `L(37b, 1) ≠ 0`.  Take `T n` to act on the
+`E_{37a}` part by `a_n(37b)` and on the `E_{37b}` part by `a_n(37a)` —
+a perfectly good family of additive endomorphisms.  Then `E_{37a}` is
+"isotypic for `37b`" in the sense of the `isotypic` field, `cover`,
+`u_surj` and `finite_ker` all hold, and a leaf concluding
+`AddMonoid.IsTorsion (E_{37a}(ℚ))` from `L(37b, 1) ≠ 0` would be false.
+
+With the full `hL` the statement is TRUE for any `T` whatsoever, because
+`hL` already forces `J₀(N)(ℚ)` to be torsion and `u_surj` bounds the
+rank of a factor: by Poincaré reducibility there is `v : A i ⟶ J` with
+`u i ∘ v = [m]` for some `m ≠ 0`, so `m • x = u i (v x)` is torsion for
+every `x ∈ A i(ℚ)`, hence so is `x`.  That is a strictly weaker theorem
+than the one a prover should actually prove, and the honest reading is:
+**this leaf is stated at the strength its hypotheses can support, and it
+becomes the sharp Kolyvagin–Logachev statement the moment `T` is
+pinned.**  Sharpening it is a cut-level repair, gated on the same missing
+input, and it should be done rather than routed around.
+
+`D.u_surj`, `D.isotypic`, `D.cover`, `D.equivariant` and `D.integral` are
+all available to a prover and none of them is decoration: the first
+carries the rank bound, the rest identify which eigenform `A i` belongs
+to. -/
+theorem isTorsion_factor_of_heckeIsotypic (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {h : IsX0Compactification N strX strY j} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {jac : IsJacobianOf strX ab o} (D : IsHeckeIsotypicDecomposition N h jac)
+    (hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0) (i : D.idx) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+  sorry
+
 /-- **Kolyvagin–Logachev: analytic rank `0` forces `J₀(N)(ℚ)` to be
 torsion** (sorry node) — LEVEL-FREE in the arithmetic sense that matters:
 `hN : N ∈ kenkuLevels` has been REPLACED by the analytic input `hL`, so
@@ -14567,25 +14891,46 @@ an elliptic curve of rank `1`.  `h` may not be dropped either: it is
 what makes `X` the modular curve whose Jacobian the `L`-functions in
 `hL` belong to.  `N` enters only through `h` and `hL`.
 
-IRREDUCIBLE at this pin, and here is the axis searched, so the next
-reader need not redo it.  *Cuts along the arithmetic* were tried:
+**DECOMPOSED AND PROVEN 2026-07-27, over three inputs.**  The previous
+version of this docstring recorded the node as IRREDUCIBLE at this pin
+after searching the "cuts along the arithmetic" axis.  That verdict was
+right about the cut it examined and wrong as a verdict; it is superseded,
+and what it got right is preserved in the two places it belongs:
 
-* "isogeny decomposition of `J₀(N)`" + "each factor is torsion" is NOT a
-  cut — the degenerate witness `n = 0` (empty product) makes the first
-  half assert exactly the conclusion, so no content moves across the
-  seam.  Any decomposition that keeps both halves geometric has this
-  defect; the seam has to be analytic, which is why it is `L(f, 1)`.
-* "`A_g(ℚ)` is torsion when `L(g, 1) ≠ 0`" as a separate leaf requires
-  the modular abelian variety `A_g`, hence the Hecke algebra acting on
-  `J₀(M)` and its quotients — none of which exists in `Mathlib`, in
-  `~/cs/FLT`, or here.  Stating it is a real, statable next step and is
-  the correct further decomposition of THIS leaf; it is not attempted
-  now because it needs a Hecke-algebra interface, not because it is
-  impossible.  The check that would refute this:
-  `grep -rn "heckeAlgebra\|HeckeAlgebra\|AbelianVarietyAttachedTo"
-  Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+* it rejected "isogeny decomposition + each factor torsion" because the
+  empty product makes the first half assert the conclusion.  Correct, and
+  that is exactly what the `cover` and `isotypic` fields of
+  `IsHeckeIsotypicDecomposition` are for — see its DEGENERACY AUDIT.
+* it said "`A_g(ℚ)` is torsion when `L(g, 1) ≠ 0`" needs the modular
+  abelian variety, hence a Hecke-algebra interface, and that STATING it
+  is "a real, statable next step and the correct further decomposition of
+  THIS leaf".  That is precisely what has been done: the interface is
+  `IsHeckeIsotypicDecomposition`, the two halves are
+  `exists_heckeIsotypicDecomposition` (Eichler–Shimura) and
+  `isTorsion_factor_of_heckeIsotypic` (Kolyvagin–Logachev), and the third
+  step — isogeny invariance, the only elementary one — is PROVEN as
+  `isTorsion_of_finite_jointKer`.
 
-The *axis not searched*: a `p`-adic / Iwasawa route (Kato's Euler
+The assembly also consumes `isLFunctionOf_apply_eq`, the identity-theorem
+uniqueness of `IsLFunctionOf`, which was machine-checked and recorded in
+`WeightTwoEigenform.lean` as a docstring rather than a declaration
+because it had no consumer.  It has one now: `hL` hands over an
+`L`-function it CHOSE, and the leaves want the statement "*the*
+`L`-function does not vanish at `1`", i.e. quantified over every witness.
+Uniqueness is exactly the bridge, so the leaves take the `∀`-form and
+this assembly does the conversion.
+
+**WHAT IS STILL NOT PINNED, and it is the one thing a reader should carry
+away**: the Hecke operators in the datum are an arbitrary family of
+endomorphisms, because pinning them needs either elliptic-curve isogenies
+(for the moduli description of `T_ℓ`) or the action on `H⁰(J, Ω¹)`, and
+neither exists at this pin.  The cost is paid, visibly, in
+`isTorsion_factor_of_heckeIsotypic`, which therefore carries the whole of
+`hL` instead of the single value `L(form i, 1) ≠ 0`; its docstring gives
+the `N = 37` counterexample showing the sharper statement is FALSE
+without the pin, so this is a faithfulness fact, not a stylistic choice.
+
+The *axis still not searched*: a `p`-adic / Iwasawa route (Kato's Euler
 system, which also gives rank `0` from `L(f, 1) ≠ 0` and might factor
 through the same seam), and Mazur's Eisenstein-ideal argument, which
 proves finiteness of `J₀(N)(ℚ)` for `N` prime by an entirely different
@@ -14598,8 +14943,26 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero (N : ℕ)
     (hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
       ∃ L : ℂ → ℂ, IsLFunctionOf a L ∧ L 1 ≠ 0) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
-  sorry
+    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  -- `hL` supplies an `L`-function it chose; the leaves want "*the*
+  -- `L`-function does not vanish".  Uniqueness (`isLFunctionOf_apply_eq`)
+  -- is the bridge.
+  have hL' : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0 := by
+    intro f a hf L hLf
+    obtain ⟨L₀, hL₀, hne⟩ := hL f a hf
+    rw [isLFunctionOf_apply_eq hLf hL₀ 1]
+    exact hne
+  obtain ⟨D⟩ := exists_heckeIsotypicDecomposition N h jac
+  letI := D.fintypeIdx
+  letI : ∀ i, AddCommGroup (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+    fun i => (D.abA i).addCommGroup (𝟙 SpecQ)
+  refine isTorsion_of_finite_jointKer
+    (φ := fun i => AddMonoidHom.mk' (fun x => RelPoint.post (D.u i) (D.u_comp i) x)
+      (fun x y => D.u_add i x y))
+    (fun i => isTorsion_factor_of_heckeIsotypic N D hL' i) ?_
+  exact D.finite_ker
 
 /-- **`rank J_0(N)(ℚ) = 0` at the thirteen Kenku levels** (PROVEN
 2026-07-27, from three leaves) — `J₀(N)(ℚ)` is a TORSION group.
@@ -15217,9 +15580,15 @@ needs, are:
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
-| `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |
+| `exists_heckeIsotypicDecomposition` | Eichler–Shimura | no |
+| `isTorsion_factor_of_heckeIsotypic` | Kolyvagin–Logachev | no |
 | `ajMor_eq_const_of_not_injective` | Riemann–Roch | no |
 | `hasNonconstantAbelianMap_of_one_le_x0Genus` | genus formula | **yes** |
+
+(`isTorsion_jacobian_of_lFunction_ne_zero` stood in this table until
+2026-07-27, when it was decomposed into the two rows that replace it;
+the elementary third step, isogeny invariance, is PROVEN as
+`isTorsion_of_finite_jointKer`.)
 
 Only two of the nine mention `N` or `kenkuLevels` at all, and each of
 the other seven is a named classical theorem stated for an arbitrary
@@ -18404,37 +18773,12 @@ curves over an arbitrary base, and everything specific to this file
 happens in the assembly `exists_x0JacobianModel_of_curveModel`, which
 instantiates them at the generic and the closed point. -/
 
-/-- **Postcomposition of a relative point along an `S`-morphism**
-(PROVEN — the dual of `RelPoint.pre`, which precomposes in the TEST
-scheme; this one postcomposes in the TARGET).
-
-Together with `RelPoint.pre` it is everything needed to say that a
-morphism of abelian schemes is a homomorphism, which is what
-`IsAdditiveOn` below does.  The development had no such notion before
-2026-07-27 — `grep` for `RelPoint.post` and `IsAdditiveOn` returned
-nothing in this project, in mathlib and in `~/cs/FLT`. -/
-def RelPoint.post {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (u : A ⟶ B)
-    (hu : u ≫ bf = af) {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
-    RelPoint bf g :=
-  ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩
-
-/-- **`u : A ⟶ B` is a HOMOMORPHISM of abelian schemes**, read on the
-functor of points: postcomposition by `u` carries sums to sums, at every
-test scheme and every base point.
-
-By Yoneda this is exactly the classical condition that `u` commute with
-the two group laws, and it is stated on points rather than as an
-equation of morphisms `A ×_S A ⟶ B` for the same reason
-`AbelianSchemeStruct` itself is: the group law of an abelian scheme in
-this development is primitively a functor-of-points datum, and
-`addHom` — the morphism-level multiplication — is currently available
-only over the base `SpecQ`. -/
-def IsAdditiveOn {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
-    (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
-    (u : A ⟶ B) (hu : u ≫ bf = af) : Prop :=
-  ∀ {T : Scheme.{0}} {g : T ⟶ S} (x y : RelPoint af g),
-    RelPoint.post u hu (abA.add x y)
-      = abB.add (RelPoint.post u hu x) (RelPoint.post u hu y)
+-- `RelPoint.post` and `IsAdditiveOn` used to stand here.  They were HOISTED
+-- VERBATIM (names, statements and docstrings unchanged) to just above
+-- `IsHeckeIsotypicDecomposition`, ~4000 lines up, on 2026-07-27: that structure
+-- states what it means for the optimal quotients `J₀(N) ↠ A_f` to be
+-- homomorphisms, and Lean's declaration order made them unusable where they
+-- stood.  Every consumer below resolves unchanged.
 
 /-- **RELATIVE RIGIDITY: an `S`-morphism of abelian schemes carrying the
 origin to the origin is a homomorphism** (PROVEN 2026-07-27 over the
