@@ -21768,24 +21768,110 @@ theorem isOpen_range_absoluteGaloisGroup_map_numberField
   rw [IntermediateField.mem_fixingSubgroup_iff] at hg
   exact hφ g fun y => hg (φ y) ⟨y, rfl⟩
 
-/-- **`ℚ(√d)` is normal over `ℚ`** (sorry leaf, 2026-07-27 — elementary).
+/-- **`ℚ(√d)` is normal over `ℚ`** (PROVEN 2026-07-27 — elementary).
 
-`y² = d ∈ ℚ` makes `minpoly ℚ y` either `X − y` (when `y ∈ ℚ`) or
-`X² − d`; in BOTH cases it splits in `ℚ⟮y⟯`, whose two roots are `±y`. So
-`ℚ⟮y⟯` is the splitting field of `minpoly ℚ y` over `ℚ` and
+`y² = d ∈ ℚ` makes `X² − d` split in `ℚ⟮y⟯` with the two roots `±y`,
+whatever the degree: the factorisation `X² − d = (X − y)(X + y)` is valid
+over `L`, so `p = X² − C d` splits over `L` and its root set there is
+`{y, −y}`, whose generated intermediate field is exactly `ℚ⟮y⟯` (`−y` is a
+`ℚ`-multiple of `y`). Hence `ℚ⟮y⟯` IS the splitting field of `p` over `ℚ`
+(`IntermediateField.adjoin_rootSet_isSplittingField`) and
 `Normal.of_isSplittingField` applies. No irreducibility hypothesis is
 needed and none should be added — the degenerate case `y ∈ ℚ` is genuinely
-normal (it is `ℚ` itself).
+normal (it is `ℚ` itself), and the route above never splits on it.
 
 Stated over an arbitrary `ℚ`-algebra field `L` rather than over the
-enlargement it is used for, because nothing beyond `y² ∈ ℚ` is relevant. -/
+enlargement it is used for, because nothing beyond `y² ∈ ℚ` is relevant.
+
+INSTANCE NOTE (cost one verification cycle). `Algebra ℚ ↥(adjoin ℚ S)` is a
+DIAMOND: fresh synthesis here picks `DivisionRing.toRatAlgebra`, whereas
+`IntermediateField.adjoin_rootSet_isSplittingField` produces its statement
+with `IntermediateField.algebra'`, and the two are not definitionally equal.
+They are propositionally equal (`algebra_rat_subsingleton`), so the transfer
+is `convert … using 2` followed by `Subsingleton.elim`. Do not try to make
+the two sides agree by rearranging the term. -/
 theorem normal_adjoin_sqrt_nat (L : Type u) [Field L] [Algebra ℚ L] (d : ℕ) (y : L)
     (hy : y ^ 2 = ((d : ℕ) : L)) :
-    Normal ℚ (IntermediateField.adjoin ℚ ({y} : Set L)) :=
-  sorry
+    Normal ℚ (IntermediateField.adjoin ℚ ({y} : Set L)) := by
+  classical
+  set p : ℚ[X] := X ^ 2 - C ((d : ℕ) : ℚ) with hp
+  have hdy : (algebraMap ℚ L) ((d : ℕ) : ℚ) = y ^ 2 := by rw [hy]; simp
+  have hpne : p ≠ 0 := (monic_X_pow_sub_C ((d : ℕ) : ℚ) two_ne_zero).ne_zero
+  have hmap : p.map (algebraMap ℚ L) = (X - C y) * (X - C (-y)) := by
+    simp only [hp, Polynomial.map_sub, Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C,
+      hdy, C_neg, C_pow]
+    ring
+  have hsplits : (p.map (algebraMap ℚ L)).Splits := by
+    rw [hmap]
+    exact Splits.mul (Splits.X_sub_C y) (Splits.X_sub_C (-y))
+  have hymem : y ∈ p.rootSet L := by
+    rw [Polynomial.mem_rootSet]
+    refine ⟨hpne, ?_⟩
+    simp only [hp, map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero, hdy]
+  have hroot : ∀ z : L, z ∈ p.rootSet L → z = y ∨ z = -y := by
+    intro z hz
+    rw [Polynomial.mem_rootSet] at hz
+    have h := hz.2
+    simp only [hp, map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero, hdy] at h
+    have hfac : (z - y) * (z + y) = 0 := by linear_combination h
+    rcases mul_eq_zero.mp hfac with h' | h'
+    · exact Or.inl (by linear_combination h')
+    · exact Or.inr (by linear_combination h')
+  have hset : IntermediateField.adjoin ℚ (p.rootSet L)
+      = IntermediateField.adjoin ℚ ({y} : Set L) := by
+    apply le_antisymm
+    · rw [IntermediateField.adjoin_le_iff]
+      intro z hz
+      rcases hroot z hz with h | h
+      · subst h
+        exact IntermediateField.subset_adjoin ℚ _ rfl
+      · subst h
+        exact neg_mem (IntermediateField.subset_adjoin ℚ _ rfl)
+    · rw [IntermediateField.adjoin_le_iff]
+      rintro z rfl
+      exact IntermediateField.subset_adjoin ℚ _ hymem
+  rw [← hset]
+  haveI hsf : IsSplittingField ℚ (IntermediateField.adjoin ℚ (p.rootSet L)) p := by
+    convert IntermediateField.adjoin_rootSet_isSplittingField (K := ℚ) (L := L) (p := p) hsplits
+      using 2
+    exact Subsingleton.elim _ _
+  exact Normal.of_isSplittingField p
+
+/-- **`AdjoinRoot (X² − C c)` is a splitting field of `X² − C c` over the base**
+(PROVEN 2026-07-27) — the one fact about the quadratic enlargement that
+`isGalois_adjoinRoot_X_sq_sub_C_nat` feeds to `IsSplittingField.mul`.
+
+Both roots `±r` are present because `X² − C c = (X − C r)(X + C r)` once
+`r² = c`, and `Algebra.adjoin F {r} = ⊤` is `AdjoinRoot.adjoinRoot_eq_top`,
+so the root set generates. -/
+theorem isSplittingField_adjoinRoot_X_sq_sub_C {F : Type u} [Field F] (c : F)
+    [Fact (Irreducible (X ^ 2 - C c))] :
+    IsSplittingField F (AdjoinRoot (X ^ 2 - C c)) (X ^ 2 - C c) := by
+  classical
+  have hrsq : (AdjoinRoot.root (X ^ 2 - C c)) ^ 2
+      = algebraMap F (AdjoinRoot (X ^ 2 - C c)) c := by
+    have h := AdjoinRoot.eval₂_root (X ^ 2 - C c)
+    simp only [eval₂_sub, eval₂_X_pow, eval₂_C, sub_eq_zero] at h
+    exact h
+  constructor
+  · have hmap : (X ^ 2 - C c).map (algebraMap F (AdjoinRoot (X ^ 2 - C c)))
+        = (X - C (AdjoinRoot.root (X ^ 2 - C c))) * (X - C (-(AdjoinRoot.root (X ^ 2 - C c)))) := by
+      simp only [Polynomial.map_sub, Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C,
+        ← hrsq, C_neg, C_pow]
+      ring
+    rw [hmap]
+    exact Splits.mul (Splits.X_sub_C _) (Splits.X_sub_C _)
+  · refine top_le_iff.mp ?_
+    rw [← AdjoinRoot.adjoinRoot_eq_top (f := X ^ 2 - C c)]
+    refine Algebra.adjoin_mono ?_
+    rintro z rfl
+    rw [Polynomial.mem_rootSet]
+    refine ⟨(monic_X_pow_sub_C c two_ne_zero).ne_zero, ?_⟩
+    simp only [map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero]
+    exact hrsq
 
 /-- **Adjoining `√d` to a GALOIS totally real `F` keeps it Galois over `ℚ`**
-(sorry leaf, 2026-07-27 — elementary).
+(PROVEN 2026-07-27 — elementary).
 
 `F/ℚ` is finite Galois, hence the splitting field over `ℚ` of some
 `q ∈ ℚ[X]`; and `F' = F(√d)` is then the splitting field over `ℚ` of
@@ -21802,10 +21888,106 @@ generate a QUADRATIC extension of `ℚ` as well as of `F`, which is false for
 a general `d ∈ F`. Keeping `d` rational is load-bearing, not cosmetic. -/
 theorem isGalois_adjoinRoot_X_sq_sub_C_nat (F : Type u) [Field F] [NumberField F] [IsGalois ℚ F]
     (d : ℕ) [Fact (Irreducible (X ^ 2 - C ((d : ℕ) : F)))] :
-    IsGalois ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
-  sorry
+    IsGalois ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) := by
+  classical
+  have hmapq : ((X ^ 2 - C ((d : ℕ) : ℚ)) : ℚ[X]).map (algebraMap ℚ F)
+      = X ^ 2 - C ((d : ℕ) : F) := by simp
+  have hpQne : ((X ^ 2 - C ((d : ℕ) : ℚ)) : ℚ[X]) ≠ 0 :=
+    (monic_X_pow_sub_C ((d : ℕ) : ℚ) two_ne_zero).ne_zero
+  haveI hsf : IsSplittingField F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+      (((X ^ 2 - C ((d : ℕ) : ℚ)) : ℚ[X]).map (algebraMap ℚ F)) := by
+    rw [hmapq]
+    exact isSplittingField_adjoinRoot_X_sq_sub_C ((d : ℕ) : F)
+  obtain ⟨q, hqsep, hq⟩ := IsGalois.is_separable_splitting_field ℚ F
+  haveI := hq
+  haveI : IsSplittingField ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+      (q * (X ^ 2 - C ((d : ℕ) : ℚ))) :=
+    IsSplittingField.mul (K := F) (L := AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) q
+      ((X ^ 2 - C ((d : ℕ) : ℚ)) : ℚ[X]) hqsep.ne_zero hpQne
+  haveI : FiniteDimensional ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+    IsSplittingField.finiteDimensional _ (q * (X ^ 2 - C ((d : ℕ) : ℚ)))
+  haveI : Normal ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+    Normal.of_isSplittingField (q * (X ^ 2 - C ((d : ℕ) : ℚ)))
+  exact ⟨⟩
 
-/-- **`Γ F(√d) = Γ F ⊓ Γ ℚ(√d)`** (sorry leaf, 2026-07-27 — the compositum
+/-- **Every element of the image of `Γ L → Γ K` fixes EVERY `K`-embedded copy of
+`L` inside `Kᵃˡᵍ`, when `L/K` is normal** (PROVEN 2026-07-27).
+
+This is the direction `range ≤ fixingSubgroup` that
+`normal_range_absoluteGaloisGroup_map` computes internally but does not
+expose, strengthened from ITS embedding to an ARBITRARY one — which is what
+`range_absoluteGaloisGroup_map_adjoinRoot_sq_eq_inf` needs, since there the
+copies of `F` and of `ℚ(√d)` arrive as restrictions of the single embedding
+of `F(√d)` supplied by
+`exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`, not as the
+canonical ones.
+
+PROOF. The first half rebuilds the canonical `φ : L →ₐ[K] Kᵃˡᵍ` (the pullback
+of `algebraMap L Lᵃˡᵍ` along the bijection `ι = AlgebraicClosure.map`) and
+checks `g ∘ φ = φ` by `Field.absoluteGaloisGroup.lift_map` and injectivity of
+`ι` — no normality used. Normality enters ONLY in the second half, to see
+that `ψ` has the SAME field range as `φ`: `Normal K L` transports along
+`φ.equivFieldRange` to `Normal K φ.fieldRange`, and then
+`AlgHom.fieldRange_of_normal` applied to `ψ ∘ φ.equivFieldRange.symm` gives
+`ψ.fieldRange = φ.fieldRange`. Without it the two copies could be distinct
+conjugates and the statement would be FALSE. -/
+theorem forall_fixes_of_mem_range_absoluteGaloisGroup_map
+    {K L : Type*} [Field K] [Field L] [Algebra K L] [Normal K L]
+    (ψ : L →ₐ[K] AlgebraicClosure K) {g : Field.absoluteGaloisGroup K}
+    (hg : g ∈ (Field.absoluteGaloisGroup.map (algebraMap K L)).toMonoidHom.range) :
+    ∀ y : L, g (ψ y) = ψ y := by
+  classical
+  haveI : Algebra.IsAlgebraic K (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.trans (R := K) (S := L) (A := AlgebraicClosure L)
+  set ι : AlgebraicClosure K →+* AlgebraicClosure L :=
+    AlgebraicClosure.map (algebraMap K L) with hι
+  letI : Algebra (AlgebraicClosure K) (AlgebraicClosure L) := ι.toAlgebra
+  haveI : IsScalarTower K (AlgebraicClosure K) (AlgebraicClosure L) :=
+    IsScalarTower.of_algebraMap_eq' (by
+      ext x
+      exact (AlgebraicClosure.map_algebraMap (algebraMap K L) x).symm)
+  haveI : Algebra.IsAlgebraic (AlgebraicClosure K) (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.tower_top (K := K) (AlgebraicClosure K) (A := AlgebraicClosure L)
+  have hbij : Function.Bijective ι :=
+    IsAlgClosed.algebraMap_bijective_of_isIntegral (k := AlgebraicClosure K)
+      (K := AlgebraicClosure L)
+  set ε : AlgebraicClosure K ≃+* AlgebraicClosure L := RingEquiv.ofBijective ι hbij with hε
+  have hεapp : ∀ x, ε x = ι x := fun _ => rfl
+  set φr : L →+* AlgebraicClosure K :=
+    (ε.symm : AlgebraicClosure L →+* AlgebraicClosure K).comp
+      (algebraMap L (AlgebraicClosure L)) with hφr
+  set φ : L →ₐ[K] AlgebraicClosure K :=
+    { toRingHom := φr
+      commutes' := fun x => by
+        show ε.symm (algebraMap L (AlgebraicClosure L) (algebraMap K L x)) = _
+        have h1 : (algebraMap L (AlgebraicClosure L)) (algebraMap K L x)
+            = ι (algebraMap K (AlgebraicClosure K) x) := by
+          rw [hι, AlgebraicClosure.map_algebraMap]
+        rw [h1, ← hεapp, RingEquiv.symm_apply_apply] } with hφ
+  have hφapp : ∀ y : L, φ y = ε.symm (algebraMap L (AlgebraicClosure L) y) := fun _ => rfl
+  obtain ⟨σ, hσ⟩ := MonoidHom.mem_range.mp hg
+  have hfixφ : ∀ y : L, g (φ y) = φ y := by
+    intro y
+    have h1 : ι (g (φ y)) = σ (ι (φ y)) := by
+      rw [← hσ]
+      exact Field.absoluteGaloisGroup.lift_map (algebraMap K L) σ (φ y)
+    have h2 : ι (φ y) = algebraMap L (AlgebraicClosure L) y := by
+      rw [hφapp, ← hεapp, RingEquiv.apply_symm_apply]
+    apply ι.injective
+    rw [h1, h2]
+    exact σ.commutes y
+  haveI : Normal K φ.fieldRange := Normal.of_algEquiv φ.equivFieldRange
+  have hrange := AlgHom.fieldRange_of_normal (E := φ.fieldRange)
+    (ψ.comp (φ.equivFieldRange.symm.toAlgHom))
+  intro y
+  have hmem : ψ y ∈ φ.fieldRange := by
+    rw [← hrange]
+    exact ⟨φ.equivFieldRange y, by simp⟩
+  obtain ⟨y', hy'⟩ := hmem
+  rw [← hy']
+  exact hfixφ y'
+
+/-- **`Γ F(√d) = Γ F ⊓ Γ ℚ(√d)`** (PROVEN 2026-07-27 — the compositum
 identification, and the one genuinely Galois-theoretic step of the
 even-degree enlargement).
 
@@ -21827,7 +22009,16 @@ Then `exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`
 converts "fixes the copy of `F'`" back into membership of `Γ F'`.
 
 Dropping either normality hypothesis makes the statement FALSE as written,
-since the two ranges could then be non-conjugate copies. -/
+since the two ranges could then be non-conjugate copies.
+
+HOW THE REVERSE INCLUSION IS ACTUALLY RUN. Take the single embedding
+`φ : F(√d) →ₐ[ℚ] ℚᵃˡᵍ` from
+`exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`; it suffices
+that `g` fixes `φ` pointwise. `forall_fixes_of_mem_range_absoluteGaloisGroup_map`
+— the normality-consuming half — says `g` fixes `φ` restricted to `F` and `φ`
+restricted to `ℚ(√d)`. The set `{x | g (φ x) = φ x}` is then an `F`-subalgebra
+of `F(√d)` containing `√d`, and `AdjoinRoot.adjoinRoot_eq_top` makes it
+everything. -/
 theorem range_absoluteGaloisGroup_map_adjoinRoot_sq_eq_inf
     (F : Type u) [Field F] [NumberField F] [IsGalois ℚ F]
     (d : ℕ) [Fact (Irreducible (X ^ 2 - C ((d : ℕ) : F)))] :
@@ -21837,8 +22028,85 @@ theorem range_absoluteGaloisGroup_map_adjoinRoot_sq_eq_inf
         (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IntermediateField.adjoin ℚ
             ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
-              Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))))).toMonoidHom.range :=
-  sorry
+              Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))))).toMonoidHom.range := by
+  classical
+  have hf0 : (X ^ 2 - C ((d : ℕ) : F)) ≠ 0 :=
+    (monic_X_pow_sub_C ((d : ℕ) : F) two_ne_zero).ne_zero
+  haveI : Module.Finite F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+    (AdjoinRoot.powerBasis hf0).finite
+  haveI : NumberField (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+    NumberField.of_module_finite F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+  have hrsq : (AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))) ^ 2
+      = ((d : ℕ) : AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) := by
+    have h := AdjoinRoot.eval₂_root (X ^ 2 - C ((d : ℕ) : F))
+    simp only [eval₂_sub, eval₂_X_pow, eval₂_C, sub_eq_zero] at h
+    rw [h]
+    simp
+  haveI hKnormal : Normal ℚ (IntermediateField.adjoin ℚ
+      ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+        Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))) :=
+    normal_adjoin_sqrt_nat _ d _ hrsq
+  apply le_antisymm
+  · refine le_inf ?_ ?_
+    · have h1 := range_absoluteGaloisGroup_map_le_of_ringHom (K := ℚ) (L := F)
+        (M := AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+        (algebraMap F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))
+      rwa [← IsScalarTower.algebraMap_eq ℚ F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))] at h1
+    · have h2 := range_absoluteGaloisGroup_map_le_of_ringHom (K := ℚ)
+        (L := IntermediateField.adjoin ℚ
+          ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+            Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))))
+        (M := AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+        (algebraMap _ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))
+      rwa [← IsScalarTower.algebraMap_eq ℚ (IntermediateField.adjoin ℚ
+          ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+            Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))))
+          (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))] at h2
+  · intro g hg
+    obtain ⟨hgF, hgK⟩ := Subgroup.mem_inf.mp hg
+    obtain ⟨φ, hφ⟩ :=
+      exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map (K := ℚ)
+        (L := AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+    refine hφ g ?_
+    have hFfix : ∀ a : F, g (φ (algebraMap F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) a))
+        = φ (algebraMap F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) a) :=
+      forall_fixes_of_mem_range_absoluteGaloisGroup_map
+        (φ.comp (IsScalarTower.toAlgHom ℚ F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))) hgF
+    have hKfix : ∀ a : IntermediateField.adjoin ℚ
+        ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+          Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))),
+        g (φ (a : AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))
+          = φ (a : AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+      forall_fixes_of_mem_range_absoluteGaloisGroup_map
+        (φ.comp (IsScalarTower.toAlgHom ℚ (IntermediateField.adjoin ℚ
+          ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+            Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))))
+          (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))) hgK
+    have hrfix : g (φ (AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))))
+        = φ (AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))) :=
+      hKfix ⟨_, IntermediateField.subset_adjoin ℚ _ rfl⟩
+    let S : Subalgebra F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+      { carrier := {x : AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)) | g (φ x) = φ x}
+        mul_mem' := by
+          intro a b ha hb
+          simp only [Set.mem_setOf_eq] at *
+          rw [map_mul, map_mul, ha, hb]
+        one_mem' := by simp
+        add_mem' := by
+          intro a b ha hb
+          simp only [Set.mem_setOf_eq] at *
+          rw [map_add, map_add, ha, hb]
+        zero_mem' := by simp
+        algebraMap_mem' := hFfix }
+    have hle : Algebra.adjoin F
+        ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+          Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))) ≤ S := by
+      refine Algebra.adjoin_le ?_
+      rintro z rfl
+      exact hrfix
+    rw [AdjoinRoot.adjoinRoot_eq_top (f := X ^ 2 - C ((d : ℕ) : F))] at hle
+    intro y
+    exact hle (Algebra.mem_top (R := F) (x := y))
 
 /-- **The quadratic enlargement `F ↦ F(√d)`, with its auxiliary quadratic
 subfield** (PROVEN 2026-07-27 over the three leaves above).
