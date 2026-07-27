@@ -34343,25 +34343,297 @@ theorem qCoeff_congr {N N' : ℕ} {f : CuspForm (Gamma0GL N) 2}
     qCoeff N' f' n = qCoeff N f n := by
   rw [qCoeff, qCoeff, h]
 
-/-- **LEVEL DESCENT AT A PRIME WHOSE SQUARE DIVIDES THE LEVEL** (sorry
-node, TWELFTH decomposition 2026-07-26 — the single new leaf under
-`qCoeff_eq_zero_of_sq_dvd` below): a normalized weight-two EIGENFORM of
-level `M` with `q² ∣ M` and NONZERO `q`-th coefficient is, as a
-function, already a cusp form of level `M / q`.
+section QOldLevelDescent
+
+open _root_.Matrix.SpecialLinearGroup _root_.CongruenceSubgroup _root_.ConjAct
+open scoped Pointwise ModularForm
+
+/-- **The Hecke coset criterion ACROSS TWO LEVELS** (PROVEN): for
+`α = heckeRep q 0 = [1, 0; 0, q]` and any `ρ ∈ SL(2, ℤ)` whose lower-left
+entry satisfies `M ∣ q·ρ₁₀`, the conjugate `α ρ α⁻¹` lies in `Γ₀(M)` iff
+`q ∣ ρ₀₁`.
+
+This generalizes `heckeRep_conj_mem_iff` above, which is the case where
+`ρ` itself lies in `Γ₀(M)`.  The point of the weaker hypothesis is that
+`ρ` is allowed to live in the LARGER group `Γ₀(M/q)`: when `q² ∣ M` we
+have `(M/q) ∣ ρ₁₀` and `q·(M/q) = M`, so `M ∣ q·ρ₁₀` holds and the
+criterion applies verbatim.  That is exactly what makes the trace of the
+`α`-translate land at level `M/q` rather than at level `M`.
+
+Conjugation by `α` divides the upper-right entry by `q` and multiplies
+the lower-left by `q`; integrality of the conjugate is the divisibility
+of `ρ₀₁`, and its lower-left entry `q·ρ₁₀` is divisible by `M` by
+hypothesis. -/
+theorem heckeRep_conj_mem_iff_of_dvd {M q : ℕ} (hq : q.Prime)
+    {ρ : SL(2, ℤ)} (hρ : (M : ℤ) ∣ (q : ℤ) * ρ 1 0) :
+    heckeRep q 0 * mapGL ℝ ρ * (heckeRep q 0)⁻¹ ∈ Gamma0GL M ↔
+      (q : ℤ) ∣ ρ 0 1 := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  constructor
+  · intro h
+    obtain ⟨ε, -, hεeq⟩ := mem_Gamma0GL_iff.mp h
+    have heq : mapGL ℝ ε * heckeRep q 0 = heckeRep q 0 * mapGL ℝ ρ := by
+      rw [hεeq]; group
+    have h01 := congr_arg
+      (fun g : GL (Fin 2) ℝ => (g : Matrix (Fin 2) (Fin 2) ℝ) 0 1) heq
+    simp [heckeRep_coe hq0,
+      mapGL_coe_matrix, Matrix.SpecialLinearGroup.map_apply_coe,
+      RingHom.mapMatrix_apply, Int.coe_castRingHom, Matrix.map_apply,
+      Matrix.mul_apply, Fin.sum_univ_two] at h01
+    refine ⟨ε 0 1, ?_⟩
+    have hcast : ((ρ 0 1 : ℤ) : ℝ) = (((q : ℤ) * ε 0 1 : ℤ) : ℝ) := by
+      push_cast
+      linarith [h01]
+    exact_mod_cast hcast
+  · rintro ⟨t, ht⟩
+    have hdet : ρ 0 0 * ρ 1 1 - ρ 0 1 * ρ 1 0 = 1 := by
+      have h2 := ρ.2
+      rwa [Matrix.det_fin_two] at h2
+    obtain ⟨s, hs⟩ := hρ
+    refine mem_Gamma0GL_iff.mpr ⟨⟨!![ρ 0 0, t; (q : ℤ) * ρ 1 0, ρ 1 1], ?_⟩,
+      ?_, ?_⟩
+    · rw [Matrix.det_fin_two_of]
+      have hqt : ρ 0 0 * ρ 1 1 - ((q : ℤ) * t) * ρ 1 0 = 1 := ht ▸ hdet
+      linarith [hqt]
+    · rw [CongruenceSubgroup.Gamma0_mem]
+      show (((q : ℤ) * ρ 1 0 : ℤ) : ZMod M) = 0
+      rw [hs]
+      push_cast
+      simp
+    · rw [eq_mul_inv_iff_mul_eq]
+      ext i j
+      fin_cases i <;> fin_cases j <;>
+        · simp [heckeRep_coe hq0, mapGL_coe_matrix,
+            Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply,
+            Int.coe_castRingHom, Matrix.map_apply, Matrix.mul_apply,
+            Fin.sum_univ_two, ht]
+          try ring
+
+/-- **`U_q` LANDS ONE LEVEL DOWN WHEN `q² ∣ M`** (PROVEN 2026-07-27 —
+the whole mathematical content of the level-descent leaf below): if
+`q² ∣ M` then the Hecke slash-sum of a weight-2 level-`M` cusp form is
+the underlying function of a cusp form of level `M / q`.
+
+This is the classical statement `U_q : S₂(Γ₀(M)) → S₂(Γ₀(M/q))` for
+`q² ∣ M` (Atkin–Lehner 1970; Diamond–Shurman §5.6), and it is proven
+here by exactly the argument that `exists_cuspForm_heckeTransform`
+above uses for level-`M` stability, run with the AMBIENT group enlarged
+to `Γ₀(M/q)`:
+
+* `heckeTransform M q ⇑f` is the `CuspForm.trace` back to `Γ₀(M/q)` of
+  the `α`-translate of `f`, `α = [1, 0; 0, q]`, which is a cusp form on
+  the arithmetic conjugate `α⁻¹Γ₀(M)α`;
+* the coset space `Γ₀(M/q) ⧸ (α⁻¹Γ₀(M)α ∩ Γ₀(M/q))` is enumerated by the
+  `q` translations `[1, j; 0, 1]`, `0 ≤ j < q`, through the two-level
+  criterion `heckeRep_conj_mem_iff_of_dvd`;
+* the extra good-prime representative `[q, 0; 0, 1]` does not occur,
+  since `q ∣ M`.
+
+WHERE `q² ∣ M` IS USED, and it is used exactly once, in SURJECTIVITY of
+that enumeration: given `δ ∈ Γ₀(M/q)` one needs `j` with
+`q ∣ δ₀₁ + j·δ₁₁`, which requires `δ₁₁` invertible mod `q`.  From
+`q ∣ M/q` — i.e. from `q² ∣ M` — we get `q ∣ δ₁₀`, so `det δ = 1` forces
+`δ₀₀δ₁₁ ≡ 1 (mod q)`.  At `q ‖ M` this fails, and indeed the index of
+`Γ₀(M)` in `Γ₀(M/q)` is then `q + 1` rather than `q`, so the `q`
+translations cannot cover: the hypothesis is not decorative. -/
+theorem exists_cuspForm_heckeTransform_div {M : ℕ} (hM : 0 < M) {q : ℕ}
+    (hq : q.Prime) (hqM2 : q ^ 2 ∣ M) (f : CuspForm (Gamma0GL M) 2) :
+    ∃ g : CuspForm (Gamma0GL (M / q)) 2, ⇑g = heckeTransform M q ⇑f := by
+  have hqM : q ∣ M := dvd_trans (dvd_pow_self q two_ne_zero) hqM2
+  have hMq : q * (M / q) = M := Nat.mul_div_cancel' hqM
+  have hMqZ : (q : ℤ) * ((M / q : ℕ) : ℤ) = (M : ℤ) := by
+    exact_mod_cast congrArg (Nat.cast : ℕ → ℤ) hMq
+  have hqMq : q ∣ M / q := by
+    obtain ⟨t, ht⟩ := hqM2
+    exact ⟨t, by rw [ht, pow_two, Nat.mul_assoc, Nat.mul_div_cancel_left _ hq.pos]⟩
+  have hMqpos : 0 < M / q := Nat.div_pos (Nat.le_of_dvd hM hqM) hq.pos
+  haveI : NeZero M := ⟨hM.ne'⟩
+  haveI : NeZero (M / q) := ⟨hMqpos.ne'⟩
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  haveI hFact : Fact q.Prime := ⟨hq⟩
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  haveI hFRI : Subgroup.IsFiniteRelIndex
+      (toConjAct (heckeRep q 0)⁻¹ • Gamma0GL M) (Gamma0GL (M / q)) :=
+    haveI := heckeConj_isArithmetic (N := M) hq
+    ⟨(Subgroup.IsArithmetic.is_commensurable.trans
+        Subgroup.IsArithmetic.is_commensurable.symm).1⟩
+  refine ⟨CuspForm.trace (Gamma0GL (M / q))
+    (CuspForm.translate f (heckeRep q 0)), ?_⟩
+  rw [CuspForm.coe_trace]
+  set Γc : Subgroup (GL (Fin 2) ℝ) := toConjAct (heckeRep q 0)⁻¹ • Gamma0GL M
+    with hΓc
+  letI instQ : Fintype ((Gamma0GL (M / q)) ⧸ Γc.subgroupOf (Gamma0GL (M / q))) :=
+    Fintype.ofFinite _
+  -- `(M/q) ∣ ρ₁₀` and `q·(M/q) = M` give the hypothesis of the two-level
+  -- criterion for every `ρ ∈ Γ₀(M/q)`
+  have hlow : ∀ ρ : SL(2, ℤ), ρ ∈ CongruenceSubgroup.Gamma0 (M / q) →
+      (M : ℤ) ∣ (q : ℤ) * ρ 1 0 := by
+    intro ρ hρ
+    have hc : ((M / q : ℕ) : ℤ) ∣ ρ 1 0 := by
+      rw [CongruenceSubgroup.Gamma0_mem] at hρ
+      exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp (by exact_mod_cast hρ)
+    obtain ⟨s, hs⟩ := hc
+    exact ⟨s, by rw [hs, ← hMqZ]; ring⟩
+  -- membership of the translation representatives, now in the LARGER group
+  have hTmem : ∀ j : ℤ, mapGL ℝ (heckeTMat j) ∈ Gamma0GL (M / q) := fun j =>
+    mem_Gamma0GL_iff.mpr ⟨heckeTMat j, heckeTMat_mem_Gamma0 _ j, rfl⟩
+  -- the packaged coset criterion
+  have hcrit : ∀ (x y : Gamma0GL (M / q)) (ρ : SL(2, ℤ)),
+      ρ ∈ CongruenceSubgroup.Gamma0 (M / q) →
+      mapGL ℝ ρ = (x : GL (Fin 2) ℝ)⁻¹ * y →
+      ((⟦x⟧ : (Gamma0GL (M / q)) ⧸ Γc.subgroupOf (Gamma0GL (M / q))) = ⟦y⟧ ↔
+        (q : ℤ) ∣ ρ 0 1) := by
+    intro x y ρ hρ hxy
+    rw [QuotientGroup.eq, Subgroup.mem_subgroupOf]
+    have hcoe : ((x⁻¹ * y : Gamma0GL (M / q)) : GL (Fin 2) ℝ) = mapGL ℝ ρ := by
+      rw [hxy]; rfl
+    rw [hcoe, hΓc, mem_conjAct_inv_smul_iff]
+    exact heckeRep_conj_mem_iff_of_dvd hq (hlow ρ hρ)
+  -- the `q` coset representatives
+  set E : Fin q → Gamma0GL (M / q) := fun j =>
+    ⟨mapGL ℝ (heckeTMat (-(j : ℤ))), hTmem _⟩ with hE
+  have hEinv : ∀ j : Fin q,
+      ((E j : Gamma0GL (M / q)) : GL (Fin 2) ℝ)⁻¹
+        = mapGL ℝ (heckeTMat (j : ℤ)) := by
+    intro j
+    show (mapGL ℝ (heckeTMat (-(j : ℤ))))⁻¹ = _
+    rw [← map_inv, heckeTMat_inv, neg_neg]
+  have hEval : ∀ j : Fin q,
+      SlashInvariantForm.quotientFunc (CuspForm.translate f (heckeRep q 0)) ⟦E j⟧
+        = ⇑f ∣[(2 : ℤ)] heckeRep q (j : ℕ) := by
+    intro j
+    rw [SlashInvariantForm.quotientFunc_mk]
+    show (⇑f ∣[(2 : ℤ)] heckeRep q 0) ∣[(2 : ℤ)]
+      ((E j : Gamma0GL (M / q)) : GL (Fin 2) ℝ)⁻¹ = _
+    rw [hEinv j, ← SlashAction.slash_mul, heckeRep_zero_mul_heckeTMat hq0]
+  have hEinj : ∀ j j' : Fin q,
+      ((⟦E j⟧ : (Gamma0GL (M / q)) ⧸ Γc.subgroupOf (Gamma0GL (M / q))) = ⟦E j'⟧) →
+      j = j' := by
+    intro j j' hjj'
+    have hρ : mapGL ℝ (heckeTMat ((j : ℤ) - (j' : ℤ))) =
+        ((E j : Gamma0GL (M / q)) : GL (Fin 2) ℝ)⁻¹ * (E j') := by
+      rw [hEinv j]
+      show _ = mapGL ℝ (heckeTMat (j : ℤ)) * mapGL ℝ (heckeTMat (-(j' : ℤ)))
+      rw [← map_mul, heckeTMat_mul, sub_eq_add_neg]
+    have hd := (hcrit _ _ _ (heckeTMat_mem_Gamma0 _ _) hρ).mp hjj'
+    have hd' : (q : ℤ) ∣ (j : ℤ) - (j' : ℤ) := by simpa [heckeTMat] using hd
+    obtain ⟨t, ht⟩ := hd'
+    have hjq : ((j : ℕ) : ℤ) < q := by exact_mod_cast j.isLt
+    have hj'q : ((j' : ℕ) : ℤ) < q := by exact_mod_cast j'.isLt
+    have hj0 : (0 : ℤ) ≤ ((j : ℕ) : ℤ) := Int.natCast_nonneg _
+    have hj'0 : (0 : ℤ) ≤ ((j' : ℕ) : ℤ) := Int.natCast_nonneg _
+    have hqpos : (0 : ℤ) < q := by exact_mod_cast hq.pos
+    have h1 : t < 1 := by
+      by_contra hcon
+      have hcon' : (1 : ℤ) ≤ t := not_lt.mp hcon
+      have h2 : (q : ℤ) * 1 ≤ q * t := mul_le_mul_of_nonneg_left hcon' hqpos.le
+      linarith
+    have h3 : -1 < t := by
+      by_contra hcon
+      have hcon' : t ≤ -1 := not_lt.mp hcon
+      have h4 : (q : ℤ) * t ≤ q * (-1) := mul_le_mul_of_nonneg_left hcon' hqpos.le
+      linarith
+    have ht0 : t = 0 := by omega
+    rw [ht0, mul_zero] at ht
+    have hjj : ((j : ℕ) : ℤ) = ((j' : ℕ) : ℤ) := by linarith
+    exact Fin.ext (by exact_mod_cast hjj)
+  -- surjectivity: this is the ONLY step that uses `q² ∣ M`
+  have hEsurj : Function.Surjective (fun j : Fin q =>
+      (⟦E j⟧ : (Gamma0GL (M / q)) ⧸ Γc.subgroupOf (Gamma0GL (M / q)))) := by
+    intro x
+    induction x using Quotient.inductionOn with
+    | h y =>
+      obtain ⟨δ, hδ, hδeq⟩ := mem_Gamma0GL_iff.mp y.2
+      have hNc : ((M / q : ℕ) : ℤ) ∣ δ 1 0 := by
+        have hg := hδ
+        rw [CongruenceSubgroup.Gamma0_mem] at hg
+        rwa [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+      have hqd : ¬ (q : ℤ) ∣ δ 1 1 := by
+        intro hdvd
+        have hqc : (q : ℤ) ∣ δ 1 0 :=
+          dvd_trans (Int.natCast_dvd_natCast.mpr hqMq) hNc
+        have hdet : δ 0 0 * δ 1 1 - δ 0 1 * δ 1 0 = 1 := by
+          have h2 := δ.2
+          rwa [Matrix.det_fin_two] at h2
+        have hone : (q : ℤ) ∣ 1 := by
+          have h5 : (q : ℤ) ∣ δ 0 0 * δ 1 1 := hdvd.mul_left _
+          have h6 : (q : ℤ) ∣ δ 0 1 * δ 1 0 := hqc.mul_left _
+          have h7 := dvd_sub h5 h6
+          rwa [hdet] at h7
+        have hle := Int.le_of_dvd one_pos hone
+        exact absurd hle (by exact_mod_cast hq.one_lt.not_ge)
+      have hdbar : ((δ 1 1 : ℤ) : ZMod q) ≠ 0 := by
+        rwa [Ne, ZMod.intCast_zmod_eq_zero_iff_dvd]
+      refine ⟨⟨(-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val,
+        ZMod.val_lt _⟩, ?_⟩
+      have hρmem : heckeTMat
+            (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ
+          ∈ CongruenceSubgroup.Gamma0 (M / q) :=
+        mul_mem (heckeTMat_mem_Gamma0 _ _) hδ
+      have hρeq : mapGL ℝ (heckeTMat
+            (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ) =
+          ((E ⟨(-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val,
+            ZMod.val_lt _⟩ : Gamma0GL (M / q)) : GL (Fin 2) ℝ)⁻¹ * y := by
+        rw [map_mul, hEinv, hδeq]
+      refine (hcrit _ _ _ hρmem hρeq).mpr ?_
+      have hval : (heckeTMat
+            (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ) 0 1
+          = δ 0 1 +
+            (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ)
+              * δ 1 1 := by
+        rw [SL2_mul_apply_zero_one]
+        simp [heckeTMat]
+      rw [hval, ← ZMod.intCast_zmod_eq_zero_iff_dvd]
+      push_cast
+      rw [ZMod.natCast_val, ZMod.cast_id]
+      field_simp
+      ring
+  have hbij : Function.Bijective (fun j : Fin q =>
+      (⟦E j⟧ : (Gamma0GL (M / q)) ⧸ Γc.subgroupOf (Gamma0GL (M / q)))) :=
+    ⟨fun a b hab => hEinj a b hab, hEsurj⟩
+  have h11 : (∑ j : Fin q, SlashInvariantForm.quotientFunc
+        (CuspForm.translate f (heckeRep q 0)) ⟦E j⟧)
+      = ∑ x : (Gamma0GL (M / q)) ⧸ Γc.subgroupOf (Gamma0GL (M / q)),
+          SlashInvariantForm.quotientFunc
+            (CuspForm.translate f (heckeRep q 0)) x :=
+    Fintype.sum_bijective _ hbij _ _ (fun _ => rfl)
+  have h12 : (∑ j : Fin q, SlashInvariantForm.quotientFunc
+        (CuspForm.translate f (heckeRep q 0)) ⟦E j⟧)
+      = heckeTransform M q ⇑f := by
+    unfold heckeTransform
+    rw [if_pos hqM, add_zero, ← Fin.sum_univ_eq_sum_range]
+    exact Finset.sum_congr rfl fun j _ => hEval j
+  exact h11.symm.trans h12
+
+/-- **LEVEL DESCENT AT A PRIME WHOSE SQUARE DIVIDES THE LEVEL**
+(PROVEN 2026-07-27; it was the single leaf under
+`qCoeff_eq_zero_of_sq_dvd` below, from the TWELFTH decomposition
+2026-07-26): a normalized weight-two EIGENFORM of level `M` with
+`q² ∣ M` and NONZERO `q`-th coefficient is, as a function, already a
+cusp form of level `M / q`.
 
 This is the real mechanism of Atkin–Lehner's theorem at `q² ∣ M`, and
-the reason the theorem below is about NEWforms while this leaf is not:
+the reason the theorem below is about NEWforms while this one is not:
 newness is not used here at all, it is consumed by the assembly.
 
-Classical content (Atkin–Lehner 1970, Theorem 3; Diamond–Shurman §5.8):
-write `f` for the newform of level `L ∣ M` behind `g`.  The `U_q`-action
-on the span of the shifts `f|V_q^i` inside `S₂(Γ₀(M))` is nilpotent when
-`q² ∣ L`, so a nonzero eigenvalue forces `v_q(L) ≤ 1`; and then comparing
-coefficients from the top shift downwards kills every shift above the
-first, leaving `g = f` (if `v_q(L) = 1`) or `g ∈ ⟨f, f|V_q⟩` (if
-`q ∤ L`).  In both surviving cases `v_q` of the level of `g` is at most
-`1 ≤ v_q(M) − 1`, while the prime-to-`q` part is unchanged — so the level
-of `g` divides `M / q`.
+THE PROOF, IN ONE LINE: `g = a_q⁻¹ · U_q g`, and `U_q` lands at level
+`M / q`.  Formally, `heckeOp_apply_eq_smul_of_isWeightTwoEigenform`
+gives `U_q g = a_q · g`, so `g = a_q⁻¹ · U_q g` since `a_q ≠ 0`; and
+`exists_cuspForm_heckeTransform_div` above puts `U_q g` in
+`S₂(Γ₀(M/q))` because `q² ∣ M`.  Scaling by `a_q⁻¹` stays there.
+
+WHY THE ROUTE THE ORIGINAL AUDIT MAPPED WAS NOT NEEDED.  That audit
+recorded the classical proof through the structure of the `q`-old space
+— write `f` for the newform of level `L ∣ M` behind `g`, use nilpotency
+of `U_q` on the span of the shifts `f|V_q^i` when `q² ∣ L`, then compare
+coefficients from the top shift downwards — and listed the `V_q`-shift
+decomposition and that nilpotency as missing from the pin.  Both
+statements are true, and the whole apparatus is unnecessary here: it is
+what one needs to CLASSIFY the eigenforms at level `M`, whereas the leaf
+only asks where a given one lives.  The one-line argument above answers
+that directly, and the only real work is the operator-level fact
+`U_q : S₂(Γ₀(M)) → S₂(Γ₀(M/q))`, which is a coset enumeration of exactly
+the kind this file already carries for level-`M` Hecke stability.
 
 Stated as an equality of FUNCTIONS (`⇑g' = ⇑g`) rather than of
 coefficients on purpose: the function determines the coefficients at
@@ -34369,24 +34641,30 @@ every level by `qCoeff_congr` above, so this is the strongest and also
 the cheapest form, and it hands the assembly the whole eigensystem for
 free rather than one coefficient at a time.
 
-NON-VACUITY, checked (the failure mode a level-descent leaf is most
-exposed to).  At `M = L·q^j` with `j ≥ 2` and `q ∤ L`, the two
-`U_q`-eigenforms `f − β·f|V_q` and `f − α·f|V_q` attached to a level-`L`
-newform `f` — where `α, β` are the roots of `X² − a_q(f)X + q`, both
-nonzero since `αβ = q` — satisfy every hypothesis with `a_q = α ≠ 0`,
-and really do live at level `L·q ∣ M/q`.  So the hypothesis is
-satisfiable and the conclusion is not automatic.
-
-Missing from the pin: the `V_q`-shift decomposition of the `q`-old space
-and the nilpotency of `U_q` on it.  Note `degeneracyOp` (the `V_d`
-operator) and its injectivity ARE already built above, in the
-`DegeneracyOperator` section, so a successor starts from those rather
-than from nothing. -/
+NON-VACUITY, checked at the time this was still a leaf, and preserved by
+the proof (the failure mode a level-descent statement is most exposed
+to).  At `M = L·q^j` with `j ≥ 2` and `q ∤ L`, the two `U_q`-eigenforms
+`f − β·f|V_q` and `f − α·f|V_q` attached to a level-`L` newform `f` —
+where `α, β` are the roots of `X² − a_q(f)X + q`, both nonzero since
+`αβ = q` — satisfy every hypothesis with `a_q = α ≠ 0`, and really do
+live at level `L·q ∣ M/q`.  So the hypothesis is satisfiable and the
+conclusion is not automatic.  Consistently with that, the proof consumes
+`hne` essentially (it inverts `a_q`) and `hqM2` essentially (it is what
+makes the coset enumeration surjective — see the note on
+`exists_cuspForm_heckeTransform_div`). -/
 theorem exists_cuspForm_level_div_of_qCoeff_ne_zero {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoEigenform M g)
     {q : ℕ} (hq : q.Prime) (hqM2 : q ^ 2 ∣ M) (hne : qCoeff M g q ≠ 0) :
-    ∃ g' : CuspForm (Gamma0GL (M / q)) 2, ⇑g' = ⇑g :=
-  sorry
+    ∃ g' : CuspForm (Gamma0GL (M / q)) 2, ⇑g' = ⇑g := by
+  obtain ⟨h, hh⟩ := exists_cuspForm_heckeTransform_div hM hq hqM2 g
+  refine ⟨(qCoeff M g q)⁻¹ • h, ?_⟩
+  have h1 : heckeTransform M q ⇑g = qCoeff M g q • ⇑g := by
+    rw [← heckeOp_coe hM hq g,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq]
+    exact CuspForm.IsGLPos.coe_smul _ _
+  rw [CuspForm.IsGLPos.coe_smul, hh, h1, smul_smul, inv_mul_cancel₀ hne, one_smul]
+
+end QOldLevelDescent
 
 /-- **Atkin–Lehner at a prime whose SQUARE divides the level** (PROVEN
 2026-07-26 as the TWELFTH decomposition, over the level-descent leaf
