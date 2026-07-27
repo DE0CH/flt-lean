@@ -36,6 +36,10 @@ public import Mathlib.RingTheory.Localization.Away.AdjoinRoot
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.AlgebraicGeometry.ResidueField
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
+-- LOAD-BEARING, added 2026-07-27 for `smoothOfRelativeDimension_of_isDominant`, which is what
+-- proves `smoothOfRelativeDimension_one_of_affineChart` below.  It grows the ROOT cone by ZERO
+-- modules: `X0.lean`, the only consumer of this file, already `public import`s it.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification
 
 /-!
 # The projective Weierstrass model as an elliptic scheme over `Spec ℚ`
@@ -6804,24 +6808,56 @@ theorem exists_hom_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
       (geometricallyConnected_projToSpec E) hfin hstr₀ ι hstr
   exact ⟨u, h1, h2⟩
 
-/-- **The abelian scheme of a Weierstrass model is a CURVE** (sorry node,
-introduced 2026-07-27 — the whole residue of the backward extension).
+/-- **The affine Weierstrass curve is a smooth curve over `ℚ`** (PROVEN,
+from `exists_affineChart_projInfty` and `smoothOfRelativeDimension_projToSpec`).
+
+`Spec ℚ[E]` is the chart `D₊(Z)` of `proj E`, i.e. an OPEN SUBSCHEME of the
+projective model, and the chart's structure map is the restriction of
+`projToSpec E`.  An open immersion is smooth of relative dimension `0`, so
+composing with `smoothOfRelativeDimension_projToSpec` gives relative
+dimension `0 + 1 = 1`, and `hstr₀` rewrites the composite as the structure
+map of the coordinate ring.
+
+This is what supplies the dense-open input to
+`smoothOfRelativeDimension_one_of_affineChart` below.  Proving it directly
+from a presentation of `ℚ[X, Y] ⧸ (F)` would be strictly harder and is not
+worth doing: the Jacobian `∂F/∂Y` is NOT a global unit (it vanishes at the
+`2`-torsion), so the coordinate ring is only *locally* standard smooth, and
+that cover is exactly the work already done for the `proj` charts in
+`isStandardSmoothOfRelativeDimension_projChartAway`. -/
+theorem smoothOfRelativeDimension_specMap_coordinateRing
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    SmoothOfRelativeDimension 1
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))) := by
+  obtain ⟨ι₀, h₀, hstr₀, -⟩ := exists_affineChart_projInfty E
+  haveI := h₀
+  haveI := smoothOfRelativeDimension_projToSpec E
+  have h : SmoothOfRelativeDimension (0 + 1)
+      (ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E) := inferInstance
+  rw [zero_add, hstr₀] at h
+  exact h
+
+/-- **The abelian scheme of a Weierstrass model is a CURVE** (**PROVEN
+2026-07-27**; formerly the whole residue of the backward extension).
 
 TRUE: `A` carries an open immersion `ι` from the affine Weierstrass curve
-`Spec ℚ[E]`, which is smooth of relative dimension one over `ℚ`, and
-`hrange` makes its range the complement of a single point.  `ab.smooth`
-makes `f` smooth, and the relative dimension of a smooth morphism is
-LOCALLY CONSTANT on the source, so it is `1` on the whole connected
-component of the image of `ι` — and `ab.connected` makes `A` connected.
+`Spec ℚ[E]`, which is smooth of relative dimension one over `ℚ`
+(`smoothOfRelativeDimension_specMap_coordinateRing` above), and `hrange`
+makes its range the complement of a single point of a CONNECTED space,
+hence DENSE (`isDominant_of_range_eq_compl`).  `ab.smooth` makes `f`
+smooth, and the relative dimension of a smooth morphism is determined by
+its value on a dense open — which is
+`AlgebraicGeometry.smoothOfRelativeDimension_of_isDominant`, PROVEN in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
 
-**Why this is a separate leaf rather than a hypothesis.**  With release 6's
-`exists_unique_extension_of_isSmoothProperCurve` in hand, the backward
-extension `A ⟶ proj E` needs exactly four things about `f`: properness
-(`ab.proper`), geometric connectedness (`ab.connected`), finiteness of the
-removed locus (`hrange`) — and `SmoothOfRelativeDimension 1 f`, which is the
-ONE that `AbelianSchemeStruct` does not carry: its `smooth` field is a bare
-`Smooth f`, with no dimension.  Everything else in the backward half is
-therefore already discharged, and this is all that is left of it.
+**Why this is a separate declaration rather than a hypothesis.**  With
+release 6's `exists_unique_extension_of_isSmoothProperCurve` in hand, the
+backward extension `A ⟶ proj E` needs exactly four things about `f`:
+properness (`ab.proper`), geometric connectedness (`ab.connected`),
+finiteness of the removed locus (`hrange`) — and
+`SmoothOfRelativeDimension 1 f`, which is the ONE that
+`AbelianSchemeStruct` does not carry: its `smooth` field is a bare
+`Smooth f`, with no dimension.
 
 **Do NOT repair this by adding `hdim` to the consumer.**  The outer
 statement `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` does
@@ -6829,39 +6865,53 @@ carry `SmoothOfRelativeDimension 1 f`, so threading it down looks free — but
 the immediate consumer `exists_geomFibreAddEquiv_of_weierstrassModel` does
 not, and it is consumed in `X0.lean` from data that supplies the model
 without the dimension.  The dimension is genuinely derivable from the chart,
-which is what this leaf says; deriving it is strictly better than
-propagating a hypothesis.
+which is what this declaration says.
 
-## WHAT TO CHECK FIRST
+## THE ROUTE NOTE THIS DOCSTRING USED TO CARRY IS RETIRED (2026-07-27)
 
-`SmoothOfRelativeDimension` is a `MorphismProperty`; the question is whether
-it, or `Smooth` together with a fibre-dimension statement, is local at the
-source in a usable form at this pin
-(`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`,
-`Morphisms/SmoothFiber.lean`).  Note that `{range ι}` is NOT an open cover
-of `A` — the point `ab.zero` is missing — so a bare local-at-source lemma
-does not suffice on its own; what closes the gap is connectedness of `A`
-plus local constancy, or a direct computation of the fibre dimension at the
-removed point.
+An earlier version asked whether `SmoothOfRelativeDimension` is local at
+the source in a usable form, observed that `{range ι}` is not an open cover
+of `A`, and named `CurveExtension.lean`'s
+`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` as "a
+cheaper route worth pricing first".  All three points are superseded, and
+the way they were wrong is the standard one — **the axis searched was
+`Mathlib.AlgebraicGeometry`, and the lemma lives one level down in
+`Mathlib.RingTheory`**:
 
-**A cheaper route worth pricing first**: `CurveExtension.lean`'s
-`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` derives
-exactly this conclusion over a PERFECT field from DVR stalks, and it takes
-its dimension pin from a dense open `j` that is already a smooth curve —
-which is precisely `ι`.  `ℚ` is perfect, so if the DVR hypothesis can be got
-from `ab.smooth`, that declaration discharges this leaf directly.
+* the missing "two values of `n`" fact is
+  `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) — over a
+  NONTRIVIAL standard smooth algebra the relative dimension IS the rank of
+  `Ω[S⁄R]`, hence unique.  It is packaged for schemes as
+  `AlgebraicGeometry.eq_of_isStandardSmoothOfRelativeDimension_of_locally`;
+* no local-constancy theorem (EGA IV 17.10.2 / Stacks `02NM`) is needed,
+  and **connectedness of `A` is not needed either**: DENSITY of the chart
+  suffices, which is what `smoothOfRelativeDimension_of_isDominant`
+  consumes.  Connectedness enters here only as the way density is derived
+  from `hrange`, through `isDominant_of_range_eq_compl`;
+* the DVR route would have been strictly harder — that leaf is still open,
+  and it is the *converse* implication (regular ⟹ smooth over a perfect
+  field), which this argument never needs.
 
-NOT VACUOUS: dropping `hrange` leaves `ι` an arbitrary open immersion, and a
-smooth `f` can then have any relative dimension away from its range. -/
+Every hypothesis is load-bearing: `hrange` supplies density (without it `ι`
+is an arbitrary open immersion and a smooth `f` may have any relative
+dimension away from its range), `h₁` and `hstr` identify `ι` as a chart of
+`f`, and `ab` supplies both `Smooth f` and — through `ab.connected` —
+`ConnectedSpace A`. -/
 theorem smoothOfRelativeDimension_one_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (_ab : AbelianSchemeStruct f)
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
     (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
-    (_h₁ : IsOpenImmersion ι)
-    (_hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
-    (_hrange : Set.range ι.base =
-      (Set.range (_ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
-    SmoothOfRelativeDimension 1 f :=
-  sorry
+    (h₁ : IsOpenImmersion ι)
+    (hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
+    SmoothOfRelativeDimension 1 f := by
+  haveI := h₁
+  haveI := ab.connected
+  haveI : ConnectedSpace A := GeometricallyConnected.connectedSpace_of_subsingleton (f := f)
+  haveI : IsDominant ι := isDominant_of_range_eq_compl ι _ hrange
+  exact _root_.AlgebraicGeometry.smoothOfRelativeDimension_of_isDominant hstr ab.smooth
+    (smoothOfRelativeDimension_specMap_coordinateRing E)
 
 /-- **The chart of the abelian scheme extends to a morphism `A ⟶ proj E`**
 (**PROVEN 2026-07-27** over `smoothOfRelativeDimension_one_of_affineChart`)

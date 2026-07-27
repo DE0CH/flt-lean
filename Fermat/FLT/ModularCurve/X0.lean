@@ -31150,8 +31150,14 @@ theorem isDominant_of_isX0Compactification {N ℓ : ℕ} (hℓ : ℓ.Prime)
   exact isDominant_of_finite_compl_of_smoothOfRelativeDimension_one strX₁ h₁.finite_compl
 
 /-- **A morphism from the open part into a proper curve extends over the
-cusps** (sorry leaf — the valuative criterion at the cusps, and the ONLY
-geometric content left in the uniqueness of `X_0(N)_{𝔽_ℓ}`).
+cusps** (**PROVEN 2026-07-27** — see the CONSOLIDATED paragraph below).
+
+**STALE LABEL CORRECTED 2026-07-27.**  This parenthesis read "sorry leaf —
+the valuative criterion at the cusps, and the ONLY geometric content left in
+the uniqueness of `X_0(N)_{𝔽_ℓ}`" for as long as the declaration below has
+been proven, contradicting its own docstring twelve paragraphs down.  Stale
+`(sorry leaf)` labels are harvested into dispatch lists, so a proven
+declaration carrying one manufactures phantom work; corrected on sight.
 
 TRUE and classical (Hartshorne I.6.8 / II Ex. 4.5, Stacks `0BXA`): a
 morphism to a PROPER scheme, defined on a dense open of a REGULAR curve,
