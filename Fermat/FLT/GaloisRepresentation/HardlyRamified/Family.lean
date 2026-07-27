@@ -65,6 +65,13 @@ public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 -- because the consuming statements are the ones named above.
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.ShortExact
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDualExamples
+-- the CONNECTED COMPONENT of the identity as a Hopf algebra: `HopfAlgebra.cornerIdeal e₀`
+-- is a Hopf ideal (`HopfAlgebra.isHopfIdeal_cornerIdeal`, sorry-free), so
+-- `G ⧸ HopfAlgebra.cornerIdeal e₀` is `𝒪(G°)`. This is the object that makes the Raynaud
+-- requirement `(R1)` of `exists_unramified_grouplike_family_generating_corner` STATABLE in
+-- the `IsShortExact`/`IsMultiplicativeType` vocabulary of `ShortExact.lean`; it appears in
+-- the statements of the four leaves that cut replaces, hence public.
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.Corner
 -- the `μ`-typed factor of the Eisenstein member: the group-algebra Hopf
 -- structure `MonoidAlgebra.instHopfAlgebra` (the diagonalizable group scheme
 -- `Spec 𝒪ᵥ[D]`), its base change `MonoidAlgebra.scalarTensorEquiv`, and
@@ -3239,14 +3246,273 @@ theorem mul_mem_unramifiedTensorSubmodule (G : Type) [CommRing G] [Algebra 𝒪�
   | add u v _ _ hu hv => rw [add_mul]; exact Submodule.add_mem _ hu hv
   | smul c u _ hu => rw [smul_mul_assoc]; exact Submodule.smul_mem _ _ hu
 
+/-! ### The connected component `G°` as a Hopf algebra: the object `(R1)` was missing
+
+`(R1)` — the Raynaud dévissage — is a statement about a GROUP SCHEME: the connected
+component of the identity `G° ⊆ G` acquires a composition series whose graded pieces
+are `μ`-type. Its extension step `(R3)` is already PROVEN in this tree, as
+`HopfAlgebra.isMultiplicativeType_of_isShortExact`, and it is stated over
+`HopfAlgebra.IsShortExact` and `HopfAlgebra.IsMultiplicativeType` — both of which are
+statements about a HOPF ALGEBRA.
+
+This file never had `G°` as a Hopf algebra. It carried the idempotent `e₀` and the
+corner SUBMODULE `(ℚᵖᵥᵃˡᵍ ⊗ G) · ē₀`, which is not one, and about which neither
+`IsShortExact` nor `IsMultiplicativeType` can even be stated. So `(R1)` was not merely
+unproven, it was UNSTATABLE — which is why the three successive audits in the docstring
+below could find no cut and recorded the leaf as "IRREDUCIBLY A CITATION". Those audits
+also dismissed building the object, as route (c), "real work but pure plumbing: it moves
+no part of (R1)–(R4)". That inference is the one the doctrine names as the commonest bad
+one: *stating* a theory is not *proving* it, and an object that can be written before
+anything satisfies it is often exactly what makes a safe cut possible.
+
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean` (new, sorry-free) writes it.
+`HopfAlgebra.cornerIdeal e₀ = (1 - e₀)` is a HOPF ideal exactly under the hypotheses this
+leaf already carries — `he₀`, `hε₀`, `hprim₀`, `hcomul₀`, and `hcomul₀` is used for
+nothing else — so mathlib's `HopfAlgebra.Quotient` instance makes
+`G ⧸ HopfAlgebra.cornerIdeal e₀` a Hopf algebra over `𝒪ᵖᵥ`. That is `𝒪(G°)`.
+
+With the object in hand the citation splits into FOUR named leaves, replacing one that
+could not be attacked at all:
+
+* `free_corner_of_connected` — `𝒪(G°)` is `𝒪ᵖᵥ`-free. Formal: `G ⧸ (1 - e₀) ≅ e₀ G` is a
+  direct summand of a module-finite flat module over a DVR.
+* `isCocomm_corner_of_habel` — `𝒪(G°)` is cocommutative, i.e. `G°` is a COMMUTATIVE group
+  scheme. Formal: `habel` says the point monoid of the generic fibre is commutative, and
+  flatness descends the identity.
+* `isMultiplicativeType_corner_of_hopf_package` — **`(R1)` itself, now stated**: `G°` is of
+  multiplicative type. This is the whole Raynaud/Oort–Tate citation, and the only one of
+  the four that is not commutative algebra. It is where `hpodd`, `hchar` and `fG` are
+  spent.
+* `exists_unramified_grouplike_family_of_isMultiplicativeType` — multiplicative type over
+  the STRICTLY HENSELIAN base is DIAGONALIZABLE, and the resulting group-likes are
+  `ℚᵖᵥᵘⁿʳ`-rational. This is where `hhens` and `hsep` are spent; it is the only one of the
+  four that mentions inertia, and it needs no `ρ`, no `hchar` and no `fG`.
+
+Be precise about what this does and does not claim. It does NOT claim progress on
+Raynaud: the third bullet is the same mathematics the docstring below describes. What it
+claims is that Raynaud is now a STATEMENT IN THIS TREE, in the standard Hopf-algebraic
+vocabulary, dispatchable to a group-scheme prover rather than to an arithmetic one — and
+that the three surrounding obligations, which were previously invisible inside the
+citation, are separated out and are ordinary commutative algebra.
+
+Refuting check on this cut, and it is cheap: exhibit a proof of the conclusion of
+`exists_unramified_grouplike_family_generating_corner` that never establishes
+multiplicative type of `G°`. -/
+
+/-- **The corner Hopf algebra `𝒪(G°) = G ⧸ (1 - e₀)` is free over `𝒪ᵖᵥ`** (SORRY LEAF,
+formal — no arithmetic input: neither `hpodd` nor `hchar` nor `fG` appears).
+
+`G ⧸ (1 - e₀)` is isomorphic as an `𝒪ᵖᵥ`-module to the corner `e₀ G`, which is a DIRECT
+SUMMAND of `G` (the idempotent splitting `G ≅ e₀ G × (1 - e₀) G`). A direct summand of a
+module-finite flat module over the discrete valuation ring `𝒪ᵖᵥ` is again module-finite
+and flat, hence torsion-free and finitely generated over a PID, hence FREE
+(`Module.free_of_finite_type_torsion_free'`).
+
+This is needed because `HopfAlgebra.IsMultiplicativeType` — and every statement in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` — carries `[Module.Free R A]`:
+Cartier duality is the `R`-linear dual, and it is only well-behaved on a finite free
+module. -/
+theorem free_corner_of_connected
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀) :
+    Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+  sorry
+
+/-- **The corner Hopf algebra `𝒪(G°)` is cocommutative** (SORRY LEAF, formal), i.e. the
+connected component `G°` is a COMMUTATIVE group scheme.
+
+`habel` says the convolution monoid of `ℚᵖᵥ`-points of `G` valued in `ℚᵖᵥᵃˡᵍ` is
+commutative; at the call site it is *proven* from the `Γ`-equivariant bijection `fG` onto
+the ADDITIVE representation space, exactly as in
+`exists_grouplike_family_of_connected_hopf_package`. Since the generic fibre is étale over
+the characteristic-`0` field `ℚᵖᵥ`, its points over `ℚᵖᵥᵃˡᵍ` separate elements, so
+commutativity of the point monoid is equivalent to cocommutativity of
+`ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G`; and `G` is FLAT over the domain `𝒪ᵖᵥ`, so `G → ℚᵖᵥᵃˡᵍ ⊗ G` is
+injective and the identity `τ ∘ comul = comul` descends. Passing to the quotient by a Hopf
+ideal preserves it.
+
+Needed because `HopfAlgebra.IsMultiplicativeType` carries `[IsCocomm R A]`: the Cartier
+dual of a coalgebra is an algebra, and it is COMMUTATIVE exactly when the coalgebra is
+cocommutative — which is what makes `CartierDual R A` a `CommRing` and hence a Hopf
+algebra again. -/
+theorem isCocomm_corner_of_habel
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ] :
+    Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+include hpodd in
+/-- **`(R1)`, THE RAYNAUD DÉVISSAGE, NOW STATED: the connected component `G°` of a
+hardly-ramified Hopf package at `p` is of MULTIPLICATIVE TYPE** (SORRY LEAF — this is the
+genuine citation, and after this cut it is the ONLY arithmetic one of the four).
+
+Reference: Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102** (1974),
+§1.4, Prop. 3.3.2, Th. 3.3.3 and Cor. 3.4.4, with Oort–Tate 1970 at order `p`; Tate's
+chapter in Cornell–Silverman–Stevens §4; Serre, Duke 1987, §4.1.
+
+STATEMENT. `HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ 𝒪(G°)` is *by definition* "the Cartier
+dual of `G°` is étale over `𝒪ᵖᵥ`" — see
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`. Note the base is `𝒪ᵖᵥ`
+itself and NOT the strict henselisation: multiplicative type is insensitive to unramified
+twisting (the dual of `μ_p ⊗ ψ` is `(ℤ/p) ⊗ ψ`, étale for every `ψ`), and it is precisely
+the strongest form that survives the twist. DIAGONALIZABILITY — the existence of the
+`μ`-coordinates — is what needs the strictly henselian base, and that is the next leaf,
+not this one. Getting this boundary wrong is what killed `exists_muType_closure`.
+
+THE ARGUMENT, and where each hypothesis goes.
+
+1. *Level one.* `hchar` plus `fG` say the geometric points of `G` are `(R ⧸ I) ⊗ V` with
+   its `Γ`-action, whose Jordan–Hölder factors are the ONE-dimensional `χ̄₁`, `χ̄₂`. With
+   `e = 1 < p − 1` (`hpodd` and `p` odd, `𝒪ᵖᵥ = ℤ_p` absolutely unramified), Raynaud's
+   fundamental-character count forces every graded piece of `G°` to be an
+   `𝔽_p`-vector-space scheme of RANK ONE. The Frobenius-conjugation argument that pins
+   this is robust to a large residue field — see item (iv) of the docstring below.
+2. *Dévissage.* Over the STRICT HENSELISATION such a `G°` acquires a composition series
+   `0 = H_0 ⊆ H_1 ⊆ … ⊆ H_n = G°` of finite flat closed subgroup schemes with rank-one
+   graded pieces. In this tree each step is an
+   `HopfAlgebra.IsShortExact i π` between the corner Hopf algebras.
+3. *The order-`p` dichotomy `(R2)`.* Each graded piece is étale or of `μ`-type, and
+   connectedness of `G°` (`hprim₀`) excludes étale. FORMALIZED AND SORRY-FREE in
+   `Fermat/FLT/GroupScheme/ConnectedEtale.lean` at the level of POINTS
+   (`OortTate.inertia_character_trivial_or_cyclotomic`,
+   `not_inertia_character_trivial_of_connected`, `exists_muType_coordinate`); what is not
+   formalized is its group-scheme form, which is what step 2 hands it.
+4. *The extension step `(R3)`.* Iterate
+   `HopfAlgebra.isMultiplicativeType_of_isShortExact` along the series. PROVEN.
+
+So the residual content of this leaf is 1 + 2 + the group-scheme form of 3. Four leaves
+remain open beneath `(R3)` in `ShortExact.lean`
+(`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`,
+`IsShortExact.exists_linearRetraction`, `IsShortExact.ker_cartierDual_le`,
+`IsShortExact.faithfullyFlat_cartierDual`) — they are transitively under this one but are
+NOT what blocks it, and none of them is owned by this statement.
+
+NON-VACUITY. The witness of item (C2) of the docstring below satisfies every hypothesis
+with a nontrivial connected part: `R = ℤ_[p]`, `I = (p)`, `ρ = χ_cyc ⊕ 1`,
+`G = 𝒪(μ_p × ℤ/p)`. There `G° = 𝒪(μ_p) = ℤ_p[T]/(T^p − 1)`, whose Cartier dual is the
+constant group scheme `ℤ/p`, which is étale — so the conclusion holds and is not
+vacuous. -/
+theorem isMultiplicativeType_corner_of_hopf_package
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (fG : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) →+[Field.absoluteGaloisGroup ℚᵖᵥ]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)] :
+    HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **Multiplicative type over the STRICTLY HENSELIAN base is DIAGONALIZABLE: the corner
+group-likes may be taken `ℚᵖᵥᵘⁿʳ`-rational** (SORRY LEAF).
+
+This is the second half of the μ-type node's arithmetic, and it is the half that is NOT
+Raynaud. Given that `G°` is of multiplicative type over `𝒪ᵖᵥ` — its Cartier dual `X` is an
+étale group scheme — the strictly henselian base makes `X` CONSTANT: an étale algebra over
+a henselian local ring with SEPARABLY CLOSED residue field is a finite product of copies of
+the base (`hhens` + `hsep`, through
+`Algebra.FormallyEtale.equivPiOfIsSepClosed` at the residue field and Hensel lifting the
+idempotents). So `𝒪ᵘⁿʳ ⊗ 𝒪(G°) ≅ 𝒪ᵘⁿʳ[X]` is a group algebra, and the group-likes of the
+corner are the images of `X` — all of them scalars in `unramifiedIntegers p`, hence in the
+fixed field `unramifiedSubfield p = ℚᵖᵥᵘⁿʳ`, hence in `unramifiedTensorSubmodule G`.
+
+`habel` is spent on the GENERATION clause, exactly as in half (α)
+(`exists_grouplike_family_generating_corner`): the characters of a finite abelian group
+span its function algebra, and for a nonabelian point group they do not.
+
+WHAT THIS LEAF IS NOT. It is not `(R4)`. `(R4)` — *multiplicative type ⟹ every corner
+group-like is unramified* — is PROVEN, in
+`grouplike_corner_mem_unramifiedTensorSubmodule_of_strictlyHenselian` below, by linear
+independence of characters, and it consumes THIS statement rather than the other way
+round. What is asserted here is the existence of the diagonalizing family, which is the
+form Raynaud's classification actually delivers.
+
+FAITHFULNESS. The conclusion asks for membership of the SCALARS in the inertia-fixed
+field, never for an element of `G` and never for `ℚᵖᵥ`-rationality, so it is blind to
+unramified twists — see item (C1) of the docstring below. Strengthening
+`unramifiedTensorSubmodule G` to `ℚᵖᵥ ⊗ G` makes it FALSE for every twist `ψ ≠ 1`. -/
+theorem exists_unramified_grouplike_family_of_isMultiplicativeType
+    (hhens : HenselianLocalRing (unramifiedIntegers p))
+    (hsep : IsSepClosed (IsLocalRing.ResidueField (unramifiedIntegers p)))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    (hmult : HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)) :
+    ∃ (ι : Type) (y : ι → ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G),
+      (∀ i, Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) (y i) = (1 : ℚᵖᵥᵃˡᵍ)) ∧
+      (∀ i, Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) (y i) *
+          (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+        y i ⊗ₜ[ℚᵖᵥᵃˡᵍ] y i) ∧
+      (∀ i, y i ∈ unramifiedTensorSubmodule G) ∧
+      (∀ z : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, z * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) :=
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 include hpodd in
 /-- **Half (β) of the μ-type node, SHARPENED to an `ℚᵖᵥᵘⁿʳ`-rationality
 statement: the connected corner is DIAGONALIZABLE over the strict
-henselisation** (SORRY NODE — the genuine Raynaud/Oort–Tate citation of this
-cut.
+henselisation**.
+
+**STATUS, 2026-07-27 — NO LONGER A SORRY NODE. It is now an ASSEMBLY over four
+named leaves**, three of which are ordinary commutative algebra; see the section
+"The connected component `G°` as a Hopf algebra" immediately above for the cut and
+for why it was not available before. In one line: `(R1)` was not merely unproven,
+it was UNSTATABLE, because this file had no Hopf algebra `𝒪(G°)` for
+`IsShortExact`/`IsMultiplicativeType` to be about.
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/Corner.lean` (new, sorry-free) supplies
+it as `G ⧸ HopfAlgebra.cornerIdeal e₀`, out of exactly the hypotheses this
+statement already carried. The four leaves are `free_corner_of_connected`,
+`isCocomm_corner_of_habel`, `isMultiplicativeType_corner_of_hopf_package` (this is
+`(R1)`, the citation) and
+`exists_unramified_grouplike_family_of_isMultiplicativeType`.
+
+**Everything below this paragraph is the audit history of the node while it was a
+leaf. It is preserved because its mathematics is still the mathematics of
+`isMultiplicativeType_corner_of_hopf_package`, but READ IT AS DATED. In
+particular its VERDICT "IRREDUCIBLY A CITATION at the present state of the tree"
+was true of the tree it was written against and is not true of this one: the axis
+those three audits never searched was "build the missing OBJECT", which is what
+the cut above does. That is the standing lesson about irreducibility verdicts —
+one is only as wide as the axis its author searched.**
 
 RESTATED 2026-07-26 (third pass, this owner) from "every corner group-like is
 unramified" to "SOME generating family of corner group-likes is unramified",
@@ -3878,8 +4144,39 @@ theorem exists_unramified_grouplike_family_generating_corner
         y i ⊗ₜ[ℚᵖᵥᵃˡᵍ] y i) ∧
       (∀ i, y i ∈ unramifiedTensorSubmodule G) ∧
       (∀ z : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, z * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
-        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) :=
-  sorry
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) := by
+  classical
+  -- the convolution monoid of `ℚᵖᵥ`-points is COMMUTATIVE: `fG` is an additive
+  -- bijection onto the (commutative) representation space.  Same derivation as in
+  -- `exists_grouplike_family_of_connected_hopf_package` below.
+  have habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ := by
+    intro φ ψ
+    have h : fG (Additive.ofMul φ + Additive.ofMul ψ) =
+        fG (Additive.ofMul ψ + Additive.ofMul φ) := by
+      rw [map_add, map_add, add_comm]
+    have h2 : (Additive.ofMul (φ * ψ) :
+        Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)) = Additive.ofMul (ψ * φ) :=
+      hfG.1 h
+    exact Additive.ofMul.injective h2
+  -- the connected component of the identity, as a Hopf algebra over `𝒪ᵖᵥ`
+  haveI hhopf : (HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ :=
+    HopfAlgebra.isHopfIdeal_cornerIdeal (R := 𝒪ᵖᵥ) he₀ hε₀ hprim₀ hcomul₀
+  haveI hfin : Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+    Module.Finite.of_surjective
+      (Ideal.Quotient.mkₐ 𝒪ᵖᵥ (HopfAlgebra.cornerIdeal e₀)).toLinearMap
+      Ideal.Quotient.mk_surjective
+  haveI hfree : Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+    free_corner_of_connected G e₀ he₀
+  haveI hcocomm : Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+    isCocomm_corner_of_habel G habel e₀ he₀
+  -- `(R1)`: the Raynaud dévissage, i.e. `G°` is of multiplicative type
+  have hmult : HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+    isMultiplicativeType_corner_of_hopf_package hpodd hZinj hRinj χ₁ χ₂ hmul₁ hmul₂
+      hchar I hI G fG hfG e₀ he₀ hε₀ hprim₀ hcomul₀
+  -- diagonalizability over the strictly henselian base, and the rationality of the
+  -- resulting group-likes
+  exact exists_unramified_grouplike_family_of_isMultiplicativeType hhens hsep G habel
+    e₀ he₀ hε₀ hprim₀ hcomul₀ hmult
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
