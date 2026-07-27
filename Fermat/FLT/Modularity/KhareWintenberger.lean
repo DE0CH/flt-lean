@@ -8549,6 +8549,241 @@ theorem isFinite_fromNormalization_of_smooth_affine
     AlgebraicGeometry.IsFinite g.fromNormalization :=
   sorry
 
+/-- **A NOETHERIAN LOCAL DOMAIN THAT IS INTEGRALLY CLOSED AND OF DIMENSION `≤ 1`
+IS REGULAR** (**PROVEN 2026-07-27** — general commutative algebra, no scheme
+theory, no smoothness, and nothing specific to this development).
+
+In dimension `1` this is the classical "normal Noetherian local domain of
+dimension one is a DVR"; in dimension `0` it is "a Noetherian local domain of
+dimension `0` is a field". Both are packaged by mathlib's
+`tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain`, whose item 3 is exactly
+`IsIntegrallyClosed R ∧ (every nonzero prime is the maximal ideal)` and whose
+item 0 is `IsPrincipalIdealRing R`; the second conjunct is `Ring.KrullDimLE 1`
+read through `Ideal.IsPrime.isMaximal_of_ne_bot`, and `IsPrincipalIdealRing`
+gives `IsRegularLocalRing` by mathlib's instance
+`[IsLocalRing R] [IsDomain R] [IsPrincipalIdealRing R] : IsRegularLocalRing R`.
+
+This is the step that turns NORMALITY plus a DIMENSION BOUND into REGULARITY,
+and it is the reason the two geometric leaves below (`IsIntegrallyClosed` of
+the stalks, and `Ring.KrullDimLE 1` of the stalks) suffice: no separate "the
+model is regular" leaf is needed. -/
+theorem isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one
+    (R : Type u) [CommRing R] [IsNoetherianRing R] [IsLocalRing R] [IsDomain R]
+    [IsIntegrallyClosed R] [Ring.KrullDimLE 1 R] : IsRegularLocalRing R := by
+  have hmax : ∀ Q : Ideal R, Q ≠ ⊥ → Q.IsPrime → Q = IsLocalRing.maximalIdeal R := by
+    intro Q hQ hQ'
+    exact IsLocalRing.eq_maximalIdeal (hQ'.isMaximal_of_ne_bot hQ)
+  have key : IsIntegrallyClosed R ∧
+      ∀ Q : Ideal R, Q ≠ ⊥ → Q.IsPrime → Q = IsLocalRing.maximalIdeal R := ⟨‹_›, hmax⟩
+  haveI : IsPrincipalIdealRing R :=
+    ((tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain R).out 3 0).mp key
+  infer_instance
+
+open CategoryTheory AlgebraicGeometry in
+/-- **OVER A FIELD BASE, LOCALLY OF FINITE TYPE UPGRADES TO LOCALLY OF FINITE
+PRESENTATION** (**PROVEN 2026-07-27**).
+
+A field is Noetherian, so `Spec K` is a locally Noetherian scheme and every
+affine open `U ⊆ Spec K` has Noetherian sections; over a Noetherian base ring
+`RingHom.FiniteType` and `RingHom.FinitePresentation` coincide
+(`RingHom.FinitePresentation.of_finiteType`). The transfer between the two
+morphism properties is `HasRingHomProperty.iff_appLE` in one direction and
+`HasRingHomProperty.appLE` in the other, so the whole proof is four lines.
+
+This matters because `Smooth` is a property of morphisms LOCALLY OF FINITE
+PRESENTATION — `Scheme.Hom.smoothLocus` and `Scheme.Hom.smoothLocus_eq_top_iff`
+both carry `[LocallyOfFinitePresentation f]` — while everything upstream in
+this cluster (properness, finiteness of the normalization) delivers only
+`LocallyOfFiniteType`. Without this bridge the smoothness leaf below could not
+even be applied. -/
+theorem locallyOfFinitePresentation_of_locallyOfFiniteType_over_field
+    {K : Type u} [Field K] {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hft : AlgebraicGeometry.LocallyOfFiniteType f) :
+    AlgebraicGeometry.LocallyOfFinitePresentation f := by
+  rw [AlgebraicGeometry.HasRingHomProperty.iff_appLE
+    (P := @AlgebraicGeometry.LocallyOfFinitePresentation)]
+  intro U V e
+  have h := AlgebraicGeometry.HasRingHomProperty.appLE
+    (P := @AlgebraicGeometry.LocallyOfFiniteType) f hft U V e
+  haveI : IsNoetherianRing Γ(AlgebraicGeometry.Spec (CommRingCat.of K), U.1) :=
+    AlgebraicGeometry.IsLocallyNoetherian.component_noetherian U
+  exact RingHom.FinitePresentation.of_finiteType.mp h
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF C2 — REGULAR ⟹ SMOOTH OVER A PERFECT FIELD** (SORRY LEAF, and this
+is THE genuinely missing theory in the whole smooth-proper-model cluster).
+
+This is the EXACT CONVERSE of `isRegularLocalRing_stalk_of_smooth_over_field`
+(PROVEN above in this file): that node says a scheme smooth over a field has
+regular local rings; this one says that over a PERFECT field the implication
+reverses. Stacks 00TT (`X` locally of finite type over a field `k` is smooth
+iff it is geometrically regular) together with Stacks 056S (over a perfect
+`k`, a locally Noetherian `k`-scheme is geometrically regular iff it is
+regular). Matsumura §28 is the commutative-algebra form.
+
+PERFECTNESS IS NOT DECORATION. Over an imperfect `k` the statement is FALSE:
+`Spec k[x]/(xᵖ − t)` for `t ∈ k \ kᵖ` is a regular (indeed a field) `k`-scheme
+that is not smooth over `k`, because base change to `k^{1/p}` produces a
+nonreduced ring. So any attempt at this leaf that never uses `PerfectField K`
+is proving something false, and that is the check to run on a draft proof.
+
+WHAT MATHLIB HAS, verified by name at this pin (2026-07-27), so that the owner
+does not re-survey:
+
+* `Scheme.Hom.smoothLocus_eq_top_iff : f.smoothLocus = ⊤ ↔ Smooth f` for
+  `[LocallyOfFinitePresentation f]`, where `f.smoothLocus` is by definition
+  `{x | (f.stalkMap x).hom.FormallySmooth}`. So the goal reduces to formal
+  smoothness of each stalk map, pointwise, with no gluing to do.
+* `Scheme.Hom.genericPoint_mem_smoothLocus_of_perfectField` — the GENERIC point
+  of an integral scheme is already in the smooth locus over a perfect field
+  (it is `Algebra.FormallySmooth.of_perfectField` applied to the function
+  field), and `Scheme.Hom.dense_smoothLocus_of_perfectField` says the smooth
+  locus is dense for `[IsReduced X]`. So the whole content sits at the
+  NON-GENERIC points, and in the application below there are only finitely
+  many of them, each with a DVR local ring.
+* `Algebra.smoothLocus`, `Algebra.IsSmoothAt` and
+  `Algebra.smoothLocus_eq_compl_support_inter` reduce `IsSmoothAt R p` to
+  `Subsingleton (H¹L_{R,Aₚ})` together with `Module.Free Aₚ Ω[Aₚ⁄R]`.
+* The two Jacobian criteria of `Mathlib/RingTheory/Smooth/Local.lean`,
+  `Algebra.FormallySmooth.iff_injective_lTensor_residueField` and
+  `…iff_injective_cotangentComplexBaseChange`, are the intended entry point:
+  they turn formal smoothness of a local algebra into INJECTIVITY of
+  `κ ⊗ I/I² → κ ⊗ Ω[P⁄R]` for a presentation `0 → I → P → S → 0`.
+* `IsRegularLocalRing.iff_finrank_cotangentSpace` supplies the input on the
+  other side: regularity is exactly
+  `finrank κ (CotangentSpace R) = ringKrullDim R`.
+
+WHAT IS ABSENT, re-checked BY NAME on 2026-07-27 (each of these greps is the
+check that would refute the claim, so run them again before believing it):
+`grep -rn "IsRegularLocalRing" .lake/packages/mathlib/Mathlib/` returns only
+`RegularLocalRing/{Defs,Polynomial}.lean` and no smoothness lemma anywhere;
+`Mathlib/RingTheory/Smooth/Locus.lean` has `smoothLocus` but NO comparison
+with a regular locus; there is no `geometricallyRegular` in mathlib at all
+(`grep -rin "geometrically regular"` is empty); and `~/cs/FLT` has no
+`FormallySmooth` or `IsRegularLocalRing` occurrence whatsoever
+(`grep -rln "FormallySmooth\|IsRegularLocalRing" ~/cs/FLT/FLT` is empty).
+
+A NARROWER STATEMENT WOULD ALSO DISCHARGE THE CONSUMER, and whoever takes this
+leaf may prefer it: the only points at which the assembly below cannot already
+see smoothness are the finitely many closed points of `X̄` outside the open
+`C`, and there the local ring is a DVR essentially of finite type over `ℚ`
+with residue field FINITE over `ℚ` — hence separable, since `char ℚ = 0`. So
+"a DVR essentially of finite type over a field of characteristic zero is
+formally smooth over that field" is enough for this cluster, and is a
+strictly smaller theorem than the general regular ⟹ smooth. Cutting the leaf
+that way is a legitimate and probably cheaper decomposition; the general form
+is stated here because it is the reusable one and because it is the exact
+converse of a node this file already proves. -/
+theorem smooth_of_isRegularLocalRing_stalk_of_perfectField {K : Type u} [Field K] [PerfectField K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hfp : AlgebraicGeometry.LocallyOfFinitePresentation f)
+    (hreg : ∀ z : Z, IsRegularLocalRing (Z.presheaf.stalk z)) :
+    AlgebraicGeometry.Smooth f :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF C1a — THE STALKS OF THE NORMALIZED MODEL ARE INTEGRALLY CLOSED**
+(SORRY LEAF; Stacks 035Q).
+
+This is the NORMALITY half of "the model is regular". The mathematics is the
+one-paragraph argument the parent docstring already records, and it is worth
+writing out because it shows the leaf is about the RELATIVE normalization and
+not about curves at all:
+
+Locally `X̄ = g.normalization` has sections `A' = ` the integral closure of
+`A = Γ(P, U)` inside `B = Γ(C, g⁻¹ U)`. `C` is smooth over `ℚ`, so `B` is a
+regular — hence normal — domain (`isRegularLocalRing_stalk_of_smooth_over_field`
+above, plus `isDomain_of_isRegularLocalRing`). Let `z ∈ Frac A'` be integral
+over `A'`. Then `z` is integral over `A` by transitivity, so in particular
+integral over `B`; and `Frac A' = Frac B` because `g.toNormalization` is a
+DOMINANT OPEN IMMERSION (`instance : IsDominant f.toNormalization`, plus
+Zariski's Main Theorem for the open immersion), so `X̄` and `C` share a
+function field. `B` normal therefore puts `z ∈ B`, and `z` integral over `A`
+and lying in `B` puts `z ∈ A'`. So `A'` is integrally closed.
+
+WHAT THIS LEAF ACTUALLY OWES IN LEAN, and it is bookkeeping rather than
+theory: mathlib has NO notion of a normal scheme — `grep -rn
+"IsIntegrallyClosed" .lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is
+EMPTY, which is the check that would refute this — so the statement is made
+directly about the stalks, and the proof has to descend from the affine
+sections `A'` of `Scheme.Hom.normalizationObjIso` to the stalk at `x` through
+`IsAffineOpen.isLocalization_stalk`, using that a localization of an
+integrally closed domain is integrally closed
+(`IsIntegrallyClosed.of_isLocalization` / `IsLocalization.isIntegrallyClosed`).
+
+`hsmooth` is what makes `B` normal and is therefore load-bearing; `hgqf`,
+`hgsep`, `hgft`, `hgqc` are the Zariski's-Main-Theorem hypotheses that make
+`g.toNormalization` an open immersion, which is what identifies the two
+function fields. `[IsIntegral C]` is an instance hypothesis rather than a
+derived fact only so that `IsDomain` of the stalk is available while the
+statement elaborates; the assembly below discharges it from `hsmooth` and
+`hgi`. -/
+theorem isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve
+    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
+    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
+    (hgsep : AlgebraicGeometry.IsSeparated g)
+    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgqc : AlgebraicGeometry.QuasiCompact g)
+    (x : (g.normalization : AlgebraicGeometry.Scheme.{u})) :
+    IsIntegrallyClosed ((g.normalization).presheaf.stalk x) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF C1b — THE STALKS OF THE NORMALIZED MODEL HAVE DIMENSION `≤ 1`**
+(SORRY LEAF).
+
+The DIMENSION half of "the model is regular". `g.toNormalization : C ⟶ X̄` is
+an OPEN IMMERSION by Zariski's Main Theorem and is DOMINANT
+(`instance : IsDominant f.toNormalization`), so `C` is a dense open subscheme
+of `X̄`; `X̄` is integral, hence irreducible, so `X̄` and `C` have the same
+generic point and the same function field, and `hdim` bounds the dimension of
+`C`. Since `X̄` is of finite type over a field, its dimension is the
+transcendence degree of that common function field, whence `dim X̄ ≤ 1` and a
+fortiori `dim 𝒪_{X̄,x} ≤ 1` for every `x`.
+
+WHY THIS IS STATED AT THE STALK AND NOT AT THE SPACE. The natural statement is
+`topologicalKrullDim ↥(g.normalization) ≤ 1`, and it would be the better leaf —
+but mathlib has NO comparison between the Krull dimension of a stalk and the
+topological Krull dimension of the space. The check that would refute this:
+`grep -rn "topologicalKrullDim" .lake/packages/mathlib/Mathlib/ | grep -i
+stalk` is empty, and `Mathlib/Topology/KrullDimension.lean` offers only
+`topologicalKrullDim_subspace_le`. So a space-level leaf would need an extra
+bridge (affine open `U ∋ x`, `IsAffineOpen.isLocalization_stalk`,
+`IsLocalization.AtPrime.orderIsoOfPrime` to see the primes of `𝒪_{X,x}` as the
+primes of `Γ(X,U)` below `x`, then
+`PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`) which nobody has written.
+Whoever proves this leaf should consider writing that bridge FIRST and then
+proving the space-level statement, since the bridge is reusable and the
+space-level statement is the one the rest of the development will want.
+
+The genuine mathematical content is "a dense open subscheme of an integral
+scheme of finite type over a field has the same dimension", i.e. dimension =
+transcendence degree of the function field — which mathlib also lacks. That,
+not the bookkeeping, is what makes this a leaf rather than a lemma. -/
+theorem krullDimLE_one_stalk_normalizationModel_of_smooth_affine_curve
+    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
+    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
+    (hgsep : AlgebraicGeometry.IsSeparated g)
+    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgqc : AlgebraicGeometry.QuasiCompact g)
+    (hfin : AlgebraicGeometry.IsFinite g.fromNormalization)
+    (x : (g.normalization : AlgebraicGeometry.Scheme.{u})) :
+    Ring.KrullDimLE 1 ((g.normalization).presheaf.stalk x) :=
+  sorry
+
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF C — the normalized model is smooth over `ℚ`** (SORRY LEAF).
 
@@ -8572,14 +8807,58 @@ is "normal Noetherian local domain of dimension one is a DVR, hence regular"
 perfect field implies smooth"; in dimension `0` the local rings are fields,
 finite and separable over `ℚ` since `char ℚ = 0`.
 
-WHAT IS GENUINELY MISSING AT THIS PIN, and it is the one real gap in the
-whole route: **regular ⟹ smooth over a perfect field**. There is no such
-lemma — `Mathlib/RingTheory/Smooth/Local.lean` has only the cotangent-complex
-criteria `Algebra.FormallySmooth.iff_injective_lTensor_residueField` and
-friends, and `Mathlib/RingTheory/Smooth/Locus.lean` has `smoothLocus` but no
-comparison with the regular locus. Expect to prove Jacobian-criterion-style
-smoothness from regularity, via those cotangent criteria, as a genuinely new
-piece of commutative algebra.
+**DECOMPOSED 2026-07-27 — this is no longer a bare leaf.** The scheme-theoretic
+glue is PROVEN here and three named sub-leaves remain, stated immediately
+above. What this node's proof now does, every step out of mathlib or out of
+this file:
+
+* `C` is REDUCED, because `isDomain_stalk_of_smooth_over_field` (PROVEN above)
+  makes each of its stalks a domain and `isReduced_of_isReduced_stalk` glues
+  that to `IsReduced C`;
+* `C` is IRREDUCIBLE, because `Spec (ULift ℚ)` is a one-point space and
+  `GeometricallyIrreducible.irreducibleSpace_of_subsingleton` turns geometric
+  irreducibility over a point into irreducibility;
+* hence `IsIntegral C` (`isIntegral_of_irreducibleSpace_of_isReduced`), hence
+  `IsIntegral g.normalization` by mathlib's
+  `instance [IsIntegral X] : IsIntegral f.normalization`, which is what makes
+  every stalk of the model a DOMAIN
+  (`instance [IsIntegral X] {x : X} : IsDomain (X.presheaf.stalk x)`);
+* `fX = g.fromNormalization ≫ fP` is LOCALLY OF FINITE TYPE — `hfin` gives it
+  for `g.fromNormalization`, `hPproper` for `fP` — hence LOCALLY OF FINITE
+  PRESENTATION by `locallyOfFinitePresentation_of_locallyOfFiniteType_over_field`
+  (PROVEN above), which is the form `Smooth` is stated in; and hence the model
+  is LOCALLY NOETHERIAN (`LocallyOfFiniteType.isLocallyNoetherian`), which is
+  what makes every stalk a NOETHERIAN local ring;
+* `ULift ℚ` is a PERFECT field, being of characteristic zero;
+* each stalk is then NOETHERIAN, LOCAL, a DOMAIN, INTEGRALLY CLOSED (LEAF C1a)
+  and of dimension `≤ 1` (LEAF C1b), so it is REGULAR by
+  `isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one` (PROVEN above);
+* and regular stalks over a perfect field give smoothness by LEAF C2.
+
+THE THREE RESIDUAL LEAVES, in decreasing order of expected cost:
+
+* `smooth_of_isRegularLocalRing_stalk_of_perfectField` — regular ⟹ smooth over
+  a perfect field. **This is the one genuinely missing THEORY**, and it is the
+  exact converse of this file's own PROVEN
+  `isRegularLocalRing_stalk_of_smooth_over_field`. Its docstring records what
+  mathlib has, what it lacks (re-checked by name 2026-07-27), why perfectness
+  is load-bearing, and a strictly smaller statement that would also discharge
+  this consumer.
+* `krullDimLE_one_stalk_normalizationModel_of_smooth_affine_curve` — the model
+  has dimension `≤ 1`; the content is "a dense open of an integral finite-type
+  scheme has the same dimension".
+* `isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve` — the
+  model is normal; Stacks 035Q, a transitivity-of-integrality argument with
+  no curve theory in it.
+
+The earlier version of this docstring said the missing theory was the ONLY
+gap. That was optimistic on two counts, and both corrections are recorded
+above: mathlib has **no notion of a normal scheme at all**
+(`grep -rn "IsIntegrallyClosed" Mathlib/AlgebraicGeometry/` is empty) and
+**no comparison between a stalk's Krull dimension and the space's**
+(`grep -rn "topologicalKrullDim" Mathlib/ | grep -i stalk` is empty), so the
+normality and the dimension bound are separate obligations rather than
+free consequences.
 
 `hfin` is supplied so that the model is already known to be of finite type
 over `ℚ` — smoothness is a property of finitely presented morphisms, so
@@ -8598,8 +8877,34 @@ theorem smooth_normalizationModel_of_smooth_affine_curve
     (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
     (hgqc : AlgebraicGeometry.QuasiCompact g)
     (hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
-    AlgebraicGeometry.Smooth (g.fromNormalization ≫ fP) :=
-  sorry
+    AlgebraicGeometry.Smooth (g.fromNormalization ≫ fP) := by
+  haveI := hgi
+  haveI := hPproper
+  haveI := hfin
+  -- `C` is reduced: its stalks are domains because it is smooth over a field.
+  haveI : ∀ c : C, _root_.IsReduced (C.presheaf.stalk c) := fun c =>
+    haveI := isDomain_stalk_of_smooth_over_field fC hsmooth c
+    inferInstance
+  haveI : AlgebraicGeometry.IsReduced C := AlgebraicGeometry.isReduced_of_isReduced_stalk C
+  -- `C` is irreducible: it is geometrically irreducible over a one-point base.
+  haveI : IrreducibleSpace ↥C :=
+    AlgebraicGeometry.GeometricallyIrreducible.irreducibleSpace_of_subsingleton fC
+  haveI : AlgebraicGeometry.IsIntegral C :=
+    AlgebraicGeometry.isIntegral_of_irreducibleSpace_of_isReduced C
+  haveI : AlgebraicGeometry.IsIntegral g.normalization := inferInstance
+  -- the model is locally of finite type over `ℚ`, hence of finite presentation
+  haveI : AlgebraicGeometry.LocallyOfFiniteType (g.fromNormalization ≫ fP) := inferInstance
+  haveI hfp : AlgebraicGeometry.LocallyOfFinitePresentation (g.fromNormalization ≫ fP) :=
+    locallyOfFinitePresentation_of_locallyOfFiniteType_over_field _ inferInstance
+  haveI : AlgebraicGeometry.IsLocallyNoetherian (g.normalization) :=
+    AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian (g.fromNormalization ≫ fP)
+  haveI : CharZero (ULift.{u} ℚ) := charZero_uliftRat
+  refine smooth_of_isRegularLocalRing_stalk_of_perfectField _ hfp (fun x => ?_)
+  haveI := isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
+    hft hPproper hcomm hgqf hgsep hgft hgqc x
+  haveI := krullDimLE_one_stalk_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
+    hft hdim hPproper hcomm hgqf hgsep hgft hgqc hfin x
+  exact isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one _
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF D — the normalized model is geometrically irreducible** (SORRY LEAF).
