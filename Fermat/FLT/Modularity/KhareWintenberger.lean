@@ -12907,9 +12907,9 @@ theorem isReduced_of_etale_of_isDomain (A B : Type u) [CommRing A] [IsDomain A]
   exact isReduced_of_injective f hinj
 
 /-- **LEAF B-i-a — a standard smooth algebra over a field is étale over a
-polynomial subring** (SORRY LEAF, new 2026-07-27). This is the ONLY remaining
-gap under `isReduced_of_smooth_over_rat`, and it is pure manipulation of
-`SubmersivePresentation`s: no new mathematics, no missing theory.
+polynomial subring** (**PROVEN 2026-07-27**, axiom-clean). This was the ONLY
+remaining gap under `isReduced_of_smooth_over_rat`, and it is pure manipulation
+of `SubmersivePresentation`s: no new mathematics, no missing theory.
 
 THE CONSTRUCTION, which is why the statement is true. `Algebra.IsStandardSmooth
 k B` gives a `SubmersivePresentation k B ι σ` with `Finite ι`: generators
@@ -12933,25 +12933,144 @@ which is `Algebra.Etale A B` by mathlib's
 (`Mathlib/RingTheory/Smooth/StandardSmoothOfFree.lean:89`). And `A` is a
 polynomial ring over a field, hence a domain.
 
-WHERE THE WORK IS: mathlib's `SubmersivePresentation` API
+WHERE THE WORK WAS: mathlib's `SubmersivePresentation` API
 (`Mathlib/RingTheory/Extension/Presentation/Submersive.lean`) has `comp`,
 `baseChange`, `reindex`, `ofAlgEquiv` and `localizationAway`, but NOT this
 decomposition — it can BUILD a presentation over a bigger base, never split an
-existing one along `P.map`. So the successor must transport `jacobiMatrix`
-across the `MvPolynomial ι k ≃ₐ[k] MvPolynomial σ A` isomorphism by hand;
-`jacobiMatrix_ofAlgEquiv` and `jacobian_reindex` are the closest templates.
+existing one along `P.map`. So the split presentation is assembled by hand
+below: `Generators`, then `Presentation`, then `PreSubmersivePresentation` with
+`map := id`, and finally `SubmersivePresentation`.
 
-DEGENERATE CASES ARE FINE, so do not special-case them: if `B` is the zero ring
-take `A := k` (mathlib has `[Subsingleton S] : IsStandardSmoothOfRelativeDimension
-0 R S`); if `Set.range P.map = Set.univ` then `A` is `MvPolynomial Empty k ≃ k`,
-still a domain. -/
+**CORRECTION TO THE ORIGINAL AUDIT.** It predicted that the expensive step
+would be transporting `jacobiMatrix` across
+`MvPolynomial ι k ≃ₐ[k] MvPolynomial σ A` by hand, with
+`jacobiMatrix_ofAlgEquiv` / `jacobian_reindex` as the only templates. That
+transport is **already in mathlib**, in two pieces which compose to exactly the
+needed identity `pderiv j (Φ f) = Φ (pderiv (P.map j) f)`:
+
+* `MvPolynomial.pderiv_sumAlgEquiv` (`Mathlib/Algebra/MvPolynomial/PDeriv.lean`)
+  — `pderiv b (sumAlgEquiv R S₁ S₂ p) = sumAlgEquiv R S₁ S₂ (pderiv (.inl b) p)`;
+* `MvPolynomial.pderiv_rename` — `pderiv (f i) (rename f p) = rename f (pderiv i p)`
+  for injective `f`, applied to `f := e.symm` at `i := P.map j`.
+
+So the only genuinely hand-written parts are the `A`-algebra structure on `B`
+(the composite `A → MvPolynomial σ A ≃ MvPolynomial ι k → B`), the kernel
+identification, and the determinant bookkeeping.
+
+DEGENERATE CASES NEED NO SPECIAL-CASING and get none: if `B` is the zero ring
+the constructed presentation still works, and if `Set.range P.map = Set.univ`
+then `A` is `MvPolynomial (∅-indexed) k`, still a domain. -/
 theorem exists_isDomain_etale_of_isStandardSmooth (k B : Type u) [Field k] [CommRing B]
     [Algebra k B] [Algebra.IsStandardSmooth k B] :
-    ∃ (A : Type u) (_ : CommRing A) (_ : IsDomain A) (_ : Algebra A B), Algebra.Etale A B :=
-  sorry
+    ∃ (A : Type u) (_ : CommRing A) (_ : IsDomain A) (_ : Algebra A B), Algebra.Etale A B := by
+  classical
+  obtain ⟨ι, σ, hσ, hι, ⟨P⟩⟩ := ‹Algebra.IsStandardSmooth k B›.out
+  letI : Finite σ := hσ
+  letI : Finite ι := hι
+  letI : Fintype σ := Fintype.ofFinite σ
+  -- Split the variables `ι` as `σ ⊕ (complement of the image of `P.map`)`.
+  have hbij : Function.Bijective
+      (Sum.elim P.map (Subtype.val : {i : ι // i ∉ Set.range P.map} → ι)) := by
+    refine ⟨Function.Injective.sumElim P.map_inj Subtype.val_injective ?_, ?_⟩
+    · rintro a ⟨c, hc⟩ h
+      exact hc ⟨a, h⟩
+    · intro i
+      by_cases h : i ∈ Set.range P.map
+      · obtain ⟨j, rfl⟩ := h
+        exact ⟨Sum.inl j, rfl⟩
+      · exact ⟨Sum.inr ⟨i, h⟩, rfl⟩
+  let e : σ ⊕ {i : ι // i ∉ Set.range P.map} ≃ ι := Equiv.ofBijective _ hbij
+  have hel : ∀ j : σ, e.symm (P.map j) = Sum.inl j := fun j => e.symm_apply_eq.2 rfl
+  let A : Type u := MvPolynomial {i : ι // i ∉ Set.range P.map} k
+  let Φ : MvPolynomial ι k ≃ₐ[k] MvPolynomial σ A :=
+    (MvPolynomial.renameEquiv k e.symm).trans
+      (MvPolynomial.sumAlgEquiv k σ {i : ι // i ∉ Set.range P.map})
+  have hΦapp : ∀ f : MvPolynomial ι k,
+      Φ f = MvPolynomial.sumAlgEquiv k σ {i : ι // i ∉ Set.range P.map}
+        (MvPolynomial.rename e.symm f) := fun _ => rfl
+  -- The jacobian transport: `∂/∂X_j` on the new ring is `∂/∂X_{P.map j}` on the old one.
+  have hpd : ∀ (j : σ) (f : MvPolynomial ι k),
+      MvPolynomial.pderiv j (Φ f) = Φ (MvPolynomial.pderiv (P.map j) f) := by
+    intro j f
+    rw [hΦapp, hΦapp, MvPolynomial.pderiv_sumAlgEquiv, ← hel j,
+      MvPolynomial.pderiv_rename e.symm.injective]
+  -- The `A`-algebra structure on `B`.
+  let alg : MvPolynomial σ A →ₐ[k] B := (MvPolynomial.aeval P.val).comp Φ.symm.toAlgHom
+  letI : Algebra A B :=
+    (alg.toRingHom.comp (MvPolynomial.C : A →+* MvPolynomial σ A)).toAlgebra
+  let algA : MvPolynomial σ A →ₐ[A] B := { alg.toRingHom with commutes' := fun _ => rfl }
+  have h1 : (MvPolynomial.aeval (R := A) (fun j => algA (MvPolynomial.X j)) :
+      MvPolynomial σ A →ₐ[A] B) = algA := by
+    apply MvPolynomial.algHom_ext
+    intro j
+    simp
+  let G : Algebra.Generators A B σ :=
+    { val := fun j => algA (MvPolynomial.X j)
+      σ' := fun b => Φ (P.σ b)
+      aeval_val_σ' := by
+        intro b
+        rw [h1]
+        show MvPolynomial.aeval P.val (Φ.symm (Φ (P.σ b))) = b
+        rw [Φ.symm_apply_apply, P.aeval_val_σ] }
+  -- Same relations, same kernel.
+  let Pr : Algebra.Presentation A B σ σ :=
+    { toGenerators := G
+      relation := fun j => Φ (P.relation j)
+      span_range_relation_eq_ker := by
+        have h2 : (MvPolynomial.aeval (R := A) G.val : MvPolynomial σ A →ₐ[A] B) = algA := h1
+        rw [Algebra.Generators.ker_eq_ker_aeval_val, h2]
+        apply le_antisymm
+        · rw [Ideal.span_le]
+          rintro x ⟨j, rfl⟩
+          have : algA (Φ (P.relation j)) = 0 := by
+            show MvPolynomial.aeval P.val (Φ.symm (Φ (P.relation j))) = 0
+            rw [Φ.symm_apply_apply, P.aeval_val_relation]
+          exact this
+        · intro x hx
+          have hx0 : MvPolynomial.aeval P.val (Φ.symm x) = 0 := hx
+          have hx' : Φ.symm x ∈ Ideal.span (Set.range P.relation) := by
+            rw [P.span_range_relation_eq_ker, Algebra.Generators.ker_eq_ker_aeval_val]
+            exact hx0
+          rw [Ideal.mem_span_range_iff_exists_fun] at hx'
+          obtain ⟨c, hc⟩ := hx'
+          refine Ideal.mem_span_range_iff_exists_fun.2 ⟨fun j => Φ (c j), ?_⟩
+          have := congrArg Φ hc
+          simpa [map_sum, map_mul] using this }
+  -- The relation index now maps to the variable index by the identity: relative dimension `0`.
+  let PS : Algebra.PreSubmersivePresentation A B σ σ :=
+    { toPresentation := Pr
+      map := id
+      map_inj := Function.injective_id }
+  have hjac : PS.jacobian = P.jacobian := by
+    have hm : ∀ i j, PS.jacobiMatrix i j = Φ (P.jacobiMatrix i j) := by
+      intro i j
+      rw [Algebra.PreSubmersivePresentation.jacobiMatrix_apply,
+        Algebra.PreSubmersivePresentation.jacobiMatrix_apply]
+      exact hpd i (P.relation j)
+    have hmm : PS.jacobiMatrix =
+        P.jacobiMatrix.map (Φ : MvPolynomial ι k →+* MvPolynomial σ A) := by
+      ext i j : 1
+      simpa using hm i j
+    have hdet : PS.jacobiMatrix.det = Φ (P.jacobiMatrix.det) := by
+      rw [hmm, ← RingHom.mapMatrix_apply, ← RingHom.map_det]
+      rfl
+    rw [Algebra.PreSubmersivePresentation.jacobian_eq_jacobiMatrix_det,
+      Algebra.PreSubmersivePresentation.jacobian_eq_jacobiMatrix_det, hdet,
+      Algebra.Generators.algebraMap_apply, Algebra.Generators.algebraMap_apply]
+    have h3 : (MvPolynomial.aeval (R := A) PS.val : MvPolynomial σ A →ₐ[A] B) = algA := h1
+    rw [h3]
+    show MvPolynomial.aeval P.val (Φ.symm (Φ (P.jacobiMatrix.det))) = _
+    rw [Φ.symm_apply_apply]
+  let SP : Algebra.SubmersivePresentation A B σ σ :=
+    { toPreSubmersivePresentation := PS
+      jacobian_isUnit := by rw [hjac]; exact P.jacobian_isUnit }
+  have hSS : Algebra.IsStandardSmoothOfRelativeDimension 0 A B :=
+    SP.isStandardSmoothOfRelativeDimension (by simp [Algebra.Presentation.dimension])
+  exact ⟨A, inferInstance, inferInstance, inferInstance,
+    Algebra.Etale.iff_isStandardSmoothOfRelativeDimension_zero.2 hSS⟩
 
 /-- **A standard smooth algebra over a field is reduced** (**PROVEN
-2026-07-27**, modulo LEAF B-i-a): combine
+2026-07-27**, unconditionally — LEAF B-i-a below is proven too): combine
 `exists_isDomain_etale_of_isStandardSmooth` with
 `isReduced_of_etale_of_isDomain`. -/
 theorem isReduced_of_isStandardSmooth (k B : Type u) [Field k] [CommRing B]
@@ -12959,8 +13078,8 @@ theorem isReduced_of_isStandardSmooth (k B : Type u) [Field k] [CommRing B]
   obtain ⟨A, _, _, _, _⟩ := exists_isDomain_etale_of_isStandardSmooth k B
   exact isReduced_of_etale_of_isDomain A B
 
-/-- **A SMOOTH ALGEBRA OVER A FIELD IS REDUCED** (**PROVEN 2026-07-27**, modulo
-LEAF B-i-a). This is the ring-level form of LEAF B-i.
+/-- **A SMOOTH ALGEBRA OVER A FIELD IS REDUCED** (**PROVEN 2026-07-27**,
+unconditionally — LEAF B-i-a is proven). This is the ring-level form of LEAF B-i.
 
 **CORRECTION TO A STALE CLAIM.** `Mathlib/RingTheory/Smooth/StandardSmooth.lean`
 still lists "show that locally on the target, smooth algebras are standard
@@ -12998,8 +13117,8 @@ theorem isReduced_of_smooth_field (k B : Type u) [Field k] [CommRing B] [Algebra
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF B-i — a scheme smooth over a field is reduced** (**PROVEN
-2026-07-27**, modulo the single sub-leaf `exists_isDomain_etale_of_isStandardSmooth`
-above).
+2026-07-27**, unconditionally: its former single sub-leaf
+`exists_isDomain_etale_of_isStandardSmooth` above is **PROVEN 2026-07-27** too).
 
 **THE 2026-07-27 AUDIT THAT USED TO STAND HERE IS CORRECTED.** It said this was
 "the ONE place where the standard chain is unavailable at this pin", because
@@ -13695,8 +13814,9 @@ statements, in increasing order of expected cost:
   recorded here turned out to be true but irrelevant: the proof goes
   smooth ⟹ standard smooth locally ⟹ étale over a polynomial subring ⟹ (flat,
   so `B` embeds in its generic fibre) reduced, never mentioning regularity.
-  One purely mechanical sub-leaf survives under it,
-  `exists_isDomain_etale_of_isStandardSmooth`.
+  Its one purely mechanical sub-leaf
+  `exists_isDomain_etale_of_isStandardSmooth` is **PROVEN 2026-07-27** as well,
+  so nothing survives under it.
 * LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` — the gluing
   step over one affine open of `P`, needed because `g ⁻¹ᵁ U` is not affine.
   **PROVEN 2026-07-27** out of the pin (Stacks 03GR: finite affine cover of the
@@ -15379,7 +15499,7 @@ PROVEN; only B and C are open), in decreasing order of expected cost:
   turned out to be free (`isFinite_fromNormalization_of_forall_affineOpens`,
   PROVEN, is mathlib's own `IsIntegralHom f.fromNormalization` argument with
   `IsFinite` substituted throughout). LEAF B-i `isReduced_of_smooth_over_rat`
-  is **PROVEN 2026-07-27** too, over one mechanical sub-leaf
+  is **PROVEN 2026-07-27** too, and so is its one mechanical sub-leaf
   (`exists_isDomain_etale_of_isStandardSmooth`); regularity theory, which the
   audit called the blocker, is not on the route at all. What survives is
   LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` (the gluing
