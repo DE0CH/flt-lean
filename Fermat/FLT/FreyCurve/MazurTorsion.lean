@@ -117,6 +117,12 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 -- arrived on a branch that also carried a rival `14a4` route in
 -- `MordellWeil.lean`, which was not taken, so it is not re-exported from there.
 public import Fermat.FLT.EllipticCurve.TorsionReduction
+-- mathlib's reduction theory of Weierstrass equations over a DVR
+-- (`IsMinimal`, `HasGoodReduction`, `reduction`). It already reaches this file
+-- publicly through `TorsionReduction → GoodReduction`, and is named here
+-- because `WeierstrassCurve.PotentiallyGoodModel` below uses `HasGoodReduction`
+-- in SIGNATURE position, where a merely transitive import is not re-exported.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 -- Minkowski's discriminant theorem (`exists_not_isUnramifiedAt_int_of_isGalois`)
 -- and the going-up prime lifting, used in the Minkowski assembly proof.
 import Mathlib.NumberTheory.NumberField.ExistsRamified
@@ -2092,33 +2098,290 @@ noncomputable def WeierstrassCurve.autTorsionEnd {F : Type*} [Field F]
         (WeierstrassCurve.Affine.Point.equivVariableChange
           (W.map (algebraMap F F)) C)) : _ ≃+ _).toAddMonoidHom) N)
 
-/-- **The local half of Serre–Tate at a named prime: `ρ(σ_q)` is an
-automorphism composed with the Frobenius of a good model over `𝔽_q`** (sorry
-leaf, opened 2026-07-27 by decomposing
-`exists_frobenius_reduction_model_of_potentiallyGoodReduction` below, which is
-now PROVEN over this leaf and `exists_twist_frobeniusTorsionEnd`).
+/-- **A potentially-good-reduction datum for `E` at `q`, with residue degree
+one** (interface opened 2026-07-27 while decomposing
+`exists_frobeniusAut_of_potentiallyGoodReduction` below into its ARITHMETIC and
+its GALOIS halves).
 
-THE CONTENT. Let `K/ℚ_q` be a finite TOTALLY RAMIFIED extension over which `E`
-acquires good reduction and `Ẽ/𝔽_q` the good model — the residue field of `K`
-is still `𝔽_q`, which is exactly what "totally ramified" buys, and it is why
-`Wbar₀` in the conclusion is a curve over `ZMod q` rather than over an
-extension. Because the residue field did not grow, `G_K` still surjects onto
-`Gal(𝔽̄_q/𝔽_q)`, so a Frobenius `σ_K ∈ G_K` exists; for the lift
-`σ := globalFrob q` actually named in the statement we then have
-`τ := σ σ_K⁻¹ ∈ I_q`, whatever that lift is. Néron–Ogg–Shafarevich makes
-`ρ|_{G_K}` unramified and identifies `ρ(σ_K)` with the `q`-power Frobenius
-`F ∈ End(Ẽ)`; Serre–Tate (Invent. Math. 15 (1972), Thm 2) makes `I_q` act
-through a finite subgroup of `Aut(Ẽ_{𝔽̄_q})`, so `ρ(τ) = φ` is an
-AUTOMORPHISM — which is the `C` of the conclusion, presented as the variable
-change it is. Hence `ρ(σ) = φ ∘ F`, which is what the conclusion says.
+THE CONTENT. A `PotentiallyGoodModel E q` is exactly the sentence "`E` acquires
+good reduction over a finite extension of `ℚ` at a prime above `q` whose residue
+field is the PRIME field `𝔽_q`", written as data:
 
-That chain is also what DISSOLVES the parent's old faithfulness concern about
-`globalFrob` being defined only up to inertia: the lift is unconstrained here,
-and changing it changes only WHICH automorphism `C` appears. See
+* `K` — a number field (`FiniteDimensional ℚ K` is field `instFin`);
+* `R` — a DVR with fraction field `K`, i.e. the local ring of a prime of `K`.
+  No hypothesis says `R` lies above `q`: `resEquiv` already forces it, since a
+  residue field of characteristic `q` forces `q ∈ 𝔪`;
+* `resEquiv : ResidueField R ≃+* ZMod q` — **this is where TOTAL RAMIFICATION
+  is encoded**, exactly as `TameGoodModel.res` encodes it in
+  `EllipticCurve/TorsionReduction.lean`: landing in the PRIME field rather than
+  in an extension of it says the residue degree is `1`, hence
+  `e = [K_𝔮 : ℚ_q]`;
+* `V` — the good model, with mathlib's `HasGoodReduction R` (which extends
+  `IsMinimal R`, so `V` is a minimal integral equation whose discriminant is a
+  unit), and `V_eq` pinning `V` as a model OF `E` rather than an unrelated
+  curve.
+
+WHY THIS IS THE RIGHT CUT, and it is the standing rule that a cut may need a
+theory only STATED rather than PROVEN. The old single leaf mixed two
+difficulties that share no technique:
+
+1. *Arithmetic*: `0 ≤ v_q(j)` ⟹ such a datum exists. Reduction theory of
+   Weierstrass equations, Kummer/wild extensions of `ℚ_q`, and a Krasner-style
+   descent to a number field. Nothing Galois-theoretic appears.
+2. *Galois*: given the datum, `ρ(σ_q)` is an automorphism composed with the
+   `q`-power Frobenius of the reduction. Néron–Ogg–Shafarevich and Serre–Tate.
+   No reduction theory appears — the model is handed over.
+
+They are now `exists_potentiallyGoodModel_of_jIntegral` and
+`exists_frobeniusAut_of_potentiallyGoodModel`, separately ownable.
+
+RELATION TO `TameGoodModel` (`EllipticCurve/TorsionReduction.lean`), whose
+existence leaf `exists_tameGoodModel_of_jIntegral` is ALREADY OPEN and being
+worked: the two structures say the same thing in different vocabularies —
+`TameGoodModel` carries a `ValuationSubring L` with a residue map to `ZMod ℓ`
+and an abstract injection of points, this one carries a DVR with mathlib's
+`HasGoodReduction`. Neither subsumes the other as written and NEITHER SHOULD BE
+DUPLICATED: whoever proves one should expect to write the (routine, but not
+free) translation rather than reprove the arithmetic. The two differences that
+matter are that `TameGoodModel` assumes `5 ≤ ℓ` at its producer — so it does
+NOT cover `q = 3`, which the consumers of this file need — and that it does not
+ask `L` to be a NUMBER field, which is what makes `Γ K ≤ Γ ℚ` available to the
+Galois half here.
+
+NOT VACUOUS, and `V_eq` is what prevents it: `V` is pinned to `C • E_K`, so no
+choice of an unrelated good curve satisfies the structure. `resEquiv` cannot be
+degenerate either — `ZMod q` is a field of `q` elements, so a residue field of
+any other size (in particular any nontrivial extension of `𝔽_q`, which is what
+a prime of residue degree `> 1` would give) simply admits no such equivalence.
+-/
+structure WeierstrassCurve.PotentiallyGoodModel (E : WeierstrassCurve ℚ)
+    (q : ℕ) [Fact q.Prime] where
+  /-- The number field over which `E` acquires good reduction. -/
+  K : Type
+  [instField : Field K]
+  [instDec : DecidableEq K]
+  [instAlgebra : Algebra ℚ K]
+  [instFin : FiniteDimensional ℚ K]
+  /-- The local ring of the chosen prime of `K` above `q`. -/
+  R : Type
+  [instCommRing : CommRing R]
+  [instDomain : IsDomain R]
+  [instDVR : IsDiscreteValuationRing R]
+  [instAlgRK : Algebra R K]
+  [instFrac : IsFractionRing R K]
+  /-- **Residue degree one.** Landing in the PRIME field `ZMod q` rather than in
+  an extension of it is where total ramification is encoded. -/
+  resEquiv : IsLocalRing.ResidueField R ≃+* ZMod q
+  /-- The good model itself. -/
+  V : WeierstrassCurve K
+  [V_elliptic : V.IsElliptic]
+  [V_good : V.HasGoodReduction R]
+  /-- The variable change carrying `E` over `K` to that model. -/
+  C : WeierstrassCurve.VariableChange K
+  /-- `V` is genuinely a model of `E`, not an unrelated curve. -/
+  V_eq : V = C • (E.baseChange K)
+
+attribute [instance] WeierstrassCurve.PotentiallyGoodModel.instField
+  WeierstrassCurve.PotentiallyGoodModel.instDec
+  WeierstrassCurve.PotentiallyGoodModel.instAlgebra
+  WeierstrassCurve.PotentiallyGoodModel.instFin
+  WeierstrassCurve.PotentiallyGoodModel.instCommRing
+  WeierstrassCurve.PotentiallyGoodModel.instDomain
+  WeierstrassCurve.PotentiallyGoodModel.instDVR
+  WeierstrassCurve.PotentiallyGoodModel.instAlgRK
+  WeierstrassCurve.PotentiallyGoodModel.instFrac
+  WeierstrassCurve.PotentiallyGoodModel.V_elliptic
+  WeierstrassCurve.PotentiallyGoodModel.V_good
+
+/-- **The ARITHMETIC half: integral `j`-invariant produces a good model over a
+number field with residue degree one at `q`** (sorry leaf, opened 2026-07-27 by
+decomposing `exists_frobeniusAut_of_potentiallyGoodReduction` below). No Galois
+theory appears here; the whole content is reduction theory of Weierstrass
+equations.
+
+THE PROOF (not formalised). Locally, `0 ≤ v_q(j(E))` is equivalent to potential
+good reduction (Silverman *AEC* VII.5.5), so `E/ℚ_q` acquires good reduction
+over some finite `L/ℚ_q`. Three further steps produce the datum:
+
+1. *Drop the unramified layer.* For `L'/L` unramified, `I_{L'} = I_L`, so by the
+   criterion of Néron–Ogg–Shafarevich good reduction over `L'` already gives
+   good reduction over `L`. Equivalently and more concretely: an unramified
+   twist of a curve with good reduction has good reduction, because its
+   discriminant is again a unit. This is what makes residue degree `1`
+   available at all, and it is why `resEquiv` is not an extra assumption but a
+   normalisation.
+2. *Keep the singular point rational.* The singular point of an additive
+   reduction is unique, hence fixed by the residue Galois group, hence residue
+   rational — so the `r, s, t` part of the variable change costs no extension
+   and only the `u` part can.
+3. *Descend to a number field.* `K` is obtained from `L` by Krasner:
+   a number field dense enough at `q` has completion `L`, and good reduction is
+   a condition on the completion.
+
+THE OBLIGATION THAT IS NOT UNIFORM IN `q`, STATED HONESTLY. Step 1 is the
+standard statement for `q ≥ 5`, where the twisting is by `u` with
+`v(u) = d/12` and `L` is the TAME Kummer extension `ℚ_q(π^{1/e})`,
+`e ∈ {1, 2, 3, 4, 6}` (Silverman *ATAEC* IV.10; Kraus, Manuscripta Math. 69
+(1990)). At `q = 3` the semistability defect can be `12` and `L/ℚ_q` is WILDLY
+ramified. `q = 3` IS used by the consumers of this file (they take
+`q ∈ {3, 5}`), so this cannot be dodged by assuming `5 ≤ q`; the wild case is
+the genuinely missing ingredient and the tame case is textbook.
+
+RELATED OPEN LEAF, DO NOT DUPLICATE: `exists_tameGoodModel_of_jIntegral`
+(`EllipticCurve/TorsionReduction.lean`) is the same arithmetic in the
+`TameGoodModel` vocabulary, restricted to `5 ≤ ℓ`. See
+`PotentiallyGoodModel`'s docstring for the comparison.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit `E/ℚ` and a prime `q` with
+`0 ≤ v_q(j(E))` acquiring good reduction over NO finite extension of `ℚ_q` of
+residue degree `1`. By step 1 that would require an example where the
+unramified layer cannot be dropped, i.e. a curve with good reduction over an
+unramified extension of `ℚ_q` but over no totally ramified one — which the
+unit-discriminant argument of step 1 rules out for `q` odd. -/
+theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (hq2 : q ≠ 2) (hj : 0 ≤ padicValRat q E.j) :
+    Nonempty (E.PotentiallyGoodModel q) :=
+  sorry
+
+/-- **The GALOIS half: from a good model with residue degree one, `ρ(σ_q)` is an
+automorphism composed with the Frobenius of the reduction** (sorry leaf, opened
+2026-07-27 by decomposing
+`exists_frobeniusAut_of_potentiallyGoodReduction` below). The reduction theory
+is now an INPUT — `D` hands over the model — and everything remaining is
+Néron–Ogg–Shafarevich plus Serre–Tate.
+
+THE CONTENT. Write `K`, `R`, `V` for the datum's field, DVR and good model, and
+choose a valuation subring `𝒪` of `ℚ̄` above `R`; its residue field is `𝔽̄_q`
+because `𝒪` is a valuation subring of an algebraically closed field, and the
+residue field of `R` is `𝔽_q` by `D.resEquiv`. Hence the decomposition group of
+`𝒪` inside `Γ K` still surjects onto `Gal(𝔽̄_q/𝔽_q)` — THIS IS WHAT RESIDUE
+DEGREE ONE BUYS — so a Frobenius lift `σ_K` exists there. For the lift
+`σ := globalFrob q` actually named in the conclusion, `τ := σ σ_K⁻¹` then lies
+in inertia at `q`, whatever that lift is. Two theorems finish it:
+
+* Néron–Ogg–Shafarevich (easy direction) makes `ρ|_{G_K}` unramified on
+  `E[N]` and identifies `ρ(σ_K)` with the `q`-power Frobenius `F` of the
+  reduction `Ẽ := V.reduction R`, transported along `D.resEquiv` to a curve
+  over `ZMod q`. That transported curve is the `Wbar₀` of the conclusion.
+* Serre–Tate (Invent. Math. 15 (1972), Thm 2) makes inertia act through a
+  finite subgroup of `Aut(Ẽ_{𝔽̄_q})`, so `ρ(τ) = φ` is an AUTOMORPHISM — the
+  `C` of the conclusion, presented as the variable change it is.
+
+Hence `ρ(σ) = φ ∘ F`, which is what the conclusion says. That chain is also what
+DISSOLVES the old faithfulness concern about `globalFrob` being defined only up
+to inertia: the lift is unconstrained here, and changing it changes only WHICH
+automorphism `C` appears — which is exactly why the conclusion carries `C`
+EXISTENTIALLY. See
 `exists_integerFrobeniusTrace_of_potentiallyGoodReduction`'s docstring for the
 full resolution.
 
-WHAT MUST BE BUILT (grepped 2026-07-27 over `Fermat/`,
+MACHINERY, GREPPED 2026-07-27 OVER ALL THREE TREES (`Fermat/`,
+`.lake/packages/mathlib/`, `~/cs/FLT/`):
+
+* **Néron–Ogg–Shafarevich is PARTLY PRESENT and must not be rebuilt.**
+  `WeierstrassCurve.torsion_unramified_of_good_reduction`
+  (`KnownIn1980s/EllipticCurves/GoodReduction.lean`, PROVEN, sorry-free) is
+  precisely "good reduction over a DVR `R` ⟹ inertia at a valuation subring
+  above `R` acts trivially on the `n`-torsion", for odd `n` invertible in the
+  residue field — stated over a GENERAL `R`, which is why the datum above is
+  phrased with a DVR. Its companions `torsion_abscissa_mem`,
+  `torsion_ordinate_mem`, `torsion_abscissa_residue_ne` and
+  `torsion_ordinate_eq_of_residue_eq` are the reduction-injectivity half. The
+  assembly pattern to copy is the PROVEN
+  `WeilPairing.exists_frobenius_reduction_model`, which does exactly this work
+  at the primes of good reduction of a global integral model; the only new
+  ingredient here is that the base is `K` rather than `ℚ` and that `σ_K` must
+  be produced from residue degree one rather than from an unramified prime.
+  Note `torsion_unramified_of_good_reduction` needs `Odd n`, i.e. `N ≠ 2`; the
+  hypotheses `q ≠ 2` and `q ≠ N` do not by themselves exclude `N = 2`, so a
+  prover should either handle `N = 2` separately or record why it cannot arise.
+* **Serre–Tate is ABSENT from all three trees.** What is available and should
+  be used rather than rebuilt is the point-level transport of a
+  `VariableChange` — `Affine.Point.equivVariableChange` and its
+  Galois-equivariant base-changed form `equivVariableChangeBaseChange_galois`,
+  in the project shim
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` — and
+  the definition `WeierstrassCurve.autTorsionEnd` above, which is already built
+  on it. An elementary route avoiding Néron models: `τ ∈ I_q` carries the
+  variable change `C` of the datum to `C^τ`, and `D_τ := C^τ C⁻¹` is then a
+  variable change between two good models of the same curve, hence has unit
+  entries, hence reduces to a variable change over the residue field, which is
+  the automorphism `φ`. That is the shape a prover should try first.
+
+THE GLOBAL/CHEBOTAREV AXIS IS A DEAD END HERE, and the reason is structural
+rather than technical — recorded so that nobody spends a cycle re-searching it
+(the axis searched, 2026-07-27, was: imitate
+`WeilPairing.det_galoisRep_eq_cyclotomic`, which pins the DETERMINANT at every
+Frobenius globally and so avoids any integral model). `det ρ` is the cyclotomic
+CHARACTER, hence unramified at `q ≠ N`, so its value at `σ_q` does not depend
+on the choice of lift and a global identity of characters determines it. The
+trace is not a character: at potentially-good-but-not-good reduction `ρ` is
+genuinely RAMIFIED at `q`, and the trace really does change with the lift
+(`a ↦ ζ_e a` for semistability defect `e`). A global argument cannot see inside
+a Frobenius coset, so it cannot produce a lift-dependent value. The LOCAL axis
+is the only one.
+
+NOT VACUOUS: `ψ₀` is a linear EQUIVALENCE and the conclusion is a conjugation
+identity, so it pins `ρ(σ_q)` into the coset `Aut · F`; in particular it forces
+`det ρ(σ_q) = q` via `WeilPairing.det_frobeniusTorsionEnd`, which is
+independently PROVEN, so a junk witness would have to reprove that. -/
+theorem WeierstrassCurve.exists_frobeniusAut_of_potentiallyGoodModel
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
+    (D : E.PotentiallyGoodModel q) :
+    ∃ (Wbar₀ : WeierstrassCurve (ZMod q)) (_ : Wbar₀.IsElliptic)
+      (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+      (hC : C • ((Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+          = (Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+      (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+        ((Wbar₀.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N)),
+      ∀ x, ψ₀ (E.galoisRep N hN.pos (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) x) =
+        WeierstrassCurve.autTorsionEnd _ C hC N
+          (WeilPairing.frobeniusTorsionEnd q Wbar₀ N (ψ₀ x)) :=
+  sorry
+
+/-- **The local half of Serre–Tate at a named prime: `ρ(σ_q)` is an
+automorphism composed with the Frobenius of a good model over `𝔽_q`** (PROVEN
+2026-07-27 over the two leaves immediately above,
+`exists_potentiallyGoodModel_of_jIntegral` and
+`exists_frobeniusAut_of_potentiallyGoodModel`; itself opened earlier the same
+day by decomposing
+`exists_frobenius_reduction_model_of_potentiallyGoodReduction` below, which is
+PROVEN over this leaf and `exists_twist_frobeniusTorsionEnd`).
+
+The proof is the anonymous eliminator: the arithmetic leaf produces a
+`PotentiallyGoodModel` datum from `0 ≤ v_q(j(E))`, and the Galois leaf turns
+that datum into the conclusion. `hj` is consumed ONLY by the first and the
+Galois content is consumed ONLY by the second, which is the whole point of the
+cut — see `PotentiallyGoodModel`'s docstring for why those two halves share no
+technique. The audits that used to sit here have moved to the two leaves, which
+is where a prover should read them:
+
+* `exists_potentiallyGoodModel_of_jIntegral` carries the ARITHMETIC — the good
+  model over a number field with residue degree `1` at `q`. `q = 3` is wildly
+  ramified there and is used by the consumers, so it cannot be dodged.
+* `exists_frobeniusAut_of_potentiallyGoodModel` carries the GALOIS content —
+  Néron–Ogg–Shafarevich (partly PROVEN in the tree already, as
+  `torsion_unramified_of_good_reduction`) and Serre–Tate (absent). It also
+  records, with the reason, that the GLOBAL/Chebotarev axis is a dead end:
+  `det ρ` is a character and is unramified at `q`, the trace is neither, and a
+  global argument cannot see inside a Frobenius coset.
+
+THE SUPERSEDED AUDIT KEPT FOR ITS REFUTATION CHECK. Before the cut, this leaf
+recorded: "exhibit `E/ℚ_3` with `0 ≤ v_3(j(E))` acquiring good reduction over
+NO finite totally ramified extension of `ℚ_3`, AND a Frobenius lift whose
+action on `E[N]` is not `φ ∘ F` for any elliptic curve over `𝔽_3` and
+automorphism `φ`." The first half now refutes only
+`exists_potentiallyGoodModel_of_jIntegral`, and the second only
+`exists_frobeniusAut_of_potentiallyGoodModel` — which is a further reason the
+cut is the right one: the two halves have DIFFERENT refutation checks.
+
+WHAT THE OLD LIST OF MISSING MACHINERY SAID (grepped 2026-07-27 over `Fermat/`,
 `.lake/packages/mathlib/` and `~/cs/FLT/` — all three):
 
 1. `0 ≤ v_q(j(E))` ⟹ `E` acquires good reduction over a finite TOTALLY
@@ -2171,14 +2434,7 @@ is also why the conclusion here is existential in `C`: the lift-dependence is
 carried structurally by which automorphism appears, exactly as
 `exists_integerFrobeniusTrace_of_potentiallyGoodReduction`'s docstring
 demands. The axis that remains open is therefore the LOCAL one, and step 1
-above is its only genuinely missing ingredient.
-
-THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit `E/ℚ_3` with `0 ≤ v_3(j(E))`
-acquiring good reduction over NO finite totally ramified extension of `ℚ_3`,
-AND a Frobenius lift whose action on `E[N]` is not `φ ∘ F` for any elliptic
-curve over `𝔽_3` and automorphism `φ`. The first half alone refutes only the
-ROUTE, not the leaf — the conclusion is about the Galois action, not about the
-model. -/
+above is its only genuinely missing ingredient. -/
 theorem WeierstrassCurve.exists_frobeniusAut_of_potentiallyGoodReduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ} (hN : N.Prime)
     {q : ℕ} [Fact q.Prime] (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
@@ -2196,7 +2452,8 @@ theorem WeierstrassCurve.exists_frobeniusAut_of_potentiallyGoodReduction
           hq.toHeightOneSpectrumRingOfIntegersRat) x) =
         WeierstrassCurve.autTorsionEnd _ C hC N
           (WeilPairing.frobeniusTorsionEnd q Wbar₀ N (ψ₀ x)) :=
-  sorry
+  (E.exists_potentiallyGoodModel_of_jIntegral hq hq2 hj).elim
+    (E.exists_frobeniusAut_of_potentiallyGoodModel hN hq hq2 hqN)
 
 /-- **Twisting over a finite field: an automorphism composed with the
 Frobenius is the Frobenius of a twist** (sorry leaf, opened 2026-07-27 by
