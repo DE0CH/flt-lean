@@ -152,6 +152,13 @@ public import Mathlib.RingTheory.Depth.Rees
 -- the identification `(maximalIdeal R).height = ringKrullDim R`.
 public import Mathlib.RingTheory.Ideal.GoingDown
 public import Mathlib.RingTheory.Ideal.Height
+-- Krull's going-down theorem for integrally closed domains, `@[stacks 00H8]`,
+-- as an INSTANCE — this is what discharges going down on an affine chart in
+-- `generalizingMap_of_isFinite_of_isIntegral` below.
+public import Mathlib.RingTheory.IntegralClosure.GoingDown
+-- `Scheme.Hom.app_injective` for a dominant morphism to a REDUCED target, which
+-- is the `FaithfulSMul` input of Krull's instance on the chart.
+public import Mathlib.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 -- `isRegularLocalRing_stalk_of_smooth` below is a one-line corollary of
 -- `isRegularLocalRing_stalk_of_smooth_over_field`, which was PROVEN in
 -- `Modularity/KhareWintenberger.lean` — a module strictly DOWNSTREAM of this
@@ -2796,11 +2803,383 @@ theorem ringKrullDim_eq_of_hasGoingDown_of_ringKrullDim_quotient_eq_zero
   rw [← IsLocalRing.maximalIdeal_height_eq_ringKrullDim (R := B),
     ← IsLocalRing.maximalIdeal_height_eq_ringKrullDim (R := A), h]
 
+/-! ### The four sub-leaves of going-down for the stalk map of a finite endomorphism
+
+`hasGoingDown_stalkMap_of_isFinite_endo` below is PROVEN over the three sorried
+statements in this block (`irreducibleSpace_of_smooth_geometricallyConnected`,
+`isDominant_of_isFinite_endo`, `isIntegrallyClosed_sections_of_smooth`); the
+other four declarations here are proven.  See the docstring on the consumer for
+why this is the cut. -/
+
+/-- **THE RESTRICTION MAP BETWEEN TWO AFFINE OPENS IS FLAT** (**PROVEN
+2026-07-27** — general scheme theory, three lines over mathlib).
+
+For affine opens `V ≤ W` of any scheme, `Γ(X, W) ⟶ Γ(X, V)` is flat, because
+`Spec Γ(X,V) ⟶ Spec Γ(X,W)` is an open immersion.  Mathlib already contains this
+in the shape `Flat.flat_appLE`, which for a FLAT morphism `f` asserts flatness of
+`f.appLE U V e` for all affine `U`, `V`; taking `f = 𝟙 X` (an isomorphism, hence
+flat) and unfolding `Scheme.Hom.appLE` — `(𝟙 X).appLE W V e = 𝟙 ≫ res` — gives
+exactly the restriction map, since `(𝟙 X) ⁻¹ᵁ W = W` by `rfl`.
+
+This is what makes `generalizingMap_of_isFinite_of_isIntegral` below able to work
+with an ARBITRARY affine open `V` of the source rather than only with `f ⁻¹ᵁ U`:
+`Γ(Y,U) → Γ(X,V)` factors as (module-finite) ∘ (flat), and going down is stable
+under composition (`Algebra.HasGoingDown.trans`).  That factorisation is not
+cosmetic — `Γ(Y,U) → Γ(X,V)` is NOT module-finite for `V` a proper affine open of
+`f ⁻¹ᵁ U`, so Krull's theorem does not apply to it directly. -/
+theorem flat_presheafMap_of_isAffineOpen {X : Scheme.{u}} {W V : X.Opens} (hW : IsAffineOpen W)
+    (hV : IsAffineOpen V) (e : V ≤ W) : (X.presheaf.map (homOfLE e).op).hom.Flat := by
+  have h := AlgebraicGeometry.Flat.flat_appLE (𝟙 X) hW hV (show V ≤ (𝟙 X) ⁻¹ᵁ W by simpa using e)
+  have h2 : Scheme.Hom.appLE (𝟙 X) W V (show V ≤ (𝟙 X) ⁻¹ᵁ W by simpa using e)
+      = X.presheaf.map (homOfLE e).op := by
+    have h3 : Scheme.Hom.appLE (𝟙 X) W V (show V ≤ (𝟙 X) ⁻¹ᵁ W by simpa using e)
+        = 𝟙 Γ(X, W) ≫ X.presheaf.map (homOfLE e).op := rfl
+    simpa using h3
+  rw [h2] at h
+  exact h
+
+/-- **GOING DOWN FOR A STALK MAP IS A CONSEQUENCE OF THE UNDERLYING MAP BEING
+GENERALIZING** (**PROVEN 2026-07-27** — general scheme theory, no hypotheses at
+all on `f`, `X` or `Y`; mathlib-shaped).
+
+If the continuous map underlying `f : X ⟶ Y` lifts generalizations, then for
+every `x` the ring map `f.stalkMap x : 𝒪_{Y,f x} ⟶ 𝒪_{X,x}` satisfies going
+down.
+
+**THIS IS THE TRANSPORT STEP THE OLD ROUTE NOTE DESPAIRED OF**, and it is why
+the affine-chart hypotheses below never have to be pushed through a
+localisation by hand.  The note on the consumer said the four inputs of Krull's
+theorem "must be supplied on an affine chart, and then going-down transported to
+the stalks", and transporting `Algebra.HasGoingDown A B` to `A_p → B_q` is real
+work.  Restating going down TOPOLOGICALLY removes it: `GeneralizingMap` is local
+on source and target for free (opens are stable under generalization), so the
+chart statement IS the local statement, and this lemma converts back.
+
+**THE PROOF, in the two facts about `Spec 𝒪_{X,x} ⟶ X` that carry it.**
+`X.fromSpecStalk x` is a PREIMMERSION (mathlib instance), so its underlying map
+is an embedding — injective, and reflecting specializations; and its range is
+exactly the set of generalizations of `x` (`Scheme.range_fromSpecStalk`,
+`@[stacks 01J7]`).  With the square
+`Spec.map (f.stalkMap x) ≫ Y.fromSpecStalk (f x) = X.fromSpecStalk x ≫ f`
+(`Scheme.SpecMap_stalkMap_fromSpecStalk`) the argument is four lines of chasing:
+a generalization `q` of `comap p` pushes down to a generalization of
+`f (ι_X p)`, lifts along `f` to some `x' ⤳ ι_X p ⤳ x`, and `x' ⤳ x` puts `x'`
+back in the range of `ι_X`; the embedding then supplies both the specialization
+`p' ⤳ p` and the identification `comap p' = q`.
+
+*Refute with:* an `f` whose base is generalizing but some stalk map is not — by
+this proof there is none. -/
+theorem hasGoingDown_stalkMap_of_generalizingMap {X Y : Scheme.{u}} (f : X ⟶ Y)
+    (hf : GeneralizingMap f.base) (x : X) :
+    @Algebra.HasGoingDown (Y.presheaf.stalk (f.base x)) (X.presheaf.stalk x) _ _
+      (f.stalkMap x).hom.toAlgebra := by
+  letI : Algebra (Y.presheaf.stalk (f.base x)) (X.presheaf.stalk x) :=
+    (f.stalkMap x).hom.toAlgebra
+  have halg : algebraMap (Y.presheaf.stalk (f.base x)) (X.presheaf.stalk x)
+      = (f.stalkMap x).hom := rfl
+  rw [Algebra.HasGoingDown.iff_generalizingMap_primeSpectrumComap, halg]
+  have hsq : ∀ p : Spec (X.presheaf.stalk x),
+      (Y.fromSpecStalk (f.base x)).base
+          (PrimeSpectrum.comap (f.stalkMap x).hom p)
+        = f.base ((X.fromSpecStalk x).base p) := by
+    intro p
+    have h2 : (Spec.map (f.stalkMap x) ≫ Y.fromSpecStalk (f.base x)) p
+        = (X.fromSpecStalk x ≫ f) p := by
+      rw [Scheme.SpecMap_stalkMap_fromSpecStalk]
+    rw [Scheme.Hom.comp_apply, Scheme.Hom.comp_apply] at h2
+    exact h2
+  have hrX : ∀ p : Spec (X.presheaf.stalk x), (X.fromSpecStalk x).base p ⤳ x := by
+    intro p
+    have : (X.fromSpecStalk x).base p ∈ Set.range (X.fromSpecStalk x).base :=
+      Set.mem_range_self p
+    rwa [Scheme.range_fromSpecStalk] at this
+  intro p q hq
+  have h1 : (Y.fromSpecStalk (f.base x)).base q ⤳ f.base ((X.fromSpecStalk x).base p) := by
+    have := hq.map (Y.fromSpecStalk (f.base x)).base.hom.continuous
+    rwa [hsq p] at this
+  obtain ⟨x', hx'le, hx'eq⟩ := hf h1
+  have hx'x : x' ⤳ x := hx'le.trans (hrX p)
+  have : x' ∈ Set.range (X.fromSpecStalk x).base := by
+    rw [Scheme.range_fromSpecStalk]; exact hx'x
+  obtain ⟨p', hp'⟩ := this
+  refine ⟨p', ?_, ?_⟩
+  · exact (X.fromSpecStalk x).isEmbedding.toIsInducing.specializes_iff.mp (hp' ▸ hx'le)
+  · refine (Y.fromSpecStalk (f.base x)).isEmbedding.injective ?_
+    rw [hsq p', hp', hx'eq]
+
+/-- **A FINITE DOMINANT MORPHISM FROM AN INTEGRAL SCHEME TO A NORMAL ONE IS
+GENERALIZING** (**PROVEN 2026-07-27** — this is Krull's going-down theorem,
+`@[stacks 00H8]`, descended to schemes.  General scheme theory: no smoothness,
+no field, no abelian varieties.)
+
+Normality is asked for in the only form the proof uses: `IsIntegrallyClosed`
+for the sections over every NONEMPTY affine open of the target.  (There is no
+`IsNormalRing` class in the pin and no normal-scheme class in
+`Mathlib/AlgebraicGeometry/`; passing the hypothesis as a plain `∀` avoids
+inventing one.)
+
+**HOW THE DESCENT IS DONE, and why no affine cover is constructed by hand.**
+`topologically GeneralizingMap` carries `IsZariskiLocalAtSource` and
+`IsZariskiLocalAtTarget` instances in mathlib
+(`AlgebraicGeometry/Morphisms/UnderlyingMap.lean`), so
+`HasRingHomProperty.of_isZariskiLocalAtSource_of_isZariskiLocalAtTarget` turns it
+into an affine-local property and `HasRingHomProperty.iff_appLE` reduces the
+whole statement to: for every affine open `U ⊆ Y` and every affine open
+`V ⊆ f ⁻¹ᵁ U`, the ring map `f.appLE U V` satisfies going down.  This is exactly
+the shape of mathlib's own `Flat.generalizingMap`, and it is worth copying.
+
+**THE ONE PLACE THE NAIVE ARGUMENT BREAKS, and the fix.**  `Γ(Y,U) → Γ(X,V)` is
+*not* module-finite when `V` is a proper affine open of `f ⁻¹ᵁ U` (it inverts
+elements), so Krull's theorem does not apply to it.  The map is factored instead:
+
+    Γ(Y, U)  --f.app U-->  Γ(X, f ⁻¹ᵁ U)  --restriction-->  Γ(X, V)
+
+The first factor is module-finite by `IsFinite.finite_app` — `f ⁻¹ᵁ U` is affine
+because a finite morphism is affine — and Krull applies to it; the second is FLAT
+(`flat_presheafMap_of_isAffineOpen` above) and flat maps satisfy going down
+(`Algebra.HasGoingDown.of_flat`, `@[stacks 00HS]`).  `Algebra.HasGoingDown.trans`
+(`@[stacks 00HX]`) composes them.
+
+**THE FOUR INPUTS OF KRULL'S INSTANCE, and where each comes from.**
+
+1. `Algebra.IsIntegral Γ(Y,U) Γ(X, f ⁻¹ᵁ U)` — `IsFinite.finite_app` then
+   `Algebra.IsIntegral.of_finite`.
+2. `IsDomain Γ(X, f ⁻¹ᵁ U)` — `IsIntegral X` and `f ⁻¹ᵁ U` nonempty.
+3. `FaithfulSMul Γ(Y,U) Γ(X, f ⁻¹ᵁ U)` — injectivity of `f.app U`.  This is
+   `Scheme.Hom.app_injective`, which needs `IsSchemeTheoreticallyDominant f`; and
+   `IsSchemeTheoreticallyDominant.of_isDominant` supplies it from `[IsDominant f]`
+   together with `[IsReduced Y]`.  **This is the only use of dominance, and it is
+   essential**: for `u : Spec k[t] ⟶ Spec k[t]` induced by `t ↦ 0` the stalk map
+   at the generic point is `k[t]_(t) → k(t)` killing `t`, `(0) < (t) = Q.under`,
+   and no prime of `k(t)` lies over `(0)` — going down fails outright.
+4. `IsIntegrallyClosed Γ(Y,U)` — the hypothesis `hnormal`.
+
+The EMPTY affine open is not an exception to be worried about: `Γ(X, ⊥)` is
+subsingleton, so it has no prime ideals and going down holds vacuously.  That
+branch is discharged explicitly rather than by a nonemptiness side condition,
+because `iff_appLE` really does quantify over every affine open. -/
+theorem generalizingMap_of_isFinite_of_isIntegral {X Y : Scheme.{u}} (f : X ⟶ Y) [IsFinite f]
+    [AlgebraicGeometry.IsIntegral X] [AlgebraicGeometry.IsReduced Y] [IsDominant f]
+    (hnormal : ∀ (U : Y.affineOpens), Nonempty ↥U.1 → IsIntegrallyClosed Γ(Y, U.1)) :
+    GeneralizingMap f.base := by
+  have := HasRingHomProperty.of_isZariskiLocalAtSource_of_isZariskiLocalAtTarget.{u}
+    (topologically GeneralizingMap)
+  change topologically GeneralizingMap f
+  rw [HasRingHomProperty.iff_appLE (P := topologically GeneralizingMap)]
+  intro U V e
+  letI algUV : Algebra Γ(Y, U.1) Γ(X, V.1) := (f.appLE U.1 V.1 e).hom.toAlgebra
+  apply Algebra.HasGoingDown.iff_generalizingMap_primeSpectrumComap.mp
+  by_cases hV : Nonempty ↥V.1
+  · haveI := hV
+    have hW : IsAffineOpen (f ⁻¹ᵁ U.1) := U.2.preimage f
+    haveI hUne : Nonempty ↥U.1 := ⟨⟨f.base hV.some.1, e hV.some.2⟩⟩
+    letI algW : Algebra Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1) := (f.app U.1).hom.toAlgebra
+    letI algWV : Algebra Γ(X, f ⁻¹ᵁ U.1) Γ(X, V.1) :=
+      (X.presheaf.map (homOfLE (show V.1 ≤ f ⁻¹ᵁ U.1 from e)).op).hom.toAlgebra
+    haveI : IsScalarTower Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1) Γ(X, V.1) :=
+      IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+    haveI : IsDomain Γ(X, f ⁻¹ᵁ U.1) :=
+      @IsIntegral.component_integral _ _ _ ⟨⟨hV.some.1, e hV.some.2⟩⟩
+    haveI : Module.Finite Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1) := f.finite_app U.1 U.2
+    haveI : Algebra.IsIntegral Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1) := Algebra.IsIntegral.of_finite _ _
+    haveI : IsSchemeTheoreticallyDominant f := IsSchemeTheoreticallyDominant.of_isDominant f
+    haveI : FaithfulSMul Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1) :=
+      (faithfulSMul_iff_algebraMap_injective _ _).mpr (f.app_injective U.1)
+    haveI := hnormal U hUne
+    haveI hgd1 : Algebra.HasGoingDown Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1) := inferInstance
+    haveI : Module.Flat Γ(X, f ⁻¹ᵁ U.1) Γ(X, V.1) :=
+      flat_presheafMap_of_isAffineOpen hW V.2 (show V.1 ≤ f ⁻¹ᵁ U.1 from e)
+    haveI hgd2 : Algebra.HasGoingDown Γ(X, f ⁻¹ᵁ U.1) Γ(X, V.1) := Algebra.HasGoingDown.of_flat
+    exact Algebra.HasGoingDown.trans Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1) Γ(X, V.1)
+  · have hbot : V.1 = ⊥ := by
+      rw [← TopologicalSpace.Opens.not_nonempty_iff_eq_bot]
+      exact fun hne => hV hne.to_subtype
+    haveI : Subsingleton Γ(X, V.1) := by rw [hbot]; infer_instance
+    constructor
+    intro p _ Q hQ _
+    exact absurd (Subsingleton.elim Q ⊤) hQ.ne_top
+
+/-- **A SMOOTH GEOMETRICALLY CONNECTED SCHEME OVER A FIELD IS IRREDUCIBLE**
+(sorry leaf, created 2026-07-27 — step 1 of the route recorded on
+`ringKrullDim_stalk_eq_of_isFinite_endo` below, now isolated as its own leaf.
+General scheme theory over a field, NO abelian varieties.)
+
+`Smooth g` makes every stalk of `X` regular local
+(`isRegularLocalRing_stalk_of_smooth` above) hence a DOMAIN
+(`GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing`), so `X` is
+LOCALLY IRREDUCIBLE: the irreducible components through any point are totally
+ordered by the minimal primes of the stalk, of which a domain has exactly one.
+`GeometricallyConnected g` makes `X` CONNECTED.  A connected, locally
+noetherian, locally irreducible scheme is irreducible: the irreducible
+components are locally finite, each point lies on exactly one, so they are
+pairwise disjoint closed sets forming a locally finite cover — hence each is
+also open, and connectedness leaves only one.
+
+**WHY THIS IS NOT ALREADY IN THE PIN** (checked 2026-07-27, and each check is
+what would refute the claim).  `grep -rn "IrreducibleSpace"
+Mathlib/AlgebraicGeometry/ | grep -iE "connected|stalk|domain|normal"` returns
+only `instance {R} [IsDomain R] : IrreducibleSpace (Spec R)` and unrelated
+`FunctionField`/`Birational` uses — there is no "connected + locally irreducible
+⟹ irreducible".  Mathlib DOES have the two conversions on either side of it:
+`isIntegral_of_irreducibleSpace_of_isReduced` and
+`isReduced_of_isReduced_stalk`, which is why reducedness is proven outright in
+`isIntegral_of_smooth_geometricallyConnected` below and only irreducibility is
+left open.
+
+**A CHEAPER ROUTE THAT MAY EXIST**, worth trying before the component argument:
+mathlib has `GeometricallyIrreducible.irreducibleSpace_of_subsingleton`, and
+`Spec K` for `K` a field is a one-point space, so `GeometricallyIrreducible g`
+would give this immediately.  Whether `GeometricallyIrreducible` is easier than
+`IrreducibleSpace` here is not obvious — it asks for irreducibility after every
+field base change, which for a SMOOTH `g` is the same statement over `K̄` — but
+the geometrically-* API is stable under base change and restriction for free,
+which the hand argument is not.
+
+**ONLY ORDINARY CONNECTEDNESS IS USED**, so `GeometricallyConnected` may be
+weakened freely; it appears because that is what the caller has in hand
+(`AbelianSchemeStruct.connected`). -/
+theorem irreducibleSpace_of_smooth_geometricallyConnected {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [GeometricallyConnected g] :
+    IrreducibleSpace X :=
+  sorry
+
+/-- **A SMOOTH GEOMETRICALLY CONNECTED SCHEME OVER A FIELD IS INTEGRAL**
+(**PROVEN 2026-07-27** over the single leaf
+`irreducibleSpace_of_smooth_geometricallyConnected` immediately above).
+
+Reducedness is discharged here and is NOT a leaf: the stalks are regular local
+(`isRegularLocalRing_stalk_of_smooth`), hence domains
+(`GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing`), hence
+reduced, and `isReduced_of_isReduced_stalk` lifts that to the scheme.  Note this
+route is `sorryAx`-free, whereas the project's own
+`AlgebraicGeometry.isReduced_of_smooth_over_field`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`) is built
+over the still-open `Algebra.Smooth.isReduced_of_isField`; using the stalks
+avoids importing that leaf's sorry into this cone. -/
+theorem isIntegral_of_smooth_geometricallyConnected {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [GeometricallyConnected g] :
+    AlgebraicGeometry.IsIntegral X := by
+  haveI : ∀ x : X, _root_.IsReduced (X.presheaf.stalk x) := fun x => by
+    haveI := isRegularLocalRing_stalk_of_smooth g x
+    haveI := GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing
+      (X.presheaf.stalk x)
+    infer_instance
+  haveI : AlgebraicGeometry.IsReduced X := isReduced_of_isReduced_stalk X
+  haveI := irreducibleSpace_of_smooth_geometricallyConnected g
+  exact isIntegral_of_irreducibleSpace_of_isReduced X
+
+/-- **A FINITE ENDOMORPHISM OF A PROPER GEOMETRICALLY CONNECTED SMOOTH SCHEME
+OVER A FIELD IS DOMINANT** (sorry leaf, created 2026-07-27 — step 2 of the route
+recorded on `ringKrullDim_stalk_eq_of_isFinite_endo` below, now isolated as its
+own leaf.  General scheme theory over a field, NO abelian varieties, no group
+law, no `[n]`.)
+
+`IsProper g` makes `X` quasi-compact and of finite type over `K`, hence
+finite-dimensional; `u` finite is closed, so `u '' X` is a closed irreducible
+subset of the irreducible `X`; a finite morphism preserves the dimension of a
+closed subset, so `u '' X` has the full dimension `dim X`, and in an irreducible
+finite-dimensional scheme of finite type over a field the only such closed subset
+is `X` itself.  Hence `u` is surjective, a fortiori dominant.
+
+**THIS LEAF IS WHERE PROPERNESS IS USED, AND IT CANNOT BE DROPPED.**  Without
+it the statement is FALSE: `u : Spec k[t] ⟶ Spec k[t]` induced by `t ↦ 0` is
+finite (`k[t]` is a finite `k[t]`-module through `t ↦ 0`, being `k`) and its
+image is the single closed point, so it is not dominant — and going down really
+does fail for its stalk map at the generic point, as recorded on
+`generalizingMap_of_isFinite_of_isIntegral` above.  Any attempt to prove this
+leaf without consuming `IsProper g` is therefore proving something false.
+
+**WHAT IS MISSING** (checked 2026-07-27): `Mathlib/AlgebraicGeometry/` has no
+`Dimension.lean` and no scheme-level dimension theory; the pin's dimension
+material is ring-level (`ringKrullDim`, `Ideal.height`,
+`Mathlib/RingTheory/KrullDimension/`) plus the topological
+`AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` (`@[stacks 02IZ]`), stated in
+terms of `Order.coheight` — which is why a `grep -rn "dim"
+Mathlib/AlgebraicGeometry/` misses it.  A hit on a scheme-dimension file, or on
+"a finite surjection preserves `topologicalKrullDim`", means this note has gone
+stale and the leaf is much cheaper than it looks.
+
+**A ROUTE THAT AVOIDS DIMENSION THEORY ALTOGETHER, worth trying first**: `u`
+finite is proper and its image is closed; if `u '' X ≠ X` pick a nonempty affine
+open `V` meeting `u '' X`, and use that `u ⁻¹ᵁ V` is affine while `X` is proper
+over `K`, so `Γ(X, ⊤)` is a finite `K`-algebra.  Whether that closes without
+dimensions has NOT been checked here; it is recorded as the first thing to try,
+not as a known route. -/
+theorem isDominant_of_isFinite_endo {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [IsProper g] [GeometricallyConnected g]
+    (u : X ⟶ X) [IsFinite u] :
+    IsDominant u :=
+  sorry
+
+/-- **A REGULAR LOCAL RING IS INTEGRALLY CLOSED, IN THE FORM THIS DEVELOPMENT
+NEEDS IT** (sorry leaf, created 2026-07-27 — **this is the one genuinely missing
+piece of COMMUTATIVE ALGEBRA under `flat_of_finite_fibres_endo`**, and it is
+absent from mathlib, from this project, and from `~/cs/FLT`).
+
+`Γ(X, U)` is integrally closed for every nonempty affine open `U` of a scheme
+smooth over a field.
+
+**WHY IT IS STATED GEOMETRICALLY RATHER THAN AS "regular ⟹ normal".**  The
+abstract statement
+
+> a regular local ring is integrally closed
+
+is TRUE but its standard proofs need machinery the pin does not have: Serre's
+criterion (`R1` + `S2`), which needs Cohen–Macaulayness — `ls
+Mathlib/RingTheory/` has no `CohenMacaulay*` and `grep -rln "Serre"
+Mathlib/RingTheory/` returns only `DiscreteValuationRing/Basic.lean`,
+`Valuation/Discrete/Basic.lean` and `Polynomial/Morse.lean`, none of them this
+criterion — or Auslander–Buchsbaum (regular ⟹ UFD).  There is no `IsNormalRing`
+class in the pin at all, and `Mathlib/RingTheory/RegularLocalRing/` contains only
+`Defs.lean` and `Polynomial.lean`.
+
+The induction that DOES work here needs to know that the localisations of the
+ring at all its primes are again regular local — which for an ABSTRACT regular
+local ring is Serre's theorem (localisation of regular is regular, via finite
+global dimension) and is missing, but which HERE IS FREE: the localisations of
+`Γ(X,U)` at its primes are the stalks of `X`, and every stalk of a smooth `X` is
+regular local by `isRegularLocalRing_stalk_of_smooth` above.  So stating the leaf
+over `Γ(X,U)` rather than over an abstract regular local ring converts an
+apparent dependence on Serre's theorem into a hypothesis the caller already has.
+
+**THE INDUCTION, on `dim Γ(X,U)_p`, and the mathlib pieces it uses.**
+`IsIntegrallyClosed` is a local property (`Mathlib/RingTheory/LocalProperties/
+IntegrallyClosed.lean`), so it suffices to treat a regular local `R` all of whose
+localisations at primes are regular local.
+* `dim R = 0`: `R` is a field, integrally closed.
+* `dim R ≥ 1`: `𝔪 ≠ 𝔪²` by Nakayama, so pick `x ∈ 𝔪 ∖ 𝔪²`.  Then `R ⧸ (x)` is
+  regular local (`isRegularLocalRing_quotient_span_singleton`, PROVEN in
+  `Modularity/RegularStalks.lean`) hence a domain, so `(x)` is PRIME; it has
+  height `1` (Krull's principal ideal theorem for `≤`, and `≥` because `R` is a
+  domain), so `R_(x)` is a one-dimensional noetherian local domain whose maximal
+  ideal is principal — a DVR, hence integrally closed.  And
+  `R = R[1/x] ∩ R_(x)` inside `Frac R`: if `a = r/xⁿ` with `n` minimal and
+  `a ∈ R_(x)` then `x ∣ r` because `x` is prime, contradicting minimality.  An
+  intersection of two integrally closed subrings of `Frac R` is integrally
+  closed, and `R[1/x]` is integrally closed because each of its localisations is
+  `R_p` for a prime `p` not containing `x`, which has `ht p < ht 𝔪 = dim R` and
+  is regular local, so the induction applies.
+
+*Refute with:* `grep -rn "IsIntegrallyClosed" .lake/packages/mathlib/Mathlib/ |
+grep -iE "regular|smooth|normal"` returning a THEOREM rather than prose, or a
+hit for `IsNormalRing`, or a `Serre`/`CohenMacaulay` file appearing under
+`Mathlib/RingTheory/`.  Any of those means this note has gone stale.
+
+**Nonemptiness is a hypothesis and not decoration**: `Γ(X, ⊥)` is the zero ring,
+whose `FractionRing` is also zero, and the consumer never needs the empty case —
+`generalizingMap_of_isFinite_of_isIntegral` discharges it separately by the fact
+that a subsingleton ring has no primes. -/
+theorem isIntegrallyClosed_sections_of_smooth {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] (U : X.affineOpens) (_hU : Nonempty ↥U.1) :
+    IsIntegrallyClosed Γ(X, U.1) :=
+  sorry
+
 /-- **GOING-DOWN FOR THE STALK MAP OF A FINITE ENDOMORPHISM OF A SMOOTH
-PROPER GEOMETRICALLY CONNECTED SCHEME OVER A FIELD** (sorry leaf, created
-2026-07-27 — it is now the ONLY open content under
-`ringKrullDim_stalk_eq_of_isFinite_endo` below, which is proven over it.
-General scheme theory, NO abelian varieties, no group law, no `[n]`.)
+PROPER GEOMETRICALLY CONNECTED SCHEME OVER A FIELD** (**PROVEN 2026-07-27** over
+the three leaves in the block immediately above; created as a sorry leaf earlier
+the same day.  Its consumer is `ringKrullDim_stalk_eq_of_isFinite_endo` below,
+which is proven over it.  General scheme theory, NO abelian varieties, no group
+law, no `[n]`.)
 
 `u.stalkMap x : 𝒪_{X,u x} ⟶ 𝒪_{X,x}` satisfies going-down: every chain of
 primes below `𝔪_{u x}` lifts to a chain below `𝔪_x`.
@@ -2858,23 +3237,54 @@ below `p`, which the localisation maps identify.
    *Refute with:* `grep -rn "IsIntegrallyClosed" .lake/packages/mathlib/Mathlib/
    | grep -i "regular\|smooth\|normal"` returning a theorem rather than prose.
 
-**A WEAKER STATEMENT THAT WOULD ALSO SERVE, if going-down proves too
-expensive**: the consumer only needs `dim 𝒪_{X,x} = dim 𝒪_{X,u x}`, and the
-`≤` half is free.  So `dim 𝒪_{X,u x} ≤ dim 𝒪_{X,x}` by ANY route — for
-instance a topological one through
-`AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` (`@[stacks 02IZ]`), which
-turns both sides into `Order.coheight` in the specialisation order and the
-statement into "`u` lifts chains of generalisations", i.e. going-down again,
-but stated topologically and perhaps reachable from
-`Algebra.HasGoingDown.iff_generalizingMap_primeSpectrumComap` — would close
-the node just as well.  Re-cutting this leaf that way is a legitimate move for
-whoever takes it. -/
+**STATUS 2026-07-27 — PROVEN, AND THE ROUTE ABOVE IS CORRECTED IN ONE PLACE.**
+The plan above is what was carried out, except that the step it called the
+hardest — "and then transport going-down to the stalks" — is NOT done by
+transporting `Algebra.HasGoingDown A B` along the localisations `A → A_p`,
+`B → B_q`.  It is done by restating going down TOPOLOGICALLY.  Mathlib's
+`Algebra.HasGoingDown.iff_generalizingMap_primeSpectrumComap` (`@[stacks 00HW]`)
+identifies going down with `GeneralizingMap` on `Spec`, and `GeneralizingMap` is
+local on source and target for free, because opens are stable under
+generalization — `topologically GeneralizingMap` carries
+`IsZariskiLocalAtSource` and `IsZariskiLocalAtTarget` instances in
+`Mathlib/AlgebraicGeometry/Morphisms/UnderlyingMap.lean`.  So the affine-chart
+statement IS the local statement, and no localisation bookkeeping arises at all.
+The two halves are:
+
+* `generalizingMap_of_isFinite_of_isIntegral` above — Krull's theorem descended
+  to schemes, giving `GeneralizingMap u.base`;
+* `hasGoingDown_stalkMap_of_generalizingMap` above — the converse transport, from
+  `GeneralizingMap f.base` back to going down for EVERY stalk map, via
+  `Scheme.range_fromSpecStalk` (`@[stacks 01J7]`) and the fact that
+  `Spec 𝒪_{X,x} ⟶ X` is a preimmersion.
+
+The `A WEAKER STATEMENT THAT WOULD ALSO SERVE` paragraph that stood here — a
+fallback through `ringKrullDim_stalk_eq_coheight` — is therefore RETIRED, and it
+is worth saying why, because it was recorded as the escape hatch if the main
+route stalled.  It is not an escape hatch: it turns both sides into
+`Order.coheight` and the statement into "`u` lifts chains of generalisations",
+which is going down again, topologically.  The topological restatement is
+genuinely the right move, but it BUYS THE LOCALITY, not the mathematics: the
+mathematical content stays exactly where it was, in Krull's theorem, and hence
+in normality.
+
+**WHAT REMAINS OPEN, and it is all in the three leaves above, none of it here.**
+Normality of the charts (`isIntegrallyClosed_sections_of_smooth`) is the only
+commutative algebra; irreducibility of `X`
+(`irreducibleSpace_of_smooth_geometricallyConnected`) and dominance of `u`
+(`isDominant_of_isFinite_endo`) are the two geometric inputs, and they are steps
+1 and 2 of the survey on the consumer below, now stated as their own leaves so
+that they can be attacked independently. -/
 theorem hasGoingDown_stalkMap_of_isFinite_endo {X : Scheme.{u}} {K : Type u} [Field K]
     (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [IsProper g] [GeometricallyConnected g]
     (u : X ⟶ X) [IsFinite u] (x : X) :
     @Algebra.HasGoingDown (X.presheaf.stalk (u x)) (X.presheaf.stalk x) _ _
-      (u.stalkMap x).hom.toAlgebra :=
-  sorry
+      (u.stalkMap x).hom.toAlgebra := by
+  haveI : AlgebraicGeometry.IsIntegral X := isIntegral_of_smooth_geometricallyConnected g
+  haveI : IsDominant u := isDominant_of_isFinite_endo g u
+  exact hasGoingDown_stalkMap_of_generalizingMap u
+    (generalizingMap_of_isFinite_of_isIntegral u
+      (fun U hU => isIntegrallyClosed_sections_of_smooth g U hU)) x
 
 /-- **A FINITE ENDOMORPHISM PRESERVES THE DIMENSION OF EVERY LOCAL RING**
 (**PROVEN 2026-07-27** over the single leaf
@@ -2973,6 +3383,18 @@ STANDARD, SELF-CONTAINED, MATHLIB-SHAPED statement, and it is enormously smaller
 than "a dimension theory of schemes".  Mathlib even provides the localisation
 step for it: `Mathlib/RingTheory/LocalProperties/IntegrallyClosed.lean` lets
 `IsIntegrallyClosed A` be checked at the localisations of `A`.
+
+**UPDATE 2026-07-27: it is now a NAMED LEAF, `isIntegrallyClosed_sections_of_smooth`
+above**, stated geometrically (`IsIntegrallyClosed Γ(X,U)` for `U` a nonempty
+affine open) rather than as the abstract "regular local ⟹ integrally closed".
+That is not cosmetic: the abstract form's induction needs *localisation of a
+regular local ring is regular local*, which is Serre's theorem and is missing
+from the pin, whereas the geometric form gets it free from
+`isRegularLocalRing_stalk_of_smooth`.  Its docstring carries the induction in
+full.  Steps 1 and 2 of the survey above are likewise now named leaves
+(`irreducibleSpace_of_smooth_geometricallyConnected`,
+`isDominant_of_isFinite_endo`), and everything else between them and this
+theorem is proven.
 
 Note this route ALSO discards steps 1–3 of the survey above: irreducibility is
 still wanted (to make the charts domains), but SURJECTIVITY of `u` is not used,
