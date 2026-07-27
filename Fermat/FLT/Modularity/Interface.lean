@@ -35503,8 +35503,160 @@ theorem abs_le_two_mul_sqrt_of_forall_norm_pow_le
   have hNdpos : (0 : ℝ) < (N : ℝ) * d := mul_pos (by linarith) hd0
   linarith [hchain, hexp, hexp2, hA, hCN, hNdpos]
 
-/-- **The crude Weil bound along the powers of a good prime** (sorry
-node, THIRTEENTH decomposition 2026-07-27 — the geometric residue of
+/-- **From a Frobenius power-sum bound to the coefficient growth bound**
+(PROVEN 2026-07-27, FOURTEENTH decomposition): a sequence whose "second
+difference against `q`", `a_{s+2} − q·aₛ`, is bounded by `C·q^{(s+2)/2}`
+— with NO linear factor — and whose first two terms are bounded by `C`
+and `C·√q`, satisfies `‖aᵣ‖ ≤ C·(r+1)·q^{r/2}` for every `r`.
+
+WHY THIS IS THE RIGHT INTERMEDIARY, AND WHERE THE LINEAR FACTOR COMES
+FROM. When `aᵣ = a_{q^r}` are the Hecke coefficients at a good prime and
+`α, β` are the roots of `X² − a_q·X + q`, one has the complete
+homogeneous expansion `aᵣ = Σ_{j ≤ r} αʲ·β^{r−j}`, and the combination
+appearing in `hstep` is exactly the POWER SUM
+
+  `a_{s+2} − q·aₛ = α^{s+2} + β^{s+2}`,
+
+because `αβ = q` makes the two sums telescope against each other. Power
+sums are precisely what a point count bounds — the Hasse–Weil estimate
+`|#X(𝔽_{q^s}) − q^s − 1| ≤ 2g·q^{s/2}` carries a constant and NO linear
+factor. So the linear factor `(r+1)` in the conclusion is not part of
+the geometric input at all: it is manufactured HERE, by unrolling
+`aᵣ = pᵣ + q·a_{r−2}` roughly `r/2` times. Putting `(r+1)` into the
+geometric hypothesis would state something WEAKER than a point count
+actually delivers while making this step no easier, which is why the
+sorried leaf below does not carry it.
+
+Note the hypotheses do NOT include the Hecke recursion, and the proof
+does not use it; the statement is pure telescoping and holds for any
+sequence. That is deliberate — it keeps the recursion in exactly one
+place, the amplification lemma
+`abs_le_two_mul_sqrt_of_forall_norm_pow_le` above.
+
+PROOF: two-step induction. `‖a_{r+2}‖ ≤ ‖a_{r+2} − q·aᵣ‖ + q·‖aᵣ‖ ≤
+C·q^{(r+2)/2} + q·C·(r+1)·q^{r/2} = C·(r+2)·q^{(r+2)/2}`, which is below
+the claimed `C·(r+3)·q^{(r+2)/2}` with a whole term to spare. -/
+theorem norm_le_mul_succ_of_norm_sub_natCast_mul_le {q : ℕ} (a : ℕ → ℂ) (C : ℝ)
+    (h0 : ‖a 0‖ ≤ C) (h1 : ‖a 1‖ ≤ C * Real.sqrt q)
+    (hstep : ∀ s : ℕ, ‖a (s + 2) - (q : ℂ) * a s‖ ≤ C * Real.sqrt q ^ (s + 2)) :
+    ∀ r : ℕ, ‖a r‖ ≤ C * ((r : ℝ) + 1) * Real.sqrt q ^ r := by
+  have hC0 : 0 ≤ C := le_trans (norm_nonneg _) h0
+  have hs0 : (0 : ℝ) ≤ Real.sqrt q := Real.sqrt_nonneg _
+  have hsq : Real.sqrt q ^ 2 = (q : ℝ) := Real.sq_sqrt (by positivity)
+  have key : ∀ r : ℕ, ‖a r‖ ≤ C * ((r : ℝ) + 1) * Real.sqrt q ^ r ∧
+      ‖a (r + 1)‖ ≤ C * ((r : ℝ) + 1 + 1) * Real.sqrt q ^ (r + 1) := by
+    intro r
+    induction r with
+    | zero =>
+        refine ⟨by simpa using h0, ?_⟩
+        have hgoal : C * Real.sqrt q ≤ C * ((0 : ℝ) + 1 + 1) * Real.sqrt q := by nlinarith
+        simpa using le_trans h1 hgoal
+    | succ n ih =>
+        obtain ⟨hn, hn1⟩ := ih
+        refine ⟨by push_cast; linarith, ?_⟩
+        have hpow0 : (0 : ℝ) ≤ Real.sqrt q ^ n := by positivity
+        have hpow : (q : ℝ) * Real.sqrt q ^ n = Real.sqrt q ^ (n + 2) := by
+          rw [pow_add, hsq]; ring
+        have hqnorm : ‖(q : ℂ) * a n‖ = (q : ℝ) * ‖a n‖ := by
+          rw [norm_mul, Complex.norm_natCast]
+        have hsplit : ‖a (n + 2)‖ ≤ ‖a (n + 2) - (q : ℂ) * a n‖ + ‖(q : ℂ) * a n‖ := by
+          simpa using norm_add_le (a (n + 2) - (q : ℂ) * a n) ((q : ℂ) * a n)
+        have hqle : (q : ℝ) * ‖a n‖ ≤ C * ((n : ℝ) + 1) * Real.sqrt q ^ (n + 2) := by
+          have hq0 : (0 : ℝ) ≤ (q : ℝ) := Nat.cast_nonneg q
+          calc (q : ℝ) * ‖a n‖
+              ≤ (q : ℝ) * (C * ((n : ℝ) + 1) * Real.sqrt q ^ n) :=
+                mul_le_mul_of_nonneg_left hn hq0
+            _ = C * ((n : ℝ) + 1) * ((q : ℝ) * Real.sqrt q ^ n) := by ring
+            _ = C * ((n : ℝ) + 1) * Real.sqrt q ^ (n + 2) := by rw [hpow]
+        have hpow2 : (0 : ℝ) ≤ Real.sqrt q ^ (n + 2) := by positivity
+        have hfinal : ‖a (n + 2)‖ ≤ C * ((n : ℝ) + 1 + 1 + 1) * Real.sqrt q ^ (n + 2) := by
+          have hh := hstep n
+          nlinarith [hsplit, hqle, hh, hqnorm, hpow2, hC0]
+        push_cast
+        convert hfinal using 2
+  exact fun r => (key r).1
+
+/-- **The Frobenius power-sum bound at a good prime** (sorry node,
+FOURTEENTH decomposition 2026-07-27 — the geometric residue of
+`exists_const_norm_qCoeff_prime_pow_le` below, which is now PROVEN over
+it): at `q ∤ M` the power sums of the two Frobenius roots attached to a
+weight-two newform are bounded by `C·q^{s/2}`, with a constant and NO
+linear factor.
+
+WHAT THE HYPOTHESES SAY, IN CLASSICAL TERMS. Write `α, β` for the roots
+of `X² − a_q·X + q`. The good-prime Hecke recursion makes
+`a_{q^r} = Σ_{j ≤ r} αʲ·β^{r−j}` the complete homogeneous symmetric
+function, and `αβ = q` telescopes it into the Newton identity
+
+  `a_{q^{s+2}} − q·a_{q^s} = α^{s+2} + β^{s+2}`,
+
+which is the trace of `Frob_q^{s+2}` on the `g`-isotypic part. So the
+second clause is literally "the traces of all the Frobenius powers are
+bounded by `C·q^{s/2}`", and the first clause is the same statement at
+`s = 1`, where the power sum is `α + β = a_q`. Nothing here mentions a
+Galois representation: everything is phrased in the `q`-expansion
+coefficients, so Route 1's circularity (see
+`norm_qCoeff_le_two_mul_sqrt_of_not_dvd` below) does not arise.
+
+WHY THIS SHAPE AND NOT THE PARENT'S. This leaf is strictly STRONGER than
+`exists_const_norm_qCoeff_prime_pow_le` below, because it has no linear
+factor — and that is the point. The `(r+1)` in the parent is an artifact
+of unrolling `a_{q^r} = p_r + q·a_{q^{r−2}}` about `r/2` times, NOT of
+the geometry; a point count delivers `|#X(𝔽_{q^s}) − q^s − 1| ≤ 2g·q^{s/2}`
+with no such factor. Stating the geometric obligation with a linear
+factor would ask the geometry for less than it gives while leaving the
+elementary step exactly as hard, so the factor is manufactured in
+`norm_le_mul_succ_of_norm_sub_natCast_mul_le` above instead.
+
+FAITHFULNESS. The statement is TRUE with `C = 2`: `|α| = |β| = √q` gives
+`|α^s + β^s| ≤ 2·q^{s/2}` for every `s`, and `|a_q| ≤ 2√q`. It is not
+vacuous — it is Weil-strength, being equivalent (via the two elementary
+lemmas above) to `|a_q| ≤ 2√q`. The `1 ≤ C` clause is free at `C = 2`
+and is what discharges `‖a_{q^0}‖ = ‖a_1‖ = 1 ≤ C`.
+
+STILL MISSING, and this leaf does not pretend otherwise: an integral
+model of `X₀(M)` with good reduction at `q ∤ M` (Igusa), the
+Eichler–Shimura relation in its geometric form (Diamond–Shurman §8.7),
+and the Weil bound for curves over `𝔽_q`. The FOURTEENTH cut removes
+only the linear-factor bookkeeping from the geometric obligation; the
+THIRTEENTH removed the extremal constant.
+
+CORRECTION TO THE THIRTEENTH CUT'S COORDINATION NOTE (checked
+2026-07-27 by the owner of this cut, and it changes what a successor
+should do). The note below said a curve-level Weil bound is in flight in
+`Modularity/KhareWintenberger.lean` and should simply be consumed here.
+The ROUTING half is correct — `Interface.lean` does import that file
+directly (line 330), so anything landing there is reachable — but the
+MATHEMATICAL half is wrong: that subtree deliberately produces only
+NONEMPTINESS, never an estimate. Its curve-level output
+`exists_zero_of_absolutelyIrreducible_plane` concludes
+`∃ a : Fin 2 → ZMod p, MvPolynomial.eval a g = 0`, and its parent
+`exists_bound_forall_zmodSolvable_of_irreducibleFibre` records in as many
+words that "the full Lang–Weil estimate `|#X(𝔽_q) − q^d| ≤ C·q^{d−1/2}`
+is not needed anywhere in this development, and a route that merely
+produces `#X(𝔽_p) > 0` past an explicit threshold is enough". So NO
+quantitative bound will appear there to be consumed, and the owner of
+this leaf must build the curve-level estimate itself. What IS genuinely
+shared is one level lower: Stepanov's auxiliary polynomial
+(`exists_stepanovAuxiliary`, still OPEN there) and the zero-counting core
+(`stepanov_sum_le_natDegree`, PROVEN there) are exactly the inputs an
+estimate needs, so build the estimate ON those rather than starting a
+second Stepanov development. Refutable in one grep: if
+`exists_zero_of_absolutelyIrreducible_plane`'s conclusion ever becomes an
+inequality on a point count rather than a bare existential, this
+paragraph is stale. -/
+theorem exists_const_norm_qCoeff_frobPowerSum_le {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
+    ∃ C : ℝ, 1 ≤ C ∧ ‖qCoeff M g q‖ ≤ C * Real.sqrt q ∧
+      ∀ s : ℕ, ‖qCoeff M g (q ^ (s + 2)) - (q : ℂ) * qCoeff M g (q ^ s)‖
+        ≤ C * Real.sqrt q ^ (s + 2) :=
+  sorry
+
+/-- **The crude Weil bound along the powers of a good prime** (PROVEN
+2026-07-27 over `exists_const_norm_qCoeff_frobPowerSum_le` above,
+FOURTEENTH decomposition; opened by the THIRTEENTH decomposition
+2026-07-27 as the geometric residue of
 `norm_qCoeff_le_two_mul_sqrt_of_not_dvd` below, which is now PROVEN over
 it): at `q ∤ M` the coefficients `a_{q^r}` of a weight-two newform grow
 no faster than `q^{r/2}`, up to an arbitrary constant and a linear
@@ -35538,26 +35690,43 @@ removes only the extremal-constant extraction from the geometric
 obligation.
 
 WHERE THE WEIL BOUND IS BEING BUILT, AND THAT IT IS REACHABLE FROM HERE
-(checked 2026-07-27; this is the load-bearing coordination fact). A
-Stepanov–Bombieri development is in flight in
-`Modularity/KhareWintenberger.lean`, beneath
+(checked 2026-07-27; this is the load-bearing coordination fact, and its
+mathematical half was CORRECTED the same day — see the CORRECTION
+paragraph on `exists_const_norm_qCoeff_frobPowerSum_le` above, which is
+where a successor should read it). A Stepanov–Bombieri development is in
+flight in `Modularity/KhareWintenberger.lean`, beneath
 `exists_bound_forall_zmodSolvable_of_irreducibleFibre`, for the
 Lang–Weil needs of Khare–Wintenberger. **That file is UPSTREAM of this
-one** — `Interface.lean` imports it directly — so whatever curve-level
-Weil bound lands there is usable at this leaf with no shared module
-above the two, and no second Weil development is needed. The refutable
-form of that claim, which costs one grep: if
+one** — `Interface.lean` imports it directly — so anything landing there
+is reachable from this leaf with no shared module above the two. The
+refutable form of that claim, which costs one grep: if
 `grep -n 'import Fermat.FLT.Modularity.KhareWintenberger'
 Fermat/FLT/Modularity/Interface.lean` ever returns empty, this paragraph
-is wrong. Two independent Weil developments are the most expensive
-duplication available in this tree; the owner of this leaf should
-consume that one rather than start over. -/
+is wrong. **But what lands there is only NONEMPTINESS of a point set,
+not an estimate**, so it cannot be consumed as a Weil bound; only its
+Stepanov infrastructure one level down can. Two independent Stepanov
+developments are the most expensive duplication available in this tree,
+so build on that one rather than start over.
+
+PROOF (FOURTEENTH cut): the power-sum leaf above supplies `‖a_q‖ ≤ C√q`
+and `‖a_{q^{s+2}} − q·a_{q^s}‖ ≤ C·q^{(s+2)/2}`; `a_{q^0} = a_1 = 1 ≤ C`
+is normalisation; and `norm_le_mul_succ_of_norm_sub_natCast_mul_le`
+above turns those into the claimed growth by two-step induction. Note
+the Hecke recursion is not used here — it is consumed once, higher up,
+by the amplification lemma. -/
 theorem exists_const_norm_qCoeff_prime_pow_le {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
     ∃ C : ℝ, ∀ r : ℕ,
-      ‖qCoeff M g (q ^ r)‖ ≤ C * (r + 1) * Real.sqrt q ^ r :=
-  sorry
+      ‖qCoeff M g (q ^ r)‖ ≤ C * (r + 1) * Real.sqrt q ^ r := by
+  obtain ⟨C, hC1, hCq, hCstep⟩ := exists_const_norm_qCoeff_frobPowerSum_le hM g hg hq hqM
+  refine ⟨C, norm_le_mul_succ_of_norm_sub_natCast_mul_le (q := q)
+    (fun r => qCoeff M g (q ^ r)) C ?_ ?_ ?_⟩
+  · rw [pow_zero, hg.toIsWeightTwoEigenform.qCoeff_one, norm_one]
+    exact hC1
+  · rw [pow_one]
+    exact hCq
+  · exact hCstep
 
 /-- **The Hasse–Weil bound at a good prime** (PROVEN 2026-07-27 over
 `exists_const_norm_qCoeff_prime_pow_le`; ELEVENTH
