@@ -14918,6 +14918,1226 @@ theorem quot_fricke_jmap (j' A' B' s₁ u : ℚ)
 
 end X0Seven
 
+/-! #### The `X_0(7)` hauptmodul from the kernel polynomial
+
+The two declarations below cut `exists_x0Seven_hauptmodul` into its modular
+half and its algebraic half, along the line the old docstring identified but
+could not supply: *"(i) a moduli leaf producing, from the stable subgroup, the
+monic RATIONAL cubic `ψ_C(x) = ∏(x − x(iP))`, and (ii) an algebra leaf
+computing `t` from `(c₄, c₆, ψ_C)`; step (ii) is a classical but bulky explicit
+computation that has NOT been done here."*
+
+**Step (ii) is now done** (2026-07-26), and it is not bulky — it is a single
+rational function. Work in a short Weierstrass model `y² = x³ + Ax + B` and let
+
+  `ψ_C(x) = x³ − s₁x² + s₂x − s₃`
+
+be the kernel polynomial of the stable order-`7` subgroup `C`. Then the
+`X_0(7)` hauptmodul value of `(E, C)` is
+
+  `t = 49(s₁² − 3s₂) / (6A − 4s₁² + 18s₂)`.                              (★)
+
+**How (★) was found.** The universal curve over `X_0(7)` is
+`y² = x³ − 27c₄(t)x − 54c₆(t)` with
+
+  `c₄(t) = (t² + 13t + 49)(t² + 245t + 2401)`,
+  `c₆(t) = (t² + 13t + 49)(t⁴ − 490t³ − 21609t² − 235298t − 823543)`,
+  `Δ(t)  = t⁷(t² + 13t + 49)²`
+
+(the second factor of `c₆` is an exact square root of
+`(t² + 13t + 49)(t² + 245t + 2401)³ − 1728t⁷`, which is what makes the family
+exist). Factoring its `7`-division polynomial over `ℚ(t)` gives the degree-`3`
+kernel polynomial, whose first symmetric function is remarkably simple:
+
+  `s₁ = 63(t² + 13t + 49)`,   `s₂ = 27(t² + 13t + 49)(33t² + 637t + 2401)`.
+
+Since `t` is weight-`0` under `(A,B,x) ↦ (u⁴A, u⁶B, u²x)` it is a ratio of two
+isobaric weight-`4` forms in `A, s₁², s₂`, and solving that `3 + 3`-dimensional
+linear system over `ℚ(t)` returns a **two**-dimensional solution space. Both
+solutions are genuine, and the choice between them matters:
+
+* `t = 98(A + s₂)/(s₁² − 18A − 5s₂)` degenerates — numerator *and* denominator
+  vanish — exactly at `t = −49/4`, which is an honest rational point of
+  `X_0(7)` (`j = 351/4`), so this form is **unusable**;
+* (★) has denominator `6A − 4s₁² + 18s₂ = 1296·u⁴·t·(t² + 13t + 49)`, which
+  vanishes only at `t = 0`, i.e. only at a CUSP, where there is no elliptic
+  curve at all. So (★) is defined at every genuine `(E, C)`.
+
+Eliminating `t` between the two relations that (★) inverts,
+
+  `147·A·(t² + 13t + 49) = −s₁²·(t² + 245t + 2401)`,
+  `9261·B·(t² + 13t + 49)² = −2s₁³·(t⁴ − 490t³ − 21609t² − 235298t − 823543)`,
+
+by substituting `t = P/Q` with `P = 49(s₁² − 3s₂)`, `Q = 6A − 4s₁² + 18s₂` and
+clearing denominators gives the two `t`-FREE polynomial identities in
+`(A, B, s₁, s₂)` that `exists_x0Seven_kernelInvariants` below asserts. That is
+the whole point of the cut: the remaining leaf never mentions `t`, a
+hauptmodul, or a modular curve.
+
+**Checked with Magma (2026-07-26; untrusted searcher, never a prover).** Both
+identities hold on the nose, and `P/Q` returns the documented hauptmodul value
+with residual exactly `0`, for the four conductor-`162` curves
+(`t = −49/2, −49/8, −2, −8`), for `49a1 = [1,−1,2,−1,0]` (`t = −49/5`), and for
+the universal curve at `t = −49/2, −49/4, −2, 5, 1/3, −7, 7` — the `−49/4` case
+being precisely the one that refutes the other solution vector. -/
+theorem MazurLevelSeven.hauptmodul_of_kernelRelations (j A B s₁ P Q : ℚ)
+    (hQ : Q ≠ 0)
+    (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
+    (hj : j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3)
+    (h1 : 147 * A * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2)
+            + s₁ ^ 2 * (P ^ 2 + 245 * P * Q + 2401 * Q ^ 2) = 0)
+    (h2 : 9261 * B * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2) ^ 2
+            + 2 * s₁ ^ 3 * (P ^ 4 - 490 * P ^ 3 * Q - 21609 * P ^ 2 * Q ^ 2
+              - 235298 * P * Q ^ 3 - 823543 * Q ^ 4) = 0) :
+    ∃ t : ℚ, j * t ^ 7 = (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 := by
+  obtain ⟨t, rfl⟩ : ∃ t : ℚ, P = t * Q := ⟨P / Q, by field_simp⟩
+  refine ⟨t, ?_⟩
+  -- `t² + 13t + 49 = ((2t + 13)² + 27)/4` is positive, hence nonzero, for every rational `t`;
+  -- this is what makes the cusp `t = 0` the only degeneration of the family.
+  have hwpos : (0 : ℚ) < t ^ 2 + 13 * t + 49 := by nlinarith [sq_nonneg (2 * t + 13)]
+  have hw : t ^ 2 + 13 * t + 49 ≠ 0 := ne_of_gt hwpos
+  -- The two `t`-free identities are exactly the `Q²`- and `Q⁴`-multiples of the
+  -- universal-family relations at the parameter `t`.
+  have H1 : 147 * A * (t ^ 2 + 13 * t + 49)
+      + s₁ ^ 2 * (t ^ 2 + 245 * t + 2401) = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 2 hQ)
+    linear_combination h1
+  have H2 : 9261 * B * (t ^ 2 + 13 * t + 49) ^ 2
+      + 2 * s₁ ^ 3 * (t ^ 4 - 490 * t ^ 3 - 21609 * t ^ 2 - 235298 * t - 823543) = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 4 hQ)
+    linear_combination h2
+  have hne : (147 : ℚ) ^ 3 * (t ^ 2 + 13 * t + 49) ^ 4 ≠ 0 :=
+    mul_ne_zero (by norm_num) (pow_ne_zero _ hw)
+  -- Writing `X = 147A(t²+13t+49)` and `Y = 9261B(t²+13t+49)²`, the `147³(t²+13t+49)⁴`-multiple
+  -- of the claim is `κX³ − wV³Y²` with `κ = 6912t⁷w − 4V³w²`, and `κ = −4w·sq²` is precisely
+  -- the family identity `wV³ − sq² = 1728t⁷`.  So `H1` divides the `X³` part through
+  -- `X³ + s₁⁶V³ = (X + s₁²V)(X² − s₁²VX + s₁⁴V²)` and `H2` the `Y²` part through
+  -- `Y² − 4s₁⁶sq² = (Y + 2s₁³sq)(Y − 2s₁³sq)`.
+  have key : 6912 * A ^ 3 * t ^ 7
+      = (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 * (4 * A ^ 3 + 27 * B ^ 2) := by
+    apply mul_left_cancel₀ hne
+    linear_combination
+      ((6912 * t ^ 7 * (t ^ 2 + 13 * t + 49)
+          - 4 * (t ^ 2 + 245 * t + 2401) ^ 3 * (t ^ 2 + 13 * t + 49) ^ 2)
+        * ((147 * A * (t ^ 2 + 13 * t + 49)) ^ 2
+            - s₁ ^ 2 * (t ^ 2 + 245 * t + 2401) * (147 * A * (t ^ 2 + 13 * t + 49))
+            + s₁ ^ 4 * (t ^ 2 + 245 * t + 2401) ^ 2)) * H1
+      + (-((t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3
+            * (9261 * B * (t ^ 2 + 13 * t + 49) ^ 2
+               - 2 * s₁ ^ 3
+                 * (t ^ 4 - 490 * t ^ 3 - 21609 * t ^ 2 - 235298 * t - 823543)))) * H2
+  apply mul_right_cancel₀ hΔ
+  linear_combination t ^ 7 * hj + key
+
+set_option maxHeartbeats 1000000 in
+/-- **The two `X_0(7)` kernel relations, in their SMALL form** (PROVEN 2026-07-26).
+
+Over a short model `y² = x³ + Ax + B` write `x₁ = x(P)`, `x₂ = x(2P)`, `x₃ = x(3P)`
+for the three `x`-coordinates of the `±`-pairs of a cyclic subgroup `C = ⟨P⟩` of
+order `7`, and `s₁, s₂` for their first two symmetric functions.  Then
+
+  `E1 :  12A² + 10A·s₁² − 6A·s₂ − s₁⁴ + 21s₂² = 0`
+  `E2 :  144B·s₁ + 46A·s₁² + 6A·s₂ − 7s₁⁴ + 24s₁²·s₂ + 39s₂² = 0`
+
+and these two **weight-`8`** relations generate everything.  This is the real
+content of the `X_0(7)` moduli problem in coordinates, and it is far smaller than
+the weight-`12`/weight-`22` identities that `exists_x0Seven_kernelInvariants`
+states: those are recovered from `E1`, `E2` by pure polynomial algebra in
+`MazurLevelSeven.kernelInvariants_of_relations`, via
+
+  `h1 = 7203·(3A + s₁²)·E1`   (an EXACT factorisation, not merely a consequence).
+
+**Why `E1`, `E2` are the right pair.** On the universal curve
+`y² = x³ − 27c₄(t)x − 54c₆(t)` scaled by `u`, one has `s₁ = 63·w·u²`,
+`s₂ = 27·w·(33t² + 637t + 2401)·u⁴` with `w = t² + 13t + 49`, and the ℚ-vector
+space of weight-`8` relations among `(A, B, s₁, s₂)` is exactly `2`-dimensional,
+spanned by `E1` (which does not involve `B`) and `E2` (which does, linearly in
+`s₁`).  There is no weight-`8` or weight-`10` relation outside their span, and
+the weight-`12` relation space is exactly `E1`, `E2` times weight-`4` monomials —
+so the pair is a generating set, not an ad-hoc choice.
+
+**The proof here is a division-polynomial certificate.** With
+`e = x₁³ + Ax₁ + B`, `f₃ = 3x₁⁴ + 6Ax₁² + 12Bx₁ − A²`,
+`f₄ = 4(x₁⁶ + 5Ax₁⁴ + 20Bx₁³ − 5A²x₁² − 4ABx₁ − A³ − 8B²)`, the hypotheses say
+`x₂ = x(2P)`, `x₃ = x(3P)` and `ψ₇(x₁) = 0` (the last written in the factored form
+`(8e²f₄ − f₃³)f₃³ − 2e²f₄³`, which is `ψ₅ψ₃³ − ψ₂²ψ₄³` for the short model).
+Clearing denominators over `d = 4·e·f₃²` turns each of `E1`, `E2` into a
+degree-`48` polynomial in `x₁` that is an EXACT multiple of the degree-`24`
+`ψ₇`; the two `24`-term cofactors are the `linear_combination` witnesses below.
+Both were found and independently checked in `ℚ(A,B)[x]/(ψ₇)` with Magma
+(untrusted searcher), and are here verified by `ring`. -/
+theorem MazurLevelSeven.kernelRelations {L : Type*} [Field L] (φ : ℚ →+* L)
+    (A B s₁ s₂ : ℚ) (a b x₁ x₂ x₃ : L)
+    (ha : a = φ A) (hb : b = φ B)
+    (hE : (x₁ ^ 3 + a * x₁ + b) ≠ 0)
+    (hne : x₂ ≠ x₁)
+    (hx2 : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2))
+    (hx3 : x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
+      x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+        - 2 * (x₁ ^ 3 + a * x₁ + b) *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)))
+    (hpsi : (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+        - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
+      - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+        (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0)
+    (hs1 : φ s₁ = x₁ + x₂ + x₃)
+    (hs2 : φ s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃) :
+    12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0 ∧
+    144 * B * s₁ + 46 * A * s₁ ^ 2 + 6 * A * s₂ - 7 * s₁ ^ 4 + 24 * s₁ ^ 2 * s₂
+      + 39 * s₂ ^ 2 = 0 := by
+  have hinj : Function.Injective φ := φ.injective
+  have h4 : (4 : L) ≠ 0 := fun h => by
+    have h0 : (4 : ℚ) = 0 := hinj (by rw [map_ofNat, map_zero, h])
+    norm_num at h0
+  -- `(x₂ - x₁) · 4e = -f₃`, so `x₂ ≠ x₁` is exactly `f₃ ≠ 0`, i.e. `3P ≠ 0`.
+  have hF3 : (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ≠ 0 := by
+    intro h
+    refine hne (sub_eq_zero.mp ?_)
+    have hzz : (x₂ - x₁) * (4 * (x₁ ^ 3 + a * x₁ + b)) = 0 := by
+      linear_combination hx2 - h
+    rcases mul_eq_zero.mp hzz with h' | h'
+    · exact h'
+    · rcases mul_eq_zero.mp h' with h'' | h''
+      · exact absurd h'' h4
+      · exact absurd h'' hE
+  obtain ⟨u, hu, hune⟩ : ∃ u : L, u = 4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 ∧ u ≠ 0 :=
+    ⟨_, rfl, mul_ne_zero (mul_ne_zero h4 hE) (pow_ne_zero 2 hF3)⟩
+  -- the two symmetric functions, cleared over the common denominator `u`
+  have hN1 : φ s₁ * u =
+      (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 * (8 * (x₁ ^ 3 + a * x₁ + b) * x₁
+        + (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) - 8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 * (4 *
+        (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3
+        - 8 * b ^ 2)) := by
+    rw [hu]
+    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs1
+      + (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 * hx2
+      + (4 * (x₁ ^ 3 + a * x₁ + b)) * hx3
+  have hN2 : φ s₂ * u =
+      2 * x₁ * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 +
+        12 * b * x₁ - a ^ 2) ^ 2 + 4 * (x₁ ^ 3 + a * x₁ + b) * x₁ ^ 2 * (3 * x₁ ^ 4 + 6 * a * x₁
+        ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 - 8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 * x₁ * (4 * (x₁ ^ 6 + 5 *
+        a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+        - 2 * (x₁ ^ 3 + a * x₁ + b) * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) * (4 * (x₁
+        ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8
+        * b ^ 2)) := by
+    rw [hu]
+    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs2
+      + (x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 + x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hx2
+      + (4 * (x₁ ^ 3 + a * x₁ + b) * x₁ + (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) * hx3
+  have hE1L : 12 * a ^ 2 + 10 * a * (φ s₁) ^ 2 - 6 * a * (φ s₂) - (φ s₁) ^ 4
+      + 21 * (φ s₂) ^ 2 = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 4 hune)
+    have expand : u ^ 4 * (12 * a ^ 2 + 10 * a * (φ s₁) ^ 2 - 6 * a * (φ s₂) - (φ s₁) ^ 4
+        + 21 * (φ s₂) ^ 2)
+        = 12 * a ^ 2 * u ^ 4 + 10 * a * (φ s₁ * u) ^ 2 * u ^ 2 - 6 * a * (φ s₂ * u) * u ^ 3
+          - (φ s₁ * u) ^ 4 + 21 * (φ s₂ * u) ^ 2 * u ^ 2 := by ring
+    rw [expand, hN1, hN2, hu]
+    linear_combination (
+      1*a^12 + 128*a^9*b^2 + (-768)*a^6*b^4 + (-8192)*a^3*b^6 + (-65536)*b^8 + 232*a^10*b*x₁
+        + (-9216)*a^7*b^3*x₁ + (-33792)*a^4*b^5*x₁ + (-425984)*a*b^7*x₁ + 140*a^11*x₁^2
+        + (-20304)*a^8*b^2*x₁^2 + 50688*a^5*b^4*x₁^2 + (-1257472)*a^2*b^6*x₁^2 + (-16496)*a^9*b*x₁^3
+        + 279296*a^6*b^3*x₁^3 + (-3018752)*a^3*b^5*x₁^3 + (-671744)*b^7*x₁^3 + (-4070)*a^10*x₁^4
+        + 324480*a^7*b^2*x₁^4 + (-5440000)*a^4*b^4*x₁^4 + (-1802240)*a*b^6*x₁^4 + 129384*a^8*b*x₁^5
+        + (-5634560)*a^5*b^3*x₁^5 + (-1019904)*a^2*b^5*x₁^5 + 13260*a^9*x₁^6
+        + (-2878912)*a^6*b^2*x₁^6 + (-1884160)*a^3*b^4*x₁^6 + (-4415488)*b^6*x₁^6
+        + (-655424)*a^7*b*x₁^7 + (-6711040)*a^4*b^3*x₁^7 + (-12484608)*a*b^5*x₁^7
+        + (-59689)*a^8*x₁^8 + (-6919296)*a^5*b^2*x₁^8 + (-15164160)*a^2*b^4*x₁^8
+        + (-2730800)*a^6*b*x₁^9 + (-16773120)*a^3*b^3*x₁^9 + (-7347200)*b^5*x₁^9
+        + (-395048)*a^7*x₁^10 + (-15158496)*a^4*b^2*x₁^10 + (-19070464)*a*b^4*x₁^10
+        + (-6988704)*a^5*b*x₁^11 + (-27147008)*a^2*b^3*x₁^11 + (-1229300)*a^6*x₁^12
+        + (-25937792)*a^3*b^2*x₁^12 + (-5103616)*b^4*x₁^12 + (-13178608)*a^4*b*x₁^13
+        + (-16241152)*a*b^3*x₁^13 + (-2626760)*a^5*x₁^14 + (-23363520)*a^2*b^2*x₁^14
+        + (-15183424)*a^3*b*x₁^15 + (-3653888)*b^3*x₁^15 + (-3635521)*a^4*x₁^16
+        + (-10825728)*a*b^2*x₁^16 + (-10279608)*a^2*b*x₁^17 + (-3182308)*a^3*x₁^18
+        + (-2055760)*b^2*x₁^18 + (-3751280)*a*b*x₁^19 + (-1692550)*a^2*x₁^20 + (-560504)*b*x₁^21
+        + (-496004)*a*x₁^22 + (-61495)*x₁^24
+      ) * hpsi
+  have hE2L : 144 * b * (φ s₁) + 46 * a * (φ s₁) ^ 2 + 6 * a * (φ s₂) - 7 * (φ s₁) ^ 4
+      + 24 * (φ s₁) ^ 2 * (φ s₂) + 39 * (φ s₂) ^ 2 = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 4 hune)
+    have expand : u ^ 4 * (144 * b * (φ s₁) + 46 * a * (φ s₁) ^ 2 + 6 * a * (φ s₂)
+        - 7 * (φ s₁) ^ 4 + 24 * (φ s₁) ^ 2 * (φ s₂) + 39 * (φ s₂) ^ 2)
+        = 144 * b * (φ s₁ * u) * u ^ 3 + 46 * a * (φ s₁ * u) ^ 2 * u ^ 2
+          + 6 * a * (φ s₂ * u) * u ^ 3 - 7 * (φ s₁ * u) ^ 4
+          + 24 * (φ s₁ * u) ^ 2 * (φ s₂ * u) * u + 39 * (φ s₂ * u) ^ 2 * u ^ 2 := by ring
+    rw [expand, hN1, hN2, hu]
+    linear_combination (
+      7*a^12 + 512*a^9*b^2 + 768*a^6*b^4 + (-57344)*a^3*b^6 + (-458752)*b^8 + 664*a^10*b*x₁
+        + (-21504)*a^7*b^3*x₁ + (-408576)*a^4*b^5*x₁ + (-2981888)*a*b^7*x₁ + 404*a^11*x₁^2
+        + (-48816)*a^8*b^2*x₁^2 + (-726528)*a^5*b^4*x₁^2 + (-7327744)*a^2*b^6*x₁^2
+        + (-39824)*a^9*b*x₁^3 + (-514816)*a^6*b^3*x₁^3 + (-11694080)*a^3*b^5*x₁^3
+        + (-8241152)*b^7*x₁^3 + (-9482)*a^10*x₁^4 + (-163200)*a^7*b^2*x₁^4
+        + (-14702080)*a^4*b^4*x₁^4 + (-36503552)*a*b^6*x₁^4 + (-94440)*a^8*b*x₁^5
+        + (-13188608)*a^5*b^3*x₁^5 + (-72609792)*a^2*b^5*x₁^5 + (-39468)*a^9*x₁^6
+        + (-7005760)*a^6*b^2*x₁^6 + (-89866240)*a^3*b^4*x₁^6 + (-18522112)*b^6*x₁^6
+        + (-2144192)*a^7*b*x₁^7 + (-77820160)*a^4*b^3*x₁^7 + (-74121216)*a*b^5*x₁^7
+        + (-359263)*a^8*x₁^8 + (-43912320)*a^5*b^2*x₁^8 + (-132967680)*a^2*b^4*x₁^8
+        + (-14297552)*a^6*b*x₁^9 + (-147732480)*a^3*b^3*x₁^9 + (-24224768)*b^5*x₁^9
+        + (-2208920)*a^7*x₁^10 + (-102099744)*a^4*b^2*x₁^10 + (-83063296)*a*b^4*x₁^10
+        + (-39373920)*a^5*b*x₁^11 + (-137645312)*a^2*b^3*x₁^11 + (-6802220)*a^6*x₁^12
+        + (-127296128)*a^3*b^2*x₁^12 + (-16758784)*b^4*x₁^12 + (-61341712)*a^4*b*x₁^13
+        + (-61101568)*a*b^3*x₁^13 + (-12560120)*a^5*x₁^14 + (-88964160)*a^2*b^2*x₁^14
+        + (-58005952)*a^3*b*x₁^15 + (-11421440)*b^3*x₁^15 + (-14871367)*a^4*x₁^16
+        + (-34422144)*a*b^2*x₁^16 + (-33680328)*a^2*b*x₁^17 + (-11523964)*a^3*x₁^18
+        + (-5753776)*b^2*x₁^18 + (-11007632)*a*b*x₁^19 + (-5661034)*a^2*x₁^20 + (-1526792)*b*x₁^21
+        + (-1600604)*a*x₁^22 + (-200641)*x₁^24
+      ) * hpsi
+  constructor
+  · refine hinj ?_
+    rw [map_zero]
+    simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
+    rw [← ha]; exact hE1L
+  · refine hinj ?_
+    rw [map_zero]
+    simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
+    rw [← ha, ← hb]; exact hE2L
+
+/-- **`s₁ ≠ 0` for every genuine `(E, C)`** (PROVEN 2026-07-26).  This is the one
+non-formal input to `Q ≠ 0`, and it is exactly what excludes the spurious
+component of `V(E1, E2)`.
+
+`E1` alone does NOT exclude `s₁ = 0`: setting `s₁ = 0` in `E1` gives
+`12A² − 6A·s₂ + 21s₂² = 0`, and `16/3` times that is `(8A − 2s₂)² + 108s₂²`, a
+sum of squares, so over `ℚ` it forces `A = 0` and `s₂ = 0` — and `(A, s₁, s₂) =
+(0,0,0)` with `B` free satisfies `E1` AND `E2` identically while having `Δ ≠ 0`.
+So a proof of `Q ≠ 0` from `E1, E2, Δ ≠ 0` alone is impossible; this lemma is
+what closes that hole.
+
+**The argument, and it is elementary.**  With `A = s₂ = 0` the kernel polynomial
+is `x³ − s₃`, so `x₁ + x₂ + x₃ = 0` and `x₁x₂ + x₁x₃ + x₂x₃ = 0` give
+`x₁² + x₁x₂ + x₂² = 0` and `s₃ = x₁³`.  The duplication formula
+`x₂·4(x₁³ + B) = x₁⁴ − 8Bx₁` then reads `x₂ = r·x₁` with
+`r = (s₃ − 8B)/(4(s₃ + B))`, a ratio of RATIONALS whose denominator is
+`4·y(P)² ≠ 0`.  Feeding that back into `x₁² + x₁x₂ + x₂² = 0` and cancelling
+`x₁² ≠ 0` gives `r² + r + 1 = 0` with `r ∈ ℚ` — impossible, since
+`r² + r + 1 = (r + 1/2)² + 3/4 > 0`.
+
+So `x₂/x₁` would have to be a primitive cube root of unity that the duplication
+formula exhibits as rational.  (This matches the moduli picture: `s₁ = 63·w·u²`
+with `w = t² + 13t + 49 > 0` and `u ≠ 0`, so `s₁` never vanishes; but that
+computation presupposes the parametrisation being built here, whereas the
+argument above does not.) -/
+theorem MazurLevelSeven.sOne_ne_zero {L : Type*} [Field L] (φ : ℚ →+* L)
+    (A B s₁ s₂ s₃ : ℚ) (a b x₁ x₂ x₃ : L)
+    (ha : a = φ A) (hb : b = φ B)
+    (hE : (x₁ ^ 3 + a * x₁ + b) ≠ 0)
+    (hne : x₂ ≠ x₁)
+    (hx2 : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2))
+    (hE1 : 12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0)
+    (hs1 : φ s₁ = x₁ + x₂ + x₃)
+    (hs2 : φ s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
+    (hs3 : φ s₃ = x₁ * x₂ * x₃) :
+    s₁ ≠ 0 := by
+  have hinj : Function.Injective φ := φ.injective
+  have h4 : (4 : L) ≠ 0 := fun h => by
+    have hz : (4 : ℚ) = 0 := hinj (by rw [map_ofNat, map_zero, h])
+    norm_num at hz
+  intro h0
+  subst h0
+  -- `16/3 · E1` is a sum of two squares over `ℚ`, so `A = s₂ = 0`
+  have hkey : (8 * A - 2 * s₂) ^ 2 + 108 * s₂ ^ 2 = 0 := by linear_combination (16 / 3) * hE1
+  have hs2z : s₂ = 0 := by nlinarith [sq_nonneg (8 * A - 2 * s₂), sq_nonneg s₂]
+  have hAz : A = 0 := by nlinarith [sq_nonneg (8 * A - 2 * s₂), sq_nonneg s₂]
+  have ha0 : a = 0 := by rw [ha, hAz, map_zero]
+  have hsum : x₁ + x₂ + x₃ = 0 := by rw [← hs1, map_zero]
+  have hsym : x₁ * x₂ + x₁ * x₃ + x₂ * x₃ = 0 := by rw [← hs2, hs2z, map_zero]
+  have hx3e : x₃ = -x₁ - x₂ := by linear_combination hsum
+  rw [hx3e] at hsym hs3
+  have hquad : x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 = 0 := by linear_combination -hsym
+  have hx1 : x₁ ≠ 0 := by
+    intro h
+    refine hne ?_
+    rw [h] at hquad ⊢
+    have hsq : x₂ ^ 2 = 0 := by linear_combination hquad
+    exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hsq
+  have hs3e : φ s₃ = x₁ ^ 3 := by rw [hs3]; linear_combination (-x₁) * hquad
+  have hden : φ (s₃ + B) ≠ 0 := by
+    rw [map_add, hs3e, ← hb]
+    simpa [ha0] using hE
+  have hdenQ : s₃ + B ≠ 0 := fun h => hden (by rw [h, map_zero])
+  obtain ⟨r, hrmul⟩ : ∃ r : ℚ, r * (4 * (s₃ + B)) = s₃ - 8 * B :=
+    ⟨(s₃ - 8 * B) / (4 * (s₃ + B)), by
+      have hd4 : (4 : ℚ) * (s₃ + B) ≠ 0 := mul_ne_zero (by norm_num) hdenQ
+      field_simp⟩
+  -- the duplication formula exhibits `x₂ / x₁` as the rational number `r`
+  have hx2r : x₂ = φ r * x₁ := by
+    have h4b : (4 : L) * (x₁ ^ 3 + b) ≠ 0 :=
+      mul_ne_zero h4 (by simpa [ha0] using hE)
+    refine mul_right_cancel₀ h4b ?_
+    have hl : x₂ * (4 * (x₁ ^ 3 + b)) = x₁ ^ 4 - 8 * b * x₁ := by
+      rw [ha0] at hx2; linear_combination hx2
+    have hrr : φ r * (4 * (x₁ ^ 3 + b)) = x₁ ^ 3 - 8 * b := by
+      have hcg := congrArg φ hrmul
+      simp only [map_mul, map_sub, map_add, map_ofNat] at hcg
+      rw [hs3e, ← hb] at hcg
+      linear_combination hcg
+    rw [hl]
+    calc x₁ ^ 4 - 8 * b * x₁ = x₁ * (x₁ ^ 3 - 8 * b) := by ring
+    _ = x₁ * (φ r * (4 * (x₁ ^ 3 + b))) := by rw [hrr]
+    _ = φ r * x₁ * (4 * (x₁ ^ 3 + b)) := by ring
+  -- hence `r² + r + 1 = 0` with `r` rational, which is impossible
+  have hcube : φ (r ^ 2 + r + 1) = 0 := by
+    have h : x₁ ^ 2 * (φ r ^ 2 + φ r + 1) = 0 := by
+      rw [hx2r] at hquad; linear_combination hquad
+    have hres := (mul_eq_zero.mp h).resolve_left (pow_ne_zero 2 hx1)
+    simpa only [map_add, map_pow, map_one] using hres
+  have hr1 : r ^ 2 + r + 1 = 0 := hinj (by simpa using hcube)
+  nlinarith [sq_nonneg (2 * r + 1)]
+
+/-- **From the small relations `E1`, `E2` to the `X_0(7)` identities, INCLUDING
+the side condition `Q ≠ 0`** (PROVEN 2026-07-26).
+
+The two identities are pure ideal membership: `h1 = 7203·(3A + s₁²)·E1` exactly,
+and `h2 = c₁·E1 + c₂·E2` for two explicit `11`-term cofactors (found by linear
+algebra over the `17`-dimensional space of weight-`14` cofactors, verified by
+`linear_combination`).
+
+`Q ≠ 0` is the interesting part and splits on `P = 49(s₁² − 3s₂)`:
+
+* if `Q = 0` and `P ≠ 0`, then `h1` collapses to `P²(147A + s₁²) = 0` and `h2` to
+  `P⁴(9261B + 2s₁³) = 0`, so `A = −s₁²/147` and `B = −2s₁³/9261`; and then
+  `4A³ + 27B² = −4s₁⁶/147³ + 108s₁⁶/9261²` is IDENTICALLY `0` (because
+  `9261² = 27·147³`), contradicting `Δ ≠ 0`;
+* if `Q = 0` and `P = 0`, then `s₂ = s₁²/3` and `A = −s₁²/3`, and `E2` becomes
+  `144B·s₁ = (32/3)s₁⁴`; here `s₁ ≠ 0` is needed, and gives `B = 2s₁³/27`, whence
+  again `4A³ + 27B² = −4s₁⁶/27 + 4s₁⁶/27 = 0`, contradicting `Δ ≠ 0`.
+
+Both branches end at `Δ = 0`, which is the moduli statement that `Q` vanishes
+only at the cusp `t = 0` — there `Q = 63504·t·(t² + 13t + 49)·u⁴` (note: an
+earlier docstring recorded the constant as `1296`; the correct one is
+`63504 = 49·1296`, which is what makes `P/Q = t` rather than `49t`). -/
+theorem MazurLevelSeven.kernelInvariants_of_relations (A B s₁ s₂ : ℚ)
+    (hs1 : s₁ ≠ 0) (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
+    (hE1 : 12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0)
+    (hE2 : 144 * B * s₁ + 46 * A * s₁ ^ 2 + 6 * A * s₂ - 7 * s₁ ^ 4 + 24 * s₁ ^ 2 * s₂
+      + 39 * s₂ ^ 2 = 0) :
+    6 * A - 4 * s₁ ^ 2 + 18 * s₂ ≠ 0 ∧
+    147 * A * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 13 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2)
+      + s₁ ^ 2 * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 245 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
+        + 2401 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2) = 0 ∧
+    9261 * B * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 13 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2) ^ 2
+      + 2 * s₁ ^ 3 * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 4 - 490 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 3 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
+        - 21609 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2
+        - 235298 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 3
+        - 823543 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 4) = 0 := by
+  have hh1 : 147 * A * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 13 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2)
+      + s₁ ^ 2 * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 245 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
+        + 2401 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2) = 0 := by
+    linear_combination 7203 * (3 * A + s₁ ^ 2) * hE1
+  have hh2 : 9261 * B * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 13 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2) ^ 2
+      + 2 * s₁ ^ 3 * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 4 - 490 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 3 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
+        - 21609 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2
+        - 235298 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 3
+        - 823543 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 4) = 0 := by
+    linear_combination (2401451388 * A ^ 2 * B - 177885288 * A ^ 2 * s₁ ^ 3
+        - (38423222208 / 13) * A * B * s₁ ^ 2 - (24014513880 / 13) * A * B * s₂
+        + (23836628592 / 13) * A * s₁ ^ 5 - (9961576128 / 13) * A * s₁ ^ 3 * s₂
+        - (201721916592 / 13) * B ^ 2 * s₁ + (101127786228 / 13) * B * s₁ ^ 4
+        - (116870634216 / 13) * B * s₁ ^ 2 * s₂ - (5079613224 / 13) * s₁ ^ 7
+        + (21820595328 / 13) * s₁ ^ 5 * s₂) * hE1
+      + ((16810159716 / 13) * A ^ 2 * B - (5514443928 / 13) * A ^ 2 * s₁ ^ 3
+        + (14008466430 / 13) * A * B * s₁ ^ 2 - (8405079858 / 13) * A * B * s₂
+        - (4595369940 / 13) * A * s₁ ^ 5 + (2757221964 / 13) * A * s₁ ^ 3 * s₂
+        - (1400846643 / 13) * B * s₁ ^ 4 + (29417779503 / 13) * B * s₂ ^ 2
+        + (973427826 / 13) * s₁ ^ 7 - 237180384 * s₁ ^ 5 * s₂
+        - (5025259386 / 13) * s₁ ^ 3 * s₂ ^ 2) * hE2
+  refine ⟨?_, hh1, hh2⟩
+  intro hQ
+  by_cases hP : s₁ ^ 2 - 3 * s₂ = 0
+  · refine hΔ ?_
+    have hAv2 : A = -(s₁ ^ 2) / 3 := by linarith
+    have hs2v : s₂ = s₁ ^ 2 / 3 := by linarith
+    rw [hAv2, hs2v] at hE2
+    have hB : 144 * s₁ * B = 32 / 3 * s₁ ^ 4 := by linear_combination hE2
+    have hBv2 : B = 2 * s₁ ^ 3 / 27 := by
+      refine mul_left_cancel₀ (a := 144 * s₁) (by simpa using hs1) ?_
+      linear_combination hB
+    linear_combination (4 * (A ^ 2 - A * s₁ ^ 2 / 3 + s₁ ^ 4 / 9)) * hAv2
+      + (27 * (B + 2 * s₁ ^ 3 / 27)) * hBv2
+  · refine hΔ ?_
+    have hPne : ((49 * (s₁ ^ 2 - 3 * s₂)) : ℚ) ≠ 0 := by simpa using hP
+    have h147 : 147 * A + s₁ ^ 2 = 0 := by
+      have hsq : (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (147 * A + s₁ ^ 2) = 0 := by
+        linear_combination hh1
+          - (147 * A * (13 * (49 * (s₁ ^ 2 - 3 * s₂)) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂))
+             + s₁ ^ 2 * (245 * (49 * (s₁ ^ 2 - 3 * s₂)) + 2401 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂))) * hQ
+      exact (mul_eq_zero.mp hsq).resolve_left (pow_ne_zero 2 hPne)
+    have h9261 : 9261 * B + 2 * s₁ ^ 3 = 0 := by
+      have hsq : (49 * (s₁ ^ 2 - 3 * s₂)) ^ 4 * (9261 * B + 2 * s₁ ^ 3) = 0 := by
+        linear_combination hh2
+          - (9261 * B * (2 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (13 * (49 * (s₁ ^ 2 - 3 * s₂)) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂))
+              + (13 * (49 * (s₁ ^ 2 - 3 * s₂)) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)) ^ 2 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂))
+             - 2 * s₁ ^ 3 * (490 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 3
+                + 21609 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
+                + 235298 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2
+                + 823543 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 3)) * hQ
+      exact (mul_eq_zero.mp hsq).resolve_left (pow_ne_zero 4 hPne)
+    linear_combination (4 * (A ^ 2 - A * s₁ ^ 2 / 147 + s₁ ^ 4 / 21609) / 147) * h147
+      + (27 * (B - 2 * s₁ ^ 3 / 9261) / 9261) * h9261
+
+open Polynomial in
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **The kernel coordinates of a stable order-`7` point on a SHORT model**
+(PROVEN 2026-07-27).  This is the whole geometric content of
+`WeierstrassCurve.exists_x0Seven_kernelCoords`, isolated at a curve that is
+already in short normal form so that the variable change stays out of it.
+
+Everything is read off mathlib's division polynomials at the short model
+`y² = x³ + a₄x + a₆`, where `b₂ = 0`, `b₄ = 2a₄`, `b₆ = 4a₆`, `b₈ = −a₄²` turn
+them into the classical expressions:
+
+* `ΨSq 2 = Ψ₂Sq = 4(x³ + ax + b)` and `Φ 2 = x⁴ − 2ax² − 8bx + a²`, so
+  `TorsionCard.exists_smul_some_eq` at `n = 2` IS the duplication formula;
+* `Ψ₃ = 3x⁴ + 6ax² + 12bx − a²`, `preΨ₄ = 2(x⁶ + 5ax⁴ + 20bx³ − 5a²x² − 4abx
+  − a³ − 8b²)`, and `Φ 3 = X·Ψ₃² − preΨ₄·Ψ₂Sq`, which is `x(3P) = x − ψ₂ψ₄/ψ₃²`;
+* `preΨ 5 = preΨ₄·Ψ₂Sq² − Ψ₃³` and hence
+  `ΨSq 7 = (preΨ 5·Ψ₃³ − preΨ₄³·Ψ₂Sq²)²`, whose vanishing is `7P = 0` via
+  `TorsionCard.smul_some_eq_zero_iff`.
+
+RATIONALITY is the `ℤ/3`-descent and needs no Vélu sum: `velu_pointX_map` makes
+`σ(x(iP)) = x(σ(iP))`, stability puts `σ(iP) = k·P` with `k ≢ 0 (mod 7)`, and
+`velu_pointX_neg` folds `k ∈ {4,5,6}` back onto `{3,2,1}`.  So `σ` maps the
+`3`-element FINSET `{x₁, x₂, x₃}` into itself, hence onto itself by injectivity
+(`Finset.eq_of_subset_of_card_le`), and `Finset.sum_image` / `Finset.prod_image`
+make `e₁` and `e₃` Galois-fixed.  `e₂` follows from
+`e₁² = (x₁² + x₂² + x₃²) + 2e₂`.  `exists_rat_of_galois_fixed` then descends all
+three to `ℚ`.
+
+PERFORMANCE NOTE (measured): `ΨSq 7`'s evaluation is stated in the shape the
+rewrites literally produce, and converted to the shape the consumer wants by the
+THREE-ATOM identity `hkey`.  Doing that conversion with `ring` on the expanded
+polynomial instead makes it expand a degree-`24` polynomial in three variables
+and costs more than ten minutes. -/
+theorem MazurLevelSeven.exists_kernelCoords_of_isShortNF (E₀ : WeierstrassCurve ℚ)
+    [E₀.IsElliptic] [E₀.IsShortNF]
+    (P : (E₀⁄(AlgebraicClosure ℚ)).Point) (hPord : addOrderOf P = 7)
+    (hstab : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, ∀ n : ℤ, ∃ k : ℤ,
+      Affine.Point.map σ.toAlgHom (n • P) = k • P) :
+    ∃ (s₁ s₂ s₃ : ℚ) (x₁ x₂ x₃ : AlgebraicClosure ℚ),
+      letI a := algebraMap ℚ (AlgebraicClosure ℚ) E₀.a₄
+      letI b := algebraMap ℚ (AlgebraicClosure ℚ) E₀.a₆
+      (x₁ ^ 3 + a * x₁ + b) ≠ 0 ∧
+      x₂ ≠ x₁ ∧
+      x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) ∧
+      x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
+        x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+          - 2 * (x₁ ^ 3 + a * x₁ + b) *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ∧
+      (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+          - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3)
+          * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
+        - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+            - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₁ = x₁ + x₂ + x₃ ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ := by
+  classical
+  set K := AlgebraicClosure ℚ with hKdef
+  haveI hEK : ((E₀⁄K) : WeierstrassCurve K).IsElliptic :=
+    inferInstanceAs (E₀.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  -- ### basic order facts
+  have hz : ∀ m : ℤ, (7 : ℤ) ∣ m → m • P = 0 := by
+    intro m hm
+    exact addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hPord]; exact_mod_cast hm)
+  have h7P : (7 : ℤ) • P = 0 := hz 7 dvd_rfl
+  have hnz : ∀ n : ℤ, ¬ ((7 : ℤ) ∣ n) → n • P ≠ 0 := by
+    intro n hn h0
+    have hd := addOrderOf_dvd_iff_zsmul_eq_zero.mpr h0
+    rw [hPord] at hd
+    exact hn (by exact_mod_cast hd)
+  have hred : ∀ n : ℤ, n • P = (n % 7) • P := by
+    intro n
+    have hkk : n = n / 7 * 7 + n % 7 := by omega
+    conv_lhs => rw [hkk]
+    rw [add_zsmul, hz (n / 7 * 7) ⟨n / 7, by ring⟩, zero_add]
+  -- ### the curve base changed, in short normal form
+  have ha₁ : ((E₀⁄K)⁄K).a₁ = 0 := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
+  have ha₂ : ((E₀⁄K)⁄K).a₂ = 0 := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map, WeierstrassCurve.a₂_of_isShortNF]
+  have ha₃ : ((E₀⁄K)⁄K).a₃ = 0 := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
+  have ha₄ : ((E₀⁄K)⁄K).a₄ = algebraMap ℚ K E₀.a₄ := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
+  have ha₆ : ((E₀⁄K)⁄K).a₆ = algebraMap ℚ K E₀.a₆ := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
+  haveI hshort : ((E₀⁄K)⁄K).IsShortNF := ⟨ha₁, ha₂, ha₃⟩
+  set a : K := algebraMap ℚ K E₀.a₄ with hadef
+  set b : K := algebraMap ℚ K E₀.a₆ with hbdef
+  have hb₂ : ((E₀⁄K)⁄K).b₂ = 0 := WeierstrassCurve.b₂_of_isShortNF _
+  have hb₄ : ((E₀⁄K)⁄K).b₄ = 2 * a := by rw [WeierstrassCurve.b₄_of_isShortNF, ha₄]
+  have hb₆ : ((E₀⁄K)⁄K).b₆ = 4 * b := by rw [WeierstrassCurve.b₆_of_isShortNF, ha₆]
+  have hb₈ : ((E₀⁄K)⁄K).b₈ = -a ^ 2 := by rw [WeierstrassCurve.b₈_of_isShortNF, ha₄]
+  -- ### the three division-polynomial evaluations, as functions of `x`
+  have hΨ2ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 2).eval x = 4 * (x ^ 3 + a * x + b) := by
+    intro x
+    rw [WeierstrassCurve.ΨSq_two, WeierstrassCurve.Ψ₂Sq]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, hb₂, hb₄, hb₆]
+    ring
+  have hΨ3ev : ∀ x : K, ((E₀⁄K)⁄K).Ψ₃.eval x
+      = 3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2 := by
+    intro x
+    rw [WeierstrassCurve.Ψ₃]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, eval_ofNat, hb₂, hb₄, hb₆, hb₈]
+    ring
+  have hΨ4ev : ∀ x : K, ((E₀⁄K)⁄K).preΨ₄.eval x
+      = 2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
+          - 4 * a * b * x - a ^ 3 - 8 * b ^ 2) := by
+    intro x
+    rw [WeierstrassCurve.preΨ₄]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, eval_ofNat,
+      hb₂, hb₄, hb₆, hb₈]
+    ring
+  have hΦ2ev : ∀ x : K, (((E₀⁄K)⁄K).Φ 2).eval x
+      = x ^ 4 - 2 * a * x ^ 2 - 8 * b * x + a ^ 2 := by
+    intro x
+    rw [WeierstrassCurve.Φ_two]
+    simp only [eval_sub, eval_mul, eval_pow, eval_C, eval_X, hb₄, hb₆, hb₈]
+    ring
+  have hΨSq3ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 3).eval x
+      = (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 2 := by
+    intro x
+    rw [WeierstrassCurve.ΨSq_three, eval_pow, hΨ3ev]
+  have hΦ3ev : ∀ x : K, (((E₀⁄K)⁄K).Φ 3).eval x
+      = x * (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 2
+          - 2 * (x ^ 3 + a * x + b) *
+            (4 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
+              - 4 * a * b * x - a ^ 3 - 8 * b ^ 2)) := by
+    intro x
+    rw [WeierstrassCurve.Φ_three]
+    simp only [eval_sub, eval_mul, eval_pow, eval_X]
+    rw [hΨ3ev, hΨ4ev, show ((E₀⁄K)⁄K).Ψ₂Sq = ((E₀⁄K)⁄K).ΨSq 2 from
+      (WeierstrassCurve.ΨSq_two _).symm, hΨ2ev]
+    ring
+  -- `preΨ 5` and `ΨSq 7`
+  have h3odd : ¬ Even (3 : ℤ) := by decide
+  have hpre2 : ((E₀⁄K)⁄K).preΨ 2 = 1 := by
+    rw [show ((2 : ℤ)) = ((2 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
+      WeierstrassCurve.preΨ'_two]
+  have hpre3 : ((E₀⁄K)⁄K).preΨ 3 = ((E₀⁄K)⁄K).Ψ₃ := by
+    rw [show ((3 : ℤ)) = ((3 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
+      WeierstrassCurve.preΨ'_three]
+  have hpre4 : ((E₀⁄K)⁄K).preΨ 4 = ((E₀⁄K)⁄K).preΨ₄ := by
+    rw [show ((4 : ℤ)) = ((4 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
+      WeierstrassCurve.preΨ'_four]
+  have hpre5 : ((E₀⁄K)⁄K).preΨ 5
+      = ((E₀⁄K)⁄K).preΨ₄ * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2 - ((E₀⁄K)⁄K).Ψ₃ ^ 3 := by
+    have h := WeierstrassCurve.preΨ'_odd ((E₀⁄K)⁄K) 0
+    norm_num at h
+    rw [show ((5 : ℤ)) = ((5 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat]
+    simpa using h
+  have hΨSq7eq : ((E₀⁄K)⁄K).ΨSq 7
+      = ((((E₀⁄K)⁄K).preΨ₄ * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2 - ((E₀⁄K)⁄K).Ψ₃ ^ 3) * ((E₀⁄K)⁄K).Ψ₃ ^ 3
+          - ((E₀⁄K)⁄K).preΨ₄ ^ 3 * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2) ^ 2 := by
+    rw [show ((7 : ℤ)) = 2 * 3 + 1 by norm_num, WeierstrassCurve.ΨSq_odd]
+    simp only [if_neg h3odd, show ((3 : ℤ) + 2) = 5 from by norm_num,
+      show ((3 : ℤ) - 1) = 2 from by norm_num, show ((3 : ℤ) + 1) = 4 from by norm_num,
+      hpre5, hpre3, hpre2, hpre4, one_mul, mul_one]
+  -- NOTE: the `ΨSq 7` evaluation is stated in the shape the rewrites literally produce.
+  -- Converting it to the shape the conclusion demands is a THREE-ATOM `ring` identity
+  -- (`hkey` below); doing it here instead would make `ring` expand a degree-`24`
+  -- polynomial in three variables, which costs minutes.
+  have hΨSq7ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 7).eval x
+      = ((2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
+              - 4 * a * b * x - a ^ 3 - 8 * b ^ 2) * (4 * (x ^ 3 + a * x + b)) ^ 2
+          - (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 3)
+          * (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 3
+        - (2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
+            - 4 * a * b * x - a ^ 3 - 8 * b ^ 2)) ^ 3
+            * (4 * (x ^ 3 + a * x + b)) ^ 2) ^ 2 := by
+    intro x
+    rw [hΨSq7eq]
+    simp only [eval_sub, eval_mul, eval_pow]
+    rw [hΨ3ev, hΨ4ev, show ((E₀⁄K)⁄K).Ψ₂Sq = ((E₀⁄K)⁄K).ΨSq 2 from
+      (WeierstrassCurve.ΨSq_two _).symm, hΨ2ev]
+  have hkey : ∀ e f₃ G : K,
+      (2 * G * (4 * e) ^ 2 - f₃ ^ 3) * f₃ ^ 3 - (2 * G) ^ 3 * (4 * e) ^ 2
+        = (8 * e ^ 2 * (4 * G) - f₃ ^ 3) * f₃ ^ 3 - 2 * e ^ 2 * (4 * G) ^ 3 := by
+    intro e f₃ G; ring
+  -- ### unpack the point
+  have hP0 : P ≠ 0 := by simpa using hnz 1 (by norm_num)
+  obtain ⟨x₁, y₁, hns, hPeq⟩ : ∃ (x y : K) (h : (E₀⁄K).toAffine.Nonsingular x y),
+      P = Affine.Point.some x y h := by
+    rcases P with _ | ⟨x, y, h⟩
+    · exact absurd rfl hP0
+    · exact ⟨x, y, h, rfl⟩
+  subst hPeq
+  -- the `2`- and `3`-division values do not vanish at `x₁`
+  have hΨ2ne : (((E₀⁄K)⁄K).ΨSq 2).eval x₁ ≠ 0 := by
+    intro h
+    exact hnz 2 (by norm_num) ((TorsionCard.smul_some_eq_zero_iff (E₀⁄K)
+      (by norm_num : (2 : ℤ) ≠ 0) hns).mpr h)
+  have hΨ3ne : (((E₀⁄K)⁄K).ΨSq 3).eval x₁ ≠ 0 := by
+    intro h
+    exact hnz 3 (by norm_num) ((TorsionCard.smul_some_eq_zero_iff (E₀⁄K)
+      (by norm_num : (3 : ℤ) ≠ 0) hns).mpr h)
+  have hΨ7 : (((E₀⁄K)⁄K).ΨSq 7).eval x₁ = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff (E₀⁄K) (by norm_num : (7 : ℤ) ≠ 0) hns).mp
+      h7P
+  obtain ⟨x₂, y₂, hns₂, h2P, hx₂⟩ := TorsionCard.exists_smul_some_eq (E₀⁄K)
+    (by norm_num : (2 : ℤ) ≠ 0) hns hΨ2ne
+  obtain ⟨x₃, y₃, hns₃, h3P, hx₃⟩ := TorsionCard.exists_smul_some_eq (E₀⁄K)
+    (by norm_num : (3 : ℤ) ≠ 0) hns hΨ3ne
+  -- ### the three identities
+  have he0 : x₁ ^ 3 + a * x₁ + b ≠ 0 := by
+    intro h
+    exact hΨ2ne (by rw [hΨ2ev, h, mul_zero])
+  have hdup : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b))
+      = x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2 := by
+    rw [← hΨ2ev, ← hΦ2ev]; exact hx₂
+  have htri : x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+      = x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+          - 2 * (x₁ ^ 3 + a * x₁ + b) *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) := by
+    rw [← hΦ3ev, ← hΨSq3ev]; exact hx₃
+  have hpsi7 : (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+          - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3)
+          * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
+        - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+            - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 := by
+    have h := hΨ7
+    rw [hΨSq7ev, hkey] at h
+    exact pow_eq_zero_iff two_ne_zero |>.mp h
+  -- ### the `x`-coordinates as `veluPointX` values
+  have hxv1 : veluPointX ((1 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₁ := by
+    rw [one_zsmul]; rfl
+  have hxv2 : veluPointX ((2 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₂ := by
+    rw [h2P]; rfl
+  have hxv3 : veluPointX ((3 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₃ := by
+    rw [h3P]; rfl
+  -- ### distinctness
+  have hxne : ∀ i j : ℤ, ¬((7 : ℤ) ∣ i) → ¬((7 : ℤ) ∣ j) → ¬((7 : ℤ) ∣ (i - j)) →
+      ¬((7 : ℤ) ∣ (i + j)) →
+      veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))
+        ≠ veluPointX (j • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
+    intro i j hi hj hij hij' h
+    rcases velu_pointX_eq_iff (hnz i hi) (hnz j hj) h with h' | h'
+    · exact hnz (i - j) hij (by rw [sub_zsmul, h']; simp)
+    · exact hnz (i + j) hij' (by rw [add_zsmul, h']; simp)
+  have h12 : x₁ ≠ x₂ := by
+    have := hxne 1 2 (by decide) (by decide) (by decide) (by decide)
+    rwa [hxv1, hxv2] at this
+  have h13 : x₁ ≠ x₃ := by
+    have := hxne 1 3 (by decide) (by decide) (by decide) (by decide)
+    rwa [hxv1, hxv3] at this
+  have h23 : x₂ ≠ x₃ := by
+    have := hxne 2 3 (by decide) (by decide) (by decide) (by decide)
+    rwa [hxv2, hxv3] at this
+  -- ### the Galois action permutes `{x₁, x₂, x₃}`
+  have hnegmul : ∀ i : ℤ,
+      ((7 : ℤ) - i) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)
+        = -(i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
+    intro i
+    rw [eq_neg_iff_add_eq_zero, ← add_zsmul]
+    simpa using h7P
+  set T : Finset K := {x₁, x₂, x₃} with hTdef
+  have hTstab : ∀ σ : K ≃ₐ[ℚ] K, ∀ x ∈ T, σ x ∈ T := by
+    intro σ x hx
+    have hmain : ∀ i : ℤ, ¬((7 : ℤ) ∣ i) →
+        σ (veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))) ∈ T := by
+      intro i hi
+      obtain ⟨k, hk⟩ := hstab σ i
+      have h0 : σ (veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)))
+          = veluPointX (k • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
+        rw [← velu_pointX_map E₀ σ, hk]
+      have hk0 : ¬ ((7 : ℤ) ∣ k) := by
+        intro hd
+        obtain ⟨m, rfl⟩ := hd
+        rw [hz (7 * m) ⟨m, rfl⟩] at hk
+        have := velu_point_map_symm_map E₀ σ
+          (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))
+        rw [hk] at this
+        exact hnz i hi (by rw [← this]; rfl)
+      rw [h0, hred k]
+      have h7 : k % 7 = 1 ∨ k % 7 = 2 ∨ k % 7 = 3 ∨ k % 7 = 4 ∨ k % 7 = 5 ∨ k % 7 = 6 := by
+        have h1 : (0 : ℤ) ≤ k % 7 := Int.emod_nonneg k (by norm_num)
+        have h2 : k % 7 < 7 := Int.emod_lt_of_pos k (by norm_num)
+        have h3 : k % 7 ≠ 0 := by
+          intro h; exact hk0 (Int.dvd_of_emod_eq_zero h)
+        omega
+      simp only [hTdef, Finset.mem_insert, Finset.mem_singleton]
+      rcases h7 with h | h | h | h | h | h
+      · rw [h, hxv1]; exact Or.inl rfl
+      · rw [h, hxv2]; exact Or.inr (Or.inl rfl)
+      · rw [h, hxv3]; exact Or.inr (Or.inr rfl)
+      · rw [h, show ((4 : ℤ)) = 7 - 3 by norm_num, hnegmul, velu_pointX_neg, hxv3]
+        exact Or.inr (Or.inr rfl)
+      · rw [h, show ((5 : ℤ)) = 7 - 2 by norm_num, hnegmul, velu_pointX_neg, hxv2]
+        exact Or.inr (Or.inl rfl)
+      · rw [h, show ((6 : ℤ)) = 7 - 1 by norm_num, hnegmul, velu_pointX_neg, hxv1]
+        exact Or.inl rfl
+    simp only [hTdef, Finset.mem_insert, Finset.mem_singleton] at hx
+    rcases hx with rfl | rfl | rfl
+    · have := hmain 1 (by decide); rwa [hxv1] at this
+    · have := hmain 2 (by decide); rwa [hxv2] at this
+    · have := hmain 3 (by decide); rwa [hxv3] at this
+  have hTcard : T.card = 3 := by
+    rw [hTdef, Finset.card_insert_of_notMem (by simp [h12, h13]),
+      Finset.card_insert_of_notMem (by simp [h23]), Finset.card_singleton]
+  have himg : ∀ σ : K ≃ₐ[ℚ] K, T.image (σ : K → K) = T := by
+    intro σ
+    refine Finset.eq_of_subset_of_card_le ?_ ?_
+    · intro x hx
+      obtain ⟨y, hy, rfl⟩ := Finset.mem_image.mp hx
+      exact hTstab σ y hy
+    · rw [Finset.card_image_of_injective _ σ.injective]
+  -- ### the symmetric functions are Galois-fixed
+  have hinj : ∀ σ : K ≃ₐ[ℚ] K, Set.InjOn ((σ : K → K)) (↑T : Set K) :=
+    fun σ _ _ _ _ h => σ.injective h
+  have hnm1 : x₁ ∉ ({x₂, x₃} : Finset K) := by simp [h12, h13]
+  have hnm2 : x₂ ∉ ({x₃} : Finset K) := by simp [h23]
+  -- the three sums/products over `T`, written out
+  have hsum_id : ∑ y ∈ T, y = x₁ + x₂ + x₃ := by
+    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
+  have hsum_sq : ∑ y ∈ T, y ^ 2 = x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2 := by
+    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
+  have hprod_id : ∏ y ∈ T, y = x₁ * x₂ * x₃ := by
+    rw [hTdef, Finset.prod_insert hnm1, Finset.prod_insert hnm2, Finset.prod_singleton]; ring
+  have hsum_id' : ∀ σ : K ≃ₐ[ℚ] K, ∑ y ∈ T, σ y = σ x₁ + σ x₂ + σ x₃ := by
+    intro σ
+    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
+  have hsum_sq' : ∀ σ : K ≃ₐ[ℚ] K, ∑ y ∈ T, (σ y) ^ 2 = (σ x₁) ^ 2 + (σ x₂) ^ 2 + (σ x₃) ^ 2 := by
+    intro σ
+    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
+  have hprod_id' : ∀ σ : K ≃ₐ[ℚ] K, ∏ y ∈ T, σ y = σ x₁ * σ x₂ * σ x₃ := by
+    intro σ
+    rw [hTdef, Finset.prod_insert hnm1, Finset.prod_insert hnm2, Finset.prod_singleton]; ring
+  have hfix1 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ + x₂ + x₃) = x₁ + x₂ + x₃ := by
+    intro σ
+    have h2 : ∑ y ∈ T.image (σ : K → K), y = ∑ y ∈ T, σ y := Finset.sum_image (hinj σ)
+    rw [himg σ, hsum_id, hsum_id' σ] at h2
+    rw [map_add, map_add]
+    exact h2.symm
+  have hfixp2 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2) = x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2 := by
+    intro σ
+    have h2 : ∑ y ∈ T.image (σ : K → K), y ^ 2 = ∑ y ∈ T, (σ y) ^ 2 := Finset.sum_image (hinj σ)
+    rw [himg σ, hsum_sq, hsum_sq' σ] at h2
+    rw [map_add, map_add, map_pow, map_pow, map_pow]
+    exact h2.symm
+  have hfix3 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ * x₂ * x₃) = x₁ * x₂ * x₃ := by
+    intro σ
+    have h2 : ∏ y ∈ T.image (σ : K → K), y = ∏ y ∈ T, σ y := Finset.prod_image (hinj σ)
+    rw [himg σ, hprod_id, hprod_id' σ] at h2
+    rw [map_mul, map_mul]
+    exact h2.symm
+  have hfix2 : ∀ σ : K ≃ₐ[ℚ] K,
+      σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ := by
+    intro σ
+    have hexp : (2 : K) * σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
+        = σ (x₁ + x₂ + x₃) ^ 2 - σ (x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2) := by
+      simp only [map_add, map_mul, map_pow]
+      ring
+    have h2 : (2 : K) * σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
+        = 2 * (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) := by
+      rw [hexp, hfix1 σ, hfixp2 σ]; ring
+    exact mul_left_cancel₀ two_ne_zero h2
+  obtain ⟨s₁, hs₁⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ + x₂ + x₃) hfix1
+  obtain ⟨s₂, hs₂⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) hfix2
+  obtain ⟨s₃, hs₃⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ * x₂ * x₃) hfix3
+  exact ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h12.symm, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩
+
+/-- **Coordinates of the kernel of a stable order-`7` subgroup** (PROVEN
+2026-07-27 over `MazurLevelSeven.exists_kernelCoords_of_isShortNF`; cut
+2026-07-26 out of `exists_x0Seven_kernelInvariants`, which is PROVEN over it).
+
+This is the purely GEOMETRIC half: read the three `±`-pairs of `⟨g⟩` off a short
+Weierstrass model and record that their symmetric functions are rational.  It
+contains no `X_0(7)`, no hauptmodul and no `7`-division algebra beyond writing
+down `x(2P)`, `x(3P)` and `7P = 0`; all of that has been discharged already in
+`MazurLevelSeven.kernelRelations`, `sOne_ne_zero` and
+`kernelInvariants_of_relations`, which are proven and axiom-clean.
+
+**What the conclusion says**, with `a = A`, `b = B` in `ℚ̄` and `P` a generator of
+`⟨g⟩`:
+
+* `A, B` are the coefficients of a short model `y² = x³ + Ax + B` of `E` over `ℚ`
+  — the `j`-relation `E.j·(4A³ + 27B²) = 6912A³` and `4A³ + 27B² ≠ 0` are
+  `WeierstrassCurve.j_of_isShortNF` and `Δ_of_isShortNF` for that model
+  (`Mathlib/AlgebraicGeometry/EllipticCurve/NormalForms.lean`), transported along
+  `variableChange_j`;
+* `x₁ = x(P)`, and `x₁³ + ax₁ + b = y(P)² ≠ 0` because `P` has odd order `7`, so
+  `P` is not `2`-torsion;
+* `x₂ = x(2P)`, written as the duplication formula
+  `x₂·4(x₁³ + ax₁ + b) = x₁⁴ − 2ax₁² − 8bx₁ + a²`, and `x₂ ≠ x₁` because
+  `2P ≠ ±P`;
+* `x₃ = x(3P)`, written as `x₃·f₃² = x₁f₃² − 2·e·f₄` with
+  `f₃ = 3x₁⁴ + 6ax₁² + 12bx₁ − a²` and
+  `f₄ = 4(x₁⁶ + 5ax₁⁴ + 20bx₁³ − 5a²x₁² − 4abx₁ − a³ − 8b²)` — i.e.
+  `x(3P) = x − ψ₂ψ₄/ψ₃²`;
+* `ψ₇(x₁) = 0`, written in the factored form `ψ₅ψ₃³ − ψ₂²ψ₄³` with
+  `ψ₅ = 8e²f₄ − f₃³`, which is exactly `7P = 0` for a point of exact order `7`;
+* `s₁, s₂, s₃ ∈ ℚ` are the elementary symmetric functions of `x₁, x₂, x₃`.
+
+**Where the RATIONALITY comes from, and it is already in the tree.**  This is
+the `ℤ/3`-descent and nothing else.  `Velu.velu_sum_fixed` (`Velu.lean`) says
+that any Galois-EQUIVARIANT function summed over a Galois-STABLE finite set of
+points is Galois-fixed, and `Velu.velu_pointX_map` supplies the equivariance of
+`veluPointX`.  Applying that to `Q ↦ x(Q)^k` over `C = ⟨g⟩` makes every power sum
+`Σ_{Q ∈ C} x(Q)^k` Galois-fixed, hence rational by
+`exists_rat_of_galois_fixed` (`MazurTorsion.lean`, and note the mandatory
+`set_option backward.isDefEq.respectTransparency false` recorded there).  Since
+`velu_fiber` / `velu_pointX_eq_iff` say the fibre of `veluPointX` over each value
+is exactly a `±`-pair and `|C| = 7` is odd, that sum is `2(x₁^k + x₂^k + x₃^k)`;
+Newton's identities in three variables (a `ring` computation in characteristic
+`0`) then give `s₁, s₂, s₃ ∈ ℚ`.
+
+**Do NOT try to make `x₁` itself rational.**  For order `3` it is, which is why
+`exists_x0Three_hauptmodul` fell out in four lines; for order `7` the three
+`x(iP)` generate a cyclic cubic field.  Worked instance: for `[1,−1,0,3,−1]` the
+kernel polynomial is the IRREDUCIBLE cubic `x³ + 6x² + 3x − 1` of discriminant
+`729 = 27²`, splitting field `ℚ(ζ₉)⁺`.  So there is no Tate normal form for `P`
+over `ℚ` and only the symmetric functions descend.
+
+**Suggested route.**  `WeierstrassCurve.exists_variableChange_isShortNF` for the
+model and `Point.equivVariableChangeBaseChange` /
+`Point.equivVariableChangeBaseChange_galois`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`) to carry
+`g` and `hstable` across it; `TorsionCard.exists_smul_some_eq` and
+`TorsionCard.smul_some_eq_zero_iff` for the three coordinate identities and for
+`ψ₇(x₁) = 0` — the only real work there is matching mathlib's `Φ`/`ΨSq`
+normalisation against the explicit short-model polynomials written above.
+`TorsionCard.eq_or_add_eq_zero_of_X_eq` gives the distinctness `x₂ ≠ x₁`
+(`2P = ±P` would force `P = 0` or `3P = 0`). -/
+theorem WeierstrassCurve.exists_x0Seven_kernelCoords (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ (A B s₁ s₂ s₃ : ℚ) (a b x₁ x₂ x₃ : AlgebraicClosure ℚ),
+      a = algebraMap ℚ (AlgebraicClosure ℚ) A ∧
+      b = algebraMap ℚ (AlgebraicClosure ℚ) B ∧
+      4 * A ^ 3 + 27 * B ^ 2 ≠ 0 ∧
+      E.j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3 ∧
+      (x₁ ^ 3 + a * x₁ + b) ≠ 0 ∧
+      x₂ ≠ x₁ ∧
+      x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) ∧
+      x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
+        x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+          - 2 * (x₁ ^ 3 + a * x₁ + b) *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ∧
+      (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+          - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
+        - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₁ = x₁ + x₂ + x₃ ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ := by
+  classical
+  haveI hi2 : Invertible (2 : ℚ) := invertibleOfNonzero (by norm_num)
+  haveI hi3 : Invertible (3 : ℚ) := invertibleOfNonzero (by norm_num)
+  obtain ⟨C, hC⟩ := E.exists_variableChange_isShortNF
+  haveI hCi : (C • E).IsShortNF := hC
+  -- the Galois-equivariant identification of points induced by `C`
+  set ee := Affine.Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)
+  have hee := Affine.Point.equivVariableChangeBaseChange_galois E C (AlgebraicClosure ℚ)
+  obtain ⟨P, hPee⟩ : ∃ P : ((C • E)⁄(AlgebraicClosure ℚ)).Point, ee P = g :=
+    ⟨ee.symm g, ee.apply_symm_apply g⟩
+  have hPord : addOrderOf P = 7 := by
+    have h := ee.addOrderOf_eq P
+    rw [hPee, hg] at h
+    exact h.symm
+  have hstab : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, ∀ n : ℤ, ∃ k : ℤ,
+      Affine.Point.map σ.toAlgHom (n • P) = k • P := by
+    intro σ n
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ (n • g) (AddSubgroup.mem_zmultiples_iff.mpr ⟨n, rfl⟩))
+    refine ⟨k, ee.injective ?_⟩
+    have hL : ee (Affine.Point.map σ.toAlgHom (n • P))
+        = Affine.Point.map σ.toAlgHom (n • g) := by
+      rw [hee σ (n • P), map_zsmul, hPee]
+    have hR : ee (k • P) = k • g := by rw [map_zsmul, hPee]
+    rw [hL, hR]
+    exact hk.symm
+  obtain ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩ :=
+    MazurLevelSeven.exists_kernelCoords_of_isShortNF (C • E) P hPord hstab
+  have hΔ : (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2 : ℚ) ≠ 0 := by
+    intro h0
+    have hΔ0 : (C • E).Δ = 0 := by
+      rw [WeierstrassCurve.Δ_of_isShortNF, h0, mul_zero]
+    exact not_isUnit_zero (hΔ0 ▸ (C • E).isUnit_Δ)
+  have hjeq : E.j * (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2) = 6912 * (C • E).a₄ ^ 3 := by
+    rw [← WeierstrassCurve.variableChange_j (W := E) (C := C), WeierstrassCurve.j_of_isShortNF,
+      div_mul_cancel₀ _ hΔ]
+  exact ⟨(C • E).a₄, (C • E).a₆, s₁, s₂, s₃, _, _, x₁, x₂, x₃, rfl, rfl, hΔ, hjeq,
+    he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩
+
+/-- **The kernel-polynomial invariants of a stable order-`7` subgroup** (PROVEN
+2026-07-26 over the single geometric leaf
+`WeierstrassCurve.exists_x0Seven_kernelCoords`): from a
+Weierstrass model `y² = x³ + Ax + B` of `E` over `ℚ` together with the first two
+symmetric functions `s₁, s₂` of the `x`-coordinates of the three `±`-pairs in
+`⟨g⟩` — i.e. the coefficients of the KERNEL POLYNOMIAL
+`ψ_C(x) = x³ − s₁x² + s₂x − s₃` — and check the two explicit polynomial
+identities they satisfy.
+
+**This is the `ℤ/3`-descent, and nothing else.** For an order-`3` subgroup
+`C\{0} = {P, −P}` is a single `±`-pair, so `x(P)` is Galois-FIXED and hence
+rational, which is why `exists_x0Three_hauptmodul` fell out of machinery already
+in this file. For order `7`, `C\{0}` is three `±`-pairs permuted by `Gal(ℚ̄/ℚ)`
+through `(ℤ/7)ˣ/±1 ≅ ℤ/3`; each `x(iP)` generates a cyclic cubic field and only
+the SYMMETRIC functions descend to `ℚ`. Stability of `⟨g⟩` says exactly that
+`Gal` permutes the three roots, so `ψ_C ∈ ℚ[x]`, and `s₁, s₂ ∈ ℚ` is the entire
+modular content of the node. The two identities are then a division-polynomial
+computation over `ℚ` with no Galois action in it.
+
+**Worked instance of the obstruction, so nobody re-attempts a Tate normal
+form.** For `[1,−1,0,3,−1]` the `7`-division polynomial factors as
+`(degree 3)·(degree 21)` and the kernel polynomial is the IRREDUCIBLE cubic
+`ψ_C = x³ + 6x² + 3x − 1`, of discriminant `729 = 27²` — a square, so the cubic
+is CYCLIC, with splitting field the real cyclotomic field `ℚ(ζ₉)⁺`. Hence
+`x(P)` is a non-rational cubic irrationality for every `P ∈ C\{0}` and **no Tate
+normal form for `P` exists over `ℚ`**. The sibling `[1,−1,0,−42,−100]` behaves
+identically (`ψ_C = x³ + 6x² − 15x − 73`, discriminant `59049 = 243²`). By
+contrast `26b1`, which HAS a rational point of order `7`, has
+`ψ_C = (x−1)(x+1)(x−3)` split over `ℚ` — that is the sub-case, and the only one
+an `X_1(7)` route can reach, which is why `exists_levelSeven_jParam` does NOT
+cover this node.
+
+**Faithfulness of the two side conditions.** `Q = 6A − 4s₁² + 18s₂` equals
+`1296·u⁴·t·(t² + 13t + 49)` on the universal family, so it vanishes only at the
+cusp `t = 0`, where there is no elliptic curve; and `4A³ + 27B² ≠ 0` is just
+`Δ ≠ 0`. Both therefore hold at every genuine `(E, ⟨g⟩)`, and neither is a
+disguised extra hypothesis. See the section note above for the derivation of the
+identities and for the Magma verification data.
+**HOW IT IS PROVEN, and where the bulk went** (2026-07-26).  The weight-`12` and
+weight-`22` identities stated here are NOT what has to be computed.  They are
+consequences of two weight-`8` relations in `(A, B, s₁, s₂)`,
+
+  `E1 :  12A² + 10A·s₁² − 6A·s₂ − s₁⁴ + 21s₂² = 0`
+  `E2 :  144B·s₁ + 46A·s₁² + 6A·s₂ − 7s₁⁴ + 24s₁²·s₂ + 39s₂² = 0`,
+
+which span the WHOLE space of weight-`8` relations on the `X_0(7)` moduli (there
+is none outside their span, and none at weight `10`).  The first identity is the
+exact factorisation `h1 = 7203·(3A + s₁²)·E1`; the second is
+`h2 = c₁·E1 + c₂·E2` for two `11`-term cofactors.  See
+`MazurLevelSeven.kernelRelations` (which proves `E1`, `E2` from the
+division-polynomial coordinates by a `24`-term `ψ₇`-certificate),
+`MazurLevelSeven.sOne_ne_zero`, and
+`MazurLevelSeven.kernelInvariants_of_relations`.
+
+**The side condition `Q ≠ 0` needs strictly more than `E1`, `E2` and `Δ ≠ 0`, and
+this is not a technicality.**  `(A, s₁, s₂) = (0, 0, 0)` with `B` free satisfies
+both `E1` and `E2` identically and has `Δ = 27B² ≠ 0`, yet gives `P = Q = 0`.  So
+`V(E1, E2)` has a spurious component that must be excluded by an input from the
+geometry, and that input is `s₁ ≠ 0` — proven in `MazurLevelSeven.sOne_ne_zero`
+by showing `s₁ = 0` would force `x₂/x₁` to be a primitive cube root of unity
+which the duplication formula writes as a ratio of rationals.  Anyone restating
+or reusing this node should keep that in view: `Q ≠ 0` is where its arithmetic
+content sits.
+
+(Correction to the paragraph above: the universal-family value of `Q` is
+`63504·u⁴·t·(t² + 13t + 49)`, not `1296·u⁴·t·(t² + 13t + 49)`; `63504 = 49·1296`
+is exactly what makes `P/Q` equal `t` rather than `49t`.  The conclusion drawn —
+that `Q` vanishes only at the cusp `t = 0` — is unaffected.) -/
+theorem WeierstrassCurve.exists_x0Seven_kernelInvariants (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ A B s₁ s₂ P Q : ℚ,
+      P = 49 * (s₁ ^ 2 - 3 * s₂) ∧
+      Q = 6 * A - 4 * s₁ ^ 2 + 18 * s₂ ∧
+      Q ≠ 0 ∧
+      4 * A ^ 3 + 27 * B ^ 2 ≠ 0 ∧
+      E.j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3 ∧
+      147 * A * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2)
+        + s₁ ^ 2 * (P ^ 2 + 245 * P * Q + 2401 * Q ^ 2) = 0 ∧
+      9261 * B * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2) ^ 2
+        + 2 * s₁ ^ 3 * (P ^ 4 - 490 * P ^ 3 * Q - 21609 * P ^ 2 * Q ^ 2
+          - 235298 * P * Q ^ 3 - 823543 * Q ^ 4) = 0 := by
+  obtain ⟨A, B, s₁, s₂, s₃, a, b, x₁, x₂, x₃, ha, hb, hΔ, hj, hEne, hne, hx2, hx3,
+    hpsi, hs1, hs2, hs3⟩ := E.exists_x0Seven_kernelCoords g hg hstable
+  obtain ⟨hE1, hE2⟩ :=
+    MazurLevelSeven.kernelRelations (algebraMap ℚ (AlgebraicClosure ℚ))
+      A B s₁ s₂ a b x₁ x₂ x₃ ha hb hEne hne hx2 hx3 hpsi hs1 hs2
+  have hs1ne : s₁ ≠ 0 :=
+    MazurLevelSeven.sOne_ne_zero (algebraMap ℚ (AlgebraicClosure ℚ))
+      A B s₁ s₂ s₃ a b x₁ x₂ x₃ ha hb hEne hne hx2 hE1 hs1 hs2 hs3
+  obtain ⟨hQ, hh1, hh2⟩ :=
+    MazurLevelSeven.kernelInvariants_of_relations A B s₁ s₂ hs1ne hΔ hE1 hE2
+  exact ⟨A, B, s₁, s₂, 49 * (s₁ ^ 2 - 3 * s₂), 6 * A - 4 * s₁ ^ 2 + 18 * s₂,
+    rfl, rfl, hQ, hΔ, hj, hh1, hh2⟩
+
+/-- **The hauptmodul of `X_0(7)`** (PROVEN 2026-07-26 over the single leaf
+`exists_x0Seven_kernelInvariants` — a GENUS-`0` moduli
+`g` of `E/ℚ` has exact order `7` and is `Gal(ℚ̄/ℚ)`-stable, then there is a
+rational hauptmodul value `t` with
+
+  `j(E) · t⁷ = (t² + 13t + 49)(t² + 245t + 2401)³`.
+
+`X_0(7)` has genus `0` and is `ℙ¹_ℚ`; its hauptmodul is the `η`-quotient
+`t = (η(τ)/η(7τ))⁴ = q⁻¹ − 4 + 2q + 8q² − 5q³ + ⋯`, defined over `ℚ`, and
+the degree-`8` `j`-map is the displayed relation. Its two cusps are
+`t = 0` (a pole of order `7`) and `t = ∞` (order `1`); the
+denominator-free form already excludes `t = 0` (the right side there is
+`49 · 2401³ ≠ 0`), so again no side condition is needed.
+
+**FALSE CLAIM RETIRED (2026-07-26). This node is NOT "strictly weaker than
+the sibling `exists_levelSeven_jParam`", and `exists_levelSeven_jParam` can
+NEVER discharge it — the refutation is already proven in this file.** The
+retired paragraph read: "`X_1(7)` also has genus `0`, with Kubert parameter
+`d` and `j = c₄(d)³/Δ(d)` of degree `24`, and the degree-`3` covering
+`X_1(7) → X_0(7)` sends `d` to `t`. So a proof of `exists_levelSeven_jParam`
+together with the `ℤ/3`-descent gives this node too." The task prompt that
+generated this cut repeated it in the sharper form "check whether that
+sibling has landed before proving this from scratch", which would send an
+agent to transcribe a covering map and find the node still open.
+
+The covering map is real and is written out below; what is false is that it
+suffices. `no_torsion_order_21`, PROVEN a few declarations down, derives its
+contradiction precisely from the fact that the FOUR `j`-values this whole
+`X_0(21)` cluster produces are NOT in the image of the `X_1(7)` `j`-map — it
+applies `MazurLevelSeven.j_ne_of_five_dvd` to each of `3375/2`,
+`−140625/8`, `−189613868625/128`, `−1159088625/2097152` in turn. So the four
+curves of the conductor-`162` class carry a rational `7`-ISOGENY while having
+no rational `7`-torsion point in any quadratic twist, and they are exactly
+the points this node has to reach. The `X_1(7)` route reaches none of them.
+
+The reason is structural, and is the same discriminating rule that separates
+this node from its level-`3` sibling. For a stable subgroup `C` of order `3`,
+`C\{0} = {P, −P}` is one `±`-pair, so `x(P)` is Galois-FIXED and therefore
+rational — which is what makes a Tate normal form available and is why
+`exists_x0Three_hauptmodul` fell out of machinery already in this file. For
+order `7`, `C\{0}` is three `±`-pairs, permuted by `Gal(ℚ̄/ℚ)` through
+`(ℤ/7)ˣ/±1 ≅ ℤ/3`. Each `x(iP)` generates a cyclic cubic field; only the
+SYMMETRIC functions descend to `ℚ`. So the `ℤ/3`-descent is not an addendum
+to a covering-map computation — it is the entire content of the node, and it
+is genuinely absent from this development.
+
+**THE COVERING MAP, worked out and verified so the next owner need not redo
+it** (2026-07-26; the polynomial identities below were checked exactly, and
+the resulting Lean lemma compiles — it is recorded here rather than added as
+a declaration because nothing in the cone would consume it, since it settles
+only the sub-case this node does not need). The degree-`3` map
+`X_1(7) → X_0(7)` in the coordinates of `MazurLevelSeven` is
+
+  `t = 49 · d(d − 1) / q(d)`,   `q(d) = d³ − 8d² + 5d + 1`,
+
+the third factor of `discPoly`. It is pinned by the pole structure: `j` has
+poles of order `7` at each of `d = 0, 1, ∞` (the three points over the cusp
+`t = 0`) and simple poles at the three roots of `q` (the three points over
+`t = ∞`), so `t` must be `λ·d(d − 1)/q(d)`, and `λ = 49`. Writing
+`m = 49d(d − 1)`, the two numerator factors clear as
+
+  `(t² + 13t + 49) q² = m² + 13mq + 49q² = 49 (d² − d + 1)³`,
+  `(t² + 245t + 2401) q² = m² + 245mq + 2401q² = 2401 · B(d)`,
+  `B(d) = d⁶ − 11d⁵ + 30d⁴ − 15d³ − 10d² + 5d + 1`,
+
+and the whole relation reduces to the factorisation
+
+  `cFourPoly d = (d² − d + 1) · B(d)`,  hence  `c₄³ = (d² − d + 1)³ · B³`,
+
+together with `49⁷ = 49 · 2401³ = 7¹⁴`. Concretely: from
+`j · discPoly d = cFourPoly d ³` with `discPoly d ≠ 0`, multiplying the goal
+through by `q⁸` and cancelling gives `j · t⁷ = (t² + 13t + 49)(t² + 245t +
+2401)³`, with every step a `ring` identity after one rewrite by
+`t · q = 49d(d − 1)`.
+
+**THE CUT THAT WOULD ACTUALLY REDUCE THIS NODE**, therefore, is not through
+`X_1(7)` but through the symmetric functions: (i) a moduli leaf producing,
+from the stable subgroup, the monic RATIONAL cubic
+`ψ_C(x) = ∏_{i=1}^{3} (x − x(iP))` — the kernel polynomial, rational because
+`Gal` permutes its roots — together with the curve in short Weierstrass form;
+and (ii) an algebra leaf computing `t` from `(c₄, c₆, ψ_C)`. Step (i) is the
+order-`7` analogue of what `exists_tateInvariants_of_stableThreeSubgroup`
+does at order `3`; step (ii) is a classical but bulky explicit computation
+that has NOT been done here.
+
+**THAT CUT IS NOW MADE, and step (ii) turned out NOT to be bulky (2026-07-26).**
+Step (i) is the remaining leaf `exists_x0Seven_kernelInvariants`; step (ii) is
+the PROVEN lemma `MazurLevelSeven.hauptmodul_of_kernelRelations`, and the whole
+of it is the single rational function
+
+  `t = 49(s₁² − 3s₂) / (6A − 4s₁² + 18s₂)`
+
+in the coefficients of `ψ_C(x) = x³ − s₁x² + s₂x − s₃` over a short model
+`y² = x³ + Ax + B`. The paragraph "classical but bulky" is therefore RETIRED;
+see the section note above this pair of declarations for the derivation, for the
+second (unusable) solution of the same linear system, and for the Magma data.
+
+**THE CONTENT, IN ONE EQUATION — a sharp reformulation of step (ii), found
+and verified 2026-07-26.** Let `C` be the stable subgroup and `E' = E/C`
+Vélu's quotient, which is defined over `ℚ` and is what `Velu.lean` already
+produces. Then the hauptmodul is pinned by the DISCRIMINANT RATIO alone:
+
+  `t⁶ · Δ(E') = 7¹² · Δ(E)`.
+
+This is the eta-quotient identity `Δ(τ)/Δ(7τ) = (η(τ)/η(7τ))²⁴ = t⁶`, the
+`7¹²` being the scaling between the lattice model for `7τ` and Vélu's
+normalisation (`Δ` has weight `−12`). Checked exactly with Magma on three
+curves (untrusted searcher, never a prover), and the agreement is on the
+nose in every case — the quotient `(Δ(E)/Δ(E'))/t⁶` came out equal to
+`7⁻¹² = 1/13841287201` for all three:
+
+* `[1,−1,0,3,−1]` (conductor `162`, `j = 3375/2`): `Δ = −1458`,
+  `E' = [1,−1,0,−1077,13877]`, `Δ' = −93312`, `t = −49/2`;
+* `[1,−1,0,−42,−100]` (`j = −140625/8`): `Δ = −472392`,
+  `E' = [1,−1,0,−852,19664]`, `Δ' = −123834728448`, `t = −49/8`;
+* `26b1 = [1,−1,1,−3,3]` (`j = −2146689/1664`): `Δ = −1664`,
+  `E' = [1,−1,1,−213,−1257]`, `Δ' = −125497034`, `t = −98/13`.
+
+In each case `t` is the UNIQUE rational root of
+`(t² + 13t + 49)(t² + 245t + 2401)³ − j t⁷`, so the value is unambiguous.
+The first two are exactly the `t₇`-coordinates the `X_0(21)` reconnaissance
+predicts, and the third agrees with the covering map above at `d = 2`
+(`q(2) = −13`, `t = 49·2·1/(−13) = −98/13`) — an independent confirmation of
+that map, computed without reference to it.
+
+**So the whole obstruction is a sixth power.** `t⁶` is rational for free, and
+the node asserts that it has a rational sixth ROOT of the right sign. The
+factorisation `6 = 2 · 3` is exactly the two descents in play: the `ℤ/3` is
+the Galois action on the three `±`-pairs of `C\{0}`, and the `ℤ/2` is the
+quadratic-twist ambiguity that `j` cannot see. Note `t⁶` alone determines `t`
+only up to sign, and the `j`-relation is not even in `t`, so one bit still
+has to be supplied — the two square roots are the curve and its quadratic
+twist.
+
+**Worked instance of the `ℤ/3` obstruction, for anyone who doubts it is
+real.** For `[1,−1,0,3,−1]` the `7`-division polynomial factors as
+`(degree 3)·(degree 21)`, and the kernel polynomial is the IRREDUCIBLE
+cubic `ψ_C = x³ + 6x² + 3x − 1`, of discriminant `729 = 27²` — a square, so
+the cubic is CYCLIC and its splitting field is the real cyclotomic field
+`ℚ(ζ₉)⁺` (conductor `9`, field discriminant `81`). Hence `x(P)` is a
+non-rational cubic irrationality for every `P ∈ C\{0}`, precisely as the
+paragraph above predicts, and no Tate normal form for `P` exists over `ℚ`.
+The sibling curve `[1,−1,0,−42,−100]` behaves identically, with
+`ψ_C = x³ + 6x² − 15x − 73` of discriminant `59049 = 243²`. By contrast
+`26b1`, which HAS a rational point of order `7`, has `ψ_C = x³ − 3x² − x + 3
+= (x−1)(x+1)(x−3)` split over `ℚ` — the sub-case, and the only one the
+`X_1(7)` route can reach.
+
+Checked with Magma (2026-07-26; untrusted searcher, never a proof): the
+four curves of the conductor-`162` class have hauptmodul values
+`t = −49/2`, `−49/8`, `−2`, `−8` respectively, each the UNIQUE rational
+root of `(t² + 13t + 49)(t² + 245t + 2401)³ − j t⁷`. -/
+theorem WeierstrassCurve.exists_x0Seven_hauptmodul (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ t : ℚ, E.j * t ^ 7 =
+      (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 := by
+  obtain ⟨A, B, s₁, s₂, P, Q, rfl, rfl, hQ, hΔ, hj, h1, h2⟩ :=
+    E.exists_x0Seven_kernelInvariants g hg hstable
+  exact MazurLevelSeven.hauptmodul_of_kernelRelations E.j A B s₁ _ _ hQ hΔ hj h1 h2
+
 /-- **The `X_0(7)` kernel data of a Vélu quotient, in Fricke-relation form**
 (SORRY LEAF, cut 2026-07-27 out of `exists_x0Seven_veluParam` below, which is now
 PROVEN over it together with the PROVEN `X0Seven.quot_fricke_jmap`).
@@ -14933,24 +16153,27 @@ It asks for four rationals `u, A', B', s₁` such that
   recorded denominator-free through the `j`-formula;
 * `A'`, `B'`, `s₁` satisfy the two Fricke relations at `u`.
 
-**WHY THIS IS STILL OPEN, AND IT IS NOT A MATHEMATICAL OBSTRUCTION — IT IS
-DECLARATION ORDER.**  Every ingredient is already PROVEN *below this line in this
-same file*, and Lean is strictly sequential:
+**THE DECLARATION-ORDER OBSTRUCTION IS GONE (hoist performed 2026-07-27) — DO
+NOT RE-DIAGNOSE IT.**  The previous version of this docstring recorded that every
+ingredient was PROVEN but sat roughly ten thousand lines *below* this leaf, and
+named the hoist as the mechanical fix.  That hoist has now been done: the
+contiguous block from the section note `#### The `X_0(7)` hauptmodul from the
+kernel polynomial` through `WeierstrassCurve.exists_x0Seven_hauptmodul` was moved
+verbatim to immediately above this leaf.  So all of
 
 * `WeierstrassCurve.exists_x0Seven_kernelCoords` — the `ℤ/3`-descent producing
   `A, B, s₁, s₂, s₃` and the three abscissae on a short model `C • E`;
 * `WeierstrassCurve.exists_x0Seven_kernelInvariants`, `exists_x0Seven_hauptmodul`,
   `MazurLevelSeven.kernelRelations`, `sOne_ne_zero`,
-  `kernelInvariants_of_relations`, `hauptmodul_of_kernelRelations`.
+  `kernelInvariants_of_relations`, `hauptmodul_of_kernelRelations`,
+  `MazurLevelSeven.exists_kernelCoords_of_isShortNF`
 
-At the time of writing that block is the CONTIGUOUS range from
-`MazurLevelSeven.hauptmodul_of_kernelRelations` through
-`WeierstrassCurve.exists_x0Seven_kernelInvariants` (about a thousand lines),
-while this leaf and the whole level-`49` cluster that consumes it sit roughly ten
-thousand lines ABOVE it.  **Hoisting that block above the level-`49` cluster is
-the mechanical fix**, and it is the recommended next step; it was not done here
-because a move of that size in this file conflicts with every other owner
-currently editing it.  Locate the endpoints by NAME, never by line number.
+are now in scope AT THIS LINE and may be applied directly.  The one-line check
+that refutes any claim to the contrary: `grep -n` for the name and confirm its
+line number is smaller than this one.
+
+**SO WHAT REMAINS IS EXACTLY THE MATHEMATICS BELOW**, and nothing else.  A
+discharger should not look for an ordering problem; there is none left.
 
 **WHAT IS GENUINELY NEW AND MUST BE WRITTEN** (the two plumbing obligations
 inherited from the old statement of `exists_x0Seven_veluParam`):
@@ -25806,1226 +27029,6 @@ theorem WeierstrassCurve.exists_x0Three_hauptmodul (E : WeierstrassCurve ℚ)
   refine ⟨729 / u, ?_⟩
   field_simp
   linear_combination (729 : ℚ) * hEj
-
-/-! #### The `X_0(7)` hauptmodul from the kernel polynomial
-
-The two declarations below cut `exists_x0Seven_hauptmodul` into its modular
-half and its algebraic half, along the line the old docstring identified but
-could not supply: *"(i) a moduli leaf producing, from the stable subgroup, the
-monic RATIONAL cubic `ψ_C(x) = ∏(x − x(iP))`, and (ii) an algebra leaf
-computing `t` from `(c₄, c₆, ψ_C)`; step (ii) is a classical but bulky explicit
-computation that has NOT been done here."*
-
-**Step (ii) is now done** (2026-07-26), and it is not bulky — it is a single
-rational function. Work in a short Weierstrass model `y² = x³ + Ax + B` and let
-
-  `ψ_C(x) = x³ − s₁x² + s₂x − s₃`
-
-be the kernel polynomial of the stable order-`7` subgroup `C`. Then the
-`X_0(7)` hauptmodul value of `(E, C)` is
-
-  `t = 49(s₁² − 3s₂) / (6A − 4s₁² + 18s₂)`.                              (★)
-
-**How (★) was found.** The universal curve over `X_0(7)` is
-`y² = x³ − 27c₄(t)x − 54c₆(t)` with
-
-  `c₄(t) = (t² + 13t + 49)(t² + 245t + 2401)`,
-  `c₆(t) = (t² + 13t + 49)(t⁴ − 490t³ − 21609t² − 235298t − 823543)`,
-  `Δ(t)  = t⁷(t² + 13t + 49)²`
-
-(the second factor of `c₆` is an exact square root of
-`(t² + 13t + 49)(t² + 245t + 2401)³ − 1728t⁷`, which is what makes the family
-exist). Factoring its `7`-division polynomial over `ℚ(t)` gives the degree-`3`
-kernel polynomial, whose first symmetric function is remarkably simple:
-
-  `s₁ = 63(t² + 13t + 49)`,   `s₂ = 27(t² + 13t + 49)(33t² + 637t + 2401)`.
-
-Since `t` is weight-`0` under `(A,B,x) ↦ (u⁴A, u⁶B, u²x)` it is a ratio of two
-isobaric weight-`4` forms in `A, s₁², s₂`, and solving that `3 + 3`-dimensional
-linear system over `ℚ(t)` returns a **two**-dimensional solution space. Both
-solutions are genuine, and the choice between them matters:
-
-* `t = 98(A + s₂)/(s₁² − 18A − 5s₂)` degenerates — numerator *and* denominator
-  vanish — exactly at `t = −49/4`, which is an honest rational point of
-  `X_0(7)` (`j = 351/4`), so this form is **unusable**;
-* (★) has denominator `6A − 4s₁² + 18s₂ = 1296·u⁴·t·(t² + 13t + 49)`, which
-  vanishes only at `t = 0`, i.e. only at a CUSP, where there is no elliptic
-  curve at all. So (★) is defined at every genuine `(E, C)`.
-
-Eliminating `t` between the two relations that (★) inverts,
-
-  `147·A·(t² + 13t + 49) = −s₁²·(t² + 245t + 2401)`,
-  `9261·B·(t² + 13t + 49)² = −2s₁³·(t⁴ − 490t³ − 21609t² − 235298t − 823543)`,
-
-by substituting `t = P/Q` with `P = 49(s₁² − 3s₂)`, `Q = 6A − 4s₁² + 18s₂` and
-clearing denominators gives the two `t`-FREE polynomial identities in
-`(A, B, s₁, s₂)` that `exists_x0Seven_kernelInvariants` below asserts. That is
-the whole point of the cut: the remaining leaf never mentions `t`, a
-hauptmodul, or a modular curve.
-
-**Checked with Magma (2026-07-26; untrusted searcher, never a prover).** Both
-identities hold on the nose, and `P/Q` returns the documented hauptmodul value
-with residual exactly `0`, for the four conductor-`162` curves
-(`t = −49/2, −49/8, −2, −8`), for `49a1 = [1,−1,2,−1,0]` (`t = −49/5`), and for
-the universal curve at `t = −49/2, −49/4, −2, 5, 1/3, −7, 7` — the `−49/4` case
-being precisely the one that refutes the other solution vector. -/
-theorem MazurLevelSeven.hauptmodul_of_kernelRelations (j A B s₁ P Q : ℚ)
-    (hQ : Q ≠ 0)
-    (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
-    (hj : j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3)
-    (h1 : 147 * A * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2)
-            + s₁ ^ 2 * (P ^ 2 + 245 * P * Q + 2401 * Q ^ 2) = 0)
-    (h2 : 9261 * B * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2) ^ 2
-            + 2 * s₁ ^ 3 * (P ^ 4 - 490 * P ^ 3 * Q - 21609 * P ^ 2 * Q ^ 2
-              - 235298 * P * Q ^ 3 - 823543 * Q ^ 4) = 0) :
-    ∃ t : ℚ, j * t ^ 7 = (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 := by
-  obtain ⟨t, rfl⟩ : ∃ t : ℚ, P = t * Q := ⟨P / Q, by field_simp⟩
-  refine ⟨t, ?_⟩
-  -- `t² + 13t + 49 = ((2t + 13)² + 27)/4` is positive, hence nonzero, for every rational `t`;
-  -- this is what makes the cusp `t = 0` the only degeneration of the family.
-  have hwpos : (0 : ℚ) < t ^ 2 + 13 * t + 49 := by nlinarith [sq_nonneg (2 * t + 13)]
-  have hw : t ^ 2 + 13 * t + 49 ≠ 0 := ne_of_gt hwpos
-  -- The two `t`-free identities are exactly the `Q²`- and `Q⁴`-multiples of the
-  -- universal-family relations at the parameter `t`.
-  have H1 : 147 * A * (t ^ 2 + 13 * t + 49)
-      + s₁ ^ 2 * (t ^ 2 + 245 * t + 2401) = 0 := by
-    apply mul_left_cancel₀ (pow_ne_zero 2 hQ)
-    linear_combination h1
-  have H2 : 9261 * B * (t ^ 2 + 13 * t + 49) ^ 2
-      + 2 * s₁ ^ 3 * (t ^ 4 - 490 * t ^ 3 - 21609 * t ^ 2 - 235298 * t - 823543) = 0 := by
-    apply mul_left_cancel₀ (pow_ne_zero 4 hQ)
-    linear_combination h2
-  have hne : (147 : ℚ) ^ 3 * (t ^ 2 + 13 * t + 49) ^ 4 ≠ 0 :=
-    mul_ne_zero (by norm_num) (pow_ne_zero _ hw)
-  -- Writing `X = 147A(t²+13t+49)` and `Y = 9261B(t²+13t+49)²`, the `147³(t²+13t+49)⁴`-multiple
-  -- of the claim is `κX³ − wV³Y²` with `κ = 6912t⁷w − 4V³w²`, and `κ = −4w·sq²` is precisely
-  -- the family identity `wV³ − sq² = 1728t⁷`.  So `H1` divides the `X³` part through
-  -- `X³ + s₁⁶V³ = (X + s₁²V)(X² − s₁²VX + s₁⁴V²)` and `H2` the `Y²` part through
-  -- `Y² − 4s₁⁶sq² = (Y + 2s₁³sq)(Y − 2s₁³sq)`.
-  have key : 6912 * A ^ 3 * t ^ 7
-      = (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 * (4 * A ^ 3 + 27 * B ^ 2) := by
-    apply mul_left_cancel₀ hne
-    linear_combination
-      ((6912 * t ^ 7 * (t ^ 2 + 13 * t + 49)
-          - 4 * (t ^ 2 + 245 * t + 2401) ^ 3 * (t ^ 2 + 13 * t + 49) ^ 2)
-        * ((147 * A * (t ^ 2 + 13 * t + 49)) ^ 2
-            - s₁ ^ 2 * (t ^ 2 + 245 * t + 2401) * (147 * A * (t ^ 2 + 13 * t + 49))
-            + s₁ ^ 4 * (t ^ 2 + 245 * t + 2401) ^ 2)) * H1
-      + (-((t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3
-            * (9261 * B * (t ^ 2 + 13 * t + 49) ^ 2
-               - 2 * s₁ ^ 3
-                 * (t ^ 4 - 490 * t ^ 3 - 21609 * t ^ 2 - 235298 * t - 823543)))) * H2
-  apply mul_right_cancel₀ hΔ
-  linear_combination t ^ 7 * hj + key
-
-set_option maxHeartbeats 1000000 in
-/-- **The two `X_0(7)` kernel relations, in their SMALL form** (PROVEN 2026-07-26).
-
-Over a short model `y² = x³ + Ax + B` write `x₁ = x(P)`, `x₂ = x(2P)`, `x₃ = x(3P)`
-for the three `x`-coordinates of the `±`-pairs of a cyclic subgroup `C = ⟨P⟩` of
-order `7`, and `s₁, s₂` for their first two symmetric functions.  Then
-
-  `E1 :  12A² + 10A·s₁² − 6A·s₂ − s₁⁴ + 21s₂² = 0`
-  `E2 :  144B·s₁ + 46A·s₁² + 6A·s₂ − 7s₁⁴ + 24s₁²·s₂ + 39s₂² = 0`
-
-and these two **weight-`8`** relations generate everything.  This is the real
-content of the `X_0(7)` moduli problem in coordinates, and it is far smaller than
-the weight-`12`/weight-`22` identities that `exists_x0Seven_kernelInvariants`
-states: those are recovered from `E1`, `E2` by pure polynomial algebra in
-`MazurLevelSeven.kernelInvariants_of_relations`, via
-
-  `h1 = 7203·(3A + s₁²)·E1`   (an EXACT factorisation, not merely a consequence).
-
-**Why `E1`, `E2` are the right pair.** On the universal curve
-`y² = x³ − 27c₄(t)x − 54c₆(t)` scaled by `u`, one has `s₁ = 63·w·u²`,
-`s₂ = 27·w·(33t² + 637t + 2401)·u⁴` with `w = t² + 13t + 49`, and the ℚ-vector
-space of weight-`8` relations among `(A, B, s₁, s₂)` is exactly `2`-dimensional,
-spanned by `E1` (which does not involve `B`) and `E2` (which does, linearly in
-`s₁`).  There is no weight-`8` or weight-`10` relation outside their span, and
-the weight-`12` relation space is exactly `E1`, `E2` times weight-`4` monomials —
-so the pair is a generating set, not an ad-hoc choice.
-
-**The proof here is a division-polynomial certificate.** With
-`e = x₁³ + Ax₁ + B`, `f₃ = 3x₁⁴ + 6Ax₁² + 12Bx₁ − A²`,
-`f₄ = 4(x₁⁶ + 5Ax₁⁴ + 20Bx₁³ − 5A²x₁² − 4ABx₁ − A³ − 8B²)`, the hypotheses say
-`x₂ = x(2P)`, `x₃ = x(3P)` and `ψ₇(x₁) = 0` (the last written in the factored form
-`(8e²f₄ − f₃³)f₃³ − 2e²f₄³`, which is `ψ₅ψ₃³ − ψ₂²ψ₄³` for the short model).
-Clearing denominators over `d = 4·e·f₃²` turns each of `E1`, `E2` into a
-degree-`48` polynomial in `x₁` that is an EXACT multiple of the degree-`24`
-`ψ₇`; the two `24`-term cofactors are the `linear_combination` witnesses below.
-Both were found and independently checked in `ℚ(A,B)[x]/(ψ₇)` with Magma
-(untrusted searcher), and are here verified by `ring`. -/
-theorem MazurLevelSeven.kernelRelations {L : Type*} [Field L] (φ : ℚ →+* L)
-    (A B s₁ s₂ : ℚ) (a b x₁ x₂ x₃ : L)
-    (ha : a = φ A) (hb : b = φ B)
-    (hE : (x₁ ^ 3 + a * x₁ + b) ≠ 0)
-    (hne : x₂ ≠ x₁)
-    (hx2 : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2))
-    (hx3 : x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
-      x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
-        - 2 * (x₁ ^ 3 + a * x₁ + b) *
-          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)))
-    (hpsi : (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
-          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
-        - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
-      - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
-        (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0)
-    (hs1 : φ s₁ = x₁ + x₂ + x₃)
-    (hs2 : φ s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃) :
-    12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0 ∧
-    144 * B * s₁ + 46 * A * s₁ ^ 2 + 6 * A * s₂ - 7 * s₁ ^ 4 + 24 * s₁ ^ 2 * s₂
-      + 39 * s₂ ^ 2 = 0 := by
-  have hinj : Function.Injective φ := φ.injective
-  have h4 : (4 : L) ≠ 0 := fun h => by
-    have h0 : (4 : ℚ) = 0 := hinj (by rw [map_ofNat, map_zero, h])
-    norm_num at h0
-  -- `(x₂ - x₁) · 4e = -f₃`, so `x₂ ≠ x₁` is exactly `f₃ ≠ 0`, i.e. `3P ≠ 0`.
-  have hF3 : (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ≠ 0 := by
-    intro h
-    refine hne (sub_eq_zero.mp ?_)
-    have hzz : (x₂ - x₁) * (4 * (x₁ ^ 3 + a * x₁ + b)) = 0 := by
-      linear_combination hx2 - h
-    rcases mul_eq_zero.mp hzz with h' | h'
-    · exact h'
-    · rcases mul_eq_zero.mp h' with h'' | h''
-      · exact absurd h'' h4
-      · exact absurd h'' hE
-  obtain ⟨u, hu, hune⟩ : ∃ u : L, u = 4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 ∧ u ≠ 0 :=
-    ⟨_, rfl, mul_ne_zero (mul_ne_zero h4 hE) (pow_ne_zero 2 hF3)⟩
-  -- the two symmetric functions, cleared over the common denominator `u`
-  have hN1 : φ s₁ * u =
-      (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 * (8 * (x₁ ^ 3 + a * x₁ + b) * x₁
-        + (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) - 8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 * (4 *
-        (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3
-        - 8 * b ^ 2)) := by
-    rw [hu]
-    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs1
-      + (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 * hx2
-      + (4 * (x₁ ^ 3 + a * x₁ + b)) * hx3
-  have hN2 : φ s₂ * u =
-      2 * x₁ * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 +
-        12 * b * x₁ - a ^ 2) ^ 2 + 4 * (x₁ ^ 3 + a * x₁ + b) * x₁ ^ 2 * (3 * x₁ ^ 4 + 6 * a * x₁
-        ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 - 8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 * x₁ * (4 * (x₁ ^ 6 + 5 *
-        a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
-        - 2 * (x₁ ^ 3 + a * x₁ + b) * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) * (4 * (x₁
-        ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8
-        * b ^ 2)) := by
-    rw [hu]
-    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs2
-      + (x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 + x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hx2
-      + (4 * (x₁ ^ 3 + a * x₁ + b) * x₁ + (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) * hx3
-  have hE1L : 12 * a ^ 2 + 10 * a * (φ s₁) ^ 2 - 6 * a * (φ s₂) - (φ s₁) ^ 4
-      + 21 * (φ s₂) ^ 2 = 0 := by
-    apply mul_left_cancel₀ (pow_ne_zero 4 hune)
-    have expand : u ^ 4 * (12 * a ^ 2 + 10 * a * (φ s₁) ^ 2 - 6 * a * (φ s₂) - (φ s₁) ^ 4
-        + 21 * (φ s₂) ^ 2)
-        = 12 * a ^ 2 * u ^ 4 + 10 * a * (φ s₁ * u) ^ 2 * u ^ 2 - 6 * a * (φ s₂ * u) * u ^ 3
-          - (φ s₁ * u) ^ 4 + 21 * (φ s₂ * u) ^ 2 * u ^ 2 := by ring
-    rw [expand, hN1, hN2, hu]
-    linear_combination (
-      1*a^12 + 128*a^9*b^2 + (-768)*a^6*b^4 + (-8192)*a^3*b^6 + (-65536)*b^8 + 232*a^10*b*x₁
-        + (-9216)*a^7*b^3*x₁ + (-33792)*a^4*b^5*x₁ + (-425984)*a*b^7*x₁ + 140*a^11*x₁^2
-        + (-20304)*a^8*b^2*x₁^2 + 50688*a^5*b^4*x₁^2 + (-1257472)*a^2*b^6*x₁^2 + (-16496)*a^9*b*x₁^3
-        + 279296*a^6*b^3*x₁^3 + (-3018752)*a^3*b^5*x₁^3 + (-671744)*b^7*x₁^3 + (-4070)*a^10*x₁^4
-        + 324480*a^7*b^2*x₁^4 + (-5440000)*a^4*b^4*x₁^4 + (-1802240)*a*b^6*x₁^4 + 129384*a^8*b*x₁^5
-        + (-5634560)*a^5*b^3*x₁^5 + (-1019904)*a^2*b^5*x₁^5 + 13260*a^9*x₁^6
-        + (-2878912)*a^6*b^2*x₁^6 + (-1884160)*a^3*b^4*x₁^6 + (-4415488)*b^6*x₁^6
-        + (-655424)*a^7*b*x₁^7 + (-6711040)*a^4*b^3*x₁^7 + (-12484608)*a*b^5*x₁^7
-        + (-59689)*a^8*x₁^8 + (-6919296)*a^5*b^2*x₁^8 + (-15164160)*a^2*b^4*x₁^8
-        + (-2730800)*a^6*b*x₁^9 + (-16773120)*a^3*b^3*x₁^9 + (-7347200)*b^5*x₁^9
-        + (-395048)*a^7*x₁^10 + (-15158496)*a^4*b^2*x₁^10 + (-19070464)*a*b^4*x₁^10
-        + (-6988704)*a^5*b*x₁^11 + (-27147008)*a^2*b^3*x₁^11 + (-1229300)*a^6*x₁^12
-        + (-25937792)*a^3*b^2*x₁^12 + (-5103616)*b^4*x₁^12 + (-13178608)*a^4*b*x₁^13
-        + (-16241152)*a*b^3*x₁^13 + (-2626760)*a^5*x₁^14 + (-23363520)*a^2*b^2*x₁^14
-        + (-15183424)*a^3*b*x₁^15 + (-3653888)*b^3*x₁^15 + (-3635521)*a^4*x₁^16
-        + (-10825728)*a*b^2*x₁^16 + (-10279608)*a^2*b*x₁^17 + (-3182308)*a^3*x₁^18
-        + (-2055760)*b^2*x₁^18 + (-3751280)*a*b*x₁^19 + (-1692550)*a^2*x₁^20 + (-560504)*b*x₁^21
-        + (-496004)*a*x₁^22 + (-61495)*x₁^24
-      ) * hpsi
-  have hE2L : 144 * b * (φ s₁) + 46 * a * (φ s₁) ^ 2 + 6 * a * (φ s₂) - 7 * (φ s₁) ^ 4
-      + 24 * (φ s₁) ^ 2 * (φ s₂) + 39 * (φ s₂) ^ 2 = 0 := by
-    apply mul_left_cancel₀ (pow_ne_zero 4 hune)
-    have expand : u ^ 4 * (144 * b * (φ s₁) + 46 * a * (φ s₁) ^ 2 + 6 * a * (φ s₂)
-        - 7 * (φ s₁) ^ 4 + 24 * (φ s₁) ^ 2 * (φ s₂) + 39 * (φ s₂) ^ 2)
-        = 144 * b * (φ s₁ * u) * u ^ 3 + 46 * a * (φ s₁ * u) ^ 2 * u ^ 2
-          + 6 * a * (φ s₂ * u) * u ^ 3 - 7 * (φ s₁ * u) ^ 4
-          + 24 * (φ s₁ * u) ^ 2 * (φ s₂ * u) * u + 39 * (φ s₂ * u) ^ 2 * u ^ 2 := by ring
-    rw [expand, hN1, hN2, hu]
-    linear_combination (
-      7*a^12 + 512*a^9*b^2 + 768*a^6*b^4 + (-57344)*a^3*b^6 + (-458752)*b^8 + 664*a^10*b*x₁
-        + (-21504)*a^7*b^3*x₁ + (-408576)*a^4*b^5*x₁ + (-2981888)*a*b^7*x₁ + 404*a^11*x₁^2
-        + (-48816)*a^8*b^2*x₁^2 + (-726528)*a^5*b^4*x₁^2 + (-7327744)*a^2*b^6*x₁^2
-        + (-39824)*a^9*b*x₁^3 + (-514816)*a^6*b^3*x₁^3 + (-11694080)*a^3*b^5*x₁^3
-        + (-8241152)*b^7*x₁^3 + (-9482)*a^10*x₁^4 + (-163200)*a^7*b^2*x₁^4
-        + (-14702080)*a^4*b^4*x₁^4 + (-36503552)*a*b^6*x₁^4 + (-94440)*a^8*b*x₁^5
-        + (-13188608)*a^5*b^3*x₁^5 + (-72609792)*a^2*b^5*x₁^5 + (-39468)*a^9*x₁^6
-        + (-7005760)*a^6*b^2*x₁^6 + (-89866240)*a^3*b^4*x₁^6 + (-18522112)*b^6*x₁^6
-        + (-2144192)*a^7*b*x₁^7 + (-77820160)*a^4*b^3*x₁^7 + (-74121216)*a*b^5*x₁^7
-        + (-359263)*a^8*x₁^8 + (-43912320)*a^5*b^2*x₁^8 + (-132967680)*a^2*b^4*x₁^8
-        + (-14297552)*a^6*b*x₁^9 + (-147732480)*a^3*b^3*x₁^9 + (-24224768)*b^5*x₁^9
-        + (-2208920)*a^7*x₁^10 + (-102099744)*a^4*b^2*x₁^10 + (-83063296)*a*b^4*x₁^10
-        + (-39373920)*a^5*b*x₁^11 + (-137645312)*a^2*b^3*x₁^11 + (-6802220)*a^6*x₁^12
-        + (-127296128)*a^3*b^2*x₁^12 + (-16758784)*b^4*x₁^12 + (-61341712)*a^4*b*x₁^13
-        + (-61101568)*a*b^3*x₁^13 + (-12560120)*a^5*x₁^14 + (-88964160)*a^2*b^2*x₁^14
-        + (-58005952)*a^3*b*x₁^15 + (-11421440)*b^3*x₁^15 + (-14871367)*a^4*x₁^16
-        + (-34422144)*a*b^2*x₁^16 + (-33680328)*a^2*b*x₁^17 + (-11523964)*a^3*x₁^18
-        + (-5753776)*b^2*x₁^18 + (-11007632)*a*b*x₁^19 + (-5661034)*a^2*x₁^20 + (-1526792)*b*x₁^21
-        + (-1600604)*a*x₁^22 + (-200641)*x₁^24
-      ) * hpsi
-  constructor
-  · refine hinj ?_
-    rw [map_zero]
-    simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
-    rw [← ha]; exact hE1L
-  · refine hinj ?_
-    rw [map_zero]
-    simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
-    rw [← ha, ← hb]; exact hE2L
-
-/-- **`s₁ ≠ 0` for every genuine `(E, C)`** (PROVEN 2026-07-26).  This is the one
-non-formal input to `Q ≠ 0`, and it is exactly what excludes the spurious
-component of `V(E1, E2)`.
-
-`E1` alone does NOT exclude `s₁ = 0`: setting `s₁ = 0` in `E1` gives
-`12A² − 6A·s₂ + 21s₂² = 0`, and `16/3` times that is `(8A − 2s₂)² + 108s₂²`, a
-sum of squares, so over `ℚ` it forces `A = 0` and `s₂ = 0` — and `(A, s₁, s₂) =
-(0,0,0)` with `B` free satisfies `E1` AND `E2` identically while having `Δ ≠ 0`.
-So a proof of `Q ≠ 0` from `E1, E2, Δ ≠ 0` alone is impossible; this lemma is
-what closes that hole.
-
-**The argument, and it is elementary.**  With `A = s₂ = 0` the kernel polynomial
-is `x³ − s₃`, so `x₁ + x₂ + x₃ = 0` and `x₁x₂ + x₁x₃ + x₂x₃ = 0` give
-`x₁² + x₁x₂ + x₂² = 0` and `s₃ = x₁³`.  The duplication formula
-`x₂·4(x₁³ + B) = x₁⁴ − 8Bx₁` then reads `x₂ = r·x₁` with
-`r = (s₃ − 8B)/(4(s₃ + B))`, a ratio of RATIONALS whose denominator is
-`4·y(P)² ≠ 0`.  Feeding that back into `x₁² + x₁x₂ + x₂² = 0` and cancelling
-`x₁² ≠ 0` gives `r² + r + 1 = 0` with `r ∈ ℚ` — impossible, since
-`r² + r + 1 = (r + 1/2)² + 3/4 > 0`.
-
-So `x₂/x₁` would have to be a primitive cube root of unity that the duplication
-formula exhibits as rational.  (This matches the moduli picture: `s₁ = 63·w·u²`
-with `w = t² + 13t + 49 > 0` and `u ≠ 0`, so `s₁` never vanishes; but that
-computation presupposes the parametrisation being built here, whereas the
-argument above does not.) -/
-theorem MazurLevelSeven.sOne_ne_zero {L : Type*} [Field L] (φ : ℚ →+* L)
-    (A B s₁ s₂ s₃ : ℚ) (a b x₁ x₂ x₃ : L)
-    (ha : a = φ A) (hb : b = φ B)
-    (hE : (x₁ ^ 3 + a * x₁ + b) ≠ 0)
-    (hne : x₂ ≠ x₁)
-    (hx2 : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2))
-    (hE1 : 12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0)
-    (hs1 : φ s₁ = x₁ + x₂ + x₃)
-    (hs2 : φ s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
-    (hs3 : φ s₃ = x₁ * x₂ * x₃) :
-    s₁ ≠ 0 := by
-  have hinj : Function.Injective φ := φ.injective
-  have h4 : (4 : L) ≠ 0 := fun h => by
-    have hz : (4 : ℚ) = 0 := hinj (by rw [map_ofNat, map_zero, h])
-    norm_num at hz
-  intro h0
-  subst h0
-  -- `16/3 · E1` is a sum of two squares over `ℚ`, so `A = s₂ = 0`
-  have hkey : (8 * A - 2 * s₂) ^ 2 + 108 * s₂ ^ 2 = 0 := by linear_combination (16 / 3) * hE1
-  have hs2z : s₂ = 0 := by nlinarith [sq_nonneg (8 * A - 2 * s₂), sq_nonneg s₂]
-  have hAz : A = 0 := by nlinarith [sq_nonneg (8 * A - 2 * s₂), sq_nonneg s₂]
-  have ha0 : a = 0 := by rw [ha, hAz, map_zero]
-  have hsum : x₁ + x₂ + x₃ = 0 := by rw [← hs1, map_zero]
-  have hsym : x₁ * x₂ + x₁ * x₃ + x₂ * x₃ = 0 := by rw [← hs2, hs2z, map_zero]
-  have hx3e : x₃ = -x₁ - x₂ := by linear_combination hsum
-  rw [hx3e] at hsym hs3
-  have hquad : x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 = 0 := by linear_combination -hsym
-  have hx1 : x₁ ≠ 0 := by
-    intro h
-    refine hne ?_
-    rw [h] at hquad ⊢
-    have hsq : x₂ ^ 2 = 0 := by linear_combination hquad
-    exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hsq
-  have hs3e : φ s₃ = x₁ ^ 3 := by rw [hs3]; linear_combination (-x₁) * hquad
-  have hden : φ (s₃ + B) ≠ 0 := by
-    rw [map_add, hs3e, ← hb]
-    simpa [ha0] using hE
-  have hdenQ : s₃ + B ≠ 0 := fun h => hden (by rw [h, map_zero])
-  obtain ⟨r, hrmul⟩ : ∃ r : ℚ, r * (4 * (s₃ + B)) = s₃ - 8 * B :=
-    ⟨(s₃ - 8 * B) / (4 * (s₃ + B)), by
-      have hd4 : (4 : ℚ) * (s₃ + B) ≠ 0 := mul_ne_zero (by norm_num) hdenQ
-      field_simp⟩
-  -- the duplication formula exhibits `x₂ / x₁` as the rational number `r`
-  have hx2r : x₂ = φ r * x₁ := by
-    have h4b : (4 : L) * (x₁ ^ 3 + b) ≠ 0 :=
-      mul_ne_zero h4 (by simpa [ha0] using hE)
-    refine mul_right_cancel₀ h4b ?_
-    have hl : x₂ * (4 * (x₁ ^ 3 + b)) = x₁ ^ 4 - 8 * b * x₁ := by
-      rw [ha0] at hx2; linear_combination hx2
-    have hrr : φ r * (4 * (x₁ ^ 3 + b)) = x₁ ^ 3 - 8 * b := by
-      have hcg := congrArg φ hrmul
-      simp only [map_mul, map_sub, map_add, map_ofNat] at hcg
-      rw [hs3e, ← hb] at hcg
-      linear_combination hcg
-    rw [hl]
-    calc x₁ ^ 4 - 8 * b * x₁ = x₁ * (x₁ ^ 3 - 8 * b) := by ring
-    _ = x₁ * (φ r * (4 * (x₁ ^ 3 + b))) := by rw [hrr]
-    _ = φ r * x₁ * (4 * (x₁ ^ 3 + b)) := by ring
-  -- hence `r² + r + 1 = 0` with `r` rational, which is impossible
-  have hcube : φ (r ^ 2 + r + 1) = 0 := by
-    have h : x₁ ^ 2 * (φ r ^ 2 + φ r + 1) = 0 := by
-      rw [hx2r] at hquad; linear_combination hquad
-    have hres := (mul_eq_zero.mp h).resolve_left (pow_ne_zero 2 hx1)
-    simpa only [map_add, map_pow, map_one] using hres
-  have hr1 : r ^ 2 + r + 1 = 0 := hinj (by simpa using hcube)
-  nlinarith [sq_nonneg (2 * r + 1)]
-
-/-- **From the small relations `E1`, `E2` to the `X_0(7)` identities, INCLUDING
-the side condition `Q ≠ 0`** (PROVEN 2026-07-26).
-
-The two identities are pure ideal membership: `h1 = 7203·(3A + s₁²)·E1` exactly,
-and `h2 = c₁·E1 + c₂·E2` for two explicit `11`-term cofactors (found by linear
-algebra over the `17`-dimensional space of weight-`14` cofactors, verified by
-`linear_combination`).
-
-`Q ≠ 0` is the interesting part and splits on `P = 49(s₁² − 3s₂)`:
-
-* if `Q = 0` and `P ≠ 0`, then `h1` collapses to `P²(147A + s₁²) = 0` and `h2` to
-  `P⁴(9261B + 2s₁³) = 0`, so `A = −s₁²/147` and `B = −2s₁³/9261`; and then
-  `4A³ + 27B² = −4s₁⁶/147³ + 108s₁⁶/9261²` is IDENTICALLY `0` (because
-  `9261² = 27·147³`), contradicting `Δ ≠ 0`;
-* if `Q = 0` and `P = 0`, then `s₂ = s₁²/3` and `A = −s₁²/3`, and `E2` becomes
-  `144B·s₁ = (32/3)s₁⁴`; here `s₁ ≠ 0` is needed, and gives `B = 2s₁³/27`, whence
-  again `4A³ + 27B² = −4s₁⁶/27 + 4s₁⁶/27 = 0`, contradicting `Δ ≠ 0`.
-
-Both branches end at `Δ = 0`, which is the moduli statement that `Q` vanishes
-only at the cusp `t = 0` — there `Q = 63504·t·(t² + 13t + 49)·u⁴` (note: an
-earlier docstring recorded the constant as `1296`; the correct one is
-`63504 = 49·1296`, which is what makes `P/Q = t` rather than `49t`). -/
-theorem MazurLevelSeven.kernelInvariants_of_relations (A B s₁ s₂ : ℚ)
-    (hs1 : s₁ ≠ 0) (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
-    (hE1 : 12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0)
-    (hE2 : 144 * B * s₁ + 46 * A * s₁ ^ 2 + 6 * A * s₂ - 7 * s₁ ^ 4 + 24 * s₁ ^ 2 * s₂
-      + 39 * s₂ ^ 2 = 0) :
-    6 * A - 4 * s₁ ^ 2 + 18 * s₂ ≠ 0 ∧
-    147 * A * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 13 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2)
-      + s₁ ^ 2 * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 245 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
-        + 2401 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2) = 0 ∧
-    9261 * B * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 13 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2) ^ 2
-      + 2 * s₁ ^ 3 * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 4 - 490 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 3 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
-        - 21609 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2
-        - 235298 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 3
-        - 823543 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 4) = 0 := by
-  have hh1 : 147 * A * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 13 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2)
-      + s₁ ^ 2 * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 245 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
-        + 2401 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2) = 0 := by
-    linear_combination 7203 * (3 * A + s₁ ^ 2) * hE1
-  have hh2 : 9261 * B * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 + 13 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2) ^ 2
-      + 2 * s₁ ^ 3 * ((49 * (s₁ ^ 2 - 3 * s₂)) ^ 4 - 490 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 3 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
-        - 21609 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2
-        - 235298 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 3
-        - 823543 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 4) = 0 := by
-    linear_combination (2401451388 * A ^ 2 * B - 177885288 * A ^ 2 * s₁ ^ 3
-        - (38423222208 / 13) * A * B * s₁ ^ 2 - (24014513880 / 13) * A * B * s₂
-        + (23836628592 / 13) * A * s₁ ^ 5 - (9961576128 / 13) * A * s₁ ^ 3 * s₂
-        - (201721916592 / 13) * B ^ 2 * s₁ + (101127786228 / 13) * B * s₁ ^ 4
-        - (116870634216 / 13) * B * s₁ ^ 2 * s₂ - (5079613224 / 13) * s₁ ^ 7
-        + (21820595328 / 13) * s₁ ^ 5 * s₂) * hE1
-      + ((16810159716 / 13) * A ^ 2 * B - (5514443928 / 13) * A ^ 2 * s₁ ^ 3
-        + (14008466430 / 13) * A * B * s₁ ^ 2 - (8405079858 / 13) * A * B * s₂
-        - (4595369940 / 13) * A * s₁ ^ 5 + (2757221964 / 13) * A * s₁ ^ 3 * s₂
-        - (1400846643 / 13) * B * s₁ ^ 4 + (29417779503 / 13) * B * s₂ ^ 2
-        + (973427826 / 13) * s₁ ^ 7 - 237180384 * s₁ ^ 5 * s₂
-        - (5025259386 / 13) * s₁ ^ 3 * s₂ ^ 2) * hE2
-  refine ⟨?_, hh1, hh2⟩
-  intro hQ
-  by_cases hP : s₁ ^ 2 - 3 * s₂ = 0
-  · refine hΔ ?_
-    have hAv2 : A = -(s₁ ^ 2) / 3 := by linarith
-    have hs2v : s₂ = s₁ ^ 2 / 3 := by linarith
-    rw [hAv2, hs2v] at hE2
-    have hB : 144 * s₁ * B = 32 / 3 * s₁ ^ 4 := by linear_combination hE2
-    have hBv2 : B = 2 * s₁ ^ 3 / 27 := by
-      refine mul_left_cancel₀ (a := 144 * s₁) (by simpa using hs1) ?_
-      linear_combination hB
-    linear_combination (4 * (A ^ 2 - A * s₁ ^ 2 / 3 + s₁ ^ 4 / 9)) * hAv2
-      + (27 * (B + 2 * s₁ ^ 3 / 27)) * hBv2
-  · refine hΔ ?_
-    have hPne : ((49 * (s₁ ^ 2 - 3 * s₂)) : ℚ) ≠ 0 := by simpa using hP
-    have h147 : 147 * A + s₁ ^ 2 = 0 := by
-      have hsq : (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (147 * A + s₁ ^ 2) = 0 := by
-        linear_combination hh1
-          - (147 * A * (13 * (49 * (s₁ ^ 2 - 3 * s₂)) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂))
-             + s₁ ^ 2 * (245 * (49 * (s₁ ^ 2 - 3 * s₂)) + 2401 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂))) * hQ
-      exact (mul_eq_zero.mp hsq).resolve_left (pow_ne_zero 2 hPne)
-    have h9261 : 9261 * B + 2 * s₁ ^ 3 = 0 := by
-      have hsq : (49 * (s₁ ^ 2 - 3 * s₂)) ^ 4 * (9261 * B + 2 * s₁ ^ 3) = 0 := by
-        linear_combination hh2
-          - (9261 * B * (2 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (13 * (49 * (s₁ ^ 2 - 3 * s₂)) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂))
-              + (13 * (49 * (s₁ ^ 2 - 3 * s₂)) + 49 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)) ^ 2 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂))
-             - 2 * s₁ ^ 3 * (490 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 3
-                + 21609 * (49 * (s₁ ^ 2 - 3 * s₂)) ^ 2 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂)
-                + 235298 * (49 * (s₁ ^ 2 - 3 * s₂)) * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 2
-                + 823543 * (6 * A - 4 * s₁ ^ 2 + 18 * s₂) ^ 3)) * hQ
-      exact (mul_eq_zero.mp hsq).resolve_left (pow_ne_zero 4 hPne)
-    linear_combination (4 * (A ^ 2 - A * s₁ ^ 2 / 147 + s₁ ^ 4 / 21609) / 147) * h147
-      + (27 * (B - 2 * s₁ ^ 3 / 9261) / 9261) * h9261
-
-open Polynomial in
-set_option backward.isDefEq.respectTransparency false in
-set_option maxHeartbeats 2000000 in
-/-- **The kernel coordinates of a stable order-`7` point on a SHORT model**
-(PROVEN 2026-07-27).  This is the whole geometric content of
-`WeierstrassCurve.exists_x0Seven_kernelCoords`, isolated at a curve that is
-already in short normal form so that the variable change stays out of it.
-
-Everything is read off mathlib's division polynomials at the short model
-`y² = x³ + a₄x + a₆`, where `b₂ = 0`, `b₄ = 2a₄`, `b₆ = 4a₆`, `b₈ = −a₄²` turn
-them into the classical expressions:
-
-* `ΨSq 2 = Ψ₂Sq = 4(x³ + ax + b)` and `Φ 2 = x⁴ − 2ax² − 8bx + a²`, so
-  `TorsionCard.exists_smul_some_eq` at `n = 2` IS the duplication formula;
-* `Ψ₃ = 3x⁴ + 6ax² + 12bx − a²`, `preΨ₄ = 2(x⁶ + 5ax⁴ + 20bx³ − 5a²x² − 4abx
-  − a³ − 8b²)`, and `Φ 3 = X·Ψ₃² − preΨ₄·Ψ₂Sq`, which is `x(3P) = x − ψ₂ψ₄/ψ₃²`;
-* `preΨ 5 = preΨ₄·Ψ₂Sq² − Ψ₃³` and hence
-  `ΨSq 7 = (preΨ 5·Ψ₃³ − preΨ₄³·Ψ₂Sq²)²`, whose vanishing is `7P = 0` via
-  `TorsionCard.smul_some_eq_zero_iff`.
-
-RATIONALITY is the `ℤ/3`-descent and needs no Vélu sum: `velu_pointX_map` makes
-`σ(x(iP)) = x(σ(iP))`, stability puts `σ(iP) = k·P` with `k ≢ 0 (mod 7)`, and
-`velu_pointX_neg` folds `k ∈ {4,5,6}` back onto `{3,2,1}`.  So `σ` maps the
-`3`-element FINSET `{x₁, x₂, x₃}` into itself, hence onto itself by injectivity
-(`Finset.eq_of_subset_of_card_le`), and `Finset.sum_image` / `Finset.prod_image`
-make `e₁` and `e₃` Galois-fixed.  `e₂` follows from
-`e₁² = (x₁² + x₂² + x₃²) + 2e₂`.  `exists_rat_of_galois_fixed` then descends all
-three to `ℚ`.
-
-PERFORMANCE NOTE (measured): `ΨSq 7`'s evaluation is stated in the shape the
-rewrites literally produce, and converted to the shape the consumer wants by the
-THREE-ATOM identity `hkey`.  Doing that conversion with `ring` on the expanded
-polynomial instead makes it expand a degree-`24` polynomial in three variables
-and costs more than ten minutes. -/
-theorem MazurLevelSeven.exists_kernelCoords_of_isShortNF (E₀ : WeierstrassCurve ℚ)
-    [E₀.IsElliptic] [E₀.IsShortNF]
-    (P : (E₀⁄(AlgebraicClosure ℚ)).Point) (hPord : addOrderOf P = 7)
-    (hstab : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, ∀ n : ℤ, ∃ k : ℤ,
-      Affine.Point.map σ.toAlgHom (n • P) = k • P) :
-    ∃ (s₁ s₂ s₃ : ℚ) (x₁ x₂ x₃ : AlgebraicClosure ℚ),
-      letI a := algebraMap ℚ (AlgebraicClosure ℚ) E₀.a₄
-      letI b := algebraMap ℚ (AlgebraicClosure ℚ) E₀.a₆
-      (x₁ ^ 3 + a * x₁ + b) ≠ 0 ∧
-      x₂ ≠ x₁ ∧
-      x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) ∧
-      x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
-        x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
-          - 2 * (x₁ ^ 3 + a * x₁ + b) *
-            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
-              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ∧
-      (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
-            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
-              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
-          - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3)
-          * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
-        - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
-          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
-            - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) s₁ = x₁ + x₂ + x₃ ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ := by
-  classical
-  set K := AlgebraicClosure ℚ with hKdef
-  haveI hEK : ((E₀⁄K) : WeierstrassCurve K).IsElliptic :=
-    inferInstanceAs (E₀.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
-  -- ### basic order facts
-  have hz : ∀ m : ℤ, (7 : ℤ) ∣ m → m • P = 0 := by
-    intro m hm
-    exact addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hPord]; exact_mod_cast hm)
-  have h7P : (7 : ℤ) • P = 0 := hz 7 dvd_rfl
-  have hnz : ∀ n : ℤ, ¬ ((7 : ℤ) ∣ n) → n • P ≠ 0 := by
-    intro n hn h0
-    have hd := addOrderOf_dvd_iff_zsmul_eq_zero.mpr h0
-    rw [hPord] at hd
-    exact hn (by exact_mod_cast hd)
-  have hred : ∀ n : ℤ, n • P = (n % 7) • P := by
-    intro n
-    have hkk : n = n / 7 * 7 + n % 7 := by omega
-    conv_lhs => rw [hkk]
-    rw [add_zsmul, hz (n / 7 * 7) ⟨n / 7, by ring⟩, zero_add]
-  -- ### the curve base changed, in short normal form
-  have ha₁ : ((E₀⁄K)⁄K).a₁ = 0 := by
-    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
-  have ha₂ : ((E₀⁄K)⁄K).a₂ = 0 := by
-    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map, WeierstrassCurve.a₂_of_isShortNF]
-  have ha₃ : ((E₀⁄K)⁄K).a₃ = 0 := by
-    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
-  have ha₄ : ((E₀⁄K)⁄K).a₄ = algebraMap ℚ K E₀.a₄ := by
-    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
-  have ha₆ : ((E₀⁄K)⁄K).a₆ = algebraMap ℚ K E₀.a₆ := by
-    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
-  haveI hshort : ((E₀⁄K)⁄K).IsShortNF := ⟨ha₁, ha₂, ha₃⟩
-  set a : K := algebraMap ℚ K E₀.a₄ with hadef
-  set b : K := algebraMap ℚ K E₀.a₆ with hbdef
-  have hb₂ : ((E₀⁄K)⁄K).b₂ = 0 := WeierstrassCurve.b₂_of_isShortNF _
-  have hb₄ : ((E₀⁄K)⁄K).b₄ = 2 * a := by rw [WeierstrassCurve.b₄_of_isShortNF, ha₄]
-  have hb₆ : ((E₀⁄K)⁄K).b₆ = 4 * b := by rw [WeierstrassCurve.b₆_of_isShortNF, ha₆]
-  have hb₈ : ((E₀⁄K)⁄K).b₈ = -a ^ 2 := by rw [WeierstrassCurve.b₈_of_isShortNF, ha₄]
-  -- ### the three division-polynomial evaluations, as functions of `x`
-  have hΨ2ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 2).eval x = 4 * (x ^ 3 + a * x + b) := by
-    intro x
-    rw [WeierstrassCurve.ΨSq_two, WeierstrassCurve.Ψ₂Sq]
-    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, hb₂, hb₄, hb₆]
-    ring
-  have hΨ3ev : ∀ x : K, ((E₀⁄K)⁄K).Ψ₃.eval x
-      = 3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2 := by
-    intro x
-    rw [WeierstrassCurve.Ψ₃]
-    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, eval_ofNat, hb₂, hb₄, hb₆, hb₈]
-    ring
-  have hΨ4ev : ∀ x : K, ((E₀⁄K)⁄K).preΨ₄.eval x
-      = 2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
-          - 4 * a * b * x - a ^ 3 - 8 * b ^ 2) := by
-    intro x
-    rw [WeierstrassCurve.preΨ₄]
-    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, eval_ofNat,
-      hb₂, hb₄, hb₆, hb₈]
-    ring
-  have hΦ2ev : ∀ x : K, (((E₀⁄K)⁄K).Φ 2).eval x
-      = x ^ 4 - 2 * a * x ^ 2 - 8 * b * x + a ^ 2 := by
-    intro x
-    rw [WeierstrassCurve.Φ_two]
-    simp only [eval_sub, eval_mul, eval_pow, eval_C, eval_X, hb₄, hb₆, hb₈]
-    ring
-  have hΨSq3ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 3).eval x
-      = (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 2 := by
-    intro x
-    rw [WeierstrassCurve.ΨSq_three, eval_pow, hΨ3ev]
-  have hΦ3ev : ∀ x : K, (((E₀⁄K)⁄K).Φ 3).eval x
-      = x * (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 2
-          - 2 * (x ^ 3 + a * x + b) *
-            (4 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
-              - 4 * a * b * x - a ^ 3 - 8 * b ^ 2)) := by
-    intro x
-    rw [WeierstrassCurve.Φ_three]
-    simp only [eval_sub, eval_mul, eval_pow, eval_X]
-    rw [hΨ3ev, hΨ4ev, show ((E₀⁄K)⁄K).Ψ₂Sq = ((E₀⁄K)⁄K).ΨSq 2 from
-      (WeierstrassCurve.ΨSq_two _).symm, hΨ2ev]
-    ring
-  -- `preΨ 5` and `ΨSq 7`
-  have h3odd : ¬ Even (3 : ℤ) := by decide
-  have hpre2 : ((E₀⁄K)⁄K).preΨ 2 = 1 := by
-    rw [show ((2 : ℤ)) = ((2 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
-      WeierstrassCurve.preΨ'_two]
-  have hpre3 : ((E₀⁄K)⁄K).preΨ 3 = ((E₀⁄K)⁄K).Ψ₃ := by
-    rw [show ((3 : ℤ)) = ((3 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
-      WeierstrassCurve.preΨ'_three]
-  have hpre4 : ((E₀⁄K)⁄K).preΨ 4 = ((E₀⁄K)⁄K).preΨ₄ := by
-    rw [show ((4 : ℤ)) = ((4 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
-      WeierstrassCurve.preΨ'_four]
-  have hpre5 : ((E₀⁄K)⁄K).preΨ 5
-      = ((E₀⁄K)⁄K).preΨ₄ * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2 - ((E₀⁄K)⁄K).Ψ₃ ^ 3 := by
-    have h := WeierstrassCurve.preΨ'_odd ((E₀⁄K)⁄K) 0
-    norm_num at h
-    rw [show ((5 : ℤ)) = ((5 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat]
-    simpa using h
-  have hΨSq7eq : ((E₀⁄K)⁄K).ΨSq 7
-      = ((((E₀⁄K)⁄K).preΨ₄ * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2 - ((E₀⁄K)⁄K).Ψ₃ ^ 3) * ((E₀⁄K)⁄K).Ψ₃ ^ 3
-          - ((E₀⁄K)⁄K).preΨ₄ ^ 3 * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2) ^ 2 := by
-    rw [show ((7 : ℤ)) = 2 * 3 + 1 by norm_num, WeierstrassCurve.ΨSq_odd]
-    simp only [if_neg h3odd, show ((3 : ℤ) + 2) = 5 from by norm_num,
-      show ((3 : ℤ) - 1) = 2 from by norm_num, show ((3 : ℤ) + 1) = 4 from by norm_num,
-      hpre5, hpre3, hpre2, hpre4, one_mul, mul_one]
-  -- NOTE: the `ΨSq 7` evaluation is stated in the shape the rewrites literally produce.
-  -- Converting it to the shape the conclusion demands is a THREE-ATOM `ring` identity
-  -- (`hkey` below); doing it here instead would make `ring` expand a degree-`24`
-  -- polynomial in three variables, which costs minutes.
-  have hΨSq7ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 7).eval x
-      = ((2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
-              - 4 * a * b * x - a ^ 3 - 8 * b ^ 2) * (4 * (x ^ 3 + a * x + b)) ^ 2
-          - (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 3)
-          * (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 3
-        - (2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
-            - 4 * a * b * x - a ^ 3 - 8 * b ^ 2)) ^ 3
-            * (4 * (x ^ 3 + a * x + b)) ^ 2) ^ 2 := by
-    intro x
-    rw [hΨSq7eq]
-    simp only [eval_sub, eval_mul, eval_pow]
-    rw [hΨ3ev, hΨ4ev, show ((E₀⁄K)⁄K).Ψ₂Sq = ((E₀⁄K)⁄K).ΨSq 2 from
-      (WeierstrassCurve.ΨSq_two _).symm, hΨ2ev]
-  have hkey : ∀ e f₃ G : K,
-      (2 * G * (4 * e) ^ 2 - f₃ ^ 3) * f₃ ^ 3 - (2 * G) ^ 3 * (4 * e) ^ 2
-        = (8 * e ^ 2 * (4 * G) - f₃ ^ 3) * f₃ ^ 3 - 2 * e ^ 2 * (4 * G) ^ 3 := by
-    intro e f₃ G; ring
-  -- ### unpack the point
-  have hP0 : P ≠ 0 := by simpa using hnz 1 (by norm_num)
-  obtain ⟨x₁, y₁, hns, hPeq⟩ : ∃ (x y : K) (h : (E₀⁄K).toAffine.Nonsingular x y),
-      P = Affine.Point.some x y h := by
-    rcases P with _ | ⟨x, y, h⟩
-    · exact absurd rfl hP0
-    · exact ⟨x, y, h, rfl⟩
-  subst hPeq
-  -- the `2`- and `3`-division values do not vanish at `x₁`
-  have hΨ2ne : (((E₀⁄K)⁄K).ΨSq 2).eval x₁ ≠ 0 := by
-    intro h
-    exact hnz 2 (by norm_num) ((TorsionCard.smul_some_eq_zero_iff (E₀⁄K)
-      (by norm_num : (2 : ℤ) ≠ 0) hns).mpr h)
-  have hΨ3ne : (((E₀⁄K)⁄K).ΨSq 3).eval x₁ ≠ 0 := by
-    intro h
-    exact hnz 3 (by norm_num) ((TorsionCard.smul_some_eq_zero_iff (E₀⁄K)
-      (by norm_num : (3 : ℤ) ≠ 0) hns).mpr h)
-  have hΨ7 : (((E₀⁄K)⁄K).ΨSq 7).eval x₁ = 0 :=
-    (TorsionCard.smul_some_eq_zero_iff (E₀⁄K) (by norm_num : (7 : ℤ) ≠ 0) hns).mp
-      h7P
-  obtain ⟨x₂, y₂, hns₂, h2P, hx₂⟩ := TorsionCard.exists_smul_some_eq (E₀⁄K)
-    (by norm_num : (2 : ℤ) ≠ 0) hns hΨ2ne
-  obtain ⟨x₃, y₃, hns₃, h3P, hx₃⟩ := TorsionCard.exists_smul_some_eq (E₀⁄K)
-    (by norm_num : (3 : ℤ) ≠ 0) hns hΨ3ne
-  -- ### the three identities
-  have he0 : x₁ ^ 3 + a * x₁ + b ≠ 0 := by
-    intro h
-    exact hΨ2ne (by rw [hΨ2ev, h, mul_zero])
-  have hdup : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b))
-      = x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2 := by
-    rw [← hΨ2ev, ← hΦ2ev]; exact hx₂
-  have htri : x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
-      = x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
-          - 2 * (x₁ ^ 3 + a * x₁ + b) *
-            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
-              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) := by
-    rw [← hΦ3ev, ← hΨSq3ev]; exact hx₃
-  have hpsi7 : (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
-            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
-              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
-          - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3)
-          * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
-        - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
-          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
-            - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 := by
-    have h := hΨ7
-    rw [hΨSq7ev, hkey] at h
-    exact pow_eq_zero_iff two_ne_zero |>.mp h
-  -- ### the `x`-coordinates as `veluPointX` values
-  have hxv1 : veluPointX ((1 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₁ := by
-    rw [one_zsmul]; rfl
-  have hxv2 : veluPointX ((2 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₂ := by
-    rw [h2P]; rfl
-  have hxv3 : veluPointX ((3 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₃ := by
-    rw [h3P]; rfl
-  -- ### distinctness
-  have hxne : ∀ i j : ℤ, ¬((7 : ℤ) ∣ i) → ¬((7 : ℤ) ∣ j) → ¬((7 : ℤ) ∣ (i - j)) →
-      ¬((7 : ℤ) ∣ (i + j)) →
-      veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))
-        ≠ veluPointX (j • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
-    intro i j hi hj hij hij' h
-    rcases velu_pointX_eq_iff (hnz i hi) (hnz j hj) h with h' | h'
-    · exact hnz (i - j) hij (by rw [sub_zsmul, h']; simp)
-    · exact hnz (i + j) hij' (by rw [add_zsmul, h']; simp)
-  have h12 : x₁ ≠ x₂ := by
-    have := hxne 1 2 (by decide) (by decide) (by decide) (by decide)
-    rwa [hxv1, hxv2] at this
-  have h13 : x₁ ≠ x₃ := by
-    have := hxne 1 3 (by decide) (by decide) (by decide) (by decide)
-    rwa [hxv1, hxv3] at this
-  have h23 : x₂ ≠ x₃ := by
-    have := hxne 2 3 (by decide) (by decide) (by decide) (by decide)
-    rwa [hxv2, hxv3] at this
-  -- ### the Galois action permutes `{x₁, x₂, x₃}`
-  have hnegmul : ∀ i : ℤ,
-      ((7 : ℤ) - i) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)
-        = -(i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
-    intro i
-    rw [eq_neg_iff_add_eq_zero, ← add_zsmul]
-    simpa using h7P
-  set T : Finset K := {x₁, x₂, x₃} with hTdef
-  have hTstab : ∀ σ : K ≃ₐ[ℚ] K, ∀ x ∈ T, σ x ∈ T := by
-    intro σ x hx
-    have hmain : ∀ i : ℤ, ¬((7 : ℤ) ∣ i) →
-        σ (veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))) ∈ T := by
-      intro i hi
-      obtain ⟨k, hk⟩ := hstab σ i
-      have h0 : σ (veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)))
-          = veluPointX (k • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
-        rw [← velu_pointX_map E₀ σ, hk]
-      have hk0 : ¬ ((7 : ℤ) ∣ k) := by
-        intro hd
-        obtain ⟨m, rfl⟩ := hd
-        rw [hz (7 * m) ⟨m, rfl⟩] at hk
-        have := velu_point_map_symm_map E₀ σ
-          (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))
-        rw [hk] at this
-        exact hnz i hi (by rw [← this]; rfl)
-      rw [h0, hred k]
-      have h7 : k % 7 = 1 ∨ k % 7 = 2 ∨ k % 7 = 3 ∨ k % 7 = 4 ∨ k % 7 = 5 ∨ k % 7 = 6 := by
-        have h1 : (0 : ℤ) ≤ k % 7 := Int.emod_nonneg k (by norm_num)
-        have h2 : k % 7 < 7 := Int.emod_lt_of_pos k (by norm_num)
-        have h3 : k % 7 ≠ 0 := by
-          intro h; exact hk0 (Int.dvd_of_emod_eq_zero h)
-        omega
-      simp only [hTdef, Finset.mem_insert, Finset.mem_singleton]
-      rcases h7 with h | h | h | h | h | h
-      · rw [h, hxv1]; exact Or.inl rfl
-      · rw [h, hxv2]; exact Or.inr (Or.inl rfl)
-      · rw [h, hxv3]; exact Or.inr (Or.inr rfl)
-      · rw [h, show ((4 : ℤ)) = 7 - 3 by norm_num, hnegmul, velu_pointX_neg, hxv3]
-        exact Or.inr (Or.inr rfl)
-      · rw [h, show ((5 : ℤ)) = 7 - 2 by norm_num, hnegmul, velu_pointX_neg, hxv2]
-        exact Or.inr (Or.inl rfl)
-      · rw [h, show ((6 : ℤ)) = 7 - 1 by norm_num, hnegmul, velu_pointX_neg, hxv1]
-        exact Or.inl rfl
-    simp only [hTdef, Finset.mem_insert, Finset.mem_singleton] at hx
-    rcases hx with rfl | rfl | rfl
-    · have := hmain 1 (by decide); rwa [hxv1] at this
-    · have := hmain 2 (by decide); rwa [hxv2] at this
-    · have := hmain 3 (by decide); rwa [hxv3] at this
-  have hTcard : T.card = 3 := by
-    rw [hTdef, Finset.card_insert_of_notMem (by simp [h12, h13]),
-      Finset.card_insert_of_notMem (by simp [h23]), Finset.card_singleton]
-  have himg : ∀ σ : K ≃ₐ[ℚ] K, T.image (σ : K → K) = T := by
-    intro σ
-    refine Finset.eq_of_subset_of_card_le ?_ ?_
-    · intro x hx
-      obtain ⟨y, hy, rfl⟩ := Finset.mem_image.mp hx
-      exact hTstab σ y hy
-    · rw [Finset.card_image_of_injective _ σ.injective]
-  -- ### the symmetric functions are Galois-fixed
-  have hinj : ∀ σ : K ≃ₐ[ℚ] K, Set.InjOn ((σ : K → K)) (↑T : Set K) :=
-    fun σ _ _ _ _ h => σ.injective h
-  have hnm1 : x₁ ∉ ({x₂, x₃} : Finset K) := by simp [h12, h13]
-  have hnm2 : x₂ ∉ ({x₃} : Finset K) := by simp [h23]
-  -- the three sums/products over `T`, written out
-  have hsum_id : ∑ y ∈ T, y = x₁ + x₂ + x₃ := by
-    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
-  have hsum_sq : ∑ y ∈ T, y ^ 2 = x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2 := by
-    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
-  have hprod_id : ∏ y ∈ T, y = x₁ * x₂ * x₃ := by
-    rw [hTdef, Finset.prod_insert hnm1, Finset.prod_insert hnm2, Finset.prod_singleton]; ring
-  have hsum_id' : ∀ σ : K ≃ₐ[ℚ] K, ∑ y ∈ T, σ y = σ x₁ + σ x₂ + σ x₃ := by
-    intro σ
-    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
-  have hsum_sq' : ∀ σ : K ≃ₐ[ℚ] K, ∑ y ∈ T, (σ y) ^ 2 = (σ x₁) ^ 2 + (σ x₂) ^ 2 + (σ x₃) ^ 2 := by
-    intro σ
-    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
-  have hprod_id' : ∀ σ : K ≃ₐ[ℚ] K, ∏ y ∈ T, σ y = σ x₁ * σ x₂ * σ x₃ := by
-    intro σ
-    rw [hTdef, Finset.prod_insert hnm1, Finset.prod_insert hnm2, Finset.prod_singleton]; ring
-  have hfix1 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ + x₂ + x₃) = x₁ + x₂ + x₃ := by
-    intro σ
-    have h2 : ∑ y ∈ T.image (σ : K → K), y = ∑ y ∈ T, σ y := Finset.sum_image (hinj σ)
-    rw [himg σ, hsum_id, hsum_id' σ] at h2
-    rw [map_add, map_add]
-    exact h2.symm
-  have hfixp2 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2) = x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2 := by
-    intro σ
-    have h2 : ∑ y ∈ T.image (σ : K → K), y ^ 2 = ∑ y ∈ T, (σ y) ^ 2 := Finset.sum_image (hinj σ)
-    rw [himg σ, hsum_sq, hsum_sq' σ] at h2
-    rw [map_add, map_add, map_pow, map_pow, map_pow]
-    exact h2.symm
-  have hfix3 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ * x₂ * x₃) = x₁ * x₂ * x₃ := by
-    intro σ
-    have h2 : ∏ y ∈ T.image (σ : K → K), y = ∏ y ∈ T, σ y := Finset.prod_image (hinj σ)
-    rw [himg σ, hprod_id, hprod_id' σ] at h2
-    rw [map_mul, map_mul]
-    exact h2.symm
-  have hfix2 : ∀ σ : K ≃ₐ[ℚ] K,
-      σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ := by
-    intro σ
-    have hexp : (2 : K) * σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
-        = σ (x₁ + x₂ + x₃) ^ 2 - σ (x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2) := by
-      simp only [map_add, map_mul, map_pow]
-      ring
-    have h2 : (2 : K) * σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
-        = 2 * (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) := by
-      rw [hexp, hfix1 σ, hfixp2 σ]; ring
-    exact mul_left_cancel₀ two_ne_zero h2
-  obtain ⟨s₁, hs₁⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ + x₂ + x₃) hfix1
-  obtain ⟨s₂, hs₂⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) hfix2
-  obtain ⟨s₃, hs₃⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ * x₂ * x₃) hfix3
-  exact ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h12.symm, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩
-
-/-- **Coordinates of the kernel of a stable order-`7` subgroup** (PROVEN
-2026-07-27 over `MazurLevelSeven.exists_kernelCoords_of_isShortNF`; cut
-2026-07-26 out of `exists_x0Seven_kernelInvariants`, which is PROVEN over it).
-
-This is the purely GEOMETRIC half: read the three `±`-pairs of `⟨g⟩` off a short
-Weierstrass model and record that their symmetric functions are rational.  It
-contains no `X_0(7)`, no hauptmodul and no `7`-division algebra beyond writing
-down `x(2P)`, `x(3P)` and `7P = 0`; all of that has been discharged already in
-`MazurLevelSeven.kernelRelations`, `sOne_ne_zero` and
-`kernelInvariants_of_relations`, which are proven and axiom-clean.
-
-**What the conclusion says**, with `a = A`, `b = B` in `ℚ̄` and `P` a generator of
-`⟨g⟩`:
-
-* `A, B` are the coefficients of a short model `y² = x³ + Ax + B` of `E` over `ℚ`
-  — the `j`-relation `E.j·(4A³ + 27B²) = 6912A³` and `4A³ + 27B² ≠ 0` are
-  `WeierstrassCurve.j_of_isShortNF` and `Δ_of_isShortNF` for that model
-  (`Mathlib/AlgebraicGeometry/EllipticCurve/NormalForms.lean`), transported along
-  `variableChange_j`;
-* `x₁ = x(P)`, and `x₁³ + ax₁ + b = y(P)² ≠ 0` because `P` has odd order `7`, so
-  `P` is not `2`-torsion;
-* `x₂ = x(2P)`, written as the duplication formula
-  `x₂·4(x₁³ + ax₁ + b) = x₁⁴ − 2ax₁² − 8bx₁ + a²`, and `x₂ ≠ x₁` because
-  `2P ≠ ±P`;
-* `x₃ = x(3P)`, written as `x₃·f₃² = x₁f₃² − 2·e·f₄` with
-  `f₃ = 3x₁⁴ + 6ax₁² + 12bx₁ − a²` and
-  `f₄ = 4(x₁⁶ + 5ax₁⁴ + 20bx₁³ − 5a²x₁² − 4abx₁ − a³ − 8b²)` — i.e.
-  `x(3P) = x − ψ₂ψ₄/ψ₃²`;
-* `ψ₇(x₁) = 0`, written in the factored form `ψ₅ψ₃³ − ψ₂²ψ₄³` with
-  `ψ₅ = 8e²f₄ − f₃³`, which is exactly `7P = 0` for a point of exact order `7`;
-* `s₁, s₂, s₃ ∈ ℚ` are the elementary symmetric functions of `x₁, x₂, x₃`.
-
-**Where the RATIONALITY comes from, and it is already in the tree.**  This is
-the `ℤ/3`-descent and nothing else.  `Velu.velu_sum_fixed` (`Velu.lean`) says
-that any Galois-EQUIVARIANT function summed over a Galois-STABLE finite set of
-points is Galois-fixed, and `Velu.velu_pointX_map` supplies the equivariance of
-`veluPointX`.  Applying that to `Q ↦ x(Q)^k` over `C = ⟨g⟩` makes every power sum
-`Σ_{Q ∈ C} x(Q)^k` Galois-fixed, hence rational by
-`exists_rat_of_galois_fixed` (`MazurTorsion.lean`, and note the mandatory
-`set_option backward.isDefEq.respectTransparency false` recorded there).  Since
-`velu_fiber` / `velu_pointX_eq_iff` say the fibre of `veluPointX` over each value
-is exactly a `±`-pair and `|C| = 7` is odd, that sum is `2(x₁^k + x₂^k + x₃^k)`;
-Newton's identities in three variables (a `ring` computation in characteristic
-`0`) then give `s₁, s₂, s₃ ∈ ℚ`.
-
-**Do NOT try to make `x₁` itself rational.**  For order `3` it is, which is why
-`exists_x0Three_hauptmodul` fell out in four lines; for order `7` the three
-`x(iP)` generate a cyclic cubic field.  Worked instance: for `[1,−1,0,3,−1]` the
-kernel polynomial is the IRREDUCIBLE cubic `x³ + 6x² + 3x − 1` of discriminant
-`729 = 27²`, splitting field `ℚ(ζ₉)⁺`.  So there is no Tate normal form for `P`
-over `ℚ` and only the symmetric functions descend.
-
-**Suggested route.**  `WeierstrassCurve.exists_variableChange_isShortNF` for the
-model and `Point.equivVariableChangeBaseChange` /
-`Point.equivVariableChangeBaseChange_galois`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`) to carry
-`g` and `hstable` across it; `TorsionCard.exists_smul_some_eq` and
-`TorsionCard.smul_some_eq_zero_iff` for the three coordinate identities and for
-`ψ₇(x₁) = 0` — the only real work there is matching mathlib's `Φ`/`ΨSq`
-normalisation against the explicit short-model polynomials written above.
-`TorsionCard.eq_or_add_eq_zero_of_X_eq` gives the distinctness `x₂ ≠ x₁`
-(`2P = ±P` would force `P = 0` or `3P = 0`). -/
-theorem WeierstrassCurve.exists_x0Seven_kernelCoords (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 7)
-    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      ∀ x ∈ AddSubgroup.zmultiples g,
-        Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) :
-    ∃ (A B s₁ s₂ s₃ : ℚ) (a b x₁ x₂ x₃ : AlgebraicClosure ℚ),
-      a = algebraMap ℚ (AlgebraicClosure ℚ) A ∧
-      b = algebraMap ℚ (AlgebraicClosure ℚ) B ∧
-      4 * A ^ 3 + 27 * B ^ 2 ≠ 0 ∧
-      E.j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3 ∧
-      (x₁ ^ 3 + a * x₁ + b) ≠ 0 ∧
-      x₂ ≠ x₁ ∧
-      x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) ∧
-      x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
-        x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
-          - 2 * (x₁ ^ 3 + a * x₁ + b) *
-            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ∧
-      (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
-            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
-          - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
-        - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
-          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) s₁ = x₁ + x₂ + x₃ ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ := by
-  classical
-  haveI hi2 : Invertible (2 : ℚ) := invertibleOfNonzero (by norm_num)
-  haveI hi3 : Invertible (3 : ℚ) := invertibleOfNonzero (by norm_num)
-  obtain ⟨C, hC⟩ := E.exists_variableChange_isShortNF
-  haveI hCi : (C • E).IsShortNF := hC
-  -- the Galois-equivariant identification of points induced by `C`
-  set ee := Affine.Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)
-  have hee := Affine.Point.equivVariableChangeBaseChange_galois E C (AlgebraicClosure ℚ)
-  obtain ⟨P, hPee⟩ : ∃ P : ((C • E)⁄(AlgebraicClosure ℚ)).Point, ee P = g :=
-    ⟨ee.symm g, ee.apply_symm_apply g⟩
-  have hPord : addOrderOf P = 7 := by
-    have h := ee.addOrderOf_eq P
-    rw [hPee, hg] at h
-    exact h.symm
-  have hstab : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, ∀ n : ℤ, ∃ k : ℤ,
-      Affine.Point.map σ.toAlgHom (n • P) = k • P := by
-    intro σ n
-    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
-      (hstable σ (n • g) (AddSubgroup.mem_zmultiples_iff.mpr ⟨n, rfl⟩))
-    refine ⟨k, ee.injective ?_⟩
-    have hL : ee (Affine.Point.map σ.toAlgHom (n • P))
-        = Affine.Point.map σ.toAlgHom (n • g) := by
-      rw [hee σ (n • P), map_zsmul, hPee]
-    have hR : ee (k • P) = k • g := by rw [map_zsmul, hPee]
-    rw [hL, hR]
-    exact hk.symm
-  obtain ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩ :=
-    MazurLevelSeven.exists_kernelCoords_of_isShortNF (C • E) P hPord hstab
-  have hΔ : (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2 : ℚ) ≠ 0 := by
-    intro h0
-    have hΔ0 : (C • E).Δ = 0 := by
-      rw [WeierstrassCurve.Δ_of_isShortNF, h0, mul_zero]
-    exact not_isUnit_zero (hΔ0 ▸ (C • E).isUnit_Δ)
-  have hjeq : E.j * (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2) = 6912 * (C • E).a₄ ^ 3 := by
-    rw [← WeierstrassCurve.variableChange_j (W := E) (C := C), WeierstrassCurve.j_of_isShortNF,
-      div_mul_cancel₀ _ hΔ]
-  exact ⟨(C • E).a₄, (C • E).a₆, s₁, s₂, s₃, _, _, x₁, x₂, x₃, rfl, rfl, hΔ, hjeq,
-    he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩
-
-/-- **The kernel-polynomial invariants of a stable order-`7` subgroup** (PROVEN
-2026-07-26 over the single geometric leaf
-`WeierstrassCurve.exists_x0Seven_kernelCoords`): from a
-Weierstrass model `y² = x³ + Ax + B` of `E` over `ℚ` together with the first two
-symmetric functions `s₁, s₂` of the `x`-coordinates of the three `±`-pairs in
-`⟨g⟩` — i.e. the coefficients of the KERNEL POLYNOMIAL
-`ψ_C(x) = x³ − s₁x² + s₂x − s₃` — and check the two explicit polynomial
-identities they satisfy.
-
-**This is the `ℤ/3`-descent, and nothing else.** For an order-`3` subgroup
-`C\{0} = {P, −P}` is a single `±`-pair, so `x(P)` is Galois-FIXED and hence
-rational, which is why `exists_x0Three_hauptmodul` fell out of machinery already
-in this file. For order `7`, `C\{0}` is three `±`-pairs permuted by `Gal(ℚ̄/ℚ)`
-through `(ℤ/7)ˣ/±1 ≅ ℤ/3`; each `x(iP)` generates a cyclic cubic field and only
-the SYMMETRIC functions descend to `ℚ`. Stability of `⟨g⟩` says exactly that
-`Gal` permutes the three roots, so `ψ_C ∈ ℚ[x]`, and `s₁, s₂ ∈ ℚ` is the entire
-modular content of the node. The two identities are then a division-polynomial
-computation over `ℚ` with no Galois action in it.
-
-**Worked instance of the obstruction, so nobody re-attempts a Tate normal
-form.** For `[1,−1,0,3,−1]` the `7`-division polynomial factors as
-`(degree 3)·(degree 21)` and the kernel polynomial is the IRREDUCIBLE cubic
-`ψ_C = x³ + 6x² + 3x − 1`, of discriminant `729 = 27²` — a square, so the cubic
-is CYCLIC, with splitting field the real cyclotomic field `ℚ(ζ₉)⁺`. Hence
-`x(P)` is a non-rational cubic irrationality for every `P ∈ C\{0}` and **no Tate
-normal form for `P` exists over `ℚ`**. The sibling `[1,−1,0,−42,−100]` behaves
-identically (`ψ_C = x³ + 6x² − 15x − 73`, discriminant `59049 = 243²`). By
-contrast `26b1`, which HAS a rational point of order `7`, has
-`ψ_C = (x−1)(x+1)(x−3)` split over `ℚ` — that is the sub-case, and the only one
-an `X_1(7)` route can reach, which is why `exists_levelSeven_jParam` does NOT
-cover this node.
-
-**Faithfulness of the two side conditions.** `Q = 6A − 4s₁² + 18s₂` equals
-`1296·u⁴·t·(t² + 13t + 49)` on the universal family, so it vanishes only at the
-cusp `t = 0`, where there is no elliptic curve; and `4A³ + 27B² ≠ 0` is just
-`Δ ≠ 0`. Both therefore hold at every genuine `(E, ⟨g⟩)`, and neither is a
-disguised extra hypothesis. See the section note above for the derivation of the
-identities and for the Magma verification data.
-**HOW IT IS PROVEN, and where the bulk went** (2026-07-26).  The weight-`12` and
-weight-`22` identities stated here are NOT what has to be computed.  They are
-consequences of two weight-`8` relations in `(A, B, s₁, s₂)`,
-
-  `E1 :  12A² + 10A·s₁² − 6A·s₂ − s₁⁴ + 21s₂² = 0`
-  `E2 :  144B·s₁ + 46A·s₁² + 6A·s₂ − 7s₁⁴ + 24s₁²·s₂ + 39s₂² = 0`,
-
-which span the WHOLE space of weight-`8` relations on the `X_0(7)` moduli (there
-is none outside their span, and none at weight `10`).  The first identity is the
-exact factorisation `h1 = 7203·(3A + s₁²)·E1`; the second is
-`h2 = c₁·E1 + c₂·E2` for two `11`-term cofactors.  See
-`MazurLevelSeven.kernelRelations` (which proves `E1`, `E2` from the
-division-polynomial coordinates by a `24`-term `ψ₇`-certificate),
-`MazurLevelSeven.sOne_ne_zero`, and
-`MazurLevelSeven.kernelInvariants_of_relations`.
-
-**The side condition `Q ≠ 0` needs strictly more than `E1`, `E2` and `Δ ≠ 0`, and
-this is not a technicality.**  `(A, s₁, s₂) = (0, 0, 0)` with `B` free satisfies
-both `E1` and `E2` identically and has `Δ = 27B² ≠ 0`, yet gives `P = Q = 0`.  So
-`V(E1, E2)` has a spurious component that must be excluded by an input from the
-geometry, and that input is `s₁ ≠ 0` — proven in `MazurLevelSeven.sOne_ne_zero`
-by showing `s₁ = 0` would force `x₂/x₁` to be a primitive cube root of unity
-which the duplication formula writes as a ratio of rationals.  Anyone restating
-or reusing this node should keep that in view: `Q ≠ 0` is where its arithmetic
-content sits.
-
-(Correction to the paragraph above: the universal-family value of `Q` is
-`63504·u⁴·t·(t² + 13t + 49)`, not `1296·u⁴·t·(t² + 13t + 49)`; `63504 = 49·1296`
-is exactly what makes `P/Q` equal `t` rather than `49t`.  The conclusion drawn —
-that `Q` vanishes only at the cusp `t = 0` — is unaffected.) -/
-theorem WeierstrassCurve.exists_x0Seven_kernelInvariants (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 7)
-    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      ∀ x ∈ AddSubgroup.zmultiples g,
-        Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) :
-    ∃ A B s₁ s₂ P Q : ℚ,
-      P = 49 * (s₁ ^ 2 - 3 * s₂) ∧
-      Q = 6 * A - 4 * s₁ ^ 2 + 18 * s₂ ∧
-      Q ≠ 0 ∧
-      4 * A ^ 3 + 27 * B ^ 2 ≠ 0 ∧
-      E.j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3 ∧
-      147 * A * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2)
-        + s₁ ^ 2 * (P ^ 2 + 245 * P * Q + 2401 * Q ^ 2) = 0 ∧
-      9261 * B * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2) ^ 2
-        + 2 * s₁ ^ 3 * (P ^ 4 - 490 * P ^ 3 * Q - 21609 * P ^ 2 * Q ^ 2
-          - 235298 * P * Q ^ 3 - 823543 * Q ^ 4) = 0 := by
-  obtain ⟨A, B, s₁, s₂, s₃, a, b, x₁, x₂, x₃, ha, hb, hΔ, hj, hEne, hne, hx2, hx3,
-    hpsi, hs1, hs2, hs3⟩ := E.exists_x0Seven_kernelCoords g hg hstable
-  obtain ⟨hE1, hE2⟩ :=
-    MazurLevelSeven.kernelRelations (algebraMap ℚ (AlgebraicClosure ℚ))
-      A B s₁ s₂ a b x₁ x₂ x₃ ha hb hEne hne hx2 hx3 hpsi hs1 hs2
-  have hs1ne : s₁ ≠ 0 :=
-    MazurLevelSeven.sOne_ne_zero (algebraMap ℚ (AlgebraicClosure ℚ))
-      A B s₁ s₂ s₃ a b x₁ x₂ x₃ ha hb hEne hne hx2 hE1 hs1 hs2 hs3
-  obtain ⟨hQ, hh1, hh2⟩ :=
-    MazurLevelSeven.kernelInvariants_of_relations A B s₁ s₂ hs1ne hΔ hE1 hE2
-  exact ⟨A, B, s₁, s₂, 49 * (s₁ ^ 2 - 3 * s₂), 6 * A - 4 * s₁ ^ 2 + 18 * s₂,
-    rfl, rfl, hQ, hΔ, hj, hh1, hh2⟩
-
-/-- **The hauptmodul of `X_0(7)`** (PROVEN 2026-07-26 over the single leaf
-`exists_x0Seven_kernelInvariants` — a GENUS-`0` moduli
-`g` of `E/ℚ` has exact order `7` and is `Gal(ℚ̄/ℚ)`-stable, then there is a
-rational hauptmodul value `t` with
-
-  `j(E) · t⁷ = (t² + 13t + 49)(t² + 245t + 2401)³`.
-
-`X_0(7)` has genus `0` and is `ℙ¹_ℚ`; its hauptmodul is the `η`-quotient
-`t = (η(τ)/η(7τ))⁴ = q⁻¹ − 4 + 2q + 8q² − 5q³ + ⋯`, defined over `ℚ`, and
-the degree-`8` `j`-map is the displayed relation. Its two cusps are
-`t = 0` (a pole of order `7`) and `t = ∞` (order `1`); the
-denominator-free form already excludes `t = 0` (the right side there is
-`49 · 2401³ ≠ 0`), so again no side condition is needed.
-
-**FALSE CLAIM RETIRED (2026-07-26). This node is NOT "strictly weaker than
-the sibling `exists_levelSeven_jParam`", and `exists_levelSeven_jParam` can
-NEVER discharge it — the refutation is already proven in this file.** The
-retired paragraph read: "`X_1(7)` also has genus `0`, with Kubert parameter
-`d` and `j = c₄(d)³/Δ(d)` of degree `24`, and the degree-`3` covering
-`X_1(7) → X_0(7)` sends `d` to `t`. So a proof of `exists_levelSeven_jParam`
-together with the `ℤ/3`-descent gives this node too." The task prompt that
-generated this cut repeated it in the sharper form "check whether that
-sibling has landed before proving this from scratch", which would send an
-agent to transcribe a covering map and find the node still open.
-
-The covering map is real and is written out below; what is false is that it
-suffices. `no_torsion_order_21`, PROVEN a few declarations down, derives its
-contradiction precisely from the fact that the FOUR `j`-values this whole
-`X_0(21)` cluster produces are NOT in the image of the `X_1(7)` `j`-map — it
-applies `MazurLevelSeven.j_ne_of_five_dvd` to each of `3375/2`,
-`−140625/8`, `−189613868625/128`, `−1159088625/2097152` in turn. So the four
-curves of the conductor-`162` class carry a rational `7`-ISOGENY while having
-no rational `7`-torsion point in any quadratic twist, and they are exactly
-the points this node has to reach. The `X_1(7)` route reaches none of them.
-
-The reason is structural, and is the same discriminating rule that separates
-this node from its level-`3` sibling. For a stable subgroup `C` of order `3`,
-`C\{0} = {P, −P}` is one `±`-pair, so `x(P)` is Galois-FIXED and therefore
-rational — which is what makes a Tate normal form available and is why
-`exists_x0Three_hauptmodul` fell out of machinery already in this file. For
-order `7`, `C\{0}` is three `±`-pairs, permuted by `Gal(ℚ̄/ℚ)` through
-`(ℤ/7)ˣ/±1 ≅ ℤ/3`. Each `x(iP)` generates a cyclic cubic field; only the
-SYMMETRIC functions descend to `ℚ`. So the `ℤ/3`-descent is not an addendum
-to a covering-map computation — it is the entire content of the node, and it
-is genuinely absent from this development.
-
-**THE COVERING MAP, worked out and verified so the next owner need not redo
-it** (2026-07-26; the polynomial identities below were checked exactly, and
-the resulting Lean lemma compiles — it is recorded here rather than added as
-a declaration because nothing in the cone would consume it, since it settles
-only the sub-case this node does not need). The degree-`3` map
-`X_1(7) → X_0(7)` in the coordinates of `MazurLevelSeven` is
-
-  `t = 49 · d(d − 1) / q(d)`,   `q(d) = d³ − 8d² + 5d + 1`,
-
-the third factor of `discPoly`. It is pinned by the pole structure: `j` has
-poles of order `7` at each of `d = 0, 1, ∞` (the three points over the cusp
-`t = 0`) and simple poles at the three roots of `q` (the three points over
-`t = ∞`), so `t` must be `λ·d(d − 1)/q(d)`, and `λ = 49`. Writing
-`m = 49d(d − 1)`, the two numerator factors clear as
-
-  `(t² + 13t + 49) q² = m² + 13mq + 49q² = 49 (d² − d + 1)³`,
-  `(t² + 245t + 2401) q² = m² + 245mq + 2401q² = 2401 · B(d)`,
-  `B(d) = d⁶ − 11d⁵ + 30d⁴ − 15d³ − 10d² + 5d + 1`,
-
-and the whole relation reduces to the factorisation
-
-  `cFourPoly d = (d² − d + 1) · B(d)`,  hence  `c₄³ = (d² − d + 1)³ · B³`,
-
-together with `49⁷ = 49 · 2401³ = 7¹⁴`. Concretely: from
-`j · discPoly d = cFourPoly d ³` with `discPoly d ≠ 0`, multiplying the goal
-through by `q⁸` and cancelling gives `j · t⁷ = (t² + 13t + 49)(t² + 245t +
-2401)³`, with every step a `ring` identity after one rewrite by
-`t · q = 49d(d − 1)`.
-
-**THE CUT THAT WOULD ACTUALLY REDUCE THIS NODE**, therefore, is not through
-`X_1(7)` but through the symmetric functions: (i) a moduli leaf producing,
-from the stable subgroup, the monic RATIONAL cubic
-`ψ_C(x) = ∏_{i=1}^{3} (x − x(iP))` — the kernel polynomial, rational because
-`Gal` permutes its roots — together with the curve in short Weierstrass form;
-and (ii) an algebra leaf computing `t` from `(c₄, c₆, ψ_C)`. Step (i) is the
-order-`7` analogue of what `exists_tateInvariants_of_stableThreeSubgroup`
-does at order `3`; step (ii) is a classical but bulky explicit computation
-that has NOT been done here.
-
-**THAT CUT IS NOW MADE, and step (ii) turned out NOT to be bulky (2026-07-26).**
-Step (i) is the remaining leaf `exists_x0Seven_kernelInvariants`; step (ii) is
-the PROVEN lemma `MazurLevelSeven.hauptmodul_of_kernelRelations`, and the whole
-of it is the single rational function
-
-  `t = 49(s₁² − 3s₂) / (6A − 4s₁² + 18s₂)`
-
-in the coefficients of `ψ_C(x) = x³ − s₁x² + s₂x − s₃` over a short model
-`y² = x³ + Ax + B`. The paragraph "classical but bulky" is therefore RETIRED;
-see the section note above this pair of declarations for the derivation, for the
-second (unusable) solution of the same linear system, and for the Magma data.
-
-**THE CONTENT, IN ONE EQUATION — a sharp reformulation of step (ii), found
-and verified 2026-07-26.** Let `C` be the stable subgroup and `E' = E/C`
-Vélu's quotient, which is defined over `ℚ` and is what `Velu.lean` already
-produces. Then the hauptmodul is pinned by the DISCRIMINANT RATIO alone:
-
-  `t⁶ · Δ(E') = 7¹² · Δ(E)`.
-
-This is the eta-quotient identity `Δ(τ)/Δ(7τ) = (η(τ)/η(7τ))²⁴ = t⁶`, the
-`7¹²` being the scaling between the lattice model for `7τ` and Vélu's
-normalisation (`Δ` has weight `−12`). Checked exactly with Magma on three
-curves (untrusted searcher, never a prover), and the agreement is on the
-nose in every case — the quotient `(Δ(E)/Δ(E'))/t⁶` came out equal to
-`7⁻¹² = 1/13841287201` for all three:
-
-* `[1,−1,0,3,−1]` (conductor `162`, `j = 3375/2`): `Δ = −1458`,
-  `E' = [1,−1,0,−1077,13877]`, `Δ' = −93312`, `t = −49/2`;
-* `[1,−1,0,−42,−100]` (`j = −140625/8`): `Δ = −472392`,
-  `E' = [1,−1,0,−852,19664]`, `Δ' = −123834728448`, `t = −49/8`;
-* `26b1 = [1,−1,1,−3,3]` (`j = −2146689/1664`): `Δ = −1664`,
-  `E' = [1,−1,1,−213,−1257]`, `Δ' = −125497034`, `t = −98/13`.
-
-In each case `t` is the UNIQUE rational root of
-`(t² + 13t + 49)(t² + 245t + 2401)³ − j t⁷`, so the value is unambiguous.
-The first two are exactly the `t₇`-coordinates the `X_0(21)` reconnaissance
-predicts, and the third agrees with the covering map above at `d = 2`
-(`q(2) = −13`, `t = 49·2·1/(−13) = −98/13`) — an independent confirmation of
-that map, computed without reference to it.
-
-**So the whole obstruction is a sixth power.** `t⁶` is rational for free, and
-the node asserts that it has a rational sixth ROOT of the right sign. The
-factorisation `6 = 2 · 3` is exactly the two descents in play: the `ℤ/3` is
-the Galois action on the three `±`-pairs of `C\{0}`, and the `ℤ/2` is the
-quadratic-twist ambiguity that `j` cannot see. Note `t⁶` alone determines `t`
-only up to sign, and the `j`-relation is not even in `t`, so one bit still
-has to be supplied — the two square roots are the curve and its quadratic
-twist.
-
-**Worked instance of the `ℤ/3` obstruction, for anyone who doubts it is
-real.** For `[1,−1,0,3,−1]` the `7`-division polynomial factors as
-`(degree 3)·(degree 21)`, and the kernel polynomial is the IRREDUCIBLE
-cubic `ψ_C = x³ + 6x² + 3x − 1`, of discriminant `729 = 27²` — a square, so
-the cubic is CYCLIC and its splitting field is the real cyclotomic field
-`ℚ(ζ₉)⁺` (conductor `9`, field discriminant `81`). Hence `x(P)` is a
-non-rational cubic irrationality for every `P ∈ C\{0}`, precisely as the
-paragraph above predicts, and no Tate normal form for `P` exists over `ℚ`.
-The sibling curve `[1,−1,0,−42,−100]` behaves identically, with
-`ψ_C = x³ + 6x² − 15x − 73` of discriminant `59049 = 243²`. By contrast
-`26b1`, which HAS a rational point of order `7`, has `ψ_C = x³ − 3x² − x + 3
-= (x−1)(x+1)(x−3)` split over `ℚ` — the sub-case, and the only one the
-`X_1(7)` route can reach.
-
-Checked with Magma (2026-07-26; untrusted searcher, never a proof): the
-four curves of the conductor-`162` class have hauptmodul values
-`t = −49/2`, `−49/8`, `−2`, `−8` respectively, each the UNIQUE rational
-root of `(t² + 13t + 49)(t² + 245t + 2401)³ − j t⁷`. -/
-theorem WeierstrassCurve.exists_x0Seven_hauptmodul (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 7)
-    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      ∀ x ∈ AddSubgroup.zmultiples g,
-        Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) :
-    ∃ t : ℚ, E.j * t ^ 7 =
-      (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 := by
-  obtain ⟨A, B, s₁, s₂, P, Q, rfl, rfl, hQ, hΔ, hj, h1, h2⟩ :=
-    E.exists_x0Seven_kernelInvariants g hg hstable
-  exact MazurLevelSeven.hauptmodul_of_kernelRelations E.j A B s₁ _ _ hQ hΔ hj h1 h2
 
 /-- **The `j`-invariants of the four curves with a rational cyclic
 `21`-isogeny** (PROVEN 2026-07-26 over the three leaves
