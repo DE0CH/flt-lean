@@ -2598,15 +2598,47 @@ law:
 `v = specGal σ ≫ q_j` and hence `v ≫ ι = specGal σ ≫ p j`, which is the
 conclusion.
 
-CHECK THAT WOULD REFUTE THE FOURTH STEP: `Algebra.IsAlgebraic.algHom_bijective`
-(a `K`-algebra endomorphism of an algebraic extension is bijective) must
-resolve at this pin; grep for it together with `AlgEquiv.ofBijective`.  If
-it does not, `IsAlgClosed.equivOfEquiv`-style isomorphism extension is the
-substitute.  CHECK THAT WOULD REFUTE THE FIRST STEP: find, in
-`Mathlib/AlgebraicGeometry/IdealSheaf/Subscheme.lean`, the statement that
-`Hom.toImage` is schematically dominant — `SchemeTheoreticallyDominant` is
-a mathlib morphism property and `Morphisms/SchemeTheoreticallyDominant.lean`
-exists at this pin. -/
+**PIN SURVEY, 2026-07-27 — EVERY INGREDIENT RESOLVES; NO THEORY IS
+MISSING.**  Each of the four steps was looked up by name against a seeded
+`.lake`, and two of them came back cheaper than the sketch above, so the
+sketch is corrected here rather than left to mislead:
+
+1. Schematic dominance is **already a lemma**, and it is not the
+   `SchemeTheoreticallyDominant` property this docstring first reached
+   for: it is `AlgebraicGeometry.Scheme.Hom.toImage_app_injective`
+   (`Mathlib/AlgebraicGeometry/IdealSheaf/Subscheme.lean`), which says
+   every `app` of `f.toImage` is injective, under `[QuasiCompact f]`.
+   And `QuasiCompact (geomPtDesc p)` is ALREADY DERIVED in this file, in
+   the proof of `range_spanSchemeι_subset` — `geomPtDesc p ≫ f` is a
+   morphism of affines, and `QuasiCompact.of_comp` cancels `f`.  So step
+   one costs a citation, not a development.
+2. **Artinian theory is NOT needed** — the sketch above overshot.  `R` is
+   a finite, hence integral, `ℚ`-algebra, so `R ⧸ ker χ_j` is a DOMAIN
+   integral over the field `ℚ`, and `Algebra.IsIntegral.isField_iff_isField`
+   / `isField_of_isIntegral_of_isField'`
+   (`Mathlib/RingTheory/IntegralClosure/IsIntegralClosure/Basic.lean`)
+   make it a field directly.  So `ker χ_j` is maximal with no reference
+   to `IsArtinianRing` and no `Ring.KrullDimLE` at all.
+3. "A prime containing a finite intersection contains a factor" is
+   `Ideal.IsPrime.inf_le'` (or `IsPrime.prod_le`),
+   `Mathlib/RingTheory/Ideal/Operations.lean`.
+4. `Algebra.IsAlgebraic.algHom_bijective`
+   (`Mathlib/RingTheory/Algebraic/Basic.lean`) plus `AlgEquiv.ofBijective`
+   gives the automorphism.  `IsAlgClosure.equiv` in
+   `Mathlib/FieldTheory/IsAlgClosed/Basic.lean` is a two-line worked
+   example of exactly this assembly and is the thing to copy.
+
+CHECK THAT WOULD REFUTE THIS SURVEY: any one of those five names failing
+to resolve, or `Hom.toImage_app_injective` turning out to be stated only
+for opens of the form `f.imageι ⁻¹ᵁ U` in a way that does not cover `⊤`
+(it is stated for exactly those opens, and `f.imageι ⁻¹ᵁ ⊤ = ⊤`).
+
+What remains is therefore PLUMBING, not mathematics: transporting `v`,
+the `q_j` and the structure morphism across `(spanScheme p).isoSpec` into
+ring maps, as `exists_geomPt_factor_span` already does, and identifying
+`Γ(∐_J Spec ℚ̄, ⊤)` with `∏_J ℚ̄` so that the `χ_j` are literally the
+coordinates.  That last identification is the one step with no lemma
+found by name and is where a successor should expect the work to be. -/
 theorem exists_specGal_factor_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
     (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
