@@ -15287,35 +15287,242 @@ theorem exists_weierstrassModel_localization {R : Type} [CommRing R]
   rw [smul_eq_mul]
   exact Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩)
 
+/-- **Two Weierstrass models of one elliptic scheme have isomorphic
+coordinate rings** (PROVEN, the scheme-theoretic half of
+`weierstrassModel_j_unique`).
+
+**NO COMPLETION ARGUMENT IS NEEDED HERE, and the docstrings that describe
+one are describing a longer route than the one taken.**  Both
+`IsWeierstrassModel`s supply an OPEN IMMERSION into the same `A` with the
+SAME range — the complement of the zero section — and mathlib's
+`AlgebraicGeometry.IsOpenImmersion.isoOfRangeEq` turns that into an
+isomorphism `Spec R[W] ≅ Spec R[W']` outright, together with
+`isoOfRangeEq_inv_fac` identifying it with the two immersions.  The
+`ι ≫ f = weierstrassAffineStr` clauses then make it an isomorphism OVER
+`Spec R`, and `Spec` is fully faithful (`Spec.preimage`,
+`Spec.map_preimage`, `Spec.map_injective`), so it descends to an
+`R`-algebra isomorphism of the two coordinate rings.
+
+The smooth-projective-completion story summarised on
+`IsWeierstrassModel` above is a way of seeing WHY the identification must
+respect the point at infinity; it is not a step this proof takes, and it
+never needs to be formalised.  What is genuinely left after this lemma is
+purely a statement of commutative algebra, with no scheme theory in it at
+all: see `exists_variableChange_of_coordinateRingAlgEquiv`. -/
+theorem nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel {R : Type} [CommRing R]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)} {ab : AbelianSchemeStruct f}
+    {W W' : WeierstrassCurve R}
+    (hW : IsWeierstrassModel ab W) (hW' : IsWeierstrassModel ab W') :
+    Nonempty (W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) := by
+  obtain ⟨ι, hιoi, hιf, hιr⟩ := hW
+  obtain ⟨ι', hι'oi, hι'f, hι'r⟩ := hW'
+  have hr : Set.range ι.base = Set.range ι'.base := by rw [hιr, hι'r]
+  let e : weierstrassAffine W ≅ weierstrassAffine W' :=
+    IsOpenImmersion.isoOfRangeEq ι ι' hr
+  have hfac' : e.inv ≫ ι = ι' := IsOpenImmersion.isoOfRangeEq_inv_fac ι ι' hr
+  have hover' : e.inv ≫ weierstrassAffineStr W = weierstrassAffineStr W' := by
+    rw [← hιf, ← Category.assoc, hfac', hι'f]
+  set φ : CommRingCat.of W'.toAffine.CoordinateRing ⟶ CommRingCat.of W.toAffine.CoordinateRing :=
+    Spec.preimage e.hom with hφ
+  set ψ : CommRingCat.of W.toAffine.CoordinateRing ⟶ CommRingCat.of W'.toAffine.CoordinateRing :=
+    Spec.preimage e.inv with hψ
+  have h1 : φ ≫ ψ = 𝟙 _ := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hφ, hψ, Spec.map_preimage, Spec.map_preimage, Spec.map_id]
+    exact e.inv_hom_id
+  have h2 : ψ ≫ φ = 𝟙 _ := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hφ, hψ, Spec.map_preimage, Spec.map_preimage, Spec.map_id]
+    exact e.hom_inv_id
+  have halg : CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing) ≫ ψ
+      = CommRingCat.ofHom (algebraMap R W'.toAffine.CoordinateRing) := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hψ, Spec.map_preimage]
+    exact hover'
+  have h1' : ∀ y, ψ.hom (φ.hom y) = y := by
+    intro y
+    have := congrArg (fun u : CommRingCat.of W'.toAffine.CoordinateRing ⟶
+      CommRingCat.of W'.toAffine.CoordinateRing => u.hom y) h1
+    simpa using this
+  have h2' : ∀ x, φ.hom (ψ.hom x) = x := by
+    intro x
+    have := congrArg (fun u : CommRingCat.of W.toAffine.CoordinateRing ⟶
+      CommRingCat.of W.toAffine.CoordinateRing => u.hom x) h2
+    simpa using this
+  have halg' : ∀ r : R, ψ.hom (algebraMap R W.toAffine.CoordinateRing r)
+      = algebraMap R W'.toAffine.CoordinateRing r := by
+    intro r
+    have := congrArg (fun u : CommRingCat.of R ⟶
+      CommRingCat.of W'.toAffine.CoordinateRing => u.hom r) halg
+    simpa using this
+  let ρ : W.toAffine.CoordinateRing ≃+* W'.toAffine.CoordinateRing :=
+    { toFun := ψ.hom
+      invFun := φ.hom
+      left_inv := h2'
+      right_inv := h1'
+      map_add' := ψ.hom.map_add
+      map_mul' := ψ.hom.map_mul }
+  exact ⟨AlgEquiv.ofRingEquiv (f := ρ) halg'⟩
+
+/-- **An `R`-algebra isomorphism of Weierstrass coordinate rings is
+induced by a `VariableChange`** (sorry leaf).
+
+This is the whole residue of `weierstrassModel_j_unique` once
+`nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` has removed the
+geometry: no schemes, no completions, no zero section — just
+`R[X,Y]/(W) ≅ R[X,Y]/(W')` as `R`-algebras.
+
+**ABSENT FROM THE PIN, checked 2026-07-27.**  Mathlib knows that a
+variable change does not move `j` (`variableChange_j`,
+`VariableChange.lean:246`) and that `j` is natural in the base
+(`WeierstrassCurve.map_j`, `Weierstrass.lean:470`), and its own
+`VariableChange` docstring says only "when `R` is a field, any two
+isomorphic Weierstrass equations are related by this" — as a comment,
+with no lemma anywhere.  There is nothing in
+`Mathlib/AlgebraicGeometry/EllipticCurve/` relating
+`WeierstrassCurve.polynomial` to `variableChange`, nothing in this
+project, and nothing in `~/cs/FLT`.  So it has to be built.
+
+**THE ROUTE, and the one place it is genuinely hard.**  Write
+`A = R[W]`, `A' = R[W']`, `Φ` for the isomorphism.  `A'` is a free
+`R`-module on `{x'^i}ᵢ ∪ {x'^i y'}ᵢ`, and the pole-order filtration
+`F'ₙ := ⟨x'^i : 2i ≤ n⟩ + ⟨x'^i y' : 2i + 3 ≤ n⟩` is multiplicative with
+`F'₀ = F'₁ = R`, `rank F'ₙ = n` for `n ≥ 1`, and associated graded
+`R[T², T³]`.  The leaf splits into exactly two steps:
+
+* *(the hard step)* `Φ x ∈ F'₂` and `Φ y ∈ F'₃`, with unit leading
+  coefficients: `Φ x = u²x' + r` and `Φ y = u³y' + u²s x' + t`.  Note
+  `Φ x = a x' + r`, `Φ y = b y' + c x' + t` with `a`, `b` units is
+  ALREADY enough, since comparing the `y²` and `x³` coefficients of the
+  Weierstrass relation forces `b² = a³`, whence `u := b/a` has `u² = a`
+  and `u³ = b` — so the `u²/u³` shape of `VariableChange` costs nothing
+  extra and need not be assumed.
+* *(bookkeeping)* from that, `W' = ⟨u, r, s, t⟩ • W`: substitute into
+  `W.polynomial`, reduce `y'²` by `W'.polynomial`, and read off the five
+  coefficient identities using freeness of `A'` over `R[x']` on `{1, y'}`.
+
+**Over a DOMAIN the hard step is short**, and it is worth recording
+because it is what a formalisation should generalise rather than
+rediscover.  Put `d'(a) := max(2 deg p, 3 + 2 deg q)` for
+`a = p(x') + q(x')y'`; the parity mismatch makes the leading coefficient
+unambiguous, and `gr A' = R[T², T³]` gives `d'(ab) = d'(a) + d'(b)`.  The
+relation `Φ(y)² + … = Φ(x)³ + …` forces `2 d'(Φ y) = 3 d'(Φ x)`, so
+`d'(Φ x) = 2k`, `d'(Φ y) = 3k` and `d'(Φ a) = k · d(a)` for every `a`.
+Surjectivity applied to `x'`, whose degree is `2`, gives `k · d(a) = 2`
+with `d(a) ≥ 2`, hence `k = 1`.
+
+**WHY THAT IS NOT THE WHOLE PROOF.**  `d'(ab) = d'(a) + d'(b)` needs the
+product of the two leading coefficients to be nonzero, i.e. `R` a domain;
+over a general `R` a nilpotent leading coefficient breaks the degree
+bookkeeping.  Reduction to a domain is NOT available: the conclusion is
+an equation in `R`, and `R → ∏_𝔭 R/𝔭` is not injective when `R` has
+nilpotents, while `R → ∏_𝔪 R_𝔪` only reduces to the local case.  The
+classical fix is relative Riemann–Roch — `π_*O(n·O)` locally free of rank
+`n` and compatible with base change, which makes `F'ₙ` intrinsic over any
+base — or, staying inside commutative algebra, an intrinsic
+characterisation of `F'₂` such as "`A'` is free of rank `2` over the
+`R`-subalgebra generated by `a`", which is isomorphism-invariant by
+construction.  **Naming the axis this verdict ranges over:** filtrations
+of `A'` recovered from its `R`-algebra structure.  It does NOT range over
+the Hodge-bundle route (`ω = dx/(2y + a₁x + a₃)` generates `Ω¹_{A'/R}`,
+and `A'ˣ = Rˣ`, so `Φ_*ω = uω'` produces the unit `u` directly) — that
+axis is unsearched and may be shorter.
+
+**VERIFIED PLUMBING FOR THE BOOKKEEPING STEP, so nobody has to find it
+twice.**  The four declarations below were written and COMPILED against
+this file's cone on 2026-07-27 (in a scratch module, hence not committed —
+a proven lemma with no consumer would be free-floating).  They reduce the
+bookkeeping step to a polynomial identity plus one coefficient
+extraction, and the last of them is the non-obvious one: it never expands
+`W.polynomial` at all.
+
+```lean
+open Polynomial in
+open scoped Polynomial.Bivariate in
+-- the substitution `(X, Y) ↦ (aX + r, bY + cX + t)` on `R[X][Y]`
+noncomputable def wsubst (a r b c t : R) : R[X][Y] →+* R[X][Y] :=
+  Polynomial.eval₂RingHom
+    (Polynomial.eval₂RingHom ((C : R[X] →+* R[X][Y]).comp (C : R →+* R[X]))
+      (C (C a * X + C r)))
+    (C (C b) * Y + C (C c * X + C t))
+
+-- `simp [wsubst]` proves each of
+--   wsubst a r b c t (C (C v)) = C (C v)
+--   wsubst a r b c t (C X)     = C (C a * X + C r)
+--   wsubst a r b c t Y         = C (C b) * Y + C (C c * X + C t)
+
+-- two ring maps out of `R[X][Y]` agreeing on `R`, `X`, `Y` are equal
+theorem bivariate_ringHom_ext {S : Type} [CommRing S] {f g : R[X][Y] →+* S}
+    (h₀ : ∀ v : R, f (C (C v)) = g (C (C v)))
+    (h₁ : f (C X) = g (C X)) (h₂ : f Y = g Y) : f = g := by
+  refine Polynomial.ringHom_ext ?_ h₂
+  intro p
+  have : f.comp (C : R[X] →+* R[X][Y]) = g.comp (C : R[X] →+* R[X][Y]) :=
+    Polynomial.ringHom_ext h₀ h₁
+  exact congrArg (fun u : R[X] →+* S => u p) this
+```
+
+and then, for `e : R[W] →ₐ[R] R[W']` with
+`e (of W.polynomial X) = a·x' + r` and
+`e (root W.polynomial) = b·y' + c·x' + t` (all scalars via `algebraMap`),
+
+```lean
+theorem mk_wsubst_polynomial … :
+    AdjoinRoot.mk W'.toAffine.polynomial
+      (wsubst a r b c t W.toAffine.polynomial) = 0 := by
+  have hEq : (AdjoinRoot.mk W'.toAffine.polynomial).comp (wsubst a r b c t)
+      = (e : _ →+* _).comp (AdjoinRoot.mk W.toAffine.polynomial) := by
+    refine bivariate_ringHom_ext ?_ ?_ ?_ <;> …   -- three `show`/`rw [hx]`/`rw [hy]` cases
+  simpa [AdjoinRoot.mk_self] using
+    congrArg (fun u : R[X][Y] →+* _ => u W.toAffine.polynomial) hEq
+```
+
+Two things that cost time and are worth copying: `algebraMap R R[W] v` is
+DEFEQ to `AdjoinRoot.of W.polynomial (C v)` (so `rfl` discharges the
+constants case, and `AlgHom.commutes` moves `e` past it), and the `Y`
+case closes with `exact (add_assoc _ _ _).symm` rather than `rfl` because
+`hy` is bracketed `(· + ·) + ·`.
+
+**WHAT REMAINS AFTER THAT PLUMBING**, in order: `AdjoinRoot.mk_eq_zero`
+turns it into `W'.polynomial ∣ wsubst a r b c t W.polynomial`; the
+right-hand side has `Y`-degree `≤ 2` with `Y²`-coefficient `C (b ^ 2)`
+while `W'.polynomial` is `monic_polynomial` of `natDegree 2`, so the
+cofactor is the constant `C (C (b ^ 2))` (`Subsingleton R` is a separate
+trivial case); expanding `wsubst a r b c t W.polynomial` and comparing
+with `C (C (b ^ 2)) * W'.polynomial` gives, from the `X³` coefficient,
+`a ^ 3 = b ^ 2` — which is where `u := b * a⁻¹` comes from — and the
+remaining coefficients ARE the five identities of `variableChange_def`.
+The only genuinely new lemma needed at the end is injectivity of
+`WeierstrassCurve.Affine.polynomial` (from `coeff 1` and `coeff 0`), which
+is also absent from the pin.
+
+NOT VACUOUS: an `R`-algebra isomorphism of the two coordinate rings is
+exactly the hypothesis the geometry delivers, and the conclusion pins
+`W'` to a single `VariableChange`-orbit representative of `W`. -/
+theorem exists_variableChange_of_coordinateRingAlgEquiv {R : Type} [CommRing R]
+    (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic]
+    (e : W.toAffine.CoordinateRing ≃ₐ[R] W'.toAffine.CoordinateRing) :
+    ∃ C : WeierstrassCurve.VariableChange R, W' = C • W :=
+  sorry
+
 /-- **Two Weierstrass models of one elliptic scheme have the same `j`**
-(sorry leaf, step (ii) of the cut of `exists_jSectionOnAffine`).
+(PROVEN 2026-07-27, over `exists_variableChange_of_coordinateRingAlgEquiv`).
 
-TRUE, and the argument is written out in the docstring of
-`IsWeierstrassModel` above; it is only summarised here.  Both open
-immersions have the same range — the complement of the zero section — so
-they identify `Spec R[W]` with `Spec R[W']` as schemes over `Spec R`.
-The smooth projective completion of such a curve is unique and adds
-exactly the removed point, so the identification carries the point at
-infinity of one to the point at infinity of the other, hence is a
-`VariableChange`, and `WeierstrassCurve.variableChange_j`
+Step (ii) of the cut of `exists_jSectionOnAffine`.  The two halves are
+`nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel` — geometry, and
+proven — and `exists_variableChange_of_coordinateRingAlgEquiv` — pure
+commutative algebra, and the sole remaining leaf.  `variableChange_j`
 (`Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean:246`,
-`(C • W).j = W.j`) finishes.
-
-WHAT IS GENUINELY MISSING is only the middle step, "two models of one
-elliptic scheme differ by a variable change".  Both `j`-invariance
-lemmas it feeds are already in the pin: `variableChange_j` above and
-`WeierstrassCurve.map_j` (`Weierstrass.lean:470`, `(W.map f).j = f W.j`).
-
-NOT VACUOUS: `IsWeierstrassModel` demands an open immersion whose range
-is exactly the complement of the zero section, so it is not satisfiable
-by a junk `W'`, and the conclusion is an equation the hypotheses
-genuinely constrain. -/
+`(C • W).j = W.j`) closes it. -/
 theorem weierstrassModel_j_unique {R : Type} [CommRing R] {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
     (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic]
     (hW : IsWeierstrassModel ab W) (hW' : IsWeierstrassModel ab W') :
-    W.j = W'.j :=
-  sorry
+    W.j = W'.j := by
+  obtain ⟨e⟩ := nonempty_coordinateRingAlgEquiv_of_isWeierstrassModel hW hW'
+  obtain ⟨C, hC⟩ := exists_variableChange_of_coordinateRingAlgEquiv W W' e
+  subst hC
+  exact (WeierstrassCurve.variableChange_j (W := W) (C := C)).symm
 
 /-! #### The affine Weierstrass curve base-changes: `S[W.map φ] = S ⊗_R R[W]`
 
