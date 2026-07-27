@@ -20838,7 +20838,7 @@ theorem exists_hilbertTaylorWilesLevels
   letI := iMod
   exact ⟨q, d, coeff, M0, iAG, iMod, iNt, fun n =>
     exists_hilbertTaylorWilesLevelRaw ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
-      ψ hψalg hψπ hψρ hTWe q d coeff M0 iNt hbot n⟩
+      ψ hψalg hψπ hψρ hTWe q d coeff M0 iNt hbot.2 n⟩
 
 /-- **The Taylor–Wiles tower over `F` assembles into a system** (PROVEN
 2026-07-27 as pure glue over `exists_hilbertTaylorWilesLevels` above).
