@@ -882,7 +882,7 @@ Field provenance:
 
 DESCENT-CLOSURE OF `E` (recorded 2026-07-26, from an obligation
 reported upward by the owner of
-`exists_heckeTrace_of_prime_cyclic_step_of_inert`; NO formal change
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`; NO formal change
 was needed, only this correction of the record). `E` must NOT be read
 as "the Hecke field of `f`" on the nose. The solvable-descent leaves
 below (`exists_descended_heckeSystem_of_solvable` and the cyclic /
