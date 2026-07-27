@@ -1785,9 +1785,12 @@ characteristic three with MORE THAN THREE ELEMENTS; the discharge is
 any `Ind` machinery by writing the anticyclotomic index-two induction as
 an explicit dihedral cocycle. REFUTED as originally stated and repaired
 2026-07-26, the cardinality bound being the repair. The only class field
-theory left in it is `nonempty_ringClassArtinData_of_inertPrime` (2026-07-27
+theory left in it is `exists_ringClassConductorHom_of_inertPrime` (2026-07-27
 — the existence, at a GIVEN inert auxiliary prime `p`, of the ARTIN MAP of the
-ring class field of conductor `p` of `M = ℚ(√d)`; the `ZMod` encoding is PROVEN
+ring class field of conductor `p` of `M = ℚ(√d)`, together with the conductor
+map `μ_{p+1}(𝔽_{p²}) → Cl(𝒪_p)` of the conductor exact sequence; the parent
+`nonempty_ringClassArtinData_of_inertPrime` is PROVEN over it, the `ZMod`
+encoding is PROVEN
 in `exists_ringClassZModChar_of_inertPrime` over the group-theoretic
 `exists_zmodChar_of_dvd_exponent`, the selection of `p` in
 `exists_auxiliaryPrime_of_neg`, the descent to a prescribed order `n` in
@@ -25610,6 +25613,117 @@ structure RingClassArtinData (e : Field.absoluteGaloisGroup ℚ →* ℤˣ) (K :
 
 attribute [instance] RingClassArtinData.commGroup RingClassArtinData.finite
 
+/-- **THE NORM-ONE SUBGROUP OF THE INERT RESIDUE FIELD IS CYCLIC OF ORDER
+`p + 1`** (PROVEN 2026-07-27, supporting the cut of
+`nonempty_ringClassArtinData_of_inertPrime` below).
+
+At an inert `p` the residue ring `𝒪_M / p 𝒪_M` is the field `𝔽_{p²}`, whose unit
+group is cyclic of order `p² − 1 = (p − 1)(p + 1)`; the norm-one subgroup
+`{y : y^{p+1} = 1} = μ_{p+1}` is therefore cyclic of order EXACTLY `p + 1`
+(cyclicity is `rootsOfUnity.isCyclic`, and the order is what is proven here).
+This is the arithmetic that makes the ring class group of conductor `p` large,
+and it is precisely the half of `RingClassArtinData.exists_orderOf_dvd` that
+needs no class field theory.
+
+`GaloisField p 2` is THE field with `p²` elements, so this is a statement about
+`𝒪_M / p 𝒪_M` after a choice of isomorphism; that choice belongs to the prover
+of `exists_ringClassConductorHom_of_inertPrime` below, not here. -/
+theorem natCard_rootsOfUnity_succ_galoisField (p : ℕ) [Fact p.Prime] :
+    Nat.card (rootsOfUnity (p + 1) (GaloisField p 2)) = p + 1 := by
+  classical
+  have hp2 : 2 ≤ p := (Fact.out : p.Prime).two_le
+  have hcardK : Nat.card (GaloisField p 2) = p ^ 2 := GaloisField.card p 2 two_ne_zero
+  have hcardU : Nat.card (GaloisField p 2)ˣ = p ^ 2 - 1 := by
+    rw [Nat.card_units, hcardK]
+  obtain ⟨g, hordg⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := (GaloisField p 2)ˣ)
+  rw [hcardU] at hordg
+  have hfact : p ^ 2 - 1 = (p - 1) * (p + 1) := by
+    obtain ⟨q, rfl⟩ : ∃ q, p = q + 1 := ⟨p - 1, by omega⟩
+    have h : (q + 1) ^ 2 = q * (q + 2) + 1 := by ring
+    rw [h, Nat.add_sub_cancel, Nat.add_sub_cancel]
+  have hgcd : Nat.gcd (p ^ 2 - 1) (p - 1) = p - 1 := Nat.gcd_eq_right ⟨p + 1, hfact⟩
+  have hordz : orderOf (g ^ (p - 1)) = p + 1 := by
+    rw [orderOf_pow, hordg, hgcd, hfact, Nat.mul_div_cancel_left _ (by omega : 0 < p - 1)]
+  exact (IsPrimitiveRoot.iff_orderOf.mpr hordz).card_rootsOfUnity'
+
+/-- **THE CLASS FIELD THEORY LEAF: THE RING CLASS FIELD OF CONDUCTOR `p` AT AN
+INERT PRIME, TOGETHER WITH ITS CONDUCTOR MAP** (sorry node; cut 2026-07-27 out
+of `nonempty_ringClassArtinData_of_inertPrime` just below, which is now PROVEN
+over it together with `natCard_rootsOfUnity_succ_galoisField` above).
+
+**THIS IS THE ONLY CLASS-FIELD-THEORETIC CONTENT anywhere under
+`exists_dihedralOddGaloisRep_of_charThree`**, and it is now stated in the shape
+of the classical CONDUCTOR EXACT SEQUENCE rather than as an abstract order
+divisibility. It asks for two things and nothing else:
+
+* `D : RingClassArtinData e 1` — the Galois side. At `K = 1` the order clause
+  `exists_orderOf_dvd` reads `∃ a, 1 ∣ orderOf a` and is discharged by `⟨1, one_dvd _⟩`,
+  so `RingClassArtinData e 1` is EXACTLY the Artin-map core: a finite abelian
+  ring class group `Cl(𝒪_p)`, the Artin map `Γ_ℚ → Cl` defined on `Γ_M = ker e`,
+  the open fixing subgroup `H ≤ Γ_M`, the homomorphism and coset clauses,
+  complex conjugation inverting, and surjectivity (Artin reciprocity);
+* `ι` — the CONDUCTOR MAP `μ_{p+1}(𝔽_{p²}) → Cl(𝒪_p)`, with kernel of order
+  dividing `24`.
+
+**WHY THAT KERNEL CLAUSE IS THE CLASSICAL STATEMENT, AND WHY `w` DOES NOT
+APPEAR.** The conductor exact sequence of the order `𝒪_p = ℤ + p 𝒪_M` is
+
+    1 → 𝒪_M^ˣ / 𝒪_p^ˣ → (𝒪_M/p)ˣ / (ℤ/p)ˣ → Cl(𝒪_p) → Cl(𝒪_M) → 1,
+
+so the natural map `(𝒪_M/p)ˣ → Cl(𝒪_p)` has kernel `(ℤ/p)ˣ · μ_w` with
+`μ_w = 𝒪_M^ˣ`. Restricted to the norm-one subgroup this kernel is
+`μ_{p+1} ∩ ((ℤ/p)ˣ · μ_w) = μ_2 · μ_w = μ_w` (if `y = a ζ` with `a ∈ 𝔽_pˣ` and
+`ζ ∈ μ_w ⊆ μ_{p+1}` then `a = y ζ⁻¹ ∈ μ_{p+1} ∩ 𝔽_pˣ = μ_2`, and `2 ∣ w`), of
+order `w ∈ {2, 4, 6}` — every one of which divides `24`. Stating the clause as
+`Nat.card (ker ι) ∣ 24` therefore records the true content while keeping `w`,
+and its case split on `d = -1`, `d = -3`, out of the statement, exactly as the
+parent leaf's `(p+1)/24` does.
+
+**WHAT THE CUT MOVED OFF THIS LEAF.** The parent now discharges: the order of
+`μ_{p+1}` (`natCard_rootsOfUnity_succ_galoisField`), the first-isomorphism
+computation `#(range ι) = (p+1)/#(ker ι)`, cyclicity of `range ι`, extraction of
+an element of that exact order, and the arithmetic `k ∣ 24 ∣ p+1 ⟹
+(p+1)/24 ∣ (p+1)/k`. None of that is class field theory, and none of it is left
+here. What is left is Artin reciprocity in its EXISTENCE direction plus the
+conductor exact sequence, and nothing else.
+
+**HOW IT IS TO BE PROVED.** At an inert `p` the residue ring is
+`𝒪_M/p ≅ 𝔽_{p²} = GaloisField p 2` (the hypotheses `hpns`, `hpgt` are what make
+`p` inert: `m` is a non-square mod `p`, and `p > 24|m|` forces `p` odd and
+`p ∤ m`). Complex conjugation acts on `(𝒪_M/p)ˣ` as the Frobenius `y ↦ y^p`, so
+it inverts the norm-one subgroup. Artin reciprocity `Γ_M ↠ Cl(𝒪_p)` — the CFT
+EXISTENCE theorem, which is the whole content — supplies `art`, and the
+conductor exact sequence above supplies `ι`.
+
+**ANTICYCLOTOMY IS FREE ONCE THE RING CLASS GROUP IS IN HAND**: complex
+conjugation inverts the whole ring class group, because `𝔞 𝔞̄ = (N𝔞)` is
+generated by a rational integer and so lies in `P_{ℤ,p}`, whence `[𝔞]^c = [𝔞]⁻¹`.
+Every quotient is therefore anticyclotomic on the nose and **no `ψ / ψ^c`
+correction step is needed** — do not build one.
+
+**NO ELEMENTARY ROUTE EXISTS** (audited 2026-07-27). Over the CM field `M(ζ_n)`
+the minus part of the units is only roots of unity, which is precisely why
+Kummer theory cannot produce anticyclotomic extensions and CFT is genuinely
+required. The refuting check: exhibit a cyclic anticyclotomic extension of an
+imaginary quadratic `M` of degree `> 2` obtained by adjoining a radical.
+
+References: Cox, *Primes of the Form x² + ny²*, ch. 7 §9 (the conductor exact
+sequence, Prop. 7.22 and its corollaries) and ch. 8–9 (ring class fields);
+Childress, *Class Field Theory*; Neukirch ch. VI. -/
+theorem exists_ringClassConductorHom_of_inertPrime
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (p : ℕ) [Fact p.Prime]
+    (hpgt : 24 * (d.num * (d.den : ℤ)).natAbs < p)
+    (hp24 : 24 ∣ (p + 1))
+    (hpns : ¬ IsSquare ((d.num * (d.den : ℤ) : ℤ) : ZMod p)) :
+    ∃ D : RingClassArtinData e 1,
+      ∃ ι : rootsOfUnity (p + 1) (GaloisField p 2) →* D.Cl,
+        Nat.card (MonoidHom.ker ι) ∣ 24 :=
+  sorry
+
 /-- **THE CLASS FIELD THEORY LEAF: THE ARTIN MAP OF THE RING CLASS FIELD OF
 CONDUCTOR `p` AT AN INERT PRIME** (sorry node; cut 2026-07-27 out of
 `exists_ringClassZModChar_of_inertPrime` just below, which is now PROVEN over it
@@ -25669,10 +25783,44 @@ in this tree, or in `~/cs/FLT`:
 `grep -rn 'RayClassGroup\|rayClassGroup\|ArtinMap\|artinMap\|idele\|reciprocity'
 Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` returns prose only. AXIS SEARCHED:
 the *existence* direction of CFT — constructions that PRODUCE a Galois
-character or an abelian extension out of ideal-theoretic data. AXIS NOT
-SEARCHED: complex multiplication (the ring class field of conductor `p` is
-`M(j(𝒪_p))`), which is a second, independent route to the same object and is
-equally absent from all three trees.
+character or an abelian extension out of ideal-theoretic data.
+
+**THE COMPLEX-MULTIPLICATION AXIS IS NOW SEARCHED TOO (2026-07-27), and the
+earlier note that recorded it as untried is corrected here: CM is NOT a
+shortcut, it is strictly more expensive.** The suggestion was that the ring
+class field of conductor `p` is `M(j(𝒪_p))`, a second and independent route.
+Three findings, each with the grep that refutes it:
+
+* **The modular `j`-FUNCTION does not exist in mathlib.** `EllipticCurve.j`
+  (`Mathlib/AlgebraicGeometry/EllipticCurve/Weierstrass.lean:385`) is the
+  ALGEBRAIC `j`-invariant `c₄³/Δ` of a Weierstrass equation over a ring — not
+  the modular function on `ℍ`. `Mathlib/NumberTheory/ModularForms/` has
+  Eisenstein series, `Δ`, `η` and `q`-expansions but **no** `j`: `grep -rn
+  'kleinJ\|modular function' Mathlib/NumberTheory/ModularForms/` is empty. So
+  `j(𝒪_p)` cannot even be WRITTEN, let alone shown algebraic and integral.
+* **There is no CM theory anywhere in the three trees.** `grep -rln
+  'ComplexMultiplication' Mathlib/` is empty; `~/cs/FLT` has nothing. The only
+  CM material in THIS tree is `IsCMByRamifiedMaximalOrder`
+  (`Fermat/FLT/FreyCurve/MazurTorsion.lean:27665`), an endomorphism-structure
+  interface for CM points on `Y₀(p)` at `p = 43, 67, 163`; it carries no
+  `j`-invariant, no action of an ideal class group on lattices, no field of
+  definition and no Artin map, and its own producer
+  `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` (`:27725`) is itself a
+  sorry leaf. It cannot yield a ring class field.
+* **CM does not AVOID class field theory.** The elementary half of the theory
+  is that `Cl(𝒪)` acts simply transitively on the finite set of `j`-invariants
+  of proper `𝒪`-ideal classes; the half this leaf needs — that `M(j(𝒪_p))/M`
+  is abelian with Galois group `Cl(𝒪_p)` via the Artin map — is Cox's Theorem
+  11.1, whose proof INVOKES the CFT of the order. The refuting check: find a
+  proof that `M(j(𝒪))/M` is abelian that does not use reciprocity for `M`.
+
+Cohomological prerequisites for CFT are barely started upstream:
+`Mathlib/RepresentationTheory/Homological/TateCohomology/` contains only
+`Basic.lean` (definitions; no class formations, no Tate's theorem), and
+`Mathlib/Algebra/BrauerGroup/Defs.lean` has no invariant map. So both routes
+are theory builds, and the CM one is the larger of the two. **Attack the
+ideal-theoretic route** (`exists_ringClassConductorHom_of_inertPrime`, above),
+not the CM one.
 
 **THE ONE NEAR MISS: `ModThree.lean`'s `_ray_class` cluster. RE-AUDITED
 2026-07-27, AND ONE OF THE TWO STANDING REASONS WAS FALSE.** The earlier audit
@@ -25722,7 +25870,29 @@ The standing simplification is carried forward: NOTHING here requires the
 character to be unramified, so ray class characters of the one field `M`
 suffice and the Nakagawa–Horie/Yamamoto theorem is NOT on the critical path.
 References: Neukirch ch. VI, Childress *Class Field Theory*, Cox *Primes of the
-Form x² + ny²* ch. 8 (ring class fields). -/
+Form x² + ny²* ch. 8 (ring class fields).
+
+**DECOMPOSED 2026-07-27, AND NOW PROVEN over
+`exists_ringClassConductorHom_of_inertPrime` and
+`natCard_rootsOfUnity_succ_galoisField` above.** The order clause was the only
+part of this leaf that was not class field theory, and it has been split off.
+What that sub-leaf supplies is the classical CONDUCTOR EXACT SEQUENCE datum —
+the Artin-map core `RingClassArtinData e 1` plus the conductor map
+`ι : μ_{p+1}(𝔽_{p²}) → Cl(𝒪_p)` with `#(ker ι) ∣ 24` — and what is proven here
+from it is:
+
+* `#μ_{p+1}(𝔽_{p²}) = p + 1` (`natCard_rootsOfUnity_succ_galoisField`, the
+  norm-one subgroup of the inert residue field);
+* `#(ker ι) · #(range ι) = p + 1` (`Subgroup.index_ker` and
+  `Subgroup.card_mul_index`, i.e. the first isomorphism theorem);
+* `range ι` is cyclic, being the image of a cyclic group, so it has an element
+  of order exactly `#(range ι) = (p+1)/#(ker ι)`;
+* `k ∣ 24` and `24 ∣ p + 1` give `(p+1)/24 ∣ (p+1)/k`, which is the required
+  divisibility — this is where `24 ∣ p + 1` is load-bearing, exactly as the
+  paragraph above describes.
+
+Note the `w` of the roadmap appears NOWHERE, in this statement or in the
+sub-leaf's: it is carried entirely by the clause `Nat.card (ker ι) ∣ 24`. -/
 theorem nonempty_ringClassArtinData_of_inertPrime
     (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
     (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
@@ -25732,8 +25902,37 @@ theorem nonempty_ringClassArtinData_of_inertPrime
     (hpgt : 24 * (d.num * (d.den : ℤ)).natAbs < p)
     (hp24 : 24 ∣ (p + 1))
     (hpns : ¬ IsSquare ((d.num * (d.den : ℤ) : ℤ) : ZMod p)) :
-    Nonempty (RingClassArtinData e ((p + 1) / 24)) :=
-  sorry
+    Nonempty (RingClassArtinData e ((p + 1) / 24)) := by
+  classical
+  haveI : Fact p.Prime := ⟨hp⟩
+  obtain ⟨D, ι, hker⟩ :=
+    exists_ringClassConductorHom_of_inertPrime d hd x hx e he p hpgt hp24 hpns
+  have hμ : Nat.card (rootsOfUnity (p + 1) (GaloisField p 2)) = p + 1 :=
+    natCard_rootsOfUnity_succ_galoisField p
+  have hsplit : Nat.card (MonoidHom.ker ι) * Nat.card (MonoidHom.range ι) = p + 1 := by
+    rw [← Subgroup.index_ker ι, Subgroup.card_mul_index]
+    exact hμ
+  haveI : IsCyclic (MonoidHom.range ι) :=
+    isCyclic_of_surjective ι.rangeRestrict ι.rangeRestrict_surjective
+  obtain ⟨b, hb⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := (MonoidHom.range ι))
+  obtain ⟨t, ht⟩ := hp24
+  obtain ⟨s, hs⟩ := hker
+  have hk0 : Nat.card (MonoidHom.ker ι) ≠ 0 := by
+    intro h
+    rw [h, zero_mul] at hs
+    exact absurd hs (by norm_num)
+  have h1 : p + 1 = Nat.card (MonoidHom.ker ι) * (s * t) := by
+    calc p + 1 = 24 * t := ht
+      _ = Nat.card (MonoidHom.ker ι) * s * t := by rw [← hs]
+      _ = Nat.card (MonoidHom.ker ι) * (s * t) := by ring
+  have hR : Nat.card (MonoidHom.range ι) = s * t :=
+    Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hk0) (hsplit.trans h1)
+  refine ⟨{ Cl := D.Cl, art := D.art, H := D.H, isOpen_H := D.isOpen_H,
+            H_le_ker := D.H_le_ker, art_coset := D.art_coset, art_mul := D.art_mul,
+            art_conj := D.art_conj, art_surjOn := D.art_surjOn,
+            exists_orderOf_dvd := ⟨(b : D.Cl), ?_⟩ }⟩
+  rw [Subgroup.orderOf_coe, hb, hR, ht, Nat.mul_div_cancel_left _ (by norm_num : (0:ℕ) < 24)]
+  exact ⟨s, mul_comm s t⟩
 
 /-- **THE `n`-FREE RING CLASS CHARACTER OF CONDUCTOR `p` AT AN INERT PRIME**
 (**PROVEN 2026-07-27** over `nonempty_ringClassArtinData_of_inertPrime` and
