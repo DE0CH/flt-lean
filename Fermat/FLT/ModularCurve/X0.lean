@@ -992,8 +992,72 @@ junk witness refuted above transports along it: a presentation with
 atlas that was shown to fail `quotient`, so it does not satisfy the new
 leaf either. -/
 
+/-- **GIT for an AFFINE target, in the form `Spec R`** (PROVEN
+2026-07-27): a `G`-invariant morphism `Spec A ⟶ Spec R` factors uniquely
+through `Spec` of the invariant ring.
+
+This is the half of `specInvariants_universal` that is pure algebra, and
+it needs no geometry at all: `Spec` is fully faithful, so `φ = Spec.map f`
+for a unique `f : R ⟶ A`; `Spec.map_injective` turns `G`-invariance of
+`φ` into `G`-invariance of `f`; `Algebra.IsInvariant` lifts `f` pointwise
+to `B`, and `hinj` makes that lift a ring homomorphism (each ring axiom
+is checked after applying the injective `algebraMap B A`) and makes it
+the only one.
+
+It is stated for EVERY triple `(B, A, G)` rather than as a hypothesis of
+`specInvariants_universal`, because the reduction of a general target to
+affine ones consumes it at the localised triples `(B_b, A_b, G)`. -/
+theorem specInvariants_universal_specTarget {B A : Type} [CommRing B] [CommRing A]
+    [Algebra B A] (G : Type) [Group G] [Finite G] [MulSemiringAction G A]
+    [SMulCommClass G B A] [Algebra.IsInvariant B A G]
+    (hinj : Function.Injective (algebraMap B A))
+    {R : CommRingCat.{0}} (φ : Spec (CommRingCat.of A) ⟶ Spec R)
+    (hinv : ∀ σ : G,
+      Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ)) ≫ φ = φ) :
+    ∃! ψ : Spec (CommRingCat.of B) ⟶ Spec R,
+      Spec.map (CommRingCat.ofHom (algebraMap B A)) ≫ ψ = φ := by
+  classical
+  set f : R ⟶ CommRingCat.of A := Spec.preimage φ
+  have hφ : Spec.map f = φ := Spec.map_preimage φ
+  -- the ring map underlying `φ` is `G`-invariant
+  have hfinv : ∀ (σ : G) (r : R), σ • (f.hom r) = f.hom r := by
+    intro σ r
+    have h := hinv σ
+    rw [← hφ, ← Spec.map_comp] at h
+    exact congrArg (fun u : R ⟶ CommRingCat.of A => u.hom r) (Spec.map_injective h)
+  -- so every value of it comes from `B`, and the lift is a ring homomorphism
+  choose g hg using fun r : R =>
+    Algebra.IsInvariant.isInvariant (A := B) (B := A) (G := G) (f.hom r)
+      (fun σ => hfinv σ r)
+  have hg1 : g 1 = 1 := hinj (by rw [hg, map_one, map_one])
+  have hg0 : g 0 = 0 := hinj (by rw [hg, map_zero, map_zero])
+  have hgm : ∀ x y, g (x * y) = g x * g y := by
+    intro x y; exact hinj (by rw [hg, map_mul, map_mul, hg, hg])
+  have hga : ∀ x y, g (x + y) = g x + g y := by
+    intro x y; exact hinj (by rw [hg, map_add, map_add, hg, hg])
+  let f' : R →+* B :=
+    { toFun := g, map_one' := hg1, map_zero' := hg0, map_mul' := hgm, map_add' := hga }
+  have hfactor : CommRingCat.ofHom f' ≫ CommRingCat.ofHom (algebraMap B A) = f :=
+    CommRingCat.hom_ext (RingHom.ext hg)
+  refine ⟨Spec.map (CommRingCat.ofHom f'), ?_, ?_⟩
+  · show Spec.map (CommRingCat.ofHom (algebraMap B A)) ≫ Spec.map (CommRingCat.ofHom f') = φ
+    rw [← Spec.map_comp, hfactor, hφ]
+  · intro ψ' hψ'
+    have hu : Spec.preimage ψ' ≫ CommRingCat.ofHom (algebraMap B A) = f := by
+      apply Spec.map_injective
+      rw [Spec.map_comp, Spec.map_preimage, hψ', hφ]
+    have hpre : Spec.preimage ψ' = CommRingCat.ofHom f' := by
+      refine CommRingCat.hom_ext (RingHom.ext fun r => hinj ?_)
+      have h1 := congrArg (fun u : R ⟶ CommRingCat.of A => u.hom r) hu
+      have h2 : (algebraMap B A) (f' r) = (CommRingCat.Hom.hom f) r := hg r
+      simp only [CommRingCat.hom_ofHom, h2]
+      simpa using h1
+    rw [← Spec.map_preimage ψ', hpre]
+
 /-- **GIT: `Spec` of a ring of invariants is a categorical quotient in the
-category of ALL schemes** (sorry node — entirely mathlib-facing).
+category of ALL schemes** (sorry node — entirely mathlib-facing; the
+AFFINE case is already PROVEN below, so what is open is the reduction of
+an arbitrary target to affine ones).
 
 Let a finite group `G` act on a commutative ring `A` by ring
 automorphisms and let `B` be its invariant ring: `Algebra.IsInvariant B A
@@ -1028,20 +1092,30 @@ returns nothing today, and `grep -rn "IsInvariant" ~/cs/FLT/FLT/` finds
 only the number-theoretic uses (`Galois/Infinite.lean`,
 `Deformations/.../IntegralClosure.lean`), never a scheme-level quotient.
 
-## The shape of the proof, for whoever closes it
+## WHAT IS ALREADY PROVEN HERE, AND WHAT IS LEFT
 
-**`Y'` affine is immediate**: `Hom(Spec A, Spec R) ≃ Hom(R, A)` by full
-faithfulness of `Spec`, and `G`-invariance of the morphism is
-`G`-invariance of the ring map, which therefore lands in `B` by
-`Algebra.IsInvariant`.
+**The AFFINE case is PROVEN** (2026-07-27), sorry-free, in
+`specInvariants_universal_specTarget` and consumed by the `IsAffine Y'`
+branch of the proof below.  It is exactly as short as it looks: `Spec` is
+fully faithful, so `φ` is `Spec.map f` for a unique ring map
+`f : R ⟶ A`; `G`-invariance of `φ` is `G`-invariance of `f` by
+`Spec.map_injective`; so `f` lands in `B` by `Algebra.IsInvariant`, and
+`hinj` makes the lift a ring homomorphism and makes it unique.
 
-**The reduction to that case is the work.**  `π` is integral hence
-closed, and surjective, and its fibres are `G`-orbits, so a `G`-stable
-open of `Spec A` is `π ⁻¹` of an open of `Spec B`; refine to basic opens
-`D b` for `b : B`, where `π ⁻¹ (D b) = Spec (A_b)` and `(A_b)^G = B_b`;
-apply the affine case on each and glue, the overlaps being discharged by
-the uniqueness half on `D (b * b')`.  Global uniqueness is `π` epi, which
-follows from `π` surjective together with `B ↪ A`.
+**What is left is the REDUCTION of an arbitrary target to affine ones** —
+the `¬ IsAffine Y'` branch, which is where the `sorry` now sits.  The
+route: `π` is integral hence closed, and surjective, and its fibres are
+`G`-orbits, so a `G`-stable open of `Spec A` is `π ⁻¹` of an open of
+`Spec B`; refine to basic opens `D b` for `b : B`, where
+`π ⁻¹ (D b) = Spec (A_b)` and `(A_b)^G = B_b`; apply the affine case on
+each and glue with `Scheme.Cover.glueMorphisms`, the overlaps being
+discharged by the uniqueness half on `D (b * b')`.  Global uniqueness is
+`π` epi, which follows from `π` surjective together with `B ↪ A`.
+
+Note that the reduction needs the affine case **for the localised triples
+`(B_b, A_b, G)`**, not only for `(B, A, G)` — which is why the affine
+case is stated for every triple rather than carved out as a hypothesis of
+this one.
 
 *Refuting check for "the reduction is unavoidable"*: an `EffectiveEpi`
 or descent-shaped route would refute it — but `π` is not flat, so the
@@ -1056,8 +1130,28 @@ theorem specInvariants_universal {B A : Type} [CommRing B] [CommRing A] [Algebra
     (hinv : ∀ σ : G,
       Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ)) ≫ φ = φ) :
     ∃! ψ : Spec (CommRingCat.of B) ⟶ Y',
-      Spec.map (CommRingCat.ofHom (algebraMap B A)) ≫ ψ = φ :=
-  sorry
+      Spec.map (CommRingCat.ofHom (algebraMap B A)) ≫ ψ = φ := by
+  classical
+  by_cases hY : IsAffine Y'
+  · -- PROVEN: transport along `Y' ≅ Spec Γ(Y', ⊤)` and apply the algebra.
+    haveI := hY
+    obtain ⟨ψ₀, hψ₀, huniq⟩ :=
+      specInvariants_universal_specTarget G hinj (φ ≫ Y'.isoSpec.hom)
+        (by intro σ; rw [← Category.assoc, hinv σ])
+    refine ⟨ψ₀ ≫ Y'.isoSpec.inv, ?_, ?_⟩
+    · show Spec.map (CommRingCat.ofHom (algebraMap B A)) ≫ ψ₀ ≫ Y'.isoSpec.inv = φ
+      rw [← Category.assoc, hψ₀, Category.assoc, Iso.hom_inv_id, Category.comp_id]
+    · intro ψ' hψ'
+      have hψ'2 : Spec.map (CommRingCat.ofHom (algebraMap B A)) ≫ ψ' = φ := hψ'
+      have hE : ψ' ≫ Y'.isoSpec.hom = ψ₀ := huniq _ (by
+        show Spec.map (CommRingCat.ofHom (algebraMap B A)) ≫ ψ' ≫ Y'.isoSpec.hom
+            = φ ≫ Y'.isoSpec.hom
+        rw [← Category.assoc, hψ'2])
+      rw [← hE, Category.assoc, Iso.hom_inv_id, Category.comp_id]
+  · -- THE OPEN ITEM, and the only one left in this theorem: the reduction of
+    -- an arbitrary target to affine ones, by descending the `G`-stable opens
+    -- `φ ⁻¹ (Vᵢ)` to basic opens of `Spec B` and gluing.  See the docstring.
+    sorry
 
 /-- **A Katz–Mazur atlas presented the way (8.1.1) actually builds it**:
 the rigidified moduli scheme as `Spec A` with a finite group `G` acting,
