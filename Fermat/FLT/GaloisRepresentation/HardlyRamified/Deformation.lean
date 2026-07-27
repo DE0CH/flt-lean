@@ -17280,7 +17280,19 @@ would BOTH survive such a discharge; only a human reading catches it. `hℓ5`
 is carried for the same reason: it keeps
 `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to the
 prime `3`) inapplicable, so that route stays closed mathematically rather than
-merely by import scope. -/
+merely by import scope.
+
+INTEGRATION REPAIR (2026-07-27).  `Sha2` was RESTATED over `G_{ℚ,S}` — its
+cohomology is now taken in `adZeroRestricted ρbar S`, not in
+`adZeroTopRep ρbar` — on one branch of the release batch, and the PROVEN
+consumer `exists_obstructionCocycle_smallExtension` below was updated with it.
+This leaf, on another branch, was not: it still produced its cocycle in
+`adZeroTopRep ρbar`, so the `∈ Sha2 …` clause had no `Membership` instance and
+the consumer's `Exists.intro oc` was a type mismatch.  Both merged cleanly and
+the defect appeared only at the release build.  The leaf is restated here to
+match; nothing was proven or weakened, and the mathematical content is
+unchanged — this is the same statement over the group `Sha2` is now indexed
+by. -/
 theorem exists_obstructionCocycle_smallExtension_section
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -17309,10 +17321,13 @@ theorem exists_obstructionCocycle_smallExtension_section
               (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
                 (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
             ↥(TopModuleCat.ker
-              ((TopRep.homogeneousCochains (adZeroTopRep ρbar)).d 2 3)),
-          (∀ ψ, ContinuousCohomology.cocycleClass (adZeroTopRep ρbar) 2 (oc ψ) ∈
+              ((TopRep.homogeneousCochains
+                (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))).d 2 3)),
+          (∀ ψ, ContinuousCohomology.cocycleClass
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2 (oc ψ) ∈
             Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
-          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer (adZeroTopRep ρbar) 2).hom.range →
+          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).hom.range →
             ∀ (K : Ideal (MvPowerSeries (Fin g) Λ))
               (hK : K ≤ RingHom.ker φ),
               letI := D.isLocalRing
