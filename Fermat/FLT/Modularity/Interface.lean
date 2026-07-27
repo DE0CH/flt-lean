@@ -147,6 +147,14 @@ public import Fermat.FLT.Modularity.HeckeFrameForm
 -- count.  PUBLIC: this file is one `@[expose] public section` and every
 -- consumer of `heckeOp` here reaches it through this import.
 public import Fermat.FLT.Modularity.HeckeOperator
+-- `SpecF`, `RelPoint`, `IsX0Compactification` and
+-- `exists_x0Compactification_finiteField`, for the SEVENTEENTH decomposition of
+-- `exists_planeModel_frobEigenvalues_of_not_dvd` below: the good reduction of
+-- `X₀(M)` at `q ∤ M` is the SHARED WITNESS pinning the point-count sequence in
+-- its three leaves.  Already in this file's transitive cone through
+-- `MazurTorsion`, but PUBLIC is required — these names occur in SIGNATURE
+-- position, where a merely transitive import is not re-exported.
+public import Fermat.FLT.ModularCurve.X0
 public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
@@ -42901,8 +42909,215 @@ theorem exists_const_natCard_zeroLocus_sub_le {q : ℕ} [Fact q.Prime]
           - (q : ℝ) ^ s| ≤ C * Real.sqrt q ^ s :=
   sorry
 
+/-! #### The good reduction of `X₀(M)` at `q ∤ M`, and its Frobenius eigenvalues
+
+The three leaves of the SEVENTEENTH decomposition (2026-07-27), which cuts
+`exists_planeModel_frobEigenvalues_of_not_dvd` below along the three theories
+its own docstring named as missing: Igusa's good reduction, the Lefschetz trace
+formula, and Eichler–Shimura.
+
+THE SHARED WITNESS is the special fibre itself — `strX : X ⟶ Spec 𝔽_q`, produced
+by `Fermat.exists_x0Compactification_finiteField`, which is exactly the good
+reduction of `X₀(M)` at `q ∤ M` and so discharges the Igusa half of the parent
+outright.  It pins the point-count sequence `pointCountGaloisField strX` in all
+three statements, and that is what makes the cut SOUND rather than merely
+convenient: the parent's own docstring records that a bare `ℕ`-sequence
+satisfying only a Lefschetz clause carries no arithmetic at all, so any cut
+whose pieces do not share a witness for the curve manufactures a false sub-leaf.
+
+Two of the three leaves are general finite-field geometry with no modular
+content whatsoever (`..._of_isProperSmoothCurve`), and can be owned by someone
+who never reads the rest of this file; only the third mentions a modular form.
+-/
+
+section X0GoodReduction
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry
+
+/-- **`Spec 𝔽_{q^s} ⟶ Spec 𝔽_q`**, the structure morphism along which the
+`𝔽_{q^s}`-rational points of an `𝔽_q`-scheme are taken.
+
+`Fermat.SpecF q` is `Spec (ZMod q)`; `GaloisField q s` is the pin's `𝔽_{q^s}`,
+and it is a `ZMod q`-algebra, so this is just `Spec` of that algebra map. -/
+noncomputable def galoisFieldSpecHom (q s : ℕ) [Fact q.Prime] :
+    Spec (CommRingCat.of (GaloisField q s)) ⟶ _root_.Fermat.SpecF q :=
+  Spec.map (CommRingCat.ofHom (algebraMap (ZMod q) (GaloisField q s)))
+
+/-- **`#C(𝔽_{q^s})` for a scheme `C` over `𝔽_q`**, as the number of relative
+points over `galoisFieldSpecHom q s`.
+
+`Nat.card` is `0` on an infinite type; that is harmless here because every
+statement below carries `IsProper`, under which the point set is finite
+(`Fermat.finite_relPoint_of_isProper`). -/
+noncomputable def pointCountGaloisField {q : ℕ} [Fact q.Prime] {X : Scheme.{0}}
+    (strX : X ⟶ _root_.Fermat.SpecF q) (s : ℕ) : ℕ :=
+  Nat.card (_root_.Fermat.RelPoint strX (galoisFieldSpecHom q s))
+
+/-- **The Lefschetz trace formula for a smooth proper curve over a finite
+field** (sorry node, SEVENTEENTH decomposition 2026-07-27 — the RATIONALITY
+half of `exists_planeModel_frobEigenvalues_of_not_dvd` below).
+
+STATEMENT. For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
+and geometrically connected there are finitely many complex numbers
+`γ₀, …, γ_{n−1}` with
+
+  `Σₖ γₖ^s = q^s + 1 − #X(𝔽_{q^s})`   for every `s ≥ 1`.
+
+Classically `n = 2·genus` and the `γₖ` are the eigenvalues of `Frob_q` on
+`H¹(X_{𝔽̄_q}, ℚ_ℓ)`; equivalently they are the inverse roots of the numerator
+of the zeta function `Z(X, T) = P(T)/((1−T)(1−qT))`.
+
+NO ESTIMATE IS ASKED FOR. `‖γₖ‖ = √q` — the Riemann hypothesis for curves — is
+deliberately NOT part of this leaf; the parent gets its estimate from the plane
+model and the Stepanov-side sibling `exists_const_natCard_zeroLocus_sub_le`.
+What is asked here is exactly the RATIONALITY of the zeta function, which for
+curves is elementary: Riemann–Roch on the function field makes
+`Σ_{D ≥ 0} T^{deg D}` a rational function of `T` with the stated denominator
+(Stichtenoth, *Algebraic Function Fields and Codes*, Ch. V; Lorenzini,
+*An Invitation to Arithmetic Geometry*, Ch. X). No étale cohomology is needed
+to prove it, whatever the classical description of the `γₖ` suggests.
+
+FAITHFULNESS. TRUE, and NOT vacuous: `n` and `γ` are chosen BEFORE `s`, which
+is the whole content — a system allowed to depend on `s` would be free. The
+`n = 0` witness is available only for genus-zero curves with a rational point,
+where `#X(𝔽_{q^s}) = q^s + 1` really does hold; at genus `≥ 1` the empty system
+is refuted by any single `s`.
+
+`GeometricallyConnected` is not decoration: for a DISCONNECTED `X` the counts
+add, so the correct identity acquires one `q^s + 1` per component and the
+statement as written is false (two disjoint copies of `ℙ¹` give
+`2·(q^s + 1)`, which is `q^s + 1 − Σγₖ^s` for no fixed `γ`). It is not needed
+to exclude `X = ∅`, though: the empty curve is covered by `γ = (q, 1)`. -/
+theorem exists_frobEigenvalues_pointCount_of_isProperSmoothCurve {q : ℕ}
+    [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX] :
+    ∃ (n : ℕ) (γ : Fin n → ℂ), ∀ s : ℕ, 0 < s →
+      ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ) :=
+  sorry
+
+/-- **Every smooth proper geometrically connected curve over `𝔽_q` has an
+absolutely irreducible plane model, with a count discrepancy bounded uniformly
+in the extension degree** (sorry node, SEVENTEENTH decomposition 2026-07-27 —
+the PLANE-MODEL half of `exists_planeModel_frobEigenvalues_of_not_dvd` below).
+
+STATEMENT. For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
+and geometrically connected there are `F ∈ 𝔽_q[X,Y]`, absolutely irreducible,
+and a constant `D` depending on `F` and on NOTHING ELSE — in particular not on
+`s` — with
+
+  `| #X(𝔽_{q^s}) − #{a ∈ 𝔽_{q^s}² : F(a) = 0} | ≤ D`   for every `s ≥ 1`.
+
+ROUTE. `𝔽_q` is perfect, so the function field `K = 𝔽_q(X)` is separably
+generated: pick `x ∈ K` transcendental with `K/𝔽_q(x)` separable, then a
+primitive element gives `K = 𝔽_q(x, y)`, and clearing denominators from the
+minimal polynomial of `y` over `𝔽_q(x)` gives `F ∈ 𝔽_q[X,Y]` with
+`Frac(𝔽_q[X,Y]/(F)) ≅ K`.  `F` is absolutely irreducible exactly because `X` is
+geometrically connected — that is what makes `𝔽_q` algebraically closed in `K`,
+hence `F` irreducible over `𝔽̄_q`.  The birational map `X ⇢ V(F)` is an
+isomorphism over a common dense open whose two complements are FINITE sets of
+closed points; over `𝔽_{q^s}` the two counts can therefore differ only by
+points lying in those complements, of which there are at most
+`deg(complement of X) + deg(complement of V(F))` geometric ones — a number
+depending on the model alone.  Mathlib handles: `Scheme.functionField`,
+`Field.exists_primitiveElement`, `PerfectField`.
+
+FAITHFULNESS. TRUE, and NOT vacuous: `D` is chosen BEFORE `s`, which is the
+entire content, and the absolute irreducibility of `F` is what the sibling
+`exists_const_natCard_zeroLocus_sub_le` consumes.  A junk witness is
+unavailable: `#{F = 0}` grows like `q^s` for absolutely irreducible `F`, so no
+`F` at all can serve if `#X(𝔽_{q^s})` is bounded.
+
+`GeometricallyConnected` is load-bearing TWICE here, and in a way it is not on
+the sibling leaf above.  It gives the absolute irreducibility of `F`; and it
+excludes `X = ∅`, for which the conclusion is FALSE — the empty curve has
+`#X(𝔽_{q^s}) = 0` while every absolutely irreducible `F` has `≍ q^s` points, so
+no constant `D` can exist.  (Mathlib's `GeometricallyConnected` is stated
+through `ConnectedSpace`, which is nonempty by definition, so this really is
+excluded and is not an unstated side condition.) -/
+theorem exists_planeModel_pointCount_sub_le_of_isProperSmoothCurve {q : ℕ}
+    [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX] :
+    ∃ (F : MvPolynomial (Fin 2) (ZMod q)) (D : ℝ),
+      Irreducible (MvPolynomial.map
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F) ∧
+      ∀ s : ℕ, 0 < s →
+        |(pointCountGaloisField strX s : ℝ) - (Nat.card {a : Fin 2 → GaloisField q s //
+            MvPolynomial.eval a (MvPolynomial.map
+              (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)| ≤ D :=
+  sorry
+
+/-- **Eichler–Shimura: the two roots of `X² − a_q·X + q` occur among ANY
+Lefschetz eigenvalue system of `X₀(M)_{𝔽_q}`** (sorry node, SEVENTEENTH
+decomposition 2026-07-27 — the MODULAR half of
+`exists_planeModel_frobEigenvalues_of_not_dvd` below).
+
+STATEMENT. Let `g` be a weight-two newform of level exactly `M`, let `q ∤ M`,
+and let `strX` be the smooth compactification of the `Γ₀(M)`-problem over
+`𝔽_q` — the good reduction of `X₀(M)`, supplied by
+`Fermat.exists_x0Compactification_finiteField`.  Then for EVERY system `γ`
+satisfying the Lefschetz clause for that curve's point counts there are indices
+`i, j` with `γ_i + γ_j = a_q(g)` and `γ_i·γ_j = q`.
+
+WHAT IT PACKAGES, CLASSICALLY. The Eichler–Shimura relation
+`T_q = Frob_q + q·Frob_q^{−1}` on `J₀(M)_{𝔽_q}` (Diamond–Shurman §8.7): the
+characteristic polynomial of `Frob_q` on the `g`-isotypic piece of
+`H¹(X₀(M)_{𝔽̄_q})` is `X² − a_q(g)·X + q`, and `g` being a newform of level
+exactly `M` is what puts that piece inside `H¹` with multiplicity `≥ 1`.
+
+WHY IT IS QUANTIFIED OVER EVERY `γ` RATHER THAN OVER A CHOSEN ONE, and why
+that costs nothing.  There is no canonical eigenvalue system to name here —
+the sibling `exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` above
+produces one existentially — so a statement about "the" system could not be
+written without also re-proving rationality.  Universal quantification is
+legitimate because the Lefschetz clause DETERMINES the multiset of NONZERO
+eigenvalues: equal power sums `Σγₖ^s` for all `s ≥ 1` force equal generating
+functions `Σₖ γₖT/(1 − γₖT)`, hence equal nonzero multisets.  Both ES roots are
+nonzero (`γ_i·γ_j = q ≠ 0`), so they survive that ambiguity.
+
+THE RIGIDITY STEP IS A SEPARABLE SUB-LEAF, stated here in full so a successor
+can split it out rather than rediscover it:
+
+    theorem mem_range_of_forall_sum_pow_eq {n m : ℕ} (γ : Fin n → ℂ)
+        (δ : Fin m → ℂ) (h : ∀ s : ℕ, 0 < s → ∑ k, γ k ^ s = ∑ k, δ k ^ s)
+        {z : ℂ} (hz : z ≠ 0) (hzδ : ∃ k, δ k = z) : ∃ k, γ k = z
+
+It is pure algebra over a characteristic-zero field and has NO modular content:
+pad both families with zeros to a common length, use Newton's identities
+(`Mathlib.RingTheory.MvPolynomial.Symmetric.NewtonIdentities`) to turn equal
+power sums into equal elementary symmetric functions, conclude that
+`∏ (T − γₖ)` and `∏ (T − δₖ)` agree up to a power of `T`, and read off the
+nonzero roots.  It is NOT stated as its own leaf here only because nothing in
+the assembly below would consume it — it is consumed by the proof of THIS leaf.
+
+`i = j` IS PERMITTED, deliberately, and it is not a convenience: when
+`a_q(g)² = 4q` the two roots of `X² − a_q·X + q` coincide, and a single index
+with `γ_i = a_q/2` is then the honest witness.  Requiring `i ≠ j` would demand
+multiplicity `≥ 2` in the eigenvalue system, which is true classically but is
+extra content nothing downstream needs.
+
+FAITHFULNESS. TRUE.  NOT vacuous: the hypothesis class is nonempty
+(`exists_x0Compactification_finiteField` at `0 < M`, `q` prime, `q ∤ M`, and
+the sibling above supplies a `γ`), and the conclusion is not satisfiable by
+shape — it pins two eigenvalues to the roots of an explicit quadratic whose
+coefficients come from `g`. -/
+theorem exists_index_qCoeff_of_frobEigenvalues_x0Compactification {M : ℕ}
+    (hM : 0 < M) (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} [Fact q.Prime] (hqM : ¬ q ∣ M)
+    {X Y : Scheme.{0}} {strX : X ⟶ _root_.Fermat.SpecF q}
+    {strY : Y ⟶ _root_.Fermat.SpecF q} {jY : Y ⟶ X}
+    (hX : _root_.Fermat.IsX0Compactification M strX strY jY)
+    {n : ℕ} (γ : Fin n → ℂ)
+    (hlef : ∀ s : ℕ, 0 < s →
+      ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ)) :
+    ∃ i j : Fin n, γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) :=
+  sorry
+
+end X0GoodReduction
+
 /-- **Igusa, Lefschetz and Eichler–Shimura, packaged over a plane model**
-(sorry node, SIXTEENTH decomposition 2026-07-27 — the MODULAR residue of
+(PROVEN 2026-07-27 by the SEVENTEENTH decomposition, over the three leaves of
+the `X0GoodReduction` section immediately above; opened as a sorry node by the
+SIXTEENTH decomposition 2026-07-27 as the MODULAR residue of
 `exists_frobEigenvalues_pointCount_of_not_dvd` below).
 
 STATEMENT. At `q ∤ M` there are a plane curve `F ∈ 𝔽_q[X,Y]`, absolutely
@@ -42955,14 +43170,31 @@ therefore unavailable: dropping in the line `F = Y`, whose count is exactly
 parent, and `i = j` is deliberately PERMITTED — nothing downstream needs the
 two indices distinct, and the classical witness supplies distinct ones anyway.
 
-STILL MISSING FROM THE PIN, and this leaf is now where that debt sits: an
-integral model of `X₀(M)` with good reduction at `q ∤ M` (Igusa), the Lefschetz
-trace formula for its special fibre, and the Eichler–Shimura relation in its
-geometric form (Diamond–Shurman §8.7). `Fermat/FLT/ModularCurve/X0.lean`
-carries a scheme-theoretic `Y₀(N)` coarse-moduli layer (`Gamma0Datum`,
-`IsCoarseModuliY0`, `Gamma0Atlas`, `RigidifiedModuli`) and is the natural home
-for the integral model; note that THIS file does not currently import it, so
-wiring it in is part of the job. -/
+WHERE THE DEBT WENT, and this CORRECTS in place what the SIXTEENTH cut wrote
+here.  Its note read: "STILL MISSING FROM THE PIN, and this leaf is now where
+that debt sits: an integral model of `X₀(M)` with good reduction at `q ∤ M`
+(Igusa), the Lefschetz trace formula for its special fibre, and the
+Eichler–Shimura relation in its geometric form (Diamond–Shurman §8.7). …
+note that THIS file does not currently import it, so wiring it in is part of
+the job."  Each clause is now settled, and the corrections are worth stating
+separately because two of the three were wrong in the same way:
+
+* **The import was the easy part and is done** — `ModularCurve/X0.lean` is
+  UPSTREAM of this module (through `MazurTorsion`), so it needed only to be
+  made `public`, which it now is.
+* **No integral model is needed at all.**  `X0.lean` obtains the special fibre
+  as the smooth compactification of the `Γ₀(M)`-problem *over `𝔽_q` directly*
+  (`exists_x0Compactification_finiteField`, at `0 < M`, `q` prime, `q ∤ M`), so
+  the reduction map — the thing that would require the model — is never formed.
+  The Igusa clause is therefore DISCHARGED, not relocated.
+* **The remaining two theories split along themselves**, and the general half
+  of each escapes the modular subtree entirely: rationality of the zeta
+  function and the plane model are now leaves about an arbitrary smooth proper
+  geometrically connected curve over `𝔽_q`
+  (`exists_frobEigenvalues_pointCount_of_isProperSmoothCurve`,
+  `exists_planeModel_pointCount_sub_le_of_isProperSmoothCurve`), and only
+  Eichler–Shimura still mentions a modular form
+  (`exists_index_qCoeff_of_frobEigenvalues_x0Compactification`). -/
 theorem exists_planeModel_frobEigenvalues_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} [Fact q.Prime] (hqM : ¬ q ∣ M) :
@@ -42975,8 +43207,20 @@ theorem exists_planeModel_frobEigenvalues_of_not_dvd {M : ℕ} (hM : 0 < M)
         |(Npt s : ℝ) - (Nat.card {a : Fin 2 → GaloisField q s //
             MvPolynomial.eval a (MvPolynomial.map
               (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)| ≤ D) ∧
-      γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) :=
-  sorry
+      γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) := by
+  -- Igusa: the good reduction of `X₀(M)` at `q ∤ M`, as the smooth
+  -- compactification of the `Γ₀(M)`-problem over `𝔽_q`.
+  obtain ⟨X, Y, strX, strY, jY, ⟨hX⟩⟩ :=
+    _root_.Fermat.exists_x0Compactification_finiteField M q hM Fact.out hqM
+  haveI := hX.isProper
+  haveI := hX.smooth
+  haveI := hX.connected
+  obtain ⟨n, γ, hlef⟩ := exists_frobEigenvalues_pointCount_of_isProperSmoothCurve strX
+  obtain ⟨F, D, hirr, hdisc⟩ :=
+    exists_planeModel_pointCount_sub_le_of_isProperSmoothCurve strX
+  obtain ⟨i, j, hsum, hprod⟩ :=
+    exists_index_qCoeff_of_frobEigenvalues_x0Compactification hM g hg hqM hX γ hlef
+  exact ⟨F, n, γ, pointCountGaloisField strX, D, i, j, hirr, hlef, hdisc, hsum, hprod⟩
 
 /-- **Eichler–Shimura in point-count shape: the Frobenius eigenvalues of
 a modular curve with good reduction, two of them attached to a given
