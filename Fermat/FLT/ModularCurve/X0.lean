@@ -24861,28 +24861,35 @@ as a HYPOTHESIS (of `Scheme.Hom.dense_smoothLocus_of_perfectField`).  From
 that it inferred that this leaf "has to be supplied" here.  **That
 inference was wrong**: `Mathlib` does have the *transfer* half —
 `Mathlib/AlgebraicGeometry/Geometrically/Reduced.lean` — and the missing
-smooth-to-geometrically-reduced half was ALREADY a stated leaf in this
-project, as `AlgebraicGeometry.geometricallyReduced_of_smooth` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`, which this
-module already `public import`s.  So this declaration is a specialisation
-of existing material and adds no leaf to the frontier.
+smooth-to-geometrically-reduced half is ALREADY in this project, as
+`AlgebraicGeometry.GeometricallyReduced.of_smooth` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`, which
+this module `public import`s.  So this declaration is a specialisation of
+existing material and adds no leaf to the frontier.
 
 The audit's suggestion to hoist a `[SmoothOfRelativeDimension n f]
 [IsReduced Y] → IsReduced X` shim is therefore also retracted: that shim
-would be `geometricallyReduced_of_smooth` composed with a `Mathlib` lemma,
+would be `GeometricallyReduced.of_smooth` composed with a `Mathlib` lemma,
 consumed by nobody, i.e. free-floating.
 
-**Message for the owner of `geometricallyReduced_of_smooth`** (recorded
-here because the two files cannot see each other): its ring-level content
-is *already proven* elsewhere in this development.
-`Fermat/FLT/Modularity/MoretBailly.lean` carries
-`isReduced_of_smooth_field` (a smooth algebra over a field is reduced),
+**INTEGRATION NOTE (2026-07-27).**  This proof previously cited
+`AlgebraicGeometry.geometricallyReduced_of_smooth`, a second, sorried copy
+of the same statement in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`.  That copy
+was deleted as a duplicate on the same day, and the citation was redirected
+here at integration; the surviving `GeometricallyReduced.of_smooth` is
+PROVEN, over the ring leaf `Algebra.Smooth.isReduced_of_isField`.  The two
+statements are interchangeable at this call site — both are
+`(f : X ⟶ S) [Smooth f] : GeometricallyReduced f`.
+
+A third route to the same fact exists and is worth knowing about if
+`Algebra.Smooth.isReduced_of_isField` ever proves awkward:
+`Fermat/FLT/Modularity/MoretBailly.lean` carries `isReduced_of_smooth_field`,
 PROVEN over the single sub-leaf `exists_isDomain_etale_of_isStandardSmooth`
 by the route "smooth ⟹ locally standard smooth ⟹ étale over a polynomial
 subring ⟹ reduced by a generic-fibre argument", which avoids regularity
-theory entirely; it also carries the scheme-level glue, specialised to `ℚ`,
-as `isReduced_of_smooth_over_rat`.  That is the material to lift into the
-shim tree — not a fresh proof, and certainly not the regularity chain.
+theory entirely, plus the ℚ-specialised scheme-level glue
+`isReduced_of_smooth_over_rat`.
 
 `hℓ` is what makes `ZMod ℓ` a field, and is load-bearing: over a
 non-reduced base a smooth scheme is not reduced.  The `N`-dependence and
@@ -24895,7 +24902,7 @@ theorem isReduced_of_isX0Compactification {N ℓ : ℕ} (hℓ : ℓ.Prime)
   haveI : Fact ℓ.Prime := ⟨hℓ⟩
   haveI := h₁.smooth
   haveI : Smooth strX₁ := SmoothOfRelativeDimension.smooth 1 strX₁
-  haveI := geometricallyReduced_of_smooth strX₁
+  haveI := GeometricallyReduced.of_smooth strX₁
   exact GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian strX₁
 
 /-- **The open part of a compactification is dense in it** (**PROVEN

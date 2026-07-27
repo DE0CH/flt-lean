@@ -1933,8 +1933,8 @@ is the property that is stated.  (What rules the DVR out here is `LocallyOfFinit
 is why the argument above goes through Jacobson-ness rather than through dimension alone.)
 
 **Where the missing input lives.**  This is the same class of fact as
-`AlgebraicGeometry.geometricallyReduced_of_smooth` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — a property of smooth
+`AlgebraicGeometry.GeometricallyReduced.of_smooth` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean` — a property of smooth
 morphisms over a field that `Mathlib` does not derive from smoothness at this pin — and, as
 there, the route is through the local structure theorem
 `Algebra.Smooth.exists_span_eq_top_isStandardSmooth`
