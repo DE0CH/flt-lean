@@ -28080,9 +28080,320 @@ theorem exists_unramifiedAbelianSubgroup_relIndex_classGroup
   · -- (f) relative index
     exact relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup χ hχcyc CF
 
+/-- **RECIPROCITY, ON IDEALS: the Artin symbol of `H/K` as a map from the
+ideals of `𝓞 CF` to `Γℚ`, well defined modulo `N`, and TRIVIAL on principal
+ideals** (E3c support leaf (ii-a-1-i-B-2-a); SORRY NODE, cut 2026-07-27 out of
+`exists_artinMap_of_unramifiedAbelianSubgroup` below along the classical
+RECIPROCITY / CHEBOTAREV / COUNTING axis). Under exactly the hypotheses of that
+leaf, there is a function `art0` on the ideals of `𝓞 CF` with
+
+* `hart0ker`: every value lies in `ker χ = Γ_K`;
+* `hart0mul`: `art0` is MULTIPLICATIVE modulo `N` on nonzero ideals;
+* `hart0frob`: `art0` computes the Frobenius — `art0 (frobIdeal g v)` and
+  `g · Frob_v · g⁻¹` agree modulo `N` whenever the conjugate lies in `ker χ`;
+* `hart0prin`: **`art0` kills every nonzero PRINCIPAL ideal.** This clause is
+  Artin reciprocity for the Hilbert class field of `K = ℚ(μ_p)` and is the
+  entire class-field-theoretic content of the parent leaf.
+
+**Why the conclusion is phrased with cosets rather than a quotient group.**
+`art0` is a bare function into `Γℚ` and the three algebraic clauses are
+membership statements in `N`; no `structure`, `def`, `class` or quotient type
+is introduced, so nothing here can become a rival of the base-field-general
+ray-class Artin map that the live `ModThree.lean` effort will eventually
+produce. `hNnorm` makes the coset arithmetic legitimate: `x * y⁻¹ ∈ N` is a
+genuine equivalence relation compatible with multiplication.
+
+Soundness — the intended inhabitant. With `K = ι(CF)`, `H` the Hilbert class
+field of `K` and `N = Γ_H` (which is what `hNinert`, `hNab` and `hNcard` pin,
+as recorded on the parent leaf), take `art0 I` to be any lift to `Γℚ` of the
+Artin symbol `(I, H/K) ∈ Gal(H/K) = ker χ / N`, and `art0 ⊥ = 1`. All four
+clauses are then Neukirch VI (6.7)–(6.9): the symbol lands in `Gal(H/K)`, is
+multiplicative on the ideal monoid, sends a prime to its Frobenius, and kills
+`P_K` — the last being reciprocity. For `p = 2` take `CF = ℚ`, `N = Γℚ`,
+`art0 ≡ 1`: all four clauses hold trivially, so the leaf is inhabited.
+
+**`hart0prin` is the ONLY clause carrying arithmetic** — the other three are
+satisfied by the constant function `1` — so a reader auditing this cut should
+check that clause and nothing else. Dropping it makes the leaf vacuous, and
+makes the parent FALSE, since it is exactly what lets the map descend from
+ideals to `ClassGroup (𝓞 CF)`.
+
+**HOW TO PROVE IT — the survey, run 2026-07-27, that the parent leaf asked
+for.** `Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean` carries
+an Artin-reciprocity development that is GENERAL IN THE BASE NUMBER FIELD
+`F`, 116 declarations named `*_ray_class` spanning lines 38273–56702, of which
+**only four are still `sorry`**: `exists_artinModulusCore_ray_class`,
+`exists_artinDivisorNormIndex_le_ray_class`, `divisorRatio_mem_sup_ray_class`
+and `artinDivisorKernel_le_sup_ramified_ray_class`. Its endpoint,
+`exists_artinSymbol_isNarrowPrincipal_ray_class`, is precisely reciprocity in
+the shape wanted here: a multiplicative `c` on ideals with
+`c v.asIdeal = χ (globalFrob v)` and `c I = 1` for `I` narrowly principal —
+and over the totally imaginary `K = ℚ(μ_p)` narrow principality coincides with
+principality, since `K` has no real place. (Several docstrings there still
+describe `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`,
+`artinSymbol_span_eq_one_of_cyclotomic_ray_class` and
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` as SORRY;
+they are proven. Do not plan around those notes.)
+
+**But that material is CHARACTER-valued, and cannot be consumed here as it
+stands. Two independent obstructions, and the second is the one that was not
+previously recorded.**
+
+1. *The value group.* Every one of the 116 declarations takes
+   `χ : Γ F → Dickson.K 3 = 𝔽̄₃`. The characteristic is not cosmetic:
+   `exists_pow_eq_one_of_isOpen_ker_ray_class` and
+   `exists_forall_pow_eq_one_ray_class` use `sub_pow_char_pow` to STRIP the
+   `3`-part of the exponent, and the resulting `¬ (3 ∣ n)` is threaded as
+   `hℓ3 : ℓ ≠ 3` through roughly thirty SIGNATURES of the prime-power chain
+   (`exists_artinDivisorNormIndex_le_ray_class`,
+   `artinDivisorKernel_le_sup_ray_class`,
+   `exists_conductor_artinSymbol_span_eq_one_ray_class`, … ), where two
+   docstrings record it as load-bearing "because the cyclotomic base case
+   fails at the residue characteristic", and where even the `n = 1` corner of
+   `exists_isAdmissibleModulus_ray_class` is taken at `ℓ = 2, k = 0` for no
+   reason other than to dodge `ℓ = 3`. Generalizing to a characteristic-zero
+   value field would delete `hℓ3` from those thirty signatures and re-prove
+   both exponent lemmas — a STATEMENT-changing refactor of an 18 000-line
+   region with several concurrent owners, not a rename. **The verdict is: not
+   small, and it must be requested from that file's owners rather than
+   attempted from here.** It is also strictly necessary before any use at this
+   leaf, because `𝔽̄₃ˣ` contains `μ_n` only for `3 ∤ n`, while `Cl(𝓞 ℚ(μ_p))`
+   routinely has order divisible by `3`.
+2. *Characters are not the Artin MAP.* Even fully generalized, that chain
+   produces the symbol of ONE cyclic character at a time. Recovering the
+   `Gal(H/K)`-valued (equivalently `Cl`-valued) map from its characters is
+   Pontryagin duality over the class group, needs characters of every order
+   dividing `h_K`, and exists nowhere in this tree. So "generalize the value
+   group and cite it" is NOT a complete route for this leaf; it is a route for
+   `hart0prin` alone, and only after step 1.
+
+**The check that would refute this assessment**: find a `*_ray_class`
+declaration whose character is valued in a variable field, or whose conclusion
+is valued in a Galois group rather than in the character's codomain.
+`grep -n 'Dickson.K 3' ModThree.lean | awk -F: '$1>38000'` returns 340 hits and
+no such declaration as of 2026-07-27. -/
+theorem exists_artinIdealMap_of_unramifiedAbelianSubgroup
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF)))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNnorm : N.Normal)
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat))
+        (σ : Field.absoluteGaloisGroup ℚ),
+      n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 1 →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ N)
+    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+      a * b * a⁻¹ * b⁻¹ ∈ N)
+    (hNcard : N.relIndex (MonoidHom.ker χ) = Nat.card (ClassGroup (𝓞 CF))) :
+    ∃ art0 : Ideal (𝓞 CF) → Field.absoluteGaloisGroup ℚ,
+      (∀ I : Ideal (𝓞 CF), χ (art0 I) = 1) ∧
+      (∀ I J : Ideal (𝓞 CF), I ≠ ⊥ → J ≠ ⊥ →
+        art0 I * art0 J * (art0 (I * J))⁻¹ ∈ N) ∧
+      (∀ (g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+        art0 (frobIdeal g v : Ideal (𝓞 CF)) *
+          (g * GaloisRepresentation.globalFrob v * g⁻¹)⁻¹ ∈ N) ∧
+      (∀ α : 𝓞 CF, α ≠ 0 → art0 (Ideal.span {α}) ∈ N) :=
+  sorry
+
+/-- **CHEBOTAREV: every element of `ker χ` is an Artin symbol, modulo `N`**
+(E3c support leaf (ii-a-1-i-B-2-b); SORRY NODE, cut 2026-07-27 out of
+`exists_artinMap_of_unramifiedAbelianSubgroup` below): given the ideal-level
+Artin symbol `art0` produced by
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` above, together with its
+four clauses, every `x ∈ ker χ` agrees modulo `N` with `art0 I` for some
+nonzero ideal `I` of `𝓞 CF`.
+
+This is SURJECTIVITY of the Artin map, and it is the only place Chebotarev is
+needed. In classical terms: `N = Γ_H` for `H/K` the Hilbert class field, so
+`ker χ / N = Gal(H/K)`, and the claim is that every element of `Gal(H/K)` is
+the Frobenius of some prime — the Chebotarev density theorem, of which only
+the qualitative "every conjugacy class is met" half is used, and `Gal(H/K)`
+being abelian each class is a single element. Composing with `hart0frob`, the
+elements realized are exactly the `art0 (frobIdeal g v)`.
+
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean` is the file that carries this
+tree's Chebotarev material; `dense_conjClasses_globalFrob` there is the density
+statement in the shape a prover will want.
+
+Soundness: the hypothesis set is inhabited by the intended `art0` of the leaf
+above (the Artin symbol of `H/K`), and for it the conclusion is Chebotarev.
+For `p = 2` (`CF = ℚ`, `N = Γℚ`, `art0 ≡ 1`) it holds with `I = ⊤`, since then
+`x * (art0 ⊤)⁻¹ = x ∈ N` for every `x`. Note the conclusion is NOT vacuous for
+a junk `art0`: `hart0ker`, `hart0mul`, `hart0frob` and `hart0prin` are
+hypotheses here, so a prover may use all four; but a constant `art0 ≡ 1`
+satisfying them forces `ker χ ≤ N`, which `hNcard` allows only when
+`h_K = 1`. -/
+theorem exists_ideal_artinIdealMap_congr_of_kerChar
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF)))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNnorm : N.Normal)
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat))
+        (σ : Field.absoluteGaloisGroup ℚ),
+      n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 1 →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ N)
+    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+      a * b * a⁻¹ * b⁻¹ ∈ N)
+    (hNcard : N.relIndex (MonoidHom.ker χ) = Nat.card (ClassGroup (𝓞 CF)))
+    (art0 : Ideal (𝓞 CF) → Field.absoluteGaloisGroup ℚ)
+    (hart0ker : ∀ I : Ideal (𝓞 CF), χ (art0 I) = 1)
+    (hart0mul : ∀ I J : Ideal (𝓞 CF), I ≠ ⊥ → J ≠ ⊥ →
+      art0 I * art0 J * (art0 (I * J))⁻¹ ∈ N)
+    (hart0frob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      art0 (frobIdeal g v : Ideal (𝓞 CF)) *
+        (g * GaloisRepresentation.globalFrob v * g⁻¹)⁻¹ ∈ N)
+    (hart0prin : ∀ α : 𝓞 CF, α ≠ 0 → art0 (Ideal.span {α}) ∈ N) :
+    ∀ x : Field.absoluteGaloisGroup ℚ, χ x = 1 →
+      ∃ I : Ideal (𝓞 CF), I ≠ ⊥ ∧ x * (art0 I)⁻¹ ∈ N :=
+  sorry
+
+/-- **THE COUNTING STEP: inverting the Artin map — NO class field theory**
+(E3c support leaf (ii-a-1-i-B-2-c); SORRY NODE, cut 2026-07-27 out of
+`exists_artinMap_of_unramifiedAbelianSubgroup` below): given an ideal-level
+Artin symbol `art0` with the four clauses of
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` and the Chebotarev
+surjectivity `hart0surj` of `exists_ideal_artinIdealMap_congr_of_kerChar`,
+there is a map `art : Γℚ → Cl(𝓞 CF)` with the four clauses the parent leaf
+asks for.
+
+**This leaf is PURE ALGEBRA — group theory plus the mathlib `ClassGroup`
+API — and contains no arithmetic at all.** That is the point of isolating it:
+it can be proven today, with nothing from class field theory. The argument,
+written out so it can be rechecked:
+
+1. `N ≤ ker χ` (`hNker`) and `N.Normal` (`hNnorm`), so `Q := ker χ / N` is a
+   group, ABELIAN by `hNab`, of order `N.relIndex (ker χ) = Nat.card (Cl)`
+   (`hNcard`) — in particular finite, `Cl` of a number field being finite.
+2. `I ↦ ⟦art0 I⟧ ∈ Q` is well defined on nonzero ideals (`hart0ker`) and
+   multiplicative (`hart0mul`), hence a monoid hom on `(Ideal (𝓞 CF))⁰`.
+3. It DESCENDS to `Cl(𝓞 CF)`: if `ClassGroup.mk0 I = ClassGroup.mk0 J` then
+   `mathlib`'s `ClassGroup.mk0_eq_mk0_iff` gives nonzero `a, b` with
+   `(a) * I = (b) * J`, and `hart0prin` kills `⟦art0 (a)⟧` and `⟦art0 (b)⟧`,
+   so `⟦art0 I⟧ = ⟦art0 J⟧`. With `ClassGroup.mk0_surjective` this defines a
+   group hom `Φ : Cl(𝓞 CF) →* Q`.
+4. `Φ` is SURJECTIVE by `hart0surj`, and `Nat.card (Cl) = Nat.card Q` by
+   step 1, so `Φ` is BIJECTIVE — this is the counting step, and it is the only
+   use of `hNcard`.
+5. `art x := if χ x = 1 then Φ⁻¹ ⟦x⟧ else 1`. Homomorphy on `ker χ` and
+   triviality on `N` are immediate; surjectivity of `art` from `ker χ` is
+   surjectivity of `ker χ → Q`; and the Artin symbol formula is `hart0frob`
+   transported through `Φ⁻¹`, `frobIdeal g v` being nonzero by construction.
+
+**This is also why the parent leaf does not owe "the kernel of `art` is
+exactly `N`"**: that is step 4 read backwards, and the consumer obtains it by
+the same counting.
+
+Faithfulness: the conclusion is NOT satisfiable by junk. Clause three demands
+`art` be surjective onto `Cl(𝓞 CF)` from `ker χ`, so `art ≡ 1` fails as soon
+as `h_K > 1`, and clause four pins `art` on Frobenius conjugates. The
+hypotheses `hχcyc`, `ι`, `hfrob`, `hNopen` and `hNinert` of the parent are
+deliberately ABSENT here — none of them is needed for the algebra, and their
+absence is what certifies that this leaf carries no class field theory. -/
+theorem exists_artinMap_of_artinIdealMap
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNnorm : N.Normal)
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+      a * b * a⁻¹ * b⁻¹ ∈ N)
+    (hNcard : N.relIndex (MonoidHom.ker χ) = Nat.card (ClassGroup (𝓞 CF)))
+    (art0 : Ideal (𝓞 CF) → Field.absoluteGaloisGroup ℚ)
+    (hart0ker : ∀ I : Ideal (𝓞 CF), χ (art0 I) = 1)
+    (hart0mul : ∀ I J : Ideal (𝓞 CF), I ≠ ⊥ → J ≠ ⊥ →
+      art0 I * art0 J * (art0 (I * J))⁻¹ ∈ N)
+    (hart0frob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      art0 (frobIdeal g v : Ideal (𝓞 CF)) *
+        (g * GaloisRepresentation.globalFrob v * g⁻¹)⁻¹ ∈ N)
+    (hart0prin : ∀ α : 𝓞 CF, α ≠ 0 → art0 (Ideal.span {α}) ∈ N)
+    (hart0surj : ∀ x : Field.absoluteGaloisGroup ℚ, χ x = 1 →
+      ∃ I : Ideal (𝓞 CF), I ≠ ⊥ ∧ x * (art0 I)⁻¹ ∈ N) :
+    ∃ art : Field.absoluteGaloisGroup ℚ → ClassGroup (𝓞 CF),
+      (∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+        art (g * h) = art g * art h) ∧
+      (∀ x ∈ N, art x = 1) ∧
+      (∀ c : ClassGroup (𝓞 CF), ∃ n : Field.absoluteGaloisGroup ℚ,
+        χ n = 1 ∧ art n = c) ∧
+      (∀ (g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+        art (g * GaloisRepresentation.globalFrob v * g⁻¹) =
+          ClassGroup.mk0 (frobIdeal g v)) :=
+  sorry
+
 /-- **THE RECIPROCITY HALF: the Artin map of the unramified class
 field, computed on Frobenius elements by the class of the underlying
-prime** (E3c support leaf (ii-a-1-i-B-2); SORRY NODE, cut 2026-07-27
+prime** (E3c support leaf (ii-a-1-i-B-2); **PROVEN 2026-07-27 as glue**
+over the three leaves `exists_artinIdealMap_of_unramifiedAbelianSubgroup`,
+`exists_ideal_artinIdealMap_congr_of_kerChar` and
+`exists_artinMap_of_artinIdealMap` above, which split it along the
+RECIPROCITY / CHEBOTAREV / COUNTING axis; itself cut 2026-07-27
 out of `exists_artinMap_classGroup_of_frobeniusIdeal` below): given a
 subgroup `N ≤ Γℚ` with all the properties produced by
 `exists_unramifiedAbelianSubgroup_relIndex_classGroup` above, and given
@@ -28119,50 +28430,59 @@ such a conjugate whose ideal class is nontrivial as soon as `L ≠ H`.
 The same argument kills `hNab`. **Anyone re-cutting this leaf must
 carry both hypotheses forward.**
 
-**WHAT REMAINS TO BE PROVEN HERE, in dependency order, each claim
-stated so it can be rechecked.**
+**THE CUT, 2026-07-27.** The three obligations this docstring previously
+listed as "what remains" are now the three leaves above, and the assembly
+below is glue:
 
-1. *Artin reciprocity*: the Artin symbol of a principal ideal of `𝓞 CF`
-   is trivial in `Gal(H/K)`, so the symbol descends to `Cl(𝓞 CF)`. This
-   is the one piece for which this tree ALREADY has a formalization of
-   the classical proof: `Fermat/FLT/GaloisRepresentation/HardlyRamified/
-   ModThree.lean` (~lines 37000–41500, in this file's import cone)
-   formalizes Artin's own proof following Childress ch. 5 —
-   `exists_artinPackage_ray_class`, `exists_artinAuxiliaryField_ray_class`,
-   `artinSymbol_span_eq_one_of_cyclotomic_ray_class`,
-   `artinSymbol_ray_class_descend_unramified_prime`,
-   `exists_conductor_artinSymbol_span_eq_one_ray_class`. It is general
-   in the base number field but its characters are valued in
-   `Dickson.K 3 = AlgebraicClosure (ZMod 3)`. **Price generalizing that
-   value group before writing reciprocity again from scratch** — a
-   second independent reciprocity development is the most expensive
-   object this fleet can produce.
-2. *Surjectivity*: `art` is a homomorphism on `ker χ`, so its image is
-   a subgroup; by the symbol formula that image contains the class of
-   every degree-one prime of `𝓞 CF` arising as a `frobIdeal g v`, and
-   Chebotarev makes those classes generate. The tree has Chebotarev
-   material in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`.
-3. *Consuming `hfrob`*: `hfrob` delivers `IsArithFrobAt (𝓞 ℚ) …`, an
-   arithmetic Frobenius over `ℚ`; the Artin symbol of `H/K` needs one
-   over `K`. The bridging sub-lemma — **"an arithmetic Frobenius over
-   `ℚ` that fixes `K` pointwise is an arithmetic Frobenius over `K` at
-   the same prime"**, which is where `χ (g Frob_v g⁻¹) = 1` forcing
-   residue degree `1` enters — is stated in neither mathlib's
-   `Frobenius.lean` nor this project. **The check that would refute
-   that obstruction:**
-   `grep -rn 'IsArithFrobAt' Fermat/ .lake/packages/mathlib/Mathlib/RingTheory/`
-   turning up a restriction/base-change lemma; the axis searched was
-   `IsArithFrobAt`'s own API (`IsArithFrobAt.conj`,
-   `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`) plus `Ideal.under` /
-   `Ideal.LiesOver`, and NOT the `Ideal.primesOver` transitivity route,
-   which may give it more cheaply. It is the same missing sub-lemma
-   family that `exists_frobeniusIdeal_cyclotomic` above records.
+1. *Artin reciprocity* → `exists_artinIdealMap_of_unramifiedAbelianSubgroup`,
+   which produces the ideal-level symbol `art0` and asserts it kills the
+   principal ideals. Its docstring carries the full `ModThree.lean` survey.
+2. *Surjectivity (Chebotarev)* → `exists_ideal_artinIdealMap_congr_of_kerChar`.
+3. *Counting / inverting the symbol* → `exists_artinMap_of_artinIdealMap`,
+   which is **pure algebra**: it consumes `hNcard` and the `ClassGroup` API
+   and nothing arithmetic. Isolating it is what makes the remaining two
+   leaves purely class-field-theoretic.
 
-**RE-CUT INSTRUCTION (inherited).** Once any live ray-class effort
-lands a base-field-general Artin map for a ray class group, THIS leaf
-is the one to re-cut to consume it — and that cut is then cheap.
-`exists_unramifiedAbelianSubgroup_relIndex_classGroup` above is
-independent of it and needs no change.
+**OBSTRUCTION 3 OF THE PREVIOUS LIST IS REFUTED (2026-07-27), by running the
+grep this docstring itself prescribed.** It claimed the bridging sub-lemma —
+"an arithmetic Frobenius over `ℚ` that fixes `K` pointwise is an arithmetic
+Frobenius over `K` at the same prime" — was "stated in neither mathlib's
+`Frobenius.lean` nor this project" and treated it as missing theory. It is a
+DEFINITIONAL UNFOLDING. `IsArithFrobAt R σ Q` unfolds to
+`∀ x, σ • x - x ^ Nat.card (R ⧸ Q.under R) ∈ Q`
+(`Mathlib/RingTheory/Frobenius.lean`, `abbrev IsArithFrobAt` over
+`AlgHom.IsArithFrobAt`), and the base ring `R` occurs in it **only** through
+the residue cardinality `Nat.card (R ⧸ Q.under R)`. So the sub-lemma is
+
+    theorem isArithFrobAt_of_residue_card_eq
+        {R R' S : Type*} [CommRing R] [CommRing R'] [CommRing S]
+        [Algebra R S] [Algebra R' S]
+        {G : Type*} [Group G] [MulSemiringAction G S]
+        [SMulCommClass G R S] [SMulCommClass G R' S]
+        {σ : G} {Q : Ideal S}
+        (h : IsArithFrobAt R σ Q)
+        (hcard : Nat.card (R ⧸ Q.under R) = Nat.card (R' ⧸ Q.under R')) :
+        IsArithFrobAt R' σ Q := by
+      intro x; rw [← hcard]; exact h x
+
+which was written and compiled clean against this pin on 2026-07-27 (it is not
+committed anywhere: it belongs wherever a prover first needs it, and is quoted
+here so nobody re-derives the obstruction). The whole content of the bridge is
+therefore the residue-degree-one hypothesis
+`Nat.card (𝓞 ℚ ⧸ 𝔮 ∩ ℤ) = Nat.card (𝓞 K ⧸ 𝔮 ∩ 𝓞 K)`, which is exactly what
+`χ (g Frob_v g⁻¹) = 1` delivers — an arithmetic statement about `K/ℚ`, not a
+missing piece of Frobenius API. **The same correction applies to the
+identically-worded note on `exists_frobeniusIdeal_cyclotomic` above**, which is
+under separate ownership and so has been left for its owner.
+
+**RE-CUT INSTRUCTION (inherited, and now narrowed).** Once any live ray-class
+effort lands a base-field-general Artin map for a ray class group, the leaf to
+re-cut is `exists_artinIdealMap_of_unramifiedAbelianSubgroup` above, NOT this
+one — this one is glue and needs no change, and neither does
+`exists_unramifiedAbelianSubgroup_relIndex_classGroup`. Note also, from the
+survey recorded there, that a ray-class Artin map valued in a CHARACTER group
+is not by itself enough: the missing step is the passage from characters to
+the `Gal`-valued map, which is Pontryagin duality over the class group.
 
 Soundness: the hypothesis set is inhabited — take `χ = ω`, `CF` the
 cyclotomic field, `ι` any embedding, `frobIdeal` as constructed in
@@ -28222,8 +28542,17 @@ theorem exists_artinMap_of_unramifiedAbelianSubgroup
           (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
         χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
         art (g * GaloisRepresentation.globalFrob v * g⁻¹) =
-          ClassGroup.mk0 (frobIdeal g v)) :=
-  sorry
+          ClassGroup.mk0 (frobIdeal g v)) := by
+  -- (a) RECIPROCITY: the Artin symbol on ideals, trivial on principal ideals.
+  obtain ⟨art0, hart0ker, hart0mul, hart0frob, hart0prin⟩ :=
+    exists_artinIdealMap_of_unramifiedAbelianSubgroup χ hχcyc CF ι frobIdeal hfrob
+      N hNnorm hNopen hNker hNinert hNab hNcard
+  -- (c) COUNTING: invert it, using (b) CHEBOTAREV for surjectivity.
+  exact exists_artinMap_of_artinIdealMap χ CF frobIdeal N hNnorm hNker hNab hNcard
+    art0 hart0ker hart0mul hart0frob hart0prin
+    (exists_ideal_artinIdealMap_congr_of_kerChar χ hχcyc CF ι frobIdeal hfrob
+      N hNnorm hNopen hNker hNinert hNab hNcard art0 hart0ker hart0mul hart0frob
+      hart0prin)
 
 /-- **The Hilbert class field of `ℚ(μ_p)` EXISTS: the Artin map, over a
 given Frobenius-to-ideal dictionary** (E3c support leaf (ii-a-1-i-B);
