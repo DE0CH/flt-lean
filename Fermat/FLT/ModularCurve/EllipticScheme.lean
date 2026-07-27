@@ -10,6 +10,9 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
+public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
+public import Mathlib.RingTheory.FiniteType
+public import Mathlib.RingTheory.MvPolynomial.Ideal
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
@@ -33,11 +36,13 @@ under "Why this is not in `X0.lean`" below.
   which `X0.lean` transports verbatim onto
   `exists_ellipticScheme_of_weierstrass`.
 
-The open leaves are `nonempty_projGroupLaw`, `isProper_projToSpec`,
-`smoothOfRelativeDimension_projToSpec`,
-`geometricallyConnected_projToSpec` and
-`exists_projGeomFibreAddEquiv`; each carries its own docstring saying what
-is missing and where the classical argument is.
+`isProper_projToSpec` is PROVEN.  The open leaves are
+`nonempty_projGroupLaw`, `exists_projGeomFibreAddEquiv`, and the interiors of
+`smoothOfRelativeDimension_projToSpec` and `geometricallyConnected_projToSpec`
+— those last two are no longer bare `sorry`s: each now carries a proven
+reduction, with the residual mathematics isolated in named sorried steps
+(`hchart`; `hbc`/`hne`/`hpre`).  Each declaration carries its own docstring
+saying what is missing and where the classical argument is.
 
 ## Why this is not in `X0.lean`
 
@@ -81,6 +86,14 @@ namespace Fermat
 section EllipticScheme
 
 open _root_.WeierstrassCurve.Projective
+
+/-  `MvPolynomial.gradedAlgebra` is deliberately not a global instance in mathlib (a
+different weight function gives a different grading), so — exactly as in
+`ProjectiveModel.lean`, and by the same convention mathlib uses for
+`homogeneousSubmodule` — it has to be reintroduced locally in any file that mentions
+`projGrading` as a graded ring rather than merely mentioning `proj`/`projToSpec`,
+whose *types* carry no instance. -/
+attribute [local instance] MvPolynomial.gradedAlgebra
 
 /-- **Morphism-level group-law data on the projective Weierstrass model
 of `E`**, in exactly the shape `AbelianSchemeStruct.ofMorphisms`
@@ -160,24 +173,85 @@ theorem nonempty_projGroupLaw (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     Nonempty (ProjGroupLaw E) :=
   sorry
 
-/-- **The projective Weierstrass model is proper over `Spec ℚ`** (sorry
-node).
+/-- **The projective Weierstrass model is proper over `Spec ℚ`** (PROVEN).
 
-Mathlib already has `IsProper (Proj.toSpecZero 𝒜)` under
-`[Algebra.FiniteType (𝒜 0) A]` (`ProjectiveSpectrum/Proper.lean:368`), and
-the homogeneous coordinate ring `ℚ[X, Y, Z] ⧸ (W)` is visibly of finite
-type over its degree-zero part.  What is NOT immediate is that this
-transfers to `projToSpec`, which is `Proj.toSpecZero` FOLLOWED by
-`Spec.map (algebraMap ℚ (projGrading E 0))`: properness is not stable
-under postcomposition in general.  The missing input is that the second
-map is an isomorphism, i.e. that the degree-zero part of the homogeneous
-coordinate ring of the Weierstrass cubic is `ℚ` itself — provable at the
-ring level, because the degree-`0` component of `ℚ[X, Y, Z]` is `ℚ` and
-the homogeneous ideal `(W)` is generated in degree `3`, so it meets
-degree `0` trivially. -/
+`projToSpec` is `Proj.toSpecZero` FOLLOWED by
+`Spec.map (algebraMap ℚ (projGrading E 0))`, and properness is not stable under
+postcomposition in general, so the proof is in two halves.
+
+*The first factor.*  Mathlib has `IsProper (Proj.toSpecZero 𝒜)` under
+`[Algebra.FiniteType (𝒜 0) A]`.  That hypothesis is obtained here by descending
+`Algebra.FiniteType ℚ (ℚ[X, Y, Z] ⧸ (W))` — itself a quotient of a polynomial ring
+in finitely many variables — along the tower `ℚ → projGrading E 0 → ℚ[X, Y, Z] ⧸ (W)`
+with `Algebra.FiniteType.of_restrictScalars_finiteType`.
+
+*The second factor* is an ISOMORPHISM: the degree-zero part of the homogeneous
+coordinate ring of the Weierstrass cubic is `ℚ` itself.  Surjectivity is
+`MvPolynomial.homogeneousSubmodule_zero` (`homogeneousSubmodule σ R 0 = 1`), which
+says every degree-`0` homogeneous polynomial is a constant.  Injectivity is the
+observation that the ideal `(W)` meets the constants trivially, and the cheap proof
+of that is NOT a degree count but the ring hom `MvPolynomial.constantCoeff`: it kills
+`W` (a homogeneous polynomial of degree `3 ≠ 0` has no constant term), so it kills
+every multiple of `W`, while it sends `C c` to `c`.
+
+Two implementation notes worth keeping, both of which cost a verification cycle:
+
+* The `IsScalarTower ℚ ↥(projGrading E 0) (ℚ[X, Y, Z] ⧸ (W))` that
+  `of_restrictScalars_finiteType` consumes must be produced with `R`/`S`/`A` PINNED BY
+  NAME.  Elaborating the statement instead picks the `Submodule.smul` and
+  `Submodule.Quotient.instSMul'` scalar actions, whereas every `FiniteType` lemma is
+  stated over `Algebra.toSMul`; the two are a diamond, and `apply` fails to unify.
+* Both bridging identities — `↑(algebraMap ℚ ↥(𝒜 0) c) = algebraMap ℚ A c` and
+  `algebraMap ↥(𝒜 0) A x = ↑x` — are `rfl`
+  (`SetLike.GradeZero.coe_algebraMap`, `SetLike.GradeZero.algebraMap_apply`), which is
+  what makes the two `Subtype.val` crossings free.
+
+**FORMAL-CONTENT NOTE.** `[E.IsElliptic]` is NOT used: properness holds for the
+projective model of an arbitrary Weierstrass equation over `ℚ`, singular or not, since
+`Proj` of a finite-type graded ring is always proper over its degree-zero part.  The
+discriminant enters only at `smoothOfRelativeDimension_projToSpec`.  The hypothesis is
+retained because the signature is consumed by `ProjGroupLaw.toAbelianSchemeStruct` and
+is fixed by the cut, not because this leaf needs it. -/
 theorem isProper_projToSpec (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    IsProper (projToSpec E) :=
-  sorry
+    IsProper (projToSpec E) := by
+  -- The projective Weierstrass polynomial has vanishing constant term: it is
+  -- homogeneous of degree `3`, and `3 ≠ 0`.
+  have hc : MvPolynomial.constantCoeff (polynomial E) = 0 :=
+    (isHomogeneous_polynomial E).coeff_eq_zero (d := 0) (by simp)
+  -- Hence `ℚ → ℚ[X, Y, Z] ⧸ (W)` is injective: a constant in `(W)` is `b * W`, and
+  -- `constantCoeff` sends that to `0`.
+  have hinj : Function.Injective (algebraMap ℚ
+      (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)) := by
+    intro c c' h
+    have h' : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
+          (MvPolynomial.C c)) = Ideal.Quotient.mk _ (MvPolynomial.C c') := h
+    rw [Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← MvPolynomial.C_sub] at h'
+    obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp h'
+    have hcc := congrArg MvPolynomial.constantCoeff hb
+    rw [map_mul, hc, mul_zero, MvPolynomial.constantCoeff_C] at hcc
+    exact sub_eq_zero.mp hcc.symm
+  -- The degree-zero part of the homogeneous coordinate ring is exactly `ℚ`.
+  have hbij : Function.Bijective (algebraMap ℚ (projGrading E 0)) := by
+    refine ⟨fun c c' h => hinj (congrArg Subtype.val h), ?_⟩
+    rintro ⟨x, hx⟩
+    obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx
+    rw [MvPolynomial.homogeneousSubmodule_zero] at hp
+    obtain ⟨c, rfl⟩ := Submodule.mem_one.mp hp
+    exact ⟨c, rfl⟩
+  -- `R`/`S`/`A` pinned by name: see the implementation note above.
+  haveI := IsScalarTower.of_algebraMap_eq (R := ℚ) (S := (projGrading E 0))
+    (A := MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) fun _ => rfl
+  haveI : Algebra.FiniteType ℚ
+      (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
+    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ ℚ _) Ideal.Quotient.mk_surjective
+  haveI : Algebra.FiniteType (projGrading E 0)
+      (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
+    Algebra.FiniteType.of_restrictScalars_finiteType ℚ _ _
+  haveI : IsIso (CommRingCat.ofHom (algebraMap ℚ (projGrading E 0))) :=
+    (ConcreteCategory.isIso_iff_bijective _).mpr hbij
+  show IsProper (Proj.toSpecZero (projGrading E) ≫
+    Spec.map (CommRingCat.ofHom (algebraMap ℚ (projGrading E 0))))
+  infer_instance
 
 /-- **The projective Weierstrass model is smooth of relative dimension
 `1` over `Spec ℚ`** (sorry node — item 7a).
@@ -194,10 +268,78 @@ criterion along the standard affine cover of `Proj` — `Proj.awayι` and
 On each affine chart the partial derivatives of the Weierstrass
 polynomial generate the unit ideal exactly when `Δ` is invertible, which
 is `E.IsElliptic`.  This is where ellipticity is genuinely used, and it
-is the only place the discriminant enters. -/
+is the only place the discriminant enters.
+
+## What is PROVEN here and what remains
+
+The **reduction to the three coordinate charts is now proven**, and it is the whole
+of the glue: `SmoothOfRelativeDimension n` has a `HasRingHomProperty`, hence is
+Zariski-local at the SOURCE, so `IsZariskiLocalAtSource.of_openCover` reduces the
+claim to the charts of any affine open cover.  The cover used is
+`Proj.affineOpenCoverOfIrrelevantLESpan` at the three images `x₀, x₁, x₂` of the
+coordinates — i.e. `D₊(X)`, `D₊(Y)`, `D₊(Z)` — rather than mathlib's default
+`Proj.affineOpenCover`, whose index set is ALL homogeneous elements of positive
+degree and which would therefore leave a strictly harder residual obligation.
+
+Both side conditions of that cover are discharged:
+
+* the degree condition `xᵢ ∈ projGrading E 1`, from
+  `HomogeneousIdeal.mk_mem_quotientGrading` and `MvPolynomial.isHomogeneous_X`;
+* the covering condition `(projGrading E)₊ ≤ span {x₀, x₁, x₂}`, via
+  `HomogeneousIdeal.toIdeal_irrelevant_le` (which reduces it to homogeneous elements
+  of positive degree) and `MvPolynomial.mem_ideal_span_X_image` (a polynomial lies in
+  the ideal generated by the variables iff every monomial of its support involves
+  one) — a homogeneous polynomial of degree `i > 0` has no constant monomial, so it
+  qualifies.
+
+**The single remaining sorry is `hchart`**: over the chart `D₊(xᵢ)`, the composite
+`Spec ((A_{xᵢ})₀) ⟶ Proj 𝒜 ⟶ Spec ℚ` is smooth of relative dimension `1`.  By
+`Proj.awayι_toSpecZero` that composite is `Spec.map` of the ring map
+`ℚ → (A_{xᵢ})₀`, so the residual obligation is purely RING-THEORETIC and is where
+the Jacobian criterion and `Δ ≠ 0` enter.  Concretely, for `i = 2` the ring is
+`ℚ[x, y] ⧸ (y² + a₁xy + a₃y − x³ − a₂x² − a₄x − a₆)`. -/
 theorem smoothOfRelativeDimension_projToSpec (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    SmoothOfRelativeDimension 1 (projToSpec E) :=
-  sorry
+    SmoothOfRelativeDimension 1 (projToSpec E) := by
+  classical
+  -- the images of the three coordinates in the homogeneous coordinate ring
+  set f : Fin 3 → (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) :=
+    fun i => Ideal.Quotient.mk _ (MvPolynomial.X i)
+  have f_deg : ∀ i, f i ∈ projGrading E 1 := fun i =>
+    HomogeneousIdeal.mk_mem_quotientGrading
+      ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ i))
+  -- the three basic opens `D₊(xᵢ)` really do cover `Proj`
+  have hf : (HomogeneousIdeal.irrelevant (projGrading E)).toIdeal
+      ≤ Ideal.span (Set.range f) := by
+    rw [HomogeneousIdeal.toIdeal_irrelevant_le]
+    intro i hi z hz
+    obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hz
+    have hp' : p ∈ Ideal.span (MvPolynomial.X '' (Set.univ : Set (Fin 3))) := by
+      rw [MvPolynomial.mem_ideal_span_X_image]
+      intro m hm
+      by_contra hcon
+      push Not at hcon
+      have hm0 : m = 0 := by
+        ext j; exact hcon j (Set.mem_univ j)
+      have hdeg := ((MvPolynomial.mem_homogeneousSubmodule _ _).mp hp)
+        (MvPolynomial.mem_support_iff.mp hm)
+      rw [hm0] at hdeg
+      simp at hdeg
+      omega
+    have hle : Ideal.span (MvPolynomial.X '' (Set.univ : Set (Fin 3)))
+        ≤ Ideal.comap (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal)
+          (Ideal.span (Set.range f)) := by
+      rw [Ideal.span_le]
+      rintro _ ⟨j, -, rfl⟩
+      exact Ideal.subset_span ⟨j, rfl⟩
+    exact hle hp'
+  /- **The residual leaf.**  Each of the three standard charts is smooth of relative
+  dimension `1` over `Spec ℚ`.  This is the Jacobian criterion, descended along
+  `Proj.awayι`, and it is the only place `E.IsElliptic` is used. -/
+  have hchart : ∀ i : Fin 3, SmoothOfRelativeDimension 1
+      (Proj.awayι (projGrading E) (f i) (f_deg i) Nat.one_pos ≫ projToSpec E) := sorry
+  exact IsZariskiLocalAtSource.of_openCover
+    (Proj.affineOpenCoverOfIrrelevantLESpan (projGrading E) f (m := fun _ => 1) f_deg
+      (fun _ => Nat.one_pos) hf).openCover hchart
 
 /-- **The projective Weierstrass model is geometrically connected over
 `Spec ℚ`** (sorry node — item 7b).
@@ -208,10 +350,56 @@ intersection point of two components, contradicting
 `smoothOfRelativeDimension_projToSpec` — so the coordinate ring is a
 domain, and `Proj` of a graded domain is irreducible, hence connected.
 Nonemptiness, which `GeometricallyConnected` demands through
-`ConnectedSpace`, is the point at infinity. -/
+`ConnectedSpace`, is the point at infinity.
+
+## What is PROVEN here and what remains
+
+The **reduction to a single base change is now proven**.  `GeometricallyConnected` is
+by definition `geometrically (ConnectedSpace ·)`, i.e. a condition on `X ×_ℚ Spec K`
+for EVERY field `K` with a map `Spec K ⟶ Spec ℚ`; since the base is affine and
+`(ConnectedSpace ·)` is closed under isomorphism,
+`geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` turns that into: for
+every field `K` with `[Algebra ℚ K]`, the pullback along
+`Spec.map (algebraMap ℚ K)` is connected.
+
+Note this is genuinely a statement about ALL field extensions `K/ℚ`, not only about
+`ℚ̄` — the docstring above is right that `ℚ̄` is where the geometry happens, but the
+quantifier is not eliminable at this stage, so the remaining leaves are stated over a
+general `K`.  That costs nothing: the cubic is irreducible over every extension of a
+field over which it is smooth, so the same argument serves.
+
+**Three sorries remain**, and the assembly consumes exactly these:
+
+* `hbc` — the base change of the projective model is the projective model of the
+  base-changed curve, `Proj (ℚ[X,Y,Z]⧸(W)) ×_ℚ Spec K ≅ Proj (K[X,Y,Z]⧸(W_K))`.  This
+  is `Proj` commuting with base change of the graded ring, plus
+  `WeierstrassCurve.baseChange` commuting with `polynomial`.  It carries no
+  ellipticity.
+* `hne` — nonemptiness, which is the point at infinity `[0 : 1 : 0]`.
+* `hpre` — preconnectedness, which is the real content: `W_K` is an irreducible cubic
+  (a reducible plane cubic is singular at an intersection of two components,
+  contradicting `smoothOfRelativeDimension_projToSpec` after base change), so the
+  coordinate ring is a domain and `Proj` of a graded domain is irreducible.
+
+Splitting `ConnectedSpace` into `Nonempty` and `PreconnectedSpace` is deliberate: the
+two halves have nothing to do with each other, and bundling them would have forced a
+successor to redo the trivial half. -/
 theorem geometricallyConnected_projToSpec (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    GeometricallyConnected (projToSpec E) :=
-  sorry
+    GeometricallyConnected (projToSpec E) := by
+  constructor
+  rw [geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms]
+  intro K _ _
+  /- The base change of the projective model along `ℚ → K` is the projective model of
+  the base-changed Weierstrass curve. -/
+  have hbc : Limits.pullback (projToSpec E)
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) ≅ proj (E.baseChange K) := sorry
+  /- Nonemptiness: the point at infinity `[0 : 1 : 0]` is a `K`-rational point. -/
+  haveI hne : Nonempty (proj (E.baseChange K)) := sorry
+  /- Preconnectedness: `W_K` is an irreducible cubic, so `K[X, Y, Z] ⧸ (W_K)` is a
+  graded domain and its `Proj` is irreducible. -/
+  haveI hpre : PreconnectedSpace (proj (E.baseChange K)) := sorry
+  have hconn : ConnectedSpace (proj (E.baseChange K)) := ⟨hne⟩
+  exact ObjectProperty.prop_of_iso (fun X : Scheme.{0} => ConnectedSpace X) hbc.symm hconn
 
 /-- **The abelian-scheme structure on the projective Weierstrass model**
 (PROVEN) — the morphism-level bridge, applied.
