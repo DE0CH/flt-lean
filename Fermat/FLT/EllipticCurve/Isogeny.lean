@@ -18,6 +18,10 @@ public import Mathlib.GroupTheory.QuotientGroup.Basic
 public import Mathlib.GroupTheory.Coset.Card
 -- Only for the `𝔽₅` counterexample in the FALSITY AUDIT of `IsIsogeny.add`.
 public import Mathlib.Algebra.Field.ZMod
+-- Only for the `𝔽̄₂` counterexamples in the FALSITY AUDITs of `IsRationalMap.add`
+-- and `Isogeny.isRationalMap_dualHom`.
+public import Mathlib.Algebra.Module.ZMod
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
 
 /-!
 # Isogenies of elliptic curves as morphisms
@@ -100,6 +104,42 @@ unconditional `IsIsogeny.add` asserts that `[2] = id + id` is surjective on
 so nothing downstream changes. `IsIsogeny.zero`, `.id`, `.neg` and `.comp` remain
 unconditional and remain proven.
 
+## …and only for a NONSINGULAR `W`: `[W.IsElliptic]` is required too
+
+**`[IsAlgClosed F]` alone is not enough** (2026-07-26). `Affine F` is *any*
+Weierstrass curve, and mathlib gives `Affine.Point` its group structure with no
+nonsingularity hypothesis, so `W` may be a singular cubic. Over `𝔽̄₂` the cuspidal
+`y² = x³` has `negY x y = -y = y`, hence `-P = P`, hence an infinite point group of
+exponent 2 — an `𝔽₂`-vector space, which is **not divisible** and so has subgroups
+of index 2. Since `IsRationalMap φ` constrains only the points with `φ P ≠ 0`, a
+homomorphism onto a two-element image satisfies it by a **constant** witness and
+asserts nothing at all.
+
+That refutes `IsRationalMap.add` and `IsRationalMap.isIsogeny` as they stood;
+both refutations are machine-checked and axiom-clean in
+`WeierstrassCurve.NotIsRationalMapAdd`. Those two leaves, and with them
+`IsIsogeny.add`, `endSubring`, `End` and the whole `End.*` API, now carry
+`[W.IsElliptic]` as well. `MazurTorsion.lean`'s consumers already work with a curve
+carrying `[E.IsElliptic]`, so again nothing downstream is lost.
+
+## …and the DUAL needs `CharZero`, which nothing used to enforce
+
+`degree` is `Nat.card (ker φ)`, which equals the classical degree only for
+*separable* isogenies — the design note above says exactly that, and until
+2026-07-26 **no hypothesis anywhere enforced it**. `Isogeny.isRationalMap_dualHom`
+is where that bites, and it made the leaf FALSE: over `𝔽̄₂` the Frobenius on the
+nonsingular curve `y² + y = x³` is rational, surjective and injective on points, so
+it is an isogeny of `degree 1`, and `dualHom` therefore descends `[1] = id` and
+claims the *inverse Frobenius* `x ↦ √x` is a morphism. A parity argument on
+`X · B(X²) = A(X²)` refutes that. Machine-checked and axiom-clean in
+`WeierstrassCurve.Isogeny.NotIsRationalMapDualHom`; note that `[IsAlgClosed F]` and
+`[W.IsElliptic]` are both satisfied there, so neither of the earlier repairs helps.
+
+`isRationalMap_dualHom`, `dual`, `dual_toHom` and `dual_comp` therefore carry
+`[CharZero F]`. Nothing else in the file needs it: `IsIsogeny.comp`, `endSubring`,
+`End` and `End.sq_eq_intCast_iff` are about rational maps, surjectivity and finite
+kernels, all of which behave in characteristic `p`.
+
 ## Open leaves left by this file
 
 `IsRationalMap.add`, `IsRationalMap.isIsogeny`,
@@ -117,11 +157,20 @@ case) — all proven here. `IsIsogeny.add` was on this list too; it is now PROVE
 from `IsRationalMap.add` and `IsRationalMap.isIsogeny`, after being refuted and
 restated (above).
 
+**All three remaining leaves were REFUTED as originally stated, and restated, on
+2026-07-26** — machine-checked counterexamples in `NotIsIsogenyAdd`,
+`NotIsRationalMapAdd` and `Isogeny.NotIsRationalMapDualHom`. Their present
+hypotheses are load-bearing, not decoration; do not weaken them without reading
+those audits.
+
 ## Correction to the characteristic caveat above
 
 The design note says this file is "correct only in characteristic zero". That
 remains true of the *interpretation* of `degree` as the classical degree (which
-needs separability), but it is **not** a restriction on the two geometric
+needs separability) — and the FALSITY AUDIT of `Isogeny.isRationalMap_dualHom`
+below shows that caveat has real teeth, since Frobenius makes the dual
+construction outright FALSE in characteristic `p`. But it is **not** a
+restriction on the two geometric
 inputs: both are proven below over an arbitrary algebraically closed field, in
 every characteristic, with no hypothesis beyond `n ≠ 0`. The project's
 `TorsionCard.smul_surjective` needs `(n : k) ≠ 0` only because it works over a
@@ -558,7 +607,22 @@ theorem IsRationalMap.comp {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.
       ((B.eval (veluPointX P)) ^ d' * E.eval (veluPointX P)) * hy'
         + ((B.eval (veluPointX P)) ^ d' * C'.eval (veluPointX (φ P))) * hy
 
-/-- **LEAF.** The pointwise sum of two rational maps is rational.
+/-- **LEAF.** The pointwise sum of two rational maps is rational, over an
+algebraically closed field and for an **elliptic** `W`.
+
+**Both hypotheses were added on 2026-07-26 after the unqualified statement was
+REFUTED.** See the FALSITY AUDIT of `IsRationalMap.add` below (namespace
+`WeierstrassCurve.NotIsRationalMapAdd`, machine-checked as
+`isRationalMap_add_is_false`, axiom-clean). In one line: `Affine F` contains
+*singular* Weierstrass curves, and over `𝔽̄₂` the cuspidal cubic `y² = x³` has an
+infinite point group in which every element is 2-torsion — so the group is not
+divisible, it has index-2 subgroups, and a homomorphism onto a two-element
+subgroup is rational **by the constant witness**. Two such maps with different
+target `x`-coordinates have a non-rational sum.
+
+`[W.IsElliptic]` and `[IsAlgClosed F]` are exactly what kills that class: together
+they make `W.Point` divisible (`nsmul_surjective`), hence free of proper
+finite-index subgroups, hence free of homomorphisms with finite image.
 
 This is the affine addition formula on `W'` applied to the two images: `x` and
 `y` of `φ P + ψ P` are rational in `x(φ P), y(φ P), x(ψ P), y(ψ P)`, each of
@@ -588,7 +652,7 @@ docstring. The branches are cut out by polynomial conditions in `x P`:
 
 *The `≠ 0` side conditions* will degenerate in exactly the same way as in `comp`;
 `exists_const_of_homogSubst_eq_zero` above is available and is the tool for them. -/
-theorem IsRationalMap.add {φ ψ : W.Point →+ W'.Point}
+theorem IsRationalMap.add [IsAlgClosed F] [W.IsElliptic] {φ ψ : W.Point →+ W'.Point}
     (hφ : IsRationalMap φ) (hψ : IsRationalMap ψ) : IsRationalMap (φ + ψ) :=
   sorry
 
@@ -749,13 +813,330 @@ theorem isIsogeny_add_is_false :
 
 end NotIsIsogenyAdd
 
-/-- **LEAF.** Over an **algebraically closed** field, a homomorphism of point groups
-that is given by rational functions in the coordinates already **is** an isogeny:
-the `surjective` and `finite_ker` fields of `IsIsogeny` come for free there.
+/-! ### FALSITY AUDIT: `[IsAlgClosed F]` IS NOT ENOUGH — `Affine F` CONTAINS SINGULAR CURVES
+
+**Refuted 2026-07-26.** The audit above repaired `IsIsogeny.add` by adding
+`[IsAlgClosed F]`, on the reasoning that the failure was surjectivity *on
+`F`-points* and that algebraic closure repairs it. That reasoning is correct as far
+as it goes and it is **not sufficient**, because it silently assumes `W` is an
+elliptic curve. It need not be: `Affine F` is *any* Weierstrass curve, and mathlib
+gives `Affine.Point` its `AddCommGroup` structure with **no** nonsingularity
+hypothesis (`Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`), because
+the nonsingular points of a singular cubic form a group too.
+
+**The counterexample.** Let `K = 𝔽̄₂` and let `Wc : y² = x³` be the cuspidal cubic
+over it — a *singular* Weierstrass curve, so `Wc.IsElliptic` is false, but
+`Wc.Point` is a perfectly good abelian group. Two facts about it:
+
+* `negY x y = -y - a₁x - a₃ = -y = y` in characteristic 2, so `-P = P` and **every
+  point is 2-torsion**: `Wc.Point` is an `𝔽₂`-vector space.
+* `s ↦ (s², s³)` is an injection from `K \ {0}` into the nonsingular points, so
+  `Wc.Point` is **infinite**.
+
+An infinite `𝔽₂`-vector space is not divisible — `2 · G = 0 ≠ G` — so it has proper
+subgroups of index 2, in abundance. And that is fatal, because of what
+`IsRationalMap` does *not* say:
+
+> **`IsRationalMap φ` constrains only the points `P` with `φ P ≠ 0`.**
+
+So if the image of `φ` is the two-element subgroup `{0, Q}`, every constrained
+point has the *same* image, and the constant tuple
+`(A, B, C, D, E) = (C x(Q), 1, 0, C y(Q), 1)` satisfies the certificate. No
+algebraicity whatsoever is being asserted.
+
+Both refutations below are machine-checked and axiom-clean:
+
+* `isRationalMap_isIsogeny_is_false` — such a `φ` is rational and nonzero but has
+  two-element image, so it is not surjective on the infinite `Wc.Point`.
+* `isRationalMap_add_is_false` — take `φ = f₁ ⊗ Q₁` and `ψ = f₂ ⊗ Q₂` for two
+  independent coordinate functionals of an `𝔽₂`-basis. Each is rational. Their sum
+  is `Q₁` on one infinite level set and `Q₂` on another, so its `x`-witness would
+  need `A/B ≡ x(Q₁)` and `A/B ≡ x(Q₂)` — each forced by a polynomial with infinitely
+  many roots — and `x(Q₁) ≠ x(Q₂)`.
+
+**The repair.** `IsRationalMap.add` and `IsRationalMap.isIsogeny` carry
+`[W.IsElliptic]` (and `IsRationalMap.add` also `[IsAlgClosed F]`), which is
+inherited by `IsIsogeny.add`, `endSubring`, `End` and the `End.*` API. Over an
+algebraically closed field an elliptic curve's point group is divisible — that is
+`nsmul_surjective`, already a leaf of this file with exactly these two hypotheses —
+so it has no proper finite-index subgroup and no homomorphism with finite image.
+Every consumer (`MazurTorsion.lean`'s Atkin–Lehner leaves) works with a curve
+carrying `[E.IsElliptic]` over `AlgebraicClosure ℚ`, so nothing downstream is lost.
+
+**What is NOT claimed.** `[W'.IsElliptic]` is deliberately not added: no
+counterexample is known that needs it, and an unnecessary hypothesis on a leaf is a
+cost to its consumers. Also unformalised, but worth recording because it shows
+`[IsAlgClosed F]` on `IsRationalMap.add` is doing real work and is not mere
+symmetry with its consumer: the statement is false for *genuinely elliptic* curves
+over `ℚ` too. Take `E : y² = x³ - 25x`, which has rank 1 and full rational
+2-torsion, so `E(ℚ) ≅ ℤ × (ℤ/2)²`; let `f₁, f₂ : E(ℚ) → ℤ/2` be two independent
+functionals and `T₁ = (0,0)`, `T₂ = (5,0)`. The same constant-witness argument
+applies verbatim. The refuting check is one line: `E(ℚ)` has a subgroup of index 2
+exactly when `E(ℚ)/2E(ℚ) ≠ 0`, which holds for every curve of positive rank.
+-/
+
+namespace NotIsRationalMapAdd
+
+local instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+
+/-- An algebraic closure of `𝔽₂`. -/
+abbrev K := AlgebraicClosure (ZMod 2)
+
+noncomputable local instance : DecidableEq K := Classical.decEq _
+
+local instance : CharP K 2 :=
+  charP_of_injective_algebraMap (algebraMap (ZMod 2) K).injective 2
+
+theorem two_eq_zero : (2 : K) = 0 := by
+  exact_mod_cast CharP.cast_eq_zero K 2
+
+/-- The **cuspidal cubic** `y² = x³` over `𝔽̄₂`: a singular Weierstrass curve, so
+`IsElliptic` fails, but `Affine.Point` still makes its nonsingular points a group. -/
+noncomputable def Wc : Affine K := ⟨0, 0, 0, 0, 0⟩
+
+theorem Wc_a₁ : Wc.a₁ = 0 := rfl
+theorem Wc_a₂ : Wc.a₂ = 0 := rfl
+theorem Wc_a₃ : Wc.a₃ = 0 := rfl
+theorem Wc_a₄ : Wc.a₄ = 0 := rfl
+theorem Wc_a₆ : Wc.a₆ = 0 := rfl
+
+/-- The point group of the cuspidal cubic. -/
+abbrev G := Wc.Point
+
+/-- `(s², s³)` is a nonsingular point of `Wc` for every `s ≠ 0`: it satisfies
+`y² = x³`, and the only singular point of `Wc` is the cusp `x = 0`. -/
+theorem nonsing {s : K} (hs : s ≠ 0) : Wc.Nonsingular (s ^ 2) (s ^ 3) := by
+  rw [Affine.nonsingular_iff, Affine.equation_iff]
+  refine ⟨by simp only [Wc_a₁, Wc_a₂, Wc_a₃, Wc_a₄, Wc_a₆]; ring, Or.inl ?_⟩
+  simp only [Wc_a₁, Wc_a₂, Wc_a₄, zero_mul]
+  intro hc
+  exact pow_ne_zero 4 hs (by linear_combination -hc - (s ^ 4) * two_eq_zero)
+
+/-- **Every point of `Wc` is 2-torsion**, because `negY x y = -y = y` in
+characteristic 2, so `-P = P`. This is what makes `G` an `𝔽₂`-vector space. -/
+theorem two_nsmul_eq_zero (P : G) : (2 : ℕ) • P = 0 := by
+  rw [two_nsmul]
+  cases P with
+  | zero => show (0 : G) + (0 : G) = 0; exact add_zero 0
+  | some x y h =>
+      refine Affine.Point.add_self_of_Y_eq (h₁ := h) ?_
+      show y = Wc.negY x y
+      simp only [Affine.negY, Wc_a₁, Wc_a₃]
+      linear_combination y * two_eq_zero
+
+noncomputable local instance : Module (ZMod 2) G := AddCommGroup.zmodModule two_nsmul_eq_zero
+
+/-- `veluPointX` is injective on the nonzero points of `Wc`: `y` is determined by
+`x` because `y ↦ y²` is injective in characteristic 2. -/
+theorem veluPointX_inj {P Q : G} (hP : P ≠ 0) (hQ : Q ≠ 0)
+    (h : veluPointX P = veluPointX Q) : P = Q := by
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x₁ y₁ h₁ =>
+    cases Q with
+    | zero => exact absurd rfl hQ
+    | some x₂ y₂ h₂ =>
+      simp only [veluPointX_some] at h
+      subst h
+      have e₁ : y₁ ^ 2 = x₁ ^ 3 := by
+        have := h₁.1
+        rw [Affine.equation_iff] at this
+        simpa [Wc_a₁, Wc_a₂, Wc_a₃, Wc_a₄, Wc_a₆] using this
+      have e₂ : y₂ ^ 2 = x₁ ^ 3 := by
+        have := h₂.1
+        rw [Affine.equation_iff] at this
+        simpa [Wc_a₁, Wc_a₂, Wc_a₃, Wc_a₄, Wc_a₆] using this
+      have hsq : (y₁ - y₂) ^ 2 = 0 := by
+        linear_combination e₁ - e₂ + (y₂ ^ 2 - y₁ * y₂) * two_eq_zero
+      have hy : y₁ = y₂ :=
+        sub_eq_zero.1 (pow_eq_zero_iff (n := 2) (by norm_num) |>.1 hsq)
+      subst hy
+      rfl
+
+/-- `Wc.Point` is infinite: `s ↦ (s², s³)` injects `K \ {0}` into it. -/
+theorem infinite_G : Infinite G := by
+  haveI : Infinite ↥((({0} : Set K))ᶜ) :=
+    ((Set.finite_singleton (0 : K)).infinite_compl).to_subtype
+  refine Infinite.of_injective
+    (fun s : ↥((({0} : Set K))ᶜ) =>
+      (Point.some ((s : K) ^ 2) ((s : K) ^ 3) (nonsing s.2) : G)) ?_
+  intro s t hst
+  have hst' : ((s : K) ^ 2) = ((t : K) ^ 2) := by
+    simpa using congrArg veluPointX hst
+  have hsq : ((s : K) - (t : K)) ^ 2 = 0 := by
+    linear_combination hst' + ((t : K) ^ 2 - (s : K) * (t : K)) * two_eq_zero
+  exact Subtype.ext (sub_eq_zero.1 (pow_eq_zero_iff (n := 2) (by norm_num) |>.1 hsq))
+
+/-- **The pathological data.** `G` is an infinite `𝔽₂`-vector space, so it has two
+coordinate functionals of an `𝔽₂`-basis together with the two basis vectors they
+detect; the vectors have distinct `x`-coordinates, and each of the two joint level
+sets is infinite. -/
+theorem exists_pathological :
+    ∃ (Q₁ Q₂ : G) (f₁ f₂ : G →ₗ[ZMod 2] ZMod 2),
+      veluPointX Q₁ ≠ veluPointX Q₂ ∧ Q₁ ≠ 0 ∧ Q₂ ≠ 0 ∧
+      {P : G | f₁ P = 1 ∧ f₂ P = 0}.Infinite ∧
+      {P : G | f₁ P = 0 ∧ f₂ P = 1}.Infinite := by
+  haveI := infinite_G
+  let ι := Module.Basis.ofVectorSpaceIndex (ZMod 2) G
+  let b : Module.Basis ι (ZMod 2) G := Module.Basis.ofVectorSpace (ZMod 2) G
+  have hcoord : ∀ m n : ι, b.coord m (b n) = if n = m then 1 else 0 := by
+    intro m n
+    simp [Module.Basis.coord_apply, Module.Basis.repr_self, Finsupp.single_apply, eq_comm]
+  haveI : Infinite ι := by
+    rw [← not_finite_iff_infinite]
+    intro hfin
+    haveI := Fintype.ofFinite ι
+    haveI : Finite G := Finite.of_equiv _ b.equivFun.symm.toEquiv
+    exact not_finite G
+  obtain ⟨i, j, hij⟩ := exists_pair_ne ι
+  have hbne : ∀ m : ι, b m ≠ 0 := fun m => b.ne_zero m
+  have hlevel : ∀ m n : ι, m ≠ n →
+      {P : G | b.coord m P = 1 ∧ b.coord n P = 0}.Infinite := by
+    intro m n hmn
+    haveI : Infinite ↥(({m, n} : Set ι)ᶜ) :=
+      (((Set.finite_insert (a := m) (s := ({n} : Set ι))).2
+        (Set.finite_singleton n)).infinite_compl).to_subtype
+    refine Set.infinite_of_injective_forall_mem
+      (f := fun k : ↥(({m, n} : Set ι)ᶜ) => b m + b (k : ι)) ?_ ?_
+    · intro k l hkl
+      exact Subtype.ext (b.injective (add_left_cancel hkl))
+    · intro k
+      have hk : (k : ι) ≠ m ∧ (k : ι) ≠ n := by
+        have := k.2
+        simp only [Set.mem_compl_iff, Set.mem_insert_iff, Set.mem_singleton_iff,
+          not_or] at this
+        exact this
+      refine ⟨?_, ?_⟩
+      · rw [map_add, hcoord m m, hcoord m (k : ι), if_pos rfl, if_neg hk.1, add_zero]
+      · rw [map_add, hcoord n m, hcoord n (k : ι), if_neg hmn, if_neg hk.2, add_zero]
+  refine ⟨b i, b j, b.coord i, b.coord j, ?_, hbne i, hbne j, hlevel i j hij, ?_⟩
+  · intro hc
+    exact hij (b.injective (veluPointX_inj (hbne i) (hbne j) hc))
+  · simpa [and_comm] using hlevel j i hij.symm
+
+theorem zmod_two_cases (c : ZMod 2) : c = 0 ∨ c = 1 := by revert c; decide
+
+section Refute
+
+variable (Q : G) (f : G →ₗ[ZMod 2] ZMod 2)
+
+/-- `P ↦ f P • Q`, as a homomorphism of point groups. Its image is `{0, Q}`. -/
+noncomputable def mk (Q : G) (f : G →ₗ[ZMod 2] ZMod 2) : G →+ G :=
+  ((LinearMap.toSpanSingleton (ZMod 2) G Q).comp f).toAddMonoidHom
+
+theorem mk_apply (P : G) : mk Q f P = f P • Q := rfl
+
+/-- **A map with a two-element image is rational**, by the constant witness. This is
+the whole pathology: `IsRationalMap` constrains only the points *outside* the
+kernel, and here they all have the same image, so a constant tuple discharges it. -/
+theorem isRationalMap_mk : IsRationalMap (mk Q f) := by
+  refine ⟨Polynomial.C (veluPointX Q), 1, 0, Polynomial.C (veluPointY Q), 1,
+    one_ne_zero, one_ne_zero, fun P hP => ?_⟩
+  have hf : f P = 1 := by
+    rcases zmod_two_cases (f P) with h | h
+    · exact absurd (by rw [mk_apply, h]; exact zero_smul _ _) hP
+    · exact h
+  rw [mk_apply, hf, one_smul]
+  simp
+
+end Refute
+
+/-- **REFUTATION 1: `IsRationalMap.isIsogeny` is FALSE without `[W.IsElliptic]`.**
+On the singular curve `Wc` over the algebraically closed `𝔽̄₂`, the map
+`f₁ ⊗ Q₁` is rational and nonzero, but its image is the two-element set `{0, Q₁}`
+while `Wc.Point` is infinite, so it is not surjective. -/
+theorem isRationalMap_isIsogeny_is_false :
+    ¬ ∀ {F : Type} [Field F] [DecidableEq F] [IsAlgClosed F] {W W' : Affine F}
+        {φ : W.Point →+ W'.Point}, IsRationalMap φ → IsIsogeny φ := by
+  intro h
+  obtain ⟨Q₁, Q₂, f₁, _f₂, hx, hQ₁, hQ₂, hS₁, _hS₂⟩ := exists_pathological
+  obtain ⟨P₀, hP₀⟩ := hS₁.nonempty
+  have hne : mk Q₁ f₁ ≠ 0 := by
+    intro hc
+    have := congrArg (fun g : G →+ G => g P₀) hc
+    simp only [mk_apply, hP₀.1, one_smul, AddMonoidHom.zero_apply] at this
+    exact hQ₁ this
+  obtain ⟨P, hP⟩ := (h (isRationalMap_mk Q₁ f₁)).surjective hne Q₂
+  rw [mk_apply] at hP
+  rcases zmod_two_cases (f₁ P) with hc | hc
+  · rw [hc, zero_smul (ZMod 2) Q₁] at hP; exact hQ₂ hP.symm
+  · rw [hc, one_smul] at hP; exact hx (congrArg veluPointX hP)
+
+/-- **REFUTATION 2: `IsRationalMap.add` is FALSE without `[W.IsElliptic]`.**
+`φ = f₁ ⊗ Q₁` and `ψ = f₂ ⊗ Q₂` are each rational by the constant witness, but
+`φ + ψ` equals `Q₁` on one infinite level set and `Q₂` on another, so its
+`x`-witness `A/B` would have to be two different constants at once. -/
+theorem isRationalMap_add_is_false :
+    ¬ ∀ {F : Type} [Field F] [DecidableEq F] {W W' : Affine F}
+        {φ ψ : W.Point →+ W'.Point},
+        IsRationalMap φ → IsRationalMap ψ → IsRationalMap (φ + ψ) := by
+  intro h
+  obtain ⟨Q₁, Q₂, f₁, f₂, hx, hQ₁, hQ₂, hS₁, hS₂⟩ := exists_pathological
+  obtain ⟨A, B, C, D, E, hB, _hE, hcert⟩ :=
+    h (isRationalMap_mk Q₁ f₁) (isRationalMap_mk Q₂ f₂)
+  -- On an infinite set where `φ + ψ` is the constant `Q`, the `x`-witness is forced.
+  have key : ∀ (Q : G) (S : Set G), S.Infinite → Q ≠ 0 →
+      (∀ P ∈ S, (mk Q₁ f₁ + mk Q₂ f₂) P = Q) →
+      A = Polynomial.C (veluPointX Q) * B := by
+    intro Q S hS hQ hval
+    have hP0 : ∀ P ∈ S, P ≠ 0 := by
+      intro P hPS hc
+      exact hQ (by rw [← hval P hPS, hc, map_zero])
+    have hroot : (veluPointX '' S)
+        ⊆ {x : K | (A - Polynomial.C (veluPointX Q) * B).IsRoot x} := by
+      rintro _ ⟨P, hPS, rfl⟩
+      have := (hcert P (by rw [hval P hPS]; exact hQ)).1
+      rw [hval P hPS] at this
+      simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_sub,
+        Polynomial.eval_mul, Polynomial.eval_C]
+      linear_combination -this
+    have himg : (veluPointX '' S).Infinite :=
+      hS.image (fun P hPS Q' hQS hEq => veluPointX_inj (hP0 P hPS) (hP0 Q' hQS) hEq)
+    have := Polynomial.eq_zero_of_infinite_isRoot _ (himg.mono hroot)
+    linear_combination this
+  have h₁ : A = Polynomial.C (veluPointX Q₁) * B := by
+    refine key Q₁ _ hS₁ hQ₁ (fun P hP => ?_)
+    simp only [AddMonoidHom.add_apply, mk_apply, hP.1, hP.2]
+    rw [one_smul, zero_smul (ZMod 2) Q₂, add_zero]
+  have h₂ : A = Polynomial.C (veluPointX Q₂) * B := by
+    refine key Q₂ _ hS₂ hQ₂ (fun P hP => ?_)
+    simp only [AddMonoidHom.add_apply, mk_apply, hP.1, hP.2]
+    rw [one_smul, zero_smul (ZMod 2) Q₁, zero_add]
+  have : (Polynomial.C (veluPointX Q₁) - Polynomial.C (veluPointX Q₂)) * B = 0 := by
+    linear_combination h₂ - h₁
+  rcases mul_eq_zero.1 this with hc | hc
+  · exact hx (Polynomial.C_inj.1 (sub_eq_zero.1 hc))
+  · exact hB hc
+
+end NotIsRationalMapAdd
+
+/-- **LEAF.** Over an **algebraically closed** field and for an **elliptic** `W`, a
+homomorphism of point groups that is given by rational functions in the coordinates
+already **is** an isogeny: the `surjective` and `finite_ker` fields of `IsIsogeny`
+come for free there.
 
 This is the honest geometric content that the unconditional `IsIsogeny.add`
-silently assumed, and the FALSITY AUDIT above is the proof that it cannot be
-dropped.
+silently assumed, and the first FALSITY AUDIT above is the proof that
+`[IsAlgClosed F]` cannot be dropped.
+
+**`[W.IsElliptic]` was added 2026-07-26 and cannot be dropped either**: see the
+second FALSITY AUDIT above, machine-checked as
+`NotIsRationalMapAdd.isRationalMap_isIsogeny_is_false`. Over `𝔽̄₂` the singular
+cuspidal cubic has an infinite point group of exponent 2, hence an index-2 subgroup,
+and a homomorphism onto a two-element image is rational by the constant witness
+while being wildly non-surjective. Algebraic closure does not help, because the
+obstruction is that the *curve* is singular, not that the field is small.
+
+A proof sketch, for whoever closes this. With `[IsAlgClosed F] [W.IsElliptic]`,
+`W.Point` is divisible (`nsmul_surjective`) and infinite. First, `ker φ` is finite:
+if it were infinite then, for any `P₀ ∉ ker φ`, the polynomial
+`A - C (x (φ P₀)) * B` would vanish at the infinitely many distinct `x (P₀ + k)`,
+forcing `A / B` constant; the image would then lie in `{0, Q, -Q}` and be finite, so
+`ker φ` would have index `n ≤ 3` and divisibility would give `φ = 0`. Second,
+surjectivity: with `ker φ` finite, `A / B` is a nonconstant rational function and
+its image is cofinite in `F`, so the image subgroup `H` omits only finitely many
+`x`-coordinates; if `H ≠ W'.Point` then any coset `Q + H` lies in the finite
+complement, making `H` — hence `W'.Point` — finite, which it is not.
 
 The mathematics. A nonzero homomorphism `φ` is a nonconstant morphism of curves, so
 each fibre is finite — in particular `ker φ` is. Its image is then a subgroup of
@@ -769,7 +1150,7 @@ Relation to the other geometric leaves of this file: this statement SUBSUMES
 `mulByHom W n` is known to be rational (division polynomials). Those two leaves
 have a separate owner and are deliberately left in place; consolidating them is a
 cut-level decision, not one to make here. -/
-theorem IsRationalMap.isIsogeny [IsAlgClosed F] {φ : W.Point →+ W'.Point}
+theorem IsRationalMap.isIsogeny [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
     (h : IsRationalMap φ) : IsIsogeny φ :=
   sorry
 
@@ -779,7 +1160,7 @@ category of curves.
 
 `[IsAlgClosed F]` is NOT removable: see the FALSITY AUDIT above, where dropping it
 makes the statement false already for `φ = ψ = id` over `𝔽₅`. -/
-theorem IsIsogeny.add [IsAlgClosed F] {φ ψ : W.Point →+ W'.Point}
+theorem IsIsogeny.add [IsAlgClosed F] [W.IsElliptic] {φ ψ : W.Point →+ W'.Point}
     (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ) : IsIsogeny (φ + ψ) :=
   (hφ.isRationalMap.add hψ.isRationalMap).isIsogeny
 
@@ -947,7 +1328,8 @@ morphism.
 see the FALSITY AUDIT above. Over a general field the isogenies among the
 endomorphisms of `W.Point` are **not** closed under addition, so there is no such
 subring; `[2] = id + id` on `W₅(𝔽₅)` is an explicit failure of `add_mem'`. -/
-def endSubring [IsAlgClosed F] (W : Affine F) : Subring (AddMonoid.End W.Point) where
+def endSubring [IsAlgClosed F] (W : Affine F) [W.IsElliptic] :
+    Subring (AddMonoid.End W.Point) where
   carrier := {f | IsIsogeny (f : W.Point →+ W.Point)}
   zero_mem' := IsIsogeny.zero
   one_mem' := IsIsogeny.id
@@ -956,19 +1338,19 @@ def endSubring [IsAlgClosed F] (W : Affine F) : Subring (AddMonoid.End W.Point) 
   mul_mem' hf hg := IsIsogeny.comp hg hf
 
 /-- `End W`, the endomorphism ring of `W`. -/
-abbrev End [IsAlgClosed F] (W : Affine F) : Type _ := ↥(endSubring W)
+abbrev End [IsAlgClosed F] (W : Affine F) [W.IsElliptic] : Type _ := ↥(endSubring W)
 
 /-- **The soundness lemma of this file.** In `End W` the integer `n` acts as
 multiplication by `n` on points — definitionally. Together with `IsRationalMap`
 inside `IsIsogeny`, this is what makes `ψ * ψ = (-125 : End W)` a statement about
 complex multiplication rather than about `M₂(Ẑ)`. -/
-@[simp] theorem End.intCast_apply [IsAlgClosed F] (n : ℤ) (P : W.Point) :
+@[simp] theorem End.intCast_apply [IsAlgClosed F] [W.IsElliptic] (n : ℤ) (P : W.Point) :
     ((n : End W) : AddMonoid.End W.Point) P = n • P := rfl
 
-@[simp] theorem End.natCast_apply [IsAlgClosed F] (n : ℕ) (P : W.Point) :
+@[simp] theorem End.natCast_apply [IsAlgClosed F] [W.IsElliptic] (n : ℕ) (P : W.Point) :
     ((n : End W) : AddMonoid.End W.Point) P = n • P := rfl
 
-@[simp] theorem End.mul_apply [IsAlgClosed F] (f g : End W) (P : W.Point) :
+@[simp] theorem End.mul_apply [IsAlgClosed F] [W.IsElliptic] (f g : End W) (P : W.Point) :
     ((f * g : End W) : AddMonoid.End W.Point) P
       = (f : AddMonoid.End W.Point) ((g : AddMonoid.End W.Point) P) := rfl
 
@@ -979,7 +1361,7 @@ in the endomorphism ring says exactly that `ψ` applied twice is multiplication 
 This is the lemma the `X_0(N)` descent leaves use: `ψ * ψ = (-125 : End W)` unfolds
 to `ψ (ψ P) = -125 • P` for every `P`, with `ψ` carrying its `IsIsogeny` witness —
 so the condition is about an actual morphism, not about `M₂(Ẑ)`. -/
-theorem End.sq_eq_intCast_iff [IsAlgClosed F] (ψ : End W) (n : ℤ) :
+theorem End.sq_eq_intCast_iff [IsAlgClosed F] [W.IsElliptic] (ψ : End W) (n : ℤ) :
     ψ * ψ = (n : End W) ↔ ∀ P : W.Point,
       (ψ : AddMonoid.End W.Point) ((ψ : AddMonoid.End W.Point) P) = n • P := by
   constructor
@@ -992,9 +1374,10 @@ theorem End.sq_eq_intCast_iff [IsAlgClosed F] (ψ : End W) (n : ℤ) :
 
 /-- Every element of `End W` is an isogeny, so the endomorphism ring maps into the
 type of isogenies. -/
-def End.toIsogeny [IsAlgClosed F] (f : End W) : Isogeny W W := ⟨(f : AddMonoid.End W.Point), f.2⟩
+def End.toIsogeny [IsAlgClosed F] [W.IsElliptic] (f : End W) : Isogeny W W :=
+  ⟨(f : AddMonoid.End W.Point), f.2⟩
 
-@[simp] theorem End.toIsogeny_toHom [IsAlgClosed F] (f : End W) :
+@[simp] theorem End.toIsogeny_toHom [IsAlgClosed F] [W.IsElliptic] (f : End W) :
     (End.toIsogeny f).toHom = (f : AddMonoid.End W.Point) := rfl
 
 /-! ### The two geometric inputs -/
@@ -1207,20 +1590,293 @@ theorem dualHom_comp (φ : Isogeny W W') (h0 : φ.toHom ≠ 0) (P : W.Point) :
     AddEquiv.coe_toAddMonoidHom, hsymm]
   rfl
 
+/-! ### FALSITY AUDIT: the dual is not rational in characteristic `p`
+
+**Refuted 2026-07-26**, machine-checked and axiom-clean below. `degree` is
+`Nat.card (ker φ)`, which counts kernel *points*; for a purely inseparable isogeny
+that is `1` however large the scheme-theoretic degree. The Frobenius is exactly such
+an isogeny, and it satisfies every field of `IsIsogeny` — so `dualHom` descends
+`[1] = id` and produces the *inverse Frobenius*, which is not a morphism.
+
+Concretely, over `K = 𝔽̄₂` take `Ec : y² + y = x³`, which is nonsingular (`Δ = -27 = 1`),
+so `[IsAlgClosed K]` and `[Ec.IsElliptic]` both hold — this is *not* the singular-curve
+pathology of the audit further up, and neither of those hypotheses helps. Frobenius
+`(x, y) ↦ (x², y²)` is:
+
+* **rational** — `A = X², B = 1` for the `x`-part, and the curve relation `y² = x³ + y`
+  turns the *quadratic* `y ↦ y²` into the *linear* witness `C = 1, D = X³, E = 1`;
+* **surjective** on `K`-points, because `(√x, √y)` lies on `Ec` whenever `(x, y)` does;
+* **injective**, so `ker = ⊥` and `degree = 1` (`frobIsog_degree`).
+
+Hence `dualHom` is `x ↦ √x`, and a witness for it would give `s · B(s²) = A(s²)` for
+every `s ∈ K`, i.e. the polynomial identity `X · B(X²) = A(X²)`. The left side has odd
+degree and the right side even, so `B = 0`, contradicting `B ≠ 0`. -/
+
+namespace NotIsRationalMapDualHom
+
+local instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+
+/-- An algebraic closure of `𝔽₂`. -/
+abbrev K := AlgebraicClosure (ZMod 2)
+
+noncomputable local instance : DecidableEq K := Classical.decEq _
+
+local instance : CharP K 2 :=
+  charP_of_injective_algebraMap (algebraMap (ZMod 2) K).injective 2
+
+theorem two_eq_zero : (2 : K) = 0 := by exact_mod_cast CharP.cast_eq_zero K 2
+
+/-- `y² + y = x³` over `𝔽₂`: supersingular, and **nonsingular**. -/
+def Ec : WeierstrassCurve (ZMod 2) := ⟨0, 0, 1, 0, 0⟩
+
+theorem Ec_Δ : Ec.Δ = 1 := by decide
+
+instance : Ec.IsElliptic := ⟨by rw [Ec_Δ]; exact isUnit_one⟩
+
+/-- The Frobenius `x ↦ x²`, as a `𝔽₂`-algebra endomorphism of `𝔽̄₂`. -/
+noncomputable def frob : K →ₐ[ZMod 2] K where
+  toFun x := x ^ 2
+  map_one' := one_pow 2
+  map_mul' a b := mul_pow a b 2
+  map_zero' := zero_pow (by norm_num)
+  map_add' a b := by linear_combination (a * b) * two_eq_zero
+  commutes' r := by
+    show (algebraMap (ZMod 2) K r) ^ 2 = _
+    rw [← map_pow]
+    congr 1
+    revert r
+    decide
+
+theorem frob_apply (x : K) : frob x = x ^ 2 := rfl
+
+/-- The curve over `𝔽̄₂`. -/
+noncomputable abbrev E : Affine K := (Ec⁄K).toAffine
+
+/-- Frobenius on points. -/
+noncomputable def frobPt : E.Point →+ E.Point := Affine.Point.map (W' := Ec) frob
+
+theorem veluPointX_frobPt (P : E.Point) : veluPointX (frobPt P) = (veluPointX P) ^ 2 := by
+  cases P with
+  | zero =>
+      show veluPointX (frobPt (0 : E.Point)) = veluPointX (0 : E.Point) ^ 2
+      rw [map_zero]; simp
+  | some x y h => rw [frobPt, Point.map_some]; simp [frob_apply]
+
+theorem veluPointY_frobPt (P : E.Point) : veluPointY (frobPt P) = (veluPointY P) ^ 2 := by
+  cases P with
+  | zero =>
+      show veluPointY (frobPt (0 : E.Point)) = veluPointY (0 : E.Point) ^ 2
+      rw [map_zero]; simp
+  | some x y h => rw [frobPt, Point.map_some]; simp [frob_apply]
+
+instance : E.IsElliptic := by
+  rw [WeierstrassCurve.isElliptic_iff]
+  have hd : E.Δ = 1 := by
+    show (Ec.map (algebraMap (ZMod 2) K)).Δ = 1
+    rw [WeierstrassCurve.map_Δ, Ec_Δ, map_one]
+  rw [hd]; exact isUnit_one
+
+theorem E_a₁ : E.a₁ = 0 := by simp [E, Ec]
+theorem E_a₂ : E.a₂ = 0 := by simp [E, Ec]
+theorem E_a₃ : E.a₃ = 1 := by simp [E, Ec]
+theorem E_a₄ : E.a₄ = 0 := by simp [E, Ec]
+theorem E_a₆ : E.a₆ = 0 := by simp [E, Ec]
+
+/-- The curve relation, in the form the `y`-witness needs: `y² = x³ + y`. -/
+theorem eqn {P : E.Point} (hP : P ≠ 0) :
+    (veluPointY P) ^ 2 = (veluPointX P) ^ 3 + veluPointY P := by
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x y h =>
+      have := h.1
+      rw [Affine.equation_iff] at this
+      simp only [E_a₁, E_a₂, E_a₃, E_a₄, E_a₆, veluPointX_some, veluPointY_some] at this ⊢
+      linear_combination this - y * two_eq_zero
+
+/-- Every element of `K` is the `x`-coordinate of a nonzero point: `Y² + Y - x³`
+has a root, `K` being algebraically closed. -/
+theorem exists_point (x₀ : K) : ∃ P : E.Point, P ≠ 0 ∧ veluPointX P = x₀ := by
+  have hdeg : (X ^ 2 + X - Polynomial.C (x₀ ^ 3) : K[X]).degree = 2 := by compute_degree!
+  obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root (k := K)
+    (p := X ^ 2 + X - Polynomial.C (x₀ ^ 3)) (by rw [hdeg]; decide)
+  have heq : E.Equation x₀ y₀ := by
+    rw [Affine.equation_iff]
+    simp only [E_a₁, E_a₂, E_a₃, E_a₄, E_a₆]
+    simp only [Polynomial.IsRoot.def, Polynomial.eval_sub, Polynomial.eval_add,
+      Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C] at hy₀
+    linear_combination hy₀
+  exact ⟨Point.some x₀ y₀ (Affine.equation_iff_nonsingular.1 heq),
+    Point.some_ne_zero _, veluPointX_some _⟩
+
+theorem frobPt_injective : Function.Injective frobPt := Point.map_injective frob
+
+theorem frobPt_surjective : Function.Surjective frobPt := by
+  intro Q
+  cases Q with
+  | zero => exact ⟨0, map_zero _⟩
+  | some x y h =>
+      obtain ⟨x₀, rfl⟩ := IsAlgClosed.exists_pow_nat_eq (k := K) x (n := 2) two_pos
+      obtain ⟨y₀, rfl⟩ := IsAlgClosed.exists_pow_nat_eq (k := K) y (n := 2) two_pos
+      have h4 : (y₀ ^ 2) ^ 2 + y₀ ^ 2 = (x₀ ^ 2) ^ 3 := by
+        have := h.1
+        rw [Affine.equation_iff] at this
+        simp only [E_a₁, E_a₂, E_a₃, E_a₄, E_a₆] at this
+        linear_combination this
+      have hsq : (y₀ ^ 2 + y₀ - x₀ ^ 3) ^ 2 = 0 := by
+        linear_combination h4 + (x₀ ^ 6 + y₀ ^ 3 - y₀ ^ 2 * x₀ ^ 3 - y₀ * x₀ ^ 3) * two_eq_zero
+      have heq : E.Equation x₀ y₀ := by
+        rw [Affine.equation_iff]
+        simp only [E_a₁, E_a₂, E_a₃, E_a₄, E_a₆]
+        linear_combination sub_eq_zero.1 (pow_eq_zero_iff (n := 2) (by norm_num) |>.1 hsq)
+      exact ⟨Point.some x₀ y₀ (Affine.equation_iff_nonsingular.1 heq), rfl⟩
+
+/-- Frobenius is rational. The `y`-part is the interesting one: `y ↦ y²` is
+quadratic, but the curve relation `y² = x³ + y` makes it linear in `y`. -/
+theorem isRationalMap_frobPt : IsRationalMap frobPt := by
+  refine ⟨X ^ 2, 1, 1, X ^ 3, 1, one_ne_zero, one_ne_zero, fun P hP => ?_⟩
+  have hP0 : P ≠ 0 := fun hc => hP (by rw [hc, map_zero])
+  refine ⟨?_, ?_⟩
+  · simp only [veluPointX_frobPt, Polynomial.eval_one, Polynomial.eval_pow,
+      Polynomial.eval_X, mul_one]
+  · simp only [veluPointY_frobPt, Polynomial.eval_one, Polynomial.eval_pow,
+      Polynomial.eval_X, mul_one, one_mul]
+    linear_combination eqn hP0
+
+theorem isIsogeny_frobPt : IsIsogeny frobPt where
+  isRationalMap := isRationalMap_frobPt
+  surjective _ := frobPt_surjective
+  finite_ker _ := by
+    have : (AddMonoidHom.ker frobPt : Set E.Point) = {0} := by
+      ext P
+      simp only [SetLike.mem_coe, AddMonoidHom.mem_ker, Set.mem_singleton_iff]
+      exact ⟨fun h => frobPt_injective (by rw [h, map_zero]), fun h => by rw [h, map_zero]⟩
+    rw [this]; exact Set.finite_singleton _
+
+/-- Frobenius as an isogeny. -/
+noncomputable def frobIsog : Isogeny E E := ⟨frobPt, isIsogeny_frobPt⟩
+
+theorem frobIsog_ne_zero : frobIsog.toHom ≠ 0 := by
+  obtain ⟨P, hP0, _⟩ := exists_point 1
+  intro hc
+  have := congrArg (fun g : E.Point →+ E.Point => g P) hc
+  simp only [AddMonoidHom.zero_apply] at this
+  exact hP0 (frobPt_injective (by rw [show frobPt P = 0 from this, map_zero]))
+
+/-- **`degree = 1`.** Frobenius is purely inseparable, so its kernel *of points* is
+trivial — and this file's `degree` counts exactly that. This is the whole defect. -/
+theorem frobIsog_degree : frobIsog.degree = 1 := by
+  rw [Isogeny.degree_of_ne_zero frobIsog_ne_zero]
+  have hker : AddMonoidHom.ker frobIsog.toHom = ⊥ := by
+    ext P
+    simp only [AddMonoidHom.mem_ker, AddSubgroup.mem_bot]
+    exact ⟨fun h => frobPt_injective (by rw [show frobPt P = 0 from h, map_zero]),
+      fun h => by rw [show frobIsog.toHom = frobPt from rfl, h, map_zero]⟩
+  rw [hker]
+  exact Nat.card_unique
+
+/-- Hence the "dual" is the *inverse* Frobenius. -/
+theorem dualHom_frob (P : E.Point) :
+    frobIsog.dualHom frobIsog_ne_zero (frobPt P) = P := by
+  have := Isogeny.dualHom_comp frobIsog frobIsog_ne_zero P
+  rw [frobIsog_degree, one_nsmul] at this
+  exact this
+
+/-- **REFUTATION 3.** `Isogeny.isRationalMap_dualHom` is FALSE in characteristic 2
+even with `[IsAlgClosed F]` and `[W.IsElliptic]`: the dual of Frobenius is the
+inverse Frobenius `x ↦ √x`, and no pair of polynomials computes a square root. -/
+theorem isRationalMap_dualHom_is_false :
+    ¬ ∀ {F : Type} [Field F] [DecidableEq F] [IsAlgClosed F] {W W' : Affine F}
+        [W.IsElliptic] (φ : Isogeny W W') (h0 : φ.toHom ≠ 0),
+        IsRationalMap (φ.dualHom h0) := by
+  intro h
+  obtain ⟨A, B, C, D, Ee, hB, _hEe, hcert⟩ := h frobIsog frobIsog_ne_zero
+  -- every `x₀ : K` satisfies `x₀ · B(x₀²) = A(x₀²)`
+  have key : ∀ x₀ : K, x₀ * B.eval (x₀ ^ 2) = A.eval (x₀ ^ 2) := by
+    intro x₀
+    obtain ⟨P, hP0, hPx⟩ := exists_point x₀
+    have hd : frobIsog.dualHom frobIsog_ne_zero (frobPt P) = P := dualHom_frob P
+    have hne : frobIsog.dualHom frobIsog_ne_zero (frobPt P) ≠ 0 := by rw [hd]; exact hP0
+    have := (hcert (frobPt P) hne).1
+    rw [hd, veluPointX_frobPt, hPx] at this
+    exact this
+  -- so `X · B(X²) − A(X²)` vanishes identically
+  have hpoly : X * B.comp (X ^ 2) = A.comp (X ^ 2) := by
+    have hz : X * B.comp (X ^ 2) - A.comp (X ^ 2) = 0 := by
+      refine Polynomial.eq_zero_of_infinite_isRoot _ (Set.infinite_of_injective_forall_mem
+        (f := fun x₀ : K => x₀) Function.injective_id ?_)
+      intro x₀
+      simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_sub,
+        Polynomial.eval_mul, Polynomial.eval_X, Polynomial.eval_comp, Polynomial.eval_pow]
+      linear_combination key x₀
+    linear_combination hz
+  -- but the two sides have degrees of opposite parity
+  have hBc : B.comp (X ^ 2) ≠ 0 := by
+    intro hc
+    refine hB (Polynomial.eq_zero_of_infinite_isRoot _ (Set.infinite_of_injective_forall_mem
+      (f := fun u : K => u) Function.injective_id ?_))
+    intro u
+    obtain ⟨s, rfl⟩ := IsAlgClosed.exists_pow_nat_eq (k := K) u (n := 2) two_pos
+    have := congrArg (fun p : K[X] => p.eval s) hc
+    simpa [Polynomial.eval_comp] using this
+  have hAc : A.comp (X ^ 2) ≠ 0 := by
+    rw [← hpoly]; exact mul_ne_zero Polynomial.X_ne_zero hBc
+  have hdeg := congrArg Polynomial.natDegree hpoly
+  rw [Polynomial.natDegree_mul Polynomial.X_ne_zero hBc, Polynomial.natDegree_X,
+    Polynomial.natDegree_comp, Polynomial.natDegree_comp, Polynomial.natDegree_X_pow] at hdeg
+  omega
+
+end NotIsRationalMapDualHom
+
 /-- **LEAF.** The dual of an isogeny is again given by rational functions.
 
 This is the one genuinely geometric half of the dual construction: the map
 induced on the quotient is a morphism of curves.
 
-A warning about its generality, recorded 2026-07-26. This statement carries **no**
-`[IsAlgClosed F]`, and it is stated for a `φ` whose `IsIsogeny` witness asserts
-surjectivity *on `F`-points*. Over a general field that hypothesis is extremely
-strong — strong enough that the FALSITY AUDIT of `IsIsogeny.add` shows `[2]` on
-`W(𝔽₅)` fails it — so the leaf is not false, but its `F`-point surjectivity
-hypothesis is doing work that a reader will not expect. Whoever closes it should
-consider adding `[IsAlgClosed F]` to match `dual`, which already carries it: that
-costs nothing (every consumer is over `AlgebraicClosure ℚ`) and makes the
-hypothesis honest rather than accidental.
+`[IsAlgClosed F]` and `[W.IsElliptic]` were added 2026-07-26, matching `dual` — the
+only consumer, which always carried them. The previous owner had recorded that the
+unqualified form was stated for a `φ` whose `IsIsogeny` witness asserts surjectivity
+*on `F`-points*, which over a general field is an extremely strong and surprising
+hypothesis (the FALSITY AUDIT of `IsIsogeny.add` shows `[2]` on `W(𝔽₅)` fails it),
+and correctly declined to change someone else's declaration; the change is made here.
+
+**CHARACTERISTIC AUDIT — the leaf was FALSE without `[CharZero F]`, which is now
+present.** (Refuted 2026-07-26; the counterexample is machine-checked and
+axiom-clean in `NotIsRationalMapDualHom` immediately above.)
+
+The module docstring already says this file "is therefore correct only in
+characteristic zero", because `degree` is defined as `Nat.card (ker φ)` and that
+agrees with the classical degree only for *separable* isogenies. No hypothesis
+anywhere enforces it, and `dualHom` is where the omission bites, because its whole
+construction is "descend `[degree φ]` along `W.Point ⧸ ker φ ≃ W'.Point`".
+
+The counterexample. Let `F = 𝔽̄₂` and `E : y² + y = x³`, which is nonsingular
+(`Δ = -27 = 1`), so `[IsAlgClosed F]` and `[W.IsElliptic]` both hold. Let `φ` be the
+Frobenius `(x, y) ↦ (x², y²)`; it is an additive map because the coefficients lie in
+`𝔽₂`. It is an isogeny in this file's sense:
+
+* rational — `x(φ P) = x(P)²` gives `A = X², B = 1`, and the curve relation
+  `y² = x³ + y` turns the *quadratic* `y(φ P) = y(P)²` into the *linear* witness
+  `C = 1, D = X³, E = 1`;
+* surjective on `F`-points, since `(√x, √y)` lies on `E` whenever `(x, y)` does;
+* `ker φ = {0}`, since `x ↦ x²` is injective. Hence `degree φ = 1`.
+
+So `dualHom φ h0` is the descent of `[1] = id`, i.e. `φ⁻¹`, the *inverse* Frobenius
+`(x, y) ↦ (√x, √y)`. That is not rational: a witness would give
+`√u · B(u) = A(u)` for all `u` in the (cofinite) `x`-range, i.e. after `u = s²` the
+polynomial identity `X · B(X²) = A(X²)`; but `A(X²)` has only even-degree terms and
+`X · B(X²)` only odd-degree ones, so both sides vanish and `B = 0`, contradiction.
+
+**In one line:** `degree` counts kernel *points*, so it is `1` for every purely
+inseparable isogeny, and `dualHom` then claims `φ⁻¹` is a morphism.
+
+**The repair.** `[CharZero F]` on `isRationalMap_dualHom`, `dual`, `dual_toHom` and
+`dual_comp`. In characteristic zero every isogeny is separable, so `Nat.card (ker φ)`
+*is* the classical degree and the descent of `[deg φ]` is the classical dual. This
+costs nothing: every consumer works over `AlgebraicClosure ℚ`, and the module
+docstring already declared characteristic zero to be this file's domain — it simply
+had no hypothesis enforcing it anywhere. A separability hypothesis on `φ` would be
+the sharper repair, but this file has no notion of separability and its `degree`
+would still be the wrong invariant without one.
 
 The mathematics is not the substitution algebra of `IsRationalMap.comp` — the dual
 is not obtained by composing given rational maps — so `homogSubst` will not help
@@ -1231,12 +1887,13 @@ provides `Pic⁰` of a Weierstrass curve, though `Affine.Point.toClass` into
 `ClassGroup W.CoordinateRing` (mathlib, already used to prove associativity of the
 group law) is the closest existing handle and is worth examining before building
 divisor theory from scratch. -/
-theorem isRationalMap_dualHom (φ : Isogeny W W') (h0 : φ.toHom ≠ 0) :
-    IsRationalMap (φ.dualHom h0) :=
+theorem isRationalMap_dualHom [IsAlgClosed F] [CharZero F] [W.IsElliptic] (φ : Isogeny W W')
+    (h0 : φ.toHom ≠ 0) : IsRationalMap (φ.dualHom h0) :=
   sorry
 
 /-- The dual isogeny, as an isogeny. -/
-noncomputable def dual [IsAlgClosed F] [W.IsElliptic] (φ : Isogeny W W') (h0 : φ.toHom ≠ 0) :
+noncomputable def dual [IsAlgClosed F] [CharZero F] [W.IsElliptic] (φ : Isogeny W W')
+    (h0 : φ.toHom ≠ 0) :
     Isogeny W' W :=
   ⟨φ.dualHom h0,
    { isRationalMap := isRationalMap_dualHom φ h0
@@ -1255,11 +1912,11 @@ noncomputable def dual [IsAlgClosed F] [W.IsElliptic] (φ : Isogeny W W') (h0 : 
        rw [hd] at hz
        exact hz }⟩
 
-@[simp] theorem dual_toHom [IsAlgClosed F] [W.IsElliptic] (φ : Isogeny W W')
+@[simp] theorem dual_toHom [IsAlgClosed F] [CharZero F] [W.IsElliptic] (φ : Isogeny W W')
     (h0 : φ.toHom ≠ 0) : (φ.dual h0).toHom = φ.dualHom h0 := rfl
 
 /-- **`ψ̂ ∘ ψ = [deg ψ]`**, packaged as an equation of isogenies. -/
-theorem dual_comp [IsAlgClosed F] [W.IsElliptic] (φ : Isogeny W W') (h0 : φ.toHom ≠ 0)
+theorem dual_comp [IsAlgClosed F] [CharZero F] [W.IsElliptic] (φ : Isogeny W W') (h0 : φ.toHom ≠ 0)
     (P : W.Point) : ((φ.dual h0).comp φ).toHom P = φ.degree • P :=
   dualHom_comp φ h0 P
 

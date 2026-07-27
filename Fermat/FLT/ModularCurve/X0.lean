@@ -318,6 +318,13 @@ public import Mathlib.Data.ZMod.Basic
 -- `Scheme.Hom.image` / `imageι` / `toImage`: the scheme-theoretic image of a
 -- morphism, which is how the descent leaf's closed subscheme `C` is built.
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
+-- `Algebra.IsAlgebraic.isIntegral`, the instance turning `ℚ̄/ℚ` algebraic into
+-- `ℚ̄/ℚ` integral.  Reached only PRIVATELY through the imports above, so
+-- `isIntegralHom_specAlgClos` cannot synthesise it without this line.
+public import Mathlib.RingTheory.Algebraic.Integral
+-- `IsIntegralHom.SpecMap_iff` / `IsIntegralHom.of_comp`, the cancellation that
+-- makes each `ℚ̄`-point of `A` a closed map; see `isIntegralHom_geomPt`.
+public import Mathlib.AlgebraicGeometry.Morphisms.Integral
 
 @[expose] public section
 
@@ -1242,11 +1249,248 @@ theorem zmulPts_comp {A : Scheme.{0}} {f : A ⟶ SpecQ}
   letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
   (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).2
 
+/-! ### Finiteness of the span
+
+The route below is SHORTER than the one predicted in the docstring of
+`isFinite_spanSchemeι`, and does not use artinian schemes at all; see the
+correction recorded there. -/
+
+/-- **`Spec ℚ̄ ⟶ Spec ℚ` is an integral morphism** (PROVEN): `ℚ̄` is
+algebraic, hence integral, over `ℚ`. -/
+theorem isIntegralHom_specAlgClos' {F : Type} [Field F] :
+    IsIntegralHom (specAlgClos F) := by
+  rw [specAlgClos, IsIntegralHom.SpecMap_iff]
+  intro x
+  exact (Algebra.IsAlgebraic.isAlgebraic (R := F) (A := AlgebraicClosure F)
+    (x : AlgebraicClosure F)).isIntegral
+
+/-- **`Spec ℚ̄ ⟶ Spec ℚ` is an integral morphism** (PROVEN).
+
+STATED OVER A VARIABLE BASE FIELD ON PURPOSE, and then instantiated — this
+is CLAUDE.md's `ULift ℚ`/`AlgebraicClosure ℚ` remedy in a fresh spot.  At
+the literal `ℚ`, `Algebra ℚ (AlgebraicClosure ℚ)` does not resolve to
+`AlgebraicClosure.instAlgebra` (the `Rat`-algebra diamond gets there
+first), so `Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)` fails to
+synthesise even though every import is present.  At a variable `F` the
+diamond cannot arise and the instance is found immediately. -/
+theorem isIntegralHom_specAlgClos : IsIntegralHom (specAlgClos ℚ) :=
+  isIntegralHom_specAlgClos'
+
+/-- **The range of `geomPtDesc p` is covered by the ranges of the members
+of the family** (PROVEN): every point of `∐_J Spec ℚ̄` lies in one summand,
+and `Sigma.ι j ≫ Sigma.desc p = p j`. -/
+theorem range_geomPtDesc_subset {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) :
+    Set.range (geomPtDesc p).base ⊆ ⋃ j, Set.range (p j).base := by
+  rintro _ ⟨y, rfl⟩
+  obtain ⟨⟨j, x⟩, rfl⟩ := (AlgebraicGeometry.sigmaMk
+    (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ)))).surjective y
+  rw [AlgebraicGeometry.sigmaMk_mk]
+  refine Set.mem_iUnion.mpr ⟨j, x, ?_⟩
+  rw [← Scheme.Hom.comp_apply,
+    show Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j
+        ≫ geomPtDesc p = p j from Limits.Sigma.ι_desc p j]
+
+section SpanFinite
+
+variable {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f)
+  {J : Type} [Finite J]
+  (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+  (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ)
+
+omit [Finite J] in
+include ab hp in
+/-- **Each geometric point of the family is an INTEGRAL morphism**
+(PROVEN), hence a closed map.
+
+This is the step that replaces "Zariski's lemma" in the predicted route,
+and it is where properness of `f` does the work: `p j ≫ f` is
+`specAlgClos ℚ`, which is integral, and `f` is separated because it is
+proper, so `p j` is integral by cancellation
+(`IsIntegralHom.of_comp`).  In particular the image of `p j` is a single
+CLOSED point of `A`, with no residue-field computation anywhere. -/
+theorem isIntegralHom_geomPt (j : J) : IsIntegralHom (p j) := by
+  have hsep : IsSeparated f := by have := ab.proper; infer_instance
+  have : IsIntegralHom (p j ≫ f) := by
+    rw [hp j, Category.comp_id]
+    exact isIntegralHom_specAlgClos
+  exact IsIntegralHom.of_comp (p j) f
+
+include ab hp in
+/-- **The span is supported on the finitely many image points of the
+family** (PROVEN).  Each `Set.range (p j)` is closed by
+`isIntegralHom_geomPt`, so their union is closed and already contains the
+closure of `Set.range (geomPtDesc p)`, which is the support of the
+scheme-theoretic image. -/
+theorem range_spanSchemeι_subset :
+    Set.range (spanSchemeι p).base ⊆ ⋃ j, Set.range (p j).base := by
+  have hcl : ∀ j, IsClosed (Set.range (p j).base) := by
+    intro j
+    have := isIntegralHom_geomPt ab p hp j
+    exact (p j).isClosedMap.isClosed_range
+  have hclU : IsClosed (⋃ j, Set.range (p j).base) := isClosed_iUnion_of_finite hcl
+  have hqs : QuasiSeparated f := by have := ab.proper; infer_instance
+  have hqc0 : QuasiCompact (geomPtDesc p ≫ f) :=
+    HasAffineProperty.iff_of_isAffine (P := @QuasiCompact) |>.mpr inferInstance
+  have hqc : QuasiCompact (geomPtDesc p) := QuasiCompact.of_comp (geomPtDesc p) f
+  show Set.range (Scheme.Hom.imageι _).base ⊆ _
+  rw [AlgebraicGeometry.Scheme.IdealSheafData.range_subschemeι, Scheme.Hom.support_ker]
+  exact hclU.closure_subset_iff.mpr (range_geomPtDesc_subset p)
+
+include ab hp in
+/-- **The span is an AFFINE scheme** (PROVEN): its space is finite and
+`T1`, hence discrete, and mathlib's
+`[Finite X] [DiscreteTopology X] → IsAffine X` applies.
+
+This is the statement whose absence the docstring of
+`isFinite_spanSchemeι` recorded as "the one genuine gap"
+(`IsArtinianScheme X → IsAffine X`).  See the correction there: that
+implication is already in the pin, and in fact is not needed — no
+artinian theory enters this proof. -/
+theorem isAffine_spanScheme : IsAffine (spanScheme p) := by
+  have hsub := range_spanSchemeι_subset ab p hp
+  have hfin : (⋃ j, Set.range (p j).base).Finite :=
+    Set.finite_iUnion fun j => Set.finite_range _
+  have hinj : Function.Injective (spanSchemeι p).base :=
+    (spanSchemeι p).isClosedEmbedding.injective
+  have hrf : (Set.range (spanSchemeι p).base).Finite := hfin.subset hsub
+  have : Finite (spanScheme p) := by
+    have hpre := Set.Finite.preimage (f := (spanSchemeι p).base) hinj.injOn hrf
+    rw [Set.preimage_range] at hpre
+    exact Set.finite_univ_iff.mp hpre
+  have : T1Space (spanScheme p) := by
+    refine ⟨fun c => ?_⟩
+    obtain ⟨j, x, hx⟩ : ∃ j, ∃ x, (p j).base x = (spanSchemeι p).base c := by
+      simpa using hsub ⟨c, rfl⟩
+    have hsingle : Set.range (p j).base = {(spanSchemeι p).base c} := by
+      refine Set.eq_singleton_iff_unique_mem.mpr ⟨⟨x, hx⟩, ?_⟩
+      rintro _ ⟨x', rfl⟩
+      rw [← hx]
+      congr 1
+      exact Subsingleton.elim _ _
+    have hclA : IsClosed ({(spanSchemeι p).base c} : Set A) := by
+      rw [← hsingle]
+      have := isIntegralHom_geomPt ab p hp j
+      exact (p j).isClosedMap.isClosed_range
+    have heq : ({c} : Set (spanScheme p))
+        = (spanSchemeι p).base ⁻¹' {(spanSchemeι p).base c} := by
+      ext d
+      simp [Set.mem_preimage, hinj.eq_iff]
+    rw [heq]
+    exact hclA.preimage (spanSchemeι p).continuous
+  infer_instance
+
+end SpanFinite
+
+/-! ### Descent of a factorisation along `ℚ̄/ℚ`
+
+The three lemmas below are what turn leaf (ii) into a one-line
+kernel-comparison.  The point is that `Spec ℚ̄ ⟶ Spec ℚ` is
+schematically dominant — every `app` of it is INJECTIVE — so pulling a
+section back to `ℚ̄` does not enlarge its vanishing locus, and the
+kernel ideal sheaf of a morphism out of `Spec ℚ` is unchanged by
+precomposing with it. -/
+
+/-- An open subset of a ONE-POINT space is `⊥` or `⊤` (PROVEN). -/
+theorem opens_eq_bot_or_top {X : Scheme.{0}} [Subsingleton X] (W : X.Opens) :
+    W = ⊥ ∨ W = ⊤ := by
+  rcases Set.eq_empty_or_nonempty (W : Set X) with h | ⟨x, hx⟩
+  · exact Or.inl (TopologicalSpace.Opens.ext h)
+  · refine Or.inr (TopologicalSpace.Opens.ext (Set.eq_univ_of_forall fun y => ?_))
+    rwa [Subsingleton.elim y x]
+
+/-- **Every `app` of `Spec F̄ ⟶ Spec F` is injective** (PROVEN).
+
+`Spec F` is a one-point space, so there are only two opens to check.  On
+`⊥` the sections form the zero ring and injectivity is vacuous; on `⊤`
+it is the `ΓSpecIso` naturality square together with injectivity of
+`F → F̄`.
+
+Stated over a VARIABLE base field for the reason recorded at
+`isIntegralHom_specAlgClos`. -/
+theorem app_injective_specAlgClos {F : Type} [Field F]
+    (W : (Spec (CommRingCat.of F)).Opens) :
+    Function.Injective ((specAlgClos F).app W).hom := by
+  have : Subsingleton (Spec (CommRingCat.of F)) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum F))
+  rcases opens_eq_bot_or_top W with rfl | rfl
+  · intro a b _
+    exact Subsingleton.elim a b
+  · have hφ : Function.Injective
+        (CommRingCat.ofHom (algebraMap F (AlgebraicClosure F))).hom :=
+      (algebraMap F (AlgebraicClosure F)).injective
+    have hiso : Function.Injective
+        (Scheme.ΓSpecIso (CommRingCat.of F)).hom.hom :=
+      (Scheme.ΓSpecIso (CommRingCat.of F)).commRingCatIsoToRingEquiv.injective
+    have hnat := Scheme.ΓSpecIso_naturality
+      (CommRingCat.ofHom (algebraMap F (AlgebraicClosure F)))
+    -- NOTE: `rw [hnat]` directly under the `⇑(CommRingCat.Hom.hom ·)`
+    -- coercion produces a motive error; rewriting at the level of the
+    -- underlying FUNCTION is what works.
+    have hfun : ⇑(((specAlgClos F).app ⊤ ≫
+          (Scheme.ΓSpecIso (CommRingCat.of (AlgebraicClosure F))).hom).hom)
+        = ⇑(((Scheme.ΓSpecIso (CommRingCat.of F)).hom ≫
+          CommRingCat.ofHom (algebraMap F (AlgebraicClosure F))).hom) :=
+      congrArg (fun m => ⇑(CommRingCat.Hom.hom m)) hnat
+    have hcomp : Function.Injective
+        (((specAlgClos F).app ⊤ ≫
+          (Scheme.ΓSpecIso (CommRingCat.of (AlgebraicClosure F))).hom).hom) := by
+      rw [hfun]
+      simp only [CommRingCat.hom_comp, RingHom.coe_comp]
+      exact hφ.comp hiso
+    intro a b hab
+    refine hcomp ?_
+    simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply, hab]
+
+/-- **Precomposing with a morphism all of whose `app`s are injective does
+not shrink the kernel ideal sheaf** (PROVEN).
+
+Together with `app_injective_specAlgClos` this is the fpqc-descent step
+of leaf (ii), in the only form that leaf needs. -/
+theorem ker_comp_le_of_app_injective {X Y Z : Scheme.{0}} (g : X ⟶ Y) (r : Y ⟶ Z)
+    (hg : ∀ W : Y.Opens, Function.Injective (g.app W).hom) :
+    (g ≫ r).ker ≤ r.ker := by
+  refine Scheme.IdealSheafData.ofIdeals_mono fun U x hx => ?_
+  rw [Scheme.Hom.comp_app g r U] at hx
+  simp only [RingHom.mem_ker] at hx ⊢
+  exact hg _ (hx.trans (map_zero _).symm)
+
 /-! ### The five properties of the span that the descent leaf needs -/
 
 /-- **The span of finitely many `ℚ̄`-points of a scheme locally of finite
-type over `ℚ` is FINITE over `ℚ`** (sorry leaf (i) of the descent
-decomposition).
+type over `ℚ` is FINITE over `ℚ`** (PROVEN 2026-07-26; formerly leaf (i)
+of the descent decomposition).
+
+**PIN-SURVEY CORRECTION, 2026-07-26 — the survey below is STALE in its
+load-bearing claim, and the correction is what closed this leaf.**  It
+recorded `IsArtinianScheme X → IsAffine X` as "the genuine gap" that
+`grep` does not find in the pin.  Two things are wrong with that:
+
+* The implication IS in the pin, and needs no artinian theory to state:
+  `AlgebraicGeometry.Limits.lean` carries
+  `instance (priority := low) [Finite X] [DiscreteTopology X] : IsAffine X`,
+  and `IsArtinianScheme` supplies both hypotheses
+  (`IsArtinianScheme.finite`, `IsLocallyArtinian.discreteTopology`).  So
+  the implication is `inferInstance`.
+* More to the point, **it is not needed**.  No artinian scheme appears in
+  the proof.
+
+THE PROOF ACTUALLY USED, which is shorter than the route predicted below.
+`IsFinite = IsProper ⊓ IsAffineHom` (`IsFinite.iff_isProper_and_isAffineHom`),
+and properness is FREE here: `spanSchemeι p` is a closed immersion and `f`
+is proper by `ab.proper`.  So the whole leaf collapses to
+`IsAffine (spanScheme p)`, i.e. to `isAffine_spanScheme` above, and that
+follows from the span's space being finite and `T1`.
+
+Both of those come from ONE observation, `isIntegralHom_geomPt`: since
+`p j ≫ f = specAlgClos ℚ` is integral and `f` is separated (being
+proper), `p j` is integral by cancellation, hence a CLOSED map.  So each
+`Set.range (p j)` is a single closed point, the support of the
+scheme-theoretic image is contained in their finite union, and a finite
+`T1` space is discrete.  Zariski's lemma, residue fields, number fields
+and artinian rings all drop out of the argument entirely.
+
+The original (correct but unnecessary) route is preserved below.
 
 TRUE, and classical.  Each `ℚ̄`-point `p j` has image a point of `A` whose
 residue field embeds in `ℚ̄`, hence is a finitely generated `ℚ`-algebra
@@ -1267,10 +1511,11 @@ because the pieces are unusually close:
   `IsIntegralHom (spanSchemeι p ≫ f)`, and `LocallyOfFiniteType` of that
   composite is free (a closed immersion is of finite type, and `f` is
   smooth hence of finite type).
-* **The genuine gap is `IsArtinianScheme X → IsAffine X`** — an artinian
+* ~~**The genuine gap is `IsArtinianScheme X → IsAffine X`** — an artinian
   scheme is a finite disjoint union of `Spec`s of artin local rings — which
-  `grep` does not find anywhere in the pin.  A successor who proves that one
-  statement gets this leaf almost immediately.
+  `grep` does not find anywhere in the pin.~~ **REFUTED 2026-07-26**: it is
+  in the pin as `[Finite X] [DiscreteTopology X] → IsAffine X`, and it is
+  not used here anyway.  See the correction at the head of this docstring.
 
 Note this leaf does NOT need the family to be Galois-stable, and does not
 mention the group law: it is a statement about an arbitrary finite family
@@ -1279,12 +1524,43 @@ theorem isFinite_spanSchemeι {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
     (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
     (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ) :
-    IsFinite (spanSchemeι p ≫ f) :=
-  sorry
+    IsFinite (spanSchemeι p ≫ f) := by
+  have := isAffine_spanScheme ab p hp
+  have hproper : IsProper (spanSchemeι p ≫ f) := by
+    have := ab.proper
+    infer_instance
+  rw [IsFinite.iff_isProper_and_isAffineHom]
+  exact ⟨hproper, inferInstance⟩
 
 /-- **A `ℚ`-rational point of `A` whose associated `ℚ̄`-point is a member of
-the family factors through the span** (sorry leaf (ii) of the descent
-decomposition).
+the family factors through the span** (PROVEN 2026-07-26; formerly leaf
+(ii) of the descent decomposition).
+
+HOW IT CLOSED, which is shorter than either route sketched below and uses
+neither the reduced-induced structure nor a general fpqc-descent theorem.
+`spanScheme p` is by construction `(geomPtDesc p).ker.subscheme`, so
+`IdealSheafData.inclusion` turns the leaf into a comparison of KERNEL
+IDEAL SHEAVES on `A`: it is enough that
+`(geomPtDesc p).ker ≤ r.ker`.  That splits in two, and both halves are
+cheap:
+
+* `(geomPtDesc p).ker ≤ (p j).ker`, because `p j = Sigma.ι j ≫ geomPtDesc p`
+  factors through the coproduct — this is mathlib's `Hom.le_ker_comp`;
+* `(specAlgClos ℚ ≫ r).ker ≤ r.ker`, the actual descent.  It holds
+  because EVERY `app` of `Spec ℚ̄ ⟶ Spec ℚ` is injective
+  (`app_injective_specAlgClos`): `Spec ℚ` has exactly two opens, and on
+  `⊤` injectivity is the `ΓSpecIso` naturality square applied to the
+  injection `ℚ ↪ ℚ̄`.
+
+NOTE ON HYPOTHESES: the proof uses NEITHER `ab` NOR `hr`, and does not
+need `[Finite J]`.  They are kept because the statement is called with
+them in place, but the fact is more general than advertised — the
+factorisation descends for any morphism `r` out of `Spec ℚ` whose
+`ℚ̄`-point is a member of the family, with no group structure and no
+section condition.  This is not vacuity: the conclusion is a genuine
+factorisation, and it is exactly what `zero_liesIn_of_ratPoint` consumes.
+
+The original route sketch is preserved below.
 
 TRUE.  `geomPt_liesIn_spanScheme` already gives the factorisation of the
 `ℚ̄`-point `specAlgClos ℚ ≫ r` through `C`; what is asked here is that the
@@ -1309,8 +1585,28 @@ theorem ratPoint_liesIn_spanScheme {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
     (r : SpecQ ⟶ A) (hr : r ≫ f = 𝟙 SpecQ)
     (hgeom : ∃ j, p j = specAlgClos ℚ ≫ r) :
-    ∃ w : SpecQ ⟶ spanScheme p, w ≫ spanSchemeι p = r :=
-  sorry
+    ∃ w : SpecQ ⟶ spanScheme p, w ≫ spanSchemeι p = r := by
+  obtain ⟨j, hj⟩ := hgeom
+  -- (a) The span's kernel ideal sheaf is contained in that of each member of
+  -- the family, because each member factors through `geomPtDesc p`.
+  have ha : (geomPtDesc p).ker ≤ (p j).ker := by
+    have h := Scheme.Hom.le_ker_comp
+      (Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j)
+      (geomPtDesc p)
+    rwa [show Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j
+        ≫ geomPtDesc p = p j from Limits.Sigma.ι_desc p j] at h
+  -- (b) THE DESCENT STEP.
+  have hb : (specAlgClos ℚ ≫ r).ker ≤ r.ker :=
+    ker_comp_le_of_app_injective _ _ (app_injective_specAlgClos (F := ℚ))
+  have hle : (geomPtDesc p).ker ≤ r.ker := ha.trans (hj ▸ hb)
+  -- (c) A smaller kernel means the subscheme is LARGER, so `r`'s
+  -- scheme-theoretic image sits inside the span, and `r` factors.
+  refine ⟨r.toImage ≫ Scheme.IdealSheafData.inclusion hle, ?_⟩
+  rw [Category.assoc]
+  show r.toImage ≫ Scheme.IdealSheafData.inclusion hle
+    ≫ (geomPtDesc p).ker.subschemeι = r
+  rw [Scheme.IdealSheafData.inclusion_subschemeι]
+  exact r.toImage_imageι
 
 /-- **`zero_liesIn` at an ARBITRARY base reduces to the single `ℚ`-point
 `ab.zero (𝟙 SpecQ)`** (PROVEN 2026-07-26).
@@ -1356,7 +1652,26 @@ subgroup of `A(ℚ̄)`.  So by
 closed immersion `ι`.
 
 `hstable` enters exactly here: it is what makes `⟨y⟩` a `Γ_ℚ`-submodule,
-hence `C` defined over `ℚ` at all. -/
+hence `C` defined over `ℚ` at all.
+
+**ROUTE NOTE, 2026-07-26, from the agent that closed leaves (i) and (ii)**
+— what is now available that was not when this docstring was written:
+
+* `isAffine_spanScheme` proves `C` is an AFFINE scheme whose space is
+  FINITE and DISCRETE, and `isFinite_spanSchemeι` proves `ι ≫ f` is
+  finite.  So `C = Spec R` with `R` a finite-dimensional `ℚ`-algebra, and
+  `C ×_ℚ C = Spec (R ⊗_ℚ R)` is finite and discrete too.  The whole
+  rigidity step therefore happens between AFFINE schemes, where
+  `ext_of_isDominant_of_isSeparated` is much easier to feed.
+* The reducedness that step needs is now the ONLY missing input, and it
+  is a statement about the RING `R`: `C` is the scheme-theoretic image of
+  a reduced scheme, so `R` is reduced; a reduced finite `ℚ`-algebra in
+  characteristic `0` is étale, hence `R ⊗_ℚ R` is reduced as well.  That
+  is a commutative-algebra fact, not a scheme-theoretic one, and it does
+  not need the finite-étale/Galois-set correspondence.
+* `isIntegralHom_geomPt` is the reusable form of "each `ℚ̄`-point of `A`
+  is a closed map": it needs only `p j ≫ f = specAlgClos ℚ` and
+  separatedness of `f`. -/
 theorem exists_addHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -1417,7 +1732,30 @@ scheme-theoretic image with the scheme-theoretic image of the base change
 five that genuinely needs the finite-étale/Galois-set correspondence, and
 it needs only the SPLIT direction of it, over an algebraically closed
 base — which `CommAlgCat.FiniteEtale.equivOfIsSepClosed` already provides
-in the pin. -/
+in the pin.
+
+**ROUTE NOTE, 2026-07-26, from the agent that closed leaves (i) and (ii)**
+— the "computation of `Hom_ℚ(Spec K, C)`" half is no longer missing, and
+the tool is not the finite-étale correspondence:
+
+`AlgebraicGeometry.pointEquivClosedPoint`
+(`Mathlib/AlgebraicGeometry/AlgClosed/Basic.lean`) states, for `X`
+locally of finite type over an ALGEBRAICALLY CLOSED `K`,
+
+    {p : Spec K ⟶ X // p ≫ f = 𝟙} ≃ closedPoints X
+
+which is exactly `C(K)` on the left.  Leaf (i) is now PROVEN, so
+`ι ≫ f` is finite; base-changing it to `K` keeps it finite, so `C_K` is
+a finite discrete scheme and EVERY point of it is closed.  Hence
+`C(K) ≃ (C_K : Type)`, and the leaf reduces to counting the points of
+`C_K` and matching them with `⟨y⟩` — no Galois category, and only the
+split direction over an algebraically closed base, exactly as predicted.
+
+The remaining genuine input is still the identification of the base
+change of a scheme-theoretic image with the scheme-theoretic image of the
+base change, which is where `Spec ℚ̄ ⟶ Spec ℚ` being flat is used.  Note
+`app_injective_specAlgClos` above already packages the "schematically
+dominant" half of that for `ℚ̄/ℚ`. -/
 theorem geom_cyclic_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -2330,6 +2668,79 @@ theorem y0HasNoRationalPoint_prime {p : ℕ} (hp : p.Prime)
   obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
   exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_prime hp hmem hc hX)
 
+/-- **Kenku's prime-square determination, on `X_0(p²)` for `p ≥ 11`**
+(sorry node, introduced 2026-07-26): every rational point of `X_0(p²)` is
+a cusp, for every prime `p ≥ 11`.
+
+TRUE, and it is Kenku's theorem.  The Mazur–Kenku list of levels `N` with
+`Y_0(N)(ℚ) ≠ ∅` is
+
+    1, …, 19, 21, 25, 27, 37, 43, 67, 163,
+
+whose largest element is `163`; and for a prime `p ≥ 11` the level `p²` is
+at least `121`, is a perfect square, and is therefore in the list only if
+it is one of `1, 4, 9, 16` — all of which are `< 121`.  So `p² ` is outside
+the list for EVERY prime `p ≥ 11`, uniformly, with no case analysis.
+
+**Why `11 ≤ p` and not merely `p` prime.**  The bound is sharp at both
+ends of the small range: `4`, `9` and `25` are all IN the Mazur–Kenku
+list, so the statement is FALSE at `p = 2, 3, 5`.  (`p = 7` gives `49`,
+which is outside the list, so the statement happens to be true there too —
+but `49` is the separate concern of `MazurLevelFortyNine` and is left to
+it rather than folded in here.)
+
+**Why this node exists.**  It is the modular-curve form of the missing
+half of the level-`p` ⟷ level-`p²` dictionary.
+`FreyCurve/MazurTorsion.lean` already carries that dictionary in ONE
+direction: `not_cyclicIsogeny_sq_of_jInvariant` builds two distinct
+Galois-stable lines of order `p` on a Vélu quotient out of a cyclic
+`p²`-subgroup, and so is proven FROM the level-`p` leaf
+`not_two_stable_lines_of_jInvariant`.  Feeding that implication back would
+be circular.  Routing the CONVERSE through this node instead is not: the
+statement below is about the modular curve, is independent of both
+elliptic-curve leaves, and is exactly the shape in which Kenku proves it.
+
+IRREDUCIBLE at this pin, for the same reason as every other level node
+here: `X_0(p²)` has genus `≥ 6` for `p ≥ 11` (already `X_0(121)` has genus
+`6`), so this is a determination of the rational points of a curve of high
+genus, and neither `J_0(N)`, nor its Mordell–Weil group, nor
+Chabauty–Coleman exists in this development.  Sources: Kenku, *The modular
+curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math. Proc.
+Cambridge Philos. Soc. **87** (1980); *On the modular curves `X_0(125)`,
+`X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981);
+*The modular curve `X_0(169)` and rational isogeny*, J. London Math. Soc.
+(2) **22** (1980).
+
+Quantified over every model of `IsCompactificationY0`, so it is at least
+as strong as the `Y_0(p²)` statement it carries and cannot be discharged
+by a degenerate choice of `X`. -/
+theorem cuspidal_x0_isogenyPrimeSq {p : ℕ} (_hp : p.Prime) (_hp11 : 11 ≤ p)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (_hc : IsCoarseModuliY0 (p ^ 2) strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
+  sorry
+
+/-- **`Y_0(p²)(ℚ) = ∅` for every prime `p ≥ 11`** (PROVEN 2026-07-26 over
+`cuspidal_x0_isogenyPrimeSq`, the same compactification route
+`y0HasNoRationalPoint_prime` takes).
+
+This is the node that closes
+`WeierstrassCurve.not_two_stable_lines_of_jInvariant` in
+`FreyCurve/MazurTorsion.lean`: two DISTINCT Galois-stable lines of order
+`p` on `E` produce, on the Vélu quotient `E/⟨h₁⟩`, a Galois-stable CYCLIC
+subgroup of order `p²`, which `false_of_stable_of_y0HasNoRationalPoint`
+then contradicts.  See that leaf for the construction.
+
+Note `y0HasNoRationalPoint_of_dvd` does NOT reach `p²`: its only proper
+divisor is `p`, and `Y_0(p)(ℚ) ≠ ∅` for `p ∈ {11, 17, 19, 37, 43, 67,
+163}` — which is precisely why the seven isogeny primes need Kenku and not
+merely Mazur. -/
+theorem y0HasNoRationalPoint_isogenyPrimeSq {p : ℕ} (hp : p.Prime) (hp11 : 11 ≤ p) :
+    Y0HasNoRationalPoint (p ^ 2) := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 (p ^ 2)
+  obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
+  exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_isogenyPrimeSq hp hp11 hc hX)
+
 /-- **Kenku's semiprime determination, on `X_0(pq)`** (sorry node): for
 distinct primes `p, q` both in `mazurIsogenyPrimes` with
 `p * q ∉ {6, 10, 14, 15, 21}`, every rational point of `X_0(pq)` is a
@@ -2871,6 +3282,448 @@ structure IsX0ReductionAt {X J X' J' : Scheme.{0}} {strX : X ⟶ SpecQ}
   red_aj : ∀ x : RelPoint strX (𝟙 SpecQ),
     redJ (jac.aj (𝟙 SpecQ) x) = jac'.aj (𝟙 (SpecF ℓ)) (redX x)
 
+/-! #### The integral model, and the Néron pinning of `redJ`
+
+The subsection above records that `exists_x0Sieve` does not decompose
+*because* `IsX0ReductionAt` leaves `redJ` unpinned, and that the cut
+becomes safe exactly when `redJ` is pinned as the map induced by Néron
+models over `ℤ_ℓ`.  This subsection builds that pinning, and the cut is
+taken below: `exists_x0Sieve` is PROVEN from three leaves, none of which
+is the whole of Kenku's determination.
+
+The base is `Spec` of the local ring of `ℤ` at `ℓ`, and the pinning of
+that base is what carries the whole construction — a junk base would let
+a junk special fibre back in, and since the sharpness leaf quantifies
+UNIVERSALLY over data, one junk datum would make it FALSE rather than
+merely weak.  `IsReductionBase` pins it with two conditions and no
+imports; see its docstring.
+-/
+
+/-- **The local ring of `ℤ` at `ℓ`, pinned by two conditions.**
+
+`R` is a subring of `ℚ` and `toF : R → 𝔽_ℓ` a ring map which is
+surjective and whose kernel is exactly the set of non-units.  That is all
+that is needed, and it pins `(R, toF)` completely:
+
+* the kernel of a ring map is an ideal, so "kernel = non-units" says `R`
+  is LOCAL with maximal ideal `ker toF`;
+* every subring of `ℚ` contains `ℤ` and therefore has fraction field
+  `ℚ`, so no separate fraction-field condition is required;
+* the subrings of `ℚ` are the localizations `ℤ[S⁻¹]`, and the local ones
+  are `ℚ` itself and the `ℤ_(p)`.  There is no ring map `ℚ → 𝔽_ℓ` at all
+  (`ℓ` is a unit in `ℚ` but `toF ℓ = 0`, and `0` is not a unit unless
+  `𝔽_ℓ` is trivial, which the kernel condition excludes since `1` is a
+  unit).  Hence `R = ℤ_(ℓ)`.
+* `R / ker toF ≅ 𝔽_ℓ` is then a field, so `ℓ` is PRIME — this is a
+  consequence, not a hypothesis;
+* and `toF` itself is pinned, because the induced iso `R/m ≅ 𝔽_ℓ` is a
+  field automorphism of `𝔽_ℓ`, of which there is only the identity.
+
+So `IsReductionBase ℓ R toF` says "`R` is `ℤ_(ℓ)` and `toF` is reduction
+mod `ℓ`", in a form that needs no `IsDiscreteValuationRing`,
+`IsFractionRing` or `IsLocalRing` instance and hence no new import. -/
+structure IsReductionBase (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ) : Prop where
+  /-- `𝔽_ℓ` is the residue field -/
+  surjective : Function.Surjective toF
+  /-- the kernel is the maximal ideal, i.e. `R` is local with residue field `𝔽_ℓ` -/
+  ker_eq_nonunits : ∀ r : R, toF r = 0 ↔ ¬ IsUnit r
+
+/-- **`Spec` of the base**, the local ring of `ℤ` at `ℓ` once
+`IsReductionBase` holds of `R`.  Written for an arbitrary subring of `ℚ`
+so that the ring is a TERM and can be quantified over without
+existentials in instance position. -/
+noncomputable abbrev SpecLoc (R : Subring ℚ) : Scheme.{0} := Spec (CommRingCat.of R)
+
+/-- **The generic point `Spec ℚ ⟶ Spec ℤ_(ℓ)`**, induced by the inclusion
+`R ⊆ ℚ`. -/
+noncomputable def SpecLoc.generic (R : Subring ℚ) : SpecQ ⟶ SpecLoc R :=
+  Spec.map (CommRingCat.ofHom R.subtype)
+
+/-- **The closed point `Spec 𝔽_ℓ ⟶ Spec ℤ_(ℓ)`**, induced by reduction. -/
+noncomputable def SpecLoc.special {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ) :
+    SpecF ℓ ⟶ SpecLoc R :=
+  Spec.map (CommRingCat.ofHom toF)
+
+/-- **A Néron-pinned reduction datum for `X_0(N)` at `ℓ`.**
+
+This is `IsX0ReductionAt` with `redJ` no longer free: instead of positing
+a map with three properties, the datum carries the INTEGRAL MODELS over
+`ℤ_(ℓ)` and reads `redX`, `redJ` off them.  All three properties of
+`IsX0ReductionAt` are then theorems (`redJ_add`, `red_aj` here;
+`redJ_inj` from `neronReduction_injective`), assembled by `toReduction`.
+
+The data:
+
+* `base` pins the base as `Spec ℤ_(ℓ)` — see `IsReductionBase`;
+* `model` pins the integral curve as the smooth model of `X_0(N)` over
+  that base, reusing `IsX0Compactification`, whose base was left general
+  for exactly this purpose.  For `ℓ ∤ N` this is the Deligne–Rapoport /
+  Igusa smooth model;
+* `jacZ` pins the integral Jacobian as its relative Jacobian;
+* `genX`, `genJ`, `spX`, `spJ` identify the two fibres.  They are stated
+  as equivalences of FUNCTORS of points — for every `T` and every base
+  point, natural in the "identified base" form used throughout this file
+  — so by Yoneda they say `X ≅ 𝒳 ×_{ℤ_(ℓ)} ℚ` and `X' ≅ 𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`,
+  and likewise for the Jacobians, rather than merely comparing point
+  sets;
+* `genJ_add`, `spJ_add`, `genX_aj`, `spX_aj` say those identifications
+  respect the group law and Abel–Jacobi, i.e. that `aj` is defined over
+  the base;
+* `neronJ` is the **Néron mapping property** in section form,
+  `𝒥(ℤ_(ℓ)) ≅ J(ℚ)`, and `properX` is the **valuative criterion of
+  properness** for the curve, `𝒳(ℤ_(ℓ)) ≅ X(ℚ)`.  These are what turn a
+  rational point into an integral one, which is the only reason a
+  reduction map exists at all.
+
+**Why the pinning is the load-bearing part.**  With it, the pair
+`(X', J', aj', Set.range redJ)` is determined up to isomorphism by `N`
+and `ℓ`: the smooth proper model over `ℤ_(ℓ)` is unique, so its special
+fibre is, and `redJ` is the genuine reduction rather than an arbitrary
+injective homomorphism.  That is precisely what makes
+`exists_sharpSievePrime` — which quantifies universally over data —
+a true statement rather than the false one the subsection above warned
+about. -/
+structure IsX0NeronDatum (N ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    {X J X' J' XZ YZ JZ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    (jac : IsJacobianOf strX ab o) (jac' : IsJacobianOf strX' ab' o')
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} (jacZ : IsJacobianOf xstr abZ oZ) where
+  /-- the base is the local ring of `ℤ` at `ℓ` -/
+  base : IsReductionBase ℓ R toF
+  /-- the integral model is the smooth model of `X_0(N)` over that base -/
+  model : IsX0Compactification N xstr ystr jZ
+  /-- the generic fibre of the curve model is `X`, functorially -/
+  genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.generic R = g₀ → RelPoint strX g ≃ RelPoint xstr g₀
+  /-- the generic fibre of the Jacobian model is `J`, functorially -/
+  genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.generic R = g₀ → RelPoint jstr g ≃ RelPoint jstrZ g₀
+  /-- the special fibre of the curve model is `X'`, functorially -/
+  spX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.special toF = g₀ → RelPoint strX' g ≃ RelPoint xstr g₀
+  /-- the special fibre of the Jacobian model is `J'`, functorially -/
+  spJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.special toF = g₀ → RelPoint jstr' g ≃ RelPoint jstrZ g₀
+  /-- naturality of the generic identification of curves -/
+  genX_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+    (x : RelPoint strX g),
+    genX g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genX g g₀ h₀ x)
+  /-- naturality of the generic identification of Jacobians -/
+  genJ_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+    (x : RelPoint jstr g),
+    genJ g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genJ g g₀ h₀ x)
+  /-- naturality of the special identification of curves -/
+  spX_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF ℓ} {g' : T' ⟶ SpecF ℓ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.special toF = g₀) (h₀' : g' ≫ SpecLoc.special toF = g₀')
+    (x : RelPoint strX' g),
+    spX g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (spX g g₀ h₀ x)
+  /-- naturality of the special identification of Jacobians -/
+  spJ_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF ℓ} {g' : T' ⟶ SpecF ℓ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.special toF = g₀) (h₀' : g' ≫ SpecLoc.special toF = g₀')
+    (x : RelPoint jstr' g),
+    spJ g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (spJ g g₀ h₀ x)
+  /-- the generic identification of Jacobians is additive -/
+  genJ_add : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint jstr g),
+    genJ g g₀ h (ab.add x y) = abZ.add (genJ g g₀ h x) (genJ g g₀ h y)
+  /-- the special identification of Jacobians is additive -/
+  spJ_add : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.special toF = g₀) (x y : RelPoint jstr' g),
+    spJ g g₀ h (ab'.add x y) = abZ.add (spJ g g₀ h x) (spJ g g₀ h y)
+  /-- Abel–Jacobi is defined over the base: generic fibre -/
+  genX_aj : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (x : RelPoint strX g),
+    genJ g g₀ h (jac.aj g x) = jacZ.aj g₀ (genX g g₀ h x)
+  /-- Abel–Jacobi is defined over the base: special fibre -/
+  spX_aj : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.special toF = g₀) (x : RelPoint strX' g),
+    spJ g g₀ h (jac'.aj g x) = jacZ.aj g₀ (spX g g₀ h x)
+  /-- **Néron mapping property**: every rational point of `J` extends
+  uniquely to an integral point of the model -/
+  neronJ : Function.Bijective
+    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+      RelPoint jstrZ (𝟙 (SpecLoc R)) → RelPoint jstrZ (SpecLoc.generic R))
+  /-- **valuative criterion of properness**: every rational point of `X`
+  extends uniquely to an integral point of the model -/
+  properX : Function.Bijective
+    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+      RelPoint xstr (𝟙 (SpecLoc R)) → RelPoint xstr (SpecLoc.generic R))
+
+namespace IsX0NeronDatum
+
+variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X J X' J' XZ YZ JZ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ)
+
+/-- **The integral point of the Jacobian model** attached to a rational
+point, by the Néron mapping property. -/
+noncomputable def intJ (x : RelPoint jstr (𝟙 SpecQ)) : RelPoint jstrZ (𝟙 (SpecLoc R)) :=
+  (Equiv.ofBijective _ d.neronJ).symm
+    (d.genJ (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x)
+
+/-- **The integral point of the curve model** attached to a rational
+point, by the valuative criterion of properness. -/
+noncomputable def intX (x : RelPoint strX (𝟙 SpecQ)) : RelPoint xstr (𝟙 (SpecLoc R)) :=
+  (Equiv.ofBijective _ d.properX).symm
+    (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x)
+
+/-- **Reduction of rational points of the Jacobian**: extend to the
+integral model, then restrict to the special fibre. -/
+noncomputable def redJ (x : RelPoint jstr (𝟙 SpecQ)) : RelPoint jstr' (𝟙 (SpecF ℓ)) :=
+  (d.spJ (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+    (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intJ x))
+
+/-- **Reduction of rational points of the curve.** -/
+noncomputable def redX (x : RelPoint strX (𝟙 SpecQ)) : RelPoint strX' (𝟙 (SpecF ℓ)) :=
+  (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+    (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x))
+
+theorem redJ_def (x : RelPoint jstr (𝟙 SpecQ)) :
+    d.redJ x = (d.spJ (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intJ x)) := rfl
+
+theorem redX_def (x : RelPoint strX (𝟙 SpecQ)) :
+    d.redX x = (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x)) := rfl
+
+theorem pre_intJ (z : RelPoint jstr (𝟙 SpecQ)) :
+    RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) (d.intJ z)
+      = d.genJ (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) z :=
+  (Equiv.ofBijective _ d.neronJ).apply_symm_apply _
+
+theorem pre_intX (z : RelPoint strX (𝟙 SpecQ)) :
+    RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) (d.intX z)
+      = d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) z :=
+  (Equiv.ofBijective _ d.properX).apply_symm_apply _
+
+/-- Extending a rational point to the integral model is additive. -/
+theorem intJ_add (x y : RelPoint jstr (𝟙 SpecQ)) :
+    d.intJ (ab.add x y) = abZ.add (d.intJ x) (d.intJ y) := by
+  apply d.neronJ.1
+  rw [d.pre_intJ, abZ.pre_add, d.pre_intJ, d.pre_intJ, d.genJ_add]
+
+/-- Extending a rational point to the integral model commutes with
+Abel–Jacobi. -/
+theorem intJ_aj (x : RelPoint strX (𝟙 SpecQ)) :
+    d.intJ (jac.aj (𝟙 SpecQ) x) = jacZ.aj (𝟙 (SpecLoc R)) (d.intX x) := by
+  apply d.neronJ.1
+  rw [d.pre_intJ, d.genX_aj, ← d.pre_intX, jacZ.aj_pre]
+
+/-- **`redJ_add` of `IsX0ReductionAt`, as a theorem.** -/
+theorem redJ_add (x y : RelPoint jstr (𝟙 SpecQ)) :
+    d.redJ (ab.add x y) = ab'.add (d.redJ x) (d.redJ y) := by
+  apply (d.spJ (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).injective
+  rw [d.spJ_add, redJ_def, redJ_def, redJ_def, Equiv.apply_symm_apply,
+    Equiv.apply_symm_apply, Equiv.apply_symm_apply, d.intJ_add, abZ.pre_add]
+
+/-- **`red_aj` of `IsX0ReductionAt`, as a theorem.** -/
+theorem red_aj (x : RelPoint strX (𝟙 SpecQ)) :
+    d.redJ (jac.aj (𝟙 SpecQ) x) = jac'.aj (𝟙 (SpecF ℓ)) (d.redX x) := by
+  apply (d.spJ (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).injective
+  rw [d.spX_aj, redJ_def, Equiv.apply_symm_apply, redX_def, Equiv.apply_symm_apply,
+    d.intJ_aj, jacZ.aj_pre]
+
+include d in
+/-- **Rank `0` transports to the integral model**, along
+`𝒥(ℤ_(ℓ)) ≅ J(ℚ)`. -/
+theorem finite_intPoints (hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
+    Finite (RelPoint jstrZ (𝟙 (SpecLoc R))) := by
+  haveI := hfin
+  exact Finite.of_equiv _
+    ((d.genJ (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).trans
+      (Equiv.ofBijective _ d.neronJ).symm)
+
+/-- **A Néron-pinned datum is a reduction datum** (PROVEN), given
+injectivity of reduction on integral points — which is
+`neronReduction_injective` below.
+
+This is the whole point of the pinning: `redJ_add` and `red_aj` are no
+longer assumptions about an arbitrary map but consequences of the maps
+being induced by morphisms of models over `ℤ_(ℓ)`. -/
+noncomputable def toReduction
+    (hinj : Function.Injective
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) :
+        RelPoint jstrZ (𝟙 (SpecLoc R)) → RelPoint jstrZ (SpecLoc.special toF))) :
+    IsX0ReductionAt jac jac' where
+  redX := d.redX
+  redJ := d.redJ
+  redJ_add := d.redJ_add
+  redJ_inj := by
+    intro a b hab
+    have h1 : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intJ a)
+        = RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intJ b) := by
+      have h := congrArg
+        (d.spJ (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)) hab
+      rwa [redJ_def, redJ_def, Equiv.apply_symm_apply, Equiv.apply_symm_apply] at h
+    have h2 := congrArg (RelPoint.pre (SpecLoc.generic R)
+      (Category.comp_id (SpecLoc.generic R))) (hinj h1)
+    rw [d.pre_intJ, d.pre_intJ] at h2
+    exact (d.genJ (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective h2
+  red_aj := d.red_aj
+
+end IsX0NeronDatum
+
+/-- **Reduction is injective on the integral points of an abelian scheme
+over `ℤ_(ℓ)` for `ℓ` odd** (sorry node).
+
+TRUE, and classical.  `hfin` makes `𝒥(ℤ_(ℓ))` finite, hence torsion.
+The kernel of reduction `𝒥(ℤ_(ℓ)) → 𝒥(𝔽_ℓ)` embeds in the kernel over
+the completion `ℤ_ℓ`, which is the group of points of the formal group
+of `𝒥` — and a formal group over a `ℓ`-adic ring of absolute
+ramification index `e` is torsion-free when `e < ℓ − 1`.  Here `e = 1`
+by `hbase`, so the condition is `ℓ > 2`.  A torsion subgroup of a
+torsion-free group is trivial, and a homomorphism (`abZ.pre_add`) with
+trivial kernel is injective.
+
+**Every hypothesis is load-bearing.**  `hbase` is what makes the base a
+DVR with `e = 1` and residue characteristic `ℓ` — over a ramified base
+the formal group can have torsion.  `hℓ2` is exactly the `e < ℓ − 1`
+condition and cannot be dropped: at `ℓ = 2`, `e = 1 = ℓ − 1` and
+`2`-torsion can die under reduction.  `hfin` is rank `0`; without it the
+kernel need not be torsion and the argument gives nothing.
+
+This is the SHARED content that `card_le_of_rankZeroJacobian` also
+rests on, isolated here so that it is proven once.
+
+IRREDUCIBLE at this pin: it needs the formal group of an abelian scheme
+over a discrete valuation ring, which does not exist in mathlib. -/
+theorem neronReduction_injective (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF) (_hℓ2 : ℓ ≠ 2)
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (_abZ : AbelianSchemeStruct jstrZ)
+    (_hfin : Finite (RelPoint jstrZ (𝟙 (SpecLoc R)))) :
+    Function.Injective
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) :
+        RelPoint jstrZ (𝟙 (SpecLoc R)) → RelPoint jstrZ (SpecLoc.special toF)) :=
+  sorry
+
+/-- **The good-reduction datum exists at every odd `ℓ ∤ N`** (sorry
+node).
+
+TRUE, and it is the integral-model half of the sieve: `X_0(N)` has a
+smooth proper model over `ℤ[1/N]` (Deligne–Rapoport, Igusa), so over
+`ℤ_(ℓ)` for `ℓ ∤ N`; its relative Jacobian is an abelian scheme, and it
+is the Néron model of `J_0(N)` over `ℤ_(ℓ)` because an abelian scheme
+with the right generic fibre is one.  The identifications of fibres and
+the compatibility of Abel–Jacobi with base change are the standard
+properties of the relative Jacobian.
+
+Note there is NO sharpness claim here: this leaf is universal in `ℓ`
+and says only that the reduction machinery exists.  Combined with
+`neronReduction_injective` it is exactly the content of
+`card_le_of_rankZeroJacobian` and `exists_x0Compactification_mod_prime`,
+which is why factoring it out is a genuine reduction in the total work
+rather than a repackaging.
+
+IRREDUCIBLE at this pin: neither the integral model of `X_0(N)` nor the
+relative Jacobian exists here. -/
+theorem exists_x0NeronDatum (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2) (_hℓN : ¬ ℓ ∣ N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (_hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o) :
+    ∃ (R : Subring ℚ) (toF : R →+* ZMod ℓ) (X' J' XZ YZ JZ : Scheme.{0})
+      (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
+      (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
+      (jac' : IsJacobianOf strX' ab' o') (xstr : XZ ⟶ SpecLoc R)
+      (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ) (jstrZ : JZ ⟶ SpecLoc R)
+      (abZ : AbelianSchemeStruct jstrZ) (oZ : RelPoint xstr (𝟙 (SpecLoc R)))
+      (jacZ : IsJacobianOf xstr abZ oZ),
+      Nonempty (IsX0NeronDatum N ℓ R toF jac jac'
+        (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :=
+  sorry
+
+/-- **The sieve at `d` cuts the survivors down to the rational cusps.**
+
+The conclusion of `exists_x0Sieve`, phrased for one pinned datum so that
+the sharpness leaf can quantify over data. -/
+def IsSharpSieve (N : ℕ) {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) : Prop :=
+  ∃ s : Finset (RelPoint strX' (𝟙 (SpecF ℓ))),
+    (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+        (∃ a : RelPoint jstr (𝟙 SpecQ), d.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') → x' ∈ s) ∧
+      s.card = numRationalCusps N
+
+/-- **Some good odd prime makes the sieve sharp** (sorry node — this is
+the arithmetic heart of the four residual levels).
+
+TRUE: at each of `45, 54, 63, 75` there is a good odd prime `ℓ` at which
+only `numRationalCusps N = 4` of the points of `X_0(N)(𝔽_ℓ)` have
+Abel–Jacobi class in the image of `J_0(N)(ℚ)`, even though `X_0(N)(𝔽_ℓ)`
+itself has `8, 6, 8, 8` points.  The candidate witnesses are `ℓ = 7, 5,
+5, 7` respectively.  See the FORMAL-CONTENT AUDIT under
+`exists_x0Sieve` for the witness table, the refutation test each witness
+passes, and the reason no number of auxiliary primes replaces this leaf.
+
+**Why the universal quantifier over data is SAFE here**, where the
+subsection docstring above warns it would not be for `IsX0ReductionAt`.
+The warning was that `IsX0ReductionAt` constrains `redJ` only by
+injectivity, additivity and `red_aj`, so a subgroup of the right order
+sitting differently inside `J_0(N)(𝔽_ℓ)` gives an admissible datum with
+MORE survivors — and one such datum would refute a `∀`-statement.
+`IsX0NeronDatum` removes exactly that freedom: `base` pins the base as
+`Spec ℤ_(ℓ)`, `model` pins the integral curve as the smooth model of
+`X_0(N)` there, `genX`/`genJ`/`spX`/`spJ` pin `X'` and `J'` as its
+fibres, and `neronJ` pins `redJ` as the genuine reduction.  Any two data
+at the same `ℓ` are therefore isomorphic, and the survivor count is an
+isomorphism invariant.
+
+**`hfin` is load-bearing** and is the rank-`0` input: without it
+`J_0(N)(ℚ)` is infinite, every point of `X_0(N)(𝔽_ℓ)` survives, and no
+prime cuts anything.  `hlevel` restricts the leaf to the four levels
+where the sieve is the intended route.
+
+IRREDUCIBLE at this pin, and it is the residue of `exists_x0Sieve` after
+the model-theoretic content is factored out: it needs the Abel–Jacobi
+image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as an explicitly computable
+finite object, plus Eichler–Shimura to know `#J_0(N)(𝔽_ℓ)`. -/
+theorem exists_sharpSievePrime (N : ℕ) (_hlevel : N ∈ x0SieveLevels) :
+    ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧
+      ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+        {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+        {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+        {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+        {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+        {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+        {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+        {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+        {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+        (d : IsX0NeronDatum N ℓ R toF jac jac'
+          (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ),
+        Finite (RelPoint jstr (𝟙 SpecQ)) → IsSharpSieve N d :=
+  sorry
+
 /-- **The Mordell–Weil sieve closes at the four residual levels** (sorry
 node — this is the criterion the four levels below rest on).
 
@@ -2899,10 +3752,25 @@ what makes `Set.range redJ` the rational Jacobian rather than an
 arbitrary subgroup.  `hlevel` restricts the leaf to the four levels where
 the sieve is the intended route; see the subsection docstring.
 
-IRREDUCIBLE at this pin, and strictly beyond the five leaves above: on
-top of the integral model, the reduction map and Eichler–Shimura it needs
-the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as an
-explicitly computable finite object.
+**NO LONGER A LEAF (2026-07-26): PROVEN by decomposition.**  It was
+recorded as irreducible below, together with the precise condition that
+would make it decompose — a field on `IsX0ReductionAt` pinning `redJ`
+through Néron models over `ℤ_ℓ`.  That condition has been built
+(`IsX0NeronDatum`), and the statement now follows from three leaves:
+
+* `neronReduction_injective` — reduction is injective on integral points
+  of an abelian scheme over `ℤ_(ℓ)`, `ℓ` odd (the formal-group fact,
+  shared with `card_le_of_rankZeroJacobian`);
+* `exists_x0NeronDatum` — the integral model and its relative Jacobian
+  exist at every odd `ℓ ∤ N` (Deligne–Rapoport / Igusa, universal in
+  `ℓ`, no sharpness claim);
+* `exists_sharpSievePrime` — some good odd prime makes the sieve sharp
+  (the arithmetic residue).
+
+`redJ_add` and `red_aj` are no longer assumptions anywhere: they are
+theorems about the maps induced by the models, assembled by
+`IsX0NeronDatum.toReduction`.  See the corrected subsection below for
+what changed and why the universal quantifier in the third leaf is safe.
 
 ## FORMAL-CONTENT AUDIT (2026-07-26)
 
@@ -2990,7 +3858,13 @@ Abel–Jacobi classes are only the forced ones, and that is a different
 question, answered here by the existential quantifier over `ℓ` rather
 than by the table.
 
-## WHY THIS LEAF DOES NOT DECOMPOSE, and what would let it
+## WHY THIS LEAF DID NOT DECOMPOSE, and what let it (RESOLVED 2026-07-26)
+
+**Read this as the record of a correct prediction, not as a live
+obstruction.**  Everything below is still true of `IsX0ReductionAt`, and
+it is exactly why the decomposition had to wait for `IsX0NeronDatum`.
+The final paragraph named the missing ingredient; that ingredient was
+then built, and the cut it licenses is the one now taken.
 
 The natural cut is into (i) *good reduction exists* — the reduced pair
 and the injective reduction map at any good odd `ℓ ∤ N`, which is content
@@ -3015,14 +3889,29 @@ sub-leaf, which is worse than the single honest one.
 What would make the cut safe is a field on `IsX0ReductionAt` pinning
 `redJ` — as the map induced by a morphism of Néron models over `ℤ_ℓ`, say.
 That needs the integral model of `J_0(N)`, which is exactly the object
-whose absence makes this leaf irreducible in the first place.  So the
-decomposition becomes available at the same moment the leaf does, and
-until then the leaf is correctly left atomic. -/
-theorem exists_x0Sieve (N : ℕ) (_hlevel : N ∈ x0SieveLevels)
+whose absence makes this leaf irreducible in the first place.
+
+**This is what was done.**  The last inference above — "so the
+decomposition becomes available at the same moment the leaf does" — is
+the one place the analysis was too pessimistic, and the gap is worth
+recording.  The integral model is needed as an EXISTENCE statement to
+close the leaf, but only as a STRUCTURE to state the pinning; and a
+structure can be written before anything is known to satisfy it.  So
+`IsX0NeronDatum` was written, the pinned datum's existence became the
+separate leaf `exists_x0NeronDatum`, and the sharpness leaf could then be
+stated universally over pinned data without being false — because the
+pinning removes precisely the freedom (a differently-placed subgroup of
+the right order) that the paragraph above identifies as the danger.
+
+The general lesson, since this development keeps meeting it: **"leaf `A`
+needs theory `T`, which does not exist" does not imply "the decomposition
+of `A` needs `T` to be proven"** — often it needs only `T` to be
+*stated*.  An atomicity verdict should say which of the two it means. -/
+theorem exists_x0Sieve (N : ℕ) (hlevel : N ∈ x0SieveLevels)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (_hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o)
-    (_hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
+    (hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o)
+    (hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
     ∃ (ℓ : ℕ) (X' J' : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
       (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
       (jac' : IsJacobianOf strX' ab' o') (red : IsX0ReductionAt jac jac')
@@ -3030,8 +3919,13 @@ theorem exists_x0Sieve (N : ℕ) (_hlevel : N ∈ x0SieveLevels)
       (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
           (∃ a : RelPoint jstr (𝟙 SpecQ), red.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') →
             x' ∈ s) ∧
-        s.card = numRationalCusps N :=
-  sorry
+        s.card = numRationalCusps N := by
+  obtain ⟨ℓ, hℓ, hℓ2, hℓN, hsharp⟩ := exists_sharpSievePrime N hlevel
+  obtain ⟨R, toF, X', J', XZ, YZ, JZ, strX', jstr', ab', o', jac', xstr, ystr, jZ,
+    jstrZ, abZ, oZ, jacZ, ⟨d⟩⟩ := exists_x0NeronDatum N ℓ hℓ hℓ2 hℓN hX jac
+  have hinj := neronReduction_injective ℓ R toF d.base hℓ2 abZ (d.finite_intPoints hfin)
+  obtain ⟨s, hs, hscard⟩ := hsharp d hfin
+  exact ⟨ℓ, X', J', strX', jstr', ab', o', jac', d.toReduction hinj, s, hs, hscard⟩
 
 /-- **The sieve bound, `#X_0(N)(ℚ) ≤ numRationalCusps N`** (PROVEN).
 

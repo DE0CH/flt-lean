@@ -25,6 +25,12 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompletionInvariance
 -- absorption, and adic completeness of `adicCompletionIntegers`),
 -- consumed by `exists_connected_counit_idempotent_at_three`.
 import Fermat.FLT.GroupScheme.ConnectedEtale
+-- Fontaine's translation isomorphism for a commutative Hopf algebra
+-- (the shear automorphism `θ (a ⊗ b) = (a ⊗ 1)·Δb` of `G ⊗ G`, its
+-- antipode-built inverse, and the resulting `G`-linear identification
+-- of `Ω[G⁄R]` with the conormal module of the augmentation), consumed
+-- by `exists_kaehler_linearEquiv_baseChange_of_hopf_package`.
+public import Fermat.FLT.GroupScheme.HopfKaehler
 -- The PROVEN Gelfand-duality separation lemma for finite étale algebras
 -- (`eq_zero_of_forall_algHom_eq_zero`: the geometric points of a finite
 -- étale algebra over a field separate its elements), consumed by the
@@ -9558,11 +9564,46 @@ theorem exists_level_forall_le_sum_card_filter_of_le_sum_depth
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **GALOIS DESCENT ON THE INTEGRAL CLOSURES** (PROVEN 2026-07-26): an
+element of `𝒪_L` fixed by `Gal(L/M') = M'.fixingSubgroup` comes from
+`𝒪_{M'}`, i.e. `𝒪_L^{Gal(L/M')} = 𝒪_{M'}`.
+
+This is descent for the FIELDS (`IsGalois.fixedField_fixingSubgroup`,
+which puts the underlying element of `L` inside `M'`) followed by
+descent for INTEGRALITY (`IsIntegral.tower_bot_of_field`, applicable
+because `M'` is a field and `M' → L` is injective, so a monic equation
+over `𝒪₃ᵥ` satisfied in `L` is already satisfied in `M'`).  The witness
+is then literally the same underlying element, so the conclusion is
+`rfl` once both memberships are in hand.
+
+It is the ONLY ingredient of `exists_relative_depth_witness_adjoin`
+below that is not already inside `exists_relative_depth_witness`. -/
+theorem exists_algebraMap_eq_of_fixed_fixingSubgroup
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L] (M' : IntermediateField ℚ₃ᵥ ↥L)
+    (s : IntegralClosure 𝒪₃ᵥ ↥L)
+    (hs : ∀ h ∈ M'.fixingSubgroup, h • s = s) :
+    ∃ u : IntegralClosure 𝒪₃ᵥ ↥M',
+      algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ ↥L) u = s := by
+  have hfix : ∀ f ∈ M'.fixingSubgroup, f (s.1 : ↥L) = (s.1 : ↥L) := by
+    intro f hf
+    have h2 := congrArg Subtype.val (hs f hf)
+    rwa [IntegralClosure.coe_smul] at h2
+  have hmem : (s.1 : ↥L) ∈ M' := by
+    rw [← IsGalois.fixedField_fixingSubgroup M']
+    exact (IntermediateField.mem_fixedField_iff _ _).mpr hfix
+  have hint : IsIntegral 𝒪₃ᵥ (⟨(s.1 : ↥L), hmem⟩ : ↥M') :=
+    IsIntegral.tower_bot_of_field (B := ↥L) (x := (⟨(s.1 : ↥L), hmem⟩ : ↥M')) s.2
+  exact ⟨⟨⟨(s.1 : ↥L), hmem⟩, hint⟩, rfl⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **THE RELATIVE DEPTH WITNESS, WITH MONOGENICITY OF THE INVARIANTS**
-(sorry node, created 2026-07-26 by a fourth owner while PROVING
-`mul_le_sum_inertia_depth_fiber` below; it is the ONLY thing that leaf
-still needs).
+(PROVEN 2026-07-26 — created the same day by a fourth owner while
+PROVING `mul_le_sum_inertia_depth_fiber` below, of which it was the ONLY
+remaining input; that cone is now sorry-free).
 
 This is the PROVEN `exists_relative_depth_witness` above, VERBATIM, plus
 one extra conclusion: that the `z` it produces GENERATES the ring of
@@ -9579,12 +9620,26 @@ depth `v_N(z − σ•z) = e·m`, and neither implies monogenicity (adding
 `𝒪₃ᵥ[z]`).  So the clause cannot be derived downstream and has to be put
 back into the witness itself.
 
-WHAT ITS PROOF NEEDS, beyond re-running the existing one:
-`exists_local_adjoin_eq_top M` (PROVEN above, giving `𝒪_M = 𝒪₃ᵥ[y]`) and
-the Galois descent `𝒪_N ∩ M = 𝒪_M` through the reification, exactly as in
-`restrictToLEHom_mem_inertia`.  No new ramification theory is involved —
-this is the LAST of the three items the old "WHAT IS STILL MISSING" list
-on the leaf below asked for; the other two are now proven
+HOW IT WAS PROVED (2026-07-26), and it needed no new ramification
+theory, exactly as predicted.  The proof of `exists_relative_depth_witness`
+is re-run VERBATIM — same `w τ`, same reification `jO : 𝒪_M ≃ₐ 𝒪_{M'}`,
+same witness `z = algebraMap 𝒪_{M'} 𝒪_N (jO θ)` — with the generator
+package `exists_inertia_generator M` now taken WITH its `Algebra.adjoin
+𝒪₃ᵥ {θ} = ⊤` component (which the earlier proof discarded as `_hθtop`).
+The fourth conjunct is then two steps:
+
+* `exists_algebraMap_eq_of_fixed_fixingSubgroup` (PROVEN just above)
+  turns an `H`-invariant `s : 𝒪_N` into `s = algebraMap 𝒪_{M'} 𝒪_N u` —
+  this is the Galois descent `𝒪_N^{Gal(N/M')} = 𝒪_{M'}`, using
+  `hker : ker(restrictToLEHom) = M'.fixingSubgroup` from the copied proof;
+* `AlgHom.map_adjoin_singleton` and `Algebra.map_top` turn
+  `Algebra.adjoin 𝒪₃ᵥ {θ} = ⊤` into
+  `Algebra.adjoin 𝒪₃ᵥ {z} = φ.range` for
+  `φ = (algebraMap 𝒪_{M'} 𝒪_N) ∘ jO`, and `u` has the preimage
+  `jO.symm u`.
+
+This was the LAST of the three items the old "WHAT IS STILL MISSING"
+list on the leaf below asked for; the other two are also proven
 (`sub_smul_dvd_prod_sub_smul` and the counting step inside that leaf). -/
 theorem exists_relative_depth_witness_adjoin
     (M N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hMN : M ≤ N)
@@ -9604,15 +9659,215 @@ theorem exists_relative_depth_witness_adjoin
       (∀ s : IntegralClosure 𝒪₃ᵥ N,
         (∀ h ∈ (restrictToLEHom M N hMN).ker, h • s = s) →
         s ∈ Algebra.adjoin 𝒪₃ᵥ ({z} : Set (IntegralClosure 𝒪₃ᵥ N))) := by
-  sorry
+  classical
+  haveI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M N) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M N hMN
+  set M' := reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M N
+  -- `τ ≠ 1`, since `1` lies in every inertia subgroup.
+  have hτ1 : τ ≠ 1 := by
+    rintro rfl
+    exact hτ (one_mem _)
+  -- the `M`-side depth
+  obtain ⟨w, hw⟩ := exists_inertia_depth M
+  refine ⟨w τ, ?_⟩
+  have hdepth : ∀ k : ℕ, τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k).inertia
+      (M ≃ₐ[ℚ₃ᵥ] M) ↔ k ≤ w τ := by
+    intro k
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp only [Nat.zero_le, iff_true, pow_zero, Ideal.one_eq_top]
+      refine AddSubgroup.mem_inertia.mpr fun x => ?_
+      rw [Submodule.mem_toAddSubgroup]
+      exact Submodule.mem_top
+    · exact hw τ hτ1 k hk
+  -- a monogenic generator of `𝒪_M` and the exact depth of `τ•θ − θ`
+  obtain ⟨θ, hθtop, _hθinj, hθiff⟩ := exists_inertia_generator M
+  have hdθ : ∀ k : ℕ, τ • θ - θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k ↔
+      k ≤ w τ := fun k => (hθiff τ k).symm.trans (hdepth k)
+  -- the reification isomorphism on integer rings
+  set j := reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M N hMN
+  set f₁ : IntegralClosure 𝒪₃ᵥ ↥M →+* IntegralClosure 𝒪₃ᵥ ↥M' :=
+    RingHom.codRestrict
+      ((j.symm : ↥M →+* ↥M').comp (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M))
+      (integralClosure 𝒪₃ᵥ ↥M')
+      (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+        ((j.symm.toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+          (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M) ↥M)))
+  set f₂ : IntegralClosure 𝒪₃ᵥ ↥M' →+* IntegralClosure 𝒪₃ᵥ ↥M :=
+    RingHom.codRestrict
+      ((j : ↥M' →+* ↥M).comp (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') ↥M'))
+      (integralClosure 𝒪₃ᵥ ↥M)
+      (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+        ((j.toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+          (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M') ↥M')))
+  set jO : IntegralClosure 𝒪₃ᵥ ↥M ≃ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ ↥M' :=
+    { toFun := f₁
+      invFun := f₂
+      left_inv := fun y => Subtype.ext (j.apply_symm_apply _)
+      right_inv := fun y => Subtype.ext (j.symm_apply_apply _)
+      map_mul' := map_mul f₁
+      map_add' := map_add f₁
+      commutes' := fun r => Subtype.ext (by
+        show j.symm (algebraMap 𝒪₃ᵥ ↥M r) = algebraMap 𝒪₃ᵥ _ r
+        rw [IsScalarTower.algebraMap_apply 𝒪₃ᵥ ℚ₃ᵥ ↥M, AlgEquiv.commutes,
+          IsScalarTower.algebraMap_apply 𝒪₃ᵥ ℚ₃ᵥ ↥M']) }
+  have hcomap : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M')).comap jO =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) := by
+    ext y
+    rw [Ideal.mem_comap, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+      IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    constructor
+    · intro h1 h2
+      exact h1 (h2.map jO)
+    · intro h1 h2
+      have h3 := h2.map jO.symm
+      rw [AlgEquiv.symm_apply_apply] at h3
+      exact h1 h3
+  have hmapmax : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M)).map jO =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M') := by
+    refine le_antisymm (Ideal.map_le_iff_le_comap.mpr (le_of_eq hcomap.symm))
+      fun y hy => ?_
+    have hv : jO.symm y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) := by
+      rw [← hcomap, Ideal.mem_comap, AlgEquiv.apply_symm_apply]
+      exact hy
+    have h5 := Ideal.mem_map_of_mem jO hv
+    rwa [AlgEquiv.apply_symm_apply] at h5
+  -- membership transports along the isomorphism `jO`
+  have hmemiff : ∀ (I : Ideal (IntegralClosure 𝒪₃ᵥ ↥M)) (a : IntegralClosure 𝒪₃ᵥ ↥M),
+      jO a ∈ I.map jO ↔ a ∈ I := by
+    intro I a
+    refine ⟨fun h => ?_, fun h => Ideal.mem_map_of_mem _ h⟩
+    have hsub : I.map jO ≤ I.comap (jO.symm : IntegralClosure 𝒪₃ᵥ ↥M' →+*
+        IntegralClosure 𝒪₃ᵥ ↥M) := by
+      rw [Ideal.map_le_iff_le_comap]
+      intro y hy
+      rw [Ideal.mem_comap, Ideal.mem_comap]
+      show jO.symm (jO y) ∈ I
+      rw [AlgEquiv.symm_apply_apply]
+      exact hy
+    have h2 := hsub h
+    rw [Ideal.mem_comap] at h2
+    show a ∈ I
+    have h3 : (jO.symm : IntegralClosure 𝒪₃ᵥ ↥M' →+* IntegralClosure 𝒪₃ᵥ ↥M) (jO a) = a := by
+      show jO.symm (jO a) = a
+      exact jO.symm_apply_apply a
+    rwa [h3] at h2
+  -- the exact depth of `jO (τ•θ − θ)` in `𝒪_{M'}`
+  have hdx : ∀ k : ℕ, jO (τ • θ - θ) ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M') ^ k
+      ↔ k ≤ w τ := by
+    intro k
+    rw [show (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M') ^ k) =
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ k).map jO by
+      rw [Ideal.map_pow, hmapmax], hmemiff]
+    exact hdθ k
+  have hspanx : Ideal.span {jO (τ • θ - θ)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M') ^ (w τ) :=
+    span_singleton_eq_maximalIdeal_pow_of_mem_iff _ _ _ hdx
+  -- the kernel of `restrictToLEHom` is the fixing subgroup of `M'`
+  have hker : (restrictToLEHom M N hMN).ker = M'.fixingSubgroup := by
+    rw [← IntermediateField.restrictNormalHom_ker (K := ℚ₃ᵥ) (L := ↥N) M']
+    ext σ
+    simp only [MonoidHom.mem_ker]
+    show (AlgEquiv.autCongr j) (AlgEquiv.restrictNormalHom M' σ) = 1 ↔
+      AlgEquiv.restrictNormalHom M' σ = 1
+    constructor
+    · intro h
+      have := congrArg (AlgEquiv.autCongr j).symm h
+      rwa [MulEquiv.symm_apply_apply, map_one] at this
+    · intro h
+      rw [h, map_one]
+  -- the extension of `𝔪_{M'}` to `𝒪_N`
+  have hext : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M')).map
+      (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N)) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N)).inertia
+          (N ≃ₐ[ℚ₃ᵥ] N) ⊓ (restrictToLEHom M N hMN).ker) := by
+    rw [hker]
+    exact map_maximalIdeal_eq_maximalIdeal_pow_card_inertia_inf N M'
+  -- the algebra map `𝒪_{M'} → 𝒪_N` is computed on underlying elements
+  have hcoe : ∀ u : IntegralClosure 𝒪₃ᵥ ↥M',
+      (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) u).1 =
+        ((u.1 : ↥M') : ↥N) := fun _ => rfl
+  -- the witness
+  refine ⟨algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ),
+    ?_, hdepth, ?_, ?_⟩
+  · -- `H`-invariance
+    intro h hh
+    rw [hker] at hh
+    refine Subtype.ext ?_
+    rw [IntegralClosure.coe_smul, hcoe (jO θ)]
+    simp only [IntermediateField.mem_fixingSubgroup_iff] at hh
+    exact hh _ (jO θ).1.2
+  · -- the exact `N`-side depth
+    intro σ hσ ju
+    have hres : AlgEquiv.restrictNormalHom M' σ = j.trans (τ.trans j.symm) := by
+      have h1 : (AlgEquiv.autCongr j) (AlgEquiv.restrictNormalHom M' σ) = τ := hσ
+      have h2 := congrArg (AlgEquiv.autCongr j).symm h1
+      rw [MulEquiv.symm_apply_apply] at h2
+      rw [h2]
+      rfl
+    -- `σ` moves `z` by the image of `τ•θ − θ`
+    have hstep : (AlgEquiv.restrictNormalHom M' σ) ((jO θ).1) = (jO (τ • θ)).1 := by
+      rw [hres]
+      show j.symm (τ (j ((jO θ).1))) = (jO (τ • θ)).1
+      have h1 : j ((jO θ).1) = θ.1 := j.apply_symm_apply _
+      rw [h1]
+      show j.symm (τ θ.1) = j.symm ((τ • θ).1)
+      rw [IntegralClosure.coe_smul, AlgEquiv.smul_def]
+    have hkey : σ • algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ) =
+        algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO (τ • θ)) := by
+      refine Subtype.ext ?_
+      rw [IntegralClosure.coe_smul, hcoe (jO θ), hcoe (jO (τ • θ))]
+      have hrc := AlgEquiv.restrictNormal_commutes σ (↥M') ((jO θ).1)
+      rw [show σ.restrictNormal (↥M') = AlgEquiv.restrictNormalHom (F := ℚ₃ᵥ) (↥M') σ from rfl,
+        hstep] at hrc
+      exact hrc.symm
+    have hmove : algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ) -
+        σ • algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ) =
+        - algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO (τ • θ - θ)) := by
+      rw [hkey, map_sub, map_sub, neg_sub]
+    rw [hmove, Ideal.neg_mem_iff]
+    have hspanmap : Ideal.map
+        (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N))
+        (Ideal.span {jO (τ • θ - θ)}) =
+        Ideal.span {algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N)
+          (jO (τ • θ - θ))} := by
+      rw [Ideal.map_span, Set.image_singleton]
+    have hspanN : Ideal.span {algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N)
+          (jO (τ • θ - θ))} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^
+          (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N)).inertia
+            (N ≃ₐ[ℚ₃ᵥ] N) ⊓ (restrictToLEHom M N hMN).ker) * w τ) := by
+      rw [← hspanmap, hspanx, Ideal.map_pow, hext, ← pow_mul]
+    rw [← Ideal.span_singleton_le_iff_mem, hspanN]
+    exact maximalIdeal_pow_le_pow_iff _ _ _
+  · -- MONOGENICITY OF THE `H`-INVARIANTS: `𝒪_N^H = 𝒪_{M'} = 𝒪₃ᵥ[z]`
+    intro s hs
+    rw [hker] at hs
+    obtain ⟨u, hu⟩ := exists_algebraMap_eq_of_fixed_fixingSubgroup N M' s hs
+    have hrange : Algebra.adjoin 𝒪₃ᵥ
+        ({algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ)} :
+          Set (IntegralClosure 𝒪₃ᵥ N)) =
+        ((IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M')
+          (IntegralClosure 𝒪₃ᵥ N)).comp jO.toAlgHom).range := by
+      rw [show algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ) =
+          ((IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M')
+            (IntegralClosure 𝒪₃ᵥ N)).comp jO.toAlgHom) θ from rfl,
+        ← AlgHom.map_adjoin_singleton, hθtop, Algebra.map_top]
+    rw [hrange]
+    refine ⟨jO.symm u, ?_⟩
+    show algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO (jO.symm u)) = s
+    rw [AlgEquiv.apply_symm_apply, hu]
 
 open scoped Classical in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **SERRE, *CORPS LOCAUX* IV §1 PROP. 3, THE `≥` HALF** (PROVEN
-2026-07-26 by a fourth owner, over the single new node
-`exists_relative_depth_witness_adjoin` above; created the same day by
+2026-07-26 by a fourth owner, over the node
+`exists_relative_depth_witness_adjoin` above, which is ITSELF PROVEN as
+of the same day, so this cone is sorry-free; created the same day by
 decomposing `exists_level_forall_le_sum_card_filter_inertia_fiber`.  It
 is the SOLE arithmetic input of the UPWARD Herbrand transport, exactly as
 `exists_relative_depth_witness` is the sole arithmetic input of the
@@ -11953,8 +12208,9 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Fontaine's translation isomorphism for a finite flat Hopf order**
-(SORRY LEAF, cut 2026-07-26 out of `isFontaineAlgebra_of_hopf_package`,
-which is now PROVEN over this leaf and its sibling
+(**PROVEN 2026-07-26**, over the general Hopf-algebra development in
+`Fermat/FLT/GroupScheme/HopfKaehler.lean`; cut 2026-07-26 out of
+`isFontaineAlgebra_of_hopf_package`, which is PROVEN over this and its sibling
 `subsingleton_h1Cotangent_of_hopf_package`): the module of Kähler
 differentials of a finite flat Hopf order `G` over `𝒪₃ᵥ` is EXTENDED
 FROM THE BASE — there is an `𝒪₃ᵥ`-module `M` and a `G`-linear
@@ -11990,14 +12246,36 @@ hold anyway: the statement says `Ω¹` is INDUCED from the base, which is
 false for a general finite flat `𝒪₃ᵥ`-algebra — it is the group
 structure that makes differentials translation-invariant.  `hkill` is
 deliberately absent, since translation-invariance holds for every group
-scheme whether or not it is killed by `3`. -/
+scheme whether or not it is killed by `3`.
+
+HOW IT IS PROVEN, and what the general form needs.  The proof is
+`FontaineTranslation.exists_kaehler_equiv_baseChange_of_hopf`, stated for an
+ARBITRARY commutative Hopf algebra `G` over an arbitrary commutative ring `R`
+with `G` flat over `R`, and instantiated here at `R = 𝒪₃ᵥ`.  So **neither
+`Module.Finite 𝒪₃ᵥ G` nor the étaleness of the generic fibre is used**; both
+binders survive only because they are part of the leaf's signature as cut.
+The witness is `M = ω_G = (ker ε).Cotangent`, exactly the co-Lie module the
+route paragraph above names.
+
+The Hopf-theoretic content — the shear automorphism `θ (a ⊗ b) = (a ⊗ 1)·Δb`
+of `G ⊗ G`, its inverse `θ' (a ⊗ b) = (a ⊗ 1)·Σ S(b₁) ⊗ b₂` built from the
+antipode, the identity `p ∘ θ = μ` carrying the multiplication onto the
+augmentation, and the resulting `G`-linear
+`Ω[G⁄R] ≃ₗ[G] (ker p).Cotangent` — is all PROVEN there, by computations in
+the convolution GROUP `WithConv (G →ₐ[R] G ⊗[R] G)` rather than in Sweedler
+notation.  The remaining commutative-algebra step — the conormal module of a
+base-changed augmentation is the base change of the conormal module — turned
+out to be IN MATHLIB already, as `Ideal.tensorCotangentEquiv`
+(`Mathlib/RingTheory/Ideal/CotangentBaseChange.lean`), so
+`FontaineTranslation.cotangent_ker_augOf_equiv` is proven from it in three
+lines and the whole module is sorry-free. -/
 theorem exists_kaehler_linearEquiv_baseChange_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
     ∃ (M : Type) (_ : AddCommGroup M) (_ : Module 𝒪₃ᵥ M),
       Nonempty (Ω[G⁄𝒪₃ᵥ] ≃ₗ[G] G ⊗[𝒪₃ᵥ] M) :=
-  sorry
+  _root_.FontaineTranslation.exists_kaehler_equiv_baseChange_of_hopf 𝒪₃ᵥ G
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -12033,7 +12311,31 @@ the exact sequences around it ARE present
 `Algebra.FormallySmooth.subsingleton_h1Cotangent` — which does NOT apply
 here, since `G` is finite flat over `𝒪₃ᵥ` and NOT smooth (already
 `G = μ₃ = 𝒪₃ᵥ[x]/(x³-1)` is not).  `hkill` is absent because LCI is a
-property of the underlying scheme, independent of the exponent. -/
+property of the underlying scheme, independent of the exponent.
+
+RE-CHECKED 2026-07-26 (the audit above is accurate; two additions).
+
+*The concrete handle at this pin.*  `Algebra.Smooth.Basic` has
+`Algebra.Smooth.kerCotangentToTensor_injective_iff`:
+for a surjection `P ↠ A`, `Subsingleton (Algebra.H1Cotangent R A)` is
+EQUIVALENT to injectivity of `KaehlerDifferential.kerCotangentToTensor R P A`.
+So the goal is not to build a `CompleteIntersection` predicate (there is none —
+`grep -rl "CompleteIntersection" Mathlib/` returns nothing) but to CHOOSE a
+presentation `P = 𝒪₃ᵥ[x₁..xₙ] ↠ G` and prove that one map injective.  A
+successor should start there rather than from the Koszul-complex formulation.
+
+*What is genuinely missing is the structure theory, not the homological
+algebra.*  The classical proof reduces LCI to the SPECIAL fibre — a finite flat
+algebra over a DVR is LCI iff its closed fibre is, by the relative-complete-
+intersection criterion — and over the perfect field `𝔽₃` the connected part of a
+finite commutative group scheme is `k[x₁..xₙ]/(x₁^{p^{e₁}},…,xₙ^{p^{eₙ}})` AS AN
+ALGEBRA (Demazure–Gabriel), which is visibly a complete intersection.  Neither
+half is in mathlib.  The connected–étale splitting this needs is partly
+available already: `Fermat/FLT/GroupScheme/ConnectedEtale.lean` proves the
+connected counit-idempotent package over a complete Noetherian local base.
+The check that would refute this route: if the closed fibre of `G` were not
+of that shape, i.e. if `Bialgebra.exists_connected_counit_idempotent` did not
+apply at `𝒪₃ᵥ`, the reduction to the special fibre buys nothing. -/
 theorem subsingleton_h1Cotangent_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
@@ -12090,7 +12392,13 @@ and the connecting algebra of half (2) is done.  The cut is:
 * `subsingleton_h1Cotangent_of_hopf_package` — half (1), LCI, the
   substantial one, still fully open;
 * `exists_kaehler_linearEquiv_baseChange_of_hopf_package` — the
-  TRANSLATION ISOMORPHISM alone, i.e. `Ω¹` is extended from the base;
+  TRANSLATION ISOMORPHISM alone, i.e. `Ω¹` is extended from the base.
+  **PROVEN 2026-07-26** from the general Hopf-algebra development in
+  `Fermat/FLT/GroupScheme/HopfKaehler.lean`, which is itself sorry-free:
+  the shear automorphism of `G ⊗ G` and its antipode-built inverse are
+  proven there, and the residual commutative algebra was already in
+  mathlib as `Ideal.tensorCotangentEquiv`.  Do NOT dispatch any task at
+  this node any more;
 * `free_baseChange_kaehler_of_linearEquiv` — PROVEN here: half (2)
   follows from the translation isomorphism by pure algebra.
 
@@ -38652,10 +38960,202 @@ theorem exists_artinPackage_of_subgroups_ray_class
     exact Subgroup.isOpen_mono (H₁ := Kχ ⊓ Cm) (fun x hx => hH x hx.1 hx.2) hopen
 
 set_option maxHeartbeats 1000000 in
+/-- **THE IMAGE OF `χ` IS FINITE CYCLIC: A GENERATOR AND AN EXPONENT**
+(**PROVEN 2026-07-26**; created the same day as sub-leaf (A3a-1-1-a) of
+`exists_artinModulus_ray_class` just below, which is now PROVEN as glue
+over this lemma and (A3a-1-1-b)
+`exists_artinModulus_of_generator_ray_class` just after it).
+
+**This is the half of Childress 5.2.7 that does not mention the modulus
+at all**, and it is worth separating because it is pure finite-group
+theory over a compact group, while its sibling carries Dirichlet,
+Minkowski and the whole cyclotomic apparatus. Nothing here mentions `m`,
+`ζ`, `p` or `S`.
+
+**Route.** `χ` is multiplicative and `hVker` makes it trivial on the open
+subgroup `V`, so `charKernelRayClass χ hmul (hVker 1 V.one_mem)` — the
+kernel — is a subgroup CONTAINING `V`, hence itself OPEN
+(`Subgroup.isOpen_mono`), hence of FINITE INDEX because `Γ F` is compact.
+Every value `χ x` is a UNIT of `Dickson.K 3` (`χ x · χ x⁻¹ = χ 1 = 1`),
+so `χ` induces an injective homomorphism from the finite group
+`Γ F ⧸ ker χ` into `(Dickson.K 3)ˣ`. A finite subgroup of the units of a
+FIELD is cyclic (`instIsCyclicUnitsOfFinite` / `subgroup_units_cyclic` in
+the pin), so pick `w` mapping to a generator and `n` the cardinality of
+the image.
+
+**Why the generation clause is phrased inside the GROUP `Γ F`.** It says
+`∃ i : ℤ, χ (x * w ^ (-i)) = 1` rather than `χ x = χ w ^ i`, because
+`Dickson.K 3` is a field and `χ` is not known to be unit-valued as a
+matter of TYPE — a `zpow` of `χ w` is not available without first
+producing the unit. Phrasing the condition inside `Γ F` sidesteps that
+entirely, and it is exactly the form
+`exists_artinPackage_of_subgroups_ray_class` consumes after transport.
+
+**FAITHFULNESS.** Non-vacuous, and `0 < n` is load-bearing rather than
+cosmetic: with `n = 0` the exponent clause `χ (x ^ 0) = 1` is vacuously
+true, and the sibling's divisibility clauses would then read `(0 : ℤ) ∣ i`,
+i.e. `i = 0`, which is false for the `i` produced by the generation
+clause at a `w` of order `> 1`. So `0 < n` is what keeps the two halves
+compatible. `hVopen` is the finiteness input and `hVker` connects `V` to
+`χ`; both are load-bearing.
+
+**PROVEN 2026-07-26, exactly along the route above.** The compactness
+idiom is the one already used by
+`exists_pow_eq_one_of_isOpen_ker_ray_class` above — `IsGalois F Fᵃˡᵍ`,
+then `CompactSpace (Γ F)` by `inferInstanceAs`, then
+`Subgroup.quotient_finite_of_isOpen` at `V` and the index-divisibility
+transfer `Subgroup.index_dvd_of_le` to the larger `ker χ'`. The only new
+ingredient is cyclicity: `QuotientGroup.quotientKerEquivRange` makes
+`χ'.range` finite, `isCyclic_subgroup_units` (a finite subgroup of the
+units of an integral domain is cyclic) is then an INSTANCE, and
+`IsCyclic.exists_generator` supplies the generator, whose preimage under
+`χ'` is the `w` returned. The exponent is `n = |Γ F ⧸ ker χ'|` via
+`pow_card_eq_one'`. -/
+theorem exists_cyclicGenerator_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1) :
+    ∃ (n : ℕ) (w : Γ F), 0 < n ∧
+      (∀ x : Γ F, ∃ i : ℤ, χ (x * w ^ (-i)) = 1) ∧
+      (∀ x : Γ F, χ (x ^ n) = 1) := by
+  classical
+  have hone : χ 1 = 1 := hVker 1 V.one_mem
+  have hne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  set χ' : Γ F →* (Dickson.K 3)ˣ :=
+    { toFun := fun a => Units.mk0 (χ a) (hne a)
+      map_one' := by ext; exact hone
+      map_mul' := by intro a b; ext; exact hmul a b }
+  have hcoe : ∀ a : Γ F, ((χ' a : (Dickson.K 3)ˣ) : Dickson.K 3) = χ a := fun a => rfl
+  haveI : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  haveI : CompactSpace (Γ F) :=
+    inferInstanceAs (CompactSpace (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F))
+  haveI : Finite (Γ F ⧸ V) := Subgroup.quotient_finite_of_isOpen V hVopen
+  have hVle : V ≤ χ'.ker := by
+    intro a ha
+    simp only [MonoidHom.mem_ker]
+    ext
+    exact hVker a ha
+  have hVidx : V.index ≠ 0 := Subgroup.index_ne_zero_of_finite
+  have hkidx : χ'.ker.index ≠ 0 := fun h =>
+    hVidx (Nat.eq_zero_of_zero_dvd (h ▸ Subgroup.index_dvd_of_le hVle))
+  haveI : Finite (Γ F ⧸ χ'.ker) := Nat.finite_of_card_ne_zero hkidx
+  haveI : Finite χ'.range :=
+    Finite.of_equiv _ (QuotientGroup.quotientKerEquivRange χ').toEquiv
+  obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := χ'.range)
+  obtain ⟨w, hw⟩ := MonoidHom.mem_range.mp g.2
+  refine ⟨Nat.card (Γ F ⧸ χ'.ker), w, Nat.card_pos, ?_, ?_⟩
+  · intro x
+    obtain ⟨i, hi⟩ := Subgroup.mem_zpowers_iff.mp (hg ⟨χ' x, ⟨x, rfl⟩⟩)
+    have h1 : ((g : (Dickson.K 3)ˣ)) ^ i = χ' x := by
+      rw [← SubgroupClass.coe_zpow]
+      exact congrArg Subtype.val hi
+    rw [← hw] at h1
+    refine ⟨i, ?_⟩
+    have hkey : χ' (x * w ^ (-i)) = 1 := by
+      rw [map_mul, map_zpow, ← h1, zpow_neg, mul_inv_cancel]
+    rw [← hcoe, hkey, Units.val_one]
+  · intro x
+    have h : (QuotientGroup.mk' χ'.ker x) ^ Nat.card (Γ F ⧸ χ'.ker) = 1 :=
+      pow_card_eq_one'
+    rw [← map_pow] at h
+    have hmem : x ^ Nat.card (Γ F ⧸ χ'.ker) ∈ χ'.ker := (QuotientGroup.eq_one_iff _).mp h
+    have h2 : χ' (x ^ Nat.card (Γ F ⧸ χ'.ker)) = 1 := hmem
+    rw [← hcoe, h2, Units.val_one]
+
+set_option maxHeartbeats 1000000 in
+/-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, GIVEN THE GENERATOR AND
+THE EXPONENT** (sorry node, created 2026-07-26 as sub-leaf (A3a-1-1-b) of
+`exists_artinModulus_ray_class` just below, which is now PROVEN as glue
+over this leaf and (A3a-1-1-a) `exists_cyclicGenerator_ray_class` just
+above).
+
+**This is Childress 2.3–2.7 and Minkowski, and nothing else.** The
+cyclicity and finiteness of the image of `χ` have been moved out, so `n`
+and `w` arrive as GIVEN data satisfying the generation and exponent
+conditions, and the only thing to construct is the modulus `m`. That
+ordering is the mathematically correct one: Childress 2.6 chooses `m` in
+terms of `n` and of the Frobenius at `p`, so `m` cannot be produced
+before `n` is known — which is exactly why the cut is here and not the
+other way round.
+
+A witness must supply:
+
+* `m` avoiding the primes of `S` and the residue characteristic of `p`
+  (Childress 2.6 over 2.3–2.5: elementary number theory in `ℕ`, whose own
+  input is Dirichlet on primes in arithmetic progressions, which IS in
+  the pin as `Nat.forall_exists_prime_gt_and_eq_mod`);
+* clause (iii) `ker χ · Γ_{F(ζ_m)} = Γ F`, i.e. `K ∩ F(ζ_m) = F`;
+* **that the action on `μ_m` is ABELIAN** — `(x y) ζ = (y x) ζ` for every
+  `m`-th root of unity `ζ`. This is the one clause the group-theoretic
+  packaging downstream cannot manufacture, and it is exactly the
+  statement that the `μ_m`-action factors through `(ℤ/mℤ)ˣ`;
+* **openness of `ker χ ⊓ Γ_{F(ζ_m)}`**. `ker χ` is open by `hVopen`, and
+  `Γ_{F(ζ_m)}` is open because `F(ζ_m)/F` is finite; it is asked for as a
+  single clause because that is the only form the packaging consumes;
+* the divisibility and INDEPENDENCE conditions of Childress 2.7(ii),(iii)
+  relating the given `w` and `globalFrob p` inside `Gal(F(ζ_m)/F)`.
+
+**The Minkowski step is the one genuinely global input.** Because `m` is
+prime to every prime ramifying in `F/ℚ`, the field `F ∩ ℚ(ζ_m)` is
+everywhere unramified over `ℚ`, hence equals `ℚ`; therefore
+`Gal(F(ζ_m)/F) ≅ (ℤ/mℤ)ˣ` and the cyclotomic character of `F` is
+SURJECTIVE for this particular `m`. **That is why this cluster's standing
+warning — "do not build the character `ψ` of `(ℤ/mℤ)ˣ`, because the
+cyclotomic character need not be surjective when `F` already contains
+`m`-th roots of unity" — does not apply here**, and a next owner may
+legitimately take the `μ_m`-side group to be `(ZMod m)ˣ`. The choice of
+`m` is exactly what rules out the bad case.
+
+**FAITHFULNESS.** Non-vacuous: the independence clause together with the
+given exponent clause is what forces clause (ii) of the ultimate
+consumer, and the `q.Prime` guard on the `S`-avoidance clause is required
+— see the FALSITY AUDIT on `exists_artinAuxiliaryField_ray_class` below,
+where the unguarded form was refuted by `S = {1}`. The abelian-action
+clause is not decoration either: without it `Gal(F(ζ_m)/F)` cannot be
+given a `CommGroup` structure, and `Subgroup.mem_closure_pair` — the
+whole engine of Childress 2.8 — is a commutative-group lemma. `hn`,
+`hgen` and `hexp` are the interface to the sibling leaf and are all
+consumed by Childress 2.7. -/
+theorem exists_artinModulus_of_generator_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (S : Finset ℕ)
+    (n : ℕ) (w : Γ F) (hn : 0 < n)
+    (hgen : ∀ x : Γ F, ∃ i : ℤ, χ (x * w ^ (-i)) = 1)
+    (hexp : ∀ x : Γ F, χ (x ^ n) = 1) :
+    ∃ m : ℕ, 0 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+      (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+      (∀ x y : Γ F, ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (x * y) ζ = (y * x) ζ) ∧
+      IsOpen {x : Γ F | χ x = 1 ∧ ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → x ζ = ζ} ∧
+      (∀ i : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) → (n : ℤ) ∣ i) ∧
+      (∀ j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ) →
+        (n : ℤ) ∣ j) ∧
+      (∀ i j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
+          (w ^ i * (globalFrob p) ^ j) ζ = ζ) →
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, WITH NO GROUP-THEORETIC
-PACKAGING** (sorry node, created 2026-07-26 as sub-leaf (A3a-1-1) of
-`exists_artinPackage_ray_class` just below, which is now PROVEN as glue
-over this leaf and the pure group theory (A3a-1-0)
+PACKAGING** (**PROVEN 2026-07-26** as glue over its two new sub-leaves
+(A3a-1-1-a) `exists_cyclicGenerator_ray_class` and (A3a-1-1-b)
+`exists_artinModulus_of_generator_ray_class` just above — see the
+DECOMPOSED note at the end of this docstring; created 2026-07-26 as
+sub-leaf (A3a-1-1) of `exists_artinPackage_ray_class` just below, which
+is now PROVEN as glue over this leaf and the pure group theory (A3a-1-0)
 `exists_artinPackage_of_subgroups_ray_class` just above).
 
 **This is the whole of the arithmetic, and none of the bookkeeping.**
@@ -38708,7 +39208,27 @@ FALSITY AUDIT on `exists_artinAuxiliaryField_ray_class` below, where the
 unguarded form was refuted by `S = {1}`. The abelian-action clause is not
 decoration either: without it `Gal(F(ζ_m)/F)` cannot be given a
 `CommGroup` structure, and `Subgroup.mem_closure_pair` — the whole engine
-of Childress 2.8 — is a commutative-group lemma. -/
+of Childress 2.8 — is a commutative-group lemma.
+
+**DECOMPOSED AND PROVEN 2026-07-26.** The seam is the DEPENDENCE ORDER of
+the data: the exponent `n` and the generator `w` depend only on `χ`,
+while the modulus `m` depends on `n`, on `w`, on `p` and on `S`. So the
+cut is
+
+* (A3a-1-1-a) `exists_cyclicGenerator_ray_class` — **PROVEN the same
+  day**: the image of `χ` is FINITE (because `ker χ ⊇ V` is open in the
+  compact `Γ F`) and CYCLIC (because it is a finite subgroup of the units
+  of a field). This half mentions no modulus, no root of unity, no prime
+  and no `S`;
+* (A3a-1-1-b) `exists_artinModulus_of_generator_ray_class`: given that
+  `n` and `w`, produce `m`. This half is Childress 2.3–2.7 plus
+  Minkowski, and it is where every remaining difficulty lives.
+
+The glue below is the obvious re-association — obtain `n, w` from the
+first leaf, feed them to the second, reassemble the eleven clauses — and
+nothing else is proved here. Note the ordering is forced: Childress 2.6
+chooses `m` in terms of `n` and of the Frobenius at `p`, so the cut
+cannot be made the other way round. -/
 theorem exists_artinModulus_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -38731,8 +39251,13 @@ theorem exists_artinModulus_ray_class
       (∀ i j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
           (w ^ i * (globalFrob p) ^ j) ζ = ζ) →
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) ∧
-        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) :=
-  sorry
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) := by
+  -- (A3a-1-1-a): the exponent and the generator, depending on `χ` alone
+  obtain ⟨n, w, hn, hgen, hexp⟩ := exists_cyclicGenerator_ray_class F χ hmul V hVopen hVker
+  -- (A3a-1-1-b): the modulus, depending on `n`, `w`, `p` and `S`
+  obtain ⟨m, hm0, hmS, hmp, hiii, hcomm, hopencap, hwB, hfB, hind⟩ :=
+    exists_artinModulus_of_generator_ray_class F χ hmul V hVopen hVker p S n w hn hgen hexp
+  exact ⟨m, n, w, hm0, hmS, hmp, hiii, hcomm, hopencap, hgen, hexp, hwB, hfB, hind⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **The arithmetic package behind Artin's Lemma**
@@ -40422,9 +40947,100 @@ theorem exists_totallyPositive_sub_mem_ray_class
     exact hr2
   · exact ⟨x + (N : NumberField.RingOfIntegers F) * r ^ 2, hmem N, h0, hpos N le_rfl⟩
 
+/-- **A prime containing a finite product contains one of its factors**
+(PROVEN 2026-07-26; created the same day as the multiset half of
+`exists_coprimePart_factorization_ray_class` just below).
+
+`P ≤ Q` is `Q ∣ P` in the ideal divisibility order, so this is
+`Prime.exists_mem_multiset_dvd` transported across `Ideal.dvd_iff_le`.
+The hypothesis `P ≠ ⊥` is what turns `P.IsPrime` into primality of `P`
+as an element of the monoid `Ideal R` (`Ideal.prime_iff_isPrime`); it is
+not decoration, because `⊥` is a prime ideal of a domain and every
+element of the monoid is divisible by it. -/
+theorem prime_le_of_multiset_prod_le_ray_class {R : Type*} [CommRing R]
+    [IsDedekindDomain R] {s : Multiset (Ideal R)} {P : Ideal R}
+    (hP : P.IsPrime) (hP0 : P ≠ ⊥) (hle : s.prod ≤ P) : ∃ Q ∈ s, Q ≤ P := by
+  have hPp : Prime P := (Ideal.prime_iff_isPrime hP0).mpr hP
+  obtain ⟨Q, hQmem, hQdvd⟩ := hPp.exists_mem_multiset_dvd (Ideal.dvd_iff_le.mpr hle)
+  exact ⟨Q, hQmem, Ideal.le_of_dvd hQdvd⟩
+
+open _root_.UniqueFactorizationMonoid in
+/-- **EVERY NONZERO IDEAL SPLITS INTO ITS `nn`-SUPPORTED PART AND AN
+`nn`-COPRIME PART** (PROVEN 2026-07-26; created the same day as the
+factorization half of `exists_nnPart_ray_factorization_ray_class` just
+below, which is now glue over it).
+
+`I = g * h` where every prime above `g` lies above `nn`, and `h` is
+coprime to `nn`. This is the "`nn`-part of `I`" that the leaf below
+needs, and taking it as a PRODUCT OVER A FILTERED MULTISET OF PRIME
+FACTORS — rather than as the sup `I ⊔ nn ^ N` suggested by the original
+route note — is what makes the whole cluster valuation-free: the two
+properties come out as statements about which primes contain which
+factor, and every use below is a prime-avoidance argument.
+
+**Proof.** `Ideal R` is a unique factorization monoid whose only unit is
+`⊤` (`Ideal.uniqueUnits`), so `(normalizedFactors I).prod = I` on the
+nose. Partition that multiset by the decidable predicate `nn ≤ ·` and
+take the two products; `Multiset.filter_add_not` and `Multiset.prod_add`
+give `g * h = I`, and neither factor is `⊥` because their product is not.
+
+* *Coprimality of `h`.* A maximal `P ≥ h ⊔ nn` contains `h`, hence
+  contains one of its prime factors `Q`
+  (`prime_le_of_multiset_prod_le_ray_class`); `Q` is a nonzero prime of a
+  Dedekind domain, hence maximal, so `Q = P` — but `Q` was filtered out
+  precisely because `¬ nn ≤ Q`, while `nn ≤ P`.
+* *Support of `g`.* A prime `P ≥ g` likewise contains some factor `Q` of
+  `g`, and every factor of `g` was kept because `nn ≤ Q ≤ P`. -/
+theorem exists_coprimePart_factorization_ray_class {R : Type*} [CommRing R]
+    [IsDedekindDomain R] (I nn : Ideal R) (hI : I ≠ ⊥) :
+    ∃ g h : Ideal R, I = g * h ∧ h ⊔ nn = ⊤ ∧
+      ∀ P : Ideal R, P.IsPrime → g ≤ P → nn ≤ P := by
+  classical
+  have hprod : (normalizedFactors I).prod = I :=
+    associated_iff_eq.mp (prod_normalizedFactors hI)
+  have hsplit : ((normalizedFactors I).filter (fun P => nn ≤ P)).prod *
+      ((normalizedFactors I).filter (fun P => ¬ nn ≤ P)).prod = I := by
+    rw [← Multiset.prod_add, Multiset.filter_add_not, hprod]
+  have hgg0 : ((normalizedFactors I).filter (fun P => nn ≤ P)).prod ≠ ⊥ :=
+    fun h0 => hI (hsplit.symm.trans (Ideal.mul_eq_bot.mpr (Or.inl h0)))
+  have hhh0 : ((normalizedFactors I).filter (fun P => ¬ nn ≤ P)).prod ≠ ⊥ :=
+    fun h0 => hI (hsplit.symm.trans (Ideal.mul_eq_bot.mpr (Or.inr h0)))
+  refine ⟨_, _, hsplit.symm, ?_, ?_⟩
+  · by_contra hne
+    obtain ⟨P, hPmax, hPle⟩ := Ideal.exists_le_maximal _ hne
+    have hnnP : nn ≤ P := le_trans le_sup_right hPle
+    have hhP : ((normalizedFactors I).filter (fun P => ¬ nn ≤ P)).prod ≤ P :=
+      le_trans le_sup_left hPle
+    have hP0 : P ≠ ⊥ := by
+      intro h0
+      rw [h0] at hhP
+      exact hhh0 (le_bot_iff.mp hhP)
+    obtain ⟨Q, hQmem, hQle⟩ := prime_le_of_multiset_prod_le_ray_class hPmax.isPrime hP0 hhP
+    have hQI : Q ∈ normalizedFactors I := Multiset.mem_of_mem_filter hQmem
+    have hQ0 : Q ≠ ⊥ := by
+      intro h0
+      have hd : Q ∣ I := dvd_of_mem_normalizedFactors hQI
+      rw [h0] at hd
+      exact hI (le_bot_iff.mp (Ideal.le_of_dvd hd))
+    have hQprime : Q.IsPrime :=
+      (Ideal.prime_iff_isPrime hQ0).mp (prime_of_normalized_factor Q hQI)
+    have hQmax : Q.IsMaximal := hQprime.isMaximal hQ0
+    have hQP : Q = P := hQmax.eq_of_le hPmax.ne_top hQle
+    exact (Multiset.of_mem_filter hQmem) (by rw [hQP]; exact hnnP)
+  · intro P hPprime hgP
+    have hP0 : P ≠ ⊥ := by
+      intro h0
+      rw [h0] at hgP
+      exact hgg0 (le_bot_iff.mp hgP)
+    obtain ⟨Q, hQmem, hQle⟩ := prime_le_of_multiset_prod_le_ray_class hPprime hP0 hgP
+    exact le_trans (Multiset.of_mem_filter hQmem) hQle
+
 set_option maxHeartbeats 1000000 in
-/-- **THE `nn`-PART OF `(γ)`, AND THE THREE FACTS IT SUPPLIES** (sorry
-node, created 2026-07-26 as sub-leaf (B1a-i-1-b-1) of
+/-- **THE `nn`-PART OF `(γ)`, AND THE THREE FACTS IT SUPPLIES**
+(**PROVEN 2026-07-26** as glue over the ideal-splitting lemma
+`exists_coprimePart_factorization_ray_class` just above — see the PROOF
+note at the end of this docstring; created 2026-07-26 as sub-leaf
+(B1a-i-1-b-1) of
 `exists_denominatorIdeal_ray_factorization_ray_class` just below, which
 is now PROVEN as glue over this leaf and the archimedean adjustment
 `exists_totallyPositive_sub_mem_ray_class` just above): there is a
@@ -40448,48 +41064,61 @@ out, which is a statement about `v(γ)`, `v(u)` and `v(nn)` at the
 height-one primes `v` of `𝓞 F`, and that is the one thing this file has
 no vocabulary for yet.
 
-**Route.** Write `v(·)` for the exponent at a height-one prime `v`.
+**THE PROOF IS VALUATION-FREE — the original route note below was
+superseded on the day it was written.** That note (recoverable from git
+history) proposed `g = (γ) ⊔ nn ^ N` and argued
+all three clauses through the exponents `v(γ)`, `v(u)`, `v(nn)` at the
+height-one primes, observing that "that is the one thing this file has no
+vocabulary for yet". **No such vocabulary is needed.** Every clause falls
+out of a single ideal-theoretic splitting plus prime avoidance, and the
+finished proof mentions no valuation, no `HeightOneSpectrum`, and no
+exponent count anywhere.
 
-*The witness.* Take `N = Multiset.card (normalizedFactors (γ))` and
-`g = (γ) ⊔ nn ^ N`. Then `(γ) ≤ g` HOLDS BY CONSTRUCTION — no valuation
-argument is needed for the second clause, which is why `g` is stated as a
-sup rather than as a product over the primes dividing `nn`. And
-`v(g) = min(v(γ), N · v(nn))`, so `v(g) = v(γ)` whenever `v ∣ nn`
-(because `v(nn) ≥ 1` there and `v(γ) ≤ N` always), while `v(g) = 0`
-whenever `v ∤ nn`. Those two identities are what the three clauses need.
+**The witness.** `exists_coprimePart_factorization_ray_class` above
+splits `(γ) = g * h` with `h ⊔ nn = ⊤` and every prime over `g` lying
+over `nn`. That `g` — the honest `nn`-part of `(γ)` — is the witness, and
+`(γ) ≤ g` is `Ideal.mul_le_right`, immediate.
 
-*Clause 1 (CRT compatibility)*: at every `v`, `min(v(mm), v(nn) + v(g))`
-must be `≤ v(γ - 1)`. If `v ∤ nn` then `v(g) = 0` and the bound is
-`min(v(mm), 0) = 0`. If `v ∣ nn` and `v(γ) = 0` then `v(g) = 0` and the
-bound is `min(v(mm), v(nn))`, which is the hypothesis `hγmem`. If
-`v ∣ nn` and `v(γ) > 0` then `v(γ - 1) = 0`, but `hγmem` with
-`v(nn) > 0` already forces `v(mm) = 0`, so the bound is `0` too.
+*Clause 1 (CRT compatibility).* First, **`mm ⊔ g = ⊤`**: a maximal `P`
+containing both contains `nn` (support of `g`) and `mm`, hence contains
+`γ - 1` by `hγmem`; it also contains `γ`, since `(γ) ≤ g ≤ P`; so
+`1 = γ - (γ - 1) ∈ P`, absurd. Then
+`mm ⊔ nn = (mm ⊔ nn) * (mm ⊔ g) ≤ mm ⊔ (nn * g)`, because expanding
+`(a + b)(a' + c)` puts three of the four terms in `mm` and the fourth in
+`nn * g`. So `γ - 1 ∈ mm ⊔ nn` upgrades to `γ - 1 ∈ mm ⊔ (nn * g)`
+verbatim. **This replaces the whole "if `v ∣ nn` and `v(γ) > 0` then
+`v(γ - 1) = 0`" case analysis with one prime-avoidance step.**
 
-*The exponent of `u`.* From `γ - u ∈ nn * g` we get
-`v(γ - u) ≥ v(nn) + v(g) = v(nn) + v(γ) > v(γ)` at every `v ∣ nn`, hence
-`v(u) = v(γ)` there. This is the single fact both remaining clauses rest
-on, and it is why the congruence is taken modulo `nn * g` and NOT modulo
+*The exponent statement about `u`, without exponents.* From `γ ∈ g` and
+`γ - u ∈ nn * g ≤ g` we get `u ∈ g`, so `g ∣ (u)`; write `(u) = g * k`.
+Then **`k ⊔ nn = ⊤`**, which is the ideal-theoretic form of
+"`v(u) = v(γ)` at every `v ∣ nn`": if a maximal `P` contained both `k`
+and `nn`, then `u ∈ g * k ≤ g * P` and `γ - u ∈ nn * g ≤ g * P`, hence
+`γ ∈ g * P`, hence `g * h ≤ g * P`; cancelling the nonzero `g` in the
+cancellative monoid of ideals gives `h ≤ P`, contradicting
+`h ⊔ nn = ⊤`. This is the single fact both remaining clauses rest on, and
+it is why the congruence is taken modulo `nn * g` and NOT modulo
 `nn * (γ)` — see the refutation recorded on the consumer.
 
-*Clause 2*: `v((u) ⊓ nn*g) = max(v(u), v(nn) + v(g))` must be
-`≥ v(u) + v(nn)`. At `v ∤ nn` this reads `max(v(u), v(g)) ≥ v(u)`, true
-with no hypothesis at all. At `v ∣ nn` the second entry is
-`v(nn) + v(γ) = v(nn) + v(u)`, so the max already dominates.
+*Clause 2.* Write `1 = c + d` with `c ∈ k`, `d ∈ nn`. For
+`x ∈ (u) ⊓ (nn * g)`: `x * d ∈ (u) * nn` because `x ∈ (u)`, and
+`x * c ∈ (nn * g) * k = (g * k) * nn = (u) * nn` because `x ∈ nn * g`. So
+`x = x * (c + d) ∈ (u) * nn`. **No `max` of exponents, and no
+invertibility of `g`.**
 
-*Clause 3*: take `dd = ((u) : (γ))`, the ideal quotient, whose exponents
-are `v(dd) = max(0, v(u) - v(γ))`. Then `(γ) * dd ≤ (u)` by the defining
-property of the quotient, `dd ≠ ⊥` because `u ∈ dd`, and `v(dd) = 0` at
-every `v ∣ nn` by the displayed identity `v(u) = v(γ)` — which is
-precisely `dd ⊔ nn = ⊤`.
+*Clause 3.* Take `dd = k`. Then
+`(γ) * k = (g * h) * k = (g * k) * h ≤ g * k = (u)`, `k ≠ ⊥` because
+`g * k = (u) ≠ ⊥`, and `k ⊔ nn = ⊤` was proved above. The ideal quotient
+`((u) : (γ))` of the original note is not needed.
 
-**Mathlib route.** `IsDedekindDomain.HeightOneSpectrum` together with
-`UniqueFactorizationMonoid.normalizedFactors` and
-`Ideal.count_normalizedFactors_*`; `Ideal.dvd_iff_le` to move between the
-divisibility and containment orders; `Ideal.sup_mul_eq_...`/`Ideal.isCoprime_iff_sup_eq`
-for the final coprimality. `Mathlib/RingTheory/DedekindDomain/Factorization.lean`
-(`Ideal.factorization`, `Ideal.finprod_heightOneSpectrum_factorization`) is
-already in this file's import cone through
-`Mathlib.NumberTheory.NumberField.Discriminant.Different`.
+**Mathlib route (as used).** `UniqueFactorizationMonoid.normalizedFactors`
+with `associated_iff_eq` (legitimate because `Ideal.uniqueUnits` makes
+`⊤` the only unit), `Multiset.filter_add_not` + `Multiset.prod_add` for
+the splitting, `Prime.exists_mem_multiset_dvd` with `Ideal.dvd_iff_le`
+for prime avoidance, `Ideal.IsPrime.isMaximal` to identify a prime factor
+with the maximal ideal containing it, and `mul_dvd_mul_iff_left` for the
+one cancellation. `Ideal.count_normalizedFactors_*`,
+`Ideal.factorization` and `HeightOneSpectrum` are NOT used.
 
 **FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
 True by the route above. Non-vacuous: `g = ⊤` (the naive "no `nn`-part"
@@ -40500,12 +41129,24 @@ choice) satisfies the first two clauses but makes the third demand
 witness is `g = (3)` and `u = 33`. `hγ0` is load-bearing (at `γ = 0` the
 third clause forces `(0) * dd ≤ (u)`, fine, but the first forces
 `-1 ∈ mm ⊔ nn * g`, i.e. `mm ⊔ nn * g = ⊤`, which then fails clause 2
-unless `nn = ⊤`). `hnn` is load-bearing: at `nn = ⊥` the second clause
-reads `(u) ⊓ ⊥ ≤ ⊥`, true, but the third demands `dd ⊔ ⊥ = ⊤`, i.e.
-`dd = ⊤`, forcing `(γ) ≤ (u)`, false in general. -/
+unless `nn = ⊤`).
+
+**CORRECTION to the 2026-07-26 audit, found while proving it.** That
+audit called `hnn` load-bearing, reasoning that at `nn = ⊥` clause 3
+demands `dd = ⊤` and hence `(γ) ≤ (u)`, "false in general". It is not:
+at `nn = ⊥` the hypothesis `γ - u ∈ nn * g = ⊥` forces `u = γ`, so
+`(γ) ≤ (u)` holds. The statement is TRUE for `nn = ⊥` and for `mm = ⊥`,
+and the finished proof uses **neither `hmm` nor `hnn`** — both are
+underscore-prefixed below so the non-use is mechanically visible. They
+are retained in the signature because the consumer
+`exists_denominatorIdeal_ray_factorization_ray_class` has them to hand
+and passes them positionally; dropping them would be a gratuitous
+API change. `hγ0` and `hγmem` are both genuinely used (`hγ0` to make
+`(γ) ≠ ⊥` so that it factors at all; `hγmem` in the `mm ⊔ g = ⊤`
+step). -/
 theorem exists_nnPart_ray_factorization_ray_class
     (F : Type*) [Field F] [NumberField F]
-    (mm nn : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥) (hnn : nn ≠ ⊥)
+    (mm nn : Ideal (NumberField.RingOfIntegers F)) (_hmm : mm ≠ ⊥) (_hnn : nn ≠ ⊥)
     (γ : NumberField.RingOfIntegers F) (hγ0 : γ ≠ 0)
     (hγmem : γ - 1 ∈ mm ⊔ nn) :
     ∃ g : Ideal (NumberField.RingOfIntegers F), g ≠ ⊥ ∧
@@ -40514,8 +41155,103 @@ theorem exists_nnPart_ray_factorization_ray_class
       ∀ u : NumberField.RingOfIntegers F, u ≠ 0 → γ - u ∈ nn * g →
         Ideal.span {u} ⊓ (nn * g) ≤ Ideal.span {u} * nn ∧
         ∃ dd : Ideal (NumberField.RingOfIntegers F), dd ≠ ⊥ ∧ dd ⊔ nn = ⊤ ∧
-          Ideal.span {γ} * dd ≤ Ideal.span {u} :=
-  sorry
+          Ideal.span {γ} * dd ≤ Ideal.span {u} := by
+  classical
+  have hγI : Ideal.span ({γ} : Set (NumberField.RingOfIntegers F)) ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hγ0
+  obtain ⟨g, h, hIgh, hhnn, hgsupp⟩ :=
+    exists_coprimePart_factorization_ray_class (Ideal.span {γ}) nn hγI
+  have hg0 : g ≠ ⊥ :=
+    fun h0 => hγI (hIgh.trans (Ideal.mul_eq_bot.mpr (Or.inl h0)))
+  have hγg : Ideal.span ({γ} : Set (NumberField.RingOfIntegers F)) ≤ g := by
+    rw [hIgh]; exact Ideal.mul_le_right
+  refine ⟨g, hg0, hγg, ?_, ?_⟩
+  · -- `mm ⊔ g = ⊤`, hence `mm ⊔ nn ≤ mm ⊔ nn * g`
+    have hmg : mm ⊔ g = ⊤ := by
+      by_contra hne
+      obtain ⟨P, hPmax, hPle⟩ := Ideal.exists_le_maximal _ hne
+      have hmP : mm ≤ P := le_trans le_sup_left hPle
+      have hgP : g ≤ P := le_trans le_sup_right hPle
+      have hnnP : nn ≤ P := hgsupp P hPmax.isPrime hgP
+      have h1 : γ - 1 ∈ P := (sup_le hmP hnnP) hγmem
+      have h2 : γ ∈ P := hgP (hγg (Ideal.mem_span_singleton_self γ))
+      have hone : (1 : NumberField.RingOfIntegers F) ∈ P := by
+        have := sub_mem h2 h1
+        simpa using this
+      exact hPmax.ne_top (Ideal.eq_top_of_isUnit_mem P hone isUnit_one)
+    have hstep : (mm ⊔ nn) * (mm ⊔ g) ≤ mm ⊔ (nn * g) := by
+      rw [Ideal.mul_le]
+      intro r hr s hs
+      obtain ⟨a, ha, b, hb, rfl⟩ := Submodule.mem_sup.mp hr
+      obtain ⟨a', ha', c, hc, rfl⟩ := Submodule.mem_sup.mp hs
+      refine Submodule.mem_sup.mpr ⟨a * a' + a * c + b * a', ?_, b * c,
+        Ideal.mul_mem_mul hb hc, by ring⟩
+      exact add_mem (add_mem (Ideal.mul_mem_right _ _ ha) (Ideal.mul_mem_right _ _ ha))
+        (Ideal.mul_mem_left _ _ ha')
+    have hle : mm ⊔ nn ≤ mm ⊔ (nn * g) := by
+      calc mm ⊔ nn = (mm ⊔ nn) * ⊤ := (Ideal.mul_top _).symm
+        _ = (mm ⊔ nn) * (mm ⊔ g) := by rw [hmg]
+        _ ≤ mm ⊔ (nn * g) := hstep
+    exact hle hγmem
+  · intro u hu0 hγu
+    have hug : u ∈ g := by
+      have h2 : γ ∈ g := hγg (Ideal.mem_span_singleton_self γ)
+      have h3 : γ - u ∈ g := Ideal.mul_le_left hγu
+      have := sub_mem h2 h3
+      simpa using this
+    have husp : Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) ≤ g :=
+      (Ideal.span_singleton_le_iff_mem g).mpr hug
+    obtain ⟨k, hk⟩ :
+        g ∣ Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) :=
+      Ideal.dvd_iff_le.mpr husp
+    have hu0' : Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hu0
+    have hk0 : k ≠ ⊥ :=
+      fun h0 => hu0' (hk.trans (Ideal.mul_eq_bot.mpr (Or.inr h0)))
+    have hknn : k ⊔ nn = ⊤ := by
+      by_contra hne
+      obtain ⟨P, hPmax, hPle⟩ := Ideal.exists_le_maximal _ hne
+      have hkP : k ≤ P := le_trans le_sup_left hPle
+      have hnnP : nn ≤ P := le_trans le_sup_right hPle
+      have hu' : u ∈ g * P := by
+        have hsub : Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) ≤ g * P := by
+          rw [hk]; exact Ideal.mul_mono_right hkP
+        exact hsub (Ideal.mem_span_singleton_self u)
+      have hγu' : γ - u ∈ g * P := by
+        refine (?_ : nn * g ≤ g * P) hγu
+        rw [mul_comm nn g]; exact Ideal.mul_mono_right hnnP
+      have hγ' : γ ∈ g * P := by
+        have := add_mem hγu' hu'
+        simpa using this
+      have hgh : g * h ≤ g * P := by
+        rw [← hIgh]
+        exact (Ideal.span_singleton_le_iff_mem _).mpr hγ'
+      have hhP : h ≤ P := by
+        have hd : g * P ∣ g * h := Ideal.dvd_iff_le.mpr hgh
+        exact Ideal.le_of_dvd ((mul_dvd_mul_iff_left hg0).mp hd)
+      exact hPmax.ne_top (le_antisymm le_top (hhnn ▸ sup_le hhP hnnP))
+    obtain ⟨c, hc, d, hd, hcd⟩ := Submodule.mem_sup.mp (hknn ▸ Submodule.mem_top :
+      (1 : NumberField.RingOfIntegers F) ∈ k ⊔ nn)
+    refine ⟨?_, k, hk0, hknn, ?_⟩
+    · intro x hx
+      obtain ⟨hxu, hxng⟩ := hx
+      have hxc : x * c ∈ Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) * nn := by
+        have hmem : x * c ∈ (nn * g) * k := Ideal.mul_mem_mul hxng hc
+        have he : (nn * g) * k
+            = Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) * nn := by
+          rw [hk]; ring
+        rwa [he] at hmem
+      have hxd : x * d ∈ Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) * nn :=
+        Ideal.mul_mem_mul hxu hd
+      have hsum : x * (c + d)
+          ∈ Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) * nn := by
+        rw [mul_add]; exact add_mem hxc hxd
+      rwa [hcd, mul_one] at hsum
+    · calc Ideal.span ({γ} : Set (NumberField.RingOfIntegers F)) * k
+          = (g * h) * k := by rw [hIgh]
+        _ = (g * k) * h := by ring
+        _ ≤ g * k := Ideal.mul_le_right
+        _ = Ideal.span ({u} : Set (NumberField.RingOfIntegers F)) := hk.symm
 
 set_option maxHeartbeats 1000000 in
 /-- **The CRT core of the gcd-closure of the narrow rays**
@@ -41036,9 +41772,90 @@ theorem heightOneSpectrum_finset_prod_ne_bot_ray_class
     (∏ x ∈ s, x.asIdeal) ≠ ⊥ :=
   Finset.prod_ne_zero_iff.mpr fun x _ => x.ne_bot
 
+/-- **A MULTIPLICATIVE MAP INTO A COMMUTATIVE MONOID IS A CLASS
+FUNCTION** (PROVEN 2026-07-26; created the same day as the
+conjugation-killing half of `finite_isRamifiedChar_ray_class` below).
+
+`χ (a x a⁻¹) = χ a · χ x · χ a⁻¹ = χ x · (χ a · χ a⁻¹) = χ x`, the middle
+step being commutativity of the target and the last `χ a · χ a⁻¹ = χ 1 = 1`.
+This is the same observation that makes `charKernelRayClass` normal, and
+it is what makes the CONJUGATOR quantifier of `IsRamifiedCharRayClass`
+inert — so that the ramified set is cut out by an inertia-only condition
+and the finiteness leaf below never has to see `a`. -/
+theorem charConj_eq_ray_class {F : Type u} [Field F] {M : Type*} [CommMonoid M]
+    (χ : Γ F → M) (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b) (h1 : χ 1 = 1)
+    (a x : Γ F) : χ (a * x * a⁻¹) = χ x := by
+  have hinv : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, h1]
+  rw [hmul, hmul, mul_right_comm, hinv, one_mul]
+
+set_option maxHeartbeats 1000000 in
+/-- **ALMOST EVERY PRIME HAS ITS INERTIA INSIDE A GIVEN OPEN SUBGROUP**
+(sorry node, created 2026-07-26 as the single sub-leaf (B1a-ii-1-a-1) of
+`finite_isRamifiedChar_ray_class` just below, which is now PROVEN as glue
+over this leaf and `charConj_eq_ray_class` just above): for an OPEN
+subgroup `U` of `Γ F`, only finitely many finite places `w` have an
+inertia element landing outside `U`.
+
+**`χ` HAS BEEN ELIMINATED, AND THAT IS THE POINT OF THE CUT.** The
+consumer's statement is about a character; this one is not. Everything
+`χ` contributed — that its kernel is a subgroup, that it is a class
+function so the conjugator is inert, that it is trivial on `V` — is
+discharged in the glue below, leaving a statement of pure Galois theory
+in which no monoid, no `Dickson.K 3` and no multiplicativity occurs. The
+consumer instantiates `U := V` and uses only
+`{ramified} ⊆ {inertia ⊄ V}`, which is the one-line observation that
+`χ σ ≠ 1` forces `σ ∉ V` when `χ` kills `V`.
+
+**Route, and it is BOUNDED — no class field theory, no different needed
+for a general `U`.** `Γ F` is a profinite group, so the open subgroup `U`
+contains an OPEN NORMAL subgroup `N` (intersect the finitely many
+conjugates of `U`, which are finite in number because `U` is of finite
+index). The fixed field `L` of `N` is then a FINITE GALOIS extension of
+`F`, and for a finite place `w` the condition "`localInertiaGroup w` maps
+into `N`" is exactly "`w` is unramified in `L/F`". Since
+`{inertia ⊄ U} ⊆ {inertia ⊄ N}`, it suffices that only finitely many
+primes ramify in a finite extension — and a prime ramifies in `L/F` iff
+it divides the relative different, which is a NONZERO ideal, so it has
+only finitely many prime divisors.
+
+**Mathlib route: supported by the pin, and the imports are already
+present.** `Mathlib/RingTheory/DedekindDomain/Different.lean`
+(`differentIdeal`) and `Mathlib/NumberTheory/NumberField/Discriminant/Different.lean`
+— the latter is a `public import` of this file already — give the
+different and the "ramified iff divides the different" criterion;
+`UniqueFactorizationMonoid.normalizedFactors` gives finiteness of the
+prime support of a nonzero ideal (and see
+`heightOneSpectrum_dvd_finset_prod_iff_ray_class` above for the
+set-to-ideal direction); the fixed field of an open subgroup of the
+absolute Galois group is already used in this development (see
+`Field.absoluteGaloisGroup` and the openness bookkeeping that `hVopen`
+feeds). No ray class group, no Artin map, no reciprocity.
+
+**FAITHFULNESS.** Non-vacuous: the conclusion is a genuine finiteness
+assertion, and it FAILS for a non-open `U` — e.g. `U = ⊥`, for which
+every prime ramifying in any finite extension contributes, and there are
+infinitely many such primes across all extensions. `hUopen` is therefore
+load-bearing and is the only hypothesis. Note the statement quantifies
+`σ` over `localInertiaGroup w` ONLY; widening it to all of `Γ Fᵥ` (or to
+the decomposition group) would make it false at every prime that is
+inert or split in `L/F`, which is the standing
+inertia-versus-`Γ` trap of this development. -/
+theorem finite_localInertia_not_le_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (U : Subgroup (Γ F)) (hUopen : IsOpen (U : Set (Γ F))) :
+    {w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+      ∃ σ ∈ localInertiaGroup w,
+        Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))
+          σ ∉ U}.Finite :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **FINITENESS OF RAMIFICATION for a character trivial on an open
-subgroup** (sorry node, created 2026-07-26 as the single sub-leaf
+subgroup** (**PROVEN 2026-07-26** as glue over its single new sub-leaf
+(B1a-ii-1-a-1) `finite_localInertia_not_le_ray_class` and the class-function
+lemma `charConj_eq_ray_class` just above — see the DECOMPOSED note at the
+end of this docstring; created 2026-07-26 as the single sub-leaf
 (B1a-ii-1-a) of `exists_radical_isRamifiedChar_ray_class` just below,
 which is now PROVEN as ideal arithmetic over this leaf and the two
 height-one-prime lemmas above): the set of finite places at which `χ` is
@@ -41086,7 +41903,25 @@ finiteness assertion about a set that genuinely can be infinite for a
 character NOT trivial on any open subgroup — `hVopen` is exactly the
 hypothesis that rules that out, and `hVker` is what connects `V` to `χ`.
 `hmul` is load-bearing twice over: it makes `ker χ` a subgroup at all,
-and it is what kills the conjugation in `IsRamifiedCharRayClass`. -/
+and it is what kills the conjugation in `IsRamifiedCharRayClass`.
+
+**DECOMPOSED AND PROVEN 2026-07-26.** The seam is between the CHARACTER
+and the GALOIS THEORY, and it turns out the character contributes only
+two lines:
+
+* the conjugator `a` in `IsRamifiedCharRayClass` is inert, by
+  `charConj_eq_ray_class` above — this is where `hmul` and the
+  commutativity of `Dickson.K 3` are consumed, and `χ 1 = 1` comes from
+  `hVker 1 V.one_mem`;
+* `χ σ ≠ 1` forces `σ ∉ V`, by `hVker` — this is the ONLY other use of
+  `χ`, and it is what turns the ramified set into a subset of
+  `{w | some inertia element at w escapes V}`.
+
+Everything else — that an open subgroup of `Γ F` contains an open normal
+one, that its fixed field is a finite extension, and that only finitely
+many primes ramify in a finite extension — is `χ`-free and is now the
+single leaf `finite_localInertia_not_le_ray_class` above. The finiteness
+then transfers by `Set.Finite.subset`. -/
 theorem finite_isRamifiedChar_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -41094,8 +41929,14 @@ theorem finite_isRamifiedChar_ray_class
     (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
     (hVker : ∀ a ∈ V, χ a = 1) :
     {w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
-      IsRamifiedCharRayClass F χ w}.Finite :=
-  sorry
+      IsRamifiedCharRayClass F χ w}.Finite := by
+  have h1 : χ 1 = 1 := hVker 1 V.one_mem
+  refine Set.Finite.subset (finite_localInertia_not_le_ray_class F V hVopen) ?_
+  intro w hw
+  obtain ⟨a, σ, hσ, hne⟩ := hw
+  refine ⟨σ, hσ, fun hmem => hne ?_⟩
+  rw [charConj_eq_ray_class χ hmul h1]
+  exact hVker _ hmem
 
 set_option maxHeartbeats 1000000 in
 /-- **THE RAMIFIED RADICAL: only finitely many primes are ramified for
