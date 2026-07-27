@@ -413,6 +413,20 @@ import Mathlib.Tactic.NoncommRing
 -- (`IsLocalRing.isOpen_iff_finite_quotient`, openness ⇒ finite
 -- congruence quotient). Both are Family-free.
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- the Raynaud closure on the representation-free point-group carrier
+-- (`IsFlatPointsGroupAt`, its repackaging
+-- `GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`, and the
+-- quotient half `IsFlatPointsGroupAt.of_surjective`), which is what
+-- `hasFlatProlongationAt_of_surjective` below is assembled from. This
+-- module is already in this file's cone through
+-- `HardlyRamified/HilbertModularity.lean`, but only through a NON-public
+-- import there, so the names are unavailable even in proof bodies
+-- without this line. A BARE import is deliberate and sufficient: the
+-- only use is in a proof body of this file, no signature below mentions
+-- a name from it, and keeping it non-public leaves this module's public
+-- surface — hence `Patching.lean`'s and `Interface.lean`'s name
+-- resolution — exactly as it was.
+import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 import Mathlib.Topology.Algebra.Ring.Compact
 -- ingredients of the Artin-induction proof of the group-theoretic
 -- Brauer leaf (`brauer_induction_trivial_character`): linear duality
@@ -13656,10 +13670,24 @@ theorem threeadicRealization_isUnramified_of_witness
   · -- `p` is prime to the conductor and to `3`
     exact hunr p hp hp3 hdvd
 
-/-- **Raynaud quotient closure, in prolongation form** (sorry node, cut
-2026-07-25 for the Fontaine–Laffaille level reduction below): a
-`G_ℚ`-equivariant QUOTIENT of a Galois representation which has a flat
-prolongation at `v` again has a flat prolongation at `v`.
+/-- **Raynaud quotient closure, in prolongation form** (PROVEN
+2026-07-27 by ASSEMBLY over the re-homed carrier development, not by a
+third proof of the mathematics — see the HOME AUDIT below, which is now
+discharged): a `G_ℚ`-equivariant QUOTIENT of a Galois representation
+which has a flat prolongation at `v` again has a flat prolongation at
+`v`.
+
+Proof: repackage both sides through
+`GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt` and apply the
+carrier-level quotient closure `IsFlatPointsGroupAt.of_surjective`, both
+of `Deformations/RepresentationTheory/FlatPointsGroup.lean`. The
+mathematics is the (α)–(δ) route sketched below, already PROVEN there
+over the two sorry-free bricks
+`exists_etale_subBialgebra_of_points_surjective` and
+`exists_hopfOrder_of_subBialgebra`; the only thing ever missing here was
+IMPORT REACHABILITY, and that is what the `public import` of that module
+in this file's header supplies.
+
 Scheme-theoretically this is the closure of finite flat group schemes
 over the DVR `𝒪ᵥ` under quotients by flat closed subgroup schemes
 (Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
@@ -13701,10 +13729,12 @@ hypothesis package (for `e` bijective this is already
 target `GaloisRep.hasFlatProlongationAt_of_subsingleton`).
 
 HOME AUDIT (2026-07-25, load-bearing — read before "deduplicating"
-this brick). The same Raynaud content exists in the tree ONCE more, as
+this brick). DISCHARGED 2026-07-26/27; the analysis is kept because it
+is what dictated the shape of the fix, and the resolution is recorded at
+its end. The same Raynaud content existed in the tree ONCE more, as
 the carrier-level `IsFlatPointsGroupAt.of_surjective` of
 `Modularity/Interface.lean` (there over an abstract `G_ℚᵥ`-module
-rather than a representation). That one is IMPORT-UNREACHABLE from
+rather than a representation). That one was IMPORT-UNREACHABLE from
 here: `Interface.lean` imports THIS module, so consuming it would be a
 literal import cycle — the very thing the pillar-β circularity guard
 forbids. The architecturally neutral home for both would be
@@ -13712,12 +13742,40 @@ forbids. The architecturally neutral home for both would be
 `Interface.lean` and below this module, and already the home of the
 `of_addEquiv` transport), and the intended unification is to move this
 brick there and re-prove `Interface.lean`'s carrier version from it.
-That was deliberately NOT done in this pass for two reasons: the
+That was deliberately NOT done in that pass for two reasons: the
 carrier leaf is separately owned, and `FlatProlongation.lean` sits
 under the 30k-line `ModThree.lean` cone, so touching it forces a
 full-cone rebuild in every worktree of the fleet, while this module
 already had to be rebuilt for the decomposition below. Whoever
-performs the unification should move BOTH, not restate a third copy. -/
+performs the unification should move BOTH, not restate a third copy.
+
+RESOLUTION (the MOVE landed 2026-07-26; this leaf closed over it
+2026-07-27). The whole carrier development was moved out of
+`Interface.lean` — VERBATIM, in the same namespace and under the same
+names, so every existing consumer kept working — into the new sibling
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`, which is a
+sibling of `FlatProlongation.lean` rather than that file itself (the cut
+needs `KnownIn1980s/EllipticCurves/Flat.lean` in its cone, and
+`FlatProlongation.lean` is consumed by modules that should not pay for
+it). Nothing under the `ModThree.lean` cone was disturbed, and
+`Interface.lean` keeps NO copy of the cut. The move also generalised the
+development from `ℚ` to an arbitrary number field `K`, so the copy count
+went DOWN rather than up: `HardlyRamified/Deformation.lean`'s
+`hasFlatProlongationAt_of_pi_surjection` and
+`hasFlatProlongationAt_of_prod_injection`, and
+`HardlyRamified/HilbertModularity.lean`'s
+`hasFlatProlongationAt_of_pi_surjection_of_numberField`, all close over
+the same declarations. NO THIRD COPY of the mathematics exists or ever
+did: this leaf is a five-line assembly, and it needs no resource bumps.
+
+Historical note for anyone reading the parked branch: a module
+`Deformations/RepresentationTheory/RaynaudQuotient.lean` was written on
+2026-07-25 to perform this same re-homing by COPYING the development out
+of `Interface.lean` under a fresh `namespace RaynaudQuotient`. It was
+never merged and is deliberately superseded — `FlatPointsGroup.lean` is
+the same 26 declarations obtained by a real MOVE (so `Interface.lean`'s
+copies are gone rather than duplicated) and universe/base-field
+polymorphic where the copy was not. Do not resurrect it. -/
 theorem hasFlatProlongationAt_of_surjective
     {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
@@ -13728,8 +13786,16 @@ theorem hasFlatProlongationAt_of_surjective
     (h : ρ₁.HasFlatProlongationAt v)
     (e : M₁ →+ M₂) (hsurj : Function.Surjective e)
     (he : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : M₁), e (ρ₁ σ x) = ρ₂ σ (e x)) :
-    ρ₂.HasFlatProlongationAt v :=
-  sorry
+    ρ₂.HasFlatProlongationAt v := by
+  refine (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt (v := v) ρ₂).mpr ?_
+  refine IsFlatPointsGroupAt.of_surjective
+    ((GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt (v := v) ρ₁).mp h)
+    e hsurj ?_
+  -- the GLOBAL equivariance hypothesis gives the LOCAL one, because
+  -- `toLocal` is precomposition with `G_ℚᵥ → G_ℚ`
+  intro g x
+  show e ((ρ₁.toLocal v) g x) = (ρ₂.toLocal v) g (e x)
+  exact he _ _
 
 set_option linter.unusedVariables false in
 /-- **The Fontaine–Laffaille local shape at `3`, on the `3`-power
@@ -13858,11 +13924,14 @@ for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`; in particular the Raynaud quotient brick
-consumed here is `hasFlatProlongationAt_of_surjective` of THIS module,
-NOT the carrier-level `IsFlatPointsGroupAt.of_surjective` of
-`Modularity/Interface.lean`, which is import-unreachable from here —
-see that brick's HOME AUDIT. -/
+`Modularity/Interface.lean`; the Raynaud quotient brick consumed here is
+`hasFlatProlongationAt_of_surjective` of THIS module. (UPDATED
+2026-07-27: that brick is itself now an assembly over the carrier-level
+`IsFlatPointsGroupAt.of_surjective`, which no longer lives in
+`Interface.lean` — it was MOVED on 2026-07-26 to the low sibling
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`, strictly below
+this module, so the guard is respected and the old
+import-unreachability note is retired. See that brick's HOME AUDIT.) -/
 theorem threeadicRealization_hasFlatProlongationAt_of_finite_quotient
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
