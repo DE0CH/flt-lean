@@ -10610,9 +10610,24 @@ declarations are
   `Γ₀(N)`-datum over `ℚ̄` all of whose Galois conjugates are isomorphic to it
   comes from a Weierstrass curve over `ℚ` carrying a cyclic subgroup of order
   `N` that is Galois-stable *up to an automorphism of the curve*;
-* `exists_stableCyclic_twist_of_autStable_of_j_special` (LEAF) — the arithmetic
-  heart, at `j ∈ {0, 1728}`: the cocycle in `Aut(E)/Aut(E, C)` is trivialised by
-  a quartic or sextic twist;
+* `exists_stableCyclic_twist_of_autStable_of_j_special` (**PROVEN 2026-07-27**, over
+  the two leaves below) — the arithmetic heart, at `j ∈ {0, 1728}`: the cocycle in
+  `Aut(E)/Aut(E, C)` is trivialised by a quartic or sextic twist.  What is proven
+  here is the RIGID case (no automorphism moves `⟨g⟩`, so no twist is needed —
+  `autPoint_injective` plus finiteness of `⟨g⟩`) and the extraction, in the
+  non-rigid case, of a moving automorphism whose `u` is a primitive `4`th root of
+  unity (at `j = 1728`) resp. of order `3` or `6` (at `j = 0`);
+* `exists_stableCyclic_twist_of_autStable_of_j_eq_1728` (LEAF) — the QUARTIC twist.
+  The obstruction lives in `μ₄/μ₂ ≅ μ₂` with trivial Galois action, so it is a
+  homomorphism `Γ_ℚ → {±1}` with open kernel and the twisting parameter is the
+  discriminant of the quadratic field it cuts out.  **No Kummer theory, no `H¹`.**
+  Strictly the easier of the two, and should get its own owner;
+* `exists_stableCyclic_twist_of_autStable_of_j_eq_zero` (LEAF) — the SEXTIC twist.
+  The obstruction lives in `μ₆/μ₂ ≅ μ₃`, whose Galois action is the quadratic
+  character of `ℚ(ζ₃)`, so it is a genuine `1`-cocycle and `H¹(Γ_ℚ, μ₃) ≅ ℚˣ/(ℚˣ)³`
+  is really needed;
+* `autPoint_one`, `autPoint_negVariableChange`, `autPoint_injective` (PROVEN) — the
+  three facts about `autPoint` the cut runs on, all uniform in `j`;
 * `exists_stableCyclic_twist_of_autStable` (PROVEN) — the same statement without
   the `j` restriction, by splitting on `j` and using `Aut(E) = {±1}` at
   `j ∉ {0, 1728}`, where `±1` preserves every subgroup and NO twist is needed.
@@ -10806,8 +10821,219 @@ theorem exists_weierstrassQ_autStable_of_galoisInvariant {N : ℕ} (hN : N ≠ 0
               AddSubgroup.zmultiples g :=
   sorry
 
+/-- **The identity change of variables acts on points as the identity** (PROVEN
+2026-07-27, no leaf).
+
+This is the `C = 1` branch of `autPoint_eq_self_or_neg` extracted as a statement in
+its own right; note it carries NO hypothesis on `j`, because the `j`-hypothesis of
+that theorem is used only to pin `C` down to one of the two values, never inside
+either branch. -/
+theorem autPoint_one {F : Type*} [Field F] [DecidableEq F] {W : WeierstrassCurve F}
+    [W.IsElliptic] (h : (1 : WeierstrassCurve.VariableChange F) • W = W)
+    (P : W.toAffine.Point) : autPoint h P = P := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · exact map_zero _
+  · show WeierstrassCurve.Affine.Point.mapVariableChangeFun W 1
+      (WeierstrassCurve.Affine.Point.equivOfEq h.symm _) = _
+    rw [WeierstrassCurve.Affine.Point.equivOfEq_some,
+      WeierstrassCurve.Affine.Point.mapVariableChangeFun_some]
+    refine WeierstrassCurve.Affine.Point.some_eq_some W ?_ ?_ <;>
+      simp [WeierstrassCurve.VariableChange.one_def]
+
+/-- **`negVariableChange` acts on points as negation** (PROVEN 2026-07-27, no leaf).
+
+The `C = negVariableChange W` branch of `autPoint_eq_self_or_neg`, extracted; again
+uniform in `j`.  `negVariableChange W = ⟨-1, 0, -a₁, -a₃⟩` sends `(x, y)` to
+`(x, -y - a₁x - a₃) = (x, negY x y)`, which is `-P`. -/
+theorem autPoint_negVariableChange {F : Type*} [Field F] [DecidableEq F]
+    {W : WeierstrassCurve F} [W.IsElliptic] (h : W.negVariableChange • W = W)
+    (P : W.toAffine.Point) : autPoint h P = -P := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · exact (map_zero (autPoint h)).trans neg_zero.symm
+  · show WeierstrassCurve.Affine.Point.mapVariableChangeFun W W.negVariableChange
+      (WeierstrassCurve.Affine.Point.equivOfEq h.symm _) = _
+    rw [WeierstrassCurve.Affine.Point.equivOfEq_some,
+      WeierstrassCurve.Affine.Point.mapVariableChangeFun_some,
+      WeierstrassCurve.Affine.Point.neg_some]
+    refine WeierstrassCurve.Affine.Point.some_eq_some W ?_ ?_ <;>
+      simp [WeierstrassCurve.negVariableChange, WeierstrassCurve.Affine.negY]
+    ring
+
+/-- **An automorphism acts injectively on points** (PROVEN 2026-07-27, no leaf).
+
+`autPoint h` is the composite of the transport `equivOfEq h.symm` — an `AddEquiv` —
+with `mapVariableChange W C`, whose underlying function is injective
+(`mapVariableChangeFun_injective`, from `u ≠ 0`).
+
+This is what upgrades "`autPoint h` maps `⟨g⟩` INTO `⟨g⟩`" to "ONTO", once `⟨g⟩` is
+known finite: an injective self-map of a finite type is surjective.  That upgrade is
+the whole content of the rigid case of
+`exists_stableCyclic_twist_of_autStable_of_j_special` below. -/
+theorem autPoint_injective {F : Type*} [Field F] [DecidableEq F] {W : WeierstrassCurve F}
+    [W.IsElliptic] {C : WeierstrassCurve.VariableChange F} (h : C • W = W) :
+    Function.Injective (autPoint h) := by
+  intro P Q hPQ
+  have hEq : WeierstrassCurve.Affine.Point.equivOfEq h.symm P
+      = WeierstrassCurve.Affine.Point.equivOfEq h.symm Q :=
+    WeierstrassCurve.Affine.Point.mapVariableChangeFun_injective W C hPQ
+  simpa using hEq
+
+/-- **THE ARITHMETIC HEART at `j = 1728`: the descent obstruction is killed by a
+QUARTIC twist** (sorry leaf, opened 2026-07-27 by decomposing
+`exists_stableCyclic_twist_of_autStable_of_j_special`).
+
+`Aut(E⁄ℚ̄) ↪ μ₄` here (`WeierstrassCurve.u_pow_four_eq_one_of_smul_eq_of_j_eq_1728`),
+and `ι` is an automorphism which does NOT preserve `⟨g⟩`; `hu` records that its
+`u`-coefficient is a PRIMITIVE fourth root of unity, which the parent derives from
+`u⁴ = 1` together with `u ≠ ±1` (both `1` and `negVariableChange` preserve every
+subgroup, by `autPoint_one` and `autPoint_negVariableChange`).
+
+#### The route, in the concrete coordinates this case allows
+
+`j(E) = 1728` and `char ℚ = 0`, so over `ℚ` already `E ≅ E_a : y² = x³ + ax` with
+`a ≠ 0` (`WeierstrassCurve.toShortNF` puts `E` in the form `y² = x³ + a₄x + a₆`, and
+`j = 1728` is `a₆ = 0` by `j_of_isShortNF`).  In that model `Aut(E⁄ℚ̄)` is exactly
+`{⟨u, 0, 0, 0⟩ : u⁴ = 1}`, acting on points by `(x, y) ↦ (u²x, u³y)`, and `-1 ∈ ℚ̄`
+has `[-1] = ` negation, which preserves every subgroup.  Write `C := ⟨g⟩` and
+`A := Aut(E, C) ⊆ μ₄`.  Since `−1 ∈ A` and `A ≠ μ₄` (that is `hmove`), `A = μ₂` and
+`[μ₄ : A] = 2`.
+
+**The cocycle is a HOMOMORPHISM here, and this is what makes `j = 1728` strictly
+easier than `j = 0`.**  `μ₄/A ≅ μ₂` carries the TRIVIAL Galois action (`±1 ∈ ℚ`), so
+the map
+`χ : Γ_ℚ → {±1}`, `χ(σ) = 1 ⟺ σ⟨g⟩ = ⟨g⟩`,
+is a group homomorphism rather than a mere `1`-cocycle.  Its kernel is the stabiliser
+of `⟨g⟩`, which is OPEN — the finitely many points of `⟨g⟩` are each defined over a
+finite extension — so `χ` cuts out a quadratic field `ℚ(√d)`, `d ∈ ℚˣ`.  **No Kummer
+theory and no `H¹` is needed**: what is used is only "an index-`2` open subgroup of
+`Γ_ℚ` is `Gal(ℚ̄/ℚ(√d))`", i.e. that every quadratic extension of `ℚ` is generated by
+a square root, which is elementary in characteristic `≠ 2`.
+
+**The twist, explicitly.**  Take `E' := E_{ad} : y² = x³ + adx` and `δ ∈ ℚ̄` with
+`δ⁴ = d`.  Then `Cδ := ⟨δ⁻¹, 0, 0, 0⟩` satisfies `Cδ • (E_a⁄ℚ̄) = (E_{ad}⁄ℚ̄)`, so
+`ψ := (equivVariableChange (E_a⁄ℚ̄) Cδ)⁻¹ : (E_a⁄ℚ̄).Point ≃+ (E_{ad}⁄ℚ̄).Point`,
+`ψ(x, y) = (δ²x, δ³y)`; put `g' := ψ g`, whose order is `N` because `ψ` is an
+`AddEquiv`.  For `σ ∈ Γ_ℚ` write `σ(δ) = ζ_σ δ` with `ζ_σ ∈ μ₄`.  A three-line
+coordinate check gives `σ(ψ P) = [ζ_σ](ψ(σ P))`, and the hypothesis `haut` gives
+`σ⟨g⟩ = [u_σ]⁻¹⟨g⟩`; hence
+`σ⟨g'⟩ = [ζ_σ u_σ⁻¹]⟨g'⟩`.
+So it suffices that `ζ_σ u_σ⁻¹ ∈ A = μ₂`, i.e. that `ζ_σ² = u_σ²`.  But
+`ζ_σ² = σ(√d)/√d` (with `√d := δ²`) and `u_σ² = 1 ⟺ σ⟨g⟩ = ⟨g⟩ ⟺ χ(σ) = 1`, which is
+exactly how `d` was chosen.  ∎
+
+#### What a prover must build
+
+1. The normal form: `E ≅ E_a` over `ℚ` at `j = 1728`, and the transport of `g` and of
+   `haut` along it.  `Affine.Point.equivVariableChangeBaseChange` and
+   `…_galois` (`Fermat/FLT/Mathlib/…/EllipticCurve/Affine/Point.lean`) do the
+   `Γ_ℚ`-equivariant half; what is missing is the composition law
+   `equivVariableChange W (C * C') = equivVariableChange W C ∘ equivVariableChange (C • W) C'`,
+   needed to conjugate an automorphism through the normal-form change.
+2. `Aut(E_a⁄ℚ̄) = {⟨u, 0, 0, 0⟩ : u⁴ = 1}` — the SURJECTIVITY half; the injectivity
+   half (`u` determines the automorphism, `u⁴ = 1`) is already proven in `Aut.lean`
+   and is what `hu` packages.
+3. The quadratic field cut out by an open index-`2` subgroup of `Γ_ℚ`.
+4. The coordinate identities for `ψ` above.
+
+**Non-vacuity, and what refutes this leaf.**  Composed with its siblings this yields a
+rational point of `Y_0(N)`, and at `N = 121` Kenku's theorem says there is none, so
+`g`, `hg` and `haut` are genuinely consumed.  A refutation would exhibit `a, d, N` with
+`⟨g⟩` stable up to `μ₄` but no quartic twist making it stable — impossible, `χ` being a
+homomorphism into `{±1}` with open kernel. -/
+theorem exists_stableCyclic_twist_of_autStable_of_j_eq_1728 {N : ℕ} (hN : N ≠ 0)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj : E.j = 1728)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (haut : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+        (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
+        ∀ x ∈ AddSubgroup.zmultiples g,
+          autPoint h (WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
+            AddSubgroup.zmultiples g)
+    (ι : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+    (hι : ι • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ)))
+    (hmove : ∃ x ∈ AddSubgroup.zmultiples g, autPoint hι x ∉ AddSubgroup.zmultiples g)
+    (hu : (ι.u : AlgebraicClosure ℚ) ^ 2 = -1) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g' = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
+        WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g' :=
+  sorry
+
+/-- **THE ARITHMETIC HEART at `j = 0`: the descent obstruction is killed by a SEXTIC
+twist** (sorry leaf, opened 2026-07-27 by decomposing
+`exists_stableCyclic_twist_of_autStable_of_j_special`).
+
+The companion of `exists_stableCyclic_twist_of_autStable_of_j_eq_1728`.  Here
+`Aut(E⁄ℚ̄) ↪ μ₆` (`WeierstrassCurve.u_pow_six_eq_one_of_smul_eq_of_j_eq_zero`), and
+`hu6`/`hu2` say that `ι`'s `u`-coefficient is a root of unity of order `3` or `6` —
+again derived by the parent from `u ≠ ±1`.
+
+#### The route, and the ONE place where it is genuinely harder than `j = 1728`
+
+Over `ℚ`, `j = 0` puts `E` in the form `E_b : y² = x³ + b`, `b ≠ 0`, and
+`Aut(E_b⁄ℚ̄) = {⟨u, 0, 0, 0⟩ : u⁶ = 1}` acting by `(x, y) ↦ (u²x, u³y)`.  With
+`C := ⟨g⟩` and `A := Aut(E, C) ∋ −1`, the hypothesis `hmove` says `A ≠ μ₆`, and the
+only subgroup of `μ₆` strictly between and containing `μ₂` is `μ₂` itself, so
+`A = μ₂` and `μ₆/A ≅ μ₃`.
+
+**And `μ₃` does NOT carry the trivial `Γ_ℚ`-action.**  That is the whole difference
+from the `j = 1728` case: `σ ↦ ᾱ_σ` is a genuine `1`-cocycle in `Z¹(Γ_ℚ, μ₃)`, not a
+homomorphism, and the field it cuts out is a NON-Galois cubic field `ℚ(∛d)`.  A
+plausible-looking shortcut is false here and worth recording: not every cubic field
+arises, since a cyclic cubic field is never `ℚ(∛d)` (that would force `ζ₃` into a
+field of odd degree over `ℚ`).  The cocycle condition — whose Galois action is through
+the quadratic character of `ℚ(ζ₃) = ℚ(√-3)` — is exactly what excludes them.
+
+So this case needs Kummer theory for `n = 3`: every continuous `c ∈ Z¹(Γ_ℚ, μ₃)` is
+`σ ↦ σ(γ)/γ` for some `γ` with `γ³ = d ∈ ℚˣ`, i.e. `H¹(Γ_ℚ, μ₃) ≅ ℚˣ/(ℚˣ)³`.  Note
+this is Kummer in the form that does NOT require `μ₃ ⊆ ℚ`: it comes from
+`1 → μ₃ → ℚ̄ˣ → ℚ̄ˣ → 1` and Hilbert 90 (`H¹(Γ, ℚ̄ˣ) = 1`), which mathlib has for
+finite cyclic extensions (`Mathlib/RepresentationTheory/Homological/GroupCohomology/Hilbert90.lean`)
+and which can be run over the cyclic quadratic extension `ℚ(ζ₃)/ℚ` after restricting
+`c` to `Γ_{ℚ(ζ₃)}` — there the action IS trivial, `c` is a homomorphism, and
+`Mathlib/FieldTheory/KummerExtension.lean` applies directly; the descent of the
+resulting `e ∈ ℚ(ζ₃)ˣ` to `d ∈ ℚˣ` is then the cocycle condition again.
+
+**The twist, explicitly.**  `E' := E_{bd} : y² = x³ + bd` with `δ⁶ = d`, and
+`Cδ := ⟨δ⁻¹, 0, 0, 0⟩` gives `ψ(x, y) = (δ²x, δ³y) = (d^{1/3}x, d^{1/2}y)`.  The
+condition to check is `ζ_σ u_σ⁻¹ ∈ μ₂`, i.e. `ζ_σ² = u_σ²` in `μ₃`, where
+`ζ_σ² = σ(d^{1/3})/d^{1/3}` — which is precisely the cocycle `c` above.  Every other
+step is identical to the `j = 1728` case.
+
+**Non-vacuity and refutation**: as for the `j = 1728` sibling.  This leaf is the
+harder of the two and should be dispatched separately; the `μ₃`-Kummer input is its
+only genuinely missing theory. -/
+theorem exists_stableCyclic_twist_of_autStable_of_j_eq_zero {N : ℕ} (hN : N ≠ 0)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj : E.j = 0)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (haut : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+        (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
+        ∀ x ∈ AddSubgroup.zmultiples g,
+          autPoint h (WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
+            AddSubgroup.zmultiples g)
+    (ι : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+    (hι : ι • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ)))
+    (hmove : ∃ x ∈ AddSubgroup.zmultiples g, autPoint hι x ∉ AddSubgroup.zmultiples g)
+    (hu6 : (ι.u : AlgebraicClosure ℚ) ^ 6 = 1)
+    (hu2 : (ι.u : AlgebraicClosure ℚ) ^ 2 ≠ 1) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g' = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
+        WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g' :=
+  sorry
+
 /-- **THE ARITHMETIC HEART: the descent obstruction is killed by a twist, at
-`j ∈ {0, 1728}`** (sorry leaf, opened 2026-07-27).
+`j ∈ {0, 1728}`** (opened as a sorry leaf 2026-07-27; **DECOMPOSED the same day**
+over `exists_stableCyclic_twist_of_autStable_of_j_eq_1728` and
+`exists_stableCyclic_twist_of_autStable_of_j_eq_zero`, with the RIGID case — the one
+where no automorphism moves `⟨g⟩` — discharged outright here).
 
 A cyclic subgroup of order `N` of `E(ℚ̄)` that is Galois-stable only up to an
 automorphism of `E` becomes genuinely Galois-stable on a TWIST of `E`.  The case
@@ -10818,7 +11044,43 @@ TRUE, and the argument is uniform in `j` — see the subsection header above for
 why the split exists anyway, and for why it does not amount to reintroducing a
 `j`-hypothesis on `exists_stableCyclic_of_gamma0Datum_algClos`.
 
-#### The cocycle/Kummer computation
+#### THE CUT TAKEN HERE (2026-07-27), and what it discharges
+
+Two things are proven outright below, and the residue is the two `j`-specific
+leaves above.
+
+*The RIGID case needs no twist at all.*  If EVERY automorphism of `E⁄ℚ̄` carries
+`⟨g⟩` into itself, then `⟨g⟩` is already `Γ_ℚ`-stable and `E' := E` works.  The step
+that is not formal is going from "`autPoint h (σ x) ∈ ⟨g⟩`" back to "`σ x ∈ ⟨g⟩`":
+`autPoint h` maps `⟨g⟩` INTO `⟨g⟩` by assumption, is injective
+(`autPoint_injective`), and `⟨g⟩` is FINITE — `Nat.card (zmultiples g) = addOrderOf g
+= N ≠ 0` — so it maps `⟨g⟩` ONTO `⟨g⟩`, and injectivity then pulls `σ x` back into
+`⟨g⟩`.  This is where `hN : N ≠ 0` does real work in the proof and not only in the
+statement.
+
+*In the NON-rigid case the moving automorphism has `u ≠ ±1`.*  Both `1` and
+`negVariableChange` preserve every subgroup — they act as the identity and as
+negation (`autPoint_one`, `autPoint_negVariableChange`) — and in characteristic
+`0` an automorphism is determined by its `u`
+(`WeierstrassCurve.eq_one_of_u_eq_one_of_smul_eq`,
+`WeierstrassCurve.eq_negVariableChange_of_u_eq_neg_one`, both proven with NO
+hypothesis on `j`).  Combined with `u⁴ = 1` at `j = 1728` and `u⁶ = 1` at `j = 0`
+(`WeierstrassCurve.u_pow_four_eq_one_of_smul_eq_of_j_eq_1728`,
+`…_six_…_of_j_eq_zero`, which are the `c₄`/`c₆` transformation laws used one at a
+time — at `j = 1728` only `c₆ = 0` and at `j = 0` only `c₄ = 0`, and `c_relation`
+forbids both at once on an elliptic curve) this gives `u² = -1` at `j = 1728` and
+`u` of order `3` or `6` at `j = 0`, which is exactly the input the two leaves take.
+
+**Why the two leaves are NOT symmetric, and should get different owners.**  At
+`j = 1728` the obstruction lives in `μ₄/μ₂ ≅ μ₂`, which has TRIVIAL Galois action,
+so the cocycle is a homomorphism `Γ_ℚ → {±1}` with open kernel and the twisting
+parameter `d` is just the discriminant of the quadratic field it cuts out — no
+Kummer theory, no `H¹`.  At `j = 0` the obstruction lives in `μ₆/μ₂ ≅ μ₃`, whose
+Galois action is the quadratic character of `ℚ(ζ₃)`, so it is a genuine `1`-cocycle
+and `H¹(Γ_ℚ, μ₃) ≅ ℚˣ/(ℚˣ)³` is really needed.  See the two docstrings above for the
+routes in full.
+
+#### The cocycle/Kummer computation (the argument of record, uniform in `j`)
 
 `j(E) ∈ ℚ`, so `E` already has a model over `ℚ` and we may take `E^σ = E`.  Then
 for each `σ` there is `α_σ ∈ Aut_ℚ̄(E)` with `α_σ(σ C) = C`, well defined modulo
@@ -10847,18 +11109,18 @@ over `ℚ`.  ∎
 `ℚˣ/(ℚˣ)^{n/2}` not in the image of `ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being
 induced by the identity on representatives.
 
-#### MISSING MACHINERY, and it is the whole cost of this leaf
+#### MISSING MACHINERY
 
-Neither piece is in the pin, in `~/cs/FLT`, or in this project (checked
-2026-07-27; `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean` covers
-only `j ∉ {0, 1728}`, and `.../GaloisDescent.lean` is a stub with no
-declarations):
-
-1. `Aut(E⁄ℚ̄) ≅ μ₄` at `j = 1728` and `≅ μ₆` at `j = 0`, in characteristic `0`.
-   The `Aut.lean` proof already computes `u⁴ = u⁶ = 1` from the transformation
-   laws of `c₄`, `c₆`; at `c₄ = 0` (resp. `c₆ = 0`) one of the two constraints
-   drops out and the surviving one is exactly `u⁶ = 1` (resp. `u⁴ = 1`).  So this
-   is a genuine extension of an argument already present, not a new theory.
+1. ~~`Aut(E⁄ℚ̄) ≅ μ₄` at `j = 1728` and `≅ μ₆` at `j = 0`~~ — **the half that is
+   actually used is now PROVEN** (2026-07-27) in
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean`: `C ↦ C.u` embeds
+   `Aut(E)` into `μ₄` resp. `μ₆`
+   (`u_pow_four_eq_one_of_smul_eq_of_j_eq_1728`, `u_pow_six_eq_one_of_smul_eq_of_j_eq_zero`,
+   `eq_one_of_u_eq_one_of_smul_eq`, `eq_negVariableChange_of_u_eq_neg_one`), exactly
+   as predicted here — the `c₄` and `c₆` laws used one at a time.  What is NOT proven
+   is the SURJECTIVITY of that embedding, which is not needed by this cut: a lower
+   bound on `Aut` would be needed to show the twist is nontrivial, and the leaves
+   below only ever need an upper bound.
 2. The twist attached to a cocycle: given `β : G_ℚ → Aut(E⁄ℚ̄)` satisfying the
    cocycle identity, an `E' : WeierstrassCurve ℚ` and `ψ : E⁄ℚ̄ ≅ E'⁄ℚ̄` with
    `ψ^σ ∘ β_σ = ψ`.  For `n = 2` this is the familiar `d`-quadratic twist and
@@ -10888,8 +11150,84 @@ theorem exists_stableCyclic_twist_of_autStable_of_j_special {N : ℕ} (hN : N �
       ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
         WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g' :=
-  sorry
+          AddSubgroup.zmultiples g' := by
+  by_cases hrigid : ∀ (C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+      (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
+      ∀ x ∈ AddSubgroup.zmultiples g, autPoint h x ∈ AddSubgroup.zmultiples g
+  · -- **The rigid case**: no automorphism moves `⟨g⟩`, so `⟨g⟩` is already stable.
+    refine ⟨E, inferInstance, g, hg, fun σ x hx => ?_⟩
+    obtain ⟨C, h, hC⟩ := haut σ
+    haveI : Finite (AddSubgroup.zmultiples g) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      rw [Nat.card_zmultiples, hg]
+      exact hN
+    have hFinj : Function.Injective
+        (fun z : AddSubgroup.zmultiples g =>
+          (⟨autPoint h z, hrigid C h z z.2⟩ : AddSubgroup.zmultiples g)) := fun z w hzw =>
+      Subtype.ext (autPoint_injective h (congrArg Subtype.val hzw))
+    obtain ⟨z, hz⟩ := Finite.injective_iff_surjective.mp hFinj
+      ⟨autPoint h (WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x), hC x hx⟩
+    have hzy : (z : (E⁄(AlgebraicClosure ℚ)).Point)
+        = WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x :=
+      autPoint_injective h (congrArg Subtype.val hz)
+    exact hzy ▸ z.2
+  · -- **The non-rigid case**: extract a moving automorphism `ι` and pin down its `u`.
+    push Not at hrigid
+    obtain ⟨ι, hι, x₀, hx₀, hx₀'⟩ := hrigid
+    haveI : CharZero (AlgebraicClosure ℚ) :=
+      charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+    have h2 : (2 : AlgebraicClosure ℚ) ≠ 0 := by norm_num
+    have h3 : (3 : AlgebraicClosure ℚ) ≠ 0 := by norm_num
+    have h1728 : (1728 : AlgebraicClosure ℚ) ≠ 0 := by norm_num
+    -- `ι ≠ 1`, since `1` acts as the identity and so preserves `⟨g⟩`.
+    have hune : (ι.u : AlgebraicClosure ℚ) ≠ 1 := by
+      intro hu
+      have hi1 : ι = 1 := WeierstrassCurve.eq_one_of_u_eq_one_of_smul_eq
+        (E⁄(AlgebraicClosure ℚ)) h2 h3 (Units.val_eq_one.mp hu) hι
+      subst hi1
+      exact hx₀' (by rw [autPoint_one]; exact hx₀)
+    -- `ι ≠ negVariableChange`, since that acts as negation and so preserves `⟨g⟩`.
+    have hunegne : (ι.u : AlgebraicClosure ℚ) ≠ -1 := by
+      intro hu
+      have hi1 : ι = (E⁄(AlgebraicClosure ℚ)).negVariableChange :=
+        WeierstrassCurve.eq_negVariableChange_of_u_eq_neg_one
+          (E⁄(AlgebraicClosure ℚ)) h2 h3 (Units.ext hu) hι
+      subst hi1
+      exact hx₀' (by rw [autPoint_negVariableChange]; exact neg_mem hx₀)
+    have husq : (ι.u : AlgebraicClosure ℚ) ^ 2 ≠ 1 := by
+      intro hsq
+      rcases mul_self_eq_one_iff.mp
+        (show (ι.u : AlgebraicClosure ℚ) * (ι.u : AlgebraicClosure ℚ) = 1 by
+          linear_combination hsq) with h' | h'
+      · exact hune h'
+      · exact hunegne h'
+    rcases hj with hj0 | hj1728
+    · -- `j = 0`: `u⁶ = 1` and `u² ≠ 1`, so `u` has order `3` or `6`.
+      have hjb : (E⁄(AlgebraicClosure ℚ)).j = 0 := by
+        rw [show (E⁄(AlgebraicClosure ℚ)).j = algebraMap ℚ (AlgebraicClosure ℚ) E.j from
+          WeierstrassCurve.map_j E _, hj0, map_zero]
+      exact exists_stableCyclic_twist_of_autStable_of_j_eq_zero hN E hj0 g hg haut ι hι
+        ⟨x₀, hx₀, hx₀'⟩
+        (WeierstrassCurve.u_pow_six_eq_one_of_smul_eq_of_j_eq_zero
+          (E⁄(AlgebraicClosure ℚ)) h1728 hjb hι) husq
+    · -- `j = 1728`: `u⁴ = 1` and `u² ≠ 1`, so `u² = -1`.
+      have hjb : (E⁄(AlgebraicClosure ℚ)).j = 1728 := by
+        rw [show (E⁄(AlgebraicClosure ℚ)).j = algebraMap ℚ (AlgebraicClosure ℚ) E.j from
+          WeierstrassCurve.map_j E _, hj1728]
+        simp
+      have hu4 : (ι.u : AlgebraicClosure ℚ) ^ 4 = 1 :=
+        WeierstrassCurve.u_pow_four_eq_one_of_smul_eq_of_j_eq_1728
+          (E⁄(AlgebraicClosure ℚ)) h1728 hjb hι
+      have hu2 : (ι.u : AlgebraicClosure ℚ) ^ 2 = -1 := by
+        rcases mul_eq_zero.mp
+          (show ((ι.u : AlgebraicClosure ℚ) ^ 2 - 1) * ((ι.u : AlgebraicClosure ℚ) ^ 2 + 1) = 0 by
+            linear_combination hu4) with h' | h'
+        · exact absurd (by linear_combination h') husq
+        · linear_combination h'
+      exact exists_stableCyclic_twist_of_autStable_of_j_eq_1728 hN E hj1728 g hg haut ι hι
+        ⟨x₀, hx₀, hx₀'⟩ hu2
 
 /-- **The descent obstruction is killed by a twist** (PROVEN 2026-07-27 at
 `j ∉ {0, 1728}`, over `exists_stableCyclic_twist_of_autStable_of_j_special` at
