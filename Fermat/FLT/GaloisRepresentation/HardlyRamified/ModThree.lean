@@ -11805,6 +11805,142 @@ theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **THE UNRAMIFIED TWIST: `τ` is an obstruction to descent that survives
+into an UNRAMIFIED fixed field, and the point `x` sits at the maximal
+admissible distance from `θ`** (sorry node, created 2026-07-27 — leaf
+(Y-3-a), the geometric half of Fontaine's Prop. 1.5 (ii); see the ROUTE
+FOUND section of `exists_isEmpty_algHom_of_ne_one_of_mem_inertia` below,
+which this leaf and its sibling decompose).
+
+WHAT IT ASSERTS.  Given a monogenic generator `θ` of `𝒪_L` satisfying the
+inertia criterion `hcrit`, and a `τ ≠ 1` in `G_{j+1} = inertia(𝔪_L^{j+2})`,
+there are a finite `M/ℚ₃ᵥ` containing `L`, a finite `E/ℚ₃ᵥ` inside `M`
+NOT containing `L`, and an integer `x ∈ 𝒪_E` with
+
+* `v_E(3) = v_M(3) = g₀ = v_L(3)` — `M/L` and `M/E` are UNRAMIFIED, so no
+  ramification is created anywhere, and the leaf's `e` below is `g₀`; and
+* `x ≡ θ` to depth `j + 2` IN `𝒪_M`, i.e. exactly the depth at which `τ`
+  stops acting.
+
+THE INTENDED PROOF, which is elementary and uses no analysis whatsoever.
+Let `n := ord(τ)`, a power of `3`, and let `U/ℚ₃ᵥ` be the UNRAMIFIED
+extension of degree `f_L · n`.  Put `M := L·U`.  Because `τ` lies in
+inertia it is trivial on `L ∩ U = ℚ₃ᵥ_{f_L}`, and `Frob^{f_L}` is trivial
+there too, so the pair patches to a `ρ ∈ Gal(M/ℚ₃ᵥ)` with `ρ|_L = τ` and
+`ρ|_U = Frob^{f_L}`.  Then `ord(ρ) = n`, and `ρ^i` lies in the inertia of
+`M/ℚ₃ᵥ` only when `n ∣ i`, i.e. only when `ρ^i = 1`: so with
+`E := M^{⟨ρ⟩}` the extension `M/E` is UNRAMIFIED of degree `n`.  Hence:
+
+* `¬(L ≤ E)`, since `L ≤ E` would force `τ = ρ|_L = 1`;
+* `e_E = e_M = e_L = g₀`, since `M/L` and `M/E` are unramified;
+* `M/E` unramified makes `Tr_{M/E} : 𝒪_M → 𝒪_E` SURJECTIVE (the residue
+  extension is separable, so `Tr` is surjective mod `𝔪_E`, and Nakayama
+  upgrades that to the ideal `Tr(𝒪_M) = 𝒪_E`).  Choose `c ∈ 𝒪_M` with
+  `Tr(c) = 1` and set `x := Tr(c·θ) = Σ_{i<n} ρ^i(c·θ) ∈ 𝒪_E`.  Then
+  `x − θ = Σ_i ρ^i(c)·(ρ^i θ − θ)`, and every `ρ^i θ − θ = τ^i•θ − θ` lies
+  in `𝔪_L^{j+2}` because `G_{j+1}` is a GROUP containing `τ`; unramifiedness
+  of `M/L` turns `𝔪_L^{j+2}·𝒪_M` into `𝔪_M^{j+2}`.
+
+FAITHFULNESS.  `hτ1` is used only for `¬(L ≤ E)`, `hτ` and `hcrit` only for
+the depth statement; the leaf is not vacuous, since `¬(L ≤ E)` fails for
+every `E ⊇ L` and the depth statement fails for `E = ℚ₃ᵥ` already at
+`L = ℚ₃(ζ₉)` (see the numerical checks recorded on the consumer). -/
+theorem exists_not_le_sub_mem_of_ne_one_of_mem_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
+    (θ : IntegralClosure 𝒪₃ᵥ L) (j : ℕ) (τ : L ≃ₐ[ℚ₃ᵥ] L) (hτ1 : τ ≠ 1)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ (j + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))
+    (hcrit : ∀ (σ : L ≃ₐ[ℚ₃ᵥ] L) (i : ℕ),
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i).inertia (L ≃ₐ[ℚ₃ᵥ] L)
+        ↔ σ • θ - θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i) :
+    ∃ (M E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ M)
+      (_ : FiniteDimensional ℚ₃ᵥ E) (hLM : L ≤ M) (hEM : E ≤ M)
+      (x : IntegralClosure 𝒪₃ᵥ E),
+      ¬ (L ≤ E) ∧
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ∧
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ∧
+      integralClosureLE E M hEM x - integralClosureLE L M hLM θ ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (j + 2) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE COUNTING HALF OF FONTAINE'S PROP. 1.5 (ii): a point at depth
+`j + 2` from a monogenic generator is a root of its minimal polynomial to
+depth `Σ_{i=0}^{j+1} #G_i`** (sorry node, created 2026-07-27 — leaf
+(Y-3-b), the arithmetic half; the geometric half is
+`exists_not_le_sub_mem_of_ne_one_of_mem_inertia` above).
+
+Nothing about `τ`, about `E ⊉ L`, or about ramification-creating fields
+enters here: the hypotheses are just that `M` contains `L` and `E`, that
+NO ramification is created (all three `v(3)` exponents are the same `g₀`),
+and that `x ∈ 𝒪_E` is within `𝔪_M^{j+2}` of `θ`.
+
+THE INTENDED PROOF, which is three steps and no analysis.
+1. `P := minpoly 𝒪₃ᵥ θ` splits over `𝒪_M` as `∏_{σ ∈ Gal(L/ℚ₃ᵥ)} (X − σ•θ)`
+   — that is `aeval_minpoly_eq_prod_sub_integralClosureLE` above (whose
+   `hθ` is the `ℚ₃ᵥ`-adjoin form of `hθtop`; `L = Frac(𝒪_L)` converts).
+   So `P(x) = ∏_σ (x − σ•θ)` already in `𝒪_M`.
+2. `addVal_prod` turns that into a SUM, and the ultrametric bound
+   `addVal_M(x − σ•θ) ≥ min(j + 2, addVal_M(θ − σ•θ))` is `Ideal.sub_mem`
+   applied to `hclose`.  Since `M/L` creates no ramification, the
+   comparison map of `exists_addVal_integralClosureLE` has factor `a = 1`
+   (from `a·g₀ = g₀` and `0 < g₀`), so depths in `𝒪_L` and `𝒪_M` agree on
+   the nose and `addVal_M(θ − σ•θ) = addVal_L(θ − σ•θ) = i_L(σ)`.
+3. THE COUNTING IDENTITY, which is the only real content:
+   `Σ_{σ ∈ Gal(L/ℚ₃ᵥ)} min(j + 2, i_L(σ)) = Σ_{i=0}^{j+1} #G_i`, because
+   `min(j+2, i_L(σ)) = Σ_{i=0}^{j+1} [i_L(σ) ≥ i+1]` and, by `hcrit`,
+   `#{σ : i_L(σ) ≥ i+1} = #(𝔪_L^{i+1}).inertia = #G_i`.  Swapping the two
+   sums is `Finset.sum_comm`.  The right-hand side is exactly
+   `g₀ + Σ_{i<j+1} #(𝔪_L^{i+2}).inertia`, i.e. the `k` in the conclusion.
+4. Finally `a_E = 1` for `E ↪ M` by the same argument, so `addVal_E(P(x))`
+   is that same `k`, and `𝒪_L = 𝒪₃ᵥ[θ] ≅ 𝒪₃ᵥ[X]/(P)` sends `θ ↦ x̄` to
+   give the algebra map.
+
+FAITHFULNESS.  Every hypothesis is used: `hθtop` and `hcrit` in steps 1
+and 3, `hM3`/`hE3` in steps 2 and 4, `hclose` in step 2.  The statement is
+FALSE without `hM3`/`hE3` (a ramified `E` rescales `k`), which is why they
+are hypotheses rather than derived. -/
+theorem nonempty_algHom_quotient_of_sub_mem_of_span_three_eq
+    (L M E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
+    [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ E]
+    (hLM : L ≤ M) (hEM : E ≤ M) (j : ℕ)
+    (θ : IntegralClosure 𝒪₃ᵥ L)
+    (hθtop : Algebra.adjoin 𝒪₃ᵥ ({θ} : Set (IntegralClosure 𝒪₃ᵥ L)) = ⊤)
+    (hcrit : ∀ (σ : L ≃ₐ[ℚ₃ᵥ] L) (i : ℕ),
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i).inertia (L ≃ₐ[ℚ₃ᵥ] L)
+        ↔ σ • θ - θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i)
+    (hM3 : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (hE3 : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (x : IntegralClosure 𝒪₃ᵥ E)
+    (hclose : integralClosureLE E M hEM x - integralClosureLE L M hLM θ ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (j + 2)) :
+    Nonempty (IntegralClosure 𝒪₃ᵥ L →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^
+        (Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) +
+          ∑ i ∈ Finset.range (j + 1),
+            Nat.card ((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))))) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **FONTAINE'S PROP. 1.5 (ii) IN `φ`-FREE INTEGER FORM: a NONTRIVIAL
 element of a deep ramification group MANUFACTURES A COUNTEREXAMPLE to
 `(P_m)`** (sorry node, created 2026-07-26 — leaf (Y-3), the genuine
@@ -11849,9 +11985,92 @@ Prop. 1.5 (ii) to the compositum `L·K'` OVER `K`, not over `K'`.  So the
 whole argument fits the present `ℚ₃ᵥ`-hard-wired encoding, and no
 generalisation to a variable local base field is required.
 
-MACHINERY AUDIT (2026-07-26, fourth owner).  This is the HARDEST of the
-four Fontaine-cluster leaves, because unlike its sibling (Y-2) it must
-CONSTRUCT the affinoid point `x` rather than merely recognise one.
+**ROUTE FOUND AND DECOMPOSED, 2026-07-27 (fifth owner).  THE AFFINOID IS
+NOT NEEDED: the counterexample field is the fixed field of `τ × Frobenius`
+in `L·(an UNRAMIFIED extension)`.**  No Newton polygon, no Krasner, no
+norms, no analysis of any kind.  The `INTENDED PROOF (Fontaine's)`
+paragraph above and the machinery audit that used to stand here are
+SUPERSEDED by this; they are retained only as the historical record of
+what four owners were sent to build.  The assembly below is written and
+compiles over the two leaves
+`exists_not_le_sub_mem_of_ne_one_of_mem_inertia` (geometric half) and
+`nonempty_algHom_quotient_of_sub_mem_of_span_three_eq` (arithmetic half),
+both directly above.
+
+THE CONSTRUCTION.  Let `n := ord(τ)` (a power of `3`), let `U/ℚ₃ᵥ` be the
+UNRAMIFIED extension of degree `f_L·n`, and put `M := L·U`.  Since `τ` is
+in inertia it is trivial on `L ∩ U = ℚ₃ᵥ_{f_L}`, and so is `Frob^{f_L}`,
+so there is `ρ ∈ Gal(M/ℚ₃ᵥ)` with `ρ|_L = τ` and `ρ|_U = Frob^{f_L}`.
+Then `ord(ρ) = n` and `ρ^i` is in the inertia of `M/ℚ₃ᵥ` only for
+`n ∣ i`, i.e. only for `ρ^i = 1` — so with `E := M^{⟨ρ⟩}` the extension
+`M/E` is UNRAMIFIED of degree `n`.  Consequently:
+
+* `IsEmpty (L →ₐ[ℚ₃ᵥ] E)`, because an embedding gives `L ≤ E`
+  (`le_of_nonempty_algHom_of_normal`, `L` normal) and hence `τ = ρ|_L = 1`;
+* `e := v_E(3) = v_M(3) = v_L(3) = g₀`, both extensions being unramified;
+* `Tr_{M/E} : 𝒪_M → 𝒪_E` is SURJECTIVE for an unramified `M/E`, so pick
+  `c` with `Tr(c) = 1` and put `x := Tr(c·θ) ∈ 𝒪_E` for `θ` a monogenic
+  generator of `𝒪_L`.  Then `x − θ = Σ_i ρ^i(c)·(τ^i•θ − θ)` lies in
+  `𝔪_M^{j+2}`, because `G_{j+1}` is a GROUP containing `τ` and `M/L` is
+  unramified.  So `x` sits at the MAXIMAL admissible distance from `θ`
+  with no analytic input at all;
+* `P(x) = ∏_σ (x − σ•θ)` then has depth `Σ_σ min(j+2, i_L(σ))
+  = Σ_{i=0}^{j+1} #G_i = g₀ + S`, and `v_E = v_M`, so `k := g₀ + S` works.
+
+WHY THE INEQUALITY IS SATISFIED WITH ROOM.  With `e = g₀` and
+`k = g₀ + S` the required `e·(g₀+S) ≤ g₀·k + e` reads
+`g₀·(g₀+S) ≤ g₀·(g₀+S) + g₀`, i.e. `Nat.le_add_right`.  **So this route
+achieves `m = k/e = 1 + S/g₀ = u^{(F)}` EXACTLY, not `u^{(F)} − 1/e`** —
+the leaf could be strengthened to `e·(g₀+S) ≤ g₀·k`, which would make the
+`THE −1/e IS REAL` paragraph above obsolete.  It was left un-strengthened
+because the consumer does not need it and a strengthened statement would
+be a gratuitous conflict for the integrator; but a future owner should
+know that the `−1/e` is an artifact of Fontaine's affinoid proof, not of
+the theorem.
+
+**WHY THE PREVIOUS AUDIT SENT OWNERS THE WRONG WAY, and this is the part
+worth keeping.**  It prescribed: exhibit `x` EQUIDISTANT from `α` and
+`τα`, "so that Krasner cannot be applied and `ℚ₃ᵥ(x)` contains no root of
+`P`".  That last step is a NON SEQUITUR — Krasner's hypothesis failing is
+not its conclusion failing, and equidistance never by itself certifies
+`L ⊄ ℚ₃ᵥ(x)`.  In fact equidistance is a CONSEQUENCE of the goal, not a
+route to it: if `L ⊄ E` then, putting `M := L·E`, there is
+`ρ ∈ Gal(M/E)` with `ρ|_L ≠ 1`, and `ρx = x` forces
+`v(x − θ) = v(x − ρ_Lθ)` and hence `v(x − θ) ≤ v(θ − ρ_Lθ)`.  So the real
+content is always "put `x` in the fixed field of a lift of `τ`", which is
+what the construction above does directly.
+
+**THREE NAIVE CHOICES OF `E` ARE PROVABLY TOO SMALL** — each was computed
+before the route above was found; record them so nobody re-tries them.
+Take `L = ℚ₃(ζ₉)`, `τ` generating `Gal(L/ℚ₃(ζ₃))`, `j = 1`, where the
+requirement is `v_{ℚ₃}(x − ζ₉) ≥ 4/9` and the ceiling is `1/2`.
+* `E := L^{⟨τ⟩} = ℚ₃(ζ₃)`: the image of `𝒪_{ℚ₃(ζ₃)}` in `𝒪_L/𝔪_L^3` is
+  just `𝔽₃`, while `ζ₉ = 1 + π`, so the best distance is `1/6`.
+* `E/ℚ₃ᵥ` UNRAMIFIED with `e = 1` and `k` small: value groups forbid it,
+  since `v_M` on `E` lands in `e_{M/E}·ℤ` and `v_M(ζ₉ − 1) = 1` does not.
+* `E := (L·K')^{⟨τ⊗1⟩}` for a TAME `K'/ℚ₃ᵥ` of degree `N` — the shape the
+  consumer's own tame enlargement suggests.  Solving `(ρ−1)y = θ − τθ`
+  with no loss of depth needs the tame character order `t` of a lift `ρ`
+  to NOT divide `v_M(θ − τθ) = e_{M/L}·i_L(τ)`; but for a tame `M/L` one
+  always has `t ∣ e_{M/L}`, so there is always a loss, and the loss is at
+  least `e_{M/L}` — far more than the `1/g₀` of slack available.
+  **That is the precise reason the auxiliary extension must be
+  UNRAMIFIED and not merely tame**, and it is invisible without doing the
+  computation.  A wild lift is no better: `ord(ρ) = 3` with `i_M(ρ) = 1`
+  is impossible, because `G_0/G_1` has order prime to `3`.
+
+WHAT REMAINS AFTER THIS DECOMPOSITION.  Leaf (Y-3-a) needs unramified
+extensions of `ℚ₃ᵥ` inside `ℚ₃ᵥᵃˡᵍ` with their Frobenius, and the
+surjectivity of the trace for an unramified extension of local rings —
+neither is in this file yet, and both are ordinary local-field theory
+rather than anything Fontaine-specific.  Leaf (Y-3-b) needs only the
+counting identity plus `aeval_minpoly_eq_prod_sub_integralClosureLE`
+(sorried, owned) and `addVal_prod`/`exists_addVal_integralClosureLE`
+(PROVEN).
+
+OLDER MACHINERY AUDIT (2026-07-26, fourth owner), retained because its
+`mem_adjoin_of_sub_mem_of_forall_not_mem` half is genuinely useful and
+PROVEN; its Krasner-negative prescription is the one refuted above.
 * The sibling `nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot`
   now carries a full machinery audit for the shared half — Krasner is in
   the pin (`Mathlib/Analysis/Normed/Field/Krasner.lean`), the missing
@@ -11908,7 +12127,29 @@ theorem exists_isEmpty_algHom_of_ne_one_of_mem_inertia
         Nonempty (IntegralClosure 𝒪₃ᵥ L →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
           IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) ∧
         IsEmpty (L →ₐ[ℚ₃ᵥ] E) := by
-  sorry
+  classical
+  -- STEP 1: a monogenic generator of `𝒪_L` with the inertia criterion
+  obtain ⟨θ, hθtop, _, hcrit⟩ := exists_inertia_generator L
+  -- STEP 2: the unramified twist — a counterexample field `E ⊉ L` carrying a
+  -- point `x` at depth `j + 2` from `θ`, with no ramification created
+  obtain ⟨M, E, hMfd, hEfd, hLM, hEM, x, hnle, hM3, hE3, hclose⟩ :=
+    exists_not_le_sub_mem_of_ne_one_of_mem_inertia L θ j τ hτ1 hτ hcrit
+  haveI := hEfd
+  haveI := hMfd
+  -- STEP 3: `e := g₀` and `k := g₀ + S`; the counting half supplies the
+  -- truncated algebra map, and normality of `L` turns `¬(L ≤ E)` into `IsEmpty`
+  refine ⟨E, hEfd,
+    Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)),
+    Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) +
+      ∑ i ∈ Finset.range (j + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)),
+    hE3, Nat.card_pos, ?_,
+    nonempty_algHom_quotient_of_sub_mem_of_span_three_eq L M E hLM hEM j θ hθtop hcrit
+      hM3 hE3 x hclose,
+    ⟨fun f => hnle (le_of_nonempty_algHom_of_normal L E ⟨f⟩)⟩⟩
+  -- the level `m = k/e = 1 + S/g₀` clears Fontaine's threshold `1 + (S−1)/g₀`
+  exact Nat.le_add_right _ _
 
 /-- **THE ARITHMETIC OF YOSHIDA'S LIMIT `e' → ∞`, as a statement about
 five natural numbers** (PROVEN 2026-07-26).  Read `g₀N = #G_0(N/ℚ₃ᵥ)`,
