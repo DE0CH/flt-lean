@@ -48148,6 +48148,17 @@ AXIS SEARCHED: the descent axis as Childress runs it, plus a grep of all
 three trees for the norm and fixed-field machinery; NOT a cohomological
 reproof of 5.2.2.
 
+**A SECOND GATE, CLOSED THE SAME DAY: `hcycl`'s DIRECTION.** The
+auxiliary-field construction is necessary but was not sufficient. Once
+you have `E` and `χ' := χ ∘ ι`, the descent needs Artin reciprocity at
+`E` in the direction `ker ⊆ ray · norms` — and `hcycl` used to conclude
+only `c' (span {δ}) = 1`, i.e. `ray ⊆ ker`, which is the CONVERSE. Since
+2026-07-27 `hcycl` is the CONJUNCTION of both directions; **clause (ii)
+is the one this leaf consumes**, and it is open as
+`artinDivisorKernel_le_sup_of_cyclotomic_ray_class`. See the RESOLVED
+ROUTE AUDIT on `exists_artinNormSubgroups_ray_class` above for why the
+index-inequality alternative was rejected.
+
 **Check that would refute it**: hypotheses as stated together with a
 `v`, `v₀`, `e` for which `ofAdd (single v 1 - e • single v₀ 1)` is
 exhibited outside `P ⊔ N`. -/
@@ -48184,11 +48195,42 @@ theorem divisorRatio_mem_sup_ramified_ray_class
         c' (I * J) = c' I * c' J) →
       (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
         c' v.asIdeal = χ' (globalFrob v)) →
-      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
         (∀ φ : E →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
-        c' (Ideal.span {δ}) = 1)
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE))
     (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
     (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
