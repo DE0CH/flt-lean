@@ -1524,9 +1524,268 @@ theorem trace_quotient_pow_eq_of_mem_cofactor
           (Ideal.Quotient.mk _ x) :=
   sorry
 
+/-- **`Q^{e·k}` and its cofactor `J` are comaximal** (PROVEN 2026-07-27).
+
+`q^k·𝓞_K = Q^{e·k}·J` forces `Q ∤ J`: otherwise `J ≤ Q`, so
+`(q^k) ≤ Q^{e·k}·Q = Q^{e·k+1}`, contradicting `ord_Q(q^k) = e·k`
+exactly (`intValuation_natCast_eq_exp_ramificationIdx`).  `Q` being
+maximal, `Q ∤ J` is `Q^{e·k} ⊔ J = ⊤`.
+
+This is what makes the reduction map `J → 𝓞_K/Q^{e·k}` SURJECTIVE — the
+step that pulls a witness produced inside the finite ring back into the
+cofactor in `exists_mem_cofactor_trace_quotient_ne_zero` below, and the
+step 2/step 6 assertion that both cuts' docstrings appeal to.
+
+No hypothesis on `k` is needed: at `k = 0` the factorization reads
+`⊤ = ⊤ · J`, so `J = ⊤` and the sup is `⊤` anyway. -/
+theorem sup_pow_ramificationIdx_cofactor_eq_top
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (k : ℕ)
+    (J : Ideal (NumberField.RingOfIntegers K))
+    (hJ : Ideal.span {(q : NumberField.RingOfIntegers K) ^ k}
+      = v.asIdeal ^ (e * k) * J) :
+    v.asIdeal ^ (e * k) ⊔ J = ⊤ := by
+  classical
+  by_contra hne
+  obtain ⟨M, hM, hle⟩ := Ideal.exists_le_maximal _ hne
+  haveI : M.IsPrime := hM.isPrime
+  have hvM : v.asIdeal ≤ M := Ideal.IsPrime.le_of_pow_le (le_trans le_sup_left hle)
+  haveI hQmax : v.asIdeal.IsMaximal := v.isPrime.isMaximal v.ne_bot
+  have hMv : M = v.asIdeal := ((hQmax.eq_of_le hM.ne_top hvM)).symm
+  have hJv : J ≤ v.asIdeal := hMv ▸ le_trans le_sup_right hle
+  have hmemq : (q : NumberField.RingOfIntegers K) ^ k ∈ v.asIdeal ^ (e * k + 1) := by
+    have h1 : Ideal.span {(q : NumberField.RingOfIntegers K) ^ k}
+        ≤ v.asIdeal ^ (e * k + 1) := by
+      rw [hJ, pow_succ]
+      exact Ideal.mul_mono le_rfl hJv
+    exact h1 (Ideal.mem_span_singleton_self _)
+  rw [← v.intValuation_le_pow_iff_mem] at hmemq
+  rw [show (q : NumberField.RingOfIntegers K) ^ k
+      = ((q ^ k : ℕ) : NumberField.RingOfIntegers K) by push_cast; ring,
+    intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem (q ^ k)
+      (pow_ne_zero k hq.ne_zero), ← he] at hmemq
+  rw [Nat.Prime.factorization_pow hq, Finsupp.single_eq_same, WithZero.exp_le_exp] at hmemq
+  omega
+
+attribute [local instance] Ideal.Quotient.field in
+/-- **A finite free algebra over a LOCAL ring whose residual trace is
+surjective has an element of unit trace** (PROVEN 2026-07-27).
+
+Steps 5→6 of the wild-different argument, isolated from everything
+arithmetic and stated for arbitrary `Zb`, `A` because nothing in it is
+about number fields.
+
+If `A` is finite free over the local ring `Zb` and
+`Tr_{(A/𝔪A)/(Zb/𝔪)}` is surjective, pick `ā` of residual trace `1`.
+`Algebra.trace_quotient_mk` — which applies because the BASE is local,
+the only maximality this argument needs — says the residual trace is
+the reduction of `Tr_{A/Zb}`, so any lift `a` has `Tr_{A/Zb}(a) ∉ 𝔪`,
+i.e. `Tr_{A/Zb}(a)` is a unit of `Zb`.
+
+This is exactly the half of the old step 5 that is NOT about the
+construction of the unramified subring, and separating it is what
+leaves `exists_unramifiedSubalgebra_finrank_eq_isUnit_trace` below with
+purely constructive content. -/
+theorem exists_isUnit_trace_of_residualTrace_surjective
+    (Zb A : Type*) [CommRing Zb] [IsLocalRing Zb] [CommRing A] [Algebra Zb A]
+    [Module.Free Zb A] [Module.Finite Zb A]
+    (hsurj : Function.Surjective (Algebra.trace (Zb ⧸ IsLocalRing.maximalIdeal Zb)
+      (A ⧸ Ideal.map (algebraMap Zb A) (IsLocalRing.maximalIdeal Zb)))) :
+    ∃ a : A, IsUnit (Algebra.trace Zb A a) := by
+  classical
+  obtain ⟨y, hy⟩ := hsurj 1
+  obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
+  refine ⟨a, ?_⟩
+  rw [Algebra.trace_quotient_mk] at hy
+  rw [← IsLocalRing.notMem_maximalIdeal]
+  intro hmem
+  rw [Ideal.Quotient.eq_zero_iff_mem.mpr hmem] at hy
+  exact zero_ne_one hy
+
+/-- **`ℤ/q^k` is a local ring** (PROVEN 2026-07-27).
+
+Needed because `Algebra.trace_quotient_mk` — the one mathlib input of
+step 5 — requires the BASE to be local, and the pin has no instance
+covering a quotient of `ℤ` by a prime power (the `IsAdicComplete` grep
+recorded below is a different gap; this one is elementary and is now
+closed).
+
+Elementary: `m` is a unit mod `q^k` as soon as `q ∤ m`, by Bézout for
+`IsCoprime (q^k) m`; and of `m`, `1 − m` at least one is prime to `q`,
+which is `IsLocalRing.of_isUnit_or_isUnit_one_sub_self`.  Nontriviality
+is `q^k ∤ 1`. -/
+theorem isLocalRing_int_quotient_prime_pow (q k : ℕ) (hq : q.Prime) (hk : k ≠ 0) :
+    IsLocalRing (ℤ ⧸ Ideal.span {(q : ℤ) ^ k}) := by
+  classical
+  have hqp : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hunit : ∀ m : ℤ, ¬ ((q : ℤ) ∣ m) →
+      IsUnit (Ideal.Quotient.mk (Ideal.span {(q : ℤ) ^ k}) m) := by
+    intro m hm
+    obtain ⟨u, w, huw⟩ : IsCoprime ((q : ℤ) ^ k) m :=
+      IsCoprime.pow_left (hqp.irreducible.coprime_iff_not_dvd.mpr hm)
+    refine isUnit_iff_exists_inv.mpr ⟨Ideal.Quotient.mk _ w, ?_⟩
+    have hz : Ideal.Quotient.mk (Ideal.span {(q : ℤ) ^ k}) ((q : ℤ) ^ k) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
+    have hcg := congrArg (Ideal.Quotient.mk (Ideal.span {(q : ℤ) ^ k})) huw
+    simp only [map_add, map_mul, map_one, hz, mul_zero, zero_add] at hcg
+    rw [mul_comm]
+    exact hcg
+  haveI : Nontrivial (ℤ ⧸ Ideal.span {(q : ℤ) ^ k}) := by
+    refine Ideal.Quotient.nontrivial_iff.mpr ?_
+    rw [Ne, Ideal.eq_top_iff_one, Ideal.mem_span_singleton]
+    intro h1
+    exact hqp.not_unit (isUnit_of_dvd_one (dvd_trans (dvd_pow_self _ hk) h1))
+  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self ?_
+  intro a
+  obtain ⟨n, rfl⟩ := Ideal.Quotient.mk_surjective a
+  by_cases hdvd : (q : ℤ) ∣ n
+  · right
+    rw [show (1 : ℤ ⧸ Ideal.span {(q : ℤ) ^ k}) - Ideal.Quotient.mk _ n
+        = Ideal.Quotient.mk _ (1 - n) by rw [map_sub, map_one]]
+    refine hunit _ fun hc => ?_
+    have : (q : ℤ) ∣ 1 := by simpa using dvd_add hc hdvd
+    exact hqp.not_unit (isUnit_of_dvd_one this)
+  · exact Or.inl (hunit n hdvd)
+
+attribute [local instance] Ideal.Quotient.field in
+/-- **CUT 2a of the trace witness: the unramified subalgebra
+`A ⊆ 𝓞_K/Q^{e·k}`, free of rank `f` over `ℤ/q^k`, over which
+`S = 𝓞_K/Q^{e·k}` is free of rank `e`** (SORRY LEAF, cut 2026-07-27 out
+of `exists_mem_cofactor_trace_quotient_ne_zero` below, which is PROVEN
+over it).
+
+**This carries the entire remaining mathematical content of Serre's
+wild different bound.**  Everything else in the chain — the trace
+tower, the CRT bookkeeping, the comaximality, the `(e : ℤ/q^k) ≠ 0`
+arithmetic, and the passage from a residual trace to a unit trace — is
+now proven.
+
+## WHAT IS LEFT, AND WHERE IT SITS
+
+The statement packages steps 1–3 and the *residue-field* half of step 5
+of the plan recorded on the consumer's docstring below.  The remaining
+`sorry` is a single stated `have` inside the proof, differing from the
+theorem's own conclusion only in that it asks for the RESIDUAL trace
+`Tr_{(A/𝔪A)/(ℤ/q)}` to be surjective instead of asking directly for an
+element of unit trace; `exists_isUnit_trace_of_residualTrace_surjective`
+above converts one into the other and is already applied.
+
+So the obligation is exactly: **produce `A`.**
+
+1. *An unramified subring.*  Let `h ∈ (ℤ/q^k)[X]` be monic of degree
+   `f` reducing to the minimal polynomial of a generator `ω̄` of
+   `κ = 𝓞_K/Q = 𝔽_{q^f}` over `𝔽_q`.  `h mod q` is separable, so
+   `h'(ω₀)` is a unit in `S` for any lift `ω₀`; `S` is local with
+   NILPOTENT maximal ideal, hence Henselian, so Newton iteration
+   produces `ω ∈ S` with `h(ω) = 0`, `ω ≡ ω₀`.  Take
+   `A = Algebra.adjoin (ℤ/q^k) {ω}` — a `Subalgebra`, which is what
+   makes `Algebra ↥A S` and `IsScalarTower (ℤ/q^k) ↥A S` automatic and
+   is why the statement is phrased with `Subalgebra` rather than an
+   abstract intermediate ring.
+2. *`A` is free of rank `f` over `ℤ/q^k`.*  By construction from the
+   monic `h`.  For the required injectivity: if `∑ c_j ω^j = 0` with
+   `μ = min_j v_q(c_j) < k`, then `∑ (c_j/q^μ) ω^j` reduces to a
+   nonzero element of `κ` by `𝔽_q`-independence of `1, …, ω̄^{f−1}`,
+   hence is a unit of `S`, forcing `q^μ = 0` in `S`, i.e. `μ ≥ k`.
+3. *`S` is free of rank `e` over `A`, BY COUNTING.*  `𝔪_A = qA` and
+   `S/qS = 𝓞_K/Q^e` has `κ`-dimension `e`, so Nakayama gives a
+   surjection `A^e ↠ S`; `|A^e| = q^{kfe} = |S|`, so it is bijective
+   (`Fintype.bijective_iff_surjective_and_card`), whence
+   `Module.Free A S` by `Module.Free.of_equiv`.  **This is what
+   replaces local monogenicity `𝓞_L = W[π]`** — freeness is all the
+   classical argument ever used, and freeness is free.
+5'. *Residual trace surjectivity.*  `A/𝔪A = κ` and `(ℤ/q^k)/𝔪 = 𝔽_q`,
+   and `κ/𝔽_q` is separable, so `Algebra.trace_surjective`
+   (`Mathlib/RingTheory/Trace/Basic.lean:521`) applies.
+
+## THE ONE MATHLIB GAP, RE-CHECKED 2026-07-27 — IT IS STILL OPEN
+
+Henselianity comes from `IsAdicComplete.henselianRing`
+(`Mathlib/RingTheory/Henselian.lean:170`), and the pin has **no
+`IsAdicComplete I R` instance for a NILPOTENT `I`**: the only instances
+are `𝓞[K]`/`𝓂[K]`, `ℤ_[p]`, complete Noetherian local, power series,
+Witt vectors, `⊥` and `Subsingleton`.
+
+**Do NOT add one.**  `Algebra.FormallySmooth.lift`
+(`Mathlib/RingTheory/Smooth/Basic.lean:151`) already takes
+`IsNilpotent I` and lifts an algebra map along a nilpotent-kernel
+surjection; it needs `Algebra.FormallySmooth (ℤ/q^k) A` for
+`A = (ℤ/q^k)[X]/(h)`, i.e. standard étaleness of `h` with `h'` a unit.
+That is the no-new-instance route.
+
+**A fallback for step 1's lift, if Hensel is awkward — pure finite
+group theory.**  `S^×` is the product of its `q`-part `1 + 𝔪` with a
+cyclic group of order `m = q^f − 1` mapping isomorphically to `κ^×`; so
+`ω = u^{q^a}` (`a = f(ek−1)`, `u` any lift of a generator of `κ^×`)
+satisfies `ω^m = 1` and still generates the residue field.  Note this
+gives the Teichmüller ELEMENT but NOT the monic degree-`f` relation
+that makes `A` free of rank `f`, which is why Hensel is primary.
+
+FAITHFULNESS: not vacuous — `finrank ↥A S = e` and the residual
+surjectivity are both genuine assertions about a genuinely constructed
+`A`, and `hk0` is load-bearing (at `k = 0` the ring `S` is trivial and
+no subalgebra has `finrank ↥A S = e > 0`). -/
+theorem exists_unramifiedSubalgebra_finrank_eq_isUnit_trace
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (k : ℕ) (hk0 : k ≠ 0) :
+    ∃ A : Subalgebra
+        (ℤ ⧸ (v.asIdeal ^ (e * k)).comap (algebraMap ℤ (NumberField.RingOfIntegers K)))
+        (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)),
+      Module.Free (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+          (algebraMap ℤ (NumberField.RingOfIntegers K))) A ∧
+      Module.Finite (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+          (algebraMap ℤ (NumberField.RingOfIntegers K))) A ∧
+      Module.Free A (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)) ∧
+      Module.Finite A (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)) ∧
+      Module.finrank A (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)) = e ∧
+      ∃ a : A, IsUnit (Algebra.trace (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+          (algebraMap ℤ (NumberField.RingOfIntegers K))) A a) := by
+  classical
+  -- the base `ℤ/q^k` is local: `Algebra.trace_quotient_mk` needs exactly this
+  haveI hloc : IsLocalRing (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+      (algebraMap ℤ (NumberField.RingOfIntegers K))) := by
+    rw [comap_pow_ramificationIdx_eq_span K q hq v hmem e he k]
+    exact isLocalRing_int_quotient_prime_pow q k hq hk0
+  -- THE REMAINING OBLIGATION: construct the unramified subalgebra `A`,
+  -- free of rank `f` over `ℤ/q^k`, with `S` free of rank `e` over it and
+  -- with `A/𝔪A = κ` surjecting under the residual trace onto `𝔽_q`.
+  obtain ⟨A, hf1, hfin1, hf2, hfin2, hrank, hsurj⟩ :
+      ∃ A : Subalgebra
+          (ℤ ⧸ (v.asIdeal ^ (e * k)).comap (algebraMap ℤ (NumberField.RingOfIntegers K)))
+          (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)),
+        Module.Free (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+            (algebraMap ℤ (NumberField.RingOfIntegers K))) A ∧
+        Module.Finite (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+            (algebraMap ℤ (NumberField.RingOfIntegers K))) A ∧
+        Module.Free A (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)) ∧
+        Module.Finite A (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)) ∧
+        Module.finrank A (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)) = e ∧
+        Function.Surjective (Algebra.trace
+          ((ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+            (algebraMap ℤ (NumberField.RingOfIntegers K))) ⧸ IsLocalRing.maximalIdeal
+              (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+                (algebraMap ℤ (NumberField.RingOfIntegers K))))
+          (A ⧸ Ideal.map (algebraMap (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+              (algebraMap ℤ (NumberField.RingOfIntegers K))) A)
+            (IsLocalRing.maximalIdeal (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+              (algebraMap ℤ (NumberField.RingOfIntegers K)))))) := sorry
+  haveI := hf1
+  haveI := hfin1
+  exact ⟨A, hf1, hfin1, hf2, hfin2, hrank,
+    exists_isUnit_trace_of_residualTrace_surjective _ _ hsurj⟩
+
 /-- **CUT 2 of the trace witness: the trace form of the finite local
 ring `𝓞_K/Q^{e·k}` over `ℤ/q^k` is not identically zero, witnessed
-inside the cofactor `J`** (SORRY LEAF, cut 2026-07-27 out of
+inside the cofactor `J`** (PROVEN 2026-07-27 over
+`exists_unramifiedSubalgebra_finrank_eq_isUnit_trace`,
+`sup_pow_ramificationIdx_cofactor_eq_top` and
+`comap_pow_ramificationIdx_eq_span` above; cut 2026-07-27 out of
 `exists_intTrace_not_mem_span_of_ramificationIdx` below).
 
 **This is the whole mathematical content of Serre's wild different
@@ -1540,82 +1799,45 @@ is literally `q^k ∤ Tr x`, i.e. `Tr x ≠ 0` in `ℤ/q^k`.  So no
 whole target, and the hypothesis `hk` enters the proof only through
 `(e : ℤ/q^k) ≠ 0`, which is `v_q(e) = k − 1 < k`.
 
-## THE PROOF TO WRITE (elementary finite commutative algebra)
+## HOW IT IS PROVEN — steps 4, 5' and 6 here, steps 1–3 in the cut above
 
 Write `S = 𝓞_K/Q^{e·k}`, `Z = ℤ/q^k`, `κ = 𝓞_K/Q = 𝔽_{q^f}`.  `S` is a
 finite local ring with nilpotent maximal ideal and `q^k = 0`; it is
-free of rank `e·f` over `Z` (a direct factor of the free module
-`𝓞_K/q^k𝓞_K`, hence projective, hence free over the artinian local
-ring `Z`, with rank forced by `|S| = q^{efk}`).
+free of rank `e·f` over `Z`.
 
-1. *An unramified subring `A ⊆ S`.*  Let `h ∈ ℤ[X]` be monic of degree
-   `f` reducing to the minimal polynomial of a generator `ω̄` of `κ`
-   over `𝔽_q`.  `h mod q` is separable, so `h'(ω₀)` is a unit in `S`
-   for any lift `ω₀`; `S` is local with NILPOTENT maximal ideal, hence
-   Henselian, so Newton iteration produces `ω ∈ S` with `h(ω) = 0`,
-   `ω ≡ ω₀`.  Put `A = Z[X]/(h) → S`, `X ↦ ω`.
-2. *`A` is free of rank `f` over `Z` and `A → S` is injective.*
-   Freeness holds by construction.  Injectivity: if `∑ c_j ω^j = 0`
-   with `μ = min_j v_q(c_j) < k`, then `∑ (c_j/q^μ) ω^j` reduces to a
-   nonzero element of `κ` by `𝔽_q`-independence of `1, …, ω̄^{f−1}`,
-   hence is a unit of `S`, forcing `q^μ = 0` in `S`, i.e. `μ ≥ k`.
-3. *`S` is free of rank `e` over `A`, BY COUNTING.*  `𝔪_A = qA` and
-   `S/qS = 𝓞_K/Q^e` has `κ`-dimension `e`, so Nakayama gives a
-   surjection `A^e ↠ S`; and `|A^e| = q^{kfe} = |S|`, so it is
-   bijective (`Fintype.bijective_iff_surjective_and_card`), whence
-   `Module.Free A S` by `Module.Free.of_equiv`.  **This is what
-   replaces local monogenicity `𝓞_L = W[π]`** — freeness is all the
-   classical argument ever used, and freeness is free.
-4. *Trace tower.*  `Algebra.trace_trace` (`Mathlib/RingTheory/Trace/Defs.lean:138`,
-   hypotheses exactly `Free`+`Finite` at both levels, which is what 2
-   and 3 supply) and `Algebra.trace_algebraMap` (`Defs.lean:111`) give
-   `Tr_{S/Z}(a) = e · Tr_{A/Z}(a)` for `a ∈ A`.
-5. *A unit trace upstairs.*  `Z` is a LOCAL ring, so mathlib's
-   `Algebra.trace_quotient_mk` (`Mathlib/RingTheory/Trace/Quotient.lean:40`)
-   applies verbatim at base `Z` and gives
-   `Tr_{A/Z}(a) mod q = Tr_{κ/𝔽_q}(ā)`; the residue trace is surjective
-   because `κ/𝔽_q` is separable (`Algebra.trace_surjective`,
-   `Mathlib/RingTheory/Trace/Basic.lean:521`).  Pick `a` with `Tr_A(a)`
-   a unit of `Z`.
+Steps 1–3 and the residue-field half of step 5 — the unramified
+subalgebra `A ⊆ S`, free of rank `f` over `Z`, over which `S` is free
+of rank `e` by counting, and whose residual trace is surjective — are
+the SORRY LEAF `exists_unramifiedSubalgebra_finrank_eq_isUnit_trace`
+above, where the construction plan, the `IsAdicComplete` gap and the
+`Algebra.FormallySmooth.lift` route around it are recorded in full.
+The rest is proven here:
+
+4. *Trace tower.*  `Algebra.trace_trace`
+   (`Mathlib/RingTheory/Trace/Defs.lean:138`, hypotheses exactly
+   `Free`+`Finite` at both levels) and `Algebra.trace_algebraMap`
+   (`Defs.lean:111`) give
+   `Tr_{S/Z}(a) = (finrank_A S)·Tr_{A/Z}(a) = e·Tr_{A/Z}(a)` for
+   `a ∈ A`.  Because `A` is carried as a `Subalgebra Z S` rather than
+   as an abstract intermediate ring, `Algebra ↥A S` and
+   `IsScalarTower Z ↥A S` are found by instance search — that choice
+   is what turns this step into a three-line rewrite, and it is why
+   the cut above is phrased with `Subalgebra`.
+5'. *Unit trace from residual trace.*  `Z` is a LOCAL ring —
+   `isLocalRing_int_quotient_prime_pow` above, transported to the
+   comap form along `comap_pow_ramificationIdx_eq_span` — so
+   `Algebra.trace_quotient_mk` applies verbatim at base `Z`.  That is
+   `exists_isUnit_trace_of_residualTrace_surjective` above, already
+   applied inside the cut.
 6. *Conclusion.*  `Tr_{S/Z}(a) = e·Tr_A(a) ≠ 0` in `Z` because
-   `(e : Z) ≠ 0` (that is `hk`) and `Tr_A(a)` is a unit.  Finally lift
-   `a` to `x ∈ 𝓞_K` lying in `J`: the composite `J → 𝓞_K → S` is
-   SURJECTIVE because `J ⊔ Q^{e·k} = ⊤` (see step 2 of
-   `trace_quotient_pow_eq_of_mem_cofactor`'s docstring for why `J` is
-   prime to `Q`).
-
-## THE ONE MATHLIB GAP, RE-CHECKED 2026-07-27 — IT IS STILL OPEN
-
-Henselianity comes from `IsAdicComplete.henselianRing`
-(`Mathlib/RingTheory/Henselian.lean:170`), and the pin has **no
-`IsAdicComplete I R` instance for a NILPOTENT `I`**.  The grep the
-previous docstring asked for was run: the only instances in the pin are
-`𝓞[K]`/`𝓂[K]` (`NumberTheory/LocalField/Basic.lean:176`), `ℤ_[p]`
-(`Padics/PadicIntegers.lean:532`), complete Noetherian local
-(`AdicCompletion/LocalRing.lean:127`), power series
-(`AdicCompletion/Completeness.lean:226`), Witt vectors
-(`WittVector/Complete.lean:116`), `⊥` and `Subsingleton`
-(`AdicCompletion/Basic.lean:857,862`).  None covers a nilpotent ideal.
-
-Supplying it is a few lines, and it is the whole of the gap.  With
-`I^N = ⊥`: `IsHausdorff` — take `n = N` in the hypothesis and the
-modulus is `⊥`.  `IsPrecomplete` — the limit is `L = f N`; for `n ≤ N`
-compatibility gives `f n ≡ f N`, and for `n > N` the modulus `I^n ≤ I^N`
-is `⊥` while compatibility at `m = N ≤ n` gives `f N = f n` on the nose.
-
-**A fallback for step 1's lift, if Hensel is awkward — pure finite
-group theory.**  `S^×` is the product of its `q`-part `1 + 𝔪` with a
-cyclic group of order `m = q^f − 1` mapping isomorphically to `κ^×`; so
-`ω = u^{q^a}` (`a = f(ek−1)`, `u` any lift of a generator of `κ^×`)
-satisfies `ω^m = 1` and still generates the residue field.  Note this
-gives the Teichmüller ELEMENT but NOT the monic degree-`f` relation
-that makes `A` free of rank `f`, which is why Hensel is primary.
-
-An alternative to Hensel with no new instance:
-`Algebra.FormallySmooth.lift` (`Mathlib/RingTheory/Smooth/Basic.lean:151`)
-already takes `IsNilpotent I` and lifts an algebra map along a
-nilpotent-kernel surjection — it needs `Algebra.FormallySmooth Z A`
-for `A = Z[X]/(h)`, i.e. standard étaleness of `h` with `h'` a unit.
+   `(e : Z) ≠ 0` — that is `hk`, via `q^k ∤ e`
+   (`Nat.Prime.pow_dvd_iff_le_factorization`, using `e ≠ 0` from
+   `ramificationIdx'_ne_zero_of_liesOver`) — and `Tr_A(a)` is a unit,
+   so `IsUnit.mul_left_eq_zero` finishes.  The witness is pulled back
+   into `J` because `J ⊔ Q^{e·k} = ⊤`
+   (`sup_pow_ramificationIdx_cofactor_eq_top` above), which makes
+   `J → 𝓞_K → S` surjective: from `p + j = 1` with `p ∈ Q^{e·k}`,
+   `j ∈ J`, the element `y·j` lies in `J` and reduces to `ȳ`.
 
 ## WHAT DOES NOT APPLY, CHECKED — DO NOT SPEND A CYCLE REDISCOVERING IT
 
@@ -1646,8 +1868,63 @@ theorem exists_mem_cofactor_trace_quotient_ne_zero
       Algebra.trace
         (ℤ ⧸ (v.asIdeal ^ (e * k)).comap (algebraMap ℤ (NumberField.RingOfIntegers K)))
         (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k))
-        (Ideal.Quotient.mk _ x) ≠ 0 :=
-  sorry
+        (Ideal.Quotient.mk _ x) ≠ 0 := by
+  classical
+  have hk0 : k ≠ 0 := by omega
+  -- `e ≠ 0`: the ramification index of a prime lying over `q` is positive
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have hene0 : e ≠ 0 := by
+    rw [he]
+    exact Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0
+  -- step 6's arithmetic: `(e : ℤ/q^k) ≠ 0`, which is exactly `v_q(e) = k − 1 < k`
+  have hecast : ((e : ℕ) : ℤ ⧸ (v.asIdeal ^ (e * k)).comap
+      (algebraMap ℤ (NumberField.RingOfIntegers K))) ≠ 0 := by
+    rw [← map_natCast (Ideal.Quotient.mk ((v.asIdeal ^ (e * k)).comap
+        (algebraMap ℤ (NumberField.RingOfIntegers K)))) e, Ne,
+      Ideal.Quotient.eq_zero_iff_mem, comap_pow_ramificationIdx_eq_span K q hq v hmem e he k,
+      Ideal.mem_span_singleton]
+    intro hdvd
+    have hdvd' : (q : ℕ) ^ k ∣ e := by
+      have h2 : ((q ^ k : ℕ) : ℤ) ∣ ((e : ℕ) : ℤ) := by push_cast at hdvd ⊢; exact hdvd
+      exact_mod_cast h2
+    rw [Nat.Prime.pow_dvd_iff_le_factorization hq hene0] at hdvd'
+    omega
+  haveI hnt : Nontrivial (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k)) := by
+    refine Ideal.Quotient.nontrivial_iff.mpr ?_
+    intro htop
+    have h1 : v.asIdeal ^ (e * k) ≤ v.asIdeal := Ideal.pow_le_self (Nat.mul_ne_zero hene0 hk0)
+    rw [htop, top_le_iff] at h1
+    exact v.isPrime.ne_top h1
+  -- every residue class of `S = 𝓞_K/Q^{e·k}` is represented inside the cofactor `J`
+  have hsup := sup_pow_ramificationIdx_cofactor_eq_top K q hq v hmem e he k J hJ
+  have hlift : ∀ s : NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k),
+      ∃ x : NumberField.RingOfIntegers K, x ∈ J ∧ Ideal.Quotient.mk _ x = s := by
+    intro s
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective s
+    have h1 : (1 : NumberField.RingOfIntegers K) ∈ v.asIdeal ^ (e * k) ⊔ J := by
+      rw [hsup]; exact Submodule.mem_top
+    obtain ⟨p, hp, j, hj, hpj⟩ := Submodule.mem_sup.mp h1
+    refine ⟨y * j, Ideal.mul_mem_left J y hj, ?_⟩
+    have hp0 : Ideal.Quotient.mk (v.asIdeal ^ (e * k)) p = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr hp
+    have hj1 : Ideal.Quotient.mk (v.asIdeal ^ (e * k)) j = 1 := by
+      have hcg := congrArg (Ideal.Quotient.mk (v.asIdeal ^ (e * k))) hpj
+      simpa [hp0] using hcg
+    rw [map_mul, hj1, mul_one]
+  -- the finite-ring core, then step 4's trace tower `Tr_{S/Z} a = e · Tr_{A/Z} a`
+  obtain ⟨A, hf1, hfin1, hf2, hfin2, hrank, a, hu⟩ :=
+    exists_unramifiedSubalgebra_finrank_eq_isUnit_trace K q hq v hmem e he k hk0
+  obtain ⟨x, hxJ, hxa⟩ := hlift (algebraMap A _ a)
+  refine ⟨x, hxJ, ?_⟩
+  rw [hxa, ← Algebra.trace_trace (S := A), Algebra.trace_algebraMap, hrank, map_nsmul,
+    nsmul_eq_mul]
+  intro hcon
+  exact hecast (hu.mul_left_eq_zero.mp hcon)
 
 /-- **The trace witness for Serre's different bound** (PROVEN 2026-07-27
 over the two cuts `trace_quotient_pow_eq_of_mem_cofactor` (trace
@@ -1681,12 +1958,13 @@ not identically zero.**  There is no room for a cheaper reformulation.
 
 ## THE PROOF PLAN — NOW OWNED BY THE TWO CUTS ABOVE
 
-**Retained here for context only.  The LIVE version, with every mathlib
-input re-checked on 2026-07-27 (including the `IsAdicComplete` grep,
-which still finds no nilpotent instance), is the docstring of
-`exists_mem_cofactor_trace_quotient_ne_zero` above — edit THAT one.**
-Steps 1–6 below are its steps 1–6; the CRT and base-change bookkeeping
-they gesture at is now the separate leaf
+**Retained here for context only, and now doubly superseded: as of
+2026-07-27 steps 4–6 are PROVEN inside
+`exists_mem_cofactor_trace_quotient_ne_zero` above, and the LIVE
+version of steps 1–3 — the only part still open — is the docstring of
+`exists_unramifiedSubalgebra_finrank_eq_isUnit_trace` above.  EDIT THAT
+ONE.**  Steps 1–6 below are its steps 1–6; the CRT and base-change
+bookkeeping they gesture at is the separate leaf
 `trace_quotient_pow_eq_of_mem_cofactor`.
 
 (Derived 2026-07-27.  This supersedes BOTH routes recorded on the
