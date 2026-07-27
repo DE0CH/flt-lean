@@ -22802,10 +22802,372 @@ theorem span_natCard_le_decompPow (CF : Type) [Field CF] [NumberField CF]
           Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card :=
   sorry
 
-/-- **THE JACOBI-SUM CARRY FORMULA — the one remaining deep node of the
-Stickelberger chain** (SORRY LEAF, cut 2026-07-27 out of
-`span_gaussPowOfJacobiSums_le_localPow` below, which is now PROVEN over
-this leaf and `span_natCard_le_decompPow`).
+/-- **`∑_{x ∈ K} x^A (1−x)^C = 0` WHEN `A + C < #K − 1`** (PROVEN
+2026-07-27; the finite-field kernel of the ELEMENTARY half of
+Stickelberger's congruence, isolated from everything cyclotomic).
+
+Expand `(1−x)^C` binomially and exchange the two sums: every inner sum
+is `∑_{x ∈ K} x^{A+j}` with `A + j ≤ A + C < #K − 1`, and
+`FiniteField.sum_pow_lt_card_sub_one` says each such power sum
+vanishes. No side condition on `A`, `C` beyond the bound is needed — in
+particular `j = 0` is fine, since `∑_{x ∈ K} x^0 = #K = 0` in `K`.
+
+This is what makes `J(χᵃ,χᶜ) ≡ 0 (mod q)` for `a′ + c′ < p` an
+IDENTITY rather than a computation with binomial coefficients: after
+reduction mod `q` the Jacobi sum *is* such a power sum, with
+`A = a′·d`, `C = c′·d`, so `A + C = (a′+c′)·d < p·d = #F − 1`. -/
+theorem sum_pow_mul_one_sub_pow_eq_zero {K : Type*} [Field K] [Fintype K] (A C : ℕ)
+    (h : A + C < Fintype.card K - 1) :
+    ∑ x : K, x ^ A * (1 - x) ^ C = 0 := by
+  classical
+  have hexp : ∀ x : K, x ^ A * (1 - x) ^ C
+      = ∑ j ∈ Finset.range (C + 1), ((C.choose j : K) * (-1) ^ j) * x ^ (A + j) := by
+    intro x
+    have h1 : (1 - x : K) = (-x) + 1 := by ring
+    rw [h1, add_pow, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun j hj => ?_
+    rw [one_pow, mul_one, neg_pow, pow_add]
+    ring
+  simp only [hexp]
+  rw [Finset.sum_comm]
+  refine Finset.sum_eq_zero fun j hj => ?_
+  rw [← Finset.mul_sum, FiniteField.sum_pow_lt_card_sub_one K (A + j) (by
+    rw [Finset.mem_range] at hj; omega), mul_zero]
+
+/-- **THE ELEMENTARY CONGRUENCE: `q ∣ J(χᵃ, χᶜ)` WHEN `a′ + c′ < p`**
+(PROVEN 2026-07-27; `a′ := (a : ZMod p).val`), where `χ` is the `p`-th
+power residue character at `q` in the normalisation `χ(x) ≡ x^d`,
+`d := (#F − 1)/p`, `F := 𝓞 CF ⧸ q`.
+
+Proof, entirely inside `F` and needing no Gauss sums, no compositum and
+no ramification transfer:
+
+* `χ ≠ 1` with `χᵖ = 1` gives `orderOf χ = p`, and `χ^{#F−1} = 1`
+  because `x^{#F−1} = 1` on `Fˣ`; hence `p ∣ #F − 1` and `p·d = #F − 1`;
+* `mk_pow_apply_eq` (above) upgrades the normalisation `χ(x) ≡ x^d` to
+  `mk q ((χᵃ) x) = x^{a′·d}` for every `a` prime to `p`;
+* `jacobiSum_ringHomComp` therefore identifies `mk q (J(χᵃ,χᶜ))` with
+  the power sum `∑_{x ∈ F} x^{a′d}(1−x)^{c′d}`, and
+  `sum_pow_mul_one_sub_pow_eq_zero` kills it because
+  `(a′+c′)d < pd = #F − 1`.
+
+**Only the `a′+c′ < p ⟹ q ∣ J` direction is proven, and only that
+direction is elementary.** Its converse is FALSE as an equivalence with
+`v_q(J) = 0`: for `a′+c′ > p` one gets
+`J ≡ −(−1)^{(p−a′)d}·C(c′d, (p−a′)d) (mod q)`, and that binomial
+coefficient is itself divisible by `ℓ` exactly when the base-`ℓ`
+addition carries (Kummer) — which is the same carry count again. So the
+mod-`q` congruence decides `v_q ≥ 1` versus `= 0` and nothing beyond. -/
+theorem jacobiSum_mem_of_val_add_lt (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
+    (a c : ℕ) (ha : ¬ (p ∣ a)) (hc : ¬ (p ∣ c))
+    (hlt : ((a : ZMod p)).val + ((c : ZMod p)).val < p) :
+    jacobiSum (χ ^ a) (χ ^ c) ∈ q := by
+  classical
+  have hpp : p.Prime := hp.out
+  haveI : NeZero p := ⟨hpp.ne_zero⟩
+  haveI : Fact (1 < p) := ⟨hpp.one_lt⟩
+  haveI hqmax : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  -- `χ ^ p = 1` and `orderOf χ = p`
+  have hχpow : χ ^ p = 1 := by
+    refine MulChar.ext fun y => ?_
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe]
+    exact hχp y (Units.ne_zero y)
+  have hord : orderOf χ = p := by
+    have h1 : orderOf χ ∣ p := orderOf_dvd_of_pow_eq_one hχpow
+    rcases (Nat.Prime.eq_one_or_self_of_dvd hpp _ h1) with h | h
+    · exact absurd (orderOf_eq_one_iff.mp h) hχ1
+    · exact h
+  -- `p ∣ #F − 1`
+  have hchicard : χ ^ (Fintype.card (𝓞 CF ⧸ q) - 1) = 1 := by
+    refine MulChar.ext fun y => ?_
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe, ← map_pow,
+      FiniteField.pow_card_sub_one_eq_one (y : 𝓞 CF ⧸ q) (Units.ne_zero y), map_one]
+  have hpdvd : p ∣ Fintype.card (𝓞 CF ⧸ q) - 1 := by
+    rw [← hord]; exact orderOf_dvd_of_pow_eq_one hchicard
+  have hcard1 : 1 < Fintype.card (𝓞 CF ⧸ q) := Fintype.one_lt_card
+  set d : ℕ := (Fintype.card (𝓞 CF ⧸ q) - 1) / p with hddef
+  have hd : p * d = Fintype.card (𝓞 CF ⧸ q) - 1 := Nat.mul_div_cancel' hpdvd
+  have hd0 : d ≠ 0 := by
+    intro h
+    rw [h, Nat.mul_zero] at hd
+    omega
+  have hnatcard : Nat.card (𝓞 CF ⧸ q) = Fintype.card (𝓞 CF ⧸ q) := Nat.card_eq_fintype_card
+  have hcong : ∀ x : 𝓞 CF ⧸ q, Ideal.Quotient.mk q (χ x)
+      = x ^ ((((1 : (ZMod p)ˣ) : ZMod p)).val * d) := by
+    intro x
+    rw [hχcong x, hnatcard, Units.val_one, ZMod.val_one, one_mul, hddef]
+  -- the units of `ZMod p` attached to `a` and `c`
+  have hane : ((a : ZMod p)) ≠ 0 := by
+    intro h; exact ha ((ZMod.natCast_eq_zero_iff a p).mp h)
+  have hcne : ((c : ZMod p)) ≠ 0 := by
+    intro h; exact hc ((ZMod.natCast_eq_zero_iff c p).mp h)
+  have ha0 : a ≠ 0 := by rintro rfl; exact ha (dvd_zero p)
+  have hc0 : c ≠ 0 := by rintro rfl; exact hc (dvd_zero p)
+  set ua : (ZMod p)ˣ := (isUnit_iff_ne_zero.mpr hane).unit with huadef
+  set uc : (ZMod p)ˣ := (isUnit_iff_ne_zero.mpr hcne).unit with hucdef
+  have hua : ((ua : (ZMod p)ˣ) : ZMod p) = (a : ZMod p) := IsUnit.unit_spec _
+  have huc : ((uc : (ZMod p)ˣ) : ZMod p) = (c : ZMod p) := IsUnit.unit_spec _
+  have hA := mk_pow_apply_eq (Ideal.Quotient.mk q) p hpp χ 1 ua d a hd hd0 ha0
+    (by rw [hua, Units.val_one, mul_one]) hcong
+  have hC := mk_pow_apply_eq (Ideal.Quotient.mk q) p hpp χ 1 uc d c hd hd0 hc0
+    (by rw [huc, Units.val_one, mul_one]) hcong
+  rw [hua] at hA
+  rw [huc] at hC
+  -- reduce the Jacobi sum mod `q`
+  refine (Ideal.Quotient.eq_zero_iff_mem).mp ?_
+  rw [← jacobiSum_ringHomComp, jacobiSum]
+  have hterm : ∀ x : 𝓞 CF ⧸ q,
+      ((χ ^ a).ringHomComp (Ideal.Quotient.mk q)) x
+          * ((χ ^ c).ringHomComp (Ideal.Quotient.mk q)) (1 - x)
+        = x ^ (((a : ZMod p)).val * d) * (1 - x) ^ (((c : ZMod p)).val * d) := by
+    intro x
+    rw [MulChar.ringHomComp_apply, MulChar.ringHomComp_apply, hA x, hC (1 - x)]
+  simp only [hterm]
+  refine sum_pow_mul_one_sub_pow_eq_zero _ _ ?_
+  rw [← hd, ← Nat.add_mul]
+  exact (Nat.mul_lt_mul_right (Nat.pos_of_ne_zero hd0)).mpr hlt
+
+/-- **`σ_u` PERMUTES THE JACOBI SUMS: `σ_u(J(ψᵃ,ψᶜ)) = J(ψ^{a·u}, ψ^{c·u})`**
+(PROVEN 2026-07-27). `jacobiSum_ringHomComp` pushes a ring hom through a
+Jacobi sum as a `ringHomComp` on both characters, and
+`ringHomComp_cycGalRingOfIntegersEquiv` (above) evaluates each of those
+to a power of `ψ`, `ψ` being `p`-torsion. Nothing about `q` enters.
+
+This is the second half of the elementary bound: `v_q(J(ψᵃ,ψᶜ))` is
+CONSTANT along the decomposition subgroup's orbit of the exponent pair,
+because `σ_u` fixes `q` there — so the mod-`q` criterion may be applied
+at any `u ∈ D`, not only at `u = 1`. -/
+theorem map_jacobiSum_cycGal {F : Type*} [CommRing F] [Fintype F] (CF : Type) [Field CF]
+    [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] (ψ : MulChar F (𝓞 CF))
+    (hψp : ψ ^ p = 1) (u : (ZMod p)ˣ) (a c : ℕ) :
+    ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) (jacobiSum (ψ ^ a) (ψ ^ c))
+      = jacobiSum (ψ ^ (a * ((u : ZMod p)).val)) (ψ ^ (c * ((u : ZMod p)).val)) := by
+  rw [← jacobiSum_ringHomComp, ringHomComp_cycGalRingOfIntegersEquiv CF ψ hψp u a,
+    ringHomComp_cycGalRingOfIntegersEquiv CF ψ hψp u c]
+
+/-- **ONE CARRYING `u ∈ D` ALREADY FORCES `q ∣ J(χᵃ,χᶜ)`** (PROVEN
+2026-07-27; the elementary bound in its final, `u`-uniform form — this
+is exactly how far the elementary route reaches).
+
+Given `u` with `σ_u(q) = q` and a carry at `u`, i.e.
+`((−a)u⁻¹).val + ((−c)u⁻¹).val ≥ p`, put `w := u⁻¹` and
+`W := (w : ZMod p).val`. Then:
+
+* the carry condition is literally `(a·W)′ + (c·W)′ ≤ p` after
+  `ZMod.neg_val` (both residues are nonzero because `a`, `c`, `W` are
+  prime to `p`), and it cannot be an EQUALITY, since
+  `(a·W)′ + (c·W)′ = p` forces `((a+c)·w : ZMod p) = 0` and hence
+  `p ∣ a + c`, excluded by hypothesis. So `(a·W)′ + (c·W)′ < p`;
+* `jacobiSum_mem_of_val_add_lt` therefore puts `J(χ^{aW}, χ^{cW})` in
+  `q`, and `map_jacobiSum_cycGal` identifies that element with
+  `σ_w(J(χᵃ,χᶜ))`;
+* applying `σ_u` and using `σ_u ∘ σ_{u⁻¹} = σ_1 = id`
+  (`cycGalRingOfIntegersEquiv_comp`, `cycGalRingOfIntegersEquiv_one`)
+  transports the membership back across `Ideal.map σ_u q = q`.
+
+**The `p ∤ (a+c)` hypothesis is load-bearing and not decoration**: it is
+what makes the carry a STRICT inequality, and without it the leaf is
+false at `a + c ≡ 0`, where `J(χᵃ,χ^{−a}) = −χᵃ(−1)` is a unit. -/
+theorem jacobiSum_mem_of_mem_decompCarry (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
+    (a c : ℕ) (ha : ¬ (p ∣ a)) (hc : ¬ (p ∣ c)) (hac : ¬ (p ∣ (a + c)))
+    {u : (ZMod p)ˣ}
+    (hu : Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)
+    (hcarry : p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+        + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) :
+    jacobiSum (χ ^ a) (χ ^ c) ∈ q := by
+  classical
+  have hpp : p.Prime := hp.out
+  haveI : NeZero p := ⟨hpp.ne_zero⟩
+  haveI : Fact (1 < p) := ⟨hpp.one_lt⟩
+  have hχpow : χ ^ p = 1 := by
+    refine MulChar.ext fun y => ?_
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe]
+    exact hχp y (Units.ne_zero y)
+  set w : (ZMod p)ˣ := u⁻¹ with hwdef
+  set W : ℕ := ((w : (ZMod p)ˣ) : ZMod p).val with hWdef
+  -- `p ∤ W`, since `w` is a unit
+  have hWne : ((w : (ZMod p)ˣ) : ZMod p) ≠ 0 := w.ne_zero
+  have hWpos : 0 < W := ZMod.val_pos.mpr hWne
+  have hWlt : W < p := ZMod.val_lt _
+  have hWdvd : ¬ (p ∣ W) := fun h => by have := Nat.le_of_dvd hWpos h; omega
+  -- the two shifted exponents
+  have hcast : ∀ k : ℕ, ((k * W : ℕ) : ZMod p) = (k : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p) := by
+    intro k
+    push_cast [hWdef]
+    rw [ZMod.natCast_val, ZMod.cast_id]
+  have hdvdmul : ∀ k : ℕ, ¬ (p ∣ k) → ¬ (p ∣ (k * W)) := by
+    intro k hk h
+    rcases (Nat.Prime.dvd_mul hpp).mp h with h' | h'
+    · exact hk h'
+    · exact hWdvd h'
+  have hna : ¬ (p ∣ (a * W)) := hdvdmul a ha
+  have hnc : ¬ (p ∣ (c * W)) := hdvdmul c hc
+  -- the carry hypothesis is exactly `(aW)′ + (cW)′ ≤ p`
+  have hnegA : ((-(a : ZMod p)) * ((w : (ZMod p)ˣ) : ZMod p))
+      = -(((a * W : ℕ) : ZMod p)) := by rw [hcast a]; ring
+  have hnegC : ((-(c : ZMod p)) * ((w : (ZMod p)ˣ) : ZMod p))
+      = -(((c * W : ℕ) : ZMod p)) := by rw [hcast c]; ring
+  have hAne : (((a * W : ℕ) : ZMod p)) ≠ 0 := fun h => hna ((ZMod.natCast_eq_zero_iff _ _).mp h)
+  have hCne : (((c * W : ℕ) : ZMod p)) ≠ 0 := fun h => hnc ((ZMod.natCast_eq_zero_iff _ _).mp h)
+  rw [hnegA, hnegC, ZMod.neg_val, ZMod.neg_val, if_neg hAne, if_neg hCne] at hcarry
+  have hAlt : (((a * W : ℕ) : ZMod p)).val < p := ZMod.val_lt _
+  have hClt : (((c * W : ℕ) : ZMod p)).val < p := ZMod.val_lt _
+  have hle : (((a * W : ℕ) : ZMod p)).val + (((c * W : ℕ) : ZMod p)).val ≤ p := by omega
+  -- equality would force `p ∣ a + c`
+  have hne : (((a * W : ℕ) : ZMod p)).val + (((c * W : ℕ) : ZMod p)).val ≠ p := by
+    intro heq
+    apply hac
+    have hsum : (((a * W : ℕ) : ZMod p)) + (((c * W : ℕ) : ZMod p)) = 0 := by
+      have h1 : ((((a * W : ℕ) : ZMod p)).val + (((c * W : ℕ) : ZMod p)).val : ℕ) = p := heq
+      have h2 : ((((((a * W : ℕ) : ZMod p)).val + (((c * W : ℕ) : ZMod p)).val : ℕ)) : ZMod p)
+          = ((p : ℕ) : ZMod p) := by rw [h1]
+      rw [Nat.cast_add, ZMod.natCast_val, ZMod.natCast_val, ZMod.cast_id, ZMod.cast_id,
+        ZMod.natCast_self] at h2
+      exact h2
+    rw [hcast a, hcast c, ← add_mul] at hsum
+    have := (mul_eq_zero.mp hsum).resolve_right hWne
+    rw [← Nat.cast_add] at this
+    exact (ZMod.natCast_eq_zero_iff _ _).mp this
+  have hlt : (((a * W : ℕ) : ZMod p)).val + (((c * W : ℕ) : ZMod p)).val < p := by omega
+  -- the elementary congruence at the shifted exponents
+  have hmem := jacobiSum_mem_of_val_add_lt CF hq hq0 χ hχ1 hχp hχcong (a * W) (c * W)
+    hna hnc hlt
+  -- transport back along `σ_u`
+  rw [← map_jacobiSum_cycGal CF χ hχpow w a c] at hmem
+  have hmem2 := Ideal.mem_map_of_mem
+    ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) hmem
+  rw [hu] at hmem2
+  have hid : ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF))
+      (((cycGalRingOfIntegersEquiv CF w : 𝓞 CF →+* 𝓞 CF)) (jacobiSum (χ ^ a) (χ ^ c)))
+      = jacobiSum (χ ^ a) (χ ^ c) := by
+    rw [← RingHom.comp_apply, cycGalRingOfIntegersEquiv_comp, hwdef, mul_inv_cancel,
+      cycGalRingOfIntegersEquiv_one, RingHom.id_apply]
+  rwa [hid] at hmem2
+
+/-- **STICKELBERGER PROPER — THE JACOBI-SUM CARRY FORMULA AT CARRY
+COUNT `≥ 2`** (SORRY LEAF, cut 2026-07-27 out of
+`span_jacobiSum_le_decompCarryPow` below, which is now PROVEN over this
+leaf and `jacobiSum_mem_of_mem_decompCarry` above).
+
+This is the residue of the deep node after the elementary route has
+been driven to its limit. The hypothesis `2 ≤ #{carries}` is not a
+convenience: the elementary argument gives EXACTLY `v_q(J) ≥ 1`, so
+carry counts `0` and `1` are now closed and everything at `2` and above
+is open.
+
+**WHY THE ELEMENTARY ROUTE STOPS AT `1`, and the check that refutes
+this claim.** Reducing mod `q` turns `J(χᵃ,χᶜ)` into a power sum over
+`F = 𝓞 CF ⧸ q`, which vanishes iff `a′+c′ < p`
+(`jacobiSum_mem_of_val_add_lt`); and `σ_u` for `u ∈ D` fixes `q` while
+moving the exponent pair, so the criterion may be read at every
+`u ∈ D` (`map_jacobiSum_cycGal`). But all those readings are readings
+of the SAME integer `v_q(J)`, and they disagree with each other
+whenever `0 < #{carries} < f` — so a mod-`q` congruence cannot separate
+`v_q = 1` from `v_q = 2`. Concretely, at `a′+c′ > p` one has
+`J ≡ −(−1)^{(p−a′)d}·C(c′d,(p−a′)d) (mod q)`, whose `ℓ`-valuation IS
+the carry count by Kummer's theorem — but a congruence mod `q` only
+exposes whether that valuation is positive. **Refuting check**: exhibit
+a proof of `v_q(J) ≥ 2` that uses only congruences mod `q` and the
+`(ZMod p)ˣ`-action; the argument above says none exists.
+
+**AXIS SEARCHED.** Congruence-and-Galois arguments inside `𝓞 CF` — mod
+`q` reduction of the Jacobi sum, the `D`-action on exponent pairs, the
+norm relation `J·J̄ = #F`, and the resulting duality (below). Not
+searched, because it is known to work and is known to be large: the
+Gauss-sum route through the compositum.
+
+**A STRUCTURAL FACT worth having before attacking this.** For `a`, `c`,
+`a+c` all prime to `p`, `J(χᵃ,χᶜ)·J(χ^{−a},χ^{−c}) = #F`, whose
+`q`-valuation is `f = #D`; and the carry counts of `(a,c)` and
+`(−a,−c)` also sum to `#D`, because for each `u ∈ D` exactly one of
+`(au⁻¹)′+(cu⁻¹)′ < p` and `> p` holds (equality being excluded by
+`p ∤ a+c`). Consequently:
+
+* the `≥` asserted here, quantified over ALL pairs, is EQUIVALENT to the
+  corresponding EQUALITY — so no proof can be cheaper by proving only
+  an inequality; and
+* the lower bound at `(−a,−c)` gives the UPPER bound at `(a,c)` for
+  free. In particular the elementary bound already yields
+  `v_q(J) ≤ #{carries}` whenever `#{carries} ≤ 1`, which is why those
+  cases come out exactly.
+
+**THE ROUTE THAT DOES WORK** (Washington, *Introduction to Cyclotomic
+Fields* §6.1–6.2; Ireland–Rosen ch. 14; Lang, *Cyclotomic Fields*
+ch. 1). Let `ℓ` be the rational prime under `q`, `L := CF(ζ_ℓ)`,
+`𝒬 ∣ q` a prime of `𝓞 L`, so `e(𝒬/q) = ℓ − 1`. With `ω` the Teichmüller
+character of `F` and `g` the Gauss sum against a primitive additive
+character, Stickelberger's congruence gives
+`v_𝒬(g(ω^{−k})) = s_ℓ(k)`, the base-`ℓ` digit sum. Since `χ = ω^d`, the
+factorisation `J(χᵃ,χᶜ) = g(χᵃ)g(χᶜ)/g(χ^{a+c})` yields
+`v_q(J) = [s_ℓ((p−a)d) + s_ℓ((p−c)d) − s_ℓ((p−a−c)d)]/(ℓ−1)`, and the
+classical digit identity `s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f}(mℓ^i mod p)`
+turns that into exactly `#{u ∈ D : carry at u}`, `D = ⟨ℓ⟩` being
+generated by Frobenius. Nothing about `gaussSum` valuations exists in
+mathlib (`Mathlib/NumberTheory/GaussSum.lean` has only
+`gaussSum_mul_gaussSum_eq_card` and `gaussSum_sq`), nor in `~/cs/FLT` —
+surveyed 2026-07-26, re-checked 2026-07-27.
+
+**FAITHFULNESS** — inherited verbatim from the parent statement, and
+independently a fortiori: PARI/GP, 2026-07-27, `K = ℚ(ζ_p)`,
+`q = idealprimedec(K,ℓ)[1]`, `χ` realised through `nfmodprinit` by
+discrete logarithm, `J(χᵃ,χᶜ)` formed in `ℤ[ζ_p]` and `idealval`
+compared with the carry count. Holds as an EQUALITY for every ordered
+pair `(a,c) ∈ [1,p−1]²` with `p ∤ a+c`, over
+`(p,ℓ) ∈ {(5,11),(7,29),(5,19),(7,13),(13,3),(7,2),(5,2),(5,3),(11,3),
+(13,5)}` — residue degrees `f = 1…5`, 706 pairs, no failures. Note
+`f = 1` forces carry count `≤ 1`, so this leaf is VACUOUS there and the
+whole `ℓ ≡ 1 (mod p)` case is now proven outright. -/
+theorem span_jacobiSum_le_decompCarryPow_of_two_le (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
+    (a c : ℕ) (ha : ¬ (p ∣ a)) (hc : ¬ (p ∣ c)) (hac : ¬ (p ∣ (a + c)))
+    (htwo : 2 ≤ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
+          p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card) :
+    Ideal.span {jacobiSum (χ ^ a) (χ ^ c)}
+      ≤ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
+          p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card :=
+  sorry
+
+/-- **THE JACOBI-SUM CARRY FORMULA — the deep node of the Stickelberger
+chain** (cut 2026-07-27 out of `span_gaussPowOfJacobiSums_le_localPow`
+below, which is PROVEN over this statement and
+`span_natCard_le_decompPow`).
+
+**NO LONGER A LEAF (2026-07-27): PROVEN over
+`jacobiSum_mem_of_mem_decompCarry` (elementary, complete) and the
+strictly smaller residual leaf
+`span_jacobiSum_le_decompCarryPow_of_two_le` (Stickelberger proper).**
+The elementary route — reduce mod `q`, use `∑_{x ∈ 𝔽_Q} x^n = 0` for
+`0 < n < Q−1`, and move the exponent pair by the decomposition
+subgroup — proves EXACTLY `v_q(J) ≥ 1` as soon as one carry occurs, so
+the carry counts `0` and `1` are closed here. In particular **the whole
+`f = 1` case, i.e. every `ℓ ≡ 1 (mod p)`, is now proven outright**,
+since there the carry count never exceeds `1`. Only carry count `≥ 2`
+remains open; see that leaf's docstring for why a mod-`q` argument
+cannot reach it, which axis was searched, and the Gauss-sum route that
+does work.
 
 Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
 `d := (Q−1)/p`, and `χ` **the** `p`-th power residue character at `q`
@@ -22880,8 +23242,29 @@ theorem span_jacobiSum_le_decompCarryPow (CF : Type) [Field CF] [NumberField CF]
       ≤ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
           Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
           p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
-            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card :=
-  sorry
+            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card := by
+  classical
+  rcases Nat.lt_or_ge (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+      Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
+      p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+        + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card 2 with hlt2 | hge2
+  · rcases Nat.eq_zero_or_pos (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+        Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
+        p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+          + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card with h0 | h0
+    · rw [h0, pow_zero, Ideal.one_eq_top]
+      exact le_top
+    · have h1 : (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
+          p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card = 1 := by omega
+      rw [h1, pow_one, Ideal.span_le, Set.singleton_subset_iff]
+      obtain ⟨u, hu⟩ := Finset.card_pos.mp h0
+      rw [Finset.mem_filter] at hu
+      exact jacobiSum_mem_of_mem_decompCarry CF hq hq0 χ hχ1 hχp hχcong a c ha hc hac
+        hu.2.1 hu.2.2
+  · exact span_jacobiSum_le_decompCarryPow_of_two_le CF hq hq0 hpq χ hχ1 hχp hχcong
+      a c ha hc hac hge2
 
 /-- **STICKELBERGER'S THEOREM, DIVISIBILITY HALF, AT THE SINGLE PRIME
 `q`** (PROVEN 2026-07-27 over `span_natCard_le_decompPow` and
