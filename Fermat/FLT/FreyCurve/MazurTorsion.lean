@@ -6175,12 +6175,111 @@ theorem natCard_affine_point_eq_natCard_frobFixed (q : ℕ) [Fact q.Prime]
         Subtype.ext (WeierstrassCurve.Affine.Point.map_some
           (Algebra.ofId (ZMod q) (AlgebraicClosure (ZMod q))) hns)⟩
 
-/-- **The level-`N` Weil pairing, scaled by the degree of `1 − F`** (sorry leaf,
-opened 2026-07-27 by decomposing
-`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below, of which it is the
-ENTIRE remaining content): for `N` coprime to `q` there is an alternating,
+/-- **`det(1 − F) = #Wbar(𝔽_q)` on the `N`-torsion** (sorry leaf, opened
+2026-07-27 by decomposing
+`exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd` below, of which it is
+the ENTIRE remaining content): for `N` coprime to `q`, the determinant of
+`1 − F` on `Wbar[N]` is the reduction mod `N` of the number of `F`-fixed points
+of `Wbar(𝔽̄_q)` — equivalently, by `natCard_affine_point_eq_natCard_frobFixed`
+above, of `#Wbar(𝔽_q)`.
+
+WHY THE LEAF MOVED HERE, AND WHAT THAT REMOVED. The leaf below used to bundle
+TWO things: the existence of an alternating PERFECT `ZMod N`-valued pairing on
+`Wbar[N]`, and the scaling of that pairing by the fixed-point count. The first
+half was pure duplication — `exists_weilPairing_frobenius_of_coprime` above is
+PROVEN and already produces exactly such a pairing, over the single
+composite-level arithmetic leaf `exists_weilPairing_mu_of_coprime`, which is
+separately owned. The second half is not about a pairing at all: by
+`pairing_map_eq_det_mul_fin_two` above, EVERY alternating form on a rank-two
+module is scaled by `LinearMap.det f` under any `f`, so the scaling constant is
+forced by the endomorphism and the only content is which ring element it equals.
+Hence this statement, which mentions no pairing.
+
+WHAT IT ACTUALLY NEEDS, AND THE CORRECTION THAT COMES WITH IT. The classical
+chain is `#Wbar(𝔽_q) = #ker(1 − F) = deg(1 − F) = det(1 − F | T_ℓ)`. The first
+equality is `natCard_affine_point_eq_natCard_frobFixed` above (PROVEN, Galois
+descent, no degree theory); the REST is this leaf, and both of its equalities
+need a genuine degree of an isogeny:
+
+* `#ker ψ = deg ψ` is the SEPARABILITY of `ψ = 1 − F` (Silverman *AEC* III.4.10)
+  — false for `F` itself, which has `#ker F = 1` and `deg F = q`;
+* `deg ψ = det(ψ | Wbar[N])` rests on the dual isogeny `ψ̂ψ = [deg ψ]`
+  (III.6.2) together with the Weil-pairing adjointness `e(ψ x, y) = e(x, ψ̂ y)`.
+
+So — correcting a note carried in this file's docstrings and in at least one
+dispatch — **the Lefschetz half DOES need the degree theory, and it IS shared
+with Hasse's bound.** What it does not need is a second copy of the Weil
+pairing. The companion is `HasseBound.natCard_ker_degreeFormEnd`
+(`EllipticCurve/HasseBound.lean`), the only remaining input of
+`hasse_bound_natCard_affine_point` above, which asserts
+`#ker([m] − [n]∘F) = m² − a·m·n + n²·q` for `q ∤ m`. This leaf is its
+`N`-TORSION companion, and the single statement that discharges both is
+
+    det ([m] − [n]∘F ∣ Wbar[N]) = (m² − a·m·n + n²·q : ZMod N)   for  q ∤ m,
+
+whose `(m, n) = (1, 1)` case is this leaf (`a = q + 1 − #Wbar(𝔽_q)` by
+definition, so the form is `#Wbar(𝔽_q)`) and whose `(m, n) = (0, 1)` case is
+`det_frobeniusTorsionEnd_of_coprime` above — already PROVEN there from the Weil
+pairing, which is the one specialization the pairing route reaches on its own,
+because `e(Fx, Fy) = e(x, y)^q` is GALOIS EQUIVARIANCE rather than degree
+compatibility. Note also, as a free consistency check for that leaf's owner,
+that `natCard_ker_degreeFormEnd` at `(m, n) = (1, 1)` is already PROVEN in this
+file as `natCard_affine_point_eq_natCard_frobFixed`; its content is the other
+`(m, n)`.
+
+WHAT IS AVAILABLE IN THE TREE, checked 2026-07-27 rather than assumed.
+`Isogeny.dualHom` and `Isogeny.dualHom_comp` (`EllipticCurve/Isogeny.lean`) DO
+exist in characteristic `p` — `ψ̂ (ψ P) = ψ.degree • P` as a homomorphism of
+point groups, with no `CharZero` binder — because they are Lagrange in `ker ψ`
+plus descent along surjectivity. What carries `[CharZero F]`, and must, is
+`isRationalMap_dualHom` / `Isogeny.dual`: that `ψ̂` is again a MORPHISM. The same
+file refutes the characteristic-`p` version in `isRationalMap_dualHom_is_false`,
+and the reason is exactly that `Isogeny.degree` is `Nat.card (ker ·)`, i.e. the
+SEPARABLE degree (`frobIsog_degree = 1`, not `q`). So the tree has no
+scheme-theoretic `deg` at all, and the group-level factorisation it does have is
+not enough for the divisor-theoretic proof of pairing adjointness, which needs
+`ψ̂` rational.
+
+A ROUTE ALREADY REFUTED — do not re-search it. Computing `#ker(1 − F)` `ℓ`-part
+by `ℓ`-part from Smith normal form on the Tate module recovers only the
+VALUATIONS `v_ℓ(det)`, never the congruence: over `ZMod N` a kernel count sees
+an endomorphism only through `gcd(dᵢ, N)` for its elementary divisors, so it
+cannot see that `det(1 − F | T_ℓ)` is a rational integer independent of `ℓ` and
+POSITIVE. Positivity is not group theory — for a bare group endomorphism `#ker`
+and `det` agree only up to sign.
+
+THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a degree function on isogenies
+in `Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/` that is not
+`Nat.card (ker ·)`, or an isogeny-degree compatibility
+`e(ψ x, ψ y) = e(x, y) ^ deg ψ` in positive characteristic. THE AXIS SEARCHED
+was this development's own isogeny and Weil-pairing developments, by name and by
+binder (`CharZero`, `Fact p.Prime`), plus `EllipticCurve/HasseBound.lean` as it
+stands on 2026-07-27. -/
+theorem det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    LinearMap.det (1 - WeilPairing.frobeniusTorsionEnd q Wbar N) =
+      ((Nat.card {P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point //
+          WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+            (WeilPairing.frobAlgHom q) P = P} : ℕ) : ZMod N) :=
+  sorry
+
+/-- **The level-`N` Weil pairing, scaled by the degree of `1 − F`** (PROVEN
+2026-07-27 over `det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed`
+immediately above together with the PROVEN
+`exists_weilPairing_frobenius_of_coprime`; opened the same day by decomposing
+`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below, of which it is
+the ENTIRE remaining content): for `N` coprime to `q` there is an alternating,
 PERFECT (`ZMod N`-valued, unit somewhere) pairing on `Wbar[N]` which the
 endomorphism `1 − F` scales by `#{P ∈ Wbar(𝔽̄_q) : F P = P}`.
+
+THE PROOF IS THREE LINES, AND THAT IS THE POINT. The pairing is the one
+`exists_weilPairing_frobenius_of_coprime` above already builds; its Frobenius
+clause is discarded here (`1 − F` is a different endomorphism), and the scaling
+clause is not an extra property of the pairing at all —
+`pairing_map_eq_det_mul_fin_two` scales EVERY alternating form on a rank-two
+module by `LinearMap.det`. So the arithmetic all sits in the determinant leaf
+above; read its audit before attacking this cluster.
 
 WHAT THIS IS. It is the level-`N` Weil pairing `e_N : Wbar[N] × Wbar[N] → μ_N`
 (transported to `ZMod N` by a discrete logarithm, which is available because
@@ -6204,41 +6303,17 @@ NOT VACUOUS. Dropping the unit-valued clause would make the leaf trivial (take
 both, the leaf pins `det(1 − F | Wbar[N])` to the point count — see the assembly
 below, which is three lines over `det_eq_of_pairing_scaling_fin_two`.
 
-MACHINERY, AND WHY IT IS SHARED. What is missing is the Weil pairing at COMPOSITE
-level: the development in `EllipticCurve/WeilPairing.lean` (`weilValueProp`,
-`IsWeilValue`, `dlog`, `exists_weilPairing_frobenius`) carries `[Fact p.Prime]`
-throughout, because it builds the pairing from `μ_p ⊆ 𝔽̄_qˣ` and a discrete
-logarithm into the FIELD `ZMod p`. This is the SAME missing piece that
-`det_frobeniusTorsionEnd_of_coprime` above needs, and building it discharges both
-leaves at once: with the pairing in hand, `det F = q` comes from
-`exists_weilPairing_frobenius`'s scaling `q`, and this leaf from the scaling
-`deg(1 − F)`. Everything downstream of the pairing is already generic here —
-`pairing_map_eq_det_mul_fin_two` and `det_eq_of_pairing_scaling_fin_two` above hold
-over any commutative ring, and `nonempty_basis_nTorsion` supplies the rank-two
-input for every `N` coprime to `q`.
-
-Beyond the pairing itself, the second classical input is the DUAL ISOGENY
-(`ψ̂ ψ = [deg ψ]`), which is what proves the degree compatibility. This tree's
-`Isogeny.dual` (`EllipticCurve/Isogeny.lean`) is restricted to `[CharZero F]` —
-and must be, since the same file REFUTES the characteristic-`p` version in
-`isRationalMap_dualHom_is_false`. So the degree compatibility in characteristic
-`p` is genuinely absent and cannot be lifted from there.
-
-THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a `μ_N`-valued (or `ZMod N`-
-valued) alternating pairing on `nTorsion N` without a primality hypothesis, or an
-isogeny-degree compatibility `e(ψ x, ψ y) = e(x, y) ^ deg ψ` in positive
-characteristic, anywhere in `Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`.
-THE AXIS SEARCHED was the primality binders and the `CharZero` binders of this
-project's own Weil-pairing and isogeny developments; a name-level grep over the
-three trees was run for the pairing, not for a dual isogeny in characteristic `p`.
-
-THE AXIS *NOT* SEARCHED, recorded so the next owner does not assume it is closed:
-a route that avoids the dual isogeny entirely — e.g. computing `#ker(1 − F)`
-`ℓ`-part by `ℓ`-part from Smith normal form on the Tate module. That route
-recovers only the VALUATIONS `v_ℓ(det)`, not the congruence, because it cannot see
-that `det(1 − F | T_ℓ)` is a rational integer independent of `ℓ` and POSITIVE.
-Positivity is essential and is not group theory: for a group endomorphism with the
-same kernel data, `#ker` and `det` agree only up to sign. -/
+MACHINERY. Everything this statement needs beyond the determinant leaf is proven
+and generic: `exists_weilPairing_frobenius_of_coprime` for the pairing (itself
+over the composite-level arithmetic leaf `exists_weilPairing_mu_of_coprime`),
+`nonempty_basis_nTorsion` for the rank-two input at every `N` coprime to `q`, and
+`pairing_map_eq_det_mul_fin_two` / `det_eq_of_pairing_scaling_fin_two` for the
+linear algebra, which hold over an arbitrary commutative ring so that composite
+`N` is not an obstruction. The audit of the missing degree theory — the dual
+isogeny in characteristic `p`, its sharing with `HasseBound`, and the refuted
+Smith-normal-form route — lives on
+`det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed` above, which is where the
+work now is. -/
 theorem exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ) (hNq : Nat.Coprime N q) :
     ∃ e : ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N) →ₗ[ZMod N]
@@ -6249,8 +6324,13 @@ theorem exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd (q : ℕ) [Fact q
             ((1 - WeilPairing.frobeniusTorsionEnd q Wbar N) y)
           = ((Nat.card {P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point //
                 WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
-                  (WeilPairing.frobAlgHom q) P = P} : ℕ) : ZMod N) * e x y :=
-  sorry
+                  (WeilPairing.frobAlgHom q) P = P} : ℕ) : ZMod N) * e x y := by
+  obtain ⟨b⟩ := nonempty_basis_nTorsion q Wbar N hNq
+  obtain ⟨e, halt, hnd, -⟩ := exists_weilPairing_frobenius_of_coprime q Wbar N hNq
+  exact ⟨e, halt, hnd, fun x y => by
+    rw [pairing_map_eq_det_mul_fin_two b e halt
+        (1 - WeilPairing.frobeniusTorsionEnd q Wbar N) x y,
+      det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed q Wbar N hNq]⟩
 
 /-- **The Lefschetz congruence: `#Wbar(𝔽_q) ≡ det(1 − F)` on `Wbar[N]`** (PROVEN
 2026-07-27 over `exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd` and
@@ -6280,20 +6360,27 @@ above has exactly two joints, and they are separated here:
   as an explicit bijection over `exists_algebraMap_eq_of_pow_card_eq`. The old
   audit here flagged it as "separately available and cheap"; that was right.
 * the REST — `#ker(1 − F) = deg(1 − F) = det(1 − F)` — is
-  `exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd` above, restated as the
-  level-`N` Weil pairing together with its isogeny-degree compatibility, which is
-  the classical input those two equalities actually rest on and is SHARED with
-  `det_frobeniusTorsionEnd_of_coprime`. Read its audit before attacking either.
+  `exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd` above, now PROVEN, and
+  through it the single leaf
+  `det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed` above, which carries the
+  whole of it. Read that leaf's audit before attacking this cluster.
 
-What was NOT needed, and this is worth recording because both audits above expect
-it: no degree FORM on `End`, and no `deg` function at all. Only the two joints
-above, and the ambient linear algebra is generic
-(`pairing_map_eq_det_mul_fin_two`, `det_eq_of_pairing_scaling_fin_two`, proven
-here over any commutative ring so that composite `N` is not an obstruction).
-`hasse_bound_natCard_affine_point` above still needs the degree form, because
-positive-definiteness of a quadratic form is not a single-isogeny statement — so
-the "build a degree theory once for both" note in its audit is now half retired:
-the LEFSCHETZ half does not need one, the HASSE half still does. -/
+WHAT WAS NEEDED AFTER ALL — this paragraph previously claimed the opposite and is
+CORRECTED (2026-07-27). It said no `deg` function was needed, on the strength of
+the Weil-pairing shape the residue leaf then had. That shape was hiding the
+degree theory inside its scaling clause: the pairing itself is generic (and is
+now taken from the PROVEN `exists_weilPairing_frobenius_of_coprime`, so nobody
+builds it twice), but `e(ψx, ψy) = e(x, y)^{deg ψ}` is exactly the
+isogeny-degree compatibility, which rests on the dual isogeny. With the pairing
+factored out, the residue is the bare determinant identity above, and it needs
+`#ker ψ = deg ψ` (separability of `1 − F`) and `deg ψ = det(ψ | Wbar[N])` — the
+SAME theory that `HasseBound.natCard_ker_degreeFormEnd` needs for
+`hasse_bound_natCard_affine_point`. So the old "build a degree theory once for
+both" note is NOT half retired; it is right, and the shared statement is spelled
+out on the determinant leaf. What genuinely is generic here is only the ambient
+linear algebra (`pairing_map_eq_det_mul_fin_two`,
+`det_eq_of_pairing_scaling_fin_two`, over any commutative ring so that composite
+`N` is not an obstruction). -/
 theorem natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
     (hNq : Nat.Coprime N q) :
