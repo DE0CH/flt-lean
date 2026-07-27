@@ -7718,6 +7718,34 @@ recording why that is not circular.
 * `exists_finset_weilCoeffs_eq_of_mult` is exactly the missing content:
   two families obtained that way, from two frames at possibly DIFFERENT
   residue characteristics, agree off a finite set of places.
+
+**BOTH OF THOSE ARE NOW PROVEN TOO** (2026-07-27), by a second cut along
+the DETERMINANT/TRACE axis, and the residue is smaller than either of
+them.  Three leaves replace them:
+
+* `exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult` — the
+  constant coefficient is `N w`.  This is the WEIL PAIRING for a GIVEN
+  frame that remembers the real multiplication; the DETERMINANT CLAUSE
+  audit of `exists_tateFrame_of_levelStructure` states precisely that
+  `j`/`hj` is what makes such a given-frame statement faithful, and this
+  leaf has them.
+* `exists_finset_charFrob_coeff_one_mem_range_of_tateFrame_mult` — the
+  linear coefficient lies in `j(𝒪_D)`.  Weil integrality of the trace,
+  and nothing else.
+* `exists_finset_weilCoeffs_fst_eq_of_mult` — two frames give the same
+  TRACE family off a finite set.
+
+Rationality is then the shape of a monic quadratic (proven inline) fed
+by the first two; independence is the third plus the observation that
+the determinant leaf pins `b w = (N w : 𝒪_D)` in every frame once `j` is
+known injective, which `injective_of_tateFrame_mult` supplies from
+`exists_algebraicClosureEmbedding_of_tateFrame_mult`.  So the whole
+`b`/norm half of the chain is now a corollary of a pairing identity, and
+every remaining piece of compatible-system content sits in ONE statement
+about traces.  Sorry count went 2 → 3 and the mathematical residue went
+down: two of the three are strictly weaker than what they replaced, and
+the third is a named classical identity the file already tracks
+elsewhere.
 * The assembly then needs no reference frame handed to it, and in
   particular no frame-existence leaf.  Split on whether any frame at all
   admits a rational family (`IsTateFrameWeilCoeffs`).  If one does, take
@@ -7811,10 +7839,171 @@ def IsTateFrameWeilCoeffs {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeSt
           Polynomial.X ^ 2 - Polynomial.C (j (a w)) * Polynomial.X +
             Polynomial.C (j (b w))
 
+/-- **A frame that remembers the real multiplication has `j`
+INJECTIVE** (PROVEN 2026-07-27 over the sibling leaf
+`exists_algebraicClosureEmbedding_of_tateFrame_mult`).
+
+That leaf produces `ψ : D →+* ℚ̄_q` and `ι : O →+* ℚ̄_q` with
+`ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.  A ring homomorphism out of a FIELD is
+injective, and `𝒪_D ↪ D` is injective, so the composite is injective
+and therefore so is `j`.  (The injectivity of `ι`, which that leaf also
+supplies, is not needed and is discarded.)
+
+This is what lets a coefficient identity in `O` be pulled back to an
+identity in `𝒪_D`, and it is the only thing the `b`-half of
+`exists_finset_weilCoeffs_eq_of_mult` needs beyond the determinant
+clause. -/
+theorem injective_of_tateFrame_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) (hq : Fact q.Prime)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) (iCR : CommRing O) (iTS : TopologicalSpace O) (iTR : IsTopologicalRing O)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hj : ∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j c • u)).1 n = m.act c ((φ u).1 n)) :
+    Function.Injective j := by
+  obtain ⟨ψ, ι, -, hcomp⟩ :=
+    exists_algebraicClosureEmbedding_of_tateFrame_mult m x hdim q hq I hI hqI π hπ hπ2 O
+      iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  intro a₁ a₂ hEq
+  have hψ : ψ (algebraMap (NumberField.RingOfIntegers D) D a₁)
+      = ψ (algebraMap (NumberField.RingOfIntegers D) D a₂) := by
+    rw [← hcomp, ← hcomp, hEq]
+  exact FaithfulSMul.algebraMap_injective (NumberField.RingOfIntegers D) D (ψ.injective hψ)
+
+/-- **DETERMINANT: the constant coefficient of the Frobenius
+characteristic polynomial of a frame is the absolute norm** (sorry leaf
+— the WEIL PAIRING for a GIVEN frame that remembers the real
+multiplication).
+
+For all but finitely many `w`,
+
+    (τ.charFrob w).coeff 0 = (N w : O).
+
+`charFrob` is the characteristic polynomial of an endomorphism of a
+free module of rank `2`, so its constant coefficient is `(-1)² · det`,
+i.e. the determinant itself; the statement is therefore
+`det (τ ∘ Frob_w) = N w`, written in the form both consumers actually
+use so that no `LinearMap.det`-to-`charpoly` bridge is needed.
+
+WHY THIS IS FAITHFUL, AND WHY IT IS NOT THE CLAUSE ALREADY DISCHARGED.
+The DETERMINANT CLAUSE of `exists_tateFrame_of_levelStructure` (see its
+docstring) proves exactly this identity, but only for the frame that
+leaf CHOOSES — one carrying the full adic package
+(`IsLocalRing O`, `Algebra ℤ_[q] O`, `IsModuleTopology ℤ_[q] O`,
+`hcplt`/`hdense`/`hker`), through
+`det_eq_cyclotomicCharacter_of_tateFrame` and
+`cyclotomicCharacter_adicArithFrob_absNorm`.  Here the frame is GIVEN
+and carries none of that package.  The audit in that docstring is
+explicit about the dividing line: over a given frame the identity is
+FALSE without the real-multiplication tie (the commutant can be larger
+than `𝒪_{D,I}`, and the determinant becomes `χ₁ · ψ⁻¹(χ₂)` instead of
+`χ₁ · χ₂ = N w`), and "over a frame the prover chooses, it needs
+nothing".  This leaf has the tie — `j` and `hj` — so it sits on the
+true side of that line.
+
+The intended proof is the same three-step one, once the given frame's
+`O` has been recognised as `𝒪_{D,I}`: that recognition is the sibling
+`exists_algebraicClosureEmbedding_of_tateFrame_mult`, whose docstring
+gives the four-step argument, strengthened to produce the adic package
+rather than merely an embedding.  The exceptional set is the (finite)
+set of places over `q`, by `exists_finset_forall_natCast_notMem`; the
+places of bad reduction do NOT have to be excluded, since `det τ = χ_cyc`
+is an identity of characters and is insensitive to ramification of `τ`. -/
+theorem exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) (hq : Fact q.Prime)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) (iCR : CommRing O) (iTS : TopologicalSpace O) (iTR : IsTopologicalRing O)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hj : ∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j c • u)).1 n = m.act c ((φ u).1 n)) :
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad, (τ.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : O) :=
+  sorry
+
+/-- **TRACE: the linear coefficient of the Frobenius characteristic
+polynomial of a frame lies in `j(𝒪_D)`** (sorry leaf — this is the
+arithmetic core of rationality, and after the determinant leaf above it
+is ALL that is left of it).
+
+For all but finitely many `w`,
+
+    (τ.charFrob w).coeff 1 ∈ Set.range j,
+
+i.e. `- a_w`, the trace of Frobenius, is a GLOBAL algebraic integer of
+`D` and not merely an `I`-adic one.  Classically `a_w` is the trace of
+the Frobenius endomorphism of the reduction `A_w`, and its integrality
+is Weil's.
+
+Note what is NOT asserted: `b_w = N w` is the separate determinant leaf
+above, and the archimedean bound `|a_w| ≤ 2√(N w)` — the Riemann
+hypothesis half — is true but is needed by no consumer in this tree and
+is deliberately not stated.  A prover of this leaf owes integrality
+only.
+
+`hdim` is what makes the rank two rather than `2d`; `hπ`, `hπ2` pin `π`
+as a uniformizer so that `TatePt` is the `I`-adic Tate module; `hj` is
+what makes the coefficient `𝒪_D`-rational at all — without it the
+frame's coefficient ring need not even contain a copy of `𝒪_D`. -/
+theorem exists_finset_charFrob_coeff_one_mem_range_of_tateFrame_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) (hq : Fact q.Prime)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) (iCR : CommRing O) (iTS : TopologicalSpace O) (iTR : IsTopologicalRing O)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hj : ∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j c • u)).1 n = m.act c ((φ u).1 n)) :
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad, (τ.charFrob w).coeff 1 ∈ Set.range j :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **RATIONALITY: the Frobenius characteristic polynomial of ONE frame
-has its coefficients in `j(𝒪_D)`** (sorry leaf — Weil's Riemann
-hypothesis for abelian varieties over finite fields, in the
-Hilbert–Blumenthal normalization of Shimura / Taylor 2002 §1).
+has its coefficients in `j(𝒪_D)`** (PROVEN 2026-07-27 over the
+determinant and trace leaves just above, plus the polynomial-shape glue
+proven inline — Weil's integrality for abelian varieties over finite
+fields, in the Hilbert–Blumenthal normalization of Shimura /
+Taylor 2002 §1).
 
 Fix a frame `(O, τ, φ, j)` of `TatePt m x I π` which remembers the real
 multiplication.  Then for all but finitely many places `w` of `F`,
@@ -7826,18 +8015,35 @@ and `bad` moved INSIDE the frame quantifiers, so it carries no
 independence-of-`I` content whatever; that is
 `exists_finset_weilCoeffs_eq_of_mult`'s job.
 
-WHAT IS ACTUALLY OWED HERE.  By the sibling leaf
-`exists_algebraicClosureEmbedding_of_tateFrame_mult` the frame forces
-`O = 𝒪_{D,I}`, and `τ.charFrob w` is a monic quadratic over that
-completion whatever happens — being the characteristic polynomial of an
-endomorphism of a free rank-two module.  So the ONLY content is that its
-two coefficients lie in the DENSE SUBRING `j(𝒪_D) ⊂ 𝒪_{D,I}`, i.e. that
-they are global algebraic integers of `D` rather than merely `I`-adic
-ones.  Classically `a w` is the trace and `b w` the norm of the
-Frobenius endomorphism of the reduction `A_w`, and integrality is
-Weil's; `b w = N(w)` and the archimedean bound `|a w| ≤ 2√N(w)` are true
-but are NOT needed by any consumer in this tree and are deliberately not
-asserted, so a prover need not carry the Riemann-hypothesis half.
+HOW IT IS PROVEN, AND WHAT IS LEFT.  Three things are needed and they
+are now separated:
+
+* *Shape.*  `τ.charFrob w` is the characteristic polynomial of an
+  endomorphism of `O²`, hence MONIC of degree `2` whatever the frame, so
+  it equals `X² + C (coeff 1) · X + C (coeff 0)`.  That is pure
+  polynomial algebra and is proven inline below (`hshape`, `hmonic`,
+  `hdeg`), on top of `LinearMap.charpoly_monic`,
+  `LinearMap.charpoly_natDegree` and `Module.finrank_fin_fun`.  The
+  degenerate case `O` trivial is discharged first, by
+  `Subsingleton.elim` on coefficients — `natDegree` is `0`, not `2`,
+  there, and every polynomial equation holds anyway.
+* *The constant coefficient* is `N w`, hence `j` of a global integer:
+  the determinant leaf
+  `exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult`.
+* *The linear coefficient* lies in `j(𝒪_D)`: the trace leaf
+  `exists_finset_charFrob_coeff_one_mem_range_of_tateFrame_mult`.
+
+`a w` and `b w` are then read off by `choose`, with the junk value `0`
+inside the union of the two exceptional sets, where nothing is claimed.
+Only the trace leaf carries arithmetic that this tree does not already
+have in some form; `b w` comes out as `N w` on the nose, which is what
+makes the `b`-half of the sibling independence leaf free.
+
+Classically `a w` is the trace and `b w` the norm of the Frobenius
+endomorphism of the reduction `A_w`, and integrality is Weil's; the
+archimedean bound `|a w| ≤ 2√N(w)` is true but is NOT needed by any
+consumer in this tree and is deliberately not asserted, so no prover
+here need carry the Riemann-hypothesis half.
 
 `hdim` is what makes the rank two rather than `2d`; `hπ`, `hπ2` pin `π`
 as a uniformizer so that `TatePt` is the `I`-adic Tate module; `hj` is
@@ -7870,13 +8076,118 @@ theorem exists_weilCoeffs_of_tateFrame_mult
       ∀ w ∉ bad,
         τ.charFrob w =
           Polynomial.X ^ 2 - Polynomial.C (j (a w)) * Polynomial.X +
-            Polynomial.C (j (b w)) :=
+            Polynomial.C (j (b w)) := by
+  classical
+  -- The trivial coefficient ring is degenerate (`natDegree` is `0`, not `2`) and
+  -- is discharged directly: every polynomial equation over it holds.
+  rcases subsingleton_or_nontrivial O with hO | hO
+  · exact ⟨0, 0, ∅, fun w _ => Polynomial.ext fun n => Subsingleton.elim _ _⟩
+  obtain ⟨bad₀, hbad₀⟩ :=
+    exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult m x hdim q hq I hI hqI
+      π hπ hπ2 O iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  obtain ⟨bad₁, hbad₁⟩ :=
+    exists_finset_charFrob_coeff_one_mem_range_of_tateFrame_mult m x hdim q hq I hI hqI
+      π hπ hπ2 O iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  -- A monic quadratic is determined by its two lower coefficients.
+  have hshape : ∀ P : Polynomial O, P.Monic → P.natDegree = 2 →
+      P = Polynomial.X ^ 2 + Polynomial.C (P.coeff 1) * Polynomial.X
+        + Polynomial.C (P.coeff 0) := by
+    intro P hm hd
+    refine Polynomial.ext fun n => ?_
+    match n with
+    | 0 => simp
+    | 1 => simp
+    | 2 =>
+      have h2 : P.coeff 2 = 1 := by rw [← hd]; exact hm.coeff_natDegree
+      simp [h2]
+    | (k + 3) =>
+      rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
+      simp
+  have hmonic : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (τ.charFrob w).Monic := by
+    intro w
+    show ((τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)).charpoly).Monic
+    exact LinearMap.charpoly_monic _
+  have hdeg : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (τ.charFrob w).natDegree = 2 := by
+    intro w
+    show ((τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)).charpoly).natDegree = 2
+    rw [LinearMap.charpoly_natDegree]
+    exact Module.finrank_fin_fun O
+  -- Read off `(a w, b w)` place by place; junk inside the exceptional set.
+  have key : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∃ ab' : NumberField.RingOfIntegers D × NumberField.RingOfIntegers D,
+        w ∉ bad₀ ∪ bad₁ →
+          τ.charFrob w = Polynomial.X ^ 2 - Polynomial.C (j ab'.1) * Polynomial.X
+            + Polynomial.C (j ab'.2) := by
+    intro w
+    by_cases hw : w ∈ bad₀ ∪ bad₁
+    · exact ⟨(0, 0), fun h => absurd hw h⟩
+    have hw₀ : w ∉ bad₀ := fun h => hw (Finset.mem_union_left _ h)
+    have hw₁ : w ∉ bad₁ := fun h => hw (Finset.mem_union_right _ h)
+    obtain ⟨α, hα⟩ := hbad₁ w hw₁
+    refine ⟨(-α, ((Ideal.absNorm w.asIdeal : ℕ) : NumberField.RingOfIntegers D)),
+      fun _ => ?_⟩
+    have h0 : j ((Ideal.absNorm w.asIdeal : ℕ) : NumberField.RingOfIntegers D)
+        = (τ.charFrob w).coeff 0 := by
+      rw [map_natCast, hbad₀ w hw₀]
+    have h1 : j (-α) = -(τ.charFrob w).coeff 1 := by rw [map_neg, hα]
+    refine (hshape (τ.charFrob w) (hmonic w) (hdeg w)).trans ?_
+    simp only [h0, h1, Polynomial.C_neg]
+    ring
+  choose ab' hab' using key
+  exact ⟨fun w => (ab' w).1, fun w => (ab' w).2, bad₀ ∪ bad₁, fun w hw => hab' w hw⟩
+
+/-- **INDEPENDENCE OF THE TRACE: two frames give the same `a` at all
+but finitely many places** (sorry leaf — after the determinant leaf
+`exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult` this is
+ALL that is left of the compatible-system content of
+`exists_intWeilPolynomial_of_mult`, and it is the only place in the
+chain where two residue characteristics are compared).
+
+The `b`-half of the sibling `exists_finset_weilCoeffs_eq_of_mult` is no
+longer open: the determinant leaf pins `j (b w) = (N w : O)` in EVERY
+frame, and `injective_of_tateFrame_mult` pulls that back to
+`b w = (N w : 𝒪_D)`, a value with no frame in it.  The trace admits no
+such shortcut — there is no character whose value it is — so it is
+exactly the surviving compatible-system statement.
+
+The exceptional set is existential and that is deliberate: `a` and `a'`
+are constrained by their frames only outside those frames' own bad sets
+(which contain, in particular, the places over `q` and over `q'`, and
+those cannot be bounded uniformly in the residue characteristic), and on
+those sets they are arbitrary.  So no pointwise-in-`w` version of this
+statement is true, and none is needed — the assembly unions finite sets.
+
+PROOF ROUTE, once the reduction machinery exists.  At a place `w` of
+good reduction outside both bad sets, both sides compute the trace of
+the Frobenius ENDOMORPHISM of `A_w` as an element of the centralizer of
+`𝒪_D` in `End(A_w)`, via the faithful functors `T_I` and `T_{I'}`; that
+element is one and the same and its trace over `D` mentions no residue
+characteristic.  This is Weil, not Faltings — see the CITATION AUDIT in
+the section note above.  The machinery it needs (good reduction of an
+abelian scheme, the specialization isomorphism, `End(A) ↪ End(T_I A)`,
+the degree map) is absent from this tree and is a subtree of its own;
+the ROUTE NOTE above records the survey. -/
+theorem exists_finset_weilCoeffs_fst_eq_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (a b a' b' : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      NumberField.RingOfIntegers D)
+    (h : IsTateFrameWeilCoeffs m x a b) (h' : IsTateFrameWeilCoeffs m x a' b') :
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad, a w = a' w :=
   sorry
 
 /-- **INDEPENDENCE: two frames give the SAME `𝒪_D`-coefficients at all
-but finitely many places** (sorry leaf — this is the whole
-compatible-system content of `exists_intWeilPolynomial_of_mult`, and the
-only place in the chain where two residue characteristics are compared).
+but finitely many places** (PROVEN 2026-07-27 by splitting off the `b`
+half — its compatible-system content now lives entirely in the sibling
+`exists_finset_weilCoeffs_fst_eq_of_mult` just above, which is the trace
+half).
 
 If `(a, b)` are the Weil coefficients of some frame and `(a', b')` those
 of some other frame — the two frames unrelated, at possibly DIFFERENT
@@ -7895,19 +8206,27 @@ ONE compatible system, with nothing else attached.
 The exceptional set is existential and that is deliberate: `a` and `b`
 are constrained by their frames only outside those frames' own bad sets,
 and on those sets they are arbitrary, so no pointwise statement is
-available and none is needed — the assembly unions three finite sets.
+available and none is needed — the assembly unions finite sets.
 
-PROOF ROUTE, once the reduction machinery exists.  At a place `w` of
-good reduction outside both bad sets, both sides compute the
-characteristic polynomial of the Frobenius ENDOMORPHISM of `A_w` as an
-element of the centralizer of `𝒪_D` in `End(A_w)`, via the faithful
-functors `T_I` and `T_{I'}`; that element is one and the same and its
-characteristic polynomial over `D` mentions no residue characteristic.
-This is Weil, not Faltings — see the CITATION AUDIT in the section note
-above.  The machinery it needs (good reduction of an abelian scheme, the
-specialization isomorphism, `End(A) ↪ End(T_I A)`, the degree map) is
-absent from this tree and is a subtree of its own; the ROUTE NOTE above
-records the survey. -/
+HOW IT IS PROVEN, AND WHAT MOVED.  The two halves are no longer
+symmetric:
+
+* The `b` half is now CLOSED here.  `IsTateFrameWeilCoeffs` hands over
+  each frame in full, so the determinant leaf
+  `exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult`
+  applies to each of them and gives `j (b w) = (N w : O)` and
+  `j' (b' w) = (N w : O')` off finite sets; `injective_of_tateFrame_mult`
+  — itself proven over the sibling
+  `exists_algebraicClosureEmbedding_of_tateFrame_mult` — turns each of
+  those into `b w = (N w : 𝒪_D) = b' w`, a value in which no frame
+  appears.  That is the Weil pairing doing the work, exactly as it does
+  in the DETERMINANT CLAUSE of `exists_tateFrame_of_levelStructure`.
+* The `a` half is `exists_finset_weilCoeffs_fst_eq_of_mult` above and
+  is the surviving deep leaf.
+
+So the compatible-system content of the chain is now localized in ONE
+statement about traces, and the norm half is a corollary of a pairing
+identity rather than of independence of `λ`. -/
 theorem exists_finset_weilCoeffs_eq_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -7919,8 +8238,40 @@ theorem exists_finset_weilCoeffs_eq_of_mult
       NumberField.RingOfIntegers D)
     (h : IsTateFrameWeilCoeffs m x a b) (h' : IsTateFrameWeilCoeffs m x a' b') :
     ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
-      ∀ w ∉ bad, a w = a' w ∧ b w = b' w :=
-  sorry
+      ∀ w ∉ bad, a w = a' w ∧ b w = b' w := by
+  classical
+  obtain ⟨bada, hbada⟩ := exists_finset_weilCoeffs_fst_eq_of_mult m x hdim a b a' b' h h'
+  obtain ⟨badb, hbadb⟩ :
+      ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+        ∀ w ∉ bad, b w = b' w := by
+    obtain ⟨q, hq, I, hI, hqI, π, hπ, hπ2, O, iCR, iTS, iTR, τ, φ, jj,
+      hφadd, hφbij, hφequiv, hj, bad1, hbad1⟩ := id h
+    obtain ⟨q', hq', I', hI', hqI', π', hπ', hπ2', O', iCR', iTS', iTR', τ', φ', jj',
+      hφadd', hφbij', hφequiv', hj', bad2, hbad2⟩ := id h'
+    obtain ⟨badd, hbadd⟩ :=
+      exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult m x hdim q hq I hI hqI
+        π hπ hπ2 O iCR iTS iTR τ φ jj hφadd hφbij hφequiv hj
+    obtain ⟨badd', hbadd'⟩ :=
+      exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult m x hdim q' hq' I' hI'
+        hqI' π' hπ' hπ2' O' iCR' iTS' iTR' τ' φ' jj' hφadd' hφbij' hφequiv' hj'
+    have hinj := injective_of_tateFrame_mult m x hdim q hq I hI hqI π hπ hπ2 O iCR iTS iTR
+      τ φ jj hφadd hφbij hφequiv hj
+    have hinj' := injective_of_tateFrame_mult m x hdim q' hq' I' hI' hqI' π' hπ' hπ2' O'
+      iCR' iTS' iTR' τ' φ' jj' hφadd' hφbij' hφequiv' hj'
+    refine ⟨bad1 ∪ bad2 ∪ badd ∪ badd', fun w hw => ?_⟩
+    have hw1 : w ∉ bad1 := fun hc => hw (by simp [hc])
+    have hw2 : w ∉ bad2 := fun hc => hw (by simp [hc])
+    have hwd : w ∉ badd := fun hc => hw (by simp [hc])
+    have hwd' : w ∉ badd' := fun hc => hw (by simp [hc])
+    have e0 : (τ.charFrob w).coeff 0 = jj (b w) := by rw [hbad1 w hw1]; simp
+    have e0' : (τ'.charFrob w).coeff 0 = jj' (b' w) := by rw [hbad2 w hw2]; simp
+    have eb : b w = ((Ideal.absNorm w.asIdeal : ℕ) : NumberField.RingOfIntegers D) :=
+      hinj (by rw [map_natCast, ← e0, hbadd w hwd])
+    have eb' : b' w = ((Ideal.absNorm w.asIdeal : ℕ) : NumberField.RingOfIntegers D) :=
+      hinj' (by rw [map_natCast, ← e0', hbadd' w hwd'])
+    rw [eb, eb']
+  exact ⟨bada ∪ badb, fun w hw => ⟨hbada w (fun hc => hw (Finset.mem_union_left _ hc)),
+    hbadb w (fun hc => hw (Finset.mem_union_right _ hc))⟩⟩
 
 /-- **The Frobenius characteristic polynomials of the `𝒪_D`-Tate modules
 are `X² - a_w X + b_w` with `a_w, b_w ∈ 𝒪_D` independent of `I`**
