@@ -211,6 +211,14 @@ import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 -- `exists_const_natCard_zeroLocus_sub_le` below, which state the curve-level
 -- Weil bound over a plane model, so these three must be re-exported.
 public import Mathlib.Algebra.MvPolynomial.Equiv
+-- PUBLIC (2026-07-27, SEVENTEENTH decomposition of
+-- `exists_const_natCard_zeroLocus_sub_le`): `Polynomial.hasseDeriv` occurs in
+-- SIGNATURE position in `exists_stepanovAuxiliaryPair` below (Stepanov's
+-- auxiliary polynomials are specified by the vanishing of their
+-- hyperderivatives), so the defining module must be re-exported rather than
+-- reached transitively through `Modularity/MoretBailly.lean`, which imports it
+-- only privately.
+public import Mathlib.Algebra.Polynomial.HasseDeriv
 import Mathlib.RingTheory.AlgebraicIndependent.Transcendental
 import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
 import Mathlib.FieldTheory.IsAlgClosed.Basic
@@ -41522,9 +41530,415 @@ theorem norm_le_sqrt_of_forall_norm_sum_pow_le {q : ℕ} (hq : 0 < q) {n : ℕ}
   rw [hterm0, htt, hsplit] at hsingle
   linarith
 
+/-! ### The Weil bound for a plane curve, SEVENTEENTH decomposition (2026-07-27)
+
+`exists_const_natCard_zeroLocus_sub_le` below is now **PROVEN** over the single
+sorried leaf `exists_stepanovAuxiliaryPair`. The chain is
+
+* `exists_stepanovAuxiliaryPair` — Schmidt III §§1–5 and §§7–9, the *only* new
+  mathematics (SORRY);
+* `stepanov_mul_abs_natCard_zeroLocus_sub_card_le` — Schmidt III §6's
+  inequality (6.1), PROVEN from the pair by the counting core
+  `sum_le_natDegree_of_hasseDeriv_vanishing` of `Modularity/MoretBailly.lean`
+  plus `ℕ`-arithmetic;
+* `natCard_zeroLocus_sub_card_le_of_absolutelyIrreducible` — Schmidt III
+  Theorem 1A, PROVEN by choosing the modulus `M ≈ √(q/8d)` and optimising (6.1);
+* `irreducible_map_algebraicClosure_galoisField` — absolute irreducibility
+  ascends from `𝔽_q` to `𝔽_{q^s}`, PROVEN;
+* the leaf itself — uniformity of the constant in `s`, PROVEN, by taking the
+  Weil bound above the threshold and absorbing the finitely many `s` with
+  `q^s ≤ 250 d⁵ + 1000` into `C`.
+-/
+
+/-- Total degree is unchanged by an INJECTIVE coefficient map: `map f p` has the
+same `support` as `p` (`MvPolynomial.support_map_of_injective`) and
+`totalDegree` is read off the support.
+
+Consumed by `exists_const_natCard_zeroLocus_sub_le` below, where the constant
+`C` must be chosen BEFORE `s` and therefore has to be expressed in the degree of
+`F` over `𝔽_q` rather than in the degree of its image over `𝔽_{q^s}`. -/
+theorem totalDegree_map_of_injective {R S σ : Type*} [CommSemiring R] [CommSemiring S]
+    (p : MvPolynomial σ R) {f : R →+* S} (hf : Function.Injective f) :
+    (MvPolynomial.map f p).totalDegree = p.totalDegree := by
+  simp only [MvPolynomial.totalDegree, MvPolynomial.support_map_of_injective _ hf]
+
+/-- `√x ^ n = √(x ^ n)` for `0 ≤ x`. The leaf below states its bound as
+`C · (√q)^s` while the Weil estimate produces `C · √(q^s)`; this is the bridge. -/
+theorem sqrt_pow_eq_pow_sqrt {x : ℝ} (hx : 0 ≤ x) (n : ℕ) :
+    Real.sqrt x ^ n = Real.sqrt (x ^ n) := by
+  induction n with
+  | zero => simp
+  | succ k ih => rw [pow_succ, pow_succ, Real.sqrt_mul (pow_nonneg hx k), ih]
+
+/-- An absolutely irreducible plane polynomial is NONCONSTANT.
+
+A total degree of `0` forces `G = C c` (`totalDegree_eq_zero_iff_eq_C`), and over
+a field `C c` is either `0` — not irreducible — or a unit, since `C` is a ring
+hom and units map to units. Needed because Schmidt's estimate is stated with a
+`d`-dependent constant that would be `0` at `d = 0`. -/
+theorem one_le_totalDegree_of_irreducible_map
+    {K : Type*} [Field K] (G : MvPolynomial (Fin 2) K)
+    (hirr : Irreducible (MvPolynomial.map (algebraMap K (AlgebraicClosure K)) G)) :
+    1 ≤ G.totalDegree := by
+  by_contra hcon
+  have h0 : G.totalDegree = 0 := by omega
+  obtain ⟨c, rfl⟩ : ∃ c, G = MvPolynomial.C c :=
+    ⟨G.coeff 0, MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp h0⟩
+  rw [MvPolynomial.map_C] at hirr
+  rcases eq_or_ne (algebraMap K (AlgebraicClosure K) c) 0 with hc | hc
+  · rw [hc, MvPolynomial.C_0] at hirr
+    exact not_irreducible_zero hirr
+  · exact hirr.not_isUnit
+      (IsUnit.map (MvPolynomial.C (σ := Fin 2) (R := AlgebraicClosure K))
+        (isUnit_iff_ne_zero.mpr hc))
+
+/-- **STEPANOV'S AUXILIARY PAIR OVER AN ARBITRARY FINITE FIELD** (sorry node,
+SEVENTEENTH decomposition 2026-07-27 — the ONLY open leaf of
+`exists_const_natCard_zeroLocus_sub_le` below).
+
+This is W. M. Schmidt, *Equations over Finite Fields: An Elementary Approach*,
+LNM 536, **Chapter III §§1–5** (his Lemmas 4A and 5A, at BOTH values
+`λ = 1, 2` of his parameter), **together with §§7–9**, which remove the
+restriction to a prime field. It is stated as a single existential because that
+is the shape §6 consumes, and because every clause is a numbered result of
+Schmidt's that the next owner can look up.
+
+DICTIONARY (Schmidt's notation on the left, this statement on the right). `q` is
+`Nat.card K`, `d` is `G.totalDegree`, `𝔄` is `A`, `𝔐₁(x)` is `mu1 x`, `𝔐₂(x)`
+is `mu2 x`, and `r₁, r₂` are his `r(X)` at `λ = 1, 2`.
+
+* `Nat.card K ≤ A.card + d*(d−1)` is (4.5), `q − d(d−1) ≤ |𝔄|`: `𝔄` is the
+  non-vanishing locus of the discriminant `Δ` of the normalised curve in `Y`,
+  and `deg Δ ≤ d(d−1)`.
+* `mu1 x + mu2 x = d` is the fibrewise identity: for `x ∈ 𝔄` the fibre
+  `f(x, Y)` has `d` DISTINCT roots in `K̄`, of which `mu1 x` are `K`-rational.
+* The two `hasseDeriv` clauses are Lemma 5A(i), `D_ν r_λ(x) = 0` for `x ∈ 𝔄`
+  and `0 ≤ ν < M|𝔐_λ(x)|`, with `D_ν = Polynomial.hasseDeriv ν`; `r_λ` is the
+  norm of Lemma 4A's `a(X, Y)` from `K(X, η)` to `K(X)`.
+* The two degree bounds are Lemma 5A(ii), `deg r_λ ≤ ε_λ q M + q d(d−1)`, with
+  Schmidt's `ε₁ = 1`, `ε₂ = d − 1` (his notation line preceding Lemma 4A).
+* `hMdvd`, `hMsq`, `hMcard` are Lemma 4A's standing conditions on `M` verbatim:
+  `d ∣ M`, `M ≥ d²`, `2(d−1)(M+8)² ≤ q` — weakened here to `2d(M+8)² ≤ q`,
+  which is STRONGER as a hypothesis and so makes this leaf strictly easier.
+* The last two clauses say `∑_{x ∈ 𝔄} |𝔐₁(x)|` is the affine `K`-point count of
+  `G` up to `d³`. The lower half is what `exists_stepanovAuxiliary` in
+  `Modularity/MoretBailly.lean` already delivers; the upper half is available
+  from the same construction, because Schmidt's normalisation is a LINEAR change
+  of coordinates, hence a bijection of `K²`, and the zeros lying over the
+  complement of `𝔄` number at most `d·deg Δ ≤ d²(d−1) ≤ d³`.
+
+WHAT IS ALREADY PROVEN AND SHOULD BE REUSED, all in
+`Fermat/FLT/Modularity/MoretBailly.lean` as of 2026-07-27:
+`exists_stepanovNormalisation` (§1), `exists_stepanovDiscriminant` ((4.1),
+(4.3), including `Δ.natDegree ≤ d*(d−1)`), `exists_stepanovAuxiliaryFunction`
+(Lemma 4A), `exists_stepanovNormPolynomial` (Lemma 5A) and
+`exists_stepanovAuxiliary`, which bundles exactly this data — but only at
+`λ = 2`, only over the PRIME field `ZMod p`, and only with the one-sided link.
+
+THE TWO GAPS, therefore, and they are the whole content of this leaf:
+
+1. *Prime powers.* Everything cited above is over `ZMod p`. Here `K` is an
+   arbitrary finite field, because the parent's Lefschetz clause runs over all
+   `𝔽_{q^s}`. Schmidt's §6 needs `M|𝔐_λ(x)| ≤ dM < q` to invoke Theorem 1G of
+   his Chapter I; §§7–9 replace that with valuations and hyperderivatives in
+   function fields. `MoretBailly.lean` records in as many words that it
+   deliberately skips them. NOTE that the CONSUMING step is already
+   field-general: `sum_le_natDegree_of_hasseDeriv_vanishing` is stated for an
+   arbitrary field `K` and is Hasse-derivative based, so nothing downstream of
+   this leaf has to be redone for `q = p^f`.
+2. *The `λ = 1` auxiliary function.* `exists_stepanovAuxiliary` produces `r₂`
+   only, which bounds `∑ mu2` above and hence `∑ mu1` below — the one-sided
+   `p ≤ 2N` of `exists_count_of_absolutelyIrreducible_plane`. The UPPER half of
+   the Weil bound needs `r₁`, i.e. Lemma 4A at `λ = 1`, which is Schmidt's
+   *easier* case (his Case 1 is the one where `x, y ∈ 𝔽_q`, so `x^q = x` and
+   `y^q = y` and no norm-form manipulation is required).
+
+FAITHFULNESS. TRUE — every clause is a numbered statement of Schmidt III, and
+the `M`-hypotheses have been strengthened (`2d` for his `2(d−1)`) rather than
+weakened. NOT vacuous: the conjunction pins `r₁` and `r₂` to be nonzero
+polynomials with prescribed vanishing AND bounded degree, which is precisely the
+tension Stepanov's method resolves; dropping either the nonvanishing or the
+degree bound would make it satisfiable by `r := 1` or by `r := 0`. The two link
+clauses are what make the data say anything about `G` at all — without them the
+statement is about an unrelated `A`, `mu1`, `mu2`.
+
+CIRCULARITY GUARD: polynomials over a finite field only. No modular form, no
+level, no Hecke operator, no Galois representation; nothing from `Family.lean`,
+`Lift.lean` or the rest of this file. -/
+theorem exists_stepanovAuxiliaryPair {K : Type*} [Field K] [Finite K]
+    (G : MvPolynomial (Fin 2) K)
+    (hirr : Irreducible (MvPolynomial.map (algebraMap K (AlgebraicClosure K)) G))
+    (hd : 1 ≤ G.totalDegree)
+    (hcard : 250 * G.totalDegree ^ 5 < Nat.card K)
+    (M : ℕ) (hMdvd : G.totalDegree ∣ M) (hMsq : G.totalDegree ^ 2 ≤ M)
+    (hMcard : 2 * G.totalDegree * (M + 8) ^ 2 ≤ Nat.card K) :
+    ∃ (A : Finset K) (mu1 mu2 : K → ℕ) (r1 r2 : Polynomial K),
+      Nat.card K ≤ A.card + G.totalDegree * (G.totalDegree - 1) ∧
+      (∀ x ∈ A, mu1 x + mu2 x = G.totalDegree) ∧
+      r1 ≠ 0 ∧ r2 ≠ 0 ∧
+      (∀ x ∈ A, ∀ j < M * mu1 x, (Polynomial.hasseDeriv j r1).eval x = 0) ∧
+      (∀ x ∈ A, ∀ j < M * mu2 x, (Polynomial.hasseDeriv j r2).eval x = 0) ∧
+      r1.natDegree ≤ Nat.card K * M
+        + Nat.card K * (G.totalDegree * (G.totalDegree - 1)) ∧
+      r2.natDegree ≤ (G.totalDegree - 1) * Nat.card K * M
+        + Nat.card K * (G.totalDegree * (G.totalDegree - 1)) ∧
+      (∑ x ∈ A, mu1 x) ≤ Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0} ∧
+      Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0}
+        ≤ (∑ x ∈ A, mu1 x) + G.totalDegree ^ 3 :=
+  sorry
+
+/-- **SCHMIDT III (6.1)** (PROVEN 2026-07-27 over `exists_stepanovAuxiliaryPair`):
+for every admissible Stepanov modulus `M`,
+
+  `|N − q| ≤ d(d−1)·q/M + d³`,
+
+written multiplied through by `M` and with `d(d−1)` weakened to `d²` so that no
+division or truncated subtraction appears.
+
+THE PROOF IS SCHMIDT'S §6 VERBATIM. Writing `N_λ = ∑_{x ∈ 𝔄} |𝔐_λ(x)|`, the
+counting core `sum_le_natDegree_of_hasseDeriv_vanishing` (of
+`Modularity/MoretBailly.lean`, already proven and field-general) applied to `r_λ`
+with the varying vanishing order `M·|𝔐_λ(x)|` gives `M·N_λ ≤ deg r_λ`, so
+
+  `N₁ ≤ q + q d(d−1)/M`   and   `N₂ ≤ (d−1)q + q d(d−1)/M`;
+
+while `N₁ + N₂ = |𝔄|·d ≥ (q − d(d−1))·d` bounds `N₁` from below by
+`q − d²(d−1) − q d(d−1)/M`. The affine count `N` differs from `N₁` by at most
+`d³`, in both directions, by the last two clauses of the pair. -/
+theorem stepanov_mul_abs_natCard_zeroLocus_sub_card_le
+    {K : Type*} [Field K] [Finite K] (G : MvPolynomial (Fin 2) K)
+    (hirr : Irreducible (MvPolynomial.map (algebraMap K (AlgebraicClosure K)) G))
+    (hd : 1 ≤ G.totalDegree)
+    (hcard : 250 * G.totalDegree ^ 5 < Nat.card K)
+    (M : ℕ) (hMdvd : G.totalDegree ∣ M) (hMsq : G.totalDegree ^ 2 ≤ M)
+    (hMcard : 2 * G.totalDegree * (M + 8) ^ 2 ≤ Nat.card K) :
+    (M : ℝ) * |(Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0} : ℝ)
+        - (Nat.card K : ℝ)|
+      ≤ (G.totalDegree : ℝ) ^ 2 * (Nat.card K : ℝ)
+        + (M : ℝ) * (G.totalDegree : ℝ) ^ 3 := by
+  classical
+  obtain ⟨A, mu1, mu2, r1, r2, hA, hmu, hr1, hr2, hv1, hv2, hdg1, hdg2, hlow, hhigh⟩ :=
+    exists_stepanovAuxiliaryPair G hirr hd hcard M hMdvd hMsq hMcard
+  set d := G.totalDegree with hddef
+  set Q := Nat.card K with hQdef
+  set N := Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0} with hNdef
+  set N1 := ∑ x ∈ A, mu1 x with hN1def
+  set N2 := ∑ x ∈ A, mu2 x with hN2def
+  have hc1 : M * N1 ≤ r1.natDegree := by
+    rw [hN1def, Finset.mul_sum]
+    exact sum_le_natDegree_of_hasseDeriv_vanishing r1 hr1 A (fun x => M * mu1 x) hv1
+  have hc2 : M * N2 ≤ r2.natDegree := by
+    rw [hN2def, Finset.mul_sum]
+    exact sum_le_natDegree_of_hasseDeriv_vanishing r2 hr2 A (fun x => M * mu2 x) hv2
+  have hsum : N1 + N2 = A.card * d := by
+    rw [hN1def, hN2def, ← Finset.sum_add_distrib, Finset.sum_congr rfl hmu,
+      Finset.sum_const, smul_eq_mul]
+  clear_value d Q N N1 N2
+  clear hddef hQdef hNdef hN1def hN2def hirr hmu hv1 hv2 hMdvd hMsq hMcard hcard
+  -- everything below is `ℕ`-arithmetic; write `d = e + 1` to clear the
+  -- truncated subtractions.
+  obtain ⟨e, rfl⟩ : ∃ e, d = e + 1 := ⟨d - 1, by omega⟩
+  simp only [Nat.add_sub_cancel] at hA hdg1 hdg2
+  have key1 : M * N ≤ M * Q + Q * (e + 1) ^ 2 + M * (e + 1) ^ 3 := by
+    have s1 : M * N ≤ M * (N1 + (e + 1) ^ 3) := Nat.mul_le_mul_left _ hhigh
+    have s2 : M * (N1 + (e + 1) ^ 3) = M * N1 + M * (e + 1) ^ 3 := by ring
+    have s3 : Q * M = M * Q := by ring
+    have s4 : Q * ((e + 1) * e) ≤ Q * (e + 1) ^ 2 := Nat.mul_le_mul_left _ (by nlinarith)
+    omega
+  have key2 : M * Q ≤ M * N + Q * (e + 1) ^ 2 + M * (e + 1) ^ 3 := by
+    have t1 : (e + 1) * Q ≤ (e + 1) * (A.card + (e + 1) * e) := Nat.mul_le_mul_left _ hA
+    have t2 : M * ((e + 1) * Q) ≤ M * ((e + 1) * (A.card + (e + 1) * e)) :=
+      Nat.mul_le_mul_left _ t1
+    have t3 : M * ((e + 1) * (A.card + (e + 1) * e))
+        = M * (A.card * (e + 1)) + M * ((e + 1) ^ 2 * e) := by ring
+    have t4 : M * (A.card * (e + 1)) = M * N1 + M * N2 := by rw [← hsum]; ring
+    have t5 : M * N1 ≤ M * N := Nat.mul_le_mul_left _ hlow
+    have t6 : M * ((e + 1) * Q) = M * (e * Q) + M * Q := by ring
+    have t7 : e * Q * M = M * (e * Q) := by ring
+    have t8 : M * ((e + 1) ^ 2 * e) ≤ M * (e + 1) ^ 3 := Nat.mul_le_mul_left _ (by nlinarith)
+    have t9 : Q * ((e + 1) * e) ≤ Q * (e + 1) ^ 2 := Nat.mul_le_mul_left _ (by nlinarith)
+    omega
+  have hk1R : ((M * N : ℕ) : ℝ)
+      ≤ ((M * Q + Q * (e + 1) ^ 2 + M * (e + 1) ^ 3 : ℕ) : ℝ) := by exact_mod_cast key1
+  have hk2R : ((M * Q : ℕ) : ℝ)
+      ≤ ((M * N + Q * (e + 1) ^ 2 + M * (e + 1) ^ 3 : ℕ) : ℝ) := by exact_mod_cast key2
+  push_cast at hk1R hk2R
+  have hMnn : (0 : ℝ) ≤ (M : ℝ) := Nat.cast_nonneg _
+  have heq : (M : ℝ) * |(N : ℝ) - (Q : ℝ)| = |(M : ℝ) * ((N : ℝ) - (Q : ℝ))| := by
+    rw [abs_mul, abs_of_nonneg hMnn]
+  rw [heq, abs_le]
+  have hexp : (M : ℝ) * ((N : ℝ) - (Q : ℝ)) = (M : ℝ) * (N : ℝ) - (M : ℝ) * (Q : ℝ) := by ring
+  push_cast
+  constructor <;> linarith
+
+/-- **SCHMIDT III THEOREM 1A — THE WEIL BOUND FOR A PLANE CURVE OVER A FINITE
+FIELD** (PROVEN 2026-07-27 over `stepanov_mul_abs_natCard_zeroLocus_sub_card_le`,
+hence over `exists_stepanovAuxiliaryPair`).
+
+Schmidt's own constant is `√2·d^{5/2}`; `8·d³` is used here because the
+downstream constant is existentially quantified, so nothing is gained by
+sharpness and the coarser constant leaves room for a `ℕ`-valued choice of `M`.
+The threshold is `250d⁵ + 1000 < q` rather than Schmidt's `250d⁵ < q`, for the
+same reason: the extra `1000` is what makes the modulus chosen below at least
+`8` at `d = 1` without a case split, and the parent absorbs any finite set of
+`q` into `C` anyway.
+
+THE PROOF IS SCHMIDT'S §6 CHOICE OF `M`, in `ℕ`. Put
+`u = ⌊√⌊q/8d³⌋⌋` and `M = d·u`. Then `8d³u² ≤ q` gives Lemma 4A's condition
+`2d(M+8)² ≤ 8d·M² ≤ q` (using `M ≥ 8`), `d ≤ u` gives `d² ≤ M`, and the
+matching upper bound `q < 8d³(u+1)² ≤ 32d³u²` gives `q ≤ 49d²M²`, i.e.
+`√q ≤ 7dM`. Feeding that into (6.1) multiplied by `M`,
+
+  `M|N − q| ≤ d²q + Md³ = d²·√q·√q + Md³ ≤ 7d³M√q + Md³ ≤ 8d³M√q`,
+
+the last step because `√q ≥ 1`. Dividing by `M > 0` is the claim. -/
+theorem natCard_zeroLocus_sub_card_le_of_absolutelyIrreducible
+    {K : Type*} [Field K] [Finite K] (G : MvPolynomial (Fin 2) K)
+    (hirr : Irreducible (MvPolynomial.map (algebraMap K (AlgebraicClosure K)) G))
+    (hcard : 250 * G.totalDegree ^ 5 + 1000 < Nat.card K) :
+    |(Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0} : ℝ) - (Nat.card K : ℝ)|
+      ≤ 8 * (G.totalDegree : ℝ) ^ 3 * Real.sqrt (Nat.card K) := by
+  classical
+  have hd : 1 ≤ G.totalDegree := one_le_totalDegree_of_irreducible_map G hirr
+  set d := G.totalDegree with hddef
+  set Q := Nat.card K with hQdef
+  set N := Nat.card {a : Fin 2 → K // MvPolynomial.eval a G = 0} with hNdef
+  have hd3 : 0 < 8 * d ^ 3 := by positivity
+  -- `512 d³ ≤ q`, which is what makes the Stepanov modulus at least `8`.
+  have h512 : 512 * d ^ 3 ≤ Q := by
+    have haux : 512 * d ^ 3 ≤ 250 * d ^ 5 + 1000 := by
+      rcases eq_or_lt_of_le hd with h1 | h2
+      · rw [← h1]; norm_num
+      · have h4 : (4 : ℕ) ≤ d ^ 2 := by nlinarith
+        have h5 : 4 * d ^ 3 ≤ d ^ 2 * d ^ 3 := Nat.mul_le_mul_right _ h4
+        have h6 : d ^ 5 = d ^ 2 * d ^ 3 := by ring
+        omega
+    omega
+  set u := Nat.sqrt (Q / (8 * d ^ 3)) with hudef
+  have hu8 : 8 ≤ u := by
+    refine Nat.le_sqrt'.mpr ?_
+    rw [Nat.le_div_iff_mul_le hd3]
+    have : (8 : ℕ) ^ 2 * (8 * d ^ 3) = 512 * d ^ 3 := by ring
+    omega
+  have hud : d ≤ u := by
+    refine Nat.le_sqrt'.mpr ?_
+    rw [Nat.le_div_iff_mul_le hd3]
+    have : d ^ 2 * (8 * d ^ 3) = 8 * d ^ 5 := by ring
+    omega
+  have hsq : 8 * d ^ 3 * u ^ 2 ≤ Q := by
+    calc 8 * d ^ 3 * u ^ 2 ≤ 8 * d ^ 3 * (Q / (8 * d ^ 3)) :=
+          Nat.mul_le_mul_left _ (Nat.sqrt_le' _)
+      _ = Q / (8 * d ^ 3) * (8 * d ^ 3) := by ring
+      _ ≤ Q := Nat.div_mul_le_self _ _
+  have hQlt : Q < 8 * d ^ 3 * (u + 1) ^ 2 := by
+    have h := Nat.lt_succ_sqrt' (Q / (8 * d ^ 3))
+    rw [← hudef] at h
+    simp only [Nat.succ_eq_add_one] at h
+    have h' := (Nat.div_lt_iff_lt_mul hd3).mp h
+    calc Q < (u + 1) ^ 2 * (8 * d ^ 3) := h'
+      _ = 8 * d ^ 3 * (u + 1) ^ 2 := by ring
+  set M := d * u with hMdef
+  have hM8 : 8 ≤ M := le_trans hu8 (Nat.le_mul_of_pos_left _ (by omega))
+  have hMsq : d ^ 2 ≤ M := by
+    have h1 : d * d ≤ d * u := Nat.mul_le_mul_left _ hud
+    have h2 : d ^ 2 = d * d := by ring
+    omega
+  have hMcard : 2 * d * (M + 8) ^ 2 ≤ Q := by
+    have h1 : (M + 8) ^ 2 ≤ 4 * M ^ 2 := by nlinarith
+    have h2 : 2 * d * (4 * M ^ 2) = 8 * d ^ 3 * u ^ 2 := by rw [hMdef]; ring
+    calc 2 * d * (M + 8) ^ 2 ≤ 2 * d * (4 * M ^ 2) := Nat.mul_le_mul_left _ h1
+      _ = 8 * d ^ 3 * u ^ 2 := h2
+      _ ≤ Q := hsq
+  have hQ49 : Q ≤ 49 * d ^ 2 * M ^ 2 := by
+    have h1 : (u + 1) ^ 2 ≤ 4 * u ^ 2 := by nlinarith
+    calc Q ≤ 8 * d ^ 3 * (u + 1) ^ 2 := hQlt.le
+      _ ≤ 8 * d ^ 3 * (4 * u ^ 2) := Nat.mul_le_mul_left _ h1
+      _ = 32 * (d ^ 3 * u ^ 2) := by ring
+      _ ≤ 49 * d * (d ^ 3 * u ^ 2) := Nat.mul_le_mul_right _ (by omega)
+      _ = 49 * d ^ 2 * M ^ 2 := by rw [hMdef]; ring
+  -- pass to the reals
+  have hA1 := stepanov_mul_abs_natCard_zeroLocus_sub_card_le G hirr hd
+    (by rw [← hddef, ← hQdef]; omega) M ⟨u, rfl⟩ hMsq hMcard
+  rw [← hNdef, ← hQdef, ← hddef] at hA1
+  have hQpos : 0 < (Q : ℝ) := by
+    have : 0 < Q := by omega
+    exact_mod_cast this
+  have hSnn : (0 : ℝ) ≤ Real.sqrt Q := Real.sqrt_nonneg _
+  have hSS : Real.sqrt Q * Real.sqrt Q = (Q : ℝ) := Real.mul_self_sqrt hQpos.le
+  have hS1 : (1 : ℝ) ≤ Real.sqrt Q := by
+    rw [show (1 : ℝ) = Real.sqrt 1 by simp]
+    exact Real.sqrt_le_sqrt (by exact_mod_cast (show 1 ≤ Q by omega))
+  have hMpos : (0 : ℝ) < (M : ℝ) := by
+    have : 0 < M := by omega
+    exact_mod_cast this
+  have hdnn : (0 : ℝ) ≤ (d : ℝ) := Nat.cast_nonneg _
+  have hSle : Real.sqrt Q ≤ 7 * (d : ℝ) * (M : ℝ) := by
+    have h1 : (Q : ℝ) ≤ (7 * (d : ℝ) * (M : ℝ)) ^ 2 := by
+      have h2 : ((Q : ℕ) : ℝ) ≤ ((49 * d ^ 2 * M ^ 2 : ℕ) : ℝ) := by exact_mod_cast hQ49
+      push_cast at h2
+      nlinarith
+    calc Real.sqrt Q ≤ Real.sqrt ((7 * (d : ℝ) * (M : ℝ)) ^ 2) := Real.sqrt_le_sqrt h1
+      _ = 7 * (d : ℝ) * (M : ℝ) := Real.sqrt_sq (by positivity)
+  have key : (M : ℝ) * |(N : ℝ) - (Q : ℝ)| ≤ (M : ℝ) * (8 * (d : ℝ) ^ 3 * Real.sqrt Q) := by
+    have step1 : (d : ℝ) ^ 2 * (Real.sqrt Q * Real.sqrt Q)
+        ≤ (d : ℝ) ^ 2 * (Real.sqrt Q * (7 * (d : ℝ) * (M : ℝ))) :=
+      mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hSle hSnn) (by positivity)
+    have step2 : (M : ℝ) * (8 * (d : ℝ) ^ 3 * Real.sqrt Q)
+        - ((d : ℝ) ^ 2 * (Real.sqrt Q * (7 * (d : ℝ) * (M : ℝ))) + (M : ℝ) * (d : ℝ) ^ 3)
+        = (M : ℝ) * (d : ℝ) ^ 3 * (Real.sqrt Q - 1) := by ring
+    have step3 : (0 : ℝ) ≤ (M : ℝ) * (d : ℝ) ^ 3 * (Real.sqrt Q - 1) := by
+      have : (0 : ℝ) ≤ Real.sqrt Q - 1 := by linarith
+      positivity
+    have step4 : (d : ℝ) ^ 2 * (Q : ℝ) = (d : ℝ) ^ 2 * (Real.sqrt Q * Real.sqrt Q) := by
+      rw [hSS]
+    linarith [hA1]
+  exact le_of_mul_le_mul_left key hMpos
+
+/-- **ABSOLUTE IRREDUCIBILITY ASCENDS TO A FINITE EXTENSION** (PROVEN
+2026-07-27). If `F ∈ 𝔽_q[X,Y]` stays irreducible over `𝔽̄_q`, then its image in
+`𝔽_{q^s}[X,Y]` stays irreducible over `𝔽̄_{q^s}`.
+
+Nothing is lost or gained by changing the algebraic closure: `𝔽̄_{q^s}` is
+algebraic over `𝔽_q` as well (transitivity through the finite extension
+`𝔽_{q^s}/𝔽_q`), hence is an algebraic closure of `𝔽_q`, hence is
+`𝔽_q`-isomorphic to `𝔽̄_q`. The two composite structure maps `𝔽_q → 𝔽̄_{q^s}`
+then agree for the cheapest possible reason — `RingHom.ext_zmod`, a prime field
+admits exactly one ring homomorphism into any ring — so `MvPolynomial.map`
+along the isomorphism carries one statement to the other, and irreducibility
+transfers along a ring equivalence. -/
+theorem irreducible_map_algebraicClosure_galoisField {q : ℕ} [Fact q.Prime]
+    (F : MvPolynomial (Fin 2) (ZMod q))
+    (hirr : Irreducible (MvPolynomial.map
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F)) (s : ℕ) :
+    Irreducible (MvPolynomial.map
+      (algebraMap (GaloisField q s) (AlgebraicClosure (GaloisField q s)))
+      (MvPolynomial.map (algebraMap (ZMod q) (GaloisField q s)) F)) := by
+  classical
+  haveI halg : Algebra.IsAlgebraic (ZMod q) (AlgebraicClosure (GaloisField q s)) :=
+    Algebra.IsAlgebraic.trans (S := GaloisField q s) (ZMod q)
+      (AlgebraicClosure (GaloisField q s))
+  haveI : IsAlgClosure (ZMod q) (AlgebraicClosure (GaloisField q s)) := ⟨inferInstance, halg⟩
+  let e : AlgebraicClosure (ZMod q) ≃ₐ[ZMod q] AlgebraicClosure (GaloisField q s) :=
+    IsAlgClosure.equiv (ZMod q) (AlgebraicClosure (ZMod q)) (AlgebraicClosure (GaloisField q s))
+  have hmapeq : MvPolynomial.map (e.toRingEquiv : AlgebraicClosure (ZMod q) →+* _)
+        (MvPolynomial.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F)
+      = MvPolynomial.map (algebraMap (GaloisField q s) (AlgebraicClosure (GaloisField q s)))
+        (MvPolynomial.map (algebraMap (ZMod q) (GaloisField q s)) F) := by
+    have hcomp : (e.toRingEquiv : AlgebraicClosure (ZMod q) →+* _).comp
+          (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))
+        = (algebraMap (GaloisField q s) (AlgebraicClosure (GaloisField q s))).comp
+          (algebraMap (ZMod q) (GaloisField q s)) := RingHom.ext_zmod _ _
+    rw [MvPolynomial.map_map, MvPolynomial.map_map, hcomp]
+  have htrans := (MulEquiv.irreducible_iff
+    (MvPolynomial.mapEquiv (Fin 2) e.toRingEquiv)).mpr hirr
+  rw [MvPolynomial.mapEquiv_apply] at htrans
+  rw [← hmapeq]
+  exact htrans
+
 /-- **The Weil bound for an absolutely irreducible plane curve over a finite
-field, in affine point-count form** (sorry node, SIXTEENTH decomposition
-2026-07-27 — the CURVE-LEVEL residue of
+field, in affine point-count form** (**PROVEN 2026-07-27**, SEVENTEENTH
+decomposition, over the single leaf `exists_stepanovAuxiliaryPair` above — was
+a sorry node from the SIXTEENTH decomposition; the CURVE-LEVEL residue of
 `exists_frobEigenvalues_pointCount_of_not_dvd` below, which is now PROVEN over
 this leaf and `exists_planeModel_frobEigenvalues_of_not_dvd`).
 
@@ -41575,7 +41989,14 @@ its normalisation, discriminant and norm-polynomial sub-leaves), and
 `exists_count_of_absolutelyIrreducible_plane`. The route follows W. M. Schmidt,
 *Equations over Finite Fields: An Elementary Approach*, LNM 536, Chapter III.
 
-THE TWO GAPS BETWEEN THAT AND THIS LEAF, stated so nobody re-surveys them:
+WHERE THE TWO GAPS NOW LIVE (2026-07-27): both have been RELOCATED, unchanged,
+onto `exists_stepanovAuxiliaryPair` above, which is the only sorry left under
+this statement. Everything between that leaf and this one — Schmidt's §6
+inequality (6.1), his choice of the modulus `M`, the passage from `𝔽_q` to
+`𝔽_{q^s}`, and the uniformity of `C` in `s` — is now proven. The list below is
+kept because it is the description of that leaf's content.
+
+THE TWO GAPS, stated so nobody re-surveys them:
 
 1. *Prime powers.* Everything there is over `ZMod p`. This leaf needs
    `𝔽_{q^s}` for every `s`, because the parent's Lefschetz clause runs over
@@ -41610,8 +42031,78 @@ theorem exists_const_natCard_zeroLocus_sub_le {q : ℕ} [Fact q.Prime]
       |(Nat.card {a : Fin 2 → GaloisField q s //
             MvPolynomial.eval a (MvPolynomial.map
               (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)
-          - (q : ℝ) ^ s| ≤ C * Real.sqrt q ^ s :=
-  sorry
+          - (q : ℝ) ^ s| ≤ C * Real.sqrt q ^ s := by
+  classical
+  set d := F.totalDegree with hddef
+  set T : ℕ := 250 * d ^ 5 + 1000 with hTdef
+  refine ⟨8 * (d : ℝ) ^ 3 + (T : ℝ) ^ 2, ?_⟩
+  intro s hs
+  set G : MvPolynomial (Fin 2) (GaloisField q s) :=
+    MvPolynomial.map (algebraMap (ZMod q) (GaloisField q s)) F with hGdef
+  set N := Nat.card {a : Fin 2 → GaloisField q s // MvPolynomial.eval a G = 0} with hNdef
+  have hq2 : 2 ≤ q := (Fact.out : q.Prime).two_le
+  have hqR : (1 : ℝ) ≤ (q : ℝ) := by exact_mod_cast Nat.one_le_of_lt hq2
+  have hcardK : Nat.card (GaloisField q s) = q ^ s := GaloisField.card q s hs.ne'
+  have hdeg : G.totalDegree = d :=
+    totalDegree_map_of_injective F (algebraMap (ZMod q) (GaloisField q s)).injective
+  have hcast : ((q ^ s : ℕ) : ℝ) = (q : ℝ) ^ s := by push_cast; ring
+  have hsqrtq : Real.sqrt (q : ℝ) ^ s = Real.sqrt ((q : ℝ) ^ s) :=
+    sqrt_pow_eq_pow_sqrt (by linarith) s
+  have hsq1 : (1 : ℝ) ≤ Real.sqrt (q : ℝ) ^ s := by
+    refine one_le_pow₀ ?_
+    rw [show (1 : ℝ) = Real.sqrt 1 by simp]
+    exact Real.sqrt_le_sqrt hqR
+  have hdnn : (0 : ℝ) ≤ 8 * (d : ℝ) ^ 3 := by positivity
+  have hTnn : (0 : ℝ) ≤ (T : ℝ) ^ 2 := by positivity
+  by_cases hlt : T < q ^ s
+  · -- above the Stepanov threshold: Schmidt's Theorem 1A applies verbatim
+    have hB : Irreducible (MvPolynomial.map
+        (algebraMap (GaloisField q s) (AlgebraicClosure (GaloisField q s))) G) :=
+      irreducible_map_algebraicClosure_galoisField F hirr s
+    have hthr : 250 * G.totalDegree ^ 5 + 1000 < Nat.card (GaloisField q s) := by
+      rw [hdeg, hcardK]; exact hlt
+    have hA := natCard_zeroLocus_sub_card_le_of_absolutelyIrreducible G hB hthr
+    rw [← hNdef, hdeg, hcardK, hcast] at hA
+    rw [hsqrtq]
+    have hsplit : (8 * (d : ℝ) ^ 3 + (T : ℝ) ^ 2) * Real.sqrt ((q : ℝ) ^ s)
+        = 8 * (d : ℝ) ^ 3 * Real.sqrt ((q : ℝ) ^ s)
+          + (T : ℝ) ^ 2 * Real.sqrt ((q : ℝ) ^ s) := by ring
+    rw [hsplit]
+    have hpos : (0 : ℝ) ≤ (T : ℝ) ^ 2 * Real.sqrt ((q : ℝ) ^ s) := by positivity
+    linarith
+  · -- below the threshold: the whole affine plane has at most `T²` points, and
+    -- `(√q)^s ≥ 1`, so the fixed constant `T²` absorbs these finitely many `s`.
+    have hle : q ^ s ≤ T := Nat.not_lt.mp hlt
+    have hNle : N ≤ T ^ 2 := by
+      have h1 : N ≤ Nat.card (Fin 2 → GaloisField q s) :=
+        Nat.card_le_card_of_injective _ Subtype.val_injective
+      have h2 : Nat.card (Fin 2 → GaloisField q s) = (q ^ s) ^ 2 := by
+        rw [Nat.card_fun, hcardK, Nat.card_eq_fintype_card, Fintype.card_fin]
+      rw [h2] at h1
+      exact le_trans h1 (Nat.pow_le_pow_left hle 2)
+    have hNleR : (N : ℝ) ≤ (T : ℝ) ^ 2 := by exact_mod_cast hNle
+    have hNnn : (0 : ℝ) ≤ (N : ℝ) := Nat.cast_nonneg _
+    have hqsnn : (0 : ℝ) ≤ (q : ℝ) ^ s := by positivity
+    have hqsR : (q : ℝ) ^ s ≤ (T : ℝ) ^ 2 := by
+      have h1 : ((q ^ s : ℕ) : ℝ) ≤ (T : ℝ) := by exact_mod_cast hle
+      have hT1 : (1 : ℝ) ≤ (T : ℝ) := by
+        have : 1 ≤ T := by omega
+        exact_mod_cast this
+      have h2 : (T : ℝ) ≤ (T : ℝ) ^ 2 := by
+        have h3 : (1 : ℝ) * (T : ℝ) ≤ (T : ℝ) * (T : ℝ) :=
+          mul_le_mul_of_nonneg_right hT1 (by linarith)
+        rw [sq]
+        linarith
+      rw [hcast] at h1
+      linarith
+    have hcnn : (0 : ℝ) ≤ 8 * (d : ℝ) ^ 3 + (T : ℝ) ^ 2 := by linarith
+    have hbound : (T : ℝ) ^ 2 ≤ (8 * (d : ℝ) ^ 3 + (T : ℝ) ^ 2) * Real.sqrt (q : ℝ) ^ s := by
+      have h1 : (8 * (d : ℝ) ^ 3 + (T : ℝ) ^ 2) * 1
+          ≤ (8 * (d : ℝ) ^ 3 + (T : ℝ) ^ 2) * (Real.sqrt (q : ℝ) ^ s) :=
+        mul_le_mul_of_nonneg_left hsq1 hcnn
+      linarith
+    rw [abs_le]
+    constructor <;> linarith
 
 /-- **Igusa, Lefschetz and Eichler–Shimura, packaged over a plane model**
 (sorry node, SIXTEENTH decomposition 2026-07-27 — the MODULAR residue of
