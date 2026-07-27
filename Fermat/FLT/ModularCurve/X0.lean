@@ -6863,7 +6863,33 @@ relative Jacobian in mathlib, `~/cs/FLT` or this project — mathlib's
 (`Mathlib/RingTheory/PicardGroup.lean`), and this project's
 `JacobianPackage` / `ModularJacobianPackage` are axiomatized interfaces,
 not constructions.  Producing a representing scheme for the relative
-`Pic⁰` functor refutes the claim. -/
+`Pic⁰` functor refutes the claim.
+
+That survey was re-run independently on 2026-07-27 over all three trees
+and CONFIRMED: `PicardScheme`, `RelativePicard`, `PicardFunctor`, `Pic⁰`
+and `relativeJacobian` have zero declaration hits in mathlib and in
+`~/cs/FLT`, and in this project only ever occur inside docstrings or on
+the axiomatized interfaces named above.
+
+**FAITHFULNESS NOTE on `IsJacobianOf.universal`, recorded because a
+future prover is likely to suspect it of being TOO STRONG and to
+"repair" it.**  Do not weaken it: the `∃!` is correct as stated, even
+though `u` is quantified over ARBITRARY `S`-morphisms `J ⟶ A` rather
+than over homomorphisms.  Existence is the Albanese property.  For
+uniqueness, note first that the point equation at the base point forces
+`u` to send the origin to the origin — `c (𝟙 S) o = ab'.zero` and
+`aj (𝟙 S) o = ab.zero` are the two hypotheses of `universal`, and they
+say exactly `0_A = 0_J ≫ u`.  A morphism of abelian schemes sending the
+origin to the origin is a HOMOMORPHISM — the rigidity theorem (Mumford,
+*Abelian Varieties* §4; BLR *Néron Models* 8.4 in the relative case) —
+so any two competitors are homomorphisms agreeing on the image of `aj`,
+i.e. on the curve, which generates `J` as a group scheme.  Hence they
+are equal.
+
+So rigidity is already built INTO this interface, which is worth knowing
+before proving anything against it: the interface is not weaker than the
+classical Jacobian, and a construction discharging this leaf must supply
+the full Albanese property, not merely a representing object. -/
 theorem exists_relativeJacobian {C S : Scheme.{0}} (f : C ⟶ S)
     (_hf : IsSmoothProperCurve f) (o : RelPoint f (𝟙 S)) :
     ∃ (J : Scheme.{0}) (jf : J ⟶ S) (ab : AbelianSchemeStruct jf),
@@ -6996,7 +7022,49 @@ uniqueness of the Jacobian as a separate obligation: the given `J/ℚ` of
 compared with a freshly constructed one.
 
 IRREDUCIBLE at this pin ALONG THE PICARD AXIS, for the same reason as
-`exists_relativeJacobian`, and with the same refuting check. -/
+`exists_relativeJacobian`, and with the same refuting check.  A second
+survey on 2026-07-27 adds a sharper obstruction, which is worth stating
+because it is NOT the same as the missing Picard scheme: the proof
+technique this leaf names — "cohomology and base change" — is itself
+absent from ALL THREE trees.  `CohomologyAndBaseChange`,
+`higherDirectImage`, a derived pushforward and `IsCohomologicallyFlat`
+have zero hits in this project, in mathlib at our pin, and in
+`~/cs/FLT`.  So this leaf is gated on two independent missing theories,
+not one, and mathlib is the blocker for the second.
+
+**A DECOMPOSITION ALONG THE CANONICAL-COMPARISON AXIS WAS SEARCHED AND
+REJECTED (2026-07-27).  Stating the axis, since an irreducibility
+verdict is only as wide as what its author looked at.**  The cut that
+suggests itself is to CONSTRUCT the comparison map rather than posit the
+identification, exactly as `fibreIdentPullback` did for the curve:
+
+1. transport `ab` along `fibreIdentPullback s jf` to an
+   `AbelianSchemeStruct (Limits.pullback.snd jf s)` — all thirteen
+   fields go through, the group data by the equivalence, `pre_add` /
+   `pre_zero` by `e.nat`, and `proper` / `smooth` / `connected` by the
+   same base-change-plus-iso argument now used in
+   `isSmoothProperCurve_of_fibreIdent`;
+2. push Abel–Jacobi across `eX` to a natural `c` from `C'` into it,
+   whose value at `o'` is the origin — this is precisely where `_ho` is
+   consumed;
+3. feed `c` to `jac'.universal`, obtaining a CANONICAL
+   `u : J' ⟶ J ×_S S'` over `S'`, unique with the `aj` equation.
+
+What is left after that is `IsIso u` plus additivity of `u`, and the
+conclusions of this leaf follow formally from those two.  **The reason
+this is not a reduction: it replaces ONE blocked obligation with TWO
+blocked obligations** — `IsIso u` is still base change for `Pic⁰`, and
+additivity of `u` is the rigidity theorem, which is likewise absent
+everywhere (see the FAITHFULNESS NOTE on `exists_relativeJacobian`) —
+**at a cost of roughly 250 lines of new glue.**  Splitting is worth it
+when the halves have disjoint literature AND at least one half becomes
+attackable; here neither does.
+
+THE CHECK THAT WOULD REFUTE THIS: formalize the relative rigidity lemma
+(a morphism of abelian schemes carrying the origin to the origin is a
+homomorphism).  If rigidity lands, additivity of `u` stops being a leaf,
+the cut becomes one blocked obligation plus proven glue, and it should
+then be made. -/
 theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
     {C C' J J' : Scheme.{0}} {f : C ⟶ S} {f' : C' ⟶ S'}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
