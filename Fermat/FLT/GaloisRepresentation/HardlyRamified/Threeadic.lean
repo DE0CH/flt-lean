@@ -8,9 +8,13 @@ module
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Deformations.RepresentationTheory.ArtinConductor
 -- `wildInertiaGroup` (and `tameFixingSubgroup` behind it), which appear in
--- the STATEMENTS of the two Raynaud/tameness leaves
--- `exists_localInertia_generator_of_wildInertia_trivial` and
--- `wildInertia_fixes_connected_threeTorsion_of_hopf_package` below. The
+-- the STATEMENTS of the tameness leaf
+-- `exists_localInertia_generator_of_wildInertia_trivial` and of
+-- `wildInertia_fixes_connected_threeTorsion_of_hopf_package` below (the
+-- latter PROVEN since 2026-07-27 over
+-- `exists_coprime_three_exponent_localInertia_connected_threeTorsion`,
+-- which is the Raynaud leaf and does NOT mention the wild inertia). Also
+-- `exists_pow_eq_of_mem_wildInertiaGroup`, consumed in that proof. The
 -- module imports only `GaloisRep`, which is already in this cone, so the
 -- import adds exactly one module to it.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
@@ -2785,21 +2789,52 @@ theorem exists_localInertia_generator_of_wildInertia_trivial
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Raynaud at `e = 1 < p − 1`: the CONNECTED `3`-torsion is TAMELY
-ramified** (SORRY LEAF, cut 2026-07-27 out of
-`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
-below, which is PROVEN over it together with the procyclicity leaf
-`exists_localInertia_generator_of_wildInertia_trivial` just above).
+/-- **Raynaud at `e = 1 < p − 1`: LOCAL INERTIA acts on the connected
+`3`-torsion through a finite quotient of order PRIME TO `3`** (SORRY
+LEAF, cut 2026-07-27 out of
+`wildInertia_fixes_connected_threeTorsion_of_hopf_package` just below,
+which is PROVEN over it).
 
-Content: WILD inertia at `3` acts TRIVIALLY on every CONNECTED vector
-killed by `3` — every `w` with `3 • w = 0` whose point takes the value
-`1` at the connected counit idempotent `e₀`.
+Content: there is ONE exponent `n`, PRIME TO `3`, such that `σ ^ n`
+fixes EVERY connected `3`-torsion geometric point of the generic fibre,
+for every `σ ∈ I₃`. Equivalently — and this is the reading to keep in
+mind — the image of local inertia in the permutation group of the
+(finite) connected `3`-torsion socle is a finite group of order prime
+to `3`, i.e. **the action is TAME**.
 
-THIS IS THE ENTIRE FINITE-FLAT INPUT OF THE CONSUMER, and it is the
-declaration that spends `e = 1 < p − 1 = 2`. Everything else the
-consumer needs is either formal (finiteness of the point set,
-inertia-stability of the connected locus, the iterate argument) or is
-the pure local-field statement of the procyclicity leaf above.
+THIS IS THE ENTIRE FINITE-FLAT INPUT OF THE `3`-adic hardly-ramified
+cluster, and it is the declaration that spends `e = 1 < p − 1 = 2`.
+Nothing above it and nothing below it does.
+
+WHY THIS SHAPE — WHAT THE CUT OF 2026-07-27 REMOVED, AND WHAT IT
+DELIBERATELY DID NOT. Two pieces were peeled off the previous statement
+of `wildInertia_fixes_connected_threeTorsion_of_hopf_package`, and
+NEITHER of them carried any finite-flat content:
+
+* the HOPF PACKAGE. `ρ'`, `N`, `A`, `fG`, `hfG` are gone. They only
+  transported the statement from geometric points to vectors of a
+  Galois representation, which is `map_add`/`map_smul` of an
+  equivariant bijection — done in the consumer below by the same three
+  moves as `inertiaFixed_connected_vector_eq_zero_of_hopf_package`.
+  What remains here is a PURE finite-flat-group-scheme statement in the
+  idiom of `Fermat/FLT/GroupScheme/ConnectedEtale.lean`'s `OortTate`
+  namespace, so a prover can work entirely inside that machinery;
+* the WILD-TO-TAME CONVERSION. The old statement quantified over
+  `wildInertiaGroup 𝔭₃`; this one quantifies over all of
+  `localInertiaGroup 𝔭₃` and produces a prime-to-`3` exponent instead.
+  The passage back is `exists_pow_eq_of_mem_wildInertiaGroup`
+  (`ArtinConductor.lean`): `P₃` is pro-`3`, so every `π ∈ P₃` is an
+  `n`-th power `θ ^ n` of some `θ ∈ P₃` whenever `3 ∤ n`, and then
+  `π • φ = (θ ^ n) • φ = φ`. That is where "wild = pro-`3`" belongs; it
+  is somebody else's leaf (`coprime_card_quotient_wildInertiaGroup`)
+  and it should not be re-proved inside a Raynaud argument.
+
+What was NOT peeled off is the classification itself. The `∃ n` form is
+the shape Raynaud's theorem actually PRODUCES (the image of tame
+inertia lands in `μ_{3^r − 1}`), which is why the cut is in this
+direction rather than the equivalent "the image has no element of order
+`3`": the latter is Cauchy-equivalent but strictly harder to reach from
+the classification, and would make the next owner's job worse.
 
 MATHEMATICAL CONTENT. The connected `3`-torsion socle is the geometric
 point group of the schematic closure, inside `Spec (e₀ G)`, of the
@@ -2807,33 +2842,60 @@ point group of the schematic closure, inside `Spec (e₀ G)`, of the
 KILLED BY `3` over a base with `e = 1 < p − 1 = 2`. Raynaud (Bull. SMF
 102 (1974), 3.3.2–3.3.5 and 3.4.3) classifies these: the action of
 inertia is through products of fundamental characters `∏ ψᵢ ^ nᵢ` with
-`nᵢ ≤ e = 1`, and fundamental characters are TAME, so the whole action
-factors through `I₃ / P₃`. That is exactly this statement.
+`nᵢ ≤ e = 1`, and fundamental characters are TAME — they factor through
+`I₃ / P₃`, whose finite quotients all have order prime to `3` (the tame
+quotient is `∏_{ℓ ≠ 3} ℤ_ℓ`). Taking `n` to be the order of the image
+of `I₃` in the permutation group of the socle — finite because the
+point set is (`finite_points_of_hopf_order`, which is what the
+`Algebra.Etale` instance is for) — gives the statement.
 
-**CONNECTEDNESS IS ESSENTIAL AND THE UNRESTRICTED FORM IS FALSE — do
-not "simplify" this leaf by dropping `e₀`.** The tempting stronger
-statement is "wild inertia acts trivially on ALL of `M[3]`", which
-would drop `e₀`, `he₀`, `hε₀`, `hprim₀` and `hcomul₀` at a stroke and
-looks like a cleaner leaf. It is refuted by GOOD ORDINARY REDUCTION at
-`3`: for `E / ℚ₃` with good ordinary reduction, `E[3]` IS finite flat
-over `ℤ₃` (so every hypothesis of the dropped form holds, with
-`e = 1 < p − 1`), yet `ρ_{E,3} |_{I₃}` is `[[ω, *], [0, 1]]` with the
-extension class `*` a Kummer class of a `3`-adic UNIT, and
-`ℚ₃(ζ₃, u^{1/3})` is wildly ramified for `u` a unit that is not a cube
-modulo `λ^3` (`λ = ζ₃ − 1`, `v_λ(3) = 2`). What Raynaud bounds in that
-situation is only the SEMISIMPLIFICATION; Fontaine's ramification
-bound for `n = 1, e = 1, p = 3` is `u > e (n + 1/(p − 1)) = 3/2`, which
-permits a wild break in `(0, 3/2]` and the ordinary curve realises one.
-The connected part `E[3]⁰ = Ê[3] ≅ μ₃ ⊗ ψ` is rank one and tame — the
+**DO NOT AIM AT `n = 2`: THE PURELY CYCLOTOMIC ANSWER IS FALSE, AND
+THIS IS COMPUTED (PARI/GP, 2026-07-27).** The order-`p` machinery in
+`OortTate` (`inertia_character_trivial_or_cyclotomic`,
+`connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`) gives
+`σ • φ = φ ^ χ(σ)` when `⟨φ⟩` is inertia-stable, whence `n = 2` since
+`(ℤ/3)ˣ` has order `2`. That case is real but it is NOT the general
+one: `E = 37a1 = [0,0,1,−1,0]` has conductor `37` (good reduction at
+`3`) and `a₃ = −3 ≡ 0 (mod 3)`, so it is SUPERSINGULAR at `3`; its
+formal group has height `2`, so `E[3]` is CONNECTED in its entirety and
+every hypothesis here holds with `e₀` the whole component. Tame inertia
+then acts through the LEVEL-`2` fundamental characters, i.e. through
+`𝔽₉ˣ ≅ ℤ/8`, and the computation confirms it:
+
+    E = ellinit([0,0,1,-1,0]);   K = nfinit(nfsplitting(elldivpol(E,3)));
+    poldegree(K.pol)             \\ 24
+    [ [pr.e, pr.f] | pr <- idealprimedec(K,3) ]   \\ [[4,2],[4,2],[4,2]]
+
+`e = 4` on the `x`-coordinate field (so `e ∈ {4, 8}` on `ℚ(E[3])`,
+which is at most quadratic over it) — PRIME TO `3`, hence tame, exactly
+as this leaf asserts, but with `n = 8` and not `n = 2`. A proof that
+concludes `σ • φ = φ ^ χ(σ)` in general is therefore WRONG, and the
+correct input is tameness alone.
+
+**CONNECTEDNESS IS ESSENTIAL AND THE `e₀`-FREE FORM IS FALSE — do not
+"simplify" this leaf by dropping `e₀`, `he₀`, `hε₀`, `hprim₀`,
+`hcomul₀`.** The tempting stronger statement is "inertia acts tamely on
+ALL of `M[3]`". It is refuted by GOOD ORDINARY REDUCTION at `3`: for
+`E / ℚ₃` with good ordinary reduction, `E[3]` IS finite flat over `ℤ₃`
+(so every hypothesis of the dropped form holds, with `e = 1 < p − 1`),
+yet `ρ_{E,3} |_{I₃}` is `[[ω, *], [0, 1]]` with the extension class `*`
+a Kummer class of a `3`-adic UNIT, and `ℚ₃(ζ₃, u^{1/3})` is wildly
+ramified for `u` a unit that is not a cube modulo `λ³`
+(`λ = ζ₃ − 1`, `v_λ(3) = 2`). What Raynaud bounds in that situation is
+only the SEMISIMPLIFICATION; Fontaine's ramification bound for
+`n = 1, e = 1, p = 3` is `u > e (n + 1/(p − 1)) = 3/2`, which permits a
+wild break in `(0, 3/2]` and the ordinary curve realises one. The
+connected part `E[3]⁰ = Ê[3] ≅ μ₃ ⊗ ψ` is rank one and tame — the
 wildness lives entirely in the EXTENSION, which the connectedness
 hypothesis removes.
 
-THE REFUTATION IS COMPUTED, NOT ASSERTED (PARI/GP, 2026-07-27). `E =
-11a1 = [0,−1,1,−10,−20]` has conductor `11` (so good reduction at `3`)
-and `a₃ = −1 ≢ 0 (mod 3)` (so ORDINARY at `3`), hence `E[3]` is a
-finite flat `ℤ₃`-group scheme killed by `3` with `e = 1 < p − 1`. Its
-`3`-division field ramifies at `3` with `e = 6`, and `3 ∣ 6`, i.e.
-WILDLY. Re-runnable in seconds:
+THE REFUTATION IS COMPUTED, NOT ASSERTED (PARI/GP, re-run 2026-07-27
+alongside the supersingular check above). `E = 11a1 =
+[0,−1,1,−10,−20]` has conductor `11` (good reduction at `3`) and
+`a₃ = −1 ≢ 0 (mod 3)` (ORDINARY at `3`), hence `E[3]` is a finite flat
+`ℤ₃`-group scheme killed by `3` with `e = 1 < p − 1`. Its `3`-division
+field ramifies at `3` with `e = 6`, and `3 ∣ 6`, i.e. WILDLY.
+Re-runnable in seconds:
 
     E = ellinit([0,-1,1,-10,-20]);  P = elldivpol(E,3);
     K = nfinit(nfsplitting(P));     idealprimedec(K,3)
@@ -2841,8 +2903,10 @@ WILDLY. Re-runnable in seconds:
 
 (The `x`-coordinate field suffices: `ℚ(E[3])` is at most a quadratic
 extension of it, so it cannot introduce or remove a factor of `3` in
-`e`.) Anyone tempted to restate this leaf without `e₀` should run that
-first.
+`e`.) Note how sharply the two computations bracket this leaf: same
+prime, same `e = 1`, same "finite flat killed by `3`" — `e = 6` (wild)
+without connectedness, `e = 4` (tame) with it. Anyone tempted to
+restate this leaf without `e₀` should run both first.
 
 WHY THE CONNECTED CASE IS NEVERTHELESS TAME. The graded pieces of a
 connected `G⁰` killed by `3` over `ℤ₃` are the connected SIMPLE objects
@@ -2852,25 +2916,142 @@ fundamental characters — all of them tame. The extensions do not
 reintroduce wildness: for an iterated extension of `μ₃`-types the
 Cartier dual is an extension of étale by étale, hence étale, hence
 UNRAMIFIED, and `G⁰(K̄) ≅ (G⁰)^∨(K̄)^∨ ⊗ μ₃` is then `ω ⊗ unramified`.
-(That duality argument is currently unavailable in Lean:
-`grep -rn 'CartierDual\|cartierDual' Fermat/` was re-run 2026-07-27 and
-still returns nothing outside docstrings. A Cartier-duality build has
-its OWN owner — re-run the grep before assuming it is unavailable, since
-if it lands this leaf becomes much easier.)
+
+**THE DUALITY ROUTE IS NO LONGER ABSENT — the older note here saying
+the grep "matches only docstrings" is STALE.**
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` builds
+Cartier duality for finite flat commutative group schemes, sorry-free
+(biduality, the dual Hopf structure, `finrank_cartierDual`), and
+`.../HopfAlgebra/ShortExact.lean` adds `CartierDual.map`,
+`HopfAlgebra.IsShortExact` and `etale_of_isShortExact`. The one open
+leaf on that route is `HopfAlgebra.IsShortExact.cartierDual` (exactness
+of duality), which has its own owner. Re-run
+`grep -rn 'cartierDual' Fermat/` before believing any statement in this
+paragraph.
+
+WHAT ELSE IS ALREADY BUILT AND SHOULD BE READ FIRST. In
+`ConnectedEtale.lean`'s `OortTate` namespace, all PROVEN:
+`point_sub_counit_mem_maximalIdeal` (connectedness ⇒ the point reduces
+to the counit), `displacement_span_eq_span_zeta_sub_one` (Raynaud's
+valuation computation for an order-`3` inertia-stable point: the
+displacement ideal is exactly `(ζ₃ − 1)`),
+`inertia_character_trivial_or_cyclotomic`,
+`not_inertia_character_trivial_of_connected`,
+`connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`,
+`mem_span_natCast_of_inertia_invariant` (where `e = 1` is spent
+elsewhere), and the convolution-filtration toolkit
+(`exists_convPow_rem`, `fg_span_range`, `convPow_apply_mem_pow`). The
+RANK-ONE case of this leaf is essentially assembled from those, with
+`n = 2`; what is genuinely missing is the higher-rank case, i.e. the
+level-`r` fundamental characters.
 
 WHAT DEFEATS THE `S₃` CONFIGURATION, MECHANICALLY. For `A = 𝔽₃²` with
 `I` acting through a copy of `S₃` by `σ ↦ [[1,1],[0,1]]` and
 `τ ↦ diag(−1,1)` one has `A^I = 0` while EVERY single element fixes a
-nonzero vector, so no derivation of the consumer from `(M⁰)^{I₃} = 0`
-alone can exist. This leaf is what rules the configuration out:
-`[[1,1],[0,1]]` has order `3 = p`, so that image is wildly ramified,
-which is exactly what is forbidden here. Any proof of this leaf must
-therefore spend `e < p − 1`; a proof that does not is wrong.
+nonzero vector, so no derivation of the downstream consumer from
+`(M⁰)^{I₃} = 0` alone can exist. This leaf is what rules the
+configuration out: `[[1,1],[0,1]]` has order `3 = p`, so that image has
+order divisible by `3`, which is exactly what is forbidden here. Any
+proof of this leaf must therefore spend `e < p − 1`; a proof that does
+not is wrong.
+
+FAITHFULNESS. The conclusion is a VALUE-level statement about geometric
+points; the quantifier `σ ∈ localInertiaGroup 𝔭₃` is over INERTIA and
+is not widened to `Γ ℚ₃ᵥ` — widening it would make the leaf FALSE, since
+the unramified quotient contributes Frobenius, whose order on the socle
+is `f`-related and can perfectly well be divisible by `3`. No element of
+`G`, no coordinate and no normal form appears, so the leaf is on the
+true side of the development's `𝒪ᵥ`-descent rule and blind to the
+`p − 1` unramified twists `μ₃ ⊗ ψ` that killed `exists_muType_closure`:
+a twist changes WHICH points are connected, not how tamely inertia
+moves them. The connected `3`-torsion point set IS `Γ ℚ₃ᵥ`-stable
+(`(σ • φ) (1 ⊗ e₀) = σ (φ (1 ⊗ e₀)) = 1` and
+`(σ • φ) ^ 3 = σ • φ ^ 3 = 1`), so the statement is not quietly empty.
+
+CHECK THAT WOULD REFUTE THIS: exhibit a finite flat `ℤ₃`-Hopf order `G`
+killed by `3` with a primitive counit-one idempotent `e₀`, and a
+`σ ∈ I₃` whose action on the connected `3`-torsion points has order
+divisible by `3` — equivalently, a connected finite flat `ℤ₃`-group
+scheme killed by `3` whose points generate a wildly ramified extension.
+The two `gp` runs above are the two nearest misses: `11a1` produces
+wildness but only on the FULL (non-connected) `3`-torsion, and `37a1`
+produces a genuinely connected `E[3]` whose ramification is tame.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 3.3.2–3.3.5 and 3.4.3; Fontaine, *Il n'y a pas de variété
+abélienne sur `ℤ`*, §1 (the ramification bound); Serre, *Propriétés
+galoisiennes…*, Invent. Math. 15 (1972), §1.11 (fundamental characters
+and the procyclic tame quotient); Tate, *Finite flat group schemes*,
+§4, in Cornell–Silverman–Stevens. -/
+theorem exists_coprime_three_exponent_localInertia_connected_threeTorsion
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀) :
+    ∃ n : ℕ, ¬ (3 ∣ n) ∧
+      ∀ σ ∈ localInertiaGroup 𝔭₃, ∀ φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ,
+        φ ^ (3 : ℕ) = 1 → φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → (σ ^ n) • φ = φ := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Raynaud at `e = 1 < p − 1`: the CONNECTED `3`-torsion is TAMELY
+ramified** (PROVEN 2026-07-27 over the single leaf
+`exists_coprime_three_exponent_localInertia_connected_threeTorsion` just
+above, into which it was decomposed on that date, together with the
+PROVEN-modulo-its-own-leaf `exists_pow_eq_of_mem_wildInertiaGroup`; it
+was itself a SORRY LEAF, cut 2026-07-27 out of
+`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
+below, which is PROVEN over it together with the procyclicity leaf
+`exists_localInertia_generator_of_wildInertia_trivial` just above).
+
+Content: WILD inertia at `3` acts TRIVIALLY on every CONNECTED vector
+killed by `3` — every `w` with `3 • w = 0` whose point takes the value
+`1` at the connected counit idempotent `e₀`.
+
+This is the Hopf-package reading of the leaf above, and **it spends no
+finite-flat input of its own**: everything Raynaud is in that leaf, and
+everything about the wild inertia being pro-`3` is in
+`exists_pow_eq_of_mem_wildInertiaGroup`. The docstring of the leaf above
+carries the mathematics, the two `gp` computations that bracket it
+(`11a1` wild without connectedness, `37a1` tame with it), the reason
+`n = 2` is the WRONG target, and the inventory of `OortTate` machinery
+already available.
+
+PROOF, in two moves, neither of which touches the classification.
+
+1. THE PRO-`3` MOVE. The leaf hands over an exponent `n` with `3 ∤ n`.
+   Since `𝔭₃` has residue characteristic `3`, `3 ∤ n` is exactly
+   `(n : 𝓞 ℚ) ∉ 𝔭₃.asIdeal`
+   (`Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal`), so
+   `exists_pow_eq_of_mem_wildInertiaGroup` produces `θ ∈ P₃` with
+   `θ ^ n = π`. As `P₃ ≤ I₃`
+   (`wildInertiaGroup_le_localInertiaGroup`), the leaf applies to `θ`
+   and gives `π • φ = (θ ^ n) • φ = φ` for the point `φ` of `w`.
+2. THE TRANSPORT. `fG` is additive and `Γ ℚ₃ᵥ`-equivariant, so
+   `fG⁻¹` carries `3 • w = 0` to `φ ^ 3 = 1` (`toMul_nsmul`), the
+   connectedness hypothesis is `φ (1 ⊗ e₀) = 1` verbatim, and
+   `π • φ = φ` transports back to `ρ'(π) w = w` by `map_smul`. These
+   are the same three moves as
+   `inertiaFixed_connected_vector_eq_zero_of_hopf_package` above.
+
+`hprim₀` and `hcomul₀` are passed straight through to the leaf, where
+they are the connectedness of `e₀`; they are not used here. Note the
+inherited paragraph "`hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT
+IS FALSE", offering the constant group scheme `ℤ/3` with `e₀ = 1`, was
+never a refutation of this statement (its own witness concedes the
+conclusion): it refutes the PARENT
+`exists_localInertia_no_fixed_connected_vector_of_hopf_package`, not
+this. The real reason connectedness cannot be dropped is the good
+ORDINARY reduction computation recorded on the leaf above.
 
 FAITHFULNESS. The conclusion is a VALUE-level statement about vectors;
 the quantifier `π ∈ wildInertiaGroup 𝔭₃` is over (wild) INERTIA and is
 not widened to `Γ`, and no element of `G`, no coordinate and no normal
-form appears. So the leaf is on the true side of the development's
+form appears. So the statement is on the true side of the development's
 `𝒪ᵥ`-descent rule and blind to the `p − 1` unramified twists `μ₃ ⊗ ψ`
 that killed `exists_muType_closure`: a twist changes WHICH vectors are
 connected, not whether wild inertia moves them.
@@ -2897,7 +3078,51 @@ theorem wildInertia_fixes_connected_threeTorsion_of_hopf_package
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm w))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
       (ρ'.toLocal 𝔭₃) π w = w := by
-  sorry
+  classical
+  obtain ⟨n, hn3, hfix⟩ :=
+    exists_coprime_three_exponent_localInertia_connected_threeTorsion G e₀ he₀ hε₀
+      hprim₀ hcomul₀
+  -- `n` is prime to the residue characteristic `3`
+  have hnv : ((n : ℕ) : NumberField.RingOfIntegers ℚ) ∉
+      (Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).asIdeal := by
+    rw [Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast]
+    intro h
+    exact hn3 (by exact_mod_cast h)
+  set g := Equiv.ofBijective fG hfG with hg
+  have hfs : ∀ x : N, fG (g.symm x) = x := fun x => g.apply_symm_apply x
+  have hgs_add : ∀ x y : N, g.symm (x + y) = g.symm x + g.symm y := by
+    intro x y
+    apply g.injective
+    show fG (g.symm (x + y)) = fG (g.symm x + g.symm y)
+    rw [map_add fG, hfs, hfs, hfs]
+  have hgs_zero : g.symm (0 : N) = 0 := by
+    apply g.injective
+    show fG (g.symm (0 : N)) = fG 0
+    rw [map_zero fG, hfs]
+  have hgs_nsmul : ∀ (j : ℕ) (x : N), g.symm (j • x) = j • g.symm x := by
+    intro j x
+    induction j with
+    | zero => rw [zero_nsmul, zero_nsmul, hgs_zero]
+    | succ j ih => rw [succ_nsmul, succ_nsmul, hgs_add, ih]
+  intro π hπ w hw3 hwc
+  -- `P₃` is pro-`3`, so `π` is an `n`-th power INSIDE `P₃`
+  obtain ⟨θ, hθ, hθn⟩ := exists_pow_eq_of_mem_wildInertiaGroup 𝔭₃ hnv hπ
+  have hθI : θ ∈ localInertiaGroup 𝔭₃ := wildInertiaGroup_le_localInertiaGroup 𝔭₃ hθ
+  -- the point of `w` is killed by `3` in the convolution group
+  have hord : (Additive.toMul (g.symm w)) ^ (3 : ℕ) = 1 := by
+    have h0 : (3 : ℕ) • g.symm w = 0 := by rw [← hgs_nsmul, hw3, hgs_zero]
+    have h1 := congrArg Additive.toMul h0
+    rwa [toMul_nsmul, toMul_zero] at h1
+  have hfixφ := hfix θ hθI (Additive.toMul (g.symm w)) hord hwc
+  rw [hθn] at hfixφ
+  have h1 : π • g.symm w = g.symm w := by
+    apply Additive.toMul.injective
+    show Additive.toMul (π • g.symm w) = Additive.toMul (g.symm w)
+    have h2 : Additive.toMul (π • g.symm w) = π • Additive.toMul (g.symm w) := rfl
+    rw [h2, hfixφ]
+  have h3 : fG (π • g.symm w) = fG (g.symm w) := congrArg fG h1
+  rw [map_smul fG, hfs] at h3
+  exact h3
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
