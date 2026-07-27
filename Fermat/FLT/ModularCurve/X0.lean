@@ -349,6 +349,10 @@ public import Mathlib.AlgebraicGeometry.Sites.Fpqc
 -- of `specInvariants_universal`, the pure geometric-invariant-theory leaf that
 -- `exists_gamma0Atlas` is split along.
 public import Mathlib.RingTheory.Invariant.Basic
+-- The GIT quotient theorem itself, proved mathlib-facing and modular-curve-free in
+-- `Fermat/FLT/Mathlib/AlgebraicGeometry/InvariantQuotient.lean`; it closes the
+-- `¬ IsAffine` branch of `specInvariants_universal`.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.InvariantQuotient
 
 @[expose] public section
 
@@ -1079,9 +1083,8 @@ theorem specInvariants_universal_specTarget {B A : Type} [CommRing B] [CommRing 
     rw [← Spec.map_preimage ψ', hpre]
 
 /-- **GIT: `Spec` of a ring of invariants is a categorical quotient in the
-category of ALL schemes** (sorry node — entirely mathlib-facing; the
-AFFINE case is already PROVEN below, so what is open is the reduction of
-an arbitrary target to affine ones).
+category of ALL schemes** (PROVEN 2026-07-27, sorry-free and axiom-clean;
+formerly a sorry leaf).
 
 Let a finite group `G` act on a commutative ring `A` by ring
 automorphisms and let `B` be its invariant ring: `Algebra.IsInvariant B A
@@ -1116,30 +1119,50 @@ returns nothing today, and `grep -rn "IsInvariant" ~/cs/FLT/FLT/` finds
 only the number-theoretic uses (`Galois/Infinite.lean`,
 `Deformations/.../IntegralClosure.lean`), never a scheme-level quotient.
 
-## WHAT IS ALREADY PROVEN HERE, AND WHAT IS LEFT
+## HOW IT IS PROVEN
 
-**The AFFINE case is PROVEN** (2026-07-27), sorry-free, in
-`specInvariants_universal_specTarget` and consumed by the `IsAffine Y'`
-branch of the proof below.  It is exactly as short as it looks: `Spec` is
-fully faithful, so `φ` is `Spec.map f` for a unique ring map
-`f : R ⟶ A`; `G`-invariance of `φ` is `G`-invariance of `f` by
-`Spec.map_injective`; so `f` lands in `B` by `Algebra.IsInvariant`, and
-`hinj` makes the lift a ring homomorphism and makes it unique.
+**The AFFINE case** is `specInvariants_universal_specTarget` (2026-07-27),
+consumed by the `IsAffine Y'` branch of the proof below.  It is exactly
+as short as it looks: `Spec` is fully faithful, so `φ` is `Spec.map f`
+for a unique ring map `f : R ⟶ A`; `G`-invariance of `φ` is
+`G`-invariance of `f` by `Spec.map_injective`; so `f` lands in `B` by
+`Algebra.IsInvariant`, and `hinj` makes the lift a ring homomorphism and
+makes it unique.
 
-**What is left is the REDUCTION of an arbitrary target to affine ones** —
-the `¬ IsAffine Y'` branch, which is where the `sorry` now sits.  The
-route: `π` is integral hence closed, and surjective, and its fibres are
+**The REDUCTION of an arbitrary target to affine ones** — formerly the
+`sorry` in the `¬ IsAffine Y'` branch — is
+`Fermat.InvariantQuotient.exists_unique_of_isInvariant`, in the
+mathlib-facing module
+`Fermat/FLT/Mathlib/AlgebraicGeometry/InvariantQuotient.lean`
+(2026-07-27).  It proves the statement for EVERY target, so the
+`IsAffine Y'` branch above survives only because it is the shorter route
+in that case.  The route taken there is the one this docstring predicted:
+`π` is integral hence closed, and surjective, and its fibres are
 `G`-orbits, so a `G`-stable open of `Spec A` is `π ⁻¹` of an open of
-`Spec B`; refine to basic opens `D b` for `b : B`, where
-`π ⁻¹ (D b) = Spec (A_b)` and `(A_b)^G = B_b`; apply the affine case on
-each and glue with `Scheme.Cover.glueMorphisms`, the overlaps being
-discharged by the uniqueness half on `D (b * b')`.  Global uniqueness is
-`π` epi, which follows from `π` surjective together with `B ↪ A`.
+`Spec B`; call `D b` GOOD when `φ (π ⁻¹ (D b))` lies in a single affine
+open of `Y'`, note that the good basic opens are closed downwards and
+cover `Spec B`, hence form a BASIS, and glue over the resulting cover.
 
-Note that the reduction needs the affine case **for the localised triples
-`(B_b, A_b, G)`**, not only for `(B, A, G)` — which is why the affine
-case is stated for every triple rather than carved out as a hypothesis of
-this one.
+Two things made it shorter than the docstring feared.  First, gluing
+along a **locally directed** cover (`Cover.LocallyDirected.ofIsBasisOpensRange`,
+which a basis supplies for free) needs only compatibility with the
+transition maps `D b ⊆ D b'`, not the pullback compatibility of
+`Scheme.Cover.glueMorphisms` — so no pullback of two basic opens is ever
+identified.  Second, global uniqueness is NOT a separate "`π` is epi"
+argument: `Scheme.Cover.hom_ext` on the same cover reduces it to the
+local uniqueness already in hand.
+
+The reduction consumes the affine case **at the localised triples
+`(B_b, A_b, G)`**, not only at `(B, A, G)` — which is why the affine case
+is stated for every triple rather than carved out as a hypothesis of this
+one, and why `InvariantQuotient` states its affine case for a bare ring
+map `ι : B →+* A` with a bare family of ring endomorphisms of `A` rather
+than for a `MulSemiringAction`: at a localisation, producing the class
+instances would be pure overhead, whereas the ring maps are just
+`IsLocalization.map`.  The one genuinely new piece of algebra there is
+that **invariants localise** (`exists_awayMap_eq_of_fixed`): finiteness
+of `G` lets a single power of `ι b` clear denominators for all `σ` at
+once, and `(ι b) ^ N * a` is then genuinely `G`-fixed.
 
 *Refuting check for "the reduction is unavoidable"*: an `EffectiveEpi`
 or descent-shaped route would refute it — but `π` is not flat, so the
@@ -1172,10 +1195,13 @@ theorem specInvariants_universal {B A : Type} [CommRing B] [CommRing A] [Algebra
             = φ ≫ Y'.isoSpec.hom
         rw [← Category.assoc, hψ'2])
       rw [← hE, Category.assoc, Iso.hom_inv_id, Category.comp_id]
-  · -- THE OPEN ITEM, and the only one left in this theorem: the reduction of
-    -- an arbitrary target to affine ones, by descending the `G`-stable opens
-    -- `φ ⁻¹ (Vᵢ)` to basic opens of `Spec B` and gluing.  See the docstring.
-    sorry
+  · -- PROVEN (2026-07-27): the reduction of an arbitrary target to affine ones, by
+    -- descending the `G`-stable opens `φ ⁻¹ (Vᵢ)` to basic opens of `Spec B` and gluing.
+    -- The whole argument is mathlib-facing and lives in
+    -- `Fermat/FLT/Mathlib/AlgebraicGeometry/InvariantQuotient.lean`; note it proves the
+    -- statement for EVERY target, affine or not, so the `IsAffine` branch above is now
+    -- only kept because it is the shortest route in that case.
+    exact InvariantQuotient.exists_unique_of_isInvariant G hinj φ hinv
 
 /-- **A Katz–Mazur atlas presented the way (8.1.1) actually builds it**:
 the rigidified moduli scheme as `Spec A` with a finite group `G` acting,
