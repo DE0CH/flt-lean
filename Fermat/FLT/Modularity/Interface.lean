@@ -3030,8 +3030,124 @@ theorem rationalCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
     Submodule.span ℂ ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ :=
   sorry
 
+/-- **FINITELY MANY INTEGRAL GENERATORS ⟹ MODULE-FINITE OVER `ℤ`**
+(PROVEN, 2026-07-27): a commutative ring `A` which is the `Subring`
+closure of a FINITE set of elements each integral over `ℤ` is a finite
+`ℤ`-module.
+
+Nothing here is new mathematics — it is mathlib's `fg_adjoin_of_finite`
+(Stacks 09GH) read through `Algebra.adjoin_int`, which identifies
+`Algebra.adjoin ℤ s` with `Subring.closure s` for any ring. It is stated
+separately from its single consumer `heckeSubring_moduleFinite_int`
+below because that consumer must first move the question INSIDE the
+Hecke algebra: `𝕋` is commutative (`heckeSubring_mul_comm`) but the
+ambient `End_ℂ(S₂(Γ₀(N)))` is not, and the integral-closure API is
+commutative-only. -/
+theorem moduleFinite_int_of_isIntegral_of_closure_eq_top {A : Type*} [CommRing A]
+    {s : Set A} (hfin : s.Finite) (hint : ∀ x ∈ s, IsIntegral ℤ x)
+    (htop : Subring.closure s = ⊤) : Module.Finite ℤ A := by
+  have hadj : Algebra.adjoin ℤ s = ⊤ := by
+    rw [Algebra.adjoin_int, htop]
+    rfl
+  have hfg : (Algebra.adjoin ℤ s).toSubmodule.FG := fg_adjoin_of_finite hfin hint
+  rw [hadj] at hfg
+  exact Module.finite_def.mpr (by simpa using hfg)
+
+/-- **LEAF 1a OF THE DISCRETENESS CUT — FINITE ALGEBRA GENERATION:
+`𝕋 = ℤ[T_q : q ≤ k]` for some `k`** (sorry leaf, cut 2026-07-27 out of
+`heckeSubring_moduleFinite_int` below along the ALGEBRAIC-STRUCTURE
+axis; see that leaf's second audit for why the axis is new).
+
+TRUE, and for a soft reason worth recording since it shows the cut is a
+consequence and not a restatement: `𝕋` IS a finite `ℤ`-module (that is
+the statement being cut), so a finite module-generating set is contained
+in `ℤ[T_q : q ≤ k]` for `k` large; the truncated closures form a
+DIRECTED family whose union is a subring containing every `T_q`, hence
+is all of `𝕋`.
+
+STRICTLY WEAKER THAN THE CONSUMER, with the counterexample:
+`ℤ[x] ⊆ ℚ[x]` is generated as a `ℤ`-algebra by ONE element and is not a
+finite `ℤ`-module. So this leaf carries none of the discreteness on its
+own; it is the partner of `isIntegral_heckeEndo` below, and only the
+PAIR is equivalent to the consumer.
+
+WHERE THE DEEP INPUT OF THE PAIR SITS — here, not in the integrality
+half. Classically this is Sturm's bound over `ℤ`: the `T_n` with
+`n ≤ 2·[SL₂(ℤ):Γ₀(N)]/12` already span `𝕋` as a `ℤ`-MODULE (Sturm,
+*On the congruence of modular forms*, LNM 1240; Diamond–Shurman
+Exercise 6.5.4) — strictly more than is asked for here — and its proof
+runs through the integral `q`-expansion structure. A successor should
+expect to need the integral model (or `H¹(X₀(N), ℤ)`) for THIS leaf,
+and should NOT expect to need it for the integrality half.
+
+SOUNDNESS: `0 < N` is inherited from the consumer and is not needed
+mathematically — at `N = 0` every `heckeEndo 0 q` is the junk value `0`
+and `k = 2` witnesses the statement. -/
+theorem exists_heckeSubring_algebraGenerators {N : ℕ} (hN : 0 < N) :
+    ∃ k : ℕ, heckeSubring N ≤
+      Subring.closure {T | ∃ q : ℕ, q.Prime ∧ q ≤ k ∧ T = heckeEndo N q} :=
+  sorry
+
+/-- **LEAF 1b OF THE DISCRETENESS CUT — INTEGRALITY: every `T_q`
+satisfies a monic `ℤ`-polynomial** (sorry leaf, cut 2026-07-27), the
+operator form of "Hecke eigenvalues are algebraic integers".
+
+STRICTLY WEAKER THAN THE CONSUMER, with the counterexample already on
+record in the audit of `heckeSubring_moduleFinite` far below:
+`ℤ + ℚ·x ⊆ ℚ[x]/(x²)` is a subring EVERY element of which is integral
+over `ℤ` (`n + cx` is killed by the monic `(X − n)²`) and which is not a
+finite `ℤ`-module. So integrality alone carries no discreteness; it is
+the partner of `exists_heckeSubring_algebraGenerators` above.
+
+**TWO INDEPENDENT ROUTES, and the second is the whole reason this half
+was worth separating off.**
+
+* *The lattice route.* `T_q` preserves a full-rank `ℤ`-lattice, so it
+  satisfies that lattice's characteristic polynomial. This is the
+  integral-model input again — the same deep input as everything else in
+  this cluster — so it buys nothing new.
+* *The TRACE route, which needs NO integral model and NO semisimplicity.*
+  Eichler–Selberg gives `Tr(T_n) ∈ ℤ` for every `n`; the Hecke
+  multiplication rule `T_m T_n = Σ_{d ∣ (m,n), (d,N)=1} d · T_{mn/d²}`
+  puts every power `T_q^k` in the `ℤ`-SPAN of the `T_n`, so all power
+  sums `Tr(T_q^k)`, `k ≥ 1`, are rational integers; and a matrix over a
+  field of characteristic `0` all of whose power traces are rational
+  integers has characteristic polynomial in `ℤ[X]`. (`p`-adically:
+  `Σ_{k ≥ 1} Tr(T_q^k) t^k = Σ_i λ_i t/(1 − λ_i t)` is a rational
+  function with `ℤ_p`-integral coefficients, so it converges on the open
+  unit disc and can have no pole there, so no eigenvalue satisfies
+  `|λ|_p > 1`; being also a root of a monic `ℚ`-polynomial, each `λ_i`
+  is an algebraic integer.)
+
+THE ASYMMETRY WITH THE SIBLING, which is the finding this cut is built
+on. Eichler–Selberg is recorded as a DEAD axis (axis 2) in the audit of
+`rationalCuspForms_span_eq_top` above, and correctly so: the RANK bound
+needs the trace form `⟨x, y⟩ = Tr(xy)` to be NONDEGENERATE, whose
+radical is the nilradical, so that route needs `𝕋 ⊗ ℚ` SEMISIMPLE — for
+`Γ₀(N)` exactly the semisimplicity of `U_q` on the `q`-old part, a
+known-hard and in general OPEN question (Coleman–Edixhoven,
+*On the semi-simplicity of the `U_p`-operator on modular forms*,
+Math. Ann. 310 (1998), 119–127). INTEGRALITY needs no such thing: the
+argument above uses only that the traces are integers. So the trace
+formula is dead for the sibling and LIVE here, and that is exactly why
+this half separates.
+
+Eichler–Selberg is absent from the pin — `grep -rn 'Eichler'
+.lake/packages/mathlib` is empty, and `~/cs/FLT` is quaternionic — so
+this is still a theory to build; but it is an elementary and finite
+analytic computation, not a moduli-theoretic one.
+
+SOUNDNESS: `0 < N` is inherited from the consumer and is not needed
+mathematically — at `N = 0` the operator is the junk value `0`, which is
+integral. -/
+theorem isIntegral_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime) :
+    IsIntegral ℤ (heckeEndo N q) :=
+  sorry
+
+open scoped IsMulCommutative in
 /-- **LEAF 1 OF 2 FOR THE `ℤ`-FORM — DISCRETENESS: `𝕋` is a finitely
-generated `ℤ`-module** (sorry leaf, cut 2026-07-27).
+generated `ℤ`-module** (DECOMPOSED 2026-07-27; formerly a sorry leaf,
+cut the same day).
 
 This is the half of Eichler–Shimura that says `𝕋` is a LATTICE at all:
 classically `𝕋` acts faithfully on `H₁(X₀(N), ℤ)`, which is free of
@@ -3104,12 +3220,117 @@ WHAT DOES **NOT** HELP, checked rather than assumed:
 
 So what is genuinely missing is an integral structure that is NOT built
 from the `q`-expansions — classically `H₁(X₀(N), ℤ)`, or the integral
-model `X₀(N)/ℤ`. A successor should attack it as the construction of such
-a lattice, and should not expect a further cut of this statement to be
-available first. -/
+model `X₀(N)/ℤ`.
+
+**SECOND AXIS SEARCHED (2026-07-27, by the next owner): the
+ALGEBRAIC-STRUCTURE axis — `𝕋` as a `ℤ`-ALGEBRA rather than as a
+lattice. Along it the statement DOES decompose, and the cut is executed
+below. The audit above stands as written; it says so itself — the axis
+it searched was LATTICE-shaped cuts, and its closing "should not expect
+a further cut of this statement to be available first" was true only of
+that axis and has been withdrawn.**
+
+A `ℤ`-algebra has TWO separate finiteness properties, and no
+lattice-shaped cut sees either of them:
+
+* `exists_heckeSubring_algebraGenerators` above — `𝕋` is generated as a
+  `ℤ`-ALGEBRA by FINITELY many `T_q`;
+* `isIntegral_heckeEndo` above — each generator is INTEGRAL over `ℤ`.
+
+Neither implies this leaf and neither implies the other, with explicit
+counterexamples in their docstrings (`ℤ[x] ⊆ ℚ[x]` for the first,
+`ℤ + ℚ·x ⊆ ℚ[x]/(x²)` for the second). Their conjunction gives this leaf
+by the standard "finitely many integral generators" theorem, which is
+`moduleFinite_int_of_isIntegral_of_closure_eq_top` above and is the
+whole of the assembly written below. So this is a genuine decomposition
+into two strictly weaker statements, not a relabelling in DEAD END 8's
+sense.
+
+**WHY THE AXIS LOOKED DEAD, and the correction.** The audit of
+`heckeSubring_moduleFinite` far below already considered integrality and
+dismissed it, correctly observing that "integrality ALONE does not give
+finiteness" with exactly the `ℚ[x]/(x²)` example — and then pairing it
+with SEMISIMPLICITY, "a reducedness hypothesis would have to be carried
+as a second leaf of the same depth". That pairing is what kills the
+route, and it is the wrong one: semisimplicity of `𝕋 ⊗ ℚ` at level `N`
+is a known-hard and in general OPEN question (Coleman–Edixhoven, Math.
+Ann. 310 (1998), 119–127), so it may not be a leaf at all. FINITE
+ALGEBRA GENERATION is the right partner: it is a theorem, it is strictly
+weaker than this leaf, and it is what the classical Sturm bound produces
+anyway.
+
+**WHAT THE CUT BUYS, stated so nobody overrates it.** It does not remove
+the integral-model input — that input now sits in
+`exists_heckeSubring_algebraGenerators`, which is Sturm's bound over
+`ℤ`. What it buys is that the OTHER half becomes independently
+attackable: `isIntegral_heckeEndo` follows from the Eichler–Selberg
+trace formula alone, with no integral model and no semisimplicity, and
+Eichler–Selberg is dead for the sibling `heckeSubring_zRank_le`
+precisely because the rank bound needs the trace form to be
+nondegenerate. See `isIntegral_heckeEndo`'s docstring for the argument
+and the asymmetry.
+
+**A STRUCTURAL CONSTRAINT ON ANY ATTACK, not recorded above and easy to
+lose an afternoon to.** `rank_ℚ 𝕋 < ∞` is NOT available here: that is
+the sibling leaf `heckeSubring_zRank_le`, DECLARED BELOW, so every
+"lattice in a finite-dimensional `ℚ`-vector space" argument — the
+trace-form/dual-lattice argument in particular — is unavailable in
+place, not merely unproven. What IS available above this line is that
+the `ℂ`-SPAN of `𝕋` inside `End_ℂ(S₂)` has dimension `≤ D`, from
+left-nondegeneracy (`heckeSubring_eq_zero_of_forall_qCoeff_one`);
+upgrading that to `ℚ`-independence ⟹ `ℂ`-independence is exactly the
+sibling's content, and is the coupling this cluster deliberately avoids.
+
+ASSEMBLY (2026-07-27). `𝕋` is commutative
+(`heckeSubring_mul_comm`, via `Subring.isMulCommutative_closure` on the
+defining generator set), so the whole question moves inside the type
+`↥𝕋`, where the commutative integral-closure API applies; the ambient
+`End_ℂ(S₂)` is NOT commutative, which is the only reason the transfer is
+written out. The finite generating set `s` of leaf 1a is pulled back to
+`s' ⊆ ↥𝕋` (finite, since `Subtype.val` is injective), its elements are
+integral by leaf 1b transported along the injective `ℤ`-algebra map
+`Subring.subtype` (`isIntegral_algHom_iff`), and `Subring.closure s' = ⊤`
+because `Subring.closure s` is contained in the image of
+`Subring.closure s'`. -/
 theorem heckeSubring_moduleFinite_int {N : ℕ} (hN : 0 < N) :
-    Module.Finite ℤ (heckeSubring N) :=
-  sorry
+    Module.Finite ℤ (heckeSubring N) := by
+  classical
+  obtain ⟨k, hk⟩ := exists_heckeSubring_algebraGenerators hN
+  set s : Set (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+    {T | ∃ q : ℕ, q.Prime ∧ q ≤ k ∧ T = heckeEndo N q}
+  have hsub : s ⊆ (heckeSubring N : Set (Module.End ℂ (CuspForm (Gamma0GL N) 2))) := by
+    rintro T ⟨q, hq, -, rfl⟩
+    exact heckeEndo_mem_heckeSubring N hq
+  have hsfin : s.Finite := by
+    have himg : s ⊆ (fun q : ℕ => heckeEndo N q) '' (Set.Iic k) := by
+      rintro T ⟨q, -, hqk, rfl⟩
+      exact ⟨q, hqk, rfl⟩
+    exact Set.Finite.subset ((Set.finite_Iic k).image _) himg
+  -- `𝕋` is commutative, so the commutative integral-closure API applies inside it.
+  haveI : IsMulCommutative ↥(heckeSubring N) :=
+    Subring.isMulCommutative_closure
+      (s := {T | ∃ q : ℕ, q.Prime ∧ T = heckeEndo N q})
+      (fun x hx y hy => heckeSubring_mul_comm hN (Subring.subset_closure hx)
+        (Subring.subset_closure hy))
+  set s' : Set ↥(heckeSubring N) :=
+    (fun y : ↥(heckeSubring N) => (y : Module.End ℂ (CuspForm (Gamma0GL N) 2))) ⁻¹' s
+  have hs'fin : s'.Finite := Set.Finite.preimage (Subtype.val_injective.injOn) hsfin
+  have hint : ∀ x ∈ s', IsIntegral ℤ x := by
+    rintro x ⟨q, hq, -, hqx⟩
+    have h1 : IsIntegral ℤ ((Subring.subtype (heckeSubring N)).toIntAlgHom x) := by
+      simpa [hqx] using isIntegral_heckeEndo hN hq
+    exact (isIntegral_algHom_iff _ Subtype.coe_injective).mp h1
+  have htop : Subring.closure s' = ⊤ := by
+    rw [eq_top_iff]
+    rintro x -
+    have hx : (x : Module.End ℂ (CuspForm (Gamma0GL N) 2)) ∈ Subring.closure s := hk x.2
+    have hle : Subring.closure s ≤ (Subring.closure s').map (Subring.subtype _) := by
+      refine Subring.closure_le.mpr ?_
+      rintro y hy
+      exact ⟨⟨y, hsub hy⟩, Subring.subset_closure hy, rfl⟩
+    obtain ⟨y, hy, hyx⟩ := hle hx
+    exact (Subtype.ext hyx : y = x) ▸ hy
+  exact moduleFinite_int_of_isIntegral_of_closure_eq_top hs'fin hint htop
 
 /-- **LEAF 2 OF 2 FOR THE `ℤ`-FORM — RANK: `rank_ℤ 𝕋 ≤ dim_ℂ S₂(Γ₀(N))`**
 (sorry leaf, cut 2026-07-27), stated as the absence of a `ℤ`-linearly
