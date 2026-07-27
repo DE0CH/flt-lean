@@ -1432,6 +1432,28 @@ artinian ring `ℤ/q^k`, and the rank is forced by counting).
    ideal, hence Henselian, so Newton iteration terminates and produces
    `ω ∈ S` with `h(ω) = 0` and `ω ≡ ω₀`.  Put
    `A = (ℤ/q^k)[X]/(h) → S`, `X ↦ ω`.
+
+   *The one mathlib gap, and it is small.*  Henselianity is reached by
+   `IsAdicComplete.henselianRing` (`Mathlib/RingTheory/Henselian.lean`),
+   but the pin has **no `IsAdicComplete I R` instance for a NILPOTENT
+   `I`** — only for `ℤ_[p]`, power series, Witt vectors and complete
+   Noetherian local rings.  Supplying it is a few lines and it is the
+   whole of the gap: `IsHausdorff` is `⋂ Iⁿ = 0`, and for
+   `IsPrecomplete` a compatible sequence `f` has limit `f N` where
+   `I^N = 0` (for `n ≤ N` compatibility gives it; for `n > N` the
+   modulus is `0`, so `f n = f N` on the nose).  **Check before
+   building it**: `grep -rn "IsAdicComplete" .lake/packages/mathlib`
+   for a nilpotent/artinian instance added since this note.
+
+   *A fallback for the lift itself, if Hensel is awkward: pure finite
+   group theory.*  `|S^×| = q^{f(ek−1)}·m` with `m = q^f − 1`, so for
+   `u ∈ S^×` any lift of a generator of `k(Q)^×` and `a = f(ek−1)`, the
+   element `ω = u^{q^a}` satisfies `ω^m = 1` and still reduces to a
+   generator (`q^a` is coprime to `m`).  This gives the Teichmüller
+   element with no Newton iteration — but note it does NOT by itself
+   give the monic degree-`f` relation that makes `A` free of rank `f`,
+   which is why Hensel is the primary route and this is only a fallback
+   for step 1's first half.
 2. *`A` is free of rank `f` over `ℤ/q^k` and the map is injective.*
    Freeness is by construction (quotient by a monic of degree `f`).
    For injectivity suppose `∑_{j<f} c_j ω^j = 0` with `c_j ∈ ℤ/q^k` not
@@ -1469,16 +1491,35 @@ take `x = (1+√5)/2`: it is a unit at the unique prime above `2`, and
 
 ## MATHLIB INPUTS ALREADY LOCATED
 
-`not_dvd_differentIdeal_of_intTrace_not_mem` (the consumer),
-`Algebra.trace_trace`, `Algebra.trace_algebraMap`,
-`Module.basisQuotient` and `Algebra.trace_quotient_mk`
-(`Mathlib/RingTheory/LocalRing/Quotient.lean`, `Trace/Quotient.lean` —
-note the latter's `trace_quotient_eq_of_isDedekindDomain` needs `p`
-MAXIMAL and so does NOT apply to `p = (q^k)`; the reduction of
-`Algebra.intTrace ℤ 𝓞_K` mod `q^k` has to be done from a `ℤ`-basis with
-`Algebra.trace_eq_matrix_trace`, as in `trace_quotient_mk`'s proof),
-`HenselianLocalRing` (`Mathlib/RingTheory/Henselian.lean`),
-`Ideal.quotientInfRingEquivPiQuotient` for the CRT splitting. -/
+All checked to exist in our pin on 2026-07-27, with exact signatures:
+
+* `not_dvd_differentIdeal_of_intTrace_not_mem` — the consumer's handle.
+* `Algebra.intTrace_eq_trace [Module.Free A B] : intTrace A B = trace A B`
+  (`Mathlib/RingTheory/IntegralClosure/IntegralRestrict.lean:307`).
+  `𝓞_K` is free over `ℤ`, so the leaf's `Algebra.intTrace` is just
+  `Algebra.trace ℤ 𝓞_K`; do this first, it removes a whole layer.
+* `Algebra.trace_trace [Module.Free R S] [Module.Finite R S]
+  [Module.Free S T] [Module.Finite S T]`
+  (`Mathlib/RingTheory/Trace/Defs.lean:138`) — step 4.  Note the
+  hypotheses are exactly `Free`+`Finite` at both levels, which is
+  precisely what steps 2 and 3 supply.
+* `Algebra.trace_algebraMap [StrongRankCondition R] [Module.Free R S] :
+  trace R S (algebraMap R S x) = finrank R S • x`
+  (`Trace/Defs.lean:111`) — step 4's `Tr_{S/A}(a) = e·a`.
+* `LinearMap.trace_baseChange` (`Mathlib/LinearAlgebra/Trace.lean:387`)
+  for the reduction of the trace mod `q^k`.
+
+**And one thing that does NOT apply, checked**: `Trace/Quotient.lean`'s
+`Algebra.trace_quotient_eq_of_isDedekindDomain` and
+`Algebra.trace_quotient_mk`, and `Module.basisQuotient`
+(`Mathlib/RingTheory/LocalRing/Quotient.lean:85`), all require the base
+ideal to be MAXIMAL (`basisQuotient` is built under
+`attribute [local instance] Ideal.Quotient.field`), so none of them is
+available at `p = (q^k)`.  Reduce the trace from a `ℤ`-basis with
+`Algebra.trace_eq_matrix_trace`, or via `LinearMap.trace_baseChange`
+along `ℤ → ℤ/q^k`, instead.  Do not spend a cycle rediscovering this.
+
+CRT splitting: `Ideal.quotientInfRingEquivPiQuotient`. -/
 theorem exists_intTrace_not_mem_span_of_ramificationIdx
     (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
