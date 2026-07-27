@@ -10,6 +10,7 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 /-!
 # Coherent pushforward along a proper morphism: `f_*𝒪_X = 𝒪_S`, and the rigidity lemma
@@ -35,12 +36,20 @@ direct images of quasi-coherent sheaves at all.
   an arbitrary `Y ⟶ S`, and `𝒪_S = f_*𝒪_X` alone does not survive that (it does under
   flatness + geometric connectedness + geometric reducedness, which is exactly what the
   main theorem below asserts).
-* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — **THE LEAF**: the theorem
-  itself, in its classical hypotheses.
-* `geometricallyReduced_of_smooth` — **LEAF**, small and separate: a smooth morphism has
-  geometrically reduced fibres (its fibres are smooth over a field, hence regular, hence
-  reduced).  `Mathlib` has `GeometricallyReduced` and has smoothness, and has no
-  implication between them at this pin.
+* `isIso_appTop_of_isProper_of_flat` — **THE LEAF** (2026-07-27): `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is
+  an isomorphism, for a single fixed `f` with the classical hypotheses.  This is all that
+  is left of the theorem: see the next item.
+* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — **PROVEN** over that leaf.  Both
+  of the theorem's quantifiers turned out to be bookkeeping rather than mathematics: all
+  five hypotheses are stable under base change, and an open restriction `f ∣_ U` is itself
+  a base change (`isPullback_morphismRestrict`), so `∀ U, IsIso (f.app U)` *and* the
+  `universally` wrapper both reduce to the single global-sections statement above.
+* `geometricallyReduced_of_smooth` — **PROVEN** (2026-07-27), as a re-export of
+  `AlgebraicGeometry.GeometricallyReduced.of_smooth` from
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`.  It used to be a
+  leaf of this file; the mathematical content now sits, once, in that file's single
+  ring-theoretic leaf `Algebra.Smooth.isReduced_of_isField` (a smooth algebra over a field
+  is reduced — a genuine `Mathlib` gap, and *unowned* as of this writing).
 * `hasUniversallyTrivialPushforward_of_isProper_of_smooth` — PROVEN from those two.  This
   is the form every consumer in this development actually applies, because an abelian
   scheme and a smooth proper curve are both given as *smooth* rather than as *flat with
@@ -118,8 +127,11 @@ theorem HasUniversallyTrivialPushforward.hasTrivialPushforward {f : X ⟶ S}
 
 /-! ### The theorem -/
 
-/-- **`f_*𝒪_X = 𝒪_S` FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY CONNECTED AND REDUCED
-FIBRES** (sorry node — Hartshorne III.12, Mumford *AV* §5, Stacks 0E6R / 0BUG).
+/-- **`Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY
+CONNECTED AND REDUCED FIBRES** (sorry node — Hartshorne III.12, Mumford *AV* §5, Stacks
+0E6R / 0BUG).  This is `f_*𝒪_X = 𝒪_S` read at global sections, and by
+`hasUniversallyTrivialPushforward_of_isProper_of_flat` below it is *equivalent* to the
+full sheaf-theoretic, universal statement — the reduction is recorded there.
 
 This is the missing classical input behind the whole Jacobian half of this development:
 `isAdditiveOn_of_post_zero` (relative rigidity), `exists_albaneseOfCurve` and
@@ -133,34 +145,124 @@ because `X_s` is reduced and connected, and is trivial because it is geometrical
 connected.  Flatness plus properness plus finite presentation then give cohomology and
 base change (Grauert / Hartshorne III.12.11): `f_*𝒪_X` is locally free of rank one and its
 formation commutes with base change, and the unit `𝒪_S ⟶ f_*𝒪_X` is an isomorphism
-because it is one on every fibre.  Base change is built into the conclusion for exactly
-this reason.
+because it is one on every fibre.
 
 **PIN STATE, checked rather than assumed (2026-07-27).**  `Mathlib` has no higher direct
 images of quasi-coherent sheaves, no `Rⁱf_*`, no semicontinuity, no cohomology-and-base-
 change; `grep` for `higherDirectImage`/`directImage` over `Mathlib/AlgebraicGeometry` and
 over `~/cs/FLT` returns nothing.  So this leaf is a genuine theory build, and it is the
-one whose completion unblocks three separate leaves at once. -/
+one whose completion unblocks three separate leaves at once.
+
+**LEAF: `Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM.**  This is the whole content: the two
+quantifiers that decorate it — "and after every base change", "and over every open
+`U ⊆ S`" — are both discharged by
+`hasUniversallyTrivialPushforward_of_isProper_of_flat` below, because *all five*
+hypotheses are stable under base change and an open restriction `f ∣_ U` is itself a base
+change (`AlgebraicGeometry.isPullback_morphismRestrict`).  So whoever takes this leaf owes
+**one global-sections computation and nothing else**; in particular there is no need to
+carry the `universally` wrapper or the `∀ U` through the cohomological argument.
+
+**THE ROUTE, restated at this reduced generality.**  `f` is proper, flat and of finite
+presentation with geometrically connected and geometrically reduced fibres.  Cohomology
+and base change (Grauert; Hartshorne III.12.11, Stacks 0E6R / 0BUG) makes `f_*𝒪_X` locally
+free with formation commuting with base change; its fibre at `s` is `H⁰(X_s, 𝒪_{X_s})`,
+which is `κ(s)` because `X_s` is proper, geometrically connected and geometrically reduced
+over `κ(s)` (a global section generates a finite `κ(s)`-subalgebra of `H⁰`, which is a
+field by reducedness and connectedness and is `κ(s)` itself by geometric connectedness).
+Hence the unit `𝒪_S ⟶ f_*𝒪_X` is an isomorphism on fibres, so an isomorphism, so an
+isomorphism on global sections.
+
+**WHAT IS MISSING, and the check that refutes it**: `grep -rn 'higherDirectImage\|
+directImage\|cohomologyAndBaseChange' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/
+~/cs/FLT/FLT/ Fermat/` — zero hits at `982e0aea`.  There is no quasi-coherent cohomology
+in the pin at all, so this is a theory build and not a missing-lemma hunt. -/
+theorem isIso_appTop_of_isProper_of_flat (f : X ⟶ S)
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    [GeometricallyConnected f] [GeometricallyReduced f] :
+    IsIso f.appTop :=
+  sorry
+
+/-- **`f_*𝒪_X = 𝒪_S`, UNIVERSALLY, FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY CONNECTED
+AND REDUCED FIBRES** — PROVEN over `isIso_appTop_of_isProper_of_flat`.
+
+Both quantifiers are pure bookkeeping and are discharged here, once:
+
+* *the base change*: `IsProper`, `Flat`, `LocallyOfFinitePresentation`,
+  `GeometricallyConnected` and `GeometricallyReduced` all carry
+  `MorphismProperty.IsStableUnderBaseChange` instances in `Mathlib`, so every leg of a
+  pullback square over `f` inherits all five;
+* *the open `U ⊆ S`*: `isPullback_morphismRestrict` exhibits `f ∣_ U` as a base change of
+  `f`, so it inherits all five as well, and `morphismRestrict_appTop` together with
+  `Scheme.Opens.ι_image_top` identifies `(f ∣_ U).appTop` with `f.app U` up to the
+  `eqToHom`-induced isomorphism `X.presheaf.map (eqToHom …).op`.
+
+This is why the remaining leaf may be stated at `⊤` over a *fixed* `f`: no generality is
+lost, and a cohomological argument that had to thread `universally` through itself would be
+considerably worse. -/
 theorem hasUniversallyTrivialPushforward_of_isProper_of_flat (f : X ⟶ S)
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     [GeometricallyConnected f] [GeometricallyReduced f] :
-    HasUniversallyTrivialPushforward f :=
-  sorry
+    HasUniversallyTrivialPushforward f := by
+  intro X' S' i₁ i₂ f' hpb
+  haveI : IsProper f' := MorphismProperty.of_isPullback hpb.flip ‹IsProper f›
+  haveI : Flat f' := MorphismProperty.of_isPullback hpb.flip ‹Flat f›
+  haveI : LocallyOfFinitePresentation f' :=
+    MorphismProperty.of_isPullback hpb.flip ‹LocallyOfFinitePresentation f›
+  haveI : GeometricallyConnected f' :=
+    MorphismProperty.of_isPullback hpb.flip ‹GeometricallyConnected f›
+  haveI : GeometricallyReduced f' :=
+    MorphismProperty.of_isPullback hpb.flip ‹GeometricallyReduced f›
+  intro U
+  haveI : IsProper (f' ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f' U).flip ‹IsProper f'›
+  haveI : Flat (f' ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f' U).flip ‹Flat f'›
+  haveI : LocallyOfFinitePresentation (f' ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f' U).flip
+      ‹LocallyOfFinitePresentation f'›
+  haveI : GeometricallyConnected (f' ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f' U).flip
+      ‹GeometricallyConnected f'›
+  haveI : GeometricallyReduced (f' ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f' U).flip
+      ‹GeometricallyReduced f'›
+  haveI hiso : IsIso (f'.app (U.ι ''ᵁ ⊤) ≫
+      X'.presheaf.map (eqToHom (image_morphismRestrict_preimage f' U ⊤)).op) := by
+    rw [← morphismRestrict_appTop]
+    exact isIso_appTop_of_isProper_of_flat (f' ∣_ U)
+  haveI h2 := (isIso_comp_right_iff _ _).mp hiso
+  rwa [U.ι_image_top] at h2
 
-/-- **A SMOOTH MORPHISM HAS GEOMETRICALLY REDUCED FIBRES** (sorry node).
+/-- **A SMOOTH MORPHISM HAS GEOMETRICALLY REDUCED FIBRES** (PROVEN — a re-export of
+`AlgebraicGeometry.GeometricallyReduced.of_smooth`).
 
 TRUE and standard: smoothness is stable under base change, so every geometric fibre
 `X ×_S Spec K` is smooth over the field `K`; a scheme smooth over a field is regular,
 and a regular scheme is reduced.
 
-It is stated separately because it is genuinely a different fact from the pushforward
-theorem, is far smaller, and is missing from `Mathlib` at this pin in this direction
-only: `Mathlib/AlgebraicGeometry/Geometrically/Reduced.lean` defines
-`GeometricallyReduced` and `Mathlib/AlgebraicGeometry/Group/Smooth.lean` proves the
-CONVERSE for group schemes (`smooth_of_grpObj`), but there is no
-`[Smooth f] → GeometricallyReduced f`. -/
+**THIS IS NO LONGER A LEAF OF THIS FILE, AND THE ABSENCE NOTE THAT USED TO SIT HERE IS
+STALE** (corrected 2026-07-27).  It said the implication `[Smooth f] → GeometricallyReduced f`
+is missing at this pin — which is still true *of `Mathlib`*, and no longer true of this
+project: `Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean` (landed by
+`6591aca3`, reached here by the `public import` above) proves
+
+* `AlgebraicGeometry.isReduced_of_smooth_over_field` — a scheme smooth over a field is
+  reduced, by an affine cover, and
+* `AlgebraicGeometry.GeometricallyReduced.of_smooth` — the base-change packaging,
+
+over the single ring-theoretic leaf `Algebra.Smooth.isReduced_of_isField` (a smooth algebra
+over a field is reduced; genuinely open, and genuinely a `Mathlib` gap — the Jacobian
+criterion, which needs `IsRegularLocalRing → IsDomain` and a bridge to it, neither of which
+exists at this pin).  **The check that refutes this note** — i.e. that would show the
+implication is again missing rather than merely relocated — is
+
+    grep -rn 'GeometricallyReduced.of_smooth' Fermat/FLT/Mathlib/AlgebraicGeometry/
+
+Restating it here rather than deleting it costs nothing and keeps
+`hasUniversallyTrivialPushforward_of_isProper_of_smooth` below readable at its point of
+use; the mathematics is entirely in the sibling file. -/
 theorem geometricallyReduced_of_smooth (f : X ⟶ S) [Smooth f] : GeometricallyReduced f :=
-  sorry
+  GeometricallyReduced.of_smooth f
 
 /-- **`f_*𝒪_X = 𝒪_S` for a PROPER SMOOTH morphism with geometrically connected fibres**
 (PROVEN, over the two leaves above).
