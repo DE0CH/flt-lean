@@ -3228,12 +3228,32 @@ duality for finite flat commutative group schemes, sorry-free, and
 `.../HopfAlgebra/ShortExact.lean` adds its functoriality
 (`CartierDual.map`) plus the short-exactness definition
 (`HopfAlgebra.IsShortExact`) the transport needs.  The duality route is
-therefore no longer ABSENT; it is available in principle and blocked on
-ONE named open leaf, `HopfAlgebra.IsShortExact.cartierDual` (exactness of
-duality) — a different and much smaller obstruction than the one recorded
-here.  If it lands it would most likely close
+therefore no longer ABSENT; it is available in principle, and the whole
+cluster is now IN THE ROOT IMPORT CONE (wired in at `1492cecb` through
+`HardlyRamified/Family.lean`, which `public import`s `ShortExact` and
+`CartierDualExamples`) — until then those five modules were never
+compiled at all, so nothing in this paragraph had ever been checked by
+the compiler.
+
+RE-CHECKED 2026-07-27 AFTER THE WIRING, and the "ONE named open leaf"
+count above is STALE in two ways.  `HopfAlgebra.IsShortExact.cartierDual`
+is itself **PROVEN** (`ShortExact.lean:669`), as a four-field assembly;
+what is open is THREE sub-leaves it consumes, none of them owned:
+
+* `HopfAlgebra.IsShortExact.exists_linearRetraction` (`ShortExact.lean:564`)
+  — the normal-basis splitting; `surjective_cartierDual_map` is proven from it;
+* `HopfAlgebra.IsShortExact.ker_cartierDual_le` (`ShortExact.lean:628`)
+  — the hard half of the dual kernel condition (`le_ker_cartierDual` is proven);
+* `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` (`ShortExact.lean:648`)
+  — the deepest, classically `Ext¹(G'', 𝔾ₘ) = 0`.
+
+Plus `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
+(`ShortExact.lean:238`), which `etale_of_isShortExact` consumes.  If they land
+it would most likely close
 `wildInertia_fixes_connected_threeTorsion_of_hopf_package` directly,
 since the duality argument for the connected case is written out there.
+Re-run `python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before
+believing this list; it is a dated claim like every other one here.
 
 `hprim₀`: KEEP IT, BUT THE INHERITED JUSTIFICATION WAS WRONG (corrected
 2026-07-27 while proving this leaf). The previous version of this
@@ -3487,11 +3507,25 @@ duality for finite flat commutative group schemes, sorry-free, and
 `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` adds its
 functoriality (`CartierDual.map`) together with the definition of a short
 exact sequence (`HopfAlgebra.IsShortExact`) that the transport needs. So the
-duality route is no longer ABSENT; it is available in principle and blocked
-on ONE named open leaf, `HopfAlgebra.IsShortExact.cartierDual` (exactness of
-duality). That is a different — and much smaller — obstruction than the one
-recorded here, and the next owner of this leaf should weigh it afresh rather
-than treating the duality route as nonexistent.
+duality route is no longer ABSENT; and since `1492cecb` the whole cluster is
+in the ROOT IMPORT CONE, wired in through `HardlyRamified/Family.lean` — before
+that those five modules were never compiled, so no claim made about them here
+had ever been checked by the compiler.
+
+RE-CHECKED 2026-07-27 AFTER THE WIRING: the "ONE named open leaf" count this
+paragraph used to carry is STALE.  `HopfAlgebra.IsShortExact.cartierDual` is
+itself PROVEN (`ShortExact.lean:669`) as a four-field assembly; what is open
+is three unowned sub-leaves it consumes —
+`IsShortExact.exists_linearRetraction` (`ShortExact.lean:564`),
+`IsShortExact.ker_cartierDual_le` (`:628`) and
+`IsShortExact.faithfullyFlat_cartierDual` (`:648`) — together with
+`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
+(`:238`), which `etale_of_isShortExact` consumes.  That is still a different —
+and much smaller — obstruction than the one recorded here, and the next owner
+of this leaf should weigh it afresh rather than treating the duality route as
+nonexistent.  Re-run
+`python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before believing
+the list; it is a dated claim like every other one here.
 
 `hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
 idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
