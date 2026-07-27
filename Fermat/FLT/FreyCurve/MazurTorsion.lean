@@ -2058,11 +2058,219 @@ theorem mazurIsogeny_eigenvalue_quadratic_of_finrank_two
   · exact h
   · exact absurd h hv
 
-/-- **Serre–Tate at a prime of potentially good reduction: the Frobenius
-acts as the `q`-power Frobenius of an elliptic curve over `𝔽_q`** (sorry
+/-- **The endomorphism of the `N`-torsion induced by an automorphism of a
+Weierstrass curve.**
+
+An automorphism of `W` over `F` — as an elliptic curve, i.e. fixing the origin
+— is exactly an admissible change of variables `C` with `C • W⁄F = W⁄F`
+(Silverman *AEC* III.3.1(b): the isomorphisms between Weierstrass equations are
+precisely the variable changes). The point-level transport of a
+`VariableChange` then turns it into an additive automorphism of the point
+group, which restricts to the `N`-torsion and is `ZMod N`-linear there. The
+construction mirrors `WeilPairing.frobeniusTorsionEnd` line for line, with
+`Point.equivVariableChange` in place of `Point.map (frobAlgHom q)`.
+
+THE POINT-LEVEL API THIS RESTS ON, AND WHERE THE SAME LESSON WAS LEARNED
+TWICE. `WeierstrassCurve.Affine.Point.equivVariableChange`, together with
+`equivVariableChangeBaseChange` and `equivVariableChangeBaseChange_galois`,
+lives in the project shim
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`. It is
+absent from mathlib, which is exactly why the shim exists — and
+`EllipticCurve/TorsionReduction.lean` independently recorded, then RETIRED
+("it was never missing"), an audit item claiming this map had to be built,
+after an earlier grep had covered only mathlib's copy. Both files now depend
+on it. The reusable moral is the standing one: grep `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT/`, not mathlib alone. -/
+noncomputable def WeierstrassCurve.autTorsionEnd {F : Type*} [Field F]
+    [DecidableEq F] (W : WeierstrassCurve F) [W.IsElliptic]
+    (C : WeierstrassCurve.VariableChange F)
+    (hC : C • (W.map (algebraMap F F)) = W.map (algebraMap F F)) (N : ℕ) :
+    Module.End (ZMod N) (W.nTorsion N) :=
+  AddMonoidHom.toZModLinearMap N
+    (TorsionCounting.endRestrict
+      ((((WeierstrassCurve.Affine.Point.equivOfEq hC.symm).trans
+        (WeierstrassCurve.Affine.Point.equivVariableChange
+          (W.map (algebraMap F F)) C)) : _ ≃+ _).toAddMonoidHom) N)
+
+/-- **The local half of Serre–Tate at a named prime: `ρ(σ_q)` is an
+automorphism composed with the Frobenius of a good model over `𝔽_q`** (sorry
 leaf, opened 2026-07-27 by decomposing
-`exists_integerFrobeniusTrace_of_potentiallyGoodReduction` below, which is
-now PROVEN over this leaf and `hasseWeil_trace_frobeniusTorsionEnd`).
+`exists_frobenius_reduction_model_of_potentiallyGoodReduction` below, which is
+now PROVEN over this leaf and `exists_twist_frobeniusTorsionEnd`).
+
+THE CONTENT. Let `K/ℚ_q` be a finite TOTALLY RAMIFIED extension over which `E`
+acquires good reduction and `Ẽ/𝔽_q` the good model — the residue field of `K`
+is still `𝔽_q`, which is exactly what "totally ramified" buys, and it is why
+`Wbar₀` in the conclusion is a curve over `ZMod q` rather than over an
+extension. Because the residue field did not grow, `G_K` still surjects onto
+`Gal(𝔽̄_q/𝔽_q)`, so a Frobenius `σ_K ∈ G_K` exists; for the lift
+`σ := globalFrob q` actually named in the statement we then have
+`τ := σ σ_K⁻¹ ∈ I_q`, whatever that lift is. Néron–Ogg–Shafarevich makes
+`ρ|_{G_K}` unramified and identifies `ρ(σ_K)` with the `q`-power Frobenius
+`F ∈ End(Ẽ)`; Serre–Tate (Invent. Math. 15 (1972), Thm 2) makes `I_q` act
+through a finite subgroup of `Aut(Ẽ_{𝔽̄_q})`, so `ρ(τ) = φ` is an
+AUTOMORPHISM — which is the `C` of the conclusion, presented as the variable
+change it is. Hence `ρ(σ) = φ ∘ F`, which is what the conclusion says.
+
+That chain is also what DISSOLVES the parent's old faithfulness concern about
+`globalFrob` being defined only up to inertia: the lift is unconstrained here,
+and changing it changes only WHICH automorphism `C` appears. See
+`exists_integerFrobeniusTrace_of_potentiallyGoodReduction`'s docstring for the
+full resolution.
+
+WHAT MUST BE BUILT (grepped 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT/` — all three):
+
+1. `0 ≤ v_q(j(E))` ⟹ `E` acquires good reduction over a finite TOTALLY
+   RAMIFIED `K/ℚ_q`. Half of this is ALREADY OPEN in this tree as
+   `exists_tameGoodModel_of_jIntegral`
+   (`EllipticCurve/TorsionReduction.lean`, on `main`), whose `TameGoodModel`
+   structure encodes total ramification in precisely the form wanted here —
+   its `res : A →+* ZMod ℓ` lands in the PRIME field, which is the encoding.
+   But `TameGoodModel` carries no Galois action at all, so it is an INPUT to
+   this leaf, not a solution of it; whoever proves that one should expect to
+   extend the structure with the `G_K`-equivariance before it is usable here.
+   Note also that `exists_tameGoodModel_of_jIntegral` assumes `5 ≤ ℓ`, so it
+   does not cover `q = 3` — see the non-uniformity paragraph below.
+2. Serre–Tate's theorem that inertia acts through `Aut(Ẽ)`. Absent.
+
+What is NO LONGER on this list, because it has been discharged: the passage
+from an automorphism to a twist, which is now the separate leaf
+`exists_twist_frobeniusTorsionEnd`; and the point-level action of an
+automorphism, which is now the definition `WeierstrassCurve.autTorsionEnd`
+above.
+
+THE PROOF OBLIGATION THAT IS NOT UNIFORM IN `q`, STATED HONESTLY. Step 1 is
+the standard statement for `q ≥ 5`, where the twisting is by `u` with
+`v(u) = d/12` and the field is the TAME Kummer extension `ℚ_q(π^{1/e})`,
+`e ∈ {1, 2, 3, 4, 6}` (Silverman *ATAEC* IV.10; Kraus, Manuscripta Math. 69
+(1990)). At `q = 3` the semistability defect can be `12` and the extension is
+wildly ramified. Two remarks keep that from being a hidden falsity rather than
+an open obligation: an unramified layer can always be DROPPED (for `K'/K`
+unramified `I_{K'} = I_K`, so good reduction over `K'` already gives good
+reduction over `K`), and the singular point of an additive reduction is
+unique, hence residue-rational, so the `r, s, t` part of the variable change
+costs no extension. What is genuinely not carried out here is the descent of a
+WILD totally ramified extension of `ℚ̆_q` to one of `ℚ_q`. `q = 3` IS used by
+the consumers (they take `q ∈ {3, 5}`), so this cannot be dodged by adding
+`5 ≤ q`.
+
+THE GLOBAL AXIS WAS SEARCHED ON 2026-07-27, AND IT IS A DEAD END FOR THIS
+LEAF — recorded so that nobody spends a cycle re-searching it. The suggestion
+was to imitate `WeilPairing.det_galoisRep_eq_cyclotomic`, which pins the
+DETERMINANT at every Frobenius by a global/Chebotarev argument and so avoids
+any integral model. It does not transpose, for a reason that is structural
+rather than technical: `det ρ` is the cyclotomic CHARACTER, hence unramified
+at `q ≠ N`, so its value at `σ_q` does not depend on the choice of lift and a
+global identity of characters determines it. The trace is not a character; at
+potentially-good-but-not-good reduction `ρ` is genuinely RAMIFIED at `q`, and
+the trace really does change with the lift (`a ↦ ζ_e a` for semistability
+defect `e`). A global argument, by construction, cannot distinguish lifts
+inside one Frobenius coset, so it cannot produce a lift-dependent value. This
+is also why the conclusion here is existential in `C`: the lift-dependence is
+carried structurally by which automorphism appears, exactly as
+`exists_integerFrobeniusTrace_of_potentiallyGoodReduction`'s docstring
+demands. The axis that remains open is therefore the LOCAL one, and step 1
+above is its only genuinely missing ingredient.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit `E/ℚ_3` with `0 ≤ v_3(j(E))`
+acquiring good reduction over NO finite totally ramified extension of `ℚ_3`,
+AND a Frobenius lift whose action on `E[N]` is not `φ ∘ F` for any elliptic
+curve over `𝔽_3` and automorphism `φ`. The first half alone refutes only the
+ROUTE, not the leaf — the conclusion is about the Galois action, not about the
+model. -/
+theorem WeierstrassCurve.exists_frobeniusAut_of_potentiallyGoodReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
+    (hj : 0 ≤ padicValRat q E.j) :
+    ∃ (Wbar₀ : WeierstrassCurve (ZMod q)) (_ : Wbar₀.IsElliptic)
+      (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+      (hC : C • ((Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+          = (Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+      (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+        ((Wbar₀.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N)),
+      ∀ x, ψ₀ (E.galoisRep N hN.pos (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) x) =
+        WeierstrassCurve.autTorsionEnd _ C hC N
+          (WeilPairing.frobeniusTorsionEnd q Wbar₀ N (ψ₀ x)) :=
+  sorry
+
+/-- **Twisting over a finite field: an automorphism composed with the
+Frobenius is the Frobenius of a twist** (sorry leaf, opened 2026-07-27 by
+decomposing `exists_frobenius_reduction_model_of_potentiallyGoodReduction`
+below). This is the half of that leaf which is purely a statement about
+elliptic curves over `𝔽_q` — no number field, no inertia, no reduction theory
+— and it is the standard classification of twists.
+
+THE CONTENT. Twists of `Wbar₀/𝔽_q` are classified by
+`H¹(Gal(𝔽̄_q/𝔽_q), Aut(Wbar₀_{𝔽̄_q}))`. The Galois group is procyclic,
+topologically generated by Frobenius, and the automorphism group is finite, so
+a continuous cocycle is determined by its single value `ξ` at Frobenius and
+EVERY `ξ` occurs (`H¹` is `Aut` modulo twisted conjugacy, i.e. the cokernel of
+the Lang map). The twist `Wbar` attached to `ξ := C` comes with an isomorphism
+`f : Wbar₀_{𝔽̄_q} → Wbar_{𝔽̄_q}` over `𝔽̄_q` intertwining `C ∘ F₀` with the
+`q`-power Frobenius of `Wbar` itself; restricting `f` to `N`-torsion gives the
+`χ` asserted here. Because `C` ranges over ALL automorphisms, the direction of
+the twisting convention is immaterial to the truth of the statement.
+
+MACHINERY. Absent from all three trees (grepped 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib/`, `~/cs/FLT/`): `QuadraticTwists/` does the quadratic
+case over a general field and stops there; there is no `H¹` classification of
+twists, no Lang's theorem, and no "Frobenius of a twist" lemma. What IS
+available and should be used rather than rebuilt is the point-level transport
+of a `VariableChange`, `WeierstrassCurve.Affine.Point.equivVariableChange` and
+its Galois-equivariant base-changed form
+`equivVariableChangeBaseChange_galois`, in the project shim
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` — the
+latter is exactly the compatibility a cocycle argument needs.
+
+A ROUTE THAT AVOIDS `H¹` ENTIRELY, worth trying first: over a finite field one
+does not need the cohomological classification, only Lang's theorem in the
+form "`x ↦ x^{-1} · F(x)` is surjective on a connected group". For the
+concrete `Aut` groups here (cyclic of order `2`, `4` or `6`, and the extra
+automorphisms only at `j ∈ {0, 1728}`) the twist can be written down as an
+explicit `VariableChange` over `𝔽_{q^k}` and descended by hand, which is how
+Silverman *AEC* X.5 does it. That is elementary and finite, and it does not
+require any general cohomology.
+
+NOT VACUOUS: `χ` is a linear EQUIVALENCE and the conclusion is a conjugation
+identity, so it pins `C ∘ F₀` into the `q`-Frobenius conjugacy class of a
+genuine curve over `𝔽_q`; in particular it forces `det (C ∘ F₀) = q` via
+`WeilPairing.det_frobeniusTorsionEnd`, which is independently PROVEN, so a
+junk witness would have to reprove that. -/
+theorem WeierstrassCurve.exists_twist_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
+    (Wbar₀ : WeierstrassCurve (ZMod q)) [Wbar₀.IsElliptic] (N : ℕ)
+    (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+    (hC : C • ((Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+          (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+        = (Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+          (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))) :
+    ∃ (Wbar : WeierstrassCurve (ZMod q)) (_ : Wbar.IsElliptic)
+      (χ : ((Wbar₀.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N)
+        ≃ₗ[ZMod N]
+        ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N)),
+      ∀ y, χ (WeierstrassCurve.autTorsionEnd _ C hC N
+          (WeilPairing.frobeniusTorsionEnd q Wbar₀ N y)) =
+        WeilPairing.frobeniusTorsionEnd q Wbar N (χ y) :=
+  sorry
+
+/-- **Serre–Tate at a prime of potentially good reduction: the Frobenius
+acts as the `q`-power Frobenius of an elliptic curve over `𝔽_q`** (PROVEN
+2026-07-27 over the two leaves immediately above,
+`exists_frobeniusAut_of_potentiallyGoodReduction` and
+`exists_twist_frobeniusTorsionEnd`; itself opened earlier the same day by
+decomposing `exists_integerFrobeniusTrace_of_potentiallyGoodReduction` below,
+which is PROVEN over this leaf and `hasseWeil_trace_frobeniusTorsionEnd`).
+
+The proof is two lines of bookkeeping: the first leaf writes `ρ(σ_q)` as
+`C ∘ F₀` for a good model `Wbar₀/𝔽_q` and an automorphism `C`, and the second
+replaces `Wbar₀` by the twist whose own Frobenius that composite is. The two
+conjugating equivalences compose.
 
 This is the exact analogue of `WeilPairing.exists_frobenius_reduction_model`
 (PROVEN, axiom-clean) with the two quantifiers traded. That theorem covers
@@ -2095,52 +2303,18 @@ about `globalFrob` being defined only up to inertia: the lift is
 unconstrained here, and changing it changes only WHICH twist appears. See
 the parent's docstring for the full resolution.
 
-WHAT MUST BE BUILT (grepped 2026-07-27 over `Fermat/`,
-`.lake/packages/mathlib/` and `~/cs/FLT/` — all three):
+WHERE THE REMAINING WORK LIVES. The audits that used to sit here have moved
+to the two leaves above, which is where a prover should read them:
 
-1. `0 ≤ v_q(j(E))` ⟹ `E` acquires good reduction over a finite TOTALLY
-   RAMIFIED `K/ℚ_q`. Half of this is ALREADY OPEN in this tree as
-   `exists_tameGoodModel_of_jIntegral`
-   (`EllipticCurve/TorsionReduction.lean`, on `main`), whose
-   `TameGoodModel` structure encodes total ramification in precisely the
-   form wanted here — its `res : A →+* ZMod ℓ` lands in the PRIME field,
-   which is the encoding. But `TameGoodModel` carries no Galois action at
-   all, so it is an INPUT to this leaf, not a solution of it; whoever
-   proves that one should expect to extend the structure with the
-   `G_K`-equivariance before it is usable here.
-2. Serre–Tate's theorem that inertia acts through `Aut(Ẽ)`. Absent.
-3. Twists of an elliptic curve over a finite field and the Frobenius of a
-   twist. Absent: `QuadraticTwists/` does the quadratic case over a
-   general field and stops there.
-
-THE PROOF OBLIGATION THAT IS NOT UNIFORM IN `q`, STATED HONESTLY. Step 1
-is the standard statement for `q ≥ 5`, where the twisting is by `u` with
-`v(u) = d/12` and the field is the TAME Kummer extension `ℚ_q(π^{1/e})`,
-`e ∈ {1, 2, 3, 4, 6}` (Silverman *ATAEC* IV.10; Kraus, Manuscripta Math.
-69 (1990)). At `q = 3` the semistability defect can be `12` and the
-extension is wildly ramified. Two remarks keep that from being a hidden
-falsity rather than an open obligation: an unramified layer can always be
-DROPPED (for `K'/K` unramified `I_{K'} = I_K`, so good reduction over `K'`
-already gives good reduction over `K`), and the singular point of an
-additive reduction is unique, hence residue-rational, so the `r, s, t`
-part of the variable change costs no extension. What is genuinely not
-carried out here is the descent of a WILD totally ramified extension of
-`ℚ̆_q` to one of `ℚ_q`. `q = 3` IS used by the consumers (they take
-`q ∈ {3, 5}`), so this cannot be dodged by adding `5 ≤ q`.
-
-THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit `E/ℚ_3` with
-`0 ≤ v_3(j(E))` acquiring good reduction over NO finite totally ramified
-extension of `ℚ_3`, AND a Frobenius lift whose action on `E[N]` is not
-conjugate to the `q`-Frobenius of any elliptic curve over `𝔽_3`. The first
-half alone refutes only the ROUTE, not the leaf — the conclusion is about
-the Galois action, not about the model. THE AXIS SEARCHED here was the
-LOCAL one (integral models, twists, inertia). The GLOBAL axis — deducing
-the value at one Frobenius from the character of `ρ` by a
-Chebotarev/Brauer–Nesbitt argument, as `WeilPairing.det_galoisRep_eq_cyclotomic`
-does for the determinant — was NOT searched, and is the obvious place to
-look for a route that avoids step 1 entirely. Note the determinant
-analogue succeeds there precisely because `det ρ` is a CHARACTER; the
-trace is not, so the analogy is not automatic.
+* `exists_frobeniusAut_of_potentiallyGoodReduction` carries the LOCAL
+  content — the totally ramified good model (`q = 3` is wildly ramified and
+  is used by the consumers, so it cannot be dodged) and Serre–Tate. It also
+  records, with the reason, that the GLOBAL/Chebotarev axis is a dead end for
+  this leaf: `det ρ` is a character and is unramified at `q`, the trace is
+  neither, and a global argument cannot see inside a Frobenius coset.
+* `exists_twist_frobeniusTorsionEnd` carries the twist classification over
+  `𝔽_q`, which is elementary, self-contained, and needs nothing from number
+  theory.
 
 NOT VACUOUS: `ψ` is a linear EQUIVALENCE and the conclusion is a
 conjugation identity, so it pins `ρ(σ_q)` into the `q`-Frobenius
@@ -2158,73 +2332,170 @@ theorem WeierstrassCurve.exists_frobenius_reduction_model_of_potentiallyGoodRedu
           (AlgebraicClosure (ZMod q)))).nTorsion N)),
       ∀ x, ψ (E.galoisRep N hN.pos (GaloisRepresentation.globalFrob
           hq.toHeightOneSpectrumRingOfIntegersRat) x) =
-        WeilPairing.frobeniusTorsionEnd q Wbar N (ψ x) :=
-  sorry
+        WeilPairing.frobeniusTorsionEnd q Wbar N (ψ x) := by
+  obtain ⟨Wbar₀, hell₀, C, hC, ψ₀, hψ₀⟩ :=
+    E.exists_frobeniusAut_of_potentiallyGoodReduction hN hq hq2 hqN hj
+  haveI := hell₀
+  obtain ⟨Wbar, hell, χ, hχ⟩ :=
+    WeierstrassCurve.exists_twist_frobeniusTorsionEnd q Wbar₀ N C hC
+  refine ⟨Wbar, hell, ψ₀.trans χ, fun x => ?_⟩
+  rw [LinearEquiv.trans_apply, LinearEquiv.trans_apply, hψ₀ x, hχ]
 
-/-- **Hasse–Weil for the `q`-power Frobenius on the `N`-torsion** (sorry
-leaf, opened 2026-07-27 by decomposing
-`exists_integerFrobeniusTrace_of_potentiallyGoodReduction` below): the
-trace of the `q`-power Frobenius acting on the `N`-torsion of an elliptic
-curve over `𝔽_q` (`N ≠ q`) is the reduction of a RATIONAL INTEGER `a` with
-`a² ≤ 4q`.
+/-- **Hasse's bound** (sorry leaf, opened 2026-07-27 by decomposing
+`hasseWeil_trace_frobeniusTorsionEnd` below): for an elliptic curve over
+`𝔽_q`, the trace `a := q + 1 − #Wbar(𝔽_q)` satisfies `a² ≤ 4q`.
 
-This is the exact companion of `WeilPairing.det_frobeniusTorsionEnd`
-(PROVEN, from the Weil pairing: the determinant is `q`) — same operator,
-same module, the other coefficient of the same characteristic polynomial.
-Together the two say `char(F) = X² − aX + q` with `a² ≤ 4q`, which is
-Hasse–Weil.
+This is the ARITHMETIC half of that leaf, and it mentions neither `N` nor the
+torsion: it is a statement about the point count alone. It is genuinely
+Hasse's theorem, and it is what the tree does not have — see the machinery
+audit below.
 
-Proof (not formalised): take `a := q + 1 − #Wbar(𝔽_q)`. Two halves:
-(i) `tr(F | Wbar[N]) ≡ a (mod N)`, which is `#Wbar(𝔽_q) = deg(1 − F)`
-together with `deg(1 − F) = 1 − tr F + deg F`; (ii) the bound `a² ≤ 4q`,
-which is positive definiteness of the degree form —
-`deg(m − nF) = m² − mn·a + n²q ≥ 0` for all `m, n : ℤ` forces
-`a² − 4q ≤ 0`, and the single choice `(m, n) = (a, 2)` already suffices.
+Proof (not formalised): positive definiteness of the degree form on
+`End(Wbar_{𝔽̄_q})`. Writing `F` for the `q`-power Frobenius,
+`deg(m − nF) = m² − mn·a + n²q ≥ 0` for all `m, n : ℤ`, and the single choice
+`(m, n) = (a, 2)` already gives `a² − 4q ≤ 0`. The identity
+`#Wbar(𝔽_q) = deg(1 − F)` is what makes `a` the trace of `F`; it is the input
+the companion leaf `trace_frobeniusTorsionEnd_eq_natCard` also needs.
 
 **DO NOT ROUTE THIS THROUGH `WeierstrassCurve.End.exists_charPoly`**
 (`EllipticCurve/IsogenyTrace.lean`, publicly imported here). It reads as
 exactly this statement for a general endomorphism — `ψ² − tψ + n = 0` with
-`t² ≤ 4n` — and it is PROVEN there, so it is a natural thing to reach for.
-It is unusable here, and worse than unusable: its `n` is
-`Nat.card (ker ψ)`, i.e. the SEPARABLE degree, and `Isogeny.frobIsog_degree`
-in `EllipticCurve/Isogeny.lean` PROVES that this is `1` for Frobenius,
-with the comment "Frobenius is purely inseparable, so its kernel *of
-points* is trivial — and this file's `degree` counts exactly that. This is
-the whole defect." Feeding Frobenius to `exists_charPoly` would therefore
-yield `t² ≤ 4` and `F² + 1 = tF`, which is false for every `q ≥ 5` with
-`|a| > 2` — and indeed forces `q = 1` on the Tate module. (Consequently
-`End.exists_dual`, the leaf `exists_charPoly` rests on, is itself false in
-characteristic `p`: it would make the inverse Frobenius a rational map,
-which the same file REFUTES in `isRationalMap_dualHom_is_false`. That is
-another owner's region and is reported, not repaired, here.) The moral is
-that this leaf needs the TRUE degree, which in this tree means point
-counting.
+`t² ≤ 4n` — and it is PROVEN there, so it is a natural thing to reach for. It
+is unusable here, and worse than unusable: its `n` is `Nat.card (ker ψ)`,
+i.e. the SEPARABLE degree, and `Isogeny.frobIsog_degree` in
+`EllipticCurve/Isogeny.lean` PROVES that this is `1` for Frobenius, with the
+comment "Frobenius is purely inseparable, so its kernel *of points* is trivial
+— and this file's `degree` counts exactly that. This is the whole defect."
+Feeding Frobenius to `exists_charPoly` would therefore yield `t² ≤ 4` and
+`F² + 1 = tF`, which is false for every `q ≥ 5` with `|a| > 2` — and indeed
+forces `q = 1` on the Tate module. (Consequently `End.exists_dual`, the leaf
+`exists_charPoly` rests on, is itself false in characteristic `p`: it would
+make the inverse Frobenius a rational map, which the same file REFUTES in
+`isRationalMap_dualHom_is_false`. A repair adding `[CharZero F]` to both was
+reported on branch `flt-lean-60`; that is another owner's region and is not
+touched here.) The moral is that this leaf needs the TRUE degree, which in
+this tree means point counting.
 
 MACHINERY. Point counting over a finite field IS present and PROVEN:
-`natCard_affine_point_eq`, `natCard_affine_point_le`, `natCard_affine_point_pos`
-in `EllipticCurve/TorsionReduction.lean` — which is on `main` as of
-2026-07-27, so the previous version of the parent's audit calling it
-"unreleased" is stale. What is absent from all three trees (this one,
+`natCard_affine_point_eq`, `natCard_affine_point_le`,
+`natCard_affine_point_pos` in `EllipticCurve/TorsionReduction.lean`, which is
+on `main` as of 2026-07-27. What is absent from all three trees (this one,
 mathlib, `~/cs/FLT`; grepped 2026-07-27) is the degree form on `End`, the
 identity `#E(𝔽_q) = deg(1 − F)`, and the bound itself —
-`TorsionReduction.lean`'s own `natCard_affine_point_le` docstring says so
-in as many words ("not Hasse's `#W(𝔽_q) = q + 1 − a` with `|a| ≤ 2√q`,
-which mathlib does not have").
+`TorsionReduction.lean`'s own `natCard_affine_point_le` docstring says so in
+as many words ("not Hasse's `#W(𝔽_q) = q + 1 − a` with `|a| ≤ 2√q`, which
+mathlib does not have").
 
-THE CHECK THAT WOULD REFUTE THE "absent" CLAIM: a declaration in any of
-those trees stating `deg (1 - frobenius)`, a `Nat.card` bound of the shape
+THE CHECK THAT WOULD REFUTE THE "absent" CLAIM: a declaration in any of those
+trees stating `deg (1 - frobenius)`, a `Nat.card` bound of the shape
 `|#E(𝔽_q) − q − 1| ≤ 2√q`, or a degree function on isogenies that is not
-`Nat.card (ker ·)`. THE AXIS SEARCHED was name-level grep over the three
-trees plus a read of this development's own isogeny-degree API. -/
+`Nat.card (ker ·)`. THE AXIS SEARCHED was name-level grep over the three trees
+plus a read of this development's own isogeny-degree API. -/
+theorem hasse_bound_natCard_affine_point (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
+    ((q : ℤ) + 1 - (Nat.card Wbar.toAffine.Point : ℤ)) ^ 2 ≤ 4 * (q : ℤ) :=
+  sorry
+
+/-- **The Frobenius trace on the `N`-torsion is the point-count trace**
+(sorry leaf, opened 2026-07-27 by decomposing
+`hasseWeil_trace_frobeniusTorsionEnd` below): for `N` COPRIME TO `q`, the
+trace of the `q`-power Frobenius on `Wbar[N]` is the reduction mod `N` of the
+rational integer `q + 1 − #Wbar(𝔽_q)`.
+
+This is the LEFSCHETZ half, and it is the exact companion of
+`WeilPairing.det_frobeniusTorsionEnd` (PROVEN, from the Weil pairing: the
+determinant is `q`) — same operator, same module, the other coefficient of the
+same characteristic polynomial. Together the two say
+`char(F | Wbar[N]) = X² − aX + q` over `ZMod N`.
+
+Proof (not formalised): `#Wbar(𝔽_q) = #ker(1 − F) = deg(1 − F)` — the middle
+equality because `1 − F` is separable — together with the quadratic expansion
+`deg(1 − F) = 1 − tr(F) + deg(F) = 1 − tr(F) + q` of the degree form. That
+identifies `a := q + 1 − #Wbar(𝔽_q)` with `tr(F)` in `ℤ`; its reduction is the
+trace on `Wbar[N]` because for `N` coprime to `q` the module `Wbar[N]` is free
+of rank `2` over `ZMod N` and the characteristic polynomial of `F` on it is
+the reduction of the integral one.
+
+**COPRIMALITY IS LOAD-BEARING, AND `q ≠ N` IS NOT ENOUGH — this leaf's
+predecessor was FALSE for that reason.** See the falsity audit in
+`hasseWeil_trace_frobeniusTorsionEnd`'s docstring immediately below for the
+explicit counterexample at `q = 5`, `N = 25`. The short version: at `N = q^k`
+with `k ≥ 2` the module `Wbar[N]` is NOT free of rank `2` — for an ordinary
+curve it is free of rank `1`, Frobenius acts on it by the `q`-adic UNIT ROOT,
+and that unit root is not congruent mod `q²` to any integer of square `≤ 4q`.
+
+MACHINERY: as for `hasse_bound_natCard_affine_point` above — the point count
+is available, the degree form and `#E(𝔽_q) = deg(1 − F)` are not. This half
+additionally needs the freeness of `Wbar[N]` over `ZMod N` for `N` coprime to
+`q`, which is the same statement `WeilPairing.det_frobeniusTorsionEnd` already
+relies on. -/
+theorem trace_frobeniusTorsionEnd_eq_natCard (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    (((q : ℤ) + 1 - (Nat.card Wbar.toAffine.Point : ℤ) : ℤ) : ZMod N) =
+      LinearMap.trace (ZMod N)
+        ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N)
+        (WeilPairing.frobeniusTorsionEnd q Wbar N) :=
+  sorry
+
+/-- **Hasse–Weil for the `q`-power Frobenius on the `N`-torsion** (PROVEN
+2026-07-27 over the two leaves immediately above; itself opened earlier the
+same day by decomposing
+`exists_integerFrobeniusTrace_of_potentiallyGoodReduction` below): the
+trace of the `q`-power Frobenius acting on the `N`-torsion of an elliptic
+curve over `𝔽_q` (`N` COPRIME TO `q`) is the reduction of a RATIONAL INTEGER
+`a` with `a² ≤ 4q`.
+
+The witness is `a := q + 1 − #Wbar(𝔽_q)`, so the two halves split cleanly:
+`hasse_bound_natCard_affine_point` is the bound and mentions no torsion at
+all, and `trace_frobeniusTorsionEnd_eq_natCard` is the congruence and needs no
+inequality. The assembly is the anonymous constructor.
+
+**FALSITY AUDIT OF 2026-07-27 — THE PREVIOUS HYPOTHESIS `q ≠ N` MADE THIS
+STATEMENT FALSE, AND IT HAS BEEN REPAIRED TO `Nat.Coprime N q`.**
+
+Counterexample to the old statement, verified in PARI/GP. Take `q = 5` and
+`Wbar : y² = x³ + x` over `𝔽_5`, which is elliptic (`Δ = −64 ≡ 1`) and has
+`#Wbar(𝔽_5) = 4`, hence `a_true = 5 + 1 − 4 = 2`; since `5 ∤ 2` it is
+ORDINARY. Take `N = 25`, which satisfies the old hypothesis `q ≠ N` (`5 ≠ 25`)
+but is not coprime to `q`. Then:
+
+* `Wbar[25](𝔽̄_5) ≅ ℤ/25` — for an ordinary curve the `q`-power torsion is the
+  étale quotient, of rank ONE, not two. So as a `ZMod 25`-module it is free of
+  rank `1` and `LinearMap.trace` is simply the scalar by which `F` acts.
+* `F` acts on the étale part by the `5`-adic UNIT ROOT `α` of `X² − 2X + 5`.
+  Solving `α = 2 + 5t` gives `10t + 5 ≡ 0 (mod 25)`, i.e. `t ≡ 2 (mod 5)`, so
+  `α ≡ 12 (mod 25)`.
+* The integers `a` with `a² ≤ 4·5 = 20` are exactly `−4 … 4`, and NONE of them
+  is `≡ 12 (mod 25)`.
+
+So no `a` exists, and the old statement was false. This is not an artefact of
+`N` being a prime power in general: the same computation kills every `N = q^k`,
+`k ≥ 2`, for which `a_true − q·(a_true⁻¹ mod q)` falls outside `[−2√q, 2√q]`.
+
+**Why the repair is the right one and costs the consumer nothing.** The single
+consumer, `exists_integerFrobeniusTrace_of_potentiallyGoodReduction` below, has
+`hN : N.Prime` and `hq : q.Prime` and `hqN : q ≠ N` all in scope, so it
+supplies `Nat.Coprime N q` by `(Nat.coprime_primes hN hq).mpr (Ne.symm hqN)` —
+one term, no new obligation, no change to the consumer's own statement. The old
+hypothesis was an oversight in which "distinct primes" was written as the
+weaker "distinct naturals"; `Nat.Coprime N q` is the sharp hypothesis, and it
+still covers the degenerate `N = 1` (where `ZMod 1` is trivial and `a = 0`
+works). THE CHECK THAT WOULD REFUTE THIS REPAIR: an `N` coprime to `q` at which
+`Wbar[N]` fails to be free of rank `2` over `ZMod N`. There is none — that is
+exactly what coprimality buys. -/
 theorem hasseWeil_trace_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
-    (hqN : q ≠ N) :
+    (hNq : Nat.Coprime N q) :
     ∃ a : ℤ, a ^ 2 ≤ 4 * (q : ℤ) ∧
       (a : ZMod N) = LinearMap.trace (ZMod N)
         ((Wbar.map (algebraMap (ZMod q)
           (AlgebraicClosure (ZMod q)))).nTorsion N)
         (WeilPairing.frobeniusTorsionEnd q Wbar N) :=
-  sorry
+  ⟨(q : ℤ) + 1 - (Nat.card Wbar.toAffine.Point : ℤ),
+    hasse_bound_natCard_affine_point q Wbar,
+    trace_frobeniusTorsionEnd_eq_natCard q Wbar N hNq⟩
 
 /-- **The integral Frobenius trace at a prime of potentially good
 reduction** (PROVEN 2026-07-27 over the two leaves immediately above;
@@ -2320,11 +2591,33 @@ it existed "only on the unreleased branch `flt-lean-132`"), and its point
 counting is available; and `WeierstrassCurve.End.exists_charPoly` — which
 looks like exactly the Hasse bound and is PROVEN — must NOT be used for
 Frobenius, because its degree is the SEPARABLE degree. The full argument
-is in `hasseWeil_trace_frobeniusTorsionEnd`'s docstring above. What is NOT
+is in `hasse_bound_natCard_affine_point`'s docstring above. What is NOT
 missing and must not be rebuilt is unchanged: the representation
 `WeierstrassCurve.galoisRep`, `WeilPairing.det_galoisRep_eq_cyclotomic`,
 and the good-reduction transfer
-`WeilPairing.exists_frobenius_reduction_model`. -/
+`WeilPairing.exists_frobenius_reduction_model`.
+
+STATE OF THE DECOMPOSITION AS OF 2026-07-27 (second cut of the same day —
+both of the two leaves this statement was opened over are now themselves
+PROVEN over sharper leaves, so the FOUR open leaves below are the whole
+remaining obligation of this subtree):
+
+* `exists_frobeniusAut_of_potentiallyGoodReduction` — the local content:
+  a totally ramified good model at `q` (WILD at `q = 3`, which the consumers
+  use) plus Serre–Tate. Its docstring also records that the global/Chebotarev
+  axis is a DEAD END here, with the reason.
+* `exists_twist_frobeniusTorsionEnd` — twists over `𝔽_q`. Elementary and
+  self-contained; needs no number theory at all.
+* `hasse_bound_natCard_affine_point` — Hasse's `|q + 1 − #Wbar(𝔽_q)| ≤ 2√q`.
+  Mentions no torsion.
+* `trace_frobeniusTorsionEnd_eq_natCard` — the Lefschetz congruence. Mentions
+  no inequality.
+
+A NOTE ON THE `hqN` HYPOTHESIS, because it caught a real falsity. The
+Hasse–Weil leaf used to be stated with `q ≠ N`, which is FALSE at `N = q^k`
+for `k ≥ 2`; it now takes `Nat.Coprime N q`, which this statement supplies
+from `hN`, `hq` and `hqN` in one term. See that leaf's FALSITY AUDIT for the
+explicit counterexample. -/
 theorem WeierstrassCurve.exists_integerFrobeniusTrace_of_potentiallyGoodReduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
     (hN : N.Prime) (_hN23 : 23 ≤ N)
@@ -2342,7 +2635,10 @@ theorem WeierstrassCurve.exists_integerFrobeniusTrace_of_potentiallyGoodReductio
     E.exists_frobenius_reduction_model_of_potentiallyGoodReduction hN hq hq2 hqN
       (hpg q hq hq2 hqN)
   haveI := hell
-  obtain ⟨a, ha, hatr⟩ := hasseWeil_trace_frobeniusTorsionEnd q Wbar N hqN
+  -- `N` and `q` are DISTINCT PRIMES, hence coprime; `q ≠ N` alone would not do
+  -- (see the falsity audit on `hasseWeil_trace_frobeniusTorsionEnd`).
+  obtain ⟨a, ha, hatr⟩ := hasseWeil_trace_frobeniusTorsionEnd q Wbar N
+    ((Nat.coprime_primes hN hq).mpr (Ne.symm hqN))
   refine ⟨a, ha, ?_⟩
   -- the representation at `σ_q` is the `q`-Frobenius conjugated by `ψ`
   have hρ : (E.galoisRep N hN.pos
