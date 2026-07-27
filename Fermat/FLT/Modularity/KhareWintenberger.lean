@@ -2536,17 +2536,20 @@ THE FIBRE STEP is `smooth_quotient_of_smooth_localizationAway`, also proven:
 `B ⧸ (ker φ)B ≃ₐ[R ⧸ ker φ] (R ⧸ ker φ) ⊗[R] B`, and `Algebra.Smooth.comp`
 lands the result over `k`.
 
-THE ONE REMAINING LEAF is
-`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` — the
-generic fibre is smooth — which is where and where alone `CharZero` is used,
-and which is exactly the classical statement "a regular local ring
-essentially of finite type over a PERFECT field is formally smooth over it"
-(Stacks 07EC / EGA IV 22.5.8), applied to `B_q` (regular, being a
-localization of the regular ring `B`) over `Frac R` (characteristic zero,
-hence perfect). It is genuinely absent from the pin — the check that would
-refute that: `grep -rln "IsRegularLocalRing" .lake/packages/mathlib/Mathlib`
-returns only `RegularLocalRing/{Defs,Polynomial}.lean`, neither of which
-mentions smoothness. -/
+**NOTHING REMAINS OPEN BELOW THIS NODE (2026-07-27).** What used to be recorded
+here as "THE ONE REMAINING LEAF",
+`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` — the generic
+fibre is smooth, and where and where alone `CharZero` is used — is now PROVEN,
+its last input `isRegularLocalRing_localizationAtPrime_of_smooth_over_field`
+having closed the same day. It is exactly the classical statement "a regular
+local ring essentially of finite type over a PERFECT field is formally smooth
+over it" (Stacks 07EC / EGA IV 22.5.8), applied to `B_q` (regular, being a
+localization of the regular ring `B`) over `Frac R` (characteristic zero, hence
+perfect). That statement is indeed absent from the pin — the check:
+`grep -rln "IsRegularLocalRing" .lake/packages/mathlib/Mathlib` returns only
+`RegularLocalRing/{Defs,Polynomial}.lean`, neither of which mentions smoothness
+— and it is supplied HERE, by
+`formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`. -/
 theorem exists_ne_zero_smooth_localizationAway_of_smoothAt_generic
     {R B : Type u} [CommRing R] [IsDomain R] [CommRing B] [Algebra R B]
     [Algebra.FinitePresentation R B]
@@ -3130,58 +3133,58 @@ theorem formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField
     Algebra.FormallySmooth K A :=
   formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField_aux K _ A rfl
 
+open AlgebraicGeometry in
 /-- **A LOCALIZATION OF A SMOOTH ALGEBRA OVER A FIELD IS A REGULAR LOCAL RING**
-(SORRY LEAF, cut 2026-07-27 — **and it is NOT new mathematics: it is BLOCKED
-ONLY BY LEAN'S DECLARATION ORDER**).
+(**PROVEN 2026-07-27**, in five lines — it was never new mathematics, only
+Lean's declaration order, and the hoist that unblocked it has landed).
 
-This is the AFFINE form of this file's own **PROVEN**
-`isRegularLocalRing_stalk_of_smooth_over_field` (~1600 lines below this point,
-sorry-free over `exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field`
-and `isRegularLocalRing_quotient_span_list_aux`, both PROVEN 2026-07-26). The
-only reason it is a separate declaration here is that its consumer,
-`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` immediately
-below, sits ~1600 lines ABOVE the proof, and Lean has no forward references.
+This is the AFFINE form of the scheme-level
+`isRegularLocalRing_stalk_of_smooth_over_field`, which since 2026-07-27 lives
+in `Fermat/FLT/Modularity/RegularStalks.lean` (`public import`ed above, so it
+is in scope HERE, above this line, unqualified). It is sorry-free there over
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` and
+`isRegularLocalRing_quotient_span_list_aux`, both PROVEN 2026-07-26.
 
-**THE RECIPE THAT CLOSES IT, once the proof is reachable** — this is scheme
-bookkeeping with no mathematical content, and it is written out here so that
-nobody dispatches a proof effort at it:
+**HISTORICAL NOTE, kept because it explains the shape of this declaration.**
+The whole tower was originally proven ~1600 lines BELOW this point, inside this
+file, so its consumer `formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero`
+(immediately below) could not reach it and this affine restatement had to be a
+separate, sorried declaration. The hoist to `RegularStalks.lean` — done for
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, which is UPSTREAM of this
+module and needs the same theorem — removed the order obstruction, and the
+three-step recipe recorded here was then executed verbatim:
 
 1. `Algebra.Smooth k B` gives `AlgebraicGeometry.Smooth (Spec.map (algebraMap k B))`
    through `HasRingHomProperty @Smooth RingHom.Smooth` together with
-   `AlgebraicGeometry.HasRingHomProperty.iff_of_isAffine`;
-2. `Spec (CommRingCat.of B)` has a point `y` with `y.asIdeal = q`, and
-   `AlgebraicGeometry.Spec.stalkIso` (or `IsAffineOpen.isLocalization_stalk` at
-   `⊤`) identifies `(Spec (CommRingCat.of B)).presheaf.stalk y` with
-   `Localization.AtPrime q` as a ring;
+   `AlgebraicGeometry.HasRingHomProperty.Spec_iff` (the `Spec.map` form of
+   `iff_of_isAffine`, which saves the `ΓSpecIso` bookkeeping) and
+   `RingHom.smooth_algebraMap`;
+2. `Spec (CommRingCat.of B)` has the point `⟨q, _⟩ : PrimeSpectrum B`, and
+   `AlgebraicGeometry.Spec.stalkIso` identifies
+   `(Spec (CommRingCat.of B)).presheaf.stalk ⟨q, _⟩` with `Localization.AtPrime q`
+   as a ring, via `Iso.commRingCatIsoToRingEquiv`;
 3. `isRegularLocalRing_stalk_of_smooth_over_field` applied to that morphism and
-   that point, then `IsRegularLocalRing.of_ringEquiv` across the iso of (2).
-
-**THE PROPER REPAIR IS A HOIST, AND ONE IS ALREADY IN FLIGHT.** As of
-2026-07-27 the worker on `flt-lean-149` is hoisting
-`isRegularLocalRing_stalk_of_smooth_over_field` (with the block it depends on:
-`isDomain_of_isRegularLocalRing`, `isRegularLocalRing_quotient_span_singleton`,
-`isRegularLocalRing_quotient_span_list_aux` and the standard-smooth
-presentation lemmas) into a module UPSTREAM of
-`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, because a leaf there wants
-the same theorem. Once that lands, the hoisted theorem is in scope at THIS line
-too, and this leaf closes by the three steps above. **Do not hoist it a second
-time, and do not re-prove it** — check `git log --oneline -S
-isRegularLocalRing_stalk_of_smooth_over_field` first.
-
-The check that would refute the "already proven" claim:
-`grep -n "theorem isRegularLocalRing_stalk_of_smooth_over_field" \
-Fermat/FLT/Modularity/KhareWintenberger.lean` and then `#print axioms` on it. -/
+   that point, then `IsRegularLocalRing.of_ringEquiv` across the iso of (2). -/
 theorem isRegularLocalRing_localizationAtPrime_of_smooth_over_field
     {k B : Type u} [Field k] [CommRing B] [Algebra k B] [Algebra.Smooth k B]
     (q : Ideal B) [q.IsPrime] :
-    IsRegularLocalRing (Localization.AtPrime q) :=
-  sorry
+    IsRegularLocalRing (Localization.AtPrime q) := by
+  have hsm : Smooth (Spec.map (CommRingCat.ofHom (algebraMap k B))) := by
+    rw [HasRingHomProperty.Spec_iff (P := @Smooth)]
+    exact RingHom.smooth_algebraMap.mpr inferInstance
+  let z : Spec (CommRingCat.of B) := (⟨q, inferInstance⟩ : PrimeSpectrum B)
+  haveI : IsRegularLocalRing ((Spec (CommRingCat.of B)).presheaf.stalk z) :=
+    isRegularLocalRing_stalk_of_smooth_over_field
+      (K := k) (Spec.map (CommRingCat.ofHom (algebraMap k B))) hsm z
+  exact IsRegularLocalRing.of_ringEquiv
+    (Spec.stalkIso (CommRingCat.of B) z).commRingCatIsoToRingEquiv
 
-/-- **THE GENERIC FIBRE IS SMOOTH** (**PROVEN 2026-07-27** over the shared
-classical leaf `formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`
-and the order-blocked `isRegularLocalRing_localizationAtPrime_of_smooth_over_field`,
-both stated immediately above; it remains the only place where `CharZero` is
-used in the algebraic-Sard chain).
+/-- **THE GENERIC FIBRE IS SMOOTH** (**PROVEN 2026-07-27**, and as of the same
+day it is FULLY sorry-free: both of its inputs —
+`formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField` and
+`isRegularLocalRing_localizationAtPrime_of_smooth_over_field`, stated
+immediately above — are now PROVEN. It remains the only place where `CharZero`
+is used in the algebraic-Sard chain).
 
 If `B` is smooth over a characteristic-zero field `k` and finite type over a
 `k`-subalgebra `R` which is a domain, then every prime `q` of `B` lying over
@@ -3231,7 +3234,7 @@ statement is `K`-algebra bookkeeping, and it is written out here:
   `charZero_of_injective_algebraMap` (`k ↪ R` because `k` is a field and `R`
   nontrivial, then `R ↪ Frac R`), and `PerfectField.ofCharZero` is an instance.
 * Regularity of `B_q` is `isRegularLocalRing_localizationAtPrime_of_smooth_over_field`,
-  which is order-blocked rather than open — see its docstring.
+  PROVEN immediately above (2026-07-27) — see its docstring.
 * Finally `Algebra.FormallySmooth.of_isLocalization (nonZeroDivisors R)` gives
   `FormallySmooth R (Frac R)` and `Algebra.FormallySmooth.comp` composes. -/
 theorem formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero
