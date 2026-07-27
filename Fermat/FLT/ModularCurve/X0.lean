@@ -8039,7 +8039,20 @@ What Mazur actually needs is the *two-point* statement — a rational point
 and the cusp `∞` having the SAME reduction forces them equal — and that
 is a theorem about the rank-`0` Eisenstein quotient and a formal
 immersion at `∞`, neither of which is in this module.  A one-point
-"reduction of a cusp is a cusp" leaf should not be written at all. -/
+"reduction of a cusp is a cusp" leaf should not be written at all.
+
+**STALE-NOTE CORRECTION (2026-07-27).**  An earlier version of the audit
+above said the remedy was "already in flight ... on branch `flt-lean-12`".
+It has LANDED, and it is in this very file: `IsX0NeronDatum` (below, in the
+Néron subsection) carries the integral models over `ℤ_(ℓ)` with both fibres
+identified as equivalences of FUNCTORS of points, and there `redX`/`redJ`
+are induced maps — which is why `red_aj` and `redJ_add` are theorems there
+rather than assumptions.  So re-founding `IsX0JReductionAt` on
+`IsX0NeronDatum`, and making `red_jm` a theorem, is available work TODAY.
+Until someone does it, the audit above still applies to THIS structure, and
+the formal-immersion leaf must be stated against a datum produced together
+with it — which is what `exists_eisensteinFormalImmersionAt` does — never
+against an arbitrary one. -/
 structure IsX0JReductionAt (N q : ℕ)
     {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -8765,24 +8778,446 @@ file, where it is **PROVEN** from `exists_x0JNeronDatum`; it now consumes
 `SpecLoc`, which is declared below this point, so it cannot live here.
 See the POST-SCRIPT in the docstring of `IsX0JReductionAt` above. -/
 
-/-- **Mazur 1978, Theorem 1** (sorry node): for every prime
-`p ∉ mazurIsogenyPrimes`, every rational point of `X_0(p)` is a cusp.
+/-- **Mazur's Cor. 4.3–4.4 package at `q`, read on points** (interface,
+introduced 2026-07-27).
+
+This is the ANATOMY of the formal-immersion argument: the three inputs
+Mazur combines, named separately so that each can be recognised, attacked
+and refuted on its own instead of hiding inside one opaque leaf.  It is
+carried by `exists_eisensteinFormalImmersionAt` and consumed by
+`exists_x0JReductionDatum_formalImmersion`, which is PROVEN from it.
+
+* `redE_inj` is **Cor. 4.3**: the Eisenstein quotient `J_e(p)` has
+  Mordell–Weil rank `0` (Mazur, *Eisenstein ideal*, §II.7 and III.2), so
+  `J_e(p)(ℚ)` is finite, and reduction mod `q` is injective on a finite
+  group of points of an abelian variety with good reduction at an ODD
+  prime.  The second half is the same formal-group fact this module
+  already isolates as `neronKernel_torsionFree`, which is exactly why
+  `q ≠ 2` is a hypothesis of the leaf below.
+* `formalImmersion` is the **formal immersion at the cusp** in
+  characteristic `q ≠ 2`: `X_0(p) → J_e(p)` is a formal immersion at `∞`
+  over `𝔽_q`, so two integral points congruent mod `q` to a cusp with the
+  same image in `J_e` coincide.  (Mazur proves it at `∞`; the Atkin–Lehner
+  involution `w_p` swaps the two cusps of `X_0(p)` for `p` prime, which is
+  what lets the field be stated at every cusp of the special fibre.)
+* `cusp_lift` is the **rationality and surjectivity of the cusps**: for
+  `p` prime the two cusps `0, ∞` of `X_0(p)` are rational and their
+  reductions are exactly the cusps of the special fibre.  This is the one
+  input of the three that is not deep, and a successor may well be able to
+  split it off against `exists_rationalCusps`.
+
+## WHAT IS DELIBERATELY *NOT* HERE
+
+`Eis` and `EisRed` are bare `Type`s and `redE` a bare function: no group
+structure, no abelian scheme, no quotient map from `J_0(p)`.  The argument
+below uses only injectivity of `redE` and its commutation with
+Abel–Jacobi, so carrying the group law would be an unused field — and
+every field this structure does not carry makes the EXISTENCE leaf weaker,
+which is the direction that leaves the least for a prover to invent.  The
+mathematics that produces them (the Eisenstein ideal in the Hecke algebra
+acting on `J_0(p)`, and its rank-`0` quotient) is named in the docstrings
+and in this comment, not in the type.
+
+## WHY IT IS PARAMETERISED BY `hjr` AND MUST STAY THAT WAY
+
+Same reason as the leaf below, and the same junk witness: `IsX0JReductionAt`
+does not pin `redX`, so `formalImmersion` and `cusp_lift` are FALSE if
+quantified over an arbitrary datum (see the FORMAL-CONTENT AUDIT above).
+Parameterising by `hjr` is harmless because the datum is produced together
+with the package, never taken as a hypothesis. -/
+structure IsEisensteinFormalImmersionAt {N q : ℕ}
+    {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc} (hjr : IsX0JReductionAt N q hX hX' hj) where
+  /-- the rational points of the Eisenstein quotient, `J_e(N)(ℚ)`, as a
+  bare set — only injectivity of reduction on it is ever used -/
+  Eis : Type
+  /-- the points of its reduction, `J_e(N)(𝔽_q)` -/
+  EisRed : Type
+  /-- `x ↦` the class of `[x] − [∞]` in `J_e(N)(ℚ)` -/
+  ajE : RelPoint strX (𝟙 SpecQ) → Eis
+  /-- the same map on the special fibre -/
+  ajE' : RelPoint strX' (𝟙 (SpecF q)) → EisRed
+  /-- reduction mod `q` on the Eisenstein quotient -/
+  redE : Eis → EisRed
+  /-- Abel–Jacobi into `J_e` commutes with reduction, i.e. the quotient map
+  is defined over `ℤ_(q)` -/
+  red_ajE : ∀ x : RelPoint strX (𝟙 SpecQ), redE (ajE x) = ajE' (hjr.redX x)
+  /-- **Mazur Cor. 4.3**: `J_e(N)(ℚ)` is finite (rank `0`) and `q` is odd,
+  so reduction is injective on it -/
+  redE_inj : Function.Injective redE
+  /-- **the formal immersion at the cusps**, in characteristic `q ≠ 2`:
+  two rational points with the same CUSPIDAL reduction and the same image
+  in `J_e(N)(ℚ)` are equal -/
+  formalImmersion : ∀ x z : RelPoint strX (𝟙 SpecQ), hX'.IsCusp (hjr.redX x) →
+      hjr.redX x = hjr.redX z → ajE x = ajE z → x = z
+  /-- **the cusps of the special fibre are reductions of rational cusps**:
+  for `N` prime the two cusps of `X_0(N)` are rational and reduction is
+  onto the cusps of the special fibre -/
+  cusp_lift : ∀ x : RelPoint strX (𝟙 SpecQ), hX'.IsCusp (hjr.redX x) →
+      ∃ c : RelPoint strX (𝟙 SpecQ), hX.IsCusp c ∧ hjr.redX c = hjr.redX x
+
+/-- **Mazur's Cor. 4.3–4.4, PACKAGED WITH THE DATUM IT IS ABOUT** (sorry
+node, introduced 2026-07-27): for a prime `p ∉ mazurIsogenyPrimes` and a
+prime `q ∉ {2, p}` there is a good-reduction datum for `(X_0(p), j)` at `q`
+carrying the Eisenstein/formal-immersion package above.
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
+Cor. 4.3–4.4, over *Modular curves and the Eisenstein ideal*, Publ. Math.
+IHÉS 47 (1977).  See `IsEisensteinFormalImmersionAt` for the anatomy: the
+three fields are the rank-`0`/injectivity half, the formal-immersion half,
+and the cusp bookkeeping, and a prover should expect to supply them
+separately even though they are produced together.
+
+**`p ∉ mazurIsogenyPrimes` with `p` prime already gives `19 < p`** — every
+prime `≤ 19` lies in the list — which is exactly the hypothesis `p ≥ 23`
+that the formal-immersion half needs.  No separate bound is added.
+
+**The datum is bundled into the existential and MUST STAY THAT WAY**; the
+reason is spelled out on `exists_x0JReductionDatum_formalImmersion` below,
+and it is the FORMAL-CONTENT AUDIT's junk witness for `redX`.
+
+Consequently this leaf is strictly STRONGER than `exists_x0JReductionAt` at
+the same `q` — it produces the same datum and more.
+
+IRREDUCIBLE at this pin: `J_0(p)`, the Hecke algebra, the Eisenstein ideal
+and reduction of an abelian variety are all missing.  **The check that
+would refute that**: a declaration in the tree producing an abelian-variety
+quotient of `J_0(p)` of rank `0`.  Note that the reduction-injectivity
+input alone is NOT missing — `neronReduction_injective` (PROVEN here, over
+the single formal-group leaf `neronKernel_torsionFree`) is exactly it, so a
+prover who gets as far as building `J_e(p)` as an abelian scheme over
+`ℤ_(q)` can discharge `redE_inj` from material already in this file. -/
+theorem exists_eisensteinFormalImmersionAt {p q : ℕ} (_hp : p.Prime)
+    (_hmem : p ∉ mazurIsogenyPrimes) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqp : q ≠ p)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {hc : IsCoarseModuliY0 p strY} (hX : IsCompactificationY0 strY strX)
+    (hj : IsJMapOn p hc) :
+    ∃ (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q) (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
+      (hX' : IsX0Compactification p strX' strY' jY') (hjr : IsX0JReductionAt p q hX hX' hj),
+      Nonempty (IsEisensteinFormalImmersionAt hjr) :=
+  sorry
+
+/-- **Mazur's formal-immersion criterion at `q`, PACKAGED WITH THE DATUM IT
+IS ABOUT** (PROVEN 2026-07-27 over `exists_eisensteinFormalImmersionAt`):
+for a prime `p ∉ mazurIsogenyPrimes` and a prime `q ∉ {2, p}` there is a
+good-reduction datum for `(X_0(p), j)` at `q` whose reduction map detects
+cusps — a rational point of `X_0(p)` whose reduction mod `q` is a cusp of
+the special fibre is itself a cusp.
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
+Cor. 4.3–4.4, over *Modular curves and the Eisenstein ideal*, Publ. Math.
+IHÉS 47 (1977): the Eisenstein quotient `J_e(p)` has Mordell–Weil rank `0`,
+so `J_e(p)(ℚ)` is finite and reduction mod `q` is injective on it for
+`q ≠ 2`; and `X_0(p) → J_e(p)` is a formal immersion at the cusp `∞` in
+characteristic `q ≠ 2`.  Together those say that a rational point congruent
+to a cusp mod `q` *is* that cusp.
+
+## THE CUT (2026-07-27): THE MECHANISM IS PROVEN, THE OBJECTS ARE THE LEAF
+
+The bare `sorry` is gone.  The three inputs of Mazur's argument are named as
+the fields of `IsEisensteinFormalImmersionAt` above and produced by the
+single leaf `exists_eisensteinFormalImmersionAt`; the four lines below are
+the argument itself, and they are the whole of Cor. 4.4 given Cor. 4.3:
+
+1. the reduction of `z` is a cusp, so by `cusp_lift` some RATIONAL cusp `c`
+   has the same reduction;
+2. `redE (ajE z) = ajE' (redX z) = ajE' (redX c) = redE (ajE c)` by
+   `red_ajE`, so `ajE z = ajE c` by `redE_inj` — this is the step that
+   consumes rank `0` and `q ≠ 2`;
+3. `formalImmersion` then gives `z = c`, and `c` is a cusp.
+
+What this buys is that the surviving leaf mentions the Eisenstein quotient,
+the formal immersion and the cusps SEPARATELY, so a partial advance on any
+one of them is visible.  What it does not buy is a smaller total: the leaf
+is still Mazur's theorem, and the count is unchanged.
+
+**`p ∉ mazurIsogenyPrimes` with `p` prime already gives `19 < p`** — every
+prime `≤ 19` lies in the list — which is exactly the hypothesis
+`p ≥ 23` that the formal-immersion half needs.  No separate bound is added.
+
+## WHY THE DATUM IS BUNDLED INTO THE EXISTENTIAL, AND MUST STAY THAT WAY
+
+The natural-looking statement takes `hjr : IsX0JReductionAt p q hX hX' hj`
+as a HYPOTHESIS and concludes `hX'.IsCusp (hjr.redX z) → hX.IsCusp z`.  That
+statement is **FALSE**, and the FORMAL-CONTENT AUDIT on `IsX0JReductionAt`
+above gives the counterexample: `redX` is pinned by nothing, so sending every
+rational point to a cusp of the special fibre makes `red_jm`'s hypothesis
+unsatisfiable and therefore satisfies the structure vacuously — whereupon the
+hypothesis of that implication holds for EVERY `z` while its conclusion fails
+for every `z` coming from `Y`.
+
+Quantifying the datum EXISTENTIALLY, as here, is what the audit prescribes
+("the formal-immersion leaf must be stated against a datum produced by
+`exists_x0JReductionAt`, never against an arbitrary one") and is immune to
+that witness: it asks for SOME datum with the property, and the junk witness
+is simply not that one.  **Do not refactor this into a hypothesis on `hjr`**;
+that is the one edit that silently turns this leaf false.
+
+Consequently this leaf is strictly STRONGER than `exists_x0JReductionAt` at
+the same `q` — it produces the same datum and more — and a prover should
+expect to discharge both together.
+
+**STALE-NOTE CORRECTION (2026-07-27).**  The previous version of this
+paragraph, and the FORMAL-CONTENT AUDIT on `IsX0JReductionAt` above, said
+the remedy was "in flight on branch `flt-lean-12`".  It has LANDED: the
+whole `IsX0NeronDatum` layer is in THIS FILE (structure at the head of the
+Néron subsection below, with `redX`, `redJ`, `red_aj`, `redJ_add`,
+`toReduction` and `neronReduction_injective`), and there `redX` really is
+induced by a morphism of integral models.  So the re-founding of
+`IsX0JReductionAt` on it — which would let this implication be stated
+against an ARBITRARY datum, and would split this leaf in two — is available
+work TODAY, not future work.  It is deliberately not done here: it edits a
+structure that is concurrently owned, and the bundled form above is true
+either way. -/
+theorem exists_x0JReductionDatum_formalImmersion {p q : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes) (hq : q.Prime) (hq2 : q ≠ 2) (hqp : q ≠ p)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {hc : IsCoarseModuliY0 p strY} (hX : IsCompactificationY0 strY strX)
+    (hj : IsJMapOn p hc) :
+    ∃ (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q) (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
+      (hX' : IsX0Compactification p strX' strY' jY') (hjr : IsX0JReductionAt p q hX hX' hj),
+      ∀ z : RelPoint strX (𝟙 SpecQ), hX'.IsCusp (hjr.redX z) → hX.IsCusp z := by
+  obtain ⟨Y', X', strY', strX', jY', hX', hjr, ⟨d⟩⟩ :=
+    exists_eisensteinFormalImmersionAt hp hmem hq hq2 hqp hX hj
+  refine ⟨Y', X', strY', strX', jY', hX', hjr, fun z hz => ?_⟩
+  -- the reduction of `z` is a cusp of the special fibre, so it is the
+  -- reduction of a RATIONAL cusp `c`
+  obtain ⟨c, hcusp, hcz⟩ := d.cusp_lift z hz
+  -- `z` and `c` have the same image in `J_e(p)(ℚ)`: their images agree
+  -- after reduction, and reduction is injective there (rank `0`, `q ≠ 2`)
+  have hE : d.ajE z = d.ajE c :=
+    d.redE_inj (by rw [d.red_ajE, d.red_ajE, hcz])
+  -- the formal immersion at the cusp then identifies them
+  rw [d.formalImmersion z c hz hcz.symm hE]
+  exact hcusp
+
+/-- **The coarse-to-fine descent on `Y_0(p)`** (sorry node, introduced
+2026-07-27): a rational point of the COARSE space `Y_0(p)` for a prime
+`p ∉ mazurIsogenyPrimes` is represented by a Weierstrass curve over `ℚ`
+carrying a Galois-stable cyclic subgroup of order `p`, whose `j`-invariant
+is the value of the `j`-map at the point.
+
+TRUE.  This is the converse direction of `nonempty_gamma0Datum_of_stable`,
+which is the only direction this module has had: a rational point of `Y_0(p)`
+is a `ℚ̄`-isomorphism class of pairs `(E, C)` fixed by `Gal(ℚ̄/ℚ)`, and for
+`Aut(E, C) = {±1}` — i.e. `j ≠ 0, 1728` — the field of moduli is a field of
+definition, so the pair descends to `ℚ` up to quadratic twist and a twist
+changes neither `j` nor the Galois-stability of `C`.
+
+## WHY `hmem` IS A HYPOTHESIS, AND WHAT IT IS COVERING
+
+Two distinct gaps, and both are real:
+
+* **the CM values.**  At `j = 0` and `j = 1728` the automorphism group of
+  the pair can be larger than `{±1}` and descent from the field of moduli
+  is not automatic — the obstruction lives in `Br(ℚ)[n]`, which does not
+  vanish.  With `p ∉ mazurIsogenyPrimes` those values do not arise (a curve
+  with CM by `ℤ[ζ₃]` or `ℤ[i]` has a rational `p`-isogeny only for `p` in
+  the list), so the hypothesis buys the descent honestly rather than by
+  assumption.
+* **`jm` at an unclassified point.**  `IsJMapOn` pins `jm` only through
+  `classify_jm`, which is an EXISTENCE statement about points classifying a
+  curve — see the subsection docstring for why it deliberately is not the
+  equation `jm (hc.classify d) = E.j`.  So `jm y` for a general `y` is
+  unconstrained by the structure, and the final conjunct `hj.jm y = E.j` is
+  the one clause here that needs `jm` to be the genuine `j`-map rather than
+  merely an `IsJMapOn`.  **This is a gap in `IsJMapOn`, not in this leaf**,
+  and it is the thing to repair if this leaf resists: a field pinning `jm`
+  at every rational point, not just at classified ones, would make the
+  conjunct free.
+
+**VACUITY, stated plainly.**  By Mazur's theorem itself `Y_0(p)(ℚ) = ∅` for
+these `p`, so this leaf is vacuously true and cannot be tested against an
+example.  That is inherent to the whole node — its sibling and their
+consumer are non-existence statements — and is not a defect introduced by
+the cut; but it does mean a prover must be careful not to "prove" this leaf
+by an argument that quietly assumes the conclusion of `cuspidal_x0_prime`.
+The non-vacuous statement it specialises is the descent for `p` prime,
+`p ≥ 5` and `j ≠ 0, 1728`, which is where a proof should start.
+
+IRREDUCIBLE at this pin: it needs `Y_0(p)` as a coarse space with its
+`ℚ̄`-points identified with pairs `(E, C)`, and the twisting/field-of-moduli
+theory, none of which exists here. -/
+theorem exists_weierstrass_jm_of_relPointY0 {p : ℕ} (_hp : p.Prime)
+    (_hmem : p ∉ mazurIsogenyPrimes)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} {hc : IsCoarseModuliY0 p strY}
+    (hj : IsJMapOn p hc) (y : RelPoint strY (𝟙 SpecQ)) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g = p ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) ∧
+      hj.jm y = E.j :=
+  sorry
+
+/-- **Mazur 1978 §5 on the elliptic-curve side** (sorry node, introduced
+2026-07-27): no elliptic curve over `ℚ` with a Galois-stable cyclic subgroup
+of order `p`, `p` a prime outside `mazurIsogenyPrimes`, has `q`-integral
+`j`-invariant at every prime `q ∉ {2, p}`.
+
+TRUE — this is Mazur 1978 §5: the isogeny character `λ` attached to the
+`p`-isogeny satisfies `λ^12` unramified outside `p`, and potentially good
+reduction away from `{2, p}` is exactly what licenses the Frobenius-trace
+computation; the Serre–Raynaud signature, the resultant elimination and the
+class-number-one determination then force `p ∈ mazurIsogenyPrimes`.
+
+## THIS IS DUPLICATED CONTENT, AND THE DUPLICATION IS FORCED BY IMPORTS
+
+`FreyCurve/MazurTorsion.lean` already PROVES the corresponding statement,
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`, over four
+leaves — `potentiallyGoodReduction_of_isogenyCharacter`,
+`exists_isogenySignature`, `not_isogenyCharacter_of_isogenySignature_ne_six`
+and `mem_classNumberOnePrimes_of_isogenySignature_six`.  That module IMPORTS
+this one, so the theorem cannot be cited here and the statement has to be
+made again.
+
+**The relationship is precise, and it is NOT circular.**  That proof's step
+`0` is `potentiallyGoodReduction_of_isogenyCharacter`, which is Mazur's
+Cor. 4.4 — the *sibling* of this leaf, and the thing
+`exists_eisensteinFormalImmersionAt` above is about.  This leaf takes
+potential good reduction as a HYPOTHESIS instead of deriving it, so it is
+steps 1–3 only.  Discharging it must therefore NOT go through Cor. 4.4, and
+in particular not through `cuspidal_x0_prime` below; see that theorem's
+`⚠ DO NOT CLOSE` warning, which records the same trap in the other
+direction.
+
+**The right repair is a HOIST, not a proof.**  The three signature/resultant
+/class-number leaves of `MazurTorsion.lean` mention only `WeierstrassCurve`,
+`Field.absoluteGaloisGroup` and `padicValRat`; nothing in them needs this
+module.  Moving them (and the `hstable ↔ hlam` bridge
+`exists_isogenyCharacter`) to a module upstream of BOTH would let this leaf
+be discharged by citation and would delete the duplication outright.  That
+is a cross-module refactor with two owners and is deliberately not done
+here.
+
+Stated in the `hstable` form rather than with an isogeny character `λ`
+because that is the form this module has (`nonempty_gamma0Datum_of_stable`,
+`IsJMapOn.classify_jm`); the two are equivalent, by the bridge named above.
+
+`2` is excluded because the reduction analysis is at odd primes, and `p`
+itself because the character is ramified there by construction; keeping both
+out of the quantifier is the direction that leaves the leaf weakest. -/
+theorem false_of_stable_of_forall_padicValRat_nonneg (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] {p : ℕ} (_hp : p.Prime) (_hmem : p ∉ mazurIsogenyPrimes)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = p)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g)
+    (_hint : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ p → 0 ≤ padicValRat q E.j) :
+    False :=
+  sorry
+
+/-- **The potentially-good-reduction case of Mazur's Theorem 1** (PROVEN
+2026-07-27 over `exists_weierstrass_jm_of_relPointY0` and
+`false_of_stable_of_forall_padicValRat_nonneg`): for a prime
+`p ∉ mazurIsogenyPrimes` there is no rational point of `Y_0(p)` whose
+`j`-invariant is integral at every prime outside `{2, p}`.
+
+TRUE — this is Mazur 1978 §5, the half of Theorem 1 that Cor. 4.4 does *not*
+cover.  A point with no `j`-pole outside `{2, p}` gives a curve with
+potentially good reduction there, so the isogeny character `λ` attached to
+the `p`-isogeny satisfies `λ^12` unramified outside `p`; the resulting
+class-number and CM analysis forces `p ∈ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43,
+67, 163}` — that is, `p ∈ mazurIsogenyPrimes`, contradicting the hypothesis.
+The list in `mazurIsogenyPrimes` is exactly the output of that analysis, which
+is why the leaf is stated against the list rather than against a bound.
+
+`2` is excluded because the reduction analysis is at odd primes, and `p`
+itself because the character is ramified there by construction; keeping both
+out of the quantifier is the direction that leaves the leaf weakest.
+
+## THE CUT (2026-07-27): THE COARSE SPACE AND THE ARITHMETIC ARE SEPARATE
+
+This leaf was about the COARSE space: `y` is a rational point of `Y_0(p)`,
+which need not be represented by a pair `(E, C)` defined over `ℚ`.  That
+descent is a completely different subject from Mazur §5, and the two are now
+separate leaves:
+
+* `exists_weierstrass_jm_of_relPointY0` — the descent (field of moduli,
+  twists, the `Aut(E, C) = {±1}` condition);
+* `false_of_stable_of_forall_padicValRat_nonneg` — Mazur §5 proper (isogeny
+  character, Serre–Raynaud, resultants, class number one), stated purely in
+  terms of Weierstrass curves and therefore quotable, hoistable, and
+  testable independently of every scheme in this file.
+
+The three-line assembly below is the whole of what joined them.  Note the
+second leaf duplicates content already decomposed in
+`FreyCurve/MazurTorsion.lean`; its docstring records why the import
+direction forces that, and what the real repair is. -/
+theorem false_of_relPointY0_of_forall_padicValRat_nonneg {p : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} {hc : IsCoarseModuliY0 p strY}
+    (hj : IsJMapOn p hc) (y : RelPoint strY (𝟙 SpecQ))
+    (hint : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ p → 0 ≤ padicValRat q (hj.jm y)) :
+    False := by
+  -- the coarse point is represented by a curve with a stable `p`-subgroup
+  obtain ⟨E, hE, g, hg, hstable, hjE⟩ :=
+    exists_weierstrass_jm_of_relPointY0 hp hmem hj y
+  letI := hE
+  -- and its `j`-invariant inherits the integrality hypothesis
+  exact false_of_stable_of_forall_padicValRat_nonneg E hp hmem g hg hstable
+    (fun q hq hq2 hqp => hjE ▸ hint q hq hq2 hqp)
+
+/-- **Mazur 1978, Theorem 1** (PROVEN over two leaves, 2026-07-27): for every
+prime `p ∉ mazurIsogenyPrimes`, every rational point of `X_0(p)` is a cusp.
 
 TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44
 (1978), Theorem 1: `X_0(p)(ℚ)` consists of the two cusps `0` and `∞` for
 every prime `p ∉ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`.
 
 **This is the statement in the shape Mazur proves it**, which is the
-point of routing `y0HasNoRationalPoint_prime` through it.  The argument
-is: the Eisenstein quotient `J̃` of `J_0(p)` has Mordell–Weil rank `0`
-(Mazur, *Modular curves and the Eisenstein ideal*, Publ. Math. IHÉS 47
-(1977)); `x ↦ [x − ∞]` embeds `X_0(p)(ℚ)` in `J̃(ℚ)`, which is therefore
-finite; and a specialisation argument at `3` forces the image to be
-cuspidal for `p ≥ 23`, `p ∉ {37, 43, 67, 163}`.  Every object in that
-sentence — `J_0(p)`, the Hecke algebra, the Eisenstein ideal, the
-Mordell–Weil theorem, reduction of an abelian variety — is a subtree that
-does not exist at this pin, and none of it can be *stated* against the
-affine `Y_0(p)`.
+point of routing `y0HasNoRationalPoint_prime` through it.
+
+## THE DECOMPOSITION (2026-07-27), AND WHY THE CASE SPLIT IS THE RIGHT ONE
+
+The bare `sorry` is gone: the proof below is written out, and both branches
+are themselves now proven — the three surviving leaves under this node are
+`exists_eisensteinFormalImmersionAt` (Mazur Cor. 4.3–4.4),
+`exists_weierstrass_jm_of_relPointY0` (the coarse-to-fine descent) and
+`false_of_stable_of_forall_padicValRat_nonneg` (Mazur §5), all stated
+immediately above.  The split is Mazur's own, and
+it is the *tautological* one on the `j`-invariant of the point — either `j`
+has a pole somewhere outside `{2, p}` or it does not:
+
+* a pole at some prime `q ∉ {2, p}` is potentially MULTIPLICATIVE reduction
+  at `q`.  `isCusp_redX_of_padicValRat_neg` — THE DICTIONARY, proven above —
+  turns that pole into "the point reduces mod `q` into the cuspidal locus",
+  and `exists_x0JReductionDatum_formalImmersion` (Mazur Cor. 4.3–4.4, the
+  Eisenstein quotient plus the formal immersion at `∞`) turns *that* into
+  "the point was a cusp all along" — contradicting that it came from the
+  open part `Y_0(p)`;
+* no such pole is potentially GOOD reduction outside `{2, p}`, which is
+  `false_of_relPointY0_of_forall_padicValRat_nonneg` (Mazur §5, the isogeny
+  character and the class-number-one determination).
+
+Being tautological, the split loses nothing: neither leaf carries a
+hypothesis the other needs, and together they are exactly the theorem.  The
+objects that do not exist at this pin — `J_0(p)`, the Hecke algebra, the
+Eisenstein ideal, reduction of an abelian variety, the isogeny character —
+are now confined to those two leaves rather than to this node.
+
+**This node is also where the `j`-map dictionary enters the root cone.**
+Before this proof was written, `isCusp_redX_of_padicValRat_neg` and the
+machinery under it were free-floating: their only possible in-cone consumers
+were this node and `potentiallyGoodReduction_of_isogenyCharacter` in
+`FreyCurve/MazurTorsion.lean`, and both were bare sorries.
+
+## ⚠ DO NOT CLOSE `potentiallyGoodReduction_of_isogenyCharacter` WITH THIS
+
+That leaf in `FreyCurve/MazurTorsion.lean` can be discharged from this node
+in about ten lines, with **no build error** — and doing so makes the whole
+chain VACUOUS.  It feeds
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`, which proves
+the elliptic-curve form of Mazur's Theorem 1; and Mazur proves Cor. 4.4 as a
+*step toward* Theorem 1, not the other way round.  The honest direction is
+the one recorded on `y0HasNoRationalPoint_prime` below: prove this node, then
+DERIVE the elliptic-curve statement from it.
 
 Quantified over every model of `IsCompactificationY0`, so it is at least
 as strong as the `Y_0(p)` statement it replaces and cannot be discharged
@@ -8793,11 +9228,31 @@ statement `WeierstrassCurve.prime_mem_cyclicIsogenyDegrees` in
 `FreyCurve/MazurTorsion.lean` (which is downstream of this module and so
 unusable here): it rules out rational points of a COARSE space, which
 need not be represented by a pair `(E, C)` defined over `ℚ`. -/
-theorem cuspidal_x0_prime {p : ℕ} (_hp : p.Prime) (_hmem : p ∉ mazurIsogenyPrimes)
+theorem cuspidal_x0_prime {p : ℕ} (hp : p.Prime) (hmem : p ∉ mazurIsogenyPrimes)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 p strY) (hX : IsCompactificationY0 strY strX)
-    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
-  sorry
+    (hc : IsCoarseModuliY0 p strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x := by
+  -- Suppose `x` is NOT a cusp: it comes from a point `y0` of the open part.
+  rintro ⟨y0, hy0⟩
+  -- `y0` is then a rational point of `Y_0(p)`; the compatibility
+  -- `y0 ≫ strY = 𝟙` is forced, exactly as `IsCompactificationY0.IsCusp`'s
+  -- docstring records, and is not an extra assumption.
+  have hy : y0 ≫ strY = 𝟙 SpecQ := by
+    rw [← hX.over, ← Category.assoc, hy0]; exact x.2
+  set y : RelPoint strY (𝟙 SpecQ) := ⟨y0, hy⟩
+  -- the `j`-map on `Y_0(p)(ℚ)`; `p ≠ 0` because `p` is prime
+  obtain ⟨hj⟩ := exists_jMap p hp.ne_zero hc
+  by_cases hint : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ p → 0 ≤ padicValRat q (hj.jm y)
+  · -- potentially GOOD reduction outside `{2, p}`
+    exact false_of_relPointY0_of_forall_padicValRat_nonneg hp hmem hj y hint
+  · -- potentially MULTIPLICATIVE reduction at some `q ∉ {2, p}`
+    push Not at hint
+    obtain ⟨q, hq, hq2, hqp, hv⟩ := hint
+    obtain ⟨Y', X', strY', strX', jY', hX', hjr, hfi⟩ :=
+      exists_x0JReductionDatum_formalImmersion hp hmem hq hq2 hqp hX hj
+    -- THE DICTIONARY: the pole makes the reduction of `y` cuspidal …
+    -- … and the formal immersion makes `y` itself a cusp, which it is not.
+    exact hfi _ (isCusp_redX_of_padicValRat_neg hjr y hv) ⟨y.1, rfl⟩
 
 /-- **Mazur's rational isogenies of prime degree, on the modular curve**
 (sorry node): `Y_0(p)(ℚ) = ∅` for every prime `p` outside
