@@ -29895,6 +29895,10 @@ of the cut:
 * `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` is **Mazur's
   isogeny theorem** at these three levels: a rational point forces CM.
   Deep, and the Eisenstein-ideal descent is the only known route.
+  **It is itself now PROVEN (2026-07-27) over three further leaves** — see
+  the subsection "Cutting MAZUR into the moduli formalism, the descent,
+  and the arithmetic" below; only the third of those,
+  `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`, is Mazur.
 * `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder` is **`h(−p) = 1`
   and nothing else**: no Eisenstein ideal, no Chabauty, no modular curve —
   two CM elliptic curves with the same maximal order are isomorphic, and
@@ -29991,9 +29995,311 @@ structure IsCMByRamifiedMaximalOrder (p : ℕ) {T : Scheme.{0}} (d : Gamma0Datum
       letI := d.ab.addCommGroup g
       phi x + phi x = x
 
+/-! #### Cutting MAZUR into the moduli formalism, the descent, and the arithmetic
+
+(2026-07-27, flt-lean-129.)  `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq`
+was an atom when the cut of `card_y0Le_classNumberOne` opened it earlier the
+same day.  Its docstring named the route — "Mazur's Eisenstein-ideal descent,
+the `j`-invariant analysis of Mazur §5 run at the three surviving signatures" —
+but that is only the LAST of three things the leaf was carrying, and the other
+two are not Mazur at all.  The anatomy, in the order the assembly consumes it:
+
+1. **The field-of-moduli descent.**  The hypothesis is about a `ℚ̄`-datum whose
+   moduli point is `ℚ`-rational; Mazur's argument is about a Galois
+   representation, i.e. about a curve and a subgroup over `ℚ`.  Getting from
+   one to the other is `exists_gamma0Datum_descent_mazurLevel` below — the
+   sibling of `Fermat.exists_gamma0Datum_descent`, with `hp` in place of that
+   leaf's `hmem : p ∉ mazurIsogenyPrimes`, which is FALSE at every level here.
+2. **The moduli formalism's missing half.**  Even with a `ℚ`-datum `d₀` in
+   hand, nothing yet relates `d₀` to the GIVEN `d`: `IsCoarseModuliY0` carries
+   `classify`, `classify_natural` and `universal` and no clause at all about
+   points of `Y` going back to data.  `exists_gamma0Datum_geomClassify` supplies
+   the SURJECTIVE half of the omitted geometric-points clause; what this leaf
+   needs is the INJECTIVE half, and that is
+   `exists_isCoarseModuliY0_geomInjective` below, stated existentially on one
+   exhibited model exactly as `Fermat.exists_isCoarseModuliY0_geomSurjective` is,
+   and transported to an arbitrary coarse space by
+   `nonempty_isBaseChangeOf_of_classify_eq`, which is PROVEN.
+3. **Mazur's isogeny theorem proper**, and only now: a `Γ₀(p)`-structure over
+   `ℚ` at `p = 43, 67, 163` is a CM structure for the maximal order of
+   discriminant `−p`.  That is
+   `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`.
+
+**Why this is a cut and not a renaming.**  The three have different owners in
+the literature and different failure modes.  (1) is the classical
+field-of-moduli/twisting theory, ABSENT from this tree, from the mathlib pin
+and from `~/cs/FLT` — `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/`
+`GaloisDescent.lean` is a stub with zero declarations — and it is the same
+missing theory that blocks `Fermat.exists_gamma0Datum_descent`, so the two
+close together.  (2) is not mathematics at all: it is the half of the
+DEFINITION of a coarse moduli space that `IsCoarseModuliY0`'s docstring says
+is "deliberately omitted", and it closes by a Katz–Mazur (8.1.1) citation on
+one exhibited model, exactly as its already-closed surjective twin did.  (3) is
+the Eisenstein-ideal/`j`-invariant argument, and it is the only one of the
+three that is deep.
+
+**A gain in checkability, and it is worth naming.**  `exists_gamma0Datum_descent`
+is VACUOUS — `Y_0(p)(ℚ) = ∅` for `p ∉ mazurIsogenyPrimes`, so its `y` cannot
+exist and no example can test it.  Both leaves below are NON-vacuous: at
+`43, 67, 163` the curve with CM by the maximal order of discriminant `−p`,
+carrying its ramified `p`-isogeny, is defined over `ℚ` (`j = −884736000`,
+`−147197952000`, `−262537412640768000`, all rational), so `Gamma0Datum p SpecQ`
+is inhabited and `Y_0(p)(ℚ)` is nonempty.  The vacuity that made the sibling
+cluster untestable is gone here purely because these are the levels where the
+rational point exists.
+
+**What the cut does NOT do**, recorded so the next owner does not expect it.
+It does not split (3) further, and the reason is a mechanical one rather than a
+mathematical one.  The natural next cut of (3) is into the arithmetic —
+
+> `∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine`,
+> `φ * φ + ((p+1)/4 : ℕ) = φ` and `ker (2φ − 1) = AddSubgroup.zmultiples g`,
+
+the exact analogue at PRIME level of
+`WeierstrassCurve.exists_endSq_neg125_of_stable_cyclic_subgroup_order_125`,
+whose vocabulary (`WeierstrassCurve.End`, with its `IsRationalMap` certificate)
+is already in this file's import cone and is what makes such a statement carry
+content — and the moduli↔Weierstrass bridge that turns that `End` into the
+NATURAL endomorphism `IsCMByRamifiedMaximalOrder.phi` of `d`'s functor of
+points.  The bridge is the blocker: it needs a SCHEME-level identification of
+`d₀.E` with the projective Weierstrass model, and `X0.lean` records at length
+(`exists_weierstrass_jm_of_gamma0Datum`) that the only such relation nameable
+downstream is `IsWeierstrassModel`, that the point-group equivalence produced by
+`exists_ellipticScheme_of_projModel` is NOT enough (it pins the isogeny class,
+not `E`), and that the whole `Gamma0Datum p SpecQ → (E, g)` direction is itself
+an open leaf there — one carrying `hmem`, hence again unavailable at these
+primes.  Cutting (3) along that seam today would mean writing a second,
+independent copy of an in-flight interface, which is the most expensive object
+this fleet produces.  **The check that would refute this**: a declaration
+producing, from `d₀ : Gamma0Datum p SpecQ`, a `WeierstrassCurve ℚ` together with
+`IsWeierstrassModel d₀.ab E` and no membership hypothesis.  If one lands, (3)
+splits along the seam above and the arithmetic half is a `WeierstrassCurve.End`
+statement that the signature machinery earlier in this file already speaks. -/
+
+/-- **The INJECTIVE half of the geometric-points clause a coarse moduli space
+is supposed to carry, stated existentially on one exhibited model** (sorry
+leaf, opened 2026-07-27).
+
+TRUE and classical, and it is the exact twin of
+`Fermat.exists_isCoarseModuliY0_geomSurjective`: over an algebraically closed
+field the points of the coarse space ARE the isomorphism classes of objects of
+the moduli problem, so two `ℚ̄`-data with the same classifying `ℚ̄`-point are
+`ℚ̄`-isomorphic — and an isomorphism of `Γ₀(N)`-data over a fixed base is
+`IsBaseChangeOf (𝟙 _)`, as that structure's own docstring says.  Katz–Mazur
+(8.1.1); Mumford *GIT* Ch. 0 §2, condition (ii) in the definition of a coarse
+moduli scheme — the condition a bare categorical quotient does not carry.
+
+**Why existential, and on one model.**  Verbatim the reason recorded on the
+surjective twin: quantified over EVERY coarse space the clause is not
+attackable, because a scheme presented only by a universal property carries no
+extractable geometry.  Initiality identifies any two coarse spaces compatibly
+with `classify`, so it suffices to exhibit ONE model; the transport is
+`nonempty_isBaseChangeOf_of_classify_eq` immediately below, and it is shorter
+than the surjective transport because only ONE direction of the identification
+is needed.
+
+**NOT vacuous**: `Y_0(N)(ℚ̄)` is large for every `N ≥ 1`, and the hypothesis is
+satisfied whenever `d₁ = d₂`.  `hN : 0 < N` matches the surjective twin; at
+`N = 0` the coarse space is empty and the clause is vacuous there, and the
+branches are deliberately not merged.
+
+**The recommended attack is the surjective twin's, run backwards.**  Exhibit the
+atlas (`exists_gamma0AffineModel` → `Gamma0Atlas N`), against which the leaf
+becomes: two `ℚ̄`-points of `A.M` with the same image in `A.Y = Spec (A^G)`,
+`G = GL₂(ℤ/n)` finite, lie in one `G`-orbit — the standard fact that a finite
+group quotient of an affine scheme separates orbits on geometric points — and a
+`G`-translate of a rigidified datum is the SAME `Γ₀(N)`-datum with a different
+level-`n` structure, so the two data are isomorphic.  Note this is genuinely the
+place where finiteness of `G` is used; the categorical-quotient clause alone
+does not give it. -/
+theorem exists_isCoarseModuliY0_geomInjective (N : ℕ) (_hN : 0 < N) :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 N strY),
+      ∀ d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+        hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁
+            = hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂ →
+          Nonempty (IsBaseChangeOf
+            (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
+  sorry
+
+/-- **Two `ℚ̄`-data with the same classifying `ℚ̄`-point are isomorphic, over
+ANY coarse moduli space** (PROVEN 2026-07-27 over
+`exists_isCoarseModuliY0_geomInjective`).
+
+The transport along initiality, and it needs only the FORWARD comparison map:
+`hc.universal` applied to the exhibited model's `classify` produces
+`u : Y ⟶ Y'` with `(hc'.classify g d).1 = (hc.classify g d).1 ≫ u` for every
+datum, so equal classifying points for `hc` give equal classifying points for
+`hc'`, where the exhibited clause applies.  Contrast
+`exists_gamma0Datum_geomClassify`, whose transport has to build `u ≫ v = 𝟙`
+because it carries a datum BACK across the comparison. -/
+theorem nonempty_isBaseChangeOf_of_classify_eq {p : ℕ} (hp : 0 < p)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
+    {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (h : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁
+      = hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂) :
+    Nonempty (IsBaseChangeOf
+      (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) := by
+  obtain ⟨Y', strY', hc', hinj⟩ := exists_isCoarseModuliY0_geomInjective p hp
+  obtain ⟨u, ⟨-, huc⟩, -⟩ := hc.universal strY' hc'.classify hc'.classify_natural
+  refine hinj d₁ d₂ (Subtype.ext ?_)
+  rw [huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁, huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂,
+    congrArg Subtype.val h]
+
+/-- **A `Γ₀(p)`-datum over `ℚ̄` whose moduli point is defined over `ℚ` descends
+to `ℚ`, at the three class-number-one levels** (sorry leaf, opened 2026-07-27).
+
+TRUE, and it is `Fermat.exists_gamma0Datum_descent` with `hp` in place of that
+leaf's `hmem : p ∉ mazurIsogenyPrimes` — a hypothesis that is FALSE at every
+one of `43, 67, 163`, which is why that leaf cannot be cited here and this
+sibling exists.
+
+**The argument is the same one, and so is the obstruction `hmem` guards.**  `hd`
+says the `ℚ̄`-class of `d` is the base change of a RATIONAL point, i.e. that the
+class is Galois-stable and its field of moduli is `ℚ`.  When
+`Aut(E, C) = {±1}` — i.e. `j ≠ 0, 1728` — the field of moduli is a field of
+definition, so the class contains a pair defined over `ℚ`; that pair is a
+`Gamma0Datum p SpecQ` and it classifies to `y`, because `Y(ℚ) → Y(ℚ̄)` is
+injective.  Quadratic twists are not an obstruction: a twist changes neither
+`j` nor the Galois-stability of `C`, and maps to the SAME point of the coarse
+space, which is all that is asked.
+
+**WHAT REPLACES `hmem`, i.e. how `j = 0, 1728` is excluded HERE.**  `hmem`
+excludes them by fiat — a curve with CM by `ℤ[ζ₃]` or `ℤ[i]` has a rational
+`p`-isogeny only for `p` in the list.  At these three levels the exclusion has
+to be earned, and it is, by the class-number-one arithmetic of the two
+discriminants involved rather than by Mazur:
+
+* `j = 0` is CM by the maximal order of `ℚ(√−3)`, and `43, 67, 163 ≡ 1 mod 3`
+  are all SPLIT there (`43 = 4² + 4·3 + 3²`, and likewise for the other two;
+  `qfbclassno(−3) = 1`, PARI/GP).  A split prime gives exactly TWO cyclic
+  `p`-subgroups, the kernels of the two primes above `p`, and complex
+  conjugation SWAPS them — so neither is Galois-stable and the field of moduli
+  of the pair is `ℚ(√−3)`, not `ℚ`.
+* `j = 1728` is CM by `ℤ[i]`; `43, 67, 163 ≡ 3 mod 4` are all INERT there, so
+  there is no cyclic `p`-subgroup stable under the CM action at all, and the
+  same swap argument applies to any of the `p + 1` subgroups.
+
+Neither bullet is Mazur and neither is circular: both are statements about the
+two class-number-one discriminants `−3` and `−4`, decidable from the splitting
+of `p`.  A prover should establish exactly them and then run the descent.
+
+**NOT vacuous, unlike the sibling.**  `exists_gamma0Datum_descent` is vacuously
+true because `Y_0(p)(ℚ) = ∅` off the list; here `Y_0(p)(ℚ)` is NONEMPTY at all
+three levels — the single CM point — so `y` really can exist and the statement
+really does assert something.  That is the one genuine advantage this sibling
+has over the leaf it copies, and it is why the two should not be merged into a
+single `p`-generic statement.
+
+IRREDUCIBLE at this pin for the same reason as its sibling: there is no descent
+or twisting API in `Fermat/`, in the mathlib pin, or in `~/cs/FLT`, and
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/GaloisDescent.lean` is a
+stub with zero declarations.  **The check that would refute that**: any
+declaration in the tree producing a `Gamma0Datum p SpecQ`, or a `ℚ`-model of a
+`ℚ̄`-curve, from a Galois-stability hypothesis. -/
+theorem exists_gamma0Datum_descent_mazurLevel (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
+    (y : RelPoint strY (𝟙 SpecQ))
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (_hd : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d
+      = RelPoint.pre (specAlgClos ℚ) rfl y) :
+    ∃ d₀ : Gamma0Datum p SpecQ, hc.classify (𝟙 SpecQ) d₀ = y :=
+  sorry
+
+/-- **MAZUR'S ISOGENY THEOREM at `43, 67, 163`: a `Γ₀(p)`-structure defined
+over `ℚ` is a CM structure for the maximal order of discriminant `−p`** (sorry
+leaf, opened 2026-07-27; the DEEP third of
+`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq`, and the only third that
+is deep).
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
+Theorem 1 and the table following it.  At every prime `p ≥ 23` other than `37`
+the non-cuspidal rational points of `X_0(p)` are CM points, and at
+`43, 67, 163` the discriminant is `−p` itself.
+
+**Now stated over a `ℚ`-model**, which is the whole point of the cut: the
+hypothesis is a `Γ₀(p)`-datum `d₀` over `Spec ℚ` — an elliptic curve over `ℚ`
+with a `ℚ`-rational cyclic subgroup of order `p` — and `d` is any base change
+of it to `ℚ̄`.  Mazur's argument is about the Galois representation on `E[p]`
+and cannot start until that model is in hand; the field-of-moduli descent that
+produces it is `exists_gamma0Datum_descent_mazurLevel`, above, and is NOT part
+of this leaf.
+
+**NOT vacuous, and that is checkable.**  `Gamma0Datum p SpecQ` is inhabited at
+all three levels: the curve with CM by the maximal order of discriminant `−p`,
+of `j`-invariant `−884736000`, `−147197952000`, `−262537412640768000`
+respectively (`polclass(−p)` is LINEAR at each, re-verified in the
+reconnaissance block above), carries its ramified `p`-isogeny over `ℚ` —
+`ellisomat (ellfromj j)` returns `[1, p; p, 1]` for each of the three.  Note the
+contrast with `Fermat.exists_gamma0Datum_descent` and
+`Fermat.exists_weierstrass_jm_of_gamma0Datum`, which are true only through
+vacuity precisely because they carry `p ∉ mazurIsogenyPrimes`.
+
+**`hp` IS LOAD-BEARING.**  Without it the statement says every elliptic curve
+over `ℚ` with a rational cyclic `N`-subgroup has CM by the order of
+discriminant `−N`, which is false at every small `N` (a generic curve with a
+rational `5`-isogeny has no CM at all) and false at `N = 37`, whose two
+rational points are the Mazur–Swinnerton-Dyer non-CM ones.
+
+**WHY THE MAXIMAL ORDER, AND NOT `ψ² = [−p]`.**  See the subsection note above:
+`ψ² = [−p]` pins only `ℤ[√−p]`, of discriminant `−4p`, and
+`h(−4·43) = h(−4·67) = h(−4·163) = 3` (`qfbclassno`, PARI/GP) — three classes,
+not one — so the sibling `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`
+would be FALSE in that form.  The conclusion here therefore carries
+`φ² + (p+1)/4 = φ`, and `ψ = 2φ − 1` is recovered inside the structure.
+
+**Where the mathematics is, and what the two halves of it are.**
+
+*The arithmetic.*  This file already carries Serre's reduction and the whole
+signature analysis in isogeny-character vocabulary:
+`WeierstrassCurve.exists_isogenySignature` produces `s ∈ {0, 4, 6, 8, 12}`,
+`WeierstrassCurve.not_isogenyCharacter_of_isogenySignature_ne_six` kills every
+value but `6` outside `N = 37`, and
+`WeierstrassCurve.mem_classNumberOnePrimes_of_isogenySignature_six` reads
+`{43, 67, 163}` off signature `6`.  What is missing is the step FROM signature
+`6` TO the CM structure — `λ² = χ·ψ_{−p}` with `ψ_{−p}` the quadratic character
+of `ℚ(√−p)`, whence `End(E) ⊗ ℚ = ℚ(√−p)` and the rational subgroup is the
+kernel of the ramified prime — together with `h(−p) = 1` making the order
+maximal.  Stated in the vocabulary this file already has, that step is
+
+> `∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine`,
+> `φ * φ + ((p+1)/4 : ℕ) = φ` and `ker (2φ − 1) = AddSubgroup.zmultiples g`,
+
+the prime-level analogue of
+`WeierstrassCurve.exists_endSq_neg125_of_stable_cyclic_subgroup_order_125`.
+**But note the doctrine's warning in the other direction**: the prime-POWER
+route to such an endomorphism (Atkin–Lehner fixedness, forced by `k ≥ 2`) does
+NOT transfer to prime level, so that sibling is a template for the STATEMENT
+and not for the proof.
+
+*The bridge.*  Turning that `End` into the natural endomorphism
+`IsCMByRamifiedMaximalOrder.phi` of `d`'s functor of points needs a
+scheme-level identification of `d₀.E` with the projective Weierstrass model.
+The section note above records why that seam is not cut here: the only such
+relation nameable downstream is `IsWeierstrassModel`, the point-group
+equivalence of `exists_ellipticScheme_of_projModel` is not enough (it pins the
+isogeny class, not `E`), and the `Gamma0Datum p SpecQ → (E, g)` direction is
+itself an open leaf in `X0.lean` carrying `hmem`.
+
+**AXES ALREADY REFUTED, inherited from the atom and re-checked**: the rank-`0`
+Jacobian (analytic ranks `1, 2, 6`), effective Chabauty–Coleman (`15, 19, 64`
+against `3`) and the rank-`0` QUOTIENT — the last dying by STRENGTH rather than
+cardinality at these levels, with the numbers in the subsection note above.
+`classPoly` is not a route either: at `h(−p) = 1` the class polynomial is
+linear, so "`j` is its root" is this leaf's own conclusion rewritten. -/
+theorem nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {d₀ : Gamma0Datum p SpecQ}
+    {d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (_bc : IsBaseChangeOf (specAlgClos ℚ) d d₀) :
+    Nonempty (IsCMByRamifiedMaximalOrder p d) :=
+  sorry
+
 /-- **MAZUR: a rational point of `Y_0(p)` at `p = 43, 67, 163` is a CM point
-for the maximal order of discriminant `−p`** (sorry leaf, introduced
-2026-07-27 by the cut of `card_y0Le_classNumberOne`; the DEEP half).
+for the maximal order of discriminant `−p`** (PROVEN 2026-07-27 over the three
+leaves immediately above — the descent, the coarse space's omitted
+geometric-injectivity clause, and Mazur's isogeny theorem over a `ℚ`-model;
+a sorry leaf from earlier the same day until then).
 
 TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
 Theorem 1 and the table following it.  At every prime `p ≥ 23` other than
@@ -30008,19 +30314,32 @@ really is satisfiable and the leaf really does assert something.
 
 **The hypothesis is stated over `ℚ̄`-data on purpose.**  `d` is a datum over
 `ℚ̄` classifying (the base change of) a `ℚ`-rational point `y`; it is NOT
-asked to be defined over `ℚ`.  That is what keeps the field-of-moduli
-descent — `Fermat.exists_gamma0Datum_descent`, another owner's leaf, and
-one whose hypothesis `p ∉ mazurIsogenyPrimes` is FALSE here — entirely out
-of this cut.  Only `Fermat.exists_gamma0Datum_geomClassify` is consumed,
-and that carries no membership hypothesis at all.
+asked to be defined over `ℚ`.  What that buys is that the ASSEMBLY above
+this node never has to produce a `ℚ`-datum — the descent is confined to
+this proof, where it appears as one named leaf.
 
-**Where the mathematics is.**  This is Mazur's Eisenstein-ideal descent,
-the same input `exists_eisensteinFormalImmersion` packages at the top of
-this file for the `p ∉ mazurIsogenyPrimes` regime.  There the conclusion is
-"no rational point"; here the primes ARE in the list, so the conclusion is
-the weaker "every rational point is CM", and the classical route is the
-`j`-invariant analysis of Mazur §5 run at the three surviving signatures
-rather than to a contradiction.
+**WHAT THE PROOF BELOW DISCHARGES, AND WHAT IT DOES NOT** (2026-07-27; the
+paragraph this replaces said the field-of-moduli descent was kept "entirely
+out of this cut", which was true of the assembly above and false of this
+node's own proof — the descent has to happen SOMEWHERE, and it happens
+here).  The four steps are:
+
+1. the field-of-moduli descent, `exists_gamma0Datum_descent_mazurLevel`,
+   producing a `Γ₀(p)`-datum `d₀` over `ℚ` classifying to `y`;
+2. `Fermat.exists_gamma0Datum_baseChange` (PROVEN, in `X0.lean`), producing
+   a base change `dbc` of `d₀` to `ℚ̄` together with its `IsBaseChangeOf`;
+3. `IsCoarseModuliY0.classify_natural` at `h = specAlgClos ℚ`, which makes
+   `dbc` classify to `RelPoint.pre (specAlgClos ℚ) rfl y` — the same
+   `ℚ̄`-point as `d` — followed by
+   `nonempty_isBaseChangeOf_of_classify_eq`, the coarse space's omitted
+   geometric-INJECTIVITY clause, identifying `d` with `dbc`;
+4. `IsBaseChangeOf.comp` of those two, making `d` itself a base change of the
+   `ℚ`-datum `d₀`, at which point Mazur's isogeny theorem —
+   `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` — applies.
+
+`Fermat.exists_gamma0Datum_descent` is still NOT invoked, and cannot be: its
+`p ∉ mazurIsogenyPrimes` is false at every level here.  Step 1 is its
+`hp`-hypothesised sibling, and the two close together.
 
 **AXES ALREADY REFUTED, inherited from the atom and re-checked here**:
 the rank-`0` Jacobian (ranks `1, 2, 6`), effective Chabauty–Coleman
@@ -30028,15 +30347,33 @@ the rank-`0` Jacobian (ranks `1, 2, 6`), effective Chabauty–Coleman
 re-examined at these levels for the first time, with numbers, in the
 subsection note above.  `classPoly` is not a route either: at `h(−p) = 1`
 the class polynomial is linear, so "`j` is its root" is this leaf's own
-conclusion rewritten. -/
+conclusion rewritten.  All three are now recorded on
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`, which is where the
+arithmetic lives. -/
 theorem nonempty_isCMByRamifiedMaximalOrder_of_classify_eq (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
     (y : RelPoint strY (𝟙 SpecQ))
     (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-    (_hd : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = RelPoint.pre (specAlgClos ℚ) rfl y) :
-    Nonempty (IsCMByRamifiedMaximalOrder p d) :=
-  sorry
+    (hd : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = RelPoint.pre (specAlgClos ℚ) rfl y) :
+    Nonempty (IsCMByRamifiedMaximalOrder p d) := by
+  have hpos : 0 < p := by fin_cases hp <;> norm_num
+  -- **1.** the rational point is classified by a datum defined over `ℚ`
+  obtain ⟨d₀, hd₀⟩ := exists_gamma0Datum_descent_mazurLevel p hp hc y d hd
+  -- **2.** base-change that datum back to `ℚ̄`
+  obtain ⟨dbc, ⟨bc⟩⟩ := exists_gamma0Datum_baseChange (specAlgClos ℚ) d₀
+  -- **3.** naturality of `classify` puts `dbc` at the same `ℚ̄`-point as `d`,
+  -- and geometric injectivity identifies the two data
+  have hnat := hc.classify_natural (h := specAlgClos ℚ) (g := 𝟙 SpecQ)
+    (g' := specAlgClos ℚ ≫ 𝟙 SpecQ) rfl bc
+  have hcl : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d
+      = hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) dbc := by
+    rw [hnat, hd₀, hd]
+  obtain ⟨iso⟩ := nonempty_isBaseChangeOf_of_classify_eq hpos hc hcl
+  -- **4.** so `d` is a base change of the `ℚ`-datum `d₀`, and Mazur applies
+  have hid : 𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))) ≫ specAlgClos ℚ
+      = specAlgClos ℚ := Category.id_comp _
+  exact nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf p hp (hid ▸ iso.comp bc)
 
 /-- **CLASS NUMBER ONE: two CM `Γ₀(p)`-data over `ℚ̄` for the maximal order
 of discriminant `−p` are isomorphic** (sorry leaf, introduced 2026-07-27 by
