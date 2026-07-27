@@ -15345,15 +15345,16 @@ theorem exists_finiteType_algHom_injection_of_isProper {R : Type} [CommRing R] [
       ⟨fun a b => (isInitialOfIsEmpty (X := Spec (CommRingCat.of R))).hom_ext a b⟩
     exact ⟨CommAlgCat.of R R, inferInstance, fun _ => AlgHom.id R R,
       fun a b _ => Subtype.ext (Subsingleton.elim a.1 b.1)⟩
-  · haveI := finite_hom_of_isProper (pullback.snd f g)
+  · haveI := finite_hom_of_isProper (Limits.pullback.snd f g)
     haveI : Finite (RelPoint f g) := by
       refine Finite.of_injective
         (fun x : RelPoint f g =>
-          pullback.lift (f := f) (g := g) x.1 (𝟙 _) (by rw [x.2, Category.id_comp])) ?_
+          Limits.pullback.lift (f := f) (g := g) x.1 (𝟙 _)
+            (by rw [x.2, Category.id_comp])) ?_
       intro a b hab
       refine Subtype.ext ?_
-      have := congrArg (fun t => t ≫ pullback.fst f g) hab
-      simpa using this
+      have h1 := congrArg (fun t => t ≫ Limits.pullback.fst f g) hab
+      simpa using h1
     exact exists_finiteType_algHom_injection_of_finite _
 
 /-- **A scheme proper over `S` has finitely many points valued in a
@@ -20802,8 +20803,9 @@ theorem smoothOfRelativeDimension_finite_compl_of_compactificationY0 (N : ℕ) (
   haveI := hX.proper
   have hsm : SmoothOfRelativeDimension 1 strX :=
     AlgebraicGeometry.smoothOfRelativeDimension_of_isDominant hX.«over» hX.smooth hsmY
+  haveI := hsm
   exact ⟨hsm, AlgebraicGeometry.finite_compl_range_of_topologicalKrullDim_le_one strX hX.j
-    (AlgebraicGeometry.topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one strX hsm)⟩
+    (AlgebraicGeometry.topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one strX)⟩
 
 /-- **The three facts about `X_0(N)/ℚ` that `IsCompactificationY0` does
 not carry** (PROVEN over one smaller leaf, was a sorry node until
