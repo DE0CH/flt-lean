@@ -14294,8 +14294,319 @@ theorem arith_thirteen (v a b : ℤ) (hv : 0 < v)
 
 end MazurCMOrder
 
-/-- **LEAF — `End(E)` is a free `ℤ`-module of rank `2` as soon as it is bigger
-than `ℤ`** (introduced 2026-07-27 by the cut of the two class-polynomial nodes).
+/-!
+### The endomorphism ring as a lattice: reducing `exists_intBasis` to ONE leaf
+
+(Added 2026-07-27, decomposing `End.exists_intBasis`.)
+
+`End.exists_intBasis` bundled three separate assertions: that `End(W)` is
+COMMUTATIVE, that it has `ℚ`-rank `2`, and that it is MONOGENIC (`= ℤ[ω]` with
+`1, ω` a basis). Only the second is genuinely characteristic-zero input; the
+other two are consequences, and they are proved outright below.
+
+**The one leaf that remains** is `End.exists_zsmul_rel`: any two endomorphisms
+satisfy a nontrivial `ℤ`-linear relation modulo `ℤ`, i.e. `End(W) ⊗ ℚ` has
+`ℚ`-dimension at most `2`. Note it does NOT assert commutativity — commutativity
+comes out of the assembly, since everything ends up a `ℤ`-combination of `1` and
+a single `ω`.
+
+**The argument, and it needs nothing beyond `End.exists_charPoly`.** Write
+`[c]` for the image of `c : ℤ`.
+
+1. `End(W)` has no zero divisors (`end_mul_ne_zero`): a nonzero isogeny is
+   surjective on points, so `f ∘ g = 0` with `g ≠ 0` forces `f = 0`. Hence
+   `[c] · χ = [c] · χ'` cancels for `c ≠ 0` (`intCast_mul_cancel`), which is
+   `ℤ`-torsion-freeness.
+2. Every `ψ` satisfies `ψ² + [n] = [t] ψ` with `t² ≤ 4n` — `exists_charPolyRing`,
+   a ring-level repackaging of `End.exists_charPoly`. Its traceless part
+   `η := [2]ψ − [t]` therefore squares to a NONPOSITIVE integer,
+   `η² = [−e]` with `e = 4n − t² ≥ 0` (`exists_traceless`).
+3. **`End(W) ∩ ℚ = ℤ`** (`intCast_of_intCast_mul`): if `[v] ψ = [c]` with
+   `v ≠ 0`, then squaring and using (2) gives the integer relation
+   `c² = vtc − v²n`, whose rational root `c/v` must be integral — the gcd split
+   `v = g v₁`, `c = g c₁` with `v₁, c₁` coprime yields `v₁ ∣ c₁²`, hence
+   `v₁ = ±1` and `v ∣ c`; torsion-freeness then gives `ψ = [c/v]`.
+4. **Bounded denominators.** Fix `ψ₀ ∉ ℤ` and put `δ := [2]ψ₀ − [s₀]`, so
+   `δ² = [−d]` with `d > 0` (`d = 0` would make `δ` a zero divisor). For any
+   `χ` with traceless part `η`, `η² = [−e]`, the leaf gives
+   `[p] η = [q'] δ + [r']` with `(p, q') ≠ (0,0)`. SQUARING BOTH SIDES — which
+   needs no commutativity, only centrality of integer casts — the `δ`-component
+   reads `[2q'r'] δ ∈ ℤ`, so by (3) either `δ ∈ ℤ` (false) or `q'r' = 0`.
+   * `q' = 0` makes `χ` an integer;
+   * `r' = 0` gives `p² e = q'² d`, and with `g = gcd(p, q')`, `p = g p₁`,
+     `q' = g q₁` coprime, `p₁² ∣ d`. Writing `d = p₁² d'` and cancelling `g`,
+     `[d] η = [p₁ d' q₁] δ`.
+   Either way `[2d] χ ∈ ℤ + ℤδ`, with the SAME `2d` for every `χ`. This is the
+   step the `t² ≤ 4n` half of `End.exists_charPoly` is really for: without it
+   `δ² ` could be positive and `δ` rational.
+5. **Monogenicity.** The set of `δ`-coefficients arising in (4) is an IDEAL of
+   `ℤ` (closed under multiplication by integers because `χ ↦ [m]χ` scales it),
+   hence `= (v₀)`; and it is nonzero because `ψ₀` itself contributes `d`. Any
+   `ω` realising `v₀` works: for arbitrary `χ` with coefficient `v = k v₀`,
+   `[2d](χ − [k]ω)` is an integer, so `χ − [k]ω ∈ ℤ` by (3). Independence and
+   `ω² = aω − b` are then immediate from (3) and (2).
+
+The whole of this is elementary, and in particular NONE of it needs the analytic
+uniformisation, `H_1(E, ℤ)`, orders in quadratic fields, or class field theory —
+those are needed only for the one remaining leaf.
+-/
+
+section EndLattice
+
+variable {F : Type*} [Field F] [DecidableEq F] [IsAlgClosed F] [CharZero F]
+  {W : Affine F} [W.IsElliptic]
+
+namespace MazurEndLattice
+
+/-- **The rational root theorem for a monic integral quadratic**, in the form the
+lattice argument needs: if `c/v` is a root of `x² − tx + n` then `v ∣ c`. -/
+theorem dvd_of_monic_quadratic (v c t n : ℤ) (hv : v ≠ 0)
+    (h : c ^ 2 = v * t * c - v ^ 2 * n) : v ∣ c := by
+  set g : ℤ := (Int.gcd v c : ℤ) with hg
+  have hgpos : 0 < Int.gcd v c := Int.gcd_pos_of_ne_zero_left c hv
+  have hg0 : g ≠ 0 := by
+    rw [hg]; exact_mod_cast hgpos.ne'
+  set v₁ : ℤ := v / g with hv₁
+  set c₁ : ℤ := c / g with hc₁
+  have hvE : v = g * v₁ := by
+    rw [hv₁, hg]
+    exact (Int.mul_ediv_cancel' (Int.gcd_dvd_left v c)).symm
+  have hcE : c = g * c₁ := by
+    rw [hc₁, hg]
+    exact (Int.mul_ediv_cancel' (Int.gcd_dvd_right v c)).symm
+  have hcop : IsCoprime v₁ c₁ := by
+    rw [Int.isCoprime_iff_gcd_eq_one, hv₁, hc₁, hg]
+    exact Int.gcd_div_gcd_div_gcd hgpos
+  have hkey : c₁ ^ 2 = v₁ * (t * c₁ - v₁ * n) := by
+    have h2 : g ^ 2 * (c₁ ^ 2) = g ^ 2 * (v₁ * (t * c₁ - v₁ * n)) := by
+      have := h
+      rw [hvE, hcE] at this
+      linarith [this]
+    have hg2 : (g : ℤ) ^ 2 ≠ 0 := pow_ne_zero _ hg0
+    exact mul_left_cancel₀ hg2 h2
+  have hdvd : v₁ ∣ c₁ ^ 2 := ⟨_, hkey⟩
+  have hcop2 : IsCoprime v₁ (c₁ ^ 2) := hcop.pow_right
+  have hunit : IsUnit v₁ := hcop2.isUnit_of_dvd' dvd_rfl hdvd
+  rcases Int.isUnit_iff.1 hunit with h1 | h1
+  · rw [hvE, h1, mul_one]
+    exact ⟨c₁, hcE⟩
+  · rw [hvE, h1]
+    exact ⟨-c₁, by rw [hcE]; ring⟩
+
+omit [CharZero F] in
+/-- Unfolding `f ≠ 0` in `End W` to the underlying map. -/
+theorem coe_ne_zero {f : End W} (hf : f ≠ 0) :
+    ((f : AddMonoid.End W.Point) : W.Point →+ W.Point) ≠ 0 := fun hc => hf (Subtype.ext hc)
+
+/-- **`End W` has no zero divisors.** A nonzero isogeny is surjective on points
+(`IsRationalMap.surjective`), so `f ∘ g = 0` with `g ≠ 0` kills every point. -/
+theorem end_mul_ne_zero {f g : End W} (hf : f ≠ 0) (hg : g ≠ 0) : f * g ≠ 0 := by
+  intro h
+  refine hf (Subtype.ext (AddMonoidHom.ext fun Q => ?_))
+  obtain ⟨P, hP⟩ := (g.2 : IsIsogeny _).isRationalMap.surjective (coe_ne_zero hg) Q
+  have hap := congrArg (fun k : End W => (k : AddMonoid.End W.Point) P) h
+  simp only [End.mul_apply] at hap
+  have hPQ : (g : AddMonoid.End W.Point) P = Q := hP
+  rw [hPQ] at hap
+  exact hap.trans rfl
+
+omit [CharZero F] in
+/-- `[c] ≠ 0` for `c ≠ 0`, from `End.intCast_injective`. -/
+theorem intCast_ne_zero_of_ne_zero {c : ℤ} (hc : c ≠ 0) : ((c : ℤ) : End W) ≠ 0 := by
+  intro h
+  refine hc (End.intCast_injective (W := W) (a := c) (b := 0) ?_)
+  rw [h, Int.cast_zero]
+
+/-- **`End W` is `ℤ`-torsion-free**, in the form used below. -/
+theorem intCast_mul_cancel {c : ℤ} (hc : c ≠ 0) {f g : End W}
+    (h : ((c : ℤ) : End W) * f = ((c : ℤ) : End W) * g) : f = g := by
+  by_contra hne
+  have hsub : f - g ≠ 0 := sub_ne_zero.mpr hne
+  have : ((c : ℤ) : End W) * (f - g) = 0 := by rw [mul_sub, h, sub_self]
+  exact end_mul_ne_zero (intCast_ne_zero_of_ne_zero hc) hsub this
+
+/-- **`End.exists_charPoly` at RING level**: `ψ² + [n] = [t] ψ` with `t² ≤ 4n`,
+including at `ψ = 0` (where `t = n = 0`). The pointwise form of
+`End.exists_charPoly` becomes a ring identity through `Subtype.ext`. -/
+theorem exists_charPolyRing (ψ : End W) :
+    ∃ t n : ℤ, 0 ≤ n ∧ ψ * ψ + ((n : ℤ) : End W) = ((t : ℤ) : End W) * ψ ∧ t ^ 2 ≤ 4 * n := by
+  classical
+  by_cases h0 : ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0
+  · refine ⟨0, 0, le_refl _, ?_, by norm_num⟩
+    have hz : ψ = 0 := Subtype.ext h0
+    rw [hz]; simp
+  · obtain ⟨t, hchar, hbound⟩ := End.exists_charPoly ψ
+      (Nat.card (AddMonoidHom.ker ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point))) rfl h0
+    refine ⟨t, (Nat.card (AddMonoidHom.ker
+      ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point)) : ℤ), Int.natCast_nonneg _, ?_, hbound⟩
+    refine Subtype.ext (AddMonoidHom.ext fun P => ?_)
+    have h := hchar P
+    show ((ψ * ψ + _ : End W) : AddMonoid.End W.Point) P
+        = ((_ * ψ : End W) : AddMonoid.End W.Point) P
+    rw [End.coe_add_apply]
+    simp only [End.mul_apply, End.intCast_apply]
+    rw [natCast_zsmul]
+    exact h
+
+/-- **The traceless part `[2]χ − [t]` squares to a NONPOSITIVE integer.** This is
+where the Hasse bound `t² ≤ 4n` of `End.exists_charPoly` is consumed, and it is
+what makes the discriminant `−d` below negative — hence `δ` irrational. -/
+theorem exists_traceless (χ : End W) :
+    ∃ s e : ℤ, 0 ≤ e ∧
+      (((2 : ℤ) : End W) * χ - ((s : ℤ) : End W)) * (((2 : ℤ) : End W) * χ - ((s : ℤ) : End W))
+        = ((-e : ℤ) : End W) := by
+  obtain ⟨t, n, hn, hsq, hb⟩ := exists_charPolyRing χ
+  refine ⟨t, 4 * n - t ^ 2, by omega, ?_⟩
+  have hc : ((t : ℤ) : End W) * χ = χ * ((t : ℤ) : End W) := (Int.cast_commute t χ).eq
+  have hsq' : χ * χ = ((t : ℤ) : End W) * χ - ((n : ℤ) : End W) := by
+    rw [← hsq]; abel
+  have hexp : (((2 : ℤ) : End W) * χ - ((t : ℤ) : End W))
+        * (((2 : ℤ) : End W) * χ - ((t : ℤ) : End W))
+      = ((4 : ℤ) : End W) * (χ * χ) - ((2 : ℤ) : End W) * (((t : ℤ) : End W) * χ)
+        - ((2 : ℤ) : End W) * (χ * ((t : ℤ) : End W)) + ((t : ℤ) : End W) * ((t : ℤ) : End W) := by
+    push_cast
+    noncomm_ring
+  rw [hexp, ← hc, hsq']
+  push_cast
+  noncomm_ring
+
+/-- **`End W ∩ ℚ = ℤ`.** If `[v] ψ` is an integer and `v ≠ 0` then `ψ` is an
+integer. Squaring turns the hypothesis into `c² = vtc − v²n` in `ℤ`, and
+`dvd_of_monic_quadratic` gives `v ∣ c`. -/
+theorem intCast_of_intCast_mul {v c : ℤ} {ψ : End W} (hv : v ≠ 0)
+    (h : ((v : ℤ) : End W) * ψ = ((c : ℤ) : End W)) : ∃ e : ℤ, ψ = ((e : ℤ) : End W) := by
+  obtain ⟨t, n, hn, hsq, hb⟩ := exists_charPolyRing ψ
+  have hsq' : ψ * ψ = ((t : ℤ) : End W) * ψ - ((n : ℤ) : End W) := by rw [← hsq]; abel
+  have hc : ∀ m : ℤ, ((m : ℤ) : End W) * ψ = ψ * ((m : ℤ) : End W) :=
+    fun m => (Int.cast_commute m ψ).eq
+  have hsquare : ((c * c : ℤ) : End W) = ((v * t * c - v ^ 2 * n : ℤ) : End W) := by
+    have hlhs : ((c * c : ℤ) : End W)
+        = (((v : ℤ) : End W) * ψ) * (((v : ℤ) : End W) * ψ) := by rw [h]; exact Int.cast_mul c c
+    have hvv : ((v : ℤ) : End W) * ((v : ℤ) : End W) = ((v * v : ℤ) : End W) :=
+      (Int.cast_mul v v).symm
+    have hcast : ((v * v * t : ℤ) : End W) = ((v * t : ℤ) : End W) * ((v : ℤ) : End W) := by
+      rw [← Int.cast_mul]; congr 1; ring
+    have step : (((v : ℤ) : End W) * ψ) * (((v : ℤ) : End W) * ψ)
+        = ((v * v * t : ℤ) : End W) * ψ - ((v * v * n : ℤ) : End W) := by
+      calc (((v : ℤ) : End W) * ψ) * (((v : ℤ) : End W) * ψ)
+          = ((v : ℤ) : End W) * (ψ * ((v : ℤ) : End W)) * ψ := by noncomm_ring
+        _ = ((v : ℤ) : End W) * (((v : ℤ) : End W) * ψ) * ψ := by rw [← hc v]
+        _ = ((v * v : ℤ) : End W) * (ψ * ψ) := by rw [← hvv]; noncomm_ring
+        _ = ((v * v : ℤ) : End W) * (((t : ℤ) : End W) * ψ - ((n : ℤ) : End W)) := by rw [hsq']
+        _ = ((v * v * t : ℤ) : End W) * ψ - ((v * v * n : ℤ) : End W) := by
+              push_cast; noncomm_ring
+    rw [hlhs, step, hcast, mul_assoc, h]
+    push_cast
+    noncomm_ring
+  have hint : c * c = v * t * c - v ^ 2 * n := End.intCast_injective (W := W) hsquare
+  have hdvd : v ∣ c := dvd_of_monic_quadratic v c t n hv (by rw [sq]; exact hint)
+  obtain ⟨e, he⟩ := hdvd
+  refine ⟨e, ?_⟩
+  refine intCast_mul_cancel (W := W) hv ?_
+  rw [h, he]
+  exact Int.cast_mul v e
+
+omit [CharZero F] in
+/-- `([p] η)² = [p²m]` when `η² = [m]`. Only centrality of integer casts is used,
+never commutativity of `End W`. -/
+theorem sq_intCast_mul (η : End W) (m : ℤ) (hη : η * η = ((m : ℤ) : End W)) (p : ℤ) :
+    (((p : ℤ) : End W) * η) * (((p : ℤ) : End W) * η) = ((p * p * m : ℤ) : End W) := by
+  have hc : ((p : ℤ) : End W) * η = η * ((p : ℤ) : End W) := (Int.cast_commute p η).eq
+  calc (((p : ℤ) : End W) * η) * (((p : ℤ) : End W) * η)
+      = ((p : ℤ) : End W) * (η * ((p : ℤ) : End W)) * η := by noncomm_ring
+    _ = ((p : ℤ) : End W) * (((p : ℤ) : End W) * η) * η := by rw [← hc]
+    _ = ((p * p : ℤ) : End W) * (η * η) := by rw [Int.cast_mul]; noncomm_ring
+    _ = ((p * p : ℤ) : End W) * ((m : ℤ) : End W) := by rw [hη]
+    _ = ((p * p * m : ℤ) : End W) := by rw [← Int.cast_mul]
+
+/-- `([a] δ + [b])² = [a²m + b²] + [2ab] δ` when `δ² = [m]`. Again no
+commutativity: `δ` is squared against itself and the casts are central. The
+`[2ab] δ` term is the one that must vanish in the argument below. -/
+theorem sq_linear (δ : End W) (m : ℤ) (hδ : δ * δ = ((m : ℤ) : End W)) (a b : ℤ) :
+    (((a : ℤ) : End W) * δ + ((b : ℤ) : End W)) * (((a : ℤ) : End W) * δ + ((b : ℤ) : End W))
+      = ((a * a * m + b * b : ℤ) : End W) + ((2 * a * b : ℤ) : End W) * δ := by
+  have hc : ∀ k : ℤ, ((k : ℤ) : End W) * δ = δ * ((k : ℤ) : End W) :=
+    fun k => (Int.cast_commute k δ).eq
+  have h1 : (((a : ℤ) : End W) * δ) * (((a : ℤ) : End W) * δ) = ((a * a * m : ℤ) : End W) :=
+    sq_intCast_mul δ m hδ a
+  have h2 : (((a : ℤ) : End W) * δ) * ((b : ℤ) : End W) = ((a * b : ℤ) : End W) * δ := by
+    rw [mul_assoc, ← hc b, ← mul_assoc, ← Int.cast_mul]
+  have h3 : ((b : ℤ) : End W) * (((a : ℤ) : End W) * δ) = ((a * b : ℤ) : End W) * δ := by
+    rw [← mul_assoc, ← Int.cast_mul, mul_comm b a]
+  calc (((a : ℤ) : End W) * δ + ((b : ℤ) : End W))
+        * (((a : ℤ) : End W) * δ + ((b : ℤ) : End W))
+      = (((a : ℤ) : End W) * δ) * (((a : ℤ) : End W) * δ)
+        + (((a : ℤ) : End W) * δ) * ((b : ℤ) : End W)
+        + ((b : ℤ) : End W) * (((a : ℤ) : End W) * δ)
+        + ((b : ℤ) : End W) * ((b : ℤ) : End W) := by noncomm_ring
+    _ = ((a * a * m : ℤ) : End W) + ((a * b : ℤ) : End W) * δ + ((a * b : ℤ) : End W) * δ
+        + ((b * b : ℤ) : End W) := by rw [h1, h2, h3, ← Int.cast_mul]
+    _ = ((a * a * m + b * b : ℤ) : End W) + ((2 * a * b : ℤ) : End W) * δ := by
+        push_cast; noncomm_ring
+
+end MazurEndLattice
+
+end EndLattice
+
+/-- **LEAF — `End(W) ⊗ ℚ` has `ℚ`-dimension at most `2`** (introduced 2026-07-27
+by the decomposition of `End.exists_intBasis`, which it now carries in full).
+
+Any two endomorphisms satisfy a nontrivial `ℤ`-linear relation modulo `ℤ`: there
+are integers `p, q, r`, not both `p` and `q` zero, with `pφ + qψ + r = 0`.
+
+This is Silverman *AEC* III.9.3 together with Deuring's characteristic-zero case:
+`End(W) ⊗ ℚ` is `ℚ` or an imaginary quadratic field, so `1, φ, ψ` are `ℚ`-linearly
+dependent for any `φ, ψ`.
+
+**`[CharZero F]` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.** In
+characteristic `p` a supersingular curve has `End(W)` an order in a QUATERNION
+algebra, of `ℚ`-dimension `4`; there `1, φ, ψ` are generically independent and no
+such relation exists. `Isogeny.lean`'s `𝔽̄₂` counterexample section, and the
+`[CharZero F]` on `Isogeny.dual` and `End.exists_dual`, are the same phenomenon.
+
+**Note what is NOT asserted: commutativity.** It is not needed as a hypothesis and
+it is not needed as a separate leaf — `End.exists_intBasis` derives it, because
+its conclusion exhibits every endomorphism as a `ℤ`-combination of `1` and one
+fixed `ω`, and those commute. That is why this is the ONLY remaining leaf of the
+`exists_intBasis` cluster.
+
+**What it will take to prove.** The classical route is: (1) `End(W) ⊗ ℚ` is a
+division algebra of dimension `≤ 4` over `ℚ` (Silverman III.9.3, from the degree
+being a positive-definite quadratic form — the same input as `End.exists_dual`,
+i.e. `End.dualEnd_add`); (2) in characteristic `0` the quaternion case cannot
+occur, because `End(W)` embeds in `End(H_1(W, ℤ)) = M₂(ℤ)` via the analytic
+uniformisation, or equivalently acts faithfully on the `2`-dimensional
+`ℚ`-vector space `H_1(W, ℚ)`. Step (2) is the genuinely new content and is where
+the `H_1` / analytic layer, absent at this pin, is needed.
+
+An ALTERNATIVE route that may be cheaper here, and which the decomposition below
+was designed to leave open: in characteristic `0` the action of `End(W)` on
+invariant differentials is an injective ring map `End(W) → F`, so `End(W)` is
+COMMUTATIVE; and a commutative domain in which every element is quadratic over
+`ℤ` (which is `End.exists_charPoly`) has `ℚ`-dimension `≤ 2` by the primitive
+element theorem, which mathlib has. That replaces the `H_1` layer by the
+differential action — the grep that would settle whether it is available is
+
+    grep -rn 'invariantDifferential\|differential\|cotangent' Fermat/ ~/cs/FLT/FLT/
+
+which at the time of writing finds nothing usable for isogenies (the
+`InvariantDifferential` namespace in `WeilPairingDescent.lean` is a formal
+polynomial identity, not the action of `End` on `Ω¹`).
+
+**The `(p ≠ 0 ∨ q ≠ 0)` side condition is not decoration**: without it `r = 0`
+and `p = q = 0` satisfies the conclusion for every `φ, ψ`, and the leaf would be
+vacuous. -/
+theorem WeierstrassCurve.End.exists_zsmul_rel {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
+    (φ ψ : WeierstrassCurve.End W) :
+    ∃ p q r : ℤ, (p ≠ 0 ∨ q ≠ 0) ∧
+      ((p : ℤ) : WeierstrassCurve.End W) * φ + ((q : ℤ) : WeierstrassCurve.End W) * ψ
+        + ((r : ℤ) : WeierstrassCurve.End W) = 0 :=
+  sorry
+
+/-- **`End(E)` is a free `ℤ`-module of rank `2` as soon as it is bigger
+than `ℤ`** (introduced 2026-07-27 by the cut of the two class-polynomial nodes;
+**PROVEN 2026-07-27 over the single leaf `End.exists_zsmul_rel`**).
 
 If some `ψ₀ ∈ End W` is not an integer, then there are `ω ∈ End W` and `a, b ∈ ℤ`
 with `ω² = aω − b` such that `1, ω` is a `ℤ`-BASIS of `End W`: every `χ` is
@@ -14315,22 +14626,26 @@ quaternion algebra, of rank `4` over `ℤ` and NOT commutative — so no such
 reminder that this file's ambient hypotheses do not come for free. `Isogeny.dual`
 already carries `[CharZero F]` for the same reason.
 
-**What it will take to prove.** The classical route is: (1) `End(E) ⊗ ℤ ℚ` is a
-division algebra of dimension `≤ 4` over `ℚ` (Silverman III.9.3, from the degree
-being a positive-definite quadratic form — the same input as
-`End.exists_dual`); (2) in characteristic `0` the quaternion case cannot occur,
-because `End(E)` embeds in `End(H_1(E, ℤ)) = M₂(ℤ)` via the analytic
-uniformisation, or equivalently acts faithfully on the `2`-dimensional
-`ℚ`-vector space `H_1(E, ℚ)`, forcing commutativity; (3) `End(E)` is then a
-subring of an imaginary quadratic field `K` that is finitely generated as a
-`ℤ`-module and spans `K`, i.e. an order, and orders in quadratic fields are
-`ℤ + fO_K = ℤ[fω_K]`. Step (1) shares its missing input with `End.exists_dual`
-(the parallelogram law for the degree); step (2) is the genuinely new content
-and is where the `H_1` / analytic layer, absent at this pin, is needed.
+**HOW IT IS PROVEN, and what is left.** Of the classical three steps —
+(1) `End(E) ⊗ ℤ ℚ` is a division algebra of dimension `≤ 4` over `ℚ`;
+(2) in characteristic `0` the quaternion case cannot occur, so the dimension is
+`≤ 2`; (3) a subring of an imaginary quadratic field that is a finitely
+generated `ℤ`-module spanning it is an order, and orders in quadratic fields are
+`ℤ + fO_K = ℤ[fω_K]` — only (1)+(2) remain open, as the single leaf
+`End.exists_zsmul_rel` ("any two endomorphisms are `ℚ`-dependent modulo `ℚ`").
+Step (3), which is where finite generation, monogenicity, INDEPENDENCE of
+`1, ω`, and commutativity of `End(E)` all live, is PROVEN below.
+
+The proof is the lattice argument of the section note above: `End.exists_charPoly`
+gives every `χ` a traceless part squaring to a nonpositive integer; the leaf
+pins all those traceless parts to a single `ℚ`-line through `δ = 2ψ₀ − t₀`; the
+discriminant congruence bounds the denominators UNIFORMLY by `2d`; and the
+resulting `δ`-coefficients form an ideal of `ℤ`, whose generator supplies `ω`.
 
 Note that `End.exists_charPoly` already gives each individual `χ` a monic
-integral quadratic — that is `(1)` for one element at a time. What is missing
-here, and only here, is that a SINGLE `ω` works for all of them at once. -/
+integral quadratic — that is `(1)` for one element at a time. What was missing,
+and is now isolated in `End.exists_zsmul_rel` alone, is that a single quadratic
+FIELD contains all of them. -/
 theorem WeierstrassCurve.End.exists_intBasis {F : Type*} [Field F] [DecidableEq F]
     [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
     (ψ₀ : WeierstrassCurve.End W) (h₀ : ¬ ∃ c : ℤ, ψ₀ = (c : WeierstrassCurve.End W)) :
@@ -14338,8 +14653,211 @@ theorem WeierstrassCurve.End.exists_intBasis {F : Type*} [Field F] [DecidableEq 
       ω * ω = a • ω - (b : WeierstrassCurve.End W) ∧
       (∀ χ : WeierstrassCurve.End W, ∃ u v : ℤ,
         χ = (u : WeierstrassCurve.End W) + v • ω) ∧
-      (∀ u v : ℤ, (u : WeierstrassCurve.End W) + v • ω = 0 → u = 0 ∧ v = 0) :=
-  sorry
+      (∀ u v : ℤ, (u : WeierstrassCurve.End W) + v • ω = 0 → u = 0 ∧ v = 0) := by
+  classical
+  obtain ⟨s₀, d, hdnn, hδsq⟩ := MazurEndLattice.exists_traceless ψ₀
+  set δ : End W := ((2 : ℤ) : End W) * ψ₀ - ((s₀ : ℤ) : End W) with hδdef
+  -- `δ` is not an integer, since `ψ₀` is not.
+  have hδnotint : ¬ ∃ k : ℤ, δ = ((k : ℤ) : End W) := by
+    rintro ⟨k, hk⟩
+    refine h₀ ?_
+    have h2 : ((2 : ℤ) : End W) * ψ₀ = ((k + s₀ : ℤ) : End W) := by
+      have hs : ((2 : ℤ) : End W) * ψ₀ = δ + ((s₀ : ℤ) : End W) := by rw [hδdef]; abel
+      rw [hs, hk, ← Int.cast_add]
+    exact MazurEndLattice.intCast_of_intCast_mul (by norm_num) h2
+  have hδne : δ ≠ 0 := fun h => hδnotint ⟨0, by rw [h, Int.cast_zero]⟩
+  have hd0 : 0 < d := by
+    rcases hdnn.lt_or_eq with h | h
+    · exact h
+    · exact absurd (by rw [hδsq, ← h]; norm_num)
+        (MazurEndLattice.end_mul_ne_zero hδne hδne)
+  -- **Bounded denominators**: `[2d] · End W ⊆ ℤ + ℤδ`, with `2d` independent of `χ`.
+  set D : ℤ := 2 * d with hDdef
+  have hD0 : D ≠ 0 := by omega
+  have hDd : ((D : ℤ) : End W) = ((d : ℤ) : End W) * ((2 : ℤ) : End W) := by
+    rw [← Int.cast_mul]; congr 1; omega
+  have hbd : ∀ χ : End W, ∃ u v : ℤ,
+      ((D : ℤ) : End W) * χ = ((u : ℤ) : End W) + ((v : ℤ) : End W) * δ := by
+    intro χ
+    obtain ⟨s, e, he, hη⟩ := MazurEndLattice.exists_traceless χ
+    set η : End W := ((2 : ℤ) : End W) * χ - ((s : ℤ) : End W) with hηdef
+    have h2χ : ((2 : ℤ) : End W) * χ = η + ((s : ℤ) : End W) := by rw [hηdef]; abel
+    obtain ⟨p, q, r, hpq, hrel⟩ := WeierstrassCurve.End.exists_zsmul_rel η δ
+    set q' : ℤ := -q with hq'def
+    set r' : ℤ := -r with hr'def
+    have hkey : ((p : ℤ) : End W) * η = ((q' : ℤ) : End W) * δ + ((r' : ℤ) : End W) := by
+      have hq : ((q' : ℤ) : End W) * δ = -(((q : ℤ) : End W) * δ) := by
+        rw [hq'def, Int.cast_neg, neg_mul]
+      have hr : ((r' : ℤ) : End W) = -((r : ℤ) : End W) := by rw [hr'def, Int.cast_neg]
+      rw [hq, hr]
+      have h1 : ((p : ℤ) : End W) * η
+          = (((p : ℤ) : End W) * η + ((q : ℤ) : End W) * δ + ((r : ℤ) : End W))
+            - ((q : ℤ) : End W) * δ - ((r : ℤ) : End W) := by abel
+      rw [h1, hrel]
+      abel
+    have hsqL : (((p : ℤ) : End W) * η) * (((p : ℤ) : End W) * η)
+        = ((p * p * (-e) : ℤ) : End W) := MazurEndLattice.sq_intCast_mul η (-e) hη p
+    -- The `δ`-coefficient of the square must vanish, else `δ` would be an integer.
+    have hzero : q' * r' = 0 := by
+      by_contra hz
+      refine hδnotint ?_
+      have hsq := hsqL
+      rw [hkey, MazurEndLattice.sq_linear δ (-d) hδsq q' r'] at hsq
+      have hstep : ((2 * q' * r' : ℤ) : End W) * δ
+          = ((p * p * (-e) - (q' * q' * (-d) + r' * r') : ℤ) : End W) := by
+        rw [Int.cast_sub, ← hsq]; abel
+      exact MazurEndLattice.intCast_of_intCast_mul (by simpa using hz) hstep
+    rcases mul_eq_zero.1 hzero with hq'0 | hr'0
+    · -- `q' = 0`: then `χ` is itself an integer.
+      have hp0 : p ≠ 0 := by
+        rcases hpq with h | h
+        · exact h
+        · exact absurd (by omega : q = 0) h
+      have hpη : ((p : ℤ) : End W) * η = ((r' : ℤ) : End W) := by
+        rw [hkey, hq'0]; push_cast; abel
+      obtain ⟨k, hk⟩ := MazurEndLattice.intCast_of_intCast_mul hp0 hpη
+      have h2 : ((2 : ℤ) : End W) * χ = ((k + s : ℤ) : End W) := by
+        rw [h2χ, hk, ← Int.cast_add]
+      obtain ⟨c, hc⟩ := MazurEndLattice.intCast_of_intCast_mul (by norm_num : (2 : ℤ) ≠ 0) h2
+      exact ⟨D * c, 0, by rw [hc]; push_cast; noncomm_ring⟩
+    · -- `r' = 0`: `[p] η = [q'] δ`, and `p₁² ∣ d` bounds the denominator.
+      have hpη : ((p : ℤ) : End W) * η = ((q' : ℤ) : End W) * δ := by
+        rw [hkey, hr'0]; push_cast; abel
+      have hp0 : p ≠ 0 := by
+        intro hp
+        have hq'ne : q' ≠ 0 := by
+          rcases hpq with h | h
+          · exact absurd hp h
+          · omega
+        refine MazurEndLattice.end_mul_ne_zero
+          (MazurEndLattice.intCast_ne_zero_of_ne_zero hq'ne) hδne ?_
+        rw [← hpη, hp]
+        push_cast
+        simp
+      have hpq2 : p * p * e = q' * q' * d := by
+        have hsq := hsqL
+        rw [hpη, MazurEndLattice.sq_intCast_mul δ (-d) hδsq q'] at hsq
+        have hint := End.intCast_injective (W := W) hsq
+        linarith [hint]
+      set g : ℤ := (Int.gcd p q' : ℤ) with hgdef
+      have hgpos : 0 < Int.gcd p q' := Int.gcd_pos_of_ne_zero_left q' hp0
+      have hg0 : g ≠ 0 := by rw [hgdef]; exact_mod_cast hgpos.ne'
+      set p₁ : ℤ := p / g with hp₁def
+      set q₁ : ℤ := q' / g with hq₁def
+      have hpE : p = g * p₁ := by
+        rw [hp₁def, hgdef]; exact (Int.mul_ediv_cancel' (Int.gcd_dvd_left p q')).symm
+      have hqE : q' = g * q₁ := by
+        rw [hq₁def, hgdef]; exact (Int.mul_ediv_cancel' (Int.gcd_dvd_right p q')).symm
+      have hcop : IsCoprime p₁ q₁ := by
+        rw [Int.isCoprime_iff_gcd_eq_one, hp₁def, hq₁def, hgdef]
+        exact Int.gcd_div_gcd_div_gcd hgpos
+      have hkey2 : p₁ * p₁ * e = q₁ * q₁ * d := by
+        have hg2 : g ^ 2 ≠ 0 := pow_ne_zero _ hg0
+        refine mul_left_cancel₀ hg2 ?_
+        have := hpq2
+        rw [hpE, hqE] at this
+        ring_nf
+        ring_nf at this
+        linarith [this]
+      have hcop2 : IsCoprime (p₁ * p₁) (q₁ * q₁) :=
+        (hcop.mul_left hcop).mul_right (hcop.mul_left hcop)
+      have hdvd : p₁ * p₁ ∣ d :=
+        hcop2.dvd_of_dvd_mul_right ⟨e, by linarith [hkey2]⟩
+      obtain ⟨d', hd'⟩ := hdvd
+      have hcancel : ((p₁ : ℤ) : End W) * η = ((q₁ : ℤ) : End W) * δ := by
+        refine MazurEndLattice.intCast_mul_cancel (W := W) hg0 ?_
+        rw [← mul_assoc, ← mul_assoc, ← Int.cast_mul, ← Int.cast_mul, ← hpE, ← hqE]
+        exact hpη
+      have hdη : ((d : ℤ) : End W) * η = ((p₁ * d' * q₁ : ℤ) : End W) * δ := by
+        have h1 : ((d : ℤ) : End W) * η
+            = ((p₁ * d' : ℤ) : End W) * (((p₁ : ℤ) : End W) * η) := by
+          rw [← mul_assoc, ← Int.cast_mul, hd']; congr 2; ring
+        rw [h1, hcancel, ← mul_assoc, ← Int.cast_mul]
+      refine ⟨d * s, p₁ * d' * q₁, ?_⟩
+      rw [hDd, mul_assoc, h2χ, mul_add, hdη, ← Int.cast_mul]
+      abel
+  -- **The lattice of `δ`-coefficients**, an ideal of `ℤ`.
+  set S : Ideal ℤ :=
+    { carrier := {v : ℤ | ∃ (χ : End W) (u : ℤ),
+        ((D : ℤ) : End W) * χ = ((u : ℤ) : End W) + ((v : ℤ) : End W) * δ}
+      zero_mem' := ⟨0, 0, by simp⟩
+      add_mem' := by
+        rintro a b ⟨χa, ua, ha⟩ ⟨χb, ub, hb⟩
+        refine ⟨χa + χb, ua + ub, ?_⟩
+        rw [mul_add, ha, hb]
+        push_cast
+        noncomm_ring
+      smul_mem' := by
+        rintro m a ⟨χa, ua, ha⟩
+        refine ⟨((m : ℤ) : End W) * χa, m * ua, ?_⟩
+        have hcm : ((D : ℤ) : End W) * (((m : ℤ) : End W) * χa)
+            = ((m : ℤ) : End W) * (((D : ℤ) : End W) * χa) := by
+          rw [← mul_assoc, ← mul_assoc, ← Int.cast_mul, ← Int.cast_mul, mul_comm D m]
+        rw [hcm, ha, mul_add, ← mul_assoc, ← Int.cast_mul, ← Int.cast_mul]
+        simp } with hSdef
+  have hmemS : ∀ v : ℤ, v ∈ S ↔ ∃ (χ : End W) (u : ℤ),
+      ((D : ℤ) : End W) * χ = ((u : ℤ) : End W) + ((v : ℤ) : End W) * δ := fun _ => Iff.rfl
+  obtain ⟨v₀, hv₀⟩ := (IsPrincipalIdealRing.principal S).principal
+  have hdS : d ∈ S := by
+    refine (hmemS d).2 ⟨ψ₀, d * s₀, ?_⟩
+    have hs : ((2 : ℤ) : End W) * ψ₀ = δ + ((s₀ : ℤ) : End W) := by rw [hδdef]; abel
+    rw [hDd, mul_assoc, hs, mul_add, ← Int.cast_mul]
+    abel
+  have hv₀0 : v₀ ≠ 0 := by
+    rintro rfl
+    rw [hv₀] at hdS
+    rw [Ideal.mem_span_singleton] at hdS
+    omega
+  have hv₀S : v₀ ∈ S := by
+    rw [hv₀]; exact Ideal.mem_span_singleton_self v₀
+  obtain ⟨ω, u₀, hω⟩ := (hmemS v₀).1 hv₀S
+  have hωnotint : ¬ ∃ k : ℤ, ω = ((k : ℤ) : End W) := by
+    rintro ⟨k, hk⟩
+    refine hδnotint ?_
+    have h1 : ((u₀ : ℤ) : End W) + ((v₀ : ℤ) : End W) * δ = ((D * k : ℤ) : End W) := by
+      rw [← hω, hk, ← Int.cast_mul]
+    have h2 : ((v₀ : ℤ) : End W) * δ = ((D * k - u₀ : ℤ) : End W) := by
+      rw [Int.cast_sub, ← h1]; abel
+    exact MazurEndLattice.intCast_of_intCast_mul hv₀0 h2
+  have hspan : ∀ χ : End W, ∃ u v : ℤ, χ = ((u : ℤ) : End W) + ((v : ℤ) : End W) * ω := by
+    intro χ
+    obtain ⟨u, v, huv⟩ := hbd χ
+    have hvS : v ∈ S := (hmemS v).2 ⟨χ, u, huv⟩
+    rw [hv₀] at hvS
+    obtain ⟨k, hk⟩ := Ideal.mem_span_singleton.1 hvS
+    have hvk : v = k * v₀ := by rw [hk, mul_comm]
+    have hDk : ((D : ℤ) : End W) * (((k : ℤ) : End W) * ω)
+        = ((k : ℤ) : End W) * (((D : ℤ) : End W) * ω) := by
+      rw [← mul_assoc, ← mul_assoc, ← Int.cast_mul, ← Int.cast_mul, mul_comm D k]
+    have hkey : ((D : ℤ) : End W) * (χ - ((k : ℤ) : End W) * ω)
+        = ((u - k * u₀ : ℤ) : End W) := by
+      rw [mul_sub, huv, hDk, hω, hvk]
+      push_cast
+      noncomm_ring
+    obtain ⟨c, hc⟩ := MazurEndLattice.intCast_of_intCast_mul hD0 hkey
+    exact ⟨c, k, by rw [← hc]; abel⟩
+  have hindep : ∀ u v : ℤ, ((u : ℤ) : End W) + ((v : ℤ) : End W) * ω = 0 → u = 0 ∧ v = 0 := by
+    intro u v huv
+    have hv0 : v = 0 := by
+      by_contra hvne
+      refine hωnotint ?_
+      have h1 : ((v : ℤ) : End W) * ω = ((-u : ℤ) : End W) := by
+        rw [Int.cast_neg]
+        exact eq_neg_of_add_eq_zero_left (by rw [add_comm]; exact huv)
+      exact MazurEndLattice.intCast_of_intCast_mul hvne h1
+    subst hv0
+    refine ⟨?_, rfl⟩
+    refine End.intCast_injective (W := W) (b := 0) ?_
+    rw [Int.cast_zero, ← huv, Int.cast_zero]
+    simp
+  obtain ⟨a, b, _, hqr, _⟩ := MazurEndLattice.exists_charPolyRing ω
+  refine ⟨ω, a, b, ?_, ?_, ?_⟩
+  · rw [zsmul_eq_mul, ← hqr]; abel
+  · intro χ
+    obtain ⟨u, v, huv⟩ := hspan χ
+    exact ⟨u, v, by rw [zsmul_eq_mul]; exact huv⟩
+  · intro u v huv
+    exact hindep u v (by rw [← zsmul_eq_mul]; exact huv)
 
 /-- **The order-determination step, PROVEN** (2026-07-27), uniformly in `(n, m)`.
 
