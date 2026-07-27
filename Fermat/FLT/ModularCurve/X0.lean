@@ -8854,21 +8854,224 @@ theorem exists_jTransformation_of_affine (ja : IsJSectionOnAffine)
       jtr.jt g d = ja.jt g d :=
   sorry
 
-/-- **Existence of the `j`-invariant of an elliptic scheme over an affine
-base** (sorry node).
+/-! #### The cut of `exists_jSectionOnAffine`: local models, and gluing
 
-TRUE and classical — this is `Y_0(1) ≅ 𝔸¹_j`, Deligne–Rapoport VI, or
-Silverman *AEC* III.1 plus descent.  **This leaf carries all of the
-elliptic-curve geometry of `exists_jSection`**; what it no longer carries
-is the passage to non-affine bases, which is
-`exists_jTransformation_of_affine`.
+The affine leaf's own docstring below already itemised the three steps of
+an attack — (i) local Weierstrass models, (ii) two models of one elliptic
+scheme have the same `j`, (iii) the local values glue.  What it did not
+say, and what the cut below adds, is that once those three are in hand
+**everything else in `IsJSectionOnAffine` is bookkeeping**: naturality,
+the pinning at `ℚ`, and the dictionary between a relative point of the
+`j`-line and an element of the base ring.  That bookkeeping is CLOSED
+here; `exists_jSectionOnAffine` is now an assembly.
 
-WHAT IT NEEDS.  A Weierstrass presentation of an elliptic scheme
-`f : E ⟶ Spec R` after inverting finitely many elements of `R`, so that
-`c₄³/Δ` is defined on each piece; equivalently, the line bundle
-`ω = f_* Ω¹_{E/T}` and the classical formulas for `c₄, c₆, Δ` as sections
-of its powers.  None of that exists at this pin: `AbelianSchemeStruct` is
-a functor-of-points presentation with no coordinates anywhere, and
+**The dictionary, and why it is not itself a leaf.**  `jLine` is
+`Spec ℚ[X]`, so over an affine base a relative point of it is a ring map
+`ℚ[X] ⟶ R` over `ℚ`, i.e. an ELEMENT of `R`; `jLineCoord` is that
+element, `jLineVal` is its value at `R = ℚ` (`jLineVal_eq_jLineCoord` is
+`rfl`), `jLineCoord_pre` is its naturality and `jLineCoord_injective`
+says the element determines the point.  All four are proven below, and
+they are what turn the scheme-level statement into a statement about
+ring elements.
+
+**The pinning `IsJValueOnAffine`, and why the second clause is there.**
+The first clause is the obvious one: where the datum has a Weierstrass
+model over `R` itself, the value is `W.j`.  Alone it would leave the
+value UNDETERMINED at every base with no global model — which is most
+bases, since a Weierstrass model exists only Zariski-locally — and the
+uniqueness half of the leaf below would then be FALSE.  The second
+clause pins the value after every base change, and it is exactly what
+makes uniqueness true: by (i) there is a cover of `Spec R` by basic
+opens on which models exist, and `R` injects into the product of the
+corresponding localizations.  It is also what makes NATURALITY provable,
+by composing base changes (`IsBaseChangeOf.comp`, proven below).
+
+**Three leaves, and each is smaller than the node it replaces.**
+
+* `exists_weierstrassModel_localization` — step (i).  This is where the
+  IRREDUCIBLE verdict of the affine leaf still applies, verbatim, and it
+  is reproduced there: no machinery attaching `ω`, `c₄`, `Δ` to an
+  `AbelianSchemeStruct` exists in mathlib, in `~/cs/FLT` or here.
+* `weierstrassModel_j_eq_of_isBaseChangeOf` — step (ii), stated in the
+  form that also covers base change, so that the two are one leaf rather
+  than two.  Taking `φ` an isomorphism recovers "two models of one
+  elliptic scheme have the same `j`"; taking `W'` the pullback of `W`
+  recovers `WeierstrassCurve.map_j`.
+* `exists_jValueOnAffine_of_localModels` — step (iii), the gluing,
+  stated with (i) and (ii) as HYPOTHESES.  They are hypotheses and not
+  calls for the same reason `exists_jTransformation_of_affine` takes
+  `hbc`: a sorried body contributes no dependency edges, so a leaf that
+  merely *called* them would leave them free-floating, and the three can
+  be worked on by different owners without any of them waiting.
+
+**What is NOT claimed.**  This cut does not make step (i) any easier; it
+isolates it.  The affine-versus-general-base axis was the previous cut's
+contribution, and this one is the local-versus-global axis INSIDE the
+affine case.  The axis still unsearched, and worth naming for whoever
+reads this next: whether the `j`-invariant can be obtained without local
+Weierstrass models at all — e.g. from the Hodge bundle `ω` directly, or
+by descent from a level-`n` cover where the moduli problem is
+representable (`exists_fullLevelStructure_cover` is in this file). -/
+
+/-- **The coordinate of a relative point of the `j`-line over an affine
+base** (PROVEN).
+
+`jLine = Spec ℚ[X]`, and `Spec` is fully faithful, so a morphism
+`Spec R ⟶ jLine` is a ring map `ℚ[X] ⟶ R`; its value at `X` is the
+coordinate.  For `R = ℚ` and `g = 𝟙` this is `jLineVal` — literally, not
+merely up to an isomorphism: see `jLineVal_eq_jLineCoord`, which is
+`rfl`. -/
+noncomputable def jLineCoord {R : Type} [CommRing R]
+    {g : Spec (CommRingCat.of R) ⟶ SpecQ} (x : RelPoint jLineStr g) : R :=
+  (Spec.preimage x.1).hom Polynomial.X
+
+/-- **`jLineVal` is the case `R = ℚ` of `jLineCoord`** (PROVEN, by
+`rfl`). -/
+theorem jLineVal_eq_jLineCoord (x : RelPoint jLineStr (𝟙 SpecQ)) :
+    jLineVal x = jLineCoord x := rfl
+
+/-- **The coordinate is natural**: precomposing a relative point with a
+morphism of affine bases applies the corresponding ring map to the
+coordinate (PROVEN). -/
+theorem jLineCoord_pre {R S : Type} [CommRing R] [CommRing S]
+    {g : Spec (CommRingCat.of R) ⟶ SpecQ}
+    (h : Spec (CommRingCat.of S) ⟶ Spec (CommRingCat.of R))
+    {g' : Spec (CommRingCat.of S) ⟶ SpecQ} (hg : h ≫ g = g')
+    (x : RelPoint jLineStr g) :
+    jLineCoord (RelPoint.pre h hg x) = (Spec.preimage h).hom (jLineCoord x) := by
+  simp [jLineCoord, RelPoint.pre]
+
+/-- **The coordinate determines the point** (PROVEN).
+
+Two relative points of the `j`-line over the SAME base point `g` with the
+same coordinate are equal: their ring maps `ℚ[X] ⟶ R` agree on `X` by
+hypothesis and on the constants because both lie over `g`, and
+`Polynomial.ringHom_ext` closes it.  This is what lets the uniqueness
+half of `exists_jValueOnAffine_of_localModels` be stated about elements
+of `R` and used about points of the `j`-line. -/
+theorem jLineCoord_injective {R : Type} [CommRing R]
+    {g : Spec (CommRingCat.of R) ⟶ SpecQ} {x y : RelPoint jLineStr g}
+    (hxy : jLineCoord x = jLineCoord y) : x = y := by
+  refine Subtype.ext ?_
+  refine Spec.homEquiv.injective ?_
+  show Spec.preimage x.1 = Spec.preimage y.1
+  refine CommRingCat.hom_ext ?_
+  refine Polynomial.ringHom_ext ?_ hxy
+  intro a
+  have hx := congrArg Spec.preimage x.2
+  have hy := congrArg Spec.preimage y.2
+  rw [Spec.preimage_comp] at hx hy
+  have hcomp : (Spec.preimage jLineStr ≫ Spec.preimage x.1)
+      = (Spec.preimage jLineStr ≫ Spec.preimage y.1) := by rw [hx, hy]
+  have := congrArg (fun f => CommRingCat.Hom.hom f a) hcomp
+  simpa [jLineStr, Polynomial.C_eq_algebraMap] using this
+
+/-- **Base changes compose** (PROVEN).
+
+If `d''` is a base change of `d'` along `h₁` and `d'` is a base change of
+`d` along `h₂`, then `d''` is a base change of `d` along `h₁ ≫ h₂`.  The
+cartesian square is `IsPullback.paste_vert`; the three remaining axioms
+are the corresponding axioms of the two halves, chased through
+`RelPoint.along` and reassociated.
+
+Consumed by `exists_jSectionOnAffine` below to prove `jt_natural`: the
+pinning `IsJValueOnAffine` quantifies over base changes, so transporting
+it along one more base change is exactly this composition. -/
+noncomputable def IsBaseChangeOf.comp {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {d'' : Gamma0Datum N T''} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb₁ : IsBaseChangeOf h₁ d'' d') (hb₂ : IsBaseChangeOf h₂ d' d) :
+    IsBaseChangeOf (h₁ ≫ h₂) d'' d where
+  map := hb₁.map ≫ hb₂.map
+  isPullback := hb₁.isPullback.paste_vert hb₂.isPullback
+  map_zero := by
+    intro U g
+    have e₁ := congrArg Subtype.val (hb₁.map_zero g)
+    have e₂ := congrArg Subtype.val (hb₂.map_zero (g ≫ h₁))
+    refine Subtype.ext ?_
+    show (d''.ab.zero g).1 ≫ hb₁.map ≫ hb₂.map = _
+    rw [← Category.assoc]
+    show ((d''.ab.zero g).1 ≫ hb₁.map) ≫ hb₂.map = _
+    rw [show (d''.ab.zero g).1 ≫ hb₁.map = (d'.ab.zero (g ≫ h₁)).1 from e₁]
+    rw [show (d'.ab.zero (g ≫ h₁)).1 ≫ hb₂.map = (d.ab.zero ((g ≫ h₁) ≫ h₂)).1 from e₂,
+      Category.assoc]
+  map_add := by
+    intro U g x y
+    have key : ∀ {b₁ b₂ : U ⟶ T}, b₁ = b₂ → ∀ (p q : RelPoint d.f b₁)
+        (p' q' : RelPoint d.f b₂), p.1 = p'.1 → q.1 = q'.1 →
+        (d.ab.add p q).1 = (d.ab.add p' q').1 := by
+      rintro b₁ b₂ rfl p q p' q' hp hq
+      rw [Subtype.ext hp, Subtype.ext hq]
+    have e₁ := congrArg Subtype.val (hb₁.map_add x y)
+    have e₂ := congrArg Subtype.val
+      (hb₂.map_add (RelPoint.along hb₁.map hb₁.isPullback.w x)
+        (RelPoint.along hb₁.map hb₁.isPullback.w y))
+    refine Subtype.ext ?_
+    show (d''.ab.add x y).1 ≫ hb₁.map ≫ hb₂.map = _
+    rw [← Category.assoc]
+    show ((d''.ab.add x y).1 ≫ hb₁.map) ≫ hb₂.map = _
+    rw [show (d''.ab.add x y).1 ≫ hb₁.map
+        = (d'.ab.add (RelPoint.along hb₁.map hb₁.isPullback.w x)
+            (RelPoint.along hb₁.map hb₁.isPullback.w y)).1 from e₁]
+    rw [show (d'.ab.add (RelPoint.along hb₁.map hb₁.isPullback.w x)
+            (RelPoint.along hb₁.map hb₁.isPullback.w y)).1 ≫ hb₂.map
+          = (d.ab.add (RelPoint.along hb₂.map hb₂.isPullback.w
+                (RelPoint.along hb₁.map hb₁.isPullback.w x))
+              (RelPoint.along hb₂.map hb₂.isPullback.w
+                (RelPoint.along hb₁.map hb₁.isPullback.w y))).1 from e₂]
+    exact key (Category.assoc g h₁ h₂) _ _ _ _ (by simp [RelPoint.along]) (by
+      simp [RelPoint.along])
+  liesIn_iff := by
+    intro U g x
+    rw [hb₁.liesIn_iff x, hb₂.liesIn_iff]
+    constructor
+    · rintro ⟨z, hz⟩
+      exact ⟨z, by simpa [RelPoint.along, ← Category.assoc] using hz⟩
+    · rintro ⟨z, hz⟩
+      exact ⟨z, by simpa [RelPoint.along, ← Category.assoc] using hz⟩
+
+/-- **`x` is THE `j`-value of the datum `d` over the affine base
+`Spec R`.**
+
+Two clauses, and both are load-bearing; see the subsection docstring
+above.
+
+* the value agrees with `W.j` on a Weierstrass model over `R` itself;
+* it agrees with `W'.j` after EVERY base change to an affine base on
+  which the base-changed datum acquires a model.
+
+The first is the case `h = 𝟙` of the second, and is stated separately
+only so that nothing here has to construct an `IsBaseChangeOf 𝟙 d d`.
+The second is what makes the value unique (a Weierstrass model exists
+only Zariski-locally, so the first clause alone determines nothing at a
+base with no global model) and what makes it natural. -/
+def IsJValueOnAffine {R : Type} [CommRing R] {g : Spec (CommRingCat.of R) ⟶ SpecQ}
+    (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (x : RelPoint jLineStr g) : Prop :=
+  (∀ (W : WeierstrassCurve R) [W.IsElliptic], IsWeierstrassModel d.ab W →
+      jLineCoord x = W.j) ∧
+  (∀ {S : Type} [CommRing S] (h : Spec (CommRingCat.of S) ⟶ Spec (CommRingCat.of R))
+      {g' : Spec (CommRingCat.of S) ⟶ SpecQ} (hg : h ≫ g = g')
+      (d' : Gamma0Datum 1 (Spec (CommRingCat.of S))), IsBaseChangeOf h d' d →
+      ∀ (W : WeierstrassCurve S) [W.IsElliptic], IsWeierstrassModel d'.ab W →
+        jLineCoord (RelPoint.pre h hg x) = W.j)
+
+/-- **An elliptic scheme over an affine base is a Weierstrass model after
+inverting finitely many elements of the base ring** (sorry leaf, step (i)
+of the cut of `exists_jSectionOnAffine`).
+
+TRUE and classical: Deligne–Rapoport II, Katz–Mazur 2.2, or Deligne's
+*Courbes elliptiques: formulaire*.  The Hodge bundle
+`ω = f_* Ω¹_{E/Spec R}` is invertible, hence trivial on a basic-open
+cover `D(aᵢ)` of `Spec R`; a trivialisation of `ω` over `D(aᵢ)` gives the
+Weierstrass coordinates `x, y` by Riemann–Roch on the fibres, and
+`Spec R[1/aᵢ][W]` is then the complement of the zero section.  `Spec R`
+is quasi-compact, so finitely many `aᵢ` suffice, and they generate the
+unit ideal exactly because the `D(aᵢ)` cover.
+
+**THE IRREDUCIBILITY VERDICT OF `exists_jSection` APPLIES HERE, AND ONLY
+HERE.**  It is reproduced verbatim because this is the leaf it still
+describes: no machinery attaching `ω`, `c₄`, `c₆` or `Δ` to an
+`AbelianSchemeStruct` exists at this pin.  `AbelianSchemeStruct` is a
+functor-of-points presentation with no coordinates anywhere, and
 mathlib's `WeierstrassCurve.j` is defined only for a Weierstrass EQUATION
 over a ring, not for a scheme.  Searched 2026-07-27 over `Fermat/`,
 `.lake/packages/mathlib` and `~/cs/FLT`: mathlib has NO file mentioning
@@ -8876,45 +9079,180 @@ an elliptic scheme at all, `~/cs/FLT` has no `jInvariant`, and the only
 `j` anywhere is `WeierstrassCurve.j`
 (`Mathlib/AlgebraicGeometry/EllipticCurve/Weierstrass.lean:385`).
 
-THE AXIS THAT VERDICT RANGES OVER, stated so the next reader can see what
-it does not cover: presentations of elliptic schemes.  It does NOT cover
-the split between the `j`-theory and the existence of models over `ℚ` —
-that was the earlier cut, and it produced
-`exists_weierstrassModel_gamma0Datum`, now PROVEN.  Nor does it cover the
-split between affine and general bases, which is the cut this leaf is the
-residue of.
+THE AXIS THAT VERDICT RANGES OVER: presentations of elliptic schemes.  It
+does NOT cover the split between the `j`-theory and the existence of
+models over `ℚ` (that was `exists_weierstrassModel_gamma0Datum`, PROVEN),
+nor the split between affine and general bases (that was
+`exists_jTransformation_of_affine`), nor the split between local models
+and their gluing, which is the cut this leaf is the residue of.
 
-THE CHECK THAT WOULD REFUTE THIS.  Any construction attaching a global
-section of `𝒪_T` to an `AbelianSchemeStruct` of relative dimension `1`,
-natural in `T`; equivalently, a `grep` for a Weierstrass presentation of
+THE CHECK THAT WOULD REFUTE "OPEN": any construction in this project of a
+relative differential, a Hodge bundle, or a Weierstrass presentation of
+an `AbelianSchemeStruct` — equivalently a `grep` for `ω`, `c₄` or `Δ`
+attached to a relative curve rather than to a `WeierstrassCurve`.
+
+NOT VACUOUS.  The conclusion is an existential over covers, but it is not
+satisfiable by a degenerate cover: `Ideal.span (Set.range a) = ⊤` forces
+the `D(aᵢ)` to cover `Spec R`, and the empty cover satisfies it only when
+`R` is the zero ring.  And `IsWeierstrassModel` is not junk-satisfiable —
+it demands an open immersion whose range is exactly the complement of the
+zero section. -/
+theorem exists_weierstrassModel_localization {R : Type} [CommRing R]
+    (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) :
+    ∃ (n : ℕ) (a : Fin n → R), Ideal.span (Set.range a) = ⊤ ∧
+      ∀ i : Fin n,
+        ∃ (d' : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away (a i)))))
+          (W : WeierstrassCurve (Localization.Away (a i))) (_ : W.IsElliptic),
+          Nonempty (IsBaseChangeOf
+            (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (a i))))) d' d) ∧
+          IsWeierstrassModel d'.ab W :=
+  sorry
+
+/-- **The `j`-invariant of a Weierstrass model is well defined and
+natural** (sorry leaf, step (ii) of the cut of `exists_jSectionOnAffine`).
+
+TRUE.  Two statements in one, deliberately:
+
+* taking `φ` an isomorphism (in particular `φ = id` and `d' = d`) this
+  says two Weierstrass models of ONE elliptic scheme have the same `j`;
+* taking `W'` a pullback of `W` it is `WeierstrassCurve.map_j`.
+
+THE ARGUMENT, which is written out in the docstring of
+`IsWeierstrassModel` above and is only summarised here.  `W.map φ` is
+again a Weierstrass model of `d'`, because `IsWeierstrassModel`'s open
+immersion base-changes along the cartesian square of `hb` and its range
+condition is preserved (open immersions are stable under base change, and
+the complement of the zero section pulls back to the complement of the
+zero section by `hb.map_zero`).  So it suffices to know that two models
+over the SAME base have the same `j`: both open immersions have the same
+range, so they identify `Spec S[W']` with `Spec S[W.map φ]` over `S`;
+over a field such an isomorphism extends to the smooth completions
+carrying the single point at infinity of each to the other, hence is a
+`VariableChange`, and `WeierstrassCurve.variableChange_j`
+(`Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean:246`)
+finishes.  `WeierstrassCurve.map_j` (`Weierstrass.lean:470`) is already
+in the pin, so what is genuinely missing is only "two models of one
+elliptic scheme differ by a variable change".
+
+WHY IT IS ONE LEAF AND NOT TWO.  The base-change half and the uniqueness
+half share the whole of that argument, and the base-change half has no
+consumer of its own — stated separately it would be free-floating.
+
+NOT VACUOUS: the conclusion is an equation between two elements of `S`
+that both hypotheses genuinely constrain, and it is FALSE for a junk
+`W'` — `IsWeierstrassModel` is what excludes those. -/
+theorem weierstrassModel_j_eq_of_isBaseChangeOf {R S : Type} [CommRing R] [CommRing S]
+    (φ : R →+* S) {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+    {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))}
+    (hb : IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d)
+    (W : WeierstrassCurve R) [W.IsElliptic] (W' : WeierstrassCurve S) [W'.IsElliptic]
+    (hW : IsWeierstrassModel d.ab W) (hW' : IsWeierstrassModel d'.ab W') :
+    W'.j = φ W.j :=
+  sorry
+
+/-- **The local `j`-values glue to a unique `j`-value over the affine
+base** (sorry leaf, step (iii) of the cut of `exists_jSectionOnAffine`).
+
+TRUE, and it is commutative algebra and nothing else — no elliptic curve
+enters the argument, which is the point of cutting here.
+
+THE ARGUMENT.  `hloc` gives `a₁, …, aₙ` generating the unit ideal and, on
+each `R[1/aᵢ]`, a datum `dᵢ` base-changing `d` with a Weierstrass model
+`Wᵢ`.  Put `jᵢ := Wᵢ.j ∈ R[1/aᵢ]`.  On the overlap `R[1/(aᵢaⱼ)]`, apply
+`hloc` again to the base-changed datum and `hjeq` twice, once through
+`dᵢ` and once through `dⱼ`: the images of `jᵢ` and `jⱼ` agree in every
+localization of a cover of the overlap, hence agree.  So the `jᵢ` are a
+compatible family, `R ⟶ ∏ R[1/aᵢ]` is an equalizer over a cover by basic
+opens, and they glue to a unique `r ∈ R`.  The point `x` is the ring map
+`ℚ[X] ⟶ R` sending `X ↦ r` — `Spec` is fully faithful, so that is a
+morphism `Spec R ⟶ jLine`, and it lies over `g` because the map is a
+`ℚ`-algebra map.  Both clauses of `IsJValueOnAffine` then follow from
+`hjeq`, and uniqueness follows from `hloc` plus `jLineCoord_injective`:
+two values with the pinning have the same image in each `R[1/aᵢ]`, and
+`R` injects into the product because the `aᵢ` generate the unit ideal.
+
+WHY `hloc` AND `hjeq` ARE HYPOTHESES RATHER THAN CALLS.  A sorried body
+contributes no dependency edges, so a leaf that merely CALLED
+`exists_weierstrassModel_localization` and
+`weierstrassModel_j_eq_of_isBaseChangeOf` would leave both of them
+free-floating until it was proven.  As hypotheses they are visibly
+consumed at the assembly site, `exists_jSectionOnAffine` below, and the
+three leaves can be owned independently — the same reason
+`exists_jTransformation_of_affine` takes `hbc`.
+
+WHAT IS MISSING, precisely: the equalizer property of
+`R ⟶ ∏ᵢ R[1/aᵢ]` for a family generating the unit ideal.  This is the
+affine sheaf condition; `AlgebraicGeometry.StructureSheaf` and
+`IsLocalization.Away` are the relevant mathlib API, and it is much
+lighter than the scheme-level gluing, which was already factored out into
+`exists_jTransformation_of_affine`.
+
+NOT VACUOUS, and the UNIQUENESS half is where the content is.  Existence
+alone would be satisfiable by junk at any base with no global Weierstrass
+model, since the first clause of `IsJValueOnAffine` is then empty; it is
+the second clause plus `hloc` that pins the value everywhere.  Note also
+that uniqueness would be FALSE without `hloc`: a datum that never
+acquires a model would leave the pinning empty and every point of the
+`j`-line would satisfy it. -/
+theorem exists_jValueOnAffine_of_localModels
+    (hloc : ∀ {R : Type} [CommRing R] (d : Gamma0Datum 1 (Spec (CommRingCat.of R))),
+      ∃ (n : ℕ) (a : Fin n → R), Ideal.span (Set.range a) = ⊤ ∧
+        ∀ i : Fin n,
+          ∃ (d' : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away (a i)))))
+            (W : WeierstrassCurve (Localization.Away (a i))) (_ : W.IsElliptic),
+            Nonempty (IsBaseChangeOf
+              (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (a i))))) d' d) ∧
+            IsWeierstrassModel d'.ab W)
+    (hjeq : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
+      {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+      {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))},
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d →
+      ∀ (W : WeierstrassCurve R) [W.IsElliptic] (W' : WeierstrassCurve S) [W'.IsElliptic],
+        IsWeierstrassModel d.ab W → IsWeierstrassModel d'.ab W' → W'.j = φ W.j)
+    {R : Type} [CommRing R] (g : Spec (CommRingCat.of R) ⟶ SpecQ)
+    (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) :
+    ∃! x : RelPoint jLineStr g, IsJValueOnAffine d x :=
+  sorry
+
+/-- **Existence of the `j`-invariant of an elliptic scheme over an affine
+base** (PROVEN 2026-07-27, over the three-leaf cut of the subsection
+above; formerly a sorry node carrying the IRREDUCIBLE verdict, which is
+now preserved on `exists_weierstrassModel_localization`, the leaf it
+still describes).
+
+TRUE and classical — this is `Y_0(1) ≅ 𝔸¹_j`, Deligne–Rapoport VI, or
+Silverman *AEC* III.1 plus descent.  **This leaf carries all of the
+elliptic-curve geometry of `exists_jSection`**; what it no longer carries
+is the passage to non-affine bases, which is
+`exists_jTransformation_of_affine`.
+
+WHAT IT NEEDED, and where that now lives.  A Weierstrass presentation of
+an elliptic scheme `f : E ⟶ Spec R` after inverting finitely many
+elements of `R`, so that `c₄³/Δ` is defined on each piece; equivalently,
+the line bundle `ω = f_* Ω¹_{E/T}` and the classical formulas for
+`c₄, c₆, Δ` as sections of its powers.  That is
+`exists_weierstrassModel_localization`, which carries the irreducibility
+verdict; the well-definedness of `j` is
+`weierstrassModel_j_eq_of_isBaseChangeOf`; the gluing of the local values
+is `exists_jValueOnAffine_of_localModels`.
+
+HOW IT IS PROVEN, and what the assembly contributes.  The gluing leaf
+returns, for every affine base, a UNIQUE point of the `j`-line satisfying
+`IsJValueOnAffine`.  Existence gives `jt`; the first clause of the
+pinning gives `jt_model` directly, because `SpecQ` is affine and
+`jLineVal` is literally `jLineCoord` there (`jLineVal_eq_jLineCoord` is
+`rfl`); and UNIQUENESS gives `jt_natural` — the precomposed point
+`RelPoint.pre h hg (jt g d)` satisfies the pinning for `d'`, by the
+second clause of the pinning composed with `IsBaseChangeOf.comp`, so it
+IS `jt g' d'`.  That last step is the whole reason the gluing leaf is
+stated with `∃!` rather than `∃`: naturality is not an extra obligation
+on the leaf, it is a consequence of the value being determined.
+
+THE CHECK THAT WOULD REFUTE "OPEN" for the residual leaves.  Any
+construction attaching a global section of `𝒪_T` to an
+`AbelianSchemeStruct` of relative dimension `1`, natural in `T`;
+equivalently, a `grep` for a Weierstrass presentation of
 `AbelianSchemeStruct` or for `ω`/`c₄`/`Δ` on a relative curve.
-
-THE FURTHER CUT, when someone attacks this.  Three steps, of which the
-middle one is nearly free at this pin, and only the FIRST is now genuinely
-missing:
-
-* (i) after inverting finitely many elements of `R`, an elliptic scheme
-  over `Spec R` is a Weierstrass model — i.e. `IsWeierstrassModel` holds
-  for a base change of the datum to `Spec (Localization.Away a)`.  This
-  needs `exists_gamma0Datum_baseChange` to even state, which is why that
-  leaf is worth having independently of the descent one.
-* (ii) two Weierstrass models of ONE elliptic scheme have the same `j`.
-  `WeierstrassCurve.variableChange_j`
-  (`Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean:246`,
-  `(C • W).j = W.j`) and `WeierstrassCurve.map_j` (`Weierstrass.lean:470`,
-  `(W.map f).j = f W.j`, naturality of `j` under base change) are BOTH
-  already in the pin, so what is missing here is only "two models of one
-  elliptic scheme differ by a variable change" — and the argument for
-  that is written out in the docstring of `IsWeierstrassModel` above.
-* (iii) the finitely many local values glue over `Spec R`.  This is
-  ordinary commutative algebra — an equalizer over a cover by basic opens
-  `D(aᵢ)` with `span {aᵢ} = ⊤` — and is much lighter than the
-  scheme-level gluing, which has already been factored out into
-  `exists_jTransformation_of_affine`.
-
-Step (ii) is deliberately NOT a separate declaration: nothing else would
-consume it, so it would be free-floating.  Whoever proves (i) and (iii)
-should write it as a `have` inside this proof.
 
 NOT VACUOUS, and not satisfiable by junk.  Two independent reasons.
 First, `jLineVal` is the honest coordinate (see its docstring), so the
@@ -8925,8 +9263,28 @@ forces every fibre to take the same value, while `jt_model` demands the
 fibre's own `j`.  So `jt` must genuinely vary.  Both reasons survive the
 restriction to affine bases, since the pinning field is unchanged and
 `SpecQ` is affine. -/
-theorem exists_jSectionOnAffine : Nonempty IsJSectionOnAffine :=
-  sorry
+theorem exists_jSectionOnAffine : Nonempty IsJSectionOnAffine := by
+  have H : ∀ {R : Type} [CommRing R] (g : Spec (CommRingCat.of R) ⟶ SpecQ)
+      (d : Gamma0Datum 1 (Spec (CommRingCat.of R))),
+      ∃! x : RelPoint jLineStr g, IsJValueOnAffine d x := fun {R} _ g d =>
+    exists_jValueOnAffine_of_localModels
+      (fun {_} _ d₀ => exists_weierstrassModel_localization d₀)
+      (fun {_} {_} _ _ φ {_} {_} hb W _ W' _ hW hW' =>
+        weierstrassModel_j_eq_of_isBaseChangeOf φ hb W W' hW hW') g d
+  refine ⟨{ jt := fun {R} _ g d => (H g d).choose, jt_natural := ?_, jt_model := ?_ }⟩
+  · intro R' R _ _ h g g' hg d' d hbc
+    refine ((H g' d').choose_spec.2 _ ?_).symm
+    obtain ⟨-, hx2⟩ := (H g d).choose_spec.1
+    refine ⟨fun W _ hW => hx2 h hg d' hbc W hW, ?_⟩
+    intro S _ h₂ g'' hg₂ d'' hb₂ W _ hW
+    have hcomp : (h₂ ≫ h) ≫ g = g'' := by rw [Category.assoc, hg, hg₂]
+    have hpp : RelPoint.pre h₂ hg₂ (RelPoint.pre h hg (H g d).choose)
+        = RelPoint.pre (h₂ ≫ h) hcomp (H g d).choose :=
+      Subtype.ext (by simp [RelPoint.pre])
+    rw [hpp]
+    exact hx2 (h₂ ≫ h) hcomp d'' (hb₂.comp hbc) W hW
+  · intro W _ d hd
+    exact (H (R := ℚ) (𝟙 SpecQ) d).choose_spec.1.1 W hd
 
 /-- **Existence of the `j`-invariant of an elliptic scheme** (PROVEN
 2026-07-27, over the three-leaf cut of the subsection above; formerly a
