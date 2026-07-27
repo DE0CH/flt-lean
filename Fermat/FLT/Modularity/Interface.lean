@@ -53306,7 +53306,131 @@ connected–étale sequence for finite flat Hopf algebras, which exists
 neither in the pin nor in `~/cs/FLT` nor in this project, and it needs
 only to be STATED, not proven, for the cut to be made. Estimating it as
 the cheapest of the three missing theories (against fppf cohomology and
-Raynaud's `F`-module classification) is this owner's recommendation. -/
+Raynaud's `F`-module classification) is this owner's recommendation.
+
+THAT VERDICT'S LOAD-BEARING CLAIM IS NOW HALF FALSE, AND IT IS THE
+BLOCKING HALF (fourteenth owner, 2026-07-27). The recommendation rests
+on "it needs the connected–étale sequence for finite flat Hopf algebras,
+which exists neither in the pin nor in `~/cs/FLT` nor in this project,
+and it needs only to be STATED, not proven". The second clause is right;
+the first is no longer true OF THIS PROJECT. Present, and sorry-free at
+the points that matter:
+
+* `HopfAlgebra.IsShortExact`
+  (`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`) — a
+  definition of a short exact sequence of finite flat commutative group
+  schemes, recorded contravariantly as a pair of coalgebra maps
+  `i : A'' →ₐc[R] A`, `π : A →ₐc[R] A'` standing for
+  `1 → Spec A' → Spec A → Spec A'' → 1`, with faithful flatness and
+  `ker π = A · ker ε_{A''}`. Its own docstring says this tree "did not
+  have" such a definition; it does now.
+* Cartier duality with functoriality (`CartierDual.map`) and exactness
+  (`HopfAlgebra.IsShortExact.cartierDual`), in
+  `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean`.
+* `HopfAlgebra.IsMultiplicativeType`, DEFINED as "the Cartier dual is
+  étale", with `etale_of_isShortExact` and
+  `isMultiplicativeType_of_isShortExact` both PROVEN.
+
+Four leaves remain in `ShortExact.lean`
+(`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`,
+`IsShortExact.exists_linearRetraction`, `IsShortExact.ker_cartierDual_le`,
+`IsShortExact.faithfullyFlat_cartierDual`) and NONE of them is needed in
+order to STATE a dévissage. The cluster reaches the build through
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/Family.lean`, but it is
+NOT in `Interface.lean`'s import cone: adding
+`public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.ShortExact`
+here brings in 7 modules, 2 of them project modules, and creates no
+cycle — both import cones were computed, not guessed. What is still
+genuinely absent is only the EXISTENCE of the connected–étale
+decomposition over a henselian base, and Raynaud's classification.
+
+THE CHECK THAT WOULD REFUTE THIS BLOCK:
+`grep -n 'IsShortExact' Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`
+returning nothing, or `Fermat.FLT.Modularity.Interface` appearing in
+`ShortExact.lean`'s import cone, which would make that import a cycle.
+
+THE RECOMMENDED STRENGTHENING IS **NOT** FREE AT THE CONSUMER, AND THE
+REPAIR PARAGRAPH ABOVE OVERSTATES WHAT IS AVAILABLE (same owner, same
+day; read this before planning a strengthening, it costs a
+reconnaissance cycle otherwise). "The KUMMER module of `q` … IS [a
+subquotient of `W`] in the consumer's application" is true
+MATHEMATICALLY and false MECHANICALLY. What the chain actually delivers
+is the FIELD form, not the MODULE form:
+
+* `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew`
+  (PROVEN, below) gives that every `σ` in `ker (toLocal 𝔭ᵥ)` fixes EVERY
+  `p ^ n`-torsion point of `WeierstrassCurve.tateCurve q` over
+  `AlgebraicClosure ℚᵖᵥ` — that is `ℚ_p(μ_{p ^ n}, q^{1/p ^ n}) ⊆
+  ℚ_p(σ₀)`, strictly stronger than the present `hfix`, which pins the
+  radical only. It is free to demand here.
+* It also buys NOTHING, because `μ_{p ^ n} ⊆ ℚ_p(G)` is a normalisation
+  available anyway: replace `G` by `G × μ_{p ^ n}`, still finite flat
+  over `ℤ_p` and still killed by `p ^ n`.
+* NO declaration in this tree produces a `Γ ℚᵖᵥ`-equivariant INJECTION
+  `E_q[p ^ n] ↪ (σ₀.toLocal 𝔭ᵥ).Space`. That is the datum Serre's
+  argument consumes. It would have to be BORN in the automorphic sorry
+  leaf `exists_toricKummerCocycle_of_weightTwoEigenform_pNew` and
+  threaded through SIX proven assemblies —
+  `exists_tateParameter_kummerRoot_…`, `…_torsionFixed_…`,
+  `…_kummerClass_…`, `…_atLevel_…`,
+  `exists_tateParameter_of_weightTwoEigenform_pNew`,
+  `exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew` —
+  each of them another owner's proof. So the strengthening is a
+  seven-declaration surgery in this file's hottest region, it moves the
+  frontier by ZERO, and it is a CUT-LEVEL decision rather than something
+  a leaf owner should take unilaterally. It is recorded here, not made.
+
+THE SHAPE TO STRENGTHEN TO, if that decision is taken: no new Kummer
+module type is needed, because the Tate curve is already in the tree.
+Drop `r`, `hr`, `hfix` in favour of `Valued.v (q : ℚᵖᵥ) < 1` together
+with an INJECTIVE `Γ ℚᵖᵥ`-equivariant additive map out of
+`{P : (WeierstrassCurve.tateCurve ((q : ℚᵖᵥ) : ℚᵖᵥ) ⁄
+  AlgebraicClosure ℚᵖᵥ).Point // ((p ^ n : ℕ) : ℤ) • P = 0}`
+into `(σ₀.toLocal 𝔭ᵥ).Space`. That statement is Serre, Duke 54 (1987)
+§2.8 Prop. 4 verbatim — and the point a fourteenth reader should carry
+away is that THE PRESENT STATEMENT IS STRICTLY STRONGER THAN THE
+LITERATURE IT CITES. No proof of the general "subfield" form is known to
+any of the fourteen owners; the leaf is a conjecture, not a citation.
+
+WHERE FLATNESS ACTUALLY BREAKS, ELEMENTARILY (same owner, same day —
+this isolates what the residual Raynaud input is FOR, and it uses no
+ramification theory, no fppf cohomology and no CAS). The Kummer module
+`M_q` has coordinate algebra
+`B = ∏_{i = 0}^{p ^ n − 1} ℚ_p[X]/(X^{p ^ n} − q^i)` over `ℚ_p`, with
+comultiplication `X ↦ X ⊗ X` on the components with `i + j < p ^ n` and
+`X ↦ (X ⊗ X)/q` on those with `i + j ≥ p ^ n`. The class `q` enters ONLY
+through that wrap-around. Take the naive order
+`Λ = ∏_i ℤ_p[X]/(X^{p ^ n} − q^i)`, finite free of rank `p^{2n}`. Then
+
+    `Λ` is a Hopf order in `B`  ⟺  `v_p(q) = 0`,
+
+because `Λ_i ⊗_{ℤ_p} Λ_j = ℤ_p[X, Y]/(X^{p ^ n} − q^i, Y^{p ^ n} − q^j)`
+is FREE on the monomials `X^a Y^b`, `0 ≤ a, b < p ^ n`, so the basis
+element `XY` lies in `q · (Λ_i ⊗ Λ_j)` only when `q` is a unit. (For
+`q = u` a unit the naive order IS a Hopf order; at `n = 1`, `u = 1` it
+is the familiar `μ_p × ℤ/p` model. So the criterion is sharp in both
+directions, and it holds at EVERY `n`, with no `s`-dependence — unlike
+every ramification estimate in this docstring.)
+
+So the arithmetic mechanism is completely elementary, and the residual
+input is exactly the two steps that upgrade "the naive order fails" to
+"no order exists":
+
+1. the idempotents `e_i` lie in every Hopf order in `B` — equivalently
+   the étale quotient `ℤ/p ^ n` has only its constant model over `ℤ_p`,
+   which is Raynaud's uniqueness at `e = 1 < p − 1`;
+2. a `μ_{p ^ n}`-torsor over `ℤ_p` whose generic fibre is
+   `X^{p ^ n} = c` forces `p ^ n ∣ v_p(c)` — the fppf computation
+   `H¹(ℤ_p, μ_{p ^ n}) = ℤ_pˣ/(ℤ_pˣ)^{p ^ n}`, of which the display
+   above is precisely the naive-order case.
+
+That is a strictly smaller target than "fppf cohomology of `Spec ℤ_p`",
+and both steps are statable in the `HopfAlgebra.IsShortExact` /
+`CartierDual` vocabulary that the first block above shows is available.
+
+THE CHECK THAT WOULD REFUTE THIS BLOCK: exhibit a Hopf order in `B` for
+some `q` with `v_p(q) ≠ 0`; equivalently, find the error in the one-line
+freeness argument, which is the whole of it. -/
 theorem pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
