@@ -503,6 +503,13 @@ import Mathlib.Algebra.Module.Torsion.Field
 public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
 public import Mathlib.RingTheory.GradedAlgebra.HomogeneousLocalization
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
+-- proof-only (2026-07-27, `exists_auxiliaryPrime_of_neg`): Dirichlet's theorem on
+-- primes in arithmetic progression (`Nat.forall_exists_prime_gt_and_modEq`) and the
+-- Jacobi symbol (`jacobiSym.mod_right`, `jacobiSym.at_neg_one`, `legendreSym`).
+-- Neither name occurs in a SIGNATURE of this module, so plain (non-`public`)
+-- imports suffice and the analytic cone does NOT propagate to `Patching.lean`.
+import Mathlib.NumberTheory.LSeries.PrimesInAP
+import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
 
 @[expose] public section
 
@@ -1473,9 +1480,12 @@ characteristic three with MORE THAN THREE ELEMENTS; the discharge is
 any `Ind` machinery by writing the anticyclotomic index-two induction as
 an explicit dihedral cocycle. REFUTED as originally stated and repaired
 2026-07-26, the cardinality bound being the repair. The only class field
-theory left in it is `exists_anticyclotomicZModChar_of_quadraticChar` — the
-existence, for every `n ≥ 1`, of an anticyclotomic ray-class character of
-`M = ℚ(√d)` of order `n` — whose docstring records what has to be built; the
+theory left in it is `exists_anticyclotomicZModChar_of_inertPrime` (2026-07-27
+— the existence, for every `n ≥ 1` and a GIVEN inert auxiliary prime `p`, of an
+anticyclotomic ray-class character of `M = ℚ(√d)` of order `n`; the selection of
+`p` is PROVEN in `exists_auxiliaryPrime_of_neg` and the profinite bookkeeping in
+`exists_anticyclotomicZModChar_of_quadraticChar`, so only class field theory is
+left) — whose docstring records what has to be built; the
 dihedral cocycle itself, the oddness, the complex-conjugation involution,
 the index-two induction and the coefficient transport
 (`exists_anticyclotomicChar_of_quadraticChar`) were all proven over it by
@@ -16538,18 +16548,140 @@ theorem exists_dihedralCocycle_of_anticyclotomicChar
     rw [hsplit]
     exact (hopen w).union ((Homeomorph.mulRight c₀).isOpenMap _ (hopen w))
 
+/-- **THE AUXILIARY PRIME of the ring-class construction** (PROVEN 2026-07-27).
+For every `N ≥ 1`, every NEGATIVE integer `m` and every bound `B` there is a
+prime `p > B` with
+
+* `24 · N · |m| ∣ p + 1`, i.e. `p ≡ -1` modulo `24 N |m|`; in particular
+  `N ∣ (p + 1) / w` for every `w ∈ {2, 4, 6}` — that is, for the order
+  `w = #𝒪_M^ˣ` of the unit group of ANY imaginary quadratic order, since all
+  three divide `24`; and
+* `m` is a NON-SQUARE mod `p`. Since `p > |m|` is odd and does not divide `m`,
+  `p` is unramified in `ℚ(√m)`, so this says exactly that `p` is INERT there.
+
+WHY BOTH HOLD AT ONCE, which is the pleasant surprise of the roadmap: the
+Kronecker character of an imaginary quadratic field is ODD, so the single
+congruence `p ≡ -1` already forces `χ(p) = χ(-1) = -1`. No second, possibly
+incompatible, congruence has to be imposed. Formally the second bullet needs no
+reciprocity law at all, only the PERIODICITY of the Jacobi symbol in its lower
+argument (`jacobiSym.mod_right`, `J(a | b) = J(a | b % 4|a|)`). With `k = |m|`
+and `b = 4k - 1`:
+
+* `J(m | p) = J(m | p % 4k) = J(m | b)`, because `4k ∣ p + 1`;
+* `J(4k | b) = J(1 | b) = 1`, because `4k ≡ 1 (mod b)`
+  (`jacobiSym.mod_left`), while `J(4 | b) = J(2 | b) ^ 2 = 1`
+  (`jacobiSym.sq_one`, `b` odd); hence `J(k | b) = 1`;
+* so `J(m | b) = J(-1 | b) · J(k | b) = χ₄ b = -1`, as `b % 4 = 3`.
+
+The prime itself is DIRICHLET's theorem (`Nat.forall_exists_prime_gt_and_modEq`,
+mathlib), applied to the residue class `24 N |m| - 1`, which is coprime to
+`24 N |m|` because it is one less than it. -/
+theorem exists_auxiliaryPrime_of_neg (N : ℕ) (hN : 0 < N) (m : ℤ) (hm : m < 0) (B : ℕ) :
+    ∃ p : ℕ, p.Prime ∧ B < p ∧ (24 * N * m.natAbs) ∣ (p + 1) ∧
+      ¬ IsSquare ((m : ZMod p)) := by
+  classical
+  obtain ⟨k, hk, hmk⟩ : ∃ k : ℕ, 0 < k ∧ m = -(k : ℤ) :=
+    ⟨m.natAbs, Int.natAbs_pos.mpr (by omega), by omega⟩
+  have hnatAbs : m.natAbs = k := by omega
+  rw [hnatAbs]
+  have hQ : 24 ≤ 24 * N * k := by nlinarith
+  have hcop : Nat.Coprime (24 * N * k - 1) (24 * N * k) := by
+    have hd1 := Nat.gcd_dvd_left (24 * N * k - 1) (24 * N * k)
+    have hd2 := Nat.gcd_dvd_right (24 * N * k - 1) (24 * N * k)
+    have hsub := Nat.dvd_sub hd2 hd1
+    rw [Nat.sub_sub_self (by omega : 1 ≤ 24 * N * k)] at hsub
+    exact Nat.dvd_one.mp hsub
+  obtain ⟨p, hpgt, hp, hpmod⟩ :=
+    Nat.forall_exists_prime_gt_and_modEq (max B (24 * N * k)) (q := 24 * N * k)
+      (a := 24 * N * k - 1) (by omega) hcop
+  have hpB : B < p := lt_of_le_of_lt (le_max_left _ _) hpgt
+  have hpQ : 24 * N * k < p := lt_of_le_of_lt (le_max_right _ _) hpgt
+  have hQdvd : (24 * N * k) ∣ p + 1 := by
+    have h2 : p % (24 * N * k) = 24 * N * k - 1 := by
+      have h3 : p % (24 * N * k) = (24 * N * k - 1) % (24 * N * k) := hpmod
+      rw [h3, Nat.mod_eq_of_lt (by omega)]
+    refine ⟨p / (24 * N * k) + 1, ?_⟩
+    have h3 := Nat.div_add_mod p (24 * N * k)
+    rw [Nat.mul_add, Nat.mul_one]
+    omega
+  refine ⟨p, hp, hpB, hQdvd, ?_⟩
+  haveI : Fact p.Prime := ⟨hp⟩
+  have h4k : 4 * k ∣ p + 1 := dvd_trans ⟨6 * N, by ring⟩ hQdvd
+  have hkp : 4 * k ≤ p + 1 := Nat.le_of_dvd (by omega) h4k
+  have h4p : (4 : ℕ) ∣ p + 1 := dvd_trans ⟨k, rfl⟩ h4k
+  have hodd : Odd p := Nat.odd_iff.mpr (by omega)
+  have hmodk : p % (4 * k) = 4 * k - 1 := by
+    obtain ⟨t, ht⟩ := h4k
+    have ht1 : 1 ≤ t := by nlinarith
+    have hrw : p = (4 * k - 1) + 4 * k * (t - 1) := by
+      have hsub : 4 * k * (t - 1) = 4 * k * t - 4 * k := by
+        rw [Nat.mul_sub, Nat.mul_one]
+      omega
+    rw [hrw, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by omega)]
+  have hb3 : (4 * k - 1) % 4 = 3 := by omega
+  have hbodd : Odd (4 * k - 1) := Nat.odd_iff.mpr (by omega)
+  have hJk : jacobiSym (k : ℤ) (4 * k - 1) = 1 := by
+    have hcast : (4 * (k : ℤ)) = 1 + ((4 * k - 1 : ℕ) : ℤ) * 1 := by
+      have hc : ((4 * k - 1 : ℕ) : ℤ) = 4 * (k : ℤ) - 1 := by
+        push_cast [Nat.cast_sub (by omega : 1 ≤ 4 * k)]
+        ring
+      rw [hc]; ring
+    have h1 : jacobiSym ((4 : ℤ) * (k : ℤ)) (4 * k - 1) = jacobiSym (1 : ℤ) (4 * k - 1) := by
+      rw [jacobiSym.mod_left ((4 : ℤ) * (k : ℤ)) (4 * k - 1),
+        jacobiSym.mod_left (1 : ℤ) (4 * k - 1), hcast, Int.add_mul_emod_self_left]
+    have h2 : jacobiSym ((4 : ℤ) * (k : ℤ)) (4 * k - 1)
+        = jacobiSym (2 : ℤ) (4 * k - 1) ^ 2 * jacobiSym (k : ℤ) (4 * k - 1) := by
+      have hfac : ((4 : ℤ) * (k : ℤ)) = 2 * (2 * (k : ℤ)) := by ring
+      rw [hfac, jacobiSym.mul_left, jacobiSym.mul_left]
+      ring
+    have h3 : jacobiSym (2 : ℤ) (4 * k - 1) ^ 2 = 1 := by
+      refine jacobiSym.sq_one ?_
+      have hg : Int.gcd 2 ((4 * k - 1 : ℕ) : ℤ) = Nat.gcd 2 (4 * k - 1) := rfl
+      rw [hg]
+      exact Nat.coprime_two_left.mpr hbodd
+    rw [jacobiSym.one_left] at h1
+    rw [h2, h3, one_mul] at h1
+    exact h1
+  have hleg : legendreSym p m = -1 := by
+    rw [jacobiSym.legendreSym.to_jacobiSym, jacobiSym.mod_right m hodd, hnatAbs, hmodk, hmk,
+      show (-(k : ℤ)) = (-1) * (k : ℤ) by ring, jacobiSym.mul_left,
+      jacobiSym.at_neg_one hbodd, hJk, mul_one, ZMod.χ₄_nat_three_mod_four hb3]
+  exact (legendreSym.eq_neg_one_iff p).mp hleg
+
 /-- **THE CLASS FIELD THEORY LEAF: an ANTICYCLOTOMIC RAY-CLASS CHARACTER of an
-imaginary quadratic field, of ANY PRESCRIBED ORDER `n`** (sorry node, cut
-2026-07-27 out of `exists_anticyclotomicChar_of_quadraticChar`, which is PROVEN
-over it; this is now the ONLY class-field-theoretic content anywhere under
+imaginary quadratic field, of ANY PRESCRIBED ORDER `n`, AT A GIVEN INERT
+AUXILIARY PRIME** (sorry node; cut 2026-07-27 out of
+`exists_anticyclotomicChar_of_quadraticChar`, and re-cut the same day so that
+the auxiliary prime and the profinite bookkeeping are DISCHARGED elsewhere —
+`exists_auxiliaryPrime_of_neg` above proves the arithmetic selection of `p`, and
+`exists_anticyclotomicZModChar_of_quadraticChar` below derives local constancy
+from the open subgroup produced here. This is now the ONLY
+class-field-theoretic content anywhere under
 `exists_dihedralOddGaloisRep_of_charThree`).
 
+WHAT THE PRIME HYPOTHESES GIVE YOU, so that no arithmetic selection remains.
+Write `m = d.num · d.den`, an INTEGER with `m < 0` and `ℚ(√d) = ℚ(√m)` (because
+`d = m / d.den ^ 2`, a square factor). The hypotheses hand you a prime
+`p > 24 n |m|` with `24 n |m| ∣ p + 1` and `m` a non-square mod `p`. Hence `p` is
+odd, `p ∤ m`, `p` is INERT in `M = ℚ(√m)`, and `n ∣ (p + 1) / w` where
+`w = #𝒪_M^ˣ ∈ {2, 4, 6}`. Those are precisely the two facts the ring class field
+construction consumes; the leaf may take them as given.
+
 WHAT IT SAYS. Let `e` cut out `M = ℚ(√d)` inside `Γ_ℚ`, so `ker e = Γ_M`, and
-let `n ≥ 1`. Then there is `φ : Γ_ℚ → ZMod n` which is additive on `Γ_M`,
-ANTICYCLOTOMIC (`φ (c g c⁻¹) = -φ g` for `c ∉ Γ_M`), locally constant on `Γ_M`,
-and SURJECTIVE in the only sense that is used: it takes the value `1`. In other
-words `M` has a cyclic anticyclotomic (ring-class) extension of degree exactly
-`n`, i.e. a `D_n`-extension of `ℚ` with quadratic subfield `M`.
+let `n ≥ 1`. Then there are `φ : Γ_ℚ → ZMod n` and an OPEN subgroup
+`H ≤ Γ_M` such that `φ` is additive on `Γ_M`, ANTICYCLOTOMIC
+(`φ (c g c⁻¹) = -φ g` for `c ∉ Γ_M`), CONSTANT on every coset `g H` with
+`g ∈ Γ_M`, and takes the value `1` somewhere on `Γ_M`. In other words `M` has a
+cyclic anticyclotomic (ring-class) extension of degree exactly `n`, i.e. a
+`D_n`-extension of `ℚ` with quadratic subfield `M`; `H` is the fixing subgroup
+of that extension.
+
+WHY THE `H` FORMULATION RATHER THAN OPEN LEVEL SETS: the class field theory
+produces a FINITE abelian extension, hence an open fixing subgroup, directly.
+Turning that into "every level set of `φ` on `Γ_M` is open" is pure point-set
+topology (a level set is a union of left translates of `H`) and is discharged in
+`exists_anticyclotomicZModChar_of_quadraticChar` below, so a prover of this leaf
+never has to touch the Krull topology beyond exhibiting `H`.
 
 WHY THIS IS THE RIGHT SHAPE, and it is not merely a restatement of the parent.
 The parent asks for a character into an arbitrary commutative group carrying an
@@ -16566,6 +16698,10 @@ take the value `1`. So the hypothesis is not decoration; deleting it turns a
 true leaf into a false one.
 
 HOW IT IS TO BE PROVED, and this is a genuine roadmap rather than a gesture.
+**THE FIRST STEP IS NO LONGER PART OF THIS LEAF** (2026-07-27): the choice of
+`p` and both of its properties are the hypotheses `hpgt`/`hpdvd`/`hpns` above,
+proven in `exists_auxiliaryPrime_of_neg`. The paragraph is kept because it
+explains WHERE those hypotheses come from and why they are jointly satisfiable.
 Let `w = #𝒪_M^ˣ` (`4` for `d = -1`, `6` for `d = -3`, else `2`) and let `D` be
 the discriminant of `M`. Choose by DIRICHLET a prime `p ≡ -1 (mod w · n · |D|)`.
 Two things then hold at once, and the second is the pleasant surprise:
@@ -16619,6 +16755,56 @@ unramified, so ray class characters of the one field `M` suffice and the
 Nakagawa–Horie/Yamamoto theorem is NOT on the critical path.
 References: Neukirch ch. VI, Childress *Class Field Theory*, Cox *Primes of the
 Form x² + ny²* ch. 8 (ring class fields). -/
+theorem exists_anticyclotomicZModChar_of_inertPrime
+    (n : ℕ) (hn : 0 < n)
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (p : ℕ) (hp : p.Prime)
+    (hpgt : 24 * n * (d.num * (d.den : ℤ)).natAbs < p)
+    (hpdvd : (24 * n * (d.num * (d.den : ℤ)).natAbs) ∣ (p + 1))
+    (hpns : ¬ IsSquare ((d.num * (d.den : ℤ) : ℤ) : ZMod p)) :
+    ∃ (φ : Field.absoluteGaloisGroup ℚ → ZMod n)
+      (H : Subgroup (Field.absoluteGaloisGroup ℚ)),
+      IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+      (∀ h ∈ H, e h = 1) ∧
+      (∀ g h, e g = 1 → h ∈ H → φ (g * h) = φ g) ∧
+      (∀ g h, e g = 1 → e h = 1 → φ (g * h) = φ g + φ h) ∧
+      (∀ c g, e c = -1 → e g = 1 → φ (c * g * c⁻¹) = - φ g) ∧
+      (∃ g, e g = 1 ∧ φ g = 1) :=
+  sorry
+
+/-- **An ANTICYCLOTOMIC RAY-CLASS CHARACTER of an imaginary quadratic field, of
+ANY PRESCRIBED ORDER `n`, with `ZMod n` coefficients** (PROVEN 2026-07-27 over
+the two declarations above: the auxiliary prime
+`exists_auxiliaryPrime_of_neg` — Dirichlet plus a Jacobi-symbol computation, both
+elementary — and the single remaining class-field-theoretic leaf
+`exists_anticyclotomicZModChar_of_inertPrime`).
+
+WHAT IS DISCHARGED HERE, and it is exactly the two things that are NOT class
+field theory:
+
+* the ARITHMETIC SELECTION of the auxiliary prime. `ℚ(√d) = ℚ(√m)` for the
+  integer `m = d.num · d.den` (as `d = m / d.den ^ 2`), and `m < 0` because
+  `d < 0`; `exists_auxiliaryPrime_of_neg` then produces a prime `p` that is
+  simultaneously inert in `M` and large enough in the progression that
+  `n ∣ (p + 1) / w`. The roadmap's "pleasant surprise" — that ONE congruence
+  buys both, because the Kronecker character of an imaginary quadratic field is
+  odd — is a theorem of this module now, not a plan;
+* the LOCAL CONSTANCY. The class field theory leaf exhibits an open subgroup `H`
+  of `Γ_M` on whose cosets `φ` is constant (the fixing subgroup of the ring
+  class field of conductor `p`). Each level set
+  `{g | e g = 1 ∧ φ g = φ g₀}` is then a union of left translates `g · H`, each
+  open because left translation is a homeomorphism of `Γ_ℚ`; that is the whole
+  proof below, and it is why the CFT leaf never has to mention the Krull
+  topology except to say that `H` is open.
+
+**`0 < n` REMAINS LOAD-BEARING** and is passed straight through: at `n = 0`
+(`ZMod 0 = ℤ`) local constancy on the COMPACT `Γ_M` forces `φ = 0`, which can
+never take the value `1`. See the leaf above for the full statement of that
+audit, and for the audits that rule out `ModThree.lean`'s `_ray_class` cluster
+and explicit-dihedral-extension tricks. -/
 theorem exists_anticyclotomicZModChar_of_quadraticChar
     (n : ℕ) (hn : 0 < n)
     (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
@@ -16629,8 +16815,33 @@ theorem exists_anticyclotomicZModChar_of_quadraticChar
       (∀ g h, e g = 1 → e h = 1 → φ (g * h) = φ g + φ h) ∧
       (∀ c g, e c = -1 → e g = 1 → φ (c * g * c⁻¹) = - φ g) ∧
       (∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | e g = 1 ∧ φ g = φ g₀}) ∧
-      (∃ g, e g = 1 ∧ φ g = 1) :=
-  sorry
+      (∃ g, e g = 1 ∧ φ g = 1) := by
+  classical
+  -- `d = (num · den) / den ^ 2`, so `ℚ(√d) = ℚ(√m)` for the INTEGER `m = num · den`,
+  -- and `m < 0` exactly because `d < 0`. Everything arithmetic below is about `m`.
+  have hmneg : d.num * (d.den : ℤ) < 0 := by
+    have h1 : d.num < 0 := Rat.num_neg.mpr hd
+    have h2 : (0 : ℤ) < (d.den : ℤ) := by exact_mod_cast d.pos
+    exact mul_neg_of_neg_of_pos h1 h2
+  -- Dirichlet + quadratic reciprocity produce the auxiliary prime.
+  obtain ⟨p, hp, hpgt, hpdvd, hpns⟩ :=
+    exists_auxiliaryPrime_of_neg n hn (d.num * (d.den : ℤ)) hmneg
+      (24 * n * (d.num * (d.den : ℤ)).natAbs)
+  -- Class field theory at that prime produces `φ` together with an open subgroup `H`
+  -- of `Γ_M` on whose cosets `φ` is constant (the fixing subgroup of the ring class
+  -- field of conductor `p`).
+  obtain ⟨φ, H, hHopen, hHker, hHconst, hmul, hanti, g₁, hg₁, hg₁1⟩ :=
+    exists_anticyclotomicZModChar_of_inertPrime n hn d hd x hx e he p hp hpgt hpdvd hpns
+  refine ⟨φ, hmul, hanti, ?_, ⟨g₁, hg₁, hg₁1⟩⟩
+  -- local constancy: each level set is a union of left translates `g · H`, each open.
+  intro g₀
+  rw [isOpen_iff_forall_mem_open]
+  rintro g ⟨hge, hgφ⟩
+  refine ⟨(fun y => g * y) '' (H : Set (Field.absoluteGaloisGroup ℚ)), ?_, ?_, ?_⟩
+  · rintro _ ⟨h, hh, rfl⟩
+    exact ⟨by rw [map_mul, hge, hHker h hh, one_mul], by rw [hHconst g h hge hh, hgφ]⟩
+  · exact (Homeomorph.mulLeft g).isOpenMap _ hHopen
+  · exact ⟨1, H.one_mem, mul_one g⟩
 
 /-- **An ANTICYCLOTOMIC CHARACTER of an imaginary quadratic field, of order not
 dividing `4`, valued in an arbitrary commutative group** (PROVEN 2026-07-27 over
@@ -16833,11 +17044,15 @@ finite field — has a generator `ζ` of order `> 4`, which is exactly the
 hypothesis the class-field-theoretic leaf consumes.
 
 WHAT REMAINS. Exactly one input, and since 2026-07-27 it is one level
-further down: `exists_anticyclotomicChar_of_quadraticChar` is PROVEN, over
+further down — and since later that same day, two levels further down:
+`exists_anticyclotomicChar_of_quadraticChar` is PROVEN, over
 `exists_anticyclotomicZModChar_of_quadraticChar` — the existence, for every
 `n ≥ 1`, of an anticyclotomic (ring-class) character of `M = ℚ(√d)` of
 order `n`, stated with `ZMod n` coefficients so that no consumer's
-coefficient group leaks into the arithmetic. That is a RAY CLASS character,
+coefficient group leaks into the arithmetic — and THAT is now PROVEN too, over
+`exists_auxiliaryPrime_of_neg` (the Dirichlet/Jacobi-symbol selection of an
+inert auxiliary prime, elementary and PROVEN) and the single residual leaf
+`exists_anticyclotomicZModChar_of_inertPrime`. That is a RAY CLASS character,
 and its docstring records what has to be built (the ray class group of an
 imaginary quadratic field and Artin reciprocity onto it — absent from
 mathlib, from this tree and from `~/cs/FLT`; `ModThree.lean`'s `_ray_class`
@@ -17465,7 +17680,10 @@ was itself PROVEN on 2026-07-27, over a single class-field-theoretic leaf —
 anticyclotomic ray-class character of order not dividing `4`, which was in
 turn PROVEN the same day over
 `exists_anticyclotomicZModChar_of_quadraticChar` (the same statement with
-`ZMod n` coefficients and prescribed order `n`) — whose
+`ZMod n` coefficients and prescribed order `n`), which was itself PROVEN on
+2026-07-27 over `exists_auxiliaryPrime_of_neg` (elementary, PROVEN) and the
+single residual class-field-theoretic leaf
+`exists_anticyclotomicZModChar_of_inertPrime` — whose
 docstring records what has to be built (the ray class group of an
 imaginary quadratic field and the Artin map onto it; NOTHING of the kind
 exists in mathlib, in this tree, or in `~/cs/FLT`, re-confirmed
