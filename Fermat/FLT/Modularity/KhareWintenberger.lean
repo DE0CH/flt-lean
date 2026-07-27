@@ -3127,11 +3127,280 @@ theorem exists_totallyDefinite_heckeCharacter_of_heckePackage
           -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
   sorry
 
+/-- **The module topology on a finite-dimensional `ℚ_p`-algebra is a ring
+topology** (PROVEN, 2026-07-27): the exact mirror of
+`isTopologicalRing_moduleTopology_of_finite` one level up the tower, over the
+FIELD `ℚ_p` rather than over `ℤ_p`.
+
+It exists for the same reason the `ℤ_p`-version does: the field form of the
+Carayol citation (`exists_threeadicField_realization_of_totallyDefinite_heckeCharacter`
+below) must be able to say `GaloisRep F L (Fin 2 → L)` without asserting a
+topology on `L` as a component of the citation. The topology is not a choice —
+`Module.Finite ℚ_p L` pins it to the module topology — so both
+`IsTopologicalRing` and `IsModuleTopology` are theorems there rather than
+assumptions. -/
+theorem isTopologicalRing_moduleTopology_of_finite_padic (p : ℕ) [Fact p.Prime]
+    (L : Type*) [CommRing L] [Algebra ℚ_[p] L] [Module.Finite ℚ_[p] L] :
+    letI := moduleTopology ℚ_[p] L
+    IsTopologicalRing L :=
+  letI := moduleTopology ℚ_[p] L
+  IsModuleTopology.isTopologicalRing ℚ_[p] L
+
+/-- **STEP 2a — CARAYOL's Théorème (A) in its FIELD form: the `3`-adic
+realization over a finite extension of `ℚ_3`** (sorry leaf, CUT 2026-07-27 out
+of `carayol_threeadic_of_totallyDefinite_heckeCharacter`, which is now a proven
+assembly of this leaf and the stable-lattice leaf below).
+
+This is verbatim STEP 2 with ONE component deleted from the conclusion:
+INTEGRALITY. Where STEP 2 asks for a coefficient ring `B` module-finite over
+`ℤ_3` — i.e. for a `Γ_F`-stable LATTICE — this asks only for the
+representation over a finite extension `L/ℚ_3`, which is what Carayol's
+Théorème (A) literally produces (`σ_λ` is `E_λ`-adic; `E_λ` is a field).
+
+WHY THIS CUT IS A STRICT SHRINK, and why the standing ROUTE AUDIT no longer
+blocks it. `carayol_threeadic_realization_of_heckePackage`'s ROUND-3 AUDIT,
+route (1), analysed exactly this cut and reached the conclusion recorded there:
+"Old ⟹ New using only material already in this file … So New is a CONSEQUENCE
+of Old: strictly less to take on faith, and what it drops is exactly the
+INTEGRALITY — the existence of a Galois-stable lattice — and nothing else. New
+⟹ Old is precisely Serre I §1, and that is the entire price. **The moment the
+lattice step is PROVEN rather than cited, the cut becomes a strict
+improvement**; it is the only remaining route to removing `Module.Finite ℤ_3 B`."
+The older ROUTE AUDIT (2026-07-24) had rejected the same cut on the ground that
+"the stable-lattice step is itself a citation (compactness of `G_F` plus Serre
+I §1), so the cut trades one citation for two". **Round 5 refuted that ground**
+by producing a complete six-step in-tree work plan for the lattice step out of
+material that is all present at this pin, and the ONE pin gap it named has
+since closed — see the lattice leaf's docstring for both the plan and the
+refuting checks. So the lattice half is an ELEMENTARY open leaf, not a
+citation, and this is one citation plus one elementary leaf rather than two
+citations.
+
+Every hypothesis, and every other component of the conclusion, is byte-identical
+to STEP 2's; in particular `hJL` is the STEP 1 package verbatim, `hbad2` /
+`hbad3` / `hbadℓ` still delete the places where the `3`-adic member ramifies,
+and `hirrF` is still the non-Eisenstein condition without which Théorème (A) is
+not a theorem about this eigensystem. See
+`carayol_threeadic_realization_of_heckePackage`'s docstring for the full
+round-2/3/4/5 hypothesis audits; they apply here unchanged, because nothing on
+the hypothesis side moved.
+
+Literature: Carayol, *Sur les représentations `ℓ`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. ÉNS (4) **19** (1986) 409–468, Théorème (A)
+(§0.7) and its even-degree quaternionic predecessor Théorème (B) (§0.9);
+Taylor, *On Galois representations associated to Hilbert modular forms*,
+Invent. Math. **98** (1989). Carayol builds the compatible system by
+decomposing the `ℓ`-adic cohomology `H¹(M_K ⊗_F F̄, ℱ_λ)` of the Shimura curves
+attached to the quaternion algebra under the Hecke action (op. cit.
+§0.10–0.11); no pin material reaches that, which is why this half stays a
+citation.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_threeadicField_realization_of_totallyDefinite_heckeCharacter
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
+      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
+      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) :
+    ∃ (L : Type u) (_ : Field L) (_ : Algebra ℚ_[3] L)
+      (_ : Module.Finite ℚ_[3] L),
+      letI : TopologicalSpace L := moduleTopology ℚ_[3] L
+      letI : IsTopologicalRing L :=
+        isTopologicalRing_moduleTopology_of_finite_padic 3 L
+      ∃ (τ : GaloisRep F L (Fin 2 → L))
+        (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+        (ι : L →+* AlgebraicClosure ℚ_[3]),
+        ∀ w ∉ badF, (τ.charFrob w).map ι = (heckeF w).map ψ₃ := by
+  sorry
+
+/-- **STEP 2b — THE GALOIS-STABLE LATTICE (Serre, *Abelian `ℓ`-adic
+representations*, I §1)** (sorry leaf, CUT 2026-07-27): a continuous
+`2`-dimensional representation of `Γ_F` over a finite extension `L/ℚ_p`
+preserves a lattice, so it is conjugate to a representation over a
+coefficient ring `B` module-finite over `ℤ_p`, with the same Frobenius
+characteristic polynomials.
+
+**THIS IS AN ELEMENTARY LEAF, NOT A CITATION**, and saying so is the whole
+point of the cut: it is what makes
+`exists_threeadicField_realization_of_totallyDefinite_heckeCharacter` a strict
+shrink of the Carayol citation rather than a swap of one citation for two. The
+2026-07-24 ROUTE AUDIT in `carayol_threeadic_realization_of_heckePackage`
+rejected this cut on precisely the ground that "the stable-lattice step is
+itself a citation"; the ROUND-3/ROUND-5 audits in the same docstring refuted
+that by producing the complete work plan reproduced below out of material that
+is entirely in-tree at this pin.
+
+WHY IT IS TRUE. `Γ_F` is compact, `τ` is continuous, and `𝒪_L` is open in `L`;
+so the two-sided stabiliser `U` of the standard lattice `Λ₀ = 𝒪_L²` is an OPEN
+subgroup of a compact group, hence of finite index, and
+`Λ := ∑_i τ(gᵢ) Λ₀` over coset representatives is a `Γ_F`-stable lattice. `𝒪_L`
+is a DVR, so `Λ` is free of rank `2`, and conjugating by a basis gives the
+representation over `B = 𝒪_L`. Conjugation does not move a characteristic
+polynomial, which is why the matching clause is an equality on the nose rather
+than up to an isomorphism.
+
+WORK PLAN (inherited verbatim from the ROUND-5 audit of
+`carayol_threeadic_realization_of_heckePackage`, where it was written for a
+leaf that did not yet exist; it is reproduced HERE, on the declaration it is
+actually about, so the next owner starts at step 4 rather than at a blank
+page). Steps 1–3 are lookups, step 5 is standard, and essentially all of the
+cost is in step 6.
+
+1. `CompactSpace (Γ F)`. AVAILABLE but NOT by `inferInstance`: the tree's own
+   `instance [Algebra.IsAlgebraic K L] : CompactSpace (L ≃ₐ[K] L)`
+   (`Fermat/FLT/Mathlib/FieldTheory/Galois/Infinite.lean:93`) is stronger than
+   mathlib's `IsGalois`-based one, but `Field.absoluteGaloisGroup` is a `def`,
+   so it must be summoned as
+   `inferInstanceAs (CompactSpace (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F))`
+   — the idiom already used at `ModThree.lean:37174`.
+2. `𝒪_L := integralClosure ℤ_p L` is module-finite over `ℤ_p`
+   (`IsIntegralClosure.finite`) and free (`IsIntegralClosure.module_free`); the
+   set-up is `exists_padicIntegers_dvr_hull_of_injective`
+   (`Fermat/FLT/Mathlib/RingTheory/PadicIntegralClosure.lean:192`) verbatim,
+   which also gives it the `ℤ_p`-module topology by fiat. `U := {g | τ g '' Λ₀ ⊆
+   Λ₀ ∧ τ g⁻¹ '' Λ₀ ⊆ Λ₀}` is a SUBGROUP (the two-sided form is what makes it
+   one; the naive preimage of the integral matrices is only a submonoid) and is
+   OPEN, because `Mat₂(𝒪_L)` is open in `Mat₂(L) ≅ End_L(L²)`. That reduces to
+   `𝒪_L` open in `L`, i.e. a full `ℤ_p`-lattice in a finite-dimensional
+   `ℚ_p`-space is open — the `isOpen_span_natCast_pow` /
+   `isOpen_pow_of_natCast_mem` technique of
+   `Fermat/FLT/Modularity/TateModule.lean:2752`, `:2793` verbatim
+   (`Module.Free.chooseBasis`'s `equivFun` +
+   `IsModuleTopology.continuous_of_linearMap` + `isOpen_set_pi` +
+   `IsLocalRing.isOpen_maximalIdeal_pow`).
+3. `U` has finite index: `Subgroup.quotient_finite_of_isOpen`
+   (`Mathlib/Topology/Algebra/OpenSubgroup.lean:287`) composed with
+   `Subgroup.finiteIndex_of_finite_quotient` (`Mathlib/GroupTheory/Index.lean:719`)
+   — mathlib has no single bundled name, which is why an earlier grep missed
+   it, and the tree already open-codes the composition at `ModThree.lean:37176`.
+4. `Λ := ⨆ i, τ (gᵢ) '' Λ₀` over coset representatives is `Γ F`-stable: for `g`
+   and each `i`, `g * gᵢ = gⱼ * u` with `u ∈ U`, so `τ(g * gᵢ) '' Λ₀ = τ(gⱼ) ''
+   Λ₀`. The Lean cost here is the `Finset` bookkeeping over
+   `Quotient (QuotientGroup.leftRel U)`, not the mathematics.
+5. `Λ` is f.g. and torsion-free over the DVR `𝒪_L`, hence free, and it spans
+   `L²`, hence of rank `2` — giving `e : Λ ≃ₗ[𝒪_L] (Fin 2 → 𝒪_L)`.
+6. CONTINUITY of `g ↦ e.conj (τ g |_Λ)` into
+   `moduleTopology 𝒪_L (End_{𝒪_L} (Fin 2 → 𝒪_L))`. Go through `ℤ_p` rather than
+   `𝒪_L` — the module topology over `𝒪_L` agrees with the one over `ℤ_p`
+   because `𝒪_L` is module-finite over `ℤ_p`, `End_{𝒪_L}(𝒪_L²)` is then finite
+   free over `ℤ_p`, and continuity into a finite free `ℤ_p`-module is continuity
+   of coordinates, each of which factors through the already-continuous `τ` and
+   the topological embedding `ℤ_p ↪ ℚ_p`. This is the expensive half; the
+   doctrine's warning about concrete modules inside topology-carrying steps
+   applies in full, so keep the intermediate lemmas stated over an ABSTRACT
+   module.
+
+**THE ONE PIN GAP THAT ROUND 5 NAMED HAS CLOSED — this is a correction to that
+audit, checked mechanically on 2026-07-27.** Round 5 recorded that the
+transitivity lemma step 6 opens with (`IsModuleTopology R M ↔ IsModuleTopology
+S M` for `S` module-finite over `R` with the `R`-module topology) is "NOT in our
+mathlib pin", is present only in the reference project, and that "vendoring the
+three is the recommended first commit of the development" — with a warning that
+they would be FREE-FLOATING until step 6 consumes them, so the development
+could not be landed incrementally. **All of that is now moot: the vendoring
+already happened**, as part of the 109-module automorphic vendoring, and the
+lemmas arrived WITH consumers, so there is no free-floating problem and no
+first commit to pay for. Refuting check, one line:
+`grep -rn 'moduleTopology.trans\|of_continuous_isOpenMap_algebraMap' Fermat/`
+— `moduleTopology.trans` at
+`Fermat/FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean:169`,
+`IsModuleTopology.trans` at `:194`, `of_continuous_isOpenMap_algebraMap` at
+`:212`, already consumed at `DivisionAlgebra/Finiteness.lean:144,512`,
+`NumberField/AdeleRing.lean:341` and inside `ModuleTopology.lean` itself. So
+this leaf can be attacked as one whole task with nothing owed up front.
+
+FAITHFULNESS NOTE. `j` is NOT asserted injective and `B` is NOT asserted to be
+a domain, local, or to carry `ℤ_p` injectively: none of those is needed by the
+consumer (`carayol_threeadic_of_totallyDefinite_heckeCharacter`), all of them
+are already theorems downstream from the mere existence of a
+characteristic-zero comparison embedding
+(`injective_of_finite_padicInt_charZero`,
+`injective_algebraMap_of_ringHom_charZero`,
+`isLocalRing_of_finite_padicInt_domain`,
+`exists_domain_coefficientRing_of_ringHom`), and a weaker conclusion is a
+weaker obligation on whoever proves this. -/
+theorem exists_stableLattice_galoisRep_of_finiteDimensional_padic
+    (p : ℕ) [Fact p.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {L : Type u} [Field L] [Algebra ℚ_[p] L] [Module.Finite ℚ_[p] L]
+    [TopologicalSpace L] [IsTopologicalRing L] [IsModuleTopology ℚ_[p] L]
+    (τ : GaloisRep F L (Fin 2 → L)) :
+    ∃ (B : Type u) (_ : CommRing B) (_ : Algebra ℤ_[p] B)
+      (_ : Module.Finite ℤ_[p] B),
+      letI : TopologicalSpace B := moduleTopology ℤ_[p] B
+      letI : IsTopologicalRing B := isTopologicalRing_moduleTopology_of_finite p B
+      ∃ (τB : GaloisRep F B (Fin 2 → B)) (j : B →+* L),
+        ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+          (τB.charFrob w).map j = τ.charFrob w := by
+  sorry
+
 /-- **STEP 2 of the Carayol node — CARAYOL's Théorème (A): the `3`-adic
-Galois realization of the quaternionic Hecke character** (sorry leaf;
-HOISTED 2026-07-27 out of the body of
+Galois realization of the quaternionic Hecke character** (PROVEN ASSEMBLY
+since 2026-07-27 over the two leaves declared immediately above; HOISTED
+2026-07-27 out of the body of
 `carayol_threeadic_realization_of_heckePackage`, where it lived as the
 internal `have hcar`).
+
+ASSEMBLY (2026-07-27) — the INTEGRALITY CUT, i.e. route (1) of the ROUND-3
+AUDIT in `carayol_threeadic_realization_of_heckePackage`, taken. This node
+splits at the only joint that audit left open:
+
+* `exists_threeadicField_realization_of_totallyDefinite_heckeCharacter` — the
+  CITATION half, Carayol's Théorème (A) over the FIELD `E_λ`, which is what the
+  theorem literally produces. It no longer asserts that the representation
+  preserves a lattice;
+* `exists_stableLattice_galoisRep_of_finiteDimensional_padic` — the ELEMENTARY
+  half, Serre I §1: a continuous representation of the compact `Γ_F` over a
+  finite extension of `ℚ_3` preserves a lattice. Its docstring carries the
+  complete six-step in-tree work plan and the refuting checks.
+
+What the assembly itself does is only the composition of comparison embeddings:
+`ι ∘ j` where `j : B →+* L` and `ι : L →+* ℚ̄_3`, through `Polynomial.map_map`.
+That the Frobenius characteristic polynomials survive the lattice step is
+asserted by the lattice leaf, not re-derived here.
 
 Given the Jacquet–Langlands package produced by
 `exists_totallyDefinite_heckeCharacter_of_heckePackage` — a totally definite
@@ -3227,7 +3496,28 @@ theorem carayol_threeadic_of_totallyDefinite_heckeCharacter
         (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
         (ιB : B →+* AlgebraicClosure ℚ_[3]),
         ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
-  sorry
+  -- STEP 2a — the CITATION half, over the field `E_λ`: Carayol's Théorème (A)
+  -- literally produces an `E_λ`-adic representation, and this is that statement
+  -- with nothing added.
+  obtain ⟨L, hFieldL, hAlgL, hFinL, τ, ψ₃, ι, hmatch⟩ :=
+    exists_threeadicField_realization_of_totallyDefinite_heckeCharacter hℓodd hℓ5
+      hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF
+      ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+  -- the topology on `L` must be FIXED before anything whose type mentions it is
+  -- elaborated; it is not a choice, `Module.Finite ℚ_3 L` pins it
+  letI : TopologicalSpace L := moduleTopology ℚ_[3] L
+  haveI : IsModuleTopology ℚ_[3] L := ⟨rfl⟩
+  haveI : IsTopologicalRing L := isTopologicalRing_moduleTopology_of_finite_padic 3 L
+  -- STEP 2b — the ELEMENTARY half, Serre I §1: `Γ_F` is compact, so `τ`
+  -- preserves a lattice and descends to a coefficient ring module-finite over
+  -- `ℤ_3`, with the Frobenius characteristic polynomials unmoved (conjugation
+  -- does not move a characteristic polynomial).
+  obtain ⟨B, hCR, hAlg, hFin, τF, j, hj⟩ :=
+    exists_stableLattice_galoisRep_of_finiteDimensional_padic 3 (F := F) τ
+  letI : TopologicalSpace B := moduleTopology ℤ_[3] B
+  -- the assembly is the composition of the two comparison embeddings
+  exact ⟨B, hCR, hAlg, hFin, τF, ψ₃, ι.comp j, fun w hw => by
+    rw [← Polynomial.map_map, hj w, hmatch w hw]⟩
 
 /-- **The Hilbert-modular `3`-adic realization, geometric core**
 (PROVEN assembly since 2026-07-27, over the two hoisted citation leaves
@@ -3504,6 +3794,21 @@ becomes a strict improvement; it is the only remaining route to
 removing `Module.Finite ℤ_3 B`, and it is new mathematics, not
 restructuring.
 
+**ROUTE (1) HAS BEEN TAKEN (2026-07-27), one level down — at STEP 2.**
+It is not this node that was cut but its Carayol half,
+`carayol_threeadic_of_totallyDefinite_heckeCharacter`, which is now a
+PROVEN assembly of
+`exists_threeadicField_realization_of_totallyDefinite_heckeCharacter`
+(the citation, in the FIELD form written as "New" above) and
+`exists_stableLattice_galoisRep_of_finiteDimensional_padic` (Serre
+I §1). That is the right level: this node's conclusion is unchanged,
+its consumers are unchanged, and the integrality claim has moved OUT of
+the citation and INTO an elementary open leaf. The lattice leaf carries
+the six-step work plan below, verbatim, on the declaration it is
+actually about. NOTE the frontier count RISES by one at this cut, which
+is disclosure and not regression: a component that was previously
+invisible inside a citation is now a named, ownable obligation.
+
 PIN RECON for that step (done 2026-07-26 so the next owner need not
 repeat it). Statement: `Γ F` compact, `τ : Γ F → GL_2(L)` continuous,
 `L/ℚ_3` finite ⟹ a `Γ F`-stable `O_L`-lattice exists (take the
@@ -3622,14 +3927,23 @@ is standard, and essentially all of the cost is in step 6:
    with `of_continuous_isOpenMap_algebraMap` at `:212`, as recorded. So
    the vendoring step is real work and not a lookup.
 
-   **A WARNING FOR WHOEVER TAKES IT, and the reason this development has
-   not been started piecemeal:** the three vendored lemmas would be
-   FREE-FLOATING until step 6 consumes them, and free-floating code is
-   barred by the project's own check. This development therefore cannot
-   be landed as its "recommended first commit" alone — steps 1–6 have to
-   arrive together, or at least far enough for the topology lemmas to
-   have a written consumer. Budget it as ONE whole task, not as an
-   incremental series.
+   **BOTH PARAGRAPHS ABOVE ARE RETIRED (2026-07-27) — THE VENDORING HAS
+   LANDED, AND IT LANDED WITH CONSUMERS.** The re-verification was
+   correct when it was run and is now false: `moduleTopology.trans`,
+   `IsModuleTopology.trans` and `of_continuous_isOpenMap_algebraMap` are
+   in THIS tree, at
+   `Fermat/FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean:169`,
+   `:194` and `:212`, brought in by the 109-module automorphic vendoring.
+   Refuting check, one line:
+   `grep -rn 'moduleTopology.trans' Fermat/`. They are already consumed
+   at `DivisionAlgebra/Finiteness.lean:144,512`,
+   `NumberField/AdeleRing.lean:341` and inside `ModuleTopology.lean`
+   itself, so the free-floating warning that used to end this item — "the
+   three vendored lemmas would be FREE-FLOATING until step 6 consumes
+   them, so steps 1–6 have to arrive together" — no longer applies
+   either: there is no first commit to pay for, and step 6 can open
+   directly with `IsModuleTopology.trans`. Budgeting it as one whole task
+   is still the right call, but for its own size and not for this reason.
 
 (2) FIXING THE CARRIER — returning the representation over the
 integers of `ℚ_3(ψ₃ E)`, i.e. over `O_{E_λ}` — REJECTED. It does make
