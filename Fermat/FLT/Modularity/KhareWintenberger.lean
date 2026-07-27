@@ -299,6 +299,18 @@ public import Mathlib.Algebra.Algebra.Rat
 -- the density lemma reconciling the Zariski and real topologies, and
 -- `Set.Ioo_infinite` supplies the infinite sides.
 public import Mathlib.Algebra.MvPolynomial.Funext
+-- NOETHER–OSTROWSKI (2026-07-27, `exists_inverted_irreducible_map_algClosureZMod`):
+-- the Nullstellensatz over `ℚ ⊆ ℚ̄` (`MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`)
+-- turns "no `ℚ̄`-point" into "the ideal is `⊤`"; `IsLocalization.exist_integer_multiples`
+-- clears the denominators of the resulting Bézout identity; and the unit/degree API for
+-- `MvPolynomial` over a domain (`isUnit_iff_totalDegree_of_isReduced`,
+-- `totalDegree_mul_of_isDomain`) is what makes "both factors nonconstant" a CLOSED
+-- condition on the coefficient vectors.
+public import Mathlib.RingTheory.Nullstellensatz
+public import Mathlib.RingTheory.Localization.Integer
+public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
+public import Mathlib.Algebra.MvPolynomial.Nilpotent
+public import Mathlib.Algebra.Field.ZMod
 -- ARCHIMEDEAN cut (2026-07-26, `exists_realHilbertBlumenthalObject_of_odd`):
 -- the two conjugacy classes of complex conjugation on `H₁(E(ℂ), ℤ) = ℤ²` are
 -- written as explicit `2 × 2` matrices (`realConjMatrix`), so the matrix

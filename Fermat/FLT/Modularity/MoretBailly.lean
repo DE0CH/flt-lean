@@ -234,6 +234,18 @@ public import Mathlib.Algebra.Algebra.Rat
 -- the density lemma reconciling the Zariski and real topologies, and
 -- `Set.Ioo_infinite` supplies the infinite sides.
 public import Mathlib.Algebra.MvPolynomial.Funext
+-- NOETHER–OSTROWSKI (2026-07-27, `exists_inverted_irreducible_map_algClosureZMod`):
+-- the Nullstellensatz over `ℚ ⊆ ℚ̄` (`MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`)
+-- turns "no `ℚ̄`-point" into "the ideal is `⊤`"; `IsLocalization.exist_integer_multiples`
+-- clears the denominators of the resulting Bézout identity; and the unit/degree API for
+-- `MvPolynomial` over a domain (`isUnit_iff_totalDegree_of_isReduced`,
+-- `totalDegree_mul_of_isDomain`) is what makes "both factors nonconstant" a CLOSED
+-- condition on the coefficient vectors.
+public import Mathlib.RingTheory.Nullstellensatz
+public import Mathlib.RingTheory.Localization.Integer
+public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
+public import Mathlib.Algebra.MvPolynomial.Nilpotent
+public import Mathlib.Algebra.Field.ZMod
 -- ARCHIMEDEAN cut (2026-07-26, `exists_realHilbertBlumenthalObject_of_odd`):
 -- the two conjugacy classes of complex conjugation on `H₁(E(ℂ), ℤ) = ℤ²` are
 -- written as explicit `2 × 2` matrices (`realConjMatrix`), so the matrix
@@ -7463,15 +7475,422 @@ theorem isPrime_radical_integralSystemIdeal_algClosureRat
         (ULift.ringEquiv : ULift.{u} (AlgebraicClosure ℚ) ≃+* AlgebraicClosure ℚ)) h4
   exact isPrime_radical_of_irreducibleSpace_quotient _ h5
 
+/-! ### Noether–Ostrowski: the coefficient-space apparatus
+
+Everything in this block exists to prove
+`exists_inverted_irreducible_map_algClosureZMod` below, and is consumed only there.
+The plan (2026-07-27) does NOT go through Chevalley constructibility, which the route
+audit in that leaf's docstring proposed: the incidence "scheme" of factorisations is
+never formed as a scheme at all. Instead
+
+* reducibility of `g` over a field `K` is rewritten as SOLVABILITY over `K` of one of
+  finitely many systems of polynomial equations with INTEGER coefficients
+  (`exists_reducibilityCertificates`), and
+* a system with no solution over `ℚ̄` is shown to have no solution over `𝔽̄_p` for almost
+  all `p` (`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`) — by the Nullstellensatz
+  over `ℚ ⊆ ℚ̄`, which makes the ideal the unit ideal, followed by clearing the
+  denominators of the Bézout identity `1 = ∑ cᵢ rᵢ` to get an INTEGRAL certificate
+  `N = ∑ dᵢ rᵢ` with `N ≠ 0`. A solution in characteristic `p ∤ N` would force `N = 0`.
+
+The two non-formal points the audit flagged are handled as follows. Bounding the degrees
+of the factors is `totalDegree_mul_of_isDomain`. NONCONSTANCY of the two factors — an OPEN
+condition, which is what forced the audit towards constructibility — is made CLOSED by
+(i) normalising the first factor so that a chosen positive-degree coefficient equals `1`
+(the one scaling freedom in a factorisation), and (ii) adjoining ONE extra variable `t`
+with the equation `t * b_{e₂} = 1`, which expresses `b_{e₂} ≠ 0` by an equation. That is
+why the certificate family is indexed by a pair of positive-degree exponent vectors. -/
+
+/-- The multi-index attached to a coordinatewise-bounded exponent vector. -/
+noncomputable def boundedExpo (k D : ℕ) (e : Fin k → Fin (D + 1)) : Fin k →₀ ℕ :=
+  Finsupp.equivFunOnFinite.symm (fun i => (e i : ℕ))
+
+@[simp] theorem boundedExpo_apply (k D : ℕ) (e : Fin k → Fin (D + 1)) (i : Fin k) :
+    boundedExpo k D e i = (e i : ℕ) := rfl
+
+theorem boundedExpo_injective (k D : ℕ) : Function.Injective (boundedExpo k D) := by
+  intro e e' h
+  funext i
+  have := congrArg (fun m => m i) h
+  simp only [boundedExpo_apply] at this
+  exact Fin.val_injective this
+
+theorem exists_boundedExpo {k D : ℕ} {m : Fin k →₀ ℕ} (hm : ∀ i, m i ≤ D) :
+    ∃ e, boundedExpo k D e = m := by
+  refine ⟨fun i => ⟨m i, Nat.lt_succ_of_le (hm i)⟩, ?_⟩
+  ext i
+  simp
+
+/-- The polynomial with prescribed coordinatewise-bounded coefficients: the generic
+element of the space of polynomials of coordinatewise degree at most `D`. -/
+noncomputable def coeffPoly (k D : ℕ) {R : Type*} [CommSemiring R]
+    (a : (Fin k → Fin (D + 1)) → R) : MvPolynomial (Fin k) R :=
+  ∑ e, MvPolynomial.monomial (boundedExpo k D e) (a e)
+
+theorem coeff_coeffPoly (k D : ℕ) {R : Type*} [CommSemiring R]
+    (a : (Fin k → Fin (D + 1)) → R) (e : Fin k → Fin (D + 1)) :
+    (coeffPoly k D a).coeff (boundedExpo k D e) = a e := by
+  classical
+  rw [coeffPoly, MvPolynomial.coeff_sum, Finset.sum_eq_single e]
+  · simp
+  · intro e' _ hne
+    rw [MvPolynomial.coeff_monomial, if_neg]
+    exact fun hh => hne (boundedExpo_injective k D hh)
+  · intro h; exact absurd (Finset.mem_univ e) h
+
+theorem coeffPoly_coeff_self (k D : ℕ) {R : Type*} [CommSemiring R]
+    {p : MvPolynomial (Fin k) R} (hp : ∀ i, p.degreeOf i ≤ D) :
+    coeffPoly k D (fun e => p.coeff (boundedExpo k D e)) = p := by
+  classical
+  have hsub : p.support ⊆ Finset.image (boundedExpo k D) Finset.univ := by
+    intro m hm
+    obtain ⟨e, he⟩ := exists_boundedExpo (k := k) (D := D)
+      (fun i => le_trans (MvPolynomial.monomial_le_degreeOf i hm) (hp i))
+    exact Finset.mem_image.mpr ⟨e, Finset.mem_univ e, he⟩
+  calc coeffPoly k D (fun e => p.coeff (boundedExpo k D e))
+      = ∑ m ∈ Finset.image (boundedExpo k D) Finset.univ,
+          MvPolynomial.monomial m (p.coeff m) := by
+        rw [coeffPoly]
+        exact (Finset.sum_image (f := fun m => MvPolynomial.monomial m (p.coeff m))
+          (fun x _ y _ h => boundedExpo_injective k D h)).symm
+    _ = ∑ m ∈ p.support, MvPolynomial.monomial m (p.coeff m) := by
+        refine (Finset.sum_subset hsub ?_).symm
+        intro m _ hm
+        rw [MvPolynomial.notMem_support_iff.mp hm, MvPolynomial.monomial_zero]
+    _ = p := (MvPolynomial.as_sum p).symm
+
+theorem map_coeffPoly (k D : ℕ) {R S : Type*} [CommSemiring R] [CommSemiring S] (f : R →+* S)
+    (a : (Fin k → Fin (D + 1)) → R) :
+    MvPolynomial.map f (coeffPoly k D a) = coeffPoly k D (fun e => f (a e)) := by
+  rw [coeffPoly, coeffPoly, _root_.map_sum]
+  exact Finset.sum_congr rfl fun e _ => MvPolynomial.map_monomial f _ _
+
+theorem totalDegree_map_le' {σ R S : Type*} [CommSemiring R] [CommSemiring S] (f : R →+* S)
+    (p : MvPolynomial σ R) : (MvPolynomial.map f p).totalDegree ≤ p.totalDegree := by
+  classical
+  rw [MvPolynomial.totalDegree_eq]
+  refine Finset.sup_le fun m hm => ?_
+  rw [Finsupp.card_toMultiset]
+  exact MvPolynomial.le_totalDegree (MvPolynomial.support_map_subset f p hm)
+
+/-- Denominator clearing for a single multivariate polynomial over `ℚ`: some nonzero
+integer multiple of it comes from `MvPolynomial σ ℤ`. -/
+theorem exists_intPoly_map_eq_intCast_mul {σ : Type*} (c : MvPolynomial σ ℚ) :
+    ∃ (N : ℤ) (c' : MvPolynomial σ ℤ), N ≠ 0 ∧
+      MvPolynomial.map (Int.castRingHom ℚ) c' = (N : MvPolynomial σ ℚ) * c := by
+  classical
+  obtain ⟨b, hb⟩ :=
+    IsLocalization.exist_integer_multiples (nonZeroDivisors ℤ) (S := ℚ) c.support c.coeff
+  refine ⟨(b : ℤ), ∑ m ∈ c.support,
+    MvPolynomial.monomial m ((((b : ℤ) : ℚ) * c.coeff m).num), nonZeroDivisors.coe_ne_zero b, ?_⟩
+  have key : ∀ m ∈ c.support,
+      (((((b : ℤ) : ℚ) * c.coeff m).num : ℚ)) = (((b : ℤ) : ℚ)) * c.coeff m := by
+    intro m hm
+    obtain ⟨z, hz⟩ := hb m hm
+    have hz' : (((b : ℤ) : ℚ)) * c.coeff m = (z : ℚ) := by
+      rw [Algebra.smul_def] at hz
+      simpa using hz.symm
+    rw [hz', Rat.num_intCast]
+  rw [_root_.map_sum]
+  simp only [MvPolynomial.map_monomial, eq_intCast]
+  rw [Finset.sum_congr rfl (fun m hm => by rw [key m hm])]
+  rw [show ((b : ℤ) : MvPolynomial σ ℚ) = MvPolynomial.C (((b : ℤ) : ℚ)) from
+    (_root_.map_intCast (MvPolynomial.C : ℚ →+* MvPolynomial σ ℚ) ((b : ℤ))).symm]
+  conv_rhs => rw [MvPolynomial.as_sum c]
+  rw [Finset.mul_sum]
+  exact Finset.sum_congr rfl fun m _ => (MvPolynomial.C_mul_monomial).symm
+
+/-- **A finite system of integral polynomial equations with no solution over `ℚ̄` has no
+solution over `𝔽̄_p` for all but finitely many primes `p`.**
+
+This is the arithmetic half of Noether–Ostrowski, and it is where the single integer `N`
+comes from. The Nullstellensatz over the pair `ℚ ⊆ ℚ̄`
+(`MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`, which is stated for a base field and
+an algebraically closed extension — exactly the shape needed) turns the absence of a
+`ℚ̄`-point into `Ideal.span (range r) = ⊤` over `ℚ`; clearing denominators in the resulting
+Bézout identity produces `N = ∑ dᵢ rᵢ` over `ℤ` with `N ≠ 0`; and a solution in
+characteristic `p ∤ N` would evaluate that identity to `N = 0` in a field of
+characteristic `p`. -/
+theorem exists_pos_forall_prime_not_dvd_exists_eval_ne_zero
+    {σ ι : Type} [Finite σ] [Fintype ι] (r : ι → MvPolynomial σ ℤ)
+    (h : ∀ x : σ → AlgebraicClosure ℚ, ∃ i,
+      MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (r i) ≠ 0) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      ∀ x : σ → AlgebraicClosure (ZMod p), ∃ i,
+        MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure (ZMod p))) x (r i) ≠ 0 := by
+  classical
+  set rQ : ι → MvPolynomial σ ℚ := fun i => MvPolynomial.map (Int.castRingHom ℚ) (r i) with hrQ
+  have hcomp : ∀ (K : Type) [Field K] [Algebra ℚ K] (x : σ → K) (i : ι),
+      MvPolynomial.aeval x (rQ i) = MvPolynomial.eval₂ (Int.castRingHom K) x (r i) := by
+    intro K _ _ x i
+    rw [hrQ]
+    simp only [MvPolynomial.aeval_def, MvPolynomial.eval₂_map]
+    congr 1
+    exact Subsingleton.elim _ _
+  -- STEP 1: the ideal generated over `ℚ` is the unit ideal (Nullstellensatz).
+  have hzl : MvPolynomial.zeroLocus (AlgebraicClosure ℚ) (Ideal.span (Set.range rQ)) = ∅ := by
+    ext x
+    simp only [MvPolynomial.zeroLocus_span, Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false]
+    intro hx
+    obtain ⟨i, hi⟩ := h x
+    exact hi (by rw [← hcomp]; exact hx (rQ i) ⟨i, rfl⟩)
+  have htop : (Ideal.span (Set.range rQ) : Ideal (MvPolynomial σ ℚ)) = ⊤ := by
+    have hrad := MvPolynomial.vanishingIdeal_zeroLocus_eq_radical
+      (k := ℚ) (K := AlgebraicClosure ℚ) (Ideal.span (Set.range rQ))
+    rw [hzl, MvPolynomial.vanishingIdeal_empty] at hrad
+    exact Ideal.radical_eq_top.mp hrad.symm
+  rw [Ideal.eq_top_iff_one] at htop
+  obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun _).mp htop
+  -- STEP 2: clear denominators, getting an integral Bézout certificate for `Ntot`.
+  choose Nc c' hNc hc' using fun i => exists_intPoly_map_eq_intCast_mul (c i)
+  set Ntot : ℤ := ∏ i, Nc i with hNtot
+  have hNtot0 : Ntot ≠ 0 := Finset.prod_ne_zero_iff.mpr fun i _ => hNc i
+  set d : ι → MvPolynomial σ ℤ :=
+    fun i => ((∏ j ∈ Finset.univ.erase i, Nc j : ℤ) : MvPolynomial σ ℤ) * c' i with hd
+  have key : ∑ i, d i * r i = (Ntot : MvPolynomial σ ℤ) := by
+    apply MvPolynomial.map_injective (Int.castRingHom ℚ) Int.cast_injective
+    rw [_root_.map_sum, _root_.map_intCast]
+    have hterm : ∀ i : ι, MvPolynomial.map (Int.castRingHom ℚ) (d i * r i)
+        = (Ntot : MvPolynomial σ ℚ) * (c i * rQ i) := by
+      intro i
+      rw [hd]
+      simp only [_root_.map_mul, _root_.map_intCast, hc', hrQ, hNtot]
+      rw [← Finset.prod_erase_mul Finset.univ Nc (Finset.mem_univ i)]
+      push_cast
+      ring
+    rw [Finset.sum_congr rfl fun i _ => hterm i, ← Finset.mul_sum]
+    rw [show ∑ i, c i * rQ i = (1 : MvPolynomial σ ℚ) by
+      rw [← hc]; exact Finset.sum_congr rfl fun i _ => (smul_eq_mul _ _)]
+    rw [mul_one]
+  -- STEP 3: read the certificate modulo `p`.
+  refine ⟨Ntot.natAbs, Int.natAbs_pos.mpr hNtot0, ?_⟩
+  intro p hp hpN x
+  by_contra hcon
+  push Not at hcon
+  haveI : CharP (AlgebraicClosure (ZMod p)) p :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective p
+  have heval := congrArg
+    (MvPolynomial.eval₂Hom (Int.castRingHom (AlgebraicClosure (ZMod p))) x) key
+  rw [_root_.map_sum, _root_.map_intCast] at heval
+  simp only [_root_.map_mul, MvPolynomial.coe_eval₂Hom, hcon, mul_zero,
+    Finset.sum_const_zero] at heval
+  have hdvd : (p : ℤ) ∣ Ntot :=
+    (CharP.intCast_eq_zero_iff (AlgebraicClosure (ZMod p)) p Ntot).mp heval.symm
+  exact hpN (by simpa using Int.natAbs_dvd_natAbs.mpr hdvd)
+
+/-- **Reducibility of one integral polynomial over a field is cut out by finitely many
+systems of integral polynomial equations, uniformly in the field.**
+
+This is the geometric half of Noether–Ostrowski, and it is what makes the arithmetic half
+applicable. Given `g` over `ℤ` of total degree `D`, a factorisation of `g` over a field
+`K` into two nonconstant factors has both factors of total degree at most `D`
+(`totalDegree_mul_of_isDomain`), hence of coordinatewise degree at most `D`, hence of the
+form `coeffPoly k D a` for a coefficient vector indexed by the FINITE set
+`Fin k → Fin (D+1)`. Multiplying out the two generic factors and comparing coefficients
+with `g` gives a finite system of equations with integer coefficients in those unknowns.
+
+Nonconstancy is made into an equation twice over: the factorisation is normalised so that
+a chosen positive-degree coefficient `a_{e₁}` of the first factor equals `1`, and an extra
+unknown `t` is adjoined with the equation `t * b_{e₂} = 1`, which says `b_{e₂} ≠ 0`. The
+family is therefore indexed by the pair `(e₁, e₂)` of positive-degree exponent vectors. -/
+theorem exists_reducibilityCertificates {k : ℕ} (g : MvPolynomial (Fin k) ℤ) :
+    ∃ (J V ι : Type) (_ : Fintype J) (_ : Fintype V) (_ : Fintype ι)
+      (r : J → ι → MvPolynomial V ℤ),
+      ∀ (K : Type) [Field K],
+        (MvPolynomial.map (Int.castRingHom K) g).totalDegree ≠ 0 →
+        (¬ Irreducible (MvPolynomial.map (Int.castRingHom K) g) ↔
+          ∃ j : J, ∃ x : V → K,
+            ∀ i : ι, MvPolynomial.eval₂ (Int.castRingHom K) x (r j i) = 0) := by
+  classical
+  set D := g.totalDegree with hD
+  set Auniv : MvPolynomial (Fin k)
+      (MvPolynomial ((Fin k → Fin (D + 1)) ⊕ (Fin k → Fin (D + 1)) ⊕ Unit) ℤ) :=
+    coeffPoly k D (fun e => MvPolynomial.X (Sum.inl e)) with hAuniv
+  set Buniv : MvPolynomial (Fin k)
+      (MvPolynomial ((Fin k → Fin (D + 1)) ⊕ (Fin k → Fin (D + 1)) ⊕ Unit) ℤ) :=
+    coeffPoly k D (fun e => MvPolynomial.X (Sum.inr (Sum.inl e))) with hBuniv
+  set U : MvPolynomial (Fin k)
+      (MvPolynomial ((Fin k → Fin (D + 1)) ⊕ (Fin k → Fin (D + 1)) ⊕ Unit) ℤ) :=
+    Auniv * Buniv -
+      MvPolynomial.map
+        (Int.castRingHom
+          (MvPolynomial ((Fin k → Fin (D + 1)) ⊕ (Fin k → Fin (D + 1)) ⊕ Unit) ℤ)) g with hU
+  refine ⟨{e : Fin k → Fin (D + 1) // boundedExpo k D e ≠ 0} ×
+      {e : Fin k → Fin (D + 1) // boundedExpo k D e ≠ 0},
+    (Fin k → Fin (D + 1)) ⊕ (Fin k → Fin (D + 1)) ⊕ Unit,
+    {m : Fin k →₀ ℕ // m ∈ U.support} ⊕ (Unit ⊕ Unit),
+    inferInstance, inferInstance, inferInstance,
+    fun j => Sum.elim (fun m => U.coeff m.1)
+      (Sum.elim (fun _ => MvPolynomial.X (Sum.inl j.1.1) - 1)
+        (fun _ => MvPolynomial.X (Sum.inr (Sum.inl j.2.1)) *
+          MvPolynomial.X (Sum.inr (Sum.inr ())) - 1)), ?_⟩
+  intro K _ hdeg
+  set gK : MvPolynomial (Fin k) K := MvPolynomial.map (Int.castRingHom K) g with hgK
+  -- THE BRIDGE: the coefficient relations say exactly that the two generic factors
+  -- multiply out to `g`.
+  have hbridge : ∀ x : ((Fin k → Fin (D + 1)) ⊕ (Fin k → Fin (D + 1)) ⊕ Unit) → K,
+      (∀ m ∈ U.support, MvPolynomial.eval₂ (Int.castRingHom K) x (U.coeff m) = 0) ↔
+        coeffPoly k D (fun e => x (Sum.inl e)) *
+          coeffPoly k D (fun e => x (Sum.inr (Sum.inl e))) = gK := by
+    intro x
+    have hcomp : (MvPolynomial.eval₂Hom (Int.castRingHom K) x).comp
+        (Int.castRingHom
+          (MvPolynomial ((Fin k → Fin (D + 1)) ⊕ (Fin k → Fin (D + 1)) ⊕ Unit) ℤ))
+        = Int.castRingHom K := Subsingleton.elim _ _
+    have hmapU : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U =
+        coeffPoly k D (fun e => x (Sum.inl e)) *
+          coeffPoly k D (fun e => x (Sum.inr (Sum.inl e))) - gK := by
+      rw [hU, _root_.map_sub, _root_.map_mul, hAuniv, hBuniv, map_coeffPoly, map_coeffPoly,
+        MvPolynomial.map_map, hcomp, hgK]
+      simp
+    constructor
+    · intro hzero
+      have hz : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U = 0 := by
+        ext m
+        rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero]
+        by_cases hm : m ∈ U.support
+        · simpa using hzero m hm
+        · rw [MvPolynomial.notMem_support_iff.mp hm, _root_.map_zero]
+      rw [hmapU] at hz
+      exact sub_eq_zero.mp hz
+    · intro hprod m hm
+      have hz : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U = 0 := by
+        rw [hmapU, hprod, sub_self]
+      have hzz := congrArg (MvPolynomial.coeff m) hz
+      rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero] at hzz
+      simpa using hzz
+  constructor
+  · -- REDUCIBLE ⟹ a certificate exists.
+    intro hnirr
+    have hgK0 : gK ≠ 0 := fun h => hdeg (by rw [h, MvPolynomial.totalDegree_zero])
+    have hgKnu : ¬ IsUnit gK := fun hu =>
+      hdeg (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mp hu).2
+    rw [irreducible_iff] at hnirr
+    push Not at hnirr
+    obtain ⟨u, v, huv, hu, hv⟩ := hnirr hgKnu
+    have hu0 : u ≠ 0 := by rintro rfl; rw [zero_mul] at huv; exact hgK0 huv
+    have hv0 : v ≠ 0 := by rintro rfl; rw [mul_zero] at huv; exact hgK0 huv
+    have hDb : gK.totalDegree ≤ D := by rw [hgK, hD]; exact totalDegree_map_le' _ _
+    have hsum : u.totalDegree + v.totalDegree = gK.totalDegree := by
+      rw [huv, MvPolynomial.totalDegree_mul_of_isDomain hu0 hv0]
+    have hdu : u.totalDegree ≤ D := by omega
+    have hdv : v.totalDegree ≤ D := by omega
+    have hnc : ∀ w : MvPolynomial (Fin k) K, w ≠ 0 → ¬ IsUnit w → ∃ m ∈ w.support, m ≠ 0 := by
+      intro w hw0 hwnu
+      by_contra hcon
+      push Not at hcon
+      have htd : w.totalDegree = 0 :=
+        (MvPolynomial.totalDegree_eq_zero_iff _ w).mpr
+          (fun m hm i => by rw [hcon m hm]; rfl)
+      refine hwnu (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mpr ⟨?_, htd⟩)
+      have hCw := MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp htd
+      exact isUnit_iff_ne_zero.mpr (fun hz => hw0 (by rw [hCw, hz, _root_.map_zero]))
+    obtain ⟨m₁, hm₁s, hm₁ne⟩ := hnc u hu0 hu
+    obtain ⟨m₂, hm₂s, hm₂ne⟩ := hnc v hv0 hv
+    have hlam0 : u.coeff m₁ ≠ 0 := MvPolynomial.mem_support_iff.mp hm₁s
+    have hCne : (MvPolynomial.C (u.coeff m₁)⁻¹ : MvPolynomial (Fin k) K) ≠ 0 := by
+      simp [hlam0]
+    have hCne' : (MvPolynomial.C (u.coeff m₁) : MvPolynomial (Fin k) K) ≠ 0 := by
+      simp [hlam0]
+    have huv' : (MvPolynomial.C (u.coeff m₁)⁻¹ * u) * (MvPolynomial.C (u.coeff m₁) * v) = gK := by
+      rw [show (MvPolynomial.C (u.coeff m₁)⁻¹ * u) * (MvPolynomial.C (u.coeff m₁) * v)
+          = (MvPolynomial.C (u.coeff m₁)⁻¹ * MvPolynomial.C (u.coeff m₁)) * (u * v) by ring,
+        ← _root_.map_mul, inv_mul_cancel₀ hlam0, _root_.map_one, one_mul, huv]
+    have hdu' : ∀ i, (MvPolynomial.C (u.coeff m₁)⁻¹ * u).degreeOf i ≤ D := by
+      intro i
+      refine le_trans (MvPolynomial.degreeOf_le_totalDegree _ _) ?_
+      rw [MvPolynomial.totalDegree_mul_of_isDomain hCne hu0, MvPolynomial.totalDegree_C]
+      simpa using hdu
+    have hdv' : ∀ i, (MvPolynomial.C (u.coeff m₁) * v).degreeOf i ≤ D := by
+      intro i
+      refine le_trans (MvPolynomial.degreeOf_le_totalDegree _ _) ?_
+      rw [MvPolynomial.totalDegree_mul_of_isDomain hCne' hv0, MvPolynomial.totalDegree_C]
+      simpa using hdv
+    obtain ⟨e₁, he₁⟩ : ∃ e, boundedExpo k D e = m₁ :=
+      exists_boundedExpo (fun i => le_trans (MvPolynomial.monomial_le_degreeOf i hm₁s)
+        (le_trans (MvPolynomial.degreeOf_le_totalDegree _ _) hdu))
+    obtain ⟨e₂, he₂⟩ : ∃ e, boundedExpo k D e = m₂ :=
+      exists_boundedExpo (fun i => le_trans (MvPolynomial.monomial_le_degreeOf i hm₂s)
+        (le_trans (MvPolynomial.degreeOf_le_totalDegree _ _) hdv))
+    have hb2ne : (MvPolynomial.C (u.coeff m₁) * v).coeff m₂ ≠ 0 := by
+      rw [MvPolynomial.coeff_C_mul]
+      exact mul_ne_zero hlam0 (MvPolynomial.mem_support_iff.mp hm₂s)
+    refine ⟨(⟨e₁, by rw [he₁]; exact hm₁ne⟩, ⟨e₂, by rw [he₂]; exact hm₂ne⟩),
+      Sum.elim (fun e => (MvPolynomial.C (u.coeff m₁)⁻¹ * u).coeff (boundedExpo k D e))
+        (Sum.elim (fun e => (MvPolynomial.C (u.coeff m₁) * v).coeff (boundedExpo k D e))
+          (fun _ => ((MvPolynomial.C (u.coeff m₁) * v).coeff m₂)⁻¹)), ?_⟩
+    rintro (⟨m, hm⟩ | (_ | _))
+    · simp only [Sum.elim_inl]
+      refine (hbridge _).mpr ?_ m hm
+      simp only [Sum.elim_inl, Sum.elim_inr]
+      rw [coeffPoly_coeff_self k D hdu', coeffPoly_coeff_self k D hdv']
+      exact huv'
+    · simp only [Sum.elim_inr, Sum.elim_inl, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_X,
+        MvPolynomial.eval₂_one]
+      rw [he₁, MvPolynomial.coeff_C_mul, inv_mul_cancel₀ hlam0, sub_self]
+    · simp only [Sum.elim_inr, Sum.elim_inl, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_mul,
+        MvPolynomial.eval₂_X, MvPolynomial.eval₂_one]
+      rw [he₂, mul_inv_cancel₀ hb2ne, sub_self]
+  · -- A certificate ⟹ REDUCIBLE.
+    rintro ⟨⟨⟨e₁, he₁⟩, ⟨e₂, he₂⟩⟩, x, hx⟩ hirr
+    have hcoef := (hbridge x).mp (fun m hm => by simpa using hx (Sum.inl ⟨m, hm⟩))
+    have ha1 : x (Sum.inl e₁) = 1 := by
+      have h1 := hx (Sum.inr (Sum.inl ()))
+      simp only [Sum.elim_inr, Sum.elim_inl, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_X,
+        MvPolynomial.eval₂_one, sub_eq_zero] at h1
+      exact h1
+    have hb2 : x (Sum.inr (Sum.inl e₂)) ≠ 0 := by
+      have h2 := hx (Sum.inr (Sum.inr ()))
+      simp only [Sum.elim_inr, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_mul,
+        MvPolynomial.eval₂_X, MvPolynomial.eval₂_one, sub_eq_zero] at h2
+      intro hzero
+      rw [hzero, zero_mul] at h2
+      exact zero_ne_one h2
+    have hnu : ∀ (P : MvPolynomial (Fin k) K) (e : Fin k → Fin (D + 1)),
+        boundedExpo k D e ≠ 0 → P.coeff (boundedExpo k D e) ≠ 0 → ¬ IsUnit P := by
+      intro P e he hc hunit
+      have h0 := (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mp hunit).2
+      rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C] at h0
+      rw [h0, MvPolynomial.coeff_C, if_neg (Ne.symm he)] at hc
+      exact hc rfl
+    rcases hirr.isUnit_or_isUnit hcoef.symm with h | h
+    · exact hnu _ e₁ he₁ (by rw [coeff_coeffPoly, ha1]; exact one_ne_zero) h
+    · exact hnu _ e₂ he₂ (by rw [coeff_coeffPoly]; exact hb2) h
+
 /-- **NOETHER–OSTROWSKI: ABSOLUTE IRREDUCIBILITY OF ONE POLYNOMIAL SPREADS OUT**
-(SORRY LEAF, cut 2026-07-27 out of
-`exists_inverted_irreducibleSpace_integralSystemModel` below, which is now PROVEN
+(**PROVEN 2026-07-27**; cut out of
+`exists_inverted_irreducibleSpace_integralSystemModel` below, which is PROVEN
 over this leaf together with its geometric sibling
 `exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel`
 immediately below.)
 
 An integral polynomial irreducible over `ℚ̄` stays irreducible over `𝔽̄_p` for
 every prime outside one explicit integer `N`.
+
+THE PROOF THAT WAS USED — AND THE CORRECTION TO THE CHEVALLEY ROUTE RECORDED
+BELOW. The route sketched in the next paragraph is correct mathematics, and it
+is NOT the route taken: **no scheme, no constructible set and no Chevalley
+theorem occur in the proof.** The observation that makes them unnecessary is
+that `Spec ℤ`-constructibility is being used only to convert "the reducibility
+locus misses the generic point" into "it misses all but finitely many closed
+points", and over `ℤ` that conversion is elementary once the locus is presented
+as the solution set of a system of INTEGRAL polynomial equations: absence of a
+`ℚ̄`-solution makes the ideal the unit ideal (Nullstellensatz over `ℚ ⊆ ℚ̄`,
+`MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`), and clearing denominators
+in the resulting Bézout identity `1 = ∑ cᵢ rᵢ` yields an integral certificate
+`N = ∑ dᵢ rᵢ` with `N ≠ 0`. Any solution in characteristic `p ∤ N` would
+evaluate that identity to `N = 0`. So the SAME integer `N` that the Chevalley
+argument produces as "the product of the offending primes" is produced here
+directly, as the denominator of a Bézout identity.
+
+The two halves are `exists_reducibilityCertificates` (geometry: reducibility of
+`g` over any field is solvability of one of finitely many integral systems) and
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` (arithmetic: an integral
+system unsolvable over `ℚ̄` is unsolvable over `𝔽̄_p` for `p ∤ N`), both above.
+The third ingredient, invisible in that split, is nonconstancy of `g` itself
+modulo `p`: it is inverted by the integer `N₀ = |coeff m₀ g|` at any
+positive-degree monomial `m₀` in the support of `g`, and the `N` returned below
+is `N₀` times the product of the arithmetic half's integers.
 
 WHY THIS IS THE PIECE WORTH PEELING OFF, AND WHY IT IS SEPARATELY DISPATCHABLE.
 The route audit on the sibling leaf below records the Poonen §3.2 architecture
@@ -7482,7 +7901,10 @@ system `f` — a commutative algebraist who has never opened this file can take
 it, exactly like the Lang–Weil sibling
 `exists_bound_forall_zmodSolvable_of_irreducibleFibre`.
 
-WHY CHEVALLEY APPLIES HERE THOUGH IT DID NOT APPLY TO THE PARENT. The parent's
+WHY CHEVALLEY APPLIES HERE THOUGH IT DID NOT APPLY TO THE PARENT (the
+ALTERNATIVE route, recorded at dispatch and NOT the one taken — see above; kept
+because its degree-bound analysis is what shows the leaf is separable from its
+sibling at all). The parent's
 route 2 (see the sibling below) died because a factorisation of the SYSTEM's
 radical has UNBOUNDED degrees, so the reducibility locus is not a finite-type
 condition. Here the degrees are bounded by `g` itself: in a factorisation
@@ -7508,7 +7930,15 @@ pin:
   (some coefficient of a positive-degree monomial is nonzero), not a closed one.
   That is why the locus is CONSTRUCTIBLE rather than the image of a closed set,
   and it is why `isConstructible_comap_image` is the right tool rather than a
-  bare image-of-`Spec` argument;
+  bare image-of-`Spec` argument. (**Superseded by the proof actually given**:
+  openness is removed rather than accommodated. Normalising one positive-degree
+  coefficient of the first factor to `1` uses up the single scaling freedom in a
+  factorisation and turns the first factor's nonconstancy into an EQUATION; the
+  second factor's is turned into one by adjoining a single new unknown `t` with
+  the equation `t * b_{e₂} = 1`. The price is that the certificate family is
+  indexed by the finitely many pairs `(e₁, e₂)` of positive-degree exponent
+  vectors — a finite disjunction, which the arithmetic half absorbs by taking
+  the product of the finitely many `N`s.);
 * the bridge between "`g` factors over the algebraically closed field `k`" and
   "the incidence scheme has a `k`-point" is the ordinary Nullstellensatz
   dictionary between `k`-points and maximal ideals of the fibre. In particular
@@ -7529,8 +7959,60 @@ theorem exists_inverted_irreducible_map_algClosureZMod {k : ℕ}
     (g : MvPolynomial (Fin k) ℤ)
     (hQ : Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g)) :
     ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
-      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g) :=
-  sorry
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g) := by
+  classical
+  obtain ⟨J, V, ι, _, _, _, r, hr⟩ := exists_reducibilityCertificates g
+  -- `g` is nonconstant over `ℚ̄`, because a constant is a unit or zero there.
+  have hdegQ : (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g).totalDegree ≠ 0 := by
+    intro h0
+    have hC := MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp h0
+    rcases eq_or_ne ((MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g).coeff 0) 0
+      with hc | hc
+    · exact hQ.ne_zero (by rw [hC, hc, _root_.map_zero])
+    · exact (irreducible_iff.mp hQ).1 (MvPolynomial.isUnit_iff_totalDegree_of_isReduced.mpr
+        ⟨isUnit_iff_ne_zero.mpr hc, h0⟩)
+  -- `N₀`: a positive-degree coefficient of `g` that must survive modulo `p`.
+  obtain ⟨m₀, hm₀s, hm₀ne⟩ : ∃ m ∈ g.support, m ≠ 0 := by
+    by_contra hcon
+    push Not at hcon
+    have hg0 : g.totalDegree = 0 := (MvPolynomial.totalDegree_eq_zero_iff _ g).mpr
+      (fun m hm i => by rw [hcon m hm]; rfl)
+    exact hdegQ (Nat.le_zero.mp (hg0 ▸ totalDegree_map_le' _ g))
+  have hm₀ : g.coeff m₀ ≠ 0 := MvPolynomial.mem_support_iff.mp hm₀s
+  -- irreducibility over `ℚ̄` says every certificate system is unsolvable there.
+  have hnoQ : ∀ j : J, ∀ x : V → AlgebraicClosure ℚ, ∃ i,
+      MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (r j i) ≠ 0 := by
+    intro j x
+    by_contra hcon
+    push Not at hcon
+    exact (hr (AlgebraicClosure ℚ) hdegQ).mpr ⟨j, x, hcon⟩ hQ
+  choose Nj hNjpos hNj using fun j : J =>
+    exists_pos_forall_prime_not_dvd_exists_eval_ne_zero (r j) (hnoQ j)
+  refine ⟨(g.coeff m₀).natAbs * ∏ j, Nj j, Nat.mul_pos (Int.natAbs_pos.mpr hm₀)
+    (Finset.prod_pos fun j _ => hNjpos j), ?_⟩
+  intro p hp hpdvd
+  haveI : CharP (AlgebraicClosure (ZMod p)) p :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective p
+  have hp0 : ¬ (p ∣ (g.coeff m₀).natAbs) := fun h => hpdvd (h.mul_right _)
+  have hdegp : (MvPolynomial.map
+      (Int.castRingHom (AlgebraicClosure (ZMod p))) g).totalDegree ≠ 0 := by
+    intro h0
+    have hC := MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp h0
+    have hcoef : ((g.coeff m₀ : ℤ) : AlgebraicClosure (ZMod p)) = 0 := by
+      have h1 : (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g).coeff m₀
+          = ((g.coeff m₀ : ℤ) : AlgebraicClosure (ZMod p)) := by
+        rw [MvPolynomial.coeff_map]; rfl
+      rw [hC, MvPolynomial.coeff_C, if_neg (Ne.symm hm₀ne)] at h1
+      exact h1.symm
+    exact hp0 (by
+      simpa using Int.natAbs_dvd_natAbs.mpr
+        ((CharP.intCast_eq_zero_iff (AlgebraicClosure (ZMod p)) p (g.coeff m₀)).mp hcoef))
+  by_contra hnirr
+  obtain ⟨j, x, hx⟩ := (hr (AlgebraicClosure (ZMod p)) hdegp).mp hnirr
+  obtain ⟨i, hi⟩ := hNj j p
+    (fun h => hpdvd ((h.trans (Finset.dvd_prod_of_mem Nj (Finset.mem_univ j))).mul_left _)) x
+  exact hi (hx i)
 
 /-- **POONEN §3.2 STEPS (a)–(c) OVER `ℚ` ALONE: A BIRATIONAL HYPERSURFACE NORMAL
 FORM FOR THE GENERIC FIBRE** (SORRY LEAF, cut 2026-07-27 out of
