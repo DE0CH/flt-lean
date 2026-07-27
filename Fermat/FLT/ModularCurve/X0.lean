@@ -18193,7 +18193,75 @@ theory for abelian schemes here: `Modularity/AbelianSchemeIsogeny.lean`
 supplies `[n] : A ⟶ A` and its flatness, nothing more.  The check that
 would refute this:
 `grep -rn "heckeAlgebra\|HeckeAlgebra\|AbelianVarietyAttachedTo" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/`. -/
+.lake/packages/mathlib/ ~/cs/FLT/`.
+
+**ABSENCE RE-VERIFIED INDEPENDENTLY 2026-07-27 at `122c02b0`**, over all
+four places an absence claim can fail (the mathlib pin, this project's
+`Fermat/FLT/Mathlib/` shim, the rest of `Fermat/`, and `~/cs/FLT`).  Counts
+are FILES containing a match, from
+
+    grep -rlE "<pat>" Fermat/ .lake/packages/mathlib/Mathlib/ ~/cs/FLT/FLT/ --include=*.lean
+
+| pattern | `Fermat/` | mathlib | `~/cs/FLT` |
+|---|---|---|---|
+| `Isogeny\|isogenous\|IsIsogeny` | 0 | 0 | 0 |
+| `Newform\|newform` | 0 | 0 | 0 |
+| `AtkinLehner\|Atkin-Lehner\|Atkin–Lehner` | 0 | 0 | 0 |
+| `GrossZagier\|Gross-Zagier\|Gross–Zagier` | 0 | 0 | 0 |
+| `EulerSystem\|Euler system` | 0 | 0 | 0 |
+| `Kolyvagin` | 6, all prose | 0 | 0 |
+
+Two further facts from the same sweep, neither of them recorded before and
+both load-bearing for the pin discussion on
+`isTorsion_factor_of_heckeIsotypic` below: mathlib has **no abelian
+varieties** (`Jacobian` occurs there only in measure theory), and **no
+scheme-level `Ω¹`** — `Mathlib/RingTheory/Kaehler/` is ring-level only and
+a search for a differentials object under `Mathlib/AlgebraicGeometry/`
+returns nothing.
+
+**NO SAFE CUT OF THIS LEAF EXISTS AT THIS PIN — with a witness rather than
+an opinion** (2026-07-27).  The tempting cut is "the Hecke action exists",
+then "the action decomposes".  Its first half is **vacuous**: `T n := 𝟙 J`
+satisfies `T_comp` (`Category.id_comp`), `T_add` (`RelPoint.post (𝟙 J) _ x
+= x`, since `x.1 ≫ 𝟙 = x.1`) and commutativity, so any intermediate
+structure carrying only `T`, `T_comp`, `T_add` is inhabited
+unconditionally and the second half is this theorem verbatim.  A second
+witness kills the cuts that keep the factors but drop `u_surj` or
+`finite_ker`: take `A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr`, for
+which `RelPoint (𝟙 SpecQ) g` is a SINGLETON, so `isotypic` holds trivially
+and `integral`/`cover` are the only surviving content.  That is why the
+structure above must be produced as ONE datum.
+
+AXES SEARCHED: (a) cuts of the conclusion by field group — every grouping
+leaves a half that one of the two witnesses inhabits for free; (b)
+splitting off the modular-forms bookkeeping — see the next paragraph; (c)
+the theory axis (the table above).  AXIS **NOT** SEARCHED: a
+complex-analytic route through `Γ₀(N)\ℍ*`, which is how the classical
+proof identifies the factors in the first place and the one direction that
+does not start from an integral model.
+
+**The modular-forms split, recorded so the next owner does not re-derive
+it.**  One could split off
+
+    ∃ (ι : Type) (_ : Fintype ι) (form : ι → CuspForm (Gamma0GL N) 2)
+      (coeff : ι → ℕ → ℂ),
+      (∀ i, IsWeightTwoEigenform N (form i) (coeff i)) ∧
+      (∀ i n, IsIntegral ℤ (coeff i n)) ∧
+      (∀ f a, IsWeightTwoEigenform N f a → ∃ i, coeff i = a)
+
+— finitely many normalized eigenforms with algebraic-integer coefficients,
+i.e. Shimura integrality together with Atkin–Lehner, which is genuinely
+different literature from Eichler–Shimura.  The statement is SAFE (not
+vacuous: it demands finiteness AND covering, so neither an empty nor a
+junk `ι` discharges it).  It nevertheless does **not** reduce the
+geometric half, and the reason is worth writing down: that half must still
+choose its own `idx` **with multiplicities**.  The number of eigenforms of
+level `N` above a newform `g` of level `M` can be strictly smaller than
+`σ₀(N/M)` — at `N = p³M` with `p ∤ M` the `g`-old space is `4`-dimensional
+while `U_p` on it has only the two stabilization eigenvalues and is not
+semisimple, so there are `2` eigenforms and `4` copies are needed for
+`finite_ker`.  So `ι` cannot serve as `idx`, and the split buys the
+geometric leaf only `integral`. -/
 theorem exists_heckeIsotypicDecomposition (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -18245,7 +18313,84 @@ input, and it should be done rather than routed around.
 `D.u_surj`, `D.isotypic`, `D.cover`, `D.equivariant` and `D.integral` are
 all available to a prover and none of them is decoration: the first
 carries the rank bound, the rest identify which eigenform `A i` belongs
-to. -/
+to.
+
+**THE ROUTE RECORDED ABOVE READS AS CIRCULAR, AND IT NEED NOT BE**
+(2026-07-27).  "`hL` already forces `J₀(N)(ℚ)` to be torsion" is the
+CONCLUSION OF THIS LEAF'S OWN CONSUMER
+(`isTorsion_jacobian_of_lFunction_ne_zero` below), so a prover who takes
+that sentence literally has nothing to start from.  A direct route exists,
+it is the one to take, and it uses `D.u_surj i` and nothing else about `D`:
+
+* `u i` is a SURJECTIVE homomorphism, so `A i` is an abelian-variety
+  QUOTIENT of `J₀(N)`;
+* by Eichler–Shimura every such quotient is `ℚ`-isogenous to a product of
+  modular abelian varieties `A_g` with `g` a newform of level `M ∣ N`;
+* each such `g` is itself an element of `S₂(Γ₀(N))` and an eigenform, so
+  `hL` applies to it directly and gives `L(g, 1) ≠ 0`;
+* Kolyvagin–Logachev makes each `A_g(ℚ)` torsion, and isogeny invariance is
+  already PROVEN above as `isTorsion_of_finite_jointKer`.
+
+So the unpinned `T` is **not** an obstruction to proving this statement; it
+is an obstruction only to STRENGTHENING it.  The route's one extra input
+beyond Eichler–Shimura and Kolyvagin–Logachev is Poincaré reducibility (or
+just its quotient half), which is absent from all four places —
+`grep -ri "poincar" Fermat/ .lake/packages/mathlib/Mathlib/ ~/cs/FLT/FLT/`
+returns only this file's own prose, at `122c02b0`.
+
+**THE PIN NAMED IN THE CRUX IS INSUFFICIENT AS AN ABSTRACT INTERTWINING**
+(2026-07-27; this is the correction that matters most for whoever is
+dispatched at the pin).  `IsHeckeIsotypicDecomposition`'s docstring offers,
+as "the check that would let the sharper statement be written", the action
+of `T_n` on `H⁰(J, Ω¹) ≅ S₂(Γ₀(N))` against `heckeOp N n`.  Stated as the
+existence of SOME Hecke-equivariant isomorphism, that pins nothing — and
+the `N = 37` witness above already satisfies it.  With `T n` swapped, the
+tangent space is `Lie(E_{37a}) ⊕ Lie(E_{37b})` with `T n` acting by
+`(a_n(37b), a_n(37a))`, and sending `Lie(E_{37a}) ↦ ℂ·f_{37b}` and
+`Lie(E_{37b}) ↦ ℂ·f_{37a}` is an isomorphism onto `S₂(Γ₀(37))` intertwining
+`T n` with `heckeOp 37 n`.  **A permutation of the eigen-systems is
+invisible to an abstract intertwining**, which is exactly the degeneracy
+the swap exploits.  A leaf asserting only `Nonempty (… ≃ₗ …)` would
+therefore leave the sharpened statement false, and building it would be a
+wasted dispatch.
+
+**A sufficient pin must PRODUCE the identification from the geometry**,
+not assert that one exists.  The three shapes that do:
+
+1. pullback along `IsJacobianOf.ajHom : X ⟶ J` into `H⁰(X₀(N), Ω¹)`,
+   composed with the `q`-expansion identification
+   `H⁰(X₀(N), Ω¹) ≅ S₂(Γ₀(N))`.  `ajHom` EXISTS here (`IsJacobianOf.ajHom`
+   above, with `aj_val` as its Yoneda equation); the `q`-expansion half is
+   the analytic uniformization and does not;
+2. the moduli description of `T_ℓ` on `Y₀(N)` (needs elliptic-curve
+   isogenies — absent, see the table on
+   `exists_heckeIsotypicDecomposition` above);
+3. the Eichler–Shimura congruence `T_ℓ = F + ℓ·F^{-1}` on the reduction
+   (needs an integral model of `J`, which nothing here builds).
+
+**And the first brick of route 1 is available NOW, which the crux does not
+say.**  Mathlib has no scheme-level `Ω¹` at this pin, so `H⁰(J, Ω¹)` is not
+the object to reach for; its DUAL, the tangent space at the origin, is
+expressible with nothing new:
+
+    Lie(J) := {x : RelPoint jstr dualStr |
+                 RelPoint.pre dualAug _ x = ab.zero (𝟙 SpecQ)}
+
+where `dualStr : Spec ℚ[ε] ⟶ SpecQ` and its augmentation section
+`dualAug : SpecQ ⟶ Spec ℚ[ε]` are `Spec.map` of `algebraMap ℚ
+(DualNumber ℚ)` and of `TrivSqZeroExt.fstHom ℚ ℚ ℚ` respectively.  This was
+COMPILER-VERIFIED at `122c02b0` — `Lie(J)` as an `AddSubgroup` of
+`J(ℚ[ε])`, together with its stability under `RelPoint.post (T n)` for any
+`IsAdditiveOn` endomorphism — in a probe module on branch `flt-lean-145`,
+recoverable with
+
+    git show fc07e830:Fermat/FLT/ModularCurve/Scratch145.lean
+
+It costs one extra `public import Mathlib.Algebra.DualNumber` and no new
+mathematics.  Building it is worthwhile, but by the previous paragraph it
+is only HALF the pin: the remaining half is CANONICITY, and that is where
+the analytic uniformization enters.  Anyone dispatched "at the pin" should
+be told both halves, or they will build the half that does not pin. -/
 theorem isTorsion_factor_of_heckeIsotypic (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     {h : IsX0Compactification N strX strY j} {jstr : J ⟶ SpecQ}
