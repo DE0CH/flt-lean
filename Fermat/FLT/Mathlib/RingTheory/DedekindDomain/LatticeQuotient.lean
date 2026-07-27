@@ -147,6 +147,41 @@ theorem card_quotient_ideal_span_natCast_smul_top
 
 end Lattice
 
+section FreeQuotient
+
+/-- **`#(M/IM) = #(R/I) ^ rank M` for a FREE module and an ARBITRARY
+ideal.**
+
+This is the companion of `card_quotient_smul_top_of_isDedekindDomain`
+above, and the two are incomparable: that one allows any finitely
+generated torsion-free module but needs `I` MAXIMAL (it goes through the
+residue field and `Ideal.finrank_fiber_eq_finrank`), whereas this one
+needs a basis but places no condition on `I` whatever — not maximality,
+not primality, not even nonzeroness.
+
+That is exactly what a torsion count at a general ideal `I` of `𝒪_D`
+requires, since the ideals arising there are arbitrary nonzero ones
+(`Ideal.span {(N : 𝒪_D)}` in particular is very far from maximal).
+
+The proof is the same three-step tensor computation as
+`card_quotient_natCast_smul_top`: `M/IM ≃ (R/I) ⊗ M`, transport along
+the basis, and `(R/I) ⊗ (ι →₀ R) ≃ (ι →₀ R/I)`. -/
+theorem card_quotient_ideal_smul_top_of_basis {R : Type*} [CommRing R] {M : Type*}
+    [AddCommGroup M] [Module R M] {ι : Type*} [Fintype ι]
+    (b : Module.Basis ι R M) (I : Ideal R) :
+    Nat.card (M ⧸ (I • ⊤ : Submodule R M)) = Nat.card (R ⧸ I) ^ Nat.card ι := by
+  classical
+  have e1 : (R ⧸ I) ⊗[R] M ≃ₗ[R] M ⧸ (I • ⊤ : Submodule R M) :=
+    TensorProduct.quotTensorEquivQuotSMul _ I
+  have e2 : (R ⧸ I) ⊗[R] M ≃ₗ[R] (R ⧸ I) ⊗[R] (ι →₀ R) :=
+    TensorProduct.congr (LinearEquiv.refl _ _) b.repr
+  have e3 : (R ⧸ I) ⊗[R] (ι →₀ R) ≃ₗ[R] (ι →₀ (R ⧸ I)) :=
+    TensorProduct.finsuppScalarRight R R (R ⧸ I) ι
+  rw [← Nat.card_congr e1.toEquiv, Nat.card_congr (e2.trans e3).toEquiv,
+    Nat.card_congr Finsupp.equivFunOnFinite, Nat.card_fun]
+
+end FreeQuotient
+
 section Bridge
 
 open scoped nonZeroDivisors
