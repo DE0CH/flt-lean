@@ -127,10 +127,21 @@ it has **two** consumers, in two different places in
 `ModularCurve/X0.lean`, and only a declaration upstream of both can serve
 them.  See its own docstring for the inventory.
 
-The autoduality half of the cut still lives next to its consumer in
-`ModularCurve/X0.lean` (`isJacobianOf_of_isRelPicZeroOf` over `Spec ℚ`,
-`IsRelPicZeroOf.exists_albaneseFactorisation` and
-`IsRelPicZeroOf.eq_of_aj_eq` over an arbitrary base).
+The autoduality half of the cut lives next to its consumer in
+`ModularCurve/X0.lean`, as the two general-base leaves
+`IsRelPicZeroOf.exists_albaneseFactorisation` (autoduality and
+biduality) and `IsRelPicZeroOf.eq_of_aj_eq` (generation).  Those two are
+the whole of what autoduality still owes.
+
+Amended 2026-07-27: the `Spec ℚ` node `exists_relPicZeroOf` is now
+PROVEN, as `exists_relPicZero strX hproper hsmooth hconn o` and nothing
+else.  Its sibling `isJacobianOf_of_isRelPicZeroOf` is still sorried but
+carries NO mathematics — it is
+`⟨(P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf⟩`, and the only
+obstacle is that `IsRelPicZeroOf.isAlbaneseOf` and
+`IsAlbaneseOf.isJacobianOf` are declared BELOW it in `X0.lean`.  Its
+docstring carries the exact relocation that closes it.  Do not dispatch
+a prover at it.
 -/
 module
 
@@ -381,7 +392,43 @@ A refutation of the first item would be a proof of
 `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`, which is
 where the neighbouring `f_*𝒪 = 𝒪` statement already lives; that module is
 the natural home for the missing input and is the check that would refute
-this note. -/
+this note.
+
+**TWO AXES SEARCHED AND REJECTED (2026-07-27), each with an explicit junk
+witness, because both look like obvious further cuts and both are wrong.**
+
+*Rejected: split off "the classifying scheme is PROPER" / "…is SMOOTH".*
+The tempting cut is "a scheme carrying the classification data exists"
+plus "any such scheme is proper and smooth", which would isolate BLR
+8.4/2 and 9.4/4 as separate leaves.  It is UNSOUND, and the
+counterexample is `Pic_{X/S}` ITSELF: the full Picard scheme satisfies
+`sheaf`, `invertible`, `inj`, `sheaf_zero`, `sheaf_add`, `sheaf_pre`,
+`aj` and `aj_spec` — every field of `IsRelPicZeroOf` that does not
+mention `AbelianSchemeStruct`'s geometry — and it is **not proper**,
+being the disjoint union of the `Pic^d` over `d ∈ ℤ`.  So the second
+half would be a FALSE leaf.  Nothing in `IsRelPicZeroOf` distinguishes
+`Pic` from `Pic⁰`; what would is a surjectivity ("every invertible sheaf
+on `X_T` is classified") field, which `IsRelPicZeroOf` deliberately does
+not have.  Consequently the passage `Pic ↝ Pic⁰` and the proof that the
+result is proper and smooth cannot be separated: they have to be stated
+together, i.e. as this leaf.
+
+*Rejected: split off the Abel–Jacobi fields.*  Dropping `aj`, `aj_spec`,
+`aj_pre`, `aj_base` to leave a "pure classification" leaf is VACUOUS:
+the trivial abelian scheme `J = S`, `jstr = 𝟙 S` satisfies all six
+remaining fields, since `RelPoint (𝟙 S) g` is a singleton and `inj` is
+then free.  The Abel–Jacobi half would inherit all the content and could
+no longer be stated, the witness having been chosen.  This is the same
+trap `exists_jacobianOf_x0`'s audit recorded for "existence plus
+initiality", in the Picard idiom.
+
+So this leaf is atomic ALONG THE STRUCTURAL AXIS — cuts that partition
+the fields of `IsRelPicZeroOf` — and the search that would refute that is
+a field-partition of `IsRelPicZeroOf` for which NEITHER `Pic_{X/S}` nor
+`Spec ℚ` is a witness of the weaker half.  It was not searched along the
+axis of the CONSTRUCTION (Quot/Hilbert schemes, `Sym^d C ⟶ Pic^d`), which
+is where a genuine decomposition would come from once relative effective
+Cartier divisors exist. -/
 theorem exists_relPicZero {X S : Scheme.{u}} (strX : X ⟶ S)
     (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S)) :
