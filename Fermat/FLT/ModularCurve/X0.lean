@@ -8472,43 +8472,14 @@ structure IsJTransformation where
     (hg : h ≫ g = g') {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
     IsBaseChangeOf h d' d → jt g' d' = RelPoint.pre h hg (jt g d)
 
-/-- **A `Γ₀(N)`-datum can be based-changed along any morphism** (sorry
-node).
-
-TRUE, and it is the ordinary fibre product: pull the elliptic scheme back
-along `h`, and pull the level structure back with it.  Every clause of
-`Gamma0Datum` is stable under base change, and each for a reason already
-present at this pin —
-
-* `AbelianSchemeStruct` — `IsProper`, `Smooth` and `GeometricallyConnected`
-  are all `MorphismProperty.IsStableUnderBaseChange` in mathlib; the zero
-  section, the group law and their axioms transport because
-  `RelPoint (pullback.fst) g` is canonically `RelPoint f (g ≫ h)`, which
-  is the universal property of the pullback and nothing more;
-* `SmoothOfRelativeDimension 1` — likewise stable under base change;
-* `CyclicSubgroupOfOrder` — the pullback of a closed immersion is a closed
-  immersion, of a finite flat morphism a finite flat morphism, and the
-  GEOMETRIC FIBRES are unchanged: a geometric point of `T'` is a geometric
-  point of `T` composed with `h`, so "cyclic of order exactly `N` on every
-  geometric fibre" is literally the same family of conditions re-indexed.
-
-`Nonempty` and not `∃ … , IsBaseChangeOf …`: `IsBaseChangeOf` is a
-`structure` in `Type`, not a `Prop`, so it cannot be the body of an `∃`.
-
-WHY IT IS OPEN.  `IsBaseChangeOf` is *stated* in this file and never
-constructed — see its own docstring, which says so and explains that the
-development has so far only ever consumed one.  This leaf is the first
-producer, and it is pure infrastructure: it mentions no `j`, no
-Weierstrass equation and no modular curve.
-
-THE CHECK THAT WOULD REFUTE "OPEN": any declaration in this project or in
-mathlib constructing a `Gamma0Datum` over `T'` out of one over `T`, or
-more generally an `AbelianSchemeStruct` on a pullback of a morphism
-carrying one. -/
-theorem exists_gamma0Datum_baseChange {N : ℕ} {T' T : Scheme.{0}} (h : T' ⟶ T)
-    (d : Gamma0Datum N T) :
-    ∃ d' : Gamma0Datum N T', Nonempty (IsBaseChangeOf h d' d) :=
-  sorry
+/- `exists_gamma0Datum_baseChange` used to be stated HERE a second time, as a
+`Scheme.{0}` sorry node.  It is now a DUPLICATE: the declaration is PROVEN
+earlier in this file, for arbitrary `Scheme.{u}`, out of `Gamma0BaseChange`.
+Its own docstring's "CHECK THAT WOULD REFUTE 'OPEN'" — *any declaration in
+this project constructing a `Gamma0Datum` over `T'` out of one over `T`* —
+had FIRED, and the two copies were in the same namespace, so keeping both
+was a hard "already declared" error rather than merely redundant.  Deleted at
+integration 2026-07-27; use the general version above. -/
 
 /-- **Zariski descent for the `j`-invariant: an affine `j`-theory extends
 to all bases** (sorry node).
