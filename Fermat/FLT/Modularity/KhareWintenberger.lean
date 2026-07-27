@@ -10091,7 +10091,8 @@ theorem module_finite_integralClosure_of_finiteType
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF B-iii — globalising Noether's theorem over one affine open of the
-target** (SORRY LEAF, new 2026-07-27).
+target** (**PROVEN 2026-07-27**, exactly along the Stacks 03GR plan recorded
+below; no new machinery was needed, everything used is in the pin).
 
 This supplies the hypothesis of `isFinite_fromNormalization_of_forall_affineOpens`
 above from LEAF B-ii, and it is the ONE step that is neither pure algebra nor
@@ -10119,11 +10120,42 @@ affine with non-Noetherian sections.) The standard fix, Stacks 03GR:
 the base along `Scheme.ΓSpecIso (CommRingCat.of (ULift ℚ))`.
 
 `hNoether` is LEAF B-ii, passed as an explicit hypothesis rather than invoked
-inside the (currently sorried) proof: a sorried body contributes no dependency
-edges, so stating it this way is what keeps LEAF B-ii from being free-floating
-while this leaf is open. Discharge it with
-`module_finite_integralClosure_of_finiteType` and delete the hypothesis once
-this leaf is proven. -/
+inside the proof. It was originally written this way because a sorried body
+contributes no dependency edges; now that this leaf is proven the hypothesis is
+genuinely CONSUMED (once per piece `Vᵢ` of the cover), and the dependency edge
+to `module_finite_integralClosure_of_finiteType` exists at the single call site
+in `isFinite_fromNormalization_of_smooth_affine`. It is therefore left in place:
+inlining it would buy nothing and would edit a neighbouring owner's declaration.
+
+**WHAT THE PROOF ACTUALLY USES, 2026-07-27** (recorded so that nobody re-derives
+it, and because two of these are worth knowing):
+
+* `hPproper` enters ONLY through `IsProper.toLocallyOfFiniteType` plus
+  `HasRingHomProperty.iff_appLE` at the affine open `⊤ : (Spec (ULift ℚ)).Opens`,
+  giving `Algebra.FiniteType (ULift ℚ) Γ(P, U)` after transport along
+  `Scheme.ΓSpecIso`; that in turn gives `IsNoetherianRing Γ(P, U)` by
+  `Algebra.FiniteType.isNoetherianRing`. Nothing else about properness is used.
+* `[IsAffine C]` **is not used at all** — the argument is the general Stacks 03GR
+  one and never needs `C` affine, only that `g ⁻¹ᵁ U` is quasi-compact (`hgqc`
+  plus `U` affine) so that `isCompact_iff_finite_and_eq_biUnion_affineOpens`
+  yields a FINITE set of affine opens of `C`. The hypothesis is kept because it
+  is an instance binder in the statement the consumer was written against.
+* `[IsReduced C]` is used, but only through the instance
+  `AlgebraicGeometry.IsReduced.component_reduced`, which hands `IsReduced Γ(C, V)`
+  to LEAF B-ii on each piece. This is where LEAF B-i's output lands, so the
+  counterexample in LEAF B-ii's docstring (`k[x][ε]/(ε²)`) is what makes this
+  step, and hence LEAF B-i, load-bearing rather than decorative.
+* The `ULift ℚ`-algebra structure on each `Γ(C, Vᵢ)` is DEFINED as the composite
+  through `Γ(P, U)`, so `IsScalarTower` is `rfl` and no compatibility with the
+  structure morphism of `C` is needed. This is why `_hcomm` really is inert.
+* The injectivity `Γ(C, g ⁻¹ᵁ U) ↪ ∏ᵢ Γ(C, Vᵢ)` is `TopCat.Sheaf.eq_of_locally_eq'`
+  on `C.sheaf`, and the restrictions are `Γ(P, U)`-algebra maps definitionally,
+  because `Scheme.Hom.appLE U V e` is by definition `app U ≫ presheaf.map …`. The
+  final step is `Module.Finite.of_injective` against `Module.Finite.pi`.
+
+No `simp` appears anywhere in the proof, so no lemma from the ambient (partly
+sorried) simp set can leak in; `#print axioms` on this declaration returns
+`[propext, Classical.choice, Quot.sound]`. -/
 theorem module_finite_integralClosure_sections_of_isReduced
     {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C] [IsReduced C]
     (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
@@ -10137,8 +10169,81 @@ theorem module_finite_integralClosure_sections_of_isReduced
       Module.Finite A (integralClosure A B))
     (U : P.affineOpens) :
     letI := (g.app U.1).hom.toAlgebra
-    Module.Finite Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1)) :=
-  sorry
+    Module.Finite Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1)) := by
+  letI algA : Algebra Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1) := (g.app U.1).hom.toAlgebra
+  show Module.Finite Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1))
+  -- `Γ(P, U)` is a finite-type `ℚ`-algebra, hence Noetherian.  This is the only
+  -- use of `hPproper`, and it goes through `IsProper.toLocallyOfFiniteType`
+  -- transported along `Scheme.ΓSpecIso (CommRingCat.of (ULift ℚ))`.
+  letI algQA : Algebra (ULift.{u} ℚ) Γ(P, U.1) :=
+    ((Scheme.ΓSpecIso (CommRingCat.of (ULift.{u} ℚ))).inv ≫
+      fP.appLE ⊤ U.1 le_top).hom.toAlgebra
+  have hPft : AlgebraicGeometry.LocallyOfFiniteType fP := hPproper.toLocallyOfFiniteType
+  have hAppFT : RingHom.FiniteType (fP.appLE ⊤ U.1 le_top).hom :=
+    (HasRingHomProperty.iff_appLE (P := @AlgebraicGeometry.LocallyOfFiniteType)).mp hPft
+      ⟨⊤, isAffineOpen_top _⟩ U le_top
+  haveI ftA : Algebra.FiniteType (ULift.{u} ℚ) Γ(P, U.1) := by
+    show RingHom.FiniteType ((Scheme.ΓSpecIso (CommRingCat.of (ULift.{u} ℚ))).inv ≫
+      fP.appLE ⊤ U.1 le_top).hom
+    rw [CommRingCat.hom_comp]
+    exact hAppFT.comp
+      ((Scheme.ΓSpecIso
+        (CommRingCat.of (ULift.{u} ℚ))).symm.commRingCatIsoToRingEquiv).finite.finiteType
+  haveI : IsNoetherianRing Γ(P, U.1) := Algebra.FiniteType.isNoetherianRing (ULift.{u} ℚ) _
+  -- `g ⁻¹ᵁ U` is quasi-compact, hence a FINITE union of affine opens of `C`.
+  have hcpt : IsCompact ((g ⁻¹ᵁ U.1 : C.Opens) : Set C) := g.isCompact_preimage U.2.isCompact
+  obtain ⟨s, hsfin, hs⟩ :=
+    AlgebraicGeometry.isCompact_iff_finite_and_eq_biUnion_affineOpens.mp hcpt
+  haveI : Finite s := hsfin.to_subtype
+  have hle : ∀ V : s, ((V : C.affineOpens) : C.Opens) ≤ g ⁻¹ᵁ U.1 := by
+    intro V
+    rw [hs]
+    exact le_iSup₂ (f := fun (i : C.affineOpens) (_ : i ∈ s) => (i : C.Opens))
+      (V : C.affineOpens) V.2
+  have hcover : g ⁻¹ᵁ U.1 ≤ ⨆ V : s, ((V : C.affineOpens) : C.Opens) := by
+    rw [hs, iSup_subtype']
+  -- Each piece is an affine open of `C` contained in `g ⁻¹ᵁ U`, so `hgft` makes it a
+  -- finite-type `Γ(P, U)`-algebra; its `ℚ`-algebra structure is the composite one.
+  letI algI : ∀ V : s, Algebra Γ(P, U.1) Γ(C, (V : C.affineOpens).1) :=
+    fun V => (g.appLE U.1 (V : C.affineOpens).1 (hle V)).hom.toAlgebra
+  letI algQI : ∀ V : s, Algebra (ULift.{u} ℚ) Γ(C, (V : C.affineOpens).1) :=
+    fun V => ((algebraMap Γ(P, U.1) Γ(C, (V : C.affineOpens).1)).comp
+      (algebraMap (ULift.{u} ℚ) Γ(P, U.1))).toAlgebra
+  haveI towerI : ∀ V : s,
+      IsScalarTower (ULift.{u} ℚ) Γ(P, U.1) Γ(C, (V : C.affineOpens).1) :=
+    fun V => IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  haveI ftI : ∀ V : s, Algebra.FiniteType Γ(P, U.1) Γ(C, (V : C.affineOpens).1) :=
+    fun V => (HasRingHomProperty.iff_appLE (P := @AlgebraicGeometry.LocallyOfFiniteType)).mp
+      hgft U (V : C.affineOpens) (hle V)
+  -- LEAF B-ii on each piece.  `IsReduced Γ(C, V)` is `IsReduced.component_reduced`.
+  haveI hfinI : ∀ V : s,
+      Module.Finite Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(C, (V : C.affineOpens).1)) :=
+    fun V => hNoether Γ(P, U.1) Γ(C, (V : C.affineOpens).1)
+  -- The restriction maps are `Γ(P, U)`-algebra maps: `appLE U V = app U ≫ restriction`.
+  let ρ : ∀ V : s, Γ(C, g ⁻¹ᵁ U.1) →+* Γ(C, (V : C.affineOpens).1) :=
+    fun V => (C.presheaf.map (homOfLE (hle V)).op).hom
+  have hρ : ∀ (V : s) (a : Γ(P, U.1)),
+      ρ V (algebraMap Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1) a) =
+        algebraMap Γ(P, U.1) Γ(C, (V : C.affineOpens).1) a := fun _ _ => rfl
+  let ρₐ : ∀ V : s, Γ(C, g ⁻¹ᵁ U.1) →ₐ[Γ(P, U.1)] Γ(C, (V : C.affineOpens).1) :=
+    fun V => { ρ V with commutes' := hρ V }
+  -- The sheaf axiom: sections agreeing on a cover are equal.  No reducedness needed.
+  have hinj : ∀ x y : Γ(C, g ⁻¹ᵁ U.1), (∀ V : s, ρ V x = ρ V y) → x = y := by
+    intro x y h
+    refine C.sheaf.eq_of_locally_eq' (fun V : s => ((V : C.affineOpens) : C.Opens))
+      (g ⁻¹ᵁ U.1) (fun V => homOfLE (hle V)) hcover x y (fun V => h V)
+  -- Hence the integral closure embeds `Γ(P, U)`-linearly into a finite module over the
+  -- Noetherian ring `Γ(P, U)`, so it is finite.
+  let Φ : integralClosure Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1) →ₗ[Γ(P, U.1)]
+      (∀ V : s, integralClosure Γ(P, U.1) Γ(C, (V : C.affineOpens).1)) :=
+    { toFun := fun x V => ⟨ρₐ V x.1, IsIntegral.map (ρₐ V) x.2⟩
+      map_add' := fun x y => by funext V; exact Subtype.ext (map_add (ρₐ V) x.1 y.1)
+      map_smul' := fun a x => by funext V; exact Subtype.ext (map_smul (ρₐ V) a x.1) }
+  have hΦ : Function.Injective Φ := by
+    intro x y hxy
+    refine Subtype.ext (hinj x.1 y.1 fun V => ?_)
+    exact congrArg Subtype.val (congrFun hxy V)
+  exact Module.Finite.of_injective Φ hΦ
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF B — finiteness of the normalization (E. Noether)**
@@ -10234,6 +10339,9 @@ statements, in increasing order of expected cost:
   Small statement, genuinely missing (mathlib has no scheme regularity).
 * LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` — the gluing
   step over one affine open of `P`, needed because `g ⁻¹ᵁ U` is not affine.
+  **PROVEN 2026-07-27** out of the pin (Stacks 03GR: finite affine cover of the
+  quasi-compact `g ⁻¹ᵁ U`, sheaf-axiom injectivity into the product, then
+  `Module.Finite.of_injective` over the Noetherian `Γ(P, U)`).
 * LEAF B-ii `module_finite_integralClosure_of_finiteType` — E. Noether's
   finiteness theorem, pure commutative algebra, the real content. Its docstring
   carries a four-step proof plan and a correction to the audit below. -/
@@ -10789,7 +10897,8 @@ PROVEN; only B and C are open), in decreasing order of expected cost:
   LEAF B-i `isReduced_of_smooth_over_rat` (smooth over a field ⟹ reduced —
   small, and mathlib has no scheme regularity at all),
   LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` (the gluing
-  step over one affine open, needed because `g ⁻¹ᵁ U` is not affine), and
+  step over one affine open, needed because `g ⁻¹ᵁ U` is not affine — **PROVEN
+  2026-07-27**, so it no longer survives), and
   LEAF B-ii `module_finite_integralClosure_of_finiteType` (E. Noether's
   finiteness theorem, pure commutative algebra — the real content, and still
   the most expensive item under this node). The 2026-07-27 audit's verdict that
