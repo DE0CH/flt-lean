@@ -14142,12 +14142,15 @@ into the two leaves consumed below:
   at `N = 32` over `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`, itself
   proven by a cusp count on `X_0(32)` against the four rational points that
   `QuarticDescent.rational_point_x0ThirtyTwo` allows. What is left open is
-  TWO leaves, `X0GenusOne.isTorsion_jacobian` and
-  `X0GenusOne.card_relPoint_finiteField` (2026-07-27, third correction;
-  neither is vacuous or refutable).  `X0GenusOne.finite_jacobian`, which
-  this paragraph named until the third correction, is now PROVEN over
-  `isTorsion_jacobian` and `X0.lean`'s level-generic Mordell–Weil leaf
-  `Fermat.fg_relPoint_of_abelianScheme`.
+  `X0GenusOne.nonempty_relPoint_equiv_modelPoint` (all that survives of
+  `card_relPoint_finiteField`) together with the four successors of
+  `X0GenusOne.isTorsion_jacobian` — `exists_abelianSchemeStruct_of_x0Genus_eq_one`,
+  `exists_x0Model`, `finite_curve11a1`, `finite_curve17a1`,
+  `finite_curve19a1` (2026-07-27, fourth correction; none is vacuous or
+  refutable).  `X0GenusOne.finite_jacobian`, `isTorsion_jacobian` and
+  `finite_relPoint_x0`, which this paragraph named at earlier corrections,
+  are all now PROVEN — the last of them along the MODEL/ARITHMETIC seam,
+  see the subsection note above `X0GenusOne.curve11a1`.
 
   **DO NOT DISPATCH AT `MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` OR
   `MazurLevel32.exists_x0ThirtyTwo_mod_three`**, which is what this
@@ -18027,7 +18030,19 @@ with — an injection out of `RelPoint strX (𝟙 SpecQ)`, exactly like
 `MazurLevel32.exists_planeModel_x0ThirtyTwo` — rather than as a statement
 about an abstract abelian scheme, which nothing here can attack.
 
-**So the open leaves of this section are `finite_relPoint_x0`,
+**FOURTH DECOMPOSITION STEP, 2026-07-27 (same day): `finite_relPoint_x0`
+is now PROVEN too, along the MODEL/ARITHMETIC seam** — see the subsection
+note above `curve11a1`.  It split into the arithmetic-free moduli
+dictionary `exists_x0Model` (`X_0(N)(ℚ) ↪ N a 1(ℚ)`) and the
+scheme-free `finite_x0Model` (rank `0` for four explicit
+`WeierstrassCurve ℚ`s), of whose four rows level `32` is PROVEN outright
+from `QuarticDescent.rational_point_x0ThirtyTwo`.  The rank input of this
+section is now stated entirely in `WeierstrassCurve` coordinates, which
+is the shape `Fermat/FLT/EllipticCurve/MordellWeil.lean` has already
+closed twice (`11a3`, `14a4`).
+
+**So the open leaves of this section are `exists_x0Model`,
+`finite_curve11a1`, `finite_curve17a1`, `finite_curve19a1`,
 `exists_abelianSchemeStruct_of_x0Genus_eq_one` and
 `nonempty_relPoint_equiv_modelPoint`.**  (`finite_jacobian` still consumes
 the shared Mordell–Weil obligation `Fermat.fg_relPoint_of_abelianScheme`
@@ -18282,9 +18297,299 @@ theorem surjective_aj_of_abelianSchemeStruct {X J : Scheme.{0}} {strX : X ⟶ Sp
   show (y.1 ≫ u) ≫ jac.ajHom = y.1
   rw [Category.assoc, h1, Category.comp_id]
 
-/-- **`X_0(N)(ℚ)` is FINITE at the four genus-one levels** (sorry leaf,
-introduced 2026-07-27) — the ARITHMETIC half of `isTorsion_jacobian`, and
-after this decomposition the only rank input the section still owes.
+/-! #### The MODEL/ARITHMETIC seam: `X_0(N)(ℚ) ↪ Na1(ℚ)`, then rank `0` on
+the plane curve
+
+**FOURTH DECOMPOSITION STEP, 2026-07-27 (same day): `finite_relPoint_x0`
+is now PROVEN too, along the MODEL/ARITHMETIC seam.**  The leaf below it
+bundled two unrelated things once more: the *moduli geometry* — that the
+abstract coarse space `X` really is the plane cubic `N a 1` — and the
+*arithmetic* — that `N a 1` has finitely many rational points.  The
+previous step had already moved the arithmetic from `RelPoint jstr` onto
+`RelPoint strX`, which is what makes this cut possible at all; this step
+moves it one further, off schemes entirely and onto
+`WeierstrassCurve.Affine.Point`, which is the shape in which this
+development has already CLOSED two curves of exactly this kind
+(`WeierstrassCurve.curve11a3_finite` for `X_1(11) = 11a3`,
+`WeierstrassCurve.curve14a4_*` for `X_1(14) = 14a4`, both by explicit
+descent in `Fermat/FLT/EllipticCurve/MordellWeil.lean`).
+
+So the three halves are:
+
+* `exists_x0Model` — the moduli dictionary, arithmetic-free: `X_0(N)(ℚ)`
+  injects into `N a 1(ℚ)`.  This is verbatim the successor already named
+  on `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` ("an
+  integral/Weierstrass model of `X_0(N)` over `ℚ` and the identification
+  of `X_0(N)(ℚ)` with its rational solutions"), now asked once for all
+  four levels instead of once for level `32`;
+* `finite_curve11a1` / `finite_curve17a1` / `finite_curve19a1` — the
+  arithmetic, one explicit rank-`0` curve each, stated with NO scheme
+  and NO level in sight;
+* `finite_curve32a1` — the same statement at level `32`, and **already
+  PROVEN**, because `QuarticDescent.rational_point_x0ThirtyTwo`
+  (Fermat's quartic theorem through the `2`-isogeny to `y² = x³ − x`)
+  determines every rational point of `y² = x³ + 4x` unconditionally.
+
+**Level `32`'s arithmetic is therefore FREE, and non-circularly so.**
+The circularity warning on `finite_relPoint_x0`'s old docstring was
+about `exists_weierstrassModel_x0ThirtyTwo`, which is proven *from* the
+rank input; `QuarticDescent.rational_point_x0ThirtyTwo` is not — it
+lives in `Fermat/FLT/FreyCurve/QuarticDescent.lean`, a module this file
+imports, so it cannot depend on anything here.  Declaration order makes
+the circular route structurally impossible as well: `MazurLevel32` is
+declared BELOW `X0GenusOne`, so nothing in this section can cite it.
+
+**What the cut buys, since the leaf count rises from one to four.**  The
+old leaf was a single statement about a `Scheme` that no tool in this
+tree can bound.  Three of its four successors are statements about an
+explicit `WeierstrassCurve ℚ` — the exact input format of the descent
+machinery in `MordellWeil.lean`, which has already produced two
+theorems of this literal shape — and the fourth is closed outright.
+The surviving geometry is a single obligation shared by all four levels
+instead of being entangled with each level's arithmetic.
+
+**Reconnaissance for the successors** (PARI/GP 2.17.4, 2026-07-27,
+untrusted searcher, statement check only).  `ellglobalred` gives
+conductors `11, 17, 19, 32` — the check that each model is the right
+curve — `ellrank` returns the INTERVAL `[0, 0]` at all four (rank proven
+`0`, not merely bounded), and `ellratpoints(E, 100)` returns the full
+affine point sets:
+
+| curve | model | affine `ℚ`-points | `#E(ℚ)` |
+|-------|-------|-------------------|---------|
+| `11a1` | `[0,-1,1,-10,-20]` | `(5,5), (5,-6), (16,60), (16,-61)` | `5` |
+| `17a1` | `[1,-1,1,-1,-14]` | `(7,13), (7,-21), (11/4,-15/8)` | `4` |
+| `19a1` | `[0,1,1,-9,-15]` | `(5,9), (5,-10)` | `3` |
+| `32a1` | `[0,0,0,4,0]` | `(0,0), (2,4), (2,-4)` | `4` |
+
+The point at infinity makes up the last column.  A successor proving
+`finite_curveNa1` will want the enumeration first and `Finite` as its
+corollary, exactly as `curve11a3_rational_points ⟹ curve11a3_finite`;
+only `Finite` is asked for here because only `Finite` is consumed.
+
+**THE DEGENERACY AXIS IS REFUTED, and it was the axis the previous
+docstring named as unsearched.**  It asked whether "the `X_1(N) → X_0(N)`
+degeneracy map, which `Fermat/FLT/ModularCurve/X1.lean` does carry, gives
+a scheme-level route from `curve11a3_points` to level `11`".  Two
+independent things are wrong with it:
+
+* *`X1.lean` does not carry such a map.*  Refuting check:
+  `grep -n 'IsX0Compactification' Fermat/FLT/ModularCurve/X1.lean`
+  returns eleven hits and every one is inside a comment comparing the
+  two developments; there is no morphism, and no `RelPoint` map, between
+  a `Γ₁` object and a `Γ₀` object anywhere in the tree.
+* *Even if it did, it points the wrong way.*  A finite morphism
+  `π : X_1(N) → X_0(N)` maps `X_1(N)(ℚ)` INTO `X_0(N)(ℚ)`; a rational
+  point of the target need have no rational preimage, so finiteness of
+  the source bounds nothing.  (The general counterexample is any
+  nonconstant map from a genus-`≥ 2` curve to `P¹`: source finite,
+  target infinite.)  What WOULD work is a map in the OTHER direction
+  with finite fibres — at `N = 11` the dual of the `5`-isogeny
+  `11a3 → 11a1` — but producing it needs both curves to carry their
+  group structure first, i.e. it is downstream of
+  `exists_abelianSchemeStruct_of_x0Genus_eq_one` plus a theory of dual
+  isogenies of abelian schemes, neither of which exists here.  So the
+  axis is not merely unsearched; as stated it is refuted, and the
+  repaired version of it is strictly harder than the four descents
+  below. -/
+
+/-- **`X_0(11)` as the elliptic curve `11a1 : y² + y = x³ − x² − 10x − 20`**
+(Cremona label `11a1`, conductor `11`, `#11a1(ℚ) = 5`).
+
+Not to be confused with `WeierstrassCurve.curve11a3 = ⟨0, -1, 1, 0, 0⟩`
+in `MordellWeil.lean`, which is `X_1(11)`: the two are `5`-isogenous but
+are different curves, and neither one's rational points determine the
+other's without the isogeny. -/
+def curve11a1 : WeierstrassCurve ℚ := ⟨0, -1, 1, -10, -20⟩
+
+/-- **`X_0(17)` as the elliptic curve `17a1 : y² + xy + y = x³ − x² − x − 14`**
+(conductor `17`, `#17a1(ℚ) = 4`, cyclic of order `4`). -/
+def curve17a1 : WeierstrassCurve ℚ := ⟨1, -1, 1, -1, -14⟩
+
+/-- **`X_0(19)` as the elliptic curve `19a1 : y² + y = x³ + x² − 9x − 15`**
+(conductor `19`, `#19a1(ℚ) = 3`). -/
+def curve19a1 : WeierstrassCurve ℚ := ⟨0, 1, 1, -9, -15⟩
+
+/-- **`X_0(32)` as the elliptic curve `32a1 : y² = x³ + 4x`**
+(conductor `32`, `#32a1(ℚ) = 4`).
+
+The same Weierstrass data as `MazurLevel32.x0ThirtyTwoModel`, restated
+here because that namespace is declared BELOW this one and so is not in
+scope — and deliberately so: `MazurLevel32`'s model reaches its
+cardinality bound through the rank input this section owes, which would
+be circular here, whereas `finite_curve32a1` below goes through
+`QuarticDescent.rational_point_x0ThirtyTwo` alone. -/
+def curve32a1 : WeierstrassCurve ℚ := ⟨0, 0, 0, 4, 0⟩
+
+/-- **The elliptic-curve model of `X_0(N)` at the four genus-one levels.**
+
+Outside `levels` the value is the singular cuspidal cubic `y² = x³`,
+which is junk: every statement below that mentions `x0Model N` carries
+`N ∈ levels` as a hypothesis, and that hypothesis is load-bearing.  The
+junk row is deliberately NOT one of the four curves, so that a proof
+which forgets the level hypothesis cannot accidentally succeed. -/
+def x0Model : ℕ → WeierstrassCurve ℚ
+  | 11 => curve11a1
+  | 17 => curve17a1
+  | 19 => curve19a1
+  | 32 => curve32a1
+  | _ => ⟨0, 0, 0, 0, 0⟩
+
+/-- **`X_0(N)(ℚ)` injects into `N a 1(ℚ)` at the four genus-one levels**
+(sorry leaf, introduced 2026-07-27) — the MODULI-GEOMETRY half of
+`finite_relPoint_x0`, and the only geometry the arithmetic below needs.
+
+TRUE: at `N ∈ {11, 17, 19, 32}` the modular curve `X_0(N)` has genus `1`
+and a rational cusp, hence IS the elliptic curve `N a 1` of conductor
+`N` (see the section note above `levels` for the conductor certificate),
+so the two point sets are in bijection — and only an injection is asked
+for, because only finiteness is consumed.
+
+**`_h` and `_hN` are LOAD-BEARING FOR TRUTH and may not be dropped.**
+They are underscored only because the body is `sorry`; a successor that
+proves this must un-underscore them.  Without `_h` the scheme `strX` is
+an arbitrary `ℚ`-scheme, whose rational points need not inject into a
+five-element set, and the statement is then plainly FALSE (take
+`X = 𝔸¹_ℚ`).  Without `_hN` it is false at every other level: `37, 43,
+67, 163` have ranks `1, 1, 2, 6`, so `X_0(N)(ℚ)` is infinite there while
+`x0Model N` is the junk cubic.
+
+**Not vacuous**: `Fermat.exists_x0Compactification N` supplies an `_h` at
+each of the four levels.
+
+**WHAT A SUCCESSOR MUST BUILD**, and it is the honest cost — the same
+list `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` records, now
+shared by four levels instead of paid privately by one: a genus for
+`strX`, Riemann–Roch far enough to give a genus-`1` curve with a
+rational point a Weierstrass model as a SCHEME, and the identification
+of that model's rational points with `RelPoint strX (𝟙 SpecQ)`.  None of
+the three exists in `Mathlib`, in `~/cs/FLT` or in this project;
+`mono_ajHom_of_one_le_x0Genus` and
+`exists_abelianSchemeStruct_of_x0Genus_eq_one` record the same absence,
+and all three should have the same owner.
+
+**DO NOT close this by citing `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo`.**
+That declaration has exactly this shape at level `32`, but it is proven
+FROM `card_le_four_x0ThirtyTwo`, hence from
+`hasRankZeroJacobian_x0ThirtyTwo`, hence from `X0GenusOne.finite_jacobian`
+and ultimately from this very statement.  Lean forbids the cycle anyway —
+`MazurLevel32` is declared below `X0GenusOne` — but the temptation is
+real and the note is cheaper than rediscovering it. -/
+theorem exists_x0Model (N : ℕ) (_hN : N ∈ levels)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_h : IsX0Compactification N strX strY jY) :
+    ∃ f : RelPoint strX (𝟙 SpecQ) → (x0Model N).toAffine.Point, Function.Injective f :=
+  sorry
+
+/-- **`11a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
+level-`11` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
+`0` for `y² + y = x³ − x² − 10x − 20` with every trace of the modular
+interpretation removed.
+
+TRUE, and `#11a1(ℚ) = 5`: the affine points are `(5, 5)`, `(5, −6)`,
+`(16, 60)`, `(16, −61)` (PARI/GP `ellratpoints`, and `ellrank` returns
+the interval `[0, 0]`, so the rank is proven rather than bounded).  The
+group is cyclic of order `5`.
+
+**This is the shape this development already closes.**
+`WeierstrassCurve.curve11a3_finite` in
+`Fermat/FLT/EllipticCurve/MordellWeil.lean` is the identical statement
+for `X_1(11) = 11a3`, proven from the unconditional enumeration
+`curve11a3_rational_points`, which is itself an explicit descent in the
+cubic ring `ZS = ℤ[s]` together with the height argument
+`MazurLevel11.height_drop_or_small`.  A successor should follow that file
+rather than looking for a general Mordell–Weil theorem, which exists
+nowhere in this tree, in `Mathlib`, or in `~/cs/FLT`.
+
+**`11a3` does NOT discharge this.**  `11a1` and `11a3` are `5`-isogenous
+but distinct curves; transporting finiteness along the isogeny needs the
+isogeny itself as a map of `Affine.Point` groups, which does not exist
+here.  Refuting check: `grep -n 'curve11a1' Fermat/` finds this
+declaration and nothing else. -/
+theorem finite_curve11a1 : Finite curve11a1.toAffine.Point :=
+  sorry
+
+/-- **`17a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
+level-`17` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
+`0` for `y² + xy + y = x³ − x² − x − 14`.
+
+TRUE, and `#17a1(ℚ) = 4`: the affine points are `(7, 13)`, `(7, −21)`,
+`(11/4, −15/8)` (PARI/GP `ellratpoints`; `ellrank` returns `[0, 0]`).
+The group is cyclic of order `4`, so unlike the other three levels there
+IS a rational `2`-torsion point — `(11/4, −15/8)` — which makes a
+descent by `2`-isogeny available here and not at `11` or `19`.  See
+`finite_curve11a1` for the template to follow. -/
+theorem finite_curve17a1 : Finite curve17a1.toAffine.Point :=
+  sorry
+
+/-- **`19a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
+level-`19` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
+`0` for `y² + y = x³ + x² − 9x − 15`.
+
+TRUE, and `#19a1(ℚ) = 3`: the affine points are `(5, 9)` and `(5, −10)`
+(PARI/GP `ellratpoints`; `ellrank` returns `[0, 0]`).  The group is
+cyclic of order `3`.  See `finite_curve11a1` for the template to
+follow. -/
+theorem finite_curve19a1 : Finite curve19a1.toAffine.Point :=
+  sorry
+
+/-- **`32a1(ℚ)` is finite** (PROVEN 2026-07-27, outright and
+non-circularly, from `QuarticDescent.rational_point_x0ThirtyTwo`).
+
+That theorem — Fermat's quartic theorem, routed through the `2`-isogeny
+onto the congruent-number curve `y² = x³ − x` — says that every rational
+solution of `y² = x³ + 4x` is `(0, 0)`, `(2, 4)` or `(2, −4)`.  The
+affine points of `curve32a1` are exactly those solutions, so the point
+set has four elements including the point at infinity, and finiteness
+follows by mathlib's
+`Affine.nonsingularPointEquiv : W.Point ≃ WithZero {xy // W.Nonsingular xy.1 xy.2}`,
+verbatim the argument of `WeierstrassCurve.curve11a3_finite`.
+
+**Non-circular, twice over.**  `QuarticDescent.lean` is IMPORTED by this
+module, so it cannot depend on anything declared here; and
+`MazurLevel32`'s route to the same four points — through
+`card_le_four_x0ThirtyTwo` and `hasRankZeroJacobian_x0ThirtyTwo` — is
+not used and could not be, being declared below this section.  So the
+rank input this section owes is genuinely discharged at level `32`, and
+`finite_x0Model` needs only three leaves rather than four. -/
+theorem finite_curve32a1 : Finite curve32a1.toAffine.Point := by
+  have hsub : {xy : ℚ × ℚ | curve32a1.toAffine.Nonsingular xy.1 xy.2} ⊆
+      ({((0 : ℚ), (0 : ℚ)), (2, 4), (2, -4)} : Set (ℚ × ℚ)) := by
+    rintro ⟨x, y⟩ hxy
+    have he := hxy.left
+    rw [WeierstrassCurve.Affine.equation_iff] at he
+    simp only [curve32a1, WeierstrassCurve.toAffine] at he
+    have hq : y ^ 2 = x ^ 3 + 4 * x := by linear_combination he
+    rcases QuarticDescent.rational_point_x0ThirtyTwo x y hq with
+      ⟨hx, hy⟩ | ⟨hx, hy | hy⟩ <;> subst hx <;> subst hy <;> simp
+  haveI : Finite {xy : ℚ × ℚ // curve32a1.toAffine.Nonsingular xy.fst xy.snd} :=
+    (Set.Finite.subset (((Set.finite_singleton _).insert _).insert _) hsub).to_subtype
+  haveI : Finite (WithZero {xy : ℚ × ℚ // curve32a1.toAffine.Nonsingular xy.fst xy.snd}) :=
+    inferInstanceAs (Finite (Option _))
+  exact Finite.of_equiv _ curve32a1.toAffine.nonsingularPointEquiv.symm
+
+/-- **The model of `X_0(N)` has finitely many rational points at each of
+the four genus-one levels** (PROVEN 2026-07-27 by `fin_cases` over
+`levels`, from the four rows above — three of them leaves, level `32`
+proven outright).
+
+Purely a dispatcher: it exists so that `finite_relPoint_x0` names one
+input rather than four, and so that the four rows can be owned, proven
+and audited independently of each other and of every scheme in this
+file. -/
+theorem finite_x0Model (N : ℕ) (hN : N ∈ levels) : Finite (x0Model N).toAffine.Point := by
+  fin_cases hN
+  · exact finite_curve11a1
+  · exact finite_curve17a1
+  · exact finite_curve19a1
+  · exact finite_curve32a1
+
+/-- **`X_0(N)(ℚ)` is FINITE at the four genus-one levels** (PROVEN
+2026-07-27 by decomposition along the MODEL/ARITHMETIC seam; was the
+sorry leaf carrying the whole rank content of `isTorsion_jacobian`,
+introduced earlier the same day) — the ARITHMETIC half of
+`isTorsion_jacobian`, and after this decomposition the section owes no
+rank input stated about a scheme at all.
 
 TRUE, and it is rank `0` written on the CURVE rather than on the
 Jacobian.  At `N ∈ {11, 17, 19, 32}` the curve `X_0(N)` is the elliptic
@@ -18293,86 +18598,76 @@ respectively; see the section note above `levels` for the PARI/GP
 certificate (`ellglobalred` for the conductors, `ellrank` returning the
 interval `[0, 0]`, `elltors = 5, 4, 3, 4`).
 
-**WHY THE CURVE AND NOT THE JACOBIAN — this is the point of the cut, and
-it answers the "explicit-order axis" objection that the previous verdict
-on `isTorsion_jacobian` used to reject that axis.**  That objection was
-that stating `Nat.card (RelPoint jstr (𝟙 SpecQ)) = 5, 4, 3, 4` needs a
-`Scheme` ↔ `WeierstrassCurve` bridge, since it speaks about the abstract
-abelian scheme `J`.  Stated about `X` instead, no such bridge is needed
-in the statement at all: `MazurLevel32.exists_planeModel_x0ThirtyTwo`
-already has EXACTLY this shape at one of the four levels — an injection
-`RelPoint strX (𝟙 SpecQ) → Option (ℚ × ℚ)` landing on a plane cubic —
-and an injection into a set of known-finite rational solutions is
-finiteness.  So a future explicit-model determination discharges this
-leaf DIRECTLY, whereas it could never have discharged `isTorsion_jacobian`
-without first building the Jacobian bridge.
+**THE CUT, and why it is where it is.**  The predecessor's own docstring
+argued that stating the arithmetic on `X` rather than on `J` is what
+makes it attackable, because `MazurLevel32.exists_planeModel_x0ThirtyTwo`
+is literally an injection out of `RelPoint strX (𝟙 SpecQ)`.  That was
+right, and this proof is what it was pointing at: an injection into an
+explicit plane cubic, plus finiteness of that cubic's rational points.
+Split there, the leaf becomes
 
-**LEVEL `32` IS NOT FREE, AND THE AUDIT THAT SAID IT WAS IS NOW STALE.**
-`hasRankZeroJacobian`'s docstring records, as an axis not searched,
-"whether an explicit Weierstrass model plus descent — the route
-`MazurLevel32.y0HasNoRationalPoint_thirtyTwo` takes at level `32`, where
-`QuarticDescent` replaces the rank input entirely — reaches the three
-prime levels".  It no longer replaces it **even at `32`**: since the
-2026-07-27 restructure `exists_weierstrassModel_x0ThirtyTwo` is PROVEN
-*from* `card_le_four_x0ThirtyTwo`, hence from
-`hasRankZeroJacobian_x0ThirtyTwo`, hence from `X0GenusOne.finite_jacobian`
-and this very leaf.  Using it here would be CIRCULAR.  The refuting check
-is one `grep`: `exists_weierstrassModel_x0ThirtyTwo`'s proof body calls
-`card_le_four_x0ThirtyTwo`, whose proof calls
-`hasRankZeroJacobian_x0ThirtyTwo`, whose body is
-`X0GenusOne.hasRankZeroJacobian 32 …`.  What WOULD close level `32` is a
-model produced independently of the rank — i.e. the successor named on
-`exists_weierstrassModel_x0ThirtyTwo` itself, "an integral/Weierstrass
-model of `X_0(32)` over `ℚ` and the identification of `X_0(32)(ℚ)` with
-its rational solutions".  That is one level's worth of moduli geometry,
-not a rank computation, and it is a genuinely different attack.
+* `exists_x0Model` — the moduli dictionary `X_0(N)(ℚ) ↪ N a 1(ℚ)`,
+  arithmetic-free and shared by all four levels; and
+* `finite_x0Model` — rank `0` for four explicit `WeierstrassCurve ℚ`s,
+  scheme-free, level-free, and already discharged at `32` by
+  `QuarticDescent.rational_point_x0ThirtyTwo`.
 
-**AXES SEARCHED for this leaf**, each with its refuting check:
+`Finite.of_injective` recombines them.  See the section note above
+`curve11a1` for the full argument, the PARI/GP certificate (conductors
+`11, 17, 19, 32`; `ellrank` returning the interval `[0, 0]`; the explicit
+point lists giving `#X_0(N)(ℚ) = 5, 4, 3, 4`), and the refutation of the
+degeneracy axis that this docstring previously named as unsearched.
 
-* *the rank input* — a Mordell–Weil theorem or any rank computation for
-  elliptic curves over `ℚ`.  Still empty:
+**THE AXES SEARCHED BEFORE THE CUT are recorded here because they remain
+correct about `finite_x0Model`'s three open rows**, each with its
+refuting check:
+
+* *the rank input* — a general Mordell–Weil theorem or rank computation
+  for elliptic curves over `ℚ`.  Still empty:
   `grep -rn "MordellWeil\|ellrank\|NeronTateHeight\|Selmer" Fermat/
   .lake/packages/mathlib/ ~/cs/FLT/` finds no rank theory in any of the
   three trees.  `Fermat/FLT/EllipticCurve/MordellWeil.lean` is not a
-  counterexample: it is an explicit descent for `11a3` and `14a4` in
-  `WeierstrassCurve` coordinates, with no general theory and no bridge to
-  schemes.
+  counterexample — but it is the TEMPLATE: an explicit descent for `11a3`
+  and `14a4` in exactly the `WeierstrassCurve` coordinates that
+  `finite_curve11a1` / `finite_curve17a1` / `finite_curve19a1` are now
+  stated in.  That change of shape is the whole point of this step.
 * *the cuspidality axis* — `Fermat.cuspidal_of_y0HasNoRationalPoint` plus
   `IsX0Compactification.finite_compl` bounds `X_0(N)(ℚ)` by the cusps
   whenever `Y_0(N)(ℚ) = ∅`.  Dead at all four levels for two independent
   reasons: `11, 17, 19 ∈ Fermat.mazurIsogenyPrimes`, so
   `Fermat.y0HasNoRationalPoint_prime` does not apply and indeed
   `Y_0(N)(ℚ) ≠ ∅` there (three, two and one non-cuspidal rational point
-  respectively); and at `32` the only proof of `Y_0(32)(ℚ) = ∅` is the
-  circular one above.
+  respectively); and at `32` the only proof of `Y_0(32)(ℚ) = ∅` available
+  at this point in the file is the circular one through
+  `hasRankZeroJacobian_x0ThirtyTwo`.
 * *the isogeny axis* — `11a1` is `5`-isogenous to `11a3 = X_1(11)`, whose
   rational points ARE determined in this tree
   (`WeierstrassCurve.curve11a3_points`), and torsion transports along an
   isogeny (`φ̂ ∘ φ = [deg φ]`, so a torsion source forces a torsion
-  target).  Blocked by the same missing bridge in the same place: the
-  transport is a statement about `Scheme`-level isogenies and
-  `curve11a3_points` is about `WeierstrassCurve`.  Refuting check:
-  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` contains no
-  `WeierstrassCurve`.
+  target).  Still blocked, but the obstruction has MOVED and shrunk: it
+  used to be the missing `Scheme` ↔ `WeierstrassCurve` bridge, and after
+  this cut both curves are `WeierstrassCurve ℚ`s, so what is missing is
+  only the `5`-isogeny `11a3 → 11a1` as a map of `Affine.Point` groups.
+  Refuting check for its absence: `grep -n 'curve11a1'
+  Fermat/FLT/EllipticCurve/` returns nothing.  A successor at
+  `finite_curve11a1` should weigh that against a direct descent.
 * *the descent axis* — Selmer groups of an abelian scheme over `ℚ`, hence
   Galois cohomology with local conditions.  `grep -rn "Selmer" Fermat/`
   returns only Galois-representation modules and `MordellWeil.lean`'s
-  prose.
+  prose.  Note this axis is now needed only in its ELEMENTARY form, over
+  `ℚ` and for one explicit curve at a time.
 
-**NOT searched**, and named so the next owner starts there rather than
-redoing the above: whether the `X_1(N) → X_0(N)` degeneracy map, which
-`Fermat/FLT/ModularCurve/X1.lean` does carry, gives a scheme-level route
-from `curve11a3_points` to level `11`.
-
-**Not vacuous**: `Fermat.exists_x0Compactification N` supplies an `hX` at
-each of the four levels.  `_hN` is load-bearing — the next prime levels
+**Not vacuous**: `Fermat.exists_x0Compactification N` supplies an `h` at
+each of the four levels.  `hN` is load-bearing — the next prime levels
 `37, 43, 67, 163` have ranks `1, 1, 2, 6`, so `X_0(N)(ℚ)` is INFINITE
 there and `levels` may not be widened without recomputing. -/
-theorem finite_relPoint_x0 (N : ℕ) (_hN : N ∈ levels)
+theorem finite_relPoint_x0 (N : ℕ) (hN : N ∈ levels)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_h : IsX0Compactification N strX strY jY) :
-    Finite (RelPoint strX (𝟙 SpecQ)) :=
-  sorry
+    (h : IsX0Compactification N strX strY jY) :
+    Finite (RelPoint strX (𝟙 SpecQ)) := by
+  obtain ⟨f, hf⟩ := exists_x0Model N hN h
+  haveI := finite_x0Model N hN
+  exact Finite.of_injective f hf
 
 /-- **`J_0(N)(ℚ)` is a TORSION group at the four genus-one levels**
 (PROVEN 2026-07-27 by decomposition; was the sorry leaf that carried the
@@ -18412,7 +18707,8 @@ as an obligation:
   `J_0(N)(ℚ)` (PROVEN here, pure category theory over the universal
   property of `IsJacobianOf`);
 * `finite_relPoint_x0` — `X_0(N)(ℚ)` is finite (the rank statement, now
-  written on the curve).
+  written on the curve, and since the fourth decomposition step of
+  2026-07-27 itself PROVEN over `exists_x0Model` and `finite_x0Model`).
 
 A surjection from a finite set makes `J_0(N)(ℚ)` finite, and a finite
 group is torsion (`is_add_torsion_of_finite`).
@@ -18586,7 +18882,18 @@ are trying to prove.  What is genuinely open, and is the right target, is
 the successor named on `exists_weierstrassModel_x0ThirtyTwo` itself: an
 integral model of `X_0(32)` over `ℚ` built from the moduli problem rather
 than from a point count.  See `finite_relPoint_x0` for the full axis
-survey. -/
+survey.
+
+**FOLLOW-UP, 2026-07-27, later the same day: that successor is now
+STATED, as `exists_x0Model`, and at all four levels rather than only at
+`32`** — the arithmetic-free half of the MODEL/ARITHMETIC decomposition
+of `finite_relPoint_x0`.  Its companion `finite_x0Model` carries the rank
+input, in `WeierstrassCurve` coordinates, and its level-`32` row is
+PROVEN from `QuarticDescent.rational_point_x0ThirtyTwo` alone — which is
+the non-circular use of `QuarticDescent` the correction above says is
+missing, since `QuarticDescent.lean` is imported by this module and so
+cannot depend on anything here.  What `QuarticDescent` does NOT supply,
+at `32` or anywhere, is the model itself. -/
 theorem hasRankZeroJacobian (N : ℕ) (hN : N ∈ levels)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY) : HasRankZeroJacobian strX := by
