@@ -12593,47 +12593,699 @@ theorem exists_spreadOutHypersurfaceModel {n m : ℕ} (f : Fin m → MvPolynomia
         zeroCount S ≤ systemCount f p + badLocusCount S g :=
   sorry
 
-/-- **SUB-LEAF (B): SCHMIDT'S LEMMA 7C** (SORRY LEAF, cut 2026-07-27 out of
-`exists_birationalHypersurfaceModel`) — the elementary COUNTING half: two
-hypersurfaces with no common factor meet in `O(p^{e−1})` rational points, with the
-implied constant depending only on `e` and the two degrees.
+section BadLocusShear
+
+variable {k : Type*} [Field k] {N : ℕ}
+
+/-- The linear substitution `X₀ ↦ x₀·X₀`, `Xᵢ ↦ Xᵢ + xᵢ·X₀` for `i ≠ 0`. -/
+noncomputable def shearAlgHom (x : Fin (N + 1) → k) :
+    MvPolynomial (Fin (N + 1)) k →ₐ[k] MvPolynomial (Fin (N + 1)) k :=
+  MvPolynomial.aeval fun i =>
+    if i = 0 then MvPolynomial.C (x 0) * MvPolynomial.X 0
+    else MvPolynomial.X i + MvPolynomial.C (x i) * MvPolynomial.X 0
+
+/-- The inverse of `shearAlgHom x` when `x 0 ≠ 0`. -/
+noncomputable def shearAlgHomInv (x : Fin (N + 1) → k) :
+    MvPolynomial (Fin (N + 1)) k →ₐ[k] MvPolynomial (Fin (N + 1)) k :=
+  MvPolynomial.aeval fun i =>
+    if i = 0 then MvPolynomial.C (x 0)⁻¹ * MvPolynomial.X 0
+    else MvPolynomial.X i - MvPolynomial.C (x i * (x 0)⁻¹) * MvPolynomial.X 0
+
+@[simp] lemma shearAlgHom_X_zero (x : Fin (N + 1) → k) :
+    shearAlgHom x (MvPolynomial.X 0) = MvPolynomial.C (x 0) * MvPolynomial.X 0 := by
+  simp [shearAlgHom]
+
+@[simp] lemma shearAlgHom_X_succ (x : Fin (N + 1) → k) (j : Fin N) :
+    shearAlgHom x (MvPolynomial.X j.succ)
+      = MvPolynomial.X j.succ + MvPolynomial.C (x j.succ) * MvPolynomial.X 0 := by
+  simp [shearAlgHom, Fin.succ_ne_zero]
+
+@[simp] lemma shearAlgHom_C (x : Fin (N + 1) → k) (c : k) :
+    shearAlgHom x (MvPolynomial.C c) = MvPolynomial.C c := by
+  simp [shearAlgHom, MvPolynomial.algebraMap_eq]
+
+@[simp] lemma shearAlgHomInv_C (x : Fin (N + 1) → k) (c : k) :
+    shearAlgHomInv x (MvPolynomial.C c) = MvPolynomial.C c := by
+  simp [shearAlgHomInv, MvPolynomial.algebraMap_eq]
+
+@[simp] lemma shearAlgHomInv_X_zero (x : Fin (N + 1) → k) :
+    shearAlgHomInv x (MvPolynomial.X 0) = MvPolynomial.C (x 0)⁻¹ * MvPolynomial.X 0 := by
+  simp [shearAlgHomInv]
+
+@[simp] lemma shearAlgHomInv_X_succ (x : Fin (N + 1) → k) (j : Fin N) :
+    shearAlgHomInv x (MvPolynomial.X j.succ)
+      = MvPolynomial.X j.succ - MvPolynomial.C (x j.succ * (x 0)⁻¹) * MvPolynomial.X 0 := by
+  simp [shearAlgHomInv, Fin.succ_ne_zero]
+
+lemma shearAlgHom_comp_inv (x : Fin (N + 1) → k) (hx : x 0 ≠ 0) :
+    (shearAlgHom x).comp (shearAlgHomInv x) = AlgHom.id k _ := by
+  apply MvPolynomial.algHom_ext
+  intro i
+  induction i using Fin.cases with
+  | zero =>
+      rw [AlgHom.comp_apply, shearAlgHomInv_X_zero, map_mul, shearAlgHom_X_zero,
+        shearAlgHom_C, ← mul_assoc, ← MvPolynomial.C_mul,
+        inv_mul_cancel₀ hx, MvPolynomial.C_1, one_mul, AlgHom.id_apply]
+  | succ j =>
+      rw [AlgHom.comp_apply, shearAlgHomInv_X_succ, map_sub, map_mul, shearAlgHom_X_succ,
+        shearAlgHom_X_zero, shearAlgHom_C, AlgHom.id_apply,
+        ← mul_assoc, ← MvPolynomial.C_mul, mul_assoc (x j.succ), inv_mul_cancel₀ hx, mul_one]
+      ring
+
+lemma shearAlgHomInv_comp (x : Fin (N + 1) → k) (hx : x 0 ≠ 0) :
+    (shearAlgHomInv x).comp (shearAlgHom x) = AlgHom.id k _ := by
+  apply MvPolynomial.algHom_ext
+  intro i
+  induction i using Fin.cases with
+  | zero =>
+      rw [AlgHom.comp_apply, shearAlgHom_X_zero, map_mul, shearAlgHomInv_X_zero,
+        shearAlgHomInv_C, ← mul_assoc, ← MvPolynomial.C_mul,
+        mul_inv_cancel₀ hx, MvPolynomial.C_1, one_mul, AlgHom.id_apply]
+  | succ j =>
+      rw [AlgHom.comp_apply, shearAlgHom_X_succ, map_add, map_mul, shearAlgHomInv_X_succ,
+        shearAlgHomInv_X_zero, shearAlgHomInv_C, AlgHom.id_apply,
+        ← mul_assoc, ← MvPolynomial.C_mul]
+      ring
+
+/-- `shearAlgHom x` as an algebra equivalence, for `x 0 ≠ 0`. -/
+noncomputable def shearAlgEquiv (x : Fin (N + 1) → k) (hx : x 0 ≠ 0) :
+    MvPolynomial (Fin (N + 1)) k ≃ₐ[k] MvPolynomial (Fin (N + 1)) k :=
+  AlgEquiv.ofAlgHom (shearAlgHom x) (shearAlgHomInv x)
+    (shearAlgHom_comp_inv x hx) (shearAlgHomInv_comp x hx)
+
+@[simp] lemma shearAlgEquiv_apply (x : Fin (N + 1) → k) (hx : x 0 ≠ 0)
+    (f : MvPolynomial (Fin (N + 1)) k) : shearAlgEquiv x hx f = shearAlgHom x f := rfl
+
+/-- The coordinate change on points induced by `shearAlgHom x`. -/
+def shearPoint (x a : Fin (N + 1) → k) : Fin (N + 1) → k :=
+  fun i => if i = 0 then x 0 * a 0 else a i + x i * a 0
+
+/-- The inverse coordinate change. -/
+def shearPointInv (x b : Fin (N + 1) → k) : Fin (N + 1) → k :=
+  fun i => if i = 0 then (x 0)⁻¹ * b 0 else b i - x i * ((x 0)⁻¹ * b 0)
+
+@[simp] lemma shearPoint_zero (x a : Fin (N + 1) → k) : shearPoint x a 0 = x 0 * a 0 := by
+  simp [shearPoint]
+
+@[simp] lemma shearPoint_succ (x a : Fin (N + 1) → k) (j : Fin N) :
+    shearPoint x a j.succ = a j.succ + x j.succ * a 0 := by
+  simp [shearPoint, Fin.succ_ne_zero]
+
+@[simp] lemma shearPointInv_zero (x b : Fin (N + 1) → k) :
+    shearPointInv x b 0 = (x 0)⁻¹ * b 0 := by simp [shearPointInv]
+
+@[simp] lemma shearPointInv_succ (x b : Fin (N + 1) → k) (j : Fin N) :
+    shearPointInv x b j.succ = b j.succ - x j.succ * ((x 0)⁻¹ * b 0) := by
+  simp [shearPointInv, Fin.succ_ne_zero]
+
+/-- `shearPoint x` is a bijection of the affine space when `x 0 ≠ 0`. -/
+noncomputable def shearPointEquiv (x : Fin (N + 1) → k) (hx : x 0 ≠ 0) :
+    (Fin (N + 1) → k) ≃ (Fin (N + 1) → k) where
+  toFun := shearPoint x
+  invFun := shearPointInv x
+  left_inv a := by
+    funext i
+    induction i using Fin.cases with
+    | zero => rw [shearPointInv_zero, shearPoint_zero, inv_mul_cancel_left₀ hx]
+    | succ j =>
+        rw [shearPointInv_succ, shearPoint_succ, shearPoint_zero, inv_mul_cancel_left₀ hx,
+          add_sub_cancel_right]
+  right_inv b := by
+    funext i
+    induction i using Fin.cases with
+    | zero => rw [shearPoint_zero, shearPointInv_zero, mul_inv_cancel_left₀ hx]
+    | succ j =>
+        rw [shearPoint_succ, shearPointInv_succ, shearPointInv_zero, sub_add_cancel]
+
+@[simp] lemma shearPointEquiv_apply (x : Fin (N + 1) → k) (hx : x 0 ≠ 0) (a : Fin (N + 1) → k) :
+    shearPointEquiv x hx a = shearPoint x a := rfl
+
+lemma eval_shearAlgHom (x a : Fin (N + 1) → k) (f : MvPolynomial (Fin (N + 1)) k) :
+    MvPolynomial.eval a (shearAlgHom x f) = MvPolynomial.eval (shearPoint x a) f := by
+  have h : (MvPolynomial.aeval a : MvPolynomial (Fin (N + 1)) k →ₐ[k] k).comp (shearAlgHom x)
+      = MvPolynomial.aeval (shearPoint x a) := by
+    rw [shearAlgHom, MvPolynomial.comp_aeval]
+    congr 1
+    funext i
+    induction i using Fin.cases with
+    | zero => simp
+    | succ j => simp [Fin.succ_ne_zero]
+  have h2 := congrArg (fun φ : MvPolynomial (Fin (N + 1)) k →ₐ[k] k => φ f) h
+  simpa [MvPolynomial.coe_aeval_eq_eval] using h2
+
+lemma totalDegree_shearAlgHom_le (x : Fin (N + 1) → k) (f : MvPolynomial (Fin (N + 1)) k) :
+    (shearAlgHom x f).totalDegree ≤ f.totalDegree := by
+  classical
+  set g : Fin (N + 1) → MvPolynomial (Fin (N + 1)) k := fun i =>
+    if i = 0 then MvPolynomial.C (x 0) * MvPolynomial.X 0
+    else MvPolynomial.X i + MvPolynomial.C (x i) * MvPolynomial.X 0 with hgdef
+  have hg : ∀ i, (g i).totalDegree ≤ 1 := by
+    intro i
+    by_cases hi : i = 0
+    · subst hi
+      simp only [hgdef, if_pos rfl]
+      refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+      simp [MvPolynomial.totalDegree_C, MvPolynomial.totalDegree_X]
+    · simp only [hgdef, if_neg hi]
+      refine le_trans (MvPolynomial.totalDegree_add _ _) ?_
+      refine max_le (le_of_eq (MvPolynomial.totalDegree_X _)) ?_
+      refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+      simp [MvPolynomial.totalDegree_C, MvPolynomial.totalDegree_X]
+  show (MvPolynomial.aeval g f).totalDegree ≤ f.totalDegree
+  conv_lhs => rw [← f.support_sum_monomial_coeff]
+  rw [map_sum]
+  refine le_trans (MvPolynomial.totalDegree_finsetSum _ _) (Finset.sup_le fun m hm => ?_)
+  rw [MvPolynomial.aeval_monomial]
+  refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+  have h1 : (algebraMap k (MvPolynomial (Fin (N + 1)) k) (MvPolynomial.coeff m f)).totalDegree
+      = 0 := by
+    rw [MvPolynomial.algebraMap_eq]; exact MvPolynomial.totalDegree_C _
+  rw [h1, zero_add, Finsupp.prod]
+  refine le_trans (MvPolynomial.totalDegree_finsetProd _ _) ?_
+  calc ∑ i ∈ m.support, ((g i) ^ (m i)).totalDegree
+      ≤ ∑ i ∈ m.support, (m i) * (g i).totalDegree :=
+        Finset.sum_le_sum fun i _ => MvPolynomial.totalDegree_pow _ _
+    _ ≤ ∑ i ∈ m.support, (m i) * 1 :=
+        Finset.sum_le_sum fun i _ => Nat.mul_le_mul_left _ (hg i)
+    _ = m.sum fun _ e => e := by simp [Finsupp.sum]
+    _ ≤ f.totalDegree := MvPolynomial.le_totalDegree hm
+
+/-- Restriction to the line through the origin in direction `x`: `Xᵢ ↦ xᵢ·T`. -/
+noncomputable def lineAlgHom (x : Fin (N + 1) → k) :
+    MvPolynomial (Fin (N + 1)) k →ₐ[k] Polynomial k :=
+  MvPolynomial.aeval fun i => Polynomial.C (x i) * Polynomial.X
+
+lemma homogeneousComponent_monomial (d : ℕ) (m : Fin (N + 1) →₀ ℕ) (a : k) :
+    MvPolynomial.homogeneousComponent d (MvPolynomial.monomial m a)
+      = if Finsupp.degree m = d then MvPolynomial.monomial m a else 0 := by
+  classical
+  ext u
+  rw [MvPolynomial.coeff_homogeneousComponent]
+  by_cases hu : u = m
+  · subst hu; by_cases h : Finsupp.degree u = d <;> simp [h]
+  · have h0 : MvPolynomial.coeff u (MvPolynomial.monomial m a) = 0 := by
+      rw [MvPolynomial.coeff_monomial, if_neg (Ne.symm hu)]
+    by_cases h : Finsupp.degree m = d <;> simp [h, h0]
+
+lemma coeff_lineAlgHom (x : Fin (N + 1) → k) (d : ℕ) (f : MvPolynomial (Fin (N + 1)) k) :
+    (lineAlgHom x f).coeff d
+      = MvPolynomial.eval x (MvPolynomial.homogeneousComponent d f) := by
+  classical
+  refine MvPolynomial.induction_on' f ?_ ?_
+  · intro m a
+    rw [homogeneousComponent_monomial, lineAlgHom, MvPolynomial.aeval_monomial]
+    have hprod : (m.prod fun i e => (Polynomial.C (x i) * Polynomial.X) ^ e)
+        = Polynomial.C (m.prod fun i e => x i ^ e) * Polynomial.X ^ (m.sum fun _ e => e) := by
+      rw [Finsupp.prod, Finsupp.prod, Finsupp.sum, map_prod, ← Finset.prod_pow_eq_pow_sum,
+        ← Finset.prod_mul_distrib]
+      exact Finset.prod_congr rfl fun i _ => by rw [mul_pow, Polynomial.C_pow]
+    rw [hprod]
+    have hAlg : (algebraMap k (Polynomial k)) a = Polynomial.C a := rfl
+    have hdeg : Finsupp.degree m = m.sum fun _ e => e := rfl
+    rw [hAlg, ← mul_assoc, ← Polynomial.C_mul, hdeg, Polynomial.coeff_C_mul,
+      Polynomial.coeff_X_pow]
+    by_cases h : (m.sum fun _ e => e) = d
+    · rw [if_pos h, if_pos h.symm, mul_one, MvPolynomial.eval_monomial]
+    · rw [if_neg h, if_neg (fun hh => h hh.symm), mul_zero, map_zero]
+  · intro q r hq hr
+    simp [hq, hr]
+
+/-- `finSuccEquiv` sends a constant to a constant. -/
+lemma finSuccEquiv_C' (c : k) :
+    MvPolynomial.finSuccEquiv k N (MvPolynomial.C c) = Polynomial.C (MvPolynomial.C c) := by
+  simp [MvPolynomial.finSuccEquiv_apply]
+
+lemma map_finSuccEquiv_shearAlgHom (x : Fin (N + 1) → k)
+    (f : MvPolynomial (Fin (N + 1)) k) :
+    Polynomial.map (MvPolynomial.eval (0 : Fin N → k))
+        (MvPolynomial.finSuccEquiv k N (shearAlgHom x f)) = lineAlgHom x f := by
+  classical
+  have key : ((Polynomial.mapAlgHom
+        (MvPolynomial.aeval (0 : Fin N → k) : MvPolynomial (Fin N) k →ₐ[k] k)).comp
+      ((MvPolynomial.finSuccEquiv k N).toAlgHom.comp (shearAlgHom x)))
+      = lineAlgHom x := by
+    apply MvPolynomial.algHom_ext
+    intro i
+    induction i using Fin.cases with
+    | zero =>
+        simp [lineAlgHom, MvPolynomial.finSuccEquiv_X_zero, Polynomial.mapAlgHom,
+          finSuccEquiv_C']
+    | succ j =>
+        simp [lineAlgHom, MvPolynomial.finSuccEquiv_X_succ,
+          MvPolynomial.finSuccEquiv_X_zero, Polynomial.mapAlgHom, finSuccEquiv_C']
+  have h2 := congrArg (fun φ : MvPolynomial (Fin (N + 1)) k →ₐ[k] Polynomial k => φ f) key
+  simpa [Polynomial.mapAlgHom, MvPolynomial.coe_aeval_eq_eval] using h2
+
+end BadLocusShear
+
+section BadLocusAssembly
+
+/-- A common root of two polynomials over a field obstructs coprimality. -/
+lemma not_isCoprime_of_common_root {k : Type*} [Field k] {P Q : Polynomial k} {a : k}
+    (hP : P.eval a = 0) (hQ : Q.eval a = 0) : ¬ IsCoprime P Q := by
+  rintro ⟨u, v, huv⟩
+  have h := congrArg (Polynomial.eval a) huv
+  simp [hP, hQ] at h
+
+/-- A nonzero polynomial of total degree `< p` has a non-vanishing `𝔽_p`-point. -/
+lemma exists_eval_ne_zero_of_totalDegree_lt {p : ℕ} [Fact p.Prime] {M : ℕ}
+    (F : MvPolynomial (Fin M) (ZMod p)) (hF : F ≠ 0) (hdeg : F.totalDegree < p) :
+    ∃ x : Fin M → ZMod p, MvPolynomial.eval x F ≠ 0 := by
+  classical
+  by_contra hcon
+  simp only [not_exists, not_not] at hcon
+  have hall : (Finset.univ.filter
+      (fun x : Fin M → ZMod p => MvPolynomial.eval x F = 0)) = Finset.univ := by
+    ext x; simp [hcon x]
+  have hSZ := schwartzZippel_card_zeros_mul_le F hF
+  rw [hall, Finset.card_univ] at hSZ
+  have hcard : Fintype.card (Fin M → ZMod p) = p ^ (Fintype.card (Fin M)) := by
+    simp [ZMod.card]
+  rw [hcard] at hSZ
+  have hpos : 0 < p ^ (Fintype.card (Fin M)) := pow_pos (Fact.out : p.Prime).pos _
+  have : p ≤ F.totalDegree := by
+    have := Nat.le_of_mul_le_mul_left (by linarith [hSZ] : p ^ (Fintype.card (Fin M)) * p
+      ≤ p ^ (Fintype.card (Fin M)) * F.totalDegree) hpos
+    exact this
+  omega
+
+/-- `homogeneousComponent` at the total degree is nonzero. -/
+lemma homogeneousComponent_totalDegree_ne_zero {σ : Type*} {k : Type*} [CommRing k]
+    (f : MvPolynomial σ k) (hf : f ≠ 0) :
+    MvPolynomial.homogeneousComponent f.totalDegree f ≠ 0 := by
+  classical
+  obtain ⟨m, hm, hmeq⟩ := Finset.exists_mem_eq_sup f.support
+    (MvPolynomial.support_nonempty.mpr hf) (fun s => s.sum fun _ e => e)
+  intro hzero
+  have h1 : MvPolynomial.coeff m (MvPolynomial.homogeneousComponent f.totalDegree f)
+      = MvPolynomial.coeff m f := by
+    rw [MvPolynomial.coeff_homogeneousComponent, if_pos]
+    show Finsupp.degree m = f.totalDegree
+    rw [MvPolynomial.totalDegree, hmeq]
+    rfl
+  rw [hzero, MvPolynomial.coeff_zero] at h1
+  exact (MvPolynomial.mem_support_iff.mp hm) h1.symm
+
+/-- Total-degree bound for the resultant of two polynomials with `MvPolynomial` coefficients. -/
+lemma totalDegree_resultant_le {σ : Type*} {k : Type*} [Field k]
+    (U V : Polynomial (MvPolynomial σ k)) (m n a : ℕ)
+    (hU : ∀ i, (U.coeff i).totalDegree ≤ a) (hV : ∀ i, (V.coeff i).totalDegree ≤ a) :
+    (U.resultant V m n).totalDegree ≤ (m + n) * a := by
+  classical
+  have hentry : ∀ (i j : Fin (m + n)), (Polynomial.sylvester U V m n i j).totalDegree ≤ a := by
+    intro i j
+    induction j using Fin.addCases with
+    | left j =>
+        simp only [Polynomial.sylvester, Matrix.of_apply, Fin.addCases_left]
+        split_ifs with h
+        · exact hV _
+        · simp
+    | right j =>
+        simp only [Polynomial.sylvester, Matrix.of_apply, Fin.addCases_right]
+        split_ifs with h
+        · exact hU _
+        · simp
+  rw [Polynomial.resultant, Matrix.det_apply']
+  refine le_trans (MvPolynomial.totalDegree_finsetSum _ _) (Finset.sup_le fun τ _ => ?_)
+  refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+  have h1 : (((Equiv.Perm.sign τ : ℤ) : MvPolynomial σ k)).totalDegree = 0 := by
+    rcases Int.units_eq_one_or (Equiv.Perm.sign τ) with h | h <;> simp [h]
+  rw [h1, zero_add]
+  refine le_trans (MvPolynomial.totalDegree_finsetProd _ _) ?_
+  calc ∑ i : Fin (m + n), (Polynomial.sylvester U V m n (τ i) i).totalDegree
+      ≤ ∑ _i : Fin (m + n), a := Finset.sum_le_sum fun i _ => hentry _ _
+    _ = (m + n) * a := by simp [Finset.sum_const, mul_comm]
+
+/-- Root count of a nonzero one-variable polynomial over a finite field. -/
+lemma card_filter_eval_eq_zero_le {k : Type*} [Field k] [Fintype k] [DecidableEq k]
+    (P : Polynomial k) (hP : P ≠ 0) :
+    (Finset.univ.filter (fun a : k => Polynomial.eval a P = 0)).card ≤ P.natDegree := by
+  classical
+  have h1 : (Finset.univ.filter (fun a : k => Polynomial.eval a P = 0)) ⊆ P.roots.toFinset := by
+    intro a ha
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha
+    rw [Multiset.mem_toFinset, Polynomial.mem_roots']
+    exact ⟨hP, ha⟩
+  exact le_trans (Finset.card_le_card h1)
+    (le_trans (Multiset.toFinset_card_le _) (Polynomial.card_roots' P))
+
+/-- **SUB-LEAF (B): SCHMIDT'S LEMMA 7C** (PROVEN 2026-07-27) — the elementary
+COUNTING half: two hypersurfaces with no common factor meet in `O(p^{e−1})`
+rational points, with the implied constant depending only on `e` and the two
+degrees.
 
 NO ALGEBRAIC CLOSURE APPEARS HERE. The hypothesis is irreducibility of `S` over
 `𝔽_p` itself, which the consumer supplies from absolute irreducibility via
 `irreducible_of_irreducible_map`. So this leaf is a self-contained finite-field
-point count, dispatchable to a specialist who needs nothing else from this file
-except `badLocusCount`.
+point count, needing nothing else from this file except `badLocusCount`.
 
-WHY IT IS TRUE. `S` irreducible makes `(S)` a prime ideal of `𝔽_p[X_0,…,X_e]`, and
-`¬ S ∣ g` says exactly `g ∉ (S)`. So `V(S) ∩ V(g)` is a proper closed subset of the
-`e`-dimensional irreducible `V(S)`, hence has dimension at most `e − 1`, and
-Schmidt's Chapter IV §3 elementary upper bounds (his Lemmas 3A/3B — no Lang–Weil,
-no input whatever from item 4) give `#(V(S) ∩ V(g)) ≤ C·p^{e−1}` with `C` depending
-only on the ambient dimension and the degrees. Note `¬ S ∣ g` also forces `g ≠ 0`,
-since every `S` divides `0`.
+THE PROOF, which is Schmidt's Lemma 3C of Chapter IV §3 verbatim (shear, then
+resultant, then Schwartz–Zippel), with the explicit constant `d·(d+c+2)²`:
+
+* `p ≤ d + c + 1`: the bad locus sits inside `V(S)`, so the bare Schwartz–Zippel
+  bound `#V(S)·p ≤ d·p^{e+1}` already gives `p·N ≤ d·p·p^e ≤ d(d+c+1)p^e`.
+* `p > d + c + 1`: pick a direction `x` with `x₀ ≠ 0` at which BOTH top
+  homogeneous forms `S_d` and `g_{c'}` are nonzero — possible because
+  `S_d·g_{c'}·X₀` is a nonzero polynomial of total degree `≤ d+c+1 < p`, so
+  Schwartz–Zippel leaves a non-root (`exists_eval_ne_zero_of_totalDegree_lt`).
+  The linear substitution `X₀ ↦ x₀X₀`, `Xᵢ ↦ Xᵢ + xᵢX₀` (`shearAlgHom`, an
+  algebra AUTOMORPHISM for `x₀ ≠ 0`, inducing a BIJECTION on `𝔽_p`-points via
+  `shearPointEquiv`) then makes the `X₀`-leading coefficients CONSTANTS: the
+  coefficient of `X₀^d` in the sheared `S` is `S_d(x)`, which is the identity
+  `coeff_lineAlgHom` combined with `map_finSuccEquiv_shearAlgHom`. Rescaling by
+  those constants makes `U := finSuccEquiv S'` and `V := finSuccEquiv g'` MONIC
+  over `A := 𝔽_p[X₁,…,X_e]`, of degrees `d` and `c' = deg g`.
+
+  Monicity is what makes the whole argument work, and it is used twice:
+  (i) Gauss's lemma in its MONIC form (needing only that a UFD is integrally
+  closed — no `GCDMonoid` instance is required) carries `Irreducible U` and
+  `¬ U ∣ V` up to `Frac(A)[X]`, where a PID makes them COPRIME, so
+  `Res(U,V) ≠ 0`; (ii) specialisation `A → 𝔽_p` at any `a'` preserves BOTH
+  degrees, so `Res` commutes with it on the nose. A common zero `(a₀,a')` of
+  `S'` and `g'` therefore forces `Res(a') = 0`, while the fibre over each `a'`
+  has at most `d` points because `U` specialises to a monic degree-`d`
+  polynomial. Schwartz–Zippel on `Res` — total degree `≤ (d+c)²` by
+  `totalDegree_resultant_le`, a determinant of a Sylvester matrix whose entries
+  are `X₀`-coefficients — bounds the number of such `a'` by `deg(Res)·p^{e−1}`.
 
 WHY THE MULTIPLIED FORM `p · #(V(S) ∩ V(g)) ≤ C · p^e`. Same reason as in the
 parent, and it matters more here: `ℕ`-subtraction collapses `p^{e−1}` to `1` at
 `e = 0`, so the unmultiplied form would say nothing in the one case where the
 statement is completely elementary. In the multiplied form `e = 0` reads
-`#(V(S) ∩ V(g)) = 0`, which is TRUE and is a one-line argument: in `𝔽_p[X_0]` a
-common root `a` gives `(X_0 − a) ∣ S`, and `S` irreducible then makes `S` an
-associate of `X_0 − a`, so `S ∣ g`, contradiction.
+`#(V(S) ∩ V(g)) = 0`, which is TRUE; the proof above covers it uniformly, since
+at `e = 0` the base ring `A` is `𝔽_p` itself and Schwartz–Zippel over no
+variables says a nonzero constant has no zeros.
 
 NOT VACUOUS. The hypotheses are jointly satisfiable and the content is real: at
-`e = 1`, `d = c = 1` it is two distinct lines meeting in at most one point, and the
-general case at `e = 1` is the elementary Bezout bound `#(V(S) ∩ V(g)) ≤ d·c`. (The
-degenerate `d = 0` instance is vacuous, since a constant is never irreducible; the
-consumer never reaches it, because `exists_spreadOutHypersurfaceModel` also
-produces `S` absolutely irreducible.)
+`e = 1`, `d = c = 1` it is two distinct lines meeting in at most one point, and
+the general case at `e = 1` is the elementary Bezout bound
+`#(V(S) ∩ V(g)) ≤ d·c`. (The degenerate `d = 0` instance is vacuous, since a
+constant is never irreducible; the consumer never reaches it, because
+`exists_spreadOutHypersurfaceModel` also produces `S` absolutely irreducible.)
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_bound_badLocusCount (e d c : ℕ) :
     ∃ C : ℕ, ∀ (p : ℕ) [Fact p.Prime],
       ∀ S g : MvPolynomial (Fin (e + 1)) (ZMod p),
         S.totalDegree = d → Irreducible S → ¬ S ∣ g → g.totalDegree ≤ c →
-        p * badLocusCount S g ≤ C * p ^ e :=
-  sorry
+        p * badLocusCount S g ≤ C * p ^ e := by
+  classical
+  refine ⟨d * (d + c + 2) ^ 2, ?_⟩
+  intro p hpfact S g hSdeg hSirr hSg hgdeg
+  have hS0 : S ≠ 0 := hSirr.ne_zero
+  have hg0 : g ≠ 0 := fun h => hSg (h ▸ dvd_zero S)
+  have hppos : 0 < p := (Fact.out : p.Prime).pos
+  -- the bad locus is contained in the zero locus of `S`
+  have hsub : badLocusCount S g ≤ zeroCount S := by
+    rw [badLocusCount, zeroCount]
+    apply Finset.card_le_card
+    intro a ha
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+    exact ha.1
+  by_cases hpsmall : p ≤ d + c + 1
+  · -- small `p`: the trivial Schwartz–Zippel bound already suffices
+    have hSZ := schwartzZippel_card_zeros_mul_le S hS0
+    rw [Fintype.card_fin, hSdeg] at hSZ
+    have hz : zeroCount S * p ≤ d * p ^ (e + 1) := hSZ
+    calc p * badLocusCount S g ≤ p * zeroCount S := Nat.mul_le_mul_left _ hsub
+      _ = zeroCount S * p := by ring
+      _ ≤ d * p ^ (e + 1) := hz
+      _ = (d * p) * p ^ e := by ring
+      _ ≤ (d * (d + c + 2) ^ 2) * p ^ e := by
+          refine Nat.mul_le_mul_right _ ?_
+          have : p ≤ (d + c + 2) ^ 2 := le_trans hpsmall (by nlinarith)
+          exact Nat.mul_le_mul_left _ this
+  · replace hpsmall : d + c + 1 < p := Nat.lt_of_not_le hpsmall
+    -- the top homogeneous parts
+    set c' := g.totalDegree with hc'def
+    set F := MvPolynomial.homogeneousComponent d S with hFdef
+    set G := MvPolynomial.homogeneousComponent c' g with hGdef
+    have hF0 : F ≠ 0 := by
+      rw [hFdef, ← hSdeg]; exact homogeneousComponent_totalDegree_ne_zero S hS0
+    have hG0 : G ≠ 0 := homogeneousComponent_totalDegree_ne_zero g hg0
+    have hFdeg : F.totalDegree = d :=
+      (MvPolynomial.homogeneousComponent_isHomogeneous d S).totalDegree hF0
+    have hGdeg : G.totalDegree = c' :=
+      (MvPolynomial.homogeneousComponent_isHomogeneous c' g).totalDegree hG0
+    -- choose a good direction `x`
+    obtain ⟨x, hx⟩ : ∃ x : Fin (e + 1) → ZMod p,
+        MvPolynomial.eval x (F * G * MvPolynomial.X 0) ≠ 0 := by
+      refine exists_eval_ne_zero_of_totalDegree_lt _ ?_ ?_
+      · exact mul_ne_zero (mul_ne_zero hF0 hG0) (MvPolynomial.X_ne_zero _)
+      · refine lt_of_le_of_lt (le_trans (MvPolynomial.totalDegree_mul _ _) ?_) hpsmall
+        have h1 : (F * G).totalDegree ≤ d + c := by
+          refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+          rw [hFdeg, hGdeg]
+          exact Nat.add_le_add_left hgdeg _
+        have h2 : (MvPolynomial.X (0 : Fin (e + 1)) :
+            MvPolynomial (Fin (e + 1)) (ZMod p)).totalDegree = 1 :=
+          MvPolynomial.totalDegree_X _
+        omega
+    have hxF : MvPolynomial.eval x F ≠ 0 := by
+      intro h; apply hx; simp [h]
+    have hxG : MvPolynomial.eval x G ≠ 0 := by
+      intro h; apply hx; simp [h]
+    have hx0 : x 0 ≠ 0 := by
+      intro h; apply hx; simp [h]
+    -- the sheared polynomials
+    set S₁ := shearAlgHom x S with hS₁def
+    set g₁ := shearAlgHom x g with hg₁def
+    set U₀ := MvPolynomial.finSuccEquiv (ZMod p) e S₁ with hU₀def
+    set V₀ := MvPolynomial.finSuccEquiv (ZMod p) e g₁ with hV₀def
+    have htdS₁ : S₁.totalDegree ≤ d := hSdeg ▸ totalDegree_shearAlgHom_le x S
+    have htdg₁ : g₁.totalDegree ≤ c' := totalDegree_shearAlgHom_le x g
+    have hU₀d : U₀.coeff d ≠ 0 := by
+      intro hzero
+      apply hxF
+      have h1 := map_finSuccEquiv_shearAlgHom x S
+      have h2 := coeff_lineAlgHom x d S
+      rw [← h2, ← h1, Polynomial.coeff_map, ← hS₁def, ← hU₀def, hzero, map_zero]
+    have hV₀c : V₀.coeff c' ≠ 0 := by
+      intro hzero
+      apply hxG
+      have h1 := map_finSuccEquiv_shearAlgHom x g
+      have h2 := coeff_lineAlgHom x c' g
+      rw [← h2, ← h1, Polynomial.coeff_map, ← hg₁def, ← hV₀def, hzero, map_zero]
+    have hU₀nat : U₀.natDegree = d := by
+      refine le_antisymm ?_ (Polynomial.le_natDegree_of_ne_zero hU₀d)
+      rw [hU₀def, MvPolynomial.natDegree_finSuccEquiv]
+      exact le_trans (MvPolynomial.degreeOf_le_totalDegree _ _) htdS₁
+    have hV₀nat : V₀.natDegree = c' := by
+      refine le_antisymm ?_ (Polynomial.le_natDegree_of_ne_zero hV₀c)
+      rw [hV₀def, MvPolynomial.natDegree_finSuccEquiv]
+      exact le_trans (MvPolynomial.degreeOf_le_totalDegree _ _) htdg₁
+    obtain ⟨α, hα⟩ : ∃ α : ZMod p, U₀.coeff d = MvPolynomial.C α := by
+      have h := MvPolynomial.totalDegree_coeff_finSuccEquiv_add_le S₁ d (by rw [← hU₀def]; exact hU₀d)
+      have h0 : (U₀.coeff d).totalDegree = 0 := by rw [← hU₀def] at h; omega
+      exact ⟨_, MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp h0⟩
+    obtain ⟨β, hβ⟩ : ∃ β : ZMod p, V₀.coeff c' = MvPolynomial.C β := by
+      have h := MvPolynomial.totalDegree_coeff_finSuccEquiv_add_le g₁ c'
+        (by rw [← hV₀def]; exact hV₀c)
+      have h0 : (V₀.coeff c').totalDegree = 0 := by rw [← hV₀def] at h; omega
+      exact ⟨_, MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp h0⟩
+    have hα0 : α ≠ 0 := by intro h; apply hU₀d; rw [hα, h, map_zero]
+    have hβ0 : β ≠ 0 := by intro h; apply hV₀c; rw [hβ, h, map_zero]
+    -- normalise so that the leading `X₀`-coefficients are `1`
+    set S' := MvPolynomial.C α⁻¹ * S₁ with hS'def
+    set g' := MvPolynomial.C β⁻¹ * g₁ with hg'def
+    set U := MvPolynomial.finSuccEquiv (ZMod p) e S' with hUdef
+    set V := MvPolynomial.finSuccEquiv (ZMod p) e g' with hVdef
+    have hUeq : U = Polynomial.C (MvPolynomial.C α⁻¹) * U₀ := by
+      rw [hUdef, hS'def, map_mul, finSuccEquiv_C', hU₀def]
+    have hVeq : V = Polynomial.C (MvPolynomial.C β⁻¹) * V₀ := by
+      rw [hVdef, hg'def, map_mul, finSuccEquiv_C', hV₀def]
+    have hU₀ne : U₀ ≠ 0 := fun h => hU₀d (by rw [h, Polynomial.coeff_zero])
+    have hV₀ne : V₀ ≠ 0 := fun h => hV₀c (by rw [h, Polynomial.coeff_zero])
+    have hα' : (α⁻¹ : ZMod p) ≠ 0 := inv_ne_zero hα0
+    have hβ' : (β⁻¹ : ZMod p) ≠ 0 := inv_ne_zero hβ0
+    have hCαne : (Polynomial.C (MvPolynomial.C α⁻¹) :
+        Polynomial (MvPolynomial (Fin e) (ZMod p))) ≠ 0 := by
+      simp [hα']
+    have hCβne : (Polynomial.C (MvPolynomial.C β⁻¹) :
+        Polynomial (MvPolynomial (Fin e) (ZMod p))) ≠ 0 := by
+      simp [hβ']
+    have hUnat : U.natDegree = d := by
+      rw [hUeq, Polynomial.natDegree_mul hCαne hU₀ne, Polynomial.natDegree_C, zero_add, hU₀nat]
+    have hVnat : V.natDegree = c' := by
+      rw [hVeq, Polynomial.natDegree_mul hCβne hV₀ne, Polynomial.natDegree_C, zero_add, hV₀nat]
+    have hUmonic : U.Monic := by
+      have hcU : U.coeff d = 1 := by
+        rw [hUeq, Polynomial.coeff_C_mul, hα, ← MvPolynomial.C_mul, inv_mul_cancel₀ hα0,
+          MvPolynomial.C_1]
+      rw [Polynomial.Monic, Polynomial.leadingCoeff, hUnat, hcU]
+    have hVmonic : V.Monic := by
+      have hcV : V.coeff c' = 1 := by
+        rw [hVeq, Polynomial.coeff_C_mul, hβ, ← MvPolynomial.C_mul, inv_mul_cancel₀ hβ0,
+          MvPolynomial.C_1]
+      rw [Polynomial.Monic, Polynomial.leadingCoeff, hVnat, hcV]
+    -- the point count is unchanged
+    have hcount : badLocusCount S' g' = badLocusCount S g := by
+      rw [badLocusCount, badLocusCount]
+      refine Finset.card_equiv (shearPointEquiv x hx0) ?_
+      intro a
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, shearPointEquiv_apply, hS'def,
+        hg'def, hS₁def, hg₁def, map_mul, MvPolynomial.eval_C, eval_shearAlgHom, mul_eq_zero,
+        hα', hβ', false_or]
+    -- irreducibility and non-divisibility survive
+    have hS₁irr : Irreducible S₁ := by
+      have h := (MulEquiv.irreducible_iff
+        (f := (shearAlgEquiv x hx0).toRingEquiv.toMulEquiv) (x := S)).mpr hSirr
+      simpa [hS₁def] using h
+    obtain ⟨uα, huα⟩ : ∃ u : (MvPolynomial (Fin (e + 1)) (ZMod p))ˣ,
+        (u : MvPolynomial (Fin (e + 1)) (ZMod p)) = MvPolynomial.C α⁻¹ :=
+      ⟨⟨MvPolynomial.C α⁻¹, MvPolynomial.C α,
+        by rw [← MvPolynomial.C_mul, inv_mul_cancel₀ hα0, MvPolynomial.C_1],
+        by rw [← MvPolynomial.C_mul, mul_inv_cancel₀ hα0, MvPolynomial.C_1]⟩, rfl⟩
+    obtain ⟨uβ, huβ⟩ : ∃ u : (MvPolynomial (Fin (e + 1)) (ZMod p))ˣ,
+        (u : MvPolynomial (Fin (e + 1)) (ZMod p)) = MvPolynomial.C β⁻¹ :=
+      ⟨⟨MvPolynomial.C β⁻¹, MvPolynomial.C β,
+        by rw [← MvPolynomial.C_mul, inv_mul_cancel₀ hβ0, MvPolynomial.C_1],
+        by rw [← MvPolynomial.C_mul, mul_inv_cancel₀ hβ0, MvPolynomial.C_1]⟩, rfl⟩
+    have hassS : Associated S₁ S' := ⟨uα, by rw [hS'def, huα]; ring⟩
+    have hassg : Associated g₁ g' := ⟨uβ, by rw [hg'def, huβ]; ring⟩
+    have hS'irr : Irreducible S' := hassS.irreducible hS₁irr
+    have hS'g' : ¬ S' ∣ g' := by
+      intro hdvd
+      apply hSg
+      have h1 : S₁ ∣ g₁ := hassS.dvd_iff_dvd_left.mpr (hassg.dvd_iff_dvd_right.mpr hdvd)
+      have h2 := map_dvd (shearAlgEquiv x hx0).symm h1
+      have hs : (shearAlgEquiv x hx0).symm S₁ = S := by
+        rw [hS₁def, ← shearAlgEquiv_apply x hx0 S, AlgEquiv.symm_apply_apply]
+      have hg : (shearAlgEquiv x hx0).symm g₁ = g := by
+        rw [hg₁def, ← shearAlgEquiv_apply x hx0 g, AlgEquiv.symm_apply_apply]
+      rwa [hs, hg] at h2
+    have hUirr : Irreducible U := by
+      have h := (MulEquiv.irreducible_iff
+        (f := (MvPolynomial.finSuccEquiv (ZMod p) e).toRingEquiv.toMulEquiv) (x := S')).mpr hS'irr
+      simpa [hUdef] using h
+    have hUV : ¬ U ∣ V := by
+      intro hdvd
+      apply hS'g'
+      have h := map_dvd (MvPolynomial.finSuccEquiv (ZMod p) e).symm hdvd
+      rwa [hUdef, hVdef, AlgEquiv.symm_apply_apply, AlgEquiv.symm_apply_apply] at h
+    -- pass to the fraction field to see the resultant is nonzero
+    set ι := algebraMap (MvPolynomial (Fin e) (ZMod p))
+      (FractionRing (MvPolynomial (Fin e) (ZMod p))) with hιdef
+    have hUmapirr : Irreducible (U.map ι) :=
+      (hUmonic.irreducible_iff_irreducible_map_fraction_map
+        (K := FractionRing (MvPolynomial (Fin e) (ZMod p)))).mp hUirr
+    have hUmapdvd : ¬ (U.map ι ∣ V.map ι) := fun h =>
+      hUV (hVmonic.dvd_of_fraction_map_dvd_fraction_map hUmonic h)
+    have hcop : IsCoprime (U.map ι) (V.map ι) := by
+      refine isCoprime_of_irreducible_dvd ?_ ?_
+      · intro hc
+        exact (hUmonic.map ι).ne_zero hc.1
+      · intro z hz hzU hzV
+        exact hUmapdvd (dvd_trans (hz.associated_of_dvd hUmapirr hzU).symm.dvd hzV)
+    set R := Polynomial.resultant U V U.natDegree V.natDegree with hRdef
+    have hRne : R ≠ 0 := by
+      have h1 : Polynomial.resultant (U.map ι) (V.map ι) U.natDegree V.natDegree = ι R :=
+        Polynomial.resultant_map_map U V _ _ ι
+      have h2 : Polynomial.resultant (U.map ι) (V.map ι) ≠ 0 :=
+        Polynomial.resultant_ne_zero _ _ hcop
+      rw [hUmonic.natDegree_map, hVmonic.natDegree_map, h1] at h2
+      intro h
+      exact h2 (by rw [h, map_zero])
+    -- the specialisation identity
+    have hspec : ∀ (a' : Fin e → ZMod p) (a₀ : ZMod p),
+        MvPolynomial.eval (Fin.cons a₀ a') S' = 0 →
+        MvPolynomial.eval (Fin.cons a₀ a') g' = 0 →
+        MvPolynomial.eval a' R = 0 := by
+      intro a' a₀ h1 h2
+      have e1 : Polynomial.eval a₀ (U.map (MvPolynomial.eval a')) = 0 := by
+        rw [hUdef, ← MvPolynomial.eval_eq_eval_mv_eval']; exact h1
+      have e2 : Polynomial.eval a₀ (V.map (MvPolynomial.eval a')) = 0 := by
+        rw [hVdef, ← MvPolynomial.eval_eq_eval_mv_eval']; exact h2
+      have hnc := not_isCoprime_of_common_root e1 e2
+      have hz : Polynomial.resultant (U.map (MvPolynomial.eval a'))
+          (V.map (MvPolynomial.eval a')) = 0 := by
+        rw [Polynomial.resultant_eq_zero_iff]
+        exact ⟨Or.inl (hUmonic.map _).ne_zero, hnc⟩
+      rw [hUmonic.natDegree_map, hVmonic.natDegree_map,
+        Polynomial.resultant_map_map U V U.natDegree V.natDegree
+          (MvPolynomial.eval a' : MvPolynomial (Fin e) (ZMod p) →+* ZMod p)] at hz
+      exact hz
+    -- fibrewise counting
+    set Z := Finset.univ.filter (fun a' : Fin e → ZMod p => MvPolynomial.eval a' R = 0) with hZdef
+    have hZcount : badLocusCount S' g' ≤ d * Z.card := by
+      rw [badLocusCount]
+      refine Finset.card_le_mul_card_image_of_maps_to
+        (f := fun a : Fin (e + 1) → ZMod p => fun j : Fin e => a j.succ) ?_ d ?_
+      · intro a ha
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha
+        simp only [hZdef, Finset.mem_filter, Finset.mem_univ, true_and]
+        have hc : Fin.cons (a 0) (fun j : Fin e => a j.succ) = a := by
+          funext i; induction i using Fin.cases <;> simp
+        exact hspec _ (a 0) (by rw [hc]; exact ha.1) (by rw [hc]; exact ha.2)
+      · intro b _
+        have hnd : (U.map (MvPolynomial.eval b)).natDegree = d := by
+          rw [hUmonic.natDegree_map, hUnat]
+        refine le_trans (le_trans (Finset.card_le_card_of_injOn (fun a => a 0) ?_ ?_)
+          (card_filter_eval_eq_zero_le (U.map (MvPolynomial.eval b)) (hUmonic.map _).ne_zero))
+          (le_of_eq hnd)
+        · intro a ha
+          obtain ⟨ha1, ha2⟩ := Finset.mem_filter.mp ha
+          obtain ⟨-, ha3⟩ := Finset.mem_filter.mp ha1
+          refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
+          have hc : Fin.cons (a 0) b = a := by
+            rw [← ha2]; funext i; induction i using Fin.cases <;> simp
+          show Polynomial.eval (a 0) (Polynomial.map (MvPolynomial.eval b) U) = 0
+          rw [hUdef, ← MvPolynomial.eval_eq_eval_mv_eval', hc]
+          exact ha3.1
+        · intro a ha a₂ ha₂ heq
+          have hb : (fun j : Fin e => a j.succ) = b :=
+            (Finset.mem_filter.mp (Finset.mem_coe.mp ha)).2
+          have hb₂ : (fun j : Fin e => a₂ j.succ) = b :=
+            (Finset.mem_filter.mp (Finset.mem_coe.mp ha₂)).2
+          have hc : Fin.cons (a 0) b = a := by
+            rw [← hb]; funext i; induction i using Fin.cases <;> simp
+          have hc₂ : Fin.cons (a₂ 0) b = a₂ := by
+            rw [← hb₂]; funext i; induction i using Fin.cases <;> simp
+          have heq' : a 0 = a₂ 0 := heq
+          rw [← hc, ← hc₂, heq']
+    -- the degree bound on the resultant
+    have hS'td : S'.totalDegree ≤ d := by
+      rw [hS'def]
+      refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+      rw [MvPolynomial.totalDegree_C, zero_add]; exact htdS₁
+    have hg'td : g'.totalDegree ≤ c := by
+      rw [hg'def]
+      refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+      rw [MvPolynomial.totalDegree_C, zero_add]; exact le_trans htdg₁ hgdeg
+    have hRdeg : R.totalDegree ≤ (d + c + 2) ^ 2 := by
+      have hcoU : ∀ i, (U.coeff i).totalDegree ≤ d + c := by
+        intro i
+        by_cases hi : U.coeff i = 0
+        · rw [hi]; simp
+        · have h := MvPolynomial.totalDegree_coeff_finSuccEquiv_add_le S' i
+            (by rw [← hUdef]; exact hi)
+          rw [← hUdef] at h
+          omega
+      have hcoV : ∀ i, (V.coeff i).totalDegree ≤ d + c := by
+        intro i
+        by_cases hi : V.coeff i = 0
+        · rw [hi]; simp
+        · have h := MvPolynomial.totalDegree_coeff_finSuccEquiv_add_le g' i
+            (by rw [← hVdef]; exact hi)
+          rw [← hVdef] at h
+          omega
+      have h := totalDegree_resultant_le U V U.natDegree V.natDegree (d + c) hcoU hcoV
+      rw [← hRdef, hUnat, hVnat] at h
+      have hc'c : c' ≤ c := hgdeg
+      calc R.totalDegree ≤ (d + c') * (d + c) := h
+        _ ≤ (d + c + 2) ^ 2 := by nlinarith
+    -- assemble
+    have hSZR := schwartzZippel_card_zeros_mul_le R hRne
+    rw [Fintype.card_fin, ← hZdef] at hSZR
+    calc p * badLocusCount S g = p * badLocusCount S' g' := by rw [hcount]
+      _ ≤ p * (d * Z.card) := Nat.mul_le_mul_left _ hZcount
+      _ = d * (Z.card * p) := by ring
+      _ ≤ d * (R.totalDegree * p ^ e) := Nat.mul_le_mul_left _ hSZR
+      _ ≤ d * ((d + c + 2) ^ 2 * p ^ e) :=
+          Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hRdeg)
+      _ = d * (d + c + 2) ^ 2 * p ^ e := by ring
+
+end BadLocusAssembly
 
 /-- **THE BIRATIONAL HYPERSURFACE MODEL, SPREAD OUT OVER `ℤ[1/D]`** (PROVEN
 2026-07-27 over `exists_spreadOutHypersurfaceModel` and
@@ -12650,6 +13302,10 @@ NAMED LEAVES, split along the line the literature itself draws:
 * `exists_bound_badLocusCount` — Lemma 7C, via the Chapter IV §3 elementary upper
   bounds. A pure finite-field point count over `𝔽_p`, with no algebraic closure in
   its signature; the bridge is `irreducible_of_irreducible_map`, PROVEN above.
+  This one is now **PROVEN** (2026-07-27) — Schmidt's Lemma 3C in full: a linear
+  shear makes both `X₀`-leading coefficients constant, monic Gauss carries
+  coprimality up to `Frac(𝔽_p[X₁,…,X_e])[X]` so the resultant is nonzero, and
+  Schwartz–Zippel on the resultant bounds the projected bad locus.
 
 The cut is made possible by presenting the bad locus as a hypersurface SECTION
 `V(S) ∩ V(g)` rather than as an abstract proper closed subset — that is what turns
