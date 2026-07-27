@@ -9619,8 +9619,204 @@ theorem y0HasNoRationalPoint_of_no_stable_isolated {p N : ℕ}
     Y0HasNoRationalPoint N :=
   y0HasNoRationalPoint_of_not_stableCyclic hno
 
-/-- **Mazur's Theorem 1, in the form the descent needs** (sorry node,
-introduced 2026-07-27): a curve over `ℚ` with a rational `p`-isogeny, for
+/-! #### Mazur's Theorem 1 at the isolated primes, split by TECHNIQUE
+
+`mem_isolatedJInvariants_of_stable` below was a single leaf when it was
+introduced earlier on 2026-07-27, carrying an ATOMICITY audit that recorded
+cuts along the *level*, the *prime* and the *`j`-value* as all tried and all
+failed.  That audit is right about each of the three axes it searched — the
+level cut is vacuous at prime level, `fin_cases` on `_hp` really does hand
+back seven goals of the same shape, and the `j`-value cut really does need
+the conclusion in order to case on.  What it did not ask is what happens
+when the seven primes are grouped by the ARGUMENT that settles them instead
+of enumerated one by one.  They fall into three groups whose proofs have
+nothing in common, and that is the split taken here.
+
+**A second, independent development in this tree had already converged on
+exactly this split.**  `FreyCurve/MazurTorsion.lean` carries
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_ge_eleven`, which is
+verbatim `mem_isolatedJInvariants_of_stable` modulo the `Finset ℚ` versus
+`List (ℕ × ℚ)` phrasing, and it is PROVEN there over
+`jInvariant_mem_of_isogenyPrime_genusOne`, `…_thirtySeven` and
+`…_classNumberOne` — the same three groups, `{11, 17, 19}`, `{37}`,
+`{43, 67, 163}`.  Two developments reaching the same three-way cut from
+opposite directions is the strongest evidence available here that the cut is
+the mathematics and not a convenience.
+
+**Why this file must state them again rather than cite them: IMPORT
+DIRECTION.**  `MazurTorsion.lean` `public import`s this module, so nothing in
+it can be used here.  This is the same forced duplication that
+`false_of_stable_of_forall_padicValRat_nonneg` records some three thousand
+lines below, and it has the same repair — a HOIST of the
+`MazurIsogenyPrimeJ` section, and of the three
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_*` wrappers over it, into a
+module upstream of both.  That is a cross-module refactor with several
+concurrent owners and is deliberately not attempted here.  What IS done here
+is to make the hoist mechanical: the three leaves below are stated with the
+same hypotheses, the same grouping and matching names, so the repair is
+three `exact`s and three deletions rather than a reconciliation.
+
+**Their state over there, read off the build's `declaration uses 'sorry'`
+set at `60313518` rather than off docstrings.**  The genus-one branch is
+proven down to the single leaf `exists_kernelPolynomial_of_genusOneJTable`;
+the `37` branch down to `exists_coarseModuliY0_thirtySeven_cardLe` and
+`exists_x0ThirtySevenPoints`; the class-number-one branch down to
+`exists_x0ClassNumberOnePoints`,
+`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` and
+`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`, with
+`card_le_of_isogenyPrimeHigherGenus` (`#X_0(p)(ℚ) ≤ 3`) already PROVEN.  So
+"Mazur's Theorem 1 is a single irreducible leaf" is not a true statement
+about this tree: it is already seven leaves in the module next door, and the
+only thing keeping it one leaf here is the direction of an import.
+-/
+
+/-- **Mazur's Theorem 1 at the three genus-one levels** (sorry node, new
+2026-07-27): for `p ∈ {11, 17, 19}` a curve over `ℚ` with a rational
+`p`-isogeny has one of the six tabulated `j`-invariants.
+
+TRUE, and this is the group that needs **no modular-curve depth at all**:
+`X_0(11)`, `X_0(17)` and `X_0(19)` have genus `1`, so each is an elliptic
+curve over `ℚ` — the curves `11a1`, `17a1`, `19a1` — and the determination
+of `X_0(p)(ℚ)` is a Mordell–Weil computation on a specific curve.
+
+**Machine-checked in PARI/GP 2.17.4, 2026-07-27** (untrusted searcher,
+statement check only).  `ellinit` on `[0,-1,1,-10,-20]`, `[1,-1,1,-1,-14]`,
+`[0,1,1,-9,-15]` gives conductors `11, 17, 19`; `ellanalyticrank` gives
+`0, 0, 0`; `elltors` gives `ℤ/5`, `ℤ/4`, `ℤ/3`.  Two points of each are the
+cusps `0` and `∞`, leaving `3 + 2 + 1 = 6` non-cuspidal `j`-invariants —
+exactly the counts of the three rows of `isolatedJInvariants` at these
+primes.  Independently, `numerator((p − 1)/12) = 5, 4, 3`, the order of the
+cuspidal divisor class group, agrees with the torsion order at each of the
+three, so the row counts are checked twice by different means.
+
+**WHY THIS GROUP CANNOT GO THROUGH THE EISENSTEIN QUOTIENT**, which is the
+reason it is a separate leaf and not three more cases of the two below.
+Mazur's Thm 4 (*Modular curves and the Eisenstein ideal*, IHÉS 47 (1977))
+gives a NONTRIVIAL Eisenstein quotient only for `19 < p`; at `p ≤ 19` the
+quotient can vanish and the formal-immersion argument carries nothing.  That
+hypothesis is recorded in the same words on
+`exists_eisensteinQuotientAt_of_jNeronDatum` in `FreyCurve/MazurTorsion.lean`
+and is why `exists_eisensteinFormalImmersionAt` in this file is stated for
+`p ∉ mazurIsogenyPrimes`.  So the `19 < p` boundary is not an artefact of
+this cut — it is where Mazur's own method starts working.
+
+REFERENCES: Fricke; Ligozat, *Courbes modulaires de genre 1*, Bull. SMF Mém.
+**43** (1975); Mazur–Swinnerton-Dyer, *Arithmetic of Weil curves*, Invent.
+Math. **25** (1974).
+
+**The check that refutes any irreducibility verdict here**: the counterpart
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_genusOne` in
+`FreyCurve/MazurTorsion.lean` is PROVEN, over
+`MazurIsogenyPrimeJ.exists_jMap_genusOne`, down to the single open leaf
+`MazurIsogenyPrimeJ.exists_kernelPolynomial_of_genusOneJTable`.  This leaf is
+therefore one hoist away from three lines; a successor should hoist rather
+than reprove. -/
+theorem mem_isolatedJInvariants_of_stable_genusOne {p : ℕ}
+    (_hp : p ∈ ({11, 17, 19} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg : addOrderOf g = p)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    E.j ∈ isolatedJInvariants p :=
+  sorry
+
+/-- **Mazur's Theorem 1 at `p = 37`** (sorry node, new 2026-07-27): a curve
+over `ℚ` with a rational `37`-isogeny has `j = −7·11³ = −9317` or
+`j = −7·137³·2083³ = −162677523113838677`.
+
+TRUE, and `37` is the exceptional level of the seven.  `X_0(37)` has genus
+`2`; its two non-cuspidal rational points are **not** CM, so the
+class-number-one argument of the sibling below says nothing about them; and
+`J_0(37)` splits as `37a × 37b` with `37a` of rank `1`, so
+`HasRankZeroJacobian` is FALSE here and the genus-one route above does not
+extend either.  The classical determination is Mazur–Swinnerton-Dyer,
+*Arithmetic of Weil curves*, Invent. Math. **25** (1974), refined by
+Mazur–Vélu; it is the one level of the seven settled by a Chabauty-style
+argument on a rank-deficient quotient rather than by torsion or by CM.
+
+Stated at the literal level `37` rather than with a membership hypothesis
+because the group is a singleton: there is nothing for a proof to case on,
+and the assembly stays a plain `rcases`.
+
+**The check that refutes any irreducibility verdict here**: the counterpart
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_thirtySeven` in
+`FreyCurve/MazurTorsion.lean` is PROVEN over
+`MazurIsogenyPrimeJ.exists_jMap_thirtySeven`, whose own residue is the two
+open leaves `exists_coarseModuliY0_thirtySeven_cardLe` (`#X_0(37)(ℚ) ≤ 4`)
+and `exists_x0ThirtySevenPoints` (the four points, two cusps and two
+non-cuspidal).  The honest description of this node is "two leaves in the
+module next door, unreachable by import direction", not "irreducible". -/
+theorem mem_isolatedJInvariants_of_stable_thirtySeven
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg : addOrderOf g = 37)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    E.j ∈ isolatedJInvariants 37 :=
+  sorry
+
+/-- **Mazur's Theorem 1 at the three class-number-one levels** (sorry node,
+new 2026-07-27): for `p ∈ {43, 67, 163}` a curve over `ℚ` with a rational
+`p`-isogeny has `j` equal to the singular modulus of discriminant `−p`.
+
+TRUE.  `X_0(43)`, `X_0(67)`, `X_0(163)` have genus `3, 5, 13` and each has
+exactly one non-cuspidal rational point, the CM point of the
+class-number-one discriminant `−p`.  Because `h(−p) = 1` the Hilbert class
+polynomial is LINEAR —
+
+    polclass(−43)  = x + 884736000
+    polclass(−67)  = x + 147197952000
+    polclass(−163) = x + 262537412640768000
+
+— so the three values are forced the moment CM is known, and **all the
+content of this leaf is the converse**: that a rational `p`-isogeny forces
+CM, i.e. that there is no third rational point.  That is the Eisenstein-ideal
+descent of Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), over *Modular curves and the Eisenstein ideal*, IHÉS 47 (1977).
+
+**Two routes are known to be dead here; do not spend a cycle rediscovering
+them.**  (i) The cut into "`E` has CM by an order of `ℚ(√−p)`" plus "`h = 1`
+pins `j`" was tried and rejected in `FreyCurve/MazurTorsion.lean`: the first
+half is the whole of Mazur and the second half is the displayed line above,
+so it is a restatement rather than a reduction.  Note in particular that
+"`p`-isogeny ⟹ CM" is FALSE in general at PRIME level — it holds at these
+three primes only as a consequence of the very theorem being proven — so
+there is no endomorphism to descend from, unlike at prime-power levels
+`125`/`169` where `k ≥ 2` manufactures one.  (ii) `rank J_0(p)(ℚ) = 1, 2, 6`
+at these three, so `HasRankZeroJacobian` is FALSE and routing through
+`card_le_of_rankZeroJacobian` would manufacture a false sub-leaf.  The check
+that would refute (ii): any source giving rank `0` for one of the three
+Jacobians.
+
+**The check that refutes any irreducibility verdict here**: the counterpart
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_classNumberOne` in
+`FreyCurve/MazurTorsion.lean` is PROVEN over
+`MazurIsogenyPrimeJ.exists_jMap_classNumberOne`, itself PROVEN over
+`card_le_of_isogenyPrimeHigherGenus` (`#X_0(p)(ℚ) ≤ 3`, PROVEN) and
+`exists_x0ClassNumberOnePoints` (the CM point and the two cusps, open), with
+the class-number-one identification carried by the two further open leaves
+`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` and
+`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`.  Recorded there and
+worth knowing before choosing a different route: effective Chabauty–Coleman
+cannot close these levels, since `#X(𝔽_ℓ) + 2g − 2` gives `15, 19, 64` and
+`#X(𝔽_ℓ) + 2r` gives `8, 10, 20` against a truth of `3`. -/
+theorem mem_isolatedJInvariants_of_stable_classNumberOne {p : ℕ}
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg : addOrderOf g = p)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    E.j ∈ isolatedJInvariants p :=
+  sorry
+
+/-- **Mazur's Theorem 1, in the form the descent needs** (PROVEN 2026-07-27
+by the split into the three technique leaves above; introduced as a single
+leaf earlier the same day): a curve over `ℚ` with a rational `p`-isogeny, for
 `p` one of the seven isolated Mazur primes, has one of the tabulated
 `j`-invariants.
 
@@ -9647,9 +9843,9 @@ eleven are strictly negative, and in particular **none is `0` and none is
 `1728`** — the single property the sibling descent
 `y0HasNoRationalPoint_of_no_stable_isolated` consumes.  No error was
 found in the statement, and none of its hypotheses is redundant: dropping
-`_hp` makes it false at `p ∈ {2, 3, 5, 7, 13}` (where `X_0(p) ≅ ℙ¹` and
+`hp` makes it false at `p ∈ {2, 3, 5, 7, 13}` (where `X_0(p) ≅ ℙ¹` and
 `isolatedJInvariants p = ∅` while infinitely many `j` occur), dropping
-`_hg` or `_hstable` makes it false for any curve with no `p`-isogeny.
+`hg` or `hstable` makes it false for any curve with no `p`-isogeny.
 
 The direction proved here is the easy one to state and the only one used:
 a `Γ_ℚ`-stable order-`p` subgroup of `E(ℚ̄)` gives a NON-CUSPIDAL rational
@@ -9657,27 +9853,71 @@ point of `X_0(p)` with that `j`-invariant, so no coarse-space subtlety
 enters — the subtlety is entirely in the converse, which is where
 `y0HasNoRationalPoint_of_no_stable_isolated` lives.
 
-ATOMICITY, and the axis searched: cuts along the *level* (push to a
-divisor), along the *prime* (`fin_cases` on `_hp`) and along the
-*`j`-value* were all considered.  The first is vacuous at prime level; the
-second yields seven copies of the same theorem, each still Mazur; the
-third runs backwards (it needs the conclusion to case on).  There is no
-sub-statement here that is not Mazur's Theorem 1, which is why — unlike
-its sibling `not_stable_of_mem_isolatedJInvariants`, which DID cut — this
-node stays a single leaf.
+## THE ATOMICITY VERDICT WAS WRONG, AND HERE IS THE AXIS IT MISSED
 
-IRREDUCIBLE at this pin: Mazur's theorem is not in `Mathlib`, not in
-`~/cs/FLT`, and not in this project.  Its proof is the Eisenstein-ideal
-argument — the deepest input to the whole `X_0` subtree. -/
-theorem mem_isolatedJInvariants_of_stable {p : ℕ} (_hp : p ∈ isolatedIsogenyPrimes)
+The paragraph this one replaces read: "ATOMICITY, and the axis searched:
+cuts along the *level* (push to a divisor), along the *prime* (`fin_cases`
+on `_hp`) and along the *`j`-value* were all considered.  The first is
+vacuous at prime level; the second yields seven copies of the same theorem,
+each still Mazur; the third runs backwards (it needs the conclusion to case
+on).  There is no sub-statement here that is not Mazur's Theorem 1, which is
+why — unlike its sibling `not_stable_of_mem_isolatedJInvariants`, which DID
+cut — this node stays a single leaf."
+
+Each of those three findings is correct, and the conclusion drawn from them
+is not.  An irreducibility verdict is only as wide as the axes it searched,
+and the axis that settles this node is **the argument, not the enumeration**:
+`fin_cases` on `hp` gives seven goals of the same SHAPE, but they are settled
+by three different theorems, and grouping them accordingly is a genuine cut.
+
+* `p ∈ {11, 17, 19}` — `X_0(p)` has genus `1` and is an elliptic curve of
+  rank `0` with torsion `ℤ/5`, `ℤ/4`, `ℤ/3`; the determination is a
+  Mordell–Weil TORSION computation and touches no Eisenstein ideal.  It
+  cannot use one either: Mazur's Thm 4 gives a nontrivial Eisenstein quotient
+  only for `19 < p`.
+* `p = 37` — genus `2`, two NON-CM `j`-invariants, `J_0(37) = 37a × 37b`
+  with `37a` of rank `1`; Mazur–Swinnerton-Dyer, not torsion and not CM.
+* `p ∈ {43, 67, 163}` — genus `3, 5, 13`, one CM point each, class number
+  one; the Eisenstein-ideal descent proper.
+
+Only the third group is "still Mazur" in the sense the old paragraph meant.
+
+**This is confirmed by a second, independent development in this tree.**
+`FreyCurve/MazurTorsion.lean` proves
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_ge_eleven` — verbatim this
+statement modulo `Finset ℚ` versus `List (ℕ × ℚ)` — over exactly these three
+groups, and carries it down to seven open leaves.  See the subsection
+docstring above for their names, for the state of each read off the build's
+warning set, and for why the import direction forces this file to state them
+again instead of citing them.
+
+So the corrected verdict is: **not irreducible, and not in fact undivided
+anywhere but here.**  What remains genuinely absent from `Mathlib`, from
+`~/cs/FLT` and from this project is the Eisenstein-ideal machinery behind the
+third group, which is now confined to
+`mem_isolatedJInvariants_of_stable_classNumberOne`. -/
+theorem mem_isolatedJInvariants_of_stable {p : ℕ} (hp : p ∈ isolatedIsogenyPrimes)
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hg : addOrderOf g = p)
-    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+    (hg : addOrderOf g = p)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    E.j ∈ isolatedJInvariants p :=
-  sorry
+    E.j ∈ isolatedJInvariants p := by
+  -- the seven isolated primes, as a disjunction
+  have hp' : p = 11 ∨ p = 17 ∨ p = 19 ∨ p = 37 ∨ p = 43 ∨ p = 67 ∨ p = 163 := by
+    simpa [isolatedIsogenyPrimes] using hp
+  rcases hp' with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  -- genus `1`, rank `0`, Mordell–Weil torsion
+  · exact mem_isolatedJInvariants_of_stable_genusOne (by decide) E g hg hstable
+  · exact mem_isolatedJInvariants_of_stable_genusOne (by decide) E g hg hstable
+  · exact mem_isolatedJInvariants_of_stable_genusOne (by decide) E g hg hstable
+  -- genus `2`, the exceptional non-CM level
+  · exact mem_isolatedJInvariants_of_stable_thirtySeven E g hg hstable
+  -- class number one, the Eisenstein-ideal descent proper
+  · exact mem_isolatedJInvariants_of_stable_classNumberOne (by decide) E g hg hstable
+  · exact mem_isolatedJInvariants_of_stable_classNumberOne (by decide) E g hg hstable
+  · exact mem_isolatedJInvariants_of_stable_classNumberOne (by decide) E g hg hstable
 
 /-! #### No second isogeny: the CM half and the non-CM half
 
