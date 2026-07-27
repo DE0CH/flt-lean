@@ -2299,8 +2299,259 @@ theorem isWeaklyRegular_map_of_ringKrullDim_eq {R T : Type u} [CommRing R] [Comm
   · rw [List.length_map, hlen, hdim]
   · rw [himg]; exact hfib
 
+section LocalCriterionOfFlatness
+
+open scoped TensorProduct
+
+variable {R T : Type u} [CommRing R] [CommRing T] [Algebra R T]
+
+/-- **THE POWER STEP OF THE LOCAL CRITERION OF FLATNESS** (sorry leaf — pure
+commutative algebra; Stacks 051C + 00MK in the NILPOTENT case, Matsumura
+*Commutative Ring Theory* 22.1/22.2).
+
+`t` a nonzerodivisor on `R` and on `T` with `T ⧸ (φ t)` flat over `R ⧸ (t)`;
+then `T ⧸ (φ t)^n` is flat over `R ⧸ (t)^n` for every `n`.
+
+**WHY THIS IS ONE OF THE TWO HALVES.**  Together with
+`mem_baseChange_sup_of_flat_quotientMap_pow` below it proves the atom
+`flat_of_flat_quotient_isSMulRegular`.  It is the half that needs NO
+separatedness and NO Artin–Rees: inside `A := R ⧸ (t^n)` the ideal
+`(t)/(t^n)` is NILPOTENT, and for a nilpotent ideal the local criterion of
+flatness is unconditional.
+
+**THE ROUTE.**  Induct on `n`.  The classical formulation is: for `A` a ring,
+`J ⊆ A` nilpotent and `M` an `A`-module, `M` is `A`-flat as soon as `M ⧸ JM`
+is `A ⧸ J`-flat and `Tor₁^A(A ⧸ J, M) = 0`.  Instantiated at `A = R ⧸ (t^n)`,
+`J = (t)/(t^n)`, `M = T ⧸ (φ t)^n`:
+
+* `M ⧸ JM = T ⧸ (φ t)` is flat over `A ⧸ J = R ⧸ (t)` — that is `hflat`;
+* the `Tor₁` vanishing is exactly regularity.  Over `A` the module `A ⧸ J`
+  has the periodic-style presentation `A --(t^{n-1})--> A --t--> A → A ⧸ J → 0`,
+  so `Tor₁^A(A ⧸ J, M) = (0 :ₘ t) / t^{n-1} M`; and `φ t` being a
+  nonzerodivisor on `T` gives `(0 :_{T ⧸ (φ t)^n} φ t) = (φ t)^{n-1} T ⧸ (φ t)^n`,
+  which is precisely `t^{n-1} M`.  So the quotient is `0`.
+
+**THERE IS NO `Tor` TO USE.**  Mathlib has no `Tor` long exact sequence for
+modules (checked 2026-07-27: `Mathlib/RingTheory/Flat/` has no `Tor` at all,
+and there is no `LocalCriterion` file anywhere in the library).  So a prover
+must run the argument through `Module.Flat.iff_rTensor_injective` /
+`iff_lTensor_injective`, which expresses `Tor₁(R ⧸ I, M) = 0` as injectivity
+of `I ⊗ M → M`, exactly as the atom's original docstring already advised.
+`Mathlib/RingTheory/TensorProduct/Quotient.lean` (already in this file's import
+cone) supplies the identifications that replace the change-of-rings
+isomorphisms: `Algebra.TensorProduct.quotIdealMapEquivQuotTensor`,
+`quotientTensorEquiv`, `tensorQuotientEquiv`, `Ideal.subtype_rTensor_range`.
+
+**FAITHFULNESS.**  `ψn` is passed as DATA together with its intertwining
+`hψn`, for the same reason `ψ` is in the atom: the map is
+`Ideal.quotientMap (Ideal.span {(algebraMap R T t)^n}) (algebraMap R T) _`, and
+taking it as data keeps the (one-line) construction of its side condition at
+the call site.  Since `Ideal.Quotient.mk` is surjective, `hψn` determines `ψn`
+uniquely, so this is not a weakening. -/
+theorem flat_quotientMap_pow_of_flat_quotientMap
+    [IsNoetherianRing R] [IsNoetherianRing T]
+    {t : R} (hRt : IsSMulRegular R t) (hTt : IsSMulRegular T (algebraMap R T t))
+    (ψ : R ⧸ Ideal.span {t} →+* T ⧸ Ideal.span {algebraMap R T t})
+    (hψ : ψ.comp (Ideal.Quotient.mk (Ideal.span {t}))
+      = (Ideal.Quotient.mk (Ideal.span {algebraMap R T t})).comp (algebraMap R T))
+    (hflat : ψ.Flat) (n : ℕ)
+    (ψn : R ⧸ Ideal.span {t ^ n} →+* T ⧸ Ideal.span {(algebraMap R T t) ^ n})
+    (hψn : ψn.comp (Ideal.Quotient.mk (Ideal.span {t ^ n}))
+      = (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ n})).comp (algebraMap R T)) :
+    ψn.Flat :=
+  sorry
+
+/-- **THE DESCENT MODULO `t ^ n`** (sorry leaf — pure commutative algebra;
+the elementwise core of Stacks 00MK / Matsumura 22.3).
+
+Write `I = (t) ⊆ R`, `𝔞 ⊆ R` an ideal, and let `ξ ∈ T ⊗[R] 𝔞` map to `0` in
+`T` under `𝔞 ⊗ T → T`.  Given only that `T ⧸ (φ t)^n` is FLAT over
+`R ⧸ (t)^n`, this says
+
+  `ξ ∈ baseChange T (𝔞 ⊓ (t^n)) + (φ t)^n · (T ⊗[R] 𝔞)`.
+
+**WHY THIS IS THE OTHER HALF, AND WHY THE STATEMENT LOOKS LIKE THIS.**  The
+consumer `mem_pow_smul_of_lTensor_ideal_eq_zero` below feeds Artin–Rees into
+the first summand (`𝔞 ⊓ (t^n) ⊆ t^{n-k} 𝔞`) and `n ≥ m` into the second, and
+then Krull's intersection theorem kills the kernel.  So this leaf is exactly
+"the kernel dies modulo `t^n`, up to the Artin–Rees discrepancy", with the
+discrepancy left explicit rather than estimated here — that is what makes the
+two halves independent.
+
+**THE ROUTE — a four-term chase, all four maps already in mathlib.**  Put
+`J = (t^n) ⊆ R`, `J' = ((φ t)^n) ⊆ T`, `Rₙ = R ⧸ J`, `Tₙ = T ⧸ J'`,
+`𝔞ₙ = 𝔞.map (Ideal.Quotient.mk J) ⊆ Rₙ`.  Consider
+
+  `T ⊗[R] 𝔞  --a-->  Tₙ ⊗[R] 𝔞  --b-->  Tₙ ⊗[Rₙ] 𝔞ₙ  --c-->  Tₙ`.
+
+* `c` is injective — this is `hpow` through `Module.Flat.iff_lTensor_injective`;
+* `c ∘ b ∘ a` sends `ξ` to the image in `Tₙ` of `lTensor T 𝔞.subtype ξ = 0`,
+  so `b (a ξ) = 0`;
+* `ker b` is the image of `Tₙ ⊗[R] ↥(𝔞 ⊓ J)`, i.e.
+  `Submodule.baseChange Tₙ (comap 𝔞.subtype J)`, by right-exactness of
+  `Tₙ ⊗[R] -` applied to `(𝔞 ⊓ J) → 𝔞 → 𝔞ₙ → 0`
+  (`Submodule.baseChange` IS that image: `Submodule.baseChange_eq_span`);
+* `ker a = J' • ⊤`, by right-exactness of `- ⊗[R] 𝔞` on `J' → T → Tₙ → 0`;
+* `a` is surjective and carries `baseChange T P` onto `baseChange Tₙ P`, so
+  `a⁻¹ (baseChange Tₙ P) = baseChange T P ⊔ ker a`.  That is the conclusion.
+
+**WHAT MATHLIB SUPPLIES** (all already in this file's import cone):
+`Submodule.baseChange`, `baseChange_eq_span`, `baseChange_mono`,
+`tmul_mem_baseChange_of_mem`, `toBaseChange_surjective`
+(`Mathlib/LinearAlgebra/TensorProduct/Tower.lean`);
+`TensorProduct.quotientTensorEquiv`, `tensorQuotientEquiv`,
+`quotTensorEquivQuotSMul`, `Ideal.subtype_rTensor_range`
+(`Mathlib/{LinearAlgebra,RingTheory}/TensorProduct/Quotient.lean`);
+`LinearMap.lTensor_exact` / `rTensor_exact` and the right-exactness API in
+`Mathlib/LinearAlgebra/TensorProduct/RightExactness.lean`.
+
+**NO HYPOTHESIS ON `R`, `T` BEYOND COMMUTATIVITY IS NEEDED HERE.**  Noetherian,
+local and `IsLocalHom` are used only by the consumer (Artin–Rees needs
+noetherian; Krull needs local).  Keeping them off this leaf is deliberate: it
+makes clear that the separatedness input enters exactly once, in the
+consumer.
+
+**THE CONCRETE LEAN ATTACK — DO NOT TRY TO COMPUTE `ker b` DIRECTLY**
+(worked out 2026-07-27; identifying `ker b` as an image is the step that turns
+a two-page chase into a two-week one).  Write `N` for the target submodule
+(the `⊔` in the conclusion) and `Q := (T ⊗[R] 𝔞) ⧸ N`.  Build TWO maps and
+never mention a kernel:
+
+* `F : T ⊗[R] 𝔞 → Tₙ ⊗[Rₙ] 𝔞ₙ`, `y ⊗ a ↦ (mk y) ⊗ (mk a)`.  This is
+  `R`-balanced because `mk (r • y) = mk r • mk y` on both sides, so
+  `TensorProduct.lift` builds it.
+* `G : Tₙ ⊗[Rₙ] 𝔞ₙ → Q`, `ȳ ⊗ ā ↦ ⟦y ⊗ a⟧` for ANY lifts.  Well defined
+  exactly because of the two summands of `N`, one each:
+  changing the lift of `ȳ` moves the value by `(y - y') ⊗ a ∈ J' • ⊤`;
+  changing the lift of `ā` moves it by `y ⊗ (a - a')` with
+  `a - a' ∈ 𝔞 ⊓ J`, i.e. into `baseChange T (comap 𝔞.subtype J)`
+  (`Submodule.tmul_mem_baseChange_of_mem`).  **This is where the shape of the
+  conclusion comes from, and it is why the two summands are exactly these.**
+
+Then `G ∘ F = Submodule.mkQ N` (check on `y ⊗ a`), so `F ξ = 0` gives `ξ ∈ N`
+with no kernel computation at all.  And `F ξ = 0` is the only place flatness
+is used: `c : Tₙ ⊗[Rₙ] 𝔞ₙ → Tₙ`, the `lift (lsmul ∘ 𝔞ₙ.subtype)` of
+`Module.Flat.iff_lift_lsmul_comp_subtype_injective`, is INJECTIVE by `hpow`,
+and `c (F ξ)` is the image in `Tₙ` of `lift (lsmul ∘ 𝔞.subtype) ξ`, which is
+`0` by `hξ`.
+
+**THE INSTANCE HAZARD ON THIS ROUTE**, since it is what will actually cost
+time: `Q` is a `T`-module, and `G`'s source is an `Rₙ`-module, so a bare
+`TensorProduct.lift` for `G` needs `Module Rₙ Q` — which is NOT an instance
+(`Module Rₙ M` from `Module Tₙ M` and `Algebra Rₙ Tₙ` does not fire on its
+own).  Either supply it explicitly from `ψn.toAlgebra` and note `J' • ⊤ ≤ N`
+makes `Q` a `Tₙ`-module, or build `F` and `G` as bare `AddMonoidHom`s — only
+additivity is used above. -/
+theorem mem_baseChange_sup_of_flat_quotientMap_pow
+    {t : R} (n : ℕ)
+    (hpow : ∀ ψn : R ⧸ Ideal.span {t ^ n} →+* T ⧸ Ideal.span {(algebraMap R T t) ^ n},
+      ψn.comp (Ideal.Quotient.mk (Ideal.span {t ^ n}))
+          = (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ n})).comp (algebraMap R T) →
+        ψn.Flat)
+    {𝔞 : Ideal R} (ξ : T ⊗[R] ↥𝔞) (hξ : LinearMap.lTensor T 𝔞.subtype ξ = 0) :
+    ξ ∈ (Submodule.comap 𝔞.subtype (Ideal.span {t ^ n} : Ideal R)).baseChange T
+      ⊔ (Ideal.span {(algebraMap R T t) ^ n} • (⊤ : Submodule T (T ⊗[R] ↥𝔞))) :=
+  sorry
+
+/-- The base change of `t ^ m · 𝔞` sits inside `(φ t)^m · (T ⊗[R] 𝔞)`
+(**PROVEN 2026-07-27**).  Pure bookkeeping: `1 ⊗ (r • x) = φ r • (1 ⊗ x)`,
+and `φ` carries `(t^m)` into `(φ t)^m`. -/
+theorem baseChange_smul_top_le_pow_smul_top (t : R) (m : ℕ) (𝔞 : Ideal R) :
+    ((Ideal.span {t ^ m} : Ideal R) • (⊤ : Submodule R ↥𝔞)).baseChange T
+      ≤ (Ideal.span {algebraMap R T t} : Ideal T) ^ m •
+        (⊤ : Submodule T (T ⊗[R] ↥𝔞)) := by
+  rw [Submodule.baseChange_eq_span, Submodule.span_le]
+  rintro _ ⟨q, hq, rfl⟩
+  simp only [TensorProduct.mk_apply, SetLike.mem_coe]
+  refine Submodule.smul_induction_on hq ?_ ?_
+  · intro r hr x _
+    have hr' : algebraMap R T r ∈ (Ideal.span {algebraMap R T t} : Ideal T) ^ m := by
+      rw [Ideal.span_singleton_pow, ← map_pow]
+      rw [Ideal.mem_span_singleton] at hr ⊢
+      exact map_dvd _ hr
+    have key : (1 : T) ⊗ₜ[R] (r • x) = algebraMap R T r • ((1 : T) ⊗ₜ[R] x) := by
+      rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one, ← TensorProduct.smul_tmul,
+        Algebra.algebraMap_eq_smul_one]
+    rw [key]
+    exact Submodule.smul_mem_smul hr' Submodule.mem_top
+  · intro x y hx hy
+    rw [TensorProduct.tmul_add]
+    exact Submodule.add_mem _ hx hy
+
+/-- **THE KERNEL OF `𝔞 ⊗ T → T` LIES IN EVERY POWER OF `(φ t)`**
+(**PROVEN 2026-07-27** over the two leaves above — this is the ARTIN–REES half
+of the local criterion of flatness).
+
+Given `ξ ∈ T ⊗[R] 𝔞` killed by `𝔞 ⊗ T → T`, and any `m`, we get
+`ξ ∈ (φ t)^m · (T ⊗[R] 𝔞)`.  Together with Krull's intersection theorem (in
+`flat_of_flat_quotient_isSMulRegular` below) this forces `ξ = 0`, which is
+flatness.
+
+**THE PROOF, and the two mathlib facts it turns on.**  Artin–Rees
+(`Ideal.exists_pow_inf_eq_pow_smul`, `Mathlib/RingTheory/Filtration.lean` —
+it IS in the pin, contrary to what one might expect) gives `k` with
+`(t)^n ⊓ 𝔞 = (t)^{n-k} • ((t)^k ⊓ 𝔞)` for `n ≥ k`; take `n = m + k`, so
+`𝔞 ⊓ (t^n) ⊆ t^m 𝔞`.  Feeding that into
+`mem_baseChange_sup_of_flat_quotientMap_pow` at this `n`, the first summand
+lands in `(φ t)^m · (T ⊗ 𝔞)` by `baseChange_smul_top_le_pow_smul_top`, and the
+second does because `n ≥ m`.
+
+`ψ`, `hψ`, `hflat`, `hRt`, `hTt` are threaded through only to supply
+`flat_quotientMap_pow_of_flat_quotientMap`. -/
+theorem mem_pow_smul_of_lTensor_ideal_eq_zero
+    [IsNoetherianRing R] [IsNoetherianRing T]
+    {t : R} (hRt : IsSMulRegular R t) (hTt : IsSMulRegular T (algebraMap R T t))
+    (ψ : R ⧸ Ideal.span {t} →+* T ⧸ Ideal.span {algebraMap R T t})
+    (hψ : ψ.comp (Ideal.Quotient.mk (Ideal.span {t}))
+      = (Ideal.Quotient.mk (Ideal.span {algebraMap R T t})).comp (algebraMap R T))
+    (hflat : ψ.Flat)
+    {𝔞 : Ideal R} (ξ : T ⊗[R] ↥𝔞)
+    (hξ : LinearMap.lTensor T 𝔞.subtype ξ = 0) (m : ℕ) :
+    ξ ∈ (Ideal.span {algebraMap R T t} : Ideal T) ^ m •
+      (⊤ : Submodule T (T ⊗[R] ↥𝔞)) := by
+  obtain ⟨k, hk⟩ := Ideal.exists_pow_inf_eq_pow_smul (Ideal.span {t} : Ideal R) (M := R) 𝔞
+  set n := m + k with hn
+  have hAR : ((Ideal.span {t} : Ideal R) ^ n • (⊤ : Submodule R R) ⊓ (𝔞 : Submodule R R))
+      ≤ Submodule.map 𝔞.subtype ((Ideal.span {t ^ m} : Ideal R) • (⊤ : Submodule R ↥𝔞)) := by
+    rw [hk n (by omega), show n - k = m from by omega]
+    refine Submodule.smul_le.2 fun r hr y hy => ?_
+    refine Submodule.mem_map.2 ⟨r • ⟨y, hy.2⟩, ?_, rfl⟩
+    exact Submodule.smul_mem_smul (by rwa [Ideal.span_singleton_pow] at hr) Submodule.mem_top
+  have hcomap : Submodule.comap 𝔞.subtype (Ideal.span {t ^ n} : Ideal R)
+      ≤ (Ideal.span {t ^ m} : Ideal R) • (⊤ : Submodule R ↥𝔞) := by
+    intro x hx
+    have h1 : (x : R) ∈ (Ideal.span {t} : Ideal R) ^ n • (⊤ : Submodule R R)
+        ⊓ (𝔞 : Submodule R R) := by
+      refine ⟨?_, x.2⟩
+      have hsmul : (Ideal.span {t} : Ideal R) ^ n • (⊤ : Submodule R R)
+          = ((Ideal.span {t} : Ideal R) ^ n : Submodule R R) := by
+        rw [smul_eq_mul, ← Ideal.one_eq_top, mul_one]
+      rw [hsmul, Ideal.span_singleton_pow]
+      exact hx
+    obtain ⟨y, hy, hxy⟩ := Submodule.mem_map.1 (hAR h1)
+    have hxy' : y = x := Subtype.ext hxy
+    exact hxy' ▸ hy
+  have hmem := mem_baseChange_sup_of_flat_quotientMap_pow (T := T) (t := t) n
+    (fun ψn hψn => flat_quotientMap_pow_of_flat_quotientMap hRt hTt ψ hψ hflat n ψn hψn) ξ hξ
+  have hle : (Submodule.comap 𝔞.subtype (Ideal.span {t ^ n} : Ideal R)).baseChange T
+      ⊔ (Ideal.span {(algebraMap R T t) ^ n} • (⊤ : Submodule T (T ⊗[R] ↥𝔞)))
+      ≤ (Ideal.span {algebraMap R T t} : Ideal T) ^ m •
+        (⊤ : Submodule T (T ⊗[R] ↥𝔞)) := by
+    refine sup_le ?_ ?_
+    · exact (Submodule.baseChange_mono T hcomap).trans
+        (baseChange_smul_top_le_pow_smul_top t m 𝔞)
+    · refine Submodule.smul_mono_left ?_
+      rw [← Ideal.span_singleton_pow]
+      exact Ideal.pow_le_pow_right (by omega)
+  exact hle hmem
+
+end LocalCriterionOfFlatness
+
 /-- **THE ONE-ELEMENT LOCAL CRITERION OF FLATNESS — THE ATOM**
-(sorry leaf — pure commutative algebra; Matsumura *Commutative Ring Theory*
+(**PROVEN 2026-07-27** over the two leaves
+`flat_quotientMap_pow_of_flat_quotientMap` and
+`mem_baseChange_sup_of_flat_quotientMap_pow` stated immediately above —
+pure commutative algebra; Matsumura *Commutative Ring Theory*
 22.3 / Stacks 00MK in the length-one case.  Absent from mathlib, from
 `~/cs/FLT` and from this project).
 
@@ -2336,7 +2587,31 @@ leaf.**
 argument without ever constructing derived functors;
 `Module.Flat.of_isLocalized_maximal` and the equational criterion
 (`RingTheory/Flat/EquationalCriterion.lean`) are the other two handles.
-`RingHom.flat_algebraMap_iff` moves between `RingHom.Flat` and `Module.Flat`. -/
+`RingHom.flat_algebraMap_iff` moves between `RingHom.Flat` and `Module.Flat`.
+
+**THE CUT (2026-07-27), and what is still open.**  The classical proof splits
+at exactly one place, and both halves are stated above:
+
+1. `flat_quotientMap_pow_of_flat_quotientMap` — `T ⧸ (φ t)^n` is flat over
+   `R ⧸ (t)^n` for all `n`.  This is the local criterion for a NILPOTENT
+   ideal; no separatedness, no Artin–Rees.
+2. `mem_baseChange_sup_of_flat_quotientMap_pow` — the elementwise descent of
+   `ker(𝔞 ⊗ T → T)` modulo `t^n`, granted (1).
+
+Everything else is now written out and PROVEN:
+`mem_pow_smul_of_lTensor_ideal_eq_zero` feeds Artin–Rees
+(`Ideal.exists_pow_inf_eq_pow_smul`) into (2), and this declaration closes with
+Krull's intersection theorem
+(`Ideal.iInf_pow_smul_eq_bot_of_isLocalRing`) applied to the FINITE `T`-module
+`T ⊗[R] 𝔞` — finite because `𝔞` is finitely generated, which is why
+`Module.Flat.iff_lTensor_injective` (finitely generated ideals only) rather
+than `iff_lTensor_injective'` is the right entry point.
+
+**WHERE THE SEPARATEDNESS HYPOTHESIS IS ACTUALLY SPENT.**  Precisely twice in
+this proof, and nowhere in leaf (2): `[IsLocalHom φ]` + `htm` give
+`(φ t) ≠ ⊤`, and `[IsLocalRing T] [IsNoetherianRing T]` give Krull's theorem
+for `T ⊗[R] 𝔞`.  That is the formal counterpart of the classical
+`⋂ₙ 𝔪_R^n T ⊆ ⋂ₙ 𝔪_T^n = 0` remark above. -/
 theorem flat_of_flat_quotient_isSMulRegular {R T : Type u} [CommRing R] [CommRing T]
     [IsLocalRing R] [IsNoetherianRing R] [IsLocalRing T] [IsNoetherianRing T]
     (φ : R →+* T) [IsLocalHom φ] {t : R} (htm : t ∈ IsLocalRing.maximalIdeal R)
@@ -2345,8 +2620,27 @@ theorem flat_of_flat_quotient_isSMulRegular {R T : Type u} [CommRing R] [CommRin
     (hψ : ψ.comp (Ideal.Quotient.mk (Ideal.span {t}))
       = (Ideal.Quotient.mk (Ideal.span {φ t})).comp φ)
     (hflat : ψ.Flat) :
-    φ.Flat :=
-  sorry
+    φ.Flat := by
+  letI : Algebra R T := φ.toAlgebra
+  show Module.Flat R T
+  rw [Module.Flat.iff_lTensor_injective]
+  intro 𝔞 h𝔞
+  haveI : Module.Finite R ↥𝔞 := Module.Finite.iff_fg.2 h𝔞
+  haveI : Module.Finite T (TensorProduct R T ↥𝔞) := inferInstance
+  rw [injective_iff_map_eq_zero]
+  intro ξ hξ
+  have hIne : (Ideal.span {φ t} : Ideal T) ≠ ⊤ := by
+    rw [Ne, Ideal.span_singleton_eq_top]
+    intro hu
+    exact ((IsLocalRing.mem_maximalIdeal _).1 htm) (isUnit_of_map_unit φ t hu)
+  have hbot := Ideal.iInf_pow_smul_eq_bot_of_isLocalRing
+    (M := TensorProduct R T ↥𝔞) (Ideal.span {φ t}) hIne
+  have hmem : ξ ∈ (⨅ i : ℕ, (Ideal.span {φ t} : Ideal T) ^ i •
+      (⊤ : Submodule T (TensorProduct R T ↥𝔞))) := by
+    refine Submodule.mem_iInf _ |>.2 fun i => ?_
+    exact mem_pow_smul_of_lTensor_ideal_eq_zero hRt hTt ψ hψ hflat ξ hξ i
+  rw [hbot] at hmem
+  simpa using hmem
 
 /-- **THE INDUCTION CARRIER OF THE LOCAL CRITERION OF FLATNESS**
 (**PROVEN 2026-07-27** over the one-element atom above).
