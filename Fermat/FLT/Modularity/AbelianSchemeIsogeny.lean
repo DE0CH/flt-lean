@@ -71,6 +71,9 @@ public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyOpen
 public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
 public import Mathlib.AlgebraicGeometry.Morphisms.FiniteType
 public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
+public import Mathlib.AlgebraicGeometry.Morphisms.FormallyUnramified
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.RingTheory.Unramified.LocalStructure
 public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.AlgebraicGeometry.Pullbacks
@@ -915,8 +918,216 @@ theorem finite_preimage_comp {X Y Z : Scheme.{u}} (g : X ⟶ Y) (h : Y ⟶ Z)
   rw [← Scheme.Hom.comp_apply]
   exact hx
 
+/-! ### `[n]` is UNRAMIFIED when `n` is prime to the characteristic
+
+The four declarations below carry the whole of
+`finite_preimage_mulByNat_of_field_prime_to_char` except one leaf.  Three
+of them are general scheme theory with no abelian-variety content at all;
+the fourth (`eq_zero_of_nsmul_eq_zero_of_squareZero`) is the single
+genuinely missing input, the Lie algebra of a smooth group scheme. -/
+
+namespace AbelianSchemeStruct
+
+/-- **Precomposition of relative points is SUBTRACTIVE** (PROVEN 2026-07-27).
+
+`RelPoint.pre` preserves `+` and `0` by the structure's own naturality
+axioms `pre_add` and `pre_zero`; the inversion step is proven inline from
+`neg_add` and cancellation.
+
+**Why inline rather than by reusing `AbelianSchemeStruct.pre_neg`.**  That
+lemma exists — `Fermat/FLT/ModularCurve/X0.lean:1352`, same namespace, same
+statement — but in a SIBLING module which is not in this import cone (X0
+imports `Modularity/AbelianScheme`, not this file).  Re-declaring
+`Fermat.AbelianSchemeStruct.pre_neg` here would give two declarations of one
+name and break any module that ever imports both, so the two lines are
+duplicated instead of the name.  If the two modules are ever merged into one
+cone, delete this `have` and use `ab.pre_neg`.
+
+Used once, in `formallyUnramified_mulByNat`, to turn "two points agree
+modulo a square-zero ideal" into "their difference lies in the kernel of the
+restriction map". -/
+theorem pre_sub (ab : AbelianSchemeStruct f) {T' T : Scheme.{u}} (h : T' ⟶ T)
+    {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g') (x y : RelPoint f g) :
+    letI := ab.addCommGroup g
+    letI := ab.addCommGroup g'
+    RelPoint.pre h hg (x - y) = RelPoint.pre h hg x - RelPoint.pre h hg y := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  have hneg : RelPoint.pre h hg (-y) = -(RelPoint.pre h hg y) := by
+    refine eq_neg_of_add_eq_zero_left ?_
+    show ab.add (RelPoint.pre h hg (ab.neg y)) (RelPoint.pre h hg y) = ab.zero g'
+    rw [← ab.pre_add h hg]
+    show RelPoint.pre h hg (ab.add (ab.neg y) y) = ab.zero g'
+    rw [ab.neg_add]
+    exact ab.pre_zero h hg
+  simp only [sub_eq_add_neg]
+  rw [← hneg]
+  exact ab.pre_add h hg x (-y)
+
+end AbelianSchemeStruct
+
+/-- **Formally unramified + finite type ⟹ quasi-finite, at RING level**
+(PROVEN 2026-07-27, and it is two lines).
+
+**This REFUTES a survey that stood in this file.**  The docstring of
+`finite_preimage_mulByNat_of_field_prime_to_char` recorded
+`FormallyUnramified f → LocallyOfFiniteType f → LocallyQuasiFinite f` as
+ABSENT from the pin, on the strength of
+`grep -rn "Unramified" Mathlib/AlgebraicGeometry/Morphisms/QuasiFinite.lean`
+returning nothing.  That grep is correct and the conclusion drawn from it is
+not: the implication holds at ring level as a mathlib INSTANCE,
+
+    Mathlib/RingTheory/Unramified/LocalStructure.lean:333
+    instance (priority := low) [EssFiniteType R S] [FormallyUnramified R S] :
+      Algebra.QuasiFinite R S
+
+(located by name 2026-07-27), with `Algebra.EssFiniteType.of_finiteType`
+supplying `EssFiniteType` from `FiniteType`.  Only the *scheme-level*
+packaging was missing, and that is `locallyQuasiFinite_of_formallyUnramified`
+below.  **To refute THIS note in turn**, re-run
+`grep -rn "EssFiniteType R S. .FormallyUnramified R S" Mathlib/RingTheory/Unramified/`;
+an empty result means the instance has been removed or renamed.
+
+The one non-obvious point is that `RingHom.QuasiFinite` is a `def`, not a
+class, so `inferInstance` cannot close the goal directly — the `Algebra`-side
+instance has to be produced with the ring types NAMED, which is exactly what
+this wrapper does. -/
+theorem quasiFinite_of_formallyUnramified_of_finiteType {R S : Type*} [CommRing R] [CommRing S]
+    (ψ : R →+* S) (h₁ : ψ.FormallyUnramified) (h₂ : ψ.FiniteType) : ψ.QuasiFinite := by
+  algebraize [ψ]
+  exact (inferInstance : Algebra.QuasiFinite R S)
+
+/-- **Formally unramified + locally of finite type ⟹ locally quasi-finite**
+(PROVEN 2026-07-27).  General scheme theory, no abelian varieties.
+
+Both `FormallyUnramified` and `LocallyOfFiniteType` are
+`HasRingHomProperty`s, and so is `LocallyQuasiFinite`; `iff_appLE` turns all
+three into statements about the same affine-local maps `Γ(Y, U) ⟶ Γ(X, V)`,
+where `quasiFinite_of_formallyUnramified_of_finiteType` applies pointwise.
+No Zariski gluing is needed because the three characterisations quantify over
+the *same* pairs of affine opens.
+
+This is the piece of `Mathlib/AlgebraicGeometry/Morphisms/QuasiFinite.lean`
+that is genuinely absent upstream, and it is a mathlib-facing lemma: it
+mentions nothing from this development. -/
+theorem locallyQuasiFinite_of_formallyUnramified {X Y : Scheme.{u}} (u : X ⟶ Y)
+    [FormallyUnramified u] [LocallyOfFiniteType u] : LocallyQuasiFinite u := by
+  rw [HasRingHomProperty.iff_appLE (P := @LocallyQuasiFinite) (f := u)]
+  intro U V e
+  exact quasiFinite_of_formallyUnramified_of_finiteType _
+    ((HasRingHomProperty.iff_appLE (P := @FormallyUnramified) (f := u)).mp ‹_› U V e)
+    ((HasRingHomProperty.iff_appLE (P := @LocallyOfFiniteType) (f := u)).mp ‹_› U V e)
+
+/-- **THE LIE ALGEBRA OF A SMOOTH GROUP SCHEME** (sorry leaf, created
+2026-07-27 — the ONE remaining input of
+`finite_preimage_mulByNat_of_field_prime_to_char`, and the only thing in
+that half of the old cube leaf that mathlib does not already have).
+
+*The infinitesimal kernel of an abelian scheme is torsion free at every `n`
+invertible in the base field.*  Concretely: `Spec R₀ ⟶ Spec R` is a
+square-zero thickening (`φ` surjective, `ker φ ^ 2 = ⊥`), `d` is an
+`R`-point of `A` over the base point `q`, `d` restricts to the identity
+element on `Spec R₀`, and `n · d = 0`.  Then `d = 0`.
+
+**WHY IT IS TRUE, and why it needs no line bundles.**  Write `I = ker φ`, so
+`I ^ 2 = 0` and `I` is a module over `R₀ = R ⧸ I`.  For any `S`-group scheme
+`G` and any square-zero thickening there is a natural isomorphism
+
+    ker (G(R) ⟶ G(R₀))  ≅  Hom_{R₀} (e^* Ω_{G/S} ⊗ R₀, I)
+
+(SGA 3, Exp. II; Mumford *Abelian Varieties* §11; Milne *Abelian Varieties*
+I.7) — the "Lie algebra" of `G`, tensored with the ideal.  The right-hand
+side is an `R₀`-MODULE, and `R₀` is a `K`-algebra because `q : Spec R ⟶
+Spec K` makes `R` one.  Under that isomorphism the group's `ℕ`-action is the
+module action of `(n : R₀)`, which is a unit as soon as `(n : K) ≠ 0`.
+Hence `n • d = 0` forces `d = 0`.  Nothing in this argument mentions ample
+line bundles, `Pic`, or the theorem of the cube.
+
+**IT IS EXACTLY THE `d[n] = n · id` STATEMENT.**  That is why this leaf
+closes the prime-to-characteristic half and says nothing about the other
+half: at `n = p = ringChar K` the scalar `(n : R₀)` is zero, the argument
+gives no information, and `finite_preimage_mulByNat_of_field_char` really
+does need the cube.
+
+**WHAT IS MISSING AT THIS PIN** (each claim refutable by one grep, all
+re-run 2026-07-27 on this worktree's `.lake/packages/mathlib`).
+
+* A scheme-level tangent space or Lie algebra:
+  `grep -rni "tangentSpace\|DualNumber" Mathlib/AlgebraicGeometry/` returns
+  NOTHING.  A hit means this leaf may now be cheap and should be re-attacked.
+* Consequently there is no `e^* Ω_{G/S}` for a group scheme and no
+  identification of the infinitesimal kernel with it.  `Ω` itself exists at
+  ring level (`KaehlerDifferential`) and as a sheaf, so what is missing is
+  the group-scheme half, not differentials.
+
+**A GENERALISATION THAT IS ALSO TRUE**, recorded so a prover is not misled
+into thinking the field is essential: the same statement holds over an
+arbitrary base with `n` invertible in `Γ(T, 𝒪_T)`, and does not need
+`ab.smooth` either (the displayed isomorphism is valid for every group
+scheme).  It is stated over a field here because that is the shape the
+consumer needs, and a prover may freely prove the stronger form and
+specialise. -/
+theorem eq_zero_of_nsmul_eq_zero_of_squareZero {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
+    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : (n : K) ≠ 0)
+    {R R₀ : CommRingCat.{u}} (φ : R ⟶ R₀) (hφ : Function.Surjective φ)
+    (hker : RingHom.ker φ.hom ^ 2 = ⊥)
+    {q : Spec R ⟶ Spec K} (d : RelPoint fK q)
+    (hres : letI := ab.addCommGroup (Spec.map φ ≫ q)
+      RelPoint.pre (Spec.map φ) rfl d = 0)
+    (hnd : letI := ab.addCommGroup q; n • d = 0) :
+    letI := ab.addCommGroup q; d = 0 :=
+  sorry
+
+/-- **`[n]` is FORMALLY UNRAMIFIED when `n` is prime to the characteristic**
+(PROVEN 2026-07-27 over the single leaf
+`eq_zero_of_nsmul_eq_zero_of_squareZero` above).
+
+This is the functor-of-points argument in full, and it uses no geometry
+beyond the group structure.  Mathlib's `FormallyUnramified.of_hom_ext`
+reduces formal unramifiedness to: for every surjection `φ : R ⟶ R₀` with
+`ker φ ^ 2 = ⊥` and every pair `g₁ g₂ : Spec R ⟶ A` with
+`Spec.map φ ≫ g₁ = Spec.map φ ≫ g₂` and `g₁ ≫ [n] = g₂ ≫ [n]`, one has
+`g₁ = g₂`.
+
+The proof:
+
+1. *Both are relative points over the SAME base point.*  `[n] ≫ f = f`
+   (`mulByNat_comp`) turns `g₁ ≫ [n] = g₂ ≫ [n]` into `g₂ ≫ f = g₁ ≫ f`,
+   so `g₁` and `g₂` are two elements of the group `RelPoint f (g₁ ≫ f)`.
+2. *The hypotheses become group statements.*  `nsmul_val` says precomposition
+   with `[n]` IS multiplication by `n`, so `g₁ ≫ [n] = g₂ ≫ [n]` reads
+   `n • y₁ = n • y₂`, i.e. `n • (y₁ - y₂) = 0`; and `pre_sub` turns the
+   agreement over `Spec R₀` into `RelPoint.pre _ _ (y₁ - y₂) = 0`.
+3. *Apply the leaf* to `d = y₁ - y₂` and conclude `y₁ = y₂`, hence
+   `g₁ = g₂`.
+
+No line bundles, no `Pic`, no theorem of the cube, and no smoothness is used
+HERE — smoothness is consumed inside the leaf. -/
+theorem formallyUnramified_mulByNat {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
+    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : (n : K) ≠ 0) :
+    FormallyUnramified (ab.mulByNat n) := by
+  refine FormallyUnramified.of_hom_ext _ ?_
+  intro R R₀ φ hφ hker g₁ g₂ hres hcomp
+  have hq₂ : g₂ ≫ fK = g₁ ≫ fK := by
+    conv_lhs => rw [← ab.mulByNat_comp n]
+    rw [← Category.assoc, ← hcomp, Category.assoc, ab.mulByNat_comp]
+  letI := ab.addCommGroup (g₁ ≫ fK)
+  letI := ab.addCommGroup (Spec.map φ ≫ (g₁ ≫ fK))
+  set y₁ : RelPoint fK (g₁ ≫ fK) := ⟨g₁, rfl⟩ with hy₁
+  set y₂ : RelPoint fK (g₁ ≫ fK) := ⟨g₂, hq₂⟩ with hy₂
+  have hsub : y₁ - y₂ = 0 := by
+    refine eq_zero_of_nsmul_eq_zero_of_squareZero K ab n hn φ hφ hker _ ?_ ?_
+    · rw [ab.pre_sub, sub_eq_zero]
+      exact Subtype.ext hres
+    · rw [smul_sub, sub_eq_zero]
+      refine Subtype.ext ?_
+      rw [ab.nsmul_val, ab.nsmul_val]
+      exact hcomp
+  exact congrArg Subtype.val (sub_eq_zero.mp hsub)
+
 /-- **`[n]` has finite fibres when `n` is invertible in the base field**
-(sorry leaf — the Lie algebra of a smooth group scheme).
+(PROVEN 2026-07-27 over the single leaf
+`eq_zero_of_nsmul_eq_zero_of_squareZero`; this used to be a sorry leaf).
 
 One half of the old `finite_preimage_mulByNat_of_field`, split out
 2026-07-27.  Since `K` is a field, `(n : K) ≠ 0` says exactly that `n` is
@@ -949,23 +1160,45 @@ the quasi-finite locus is OPEN.  Mathlib has also STARTED abelian varieties:
 `isCommMonObj_of_isProper_of_isIntegral_tensorObj_of_isAlgClosed` and
 `smooth_of_grpObj`.  Re-check that directory at every pin bump.
 
-**What is MISSING — these are the two obligations, and neither is the cube.**
-1. The `Γ(T, 𝒪_T)`-module structure on the kernel above, i.e. the Lie algebra
-   / tangent space of a smooth group scheme.  Mathlib has NO scheme tangent
-   space at all: `grep -rni "tangentSpace\|DualNumber"
-   Mathlib/AlgebraicGeometry/` returns NOTHING.
-2. `FormallyUnramified f → LocallyOfFiniteType f → LocallyQuasiFinite f`.
-   Absent: `grep -rn "Unramified"
-   Mathlib/AlgebraicGeometry/Morphisms/QuasiFinite.lean` returns NOTHING.
-   The pieces are present (`FormallyUnramified.stalkMap` and the
-   residue-field separability instance at `Morphisms/FormallyUnramified.lean:149`
-   and `:156`), so this is ordinary scheme theory, not missing theory.
+**THE TWO OBLIGATIONS THIS DOCSTRING USED TO RECORD: one is now PROVEN, one
+is now the single leaf.**  Neither was ever the cube.
 
-References: Mumford *Abelian Varieties* §6; Milne *Abelian Varieties* I.7. -/
+1. The `Γ(T, 𝒪_T)`-module structure on the kernel above, i.e. the Lie algebra
+   / tangent space of a smooth group scheme.  **Still missing, and it is now
+   the leaf `eq_zero_of_nsmul_eq_zero_of_squareZero` above**, where the
+   argument, the references and the refuting greps are recorded.  Mathlib
+   still has NO scheme tangent space: `grep -rni "tangentSpace\|DualNumber"
+   Mathlib/AlgebraicGeometry/` returns NOTHING (re-run 2026-07-27).
+2. `FormallyUnramified f → LocallyOfFiniteType f → LocallyQuasiFinite f`.
+   **This was recorded as ABSENT and that was WRONG** — the grep it rested on
+   (`grep -rn "Unramified" Morphisms/QuasiFinite.lean` → nothing) is true but
+   does not support the conclusion, because the implication lives at RING
+   level as the mathlib instance
+   `[EssFiniteType R S] [FormallyUnramified R S] : Algebra.QuasiFinite R S`
+   (`Mathlib/RingTheory/Unramified/LocalStructure.lean:333`).  It is now
+   PROVEN here as `locallyQuasiFinite_of_formallyUnramified`, in four lines.
+
+**The `quasiFiniteLocus` spreading tool is NOT needed** — and recording that
+saves the next reader a detour.  `Scheme.Hom.quasiFiniteLocus` /
+`isOpen_quasiFiniteAt` were suggested for propagating quasi-finiteness from
+the origin over all of `A`, but the functor-of-points argument proves
+`FormallyUnramified` at EVERY affine test scheme at once, so there is nothing
+to spread.  (Openness of the quasi-finite locus would not have sufficed
+anyway: spreading from one point needs homogeneity, i.e. translations, not
+just an open locus.)
+
+References: Mumford *Abelian Varieties* §6, §11; Milne *Abelian Varieties*
+I.7; SGA 3, Exp. II. -/
 theorem finite_preimage_mulByNat_of_field_prime_to_char {X : Scheme.{u}}
     (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
-    (n : ℕ) (hn : (n : K) ≠ 0) (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
-  sorry
+    (n : ℕ) (hn : (n : K) ≠ 0) (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite := by
+  haveI : LocallyOfFiniteType (ab.mulByNat n) := ab.locallyOfFiniteType_mulByNat n
+  haveI : IsProper (ab.mulByNat n) := ab.isProper_mulByNat n
+  haveI : QuasiCompact (ab.mulByNat n) := inferInstance
+  haveI : FormallyUnramified (ab.mulByNat n) := formallyUnramified_mulByNat K ab n hn
+  haveI : LocallyQuasiFinite (ab.mulByNat n) :=
+    locallyQuasiFinite_of_formallyUnramified (ab.mulByNat n)
+  exact (ab.mulByNat n).finite_preimage_singleton a
 
 /-- **`[p]` has finite fibres in characteristic `p`** (sorry leaf — the
 theorem of the cube; this is the irreducible residue).
@@ -1021,7 +1254,14 @@ theorem finite_preimage_mulByNat_of_field_char {X : Scheme.{u}}
   sorry
 
 /-- **The fibres of `[n]` on an abelian VARIETY are FINITE** (PROVEN
-2026-07-27 over the two leaves just above).
+2026-07-27 over the two declarations just above).
+
+**Status update 2026-07-27, later the same day.**  Of those two,
+`finite_preimage_mulByNat_of_field_prime_to_char` is now itself PROVEN, over
+the single new leaf `eq_zero_of_nsmul_eq_zero_of_squareZero` (the Lie algebra
+of a smooth group scheme).  So the two open leaves under this declaration are
+now that one and `finite_preimage_mulByNat_of_field_char`, and only the
+SECOND of them needs the theorem of the cube.
 
 This is the SECOND cube input, and it is the one the torsion CARDINALITY
 arguments need.  It says exactly that `ker[n]` is a finite group scheme:
@@ -1055,8 +1295,11 @@ arbitrary base.  Nothing else was removed: the reduction below is formal.
 
 **THE SPLIT (2026-07-27), replacing the previous "atomic at this pin"
 verdict.**  This is no longer a leaf.  It is proven by strong induction on
-`n` over the two leaves above, which are genuinely different mathematical
-problems and want different provers.  Writing `p = ringChar K`, the step is:
+`n` over the two declarations above, which are genuinely different
+mathematical problems and want different provers (and the first of them has
+since been PROVEN, over the Lie-algebra leaf
+`eq_zero_of_nsmul_eq_zero_of_squareZero`).  Writing `p = ringChar K`, the
+step is:
 
 * `(n : K) ≠ 0` — pass to `finite_preimage_mulByNat_of_field_prime_to_char`;
 * `(n : K) = 0` — then `p ≠ 0` (else `K` has characteristic zero and `n = 0`),
