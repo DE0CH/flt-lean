@@ -337,6 +337,31 @@ public import Mathlib.RingTheory.MvPowerSeries.Inverse
 public import Mathlib.RingTheory.Regular.Flat
 -- `IsWeaklyRegular.isWeaklyRegular_rTensor`: a `Λ`-regular sequence is
 -- `M`-regular for flat (in particular free) `M`
+public import Mathlib.RingTheory.WittVector.DiscreteValuationRing
+public import Mathlib.RingTheory.WittVector.Complete
+public import Mathlib.RingTheory.WittVector.Truncated
+public import Mathlib.RingTheory.WittVector.Teichmuller
+-- the Witt-vector coefficient ring `𝒪 = 𝕎 k` of the Cohen decomposition
+-- below: `WittVector.isDiscreteValuationRing`, `quotientPEquiv`,
+-- `ker_constantCoeff`, `mem_span_p_pow_iff_le_coeff_eq_zero`, `truncate`
+-- and `teichmuller`
+public import Mathlib.RingTheory.AdicCompletion.RingHom
+-- `IsAdicComplete.StrictMono.liftRingHom`: the universal property of
+-- `IsAdicComplete` for RING maps, which discharges the completion half of
+-- Cohen's coefficient-ring map for free
+public import Mathlib.RingTheory.Ideal.Quotient.PowTransition
+-- `Ideal.Quotient.factorPow`, the transition maps `R ⧸ 𝔪^(n+1) → R ⧸ 𝔪^n`
+-- of that universal property
+public import Mathlib.Algebra.Field.Shrink
+public import Mathlib.Data.Countable.Small
+-- the `Type 0` transport of the finite residue field `k` demanded by
+-- `TaylorWilesCoefficients.carrier : Type`
+public import Mathlib.FieldTheory.Perfect
+-- `PerfectRing.ofFiniteOfIsReduced`: a finite field is perfect, the
+-- standing hypothesis of the Witt-vector DVR theory
+public import Mathlib.Topology.Homeomorph.Lemmas
+-- `Homeomorph.compactSpace`/`Homeomorph.t2Space`, transporting the
+-- profiniteness of `ℕ → k` onto `𝕎 k`
 public import Mathlib.Topology.MetricSpace.Ultra.TotallySeparated
 public import Mathlib.Topology.Connected.TotallyDisconnected
 -- proof-only, and easy to miss: without these two the route
@@ -4115,12 +4140,471 @@ theorem exists_ringHom_mvPowerSeries_of_isAdicComplete
     rw [MvPowerSeries.coe_eval₂Hom hcont hev]
     exact MvPowerSeries.eval₂_X _ _ _
 
-/-- **Cohen's COEFFICIENT RING, with its map into `R`** (sorry node,
-LEAF B1a-i of the 2026-07-27 decomposition of
-`exists_taylorWilesCoefficientsPresentation`; this is the substantial
-half): for `R` local and `𝔪_R`-adically complete with finite residue
-field `k`, there is a `TaylorWilesCoefficients` `𝒪` and a ring map
-`ι : 𝒪 →+* R` lifting the residue field, i.e. with `π ∘ ι` surjective.
+/-! ### Cohen's coefficient ring: `𝕎 k` as a `TaylorWilesCoefficients`
+
+The block below (2026-07-27) discharges obligation (a) of
+`exists_taylorWilesCoefficients_ringHom`: it exhibits the Witt vectors
+`𝕎 k` of a finite field `k` of characteristic `p` as a
+`TaylorWilesCoefficients` bundle, and it does so with NO sorry.  The
+topological half — which the leaf's docstring flagged as the part needing
+`𝕎 k = lim 𝕎_n(k)` — turned out not to need the inverse-limit
+description at all: `𝕎 k` is by DEFINITION a structure whose single field
+is `coeff : ℕ → k`, so the coefficientwise topology makes it
+HOMEOMORPHIC to `ℕ → k`, and compactness, Hausdorffness and total
+disconnectedness are Tychonoff plus transport.  Only the continuity of
+the ring operations needs an argument, and that argument is
+`WittVector.truncate` (the `n`-th coefficient of `x + y`, `x * y`, `-x`
+depends on the first `n + 1` coefficients of `x` and `y` alone) landing
+in a FINITE, hence discrete, space.
+
+For a perfect `k` of characteristic `p` this topology IS the `p`-adic
+one, by `WittVector.mem_span_p_pow_iff_le_coeff_eq_zero`
+(`(p)^n = {x | ∀ i < n, x.coeff i = 0}`), so nothing unnatural is being
+installed. -/
+
+/-- **The coefficientwise topology on `𝕎 k`** (PROVEN 2026-07-27), for a
+DISCRETE coefficient ring `k`: the topology induced from `ℕ → k` along
+`WittVector.coeff`.  For `k` perfect of characteristic `p` this is the
+`p`-adic topology, because `(p)^n` is exactly the set of Witt vectors
+whose first `n` coefficients vanish
+(`WittVector.mem_span_p_pow_iff_le_coeff_eq_zero`). -/
+@[reducible] def wittVectorTopology (p : ℕ) (k : Type*) [TopologicalSpace k] :
+    TopologicalSpace (WittVector p k) :=
+  TopologicalSpace.induced (fun x : WittVector p k => x.coeff) inferInstance
+
+/-- `𝕎 k` with the coefficientwise topology is HOMEOMORPHIC to `ℕ → k`
+(PROVEN 2026-07-27) — `WittVector p k` is a one-field structure, so
+`coeff` is a bijection, and the topology was defined to make it inducing.
+This is what makes the profiniteness of `𝕎 k` for finite `k` a transport
+of Tychonoff rather than an inverse-limit construction. -/
+def wittVectorHomeomorph (p : ℕ) (k : Type*) [TopologicalSpace k] :
+    @Homeomorph (WittVector p k) (ℕ → k) (wittVectorTopology p k) inferInstance :=
+  letI := wittVectorTopology p k
+  { toFun := fun x => x.coeff
+    invFun := WittVector.mk p
+    left_inv := fun _ => rfl
+    right_inv := fun _ => rfl
+    continuous_toFun := continuous_induced_dom
+    continuous_invFun := continuous_induced_rng.mpr continuous_id }
+
+/-- Each coefficient function `x ↦ x.coeff i` is continuous (PROVEN
+2026-07-27). -/
+theorem continuous_wittVector_coeff (p : ℕ) (k : Type*) [TopologicalSpace k] (i : ℕ) :
+    @Continuous (WittVector p k) k (wittVectorTopology p k) _ (fun x => x.coeff i) := by
+  letI := wittVectorTopology p k
+  exact (continuous_apply i).comp
+    (@continuous_induced_dom _ _ (fun x : WittVector p k => x.coeff) _)
+
+/-- `𝕎 k` is COMPACT for the coefficientwise topology when `k` is
+(PROVEN 2026-07-27) — Tychonoff on `ℕ → k`, transported. -/
+theorem wittVector_compactSpace (p : ℕ) (k : Type*) [TopologicalSpace k] [CompactSpace k] :
+    @CompactSpace (WittVector p k) (wittVectorTopology p k) := by
+  letI := wittVectorTopology p k
+  exact (wittVectorHomeomorph p k).symm.compactSpace
+
+/-- `𝕎 k` is HAUSDORFF for the coefficientwise topology when `k` is
+(PROVEN 2026-07-27). -/
+theorem wittVector_t2Space (p : ℕ) (k : Type*) [TopologicalSpace k] [T2Space k] :
+    @T2Space (WittVector p k) (wittVectorTopology p k) := by
+  letI := wittVectorTopology p k
+  exact (wittVectorHomeomorph p k).symm.t2Space
+
+/-- `𝕎 k` is TOTALLY DISCONNECTED for the coefficientwise topology when
+`k` is (PROVEN 2026-07-27). -/
+theorem wittVector_totallyDisconnectedSpace (p : ℕ) (k : Type*) [TopologicalSpace k]
+    [TotallyDisconnectedSpace k] :
+    @TotallyDisconnectedSpace (WittVector p k) (wittVectorTopology p k) := by
+  letI := wittVectorTopology p k
+  exact ⟨(wittVectorHomeomorph p k).isEmbedding.isTotallyDisconnected
+    (isTotallyDisconnected_of_totallyDisconnectedSpace _)⟩
+
+/-- `truncate n x` is the tuple of the first `n` coefficients of `x`
+(PROVEN 2026-07-27).  This is the bridge that turns the ring operations
+of `𝕎 k` into functions of finitely many coefficients. -/
+theorem wittVector_truncate_eq_mk (p n : ℕ) [Fact p.Prime] {k : Type*} [CommRing k]
+    (x : WittVector p k) :
+    WittVector.truncate n x = TruncatedWittVector.mk p (fun i : Fin n => x.coeff i) :=
+  TruncatedWittVector.ext fun i => by
+    rw [WittVector.coeff_truncate, TruncatedWittVector.coeff_mk]
+
+/-- **The ring operations of `𝕎 k` are continuous** for the
+coefficientwise topology (PROVEN 2026-07-27).
+
+The whole content is that `WittVector.truncate (n+1)` is a RING
+HOMOMORPHISM onto `TruncatedWittVector p (n+1) k = (Fin (n+1) → k)`, so
+the `n`-th coefficient of `x + y` (resp. `x * y`, `-x`) is an explicit
+function of the first `n + 1` coefficients of `x` and `y`; that function
+is continuous for free because its domain `(Fin (n+1) → k)²` is DISCRETE
+(`Pi.discreteTopology` on a finite index set).  No finiteness of `k` is
+needed here — only discreteness. -/
+theorem wittVector_isTopologicalRing (p : ℕ) [Fact p.Prime] (k : Type*) [CommRing k]
+    [TopologicalSpace k] [DiscreteTopology k] :
+    @IsTopologicalRing (WittVector p k) (wittVectorTopology p k) _ := by
+  letI := wittVectorTopology p k
+  have hcoeff : ∀ i : ℕ, Continuous fun x : WittVector p k => x.coeff i :=
+    continuous_wittVector_coeff p k
+  have hΦ : ∀ n : ℕ, Continuous fun q : WittVector p k × WittVector p k =>
+      ((fun i : Fin (n + 1) => q.1.coeff i), (fun i : Fin (n + 1) => q.2.coeff i)) := by
+    intro n
+    exact (continuous_pi fun i : Fin (n + 1) => (hcoeff (i : ℕ)).comp continuous_fst).prodMk
+      (continuous_pi fun i : Fin (n + 1) => (hcoeff (i : ℕ)).comp continuous_snd)
+  have hΦ' : ∀ n : ℕ, Continuous fun x : WittVector p k =>
+      (fun i : Fin (n + 1) => x.coeff i) :=
+    fun n => continuous_pi fun i : Fin (n + 1) => hcoeff (i : ℕ)
+  have hadd : Continuous fun q : WittVector p k × WittVector p k => q.1 + q.2 := by
+    refine continuous_induced_rng.mpr (continuous_pi fun n => ?_)
+    show Continuous fun q : WittVector p k × WittVector p k => (q.1 + q.2).coeff n
+    have : (fun q : WittVector p k × WittVector p k => (q.1 + q.2).coeff n) =
+        (fun a : (Fin (n + 1) → k) × (Fin (n + 1) → k) =>
+          TruncatedWittVector.coeff (⟨n, Nat.lt_succ_self n⟩ : Fin (n + 1))
+            (TruncatedWittVector.mk p a.1 + TruncatedWittVector.mk p a.2)) ∘
+        (fun q : WittVector p k × WittVector p k =>
+          ((fun i : Fin (n + 1) => q.1.coeff i), (fun i : Fin (n + 1) => q.2.coeff i))) := by
+      funext q
+      simp only [Function.comp_apply, ← wittVector_truncate_eq_mk, ← map_add,
+        WittVector.coeff_truncate]
+    rw [this]
+    exact continuous_of_discreteTopology.comp (hΦ n)
+  have hmul : Continuous fun q : WittVector p k × WittVector p k => q.1 * q.2 := by
+    refine continuous_induced_rng.mpr (continuous_pi fun n => ?_)
+    show Continuous fun q : WittVector p k × WittVector p k => (q.1 * q.2).coeff n
+    have : (fun q : WittVector p k × WittVector p k => (q.1 * q.2).coeff n) =
+        (fun a : (Fin (n + 1) → k) × (Fin (n + 1) → k) =>
+          TruncatedWittVector.coeff (⟨n, Nat.lt_succ_self n⟩ : Fin (n + 1))
+            (TruncatedWittVector.mk p a.1 * TruncatedWittVector.mk p a.2)) ∘
+        (fun q : WittVector p k × WittVector p k =>
+          ((fun i : Fin (n + 1) => q.1.coeff i), (fun i : Fin (n + 1) => q.2.coeff i))) := by
+      funext q
+      simp only [Function.comp_apply, ← wittVector_truncate_eq_mk, ← map_mul,
+        WittVector.coeff_truncate]
+    rw [this]
+    exact continuous_of_discreteTopology.comp (hΦ n)
+  have hneg : Continuous fun x : WittVector p k => -x := by
+    refine continuous_induced_rng.mpr (continuous_pi fun n => ?_)
+    show Continuous fun x : WittVector p k => (-x).coeff n
+    have : (fun x : WittVector p k => (-x).coeff n) =
+        (fun a : Fin (n + 1) → k =>
+          TruncatedWittVector.coeff (⟨n, Nat.lt_succ_self n⟩ : Fin (n + 1))
+            (-TruncatedWittVector.mk p a)) ∘
+        (fun x : WittVector p k => (fun i : Fin (n + 1) => x.coeff i)) := by
+      funext x
+      simp only [Function.comp_apply, ← wittVector_truncate_eq_mk, ← map_neg,
+        WittVector.coeff_truncate]
+    rw [this]
+    exact continuous_of_discreteTopology.comp (hΦ' n)
+  exact { toIsTopologicalSemiring := { toContinuousAdd := ⟨hadd⟩, toContinuousMul := ⟨hmul⟩ }
+          toContinuousNeg := ⟨hneg⟩ }
+
+section WittVectorLocal
+
+variable (p : ℕ) [Fact p.Prime] (k : Type*) [Field k] [CharP k p] [PerfectRing k p]
+
+/-- **`𝔪_{𝕎 k} = (p)`** (PROVEN 2026-07-27): the kernel of
+`WittVector.constantCoeff` is `(p)` (mathlib's
+`WittVector.ker_constantCoeff`), and it is maximal because
+`constantCoeff` is a surjection onto the field `k`; a maximal ideal of a
+local ring is THE maximal ideal. -/
+theorem wittVector_maximalIdeal_eq_span_p :
+    _root_.IsLocalRing.maximalIdeal (WittVector p k) = Ideal.span {(p : WittVector p k)} := by
+  refine (_root_.IsLocalRing.eq_maximalIdeal ?_).symm
+  rw [← WittVector.ker_constantCoeff (p := p) (k := k)]
+  exact RingHom.ker_isMaximal_of_surjective _ (WittVector.constantCoeff_surjective p)
+
+/-- **The residue field of `𝕎 k` is `k`** (PROVEN 2026-07-27), via
+mathlib's `WittVector.quotientPEquiv : 𝕎 k ⧸ (p) ≃+* k`. -/
+noncomputable def wittVectorResidueEquiv :
+    (WittVector p k ⧸ _root_.IsLocalRing.maximalIdeal (WittVector p k)) ≃+* k :=
+  (Ideal.quotEquivOfEq (wittVector_maximalIdeal_eq_span_p p k)).trans WittVector.quotientPEquiv
+
+/-- The `finite_residueField` field of `TaylorWilesCoefficients` for
+`𝒪 = 𝕎 k` (PROVEN 2026-07-27). -/
+theorem wittVector_finite_residueField [Finite k] :
+    Finite (WittVector p k ⧸ _root_.IsLocalRing.maximalIdeal (WittVector p k)) :=
+  Finite.of_equiv k (wittVectorResidueEquiv p k).symm.toEquiv
+
+/-- The `exists_isRegular_maximalIdeal` field of `TaylorWilesCoefficients`
+for `𝒪 = 𝕎 k` (PROVEN 2026-07-27): `𝔪 = (p)` is spanned by the
+length-one regular sequence `[p]`, `p` being a nonzerodivisor of `𝕎 k`
+by `WittVector.eq_zero_of_p_mul_eq_zero`.  This is the `𝕎 k` analogue of
+`exists_isRegular_ofList_eq_maximalIdeal_padicInt` in `PatchingCore`, and
+it is what says `𝒪` is a DVR. -/
+theorem wittVector_exists_isRegular_maximalIdeal :
+    ∃ ts : List (WittVector p k), ts.length = 0 + 1 ∧
+      RingTheory.Sequence.IsRegular (WittVector p k) ts ∧
+      Ideal.ofList ts = _root_.IsLocalRing.maximalIdeal (WittVector p k) := by
+  have hmem : ∀ r ∈ [(p : WittVector p k)],
+      r ∈ _root_.IsLocalRing.maximalIdeal (WittVector p k) := by
+    intro r hr
+    rw [List.mem_singleton] at hr
+    subst hr
+    rw [wittVector_maximalIdeal_eq_span_p]
+    exact Ideal.mem_span_singleton_self _
+  have hp : IsSMulRegular (WittVector p k) (p : WittVector p k) := by
+    intro x y h
+    simp only [smul_eq_mul] at h
+    have hz : (x - y) * (p : WittVector p k) = 0 := by
+      rw [sub_mul, mul_comm x, mul_comm y, h, sub_self]
+    exact sub_eq_zero.mp (WittVector.eq_zero_of_p_mul_eq_zero _ hz)
+  refine ⟨[(p : WittVector p k)], rfl,
+    RingTheory.Sequence.IsRegular.of_isWeaklyRegular_of_mem_maximalIdeal (WittVector p k) hmem
+      (RingTheory.Sequence.IsWeaklyRegular.cons hp (RingTheory.Sequence.IsWeaklyRegular.nil _ _)),
+    ?_⟩
+  rw [Ideal.ofList_singleton, wittVector_maximalIdeal_eq_span_p]
+
+/-- **Teichmüller approximation** (PROVEN 2026-07-27): every Witt vector
+is matched to any prescribed coefficient depth by an element of the
+subRING generated over `ℤ` by the Teichmüller lifts.
+
+Induction on the depth `n`: if `a` agrees with `x` below `n` then
+`x - a ∈ (p^n)`, say `x - a = z · p^n`; the Teichmüller lift
+`c = τ(z.coeff 0)` has the same constant coefficient as `z`, so
+`z - c ∈ (p)` and `x - (a + c·p^n) ∈ (p^{n+1})`.  This is the ℤ-integral
+form of the Teichmüller expansion `x = Σ_i τ(x_i^{p^{-i}}) p^i`, and it
+is all that topological finite generation needs. -/
+theorem exists_mem_adjoin_teichmuller_coeff_eq (x : WittVector p k) (n : ℕ) :
+    ∃ a ∈ Algebra.adjoin ℤ (Set.range (WittVector.teichmuller p (R := k))),
+      ∀ i < n, WittVector.coeff a i = x.coeff i := by
+  induction n with
+  | zero => exact ⟨0, Subalgebra.zero_mem _, fun i hi => absurd hi (Nat.not_lt_zero i)⟩
+  | succ n ih =>
+    obtain ⟨a, ha, hac⟩ := ih
+    have hy : x - a ∈ Ideal.span {(p : WittVector p k) ^ n} := by
+      rw [WittVector.mem_span_p_pow_iff_le_coeff_eq_zero]
+      exact WittVector.le_coeff_eq_iff_le_sub_coeff_eq_zero.mp fun i hi => (hac i hi).symm
+    obtain ⟨z, hz⟩ := Ideal.mem_span_singleton'.mp hy
+    set c : WittVector p k := WittVector.teichmuller p (z.coeff 0) with hc
+    have hzc : z - c ∈ Ideal.span {(p : WittVector p k) ^ 1} := by
+      rw [WittVector.mem_span_p_pow_iff_le_coeff_eq_zero]
+      refine WittVector.le_coeff_eq_iff_le_sub_coeff_eq_zero.mp fun i hi => ?_
+      obtain rfl : i = 0 := by omega
+      rw [hc, WittVector.teichmuller_coeff_zero]
+    obtain ⟨w, hw⟩ := Ideal.mem_span_singleton'.mp hzc
+    refine ⟨a + c * (p : WittVector p k) ^ n, ?_, ?_⟩
+    · exact Subalgebra.add_mem _ ha (Subalgebra.mul_mem _
+        (Algebra.subset_adjoin ⟨_, rfl⟩) (Subalgebra.pow_mem _ (Subalgebra.natCast_mem _ p) n))
+    · intro i hi
+      have hmem : x - (a + c * (p : WittVector p k) ^ n) ∈
+          Ideal.span {(p : WittVector p k) ^ (n + 1)} := by
+        refine Ideal.mem_span_singleton'.mpr ⟨w, ?_⟩
+        linear_combination hz + (p : WittVector p k) ^ n * hw
+      exact ((WittVector.le_coeff_eq_iff_le_sub_coeff_eq_zero (n := n + 1)).mpr
+        ((WittVector.mem_span_p_pow_iff_le_coeff_eq_zero _ (n + 1)).mp hmem) i hi).symm
+
+/-- The `topologicallyFG` field of `TaylorWilesCoefficients` for
+`𝒪 = 𝕎 k` (PROVEN 2026-07-27): `𝕎 k` is topologically generated over
+`ℤ` by the FINITELY many Teichmüller lifts `τ(a)`, `a ∈ k`.
+
+The generating set is `Set.range (WittVector.teichmuller p)`, finite
+because `k` is; density is `exists_mem_adjoin_teichmuller_coeff_eq`
+turned into a limit: the approximants converge coefficientwise, and the
+topology is exactly the coefficientwise one.  This replaces the
+`W(k) = ℤ_p[ζ]`-with-`ζ`-a-Teichmüller-lift-of-a-generator route recorded
+in the leaf docstring, which would have needed the polynomial
+presentation of `𝕎 k` over `ℤ_[p]`. -/
+theorem wittVector_topologicallyFG [Finite k] [TopologicalSpace k] [DiscreteTopology k] :
+    @Algebra.TopologicallyFG ℤ (WittVector p k) _ _ _ (wittVectorTopology p k)
+      (wittVector_isTopologicalRing p k) := by
+  letI := wittVectorTopology p k
+  haveI := wittVector_isTopologicalRing p k
+  have hfin : (Set.range (WittVector.teichmuller p (R := k))).Finite := Set.finite_range _
+  refine ⟨⟨hfin.toFinset, ?_⟩⟩
+  rw [hfin.coe_toFinset]
+  intro x
+  choose a ha hac using fun n => exists_mem_adjoin_teichmuller_coeff_eq p k x n
+  refine mem_closure_of_tendsto (b := Filter.atTop) ?_ (Filter.Eventually.of_forall ha)
+  rw [(⟨rfl⟩ : Topology.IsInducing (fun y : WittVector p k => y.coeff)).tendsto_nhds_iff]
+  refine tendsto_pi_nhds.mpr fun i => ?_
+  refine tendsto_const_nhds.congr' ?_
+  filter_upwards [Filter.eventually_ge_atTop (i + 1)] with n hn
+  exact (hac n i (by omega)).symm
+
+end WittVectorLocal
+
+/-- **`𝕎 k` IS a Taylor–Wiles coefficient ring** (PROVEN 2026-07-27) —
+obligation (a) of `exists_taylorWilesCoefficients_ringHom`, discharged
+with no sorry.  `k` is taken in `Type 0` because
+`TaylorWilesCoefficients.carrier` is; the caller supplies the transport
+(`Shrink.{0} k`, legitimate because `k` is finite hence countable).
+
+Where each field comes from:
+
+* `commRing`/`isLocalRing`/`isNoetherianRing` and
+  `exists_isRegular_maximalIdeal` — mathlib's
+  `WittVector.isDiscreteValuationRing` (a DVR is local, Noetherian, and
+  has principal maximal ideal), through
+  `wittVector_exists_isRegular_maximalIdeal`.
+* `finite_residueField` — `WittVector.quotientPEquiv`, through
+  `wittVector_finite_residueField`.
+* the TOPOLOGICAL half — the coefficientwise (= `p`-adic) topology
+  `wittVectorTopology`, whose profiniteness is Tychonoff on `ℕ → k`
+  transported along `wittVectorHomeomorph`.
+* `topologicallyFG` — `wittVector_topologicallyFG`, from the Teichmüller
+  expansion. -/
+noncomputable def TaylorWilesCoefficients.wittVector (p : ℕ) [Fact p.Prime] (k : Type)
+    [Field k] [Finite k] [CharP k p] : TaylorWilesCoefficients :=
+  letI : TopologicalSpace k := ⊥
+  haveI : DiscreteTopology k := ⟨rfl⟩
+  haveI : PerfectRing k p := PerfectRing.ofFiniteOfIsReduced p k
+  { carrier := WittVector p k
+    topologicalSpace := wittVectorTopology p k
+    isTopologicalRing := wittVector_isTopologicalRing p k
+    compactSpace := wittVector_compactSpace p k
+    t2Space := wittVector_t2Space p k
+    totallyDisconnectedSpace := wittVector_totallyDisconnectedSpace p k
+    finite_residueField := wittVector_finite_residueField p k
+    topologicallyFG := wittVector_topologicallyFG p k
+    exists_isRegular_maximalIdeal := wittVector_exists_isRegular_maximalIdeal p k }
+
+/-- **Lifting `𝕎 k` along a NILPOTENT thickening** (sorry node, LEAF
+B1a-i-α of the 2026-07-27 decomposition of
+`exists_taylorWilesCoefficients_ringHom`; this is the ENTIRE remaining
+content of Cohen's coefficient-ring map): if `p` is nilpotent in `S` and
+`σ : S ↠ k` has nilpotent kernel, then `σ` lifts UNIQUELY to a ring
+homomorphism `𝕎 k → S`.
+
+This is the finite-level half of Cohen's structure theorem (Serre,
+*Corps Locaux*, II §5 Thm. 3 / *Local Fields* II §5; Matsumura,
+*Commutative Ring Theory*, Thm. 29.1–29.4; Eisenbud, *Commutative
+Algebra*, Thm. 7.7), and it is what makes `𝕎 k` "the" `p`-adic lift of a
+perfect ring: `𝕎 k` is formally étale over `ℤ_p` in the `p`-adic sense,
+so a lift along a nilpotent thickening exists and is unique.
+
+# ROUTE
+
+Both halves go through the Teichmüller expansion.
+
+* **UNIQUENESS is already in mathlib.**  `WittVector.eq_of_apply_teichmuller_eq`
+  (`Mathlib/RingTheory/WittVector/TeichmullerSeries.lean`) says exactly
+  that two ring maps `𝕎 k →+* S` agreeing on Teichmüller
+  representatives are equal when `p` is nilpotent in `S`.  So it remains
+  to show that `σ.comp f = constantCoeff` PINS `f (τ a)`: `f (τ a)` is
+  the unique element of `S` lying over `a` that is a `p^n`-th power for
+  every `n` — the multiplicative (Teichmüller) section of `σ`, whose
+  uniqueness is the standard `x ↦ lim_n x̃_n^{p^n}` argument, using that
+  `k` is PERFECT and that `ker σ` is nilpotent.
+* **EXISTENCE** is the multiplicative section itself plus additivity:
+  set `f x = Σ_i ω(x_i^{p^{-i}}) · p^i` (a FINITE sum, since `p` is
+  nilpotent in `S`), with `ω` the Teichmüller section.  That the sum is
+  a ring map is the classical computation; the standard formal route is
+  to induct along the filtration by powers of `ker σ`, lifting through
+  each SQUARE-ZERO extension, where the obstruction vanishes because `k`
+  is perfect.
+
+# WHAT IS **NOT** OWED, and this is what shrank the leaf (2026-07-27)
+
+The COMPLETION half is free.  `IsAdicComplete.StrictMono.liftRingHom`
+(`Mathlib/RingTheory/AdicCompletion/RingHom.lean`) is the universal
+property of `IsAdicComplete` for RING maps: a compatible family
+`𝕎 k →+* R ⧸ 𝔪^{n+1}` assembles into `𝕎 k →+* R`.  That is exactly what
+`exists_ringHom_wittVector_of_isAdicComplete` below does with this leaf,
+and the compatibility of the family comes from the UNIQUENESS clause
+here — which is why the statement is `∃!` and not `∃`.  The earlier
+docstring's "the coefficient-ring map `W(k) → R` is absent from all
+three trees" is correct only about the finite-level statement below.
+
+FAITHFULNESS.  The hypotheses are the exact ones under which the
+statement is classical: `p` nilpotent in `S`, `σ` surjective, `ker σ`
+nilpotent (so `S → k` is a nilpotent thickening), `k` a PERFECT field of
+characteristic `p`.  Dropping perfectness makes it false (there is no
+canonical multiplicative section for imperfect `k`); dropping
+nilpotence of `ker σ` makes it false (`S` must be an infinitesimal
+thickening for the successive lifting to terminate).
+
+CIRCULARITY GUARD: none applies — no `ρbar`, no deformation functor, no
+Hecke algebra occurs in the statement. -/
+theorem existsUnique_ringHom_wittVector_of_isNilpotent
+    {p : ℕ} [Fact p.Prime] {k : Type*} [Field k] [CharP k p] [PerfectRing k p]
+    {S : Type*} [CommRing S] (hpS : IsNilpotent (p : S))
+    {σ : S →+* k} (hσ : Function.Surjective σ)
+    (hker : ∀ x ∈ RingHom.ker σ, IsNilpotent x) :
+    ∃! f : WittVector p k →+* S, σ.comp f = WittVector.constantCoeff :=
+  sorry
+
+/-- **Cohen's coefficient-ring map `𝕎 k → R`** (PROVEN 2026-07-27 over
+`existsUnique_ringHom_wittVector_of_isNilpotent`): for `R` local and
+`𝔪_R`-adically complete with residue field `k` (perfect, of
+characteristic `p`), there is a ring homomorphism `ι : 𝕎 k →+* R` with
+`π ∘ ι = WittVector.constantCoeff` — i.e. `ι` induces the IDENTITY on
+residue fields.
+
+The proof is pure assembly and needs no Witt-vector theory of its own:
+
+* `𝔪_R^{n+1} ≤ ker π = 𝔪_R`, so `π` factors through every
+  `R ⧸ 𝔪_R^{n+1}`, and that quotient is a nilpotent thickening of `k`
+  in which `p` is nilpotent (`p ∈ 𝔪_R` because `k` has characteristic
+  `p`).  The leaf therefore applies at every level.
+* The resulting family is COMPATIBLE by the leaf's uniqueness clause:
+  `factorPow ∘ f_{n+1}` also lifts `π` at level `n`.
+* `IsAdicComplete.StrictMono.liftRingHom` assembles it into `𝕎 k →+* R`,
+  and reading the identity off at level `0` gives `π ∘ ι = constantCoeff`. -/
+theorem exists_ringHom_wittVector_of_isAdicComplete
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    (hcomplete : IsAdicComplete (_root_.IsLocalRing.maximalIdeal R) R)
+    {p : ℕ} [Fact p.Prime] {k : Type*} [Field k] [CharP k p] [PerfectRing k p]
+    {π : R →+* k} (hπ : Function.Surjective π) :
+    ∃ ι : WittVector p k →+* R, π.comp ι = WittVector.constantCoeff := by
+  haveI := hcomplete
+  set I : Ideal R := _root_.IsLocalRing.maximalIdeal R with hIdef
+  have hkerpi : RingHom.ker π = I :=
+    _root_.IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective π hπ)
+  have hpow : ∀ n : ℕ, I ^ (n + 1) ≤ RingHom.ker π := fun n => by
+    rw [hkerpi]; exact Ideal.pow_le_self (Nat.succ_ne_zero n)
+  set res : (n : ℕ) → (R ⧸ I ^ (n + 1)) →+* k := fun n =>
+    Ideal.Quotient.lift (I ^ (n + 1)) π (fun a ha => hpow n ha) with hresdef
+  have hres_mk : ∀ (n : ℕ) (x : R), res n (Ideal.Quotient.mk (I ^ (n + 1)) x) = π x :=
+    fun n x => rfl
+  have hres_surj : ∀ n : ℕ, Function.Surjective (res n) := by
+    intro n y
+    obtain ⟨x, hx⟩ := hπ y
+    exact ⟨Ideal.Quotient.mk _ x, by rw [hres_mk, hx]⟩
+  have hres_ker : ∀ (n : ℕ), ∀ x ∈ RingHom.ker (res n), IsNilpotent x := by
+    intro n x hx
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+    refine ⟨n + 1, ?_⟩
+    rw [← map_pow, Ideal.Quotient.eq_zero_iff_mem]
+    have hy : y ∈ I := by
+      rw [← hkerpi]
+      simpa [RingHom.mem_ker, hres_mk] using hx
+    exact Ideal.pow_mem_pow hy (n + 1)
+  have hpnil : ∀ n : ℕ, IsNilpotent ((p : ℕ) : R ⧸ I ^ (n + 1)) := by
+    intro n
+    refine hres_ker n _ ?_
+    simp only [RingHom.mem_ker, map_natCast]
+    exact CharP.cast_eq_zero k p
+  choose f hf huniq using fun n : ℕ =>
+    existsUnique_ringHom_wittVector_of_isNilpotent (p := p) (k := k) (hpnil n)
+      (hres_surj n) (hres_ker n)
+  have ha : StrictMono (fun n : ℕ => n + 1) := fun _ _ h => Nat.succ_lt_succ h
+  have hcompat : ∀ m : ℕ,
+      (Ideal.Quotient.factorPow I (ha.monotone m.le_succ)).comp (f (m + 1)) = f m := by
+    intro m
+    have hstep : (res m).comp (Ideal.Quotient.factorPow I (ha.monotone m.le_succ))
+        = res (m + 1) := by
+      refine RingHom.ext fun z => ?_
+      obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective z
+      rfl
+    refine huniq m _ ?_
+    show (res m).comp ((Ideal.Quotient.factorPow I (ha.monotone m.le_succ)).comp (f (m + 1)))
+      = WittVector.constantCoeff
+    rw [← RingHom.comp_assoc, hstep, hf (m + 1)]
+  refine ⟨IsAdicComplete.StrictMono.liftRingHom I ha f (fun {m} => hcompat m), ?_⟩
+  ext x
+  have hlvl := IsAdicComplete.StrictMono.mk_liftRingHom I ha f (fun {m} => hcompat m) (n := 0) x
+  calc π (IsAdicComplete.StrictMono.liftRingHom I ha f (fun {m} => hcompat m) x)
+      = res 0 (Ideal.Quotient.mk (I ^ (0 + 1))
+          (IsAdicComplete.StrictMono.liftRingHom I ha f (fun {m} => hcompat m) x)) :=
+        (hres_mk 0 _).symm
+    _ = res 0 (f 0 x) := by rw [hlvl]
+    _ = WittVector.constantCoeff x := congrArg (fun g : WittVector p k →+* k => g x) (hf 0)
+
+/-- **Cohen's COEFFICIENT RING, with its map into `R`** (PROVEN
+2026-07-27 over the single leaf
+`existsUnique_ringHom_wittVector_of_isNilpotent`; was LEAF B1a-i of the
+2026-07-27 decomposition of `exists_taylorWilesCoefficientsPresentation`,
+"the substantial half"): for `R` local and `𝔪_R`-adically complete with
+finite residue field `k`, there is a `TaylorWilesCoefficients` `𝒪` and a
+ring map `ι : 𝒪 →+* R` lifting the residue field, i.e. with `π ∘ ι`
+surjective.
 
 Classically `𝒪 = W(k)`, the Witt vectors of `k` (Cohen 1946; Matsumura,
 *Commutative Ring Theory*, Thm. 29.1–29.4; Eisenbud, *Commutative
@@ -4136,30 +4620,43 @@ is multiplicative, and `W(k)`'s universal property in the OTHER
 direction from `WittVector.lift` — a multiplicative section of
 `R ↠ k` induces `W(k) → R` — is what has to be written.
 
-WHAT IS OWED, precisely.  Two independent obligations:
+WHAT WAS OWED, AND WHAT REMAINS (2026-07-27).  The two obligations this
+docstring recorded have been discharged as follows; NOTHING in this
+declaration is open any more, and its whole residual content is the one
+leaf `existsUnique_ringHom_wittVector_of_isNilpotent` above.
 
-1. **The bundle.** `W(k)` must be exhibited as a `TaylorWilesCoefficients`.
-   `carrier` is declared `Type`, so a universe-`0` copy of `k` is needed
-   first; `k` is finite, so `k ≃ Fin (Nat.card k)` transports the field
-   structure into `Type 0` and this costs nothing.  Then:
-   `IsLocalRing`, `IsNoetherianRing` and `exists_isRegular_maximalIdeal`
-   come from `WittVector.isDiscreteValuationRing`
-   (`Mathlib/RingTheory/WittVector/DiscreteValuationRing.lean:149`) —
-   copy the pattern of `exists_isRegular_ofList_eq_maximalIdeal_padicInt`
-   in `PatchingCore.lean`, which discharges exactly this field for
-   `ℤ_[p]`.  `finite_residueField` is `W(k)/p ≃ k`.  The TOPOLOGICAL
-   half (`TopologicalSpace`, `IsTopologicalRing`, `CompactSpace`,
-   `T2Space`, `TotallyDisconnectedSpace`) should be taken to be the
-   `p`-adic i.e. `𝔪`-adic topology — `WithIdeal (W k) := ⟨𝔪⟩` supplies
-   the first two instantly — and compactness/total disconnectedness
-   follow from `W(k) = lim W_n(k)` being an inverse limit of FINITE
-   rings (`WittVector.TruncatedWittVector` is finite for `k` finite).
-   `Algebra.TopologicallyFG ℤ (W k)` holds because `W(k) = ℤ_p[ζ]` is
-   the closure of `ℤ[ζ]` for `ζ` a Teichmüller lift of a generator of
-   `kˣ`; compare `topologicallyFG_int_padicInt`.
-2. **The lift `ι : W(k) →+* R`.** This is the genuinely missing theorem.
-   Mathlib's `WittVector.lift` maps *into* `𝕎 k` and is therefore the
-   wrong direction, as the earlier note correctly recorded.
+1. **The bundle — DONE, sorry-free**, as
+   `TaylorWilesCoefficients.wittVector` above.  Two of this docstring's
+   own suggestions turned out to be more expensive than necessary and
+   were NOT followed, which is worth recording because both were the
+   obvious route:
+   * The TOPOLOGY is *not* installed through `WithIdeal (W k) := ⟨𝔪⟩`,
+     and compactness does *not* go through `W(k) = lim W_n(k)`.
+     `WittVector p k` is by definition a one-field structure over
+     `coeff : ℕ → k`, so the coefficientwise topology
+     (`wittVectorTopology`) makes it HOMEOMORPHIC to `ℕ → k`
+     (`wittVectorHomeomorph`), and compactness / Hausdorffness / total
+     disconnectedness are Tychonoff plus transport.  Only continuity of
+     the ring operations needs an argument, and `WittVector.truncate`
+     supplies it.  For perfect `k` this topology IS the `p`-adic one, by
+     `WittVector.mem_span_p_pow_iff_le_coeff_eq_zero`.
+   * `Algebra.TopologicallyFG ℤ (W k)` does *not* need
+     `W(k) = ℤ_p[ζ]`.  The finite set `{τ(a) : a ∈ k}` of ALL
+     Teichmüller lifts generates topologically
+     (`wittVector_topologicallyFG`), by the integral Teichmüller
+     approximation `exists_mem_adjoin_teichmuller_coeff_eq`.
+   The `Type 0` transport is `Shrink.{0} k` (a finite field is countable,
+   hence `Small.{0}`), not `Fin (Nat.card k)`.
+2. **The lift `ι : W(k) →+* R` — the COMPLETION half is FREE**, and the
+   previous note missed this.  `IsAdicComplete.StrictMono.liftRingHom`
+   (`Mathlib/RingTheory/AdicCompletion/RingHom.lean`) is mathlib's
+   universal property of `IsAdicComplete` for RING maps.  So
+   `exists_ringHom_wittVector_of_isAdicComplete` above is pure assembly
+   over the FINITE-LEVEL statement, which is the single remaining leaf:
+   lifting `𝕎 k → S` along a nilpotent thickening `S ↠ k` with `p`
+   nilpotent in `S`.  Its uniqueness clause is what makes the family of
+   level-`n` lifts compatible, and half of that uniqueness is already in
+   mathlib as `WittVector.eq_of_apply_teichmuller_eq`.
 
 MISSING MACHINERY (re-checked 2026-07-27 against our pin, `~/cs/FLT` and
 `Fermat/FLT/Mathlib/`; the refuting check for each is a grep for the
@@ -4170,7 +4667,8 @@ name):
   which is Cohen's *other* theorem ("Noetherian iff every prime is
   finitely generated") and is unrelated.
   `grep -rln 'Cohen' .lake/packages/mathlib/Mathlib ~/cs/FLT Fermat`
-* The coefficient-ring map `W(k) → R` is absent from all three trees.
+* The coefficient-ring map `W(k) → R` is absent from all three trees —
+  but only its FINITE-LEVEL half is genuinely missing, see item 2 above.
 
 WHAT IS **NOT** OWED ANY MORE, and this is the correction that shrank
 this leaf.  The convergence and surjectivity halves of Cohen have been
@@ -4198,8 +4696,29 @@ theorem exists_taylorWilesCoefficients_ringHom
     {k : Type*} [Field k] [Finite k] {π : R →+* k}
     (hπ : Function.Surjective π) :
     ∃ (coeff : TaylorWilesCoefficients) (ι : coeff.carrier →+* R),
-      Function.Surjective (π.comp ι) :=
-  sorry
+      Function.Surjective (π.comp ι) := by
+  -- the residue characteristic, and its primality
+  haveI : CharP k (ringChar k) := ringChar.charP k
+  haveI hfp : Fact (ringChar k).Prime := ⟨CharP.char_is_prime k (ringChar k)⟩
+  set p := ringChar k with hpdef
+  -- a `Type 0` model of `k`: `TaylorWilesCoefficients.carrier` is a `Type`,
+  -- and a finite field is countable hence `Small.{0}`
+  letI e : Shrink.{0} k ≃+* k := Shrink.ringEquiv.{0, _} k
+  haveI : Finite (Shrink.{0} k) := Finite.of_equiv k e.symm.toEquiv
+  haveI : CharP (Shrink.{0} k) p :=
+    charP_of_injective_ringHom (f := (e.symm : k →+* Shrink.{0} k)) e.symm.injective p
+  haveI : PerfectRing (Shrink.{0} k) p := PerfectRing.ofFiniteOfIsReduced p _
+  obtain ⟨ι, hι⟩ := exists_ringHom_wittVector_of_isAdicComplete hcomplete
+    (p := p) (k := Shrink.{0} k) (π := (e.symm : k →+* Shrink.{0} k).comp π)
+    (e.symm.surjective.comp hπ)
+  refine ⟨TaylorWilesCoefficients.wittVector p (Shrink.{0} k), ι, ?_⟩
+  intro y
+  obtain ⟨x, hx⟩ := WittVector.constantCoeff_surjective p (e.symm y)
+  refine ⟨x, ?_⟩
+  have hx' : (e.symm : k →+* Shrink.{0} k) (π (ι x)) = e.symm y := by
+    rw [show (e.symm : k →+* Shrink.{0} k) (π (ι x))
+        = (((e.symm : k →+* Shrink.{0} k).comp π).comp ι) x from rfl, hι, hx]
+  exact e.symm.injective hx'
 
 /-- **Complete Nakayama: the substitution homomorphism is surjective**
 (sorry node, LEAF B1a-ii of the 2026-07-27 decomposition of
@@ -4324,8 +4843,12 @@ Three pieces, of which the first two are PROVEN:
 * `exists_ringHom_mvPowerSeries_of_isAdicComplete` (PROVEN) — the
   substitution homomorphism, from `MvPowerSeries.eval₂Hom` and the adic
   topology.  This needed no new theory.
-* `exists_taylorWilesCoefficients_ringHom` (LEAF) — the coefficient ring
-  `W(k)` and its map into `R`.  The substantial half.
+* `exists_taylorWilesCoefficients_ringHom` (PROVEN 2026-07-27) — the
+  coefficient ring `𝕎 k` and its map into `R`.  Was "the substantial
+  half"; the bundle is now sorry-free
+  (`TaylorWilesCoefficients.wittVector`) and the map is assembled from
+  mathlib's `IsAdicComplete` universal property over the single leaf
+  `existsUnique_ringHom_wittVector_of_isNilpotent`.
 * `surjective_of_span_range_eq_maximalIdeal` (LEAF) — complete
   Nakayama. -/
 theorem exists_taylorWilesCoefficientsPresentation
