@@ -57335,8 +57335,159 @@ theorem exists_tateParameter_of_weightTwoEigenform_pNew
   exact ⟨k, n, hn, CharP.cast_eq_zero _ _, hlev k n hchar⟩
 
 include hpodd in
+/-- **Saito's local–global compatibility at `p` in the DEEP-LEVEL case,
+AT THE NEWFORM LEVEL: a weight-2 newform whose level is divisible by
+`p²` has no flat level in the `p`-adic tower** (sorry leaf, NEW
+2026-07-27 — the LITERATURE half of the NEWFORM-DESCENT CUT of
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew_of_sq_dvd`
+below, whose docstring carries the regime dichotomy; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), together
+with Tate, *`p`-divisible groups*, and Raynaud, *Schémas en groupes de
+type `(p, …, p)`*, Bull. SMF 102 (1974)).
+
+For a NEWFORM `g₀` of level `M₀` with `2 ≤ ord_p M₀`, and `τ` the
+attached `p`-adic representation (matched to `g₀` by its Hecke
+polynomials away from a finite set, and irreducible), realized on an
+`R`-lattice `ρ` through `e`, `he`: SOME level `k` of the `𝔪`-adic
+tower has no finite flat prolongation at `p`.
+
+THE MATHEMATICS, in one paragraph. The local automorphic component
+`π_p` has conductor exponent `ord_p M₀ ≥ 2`, so it is a ramified
+principal series, a ramified twist of Steinberg, or supercuspidal —
+in every case its Weil–Deligne parameter is RAMIFIED, so by Saito's
+local–global compatibility at `ℓ = p` the parameter `WD(τ|_{G_p})`
+obtained from `D_pst` is ramified, hence `τ|_{G_p}` is not semistable
+and a fortiori not Barsotti–Tate. If, on the contrary, every level of
+the tower carried a finite flat model, those models would assemble
+(Tate, *`p`-divisible groups*, §2.4 and §4) into a `p`-divisible group
+over `ℤ_p` whose Tate module is `τ|_{G_p}` up to isogeny — making
+`τ|_{G_p}` Barsotti–Tate, whose Weil–Deligne parameter is UNRAMIFIED.
+Contradiction. There is NO Tate parameter and NO toric reduction
+anywhere in this argument: that is what distinguishes it from the
+`p ∥ M` regime, and it is why the two are separate leaves.
+
+WHAT THE NEWFORM-DESCENT CUT BOUGHT, and why it is a real cut rather
+than a rewording. The consumer below is stated for a `p`-NEW EIGENFORM
+of level `M`, which is not the shape any of the cited theorems has:
+Saito's theorem, like Carayol's, is a statement about the NEWFORM
+behind the eigensystem, and the passage from one to the other is
+bookkeeping that this leaf should not be carrying. The consumer now
+discharges all of it — the newform `g₀ ∣ g` (Diamond–Shurman
+Prop. 5.8.4, in the tree as
+`exists_weightTwoNewform_of_weightTwoEigenform`), the transport of the
+`p`-adic Hecke-field embedding (`exists_ringHom_heckeField_of_qCoeff_eq`),
+the enlargement of the exceptional set to `S_τ ∪ {r : r ∣ M}`, and the
+arithmetic step `M₀ ∣ M ∧ ¬ M₀ ∣ M/p ⟹ ord_p M₀ = ord_p M ≥ 2` that
+converts `p`-NEWNESS into the level hypothesis `hord₂`. That last step
+is where `hpnew` is consumed, and it is the only place it is needed:
+`hpnew` does not appear here at all. Same shape as the at-`q`
+conductor cut, whose newform-level leaf
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
+this declaration is the at-`p` analogue of.
+
+CUT AUDIT — TWO ROUTES SEARCHED AND WHY BOTH ARE CLOSED HERE, stated
+so the next owner does not re-search them.
+
+* **The CONDUCTOR route is not available at `v = p`, and the obvious
+  statement of it is FALSE.** One would like to write this leaf's
+  automorphic half as
+  `τ.HasConductorExponentAt 𝔭ᵥ (M₀.factorization p)` and pair it with
+  a local half bounding the exponent under flatness — exactly the
+  at-`q` idiom. That does not work, because
+  `GaloisRep.conductorExponent v = (dim V − dim V^{I_v}) + Sw_v` is the
+  ARTIN conductor only for `v ∤ p`; at `v = p` the Artin conductor of a
+  `p`-adic representation is the conductor of its Weil–Deligne
+  parameter, computed through `D_pst`, and the naive inertia invariants
+  compute something else entirely. The check that settles it: for `E/ℚ`
+  with GOOD reduction at `p` (so `p ∤ M₀` and the true exponent is `0`)
+  the `p`-adic Tate module has `V^{I_p} = 0`, since `I_p` acts through
+  the cyclotomic character on the connected part; so the naive value is
+  `2 ≠ 0`. This is precisely why every existing conductor leaf in this
+  file carries `hqp : q ≠ p`, and why no such hypothesis can be dropped.
+* **The TRACE route needs a reducibility input this leaf cannot
+  supply.** `Family.lean`'s
+  `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+  turns a flat tower into the exact inertia identity
+  `χ₁(σ) + χ₂(σ) = 1 + χ_cyc(σ)` — an obstruction of exactly the right
+  strength — but it consumes a splitting of the mapped characteristic
+  polynomials through a continuous multiplicative pair `χ₁, χ₂`, i.e.
+  reducibility of `ρ|_{G_p}`. That hypothesis is NOT decoration: as
+  that declaration's own docstring records, a SUPERSINGULAR `ρ|_{G_p}`
+  is flat at every level with IRREDUCIBLE inertia characteristic
+  polynomials (Raynaud: inertia acts through the level-2 fundamental
+  characters `ψ, ψ^p`), so the identity is false there. Under this
+  leaf's hypotheses `ρ|_{G_p}` is not known to be reducible — indeed
+  the counterexample that forced the split of the old composite leaf,
+  `E = 27a1` at `p = 3`, has `ρ|_{G_3}` IRREDUCIBLE — so the trace
+  identity cannot be the local half without first proving reducibility,
+  which is not available and would itself be a citation.
+
+  AXIS NOT SEARCHED: whether the two branches can be recombined — a
+  `by_cases` on reducibility of `ρ|_{G_p}`, with the trace identity
+  closing the reducible branch and a Raynaud fundamental-character
+  computation closing the irreducible one. That is the most promising
+  route to decomposing this leaf further, and it needs the
+  fundamental-character classification (Raynaud cor. 3.4.4) as a named
+  leaf, which the tree does not yet have.
+
+SOUNDNESS: non-vacuously satisfiable — `p = 5`, `M₀ = 275`, `g₀` the
+weight-2 newform attached to the quadratic twist of `X₀(11)` by `χ₅`
+(conductor `275 = 5² · 11`, verified with PARI/GP), whose `ρ` is not
+flat at `5`, the curve having additive reduction there. Nothing in the
+statement mentions `M`, `g`, `p`-newness or a Tate parameter: it is a
+statement about a newform, its level, and a flat tower.
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged from the consumer, exactly as for the
+`p ∥ M` chain: `hpne` and `hpmem` make the exponent of `R ⧸ 𝔪 ^ k`
+finite and unbounded in `k`, `hkfin` keeps every level finite (so that
+`HasFlatProlongationAt`'s finiteness is not satisfied for a merely
+cardinal reason), and `hlat` makes "`ρ` is an `R`-lattice model of `τ`"
+a statement about a genuine lattice. -/
+theorem exists_level_not_hasFlatProlongationAt_of_isWeightTwoNewform_of_sq_dvd
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hord₂ : 2 ≤ M₀.factorization p) :
+    ∃ k : ℕ,
+      ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
+        (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+include hpodd in
 /-- **Serre's flat-level criterion for a `p`-new eigensystem, IN THE
-DEEP-LEVEL CASE `p² ∣ M`** (sorry leaf, NEW 2026-07-27 — the second
+DEEP-LEVEL CASE `p² ∣ M`** (**PROVEN 2026-07-27, second owner**, by the
+NEWFORM-DESCENT CUT over the single leaf
+`exists_level_not_hasFlatProlongationAt_of_isWeightTwoNewform_of_sq_dvd`
+immediately ABOVE, whose docstring carries the mathematics, the
+soundness witness and the CUT AUDIT of the two routes that are closed;
+NEW 2026-07-27 as the second
 half of the local–global citation, split off by the FALSITY AUDIT of
 `exists_toricKummerCocycle_of_weightTwoEigenform_pNew` above; Saito,
 *Modular forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997)).
@@ -57374,14 +57525,40 @@ the two branches now rest on genuinely different arguments, and one of
 them was silently asserting the other's conclusion.
 
 WHAT IS MISSING HERE, stated so the next owner can act on it. Only the
-Saito half: that for a `p`-new eigenform of level `M` with `p² ∣ M` the
-local Weil–Deligne parameter at `p` has conductor exponent `≥ 2`, hence
-is not semistable, hence `ρ|_{G_p}` is not Barsotti–Tate and admits no
-finite flat prolongation at every level. NOTE that this leaf needs NO
+Saito half: that for a weight-2 NEWFORM of level `M₀` with `p² ∣ M₀`
+the local Weil–Deligne parameter at `p` is ramified, hence `τ|_{G_p}`
+is not semistable, hence not Barsotti–Tate, hence admits no finite flat
+prolongation at every level. That is now the separate leaf
+`exists_level_not_hasFlatProlongationAt_of_isWeightTwoNewform_of_sq_dvd`
+ABOVE; NOTHING else is cited here. NOTE that it needs NO
 Tate curve, NO Deligne–Rapoport model and NO toric reduction — it is
 strictly the "not even semistable" sentence of the citation — so it is
 NOT gated on the modular-curve geometry that gates its sibling, and the
 two should not be dispatched as one task.
+
+WHAT THIS DECLARATION NOW PROVES (the NEWFORM-DESCENT CUT, 2026-07-27,
+second owner). All the eigenform-to-newform bookkeeping that Saito's
+theorem does not have in its statement:
+
+* the newform `g₀` of level `M₀ ∣ M` behind `g`'s eigensystem
+  (Diamond–Shurman Prop. 5.8.4, in the tree as
+  `exists_weightTwoNewform_of_weightTwoEigenform`);
+* `p`-NEWNESS, in the degeneracy spelling `hpnew`, converted into the
+  LEVEL hypothesis `2 ≤ ord_p M₀`. This is where `hpnew` is consumed
+  and the ONLY place it is needed. The arithmetic: `hpnew` forbids
+  `M₀ ∣ M / p`, and `M₀ ∣ M` with `¬ M₀ ∣ M / p` forces
+  `ord_p M₀ = ord_p M`, which `hpM2` makes `≥ 2`. (Concretely: if
+  `ord_p M₀ ≤ ord_p M − 1` then `M₀.factorization ≤ (M/p).factorization`
+  prime by prime — off `p` because `M₀ ∣ M`, at `p` by assumption — so
+  `M₀ ∣ M / p` by `Nat.factorization_le_iff_dvd`.)
+* the transport of the `p`-adic Hecke-field embedding `κ` to `κ₀`
+  (`exists_ringHom_heckeField_of_qCoeff_eq`), and the enlargement of
+  the exceptional set from `S_τ` to `S_τ ∪ {r prime : r ∣ M}` across
+  which `τ`'s Hecke polynomials match `g₀`'s — the same step as in
+  `exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime` above.
+
+Note that `hpM` and `hpM2` survive only inside that arithmetic; the
+leaf above sees `p` only through `2 ≤ M₀.factorization p`.
 
 WHY THE CONCLUSION IS "SOME LEVEL", not "every level". Unchanged from
 the sibling: at a SINGLE finite level flatness can be compatible with a
@@ -57434,8 +57611,57 @@ theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew_of_sq_
     (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
     ∃ k : ℕ,
       ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
-        (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+        (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  -- step 1: the newform behind `g` (Diamond–Shurman Prop. 5.8.4)
+  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hM hg
+  -- step 2: `p`-newness forbids the realization level `M₀` from dividing `M / p`
+  have hM₀ndvd : ¬ M₀ ∣ M / p :=
+    fun hd => hpnew M₀ hd g₀ hg₀.toIsWeightTwoEigenform hagree
+  -- step 3: hence `ord_p M₀ = ord_p M`, which `hpM2` makes `≥ 2`
+  have hord₂ : 2 ≤ M₀.factorization p := by
+    by_contra hlt'
+    have hlt : M₀.factorization p < 2 := by omega
+    have hpp : p.Prime := hp.out
+    have hMne : M ≠ 0 := hM.ne'
+    have hdivne : M / p ≠ 0 := (Nat.div_pos (Nat.le_of_dvd hM hpM) hpp.pos).ne'
+    have hMord : 2 ≤ M.factorization p :=
+      (Nat.Prime.pow_dvd_iff_le_factorization hpp hMne).mp hpM2
+    have hle : M₀.factorization ≤ M.factorization :=
+      (Nat.factorization_le_iff_dvd hM₀pos.ne' hMne).mpr hM₀dvd
+    refine hM₀ndvd ((Nat.factorization_le_iff_dvd hM₀pos.ne' hdivne).mp ?_)
+    rw [Nat.factorization_div hpM, hpp.factorization]
+    refine Finsupp.le_def.mpr fun r => ?_
+    rw [Finsupp.tsub_apply, Finsupp.single_apply]
+    have hr := Finsupp.le_def.mp hle r
+    split_ifs with hpr
+    · subst hpr
+      omega
+    · omega
+  -- step 4: transport the `p`-adic embedding to the newform's Hecke field
+  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
+    hg₀.toIsWeightTwoEigenform κ hagree
+  -- step 5: `τ` matches `g₀`'s Hecke polynomials away from `S_τ ∪ (primes ∣ M)`
+  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    M.primeFactors.attach.image fun r =>
+      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
+  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
+    intro r hr hrS
+    have hrM : ¬ r ∣ M := by
+      intro hdvd
+      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
+        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
+          Finset.mem_attach _ _, rfl⟩))
+    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
+  -- step 6: Saito's theorem at the newform level
+  exact exists_level_not_hasFlatProlongationAt_of_isWeightTwoNewform_of_sq_dvd
+    hpodd hM₀pos hg₀ κ₀ hτ₀ hirr e he hdet hpne hpmem hkfin hlat hord₂
 
 include hpodd in
 /-- **Serre's flat-level criterion for a `p`-new eigensystem: SOME FINITE
