@@ -188,6 +188,14 @@ public import Fermat.FLT.FreyCurve.QuarticDescent
 -- the twelve levels of Kenku's non-prime-power determination below are proven
 -- from the corresponding rational-point statements about that curve.
 public import Fermat.FLT.ModularCurve.X0
+-- The modular curve `Y_1(N)`/`X_1(N)` as a coarse moduli space over `ℚ`, the
+-- `Γ₁` companion of `X0.lean` (`Fermat.IsX1Compactification`,
+-- `Fermat.exists_notCusp_of_ratPoint`, `Fermat.HasRankZeroJacobian` reused
+-- from `X0.lean`): level `25` below — `MazurX1Plane.exists_isX1TwentyFiveDatum`
+-- — is proven from it, the `Γ₀` route at that level being not merely
+-- unavailable but REFUTED (`X_0(25)` has genus `0` and a rational cyclic
+-- `25`-isogeny exists, the class `11a`).
+public import Fermat.FLT.ModularCurve.X1
 -- The Tate normal form and the level-`7` parametrisation, used by
 -- `not_order_two_and_order_seven_point` below.
 public import Fermat.FLT.FreyCurve.TateNormalForm
@@ -27178,7 +27186,45 @@ denominator `d ≤ 6`, solving for the other coordinate over `ℚ`, found NO
 zero of `G₂₅` off the two degenerate loci — the only rational zero found
 at all was `(0, 0)`, which has `b = 0`.  And `G₂₅ mod 3` vanishes on
 `𝔽_3 × 𝔽_3` ONLY at `(0, 0)`: it is nonzero at all four points with
-`b ≠ 0` and `b ≠ c`, which is the mod-`3` shadow of `card_ptF3`. -/
+`b ≠ 0` and `b ≠ c`, which is the mod-`3` shadow of `card_ptF3`.
+
+**NON-DEGENERACY AUDIT — why `exists_notCusp_of_plane` now carries
+`IsElliptic`, added 2026-07-27 when the datum was first CONSTRUCTED.**
+As originally stated the field quantified over all `b, c` with
+`G₂₅(b, c) = 0`, `b ≠ 0`, `b ≠ c`, with no non-degeneracy on
+`tateNormalForm b c`.  That is not a harmless generalisation: at a
+rational point of the plane model where the family DEGENERATES the
+corresponding point of `X_1(25)` is a CUSP, so "produce a non-cuspidal
+point" would be unprovable there — the field would have been carrying a
+hidden obligation with no modular content, and the sole consumer
+`x1TwentyFive_plane_ne_zero` was silently discharging it with an
+`[IsElliptic]` instance that it never passed on.
+
+The degenerate locus really is empty, so nothing is lost mathematically.
+Writing `Δ(b, c) = b³ · D₀` with
+`D₀ = c⁴ − 3c³ + (−8b + 3)c² + (−20b − 1)c + 16b² + b`
+(PARI/GP, from the `tateNormalForm` coefficients `a₁ = 1 − c`,
+`a₂ = a₃ = −b`, `a₄ = a₆ = 0`), the elimination
+`Res_c(G₂₅, D₀) = b^90 · Q(b)` holds with
+
+  `Q = b^10 − 15414960·b^9 + 25150431265·b^8 + 11220127490·b^7`
+  `    + 1814562900·b^6 + 102239539·b^5 − 4294195·b^4 − 826695·b^3`
+  `    − 37795·b^2 − 600·b − 1`,
+
+and `Q` is IRREDUCIBLE over `ℚ`.  Being monic with constant term `−1`,
+the rational-root theorem alone already excludes every rational root.  So
+`G₂₅(b, c) = 0` with `b ≠ 0` forces `Δ ≠ 0`.  (Two cross-checks that this
+`G₂₅` is the file's own, both from the same `normEDS` run: `w₅` came out
+as `b⁸(b − c)`, matching `eval_five`, and `G₂₅` of bidegree `(25, 38)`,
+matching `eval_twentyFive`.)
+
+Discharging that inside Lean needs a bivariate elimination certificate
+`A·G₂₅ + B·D₀ = b^90·Q(b)` whose cofactors are of the size of `G₂₅`
+itself (`234` terms, degree `38` in `c`), which is not a reasonable
+object to write, and the resulting leaf would carry no modular content.
+Hence the hypothesis.  **A successor wanting the general form has
+everything it needs above** — which is the only reason the certificate
+data is recorded rather than discarded. -/
 structure IsX1TwentyFiveDatum where
   /-- the rational points `X_1(25)(ℚ)` -/
   Pt : Type
@@ -27196,32 +27242,118 @@ structure IsX1TwentyFiveDatum where
   /-- the `10` rational cusps are distinct -/
   cusp_injective : Function.Injective cusp
   /-- **the moduli dictionary**: a nondegenerate rational point of the
-  plane model `G₂₅ = 0` is a non-cuspidal rational point of `X_1(25)` -/
-  exists_notCusp_of_plane : ∀ b c : ℚ, x1Poly25 b c = 0 → b ≠ 0 → b - c ≠ 0 →
+  plane model `G₂₅ = 0` is a non-cuspidal rational point of `X_1(25)`.
+
+  See the NON-DEGENERACY AUDIT in the structure docstring for why the
+  `IsElliptic` hypothesis is carried here rather than derived. -/
+  exists_notCusp_of_plane : ∀ b c : ℚ,
+    ∀ _ : (WeierstrassCurve.tateNormalForm b c).IsElliptic,
+    x1Poly25 b c = 0 → b ≠ 0 → b - c ≠ 0 →
     ∃ p : Pt, ∀ i, p ≠ cusp i
 
 /-- **Mazur 1977, Thm 8 for `X_1(25)`, as the counting datum above**
-(sorry node — NEW 2026-07-27, the modular half of the level-`25` leaf).
+(PROVEN 2026-07-27 over the new `Γ₁` layer
+`Fermat/FLT/ModularCurve/X1.lean`; it was a sorry node from its creation
+earlier the same day).
 
 Everything mathematical in `WeierstrassCurve.x1TwentyFive_plane_ne_zero`
 is here; what remains there is `11 > 10`.  See `IsX1TwentyFiveDatum` for
-the four inputs, the pinning audit, and the reconciliation note against
-`Fermat/FLT/ModularCurve/X0.lean`.
+the four fields, the pinning audit and the non-degeneracy audit.
 
-MISSING MACHINERY, in dependency order — the pin has NONE of it, and this
-is the honest reason the node is open rather than hard:
-1. the modular curve `X_1(N)` as a coarse moduli space over `ℤ[1/N]`,
-   with its cusps (`X0.lean` builds the `Γ₀` analogue only);
-2. Jacobians of curves of genus `> 1` over `ℚ`, and Abel–Jacobi;
-3. Mordell–Weil, plus `L`-functions of modular abelian varieties and
-   Kolyvagin–Logachev, to get `rank J_1(25)(ℚ) = 0`;
-4. the formal group of an abelian scheme, for injectivity of reduction.
+**WHAT THIS PROOF IS.**  Two steps, and neither is modular:
 
-Items 2–4 are shared verbatim with `hasRankZeroJacobian_of_kenkuLevel`
-and `card_le_of_rankZeroJacobian` in `X0.lean`; only item 1 is specific
-to `Γ_1`. -/
-theorem exists_isX1TwentyFiveDatum : Nonempty IsX1TwentyFiveDatum :=
-  sorry
+1. `Fermat.exists_cuspidalCountingDatum_twentyFive` supplies the whole
+   `Γ₁` layer with the schemes already eliminated — two bare types, the
+   reduction, the `10` cusps, and the rule turning an elliptic curve over
+   `ℚ` with a rational point of order `25` into a non-cuspidal point.
+   The four components map one-for-one onto this structure's fields.
+2. The moduli dictionary is then the TORSION dictionary of this file:
+   the origin `(0, 0)` of `tateNormalForm b c` has order exactly `25`
+   whenever `G₂₅(b, c) = 0` with `b ≠ 0` and `b ≠ c`.  That is proved
+   below from `eval_twentyFive` and `eval_five` alone, with no new input
+   — order divides `25` because `w₂₅ = 0`; it is not `1` because the
+   origin is an affine point; and it is not `5` because `w₅ = b⁸(b − c)`
+   does not vanish off the two loci.
+
+**WHERE THE MISSING MACHINERY WENT** — the four items the previous
+version of this docstring listed, with the accounting corrected:
+
+1. `X_1(N)` as a coarse moduli space with cusps — now
+   `Fermat.IsCoarseModuliY1` / `Fermat.IsX1Compactification`, WRITTEN;
+   the two open pieces are `Fermat.exists_x1Compactification` and
+   `Fermat.exists_rationalCuspsX1`, and the latter needs only the EASY
+   half of Ogg's cusp description (a lower bound on the rational cusps
+   suffices).
+2–4. Jacobians with Abel–Jacobi, Mordell–Weil with
+   Kolyvagin–Logachev, and the formal group of an abelian scheme are
+   shared verbatim with `X0.lean` — and the sharing is now MECHANICAL
+   rather than asserted: `Fermat.HasRankZeroJacobian` is used
+   unchanged, so `Fermat.hasRankZeroJacobian_x1TwentyFive` and
+   `hasRankZeroJacobian_of_kenkuLevel` are statements in the same
+   vocabulary, and
+   `Fermat.exists_injective_reduction_of_rankZeroJacobian` is the
+   injective form of `card_le_of_rankZeroJacobian`.  Nothing in
+   `X0.lean` was edited — it has several concurrent owners.
+
+**CORRECTION to the level-`25` budget, and it changes where to dispatch.**
+That list presented `#X_1(25)(𝔽_3) = 10` as a peer of `rank J_1(25) = 0`.
+It is not: the count equals `φ(25)/2`, the cusp count, so its content is
+"no `(E, P)/𝔽_3` with `P` of order `25`", and `#E(𝔽_3) ≤ 2·3 + 1 = 7 < 25`
+settles that with no Hasse and no Eichler–Shimura.  Essentially the whole
+weight of level `25` is `Fermat.hasRankZeroJacobian_x1TwentyFive`. -/
+theorem exists_isX1TwentyFiveDatum : Nonempty IsX1TwentyFiveDatum := by
+  obtain ⟨Pt, PtF3, red, cusp, hred, hcard, hcinj, hmod⟩ :=
+    Fermat.exists_cuspidalCountingDatum_twentyFive
+  refine ⟨{ Pt := Pt, PtF3 := PtF3, red := red, red_injective := hred,
+            card_ptF3 := hcard, cusp := cusp, cusp_injective := hcinj,
+            exists_notCusp_of_plane := ?_ }⟩
+  intro b c hell hG hb hbc
+  haveI := hell
+  -- The origin is a nonsingular point of the whole Tate family as soon as
+  -- `b ≠ 0`; this is the converse of `b_ne_zero`, and `nonsingular_zero`
+  -- makes the two directions the same computation.
+  have h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0 := by
+    rw [WeierstrassCurve.tateNormalForm, Affine.nonsingular_zero]
+    exact ⟨rfl, Or.inl (by simpa using hb)⟩
+  -- `w₂₅ = b²⁰⁸(b − c)·G₂₅` and `G₂₅(b, c) = 0`, so the level value vanishes.
+  have hw25 : ((WeierstrassCurve.tateNormalForm b c).preΨ' 25).eval 0 = 0 := by
+    rw [MazurX1Plane.eval_twentyFive, hG]; ring
+  -- Hence the order of the origin divides `25`.
+  have hdvd : addOrderOf (Affine.Point.some 0 0 h00) ∣ 25 := by
+    have hz : ((25 : ℕ) : ℤ) • (Affine.Point.some 0 0 h00) = 0 :=
+      (MazurX1Plane.zsmul_eq_zero_iff _ h00 (by norm_num)).mpr
+        (MazurX1Plane.eval_ΨSq_of_preΨ' _ _ 25 hw25)
+    rw [natCast_zsmul] at hz
+    exact addOrderOf_dvd_of_nsmul_eq_zero hz
+  -- It is not `1`: the origin is an affine point, not the point at infinity.
+  have hne1 : addOrderOf (Affine.Point.some 0 0 h00) ≠ 1 := by
+    intro h1
+    have hz1 : (1 : ℕ) • (Affine.Point.some 0 0 h00) = 0 := by
+      rw [← h1]; exact addOrderOf_nsmul_eq_zero _
+    rw [one_nsmul] at hz1
+    exact Affine.Point.some_ne_zero h00 hz1
+  -- It is not `5`: order `5` forces `w₅ = b⁸(b − c) = 0`, which both side
+  -- conditions exclude.  This is the step that makes `b ≠ c` load-bearing.
+  have hne5 : addOrderOf (Affine.Point.some 0 0 h00) ≠ 5 := by
+    intro h5
+    have hz : ((5 : ℕ) : ℤ) • (Affine.Point.some 0 0 h00) = 0 := by
+      rw [natCast_zsmul, ← h5]; exact addOrderOf_nsmul_eq_zero _
+    have hΨ := (MazurX1Plane.zsmul_eq_zero_iff _ h00 (by norm_num)).mp hz
+    rw [MazurX1Plane.eval_ΨSq_odd _ _ 5 (by decide)] at hΨ
+    have h5z : ((WeierstrassCurve.tateNormalForm b c).preΨ' 5).eval 0 = 0 :=
+      pow_eq_zero_iff two_ne_zero |>.mp hΨ
+    rw [MazurX1Plane.eval_five] at h5z
+    rcases mul_eq_zero.mp h5z with h | h
+    · exact hb (pow_eq_zero_iff (n := 8) (by norm_num) |>.mp h)
+    · exact hbc h
+  -- The divisors of `25` are `1`, `5`, `25`, so the order is exactly `25`.
+  have hcases : ∀ d ∈ Nat.divisors 25, d = 1 ∨ d = 5 ∨ d = 25 := by decide
+  have h25 : addOrderOf (Affine.Point.some 0 0 h00) = 25 := by
+    rcases hcases _ (Nat.mem_divisors.mpr ⟨hdvd, by norm_num⟩) with h | h | h
+    · exact absurd h hne1
+    · exact absurd h hne5
+    · exact h
+  exact hmod (WeierstrassCurve.tateNormalForm b c) hell _ h25
 
 end MazurX1Plane
 
@@ -27289,7 +27421,7 @@ theorem WeierstrassCurve.x1TwentyFive_plane_ne_zero (b c : ℚ)
     (hbc : b - c ≠ 0) : MazurX1Plane.x1Poly25 b c ≠ 0 := by
   intro hG
   obtain ⟨M⟩ := MazurX1Plane.exists_isX1TwentyFiveDatum
-  obtain ⟨p, hp⟩ := M.exists_notCusp_of_plane b c hG hb hbc
+  obtain ⟨p, hp⟩ := M.exists_notCusp_of_plane b c inferInstance hG hb hbc
   have hfin3 : Finite M.PtF3 := Nat.finite_of_card_ne_zero (by rw [M.card_ptF3]; norm_num)
   have hfinPt : Finite M.Pt := Finite.of_injective M.red M.red_injective
   have hinj : Function.Injective (fun o : Option (Fin 10) => o.elim p M.cusp) := by
