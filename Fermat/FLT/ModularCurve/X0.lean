@@ -19653,10 +19653,168 @@ theorem finite_relPoint_of_x0Compactification_finiteField (N ℓ : ℕ) (hℓ : 
   haveI := h.isProper
   exact finite_relPoint_of_isProper (R := ZMod ℓ) strX (𝟙 (SpecF ℓ))
 
+/-! ### The Eichler–Shimura input, as ONE named interface
+
+`IsX0EichlerShimura` below is the single unproven input this file takes
+from the cohomology of `X_0(N)` in characteristic `ℓ`.  It is stated
+ONCE, as a structure, rather than spread over the several leaves that
+consume it, because those consumers are the SAME theorem —
+Grothendieck–Lefschetz for the smooth proper curve `X_0(N)_{𝔽_ℓ}`
+together with the Eichler–Shimura relation on `H¹` — read off at two
+different places:
+
+* the CURVE count `#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(Frob ∣ H¹)`, and
+* the JACOBIAN count `#J_0(N)(𝔽_ℓ) = det(1 − Frob ∣ H¹)`.
+
+Eichler–Shimura says the Frobenius eigenvalues on `H¹` pair up as
+`α_i, β_i` with `α_i + β_i = a_i` and `α_i β_i = ℓ`, the `a_i` being the
+eigenvalues of `T_ℓ` on `S_2(Γ_0(N))`.  Hence
+
+    Tr(Frob ∣ H¹) = Σ a_i                = Tr(T_ℓ ∣ S_2(Γ_0(N)))
+    det(1 − Frob) = ∏ (1 − α_i)(1 − β_i) = ∏ (ℓ + 1 − a_i)
+                  = det((ℓ + 1)·1 − T_ℓ ∣ S_2(Γ_0(N))),
+
+which is why BOTH counts can be stated in the honest objects
+`CuspForm (Gamma0GL N) 2` and `heckeOp N ℓ`, with **no `H¹` and no
+étale cohomology appearing in the statement at all**, and in particular
+with no `opaque` constant anywhere.
+
+Two remarks on why the fields are stated this way rather than through a
+`(H, frob)` datum.  First, `LinearMap.det` and `LinearMap.trace` are
+TOTAL, so neither field needs `Module.Finite ℂ (CuspForm …)` — true, by
+`cuspForm_finiteDimensional`, but living downstream in
+`Modularity/Interface.lean` — as a side condition of the STATEMENT; a
+proof will of course need it, and that is the proof's business, not the
+seam's.  Second, carrying `H¹` as an abstract finite-dimensional
+`(H, frob)` and splitting off "Lefschetz" as a separate leaf would be
+VACUOUS: the two count fields pin only `Tr frob` and `det (1 − frob)`,
+and for any prescribed pair of values a two-dimensional `H` with a
+suitable `frob` exists, so the split-off leaf would be discharged by a
+junk witness and the whole content would silently migrate into the other
+half.  The honest cut is therefore the one taken here — one interface,
+one existence leaf.
+
+**Both formulas were re-verified numerically on 2026-07-27** with
+PARI/GP (`mfinit([N,2],1)`, `mfheckemat`, `charpoly`), independently of
+the Magma runs banked elsewhere in this file:
+
+* the trace column reproduces all ELEVEN rows of `x0WitnessTable` as
+  `Tr T_ℓ = ℓ + 1 − m`, i.e. `−2, −2, 0, 10, 0, 0, 2, 4, 0, 0, 2` at
+  `(20,3), (24,5), (28,5), (30,17), (35,3), (36,5), (39,5), (42,11),
+  (50,3), (65,3), (91,5)`, with cuspidal dimensions
+  `1, 1, 2, 3, 3, 1, 3, 5, 2, 5, 7`;
+* the determinant column reproduces every `#J_0(N)(𝔽_ℓ)` banked under
+  `exists_sharpSievePrime_classCount` and `y0HasNoRationalPoint_*`:
+  `21, 63, 63, 84` at `N = 26`, `ℓ = 3, 5, 7, 11`; and
+  `512, 972, 6144, 28160` at `(45,7), (54,5), (63,5), (75,7)`, with
+  `4096, 6561, 135168, 409600` at the auxiliary primes `19, 7, 11, 11`.
+
+So the Jacobian field is not speculative packaging: it is exactly the
+identity those docstrings already write informally as
+`#J_0(75)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(75)))`, now available as a
+theorem rather than as prose.  **Consumers that need `#J_0(N)(𝔽_ℓ)` —
+`exists_sharpSievePrime_classCount` in particular, whose irreducibility
+verdict names "`#J_0(N)(𝔽_ℓ)` from Eichler–Shimura" as its first missing
+input — should take it from `IsX0EichlerShimura.card_jacobian` rather
+than open a second Eichler–Shimura leaf of their own.**
+
+**Why quantifying over compactifications is safe**, the same reason as
+for `exists_rationalCusps`: `IsX0Compactification` pins `(X, Y, j)` up
+to isomorphism and both `RelPoint strX (𝟙 (SpecF ℓ))` and
+`RelPoint jstr (𝟙 (SpecF ℓ))` are isomorphism invariants, so neither
+count depends on which model is supplied; non-vacuity is
+`exists_x0Compactification_finiteField`.  The Jacobian field likewise
+quantifies over every `IsJacobianOf strX ab o`, which is safe because
+the Jacobian is unique up to isomorphism (`IsJacobianOf.universal`).
+
+Sanity at genus `0` (not a case any consumer uses, but it is what makes
+the two fields consistent rather than accidentally strong): there
+`S_2(Γ_0(N)) = 0`, so `Tr T_ℓ = 0` and the empty determinant is `1`,
+giving `#X = ℓ + 1` and `#J = 1` — the point counts of `ℙ¹` and of the
+trivial abelian variety. -/
+
+/-- **The Eichler–Shimura point counts for `X_0(N)` over `𝔽_ℓ`** — the
+ONE named interface this file takes from the cohomology of the special
+fibre.  See the section docstring above for the derivation of both
+fields from `#X = ℓ + 1 − Tr(Frob ∣ H¹)` and `#J = det(1 − Frob ∣ H¹)`
+through the Eichler–Shimura relation, for why no `H¹` datum is carried,
+and for the numerical verification of both columns. -/
+structure IsX0EichlerShimura (N ℓ : ℕ) {X : Scheme.{0}}
+    (strX : X ⟶ SpecF ℓ) : Prop where
+  /-- **The curve count**: `#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`. -/
+  card_curve : ((Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) : ℕ) : ℂ) = (ℓ : ℂ) + 1 -
+    LinearMap.trace ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+      (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+  /-- **The Jacobian count**:
+  `#J_0(N)(𝔽_ℓ) = det((ℓ + 1)·1 − T_ℓ ∣ S_2(Γ_0(N)))`. -/
+  card_jacobian : ∀ {J : Scheme.{0}} {jstr : J ⟶ SpecF ℓ}
+      {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 (SpecF ℓ))},
+      IsJacobianOf strX ab o →
+      ((Nat.card (RelPoint jstr (𝟙 (SpecF ℓ))) : ℕ) : ℂ) =
+        LinearMap.det (((ℓ : ℂ) + 1) • (1 : Module.End ℂ
+            (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2))
+          - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+
+/-- **The Eichler–Shimura input exists at every good prime** (sorry leaf
+— THE cohomological input of this file, and after 2026-07-27 the only
+one; everything the point-count cluster used to take from
+Eichler–Shimura now factors through it).
+
+TRUE, and classical: Deligne–Rapoport gives `X_0(N)` a smooth proper
+model over `ℤ[1/N]`, so at `ℓ ∤ N` the special fibre is a smooth proper
+geometrically connected curve over `𝔽_ℓ`; Grothendieck–Lefschetz counts
+its points and those of its Jacobian by the two formulas above; and the
+Eichler–Shimura congruence relation `Frob + ℓ·Frob^∨ = T_ℓ` on
+`J_0(N)_{𝔽_ℓ}` identifies the characteristic polynomial of Frobenius on
+`H¹` with the `ℓ`-Weil transform of that of `T_ℓ` on `S_2(Γ_0(N))`.
+Diamond–Shurman ch. 8 (8.7.2 for the congruence relation, 8.8 for the
+consequences); Deligne–Rapoport for the model.
+
+**WHAT IS MISSING, stated so it can be checked rather than believed.**
+Three theories, none of which exists in this project, in `Mathlib` at
+our pin, or in `~/cs/FLT` (checked 2026-07-27 by grep over all three:
+`~/cs/FLT` has Hecke operators only for automorphic forms on quaternion
+algebras, nothing on `H¹` of a modular curve):
+
+1. **Étale cohomology of curves**, or any substitute giving a
+   `2g`-dimensional `H¹` with a Frobenius action.  This is the largest
+   of the three and nothing here approximates it.
+2. **The Grothendieck–Lefschetz trace formula** for a smooth proper
+   curve over a finite field, together with `#A(𝔽_ℓ) = det(1 − Frob)`
+   for an abelian variety.  Note this half is MODULAR-CURVE-FREE and is
+   worth stating separately if it is ever built.
+3. **The Eichler–Shimura congruence relation** itself, which needs the
+   moduli interpretation of Frobenius on the special fibre — i.e. that
+   the two degeneracy maps `X_0(Nℓ) ⇉ X_0(N)` reduce to Frobenius and
+   its transpose.  This one genuinely needs the integral model, so it
+   is downstream of the same Deligne–Rapoport input as
+   `exists_isCoarseModuliY0_isSmoothCurve_field`.
+
+**AXES SEARCHED** (an irreducibility verdict is only as wide as its
+axis).  *Theory axis*: the three items above, in all three source trees.
+*Module axis*: the cycle
+`Interface → ModThree → MazurTorsion → X0` that used to make `heckeOp`
+unstateable here is BROKEN — `Gamma0GL`/`heckeOp` now live in
+`Fermat/FLT/Modularity/HeckeOperator.lean`, which this file imports — so
+the obstruction is no longer where an earlier audit put it.
+*Cut axis*: splitting off an abstract `(H, frob)` datum was tried and
+REJECTED as vacuous; see the section docstring for the two-dimensional
+junk witness that discharges it.  **NOT searched**: whether a
+`p`-divisible-group or a crystalline substitute for `H¹` could carry
+these two counts with less machinery than étale cohomology. -/
+theorem exists_isX0EichlerShimura (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X}
+    (_h : IsX0Compactification N strX strY j) :
+    IsX0EichlerShimura N ℓ strX :=
+  sorry
+
 /-- **Eichler–Shimura / Lefschetz: the point count of the special fibre
-is `ℓ + 1 − Tr(T_ℓ ∣ S₂(Γ₀(N)))`** (sorry node — the GEOMETRIC half of
-the point count, split off 2026-07-27; this docstring is the cluster's
-route audit and is kept here in full).
+is `ℓ + 1 − Tr(T_ℓ ∣ S₂(Γ₀(N)))`** (PROVEN 2026-07-27 — it is the
+`card_curve` field of `IsX0EichlerShimura`, the interface introduced
+just above; this docstring is the cluster's route audit and is kept here
+in full).
 
 TRUE.  `#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`, and the seven `m`
 of `x0WitnessTable` are that formula evaluated.  **Recomputed
@@ -19756,24 +19914,38 @@ against.
 The two leaves are `card_relPoint_x0_eichlerShimura` (the geometry: the
 Lefschetz trace formula for Frobenius on `X₀(N)_{𝔽_ℓ}` together with the
 Eichler–Shimura relation identifying `Frob_ℓ + Frob_ℓ^∨` with `T_ℓ` on
-`H¹`) and `traceHeckeOp_of_x0WitnessTable` (the arithmetic: the seven
+`H¹`) and `traceHeckeOp_of_x0WitnessTable` (the arithmetic: the eleven
 banked trace values).  Neither is stated in `ℤ`: the trace of `heckeOp`
 is a COMPLEX number by construction, and casting the count into `ℂ`
 avoids importing the integrality of the Hecke action as a silent side
 condition of the cut.  Integrality is a real theorem and belongs to
-whoever proves the first leaf, not to the seam between them. -/
-theorem card_relPoint_x0_eichlerShimura (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N)
+whoever proves the first leaf, not to the seam between them.
+
+**UPDATE, LATER ON 2026-07-27 — THE GEOMETRIC HALF IS NO LONGER A LEAF.**
+It is now the `card_curve` field of `IsX0EichlerShimura` (the section
+immediately above), and this theorem is a projection out of
+`exists_isX0EichlerShimura`.  The reason for the move is not
+bookkeeping: the SAME cohomological input also supplies
+`#J_0(N)(𝔽_ℓ) = det((ℓ + 1)·1 − T_ℓ ∣ S_2(Γ_0(N)))`, which
+`exists_sharpSievePrime_classCount` names as its first missing input,
+and having two leaves assert one theorem is how a development ends up
+proving it twice.  The audit above is retained because its module
+analysis is what produced the `HeckeOperator.lean` hoist, and because
+its "AXIS SEARCHED / NOT searched" note is still the right map of what
+remains — but the remaining work now lives on
+`exists_isX0EichlerShimura`, not here. -/
+theorem card_relPoint_x0_eichlerShimura (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X}
-    (_h : IsX0Compactification N strX strY j) :
+    (h : IsX0Compactification N strX strY j) :
     ((Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) : ℕ) : ℂ) = (ℓ : ℂ) + 1 -
       LinearMap.trace ℂ
         (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
         (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) :=
-  sorry
+  (exists_isX0EichlerShimura N ℓ hN hℓ hℓN h).card_curve
 
-/-- **The seven banked Hecke traces** (sorry node — the arithmetic half of
-the point count, split off 2026-07-27).
+/-- **The eleven banked Hecke traces** (sorry node — the arithmetic half
+of the point count, split off 2026-07-27).
 
 `Tr(T_ℓ ∣ S₂(Γ₀(N)))` at the rows of `x0WitnessTable`, read off the table
 in the docstring of `card_relPoint_x0_finiteField`: the value is
@@ -19782,20 +19954,78 @@ independently with Magma (`CuspForms(Gamma0(N), 2)`,
 `Trace(HeckeOperator(S, ℓ))`) and, for the two rows added on 2026-07-27,
 with PARI/GP from the trace form of the cuspidal space.
 
+**RE-VERIFIED, ALL ELEVEN ROWS, 2026-07-27** with PARI/GP
+(`mf = mfinit([N,2],1); trace(mfheckemat(mf,ℓ))`) — a third independent
+computation, and it reproduces the table exactly.  `(N, ℓ)`, cuspidal
+dimension, `Tr T_ℓ`, `ℓ + 1 − Tr T_ℓ`:
+
+    (20,3)  1  −2   6      (36,5)  1   0   6
+    (24,5)  1  −2   8      (39,5)  3   2   4
+    (28,5)  2   0   6      (42,11) 5   4   8
+    (30,17) 3  10   8      (50,3)  2   0   4
+    (35,3)  3   0   4      (65,3)  5   0   4
+                           (91,5)  7   2   4
+
+The dimension column is worth recording because it is what a proof will
+have to produce first, and because it matches `x0Genus` at every row —
+the genus of `X_0(N)` and `dim_ℂ S₂(Γ₀(N))` are the same number, and
+`x0Genus` is already `decide`-computable in this file.
+
 WHAT MAKES THIS PROVABLE AT ALL, rather than an equation in an opaque
 constant: `heckeOp N ℓ` is pinned to the Hecke slash-sum by
 `heckeOp_coe`, and `S₂(Γ₀(N))` is finite-dimensional
 (`exists_cuspForm_sturm_bound` / `cuspForm_finiteDimensional`, in
 `Interface.lean`), so its trace is the trace of a matrix in an explicit
 basis.  The route is Eichler–Selberg, or a `q`-expansion basis at each of
-the seven levels — a FINITE computation at genus `1`–`5`, which is why
+the eleven levels — a FINITE computation at genus `1`–`7`, which is why
 this half is arithmetic rather than geometric.
 
 NOTE the finite-dimensionality lemmas named above live DOWNSTREAM of this
 module (they stayed in `Interface.lean`, only `Gamma0GL`/`heckeOp` were
 hoisted).  Whoever proves this leaf will most likely have to hoist the
 Sturm-bound block as well, by the same verbatim-move recipe; that is a
-known, bounded cost and not a new obstruction. -/
+known, bounded cost and not a new obstruction.
+
+**AUDIT, 2026-07-27 — WHICH AXES HAVE BEEN SEARCHED, AND ONE THAT LOOKS
+CHEAPER THAN IT IS.**
+
+*Faithfulness*: settled affirmatively, all eleven rows, by the PARI/GP
+run above.  In particular the leaf is NOT vacuous through
+`LinearMap.trace`'s junk branch: `trace` returns `0` on a module with no
+finite basis, and the asserted values include four nonzero ones
+(`−2, −2, 10, 4, 2, 2`), so the statement genuinely forces
+finite-dimensionality rather than being satisfied by it.
+
+*The hoist axis* is the one the paragraph above describes and it is
+still the right route, but the cost is larger than "the Sturm-bound
+block": `exists_cuspForm_sturm_bound` runs through `qCoeff`, `qCoeffL`,
+`ModularForm.norm`, `sturm_bound_levelOne` and
+`SlashInvariantForm.quotientFunc`, so the verbatim move is the whole
+`q`-expansion layer of `Interface.lean`, not a few declarations.  **And
+it closes nothing by itself** — with `cuspForm_finiteDimensional` in
+scope one still needs an explicit basis of `S₂(Γ₀(N))` at eleven levels
+up to genus `7` and the matrix of `T_ℓ` in it.  So the hoist is
+necessary, not sufficient, and should be done by whoever is actually
+going to do the computation.
+
+*The geometric axis is REAL but not cheaper.*  Given
+`IsX0EichlerShimura` (above), this leaf is EQUIVALENT to
+`#X_0(N)(𝔽_ℓ) = m` at the eleven rows — i.e. to
+`card_relPoint_x0_finiteField`, which is currently derived FROM it.  So
+anyone who can count the points of the explicit reduction directly
+closes this leaf for free, and that is the axis an earlier audit
+recorded as "NOT searched".  It was searched on 2026-07-27 and it is not
+the cheap way in: the statement quantifies over every
+`IsX0Compactification`, so the direct count would first have to produce
+the plane model and identify it with the coarse space — machinery this
+project does not have either, and strictly more than the `q`-expansion
+layer, which at least exists.  Recorded so the next owner does not
+re-open it hoping for a shortcut.
+
+*NOT searched*: whether Eichler–Selberg for weight `2` and squarefree
+level admits a formalisable proof shorter than the `q`-expansion route.
+It would close all eleven rows at once and is the only candidate for a
+uniform argument. -/
 theorem traceHeckeOp_of_x0WitnessTable {N ℓ m : ℕ}
     (_htable : (N, ℓ, m) ∈ x0WitnessTable) :
     LinearMap.trace ℂ
@@ -19805,7 +20035,7 @@ theorem traceHeckeOp_of_x0WitnessTable {N ℓ m : ℕ}
   sorry
 
 /-- **Eichler–Shimura: the special fibre has exactly `m` rational
-points, at the seven witness rows** (PROVEN 2026-07-27 by decomposition,
+points, at the eleven witness rows** (PROVEN 2026-07-27 by decomposition,
 once the module cycle below was broken).
 
 The assembly is pure bookkeeping: the geometric leaf gives the count as
