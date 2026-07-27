@@ -142,11 +142,33 @@ kernels, all of which behave in characteristic `p`.
 
 ## Open leaves left by this file
 
-`IsRationalMap.add` and `Isogeny.isRationalMap_dualHom`. Those TWO are the whole
-remaining frontier of this module; the list is stated from the file's actual
-sorry set at 2026-07-27, not inherited from either side of a merge.
+`IsRationalMap.add_self`, `IsRationalMap.add_of_x_ne` and
+`Isogeny.isRationalMap_dualHom`. Those THREE are the whole remaining frontier of
+this module; the list is stated from the file's actual sorry set at 2026-07-27,
+not inherited from either side of a merge. **They are mutually independent and
+separately ownable.**
 
-**`IsRationalMap.isIsogeny` was on this list and is now PROVEN and axiom-clean**
+**`IsRationalMap.add` is PROVEN** (2026-07-27) as an assembly, and so is
+`IsRationalMap.add_of_ne`. What is left of the sum is exactly two geometric
+atoms:
+
+* `IsRationalMap.add_self` — the DOUBLING branch (`φ = ψ`). With
+  `IsRationalMap.comp` proven this is equivalent to "`[2]` on `W'` is a rational
+  map", since `(mulByHom W' 2).comp φ = φ + φ`; read its docstring before
+  choosing a route, and in particular the caveat about `[W'.IsElliptic]`, which
+  the statement deliberately does NOT assume.
+* `IsRationalMap.add_of_x_ne` — the CHORD branch with the degenerate case
+  already excluded by the hypothesis `A₂B₁ - A₁B₂ ≠ 0`. Its crux is Step 3
+  (`U = 0`), not the branch analysis.
+
+`IsRationalMap.isIsogeny` was on this list and is now PROVEN and axiom-clean, as
+are the two halves it was split into for ordering reasons —
+`IsRationalMap.finite_ker` and `IsRationalMap.surjective`, which live in the
+*Consequences of divisibility* section so that they are available BEFORE
+`IsIsogeny` is defined. `IsRationalMap.add_of_ne` needs `finite_ker` and would
+otherwise be blocked purely by declaration order.
+
+**`IsRationalMap.isIsogeny` is PROVEN and axiom-clean**
 (2026-07-27), so `IsIsogeny.add` is now open only through `IsRationalMap.add`.
 Its proof rests on four new helpers collected under *Consequences of
 divisibility* below — `exists_point_veluPointX_eq`,
@@ -931,6 +953,316 @@ theorem eq_zero_of_constX [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.P
   simp only [Polynomial.eval_mul, Polynomial.eval_C] at hx
   exact mul_right_cancel₀ hBP hx
 
+/-- **`W.Point` is not the union of two proper subgroups plus a finite set.**
+
+If `φ P` and `ψ P` agree UP TO SIGN at all but finitely many `P`, then they agree
+up to sign identically: `φ = ψ` or `φ + ψ = 0`. Equivalently, the two subgroups
+`ker (φ - ψ)` and `ker (φ + ψ)` cannot cover `W.Point` off a finite set unless one
+of them is everything.
+
+This is Step 1 of the chord branch of `IsRationalMap.add`, where it rules out the
+degenerate case `A₂B₁ - A₁B₂ = 0` — i.e. `x ∘ φ` and `x ∘ ψ` being the SAME
+rational function, which is the one case technique 1 of the module docstring
+cannot absorb.
+
+The proof has three cases, and only the third is the classical covering argument.
+If `ker (φ - ψ)` is finite then the complement of `ker (φ + ψ)` is finite, so
+`φ + ψ` has finite image and is zero by `eq_zero_of_finite_range`; symmetrically
+with the roles swapped. Otherwise pick `a` outside `ker (φ - ψ)` and off the
+exceptional set — so `a ∈ ker (φ + ψ)` — and note that for every `b` outside
+`ker (φ + ψ)` and off the exceptional set (an INFINITE supply, since a finite
+complement would again force `φ + ψ = 0`) the sum `a + b` lies in neither
+subgroup, hence in the finite exceptional set. Translation by `a` is injective, so
+that is an injection of an infinite set into a finite one. -/
+theorem eq_or_add_eq_zero_of_finite_compl [IsAlgClosed F] [W.IsElliptic]
+    {φ ψ : W.Point →+ W'.Point}
+    (hfin : {P : W.Point | φ P ≠ ψ P ∧ φ P ≠ -(ψ P)}.Finite) :
+    φ = ψ ∨ φ + ψ = 0 := by
+  classical
+  set T : Set W.Point := {P : W.Point | φ P ≠ ψ P ∧ φ P ≠ -(ψ P)} with hTdef
+  set Sp : Set W.Point := {P : W.Point | φ P = ψ P} with hSpdef
+  set Sm : Set W.Point := {P : W.Point | φ P = -(ψ P)} with hSmdef
+  have hSpk : ∀ P : W.Point, P ∈ Sp ↔ (φ - ψ) P = 0 := by
+    intro P; simp [hSpdef, sub_eq_zero]
+  have hSmk : ∀ P : W.Point, P ∈ Sm ↔ (φ + ψ) P = 0 := by
+    intro P
+    simp only [hSmdef, Set.mem_setOf_eq, AddMonoidHom.add_apply]
+    constructor
+    · intro h; rw [h]; exact neg_add_cancel _
+    · intro h; exact eq_neg_of_add_eq_zero_left h
+  have hout_p : (Set.range (φ - ψ)).Finite → φ = ψ := by
+    intro hf
+    have h := eq_zero_of_finite_range (W := W) (φ := φ - ψ) hf
+    exact sub_eq_zero.1 h
+  have hout_m : (Set.range (φ + ψ)).Finite → φ + ψ = 0 := fun hf =>
+    eq_zero_of_finite_range (W := W) (φ := φ + ψ) hf
+  have hcase_m : (Smᶜ).Finite → φ + ψ = 0 := by
+    intro hf
+    refine hout_m (Set.Finite.subset ((hf.image (φ + ψ)).insert 0) ?_)
+    rintro _ ⟨P, rfl⟩
+    by_cases hP : P ∈ Sm
+    · exact Set.mem_insert_iff.2 (Or.inl ((hSmk P).1 hP))
+    · exact Set.mem_insert_iff.2 (Or.inr ⟨P, hP, rfl⟩)
+  have hcase_p : (Spᶜ).Finite → φ = ψ := by
+    intro hf
+    refine hout_p (Set.Finite.subset ((hf.image (φ - ψ)).insert 0) ?_)
+    rintro _ ⟨P, rfl⟩
+    by_cases hP : P ∈ Sp
+    · exact Set.mem_insert_iff.2 (Or.inl ((hSpk P).1 hP))
+    · exact Set.mem_insert_iff.2 (Or.inr ⟨P, hP, rfl⟩)
+  have hcov_p : Spᶜ \ T ⊆ Sm := by
+    intro P hP
+    by_contra hc
+    exact hP.2 ⟨hP.1, hc⟩
+  have hcov_m : Smᶜ \ T ⊆ Sp := by
+    intro P hP
+    by_contra hc
+    exact hP.2 ⟨hc, hP.1⟩
+  by_cases hSpfin : Sp.Finite
+  · refine Or.inr (hcase_m (Set.Finite.subset (hSpfin.union hfin) ?_))
+    intro P hP
+    by_cases hc : P ∈ Sp
+    · exact Set.mem_union_left _ hc
+    · exact Set.mem_union_right _ ⟨hc, hP⟩
+  by_cases hSmfin : Sm.Finite
+  · refine Or.inl (hcase_p (Set.Finite.subset (hSmfin.union hfin) ?_))
+    intro P hP
+    by_cases hc : P ∈ Sm
+    · exact Set.mem_union_left _ hc
+    · exact Set.mem_union_right _ ⟨hP, hc⟩
+  by_cases hp : φ = ψ
+  · exact Or.inl hp
+  by_cases hm : φ + ψ = 0
+  · exact Or.inr hm
+  exfalso
+  have hSpcinf : (Spᶜ).Infinite := fun hf => hp (hcase_p hf)
+  have hSmcinf : (Smᶜ).Infinite := fun hf => hm (hcase_m hf)
+  obtain ⟨a, ha⟩ : (Spᶜ \ T).Nonempty := (hSpcinf.sdiff hfin).nonempty
+  have haSm : a ∈ Sm := hcov_p ha
+  have haSp : a ∉ Sp := ha.1
+  have hXinf : (Smᶜ \ T).Infinite := hSmcinf.sdiff hfin
+  have himg : (fun b : W.Point => a + b) '' (Smᶜ \ T) ⊆ T := by
+    rintro _ ⟨b, hb, rfl⟩
+    have hbSp : b ∈ Sp := hcov_m hb
+    have hbSm : b ∉ Sm := hb.1
+    refine ⟨?_, ?_⟩
+    · intro hc
+      refine haSp ?_
+      have hb' : φ b = ψ b := hbSp
+      have hsum' : φ (a + b) = ψ (a + b) := hc
+      rw [map_add, map_add, hb'] at hsum'
+      exact add_right_cancel hsum'
+    · intro hc
+      refine hbSm ?_
+      have ha' : φ a = -(ψ a) := haSm
+      have hsum' : φ (a + b) = -(ψ (a + b)) := hc
+      rw [map_add, map_add, neg_add, ha'] at hsum'
+      exact add_left_cancel hsum'
+  exact (hXinf.image (Set.injOn_of_injective (add_right_injective a))) (hfin.subset himg)
+
+/-- **The kernel of a nonzero rational map is finite.**
+
+Fix `P₀ ∉ ker φ`. Translating by `k ∈ ker φ` does not move `φ P₀`, so every
+`x (P₀ + k)` is a root of `A - C (x (φ P₀)) · B`. If that polynomial vanishes
+identically then `A / B` is constant and `eq_zero_of_constX` forces `φ = 0`;
+otherwise its root set is finite and `k ↦ P₀ + k` is an injection of `ker φ` into
+`{0} ∪ {P ≠ 0 : x P ∈ roots}`, finite by `finite_veluPointX_preimage`.
+
+Extracted from `IsRationalMap.isIsogeny` so that it is usable EARLIER in the file
+than `IsIsogeny` itself is defined — `IsRationalMap.add_of_ne` needs exactly this
+and nothing else about isogenies. -/
+theorem IsRationalMap.finite_ker [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    (h : IsRationalMap φ) (hφ0 : φ ≠ 0) : (AddMonoidHom.ker φ : Set W.Point).Finite := by
+  classical
+  obtain ⟨A, B, _Cp, _Dp, _Ep, hB, _hE, hcert⟩ := h
+  have hcertx : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) :=
+    fun P hP => (hcert P hP).1
+  obtain ⟨P₀, hP₀⟩ : ∃ P : W.Point, φ P ≠ 0 := by
+    by_contra hcon
+    push Not at hcon
+    exact hφ0 (AddMonoidHom.ext fun P => by simpa using hcon P)
+  by_cases hAc : A = Polynomial.C (veluPointX (φ P₀)) * B
+  · exact absurd (eq_zero_of_constX hB _ hAc hcertx) hφ0
+  have hne : A - Polynomial.C (veluPointX (φ P₀)) * B ≠ 0 := sub_ne_zero.2 hAc
+  have hroots : {t : F | (A - Polynomial.C (veluPointX (φ P₀)) * B).eval t = 0}.Finite :=
+    Polynomial.finite_setOf_isRoot hne
+  have himg : ((fun k : W.Point => P₀ + k) '' (AddMonoidHom.ker φ : Set W.Point)) ⊆
+      insert (0 : W.Point) {P : W.Point | P ≠ 0 ∧ veluPointX P ∈
+        {t : F | (A - Polynomial.C (veluPointX (φ P₀)) * B).eval t = 0}} := by
+    rintro _ ⟨k, hk, rfl⟩
+    by_cases hz : P₀ + k = 0
+    · exact Set.mem_insert_iff.2 (Or.inl hz)
+    refine Set.mem_insert_iff.2 (Or.inr ⟨hz, ?_⟩)
+    have hkk : φ k = 0 := (AddMonoidHom.mem_ker).1 hk
+    have hval : φ (P₀ + k) = φ P₀ := by rw [map_add, hkk, add_zero]
+    have hx := hcertx (P₀ + k) (by rw [hval]; exact hP₀)
+    rw [hval] at hx
+    show (A - Polynomial.C (veluPointX (φ P₀)) * B).eval (veluPointX (P₀ + k)) = 0
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+    linear_combination -hx
+  refine Set.Finite.of_finite_image
+    (Set.Finite.subset ((finite_veluPointX_preimage hroots).insert 0) himg) ?_
+  intro a _ b _ hab
+  exact add_left_cancel hab
+
+/-- **A nonzero rational map is surjective on points.**
+
+Cancel `g = gcd A B` to a COPRIME pair `(A₀, B₀)`, which is nonconstant (else
+`eq_zero_of_constX`). Then `A₀ - C s · B₀` is nonzero for every `s`, has degree `0`
+for at most one `s`, and by coprimality each of its roots `t` has `B₀(t) ≠ 0`, so
+`s = A₀(t) / B₀(t)` is DETERMINED by `t` — distinct `s` therefore have disjoint root
+sets. Away from the finite bad locus (zeros of `g`, plus the `x`-coordinates of the
+finite kernel) a root lifts to a point of the image with `x = s`, by
+`exists_point_veluPointX_eq`. So the unattained `s` inject into that locus and form
+a finite set; pulling back along the (≤ 2)-to-one `x` makes the complement of the
+image finite, while for `Q₀` outside the image the coset `Q₀ + im φ` is an infinite
+subset of that finite complement.
+
+Extracted from `IsRationalMap.isIsogeny`; see the note there. -/
+theorem IsRationalMap.surjective [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    (h : IsRationalMap φ) (hφ0 : φ ≠ 0) : Function.Surjective φ := by
+  classical
+  have hc := h
+  obtain ⟨A, B, _Cp, _Dp, _Ep, hB, _hE, hcert⟩ := hc
+  have hcertx : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) :=
+    fun P hP => (hcert P hP).1
+  have hker := IsRationalMap.finite_ker h hφ0
+  obtain ⟨g, A₀, B₀, hgne, hA, hBeq, hcop⟩ :
+      ∃ g A₀ B₀ : F[X], g ≠ 0 ∧ A = g * A₀ ∧ B = g * B₀ ∧ IsCoprime A₀ B₀ := by
+    letI : GCDMonoid F[X] := EuclideanDomain.gcdMonoid F[X]
+    exact ⟨GCDMonoid.gcd A B, A / GCDMonoid.gcd A B, B / GCDMonoid.gcd A B,
+      gcd_ne_zero_of_right hB,
+      (EuclideanDomain.mul_div_cancel' (gcd_ne_zero_of_right hB) (gcd_dvd_left A B)).symm,
+      (EuclideanDomain.mul_div_cancel' (gcd_ne_zero_of_right hB) (gcd_dvd_right A B)).symm,
+      isCoprime_div_gcd_div_gcd hB⟩
+  have hB₀ : B₀ ≠ 0 := by rintro rfl; rw [mul_zero] at hBeq; exact hB hBeq
+  have hcert₀ : ∀ P : W.Point, φ P ≠ 0 → g.eval (veluPointX P) ≠ 0 →
+      veluPointX (φ P) * B₀.eval (veluPointX P) = A₀.eval (veluPointX P) := by
+    intro P hP hg
+    have hx := hcertx P hP
+    rw [hA, hBeq] at hx
+    simp only [Polynomial.eval_mul] at hx
+    refine mul_left_cancel₀ hg ?_
+    linear_combination hx
+  have hnocommon : ∀ t : F, A₀.eval t = 0 → B₀.eval t = 0 → False := by
+    intro t h1 h2
+    obtain ⟨u, v, huv⟩ := hcop
+    have hev := congrArg (Polynomial.eval t) huv
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one, h1, h2,
+      mul_zero, add_zero] at hev
+    exact zero_ne_one hev
+  have hnc : ∀ s : F, A₀ ≠ Polynomial.C s * B₀ := by
+    intro s hs
+    refine hφ0 (eq_zero_of_constX hB s ?_ hcertx)
+    rw [hA, hs, hBeq]; ring
+  have hdpos : 0 < max A₀.natDegree B₀.natDegree := by
+    rcases Nat.eq_zero_or_pos (max A₀.natDegree B₀.natDegree) with h0 | h0
+    · exfalso
+      have hA0 : A₀.natDegree = 0 := by omega
+      have hB0 : B₀.natDegree = 0 := by omega
+      obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.1 hA0
+      obtain ⟨b, hb⟩ := Polynomial.natDegree_eq_zero.1 hB0
+      have hbne : b ≠ 0 := by
+        rintro rfl
+        rw [map_zero] at hb
+        exact hB₀ hb.symm
+      refine hnc (a / b) ?_
+      rw [← ha, ← hb, ← Polynomial.C_mul, div_mul_cancel₀ a hbne]
+    · exact h0
+  -- At most one `s` degenerates the degree of `A₀ - C s * B₀`.
+  have hdegs : ∀ s s' : F, (A₀ - Polynomial.C s * B₀).natDegree = 0 →
+      (A₀ - Polynomial.C s' * B₀).natDegree = 0 → s = s' := by
+    intro s s' h1 h2
+    by_contra hss
+    have hd : Polynomial.C (s' - s) * B₀ =
+        (A₀ - Polynomial.C s * B₀) - (A₀ - Polynomial.C s' * B₀) := by
+      rw [Polynomial.C_sub]; ring
+    have hle : (Polynomial.C (s' - s) * B₀).natDegree = 0 := by
+      rw [hd]
+      exact Nat.le_zero.1 (le_trans (Polynomial.natDegree_sub_le _ _) (by omega))
+    have hsub : s' - s ≠ 0 := sub_ne_zero.2 (Ne.symm hss)
+    have hB0d : B₀.natDegree = 0 := by
+      rwa [Polynomial.natDegree_C_mul hsub] at hle
+    have h3 : (Polynomial.C s * B₀).natDegree = 0 :=
+      Nat.le_zero.1 (le_trans (Polynomial.natDegree_C_mul_le s B₀) (le_of_eq hB0d))
+    have hA0d : A₀.natDegree = 0 := by
+      have heq : A₀ = (A₀ - Polynomial.C s * B₀) + Polynomial.C s * B₀ := by ring
+      rw [heq]
+      exact Nat.le_zero.1 (le_trans (Polynomial.natDegree_add_le _ _) (by omega))
+    omega
+  -- The finite "bad locus" in the source: zeros of the cancelled factor `g`,
+  -- together with the `x`-coordinates of the (finite) kernel.
+  have hZ : ({t : F | g.eval t = 0} ∪
+      veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite :=
+    (Polynomial.finite_setOf_isRoot hgne).union (hker.image _)
+  -- The unattained `x`-coordinates form a finite set.
+  have hT : {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s}.Finite := by
+    have hsub : {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s} ⊆
+        {s : F | (A₀ - Polynomial.C s * B₀).natDegree = 0} ∪
+          (fun t : F => A₀.eval t / B₀.eval t) ''
+            ({t : F | g.eval t = 0} ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point)) := by
+      intro s hs
+      by_cases hdeg0 : (A₀ - Polynomial.C s * B₀).natDegree = 0
+      · exact Set.mem_union_left _ hdeg0
+      refine Set.mem_union_right _ ?_
+      have hdegne : (A₀ - Polynomial.C s * B₀).degree ≠ 0 := by
+        intro h0
+        exact hdeg0 (Polynomial.natDegree_eq_zero_iff_degree_le_zero.2 (le_of_eq h0))
+      obtain ⟨t, ht⟩ := IsAlgClosed.exists_root (A₀ - Polynomial.C s * B₀) hdegne
+      have hteq : A₀.eval t = s * B₀.eval t := by
+        have h := ht
+        rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_mul,
+          Polynomial.eval_C] at h
+        linear_combination h
+      have hBt : B₀.eval t ≠ 0 := by
+        intro h0
+        exact hnocommon t (by rw [hteq, h0, mul_zero]) h0
+      refine ⟨t, ?_, ?_⟩
+      · -- `t` must lie in the bad locus, else `s` would be attained.
+        by_contra htbad
+        have hg : g.eval t ≠ 0 := fun hc => htbad (Set.mem_union_left _ hc)
+        obtain ⟨P, hP0, hxP⟩ := exists_point_veluPointX_eq (W := W) t
+        have hPk : φ P ≠ 0 := by
+          intro hc
+          exact htbad (Set.mem_union_right _ ⟨P, (AddMonoidHom.mem_ker).2 hc, hxP⟩)
+        have hval := hcert₀ P hPk (by rw [hxP]; exact hg)
+        rw [hxP, hteq] at hval
+        exact hs P hPk (mul_right_cancel₀ hBt hval)
+      · field_simp
+        linear_combination hteq
+    refine Set.Finite.subset (Set.Finite.union ?_ (hZ.image _)) hsub
+    exact Set.Subsingleton.finite (fun s hs s' hs' => hdegs s s' hs hs')
+  -- Hence the complement of the image is finite.
+  have hrcfin : ((Set.range φ)ᶜ).Finite := by
+    refine Set.Finite.subset
+      (finite_veluPointX_preimage (W := W')
+        (T := {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s}) hT) ?_
+    intro R hR
+    have hR0 : R ≠ 0 := by
+      rintro rfl
+      exact hR ⟨0, map_zero φ⟩
+    refine ⟨hR0, ?_⟩
+    intro P hP hxeq
+    rcases eq_or_eq_neg_of_veluPointX_eq hR0 hP hxeq.symm with hcase | hcase
+    · exact hR ⟨P, hcase.symm⟩
+    · exact hR ⟨-P, by rw [map_neg, ← hcase]⟩
+  by_contra hnsurj
+  obtain ⟨Q₀, hQ₀'⟩ : ∃ Q₀ : W'.Point, Q₀ ∉ Set.range φ := by
+    by_contra hc
+    push Not at hc
+    exact hnsurj hc
+  have hinf : (Set.range φ).Infinite := by
+    intro hfin
+    exact hφ0 (eq_zero_of_finite_range hfin)
+  have hsubset : (fun R : W'.Point => Q₀ + R) '' (Set.range φ) ⊆ (Set.range φ)ᶜ := by
+    rintro _ ⟨R, ⟨P, rfl⟩, rfl⟩
+    rintro ⟨P', hP'⟩
+    exact hQ₀' ⟨P' - P, by rw [map_sub, hP']; simp⟩
+  exact (hinf.image (Set.injOn_of_injective (add_right_injective Q₀)))
+    (hrcfin.subset hsubset)
+
 /-! ### The two branches of `IsRationalMap.add`
 
 `IsRationalMap.add` below is now an ASSEMBLY: it is proven from exactly two leaves,
@@ -983,12 +1315,15 @@ theorem IsRationalMap.add_self [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+
     (hφ : IsRationalMap φ) : IsRationalMap (φ + φ) :=
   sorry
 
-/-- **LEAF.** The chord branch: the sum of two rational maps that are not `0` and
-not equal or opposite to one another is rational.
+/-- **LEAF.** The chord branch, **with its one degenerate case already excluded**:
+the sum of two rational maps whose `x`-coordinate functions `A₁ / B₁` and
+`A₂ / B₂` are genuinely different, expressed as `A₂ B₁ - A₁ B₂ ≠ 0`.
 
-The four hypotheses are exactly what makes `x ∘ φ` and `x ∘ ψ` DIFFERENT rational
-functions, so that the chord formula applies away from a finite set. See the
-section docstring above for why that is the correct dividing line.
+The certificates are taken apart into their five polynomials rather than passed as
+`IsRationalMap`, because `hG` has to talk about `A₁, B₁, A₂, B₂` — the whole point
+of this cut is that a witness has been FIXED and the degenerate one ruled out.
+`IsRationalMap.add_of_ne` below reassembles it and discharges `hG`, so this leaf
+is a statement about a chosen witness only, never about the map.
 
 **The plan, from having closed `IsRationalMap.comp` and `IsRationalMap.isIsogeny`.**
 Write `t = x P`, `y = y P`, and abbreviate the two certificates as
@@ -998,15 +1333,8 @@ Write `t = x P`, `y = y P`, and abbreviate the two certificates as
   `K = B₁ B₂`,  `G = A₂ B₁ - A₁ B₂`,  `H = E₁ E₂ G`,
   `N = C₂ E₁ - C₁ E₂`,  `M = D₂ E₁ - D₁ E₂`,
 
-so that the chord slope is `λ = K (N y + M) / H`.
-
-*Step 1: `G ≠ 0`.* If `G = 0` then `x (φ P) = x (ψ P)` off a finite set, hence
-`φ P = ψ P` or `φ P = -(ψ P)` there, so `W.Point` is covered by
-`ker (φ - ψ) ∪ ker (φ + ψ)` together with a finite set. If either subgroup is
-finite the other has finite index, so the corresponding map has finite image and is
-ZERO by `eq_zero_of_finite_range` — contradicting `hdiff` or `hsum`. The remaining
-case is the classical "a group is not the union of two proper subgroups", with a
-finite exceptional set absorbed by infinitude of `W.Point`.
+so that the chord slope is `λ = K (N y + M) / H`. `hG` is exactly `G ≠ 0`, hence
+`H ≠ 0`, which is what makes the witness below nondegenerate.
 
 *Step 2: the pointwise identity.* Substituting into `Affine.addX` and clearing
 denominators gives, on the locus where `K H ≠ 0` and all four points are nonzero,
@@ -1025,20 +1353,106 @@ and `2 y + a₁ t + a₃ = y - negY (x P) (y P)` vanishes exactly on the 2-torsi
 which is FINITE (`finite_nsmulKer` at `n = 2`). So `U` vanishes at infinitely many
 `t` — `exists_point_veluPointX_eq` supplies a point over every `t` — hence `U = 0`.
 This is the step the leaf's difficulty really lives in; it is not the branch
-analysis.
+analysis, and note it needs BOTH ambient instances, through `finite_nsmulKer` and
+through `exists_point_veluPointX_eq`.
 
-*Step 4:* `(V, H² K)` is then the `x`-witness, `H² K ≠ 0` by Step 1, and the
+*Step 4:* `(V, H² K)` is then the `x`-witness, `H² K ≠ 0` by `hG`, and the
 `y`-witness comes out of `Affine.negAddY` by the same substitution, this time with
 no cancellation needed because `y ((φ + ψ) P)` is genuinely affine in `y P`.
 
 *Step 5:* multiply both witnesses through by the polynomial cutting out the finite
 bad locus (technique 1 of the module docstring), so that the certificate holds at
-EVERY point rather than off it. -/
+EVERY point rather than off it. The bad locus is finite because `ker φ` and
+`ker ψ` are finite (`IsRationalMap.isIsogeny`, using `h0φ` / `h0ψ`) and because
+`B₁ B₂ H` has finitely many roots; `finite_veluPointX_preimage` turns the latter
+into finitely many points. `hsum` is there so that `(φ + ψ)`'s own kernel may be
+handled the same way if the assembly needs it. -/
+theorem IsRationalMap.add_of_x_ne [IsAlgClosed F] [W.IsElliptic] {φ ψ : W.Point →+ W'.Point}
+    {A₁ B₁ C₁ D₁ E₁ A₂ B₂ C₂ D₂ E₂ : F[X]}
+    (hB₁ : B₁ ≠ 0) (hE₁ : E₁ ≠ 0)
+    (hcert₁ : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B₁.eval (veluPointX P) = A₁.eval (veluPointX P) ∧
+        veluPointY (φ P) * E₁.eval (veluPointX P)
+          = C₁.eval (veluPointX P) * veluPointY P + D₁.eval (veluPointX P))
+    (hB₂ : B₂ ≠ 0) (hE₂ : E₂ ≠ 0)
+    (hcert₂ : ∀ P : W.Point, ψ P ≠ 0 →
+      veluPointX (ψ P) * B₂.eval (veluPointX P) = A₂.eval (veluPointX P) ∧
+        veluPointY (ψ P) * E₂.eval (veluPointX P)
+          = C₂.eval (veluPointX P) * veluPointY P + D₂.eval (veluPointX P))
+    (h0φ : φ ≠ 0) (h0ψ : ψ ≠ 0) (hsum : φ + ψ ≠ 0)
+    (hG : A₂ * B₁ - A₁ * B₂ ≠ 0) :
+    IsRationalMap (φ + ψ) :=
+  sorry
+
+/-- **PROVEN** (Step 1 of the chord branch, 2026-07-27). The sum of two rational
+maps that are not `0` and not equal or opposite to one another is rational,
+**given `IsRationalMap.add_of_x_ne`** — that is, this theorem discharges the
+degenerate case in which the two `x`-coordinate functions coincide.
+
+The four hypotheses are exactly what makes `x ∘ φ` and `x ∘ ψ` DIFFERENT rational
+functions, so that the chord formula applies away from a finite set. See the
+section docstring above for why that is the correct dividing line.
+
+*The proof.* Suppose the chosen witnesses satisfy `A₂ B₁ - A₁ B₂ = 0`. At any `P`
+outside the finite set `ker φ ∪ ker ψ ∪ {P ≠ 0 : (B₁B₂)(x P) = 0} ∪ {0}` — finite
+because `IsRationalMap.isIsogeny` makes both kernels finite and
+`finite_veluPointX_preimage` handles the roots of `B₁ B₂` — the two certificates
+give `x (φ P) (B₁B₂)(x P) = x (ψ P) (B₁B₂)(x P)`, hence `x (φ P) = x (ψ P)`, hence
+`φ P = ψ P` or `φ P = -(ψ P)` by `eq_or_eq_neg_of_veluPointX_eq`. So `φ` and `ψ`
+agree up to sign off a finite set, and
+`eq_or_add_eq_zero_of_finite_compl` upgrades that to `φ = ψ` or `φ + ψ = 0`,
+contradicting `hdiff` or `hsum`.
+
+Both of `hdiff` and `hsum` are therefore consumed HERE, and neither is passed on
+to `add_of_x_ne` (which gets `hG` instead) — the degenerate case is the only place
+they were ever needed. -/
 theorem IsRationalMap.add_of_ne [IsAlgClosed F] [W.IsElliptic] {φ ψ : W.Point →+ W'.Point}
     (hφ : IsRationalMap φ) (hψ : IsRationalMap ψ)
     (h0φ : φ ≠ 0) (h0ψ : ψ ≠ 0) (hsum : φ + ψ ≠ 0) (hdiff : φ ≠ ψ) :
-    IsRationalMap (φ + ψ) :=
-  sorry
+    IsRationalMap (φ + ψ) := by
+  classical
+  have hφc := hφ
+  have hψc := hψ
+  obtain ⟨A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hcert₁⟩ := hφc
+  obtain ⟨A₂, B₂, C₂, D₂, E₂, hB₂, hE₂, hcert₂⟩ := hψc
+  refine IsRationalMap.add_of_x_ne hB₁ hE₁ hcert₁ hB₂ hE₂ hcert₂ h0φ h0ψ hsum ?_
+  intro hG
+  have hkerφ : (AddMonoidHom.ker φ : Set W.Point).Finite := IsRationalMap.finite_ker hφ h0φ
+  have hkerψ : (AddMonoidHom.ker ψ : Set W.Point).Finite := IsRationalMap.finite_ker hψ h0ψ
+  have hBz : {P : W.Point | P ≠ 0 ∧ veluPointX P ∈ {t : F | (B₁ * B₂).eval t = 0}}.Finite :=
+    finite_veluPointX_preimage (Polynomial.finite_setOf_isRoot (mul_ne_zero hB₁ hB₂))
+  have hfin : {P : W.Point | φ P ≠ ψ P ∧ φ P ≠ -(ψ P)}.Finite := by
+    refine Set.Finite.subset (((hkerφ.union hkerψ).union hBz).insert 0) ?_
+    intro P hP
+    by_cases hP0 : P = 0
+    · exact Set.mem_insert_iff.2 (Or.inl hP0)
+    refine Set.mem_insert_iff.2 (Or.inr ?_)
+    by_cases hφP : φ P = 0
+    · exact Set.mem_union_left _ (Set.mem_union_left _ ((AddMonoidHom.mem_ker).2 hφP))
+    by_cases hψP : ψ P = 0
+    · exact Set.mem_union_left _ (Set.mem_union_right _ ((AddMonoidHom.mem_ker).2 hψP))
+    by_cases hBP : (B₁ * B₂).eval (veluPointX P) = 0
+    · exact Set.mem_union_right _ ⟨hP0, hBP⟩
+    exfalso
+    simp only [Polynomial.eval_mul, mul_eq_zero, not_or] at hBP
+    obtain ⟨hb1, hb2⟩ := hBP
+    have hx1 := (hcert₁ P hφP).1
+    have hx2 := (hcert₂ P hψP).1
+    have hGev : A₂.eval (veluPointX P) * B₁.eval (veluPointX P)
+        - A₁.eval (veluPointX P) * B₂.eval (veluPointX P) = 0 := by
+      have h := congrArg (Polynomial.eval (veluPointX P)) hG
+      simpa only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_zero] using h
+    have hkey : veluPointX (ψ P) * (B₂.eval (veluPointX P) * B₁.eval (veluPointX P))
+        = veluPointX (φ P) * (B₂.eval (veluPointX P) * B₁.eval (veluPointX P)) := by
+      linear_combination B₁.eval (veluPointX P) * hx2 - B₂.eval (veluPointX P) * hx1 + hGev
+    have hxx : veluPointX (φ P) = veluPointX (ψ P) :=
+      (mul_right_cancel₀ (mul_ne_zero hb2 hb1) hkey).symm
+    rcases eq_or_eq_neg_of_veluPointX_eq hφP hψP hxx with h | h
+    · exact hP.1 h
+    · exact hP.2 h
+  rcases eq_or_add_eq_zero_of_finite_compl hfin with h | h
+  · exact hdiff h
+  · exact hsum h
 
 /-- **PROVEN** (assembly, 2026-07-27). The pointwise sum of two rational maps is
 rational, over an algebraically closed field and for an **elliptic** `W`.
@@ -1585,186 +1999,8 @@ a cut-level decision, not one to make here — and note the dependency runs the 
 way in the present proof, which CONSUMES `nsmul_surjective`, so the two are not
 interchangeable as written. -/
 theorem IsRationalMap.isIsogeny [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
-    (h : IsRationalMap φ) : IsIsogeny φ := by
-  classical
-  obtain ⟨A, B, Cp, Dp, Ep, hB, hE, hcert⟩ := h
-  have hcertx : ∀ P : W.Point, φ P ≠ 0 →
-      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) :=
-    fun P hP => (hcert P hP).1
-  -- **Finiteness of the kernel.** Translating by a kernel element does not move
-  -- `x (φ P₀)`, so every `x (P₀ + k)` is a root of `A - C (x (φ P₀)) · B`; that
-  -- polynomial is nonzero unless `A / B` is constant, which forces `φ = 0`.
-  have hkerfin : φ ≠ 0 → (AddMonoidHom.ker φ : Set W.Point).Finite := by
-    intro hφ0
-    obtain ⟨P₀, hP₀⟩ : ∃ P : W.Point, φ P ≠ 0 := by
-      by_contra hcon
-      push Not at hcon
-      exact hφ0 (AddMonoidHom.ext fun P => by simpa using hcon P)
-    by_cases hAc : A = Polynomial.C (veluPointX (φ P₀)) * B
-    · exact absurd (eq_zero_of_constX hB _ hAc hcertx) hφ0
-    have hne : A - Polynomial.C (veluPointX (φ P₀)) * B ≠ 0 := sub_ne_zero.2 hAc
-    have hroots : {t : F | (A - Polynomial.C (veluPointX (φ P₀)) * B).eval t = 0}.Finite :=
-      Polynomial.finite_setOf_isRoot hne
-    have himg : ((fun k : W.Point => P₀ + k) '' (AddMonoidHom.ker φ : Set W.Point)) ⊆
-        insert (0 : W.Point) {P : W.Point | P ≠ 0 ∧ veluPointX P ∈
-          {t : F | (A - Polynomial.C (veluPointX (φ P₀)) * B).eval t = 0}} := by
-      rintro _ ⟨k, hk, rfl⟩
-      by_cases hz : P₀ + k = 0
-      · exact Set.mem_insert_iff.2 (Or.inl hz)
-      refine Set.mem_insert_iff.2 (Or.inr ⟨hz, ?_⟩)
-      have hkk : φ k = 0 := (AddMonoidHom.mem_ker).1 hk
-      have hval : φ (P₀ + k) = φ P₀ := by rw [map_add, hkk, add_zero]
-      have hx := hcertx (P₀ + k) (by rw [hval]; exact hP₀)
-      rw [hval] at hx
-      show (A - Polynomial.C (veluPointX (φ P₀)) * B).eval (veluPointX (P₀ + k)) = 0
-      simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
-      linear_combination -hx
-    refine Set.Finite.of_finite_image
-      (Set.Finite.subset ((finite_veluPointX_preimage hroots).insert 0) himg) ?_
-    intro a _ b _ hab
-    exact add_left_cancel hab
-  -- **Surjectivity.** After cancelling `gcd A B` the pair `(A₀, B₀)` is coprime and
-  -- nonconstant, so `A₀ - C s · B₀` has a root for all but one `s`, and distinct `s`
-  -- have disjoint root sets. Hence all but finitely many `s` are `x`-coordinates of
-  -- the image, so the complement of the image is finite — while a coset of the
-  -- (infinite) image sits inside that complement.
-  have hsurj : φ ≠ 0 → Function.Surjective φ := by
-    intro hφ0
-    have hker := hkerfin hφ0
-    obtain ⟨g, A₀, B₀, hgne, hA, hBeq, hcop⟩ :
-        ∃ g A₀ B₀ : F[X], g ≠ 0 ∧ A = g * A₀ ∧ B = g * B₀ ∧ IsCoprime A₀ B₀ := by
-      letI : GCDMonoid F[X] := EuclideanDomain.gcdMonoid F[X]
-      exact ⟨GCDMonoid.gcd A B, A / GCDMonoid.gcd A B, B / GCDMonoid.gcd A B,
-        gcd_ne_zero_of_right hB,
-        (EuclideanDomain.mul_div_cancel' (gcd_ne_zero_of_right hB) (gcd_dvd_left A B)).symm,
-        (EuclideanDomain.mul_div_cancel' (gcd_ne_zero_of_right hB) (gcd_dvd_right A B)).symm,
-        isCoprime_div_gcd_div_gcd hB⟩
-    have hB₀ : B₀ ≠ 0 := by rintro rfl; rw [mul_zero] at hBeq; exact hB hBeq
-    have hcert₀ : ∀ P : W.Point, φ P ≠ 0 → g.eval (veluPointX P) ≠ 0 →
-        veluPointX (φ P) * B₀.eval (veluPointX P) = A₀.eval (veluPointX P) := by
-      intro P hP hg
-      have hx := hcertx P hP
-      rw [hA, hBeq] at hx
-      simp only [Polynomial.eval_mul] at hx
-      refine mul_left_cancel₀ hg ?_
-      linear_combination hx
-    have hnocommon : ∀ t : F, A₀.eval t = 0 → B₀.eval t = 0 → False := by
-      intro t h1 h2
-      obtain ⟨u, v, huv⟩ := hcop
-      have hev := congrArg (Polynomial.eval t) huv
-      simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one, h1, h2,
-        mul_zero, add_zero] at hev
-      exact zero_ne_one hev
-    have hnc : ∀ s : F, A₀ ≠ Polynomial.C s * B₀ := by
-      intro s hs
-      refine hφ0 (eq_zero_of_constX hB s ?_ hcertx)
-      rw [hA, hs, hBeq]; ring
-    have hdpos : 0 < max A₀.natDegree B₀.natDegree := by
-      rcases Nat.eq_zero_or_pos (max A₀.natDegree B₀.natDegree) with h0 | h0
-      · exfalso
-        have hA0 : A₀.natDegree = 0 := by omega
-        have hB0 : B₀.natDegree = 0 := by omega
-        obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.1 hA0
-        obtain ⟨b, hb⟩ := Polynomial.natDegree_eq_zero.1 hB0
-        have hbne : b ≠ 0 := by
-          rintro rfl
-          rw [map_zero] at hb
-          exact hB₀ hb.symm
-        refine hnc (a / b) ?_
-        rw [← ha, ← hb, ← Polynomial.C_mul, div_mul_cancel₀ a hbne]
-      · exact h0
-    -- At most one `s` degenerates the degree of `A₀ - C s * B₀`.
-    have hdegs : ∀ s s' : F, (A₀ - Polynomial.C s * B₀).natDegree = 0 →
-        (A₀ - Polynomial.C s' * B₀).natDegree = 0 → s = s' := by
-      intro s s' h1 h2
-      by_contra hss
-      have hd : Polynomial.C (s' - s) * B₀ =
-          (A₀ - Polynomial.C s * B₀) - (A₀ - Polynomial.C s' * B₀) := by
-        rw [Polynomial.C_sub]; ring
-      have hle : (Polynomial.C (s' - s) * B₀).natDegree = 0 := by
-        rw [hd]
-        exact Nat.le_zero.1 (le_trans (Polynomial.natDegree_sub_le _ _) (by omega))
-      have hsub : s' - s ≠ 0 := sub_ne_zero.2 (Ne.symm hss)
-      have hB0d : B₀.natDegree = 0 := by
-        rwa [Polynomial.natDegree_C_mul hsub] at hle
-      have h3 : (Polynomial.C s * B₀).natDegree = 0 :=
-        Nat.le_zero.1 (le_trans (Polynomial.natDegree_C_mul_le s B₀) (le_of_eq hB0d))
-      have hA0d : A₀.natDegree = 0 := by
-        have heq : A₀ = (A₀ - Polynomial.C s * B₀) + Polynomial.C s * B₀ := by ring
-        rw [heq]
-        exact Nat.le_zero.1 (le_trans (Polynomial.natDegree_add_le _ _) (by omega))
-      omega
-    -- The finite "bad locus" in the source: zeros of the cancelled factor `g`,
-    -- together with the `x`-coordinates of the (finite) kernel.
-    have hZ : ({t : F | g.eval t = 0} ∪
-        veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite :=
-      (Polynomial.finite_setOf_isRoot hgne).union (hker.image _)
-    -- The unattained `x`-coordinates form a finite set.
-    have hT : {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s}.Finite := by
-      have hsub : {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s} ⊆
-          {s : F | (A₀ - Polynomial.C s * B₀).natDegree = 0} ∪
-            (fun t : F => A₀.eval t / B₀.eval t) ''
-              ({t : F | g.eval t = 0} ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point)) := by
-        intro s hs
-        by_cases hdeg0 : (A₀ - Polynomial.C s * B₀).natDegree = 0
-        · exact Set.mem_union_left _ hdeg0
-        refine Set.mem_union_right _ ?_
-        have hdegne : (A₀ - Polynomial.C s * B₀).degree ≠ 0 := by
-          intro h0
-          exact hdeg0 (Polynomial.natDegree_eq_zero_iff_degree_le_zero.2 (le_of_eq h0))
-        obtain ⟨t, ht⟩ := IsAlgClosed.exists_root (A₀ - Polynomial.C s * B₀) hdegne
-        have hteq : A₀.eval t = s * B₀.eval t := by
-          have h := ht
-          rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_mul,
-            Polynomial.eval_C] at h
-          linear_combination h
-        have hBt : B₀.eval t ≠ 0 := by
-          intro h0
-          exact hnocommon t (by rw [hteq, h0, mul_zero]) h0
-        refine ⟨t, ?_, ?_⟩
-        · -- `t` must lie in the bad locus, else `s` would be attained.
-          by_contra htbad
-          have hg : g.eval t ≠ 0 := fun hc => htbad (Set.mem_union_left _ hc)
-          obtain ⟨P, hP0, hxP⟩ := exists_point_veluPointX_eq (W := W) t
-          have hPk : φ P ≠ 0 := by
-            intro hc
-            exact htbad (Set.mem_union_right _ ⟨P, (AddMonoidHom.mem_ker).2 hc, hxP⟩)
-          have hval := hcert₀ P hPk (by rw [hxP]; exact hg)
-          rw [hxP, hteq] at hval
-          exact hs P hPk (mul_right_cancel₀ hBt hval)
-        · field_simp
-          linear_combination hteq
-      refine Set.Finite.subset (Set.Finite.union ?_ (hZ.image _)) hsub
-      exact Set.Subsingleton.finite (fun s hs s' hs' => hdegs s s' hs hs')
-    -- Hence the complement of the image is finite.
-    have hrcfin : ((Set.range φ)ᶜ).Finite := by
-      refine Set.Finite.subset
-        (finite_veluPointX_preimage (W := W')
-          (T := {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s}) hT) ?_
-      intro R hR
-      have hR0 : R ≠ 0 := by
-        rintro rfl
-        exact hR ⟨0, map_zero φ⟩
-      refine ⟨hR0, ?_⟩
-      intro P hP hxeq
-      rcases eq_or_eq_neg_of_veluPointX_eq hR0 hP hxeq.symm with hcase | hcase
-      · exact hR ⟨P, hcase.symm⟩
-      · exact hR ⟨-P, by rw [map_neg, ← hcase]⟩
-    by_contra hnsurj
-    obtain ⟨Q₀, hQ₀'⟩ : ∃ Q₀ : W'.Point, Q₀ ∉ Set.range φ := by
-      by_contra hc
-      push Not at hc
-      exact hnsurj hc
-    have hinf : (Set.range φ).Infinite := by
-      intro hfin
-      exact hφ0 (eq_zero_of_finite_range hfin)
-    have hsubset : (fun R : W'.Point => Q₀ + R) '' (Set.range φ) ⊆ (Set.range φ)ᶜ := by
-      rintro _ ⟨R, ⟨P, rfl⟩, rfl⟩
-      rintro ⟨P', hP'⟩
-      exact hQ₀' ⟨P' - P, by rw [map_sub, hP']; simp⟩
-    exact (hinf.image (Set.injOn_of_injective (add_right_injective Q₀)))
-      (hrcfin.subset hsubset)
-  exact ⟨⟨A, B, Cp, Dp, Ep, hB, hE, hcert⟩, hsurj, hkerfin⟩
+    (h : IsRationalMap φ) : IsIsogeny φ :=
+  ⟨h, fun hne => IsRationalMap.surjective h hne, fun hne => IsRationalMap.finite_ker h hne⟩
 
 /-- The pointwise sum of two isogenies over an **algebraically closed** field is an
 isogeny — this is the statement that `Hom(W, W')` is a group under addition in the
