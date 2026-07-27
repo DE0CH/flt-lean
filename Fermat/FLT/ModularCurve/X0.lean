@@ -3422,9 +3422,161 @@ theorem y0HasNoRationalPoint_prime {p : ℕ} (hp : p.Prime)
   obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
   exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_prime hp hmem hc hX)
 
+/-- **`Y_0(N)(ℚ) = ∅` implies every rational point of `X_0(N)` is a cusp**
+(PROVEN) — the exact converse of `y0HasNoRationalPoint_of_cuspidal`, and
+the direction in which the level nodes below are consumed.
+
+The proof is the definition unwound: a rational point of `X` that is NOT
+a cusp factors as `y ≫ hX.j` for some `y : Spec ℚ ⟶ Y`, and
+`IsCompactificationY0.over` turns `x.2` into `y ≫ strY = 𝟙`, so `y` is a
+rational point of the coarse space, which `Y0HasNoRationalPoint N`
+forbids.
+
+**Why this is not circular with `y0HasNoRationalPoint_of_cuspidal`.**
+The two together say `X_0(N)(ℚ)` cuspidal ⟺ `Y_0(N)(ℚ) = ∅`, which is
+the content of "the cusps are exactly `X ∖ Y`" and carries no arithmetic
+at all.  What it buys is that a level node may be discharged by whichever
+of the two shapes its argument naturally produces: Mazur's and Kenku's
+theorems are proven on `X_0(N)`, while the divisibility glue
+(`y0HasNoRationalPoint_of_dvd`) and the reduction counts live on
+`Y_0(N)`.  Before this lemma only the `X → Y` direction existed, so a
+level node stated on `X` could not consume the divisibility glue — which
+is precisely what `cuspidal_x0_isogenyPrimeSq` below needs.
+
+Placed here rather than beside `y0HasNoRationalPoint_of_cuspidal` only to
+keep this edit inside one region of a heavily contended file; it belongs
+next to its converse and may be moved there freely. -/
+theorem cuspidal_of_y0HasNoRationalPoint {N : ℕ} {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    {strX : X ⟶ SpecQ} (hc : IsCoarseModuliY0 N strY)
+    (hX : IsCompactificationY0 strY strX) (hY : Y0HasNoRationalPoint N)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x := by
+  rintro ⟨y, hy⟩
+  refine (hY Y strY hc).false ⟨y, ?_⟩
+  rw [← hX.over, ← Category.assoc, hy]
+  exact x.2
+
+/-- **The eight prime-square levels that Kenku's determination must treat
+one at a time**: `p²` for the eight primes `p ≥ 11` that admit a rational
+`p`-isogeny, i.e. for `p ∈ mazurIsogenyPrimes` with `11 ≤ p`, namely
+`p ∈ {11, 13, 17, 19, 37, 43, 67, 163}`.
+
+This is the prime-square analogue of `kenkuLevels`, and it exists for the
+same reason: the machinery that can actually close a level node here
+(`hasRankZeroJacobian_of_kenkuLevel` plus `card_le_of_rankZeroJacobian`,
+or the Mordell–Weil sieve of `y0HasNoRationalPoint_of_sieveLevel`) is
+LEVEL-INDEXED, so it can only be pointed at an explicit finite list of
+levels.  Every prime `p ≥ 11` OUTSIDE `mazurIsogenyPrimes` is handled
+uniformly by Mazur instead — see `cuspidal_x0_isogenyPrimeSq`. -/
+def isogenyPrimeSqLevels : List ℕ := [121, 169, 289, 361, 1369, 1849, 4489, 26569]
+
+/-- **The arithmetic behind the case split in `cuspidal_x0_isogenyPrimeSq`**
+(PROVEN): a prime `p ≥ 11` admitting a rational `p`-isogeny has `p² ` in
+`isogenyPrimeSqLevels`.
+
+Pure `Finset`/`List` computation: `mazurIsogenyPrimes` has twelve
+elements, `11 ≤ p` removes the four small ones, and the remaining eight
+squares are the eight entries of `isogenyPrimeSqLevels` by evaluation. -/
+theorem mem_isogenyPrimeSqLevels_of_mem_mazurIsogenyPrimes {p : ℕ}
+    (hmem : p ∈ mazurIsogenyPrimes) (hp11 : 11 ≤ p) :
+    p ^ 2 ∈ isogenyPrimeSqLevels := by
+  fin_cases hmem <;> first | omega | decide
+
+/-- **Kenku's determination at the eight prime-square levels** (sorry
+node, introduced 2026-07-27): `Y_0(N)(ℚ) = ∅` for each of the eight
+levels `N = p²`, `p ∈ {11, 13, 17, 19, 37, 43, 67, 163}`.
+
+TRUE: none of `121, 169, 289, 361, 1369, 1849, 4489, 26569` lies in the
+Mazur–Kenku list `1, …, 19, 21, 25, 27, 37, 43, 67, 163` of levels with a
+non-cuspidal rational point — every one of them exceeds `163`.
+
+**This is the whole remaining content of Kenku's prime-square theorem**,
+and it is a FINITE statement.  `cuspidal_x0_isogenyPrimeSq` used to carry
+the assertion for every prime `p ≥ 11`; the infinite part of that family
+is now discharged by Mazur (`y0HasNoRationalPoint_prime`, through
+`y0HasNoRationalPoint_of_dvd` at `p ∣ p²`), because a prime `p` outside
+`mazurIsogenyPrimes` already has `Y_0(p)(ℚ) = ∅` and a rational point of
+`Y_0(p²)` would push down to one of `Y_0(p)`.  What survives is exactly
+the eight primes for which `Y_0(p)(ℚ) ≠ ∅`, so no descent to level `p` is
+available and each `p²` must be treated on its own.
+
+**Where each of the eight comes from in the literature.**  These are
+Kenku's papers, one level at a time: `X_0(169)` in *The modular curve
+`X_0(169)` and rational isogeny*, J. London Math. Soc. (2) **22** (1980);
+`X_0(125)`, `X_1(25)`, `X_1(49)` in J. London Math. Soc. (2) **23**
+(1981), whose method covers `X_0(121)`; and the four large levels
+`1369, 1849, 4489, 26569` (`p = 37, 43, 67, 163`) by the isogeny-character
+argument, since a rational point of `Y_0(p²)` gives an elliptic curve
+whose mod-`p` representation has TWO independent stable lines, hence is
+diagonal — which the CM description of `Y_0(p)(ℚ)` at `p = 43, 67, 163`
+and the two `j`-invariants at `p = 37` exclude.
+
+IRREDUCIBLE at this pin, but no longer uniformly so, and the two halves
+have different prospects — which is the reason for splitting the node
+out rather than leaving it inside the `p ≥ 11` statement:
+
+* `121, 169, 289, 361` are genuine rational-point determinations on
+  curves of genus `6, 8, 17, 22`.  The file already carries the machinery
+  their arguments need in outline (`HasRankZeroJacobian`,
+  `card_le_of_rankZeroJacobian`, `IsSharpSieve`) — **and that machinery
+  does NOT apply at any of the four**, which is the single most useful
+  fact recorded here, because it is exactly the route a successor would
+  otherwise try first.
+
+  #### Reconnaissance (PARI/GP 2.17.4, 2026-07-27)
+
+  Decomposing `S_2(Γ_0(N))^new` into newform factors and taking
+  `ord_{s=1} L(f, s)` on each — the same computation the `kenkuLevels`
+  reconnaissance block performs, and the check that would refute the
+  claim above if it came back all zeros:
+
+  | `N`   | genus | `dim^new` | factors `(deg 𝕋_f, ord L)`                   | `rank J_0(N)` |
+  |-------|-------|-----------|----------------------------------------------|---------------|
+  | `121` | `6`   | `4`       | `(1,0) (1,0) (1,1) (1,0)`                    | `1`           |
+  | `169` | `8`   | `8`       | `(2,0) (3,0) (3,3)`                          | `3`           |
+  | `289` | `17`  | `15`      | `(1,1) (2,0) (2,2) (3,0) (3,3) (4,0)`        | `6`           |
+  | `361` | `22`  | `20`      | `(1,0) (1,1) (2,0)×4 (3,0) (3,3) (4,4)`      | `8`           |
+
+  The old part contributes `0` at each: it is `J_0(11)²`, `0`, `J_0(17)²`,
+  `J_0(19)²`, and `J_0(11), J_0(17), J_0(19)` all have rank `0`.
+
+  **Unconditionality.**  At `121`, `289` and `361` the vanishing occurs at
+  a factor with `deg 𝕋_f = 1` — an elliptic curve of analytic rank `1` —
+  so Gross–Zagier plus Kolyvagin give Mordell–Weil rank `1` there
+  *unconditionally*, and `rank J_0(N)(ℚ) > 0` is a theorem.  At `169` the
+  only vanishing is at a `3`-dimensional factor of analytic rank `3`, so
+  positivity of the Mordell–Weil rank is conditional on BSD; what is
+  unconditional at `169` is only that the counting route has no rank input
+  available.
+
+  **What this leaves.**  Every one of the four satisfies
+  `rank J_0(N)(ℚ) < genus X_0(N)` (`1 < 6`, `3 < 8`, `6 < 17`, `8 < 22`),
+  which is precisely Chabauty–Coleman's hypothesis.  So the route at these
+  four levels is Chabauty–Coleman — a theory this development does not
+  have in any form, and a strictly larger obligation than the rank-`0`
+  counting the eleven `kenkuLevels` use.  **Do not dispatch a prover at
+  `121, 169, 289, 361` expecting to reuse `card_le_of_rankZeroJacobian`;
+  the rank input it needs is false at all four.**
+* `1369, 1849, 4489, 26569` do NOT need the geometry of `X_0(p²)` at all.
+  The isogeny-character route above is a statement about elliptic curves
+  with a rational `p`-isogeny for the four largest Mazur primes, and it
+  is the same circle of ideas as
+  `WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree` in
+  `FreyCurve/MazurTorsion.lean`.  **Note the direction**: that module
+  imports this one, so the implication may not be used here, and a
+  successor must prove the modular-curve form directly — but it may
+  freely copy the ARGUMENT.
+
+Stated as a membership in an explicit list, in the idiom of
+`hasRankZeroJacobian_of_kenkuLevel`, so that a successor may close the
+eight levels independently. -/
+theorem y0HasNoRationalPoint_of_isogenyPrimeSqLevel (N : ℕ)
+    (_hN : N ∈ isogenyPrimeSqLevels) : Y0HasNoRationalPoint N :=
+  sorry
+
 /-- **Kenku's prime-square determination, on `X_0(p²)` for `p ≥ 11`**
-(sorry node, introduced 2026-07-26): every rational point of `X_0(p²)` is
-a cusp, for every prime `p ≥ 11`.
+(PROVEN 2026-07-27 over `y0HasNoRationalPoint_of_isogenyPrimeSqLevel`;
+introduced as a sorry node 2026-07-26): every rational point of `X_0(p²)`
+is a cusp, for every prime `p ≥ 11`.
 
 TRUE, and it is Kenku's theorem.  The Mazur–Kenku list of levels `N` with
 `Y_0(N)(ℚ) ≠ ∅` is
@@ -3434,7 +3586,14 @@ TRUE, and it is Kenku's theorem.  The Mazur–Kenku list of levels `N` with
 whose largest element is `163`; and for a prime `p ≥ 11` the level `p²` is
 at least `121`, is a perfect square, and is therefore in the list only if
 it is one of `1, 4, 9, 16` — all of which are `< 121`.  So `p² ` is outside
-the list for EVERY prime `p ≥ 11`, uniformly, with no case analysis.
+the list for EVERY prime `p ≥ 11`, uniformly.
+
+(That uniformity is a fact about the *statement*, not about its proof.
+The proof below does split on `p ∈ mazurIsogenyPrimes`, because the two
+halves are discharged by genuinely different theorems — Mazur's for the
+infinite half, Kenku's eight levels for the rest.  An earlier version of
+this docstring read "uniformly, with no case analysis", which was a claim
+about the truth and was silently taken for a claim about the route.)
 
 **Why `11 ≤ p` and not merely `p` prime.**  The bound is sharp at both
 ends of the small range: `4`, `9` and `25` are all IN the Mazur–Kenku
@@ -3454,25 +3613,49 @@ be circular.  Routing the CONVERSE through this node instead is not: the
 statement below is about the modular curve, is independent of both
 elliptic-curve leaves, and is exactly the shape in which Kenku proves it.
 
-IRREDUCIBLE at this pin, for the same reason as every other level node
-here: `X_0(p²)` has genus `≥ 6` for `p ≥ 11` (already `X_0(121)` has genus
-`6`), so this is a determination of the rational points of a curve of high
-genus, and neither `J_0(N)`, nor its Mordell–Weil group, nor
-Chabauty–Coleman exists in this development.  Sources: Kenku, *The modular
-curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math. Proc.
-Cambridge Philos. Soc. **87** (1980); *On the modular curves `X_0(125)`,
-`X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981);
-*The modular curve `X_0(169)` and rational isogeny*, J. London Math. Soc.
-(2) **22** (1980).
+**NOT IRREDUCIBLE — the infinite half is Mazur's, and is now discharged**
+(2026-07-27, correcting the audit this docstring previously carried,
+which read "IRREDUCIBLE at this pin, for the same reason as every other
+level node here").  That verdict was recorded before the case split below
+was tried, and it is wrong for every prime `p ∉ mazurIsogenyPrimes`:
+
+* if `p ∉ mazurIsogenyPrimes` then `Y_0(p)(ℚ) = ∅` by
+  `y0HasNoRationalPoint_prime` — Mazur's theorem, already a node here —
+  and `p ∣ p²`, so `y0HasNoRationalPoint_of_dvd` gives
+  `Y_0(p²)(ℚ) = ∅` with no reference to the geometry of `X_0(p²)` at all;
+* the new `cuspidal_of_y0HasNoRationalPoint` converts that back into
+  cuspidality of `X_0(p²)(ℚ)`, which is the shape stated here.
+
+So the genus-`≥ 6` obstruction the old audit named applies only to the
+eight levels where the descent to level `p` is unavailable — exactly
+`p ∈ mazurIsogenyPrimes` with `11 ≤ p` — and those are now the separate
+node `y0HasNoRationalPoint_of_isogenyPrimeSqLevel`, whose docstring
+records what each of the eight still needs.  **The check that would
+refute this reading**: `y0HasNoRationalPoint_prime` is stated for `p`
+prime with `p ∉ mazurIsogenyPrimes` and nothing else, and
+`y0HasNoRationalPoint_of_dvd` needs only `N ≠ 0` and `M ∣ N`; if either
+acquired a hypothesis this proof does not supply, the split would fail to
+elaborate.
+
+Sources for the eight residual levels: Kenku, *The modular curves
+`X_0(65)` and `X_0(91)` and rational isogeny*, Math. Proc. Cambridge
+Philos. Soc. **87** (1980); *On the modular curves `X_0(125)`, `X_1(25)`
+and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981); *The modular curve
+`X_0(169)` and rational isogeny*, J. London Math. Soc. (2) **22** (1980).
 
 Quantified over every model of `IsCompactificationY0`, so it is at least
 as strong as the `Y_0(p²)` statement it carries and cannot be discharged
 by a degenerate choice of `X`. -/
-theorem cuspidal_x0_isogenyPrimeSq {p : ℕ} (_hp : p.Prime) (_hp11 : 11 ≤ p)
+theorem cuspidal_x0_isogenyPrimeSq {p : ℕ} (hp : p.Prime) (hp11 : 11 ≤ p)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 (p ^ 2) strY) (hX : IsCompactificationY0 strY strX)
-    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
-  sorry
+    (hc : IsCoarseModuliY0 (p ^ 2) strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x := by
+  refine cuspidal_of_y0HasNoRationalPoint hc hX ?_ x
+  by_cases hmem : p ∈ mazurIsogenyPrimes
+  · exact y0HasNoRationalPoint_of_isogenyPrimeSqLevel (p ^ 2)
+      (mem_isogenyPrimeSqLevels_of_mem_mazurIsogenyPrimes hmem hp11)
+  · exact y0HasNoRationalPoint_of_dvd (pow_ne_zero 2 hp.pos.ne')
+      (dvd_pow_self p two_ne_zero) (y0HasNoRationalPoint_prime hp hmem)
 
 /-- **`Y_0(p²)(ℚ) = ∅` for every prime `p ≥ 11`** (PROVEN 2026-07-26 over
 `cuspidal_x0_isogenyPrimeSq`, the same compactification route
