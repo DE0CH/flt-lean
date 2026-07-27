@@ -14462,6 +14462,120 @@ theorem isNoetherianRing_isAdic_hilbertTraceSubring_of_descent
     hbasis (IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ))
     Ideal.Quotient.mk_surjective hresidcont hhom
 
+/-- **CARAYOL'S THÉORÈME 1 PROPER, FOR A WEAKLY UNIVERSAL DATUM: the framed
+deformation DESCENDS to the trace subring, local conditions and all**
+(SORRY LEAF — hoisted 2026-07-27 (flt-lean-65) out of the `hThm1` step of
+`exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal`
+immediately below, which is now PROVEN over it and carries no direct
+`sorry` of its own. It is the SOLE remaining atom of the whole
+`R_F = 𝕋_F` trace-descent cluster; hoisting it makes it greppable BY NAME
+rather than buried as an anonymous `have` in a 15k-line module.)
+
+The hypotheses are exactly those of the consumer, and the two Carayol
+inputs it spends (`hℓ5`, `hirrF`) are ordinary binders here rather than
+the implication-shaped `5 ≤ ℓ → … →` they were as a `have`.
+
+**WHY `h𝒟` IS LOAD-BEARING AND MAY NOT BE DROPPED.** The Nyssen–Rouquier
+conjugation itself is retraction-free
+(`exists_framedGaloisRep_baseChange_hilbertTraceSubring` below takes only
+`hloc`), and three of the four local clauses are FORMAL: the determinant
+by injectivity of `R' ↪ 𝒟.R`, unramifiedness through the injective frame,
+and the charpolys by `charpoly_baseChange_conj_hilbert`. The whole residue
+is the TAME clause at the places `w ∣ 2` — descending a unimodular
+eigenrow from `𝒟.R²` to `R'²` — and the FALSITY AUDIT of
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` below refutes that
+for an ARBITRARY datum, with the explicit witness
+`R' = ℤ_7[[Z]] ↪ ℤ_7[[Y]]` by `Z ↦ 7Y` over `F = ℚ(ζ₇)⁺`, `ℓ = 7`. The
+quotient CHARACTER needs no descent argument at all: `δ(g)² = 1` in a
+local ring where `2` is a unit (which holds because `char k = ℓ ≥ 5`)
+forces `δ(g) = ±1`, already in the image of `ℤ_ℓ ⊆ R'`; only the ROW is at
+issue.
+
+**IT MAY NOT BE DISCHARGED THROUGH `exists_framedGaloisRep_hilbertTraceSubring`
+BELOW**, which has literally this conclusion and is PROVEN — because that
+declaration takes the RETRACTION as a hypothesis, and the retraction
+(`exists_ringHom_retraction_hilbertTraceSubring`) is proven through the
+consumer of THIS leaf. That is the circularity this whole node exists to
+break. It is also blocked mechanically: both live BELOW this point in the
+module, so Lean's declaration order forbids the appeal anyway.
+
+The check that would refute the obstruction is unchanged in kind and
+sharper in content: a version of
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` whose hypotheses
+replace `f`/`hf` by `𝒟.IsWeaklyUniversal`.
+
+# ROUTE OBSTRUCTION FOUND 2026-07-27 (flt-lean-65): THIS NODE IS MISSING `[NumberField.IsTotallyReal F]`, AND ITS ROUTE NEEDS IT
+
+This is a CUT-LEVEL observation, recorded rather than acted on, because
+fixing it changes a signature that two consumers and their consumers
+share.
+
+The Carayol conjugation this leaf asks for bottoms out at ABSOLUTE
+irreducibility of `ρbar|_{G_F}`, i.e. at
+`exists_smul_eq_of_commute_of_isIrreducible_hilbert` below. That
+declaration carries `[NumberField.IsTotallyReal F]`, and its own ROUTE
+OBSTRUCTION section says in terms why: the oddness input is a COMPLEX
+CONJUGATION inside `Γ F`, i.e. a real place of `F`, and over a totally
+imaginary `F` there is an explicit counterexample — `ρbar : Γ ℚ → GL₂(𝔽_ℓ)`
+surjective, `C` a nonsplit Cartan, `F` the fixed field of `ρbar⁻¹(C)`,
+whereupon `hirrF` HOLDS while the commutant is `𝔽_{ℓ²}`, of `k`-dimension
+`2`. On 2026-07-27 the binder was threaded through the whole chain from
+that leaf to the two terminal consumers —
+`exists_residual_basis_toMatrix'_hilbert`,
+`exists_basis_toMatrix'_isUnit_hilbertTraceGram`,
+`exists_basis_repr_mem_hilbertTraceSubring`,
+`exists_conj_entries_mem_hilbertTraceSubring`,
+`exists_framedGaloisRep_baseChange_hilbertTraceSubring`,
+`exists_framedGaloisRep_hilbertTraceSubring`,
+`exists_hilbertTraceDescent`,
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum`.
+
+**This node was created the SAME DAY, to break the circularity, and was
+not included in that sweep.** `HilbertDeformationDatum` carries no
+totally-real field (unlike `PotentialHeckeDatum`, whose `totallyReal`
+field is what discharges the binder at the top), so `F` here is an
+arbitrary number field and none of the chain above is applicable to it.
+
+This is a ROUTE obstruction, not a refutation: the counterexample above
+does not obviously falsify THIS statement (in it `𝒟.R = k = 𝔽_ℓ` and
+`𝒟.π = id`, so `R' = 𝒟.R` and the descent is trivial). What it does show
+is that the only documented route is unavailable as the leaf is currently
+scoped, so a prover dispatched here will not close it.
+
+**The repair, for whoever owns the cut**: add `[NumberField.IsTotallyReal F]`
+to this leaf, to the consumer below, and to that consumer's two consumers
+`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` and
+`exists_ringHom_retraction_hilbertTraceSubring`. It is an INSTANCE binder,
+so no positional call site changes, and the 2026-07-27 sweep records that
+the terminal consumers discharge it for free
+(`exists_heckeDatum_isWeaklyUniversal_isTraceGenerated` carries
+`htr : NumberField.IsTotallyReal F` explicitly, and
+`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified` gets it
+from `PotentialHeckeDatum.totallyReal`). The check that would refute this
+note: close the leaf, or exhibit the absolute irreducibility, over an
+arbitrary number field `F`.
+
+References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen,
+*Pseudo-représentations*, Math. Ann. 306; Rouquier, *Caractérisation des
+caractères et pseudo-caractères*, J. Algebra 180; Mazur, *Deforming Galois
+representations*, §1.8. -/
+theorem exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal)
+    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ)) :
+    letI := hloc
+    ∃ ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2),
+      IsHilbertHardlyRamified ℓ F
+        (rank_finTwoPi (hilbertTraceSubring ℓ 𝒟.ρ)) ρ' ∧
+      ∀ g : Γ F, ((ρ' g).charpoly).map (hilbertTraceSubring ℓ 𝒟.ρ).subtype =
+        (𝒟.ρ g).charpoly :=
+  sorry
+
 /-- **Carayol's Théorème 1 over `F`: a weakly universal datum may be taken
 TRACE-GENERATED** (LEAF — new 2026-07-27; it is the SOLE arithmetic input of
 BOTH `exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` and
@@ -14524,16 +14638,29 @@ with `R' ↪ 𝒟.R` (this half needs no arithmetic whatever); and its TRACE
 GENERATION, by `hilbertTraceSubring_eq_top_of_charpoly_map`.
 
 **UPDATE 2026-07-27 (flt-lean-182): AXIS 6 BELOW IS NOW CLOSED, and exactly
-ONE sorried `have` remains.** Carayol's **Lemme 1** is no longer assumed: it
+ONE sorried `have` remained.** Carayol's **Lemme 1** is no longer assumed: it
 is DERIVED from Théorème 1 by
 `isNoetherianRing_isAdic_hilbertTraceSubring_of_descent` above, which is
-Mazur's `Φ_ℓ` criterion applied directly to `R'`. So the cluster's single
-atom is now:
+Mazur's `Φ_ℓ` criterion applied directly to `R'`.
 
-* `hThm1` — Carayol's **Théorème 1** proper: the framed deformation descends
-  to `R'` and the `F`-level local conditions descend with it. It is stated as
-  an implication so that the two Carayol hypotheses it spends (`hℓ5`,
-  `hirrF`) are mechanically visible.
+**UPDATE 2026-07-27 (flt-lean-65): that last sorried `have` is now a NAMED
+TOP-LEVEL LEAF and this node carries no direct `sorry` at all.** The cluster's
+single atom is
+
+* `exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal`
+  immediately above — Carayol's **Théorème 1** proper: the framed deformation
+  descends to `R'` and the `F`-level local conditions descend with it. Its
+  hypotheses are exactly this node's, so the two Carayol inputs it spends
+  (`hℓ5`, `hirrF`) are ordinary binders rather than the implication shape the
+  `have` used to make them visible. **Read its docstring before working on
+  this cluster**: it records a ROUTE OBSTRUCTION found while hoisting it —
+  the Carayol conjugation bottoms out at ABSOLUTE irreducibility of
+  `ρbar|_{G_F}`, whose leaf `exists_smul_eq_of_commute_of_isIrreducible_hilbert`
+  needs `[NumberField.IsTotallyReal F]` (a real place, for the complex
+  conjugation), and that binder was threaded through the whole chain on
+  2026-07-27 but NOT through this node, which was created the same day. The
+  repair is a cut-level signature change, so it is reported there and not
+  made here.
 
 (The retired `hLemme1` read: `R'` is Noetherian, adic and adically complete;
 equivalently `𝔪'` is finitely generated, everything else following from
@@ -14696,28 +14823,17 @@ theorem exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal
       Set 𝒟.R) := Subring.isClosed_topologicalClosure _
   haveI hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ) :=
     isLocalRing_of_isClosed_subring_of_finite_residueField 𝒟.isAdic hclosed
-  /- **THE SOLE ARITHMETIC INPUT — Carayol's Théorème 1 proper**: the framed
-  deformation descends to `R'`, and the `F`-level local conditions descend
-  with it. The Nyssen–Rouquier conjugation itself is available
-  retraction-free (`exists_framedGaloisRep_baseChange_hilbertTraceSubring`
-  below takes only `hloc`), and three of the four local clauses are FORMAL
-  (determinant, unramifiedness through the injective frame, charpolys).
-  The whole residue is the TAME clause at the places `w ∣ 2`: descending a
-  unimodular eigenrow from `𝒟.R²` to `R'²`, which the FALSITY AUDIT of
-  `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` refutes for an
-  ARBITRARY datum (`R' = ℤ_7[[Z]] ↪ ℤ_7[[Y]]` by `Z ↦ 7Y`, over
-  `F = ℚ(ζ₇)⁺`, `ℓ = 7`) — so `h𝒟`, in context here, is load-bearing and may
-  not be dropped. Note the quotient character needs NO descent argument: it
-  is valued in `{±1}` (a square root of `1` in a local ring with `2` a unit,
-  which holds since `char k = ℓ ≥ 5`), hence already in the image of `ℤ_ℓ`. -/
-  have hThm1 : 5 ≤ ℓ → (ρbar.map (algebraMap ℚ F)).IsIrreducible →
-      ∃ ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2),
-        IsHilbertHardlyRamified ℓ F
-          (rank_finTwoPi (hilbertTraceSubring ℓ 𝒟.ρ)) ρ' ∧
-        ∀ g : Γ F, ((ρ' g).charpoly).map (hilbertTraceSubring ℓ 𝒟.ρ).subtype =
-          (𝒟.ρ g).charpoly := by
-    sorry
-  obtain ⟨ρ', hhr', hcp'⟩ := hThm1 hℓ5 hirrF
+  -- **THE SOLE ARITHMETIC INPUT — Carayol's Théorème 1 proper**, hoisted
+  -- 2026-07-27 into the named leaf
+  -- `exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal`
+  -- immediately above: the framed deformation descends to `R'` and the
+  -- `F`-level local conditions descend with it.  Its docstring carries the
+  -- full route, the reason `h𝒟` is load-bearing (the tame eigenrow at
+  -- `w ∣ 2`), and a ROUTE OBSTRUCTION about the missing
+  -- `[NumberField.IsTotallyReal F]`.
+  obtain ⟨ρ', hhr', hcp'⟩ :=
+    exists_framedGaloisRep_descent_hilbertTraceSubring_of_isWeaklyUniversal
+      ℓ hℓ5 F hirrF 𝒟 h𝒟 hloc
   /- **Carayol's Lemme 1 is DERIVED, not assumed** (AXIS 6, closed 2026-07-27):
   Mazur's `Φ_ℓ` criterion applied DIRECTLY to `R'` turns the conclusion of
   Théorème 1 into Noetherianity, adicness and adic completeness. It consumes

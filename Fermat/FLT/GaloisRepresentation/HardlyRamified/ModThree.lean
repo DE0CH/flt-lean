@@ -49365,199 +49365,125 @@ theorem exists_rayClassPackage_ray_class (E : Type*) [Field E] [NumberField E]
 
 set_option maxHeartbeats 1000000 in
 /-- **THE COMMON NORM BASE AND THE TWO AUXILIARY NORM SUBGROUPS OF
-CHILDRESS pp. 121–123** (sorry node, created 2026-07-27 as the sole
-sub-leaf (A3b-2-b-i) of `divisorRatio_mem_sup_ray_class` just below,
-which is now glue over it): there is a divisor `β` whose Artin symbol is
-`χ (globalFrob v₀)`, and two subgroups `𝒜`, `𝒜₀` of the divisor group —
-the divisors that are NORMS from the auxiliary field attached by Artin's
-Lemma to `v` resp. to `v₀` — each containing `β` and its own prime, and
-each meeting `ker φ` inside `P ⊔ N`.
+CHILDRESS pp. 121–123, WITH NO UNRAMIFIEDNESS HYPOTHESIS ON `χ`**
+(SORRY LEAF, created 2026-07-27 (flt-lean-65) as the sole sub-leaf of
+`divisorRatio_mem_sup_ramified_ray_class` far below, which is now glue
+over it; `exists_artinNormSubgroups_ray_class` immediately below — the
+`hunr`-carrying form, which was itself a leaf until today — is now PROVEN
+over this one by simply discarding `hunr`).
 
-**WHY A COMMON BASE `β` IS FORCED, and this is the mathematical content
-of the cut.** Childress runs his argument one prime at a time: Artin's
-Lemma is applied at `p₁, …, p_r` SEPARATELY, producing a different
-auxiliary field `Eᵢ` for each, and the relation actually proved is
-`pᵢ^{γᵢ} b_F^{-dᵢ} ∈ P⁺ N` — a relation between `pᵢ` and a FIXED divisor
-`b_F`, never between two primes. That is not a stylistic choice. Artin's
-Lemma at `v` gives an `E` in which `v` splits completely and says
-NOTHING about `v₀`, so `v · v₀^{-e}` is in general **not** a norm from
-either prime's auxiliary field, and the two-prime relation cannot be
-attacked with a single `E`. Childress's `b_F = N_{E/F} B_E` is built
-from the COMPOSITUM `E = E_v E_{v₀}`, hence is a norm from each factor,
-which is exactly what lets the two primes be handled independently and
-then subtracted. `β` here is that `b_F`, and `𝒜`, `𝒜₀` are the norm
-groups of `E_v`, `E_{v₀}`.
+**WHAT CHANGED, and why this is a UNIFICATION rather than a new
+obligation.** The cluster carried two parallel two-prime leaves, the
+unramified `divisorRatio_mem_sup_ray_class` and the ramified
+`divisorRatio_mem_sup_ramified_ray_class`, whose statements differ in
+exactly one binder, `hunr`. The unramified one had already been reduced
+to `exists_artinNormSubgroups_ray_class`; the ramified one was still a
+bare `sorry`, so the SAME class field theory was open twice. Dropping
+`hunr` here makes one leaf serve both: the ramified consumer applies it
+directly, and the unramified consumer applies it and throws `hunr` away.
+Net effect on the frontier is one leaf where there were two.
 
-Everything else in this leaf's parent is then divisor bookkeeping:
-`v · v₀^{-e} = (v · β^{-e}) · (v₀ · β^{-1})^{-e}`, and each bracket lies
-in its own `𝒜 ⊓ ker φ` — the left one because `φ (single v 1) =
-φ β ^ e` by `he`, the right one because `φ β = φ (single v₀ 1)` by
-construction. That is the whole glue below.
+**WHY `hunr` IS NOT NEEDED — the mathematics, checked against the book,
+not binder bookkeeping.** Childress's proof of Prop. 5.2.2 (*Class Field
+Theory*, ch. 5 §2, pp. 121–123) opens by choosing `m` "a multiple of
+`f = f(K/F)`, chosen divisible by all the ramified primes and no
+others", and thereafter every Artin symbol it evaluates is at a prime
+prime to `m`. Unramifiedness of `K/F` is never used and never stated;
+what is used is that the modulus is divisible by every ramified prime,
+so that the Artin map is defined on `I_F(m)` and no Frobenius at a
+ramified prime is ever evaluated. That condition is exactly `hmmram`,
+which is already a binder of the `hunr`-carrying form and is carried here
+unchanged. Concretely: `hv` and `hv₀` put both primes outside `mm`, so by
+`hmmram` both are unramified for `χ`, and the junk values
+`χ (globalFrob w)` at ramified `w` — Frobenius being well defined only
+modulo inertia there — are never touched. `hunr` merely forces the
+ramified set to be EMPTY, which makes `hmmram` vacuous.
 
-**Route for a prover — Childress pp. 121–123, in the order the objects
-must be built.**
+**THE SHARPEST EVIDENCE, since a route audit is a dated claim.** The
+FALSITY AUDIT recorded on `artinDivisorKernel_le_sup_ray_class` below
+exhibits a counterexample to the *unrepaired* crux (`F = ℚ`, `χ ≡ 1`,
+`mm = (5)`, `A = φ.ker`) which satisfies `hunr` **vacuously**. So `hunr`
+demonstrably is not what makes the statement true, and the repair that
+did make it true — `A = φ.ker ⊓ Im` — is orthogonal to it.
 
-1. *The auxiliary fields.* `hartin` at `v` gives `(m₁, H₁)`, and at `v₀`
-   with `S` containing the primes of `m₁` gives `(m₂, H₂)` with `m₂`
-   prime to `m₁`. `H₁`, `H₂` are OPEN, hence closed in the compact
-   `Γ F`, so `Eᵢ := IntermediateField.fixedField Hᵢ` satisfies
-   `Hᵢ = Eᵢ.fixingSubgroup` (`InfiniteGalois.fixingSubgroup_fixedField`)
-   and `FiniteDimensional F Eᵢ`
-   (`InfiniteGalois.isOpen_iff_finite`), so `Eᵢ` is a NUMBER FIELD in
-   `Type u` — which is what makes `hcycl`'s quantifier over every
-   `E : Type u` usable. `E := E₁E₂` corresponds to `H₁ ⊓ H₂`.
-2. *The base `β`.* Choose `B_E ∈ I_E(m₁m₂mm)` with `c_E (B_E) =
-   χ (globalFrob v₀)` — surjectivity of the Artin map over `E`, i.e.
-   Chebotarev at `E` — and set `β := N_{E/F} B_E`. Its symbol is
-   `χ (globalFrob v₀)` by the Consistency Property, and `β` is a norm
-   from `E₁` and from `E₂` because `E ⊇ Eᵢ`.
-3. *The norm groups.* `𝒜 := N_{E₁/F} (I_{E₁}(m₁ mm)) ⊓ Im`, likewise
-   `𝒜₀`. Clause (iv) of `hartin` (`globalFrob v ∈ H₁`) says `v` splits
-   completely in `E₁`, so `v = N_{E₁/F} 𝔓` for any `𝔓 ∣ v`: that is
-   `single v 1 ∈ 𝒜`.
-4. *The descent* `𝒜 ⊓ ker φ ≤ P ⊔ N`. For `𝔞 = N_{E₁/F} 𝔄` with
-   `φ 𝔞 = 1`, the Consistency Property plus `K ∩ E₁ = F` (clause (i))
-   give `c_{E₁} 𝔄 = 1`; Artin Reciprocity for `K E₁ / E₁`, which is a
-   subextension of the CYCLOTOMIC `E₁(ζ_{m₁})/E₁` by clause (ii), writes
-   `𝔄 = (α) · N_{K E₁ / E₁} 𝔅` with `α ≫ 0`, `α ≡ 1 (mod m₁ mm)`;
-   applying `N_{E₁/F}` sends `(α)` into `P` (`N (α) ≫ 0` and
-   `≡ 1 (mod mm)`) and the norm part into `N`.
+**Route — Childress pp. 121–123, and it is exactly here that `hartin`
+and `hcycl` are consumed.** Apply Artin's Lemma (`hartin`) at `v`, with
+`S` the finite set of rational primes already used, to get a modulus `m`
+and an open subgroup `H` — the auxiliary field `E`, `H = Gal(F̄/E)` — in
+which `v` splits completely (clause `globalFrob v ∈ H`), with
+`K ∩ E = F` (clause `Γ F = ker χ · H`) and `K E ⊆ E(ζ_m)` (clause
+`H ∩ Gal(F̄/F(ζ_m)) ≤ ker χ`). Take `𝒜` to be the divisors of `F` that
+are norms from `E`, and `β = b_F` Childress's common base: `B_E` is
+chosen with `B_E/(K E/E) = σ` and `b_F := N_{E/F} B_E`, so `b_F` is a
+norm from `E` **by construction**. Realise `v · β^{-e}` as a norm
+`N_{E/F} 𝔄_E` from a NON-PRINCIPAL divisor of `E`, every residue degree
+of which is `1`; the naive principal descent is vacuous, because
+`c_E ((γ) 𝓞_E) = c ((γ))^{[E:F]}` and `[E:F]` is an `ℓ`-power.
+Base-change then puts the character in the scope of `hcycl` AT `E` —
+which is why `hcycl` quantifies over every number field `E` in `Type u`,
+and why narrowing that quantifier would make this leaf unprovable. The
+same construction at `v₀` gives `𝒜₀`; the two auxiliary fields are
+different, which is precisely why a COMMON BASE `β` is needed and why
+the consumer cannot be stated with a single field.
 
-**ROUTE AUDIT — RESOLVED 2026-07-27; the missing input is now IN this
-binder list, as clause (ii) of `hcycl`.** The audit read: step 4 consumes
-Artin Reciprocity at `E₁` in the direction `ker ⊆ ray · norms`, whereas
-`hcycl` supplied only the OTHER direction — it concluded
-`c' (span {δ}) = 1`, i.e. `ray ⊆ ker`, for a cyclotomic `χ'` (PROVEN, as
-`artinSymbol_span_eq_one_of_cyclotomic_ray_class`). `norms ⊆ ker` is
-free, by the very definition of `N`. So the old `hcycl` gave
-`P_E ⊔ N_E ≤ ker c_E`, hence `[I_E : P_E ⊔ N_E] ≥ n`; turning that into
-`ker c_E ≤ P_E ⊔ N_E` needs `[I_E : P_E ⊔ N_E] ≤ n`, which is the
-**Universal/Global Norm Index Inequality at `E₁`** (Childress p. 112,
-the displayed step before Theorem 2.1's proof). At `F` this cluster HAS
-that input — it is `exists_artinDivisorNormIndex_le_ray_class`, arriving
-here as `hidx₂` — but it is stated at `F` only, and `hidx₂` is in any
-case the *opposite* inequality (`[Im : A] ≤ [Im : P ⊔ N]`), used one
-level up by `le_of_le_of_relIndex_le_ray_class` to convert this cluster's
-conclusion `A ≤ P ⊔ N` back into `P ⊔ N ≤ A`.
+**THE AUXILIARY FIELD IS BUILT (2026-07-27) — this gate is CLOSED.**
+"Apply Artin's Lemma to get the field `E`" was, until then, not something
+a consumer could literally write: `hartin` yields the SUBGROUP `H` and
+nothing more. `exists_auxiliaryNumberField_ray_class` far above is
+PROVEN, and its Artin-facing packaging
+`exists_artinAuxiliaryNumberField_ray_class` delivers `m`, `H`,
+`E : Type u` with `[NumberField E]`, an injection `ι : Γ E →* Γ F` with
+image exactly `H`, and the derived clause
+`∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ (ι σ) = 1`
+— precisely `hcycl`'s third hypothesis for `χ' := χ ∘ ι`. What remains is
+ideal arithmetic, not theory-building: the base change `c'` of `c` to
+`𝓞 E`, the norm compatibility `c (N_{E/F} 𝔄) = c' 𝔄` over the pin's
+`Ideal.relNorm` (which IS in the pin — it is used in
+`Fermat/FLT/EllipticCurve/WeilPairing.lean`), and the use of
+`globalFrob p ∈ H` to see that `p` splits completely in `E/F` so that
+every residue degree above it is `1`. **That, not the Herbrand quotient
+and not the idele class group, is the gate on this leaf.**
 
-**THE REPAIR THAT WAS MADE, and it is the FIRST of the two shapes the
-audit offered.** `hcycl` is now the CONJUNCTION of the two directions —
-full cyclotomic reciprocity, the sentence Childress actually cites on
-p. 123 — quantified over every number field `E : Type u`:
+**A SECOND GATE, ALSO CLOSED: `hcycl`'s DIRECTION.** The auxiliary-field
+construction is necessary but not sufficient. Once you have `E` and
+`χ' := χ ∘ ι`, the descent needs Artin reciprocity at `E` in the
+direction `ker ⊆ ray · norms` — and `hcycl` used to conclude only
+`c' (span {δ}) = 1`, i.e. `ray ⊆ ker`, which is the CONVERSE. `hcycl` is
+now the CONJUNCTION of both directions; **clause (ii) is the one this
+leaf consumes**, and it is open as
+`artinDivisorKernel_le_sup_of_cyclotomic_ray_class` above.
 
-* clause (i) is the OLD statement verbatim, `c' (span {δ}) = 1` for
-  totally positive `δ ≡ 1 (mod m)`; it is still discharged by
-  `artinSymbol_span_eq_one_of_cyclotomic_ray_class` over
-  `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`, which is why
-  those two proven nodes are still CONSUMED and not left floating;
-* clause (ii) is the new one, `ker φ' ⊓ I_E(mmE) ≤ P⁺_{E,mmE} ⊔ N_E` for
-  any nonzero modulus `mmE` divisible by `(m)`, stated in the same
-  divisor-group language and with the same intrinsic pinning clauses as
-  the `F`-level statements here. Its supplier is the new sorry leaf
-  `artinDivisorKernel_le_sup_of_cyclotomic_ray_class` above; read its
-  docstring for the route and the faithfulness audit.
+AXIS SEARCHED: the descent axis as Childress runs it, plus a grep of
+mathlib, `~/cs/FLT` and this project for the norm and fixed-field
+machinery; NOT a cohomological reproof of 5.2.2, and NOT the
+index-inequality alternative (rejected — see the RESOLVED ROUTE AUDIT on
+`exists_artinNormSubgroups_ray_class` below; note in particular that
+`hidx₂` as stated, `A.relIndex Im ≤ (P ⊔ N).relIndex Im`, is the
+AUTOMATIC direction once `P ⊔ N ≤ A ≤ Im`, so it yields finiteness of
+`(P ⊔ N).relIndex A` and never index `1`).
 
-**THE SECOND SHAPE WAS REJECTED, and the reason is not stylistic** — a
-hypothesis quantified over every `E` that is the analogue of
-`exists_artinDivisorNormIndex_le_ray_class`, namely
-`(P_E ⊔ N_E).relIndex Im_E ≤ (ker c_E ⊓ Im_E).relIndex Im_E`, does NOT
-by itself give step 4 what it needs. Converting that index inequality
-into the inclusion also requires `(ker c_E ⊓ Im_E).relIndex Im_E ≠ 0`,
-i.e. surjectivity of the Artin map (Chebotarev) AT `E` — a third
-hypothesis the audit did not name — and its own supplier would be the
-First Inequality at every `E`, whose content
-`exists_artinDivisorNormIndex_le_ray_class` records as absent from
-mathlib, from `~/cs/FLT` and from this project. One hypothesis with an
-attackable supplier beats two with a blocked one.
+**Check that would refute it**: hypotheses as stated together with a
+`v`, `v₀` for which no such `β`, `𝒜`, `𝒜₀` exist — equivalently, by the
+consumer below, a `v`, `v₀`, `e` with
+`ofAdd (single v 1 - e • single v₀ 1)` exhibited outside `P ⊔ N`.
 
-*Check that would refute the resolved form*: exhibit a derivation of
-`ker c_E ⊓ Im_E ≤ P_E ⊔ N_E` for a cyclotomic `χ'` from clause (i)
-alone — equivalently, a proof that a character of the ray class group of
-`E` mod `m·mm` that kills the norms of `K E` is determined by its values
-on a cyclic quotient of the right order, with no index input. That would
-make clause (ii) redundant and the new leaf deletable.
-
-**FAITHFULNESS (audited 2026-07-27): TRUE as stated, and NOT vacuous.**
-True because the objects of steps 1–4 exist (this is Childress's own
-construction). Not vacuous: the minimal admissible choice
-`𝒜 = 𝒜₀ = Subgroup.closure {single v 1, β}` already forces
-`𝒜 ⊓ ker φ ≤ P ⊔ N` to contain the parent's conclusion, so no junk
-witness discharges it; and `𝒜 = ⊤` is not admissible either, since
-`⊤ ⊓ ker φ ≤ P ⊔ N` is strictly stronger than the crux one level up
-(it drops `⊓ Im`, and a divisor supported at a prime dividing `mm` has
-no reason to lie in `P ⊔ N`). `hv` and `hv₀` are load-bearing at step 3:
-a prime dividing `mm` is outside `Im`, so it is not in the norm group as
-defined.
-
-**DECOMPOSED 2026-07-27 — steps 1, 2 and 4 are now WRITTEN; the remaining
-content is THREE sorried `have`s, all of it ideal-theoretic.** The proof below
-is the glue the route above describes, and it is the ONLY place `hcycl` is
-consumed in this cluster:
-
-* *Step 1 is DONE, not sorried.* `exists_artinAuxiliaryNumberField_ray_class`
-  (PROVEN, just above) is applied twice — at `v` with `S = ∅` and at `v₀` with
-  `S = m₁.primeFactors`, which is what makes the two moduli coprime — and hands
-  back number fields `E₁, E₂ : Type u` with maps `ι_i : Γ E_i →* Γ F` onto the
-  open subgroups `H_i`. That lemma had no consumer before this proof.
-* *Writing `hcycl`'s hypotheses down at `E_i` is DONE.* The moduli are
-  `mmE_i := (m_i · N(mm))`, admissible for the cyclotomic extension
-  (`(m_i) ∣ mmE_i`, `hcycl`'s clause) and divisible by `mm 𝓞_{E_i}` (because
-  `Ideal.absNorm mm ∈ mm`), which is what makes the ray push-forward below
-  TRUE rather than merely plausible. `exists_ideal_extension_globalFrob_ray_class`
-  supplies `c_i`, and `exists_rayClassPackage_ray_class` (PROVEN, just above)
-  supplies `φ_i`, `d_i`, `I_{E_i}(mmE_i)`; `P_i`, `N_i` are the literal
-  closures, so `hcycl`'s `hPE`/`hNE` are `rfl`.
-* *Step 4 is DONE.* `hcycl … |>.2` at `E_i` gives
-  `ker φ_i ⊓ Im_i ≤ P_i ⊔ N_i`, and `map_inf_ker_le_sup_of_normCompatible_ray_class`
-  (PROVEN, just above) turns that into `𝒜_i ⊓ ker φ ≤ P ⊔ N` for
-  `𝒜_i := 𝔑_i (Im_i)`. **Note the answer subgroups are literally the images of
-  the norm maps**, and no `⊓ Im` is needed: the conclusion never asks for it.
-
-**WHAT IS LEFT, by name, and it is items (b) and (c) of the "WHAT REMAINS"
-note on `exists_artinAuxiliaryNumberField_ray_class`:**
-
-1. `hnorm₁` / `hnorm₂` — *the relative norm on divisors*. For `i = 1, 2`:
-   a monoid hom `𝔑_i` from the divisor group of `E_i` to that of `F` with
-   (α) the CONSISTENCY PROPERTY `φ ∘ 𝔑_i = φ_i`, (β) `𝔑_i(P_i) ≤ P` and
-   `𝔑_i(N_i) ≤ N`, and (γ) `single v 1 ∈ 𝔑_i(Im_i)`, i.e. `v` splits
-   completely in `E₁` (clause `globalFrob v ∈ H₁`, which is passed in). `Ideal.relNorm`
-   is in the pin and already used in `Fermat/FLT/EllipticCurve/WeilPairing.lean`.
-   (β) is where `mm 𝓞_{E_i} ∣ mmE_i` is consumed: a norm of a totally positive
-   `α ≡ 1 (mod mmE_i)` is totally positive and `≡ 1 (mod mm)`, and
-   `𝔑_i (single W n) = single w (n·f)` with `orderOf (χ (Frob w)) ∣ n·f` because
-   `n = orderOf (χ (Frob w)^f)`.
-2. `hbase` — *the common norm base*. A divisor `β` with Artin symbol
-   `χ (globalFrob v₀)` lying in BOTH `𝔑₁(Im₁)` and `𝔑₂(Im₂)`. This is the step
-   that forces the COMPOSITUM: `β := N_{E/F} B` for `E = E₁E₂` is a norm from
-   each factor, and `B` with `c_E B = χ (globalFrob v₀)` is surjectivity of the
-   Artin map over `E`. `E` itself is cheap — `exists_auxiliaryNumberField_ray_class`
-   applies to the open subgroup `H₁ ⊓ H₂` — and the coprimality clause
-   `hm₂cop`, together with the two `hi` clauses (`χ(H_i) = χ(Γ F)`), is what is
-   passed in for the `K ∩ E = F` half of that surjectivity.
-
-**CAVEAT A PROVER OF (1) MUST READ FIRST, and it is a possible cut-level
-defect, not a proof obligation.** `hcycl` is applied to the base-changed
-character `χ ∘ ι_i`, and `φ_i` is pinned by `χ (ι_i (globalFrob W))` — but
-`exists_artinAuxiliaryNumberField_ray_class` pins `ι_i` only as *some* injective
-map onto `H_i`, NOT as the restriction map along `F → E_i`. Consistency (α) is
-true for the restriction; for a general injective map onto `H_i` it need not be,
-so (1) may be unprovable as stated. **The repair is cheap and local**: the
-construction inside `exists_auxiliaryNumberField_ray_class` already produces
-`hιapp : ∀ σ x, ι σ x = e (σ (e.symm x))` for an `e : AlgebraicClosure E ≃ₐ[E]
-AlgebraicClosure F`; exposing that clause (together with the
-`Algebra E (AlgebraicClosure F)` it needs) in both lemmas' conclusions pins
-`ι` as a restriction and makes (α) provable. Do that BEFORE attacking (1),
-not after. -/
-theorem exists_artinNormSubgroups_ray_class
+**The Childress pp. 121–123 assembly lives HERE** (integration, 2026-07-28).
+Two branches worked on this node concurrently: one wrote the assembly against
+the `hunr`-carrying `exists_artinNormSubgroups_ray_class` below, the other
+generalised the statement by dropping `hunr` so that the ramified consumer
+could share it.  The assembly never used `hunr`, so it transplants verbatim
+into the general form and the special form below is now a one-line
+delegation.  Steps 1 and 4 (Artin's Lemma at `v` and `v₀`; cyclotomic
+reciprocity upstairs) are PROVEN; steps 2 and 3 — the common norm base from
+the compositum, and the relative norm on divisors — remain as three sorried
+`have`s inside it. -/
+set_option maxHeartbeats 1000000 in
+theorem exists_artinNormSubgroups_ramified_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
     (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
     (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
     (hVker : ∀ a ∈ V, χ a = 1)
-    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
-      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
-        χ (c * Field.absoluteGaloisGroup.map
-          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
     (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
     (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
     (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
@@ -49830,6 +49756,316 @@ theorem exists_artinNormSubgroups_ray_class
       hP𝔑₁ hN𝔑₁ hker₁,
     map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₂ φ φ₂ hcons₂ Im₂ P₂ N₂ P N
       hP𝔑₂ hN𝔑₂ hker₂⟩
+
+set_option maxHeartbeats 1000000 in
+/-- **THE COMMON NORM BASE AND THE TWO AUXILIARY NORM SUBGROUPS OF
+CHILDRESS pp. 121–123** (**PROVEN 2026-07-27** (flt-lean-65) over the
+`hunr`-FREE form `exists_artinNormSubgroups_ramified_ray_class`
+immediately above, by discarding `hunr` — hence the binder is now
+`_hunr`, making the emptiness mechanically visible. It was a sorry node
+from its creation 2026-07-27 as the sole sub-leaf (A3b-2-b-i) of
+`divisorRatio_mem_sup_ray_class` just below, which is glue over it.
+The `hunr`-free form serves BOTH the unramified consumer here and the
+ramified `divisorRatio_mem_sup_ramified_ray_class` far below, which
+until today opened the same class field theory a second time): there is
+a divisor `β` whose Artin symbol is
+`χ (globalFrob v₀)`, and two subgroups `𝒜`, `𝒜₀` of the divisor group —
+the divisors that are NORMS from the auxiliary field attached by Artin's
+Lemma to `v` resp. to `v₀` — each containing `β` and its own prime, and
+each meeting `ker φ` inside `P ⊔ N`.
+
+**WHY A COMMON BASE `β` IS FORCED, and this is the mathematical content
+of the cut.** Childress runs his argument one prime at a time: Artin's
+Lemma is applied at `p₁, …, p_r` SEPARATELY, producing a different
+auxiliary field `Eᵢ` for each, and the relation actually proved is
+`pᵢ^{γᵢ} b_F^{-dᵢ} ∈ P⁺ N` — a relation between `pᵢ` and a FIXED divisor
+`b_F`, never between two primes. That is not a stylistic choice. Artin's
+Lemma at `v` gives an `E` in which `v` splits completely and says
+NOTHING about `v₀`, so `v · v₀^{-e}` is in general **not** a norm from
+either prime's auxiliary field, and the two-prime relation cannot be
+attacked with a single `E`. Childress's `b_F = N_{E/F} B_E` is built
+from the COMPOSITUM `E = E_v E_{v₀}`, hence is a norm from each factor,
+which is exactly what lets the two primes be handled independently and
+then subtracted. `β` here is that `b_F`, and `𝒜`, `𝒜₀` are the norm
+groups of `E_v`, `E_{v₀}`.
+
+Everything else in this leaf's parent is then divisor bookkeeping:
+`v · v₀^{-e} = (v · β^{-e}) · (v₀ · β^{-1})^{-e}`, and each bracket lies
+in its own `𝒜 ⊓ ker φ` — the left one because `φ (single v 1) =
+φ β ^ e` by `he`, the right one because `φ β = φ (single v₀ 1)` by
+construction. That is the whole glue below.
+
+**Route for a prover — Childress pp. 121–123, in the order the objects
+must be built.**
+
+1. *The auxiliary fields.* `hartin` at `v` gives `(m₁, H₁)`, and at `v₀`
+   with `S` containing the primes of `m₁` gives `(m₂, H₂)` with `m₂`
+   prime to `m₁`. `H₁`, `H₂` are OPEN, hence closed in the compact
+   `Γ F`, so `Eᵢ := IntermediateField.fixedField Hᵢ` satisfies
+   `Hᵢ = Eᵢ.fixingSubgroup` (`InfiniteGalois.fixingSubgroup_fixedField`)
+   and `FiniteDimensional F Eᵢ`
+   (`InfiniteGalois.isOpen_iff_finite`), so `Eᵢ` is a NUMBER FIELD in
+   `Type u` — which is what makes `hcycl`'s quantifier over every
+   `E : Type u` usable. `E := E₁E₂` corresponds to `H₁ ⊓ H₂`.
+2. *The base `β`.* Choose `B_E ∈ I_E(m₁m₂mm)` with `c_E (B_E) =
+   χ (globalFrob v₀)` — surjectivity of the Artin map over `E`, i.e.
+   Chebotarev at `E` — and set `β := N_{E/F} B_E`. Its symbol is
+   `χ (globalFrob v₀)` by the Consistency Property, and `β` is a norm
+   from `E₁` and from `E₂` because `E ⊇ Eᵢ`.
+3. *The norm groups.* `𝒜 := N_{E₁/F} (I_{E₁}(m₁ mm)) ⊓ Im`, likewise
+   `𝒜₀`. Clause (iv) of `hartin` (`globalFrob v ∈ H₁`) says `v` splits
+   completely in `E₁`, so `v = N_{E₁/F} 𝔓` for any `𝔓 ∣ v`: that is
+   `single v 1 ∈ 𝒜`.
+4. *The descent* `𝒜 ⊓ ker φ ≤ P ⊔ N`. For `𝔞 = N_{E₁/F} 𝔄` with
+   `φ 𝔞 = 1`, the Consistency Property plus `K ∩ E₁ = F` (clause (i))
+   give `c_{E₁} 𝔄 = 1`; Artin Reciprocity for `K E₁ / E₁`, which is a
+   subextension of the CYCLOTOMIC `E₁(ζ_{m₁})/E₁` by clause (ii), writes
+   `𝔄 = (α) · N_{K E₁ / E₁} 𝔅` with `α ≫ 0`, `α ≡ 1 (mod m₁ mm)`;
+   applying `N_{E₁/F}` sends `(α)` into `P` (`N (α) ≫ 0` and
+   `≡ 1 (mod mm)`) and the norm part into `N`.
+
+**ROUTE AUDIT — RESOLVED 2026-07-27; the missing input is now IN this
+binder list, as clause (ii) of `hcycl`.** The audit read: step 4 consumes
+Artin Reciprocity at `E₁` in the direction `ker ⊆ ray · norms`, whereas
+`hcycl` supplied only the OTHER direction — it concluded
+`c' (span {δ}) = 1`, i.e. `ray ⊆ ker`, for a cyclotomic `χ'` (PROVEN, as
+`artinSymbol_span_eq_one_of_cyclotomic_ray_class`). `norms ⊆ ker` is
+free, by the very definition of `N`. So the old `hcycl` gave
+`P_E ⊔ N_E ≤ ker c_E`, hence `[I_E : P_E ⊔ N_E] ≥ n`; turning that into
+`ker c_E ≤ P_E ⊔ N_E` needs `[I_E : P_E ⊔ N_E] ≤ n`, which is the
+**Universal/Global Norm Index Inequality at `E₁`** (Childress p. 112,
+the displayed step before Theorem 2.1's proof). At `F` this cluster HAS
+that input — it is `exists_artinDivisorNormIndex_le_ray_class`, arriving
+here as `hidx₂` — but it is stated at `F` only, and `hidx₂` is in any
+case the *opposite* inequality (`[Im : A] ≤ [Im : P ⊔ N]`), used one
+level up by `le_of_le_of_relIndex_le_ray_class` to convert this cluster's
+conclusion `A ≤ P ⊔ N` back into `P ⊔ N ≤ A`.
+
+**THE REPAIR THAT WAS MADE, and it is the FIRST of the two shapes the
+audit offered.** `hcycl` is now the CONJUNCTION of the two directions —
+full cyclotomic reciprocity, the sentence Childress actually cites on
+p. 123 — quantified over every number field `E : Type u`:
+
+* clause (i) is the OLD statement verbatim, `c' (span {δ}) = 1` for
+  totally positive `δ ≡ 1 (mod m)`; it is still discharged by
+  `artinSymbol_span_eq_one_of_cyclotomic_ray_class` over
+  `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`, which is why
+  those two proven nodes are still CONSUMED and not left floating;
+* clause (ii) is the new one, `ker φ' ⊓ I_E(mmE) ≤ P⁺_{E,mmE} ⊔ N_E` for
+  any nonzero modulus `mmE` divisible by `(m)`, stated in the same
+  divisor-group language and with the same intrinsic pinning clauses as
+  the `F`-level statements here. Its supplier is the new sorry leaf
+  `artinDivisorKernel_le_sup_of_cyclotomic_ray_class` above; read its
+  docstring for the route and the faithfulness audit.
+
+**THE SECOND SHAPE WAS REJECTED, and the reason is not stylistic** — a
+hypothesis quantified over every `E` that is the analogue of
+`exists_artinDivisorNormIndex_le_ray_class`, namely
+`(P_E ⊔ N_E).relIndex Im_E ≤ (ker c_E ⊓ Im_E).relIndex Im_E`, does NOT
+by itself give step 4 what it needs. Converting that index inequality
+into the inclusion also requires `(ker c_E ⊓ Im_E).relIndex Im_E ≠ 0`,
+i.e. surjectivity of the Artin map (Chebotarev) AT `E` — a third
+hypothesis the audit did not name — and its own supplier would be the
+First Inequality at every `E`, whose content
+`exists_artinDivisorNormIndex_le_ray_class` records as absent from
+mathlib, from `~/cs/FLT` and from this project. One hypothesis with an
+attackable supplier beats two with a blocked one.
+
+*Check that would refute the resolved form*: exhibit a derivation of
+`ker c_E ⊓ Im_E ≤ P_E ⊔ N_E` for a cyclotomic `χ'` from clause (i)
+alone — equivalently, a proof that a character of the ray class group of
+`E` mod `m·mm` that kills the norms of `K E` is determined by its values
+on a cyclic quotient of the right order, with no index input. That would
+make clause (ii) redundant and the new leaf deletable.
+
+**FAITHFULNESS (audited 2026-07-27): TRUE as stated, and NOT vacuous.**
+True because the objects of steps 1–4 exist (this is Childress's own
+construction). Not vacuous: the minimal admissible choice
+`𝒜 = 𝒜₀ = Subgroup.closure {single v 1, β}` already forces
+`𝒜 ⊓ ker φ ≤ P ⊔ N` to contain the parent's conclusion, so no junk
+witness discharges it; and `𝒜 = ⊤` is not admissible either, since
+`⊤ ⊓ ker φ ≤ P ⊔ N` is strictly stronger than the crux one level up
+(it drops `⊓ Im`, and a divisor supported at a prime dividing `mm` has
+no reason to lie in `P ⊔ N`). `hv` and `hv₀` are load-bearing at step 3:
+a prime dividing `mm` is outside `Im`, so it is not in the norm group as
+defined.
+
+**DECOMPOSED 2026-07-27 — steps 1, 2 and 4 are now WRITTEN; the remaining
+content is THREE sorried `have`s, all of it ideal-theoretic.** The proof below
+is the glue the route above describes, and it is the ONLY place `hcycl` is
+consumed in this cluster:
+
+* *Step 1 is DONE, not sorried.* `exists_artinAuxiliaryNumberField_ray_class`
+  (PROVEN, just above) is applied twice — at `v` with `S = ∅` and at `v₀` with
+  `S = m₁.primeFactors`, which is what makes the two moduli coprime — and hands
+  back number fields `E₁, E₂ : Type u` with maps `ι_i : Γ E_i →* Γ F` onto the
+  open subgroups `H_i`. That lemma had no consumer before this proof.
+* *Writing `hcycl`'s hypotheses down at `E_i` is DONE.* The moduli are
+  `mmE_i := (m_i · N(mm))`, admissible for the cyclotomic extension
+  (`(m_i) ∣ mmE_i`, `hcycl`'s clause) and divisible by `mm 𝓞_{E_i}` (because
+  `Ideal.absNorm mm ∈ mm`), which is what makes the ray push-forward below
+  TRUE rather than merely plausible. `exists_ideal_extension_globalFrob_ray_class`
+  supplies `c_i`, and `exists_rayClassPackage_ray_class` (PROVEN, just above)
+  supplies `φ_i`, `d_i`, `I_{E_i}(mmE_i)`; `P_i`, `N_i` are the literal
+  closures, so `hcycl`'s `hPE`/`hNE` are `rfl`.
+* *Step 4 is DONE.* `hcycl … |>.2` at `E_i` gives
+  `ker φ_i ⊓ Im_i ≤ P_i ⊔ N_i`, and `map_inf_ker_le_sup_of_normCompatible_ray_class`
+  (PROVEN, just above) turns that into `𝒜_i ⊓ ker φ ≤ P ⊔ N` for
+  `𝒜_i := 𝔑_i (Im_i)`. **Note the answer subgroups are literally the images of
+  the norm maps**, and no `⊓ Im` is needed: the conclusion never asks for it.
+
+**WHAT IS LEFT, by name, and it is items (b) and (c) of the "WHAT REMAINS"
+note on `exists_artinAuxiliaryNumberField_ray_class`:**
+
+1. `hnorm₁` / `hnorm₂` — *the relative norm on divisors*. For `i = 1, 2`:
+   a monoid hom `𝔑_i` from the divisor group of `E_i` to that of `F` with
+   (α) the CONSISTENCY PROPERTY `φ ∘ 𝔑_i = φ_i`, (β) `𝔑_i(P_i) ≤ P` and
+   `𝔑_i(N_i) ≤ N`, and (γ) `single v 1 ∈ 𝔑_i(Im_i)`, i.e. `v` splits
+   completely in `E₁` (clause `globalFrob v ∈ H₁`, which is passed in). `Ideal.relNorm`
+   is in the pin and already used in `Fermat/FLT/EllipticCurve/WeilPairing.lean`.
+   (β) is where `mm 𝓞_{E_i} ∣ mmE_i` is consumed: a norm of a totally positive
+   `α ≡ 1 (mod mmE_i)` is totally positive and `≡ 1 (mod mm)`, and
+   `𝔑_i (single W n) = single w (n·f)` with `orderOf (χ (Frob w)) ∣ n·f` because
+   `n = orderOf (χ (Frob w)^f)`.
+2. `hbase` — *the common norm base*. A divisor `β` with Artin symbol
+   `χ (globalFrob v₀)` lying in BOTH `𝔑₁(Im₁)` and `𝔑₂(Im₂)`. This is the step
+   that forces the COMPOSITUM: `β := N_{E/F} B` for `E = E₁E₂` is a norm from
+   each factor, and `B` with `c_E B = χ (globalFrob v₀)` is surjectivity of the
+   Artin map over `E`. `E` itself is cheap — `exists_auxiliaryNumberField_ray_class`
+   applies to the open subgroup `H₁ ⊓ H₂` — and the coprimality clause
+   `hm₂cop`, together with the two `hi` clauses (`χ(H_i) = χ(Γ F)`), is what is
+   passed in for the `K ∩ E = F` half of that surjectivity.
+
+**CAVEAT A PROVER OF (1) MUST READ FIRST, and it is a possible cut-level
+defect, not a proof obligation.** `hcycl` is applied to the base-changed
+character `χ ∘ ι_i`, and `φ_i` is pinned by `χ (ι_i (globalFrob W))` — but
+`exists_artinAuxiliaryNumberField_ray_class` pins `ι_i` only as *some* injective
+map onto `H_i`, NOT as the restriction map along `F → E_i`. Consistency (α) is
+true for the restriction; for a general injective map onto `H_i` it need not be,
+so (1) may be unprovable as stated. **The repair is cheap and local**: the
+construction inside `exists_auxiliaryNumberField_ray_class` already produces
+`hιapp : ∀ σ x, ι σ x = e (σ (e.symm x))` for an `e : AlgebraicClosure E ≃ₐ[E]
+AlgebraicClosure F`; exposing that clause (together with the
+`Algebra E (AlgebraicClosure F)` it needs) in both lemmas' conclusions pins
+`ι` as a restriction and makes (α) provable. Do that BEFORE attacking (1),
+not after. -/
+theorem exists_artinNormSubgroups_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (_hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (hartin : ∀ (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (S : Finset ℕ),
+      ∃ (m : ℕ) (H : Subgroup (Γ F)), 0 < m ∧
+        (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+        (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+        IsOpen (H : Set (Γ F)) ∧
+        (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
+        (∀ σ ∈ H, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ) → χ σ = 1) ∧
+        (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+          (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+        globalFrob p ∈ H)
+    (hcycl : ∀ (E : Type u) [Field E] [NumberField E]
+      (χ' : Γ E → Dickson.K 3), (∀ a b : Γ E, χ' (a * b) = χ' a * χ' b) →
+      ∀ m : ℕ, 0 < m →
+      (∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ' σ = 1) →
+      ∀ c' : Ideal (NumberField.RingOfIntegers E) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers E), I ≠ ⊥ → J ≠ ⊥ →
+        c' (I * J) = c' I * c' J) →
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        c' v.asIdeal = χ' (globalFrob v)) →
+      -- (i) `ray ⊆ ker`: the cyclotomic base case, PROVEN as
+      -- `artinSymbol_span_eq_one_of_cyclotomic_ray_class`.
+      (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+        (∀ φ : E →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
+        δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
+        c' (Ideal.span {δ}) = 1) ∧
+      -- (ii) `ker ⊆ ray · norms`: the direction Childress pp. 121–123
+      -- actually consumes, open as
+      -- `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`.
+      (∀ mmE : Ideal (NumberField.RingOfIntegers E), mmE ≠ ⊥ →
+        Ideal.span {(m : NumberField.RingOfIntegers E)} ∣ mmE →
+        ∀ (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+          (d' : NumberField.RingOfIntegers E → Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+          (ImE PE NE : Subgroup (Multiplicative
+            (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))),
+          (∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+            ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+              ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+                (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w)) →
+          (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+            ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+              = χ' (globalFrob w)) →
+          (∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+              Multiplicative.toAdd x w = 0) →
+          PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+            (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+            δ - 1 ∈ mmE ∧ y = d' δ} →
+          NE = Subgroup.closure {y | ∃ w : IsDedekindDomain.HeightOneSpectrum
+            (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
+            y = Multiplicative.ofAdd
+              (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))} →
+          φ'.ker ⊓ ImE ≤ PE ⊔ NE))
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+        χ (a * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
+          ≠ 1) → w.asIdeal ∣ mm)
+    (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (Im A P N : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v))
+    (hA : A = φ.ker ⊓ Im)
+    (hφv : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+        = χ (globalFrob v))
+    (hφd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ}))
+    (hIm : ∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), v.asIdeal ∣ mm → Multiplicative.toAdd x v = 0)
+    (hP : P = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) ∧
+      δ - 1 ∈ mm ∧ y = d δ})
+    (hN : N = Subgroup.closure {y | ∃ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
+      y = Multiplicative.ofAdd (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))})
+    (hidx₁ : A.relIndex Im ≠ 0) (hidx₂ : A.relIndex Im ≤ (P ⊔ N).relIndex Im)
+    (v₀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hv₀ : ¬ v₀.asIdeal ∣ mm) (hv : ¬ v.asIdeal ∣ mm) :
+    ∃ (β : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)
+      (𝒜 𝒜₀ : Subgroup (Multiplicative
+        (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))),
+      ((φ (Multiplicative.ofAdd β) : Dickson.K 3)) = χ (globalFrob v₀) ∧
+      Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)) ∈ 𝒜 ∧
+      Multiplicative.ofAdd β ∈ 𝒜 ∧
+      Multiplicative.ofAdd (Finsupp.single v₀ (1 : ℤ)) ∈ 𝒜₀ ∧
+      Multiplicative.ofAdd β ∈ 𝒜₀ ∧
+      𝒜 ⊓ φ.ker ≤ P ⊔ N ∧ 𝒜₀ ⊓ φ.ker ≤ P ⊔ N :=
+  exists_artinNormSubgroups_ramified_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k
+    hord c hcmul hcfrob hartin hcycl mm hmm hmmram φ d Im A P N hd hA hφv hφd hIm
+    hP hN hidx₁ hidx₂ v₀ v hv₀ hv
 
 set_option maxHeartbeats 1000000 in
 /-- **CHILDRESS 5.2.2 AT A SINGLE PAIR OF PRIMES: a Frobenius-matched
@@ -52317,7 +52553,27 @@ exhibits a counterexample to the *unrepaired* crux (`F = ℚ`, `χ ≡ 1`,
 demonstrably is not what makes the statement true, and the repair that
 did make it true — `A = φ.ker ⊓ Im` — is orthogonal to it.
 
-**Route — Childress pp. 121–123, and it is exactly here that `hartin`
+**DECOMPOSED AND PROVEN 2026-07-27 (flt-lean-65).** The body below is
+now glue over the single new sub-leaf
+`exists_artinNormSubgroups_ramified_ray_class` far above — the
+`hunr`-FREE form of the common-norm-base package — and the glue is
+verbatim the two-line subtraction that already discharged the
+unramified sibling `divisorRatio_mem_sup_ray_class`:
+
+    v · v₀^{-e} = (v · β^{-e}) · (v₀ · β^{-1})^{-e}
+
+around Childress's common norm base `β = b_F`. `hunr` never entered that
+subtraction, which is exactly why one leaf can serve both consumers.
+
+**THIS IS A NET REDUCTION OF THE FRONTIER, not a repackaging.** Before
+today the cluster had TWO open class-field-theoretic leaves carrying the
+same mathematics — this node (a bare `sorry`) and
+`exists_artinNormSubgroups_ray_class` — differing in the single binder
+`hunr`. Both are now closed over ONE leaf, and
+`exists_artinNormSubgroups_ray_class` obtains it by discarding `hunr`
+(its binder is now `_hunr`).
+
+**Route — Childress pp. 121–123, and it is exactly there that `hartin`
 and `hcycl` are consumed.** Apply Artin's Lemma (`hartin`) at `v`, with
 `S` the finite set of rational primes already used, to get a modulus `m`
 and an open subgroup `H` — the auxiliary field `E`, `H = Gal(F̄/E)` — in
@@ -52534,8 +52790,44 @@ theorem divisorRatio_mem_sup_ramified_ray_class
     (hv₀ : ¬ v₀.asIdeal ∣ mm) (hv : ¬ v.asIdeal ∣ mm)
     (e : ℤ) (he : χ (globalFrob v) = χ (globalFrob v₀) ^ e) :
     Multiplicative.ofAdd
-        (Finsupp.single v (1 : ℤ) - e • Finsupp.single v₀ (1 : ℤ)) ∈ P ⊔ N :=
-  sorry
+        (Finsupp.single v (1 : ℤ) - e • Finsupp.single v₀ (1 : ℤ)) ∈ P ⊔ N := by
+  -- (A3b-2-b-i, ramified): the common norm base `β` and the two auxiliary
+  -- norm subgroups, from the single `hunr`-free class-field-theoretic leaf
+  obtain ⟨β, 𝒜, 𝒜₀, hβφ, hv𝒜, hβ𝒜, hv₀𝒜₀, hβ𝒜₀, h𝒜ker, h𝒜₀ker⟩ :=
+    exists_artinNormSubgroups_ramified_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3
+      k hord c hcmul hcfrob hartin hcycl mm hmm hmmram φ d Im A P N hd hA hφv hφd
+      hIm hP hN hidx₁ hidx₂ v₀ v hv₀ hv
+  -- The two Artin symbols, read through the common base `β`.
+  have hUv : φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))
+      = φ (Multiplicative.ofAdd β) ^ e := by
+    ext
+    rw [hφv v, Units.val_zpow_eq_zpow_val, hβφ]
+    exact he
+  have hUv₀ : φ (Multiplicative.ofAdd (Finsupp.single v₀ (1 : ℤ)))
+      = φ (Multiplicative.ofAdd β) := by
+    ext
+    rw [hφv v₀, hβφ]
+  -- `v · β^{-e}` is a norm from the auxiliary field at `v`, and lies in `ker φ`.
+  have hx : Multiplicative.ofAdd (Finsupp.single v (1 : ℤ) - e • β) ∈ P ⊔ N := by
+    rw [ofAdd_sub, ofAdd_zsmul]
+    refine h𝒜ker (Subgroup.mem_inf.mpr
+      ⟨Subgroup.div_mem _ hv𝒜 (Subgroup.zpow_mem _ hβ𝒜 e), ?_⟩)
+    rw [MonoidHom.mem_ker, map_div, map_zpow, hUv]
+    exact div_self' _
+  -- `v₀ · β^{-1}` is a norm from the auxiliary field at `v₀`, and lies in `ker φ`.
+  have hy : Multiplicative.ofAdd (Finsupp.single v₀ (1 : ℤ) - β) ∈ P ⊔ N := by
+    rw [ofAdd_sub]
+    refine h𝒜₀ker (Subgroup.mem_inf.mpr ⟨Subgroup.div_mem _ hv₀𝒜₀ hβ𝒜₀, ?_⟩)
+    rw [MonoidHom.mem_ker, map_div, hUv₀]
+    exact div_self' _
+  -- Subtracting the two relations, the common base cancels.
+  have key : Finsupp.single v (1 : ℤ) - e • Finsupp.single v₀ (1 : ℤ)
+      = (Finsupp.single v (1 : ℤ) - e • β)
+        - e • (Finsupp.single v₀ (1 : ℤ) - β) := by
+    rw [smul_sub]
+    abel
+  rw [key, ofAdd_sub, ofAdd_zsmul]
+  exact Subgroup.div_mem _ hx (Subgroup.zpow_mem _ hy e)
 
 set_option maxHeartbeats 1000000 in
 /-- **Childress Proposition 5.2.2 IN THE RAMIFIED CASE: `ker A ⊆ P⁺·N`,
