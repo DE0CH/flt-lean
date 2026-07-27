@@ -2670,6 +2670,102 @@ theorem exists_bertiniSmoothLocus_algebra {k : Type u} [Field k] [CharZero k]
   haveI := hF v hv
   exact Algebra.Smooth.of_equiv E
 
+/-- **DESCENT OF A NONVANISHING LOCUS ALONG A FIELD EXTENSION**
+(**PROVEN 2026-07-27**; item 3 of the PREREQUISITE LEDGER on
+`exists_bertiniConnectedLocus_algebra`, and the first item of that ledger to
+be closed).
+
+Given a nonzero polynomial `F'` over ANY `k`-algebra `L`, there is a nonzero
+polynomial `F` over `k` itself whose nonvanishing locus, intersected with the
+`k`-RATIONAL points, is contained in that of `F'`:
+
+  `eval v F ≠ 0  →  eval (algebraMap k L ∘ v) F' ≠ 0`   for `v : Fin m → k`.
+
+WHY THIS IS THE SHAPE THE BERTINI CUT NEEDS. Every route to
+`exists_bertiniConnectedLocus_algebra` passes to `k̄`, where
+`GeometricallyConnected` collapses to `ConnectedSpace` and the classical
+Bertini arguments live. What comes back from `k̄` is a good locus cut out by a
+polynomial with coefficients in `k̄`, whereas the leaf's `∃ F` packaging
+demands one over `k`. This lemma is exactly that last step, and it is the
+reason the leaf's proof below can now be written as a skeleton whose single
+remaining obligation is stated over `k̄`.
+
+THE PROOF — NO GALOIS THEORY, NO `CharZero`, NO SEPARABILITY. The textbook
+route takes the norm `∏_σ σF'` over a Galois closure, which needs `L/k`
+separable and finite. Neither is available here (`L = k̄` is infinite, and the
+statement is wanted for an arbitrary `L`), and neither is necessary. Instead:
+
+* `L` is a `k`-VECTOR SPACE, so it has a basis `b` (`Module.Basis.ofVectorSpace`),
+  and `c ↦ b.repr c i` is a `k`-LINEAR functional `L → k` for each index `i`.
+* Applying that functional coefficientwise to `F'` gives `F i ∈ k[X]`, namely
+  `∑_{e ∈ supp F'} monomial e (b.repr (coeff e F') i)`.
+* At a `k`-RATIONAL point `v` the monomial values `∏ⱼ vⱼ^{eⱼ}` lie in `k`, so
+  they pass through the functional as SCALARS:
+  `b.repr (eval (algebraMap k L ∘ v) F') i = eval v (F i)` (`key` below).
+  This is the only computation in the proof, and it is `k`-linearity of
+  `b.repr · i` together with `algebraMap` commuting with the monomial product.
+* `F' ≠ 0` gives a coefficient `coeff d F' ≠ 0`, hence an index `i` with
+  `b.repr (coeff d F') i ≠ 0`; that same `i` makes `coeff d (F i) ≠ 0`, so
+  `F i ≠ 0`. Take `F := F i`.
+
+Note the direction of the implication is the useful one and the converse is
+false: `F` may vanish where `F'` does not (the functional can kill a nonzero
+value). Only the containment of good loci is needed.
+
+`k` IS AN EXPLICIT ARGUMENT deliberately: it occurs in the conclusion only
+through `[Algebra k L]`, so as an implicit it is undeterminable and every call
+site fails with `typeclass instance problem is stuck / Algebra ?m L`. -/
+theorem exists_descent_nonvanishing_polynomial (k : Type u) [Field k]
+    {L : Type*} [CommRing L] [Algebra k L] {m : ℕ}
+    (F' : MvPolynomial (Fin m) L) (hF' : F' ≠ 0) :
+    ∃ F : MvPolynomial (Fin m) k, F ≠ 0 ∧ ∀ v : Fin m → k,
+      MvPolynomial.eval v F ≠ 0 →
+        MvPolynomial.eval ((algebraMap k L) ∘ v) F' ≠ 0 := by
+  classical
+  set b := Module.Basis.ofVectorSpace k L with hb
+  obtain ⟨d, hd⟩ : ∃ d, MvPolynomial.coeff d F' ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact hF' (MvPolynomial.ext _ _ (by simpa using h))
+  have hrepr : b.repr (MvPolynomial.coeff d F') ≠ 0 := by
+    simpa using hd
+  obtain ⟨i, hi⟩ : ∃ i, b.repr (MvPolynomial.coeff d F') i ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact hrepr (Finsupp.ext h)
+  set G : MvPolynomial (Fin m) k :=
+    ∑ e ∈ F'.support, MvPolynomial.monomial e (b.repr (MvPolynomial.coeff e F') i) with hG
+  have hcoeffG : ∀ e ∈ F'.support,
+      MvPolynomial.coeff e G = b.repr (MvPolynomial.coeff e F') i := by
+    intro e he
+    rw [hG, MvPolynomial.coeff_sum]
+    simp only [MvPolynomial.coeff_monomial]
+    rw [Finset.sum_ite_eq' F'.support e]
+    simp [he]
+  have key : ∀ v : Fin m → k,
+      b.repr (MvPolynomial.eval ((algebraMap k L) ∘ v) F') i = MvPolynomial.eval v G := by
+    intro v
+    have hGv : MvPolynomial.eval v G
+        = ∑ e ∈ F'.support,
+            b.repr (MvPolynomial.coeff e F') i * ∏ j ∈ e.support, v j ^ e j := by
+      rw [hG, map_sum]
+      exact Finset.sum_congr rfl fun e _ => by
+        rw [MvPolynomial.eval_monomial]; rfl
+    rw [hGv, MvPolynomial.eval_eq, map_sum]
+    rw [Finsupp.finsetSum_apply]
+    refine Finset.sum_congr rfl fun e _ => ?_
+    have hprod : (∏ j ∈ e.support, ((algebraMap k L) ∘ v) j ^ e j)
+        = algebraMap k L (∏ j ∈ e.support, v j ^ e j) := by
+      rw [map_prod]
+      simp
+    rw [hprod, mul_comm, ← Algebra.smul_def, map_smul, Finsupp.smul_apply, smul_eq_mul, mul_comm]
+  refine ⟨G, ?_, ?_⟩
+  · intro h0
+    exact hi (by rw [← hcoeffG d (MvPolynomial.mem_support_iff.mpr hd), h0,
+      MvPolynomial.coeff_zero])
+  · intro v hv hzero
+    exact hv (by rw [← key v, hzero, map_zero, Finsupp.coe_zero, Pi.zero_apply])
+
 /-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node,
 2026-07-27; cut out of
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`, which is
@@ -2841,20 +2937,32 @@ that whoever does decide to cut does not have to redo the survey.
    `grep -rn "topologicalKrullDim" .lake/packages/mathlib/Mathlib | grep -i
    "tensor\|baseChange\|extension"`, which returned nothing.
 
-3. DESCENT OF THE GOOD LOCUS FROM `k̄` TO `k`. Absent, but **provable now and
-   cheaply** — this is the one item here that needs no missing theory:
+3. DESCENT OF THE GOOD LOCUS FROM `k̄` TO `k`. **CLOSED 2026-07-27** — it is
+   `exists_descent_nonvanishing_polynomial` above, PROVEN, and it is stated
+   for an ARBITRARY `k`-algebra `L`, not only for `AlgebraicClosure k`:
 
-     ∀ (F̄ : MvPolynomial (Fin m) (AlgebraicClosure k)), F̄ ≠ 0 →
+     ∀ (F' : MvPolynomial (Fin m) L), F' ≠ 0 →
        ∃ F : MvPolynomial (Fin m) k, F ≠ 0 ∧ ∀ v : Fin m → k,
-         eval v F ≠ 0 → eval (algebraMap k (AlgebraicClosure k) ∘ v) F̄ ≠ 0
+         eval v F ≠ 0 → eval (algebraMap k L ∘ v) F' ≠ 0
 
-   PROOF, which needs neither Galois theory nor `CharZero`: `k̄` is free as a
-   `k`-module, so fix a `k`-basis `b` and split `F̄ = ∑ᵢ b i • (map (algebraMap
-   k k̄) Fᵢ)` with `Fᵢ ∈ k[X]`. At a `k`-RATIONAL `v` every `Fᵢ v` lies in `k`,
-   so linear independence of `b` gives `eval v F̄ = 0 ↔ ∀ i, Fᵢ v = 0`. Pick
-   any `i` with `Fᵢ ≠ 0` and take `F := Fᵢ`. (The `∏_σ σF̄` norm construction is
+   The proof needs neither Galois theory nor `CharZero`: `L` is a `k`-vector
+   space, so fix a `k`-basis `b`; the coordinate functional `c ↦ b.repr c i` is
+   `k`-linear, and applying it coefficientwise to `F'` gives `Fᵢ ∈ k[X]` with
+   `b.repr (eval (algebraMap k L ∘ v) F') i = eval v Fᵢ` at every `k`-RATIONAL
+   `v`, because there the monomial values are scalars. Any `i` with
+   `b.repr (coeff d F') i ≠ 0` for a nonzero coefficient `coeff d F'` gives
+   `Fᵢ ≠ 0`, and that `Fᵢ` is the descent. (The `∏_σ σF'` norm construction is
    the usual textbook route and is strictly worse here — it needs separability
-   and a finite Galois closure.)
+   and a finite Galois closure, neither of which `k̄/k` supplies.)
+
+   THE PROOF SKELETON BELOW NOW CONSUMES IT. The leaf is no longer a bare
+   `sorry`: its body obtains the good locus as a polynomial over `k̄` (one
+   sorried step, carrying items 1, 2, 4 and the base-change bridge) and then
+   descends it with this lemma. The sorried step is EQUIVALENT to the leaf
+   (given the leaf, push its `F` forward along the injective `algebraMap`), so
+   the skeleton introduces no new falsity risk; what it buys is that the
+   remaining obligation is now stated where the mathematics actually lives,
+   over `k̄`, and that the `k`-rationality packaging is done and checked.
 
 4. BERTINI IRREDUCIBILITY OVER AN ALGEBRAICALLY CLOSED FIELD — the actual
    mathematics, and the whole reason this leaf is hard. Needs the projective
@@ -2881,8 +2989,28 @@ theorem exists_bertiniConnectedLocus_algebra {k : Type u} [Field k] [CharZero k]
         AlgebraicGeometry.GeometricallyConnected (AlgebraicGeometry.Spec.map
           (CommRingCat.ofHom (algebraMap k
             (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
-              - algebraMap k S (v (Fin.last n))})))) :=
-  sorry
+              - algebraMap k S (v (Fin.last n))})))) := by
+  classical
+  -- THE ONE REMAINING OBLIGATION, and it is stated over `k̄` rather than over
+  -- `k`: ledger items 1, 2 and 4, together with the algebra-level base-change
+  -- bridge, deliver a good locus cut out by a polynomial with coefficients in
+  -- `AlgebraicClosure k`. `hgi`, `hdim` and `hgen` are consumed HERE and
+  -- nowhere else — this is the step that the `k̄` route proves, and the
+  -- FALSITY AUDIT above is exactly the record of why `hgen` may not be
+  -- dropped from it.
+  obtain ⟨F', hF'0, hF'⟩ :
+      ∃ F' : MvPolynomial (Fin (n + 1)) (AlgebraicClosure k), F' ≠ 0 ∧
+        ∀ v : Fin (n + 1) → k,
+          MvPolynomial.eval ((algebraMap k (AlgebraicClosure k)) ∘ v) F' ≠ 0 →
+            AlgebraicGeometry.GeometricallyConnected (AlgebraicGeometry.Spec.map
+              (CommRingCat.ofHom (algebraMap k
+                (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
+                  - algebraMap k S (v (Fin.last n))})))) := sorry
+  -- Ledger item 3, PROVEN: descend the `k̄`-rational good locus to a `k`-rational
+  -- one. This is what turns the `k̄` route's output into the `∃ F` over `k` that
+  -- the leaf's statement demands.
+  obtain ⟨F, hF0, hFv⟩ := exists_descent_nonvanishing_polynomial k F' hF'0
+  exact ⟨F, hF0, fun v hv => hF' v (hFv v hv)⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI SMOOTHNESS: the generic hyperplane section is smooth**
