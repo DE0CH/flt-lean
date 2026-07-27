@@ -374,6 +374,9 @@ import Mathlib.Tactic.Group
 -- `ContinuousSMul` criterion, and base-change of ranks
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 import Mathlib.NumberTheory.Padics.RingHoms
+-- `hensels_lemma`, for the explicit square root of the auxiliary quadratic field's
+-- radicand in `ℚ_[p]` (`exists_padicSquare_of_dvd_sub_one`)
+import Mathlib.NumberTheory.Padics.Hensel
 import Mathlib.Topology.Algebra.Module.ModuleTopology
 import Mathlib.Topology.Algebra.Algebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
@@ -12263,10 +12266,477 @@ theorem exists_totallyReal_point_of_affine_geometricallyIrreducible
     { to_isSeparable := hsep', to_normal := hnorm }, hsup,
     HasRationalPoint.of_comp g fX hpt⟩
 
+/-- **A complex number whose square is a positive natural number is real**
+(PROVEN helper, 2026-07-27, and elementary). Taking imaginary parts of
+`z² = d` gives `2·re(z)·im(z) = 0`; if `im(z) ≠ 0` then `re(z) = 0`, and
+taking real parts then gives `−im(z)² = d > 0`, which is impossible.
+
+This is the entire reason the quadratic twist below is TOTALLY REAL: every
+complex embedding of `D(√d)` sends `√d` to a complex square root of the
+positive integer `d`, hence to a real number. -/
+theorem conj_eq_of_sq_eq_natCast (z : ℂ) (d : ℕ) (hd : 0 < d) (hz : z ^ 2 = (d : ℂ)) :
+    (starRingEnd ℂ) z = z := by
+  rw [Complex.conj_eq_iff_im]
+  have hre := congrArg Complex.re hz
+  have him := congrArg Complex.im hz
+  simp only [pow_two, Complex.mul_re, Complex.mul_im, Complex.natCast_re,
+    Complex.natCast_im] at hre him
+  have hdR : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd
+  by_contra hcon
+  have hre0 : z.re = 0 := by
+    rcases mul_eq_zero.mp (show z.re * z.im = 0 by linarith) with h | h
+    · exact h
+    · exact absurd h hcon
+  rw [hre0] at hre
+  nlinarith [mul_self_nonneg z.im]
+
+/-- **Adjoining a square root of a POSITIVE integer to a totally real field
+keeps it totally real** (PROVEN helper, 2026-07-27).
+
+The proof is the standard one and needs no ramification theory: fix an
+infinite place `v` of `L` and let `φ` be its embedding. The set of `x ∈ L`
+with `conj (φ x) = φ x` is a `D`-subalgebra of `L` — it contains the image
+of `D` because `D` is totally real, and it contains `y` because `φ y` is a
+complex square root of `d > 0`, hence real. Since `y` generates `L` over
+`D`, that subalgebra is everything, so `φ` is a real embedding. -/
+theorem isTotallyReal_of_adjoin_sqrt
+    (D : Type u) [Field D] [NumberField.IsTotallyReal D]
+    (L : Type u) [Field L] [Algebra D L]
+    (d : ℕ) (hd : 0 < d) (y : L) (hy : y ^ 2 = ((d : ℕ) : L))
+    (hgen : Algebra.adjoin D ({y} : Set L) = ⊤) :
+    NumberField.IsTotallyReal L := by
+  refine ⟨fun v => ?_⟩
+  rw [← v.mk_embedding, NumberField.InfinitePlace.isReal_mk_iff,
+    NumberField.ComplexEmbedding.isReal_iff]
+  set φ := v.embedding with hφ
+  set S : Subalgebra D L :=
+    { carrier := {x : L | (starRingEnd ℂ) (φ x) = φ x}
+      one_mem' := by simp
+      mul_mem' := by
+        intro a b ha hb
+        simp only [Set.mem_setOf_eq, map_mul] at *
+        rw [ha, hb]
+      zero_mem' := by simp
+      add_mem' := by
+        intro a b ha hb
+        simp only [Set.mem_setOf_eq, map_add] at *
+        rw [ha, hb]
+      algebraMap_mem' := by
+        intro r
+        have h := NumberField.IsTotallyReal.complexEmbedding_isReal
+          (K := D) (φ.comp (algebraMap D L))
+        rw [NumberField.ComplexEmbedding.isReal_iff] at h
+        exact congrArg (fun ψ : D →+* ℂ => ψ r) h } with hS
+  have hyS : y ∈ S := by
+    show (starRingEnd ℂ) (φ y) = φ y
+    refine conj_eq_of_sq_eq_natCast (φ y) d hd ?_
+    rw [← map_pow, hy, map_natCast]
+  have hStop : S = ⊤ := by
+    rw [← top_le_iff, ← hgen]
+    exact Algebra.adjoin_le (by simpa using hyS)
+  ext x
+  exact (show x ∈ S by rw [hStop]; trivial)
+
+/-- **The image of `Γ L → Γ K` contains everything that fixes ONE embedded copy
+of `L` in `Kᵃˡᵍ`** (PROVEN 2026-07-27).
+
+`Field.absoluteGaloisGroup.map (algebraMap K L)` is built from an arbitrarily
+chosen `IsAlgClosed.lift`, so "the subgroup `Γ L ≤ Γ K`" is well defined only up
+to conjugacy. This lemma pins that ambiguity down once and for all: it produces
+the `K`-embedding `φ : L →ₐ[K] Kᵃˡᵍ` that the chosen closure map determines, and
+shows every `g : Γ K` fixing `φ L` pointwise really is in the image of `Γ L`.
+
+PROOF. `L/K` algebraic makes `Lᵃˡᵍ` algebraic over `Kᵃˡᵍ` through
+`ι := AlgebraicClosure.map (algebraMap K L)`, and an algebraic extension of an
+algebraically closed field is trivial
+(`IsAlgClosed.algebraMap_bijective_of_isIntegral`), so `ι` is BIJECTIVE. Pull `L`
+back along `ι` to get `φ`; for `g` fixing `φ L`, conjugating `g` by `ι` produces
+an honest `L`-automorphism of `Lᵃˡᵍ` whose image under `map` is `g`, by
+`Field.absoluteGaloisGroup.lift_map` and injectivity of `ι`.
+
+RELATION TO `normal_range_absoluteGaloisGroup_map`. That theorem computes the
+same range as `Z.fixingSubgroup` and then uses `Normal K L` to conclude the
+range is a NORMAL subgroup. This lemma is exactly the half of its range
+computation that does NOT need normality — which is what makes it usable here,
+since a totally real `F` need not be normal over `ℚ`. -/
+theorem exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map
+    {K L : Type*} [Field K] [Field L] [Algebra K L] [Algebra.IsAlgebraic K L] :
+    ∃ φ : L →ₐ[K] AlgebraicClosure K,
+      ∀ g : Field.absoluteGaloisGroup K, (∀ y : L, g (φ y) = φ y) →
+        g ∈ Set.range (Field.absoluteGaloisGroup.map (algebraMap K L)) := by
+  classical
+  haveI : Algebra.IsAlgebraic K (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.trans (R := K) (S := L) (A := AlgebraicClosure L)
+  set ι : AlgebraicClosure K →+* AlgebraicClosure L :=
+    AlgebraicClosure.map (algebraMap K L) with hι
+  letI : Algebra (AlgebraicClosure K) (AlgebraicClosure L) := ι.toAlgebra
+  haveI : IsScalarTower K (AlgebraicClosure K) (AlgebraicClosure L) :=
+    IsScalarTower.of_algebraMap_eq' (by
+      ext x
+      exact (AlgebraicClosure.map_algebraMap (algebraMap K L) x).symm)
+  haveI : Algebra.IsAlgebraic (AlgebraicClosure K) (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.tower_top (K := K) (AlgebraicClosure K) (A := AlgebraicClosure L)
+  have hbij : Function.Bijective ι :=
+    IsAlgClosed.algebraMap_bijective_of_isIntegral (k := AlgebraicClosure K)
+      (K := AlgebraicClosure L)
+  set ε : AlgebraicClosure K ≃+* AlgebraicClosure L := RingEquiv.ofBijective ι hbij with hε
+  have hεapp : ∀ x, ε x = ι x := fun _ => rfl
+  set φr : L →+* AlgebraicClosure K :=
+    (ε.symm : AlgebraicClosure L →+* AlgebraicClosure K).comp
+      (algebraMap L (AlgebraicClosure L)) with hφr
+  set φ : L →ₐ[K] AlgebraicClosure K :=
+    { toRingHom := φr
+      commutes' := fun x => by
+        show ε.symm (algebraMap L (AlgebraicClosure L) (algebraMap K L x)) = _
+        have h1 : (algebraMap L (AlgebraicClosure L)) (algebraMap K L x)
+            = ι (algebraMap K (AlgebraicClosure K) x) := by
+          rw [hι, AlgebraicClosure.map_algebraMap]
+        rw [h1, ← hεapp, RingEquiv.symm_apply_apply] } with hφ
+  have hφapp : ∀ y : L, φ y = ε.symm (algebraMap L (AlgebraicClosure L) y) := fun _ => rfl
+  refine ⟨φ, fun τ hfix => ?_⟩
+  set σ0 : AlgebraicClosure L ≃+* AlgebraicClosure L :=
+    (ε.symm.trans τ.toRingEquiv).trans ε with hσ0
+  have hσ0app : ∀ w, σ0 w = ε (τ (ε.symm w)) := fun _ => rfl
+  have hcomm : ∀ y : L, σ0 (algebraMap L (AlgebraicClosure L) y)
+      = algebraMap L (AlgebraicClosure L) y := by
+    intro y
+    rw [hσ0app, ← hφapp, hfix y, hφapp, RingEquiv.apply_symm_apply]
+  set σ : Field.absoluteGaloisGroup L := AlgEquiv.ofRingEquiv (f := σ0) hcomm with hσ
+  refine ⟨σ, ?_⟩
+  apply AlgEquiv.ext
+  intro x
+  apply ι.injective
+  have hx : ε.symm (ι x) = x := by rw [← hεapp]; exact ε.symm_apply_apply x
+  have hrhs : σ (ι x) = ι (τ x) := by
+    show σ0 (ι x) = ι (τ x)
+    rw [hσ0app, hx, hεapp]
+  exact (Field.absoluteGaloisGroup.lift_map (algebraMap K L) σ x).trans hrhs
+
+
+/-- **Hensel at an ODD prime: a natural number `≡ 1 (mod p)` is a square in
+`ℚ_[p]`** (PROVEN 2026-07-27).
+
+`X² − d` has the approximate root `1` at `p`, and the Hensel hypothesis
+`‖f(1)‖ < ‖f′(1)‖²` reads `‖1 − d‖ < ‖2‖² = 1`, which is exactly
+`p ∣ 1 − d` once `p` is odd (an odd `p` makes `2` a unit of `ℤ_[p]`, so
+`‖2‖ = 1`). Oddness is the ONLY place `2 < p` is used, and it is not
+removable: at `p = 2` the correct congruence is `d ≡ 1 (mod 8)`. -/
+theorem exists_padicSquare_of_dvd_sub_one (p : ℕ) [Fact p.Prime] (hp2 : 2 < p)
+    (d : ℕ) (hpd : (p : ℤ) ∣ 1 - (d : ℤ)) :
+    ∃ z : ℚ_[p], z ^ 2 = (d : ℚ_[p]) := by
+  have hnorm2 : ‖(2 : ℤ_[p])‖ = 1 := by
+    refine le_antisymm (PadicInt.norm_le_one _) ?_
+    by_contra hcon
+    push Not at hcon
+    have h2 : ‖((2 : ℤ) : ℤ_[p])‖ < 1 := by push_cast; exact hcon
+    have hdvd := (PadicInt.norm_int_lt_one_iff_dvd (2 : ℤ)).mp h2
+    have hple : (p : ℤ) ≤ 2 := Int.le_of_dvd (by norm_num) hdvd
+    omega
+  set G : Polynomial ℤ := X ^ 2 - C (d : ℤ) with hG
+  have hGa : G.aeval (1 : ℤ_[p]) = 1 - (((d : ℤ)) : ℤ_[p]) := by
+    rw [hG]; simp
+  have hGd : G.derivative = C 2 * X := by
+    rw [hG, derivative_sub, derivative_X_pow, derivative_C, sub_zero, pow_one]
+    norm_num
+  have hGda : G.derivative.aeval (1 : ℤ_[p]) = 2 := by
+    rw [hGd]; simp [map_ofNat]
+  have hcast : (((1 - (d : ℤ) : ℤ)) : ℤ_[p]) = 1 - (((d : ℤ)) : ℤ_[p]) := by
+    push_cast; ring
+  have hlt : ‖G.aeval (1 : ℤ_[p])‖ < ‖G.derivative.aeval (1 : ℤ_[p])‖ ^ 2 := by
+    rw [hGa, hGda, hnorm2, one_pow, ← hcast]
+    exact (PadicInt.norm_int_lt_one_iff_dvd _).mpr hpd
+  obtain ⟨z, hz, -, -, -⟩ := hensels_lemma (F := G) (a := (1 : ℤ_[p])) hlt
+  have hz' : z ^ 2 = (((d : ℤ)) : ℤ_[p]) := by
+    rw [hG] at hz
+    simp only [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, sub_eq_zero] at hz
+    exact hz
+  refine ⟨(z : ℚ_[p]), ?_⟩
+  have hmap := congrArg (fun w : ℤ_[p] => (w : ℚ_[p])) hz'
+  push_cast at hmap
+  exact hmap
+
+/-- **A positive NON-SQUARE natural that is a square in `ℚ_[p]` for every `p`
+in a prescribed finite set of odd primes** (PROVEN 2026-07-27).
+
+This is the arithmetic input to the even-degree enlargement below: the
+auxiliary real quadratic field is `ℚ(√d)`, and it must be split at the
+Chebotarev avoidance primes `S` while remaining a genuine quadratic
+extension.
+
+THE WITNESS IS EXPLICIT, and deliberately so — no Dirichlet theorem on
+primes in arithmetic progressions and no quadratic reciprocity is needed.
+Put `Q = ∏_{p ∈ S} p` and
+
+  `d = (Q + 1)² + Q`.
+
+Then `d ≡ 1 (mod p)` for every `p ∈ S` (because `p ∣ Q`), so
+`exists_padicSquare_of_dvd_sub_one` makes `d` a square in each `ℚ_[p]`;
+and `d` is NOT a perfect square because it is squeezed strictly between
+consecutive squares,
+
+  `(Q + 1)² < d < (Q + 2)²`,
+
+the right-hand inequality being `Q < 2Q + 3`. The empty-`S` case is not
+special: the empty product is `Q = 1`, giving `d = 5`. -/
+theorem exists_padicSquare_nat_of_finset_primes
+    (S : Finset ℕ) (hS : ∀ p ∈ S, p.Prime ∧ 2 < p) :
+    ∃ d : ℕ, 0 < d ∧ ¬ IsSquare d ∧
+      ∀ (p : ℕ) [Fact p.Prime], p ∈ S → ∃ z : ℚ_[p], z ^ 2 = (d : ℚ_[p]) := by
+  classical
+  set Q : ℕ := ∏ p ∈ S, p with hQdef
+  have hQpos : 0 < Q := Finset.prod_pos fun p hp => (hS p hp).1.pos
+  refine ⟨(Q + 1) ^ 2 + Q, by positivity, ?_, ?_⟩
+  · rintro ⟨c, hc⟩
+    have hc1 : Q + 1 < c := by
+      by_contra hcon
+      push Not at hcon
+      have := Nat.mul_le_mul hcon hcon
+      nlinarith
+    have hc2 : c < Q + 2 := by
+      by_contra hcon
+      push Not at hcon
+      have := Nat.mul_le_mul hcon hcon
+      nlinarith
+    omega
+  · intro p hpfact hpS
+    obtain ⟨hpprime, hp2⟩ := hS p hpS
+    have hpQ : p ∣ Q := Finset.dvd_prod_of_mem _ hpS
+    refine exists_padicSquare_of_dvd_sub_one p hp2 _ ?_
+    obtain ⟨t, ht⟩ := hpQ
+    refine ⟨-((p : ℤ) * t * t + 3 * t), ?_⟩
+    have hQt : (Q : ℤ) = (p : ℤ) * t := by exact_mod_cast ht
+    push_cast [hQt]
+    ring
+
+/-- **`Γ F ≤ Γ ℚ` is OPEN for every number field `F`** (PROVEN 2026-07-27).
+
+`exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map` pins the
+ambiguity of `Field.absoluteGaloisGroup.map` down to one embedded copy
+`φ F ⊆ ℚᵃˡᵍ` and shows everything fixing that copy lies in the range. That
+copy is FINITE over `ℚ` (`F` is a number field), so `IntermediateField.fixingSubgroup_isOpen`
+makes `(φ F).fixingSubgroup` an open subgroup contained in the range, and a
+subgroup containing an open subgroup is open (`Subgroup.isOpen_mono`).
+
+Note only ONE inclusion is needed — the range may a priori be larger, and
+openness is inherited upwards. In fact equality holds, but proving it would
+need normality of `F`, which this statement deliberately does not assume. -/
+theorem isOpen_range_absoluteGaloisGroup_map_numberField
+    (F : Type u) [Field F] [NumberField F] :
+    IsOpen (((Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range :
+      Subgroup (Field.absoluteGaloisGroup ℚ)) : Set (Field.absoluteGaloisGroup ℚ)) := by
+  obtain ⟨φ, hφ⟩ :=
+    exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map (K := ℚ) (L := F)
+  haveI : FiniteDimensional ℚ φ.fieldRange :=
+    Module.Finite.equiv (φ.equivFieldRange.toLinearEquiv)
+  refine Subgroup.isOpen_mono (H₁ := φ.fieldRange.fixingSubgroup) ?_
+    (IntermediateField.fixingSubgroup_isOpen _)
+  intro g hg
+  rw [IntermediateField.mem_fixingSubgroup_iff] at hg
+  exact hφ g fun y => hg (φ y) ⟨y, rfl⟩
+
+/-- **`ℚ(√d)` is normal over `ℚ`** (sorry leaf, 2026-07-27 — elementary).
+
+`y² = d ∈ ℚ` makes `minpoly ℚ y` either `X − y` (when `y ∈ ℚ`) or
+`X² − d`; in BOTH cases it splits in `ℚ⟮y⟯`, whose two roots are `±y`. So
+`ℚ⟮y⟯` is the splitting field of `minpoly ℚ y` over `ℚ` and
+`Normal.of_isSplittingField` applies. No irreducibility hypothesis is
+needed and none should be added — the degenerate case `y ∈ ℚ` is genuinely
+normal (it is `ℚ` itself).
+
+Stated over an arbitrary `ℚ`-algebra field `L` rather than over the
+enlargement it is used for, because nothing beyond `y² ∈ ℚ` is relevant. -/
+theorem normal_adjoin_sqrt_nat (L : Type u) [Field L] [Algebra ℚ L] (d : ℕ) (y : L)
+    (hy : y ^ 2 = ((d : ℕ) : L)) :
+    Normal ℚ (IntermediateField.adjoin ℚ ({y} : Set L)) :=
+  sorry
+
+/-- **Adjoining `√d` to a GALOIS totally real `F` keeps it Galois over `ℚ`**
+(sorry leaf, 2026-07-27 — elementary).
+
+`F/ℚ` is finite Galois, hence the splitting field over `ℚ` of some
+`q ∈ ℚ[X]`; and `F' = F(√d)` is then the splitting field over `ℚ` of
+`q · (X² − d)`, because `X² − d` has BOTH its roots `±√d` in `F'` and
+`d ∈ ℚ`. `Normal.of_isSplittingField` gives normality, and characteristic
+zero gives separability, so `IsGalois ℚ F'`.
+
+The route through `Polynomial.IsSplittingField.mul` — `F` splits `q` over
+`ℚ` and `F'` splits `(X² − d).map` over `F` — is the intended one; it is
+what avoids any embedding or conjugation bookkeeping.
+
+WHY `d : ℕ` AND NOT `d : F`: the parity argument downstream needs `√d` to
+generate a QUADRATIC extension of `ℚ` as well as of `F`, which is false for
+a general `d ∈ F`. Keeping `d` rational is load-bearing, not cosmetic. -/
+theorem isGalois_adjoinRoot_X_sq_sub_C_nat (F : Type u) [Field F] [NumberField F] [IsGalois ℚ F]
+    (d : ℕ) [Fact (Irreducible (X ^ 2 - C ((d : ℕ) : F)))] :
+    IsGalois ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+  sorry
+
+/-- **`Γ F(√d) = Γ F ⊓ Γ ℚ(√d)`** (sorry leaf, 2026-07-27 — the compositum
+identification, and the one genuinely Galois-theoretic step of the
+even-degree enlargement).
+
+`F' = F(√d)` is generated over `ℚ` by `F` together with `√d`, so an
+automorphism of `ℚᵃˡᵍ` fixes (a copy of) `F'` exactly when it fixes both
+(copies of) `F` and of `ℚ(√d)`.
+
+WHY NORMALITY IS LOAD-BEARING, and why this is not immediate.
+`Field.absoluteGaloisGroup.map` is built from an ARBITRARILY chosen
+`IsAlgClosed.lift`, so each of the three ranges is a priori only defined up
+to conjugacy. The inclusion `≤` is cheap in either reading — it is
+`range_absoluteGaloisGroup_map_le_of_ringHom` applied to `F →+* F'` and to
+`ℚ(√d) →+* F'`. It is the REVERSE inclusion that needs `Normal ℚ F` (given)
+and `Normal ℚ ℚ(√d)` (`normal_adjoin_sqrt_nat`): normality is exactly what
+makes the embedded copies independent of the chosen lift
+(`normal_range_absoluteGaloisGroup_map`), so that one single embedding of
+`F'` restricts to THE copy of `F` and THE copy of `ℚ(√d)` simultaneously.
+Then `exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`
+converts "fixes the copy of `F'`" back into membership of `Γ F'`.
+
+Dropping either normality hypothesis makes the statement FALSE as written,
+since the two ranges could then be non-conjugate copies. -/
+theorem range_absoluteGaloisGroup_map_adjoinRoot_sq_eq_inf
+    (F : Type u) [Field F] [NumberField F] [IsGalois ℚ F]
+    (d : ℕ) [Fact (Irreducible (X ^ 2 - C ((d : ℕ) : F)))] :
+    (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))).toMonoidHom.range =
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range ⊓
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IntermediateField.adjoin ℚ
+            ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+              Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))))).toMonoidHom.range :=
+  sorry
+
+/-- **The quadratic enlargement `F ↦ F(√d)`, with its auxiliary quadratic
+subfield** (PROVEN 2026-07-27 over the three leaves above).
+
+Given a totally real Galois `F` of ODD degree and a positive non-square
+`d : ℕ`, this builds `F' = F(√d)` — totally real, Galois over `ℚ`, of
+degree `2·[F : ℚ]`, hence EVEN — together with the real quadratic field
+`K = ℚ(√d)`, its `p`-adic splitting criterion, and the compositum identity
+`Γ F' = Γ F ⊓ Γ K` that the disjointness transfer downstream consumes.
+
+WHY ODDNESS OF `[F : ℚ]` IS A HYPOTHESIS AND NOT AN INCONVENIENCE. The
+construction needs `X² − d` to be IRREDUCIBLE over `F`, i.e. `d` to be a
+non-square in `F` — and that is exactly what odd degree buys for free: a
+square root of a rational non-square generates a quadratic subfield, whose
+degree `2` would divide `[F : ℚ]`. So no condition relating `d` to `F` has
+to be arranged, and `d` may be chosen looking only at `ℚ`. This is what
+lets the caller pick `d` from the Chebotarev primes alone.
+
+WHY `K` IS TAKEN AS A SUBFIELD OF `F'` AND NOT AS `AdjoinRoot` OVER `ℚ[X]`:
+UNIVERSES. The consumer (`exists_primes_forall_sup_eq_top_of_isOpen`)
+quantifies over `Type u`, and `AdjoinRoot` of a polynomial over `ℚ` lands in
+`Type 0`. Realising `ℚ(√d)` as `IntermediateField.adjoin ℚ {√d}` inside `F'`
+keeps it in `Type u` with no `ULift` bookkeeping at all. -/
+theorem exists_sqrtAdjoin_evenDegree_of_odd_finrank
+    (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F] [IsGalois ℚ F]
+    (hodd : ¬ Even (Module.finrank ℚ F))
+    (d : ℕ) (hdpos : 0 < d) (hdsq : ¬ IsSquare d) :
+    ∃ (F' : Type u) (_ : Field F') (_ : NumberField F')
+      (_ : NumberField.IsTotallyReal F') (_ : IsGalois ℚ F') (_ : F →+* F')
+      (K : Type u) (_ : Field K) (_ : NumberField K) (_ : Normal ℚ K),
+      Even (Module.finrank ℚ F') ∧
+      (∀ (p : ℕ) [Fact p.Prime], (∃ z : ℚ_[p], z ^ 2 = (d : ℚ_[p])) →
+        Nonempty (K →+* ℚ_[p])) ∧
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F')).toMonoidHom.range =
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range ⊓
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ K)).toMonoidHom.range := by
+  classical
+  -- (1) `d` is not a square in `ℚ`
+  have hdQ : ∀ y : ℚ, y ^ 2 ≠ ((d : ℕ) : ℚ) := by
+    intro y hy
+    exact hdsq (Rat.isSquare_natCast_iff.mp ⟨y, by rw [← hy]; ring⟩)
+  -- (2) `d` is not a square in `F` either: a square root would generate a QUADRATIC
+  -- subfield of `F`, forcing `2 ∣ [F : ℚ]`, against `hodd`
+  have hdF : ∀ y : F, y ^ 2 ≠ ((d : ℕ) : F) := by
+    intro y hy
+    refine hodd ?_
+    have hyint : IsIntegral ℚ y :=
+      ⟨X ^ 2 - C ((d : ℕ) : ℚ), monic_X_pow_sub_C _ two_ne_zero, by
+        simp [hy]⟩
+    have haev : (aeval y) (X ^ 2 - C ((d : ℕ) : ℚ)) = 0 := by
+      simp [hy]
+    have hmin : minpoly ℚ y = X ^ 2 - C ((d : ℕ) : ℚ) :=
+      (minpoly.eq_of_irreducible_of_monic
+        (X_pow_sub_C_irreducible_of_prime Nat.prime_two hdQ)
+        haev (monic_X_pow_sub_C _ two_ne_zero)).symm
+    have hrank2 : Module.finrank ℚ (IntermediateField.adjoin ℚ ({y} : Set F)) = 2 := by
+      rw [IntermediateField.adjoin.finrank hyint, hmin, natDegree_X_pow_sub_C]
+    have htower := Module.finrank_mul_finrank ℚ
+      (IntermediateField.adjoin ℚ ({y} : Set F)) F
+    rw [hrank2] at htower
+    exact ⟨Module.finrank (IntermediateField.adjoin ℚ ({y} : Set F)) F, by omega⟩
+  -- (3) the enlargement `F' = F(√d)`
+  have hirrF : Irreducible (X ^ 2 - C ((d : ℕ) : F)) :=
+    X_pow_sub_C_irreducible_of_prime Nat.prime_two hdF
+  haveI : Fact (Irreducible (X ^ 2 - C ((d : ℕ) : F))) := ⟨hirrF⟩
+  set fF : F[X] := X ^ 2 - C ((d : ℕ) : F) with hfF
+  have hfF0 : fF ≠ 0 := hirrF.ne_zero
+  set pbF : PowerBasis F (AdjoinRoot fF) := AdjoinRoot.powerBasis hfF0 with hpbF
+  haveI : Module.Finite F (AdjoinRoot fF) := pbF.finite
+  haveI : NumberField (AdjoinRoot fF) := NumberField.of_module_finite F (AdjoinRoot fF)
+  have hminF : minpoly F pbF.gen = X ^ 2 - C ((d : ℕ) : F) :=
+    AdjoinRoot.minpoly_powerBasis_gen_of_monic (monic_X_pow_sub_C _ two_ne_zero) hfF0
+  have hgensqF : pbF.gen ^ 2 = ((d : ℕ) : AdjoinRoot fF) := by
+    have h := minpoly.aeval F pbF.gen
+    rw [hminF] at h
+    simp only [map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero] at h
+    simpa using h
+  haveI : NumberField.IsTotallyReal (AdjoinRoot fF) :=
+    isTotallyReal_of_adjoin_sqrt F (AdjoinRoot fF) d hdpos pbF.gen hgensqF
+      (by rw [hpbF, AdjoinRoot.powerBasis_gen]; exact AdjoinRoot.adjoinRoot_eq_top)
+  -- (4) the degree of `F'` is `2 · [F : ℚ]`, hence EVEN
+  have hFF'rank : Module.finrank F (AdjoinRoot fF) = 2 := by
+    rw [pbF.finrank, hpbF, AdjoinRoot.powerBasis_dim, hfF, natDegree_X_pow_sub_C]
+  have hevF' : Even (Module.finrank ℚ (AdjoinRoot fF)) := by
+    have htower := Module.finrank_mul_finrank ℚ F (AdjoinRoot fF)
+    rw [hFF'rank] at htower
+    exact ⟨Module.finrank ℚ F, by omega⟩
+  -- (5) the auxiliary real quadratic field, taken as the SUBFIELD `ℚ(√d) ⊆ F'`
+  have hyintQ : IsIntegral ℚ pbF.gen :=
+    ⟨X ^ 2 - C ((d : ℕ) : ℚ), monic_X_pow_sub_C _ two_ne_zero, by simp [hgensqF]⟩
+  have haevQ : (aeval pbF.gen) (X ^ 2 - C ((d : ℕ) : ℚ)) = 0 := by simp [hgensqF]
+  have hminQ : minpoly ℚ pbF.gen = X ^ 2 - C ((d : ℕ) : ℚ) :=
+    (minpoly.eq_of_irreducible_of_monic
+      (X_pow_sub_C_irreducible_of_prime Nat.prime_two hdQ) haevQ
+      (monic_X_pow_sub_C _ two_ne_zero)).symm
+  haveI : FiniteDimensional ℚ (IntermediateField.adjoin ℚ ({pbF.gen} : Set (AdjoinRoot fF))) :=
+    IntermediateField.adjoin.finiteDimensional hyintQ
+  haveI : NumberField (IntermediateField.adjoin ℚ ({pbF.gen} : Set (AdjoinRoot fF))) :=
+    NumberField.of_module_finite ℚ _
+  have hpbgen : pbF.gen = AdjoinRoot.root fF := by rw [hpbF, AdjoinRoot.powerBasis_gen]
+  have hKnormal : Normal ℚ (IntermediateField.adjoin ℚ ({pbF.gen} : Set (AdjoinRoot fF))) :=
+    normal_adjoin_sqrt_nat _ d pbF.gen hgensqF
+  have hF'galois : IsGalois ℚ (AdjoinRoot fF) :=
+    isGalois_adjoinRoot_X_sq_sub_C_nat F d
+  have hΓeq : (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (AdjoinRoot fF))).toMonoidHom.range =
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range ⊓
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IntermediateField.adjoin ℚ ({pbF.gen} : Set (AdjoinRoot fF))))).toMonoidHom.range := by
+    rw [hpbgen]
+    exact range_absoluteGaloisGroup_map_adjoinRoot_sq_eq_inf F d
+  refine ⟨AdjoinRoot fF, inferInstance, inferInstance, inferInstance, hF'galois,
+    algebraMap F (AdjoinRoot fF),
+    IntermediateField.adjoin ℚ ({pbF.gen} : Set (AdjoinRoot fF)), inferInstance, inferInstance,
+    hKnormal, hevF', ?_, hΓeq⟩
+  -- (6) `K` embeds into `ℚ_[p]` as soon as `d` is a square there
+  rintro p hp ⟨z, hz⟩
+  have hz' : eval₂ (algebraMap ℚ ℚ_[p]) z (minpoly ℚ pbF.gen) = 0 := by
+    rw [hminQ]
+    simp only [eval₂_sub, eval₂_X_pow, eval₂_C, sub_eq_zero, hz]
+    simp
+  exact ⟨(AdjoinRoot.lift (algebraMap ℚ ℚ_[p]) z hz').comp
+    (IntermediateField.adjoinRootEquivAdjoin ℚ hyintQ).symm.toRingEquiv.toRingHom⟩
+
+open scoped Pointwise in
 /-- **Even-degree enlargement of a totally real Galois field, preserving
-disjointness** (sorry leaf, 2026-07-27 — elementary algebraic number
-theory; Neukirch I §§2, 8 and the standard disjointness criterion via
-ramification).
+disjointness** (**PROVEN 2026-07-27** over
+`exists_padicSquare_nat_of_finset_primes`,
+`isOpen_range_absoluteGaloisGroup_map_numberField` and
+`exists_sqrtAdjoin_evenDegree_of_odd_finrank` — elementary algebraic number
+theory, but see the ROUTE CORRECTION below: no ramification theory is used).
 
 Given `F` totally real and Galois over `ℚ`, and an OPEN subgroup
 `N ≤ Γ ℚ` with `N ⊔ (Γ F → Γ ℚ).range = ⊤`, there is a totally real
@@ -12288,22 +12758,44 @@ without either asserting something FALSE for odd-degree `F` or blurring
 its own hypothesis set. See that leaf's "JACQUET–LANGLANDS CONSUMER"
 block.
 
-PROOF (classical, and the reason this is a leaf and not a citation to
-something deeper). If `[F : ℚ]` is already even take `F' = F`. Otherwise
-let `L` be the fixed field of `N`, a FINITE extension of `ℚ` because `N`
-is open. Choose a rational prime `p` unramified in the compositum `L·F`
-and with `p ≡ 1 mod 4` (so `ℚ(√p)` is REAL), and put `K = ℚ(√p)`,
-`F' = F·K`. Then:
+ROUTE CORRECTION (2026-07-27). The sketch previously recorded here chose
+the auxiliary quadratic field by a RAMIFICATION argument — a prime `p`
+unramified in the compositum `L·F` with `p ≡ 1 (mod 4)`, so that `ℚ(√p)`
+ramifies at `p` and therefore cannot sit inside `L·F`. That route is
+correct mathematics but needs the discriminant of a compositum and the
+ramification of `ℚ(√p)`, none of which this development has. It was
+replaced by the route below, which reuses machinery already PROVEN in this
+file and needs NO ramification theory whatsoever.
 
-* `F'` is totally real (a compositum of totally real fields is totally
-  real) and Galois over `ℚ` (a compositum of Galois extensions is
-  Galois);
-* `K ⊄ L·F` since `K` ramifies at `p` and `L·F` does not, so
-  `[F' : F] = 2` and `[F' : ℚ] = 2·[F : ℚ]` is EVEN;
-* the disjointness survives: `K` is linearly disjoint from `L·F`, so
-  `[L·F·K : L·F] = 2`, hence `L·F ∩ F' = F` (it is `F` or `F'`, and `F'`
-  would force `K ⊆ L·F`), hence `L ∩ F' ⊆ L ∩ F = ℚ` — which is the
-  displayed join condition again.
+PROOF AS FORMALISED. If `[F : ℚ]` is already even take `F' = F` and there is
+nothing to do. Otherwise:
+
+* Put `H = N ⊓ Γ F`, an OPEN subgroup — `Γ F` is open by
+  `isOpen_range_absoluteGaloisGroup_map_numberField`. Taking `H` INSIDE
+  `Γ F` rather than `N` itself is the whole trick; see the lattice step.
+* Feed `H` to `exists_primes_forall_sup_eq_top_of_isOpen` (Chebotarev,
+  already proven above) at the bound `2`, obtaining a finite set `S` of
+  ODD primes such that any normal number field split completely at every
+  `p ∈ S` is `H`-disjoint.
+* `exists_padicSquare_nat_of_finset_primes` produces an EXPLICIT positive
+  non-square `d = (Q + 1)² + Q`, `Q = ∏_{p ∈ S} p`, that is a square in
+  every `ℚ_[p]`, `p ∈ S`. So `K = ℚ(√d)` is split at `S` and
+  `H ⊔ Γ K = ⊤`.
+* `exists_sqrtAdjoin_evenDegree_of_odd_finrank` builds `F' = F(√d)`:
+  totally real (`isTotallyReal_of_adjoin_sqrt`), Galois over `ℚ`, of
+  degree `2·[F : ℚ]` — EVEN — and satisfies `Γ F' = Γ F ⊓ Γ K`. Oddness of
+  `[F : ℚ]` is what makes `d` a non-square in `F` for free, so `d` may be
+  chosen looking only at `ℚ`.
+* THE LATTICE STEP, which replaces the intersection-of-fields computation
+  of the old sketch by three lines of subgroup algebra. Let `g ∈ Γ F`.
+  Since `Γ K` is normal and `H ⊔ Γ K = ⊤`, write `g = h·k` with `h ∈ H`,
+  `k ∈ Γ K`. Because `H ≤ Γ F`, also `k = h⁻¹g ∈ Γ F`, so
+  `k ∈ Γ F ⊓ Γ K = Γ F'`. Hence `g ∈ N ⊔ Γ F'`, giving
+  `⊤ = N ⊔ Γ F ≤ N ⊔ Γ F'`.
+
+Note the enlargement makes `Γ F'` SMALLER than `Γ F`, so the disjointness
+conclusion is genuinely stronger than the hypothesis and does not come for
+free — the Chebotarev choice of `d` is exactly what pays for it.
 
 FAITHFULNESS NOTE. The conclusion is deliberately an ENLARGEMENT
 (`F →+* F'`) rather than a re-choice: the consumer needs to transport an
@@ -12320,8 +12812,54 @@ theorem exists_evenDegree_totallyReal_of_sup_eq_top
       (_ : NumberField.IsTotallyReal F') (_ : IsGalois ℚ F')
       (_ : F →+* F'),
       Even (Module.finrank ℚ F') ∧
-      N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F')).toMonoidHom.range = ⊤ :=
-  sorry
+      N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F')).toMonoidHom.range = ⊤ := by
+  classical
+  by_cases hev : Even (Module.finrank ℚ F)
+  · exact ⟨F, inferInstance, inferInstance, inferInstance, inferInstance, RingHom.id F, hev, hsup⟩
+  · -- the open subgroup `H = N ⊓ Γ F` against which the auxiliary quadratic field is chosen
+    have hΓFopen : IsOpen
+        (((Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range :
+          Subgroup (Field.absoluteGaloisGroup ℚ)) : Set (Field.absoluteGaloisGroup ℚ)) :=
+      isOpen_range_absoluteGaloisGroup_map_numberField.{u} F
+    have hHopen : IsOpen (((N ⊓ (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ F)).toMonoidHom.range :
+          Subgroup (Field.absoluteGaloisGroup ℚ))) : Set (Field.absoluteGaloisGroup ℚ)) := by
+      simpa only [Subgroup.coe_inf] using hNopen.inter hΓFopen
+    -- Chebotarev, run at `H` and at the bound `2` so every avoidance prime is ODD
+    obtain ⟨S, hSprime, hSsup⟩ :=
+      exists_primes_forall_sup_eq_top_of_isOpen.{u} _ hHopen 2
+    obtain ⟨d, hdpos, hdsq, hdpadic⟩ := exists_padicSquare_nat_of_finset_primes S hSprime
+    obtain ⟨F', hF', hNF', hFtr', hFgal', ι, K, hK, hNK, hKnormal, hev', hKsplit, hΓeq⟩ :=
+      exists_sqrtAdjoin_evenDegree_of_odd_finrank.{u} F hev d hdpos hdsq
+    refine ⟨F', hF', hNF', hFtr', hFgal', ι, hev', ?_⟩
+    have hHK : (N ⊓ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range)
+        ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ K)).toMonoidHom.range = ⊤ :=
+      hSsup K hK hNK hKnormal (fun p _ hp => hKsplit p (hdpadic p hp))
+    haveI : (Field.absoluteGaloisGroup.map (algebraMap ℚ K)).toMonoidHom.range.Normal := by
+      haveI := hKnormal
+      exact normal_range_absoluteGaloisGroup_map (K := ℚ) (L := K)
+    -- THE LATTICE STEP. `Γ F ≤ H ⊔ Γ F'`: given `g ∈ Γ F`, write `g = h·k` with `h ∈ H`
+    -- and `k ∈ Γ K` (possible since `Γ K` is normal and `H ⊔ Γ K = ⊤`); then
+    -- `k = h⁻¹g ∈ Γ F` because `H ≤ Γ F`, so `k ∈ Γ F ⊓ Γ K = Γ F'`. Hence
+    -- `⊤ = N ⊔ Γ F ≤ N ⊔ Γ F'`. This is where `H` being taken INSIDE `Γ F` pays off.
+    rw [eq_top_iff, ← hsup, sup_le_iff]
+    refine ⟨le_sup_left, ?_⟩
+    intro g hg
+    have hgtop : g ∈ (((N ⊓ (Field.absoluteGaloisGroup.map
+          (algebraMap ℚ F)).toMonoidHom.range :
+          Subgroup (Field.absoluteGaloisGroup ℚ)) : Set (Field.absoluteGaloisGroup ℚ)) *
+        (((Field.absoluteGaloisGroup.map (algebraMap ℚ K)).toMonoidHom.range :
+          Subgroup (Field.absoluteGaloisGroup ℚ)) : Set (Field.absoluteGaloisGroup ℚ))) := by
+      rw [← Subgroup.mul_normal]
+      exact SetLike.mem_coe.mpr (hHK ▸ Subgroup.mem_top g)
+    obtain ⟨h, hh, k, hk, rfl⟩ := hgtop
+    have hkF : k ∈ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range := by
+      have hrw : k = h⁻¹ * (h * k) := by group
+      rw [hrw]
+      exact mul_mem (inv_mem hh.2) hg
+    have hkF' : k ∈ (Field.absoluteGaloisGroup.map (algebraMap ℚ F')).toMonoidHom.range := by
+      rw [hΓeq]; exact ⟨hkF, hk⟩
+    exact mul_mem (Subgroup.mem_sup_left hh.1) (Subgroup.mem_sup_right hkF')
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly's existence theorem for global points with prescribed
@@ -13549,77 +14087,6 @@ theorem three_lt_card_of_sq_eq_neg_one (F : Type*) [Field F] [Finite F]
       _ ≤ 3 ^ (n : ℕ) := Nat.pow_le_pow_right (by norm_num) hn
     rw [Nat.card_eq_fintype_card]
     omega
-
-/-- **A complex number whose square is a positive natural number is real**
-(PROVEN helper, 2026-07-27, and elementary). Taking imaginary parts of
-`z² = d` gives `2·re(z)·im(z) = 0`; if `im(z) ≠ 0` then `re(z) = 0`, and
-taking real parts then gives `−im(z)² = d > 0`, which is impossible.
-
-This is the entire reason the quadratic twist below is TOTALLY REAL: every
-complex embedding of `D(√d)` sends `√d` to a complex square root of the
-positive integer `d`, hence to a real number. -/
-theorem conj_eq_of_sq_eq_natCast (z : ℂ) (d : ℕ) (hd : 0 < d) (hz : z ^ 2 = (d : ℂ)) :
-    (starRingEnd ℂ) z = z := by
-  rw [Complex.conj_eq_iff_im]
-  have hre := congrArg Complex.re hz
-  have him := congrArg Complex.im hz
-  simp only [pow_two, Complex.mul_re, Complex.mul_im, Complex.natCast_re,
-    Complex.natCast_im] at hre him
-  have hdR : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd
-  by_contra hcon
-  have hre0 : z.re = 0 := by
-    rcases mul_eq_zero.mp (show z.re * z.im = 0 by linarith) with h | h
-    · exact h
-    · exact absurd h hcon
-  rw [hre0] at hre
-  nlinarith [mul_self_nonneg z.im]
-
-/-- **Adjoining a square root of a POSITIVE integer to a totally real field
-keeps it totally real** (PROVEN helper, 2026-07-27).
-
-The proof is the standard one and needs no ramification theory: fix an
-infinite place `v` of `L` and let `φ` be its embedding. The set of `x ∈ L`
-with `conj (φ x) = φ x` is a `D`-subalgebra of `L` — it contains the image
-of `D` because `D` is totally real, and it contains `y` because `φ y` is a
-complex square root of `d > 0`, hence real. Since `y` generates `L` over
-`D`, that subalgebra is everything, so `φ` is a real embedding. -/
-theorem isTotallyReal_of_adjoin_sqrt
-    (D : Type u) [Field D] [NumberField.IsTotallyReal D]
-    (L : Type u) [Field L] [Algebra D L]
-    (d : ℕ) (hd : 0 < d) (y : L) (hy : y ^ 2 = ((d : ℕ) : L))
-    (hgen : Algebra.adjoin D ({y} : Set L) = ⊤) :
-    NumberField.IsTotallyReal L := by
-  refine ⟨fun v => ?_⟩
-  rw [← v.mk_embedding, NumberField.InfinitePlace.isReal_mk_iff,
-    NumberField.ComplexEmbedding.isReal_iff]
-  set φ := v.embedding with hφ
-  set S : Subalgebra D L :=
-    { carrier := {x : L | (starRingEnd ℂ) (φ x) = φ x}
-      one_mem' := by simp
-      mul_mem' := by
-        intro a b ha hb
-        simp only [Set.mem_setOf_eq, map_mul] at *
-        rw [ha, hb]
-      zero_mem' := by simp
-      add_mem' := by
-        intro a b ha hb
-        simp only [Set.mem_setOf_eq, map_add] at *
-        rw [ha, hb]
-      algebraMap_mem' := by
-        intro r
-        have h := NumberField.IsTotallyReal.complexEmbedding_isReal
-          (K := D) (φ.comp (algebraMap D L))
-        rw [NumberField.ComplexEmbedding.isReal_iff] at h
-        exact congrArg (fun ψ : D →+* ℂ => ψ r) h } with hS
-  have hyS : y ∈ S := by
-    show (starRingEnd ℂ) (φ y) = φ y
-    refine conj_eq_of_sq_eq_natCast (φ y) d hd ?_
-    rw [← map_pow, hy, map_natCast]
-  have hStop : S = ⊤ := by
-    rw [← top_le_iff, ← hgen]
-    exact Algebra.adjoin_le (by simpa using hyS)
-  ext x
-  exact (show x ∈ S by rw [hStop]; trivial)
 
 /-- **`1` and `√d` are linearly independent over the base field**
 (PROVEN helper, 2026-07-27): if `a + b·√d = 0` with `b ≠ 0` then
@@ -15235,81 +15702,6 @@ theorem exists_anticyclotomicDihedralCocycle (kp : Type u) [Field kp] [Finite kp
     · exact h
   · rw [hνeq g₁ hg₁]
     exact hg₁4
-
-/-- **The image of `Γ L → Γ K` contains everything that fixes ONE embedded copy
-of `L` in `Kᵃˡᵍ`** (PROVEN 2026-07-27).
-
-`Field.absoluteGaloisGroup.map (algebraMap K L)` is built from an arbitrarily
-chosen `IsAlgClosed.lift`, so "the subgroup `Γ L ≤ Γ K`" is well defined only up
-to conjugacy. This lemma pins that ambiguity down once and for all: it produces
-the `K`-embedding `φ : L →ₐ[K] Kᵃˡᵍ` that the chosen closure map determines, and
-shows every `g : Γ K` fixing `φ L` pointwise really is in the image of `Γ L`.
-
-PROOF. `L/K` algebraic makes `Lᵃˡᵍ` algebraic over `Kᵃˡᵍ` through
-`ι := AlgebraicClosure.map (algebraMap K L)`, and an algebraic extension of an
-algebraically closed field is trivial
-(`IsAlgClosed.algebraMap_bijective_of_isIntegral`), so `ι` is BIJECTIVE. Pull `L`
-back along `ι` to get `φ`; for `g` fixing `φ L`, conjugating `g` by `ι` produces
-an honest `L`-automorphism of `Lᵃˡᵍ` whose image under `map` is `g`, by
-`Field.absoluteGaloisGroup.lift_map` and injectivity of `ι`.
-
-RELATION TO `normal_range_absoluteGaloisGroup_map`. That theorem computes the
-same range as `Z.fixingSubgroup` and then uses `Normal K L` to conclude the
-range is a NORMAL subgroup. This lemma is exactly the half of its range
-computation that does NOT need normality — which is what makes it usable here,
-since a totally real `F` need not be normal over `ℚ`. -/
-theorem exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map
-    {K L : Type*} [Field K] [Field L] [Algebra K L] [Algebra.IsAlgebraic K L] :
-    ∃ φ : L →ₐ[K] AlgebraicClosure K,
-      ∀ g : Field.absoluteGaloisGroup K, (∀ y : L, g (φ y) = φ y) →
-        g ∈ Set.range (Field.absoluteGaloisGroup.map (algebraMap K L)) := by
-  classical
-  haveI : Algebra.IsAlgebraic K (AlgebraicClosure L) :=
-    Algebra.IsAlgebraic.trans (R := K) (S := L) (A := AlgebraicClosure L)
-  set ι : AlgebraicClosure K →+* AlgebraicClosure L :=
-    AlgebraicClosure.map (algebraMap K L) with hι
-  letI : Algebra (AlgebraicClosure K) (AlgebraicClosure L) := ι.toAlgebra
-  haveI : IsScalarTower K (AlgebraicClosure K) (AlgebraicClosure L) :=
-    IsScalarTower.of_algebraMap_eq' (by
-      ext x
-      exact (AlgebraicClosure.map_algebraMap (algebraMap K L) x).symm)
-  haveI : Algebra.IsAlgebraic (AlgebraicClosure K) (AlgebraicClosure L) :=
-    Algebra.IsAlgebraic.tower_top (K := K) (AlgebraicClosure K) (A := AlgebraicClosure L)
-  have hbij : Function.Bijective ι :=
-    IsAlgClosed.algebraMap_bijective_of_isIntegral (k := AlgebraicClosure K)
-      (K := AlgebraicClosure L)
-  set ε : AlgebraicClosure K ≃+* AlgebraicClosure L := RingEquiv.ofBijective ι hbij with hε
-  have hεapp : ∀ x, ε x = ι x := fun _ => rfl
-  set φr : L →+* AlgebraicClosure K :=
-    (ε.symm : AlgebraicClosure L →+* AlgebraicClosure K).comp
-      (algebraMap L (AlgebraicClosure L)) with hφr
-  set φ : L →ₐ[K] AlgebraicClosure K :=
-    { toRingHom := φr
-      commutes' := fun x => by
-        show ε.symm (algebraMap L (AlgebraicClosure L) (algebraMap K L x)) = _
-        have h1 : (algebraMap L (AlgebraicClosure L)) (algebraMap K L x)
-            = ι (algebraMap K (AlgebraicClosure K) x) := by
-          rw [hι, AlgebraicClosure.map_algebraMap]
-        rw [h1, ← hεapp, RingEquiv.symm_apply_apply] } with hφ
-  have hφapp : ∀ y : L, φ y = ε.symm (algebraMap L (AlgebraicClosure L) y) := fun _ => rfl
-  refine ⟨φ, fun τ hfix => ?_⟩
-  set σ0 : AlgebraicClosure L ≃+* AlgebraicClosure L :=
-    (ε.symm.trans τ.toRingEquiv).trans ε with hσ0
-  have hσ0app : ∀ w, σ0 w = ε (τ (ε.symm w)) := fun _ => rfl
-  have hcomm : ∀ y : L, σ0 (algebraMap L (AlgebraicClosure L) y)
-      = algebraMap L (AlgebraicClosure L) y := by
-    intro y
-    rw [hσ0app, ← hφapp, hfix y, hφapp, RingEquiv.apply_symm_apply]
-  set σ : Field.absoluteGaloisGroup L := AlgEquiv.ofRingEquiv (f := σ0) hcomm with hσ
-  refine ⟨σ, ?_⟩
-  apply AlgEquiv.ext
-  intro x
-  apply ι.injective
-  have hx : ε.symm (ι x) = x := by rw [← hεapp]; exact ε.symm_apply_apply x
-  have hrhs : σ (ι x) = ι (τ x) := by
-    show σ0 (ι x) = ι (τ x)
-    rw [hσ0app, hx, hεapp]
-  exact (Field.absoluteGaloisGroup.lift_map (algebraMap K L) σ x).trans hrhs
 
 /-- **`(ULift ℝ)ᵃˡᵍ` is `ℂ`, compatibly with the real place** (PROVEN
 2026-07-27). The Moret-Bailly cut states its real points over the `Type u` copy
@@ -30949,9 +31341,20 @@ for every `v ∉ S` with `v ∤ p` AS PART OF ITS DEFINITION, so the analogue
 of this leaf is definitional there. The cost is that this leaf, its
 sibling and the conductor node all collapse into the construction leaf
 `exists_threeadicRealization_of_witness`, hiding two distinct literature
-inputs inside one citation; and the predicate itself is NOT vendorable,
-being defined over that project's quaternionic Hecke-algebra
-development, which our pin does not have.
+inputs inside one citation.
+
+CORRECTION (2026-07-27). This paragraph used to continue "…and the
+predicate itself is NOT vendorable, being defined over that project's
+quaternionic Hecke-algebra development, which our pin does not have."
+**That is false: it IS vendorable, and it HAS been vendored.** The
+development's whole import closure now lives under
+`Fermat/FLT/{AutomorphicForm,QuaternionAlgebra,DivisionAlgebra,HaarMeasure,
+NumberField,DedekindDomain,Hacks,Mathlib}/…` and builds green against our
+pin, at a cost of one sorried leaf (`isFiniteRelIndex_Δ`). See the REFUTED
+block earlier in this file (search `It IS vendorable`) for the full
+accounting. So unvendorability is NOT a reason to prefer the seam change
+described above; the remaining argument for it is only the one given in
+the sentence before this correction.
 
 MACHINERY AUDIT (2026-07-26, hard search of BOTH libraries — recorded so
 this leaf is not re-scoped as single-agent work). Restating it over a
