@@ -7092,7 +7092,10 @@ prime squares.
 Galois-stable cyclic subgroup of order `N`.  Every consumer in
 `FreyCurve/MazurTorsion.lean` uses it in that direction, and consequently
 **all of that module's prime-square material is `ex falso` from the two
-sorried nodes below.**  This is checkable in one read:
+elementary nodes `not_stableCyclic_sq_of_isogenyClassPrime` (below, still
+sorried) and `not_stableCyclic_oneHundredSixtyNine` (relocated to the `169`
+section at the end of this file, and PROVEN there since 2026-07-27 over the
+`X_0(169)` apparatus).**  This is checkable in one read:
 `WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_169`
 derives `Fermat.Y0HasNoRationalPoint 169` from
 `y0HasNoRationalPoint_isogenyPrimeSq` at `p = 13`, feeds it to
@@ -7107,7 +7110,9 @@ construction is real but whose closing step is again
 
 The consequence for a successor is the important part: **the arithmetic
 content of Kenku's prime-square theorem lives nowhere in this tree except in
-the two sorried nodes below**, and it cannot be imported from
+those two elementary nodes** — at `169` it has since moved one step down,
+into `exists_x0AbelianSieve_oneSixtyNine` and
+`hasRankZeroAbelianImage_x0OneSixtyNine` — and it cannot be imported from
 `MazurTorsion.lean`, which imports this module.  So the elementary statements
 have to be restated HERE — which is what
 `not_stableCyclic_sq_of_isogenyClassPrime` and
@@ -16673,7 +16678,11 @@ theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
 
 /-! #### The `169` chain, relocated here by declaration order
 
-The five declarations immediately below belong, thematically, to the
+The five-declaration chain below — from `not_stableCyclic_oneHundredSixtyNine`
+to `y0HasNoRationalPoint_isogenyPrimeSq`, together with the `169`-specific
+apparatus that now precedes it (`HasRankZeroAbelianImage`,
+`IsX0AbelianReductionAt`, `card_le_of_abelianSieve` and their two leaves) —
+belongs, thematically, to the
 prime-square block far above, beside `isogenyPrimeSqLevels` and the two
 sibling nodes `y0HasNoRationalPoint_of_not_stableCyclic` and
 `not_stableCyclic_sq_of_isogenyClassPrime` that still live there.  They sit
@@ -16709,8 +16718,9 @@ apparatus, its route being an enumeration of `Y_0(p)(ℚ)` rather than a
 rational-point determination on a curve of genus `8`.  If a prover of that
 node finds that it does need the apparatus, the same relocation applies to it
 — done once, there, rather than twice.  One reference went stale with this
-move: the section docstring above `y0HasNoRationalPoint_of_not_stableCyclic`
-says "the two sorried nodes below", and only one of the two is now below it. -/
+move — the section docstring above `y0HasNoRationalPoint_of_not_stableCyclic`
+said "the two sorried nodes below", and only one of the two is still below it
+— and it was corrected in place on 2026-07-27. -/
 
 /-- **A rank-`0` abelian IMAGE of `X`** — the input that replaces
 `HasRankZeroJacobian` at a level whose Jacobian has POSITIVE rank.
@@ -16791,16 +16801,108 @@ theorem hasRankZeroAbelianImage_x0OneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ 
     HasRankZeroAbelianImage strX :=
   sorry
 
-/-- **`#X_0(169)(ℚ) ≤ numRationalCusps 169 = 2`, from a rank-`0` abelian
-image** (sorry node, introduced 2026-07-27): Kenku's theorem in the counting
-form the rest of this file uses.
+/-- **Good reduction at an odd prime `ℓ ∤ N` of the pair `(X_0(N), A)`, on
+rational points, where `A` is a rank-`0` abelian IMAGE of the curve rather
+than its Jacobian.**
+
+The data is the commuting square
+
+```
+X_0(N)(ℚ)   --c-->   A(ℚ)
+   | redX              | redA
+   v                   v
+X_0(N)(𝔽_ℓ) --c'-->  A(𝔽_ℓ)
+```
+
+with `redA` an INJECTIVE group homomorphism.  It is `IsX0ReductionAt` with
+the Abel–Jacobi map replaced by an arbitrary map to an abelian scheme, and
+it exists for exactly the reason `HasRankZeroAbelianImage` exists: at a level
+whose JACOBIAN has positive rank, `redJ` is not injective and the reduction
+argument has to be run on a rank-`0` quotient instead.  `169` is such a
+level — `rank J_0(169)(ℚ) = 3`, while the Atkin–Lehner minus part has rank
+`0`; see `HasRankZeroAbelianImage`.
+
+Injectivity of `redA` is not an axiom about reduction in general: it is the
+rank-`0` input.  `A(ℚ)` is finite, hence torsion, and the kernel of reduction
+on torsion is the group of points of a formal group over `ℤ_ℓ`, torsion-free
+for `ℓ` odd — the same fact `IsX0ReductionAt.redJ_inj` carries, and the same
+one `neronReduction_injective` proves.
+
+`redA_add` is what makes `Set.range redA` a subgroup of `A(𝔽_ℓ)`, and hence
+what makes the sieve a statement about a SUBGROUP rather than about a bare
+subset.  The counting argument in `card_le_of_abelianSieve` does not use it,
+exactly as `card_le_of_sieve` does not use `redJ_add`; a `redA` without it
+would not deserve the name reduction. -/
+structure IsX0AbelianReductionAt {X A X' A' : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {astr : A ⟶ SpecQ} {ℓ : ℕ} {strX' : X' ⟶ SpecF ℓ} {astr' : A' ⟶ SpecF ℓ}
+    (ab : AbelianSchemeStruct astr) (ab' : AbelianSchemeStruct astr')
+    (c : RelPoint strX (𝟙 SpecQ) → RelPoint astr (𝟙 SpecQ))
+    (c' : RelPoint strX' (𝟙 (SpecF ℓ)) → RelPoint astr' (𝟙 (SpecF ℓ))) where
+  /-- reduction of rational points of the curve -/
+  redX : RelPoint strX (𝟙 SpecQ) → RelPoint strX' (𝟙 (SpecF ℓ))
+  /-- reduction of rational points of the abelian image -/
+  redA : RelPoint astr (𝟙 SpecQ) → RelPoint astr' (𝟙 (SpecF ℓ))
+  /-- reduction is a homomorphism on the abelian image -/
+  redA_add : ∀ x y : RelPoint astr (𝟙 SpecQ),
+    redA (ab.add x y) = ab'.add (redA x) (redA y)
+  /-- reduction is injective on the rational points of a rank-`0` image -/
+  redA_inj : Function.Injective redA
+  /-- reduction commutes with the map to the abelian image -/
+  red_c : ∀ x : RelPoint strX (𝟙 SpecQ), redA (c x) = c' (redX x)
+
+/-- **The abelian-image sieve bound, `#X_0(N)(ℚ) ≤ #s`** (PROVEN).
+
+`card_le_of_sieve` verbatim, with the Jacobian replaced by an abelian image:
+pure transport along two injections and one commuting square, and not one
+line of it uses that `A` is the Jacobian.
+
+`redX` is injective on `X_0(N)(ℚ)` — not because reduction is injective in
+any general sense, but because it is sandwiched between two injections:
+`c` is injective (the positive-genus input, here carried by `hc`) and `redA`
+is injective (the rank-`0` input, carried by `red`), and
+`redA ∘ c = c' ∘ redX`.  Every point of the image has `c'`-class
+`redA (c x)`, manifestly in `Set.range red.redA`, so the image lands inside
+the surviving set `s`.
+
+Note what does NOT appear: any point count of `X_0(N)(𝔽_ℓ)`.  The bound is
+by the SURVIVING set, which is what makes it strictly stronger than a
+reduction bound — and at `169` that strength is not optional, since the
+reduction bound has minimum `4` there against a target of `2`.  See
+`exists_x0AbelianSieve_oneSixtyNine`. -/
+theorem card_le_of_abelianSieve {X A X' A' : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {astr : A ⟶ SpecQ} {ℓ : ℕ} {strX' : X' ⟶ SpecF ℓ} {astr' : A' ⟶ SpecF ℓ}
+    {ab : AbelianSchemeStruct astr} {ab' : AbelianSchemeStruct astr'}
+    {c : RelPoint strX (𝟙 SpecQ) → RelPoint astr (𝟙 SpecQ)}
+    {c' : RelPoint strX' (𝟙 (SpecF ℓ)) → RelPoint astr' (𝟙 (SpecF ℓ))}
+    (hc : Function.Injective c) (red : IsX0AbelianReductionAt ab ab' c c')
+    {s : Finset (RelPoint strX' (𝟙 (SpecF ℓ)))}
+    (hs : ∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+      (∃ a : RelPoint astr (𝟙 SpecQ), red.redA a = c' x') → x' ∈ s)
+    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ s.card := by
+  classical
+  have hinjOn : Set.InjOn red.redX ↑t := by
+    intro a _ b _ hab
+    refine hc (red.redA_inj ?_)
+    rw [red.red_c, red.red_c, hab]
+  have hsub : t.image red.redX ⊆ s := by
+    intro x hx
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hx
+    exact hs _ ⟨c y, red.red_c y⟩
+  calc t.card = (t.image red.redX).card := (Finset.card_image_of_injOn hinjOn).symm
+    _ ≤ s.card := Finset.card_le_card hsub
+
+/-- **The Mordell–Weil sieve at level `169`** (sorry node, introduced
+2026-07-27): some prime, together with a reduction square onto a rank-`0`
+abelian image, cuts `X_0(169)(𝔽_ℓ)` down to at most
+`numRationalCusps 169 = 2` surviving points.
 
 TRUE — Kenku, *The modular curve `X_0(169)` and rational isogeny*, J. London
-Math. Soc. (2) **22** (1980).
+Math. Soc. (2) **22** (1980).  This is the whole arithmetic content of
+`card_le_numRationalCusps_x0OneSixtyNine`, which is PROVEN from it by
+`card_le_of_abelianSieve`.
 
-**Why this is not `card_le_of_rankZeroJacobian` with one hypothesis swapped,
-and what it actually costs.**  With `hA` in hand the reduction argument of
-`card_le_of_rankZeroJacobian` runs verbatim and gives
+**Why a sieve and not a single counting prime.**  With `hA` in hand the
+reduction argument of `card_le_of_rankZeroJacobian` runs verbatim and gives
 `#X_0(169)(ℚ) ≤ #X_0(169)(𝔽_ℓ)` at any odd prime `ℓ ∤ 169`.  That is not
 enough here, and the reason is a real feature of this level rather than a
 missing lemma: **no single prime is sharp.**  By Eichler–Shimura
@@ -16817,8 +16919,10 @@ residues do little better.  PARI/GP 2.17.4, 2026-07-27:
 The minimum over all admissible `ℓ` is `4`, at `ℓ = 3`, against a target of
 `2`; `ℓ = 2` would give `3` but is excluded, reduction being injective on
 torsion only for odd `ℓ`.  So one prime leaves two residue classes standing,
-and closing them is a Mordell–Weil sieve — the `x0SieveLevels` situation, one
-level further out because the group being sieved is `A(ℚ)` rather than
+and closing them is what this leaf asks for: not the point count of the
+special fibre, but the count of points whose `c'`-class lies in the finite
+subgroup `Set.range redA ≅ A(ℚ)`.  It is the `x0SieveLevels` situation one
+level further out, the group being sieved being `A(ℚ)` rather than
 `J_0(N)(ℚ)`.
 
 **The check that refutes "no single prime is sharp"**: an odd prime `ℓ ∤ 169`
@@ -16826,17 +16930,92 @@ with `Tr(T_ℓ ∣ S_2(Γ_0(169))) = ℓ − 1`.  The Weil bound
 `|Tr T_ℓ| ≤ 2 · 8 · √ℓ` confines the search to `ℓ ≤ 260`, so it is finite and
 one `mfheckemat` line per prime settles it.
 
-**`hA` is load-bearing for the intended proof, not for the truth** of the
-conclusion, which is Kenku's theorem outright.  It is carried because it is
-the input the reduction argument consumes, exactly as
-`hasRankZeroJacobian_of_kenkuLevel` feeds `card_le_of_rankZeroJacobian`. -/
+**Why the statement carries NO pinning condition on `ℓ`, `X'`, `A'`, `c'` or
+`red`** — no primality, no good reduction, no identification of `X'` as the
+special fibre of a model of `X_0(169)`.  Each would be true of the intended
+witness, and each would make the leaf HARDER to discharge for no gain,
+because the leaf cannot be satisfied by junk: it is consumed only through
+`card_le_of_abelianSieve`, which is PROVEN, so any data satisfying this
+statement is already a proof of Kenku's bound at `169`.  The objection
+recorded under `IsX0ReductionAt` — that a `∀` over unpinned reduction data
+is FALSE, a differently placed subgroup of the right order giving an
+admissible datum with more survivors — does not apply, for the same reason:
+the quantifier here is EXISTENTIAL.  That is also what makes this one leaf
+rather than two.
+
+**How it would decompose, and the one object that blocks the cut.**  The
+natural split is the one `exists_x0Sieve` has: geometry (the Néron models
+over `ℤ_(ℓ)` that produce the square) separated from arithmetic (sharpness
+at a good prime).  It is blocked by exactly one missing object — the
+abelian-image analogue of `IsX0NeronDatum`.  Without a pinning of `redA` as
+the map induced by Néron models, the sharpness half has to be stated
+universally over data, and one junk datum then makes it false.  **The check
+that would refute this blockage**: an `IsX0NeronDatum`-style structure for
+`(X_0(N), A)`, i.e. `IsX0NeronDatum` with `jac`, `jac'`, `jacZ` replaced by
+a natural family `c` and its two fibres.  Nothing in `IsX0NeronDatum`, nor
+in its `redJ`/`red_aj`/`toReduction` block, uses the UNIVERSAL property of
+the Jacobian or its base point — only `aj`, `aj_pre` and the naturality of
+the identifications — so that port is mechanical, and
+`neronReduction_injective`, which would supply `redA_inj`, is already stated
+for an arbitrary abelian scheme over `SpecLoc R`.  It is not done here
+because it is a second interface in a shared file, not because it is hard.
+
+**What proving the leaf itself needs**: `J_0(169)`, its Atkin–Lehner
+decomposition, the Prym, Kolyvagin–Logachev for finiteness of `A(ℚ)`, and
+the sieve computation proper.  The first three are
+`hasRankZeroAbelianImage_x0OneSixtyNine`; `hA` is exactly their packaged
+output and is load-bearing here, since without finiteness of `A(ℚ)` every
+point of `X_0(169)(𝔽_ℓ)` survives and no prime cuts anything. -/
+theorem exists_x0AbelianSieve_oneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY)
+    (hA : HasRankZeroAbelianImage strX) :
+    ∃ (ℓ : ℕ) (A X' A' : Scheme.{0}) (astr : A ⟶ SpecQ)
+      (ab : AbelianSchemeStruct astr) (strX' : X' ⟶ SpecF ℓ)
+      (astr' : A' ⟶ SpecF ℓ) (ab' : AbelianSchemeStruct astr')
+      (c : RelPoint strX (𝟙 SpecQ) → RelPoint astr (𝟙 SpecQ))
+      (c' : RelPoint strX' (𝟙 (SpecF ℓ)) → RelPoint astr' (𝟙 (SpecF ℓ)))
+      (_ : Function.Injective c) (red : IsX0AbelianReductionAt ab ab' c c')
+      (s : Finset (RelPoint strX' (𝟙 (SpecF ℓ)))),
+      (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+          (∃ a : RelPoint astr (𝟙 SpecQ), red.redA a = c' x') → x' ∈ s) ∧
+        s.card ≤ numRationalCusps 169 :=
+  sorry
+
+/-- **`#X_0(169)(ℚ) ≤ numRationalCusps 169 = 2`, from a rank-`0` abelian
+image** (PROVEN 2026-07-27 over `exists_x0AbelianSieve_oneSixtyNine`;
+introduced as a sorry node earlier the same day): Kenku's theorem in the
+counting form the rest of this file uses.
+
+TRUE — Kenku, *The modular curve `X_0(169)` and rational isogeny*, J. London
+Math. Soc. (2) **22** (1980).
+
+**Why this is not `card_le_of_rankZeroJacobian` with one hypothesis
+swapped.**  That theorem bounds `#X_0(169)(ℚ)` by `#X_0(169)(𝔽_ℓ)`, and at
+this level no single prime makes that bound sharp: the minimum over all
+admissible `ℓ` is `4`, at `ℓ = 3`, against a target of `2`.  The Hecke
+computation behind that, and the check that refutes it, are recorded at
+`exists_x0AbelianSieve_oneSixtyNine`; what replaces the point count is the
+count of SURVIVORS of the Mordell–Weil sieve, and the transport from that
+count to this bound is `card_le_of_abelianSieve`.
+
+**Both hypotheses are load-bearing** and both are consumed by the sieve
+leaf: `hX` because the survivor count is a statement about `X_0(169)` and
+not about an arbitrary curve, `hA` because without finiteness of `A(ℚ)`
+every point of the special fibre survives and no prime cuts anything.  The
+truth of the conclusion needs neither — it is Kenku's theorem outright —
+exactly as `hasRankZeroJacobian_of_kenkuLevel` feeds
+`card_le_of_rankZeroJacobian`. -/
 theorem card_le_numRationalCusps_x0OneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification 169 strX strY jY)
-    (_hA : HasRankZeroAbelianImage strX)
+    (hX : IsX0Compactification 169 strX strY jY)
+    (hA : HasRankZeroAbelianImage strX)
     (s : Finset (RelPoint strX (𝟙 SpecQ))) :
-    s.card ≤ numRationalCusps 169 :=
-  sorry
+    s.card ≤ numRationalCusps 169 := by
+  classical
+  obtain ⟨ℓ, A, X', A', astr, ab, strX', astr', ab', c, c', hc, red, t, ht, htcard⟩ :=
+    exists_x0AbelianSieve_oneSixtyNine hX hA
+  exact le_trans (card_le_of_abelianSieve hc red ht s) htcard
 
 /-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
 `169`** (PROVEN 2026-07-27 over `hasRankZeroAbelianImage_x0OneSixtyNine` and
