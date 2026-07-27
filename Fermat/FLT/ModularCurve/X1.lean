@@ -70,8 +70,9 @@ so `rank J_1(25)(ℚ) = 0` by Kolyvagin–Logachev (or Kato).
   (`fg_relPoint_of_abelianScheme`) and Riemann–Roch
   (`injective_aj_of_not_isIso_jacobian`), both stated level-freely there
   — a third (`exists_jacobianOf_curve`, the Albanese) is stated here
-  level-freely and SUBSUMES `X0.lean`'s `exists_jacobianOf_x0`, and only
-  ONE, `isTorsion_jacobian_x1TwentyFive`, is both new and specific to
+  level-freely and is now PROVEN over `X0.lean`'s two relative-Picard
+  leaves, leaving only TWO leaves under this node, of which only ONE,
+  `isTorsion_jacobian_x1TwentyFive`, is both new and specific to
   this level.  That last one is Kolyvagin–Logachev, and it is now the
   only place the level's arithmetic weight sits.
 * **`exists_x1Compactification_mod_prime` at `(25, 3, 10)` is SHALLOW**,
@@ -1692,8 +1693,9 @@ theorem one_le_x1Genus_twentyFive : 1 ≤ x1Genus 25 := by
 /-! ### Level `25`, packaged for `FreyCurve/MazurTorsion.lean` -/
 
 /-- **The Jacobian of a smooth proper geometrically connected curve over
-`ℚ` with a rational point exists** (sorry node) — LEVEL-FREE, and
-MODULI-FREE: no `N`, no `IsX1Compactification`, no `IsX0Compactification`.
+`ℚ` with a rational point exists** (PROVEN 2026-07-27, over `X0.lean`'s
+two relative-Picard leaves) — LEVEL-FREE, and MODULI-FREE: no `N`, no
+`IsX1Compactification`, no `IsX0Compactification`.
 
 TRUE and classical: such an `X` has an Albanese — equivalently `Pic⁰` —
 which is an abelian variety over `ℚ`, and the Abel–Jacobi map based at
@@ -1704,19 +1706,35 @@ All three geometric hypotheses are load-bearing: without properness and
 smoothness of relative dimension `1` there is no abelian Albanese, and
 without geometric connectedness `Pic⁰` is not connected.
 
-**THIS SUBSUMES `X0.lean`'s `exists_jacobianOf_x0`, and that is the
-point of stating it here.**  That theorem takes an
-`IsX0Compactification N strX strY j` and uses it *only* through
-`h.isProper`, `h.smooth` and `h.connected` — its own docstring says so —
-so it is this statement with a moduli hypothesis bolted on, and
+**HOW IT IS PROVEN, and what that retires.**  `X0.lean` now carries the
+same statement cut into its two classical halves, both of them equally
+level-free and both taking exactly the three geometric hypotheses of this
+theorem:
+
+* `exists_relPicZeroOf` — *representability*: `Pic⁰_{X/ℚ}` is an abelian
+  scheme (Grothendieck, FGA 232; BLR 8.2/1 and 9.4/4);
+* `isJacobianOf_of_isRelPicZeroOf` — *autoduality*: a representing object
+  for `Pic⁰` is the Albanese, i.e. its Abel–Jacobi map is initial among
+  pointed maps to abelian schemes.
+
+Composing them is the whole proof, so this theorem is now a genuine
+*wrapper* rather than a duplicate frontier node, and all of the weight it
+used to carry sits in those two leaves — which the `Γ₀` side needs
+anyway.
+
+**The `Γ₀` sibling is ALREADY CLOSED, and not by this theorem.**  An
+earlier version of this docstring recorded that `exists_jacobianOf_x0`
+would be retired by
 
     exists_jacobianOf_x0 N h o = exists_jacobianOf_curve h.isProper h.smooth h.connected o
 
-is a one-line derivation.  `X0.lean` is NOT edited to record this: it has
-many concurrent owners and its statement is fine as it stands.  A
-successor closing this leaf closes the `Γ₀` one for free, and whoever
-next has the `Γ₀` file to themselves should replace
-`exists_jacobianOf_x0`'s body by the line above and delete the sorry.
+since it takes an `IsX0Compactification N strX strY j` and uses it *only*
+through `h.isProper`, `h.smooth` and `h.connected`.  That reading was
+right about the dependency and is now moot: `exists_jacobianOf_x0` was
+itself proven on 2026-07-27 over the very same two leaves, directly.  It
+could not have been routed through here in any case — `X1.lean` imports
+`X0.lean`, not the other way round — so the shared factoring had to live
+on the `Γ₀` side, and it does.
 
 FAITHFULNESS AUDIT (carried over verbatim from `exists_jacobianOf_x0`,
 where both checks were run on 2026-07-27 and both passed; nothing in the
@@ -1736,21 +1754,30 @@ homomorphism followed by a translation, and one vanishing on `aj(X)`
 kills the subgroup `aj(X)` generates, which is all of `J`.  A prover must
 not weaken `∃!` to `∃`.
 
-IRREDUCIBLE at this pin, along the axis `exists_jacobianOf_x0` records
-(cuts along the universal property, all of which fail — the "existence
-plus initiality" split is discharged by the trivial `J`, and the
-"`aj` generates `J`" split is UNSOUND because points of `J` are sums of
-differences of points of `X` only fppf-locally).  The honest cut is
-*representability of `Pic⁰`* plus *autoduality of the Jacobian*, and
-stating it needs a relative Picard functor, which exists in none of
-`Mathlib`, `~/cs/FLT` or this project.  Refuting check:
-`grep -rn "PicardFunctor\|Pic⁰\|Albanese" Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`. -/
+**THE RETIRED IRREDUCIBILITY VERDICT, kept because how it fell is the
+lesson.**  This docstring used to close with "IRREDUCIBLE at this pin",
+having searched — as `exists_jacobianOf_x0`'s audit did — *cuts along the
+universal property*, all of which really do fail: the "existence plus
+initiality" split is discharged by the trivial `J = Spec ℚ`, and the
+"`aj` generates `J`" split is UNSOUND, because points of `J` are sums of
+differences of points of `X` only fppf-locally and never as a functor.
+The verdict named its own way out and then dismissed it — the honest cut
+is *representability of `Pic⁰`* plus *autoduality*, gated on a relative
+Picard functor "which exists in none of `Mathlib`, `~/cs/FLT` or this
+project".  The axis it did not search was not another universal property
+but the **infrastructure** axis, where a theory has only to be STATED for
+the cut to become available.  That functor is now written
+(`ModularCurve/RelativePicard.lean`: `modTensor`, `IsInvertibleSheaf`,
+`RelPicEquiv`, `IsRelPicZeroOf`), so the verdict is retired.  Its own
+refuting check is the one that now fails for it:
+`grep -rn "PicardFunctor\|Pic⁰\|Albanese" Fermat/`. -/
 theorem exists_jacobianOf_curve {X : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 SpecQ)) :
     ∃ (J : Scheme.{0}) (jstr : J ⟶ SpecQ) (ab : AbelianSchemeStruct jstr),
-      Nonempty (IsJacobianOf strX ab o) :=
-  sorry
+      Nonempty (IsJacobianOf strX ab o) := by
+  obtain ⟨J, jstr, ab, ⟨P⟩⟩ := exists_relPicZeroOf hproper hcurve hconn o
+  exact ⟨J, jstr, ab, isJacobianOf_of_isRelPicZeroOf hproper hcurve hconn P⟩
 
 /-- **`rank J_1(25)(ℚ) = 0`, i.e. `J_1(25)(ℚ)` is a TORSION group** (sorry
 node — Kolyvagin–Logachev, and after the split below this is the ONLY
@@ -1879,30 +1906,34 @@ costs, and each of those was itself carrying two unrelated theories.
 * **The rank half is Kolyvagin–Logachev** and stays open, alone, in
   `isTorsion_jacobian_x1TwentyFive`.
 
-The five open leaves under this node, and the single theory each one
-needs:
+The leaves under this node, and the single theory each one needs.  The
+first row was itself a leaf until 2026-07-27 and is now a PROVEN wrapper
+(over `exists_relPicZeroOf` and `isJacobianOf_of_isRelPicZeroOf`), so the
+Albanese weight has moved to `X0.lean` rather than disappearing:
 
 | leaf | theory | level-specific? | where stated |
 |---|---|---|---|
-| `exists_jacobianOf_curve` | Albanese / `Pic⁰` | no | here, LEVEL-FREE |
+| `exists_jacobianOf_curve` | Albanese / `Pic⁰` | no | here, **PROVEN** |
 | `fg_relPoint_of_abelianScheme` | Mordell–Weil | no | `X0.lean`, REUSED |
 | `isTorsion_jacobian_x1TwentyFive` | Kolyvagin–Logachev | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
 | `not_isIso_jacobian_of_one_le_x1Genus` | genus formula | **yes** | here |
 
-**Only ONE of the five is both new and level-specific**, and it is the
-Kolyvagin–Logachev leaf.  Two of the five are `X0.lean` theorems used
+**Only ONE of the four remaining is both new and level-specific**, and it
+is the Kolyvagin–Logachev leaf.  Two of them are `X0.lean` theorems used
 verbatim with no edit to that file — this is the concrete cash value of
 the module docstring's claim that `HasRankZeroJacobian` is shared between
 the layers: Mordell–Weil and Riemann–Roch are stated for an arbitrary
 abelian scheme and an arbitrary curve over `ℚ`, so the `Γ₁` layer
-consumes them as they stand.  A third, `exists_jacobianOf_curve`,
-SUBSUMES `X0.lean`'s `exists_jacobianOf_x0` (see its docstring).
+consumes them as they stand.  The Albanese row is now a third such reuse,
+one level deeper: its proof is two more `X0.lean` theorems consumed
+verbatim.
 
 So the `Γ₀` and `Γ₁` layers between them have exactly **three** distinct
-open general theories (Albanese, Mordell–Weil, Riemann–Roch) and
-**four** level-specific leaves (two Kolyvagin–Logachev, two genus
-formulas), not ten independent ones.
+open general theories (Albanese — now split into representability and
+autoduality — Mordell–Weil, Riemann–Roch) and **four** level-specific
+leaves (two Kolyvagin–Logachev, two genus formulas), not ten independent
+ones.
 
 WHY THE BUDGET SITS IN THE RANK HALF AND NOT IN THE POINT COUNT.  The
 level-`25` docstring in `MazurTorsion.lean` presents `#X_1(25)(𝔽_3) = 10`
