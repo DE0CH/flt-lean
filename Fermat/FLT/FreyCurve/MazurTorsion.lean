@@ -18458,19 +18458,199 @@ harvested from this note.**
   `t = 49(s₁² − 3s₂)/(6A − 4s₁² + 18s₂)` in the kernel-polynomial
   coefficients. See those declarations for the derivation and for the
   refutation of the claim that the `X_1(7)` sibling covers this node.
-* `MazurLevel21.j_mem_of_hauptmodul_pair` is **PROVEN** over the single new
-  leaf `MazurLevel21.rational_point_x0TwentyOne`, which is the pure
-  plane-curve statement with `j` eliminated and the cusps excluded. The
-  second bullet's cost estimate is wrong: a complete `2`-descent bounds
-  `E(ℚ)/2E(ℚ)`, and turning that into rank `0` requires finite generation,
-  i.e. the Mordell–Weil theorem, which is NOT in this mathlib pin. Full
-  audit on `rational_point_x0TwentyOne`.
+* `MazurLevel21.j_mem_of_hauptmodul_pair` is **PROVEN** over
+  `MazurLevel21.rational_point_x0TwentyOne`, the pure plane-curve statement
+  with `j` eliminated and the cusps excluded — which is itself now **PROVEN**
+  as well (2026-07-27), over the two leaves
+  `MazurLevel21.rank_zero_x0TwentyOne` and
+  `MazurLevel21.exists_x0TwentyOne_modularPoint`.
+
+  **THE COST ESTIMATE THAT USED TO SIT HERE IS WITHDRAWN, and the withdrawal
+  is the part worth reading.** It said: a complete `2`-descent bounds
+  `E(ℚ)/2E(ℚ)`, turning that into rank `0` requires finite generation, i.e.
+  the Mordell–Weil theorem, which is not in this mathlib pin — therefore the
+  node is blocked. Every clause is true and the conclusion is false, because
+  rank `0` for ONE explicit curve is reachable by a constructive infinite
+  descent that never mentions finite generation, and this file already
+  contains a PROVEN instance: `MazurLevel15.rank_zero_x`, on a curve with the
+  same Mordell–Weil group `ℤ/2 × ℤ/4`. A companion claim, that the
+  birational map to `21a1` costs `800` characters, was an artefact of using
+  Magma's generic `EllipticCurve(C, P)`; the SMALL MODULAR CURVE database
+  returns the same map at about `60` characters per coordinate. Both
+  corrections, with the checks that establish them, are recorded on the two
+  leaves.
 -/
 
 namespace MazurLevel21
 
-/-- **The rational points of the affine `X_0(21)` plane model** (sorry leaf,
-cut 2026-07-26 out of `j_mem_of_hauptmodul_pair`): the fibre product
+/-- **Rank `0` for the elliptic curve `21a1`, in its full-`2`-torsion model**
+(sorry leaf, cut 2026-07-27 out of `rational_point_x0TwentyOne`): the only
+rational points of
+
+    `W² = V (V − 9) (V + 7)`
+
+have `V ∈ {0, 9, −7, −3, 21}`.
+
+THE MODEL, derived rather than asserted. `21a1 : y² + xy = x³ − 4x − 1` has
+`b₂ = 1`, `b₄ = −8`, `b₆ = −4`, so completing the square gives
+`(2y + x)² = 4x³ + x² − 16x − 4 = (4x + 1)(x − 2)(x + 2)`; scaling by
+`V = 4x + 1`, `W = 8y + 4x` clears the leading `4` and moves the three
+`2`-torsion points to `V ∈ {0, 9, −7}`:
+
+    `V = 4x + 1`,  `W = 8y + 4x`,  `W² = V(V − 9)(V + 7) = V³ − 2V² − 63V`,
+
+an isomorphism of `21a1` onto `[0, −2, 0, −63, 0]`. The `2`-torsion is FULL
+and rational, which is what makes the classical complete `2`-descent
+available. The eight rational points are the point at infinity together
+with `V ∈ {0, 9, −7}` (`W = 0`, the `2`-torsion) and `V = −3` (`W = ±12`),
+`V = 21` (`W = ±84`) — the four points of order `4`. Under `x = (V − 1)/4`
+these are the `x`-values `−1/4, 2, −2, −1, 5` of `21a1`.
+
+RECONNAISSANCE (2026-07-27; untrusted searchers, never provers, and the two
+agree). Magma: `[0,−2,0,−63,0]` has conductor `21`, `MinimalModel`
+`y² + xy = x³ − 4x − 1`, `TorsionSubgroup ≅ ℤ/2 + ℤ/4`, `RankBounds = 0 0`,
+`AnalyticRank = 0`, and `Points(: Bound := 200)` returns exactly the eight
+points listed. PARI: `ellrank` returns rank `0` and `elltors` order `8`.
+
+WHY THIS LEAF IS NOT A MORDELL–WEIL CITATION, correcting the cost audit that
+used to sit on `rational_point_x0TwentyOne` (see the correction recorded
+there). Rank `0` for ONE explicit curve does not need finite generation, and
+this file already contains a fully PROVEN instance of exactly this shape:
+`MazurLevel15.rank_zero_x`, `V² = x(x + 1)(x + 16) → x ∈ {0, −1, −16, −4}`,
+whose chain `sq_or_two_sq` → `quartic_pos`/`quartic_neg`/`quartic_two`/
+`quartic_negtwo` → the well-founded `concordant` descent is elementary
+integer bookkeeping from beginning to end. That is the template to copy, and
+the two curves even share the Mordell–Weil group `ℤ/2 × ℤ/4`.
+
+HOW TO ATTACK IT. Write `V = p/q` in lowest terms; `q` is coprime to
+`p(p − 9q)(p + 7q)`, so `q = e²`, and `gcd(p, (p − 9e²)(p + 7e²))` divides
+`63`, so `p = dS²` with `d` a squarefree divisor of `63`, i.e.
+`d ∈ {±1, ±3, ±7, ±21}`. Unlike level `15` the cubic `V(V − 9)(V + 7)` has
+three real roots, so positivity alone does not kill the negative `d`; the
+sign condition it does give is `V ∈ [−7, 0] ∪ [9, ∞)`, which already bounds
+the `d < 0` branches (`−7 ≤ dS²/e² < 0`). The homogeneous spaces are the
+classical complete `2`-descent pair
+`d₁u² − d₂v² = 9`, `d₁u² − d₃w² = −7` with `d₁d₂d₃ ∈ (ℚ*)²`, and since the
+Selmer group must come out equal to the image of the torsion (order `4`),
+every space outside that image is everywhere-locally insoluble and dies by a
+congruence. -/
+theorem rank_zero_x0TwentyOne (V W : ℚ) (h : W ^ 2 = V * (V - 9) * (V + 7)) :
+    V = 0 ∨ V = 9 ∨ V = -7 ∨ V = -3 ∨ V = 21 :=
+  sorry
+
+/-- **The modular parametrisation of the `X_0(21)` plane model by `21a1`**
+(sorry leaf, cut 2026-07-27 out of `rational_point_x0TwentyOne`): every
+rational point `(t₃, t₇)` of the plane curve with `t₃ ≠ 0 ≠ t₇` is the image
+of a rational point `(x, y)` of `21a1 : y² + xy = x³ − 4x − 1` under the two
+degree-`8` and degree-`4` projections `X_0(21) → X_0(3)` and
+`X_0(21) → X_0(7)`, written here in the denominator-free form
+`t₇ · B₇ = A₇` and `t₃ · N₃ = 729(x + 2)⁴`.
+
+**THIS REFUTES THE "`800`-CHARACTER MAP" OBSTRUCTION** recorded on
+`rational_point_x0TwentyOne` by two previous owners (2026-07-26), and the
+refutation is a one-line check anyone can rerun. Both owners obtained the map
+from Magma's GENERIC `EllipticCurve(C, P)` algorithm, which normalises to
+projective degree `13` with `19`-digit coefficients and prints at `822`,
+`815` and `337` characters, and one recorded that `Inverse` of it did not
+complete in `8` minutes. But the map does not have to be rediscovered
+generically: `X_0(21)` is in Magma's SMALL MODULAR CURVE database, and
+`ProjectionMap(SmallModularCurve(21), 21, SmallModularCurve(d), d)` returns
+it already small, for `d = 3` and `d = 7`. The forward map is what appears in
+the statement below and it is about `60` characters per coordinate.
+
+The one calibration needed is the hauptmodul normalisation, and it is worth
+recording because it is easy to get backwards. Magma's `X_0(7)` hauptmodul is
+EXACTLY this file's `t₇`: its `jFunction` numerator is
+`s⁸ + 748s⁷ + 196882s⁶ + ⋯ + 7¹⁴`, and expanding
+`(t² + 13t + 49)(t² + 245t + 2401)³` gives leading coefficients `1`,
+`13 + 3·245 = 748` and constant `49 · 2401³ = 7¹⁴`, on the nose. Magma's
+`X_0(3)` hauptmodul is the FRICKE DUAL `s₃ = 729/t₃`: its `jFunction` is
+`(s⁴ + 756s³ + 196830s² + 19131876s + 3¹⁸)/s³`, and substituting
+`s = 729/t` returns `(t⁴ + 36t³ + 270t² + 756t + 729)/t = (t + 27)(t + 3)³/t`
+identically. Hence the `729` in the `t₃` relation.
+
+WHAT THE `≠ 0` SIDE CONDITIONS ARE FOR, and why the leaf is not vacuous
+without them. Both ratios have a base point on `21a1`, and at a base point
+the denominator-free relation degenerates to `0 = 0` and constrains nothing:
+
+* `B₇ = x² + 2x − y` vanishes only at `(−1, −1)`, where `A₇` vanishes too;
+  that point is the cusp `(t₃, t₇) = (∞, ∞)`.
+* `N₃` vanishes at `(−2, 1)`, where `729(x + 2)⁴` vanishes too; that point is
+  the affine cusp `(t₃, t₇) = (0, 0)`.
+
+Both excluded points are cusps, so demanding `B₇ ≠ 0` and `N₃ ≠ 0` costs
+nothing mathematically — but omitting them would let the existential be
+discharged by a cusp, carrying no information at all. `N₃` also vanishes at
+`(5, 8)` and `(−1, −1)`, the two poles of `t₃`, where the relation reads
+`0 = nonzero` and excludes itself.
+
+THE FORWARD DIRECTION IS A VERIFIED IDENTITY, so only surjectivity is open.
+Substituting `t₃ = 729(x + 2)⁴/N₃` and `t₇ = A₇/B₇` into
+`(t₃ + 27)(t₃ + 3)³ t₇⁷ − t₃(t₇² + 13t₇ + 49)(t₇² + 245t₇ + 2401)³` and
+clearing denominators leaves a polynomial that is EXACTLY divisible by
+`y² + xy − x³ + 4x + 1` (Magma `Quotrem`, 2026-07-27; the cofactor has total
+degree `29` and `275` terms). So the map really does land on the plane curve,
+and what this leaf asserts beyond that is that every rational point of the
+plane curve is hit — i.e. the birational inverse, over `ℚ`.
+
+THE INVERSE, COMPUTED, so its prover need not redo the elimination
+(2026-07-27). Eliminating `y` between the `t₇` relation and the curve gives
+`y` SMALL in terms of `x` and `t₇`,
+
+    `y · ((2 − x)t₇ − x² − 7x + 18) = −5x³ + 10x² + 13x − 26 − t₇(x³ − 4x)`,
+
+and substituting into the curve equation shows `x` satisfies the SMALL
+quartic over `ℚ(t₇)`
+
+    `x⁴ − (t₇² + 9t₇ + 13)x³ − (3t₇² + 9t₇ − 45)x² − (3t₇² − 9t₇ − 25)x
+        − (t₇² + 18t₇ + 250) = 0`,
+
+of degree `4 = deg(X_0(21) → X_0(7))` as it must be. Pinning the rational
+root needs `t₃` as well; the gcd of that quartic with the corresponding
+`t₃`-relation, taken over the function field of the plane curve, is linear in
+`x` and expresses `x` as a cubic in `t₃` over `ℚ(t₇)` with a common
+denominator `D(t₇)` of degree `8`. That `D` is not arbitrary: it satisfies
+`D = t₇ · N_j′(t₇) − 7 · N_j(t₇) = t₇⁸ · dj/dt₇`, i.e. it is the numerator of
+the derivative of the `X_0(7)` `j`-map, vanishing exactly at the elliptic
+points. Handling `D(t₇) = 0` (where `j ∈ {0, 1728}`) is the one case the
+elimination does not cover and is where the remaining work sits.
+
+THE DICTIONARY, from Magma's projections applied to the eight points of
+`21a1` (`s₃ = 729/t₃`); the four cusps and the four solutions:
+
+    `(x, y)`      `t₃`        `t₇`
+    `O`           `0`         `∞`      cusp
+    `(−2, 1)`     `0`         `0`      cusp
+    `(−1, −1)`    `∞`         `∞`      cusp
+    `(5, 8)`      `∞`         `0`      cusp
+    `(−1/4, 1/8)` `−18`       `−49/2`
+    `(5, −13)`    `−81/2`     `−49/8`
+    `(2, −1)`     `−1152`     `−2`
+    `(−1, 2)`     `−81/128`   `−8`
+
+Note the Atkin–Lehner structure is visible in the table: `w₇` is the
+translation by the `2`-torsion point `(−2, 1)` (it has no fixed point on
+`X_0(21)`, by the class-number count `h(−28)(1 + (−28/3)) + h(−7)(1 + (−7/3))
+= 0`), while `w₃` and `w₂₁` have four fixed points each and are of
+negation type, which is why `X_0(21)/w₃` has genus `0` and `X_0(21)/w₇` does
+not. The "untried route" through `X_0(21)/w₃` recorded below is therefore
+sound as stated but is no longer needed: it existed only to find a small
+model, and the small model is the one above. -/
+theorem exists_x0TwentyOne_modularPoint (t₃ t₇ : ℚ) (ht₃ : t₃ ≠ 0) (ht₇ : t₇ ≠ 0)
+    (h : (t₃ + 27) * (t₃ + 3) ^ 3 * t₇ ^ 7
+      = t₃ * ((t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3)) :
+    ∃ x y : ℚ, y ^ 2 + x * y = x ^ 3 - 4 * x - 1 ∧
+      x ^ 2 + 2 * x - y ≠ 0 ∧
+      t₇ * (x ^ 2 + 2 * x - y) = x * y - 5 * x ^ 2 + 9 * y + 13 ∧
+      x ^ 3 * y - 12 * x ^ 4 + 62 * x ^ 2 * y - 118 * x ^ 3 + 138 * x * y + 161 * x ^ 2
+          - 307 * y + 402 * x - 249 ≠ 0 ∧
+      t₃ * (x ^ 3 * y - 12 * x ^ 4 + 62 * x ^ 2 * y - 118 * x ^ 3 + 138 * x * y + 161 * x ^ 2
+          - 307 * y + 402 * x - 249) = 729 * (x + 2) ^ 4 :=
+  sorry
+
+/-- **The rational points of the affine `X_0(21)` plane model** (PROVEN
+2026-07-27 over `rank_zero_x0TwentyOne` and `exists_x0TwentyOne_modularPoint`;
+was a sorry leaf, cut 2026-07-26 out of `j_mem_of_hauptmodul_pair`): the fibre product
 `X_0(3) ×_{X(1)} X_0(7) = X_0(21)`, cleared of denominators, is the affine
 plane curve
 
@@ -18578,17 +18758,121 @@ was not attempted here for want of time, and it is the cheapest thing left to
 try before accepting the `800`-character transcription. **It does not remove
 the Mordell–Weil citation** — it only makes item (iii) tractable; items (i) and
 (ii), and above all the absence of finite generation from this mathlib pin,
-are untouched by it. -/
+are untouched by it.
+
+**CORRECTION TO BOTH AUDITS ABOVE, 2026-07-27 — TWO OF THE THREE INGREDIENTS
+WERE NEVER NEEDED, AND THE THIRD IS SMALL. This leaf is now PROVEN.** Each
+half of the correction is a check anyone can rerun in minutes; the two audits
+were careful and internally consistent, and each rested on one load-bearing
+claim that does not survive being re-run.
+
+* **Item (ii) — the canonical-height machinery, "by far the larger half" — is
+  NOT required.** The audit's inference was: a complete `2`-descent bounds
+  `E(ℚ)/2E(ℚ)`, and that gives rank `0` only for a finitely generated group,
+  so the Mordell–Weil theorem is needed and this pin lacks it. Every step of
+  that is true and the conclusion still does not follow, because rank `0` for
+  ONE explicit curve can be obtained by a CONSTRUCTIVE infinite descent that
+  never mentions finite generation. This file already contains such a proof:
+  `MazurLevel15.rank_zero_x` is PROVEN, elementary throughout, and its curve
+  `V² = x(x + 1)(x + 16)` has the same Mordell–Weil group `ℤ/2 × ℤ/4` as
+  `21a1`. That is the refutation, and it was sitting in the same file. The
+  arithmetic half is now the leaf `rank_zero_x0TwentyOne`, stated in the
+  full-`2`-torsion model `W² = V(V − 9)(V + 7)`.
+* **Item (iii) — the `800`-character birational map — is an artefact of how
+  the map was obtained, not of the map.** Both owners ran Magma's generic
+  `EllipticCurve(C, P)`, which normalises to projective degree `13` with
+  `19`-digit coefficients. `X_0(21)` is in Magma's SMALL MODULAR CURVE
+  database, and `ProjectionMap(SmallModularCurve(21), 21, SmallModularCurve(d), d)`
+  returns the projections already small — about `60` characters each. They are
+  the content of the leaf `exists_x0TwentyOne_modularPoint`, which also
+  records the computed inverse, the normalisation calibration
+  (`s₃ = 729/t₃`, and Magma's `X_0(7)` hauptmodul is exactly this file's `t₇`)
+  and the eight-point dictionary. The forward direction is a verified
+  polynomial identity modulo the curve.
+* **Item (i)** — weak Mordell–Weil, i.e. the elementary complete `2`-descent —
+  is real, and is exactly what `rank_zero_x0TwentyOne` now carries.
+
+The route through `X_0(21)/w₃` proposed above is sound but is no longer the
+cheapest thing to try: it was a search for a small model, and the small model
+is the modular one. Recorded there too: `w₇` is the translation by the
+`2`-torsion point `(−2, 1)` and has NO fixed point, so `X_0(21)/w₇` has genus
+`1`, not `0` — only `w₃` and `w₂₁` give genus-`0` quotients.
+
+**Assembly (this proof).** `exists_x0TwentyOne_modularPoint` produces
+`(x, y)` on `21a1`; the substitution `V = 4x + 1`, `W = 8y + 4x` turns the
+curve equation into `W² = V(V − 9)(V + 7)` (`linear_combination 64 * hE`), so
+`rank_zero_x0TwentyOne` pins `x ∈ {−1/4, 2, −2, −1, 5}`. At each `x` the curve
+equation is a quadratic in `y` that factors over `ℚ` — `(y − 1/8)²`,
+`(y + 1)²`, `(y − 1)²`, `(y − 2)(y + 1)`, `(y − 8)(y + 13)` — and the three
+cuspidal branches are killed by exactly the three hypotheses that are there
+for them: `(−2, 1)` by `N₃ ≠ 0`, `(−1, −1)` by `B₇ ≠ 0`, and `(5, 8)` by
+`t₇ ≠ 0`. The five surviving points give the four listed pairs. -/
 theorem rational_point_x0TwentyOne (t₃ t₇ : ℚ) (ht₃ : t₃ ≠ 0) (ht₇ : t₇ ≠ 0)
     (h : (t₃ + 27) * (t₃ + 3) ^ 3 * t₇ ^ 7
       = t₃ * ((t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3)) :
     (t₃ = -18 ∧ t₇ = -49 / 2) ∨ (t₃ = -81 / 2 ∧ t₇ = -49 / 8) ∨
-      (t₃ = -1152 ∧ t₇ = -2) ∨ (t₃ = -81 / 128 ∧ t₇ = -8) :=
-  sorry
+      (t₃ = -1152 ∧ t₇ = -2) ∨ (t₃ = -81 / 128 ∧ t₇ = -8) := by
+  obtain ⟨x, y, hE, hB, hB7, hN, hN3⟩ :=
+    exists_x0TwentyOne_modularPoint t₃ t₇ ht₃ ht₇ h
+  have hV : (8 * y + 4 * x) ^ 2
+      = (4 * x + 1) * ((4 * x + 1) - 9) * ((4 * x + 1) + 7) := by
+    linear_combination 64 * hE
+  rcases rank_zero_x0TwentyOne (4 * x + 1) (8 * y + 4 * x) hV with h1 | h1 | h1 | h1 | h1
+  · -- `V = 0`, i.e. `x = -1/4`, `y = 1/8`: the point `(t₃, t₇) = (-18, -49/2)`.
+    have hx : x = -1 / 4 := by linarith
+    subst hx
+    have hy2 : (y - 1 / 8) ^ 2 = 0 := by linear_combination hE
+    have hy : y = 1 / 8 := by
+      have := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hy2
+      linarith
+    subst hy
+    exact Or.inl ⟨by linarith [hN3], by linarith [hB7]⟩
+  · -- `V = 9`, i.e. `x = 2`, `y = -1`: the point `(t₃, t₇) = (-1152, -2)`.
+    have hx : x = 2 := by linarith
+    subst hx
+    have hy2 : (y + 1) ^ 2 = 0 := by linear_combination hE
+    have hy : y = -1 := by
+      have := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hy2
+      linarith
+    subst hy
+    exact Or.inr (Or.inr (Or.inl ⟨by linarith [hN3], by linarith [hB7]⟩))
+  · -- `V = -7`, i.e. `x = -2`, `y = 1`: the affine cusp, killed by `N₃ ≠ 0`.
+    have hx : x = -2 := by linarith
+    subst hx
+    have hy2 : (y - 1) ^ 2 = 0 := by linear_combination hE
+    have hy : y = 1 := by
+      have := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hy2
+      linarith
+    subst hy
+    exact absurd (by norm_num) hN
+  · -- `V = -3`, i.e. `x = -1`: `y = 2` gives `(-81/128, -8)`, `y = -1` is a cusp.
+    have hx : x = -1 := by linarith
+    subst hx
+    have hy2 : (y - 2) * (y + 1) = 0 := by linear_combination hE
+    rcases mul_eq_zero.mp hy2 with hy | hy
+    · have hy : y = 2 := by linarith
+      subst hy
+      exact Or.inr (Or.inr (Or.inr ⟨by linarith [hN3], by linarith [hB7]⟩))
+    · have hy : y = -1 := by linarith
+      subst hy
+      exact absurd (by norm_num) hB
+  · -- `V = 21`, i.e. `x = 5`: `y = -13` gives `(-81/2, -49/8)`, `y = 8` is a cusp.
+    have hx : x = 5 := by linarith
+    subst hx
+    have hy2 : (y - 8) * (y + 13) = 0 := by linear_combination hE
+    rcases mul_eq_zero.mp hy2 with hy | hy
+    · have hy : y = 8 := by linarith
+      subst hy
+      exact absurd (by linarith [hB7]) ht₇
+    · have hy : y = -13 := by linarith
+      subst hy
+      exact Or.inr (Or.inl ⟨by linarith [hN3], by linarith [hB7]⟩)
 
-/-- **The `X_0(21)` Diophantine leaf** (PROVEN 2026-07-26 over the single
-leaf `rational_point_x0TwentyOne`, which carries the Mordell–Weil half and
-is the ONLY arithmetic citation left at this level): if a rational number
+/-- **The `X_0(21)` Diophantine leaf** (PROVEN 2026-07-26 over
+`rational_point_x0TwentyOne`, which is itself PROVEN since 2026-07-27, over
+`rank_zero_x0TwentyOne` and `exists_x0TwentyOne_modularPoint`; the arithmetic
+citation left at this level is now exactly the first of those two, and it is
+elementary): if a rational number
 `j` is simultaneously a value of the
 `X_0(3)` `j`-map and of the `X_0(7)` `j`-map, at rational hauptmodul
 values `t₃` and `t₇`, then
@@ -21603,8 +21887,12 @@ today are:
   `x1Nineteen_preΨ'_ne_zero`, `x1TwentyFive_plane_eq_line`, one each, as
   the bullets below say. These three ARE accurate.
 * `21` — `velu_map_add_of_notMem`,
-  `MazurLevel21.rational_point_x0TwentyOne`,
+  `MazurLevel21.rank_zero_x0TwentyOne`,
+  `MazurLevel21.exists_x0TwentyOne_modularPoint`,
   `exists_x0Seven_hauptmodul`, through `no_torsion_order_21`.
+  (Updated 2026-07-27: `MazurLevel21.rational_point_x0TwentyOne` is PROVEN
+  and is no longer a leaf; it was cut into the two named above — the
+  elementary rank-`0` statement for `21a1` and the modular parametrisation.)
 * `27` — `velu_map_add_of_notMem`, `MazurLevel9.exists_tateParam`,
   `exists_x0Nine_param_of_cyclicNineChain`, through
   `no_torsion_order_27`.
