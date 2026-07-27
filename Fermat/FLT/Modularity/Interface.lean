@@ -36347,8 +36347,32 @@ because `a_q² = 1` there.  So this leaf and
 `qCoeff_one_atkinLehnerOp_of_newform` are two readings of the SAME
 classical relation `U_q = −W_q` on the `q`-new part, and a successor
 should expect to close them TOGETHER from that relation rather than
-separately — that is the natural next cut here, and it is a different
-axis from the operator-shaped cut that produced this leaf.
+separately — on a different axis from the operator-shaped cut that
+produced this leaf.
+
+**BUT DO NOT CUT TO `U_q = −W_q` AT `g` — IT IS A RESTATEMENT, NOT A
+REDUCTION** (checked 2026-07-27, so the next owner need not rediscover
+it).  The tempting move is to introduce
+`atkinLehnerOp M q g = -(heckeOp M q g)` as a single common parent.
+It does imply both leaves cheaply — this one because
+`U_q (−U_q g) = −a_q • U_q g = −a_q² • g = a_q • (−a_q • g)`, and
+`qCoeff_one_atkinLehnerOp_of_newform` because `qCoeff_heckeOp` gives
+`a₁(U_q g) = a_q(g)` at `q ∣ M` and `hg.qCoeff_one` gives `a₁(g) = 1`.
+The trouble is the other direction: `heckeOp M q g = a_q • g` is
+already PROVEN (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`), so
+`-(heckeOp M q g) = (−a_q) • g` and the proposed parent is
+DEFINITIONALLY the conclusion of
+`atkinLehnerOp_apply_eq_neg_qCoeff_smul` itself.  Cutting there would
+move the whole node into one leaf and prove nothing.
+
+Note also that the sibling `r ≠ q` leaf does NOT help here even in
+principle: the bridge `eq_qCoeff_one_smul_of_heckeOp_eigen` runs
+through `qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen`, whose induction on
+`m` descends along an ARBITRARY prime divisor of `m` — including
+divisors of `M` — so it genuinely consumes the eigenvalue at `q`.  A
+strong-multiplicity-one variant quantified only over `r ∤ M` would make
+this leaf removable, and no such variant exists in this file or in the
+pin; building one is a real alternative route, not a restatement.
 
 Newness enters only through `hg`; `q ‖ M` is load-bearing because
 `atkinLehnerOp M q` is junk when `q² ∣ M` (its defining clause is
