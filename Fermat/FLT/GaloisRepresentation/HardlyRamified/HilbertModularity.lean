@@ -15909,10 +15909,24 @@ which this file already imports and which is NOT in the cycle; the repaired
 structures above were deliberately shaped to be the same interface, so after
 such a hoist this leaf becomes a transposition plus one application.
 
-THE CHECK THAT WOULD REFUTE THIS OBSTRUCTION: compute the import closure of
-`Modularity/PatchingVendored/*` and confirm it does not contain
-`Modularity/PatchingCore.lean`; if so the hoist is mechanical and this leaf is
-redundant work.
+THE CHECK THAT WOULD REFUTE THIS OBSTRUCTION — **RUN 2026-07-27, AND IT PASSES.**
+The `Fermat`-import closure of the ten `Modularity/PatchingVendored/*` modules is
+**ten modules**, and contains NEITHER `Modularity/PatchingCore.lean` NOR this
+file. So `PatchingCore` may import `PatchingVendored` without any cycle, and the
+hoist described above is mechanical rather than speculative: move
+`TaylorWilesLevelRaw`/`TaylorWilesTower`/`TaylorWilesSystem`, the transposition
+`exists_taylorWilesSystem`, and `TaylorWilesSystem.exists_patchedModule` (with
+`exists_patchedModule_of_fields` beneath it) from `Modularity/Patching.lean`
+into `Modularity/PatchingCore.lean`.
+
+**Whoever does that hoist should then delete this leaf rather than prove it**,
+and likewise the structures above, replacing them by the hoisted `ℚ`-level ones
+— they were deliberately shaped to be the same interface, field for field, and
+two independent copies of one interface is the most expensive object this
+development produces. The only reconciliation needed is the diamond role's
+coefficients (`ℤ_[p]` there, abstract `𝒪` here; `𝒪` finite free over `ℤ_[p]`
+transfers freeness in the direction required) and the dropped system-level
+presentation of `R_F`, which is derivable on both sides.
 
 NON-VACUITY. `nontrivialM0` is a field of the system and `proj` is surjective at
 every level, so no level is the zero module and `rank ≥ 1`; a level is demanded
