@@ -19462,6 +19462,68 @@ three interfaces that currently record "modular" as bare Frobenius data
 repair available inside this declaration; it is recorded here so the
 next audit does not mistake `hirrF` for a complete fix.
 
+HALF OF THAT GAP IS NOW CLOSED — HILBERT MODULAR FORMS ARE IN THE TREE
+(2026-07-27). The clause "the pin has no Hilbert modular forms", and the
+PIN AUDIT it rests on, are RETIRED. They were true of `Mathlib/` and they
+were FALSE of `~/cs/FLT`, which nobody had costed. What replaces them is a
+smaller and much sharper obstruction, stated below so the next owner
+attacks that instead of re-running the sweep.
+
+*What is now available.* The reference project carries a complete
+development of weight-`2` automorphic forms on a TOTALLY DEFINITE
+QUATERNION ALGEBRA over a totally real field, with their Hecke algebras —
+`TotallyDefiniteQuaternionAlgebra`, `WeightTwoAutomorphicForm.LevelStruct`,
+`HeckeAlgebra`, `HeckeAlgebra.T` — over adele rings, restricted products
+and Haar characters. By Jacquet–Langlands this is the Hilbert-modular
+eigensystem data Théorème (A) is about. Its import closure was measured
+(109 modules, 20,688 lines) and VENDORED into this tree under
+`Fermat/FLT/{AutomorphicForm,QuaternionAlgebra,DivisionAlgebra,HaarMeasure,
+NumberField,DedekindDomain,Hacks,Mathlib}/…`, where it BUILDS GREEN against
+our pin. The refuting check, for whoever doubts this paragraph next:
+`grep -rn 'HeckeAlgebra\.T' Fermat/FLT/AutomorphicForm/` and
+`lake build Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete`.
+
+*Cost of the vendoring, measured rather than estimated.* Exactly ONE
+statement in those 20,688 lines is unproven, and it is not a pin problem:
+the reference discharges `isFiniteRelIndex_Δ` (finiteness of `Δ_g/Fˣ`,
+Voight Lemma 17.7.13) with its tactic `knownin1980s`, which is
+`axiom knownin1980s {P : Prop} : P` — a proof of an ARBITRARY proposition.
+That axiom is inadmissible here, so it is not vendored and its one use
+became a sorried leaf. Pin drift cost exactly TWO repairs, both recorded
+at their sites: an auto-generated instance name whose suffix encoded the
+root module (`RestrictedProduct.instModuleCoe_fLT`, now named explicitly),
+and one `Algebra.smul_def` rewrite in `DivisionAlgebra/Finiteness.lean`
+that stopped firing because `InfinitePlace K` now unfolds to a subtype.
+
+*THE OBSTRUCTION THAT REMAINS, and why this leaf still cannot consume any
+of it.* The formalization is QUATERNIONIC, and a totally definite
+quaternion algebra over `F` unramified at every finite place exists only
+when `[F : ℚ]` is EVEN (the ramification set must have even cardinality,
+and here it is exactly the set of infinite places). This leaf quantifies
+over an abstract totally real Galois `F` with no parity constraint, so:
+
+- as the CONCLUSION of a sub-leaf — "`heckeF` is the eigensystem of a
+  quaternionic form over `F`" — it is **FALSE for odd-degree `F`**, and
+  cutting this leaf that way would manufacture a false leaf, which is
+  worse than leaving it open;
+- as a HYPOTHESIS on this leaf — adding `Even (Module.finrank ℚ F)` — it
+  fails this docstring's own sharp test (round-4 block): Carayol's
+  Théorème (A) covers Hilbert newforms over totally real `F` of EVERY
+  degree, so the hypothesis would delete instances the literature DOES
+  cover. That is route-(3) blurring, already rejected here twice.
+
+So the honest next step is a Jacquet–Langlands layer, or the parity datum
+recorded upstream where `F` is CHOSEN (Taylor's construction is free to
+take `[F : ℚ]` even, exactly as it is free to take `F` linearly disjoint
+from `ℚ(ζ_ℓ)`) — i.e. a new field on `MoretBaillySeed` threaded through
+`exists_potentialModularityWitness_of_five_le`, which is the same
+cut-level change the paragraph above already names, now with a much
+smaller residue: no longer "define Hilbert modular forms", but "record one
+parity bit and cite Jacquet–Langlands". **Until that lands, the vendored
+subtree is FREE-FLOATING** — nothing in the cone of `fermat_last_theorem`
+consumes it — and it should be released together with its first consumer,
+not before.
+
 ROUTE AUDIT (dichotomy, 2026-07-24; unchanged — do not re-litigate
 without new evidence). Two routes to the `3`-adic member of the
 compatible system were weighed at this joint:
@@ -25033,6 +25095,55 @@ two leaves is still absent, and nothing here brings a formal
 Fontaine–Laffaille functor or a formal strict-compatibility theorem into
 the tree. This leaf remains the single residual citation of the whole
 `3`-adic construction, now carrying five clauses instead of three.
+
+## MACHINERY RE-AUDIT 2026-07-27: four absences CONFIRMED, one REFUTED
+
+Re-run against the pin as it stands, because a "still absent" claim is a
+DATED claim. Each item below names the check that would refute it.
+
+CONFIRMED ABSENT — all four, so the prerequisite chain for clauses (2)–(5)
+is unchanged and this leaf is not closable by any restatement:
+
+* no Weil group and no Weil–Deligne representations:
+  `grep -rl 'WeilDeligne\|weilGroup\|WeilGroup'` is EMPTY over `Mathlib/`,
+  over `~/cs/FLT/FLT`, and over `Fermat/`;
+* `Mathlib/RingTheory/Valuation/RamificationGroup.lean` is STILL exactly
+  54 lines — `decompositionSubgroup`, `inertiaSubgroup`, and the
+  `TODO: Define higher ramification groups in lower numbering` on line 16.
+  So there is no ramification filtration, no tame quotient, and no tame
+  character `t_ℓ : I_p ↠ ℤ_ℓ(1)`;
+* no `B_cris`, no crystalline/Hodge–Tate machinery, hence no
+  Fontaine–Laffaille functor: `grep -rl 'BCris\|B_cris\|HodgeTate\|
+  crystallineRep'` over `Mathlib/` is EMPTY and `RingTheory/Perfectoid/`
+  still contains exactly `BDeRham.lean`, `FontaineTheta.lean`, `Untilt.lean`;
+* no smooth/admissible `GL₂` representations and no local Langlands:
+  `grep -rl 'SmoothRep\|AdmissibleRep\|LocalLanglands'` over `Mathlib/`
+  is EMPTY.
+
+REFUTED — and this one had become load-bearing, because it is quoted as a
+reason not to pursue the automorphic route at the twin Carayol node and
+again in the MACHINERY AUDIT further down this file (search
+`is NOT vendorable`): the claim that the reference project's automorphy
+predicate `GaloisRep.IsAutomorphicOfLevel` "is NOT vendorable, being
+defined over that project's quaternionic Hecke-algebra development, which
+our pin does not have". **It IS vendorable, and it has been vendored.**
+That development's import closure — 109 modules, 20,688 lines, covering
+adele rings, restricted products, Haar characters, totally definite
+quaternion algebras and their Hecke algebras — now lives under
+`Fermat/FLT/{AutomorphicForm,QuaternionAlgebra,DivisionAlgebra,HaarMeasure,
+NumberField,DedekindDomain,Hacks,Mathlib}/…` and builds green against our
+pin, at a measured cost of one sorried leaf (`isFiniteRelIndex_Δ`, Voight
+17.7.13, which the reference discharged with its `axiom knownin1980s`) and
+two pin-drift repairs. Refuting check:
+`lake build Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete`.
+
+What that does NOT buy for THIS leaf, so nobody re-scopes it as cheap: the
+vendored theory is automorphic-side machinery, and every one of clauses
+(2)–(5) is a GALOIS-side local statement. Clause (2) and clause (4) need
+Fontaine–Laffaille; clauses (3) and (5) need strict compatibility, i.e.
+`WD_v(−)`. Both are in the CONFIRMED-ABSENT list above and neither is
+reachable from Hecke algebras. The vendoring changes the twin Carayol
+node's outlook (see the block on that leaf), not this one's.
 -/
 theorem blggt_threeadicBrauerSum_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
