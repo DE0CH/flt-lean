@@ -7400,6 +7400,28 @@ forces `deg_Y g = 0`, and `g ∈ 𝔽_p[X]` of total degree `d ≥ 2` is reducib
 in particular the total degree `d` is PRESERVED, which is why every bound below
 may be stated in `d`.
 
+API RECONNAISSANCE (2026-07-27, grepped in the pin on the host owning this
+worktree's `.lake`; these names were CONFIRMED to exist, not guessed):
+
+* `MvPolynomial.finSuccEquiv R n : MvPolynomial (Fin (n+1)) R ≃ₐ[R]
+  Polynomial (MvPolynomial (Fin n) R)` (`Mathlib/Algebra/MvPolynomial/Equiv.lean`),
+  with `natDegree_finSuccEquiv`, `degreeOf_coeff_finSuccEquiv` and
+  `support_finSuccEquiv`. Applied twice (plus `MvPolynomial.finZeroEquiv` /
+  `isEmptyAlgEquiv` at the bottom) this is the bridge from the `MvPolynomial
+  (Fin 2)` packaging of `g` to the `Polynomial (Polynomial (ZMod p))` packaging
+  of `F` that the conclusion demands, and `degreeOf_coeff_finSuccEquiv` is what
+  turns `totalDegree g = d` into the per-coefficient bound `deg gᵢ ≤ i`.
+* `MvPolynomial.totalDegree_rename_le` and `totalDegree_renameEquiv`
+  (`Mathlib/Algebra/MvPolynomial/Degrees.lean`) for the coordinate permutation.
+  The SHEAR itself, `X₀ ↦ X₀ + c·X₁`, is an `aeval`, and no
+  `totalDegree_aeval_le` for a linear substitution was found — that bound looks
+  like the one genuinely new piece this leaf needs, and it is elementary.
+* Nothing named `[Ss]tepanov` in `Fermat/`, `.lake/packages/mathlib/` or
+  `~/cs/FLT/`, so no existing shear-normalisation to vendor.
+
+The refuting check for the last bullet is a one-line grep; run it before
+believing this note, which is dated.
+
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_stepanovNormalisation (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
     (hp : 250 * d ^ 5 < p) (g : MvPolynomial (Fin 2) (ZMod p))
