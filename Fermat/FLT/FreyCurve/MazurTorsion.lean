@@ -5390,7 +5390,7 @@ theorem WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup
       Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite :=
     Set.finite_coe_iff.mp inferInstance
   have hCodd : Odd (Nat.card (AddSubgroup.zmultiples P)) := by rw [hCcard]; decide
-  obtain ⟨t, w, hell', φ, ht', hw', hgal, hker⟩ :=
+  obtain ⟨t, w, hell', φ, ht', hw', hgal, hker, -⟩ :=
     WeierstrassCurve.exists_velu_quotient_isogeny_model E
       (AddSubgroup.zmultiples P) hCfin hCodd hstable
   obtain ⟨ht, hw⟩ := hSum hCfin t w ht' hw'
