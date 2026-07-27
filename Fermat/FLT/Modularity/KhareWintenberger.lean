@@ -1312,10 +1312,10 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    **SHRUNK A THIRD TIME, 2026-07-26, and the REAL ANALYSIS IS NOW GONE
    FROM IT.** The chart leaf is PROVEN over
    `exists_realPolynomialModel_of_affine_geometricallyIrreducible`, which is
-   **itself PROVEN as of 2026-07-26** over the single leaf
+   **itself PROVEN as of 2026-07-26**; its last leaf,
    `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
-   — so all that survives of this item is a DIMENSION COUNT in commutative
-   algebra, with no scheme-to-manifold content left at all. The implicit function theorem has been
+   — the DIMENSION COUNT in commutative algebra — is **PROVEN 2026-07-26** too,
+   so NOTHING survives of this item. The implicit function theorem has been
    APPLIED, not merely located: `exists_euclideanPatch_of_polynomialSystem`
    (PROVEN) is the classical submersion theorem — the real zero locus of a
    polynomial system with surjective Jacobian contains a Euclidean patch of
@@ -1366,10 +1366,11 @@ Euclidean chart, and so is its consumer
 itself, `exists_realPointChart_of_affine_geometricallyIrreducible`, is PROVEN
 over `exists_euclideanPatch_of_polynomialSystem` (the submersion theorem, also
 PROVEN) and `exists_realPolynomialModel_of_affine_geometricallyIrreducible`,
-which is PROVEN too since 2026-07-26. The one remaining leaf of the whole item
-is `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+which is PROVEN too since 2026-07-26. Its last leaf,
+`not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
 -- a DIMENSION COUNT in commutative algebra, carrying no scheme-to-manifold
-content. The two `exists_bound_forall_padicAlgHom` / `_padicPoint`
+content -- is PROVEN as of 2026-07-26, so the item has NO leaf left.
+The two `exists_bound_forall_padicAlgHom` / `_padicPoint`
 statements are likewise PROVEN and are not leaves either.
 
 The elementary
@@ -3811,43 +3812,124 @@ theorem exists_ratAlgebra_smooth_of_smooth (hsmooth : AlgebraicGeometry.Smooth g
 
 open CategoryTheory AlgebraicGeometry in
 /-- **A NONEMPTY BASIC OPEN OF A `≥ 2`-DIMENSIONAL IRREDUCIBLE VARIETY IS NOT ÉTALE**
-(sorry leaf, 2026-07-26 — step 6 of the attack path below, and the ONLY part of
-`exists_realPolynomialModel_of_affine_geometricallyIrreducible` that is not proven).
+(**PROVEN 2026-07-26** — step 6 of the attack path below, and the last open piece of
+`exists_realPolynomialModel_of_affine_geometricallyIrreducible`).
 
-If `R[1/f]` were standard smooth of relative dimension `0` over `ℚ` it would be étale,
-hence a finite product of finite separable field extensions of `ℚ`
-(`Algebra.Etale.iff_isStandardSmoothOfRelativeDimension_zero` at this pin turns the
-hypothesis into `Algebra.Etale ℚ (Localization.Away f)`), hence Artinian, hence
-`ringKrullDim (Localization.Away f) ≤ 0`.
+If `A[1/f]` were standard smooth of relative dimension `0` over `ℚ` it would be étale
+(`Algebra.Etale.iff_isStandardSmoothOfRelativeDimension_zero`); being formally
+unramified and essentially of finite type over a FIELD, it is then a
+FINITE-DIMENSIONAL `ℚ`-vector space (`Algebra.FormallyUnramified.finite_of_free`).
+That single fact already dominates all of `A`, and no dimension theory of dense opens
+is needed.
 
-But `D(f)` is a NONEMPTY open of `Spec A` — nonempty because the real point `ρ` does not
-kill `f` — and `hgi` makes `Spec A` irreducible, so `D(f)` is DENSE. For a finite-type
-algebra over a field, a dense open has the SAME Krull dimension as the whole
-(both compute the transcendence degree of the function field), so
-`1 < topologicalKrullDim (Spec A) = ringKrullDim (Localization.Away f) ≤ 0`, absurd.
+THE PROOF. Write `K := ker (A → A[1/f])`.
 
-WHERE EACH HYPOTHESIS ENTERS. `hgi` gives irreducibility, hence density of `D(f)`; `hft`
-gives finite type over `ℚ`, without which "dense open has the same dimension" is FALSE
-(a dense open of a valuation ring's spectrum can drop dimension); `hdim` supplies the
-`1 <`; `ρ`/`hf` supply nonemptiness. Dropping any one of them makes the statement false.
+* `hgi` makes `Spec A` irreducible, so `nilradical A` is PRIME
+  (`PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical`, reached from `hgi`
+  through `AlgebraicGeometry.self_of_isIntegral_of_geometrically`, since the base
+  `Spec (ULift ℚ)` is integral and a single point).
+* `ρ f ≠ 0` in the reduced ring `ℝ` makes `f` NON-nilpotent, so `f ∉ nilradical A`.
+* Hence `K ≤ nilradical A`: `a ∈ K` means `fⁿ · a = 0` for some `n`, and a prime
+  containing `fⁿ · a` but not `f` must contain `a`.
 
-WHAT IS MISSING AT THIS PIN: mathlib has `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`
-and the Artinian side, but not "a dense open of an irreducible finite-type `k`-scheme has
-the ambient dimension". That is the genuine content and it is an independently ownable
-piece of dimension theory, involving no polynomial-model interface whatsoever. -/
+Now `Ideal.kerLiftAlg` embeds `A ⧸ K` into `A[1/f]` as a `ℚ`-subspace, so `A ⧸ K` is a
+finite-dimensional `ℚ`-algebra, hence ARTINIAN, hence `Ring.KrullDimLE 0 (A ⧸ K)`.
+Finally `K ≤ nilradical A` forces `K.radical = (⊥ : Ideal A).radical`, so
+`K.minimalPrimes = minimalPrimes A` (`Ideal.radical_minimalPrimes`) and the
+zero-dimensionality transfers from the quotient to `A` itself:
+`ringKrullDim A ≤ 0`, contradicting
+`1 < topologicalKrullDim (Spec A) = ringKrullDim A`.
+
+WHY THE ROUTE IN THE EARLIER VERSION OF THIS DOCSTRING WAS ABANDONED. It went through
+"a dense open of an irreducible finite-type `k`-scheme has the ambient dimension",
+recorded here as the genuine missing content. That statement is true, is still absent
+from the pin, and does need `hft` — a dense open of a valuation ring's spectrum can
+drop dimension. It is simply not needed: étaleness over `ℚ` bounds `A[1/f]` as a
+`ℚ`-VECTOR SPACE, which is far stronger than zero-dimensionality, and the
+valuation-ring obstruction never arises because such a localisation is an enormous
+field, never finite over `ℚ`.
+
+WHERE EACH HYPOTHESIS ENTERS, CORRECTED. `hgi` gives irreducibility, which is what
+makes `K` nilpotent and so lets `A[1/f]` control `A`; `hdim` supplies the `1 <`;
+`ρ` and `hf` supply `f ∉ nilradical A`. **`hft` is NOT used** by this proof, and is
+written `_hft`; it is retained only so the hypothesis list stays parallel with the
+sibling Bertini leaves and with the consumer's call site. The other three are all
+load-bearing: with `A = ℚ × ℚ[x, y]`, `f = (1, 0)` and `ρ` the first projection,
+`A[1/f] ≅ ℚ` is étale while `topologicalKrullDim (Spec A) = 2` — every hypothesis
+except `hgi` holds and the conclusion fails. -/
 theorem not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible
     [inst : Algebra ℚ A]
-    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (_hft : AlgebraicGeometry.LocallyOfFiniteType g)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
     (f : A) (ρ : A →+* ℝ) (hf : ρ f ≠ 0) :
-    ¬ Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f) :=
-  sorry
+    ¬ Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f) := by
+  intro hss
+  -- STEP 1. Relative dimension `0` standard smooth = ÉTALE.
+  haveI hetale : Algebra.Etale ℚ (Localization.Away f) :=
+    Algebra.Etale.iff_isStandardSmoothOfRelativeDimension_zero.mpr hss
+  -- STEP 2. An étale algebra over a field is a FINITE-DIMENSIONAL vector space.
+  haveI hfin : Module.Finite ℚ (Localization.Away f) :=
+    Algebra.FormallyUnramified.finite_of_free ℚ (Localization.Away f)
+  -- STEP 3. `Spec A` is irreducible, i.e. the nilradical is prime.
+  haveI hdom : IsDomain (↑(CommRingCat.of (ULift.{u} ℚ)) : Type u) :=
+    inferInstanceAs (IsDomain (ULift.{u} ℚ))
+  haveI hirr : IrreducibleSpace (PrimeSpectrum A) :=
+    AlgebraicGeometry.self_of_isIntegral_of_geometrically hgi.geometrically_irreducibleSpace
+  haveI hnp : (nilradical A).IsPrime :=
+    PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical.mp hirr
+  -- STEP 4. `f` is not nilpotent, because `ρ f ≠ 0` in the reduced ring `ℝ`.
+  have hfnil : f ∉ nilradical A := fun hmem =>
+    hf (((mem_nilradical.mp hmem).map ρ).eq_zero)
+  -- STEP 5. The kernel of `A → A[1/f]` consists of nilpotents.
+  set φ : A →ₐ[ℚ] Localization.Away f := IsScalarTower.toAlgHom ℚ A (Localization.Away f)
+  set K : Ideal A := RingHom.ker (φ : A →+* Localization.Away f)
+  have hKle : K ≤ nilradical A := by
+    intro a ha
+    have ha' : algebraMap A (Localization.Away f) a = 0 := ha
+    obtain ⟨⟨m, n, hmn⟩, hma⟩ :=
+      (IsLocalization.map_eq_zero_iff (M := Submonoid.powers f)
+        (S := Localization.Away f) a).mp ha'
+    have hmn' : f ^ n = m := hmn
+    have hma' : m * a = 0 := hma
+    have h0 : f ^ n * a = 0 := by rw [hmn']; exact hma'
+    have hmem : f ^ n * a ∈ nilradical A := h0 ▸ Ideal.zero_mem _
+    rcases hnp.mem_or_mem hmem with h | h
+    · exact absurd (hnp.mem_of_pow_mem n h) hfnil
+    · exact h
+  -- STEP 6. `A ⧸ K` embeds in a finite-dimensional `ℚ`-algebra, hence is ARTINIAN.
+  haveI : IsArtinian ℚ (A ⧸ K) :=
+    isArtinian_of_injective (Ideal.kerLiftAlg φ).toLinearMap (Ideal.kerLiftAlg_injective φ)
+  haveI : IsArtinianRing (A ⧸ K) := isArtinian_of_tower ℚ inferInstance
+  haveI : Ring.KrullDimLE 0 (A ⧸ K) := isArtinianRing_iff_krullDimLE_zero.mp inferInstance
+  -- STEP 7. `K ≤ nil A` makes the minimal primes over `K` the minimal primes of `A`.
+  have hrad : K.radical = (⊥ : Ideal A).radical := by
+    refine le_antisymm ?_ (Ideal.radical_mono bot_le)
+    have h1 : K.radical ≤ ((⊥ : Ideal A).radical).radical := Ideal.radical_mono hKle
+    rwa [Ideal.radical_idem] at h1
+  have hmin : minimalPrimes (A : Type u) = K.minimalPrimes := by
+    show (⊥ : Ideal A).minimalPrimes = K.minimalPrimes
+    rw [← Ideal.radical_minimalPrimes (I := (⊥ : Ideal A)), ← hrad,
+      Ideal.radical_minimalPrimes]
+  have hmax : ∀ J ∈ minimalPrimes (A : Type u), J.IsMaximal := by
+    rw [hmin]
+    exact Ideal.krullDimLE_zero_quotient_iff_forall_minimalPrimes_isMaximal.mp inferInstance
+  haveI : Ring.KrullDimLE 0 (A : Type u) :=
+    Ring.krullDimLE_zero_iff_forall_minimalPrimes_isMaximal.mpr hmax
+  -- STEP 8. So `Spec A` is zero-dimensional, contradicting `hdim`.
+  have hle : ringKrullDim (A : Type u) ≤ 0 := by
+    have h := Order.KrullDimLE.krullDim_le (n := 0) (α := PrimeSpectrum (A : Type u))
+    simpa [ringKrullDim] using h
+  have hdim' : (1 : WithBot ℕ∞) < ringKrullDim (A : Type u) := by
+    rw [← PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim]
+    exact hdim
+  exact absurd (hdim'.trans_le hle) (by simp)
 
 open CategoryTheory AlgebraicGeometry in
-/-- **A SMOOTH POLYNOMIAL MODEL OF `X(ℝ)`** (**PROVEN 2026-07-26** over the single leaf
-`not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
-— steps 1–5 below are now discharged, and only the DIMENSION COUNT of step 6 remains.
+/-- **A SMOOTH POLYNOMIAL MODEL OF `X(ℝ)`** (**FULLY PROVEN 2026-07-26** — steps 1–5
+below were discharged first, and the DIMENSION COUNT of step 6,
+`not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`,
+is PROVEN too, so this node carries no open leaf.
 This node was the residual scheme-theoretic content of the Euclidean-chart leaf below,
 whose real-analytic half was discharged by `exists_euclideanPatch_of_polynomialSystem`).
 
@@ -3991,10 +4073,10 @@ longer part of the gap:
 * `exists_realPolynomialModel_of_affine_geometricallyIrreducible`
   (**PROVEN 2026-07-26**) — an open piece of `X(ℝ)` is the real zero locus of a
   smooth polynomial system of codimension `c < m` in `ℝ^m`, functorially and
-  injectively. It carries every hypothesis. Its own residue is the single leaf
-  `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
-  (SORRY) — the DIMENSION COUNT: a nonempty basic open of a `≥ 2`-dimensional
-  irreducible finite-type `ℚ`-variety is not étale. No base change to `ℝ` is
+  injectively. It carries every hypothesis. Its last residue was the leaf
+  `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`,
+  **PROVEN 2026-07-26** — the DIMENSION COUNT: a nonempty basic open of a
+  `≥ 2`-dimensional irreducible `ℚ`-variety is not étale. No base change to `ℝ` is
   involved anywhere: the presentation is taken over `ℚ` and its relations are
   pushed along `ℚ → ℝ`, which is why that step disappeared from the gap.
 * `exists_euclideanPatch_of_polynomialSystem` (**PROVEN**) — the classical
