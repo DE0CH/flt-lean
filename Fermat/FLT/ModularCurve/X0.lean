@@ -318,6 +318,15 @@ public import Mathlib.Data.ZMod.Basic
 -- `Scheme.Hom.image` / `imageι` / `toImage`: the scheme-theoretic image of a
 -- morphism, which is how the descent leaf's closed subscheme `C` is built.
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
+-- `Localization.subalgebra.ofField`: `ℤ` localized at `(ℓ)` realized INSIDE `ℚ`,
+-- i.e. the witness `R = ℤ_(ℓ)` of `exists_isReductionBase`.
+public import Mathlib.RingTheory.Localization.AsSubring
+-- `IsLocalization.AtPrime.isUnit_mk'_iff`: units of `ℤ_(ℓ)`, which is the
+-- `ker toF = nonunits` half of `IsReductionBase`.
+public import Mathlib.RingTheory.Localization.AtPrime.Basic
+-- `Nat.prime_iff_prime_int`, and `Prime.coprime_iff_not_dvd` transitively: the
+-- Bézout witness making `s ∉ (ℓ)` a unit mod `ℓ`.
+public import Mathlib.RingTheory.Int.Basic
 
 @[expose] public section
 
@@ -3176,41 +3185,112 @@ noncomputable def toReduction
 
 end IsX0NeronDatum
 
-/-- **Reduction is injective on the integral points of an abelian scheme
-over `ℤ_(ℓ)` for `ℓ` odd** (sorry node).
+/-- **`n • x` on relative points of an abelian scheme.**
 
-TRUE, and classical.  `hfin` makes `𝒥(ℤ_(ℓ))` finite, hence torsion.
-The kernel of reduction `𝒥(ℤ_(ℓ)) → 𝒥(𝔽_ℓ)` embeds in the kernel over
-the completion `ℤ_ℓ`, which is the group of points of the formal group
-of `𝒥` — and a formal group over a `ℓ`-adic ring of absolute
-ramification index `e` is torsion-free when `e < ℓ − 1`.  Here `e = 1`
-by `hbase`, so the condition is `ℓ > 2`.  A torsion subgroup of a
-torsion-free group is trivial, and a homomorphism (`abZ.pre_add`) with
-trivial kernel is injective.
+The `AddCommGroup` structure on `RelPoint f g` is `addCommGroup`, which
+is a plain definition rather than an instance because it depends on the
+`ab` TERM.  Wrapping the scalar action in a definition is what lets the
+torsion hypothesis of `neronKernel_torsionFree` be STATED without a
+`letI` inside the statement. -/
+noncomputable def AbelianSchemeStruct.nsmulPoint {A S : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) {T : Scheme.{u}} {g : T ⟶ S} (n : ℕ)
+    (x : RelPoint f g) : RelPoint f g :=
+  letI := ab.addCommGroup g
+  n • x
 
-**Every hypothesis is load-bearing.**  `hbase` is what makes the base a
-DVR with `e = 1` and residue characteristic `ℓ` — over a ramified base
-the formal group can have torsion.  `hℓ2` is exactly the `e < ℓ − 1`
-condition and cannot be dropped: at `ℓ = 2`, `e = 1 = ℓ − 1` and
-`2`-torsion can die under reduction.  `hfin` is rank `0`; without it the
-kernel need not be torsion and the argument gives nothing.
+/-- **The kernel of reduction on an abelian scheme over `ℤ_(ℓ)` is
+TORSION-FREE, for `ℓ` odd** (sorry node — the formal-group fact).
 
-This is the SHARED content that `card_le_of_rankZeroJacobian` also
-rests on, isolated here so that it is proven once.
+TRUE, and classical.  The kernel of `𝒥(ℤ_(ℓ)) → 𝒥(𝔽_ℓ)` embeds in the
+kernel over the completion `ℤ_ℓ`, which is the group of points of the
+formal group of `𝒥` on the maximal ideal; and a formal group over an
+`ℓ`-adic ring of absolute ramification index `e` is torsion-free when
+`e < ℓ − 1`.  Here `e = 1` by `hbase`, so the condition is exactly
+`ℓ > 2`.
 
-IRREDUCIBLE at this pin: it needs the formal group of an abelian scheme
-over a discrete valuation ring, which does not exist in mathlib. -/
-theorem neronReduction_injective (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+**Every hypothesis is load-bearing** — they carry an underscore only
+because the body is `sorry` and Lean's linter asks for it.  `hbase` is
+what makes the base a DVR with `e = 1` and residue characteristic `ℓ`:
+over a ramified base the formal group can have torsion.  `hℓ2` is
+exactly the `e < ℓ − 1` condition and cannot be dropped — at `ℓ = 2`,
+`e = 1 = ℓ − 1` and `2`-torsion can die under reduction.
+
+**This is strictly SHARPER than the `neronReduction_injective` it was
+factored out of**: rank `0` is NOT among its hypotheses.  Finiteness of
+`𝒥(ℤ_(ℓ))` was only ever used to know that every element of the kernel
+is torsion, and that step is now discharged inside
+`neronReduction_injective` itself.  What is left here is the
+formal-group statement as the literature states it (Silverman, *ATAEC*
+IV.6; Bosch–Lütkebohmert–Raynaud, *Néron Models*).
+
+This is the SHARED content that `card_le_of_rankZeroJacobian` also rests
+on, isolated here so that it is proven once.
+
+IRREDUCIBLE at this pin, and the CHECK THAT WOULD REFUTE THAT: mathlib
+gained formal group LAWS since the note this docstring replaces
+(`Mathlib/RingTheory/FormalGroup/Basic.lean`: `FormalGroup`, its
+`Point`s on a complete local algebra, `𝔾ₐ`, `𝔾ₘ`, base change).  What is
+still absent everywhere — mathlib, `~/cs/FLT`, this project — is (a) the
+formal group OF an abelian scheme along its zero section, and (b) the
+torsion-freeness theorem for `e < p − 1`.  Producing either as a
+declaration in the pin refutes the irreducibility claim; the `Point`
+type in that file is the natural target for (a). -/
+theorem neronKernel_torsionFree (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
     (_hbase : IsReductionBase ℓ R toF) (_hℓ2 : ℓ ≠ 2)
-    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (_abZ : AbelianSchemeStruct jstrZ)
-    (_hfin : Finite (RelPoint jstrZ (𝟙 (SpecLoc R)))) :
-    Function.Injective
-      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) :
-        RelPoint jstrZ (𝟙 (SpecLoc R)) → RelPoint jstrZ (SpecLoc.special toF)) :=
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
+    (n : ℕ) (_hn : n ≠ 0) (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
+    (_htors : abZ.nsmulPoint n x = abZ.zero (𝟙 (SpecLoc R)))
+    (_hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
+      = abZ.zero (SpecLoc.special toF)) :
+    x = abZ.zero (𝟙 (SpecLoc R)) :=
   sorry
 
-/-- **The good-reduction datum exists at every odd `ℓ ∤ N`** (sorry
-node).
+/-- **Reduction is injective on the integral points of an abelian scheme
+over `ℤ_(ℓ)` for `ℓ` odd** (PROVEN, over `neronKernel_torsionFree`).
+
+The argument in full, and it is the reason the leaf above carries no
+finiteness hypothesis.  `RelPoint.pre` along the closed point is a group
+homomorphism — that is `abZ.pre_add`, and `AddMonoidHom.mk'` packages it
+— so injectivity is triviality of its kernel
+(`injective_iff_map_eq_zero`).  `hfin` makes `𝒥(ℤ_(ℓ))` finite, hence
+every element has finite additive order, so an element of the kernel is
+torsion; and a torsion element of a torsion-free subgroup is zero, which
+is `neronKernel_torsionFree` applied at `n = addOrderOf x`.
+
+So the split is: everything ABOVE the formal group is here, and the
+formal group alone is the leaf.  `hfin` is consumed here and nowhere
+else. -/
+theorem neronReduction_injective (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF) (hℓ2 : ℓ ≠ 2)
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
+    (hfin : Finite (RelPoint jstrZ (𝟙 (SpecLoc R)))) :
+    Function.Injective
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) :
+        RelPoint jstrZ (𝟙 (SpecLoc R)) → RelPoint jstrZ (SpecLoc.special toF)) := by
+  letI := abZ.addCommGroup (𝟙 (SpecLoc R))
+  letI := abZ.addCommGroup (SpecLoc.special toF)
+  haveI := hfin
+  have hinj : Function.Injective
+      (AddMonoidHom.mk' (RelPoint.pre (SpecLoc.special toF)
+          (Category.comp_id (SpecLoc.special toF)))
+        (abZ.pre_add (SpecLoc.special toF)
+          (Category.comp_id (SpecLoc.special toF)))) := by
+    rw [injective_iff_map_eq_zero]
+    intro x hx
+    refine neronKernel_torsionFree ℓ R toF hbase hℓ2 abZ (addOrderOf x) ?_ x ?_ hx
+    · exact (addOrderOf_pos x).ne'
+    · show abZ.nsmulPoint (addOrderOf x) x = abZ.zero _
+      exact addOrderOf_nsmul_eq_zero x
+  exact hinj
+
+/-- **The good-reduction datum exists over a GIVEN `ℤ_(ℓ)`, at every odd
+`ℓ ∤ N`** (sorry node).
+
+This is `exists_x0NeronDatum` with the base handed to it rather than
+constructed: `(R, toF)` and its `IsReductionBase` pinning are
+hypotheses, supplied at the use site by `exists_isReductionBase`, which
+is PROVEN.  So the arithmetic of `ℤ_(ℓ)` is no longer part of this leaf
+and what remains is purely the geometry.
 
 TRUE, and it is the integral-model half of the sieve: `X_0(N)` has a
 smooth proper model over `ℤ[1/N]` (Deligne–Rapoport, Igusa), so over
@@ -3229,11 +3309,13 @@ rather than a repackaging.
 
 IRREDUCIBLE at this pin: neither the integral model of `X_0(N)` nor the
 relative Jacobian exists here. -/
-theorem exists_x0NeronDatum (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2) (_hℓN : ¬ ℓ ∣ N)
+theorem exists_x0NeronDatum_of_base (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
+    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (_hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o) :
-    ∃ (R : Subring ℚ) (toF : R →+* ZMod ℓ) (X' J' XZ YZ JZ : Scheme.{0})
+    ∃ (X' J' XZ YZ JZ : Scheme.{0})
       (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
       (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
       (jac' : IsJacobianOf strX' ab' o') (xstr : XZ ⟶ SpecLoc R)
@@ -3243,6 +3325,107 @@ theorem exists_x0NeronDatum (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 
       Nonempty (IsX0NeronDatum N ℓ R toF jac jac'
         (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :=
   sorry
+
+/-- **The base `ℤ_(ℓ)` exists: `IsReductionBase` is SATISFIABLE at every
+prime `ℓ`** (PROVEN).
+
+This is not bookkeeping.  `IsReductionBase` pins the base by two
+conditions on a `Subring ℚ` and no imports, and everything downstream —
+`IsX0NeronDatum`, and with it the universally quantified
+`exists_sharpSievePrime` — is worthless if no pair `(R, toF)` satisfies
+them: an unsatisfiable `base` field would make every datum impossible
+and the sharpness leaf VACUOUSLY true.  So this theorem is the
+non-vacuity certificate for the whole pinning, and it is what the
+docstring of `IsReductionBase` asserts informally when it argues that
+the conditions pin `R = ℤ_(ℓ)`.
+
+The witness is the honest one.  `R` is `ℤ` localized at the prime ideal
+`(ℓ)`, realized inside `ℚ` by `Localization.subalgebra.ofField` — which
+is exactly "the rationals whose denominator is prime to `ℓ`" — and `toF`
+is `IsLocalization.lift` of `ℤ → 𝔽_ℓ`, legitimate because every `s ∉ (ℓ)`
+becomes a unit mod `ℓ`.  That unit is produced from BÉZOUT
+(`Prime.coprime_iff_not_dvd`) rather than from the field structure of
+`ZMod ℓ`, which keeps the proof clear of the
+`CommRing`-versus-`GroupWithZero` monoid diamond on `ZMod ℓ`.
+
+Surjectivity is surjectivity of `ℤ → 𝔽_ℓ` through `lift_eq`; and
+`ker toF = nonunits` is `IsLocalization.AtPrime.isUnit_mk'_iff`
+(`mk' a s` is a unit iff `a ∉ (ℓ)`) matched against
+`lift_mk'_spec` (`toF (mk' a s) = 0` iff `a ≡ 0 mod ℓ`).  Note `ℓ.Prime`
+is genuinely needed here to build the witness, even though
+`IsReductionBase` derives it as a consequence for any pair satisfying
+the two conditions. -/
+theorem exists_isReductionBase (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ (R : Subring ℚ) (toF : R →+* ZMod ℓ), IsReductionBase ℓ R toF := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  have hℓ0 : ((ℓ : ℤ)) ≠ 0 := by exact_mod_cast hℓ.ne_zero
+  set I : Ideal ℤ := Ideal.span {(ℓ : ℤ)} with hI
+  haveI hIp : I.IsPrime := by
+    rw [hI, Ideal.span_singleton_prime hℓ0]
+    exact Nat.prime_iff_prime_int.mp hℓ
+  have hmemI : ∀ a : ℤ, a ∈ I ↔ ((a : ZMod ℓ) = 0) := by
+    intro a
+    rw [hI, Ideal.mem_span_singleton, ZMod.intCast_zmod_eq_zero_iff_dvd]
+  have hS : I.primeCompl ≤ nonZeroDivisors ℤ := Ideal.primeCompl_le_nonZeroDivisors I
+  set R₀ : Subalgebra ℤ ℚ := Localization.subalgebra.ofField ℚ I.primeCompl hS
+  haveI : IsLocalization I.primeCompl R₀ :=
+    Localization.subalgebra.isLocalization_ofField ℚ I.primeCompl hS
+  haveI : IsLocalization I.primeCompl (R₀.toSubring) :=
+    inferInstanceAs (IsLocalization I.primeCompl R₀)
+  have hunit : ∀ y : I.primeCompl, IsUnit ((Int.castRingHom (ZMod ℓ)) (y : ℤ)) := by
+    intro y
+    have hnd : ¬ ((ℓ : ℤ) ∣ (y : ℤ)) := by
+      intro hd
+      refine y.2 ?_
+      exact (hmemI (y : ℤ)).mpr (by rw [ZMod.intCast_zmod_eq_zero_iff_dvd]; exact hd)
+    obtain ⟨u, v, huv⟩ :=
+      (Prime.coprime_iff_not_dvd (Nat.prime_iff_prime_int.mp hℓ)).mpr hnd
+    show IsUnit (((y : ℤ) : ZMod ℓ))
+    refine IsUnit.of_mul_eq_one ((v : ℤ) : ZMod ℓ) ?_
+    have hc := congrArg (fun z : ℤ => (z : ZMod ℓ)) huv
+    push_cast at hc
+    rw [ZMod.natCast_self, mul_zero, zero_add] at hc
+    rw [mul_comm]
+    exact hc
+  refine ⟨R₀.toSubring, IsLocalization.lift (S := R₀.toSubring) hunit, ?_, ?_⟩
+  · intro z
+    obtain ⟨n, rfl⟩ := ZMod.intCast_surjective (n := ℓ) z
+    exact ⟨algebraMap ℤ (R₀.toSubring) n, by rw [IsLocalization.lift_eq]; rfl⟩
+  · intro r
+    obtain ⟨⟨a, s⟩, rfl⟩ := IsLocalization.mk'_surjective I.primeCompl r
+    have hpc : (a ∈ I.primeCompl) ↔ a ∉ I := Iff.rfl
+    rw [IsLocalization.AtPrime.isUnit_mk'_iff, hpc, not_not,
+      IsLocalization.lift_mk'_spec, mul_zero]
+    simpa [Int.castRingHom] using (hmemI a).symm
+
+/-- **The good-reduction datum exists at every odd `ℓ ∤ N`** (PROVEN,
+over `exists_isReductionBase` and `exists_x0NeronDatum_of_base`).
+
+The base is constructed rather than posited — that is the whole of the
+proof — and the residual geometric content sits in
+`exists_x0NeronDatum_of_base`, which is the same statement with the base
+HANDED TO IT.  That is how the literature states it (models over a given
+discrete valuation ring), and it means a prover attacking the remaining
+leaf starts from a concrete `ℤ_(ℓ)` instead of having to invent one. -/
+theorem exists_x0NeronDatum (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2) (hℓN : ¬ ℓ ∣ N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o) :
+    ∃ (R : Subring ℚ) (toF : R →+* ZMod ℓ) (X' J' XZ YZ JZ : Scheme.{0})
+      (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
+      (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
+      (jac' : IsJacobianOf strX' ab' o') (xstr : XZ ⟶ SpecLoc R)
+      (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ) (jstrZ : JZ ⟶ SpecLoc R)
+      (abZ : AbelianSchemeStruct jstrZ) (oZ : RelPoint xstr (𝟙 (SpecLoc R)))
+      (jacZ : IsJacobianOf xstr abZ oZ),
+      Nonempty (IsX0NeronDatum N ℓ R toF jac jac'
+        (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) := by
+  obtain ⟨R, toF, hbase⟩ := exists_isReductionBase ℓ hℓ
+  obtain ⟨X', J', XZ, YZ, JZ, strX', jstr', ab', o', jac', xstr, ystr, jZ, jstrZ,
+    abZ, oZ, jacZ, hd⟩ :=
+    exists_x0NeronDatum_of_base N ℓ hℓ hℓ2 hℓN R toF hbase hX jac
+  exact ⟨R, toF, X', J', XZ, YZ, JZ, strX', jstr', ab', o', jac', xstr, ystr, jZ,
+    jstrZ, abZ, oZ, jacZ, hd⟩
 
 /-- **The sieve at `d` cuts the survivors down to the rational cusps.**
 
