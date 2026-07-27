@@ -40317,38 +40317,91 @@ theorem exists_characters_of_reducible_charFrob {M : ℕ} (hM : 0 < M)
   linear_combination h4
 
 
-/-- **Serre type A₀ for the two Frobenius characters** (sorry leaf,
-TWELFTH decomposition 2026-07-27, cut out of
-`not_exists_characters_charFrob_weilBound` below): the classification
-step, and **the only genuinely missing content of that leaf**. From a
-pair of continuous nowhere-vanishing multiplicative `δ₁, δ₂ : Γℚ → ℚ̄_p`
-with `δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q`
-off `S`, produce ONE prime `q ≥ 6` at which the Frobenius value is a
-root of unity times an integral power of `q`.
+/-- **A prime of any prescribed size outside a finite set of places**
+(PROVEN 2026-07-27, THIRTEENTH decomposition): for every finite set `S`
+of finite places of `ℚ` and every bound `B` there is a rational prime
+`q ≥ B` whose place lies outside `S`.
 
-THE NORMALISATION IN THE CONCLUSION, and why it is the convenient one.
-Serre's classification delivers `δ₁(Frob_q) = ζ₁ q^n`,
-`δ₂(Frob_q) = ζ₂ q^(1−n)` with `n : ℤ` and `ζᵢ` roots of unity (and
-`ζ₁ζ₂ = 1`, forced by `δ₁δ₂(Frob_q) = q`). Both `n` and `1 − n` cannot
-be `≤ 0`, so after swapping `δ₁ ↔ δ₂` we may assume the larger exponent
-is `n = j + 1` with `j : ℕ`; multiplying by `q^j` clears the negative
-power and gives the shape below, with **no `zpow` and no `ℕ`-subtraction**:
-`κ(a_q)·q^j = ζ₁·q^(2j+1) + ζ₂`. That is a purely cosmetic packaging of
-`a_q = ζ₁q^n + ζ₂q^(1−n)`, chosen so the two consumers below are
-elementary.
+Elementary, and stated as its own declaration because it is exactly the
+`Finset`-avoidance step that every "pick a good prime" argument in this
+file re-derives by hand. The proof is Euclid
+(`Nat.exists_infinite_primes`) above `max B (T.sup id + 1)`, where `T`
+is the finite set of rational primes underlying `S`; the two directions
+of the primes ↔ places dictionary are
+`exists_prime_toHeightOneSpectrum` (surjectivity) and
+`toHeightOneSpectrumRingOfIntegersRat_injective` (injectivity), both
+PROVEN in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`. The
+`B`-parameter — rather than a bare "outside `S`" — is what lets a
+consumer dodge `p` as well as `S` by asking for `q > p`. -/
+theorem exists_prime_ge_notMem_finset
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) (B : ℕ) :
+    ∃ (q : ℕ) (hq : q.Prime), B ≤ q ∧
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := by
+  classical
+  set T : Finset ℕ :=
+    S.image (fun v => (exists_prime_toHeightOneSpectrum v).choose) with hT
+  obtain ⟨q, hqge, hq⟩ := Nat.exists_infinite_primes (max B (T.sup id + 1))
+  refine ⟨q, hq, le_trans (le_max_left _ _) hqge, fun hmem => ?_⟩
+  obtain ⟨hq', heq⟩ :=
+    (exists_prime_toHeightOneSpectrum
+      (hq.toHeightOneSpectrumRingOfIntegersRat)).choose_spec
+  have hqeq : q = (exists_prime_toHeightOneSpectrum
+      (hq.toHeightOneSpectrumRingOfIntegersRat)).choose :=
+    toHeightOneSpectrumRingOfIntegersRat_injective hq hq' heq
+  have hmemT : (exists_prime_toHeightOneSpectrum
+      (hq.toHeightOneSpectrumRingOfIntegersRat)).choose ∈ T :=
+    Finset.mem_image_of_mem _ hmem
+  have hle : q ≤ T.sup id := by
+    rw [hqeq]; exact Finset.le_sup (f := id) hmemT
+  have hge2 : max B (T.sup id + 1) ≤ q := hqge
+  omega
+
+/-- **Serre type A₀ for ONE Frobenius character** (sorry leaf,
+THIRTEENTH decomposition 2026-07-27, cut out of
+`exists_frobValue_eq_rootOfUnity_mul_pow` below): a continuous
+nowhere-vanishing multiplicative `δ₁ : Γℚ → ℚ̄_p` whose Frobenius values
+are, together with those of a partner character `δ₂`, the two roots of
+the Hecke polynomial `X² − κ(a_q)X + q`, takes the shape
+`δ₁(Frob_q) = ζ·q^n` with `ζ` a root of unity of a FIXED order `m` and
+`n : ℤ` a FIXED integer, simultaneously at every good `q`.
+
+**This is the whole of the missing mathematics of the twelfth
+decomposition's open leaf.** Everything the consumer below used to
+carry besides this — choosing a prime, the `δ₁ ↔ δ₂` swap, and all the
+exponent bookkeeping that converts `n : ℤ` into the `zpow`-free
+packaging — is now PROVEN there as glue over this leaf.
+
+THE PACKAGING, and why it is `ℕ`-only. `n : ℤ` is presented as the
+difference `a − b` of two naturals: the conclusion asks for
+`δ₁(Frob_q)·q^b = ζ·q^a`, which says `δ₁(Frob_q) = ζ·q^(a−b)` with **no
+`zpow` and no `ℕ`-subtraction**, and it is an equation between products
+so it never has to divide. `a`, `b`, `m` are chosen ONCE, before `q` —
+that uniformity is the whole content, since for a single `q` the
+statement is vacuous (take `a = b = 0` and `ζ = δ₁(Frob_q)`… which is
+not a root of unity, but the point stands: nothing is pinned pointwise).
+
+WHY `q ≠ p` IS IN THE GUARD. The classification reads
+`δ₁ = ε·χ_cyc^n` with `ε` of finite order, and `χ_cyc(Frob_q) = q`
+holds exactly at the primes `q` where `χ_cyc` is unramified — which
+excludes `p`, since `p` ramifies in `ℚ(μ_{p^∞})` and `globalFrob` at
+`p` is then not a Frobenius for `χ_cyc` at all. Excluding `p` costs the
+consumer nothing: it selects `q > p` through
+`exists_prime_ge_notMem_finset` above.
 
 THE ROUTE. By Chebotarev density (`dense_conjClasses_globalFrob`, PROVEN
 in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) and continuity,
 `δ₁δ₂` IS the `p`-adic cyclotomic character, since the two agree at
-every `Frob_q` with `q ∉ S`. The classification of each `δᵢ` then needs
+every `Frob_q` with `q ∉ S`. The classification of `δ₁` then needs
 Serre, *Abelian ℓ-adic Representations and Elliptic Curves*, Ch. III
 §§1–3 (type `A₀`): continuity alone does NOT suffice — `⟨χ_cyc⟩^s` for
 `s ∈ ℤ_p ∖ ℤ` is continuous, unramified outside `{p}`, and neither
 finite-order nor an integral power. The extra input is ALGEBRAICITY of
 the Frobenius values: `δ₁(Frob_q)`, `δ₂(Frob_q)` are the two roots of
 `X² − κ(a_q)X + q`, whose coefficients come from the number field
-`heckeField M g`. Hodge–Tate-ness, Ribet's own route, is deliberately
-NOT available here.
+`heckeField M g` — which is why `g`, `hg`, `κ` and the FULL `hfrob`
+(both the sum and the product clause) are hypotheses here even though
+only `δ₁` appears in the conclusion. Hodge–Tate-ness, Ribet's own
+route, is deliberately NOT available here.
 
 **THE RAMIFICATION OBSTRUCTION RECORDED ON THE CONSUMER IS RESOLVED —
 FINITENESS IS AUTOMATIC, AND NOTHING NEED BE ADDED ONE LEVEL UP**
@@ -40390,6 +40443,84 @@ valuations of `ζ_{p^k} − 1`. Consequently **the repair contemplated on
 the consumer — pushing a ramification hypothesis up onto `τJ` — is
 unnecessary, and should not be done**: it would add a hypothesis that
 is automatically satisfied, at the cost of a wider cut. -/
+theorem exists_frobValue_eq_rootOfUnity_mul_pow_single {M : ℕ} (hM : 0 < M)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (δ₁ δ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hδ₁cont : Continuous δ₁) (hδ₂cont : Continuous δ₂)
+    (hδ₁ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ ≠ 0)
+    (hδ₂ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₂ γ ≠ 0)
+    (hδ₁mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₁ (γ * γ') = δ₁ γ * δ₁ γ')
+    (hδ₂mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₂ (γ * γ') = δ₂ γ * δ₂ γ')
+    (hfrob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = κ (heckeCoeff M g q) ∧
+        δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = (q : AlgebraicClosure ℚ_[p])) :
+    ∃ a b m : ℕ, 0 < m ∧
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        q ≠ p →
+        ∃ ζ : AlgebraicClosure ℚ_[p], ζ ^ m = 1 ∧
+          δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+              * (q : AlgebraicClosure ℚ_[p]) ^ b
+            = ζ * (q : AlgebraicClosure ℚ_[p]) ^ a :=
+  sorry
+
+/-- **Serre type A₀ for the two Frobenius characters** (PROVEN
+2026-07-27 as glue over the THIRTEENTH decomposition; was the open leaf
+of the TWELFTH decomposition, cut out of
+`not_exists_characters_charFrob_weilBound` below): from a pair of
+continuous nowhere-vanishing multiplicative `δ₁, δ₂ : Γℚ → ℚ̄_p` with
+`δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q` off
+`S`, produce ONE prime `q ≥ 6` at which the Frobenius value is a root
+of unity times an integral power of `q`.
+
+**THE THIRTEENTH DECOMPOSITION (2026-07-27) — what is now proven here,
+and where the missing content went.** The single remaining sorry is
+`exists_frobValue_eq_rootOfUnity_mul_pow_single` above: Serre's type
+`A₀` classification for ONE character. Everything else this leaf used
+to carry is discharged below and is worth listing, because each piece
+was a genuine obstacle to attacking the classification in isolation:
+
+* *the prime is chosen here*, via `exists_prime_ge_notMem_finset`
+  above, at `B := max 6 (p+1)` — which simultaneously delivers the
+  `6 ≤ q` the archimedean sibling needs (the threshold is SHARP) and
+  the `q ≠ p` the classification needs (`χ_cyc` has no Frobenius at
+  `p`);
+* *the `δ₁ ↔ δ₂` swap is executed here*, by invoking the classification
+  twice — once at `(δ₁, δ₂)` and once at `(δ₂, δ₁)`, the hypothesis
+  being symmetric — and then case-splitting on which exponent is the
+  positive one;
+* *the exponent relation `n₁ + n₂ = 1` is PROVEN here*, not assumed:
+  multiplying the two shapes gives `q^(1+b+b') = ζ₁ζ₂·q^(a+a')`, and
+  raising to the power `m·m'` kills the roots of unity, leaving
+  `q^((1+b+b')mm') = q^((a+a')mm')`. Since `q ≥ 2` and the target has
+  characteristic zero, `q` has infinite multiplicative order, so the
+  EXPONENTS are equal: `1 + b + b' = a + a'` in `ℕ`. That is the only
+  place the product clause of `hfrob` is used, and it is what forces
+  the two characters' weights to be complementary rather than merely
+  bounded.
+
+THE NORMALISATION IN THE CONCLUSION, and why it is the convenient one.
+Serre's classification delivers `δ₁(Frob_q) = ζ₁ q^n`,
+`δ₂(Frob_q) = ζ₂ q^(1−n)` with `n : ℤ` and `ζᵢ` roots of unity (and
+`ζ₁ζ₂ = 1`, forced by `δ₁δ₂(Frob_q) = q`). Both `n` and `1 − n` cannot
+be `≤ 0`, so after swapping `δ₁ ↔ δ₂` we may assume the larger exponent
+is `n = j + 1` with `j : ℕ`; multiplying by `q^j` clears the negative
+power and gives the shape below, with **no `zpow` and no `ℕ`-subtraction**:
+`κ(a_q)·q^j = ζ₁·q^(2j+1) + ζ₂`. That is a purely cosmetic packaging of
+`a_q = ζ₁q^n + ζ₂q^(1−n)`, chosen so the two consumers below are
+elementary. Note the assembly never divides: each of the two shape
+equations is multiplied up to a common power of `q` and then cancelled
+with `mul_right_cancel₀`, which is why the whole glue is `ring`-level.
+
+A common order `m·m'` is used for the two roots of unity because the
+conclusion asks for a SINGLE `m`; the classification is free to return
+different orders for the two characters. -/
 theorem exists_frobValue_eq_rootOfUnity_mul_pow {M : ℕ} (hM : 0 < M)
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
@@ -40411,8 +40542,103 @@ theorem exists_frobValue_eq_rootOfUnity_mul_pow {M : ℕ} (hM : 0 < M)
     ∃ (q : ℕ) (_ : q.Prime), 6 ≤ q ∧
       ∃ (j m : ℕ) (ζ₁ ζ₂ : AlgebraicClosure ℚ_[p]), 0 < m ∧ ζ₁ ^ m = 1 ∧ ζ₂ ^ m = 1 ∧
         κ (heckeCoeff M g q) * (q : AlgebraicClosure ℚ_[p]) ^ j
-          = ζ₁ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) + ζ₂ :=
-  sorry
+          = ζ₁ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) + ζ₂ := by
+  classical
+  haveI : CharZero (AlgebraicClosure ℚ_[p]) :=
+    charZero_of_injective_algebraMap
+      (algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p])).injective
+  -- the Frobenius hypothesis is symmetric in the two characters
+  have hfrob' : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = κ (heckeCoeff M g q) ∧
+        δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = (q : AlgebraicClosure ℚ_[p]) := by
+    intro q hq hqS
+    obtain ⟨h1, h2⟩ := hfrob q hq hqS
+    exact ⟨by rw [add_comm]; exact h1, by rw [mul_comm]; exact h2⟩
+  -- Serre type `A₀`, applied to each of the two characters in turn
+  obtain ⟨a, b, m, hm, h₁⟩ := exists_frobValue_eq_rootOfUnity_mul_pow_single
+    hM S g hg κ δ₁ δ₂ hδ₁cont hδ₂cont hδ₁ne hδ₂ne hδ₁mul hδ₂mul hfrob
+  obtain ⟨a', b', m', hm', h₂⟩ := exists_frobValue_eq_rootOfUnity_mul_pow_single
+    hM S g hg κ δ₂ δ₁ hδ₂cont hδ₁cont hδ₂ne hδ₁ne hδ₂mul hδ₁mul hfrob'
+  -- one prime, large enough for the archimedean sibling and away from `p`
+  obtain ⟨q, hq, hqB, hqS⟩ := exists_prime_ge_notMem_finset S (max 6 (p + 1))
+  have hq6 : 6 ≤ q := le_trans (le_max_left _ _) hqB
+  have hqp : q ≠ p := by
+    have := le_trans (le_max_right 6 (p + 1)) hqB
+    omega
+  obtain ⟨ζ, hζ, hζeq⟩ := h₁ q hq hqS hqp
+  obtain ⟨ξ, hξ, hξeq⟩ := h₂ q hq hqS hqp
+  obtain ⟨hsum, hprod⟩ := hfrob q hq hqS
+  refine ⟨q, hq, hq6, ?_⟩
+  have hQ0 : (q : AlgebraicClosure ℚ_[p]) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  -- `q` has infinite multiplicative order, so equal powers have equal exponents
+  have hQpow : ∀ s t : ℕ, (q : AlgebraicClosure ℚ_[p]) ^ s
+      = (q : AlgebraicClosure ℚ_[p]) ^ t → s = t := by
+    intro s t h
+    have hcast : ((q ^ s : ℕ) : AlgebraicClosure ℚ_[p])
+        = ((q ^ t : ℕ) : AlgebraicClosure ℚ_[p]) := by push_cast; exact h
+    exact Nat.pow_right_injective hq.two_le (Nat.cast_injective hcast)
+  have hζmm : ζ ^ (m * m') = 1 := by rw [pow_mul, hζ, one_pow]
+  have hξmm : ξ ^ (m * m') = 1 := by rw [mul_comm, pow_mul, hξ, one_pow]
+  -- the product relation pins the two weights as complementary
+  have hmulEq : (q : AlgebraicClosure ℚ_[p]) ^ (1 + b + b')
+      = ζ * ξ * (q : AlgebraicClosure ℚ_[p]) ^ (a + a') := by
+    have h : (δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * (q : AlgebraicClosure ℚ_[p]) ^ b)
+        * (δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * (q : AlgebraicClosure ℚ_[p]) ^ b')
+        = (ζ * (q : AlgebraicClosure ℚ_[p]) ^ a)
+          * (ξ * (q : AlgebraicClosure ℚ_[p]) ^ a') := by
+      rw [hζeq, hξeq]
+    linear_combination h
+      - ((q : AlgebraicClosure ℚ_[p]) ^ b * (q : AlgebraicClosure ℚ_[p]) ^ b') * hprod
+  have hexp : 1 + b + b' = a + a' := by
+    have hpw : ((q : AlgebraicClosure ℚ_[p]) ^ (1 + b + b')) ^ (m * m')
+        = ((q : AlgebraicClosure ℚ_[p]) ^ (a + a')) ^ (m * m') := by
+      rw [hmulEq, mul_pow, mul_pow, hζmm, hξmm, one_mul, one_mul]
+    have hpw2 : (q : AlgebraicClosure ℚ_[p]) ^ ((1 + b + b') * (m * m'))
+        = (q : AlgebraicClosure ℚ_[p]) ^ ((a + a') * (m * m')) := by
+      rw [pow_mul (q : AlgebraicClosure ℚ_[p]) (1 + b + b') (m * m'),
+        pow_mul (q : AlgebraicClosure ℚ_[p]) (a + a') (m * m')]
+      exact hpw
+    exact Nat.eq_of_mul_eq_mul_right (Nat.mul_pos hm hm') (hQpow _ _ hpw2)
+  by_cases hcase : b + 1 ≤ a
+  · -- `δ₁` carries the positive power `q^(j+1)`, so `δ₂` carries `q^(-j)`
+    obtain ⟨j, hja⟩ : ∃ j : ℕ, a = j + b + 1 := ⟨a - b - 1, by omega⟩
+    have hjb' : b' = a' + j := by omega
+    rw [hja] at hζeq
+    rw [hjb'] at hξeq
+    have g1 : δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        * (q : AlgebraicClosure ℚ_[p]) ^ j
+        = ζ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) := by
+      refine mul_right_cancel₀ (pow_ne_zero b hQ0) ?_
+      linear_combination ((q : AlgebraicClosure ℚ_[p]) ^ j) * hζeq
+    have g2 : δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        * (q : AlgebraicClosure ℚ_[p]) ^ j = ξ := by
+      refine mul_right_cancel₀ (pow_ne_zero a' hQ0) ?_
+      linear_combination hξeq
+    exact ⟨j, m * m', ζ, ξ, Nat.mul_pos hm hm', hζmm, hξmm, by
+      linear_combination g1 + g2 - ((q : AlgebraicClosure ℚ_[p]) ^ j) * hsum⟩
+  · -- `δ₂` carries the positive power `q^(j+1)`, so `δ₁` carries `q^(-j)`
+    obtain ⟨j, hja'⟩ : ∃ j : ℕ, a' = j + b' + 1 := ⟨a' - b' - 1, by omega⟩
+    have hjb : b = a + j := by omega
+    rw [hja'] at hξeq
+    rw [hjb] at hζeq
+    have g1 : δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        * (q : AlgebraicClosure ℚ_[p]) ^ j
+        = ξ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) := by
+      refine mul_right_cancel₀ (pow_ne_zero b' hQ0) ?_
+      linear_combination ((q : AlgebraicClosure ℚ_[p]) ^ j) * hξeq
+    have g2 : δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        * (q : AlgebraicClosure ℚ_[p]) ^ j = ζ := by
+      refine mul_right_cancel₀ (pow_ne_zero a hQ0) ?_
+      linear_combination hζeq
+    exact ⟨j, m * m', ξ, ζ, Nat.mul_pos hm hm', hξmm, hζmm, by
+      linear_combination g1 + g2 - ((q : AlgebraicClosure ℚ_[p]) ^ j) * hsum⟩
 
 /-- **Transfer of an algebraic Frobenius identity from `ℚ̄_p` to `ℂ`**
 (PROVEN 2026-07-27, TWELFTH decomposition): if a Hecke coefficient `a`
@@ -40543,9 +40769,15 @@ lives.** The leaf is proven here as three-line glue over three siblings
 declared immediately above, and the genuinely missing mathematics has
 been isolated into exactly ONE of them:
 
-* `exists_frobValue_eq_rootOfUnity_mul_pow` — **SORRIED, and the only
-  open content**: Serre type `A₀`, producing a prime `q ≥ 6` at which
-  `κ(a_q)·q^j = ζ₁q^(2j+1) + ζ₂` with `ζᵢ` roots of unity;
+* `exists_frobValue_eq_rootOfUnity_mul_pow` — **PROVEN 2026-07-27 by
+  the THIRTEENTH decomposition** (it was the twelfth's only open leaf):
+  Serre type `A₀`, producing a prime `q ≥ 6` at which
+  `κ(a_q)·q^j = ζ₁q^(2j+1) + ζ₂` with `ζᵢ` roots of unity. **The only
+  open content of this whole cluster is now one declaration further
+  down the cut**, `exists_frobValue_eq_rootOfUnity_mul_pow_single`:
+  Serre type `A₀` for a SINGLE character. Prime selection, the
+  `δ₁ ↔ δ₂` swap and the complementary-weight relation `n₁ + n₂ = 1`
+  are all proven there;
 * `exists_complex_of_heckeCoeff_eq_rootOfUnity_mul_pow` — **PROVEN**:
   transfers that identity from `ℚ̄_p` to `ℂ` *at the tautological
   embedding*, via the integral closure and `IsAlgClosed.lift`;
