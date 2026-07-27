@@ -36,6 +36,7 @@ import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 import Mathlib.RingTheory.Finiteness.Nakayama
 public import Mathlib.Algebra.DualNumber
 public import Mathlib.RingTheory.DedekindDomain.Factorization
+public import Mathlib.RingTheory.DedekindDomain.AdicValuation
 import Fermat.FLT.EllipticCurve.TorsionCard
 
 @[expose] public section
@@ -8684,49 +8685,265 @@ lemma count_arith {A B : ℤ} {m m' : ℕ}
     have hAle : A ≤ 0 := by by_contra hc; exact hm (hA.mp (by omega))
     omega
 
-/-- **L4-7 leaf (sorry): the `[p]`-pullback is REGULAR at a place over
-an affine point.**  For `S ≠ O` affine with `p • S ≠ O`, and any nonzero
-`z ∈ F[W]`, the pulled-back function `[p]^* z = z ∘ [p]` has no pole at
-the place of `S`:
+section CountValuation
+
+/-!
+### The `v`-adic order of a principal fractional ideal is a valuation
+
+`FractionalIdeal.count` is the `v`-exponent in the factorization, and
+mathlib's `Factorization.lean` supplies `count_mul`, `count_mono` and
+`count_coe_nonneg` but **nothing about sums** — the gap recorded by the
+two `[p]`-pullback leaves below.  It is filled here once and for all by
+identifying `count` with `IsDedekindDomain.HeightOneSpectrum.valuation`,
+which IS a genuine valuation and therefore ultrametric.
+-/
+
+variable {R : Type*} [CommRing R] [IsDedekindDomain R]
+  {K : Type*} [Field K] [Algebra R K] [IsFractionRing R K]
+  (v : IsDedekindDomain.HeightOneSpectrum R)
+
+/-- **The `v`-adic valuation of a nonzero element of the fraction field is
+the exponential of minus its `count`.** -/
+theorem valuation_eq_exp_neg_count {w : K} (hw : w ≠ 0) :
+    v.valuation K w =
+      WithZero.exp (-(FractionalIdeal.count K v
+        (FractionalIdeal.spanSingleton R⁰ w))) := by
+  classical
+  obtain ⟨⟨r, s⟩, hrs⟩ := IsLocalization.mk'_surjective R⁰ w
+  simp only at hrs
+  subst hrs
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    rw [IsLocalization.mk'_zero] at hw
+    exact hw rfl
+  have hs0 : (s : R) ≠ 0 := nonZeroDivisors.coe_ne_zero s
+  -- the count side
+  have hmul : IsLocalization.mk' K r s * algebraMap R K (s : R) = algebraMap R K r := by
+    rw [IsLocalization.mk'_spec]
+  have hspanne : ∀ z : K, z ≠ 0 →
+      FractionalIdeal.spanSingleton R⁰ z ≠ 0 := by
+    intro z hz
+    simpa [FractionalIdeal.spanSingleton_eq_zero_iff] using hz
+  have halg : ∀ z : R, z ≠ 0 → (algebraMap R K z) ≠ 0 := by
+    intro z hz
+    exact fun h0 => hz ((injective_iff_map_eq_zero _).mp
+      (IsFractionRing.injective R K) _ h0)
+  have hcountmul :
+      FractionalIdeal.count K v
+          (FractionalIdeal.spanSingleton R⁰ (IsLocalization.mk' K r s)) +
+        FractionalIdeal.count K v
+          (FractionalIdeal.spanSingleton R⁰ (algebraMap R K (s : R))) =
+      FractionalIdeal.count K v
+        (FractionalIdeal.spanSingleton R⁰ (algebraMap R K r)) := by
+    rw [← FractionalIdeal.count_mul K v (hspanne _ hw)
+        (hspanne _ (halg _ hs0)),
+      FractionalIdeal.spanSingleton_mul_spanSingleton, hmul]
+  have hcoe : ∀ z : R, z ≠ 0 →
+      FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ (algebraMap R K z)) =
+        ((Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {z})).factors : ℤ) := by
+    intro z hz
+    rw [← FractionalIdeal.coeIdeal_span_singleton,
+      FractionalIdeal.count_coe K v (by simpa [Ideal.span_singleton_eq_bot] using hz)]
+  rw [hcoe _ hr0, hcoe _ hs0] at hcountmul
+  -- the valuation side
+  rw [IsDedekindDomain.HeightOneSpectrum.valuation_of_mk', v.intValuation_if_neg hr0, v.intValuation_if_neg hs0]
+  rw [div_eq_mul_inv, ← WithZero.exp_neg, ← WithZero.exp_add]
+  congr 1
+  omega
+
+/-- Multiplicativity of `count` on principal fractional ideals. -/
+theorem count_spanSingleton_mul {w₁ w₂ : K} (h₁ : w₁ ≠ 0) (h₂ : w₂ ≠ 0) :
+    FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ (w₁ * w₂)) =
+      FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ w₁) +
+        FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ w₂) := by
+  have hspanne : ∀ z : K, z ≠ 0 →
+      FractionalIdeal.spanSingleton R⁰ z ≠ 0 := by
+    intro z hz
+    simpa [FractionalIdeal.spanSingleton_eq_zero_iff] using hz
+  rw [← FractionalIdeal.spanSingleton_mul_spanSingleton,
+    FractionalIdeal.count_mul K v (hspanne _ h₁) (hspanne _ h₂)]
+
+/-- A sign does not move the `count` of a principal fractional ideal. -/
+theorem count_spanSingleton_neg (w : K) :
+    FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ (-w)) =
+      FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ w) := by
+  rcases eq_or_ne w 0 with rfl | hw
+  · simp [FractionalIdeal.count_zero]
+  · rw [show -w = (-1 : K) * w by ring,
+      count_spanSingleton_mul v (by norm_num) hw]
+    have : FractionalIdeal.spanSingleton R⁰ (-1 : K) = 1 := by
+      rw [show (-1 : K) = algebraMap R K (-1) by simp,
+        ← FractionalIdeal.coeIdeal_span_singleton,
+        Ideal.span_singleton_eq_top.mpr isUnit_one.neg,
+        FractionalIdeal.coeIdeal_top]
+    rw [this, FractionalIdeal.count_one]
+    ring
+
+/-- **The ultrametric inequality for `count`.** -/
+theorem le_count_spanSingleton_add {n : ℤ} {w₁ w₂ : K}
+    (h₁ : n ≤ FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ w₁))
+    (h₂ : n ≤ FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ w₂))
+    (h : w₁ + w₂ ≠ 0) :
+    n ≤ FractionalIdeal.count K v
+      (FractionalIdeal.spanSingleton R⁰ (w₁ + w₂)) := by
+  rcases eq_or_ne w₁ 0 with rfl | hw₁
+  · simpa using h₂
+  rcases eq_or_ne w₂ 0 with rfl | hw₂
+  · simpa using h₁
+  have key := (v.valuation K).map_add w₁ w₂
+  rw [valuation_eq_exp_neg_count v hw₁, valuation_eq_exp_neg_count v hw₂,
+    valuation_eq_exp_neg_count v h] at key
+  have hk1 : WithZero.exp (-(FractionalIdeal.count K v
+      (FractionalIdeal.spanSingleton R⁰ w₁))) ≤ WithZero.exp (-n) := by
+    rw [WithZero.exp_le_exp]; omega
+  have hk2 : WithZero.exp (-(FractionalIdeal.count K v
+      (FractionalIdeal.spanSingleton R⁰ w₂))) ≤ WithZero.exp (-n) := by
+    rw [WithZero.exp_le_exp]; omega
+  have hb := le_trans key (max_le hk1 hk2)
+  rw [WithZero.exp_le_exp] at hb
+  omega
+
+/-- `count` of the image of a ring element is nonnegative. -/
+theorem count_spanSingleton_algebraMap_nonneg (z : R) :
+    0 ≤ FractionalIdeal.count K v
+      (FractionalIdeal.spanSingleton R⁰ (algebraMap R K z)) := by
+  rw [← FractionalIdeal.coeIdeal_span_singleton]
+  exact FractionalIdeal.count_coe_nonneg K v _
+
+/-- The subring of elements of `K` with nonnegative `count` at `v`. -/
+def countNonneg : Subring K where
+  carrier := {w : K | 0 ≤ FractionalIdeal.count K v
+    (FractionalIdeal.spanSingleton R⁰ w)}
+  zero_mem' := by simp [FractionalIdeal.count_zero]
+  one_mem' := by simp [FractionalIdeal.count_one]
+  add_mem' := by
+    intro a b ha hb
+    rcases eq_or_ne (a + b) 0 with h | h
+    · simp [h, FractionalIdeal.count_zero]
+    · exact le_count_spanSingleton_add v ha hb h
+  mul_mem' := by
+    intro a b ha hb
+    rcases eq_or_ne a 0 with rfl | ha0
+    · simp [FractionalIdeal.count_zero]
+    rcases eq_or_ne b 0 with rfl | hb0
+    · simp [FractionalIdeal.count_zero]
+    have := count_spanSingleton_mul v ha0 hb0
+    simp only [Set.mem_setOf_eq] at ha hb ⊢
+    omega
+  neg_mem' := by
+    intro a ha
+    simp only [Set.mem_setOf_eq] at ha ⊢
+    rwa [count_spanSingleton_neg v]
+
+@[simp] lemma mem_countNonneg {w : K} :
+    w ∈ countNonneg v ↔ 0 ≤ FractionalIdeal.count K v
+      (FractionalIdeal.spanSingleton R⁰ w) := Iff.rfl
+
+/-- Multiplying by something of nonnegative `count` does not lower a
+lower bound on `count`. -/
+theorem le_count_spanSingleton_mul_of_nonneg {a b : K} {n : ℤ}
+    (ha : 0 ≤ FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ a))
+    (hb : n ≤ FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ b))
+    (h : a * b ≠ 0) :
+    n ≤ FractionalIdeal.count K v
+      (FractionalIdeal.spanSingleton R⁰ (a * b)) := by
+  have ha0 : a ≠ 0 := by rintro rfl; simp at h
+  have hb0 : b ≠ 0 := by rintro rfl; simp at h
+  rw [count_spanSingleton_mul v ha0 hb0]
+  omega
+
+/-- Nonpositive-bound form of the ultrametric: no nonvanishing side
+condition is needed, because `count 0 = 0`. -/
+theorem le_count_spanSingleton_add' {n : ℤ} (hn : n ≤ 0) {w₁ w₂ : K}
+    (h₁ : n ≤ FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ w₁))
+    (h₂ : n ≤ FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ w₂)) :
+    n ≤ FractionalIdeal.count K v
+      (FractionalIdeal.spanSingleton R⁰ (w₁ + w₂)) := by
+  rcases eq_or_ne (w₁ + w₂) 0 with h | h
+  · rw [h]
+    simpa [FractionalIdeal.count_zero] using hn
+  · exact le_count_spanSingleton_add v h₁ h₂ h
+
+/-- Nonpositive-bound form of the product estimate. -/
+theorem le_count_spanSingleton_mul' {n : ℤ} (hn : n ≤ 0) {a b : K}
+    (ha : 0 ≤ FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ a))
+    (hb : n ≤ FractionalIdeal.count K v (FractionalIdeal.spanSingleton R⁰ b)) :
+    n ≤ FractionalIdeal.count K v
+      (FractionalIdeal.spanSingleton R⁰ (a * b)) := by
+  rcases eq_or_ne (a * b) 0 with h | h
+  · rw [h]
+    simpa [FractionalIdeal.count_zero] using hn
+  · exact le_count_spanSingleton_mul_of_nonneg v ha hb h
+
+end CountValuation
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **A subring of the target absorbs a ring hom out of the coordinate
+ring as soon as it absorbs the constants and the two coordinates.** -/
+theorem coordinateRing_forall_mem_subring {A : Type*} [CommRing A]
+    {ψ : W.CoordinateRing →+* A} (S : Subring A)
+    (hC : ∀ d : F, ψ (coordC W d) ∈ S) (hX : ψ (coordX W) ∈ S)
+    (hY : ψ (coordY W) ∈ S) (z : W.CoordinateRing) : ψ z ∈ S := by
+  have hpoly : ∀ r : Polynomial F,
+      ψ (CoordinateRing.mk W (Polynomial.C r)) ∈ S := by
+    intro r
+    induction r using Polynomial.induction_on with
+    | C d => exact hC d
+    | add f g hf hg =>
+      simp only [map_add]
+      exact S.add_mem hf hg
+    | monomial n d _ =>
+      simp only [map_mul, map_pow]
+      exact S.mul_mem (hC d) (S.pow_mem hX _)
+  obtain ⟨f, rfl⟩ := AdjoinRoot.mk_surjective z
+  induction f using Polynomial.induction_on with
+  | C r => exact hpoly r
+  | add f g hf hg =>
+    simp only [map_add]
+    exact S.add_mem hf hg
+  | monomial n r _ =>
+    simp only [map_mul, map_pow]
+    exact S.mul_mem (hpoly r) (S.pow_mem hY _)
+
+/-- **L4-7 (PROVEN 2026-07-27): the `[p]`-pullback is REGULAR at a place
+over an affine point.**  For `S ≠ O` affine with `p • S ≠ O`, and any
+nonzero `z ∈ F[W]`, the pulled-back function `[p]^* z = z ∘ [p]` has no
+pole at the place of `S`:
 
 `ord_S([p]^* z) ≥ 0`.
 
 Geometrically this is just that `[p]` carries `S` to the AFFINE point
 `p • S`, so a function regular on the affine curve stays regular after
-composing with `[p]`.  It is one of the two ingredients that the route
-recorded at `count_pointEval_YClass_of_smul_ne_zero` names — "together
-with `ord_S([p]^*z) ≥ 0` and the CENTER statement … it settles every
-case" — and it is the ingredient that is *not* about singling out a
-point.
+composing with `[p]`.
 
-**Where the mathematics is.**  `F[W]` is generated over `F` by `coordX`
-and `coordY`, and `[p]^*` is a ring hom, so it suffices to bound the two
-coordinates:
+**PROOF.**  The set of elements of `K = Frac F[W]` of nonnegative order
+at `v` is a SUBRING (`countNonneg`, above) — that is exactly what the
+ultrametric inequality for `FractionalIdeal.count` buys, and it is the
+lemma the previous owner of this leaf recorded as missing from mathlib's
+`Factorization.lean` (which has `count_mul`, `count_mono` and
+`count_coe_nonneg` but nothing about sums).  Since `[p]^*` is a ring hom
+out of `F[W]`, which is generated by the constants and the two
+coordinate functions (`coordinateRing_forall_mem_subring`), it suffices
+to check the three generators:
 
-* `ord_S(xp) ≥ 0` is already available: `exists_smul_tautPoint_eq` gives
-  `xp · ΨSq_p(x) = Φ_p(x)`, the right-hand side lies in `F[W]` (order
-  `≥ 0`), and the denominator is a UNIT at `S` because `ΨSq_p(a) ≠ 0`
-  when `p • S ≠ O` (`TorsionCard.smul_some_eq_zero_iff`, exactly as in
-  the proof of `count_pointEval_XClass_of_smul_ne_zero`).
-* `ord_S(yp) ≥ 0` is the missing half.  Two routes, neither one line:
-  (i) the `ψ₂`-tracking of `TorsionCard.zsmul_some_aux_strong`,
-  `(2y' + a₁x' + a₃)·ψ_p⁴ = ψ_{2p}`, applied at the tautological point,
-  writes `2yp + a₁xp + a₃` as a quotient of two elements of `F[W]` whose
-  denominator is a unit at `S`; with `2 ≠ 0` in `F` this gives the bound,
-  and it degenerates exactly in characteristic `2` — the same
-  characteristic that blocks the last case of
-  `rootMultiplicity_Φ_sub_C_mul_ΨSq`; (ii) the curve equation
-  `yp² + a₁ xp yp + a₃ yp = xp³ + a₂xp² + a₄xp + a₆` makes `yp` integral
-  over the ring where `xp` already has nonnegative order, so a pole of
-  `yp` of order `m > 0` would make the left side have order `−2m` and the
-  right side order `≥ 0`.  Route (ii) is characteristic-free but needs an
-  ULTRAMETRIC lemma for `FractionalIdeal.count`
-  (`min(count a, count b) ≤ count (a + b)`), which mathlib's
-  `Factorization.lean` does not provide — it has `count_mul`,
-  `count_mono` and `count_coe_nonneg` but nothing about sums.  Supplying
-  that lemma (through `IsDedekindDomain.HeightOneSpectrum.intValuation`,
-  which IS a genuine valuation) would close this leaf and simplify the
-  next one. -/
+* constants: `[p]^* c = constHom W c` is the image of `coordC W c`, and
+  the image of a ring element always has nonnegative order
+  (`count_spanSingleton_algebraMap_nonneg`);
+* `ord_S(xp) ≥ 0`: FREE from the vertical brick
+  `count_pointEval_XClass_of_smul_ne_zero`, whose value at the vertical
+  through `T = p • S` is a `Multiset.count`, hence `≥ 0`; adding back
+  the constant `x_T` keeps the order nonnegative;
+* `ord_S(yp) ≥ 0`: this is route (ii) of the original leaf note, and it
+  is CHARACTERISTIC-FREE.  `yp` is integral over the ring where `xp`
+  already has nonnegative order: the Weierstrass equation gives
+  `yp² = −a₁ xp yp − a₃ yp + (xp³ + a₂xp² + a₄xp + a₆)`, and if
+  `m := ord_S(yp)` were `< 0` then every term on the right has order
+  `≥ m` (the polynomial part has order `≥ 0 > m`, the two mixed terms
+  order `≥ 0 + m`), so the ultrametric gives `2m = ord(yp²) ≥ m`, i.e.
+  `m ≥ 0` — a contradiction.  No `ψ₂`-tracking and no `2 ≠ 0` is needed.
+
+The hypothesis `hz` is not used: the bound holds for `z = 0` too, since
+`count 0 = 0`. -/
 theorem count_pointEval_nonneg [IsDedekindDomain W.CoordinateRing]
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
     {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
@@ -8739,66 +8956,383 @@ theorem count_pointEval_nonneg [IsDedekindDomain W.CoordinateRing]
     0 ≤ FractionalIdeal.count W.FunctionField v
         (FractionalIdeal.spanSingleton W.CoordinateRing⁰
           (pointEval (constHom W) hpn.left z)) := by
+  classical
+  obtain ⟨xT, yT, hT, hTeq⟩ :
+      ∃ (xT yT : F) (hT : W.Nonsingular xT yT),
+        ((p : ℤ) • S : W.Point) =
+          WeierstrassCurve.Affine.Point.some xT yT hT := by
+    cases hcase : ((p : ℤ) • S : W.Point) with
+    | zero => exact absurd hcase hpS
+    | some xT yT hT => exact ⟨xT, yT, hT, rfl⟩
+  -- the two coordinate atoms lie in the nonnegativity subring
+  have hxval : pointEval (constHom W) hpn.left (CoordinateRing.XClass W xT) =
+      xp - constHom W xT := by
+    rw [XClass_eq, map_sub]
+    simp only [coordX, coordC]
+    rw [pointEval_X, pointEval_C]
+  have hxcount := count_pointEval_XClass_of_smul_ne_zero (W := W)
+    hΔ hp hptaut hT hS0 hpS hvS
+  rw [hxval] at hxcount
+  have hxnn : 0 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (xp - constHom W xT)) := by
+    rw [hxcount]; exact Int.natCast_nonneg _
+  -- `xp` and the constants have nonnegative order
+  have hcN : ∀ d : F, constHom W d ∈ countNonneg v := by
+    intro d
+    rw [mem_countNonneg,
+      show constHom W d =
+        algebraMap W.CoordinateRing W.FunctionField (coordC W d) from rfl]
+    exact count_spanSingleton_algebraMap_nonneg v _
+  have hxN : xp ∈ countNonneg v := by
+    rw [mem_countNonneg,
+      show xp = (xp - constHom W xT) + constHom W xT by ring]
+    exact (countNonneg v).add_mem
+      ((mem_countNonneg v).mpr hxnn) (hcN xT)
+  -- `yp` is integral over `xp`, so its order is nonnegative too
+  have hyN : yp ∈ countNonneg v := by
+    rw [mem_countNonneg]
+    by_contra hneg
+    rw [not_le] at hneg
+    have hyp0 : yp ≠ 0 := by
+      rintro rfl
+      simp [FractionalIdeal.count_zero] at hneg
+    have hm0 : FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰ yp) ≤ 0 := le_of_lt hneg
+    have heqc : yp ^ 2 + constHom W W.a₁ * xp * yp + constHom W W.a₃ * yp =
+        xp ^ 3 + constHom W W.a₂ * xp ^ 2 + constHom W W.a₄ * xp +
+          constHom W W.a₆ := by
+      have h2 := ((curveK W).equation_iff xp yp).mp hpn.left
+      simpa only [curveK, WeierstrassCurve.map] using h2
+    have hsq : yp * yp =
+        (-(constHom W W.a₁ * xp * yp)) +
+          ((-(constHom W W.a₃ * yp)) +
+            (xp ^ 3 + constHom W W.a₂ * xp ^ 2 + constHom W W.a₄ * xp +
+              constHom W W.a₆)) := by
+      linear_combination heqc
+    have hpolyN : (xp ^ 3 + constHom W W.a₂ * xp ^ 2 + constHom W W.a₄ * xp +
+        constHom W W.a₆) ∈ countNonneg v :=
+      (countNonneg v).add_mem
+        ((countNonneg v).add_mem
+          ((countNonneg v).add_mem
+            ((countNonneg v).pow_mem hxN 3)
+            ((countNonneg v).mul_mem (hcN _)
+              ((countNonneg v).pow_mem hxN 2)))
+          ((countNonneg v).mul_mem (hcN _) hxN))
+        (hcN _)
+    have h1 := le_count_spanSingleton_mul' v hm0
+      ((mem_countNonneg v).mp
+        ((countNonneg v).mul_mem (hcN W.a₁) hxN)) (le_refl
+      (FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰ yp)))
+    rw [← count_spanSingleton_neg v
+      (constHom W W.a₁ * xp * yp)] at h1
+    have h2 := le_count_spanSingleton_mul' v hm0
+      ((mem_countNonneg v).mp (hcN W.a₃)) (le_refl
+      (FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰ yp)))
+    rw [← count_spanSingleton_neg v (constHom W W.a₃ * yp)] at h2
+    have h3 := le_trans hm0 ((mem_countNonneg v).mp hpolyN)
+    have hall := le_count_spanSingleton_add' v hm0 h1
+      (le_count_spanSingleton_add' v hm0 h2 h3)
+    rw [← hsq, count_spanSingleton_mul v hyp0 hyp0] at hall
+    omega
+  refine coordinateRing_forall_mem_subring (countNonneg v) ?_ ?_ ?_ z
+  · intro d
+    rw [show pointEval (constHom W) hpn.left (coordC W d) = constHom W d from
+      pointEval_C _ _ _]
+    exact hcN d
+  · rw [show pointEval (constHom W) hpn.left (coordX W) = xp from
+      pointEval_X _ _]
+    exact hxN
+  · rw [show pointEval (constHom W) hpn.left (coordY W) = yp from
+      pointEval_Y _ _]
+    exact hyN
+
+omit [DecidableEq F] in
+/-- **PROVEN: the pullback of the `y`-coordinate is not a constant.** -/
+theorem smul_taut_yCoord_ne_constHom {xp yp : W.FunctionField}
+    (hpn : (curveK W).Nonsingular xp yp)
+    (hxrel : xp * ((W.ΨSq (p : ℤ)).map (constHom W)).eval (tautX W) =
+      ((W.Φ (p : ℤ)).map (constHom W)).eval (tautX W)) (d : F) :
+    yp ≠ constHom W d := by
+  intro hd
+  have heqc : yp ^ 2 + constHom W W.a₁ * xp * yp + constHom W W.a₃ * yp =
+      xp ^ 3 + constHom W W.a₂ * xp ^ 2 + constHom W W.a₄ * xp +
+        constHom W W.a₆ := by
+    have h2 := ((curveK W).equation_iff xp yp).mp hpn.left
+    simpa only [curveK, WeierstrassCurve.map] using h2
+  set q : Polynomial F := Polynomial.X ^ 3 + Polynomial.C W.a₂ * Polynomial.X ^ 2 +
+    Polynomial.C (W.a₄ - W.a₁ * d) * Polynomial.X +
+    Polynomial.C (W.a₆ - d ^ 2 - W.a₃ * d) with hq
+  have hq0 : q ≠ 0 := by
+    intro h0
+    have hc := congrArg (fun r : Polynomial F => r.coeff 3) h0
+    simp only [hq, Polynomial.coeff_add, Polynomial.coeff_X_pow,
+      Polynomial.coeff_C_mul, Polynomial.coeff_X, Polynomial.coeff_C,
+      Polynomial.coeff_zero] at hc
+    norm_num at hc
+  refine eval_map_ne_zero_of_forall_ne_constHom
+    (smul_taut_xCoord_ne_constHom hxrel) hq0 ?_
+  rw [hd] at heqc
+  simp only [hq, Polynomial.map_add, Polynomial.map_mul, Polynomial.map_pow,
+    Polynomial.map_C, Polynomial.map_X, Polynomial.eval_add, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+  simp only [map_sub, map_mul, map_pow]
+  linear_combination -heqc
+
+/-- **PROVEN: the algebraic core of the `y`-center.**  The pullback of the
+PAIR of horizontals through `T` and `⊖T` vanishes at the place of `S`. -/
+theorem one_le_count_pointEval_YClass_pair
+    [IsDedekindDomain W.CoordinateRing]
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hptaut : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    {S : W.Point} (hS0 : S ≠ 0) (hpS : (p : ℤ) • S ≠ 0)
+    {v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing}
+    (hvS : v.asIdeal = pointIdeal W S)
+    {xT yT : F} {hT : W.Nonsingular xT yT}
+    (hTeq : ((p : ℤ) • S : W.Point) =
+      WeierstrassCurve.Affine.Point.some xT yT hT) :
+    1 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        ((yp - constHom W yT) *
+          (yp - constHom W (W.negY xT yT)))) := by
+  classical
+  obtain ⟨xp', yp', hpn', hptaut', hxrel⟩ :=
+    exists_smul_tautPoint_eq (W := W) hΔ hp
+  have hxx : xp = xp' := by
+    have hpts := hptaut.symm.trans hptaut'
+    injection hpts with hx _
+  subst hxx
+  -- the vertical brick gives order `≥ 1` for `xp − x_T`
+  have hxval : pointEval (constHom W) hpn.left (CoordinateRing.XClass W xT) =
+      xp - constHom W xT := by
+    rw [XClass_eq, map_sub]
+    simp only [coordX, coordC]
+    rw [pointEval_X, pointEval_C]
+  have hxcount := count_pointEval_XClass_of_smul_ne_zero (W := W)
+    hΔ hp hptaut hT hS0 hpS hvS
+  rw [hxval] at hxcount
+  have hx1 : 1 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (xp - constHom W xT)) := by
+    rw [hxcount, hTeq]
+    have hcnt : (1 : ℕ) ≤ Multiset.count
+        (WeierstrassCurve.Affine.Point.some xT yT hT : W.Point)
+        (WeierstrassCurve.Affine.Point.some xT yT hT ::ₘ
+          (-WeierstrassCurve.Affine.Point.some xT yT hT : W.Point) ::ₘ 0) := by
+      rw [Multiset.count_cons_self]; omega
+    exact_mod_cast hcnt
+  -- everything in sight has nonnegative order
+  have hcN : ∀ d : F, constHom W d ∈ countNonneg v := by
+    intro d
+    rw [mem_countNonneg,
+      show constHom W d =
+        algebraMap W.CoordinateRing W.FunctionField (coordC W d) from rfl]
+    exact count_spanSingleton_algebraMap_nonneg v _
+  have hxN : xp ∈ countNonneg v := by
+    rw [mem_countNonneg,
+      show xp = (xp - constHom W xT) + constHom W xT by ring]
+    exact (countNonneg v).add_mem
+      ((mem_countNonneg v).mpr (by omega)) (hcN xT)
+  have hyN : yp ∈ countNonneg v := by
+    rw [mem_countNonneg,
+      show yp = pointEval (constHom W) hpn.left (coordY W) from
+        (pointEval_Y _ _).symm]
+    have hcoordY0 : coordY W ≠ 0 := by
+      have h := CoordinateRing.YClass_ne_zero (W' := W) (0 : Polynomial F)
+      simpa [CoordinateRing.YClass, coordY] using h
+    exact count_pointEval_nonneg hΔ hp hptaut hS0 hpS hvS
+      (z := coordY W) hcoordY0
+  -- the two curve equations
+  have heqc : yp ^ 2 + constHom W W.a₁ * xp * yp + constHom W W.a₃ * yp =
+      xp ^ 3 + constHom W W.a₂ * xp ^ 2 + constHom W W.a₄ * xp +
+        constHom W W.a₆ := by
+    have h2 := ((curveK W).equation_iff xp yp).mp hpn.left
+    simpa only [curveK, WeierstrassCurve.map] using h2
+  have heqT : constHom W yT ^ 2 +
+      constHom W W.a₁ * constHom W xT * constHom W yT +
+      constHom W W.a₃ * constHom W yT =
+      constHom W xT ^ 3 + constHom W W.a₂ * constHom W xT ^ 2 +
+        constHom W W.a₄ * constHom W xT + constHom W W.a₆ := by
+    have h := (W.equation_iff xT yT).mp hT.left
+    simpa only [map_add, map_mul, map_pow] using congrArg (constHom W) h
+  have hnegY : constHom W (W.negY xT yT) =
+      -(constHom W yT) - constHom W W.a₁ * constHom W xT - constHom W W.a₃ := by
+    simp [WeierstrassCurve.Affine.negY]
+  -- the identity
+  set Q : W.FunctionField :=
+    (xp ^ 2 + xp * constHom W xT + constHom W xT ^ 2) +
+      constHom W W.a₂ * (xp + constHom W xT) + constHom W W.a₄ -
+      constHom W W.a₁ * yp with hQdef
+  have hident : (yp - constHom W yT) * (yp - constHom W (W.negY xT yT)) =
+      Q * (xp - constHom W xT) := by
+    rw [hnegY, hQdef]
+    linear_combination heqc - heqT
+  have hQN : Q ∈ countNonneg v := by
+    rw [hQdef]
+    exact (countNonneg v).sub_mem
+      ((countNonneg v).add_mem
+        ((countNonneg v).add_mem
+          ((countNonneg v).add_mem
+            ((countNonneg v).add_mem
+              ((countNonneg v).pow_mem hxN 2)
+              ((countNonneg v).mul_mem hxN (hcN xT)))
+            ((countNonneg v).pow_mem (hcN xT) 2))
+          ((countNonneg v).mul_mem (hcN W.a₂)
+            ((countNonneg v).add_mem hxN (hcN xT))))
+        (hcN W.a₄))
+      ((countNonneg v).mul_mem (hcN W.a₁) hyN)
+  have hne : (yp - constHom W yT) *
+      (yp - constHom W (W.negY xT yT)) ≠ 0 := by
+    refine mul_ne_zero ?_ ?_
+    · exact sub_ne_zero.mpr (smul_taut_yCoord_ne_constHom hpn hxrel yT)
+    · exact sub_ne_zero.mpr (smul_taut_yCoord_ne_constHom hpn hxrel _)
+  rw [hident]
+  exact le_count_spanSingleton_mul_of_nonneg v
+    ((mem_countNonneg v).mp hQN) hx1 (hident ▸ hne)
+
+/-- **THE ONE REMAINING LEAF (sorry): the WRONG BRANCH does not
+vanish.**  With `T = p • S = (x_T, y_T)` affine and `T ≠ ⊖T`, the
+pullback of the horizontal through `⊖T` does NOT vanish at the place of
+`S`:
+
+`ord_S(yp − y_{⊖T}) ≤ 0`,  where `y_{⊖T} = negY x_T y_T`.
+
+**This is all that is left of the `y`-center.**  The algebraic half is
+already PROVEN as `one_le_count_pointEval_YClass_pair`: the PAIR
+`(yp − y_T)(yp − y_{⊖T})` has order `≥ 1`, because the two Weierstrass
+equations (for `(xp, yp)` over `K` and for `(x_T, y_T)` over `F`)
+combine into the identity
+
+`(yp − y_T)(yp − y_{⊖T}) = Q · (xp − x_T)`,
+`Q = (xp² + xp x_T + x_T²) + a₂(xp + x_T) + a₄ − a₁ yp`,
+
+with `ord_S(Q) ≥ 0` and `ord_S(xp − x_T) ≥ 1`.  So the pullback of the
+pair of horizontals through `T` and `⊖T` always vanishes; the only
+content left is WHICH of the two factors does it — and when `T = ⊖T`
+the two factors coincide and `2·ord ≥ 1` settles it with no input at
+all (that case is discharged inside
+`one_le_count_pointEval_YClass_of_smul_ne_zero`).
+
+Since `ord_S(yp − y_{⊖T}) ≥ 0` always (`count_pointEval_nonneg`), the
+statement says the order is exactly `0`, i.e. `[p]^*(Y − y_{⊖T})` is a
+UNIT at the place of `S`.  Mathematically this holds because `Y − y_{⊖T}`
+vanishes on the curve exactly at the points of `y`-coordinate `y_{⊖T}`,
+and `T` is such a point iff `y_T = negY x_T y_T`, i.e. iff `T = ⊖T`,
+which `hne` excludes.
+
+**Routes** (both recorded by the previous owner of the `y`-center, and
+both now needed only for this residue):
+(i) `TorsionCard.zsmul_some_aux_strong`'s `ψ₂`-tracking,
+`(2y' + a₁x' + a₃)·ψ_p⁴ = ψ_{2p}`, which gives
+`ord_S(ψ₂(p·taut) − ψ₂(T)) ≥ 1` and hence separates the branches when
+`2 ≠ 0`; it degenerates exactly in characteristic `2`, where
+`ψ₂ = a₁x + a₃` carries no `y`-information.
+(ii) Propagation along translations (`spanSingleton_pointEval_translate`
+with `[p] ∘ τ_Q = τ_{p•Q} ∘ [p]`), which reduces the claim to ONE point
+`S₀`; at an `S₀` whose image is `2`-torsion the hypothesis `hne` is
+false, so nothing is left to prove there — such an `S₀` exists by
+`TorsionCard.smul_surjective` unless `char F = 2` and `a₁ = 0`.
+
+**The check that would refute the characteristic-`2` obstruction**:
+exhibit, for a curve over a field of characteristic `2` with `a₁ = 0`,
+either a nonzero `2`-torsion point (which revives route (ii)) or a
+separating identity replacing `ψ₂`. -/
+theorem count_pointEval_YClass_neg_nonpos_of_ne_neg
+    [IsDedekindDomain W.CoordinateRing]
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hptaut : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    {S : W.Point} (hS0 : S ≠ 0) (hpS : (p : ℤ) • S ≠ 0)
+    {v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing}
+    (hvS : v.asIdeal = pointIdeal W S)
+    {xT yT : F} {hT : W.Nonsingular xT yT}
+    (hTeq : ((p : ℤ) • S : W.Point) =
+      WeierstrassCurve.Affine.Point.some xT yT hT)
+    (hne : (WeierstrassCurve.Affine.Point.some xT yT hT : W.Point) ≠
+      -(WeierstrassCurve.Affine.Point.some xT yT hT : W.Point)) :
+    FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (yp - constHom W (W.negY xT yT))) ≤ 0 := by
   sorry
 
-/-- **L4-7 leaf (sorry): the CENTER of the `[p]`-pullback place.**  For
-`S ≠ O` affine with `T := p • S ≠ O`, and any nonzero `z ∈ F[W]`, the
-pullback `[p]^* z` vanishes at the place of `S` exactly when `z` vanishes
-at `T`:
+/-- **PROVEN (2026-07-27) over the pair identity and the single branch
+leaf: the `y`-CENTER.**  `ord_S(yp − y_T) ≥ 1`.  When `T = ⊖T` the two
+factors of `one_le_count_pointEval_YClass_pair` coincide, so `2·ord ≥ 1`
+forces `ord ≥ 1` with no further input; otherwise the branch leaf
+`count_pointEval_YClass_neg_nonpos_of_ne_neg` says the other factor
+contributes `≤ 0`. -/
+theorem one_le_count_pointEval_YClass_of_smul_ne_zero
+    [IsDedekindDomain W.CoordinateRing]
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hptaut : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    {S : W.Point} (hS0 : S ≠ 0) (hpS : (p : ℤ) • S ≠ 0)
+    {v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing}
+    (hvS : v.asIdeal = pointIdeal W S)
+    {xT yT : F} {hT : W.Nonsingular xT yT}
+    (hTeq : ((p : ℤ) • S : W.Point) =
+      WeierstrassCurve.Affine.Point.some xT yT hT) :
+    1 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (yp - constHom W yT)) := by
+  classical
+  obtain ⟨xp', yp', hpn', hptaut', hxrel⟩ :=
+    exists_smul_tautPoint_eq (W := W) hΔ hp
+  have hxx : xp = xp' := by
+    have hpts := hptaut.symm.trans hptaut'
+    injection hpts with hx _
+  subst hxx
+  have hpair := one_le_count_pointEval_YClass_pair hΔ hp hptaut hS0 hpS hvS hTeq
+  have hne0 : yp - constHom W yT ≠ 0 :=
+    sub_ne_zero.mpr (smul_taut_yCoord_ne_constHom hpn hxrel yT)
+  by_cases hself : (WeierstrassCurve.Affine.Point.some xT yT hT : W.Point) =
+      -(WeierstrassCurve.Affine.Point.some xT yT hT : W.Point)
+  · have hyeq : W.negY xT yT = yT := by
+      rw [WeierstrassCurve.Affine.Point.neg_some] at hself
+      injection hself with _ h2
+      exact h2.symm
+    rw [hyeq, count_spanSingleton_mul v hne0 hne0] at hpair
+    omega
+  · have hb := count_pointEval_YClass_neg_nonpos_of_ne_neg hΔ hp hptaut hS0 hpS
+      hvS hTeq hself
+    have hne1 : yp - constHom W (W.negY xT yT) ≠ 0 :=
+      sub_ne_zero.mpr (smul_taut_yCoord_ne_constHom hpn hxrel _)
+    rw [count_spanSingleton_mul v hne0 hne1] at hpair
+    omega
+
+/-- **L4-7 (PROVEN 2026-07-27 over the single leaf
+`count_pointEval_YClass_neg_nonpos_of_ne_neg`): the CENTER of the
+`[p]`-pullback place.**  For `S ≠ O` affine with `T := p • S ≠ O`, and
+any nonzero `z ∈ F[W]`, the pullback `[p]^* z` vanishes at the place of
+`S` exactly when `z` vanishes at `T`:
 
 `ord_S([p]^* z) ≥ 1  ↔  z ∈ pointIdeal W (p • S)`.
 
 Equivalently: the prime `([p]^*)⁻¹(m_S)` of `F[W]` is `pointIdeal W T`.
-This is the "*center*" half of `count_pointEval_of_smul_ne_zero`, and it
-is the statement the previous owner of
-`count_pointEval_YClass_of_smul_ne_zero` identified as THE missing
-ingredient of the line brick ("*The missing ingredient is the center, and
-it is exactly the statement that the `y`-coordinate of `p • taut`
-specializes correctly*").
 
-**Where the mathematics is.**  Modulo `count_pointEval_nonneg` and an
-ultrametric lemma for `FractionalIdeal.count` (see that leaf), both
-directions reduce to ONE scalar fact.
+**PROOF.**  Both directions are now formal, over the ultrametric of the
+`CountValuation` section above.
 
 *`⟸`.*  `pointIdeal W T = ⟨X − x_T, Y − y_T⟩` is generated by two
-elements, so by the ultrametric it is enough to bound them:
-`ord_S(xp − x_T) ≥ 1` is FREE from the vertical brick
-`count_pointEval_XClass_of_smul_ne_zero` (its value at the vertical
-through `T` is `mult_T((T) + (⊖T)) ≥ 1`), and `ord_S(yp − y_T) ≥ 1` is
-the missing `y`-center.
+elements (`Ideal.mem_span_pair`), so writing `z = c(X − x_T) + d(Y − y_T)`
+and applying `[p]^*` it is enough that each generator's pullback has
+order `≥ 1` while `[p]^* c`, `[p]^* d` have order `≥ 0`
+(`count_pointEval_nonneg`).  `ord_S(xp − x_T) ≥ 1` is FREE from the
+vertical brick `count_pointEval_XClass_of_smul_ne_zero`, whose value is
+`mult_T((T) + (⊖T)) ≥ 1`; `ord_S(yp − y_T) ≥ 1` is
+`one_le_count_pointEval_YClass_of_smul_ne_zero` below.  `[p]^*` is
+injective (`pointEval_injective_of_forall_ne_constHom`), so no summand
+degenerates to `0`.
 
-*`⟹`.*  Follows formally from `⟸` by maximality: if `z ∉ I_T` then
-`1 = c·z + w` with `w ∈ I_T`, and applying `[p]^*` gives an element of
-order `0` written as a sum of two elements of positive order.
-
-**The `y`-center, worked out but not formalized** (recorded by the
-previous owner and reproduced here because it is the whole remaining
-content).  `TorsionCard.zsmul_some_aux_strong` tracks the `ψ₂`-value as
-well as the `x`-coordinate: `(2y' + a₁x' + a₃)·ψ_p(x,y)⁴ = ψ_{2p}(x,y)`
-whenever the base point is not `2`-torsion.  Both `ψ_p` and `ψ_{2p}` are
-BIVARIATE, so `ψ_n(taut)` is `algebraMap (CoordinateRing.mk W (W.ψ n))`
-and `ψ_n(taut) − ψ_n(S)` lies in `pointIdeal S`
-(`mem_pointIdeal_of_coordEval_eq_zero`), i.e. has `ord_S ≥ 1`; since
-`ψ_p(S) ≠ 0` (as `p • S ≠ O`) the same survives division, giving
-`ord_S(ψ₂(p • taut) − ψ₂(T)) ≥ 1`.  Subtracting `a₁·(xp − x_T)`, whose
-order is `≥ 1` by the vertical brick, leaves `ord_S(2·(yp − y_T)) ≥ 1`,
-hence the claim when `2 ≠ 0`.  For a `2`-torsion `S` (where
-`zsmul_some_aux_strong` does not apply) one has `p • S = S` for odd `p`,
-so `T = ⊖T`, and the curve-equation identity
-`(yp − y_T)² = (xp − x_T)·(xp² + xp x_T + x_T² + a₂(xp + x_T) + a₄ − a₁yp)`
-gives `2·ord_S(yp − y_T) ≥ 1` directly.  What this does NOT cover is
-`char F = 2`, where `ψ₂ = a₁x + a₃` carries no `y`-information at all.
-
-Alternatively the center PROPAGATES along translations
-(`spanSingleton_pointEval_translate` together with
-`[p] ∘ τ_Q = τ_{p•Q} ∘ [p]`), so it suffices at ONE point `S₀` — and it
-is automatic at any `S₀` whose image is `2`-torsion, where `T = ⊖T`
-leaves nothing to disambiguate.  Such an `S₀` exists because `[p]` is
-surjective on the algebraically closed points (`TorsionCard.smul_surjective`,
-now PROVEN, with `TorsionCard.prime_torsion_card` for the count), applied
-to a nonzero `2`-torsion point — of which there is none exactly when
-`char F = 2` and `a₁ = 0`, so this route too has the characteristic-`2`
-residue and no other gap. -/
+*`⟹`.*  Formal from `⟸` by maximality: if `z ∉ I_T` then
+`w + c·z = 1` with `w ∈ I_T`, and `[p]^*` turns that into a sum of two
+terms of order `≥ 1` equal to `1`, whose order is `0`. -/
 theorem one_le_count_pointEval_iff_mem_pointIdeal_smul
     [IsDedekindDomain W.CoordinateRing]
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -8813,7 +9347,127 @@ theorem one_le_count_pointEval_iff_mem_pointIdeal_smul
         (FractionalIdeal.spanSingleton W.CoordinateRing⁰
           (pointEval (constHom W) hpn.left z)) ↔
       z ∈ pointIdeal W ((p : ℤ) • S) := by
-  sorry
+  classical
+  obtain ⟨xp', yp', hpn', hptaut', hxrel⟩ :=
+    exists_smul_tautPoint_eq (W := W) hΔ hp
+  have hxx : xp = xp' := by
+    have hpts := hptaut.symm.trans hptaut'
+    injection hpts with hx _
+  subst hxx
+  have hinj : Function.Injective (pointEval (constHom W) hpn.left) :=
+    pointEval_injective_of_forall_ne_constHom hpn
+      (smul_taut_xCoord_ne_constHom hxrel)
+  set φ := pointEval (constHom W) hpn.left with hφ
+  obtain ⟨xT, yT, hT, hTeq⟩ :
+      ∃ (xT yT : F) (hT : W.Nonsingular xT yT),
+        ((p : ℤ) • S : W.Point) =
+          WeierstrassCurve.Affine.Point.some xT yT hT := by
+    cases hcase : ((p : ℤ) • S : W.Point) with
+    | zero => exact absurd hcase hpS
+    | some xT yT hT => exact ⟨xT, yT, hT, rfl⟩
+  -- the two generators of the point ideal at `T`
+  have hxval : φ (CoordinateRing.XClass W xT) = xp - constHom W xT := by
+    rw [hφ, XClass_eq, map_sub]
+    simp only [coordX, coordC]
+    rw [pointEval_X, pointEval_C]
+  have hyval : φ (CoordinateRing.YClass W (Polynomial.C yT)) =
+      yp - constHom W yT := by
+    rw [hφ, CoordinateRing.YClass]
+    simp only [map_sub]
+    rw [pointEval_Y, pointEval_C]
+  have hxcount := count_pointEval_XClass_of_smul_ne_zero (W := W)
+    hΔ hp hptaut hT hS0 hpS hvS
+  rw [hxval] at hxcount
+  have hx1 : 1 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰ (xp - constHom W xT)) := by
+    rw [hxcount, hTeq]
+    have : (1 : ℕ) ≤ Multiset.count
+        (WeierstrassCurve.Affine.Point.some xT yT hT : W.Point)
+        (WeierstrassCurve.Affine.Point.some xT yT hT ::ₘ
+          (-WeierstrassCurve.Affine.Point.some xT yT hT : W.Point) ::ₘ 0) := by
+      rw [Multiset.count_cons_self]; omega
+    exact_mod_cast this
+  have hy1 : 1 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰ (yp - constHom W yT)) :=
+    one_le_count_pointEval_YClass_of_smul_ne_zero hΔ hp hptaut hS0 hpS hvS hTeq
+  -- nonnegativity of every pullback
+  have hnn : ∀ w : W.CoordinateRing, 0 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰ (φ w)) := by
+    intro w
+    rcases eq_or_ne w 0 with rfl | hw
+    · simp [hφ, FractionalIdeal.count_zero]
+    · exact count_pointEval_nonneg hΔ hp hptaut hS0 hpS hvS hw
+  -- the `⟸` half, for an arbitrary nonzero member of the point ideal
+  have key : ∀ w : W.CoordinateRing, w ∈ pointIdeal W ((p : ℤ) • S) →
+      w ≠ 0 →
+      1 ≤ FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰ (φ w)) := by
+    intro w hwmem hw0
+    rw [hTeq, pointIdeal_some, CoordinateRing.XYIdeal] at hwmem
+    obtain ⟨c, d, hcd⟩ := Ideal.mem_span_pair.mp hwmem
+    have hsum : φ c * (xp - constHom W xT) + φ d * (yp - constHom W yT) = φ w := by
+      rw [← hcd, map_add, map_mul, map_mul, hxval, hyval]
+    have hwne : φ w ≠ 0 := fun h0 => hw0 (hinj (by rw [h0, map_zero]))
+    rcases eq_or_ne (φ c * (xp - constHom W xT)) 0 with hA | hA
+    · have hsum' : φ d * (yp - constHom W yT) = φ w := by
+        rw [← hsum, hA, zero_add]
+      rw [← hsum']
+      exact le_count_spanSingleton_mul_of_nonneg v (hnn d) hy1
+        (by rw [hsum']; exact hwne)
+    rcases eq_or_ne (φ d * (yp - constHom W yT)) 0 with hB | hB
+    · have hsum' : φ c * (xp - constHom W xT) = φ w := by
+        rw [← hsum, hB, add_zero]
+      rw [← hsum']
+      exact le_count_spanSingleton_mul_of_nonneg v (hnn c) hx1 hA
+    · rw [← hsum]
+      exact le_count_spanSingleton_add v
+        (le_count_spanSingleton_mul_of_nonneg v (hnn c) hx1 hA)
+        (le_count_spanSingleton_mul_of_nonneg v (hnn d) hy1 hB)
+        (by rw [hsum]; exact hwne)
+  refine ⟨fun hcount => ?_, fun hmem => key z hmem hz⟩
+  -- the `⟹` half, by maximality of the point ideal
+  by_contra hzmem
+  have hmax : (pointIdeal W ((p : ℤ) • S)).IsMaximal :=
+    pointIdeal_isMaximal_of_ne_zero hpS
+  have htop : pointIdeal W ((p : ℤ) • S) ⊔ Ideal.span {z} = ⊤ := by
+    by_contra hne
+    have heq := hmax.eq_of_le hne (le_sup_left)
+    exact hzmem (heq ▸ (le_sup_right (a := pointIdeal W ((p : ℤ) • S))
+      (b := Ideal.span {z})) (Ideal.mem_span_singleton_self z))
+  have h1mem : (1 : W.CoordinateRing) ∈
+      pointIdeal W ((p : ℤ) • S) ⊔ Ideal.span {z} := by
+    rw [htop]; trivial
+  obtain ⟨w, hwmem, u, humem, hsum⟩ := Submodule.mem_sup.mp h1mem
+  obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp humem
+  have hφsum : φ w + φ c * φ z = 1 := by
+    rw [← map_mul, ← map_add, hsum, map_one]
+  have hone : ¬ (1 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (1 : W.FunctionField))) := by
+    rw [FractionalIdeal.spanSingleton_one, FractionalIdeal.count_one]
+    omega
+  have hA : φ w = 0 ∨ 1 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰ (φ w)) := by
+    rcases eq_or_ne w 0 with rfl | hw
+    · exact Or.inl (map_zero _)
+    · exact Or.inr (key w hwmem hw)
+  have hB : φ c * φ z = 0 ∨ 1 ≤ FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰ (φ c * φ z)) := by
+    rcases eq_or_ne (φ c * φ z) 0 with h | h
+    · exact Or.inl h
+    · exact Or.inr
+        (le_count_spanSingleton_mul_of_nonneg v (hnn c) hcount h)
+  rcases hA with hA | hA
+  · rw [hA, zero_add] at hφsum
+    rcases hB with hB | hB
+    · rw [hB] at hφsum; exact zero_ne_one hφsum
+    · rw [hφsum] at hB; exact hone hB
+  · rcases hB with hB | hB
+    · rw [hB, add_zero] at hφsum
+      rw [hφsum] at hA; exact hone hA
+    · have hs1 := le_count_spanSingleton_add v hA hB
+        (by rw [hφsum]; exact one_ne_zero)
+      rw [hφsum] at hs1; exact hone hs1
 
 /-- **L4-7: the `[p]`-pullback of a LINE, at an affine place lying over
 an affine point** (PROVEN 2026-07-26 over the two center leaves
