@@ -8228,9 +8228,232 @@ theorem exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult
       ∀ w ∉ bad, (τ.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : O) :=
   sorry
 
+/-! #### The frame-free Weil leaf, cut along the SPECIALIZATION SEAM
+
+`exists_frobTorsionEndo_of_mult` below is **PROVEN** (2026-07-27) by
+assembly over the two leaves stated in this subsection.  The ROUTE NOTE
+above says the structurally right proof goes through the reduction, and
+that the package it needs — good reduction of an abelian scheme at a
+finite place, the specialization isomorphism, the Frobenius
+ENDOMORPHISM of the reduction — exists nowhere in this tree, in
+`~/cs/FLT` or in the pin.  That is still true, and it is re-confirmed
+below.  What has changed is that the package no longer has to be
+*proven* in order to cut: it has to be *stated*, and the two halves it
+separates are genuinely different theorems.
+
+**WHAT MOVED, precisely.**  The seam is the reduction map at `w`.  It
+sends every statement about `Γ_F` and about places of `F` into the first
+leaf, and every statement about the characteristic equation into the
+second, where the base field is FINITE:
+
+* `exists_finset_frobSpecialization_of_mult` keeps *all* of the
+  arithmetic of `F`: the exceptional set `bad`, the arithmetic Frobenius
+  `Frob_w ∈ Γ_F`, the residue field `κ(w)` and its cardinality `N w`,
+  the exclusion `q ∉ w`, and the whole `∀ I, ∀ n` prime-to-`w` torsion
+  bookkeeping.  It asserts a REDUCTION MAP: an additive,
+  `𝒪_D`-equivariant `e` from the geometric points of the fibre to the
+  geometric points of an abelian scheme over `κ(w)` of the same relative
+  dimension, INJECTIVE on prime-to-`w` torsion and intertwining `Frob_w`
+  there with the `N w`-power Frobenius of `κ(w)`.  Nothing about a
+  characteristic equation occurs in it.
+* `exists_frobEndoCharEq_of_mult_finiteBase` keeps *all* of the Weil
+  content, over a FINITE base field: `∃ t, F² + N = t·F` on the geometric
+  points.  It mentions no number field `F`, no place, no `bad`, no ideal
+  `I`, no `n` and no torsion — because over `κ(w)` the relation is an
+  identity of ENDOMORPHISMS, so it holds at every geometric point at
+  once.  That is exactly why the `∃ t, ∀ I` quantifier order of the
+  target is not the residue of this cut but a CONSEQUENCE of it: one `t`
+  serves every `I` because one endomorphism identity serves every point.
+
+**WHY THIS IS NOT EITHER OF THE TWO CUTS THAT WERE REJECTED.**
+
+* It is not an interface-only `GoodReductionFrobenius` datum whose glue
+  is trivial.  The datum here carries NO characteristic equation; the
+  equation is proved over the finite field, in a statement whose base
+  field is a different kind of object from `F`.  The glue is the
+  transport of that equation back through `e`, which needs the Galois
+  stability of `A[Iⁿ]`, the injectivity of `e` on it, and the closure of
+  `A[Iⁿ]` under `ab.add` and `m.act` — none of which is `rfl`.
+* It is not the `∀ I`-pointwise / independence split, which was rejected
+  because the `t` for a fixed `I` is already unique and so the whole
+  compatible-system content survives into the second half.  Here the `I`
+  quantifier does not appear in the second leaf AT ALL: it is discharged
+  by the first leaf, which is a statement about a single map `e`, and
+  the independence is produced by the finite-field leaf for free.
+
+**FAITHFULNESS OF THE FIRST LEAF.**  It is an EXISTENCE statement, so a
+junk witness cannot falsify it; the risk is the opposite one, that it is
+too weak to glue.  It is not: the assembly below uses exactly its seven
+clauses and nothing else.  It is TRUE for the honest witness — the
+Néron model of the fibre at `w`, whose special fibre is an abelian
+variety over `κ(w)` of the same dimension with the same real
+multiplication, together with the reduction map, which is defined on all
+of `A(F̄)` by the valuative criterion (`ab.proper`), is a group
+homomorphism, commutes with `m.act`, and is injective on prime-to-`w`
+torsion.  The intertwining is stated ONLY on prime-to-`w` torsion, which
+is where it holds: on the full point set `Frob_w` is defined only up to
+inertia, and inertia acts trivially exactly on the prime-to-`w` torsion.
+
+**FAITHFULNESS OF THE SECOND LEAF.**  Here the data is universally
+quantified, so junk witnesses matter.  Three hypotheses are load-bearing
+and none can be dropped:
+
+* `hfin`/`hN` — `k` is finite of cardinality `N`.  Over an infinite `k`,
+  `Nat.card k = 0` and `hσ` would read `σ z = 1`, which no field
+  automorphism satisfies; the leaf would be vacuous rather than false,
+  and the constant term `N` would be meaningless.
+* `hσ` — `σ` really is the `N`-power map.  This is what identifies the
+  Galois action with the Frobenius ENDOMORPHISM of the abelian scheme;
+  for any other `σ` the conclusion is false (take `σ = 1`, where it would
+  assert `y + N·y = t·y` for all `y`, i.e. that `1 + N - t` kills the
+  whole group).
+* `hdim'` — the relative dimension is `[D:ℚ]`.  This is the
+  Hilbert–Blumenthal condition; it is what makes `T_I` free of rank TWO
+  over `𝒪_{D,I}`, hence the degree of `σ` over `D` at most two, hence a
+  QUADRATIC relation.  Without it `σ` satisfies only its
+  `2·dim/[D:ℚ]`-degree characteristic polynomial over `𝒪_D`.
+
+The normalisation is the one the rest of this section uses: the constant
+coefficient is `N` and not `N²`, matching
+`exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult` and the
+Shimura/Taylor Hilbert–Blumenthal convention.  Consistency check on the
+degree: `deg σ = N^g` for `g = dim`, and
+`Nm_{D/ℚ}(N) = N^{[D:ℚ]} = N^g`, so `det_{𝒪_D} σ = N` is the right
+element of `𝒪_D`.
+
+**WHAT IS STILL MISSING, re-checked 2026-07-27 by re-running the check
+rather than trusting this note.**  `grep -rl 'Neron\|NéronModel' Fermat/`
+finds only `FreyCurve/MazurTorsion.lean`, `ModularCurve/X0.lean` and
+`EllipticCurve/MordellWeil.lean`, all about elliptic curves over `ℚ`;
+`~/cs/FLT` has no abelian-scheme material; the pin has no `NeronModel`
+and no `AbelianVariety`.  So BOTH leaves below are gated on machinery
+that must be built.  The cut does not remove that; it splits it into two
+disjoint subtrees that can be owned independently — Néron models and
+specialization on one side (Bosch–Lütkebohmert–Raynaud, Mumford §6), the
+characteristic equation of the Frobenius endomorphism of an abelian
+variety over a finite field on the other (Weil; Mumford *Abelian
+Varieties* §19, Milne *Abelian Varieties* §§V–VI, Tate's 1966 theorem for
+the `𝒪_D`-rationality of the coefficients). -/
+
+/-- **THE REDUCTION MAP AT A PLACE OF GOOD REDUCTION** (sorry leaf —
+Néron models and the specialization isomorphism; see the subsection note
+above for why this is one of the two halves of the frame-free Weil leaf
+and for the faithfulness audit).
+
+Outside a finite set of places `w` of `F` the fibre `A_x` reduces at `w`:
+there is an abelian scheme `f' : A' ⟶ Spec κ(w)` over the residue field,
+of the same relative dimension `[D:ℚ]` and carrying the same real
+multiplication `m'` by `𝒪_D`, an element `σ` of `Γ_{κ(w)}` acting as the
+`N w`-power map on `κ(w)ᵃˡᵍ`, and a REDUCTION MAP `e` on geometric points
+which
+
+* is additive (`hadd`) and `𝒪_D`-equivariant (`hact`) on ALL geometric
+  points — the reduction of an `F̄`-point is defined unconditionally by
+  the valuative criterion of properness, since `ab.proper` holds and the
+  Néron model is proper at a place of good reduction;
+* is INJECTIVE on `A[Iⁿ]` and intertwines `Frob_w` with `σ` there,
+  whenever the residue characteristic `q` of `I` is not the residue
+  characteristic of `w`.
+
+The restriction of the last clause to prime-to-`w` torsion is not a
+weakening for convenience: it is where the statement is TRUE.  On the
+full geometric point set `Frob_w` is only defined modulo the inertia
+group at `w`, and inertia acts trivially precisely on the prime-to-`w`
+torsion; on `q`-power torsion at `w ∣ q` the reduction map is not
+injective either.  The two clauses are stated together, under the same
+quantifiers, for exactly that reason.
+
+`κ(w)` is written as `w.asIdeal.ResidueField`, i.e. the residue field of
+the local ring at `w`; `Finite` and `Nat.card = N w` are part of the
+conclusion because the pin carries no `Finite` instance for it. -/
+theorem exists_finset_frobSpecialization_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad,
+        ∃ (A' : Scheme.{u}) (f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField))
+          (ab' : AbelianSchemeStruct f')
+          (m' : Mult ab' (NumberField.RingOfIntegers D))
+          (σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField)
+          (e : GeomFibrePt f x →
+            GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField)))),
+          Finite w.asIdeal.ResidueField ∧
+          Nat.card w.asIdeal.ResidueField = Ideal.absNorm w.asIdeal ∧
+          SmoothOfRelativeDimension (Module.finrank ℚ D) f' ∧
+          (∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+            (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+                AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal) ∧
+          (∀ y y' : GeomFibrePt f x, e (ab.add y y') = ab'.add (e y) (e y')) ∧
+          (∀ (c : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+            e (m.act c y) = m'.act c (e y)) ∧
+          (∀ q : ℕ, q.Prime → (q : NumberField.RingOfIntegers F) ∉ w.asIdeal →
+            ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+              (q : NumberField.RingOfIntegers D) ∈ I → ∀ n : ℕ,
+                Set.InjOn e (m.torsion x (I ^ n)).1 ∧
+                ∀ y ∈ (m.torsion x (I ^ n)).1,
+                  e (ab.galSMul x
+                      (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+                        (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)
+                    = ab'.galSMul _ σ (e y)) :=
+  sorry
+
+/-- **WEIL'S CHARACTERISTIC EQUATION FOR THE FROBENIUS ENDOMORPHISM OVER
+A FINITE FIELD** (sorry leaf — Weil; see the subsection note above for
+the faithfulness audit of the three load-bearing hypotheses).
+
+Let `k` be a finite field with `N` elements, `f' : A' ⟶ Spec k` an
+abelian scheme of relative dimension `[D:ℚ]` with real multiplication by
+`𝒪_D`, and `σ ∈ Γ_k` the `N`-power Frobenius.  Then there is a single
+`t ∈ 𝒪_D` with
+
+    σ²(y) + N · y = t · σ(y)
+
+for EVERY geometric point `y` — not merely for torsion points, and with
+no ideal `I` anywhere in sight.  That is the whole point of pushing the
+statement down to the residue field: over `k` the arithmetic Frobenius
+of `Γ_k` IS the `N`-power Frobenius ENDOMORPHISM of `A'`, so the relation
+is an identity in `End(A')` and holds at every point at once.  The
+`I`-independence that the frame-free leaf below needs is therefore not
+proved here — it never arises.
+
+Classically: `σ` lies in the centre of `End(A')`, hence in the
+centralizer of `𝒪_D`, which is a commutative `D`-algebra of degree at
+most two because `T_I A'` is free of rank two over `𝒪_{D,I}` (this is
+where `hdim'` is consumed); `t` and `N` are the coefficients of its
+characteristic polynomial over `D`, integral by Weil, and the constant
+one is `N` in the Hilbert–Blumenthal normalisation (`deg σ = N^g` and
+`Nm_{D/ℚ}(N) = N^g`).
+
+NOT ASSERTED: the archimedean bound `|t| ≤ 2√N`, which is the Riemann
+hypothesis half and which no consumer in this tree needs. -/
+theorem exists_frobEndoCharEq_of_mult_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N) :
+    ∃ t : NumberField.RingOfIntegers D,
+      ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+        ab'.add (ab'.galSMul _ σ (ab'.galSMul _ σ y))
+            (m'.act (N : NumberField.RingOfIntegers D) y)
+          = m'.act t (ab'.galSMul _ σ y) :=
+  sorry
+
 /-- **FROBENIUS SATISFIES ITS CHARACTERISTIC EQUATION ON THE TORSION OF
-THE FIBRE** (sorry leaf — Weil, and after this cut it is the ONLY
-remaining compatible-system input of the whole chain).
+THE FIBRE** (**PROVEN 2026-07-27** over the two leaves immediately above,
+by the specialization cut described in the subsection note there — Weil.
+It was previously the only remaining compatible-system input of the whole
+chain; that content now sits in
+`exists_frobEndoCharEq_of_mult_finiteBase`, over a FINITE field, where it
+is an identity of endomorphisms and no longer mentions `I` at all).
 
 There is a family `t : w ↦ 𝒪_D` and a finite set of places such that
 outside it, writing `Frob_w` for the arithmetic Frobenius at `w` read in
@@ -8331,10 +8554,16 @@ because the exclusion is stated as a hypothesis relating `I` to `w`.
 MACHINERY THIS STILL NEEDS, unchanged from the ROUTE NOTE above: good
 reduction of an abelian scheme at a finite place, the specialization
 isomorphism on prime-to-`p` torsion, and the Frobenius endomorphism of
-the reduction.  None of the three exists in this tree.  What the cut
-buys is that they are now needed to prove ONE statement about points of
-`A`, instead of being needed inside a statement about characteristic
-polynomials over an abstract coefficient ring.
+the reduction.  None of the three exists in this tree — re-checked
+2026-07-27, see the subsection note above for the command.  **That is
+still true and this statement is nonetheless PROVEN**, because the three
+had only to be STATED for the cut, not proved: they are now the two
+leaves above, `exists_finset_frobSpecialization_of_mult` (good reduction,
+the reduction map, and the specialization injectivity) and
+`exists_frobEndoCharEq_of_mult_finiteBase` (the Frobenius endomorphism's
+characteristic equation, over a finite field).  So the obligation moved
+rather than vanishing, and it moved into two subtrees with disjoint
+literature — which is the whole gain.
 
 SUBSUMPTION — DONE 2026-07-27, and it is why this leaf now sits HERE.
 This leaf subsumes what used to be the independent sibling trace leaf
@@ -8343,24 +8572,29 @@ now PROVEN over it (see that docstring for the argument, and for the one
 extra input — the injective embedding `ι : O →+* ℚ̄_q` — that the
 frame-ful sibling `weilCoeffs_fst_eq_of_frobTorsionEndo` does not need).
 The declaration was moved above the trace leaf for exactly that reason;
-nothing else about it changed.  So a prover of THIS statement closes two
-leaves at once, and the given-frame Weil cluster now has exactly two
-open leaves left: this one and the determinant leaf
-`exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult`.
+nothing else about it changed.  Closing this statement therefore closed
+TWO leaves, and the given-frame Weil cluster now has exactly ONE open
+leaf left, the determinant leaf
+`exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult` —
+plus, as of this cut, the two new frame-free ones above.
 
-ROUTE STATUS, re-checked 2026-07-27 against the whole tree: the three
-missing inputs named above are still missing, and the check is cheap to
-repeat — `grep -rl 'Neron\|NéronModel' Fermat/` finds only
-`FreyCurve/MazurTorsion.lean`, `ModularCurve/X0.lean` and
+ROUTE STATUS, re-checked 2026-07-27 against the whole tree and STILL
+CURRENT: the three missing inputs named above are still missing, and the
+check is cheap to repeat — `grep -rl 'Neron\|NéronModel' Fermat/` finds
+only `FreyCurve/MazurTorsion.lean`, `ModularCurve/X0.lean` and
 `EllipticCurve/MordellWeil.lean`, all of them about elliptic curves over
 `ℚ` rather than abelian schemes, and `~/cs/FLT` has no Néron model, no
-abelian variety and no Frobenius endomorphism either.  So this leaf is
-gated on machinery that must be BUILT, not located; that is a subtree,
-not a step, and no reformulation of the statement shortens it.  The
-statement itself is not the obstruction: it has already been reduced as
-far as a frame-free statement can go, since every remaining quantifier
-(`∃ t` before `∀ I`, `I.IsMaximal`, `q ∉ w`) is shown load-bearing
-above. -/
+abelian variety and no Frobenius endomorphism either.
+
+**The correction this proof makes to the previous version of this
+paragraph** is its last sentence, which read "no reformulation of the
+statement shortens it".  That is right about the STATEMENT and wrong as
+a conclusion about the CUT: the statement really cannot be weakened —
+every remaining quantifier (`∃ t` before `∀ I`, `I.IsMaximal`, `q ∉ w`)
+is shown load-bearing above — but it can be *decomposed*, because the
+missing machinery only had to be written down, not proved.  The seam is
+the reduction map at `w`, and the two halves it produces are stated in
+the subsection note above together with the audit of what each carries. -/
 theorem exists_frobTorsionEndo_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -8387,8 +8621,76 @@ theorem exists_frobTorsionEndo_of_mult
               = m.act (t w)
                   (ab.galSMul x
                     (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
-                      (Field.AbsoluteGaloisGroup.adicArithFrob w)) y) :=
-  sorry
+                      (Field.AbsoluteGaloisGroup.adicArithFrob w)) y) := by
+  classical
+  -- `A[J]` is closed under the group law and under the real
+  -- multiplication: both are `mem_torsion_iff` plus one axiom of `Mult`.
+  have hTadd : ∀ (J : Ideal (NumberField.RingOfIntegers D)) (u v : GeomFibrePt f x),
+      u ∈ (m.torsion x J).1 → v ∈ (m.torsion x J).1 → ab.add u v ∈ (m.torsion x J).1 := by
+    intro J u v hu hv
+    rw [mem_torsion_iff] at hu hv ⊢
+    intro a ha
+    rw [m.act_addPt a u v, hu a ha, hv a ha]
+    exact ab.zero_add _
+  have hTact : ∀ (J : Ideal (NumberField.RingOfIntegers D))
+      (c : NumberField.RingOfIntegers D) (u : GeomFibrePt f x),
+      u ∈ (m.torsion x J).1 → m.act c u ∈ (m.torsion x J).1 := by
+    intro J c u hu
+    rw [mem_torsion_iff] at hu ⊢
+    intro a ha
+    rw [← m.act_mul a c u, mul_comm, m.act_mul c a u, hu a ha]
+    letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+    letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+      m.module (specAlgClos F ≫ x)
+    exact smul_zero c
+  obtain ⟨bad, hbad⟩ := exists_finset_frobSpecialization_of_mult m x hdim
+  -- At a place of good reduction, transport the finite-field identity
+  -- back along the reduction map.
+  have key : ∀ w ∉ bad, ∃ t : NumberField.RingOfIntegers D,
+      ∀ q : ℕ, q.Prime →
+        ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+          (q : NumberField.RingOfIntegers D) ∈ I →
+          (q : NumberField.RingOfIntegers F) ∉ w.asIdeal →
+          ∀ (n : ℕ) (y : GeomFibrePt f x), y ∈ (m.torsion x (I ^ n)).1 →
+            ab.add
+              (ab.galSMul x
+                (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+                  (Field.AbsoluteGaloisGroup.adicArithFrob w))
+                (ab.galSMul x
+                  (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+                    (Field.AbsoluteGaloisGroup.adicArithFrob w)) y))
+              (m.act ((Ideal.absNorm w.asIdeal : ℕ) : NumberField.RingOfIntegers D) y)
+              = m.act t
+                  (ab.galSMul x
+                    (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+                      (Field.AbsoluteGaloisGroup.adicArithFrob w)) y) := by
+    intro w hw
+    obtain ⟨A', f', ab', m', σ, e, hfin, hcard, hdim', hσ, hadd, hact, htors⟩ := hbad w hw
+    obtain ⟨t, ht⟩ :=
+      exists_frobEndoCharEq_of_mult_finiteBase hfin _ hcard ab' m' hdim' σ hσ
+    refine ⟨t, ?_⟩
+    intro q hq I hI hqI hqw n y hy
+    obtain ⟨hinj, hint⟩ := htors q hq hqw I hI hqI n
+    set Frob := Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+      (Field.AbsoluteGaloisGroup.adicArithFrob w) with hFrob
+    have hy1 : ab.galSMul x Frob y ∈ (m.torsion x (I ^ n)).1 := (m.torsion x (I ^ n)).2 _ _ hy
+    have hy2 : ab.galSMul x Frob (ab.galSMul x Frob y) ∈ (m.torsion x (I ^ n)).1 :=
+      (m.torsion x (I ^ n)).2 _ _ hy1
+    refine hinj (hTadd _ _ _ hy2 (hTact _ _ _ hy)) (hTact _ _ _ hy1) ?_
+    calc e (ab.add (ab.galSMul x Frob (ab.galSMul x Frob y))
+            (m.act ((Ideal.absNorm w.asIdeal : ℕ) : NumberField.RingOfIntegers D) y))
+        = ab'.add (e (ab.galSMul x Frob (ab.galSMul x Frob y)))
+            (e (m.act ((Ideal.absNorm w.asIdeal : ℕ) : NumberField.RingOfIntegers D) y)) :=
+          hadd _ _
+      _ = ab'.add (ab'.galSMul _ σ (ab'.galSMul _ σ (e y)))
+            (m'.act ((Ideal.absNorm w.asIdeal : ℕ) : NumberField.RingOfIntegers D) (e y)) := by
+          rw [hint _ hy1, hint _ hy, hact]
+      _ = m'.act t (ab'.galSMul _ σ (e y)) := ht (e y)
+      _ = m'.act t (e (ab.galSMul x Frob y)) := by rw [hint _ hy]
+      _ = e (m.act t (ab.galSMul x Frob y)) := (hact _ _).symm
+  refine ⟨fun w => if hw : w ∈ bad then 0 else (key w hw).choose, bad, ?_⟩
+  intro w hw q hq I hI hqI hqw n y hy
+  simpa only [dif_neg hw] using (key w hw).choose_spec q hq I hI hqI hqw n y hy
 
 /-- **TRACE: the linear coefficient of the Frobenius characteristic
 polynomial of a frame lies in `j(𝒪_D)`** (PROVEN 2026-07-27 over the
