@@ -14341,8 +14341,12 @@ the three that remain in this subsection are strictly smaller:
 * `isX0CoarseModuli_specialOpen_of_curveModel` — good reduction of the
   `Γ₀(N)`-problem at `q ∤ N`, i.e. the special fibre of the integral open
   part is `Y_0(N)/𝔽_q` with finite cusp locus;
-* `exists_x0JGenericOpen_of_curveModel` — the generic fibre of the open
-  part, and Igusa's integrality of `j` on the model.
+* `exists_genericOpenIso_of_curveModel` and
+  `exists_x0IntegralJ_of_curveModel` — the generic fibre of the open
+  part, and Igusa's integrality of `j` on the model.  These two were one
+  leaf (`exists_x0JGenericOpen_of_curveModel`, now PROVEN over them)
+  until 2026-07-27; the split is along the geometric/modular line and
+  neither mentions the other's data.
 
 What made that possible was closing the YONEDA axis, which the old
 verdict on `exists_x0JOpenModel_of_curveModel` itself named as the
@@ -15340,10 +15344,16 @@ along the modular/formal line rather than along the generic/special one:
   moduli space over `ℤ_(q)` is the moduli space over `𝔽_q`, and the cusp
   locus stays finite.  This is good reduction of the `Γ₀(N)`-problem at
   `q ∤ N` (Deligne–Rapoport III; Katz–Mazur 8.6), and it is modular;
-* `exists_x0JGenericOpen_of_curveModel` — the GENERIC fibre of the open
-  part is `Y` compatibly with `cm.genX`, and `j` is a regular function on
-  `𝒴` valued in `ℤ_(q)` on integral sections.  The second half is Igusa's
-  good-reduction statement for the `j`-line.
+* the GENERIC fibre of the open part is `Y` compatibly with `cm.genX`,
+  and `j` is a regular function on `𝒴` valued in `ℤ_(q)` on integral
+  sections.  This was ONE leaf,
+  `exists_x0JGenericOpen_of_curveModel`, until 2026-07-27, and is now
+  PROVEN over two: `exists_genericOpenIso_of_curveModel` (geometric — the
+  given `Y` and the model's generic open fibre are the same open
+  subscheme of `X`, reduced by Yoneda to a single isomorphism filling a
+  single triangle) and `exists_x0IntegralJ_of_curveModel` (modular —
+  Igusa's good-reduction statement for the `j`-line).  See the
+  sub-subsection *Yoneda on the GENERIC side* below.
 
 Note what is NOT assumed, exactly as before the cut: `q` is not required
 to be odd.  Mazur needs `q ≠ 2` for the FORMAL IMMERSION, which is a
@@ -15490,34 +15500,306 @@ structure IsX0JGenericOpen (N q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
   jm_gen : ∀ y : RelPoint strY (𝟙 SpecQ),
     hj.jm y = jmGen (genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)
 
-/-- **The generic open part and the integral `j` exist over a given curve
-model** (sorry node — Igusa, plus the generic fibre of the open part).
+/-! ##### Yoneda on the GENERIC side: the comparison isomorphism
 
-TRUE for `q ∤ N`.  Two statements, kept in one leaf because both are read
-off the SAME model and `jm_gen` ties them together:
+The special fibre of the open part cost no leaf at all, because `Y'` was
+never posited: it is `𝒴 ×_{ℤ_(q)} 𝔽_q` by construction, so the fibre
+identification is `fibreIdentPullback` and the inclusion is
+`IsFibreIdent.openSection`.
 
-* the generic fibre of `𝒴` is `Y` compatibly with `cm.genX` and the two
-  open immersions.  Note this is NOT formal in the way the special side
-  turned out to be: `cm` identifies the generic fibre of the PROPER model
-  with `X`, and there is nothing in `IsX0CurveModel` forcing the model's
-  open part to restrict to the given `Y ⊆ X` rather than to some other
-  dense open.  It is true because both are the complement of the cusp
-  locus, which is a statement about the model;
-* `j` is a regular function on `𝒴`, valued in `ℤ_(q)` on integral
-  sections.  This is Igusa's good-reduction statement for the `j`-line at
-  `q ∤ N`, and it is the only genuinely modular input left on the generic
-  side.
+The generic side is genuinely different, and the difference is exactly
+that `Y` IS posited: it comes from `hc` and `hX`, not from the model.  So
+what is open here is a COMPARISON — the assertion that the given `Y` and
+the model's generic open fibre `𝒴 ×_{ℤ_(q)} ℚ` are the same open
+subscheme of `X`.
 
-IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
-REFUTE THAT: the `j`-half needs the `j`-line over `ℤ_(q)`, and the survey
-recorded in `exists_x0CurveModel_of_base` found no integral model of a
-modular curve in mathlib, `~/cs/FLT` or this project.  Producing one
-refutes it.  **The Yoneda axis, which the previous version of this
-verdict named as the cheaper attack, is now CLOSED** — see
-`IsFibreIdent.compareIso` — and the part of the old leaf it governed is
-proven, which is why this statement is strictly smaller than the one it
-replaces. -/
-theorem exists_x0JGenericOpen_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
+That comparison is a single morphism plus a single triangle, and the
+three functorial fields it was previously carried by — `genY`,
+`genY_nat`, `genX_j` — are Yoneda-equivalent to it.  Turning them into
+theorems over it is the same trade the special side already got, and it
+is what makes `exists_genericOpenIso_of_curveModel` below strictly
+smaller than the `∀`-families it replaces:
+
+* `genY` and `genY_nat` become `IsFibreIdent.ofIso` applied to
+  `fibreIdentPullback` — the model's generic open fibre IS a pullback, so
+  transporting along the comparison isomorphism is all that is needed;
+* `genX_j` becomes `IsX0CurveModel.genX_genericOpen`, proved from
+  `IsFibreIdent.apply_eq_comp` and
+  `IsFibreIdent.openSection_universalPoint` exactly as `spX_specialOpen`
+  is proved from `IsFibreIdent.apply_openSection`.
+
+The comparison is moreover UNIQUE (`genericOpenIso_unique`), because
+`IsFibreIdent.openSection` is an open immersion and hence a mono.  That
+matters beyond tidiness: it is what makes the `gi` argument of
+`IsX0IntegralJ` below a *pinned* datum rather than an arbitrary
+identification, so `jm_gen` cannot be satisfied by relabelling. -/
+
+/-- **An isomorphism over the base induces an equivalence of relative
+points** (PROVEN).
+
+`ι : A'' ≅ A'` with `ι.hom ≫ f' = f''` is an isomorphism in `Over S'`, so
+it induces a bijection on `T`-points over every base point; both
+directions are composition with `ι`, and the round trips are
+`Iso.hom_inv_id` / `Iso.inv_hom_id`. -/
+def relPointOfIso {A' A'' S' T : Scheme.{0}} {f' : A' ⟶ S'} {f'' : A'' ⟶ S'}
+    (ι : A'' ≅ A') (hι : ι.hom ≫ f' = f'') (g : T ⟶ S') :
+    RelPoint f'' g ≃ RelPoint f' g where
+  toFun x := ⟨x.1 ≫ ι.hom, by rw [Category.assoc, hι, x.2]⟩
+  invFun y := ⟨y.1 ≫ ι.inv, by
+    rw [Category.assoc, show ι.inv ≫ f'' = f' by
+      rw [← hι, ← Category.assoc, ι.inv_hom_id, Category.id_comp], y.2]⟩
+  left_inv x := Subtype.ext (by
+    show (x.1 ≫ ι.hom) ≫ ι.inv = x.1
+    rw [Category.assoc, ι.hom_inv_id, Category.comp_id])
+  right_inv y := Subtype.ext (by
+    show (y.1 ≫ ι.inv) ≫ ι.hom = y.1
+    rw [Category.assoc, ι.inv_hom_id, Category.comp_id])
+
+/-- **A fibre identification transports along an isomorphism over the
+fibre base** (PROVEN).
+
+If `f' : A' ⟶ S'` is the fibre of `f` along `s`, and `A''` is isomorphic
+to `A'` over `S'`, then `f''` is the fibre of `f` along `s` too.
+Naturality is `Category.assoc`, since both sides of `nat` are composition
+with `ι.hom` followed by the transported equivalence.
+
+This is the lemma that converts the comparison isomorphism of the generic
+open part into `genY` together with `genY_nat`: applied to
+`fibreIdentPullback`, it says that anything isomorphic to
+`𝒴 ×_{ℤ_(q)} ℚ` over `ℚ` is the generic fibre of `𝒴`, functorially. -/
+def IsFibreIdent.ofIso {S S' A A' A'' : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S}
+    {f' : A' ⟶ S'} {f'' : A'' ⟶ S'} (e : IsFibreIdent s f f')
+    (ι : A'' ≅ A') (hι : ι.hom ≫ f' = f'') : IsFibreIdent s f f'' where
+  toEquiv g g₀ h := (relPointOfIso ι hι g).trans (e.toEquiv g g₀ h)
+  nat := by
+    intro T' T h' g g' hg g₀ g₀' h₀ h₀' x
+    have hstep : relPointOfIso ι hι g' (RelPoint.pre h' hg x)
+        = RelPoint.pre h' hg (relPointOfIso ι hι g x) :=
+      Subtype.ext (Category.assoc _ _ _)
+    show e.toEquiv g' g₀' h₀' (relPointOfIso ι hι g' (RelPoint.pre h' hg x)) = _
+    rw [hstep]
+    exact e.nat h' hg h₀ h₀' _
+
+/-- **The generic fibre identification of the OPEN part of a curve
+model** (PROVEN, over the comparison isomorphism).
+
+`genY` and `genY_nat` of `IsX0JGenericOpen`, reconstructed: the model's
+generic open fibre is the pullback `𝒴 ×_{ℤ_(q)} ℚ`, which is a fibre by
+`fibreIdentPullback`, and `ι` transports that to `Y` by
+`IsFibreIdent.ofIso`.
+
+The hypothesis `hι` — that `ι` carries the reconstructed inclusion
+`IsFibreIdent.openSection cm.genIdent cm.model.comm` to `hX.j` — is what
+makes this the RIGHT identification rather than merely some bijection:
+without it, `ι` could be any automorphism of the generic open fibre and
+`genX_j` below would be false.  It also supplies, for free, that `ι` is a
+morphism over `ℚ`, which is why no separate hypothesis says so. -/
+noncomputable def IsX0CurveModel.genericOpen {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X X' XZ YZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (hX : IsCompactificationY0 strY strX)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
+    IsFibreIdent (SpecLoc.generic R) ystr strY :=
+  (fibreIdentPullback (SpecLoc.generic R) ystr).ofIso ι (by
+    rw [← IsFibreIdent.openSection_comp cm.genIdent cm.model.comm, ← Category.assoc, hι,
+      hX.«over»])
+
+/-- **The comparison isomorphism is UNIQUE** (PROVEN).
+
+`IsFibreIdent.openSection cm.genIdent cm.model.comm` is an open immersion
+(`IsFibreIdent.isOpenImmersion_openSection`, using `cm.model.isOpen`),
+hence a monomorphism, so `ι.hom` is determined by the triangle it is
+asked to fill.
+
+This is why `exists_genericOpenIso_of_curveModel` may be stated
+existentially without loss: the `IsFibreIdent` that `IsX0IntegralJ` is
+stated over does not depend on which witness the leaf returns, so the
+`j`-leaf below is a statement about the genuine generic fibre and not
+about an arbitrary relabelling of it. -/
+theorem IsX0CurveModel.genericOpenIso_unique {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    {hXj : Y ⟶ X} (ι₁ ι₂ : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (h₁ : ι₁.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hXj)
+    (h₂ : ι₂.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hXj) :
+    ι₁ = ι₂ := by
+  haveI : IsOpenImmersion jZ := cm.model.isOpen
+  haveI : IsOpenImmersion (IsFibreIdent.openSection cm.genIdent cm.model.comm) :=
+    IsFibreIdent.isOpenImmersion_openSection _ _
+  exact Iso.ext ((cancel_mono _).mp (h₁.trans h₂.symm))
+
+/-- **`genX_j` for the reconstructed generic open part** (PROVEN): the
+generic identification of curves carries `hX.j` to `jZ`.
+
+The exact analogue of `IsX0CurveModel.spX_specialOpen`, and proved the
+same way — both sides reduce, by `IsFibreIdent.apply_eq_comp`, to
+composition with the universal point, and
+`IsFibreIdent.openSection_universalPoint` identifies that composite with
+the pullback projection followed by `jZ`.  The only extra step over the
+special side is inserting `ι.hom`, which `hι` supplies. -/
+theorem IsX0CurveModel.genX_genericOpen {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X X' XZ YZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (hX : IsCompactificationY0 strY strX)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j)
+    {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (y : RelPoint strY g) :
+    cm.genX g g₀ h (relSectionAlong hX.j hX.«over» y)
+      = relSectionAlong jZ cm.model.comm
+          ((cm.genericOpen hX ι hι).toEquiv g g₀ h y) := by
+  refine Subtype.ext ?_
+  show ((cm.genIdent.toEquiv g g₀ h) (relSectionAlong hX.j hX.«over» y)).1
+      = ((y.1 ≫ ι.hom) ≫ Limits.pullback.fst ystr (SpecLoc.generic R)) ≫ jZ
+  rw [IsFibreIdent.apply_eq_comp]
+  show (y.1 ≫ hX.j) ≫ cm.genIdent.universalPoint.1
+      = ((y.1 ≫ ι.hom) ≫ Limits.pullback.fst ystr (SpecLoc.generic R)) ≫ jZ
+  rw [← hι]
+  simp only [Category.assoc]
+  rw [IsFibreIdent.openSection_universalPoint]
+
+/-- **The generic fibre of the open part of the curve model is `Y`, as an
+open subscheme of `X`** (sorry node — good reduction of the
+`Γ₀(N)`-problem, generic side).
+
+TRUE for `q ∤ N`.  This is the FIRST of the two statements the old
+`exists_x0JGenericOpen_of_curveModel` bundled, reduced by Yoneda from a
+`∀`-family of equivalences with a naturality axiom and a compatibility
+axiom to ONE isomorphism filling ONE triangle:
+
+    Y ---ι---> 𝒴 ×_{ℤ_(q)} ℚ ---openSection---> X          equals   hX.j
+
+`openSection` here is the reconstructed inclusion of the model's generic
+open fibre into `X = 𝒳 ×_{ℤ_(q)} ℚ`, which is PROVEN
+(`IsFibreIdent.openSection`, an open immersion by
+`isOpenImmersion_openSection`).  So the leaf says precisely: *the two
+open subschemes of `X` — the given `Y`, and the generic fibre of the
+model's open part — coincide.*
+
+**Why this is not formal.**  `cm` identifies the generic fibre of the
+PROPER model with `X`, and nothing in `IsX0CurveModel` forces the model's
+open part to restrict to the given `Y ⊆ X` rather than to some other
+dense open.  It is true because both are the complement of the cusp
+locus, which is a statement about the model; and the reason `Y` is
+determined at all is `_hc`, the coarse-moduli property.
+
+**`_hc` IS LOAD-BEARING and the statement is FALSE without it.**  Drop
+`_hc` and take `Y` to be `X` minus the cusps minus one further rational
+point: `hX` still holds (the inclusion is an open immersion, dense, and
+`X` is still proper and smooth), while the model's generic open fibre is
+strictly larger, so no isomorphism can fill the triangle.  Only the
+coarse-moduli property pins `Y` as *the* `Y_0(N)`.  `_hqN` is load-bearing
+for the usual reason — at `q ∣ N` the model is not smooth.  Every
+hypothesis is underscored only because the proof is a `sorry`.
+
+**IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
+REFUTE THAT.**  The route is: `hc.universal` applied to
+`Limits.pullback.snd ystr (SpecLoc.generic R)`, with the classifying map
+obtained from `cm.model.coarse.classify` composed with
+`(fibreIdentPullback (SpecLoc.generic R) ystr).toEquiv _ _ rfl |>.symm`,
+already produces a canonical comparison morphism `u : Y ⟶ 𝒴 ×_{ℤ_(q)} ℚ`
+over `ℚ` — that half needs nothing new and can be written today.  What is
+missing is the CONVERSE initiality, i.e. that the generic fibre of a
+coarse moduli space over `ℤ_(q)` is again a coarse moduli space, which is
+base change of coarse spaces (true here because `q ∤ N` makes the
+`Γ₀(N)`-problem tame and `Spec ℚ ⟶ Spec ℤ_(q)` is flat; Deligne–Rapoport
+III, Katz–Mazur 8.6).  **Exhibiting `IsCoarseModuliY0 N (pullback.snd ystr
+(SpecLoc.generic R))` refutes the verdict**, since `hc.universal` and that
+one's `universal` then give mutually inverse maps.  The remaining
+`hX.j`-compatibility is separate and small: `hX.j` and `u ≫ openSection`
+are both `hc`-classifying, so they agree by the uniqueness clause of
+`hc.universal`.
+
+Note which axis this verdict was searched along: the MODULI axis.  The
+Yoneda axis is closed (`IsFibreIdent.compareIso`, and everything in this
+sub-subsection), which is what shrank the statement to a single
+isomorphism. -/
+theorem exists_genericOpenIso_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
+    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (_hbase : IsReductionBase q R toF)
+    {Y X X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    (_hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX)
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
+    ∃ ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R),
+      ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j :=
+  sorry
+
+/-- **The `j`-invariant of an integral model of `Y_0(N)`, on the three
+kinds of point.**
+
+The `j`-half of `IsX0JGenericOpen`, extracted verbatim and stated over
+NOTHING but what it actually mentions: the integral open model `ystr`,
+the `j`-map `jm` of the generic curve, and the identification `gi` of the
+generic fibre of `ystr` with `Y`.  In particular it mentions neither `X`
+nor `X'` nor the compactification, which is the point of separating it —
+the two leaves of this subsection are independent inputs and can be
+attacked by different hands.
+
+`gi` is not a free parameter in practice: at the use site it is
+`cm.genericOpen hX ι hι`, and `IsX0CurveModel.genericOpenIso_unique`
+shows that datum does not depend on the choice of `ι`.  So `jm_gen` is a
+statement about the genuine generic fibre.
+
+The content is Igusa's good-reduction statement for the `j`-line at
+`q ∤ N`: `j` extends to a regular function on the integral model, so it
+takes values in `ℤ_(q)` on integral sections (`jmZ`), and reduces to the
+`j`-invariant of the reduced point (`jmSp_pre`). -/
+structure IsX0IntegralJ (q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
+    {Y YZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {ystr : YZ ⟶ SpecLoc R}
+    (jm : RelPoint strY (𝟙 SpecQ) → ℚ)
+    (gi : IsFibreIdent (SpecLoc.generic R) ystr strY) where
+  /-- the `j`-invariant of an integral point, INTEGRAL -/
+  jmZ : RelPoint ystr (𝟙 (SpecLoc R)) → R
+  /-- the `j`-invariant on the generic fibre -/
+  jmGen : RelPoint ystr (SpecLoc.generic R) → ℚ
+  /-- the `j`-invariant on the special fibre -/
+  jmSp : RelPoint ystr (SpecLoc.special toF) → ZMod q
+  /-- the generic `j`-invariant of an integral point is its integral one -/
+  jmGen_pre : ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+    jmGen (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ) = ((jmZ yZ : R) : ℚ)
+  /-- the special `j`-invariant of an integral point is the reduction of
+  its integral one -/
+  jmSp_pre : ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+    jmSp (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) yZ) = toF (jmZ yZ)
+  /-- the generic `j`-invariant is the `j`-map the consumers use -/
+  jm_gen : ∀ y : RelPoint strY (𝟙 SpecQ),
+    jm y = jmGen (gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)
+
+/-- **The integral `j`-invariant exists on the model** (sorry node —
+Igusa).
+
+TRUE for `q ∤ N`.  This is the SECOND of the two statements the old
+`exists_x0JGenericOpen_of_curveModel` bundled, and the only genuinely
+modular input left on the generic side: `j` is a regular function on
+`𝒴`, valued in `ℤ_(q)` on integral sections, compatible with the `j`-map
+of the generic curve and with reduction.
+
+The classical statement is Igusa's: `X_0(N)` has good reduction at
+`q ∤ N` and the `j`-line `Y_0(1) ≅ 𝔸¹` has an integral model over
+`ℤ[1/N]`, so the degeneracy map `Y_0(N) ⟶ Y_0(1)` is a morphism of
+integral models and `j` of an integral point is integral.
+
+**IRREDUCIBLE at this pin, and the CHECK THAT WOULD REFUTE THAT**: it
+needs the `j`-line over `ℤ_(q)`, and the survey recorded in
+`exists_x0CurveModel_of_base` found no integral model of a modular curve
+in mathlib, `~/cs/FLT` or this project.  Producing one — even just
+`Y_0(1)` over `ℤ_(q)` together with the degeneracy map from `𝒴` — refutes
+it.  Note the axis searched is the MODULI/INTEGRAL-MODEL axis; nothing
+here is blocked by Yoneda, unlike the leaf above before this cut.
+
+`ι` and `hι` are hypotheses rather than a second existential because the
+`gi` this is stated over must be the genuine generic-fibre
+identification; `IsX0CurveModel.genericOpenIso_unique` shows the choice
+is immaterial.  If `exists_genericOpenIso_of_curveModel` should turn out
+false, this leaf becomes vacuous rather than false, which is the safe
+direction. -/
+theorem exists_x0IntegralJ_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
     (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
     (_hbase : IsReductionBase q R toF)
     {Y X X' XZ YZ : Scheme.{0}}
@@ -15525,9 +15807,54 @@ theorem exists_x0JGenericOpen_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q
     {hc : IsCoarseModuliY0 N strY}
     (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
     {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
-    Nonempty (IsX0JGenericOpen N q R toF hX hj cm) :=
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
+    Nonempty (IsX0IntegralJ q R toF hj.jm (cm.genericOpen hX ι hι)) :=
   sorry
+
+/-- **The generic open part and the integral `j` exist over a given curve
+model** (PROVEN over two smaller leaves, was a sorry node until
+2026-07-27).
+
+The two statements the old leaf bundled are now separate, and the glue
+between them — which is what kept them together — is proven here:
+
+1. `exists_genericOpenIso_of_curveModel` supplies the comparison
+   isomorphism `ι` of `Y` with the model's generic open fibre;
+2. `genY` and `genY_nat` are then `IsX0CurveModel.genericOpen`, i.e.
+   `fibreIdentPullback` transported along `ι` by `IsFibreIdent.ofIso`;
+3. `genX_j` is `IsX0CurveModel.genX_genericOpen`, a theorem — the exact
+   analogue of `spX_specialOpen` on the special side;
+4. `exists_x0IntegralJ_of_curveModel` supplies the six `j`-fields, whose
+   only dependence on the geometry is through the `gi` of step 2, which
+   `genericOpenIso_unique` pins.
+
+So the residue is one geometric leaf (the two opens of `X` coincide) and
+one modular leaf (Igusa), neither of which mentions the other's data. -/
+theorem exists_x0JGenericOpen_of_curveModel (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
+    {Y X X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
+    Nonempty (IsX0JGenericOpen N q R toF hX hj cm) := by
+  obtain ⟨ι, hι⟩ :=
+    exists_genericOpenIso_of_curveModel N q hN hq hqN R toF hbase hc hX cm
+  obtain ⟨ij⟩ :=
+    exists_x0IntegralJ_of_curveModel N q hN hq hqN R toF hbase hX hj cm ι hι
+  exact ⟨{ genY := (cm.genericOpen hX ι hι).toEquiv
+           genY_nat := (cm.genericOpen hX ι hι).nat
+           genX_j := fun g g₀ h y => cm.genX_genericOpen hX ι hι g g₀ h y
+           jmZ := ij.jmZ
+           jmGen := ij.jmGen
+           jmSp := ij.jmSp
+           jmGen_pre := ij.jmGen_pre
+           jmSp_pre := ij.jmSp_pre
+           jm_gen := ij.jm_gen }⟩
 
 /-- **The open-part fibres and the integral `j` exist over a given curve
 model** (PROVEN over two smaller leaves, was a sorry node until
