@@ -32820,7 +32820,30 @@ counting over `𝔽_q`), not another cut. Mathlib at this pin has neither
 the Weil conjectures nor any zeta function of a curve over a finite
 field (checked 2026-07-26: `Mathlib/NumberTheory/` contains no
 `RiemannHypothesis` for curves, only `LSeries/RiemannZeta.lean`), and
-`~/cs/FLT` has nothing in this direction either. -/
+`~/cs/FLT` has nothing in this direction either.
+
+WHICH ROUTE TO THE WEIL BOUND, AND WHO ELSE NEEDS IT (2026-07-26,
+appended by the task that closed the two Atkin–Lehner siblings below;
+the analysis above is that task's independent confirmation of the two
+dead ends, reached before this note was merged). Accepting that the
+geometry must be supplied, the cheapest formalizable route on record is
+**Stepanov–Bombieri** — the Weil bound for curves obtained with no
+`ℓ`-adic cohomology and no Jacobian, which is exactly what makes it
+tractable here (Bombieri, *Counting points on curves over finite
+fields*; Ireland–Rosen ch. 11 for an accessible treatment).
+
+**The same theorem is required elsewhere in this tree**, by
+`exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` in
+`Modularity/KhareWintenberger.lean`, which needs Lang–Weil and whose
+recorded cheapest route is also Stepanov–Bombieri; a development of it
+was in flight there when this note was written. Two independent
+Weil-bound developments are the most expensive duplication available in
+this tree, so a future owner of THIS leaf should build on that one
+rather than start over: the shared object is the bound for curves over
+`𝔽_q`, and only the reduction to it differs — Eichler–Shimura plus good
+reduction of `X₀(M)` here, the point count of a geometrically
+irreducible variety there. This leaf was deliberately NOT attempted for
+that reason. -/
 theorem norm_qCoeff_le_two_mul_sqrt_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
@@ -32955,10 +32978,297 @@ theorem exists_frobRoots_qCoeff_of_not_dvd {M : ℕ} (hM : 0 < M)
     exists_conjugate_split_of_abs_le_two_mul_sqrt q r habs
   exact ⟨α, β, hr.trans hsum, hα, hβ, hprod⟩
 
+/-! ### The Atkin–Lehner involution `W_Q`, as an honest slash operator
+
+TWELFTH DECOMPOSITION (2026-07-26).  The two bad-prime leaves below —
+`qCoeff_sq_eq_one_of_exactly_dvd` (`q ‖ M`) and `qCoeff_eq_zero_of_sq_dvd`
+(`q² ∣ M`) — were both recorded as IRREDUCIBLE citations of "Atkin–Lehner
+theory", with the explicit finding that no leaf-level cut of either is
+faithful.  That finding was CORRECT and it is not contradicted here: the
+reason those cuts fail is that every one of them re-states `a_q` in terms
+of an operator that is itself only pinned by `a_q`.  The audit's own
+prescription was *"a faithful cut needs `W_q` pinned INDEPENDENTLY of
+`a_q`, as a slash operator — that means building Atkin–Lehner properly"*.
+This section does that.
+
+Why the obvious `W_q`-existential is NOT a cut, so that nobody
+re-manufactures it: a leaf of the form `∃ W, W² = 1 ∧ W g = (−a_q)•g` is
+*equivalent* to `a_q² = 1`, because `W := (−a_q)•1` satisfies both
+conjuncts.  The content is entirely in **which** operator `W` is.  So the
+operator is built here first, with no reference to `g` or to `a_q`
+anywhere in its defining property:
+
+* `IsAtkinLehnerMatrix M Q A` — the classical shape `!![Q x, y; M z, Q w]`
+  with `det A = Q`;
+* `exists_isAtkinLehnerMatrix` (PROVEN) — such a matrix exists at every
+  exact divisor `Q ‖ M`, by Bézout on `gcd(Q, M/Q) = 1`.  This is what
+  makes the operator leaf below NON-VACUOUS: its characterizing clause
+  quantifies over Atkin–Lehner matrices, and there is at least one;
+* `atkinLehnerRep` — that integral matrix as an element of `GL₂(ℝ)`;
+* `exists_atkinLehnerOp` (LEAF) — the slash by ANY Atkin–Lehner matrix
+  preserves `S₂(Γ₀(M))`, does not depend on the choice of matrix, and
+  squares to the identity;
+* `atkinLehnerOp M Q` — the resulting `W_Q`, an honest bundled
+  endomorphism, junk outside the meaningful range in the usual way.
+
+`W_Q` is then UNIQUELY DETERMINED by `atkinLehnerOp_coe`, so the second
+leaf, `atkinLehnerOp_apply_eq_neg_qCoeff_smul`, is a genuine theorem
+about a specific operator rather than a repackaging of its own
+conclusion.
+
+WHY THE WEIGHT-TWO SLASH NEEDS NO RENORMALIZATION.  Mathlib's slash is
+`f ∣[k] A = σ(A)·f(A•τ)·|det A|^{k−1}·denom(A,τ)^{−k}`, i.e. it carries
+`det^{k−1}`, while the classical Atkin–Lehner operator carries `det^{k/2}`.
+At `k = 2` these agree (`det^1` both), so `f ∣[2] A` IS the classically
+normalized `W_Q` and no extra scalar is needed.  Since `det A = Q > 0`,
+`σ(A)` is the identity and no complex conjugation enters either.
+
+THE THREE FACTS THE OPERATOR LEAF BUNDLES, and the computation behind
+each, recorded so a successor can execute them rather than rediscover
+them.  Write `M = Q·M'` with `gcd(Q, M') = 1`, `A = !![Qx, y; Mz, Qw]`,
+`det A = Q(Qxw − M'yz) = Q`, and `γ = !![a, b; Mc, d] ∈ Γ₀(M)`.
+
+1. *Normalization* (`A⁻¹ γ A ∈ Γ₀(M)`, so the slash preserves the level).
+   `A⁻¹ = Q⁻¹·!![Qw, −y; −Mz, Qx]`, and `Q⁻¹·A⁻¹γA` has entries
+   `Qwax − xyM'c·Q/Q …`; concretely all four entries of `A⁻¹γA` are
+   divisible by `Q` exactly because every term either already carries a
+   factor `Q²` or carries `M = Q M'`, and the lower-left entry retains a
+   factor `M`.  Determinant `1` is automatic.
+2. *Independence of the matrix.*  If `A, A'` are both Atkin–Lehner
+   matrices for `(M, Q)` then `A'A⁻¹ = Q⁻¹·A'·adj A` is integral with
+   determinant `det A' · det(adj A)/Q² = Q·Q/Q² = 1` and lower-left entry
+   `M(z'w − w'z)`, hence lies in `Γ₀(M)`.  So `A' = γA` with `γ ∈ Γ₀(M)`
+   and `f ∣[2] A' = (f ∣[2] γ) ∣[2] A = f ∣[2] A` by level invariance.
+   The Atkin–Lehner matrices form a single coset `Γ₀(M)·W_Q`.
+3. *Involution.*  `A² = !![Q²x² + Myz, Qy(x+w); QMz(x+w), Myz + Q²w²]`
+   is `Q` times an integral matrix (again `M = Q M'` supplies the missing
+   factor), of determinant `Q²/Q² = 1` and lower-left divisible by `M`,
+   so `A² = Q·γ₀` with `γ₀ ∈ Γ₀(M)`.  The scalar `Q·1` acts trivially at
+   weight two (`|det|^{k−1}·denom^{−k} = Q²·Q^{−2} = 1` and `Q·1` fixes
+   `τ`), so `f ∣[2] A ∣[2] A = f ∣[2] γ₀ = f`.
+
+None of the three mentions a cusp form's coefficients, which is exactly
+the property the earlier audits found missing.
+
+CONCURRENCY NOTE (2026-07-26).  A sibling task was in flight on
+`exists_oldSubspace_complement_vanishing` above, whose prescription is
+also "build Atkin–Lehner".  The two needs are disjoint: that leaf needs
+the OLD/NEW decomposition and multiplicity one, this section needs the
+`W_Q` INVOLUTION.  Nothing here touches `oldSubspace`, `degeneracyOp` or
+the newform decomposition. -/
+
+section AtkinLehner
+
+open scoped Matrix ModularForm
+
+/-- An integral matrix is an **Atkin–Lehner matrix** for the exact
+divisor `Q ‖ M` when it has the classical shape `!![Q x, y; M z, Q w]`
+and determinant exactly `Q`.
+
+The three divisibility clauses plus `det A = Q` are equivalent to that
+shape: `Q ∣ A 0 0` and `Q ∣ A 1 1` give the diagonal, `M ∣ A 1 0` gives
+the lower-left, and `A 0 1` is unconstrained.  Stating it this way
+avoids existentially quantifying the four auxiliary integers, which
+keeps every consumer free of them. -/
+structure IsAtkinLehnerMatrix (M Q : ℕ) (A : Matrix (Fin 2) (Fin 2) ℤ) : Prop where
+  /-- `det A = Q`. -/
+  det_eq : A.det = (Q : ℤ)
+  /-- The upper-left entry is divisible by `Q`. -/
+  dvd_zero_zero : (Q : ℤ) ∣ A 0 0
+  /-- The lower-left entry is divisible by `M` — this is what makes
+  conjugation preserve `Γ₀(M)`. -/
+  dvd_one_zero : (M : ℤ) ∣ A 1 0
+  /-- The lower-right entry is divisible by `Q`. -/
+  dvd_one_one : (Q : ℤ) ∣ A 1 1
+
+/-- **Atkin–Lehner matrices exist at every exact divisor `Q ‖ M`**
+(PROVEN): with `u·Q + v·(M/Q) = 1` from Bézout — available exactly
+because `Q` and `M/Q` are coprime, which is what `Q ‖ M` means — the
+matrix `!![Q, −v; M, Q u]` has determinant
+`Q²u + Mv = Q·(uQ + v(M/Q)) = Q` and the three divisibilities on the
+nose.
+
+This lemma is what makes `exists_atkinLehnerOp` below NON-VACUOUS:
+that leaf characterizes `W_Q` by its action for every Atkin–Lehner
+matrix, and a characterization quantified over an empty set would pin
+nothing at all. -/
+theorem exists_isAtkinLehnerMatrix {M Q : ℕ} (hQ : Q ∣ M)
+    (hcop : Nat.Coprime Q (M / Q)) :
+    ∃ A : Matrix (Fin 2) (Fin 2) ℤ, IsAtkinLehnerMatrix M Q A := by
+  obtain ⟨u, v, huv⟩ : IsCoprime (Q : ℤ) ((M / Q : ℕ) : ℤ) :=
+    Nat.isCoprime_iff_coprime.mpr hcop
+  have hMQ : (Q : ℤ) * ((M / Q : ℕ) : ℤ) = (M : ℤ) := by
+    exact_mod_cast congrArg (Nat.cast : ℕ → ℤ) (Nat.mul_div_cancel' hQ)
+  refine ⟨!![(Q : ℤ), -v; (M : ℤ), (Q : ℤ) * u], ?_, ?_, ?_, ?_⟩
+  · rw [Matrix.det_fin_two_of]
+    have hexp : (Q : ℤ) * ((Q : ℤ) * u) - -v * (M : ℤ)
+        = (Q : ℤ) * (u * (Q : ℤ) + v * ((M / Q : ℕ) : ℤ)) := by
+      rw [← hMQ]; ring
+    rw [hexp, huv, mul_one]
+  · simp
+  · simp
+  · simp
+
+/-- The Atkin–Lehner matrix as an element of `GL₂(ℝ)` (junk value `1`
+when the determinant vanishes, which never happens for an actual
+Atkin–Lehner matrix, whose determinant is the positive integer `Q`). -/
+noncomputable def atkinLehnerRep (A : Matrix (Fin 2) (Fin 2) ℤ) : GL (Fin 2) ℝ :=
+  if h : (A.map (Int.cast : ℤ → ℝ)).det ≠ 0 then
+    Matrix.GeneralLinearGroup.mkOfDetNeZero _ h
+  else 1
+
+/-- The underlying real matrix of `atkinLehnerRep A` is `A` itself
+(PROVEN).  Needed by any successor proving `exists_atkinLehnerOp`, since
+every step there is a matrix identity. -/
+theorem atkinLehnerRep_coe {A : Matrix (Fin 2) (Fin 2) ℤ}
+    (h : (A.map (Int.cast : ℤ → ℝ)).det ≠ 0) :
+    ((atkinLehnerRep A : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ)
+      = A.map (Int.cast : ℤ → ℝ) := by
+  rw [atkinLehnerRep, dif_pos h]
+  rfl
+
+/-- **THE ATKIN–LEHNER OPERATOR `W_Q`** (sorry node, TWELFTH
+decomposition 2026-07-26): at an exact divisor `Q ‖ M` there is a
+`ℂ`-linear endomorphism of `S₂(Γ₀(M))` which acts as the weight-two
+slash by EVERY Atkin–Lehner matrix for `(M, Q)`, and which squares to
+the identity.
+
+This is the leaf that pins `W_Q`, and it mentions no cusp form's
+coefficients and no eigenvalue — that is the whole point of it.  Its
+three components, with the explicit integral-matrix computations
+discharging each, are recorded in the section docstring above:
+normalization of `Γ₀(M)` by an Atkin–Lehner matrix, independence of the
+choice of matrix (they form one `Γ₀(M)`-coset), and `A² = Q·γ₀` with
+`γ₀ ∈ Γ₀(M)` together with the triviality of the scalar `Q·1` at weight
+two.
+
+WHY IT IS BUNDLED rather than cut into those three.  The three facts
+cannot be stated separately until the operator exists, and the operator
+cannot be built without the first of them — so a split here would be
+circular.  A successor should prove this one leaf and then, if a finer
+API is wanted, DERIVE the three parts from it.
+
+The natural Lean route, given what this file already carries: mathlib's
+`CuspForm.translate f (atkinLehnerRep A)` is a cusp form on the
+CONJUGATE group `toConjAct (atkinLehnerRep A)⁻¹ • Γ₀(M)`, exactly as in
+`exists_cuspForm_heckeTransform` above; component 1 says that conjugate
+group IS `Γ₀(M)`, so — unlike the Hecke case, which needs
+`CuspForm.trace` over a coset enumeration — no trace is required and the
+translate can simply be transported along a subgroup equality.  That
+makes this materially cheaper than the Hecke stability already proven in
+this file.
+
+Missing from the pin: `Mathlib.NumberTheory.ModularForms` has no
+`AtkinLehner`, no `newform` and no `U_q`; `SlashActions.lean` plus the
+`CuspForm.translate` API is the whole starting point, and `~/cs/FLT` has
+nothing transferable (only the definite quaternionic inner product). -/
+theorem exists_atkinLehnerOp {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
+    (hcop : Nat.Coprime Q (M / Q)) :
+    ∃ W : Module.End ℂ (CuspForm (Gamma0GL M) 2),
+      (∀ A : Matrix (Fin 2) (Fin 2) ℤ, IsAtkinLehnerMatrix M Q A →
+          ∀ f : CuspForm (Gamma0GL M) 2,
+            ⇑(W f) = ⇑f ∣[(2 : ℤ)] atkinLehnerRep A) ∧
+        W * W = 1 :=
+  sorry
+
+/-- The unconditional form of `exists_atkinLehnerOp`, so that `W_Q` can
+be DEFINED at every pair `(M, Q)` (junk — the zero endomorphism —
+outside the meaningful range `0 < M`, `Q ‖ M`, which is all any
+statement below quantifies over).  Same pattern as
+`exists_heckeOpLinear_total` for `T_q`. -/
+theorem exists_atkinLehnerOp_total (M Q : ℕ) :
+    ∃ W : Module.End ℂ (CuspForm (Gamma0GL M) 2),
+      0 < M → Q ∣ M → Nat.Coprime Q (M / Q) →
+        ((∀ A : Matrix (Fin 2) (Fin 2) ℤ, IsAtkinLehnerMatrix M Q A →
+            ∀ f : CuspForm (Gamma0GL M) 2,
+              ⇑(W f) = ⇑f ∣[(2 : ℤ)] atkinLehnerRep A) ∧
+          W * W = 1) := by
+  by_cases h : 0 < M ∧ Q ∣ M ∧ Nat.Coprime Q (M / Q)
+  · obtain ⟨W, hW⟩ := exists_atkinLehnerOp h.1 h.2.1 h.2.2
+    exact ⟨W, fun _ _ _ => hW⟩
+  · exact ⟨0, fun h1 h2 h3 => absurd ⟨h1, h2, h3⟩ h⟩
+
+/-- **The Atkin–Lehner involution `W_Q` on `S₂(Γ₀(M))`** at an exact
+divisor `Q ‖ M` — the weight-two slash by an Atkin–Lehner matrix,
+bundled as an endomorphism.  Junk outside the meaningful range, which no
+statement about it looks at. -/
+noncomputable def atkinLehnerOp (M Q : ℕ) : Module.End ℂ (CuspForm (Gamma0GL M) 2) :=
+  (exists_atkinLehnerOp_total M Q).choose
+
+/-- `W_Q` acts by the slash by any Atkin–Lehner matrix (PROVEN from the
+leaf).  Together with `exists_isAtkinLehnerMatrix` this determines `W_Q`
+uniquely, which is what makes
+`atkinLehnerOp_apply_eq_neg_qCoeff_smul` below a theorem with content
+rather than a restatement. -/
+theorem atkinLehnerOp_coe {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
+    (hcop : Nat.Coprime Q (M / Q)) {A : Matrix (Fin 2) (Fin 2) ℤ}
+    (hA : IsAtkinLehnerMatrix M Q A) (f : CuspForm (Gamma0GL M) 2) :
+    ⇑(atkinLehnerOp M Q f) = ⇑f ∣[(2 : ℤ)] atkinLehnerRep A :=
+  ((exists_atkinLehnerOp_total M Q).choose_spec hM hQ hcop).1 A hA f
+
+/-- `W_Q² = 1` as endomorphisms (PROVEN from the leaf). -/
+theorem atkinLehnerOp_mul_self {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
+    (hcop : Nat.Coprime Q (M / Q)) :
+    atkinLehnerOp M Q * atkinLehnerOp M Q = 1 :=
+  ((exists_atkinLehnerOp_total M Q).choose_spec hM hQ hcop).2
+
+/-- `W_Q` is an involution, pointwise (PROVEN). -/
+theorem atkinLehnerOp_atkinLehnerOp {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
+    (hcop : Nat.Coprime Q (M / Q)) (f : CuspForm (Gamma0GL M) 2) :
+    atkinLehnerOp M Q (atkinLehnerOp M Q f) = f := by
+  have h := congrArg (fun F : Module.End ℂ (CuspForm (Gamma0GL M) 2) => F f)
+    (atkinLehnerOp_mul_self hM hQ hcop)
+  simpa using h
+
+/-- **THE ATKIN–LEHNER THEOREM at a prime exactly dividing the level**
+(sorry node, TWELFTH decomposition 2026-07-26): for `q ‖ M` the
+Atkin–Lehner involution acts on a normalized weight-two newform by the
+scalar `−a_q`.
+
+Classical content (Atkin–Lehner 1970 Theorem 3; Diamond–Shurman §5.8,
+Theorem 5.8.2): for a newform of weight `k` and trivial nebentypus at a
+prime exactly dividing the level, `a_q = −q^{k/2−1}·ε_q` where `ε_q` is
+the `W_q`-eigenvalue; at weight two the exponent is `0`, so `ε_q = −a_q`.
+
+WHY THIS IS NOT THE RESTATEMENT THE EARLIER AUDIT REFUTED.  That audit
+refuted the leaf `∃ W, W² = 1 ∧ W g = (−a_q)•g`, which is *equivalent*
+to `a_q² = 1` because `W := (−a_q)•1` satisfies it.  Here `W_q` is not
+existentially quantified: it is `atkinLehnerOp M q`, a specific
+endomorphism pinned by `atkinLehnerOp_coe` as the slash by an
+Atkin–Lehner matrix, with no reference to `g` or `a_q` in its definition
+— and `exists_isAtkinLehnerMatrix` shows the pinning set is nonempty.
+So this statement genuinely computes an eigenvalue of a known operator,
+and `a_q² = 1` then falls out of the INVOLUTION, which is the part that
+carries the `±1`.
+
+Missing from the pin: the `U_q`-eigenvalue computation on the newvector,
+i.e. the `q`-expansion of `g ∣[2] W_q` compared with `U_q g`. -/
+theorem atkinLehnerOp_apply_eq_neg_qCoeff_smul {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    atkinLehnerOp M q g = (-(qCoeff M g q)) • g :=
+  sorry
+
+/-- `q ‖ M` — a prime dividing `M` but with `q² ∤ M` — is exactly the
+statement that `q` and `M / q` are coprime (PROVEN).  This is the
+hypothesis shape the Atkin–Lehner operator needs, produced from the
+shape the coefficient leaves are stated in. -/
+theorem coprime_div_of_exactly_dvd {M q : ℕ} (hq : q.Prime) (hqM : q ∣ M)
+    (hqM2 : ¬ q ^ 2 ∣ M) : Nat.Coprime q (M / q) := by
+  refine (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd => hqM2 ?_
+  obtain ⟨t, ht⟩ := hdvd
+  refine ⟨t, ?_⟩
+  have h := Nat.mul_div_cancel' hqM
+  rw [ht] at h
+  rw [← h]; ring
+
+end AtkinLehner
+
 /-- **The Atkin–Lehner SIGN at a prime exactly dividing the level**
-(sorry node, ELEVENTH decomposition 2026-07-26): for `q ‖ M` the `q`-th
-coefficient of a normalized weight-two newform satisfies `a_q² = 1` —
-that is, `a_q = ±1`.
+(PROVEN 2026-07-26 as the TWELFTH decomposition, over the Atkin–Lehner
+involution built in the section above; it was a sorry node of the
+ELEVENTH): for `q ‖ M` the `q`-th coefficient of a normalized weight-two
+newform satisfies `a_q² = 1` — that is, `a_q = ±1`.
 
 This is the classical statement, and it is STRICTLY STRONGER than the
 `‖a_q‖ = 1` that the TENTH cut stated below: `‖a_q‖ = 1` is satisfied by
@@ -33035,12 +33345,53 @@ proof that it preserves `S₂(Γ₀(M))`. That is a genuine construction, not
 a restatement, and it is what a successor must supply. Note the contrast
 with the good-prime sibling `exists_real_qCoeff_of_not_dvd`, which WAS
 closable precisely because its analytic input (the Petersson product)
-had already been pinned independently as its own existential. -/
+had already been pinned independently as its own existential.
+
+THAT PRESCRIPTION HAS NOW BEEN EXECUTED, AND THIS LEAF IS PROVEN
+(2026-07-26, later the same day — the analysis above stands unaltered
+because it is exactly what shaped the construction, and it should be
+read as the specification the `AtkinLehner` section above satisfies, not
+as a standing obstruction).
+
+`W_q` is now `atkinLehnerOp M q`: the weight-two slash by an
+Atkin–Lehner matrix `!![q x, y; M z, q w]` of determinant `q`, pinned by
+`atkinLehnerOp_coe` with NO reference to `g` or to `a_q` anywhere in its
+defining property, and non-vacuously so — `exists_isAtkinLehnerMatrix`
+(PROVEN, by Bézout on `gcd(q, M/q) = 1`) supplies the matrices the
+characterization quantifies over. The `W_q`-existential objection above
+therefore no longer applies: the operator is not existentially
+quantified alongside its eigenvalue, it is constructed first.
+
+The proof below is then the one-line consumer the analysis predicted,
+with the two inputs separated exactly as it demands:
+
+* `atkinLehnerOp_apply_eq_neg_qCoeff_smul` (leaf) gives `W_q g = (−a_q)•g`
+  — the eigenvalue, Atkin–Lehner 1970 Thm 3 / D–S 5.8.2;
+* `atkinLehnerOp_atkinLehnerOp` (PROVEN, out of `exists_atkinLehnerOp`)
+  gives `W_q (W_q g) = g` — the involution.
+
+Applying `W_q` twice yields `(a_q²)•g = g`, and `g ≠ 0` because a
+normalized eigenform has `a₁ = 1`. So `a_q² = 1`, and note WHERE the
+`±1` comes from: the INVOLUTION, not the eigenvalue computation. That is
+the structural reason this split is a reduction rather than a
+restatement. -/
 theorem qCoeff_sq_eq_one_of_exactly_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
-    qCoeff M g q ^ 2 = 1 :=
-  sorry
+    qCoeff M g q ^ 2 = 1 := by
+  have hcop : Nat.Coprime q (M / q) := coprime_div_of_exactly_dvd hq hqM hqM2
+  have hW := atkinLehnerOp_apply_eq_neg_qCoeff_smul hM g hg hq hqM hqM2
+  have hinv := atkinLehnerOp_atkinLehnerOp hM hqM hcop g
+  rw [hW, map_smul, hW, smul_smul] at hinv
+  have h2 : (qCoeff M g q ^ 2) • g = g := by
+    rw [show qCoeff M g q ^ 2 = (-(qCoeff M g q)) * (-(qCoeff M g q)) by ring]
+    exact hinv
+  have hsm : (qCoeff M g q ^ 2 - 1) • g = 0 := by
+    rw [sub_smul, one_smul, h2, sub_self]
+  have hg0 : g ≠ 0 := ne_zero_of_isWeightTwoEigenform hg.toIsWeightTwoEigenform
+  rcases smul_eq_zero.mp hsm with h | h
+  · linear_combination h
+  · exact absurd h hg0
 
 /-- **Atkin–Lehner at a prime EXACTLY dividing the level** (PROVEN
 2026-07-26 as the ELEVENTH decomposition, over the strictly stronger
@@ -33088,8 +33439,64 @@ theorem norm_qCoeff_eq_one_of_exactly_dvd {M : ℕ} (hM : 0 < M)
   · linarith
   · linarith
 
-/-- **Atkin–Lehner at a prime whose SQUARE divides the level** (sorry
-node, TENTH decomposition 2026-07-26): for `q² ∣ M` the `q`-th
+/-- The `q`-expansion coefficients depend only on the UNDERLYING
+FUNCTION of a cusp form, not on the level it is regarded at (PROVEN,
+definitional): `qCoeff N f n` is `(qExpansion 1 ⇑f).coeff n`, and the
+level appears nowhere on the right.  This is what lets a form that
+descends to a smaller level carry its whole eigensystem down with it. -/
+theorem qCoeff_congr {N N' : ℕ} {f : CuspForm (Gamma0GL N) 2}
+    {f' : CuspForm (Gamma0GL N') 2} (h : ⇑f' = ⇑f) (n : ℕ) :
+    qCoeff N' f' n = qCoeff N f n := by
+  rw [qCoeff, qCoeff, h]
+
+/-- **LEVEL DESCENT AT A PRIME WHOSE SQUARE DIVIDES THE LEVEL** (sorry
+node, TWELFTH decomposition 2026-07-26 — the single new leaf under
+`qCoeff_eq_zero_of_sq_dvd` below): a normalized weight-two EIGENFORM of
+level `M` with `q² ∣ M` and NONZERO `q`-th coefficient is, as a
+function, already a cusp form of level `M / q`.
+
+This is the real mechanism of Atkin–Lehner's theorem at `q² ∣ M`, and
+the reason the theorem below is about NEWforms while this leaf is not:
+newness is not used here at all, it is consumed by the assembly.
+
+Classical content (Atkin–Lehner 1970, Theorem 3; Diamond–Shurman §5.8):
+write `f` for the newform of level `L ∣ M` behind `g`.  The `U_q`-action
+on the span of the shifts `f|V_q^i` inside `S₂(Γ₀(M))` is nilpotent when
+`q² ∣ L`, so a nonzero eigenvalue forces `v_q(L) ≤ 1`; and then comparing
+coefficients from the top shift downwards kills every shift above the
+first, leaving `g = f` (if `v_q(L) = 1`) or `g ∈ ⟨f, f|V_q⟩` (if
+`q ∤ L`).  In both surviving cases `v_q` of the level of `g` is at most
+`1 ≤ v_q(M) − 1`, while the prime-to-`q` part is unchanged — so the level
+of `g` divides `M / q`.
+
+Stated as an equality of FUNCTIONS (`⇑g' = ⇑g`) rather than of
+coefficients on purpose: the function determines the coefficients at
+every level by `qCoeff_congr` above, so this is the strongest and also
+the cheapest form, and it hands the assembly the whole eigensystem for
+free rather than one coefficient at a time.
+
+NON-VACUITY, checked (the failure mode a level-descent leaf is most
+exposed to).  At `M = L·q^j` with `j ≥ 2` and `q ∤ L`, the two
+`U_q`-eigenforms `f − β·f|V_q` and `f − α·f|V_q` attached to a level-`L`
+newform `f` — where `α, β` are the roots of `X² − a_q(f)X + q`, both
+nonzero since `αβ = q` — satisfy every hypothesis with `a_q = α ≠ 0`,
+and really do live at level `L·q ∣ M/q`.  So the hypothesis is
+satisfiable and the conclusion is not automatic.
+
+Missing from the pin: the `V_q`-shift decomposition of the `q`-old space
+and the nilpotency of `U_q` on it.  Note `degeneracyOp` (the `V_d`
+operator) and its injectivity ARE already built above, in the
+`DegeneracyOperator` section, so a successor starts from those rather
+than from nothing. -/
+theorem exists_cuspForm_level_div_of_qCoeff_ne_zero {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoEigenform M g)
+    {q : ℕ} (hq : q.Prime) (hqM2 : q ^ 2 ∣ M) (hne : qCoeff M g q ≠ 0) :
+    ∃ g' : CuspForm (Gamma0GL (M / q)) 2, ⇑g' = ⇑g :=
+  sorry
+
+/-- **Atkin–Lehner at a prime whose SQUARE divides the level** (PROVEN
+2026-07-26 as the TWELFTH decomposition, over the level-descent leaf
+just above; it was a sorry node from the TENTH): for `q² ∣ M` the `q`-th
 coefficient of a normalized weight-two newform vanishes.
 
 Classical content (Atkin–Lehner; Diamond–Shurman Theorem 5.8.2 and the
@@ -33102,15 +33509,51 @@ The cheapest of the three cases in the trichotomy, and the only one
 whose conclusion is an equation rather than an estimate; it discharges
 the bound trivially since `0 ≤ 2√q`.
 
-WHY THIS ONE STAYS A CITATION LEAF (ELEVENTH cut, 2026-07-26). Its two
-siblings were decomposed — the good case into realness plus the
-Hasse–Weil bound, the `q ‖ M` case into the stronger sign statement
-`a_q² = 1` plus one line of norm algebra. Neither move is available
-here: `a_q = 0` is already the strongest possible form of the conclusion
-(there is nothing to strengthen it to, and no norm to peel off), and its
-single input is the Atkin–Lehner `U_q`-eigenvalue computation. So this
-is irreducible at the current pin, and a successor must supply the
-`U_q` operator itself rather than another cut.
+WHY THIS ONE STAYED A CITATION LEAF (ELEVENTH cut, 2026-07-26) — and
+what was wrong with the reasoning. Its two siblings were decomposed —
+the good case into realness plus the Hasse–Weil bound, the `q ‖ M` case
+into the stronger sign statement `a_q² = 1` plus one line of norm
+algebra. Neither move is available here: `a_q = 0` is already the
+strongest possible form of the conclusion (there is nothing to
+strengthen it to, and no norm to peel off), and its single input is the
+Atkin–Lehner `U_q`-eigenvalue computation.
+
+That much is right; the conclusion drawn from it — "irreducible, a
+successor must supply the `U_q` operator itself" — is not. Both earlier
+audits searched for a cut in the OPERATOR direction, where `U_q` is
+`heckeOp M q` and `heckeOp_apply_eq_smul_of_isWeightTwoEigenform`
+already gives `U_q g = a_q•g`, so every operator-flavoured restatement
+is circular. The cut that works goes in the LEVEL direction instead, and
+it is executed below.
+
+THE TWELFTH CUT, EXECUTED HERE (2026-07-26): DESCEND THE LEVEL, DO NOT
+RESTATE THE COEFFICIENT. The classical mechanism of Atkin–Lehner's
+theorem at `q² ∣ M` is not a computation of `a_q`; it is the fact that a
+nonzero `U_q`-eigenvalue at a prime whose square divides the level
+forces the form to already live at level `M / q`. Newness then kills it.
+So the single new leaf is `exists_cuspForm_level_div_of_qCoeff_ne_zero`
+below, and this theorem is an ASSEMBLY over it:
+
+* it quantifies over `IsWeightTwoEigenform`, not `IsWeightTwoNewform` —
+  the newform hypothesis is consumed HERE, by `eigensystem_minimal`, and
+  does not appear in the leaf at all;
+* its conclusion is a level-lowering existential, a different shape from
+  `a_q = 0`, so it is not satisfiable by any repackaging of this
+  statement;
+* it is NOT vacuous: at `M = L·q^j` with `j ≥ 2` and `L` prime to `q`,
+  the two `U_q`-eigenforms `f − β·f|V_q` and `f − α·f|V_q` attached to a
+  level-`L` newform `f` are honest inhabitants of the hypothesis, with
+  `a_q = α ≠ 0`, and each really does live at level `L·q ∣ M/q`.
+
+Truth of the leaf, checked case by case on the newform `f` of level `L`
+behind an eigenform `g` of level `M` with `v_q(M) = j ≥ 2`. If
+`v_q(L) ≥ 2` then `U_q` is NILPOTENT on the span of the shifts
+`f|V_q^i`, so `a_q(g) ≠ 0` is impossible. If `v_q(L) = 1` then, comparing
+coefficients of the top shift downwards, the only eigenvector with
+nonzero eigenvalue is `f` itself, of level `L ∣ M/q`. If `q ∤ L` the same
+descent leaves the two-dimensional span of `f, f|V_q`, whose two
+eigenvectors have level `L·q ∣ M/q` because `j ≥ 2`. In all three cases
+the level divides `M / q`, which is the leaf.
 
 CARRIER-FAITHFULNESS CHECK (2026-07-26) — the same check recorded on
 `qCoeff_sq_eq_one_of_exactly_dvd` above, and it matters MORE here,
@@ -33130,21 +33573,70 @@ newforms never share an eigensystem, so `c₁ = 0`. Checked concretely at
 there, so the constraint has something to act on) and at `M = 20, 36,
 50`. The leaf is faithful.
 
-Missing from the pin: the same Atkin–Lehner theory as the previous
-leaf, whose docstring now carries the confirmed pin-absence map
-(no `AtkinLehner`, no `newform`, no `U_q` anywhere in
-`Mathlib/NumberTheory/ModularForms/`; `SlashActions.lean` is the one
-usable starting point) and, more importantly, the ANTI-VACUITY
-ANALYSIS showing why a `W_q`- or `U_q`-existential cut would be a pure
-restatement rather than a reduction. That analysis applies verbatim
-here and independently confirms this docstring's original verdict: the
-irreducibility recorded above is not an author's reluctance to cut, it
-is a proof that the available cuts are empty. -/
+Missing from the pin: the previous leaf's docstring carries the
+confirmed pin-absence map (no `AtkinLehner`, no `newform`, no `U_q`
+anywhere in `Mathlib/NumberTheory/ModularForms/`; `SlashActions.lean` is
+the one usable starting point) and the ANTI-VACUITY ANALYSIS showing why
+a `W_q`- or `U_q`-existential cut would be a pure restatement rather
+than a reduction.
+
+WHERE THAT ANALYSIS APPLIES HERE, AND WHERE IT DOES NOT (2026-07-26,
+correcting an earlier claim in this slot that it "applies verbatim here
+and independently confirms irreducibility"). It applies to every
+OPERATOR-shaped cut, and for the same reason: `U_q` is `heckeOp M q` at
+`q ∣ M`, and `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` already
+gives `U_q g = a_q•g`, so any restatement in terms of `U_q` or of a
+freshly existentially quantified `W` renames the problem.
+
+It does NOT establish that no cut exists, because it only ever ranged
+over operator-shaped cuts. The cut executed below runs in the LEVEL
+direction instead — `exists_cuspForm_level_div_of_qCoeff_ne_zero`, the
+`q`-old descent — and that is a different shape entirely: its conclusion
+is a level-lowering existential, its hypothesis is about eigenforms
+rather than newforms, and it makes no mention of any operator. So the
+`W_q` construction built above for the sibling leaf is NOT a
+prerequisite here, and this leaf is now PROVEN independently of it. -/
 theorem qCoeff_eq_zero_of_sq_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM2 : q ^ 2 ∣ M) :
-    qCoeff M g q = 0 :=
-  sorry
+    qCoeff M g q = 0 := by
+  by_contra hne
+  have hqM : q ∣ M := dvd_trans (dvd_pow_self q two_ne_zero) hqM2
+  obtain ⟨g', hgg⟩ :=
+    exists_cuspForm_level_div_of_qCoeff_ne_zero hM g hg.toIsWeightTwoEigenform
+      hq hqM2 hne
+  -- A prime not dividing `M / q` divides neither `q` (since `q² ∣ M`
+  -- makes `q ∣ M / q`) nor the prime-to-`q` part of `M`, hence not `M`.
+  have hdvd_of : ∀ p : ℕ, p.Prime → ¬ p ∣ (M / q) → ¬ p ∣ M := by
+    intro p hp hpq hpM
+    refine hpq ?_
+    by_cases hpq' : p = q
+    · subst hpq'
+      obtain ⟨t, ht⟩ := hqM2
+      exact ⟨t, by rw [ht, pow_two, Nat.mul_assoc, Nat.mul_div_cancel_left _ hq.pos]⟩
+    · have hM' : q * (M / q) = M := Nat.mul_div_cancel' hqM
+      have hsplit : p ∣ q * (M / q) := by rw [hM']; exact hpM
+      rcases (Nat.Prime.dvd_mul hp).mp hsplit with h | h
+      · exact absurd ((Nat.prime_dvd_prime_iff_eq hp hq).mp h) hpq'
+      · exact h
+  have hMq : M / q ∣ M := Nat.div_dvd_of_dvd hqM
+  have hMqne : M / q ≠ M := by
+    have := Nat.div_lt_self hM hq.one_lt
+    omega
+  have hg' : IsWeightTwoEigenform (M / q) g' := by
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [qCoeff_congr hgg]; exact hg.qCoeff_one
+    · intro m n hmn
+      rw [qCoeff_congr hgg, qCoeff_congr hgg, qCoeff_congr hgg]
+      exact hg.qCoeff_mul_coprime m n hmn
+    · intro p hp hpq r
+      rw [qCoeff_congr hgg, qCoeff_congr hgg, qCoeff_congr hgg, qCoeff_congr hgg]
+      exact hg.qCoeff_prime_pow_of_not_dvd p hp (hdvd_of p hp hpq) r
+    · intro p hp hpq r
+      rw [qCoeff_congr hgg, qCoeff_congr hgg, qCoeff_congr hgg]
+      exact hg.qCoeff_prime_pow_of_dvd p hp (hpq.trans hMq) r
+  exact hg.eigensystem_minimal (M / q) hMq hMqne g' hg'
+    (fun p _ _ => qCoeff_congr hgg p)
 
 /-- **The Weil bound for a weight-two newform** (PROVEN 2026-07-26 as
 the TENTH decomposition — an ASSEMBLY over the three prime cases above;
@@ -33214,7 +33706,7 @@ without touching this assembly beyond one `obtain` pattern:
 * `qCoeff_eq_zero_of_sq_dvd` is unchanged and remains the irreducible
   Atkin–Lehner citation; the reasons are in its docstring.
 
-TWELFTH CUT (2026-07-26), which closed one of those three:
+TWELFTH CUT (2026-07-26), which closed all three:
 
 * `exists_real_qCoeff_of_not_dvd` is now PROVEN, over the Petersson leaf
   `exists_peterssonProduct_selfAdjoint_heckeOp` that was ALREADY in this
@@ -33224,12 +33716,30 @@ TWELFTH CUT (2026-07-26), which closed one of those three:
   Petersson theory as "missing from the pin", which was true of mathlib
   but not of this file.
 
-So THREE declarations under this bound remain open —
-`norm_qCoeff_le_two_mul_sqrt_of_not_dvd`,
-`qCoeff_sq_eq_one_of_exactly_dvd` and `qCoeff_eq_zero_of_sq_dvd` — but
-they rest on only TWO distinct bodies of missing theory: Hasse–Weil /
-Eichler–Shimura for the first, and Atkin–Lehner (`W_q`, `U_q`) for the
-other two. The Petersson product is no longer one of them. -/
+* `qCoeff_sq_eq_one_of_exactly_dvd` is now PROVEN, over the genuine
+  Atkin–Lehner involution `atkinLehnerOp` constructed in the
+  `AtkinLehner` section above: `W_q` pinned as the weight-two slash by an
+  Atkin–Lehner matrix, with no reference to `a_q` anywhere in its
+  defining property, which is exactly what the anti-vacuity analysis on
+  that leaf demanded. Its two leaves are `exists_atkinLehnerOp` (the
+  operator, its independence of the choice of matrix, and its
+  involutivity) and `atkinLehnerOp_apply_eq_neg_qCoeff_smul` (the
+  eigenvalue `−a_q`).
+* `qCoeff_eq_zero_of_sq_dvd` is now PROVEN too, and NOT through `W_q`.
+  Its single leaf `exists_cuspForm_level_div_of_qCoeff_ne_zero` is a
+  LEVEL-descent statement about EIGENforms — at `q² ∣ M` a nonzero `a_q`
+  forces the form down to level `M/q` — with newness consumed by the
+  assembly through `eigensystem_minimal`. The earlier audits that called
+  it irreducible were ranging over operator-shaped cuts, where
+  `U_q = heckeOp M q` makes every restatement circular; the level
+  direction had not been tried.
+
+So exactly ONE declaration under this bound remains open,
+`norm_qCoeff_le_two_mul_sqrt_of_not_dvd`, resting on ONE body of missing
+theory: Hasse–Weil / Eichler–Shimura, i.e. the Weil bound for curves.
+The Petersson product and Atkin–Lehner are no longer among them —
+Atkin–Lehner is now three named leaves of its own rather than a
+citation, and its `W_Q` operator exists as real code. -/
 theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) :
