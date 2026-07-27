@@ -31271,9 +31271,19 @@ existing vocabulary.
 **WHAT WOULD REFUTE THIS AUDIT**: find a step in Miyake §4.6 (pp. 153–162) that
 quantifies over `Γ(N)`- or `Γ¹(N)`-forms.  There is none; the section's
 vocabulary is `Γ₀(N)` with a nebentypus, `Δ₀(N)` double cosets, and the slash
-operator.  The one genuinely missing piece of INFRASTRUCTURE is the TRACE
+operator.
+
+**A SECOND CORRECTION, 2026-07-27, to this audit's own closing sentence.**  It
+recorded that "the one genuinely missing piece of INFRASTRUCTURE is the TRACE
 operator `S₂(Γ₀(N)) → S₂(Γ₀(N/p))` (Lemma 4.6.6), which this file does not yet
-have; `degeneracyOp` supplies the other direction only.
+have".  That is FALSE twice over.  The trace is IN THE PIN, as `CuspForm.trace`
+(`Mathlib/NumberTheory/ModularForms/NormTrace.lean`), for any pair of subgroups
+of finite relative index; and this file has been CONSUMING it since the Hecke
+operator was built — `exists_cuspForm_heckeTransform` above is proven by
+identifying the Hecke slash-sum with exactly that trace.  All that was missing
+was a level-indexed wrapper, which is `traceOp` below.  The moral is the one
+already recorded elsewhere: a docstring's belief about what is missing goes
+stale, and the refuting check is one `grep`.
 
 **CONSEQUENCE FOR THE EIGENVECTOR RESTRICTION.**  Miyake's proof uses no Hecke
 eigenvector hypothesis, so the reduction that created the leaf below — shrinking
@@ -31287,8 +31297,444 @@ consumers are untouched.  It does mean that the spectral apparatus in
 `mem_oldSubspace_of_qCoeff_coprime_eq_zero_of_dvd` — but that is another owner's
 region and is left alone deliberately. -/
 
+section MiyakeDescent
+
+open UpperHalfPlane ModularForm Matrix.SpecialLinearGroup CongruenceSubgroup
+  ConjAct
+open scoped Pointwise
+
+/-! ### Miyake §4.6: the descent `f(z) ↦ f(z/p)` -/
+
+/-- Two ARITHMETIC subgroups of `GL(2, ℝ)` have finite relative index: both are
+commensurable with `SL(2, ℤ)`, and commensurability is transitive. -/
+theorem isFiniteRelIndex_of_isArithmetic (𝒢 ℋ : Subgroup (GL (Fin 2) ℝ))
+    [𝒢.IsArithmetic] [ℋ.IsArithmetic] : Subgroup.IsFiniteRelIndex 𝒢 ℋ :=
+  ⟨(Subgroup.IsArithmetic.is_commensurable.trans
+      (Subgroup.IsArithmetic.is_commensurable (𝒢 := ℋ)).symm).1⟩
+
+/-- **UPGRADING THE LEVEL OF A CUSP FORM.**  A cusp form for `Γ₁` that happens to
+be slash-invariant under a possibly LARGER group `Γ₂` is a cusp form for `Γ₂`.
+
+Holomorphy is unconditional, and the cusp condition transfers because both groups
+are arithmetic, so `IsCusp c Γ₁ ↔ IsCusp c 𝒮ℒ ↔ IsCusp c Γ₂`
+(`Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z`); note that NO inclusion between
+`Γ₁` and `Γ₂` is needed. -/
+theorem exists_cuspForm_of_slash_invariant
+    {Γ₁ Γ₂ : Subgroup (GL (Fin 2) ℝ)} [Γ₁.IsArithmetic] [Γ₂.IsArithmetic] {k : ℤ}
+    (F : CuspForm Γ₁ k) (hinv : ∀ γ ∈ Γ₂, (⇑F : ℍ → ℂ) ∣[k] γ = ⇑F) :
+    ∃ G : CuspForm Γ₂ k, ⇑G = ⇑F :=
+  ⟨{ toFun := ⇑F
+     slash_action_eq' := hinv
+     holo' := F.holo'
+     zero_at_cusps' := fun hc =>
+       F.zero_at_cusps'
+         ((Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z Γ₁).mpr
+           ((Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z Γ₂).mp hc)) }, rfl⟩
+
+/-- **The conjugation criterion for the descent matrix**, in the form Miyake's
+Theorem 4.6.4 needs it: for `ρ ∈ Γ₀(N)` whose upper-right entry is divisible by
+`p`, the conjugate `δ_p ρ δ_p⁻¹` by `δ_p = [1, 0; 0, p] = heckeRep p 0` lies in
+`Γ₀(pN)`.
+
+Conjugation by `δ_p` divides the upper-right entry by `p` (integrality is exactly
+`p ∣ ρ₀₁`) and multiplies the lower-left by `p` (so `N ∣ ρ₁₀` becomes
+`pN ∣ pρ₁₀`).  This is the level-raising companion of `heckeRep_conj_mem_iff`,
+which is the same computation at a single level. -/
+theorem heckeRep_zero_conj_mem_Gamma0GL {N p : ℕ} (hp : p.Prime) {ρ : SL(2, ℤ)}
+    (hρ : ρ ∈ CongruenceSubgroup.Gamma0 N) (hb : (p : ℤ) ∣ ρ 0 1) :
+    heckeRep p 0 * mapGL ℝ ρ * (heckeRep p 0)⁻¹ ∈ Gamma0GL (p * N) := by
+  have hp0 : (p : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+  obtain ⟨t, ht⟩ := hb
+  have hdet : ρ 0 0 * ρ 1 1 - ρ 0 1 * ρ 1 0 = 1 := by
+    have h2 := ρ.2
+    rwa [Matrix.det_fin_two] at h2
+  have hc : ((ρ 1 0 : ℤ) : ZMod N) = 0 := by
+    rw [CongruenceSubgroup.Gamma0_mem] at hρ
+    exact_mod_cast hρ
+  have hcz : ((N : ℕ) : ℤ) ∣ ρ 1 0 :=
+    (ZMod.intCast_zmod_eq_zero_iff_dvd (ρ 1 0) N).mp hc
+  have hpc : ((p * N : ℕ) : ℤ) ∣ (p : ℤ) * ρ 1 0 := by
+    push_cast
+    exact mul_dvd_mul_left (p : ℤ) (by exact_mod_cast hcz)
+  refine mem_Gamma0GL_iff.mpr ⟨⟨!![ρ 0 0, t; (p : ℤ) * ρ 1 0, ρ 1 1], ?_⟩, ?_, ?_⟩
+  · rw [Matrix.det_fin_two_of]
+    have hqt : ρ 0 0 * ρ 1 1 - ((p : ℤ) * t) * ρ 1 0 = 1 := ht ▸ hdet
+    linarith [hqt]
+  · rw [CongruenceSubgroup.Gamma0_mem]
+    show (((p : ℤ) * ρ 1 0 : ℤ) : ZMod (p * N)) = 0
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr hpc
+  · rw [eq_mul_inv_iff_mul_eq]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      · simp [heckeRep_coe hp0, mapGL_coe_matrix,
+          Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply,
+          Int.coe_castRingHom, Matrix.map_apply, Matrix.mul_apply,
+          Fin.sum_univ_two, ht]
+        try ring
+
+/-- **`Γ₀(N)` IS GENERATED BY ITS `p`-INTEGRAL PART TOGETHER WITH THE
+TRANSLATIONS**, in the effective form the descent needs: every `ρ ∈ SL(2, ℤ)` can
+be moved by translations on BOTH sides into one whose upper-right entry is
+divisible by `p`.
+
+Explicitly `T^k ρ T^l` has upper-right entry `(ρ₀₀ + kρ₁₀)·l + (ρ₀₁ + kρ₁₁)`, and
+`k ∈ {0, 1}` already suffices to make the coefficient `A = ρ₀₀ + kρ₁₀` a unit mod
+`p`: if `p ∤ ρ₀₀` take `k = 0`; otherwise `ρ₀₀ρ₁₁ − ρ₀₁ρ₁₀ = 1` forces `p ∤ ρ₁₀`,
+so `k = 1` gives `A ≡ ρ₁₀ ≢ 0`.  Then `l` solves `A·l + B ≡ 0 (mod p)` in the
+field `ZMod p`.
+
+Note the lower-left entry is UNCHANGED by this move, so the result stays in
+`Γ₀(N)` — that is what makes the two-sided translation legitimate. -/
+theorem exists_heckeTMat_mul_mul_dvd_upperRight {p : ℕ} (hp : p.Prime)
+    (ρ : SL(2, ℤ)) :
+    ∃ k l : ℤ, (p : ℤ) ∣ (heckeTMat k * ρ * heckeTMat l) 0 1 := by
+  haveI : Fact p.Prime := ⟨hp⟩
+  haveI : NeZero p := ⟨hp.ne_zero⟩
+  have hdet : ρ 0 0 * ρ 1 1 - ρ 0 1 * ρ 1 0 = 1 := by
+    have h2 := ρ.2
+    rwa [Matrix.det_fin_two] at h2
+  -- the upper-right entry of `T^k ρ T^l`, explicitly
+  have hmul : ∀ (x y : SL(2, ℤ)) (i j : Fin 2),
+      (x * y) i j = x i 0 * y 0 j + x i 1 * y 1 j := by
+    intro x y i j
+    simp [Matrix.mul_apply, Fin.sum_univ_two]
+  have hTe : ∀ m : ℤ, (heckeTMat m) 0 0 = 1 ∧ (heckeTMat m) 0 1 = m ∧
+      (heckeTMat m) 1 1 = 1 := by
+    intro m
+    refine ⟨?_, ?_, ?_⟩ <;> simp [heckeTMat]
+  have hentry : ∀ k l : ℤ, (heckeTMat k * ρ * heckeTMat l) 0 1
+      = (ρ 0 0 + k * ρ 1 0) * l + (ρ 0 1 + k * ρ 1 1) := by
+    intro k l
+    obtain ⟨hk0, hk1, -⟩ := hTe k
+    obtain ⟨-, hl1, hl3⟩ := hTe l
+    rw [hmul (heckeTMat k * ρ) (heckeTMat l) 0 1, hmul (heckeTMat k) ρ 0 0,
+      hmul (heckeTMat k) ρ 0 1, hk0, hk1, hl1, hl3]
+    ring
+  -- choose `k ∈ {0, 1}` making the coefficient `A` prime to `p`
+  have hk : ∃ k : ℤ, ¬ (p : ℤ) ∣ (ρ 0 0 + k * ρ 1 0) := by
+    by_cases h00 : (p : ℤ) ∣ ρ 0 0
+    · have h10 : ¬ (p : ℤ) ∣ ρ 1 0 := by
+        intro h10
+        have : (p : ℤ) ∣ 1 := by
+          rw [← hdet]
+          exact dvd_sub (Dvd.dvd.mul_right h00 _) (Dvd.dvd.mul_left h10 _)
+        have hp1 : ((p : ℕ) : ℤ) = 1 :=
+          Int.eq_one_of_dvd_one (by positivity) this
+        exact hp.one_lt.ne' (by exact_mod_cast hp1)
+      refine ⟨1, fun hcon => h10 ?_⟩
+      have hsub : (p : ℤ) ∣ (ρ 0 0 + 1 * ρ 1 0) - ρ 0 0 := dvd_sub hcon h00
+      simpa using hsub
+    · exact ⟨0, by simpa using h00⟩
+  obtain ⟨k, hA⟩ := hk
+  set A : ℤ := ρ 0 0 + k * ρ 1 0 with hAdef
+  set B : ℤ := ρ 0 1 + k * ρ 1 1 with hBdef
+  -- solve `A·l + B ≡ 0 (mod p)` in the field `ZMod p`
+  have hAne : (A : ZMod p) ≠ 0 := by
+    simpa [ZMod.intCast_zmod_eq_zero_iff_dvd] using hA
+  refine ⟨k, ((-(B : ZMod p) * (A : ZMod p)⁻¹).val : ℤ), ?_⟩
+  rw [hentry, ← hAdef, ← hBdef, ← ZMod.intCast_zmod_eq_zero_iff_dvd]
+  push_cast
+  rw [ZMod.natCast_val, ZMod.cast_id]
+  field_simp
+  ring
+
+/-- **THE ANALYTIC HEART OF MIYAKE 4.6.4**: a cusp form supported on the
+multiples of `p` is invariant under the FRACTIONAL translation `z ↦ z + 1/p`, in
+the slash form `f ∣₂ [1,1;0,p] = f ∣₂ [1,0;0,p]`.
+
+Both sides are `f((τ+j)/p)/p` for `j = 1, 0`; substituting the `q`-expansion of
+`f` and using `qParam 1 ((z+j)/p) = qParam p z · e^{2πij/p}`, the two summand
+families agree TERMWISE: at an index `n` with `p ∣ n` the root of unity
+`e^{2πin/p}` is `1`, and at every other `n` the coefficient `a_n(f)` VANISHES by
+hypothesis.  `HasSum.unique` then equates the values.
+
+This is the only place the coefficient hypothesis is used, and it is exactly why
+the descended function is `1`-periodic. -/
+theorem heckeRep_one_slash_eq_of_qCoeff_eq_zero_of_not_dvd {M p : ℕ}
+    (hp : p.Prime) {f : CuspForm (Gamma0GL M) 2}
+    (hf : ∀ n : ℕ, ¬ p ∣ n → qCoeff M f n = 0) :
+    (⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 1 = (⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0 := by
+  have hppos : 0 < p := hp.pos
+  have hp0 : (p : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+  have hper : Function.Periodic (⇑f ∘ UpperHalfPlane.ofComplex) 1 :=
+    SlashInvariantFormClass.periodic_comp_ofComplex f
+      (one_mem_strictPeriods_Gamma0GL M)
+  have hbdd : UpperHalfPlane.IsBoundedAtImInfty ⇑f := by
+    have hc : IsCusp OnePoint.infty (Gamma0GL M) :=
+      (Gamma0GL M).isCusp_of_mem_strictPeriods one_pos
+        (one_mem_strictPeriods_Gamma0GL M)
+    exact (OnePoint.isZeroAt_infty_iff.mp
+      (CuspFormClass.zero_at_cusps f hc)).boundedAtFilter
+  have hsumf : ∀ τ : ℍ, HasSum
+      (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
+        Function.Periodic.qParam 1 ↑τ ^ n) (f τ) :=
+    fun τ => hasSum_qExpansion one_pos hper (CuspFormClass.holo f) hbdd τ
+  funext τ
+  rw [heckeRep_slash_apply hppos 1 ⇑f τ, heckeRep_slash_apply hppos 0 ⇑f τ]
+  congr 1
+  have h1 := hsumf (heckeRep p 1 • τ)
+  have h0 := hsumf (heckeRep p 0 • τ)
+  rw [heckeRep_smul_coe hppos 1 τ] at h1
+  rw [heckeRep_smul_coe hppos 0 τ] at h0
+  have hfun : (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
+        Function.Periodic.qParam 1 (((τ : ℂ) + ((1 : ℕ) : ℂ)) / (p : ℂ)) ^ n)
+      = (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
+        Function.Periodic.qParam 1 (((τ : ℂ) + ((0 : ℕ) : ℂ)) / (p : ℂ)) ^ n) := by
+    funext n
+    by_cases hd : p ∣ n
+    · rw [qParam_shift hp0 1 ↑τ, qParam_shift hp0 0 ↑τ, mul_pow, mul_pow]
+      have hzeta : Complex.exp (2 * Real.pi * Complex.I * ((1 : ℕ) : ℂ) / (p : ℂ)) ^ n
+          = 1 := by
+        rw [← Complex.exp_nat_mul]
+        have : (n : ℂ) * (2 * Real.pi * Complex.I * ((1 : ℕ) : ℂ) / (p : ℂ))
+            = 2 * Real.pi * Complex.I * (n : ℂ) / (p : ℂ) := by
+          push_cast; ring
+        rw [this]
+        exact (Complex.exp_two_pi_mul_I_mul_div_eq_one_iff hppos.ne').mpr hd
+      have hzero : Complex.exp (2 * Real.pi * Complex.I * ((0 : ℕ) : ℂ) / (p : ℂ)) ^ n
+          = 1 := by
+        norm_num
+      rw [hzeta, hzero]
+    · rw [show (qExpansion 1 (⇑f : ℍ → ℂ)).coeff n = qCoeff M f n from rfl,
+        hf n hd]
+      simp
+  rw [hfun] at h1
+  exact HasSum.unique h1 h0
+
 /-- **MIYAKE THEOREM 4.6.4: A FORM SUPPORTED ON THE MULTIPLES OF `p` DESCENDS TO
-LEVEL `M/p`** (sorry leaf — cut 2026-07-27 out of
+LEVEL `M/p`**, in the shape the Main Lemma consumes it: the function
+`z ↦ f(z/p)` is a cusp form for `Γ₀(M/p)`, and its `q`-expansion coefficients are
+`a_m ↦ a_{pm}(f)`.
+
+The three ingredients are
+`heckeRep_one_slash_eq_of_qCoeff_eq_zero_of_not_dvd` (invariance under the
+translation `T`, the ONLY step using the coefficient hypothesis),
+`heckeRep_zero_conj_mem_Gamma0GL` (invariance under the elements of `Γ₀(M/p)`
+whose upper-right entry is divisible by `p`), and
+`exists_heckeTMat_mul_mul_dvd_upperRight` (those two together already exhaust
+`Γ₀(M/p)`).  Holomorphy and cusp vanishing travel along `CuspForm.translate` and
+`exists_cuspForm_of_slash_invariant`. -/
+theorem exists_cuspForm_descent_of_qCoeff_eq_zero_of_not_dvd {M p : ℕ}
+    (hM : 0 < M) (hp : p.Prime) (hpM : p ∣ M)
+    {f : CuspForm (Gamma0GL M) 2}
+    (hf : ∀ n : ℕ, ¬ p ∣ n → qCoeff M f n = 0) :
+    ∃ g : CuspForm (Gamma0GL (M / p)) 2,
+      ∀ m : ℕ, qCoeff (M / p) g m = qCoeff M f (p * m) := by
+  have hppos : 0 < p := hp.pos
+  have hp0 : (p : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+  have hpC : (p : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+  set N : ℕ := M / p with hNdef
+  have hMN : p * N = M := Nat.mul_div_cancel' hpM
+  have hN0 : 0 < N := by
+    rcases Nat.eq_zero_or_pos N with h | h
+    · rw [h, mul_zero] at hMN; omega
+    · exact h
+  haveI : NeZero M := ⟨hM.ne'⟩
+  haveI : NeZero N := ⟨hN0.ne'⟩
+  haveI hΓc := heckeConj_isArithmetic (N := M) hp
+  -- the translate of `f` by `δ_p = [1, 0; 0, p]`, a cusp form on the conjugate
+  set F₀ : CuspForm (toConjAct (heckeRep p 0)⁻¹ • Gamma0GL M) 2 :=
+    CuspForm.translate f (heckeRep p 0) with hF₀
+  have hF₀coe : (⇑F₀ : ℍ → ℂ) = (⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0 := rfl
+  -- invariance under the translations `T^m`
+  have hT : ∀ m : ℤ, ((⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0) ∣[(2 : ℤ)]
+      mapGL ℝ (heckeTMat m) = (⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0 := by
+    have hone : ((⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0) ∣[(2 : ℤ)]
+        mapGL ℝ (heckeTMat 1) = (⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0 := by
+      rw [← SlashAction.slash_mul]
+      have : heckeRep p 0 * mapGL ℝ (heckeTMat ((1 : ℕ) : ℤ)) = heckeRep p 1 :=
+        heckeRep_zero_mul_heckeTMat hp0 1
+      simp only [Nat.cast_one] at this
+      rw [this]
+      exact heckeRep_one_slash_eq_of_qCoeff_eq_zero_of_not_dvd hp hf
+    have hzeroT : heckeTMat (0 : ℤ) = 1 := by
+      ext i j; fin_cases i <;> fin_cases j <;> simp [heckeTMat]
+    have hnegone : ((⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0) ∣[(2 : ℤ)]
+        mapGL ℝ (heckeTMat (-1)) = (⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0 := by
+      have hcancel : (((⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0) ∣[(2 : ℤ)]
+          mapGL ℝ (heckeTMat 1)) ∣[(2 : ℤ)] mapGL ℝ (heckeTMat (-1))
+          = (⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0 := by
+        rw [← SlashAction.slash_mul, ← map_mul, heckeTMat_mul, add_neg_cancel,
+          hzeroT, map_one, SlashAction.slash_one]
+      rwa [hone] at hcancel
+    intro m
+    induction m using Int.induction_on with
+    | zero => rw [hzeroT, map_one, SlashAction.slash_one]
+    | succ n ih =>
+      have hsplit : heckeTMat ((n : ℤ) + 1) = heckeTMat (n : ℤ) * heckeTMat 1 :=
+        (heckeTMat_mul (n : ℤ) 1).symm
+      rw [hsplit, map_mul, SlashAction.slash_mul, ih, hone]
+    | pred n ih =>
+      have hsplit : heckeTMat (-(n : ℤ) - 1) =
+          heckeTMat (-(n : ℤ)) * heckeTMat (-1) := by
+        rw [heckeTMat_mul]; ring_nf
+      rw [hsplit, map_mul, SlashAction.slash_mul, ih, hnegone]
+  -- invariance under all of `Γ₀(N)`
+  have hinv : ∀ γ ∈ Gamma0GL N, (⇑F₀ : ℍ → ℂ) ∣[(2 : ℤ)] γ = ⇑F₀ := by
+    intro γ hγ
+    obtain ⟨ρ, hρ, rfl⟩ := mem_Gamma0GL_iff.mp hγ
+    obtain ⟨k, l, hkl⟩ := exists_heckeTMat_mul_mul_dvd_upperRight hp ρ
+    set ρ' : SL(2, ℤ) := heckeTMat k * ρ * heckeTMat l with hρ'def
+    have hρ'mem : ρ' ∈ CongruenceSubgroup.Gamma0 N :=
+      Subgroup.mul_mem _
+        (Subgroup.mul_mem _ (heckeTMat_mem_Gamma0 N k) hρ) (heckeTMat_mem_Gamma0 N l)
+    -- `f ∣ δ_p` is invariant under `ρ'`
+    have hρ'inv : ((⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0) ∣[(2 : ℤ)] mapGL ℝ ρ'
+        = (⇑f : ℍ → ℂ) ∣[(2 : ℤ)] heckeRep p 0 := by
+      have hconj : heckeRep p 0 * mapGL ℝ ρ' * (heckeRep p 0)⁻¹ ∈ Gamma0GL M := by
+        rw [← hMN]
+        exact heckeRep_zero_conj_mem_Gamma0GL hp hρ'mem hkl
+      have hsplit : heckeRep p 0 * mapGL ℝ ρ'
+          = (heckeRep p 0 * mapGL ℝ ρ' * (heckeRep p 0)⁻¹) * heckeRep p 0 := by
+        group
+      rw [← SlashAction.slash_mul, hsplit, SlashAction.slash_mul,
+        SlashInvariantFormClass.slash_action_eq f _ hconj]
+    -- decompose `ρ = T^{-k} ρ' T^{-l}`
+    have hdecomp : ρ = heckeTMat (-k) * ρ' * heckeTMat (-l) := by
+      rw [hρ'def]
+      rw [← mul_assoc, ← mul_assoc, heckeTMat_mul, neg_add_cancel]
+      have h1 : heckeTMat (0 : ℤ) = 1 := by
+        ext i j; fin_cases i <;> fin_cases j <;> simp [heckeTMat]
+      rw [h1, one_mul, mul_assoc, heckeTMat_mul, add_neg_cancel, h1, mul_one]
+    rw [hF₀coe, hdecomp, map_mul, map_mul, SlashAction.slash_mul,
+      SlashAction.slash_mul, hT (-k), hρ'inv, hT (-l)]
+  obtain ⟨G₀, hG₀⟩ := exists_cuspForm_of_slash_invariant (Γ₂ := Gamma0GL N) F₀ hinv
+  refine ⟨(p : ℂ) • G₀, ?_⟩
+  -- the `q`-expansion of `p · (f ∣ δ_p)`, i.e. of `z ↦ f(z/p)`
+  have hper : Function.Periodic (⇑f ∘ UpperHalfPlane.ofComplex) 1 :=
+    SlashInvariantFormClass.periodic_comp_ofComplex f
+      (one_mem_strictPeriods_Gamma0GL M)
+  have hbdd : UpperHalfPlane.IsBoundedAtImInfty ⇑f := by
+    have hc : IsCusp OnePoint.infty (Gamma0GL M) :=
+      (Gamma0GL M).isCusp_of_mem_strictPeriods one_pos
+        (one_mem_strictPeriods_Gamma0GL M)
+    exact (OnePoint.isZeroAt_infty_iff.mp
+      (CuspFormClass.zero_at_cusps f hc)).boundedAtFilter
+  have hsumf : ∀ τ : ℍ, HasSum
+      (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
+        Function.Periodic.qParam 1 ↑τ ^ n) (f τ) :=
+    fun τ => hasSum_qExpansion one_pos hper (CuspFormClass.holo f) hbdd τ
+  have hinj : Function.Injective (fun m : ℕ => p * m) := fun a b h =>
+    Nat.eq_of_mul_eq_mul_left hppos h
+  have hmaster : ∀ τ : ℍ, HasSum
+      (fun m : ℕ => qCoeff M f (p * m) •
+        Function.Periodic.qParam 1 ↑τ ^ m) (((p : ℂ) • G₀) τ) := by
+    intro τ
+    have hval : ((p : ℂ) • G₀) τ = f (heckeRep p 0 • τ) := by
+      rw [CuspForm.IsGLPos.coe_smul]
+      show (p : ℂ) * G₀ τ = _
+      rw [hG₀, hF₀coe, heckeRep_slash_apply hppos 0 ⇑f τ]
+      field_simp
+    rw [hval]
+    have hs := hsumf (heckeRep p 0 • τ)
+    rw [heckeRep_smul_coe hppos 0 τ] at hs
+    -- rewrite the parameter: `qParam 1 ((τ+0)/p) = qParam p τ`
+    have hq : Function.Periodic.qParam 1 (((τ : ℂ) + ((0 : ℕ) : ℂ)) / (p : ℂ))
+        = Function.Periodic.qParam (p : ℝ) (τ : ℂ) := by
+      rw [qParam_shift hp0 0 ↑τ]
+      norm_num
+    rw [hq] at hs
+    -- drop the indices not divisible by `p`, then reindex `n = p·m`
+    have h0 : ∀ n : ℕ, n ∉ Set.range (fun m : ℕ => p * m) →
+        ((qExpansion 1 ⇑f).coeff n •
+          Function.Periodic.qParam (p : ℝ) (τ : ℂ) ^ n) = 0 := by
+      intro n hn
+      have hnd : ¬ p ∣ n := fun ⟨t, ht⟩ => hn ⟨t, ht.symm⟩
+      rw [show (qExpansion 1 ⇑f).coeff n = qCoeff M f n from rfl, hf n hnd,
+        zero_smul]
+    have hs2 := (Function.Injective.hasSum_iff hinj h0).mpr hs
+    have hfun : (fun m : ℕ => (qExpansion 1 ⇑f).coeff (p * m) •
+          Function.Periodic.qParam (p : ℝ) (τ : ℂ) ^ (p * m))
+        = fun m : ℕ => qCoeff M f (p * m) •
+            Function.Periodic.qParam 1 (τ : ℂ) ^ m := by
+      funext m
+      rw [pow_mul, qParam_nat_pow hp0 (τ : ℂ)]
+      rfl
+    rw [Function.comp_def, hfun] at hs2
+    exact hs2
+  intro m
+  exact (ModularFormClass.qExpansion_coeff_unique one_pos
+    (one_mem_strictPeriods_Gamma0GL N) (f := (p : ℂ) • G₀) hmaster m).symm
+
+/-! ### The TRACE operator `Tr : S₂(Γ₀(M)) → S₂(Γ₀(N))` -/
+
+/-- The slash conjugation factor `σ` is trivial on `Γ₀(N)`: its elements have
+determinant `1 > 0`. -/
+theorem σ_Gamma0GL {N : ℕ} {x : GL (Fin 2) ℝ} (hx : x ∈ Gamma0GL N) (c : ℂ) :
+    σ x c = c := by
+  have hdet : (0 : ℝ) < (x.det.val : ℝ) := by
+    simp [Subgroup.HasDetOne.det_eq hx]
+  simp only [σ, if_pos hdet, ContinuousAlgEquiv.refl_apply]
+
+/-- Additivity of `SlashInvariantForm.quotientFunc` in the form. -/
+theorem quotientFunc_add {M N : ℕ}
+    (f g : CuspForm (Gamma0GL M) 2)
+    (q : Gamma0GL N ⧸ (Gamma0GL M).subgroupOf (Gamma0GL N)) :
+    SlashInvariantForm.quotientFunc (f + g) q =
+      SlashInvariantForm.quotientFunc f q + SlashInvariantForm.quotientFunc g q := by
+  induction q using Quotient.inductionOn with
+  | h r => simp
+
+/-- Homogeneity of `SlashInvariantForm.quotientFunc` in the form (the coset
+representatives lie in `Γ₀(N)`, so the `σ`-factor is trivial). -/
+theorem quotientFunc_smul_complex {M N : ℕ} (c : ℂ)
+    (f : CuspForm (Gamma0GL M) 2)
+    (q : Gamma0GL N ⧸ (Gamma0GL M).subgroupOf (Gamma0GL N)) :
+    SlashInvariantForm.quotientFunc (c • f) q =
+      c • SlashInvariantForm.quotientFunc f q := by
+  induction q using Quotient.inductionOn with
+  | h r =>
+    have hmem : ((r : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ ∈ Gamma0GL N := inv_mem r.2
+    simp only [SlashInvariantForm.quotientFunc_mk, CuspForm.IsGLPos.coe_smul]
+    rw [ModularForm.smul_slash, σ_Gamma0GL hmem]
+
+/-- **THE TRACE OPERATOR `Tr : S₂(Γ₀(M)) → S₂(Γ₀(N))`** — Miyake, *Modular
+Forms*, Lemma 4.6.6's double-coset operator `[Γ₀(M) · 1 · Γ₀(N)]`, i.e.
+`h ↦ Σ_v h ∣₂ γ_v` summed over the finite coset space `Γ₀(M) \ Γ₀(N)`.
+
+**AUDIT CORRECTION (2026-07-27).**  The docstrings below record that "the one
+genuinely missing piece of INFRASTRUCTURE is the TRACE operator
+`S₂(Γ₀(N)) → S₂(Γ₀(N/p))`, which this file does not yet have".  That is FALSE
+twice over: the trace is in the PIN as `CuspForm.trace`
+(`Mathlib/NumberTheory/ModularForms/NormTrace.lean`, David Loeffler), and this
+file has been CONSUMING it since the Hecke operator was built —
+`exists_cuspForm_heckeTransform` above is proven by identifying the Hecke
+slash-sum with exactly this trace.  All that was missing is the present wrapper,
+which packages it as a `ℂ`-linear map between the two level-indexed spaces.
+
+The finiteness hypothesis `CuspForm.trace` needs is
+`(Γ₀(M)).IsFiniteRelIndex (Γ₀(N))`, supplied by
+`isFiniteRelIndex_of_isArithmetic`: both groups are arithmetic, hence
+commensurable through `SL(2, ℤ)`.  NOTE this needs NO divisibility relation
+between `M` and `N` — the trace is defined from `Γ₀(M) ⊓ Γ₀(N)` up to `Γ₀(N)`,
+and it is only for `N ∣ M` (where `Γ₀(M) ≤ Γ₀(N)`) that it is the classical
+trace. -/
+noncomputable def traceOp (M N : ℕ) [NeZero M] [NeZero N] :
+    CuspForm (Gamma0GL M) 2 →ₗ[ℂ] CuspForm (Gamma0GL N) 2 :=
+  haveI : Subgroup.IsFiniteRelIndex (Gamma0GL M) (Gamma0GL N) :=
+    isFiniteRelIndex_of_isArithmetic _ _
+  { toFun := fun f => CuspForm.trace (Gamma0GL N) f
+    map_add' := by
+      intro f g
+      refine DFunLike.coe_injective ?_
+      letI : Fintype (Gamma0GL N ⧸ (Gamma0GL M).subgroupOf (Gamma0GL N)) :=
+        Fintype.ofFinite _
+      simp only [CuspForm.coe_trace, CuspForm.coe_add]
+      rw [← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun q _ => quotientFunc_add f g q
+    map_smul' := by
+      intro c f
+      refine DFunLike.coe_injective ?_
+      letI : Fintype (Gamma0GL N ⧸ (Gamma0GL M).subgroupOf (Gamma0GL N)) :=
+        Fintype.ofFinite _
+      simp only [CuspForm.coe_trace, RingHom.id_apply, CuspForm.IsGLPos.coe_smul,
+        Finset.smul_sum]
+      exact Finset.sum_congr rfl fun q _ => quotientFunc_smul_complex c f q }
+
+end MiyakeDescent
+
+/-- **MIYAKE THEOREM 4.6.4: A FORM SUPPORTED ON THE MULTIPLES OF `p` DESCENDS TO
+LEVEL `M/p`** (PROVEN 2026-07-27 over the Miyake toolkit above; cut out of
 `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` below; Miyake,
 *Modular Forms*, Theorem 4.6.4, at `l = p` prime, weight `2`, trivial
 character): if every `q`-expansion coefficient of `f ∈ S₂(Γ₀(M))` at an index
@@ -31299,18 +31745,35 @@ This is the single-prime case of the Main Lemma and the engine of the general
 case: it is the ONLY place where the descent from level `M` to level `M/p`
 actually happens.
 
-PROOF (Miyake, pp. 155–157).  The hypothesis says the holomorphic function
-`g(z) := Σ_n a_{pn}(f) e^{2πinz}` satisfies `g(pz) = f(z)`; it is
-`1`-periodic, so Theorem 4.6.4 applies with `l = p`.  Its two halves are:
+PROOF AS FORMALIZED (Miyake, pp. 155–157, with the group-generation step
+rearranged into the two-sided form that is effective in Lean).  The witness is
+the honest function `g(z) = f(z/p)`, i.e. `p · (f ∣₂ δ_p)` for
+`δ_p = [1, 0; 0, p] = heckeRep p 0`, packaged by
+`exists_cuspForm_descent_of_qCoeff_eq_zero_of_not_dvd` above.  Its three
+ingredients are:
 
-* `g ∈ S₂(Γ₀(M), χ)` for the trivial `χ`, by showing `g|₂γ = g` first for the
-  subgroup `Γ' = {γ ∈ Γ₀(M) : b ≡ 0 mod p}` — where it is a direct slash
-  computation, `δ_p γ δ_p⁻¹ ∈ Γ₀(M)` — and then observing that `Γ'` together
-  with `[1,1;0,1]` generates `Γ₀(M)`;
-* the descent to `Γ₀(M/p)`: `Γ₀(M/p)` is generated by `Γ₀(M)` together with
-  `[1,0;M/p,1]`, and the slash of `g` by that extra generator is computed to be
-  `g` because the character is trivial (in general it is `χ(1 + nM/l)`, which is
-  what forces `l·m_χ ∣ N`).
+* **holomorphy and cusp vanishing** travel along the pin's `CuspForm.translate`
+  (a cusp form on the arithmetic conjugate `δ_p⁻¹Γ₀(M)δ_p`,
+  `heckeConj_isArithmetic`) and then along
+  `exists_cuspForm_of_slash_invariant`, which upgrades the level using only
+  that BOTH groups are arithmetic — `IsCusp` is then the same condition on
+  both sides (`Subgroup.IsArithmetic.isCusp_iff_isCusp_SL2Z`);
+* **invariance under the `γ ∈ Γ₀(M/p)` with `p ∣ γ₀₁`** is the direct
+  conjugation computation `δ_p γ δ_p⁻¹ ∈ Γ₀(M)`
+  (`heckeRep_zero_conj_mem_Gamma0GL`: conjugation divides `γ₀₁` by `p` and
+  multiplies `γ₁₀` by `p`, and `M/p ∣ γ₁₀` becomes `M ∣ pγ₁₀`);
+* **invariance under the remaining `γ`** because translations on BOTH sides
+  move any `γ` into that subgroup — `T^k γ T^l` has upper-right entry
+  `(γ₀₀ + kγ₁₀)·l + (γ₀₁ + kγ₁₁)` and leaves `γ₁₀` alone, so `k ∈ {0, 1}` makes
+  the coefficient a unit mod `p` and `l` then solves the congruence
+  (`exists_heckeTMat_mul_mul_dvd_upperRight`).  Invariance under `T` itself is
+  where — and the ONLY place where — the coefficient hypothesis enters
+  (`heckeRep_one_slash_eq_of_qCoeff_eq_zero_of_not_dvd`): `f(z + 1/p) = f(z)`
+  because the two `q`-expansions agree TERMWISE, the root of unity `e^{2πin/p}`
+  being `1` at `p ∣ n` and the coefficient `a_n(f)` vanishing otherwise.
+
+Finally `a_m(g) = a_{pm}(f)` by reindexing that same expansion along `n = pm`,
+and `V_p g = f` follows coefficientwise from `qCoeff_degeneracyOp`.
 
 `p ∤ M` is the other branch of Miyake's theorem and gives `f = 0` via Hecke's
 Lemma 4.6.3; it is not needed here, since the consumer only ever peels a prime
@@ -31324,8 +31787,16 @@ theorem mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd {M p : ℕ}
     (hM : 0 < M) (hp : p.Prime) (hpM : p ∣ M)
     {f : CuspForm (Gamma0GL M) 2}
     (hf : ∀ n : ℕ, ¬ p ∣ n → qCoeff M f n = 0) :
-    f ∈ LinearMap.range (degeneracyOp (M / p) M p) :=
-  sorry
+    f ∈ LinearMap.range (degeneracyOp (M / p) M p) := by
+  obtain ⟨g, hg⟩ :=
+    exists_cuspForm_descent_of_qCoeff_eq_zero_of_not_dvd hM hp hpM hf
+  have hdvd : p * (M / p) ∣ M := by
+    rw [Nat.mul_div_cancel' hpM]
+  refine ⟨g, cuspForm_eq_of_forall_qCoeff_eq fun n => ?_⟩
+  rw [qCoeff_degeneracyOp hp.pos hdvd g n]
+  by_cases hn : p ∣ n
+  · rw [if_pos hn, hg (n / p), Nat.mul_div_cancel' hn]
+  · rw [if_neg hn, (hf n hn).symm]
 
 /-- **MIYAKE'S PEELING STEP: ONE PRIME COMES OFF THE MAIN LEMMA'S MODULUS**
 (sorry leaf — cut 2026-07-27 out of
@@ -31361,11 +31832,15 @@ inclusion–exclusion sieve fails.
    `h = f − (the L-sieve of f)`, and Lemma 4.6.7 plus Lemma 4.6.6(2) show every
    coefficient of that at an `n` with `(n, L) = 1` vanishes.
 
-THE ONE MISSING PIECE OF INFRASTRUCTURE is the TRACE operator
-`S₂(Γ₀(N)) → S₂(Γ₀(N/p))` used in moves 3 and 4; this file currently has only
-the other direction (`degeneracyOp`).  Building it — the double-coset sum over
-`Γ₀(N/p) = ⊔_v Γ₀(N) γ_v` — is the prerequisite for this leaf, and it is
-`Γ₀`-only, so it does not reopen the `Γ(N)` obstruction recorded below.
+THE TRACE OPERATOR used in moves 3 and 4 is BUILT: `traceOp` above, a thin
+wrapper on the pin's own `CuspForm.trace`.  (The earlier note here, that it was
+"the one missing piece of infrastructure", was wrong — see the correction in the
+route audit above.)  Move 2 is likewise DONE: it is
+`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` above, now PROVEN.  What
+remains of this leaf is exactly moves 3 and 4 — the coefficient bookkeeping of
+the trace — and that residue is isolated below as
+`exists_smul_traceOp_qCoeff_coprime_eq_zero`, which this leaf then discharges in
+one line.
 
 FAITHFULNESS.  `1 < L` is what makes this the COMPOSITE case of Miyake's
 induction; at `L = 1` the statement degenerates to
@@ -31375,14 +31850,32 @@ and is the base case of the induction.  `¬ p ∣ L` is Miyake's square-freeness
 reduction and is used in move 3.  The statement is NOT vacuous: `f = 0` gives
 `g = 0`, and for `f = V_p u + V_q w` with `q ∣ L` the witness `g = u` is
 forced. -/
+theorem exists_smul_traceOp_qCoeff_coprime_eq_zero {M p L : ℕ}
+    [NeZero M] [NeZero (M / p)]
+    (hM : 0 < M) (hp : p.Prime) (hpM : p ∣ M) (hL : 1 < L) (hpL : ¬ p ∣ L)
+    {f : CuspForm (Gamma0GL M) 2}
+    (hf : ∀ n : ℕ, ¬ p ∣ n → Nat.Coprime n L → qCoeff M f n = 0) :
+    ∃ c : ℂ, ∀ n : ℕ, Nat.Coprime n L →
+      qCoeff M (f - degeneracyOp (M / p) M p (c • traceOp M (M / p) f)) n = 0 :=
+  sorry
+
+/-- **MIYAKE'S PEELING STEP** (Theorem 4.6.8's induction step), assembled from
+the residual leaf above: the witness is Miyake's own,
+`f_p = p(d+1)⁻¹ · (f ∣ Γ₀(M) · 1 · Γ₀(M/p))` — a scalar multiple of the TRACE of
+`f` itself, not of anything built from the sieve. -/
 theorem exists_sub_degeneracyOp_qCoeff_coprime_eq_zero {M p L : ℕ}
     (hM : 0 < M) (hp : p.Prime) (hpM : p ∣ M) (hL : 1 < L) (hpL : ¬ p ∣ L)
     {f : CuspForm (Gamma0GL M) 2}
     (hf : ∀ n : ℕ, ¬ p ∣ n → Nat.Coprime n L → qCoeff M f n = 0) :
     ∃ g : CuspForm (Gamma0GL (M / p)) 2,
       ∀ n : ℕ, Nat.Coprime n L →
-        qCoeff M (f - degeneracyOp (M / p) M p g) n = 0 :=
-  sorry
+        qCoeff M (f - degeneracyOp (M / p) M p g) n = 0 := by
+  haveI : NeZero M := ⟨hM.ne'⟩
+  haveI : NeZero (M / p) :=
+    ⟨(Nat.div_pos (Nat.le_of_dvd hM hpM) hp.pos).ne'⟩
+  obtain ⟨c, hc⟩ :=
+    exists_smul_traceOp_qCoeff_coprime_eq_zero hM hp hpM hL hpL hf
+  exact ⟨c • traceOp M (M / p) f, hc⟩
 
 /-- **THE MAIN LEMMA, INDUCTED OVER THE PRIME FACTORS OF A DIVISOR OF THE LEVEL**
 (PROVEN 2026-07-27 over the two leaves above; Miyake, *Modular Forms*, Theorem
