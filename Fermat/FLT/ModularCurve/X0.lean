@@ -9688,11 +9688,18 @@ Three things then stop being assumptions:
 `exists_x0JReductionAt` — moved here from the `j`-map subsection, since
 it now consumes `SpecLoc` — is PROVEN from `exists_x0JNeronDatum`.
 
-**Exactly ONE leaf is left open, and the net sorry count is unchanged.**
-`exists_x0JNeronDatum` — the Deligne–Rapoport / Igusa smooth model over
-`ℤ_(q)` for `q ∤ N`, together with its two fibres — is the same missing
-object as `exists_x0NeronDatum` above, and it is where all the arithmetic
-now sits.  Everything else this subsection needs is PROVEN here,
+**UPDATE (2026-07-27, later the same day): `exists_x0JNeronDatum` is now
+PROVEN too, and this paragraph's claim that it is the one open leaf is
+retired.**  As first written it demanded the Deligne–Rapoport / Igusa
+model for itself — the same missing object as `exists_x0NeronDatum`
+above, and therefore a DUPLICATE of it.  It has been re-founded on the
+shared `IsX0CurveModel`; see the subsection *Sharing ONE integral model*
+below for what replaced it.  The two leaves that remain in this
+subsection are `isX0Compactification_data_of_compactificationY0` (three
+facts about `X_0(N)/ℚ`) and `exists_x0JOpenModel_of_curveModel` (the open
+part's fibres, and `j` integral on the model).
+
+Everything else this subsection needs is PROVEN here,
 including the two facts that would most naturally have been posited:
 
 * `exists_relSectionAlong_of_special` — an integral section of the proper
@@ -10145,29 +10152,304 @@ noncomputable def toJReduction : IsX0JReductionAt N q hX hX' hj where
 
 end IsX0JNeronDatum
 
+/-! #### Sharing ONE integral model: the `j`-datum over `IsX0CurveModel`
+
+`exists_x0JNeronDatum` was written (2026-07-27) as a single leaf
+demanding the whole Deligne–Rapoport / Igusa model for itself.  Its own
+docstring said so: *"the same missing object as `exists_x0NeronDatum`"*.
+That is exactly the problem — it was a SECOND statement of an object the
+Jacobian side already needs, so proving Deligne–Rapoport once would not
+have discharged it.
+
+Meanwhile the Jacobian side had been cut: `IsX0NeronDatum` is now
+assembled from `IsX0CurveModel` (the smooth proper model of `X_0(N)`
+over `ℤ_(ℓ)` with both fibres of the CURVE identified and the valuative
+criterion) and `IsX0JacobianModel` (the relative Picard scheme over that
+same model).  `IsX0CurveModel` mentions no Jacobian and no `j`; it is
+precisely the shared object.
+
+So this subsection re-founds `exists_x0JNeronDatum` on it.  The residual
+content is genuinely disjoint from the curve model:
+
+* **the OPEN part's two fibres.**  `IsX0CurveModel` carries the open part
+  `𝒴 ⊆ 𝒳` of the integral model (inside its `model` field) but identifies
+  only the fibres of the PROPER curve — `genX`, `spX`.  `genY`, `spY`,
+  their naturality, and the compatibility of both identifications with
+  the open immersion (`genX_j`, `spX_j`) are what the `j`-layer adds.
+  Mathematically this is base change of an open immersion, which is why
+  it is a different statement from the model's existence and not a
+  weaker copy of it;
+* **the `j`-invariant on integral points** — `jmZ`, valued in `R` itself,
+  with its two restrictions.  This is Igusa: `j` is a regular function on
+  the integral model of `Y_0(N)` for `q ∤ N`.
+
+Both are collected in `IsX0JOpenModel`, taking the curve model as a
+PARAMETER — exactly the shape `IsX0JacobianModel` already uses, so the
+three halves of the integral story now sit side by side over one model.
+
+**One gap is bookkeeping rather than geometry, and it is separated out
+rather than hidden.**  This leaf's hypothesis on the generic curve is
+`IsCompactificationY0`, which carries `proper` and `smooth` but not the
+relative dimension, the geometric connectedness, or the finiteness of the
+cusp locus that `IsX0Compactification` — the hypothesis of
+`exists_x0CurveModel_of_base` — also demands.  Those three facts are the
+leaf `isX0Compactification_data_of_compactificationY0`; the packaging
+around them is proven (`IsCompactificationY0.toX0Compactification`).
+They are true because `hc` pins `Y` as `Y_0(N)`, hence as a geometrically
+connected smooth affine CURVE, and a dominant open immersion into a
+smooth proper `X` then forces `X` to be its smooth compactification.
+
+**Net effect on the frontier.**  One leaf becomes two, and the object
+that was duplicated becomes shared.  Counting leaves alone this looks
+like a step backwards; counting THEOREMS TO PROVE it is a strict
+reduction, because the Deligne–Rapoport model — by far the largest of the
+three — is now demanded once for the whole file instead of once per
+consumer. -/
+
+/-- **The three facts about `X_0(N)/ℚ` that `IsCompactificationY0` does
+not carry** (sorry node).
+
+TRUE for `N ≠ 0`.  `hc` pins `Y` up to isomorphism as the coarse moduli
+space of the `Γ₀(N)`-problem over `ℚ`, which is a geometrically connected
+smooth affine curve; `hX` presents `X` as a smooth proper scheme
+containing it as a DENSE open (`isDominant`).  Hence `X` is a smooth
+proper geometrically connected curve — relative dimension `1` and
+geometric connectedness transfer along a dominant open immersion from
+`Y` — and its cusp locus, the complement of a dense open in an
+irreducible curve, is finite.
+
+`_hN` is load-bearing and not decoration: at `N = 0` the `Γ₀(0)`-problem
+over `Spec ℚ` is empty (`isEmpty_of_gamma0Datum_zero`), so `Y` may be the
+empty scheme, `isDominant` then forces `X` empty, and the empty scheme is
+not geometrically connected.  `_hc` is load-bearing too — without it `X`
+is merely *some* smooth proper scheme with a dense open, which need not
+have dimension `1` at all.  Both are underscored only because the proof
+is a `sorry` and every hypothesis is therefore unused.
+
+Stated as the three MISSING facts rather than as
+`Nonempty (IsX0Compactification …)` on purpose: four of that structure's
+seven fields are already available from `hX` and `hc`, and burying them
+in a sorry node would overstate what is open. -/
+theorem isX0Compactification_data_of_compactificationY0 (N : ℕ) (_hN : N ≠ 0)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (_hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :
+    SmoothOfRelativeDimension 1 strX ∧ GeometricallyConnected strX ∧
+      (Set.range hX.j.base)ᶜ.Finite :=
+  sorry
+
+/-- **`IsCompactificationY0` plus the three facts above IS an
+`IsX0Compactification`** (PROVEN).
+
+Pure packaging, and it is what lets this file's `j`-layer call
+`exists_x0CurveModel_of_base` — whose hypothesis is the stronger
+structure — instead of restating the integral model for itself. -/
+def IsCompactificationY0.toX0Compactification {N : ℕ}
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (hX : IsCompactificationY0 strY strX) (hc : IsCoarseModuliY0 N strY)
+    (h : SmoothOfRelativeDimension 1 strX ∧ GeometricallyConnected strX ∧
+      (Set.range hX.j.base)ᶜ.Finite) :
+    IsX0Compactification N strX strY hX.j where
+  comm := hX.«over»
+  coarse := hc
+  isOpen := hX.isOpenImmersion
+  isProper := hX.proper
+  smooth := h.1
+  connected := h.2.1
+  finite_compl := h.2.2
+
+/-- **The OPEN-PART and `j` half of a Néron-pinned `j`-datum, over a
+GIVEN integral curve model.**
+
+This is `IsX0JNeronDatum` with every field the curve model already
+carries deleted, and the curve model itself taken as a parameter — the
+same discipline `IsX0JacobianModel` follows for the Jacobian half.
+Deleted here, because `cm` supplies them: `model`, `genX`, `spX`,
+`genX_nat`, `spX_nat`, `properX`.  (`base` is supplied by
+`exists_isReductionBase`.)
+
+What remains splits in two, and both parts are stated over `cm` so that
+they cannot be satisfied by a *different* model:
+
+* `genY`, `spY`, `genY_nat`, `spY_nat` identify the two fibres of the
+  OPEN part `𝒴` as equivalences of FUNCTORS of points, and `genX_j`,
+  `spX_j` say the curve identifications `cm.genX`, `cm.spX` carry the
+  open immersion `Y ⊆ X` (resp. `Y' ⊆ X'`) to `jZ`.  The naturality
+  fields are load-bearing for the same reason as in `IsX0JNeronDatum`:
+  without them these are bare bijections of point sets and a point-set
+  relabelling preserving the open part satisfies everything else while
+  changing nothing that Yoneda can see;
+* `jmZ`, `jmGen`, `jmSp` and their three compatibilities carry the
+  `j`-invariant on integral points, valued in `R = ℤ_(q)` ITSELF.  That
+  integrality is the whole `q`-integrality half of `red_jm`. -/
+structure IsX0JOpenModel (N q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
+    {Y X Y' X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX)
+    (hX' : IsX0Compactification N strX' strY' jY')
+    (hj : IsJMapOn N hc)
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) where
+  /-- the generic fibre of the open model is `Y`, functorially -/
+  genY : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.generic R = g₀ → RelPoint strY g ≃ RelPoint ystr g₀
+  /-- the special fibre of the open model is `Y'`, functorially -/
+  spY : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.special toF = g₀ → RelPoint strY' g ≃ RelPoint ystr g₀
+  /-- naturality of the generic identification of open parts -/
+  genY_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+    (x : RelPoint strY g),
+    genY g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genY g g₀ h₀ x)
+  /-- naturality of the special identification of open parts -/
+  spY_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF q} {g' : T' ⟶ SpecF q}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.special toF = g₀) (h₀' : g' ≫ SpecLoc.special toF = g₀')
+    (x : RelPoint strY' g),
+    spY g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (spY g g₀ h₀ x)
+  /-- the generic identification carries the open immersion -/
+  genX_j : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (y : RelPoint strY g),
+    cm.genX g g₀ h (relSectionAlong hX.j hX.over y)
+      = relSectionAlong jZ cm.model.comm (genY g g₀ h y)
+  /-- the special identification carries the open immersion -/
+  spX_j : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.special toF = g₀) (y' : RelPoint strY' g),
+    cm.spX g g₀ h (relSectionAlong jY' hX'.comm y')
+      = relSectionAlong jZ cm.model.comm (spY g g₀ h y')
+  /-- the `j`-invariant of an integral point, INTEGRAL: `j` is a regular
+  function on the integral model of the open part -/
+  jmZ : RelPoint ystr (𝟙 (SpecLoc R)) → R
+  /-- the `j`-invariant on the generic fibre -/
+  jmGen : RelPoint ystr (SpecLoc.generic R) → ℚ
+  /-- the `j`-invariant on the special fibre -/
+  jmSp : RelPoint ystr (SpecLoc.special toF) → ZMod q
+  /-- the generic `j`-invariant of an integral point is its integral one -/
+  jmGen_pre : ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+    jmGen (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ) = ((jmZ yZ : R) : ℚ)
+  /-- the special `j`-invariant of an integral point is the reduction of
+  its integral one -/
+  jmSp_pre : ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+    jmSp (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) yZ) = toF (jmZ yZ)
+  /-- the generic `j`-invariant is the `j`-map the consumers use -/
+  jm_gen : ∀ y : RelPoint strY (𝟙 SpecQ),
+    hj.jm y = jmGen (genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)
+
+/-- **A curve model plus its open-and-`j` half IS a Néron-pinned
+`j`-datum** (PROVEN).
+
+Field-by-field assembly, and the point of the whole cut: every curve
+field of the datum is taken VERBATIM from `cm`, so the datum this
+produces is built on the shared Deligne–Rapoport model rather than on
+one of its own. -/
+def IsX0JOpenModel.toJNeronDatum
+    {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ}
+    (om : IsX0JOpenModel N q R toF hX hX' hj cm) (hbase : IsReductionBase q R toF) :
+    IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ where
+  base := hbase
+  model := cm.model
+  genX := cm.genX
+  genY := om.genY
+  spX := cm.spX
+  spY := om.spY
+  genX_nat := cm.genX_nat
+  genY_nat := om.genY_nat
+  spX_nat := cm.spX_nat
+  spY_nat := om.spY_nat
+  genX_j := om.genX_j
+  spX_j := om.spX_j
+  properX := cm.properX
+  jmZ := om.jmZ
+  jmGen := om.jmGen
+  jmSp := om.jmSp
+  jmGen_pre := om.jmGen_pre
+  jmSp_pre := om.jmSp_pre
+  jm_gen := om.jm_gen
+
+/-- **The open-part fibres and the integral `j` exist over a given curve
+model** (sorry node — base change of the open immersion, and Igusa).
+
+TRUE for `q ∤ N`.  Two independent statements, deliberately kept in one
+leaf because both are read off the SAME model and neither is usable
+without the other:
+
+* the special fibre `𝒴 ×_{ℤ_(q)} 𝔽_q` of the open part exists and its
+  complement in `𝒳 ×_{ℤ_(q)} 𝔽_q` is the special fibre of the cusp locus,
+  which is what `hX'` and `spX_j` record; the generic side is the same
+  statement over `ℚ`.  This is formal — base change of an open immersion
+  is an open immersion, and the fibre identifications are the universal
+  property of the fibre product read on points — but it is not FREE here,
+  because `IsX0CurveModel` identifies `X'` only through a natural
+  equivalence of functors and recovering `Y' ↪ X'` from it needs Yoneda
+  in the slice category over `Spec ℤ_(q)`;
+* `j` is a regular function on `𝒴`, valued in `ℤ_(q)` on integral
+  sections.  This is Igusa's good-reduction statement for the `j`-line at
+  `q ∤ N`, and it is the only genuinely modular input left in this
+  subsection.
+
+Note what is NOT assumed, exactly as before the cut: `q` is not required
+to be odd.  Mazur needs `q ≠ 2` for the FORMAL IMMERSION, which is a
+different statement, is not part of this module, and would only weaken
+this leaf.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
+REFUTE THAT: the `j`-half needs the `j`-line over `ℤ_(q)`, and the survey
+recorded in `exists_x0CurveModel_of_base` found no integral model of a
+modular curve in mathlib, `~/cs/FLT` or this project.  Producing one — or
+producing a Yoneda-style reconstruction of `Y' ↪ X'` from `cm.spX` alone,
+which would split the first bullet off as PROVEN — refutes it.  The
+second of those is the cheaper attack and is the recommended next cut. -/
+theorem exists_x0JOpenModel_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
+    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (_hbase : IsReductionBase q R toF)
+    {Y X X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
+    ∃ (Y' : Scheme.{0}) (strY' : Y' ⟶ SpecF q) (jY' : Y' ⟶ X')
+      (hX' : IsX0Compactification N strX' strY' jY'),
+      Nonempty (IsX0JOpenModel N q R toF hX hX' hj cm) :=
+  sorry
+
 /-- **Existence of the Néron-pinned `j`-reduction datum at a prime
-`q ∤ N`** (sorry node).
+`q ∤ N`** (PROVEN, was a sorry node until 2026-07-27).
 
-TRUE — Deligne–Rapoport: for `q ∤ N` the modular curve `X_0(N)` has a
-smooth proper model over `ℤ_(q)` whose special fibre is `X_0(N)_{𝔽_q}`,
-the cusps form a relative divisor, and the `j`-map extends to a morphism
-of models.  Reduction of rational points is the valuative criterion
-applied to that proper model; `jmZ` is the extension of `j`, read on
-points and valued in `ℤ_(q)` itself.
+Re-founded on the SHARED integral curve model.  The proof is the
+assembly and nothing else:
 
-Note what is NOT assumed: `q` is not required to be odd.  Mazur needs
-`q ≠ 2` for the FORMAL IMMERSION, which is a different statement and is
-not part of this module; the model and the `j`-map extension are fine at
-`q = 2` as long as `q ∤ N`, and keeping the hypothesis out is the
-direction that leaves the leaf weakest.
+1. `exists_isReductionBase` constructs the base `ℤ_(q)` — PROVEN, and the
+   same witness the Jacobian side uses;
+2. `isX0Compactification_data_of_compactificationY0` supplies the three
+   facts about `X/ℚ` that `IsCompactificationY0` omits, and
+   `IsCompactificationY0.toX0Compactification` packages them;
+3. `exists_x0CurveModel_of_base` — the SHARED Deligne–Rapoport / Igusa
+   model, already required by `exists_x0NeronDatum` — produces `cm`;
+4. `exists_x0JOpenModel_of_curveModel` produces the open-part fibres and
+   the integral `j` over that same `cm`;
+5. `IsX0JOpenModel.toJNeronDatum` assembles them, taking every curve
+   field verbatim from `cm`.
 
-IRREDUCIBLE at this pin, for the same reason as `exists_x0NeronDatum`:
-it needs the integral model, which no development at this pin has.  What
-the pinning bought is not that this leaf became easier — it is that
-`red_jm` stopped being an assumption, so the datum can no longer be
-satisfied by junk, and consumers that need `redX` to BE the reduction can
-now be stated. -/
-theorem exists_x0JNeronDatum (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime) (_hqN : ¬ q ∣ N)
+The old docstring's *"IRREDUCIBLE at this pin"* verdict is retired: it
+was true of the leaf as a single statement, and the axis it did not
+search was the SHARING axis — that the integral model it needed was
+already being demanded, in a Jacobian-free form, a thousand lines above.
+See the subsection docstring. -/
+theorem exists_x0JNeronDatum (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime) (hqN : ¬ q ∣ N)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {hc : IsCoarseModuliY0 N strY} (hX : IsCompactificationY0 strY strX)
     (hj : IsJMapOn N hc) :
@@ -10175,8 +10457,16 @@ theorem exists_x0JNeronDatum (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime) (_hqN :
       (strY' : Y' ⟶ SpecF q) (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
       (hX' : IsX0Compactification N strX' strY' jY')
       (ystr : YZ ⟶ SpecLoc R) (xstr : XZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
-      Nonempty (IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :=
-  sorry
+      Nonempty (IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) := by
+  obtain ⟨R, toF, hbase⟩ := exists_isReductionBase q hq
+  obtain ⟨X', XZ, YZ, strX', xstr, ystr, jZ, ⟨cm⟩⟩ :=
+    exists_x0CurveModel_of_base N q hq hqN R toF hbase
+      (hX.toX0Compactification hc
+        (isX0Compactification_data_of_compactificationY0 N hN hc hX))
+  obtain ⟨Y', strY', jY', hX', ⟨om⟩⟩ :=
+    exists_x0JOpenModel_of_curveModel N q hN hq hqN R toF hbase hX hj cm
+  exact ⟨R, toF, Y', X', YZ, XZ, strY', strX', jY', hX', ystr, xstr, jZ,
+    ⟨om.toJNeronDatum hbase⟩⟩
 
 /-- **Existence of the good reduction of `(X_0(N), j)` at a prime
 `q ∤ N`** (PROVEN, was a sorry node until 2026-07-27).
@@ -10185,9 +10475,11 @@ Moved here from the `j`-map subsection — it consumes `SpecLoc`, which is
 declared in the integral-model subsection above — and re-founded on
 `IsX0JNeronDatum` exactly as the FORMAL-CONTENT AUDIT of
 `IsX0JReductionAt` asked.  The whole content is now in
-`exists_x0JNeronDatum`, and the three hypotheses that used to be
-decoration (`hN`, `hq`, `hqN`, formerly underscored) are passed straight
-through to it. -/
+`exists_x0JNeronDatum` — which is itself PROVEN as of later the same day,
+over the SHARED `IsX0CurveModel`, so what this ultimately rests on is
+`exists_x0CurveModel_of_base` together with the two smaller leaves named
+in its docstring.  The three hypotheses that used to be decoration
+(`hN`, `hq`, `hqN`, formerly underscored) are passed straight through. -/
 theorem exists_x0JReductionAt (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime) (hqN : ¬ q ∣ N)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {hc : IsCoarseModuliY0 N strY} (hX : IsCompactificationY0 strY strX)
