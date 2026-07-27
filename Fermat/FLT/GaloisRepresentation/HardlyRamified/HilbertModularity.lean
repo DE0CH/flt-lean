@@ -10869,7 +10869,98 @@ are recorded rather than made:
 TERMINALITY VERDICT (2026-07-26): the arithmetic residue — Moret–Bailly /
 Taylor, plus Carayol / Taylor with level lowering — is IRREDUCIBLY a
 citation at this pin. What is reducible is the packaging, and all of it
-lives in `HilbertHeckeAlgebra`. -/
+lives in `HilbertHeckeAlgebra`.
+
+## WHERE `residueCardTwo` WOULD HAVE TO COME FROM (audit 2026-07-27)
+
+Of this leaf's six obligations, five (`totallyReal`, `galoisF`,
+`irreducibleF`, and the two coefficient data) are already produced by the
+PROVEN geometric chain in `Modularity/KhareWintenberger.lean`, whose
+output node is `exists_moretBailly_seed_of_five_le`. The sixth,
+`residueCardTwo`, is NOT, and this section records exactly why, so that
+the next reader does not re-derive it. Each break below is stated with
+the check that would REFUTE it.
+
+THE SUPPLY CHAIN, bottom to top, all PROVEN and all in that file:
+
+* `exists_normalSplitPoint_of_affine_curve` — Moret–Bailly Thm 1.3. This
+  one DOES have the needed shape: it takes `S : Finset ℕ` together with
+  `hSpt : ∀ p ∈ S, HasRationalPoint fC (ULift ℚ_[p])`, and concludes
+  `∀ p ∈ S, Nonempty (F →+* ℚ_[p])` — complete splitting at `S`, which for
+  `F` normal over `ℚ` is `IsTotallySplitAt F p`.
+* `exists_normalRealPoint_of_affine_curve` — consumes the above.
+* `exists_totallyReal_point_of_affine_geometricallyIrreducible`
+* `exists_totallyReal_point_of_geometricallyIrreducible`
+* ... up to `exists_moretBailly_seed_of_five_le`.
+
+BREAK A — STATEMENT-LEVEL, and the cheap half. The splitting conclusion
+is derived and then THROWN AWAY. In the body of
+`exists_normalRealPoint_of_affine_curve` the binding `hsplit` obtained
+from `exists_normalSplitPoint_of_affine_curve` is used ONLY as the last
+argument of `hSsup`, to produce the linear-disjointness conjunct; it does
+not appear in that theorem's conclusion, and none of the three wrappers
+above it mentions splitting at any prime. So the information exists
+inside a proof and is discarded at its boundary.
+  REFUTING CHECK: read the final `exact` of
+  `exists_normalRealPoint_of_affine_curve` and look for `hsplit` in the
+  tuple. If a splitting conjunct is present in the conclusion, this
+  break has been repaired and only Break B remains.
+
+BREAK B — MATHEMATICAL, and the expensive half. `2` cannot simply be put
+into `S`. That body obtains `S` from
+`exists_primes_forall_sup_eq_top_of_isOpen` applied to the bound `B` of
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible`, i.e. every
+member of `S` is a prime EXCEEDING `B`, which is precisely the range in
+which Weil plus Hensel make local solvability free. Admitting `2` costs a
+genuine `HasRationalPoint fC (ULift ℚ_[2])`, and note the subject is the
+CURVE `fC`, not the ambient variety: the Bertini reduction
+`exists_affineCurve_of_affine_geometricallyIrreducible` is a well-founded
+induction that threads exactly ONE prescribed point,
+`HasRationalPoint _ (ULift ℝ)`, through
+`exists_dimensionDrop_of_affine_geometricallyIrreducible`. So a
+`ℚ_[2]`-point of the twisted Hilbert–Blumenthal variety must additionally
+SURVIVE the cut to a curve.
+  REFUTING CHECK: inspect the binders of
+  `exists_dimensionDrop_of_affine_geometricallyIrreducible` and
+  `exists_affineCurve_of_affine_geometricallyIrreducible` for a second,
+  `p`-adic prescribed point alongside `hreal`. If one is threaded, Break B
+  is repaired. The mathematics for it is standard and is how BLGGT
+  Prop. 3.1.1 is actually proved — the hyperplane may be chosen `p`-adically
+  close to one through the prescribed local points, local solutions being
+  open — so this is a generalisation of an existing proof, NOT a missing
+  theory.
+
+BREAK C — THE ADAPTER, missing outright and small. Even granted
+`IsTotallySplitAt F 2`, nothing in the tree converts it into this
+structure's field. The missing statement, in this file's vocabulary, is
+  `∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →`
+  `  Nat.card (𝓞 F ⧸ w.asIdeal) = 2`
+from `IsTotallySplitAt F 2`, i.e. complete splitting forces `e = f = 1` at
+every `w ∣ 2`, hence residue field `𝔽₂`. The route is
+`Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn` (`g·e·f =
+[F:ℚ]`) together with the degree-one-prime reading of `F →+* ℚ_[2]`
+recorded in the docstring above
+`exists_totallySplitPoint_of_krullDim_le_zero`.
+  REFUTING CHECK: grep the tree for a lemma concluding
+  `Nat.card (𝓞 _ ⧸ _) = 2`. As of this audit there is none.
+
+CONSEQUENCE FOR OWNERSHIP. Breaks A and B are edits to PROVEN
+declarations in `Modularity/KhareWintenberger.lean` that are simultaneously
+the consumers of several open leaves there, so this is a CUT-LEVEL repair
+spanning `exists_dimensionDrop_of_affine_geometricallyIrreducible`,
+`exists_affineCurve_of_affine_geometricallyIrreducible`,
+`exists_normalRealPoint_of_affine_curve`, the two
+`exists_totallyReal_point_*` wrappers, `MoretBaillySeed` and
+`exists_moretBailly_seed_of_five_le`. It must NOT be attempted piecemeal
+by whoever holds this leaf. The same conclusion, reached from the other
+end, is recorded in the docstring of
+`exists_heckeTraceAlgebra_of_congruentSeed`.
+
+WHAT THIS DOES NOT CHANGE. `residueCardTwo` remains INDEPENDENT and
+load-bearing: `ℚ(√5)` is totally real and Galois with `2` inert,
+`N(w) = 4` and `5 ∣ N(w)² − 1 = 15`, so the tame-at-`2` gluing clause
+genuinely fails there. The field is not removable, and `5 ≤ ℓ` is exactly
+what `N(w) = 2` buys. -/
 theorem nonempty_potentialHeckeDatum_of_five_le
     (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
