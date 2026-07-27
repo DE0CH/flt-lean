@@ -71,11 +71,37 @@ public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyOpen
 public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
 public import Mathlib.AlgebraicGeometry.Morphisms.FiniteType
 public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
+public import Mathlib.AlgebraicGeometry.Morphisms.FormallyUnramified
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.RingTheory.Unramified.LocalStructure
 public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.AlgebraicGeometry.Pullbacks
+-- `IsFinite`, `LocallyQuasiFinite` and `IsFinite.of_isProper_of_locallyQuasiFinite`
+-- (Zariski's main theorem), for the shearing reduction below.  These add NOTHING to
+-- any downstream cone: the module's only consumer, `Modularity/TateModule.lean`,
+-- already `public import`s all three (checked 2026-07-27,
+-- `grep -rn "import Fermat.FLT.Modularity.AbelianSchemeIsogeny" Fermat/`).
+public import Mathlib.AlgebraicGeometry.Morphisms.Finite
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import Mathlib.Topology.Connected.Clopen
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+-- The decomposition of `flat_of_finite_fibres_endo` (miracle flatness) below.
+-- `IsFinite` and `LocallyQuasiFinite` occur in the SIGNATURES of its geometric
+-- leaves, and `IsRegularLocalRing` / `ringKrullDim` in the signature of its
+-- commutative-algebra leaf, so all four are `public import`s and not bare ones.
+-- `QuasiFinite` supplies `LocallyQuasiFinite.of_finite_preimage_singleton` and
+-- `ZariskisMainTheorem` supplies `IsFinite.of_isProper_of_locallyQuasiFinite`;
+-- together they turn the hypothesis "`IsProper u` with finite fibres" into
+-- `IsFinite u`, which is the form all three geometric leaves consume.
+-- (Those three AlgebraicGeometry modules are already `public import`ed above.)
+public import Mathlib.RingTheory.RegularLocalRing.Defs
+-- `flat_stalkMap_of_flat_stalkMap_fiberMapOver` and its three-leaf cut.
+public import Mathlib.RingTheory.EssentialFiniteness
+public import Mathlib.RingTheory.FinitePresentation
+public import Mathlib.RingTheory.RingHom.Flat
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
 
 @[expose] public section
 
@@ -588,7 +614,244 @@ noncomputable def fiberMapOver {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     (by rw [Category.comp_id]; exact h.symm)
     (by rw [Category.comp_id, Category.id_comp])
 
-/-- **The fibrewise criterion of flatness, AT A POINT** (sorry leaf —
+/-! ### The pointwise fibre criterion, cut into ring theory + two transports
+
+`flat_stalkMap_of_flat_stalkMap_fiberMapOver` (Stacks 039C) used to be a
+single opaque leaf, and its docstring recorded that it **could not honestly
+be restated over abstract local rings** because "essentially of finite
+presentation" does not exist in the pin.  That inference is the standard
+one this fleet's doctrine warns about — *stating* a notion is not *proving*
+anything about it.  The notion is a five-line definition
+(`EssFinitePresentation` below), and once it is written the leaf decomposes
+with **no residue** into
+
+* `flat_of_flat_of_flat_quotientMap` — the ring-level *critère de platitude
+  par fibres*, **Stacks 05UV verbatim**, over abstract local rings.  This is
+  where all the missing mathematics now lives (Tor, the local criterion,
+  and the limit argument);
+* `essFinitePresentation_stalkMap` — the stalk of a morphism locally of
+  finite presentation is essentially of finite presentation.  The exact
+  analogue of mathlib's `AlgebraicGeometry.LocallyOfFiniteType.stalkMap`
+  (`Morphisms/FiniteType.lean:99`), which supplies the OTHER finiteness
+  hypothesis (`EssFiniteType`) for free;
+* `flat_quotientMap_of_flat_stalkMap_fiberMapOver` — "the stalk of the
+  fibre is the base change of the stalk", in the flatness form the criterion
+  consumes.
+
+**Why 05UV and not 00MP.**  The Noetherian local engine 00MP cannot be used
+here: `S` is an arbitrary scheme, so its stalks are arbitrary local rings.
+05UV (= Algebra Lemma 10.128.9) is the non-Noetherian local-ring form, and
+its hypotheses were checked against the source on 2026-07-27:
+
+> Let `R`, `S`, `S'` be local rings and let `R → S → S'` be local ring
+> homomorphisms.  Let `M` be an `S'`-module and `𝔪` the maximal ideal of
+> `R`.  Assume (1) `R → S'` is essentially of finite presentation, (2)
+> `R → S` is essentially of finite type, (3) `M` is of finite presentation
+> over `S'`, (4) `M` is not zero, (5) `M/𝔪M` is a flat `S/𝔪S`-module, (6)
+> `M` is a flat `R`-module.  Then `S` is essentially of finite presentation
+> and flat over `R` and `M` is a flat `S`-module.
+
+Note (2) is *finite type*, not presentation — that is exactly why this is
+the right form to cut along, since `LocallyOfFiniteType.stalkMap` already
+delivers it.  Its sibling 00R7 (10.128.8) demands essential finite
+presentation on BOTH maps and is therefore the wrong one to reach for.
+
+Instantiating `M = S' = 𝒪_{X,x}`, `S = 𝒪_{Y,y}`, `R = 𝒪_{S,s}` makes (3)
+automatic (a ring is finitely presented over itself) and (4) automatic (a
+local ring is nontrivial), which is why neither appears below.
+-/
+
+/-- **Essentially of finite presentation**, for a ring homomorphism: `φ`
+factors as a finitely presented ring map followed by a localization.
+
+This is the exact analogue of mathlib's `Algebra.EssFiniteType` — whose
+docstring reads "an `R`-algebra is essentially of finite type if it is the
+localization of an algebra of finite type" — with *finite type* replaced by
+*finite presentation*, and it is the standard definition (Stacks; EGA IV
+1.4).  It is stated for ring homs rather than algebras because that is the
+shape the stalk maps come in.
+
+**Why it is not a `Subalgebra`.**  Mathlib's `EssFiniteType` is equivalently
+witnessed by a sub*algebra* of the target
+(`essFiniteType_iff_exists_subalgebra`), because the image of a finite-type
+algebra is again of finite type.  **That equivalence FAILS for finite
+presentation** — the image of a finitely presented algebra need not be
+finitely presented — so the intermediate ring `T` here genuinely has to be
+abstract, and copying the `EssFiniteType` idiom would have produced a
+strictly stronger, and hence possibly FALSE, notion.
+
+Belongs in mathlib next to `Algebra.EssFiniteType`; it is declared here only
+to avoid a new module.  `grep -rn "EssFinitePresentation"
+.lake/packages/mathlib ~/cs/FLT` returned nothing on 2026-07-27. -/
+def EssFinitePresentation {R S : Type u} [CommRing R] [CommRing S] (φ : R →+* S) : Prop :=
+  ∃ (T : Type u) (_ : CommRing T) (g : R →+* T) (v : T →+* S) (M : Submonoid T),
+    g.FinitePresentation ∧ v.comp g = φ ∧ @IsLocalization T _ M S _ v.toAlgebra
+
+/-- Ideal bookkeeping: `I·B` lands in the contraction of `I·A` along `B → A`.
+This exists only to give the fibre hypothesis of
+`flat_of_flat_of_flat_quotientMap` a stable, nameable proof term, so that the
+statement below elaborates the same way at every use site. -/
+theorem map_le_comap_map_comp {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    (g : R →+* B) (v : B →+* A) (I : Ideal R) :
+    I.map g ≤ (I.map (v.comp g)).comap v := by
+  rw [Ideal.map_le_iff_le_comap, Ideal.comap_comap]
+  exact Ideal.le_comap_map
+
+/-- **CRITÈRE DE PLATITUDE PAR FIBRES, ring level** (sorry leaf — PURE
+COMMUTATIVE ALGEBRA, no schemes, no group schemes: **Stacks 05UV** = Algebra
+Lemma 10.128.9, the non-Noetherian local-ring form; Noetherian case Stacks
+00MP; Matsumura *Commutative Ring Theory* §23 and EGA IV 11.3.10 for the
+classical account).
+
+*Let `R → B → A` be local homomorphisms of local rings, with `R → A`
+essentially of finite presentation and `R → B` essentially of finite type.
+If `A` is flat over `R` and `A/𝔪_R A` is flat over `B/𝔪_R B`, then `A` is
+flat over `B`.*
+
+**FAITHFULNESS — this is 05UV instantiated at `M = S' = A`, with the source
+quoted in the section note above.**  Hypotheses (3) `M` of finite
+presentation over `S'` and (4) `M ≠ 0` are omitted because at `M = S' = A`
+they are theorems, not assumptions: `A` is finitely presented over itself,
+and `[IsLocalRing A]` already gives `Nontrivial A`.  The conclusion is
+likewise *weaker* than 05UV's, which also asserts that `B` is essentially of
+finite presentation and flat over `R`; only `A` flat over `B` is kept,
+because only that is consumed.  A weaker conclusion and fewer hypotheses
+cannot turn a true statement false, so this leaf is safe in both directions.
+
+**This is where ALL the missing mathematics now is**, and the survey below
+is what a prover faces (each claim paired with the grep that refutes it if
+it goes stale; all re-run against the pin on 2026-07-27):
+
+* **Tor of modules over a ring is ABSENT.**  `grep -rn "^def Tor" Mathlib/`
+  finds only the abstract monoidal `CategoryTheory.Monoidal.Tor` — whose own
+  file carries `assert_not_exists ModuleCat.abelian`, i.e. it is
+  *deliberately* disconnected from modules — and the group-homology
+  `Rep k G` version.  `Mathlib/RingTheory/Flat/CategoryTheory.lean:27`
+  carries the literal TODO `- Relate flatness with Tor`.  **`Ext` for
+  modules DOES exist** (`HasExt (ModuleCat.{v} R)`), so the asymmetry is
+  real and worth knowing: the derived-functor apparatus is present, only the
+  `Tor` half is unbuilt.
+* **The local criterion of flatness is ABSENT.**  `grep -rin "local
+  criterion" Mathlib/` returns nothing.  But note two ingredients that ARE
+  present and that a naive survey misses:
+  `Module.Flat.iff_rTensor_injective'` (`Flat/Tensor.lean:67`) is exactly
+  "`Tor₁(R/I, M) = 0` for every ideal `I`" written without Tor, and
+  `Module.free_of_maximalIdeal_rTensor_injective`
+  (`LocalRing/Module.lean:248`) is the local criterion itself in the
+  finitely-*presented* case: `𝔪 ⊗ M → M` injective plus `FinitePresentation`
+  gives `Free`.  The gap is precisely that a stalk is essentially, not
+  actually, of finite presentation.
+* **Spreading out / absolute Noetherian approximation is ABSENT.**
+  `grep -rni "noetherian approximation" Mathlib/` returns nothing.
+  `AffineTransitionLimit.lean` descends *morphisms* along cofiltered limits
+  (`Scheme.exists_π_app_comp_eq_of_locallyOfFinitePresentation:1230`) but
+  not the *property*, so EGA IV 8.8.2 is not available.
+* **Cohen–Macaulay, depth, generic flatness, openness of the flat locus are
+  ABSENT.**  `grep -rn CohenMacaulay Mathlib/` is empty,
+  `RingTheory/Regular/Depth.lean` is a 10-line stub with zero declarations,
+  and `grep -rln "flatLocus\|genericFlat" Mathlib/` is empty.
+* `~/cs/FLT` has none of it either.
+
+A hit on any of those greps means this note has gone stale and the leaf is
+cheaper than it looks. -/
+theorem flat_of_flat_of_flat_quotientMap {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (hfp : EssFinitePresentation (v.comp g))
+    (hft : g.EssFiniteType)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    v.Flat :=
+  sorry
+
+/-- **The stalk of a morphism locally of finite presentation is essentially
+of finite presentation** (sorry leaf — general scheme theory, no abelian
+varieties).
+
+This is the exact analogue of mathlib's
+`AlgebraicGeometry.LocallyOfFiniteType.stalkMap`
+(`Mathlib/AlgebraicGeometry/Morphisms/FiniteType.lean:99`), which proves
+`(f.stalkMap x).hom.EssFiniteType` for `f` locally of finite type.  Mathlib
+has NO finite-presentation counterpart: `grep -rln stalkMap
+Mathlib/AlgebraicGeometry/` does not list
+`Morphisms/FinitePresentation.lean`, and that file contains no `stalkMap` at
+all.  A hit there refutes this note.
+
+**Why it is true**, and why the route is the same as mathlib's: on affine
+opens `f` is a finitely presented `R → S`, and the stalk map is
+`R_𝔭 → S_𝔮`.  Now `S ⊗_R R_𝔭` is finitely presented over `R_𝔭` (finite
+presentation is stable under base change) and `S_𝔮` is a localization of it,
+so the composite is a localization of a finitely presented `R_𝔭`-algebra —
+which is `EssFinitePresentation` by definition.
+
+**The likely shape of a proof**, mirroring the finite-type one verbatim:
+`HasRingHomProperty.stalkMap_of_respectsIso` applied to
+`EssFinitePresentation`, which needs the four closure properties mathlib
+already has for `RingHom.EssFiniteType` — `respectsIso`,
+`stableUnderComposition`, `isStableUnderBaseChange` (hence
+`localizationPreserves`) and `holdsForLocalization` — proved for
+`EssFinitePresentation` instead.  Those four are the natural further cut if
+this leaf wants splitting; `stableUnderComposition` is the only one with any
+content. -/
+theorem essFinitePresentation_stalkMap {X Y : Scheme.{u}} (φ : X ⟶ Y)
+    [LocallyOfFinitePresentation φ] (x : X) :
+    EssFinitePresentation (φ.stalkMap x).hom :=
+  sorry
+
+/-- **The stalk of the fibre is the base change of the stalk**, in the
+flatness form the fibre criterion consumes (sorry leaf — general scheme
+theory, no abelian varieties).
+
+Concretely: `𝒪_{X_s, x_s} = 𝒪_{X,x} ⧸ 𝔪_s 𝒪_{X,x}` and
+`𝒪_{Y_s, y_s} = 𝒪_{Y,y} ⧸ 𝔪_s 𝒪_{Y,y}`, compatibly with `u`, so flatness of
+the stalk map of `fiberMapOver u h s` at `p.asFiber x` IS flatness of
+`𝒪_{Y,y}/𝔪_s 𝒪_{Y,y} → 𝒪_{X,x}/𝔪_s 𝒪_{X,x}`.  The statement is phrased as
+that flatness rather than as the isomorphism, so that it plugs straight into
+hypothesis (5) of `flat_of_flat_of_flat_quotientMap`.
+
+**Why it is true, and why the special feature matters.**  For a general
+fibre product the local ring at a point is a *localization* of a tensor
+product of local rings, not the tensor product itself.  Here it is on the
+nose, because `Scheme.Hom.fiberι` is injective on points (it is a
+homeomorphism onto `p ⁻¹' {s}` — `Scheme.Hom.fiberHomeo`), so the prime of
+`𝒪_{X,x} ⊗_{𝒪_{S,s}} κ(s)` corresponding to `x_s` is already its unique
+maximal ideal and the further localization is trivial.  Concretely on
+affines, with `𝔭 ↔ x` and `𝔯 ↔ s` and `𝔭 ∩ R = 𝔯`, both sides are
+`(A/𝔯A)_𝔭`.
+
+**ABSENT from the pin, with the refuting greps** (re-run 2026-07-27):
+`grep -n stalk Mathlib/AlgebraicGeometry/Fiber.lean` and the same over
+`PullbackCarrier.lean` and `Pullbacks.lean` each return NOTHING, and
+`grep -rn "stalkMap_pullback\|pullback_stalk" Mathlib/` is empty.  Mathlib
+computes the **residue field** of a point of a fibre product
+(`PullbackCarrier.Triplet.tensor`) and the **sections** of one
+(the `pushoutSection` block, `Morphisms/Flat.lean:183–509`), but never the
+stalk.  A hit on any of those means this leaf is cheap.
+
+**FAITHFULNESS — the intermediate map is PINNED, deliberately.**  An earlier
+draft of this leaf took the map `𝒪_{S,s} ⟶ 𝒪_{Y,y}` as an arbitrary
+parameter `g` with `g ≫ u.stalkMap x = p.stalkMap x`.  That is **not safe**:
+`u.stalkMap x` need not be injective, so `g` is not determined by that
+equation, while the conclusion depends on `g` through the ideal `𝔪_s·𝒪_{Y,y}`
+— i.e. the leaf would have quantified over data the statement is not
+invariant under, and could have been FALSE.  It is therefore stated in the
+substituted form `p = u ≫ q`, with the map fixed to `q.stalkMap (u x)`; the
+consumer reaches it by `subst h`, which costs nothing. -/
+theorem flat_quotientMap_of_flat_stalkMap_fiberMapOver
+    {X Y S : Scheme.{u}} {q : Y ⟶ S} (u : X ⟶ Y) (x : X)
+    (hfib : ((fiberMapOver u rfl ((u ≫ q) x)).stalkMap ((u ≫ q).asFiber x)).hom.Flat) :
+    (Ideal.quotientMap
+        ((IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))).map
+          ((u.stalkMap x).hom.comp (q.stalkMap (u x)).hom))
+        (u.stalkMap x).hom
+        (map_le_comap_map_comp (q.stalkMap (u x)).hom (u.stalkMap x).hom
+          (IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))))).Flat :=
+  sorry
+
+/-- **The fibrewise criterion of flatness, AT A POINT** (PROVEN 2026-07-27
+over the three leaves above —
 general scheme theory, NO abelian varieties: Stacks 039C = Stacks Theorem
 37.16.2, of which the global `flat_of_flat_fiberMap` below is the
 specialization Stacks 039E; EGA IV 11.3.10, *critère de platitude par
@@ -627,59 +890,45 @@ asks for and is weaker than the consumer's
 consumer still applies.  This leaf is therefore strictly STRONGER than
 what `flat_of_flat_fiberMap` needs, and correspondingly reusable.
 
-**ROUTE, and what is missing — surveyed 2026-07-27, each claim paired
-with the check that would refute it.**  The classical proof has two
-layers, and *only the first* is Noetherian:
+**HOW IT IS PROVEN, and the TWO STALE CLAIMS this replaces.**  The proof
+is `subst h`, then `flat_of_flat_of_flat_quotientMap` — Stacks 05UV over
+abstract local rings — fed by the three transports declared above:
+`essFinitePresentation_stalkMap` for hypothesis (1),
+`LocallyOfFiniteType.stalkMap` (mathlib, FREE) for hypothesis (2), `hp`
+for hypothesis (6), and `flat_quotientMap_of_flat_stalkMap_fiberMapOver`
+for hypothesis (5).  `subst h` is what lets `p.stalkMap x` factor as
+`q.stalkMap (u x) ≫ u.stalkMap x` by `Scheme.Hom.stalkMap_comp` with no
+`eqToHom` anywhere.
 
-1. *The Noetherian local engine* is Stacks 00MP, checked verbatim: `R`,
-   `S`, `S'` **Noetherian** local, `R → S → S'` local, `M` a finite
-   `S'`-module, `M ≠ 0`, `M/𝔪M` flat over `S/𝔪S`, `M` flat over `R`;
-   then `S` is flat over `R` and `M` is flat over `S`.  Taking
-   `M = S' = O_{X,x}` makes the finiteness hypothesis automatic, so at
-   this level the ONLY real hypothesis is Noetherian-ness.  Its proof
-   runs through the **local criterion of flatness** (`Tor₁` vanishing).
-2. *`S` here is an ARBITRARY scheme*, so layer 1 does not apply directly.
-   That is exactly why 039C carries finite-presentation hypotheses
-   instead of Noetherian ones, and why its proof needs a **limit /
-   spreading-out** argument (absolute Noetherian approximation) to
-   descend to the Noetherian case.  Do not plan a proof that stops at
-   00MP; it does not reach this statement.
+The previous version of this docstring recorded two reasons the leaf could
+NOT be cut further.  **Both were wrong, and both are the same error** —
+treating a missing *definition* as a missing *theory*:
 
-ABSENT from the pin, each with its refuting grep over
-`.lake/packages/mathlib`:
+1. *"Essentially of finite presentation does not exist, so the honest
+   ring-level statement cannot be written down."*  It is a five-line
+   definition (`EssFinitePresentation` above), and writing it is what makes
+   the cut possible.  Nothing about it has to be *proven* for the cut; the
+   proof obligations land on the named leaves instead.
+2. *"The natural seam — the stalk of the fibre — is not available, so the
+   local algebra cannot even be stated over plain rings."*  The seam does
+   not need mathlib's stalk-of-pullback theory to be *stated*; it needs it
+   to be *proven*, and that obligation is now
+   `flat_quotientMap_of_flat_stalkMap_fiberMapOver`, isolated from the
+   commutative algebra it was entangled with.
 
-* **Tor of modules over a ring.**  `grep -rn "^def Tor"` finds only the
-  categorical `CategoryTheory.Monoidal.Tor` and the group-homology
-  `Rep k G` version — there is no `Tor R M N` for modules, hence no
-  local criterion of flatness.  `grep -rn "local criterion"` returns
-  nothing at all.
-* **Cohen–Macaulay and depth.**  `grep -rn CohenMacaulay` returns
-  literally nothing; `RingTheory/Regular/Depth.lean` is a 10-line stub.
-  (Re-verified 2026-07-27.)
-* **Generic flatness and openness of the flat locus.**
-  `grep -rln flatLocus` returns nothing.
-* **Stalks of pullbacks and of fibres.**  `grep -n stalk` over
-  `AlgebraicGeometry/Fiber.lean` and over
-  `AlgebraicGeometry/PullbackCarrier.lean` each return NOTHING.  This is
-  the reason this leaf was not cut further: the natural next seam is
-  "the stalk of `p.fiber s` at `p.asFiber x` is `O_{X,x} ⧸ 𝔪_s O_{X,x}`,
-  compatibly with `u`", and that identification would have to be built
-  from scratch before the local algebra could even be stated over plain
-  rings.  A hit on either grep means that seam is now cheap and this
-  leaf should be re-cut along it.
-* **Essentially of finite presentation.**  `Algebra.EssFiniteType` exists
-  (`RingTheory/EssentialFiniteness.lean`) but there is no
-  essentially-of-finite-*presentation* notion, which is what
-  `LocallyOfFinitePresentation p` becomes at a stalk.  This is the second
-  reason the leaf is not stated over abstract local rings: the honest
-  ring-level statement cannot currently be written down.  Do **not**
-  weaken it to `EssFiniteType` — finite type is strictly weaker than
-  finite presentation and the criterion is not known in that generality,
-  so that would risk a FALSE leaf.
+The old note's positive content survives and has been moved to the leaf it
+actually describes: the Tor / local-criterion / spreading-out survey is on
+`flat_of_flat_of_flat_quotientMap`, and the stalk-of-pullback survey is on
+`flat_quotientMap_of_flat_stalkMap_fiberMapOver`.  One correction to it
+that a prover should know: mathlib's `Module.free_of_maximalIdeal_rTensor_injective`
+IS the local criterion of flatness in the finitely-presented case, so the
+gap is narrower than "no local criterion exists" suggested — it is exactly
+the step from *finitely* to *essentially* finitely presented.
 
-`~/cs/FLT` has none of this either (checked 2026-07-26: no
-`AbelianVariety`, no cube, no `CohenMacaulay`), so there is nothing to
-vendor. -/
+**Route note that remains true and load-bearing**: `S` is an ARBITRARY
+scheme, so the Noetherian engine 00MP does not reach this statement.  05UV
+is the non-Noetherian local-ring form and is what the cut uses; a plan that
+stops at 00MP is still incomplete. -/
 theorem flat_stalkMap_of_flat_stalkMap_fiberMapOver
     {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     (u : X ⟶ Y) (h : u ≫ q = p)
@@ -687,10 +936,246 @@ theorem flat_stalkMap_of_flat_stalkMap_fiberMapOver
     (x : X)
     (hp : (p.stalkMap x).hom.Flat)
     (hfib : ((fiberMapOver u h (p x)).stalkMap (p.asFiber x)).hom.Flat) :
-    (u.stalkMap x).hom.Flat :=
+    (u.stalkMap x).hom.Flat := by
+  subst h
+  have hcomp : (u.stalkMap x).hom.comp (q.stalkMap (u x)).hom = ((u ≫ q).stalkMap x).hom := by
+    rw [← CommRingCat.hom_comp, ← Scheme.Hom.stalkMap_comp]
+    rfl
+  have := q.prop (u x)
+  exact flat_of_flat_of_flat_quotientMap (g := (q.stalkMap (u x)).hom)
+    (v := (u.stalkMap x).hom)
+    (hcomp ▸ essFinitePresentation_stalkMap (u ≫ q) x)
+    (LocallyOfFiniteType.stalkMap (f := q) (u x)) (hcomp ▸ hp)
+    (flat_quotientMap_of_flat_stalkMap_fiberMapOver u x hfib)
+
+/-! ### The four inputs of miracle flatness
+
+`flat_of_finite_fibres_endo` below is PROVEN over the four leaves in this
+block.  The cut is at the stalks: `AlgebraicGeometry.Flat.of_stalkMap` turns
+`Flat u` into a statement about each local homomorphism
+`𝒪_{X,u x} ⟶ 𝒪_{X,x}`, and Matsumura 23.1 is exactly a criterion for such a
+homomorphism to be flat.  Three of the four leaves are geometry (they say what
+`u` and `X` do to stalks) and one is pure commutative algebra.
+
+**What the glue itself contributes, and it is not nothing**: the hypothesis
+`IsProper u` together with finite fibres is upgraded ONCE, here, to
+`IsFinite u` — via `LocallyQuasiFinite.of_finite_preimage_singleton` and
+Zariski's main theorem in mathlib's form
+`IsFinite.of_isProper_of_locallyQuasiFinite`.  Every geometric leaf below is
+therefore stated with `[IsFinite u]`, which is far more usable than "proper
+with finite fibres", and no leaf has to redo that step. -/
+
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS**
+(sorry leaf — but see the next paragraph: **DO NOT PROVE THIS, HOIST IT**).
+
+**THIS IS ALREADY PROVEN IN THIS REPOSITORY, AND ITS SUBTREE IS SORRY-FREE.**
+It stands sorried here for one reason only: DECLARATION ORDER.  The proof is
+`GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
+in `Fermat/FLT/Modularity/KhareWintenberger.lean`, and that module is strictly
+DOWNSTREAM of this one — it `public import`s `Modularity/TateModule.lean`,
+which `public import`s this file — so the proof cannot be imported here.
+
+Verified 2026-07-27, and here is the check that would refute it:
+
+    grep -n 'theorem isRegularLocalRing_stalk_of_smooth_over_field' \
+         Fermat/FLT/Modularity/KhareWintenberger.lean
+    grep -n '^public import Fermat' Fermat/FLT/Modularity/KhareWintenberger.lean
+
+The first must find the declaration; the second must show `TateModule` among
+its imports.  Its own two dependencies were checked the same day and BOTH have
+sorry-free bodies:
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` and
+`isRegularLocalRing_quotient_span_list_aux` (which is a general "a quotient of
+a regular local ring by part of a regular system of parameters is regular
+local", a genuine mathlib gap), resting in turn on
+`isDomain_of_isRegularLocalRing`.  So there is NO open mathematics under this
+leaf anywhere in the tree.
+
+**THE CORRECT REPAIR IS A HOIST, NOT A PROOF.**  Move
+`isRegularLocalRing_stalk_of_smooth_over_field` together with those
+dependencies into a module upstream of `Modularity/AbelianScheme.lean`, then
+this leaf closes in one line (the only difference in the statements is
+cosmetic: the downstream one takes `{K : Type u} [Field K]` and
+`Spec (CommRingCat.of K)`, this one takes the `K : CommRingCat` that the
+consumer already has).  Re-proving it here would be the single most expensive
+mistake available at this leaf: it would duplicate a large, finished
+development.  Whoever performs the hoist owns the import-cone audit that comes
+with it — that is the real work, and it is bookkeeping, not mathematics. -/
+theorem isRegularLocalRing_stalk_of_smooth {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
+    (g : X ⟶ Spec K) [Smooth g] (x : X) :
+    IsRegularLocalRing (X.presheaf.stalk x) :=
   sorry
 
-/-- **MIRACLE FLATNESS, endomorphism form** (sorry leaf — PURE COMMUTATIVE
+/-- **THE FIBRE RING OF A FINITE MORPHISM AT A POINT IS ZERO-DIMENSIONAL**
+(sorry leaf — general scheme theory, NO abelian varieties, no smoothness, no
+field; true for an arbitrary finite morphism of schemes).
+
+`𝒪_{X,x} ⧸ 𝔪_{u x} 𝒪_{X,x}` is the local ring at `x` of the scheme-theoretic
+fibre `u ⁻¹ (u x)`.  For `u` finite that fibre is `Spec` of a finite
+`κ(u x)`-algebra, hence artinian, hence zero-dimensional; and localising an
+artinian ring keeps it artinian.  This is the hypothesis `dim M/𝔪M = 0` of
+Matsumura 23.1, which is what collapses the general dimension identity
+`dim M = dim A + dim M/𝔪M` to the equality supplied by
+`ringKrullDim_stalk_eq_of_isFinite_endo`.
+
+The quotient is NONTRIVIAL, so `0` is the right value and not `⊥`: the stalk
+map of a morphism of schemes is a LOCAL homomorphism
+(`AlgebraicGeometry.Scheme.instIsLocalHomStalkMap`), so
+`𝔪_{u x} 𝒪_{X,x} ⊆ 𝔪_x ≠ ⊤`.
+
+**ROUTE.**  Purely affine-local bookkeeping.  Choose an affine open `V ∋ u x`;
+`u` finite is affine, so `U = u ⁻¹ᵁ V` is affine, and `B = Γ(U)` is a FINITE
+`A = Γ(V)`-module.  With `p ⊆ A` and `q ⊆ B` the primes of `x` and `u x`,
+`IsAffineOpen.isLocalization_stalk` identifies the two stalks with `B_q` and
+`A_p`, and the fibre ring with `(B ⧸ pB)_q`.  Now `B ⧸ pB` is a finite
+`κ(p)`-algebra, so it is artinian, so its localisation is artinian and
+`ringKrullDim = 0`.
+
+**A WARNING FOR WHOEVER TAKES THIS LEAF, because it is the trap that decided
+the shape of `flat_of_isRegularLocalRing_of_ringKrullDim_eq` below.**  Do NOT
+try to prove this by showing the stalk map is module-finite and quoting a
+finiteness argument at the level of stalks: **THE STALK MAP OF A FINITE
+MORPHISM IS NOT MODULE-FINITE.**  Counterexample: `u : Spec ℤ[i] ⟶ Spec ℤ` is
+finite; take `p = (5)`, which splits, and `q` one of the two primes above it.
+Then `A_p = ℤ_(5)` and `B_q` is a DVR with fraction field `ℚ(i)`.  If `B_q`
+were a finite `A_p`-module it would be integral over `A_p`, hence contained in
+the integral closure `ℤ[i]_(5) = B_p`; but `B_q ⊋ B_p`, since it inverts the
+elements of the OTHER prime above `5`.  So `B_q` is not finite over `A_p`.
+Finiteness survives only BEFORE localising at `q`, which is why the route
+above localises last. -/
+theorem ringKrullDim_quotient_map_maximalIdeal_stalkMap {X Y : Scheme.{u}}
+    (u : X ⟶ Y) [IsFinite u] (x : X) :
+    ringKrullDim ((X.presheaf.stalk x) ⧸
+      Ideal.map (u.stalkMap x).hom (IsLocalRing.maximalIdeal (Y.presheaf.stalk (u x)))) = 0 :=
+  sorry
+
+/-- **A FINITE ENDOMORPHISM PRESERVES THE DIMENSION OF EVERY LOCAL RING**
+(sorry leaf — general scheme theory over a field, NO abelian varieties, no
+group law, no `[n]`.  This is the deepest of the three geometric leaves and
+the one that genuinely needs a dimension theory of schemes.)
+
+For `X` smooth, proper and geometrically connected over a field and `u` a
+FINITE endomorphism of `X`, `dim 𝒪_{X,x} = dim 𝒪_{X,u x}` for every `x`.
+
+**ROUTE, in the order the hypotheses are used.**
+
+1. *`X` is irreducible.*  `Smooth g` over a field makes every stalk regular
+   local, hence a domain, so `X` is locally irreducible;
+   `GeometricallyConnected g` makes it connected; a connected, locally
+   noetherian, locally irreducible scheme is irreducible.  Only ORDINARY
+   connectedness is used, so this hypothesis may be weakened freely — it is
+   `GeometricallyConnected` merely because that is what the caller has in hand
+   (`AbelianSchemeStruct.connected`).
+2. *`u` is surjective.*  `IsProper g` makes `X` quasi-compact and of finite
+   type over the field, hence finite-dimensional.  A finite morphism preserves
+   the dimension of a closed subset, so `u '' X` is a closed irreducible subset
+   of `X` of the full dimension `dim X`; in an irreducible finite-dimensional
+   scheme of finite type over a field the only such subset is `X`.
+3. *The dimension formula.*  On an irreducible scheme of finite type over a
+   field, `dim 𝒪_{X,x} = dim X - dim (closure {x})`.  Since `u` is finite,
+   `dim (closure {x}) = dim (closure {u x})`, and the two local dimensions
+   agree.
+
+**WHAT IS MISSING, with the greps that would refute it** (re-run 2026-07-27
+against `.lake/packages/mathlib`).  Mathlib has the RING-level dimension
+theory — `ringKrullDim`, `Ideal.height`, `Module.supportDim`,
+`topologicalKrullDim`, and the dimension-drop lemmas in
+`RingTheory/KrullDimension/Regular.lean` — but essentially NO scheme-level
+dimension theory: `ls Mathlib/AlgebraicGeometry/` shows no `Dimension.lean`,
+and `grep -rn "dim" Mathlib/AlgebraicGeometry/` turns up nothing that proves
+step 3.  Step 3 is the classical `dim 𝒪_{X,x} + dim closure{x} = dim X`
+(Matsumura 5.6 / EGA IV 5.2.3) and it, not steps 1–2, is the real content of
+this leaf.  A hit on a scheme-dimension file means this note has gone stale
+and the leaf is far cheaper than it looks. -/
+theorem ringKrullDim_stalk_eq_of_isFinite_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
+    (g : X ⟶ Spec K) [Smooth g] [IsProper g] [GeometricallyConnected g]
+    (u : X ⟶ X) [IsFinite u] (x : X) :
+    ringKrullDim (X.presheaf.stalk x) = ringKrullDim (X.presheaf.stalk (u x)) :=
+  sorry
+
+/-- **MIRACLE FLATNESS, RING LEVEL** (sorry leaf — PURE COMMUTATIVE ALGEBRA,
+no schemes at all: Matsumura *Commutative Ring Theory* Theorem 23.1, in the
+special case `M = T` of the source ring itself.  It would be at home in
+mathlib, which has nothing of it.)
+
+A local homomorphism `φ : R ⟶ T` of regular local rings whose fibre ring
+`T ⧸ 𝔪_R T` is zero-dimensional and which does not change the Krull dimension
+is FLAT.
+
+**FAITHFULNESS.**  Matsumura 23.1 reads: *let `(A,𝔪) → (B,𝔫)` be a local
+homomorphism of noetherian local rings and `M` a finite `B`-module with `A`
+regular, `M` Cohen–Macaulay and `dim M = dim A + dim M/𝔪M`; then `M` is flat
+over `A`.*  Instantiate `A = R`, `B = M = T`: `T` is a finite `T`-module, and
+`T` regular makes it Cohen–Macaulay.  The dimension identity becomes
+`hdim` together with `hfib`.  Note there is **no finiteness hypothesis
+relating `R` and `T`** and there must not be — see the counterexample in the
+docstring of `ringKrullDim_quotient_map_maximalIdeal_stalkMap` above, which is
+exactly why this statement is the one that had to be cut here.
+
+**WHAT MATHLIB HAS, AND ONE CLAIM OF THE OLD SURVEY THAT IS NOW REFUTED.**
+
+* PRESENT: `IsRegularLocalRing` (`RingTheory/RegularLocalRing/Defs.lean`,
+  defined by `(maximalIdeal R).spanFinrank = ringKrullDim R`), `ringKrullDim`,
+  the regular-sequence theory in `RingTheory/Regular/RegularSequence.lean` —
+  including the recursor `IsWeaklyRegular.ndrecWithRing`, which does induction
+  along a regular sequence while quotienting the BASE RING as well — and the
+  dimension-drop lemmas of `RingTheory/KrullDimension/Regular.lean`.
+* **REFUTED (2026-07-27).**  Every earlier survey of this node, including the
+  one that used to stand in this file, said that the induction step needs the
+  **local criterion of flatness** in its `Tor₁` form and that mathlib has no
+  `Tor` of modules, so the leaf was hopeless.  The second half is true —
+  `grep -rn "^def Tor" Mathlib/` finds only `CategoryTheory.Monoidal.Tor` and
+  the group-homology `Rep k G` version — but the first half is FALSE for
+  MODULE-FINITE base changes.  `Module.free_quotSMulTop_iff_free`
+  (`Mathlib/RingTheory/Regular/Free.lean`) states exactly the induction step:
+  for `M` finitely presented over `R` and `x` in the Jacobson radical and
+  `M`-regular, `M ⧸ xM` free over `R ⧸ (x)` **iff** `M` free over `R`.  Its
+  proof is Nakayama plus a lifting argument, no `Tor` anywhere.  Refuting
+  grep: `grep -n free_quotSMulTop_iff_free
+  .lake/packages/mathlib/Mathlib/RingTheory/Regular/Free.lean`.
+* So the honest statement of the obstruction is much narrower than "no local
+  criterion": *with* module-finiteness the criterion is already in the pin,
+  and the two remaining gaps are (a) **the fibre-dimension hypothesis has to be
+  turned into a regular sequence**, i.e. "regular local ⟹ Cohen–Macaulay", or
+  concretely "a system of parameters of a regular local ring is a regular
+  sequence" — `grep -rl CohenMacaulay Mathlib/` is still empty and
+  `RingTheory/Regular/Depth.lean` is a deprecation stub with ZERO declarations
+  — and (b) the passage from the module-finite case to this one.
+
+**THE ROUTE THAT AVOIDS `Tor` ENTIRELY, and it is worth taking.**  Do not
+attack this leaf at the stalks; go back to an affine cover, where finiteness
+survives.  For `u` finite and `V ⊆ Y` affine, `U = u ⁻¹ᵁ V` is affine and
+`B = Γ(U)` is a FINITE `A = Γ(V)`-module.  Then:
+
+1. `Module.Flat A B` may be checked at the maximal ideals of `A`
+   (`Module.flat_of_isLocalized_maximal`, `RingTheory/Flat/Localization.lean`),
+   and `B_p := B ⊗_A A_p` is still a FINITE `A_p`-module — the localisation is
+   at a prime of `A`, not of `B`, which is precisely what dodges the
+   counterexample above.
+2. A finite module over a local ring is flat iff free
+   (`Module.free_of_flat_of_isLocalRing`).
+3. Freeness follows by induction along a regular system of parameters
+   `t₁, …, t_d` of `A_p` using `Module.free_quotSMulTop_iff_free` at each step,
+   with `IsWeaklyRegular.ndrecWithRing` as the recursor; the base case is
+   `𝔪 = ⊥`, i.e. `A_p` a field, where every module is free.
+4. The ONLY remaining input is that `t₁, …, t_d` is a `B_p`-regular sequence.
+   That is gap (a): `B_p` is Cohen–Macaulay because `B` is regular, and
+   `𝔪_p B_p` is `𝔪`-primary because the fibre is finite.
+
+So a prover who first proves "a system of parameters of a regular local ring is
+a regular sequence" gets the rest from the pin.  That statement — not `Tor`,
+not depth in its full generality, not generic flatness, not openness of the
+flat locus (`grep -rln "flatLocus\|genericFlat" Mathlib/` is empty) — is the
+one genuinely missing piece of commutative algebra under this node. -/
+theorem flat_of_isRegularLocalRing_of_ringKrullDim_eq {R T : Type u} [CommRing R] [CommRing T]
+    [IsRegularLocalRing R] [IsRegularLocalRing T] (φ : R →+* T) [IsLocalHom φ]
+    (hdim : ringKrullDim T = ringKrullDim R)
+    (hfib : ringKrullDim (T ⧸ Ideal.map φ (IsLocalRing.maximalIdeal R)) = 0) :
+    φ.Flat :=
+  sorry
+
+/-- **MIRACLE FLATNESS, endomorphism form** (**PROVEN 2026-07-27** over the
+four leaves stated immediately above — PURE COMMUTATIVE
 ALGEBRA / general scheme theory, NO abelian varieties, no group law, no
 `[n]`: Matsumura *Commutative Ring Theory* Theorem 23.1, the theorem
 usually called *miracle flatness*; also in the Stacks Project under that
@@ -789,6 +1274,37 @@ looks.  Note that a prover does NOT need the whole of CM theory: only
 where BOTH rings are regular, which is the classical dimension count and
 does not need depth in its full generality.
 
+**STATUS 2026-07-27 — DECOMPOSED, and the survey above is now out of date in
+two places that matter.**  The four steps are separated into the four leaves
+stated immediately above this docstring, and this node is proven over them:
+
+* step 1 (`u` is FINITE) is **PROVEN HERE**, in the two `haveI` lines below,
+  exactly as the survey predicted — `LocallyQuasiFinite.of_finite_preimage_singleton`
+  followed by `IsFinite.of_isProper_of_locallyQuasiFinite`, with the two
+  modules added to this file's header.  Nothing else in the chain has to
+  re-derive it: all three geometric leaves take `[IsFinite u]`.
+* steps 2 and 3 (regularity, irreducibility, surjectivity) and the dimension
+  count of step 4 are `isRegularLocalRing_stalk_of_smooth` and
+  `ringKrullDim_stalk_eq_of_isFinite_endo`;
+* the finiteness of the fibres becomes
+  `ringKrullDim_quotient_map_maximalIdeal_stalkMap`;
+* and the local algebra is `flat_of_isRegularLocalRing_of_ringKrullDim_eq`.
+
+**FIRST CORRECTION.**  The survey says regularity of the stalks has to be
+proven.  It does not: it is ALREADY PROVEN in this repository, sorry-free, as
+`GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
+in `Modularity/KhareWintenberger.lean`, which is DOWNSTREAM of this module.
+See the leaf's own docstring — the repair is a hoist, not a proof.
+
+**SECOND CORRECTION.**  The survey says the local criterion of flatness (the
+`Tor₁` statement) is missing and therefore blocking.  Missing, yes; blocking,
+no — for MODULE-FINITE base changes `Module.free_quotSMulTop_iff_free`
+(`Mathlib/RingTheory/Regular/Free.lean`) already IS the induction step, with no
+`Tor` in its proof.  The one genuinely missing piece of commutative algebra
+under this node is "a system of parameters of a regular local ring is a
+regular sequence" (regular ⟹ Cohen–Macaulay).  The ring leaf's docstring
+writes out the four-step route that consumes it.
+
 **Two routes considered and REJECTED for this leaf**, recorded so they are
 not re-attempted: the *theorem of the cube* route needs ample line
 bundles, absent as above; the *homogeneity/translation* route needs
@@ -797,11 +1313,26 @@ translation layer would have been free-floating since nothing could
 consume it. -/
 theorem flat_of_finite_fibres_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
     (g : X ⟶ Spec K) [Smooth g] [IsProper g] [GeometricallyConnected g]
-    (u : X ⟶ X) [IsProper u] (hu : ∀ a : X, (⇑u ⁻¹' {a}).Finite) : Flat u :=
-  sorry
+    (u : X ⟶ X) [IsProper u] (hu : ∀ a : X, (⇑u ⁻¹' {a}).Finite) : Flat u := by
+  -- Zariski's main theorem: proper with finite fibres ⟹ FINITE.
+  haveI : LocallyQuasiFinite u := LocallyQuasiFinite.of_finite_preimage_singleton u hu
+  haveI : IsFinite u := IsFinite.of_isProper_of_locallyQuasiFinite u
+  -- Flatness of a morphism is flatness of every stalk map.
+  refine AlgebraicGeometry.Flat.of_stalkMap u fun x => ?_
+  -- Both stalks are regular local, `X` being smooth over a field.
+  haveI := isRegularLocalRing_stalk_of_smooth g x
+  haveI := isRegularLocalRing_stalk_of_smooth g (u x)
+  -- Matsumura 23.1, with the two dimension inputs supplied by the geometry.
+  exact flat_of_isRegularLocalRing_of_ringKrullDim_eq (u.stalkMap x).hom
+    (ringKrullDim_stalk_eq_of_isFinite_endo g u x)
+    (ringKrullDim_quotient_map_maximalIdeal_stalkMap u x)
 
 /-- **The fibrewise criterion of flatness** (PROVEN 2026-07-27 over the
-single pointwise leaf `flat_stalkMap_of_flat_stalkMap_fiberMapOver` above
+pointwise statement `flat_stalkMap_of_flat_stalkMap_fiberMapOver` above,
+itself PROVEN the same day over the three leaves
+`flat_of_flat_of_flat_quotientMap` (Stacks 05UV, ring level),
+`essFinitePresentation_stalkMap` and
+`flat_quotientMap_of_flat_stalkMap_fiberMapOver`
 — general scheme theory, NO abelian varieties: EGA IV 11.3.10, *critère
 de platitude par fibres*; Stacks 039E; Matsumura *Commutative Ring
 Theory* §23 for the local-algebra form).
@@ -830,10 +1361,14 @@ consumed at exactly ONE fibre, `p.fiber (p x)`, and at exactly one point
 of it, `Scheme.Hom.asFiber p x` — flatness of that fibre morphism gives
 flatness of its stalk map there (`AlgebraicGeometry.Flat.stalkMap`).
 Nothing is lost: Stacks 039C, the theorem the literature actually proves,
-IS pointwise, and 039E is its global specialization.  All the remaining
-mathematics is in
-`flat_stalkMap_of_flat_stalkMap_fiberMapOver`, whose docstring carries
-the route survey and the refuting greps.
+IS pointwise, and 039E is its global specialization.  The pointwise
+statement is in turn PROVEN, so the remaining mathematics is now in its
+three leaves: `flat_of_flat_of_flat_quotientMap` carries the Tor /
+local-criterion / spreading-out survey (that is where the depth is),
+`essFinitePresentation_stalkMap` is the finite-presentation analogue of a
+lemma mathlib already has for finite type, and
+`flat_quotientMap_of_flat_stalkMap_fiberMapOver` carries the
+stalk-of-pullback survey.  Each docstring carries its own refuting greps.
 
 **Checked against the source 2026-07-27: Stacks 039E does NOT require `Y`
 flat over `S`** — its hypotheses are `X` locally of finite presentation
@@ -915,8 +1450,216 @@ theorem finite_preimage_comp {X Y Z : Scheme.{u}} (g : X ⟶ Y) (h : Y ⟶ Z)
   rw [← Scheme.Hom.comp_apply]
   exact hx
 
+/-! ### `[n]` is UNRAMIFIED when `n` is prime to the characteristic
+
+The four declarations below carry the whole of
+`finite_preimage_mulByNat_of_field_prime_to_char` except one leaf.  Three
+of them are general scheme theory with no abelian-variety content at all;
+the fourth (`eq_zero_of_nsmul_eq_zero_of_squareZero`) is the single
+genuinely missing input, the Lie algebra of a smooth group scheme. -/
+
+namespace AbelianSchemeStruct
+
+/-- **Precomposition of relative points is SUBTRACTIVE** (PROVEN 2026-07-27).
+
+`RelPoint.pre` preserves `+` and `0` by the structure's own naturality
+axioms `pre_add` and `pre_zero`; the inversion step is proven inline from
+`neg_add` and cancellation.
+
+**Why inline rather than by reusing `AbelianSchemeStruct.pre_neg`.**  That
+lemma exists — `Fermat/FLT/ModularCurve/X0.lean:1352`, same namespace, same
+statement — but in a SIBLING module which is not in this import cone (X0
+imports `Modularity/AbelianScheme`, not this file).  Re-declaring
+`Fermat.AbelianSchemeStruct.pre_neg` here would give two declarations of one
+name and break any module that ever imports both, so the two lines are
+duplicated instead of the name.  If the two modules are ever merged into one
+cone, delete this `have` and use `ab.pre_neg`.
+
+Used once, in `formallyUnramified_mulByNat`, to turn "two points agree
+modulo a square-zero ideal" into "their difference lies in the kernel of the
+restriction map". -/
+theorem pre_sub (ab : AbelianSchemeStruct f) {T' T : Scheme.{u}} (h : T' ⟶ T)
+    {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g') (x y : RelPoint f g) :
+    letI := ab.addCommGroup g
+    letI := ab.addCommGroup g'
+    RelPoint.pre h hg (x - y) = RelPoint.pre h hg x - RelPoint.pre h hg y := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  have hneg : RelPoint.pre h hg (-y) = -(RelPoint.pre h hg y) := by
+    refine eq_neg_of_add_eq_zero_left ?_
+    show ab.add (RelPoint.pre h hg (ab.neg y)) (RelPoint.pre h hg y) = ab.zero g'
+    rw [← ab.pre_add h hg]
+    show RelPoint.pre h hg (ab.add (ab.neg y) y) = ab.zero g'
+    rw [ab.neg_add]
+    exact ab.pre_zero h hg
+  simp only [sub_eq_add_neg]
+  rw [← hneg]
+  exact ab.pre_add h hg x (-y)
+
+end AbelianSchemeStruct
+
+/-- **Formally unramified + finite type ⟹ quasi-finite, at RING level**
+(PROVEN 2026-07-27, and it is two lines).
+
+**This REFUTES a survey that stood in this file.**  The docstring of
+`finite_preimage_mulByNat_of_field_prime_to_char` recorded
+`FormallyUnramified f → LocallyOfFiniteType f → LocallyQuasiFinite f` as
+ABSENT from the pin, on the strength of
+`grep -rn "Unramified" Mathlib/AlgebraicGeometry/Morphisms/QuasiFinite.lean`
+returning nothing.  That grep is correct and the conclusion drawn from it is
+not: the implication holds at ring level as a mathlib INSTANCE,
+
+    Mathlib/RingTheory/Unramified/LocalStructure.lean:333
+    instance (priority := low) [EssFiniteType R S] [FormallyUnramified R S] :
+      Algebra.QuasiFinite R S
+
+(located by name 2026-07-27), with `Algebra.EssFiniteType.of_finiteType`
+supplying `EssFiniteType` from `FiniteType`.  Only the *scheme-level*
+packaging was missing, and that is `locallyQuasiFinite_of_formallyUnramified`
+below.  **To refute THIS note in turn**, re-run
+`grep -rn "EssFiniteType R S. .FormallyUnramified R S" Mathlib/RingTheory/Unramified/`;
+an empty result means the instance has been removed or renamed.
+
+The one non-obvious point is that `RingHom.QuasiFinite` is a `def`, not a
+class, so `inferInstance` cannot close the goal directly — the `Algebra`-side
+instance has to be produced with the ring types NAMED, which is exactly what
+this wrapper does. -/
+theorem quasiFinite_of_formallyUnramified_of_finiteType {R S : Type*} [CommRing R] [CommRing S]
+    (ψ : R →+* S) (h₁ : ψ.FormallyUnramified) (h₂ : ψ.FiniteType) : ψ.QuasiFinite := by
+  algebraize [ψ]
+  exact (inferInstance : Algebra.QuasiFinite R S)
+
+/-- **Formally unramified + locally of finite type ⟹ locally quasi-finite**
+(PROVEN 2026-07-27).  General scheme theory, no abelian varieties.
+
+Both `FormallyUnramified` and `LocallyOfFiniteType` are
+`HasRingHomProperty`s, and so is `LocallyQuasiFinite`; `iff_appLE` turns all
+three into statements about the same affine-local maps `Γ(Y, U) ⟶ Γ(X, V)`,
+where `quasiFinite_of_formallyUnramified_of_finiteType` applies pointwise.
+No Zariski gluing is needed because the three characterisations quantify over
+the *same* pairs of affine opens.
+
+This is the piece of `Mathlib/AlgebraicGeometry/Morphisms/QuasiFinite.lean`
+that is genuinely absent upstream, and it is a mathlib-facing lemma: it
+mentions nothing from this development. -/
+theorem locallyQuasiFinite_of_formallyUnramified {X Y : Scheme.{u}} (u : X ⟶ Y)
+    [FormallyUnramified u] [LocallyOfFiniteType u] : LocallyQuasiFinite u := by
+  rw [HasRingHomProperty.iff_appLE (P := @LocallyQuasiFinite) (f := u)]
+  intro U V e
+  exact quasiFinite_of_formallyUnramified_of_finiteType _
+    ((HasRingHomProperty.iff_appLE (P := @FormallyUnramified) (f := u)).mp ‹_› U V e)
+    ((HasRingHomProperty.iff_appLE (P := @LocallyOfFiniteType) (f := u)).mp ‹_› U V e)
+
+/-- **THE LIE ALGEBRA OF A SMOOTH GROUP SCHEME** (sorry leaf, created
+2026-07-27 — the ONE remaining input of
+`finite_preimage_mulByNat_of_field_prime_to_char`, and the only thing in
+that half of the old cube leaf that mathlib does not already have).
+
+*The infinitesimal kernel of an abelian scheme is torsion free at every `n`
+invertible in the base field.*  Concretely: `Spec R₀ ⟶ Spec R` is a
+square-zero thickening (`φ` surjective, `ker φ ^ 2 = ⊥`), `d` is an
+`R`-point of `A` over the base point `q`, `d` restricts to the identity
+element on `Spec R₀`, and `n · d = 0`.  Then `d = 0`.
+
+**WHY IT IS TRUE, and why it needs no line bundles.**  Write `I = ker φ`, so
+`I ^ 2 = 0` and `I` is a module over `R₀ = R ⧸ I`.  For any `S`-group scheme
+`G` and any square-zero thickening there is a natural isomorphism
+
+    ker (G(R) ⟶ G(R₀))  ≅  Hom_{R₀} (e^* Ω_{G/S} ⊗ R₀, I)
+
+(SGA 3, Exp. II; Mumford *Abelian Varieties* §11; Milne *Abelian Varieties*
+I.7) — the "Lie algebra" of `G`, tensored with the ideal.  The right-hand
+side is an `R₀`-MODULE, and `R₀` is a `K`-algebra because `q : Spec R ⟶
+Spec K` makes `R` one.  Under that isomorphism the group's `ℕ`-action is the
+module action of `(n : R₀)`, which is a unit as soon as `(n : K) ≠ 0`.
+Hence `n • d = 0` forces `d = 0`.  Nothing in this argument mentions ample
+line bundles, `Pic`, or the theorem of the cube.
+
+**IT IS EXACTLY THE `d[n] = n · id` STATEMENT.**  That is why this leaf
+closes the prime-to-characteristic half and says nothing about the other
+half: at `n = p = ringChar K` the scalar `(n : R₀)` is zero, the argument
+gives no information, and `finite_preimage_mulByNat_of_field_char` really
+does need the cube.
+
+**WHAT IS MISSING AT THIS PIN** (each claim refutable by one grep, all
+re-run 2026-07-27 on this worktree's `.lake/packages/mathlib`).
+
+* A scheme-level tangent space or Lie algebra:
+  `grep -rni "tangentSpace\|DualNumber" Mathlib/AlgebraicGeometry/` returns
+  NOTHING.  A hit means this leaf may now be cheap and should be re-attacked.
+* Consequently there is no `e^* Ω_{G/S}` for a group scheme and no
+  identification of the infinitesimal kernel with it.  `Ω` itself exists at
+  ring level (`KaehlerDifferential`) and as a sheaf, so what is missing is
+  the group-scheme half, not differentials.
+
+**A GENERALISATION THAT IS ALSO TRUE**, recorded so a prover is not misled
+into thinking the field is essential: the same statement holds over an
+arbitrary base with `n` invertible in `Γ(T, 𝒪_T)`, and does not need
+`ab.smooth` either (the displayed isomorphism is valid for every group
+scheme).  It is stated over a field here because that is the shape the
+consumer needs, and a prover may freely prove the stronger form and
+specialise. -/
+theorem eq_zero_of_nsmul_eq_zero_of_squareZero {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
+    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : (n : K) ≠ 0)
+    {R R₀ : CommRingCat.{u}} (φ : R ⟶ R₀) (hφ : Function.Surjective φ)
+    (hker : RingHom.ker φ.hom ^ 2 = ⊥)
+    {q : Spec R ⟶ Spec K} (d : RelPoint fK q)
+    (hres : letI := ab.addCommGroup (Spec.map φ ≫ q)
+      RelPoint.pre (Spec.map φ) rfl d = 0)
+    (hnd : letI := ab.addCommGroup q; n • d = 0) :
+    letI := ab.addCommGroup q; d = 0 :=
+  sorry
+
+/-- **`[n]` is FORMALLY UNRAMIFIED when `n` is prime to the characteristic**
+(PROVEN 2026-07-27 over the single leaf
+`eq_zero_of_nsmul_eq_zero_of_squareZero` above).
+
+This is the functor-of-points argument in full, and it uses no geometry
+beyond the group structure.  Mathlib's `FormallyUnramified.of_hom_ext`
+reduces formal unramifiedness to: for every surjection `φ : R ⟶ R₀` with
+`ker φ ^ 2 = ⊥` and every pair `g₁ g₂ : Spec R ⟶ A` with
+`Spec.map φ ≫ g₁ = Spec.map φ ≫ g₂` and `g₁ ≫ [n] = g₂ ≫ [n]`, one has
+`g₁ = g₂`.
+
+The proof:
+
+1. *Both are relative points over the SAME base point.*  `[n] ≫ f = f`
+   (`mulByNat_comp`) turns `g₁ ≫ [n] = g₂ ≫ [n]` into `g₂ ≫ f = g₁ ≫ f`,
+   so `g₁` and `g₂` are two elements of the group `RelPoint f (g₁ ≫ f)`.
+2. *The hypotheses become group statements.*  `nsmul_val` says precomposition
+   with `[n]` IS multiplication by `n`, so `g₁ ≫ [n] = g₂ ≫ [n]` reads
+   `n • y₁ = n • y₂`, i.e. `n • (y₁ - y₂) = 0`; and `pre_sub` turns the
+   agreement over `Spec R₀` into `RelPoint.pre _ _ (y₁ - y₂) = 0`.
+3. *Apply the leaf* to `d = y₁ - y₂` and conclude `y₁ = y₂`, hence
+   `g₁ = g₂`.
+
+No line bundles, no `Pic`, no theorem of the cube, and no smoothness is used
+HERE — smoothness is consumed inside the leaf. -/
+theorem formallyUnramified_mulByNat {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
+    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : (n : K) ≠ 0) :
+    FormallyUnramified (ab.mulByNat n) := by
+  refine FormallyUnramified.of_hom_ext _ ?_
+  intro R R₀ φ hφ hker g₁ g₂ hres hcomp
+  have hq₂ : g₂ ≫ fK = g₁ ≫ fK := by
+    conv_lhs => rw [← ab.mulByNat_comp n]
+    rw [← Category.assoc, ← hcomp, Category.assoc, ab.mulByNat_comp]
+  letI := ab.addCommGroup (g₁ ≫ fK)
+  letI := ab.addCommGroup (Spec.map φ ≫ (g₁ ≫ fK))
+  set y₁ : RelPoint fK (g₁ ≫ fK) := ⟨g₁, rfl⟩ with hy₁
+  set y₂ : RelPoint fK (g₁ ≫ fK) := ⟨g₂, hq₂⟩ with hy₂
+  have hsub : y₁ - y₂ = 0 := by
+    refine eq_zero_of_nsmul_eq_zero_of_squareZero K ab n hn φ hφ hker _ ?_ ?_
+    · rw [ab.pre_sub, sub_eq_zero]
+      exact Subtype.ext hres
+    · rw [smul_sub, sub_eq_zero]
+      refine Subtype.ext ?_
+      rw [ab.nsmul_val, ab.nsmul_val]
+      exact hcomp
+  exact congrArg Subtype.val (sub_eq_zero.mp hsub)
+
 /-- **`[n]` has finite fibres when `n` is invertible in the base field**
-(sorry leaf — the Lie algebra of a smooth group scheme).
+(PROVEN 2026-07-27 over the single leaf
+`eq_zero_of_nsmul_eq_zero_of_squareZero`; this used to be a sorry leaf).
 
 One half of the old `finite_preimage_mulByNat_of_field`, split out
 2026-07-27.  Since `K` is a field, `(n : K) ≠ 0` says exactly that `n` is
@@ -949,79 +1692,487 @@ the quasi-finite locus is OPEN.  Mathlib has also STARTED abelian varieties:
 `isCommMonObj_of_isProper_of_isIntegral_tensorObj_of_isAlgClosed` and
 `smooth_of_grpObj`.  Re-check that directory at every pin bump.
 
-**What is MISSING — these are the two obligations, and neither is the cube.**
-1. The `Γ(T, 𝒪_T)`-module structure on the kernel above, i.e. the Lie algebra
-   / tangent space of a smooth group scheme.  Mathlib has NO scheme tangent
-   space at all: `grep -rni "tangentSpace\|DualNumber"
-   Mathlib/AlgebraicGeometry/` returns NOTHING.
-2. `FormallyUnramified f → LocallyOfFiniteType f → LocallyQuasiFinite f`.
-   Absent: `grep -rn "Unramified"
-   Mathlib/AlgebraicGeometry/Morphisms/QuasiFinite.lean` returns NOTHING.
-   The pieces are present (`FormallyUnramified.stalkMap` and the
-   residue-field separability instance at `Morphisms/FormallyUnramified.lean:149`
-   and `:156`), so this is ordinary scheme theory, not missing theory.
+**THE TWO OBLIGATIONS THIS DOCSTRING USED TO RECORD: one is now PROVEN, one
+is now the single leaf.**  Neither was ever the cube.
 
-References: Mumford *Abelian Varieties* §6; Milne *Abelian Varieties* I.7. -/
+1. The `Γ(T, 𝒪_T)`-module structure on the kernel above, i.e. the Lie algebra
+   / tangent space of a smooth group scheme.  **Still missing, and it is now
+   the leaf `eq_zero_of_nsmul_eq_zero_of_squareZero` above**, where the
+   argument, the references and the refuting greps are recorded.  Mathlib
+   still has NO scheme tangent space: `grep -rni "tangentSpace\|DualNumber"
+   Mathlib/AlgebraicGeometry/` returns NOTHING (re-run 2026-07-27).
+2. `FormallyUnramified f → LocallyOfFiniteType f → LocallyQuasiFinite f`.
+   **This was recorded as ABSENT and that was WRONG** — the grep it rested on
+   (`grep -rn "Unramified" Morphisms/QuasiFinite.lean` → nothing) is true but
+   does not support the conclusion, because the implication lives at RING
+   level as the mathlib instance
+   `[EssFiniteType R S] [FormallyUnramified R S] : Algebra.QuasiFinite R S`
+   (`Mathlib/RingTheory/Unramified/LocalStructure.lean:333`).  It is now
+   PROVEN here as `locallyQuasiFinite_of_formallyUnramified`, in four lines.
+
+**The `quasiFiniteLocus` spreading tool is NOT needed** — and recording that
+saves the next reader a detour.  `Scheme.Hom.quasiFiniteLocus` /
+`isOpen_quasiFiniteAt` were suggested for propagating quasi-finiteness from
+the origin over all of `A`, but the functor-of-points argument proves
+`FormallyUnramified` at EVERY affine test scheme at once, so there is nothing
+to spread.  (Openness of the quasi-finite locus would not have sufficed
+anyway: spreading from one point needs homogeneity, i.e. translations, not
+just an open locus.)
+
+References: Mumford *Abelian Varieties* §6, §11; Milne *Abelian Varieties*
+I.7; SGA 3, Exp. II. -/
 theorem finite_preimage_mulByNat_of_field_prime_to_char {X : Scheme.{u}}
     (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
-    (n : ℕ) (hn : (n : K) ≠ 0) (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
+    (n : ℕ) (hn : (n : K) ≠ 0) (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite := by
+  haveI : LocallyOfFiniteType (ab.mulByNat n) := ab.locallyOfFiniteType_mulByNat n
+  haveI : IsProper (ab.mulByNat n) := ab.isProper_mulByNat n
+  haveI : QuasiCompact (ab.mulByNat n) := inferInstance
+  haveI : FormallyUnramified (ab.mulByNat n) := formallyUnramified_mulByNat K ab n hn
+  haveI : LocallyQuasiFinite (ab.mulByNat n) :=
+    locallyQuasiFinite_of_formallyUnramified (ab.mulByNat n)
+  exact (ab.mulByNat n).finite_preimage_singleton a
+
+section ShearReduction
+
+-- `_root_.` is not optional: a bare `open Limits` inside `namespace Fermat` would
+-- bind to a nested `Fermat.Limits` if one is ever declared.  The file already
+-- opens `Limits` this way in its two earlier sections.
+open _root_.CategoryTheory.Limits
+
+/-! ### The shearing reduction: ALL fibres of `[n]` from the ONE fibre `ker[n]`
+
+(Added 2026-07-27, while proving `finite_preimage_mulByNat_of_field_char`.)
+
+Everything in this block is PROVEN and **cube-free**, and it is stated for an
+arbitrary base `S` — there is no field, no characteristic and no smoothness in
+it.  It replaces the "all fibres of `[n]`" problem by the ONE statement the
+literature actually proves, namely that `[n]` is an ISOGENY:
+
+  `ker[n] ⟶ S` is a FINITE morphism.
+
+The argument is the classical one, and it is worth recording because it is
+*not* the theorem of the cube:
+
+1. `finite_preimage_of_finite_preimage_pullback_fst` — pure scheme theory.
+   For ANY `h : X ⟶ Y`, finite fibres of `pullback.fst h h` give finite fibres
+   of `h`.  Reason: given `u, v` with `h u = h v`, `Scheme.Pullback.exists_preimage_pullback`
+   produces a point of `X ×_Y X` over the pair `(u, v)` — the map from the
+   carrier of a fibre product ONTO the set-theoretic fibre product is
+   surjective, because `κ(u) ⊗_{κ(h u)} κ(v)` is a nonzero ring.  So
+   `pullback.snd` maps the (finite) fibre of `pullback.fst` over `u` ONTO
+   `h ⁻¹' {h u}`.
+
+2. `kerShear` — the shearing morphism `A ×_{[n], A, [n]} A ⟶ A ×_S ker[n]`,
+   `(u, v) ↦ (u, v - u)`, written directly on relative points: `v - u` is a
+   relative point of `f` over `A ×_{[n]} A`, and `nsmul_val` turns
+   `[n] ∘ v = [n] ∘ u` into `n • (v - u) = 0`, i.e. `v - u` factors through
+   `ker[n]`.  `kerUnshear` is `(u, k) ↦ (u, u + k)` and
+   `kerShear_unshear` says `kerShear ≫ kerUnshear = 𝟙`, so `kerShear` is
+   injective on points — which is all that is needed.  Only ONE round trip is
+   proven; the other is not required and is not claimed.
+
+3. `pullback.fst f (ker[n] ⟶ S)` is the base change of `ker[n] ⟶ S`, hence
+   finite when that is, hence has finite fibres.  Composing (2) and (1) gives
+   `finite_preimage_mulByNat_of_isFinite_ker`.
+
+`isFinite_ker_mulByNat_of_finite_preimage` is a convenience bridge in the other
+direction: since `[n]` is proper (`isProper_mulByNat`) and locally of finite
+type (`locallyOfFiniteType_mulByNat`), so is `ker[n] ⟶ S`, and Zariski's main
+theorem (`IsFinite.of_isProper_of_locallyQuasiFinite`) upgrades "every fibre of
+`ker[n] ⟶ S` is a finite SET" to "`ker[n] ⟶ S` is a finite MORPHISM".  A prover
+of the residual leaf therefore only ever has to exhibit a finite point set —
+over a field, a single one.
+
+**This block is `n`-generic and characteristic-blind.**  It applies verbatim to
+the prime-to-characteristic sibling `finite_preimage_mulByNat_of_field_prime_to_char`
+and to the arbitrary-base `finite_preimage_mulByNat`.  Those have their own
+owners and are deliberately NOT touched here; this note is so the next owner
+sees the shared route.
+-/
+
+/-- **Finite fibres descend from `pullback.fst h h` to `h`** (PROVEN
+2026-07-27).  General scheme theory, no group structure and no hypotheses on
+`h` whatever.
+
+The point is that the carrier of `X ×_Y X` surjects onto the set-theoretic
+fibre product of the carriers (`Scheme.Pullback.exists_preimage_pullback`,
+which is where the nonvanishing of `κ(u) ⊗_{κ(s)} κ(v)` is used).  So for `u`
+in the fibre of `h` over `y`, the whole fibre `h ⁻¹' {y}` is the image under
+`pullback.snd h h` of the fibre of `pullback.fst h h` over `u`. -/
+theorem finite_preimage_of_finite_preimage_pullback_fst {X Y : Scheme.{u}} (h : X ⟶ Y)
+    (H : ∀ x : X, (⇑(pullback.fst h h) ⁻¹' {x}).Finite) (y : Y) :
+    (⇑h ⁻¹' {y}).Finite := by
+  rcases Set.eq_empty_or_nonempty (⇑h ⁻¹' {y}) with he | ⟨u, hu⟩
+  · rw [he]; exact Set.finite_empty
+  · refine ((H u).image ⇑(pullback.snd h h)).subset ?_
+    intro v hv
+    simp only [Set.mem_preimage, Set.mem_singleton_iff] at hu hv
+    obtain ⟨z, hz1, hz2⟩ :=
+      Scheme.Pullback.exists_preimage_pullback (f := h) (g := h) u v (hu.trans hv.symm)
+    exact ⟨z, by simpa using hz1, hz2⟩
+
+namespace AbelianSchemeStruct
+
+variable (ab : AbelianSchemeStruct f) (n : ℕ)
+
+/-- Both projections of `A ×_{[n], A, [n]} A` lie over the same point of `S`,
+because `[n]` is a morphism over `S`. -/
+theorem pullbackSnd_comp_structure :
+    pullback.snd (ab.mulByNat n) (ab.mulByNat n) ≫ f
+      = pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f := by
+  calc pullback.snd (ab.mulByNat n) (ab.mulByNat n) ≫ f
+      = pullback.snd (ab.mulByNat n) (ab.mulByNat n) ≫ (ab.mulByNat n ≫ f) := by
+        rw [ab.mulByNat_comp]
+    _ = (pullback.snd (ab.mulByNat n) (ab.mulByNat n) ≫ ab.mulByNat n) ≫ f :=
+        (Category.assoc _ _ _).symm
+    _ = (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ ab.mulByNat n) ≫ f := by
+        rw [pullback.condition]
+    _ = pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ (ab.mulByNat n ≫ f) :=
+        Category.assoc _ _ _
+    _ = pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f := by rw [ab.mulByNat_comp]
+
+/-- **The structure morphism of `ker[n] = A ×_{[n], A, e} S`**: the inclusion
+`ker[n] ⟶ A` followed by `f` is the second projection.  Uses only
+`mulByNat_comp` and `zeroSection_comp`. -/
+theorem kerι_comp_structure :
+    pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f
+      = pullback.snd (ab.mulByNat n) ab.zeroSection := by
+  calc pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f
+      = pullback.fst (ab.mulByNat n) ab.zeroSection ≫ (ab.mulByNat n ≫ f) := by
+        rw [ab.mulByNat_comp]
+    _ = (pullback.fst (ab.mulByNat n) ab.zeroSection ≫ ab.mulByNat n) ≫ f :=
+        (Category.assoc _ _ _).symm
+    _ = (pullback.snd (ab.mulByNat n) ab.zeroSection ≫ ab.zeroSection) ≫ f := by
+        rw [pullback.condition]
+    _ = pullback.snd (ab.mulByNat n) ab.zeroSection ≫ (ab.zeroSection ≫ f) :=
+        Category.assoc _ _ _
+    _ = pullback.snd (ab.mulByNat n) ab.zeroSection := by
+        rw [ab.zeroSection_comp, Category.comp_id]
+
+/-- The first projection of `A ×_{[n], A, [n]} A`, read as a relative point. -/
+noncomputable def shearFst :
+    RelPoint f (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f) :=
+  ⟨pullback.fst (ab.mulByNat n) (ab.mulByNat n), rfl⟩
+
+/-- The second projection of `A ×_{[n], A, [n]} A`, read as a relative point. -/
+noncomputable def shearSnd :
+    RelPoint f (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f) :=
+  ⟨pullback.snd (ab.mulByNat n) (ab.mulByNat n), ab.pullbackSnd_comp_structure n⟩
+
+/-- The difference `q₂ - q₁` of the two projections, as a relative point.
+Written with `ab.add`/`ab.neg` rather than `-` so that the definition carries
+no `letI`. -/
+noncomputable def shearDiff :
+    RelPoint f (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f) :=
+  ab.add (ab.shearSnd n) (ab.neg (ab.shearFst n))
+
+theorem shearDiff_eq_sub :
+    letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+    ab.shearDiff n = ab.shearSnd n - ab.shearFst n := rfl
+
+/-- **`n • (q₂ - q₁) = 0`**: this is `pullback.condition` read through
+`nsmul_val`, and it is the whole reason the shearing lands in `ker[n]`. -/
+theorem nsmul_shearDiff_eq_zero :
+    letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+    n • ab.shearDiff n = 0 := by
+  letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+  rw [ab.shearDiff_eq_sub n, smul_sub, sub_eq_zero]
+  refine Subtype.ext ?_
+  rw [ab.nsmul_val, ab.nsmul_val]
+  exact pullback.condition.symm
+
+/-- `(q₂ - q₁) ≫ [n]` is the zero section: the difference factors through
+`ker[n]`. -/
+theorem shearDiff_comp_mulByNat :
+    (ab.shearDiff n).1 ≫ ab.mulByNat n
+      = (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f) ≫ ab.zeroSection := by
+  letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+  rw [← ab.nsmul_val n (ab.shearDiff n), ab.nsmul_shearDiff_eq_zero n]
+  exact ab.zero_val _
+
+/-- **The shearing morphism** `A ×_{[n], A, [n]} A ⟶ A ×_S ker[n]`,
+`(u, v) ↦ (u, v - u)`. -/
+noncomputable def kerShear :
+    pullback (ab.mulByNat n) (ab.mulByNat n) ⟶
+      pullback f (pullback.snd (ab.mulByNat n) ab.zeroSection) :=
+  pullback.lift (pullback.fst (ab.mulByNat n) (ab.mulByNat n))
+    (pullback.lift (ab.shearDiff n).1 (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+      (ab.shearDiff_comp_mulByNat n))
+    (pullback.lift_snd _ _ _).symm
+
+/-- The shearing is the identity in the `A`-coordinate — the fact that makes
+it useful for comparing fibres of the two first projections. -/
+theorem kerShear_fst :
+    ab.kerShear n ≫ pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+      = pullback.fst (ab.mulByNat n) (ab.mulByNat n) := by
+  simp only [kerShear]
+  exact pullback.lift_fst _ _ _
+
+theorem kerShear_snd_fst :
+    ab.kerShear n ≫ pullback.snd f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+        ≫ pullback.fst (ab.mulByNat n) ab.zeroSection
+      = (ab.shearDiff n).1 := by
+  rw [← Category.assoc]
+  simp only [kerShear]
+  rw [pullback.lift_snd]
+  exact pullback.lift_fst _ _ _
+
+/-- The first projection of `A ×_S ker[n]`, as a relative point. -/
+noncomputable def unshearFst :
+    RelPoint f (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f) :=
+  ⟨pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection), rfl⟩
+
+/-- The `ker[n]`-component of `A ×_S ker[n]`, read as a relative point of `A`. -/
+noncomputable def unshearSnd :
+    RelPoint f (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f) :=
+  ⟨pullback.snd f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+      ≫ pullback.fst (ab.mulByNat n) ab.zeroSection, by
+    rw [Category.assoc, ab.kerι_comp_structure n]
+    exact pullback.condition.symm⟩
+
+/-- **A point of `ker[n]` is killed by `n`** — by construction, but this is
+the form the shearing needs. -/
+theorem nsmul_unshearSnd_eq_zero :
+    letI := ab.addCommGroup (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f)
+    n • ab.unshearSnd n = 0 := by
+  letI := ab.addCommGroup (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f)
+  refine Subtype.ext ?_
+  rw [ab.nsmul_val]
+  have hz : ((0 : RelPoint f
+      (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f))).1
+      = (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f) ≫ ab.zeroSection :=
+    ab.zero_val _
+  rw [hz]
+  show (pullback.snd f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+      ≫ pullback.fst (ab.mulByNat n) ab.zeroSection) ≫ ab.mulByNat n = _
+  rw [Category.assoc, pullback.condition (f := ab.mulByNat n) (g := ab.zeroSection),
+    ← Category.assoc, ← pullback.condition, Category.assoc]
+
+/-- **The inverse shearing** `A ×_S ker[n] ⟶ A ×_{[n], A, [n]} A`,
+`(u, k) ↦ (u, u + k)`.  It lands in the fibre product because `n • k = 0`. -/
+noncomputable def kerUnshear :
+    pullback f (pullback.snd (ab.mulByNat n) ab.zeroSection) ⟶
+      pullback (ab.mulByNat n) (ab.mulByNat n) :=
+  pullback.lift (ab.unshearFst n).1 (ab.add (ab.unshearFst n) (ab.unshearSnd n)).1 (by
+    letI := ab.addCommGroup (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f)
+    have h : n • (ab.unshearFst n) = n • (ab.unshearFst n + ab.unshearSnd n) := by
+      rw [smul_add, ab.nsmul_unshearSnd_eq_zero, add_zero]
+    have h2 := congrArg Subtype.val h
+    rwa [ab.nsmul_val, ab.nsmul_val] at h2)
+
+theorem kerUnshear_fst :
+    ab.kerUnshear n ≫ pullback.fst (ab.mulByNat n) (ab.mulByNat n) = (ab.unshearFst n).1 := by
+  simp only [kerUnshear]
+  exact pullback.lift_fst _ _ _
+
+theorem kerUnshear_snd :
+    ab.kerUnshear n ≫ pullback.snd (ab.mulByNat n) (ab.mulByNat n)
+      = (ab.add (ab.unshearFst n) (ab.unshearSnd n)).1 := by
+  simp only [kerUnshear]
+  exact pullback.lift_snd _ _ _
+
+/-- **`kerShear` is a split monomorphism**: `(u, v) ↦ (u, v - u) ↦ (u, u + (v - u))`
+is the identity.  Only this round trip is proven — injectivity on points is all
+the fibre comparison needs — and the naturality axiom `pre_add` is what turns
+the computation into the group identity `u + (v - u) = v`. -/
+theorem kerShear_kerUnshear : ab.kerShear n ≫ ab.kerUnshear n = 𝟙 _ := by
+  letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, ab.kerUnshear_fst n, Category.id_comp]
+    show ab.kerShear n ≫ pullback.fst f _ = _
+    exact ab.kerShear_fst n
+  · rw [Category.assoc, ab.kerUnshear_snd n, Category.id_comp]
+    have hg : ab.kerShear n ≫ (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f)
+        = pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f := by
+      rw [← Category.assoc, ab.kerShear_fst n]
+    have key := ab.pre_add (ab.kerShear n) hg (ab.unshearFst n) (ab.unshearSnd n)
+    have h1 : RelPoint.pre (ab.kerShear n) hg (ab.unshearFst n) = ab.shearFst n :=
+      Subtype.ext (ab.kerShear_fst n)
+    have h2 : RelPoint.pre (ab.kerShear n) hg (ab.unshearSnd n) = ab.shearDiff n :=
+      Subtype.ext (by
+        show ab.kerShear n ≫ (pullback.snd f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+            ≫ pullback.fst (ab.mulByNat n) ab.zeroSection) = _
+        exact ab.kerShear_snd_fst n)
+    rw [h1, h2] at key
+    have h3 : ab.add (ab.shearFst n) (ab.shearDiff n) = ab.shearSnd n := by
+      show ab.shearFst n + ab.shearDiff n = ab.shearSnd n
+      rw [ab.shearDiff_eq_sub n, add_sub_cancel]
+    exact congrArg Subtype.val (key.trans h3)
+
+/-- **ZMT bridge**: `ker[n] ⟶ S` is a FINITE MORPHISM as soon as each of its
+fibres is a finite SET (PROVEN 2026-07-27).
+
+`[n]` is proper and locally of finite type, hence so is its base change
+`ker[n] ⟶ S`; `LocallyQuasiFinite.of_finite_preimage_singleton` then gives
+quasi-finiteness and `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's
+main theorem) upgrades it.  Over a field the hypothesis is a single finite
+point set — the classical "`ker[n]` is zero-dimensional". -/
+theorem isFinite_ker_mulByNat_of_finite_preimage
+    (H : ∀ s : S, (⇑(pullback.snd (ab.mulByNat n) ab.zeroSection) ⁻¹' {s}).Finite) :
+    IsFinite (pullback.snd (ab.mulByNat n) ab.zeroSection) := by
+  haveI : IsProper (ab.mulByNat n) := ab.isProper_mulByNat n
+  haveI : LocallyOfFiniteType (ab.mulByNat n) := ab.locallyOfFiniteType_mulByNat n
+  haveI : LocallyQuasiFinite (pullback.snd (ab.mulByNat n) ab.zeroSection) :=
+    LocallyQuasiFinite.of_finite_preimage_singleton _ H
+  exact IsFinite.of_isProper_of_locallyQuasiFinite _
+
+/-- **EVERY fibre of `[n]` is finite as soon as `ker[n] ⟶ S` is a finite
+morphism** (PROVEN 2026-07-27) — i.e. as soon as `[n]` is an ISOGENY.
+
+Cube-free, `n`-generic, characteristic-blind, and stated over an ARBITRARY
+base `S`.  This is the reduction described in the section header: shear
+`A ×_{[n], A, [n]} A` onto `A ×_S ker[n]`, note that the first projection of
+the latter is a base change of `ker[n] ⟶ S` and so has finite fibres, and then
+descend along `finite_preimage_of_finite_preimage_pullback_fst`. -/
+theorem finite_preimage_mulByNat_of_isFinite_ker
+    (hker : IsFinite (pullback.snd (ab.mulByNat n) ab.zeroSection)) (a : A) :
+    (⇑(ab.mulByNat n) ⁻¹' {a}).Finite := by
+  haveI := hker
+  refine finite_preimage_of_finite_preimage_pullback_fst (ab.mulByNat n) (fun x => ?_) a
+  have hQ : (⇑(pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection)) ⁻¹' {x}).Finite :=
+    Scheme.Hom.finite_preimage_singleton _ x
+  have hinj : Function.Injective ⇑(ab.kerShear n) := by
+    intro c d hcd
+    have h1 : (ab.kerShear n ≫ ab.kerUnshear n) c = (ab.kerShear n ≫ ab.kerUnshear n) d := by
+      rw [Scheme.Hom.comp_apply, Scheme.Hom.comp_apply, hcd]
+    rw [ab.kerShear_kerUnshear n] at h1
+    simpa using h1
+  have hset : (⇑(pullback.fst (ab.mulByNat n) (ab.mulByNat n)) ⁻¹' {x})
+      = ⇑(ab.kerShear n) ⁻¹'
+        (⇑(pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection)) ⁻¹' {x}) := by
+    ext z
+    simp only [Set.mem_preimage, Set.mem_singleton_iff]
+    rw [← ab.kerShear_fst n, Scheme.Hom.comp_apply]
+  rw [hset]
+  exact hQ.preimage hinj.injOn
+
+end AbelianSchemeStruct
+
+/-- **`ker[p]` has FINITELY MANY POINTS in characteristic `p`** (sorry leaf —
+the theorem of the cube; this is the irreducible residue, cut down 2026-07-27
+from `finite_preimage_mulByNat_of_field_char`).
+
+`Spec K` has a single point, so this is one finite set: the underlying space of
+`ker[p]` is finite, i.e. `ker[p]` is zero-dimensional.  That is the weakest
+form the residue can be put in, and it is deliberately the form the leaf is
+stated in — everything else on the route (properness, Zariski's main theorem,
+the shearing) is proven above, so a prover here owes ONLY the dimension
+statement.
+
+For the mathematics — why `d[p] = 0` kills the cheap route, the two classical
+cube proofs, and the verified survey of what is missing from the pin — see
+`isFinite_ker_mulByNat_of_field_char` just below, which is the consumer. -/
+theorem finite_ker_mulByNat_of_field_char {X : Scheme.{u}}
+    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
+    ∀ s : Spec K, (⇑(pullback.snd (ab.mulByNat p) ab.zeroSection) ⁻¹' {s}).Finite :=
   sorry
 
-/-- **`[p]` has finite fibres in characteristic `p`** (sorry leaf — the
-theorem of the cube; this is the irreducible residue).
+/-- **`ker[p]` is a finite group scheme in characteristic `p`** — equivalently,
+`[p]` is an ISOGENY (PROVEN 2026-07-27 over `finite_ker_mulByNat_of_field_char`,
+through the Zariski's-main-theorem bridge `isFinite_ker_mulByNat_of_finite_preimage`).
 
-The other half of the old `finite_preimage_mulByNat_of_field`, split out
-2026-07-27, and the ONLY place in this file where ample line bundles are
-genuinely needed.
+**What changed.**  The old leaf asked for finiteness of EVERY fibre of `[p]`.
+The shearing block above proves — cube-free and over an arbitrary base — that
+all fibres are finite as soon as this ONE fibre is
+(`finite_preimage_mulByNat_of_isFinite_ker`).  So the whole residue became the
+single statement every textbook actually proves: `ker[p]` is finite, of order
+`p^{2g}`; and by `isFinite_ker_mulByNat_of_finite_preimage` even that is
+reduced to a bare POINT SET being finite, which is the leaf
+`finite_ker_mulByNat_of_field_char` above.  The chain from there to
+`finite_preimage_mulByNat_of_field_char` is entirely proven.
 
-**Why the cheap route dies here.**  The Lie-algebra argument that proves
-`finite_preimage_mulByNat_of_field_prime_to_char` computes `d[n] = n · id`;
-at `n = p = ringChar K` that is ZERO, so `[p]` is not unramified and the
-argument says nothing.  `[p]` really is inseparable — its kernel contains
-`ker F` for the relative Frobenius `F`, an infinitesimal group scheme — so
-this is a limitation of the mathematics, not of the write-up.
+**So the honest remaining content is "`ker[p]` is zero-dimensional"** —
+properness, Zariski's main theorem and the shearing supply everything else.
 
-**What a prover has to supply.**  Fibrewise this is "`ker[p]` is a finite
-group scheme", classically "`[p]` is an isogeny", of degree `p^{2g}`.  Two
-classical proofs, both blocked at this pin:
+**Why this is still the cube, and why the cheap route dies here.**  The
+Lie-algebra argument that proves the sibling
+`finite_preimage_mulByNat_of_field_prime_to_char` computes `d[n] = n · id`; at
+`n = p = ringChar K` that is ZERO, so `[p]` is not unramified and the argument
+says nothing.  `[p]` really is inseparable — its kernel contains `ker F` for the
+relative Frobenius `F`, an infinitesimal group scheme — so this is a limitation
+of the mathematics, not of the write-up.  Two classical proofs, both blocked at
+this pin:
 
 * Mumford *Abelian Varieties* §6, Application 2 of the theorem of the cube:
-  take a symmetric ample `L`, use `[p]^* L ≅ L^{p²}`, again ample for
-  `p ≠ 0`, and conclude that a morphism pulling an ample bundle back to an
-  ample bundle is quasi-finite.
-* `[p] = V ∘ F`, with `F` the relative Frobenius (finite, and a
-  homeomorphism on underlying spaces) and `V` the Verschiebung.  `V` is
-  constructed by duality, so this route needs `Pic⁰` and the dual abelian
-  variety.
+  take a symmetric ample `L`, use `[p]^* L ≅ L^{p²}`, again ample for `p ≠ 0`;
+  then `[p]^* L` is ample and trivial on `ker[p]`, which forces `ker[p]` to be
+  zero-dimensional.
+* `[p] = V ∘ F`, with `F` the relative Frobenius (finite, and a homeomorphism
+  on underlying spaces) and `V` the Verschiebung.  `V` is constructed by
+  duality, so this route needs `Pic⁰` and the dual abelian variety.
 
-**MISSING MACHINERY at this pin, each claim refutable by one grep.**
-`grep -rl Ample Mathlib/AlgebraicGeometry/` returns NOTHING: there are no
-ample line bundles (the only `Ample` in mathlib is
-`Analysis/Convex/AmpleSet.lean`), no Picard scheme or functor
-(`grep -rli picard Mathlib/AlgebraicGeometry/` is empty — the only `Picard`
-in mathlib is `RingTheory/PicardGroup.lean`, which is about modules), and no
-theorem of the cube.  There is also no Cohen–Macaulay theory
-(`grep -rl CohenMacaulay Mathlib/` is empty), which is what blocks the
-miracle-flatness route used by the sibling `flat_mulByNat`.  The claim that
-mathlib has "no notion of the dimension of a scheme" is STALE in one
-respect: `topologicalKrullDim` applies to a scheme's space and
-`Mathlib/AlgebraicGeometry/Artinian.lean` carries
-`IsLocallyArtinian.of_topologicalKrullDim_le_zero`, so "`ker[p]` is
-zero-dimensional" IS expressible; what is missing is any way to PROVE it.
+**MISSING MACHINERY at this pin, each claim refutable by one grep** (re-verified
+2026-07-27 against the worktree's own `.lake/packages/mathlib`).
+`grep -rl Ample Mathlib/AlgebraicGeometry/` returns NOTHING: there are no ample
+line bundles (the only `Ample` in mathlib is `Analysis/Convex/AmpleSet.lean`).
+`grep -rli picard Mathlib/AlgebraicGeometry/` returns only
+`EllipticCurve/Weierstrass.lean`: there is no Picard scheme or functor
+(`RingTheory/PicardGroup.lean` is about modules).
+`grep -rlie "line bundle\|invertible sheaf\|InvertibleSheaf" Mathlib/AlgebraicGeometry/`
+returns NOTHING, and `Mathlib/AlgebraicGeometry/Modules/` contains only
+`Presheaf.lean`, `Sheaf.lean`, `Tilde.lean` — so there is no invertible-sheaf
+theory to build `Pic` on.  There is no theorem of the cube
+(`grep -rli "theoremOfTheCube" Mathlib/` is empty), no relative Frobenius
+(`grep -rli frobenius Mathlib/AlgebraicGeometry/` is empty) and no
+Cohen–Macaulay theory (`grep -rl CohenMacaulay Mathlib/` is empty).
+`~/cs/FLT` has none of it either: its only `Ample`/`Picard` matches are
+`import Mathlib.RingTheory.PicardGroup`.
+What mathlib HAS started is abelian varieties themselves —
+`Mathlib/AlgebraicGeometry/Group/{Abelian,Smooth}.lean`, carrying
+`isCommMonObj_of_isProper_of_isIntegral_tensorObj_of_isAlgClosed`,
+`isCommMonObj_of_isProper_of_geometricallyIntegral` and `smooth_of_grpObj`.
+Re-check that directory at every pin bump.
 
-**`hchar` is deliberately carried even though the statement is true without
-it** — `[p]` has finite fibres for every `p` — because without it this leaf
-would silently duplicate `finite_preimage_mulByNat_of_field_prime_to_char`.
-Carrying it records that this leaf is exactly the residue the Lie-algebra
-route cannot reach, and makes the leaf VACUOUS in characteristic zero. -/
+**`hp` and `hchar` are deliberately carried even though the statement is true
+without them** — `ker[n]` is finite for every `n ≠ 0` — because without them
+this leaf would silently duplicate the content the sibling needs.  Carrying
+them records that this is exactly the residue the Lie-algebra route cannot
+reach, and makes the leaf VACUOUS in characteristic zero. -/
+theorem isFinite_ker_mulByNat_of_field_char {X : Scheme.{u}}
+    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
+    IsFinite (pullback.snd (ab.mulByNat p) ab.zeroSection) :=
+  ab.isFinite_ker_mulByNat_of_finite_preimage p
+    (finite_ker_mulByNat_of_field_char K ab p hp hchar)
+
+end ShearReduction
+
+/-- **`[p]` has finite fibres in characteristic `p`** (PROVEN 2026-07-27 over
+`isFinite_ker_mulByNat_of_field_char`, via the cube-free shearing reduction).
+
+The other half of the old `finite_preimage_mulByNat_of_field`, split out
+2026-07-27.  **It is no longer a leaf**: the shearing block above reduces it,
+cube-free, to the single fibre `ker[p]`, and the residue now lives in
+`isFinite_ker_mulByNat_of_field_char`.
+
+The statement is UNCHANGED — same name, same hypotheses, same conclusion — so
+every consumer (`finite_preimage_mulByNat_of_field` below) resolves exactly as
+before.  `hp` and `hchar` are not used by this assembly; they are passed
+through to the residual leaf, which is where they are recorded as marking the
+Lie-algebra route's blind spot.  The leaf remains VACUOUS in characteristic
+zero, and so does this theorem's route through it.
+
+For the mathematics — why `d[p] = 0` kills the cheap route, the two classical
+cube proofs, and the verified survey of what is missing from the pin — see
+`isFinite_ker_mulByNat_of_field_char` above.  It is not repeated here, so that
+there is exactly one place to update when mathlib grows ample bundles. -/
 theorem finite_preimage_mulByNat_of_field_char {X : Scheme.{u}}
     (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
     (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) (a : X) :
     (⇑(ab.mulByNat p) ⁻¹' {a}).Finite :=
-  sorry
+  ab.finite_preimage_mulByNat_of_isFinite_ker p
+    (isFinite_ker_mulByNat_of_field_char K ab p hp hchar) a
 
 /-- **The fibres of `[n]` on an abelian VARIETY are FINITE** (PROVEN
-2026-07-27 over the two leaves just above).
+2026-07-27 over the two declarations just above).
+
+**Status update 2026-07-27, later the same day.**  Of those two,
+`finite_preimage_mulByNat_of_field_prime_to_char` is now itself PROVEN, over
+the single new leaf `eq_zero_of_nsmul_eq_zero_of_squareZero` (the Lie algebra
+of a smooth group scheme).  So the two open leaves under this declaration are
+now that one and `finite_preimage_mulByNat_of_field_char`, and only the
+SECOND of them needs the theorem of the cube.
 
 This is the SECOND cube input, and it is the one the torsion CARDINALITY
 arguments need.  It says exactly that `ker[n]` is a finite group scheme:
@@ -1055,8 +2206,11 @@ arbitrary base.  Nothing else was removed: the reduction below is formal.
 
 **THE SPLIT (2026-07-27), replacing the previous "atomic at this pin"
 verdict.**  This is no longer a leaf.  It is proven by strong induction on
-`n` over the two leaves above, which are genuinely different mathematical
-problems and want different provers.  Writing `p = ringChar K`, the step is:
+`n` over the two declarations above, which are genuinely different
+mathematical problems and want different provers (and the first of them has
+since been PROVEN, over the Lie-algebra leaf
+`eq_zero_of_nsmul_eq_zero_of_squareZero`).  Writing `p = ringChar K`, the
+step is:
 
 * `(n : K) ≠ 0` — pass to `finite_preimage_mulByNat_of_field_prime_to_char`;
 * `(n : K) = 0` — then `p ≠ 0` (else `K` has characteristic zero and `n = 0`),
