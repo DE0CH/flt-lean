@@ -21201,25 +21201,12 @@ development's vocabulary: `A(ℚ) = RelPoint jstr (𝟙 SpecQ)`,
 what is supplied here is its five hypotheses.  Three of them are PROVEN
 below or upstream, and the two that remain are the leaves. -/
 
-/-- **`Spec ℚ̄ ⟶ Spec ℚ` is an epimorphism of schemes** (PROVEN).
-
-`ℚ ↪ ℚ̄` is faithfully flat — `ℚ̄` is a nontrivial free `ℚ`-module — so
-`specAlgClos ℚ` is flat and surjective
-(`AlgebraicGeometry.flat_and_surjective_SpecMap_iff`), hence, being also
-quasi-compact, an *effective* epimorphism by the fpqc instance in
-`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`, hence an epimorphism.
-
-This is the mono half of Galois descent, and it is the only half that is
-free: the surjective half is `exists_relPoint_of_galSMul_fixed` below. -/
-theorem epi_specAlgClos : Epi (specAlgClos ℚ) := by
-  have hff : (algebraMap ℚ (AlgebraicClosure ℚ)).FaithfullyFlat :=
-    RingHom.faithfullyFlat_algebraMap_iff.mpr inferInstance
-  obtain ⟨h1, h2⟩ := (flat_and_surjective_SpecMap_iff
-    (CommRingCat.ofHom (algebraMap ℚ (AlgebraicClosure ℚ)))).mpr hff
-  show Epi (Spec.map (CommRingCat.ofHom (algebraMap ℚ (AlgebraicClosure ℚ))))
-  haveI := h1
-  haveI := h2
-  infer_instance
+-- (`epi_specAlgClos` — "`Spec F̄ ⟶ Spec F` is an epimorphism of schemes" — used to be
+-- restated HERE at `F = ℚ`.  Two branches proved it on 2026-07-27, one at a general
+-- field and one at `ℚ`; the general form is declared far above, dominates every
+-- consumer, and is what the `ℚ`-level uses below now read.  This is the mono half of
+-- Galois descent, and it is the only half that is free: the surjective half is
+-- `exists_relPoint_of_galSMul_fixed` below.)
 
 /-- **`A(ℚ) ↪ A(ℚ̄)`** (PROVEN): a `ℚ`-rational point of `A` is determined
 by the `ℚ̄`-point it induces.  Immediate from `epi_specAlgClos`, since
@@ -21230,7 +21217,7 @@ theorem injective_pre_specAlgClos {J : Scheme.{0}} (jstr : J ⟶ SpecQ) :
       (RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl) := by
   intro P P' h
   have h1 : specAlgClos ℚ ≫ P.1 = specAlgClos ℚ ≫ P'.1 := congrArg Subtype.val h
-  haveI := epi_specAlgClos
+  haveI := epi_specAlgClos ℚ
   exact Subtype.ext ((cancel_epi (specAlgClos ℚ)).mp h1)
 
 /-- **`galSMul σ` as an additive endomorphism of `A(ℚ̄)`** (PROVEN).
