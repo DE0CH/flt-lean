@@ -2091,7 +2091,13 @@ dimension of a relative *normalization*, about which no smoothness is known, fro
 smoothness of a dense open inside it, so neither implies the other at this pin.
 
 So this subsection now adds ONE leaf, `smoothOfRelativeDimension_of_isDominant`; the dimension
-bound it also needs is the one already stated above. -/
+bound it also needs is the one already stated above.
+
+UPDATE 2026-07-27: **`smoothOfRelativeDimension_of_isDominant` is now PROVEN**, so this
+subsection adds NO leaf at all — everything in it is sorry-free.  It gained three
+`Mathlib`-ready lemmas on the way (`isStandardSmoothOfRelativeDimension_unique`,
+`locally_isStandardSmoothOfRelativeDimension_unique`, `smoothOfRelativeDimension_unique`);
+see the section note on them for why the old "IRREDUCIBLE at this pin" verdict was wrong. -/
 
 /-- **A space with a dense irreducible image is irreducible.**
 
@@ -2109,53 +2115,221 @@ theorem irreducibleSpace_of_denseRange {α β : Type*} [TopologicalSpace α] [To
   rw [irreducibleSpace_def, Set.top_eq_univ, ← hd.closure_eq]
   exact h.closure
 
-/-- **The relative dimension of a smooth morphism propagates from a dense open** (sorry leaf
-— local constancy of the relative dimension, and the whole content of the first half of
-`Fermat.smoothOfRelativeDimension_finite_compl_of_compactificationY0`).
+/-! #### Uniqueness of the relative dimension, and the propagation from a dense open
 
-TRUE and classical.  For a smooth morphism `strX : X ⟶ S` the function sending `x : X` to
-the dimension of the fibre `X_{strX x}` at `x` is **locally constant** on `X` (EGA IV
-17.10.2; Stacks tag `02NM`, "the relative dimension of a smooth morphism is locally
-constant on the source").  So `{x | relative dimension at x = n}` and its complement are
-both open; `j` is an open immersion so its range carries relative dimension `n` from
-`strY = j ≫ strX`, and `j` is dominant so its range meets every nonempty open.  The
-complement is therefore an open set disjoint from a dense set, hence empty.
+**The "IRREDUCIBLE at this pin" verdict that used to stand on
+`smoothOfRelativeDimension_of_isDominant` is REFUTED (2026-07-27); the leaf is PROVEN.**
+The verdict was right about the axis it searched and wrong about the tree.  It asserted
+that "not one lemma in `Mathlib` relates `SmoothOfRelativeDimension` at two different
+values of `n`", and prescribed producing the *local constancy of the relative dimension*
+(EGA IV 17.10.2, Stacks `02NM`) as the way in.  Both halves are wrong:
+
+* `Mathlib` DOES relate the property at two values of `n`, in the ring-theoretic layer:
+  `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) says that for a NONTRIVIAL
+  `S`, a standard smooth presentation of relative dimension `n` forces
+  `Module.rank S Ω[S⁄R] = n`.  So `n` is an invariant of the algebra, not of the
+  presentation, and two relative dimensions at the same nonempty affine chart coincide.
+* Local constancy is therefore not needed at all.  What replaces it is UNIQUENESS
+  (`smoothOfRelativeDimension_unique` below) plus the observation that the affine chart
+  produced by `Smooth.exists_isStandardSmooth` at an arbitrary point is a NONEMPTY OPEN,
+  hence — by density of `j` — already meets the range of `j`.  There is no "level set" to
+  show open and no complement to show empty.
+
+The general lesson (and it is the one the standing doctrine records): an irreducibility
+verdict is only as wide as the axis its author searched.  This one ranged over the
+`AlgebraicGeometry` API for `SmoothOfRelativeDimension` and never descended to
+`RingTheory`, where the invariant lives. -/
+
+section RelativeDimensionUnique
+
+open _root_.RingHom
+
+/-- **A nontrivial standard smooth algebra has exactly one relative dimension** (PROVEN,
+from `Mathlib` alone).
+
+The relative dimension of a *presentation* is a priori a property of the presentation; for
+a nontrivial target it is pinned to `Module.rank S Ω[S⁄R]` by
+`Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`, hence independent of
+the presentation.  `Nontrivial S` is load-bearing: over the zero ring every `n` works. -/
+theorem isStandardSmoothOfRelativeDimension_unique {R S : Type u} [CommRing R] [CommRing S]
+    [Nontrivial S] {f : R →+* S} {n m : ℕ}
+    (hn : f.IsStandardSmoothOfRelativeDimension n)
+    (hm : f.IsStandardSmoothOfRelativeDimension m) : n = m := by
+  letI := f.toAlgebra
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension n R S := hn
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension m R S := hm
+  have h1 :=
+    Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential (R := R) (S := S) n
+  have h2 :=
+    Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential (R := R) (S := S) m
+  exact_mod_cast h1.symm.trans h2
+
+/-- **The same, for the `Locally`-ised property** (PROVEN).
+
+`Locally Q f` is the shape in which `HasRingHomProperty (SmoothOfRelativeDimension n)`
+delivers the ring-theoretic content, so this is the form the scheme-level statement needs.
+
+The proof produces a SINGLE localisation on which both relative dimensions are visible: a
+maximal ideal `𝔪` of the nontrivial `S` misses some `t` of the `n`-cover and some `t'` of
+the `m`-cover, and `S_{t't}` — a localisation of `S_t` away from the image of `t'`, and of
+`S_{t'}` away from the image of `t` — is nontrivial because `t' * t ∉ 𝔪`.  Standard
+smoothness of relative dimension `n` survives composition with a localisation away on the
+target, so both dimensions hold there, and `isStandardSmoothOfRelativeDimension_unique`
+applies. -/
+theorem locally_isStandardSmoothOfRelativeDimension_unique {R S : Type u} [CommRing R]
+    [CommRing S] [Nontrivial S] {f : R →+* S} {n m : ℕ}
+    (hn : Locally (IsStandardSmoothOfRelativeDimension n) f)
+    (hm : Locally (IsStandardSmoothOfRelativeDimension m) f) : n = m := by
+  obtain ⟨s, hs, hsn⟩ := hn
+  obtain ⟨s', hs', hsm⟩ := hm
+  obtain ⟨𝔪, h𝔪⟩ := Ideal.exists_maximal S
+  have key : ∀ (u : Set S), Ideal.span u = ⊤ → ∃ t ∈ u, t ∉ 𝔪 := by
+    intro u hu
+    by_contra h
+    push Not at h
+    exact h𝔪.ne_top (top_le_iff.mp (hu ▸ Ideal.span_le.mpr h))
+  obtain ⟨t, hts, htm⟩ := key s hs
+  obtain ⟨t', hts', htm'⟩ := key s' hs'
+  haveI : IsLocalization.Away (t * t')
+      (Localization.Away (algebraMap S (Localization.Away t') t)) := inferInstance
+  haveI : IsLocalization.Away (t' * t)
+      (Localization.Away (algebraMap S (Localization.Away t) t')) := inferInstance
+  set T := Localization.Away (algebraMap S (Localization.Away t) t') with hT
+  set T₂ := Localization.Away (algebraMap S (Localization.Away t') t) with hT₂
+  have hmem : t' * t ∉ 𝔪 := fun h => (h𝔪.isPrime.mem_or_mem h).elim htm' htm
+  haveI : Nontrivial T := by
+    rw [← not_subsingleton_iff_nontrivial]
+    intro hsub
+    rw [IsLocalization.subsingleton_iff (M := Submonoid.powers (t' * t))] at hsub
+    obtain ⟨k, hk⟩ := hsub
+    have hk' : (t' * t) ^ k = 0 := hk
+    exact hmem (h𝔪.isPrime.mem_of_pow_mem k (by rw [hk']; exact 𝔪.zero_mem))
+  have hn' : IsStandardSmoothOfRelativeDimension n ((algebraMap S T).comp f) := by
+    have h := (isStandardSmoothOfRelativeDimension_stableUnderCompositionWithLocalizationAway
+      n).right T (algebraMap S (Localization.Away t) t')
+      ((algebraMap S (Localization.Away t)).comp f) (hsn t hts)
+    rwa [← RingHom.comp_assoc, ← IsScalarTower.algebraMap_eq] at h
+  have hm' : IsStandardSmoothOfRelativeDimension m ((algebraMap S T₂).comp f) := by
+    have h := (isStandardSmoothOfRelativeDimension_stableUnderCompositionWithLocalizationAway
+      m).right T₂ (algebraMap S (Localization.Away t') t)
+      ((algebraMap S (Localization.Away t')).comp f) (hsm t' hts')
+    rwa [← RingHom.comp_assoc, ← IsScalarTower.algebraMap_eq] at h
+  haveI : IsLocalization.Away (t' * t) T₂ := mul_comm t t' ▸ ‹IsLocalization.Away (t * t') T₂›
+  let e : T₂ ≃ₐ[S] T := IsLocalization.algEquiv (Submonoid.powers (t' * t)) T₂ T
+  have hcomp : (algebraMap S T).comp f
+      = e.toRingEquiv.toRingHom.comp ((algebraMap S T₂).comp f) := by
+    ext x
+    simp [e]
+  exact isStandardSmoothOfRelativeDimension_unique hn'
+    (hcomp ▸ isStandardSmoothOfRelativeDimension_respectsIso.left _ _ hm')
+
+/-- **A morphism out of a nonempty scheme is smooth of at most one relative dimension**
+(PROVEN).
+
+Choose an affine open `V` around any point and an affine open `U` around its image; the
+`HasRingHomProperty` instance for `SmoothOfRelativeDimension n` delivers
+`Locally (IsStandardSmoothOfRelativeDimension n) (f.appLE U V e)` for both values of `n`,
+and `Γ(X, V)` is nontrivial because `V` is a nonempty open.  `Nonempty X` is load-bearing:
+the empty scheme is smooth of every relative dimension. -/
+theorem smoothOfRelativeDimension_unique {X S : Scheme.{u}} (f : X ⟶ S) [Nonempty X] {n m : ℕ}
+    (hn : SmoothOfRelativeDimension n f) (hm : SmoothOfRelativeDimension m f) : n = m := by
+  obtain ⟨x⟩ : Nonempty X := inferInstance
+  obtain ⟨_, ⟨U, hU, rfl⟩, hxU, -⟩ :=
+    S.isBasis_affineOpens.exists_subset_of_mem_open (Set.mem_univ (f.base x)) isOpen_univ
+  obtain ⟨_, ⟨V, hV, rfl⟩, hxV, hVU⟩ :=
+    X.isBasis_affineOpens.exists_subset_of_mem_open hxU (U.2.preimage f.continuous)
+  haveI : Nonempty ↥V := ⟨⟨x, hxV⟩⟩
+  exact locally_isStandardSmoothOfRelativeDimension_unique
+    (HasRingHomProperty.appLE (@SmoothOfRelativeDimension n) f hn ⟨U, hU⟩ ⟨V, hV⟩ hVU)
+    (HasRingHomProperty.appLE (@SmoothOfRelativeDimension m) f hm ⟨U, hU⟩ ⟨V, hV⟩ hVU)
+
+/-- **The relative dimension of a smooth morphism propagates from a dense open** (**PROVEN
+2026-07-27, sorry-free** — was the "IRREDUCIBLE at this pin" leaf; see the section note
+above for what the verdict got wrong).  This is the whole content of the first half of
+`Fermat.smoothOfRelativeDimension_finite_compl_of_compactificationY0`.
+
+**The proof, and note that it does NOT go through local constancy.**  Fix `x : X`.
+`Smooth strX` produces affine opens `U ∋ strX x`, `V ∋ x` on which `strX.appLE U V e` is
+standard smooth; reading off the dimension of any submersive presentation of it gives some
+`k` with `IsStandardSmoothOfRelativeDimension k (strX.appLE U V e)`, which is the required
+witness as soon as `k = n`.  Now `V` is a NONEMPTY open, so density of `j` makes
+`W := V ⊓ j.opensRange` nonempty; `W.ι ≫ strX` is smooth of relative dimension `k`
+(restrict the chart) and of relative dimension `n` (it is, up to the canonical isomorphism
+of `j ⁻¹ᵁ W` with `W`, the restriction of `strY`), so `smoothOfRelativeDimension_unique`
+gives `k = n`.
 
 **Density alone suffices; connectedness of `X` is NOT needed** and is deliberately not a
 hypothesis.  (The justification recorded on the consumer in `X0.lean` routed through
 "`X` is connected because it contains a dense irreducible open"; that is a strictly weaker
-argument, since local constancy already makes every level set open.)
+argument.)
 
-IRREDUCIBLE at this pin, and here is the check that would refute it.  `Mathlib`'s
-`SmoothOfRelativeDimension n f` (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:135`) is a
-*pointwise* condition — for every `x` there exist affine opens on which `f.appLE` is
-`IsStandardSmoothOfRelativeDimension n` — and the entire API around it consists of
-`.smooth`, the `HasRingHomProperty` instance, stability under base change, the instance
-`SmoothOfRelativeDimension 0` for open immersions, and additivity under composition.
-**Not one lemma in `Mathlib` relates the property at two different values of `n`, and there
-is no `relativeDimension`/fibre-dimension function anywhere in
-`Mathlib.AlgebraicGeometry`** (`Mathlib/AlgebraicGeometry/Morphisms/SmoothFiber.lean` is
-about smoothness of fibres, not their dimension).  Producing the local constancy — most
-cheaply as "the set of `x` at which `SmoothOfRelativeDimension n` holds locally is open" —
-closes this leaf, and refutes the irreducibility verdict.
-
-The axis searched is the RELATIVE-dimension one.  A route through absolute dimension (`X` is
-one-dimensional, the base is a point, hence the relative dimension is one) is a *different*
-axis and was not searched; it would need the same missing dimension theory as
-`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` below **plus** a converse
-linking dimension back to the standard-smooth presentation, so it looks strictly harder, but
-it has not been ruled out.
-
-`_hsm : Smooth strX` is load-bearing and the statement is FALSE without it: a morphism can
+`hsm : Smooth strX` is load-bearing and the statement is FALSE without it: a morphism can
 restrict to something smooth of relative dimension `n` over a dense open and be arbitrarily
 bad elsewhere.  `IsOpenImmersion j` is what makes `strY` the restriction of `strX` rather
 than an unrelated morphism. -/
 theorem smoothOfRelativeDimension_of_isDominant {S Y X : Scheme.{u}} {n : ℕ}
     {strY : Y ⟶ S} {strX : X ⟶ S} {j : Y ⟶ X} [IsOpenImmersion j] [IsDominant j]
-    (_hcomm : j ≫ strX = strY) (_hsm : Smooth strX)
-    (_hY : SmoothOfRelativeDimension n strY) :
-    SmoothOfRelativeDimension n strX :=
-  sorry
+    (hcomm : j ≫ strX = strY) (hsm : Smooth strX)
+    (hY : SmoothOfRelativeDimension n strY) :
+    SmoothOfRelativeDimension n strX := by
+  haveI := hsm
+  haveI := hY
+  refine ⟨fun x => ?_⟩
+  obtain ⟨U, hU, V, hV, hxV, e, hss⟩ := Smooth.exists_isStandardSmooth strX x
+  obtain ⟨k, hk⟩ : ∃ k, IsStandardSmoothOfRelativeDimension k (strX.appLE U V e).hom := by
+    letI := (strX.appLE U V e).hom.toAlgebra
+    obtain ⟨ι, σ, hσ, hι, ⟨P⟩⟩ := hss.out
+    haveI := hσ
+    haveI := hι
+    exact ⟨P.dimension, P.isStandardSmoothOfRelativeDimension rfl⟩
+  refine ⟨U, hU, V, hV, hxV, e, ?_⟩
+  haveI : IsAffine V.toScheme := hV
+  haveI : IsAffine U.toScheme := hU
+  have hQ : RingHom.RespectsIso (Locally (IsStandardSmoothOfRelativeDimension k)) :=
+    locally_respectsIso isStandardSmoothOfRelativeDimension_respectsIso
+  have hres : SmoothOfRelativeDimension k (strX.resLE U V e) := by
+    rw [HasRingHomProperty.iff_of_isAffine (P := @SmoothOfRelativeDimension k)]
+    have key : (strX.resLE U V e).appTop
+        = U.topIso.hom ≫ strX.appLE U V e ≫ V.topIso.inv := Scheme.Hom.resLE_app_top strX e
+    rw [key, ← Category.assoc, CommRingCat.hom_comp, hQ.cancel_right_isIso,
+      CommRingCat.hom_comp, hQ.cancel_left_isIso]
+    exact locally_of isStandardSmoothOfRelativeDimension_respectsIso _ hk
+  haveI := hres
+  have hVk : SmoothOfRelativeDimension k (V.ι ≫ strX) := by
+    rw [← Scheme.Hom.resLE_comp_ι strX e]
+    exact (by simpa using
+      (inferInstance : SmoothOfRelativeDimension (k + 0) (strX.resLE U V e ≫ U.ι)))
+  obtain ⟨y, hyV, hyj⟩ :=
+    (dense_iff_inter_open.mp (Scheme.Hom.denseRange j)) V V.2 ⟨x, hxV⟩
+  set W : X.Opens := V ⊓ j.opensRange with hWdef
+  haveI : Nonempty ↥(W.toScheme) := ⟨(⟨y, ⟨hyV, hyj⟩⟩ : ↥W)⟩
+  haveI := hVk
+  have hWk : SmoothOfRelativeDimension k (W.ι ≫ strX) := by
+    rw [← X.homOfLE_ι (inf_le_left : W ≤ V), Category.assoc]
+    exact (by simpa using
+      (inferInstance : SmoothOfRelativeDimension (0 + k) (X.homOfLE (inf_le_left : W ≤ V) ≫
+        (V.ι ≫ strX))))
+  have hWn : SmoothOfRelativeDimension n (W.ι ≫ strX) := by
+    set W₀ : Y.Opens := j ⁻¹ᵁ W with hW₀
+    have hrange : Set.range (W₀.ι ≫ j).base = Set.range W.ι.base := by
+      rw [Scheme.Opens.range_ι, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+        Scheme.Opens.range_ι]
+      show j.base '' (j.base ⁻¹' (W : Set X)) = (W : Set X)
+      rw [Set.image_preimage_eq_inter_range]
+      exact Set.inter_eq_left.mpr (fun z hz => hz.2)
+    have hiso := IsOpenImmersion.isoOfRangeEq_hom_fac (W₀.ι ≫ j) W.ι hrange
+    haveI : SmoothOfRelativeDimension n (W₀.ι ≫ strY) := by
+      simpa using (inferInstance : SmoothOfRelativeDimension (0 + n) (W₀.ι ≫ strY))
+    have hcancel : SmoothOfRelativeDimension n
+        ((IsOpenImmersion.isoOfRangeEq (W₀.ι ≫ j) W.ι hrange).hom ≫ (W.ι ≫ strX)) := by
+      rw [← Category.assoc, hiso, Category.assoc, hcomm]
+      infer_instance
+    exact (MorphismProperty.cancel_left_of_respectsIso
+      (@SmoothOfRelativeDimension n) _ _).mp hcancel
+  exact (smoothOfRelativeDimension_unique (W.ι ≫ strX) hWk hWn) ▸ hk
+
+end RelativeDimensionUnique
 
 /-- **The complement of a dense open in a one-dimensional proper curve is finite** (PROVEN;
 it takes the dimension bound as the hypothesis `hdim`, which a consumer discharges from
