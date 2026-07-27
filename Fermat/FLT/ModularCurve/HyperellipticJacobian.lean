@@ -1034,22 +1034,90 @@ is a SQUARE in `ℤ[√−2]`:
 
     C̃(a, b) + 2√−2·B̃(a, b) = (v + u√−2)².
 
-**Why this branch is separated from its sibling: the two need DIFFERENT
-theories, so they are independently dispatchable.**  This is the branch whose
-elliptic curve over `K = ℚ(√−2)` is `E : w² = g(x)` with
-`g(x) = x³ + (2√−2 − 2)x² − (2√−2 + 1)x + 1`, and Magma reports `rank E(K) = 1`
-(sharp `1 ≤ r ≤ 1`), torsion trivial, `Norm(𝔣_E) = 1296`, generator
-`(1 − √−2, −1)`.  Rank `1 < 2 = [K : ℚ]`, so elliptic Chabauty applies and
-succeeds with bound `N = 12`, returning `x ∈ {∞, 0}` — both degenerate, and
-both excluded here by `0 < a < b`.  **So this branch, and only this branch,
-needs `p`-adic elliptic Chabauty: a rank-1 Mordell–Weil group over a quadratic
-field, the formal group / elliptic logarithm at a prime of `K`, and a
-Strassmann-type zero bound.**  None of that exists in this pin, in mathlib, or
-in `~/cs/FLT`.
+Equivalently — clear the denominator in `g(a/b) = F(a, b)/b³` by `X = bx`,
+`Y = b²w`, which is the same pair of `ring` identities as the hypotheses —
+`(X, Y) = (a, v + u√−2)` is an INTEGRAL POINT of
 
-Subject to the same GAP recorded on `descent_system_no_solution` below: the
-step from `F(a, b) = +Z²` to a point of `E(K)` needs `b` to be a square times a
-power of `2`, because `g(a/b) = F(a, b)/b³ ≡ b (mod K*²)`. -/
+    E⁽ᵇ⁾ : Y² = X³ + b(2√−2 − 2)X² − b²(2√−2 + 1)X + b³,
+
+the quadratic twist **by `b`** of `E : w² = g(x)`,
+`g(x) = x³ + (2√−2 − 2)x² − (2√−2 + 1)x + 1`, over `K = ℚ(√−2)`.
+
+**RETRACTION (2026-07-27): the branch-to-curve identification that stood here
+was FALSE, and with it the claim that this branch, and only it, needs elliptic
+Chabauty.**  The curve carrying a solution is selected by the SQUARE CLASS OF
+`b`, not by the sign `δ`: the class of `g(a/b)` in `K*/K*²` is `δ·b`, so a
+`δ = +1` solution lands on `E⁽ᵇ⁾` and a `δ = −1` solution on `E⁽⁻ᵇ⁾`.  Magma:
+`2 ∉ K*²` but `−2 ∈ K*²` (so `−1 ≡ 2`), hence for `b > 0` the twist is trivial
+exactly when `b ∈ ℚ*²` and is the `−1`-twist exactly when `b ∈ 2ℚ*²`.  Since
+`0 < a < b` forces `b ≥ 2`, **the rank-`1` curve `E` itself is not even
+reachable from this branch unless `b` is a perfect square `≥ 4`**, and `b = 2`
+puts this branch on the rank-`0` curve `E_d` — the exact opposite of what was
+recorded.  The sibling `_neg` carries the mirror-image correction, with the
+explicit witness `(a, b, u, v) = (0, −1, 0, 1)`, a `δ = −1` solution lying on
+`E`, not on `E_d`.
+
+**THE COVERING COLLECTION ASKED FOR DOES NOT EXIST, and this is not a
+bookkeeping gap** (2026-07-27; this replaces the "GAP" note, which correctly
+found the discrepancy but prescribed an unattainable repair).  Three findings,
+each with the check that would refute it.
+
+1. *No bound on `b` modulo squares is available.*  The descent class of a value
+   of a form of ODD degree is denominator-dependent: `ord_𝔭(g(a/b)) =
+   −3·ord_p(b)` has the parity of `ord_p(b)`, and the usual "even outside the
+   discriminant" argument fails at the pole.  Nor does a local condition bite:
+   for `p ∣ b`, `F(a, b) ≡ a³ (mod p)` is a unit by `gcd(a, b) = 1`, so every
+   local solvability condition at `p` is satisfiable with `ord_p(b)` odd.  And
+   `TwoCoverDescent` returns a **fake** 2-Selmer set — it lands in
+   `L*/L*²·ℚ*`, modulo the very `ℚ*` that would have to be bounded.  Refuting
+   check: produce a valuation or local argument forcing `ord_p(b)` even.
+2. *The obstruction cannot be removed by re-choosing the splitting field.*  An
+   EVEN-degree factor would kill the `b`-dependence (`b^even` is a square), and
+   none exists: PARI `nfsubfields` on the sextic reports that `L = ℚ[x]/(f)`
+   has exactly ONE proper subfield, `K = ℚ(√−2)` (returned as `x² − 2x + 33`,
+   discriminant `−128`), and `polgalois(f) = [18, −1, 1, "3 wr 2"]`.  So the
+   only nontrivial factorisation of `f` over a subfield is the one already in
+   use, `f = g·ḡ` with both factors CUBIC.  Refuting check: exhibit a subfield
+   of `L` other than `ℚ`, `K`, `L`.
+3. *Even enumerating the family would not close it: Chabauty is INAPPLICABLE at
+   some members.*  Elliptic Chabauty needs `rank E⁽ᵈ⁾(K) < [K : ℚ] = 2`.  Magma
+   `RankBounds(… : Effort := 1)` on `E⁽ᵈ⁾` over `K` (2026-07-27):
+
+       d :   1    2    3    5    6    7   10   11   13   14   15   17   19   22
+       r : 1..1 0..0 0..0 1..1 1..1 0..0 0..0 2..2 1..1 1..1 0..0 0..1 0..0 1..1
+
+       d :  26   29   30   31   33   34   37   41   46   51   53   55   57   59
+       r : 0..0 0..1 0..1 0..0 1..1 0..0 1..1 1..1 1..1 0..0 1..1 2..2 0..1 0..0
+
+   **`d = 11` and `d = 55` are sharp rank `2`**, and both are perfectly
+   admissible values of `b` here (`0 < a < b`, `gcd(a, b) = 1`).  Refuting
+   check: re-run `RankBounds` at `d = 11`; anything `≤ 1` restores that member.
+   (`d = 1` reproduces the recorded `E`: rank `1`, torsion trivial,
+   `Norm 𝔣 = 1296`; `d = 2` reproduces the recorded `E_d`: rank `0`, torsion
+   `ℤ/3`, `Norm 𝔣 = 324`.  So the two Chabauty runs on record cover exactly the
+   members `b ∈ ℚ*²` and `b ∈ 2ℚ*²`, and nothing else.)
+
+**The branch split does NOT separate difficulty.**  `M(a, b) = (b, b − a)`
+flips the sign of both `C̃` and `B̃`, so it carries a `δ = +1` solution to a
+`δ = −1` one; but it also moves the region, and the six points of an orbit
+alternate sign region by region with exactly one in `{0 < a < b}`.  So neither
+branch reduces to the other, and neither is the cheap one; the sibling's
+"CHEAP branch" heading is wrong for the same reason this docstring's
+"only this branch" was.
+
+**What route is actually available.**  Not route 1 (elliptic Chabauty over
+`K`), by 1–3 above.  Route 2 — `Pic⁰` of the genus-`2` curve, `rank J(ℚ) = 0`,
+injectivity of reduction at `5` — is the route with an established proof, and
+it is what a Magma `Chabauty0` run on this curve is (a decision procedure on a
+rank-`0` Jacobian, not a point search).  Re-verified here 2026-07-27,
+independently of the earlier report: `J(ℚ)_tors ≅ ℤ/21`, `RankBound(J) = 0`,
+`disc(C) = 2²³·3⁴`, and `Points(C : Bound := 500)` returns exactly the six
+cusps `(0, ±1)`, `(1, ±1)`, `∞±`.  That route lives UPSTREAM of this leaf —
+the file's chain from `redPt_injective` down to here is a chain of
+equivalences — so adopting it is a cut-level repair, not something a prover
+dispatched at this leaf can carry out.  Pieces of it already proven here:
+`card_X18_F5`, `sevenPts_injective`, `redPt_injective`,
+`nonempty_jacobianPackage_of_redPt_injective`. -/
 theorem descent_system_no_solution_pos (a b u v : ℤ) (hab : Int.gcd a b = 1)
     (ha : 0 < a) (hb : a < b) (huv : IsCoprime u v)
     (hB : a * b * (a - b) = u * v)
