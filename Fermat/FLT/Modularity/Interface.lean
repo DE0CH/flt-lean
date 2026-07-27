@@ -35629,7 +35629,9 @@ the newform decomposition. -/
 
 section AtkinLehner
 
-open scoped Matrix ModularForm
+open scoped Matrix ModularForm Pointwise
+
+open Matrix.SpecialLinearGroup CongruenceSubgroup ConjAct
 
 /-- An integral matrix is an **Atkin–Lehner matrix** for the exact
 divisor `Q ‖ M` when it has the classical shape `!![Q x, y; M z, Q w]`
@@ -35697,8 +35699,384 @@ theorem atkinLehnerRep_coe {A : Matrix (Fin 2) (Fin 2) ℤ}
   rw [atkinLehnerRep, dif_pos h]
   rfl
 
-/-- **THE ATKIN–LEHNER OPERATOR `W_Q`** (sorry node, TWELFTH
-decomposition 2026-07-26): at an exact divisor `Q ‖ M` there is a
+/-! #### The integral-matrix toolkit behind `exists_atkinLehnerOp`
+
+The three facts the operator leaf bundles — normalization of `Γ₀(M)`,
+independence of the choice of Atkin–Lehner matrix, and involutivity —
+all reduce to ONE integral statement (`exists_gamma0_of_smul_atkinLehner`
+below): a `2 × 2` integral matrix whose entries are divisible by `Q`,
+whose lower-left entry is divisible by `Q·M`, and whose determinant is
+`Q²`, is `Q` times an element of `Γ₀(M)`.
+
+Applying it to `B · adj A`, to `adj A · B` and to `A · A` — where the
+divisibilities are pure `Dvd` bookkeeping out of `IsAtkinLehnerMatrix`,
+needing no Bézout relation — gives, respectively: any two Atkin–Lehner
+matrices for `(M, Q)` differ by a LEFT factor in `Γ₀(M)`, they differ by
+a RIGHT factor in `Γ₀(M)`, and `A² = Q·γ₀` with `γ₀ ∈ Γ₀(M)`. The first
+two give `A Γ₀(M) A⁻¹ = Γ₀(M)` in both directions (so no `A²`-based
+detour is needed for the reverse inclusion), and the third gives the
+involution once slash by a positive SCALAR is seen to be trivial at
+weight two (`weightTwo_slash_scalar`: `|det|^{k−1}·denom^{−k} =
+u²·u^{−2} = 1` at `k = 2`). -/
+
+/-- `Γ₀(M)`-membership as an integral divisibility of the lower-left
+entry (PROVEN). -/
+theorem Gamma0_mem_iff_intDvd {M : ℕ} {γ : SL(2, ℤ)} :
+    γ ∈ CongruenceSubgroup.Gamma0 M ↔ (M : ℤ) ∣ (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 := by
+  rw [CongruenceSubgroup.Gamma0_mem]
+  exact ZMod.intCast_zmod_eq_zero_iff_dvd _ _
+
+/-- **The single integral lemma behind the whole Atkin–Lehner section**
+(PROVEN): an integral `2 × 2` matrix with all entries divisible by `Q`,
+lower-left entry divisible by `Q·M`, and determinant `Q²`, is `Q` times
+an element of `Γ₀(M)`. -/
+theorem exists_gamma0_of_smul_atkinLehner {M Q : ℕ} (hQ0 : (Q : ℤ) ≠ 0)
+    {C : Matrix (Fin 2) (Fin 2) ℤ} (hdet : C.det = (Q : ℤ) ^ 2)
+    (h00 : (Q : ℤ) ∣ C 0 0) (h01 : (Q : ℤ) ∣ C 0 1)
+    (h10 : ((Q : ℤ) * (M : ℤ)) ∣ C 1 0) (h11 : (Q : ℤ) ∣ C 1 1) :
+    ∃ γ : SL(2, ℤ), γ ∈ CongruenceSubgroup.Gamma0 M ∧
+      C = (Q : ℤ) • (γ : Matrix (Fin 2) (Fin 2) ℤ) := by
+  obtain ⟨a, ha⟩ := h00
+  obtain ⟨b, hb⟩ := h01
+  obtain ⟨c, hc⟩ := h10
+  obtain ⟨d, hd⟩ := h11
+  have hCD : C = (Q : ℤ) • (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ) := by
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [ha, hb, hd, hc, mul_assoc]
+  have hdetD : (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ).det = 1 := by
+    have h1 : ((Q : ℤ) • (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ)).det
+        = (Q : ℤ) ^ 2 * (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ).det := by
+      rw [Matrix.det_smul]
+      norm_num
+    have hkey : (Q : ℤ) ^ 2 * (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ).det
+        = (Q : ℤ) ^ 2 * 1 := by
+      rw [← h1, ← hCD, hdet, mul_one]
+    exact mul_left_cancel₀ (pow_ne_zero _ hQ0) hkey
+  refine ⟨⟨_, hdetD⟩, ?_, hCD⟩
+  rw [Gamma0_mem_iff_intDvd]
+  exact ⟨c, by simp⟩
+
+/-- The four entries of a `2 × 2` adjugate (PROVEN). -/
+theorem adjugate_fin_two_entries (A : Matrix (Fin 2) (Fin 2) ℤ) :
+    Matrix.adjugate A 0 0 = A 1 1 ∧ Matrix.adjugate A 0 1 = -A 0 1 ∧
+      Matrix.adjugate A 1 0 = -A 1 0 ∧ Matrix.adjugate A 1 1 = A 0 0 := by
+  rw [Matrix.adjugate_fin_two A]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp
+
+/-- The four entries of a `2 × 2` integral matrix product (PROVEN). -/
+theorem matrix_fin_two_mul_entries (A B : Matrix (Fin 2) (Fin 2) ℤ) :
+    (A * B) 0 0 = A 0 0 * B 0 0 + A 0 1 * B 1 0 ∧
+    (A * B) 0 1 = A 0 0 * B 0 1 + A 0 1 * B 1 1 ∧
+    (A * B) 1 0 = A 1 0 * B 0 0 + A 1 1 * B 1 0 ∧
+    (A * B) 1 1 = A 1 0 * B 0 1 + A 1 1 * B 1 1 := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> simp [Matrix.mul_apply, Fin.sum_univ_two]
+
+/-- `det (adj A) = det A` in dimension two (PROVEN). -/
+theorem det_adjugate_of_det_eq {A : Matrix (Fin 2) (Fin 2) ℤ} {Q : ℕ}
+    (hA : A.det = (Q : ℤ)) : (Matrix.adjugate A).det = (Q : ℤ) := by
+  rw [Matrix.det_adjugate, hA]
+  norm_num
+
+/-- The Atkin–Lehner matrices are stable under RIGHT multiplication by
+`Γ₀(M)` (PROVEN). -/
+theorem IsAtkinLehnerMatrix.mul_gamma0 {M Q : ℕ} (hQM : (Q : ℤ) ∣ (M : ℤ))
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M Q A)
+    {γ : SL(2, ℤ)} (hγ : γ ∈ CongruenceSubgroup.Gamma0 M) :
+    IsAtkinLehnerMatrix M Q (A * (γ : Matrix (Fin 2) (Fin 2) ℤ)) := by
+  have hg10 : (M : ℤ) ∣ (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 := Gamma0_mem_iff_intDvd.mp hγ
+  obtain ⟨m00, m01, m10, m11⟩ := matrix_fin_two_mul_entries A (γ : Matrix (Fin 2) (Fin 2) ℤ)
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [Matrix.det_mul, hA.det_eq, γ.2, mul_one]
+  · rw [m00]
+    exact dvd_add (hA.dvd_zero_zero.mul_right _) ((hQM.trans hg10).mul_left _)
+  · rw [m10]
+    exact dvd_add (hA.dvd_one_zero.mul_right _) (hg10.mul_left _)
+  · rw [m11]
+    exact dvd_add ((hQM.trans hA.dvd_one_zero).mul_right _) (hA.dvd_one_one.mul_right _)
+
+/-- The Atkin–Lehner matrices are stable under LEFT multiplication by
+`Γ₀(M)` (PROVEN). -/
+theorem IsAtkinLehnerMatrix.gamma0_mul {M Q : ℕ} (hQM : (Q : ℤ) ∣ (M : ℤ))
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M Q A)
+    {γ : SL(2, ℤ)} (hγ : γ ∈ CongruenceSubgroup.Gamma0 M) :
+    IsAtkinLehnerMatrix M Q ((γ : Matrix (Fin 2) (Fin 2) ℤ) * A) := by
+  have hg10 : (M : ℤ) ∣ (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 := Gamma0_mem_iff_intDvd.mp hγ
+  obtain ⟨m00, m01, m10, m11⟩ := matrix_fin_two_mul_entries (γ : Matrix (Fin 2) (Fin 2) ℤ) A
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · rw [Matrix.det_mul, hA.det_eq, γ.2, one_mul]
+  · rw [m00]
+    exact dvd_add (hA.dvd_zero_zero.mul_left _) ((hQM.trans hA.dvd_one_zero).mul_left _)
+  · rw [m10]
+    exact dvd_add (hg10.mul_right _) (hA.dvd_one_zero.mul_left _)
+  · rw [m11]
+    exact dvd_add ((hQM.trans hg10).mul_right _) (hA.dvd_one_one.mul_left _)
+
+/-- **The Atkin–Lehner matrices form ONE left `Γ₀(M)`-coset** (PROVEN):
+any two of them for the same `(M, Q)` differ by a left factor in
+`Γ₀(M)`. This is what makes the operator independent of the choice. -/
+theorem atkinLehner_exists_gamma0_left {M Q : ℕ} (hQ0 : (Q : ℤ) ≠ 0)
+    (hQM : (Q : ℤ) ∣ (M : ℤ))
+    {A B : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M Q A)
+    (hB : IsAtkinLehnerMatrix M Q B) :
+    ∃ γ : SL(2, ℤ), γ ∈ CongruenceSubgroup.Gamma0 M ∧
+      B = (γ : Matrix (Fin 2) (Fin 2) ℤ) * A := by
+  obtain ⟨a00, a01, a10, a11⟩ := adjugate_fin_two_entries A
+  obtain ⟨e00, e01, e10, e11⟩ := matrix_fin_two_mul_entries B (Matrix.adjugate A)
+  rw [a00, a10] at e00
+  rw [a01, a11] at e01
+  rw [a00, a10] at e10
+  rw [a01, a11] at e11
+  have hdet : (B * Matrix.adjugate A).det = (Q : ℤ) ^ 2 := by
+    rw [Matrix.det_mul, det_adjugate_of_det_eq hA.det_eq, hB.det_eq, sq]
+  have h00 : (Q : ℤ) ∣ (B * Matrix.adjugate A) 0 0 := by
+    rw [e00]
+    exact dvd_add (hA.dvd_one_one.mul_left _)
+      (((hQM.trans hA.dvd_one_zero).neg_right).mul_left _)
+  have h01 : (Q : ℤ) ∣ (B * Matrix.adjugate A) 0 1 := by
+    rw [e01]
+    exact dvd_add (hB.dvd_zero_zero.mul_right _) (hA.dvd_zero_zero.mul_left _)
+  have h10 : ((Q : ℤ) * (M : ℤ)) ∣ (B * Matrix.adjugate A) 1 0 := by
+    rw [e10]
+    refine dvd_add ?_ ?_
+    · rw [mul_comm (Q : ℤ)]
+      exact mul_dvd_mul hB.dvd_one_zero hA.dvd_one_one
+    · exact mul_dvd_mul hB.dvd_one_one hA.dvd_one_zero.neg_right
+  have h11 : (Q : ℤ) ∣ (B * Matrix.adjugate A) 1 1 := by
+    rw [e11]
+    exact dvd_add ((hQM.trans hB.dvd_one_zero).mul_right _) (hA.dvd_zero_zero.mul_left _)
+  obtain ⟨γ, hγ, hCγ⟩ := exists_gamma0_of_smul_atkinLehner (M := M) hQ0 hdet h00 h01 h10 h11
+  refine ⟨γ, hγ, ?_⟩
+  have hmul : (B * Matrix.adjugate A) * A
+      = (Q : ℤ) • ((γ : Matrix (Fin 2) (Fin 2) ℤ) * A) := by
+    rw [hCγ, Matrix.smul_mul]
+  have hCA : (B * Matrix.adjugate A) * A = (Q : ℤ) • B := by
+    rw [Matrix.mul_assoc, Matrix.adjugate_mul, hA.det_eq, Matrix.mul_smul, Matrix.mul_one]
+  rw [hCA] at hmul
+  exact smul_right_injective _ hQ0 hmul
+
+/-- **The Atkin–Lehner matrices form ONE right `Γ₀(M)`-coset** (PROVEN).
+Together with `atkinLehner_exists_gamma0_left` this gives BOTH
+inclusions of `A Γ₀(M) A⁻¹ = Γ₀(M)`. -/
+theorem atkinLehner_exists_gamma0_right {M Q : ℕ} (hQ0 : (Q : ℤ) ≠ 0)
+    (hQM : (Q : ℤ) ∣ (M : ℤ))
+    {A B : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M Q A)
+    (hB : IsAtkinLehnerMatrix M Q B) :
+    ∃ γ : SL(2, ℤ), γ ∈ CongruenceSubgroup.Gamma0 M ∧
+      B = A * (γ : Matrix (Fin 2) (Fin 2) ℤ) := by
+  obtain ⟨a00, a01, a10, a11⟩ := adjugate_fin_two_entries A
+  obtain ⟨e00, e01, e10, e11⟩ := matrix_fin_two_mul_entries (Matrix.adjugate A) B
+  rw [a00, a01] at e00
+  rw [a00, a01] at e01
+  rw [a10, a11] at e10
+  rw [a10, a11] at e11
+  have hdet : (Matrix.adjugate A * B).det = (Q : ℤ) ^ 2 := by
+    rw [Matrix.det_mul, det_adjugate_of_det_eq hA.det_eq, hB.det_eq, sq]
+  have h00 : (Q : ℤ) ∣ (Matrix.adjugate A * B) 0 0 := by
+    rw [e00]
+    exact dvd_add (hA.dvd_one_one.mul_right _) ((hQM.trans hB.dvd_one_zero).mul_left _)
+  have h01 : (Q : ℤ) ∣ (Matrix.adjugate A * B) 0 1 := by
+    rw [e01]
+    exact dvd_add (hA.dvd_one_one.mul_right _) (hB.dvd_one_one.mul_left _)
+  have h10 : ((Q : ℤ) * (M : ℤ)) ∣ (Matrix.adjugate A * B) 1 0 := by
+    rw [e10]
+    refine dvd_add ?_ ?_
+    · rw [mul_comm (Q : ℤ)]
+      exact mul_dvd_mul hA.dvd_one_zero.neg_right hB.dvd_zero_zero
+    · exact mul_dvd_mul hA.dvd_zero_zero hB.dvd_one_zero
+  have h11 : (Q : ℤ) ∣ (Matrix.adjugate A * B) 1 1 := by
+    rw [e11]
+    exact dvd_add ((hQM.trans hA.dvd_one_zero).neg_right.mul_right _)
+      (hA.dvd_zero_zero.mul_right _)
+  obtain ⟨γ, hγ, hCγ⟩ := exists_gamma0_of_smul_atkinLehner (M := M) hQ0 hdet h00 h01 h10 h11
+  refine ⟨γ, hγ, ?_⟩
+  have hmul : A * (Matrix.adjugate A * B)
+      = (Q : ℤ) • (A * (γ : Matrix (Fin 2) (Fin 2) ℤ)) := by
+    rw [hCγ, Matrix.mul_smul]
+  have hCA : A * (Matrix.adjugate A * B) = (Q : ℤ) • B := by
+    rw [← Matrix.mul_assoc, Matrix.mul_adjugate, hA.det_eq, Matrix.smul_mul, Matrix.one_mul]
+  rw [hCA] at hmul
+  exact smul_right_injective _ hQ0 hmul
+
+/-- **`A² = Q·γ₀` with `γ₀ ∈ Γ₀(M)`** (PROVEN) — the integral half of
+the involutivity. -/
+theorem atkinLehner_exists_gamma0_sq {M Q : ℕ} (hQ0 : (Q : ℤ) ≠ 0)
+    (hQM : (Q : ℤ) ∣ (M : ℤ))
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M Q A) :
+    ∃ γ : SL(2, ℤ), γ ∈ CongruenceSubgroup.Gamma0 M ∧
+      A * A = (Q : ℤ) • (γ : Matrix (Fin 2) (Fin 2) ℤ) := by
+  obtain ⟨e00, e01, e10, e11⟩ := matrix_fin_two_mul_entries A A
+  have hdet : (A * A).det = (Q : ℤ) ^ 2 := by
+    rw [Matrix.det_mul, hA.det_eq, sq]
+  have h00 : (Q : ℤ) ∣ (A * A) 0 0 := by
+    rw [e00]
+    exact dvd_add (hA.dvd_zero_zero.mul_right _) ((hQM.trans hA.dvd_one_zero).mul_left _)
+  have h01 : (Q : ℤ) ∣ (A * A) 0 1 := by
+    rw [e01]
+    exact dvd_add (hA.dvd_zero_zero.mul_right _) (hA.dvd_one_one.mul_left _)
+  have h10 : ((Q : ℤ) * (M : ℤ)) ∣ (A * A) 1 0 := by
+    rw [e10]
+    refine dvd_add ?_ ?_
+    · rw [mul_comm (Q : ℤ)]
+      exact mul_dvd_mul hA.dvd_one_zero hA.dvd_zero_zero
+    · exact mul_dvd_mul hA.dvd_one_one hA.dvd_one_zero
+  have h11 : (Q : ℤ) ∣ (A * A) 1 1 := by
+    rw [e11]
+    exact dvd_add ((hQM.trans hA.dvd_one_zero).mul_right _) (hA.dvd_one_one.mul_right _)
+  exact exists_gamma0_of_smul_atkinLehner (M := M) hQ0 hdet h00 h01 h10 h11
+
+/-- Casting an integral matrix product to `ℝ` (PROVEN). -/
+theorem intMatrix_map_cast_mul (X Y : Matrix (Fin 2) (Fin 2) ℤ) :
+    (X * Y).map (Int.cast : ℤ → ℝ)
+      = X.map (Int.cast : ℤ → ℝ) * Y.map (Int.cast : ℤ → ℝ) := by
+  simpa using Matrix.map_mul (L := X) (M := Y) (f := Int.castRingHom ℝ)
+
+/-- Casting an integral scalar multiple to `ℝ` (PROVEN). -/
+theorem intMatrix_map_cast_smul (q : ℤ) (X : Matrix (Fin 2) (Fin 2) ℤ) :
+    (q • X).map (Int.cast : ℤ → ℝ) = (q : ℝ) • X.map (Int.cast : ℤ → ℝ) := by
+  ext i j
+  simp only [Matrix.map_apply, Matrix.smul_apply, smul_eq_mul, Int.cast_mul]
+
+/-- The real matrix of `mapGL ℝ γ` for `γ ∈ SL(2, ℤ)` (PROVEN). -/
+theorem mapGL_coe_matrix_int (γ : SL(2, ℤ)) :
+    ((mapGL ℝ γ : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ)
+      = (γ : Matrix (Fin 2) (Fin 2) ℤ).map (Int.cast : ℤ → ℝ) := by
+  rw [mapGL_coe_matrix]
+  simp [Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply]
+
+/-- The real determinant of an Atkin–Lehner matrix is `Q` (PROVEN). -/
+theorem det_map_cast_of_isAtkinLehnerMatrix {M Q : ℕ} {A : Matrix (Fin 2) (Fin 2) ℤ}
+    (hA : IsAtkinLehnerMatrix M Q A) :
+    (A.map (Int.cast : ℤ → ℝ)).det = (Q : ℝ) := by
+  have h := RingHom.map_det (Int.castRingHom ℝ) A
+  rw [hA.det_eq] at h
+  simpa [RingHom.mapMatrix_apply] using h.symm
+
+/-- ... and in particular nonzero, so `atkinLehnerRep` is not junk
+(PROVEN). -/
+theorem det_map_cast_ne_zero_isAL {M Q : ℕ} (hQ0 : (Q : ℝ) ≠ 0)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M Q A) :
+    (A.map (Int.cast : ℤ → ℝ)).det ≠ 0 := by
+  rw [det_map_cast_of_isAtkinLehnerMatrix hA]; exact hQ0
+
+/-- Transfer of a LEFT `Γ₀(M)`-factorization to `GL₂(ℝ)` (PROVEN). -/
+theorem atkinLehnerRep_of_gamma0_mul {M Q : ℕ} (hQ0 : (Q : ℝ) ≠ 0)
+    {A B : Matrix (Fin 2) (Fin 2) ℤ}
+    (hA : IsAtkinLehnerMatrix M Q A) (hB : IsAtkinLehnerMatrix M Q B)
+    {γ : SL(2, ℤ)} (hBA : B = (γ : Matrix (Fin 2) (Fin 2) ℤ) * A) :
+    atkinLehnerRep B = mapGL ℝ γ * atkinLehnerRep A := by
+  apply Units.ext
+  rw [Units.val_mul, atkinLehnerRep_coe (det_map_cast_ne_zero_isAL hQ0 hB),
+    atkinLehnerRep_coe (det_map_cast_ne_zero_isAL hQ0 hA), mapGL_coe_matrix_int, hBA,
+    intMatrix_map_cast_mul]
+
+/-- Transfer of a RIGHT `Γ₀(M)`-factorization to `GL₂(ℝ)` (PROVEN). -/
+theorem atkinLehnerRep_of_mul_gamma0 {M Q : ℕ} (hQ0 : (Q : ℝ) ≠ 0)
+    {A B : Matrix (Fin 2) (Fin 2) ℤ}
+    (hA : IsAtkinLehnerMatrix M Q A) (hB : IsAtkinLehnerMatrix M Q B)
+    {γ : SL(2, ℤ)} (hBA : B = A * (γ : Matrix (Fin 2) (Fin 2) ℤ)) :
+    atkinLehnerRep B = atkinLehnerRep A * mapGL ℝ γ := by
+  apply Units.ext
+  rw [Units.val_mul, atkinLehnerRep_coe (det_map_cast_ne_zero_isAL hQ0 hB),
+    atkinLehnerRep_coe (det_map_cast_ne_zero_isAL hQ0 hA), mapGL_coe_matrix_int, hBA,
+    intMatrix_map_cast_mul]
+
+/-- Transfer of `A² = Q·γ₀` to `GL₂(ℝ)` (PROVEN): the square of the
+Atkin–Lehner element is the SCALAR `Q` times an element of `Γ₀(M)`. -/
+theorem atkinLehnerRep_mul_self {M Q : ℕ} (hQ0 : (Q : ℝ) ≠ 0)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M Q A) {γ : SL(2, ℤ)}
+    (hsq : A * A = (Q : ℤ) • (γ : Matrix (Fin 2) (Fin 2) ℤ)) :
+    atkinLehnerRep A * atkinLehnerRep A
+      = Matrix.GeneralLinearGroup.scalar (Fin 2) (Units.mk0 (Q : ℝ) hQ0) * mapGL ℝ γ := by
+  apply Units.ext
+  rw [Units.val_mul, Units.val_mul, atkinLehnerRep_coe (det_map_cast_ne_zero_isAL hQ0 hA),
+    mapGL_coe_matrix_int, ← intMatrix_map_cast_mul, hsq, intMatrix_map_cast_smul,
+    Matrix.GeneralLinearGroup.coe_scalar, Matrix.scalar_apply]
+  ext i j
+  rw [Matrix.diagonal_mul]
+  simp
+
+/-- **Slash by a positive SCALAR matrix is trivial at weight two**
+(PROVEN): `|det|^{k−1}·denom^{−k} = u²·u^{−2} = 1` at `k = 2`, and
+`σ` is the identity since the determinant `u²` is positive. This is
+exactly why the weight-two Atkin–Lehner slash needs no renormalization
+and why `A² = Q·γ₀` gives an involution. -/
+theorem weightTwo_slash_scalar (u : ℝˣ) (f : UpperHalfPlane → ℂ) :
+    f ∣[(2 : ℤ)] (Matrix.GeneralLinearGroup.scalar (Fin 2) u) = f := by
+  have hune : (u : ℝ) ≠ 0 := u.ne_zero
+  have hdetv : (Matrix.GeneralLinearGroup.det
+      (Matrix.GeneralLinearGroup.scalar (Fin 2) u)).val = (u : ℝ) ^ 2 := by
+    rw [Matrix.GeneralLinearGroup.det_scalar]
+    simp
+  have hpos : (0 : ℝ) < (Matrix.GeneralLinearGroup.det
+      (Matrix.GeneralLinearGroup.scalar (Fin 2) u)).val := by
+    rw [hdetv]
+    exact lt_of_le_of_ne (sq_nonneg _) (Ne.symm (pow_ne_zero 2 hune))
+  have hc : ((u : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hune
+  funext τ
+  rw [ModularForm.slash_apply, UpperHalfPlane.glScalar_smul, UpperHalfPlane.denom_scalar]
+  simp only [UpperHalfPlane.σ]
+  rw [if_pos hpos, hdetv, abs_of_nonneg (sq_nonneg _)]
+  push_cast
+  field_simp
+  rfl
+
+/-- The `σ` twist is trivial for an Atkin–Lehner matrix, whose
+determinant `Q` is positive (PROVEN) — so no complex conjugation
+enters the weight-two slash. -/
+theorem sigma_atkinLehnerRep {M Q : ℕ} (hQpos : (0 : ℝ) < (Q : ℝ))
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M Q A) (z : ℂ) :
+    UpperHalfPlane.σ (atkinLehnerRep A) z = z := by
+  have hne : (A.map (Int.cast : ℤ → ℝ)).det ≠ 0 :=
+    det_map_cast_ne_zero_isAL (ne_of_gt hQpos) hA
+  have hdetv : (Matrix.GeneralLinearGroup.det (atkinLehnerRep A)).val = (Q : ℝ) := by
+    show ((atkinLehnerRep A : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ).det = (Q : ℝ)
+    rw [atkinLehnerRep_coe hne, det_map_cast_of_isAtkinLehnerMatrix hA]
+  simp only [UpperHalfPlane.σ]
+  rw [if_pos (by rw [hdetv]; exact hQpos)]
+  rfl
+
+/-- **AN ATKIN–LEHNER MATRIX NORMALIZES `Γ₀(M)`** (PROVEN): the
+`ConjAct`-conjugate group is `Γ₀(M)` itself, which is component 1 of
+the operator leaf and is what lets `CuspForm.translate` be transported
+back to level `M` with no `CuspForm.trace` over a coset enumeration —
+unlike the Hecke case. Both inclusions come from the coset lemmas: `A γ`
+is again an Atkin–Lehner matrix, hence `= γ' A`; and `γ A` is one too,
+hence `= A γ'`. -/
+theorem atkinLehnerRep_conj_Gamma0GL {M Q : ℕ} (hQ0 : (Q : ℝ) ≠ 0) (hQ0' : (Q : ℤ) ≠ 0)
+    (hQM : (Q : ℤ) ∣ (M : ℤ)) {A : Matrix (Fin 2) (Fin 2) ℤ}
+    (hA : IsAtkinLehnerMatrix M Q A) :
+    toConjAct (atkinLehnerRep A)⁻¹ • Gamma0GL M = Gamma0GL M := by
+  ext x
+  rw [mem_conjAct_inv_smul_iff]
+  constructor
+  · intro h
+    obtain ⟨δ, hδ, hδeq⟩ := mem_Gamma0GL_iff.mp h
+    have hδA : IsAtkinLehnerMatrix M Q ((δ : Matrix (Fin 2) (Fin 2) ℤ) * A) :=
+      hA.gamma0_mul hQM hδ
+    obtain ⟨γ', hγ', hEq⟩ := atkinLehner_exists_gamma0_right hQ0' hQM hA hδA
+    have h1 := atkinLehnerRep_of_gamma0_mul hQ0 hA hδA (γ := δ) rfl
+    have h2 := atkinLehnerRep_of_mul_gamma0 hQ0 hA hδA hEq
+    have h3 : mapGL ℝ δ * atkinLehnerRep A = atkinLehnerRep A * mapGL ℝ γ' := by
+      rw [← h1, h2]
+    refine mem_Gamma0GL_iff.mpr ⟨γ', hγ', ?_⟩
+    have hxe : x = (atkinLehnerRep A)⁻¹ * (mapGL ℝ δ) * atkinLehnerRep A := by
+      rw [hδeq]; group
+    rw [hxe, mul_assoc, h3, ← mul_assoc, inv_mul_cancel, one_mul]
+  · intro h
+    obtain ⟨γ, hγ, hγeq⟩ := mem_Gamma0GL_iff.mp h
+    have hAγ : IsAtkinLehnerMatrix M Q (A * (γ : Matrix (Fin 2) (Fin 2) ℤ)) :=
+      hA.mul_gamma0 hQM hγ
+    obtain ⟨γ', hγ', hEq⟩ := atkinLehner_exists_gamma0_left hQ0' hQM hA hAγ
+    have h1 := atkinLehnerRep_of_mul_gamma0 hQ0 hA hAγ (γ := γ) rfl
+    have h2 := atkinLehnerRep_of_gamma0_mul hQ0 hA hAγ hEq
+    have h3 : atkinLehnerRep A * mapGL ℝ γ = mapGL ℝ γ' * atkinLehnerRep A := by
+      rw [← h1, h2]
+    refine mem_Gamma0GL_iff.mpr ⟨γ', hγ', ?_⟩
+    rw [← hγeq, h3, mul_assoc, mul_inv_cancel, mul_one]
+
+/-- **THE ATKIN–LEHNER OPERATOR `W_Q`** (PROVEN 2026-07-27; it was the
+sorry node of the TWELFTH decomposition 2026-07-26): at an exact
+divisor `Q ‖ M` there is a
 `ℂ`-linear endomorphism of `S₂(Γ₀(M))` which acts as the weight-two
 slash by EVERY Atkin–Lehner matrix for `(M, Q)`, and which squares to
 the identity.
@@ -35731,15 +36109,82 @@ this file.
 Missing from the pin: `Mathlib.NumberTheory.ModularForms` has no
 `AtkinLehner`, no `newform` and no `U_q`; `SlashActions.lean` plus the
 `CuspForm.translate` API is the whole starting point, and `~/cs/FLT` has
-nothing transferable (only the definite quaternionic inner product). -/
+nothing transferable (only the definite quaternionic inner product).
+
+HOW IT IS PROVEN (2026-07-27), for the record. `W` is the transport of
+`CuspForm.translate f (atkinLehnerRep A₀)` along
+`atkinLehnerRep_conj_Gamma0GL` for ONE choice `A₀` (which exists by
+`exists_isAtkinLehnerMatrix`, so nothing here is vacuous); its
+underlying function is `⇑f ∣[2] atkinLehnerRep A₀` by construction.
+Linearity is `SlashAction.add_slash` and `ModularForm.smul_slash` with
+`sigma_atkinLehnerRep` discharging the `σ`-twist. Choice-independence
+is `atkinLehner_exists_gamma0_left` plus slash-invariance of `f`.
+Involutivity is `atkinLehnerRep_mul_self` plus
+`weightTwo_slash_scalar`. No trace, no coset enumeration, no Bézout
+beyond the one already in `exists_isAtkinLehnerMatrix`. -/
 theorem exists_atkinLehnerOp {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
     (hcop : Nat.Coprime Q (M / Q)) :
     ∃ W : Module.End ℂ (CuspForm (Gamma0GL M) 2),
       (∀ A : Matrix (Fin 2) (Fin 2) ℤ, IsAtkinLehnerMatrix M Q A →
           ∀ f : CuspForm (Gamma0GL M) 2,
             ⇑(W f) = ⇑f ∣[(2 : ℤ)] atkinLehnerRep A) ∧
-        W * W = 1 :=
-  sorry
+        W * W = 1 := by
+  have hQpos : 0 < Q := by
+    rcases Nat.eq_zero_or_pos Q with rfl | h
+    · exact absurd (Nat.eq_zero_of_zero_dvd hQ) hM.ne'
+    · exact h
+  have hQ0R : (Q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hQpos.ne'
+  have hQ0Rpos : (0 : ℝ) < (Q : ℝ) := by exact_mod_cast hQpos
+  have hQ0Z : (Q : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hQpos.ne'
+  have hQMz : (Q : ℤ) ∣ (M : ℤ) := Int.natCast_dvd_natCast.mpr hQ
+  obtain ⟨A₀, hA₀⟩ := exists_isAtkinLehnerMatrix hQ hcop
+  have hnorm := atkinLehnerRep_conj_Gamma0GL hQ0R hQ0Z hQMz hA₀
+  have htrans : ∀ (Γ Γ' : Subgroup (GL (Fin 2) ℝ)) (h : Γ = Γ') (x : CuspForm Γ 2),
+      ⇑(h ▸ x : CuspForm Γ' 2) = ⇑x := by
+    rintro Γ Γ' rfl x
+    rfl
+  set T : CuspForm (Gamma0GL M) 2 → CuspForm (Gamma0GL M) 2 :=
+    fun f => hnorm ▸ (CuspForm.translate f (atkinLehnerRep A₀)) with hT
+  have hTcoe : ∀ f : CuspForm (Gamma0GL M) 2,
+      ⇑(T f) = ⇑f ∣[(2 : ℤ)] atkinLehnerRep A₀ := by
+    intro f
+    rw [hT]
+    exact htrans _ _ hnorm (CuspForm.translate f (atkinLehnerRep A₀))
+  have hindep : ∀ A : Matrix (Fin 2) (Fin 2) ℤ, IsAtkinLehnerMatrix M Q A →
+      ∀ f : CuspForm (Gamma0GL M) 2,
+        ⇑f ∣[(2 : ℤ)] atkinLehnerRep A = ⇑f ∣[(2 : ℤ)] atkinLehnerRep A₀ := by
+    intro A hA f
+    obtain ⟨γ, hγ, hEq⟩ := atkinLehner_exists_gamma0_left hQ0Z hQMz hA₀ hA
+    rw [atkinLehnerRep_of_gamma0_mul hQ0R hA₀ hA hEq, SlashAction.slash_mul,
+      SlashInvariantFormClass.slash_action_eq f (mapGL ℝ γ)
+        (mem_Gamma0GL_iff.mpr ⟨γ, hγ, rfl⟩)]
+  obtain ⟨γ₀, hγ₀, hsq⟩ := atkinLehner_exists_gamma0_sq hQ0Z hQMz hA₀
+  have hinv : ∀ f : CuspForm (Gamma0GL M) 2, T (T f) = f := by
+    intro f
+    apply DFunLike.coe_injective
+    rw [hTcoe, hTcoe, ← SlashAction.slash_mul, atkinLehnerRep_mul_self hQ0R hA₀ hsq,
+      SlashAction.slash_mul, weightTwo_slash_scalar,
+      SlashInvariantFormClass.slash_action_eq f (mapGL ℝ γ₀)
+        (mem_Gamma0GL_iff.mpr ⟨γ₀, hγ₀, rfl⟩)]
+  refine ⟨{ toFun := T, map_add' := ?_, map_smul' := ?_ }, ?_, ?_⟩
+  · intro f g
+    apply DFunLike.coe_injective
+    have h2 := hTcoe f
+    have h3 := hTcoe g
+    rw [hTcoe, CuspForm.coe_add, SlashAction.add_slash, ← h2, ← h3, ← CuspForm.coe_add]
+  · intro c f
+    apply DFunLike.coe_injective
+    have h2 := hTcoe f
+    rw [RingHom.id_apply, hTcoe, CuspForm.IsGLPos.coe_smul, ModularForm.smul_slash,
+      sigma_atkinLehnerRep hQ0Rpos hA₀, ← h2, ← CuspForm.IsGLPos.coe_smul]
+  · intro A hA f
+    show ⇑(T f) = _
+    rw [hTcoe f]
+    exact (hindep A hA f).symm
+  · apply LinearMap.ext
+    intro f
+    simp only [Module.End.mul_apply, Module.End.one_apply]
+    exact hinv f
 
 /-- The unconditional form of `exists_atkinLehnerOp`, so that `W_Q` can
 be DEFINED at every pair `(M, Q)` (junk — the zero endomorphism —
@@ -35790,6 +36235,75 @@ theorem atkinLehnerOp_atkinLehnerOp {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
     (atkinLehnerOp_mul_self hM hQ hcop)
   simpa using h
 
+/-- **THE SPECTRAL HALF of Atkin–Lehner at `q ‖ M`** (sorry node,
+THIRTEENTH decomposition 2026-07-27): the Atkin–Lehner transform of a
+weight-two newform is again a joint eigenvector of the complex Hecke
+operators, for `g`'s OWN eigensystem `{a_r(g)}` — at EVERY prime `r`,
+the bad ones included.
+
+Classical content, in two disjoint pieces, and this is the cut a
+successor should make:
+
+* `r ≠ q`: `W_q` COMMUTES with `T_r` (Atkin–Lehner 1970 Lemma 17:
+  `W_Q` commutes with `T_p` and with `U_p` for every `p ∤ Q`).  This is
+  a pure double-coset computation with no newform input, best stated as
+  the operator identity
+  `heckeOp M r * atkinLehnerOp M q = atkinLehnerOp M q * heckeOp M r`
+  and then applied to `heckeOp_apply_eq_smul_of_isWeightTwoEigenform`
+  (PROVEN), which already gives `T_r g = a_r(g)·g`.  Nothing about it is
+  blocked: `atkinLehnerRep_conj_Gamma0GL` (PROVEN above) supplies the
+  normalization that makes conjugation by `A` permute the Hecke coset
+  representatives, and `heckeTransform` is an explicit finite slash-sum,
+  so the identity is a bookkeeping statement about that permutation.
+* `r = q`: `U_q (W_q g) = a_q(g)·(W_q g)`.  This is the genuinely deep
+  half — the Atkin–Lehner relation on the `q`-new part, equivalent at
+  weight two to `U_q = −W_q` there.
+
+WHY THE HYPOTHESIS `q ‖ M` IS LOAD-BEARING and the leaf is not vacuous:
+at `q² ∣ M` the operator `atkinLehnerOp M q` is junk (its defining
+clause is guarded by `Nat.Coprime q (M / q)`), and the classical
+statement is false anyway — that regime is `qCoeff_eq_zero_of_sq_dvd`'s,
+not this one.
+
+REFUTING CHECK for the `r ≠ q` claim, so the next owner need not redo
+the survey: exhibit a prime `r ≠ q` and a newform for which
+`T_r W_q ≠ W_q T_r`; equivalently, exhibit `r ∤ q` for which
+conjugation by an Atkin–Lehner matrix fails to permute the `r + 1`
+Hecke cosets of `Γ₀(M)`. -/
+theorem heckeOp_atkinLehnerOp_eigen_of_newform {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    ∀ r : ℕ, r.Prime →
+      heckeOp M r (atkinLehnerOp M q g) = qCoeff M g r • atkinLehnerOp M q g :=
+  sorry
+
+/-- **THE EIGENVALUE HALF of Atkin–Lehner at `q ‖ M`** (sorry node,
+THIRTEENTH decomposition 2026-07-27): the FIRST Fourier coefficient of
+the Atkin–Lehner transform of a normalized weight-two newform is `−a_q`.
+
+This is Atkin–Lehner 1970 Theorem 3 (Diamond–Shurman §5.8) with the
+weight-two exponent `q^{k/2−1} = 1` already taken: `a₁(g ∣[2] W_q) =
+−a_q(g)`.  Equivalently, since `U_q g = a_q(g)·g`
+(`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`, PROVEN), it is the
+operator identity `U_q = −W_q` on the `q`-new part, read in the first
+coefficient.
+
+Note the two leaves are INDEPENDENT: this one is an unconditional
+statement about one Fourier coefficient and says nothing about whether
+`W_q g` is proportional to `g`; the spectral leaf above says nothing
+about the value.  Their conjunction is exactly what
+`eq_qCoeff_one_smul_of_heckeOp_eigen` turns into the theorem.
+
+Once both are closed, `qCoeff_sq_eq_one_of_exactly_dvd` gets `a_q² = 1`
+from the INVOLUTION `atkinLehnerOp_atkinLehnerOp` (PROVEN) — the `±1`
+never comes from this leaf, which is what makes the split a reduction
+rather than a restatement. -/
+theorem qCoeff_one_atkinLehnerOp_of_newform {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    qCoeff M (atkinLehnerOp M q g) 1 = -(qCoeff M g q) :=
+  sorry
+
 /-- **THE ATKIN–LEHNER THEOREM at a prime exactly dividing the level**
 (sorry node, TWELFTH decomposition 2026-07-26): for `q ‖ M` the
 Atkin–Lehner involution acts on a normalized weight-two newform by the
@@ -35812,12 +36326,30 @@ and `a_q² = 1` then falls out of the INVOLUTION, which is the part that
 carries the `±1`.
 
 Missing from the pin: the `U_q`-eigenvalue computation on the newvector,
-i.e. the `q`-expansion of `g ∣[2] W_q` compared with `U_q g`. -/
+i.e. the `q`-expansion of `g ∣[2] W_q` compared with `U_q g`.
+
+THIRTEENTH DECOMPOSITION (2026-07-27).  The theorem is now PROVEN over
+the two leaves stated immediately below, which are the two halves of
+the classical argument and neither of which mentions the other's
+content:
+
+* `heckeOp_atkinLehnerOp_eigen_of_newform` — `W_q g` is a joint Hecke
+  eigenvector with `g`'s OWN eigensystem (the spectral half);
+* `qCoeff_one_atkinLehnerOp_of_newform` — its first Fourier
+  coefficient is `−a_q` (the eigenvalue half).
+
+The bridge between them is `eq_qCoeff_one_smul_of_heckeOp_eigen`
+(PROVEN in this file): a joint eigenvector for `g`'s full prime
+eigensystem equals `a₁` of itself times `g`.  That is genuine
+multiplicity one, so no Petersson product and no old/new decomposition
+is needed to assemble the two halves. -/
 theorem atkinLehnerOp_apply_eq_neg_qCoeff_smul {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
-    atkinLehnerOp M q g = (-(qCoeff M g q)) • g :=
-  sorry
+    atkinLehnerOp M q g = (-(qCoeff M g q)) • g := by
+  have h1 := eq_qCoeff_one_smul_of_heckeOp_eigen hM hg.toIsWeightTwoEigenform
+    (heckeOp_atkinLehnerOp_eigen_of_newform hM g hg hq hqM hqM2)
+  rw [h1, qCoeff_one_atkinLehnerOp_of_newform hM g hg hq hqM hqM2]
 
 /-- `q ‖ M` — a prime dividing `M` but with `q² ∤ M` — is exactly the
 statement that `q` and `M / q` are coprime (PROVEN).  This is the
