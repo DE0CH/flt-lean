@@ -3843,9 +3843,106 @@ theorem exists_geomPt_factor_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
   rw [← hφ, ← Category.assoc, ← Spec.map_comp, hcomp, hχ, Category.assoc,
     Iso.hom_inv_id, Category.comp_id]
 
+/-- **Two ring maps out of an integral `F`-algebra into `F̄` with the SAME
+KERNEL differ by an element of `Gal(F̄/F)`** (PROVEN).  This is the ring
+core of leaf (v-b-ii), and the only arithmetic in it.
+
+Both maps kill `I := ker b`, so both factor through `κ := R ⧸ I`, which is
+a DOMAIN (kernel of a map to a field) that is INTEGRAL over `F` (a
+quotient of the integral `F`-algebra `R`), hence a FIELD by
+`isField_of_isIntegral_of_isField'` — no artinian theory, no
+`Ring.KrullDimLE`, and `I` is maximal only as a by-product
+(`Ideal.Quotient.maximal_ideal_iff_isField_quotient`) of wanting the
+`Field (R ⧸ I)` instance.
+
+The extension of the resulting pair of `F`-embeddings `κ ↪ F̄` to an
+automorphism of `F̄` is `AlgEquiv.liftNormal`, applied to the isomorphism
+between the two `AlgHom.fieldRange`s.  **That detour through the two
+ranges is not decoration: it is what avoids putting two `Algebra κ F̄`
+instances on the same type**, which is where the direct
+`IsAlgClosed.lift` route deadlocks.  `L₁ := B.fieldRange` and
+`L₂ := A.fieldRange` are two DIFFERENT `IntermediateField F F̄`s, each
+carrying exactly one canonical `Algebra ↥Lᵢ F̄` and one `IsScalarTower`,
+so `AlgEquiv.liftNormal` applies with no instance juggling at all.
+
+TWO TRAPS PAID FOR HERE, both worth reusing:
+
+* **State this over a VARIABLE base field `F`, never at the literal `ℚ`.**
+  `Normal ℚ (AlgebraicClosure ℚ)` runs into the `Rat`-algebra diamond that
+  the docstring of `exists_injective_pre_geomBase` records; over a
+  variable `F` it is just `IsAlgClosure.normal`.  Instantiating at `F = ℚ`
+  afterwards is fine, because the statement itself pins the instance to
+  `AlgebraicClosure.instAlgebra`, which is also the one inside
+  `Field.absoluteGaloisGroup`.
+* **`letI : Field (R ⧸ I) := Ideal.Quotient.field I` must come BEFORE the
+  `AlgHom`s are built.**  Otherwise they are elaborated against
+  `Ideal.Quotient.semiring I` and `AlgHom.equivFieldRange` — which derives
+  its `Semiring` from the `Field` — rejects them with an application type
+  mismatch on instance paths that print identically.
+
+NOTE the two compatibility hypotheses `ha`/`hb`.  Over a variable `F` they
+are genuinely needed (nothing forces `a ∘ ψ` to be the structure map); at
+`F = ℚ` they are free, by `Rat.subsingleton_ringHom`. -/
+theorem exists_algEquiv_comp_of_ker_eq {F : Type} [Field F] {R : Type} [CommRing R]
+    (ψ : F →+* R) (hint : ψ.IsIntegral)
+    (a b : R →+* AlgebraicClosure F)
+    (ha : a.comp ψ = algebraMap F (AlgebraicClosure F))
+    (hb : b.comp ψ = algebraMap F (AlgebraicClosure F))
+    (hker : RingHom.ker a = RingHom.ker b) :
+    ∃ σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F, ∀ r : R, σ (b r) = a r := by
+  letI : Algebra F R := ψ.toAlgebra
+  haveI : Algebra.IsIntegral F R := Algebra.isIntegral_def.mpr hint
+  set I : Ideal R := RingHom.ker b with hIdef
+  haveI : I.IsPrime := RingHom.ker_isPrime b
+  haveI : Algebra.IsIntegral F (R ⧸ I) := by
+    refine Algebra.isIntegral_def.mpr fun x => ?_
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    exact (Algebra.IsIntegral.isIntegral (R := F) r).map (Ideal.Quotient.mkₐ F I)
+  have hfield : IsField (R ⧸ I) := isField_of_isIntegral_of_isField' (Field.toIsField F)
+  haveI hmax : I.IsMaximal := (Ideal.Quotient.maximal_ideal_iff_isField_quotient I).mpr hfield
+  letI : Field (R ⧸ I) := Ideal.Quotient.field I
+  have hBz : ∀ r ∈ I, b r = 0 := fun r hr => hr
+  have hAz : ∀ r ∈ I, a r = 0 := fun r hr => by rw [← hker] at hr; exact hr
+  set A : (R ⧸ I) →+* AlgebraicClosure F := Ideal.Quotient.lift I a hAz with hA
+  set B : (R ⧸ I) →+* AlgebraicClosure F := Ideal.Quotient.lift I b hBz with hB
+  have hAmk : ∀ r : R, A (Ideal.Quotient.mk I r) = a r := fun r => Ideal.Quotient.lift_mk _ _ _
+  have hBmk : ∀ r : R, B (Ideal.Quotient.mk I r) = b r := fun r => Ideal.Quotient.lift_mk _ _ _
+  have hAcomm : ∀ x : F, A (algebraMap F (R ⧸ I) x) = algebraMap F (AlgebraicClosure F) x := by
+    intro x
+    have h1 : algebraMap F (R ⧸ I) x = Ideal.Quotient.mk I (ψ x) := rfl
+    rw [h1, hAmk, ← ha]
+    rfl
+  have hBcomm : ∀ x : F, B (algebraMap F (R ⧸ I) x) = algebraMap F (AlgebraicClosure F) x := by
+    intro x
+    have h1 : algebraMap F (R ⧸ I) x = Ideal.Quotient.mk I (ψ x) := rfl
+    rw [h1, hBmk, ← hb]
+    rfl
+  set A' : (R ⧸ I) →ₐ[F] AlgebraicClosure F := { A with commutes' := hAcomm } with hA'
+  set B' : (R ⧸ I) →ₐ[F] AlgebraicClosure F := { B with commutes' := hBcomm } with hB'
+  set e₁ : (R ⧸ I) ≃ₐ[F] B'.fieldRange := B'.equivFieldRange with he₁
+  set e₂ : (R ⧸ I) ≃ₐ[F] A'.fieldRange := A'.equivFieldRange with he₂
+  set ϕ : B'.fieldRange ≃ₐ[F] A'.fieldRange := e₁.symm.trans e₂ with hϕ
+  refine ⟨ϕ.liftNormal (AlgebraicClosure F), fun r => ?_⟩
+  have key := AlgEquiv.liftNormal_commutes ϕ (AlgebraicClosure F) (e₁ (Ideal.Quotient.mk I r))
+  have hL : (algebraMap B'.fieldRange (AlgebraicClosure F)) (e₁ (Ideal.Quotient.mk I r))
+      = b r := by
+    show ((e₁ (Ideal.Quotient.mk I r) : B'.fieldRange) : AlgebraicClosure F) = b r
+    rw [he₁, AlgHom.equivFieldRange_apply_coe]
+    exact hBmk r
+  have hR' : (algebraMap A'.fieldRange (AlgebraicClosure F)) (ϕ (e₁ (Ideal.Quotient.mk I r)))
+      = a r := by
+    have hϕe : ϕ (e₁ (Ideal.Quotient.mk I r)) = e₂ (Ideal.Quotient.mk I r) := by
+      rw [hϕ]; simp
+    rw [hϕe]
+    show ((e₂ (Ideal.Quotient.mk I r) : A'.fieldRange) : AlgebraicClosure F) = a r
+    rw [he₂, AlgHom.equivFieldRange_apply_coe]
+    exact hAmk r
+  rw [hL, hR'] at key
+  exact key
+
 /-- **Every `ℚ̄`-point of the span is a Galois translate of a member of the
-family** (sorry leaf (v-b-ii), split out 2026-07-27 — the arithmetic half
-of the crux).
+family** (leaf (v-b-ii), split out 2026-07-27 — the arithmetic half of the
+crux; **PROVEN 2026-07-27**).
 
 Again the family is arbitrary: this is the statement that the
 scheme-theoretic image of finitely many geometric points has no geometric
@@ -3853,28 +3950,58 @@ points beyond the `Γ_ℚ`-orbits of those it was built from.  Galois
 stability of the family is NOT assumed and is not needed; it is the
 PARENT that consumes stability, to turn the orbit back into `⟨y⟩`.
 
-THE ROUTE.  Write `R := Γ(C, ⊤)` and `χ_j : R → ℚ̄` for the `J` coordinate
-maps induced by the family.  Four steps, none of which needs the group
-law:
+HOW IT CLOSED, and it is NOT the route the pin survey below prescribes.
+Write `C := spanScheme p`, `R := Γ(C, ⊤)`, and let `w_j : Spec ℚ̄ ⟶ C` be
+the factorisation of `p j` through the span (`geomPt_liesIn_spanScheme`).
+Three steps:
 
-* `R ↪ ∏_J ℚ̄`, i.e. `⋂_j ker χ_j = 0` — this is schematic dominance of
-  `toImage`, the defining property of the scheme-theoretic image, and it
-  is the ONLY place the construction of `C` enters;
-* `R` is a finite `ℚ`-algebra (`isFinite_spanSchemeι`), hence artinian,
-  so every prime of `R` is MAXIMAL;
-* for `χ : R → ℚ̄`, `ker χ` is prime and contains `⋂_j ker χ_j = 0 ⊇
-  ∏_j ker χ_j`, so `ker χ ⊇ ker χ_j` for some `j` by primality of a
-  finite product, and maximality of both forces `ker χ = ker χ_j`;
-* `χ` and `χ_j` are then two `ℚ`-embeddings of the residue field
-  `κ := R ⧸ ker χ_j` into `ℚ̄`, so they differ by an automorphism:
-  view `ℚ̄` as a `κ`-algebra through `χ_j`, lift `χ` with
-  `IsAlgClosed.lift` to a `ℚ`-algebra endomorphism of `ℚ̄`, and make it an
-  `AlgEquiv` — an element of `Field.absoluteGaloisGroup ℚ` — with
-  `Algebra.IsAlgebraic.algHom_bijective`.
+* **Topology picks the index.**  `range_spanSchemeι_subset` (already
+  proven in this file) says the support of `C` sits inside the finitely
+  many image points of the family, and `spanSchemeι p` is a closed
+  immersion, hence injective on points.  `Spec ℚ̄` is a ONE-POINT space,
+  so the image point of `v` equals the image point of `w_j` for some `j`,
+  and injectivity of `ι` on points transfers that equality up to `C`:
+  `v.base o = (w_j).base o`.
+* **`isoSpec` turns that into an equality of KERNELS.**  `C` is affine
+  (`isAffine_spanScheme`), so `v` and `w_j` become ring maps
+  `χ, χ_j : R → ℚ̄` and the structure morphism becomes an INTEGRAL
+  `ψ : ℚ → R` (`isFinite_spanSchemeι`, then `IsIntegralHom.SpecMap_iff`)
+  — exactly the transport `exists_geomPt_factor_span` already performs.
+  `Spec.map_apply` is `rfl`, so `(Spec.map χ).base o` IS
+  `PrimeSpectrum.comap χ o`; at the unique point `o = ⟨⊥, _⟩` of
+  `Spec ℚ̄` its `asIdeal` is literally `ker χ`.  So the topological
+  equality of points is DEFINITIONALLY `ker χ = ker χ_j`.
+* **`exists_algEquiv_comp_of_ker_eq` above** turns equal kernels into
+  `σ ∘ χ_j = χ` for a `σ ∈ Gal(ℚ̄/ℚ)`.  `Spec` is contravariant, so that
+  is `v = specGal σ ≫ w_j`, and composing with `ι` gives the conclusion.
 
-`Spec` is contravariant, so `χ = σ ∘ χ_j` becomes
-`v = specGal σ ≫ q_j` and hence `v ≫ ι = specGal σ ≫ p j`, which is the
-conclusion.
+**THE PIN SURVEY BELOW WAS CORRECT AND IS NO LONGER THE CHEAPEST ROUTE —
+BOTH OF ITS HARD STEPS ARE UNUSED.**  It is kept because its individual
+claims are true and were checked, but a successor reading it should know:
+
+* Its step 1, schematic dominance via `Scheme.Hom.toImage_app_injective`,
+  is NOT needed.  Dominance was only ever wanted to force
+  `⋂_j ker χ_j = 0`; the topological containment
+  `range_spanSchemeι_subset` gives the strictly stronger and much cheaper
+  fact that the point of `v` IS one of the points of the family, which
+  hands over the index `j` directly instead of extracting it from a
+  primality argument.
+* Consequently its step 3 (`Ideal.IsPrime.inf_le'`) is unused, and so is
+  the maximality of `ker χ_j` as an ingredient — maximality reappears
+  only inside `exists_algEquiv_comp_of_ker_eq`, and only to obtain the
+  `Field (R ⧸ I)` INSTANCE.
+* **And the identification `Γ(∐_J Spec ℚ̄, ⊤) ≅ ∏_J ℚ̄`, recorded below as
+  "the one step with no lemma found by name" and as "where a successor
+  should expect the work to be", NEVER ARISES.**  The coproduct's global
+  sections are not touched anywhere in the proof.  That is worth
+  recording as a general lesson: the gap an audit identifies is a
+  property of the route it chose, not of the leaf.
+
+For the record, the survey's step 2 IS used (in
+`exists_algEquiv_comp_of_ker_eq`), and its step 4 is replaced by
+`AlgEquiv.liftNormal` — see that lemma's docstring for why the
+`IsAlgClosed.lift` assembly it recommends deadlocks on duplicate
+`Algebra κ ℚ̄` instances.
 
 **PIN SURVEY, 2026-07-27 — EVERY INGREDIENT RESOLVES; NO THEORY IS
 MISSING.**  Each of the four steps was looked up by name against a seeded
@@ -3904,27 +4031,55 @@ sketch is corrected here rather than left to mislead:
    (`Mathlib/RingTheory/Algebraic/Basic.lean`) plus `AlgEquiv.ofBijective`
    gives the automorphism.  `IsAlgClosure.equiv` in
    `Mathlib/FieldTheory/IsAlgClosed/Basic.lean` is a two-line worked
-   example of exactly this assembly and is the thing to copy.
-
-CHECK THAT WOULD REFUTE THIS SURVEY: any one of those five names failing
-to resolve, or `Hom.toImage_app_injective` turning out to be stated only
-for opens of the form `f.imageι ⁻¹ᵁ U` in a way that does not cover `⊤`
-(it is stated for exactly those opens, and `f.imageι ⁻¹ᵁ ⊤ = ⊤`).
-
-What remains is therefore PLUMBING, not mathematics: transporting `v`,
-the `q_j` and the structure morphism across `(spanScheme p).isoSpec` into
-ring maps, as `exists_geomPt_factor_span` already does, and identifying
-`Γ(∐_J Spec ℚ̄, ⊤)` with `∏_J ℚ̄` so that the `χ_j` are literally the
-coordinates.  That last identification is the one step with no lemma
-found by name and is where a successor should expect the work to be. -/
+   example of exactly this assembly and is the thing to copy. -/
 theorem exists_specGal_factor_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
     (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
     (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ)
     (v : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ spanScheme p) :
     ∃ (σ : Field.absoluteGaloisGroup ℚ) (j : J),
-      v ≫ spanSchemeι p = specGal σ ≫ p j :=
-  sorry
+      v ≫ spanSchemeι p = specGal σ ≫ p j := by
+  haveI := isAffine_spanScheme ab p hp
+  haveI := isFinite_spanSchemeι ab p hp
+  -- the unique point of `Spec ℚ̄`
+  let o : ↑(Spec (CommRingCat.of (AlgebraicClosure ℚ))) :=
+    (⟨⊥, Ideal.isPrime_bot⟩ : PrimeSpectrum (AlgebraicClosure ℚ))
+  -- STEP 1 (topology): the image point of `v` is the image point of some member
+  have hsub := range_spanSchemeι_subset ab p hp
+  obtain ⟨j, x, hx⟩ : ∃ j, ∃ x, (p j).base x = (spanSchemeι p).base (v.base o) := by
+    simpa using hsub ⟨v.base o, rfl⟩
+  obtain ⟨w, hw⟩ := geomPt_liesIn_spanScheme p j
+  have hpt : v.base o = w.base o := by
+    apply (spanSchemeι p).isClosedEmbedding.injective
+    have h1 : (spanSchemeι p).base (w.base o) = (p j).base o := by rw [← hw]; rfl
+    rw [h1, ← hx]
+    congr 1
+    exact Subsingleton.elim _ _
+  -- STEP 2: transport `v`, `w` and the structure morphism across `isoSpec`
+  haveI : IsFinite ((spanScheme p).isoSpec.inv ≫ spanSchemeι p ≫ f) := inferInstance
+  obtain ⟨ψ, hψ⟩ := Spec.map_surjective ((spanScheme p).isoSpec.inv ≫ spanSchemeι p ≫ f)
+  obtain ⟨χ, hχ⟩ := Spec.map_surjective (v ≫ (spanScheme p).isoSpec.hom)
+  obtain ⟨χj, hχj⟩ := Spec.map_surjective (w ≫ (spanScheme p).isoSpec.hom)
+  have hint : ψ.hom.IsIntegral := by
+    rw [← IsIntegralHom.SpecMap_iff, hψ]
+    infer_instance
+  -- STEP 3: equal image points ARE equal kernels (`Spec.map_apply` is `rfl`)
+  have hker : RingHom.ker χ.hom = RingHom.ker χj.hom := by
+    have h2 : (Spec.map χ).base o = (Spec.map χj).base o := by
+      rw [hχ, hχj]
+      show (spanScheme p).isoSpec.hom.base (v.base o) = (spanScheme p).isoSpec.hom.base (w.base o)
+      rw [hpt]
+    exact congrArg PrimeSpectrum.asIdeal h2
+  -- STEP 4: two embeddings of the residue field differ by a Galois element
+  obtain ⟨σ, hσ⟩ := exists_algEquiv_comp_of_ker_eq ψ.hom hint χ.hom χj.hom
+    (Subsingleton.elim _ _) (Subsingleton.elim _ _) hker
+  refine ⟨σ, j, ?_⟩
+  have hcomp : χj ≫ CommRingCat.ofHom (σ.toAlgHom.toRingHom) = χ :=
+    CommRingCat.hom_ext (RingHom.ext hσ)
+  have hvw : v = specGal σ ≫ w := by
+    refine (cancel_mono (spanScheme p).isoSpec.hom).mp ?_
+    rw [Category.assoc, ← hχ, ← hχj, specGal, ← Spec.map_comp, hcomp]
+  rw [← hw, ← Category.assoc, ← hvw]
 
 /-- **Every `K`-point of the span is an integer multiple of the geometric
 generator** (leaf (v-b), split out 2026-07-27 — THE CRUX of leaf (v), and
@@ -3962,14 +4117,20 @@ algebras, or for `IsArtinianRing.equivPi`; if such a splitting is
 available for a reduced finite `ℚ`-algebra, the rest of this leaf is
 finite bookkeeping.
 
-**DECOMPOSED 2026-07-27 into the two leaves `exists_geomPt_factor_span`
-and `exists_specGal_factor_span` below.**  The split is along the two
-independent halves of the argument above, and NEITHER half mentions the
-group law, `hstable`, `hy` or `hN` — they are statements about an
-arbitrary finite family of geometric points, exactly like leaf (i).  The
-full `R ≅ ∏ κ_i` splitting is NOT needed for either: the first half needs
-only that `R` is a finite `ℚ`-algebra, the second only that the primes of
-an artinian ring are maximal.
+**DECOMPOSED 2026-07-27 into `exists_geomPt_factor_span` and
+`exists_specGal_factor_span` below, and BOTH are now PROVEN, so this node
+has no open descendants.**  The split is along the two independent halves
+of the argument above, and NEITHER half mentions the group law,
+`hstable`, `hy` or `hN` — they are statements about an arbitrary finite
+family of geometric points, exactly like leaf (i).  The full
+`R ≅ ∏ κ_i` splitting is NOT needed for either: the first half needs only
+that `R` is a finite `ℚ`-algebra, and the second — contrary to what this
+paragraph said before the second half was proven — does NOT need "the
+primes of an artinian ring are maximal" either.  It needs only that the
+image point of a `ℚ̄`-point of `C` is one of the finitely many image
+points of the family (`range_spanSchemeι_subset`), which hands over the
+index directly; maximality survives only as the way
+`exists_algEquiv_comp_of_ker_eq` obtains a `Field` instance on `R ⧸ I`.
 
 **AUDIT: `hN` AND `hy` ARE NOT USED, and are underscored to say so.**
 That is not an oversight and it is not vacuity — the conclusion is a
@@ -4066,8 +4227,9 @@ embedding over `ℚ`.  Of the three conjuncts,
 
 Only the `→` direction — `C(K) ⊆ ⟨z⟩` — is left; it is leaf (v-b),
 `mem_zmultiples_of_liesIn_span`, which since 2026-07-27 is itself proven
-over the two leaves `exists_geomPt_factor_span` and
-`exists_specGal_factor_span`.  Leaf (v-a) is PROVEN.
+over `exists_geomPt_factor_span` and `exists_specGal_factor_span`.  Leaf
+(v-a) is PROVEN, and as of 2026-07-27 so are BOTH of those two, so the
+whole (v) subtree is leaf-free.
 
 CORRECTION TO THE PREVIOUS AUDIT.  This docstring used to record as
 MISSING "the identification of the base change of a scheme-theoretic image
@@ -4276,7 +4438,7 @@ and (v) are proven over four smaller leaves.  The state of the five is:
 | (v-a) `exists_injective_pre_geomBase` | **PROVEN** — no leaf; `he` is `subsingleton_hom_specQ`, injectivity is `epi_specMap_of_fieldHom` |
 | (v-b) `mem_zmultiples_of_liesIn_span` | PROVEN over (v-b-i), (v-b-ii) |
 | (v-b-i) `exists_geomPt_factor_span` | **PROVEN** — no leaf; consumes leaf (i) `isFinite_spanSchemeι` |
-| (v-b-ii) `exists_specGal_factor_span` | open — the `ℚ̄`-points of the span are the `Γ_ℚ`-orbits of the family; the arithmetic crux |
+| (v-b-ii) `exists_specGal_factor_span` | **PROVEN** 2026-07-27 — no leaf; `range_spanSchemeι_subset` picks the index, `isoSpec` turns equal image points into equal kernels, and `exists_algEquiv_comp_of_ker_eq` supplies `σ`.  The whole (v) subtree is now leaf-free. |
 
 The route recorded here before that date said "(iii) and (iv) are the
 rigidity of morphisms out of a reduced scheme into a separated one; (v) is
