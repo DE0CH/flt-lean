@@ -25445,9 +25445,494 @@ def HasRankZeroAbelianImage {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
       c T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c T g x)) ∧
     Finite (RelPoint astr (𝟙 SpecQ)) ∧ Function.Injective (c SpecQ (𝟙 SpecQ))
 
+/-! #### The Atkin–Lehner involution, and the Prym cut into four leaves
+
+`exists_atkinLehnerPrym_x0OneSixtyNine` below was a single sorry node
+until 2026-07-27.  Its own docstring recorded the cut it was waiting
+for, and this subsection is that cut carried out; the node is now
+PROVEN over four leaves.
+
+**The cut had to start by PINNING `w`, and that is not a formality.**
+The node produces `w` existentially, and an unpinned involution can be
+the identity, whose Prym is trivial.  So a split into "the Prym exists"
+and "`A(ℚ)` is finite" without a pin produces a first half that is
+satisfiable by `A := J`, `ι := 𝟙`, `c := x ↦ [x] − [w x]` — a half that
+is *provable with no mathematics at all*, while the entire content sits
+in a second half that can no longer even be stated about that `A`.
+That is the trap this subsection avoids, and it is why the pin comes
+first.
+
+**The pin is the moduli action.**  `IsNIsogenyPair` says that two
+`Γ₀(N)`-data `(E, C)` and `(E', C')` over a base `T` are related by a
+cyclic `N`-isogeny `φ : E → E'` with `C = ker φ` and `C' = ker φ̂`, where
+`φ̂` is a quasi-inverse with `φ̂φ = [N]` and `φφ̂ = [N]`.  Classically
+`E' = E/C` and `C' = E[N]/C`, and phrasing it through the dual is what
+makes the condition statable here: this development has no quotient of
+an elliptic scheme by a finite flat subgroup scheme, but it does have
+morphisms, kernels-on-points and `[N]`.  `IsAtkinLehner` then says `w`
+carries the moduli point of `d` to the moduli point of `d'` for every
+such pair — which is exactly `w_N`, and is FALSE for `w = 𝟙`.
+
+**What the pin does NOT do, stated so that nobody over-reads it.**  It
+constrains `w` only on points of `X` in the image of
+`coarse.classify` — i.e. on moduli points of `Y_0(N)`, not on the
+cusps, and not on points of the coarse space not represented by a
+datum over the same base.  That is the same strength `IsJMapOn` and
+`IsX0ReductionAt` have here, and for the same reason.  Its consumer is
+`noFixedRationalPoint_atkinLehner_x0OneSixtyNine`, where the cusp half
+of the fixed-point count (`w_169` SWAPS the two rational cusps) has to
+be recovered from `w` being a morphism on a curve with a dense open
+`Y_0(169)`, not from the pin.
+
+**Then the seam is `hasRankZeroJacobian_of_kenkuLevel`'s.**  With `w`
+pinned, the node splits into
+
+* `exists_atkinLehner_x0` — level-generic, the moduli construction of
+  `w_N`;
+* `noFixedRationalPoint_atkinLehner_x0OneSixtyNine` — level-specific,
+  the CM/class-number count `h(−676) = 6` plus the cusp swap;
+* `exists_prym_of_involution` — level-generic, the Prym construction
+  (Poincaré reducibility applied to `ker(1 + w_J)`);
+* `finite_antiInvariant_jacobian_x0OneSixtyNine` — level-specific,
+  Kolyvagin–Logachev, the exact analogue of
+  `isTorsion_jacobian_of_kenkuLevel`.
+
+**`w_J` is CONSTRUCTED, not posited**, which is what lets the last two
+leaves talk about the same object without either of them producing it.
+`IsJacobianOf.mapEnd` is the endomorphism of `J` induced by `w` through
+the Albanese universal property, applied to the pointed natural map
+`ajTwist : x ↦ [w x] − [w o]`; on divisor classes it is `w_*`, since
+`[w x] − [w o] = w_*([x] − [o])`.  The construction is PROVEN below and
+its characterising equation is `IsJacobianOf.post_mapEnd_aj`. -/
+
+/-- **The Abel–Jacobi map twisted by an endomorphism of the curve**:
+`x ↦ [w x] − [w o]`, written as `aj (w x)` corrected by the constant
+`− aj (w o)` so that the base point still goes to the origin.
+
+The correction is not cosmetic — it is what makes the family *pointed*,
+which is the hypothesis `IsJacobianOf.universal` asks for.  Without it
+`x ↦ aj (w x)` sends `o` to `aj (w o)`, which is `0` only when `w`
+fixes `o`.
+
+The constant is transported to an arbitrary base point `g : T ⟶ Spec ℚ`
+by `RelPoint.pre g` along `g ≫ 𝟙 = g`, which is why naturality
+(`ajTwist_pre`) is available at all. -/
+noncomputable def IsJacobianOf.ajTwist {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g) : RelPoint jstr g :=
+  ab.add (jac.aj g (RelPoint.post w hw x))
+    (RelPoint.pre g (Category.comp_id g)
+      (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o))))
+
+/-- **`ajTwist` is natural in the test object** (PROVEN), from `aj_pre`,
+`RelPoint.post_pre` and `pre_add`; the constant term is natural because
+precomposing it along `h` and then along `g` is precomposing along
+`h ≫ g = g'`. -/
+theorem IsJacobianOf.ajTwist_pre {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') (x : RelPoint strX g) :
+    jac.ajTwist w hw g' (RelPoint.pre h hg x)
+      = RelPoint.pre h hg (jac.ajTwist w hw g x) := by
+  show ab.add _ _ = RelPoint.pre h hg (ab.add _ _)
+  rw [ab.pre_add h hg, RelPoint.post_pre, jac.aj_pre]
+  congr 1
+  refine Subtype.ext ?_
+  show g' ≫ (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o))).1
+      = h ≫ g ≫ (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o))).1
+  rw [← Category.assoc, hg]
+
+/-- **`ajTwist` is pointed** (PROVEN): it sends the base point `o` to the
+origin, because at `g = 𝟙` the correction is literally `− aj (w o)`. -/
+theorem IsJacobianOf.ajTwist_base {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX) :
+    jac.ajTwist w hw (𝟙 SpecQ) o = ab.zero (𝟙 SpecQ) := by
+  show ab.add _ _ = _
+  rw [show RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ))
+      (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o)))
+      = ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o)) from
+    Subtype.ext (Category.id_comp _)]
+  rw [ab.add_comm, ab.neg_add]
+
+/-- **The Albanese factorisation of `ajTwist`** (PROVEN) — the `∃!` that
+`IsJacobianOf.mapEnd` picks from.
+
+Stated separately rather than inlined three times so that `mapEnd`, its
+compatibility with the structure morphism, and its characterising
+equation all name the SAME `∃!`, and so that the uniqueness half is
+available to a consumer: any `u` satisfying the factorisation equation
+IS `mapEnd`, which is what makes the `hchar` hypothesis of the two
+leaves below a pin rather than an extra degree of freedom. -/
+theorem IsJacobianOf.existsUnique_mapEnd {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX) :
+    ∃! u : J ⟶ J, u ≫ jstr = jstr ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+        (jac.ajTwist w hw g x).1 = (jac.aj g x).1 ≫ u :=
+  jac.universal ab (fun g x => jac.ajTwist w hw g x)
+    (by intro T' T h g g' hg x; exact jac.ajTwist_pre w hw h hg x)
+    (jac.ajTwist_base w hw)
+
+/-- **The endomorphism of the Jacobian induced by an endomorphism of the
+curve** (PROVEN construction).
+
+On divisor classes this is push-forward: `mapEnd w` is the unique
+`ℚ`-morphism `J ⟶ J` with
+`mapEnd w ([x] − [o]) = [w x] − [w o] = w_*([x] − [o])`.  For `w` the
+Atkin–Lehner involution `w_N` it is the Atkin–Lehner operator on
+`J_0(N)`, and it is the object the Prym is cut out by.
+
+Nothing here needs `w` to be an involution, or the curve to be modular:
+this is the Albanese universal property and nothing else. -/
+noncomputable def IsJacobianOf.mapEnd {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX) : J ⟶ J :=
+  (jac.existsUnique_mapEnd w hw).choose
+
+/-- **`mapEnd` is a morphism over the base** (PROVEN). -/
+theorem IsJacobianOf.mapEnd_comp {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX) :
+    jac.mapEnd w hw ≫ jstr = jstr :=
+  (jac.existsUnique_mapEnd w hw).choose_spec.1.1
+
+/-- **The characterising equation of `mapEnd`** (PROVEN):
+`mapEnd w (aj x) = [w x] − [w o]`, at every test object and every base
+point.
+
+This is what pins `mapEnd` — by the uniqueness half of
+`existsUnique_mapEnd`, any `wJ` satisfying it is `mapEnd w`.  The two
+leaves below take exactly this equation as a hypothesis on an abstract
+`wJ`, so that neither of them has to produce the operator; the assembly
+supplies `mapEnd` and this proof. -/
+theorem IsJacobianOf.post_mapEnd_aj {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g) :
+    RelPoint.post (jac.mapEnd w hw) (jac.mapEnd_comp w hw) (jac.aj g x)
+      = jac.ajTwist w hw g x :=
+  Subtype.ext ((jac.existsUnique_mapEnd w hw).choose_spec.1.2 g x).symm
+
+/-- **`d` and `d'` are exchanged by a cyclic `N`-isogeny**: the relation
+`(E, C) ↦ (E/C, E[N]/C)` that defines the Atkin–Lehner involution,
+written without ever forming the quotient `E/C`.
+
+The data is an isogeny `map : E ⟶ E'` over the base together with a
+`dual : E' ⟶ E`, subject to
+
+* `ker map = C` and `ker dual = C'`, read as subfunctors of the points
+  (`RelPoint.LiesIn` is a subfunctor by construction, so this really is
+  the scheme-theoretic kernel and not a weakening of it);
+* `dual ∘ map = [N]` on `E` and `map ∘ dual = [N]` on `E'`.
+
+Those four conditions say exactly that `map` is a cyclic `N`-isogeny
+with kernel the level structure `C`, and that `C'` is the level
+structure `map(E[N]) = ker(dual)` induced on the target.  No quotient of
+an elliptic scheme by a finite flat subgroup scheme is needed — which is
+the point, since this development has none.
+
+**The relation is symmetric**, by swapping `map` with `dual`: `ker_map`
+becomes `ker_dual` and `dual_map` becomes `map_dual`.  That symmetry is
+what makes `w_N` an INVOLUTION rather than merely an automorphism, and
+it is the reason the two `[N]` conditions are both carried rather than
+one being derived from the other by faithful flatness.
+
+**Not vacuous**: over a field `K` carrying an elliptic curve with a
+cyclic `N`-isogeny — which exists for every `N` over a suitable `K` —
+the pair `(E, ker φ)`, `(E/ker φ, ker φ̂)` inhabits it.  That
+satisfiability is what makes `IsAtkinLehner` below a constraint rather
+than a vacuous truth, and it is the check that would refute the whole
+pin. -/
+structure IsNIsogenyPair (N : ℕ) {T : Scheme.{0}} (d d' : Gamma0Datum N T) where
+  /-- the isogeny `E ⟶ E'`, classically the quotient by `C` -/
+  map : d.E ⟶ d'.E
+  /-- the isogeny is a morphism over the base -/
+  comm : map ≫ d'.f = d.f
+  /-- the dual isogeny `E' ⟶ E` -/
+  dual : d'.E ⟶ d.E
+  /-- the dual isogeny is a morphism over the base -/
+  dual_comm : dual ≫ d.f = d'.f
+  /-- the kernel of the isogeny is the level structure of `d` -/
+  ker_map : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    RelPoint.post map comm x = d'.ab.zero g ↔ RelPoint.LiesIn d.cyc.ι x
+  /-- the kernel of the dual isogeny is the level structure of `d'`,
+  i.e. `C' = map (E[N])` -/
+  ker_dual : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (y : RelPoint d'.f g),
+    RelPoint.post dual dual_comm y = d.ab.zero g ↔ RelPoint.LiesIn d'.cyc.ι y
+  /-- `dual ∘ map = [N]`: the isogeny has degree `N` -/
+  dual_map : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    letI := d.ab.addCommGroup g
+    RelPoint.post dual dual_comm (RelPoint.post map comm x) = N • x
+  /-- `map ∘ dual = [N]`: the dual isogeny has degree `N` -/
+  map_dual : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (y : RelPoint d'.f g),
+    letI := d'.ab.addCommGroup g
+    RelPoint.post map comm (RelPoint.post dual dual_comm y) = N • y
+
+/-- **`w` is the Atkin–Lehner involution `w_N` of `X_0(N)`**, pinned by
+its action on the moduli problem: it carries the moduli point of
+`(E, C)` to the moduli point of `(E/C, E[N]/C)`.
+
+Phrased through `IsNIsogenyPair`, and quantified over every test object
+`T` and every base point `g`, so that it is a statement about the
+natural transformation `classify` rather than about `ℚ`-points alone —
+which matters, since `Y_0(169)(ℚ)` is empty and the `ℚ`-point form of
+this condition would be VACUOUS.
+
+**What it pins, exactly.**  `w` is constrained on the image of
+`coarse.classify`, pushed into `X` along the open immersion `jY`.  It
+says nothing directly about the cusps, which are not moduli points; the
+classical fact that `w_N` swaps the cusps `0` and `∞` has to be
+recovered from `w` being a morphism of a smooth proper curve containing
+`Y_0(N)` as a dense open, which is how
+`noFixedRationalPoint_atkinLehner_x0OneSixtyNine` uses it.
+
+**What it rules out, which is the reason it exists.**  `w = 𝟙` does not
+satisfy it: the pin would then force `classify g d = classify g d'` for
+every `N`-isogenous pair, i.e. that `w_N` acts trivially on `Y_0(N)`,
+and at `N = 169` that is false — `g(X_0(169)/w_169) = 3 < 8 =
+g(X_0(169))`.  Without this, `exists_atkinLehner_x0` would be provable
+by `w := 𝟙` and the fixed-point leaf below would be FALSE. -/
+def IsAtkinLehner (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
+    {jY : Y ⟶ X} (hX : IsX0Compactification N strX strY jY)
+    (w : X ⟶ X) (hw : w ≫ strX = strX) : Prop :=
+  ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d d' : Gamma0Datum N T), IsNIsogenyPair N d d' →
+    RelPoint.post w hw (RelPoint.post jY hX.comm (hX.coarse.classify g d))
+      = RelPoint.post jY hX.comm (hX.coarse.classify g d')
+
+/-- **The Atkin–Lehner involution `w_N` exists on `X_0(N)`** (sorry node,
+introduced 2026-07-27 in the cut of
+`exists_atkinLehnerPrym_x0OneSixtyNine`) — LEVEL-GENERIC.
+
+TRUE.  `w_N` is the classical Fricke/Atkin–Lehner involution: on the
+moduli problem it is `(E, C) ↦ (E/C, E[N]/C)`, which is an involution
+because `E/(E[N]/C) ≅ E` carries `E[N]/(E[N]/C) ≅ C`; it descends to the
+coarse space by the universal property of `coarse`, and extends to the
+compactification because a morphism of a smooth curve into a proper
+curve extends over a finite set of points.  It is defined over `ℚ`
+because the moduli description is.
+
+**What proving it needs**: quotients of an elliptic scheme by a finite
+flat subgroup scheme (`E/C` as a scheme, not merely as the target of an
+`IsNIsogenyPair`), the descent of the induced natural transformation
+through `IsCoarseModuliY0.universal`, and the extension of a morphism
+across the cusps.  The first is the real gate and is absent from
+mathlib, from `~/cs/FLT` and from this project — refute with
+`grep -rn "quotient.*subgroup scheme\|isogenyQuotient\|IsQuotientByFinite"
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+
+**Note the involution clause `w ≫ w = 𝟙 X` is separate from the pin**,
+and is NOT derivable from `IsAtkinLehner` alone at this pin: the pin
+constrains `w` only on moduli points, and two morphisms of `X` agreeing
+there agree everywhere only by a density argument that this statement
+does not carry.  Both are asserted, which is the honest form. -/
+theorem exists_atkinLehner_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification N strX strY jY) :
+    ∃ (w : X ⟶ X) (hw : w ≫ strX = strX), w ≫ w = 𝟙 X ∧ IsAtkinLehner N hX w hw :=
+  sorry
+
+/-- **`w_169` has no `ℚ`-rational fixed point on `X_0(169)`** (sorry
+node, introduced 2026-07-27) — LEVEL-SPECIFIC, and the leaf that
+consumes the moduli pin.
+
+TRUE.  The fixed points of `w_N` on `X_0(N)` are the CM points of
+discriminant `−4N`, together with those of discriminant `−N` when
+`N ≡ 3 (mod 4)`.  Here `169 ≡ 1 (mod 4)`, so only the first family
+occurs, and `h(−676) = 6` (`quadclassunit(-676).no`, PARI/GP): those
+points are defined over a ring class field of degree `6` over
+`ℚ(√−169)` and none is rational.  The two rational cusps `0` and `∞`
+are SWAPPED by `w_169` — `w_N` exchanges the cusps above `d` and `N/d`,
+and `rationalCuspDivisors 169 = {1, 169}` — so neither is fixed either.
+
+**The check that refutes it**: `h(−676) = 1`, or a rational point of
+`X_0(169)` fixed by `w_169`.  Recomputed in PARI/GP on 2026-07-27:
+`quadclassunit(-676).no = 6`.
+
+**Where the two hypotheses go, and why both are needed.**  `_hal` is
+what makes the CM half of the argument available: it identifies `w` on
+moduli points, and the fixed points of `(E, C) ↦ (E/C, E[N]/C)` are
+exactly the pairs admitting an endomorphism of degree `N`, i.e. the CM
+points of discriminant `−4N`.  `_hw2` is what makes "fixed point" the
+right notion for a *quotient* — an order-`2` action.  Without `_hal`
+the statement is FALSE, since `w := 𝟙` is an involution over `ℚ` with
+every point fixed and `X_0(169)(ℚ) ≠ ∅` (it has two rational cusps).
+
+**What proving it needs, and it is two theories, not one.**  On moduli
+points: the CM theory of the fixed points of `w_N` (complex
+multiplication, ring class fields, `h(−4N)`), none of which exists at
+this pin.  On the cusps: that `w` is determined on `X` by its
+restriction to the dense open `Y_0(169)` — a separatedness/reducedness
+argument — plus the cusp permutation `d ↦ N/d`, which needs
+`IsX0Compactification.CuspIndexing`.  The second half is the cheaper
+one and is where a prover should start. -/
+theorem noFixedRationalPoint_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw) :
+    ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x :=
+  sorry
+
+/-- **The Prym of an involution of a curve** (sorry node, introduced
+2026-07-27) — LEVEL-GENERIC, and the half of the `169` node that knows
+nothing about `169`.
+
+TRUE, for an arbitrary involution `w` of a smooth proper geometrically
+connected curve over `ℚ`.  This is Poincaré reducibility applied to
+`ker(1 + w_J)`, and here is the construction, written out because it is
+what a prover has to build and because it explains every clause of the
+statement.
+
+* `w_J := wJ` is `w_*` on the Jacobian (that is what `hchar` says).
+  Since `w² = 𝟙`, `w_J² = 1`, so `(1 + w_J)(1 − w_J) = 0` and the class
+  `[x] − [w x]` is killed by `1 + w_J`:
+  `(1 + w_J)([x] − [w x]) = ([x] − [w x]) + ([w x] − [x]) = 0`.
+* Let `A := ker(1 + w_J)⁰`, the identity component — an abelian
+  subvariety of `J`, on which `w_J` acts as `−1`.  That is the Prym of
+  `X ⟶ X/w`, and it is where `hanti` comes from.
+* Put `t := [o] − [w o]`, a `ℚ`-rational point of `J` (both `o` and
+  `w o` are rational), and note `(1 + w_J) t = 0`, so `w_J t = −t`.
+  Take `ι := (translation by t) ∘ (the closed immersion A ↪ J)` and
+  `c x := ([x] − [w x]) − t`.  Then `c o = 0`, so the image of the
+  connected `X` under `c` lies in the identity component `A`; `ι` is a
+  closed immersion, hence injective on points; and
+  `ι (c x) = ([x] − [w x]) − t + t = [x] − [w x]`, which is `hfac`.
+  Anti-invariance survives the translation because `w_J t = −t`:
+  `w_J (a + t) = −a − t = −(a + t)`.
+
+**`ι` IS NOT ASKED TO BE ADDITIVE, and that is deliberate** — the
+construction above makes it a translate of a homomorphism, and the
+consumer (`hasRankZeroAbelianImage_x0OneSixtyNine`, through
+`exists_atkinLehnerPrym_x0OneSixtyNine`) never needs additivity.
+Demanding it would force the constant `t` into `c` instead, and then
+`hfac` would no longer be the equation the consumer wants.
+
+**Injectivity of `ι` on `ℚ`-points IS asked for, and it is not
+decoration.**  Without it the statement is FALSE: take
+`A := ker(1 + w_J)⁰ × E` for an elliptic curve `E/ℚ` of rank `1` and
+`ι := (a, e) ↦ a + t`.  Every other clause holds — `hanti` because the
+`E`-coordinate is discarded — and `A(ℚ)` is infinite, so the assembly's
+finiteness step would break.  Injectivity is exactly what makes `A(ℚ)`
+embed into the anti-invariant subgroup of `J(ℚ)`.
+
+**`hchar` is a PIN, not an extra hypothesis**: by the uniqueness half of
+`IsJacobianOf.existsUnique_mapEnd`, the only `wJ` satisfying it is
+`jac.mapEnd w hw`, and that operator exists, so this leaf is not
+vacuous.
+
+**What proving it needs**: the kernel of an endomorphism of an abelian
+scheme as a group scheme, its identity component, and Poincaré
+reducibility (or, enough for this statement, that `ker(1 + w_J)⁰` is an
+abelian subvariety).  None of the three exists at this pin — refute
+with `grep -rn "PoincareReducibility\|abelianSubvariety\|identityComponent"
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`. -/
+theorem exists_prym_of_involution {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification N strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    ∃ (A : Scheme.{0}) (astr : A ⟶ SpecQ) (_abA : AbelianSchemeStruct astr)
+      (ι : A ⟶ J) (hι : ι ≫ jstr = astr)
+      (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g),
+      (∀ (T' T : Scheme.{0}) (h : T' ⟶ T) (g : T ⟶ SpecQ) (g' : T' ⟶ SpecQ)
+          (hg : h ≫ g = g') (x : RelPoint strX g),
+        c T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c T g x)) ∧
+      Function.Injective (fun a : RelPoint astr (𝟙 SpecQ) => RelPoint.post ι hι a) ∧
+      (∀ a : RelPoint astr (𝟙 SpecQ),
+        RelPoint.post wJ hwJ (RelPoint.post ι hι a) = ab.neg (RelPoint.post ι hι a)) ∧
+      ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint strX g),
+        RelPoint.post ι hι (c T g x) =
+          ab.add (jac.aj g x) (ab.neg (jac.aj g (RelPoint.post w hw x))) :=
+  sorry
+
+/-- **Kolyvagin–Logachev at `169`: the `w_169`-ANTI-INVARIANT subgroup of
+`J_0(169)(ℚ)` is finite** (sorry node, introduced 2026-07-27) —
+LEVEL-SPECIFIC, and the exact analogue of
+`isTorsion_jacobian_of_kenkuLevel`.
+
+TRUE, and **unconditionally so** — no BSD, no `p`-adic integration.
+`J_0(169)(ℚ)` is finitely generated of rank `3`
+(`not_stableCyclic_oneHundredSixtyNine`), so the anti-invariant subgroup
+is finite exactly when the `w_169 = −1` part of `J_0(169)(ℚ) ⊗ ℚ`
+vanishes, i.e. when the MINUS part has rank `0`.  It does, and here is
+the computation, recomputed in PARI/GP for this node on 2026-07-27:
+
+* `S_2(Γ_0(169))` is `8`-dimensional and entirely new
+  (`genus X_0(13) = 0`), splitting into three newform orbits of
+  dimensions `2, 3, 3` with `w_169`-eigenvalues
+  `mfatkineigenvalues(mfinit([169,2],0),169) = [[-1,-1],[-1,-1,-1],[1,1,1]]`.
+  So the MINUS part is `5`-dimensional and the PLUS part `3`-dimensional
+  — cross-checked against `g(X_0(169)/w_169) = (8 + 1 − 3)/2 = 3` with
+  `ν = 6` fixed points.
+* Every embedding of both `w = −1` orbits has `L(f^σ, 1) ≠ 0`
+  (`0.96638…, 2.26861…` and `2.24086…, 1.56775…, 0.55137…`;
+  `lfunorderzero` returns `0` at each), while the `w = +1` orbit
+  vanishes to order `1` at each of its three embeddings.  So all the
+  rank sits in the PLUS part, and Kolyvagin–Logachev gives
+  `rank A(ℚ) = 0` for `A` the minus part.
+
+**That cross-check is what rules out the one way this node could have
+been false**: the two `3`-dimensional orbits are NOT interchangeable,
+and the rank-carrying one is the `+1` part.  Had it been the other way
+the minus part would have rank `3` and the whole approach dies.
+**The check that refutes it**: `mfatkineigenvalues` returning a
+different eigenvalue pattern, `lfunorderzero` nonzero on an embedding of
+orbit `1` or `2`, or a genus of `X_0(169)/w_169` other than `3`.
+
+**`_hal` may not be dropped, and here is the precise reason.**  The
+statement with `_hal` removed — "for EVERY involution `w` of a curve
+with `IsX0Compactification 169`, the `w_*`-anti-invariant subgroup of
+`J(ℚ)` is finite" — is FALSE as a statement about curves in general:
+for a HYPERELLIPTIC curve the hyperelliptic involution has `w_* = −1`
+on the whole Jacobian, so its anti-invariant subgroup is all of `J(ℚ)`,
+of positive rank whenever the curve has any.  `X_0(169)` is not
+hyperelliptic, so at this level the statement happens to survive — but
+only over the classification of `Aut(X_0(169))`, a strictly harder input
+than the pin.  `_hal` is what makes `w_J` the Atkin–Lehner operator
+whose minus part is the rank-`0` one, and therefore what makes the
+newform table above the relevant computation at all.  `_hw2` is needed
+for the same reason it is needed upstream: `w_J² = 1` is what makes
+`{z : w_J z = −z}` the minus eigenspace rather than an arbitrary
+subgroup.
+
+**Why this shape and not `Finite A(ℚ)`.**  Stating finiteness of the
+Prym's points would make this leaf depend on the object
+`exists_prym_of_involution` produces, and the two would no longer be
+separable.  The anti-invariant subgroup of `J(ℚ)` is the same arithmetic
+with no geometry in it, and the assembly recovers `Finite A(ℚ)` by
+`Finite.of_injective` along `ι`.
+
+**What proving it needs**: Eichler–Shimura (the isogeny decomposition of
+`J_0(N)` into modular abelian varieties, compatibly with the
+Atkin–Lehner operator), and Kolyvagin–Logachev — the same two theories
+`isTorsion_jacobian_of_lFunction_ne_zero` records as missing, plus the
+Atkin–Lehner eigenspace decomposition.  The right further cut is the one
+that file already uses: introduce the analytic input
+`L(f, 1) ≠ 0 for every eigenform with w_N f = −f` as a hypothesis, and
+split off the numerics as a separate level-specific leaf.  That cut is
+not taken here because it needs an Atkin–Lehner operator on
+`CuspForm (Gamma0GL N) 2`, which does not exist at this pin — refute
+with `grep -rn "atkinLehner\|AtkinLehner" Fermat/FLT/ModularCurve/`. -/
+theorem finite_antiInvariant_jacobian_x0OneSixtyNine {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner 169 hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x) :
+    Finite {z : RelPoint jstr (𝟙 SpecQ) // RelPoint.post wJ hwJ z = ab.neg z} :=
+  sorry
+
 /-- **The Atkin–Lehner involution `w_169` and its Prym, an abelian
-subvariety of `J_0(169)` with finite `ℚ`-points** (sorry node, introduced
-2026-07-27 as the arithmetic half of `hasRankZeroAbelianImage_x0OneSixtyNine`).
+subvariety of `J_0(169)` with finite `ℚ`-points** (PROVEN 2026-07-27
+over the four leaves immediately above; introduced as a sorry node
+earlier the same day, as the arithmetic half of
+`hasRankZeroAbelianImage_x0OneSixtyNine`).
 
 TRUE, and **unconditionally so**.  This is the half of that node which is
 specific to the level and to the involution; the geometric half — that the
@@ -25507,22 +25992,51 @@ are outputs, not quotations.
   check that refutes it**: `h(−676) = 1`, or a rational point of
   `X_0(169)` fixed by `w_169`.
 
-#### The cut this leaf is still waiting for
+#### The cut this leaf was waiting for, now TAKEN
 
-`w` is produced existentially rather than pinned, which is what allows the
-three facts above to travel together: pinning `w` as *the* Atkin–Lehner
-involution needs its moduli description `(E, C) ↦ (E/C, E[169]/C)`, and
-until that is written the rank-`0` claim cannot be separated from the
-existence claim — an unpinned involution can be the identity, whose Prym
-is trivial and whose `c` is constant.  Once `w` IS pinned, this splits
-cleanly in two along the seam `hasRankZeroJacobian_of_kenkuLevel` already
-uses: the Prym construction (Atkin–Lehner decomposition, level-generic)
-and `Finite (RelPoint astr (𝟙 SpecQ))` (Kolyvagin–Logachev, level-specific,
-the analogue of `isTorsion_jacobian_of_kenkuLevel`).
+The previous version of this docstring recorded the cut as unavailable
+because "`w` is produced existentially rather than pinned", and it was
+right that the pin had to come first: an unpinned involution can be the
+identity, whose Prym is trivial, and a split that leaves `w` unpinned
+produces a first half satisfiable by `A := J`, `ι := 𝟙` with no
+mathematics in it at all.
+
+The pin is `IsAtkinLehner`, written above through `IsNIsogenyPair`,
+which states the moduli action `(E, C) ↦ (E/C, E[169]/C)` **without
+forming the quotient `E/C`** — as an isogeny `φ` with `ker φ = C`
+together with a dual `φ̂` with `φ̂φ = φφ̂ = [169]` and `ker φ̂ = C'`.
+That is what unblocked the cut: the quotient of an elliptic scheme by a
+finite flat subgroup scheme does not exist at this pin, and the *output*
+of forming it is nameable without it.  (Same shape as the
+`swanExponent`/`tameness` and the Noether-normalisation repairs recorded
+in the fleet doctrine: ask what the missing machinery PRODUCES.)
+
+With `w` pinned, the node splits along the seam
+`hasRankZeroJacobian_of_kenkuLevel` uses, into four leaves — two
+level-generic, two level-specific, and no leaf carrying more than one
+theory:
+
+| leaf | theory | level |
+|---|---|---|
+| `exists_atkinLehner_x0` | quotient by a finite flat subgroup scheme, descent through `coarse.universal` | generic |
+| `noFixedRationalPoint_atkinLehner_x0OneSixtyNine` | CM points, `h(−676) = 6`, cusp swap | `169` |
+| `exists_prym_of_involution` | Poincaré reducibility for `ker(1 + w_J)` | generic |
+| `finite_antiInvariant_jacobian_x0OneSixtyNine` | Eichler–Shimura + Kolyvagin–Logachev | `169` |
+
+The two halves meet through `IsJacobianOf.mapEnd`, the operator `w_*`
+induced on `J` by `w`, which is **constructed** above from the Albanese
+universal property rather than posited — so neither leaf has to produce
+it, and the equation that pins it (`post_mapEnd_aj`) is proven.  The
+last leaf is stated about the anti-invariant subgroup of `J(ℚ)` rather
+than about `A(ℚ)` precisely so that it does not depend on the object the
+Prym leaf produces; this assembly recovers `Finite A(ℚ)` from it by
+`Finite.of_injective` along `ι`, which is what the injectivity clause of
+`exists_prym_of_involution` is for.
 
 Note what is NOT needed: the universal property of the Jacobian is never
-used, only `jac.aj` and its naturality — exactly as in
-`card_le_of_rankZeroJacobian`. -/
+used by the CONSUMER, only `jac.aj` and its naturality — exactly as in
+`card_le_of_rankZeroJacobian`.  It IS used here, once, to build
+`mapEnd`. -/
 theorem exists_atkinLehnerPrym_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification 169 strX strY jY)
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
@@ -25538,8 +26052,25 @@ theorem exists_atkinLehnerPrym_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶
         Finite (RelPoint astr (𝟙 SpecQ)) ∧
         ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint strX g),
           RelPoint.post ι hι (c T g x) =
-            ab.add (jac.aj g x) (ab.neg (jac.aj g (RelPoint.post w hw x))) :=
-  sorry
+            ab.add (jac.aj g x) (ab.neg (jac.aj g (RelPoint.post w hw x))) := by
+  obtain ⟨w, hw, hw2, hal⟩ := exists_atkinLehner_x0 169 _hX
+  refine ⟨w, hw, hw2,
+    noFixedRationalPoint_atkinLehner_x0OneSixtyNine _hX w hw hw2 hal, ?_⟩
+  obtain ⟨A, astr, abA, ι, hι, c, hcnat, hinj, hanti, hfac⟩ :=
+    exists_prym_of_involution _hX jac w hw hw2 (jac.mapEnd w hw) (jac.mapEnd_comp w hw)
+      (fun g x => jac.post_mapEnd_aj w hw g x)
+  -- `A(ℚ)` is finite because `ι` embeds it into the `w_169`-anti-invariant
+  -- subgroup of `J_0(169)(ℚ)`, which is finite by Kolyvagin–Logachev.
+  haveI : Finite {z : RelPoint jstr (𝟙 SpecQ) //
+      RelPoint.post (jac.mapEnd w hw) (jac.mapEnd_comp w hw) z = ab.neg z} :=
+    finite_antiInvariant_jacobian_x0OneSixtyNine _hX jac w hw hw2 hal
+      (jac.mapEnd w hw) (jac.mapEnd_comp w hw) (fun g x => jac.post_mapEnd_aj w hw g x)
+  have hfin : Finite (RelPoint astr (𝟙 SpecQ)) :=
+    Finite.of_injective (fun a => (⟨RelPoint.post ι hι a, hanti a⟩ :
+      {z : RelPoint jstr (𝟙 SpecQ) //
+        RelPoint.post (jac.mapEnd w hw) (jac.mapEnd_comp w hw) z = ab.neg z}))
+      (fun a b hab => hinj (congrArg Subtype.val hab))
+  exact ⟨A, astr, abA, ι, hι, c, hcnat, hfin, hfac⟩
 
 /-- **`x ↦ [x] − [w x]` is injective on `X_0(169)(ℚ)`** (sorry node,
 introduced 2026-07-27 as the geometric half of
