@@ -6294,10 +6294,109 @@ theorem section_eq_of_formallyUnramified {Z S : Scheme.{u}} (p : Z ⟶ S)
     rw [← hesnd, hu, Category.assoc, pullback.diagonal_snd, Category.comp_id]
   rw [h1, h2]
 
+/-- **The kernel of reduction along a square-zero extension**, as a subtype of
+`RelPoint f b`.
+
+`RelPoint.pre (Spec.map φ) rfl` is the reduction map `A(R) ⟶ A(R/I)` read on
+relative points; this is its kernel.  It is packaged as a SUBTYPE rather than
+as an `AddSubgroup` because the `AddCommGroup` structure on `RelPoint f b` is
+`ab.addCommGroup b`, a plain definition depending on the TERM `ab`, so it is
+not available to instance synthesis inside a statement — the same reason
+`nsmulPoint` exists. -/
+abbrev AbelianSchemeStruct.KerPre {A S : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) {R S' : CommRingCat.{u}} (φ : R ⟶ S')
+    (b : Spec R ⟶ S) : Type u :=
+  {c : RelPoint f b // RelPoint.pre (Spec.map φ) rfl c = ab.zero (Spec.map φ ≫ b)}
+
+/-- **The kernel of `A(R) ⟶ A(R/I)` along a square-zero extension is an
+`R`-MODULE** (sorry node — the whole deformation-theoretic content of the
+`q ≠ ℓ` half of `neronKernel_torsionFree`, and now the only thing left in it).
+
+The `R`-action is stated in explicit, typeclass-free form: a scalar map
+`smul : R → KerPre → KerPre` together with the four module axioms
+`one_smul`, `mul_smul`, `add_smul`, `smul_add`, each read through the
+subtype projection and with `ab.add` in place of `+` (the additive
+structure on `RelPoint f b` is `ab.addCommGroup b`, which is not an
+instance).  `zero_smul` and `smul_zero` are consequences of `add_smul`
+and `smul_add` respectively and are therefore not listed.
+
+TRUE, and it is the standard first statement of deformation theory.  For a
+SMOOTH `f : A ⟶ S` (here `ab.smooth`) and a square-zero extension
+`R ↠ R/I`, the kernel of `A(R) ⟶ A(R/I)` is canonically
+
+    Hom_{R/I}(e^* Ω_{A/S} ⊗ R/I, I)  ≅  Lie(A/S) ⊗ I,
+
+the lifts of a fixed `(R/I)`-point forming a TORSOR under it.  The point
+that matters is not the precise identification but its consequence: the
+kernel is an `R`-MODULE, not merely an abelian group (the `R`-action factors
+through `R/I` because `I² = 0`).
+
+STATE OF THE PIN, checked rather than assumed (2026-07-27), and this is what
+makes the leaf expensive:
+
+* Mathlib has the AFFINE-ALGEBRA half in `Mathlib/RingTheory/Smooth/Kaehler.lean`
+  — `derivationOfSectionOfKerSqZero` (the difference of two sections of a
+  square-zero extension IS a derivation), `retractionOfSectionOfKerSqZero`,
+  `retractionKerToTensorEquivSection`, `tensorKaehlerQuotKerSqEquiv`.
+* There is **no scheme-level Kähler differential module at all**: nothing
+  under `Mathlib/AlgebraicGeometry/` mentions `KaehlerDifferential` or
+  `Cotangent` except `Morphisms/FormallyUnramified.lean` and
+  `Morphisms/Etale.lean`, and neither builds `Ω_{X/Y}`.
+* There is **no scheme-level `FormallySmooth` class** — `Morphisms/Smooth.lean`
+  has `Smooth`, `SmoothOfRelativeDimension` and a `smoothLocus`, but formal
+  smoothness appears only through `f.stalkMap x` at the ring level, so the
+  infinitesimal lifting property is not available as a scheme-level API the
+  way `FormallyUnramified.of_hom_ext` is for unramifiedness.
+* `Fermat/FLT/GroupScheme/HopfKaehler.lean` has the AFFINE group-scheme
+  version; `~/cs/FLT` has no abelian-scheme development at all.
+
+THE ROUTE, recorded so the successor does not have to rediscover it.  The
+construction of `smul` needs the trivial square-zero extension, which is the
+ring `R ×_{S'} R` (pairs agreeing mod `I`); via `(a, x) ↦ (a, a + x)` it is
+`R ⊕ I` with `I² = 0`, and there `μ_r : (a, x) ↦ (a, r x)` IS an `R`-algebra
+endomorphism — that endomorphism is the whole source of the scalar action.
+To feed a kernel element into it one needs a map `Spec (R ×_{S'} R) ⟶ A`
+built from the two `R`-points `c` and `ab.zero b`, i.e. the Ferrand pushout
+`Spec R ⊔_{Spec S'} Spec R`, which is ABSENT from the pin.
+
+Two reductions make that affordable, and neither is in the docstring this
+replaces:
+
+1. **For an AFFINE target the pushout is free.**  `Hom(Spec D, X)` for
+   affine `X` is `Hom(Γ(X), D)` by the `Γ ⊣ Spec` adjunction, so the
+   universal property of `R ×_{S'} R` as a fibre product of RINGS is
+   already the universal property needed.  No Ferrand theorem is required.
+2. **One may assume the kernel element factors through an affine open of
+   `A`.**  Equality of morphisms is local on the source, and `Spec S' ⟶ Spec R`
+   is a homeomorphism (its ideal is square-zero, hence nilpotent), so
+   `hker` forces `c` and `(ab.zero b).1` to have the SAME underlying
+   continuous map.  Cover `Spec R` by basic opens `D(g)` whose image under
+   that common map lies in an affine chart of `A`; `RelPoint.pre` along
+   `Spec R_g ⟶ Spec R` is a group homomorphism (`ab.pre_add`, `ab.pre_zero`),
+   localisation is exact so `ker φ_g` is still square-zero, and `q` stays a
+   unit.  So the statement descends to the affine case.
+
+THE CHECK THAT WOULD REFUTE THIS VERDICT: a scheme-level `FormallySmooth`
+class with the lifting property phrased on `Spec R`-points, in the style of
+`FormallyUnramified.of_hom_ext`, would collapse step 2; and any scheme-level
+`Ω_{X/Y}` would make the direct torsor argument available. -/
+theorem exists_smul_kerPre_of_squareZero {A S : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) {R S' : CommRingCat.{u}} (φ : R ⟶ S')
+    (_hφ : Function.Surjective φ) (_hsq : RingHom.ker φ.hom ^ 2 = ⊥)
+    (b : Spec R ⟶ S) :
+    ∃ smul : R → ab.KerPre φ b → ab.KerPre φ b,
+      (∀ x, (smul 1 x).1 = x.1) ∧
+      (∀ (r r' : R) (x : ab.KerPre φ b),
+        (smul (r * r') x).1 = (smul r (smul r' x)).1) ∧
+      (∀ (r r' : R) (x : ab.KerPre φ b),
+        (smul (r + r') x).1 = ab.add (smul r x).1 (smul r' x).1) ∧
+      (∀ (r : R) (x y z : ab.KerPre φ b), z.1 = ab.add x.1 y.1 →
+        (smul r z).1 = ab.add (smul r x).1 (smul r y).1) :=
+  sorry
+
 /-- **The kernel of `A(R) ⟶ A(R/I)` along a SQUARE-ZERO extension has no
-`q`-torsion when `q` is a unit of `R`** (sorry node — and, after the
-reduction below, the ONLY thing left in the whole `q ≠ ℓ` half of
-`neronKernel_torsionFree`).
+`q`-torsion when `q` is a unit of `R`** (PROVEN, over the single leaf
+`exists_smul_kerPre_of_squareZero` immediately above).
 
 TRUE, and it is the standard first statement of deformation theory.  For a
 SMOOTH `f : A ⟶ S` (here `ab.smooth`) and a square-zero extension
@@ -6330,33 +6429,69 @@ That is the general lesson from this leaf twice over: an irreducibility
 verdict is only as wide as the axis searched, and a gap is only as large as
 the language it happens to be stated in.
 
-MISSING MACHINERY, checked rather than assumed (2026-07-27).  Mathlib has the
-AFFINE-ALGEBRA half of exactly this in
-`Mathlib/RingTheory/Smooth/Kaehler.lean`: `derivationOfSectionOfKerSqZero`
-(the difference of two sections of a square-zero extension IS a derivation),
-`retractionKerToTensorEquivSection`, `tensorKaehlerQuotKerSqEquiv`.  What is
-absent is the SCHEME-level statement, and — the harder half — the
-compatibility saying that the group law of `ab` on relative points
-corresponds to ADDITION of derivations under that identification.  This
-project's `Fermat/FLT/GroupScheme/HopfKaehler.lean` has the affine group
-scheme version; `~/cs/FLT` has no abelian-scheme development at all.
+WHAT IS LEFT, and what is now discharged (2026-07-27).  The entire
+deformation-theoretic content has been isolated into the single leaf
+`exists_smul_kerPre_of_squareZero` above — the `R`-module structure on the
+kernel, which is exactly the "check that would refute the verdict" the
+previous version of this docstring called for.  Everything else is
+GROUP THEORY and is proven here:
 
-THE CHECK THAT WOULD REFUTE THE VERDICT: produce, at this pin, an
-`R`-module structure (or even just an `R`-scalar action) on the kernel of
-`RelPoint.pre` along a square-zero extension, compatible with `ab.add`.  A
-single such declaration closes this leaf, since `IsUnit.map` then makes `[q]`
-bijective on it.  Note the smoothness hypothesis is already available as
-`ab.smooth` and is the only geometric input the construction needs — no
-properness, no connectedness, no abelian-ness. -/
+* `zero_smul` and `smul_zero` are derived from `add_smul` and `smul_add`
+  (`a = a + a` in a group forces `a = 0`), so the leaf does not have to
+  state them;
+* `smul ((n : ℕ) : R) = n • ·` by induction on `n`, from `one_smul` and
+  `add_smul` — this is the bridge between the `R`-action and the `ℕ`-action
+  that `nsmulPoint` uses, and it is the only place the two meet;
+* with `q = ↑u` a unit, `c = 1 • c = (u⁻¹ * u) • c = u⁻¹ • (q • c) = u⁻¹ • 0 = 0`.
+
+No hypothesis is now unused: `hφ` and `hsq` are consumed by the leaf, `hq`
+by the unit inversion, `htors` and `hker` by the computation. -/
 theorem eq_zero_of_squareZero_of_isUnit_nsmul
     {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f) (q : ℕ)
-    {R S' : CommRingCat.{u}} (φ : R ⟶ S') (_hφ : Function.Surjective φ)
-    (_hsq : RingHom.ker φ.hom ^ 2 = ⊥) (_hq : IsUnit ((q : ℕ) : R))
+    {R S' : CommRingCat.{u}} (φ : R ⟶ S') (hφ : Function.Surjective φ)
+    (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (hq : IsUnit ((q : ℕ) : R))
     {b : Spec R ⟶ S} (c : RelPoint f b)
-    (_htors : ab.nsmulPoint q c = ab.zero b)
-    (_hker : RelPoint.pre (Spec.map φ) rfl c = ab.zero (Spec.map φ ≫ b)) :
-    c = ab.zero b :=
-  sorry
+    (htors : ab.nsmulPoint q c = ab.zero b)
+    (hker : RelPoint.pre (Spec.map φ) rfl c = ab.zero (Spec.map φ ≫ b)) :
+    c = ab.zero b := by
+  letI := ab.addCommGroup b
+  obtain ⟨smul, hone, hmul, hadd, hsmul_add⟩ :=
+    exists_smul_kerPre_of_squareZero ab φ hφ hsq b
+  -- `smul r` kills the zero point: `smul_add` at `x = y = z = 0` gives `a = a + a`.
+  have hsmul_zero : ∀ (r : R) (y : ab.KerPre φ b), y.1 = ab.zero b →
+      (smul r y).1 = ab.zero b := by
+    intro r y hy
+    have hz : y.1 = ab.add y.1 y.1 := by rw [hy]; exact (ab.zero_add _).symm
+    have h : (smul r y).1 = (smul r y).1 + (smul r y).1 := hsmul_add r y y y hz
+    exact left_eq_add.mp h
+  -- the `R`-action restricted to `ℕ` is the `ℕ`-action, which is what `nsmulPoint` uses
+  have hnat : ∀ (n : ℕ) (y : ab.KerPre φ b), (smul ((n : ℕ) : R) y).1 = n • y.1 := by
+    have hzero_smul : ∀ y : ab.KerPre φ b, (smul (0 : R) y).1 = ab.zero b := by
+      intro y
+      have h := hadd (0 : R) (0 : R) y
+      rw [add_zero] at h
+      have h' : (smul (0 : R) y).1 = (smul (0 : R) y).1 + (smul (0 : R) y).1 := h
+      exact left_eq_add.mp h'
+    intro n
+    induction n with
+    | zero => intro y; rw [Nat.cast_zero, zero_nsmul]; exact hzero_smul y
+    | succ k ih =>
+      intro y
+      have h := hadd ((k : ℕ) : R) 1 y
+      rw [hone y, ih y] at h
+      rw [Nat.cast_succ, h, succ_nsmul]
+      rfl
+  -- a `q`-torsion kernel element is `0`, because `q` is invertible in `R`
+  have main : ∀ y : ab.KerPre φ b, (smul ((q : ℕ) : R) y).1 = ab.zero b →
+      y.1 = ab.zero b := by
+    intro y hy
+    obtain ⟨u, hu⟩ := hq
+    have hux : (smul ((u : R)) y).1 = ab.zero b := by rw [hu]; exact hy
+    have h1 : (smul (1 : R) y).1 = y.1 := hone y
+    rw [show (1 : R) = ((u⁻¹ : Rˣ) : R) * ((u : Rˣ) : R) from (u.inv_mul).symm, hmul,
+      hsmul_zero _ (smul ((u : R)) y) hux] at h1
+    exact h1.symm
+  exact main ⟨c, hker⟩ (by rw [hnat q ⟨c, hker⟩]; exact htors)
 
 /-- **`[q]` is formally unramified on an abelian scheme over a base on which
 `q` is invertible** (PROVEN, over the deformation-theoretic leaf above).
