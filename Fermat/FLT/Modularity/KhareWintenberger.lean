@@ -9277,11 +9277,31 @@ THE PROOF, and exactly where the pin runs out:
 5. Then `s ≤ q.height` and `height 𝔭ₓ ≤ s`, so `q` — which lies in `D(f) ⊆ C` — has
    `coheight ≥ coheight x`. ∎
 
-WHAT IS STILL OPEN HERE is only steps 1–3, the scheme-theoretic plumbing, as two sorried
-`have`s inside the proof below: getting from `hft` a finitely generated `ℚ`-algebra
-structure on the affine chart together with irreducibility of its spectrum, and producing
-a nonempty basic open of the chart inside the image of `C`. Neither needs any mathematics
-that is missing from the pin; both are `HasRingHomProperty`/`Opens` bookkeeping.
+WHAT IS STILL OPEN HERE is a SINGLE sorried `have` inside the proof below, and it is pure
+bookkeeping, not mathematics:
+
+    ∃ _ : Algebra (ULift ℚ) R, Algebra.FiniteType (ULift ℚ) R ∧
+      IrreducibleSpace (PrimeSpectrum R)
+
+for the affine chart `f : Spec R ⟶ X̄` produced by
+`Scheme.exists_affine_mem_range_and_range_subset`. Both halves have their tools at the pin
+and the next owner should not need to search:
+
+* IRREDUCIBILITY is `Topology.IsOpenEmbedding.irreducibleSpace` applied to
+  `f.isOpenEmbedding` — it wants `[IrreducibleSpace ↥X̄]` (which is `hirr`) and
+  `[Nonempty ↥(Spec R)]` (which `x₀` supplies), and nothing else.
+* FINITE TYPE is `HasRingHomProperty.appTop` applied to `f ≫ fX`, which is
+  `LocallyOfFiniteType` because `hft` is and open immersions are
+  (`locallyOfFiniteType_of_isOpenImmersion`, `locallyOfFiniteType_comp`). That yields
+  `RingHom.FiniteType (f ≫ fX).appTop.hom`; the only remaining work is transporting it
+  across the two `Scheme.ΓSpecIso` isomorphisms to a `ULift ℚ →+* R`, and
+  `RingHom.FiniteType` is by definition `Algebra.FiniteType` for `toAlgebra`.
+
+The `∃ _ : Algebra …` shape is deliberate: the chart carries no `ℚ`-algebra structure until
+`fX` supplies one, so the datum and its property have to be produced together.
+
+The OTHER plumbing step — that `C` meets the chart in a basic open — is PROVEN in the
+proof below and needs no further attention.
 
 FAITHFULNESS — both geometric hypotheses are load-bearing and neither may be dropped:
 
@@ -9318,14 +9338,34 @@ theorem exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType
   obtain ⟨algR, hRfin, hRirr⟩ :
       ∃ _ : Algebra (ULift.{u} ℚ) R, Algebra.FiniteType (ULift.{u} ℚ) R ∧
         IrreducibleSpace (PrimeSpectrum R) := sorry
-  /- PLUMBING LEAF 2 (`C` meets the chart in a basic open). `Set.range j.base` and
-  `Set.range f.base` are nonempty opens of the irreducible `X̄`, so they meet; the preimage
-  under `f.base` is then a nonempty open of `Spec R`, and basic opens are a basis, with
-  `PrimeSpectrum.basicOpen_eq_bot_iff` turning nonemptiness into non-nilpotence. -/
+  /- `C` meets the chart in a basic open (PROVEN). `Set.range j.base` and `Set.range f.base`
+  are nonempty opens of the irreducible `X̄`, so they meet; the preimage under `f.base` is
+  then a nonempty open of `Spec R`, and basic opens are a basis. Non-nilpotence of `r` is
+  just `nilradical ≤ every prime` against the point that witnesses the meeting. -/
   obtain ⟨r, hr, hrsub⟩ :
       ∃ r : R, ¬ IsNilpotent r ∧
         ∀ z : ↥(AlgebraicGeometry.Spec R), r ∉ z.asIdeal →
-          f.base z ∈ Set.range j.base := sorry
+          f.base z ∈ Set.range j.base := by
+    have hUopen : IsOpen (Set.range f.base) := f.isOpenEmbedding.isOpen_range
+    have hVopen : IsOpen (Set.range j.base) := j.isOpenEmbedding.isOpen_range
+    have hUne : (Set.univ ∩ Set.range f.base).Nonempty := ⟨f.base x₀, trivial, ⟨x₀, rfl⟩⟩
+    have hVne : (Set.univ ∩ Set.range j.base).Nonempty :=
+      ⟨j.base hne.some, trivial, ⟨hne.some, rfl⟩⟩
+    obtain ⟨w, -, hwU, hwV⟩ :=
+      (IrreducibleSpace.isIrreducible_univ ↥Xbar).2 _ _ hUopen hVopen hUne hVne
+    obtain ⟨z, rfl⟩ := hwU
+    have hWopen : IsOpen (f.base ⁻¹' (Set.range j.base)) :=
+      hVopen.preimage f.isOpenEmbedding.continuous
+    have hzW : z ∈ f.base ⁻¹' (Set.range j.base) := hwV
+    obtain ⟨v, hvb, hzv, hvsub⟩ :=
+      PrimeSpectrum.isTopologicalBasis_basic_opens.exists_subset_of_mem_open hzW hWopen
+    obtain ⟨r, rfl⟩ := hvb
+    refine ⟨r, ?_, ?_⟩
+    · intro hnilp
+      exact (PrimeSpectrum.mem_basicOpen r z).mp hzv
+        (nilradical_le_prime z.asIdeal (mem_nilradical.mpr hnilp))
+    · intro z' hz'
+      exact hvsub ((PrimeSpectrum.mem_basicOpen r z').mpr hz')
   obtain ⟨q, hqp, hqr, hqht⟩ :=
     exists_isPrime_notMem_height_le_of_finiteType_of_irreducible
       (k := ULift.{u} ℚ) hRirr hr x₀.asIdeal
