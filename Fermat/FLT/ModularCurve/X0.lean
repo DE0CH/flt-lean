@@ -4396,8 +4396,78 @@ theorem isEmpty_of_isCoarseModuliY0_zero {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
       (by intro _ _ _ _ _ _ d' _ _; exact Subtype.ext ((hinit d').hom_ext _ _))
   exact Function.isEmpty u.base
 
-/-- **`Y_0(N)` is a geometrically connected smooth curve over `ℚ`, for
-`N ≥ 1`** (sorry leaf — the MODULAR half of the compactification).
+/-- **Any two coarse moduli spaces of the `Γ₀(N)`-problem over `ℚ` are
+canonically isomorphic over `ℚ`** (PROVEN — pure initiality).
+
+This is the standard "an initial object is unique up to unique
+isomorphism" argument, written out for the shape of
+`IsCoarseModuliY0.universal`.  Feeding `hc'`'s classifying map to `hc`'s
+universal property gives `u : Y ⟶ Y'`, and symmetrically `v : Y' ⟶ Y`;
+both `u ≫ v` and `𝟙 Y` solve the initiality problem of `hc` against
+*itself*, so the uniqueness half of `∃!` identifies them, and likewise on
+the other side.
+
+**This is what makes the modular half statable on a CONSTRUCTED model.**
+`isSmoothCurve_of_isCoarseModuliY0` asks for geometric properties of an
+*arbitrary* scheme presented only by a universal property; nothing can be
+extracted from a universal property alone, which is exactly what the old
+docstring of that leaf recorded as making it irreducible.  With this
+lemma the burden moves to `exists_isCoarseModuliY0_isSmoothCurve`, which
+is existential and so may be discharged by exhibiting the Katz–Mazur
+model and reading its properties off the construction. -/
+theorem exists_isIso_of_isCoarseModuliY0 {N : ℕ} {Y Y' : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strY' : Y' ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 N strY) (hc' : IsCoarseModuliY0 N strY') :
+    ∃ u : Y ⟶ Y', IsIso u ∧ u ≫ strY' = strY := by
+  obtain ⟨u, ⟨hus, huc⟩, -⟩ := hc.universal strY' hc'.classify hc'.classify_natural
+  obtain ⟨v, ⟨hvs, hvc⟩, -⟩ := hc'.universal strY hc.classify hc.classify_natural
+  -- `u ≫ v` and `𝟙 Y` both solve the initiality problem of `hc` against itself.
+  obtain ⟨w, -, hYuniq⟩ := hc.universal strY hc.classify hc.classify_natural
+  have huv : u ≫ v = 𝟙 Y :=
+    (hYuniq (u ≫ v) ⟨by rw [Category.assoc, hvs, hus],
+        fun {_T} g d => by rw [← Category.assoc, ← huc g d, ← hvc g d]⟩).trans
+      (hYuniq (𝟙 Y) ⟨Category.id_comp _, fun {_T} _g _d => (Category.comp_id _).symm⟩).symm
+  -- and symmetrically on the other side.
+  obtain ⟨w', -, hY'uniq⟩ := hc'.universal strY' hc'.classify hc'.classify_natural
+  have hvu : v ≫ u = 𝟙 Y' :=
+    (hY'uniq (v ≫ u) ⟨by rw [Category.assoc, hus, hvs],
+        fun {_T} g d => by rw [← Category.assoc, ← hvc g d, ← huc g d]⟩).trans
+      (hY'uniq (𝟙 Y') ⟨Category.id_comp _, fun {_T} _g _d => (Category.comp_id _).symm⟩).symm
+  exact ⟨u, ⟨v, huv, hvu⟩, hus⟩
+
+/-- **The five curve properties transport along an isomorphism over the
+base** (PROVEN).
+
+Each of the five is transported by an off-the-shelf mathlib mechanism, and
+none of them needs anything about modular curves:
+
+* `IsIntegral` is a property of the underlying scheme and moves along
+  `inv u` by `IsIntegral.of_isIso`;
+* `QuasiCompact` and `IsSeparated` are stable under composition and hold
+  of an isomorphism, so they hold of `u ≫ strY'`;
+* `SmoothOfRelativeDimension` adds relative dimensions under composition
+  and an isomorphism is an open immersion, hence smooth of relative
+  dimension `0`, so `0 + 1 = 1`;
+* `GeometricallyConnected` is stable under base change, hence respects
+  isomorphisms (`MorphismProperty.RespectsIso.precomp`). -/
+theorem isSmoothCurve_transport {Y Y' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strY' : Y' ⟶ SpecQ}
+    (u : Y ⟶ Y') [IsIso u] (hu : u ≫ strY' = strY)
+    (hint : IsIntegral Y') (hqc : QuasiCompact strY') (hsep : IsSeparated strY')
+    (hsmd : SmoothOfRelativeDimension 1 strY') (hconn : GeometricallyConnected strY') :
+    IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+      SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
+  haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
+  haveI : IsIntegral Y := IsIntegral.of_isIso (inv u)
+  subst hu
+  haveI : GeometricallyConnected (u ≫ strY') :=
+    MorphismProperty.RespectsIso.precomp (P := @GeometricallyConnected) u strY' hconn
+  refine ⟨inferInstance, inferInstance, inferInstance, ?_, inferInstance⟩
+  exact inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (u ≫ strY'))
+
+/-- **SOME coarse moduli space of the `Γ₀(N)`-problem is a geometrically
+connected smooth curve over `ℚ`, for `N ≥ 1`** (sorry leaf — the MODULAR
+half of the compactification, and the ONLY modular input to `X_0(N)`'s
+existence).
 
 TRUE and classical: for `N ≥ 1` the coarse moduli space of the
 `Γ₀(N)`-problem over `ℚ` is a smooth affine geometrically connected curve.
@@ -4408,39 +4478,67 @@ stack of dimension one together with "normal curve = smooth curve"
 the irreducibility of `Γ_0(N)\ℍ` together with the fact that the moduli
 problem is defined over `ℚ` (Deligne–Rapoport IV.5.5, or Shimura 6.6).
 
-**This is the ONLY modular input to `X_0(N)`'s existence.**  Everything
-else — that a smooth curve over a field has a smooth proper
-compactification with finite complement — is
-`AlgebraicGeometry.exists_isSmoothCompactification`, which is general
-algebraic geometry and lives in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
-Separating the two is the point of this leaf: a successor can attack the
-modular half without touching curve theory, and vice versa.
+**Why the statement is EXISTENTIAL, and this is the whole point of the
+cut.**  The consumer `isSmoothCurve_of_isCoarseModuliY0` quantifies over
+*every* coarse space, and its previous docstring recorded — correctly —
+that this made it irreducible at this pin: a scheme presented only by a
+universal property carries no extractable geometry.  That objection dies
+here.  Initiality (`exists_isIso_of_isCoarseModuliY0`) makes all coarse
+spaces isomorphic over `ℚ`, and the five properties transport
+(`isSmoothCurve_transport`), so it suffices to exhibit **one** model.  A
+successor may therefore take `Gamma0Atlas.Y` — or any Katz–Mazur/
+Deligne–Rapoport construction it likes — and read the properties off the
+construction rather than off the universal property.  That is exactly the
+form in which the literature states them.
 
 `hN : 0 < N` is REQUIRED and the statement is FALSE without it.  At
 `N = 0` the coarse space is EMPTY (`isEmpty_of_isCoarseModuliY0_zero`),
 and both `IsIntegral` and `GeometricallyConnected` carry nonemptiness —
 `IsIntegral` through `IrreducibleSpace`, `GeometricallyConnected` through
 `ConnectedSpace`.  So the conclusion is unsatisfiable at the degenerate
-level, which is handled separately and vacuously below.
+level, which is handled separately and vacuously below.  Note the
+existential form does **not** soften this: `exists_coarseModuliY0_zero`
+produces a coarse space at `N = 0` too, and it is empty, so there is no
+model to exhibit.
 
-The four conclusions are exactly the hypotheses of
+The five conclusions are exactly the hypotheses of
 `exists_isSmoothCompactification`, and none is decoration:
 `QuasiCompact` and `IsSeparated` are what Nagata's compactification
 consumes, `IsIntegral` is what makes the relative normalization integral,
-and `SmoothOfRelativeDimension 1` is what pins the relative dimension of
-the compactification to `1` rather than leaving it arbitrary.
-
-IRREDUCIBLE at this pin: the coarse space is available here only through
-`IsCoarseModuliY0`, i.e. through its universal property, and no property
-of a scheme beyond that universal property can be extracted without the
-Deligne–Rapoport/Katz–Mazur construction, which does not exist at this
-pin in any form. -/
-theorem isSmoothCurve_of_isCoarseModuliY0 {N : ℕ} (_hN : 0 < N) {Y : Scheme.{0}}
-    {strY : Y ⟶ SpecQ} (_hc : IsCoarseModuliY0 N strY) :
-    IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
-      SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
+`SmoothOfRelativeDimension 1` is what pins the relative dimension of
+the compactification to `1` rather than leaving it arbitrary, and
+`GeometricallyConnected` is what
+`AlgebraicGeometry.geometricallyConnected_of_isSmoothCompactification`
+carries across to `X_0(N)`. -/
+theorem exists_isCoarseModuliY0_isSmoothCurve (N : ℕ) (hN : 0 < N) :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (_hc : IsCoarseModuliY0 N strY),
+      IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
   sorry
+
+/-- **`Y_0(N)` is a geometrically connected smooth curve over `ℚ`, for
+`N ≥ 1`** (PROVEN 2026-07-27, over the single modular leaf
+`exists_isCoarseModuliY0_isSmoothCurve`; formerly a sorry leaf itself).
+
+The proof is the two-step reduction described at that leaf: exhibit one
+model with the five properties, transport them to the given coarse space
+along the canonical isomorphism supplied by initiality.
+
+**This is the ONLY modular input to `X_0(N)`'s existence.**  Everything
+else — that a smooth curve over a field has a smooth proper
+compactification with finite complement — is
+`AlgebraicGeometry.exists_isSmoothCompactification`, which is general
+algebraic geometry and lives in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`. -/
+theorem isSmoothCurve_of_isCoarseModuliY0 {N : ℕ} (hN : 0 < N) {Y : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 N strY) :
+    IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+      SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
+  obtain ⟨Y', strY', hc', hint, hqc, hsep, hsmd, hconn⟩ :=
+    exists_isCoarseModuliY0_isSmoothCurve N hN
+  obtain ⟨u, hu, hcomm⟩ := exists_isIso_of_isCoarseModuliY0 hc hc'
+  haveI := hu
+  exact isSmoothCurve_transport u hcomm hint hqc hsep hsmd hconn
 
 /-- **Existence of the smooth compactification `X_0(N)`** (PROVEN, over
 one modular leaf plus general curve theory; formerly a sorry node).
@@ -4476,7 +4574,7 @@ theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ
     haveI : IsEmpty Y := isEmpty_of_isCoarseModuliY0_zero hc
     haveI : SmoothOfRelativeDimension 1 strY := ⟨fun x => isEmptyElim x⟩
     exact ⟨Y, strY, ⟨{ j := 𝟙 Y
-                       over := Category.id_comp strY
+                       «over» := Category.id_comp strY
                        isOpenImmersion := inferInstance
                        isDominant := inferInstance
                        proper := inferInstance
@@ -4486,7 +4584,7 @@ theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ
     obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := ℚ) strY
     haveI := hX.smooth
     exact ⟨X, strX, ⟨{ j := j
-                       over := hX.comm
+                       «over» := hX.comm
                        isOpenImmersion := hX.isOpenImmersion
                        isDominant := hX.isDominant
                        proper := hX.isProper
