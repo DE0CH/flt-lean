@@ -25679,13 +25679,15 @@ first summand is `numRationalCusps p = 2` (verified by `decide` at all
 four levels below, and independently in PARI/GP).  Since the table's
 counts are `4, 3, 3, 3`, the affine halves are `2, 1, 1, 1`.
 
-Net effect: one atom becomes two PROVEN theorems and three leaves, none of
+Net effect: one atom becomes three PROVEN theorems and two leaves, none of
 which is the atom in disguise.
 
 * the CUSPIDAL half, `card_le_numRationalCusps_of_isCusp`, general in the
-  level and carrying no arithmetic of the four primes whatever — it is the
-  converse of a leaf `X0.lean` already has, and the two should be
-  discharged together;
+  level and carrying no arithmetic of the four primes whatever — PROVEN
+  2026-07-27 over `Fermat.nonempty_cuspLocus`, which is the same leaf the
+  converse (`Fermat.nonempty_cuspIndexing_of_ne_zero`) already rests on,
+  so the two directions ARE discharged together and nothing cuspidal
+  remains open outside that one Deligne–Rapoport leaf;
 * the AFFINE half, `card_y0Le_thirtySeven` and
   `card_y0Le_classNumberOne`, which is where ALL the deep arithmetic goes;
 * `card_le_of_cuspBound_of_y0Bound`, the splitting itself, PROVEN and
@@ -25718,8 +25720,8 @@ level, and shared with an existing `X0.lean` leaf — no longer has to be
 proven by whoever attacks the arithmetic. -/
 
 /-- **The rational cusps of `X_0(N)` number at most `numRationalCusps N`**
-(sorry leaf, introduced 2026-07-27; the CUSPIDAL half, general in the
-level).
+(PROVEN 2026-07-27 over `Fermat.nonempty_cuspLocus`; the CUSPIDAL half,
+general in the level).
 
 TRUE and classical, and it is precisely the CONVERSE of a leaf `X0.lean`
 already carries.  `Fermat.nonempty_cuspIndexing_of_ne_zero` produces a
@@ -25728,17 +25730,31 @@ proves them pairwise distinct — a LOWER bound of `numRationalCusps N` on
 the rational cusps.  This is the matching UPPER bound: there are no
 others.
 
-**Discharge the two TOGETHER.**  Both directions are the same piece of
-mathematics — the identification of `X ∖ Y` with `Γ_0(N)∖ℙ¹(ℚ)`
-compatibly with the `Γ_ℚ`-action, i.e. the cuspidal part of the
-Deligne–Rapoport model (Ogg; Deligne–Rapoport VI.6; Diamond–Im §9.3).
-Concretely, adding one field to `Fermat.IsX0Compactification.CuspIndexing`
+**The two ARE now discharged together.**  Both directions are the same
+piece of mathematics — the identification of `X ∖ Y` with
+`Γ_0(N)∖ℙ¹(ℚ)` compatibly with the `Γ_ℚ`-action, i.e. the cuspidal part
+of the Deligne–Rapoport model (Ogg; Deligne–Rapoport VI.6; Diamond–Im
+§9.3) — and both now rest on the single leaf `Fermat.nonempty_cuspLocus`,
+which states exactly that identification as a finite `ℚ`-scheme with
+prescribed residue degrees.  The upper bound is
+`Fermat.IsX0Compactification.CuspLocus.card_le_numRationalCusps`; this
+theorem is the one-line specialisation of it.
+
+**The `surj`-field route was NOT taken, and its docstring records why.**
+Adding
 
     surj : ∀ x, h.IsCusp x → ∃ d, ∃ hd : d ∈ rationalCuspDivisors N, cusp d hd = x
 
-discharges this leaf in three lines, and it is the natural field to add
-when that identification lands.  It is not added here only because
-`CuspIndexing` is another owner's declaration.
+to `Fermat.IsX0Compactification.CuspIndexing` does discharge this leaf in
+three lines, but it makes `Fermat.nonempty_cuspIndexing` FALSE-as-stated
+at `N = 0` (where `rationalCuspDivisors 0 = ∅`, so `surj` asserts that
+`X` has no rational cusp at all, which no field of
+`IsX0Compactification` supplies) and it would still have to be proven
+from `CuspLocus`.  The clause that was genuinely missing is `ratPoint` on
+`Fermat.IsX0Compactification.CuspLocus` — `cover` constrains only
+underlying SETS and is too weak for any upper bound.  So the new
+obligation landed on `CuspLocus`, `CuspIndexing` was left untouched, and
+no new sorry was created.
 
 **Why this does not already follow.**  The axis note under
 `nonempty_cuspIndexing_of_ne_zero` records that `CuspIndexing` and
@@ -25749,21 +25765,22 @@ the `≥` direction, so their interderivability says nothing here.  Within
 structure's fields do not even forbid `jY` from being an isomorphism, so
 without moduli input the cusp count is unbounded below as well as above.
 
-**`_hN` is carried for safety, not because the leaf is known false without
-it.**  At `N = 0` the hypotheses are in fact UNSATISFIABLE: `coarse`
-forces `Y` empty (`Fermat.isEmpty_of_isCoarseModuliY0_zero`), so
-`finite_compl` makes the space of `X` finite, while `smooth`, `isProper`
-and `connected` make it a curve.  So the leaf is vacuously true at `N = 0`
-too — but that argument is not available in this file, and
+**`hN` is load-bearing only through `nonempty_cuspLocus`**, which carries
+it for the same reason: at `N = 0` there is nothing to index
+(`Nat.divisors 0 = ∅`).  The leaf is in fact vacuously true at `N = 0`
+as well — `coarse` forces `Y` empty
+(`Fermat.isEmpty_of_isCoarseModuliY0_zero`), so `finite_compl` makes the
+space of `X` finite while `smooth`, `isProper` and `connected` make it a
+curve — but that argument is not available in this file, and
 `numRationalCusps 0 = 0` makes `N = 0` the one level at which the
 conclusion has no slack whatever.  Every call site has `N` prime, so the
-hypothesis costs a `decide` and removes the risk entirely. -/
+hypothesis costs a `decide`. -/
 theorem card_le_numRationalCusps_of_isCusp {N : ℕ} {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hN : N ≠ 0) (_hX : IsX0Compactification N strX strY jY)
-    (s : Finset (RelPoint strX (𝟙 SpecQ))) (_hs : ∀ x ∈ s, _hX.IsCusp x) :
+    (hN : N ≠ 0) (hX : IsX0Compactification N strX strY jY)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) (hs : ∀ x ∈ s, hX.IsCusp x) :
     s.card ≤ numRationalCusps N :=
-  sorry
+  (_root_.Fermat.nonempty_cuspLocus N hN hX).elim fun C => C.card_le_numRationalCusps s hs
 
 /-- **THE SPLITTING** (PROVEN): a bound `c` on the rational cusps of `X`
 and a bound `k` on the rational points of `Y` give the bound `c + k` on
