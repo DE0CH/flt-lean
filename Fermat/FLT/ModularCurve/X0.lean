@@ -350,6 +350,13 @@ public import Fermat.FLT.ModularCurve.WeightTwoEigenform
 -- turns `Y_0(N)` into `X_0(N)`; see `exists_compactificationY0` and
 -- `exists_x0Compactification` below.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification
+-- `exists_unique_extension_of_isSmoothProperCurve`: the ONE extension theorem behind
+-- `exists_unique_extension_of_isX0Compactification` (over `Spec ℚ`) and
+-- `exists_extension_of_isX0Compactification` (over `Spec 𝔽_ℓ`), and through the latter
+-- `exists_inverse_of_isX0Compactification`.  Stated over an arbitrary FIELD base with an
+-- arbitrary proper target, so all three sites are one-line specialisations; its own residue
+-- is the shared "smooth curve ⟹ DVR local rings" node.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
 -- `f_*𝒪_X = 𝒪_S` for a proper flat morphism with geometrically connected fibres,
 -- and the RIGIDITY LEMMA over it; this is what makes `isAdditiveOn_of_post_zero`
 -- below a theorem rather than a leaf.
@@ -21813,8 +21820,26 @@ theorem exists_iso_of_isCoarseModuliY0 {N : ℕ} {Y Y₀ S : Scheme.{0}}
   exact ⟨⟨u, v, huv, hvu⟩, hu₁⟩
 
 /-- **A morphism from `Y_0(N)` into a proper `ℚ`-scheme extends uniquely
-over the compactification** (sorry leaf — a rational map from a smooth
-curve to a proper scheme is a morphism).
+over the compactification** (PROVEN 2026-07-27 — a one-line specialisation
+of `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`).
+
+**CONSOLIDATED, 2026-07-27.**  This leaf, `exists_extension_of_isX0Compactification`
+further down (the same theorem over `Spec 𝔽_ℓ`, with an `∃` conclusion),
+and the extension steps inside `exists_inverse_of_isX0Compactification`
+were three independent cuts of ONE statement.  They are now all derived
+from a single declaration in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, stated over an
+arbitrary FIELD base with an arbitrary PROPER target and an `∃!`
+conclusion.  Its hypotheses are, field for field, those of
+`IsX0Compactification` minus the moduli clause, which is what makes each
+site a specialisation rather than a re-proof.  Everything the paragraphs
+below describe — the passage to a rational map, the valuative criterion at
+each missing point, the spreading out of the local lift, the gluing, the
+uniqueness — is PROVEN there from `Mathlib` alone; what is left open is the
+single ring-theoretic node "smooth of relative dimension one over a field
+⟹ the local rings away from the generic point are discrete valuation
+rings", which that module shares with
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
 
 TRUE: `X` is a smooth — hence normal — proper curve over `ℚ` and `Y` is a
 dense open of it, so a morphism `Y ⟶ Z` into a proper `Z` extends over
@@ -21861,20 +21886,29 @@ target than properness (a weak Néron property), so a base-general
 restatement is very likely FALSE.  Generalize to `Spec` of a FIELD, not
 further.
 
-IRREDUCIBLE at this pin ALONG THE CURVE-EXTENSION AXIS, and the CHECK
-THAT WOULD REFUTE THAT: produce, in mathlib or this project, an extension
+**The old "IRREDUCIBLE at this pin ALONG THE CURVE-EXTENSION AXIS" verdict
+is RETIRED, by exactly the check it named.**  It asked for "an extension
 theorem for morphisms from a dense open of a normal (or regular
-one-dimensional) scheme into a proper scheme.  mathlib's
-`ValuativeCriterion` gives the lift along ONE valuation ring at a time
-(`IsProper.eq_valuativeCriterion`, used a few declarations above in
-`bijective_pre_generic_of_isProper`); what is missing is the glueing of
-those local lifts into a morphism on all of `X`. -/
+one-dimensional) scheme into a proper scheme", and observed that
+`ValuativeCriterion` lifts along ONE valuation ring at a time while "what
+is missing is the glueing of those local lifts into a morphism on all of
+`X`".  The glueing is **not** missing: it is
+`Mathlib.AlgebraicGeometry.Birational.RationalMap`, whose
+`PartialMap.ofFromSpecStalk` spreads a lift out of `Spec 𝒪ₓ` to a
+neighbourhood and whose `RationalMap.domain` / `RationalMap.toPartialMap`
+glue the resulting partial maps over the maximal domain of definition.
+That is the subtree the earlier survey never looked at. -/
 theorem exists_unique_extension_of_isX0Compactification {N : ℕ} {X Y Z : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X} {strZ : Z ⟶ SpecQ}
-    (_hX : IsX0Compactification N strX strY j) (_hZ : IsProper strZ)
-    (φ : Y ⟶ Z) (_hφ : φ ≫ strZ = strY) :
-    ∃! Φ : X ⟶ Z, Φ ≫ strZ = strX ∧ j ≫ Φ = φ :=
-  sorry
+    (hX : IsX0Compactification N strX strY j) (hZ : IsProper strZ)
+    (φ : Y ⟶ Z) (hφ : φ ≫ strZ = strY) :
+    ∃! Φ : X ⟶ Z, Φ ≫ strZ = strX ∧ j ≫ Φ = φ := by
+  haveI := hX.isOpen
+  haveI := hX.isProper
+  haveI := hX.smooth
+  haveI := hZ
+  exact _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+    hX.connected hX.finite_compl hX.comm φ hφ
 
 /-- **The smooth compactification of `Y_0(N)` is unique** (PROVEN, over
 the extension property).
@@ -27971,12 +28005,30 @@ one, and `Mathlib` has that subtree:
    `jY₁ ≫ w = f` because the two agree on the dense domain.
 
 Step 2's DVR input is the piece with no `Mathlib` citation: there is no
-`IsRegular` for schemes at this pin, so "smooth of relative dimension `1`
+scheme-level `IsRegular` at this pin, so "smooth of relative dimension `1`
 over a field ⟹ the local rings at non-generic points are DVRs" has to be
-built.  That is the honest residue of this leaf, and it is shared with
+built.  That is the honest residue of this statement, and it is shared with
 `smoothOfRelativeDimension_one_fromNormalization` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` — the
-two should be proven by one owner.
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
+
+**PROVEN 2026-07-27, and CONSOLIDATED.**  The route above is carried out in
+full, once, in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`,
+over an arbitrary FIELD base and an arbitrary PROPER target with an `∃!`
+conclusion; `exists_unique_extension_of_isX0Compactification` above (over
+`Spec ℚ`) is the same specialisation, and
+`exists_inverse_of_isX0Compactification` below is a third.  Note the target
+here is another compactification only because that is what the consumer
+supplies — `X₂` enters the proof solely through `IsProper strX₂`.
+
+One correction to the survey above, worth recording because two verdicts in
+this file rested on it: **`IsRegularLocalRing` IS at this pin**
+(`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), together with
+`IsLocalRing.finrank_CotangentSpace_eq_one_iff`, which identifies it with
+`IsDiscreteValuationRing` for a one-dimensional noetherian local domain.
+What is absent is only the link from SMOOTHNESS to regularity — a grep for
+`IsRegularLocalRing` over `Mathlib/RingTheory/Smooth/` is empty — and a
+scheme-level `IsRegular`.  So the residue is one named ring-theoretic
+statement, not a missing theory.
 
 **`f` is deliberately arbitrary**, not specialised to `u ≫ jY₂`: the
 classical theorem does not care, the consumer needs both `u ≫ jY₂` and
@@ -27985,15 +28037,25 @@ hide the fact that no property of `f` beyond being a morphism over the
 base is used.  `_h₂` is passed whole although only `h₂.isProper` is
 consumed.
 
-The hypotheses carry underscores only because the body is `sorry`. -/
-theorem exists_extension_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+The conclusion is left as a bare `∃` rather than upgraded to the `∃!` the
+general statement provides: its consumer `exists_inverse_of_isX0Compactification`
+gets uniqueness from `eq_of_isX0Compactification`, which has a different
+owner, and strengthening this statement would change nothing downstream. -/
+theorem exists_extension_of_isX0Compactification {N ℓ : ℕ} (hℓ : ℓ.Prime)
     {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
     {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
-    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
-    (_h₂ : IsX0Compactification N strX₂ strY₂ jY₂)
-    {f : Y₁ ⟶ X₂} (_hf : f ≫ strX₂ = strY₁) :
-    ∃ w : X₁ ⟶ X₂, w ≫ strX₂ = strX₁ ∧ jY₁ ≫ w = f :=
-  sorry
+    (h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
+    (h₂ : IsX0Compactification N strX₂ strY₂ jY₂)
+    {f : Y₁ ⟶ X₂} (hf : f ≫ strX₂ = strY₁) :
+    ∃ w : X₁ ⟶ X₂, w ≫ strX₂ = strX₁ ∧ jY₁ ≫ w = f := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI := h₁.isOpen
+  haveI := h₁.isProper
+  haveI := h₁.smooth
+  haveI := h₂.isProper
+  obtain ⟨w, hw, -⟩ := _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+    h₁.connected h₁.finite_compl h₁.comm f hf
+  exact ⟨w, hw⟩
 
 /-- **An extension over the cusps is unique** (PROVEN 2026-07-27 — one
 citation, once density and reducedness are available).
