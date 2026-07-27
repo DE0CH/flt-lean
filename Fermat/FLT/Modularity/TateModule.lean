@@ -5825,10 +5825,16 @@ ONE is open and it is the only deep one:
   cyclotomic character no longer mentioned). The arithmetic half is the
   already-proven `cyclotomicCharacter_adicArithFrob_absNorm` of this
   file; the abelian-variety geometry that remained was cut the same day
-  into `exists_tateWeilPairing_of_mult` (SORRY NODE — the `I`-adic Weil
+  into `exists_tateWeilPairing_of_mult` (the `I`-adic Weil
   pairing on the Tate module, stated frame-free) and
   `det_eq_cyclotomicCharacter_of_tateWeilPairing` (PROVEN — the
-  transport of that pairing along the frame).  So the pairing leaf is the
+  transport of that pairing along the frame).  LABEL CORRECTION
+  (2026-07-27, later the same day): the pairing node is no longer a
+  SORRY NODE — it was cut again along the LIMIT into
+  `exists_tateWeilSystem_of_mult` (SORRY NODE — the levelwise system of
+  pairings on `A[I^k]`, i.e. dual + polarization + trace duality) and
+  `exists_tateWeilPairing_of_tateWeilSystem` (PROVEN — the passage to the
+  limit).  So the levelwise SYSTEM leaf is the
   ONLY thing the determinant clause still rests on.  The INTEGRAL-MODEL route
   described below is the OTHER axis and was not the one taken — see its docstring for the
   route audit and for what a successor must NOT do.
@@ -6242,7 +6248,14 @@ frame, which is what stops the cut from collapsing) and
 `det_eq_cyclotomicCharacter_of_tateWeilPairing` (the TRANSPORT along the
 frame).  The transport is PROVEN, so `exists_tateWeilPairing_of_mult` —
 pure abelian-variety geometry, with no frame and no cyclotomic character
-in its own burden — is the section's ONLY remaining sorry. -/
+in its own burden — carried the whole residue.
+
+FOURTH CUT, later still on 2026-07-27: that declaration is PROVEN too,
+along the LIMIT axis.  `exists_tateWeilSystem_of_mult` (SORRY NODE) is
+the levelwise system of `𝒪_D/I^k`-valued Weil pairings on the finite
+torsion `A[I^k]` — dual, polarization, trace duality — and
+`exists_tateWeilPairing_of_tateWeilSystem` (PROVEN) passes it to the
+limit.  The section's ONLY remaining sorry is the levelwise system. -/
 
 /-- **A free module carrying the module topology over a `T2Space` ring is
 a `T2Space`** (PROVEN; vendored in argument from the reference project
@@ -6483,28 +6496,132 @@ def IsTateWeilPairing {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct
       E t s - E t' s' ∈ Ideal.span {j π} ^ k) ∧
   (∃ t s : TatePt m x I π, IsUnit (E t s))
 
-/-- **The Tate module of a Hilbert–Blumenthal abelian scheme carries an
-`I`-adic Weil pairing** (SORRY NODE — the GEOMETRIC half of the
-2026-07-27 cut of `det_globalFrob_eq_absNorm_of_tateFrame`; Mumford
-*Abelian Varieties* §16/§20, Taylor 2002 §2, Carayol).
+/-- **A compatible system of level-`k` `I`-adic Weil pairings on the
+torsion of the geometric fibre** — the LEVELWISE datum out of which the
+pairing of `IsTateWeilPairing` is assembled by passage to the limit.
 
-THIS LEAF DOES NOT RECEIVE THE FRAME, and that is the whole point of the
-cut.  The standing audit on `det_globalFrob_eq_absNorm_of_tateFrame` and
-on `exists_weilPairing_of_tateFrame` shows that any statement about a
-form on the FRAMED module `Fin 2 → O` is a repackaging of the determinant
+`e k` is the level-`k` pairing
+
+  `A[I^k] × A[I^k] ⟶ 𝔡_D⁻¹ 𝔠 / I^k ≅ 𝒪_D / I^k`,
+
+written additively and with values in `O` rather than in a quotient: the
+target `𝒪_{D,I}/I^k` is `O / (j π)^k` under the pin `hker`, so each clause
+is an identity MODULO `Ideal.span {j π} ^ k` between honest elements of
+`O`.  Working with congruences in `O` rather than with a family of
+quotient rings is what keeps the limit construction below elementary —
+mathlib's `IsPrecomplete`/`IsHausdorff` are stated in exactly this
+vocabulary.
+
+As with `IsTateWeilPairing`, `e k` is a function on ALL geometric points
+and every clause is asserted only for `I^k`-torsion arguments, in the
+same style as `DualStruct.weil` in `Modularity/AbelianScheme.lean`; its
+value off the torsion is unconstrained and no consumer may rely on it.
+
+The clauses, in order: bi-additivity in each variable, alternating,
+`𝒪_D`-bilinearity through `j`, `Γ_F`-equivariance with multiplier
+`χ_cyc`, TOWER COMPATIBILITY, and perfectness at level one.
+
+TOWER COMPATIBILITY IS THE ONE CLAUSE THAT IS NOT A LEVELWISE COPY OF
+`IsTateWeilPairing`, and its exact shape is what makes the limit exist.
+It says, for `y, z ∈ A[I^{k+1}]`,
+
+  `e (k+1) y z ≡ e k (π y) (π z)  (mod (j π)^k)`.
+
+That is the ADDITIVE form of the classical
+`e_{q^k}(q y, q z) = e_{q^{k+1}}(y, z)^q` (Silverman *AEC* III.8.1(e)),
+because under the identification `μ_{I^{k}} ≅ 𝒪_D/I^k` the transition
+`x ↦ x^π` of the inverse system of roots of unity becomes REDUCTION
+`𝒪_D/I^{k+1} ↠ 𝒪_D/I^k`.  Two checks worth keeping, since both are easy
+to get backwards:
+
+* it is NOT the restriction statement `e (k+1) = e k` on `A[I^k]`.  If it
+  were, `𝒪_D`-bilinearity would force `e k (π y) (π z) = π² e k y z`,
+  which contradicts it.  The two are consistent precisely because `y, z`
+  range over `A[I^{k+1}]`, where the level-`k` bilinearity clause does
+  not apply.
+* the transition of `TatePt` is `m.act π`, and this clause is stated
+  along exactly that transition — which is why the sequence
+  `k ↦ e k (t.1 k) (s.1 k)` attached to Tate points `t, s` is Cauchy:
+  `t.1 k = m.act π (t.1 (k+1))` by definition of `TatePt`.
+
+WHY THE TARGET MUST BE `(𝒪_D/I^k)(1)` AND NOT `μ_{q^k}`.  This is the
+correction recorded on `exists_tateWeilSystem_of_mult` below: a
+compatibility axiom on `DualStruct.weil` would relate levels along the
+RATIONAL INTEGER `q`, not along `π`, and no such axiom can be written for
+the `I`-adic tower before the trace-duality refinement of the target.
+Stating the system with `𝒪_D/I^k`-valued (i.e. `O`-valued) pairings is
+what makes the tower compatible; that refinement is part of the burden of
+the leaf, not a hypothesis of it.
+
+NON-VACUITY.  The constant zero system satisfies every clause but the
+last, exactly as for `IsTateWeilPairing`; the perfectness clause at level
+one is what carries the content, and it additionally asserts that
+`TatePt m x I π` is large enough to see it (it quantifies over Tate
+points, not over `A[I]`, so it also encodes surjectivity of the
+transition maps `A[I^{k+1}] ↠ A[I^k]`). -/
+def IsTateWeilSystem {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    {O : Type u} [CommRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O) : Prop :=
+  (∀ (k : ℕ) (y y' z : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 →
+      y' ∈ (m.torsion x (I ^ k)).1 → z ∈ (m.torsion x (I ^ k)).1 →
+      e k (ab.add y y') z - (e k y z + e k y' z) ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (y z z' : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 →
+      z ∈ (m.torsion x (I ^ k)).1 → z' ∈ (m.torsion x (I ^ k)).1 →
+      e k y (ab.add z z') - (e k y z + e k y z') ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (y : GeomFibrePt f x), y ∈ (m.torsion x (I ^ k)).1 →
+      e k y y ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (a : NumberField.RingOfIntegers D) (y z : GeomFibrePt f x),
+      y ∈ (m.torsion x (I ^ k)).1 → z ∈ (m.torsion x (I ^ k)).1 →
+      e k (m.act a y) z - j a * e k y z ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (y z : GeomFibrePt f x),
+      y ∈ (m.torsion x (I ^ k)).1 → z ∈ (m.torsion x (I ^ k)).1 →
+      e k (ab.galSMul x σ y) (ab.galSMul x σ z) -
+        algebraMap ℤ_[q] O
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * e k y z ∈ Ideal.span {j π} ^ k) ∧
+  (∀ (k : ℕ) (y z : GeomFibrePt f x), y ∈ (m.torsion x (I ^ (k + 1))).1 →
+      z ∈ (m.torsion x (I ^ (k + 1))).1 →
+      e (k + 1) y z - e k (m.act π y) (m.act π z) ∈ Ideal.span {j π} ^ k) ∧
+  (∃ t s : TatePt m x I π, IsUnit (e 1 (t.1 1) (s.1 1)))
+
+/-- **The torsion of a Hilbert–Blumenthal abelian scheme carries a
+compatible system of `I`-adic Weil pairings** (SORRY NODE — the GEOMETRIC
+residue of `exists_tateWeilPairing_of_mult` after the LIMIT was split off
+on 2026-07-27; Mumford *Abelian Varieties* §16/§20, Taylor 2002 §2,
+Carayol).
+
+This is steps 1–3 of the four-step classical route recorded below; step 4
+(the passage to the limit) is `exists_tateWeilPairing_of_tateWeilSystem`
+and is PROVEN.  Everything here is a statement about the FINITE torsion
+group schemes `A[I^k]` and no inverse limit occurs in it, which is the
+point of the split: the geometry and the completeness argument are
+different subjects and only the first is open.
+
+THIS LEAF DOES NOT RECEIVE THE FRAME, and that is inherited from its
+consumer and is load-bearing for the same reason.  The standing audits on
+`det_globalFrob_eq_absNorm_of_tateFrame` and on
+`exists_weilPairing_of_tateFrame` show that any statement about a form on
+the FRAMED module `Fin 2 → O` is a repackaging of the determinant
 identity, because `bilin_alternating_apply_det_apply` makes the two
 literally equivalent.  That argument needs the frame in order to run.
 Here `τ`, `φ`, `hφadd`, `hφbij`, `hφequiv` and `hφj` are all ABSENT, so
-`E` cannot be produced by transporting `stdAlternatingBilin` backwards
+`e` cannot be produced by transporting `stdAlternatingBilin` backwards
 along `φ`, and the equivariance clause cannot be discharged by quoting a
 determinant identity that is not in scope.  What must be built is the
 pairing itself, out of the geometry of `f : A ⟶ S`.
 
 REFUTING CHECK for that claim: look for `φ` or `τ` in the binders below.
 
-WHAT MUST BE BUILT, and in what order (this is the classical route, and
-the vocabulary for its first two steps now exists in
-`Modularity/AbelianScheme.lean`):
+WHAT MUST BE BUILT, and in what order (the vocabulary for the first two
+steps exists in `Modularity/AbelianScheme.lean`):
 
 1. a `DualStruct ab m` — the dual abelian scheme with its canonical
    `A[I] × A^∨[I] ⟶ μ_n` pairing.  Existence is Grothendieck
@@ -6516,9 +6633,7 @@ the vocabulary for its first two steps now exists in
 3. the TRACE-DUALITY refinement of the resulting `μ_{q^k}`-valued
    pairing to an `𝒪_D/I^k`-valued one, along the inverse different
    `𝔡_D⁻¹`.  Mathlib has the ingredients (`Submodule.traceDual`,
-   `FractionalIdeal.dual`, `differentIdeal`, `traceForm_nondegenerate`);
-4. the passage to the limit over `k`, which is where the continuity
-   clause of `IsTateWeilPairing` comes from.
+   `FractionalIdeal.dual`, `differentIdeal`, `traceForm_nondegenerate`).
 
 STEP 3 IS NOT OPTIONAL, AND THIS CORRECTS THE PROPOSAL RECORDED IN
 `Modularity/AbelianScheme.lean`.  That file's section docstring records a
@@ -6550,6 +6665,13 @@ REFUTING CHECK: exhibit `e_k(π y, π z)` as a function of `e_{k+1}(y,z)`
 for `I` ramified over `q`, or find a `DualStruct` field relating levels
 that does not mention the different.
 
+That correction is exactly why the tower-compatibility clause of
+`IsTateWeilSystem` is stated with `O`-VALUED pairings (i.e. with target
+`𝒪_D/I^k` through `j` and `hker`) rather than with
+`rootsOfUnity`-valued ones: the refinement of step 3 is built into the
+STATEMENT of the system, so that the clause it has to satisfy is the
+compatible one.
+
 WHY THIS LEAF IS NOT `∃ d : DualStruct ab m, Nonempty (PolarizationStruct d)`,
 WHICH WOULD BE FALSE (checked 2026-07-27).  That is the obvious shape for
 step 2, and it must not be used, because `PolarizationStruct` is strictly
@@ -6566,14 +6688,341 @@ the `𝒪_D`-polarizations of a Hilbert–Blumenthal abelian variety are
 classified by a polarization module, which need not be principal.
 So an existence leaf in that shape would be a FALSE leaf.
 
-`IsTateWeilPairing` avoids this by being an `I`-LOCAL statement, and that
+`IsTateWeilSystem` avoids this by being an `I`-LOCAL statement, and that
 is not a dodge but the mathematically correct scope: the classical
 identification is `∧²_{𝒪_D} T_I A ≅ 𝔡_D⁻¹ 𝔠 (1)` for the polarization
 module `𝔠`, and `𝒪_{D,I}` is a LOCAL ring, over which every invertible
 module is free.  So a unit-valued alternating form exists at `I`
 regardless of whether `𝔠` is globally principal — which is precisely why
-the perfectness clause above is stated as "some value is a unit" rather
-than as a global nondegeneracy.
+the perfectness clause is stated as "some value is a unit" rather than as
+a global nondegeneracy.  KEEP IT `I`-LOCAL.
+
+FAITHFULNESS.  No exceptional set appears here: the pairing exists at
+every place, and the finite bad set of the ultimate consumer comes only
+from evaluating `χ_cyc` at a Frobenius, which is possible exactly away
+from `q`.  `hdim` is load-bearing rather than decoration: it is what
+makes the geometric fibre an abelian variety of dimension `[D : ℚ]` with
+`𝒪_D` acting, hence `A[I^k]` free of rank TWO over `𝒪_D/I^k`, without
+which `∧²` is not a rank-one module and no unit-valued alternating form
+need exist.  `[NumberField.IsTotallyReal D]` is load-bearing for the
+`𝒪_D`-bilinearity clause: it is triviality of the Rosati involution on
+`𝒪_D` (`DualStruct.weil_act`), without which the polarized pairing is
+hermitian rather than `𝒪_D`-bilinear and the determinant of the consumer
+is a TWIST of `χ_cyc`.  Do not drop either in a restatement.
+
+The pinning hypotheses `j`, `hcplt`, `hdense`, `hker` are what force
+`O = 𝒪_{D,I}` acting canonically rather than through an exotic
+embedding; they are carried verbatim from the consumer, where the
+docstring of `det_globalFrob_eq_absNorm_of_tateFrame` records why
+weakening them makes the determinant `χ₁ · ψ⁻¹(χ₂)` instead of
+`χ_cyc`.  `hker` in particular is what identifies the level-`k` target
+`O / (j π)^k` with `𝒪_D / I^k`, and so is not merely a pin here: it is
+the reason the congruences of `IsTateWeilSystem` say what they are meant
+to say. -/
+theorem exists_tateWeilSystem_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e :=
+  sorry
+
+/-- **A compatible system of levelwise pairings passes to the limit and
+gives an `I`-adic Weil pairing on the Tate module** (PROVEN 2026-07-27 —
+step 4 of the classical route, and the half of
+`exists_tateWeilPairing_of_mult` that is analysis rather than geometry).
+
+Given `t, s : TatePt m x I π`, the sequence
+
+  `k ↦ e k (t.1 k) (s.1 k)`
+
+is CAUCHY for the `(j π)`-adic filtration: consecutive terms differ by an
+element of `(j π)^k`, because the tower-compatibility clause of
+`IsTateWeilSystem` applied at `t.1 (k+1)`, `s.1 (k+1)` is exactly the
+statement that `e (k+1) (t.1 (k+1)) (s.1 (k+1))` and
+`e k (m.act π (t.1 (k+1))) (m.act π (s.1 (k+1))) = e k (t.1 k) (s.1 k)`
+agree modulo `(j π)^k` — the second equality being the defining
+transition of `TatePt`.  `E t s` is then its limit, supplied by the
+`IsPrecomplete` half of `hcplt`, and every clause of
+`IsTateWeilPairing` follows by writing the required difference as a sum
+of three or four terms each visibly in `(j π)^k` and letting the
+`IsHausdorff` half of `hcplt` upgrade "in `(j π)^k` for every `k`" to
+"zero".
+
+WHICH HYPOTHESES ARE USED WHERE.  `hcplt` is used twice and in both
+halves, as just described.  `[IsLocalRing O]` and `hnu` are used ONLY for
+the perfectness clause: they turn "`E t s` differs from a unit by an
+element of `span {j π}`" into "`E t s` is a unit", which is false without
+locality.  `hnu` (`j π` is not a unit) is what puts `span {j π}` inside
+the maximal ideal; in the consumer it comes from `hker` at `n = 1`
+together with `I ≠ ⊤`.  No other hypothesis of the geometric leaf is
+needed here — in particular neither `hdense` nor `hdim` nor totally-real
+`D`, all of which do their work upstream in producing the system.
+
+THE CONTINUITY CLAUSE OF `IsTateWeilPairing` IS WHERE THE LEVEL STRUCTURE
+SURVIVES THE LIMIT.  It says `E t s ≡ E t' s'` modulo `(j π)^k` whenever
+the level-`k` components agree, and it falls straight out of the defining
+property of the limit: both sides are congruent to the SAME value
+`e k (t.1 k) (s.1 k)` modulo `(j π)^k`.  That clause is not decoration —
+it is what `det_eq_cyclotomicCharacter_of_tateWeilPairing` uses to
+upgrade `𝒪_D`-bilinearity to `O`-bilinearity — and the fact that it is
+free here is the structural reason this cut is the right one. -/
+theorem exists_tateWeilPairing_of_tateWeilSystem
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hnu : ¬ IsUnit (j π))
+    (e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O)
+    (he : IsTateWeilSystem m x q I π j e) :
+    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
+  classical
+  obtain ⟨hadd1, hadd2, halt, hact, hgal, hcompat, hunit⟩ := he
+  -- STEP 1.  Consecutive levels of `k ↦ e k (t_k) (s_k)` agree modulo `(j π)^k`:
+  -- the tower-compatibility clause, read along the transition of `TatePt`.
+  have hstep : ∀ (t s : TatePt m x I π) (k : ℕ),
+      e (k + 1) (t.1 (k + 1)) (s.1 (k + 1)) - e k (t.1 k) (s.1 k)
+        ∈ Ideal.span {j π} ^ k := by
+    intro t s k
+    have h := hcompat k (t.1 (k + 1)) (s.1 (k + 1)) (t.2.1 (k + 1)) (s.2.1 (k + 1))
+    rwa [t.2.2 k, s.2.2 k] at h
+  -- STEP 2.  Telescoping turns that into the Cauchy condition.
+  have hmono : ∀ (t s : TatePt m x I π) (a b : ℕ), a ≤ b →
+      e a (t.1 a) (s.1 a) - e b (t.1 b) (s.1 b) ∈ Ideal.span {j π} ^ a := by
+    intro t s a b hab
+    induction b, hab using Nat.le_induction with
+    | base => simp
+    | succ n hn ih =>
+        have h2 : (Ideal.span {j π} : Ideal O) ^ n ≤ Ideal.span {j π} ^ a :=
+          Ideal.pow_le_pow_right hn
+        have h3 : e n (t.1 n) (s.1 n) - e (n + 1) (t.1 (n + 1)) (s.1 (n + 1))
+            ∈ Ideal.span {j π} ^ a := by
+          have hneg := Submodule.neg_mem (Ideal.span {j π} ^ n) (hstep t s n)
+          rw [neg_sub] at hneg
+          exact h2 hneg
+        have hrw : e a (t.1 a) (s.1 a) - e (n + 1) (t.1 (n + 1)) (s.1 (n + 1))
+            = (e a (t.1 a) (s.1 a) - e n (t.1 n) (s.1 n))
+              + (e n (t.1 n) (s.1 n) - e (n + 1) (t.1 (n + 1)) (s.1 (n + 1))) := by ring
+        rw [hrw]
+        exact Ideal.add_mem _ ih h3
+  -- STEP 3.  The `IsPrecomplete` half of `hcplt` supplies the limit.
+  have hex : ∀ t s : TatePt m x I π, ∃ L : O,
+      ∀ n : ℕ, e n (t.1 n) (s.1 n) - L ∈ Ideal.span {j π} ^ n := by
+    intro t s
+    obtain ⟨L, hL⟩ := hcplt.toIsPrecomplete.prec (f := fun n => e n (t.1 n) (s.1 n))
+      (fun {a b} hab => by
+        rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+        exact hmono t s a b hab)
+    refine ⟨L, fun n => ?_⟩
+    have h := hL n
+    rwa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h
+  choose E hEspec using hex
+  -- STEP 4.  The `IsHausdorff` half turns congruences at every level into equalities.
+  have haus : ∀ z : O, (∀ n : ℕ, z ∈ Ideal.span {j π} ^ n) → z = 0 := fun z hz =>
+    hcplt.toIsHausdorff.haus z fun n => by
+      rw [SModEq.sub_mem, sub_zero, smul_eq_mul, Ideal.mul_top]; exact hz n
+  refine ⟨E, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- bi-additivity, first variable
+    intro t t' t'' s ht''
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t'' s k
+    have h2 := hEspec t s k
+    have h3 := hEspec t' s k
+    have h4 := hadd1 k (t.1 k) (t'.1 k) (s.1 k) (t.2.1 k) (t'.2.1 k) (s.2.1 k)
+    rw [← ht'' k] at h4
+    have hrw : E t'' s - (E t s + E t' s)
+        = -(e k (t''.1 k) (s.1 k) - E t'' s)
+          + (e k (t''.1 k) (s.1 k) - (e k (t.1 k) (s.1 k) + e k (t'.1 k) (s.1 k)))
+          + (e k (t.1 k) (s.1 k) - E t s) + (e k (t'.1 k) (s.1 k) - E t' s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) h2) h3
+  · -- bi-additivity, second variable
+    intro t s s' s'' hs''
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t s'' k
+    have h2 := hEspec t s k
+    have h3 := hEspec t s' k
+    have h4 := hadd2 k (t.1 k) (s.1 k) (s'.1 k) (t.2.1 k) (s.2.1 k) (s'.2.1 k)
+    rw [← hs'' k] at h4
+    have hrw : E t s'' - (E t s + E t s')
+        = -(e k (t.1 k) (s''.1 k) - E t s'')
+          + (e k (t.1 k) (s''.1 k) - (e k (t.1 k) (s.1 k) + e k (t.1 k) (s'.1 k)))
+          + (e k (t.1 k) (s.1 k) - E t s) + (e k (t.1 k) (s'.1 k) - E t s') := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) h2) h3
+  · -- alternating
+    intro t
+    refine haus _ fun k => ?_
+    have h1 := hEspec t t k
+    have h2 := halt k (t.1 k) (t.2.1 k)
+    have hrw : E t t = -(e k (t.1 k) (t.1 k) - E t t) + e k (t.1 k) (t.1 k) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Submodule.neg_mem _ h1) h2
+  · -- `𝒪_D`-bilinearity
+    intro a t t' s ht'
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t' s k
+    have h2 := hEspec t s k
+    have h4 := hact k a (t.1 k) (s.1 k) (t.2.1 k) (s.2.1 k)
+    rw [← ht' k] at h4
+    have hrw : E t' s - j a * E t s
+        = -(e k (t'.1 k) (s.1 k) - E t' s)
+          + (e k (t'.1 k) (s.1 k) - j a * e k (t.1 k) (s.1 k))
+          + j a * (e k (t.1 k) (s.1 k) - E t s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) (Ideal.mul_mem_left _ _ h2)
+  · -- `Γ_F`-equivariance
+    intro σ t t' s s' ht' hs'
+    refine sub_eq_zero.mp (haus _ fun k => ?_)
+    have h1 := hEspec t' s' k
+    have h2 := hEspec t s k
+    have h4 := hgal k σ (t.1 k) (s.1 k) (t.2.1 k) (s.2.1 k)
+    rw [← ht' k, ← hs' k] at h4
+    have hrw : E t' s' -
+        algebraMap ℤ_[q] O
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * E t s
+        = -(e k (t'.1 k) (s'.1 k) - E t' s')
+          + (e k (t'.1 k) (s'.1 k) -
+              algebraMap ℤ_[q] O
+                ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+                  ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+                    ℤ_[q]ˣ) : ℤ_[q])
+                * e k (t.1 k) (s.1 k))
+          + algebraMap ℤ_[q] O
+              ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+                ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+                  ℤ_[q]ˣ) : ℤ_[q])
+              * (e k (t.1 k) (s.1 k) - E t s) := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Ideal.add_mem _ (Submodule.neg_mem _ h1) h4) (Ideal.mul_mem_left _ _ h2)
+  · -- continuity: both limits are congruent to the same level-`k` value
+    intro k t t' s s' hts hss
+    have h1 := hEspec t s k
+    have h2 := hEspec t' s' k
+    rw [hts, hss] at h1
+    have hrw : E t s - E t' s'
+        = -(e k (t'.1 k) (s'.1 k) - E t s) + (e k (t'.1 k) (s'.1 k) - E t' s') := by ring
+    rw [hrw]
+    exact Ideal.add_mem _ (Submodule.neg_mem _ h1) h2
+  · -- perfectness: a unit stays a unit under a perturbation by the maximal ideal
+    obtain ⟨t, s, hts⟩ := hunit
+    refine ⟨t, s, ?_⟩
+    have h1 := hEspec t s 1
+    rw [pow_one] at h1
+    by_contra hv
+    have hjm : j π ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu)
+    have hsub : (Ideal.span {j π} : Ideal O) ≤ IsLocalRing.maximalIdeal O :=
+      Ideal.span_le.mpr (by simpa using hjm)
+    have hvm : E t s ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hv)
+    have hum : e 1 (t.1 1) (s.1 1) ∈ IsLocalRing.maximalIdeal O := by
+      have hrw : e 1 (t.1 1) (s.1 1) = (e 1 (t.1 1) (s.1 1) - E t s) + E t s := by ring
+      rw [hrw]
+      exact Ideal.add_mem _ (hsub h1) hvm
+    exact (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp hum)) hts
+
+/-- **The Tate module of a Hilbert–Blumenthal abelian scheme carries an
+`I`-adic Weil pairing** (PROVEN 2026-07-27, later the same day, over the
+ONE geometric leaf `exists_tateWeilSystem_of_mult`; it was the GEOMETRIC
+half of the 2026-07-27 cut of `det_globalFrob_eq_absNorm_of_tateFrame`.
+Mumford *Abelian Varieties* §16/§20, Taylor 2002 §2, Carayol).
+
+WHERE THE LEAF WENT.  The four-step classical route recorded below splits
+cleanly after step 3, and the split is along the LIMIT:
+
+* steps 1–3 — dual, polarization, trace-duality refinement — produce a
+  COMPATIBLE SYSTEM of levelwise pairings on the finite torsion group
+  schemes `A[I^k]`.  That is `exists_tateWeilSystem_of_mult`, and it is
+  the only thing still open.  All of the audits below apply to it
+  verbatim and are restated in its docstring, which is where a successor
+  should read them;
+* step 4 — passage to the limit — is
+  `exists_tateWeilPairing_of_tateWeilSystem`, and it is PROVEN.  It is
+  where `hcplt` earns its keep, and it is also where the CONTINUITY
+  clause of `IsTateWeilPairing` comes from, for free.
+
+The split is not a repackaging in either direction: `IsTateWeilSystem`
+mentions no inverse limit and `IsTateWeilPairing` mentions no level-`k`
+torsion group, and neither statement can be obtained from the other
+without the completeness argument in between.  The assembly below is
+therefore three lines of glue plus the one step that is genuinely about
+`O` rather than about geometry: `hker` at `n = 1` together with
+`I ≠ ⊤` says `j π` is a NON-UNIT, which is what puts `span {j π}` inside
+the maximal ideal of the local ring `O` and so lets the perfectness
+clause survive the limit.
+
+THIS LEAF DOES NOT RECEIVE THE FRAME, and that was the whole point of the
+cut.  The standing audit on `det_globalFrob_eq_absNorm_of_tateFrame` and
+on `exists_weilPairing_of_tateFrame` shows that any statement about a
+form on the FRAMED module `Fin 2 → O` is a repackaging of the determinant
+identity, because `bilin_alternating_apply_det_apply` makes the two
+literally equivalent.  That argument needs the frame in order to run.
+Here `τ`, `φ`, `hφadd`, `hφbij`, `hφequiv` and `hφj` are all ABSENT, so
+`E` cannot be produced by transporting `stdAlternatingBilin` backwards
+along `φ`, and the equivariance clause cannot be discharged by quoting a
+determinant identity that is not in scope.  What must be built is the
+pairing itself, out of the geometry of `f : A ⟶ S`.
+
+REFUTING CHECK for that claim: look for `φ` or `τ` in the binders below.
+
+THE CLASSICAL ROUTE, and in what order (the vocabulary for the first two
+steps exists in `Modularity/AbelianScheme.lean`):
+
+1. a `DualStruct ab m` — the dual abelian scheme with its canonical
+   `A[I] × A^∨[I] ⟶ μ_n` pairing.  Existence is Grothendieck
+   representability of `Pic⁰` and is asserted nowhere in this tree;
+2. a `PolarizationStruct` for it — an `𝒪_D`-linear symmetric isogeny
+   `A ⟶ A^∨` whose induced pairing on `A[I]` is nondegenerate.  Since
+   2026-07-27 that structure has content (`weil_hom_nondegenerate`), so
+   this is a genuine existence obligation and not a formality;
+3. the TRACE-DUALITY refinement of the resulting `μ_{q^k}`-valued
+   pairing to an `𝒪_D/I^k`-valued one, along the inverse different
+   `𝔡_D⁻¹`.  Mathlib has the ingredients (`Submodule.traceDual`,
+   `FractionalIdeal.dual`, `differentIdeal`, `traceForm_nondegenerate`);
+4. the passage to the limit over `k`, which is where the continuity
+   clause of `IsTateWeilPairing` comes from.
+
+Steps 1–3 are `exists_tateWeilSystem_of_mult`; step 4 is
+`exists_tateWeilPairing_of_tateWeilSystem` and is PROVEN.  TWO STANDING
+REFUTATIONS govern any further work on steps 1–3 and are recorded IN
+FULL on `exists_tateWeilSystem_of_mult`, each with its refuting check:
+the level-compatibility axiom proposed for `DualStruct` in
+`Modularity/AbelianScheme.lean` **cannot be written in that vocabulary
+and would be false** (its target `μ_{q^k}` is indexed by the rational
+integer `q`, not by `π`), and an existence leaf of the shape
+`∃ d : DualStruct ab m, Nonempty (PolarizationStruct d)` **would be
+false** (`weil_hom_nondegenerate` at every `I` forces `hom` to be an
+isomorphism, i.e. a PRINCIPAL `𝒪_D`-polarization, which a
+Hilbert–Blumenthal abelian variety need not admit).  Both are avoided by
+staying `I`-LOCAL, which is not a dodge but the correct scope: the
+classical identification is `∧²_{𝒪_D} T_I A ≅ 𝔡_D⁻¹ 𝔠 (1)` for the
+polarization module `𝔠`, and `𝒪_{D,I}` is a LOCAL ring, over which every
+invertible module is free — which is precisely why the perfectness clause
+above is stated as "some value is a unit" rather than as a global
+nondegeneracy.
 
 FAITHFULNESS.  No exceptional set appears here: the pairing exists at
 every place, and the finite bad set of the consumer comes only from
@@ -6613,8 +7062,20 @@ theorem exists_tateWeilPairing_of_mult
       z - j a ∈ Ideal.span {j π} ^ n)
     (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
       j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
-    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E :=
-  sorry
+    ∃ E : TatePt m x I π → TatePt m x I π → O, IsTateWeilPairing m x q I π j E := by
+  obtain ⟨e, he⟩ := exists_tateWeilSystem_of_mult m x hdim q I hI hqI π hπ hπ2 O j
+    hcplt hdense hker
+  refine exists_tateWeilPairing_of_tateWeilSystem m x q I π O j hcplt ?_ e he
+  -- `j π` is a non-unit: were `span {j π}` the unit ideal, `hker` at `n = 1`
+  -- would put `1` in `I`, contradicting maximality.
+  intro hu
+  have h1 : (Ideal.span {j π} : Ideal O) = ⊤ := Ideal.span_singleton_eq_top.mpr hu
+  have h2 : (1 : NumberField.RingOfIntegers D) ∈ I ^ 1 := by
+    refine (hker 1 1).mp ?_
+    rw [pow_one, h1]
+    exact Submodule.mem_top
+  rw [pow_one] at h2
+  exact hI.ne_top ((Ideal.eq_top_iff_one I).mpr h2)
 
 /-- **The determinant of a Tate frame is the cyclotomic character, given
 an `I`-adic Weil pairing on the Tate module** (PROVEN 2026-07-27 — the
@@ -6829,13 +7290,17 @@ below does NOT rule out:
   `I`-adic Weil pairing on the Tate module and it does **not** receive
   the frame, so it is not a repackaging of this identity; see its
   docstring for why, and for the four-step classical route that must be
-  formalized to close it.
+  formalized to close it.  It is itself PROVEN since later on 2026-07-27,
+  over `exists_tateWeilSystem_of_mult` (steps 1–3, the LEVELWISE system
+  of pairings on `A[I^k]`) and `exists_tateWeilPairing_of_tateWeilSystem`
+  (step 4, the limit, PROVEN).
 * `det_eq_cyclotomicCharacter_of_tateWeilPairing` — the TRANSPORT, and it
   is PROVEN.  It receives such a pairing as an arbitrary given and pushes
   it along the frame to `det (τ σ) = χ_cyc(σ)` at every `σ ∈ Γ_F`.
 
-So the whole determinant clause now rests on ONE sorry, the geometric
-one, and it is a statement about the abelian scheme alone.
+So the whole determinant clause now rests on ONE sorry, the levelwise
+geometric one, and it is a statement about the finite torsion group
+schemes of the abelian scheme alone.
 
 The assembly below is the remaining ARITHMETIC: it manufactures the
 exceptional set as the fibre over `q` (`finite_places_natCast_mem_asIdeal`,
