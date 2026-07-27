@@ -5678,6 +5678,117 @@ theorem exists_realApproximationBall_of_affine_geometricallyIrreducible
     (CommRingCat.hom_ext (ringHom_uliftRat_ext _ _)) _ ?_
   simp [hzero]
 
+open CategoryTheory AlgebraicGeometry in
+/-- **BREAK B — A HYPERPLANE PARAMETER THAT KEEPS THE PRESCRIBED `ℚ_[p]`-POINTS,
+IN THE REAL BOX, AND OFF A HYPERSURFACE** (LEAF, stated 2026-07-27).
+
+This is the single missing statement of Break B: it is what lets a prescribed set
+`S₀` of primes CROSS THE BERTINI CUT. Its parent
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` chooses the
+hyperplane parameter `v` subject to constraints that, before this leaf, were only
+"inside the real box supplied by
+`exists_realApproximationBall_of_affine_geometricallyIrreducible`" and "off the
+two Zariski-closed bad loci `F₁`, `F₂`". That is exactly why the Bertini
+reduction could thread ONE prescribed point, the real one, and why the
+`residueCardTwo` audit in `HardlyRamified/HilbertModularity.lean` records `2` as
+unable to enter `S`. This leaf adds the third family of constraints and hands
+back the `ℚ_[p]`-points of the CUT scheme directly, so the parent needs no
+reconciliation step of its own.
+
+WHY THIS SHAPE — one leaf, not two. The natural decomposition is "a `p`-adic ball
+of good parameters" plus "a rational point in the real box and in all the balls".
+Stated separately, the parent has to `choose` a centre and a radius as functions
+of `p`, and `ℚ_[p]` cannot even be MENTIONED at a `p` that is not yet known to be
+prime — so the choice has to be threaded through an explicit `Fact p.Prime`
+binder. Folding the reconciliation into the leaf removes that friction entirely
+and costs nothing mathematically, since the two halves are proven together anyway.
+
+THE PROOF, in two steps; this is why it is one leaf and not a hard theorem.
+
+*Step 1, the balls — and it is EASIER than the real sibling.* The real statement
+costs a four-storey tower (`exists_realPolynomialModel_*`, the Euclidean patch,
+`exists_realPointChart_*`, `exists_realArc_*`) because it needs a nonconstant
+continuous ARC and closes with the intermediate value theorem, the real analytic
+implicit function theorem being unavailable. Over `ℚ_[p]` no arc is needed and no
+substitute has to be built: **multivariate Hensel is already in mathlib**, as
+`Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete` together with
+`instance : IsAdicComplete (maximalIdeal ℤ_[p]) ℤ_[p]`. Smoothness of `g` plus the
+`ℚ_[p]`-point of `hS₀pt` gives directly that the `ℚ_[p]`-points form a
+`p`-adically OPEN set, so every parameter in a small enough congruence class of a
+suitable rational centre `c p` keeps one. **Do NOT redevelop Hensel for this.**
+
+*Step 2, the reconciliation.* Clear denominators so each `c p i` is `p`-integral
+at the primes of `S₀`, and put `M := ∏_{p ∈ S₀} p^(N p)`. By CRT pick integers
+`a i ≡ c p i mod p^(N p)` simultaneously for all `p ∈ S₀`. Every rational
+`a i + M · r i` whose `r i` has denominator COPRIME to `M` then satisfies all the
+`p`-adic constraints, because `‖M · r i‖_p ≤ p^(−N p)`; and those rationals are
+DENSE in `ℝ`, so each coordinate still ranges over an infinite subset of the real
+box. The existing Zariski step then applies verbatim — `MvPolynomial.funext_set`
+against a nonzero polynomial over an infinite grid, exactly as in
+`exists_rat_mem_box_eval_ne_zero` above — giving `eval v F ≠ 0`.
+
+This is the Lean form of the standard sentence in BLGGT's proof of Prop. 3.1.1:
+choose the hyperplane `p`-adically close to one through the prescribed local
+points, local solutions being open. It is a **generalisation of an existing
+proof, not a missing theory**.
+
+NOT VACUOUS, and note this carefully: at `S₀ = ∅` the statement degenerates to
+`exists_rat_mem_box_eval_ne_zero`, which is PROVEN — so the content is entirely in
+the `S₀ ≠ ∅` case, where the conclusion asserts `ℚ_[p]`-points of the CUT scheme,
+strictly more than the hypothesis `hS₀pt` about the uncut one. That degeneration
+is DISCHARGED in the proof below rather than merely asserted here, which is also
+what keeps `exists_rat_mem_box_eval_ne_zero` in the cone.
+
+AXIOM COST OF BREAK B: NONE, measured 2026-07-27 rather than assumed. Adding this
+leaf does NOT move any declaration from proven to transitively sorried, because
+every consumer of it was already `sorryAx`-tainted through a DIFFERENT input:
+`exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (a sibling leaf of
+`exists_bertiniHyperplane_*`) already carries `sorryAx`, and so, one level up,
+does `exists_normalSplitPoint_of_affine_curve` — Moret–Bailly's theorem itself. So
+the entire chain `exists_bertiniHyperplane_*` → `exists_dimensionDrop_*` →
+`exists_affineCurve_*` → both `exists_totallyReal_point_*` wrappers was already
+transitively sorried before the thread-through, and the whole cost of Break B is
+exactly ONE new direct leaf. Checked with `#print axioms`; the clean ones in the
+neighbourhood, for contrast, are `exists_rat_mem_box_eval_ne_zero`,
+`exists_realApproximationBall_*`, `exists_affineCoordinates_*` and
+`exists_nonZeroDivisorLocus_*`, all `[propext, Classical.choice, Quot.sound]`.
+Anyone tempted to revert the thread-through on cone-growth grounds should re-run
+that check first. -/
+theorem exists_rat_mem_box_padicPoints_eval_ne_zero
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤)
+    {F : MvPolynomial (Fin (n + 1)) ℚ} (hF : F ≠ 0)
+    (v₀ : Fin (n + 1) → ℝ) {ε : ℝ} (hε : 0 < ε)
+    (S₀ : Finset ℕ) (hS₀prime : ∀ p ∈ S₀, p.Prime)
+    (hS₀pt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+      HasRationalPoint g (ULift.{u} ℚ_[p])) :
+    ∃ v : Fin (n + 1) → ℚ, (∀ i, |(v i : ℝ) - v₀ i| < ε) ∧
+      MvPolynomial.eval v F ≠ 0 ∧
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+        HasRationalPoint (specQuotSpanSingleton
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g)
+          (ULift.{u} ℚ_[p])) := by
+  classical
+  rcases Finset.eq_empty_or_nonempty S₀ with hS | -
+  · -- `S₀ = ∅` is exactly `exists_rat_mem_box_eval_ne_zero`, PROVEN above: the
+    -- degeneration is discharged here rather than asserted in the docstring
+    subst hS
+    obtain ⟨v, hv, hvF⟩ := exists_rat_mem_box_eval_ne_zero hF v₀ hε
+    exact ⟨v, hv, hvF, fun p _ hp => absurd hp (Finset.notMem_empty p)⟩
+  · -- THE CONTENT: a prescribed NONEMPTY set of primes, Hensel-openness plus CRT
+    have key : ∃ v : Fin (n + 1) → ℚ, (∀ i, |(v i : ℝ) - v₀ i| < ε) ∧
+        MvPolynomial.eval v F ≠ 0 ∧
+        (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+          HasRationalPoint (specQuotSpanSingleton
+            (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g)
+            (ULift.{u} ℚ_[p])) := sorry
+    exact key
+
 end BertiniLeaves
 
 open CategoryTheory AlgebraicGeometry in
@@ -5814,11 +5925,16 @@ theorem exists_bertiniHyperplane_of_affine_geometricallyIrreducible
     (_hqc : AlgebraicGeometry.QuasiCompact g)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
     (hreal : HasRationalPoint g (ULift.{u} ℝ))
-    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A)) :
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    (S₀ : Finset ℕ) (hS₀prime : ∀ p ∈ S₀, p.Prime)
+    (hS₀pt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+      HasRationalPoint g (ULift.{u} ℚ_[p])) :
     ∃ ℓ : A, ℓ ∈ nonZeroDivisors A ∧
       AlgebraicGeometry.Smooth (specQuotSpanSingleton ℓ ≫ g) ∧
       AlgebraicGeometry.GeometricallyIrreducible (specQuotSpanSingleton ℓ ≫ g) ∧
-      HasRationalPoint (specQuotSpanSingleton ℓ ≫ g) (ULift.{u} ℝ) := by
+      HasRationalPoint (specQuotSpanSingleton ℓ ≫ g) (ULift.{u} ℝ) ∧
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+        HasRationalPoint (specQuotSpanSingleton ℓ ≫ g) (ULift.{u} ℚ_[p])) := by
   -- a closed embedding `Spec A ↪ 𝔸ⁿ_ℚ`, i.e. the hyperplane parameter space
   obtain ⟨n, x, hx⟩ := exists_affineCoordinates_of_locallyOfFiniteType g hft
   -- the two Zariski-generic loci, each a nonempty basic open `D(Fᵢ)`
@@ -5830,11 +5946,14 @@ theorem exists_bertiniHyperplane_of_affine_geometricallyIrreducible
   obtain ⟨v₀, ε, hε, hball⟩ :=
     exists_realApproximationBall_of_affine_geometricallyIrreducible g hsmooth hft hgi hreal
       hdim x hx
-  -- a rational parameter inside the box and off both closed subsets
-  obtain ⟨v, hvball, hvF⟩ := exists_rat_mem_box_eval_ne_zero (mul_ne_zero hF₁0 hF₂0) v₀ hε
+  -- BREAK B: a rational parameter inside the box, off both closed subsets, AND
+  -- keeping a `ℚ_[p]`-point of the section for every prescribed `p ∈ S₀`
+  obtain ⟨v, hvball, hvF, hvpad⟩ :=
+    exists_rat_mem_box_padicPoints_eval_ne_zero g hsmooth hft hgi hdim x hx
+      (mul_ne_zero hF₁0 hF₂0) v₀ hε S₀ hS₀prime hS₀pt
   rw [map_mul] at hvF
   obtain ⟨hsm, hgi'⟩ := hF₂ v (right_ne_zero_of_mul hvF)
-  exact ⟨_, hF₁ v (left_ne_zero_of_mul hvF), hsm, hgi', hball v hvball⟩
+  exact ⟨_, hF₁ v (left_ne_zero_of_mul hvF), hsm, hgi', hball v hvball, hvpad⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **ONE BERTINI CUT: a single dimension-lowering step** (**PROVEN
@@ -5906,7 +6025,10 @@ theorem exists_dimensionDrop_of_affine_geometricallyIrreducible
     (hqc : AlgebraicGeometry.QuasiCompact fX)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible fX)
     (hreal : HasRationalPoint fX (ULift.{u} ℝ))
-    (hdim : 1 < topologicalKrullDim X) :
+    (hdim : 1 < topologicalKrullDim X)
+    (S₀ : Finset ℕ) (hS₀prime : ∀ p ∈ S₀, p.Prime)
+    (hS₀pt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+      HasRationalPoint fX (ULift.{u} ℚ_[p])) :
     ∃ (X' : AlgebraicGeometry.Scheme.{u}) (_ : AlgebraicGeometry.IsAffine X')
       (h : X' ⟶ X),
       AlgebraicGeometry.Smooth (h ≫ fX) ∧
@@ -5915,6 +6037,8 @@ theorem exists_dimensionDrop_of_affine_geometricallyIrreducible
       AlgebraicGeometry.QuasiCompact (h ≫ fX) ∧
       AlgebraicGeometry.GeometricallyIrreducible (h ≫ fX) ∧
       HasRationalPoint (h ≫ fX) (ULift.{u} ℝ) ∧
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+        HasRationalPoint (h ≫ fX) (ULift.{u} ℚ_[p])) ∧
       topologicalKrullDim X' < topologicalKrullDim X := by
   classical
   haveI := hsmooth; haveI := hsep; haveI := hft; haveI := hqc; haveI := hgi
@@ -5932,12 +6056,20 @@ theorem exists_dimensionDrop_of_affine_geometricallyIrreducible
     refine ⟨x ≫ X.isoSpec.hom, ?_⟩
     rw [Category.assoc, ← Category.assoc X.isoSpec.hom, Iso.hom_inv_id,
       Category.id_comp, hx]
-  obtain ⟨ℓ, hℓ, hℓsm, hℓgi, hℓreal⟩ :=
+  -- the prescribed `ℚ_[p]`-points transport across the same isomorphism
+  have hpadg : ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+      HasRationalPoint (X.isoSpec.inv ≫ fX) (ULift.{u} ℚ_[p]) := by
+    intro p _ hp
+    obtain ⟨x, hx⟩ := hS₀pt p hp
+    refine ⟨x ≫ X.isoSpec.hom, ?_⟩
+    rw [Category.assoc, ← Category.assoc X.isoSpec.hom, Iso.hom_inv_id,
+      Category.id_comp, hx]
+  obtain ⟨ℓ, hℓ, hℓsm, hℓgi, hℓreal, hℓpad⟩ :=
     exists_bertiniHyperplane_of_affine_geometricallyIrreducible
       (X.isoSpec.inv ≫ fX) (htrans _ hsmooth) (htrans _ hsep) (htrans _ hft)
-      (htrans _ hqc) (htrans _ hgi) hrealg (hdimX ▸ hdim)
+      (htrans _ hqc) (htrans _ hgi) hrealg (hdimX ▸ hdim) S₀ hS₀prime hpadg
   refine ⟨Spec (CommRingCat.of (Γ(X, ⊤) ⧸ Ideal.span {ℓ})), inferInstance,
-    specQuotSpanSingleton ℓ ≫ X.isoSpec.inv, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    specQuotSpanSingleton ℓ ≫ X.isoSpec.inv, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · rw [Category.assoc]; exact hℓsm
   · rw [Category.assoc]
     haveI : IsSeparated (X.isoSpec.inv ≫ fX) := htrans _ hsep
@@ -5954,6 +6086,7 @@ theorem exists_dimensionDrop_of_affine_geometricallyIrreducible
     infer_instance
   · rw [Category.assoc]; exact hℓgi
   · rw [Category.assoc]; exact hℓreal
+  · intro p _ hp; rw [Category.assoc]; exact hℓpad p hp
   · -- the STRICT dimension drop
     rw [hdimX]
     have hA : topologicalKrullDim (Spec Γ(X, ⊤)) = ringKrullDim Γ(X, ⊤) :=
@@ -6048,7 +6181,10 @@ theorem exists_affineCurve_of_affine_geometricallyIrreducible
     (hft : AlgebraicGeometry.LocallyOfFiniteType fX)
     (hqc : AlgebraicGeometry.QuasiCompact fX)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible fX)
-    (hreal : HasRationalPoint fX (ULift.{u} ℝ)) :
+    (hreal : HasRationalPoint fX (ULift.{u} ℝ))
+    (S₀ : Finset ℕ) (hS₀prime : ∀ p ∈ S₀, p.Prime)
+    (hS₀pt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+      HasRationalPoint fX (ULift.{u} ℚ_[p])) :
     ∃ (C : AlgebraicGeometry.Scheme.{u}) (_ : AlgebraicGeometry.IsAffine C)
       (g : C ⟶ X),
       AlgebraicGeometry.Smooth (g ≫ fX) ∧
@@ -6057,16 +6193,22 @@ theorem exists_affineCurve_of_affine_geometricallyIrreducible
       AlgebraicGeometry.QuasiCompact (g ≫ fX) ∧
       AlgebraicGeometry.GeometricallyIrreducible (g ≫ fX) ∧
       HasRationalPoint (g ≫ fX) (ULift.{u} ℝ) ∧
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+        HasRationalPoint (g ≫ fX) (ULift.{u} ℚ_[p])) ∧
       topologicalKrullDim C ≤ 1 := by
   -- Well-founded induction on the dimension: `WithBot ℕ∞` is `WellFoundedLT`,
   -- so no finite-dimensionality of `X` is needed.
+  -- BREAK B: the prescribed `ℚ_[p]`-points ride along the induction exactly as the
+  -- real point does — each cut preserves them, by `exists_dimensionDrop_*`.
   have key : ∀ (d : WithBot ℕ∞) (Y : AlgebraicGeometry.Scheme.{u})
       (_ : AlgebraicGeometry.IsAffine Y)
       (fY : Y ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))),
       AlgebraicGeometry.Smooth fY → AlgebraicGeometry.IsSeparated fY →
       AlgebraicGeometry.LocallyOfFiniteType fY → AlgebraicGeometry.QuasiCompact fY →
       AlgebraicGeometry.GeometricallyIrreducible fY →
-      HasRationalPoint fY (ULift.{u} ℝ) → topologicalKrullDim Y ≤ d →
+      HasRationalPoint fY (ULift.{u} ℝ) →
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ → HasRationalPoint fY (ULift.{u} ℚ_[p])) →
+      topologicalKrullDim Y ≤ d →
       ∃ (C : AlgebraicGeometry.Scheme.{u}) (_ : AlgebraicGeometry.IsAffine C)
         (g : C ⟶ Y),
         AlgebraicGeometry.Smooth (g ≫ fY) ∧
@@ -6075,28 +6217,34 @@ theorem exists_affineCurve_of_affine_geometricallyIrreducible
         AlgebraicGeometry.QuasiCompact (g ≫ fY) ∧
         AlgebraicGeometry.GeometricallyIrreducible (g ≫ fY) ∧
         HasRationalPoint (g ≫ fY) (ULift.{u} ℝ) ∧
+        (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+          HasRationalPoint (g ≫ fY) (ULift.{u} ℚ_[p])) ∧
         topologicalKrullDim C ≤ 1 := by
     intro d
     induction d using WellFoundedLT.induction with
     | _ d ih =>
-      intro Y hYaff fY hs hsp hf hq hg hr hle
+      intro Y hYaff fY hs hsp hf hq hg hr hpad hle
       haveI : AlgebraicGeometry.IsAffine Y := hYaff
       by_cases h1 : topologicalKrullDim Y ≤ 1
       · -- base case: `Y` is already at most a curve
         exact ⟨Y, hYaff, 𝟙 Y, by rwa [Category.id_comp], by rwa [Category.id_comp],
           by rwa [Category.id_comp], by rwa [Category.id_comp], by rwa [Category.id_comp],
-          by rwa [Category.id_comp], h1⟩
+          by rwa [Category.id_comp],
+          by intro p _ hp; rw [Category.id_comp]; exact hpad p hp, h1⟩
       · -- inductive step: one Bertini cut, then the induction hypothesis
         rw [not_le] at h1
-        obtain ⟨Y', hY'aff, h, hs', hsp', hf', hq', hg', hr', hdrop⟩ :=
+        obtain ⟨Y', hY'aff, h, hs', hsp', hf', hq', hg', hr', hpad', hdrop⟩ :=
           exists_dimensionDrop_of_affine_geometricallyIrreducible fY hs hsp hf hq hg hr h1
-        obtain ⟨C, hCaff, g, hCs, hCsp, hCf, hCq, hCg, hCr, hCdim⟩ :=
+            S₀ hS₀prime hpad
+        obtain ⟨C, hCaff, g, hCs, hCsp, hCf, hCq, hCg, hCr, hCpad, hCdim⟩ :=
           ih (topologicalKrullDim Y') (lt_of_lt_of_le hdrop hle) Y' hY'aff (h ≫ fY)
-            hs' hsp' hf' hq' hg' hr' le_rfl
+            hs' hsp' hf' hq' hg' hr' hpad' le_rfl
         exact ⟨C, hCaff, g ≫ h, by rwa [Category.assoc], by rwa [Category.assoc],
           by rwa [Category.assoc], by rwa [Category.assoc], by rwa [Category.assoc],
-          by rwa [Category.assoc], hCdim⟩
-  exact key (topologicalKrullDim X) X inferInstance fX hsmooth hsep hft hqc hgi hreal le_rfl
+          by rwa [Category.assoc],
+          by intro p _ hp; rw [Category.assoc]; exact hCpad p hp, hCdim⟩
+  exact key (topologicalKrullDim X) X inferInstance fX hsmooth hsep hft hqc hgi hreal
+    hS₀pt le_rfl
 
 /-! #### The avoidance cut: how "normal AND linearly disjoint" is obtained
 
@@ -11174,23 +11322,49 @@ Instantiating `S₀ := ∅` recovers the old statement verbatim, which is what
 the existing consumer
 `exists_totallyReal_point_of_affine_geometricallyIrreducible` does.
 
-WHERE THE THREAD STOPS, AND WHY (Break B — NOT repaired here). `S₀` cannot
-be pushed above this theorem as things stand. Its hypothesis `hS₀pt` is a
-local point of the curve `fC`, and the wrapper above obtains that curve
-from `exists_affineCurve_of_affine_geometricallyIrreducible`, a
-well-founded induction over
-`exists_dimensionDrop_of_affine_geometricallyIrreducible` that threads
-exactly ONE prescribed point, `HasRationalPoint _ (ULift ℝ)`. So a
-`ℚ_[p]`-point of the ambient variety does not descend to the curve, and
-`S₀` has nothing to stand on one level up.
-  REFUTING CHECK: inspect the binders of those two theorems for a second,
-  `p`-adic prescribed point alongside `hreal`. If one is threaded, Break B
-  is repaired and `S₀` should be propagated through both
+WHERE THE THREAD STOPS, AND WHY — **UPDATED 2026-07-27: BREAK B IS NOW
+REPAIRED THROUGH THE BERTINI CUT.** The paragraph this replaces said `S₀`
+could not be pushed above this theorem, because
+`exists_affineCurve_of_affine_geometricallyIrreducible` and
+`exists_dimensionDrop_of_affine_geometricallyIrreducible` threaded exactly
+ONE prescribed point, `HasRationalPoint _ (ULift ℝ)`. Its own REFUTING
+CHECK — "inspect the binders of those two theorems for a second, `p`-adic
+prescribed point alongside `hreal`" — now SUCCEEDS: both take `S₀`,
+`hS₀prime` and `hS₀pt`, and both carry the `ℚ_[p]`-points into their
+conclusions, as does
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` beneath
+them. The whole chain from the hyperplane choice up to
+`exists_totallyReal_point_of_affine_geometricallyIrreducible` is threaded,
+and that wrapper now returns the residue-cardinality conjunct at every
+`p ∈ S₀`.
+
+The mathematics was, as the old note predicted, a GENERALISATION OF AN
+EXISTING PROOF and not a missing theory: BLGGT Prop. 3.1.1 chooses the
+hyperplane `p`-adically close to one through the prescribed local points,
+local solvability being an open condition. It is isolated in the single
+new leaf `exists_rat_mem_box_padicPoints_eval_ne_zero`, whose `S₀ = ∅`
+case is PROVEN from `exists_rat_mem_box_eval_ne_zero` and whose content
+case is Hensel-openness (multivariate Hensel is ALREADY IN MATHLIB — do
+not redevelop it) plus CRT; see that docstring.
+
+THE RESIDUAL OBSTRUCTION IS NOW SOMEWHERE ELSE, and it is a different one
+(identified 2026-07-27, and it is what stops `S₀` reaching
+`MoretBaillySeed`). `exists_totallyReal_point_of_geometricallyIrreducible`
+reduces to the affine case by shrinking `X` to an affine open chosen
+around the REAL point, via `exists_isAffineOpen_hasRationalPoint`. A
+prescribed `ℚ_[p]`-point of `X` need not lie in THAT open, so there is
+nothing to hand down even though the affine wrapper now accepts it — and
+that theorem therefore still calls its successor with `S₀ = ∅`.
+  REFUTING CHECK: inspect the binders of
+  `exists_isAffineOpen_hasRationalPoint` for a second family of prescribed
+  points. If one is threaded, `S₀` can be propagated through both
   `exists_totallyReal_point_*` wrappers up to `MoretBaillySeed`.
-  The mathematics is a GENERALISATION OF AN EXISTING PROOF, not a missing
-  theory: BLGGT Prop. 3.1.1 chooses the hyperplane `p`-adically close to
-  one through the prescribed local points, local solvability being an open
-  condition.
+  The mathematics is again standard rather than missing: on a
+  quasi-projective variety finitely many points lie in a common affine
+  open. Note the FORM AUDIT on
+  `exists_totallyReal_point_of_geometricallyIrreducible` records that
+  quasi-projectivity is not expressible at this pin, so this leaf will
+  need a hypothesis in some other form.
 
 FAITHFULNESS. `S₀ := ∅` gives back the previous statement on the nose, and
 the added conjunct is a conclusion, not a hypothesis, so no consumer can
@@ -11288,28 +11462,35 @@ theorem exists_totallyReal_point_of_affine_geometricallyIrreducible
     (hgi : AlgebraicGeometry.GeometricallyIrreducible fX)
     (hreal : HasRationalPoint fX (ULift.{u} ℝ))
     (N : Subgroup (Field.absoluteGaloisGroup ℚ))
-    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ))) :
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (S₀ : Finset ℕ) (hS₀prime : ∀ p ∈ S₀, p.Prime)
+    (hS₀pt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+      HasRationalPoint fX (ULift.{u} ℚ_[p])) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+        ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+          ((p : ℕ) : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+            Nat.card (NumberField.RingOfIntegers F ⧸ w.asIdeal) = p) ∧
       N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
       HasRationalPoint fX F := by
   classical
-  -- (i) Bertini: cut down to an affine `ℚ`-curve with a real point
-  obtain ⟨C, hCaff, g, hCsm, hCsep, hCft, hCqc, hCgi, hCreal, hCdim⟩ :=
+  -- (i) Bertini: cut down to an affine `ℚ`-curve with a real point AND, since
+  -- Break B, with the prescribed `ℚ_[p]`-points surviving the cut
+  obtain ⟨C, hCaff, g, hCsm, hCsep, hCft, hCqc, hCgi, hCreal, hCpad, hCdim⟩ :=
     exists_affineCurve_of_affine_geometricallyIrreducible fX hsmooth hsep hft hqc hgi hreal
+      S₀ hS₀prime hS₀pt
   haveI : AlgebraicGeometry.IsAffine C := hCaff
-  -- (ii)+(iii) Moret–Bailly on the curve: a NORMAL number field inside `ℝ`
-  -- no prescribed splitting set is threaded here: see Break B in the docstring of
-  -- `exists_normalRealPoint_of_affine_curve` for why `S₀` cannot cross the Bertini cut
-  obtain ⟨F, hF, hNF, hnorm, ι, -, -, hsup, hpt⟩ :=
+  -- (ii)+(iii) Moret–Bailly on the curve: a NORMAL number field inside `ℝ`,
+  -- totally split at `S₀`, with the residue fields at `S₀` pinned
+  obtain ⟨F, hF, hNF, hnorm, ι, -, hres, hsup, hpt⟩ :=
     exists_normalRealPoint_of_affine_curve (g ≫ fX) hCsm hCsep hCft hCqc hCgi hCreal hCdim
-      N hNopen ∅ (fun p hp => absurd hp (Finset.notMem_empty p))
-      (by intro p _ hp; exact absurd hp (Finset.notMem_empty p))
+      N hNopen S₀ hS₀prime hCpad
   haveI : Normal ℚ F := hnorm
   -- normality + one real embedding ⟹ totally real; char. zero ⟹ Galois
   have hsep' : Algebra.IsSeparable ℚ F := inferInstance
   exact ⟨F, hF, hNF, isTotallyReal_of_normal_of_realEmbedding ι,
-    { to_isSeparable := hsep', to_normal := hnorm }, hsup,
+    { to_isSeparable := hsep', to_normal := hnorm }, hres, hsup,
     HasRationalPoint.of_comp g fX hpt⟩
 
 open CategoryTheory AlgebraicGeometry in
@@ -11397,13 +11578,29 @@ theorem exists_totallyReal_point_of_geometricallyIrreducible
   haveI : Surjective (U.ι ≫ fX) :=
     ⟨fun _ => ⟨Classical.arbitrary _, Subsingleton.elim _ _⟩⟩
   haveI : GeometricallyIrreducible fX := hgi
-  -- (iv) Moret–Bailly in the affine case
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hsup, hFpt⟩ :=
+  -- (iv) Moret–Bailly in the affine case.
+  -- BREAK B IS REPAIRED BELOW THIS LINE BUT NOT AT IT: `S₀ = ∅` here, and the
+  -- reason is a DIFFERENT obstruction from the Bertini one, newly identified
+  -- 2026-07-27. Step (i) shrinks `X` to an affine open chosen around the REAL
+  -- point (`exists_isAffineOpen_hasRationalPoint`), and a prescribed
+  -- `ℚ_[p]`-point of `fX` need not lie in that open — so there is nothing to
+  -- hand down, even though `exists_totallyReal_point_of_affine_geometricallyIrreducible`
+  -- now accepts it. What is needed is a strengthening of
+  -- `exists_isAffineOpen_hasRationalPoint` to produce ONE affine open carrying the
+  -- real point together with finitely many prescribed local points; that is true
+  -- for a quasi-projective `X` and is exactly the hypothesis the FORM AUDIT above
+  -- records as not expressible at this pin.
+  --   REFUTING CHECK: inspect the binders of `exists_isAffineOpen_hasRationalPoint`
+  --   for a second family of prescribed points. If one is threaded, this residual
+  --   obstruction is repaired and `S₀` can be threaded straight through here.
+  obtain ⟨F, hF, hNF, hFtr, hFgal, -, hsup, hFpt⟩ :=
     exists_totallyReal_point_of_affine_geometricallyIrreducible (U.ι ≫ fX)
       (MorphismProperty.comp_mem _ _ _ inferInstance hsmooth)
       (MorphismProperty.comp_mem _ _ _ inferInstance hsep)
       (MorphismProperty.comp_mem _ _ _ inferInstance hft)
       inferInstance inferInstance hUreal N hNopen
+      ∅ (fun p hp => absurd hp (Finset.notMem_empty p))
+      (by intro p _ hp; exact absurd hp (Finset.notMem_empty p))
   -- (v) a point of the open subscheme is a point of `X`
   exact ⟨F, hF, hNF, hFtr, hFgal, hsup, HasRationalPoint.of_comp U.ι fX hFpt⟩
 

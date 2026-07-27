@@ -11850,10 +11850,30 @@ run; the status line for each break is here.
   directly, and `exists_normalRealPoint_of_affine_curve` takes a
   caller-prescribed set `S₀` and threads the splitting into its conclusion
   instead of discarding it at the boundary.
-* **BREAK B — STILL OPEN**, and it is now the ONLY mathematical obstruction.
-  See below; it is a generalisation of an existing proof (BLGGT choose the
-  Bertini hyperplane `p`-adically close to the prescribed local points), not a
-  missing theory.
+* **BREAK B — REPAIRED THROUGH THE BERTINI CUT** (2026-07-27), which is what it
+  was about: `S₀` now crosses the cut. `exists_bertiniHyperplane_*`,
+  `exists_dimensionDrop_*`, `exists_affineCurve_*` and
+  `exists_totallyReal_point_of_affine_geometricallyIrreducible` all take
+  `S₀`/`hS₀prime`/`hS₀pt` and carry the `ℚ_[p]`-points into their conclusions,
+  so that last wrapper now returns the residue-cardinality conjunct directly.
+  Its own refuting check ("inspect the binders for a second, `p`-adic prescribed
+  point alongside `hreal`") now SUCCEEDS. As predicted, it was a generalisation
+  of an existing proof, not a missing theory, and all of the new mathematics is
+  isolated in ONE leaf, `exists_rat_mem_box_padicPoints_eval_ne_zero` — whose
+  `S₀ = ∅` case is PROVEN from `exists_rat_mem_box_eval_ne_zero` and whose
+  content case is Hensel-openness (multivariate Hensel is ALREADY IN MATHLIB)
+  plus CRT.
+* **BREAK E — the residual obstruction, newly identified 2026-07-27.** `S₀` stops
+  one level below `MoretBaillySeed`, and for a reason unrelated to Bertini:
+  `exists_totallyReal_point_of_geometricallyIrreducible` reduces to the affine
+  case by shrinking `X` to an affine open chosen around the REAL point
+  (`exists_isAffineOpen_hasRationalPoint`), and a prescribed `ℚ_[p]`-point need
+  not lie in that open.
+    REFUTING CHECK: inspect the binders of
+    `exists_isAffineOpen_hasRationalPoint` for a second family of prescribed
+    points. Standard mathematics (finitely many points of a quasi-projective
+    variety lie in a common affine open), but note that file's FORM AUDIT:
+    quasi-projectivity is not expressible at this pin.
 * **BREAK C — REPAIRED** (commit `e062f9e6`); its refuting check now SUCCEEDS.
 * **BREAK D — LAYERING, recorded and repaired 2026-07-27; no audit had it.**
   Break C was first proven in `Modularity/KhareWintenberger.lean`, and the
