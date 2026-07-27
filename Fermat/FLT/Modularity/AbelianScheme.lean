@@ -1043,7 +1043,56 @@ over the LOCAL ring `𝒪_{D,I}` whatever the class of `𝔠`.
 `𝒩 = ∅` is legal and contentless, exactly as `𝒩 = ⊤` is legal and
 over-strong; that is deliberate. The set is a PARAMETER rather than a
 field so that the choice is visible in every consumer's TYPE and cannot
-drift silently — a consumer that wants content must name its levels. -/
+drift silently — a consumer that wants content must name its levels.
+
+**POSITIVITY GAP — THIS STRUCTURE IS NOT A POLARIZATION, AND THE
+PARAGRAPH ABOVE CONFLATES `Cl` WITH `Cl⁺` (audit 2026-07-27, PARI/GP
+confirmed).** Two corrections, and the second is load-bearing for
+`Modularity/KhareWintenberger.lean`'s split moduli leaves.
+
+*(1) There is no positivity anywhere in this structure.* Classically a
+polarization is `φ_L` for an AMPLE `L`; what is written here is `hom`
+additive, natural, `R`-linear, carrying torsion to torsion, with the
+induced pairing ALTERNATING (`weil_self`) and nondegenerate at `𝒩`. By
+Mumford (*Abelian Varieties* §23) "symmetric with `e^λ` alternating" is
+exactly "`λ = φ_L` for SOME line bundle `L`" — ampleness of `L` is the
+part that is missing, and it is the part no torsion-level, Weil-pairing
+or kernel condition can supply. Concretely `hom` and `-hom` satisfy
+every field of this structure simultaneously, and exactly one of a
+symmetric isomorphism / its negative is a polarization. **So this is a
+symmetric homomorphism `A ⟶ A^∨`, not a polarization**; the name is
+historical and is kept only because every consumer already spells it.
+
+*(2) Consequently the old all-ideals form pinned the WIDE class, not the
+NARROW one.* The paragraph above says `PolarizationStruct` in its first
+form forced a PRINCIPAL `𝒪_D`-polarization, hence `𝔠` trivial in
+`Cl⁺(D)`. That is wrong. Nondegeneracy at every `I` forces
+`ker hom = 0`, i.e. `hom` is a symmetric `𝒪_D`-linear ISOMORPHISM
+`A ≃ A^∨`; such an isomorphism is `λ_c` for a GENERATOR `c` of
+`𝔠 = Hom^{sym}_{𝒪_D}(A, A^∨)`, so it exists exactly when `𝔠` is trivial
+in the WIDE class group `Cl(D)` — with no constraint on its sign, hence
+none on its class in `Cl⁺(D)`.
+
+The two differ, and the discriminating witness is small: `D = ℚ(√3)` has
+`h(D) = 1` but `h⁺(D) = 2`, because the fundamental unit `2 + √3` has
+norm `+1`, so every unit is totally positive or totally negative and no
+element of mixed signature generates `𝒪_D`. `(√3)` therefore represents
+the nontrivial class of `Cl⁺(D) ≅ ℤ/2` while being trivial in
+`Cl(D) = 1`. (PARI/GP `bnfinit`/`bnrinit` at the infinite modulus, 2026-07-27:
+`√3, √6, √7, √11, √14, √19, √21, √22, √23` all have `h = 1`, `h⁺ = 2`,
+`N(fu) = +1`; `√15` has `h = 2`, `Cl⁺ ≅ (ℤ/2)²`; `√2, √5, √13, √17, √29`
+have `h⁺ = h = 1` because `N(fu) = -1`.)
+
+So an HBAV whose polarization module lies in the NONTRIVIAL narrow class
+of `ℚ(√3)` carries a `PolarizationStruct d 𝒩` for EVERY `𝒩`, including
+`𝒩 = ⊤` — the pre-repair form. Whatever the `𝒩` repair fixed, it did not
+create, and reverting it would not remove, the falsity recorded on
+`GaloisRepresentation.Modularity.HasSplitHilbertBlumenthalModuli`. The
+component of a Hilbert–Blumenthal moduli space is indexed by the narrow
+class, and **nothing expressible over this vocabulary sees it**; closing
+that gap needs an ampleness (or Rosati-positivity) notion on
+`AbelianSchemeStruct`, which is a cut-level piece of new machinery and
+has no owner. -/
 structure PolarizationStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {R : Type u} [CommRing R] {m : Mult ab R} (d : DualStruct ab m)
     (𝒩 : Set (Ideal R)) where
