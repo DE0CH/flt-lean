@@ -311,9 +311,9 @@ theorem is genuinely missing from the pin; the rest is available and is named he
 
 * `B` is a DOMAIN whenever `i ⁻¹ᵁ U` is nonempty: `IsIntegral Y` gives
   `IsIntegral.component_integral`, i.e. `IsDomain Γ(Y, V)` for every nonempty open `V`.  When
-  `i ⁻¹ᵁ U` is EMPTY, `B` is the trivial ring, the integral closure is everything, and the
-  algebra map is surjective, so the statement is immediate — that case must be split off
-  first.
+  `i ⁻¹ᵁ U` is EMPTY, `B` is the trivial ring — `instance {X : Scheme.{u}} : Subsingleton Γ(X, ⊥)`
+  in `Mathlib/AlgebraicGeometry/Scheme.lean` — the integral closure is everything, and the
+  algebra map is surjective, so the statement is immediate; that case must be split off first.
 * `B` embeds in the FUNCTION FIELD `L := Y.functionField`, injectively, by
   `Scheme.germToFunctionField_injective` (`Mathlib/AlgebraicGeometry/FunctionField.lean`).
 * `L` is the fraction field of the image `A'` of `A` in `B`: `i` is an open immersion, so
@@ -322,9 +322,13 @@ theorem is genuinely missing from the pin; the rest is available and is named he
   which is `L`.  `functionField_isFractionRing_of_isAffineOpen` is the affine form of this.
 * `A` is of FINITE TYPE over `K`, hence NOETHERIAN: `IsProper strP` gives
   `LocallyOfFiniteType strP`, and `HasRingHomProperty.appLE` reads that off at `U`.
-* Hence `integralClosure A B` injects, as an `A`-module, into `integralClosure A L`, and it is
-  enough to know that the latter is a FINITE `A`-module — a submodule of a finite module over a
-  Noetherian ring is finite.
+* Hence `integralClosure A B` injects, as an `A`-module, into `integralClosure A L` — the map is
+  `AlgHom.mapIntegralClosure`, which is already in the pin — and it is enough to know that the
+  latter is a FINITE `A`-module, since a submodule of a finite module over a Noetherian ring is
+  finite.
+* The final conversion is `RingHom.finiteType_algebraMap`
+  (`Mathlib/RingTheory/FiniteType.lean`): `(algebraMap A C).FiniteType ↔ Algebra.FiniteType A C`,
+  and `Module.Finite A C → Algebra.FiniteType A C`.
 
 So the one missing classical input, and the only thing a next owner has to import or prove, is
 
@@ -455,11 +459,32 @@ Only `≤ 1` is asked, so the EASY direction of the dimension theorem is not eno
 that has to be produced is the upper one.  Note `Y` is allowed to be empty, in which case
 `topologicalKrullDim Y = ⊥ ≤ 1`.
 
-IRREDUCIBLE at this pin: `Mathlib` relates `SmoothOfRelativeDimension n` to nothing
-dimension-theoretic — `grep -rn "SmoothOfRelativeDimension" Mathlib/` returns only
+**WHAT THE PIN DOES AND DOES NOT HAVE** (checked 2026-07-27; re-run these greps before
+believing them).  `Mathlib` relates `SmoothOfRelativeDimension n` to nothing
+dimension-theoretic: `grep -rn "SmoothOfRelativeDimension" Mathlib/` returns only
 `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` (the definition, `smooth`, base change,
-composition and the open-immersion instance) — and it has no
-`ringKrullDim (MvPolynomial (Fin n) K) = n` either.
+composition and the open-immersion instance), and there is no smooth-implies-regular result at
+all (`grep -rn "IsRegularLocalRing" Mathlib/RingTheory/Smooth/ Mathlib/AlgebraicGeometry/` is
+empty).  That is the gap.
+
+But three pieces that a proof needs ARE present, and a next owner should not go looking for
+them:
+
+* `MvPolynomial.ringKrullDim_of_isNoetherianRing`
+  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean`):
+  `ringKrullDim (MvPolynomial ι R) = ringKrullDim R + Nat.card ι`, so `dim K[x₁, …, x_m] = m`.
+* `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`): the module of differentials of a
+  standard smooth algebra of relative dimension `n` is free of rank `n`.
+* `AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` and
+  `Order.krullDim_eq_iSup_coheight`, which reduce `topologicalKrullDim Y ≤ 1` to a bound on
+  every stalk (`Modularity/KhareWintenberger.lean` packages exactly that reduction as its
+  PROVEN `krullDimLE_stalk_of_topologicalKrullDim_le` and
+  `topologicalKrullDim_eq_iSup_coheight`).
+
+So the missing step is specifically: for `S = K[x₁, …, x_m]/(f₁, …, f_{m-1})` with invertible
+Jacobian, `ringKrullDim S ≤ 1`.  The lower bound is Krull's height theorem; the upper bound is
+the one that needs the dimension theorem for finite-type `K`-algebras.
 
 RELATION TO `Modularity/KhareWintenberger.lean`: that file does NOT own this statement; it
 takes `hdim : topologicalKrullDim ↥C ≤ 1` as a HYPOTHESIS on every declaration in the cluster
