@@ -7541,7 +7541,7 @@ fully computable function of `N` — it is evaluated by `decide` in
 in the order of `kenkuLevels`.  It is NOT defined as the genus of the
 scheme `X`: no genus of a scheme, and no Riemann–Roch, exists at this
 pin.  The bridge from this number to the geometry of `X` is
-`injective_aj_of_one_le_x0Genus`, and that is a sorry node. -/
+`injective_aj_of_one_le_x0Genus_general`, and that is a sorry node. -/
 def x0Genus (N : ℕ) : ℤ :=
   (12 + (gammaZeroIndex N : ℤ) - 3 * numEllipticTwo N - 4 * numEllipticThree N
     - 6 * numCusps N) / 12
@@ -7640,35 +7640,78 @@ theorem finite_jacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     (jac : IsJacobianOf strX ab o) : Finite (RelPoint jstr (𝟙 SpecQ)) :=
   sorry
 
-/-- **Positive genus makes Abel–Jacobi injective on rational points**
-(sorry node) — the bridge from the arithmetic `x0Genus` to the geometry.
+/-- **Positive genus makes Abel–Jacobi injective on relative points, over
+every base and at every test object** (sorry node) — the bridge from the
+arithmetic `x0Genus` to the geometry.
 
 TRUE and classical, and it is the ONLY thing standing between
 `one_le_x0Genus_of_kenkuLevel` (proven above, by computation) and the
 `Injective` conjunct of `HasRankZeroJacobian`.  Two steps, deliberately
 bundled here because neither can be stated separately at this pin:
 
-* `x0Genus N` is the genus of `X` — the classical formula
-  (Diamond–Shurman, Theorem 3.1.1).  This cannot be stated as an
+* `x0Genus N` is the genus of the fibres of `xstr` — the classical
+  formula (Diamond–Shurman, Theorem 3.1.1).  This cannot be stated as an
   equation because there is no genus of a scheme in `Mathlib`; it is
   therefore absorbed into this leaf rather than left as a phantom.
-* a smooth proper geometrically connected curve of genus `≥ 1` has
-  injective Abel–Jacobi: if `aj x = aj y` with `x ≠ y` then `x − y` is
+* a smooth proper geometrically connected curve of genus `≥ 1` carrying
+  a section has `x ↦ [x] − [o]` a CLOSED IMMERSION into the Jacobian,
+  hence a monomorphism, hence injective on `T`-points for every `T`.
+  Contrapositively: `aj g x = aj g y` with `x ≠ y` makes `x − y`
   principal, so some function has a single simple pole, giving a degree
-  `1` map `X → ℙ¹`, i.e. genus `0`.  This is Riemann–Roch.
+  `1` map to `ℙ¹`, i.e. genus `0`.  This is Riemann–Roch.
 
 `hg` is load-bearing: at genus `0` the statement is FALSE, `X_0(1) = ℙ¹`
 having trivial Jacobian and infinitely many rational points.  `N` enters
-only through `hg` and `h`.
+only through `hg` and `hmodel`.
 
-IRREDUCIBLE at this pin: Riemann–Roch for curves does not exist in
-`Mathlib`. -/
+**Both generalisations are load-bearing**, and neither is available from
+the `Spec ℚ`-shaped statements elsewhere in this file.  The base `S` is
+arbitrary because `aj_injective_of_x0NeronDatum` applies this over
+`Spec ℤ_(ℓ)`; the test object `T` is arbitrary because the point that
+matters there is the CLOSED point `Spec 𝔽_ℓ ⟶ Spec ℤ_(ℓ)`, not `𝟙 S`.
+`HasRankZeroJacobian` carries the `Spec ℚ`, `T = S` case and cannot be
+specialised to either.
+
+**This is the merge of two rival forms** (2026-07-27, authorized).  A
+second declaration `injective_aj_of_x0Compactification` carried exactly
+this statement with `N ∈ kenkuLevels` in place of `hg`, together with a
+note that `kenkuLevels` was consumed ONLY to supply positivity of the
+genus and that "the hypothesis should become `1 ≤ x0Genus N` the moment
+such an invariant lands".  It had landed —
+`one_le_x0Genus_of_kenkuLevel`, proven above by `decide` — so the two
+were merged here under the weaker, arithmetic hypothesis, which is
+strictly the more general statement.  The name
+`injective_aj_of_x0Compactification` is gone; its consumer now applies
+this with `one_le_x0Genus_of_kenkuLevel N hlevel`.
+
+IRREDUCIBLE at this pin, and the axis searched is the GEOMETRIC one:
+Riemann–Roch, the genus of a scheme and `Pic⁰` are absent from the pin,
+from `~/cs/FLT` and from this development.  The ARITHMETIC axis — replace
+`1 ≤ genus` by a computable invariant of `N` so that positivity is a
+`decide` — has now been taken as far as it goes: that is exactly what
+`hg` is, and it removes the level from the statement without touching the
+Riemann–Roch residue. -/
+theorem injective_aj_of_one_le_x0Genus_general {N : ℕ} (_hg : 1 ≤ x0Genus N)
+    {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
+    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (jacZ : IsJacobianOf xstr abZ oZ) {T : Scheme.{0}} (g : T ⟶ S) :
+    Function.Injective (jacZ.aj g) :=
+  sorry
+
+/-- **Positive genus makes Abel–Jacobi injective on `ℚ`-rational points**
+(PROVEN 2026-07-27, as the `S = T = Spec ℚ`, `g = 𝟙` case of
+`injective_aj_of_one_le_x0Genus_general`).
+
+Kept as a separate name because `hasRankZeroJacobian_of_kenkuLevel` and
+the `HasRankZeroJacobian` interface are written over `Spec ℚ` at the
+identity test object; no call site moves. -/
 theorem injective_aj_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) : Function.Injective (jac.aj (𝟙 SpecQ)) :=
-  sorry
+  injective_aj_of_one_le_x0Genus_general hg h jac (𝟙 SpecQ)
 
 /-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the thirteen Kenku
 levels** (PROVEN, from four leaves — two of them closed here).
@@ -7687,7 +7730,7 @@ separated:
   `finite_jacobian_of_kenkuLevel`.
 
 The two remaining geometric leaves — `exists_jacobianOf_x0` and
-`injective_aj_of_one_le_x0Genus` — carry the objects `Mathlib` does not
+`injective_aj_of_one_le_x0Genus_general` — carry the objects `Mathlib` does not
 have (Albanese/`Pic⁰`, Riemann–Roch).  Neither is level-specific: they
 hold for every smooth proper geometrically connected curve, which is why
 splitting them out is worth doing even though they are still open. -/
@@ -7761,12 +7804,16 @@ theorem finite_algHom_of_finiteType (R A : Type) [CommRing R] [CommRing A] [Alge
       congrArg (fun t : MvPolynomial (Fin n) R →ₐ[R] R => t q) hcomp
   exact Finite.of_injective _ hinj
 
-/-- **The sections of a proper morphism to `Spec R` are cut out by ONE
-finite-type `R`-algebra** (sorry node — the scheme-theoretic half of
-`finite_relPoint_of_x0Compactification_finiteField`).
+/-- **The `R`-points of a proper morphism, over any base point, are cut
+out by ONE finite-type `R`-algebra** (sorry node — the scheme-theoretic
+half of `finite_relPoint_of_isProper`).
 
 TRUE, and this is the standard "finitely many points over a finite field"
-argument with the algebra factored out:
+argument with the algebra factored out.  `IsProper` is stable under base
+change (`AlgebraicGeometry.IsProper.isStableUnderBaseChange`), and the
+`R`-points of `f` over `g` are exactly the SECTIONS of the base change
+`Z ×_S Spec R ⟶ Spec R`, so it suffices to treat `S = Spec R`, `g = 𝟙`.
+Then:
 
 1. `IsProper f` gives `UniversallyClosed f`, hence `QuasiCompact f`
    (`AlgebraicGeometry.UniversallyClosed`'s instance at priority `900`),
@@ -7794,47 +7841,63 @@ assembly.  `CommAlgCat.{0} R` is used because an unbundled
 `∃ (A : Type) (_ : CommRing A) (_ : Algebra R A), …` cannot be written —
 the third binder needs the second as an instance.
 
-REMAINING WORK is entirely items 2–4; nothing modular appears anywhere in
-it, and nothing about `R` beyond `Finite R` is used.  The one place a
-real gap could hide is step 3 for NON-LOCAL `R`, i.e. composite `ℓ`; the
-consumer only ever supplies a prime `ℓ`, but the statement is kept at
-`Finite R` because that is the honest hypothesis and the component
-argument is routine. -/
+REMAINING WORK is the base change plus items 2–4; nothing modular appears
+anywhere in it, and nothing about `R` beyond `Finite R` is used.  The one
+place a real gap could hide is step 3 for NON-LOCAL `R`, i.e. composite
+`ℓ`; the consumers only ever supply a prime `ℓ`, but the statement is
+kept at `Finite R` because that is the honest hypothesis and the
+component argument is routine.
+
+**Why the base and the base point are arbitrary** (generalised
+2026-07-27, when the two rival forms of this cluster were merged).  The
+`𝔽_ℓ`-points consumer `finite_relPoint_of_x0Compactification_finiteField`
+wants `S = Spec 𝔽_ℓ`, `g = 𝟙`; the Néron-datum consumer
+`finite_specialFibre_of_x0NeronDatum` wants `S = Spec ℤ_(ℓ)` and `g` the
+CLOSED POINT `SpecLoc.special toF`, and no `IsX0Compactification` over
+`𝔽_ℓ` exists anywhere in `IsX0NeronDatum` for the sections-only form to
+be applied to.  Carrying the base change here — rather than in a second,
+rival leaf — is what lets both consumers share one open statement, and it
+keeps an elementary finiteness fact from resting on Deligne–Rapoport. -/
 theorem exists_finiteType_algHom_injection_of_isProper {R : Type} [CommRing R] [Finite R]
-    {X : Scheme.{0}} (f : X ⟶ Spec (CommRingCat.of R)) [IsProper f] :
+    {Z S : Scheme.{0}} (f : Z ⟶ S) [IsProper f] (g : Spec (CommRingCat.of R) ⟶ S) :
     ∃ A : CommAlgCat.{0} R, Algebra.FiniteType R A ∧
-      ∃ g : RelPoint f (𝟙 (Spec (CommRingCat.of R))) → (A →ₐ[R] R), Function.Injective g :=
+      ∃ h : RelPoint f g → (A →ₐ[R] R), Function.Injective h :=
   sorry
 
-/-- **A scheme proper over `Spec R` with `R` finite has finitely many
-sections** (PROVEN 2026-07-27, by decomposition).
+/-- **A scheme proper over `S` has finitely many points valued in a
+FINITE ring, at any base point** (PROVEN 2026-07-27, by decomposition).
 
 The assembly of `exists_finiteType_algHom_injection_of_isProper` (scheme
 theory) with `finite_algHom_of_finiteType` (algebra).  Stated over a
-general finite base ring, since neither half uses anything else.
+general finite coefficient ring and a general base point, since neither
+half uses anything else.
 
-**Note for the owner of `finite_specialFibre_of_x0NeronDatum`**, whose
-docstring records that it is "the SAME mathematics" as
-`finite_relPoint_of_x0Compactification_finiteField` but not shareable.
-It IS shareable, through this lemma rather than through that one — but it
-needs one generalisation, from SECTIONS to `R`-POINTS: what that leaf has
-is `d.spX (𝟙 _) (SpecLoc.special toF) rfl :
+**This is the single general form of what were two rival leaves**
+(consolidated 2026-07-27, authorized).  `finite_relPoint_of_isProper`
+covers both consumers in this file and both are one-liners below:
+
+* `finite_relPoint_of_x0Compactification_finiteField` is the case
+  `R = ZMod ℓ`, `S = SpecF ℓ`, `g = 𝟙`, `IsProper` from `h.isProper`;
+* `finite_relPoint_of_isProper_finiteField` — and through it
+  `finite_specialFibre_of_x0NeronDatum`, whose base is `Spec ℤ_(ℓ)` and
+  whose base point is the CLOSED point `SpecLoc.special toF` — is the
+  case `R = ZMod ℓ` with `S` and `g` left free.
+
+The second of those is why the base point had to be generalised rather
+than the sections form kept: what the Néron-datum leaf has is
+`d.spX (𝟙 _) (SpecLoc.special toF) rfl :
 RelPoint strX' (𝟙 (SpecF ℓ)) ≃ RelPoint xstr (SpecLoc.special toF)`,
-whose right-hand side is `Hom_{Spec ℤ_(ℓ)}(Spec 𝔽_ℓ, XZ)`, not a set of
-sections.  The general statement — `Finite (RelPoint f g)` for `f` proper
-and `g : Spec R ⟶ S` with `R` finite — reduces to this one by base
-change along `g`, since `IsProper` is stable under base change
-(`AlgebraicGeometry.IsProper.isStableUnderBaseChange`) and sections of
-the pullback are exactly the `R`-points of `f` over `g`.  So that leaf
-does NOT need "a lemma deducing `IsX0Compactification` from `d`", which
-is what its docstring names as the refuting check; it needs a pullback. -/
+whose right-hand side is `Hom_{Spec ℤ_(ℓ)}(Spec 𝔽_ℓ, XZ)` and not a set
+of sections.  It therefore does NOT need "a lemma deducing
+`IsX0Compactification` from `d`"; it needs a pullback, and that pullback
+now lives inside the one open leaf above rather than in a second one. -/
 theorem finite_relPoint_of_isProper {R : Type} [CommRing R] [Finite R]
-    {X : Scheme.{0}} (f : X ⟶ Spec (CommRingCat.of R)) [IsProper f] :
-    Finite (RelPoint f (𝟙 (Spec (CommRingCat.of R)))) := by
-  obtain ⟨A, hA, g, hg⟩ := exists_finiteType_algHom_injection_of_isProper f
+    {Z S : Scheme.{0}} (f : Z ⟶ S) [IsProper f] (g : Spec (CommRingCat.of R) ⟶ S) :
+    Finite (RelPoint f g) := by
+  obtain ⟨A, hA, h, hh⟩ := exists_finiteType_algHom_injection_of_isProper f g
   haveI := hA
   haveI : Finite ((A : Type) →ₐ[R] R) := finite_algHom_of_finiteType R A
-  exact Finite.of_injective g hg
+  exact Finite.of_injective h hh
 
 /-- **A curve proper over a finite field has finitely many rational
 points** (PROVEN 2026-07-27, by decomposition).
@@ -7864,7 +7927,7 @@ theorem finite_relPoint_of_x0Compactification_finiteField (N ℓ : ℕ) (hℓ : 
     Finite (RelPoint strX (𝟙 (SpecF ℓ))) := by
   haveI : NeZero ℓ := ⟨hℓ⟩
   haveI := h.isProper
-  exact finite_relPoint_of_isProper (R := ZMod ℓ) strX
+  exact finite_relPoint_of_isProper (R := ZMod ℓ) strX (𝟙 (SpecF ℓ))
 
 /-- **Eichler–Shimura: the special fibre has exactly `m` rational
 points, at the seven witness rows** (sorry node — the arithmetic half of
@@ -9864,66 +9927,29 @@ POINT, rather than manufacturing a special-fibre compactification, is
 what keeps this question elementary: the alternative route would have
 made an elementary finiteness fact depend on Deligne–Rapoport.
 
-**A merge is AVAILABLE and should be taken by whoever holds both.**  This
-statement subsumes `finite_relPoint_of_x0Compactification_finiteField`
-exactly — that leaf is the case `S = Spec 𝔽_ℓ`, `g = 𝟙`,
-`hf = h.isProper`, and its own docstring records that `isProper` is the
-only field of `IsX0Compactification` it consumes.  It is not merged here
-only because that declaration is another owner's and was in flight when
-this was written.
+**THE MERGE FLAGGED HERE HAS BEEN TAKEN** (2026-07-27, authorized, while
+integrating the two rival branches that produced this cluster).  This
+statement and `finite_relPoint_of_x0Compactification_finiteField` were
+independently-written forms of the same fact, and both are now one-liners
+over the single general leaf `finite_relPoint_of_isProper` — proper `f`,
+finite coefficient ring `R`, arbitrary base point `g`.  The generality
+argued for above is exactly what that leaf carries, so nothing is lost:
+`R := ZMod ℓ` and `hℓ` is used only to make `ZMod ℓ` finite.
 
-IRREDUCIBLE at this pin, and the axis searched is the SCHEME-THEORETIC
-one: `IsProper` is this development's own predicate, and neither the pin,
-nor `~/cs/FLT`, nor this tree has a "finite type over a finite ring
-implies finitely many sections" lemma.  NOT searched: an affine-local
-reduction written directly against `IsAffineOpen.isoSpec`,
-`IsOpenImmersion.lift` and the `ΓSpec` adjunction, which is how the
-sketch above would actually be mechanised and is the route a successor
-should try first. **The check that would refute this verdict**: such a
-lemma appearing in `Mathlib` under any name, or the affine-local
-reduction going through. -/
-theorem finite_relPoint_of_isProper_finiteField {ℓ : ℕ} (_hℓ : ℓ ≠ 0)
-    {Z S : Scheme.{0}} {f : Z ⟶ S} (_hf : IsProper f) (g : SpecF ℓ ⟶ S) :
-    Finite (RelPoint f g) :=
-  sorry
-
-/-- **Abel–Jacobi is injective on relative points at every Kenku level,
-over every base and at every test object** (sorry node — Riemann–Roch).
-
-TRUE: at `N ∈ kenkuLevels` the fibres of `X_0(N)` have genus `≥ 1` — the
-values, in the order of `kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5,
-5`, and the four sieve levels have genus `3, 4, 5, 5` (Magma,
-2026-07-27).  For a smooth proper geometrically connected curve of
-positive genus carrying a section, `x ↦ [x] − [o]` is a CLOSED IMMERSION
-into the Jacobian, hence a monomorphism, hence injective on `T`-points
-for every `T`.  Contrapositively: `aj g x = aj g y` with `x ≠ y` makes
-`x − y` principal, so some function has a single simple pole and the
-curve admits a degree-`1` map to `ℙ¹` — genus `0`.
-
-**Both generalisations are load-bearing**, and neither is available from
-the `Spec ℚ`-shaped statements already in this file.  The base `S` is
-arbitrary because the consumer below applies this over `Spec ℤ_(ℓ)`; the
-test object `T` is arbitrary because the point that matters there is the
-CLOSED point `Spec 𝔽_ℓ ⟶ Spec ℤ_(ℓ)`, not `𝟙 S`.  `HasRankZeroJacobian`
-carries the `Spec ℚ`, `T = S` case and cannot be specialised to either.
-
-IRREDUCIBLE at this pin, and the axis searched is the GEOMETRIC one:
-Riemann–Roch, the genus of a scheme and `Pic⁰` are absent from the pin,
-from `~/cs/FLT` and from this development.  NOT searched: an ARITHMETIC
-axis, in which `1 ≤ genus` is replaced by a computable invariant of `N`
-so that positivity is a `decide` rather than a theorem about the curve.
-That is the shape a successor should prefer, and `hN` is written as
-`N ∈ kenkuLevels` for exactly that reason: `kenkuLevels` is consumed
-ONLY to supply positivity of the genus, so the hypothesis should become
-`1 ≤ x0Genus N` the moment such an invariant lands, without touching
-anything else here. -/
-theorem injective_aj_of_x0Compactification {N : ℕ} (_hN : N ∈ kenkuLevels)
-    {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
-    {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
-    (_hmodel : IsX0Compactification N xstr ystr jZ)
-    (jacZ : IsJacobianOf xstr abZ oZ) {T : Scheme.{0}} (g : T ⟶ S) :
-    Function.Injective (jacZ.aj g) :=
-  sorry
+The earlier verdict — "IRREDUCIBLE at this pin, axis searched:
+SCHEME-THEORETIC; neither the pin, nor `~/cs/FLT`, nor this tree has a
+'finite type over a finite ring implies finitely many sections' lemma" —
+was right about `Mathlib` and wrong about irreducibility.  The residue is
+now split as `exists_finiteType_algHom_injection_of_isProper` (scheme
+theory, open: base change plus an affine-local reduction against
+`IsAffineOpen.isoSpec`, `IsOpenImmersion.lift` and the `ΓSpec`
+adjunction) and `finite_algHom_of_finiteType` (algebra, PROVEN). -/
+theorem finite_relPoint_of_isProper_finiteField {ℓ : ℕ} (hℓ : ℓ ≠ 0)
+    {Z S : Scheme.{0}} {f : Z ⟶ S} (hf : IsProper f) (g : SpecF ℓ ⟶ S) :
+    Finite (RelPoint f g) := by
+  haveI : NeZero ℓ := ⟨hℓ⟩
+  haveI := hf
+  exact finite_relPoint_of_isProper (R := ZMod ℓ) f g
 
 section SharpSieve
 
@@ -9955,16 +9981,26 @@ curve, no `N`, and no Néron datum in it — which is exactly what
 (`IsReductionBase.ne_zero`, proven above); `IsReductionBase`'s docstring
 derives full primality, but only nonvanishing is needed.
 
-**The route deliberately NOT taken.**  An earlier note here proposed
-discharging this leaf from
+**The route deliberately NOT taken, and the one that was.**  An earlier
+note here proposed discharging this leaf from
 `finite_relPoint_of_x0Compactification_finiteField` by first deducing
 `IsX0Compactification N strX' strY' j'` from `d` — that the special
 fibre of the model is again a compactification of the `Γ₀(N)`-problem.
 That is true and is the natural thing for the integral-model owner to
 produce, but it is the WRONG dependency for this leaf: it would make an
-elementary finiteness fact rest on Deligne–Rapoport.  Generalising the
-base POINT instead keeps the residue elementary, and is what the proof
-below does. -/
+elementary finiteness fact rest on Deligne–Rapoport.
+
+**Correction, 2026-07-27**: that note also recorded this leaf as sharing
+"the SAME mathematics" as
+`finite_relPoint_of_x0Compactification_finiteField` while being
+*unshareable* with it.  It IS shareable, and it now shares: what was
+needed was never a lemma deducing `IsX0Compactification` from `d`, but a
+generalisation of the SECTIONS statement to `R`-POINTS by base change
+along `g` (`AlgebraicGeometry.IsProper.isStableUnderBaseChange`; sections
+of the pullback are exactly the `R`-points of `f` over `g`).  That
+generalisation lives in `exists_finiteType_algHom_injection_of_isProper`,
+the single open leaf that both consumers now rest on, and it keeps the
+residue elementary — which is what the proof below relies on. -/
 theorem finite_specialFibre_of_x0NeronDatum
     (d : IsX0NeronDatum N ℓ R toF jac jac'
       (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
@@ -10000,7 +10036,7 @@ it is special to the sieve: the seven single-prime levels have positive
 genus too, and a successor proving `card_le_of_rankZeroJacobian` will
 want it there.
 
-**PROVEN 2026-07-27, over `injective_aj_of_x0Compactification`.**  The
+**PROVEN 2026-07-27, over `injective_aj_of_one_le_x0Genus_general`.**  The
 earlier verdict — "IRREDUCIBLE: the genus of a curve does not exist in
 this development in any form" — was right about the mathematics and
 wrong about the cut.  What the Néron datum contributes is not genus but
@@ -10015,7 +10051,13 @@ The residue that this factoring exposes, and which is worth saying: the
 missing theorem is needed at an ARBITRARY base and an ARBITRARY test
 object, not over `Spec ℚ` at the identity.  `HasRankZeroJacobian`
 carries only the latter, which is why nothing already in this file could
-be specialised to close this leaf. -/
+be specialised to close this leaf.
+
+`hlevel` is still `N ∈ kenkuLevels` here because the sieve's own
+interface is stated over the Kenku levels; it reaches the geometry only
+as `one_le_x0Genus_of_kenkuLevel N hlevel`, since the Abel–Jacobi leaf
+was moved onto the arithmetic hypothesis `1 ≤ x0Genus N` in the
+2026-07-27 consolidation. -/
 theorem aj_injective_of_x0NeronDatum (hlevel : N ∈ kenkuLevels)
     (d : IsX0NeronDatum N ℓ R toF jac jac'
       (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
@@ -10028,7 +10070,8 @@ theorem aj_injective_of_x0NeronDatum (hlevel : N ∈ kenkuLevels)
     rw [← d.spX_aj (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) x,
       ← d.spX_aj (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) y, hxy]
   exact (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).injective
-    (injective_aj_of_x0Compactification hlevel d.model jacZ (SpecLoc.special toF) hz)
+    (injective_aj_of_one_le_x0Genus_general (one_le_x0Genus_of_kenkuLevel N hlevel)
+      d.model jacZ (SpecLoc.special toF) hz)
 
 end SharpSieve
 
@@ -10180,7 +10223,7 @@ them showed is that neither was about the Néron datum at all.  Each
 reduced, by pure transport along the datum's `spX`/`spJ` equivalences, to
 a statement about the INTEGRAL MODEL over `Spec ℤ_(ℓ)` at its closed
 point — `finite_relPoint_of_isProper_finiteField` and
-`injective_aj_of_x0Compactification` respectively.  The lesson for the
+`injective_aj_of_one_le_x0Genus_general` respectively.  The lesson for the
 rest of this subsection is that the datum's role is to TRANSPORT
 questions from the special fibre to the model, and that the honest
 residue of a special-fibre leaf is almost always a base-general
@@ -11816,7 +11859,8 @@ the Jacobian and the reduction bound, and
 `y0HasNoRationalPoint_of_witnessPrime` is the criterion — stated
 honestly, with the cusp count entering as a count of `X(𝔽_ℓ)` and never
 as a hypothesis about `X(ℚ)`.  Its own remaining obligations are
-`finite_jacobian_of_kenkuLevel`, `injective_aj_of_one_le_x0Genus`,
+`finite_jacobian_of_kenkuLevel`,
+`injective_aj_of_one_le_x0Genus_general`,
 `card_le_of_rankZeroJacobian` and
 `exists_x0Compactification_mod_prime`. -/
 theorem y0HasNoRationalPoint_semiprime_of_mazurPrimes {p q : ℕ} (hp : p.Prime)
