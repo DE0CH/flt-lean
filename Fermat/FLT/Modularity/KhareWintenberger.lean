@@ -6663,12 +6663,20 @@ not identically zero. Since `p > 250d⁵ > 2d`, some `c ∈ 𝔽_p` avoids its z
 and dividing by it gives `F` monic. `deg g_i ≤ i` is then automatic from total
 degree `d`.
 
-WHY THE LINK IS A BARE EXISTENCE, and it matters. The shear moves points:
+WHY THE LINK IS COORDINATE-FREE, and it matters. The shear moves points:
 `(x, y)` is a zero of `F` exactly when `(x + cy, y)` is a zero of `g`. So the
 first coordinate is NOT preserved, and pinning a zero of `g` with first
-coordinate `x` would make this leaf — and its consumer — FALSE. The conclusion
-is therefore `∀ x y, F(x,y) = 0 → ∃ a, g(a) = 0`, which is exactly what
-`exists_stepanovAuxiliary`'s own `hlink` conjunct needs.
+coordinate `x` would make this leaf — and its consumer — FALSE. What IS
+preserved is the CARDINALITY, because a shear is a bijection of `𝔽_p²`; so the
+conclusion is stated as a count transport, valid for every `S`:
+
+    ∑_{x ∈ S} #{y : F(x,y) = 0}  ≤  #{a : g(a) = 0}.
+
+The left side counts the zeros of `F` lying over `S`, which are distinct points
+of `𝔽_p²`, and the shear injects them into the zeros of `g`. **The count, not
+merely nonemptiness, is what the Lang–Weil reduction downstream needs** — see
+the CUT-QUALITY AUDIT on `exists_bound_forall_zmodSolvable_of_planeCurveCount`
+for why an existence-only link is too weak to descend through a birational map.
 
 WHY NO FROBENIUS STEP. See the subsection header above: `p ∣ deg_Y g ≤ d < p`
 forces `deg_Y g = 0`, and `g ∈ 𝔽_p[X]` of total degree `d ≥ 2` is reducible over
@@ -6688,8 +6696,9 @@ theorem exists_stepanovNormalisation (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.
       (∀ i, (F.coeff i).natDegree ≤ d - i) ∧
       Irreducible (F.map (Polynomial.mapRingHom
         (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))) ∧
-      (∀ x y : ZMod p, (F.map (Polynomial.evalRingHom x)).eval y = 0 →
-        ∃ a : Fin 2 → ZMod p, MvPolynomial.eval a g = 0) :=
+      (∀ S : Finset (ZMod p), (∑ x ∈ S, (Finset.univ.filter
+          (fun y : ZMod p => (F.map (Polynomial.evalRingHom x)).eval y = 0)).card) ≤
+        (Finset.univ.filter (fun a : Fin 2 → ZMod p => MvPolynomial.eval a g = 0)).card) :=
   sorry
 
 /-- **ITEM 2b: THE DISCRIMINANT BOUND** (SORRY LEAF, cut 2026-07-27), Schmidt
@@ -6854,7 +6863,8 @@ theorem exists_stepanovAuxiliary (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prim
       r ≠ 0 ∧
       (∀ x ∈ A, ∀ j < M * mu1 x, (Polynomial.hasseDeriv j r).eval x = 0) ∧
       r.natDegree ≤ (d - 1) * p * M + p * (d * (d - 1)) ∧
-      (0 < ∑ x ∈ A, mu0 x → ∃ a : Fin 2 → ZMod p, MvPolynomial.eval a g = 0) := by
+      (∑ x ∈ A, mu0 x) ≤
+        (Finset.univ.filter (fun a : Fin 2 → ZMod p => MvPolynomial.eval a g = 0)).card := by
   classical
   -- Schmidt III §1: move the curve into the normal form `Y^d + g₁(X)Y^{d−1} + ⋯`.
   obtain ⟨F, hmon, hdegY, hcoeff, hirrF, hlinkF⟩ :=
@@ -6909,137 +6919,267 @@ theorem exists_stepanovAuxiliary (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prim
   · -- The vanishing clause is exactly Schmidt Lemma 5A(i).
     intro x hx j hj
     exact hrvan x (Finset.mem_filter.mp hx).2 j hj
-  · -- A rational point on the NORMALISED curve transports back to one on `g` —
-    -- with a different first coordinate, which is why the link is a bare existence.
-    intro hpos
-    obtain ⟨x, hxA, hx0⟩ := Finset.exists_ne_zero_of_sum_ne_zero hpos.ne'
-    obtain ⟨y, hy⟩ := Finset.card_pos.mp (Nat.pos_of_ne_zero hx0)
-    exact hlinkF x y (Finset.mem_filter.mp hy).2
+  · -- The zeros of the NORMALISED curve lying over `𝔄` inject into the zeros of
+    -- `g` — the shear moves the first coordinate but preserves cardinality.
+    exact hlinkF _
 
-/-- **ITEM 3: THE PLANE-CURVE CASE, NONEMPTINESS FORM** (PROVEN 2026-07-27 over
-item 1 and item 2 — this is Schmidt Chapter III §6, in the weakened form that is
-all the Lang–Weil reduction consumes).
+/-- **ITEM 3: THE PLANE-CURVE CASE, COUNTING FORM** (PROVEN 2026-07-27 over item
+1 and item 2 — Schmidt Chapter III §6, weakened from his Theorem IA to the
+crudest bound that still carries a `q`, namely `q ≤ 2N`).
 
-An absolutely irreducible `g ∈ 𝔽_p[X, Y]` of total degree `d ≥ 2` has an
-`𝔽_p`-point once `p > 250d⁵`.
+An absolutely irreducible `g ∈ 𝔽_p[X, Y]` of total degree `d ≥ 2` has at least
+`p/2` points over `𝔽_p` once `p > 250d⁵`.
 
-THE ARGUMENT, and where the lower bound comes from. Stepanov's method produces
-UPPER bounds on point counts, so the nonemptiness we want is not immediate. The
-lower bound is Schmidt's, and it is the reason his construction carries TWO
-algebraic functions: writing `N_k = ∑_{x ∈ 𝔄} |𝔐_k(x)|`, item 1 applied to the
-second auxiliary polynomial `r` bounds `N₂` ABOVE, while the fibrewise identity
-`|𝔐₁(x)| + |𝔐₂(x)| = d` bounds `N₁ + N₂` BELOW; together they bound `N₁` below.
-Concretely, if `N₁ = 0` then `N₂ = d·|𝔄|`, and item 1 with Lemma 5A(ii) gives
+WHY A COUNT AND NOT MERE NONEMPTINESS (restated 2026-07-27, and this replaced an
+earlier nonemptiness-only version of this leaf). Stepanov's method produces
+UPPER bounds, so a lower bound is not immediate; it comes from the fibrewise
+identity. Writing `N_k = ∑_{x ∈ 𝔄} |𝔐_k(x)|`, item 1 applied to the second
+auxiliary polynomial `r` bounds `N₂` ABOVE, while `|𝔐₁(x)| + |𝔐₂(x)| = d`
+together with `q − d(d−1) ≤ |𝔄|` bounds `N₁ + N₂` BELOW. Explicitly
 
-  `M·p ≤ p·d(d−1) + M·d²(d−1) < d²·p + d²·p = 2d²·p ≤ M·p`,
+  `M·N₁ ≥ M·p − p·d(d−1) − M·d²(d−1)`,
 
-using `(d−1)M < p` for the middle term and `2d² ≤ M` at the end — a
-contradiction. Note only the SECOND auxiliary function is needed for
-nonemptiness; Schmidt's `r₁` is what sharpens this to the full estimate
-`|N − q| < √2 d^{5/2} q^{1/2}`, which nothing downstream uses.
+and multiplying by `2d` and using `2d² ≤ M` on the middle term and
+`2d³(d−1) < 2d⁵ < p` on the last gives `p ≤ 2N₁` with room to spare. Since `N₁`
+counts zeros of the normalised curve lying over `𝔄`, and the shear of item 2a is
+a bijection of `𝔽_p²`, that is a lower bound for the zeros of `g` itself.
+
+**Nonemptiness alone would NOT do**, which is why this leaf was strengthened:
+the Lang–Weil reduction descends through a birational map whose exceptional
+locus already has `O(q^{e−1})` points, so it needs the main term, not just a
+point. See the CUT-QUALITY AUDIT on
+`exists_bound_forall_zmodSolvable_of_planeCurveCount`.
+
+The constant `2` is not tuned: the truth is `N = q + O(d^{5/2}√q)`, so any fixed
+constant `> 1` holds for `p > 250d⁵`, and `2` is simply the smallest integer one
+that the `ℕ`-arithmetic above closes with no case split.
 
 `p > 250d⁵` is Schmidt's hypothesis verbatim and is not tuned here. -/
-theorem exists_zero_of_absolutelyIrreducible_plane (d : ℕ) (hd : 2 ≤ d)
+theorem exists_count_of_absolutelyIrreducible_plane (d : ℕ) (hd : 2 ≤ d)
     (p : ℕ) [Fact p.Prime] (hp : 250 * d ^ 5 < p)
     (g : MvPolynomial (Fin 2) (ZMod p)) (hdeg : g.totalDegree = d)
     (hirr : Irreducible (MvPolynomial.map
       (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) g)) :
-    ∃ a : Fin 2 → ZMod p, MvPolynomial.eval a g = 0 := by
+    p ≤ 2 * (Finset.univ.filter
+      (fun a : Fin 2 → ZMod p => MvPolynomial.eval a g = 0)).card := by
   classical
   obtain ⟨M, A, mu0, mu1, r, hM2, hMp, hcard, hmu, hr0, hrvan, hrdeg, hlink⟩ :=
     exists_stepanovAuxiliary d hd p hp g hdeg hirr
-  refine hlink ?_
   -- Item 1, applied to `r` with the varying vanishing order `M * mu1 x`.
   have hcount : M * (∑ x ∈ A, mu1 x) ≤ r.natDegree := by
     rw [Finset.mul_sum]
     exact sum_le_natDegree_of_hasseDeriv_vanishing r hr0 A (fun x => M * mu1 x) hrvan
-  -- Suppose no `x ∈ 𝔄` carried a rational point, i.e. `N₁ = 0`.
-  by_contra hzero
-  have hzero' : ∑ x ∈ A, mu0 x = 0 := Nat.eq_zero_of_not_pos hzero
-  have hmu0 : ∀ x ∈ A, mu0 x = 0 := by
-    intro x hx
-    exact Nat.eq_zero_of_le_zero (hzero' ▸ Finset.single_le_sum (fun y _ => Nat.zero_le _) hx)
-  have hs1 : ∑ x ∈ A, mu1 x = A.card * d := by
-    have hall : ∀ x ∈ A, mu1 x = d := by
-      intro x hx
-      have h := hmu x hx
-      rw [hmu0 x hx] at h
-      omega
-    rw [Finset.sum_congr rfl hall, Finset.sum_const, smul_eq_mul]
-  rw [hs1] at hcount
+  -- The fibrewise identity, summed over `𝔄`.
+  have hsum : (∑ x ∈ A, mu0 x) + (∑ x ∈ A, mu1 x) = A.card * d := by
+    rw [← Finset.sum_add_distrib, Finset.sum_congr rfl hmu, Finset.sum_const, smul_eq_mul]
+  -- It suffices to bound `N₁ = ∑ mu0` below by `p / 2`; the shear then transports it.
+  refine le_trans ?_ (Nat.mul_le_mul_left 2 hlink)
+  set N1 : ℕ := ∑ x ∈ A, mu0 x with hN1
+  set N2 : ℕ := ∑ x ∈ A, mu1 x with hN2
+  clear_value N1 N2
+  clear hlink hrvan hmu hr0
   -- The rest is arithmetic in `ℕ`.  Write `d = e + 1` to clear the truncated
   -- subtractions.
   obtain ⟨e, rfl⟩ : ∃ e, d = e + 1 := ⟨d - 1, by omega⟩
-  simp only [Nat.add_sub_cancel] at hMp hcard hrdeg hM2
-  have hppos : 0 < p := Nat.pos_of_ne_zero (fun h => by simp [h] at hp)
-  have h1 : M * (A.card * (e + 1)) ≤ e * p * M + p * ((e + 1) * e) :=
-    le_trans hcount hrdeg
-  have h2 : M * (e + 1) * p ≤ M * (e + 1) * (A.card + (e + 1) * e) :=
-    Nat.mul_le_mul_left _ hcard
-  have h3 : M * (e + 1) * p ≤ e * p * M + p * ((e + 1) * e) + M * (e + 1) * ((e + 1) * e) := by
-    calc M * (e + 1) * p
-        ≤ M * (e + 1) * (A.card + (e + 1) * e) := h2
-      _ = M * (A.card * (e + 1)) + M * (e + 1) * ((e + 1) * e) := by ring
-      _ ≤ (e * p * M + p * ((e + 1) * e)) + M * (e + 1) * ((e + 1) * e) :=
-          Nat.add_le_add_right h1 _
-  -- Cancel `e * p * M` from both sides.
-  have h4 : M * p ≤ p * ((e + 1) * e) + M * (e + 1) * ((e + 1) * e) := by
+  simp only [Nat.add_sub_cancel] at hM2 hMp hcard hrdeg
+  have hMpos : 0 < M := by nlinarith
+  have hppos : 0 < p := by omega
+  -- `M N₂ ≤ e p M + p (e+1) e`, Lemma 5A(ii) through item 1.
+  have h1 : M * N2 ≤ e * p * M + p * ((e + 1) * e) := le_trans hcount hrdeg
+  -- `M (e+1) p ≤ M (N₁ + N₂) + M (e+1)² e`, from `p ≤ |𝔄| + (e+1)e`.
+  have h2 : M * (e + 1) * p ≤ M * (N1 + N2) + M * ((e + 1) ^ 2 * e) := by
+    calc M * (e + 1) * p ≤ M * (e + 1) * (A.card + (e + 1) * e) :=
+          Nat.mul_le_mul_left _ hcard
+      _ = M * (A.card * (e + 1)) + M * ((e + 1) ^ 2 * e) := by ring
+      _ = M * (N1 + N2) + M * ((e + 1) ^ 2 * e) := by rw [hsum]
+  -- Cancel `e p M`, leaving `M p ≤ M N₁ + p (e+1) e + M (e+1)² e`.
+  have h3 : M * p ≤ M * N1 + p * ((e + 1) * e) + M * ((e + 1) ^ 2 * e) := by
     have hexp : M * (e + 1) * p = e * p * M + M * p := by ring
+    have hexp2 : M * (N1 + N2) = M * N1 + M * N2 := by ring
     omega
-  -- `(d−1)M < p` and `2d² ≤ M` make the right-hand side strictly smaller.
-  have h5 : p * ((e + 1) * e) < (e + 1) ^ 2 * p := by
-    have hlt : (e + 1) * e < (e + 1) ^ 2 := by simp [pow_two]
-    calc p * ((e + 1) * e) < p * ((e + 1) ^ 2) := mul_lt_mul_of_pos_left hlt hppos
-      _ = (e + 1) ^ 2 * p := by ring
-  have h6 : M * (e + 1) * ((e + 1) * e) < (e + 1) ^ 2 * p := by
-    calc M * (e + 1) * ((e + 1) * e) = (e + 1) ^ 2 * (e * M) := by ring
-      _ < (e + 1) ^ 2 * p := mul_lt_mul_of_pos_left hMp (by positivity)
-  have h7 : 2 * ((e + 1) ^ 2 * p) ≤ M * p := by
-    calc 2 * ((e + 1) ^ 2 * p) = (2 * (e + 1) ^ 2) * p := by ring
-      _ ≤ M * p := Nat.mul_le_mul hM2 (le_refl p)
-  omega
+  -- Multiply by `2(e+1)`; `2d² ≤ M` absorbs the first error term and
+  -- `2d³(d−1) < 2d⁵ < p` absorbs the second.
+  have hB : 2 * (e + 1) ^ 2 * (e * p) ≤ M * (e * p) := Nat.mul_le_mul_right _ hM2
+  have hC : 2 * ((e + 1) ^ 3 * e) ≤ p := by
+    have hpow : (e + 1) ^ 4 ≤ (e + 1) ^ 5 := Nat.pow_le_pow_right (by omega) (by omega)
+    have hstep : 2 * ((e + 1) ^ 3 * e) ≤ 2 * (e + 1) ^ 4 := by
+      calc 2 * ((e + 1) ^ 3 * e) ≤ 2 * ((e + 1) ^ 3 * (e + 1)) :=
+            Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ (by omega))
+        _ = 2 * (e + 1) ^ 4 := by ring
+    omega
+  have hD : M * (2 * ((e + 1) ^ 3 * e)) ≤ M * p := Nat.mul_le_mul_left _ hC
+  have h4 : 2 * (e + 1) * (M * p)
+      ≤ 2 * (e + 1) * (M * N1) + M * (e * p) + M * p := by
+    have hmul := Nat.mul_le_mul_left (2 * (e + 1)) h3
+    have hr1 : 2 * (e + 1) * (M * N1 + p * ((e + 1) * e) + M * ((e + 1) ^ 2 * e))
+        = 2 * (e + 1) * (M * N1) + 2 * (e + 1) ^ 2 * (e * p)
+          + M * (2 * ((e + 1) ^ 3 * e)) := by ring
+    omega
+  -- `2(e+1) M p = e M p + M p + (e+1) M p`, so the two error terms cancel exactly.
+  have h5 : (e + 1) * (M * p) ≤ (e + 1) * (2 * (M * N1)) := by
+    have hexp : 2 * (e + 1) * (M * p) = M * (e * p) + M * p + (e + 1) * (M * p) := by ring
+    have hexp2 : 2 * (e + 1) * (M * N1) = (e + 1) * (2 * (M * N1)) := by ring
+    omega
+  have h6 : M * p ≤ 2 * (M * N1) := Nat.le_of_mul_le_mul_left h5 (by omega)
+  have h7 : M * p ≤ M * (2 * N1) := by
+    have hrw : 2 * (M * N1) = M * (2 * N1) := by ring
+    omega
+  exact Nat.le_of_mul_le_mul_left h7 hMpos
 
-/-- **ITEMS 4 AND 5: BERTINI OVER FINITE FIELDS, AND THE LANG–WEIL INDUCTION**
-(SORRY LEAF, cut 2026-07-27). Everything that remains between the plane-curve
-case and this file's Lang–Weil leaf.
+/-! #### Items 4 and 5, and a CUT-QUALITY AUDIT of the leaf they replaced
 
-The plane-curve nonemptiness of item 3 is taken as a HYPOTHESIS rather than
-applied inside, so that this leaf is exactly "the reduction", provable by
-someone who takes the curve case as given. The consumer below discharges the
-hypothesis with `exists_zero_of_absolutelyIrreducible_plane`.
+**The leaf here used to be `exists_bound_forall_zmodSolvable_of_planeCurveNonempty`,
+whose hypothesis was plane-curve NONEMPTINESS. It was restated on 2026-07-27
+because that hypothesis is too weak to drive its own intended proof — a
+DECORATIVE hypothesis, logically harmless (it is a true statement, so the leaf
+was true) but useless to a prover, who would have had to reprove the whole of
+Lang–Weil from scratch anyway.**
 
-WHAT IS LEFT, in Schmidt's numbering (same book, later chapters):
+Here is the arithmetic, which is the checkable part. Schmidt's route has two
+halves, and they behave differently:
 
-* Chapter V — Theorem 4B/4C and Theorem 5A: from plane curves to an absolutely
-  irreducible hypersurface `f(X₁,…,X_n) = 0`, via BERTINI (his §1, by
-  elimination theory) plus E. Noether's Theorem 2A on the forms cutting out the
-  absolutely-irreducible locus. Theorem 5A reads
-  `|N − q^{n−1}| < q^{n−2}(√2 d^{5/2} q^{1/2} + 2d^{c})`.
-* Chapter VI — Theorem 7A and Lemmas 7B/7C: the induction on dimension from
-  hypersurfaces to a general variety, which is where the SYSTEM `f : Fin m → …`
-  of this leaf (as opposed to a single equation) is handled, together with the
-  passage from `Ideal.IsPrime` of the radical over `AlgebraicClosure (ZMod p)`
-  to absolute irreducibility of a defining equation.
+* **Item 4 (Chapter V, plane → hypersurface) survives on nonemptiness.** The
+  proof averages over the `A` two-dimensional linear manifolds `M ⊆ 𝔽_q^n`. Each
+  point lies on exactly `μ` of them and each manifold carries `q²` points, so
+  `A q² = q^n μ` and `N = μ⁻¹ ∑_M N(M)`. Bertini (his Theorem 4C) bounds the bad
+  manifolds by `B/A ≤ ψ(d)/q`. Using only `N(M) ≥ 1` on good manifolds,
+
+      N ≥ (A − B)/μ = (1 − B/A)·q^{n−2} ≥ (1 − ψ/q)·q^{n−2} > 0,
+
+  which is one power of `q` short of the truth `q^{n−1}` but still positive.
+* **Item 5 (Chapter VI, hypersurface → variety) does NOT.** Its proof (Theorem
+  7A via Lemmas 7B/7C) replaces the variety `V` of dimension `e` by a
+  BIRATIONALLY equivalent hypersurface `S`, with proper closed `L ⊆ V`,
+  `M ⊆ S` such that `V ∖ L ≅ S ∖ M`. So `N(V) ≥ N(S) − N(M)`, and Lemma 7C only
+  gives `N(M) = O(q^{e−1})`. A hypothesis `N(S) ≥ 1` is worth nothing against
+  an error term of size `q^{e−1}`: the descent needs `N(S) ≳ q^e`, i.e. the
+  MAIN TERM. There is no count-free route — the exceptional locus is exactly
+  what a birational map cannot see.
+
+So the repair is upstream, and it is the one carried out on 2026-07-27: item 2's
+link conjunct and item 2a's normalisation link now transport the point COUNT
+rather than an existence, item 3 is `exists_count_of_absolutelyIrreducible_plane`
+(`p ≤ 2N`), and both leaves below are stated on counts. The count costs nothing
+extra: it falls out of the same `exists_stepanovAuxiliary` data with `2d² ≤ M`.
+
+THE CHECK THAT WOULD REFUTE THIS AUDIT: exhibit a proof of Schmidt VI Theorem 7A
+that does not pass through a birational model — e.g. one that intersects `V`
+with hyperplanes down to a curve and applies the plane case directly. That fails
+for the same reason (the projection of the curve to a plane curve is birational,
+not injective), but a different reduction would refute the audit outright.
 
 Note the bound `B` must depend only on `f`, never on `p`; that is legitimate
 because `n`, `m` and the degrees of the `f i` are fixed, and it is exactly what
 makes the numeric-bound conclusion (rather than a density statement) available.
-See the parent leaf's docstring for why no density weakening is possible.
+See the parent leaf's docstring for why no density weakening is possible. -/
 
-`hcurve` is restricted to `2 ≤ d` because Schmidt's Theorem IA is trivial at
-`d = 1` — a nonzero linear equation over `𝔽_p` always has a solution — so the
-consumer of this leaf must handle degree-one slices itself. -/
-theorem exists_bound_forall_zmodSolvable_of_planeCurveNonempty
+/-- **ITEM 4: BERTINI OVER FINITE FIELDS** (SORRY LEAF, cut 2026-07-27) —
+Schmidt Chapter V, Theorems 4B/4C and 5A: from PLANE curves to an absolutely
+irreducible HYPERSURFACE in `N` variables.
+
+Given the plane-curve count, an absolutely irreducible `h ∈ 𝔽_p[X₁,…,X_N]` of
+total degree `d` has at least `c⁻¹ p^{N−1}` points over `𝔽_p`, for all `p` past
+a bound depending only on `N` and `d`.
+
+THE ARGUMENT is the averaging displayed in the subsection header, run with the
+plane count `N(M) ≥ q/2` rather than with `N(M) ≥ 1`: it then yields
+`N ≥ (1 − ψ/q)·q^{N−1}/2`, so `c = 4` works once `q > 2ψ`. The constant is left
+existential here because `ψ(d)` is Schmidt's `2d^κ` and pinning it buys nothing
+— every consumer only needs SOME constant.
+
+WHAT IS ACTUALLY MISSING. Two things, both Chapter V and both elementary:
+Bertini's irreducibility theorem in the counting form of his Theorem 4C (proved
+by ELIMINATION THEORY in his §1 — no schemes, no generic smoothness), and E.
+Noether's Theorem 2A on the forms cutting out the absolutely-irreducible locus,
+which is what makes "bad manifold" a constructible condition of bounded degree.
+
+DEGENERATE `N` ARE IN SCOPE AND ARE CHEAP, so a prover should dispose of them
+first rather than be surprised by them: at `N = 0` no element of
+`MvPolynomial (Fin 0) 𝔽̄_p ≅ 𝔽̄_p` is irreducible (units and `0` only), so the
+hypothesis is vacuous; at `N = 1` absolute irreducibility over an algebraically
+closed field forces `d = 1`, giving exactly one root and `p⁰ = 1 ≤ c`; at
+`N = 2` the statement IS `hcurve` for `d ≥ 2`, is a nonzero linear form for
+`d = 1` (exactly `p` zeros), and vacuous for `d = 0`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_bound_forall_hypersurfaceCount_of_planeCurveCount
+    (hcurve : ∀ (d : ℕ), 2 ≤ d → ∀ (p : ℕ) [Fact p.Prime], 250 * d ^ 5 < p →
+      ∀ g : MvPolynomial (Fin 2) (ZMod p), g.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) g) →
+        p ≤ 2 * (Finset.univ.filter
+          (fun a : Fin 2 → ZMod p => MvPolynomial.eval a g = 0)).card)
+    (N d : ℕ) :
+    ∃ B c : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      ∀ h : MvPolynomial (Fin N) (ZMod p), h.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
+        p ^ (N - 1) ≤ c * (Finset.univ.filter
+          (fun a : Fin N → ZMod p => MvPolynomial.eval a h = 0)).card :=
+  sorry
+
+/-- **ITEM 5: THE LANG–WEIL INDUCTION ON DIMENSION** (SORRY LEAF, cut
+2026-07-27) — Schmidt Chapter VI §7, Theorem 7A via Lemmas 7B and 7C: from
+hypersurfaces to a general variety, which is where the SYSTEM `f : Fin m → …`
+(as opposed to a single equation) is handled.
+
+The hypersurface COUNT of item 4 is taken as a HYPOTHESIS rather than applied
+inside, so that this leaf is exactly "the reduction", provable by someone who
+takes the hypersurface case as given. The consumer below discharges it with
+`exists_bound_forall_hypersurfaceCount_of_planeCurveCount`.
+
+WHAT IS LEFT: the passage from `Ideal.IsPrime` of the radical over
+`AlgebraicClosure (ZMod p)` to an absolutely irreducible defining EQUATION —
+i.e. Schmidt's Theorem 4D, that every variety is birationally equivalent to a
+hypersurface — the induction on dimension itself, and Lemma 7C's upper bound
+`N(W) = O(q^{dim W})` for the lower-dimensional pieces, which is his Chapter IV
+§3 "elementary upper bounds" and needs no input from item 4.
+
+ONE THING THE LITERATURE DOES NOT GIVE YOU DIRECTLY, and it is the reason this
+leaf is not simply "cite Theorem 7A": Schmidt's Theorem 7A is ASYMPTOTIC IN THE
+FIELD EXTENSION — `N_v = q^{vd} + o(q^{v(d−1/2)})` as `v → ∞` over `𝔽_{q^v}` for
+a FIXED base — with implied constants depending on the variety over that base.
+The statement needed here is uniform in `p` for a FIXED integral system, which
+is a different quantifier order. The bridge is spreading out: the birational
+model and the exceptional loci are defined over `ℤ[1/D]` for a single `D`
+depending only on `f`, so one construction serves every `p > D`. Chapter V's
+Theorem 5A, by contrast, IS already uniform (its constant depends only on `N`
+and `d`), which is why item 4 above needs no such care.
+
+CIRCULARITY GUARD: inherited from the parent; no Galois representation, no
+modular form, nothing from `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_bound_forall_zmodSolvable_of_hypersurfaceCount
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hhyp : ∀ (N d : ℕ), ∃ B c : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      ∀ h : MvPolynomial (Fin N) (ZMod p), h.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
+        p ^ (N - 1) ≤ c * (Finset.univ.filter
+          (fun a : Fin N → ZMod p => MvPolynomial.eval a h = 0)).card) :
+    ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime →
+      IntegralSystemSolvable f (ZMod p) :=
+  sorry
+
+/-- **ITEMS 4 AND 5, ASSEMBLED** (PROVEN 2026-07-27): the Bertini-plus-induction
+reduction, with the plane-curve COUNT granted. This is the leaf that used to be
+`exists_bound_forall_zmodSolvable_of_planeCurveNonempty`; see the subsection
+header above for why its hypothesis had to be strengthened from nonemptiness to
+a count. -/
+theorem exists_bound_forall_zmodSolvable_of_planeCurveCount
     {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
     (hcurve : ∀ (d : ℕ), 2 ≤ d → ∀ (p : ℕ) [Fact p.Prime], 250 * d ^ 5 < p →
       ∀ g : MvPolynomial (Fin 2) (ZMod p), g.totalDegree = d →
         Irreducible (MvPolynomial.map
           (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) g) →
-        ∃ a : Fin 2 → ZMod p, MvPolynomial.eval a g = 0) :
+        p ≤ 2 * (Finset.univ.filter
+          (fun a : Fin 2 → ZMod p => MvPolynomial.eval a g = 0)).card) :
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
       (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime →
       IntegralSystemSolvable f (ZMod p) :=
-  sorry
+  exists_bound_forall_zmodSolvable_of_hypersurfaceCount f
+    (fun N d => exists_bound_forall_hypersurfaceCount_of_planeCurveCount hcurve N d)
 
 /-- **LANG–WEIL, NONEMPTINESS FORM, WITH THE SCHEME LAYER STRIPPED OFF** (cut
 2026-07-26 out of
@@ -7149,25 +7289,32 @@ five-item route is realised in the file rather than merely described):
   `stepanov_derivative_ne_zero_of_monic` — the last of which removes Schmidt's
   Frobenius-descent step entirely, since `p ∣ deg_Y g ≤ d < p` forces
   separability in `Y` for free.
-* item 3 — `exists_zero_of_absolutelyIrreducible_plane`: **PROVEN** over items
-  1 and 2. This is where the two-auxiliary-function trick converts Stepanov's
-  upper bounds into the lower bound that nonemptiness needs.
-* items 4 and 5 — `exists_bound_forall_zmodSolvable_of_planeCurveNonempty`:
-  **OPEN**, and it takes item 3's conclusion as a hypothesis, so it is exactly
-  "the Bertini-plus-induction reduction" with the curve case granted.
+* item 3 — `exists_count_of_absolutelyIrreducible_plane`: **PROVEN** over items
+  1 and 2, in the COUNTING form `p ≤ 2N`. It was `…_zero_…`, nonemptiness only,
+  until 2026-07-27; see the CUT-QUALITY AUDIT above items 4 and 5 for why that
+  had to be strengthened, and note the strengthening cost nothing — the same
+  `exists_stepanovAuxiliary` data gives the count once `2d² ≤ M` is used.
+* item 4 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`: **OPEN**.
+  Schmidt Chapter V: Bertini by elimination theory, plus averaging over
+  2-dimensional linear manifolds. Elementary and uniform in `q`.
+* item 5 — `exists_bound_forall_zmodSolvable_of_hypersurfaceCount`: **OPEN**.
+  Schmidt Chapter VI §7: birational reduction to a hypersurface and induction on
+  dimension. This is the one that needs spreading out, because Schmidt's own
+  Theorem 7A is asymptotic in the field extension rather than uniform in `p`.
 
-So after the 2026-07-27 decomposition of item 2 the remaining open leaves under
-this node are `exists_stepanovNormalisation`, `exists_stepanovDiscriminant`,
-`exists_stepanovNormPolynomial` and
-`exists_bound_forall_zmodSolvable_of_planeCurveNonempty`; the glue between them
-is written and compiles, and this leaf itself has nothing left to prove.
+So after the 2026-07-27 work the remaining open leaves under this node are
+`exists_stepanovNormalisation`, `exists_stepanovDiscriminant`,
+`exists_stepanovNormPolynomial`,
+`exists_bound_forall_hypersurfaceCount_of_planeCurveCount` and
+`exists_bound_forall_zmodSolvable_of_hypersurfaceCount`; all the glue between
+them is written and compiles, and this leaf itself has nothing left to prove.
 
 NOTE ON THE FREE-FLOATING RULE, and how it was discharged: proven bricks stacked
 in front of a sorried consumer are free-floating and not allowed here, so item 1
 could not land until item 3's skeleton existed to consume it. That is why the
 skeleton above was written top-down — items 3, 4/5 and the glue first, then item
 1 proven inside item 3 — rather than starting from item 1. Item 1 is now
-consumed by `exists_zero_of_absolutelyIrreducible_plane`, which is consumed by
+consumed by `exists_count_of_absolutelyIrreducible_plane`, which is consumed by
 this leaf.
 
 CIRCULARITY GUARD: inherited from the parent; this mentions no Galois
@@ -7178,9 +7325,9 @@ theorem exists_bound_forall_zmodSolvable_of_irreducibleFibre
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
       (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime →
       IntegralSystemSolvable f (ZMod p) :=
-  exists_bound_forall_zmodSolvable_of_planeCurveNonempty f
+  exists_bound_forall_zmodSolvable_of_planeCurveCount f
     (fun d hd p _ hp g hdeg hirr =>
-      exists_zero_of_absolutelyIrreducible_plane d hd p hp g hdeg hirr)
+      exists_count_of_absolutelyIrreducible_plane d hd p hp g hdeg hirr)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Lang–Weil, NONEMPTINESS FORM** (PROVEN 2026-07-26 over the two leaves
