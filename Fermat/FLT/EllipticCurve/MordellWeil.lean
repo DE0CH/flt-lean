@@ -279,15 +279,15 @@ PROVEN: strip the Weierstrass API and the rationals off the statement. With
 one. So `curve11a3_rational_points` is now a corollary of the single integer
 statement `integral_leaf` below.
 
-WHAT REMAINS, and it is unchanged in substance: the two routes are (i) the
-`5`-isogeny descent, whose descent map is `α(P) = f(P)` for
-`f = y + x² + xy` with `div(f) = 5(T) − 5(O)` — that side is trivial, but the
-DUAL side is `H¹(ℚ, ℤ/5)`, i.e. cyclic quintic extensions unramified outside
-`{5, 11}` cut out by local conditions, which needs class field theory; or
-(ii) a `2`-descent over the cubic field `ℚ[s]/(s³ − 2s² + 2)` — the `2`-division
-field, of discriminant `−44` — which needs that field's class group and unit
-group (unit rank `1`). Neither is in the pin, and neither is a `gcd` argument.
-Whoever takes `integral_leaf` should expect to build one of them. -/
+WHAT REMAINS is the rank-`0` statement itself. The two candidate routes — the
+`5`-isogeny descent, whose dual side is `H¹(ℚ, ℤ/5)` and so needs class field
+theory, and a `2`-descent over the cubic `2`-division field
+`ℚ[s]/(s³ − 2s² + 2)` — are audited under `integral_leaf` below. That audit was
+redone on 2026-07-27 with the cubic field's arithmetic actually COMPUTED rather
+than guessed, and it CORRECTS the previous version of this paragraph in both
+directions: the class-group/unit-group half of route (ii) is *cheap* (one
+mathlib lemma, no ideal enumeration), and the genuinely expensive ingredient is
+one this docstring did not name. -/
 
 namespace MazurLevel11
 
@@ -309,8 +309,104 @@ CHECKED EXTERNALLY (PARI/GP, untrusted searcher — not a proof).
 bounds, i.e. it *proves* rank `0`; `elltors` returns `ℤ/5`; and
 `ellratpoints(E, 1000)` returns exactly the four affine points.
 
-See the section docstring above for why no elementary descent reaches this and
-what the two genuine routes are. -/
+## FAITHFULNESS: this leaf is EXACTLY rank `0`, neither weaker nor stronger
+
+Worth recording because a stripped-down restatement is where content usually
+leaks. Forwards is `U_dichotomy`. Backwards: given coprime `(p, e)` with
+`e > 0` and `n² = p³ − 4p²e² + 16e⁶`, the pair `U = p/e²`, `W = n/e³` is a
+rational point of `W² = U³ − 4U² + 16`; rank `0` gives `U ∈ {0, 4}`; `U = 0`
+forces `p = 0` and then `IsCoprime 0 e` forces `e = 1`, and `U = 4` forces
+`p = 4e²` and then `IsCoprime p e` again forces `e = 1`. So the two statements
+are equivalent, and no arithmetic was dropped in the reduction.
+
+## ROUTE AUDIT, 2026-07-27 — REPLACES the earlier one, which was wrong twice
+
+The previous audit said route (ii), the `2`-descent over the cubic `2`-division
+field `K = ℚ[s]/(s³ − 2s² + 2)`, "needs that field's class group and unit
+group … Neither is in the pin", and the dispatch built on it called route (ii)
+"likely the cheaper one". Both halves of that are now checked, and both are
+wrong — in opposite directions.
+
+**(a) The class-group half is CHEAP, and it IS in the pin.** `K` has
+`poldisc(s³ − 2s² + 2) = −44` and field discriminant `−44`, so the index
+`[𝓞_K : ℤ[s]]` is `1` and `ℤ[s] = 𝓞_K` on the nose. Mathlib then gives
+`h(K) = 1` in ONE lemma with no ideal enumeration at all:
+`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`
+(`Mathlib/NumberTheory/NumberField/ClassNumber.lean`) asks for
+`|discr K| < (2 * (π/4) ^ nrComplexPlaces K * (n ^ n / n !)) ^ 2`. Here `n = 3`
+and `nrComplexPlaces K = 1` (signature `(1, 1)`), so the bound is
+`(2 · (π/4) · (27/6))² = (9π/4)² = 81π²/16 ≈ 49.96`, and `44 < 49.96`. The
+inequality needs only `π > 2.949`, so it is a `norm_num`-with-`pi_gt_3141592`
+step. Equivalently: the Minkowski bound of `K` is `≈ 1.877 < 2`, so every ideal
+class contains an ideal of norm `1`.
+*Refuting check*: recompute `81π²/16` and compare with `44`; or evaluate
+`M K = (4/π)^{r₂} · (n!/n^n) · √|discr K|` and check it is `< 2`.
+
+Units are equally concrete: signature `(1,1)` gives unit rank `1`, torsion
+`{±1}`, and PARI's fundamental unit is `ε = −s² + s + 1`, with `N(ε) = −1` and
+`ε⁻¹ = s − 1` — i.e. the Lean-side certificate is the single `ring` identity
+`(−s² + s + 1)(s − 1) = 1` modulo `s³ − 2s² + 2`, which is not a class-group
+computation at all. Two more units drop out of `N(a − s) = f(a)`:
+`N(1 − s) = f(1) = 1` and `N(−1 − s) = f(−1) = −1`.
+
+Ramification, all `ring`-checkable rather than looked up: `N(s) = −2` and
+`s³ = 2(s² − 1)` with `s² − 1 = −(1 − s)(1 + s)` a unit, so `2 = s³/(s² − 1)`
+and `(2) = (s)³` is TOTALLY RAMIFIED with `𝔭₂ = (s)`; and
+`s³ − 2s² + 2 ≡ (s − 5)²(s − 3) (mod 11)`, so `(11) = 𝔭²𝔮`.
+
+**(b) The expensive ingredient is FINITE GENERATION, which this module
+deleted.** This is the correction that matters, and it applies to BOTH routes.
+A complete `2`-descent proves `E(ℚ)/2E(ℚ) = 0`; a complete `5`-isogeny descent
+proves `E(ℚ) = 5E(ℚ)`. Neither conclusion implies that `E(ℚ)` is finite. With
+`E(ℚ)[2] = 0` (the `2`-division polynomial `4x³ − 4x² + 1` is irreducible),
+`E(ℚ)/2E(ℚ) = 0` says exactly that `E(ℚ)` is uniquely `2`-divisible, which an
+infinite group can perfectly well be. Rank `0` follows only after
+`AddGroup.FG E(ℚ)` — or after an explicit height/descent argument that re-does
+that content by hand. The module docstring's FRONTIER RESTRUCTURE note is right
+that finite generation alone never yields rank `0`; the converse it did not
+state is that descent alone never yields it either. `mordellWeil` was deleted
+as "not on the critical path", and for `curve11a3_rational_points` that was
+true only because the leaf moved down; for `integral_leaf` itself, some form of
+descent-with-height is unavoidable. `MazurLevel14`/`MazurLevel15` supply that
+form elementarily via a well-founded recursion, and they can only do so because
+a rational `2`-isogeny is available; here the same recursion would have to run
+over `ℤ[s]`.
+*Refuting check*: exhibit an argument that concludes `Finite 11a3(ℚ)` from the
+triviality of a Selmer group without finite generation and without a height. If
+one exists, this audit is wrong and route (ii) really is short.
+
+**(c) Reconnaissance for whoever runs route (ii), so it need not be redone.**
+Write `β = p − 2s·e² ∈ ℤ[s]`; then `N(β) = p³ − 4p²e² + 16e⁶ = n²`, because
+`∏(p − θᵢq) = p³ − 4p²q + 16q³` for `θ³ − 4θ² + 16 = 0`, `θ = 2s`, `q = e²`.
+With `h(K) = 1` and unit group `⟨−1⟩ × ⟨ε⟩`, `β` is a unit times a square times
+a factor supported on `𝔭₂` and the primes over `11`. For the TRIVIAL square
+class, `γ = a + bs + cs²` and `s³ = 2s² − 2`, `s⁴ = 4s² − 2s − 4` give
+
+    γ² = (a² − 4c² − 4bc) + (2ab − 2c²)·s + (b² + 2ac + 4bc + 4c²)·s²,
+
+so `β = γ²` holds exactly when `b² + 2ac + 4bc + 4c² = 0`, and then
+`p = a² − 4c² − 4bc` and `e² = c² − ab`. BOTH known solutions live in this
+trivial class, with witnesses verified by `ring`:
+
+    (a,b,c) = (−2, 0, 1):  γ = s² − 2,   γ² = −2s      ↔ (p,e) = (0,1);
+    (a,b,c) = ( 0,−2, 1):  γ = s² − 2s,  γ² = 4 − 2s   ↔ (p,e) = (4,1).
+
+That is the structural reason (b) bites: the `2`-Selmer group is trivial, so
+every NONTRIVIAL square class dies to a local condition (a congruence), and the
+whole difficulty is concentrated in the trivial class — whose homogeneous space
+is `E` itself, mapped by `P ↦ 2P`. Killing it is precisely the height descent.
+*Refuting check*: find a coprime solution of the displayed system with
+`e² = c² − ab` a positive square other than the two above.
+
+CHECKED EXTERNALLY 2026-07-27 (PARI/GP, untrusted searcher — none of this is a
+proof): `bnfinit(s^3-2*s^2+2,1)` returns `disc = −44`, `no = 1`, `cyc = []`,
+`sign = [1,1]`, `fu = [-s^2+s+1]`, `tu = [2,-1]`, integral basis of index `1`;
+`ellrank(ellinit([0,-1,1,0,0]))` returns `[0,0,0,[]]`, matching bounds. Every
+identity quoted above (`ε(s−1) = 1`, `s³ = 2(s²−1)`, `(s²−2)² = −2s`,
+`(s²−2s)² = 4−2s`) is a polynomial identity modulo `s³ − 2s² + 2` and is
+therefore Lean-checkable by `ring`, independently of PARI.
+
+See the section docstring above for why no elementary descent reaches this. -/
 theorem integral_leaf {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6) :
     (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := sorry
