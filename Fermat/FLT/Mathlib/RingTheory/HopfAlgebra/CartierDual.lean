@@ -456,29 +456,94 @@ noncomputable instance instHopfAlgebraStruct : HopfAlgebraStruct R (CartierDual 
 @[simp] lemma antipode_apply (f : CartierDual R A) (a : A) :
     HopfAlgebra.antipode R f a = f (HopfAlgebra.antipode R a) := rfl
 
+/-- Evaluating a product in the Cartier dual against `a : A` contracts the tensor square with
+a Sweedler representation of `comul a`. -/
+lemma mul'_apply_repr {ι : Type*} {a : A} (𝓡 : Coalgebra.Repr R a ι)
+    (x : CartierDual R A ⊗[R] CartierDual R A) :
+    (LinearMap.mul' R (CartierDual R A) x) a
+      = ∑ i ∈ 𝓡.index, pairMap (𝓡.left i) (𝓡.right i) x := by
+  induction x with
+  | zero => simp
+  | tmul u v => rw [LinearMap.mul'_apply, mul_apply_repr 𝓡]; simp
+  | add x y hx hy =>
+      rw [map_add, add_apply, hx, hy, ← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun i _ => (map_add _ _ _).symm
+
+/-- Transposing the antipode through the pairing, on the left factor. -/
+lemma pairMap_rTensor_antipode (a b : A) (x : CartierDual R A ⊗[R] CartierDual R A) :
+    pairMap a b ((HopfAlgebra.antipode R (A := CartierDual R A)).rTensor (CartierDual R A) x)
+      = pairMap (HopfAlgebra.antipode R a) b x := by
+  induction x with
+  | zero => simp
+  | tmul u v => simp
+  | add x y hx hy => simp only [map_add, LinearMap.add_apply, hx, hy]
+
+/-- Transposing the antipode through the pairing, on the right factor. -/
+lemma pairMap_lTensor_antipode (a b : A) (x : CartierDual R A ⊗[R] CartierDual R A) :
+    pairMap a b ((HopfAlgebra.antipode R (A := CartierDual R A)).lTensor (CartierDual R A) x)
+      = pairMap a (HopfAlgebra.antipode R b) x := by
+  induction x with
+  | zero => simp
+  | tmul u v => simp
+  | add x y hx hy => simp only [map_add, LinearMap.add_apply, hx, hy]
+
 /-- First antipode axiom for the Cartier dual, the transpose of the first antipode axiom
 for `A`. -/
 theorem mul_antipode_rTensor_comul_dual :
     LinearMap.mul' R (CartierDual R A) ∘ₗ
         (HopfAlgebra.antipode R (A := CartierDual R A)).rTensor (CartierDual R A) ∘ₗ comul
-      = Algebra.linearMap R (CartierDual R A) ∘ₗ counit :=
-  sorry
+      = Algebra.linearMap R (CartierDual R A) ∘ₗ counit := by
+  refine LinearMap.ext fun f => ?_
+  refine ext fun a => ?_
+  have hR : ((Algebra.linearMap R (CartierDual R A) ∘ₗ
+      counit (R := R) (A := CartierDual R A)) f) a = f 1 * counit (R := R) a := by
+    show (algebraMap R (WithConv (A →ₗ[R] R)) (counit (R := R) (A := CartierDual R A) f)) a = _
+    rw [LinearMap.convAlgebraMap_apply]
+    simp
+  rw [LinearMap.comp_apply, LinearMap.comp_apply, mul'_apply_repr (ℛ R a), hR]
+  simp only [pairMap_rTensor_antipode, pairMap_comul, ← coe_apply, ← map_sum]
+  rw [HopfAlgebra.sum_antipode_mul_eq_smul (ℛ R a), map_smul]
+  simp [mul_comm]
 
 /-- Second antipode axiom for the Cartier dual. -/
 theorem mul_antipode_lTensor_comul_dual :
     LinearMap.mul' R (CartierDual R A) ∘ₗ
         (HopfAlgebra.antipode R (A := CartierDual R A)).lTensor (CartierDual R A) ∘ₗ comul
-      = Algebra.linearMap R (CartierDual R A) ∘ₗ counit :=
-  sorry
+      = Algebra.linearMap R (CartierDual R A) ∘ₗ counit := by
+  refine LinearMap.ext fun f => ?_
+  refine ext fun a => ?_
+  have hR : ((Algebra.linearMap R (CartierDual R A) ∘ₗ
+      counit (R := R) (A := CartierDual R A)) f) a = f 1 * counit (R := R) a := by
+    show (algebraMap R (WithConv (A →ₗ[R] R)) (counit (R := R) (A := CartierDual R A) f)) a = _
+    rw [LinearMap.convAlgebraMap_apply]
+    simp
+  rw [LinearMap.comp_apply, LinearMap.comp_apply, mul'_apply_repr (ℛ R a), hR]
+  simp only [pairMap_lTensor_antipode, pairMap_comul, ← coe_apply, ← map_sum]
+  rw [HopfAlgebra.sum_mul_antipode_eq_smul (ℛ R a), map_smul]
+  simp [mul_comm]
 
 /-- **The Cartier dual of a finite flat commutative group scheme is again one.** -/
 noncomputable instance instHopfAlgebra : HopfAlgebra R (CartierDual R A) where
   mul_antipode_rTensor_comul := mul_antipode_rTensor_comul_dual
   mul_antipode_lTensor_comul := mul_antipode_lTensor_comul_dual
 
-/-- The Cartier dual is cocommutative, because `A` is commutative. -/
-theorem isCocomm_dual : IsCocomm R (CartierDual R A) :=
-  sorry
+/-- Swapping the pairing arguments corresponds to swapping the tensor factors. -/
+lemma pairMap_comm (a b : A) (x : CartierDual R A ⊗[R] CartierDual R A) :
+    pairMap a b (TensorProduct.comm R (CartierDual R A) (CartierDual R A) x) = pairMap b a x := by
+  induction x with
+  | zero => simp
+  | tmul u v => simp [mul_comm]
+  | add x y hx hy => simp only [map_add, LinearMap.add_apply, hx, hy]
+
+/-- The Cartier dual is cocommutative, because `A` is commutative — this is the statement that
+the dual group scheme is again COMMUTATIVE. -/
+theorem isCocomm_dual : IsCocomm R (CartierDual R A) where
+  comm_comp_comul := by
+    refine LinearMap.ext fun f => ?_
+    refine pairMap_injective fun a b => ?_
+    show pairMap a b (TensorProduct.comm R (CartierDual R A) (CartierDual R A)
+      (comul (R := R) f)) = pairMap a b (comul (R := R) f)
+    rw [pairMap_comm, pairMap_comul, pairMap_comul, mul_comm]
 
 noncomputable instance : IsCocomm R (CartierDual R A) := isCocomm_dual
 
