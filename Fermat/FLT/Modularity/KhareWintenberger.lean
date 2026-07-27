@@ -8471,10 +8471,86 @@ theorem isProper_of_isAffine_of_krullDim_le_zero
   infer_instance
 
 open CategoryTheory AlgebraicGeometry in
-/-- **LEAF A — quasi-projectivity: an affine `ℚ`-scheme of finite type admits
-a quasi-finite morphism to a proper `ℚ`-scheme** (SORRY LEAF).
+/-- **LEAF A1 — projective `n`-space over `ℚ` exists** (SORRY LEAF, and after
+the decomposition below it is the ONLY residual content of LEAF A).
 
-This is the ONLY construction step left, and it is the standard one: write
+Precisely: affine `n`-space over `ℚ`, in its bare affine form
+`Spec ℚ[x₁, …, xₙ]`, is an OPEN subscheme of a PROPER `ℚ`-scheme, compatibly
+with the two structure morphisms to `Spec ℚ`.
+
+WHAT THIS COSTS AT THIS PIN, checked rather than guessed (2026-07-27):
+
+* `Proj` exists (`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/`), and
+  `instance [Algebra.FiniteType (𝒜 0) A] : IsProper (Proj.toSpecZero 𝒜)`
+  gives properness for free, so `P := Proj ℚ[x₀, …, xₙ]` with the total-degree
+  grading discharges `IsProper fP` with no work;
+* `AlgebraicGeometry.Proj.awayι 𝒜 f f_deg hm : Spec (Away 𝒜 f) ⟶ Proj 𝒜` is
+  an OPEN IMMERSION (`instance : IsOpenImmersion (Proj.awayι …)`), so the
+  standard chart map is free too;
+* what is NOT free, and is the whole of this leaf, is the RING ISOMORPHISM
+  `HomogeneousLocalization.Away 𝒜 x₀ ≅ MvPolynomial (Fin n) ℚ`
+  sending `xᵢ/x₀ ↦ Yᵢ` — i.e. identifying the degree-`0` part of
+  `ℚ[x₀, …, xₙ][1/x₀]` with a polynomial ring in `n` variables. **A grep for
+  `MvPolynomial`/`Polynomial` in
+  `Mathlib/RingTheory/GradedAlgebra/HomogeneousLocalization.lean` returns
+  NOTHING**, and there is no `ProjectiveSpace`/`projectiveSpace` anywhere in
+  `Mathlib/AlgebraicGeometry/` — that grep is the check that would refute this
+  costing.
+
+So this leaf is graded-ring bookkeeping of bounded size, with no missing
+mathematics. Note it is stated with the BARE `Spec (MvPolynomial (Fin n) ℚ)`
+rather than mathlib's `𝔸(n; S)` (`Mathlib/AlgebraicGeometry/AffineSpace.lean`)
+deliberately: the consumer below produces a closed immersion out of a
+`Spec`-of-a-surjection, so the affine form is what is actually needed and the
+`AffineSpace.SpecIso` round trip is avoided entirely. -/
+theorem exists_properCompactification_affineSpace (n : ℕ) :
+    ∃ (P : AlgebraicGeometry.Scheme.{u})
+      (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (ι : AlgebraicGeometry.Spec
+        (CommRingCat.of (MvPolynomial (Fin n) (ULift.{u} ℚ))) ⟶ P),
+      AlgebraicGeometry.IsProper fP ∧ AlgebraicGeometry.IsOpenImmersion ι ∧
+        ι ≫ fP = AlgebraicGeometry.Spec.map (CommRingCat.ofHom
+          (algebraMap (ULift.{u} ℚ) (MvPolynomial (Fin n) (ULift.{u} ℚ)))) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF A — quasi-projectivity: an affine `ℚ`-scheme of finite type admits
+a quasi-finite morphism to a proper `ℚ`-scheme**
+(**DECOMPOSED AND PROVEN 2026-07-27 over LEAF A1 above** — everything except
+the existence of `ℙⁿ` is discharged here).
+
+THE REDUCTION, which is what this declaration now contains:
+
+* `C` is affine, so `C ≅ Spec Γ(C, ⊤)` (`Scheme.isoSpec`) and — this is the
+  step that removes all the `isoSpec`-naturality pain — `AlgebraicGeometry.
+  Spec.map_surjective` writes the transported structure morphism as
+  `Spec.map ψ` for an honest ring map `ψ : ULift ℚ ⟶ Γ(C, ⊤)`;
+* `LocallyOfFiniteType` on a `Spec.map` is `RingHom.FiniteType` on the ring
+  map (`HasRingHomProperty.Spec_iff`), and
+  `Algebra.FiniteType.iff_quotient_mvPolynomial''` then produces `n` together
+  with a SURJECTIVE `ℚ`-algebra map `ℚ[x₁, …, xₙ] ↠ Γ(C, ⊤)`;
+* `IsClosedImmersion.spec_of_surjective` turns that into a closed immersion
+  `C ↪ Spec ℚ[x₁, …, xₙ]`, and LEAF A1 embeds the target in a proper `P`;
+* the four conclusions about `g` are then instances, not theorems:
+  `IsImmersion` (closed ≫ open, then precomposed with an iso) already
+  supplies `LocallyQuasiFinite`, `IsSeparated` and `LocallyOfFiniteType` at
+  this pin — all three were verified to `infer_instance` — and
+  `QuasiCompact` comes from `QuasiCompact.of_comp` against the
+  quasi-separated `fP`.
+
+FORMAL-CONTENT NOTE: `_hsep` and `_hqc` are underscore-prefixed because the
+finished proof does not use them. The old docstring's remark that they are
+"available if wanted" was right that they suffice; it turns out they are not
+needed at all, because separatedness comes from `g` being an immersion (hence
+mono) and quasi-compactness from `C` being affine with `fP` quasi-separated.
+They are kept in the signature so the positional call in
+`exists_smoothProperModel_of_affine_curve` is undisturbed.
+
+NOTE this leaf does NOT mention curves: no dimension hypothesis is needed or
+used. It is quasi-projectivity of an affine finite-type scheme.
+
+The original construction sketch, retained because it is exactly what LEAF A1
+now carries: write
 `Γ(C, ⊤)` as a quotient of a polynomial ring in `n` variables (that is what
 `LocallyOfFiniteType` gives over an affine base), which is a closed immersion
 `C ↪ 𝔸ⁿ_ℚ`, and compose with the standard open immersion
@@ -8492,24 +8568,56 @@ being asked and what is free:
 
 So the mathematical content is the graded-ring bookkeeping that identifies
 the standard affine chart of `Proj` with `𝔸ⁿ`, not any properness or
-finiteness theorem. `hsep`, `hqc` are available if wanted: `IsSeparated g`
-also follows from `IsSeparated fC` by `MorphismProperty.HasOfPostcompProperty`
-once `g ≫ fP = fC`, and `QuasiCompact g` from `QuasiCompact fC` the same way.
-
-NOTE this leaf does NOT mention curves: no dimension hypothesis is needed or
-used. It is quasi-projectivity of an affine finite-type scheme. -/
+finiteness theorem — and that content, and ONLY that content, is now LEAF A1
+above. -/
 theorem exists_quasiFinite_toProper_of_isAffine_finiteType
     {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (_hsep : AlgebraicGeometry.IsSeparated fC)
     (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hqc : AlgebraicGeometry.QuasiCompact fC) :
+    (_hqc : AlgebraicGeometry.QuasiCompact fC) :
     ∃ (P : AlgebraicGeometry.Scheme.{u})
       (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P),
       AlgebraicGeometry.IsProper fP ∧ g ≫ fP = fC ∧
         AlgebraicGeometry.LocallyQuasiFinite g ∧ AlgebraicGeometry.IsSeparated g ∧
-        AlgebraicGeometry.LocallyOfFiniteType g ∧ AlgebraicGeometry.QuasiCompact g :=
-  sorry
+        AlgebraicGeometry.LocallyOfFiniteType g ∧ AlgebraicGeometry.QuasiCompact g := by
+  haveI := hft
+  -- Step 1: replace `C` by `Spec Γ(C, ⊤)` and `fC` by a `Spec.map`.
+  have eC : C ≅ AlgebraicGeometry.Spec Γ(C, ⊤) := C.isoSpec
+  obtain ⟨ψ, hψ⟩ := AlgebraicGeometry.Spec.map_surjective (eC.inv ≫ fC)
+  haveI : AlgebraicGeometry.LocallyOfFiniteType (AlgebraicGeometry.Spec.map ψ) := by
+    rw [hψ]; infer_instance
+  -- Step 2: `Γ(C, ⊤)` is a finite-type `ULift ℚ`-algebra, hence a quotient of `ℚ[x₁ … xₙ]`.
+  letI : Algebra ↥(CommRingCat.of (ULift.{u} ℚ)) ↥Γ(C, ⊤) := ψ.hom.toAlgebra
+  haveI hFT : Algebra.FiniteType ↥(CommRingCat.of (ULift.{u} ℚ)) ↥Γ(C, ⊤) :=
+    (AlgebraicGeometry.HasRingHomProperty.Spec_iff
+      (P := @AlgebraicGeometry.LocallyOfFiniteType)).mp ‹_›
+  obtain ⟨n, φ, hφ⟩ := Algebra.FiniteType.iff_quotient_mvPolynomial''.mp hFT
+  -- Step 3: LEAF A1 supplies `𝔸ⁿ ↪ ℙⁿ`.
+  obtain ⟨P, fP, ι, hPproper, hιopen, hιcomm⟩ :=
+    exists_properCompactification_affineSpace.{u} n
+  haveI := hPproper
+  haveI := hιopen
+  -- Step 4: `C ↪ 𝔸ⁿ` is a closed immersion, so `g` is an immersion.
+  haveI hcl : AlgebraicGeometry.IsClosedImmersion
+      (AlgebraicGeometry.Spec.map (CommRingCat.ofHom φ.toRingHom)) :=
+    AlgebraicGeometry.IsClosedImmersion.spec_of_surjective _ hφ
+  refine ⟨P, fP, eC.hom ≫ AlgebraicGeometry.Spec.map (CommRingCat.ofHom φ.toRingHom) ≫ ι,
+    hPproper, ?_, ?_, ?_, ?_, ?_⟩
+  · -- the triangle over `Spec ℚ`
+    have hcomp : CommRingCat.ofHom
+        (algebraMap (ULift.{u} ℚ) (MvPolynomial (Fin n) (ULift.{u} ℚ))) ≫
+        CommRingCat.ofHom φ.toRingHom = ψ := by
+      ext x
+      exact φ.commutes x
+    simp only [Category.assoc]
+    rw [hιcomm, ← AlgebraicGeometry.Spec.map_comp, hcomp, hψ, Iso.hom_inv_id_assoc]
+  · exact inferInstance
+  · exact inferInstance
+  · exact inferInstance
+  · exact AlgebraicGeometry.QuasiCompact.of_comp
+      (Z := AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (eC.hom ≫ AlgebraicGeometry.Spec.map (CommRingCat.ofHom φ.toRingHom) ≫ ι) fP
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF B — finiteness of the normalization (E. Noether)** (SORRY LEAF).
@@ -8523,14 +8631,58 @@ FINITELY GENERATED algebra — i.e. E. Noether's finiteness theorem for the
 integral closure of a finite-type algebra over a field, equivalently that
 finite-type `ℚ`-algebras are Nagata.
 
-The mathlib footholds, both present at this pin:
+CUT-OBSTRUCTION AUDIT, 2026-07-27 (by the owner of LEAFS A and D, who
+surveyed this leaf and did NOT attack it; every claim below names the grep
+that would refute it).
+
+**This leaf is more expensive than the paragraph above suggests, and the
+second "foothold" listed in the original version of this docstring does not
+apply.** The corrections:
+
+* `IsIntegralClosure.finite` requires `[IsIntegrallyClosed A]`. Here `A` is
+  `Γ(P, U)` for `P` merely PROPER over `ℚ` — nothing makes it integrally
+  closed, and in the intended application `P` is `ℙⁿ` glued from polynomial
+  rings only after LEAF A1 is proven. So that route is not available as
+  stated; it would first need `P` replaced by (or covered by) normal affines,
+  which is a different statement.
+* The theorem actually needed is that a finite-type `ℚ`-algebra is NAGATA
+  (universally Japanese), equivalently Stacks 03GS: the relative normalization
+  of a finite-type morphism over a Nagata base is FINITE.
+  **CHECK THAT WOULD REFUTE THIS:**
+  `grep -rln 'Nagata\|IsJapanese\|UniversallyJapanese' .lake/packages/mathlib/Mathlib/`
+  — at this pin it returns only `RingTheory/NoetherNormalization.lean` and
+  `Algebra/EuclideanDomain/Defs.lean`, neither of which defines any such
+  class. There is no Nagata/Japanese theory in mathlib.
+* The other classical route is Grothendieck's ZMT in its FINITE-factorization
+  form (Stacks 05K0: a quasi-finite separated finite-type morphism over a
+  quasi-compact quasi-separated base factors as an open immersion followed by
+  a FINITE morphism). Mathlib has only the open-immersion half.
+  **CHECK THAT WOULD REFUTE THIS:**
+  `grep -n 'IsFinite' Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean`
+  — it yields `IsFinite.of_isProper_of_locallyQuasiFinite` and
+  `IsFinite.iff_isProper_and_locallyQuasiFinite`, BOTH of which take
+  `[IsProper f]` as a hypothesis. Using them here is circular: properness of
+  the model is exactly what this leaf is being asked to supply.
+
+So a successor should expect to develop Noether's finiteness theorem (via
+`Mathlib/RingTheory/NoetherNormalization.lean`, which IS present) as new
+commutative algebra, and then globalize along the affine-local description of
+the relative normalization that mathlib does provide:
+`Scheme.Hom.normalizationOpenCover`, `Scheme.Hom.fromNormalization_preimage`
+and `Scheme.Hom.fromNormalization_app` in
+`Mathlib/AlgebraicGeometry/Normalization.lean`, which present
+`Γ(g.normalization, fromNormalization ⁻¹ᵁ U)` as the integral closure of
+`Γ(P, U)` in `Γ(C, g⁻¹ U)` for affine `U`. That globalization is the second
+half of the job and is independent of the algebra; it could be cut off as its
+own leaf.
+
+The remaining genuine foothold at this pin:
 
 * `Mathlib/RingTheory/NoetherNormalization.lean` — Noether normalization, to
-  reduce to a polynomial subring `ℚ[t₁, …, t_d] ⊆ Γ(C, g⁻¹ U)`;
-* `IsIntegralClosure.finite` (`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean`),
-  which needs `[IsIntegrallyClosed A] [IsNoetherianRing A]` and a finite
-  SEPARABLE fraction-field extension — automatic in characteristic `0`, which
-  is why this leaf is much cheaper here than it would be in characteristic `p`.
+  reduce to a polynomial subring `ℚ[t₁, …, t_d] ⊆ Γ(C, g⁻¹ U)`. Separability
+  of the relevant fraction-field extension is automatic in characteristic `0`,
+  which is why this leaf is still much cheaper here than it would be in
+  characteristic `p`.
 
 `hsmooth` is recorded because reducedness of `C` (which smoothness gives) is
 what makes the integral closure a torsion-free picture; `hft`, `hPproper`
@@ -8602,38 +8754,94 @@ theorem smooth_normalizationModel_of_smooth_affine_curve
   sorry
 
 open CategoryTheory AlgebraicGeometry in
-/-- **LEAF D — the normalized model is geometrically irreducible** (SORRY LEAF).
+/-- **LEAF D — the normalized model is geometrically irreducible**
+(**PROVEN 2026-07-27**, entirely out of mathlib; no curve theory is used).
 
 `g.toNormalization : C ⟶ g.normalization` is an open immersion (Zariski's
 Main Theorem) and dominant (`instance : IsDominant f.toNormalization`), so
-`C` is a DENSE open subscheme of the model. Geometric irreducibility of a
-scheme is inherited from a dense open subscheme: base change to `ℚ̄` is flat,
-so it takes the dense open immersion `C ↪ X̄` to a dense open immersion
-`C_ℚ̄ ↪ X̄_ℚ̄`, and a space with a dense irreducible open subspace is
-irreducible.
+`C` is a DENSE open subscheme of the model, and geometric irreducibility
+transfers along that dense open immersion.
 
-So the content is a transfer lemma about `GeometricallyIrreducible` along a
-dense open immersion, not any curve theory. The relevant mathlib directory is
-`Mathlib/AlgebraicGeometry/Geometrically/`; check there first for an existing
-`GeometricallyIrreducible` transfer before proving one.
+THE CHAIN, each step a named mathlib result at this pin:
 
-This is expected to be the cheapest of the four leaves. -/
+* unfolding `GeometricallyIrreducible` with
+  `geometrically_iff_of_isClosedUnderIsomorphisms` reduces the goal to
+  `IrreducibleSpace (pullback fX y)` for every field `K` and every
+  `y : Spec K ⟶ Spec (ULift ℚ)`;
+* `pullbackRightPullbackFstIso fX y g.toNormalization` identifies
+  `pullback g.toNormalization (pullback.fst fX y)` with
+  `pullback (g.toNormalization ≫ fX) y = pullback fC y`, which is
+  irreducible by `hgi`;
+* `pullback.snd g.toNormalization (pullback.fst fX y)` is an open immersion
+  (base change of one), and `Scheme.Pullback.range_snd` computes its range as
+  `(pullback.fst fX y) ⁻¹' Set.range g.toNormalization`;
+* **the load-bearing openness step**: `pullback.fst fX y` is the base change
+  of `y`, whose TARGET is `Spec` of a field, and mathlib has
+  `instance [IsIntegral Y] [Subsingleton Y] : UniversallyOpen f`
+  (`Morphisms/UniversallyOpen.lean`). So `pullback.fst fX y` is an open map
+  and `Dense.preimage` carries density of `Set.range g.toNormalization`
+  (which is `IsDominant.denseRange`) across the base change. This is the one
+  place a naive proof stalls, and it needs NO finite-presentation hypothesis
+  precisely because the base is a field;
+* an irreducible dense subset forces the whole space irreducible
+  (`IsIrreducible.closure` plus `Dense.closure_eq`).
+
+FORMAL-CONTENT NOTE: `_hsmooth`, `_hft`, `_hdim`, `_hPproper` and `_hfin` are
+underscore-prefixed because the proof genuinely does not use them — geometric
+irreducibility of the model needs only that `C` is geometrically irreducible
+and that `g.toNormalization` is a dense open immersion, which is exactly the
+four `g`-hypotheses plus Zariski's Main Theorem. They are kept in the
+signature so the leaf's shape matches its three siblings and the positional
+call in `exists_smoothProperModel_of_affine_curve` is undisturbed. -/
 theorem geometricallyIrreducible_normalizationModel_of_smooth_affine_curve
     {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
-    (hsmooth : AlgebraicGeometry.Smooth fC)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (_hsmooth : AlgebraicGeometry.Smooth fC)
+    (_hft : AlgebraicGeometry.LocallyOfFiniteType fC)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
-    (hdim : topologicalKrullDim ↥C ≤ 1)
-    (hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
+    (_hdim : topologicalKrullDim ↥C ≤ 1)
+    (_hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
     (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
     (hgsep : AlgebraicGeometry.IsSeparated g)
     (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
     (hgqc : AlgebraicGeometry.QuasiCompact g)
-    (hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
-    AlgebraicGeometry.GeometricallyIrreducible (g.fromNormalization ≫ fP) :=
-  sorry
+    (_hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
+    AlgebraicGeometry.GeometricallyIrreducible (g.fromNormalization ≫ fP) := by
+  haveI := hgqf; haveI := hgsep; haveI := hgft; haveI := hgqc
+  haveI : IsDomain (CommRingCat.of (ULift.{u} ℚ)) := inferInstanceAs (IsDomain (ULift.{u} ℚ))
+  haveI : Subsingleton ↥(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum (ULift.{u} ℚ)))
+  have hj : g.toNormalization ≫ (g.fromNormalization ≫ fP) = fC := by
+    rw [← Category.assoc, AlgebraicGeometry.Scheme.Hom.toNormalization_fromNormalization, hcomm]
+  constructor
+  rw [AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms]
+  intro K _ y
+  set fX := g.fromNormalization ≫ fP with hfXdef
+  set p := Limits.pullback.fst fX y with hpdef
+  -- `C ×_ℚ K` sits inside `X̄ ×_ℚ K` as an open subscheme
+  have e := Limits.pullbackRightPullbackFstIso fX y g.toNormalization
+  have hCK : IrreducibleSpace ↥(Limits.pullback (g.toNormalization ≫ fX) y) := by
+    rw [hj]
+    exact AlgebraicGeometry.pullback_of_geometrically hgi.geometrically_irreducibleSpace K y
+  have hW : IrreducibleSpace ↥(Limits.pullback g.toNormalization p) :=
+    e.hom.homeomorph.irreducibleSpace_iff.mpr hCK
+  have hq : AlgebraicGeometry.IsOpenImmersion (Limits.pullback.snd g.toNormalization p) :=
+    inferInstance
+  have hrange : Set.range ⇑(Limits.pullback.snd g.toNormalization p) =
+      ⇑p ⁻¹' Set.range ⇑g.toNormalization :=
+    AlgebraicGeometry.Scheme.Pullback.range_snd _ _
+  have hdense : Dense (Set.range ⇑(Limits.pullback.snd g.toNormalization p)) := by
+    rw [hrange]
+    exact (AlgebraicGeometry.IsDominant.denseRange
+      (f := g.toNormalization)).preimage p.isOpenMap
+  rw [irreducibleSpace_def]
+  have h1 : IsIrreducible (Set.range ⇑(Limits.pullback.snd g.toNormalization p)) := by
+    rw [← Set.image_univ]
+    exact (IrreducibleSpace.isIrreducible_univ _).image _
+      (Limits.pullback.snd g.toNormalization p).continuous.continuousOn
+  have h2 := h1.closure
+  rwa [hdense.closure_eq] at h2
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.1, the geometric half: the smooth proper model**
@@ -8657,19 +8865,27 @@ WHAT IS PROVEN HERE.
   `IsProper fX` is likewise discharged here, modulo LEAF B, from
   `[IsFinite f] : IsProper f` and stability of properness under composition.
 
-WHAT REMAINS, as four separate leaves, in decreasing order of expected cost:
+WHAT REMAINS (updated 2026-07-27 — LEAF D is PROVEN and LEAF A is proven
+modulo the strictly smaller LEAF A1), in decreasing order of expected cost:
 
 * LEAF C `smooth_normalizationModel_of_smooth_affine_curve` — normal of
   dimension `≤ 1` over a perfect field implies smooth. The one place where
   mathlib genuinely lacks a theorem (regular ⟹ smooth over a perfect field).
-* LEAF A `exists_quasiFinite_toProper_of_isAffine_finiteType` — quasi-
-  projectivity: an affine finite-type `ℚ`-scheme admits a quasi-finite
-  morphism to a proper `ℚ`-scheme. Construction only; `Proj` is already
-  known proper in mathlib.
 * LEAF B `isFinite_fromNormalization_of_smooth_affine` — E. Noether's
-  finiteness of integral closure; integrality is already free.
-* LEAF D `geometricallyIrreducible_normalizationModel_of_smooth_affine_curve`
-  — transfer of geometric irreducibility along a dense open immersion.
+  finiteness of integral closure; integrality is already free, but see the
+  CUT-OBSTRUCTION AUDIT in its docstring: this needs NAGATA, which is absent
+  from the pin, and the `IsIntegralClosure.finite` foothold once recorded
+  there does not apply. It is NOT cheaper than LEAF A.
+* LEAF A1 `exists_properCompactification_affineSpace` — projective `n`-space
+  over `ℚ`, i.e. `Spec ℚ[x₁, …, xₙ]` as an open subscheme of a proper
+  `ℚ`-scheme. Pure graded-ring bookkeeping: `Proj` is already known proper
+  and `Proj.awayι` is already known an open immersion, so the whole content
+  is `HomogeneousLocalization.Away 𝒜 x₀ ≅ MvPolynomial (Fin n) ℚ`.
+* ~~LEAF A `exists_quasiFinite_toProper_of_isAffine_finiteType`~~ — PROVEN
+  over LEAF A1.
+* ~~LEAF D `geometricallyIrreducible_normalizationModel_of_smooth_affine_curve`~~
+  — PROVEN outright, out of mathlib, using that base change along
+  `Spec K → Spec ℚ` is an OPEN map because the base is a field.
 
 `hpos` is deliberately NOT a hypothesis: the smooth proper model exists in
 dimension `0` too, and positivity is needed only for nonemptiness of the
