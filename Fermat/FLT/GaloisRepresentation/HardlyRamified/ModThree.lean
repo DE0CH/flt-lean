@@ -15134,6 +15134,181 @@ theorem span_range_eq_ker_of_quotient_linearEquiv
     exact hx
   exact (Ideal.Quotient.eq_zero_iff_mem).mp (hqinj hx0)
 
+open _root_.IsLocalRing in
+/-- **`n` RELATIONS INSIDE THE KERNEL THAT GENERATE IT MODULO `𝔪` AND WHOSE QUOTIENT IS
+`R`-MODULE-FINITE ALREADY EXHAUST THE KERNEL** (PROVEN 2026-07-27).
+
+Let `P : R[x₁,…,x_n] ↠ S` present a finite flat algebra over a Noetherian local ring, let
+`J = (f₁,…,f_n) ≤ I = P.ker`, and suppose
+
+* `I ≤ J + 𝔪·R[x]` — i.e. the reductions `f̄ᵢ` generate `Ī` in `𝓀[x]`; and
+* `T := R[x]/J` is MODULE-FINITE over `R`.
+
+Then `T ≃ₗ[R] S`, hence (by `span_range_eq_ker_of_quotient_linearEquiv` above) `J = I`.
+
+**WHY THIS IS THE USABLE CRITERION, AND WHAT IT REPLACES.**  The naive relation lift is
+FALSE — see the counterexample recorded on
+`exists_generators_quotient_linearEquiv_of_residue` below (`R = S = ℤ₃`, `I = (x)`,
+`f = x(1+3x)`: `f̄` generates `Ī` and `I = (f) + 𝔪I`, yet `(f) ≠ I`).  What that example
+violates is exactly the second bullet: `ℤ₃[x]/(x(1+3x)) ≅ ℤ₃ × ℚ₃` is not finite over `ℤ₃`.
+So module-finiteness of the quotient is not an incidental extra hypothesis; it is precisely
+the condition whose failure the counterexample exhibits, and adding it is what makes the
+lift correct.  A construction can therefore discharge the whole ideal equality by producing
+relations with a FINITE quotient — no ideal computation, no Nakayama over `R[x]` (where it
+does not apply, `R[x]` not being local).
+
+THE PROOF, which uses no completeness and no Koszul theory.  Write `q : T ↠ S`.  The first
+bullet gives `ker q ≤ 𝔪·T`, which is NOT yet `ker q ≤ 𝔪·ker q` and so is not yet Nakayama.
+Freeness of `S` (`Module.free_of_flat_of_isLocalRing`) splits `q`, giving a section `s` and
+hence a RETRACTION `p = id − s∘q : T ↠ ker q` restricting to the identity on `ker q`.
+Applying `p` to `ker q ≤ 𝔪·T` and using `Submodule.map_smul''` turns it into
+`ker q = p(ker q) ≤ 𝔪·p(T) ≤ 𝔪·ker q`, and now Nakayama
+(`Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`, legitimate because `ker q` is a
+finitely generated `R`-module and `𝔪 ≤ jacobson ⊥` in the LOCAL ring `R`) gives
+`ker q = ⊥`. -/
+theorem nonempty_linearEquiv_of_module_finite_span_range_le_ker
+    {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    {S : Type*} [CommRing S] [Algebra R S] [Module.Finite R S] [Module.Flat R S]
+    {n : ℕ} {P : Algebra.Generators R S (Fin n)} {f : Fin n → P.Ring}
+    (hle : Ideal.span (Set.range f) ≤ P.ker)
+    (hmod : P.ker ≤ Ideal.span (Set.range f) ⊔
+      (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring))
+    (hfin : Module.Finite R (P.Ring ⧸ Ideal.span (Set.range f))) :
+    Nonempty ((P.Ring ⧸ Ideal.span (Set.range f)) ≃ₗ[R] S) := by
+  classical
+  set J : Ideal P.Ring := Ideal.span (Set.range f)
+  set q : (P.Ring ⧸ J) →ₐ[R] S :=
+    Ideal.Quotient.liftₐ J (IsScalarTower.toAlgHom R P.Ring S) (fun a ha => hle ha)
+  have hqapp : ∀ x : P.Ring, q (Ideal.Quotient.mk J x) = algebraMap P.Ring S x := fun x => rfl
+  have hqsurj : Function.Surjective q := by
+    intro s
+    obtain ⟨p, hp⟩ := P.algebraMap_surjective s
+    exact ⟨Ideal.Quotient.mk J p, by rw [hqapp]; exact hp⟩
+  set M : Submodule R (P.Ring ⧸ J) := LinearMap.ker q.toLinearMap with hM
+  -- the kernel of `q` lies in `𝔪 · (P.Ring ⧸ J)`
+  have hsmul : (maximalIdeal R) • (⊤ : Submodule R (P.Ring ⧸ J)) =
+      (((maximalIdeal R).map (algebraMap R P.Ring)).map
+        (Ideal.Quotient.mk J)).restrictScalars R := by
+    rw [Ideal.smul_top_eq_map, Ideal.map_map]
+    rfl
+  have hMle : M ≤ (maximalIdeal R) • (⊤ : Submodule R (P.Ring ⧸ J)) := by
+    rw [hsmul]
+    intro z hz
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective z
+    have hx : x ∈ P.ker := by
+      have : q (Ideal.Quotient.mk J x) = 0 := hz
+      rw [hqapp] at this
+      exact this
+    obtain ⟨j, hj, m, hm, hjm⟩ := Submodule.mem_sup.mp (hmod hx)
+    have hxm : Ideal.Quotient.mk J x = Ideal.Quotient.mk J m := by
+      rw [← hjm, map_add, Ideal.Quotient.eq_zero_iff_mem.mpr hj, zero_add]
+    rw [Submodule.restrictScalars_mem, hxm]
+    exact Ideal.mem_map_of_mem _ hm
+  -- a retraction onto `M`, using freeness of `S`
+  haveI : Module.Free R S := Module.free_of_flat_of_isLocalRing
+  obtain ⟨s, hs⟩ := LinearMap.exists_rightInverse_of_surjective (q.toLinearMap)
+    (LinearMap.range_eq_top.mpr hqsurj)
+  set p : (P.Ring ⧸ J) →ₗ[R] (P.Ring ⧸ J) :=
+    LinearMap.id - s.comp q.toLinearMap with hp
+  have hpM : ∀ z, p z ∈ M := by
+    intro z
+    have hsq : q (s (q z)) = q z := LinearMap.congr_fun hs (q.toLinearMap z)
+    simp [hM, LinearMap.mem_ker, hp, hsq]
+  have hpid : ∀ z ∈ M, p z = z := by
+    intro z hz
+    have hz0 : q z = 0 := hz
+    simp [hp, hz0]
+  have hMsmul : M ≤ (maximalIdeal R) • M := by
+    intro z hz
+    have h2 : p z ∈ Submodule.map p ((maximalIdeal R) • (⊤ : Submodule R (P.Ring ⧸ J))) :=
+      Submodule.mem_map_of_mem (hMle hz)
+    rw [Submodule.map_smul''] at h2
+    have h3 : Submodule.map p (⊤ : Submodule R (P.Ring ⧸ J)) ≤ M := by
+      rintro _ ⟨w, -, rfl⟩
+      exact hpM w
+    have h4 : p z ∈ (maximalIdeal R) • M := _root_.smul_mono_right _ h3 h2
+    rwa [hpid z hz] at h4
+  haveI : Module.Finite R (P.Ring ⧸ J) := hfin
+  haveI : IsNoetherian R (P.Ring ⧸ J) := inferInstance
+  have hjac : maximalIdeal R ≤ (⊥ : Ideal R).jacobson := by
+    rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+  have hMbot : M = ⊥ :=
+    Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ M (IsNoetherian.noetherian M) hMsmul hjac
+  have hqinj : Function.Injective q.toLinearMap := LinearMap.ker_eq_bot.mp hMbot
+  exact ⟨LinearEquiv.ofBijective q.toLinearMap ⟨hqinj, hqsurj⟩⟩
+
+open _root_.IsLocalRing in
+/-- **THE RELATION LIFT, IN ITS ONLY CORRECT FORM: `n` relations of the special fibre can be
+lifted to `n` relations upstairs WITH MODULE-FINITE QUOTIENT** (SORRY LEAF, cut 2026-07-27
+out of the sorried `have hcrux` inside `exists_generators_quotient_linearEquiv_of_residue`
+below, which is now PROVEN over this leaf alone).
+
+Given a presentation `P : R[x₁,…,x_n] ↠ S` of a finite flat algebra over a complete
+Noetherian local ring, and `n` elements `g₁,…,g_n` of `I = P.ker` whose reductions generate
+`Ī ≤ 𝓀[x]` (that is exactly the pair of hypotheses `span g ≤ I` and `I ≤ span g + 𝔪·R[x]`),
+there are `n` elements `f₁,…,f_n` of `I` with the same two properties AND with
+`R[x]/(f₁,…,f_n)` MODULE-FINITE over `R`.
+
+`nonempty_linearEquiv_of_module_finite_span_range_le_ker` above then upgrades that to
+`R[x]/(f) ≃ₗ[R] S`, and `span_range_eq_ker_of_quotient_linearEquiv` to `(f) = I`.  So this
+is the entire remaining content of the base-generic lifting half; everything else in
+`exists_generators_quotient_linearEquiv_of_residue` is proven.
+
+**WHY THE HYPOTHESES ARE NOT ALREADY THE CONCLUSION** — the counterexample, which is what
+this leaf exists to defeat.  Take `R = S = ℤ₃`, `n = 1`, `I = (x) ≤ ℤ₃[x]`, `g = x(1+3x)`.
+Then `ḡ = x` generates `Ī`, and `g ∈ I`, so `g` satisfies both hypotheses; but
+`ℤ₃[x]/(g) ≅ ℤ₃ × ℚ₃` is not even finite over `ℤ₃`, so `(g) ≠ I`.  Here the repair is
+visible — `f = x` is another lift of the same `ḡ` and works — and the leaf asserts that such
+a repair is always available.  Note the freedom being used: the admissible lifts of a fixed
+`ḡ` form the coset `g + (I ∩ 𝔪·R[x])`, and the leaf says some member of it has finite
+quotient.
+
+**THE MONIC-TRIANGULAR ROUTE DOES NOT WORK IN GENERAL — CORRECTION 2026-07-27.**  An earlier
+docstring on the parent prescribed: assume the special-fibre relations are triangular with
+`f̄ᵢ` monic in `xᵢ` of degree `dᵢ` and `∏ dᵢ = dim_𝓀 (𝓀 ⊗ S)`, lift coefficientwise, correct
+into `I`, and count ranks.  That route is sound WHEN such a normal form exists, and it is
+what makes the finiteness clause above cheap (a triangular monic system has finite
+quotient outright).  **But such a normal form does not always exist, so it cannot be the
+route in general.**  Witness, inside the very application this file is written for: the
+constant group scheme `ℤ/5` over `𝔽₃` has Hopf algebra `𝔽₃⁵`, which IS a complete
+intersection — `𝔽₃⁵ ≅ 𝔽₃[x,y]/(x²−x, (1−x)(y³−y)+x(y²−y))`, two relations on two variables —
+yet it has NO triangular monic presentation with `∏ dᵢ = 5`: that would force `(d₁,d₂)` to be
+`(5,1)` or `(1,5)`, i.e. after eliminating the degree-`1` variable a single `f₁ ∈ 𝔽₃[x₁]`
+monic of degree `5` splitting into `5` DISTINCT linear factors, and `𝔽₃` has only `3`
+elements.  (The exhibited second relation is triangular but NOT monic: its leading `y`-coefficient
+is `1−x`, a non-unit.)  So the Demazure–Gabriel normal form covers the CONNECTED factor
+`𝓀[y]/(y^{3^e})` only; the ÉTALE factor generally has no monic-triangular presentation, and a
+successor must not plan on getting one from the sibling leaf.  The `ℤ₃`-lift of that example
+does exist — `ℤ₃[x,y]/(x²−x, (1−x)(y³−y)+x(y²−y)) ≅ ℤ₃³ × ℤ₃² = ℤ₃⁵`, because `y³−y` and
+`y²−y` split into distinct linear factors over `ℤ₃` — which is evidence for the leaf and
+against the route, not against the leaf.
+
+WHAT COMPLETENESS IS FOR.  `[IsAdicComplete (maximalIdeal R) R]` is retained because it makes
+`R` henselian, hence lets a finite `R`-algebra be split into local factors, which is how the
+classical proofs (Weierstrass preparation / Hensel factorisation, applied one local factor at
+a time) produce the finite lift.  A successor who closes the leaf without it should delete it
+rather than leave it decorative.
+
+AXIS SEARCHED (2026-07-27): the conclusion clause (finiteness cannot be dropped — that is the
+counterexample above) and the shape the citation delivers (monic-triangular — refuted above).
+NOT searched: whether the whole statement is better routed through the local factors of `S`
+(`R` henselian ⟹ `S = ∏ Sⱼ` with `Sⱼ` local), which is the route the literature takes and the
+recommended next attack. -/
+theorem exists_span_range_le_ker_module_finite_of_span_range_le_ker
+    {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {S : Type*} [CommRing S] [Algebra R S] [Module.Flat R S] [Module.Finite R S]
+    {n : ℕ} (P : Algebra.Generators R S (Fin n)) (g : Fin n → P.Ring)
+    (hgle : Ideal.span (Set.range g) ≤ P.ker)
+    (hgmod : P.ker ≤ Ideal.span (Set.range g) ⊔
+      (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring)) :
+    ∃ f : Fin n → P.Ring,
+      Ideal.span (Set.range f) ≤ P.ker ∧
+      P.ker ≤ Ideal.span (Set.range f) ⊔
+        (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) ∧
+      Module.Finite R (P.Ring ⧸ Ideal.span (Set.range f)) :=
+  sorry
+
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **THE GROUP-SCHEME CORE, ON THE SPECIAL FIBRE: the reduction `𝔽₃ ⊗ G` of a finite
@@ -15226,19 +15401,30 @@ theorem exists_generators_span_range_eq_ker_residue_of_hopf_package
 
 open _root_.IsLocalRing _root_.MvPolynomial in
 /-- **A COMPLETE INTERSECTION ON THE SPECIAL FIBRE LIFTS TO ONE UPSTAIRS**, for a
-finite flat algebra over a complete Noetherian local ring (PARTIALLY PROVEN
-2026-07-27: the GENERATOR-lifting half is proven, the RELATION-lifting half is the
-remaining sorried `have`).  No group structure is used anywhere; this is the
+finite flat algebra over a complete Noetherian local ring (**PROVEN 2026-07-27 over the
+single leaf `exists_span_range_le_ker_module_finite_of_span_range_le_ker` above**; it no
+longer contains a sorried `have`).  No group structure is used anywhere; this is the
 deformation-theoretic half of `exists_generators_span_range_eq_ker_of_hopf_package`,
 stated base-generically so it can be reused.
 
-WHAT IS PROVEN HERE.  Given a presentation `P̄ : 𝓀[x₁,…,x_n] ↠ 𝓀 ⊗ S` of the special
-fibre, the reduction `S → 𝓀 ⊗ S` is surjective (`quotTensorEquivQuotSMul` identifies
+WHAT IS PROVEN HERE, in three steps.
+
+*Step 1 — GENERATORS (Nakayama).*  Given a presentation `P̄ : 𝓀[x₁,…,x_n] ↠ 𝓀 ⊗ S` of the
+special fibre, the reduction `S → 𝓀 ⊗ S` is surjective (`quotTensorEquivQuotSMul` identifies
 `𝓀 ⊗ S` with `S ⧸ 𝔪S`), so `P̄.val` lifts to `y : Fin n → S`; and NAKAYAMA then makes
 `R[x₁,…,x_n] → S`, `xᵢ ↦ yᵢ`, SURJECTIVE — `S` is `R`-finite and `𝔪 ≤ jacobson ⊥`, so
-`LinearMap.surjective_of_surjective_comp_mkQ` applies to the composite through
-`S ⧸ 𝔪S`.  The presentation `P` is therefore pinned: it is the lift of `P̄`, variable
-by variable, and the remaining obligation is only to produce its `n` RELATIONS.
+`LinearMap.surjective_of_surjective_comp_mkQ` applies to the composite through `S ⧸ 𝔪S`.
+The presentation `P` is therefore pinned: it is the lift of `P̄`, variable by variable.
+
+*Step 2 — SOME relation lift (bookkeeping).*  Because `P` is the variable-by-variable lift of
+`P̄`, the reduction `φ = MvPolynomial.map (residue R)` carries `P.ker` ONTO `P̄.ker`, and
+`ker φ = 𝔪·R[x]`.  So the `f̄ᵢ` lift to `gᵢ ∈ I = P.ker` with `I ≤ (g) + 𝔪·R[x]`.
+
+*Step 3 — the RIGHT relation lift.*  That is where the content is, and it is now the single
+leaf `exists_span_range_le_ker_module_finite_of_span_range_le_ker`: choose the lift so that
+`R[x]/(f)` is MODULE-FINITE over `R`.  Given that,
+`nonempty_linearEquiv_of_module_finite_span_range_le_ker` produces the `≃ₗ[R] S`, and
+`span_range_eq_ker_of_quotient_linearEquiv` turns it into the ideal equality.
 
 **THE TRAP, WITH AN EXPLICIT COUNTEREXAMPLE — DO NOT LIFT THE RELATIONS NAIVELY**
 (2026-07-27).  It is tempting to lift `f̄₁,…,f̄_n` to arbitrary `f₁,…,f_n ∈ I` (possible:
@@ -15247,26 +15433,32 @@ by variable, and the remaining obligation is only to produce its `n` RELATIONS.
 `n = 1`, `I = (x) ⊆ ℤ₃[x]`, `f = x(1 + 3x) ∈ I`.  Then `f̄ = x` generates `Ī = (x)`, and
 `I = (f) + 𝔪I`, yet `(f) ≠ I`: `1 + 3x` is not a unit of `ℤ₃[x]`, and in fact
 `ℤ₃[x]/(x(1+3x)) ≅ ℤ₃ × ℚ₃` — not even FINITE over `ℤ₃`, let alone `≅ S`.  A relation
-lift can therefore fail while satisfying every congruence one would think to check.
+lift can therefore fail while satisfying every congruence one would think to check.  Note
+what the witness violates: MODULE-FINITENESS of the quotient, and nothing else.  That is
+why the remaining leaf asks for exactly that and for nothing more.
 
-**THE ROUTE THAT WORKS: MONIC RELATIONS, THEN A RANK COUNT.**  Do not aim for the ideal
-equality; aim for the hypothesis of `span_range_eq_ker_of_quotient_linearEquiv` above.
-Suppose the special-fibre relations are triangular and monic, `f̄ᵢ` monic in `xᵢ` of
-degree `dᵢ` with `∏ dᵢ = dim_𝓀 (𝓀 ⊗ S)` — which is exactly what the Demazure–Gabriel
-normal form on the sibling leaf delivers.  Lift each `f̄ᵢ` to a `gᵢ ∈ R[x]` monic in `xᵢ`
-of the SAME degree by lifting coefficients; `gᵢ` need not lie in `I`, but its image in
-`S` lies in `𝔪S`, and the `∏ dᵢ` monomials `x^α` with `αᵢ < dᵢ` are an `R`-BASIS of the
-free module `S` (they reduce to a basis mod `𝔪`, and `S` is finite flat over the local
-ring `R`, hence free), so that image is `R`-spanned by monomials of degree `< dᵢ` in
-`xᵢ` with coefficients in `𝔪`.  Subtracting that correction gives `fᵢ ∈ I`, still monic
-in `xᵢ` of degree `dᵢ`.  A triangular monic system makes `R[x]/(f)` free of rank
-`∏ dᵢ = rank_R S`, which is the `≃ₗ[R] S` that the glue lemma consumes.
+**THE MONIC-TRIANGULAR ROUTE THIS DOCSTRING USED TO PRESCRIBE IS NOT AVAILABLE IN GENERAL
+— CORRECTION 2026-07-27.**  The previous version said: assume the special-fibre relations
+are triangular with `f̄ᵢ` monic in `xᵢ` of degree `dᵢ` and `∏ dᵢ = dim_𝓀 (𝓀 ⊗ S)` — "which is
+exactly what the Demazure–Gabriel normal form on the sibling leaf delivers" — lift
+coefficientwise, correct into `I`, and count ranks.  The lifting argument is correct **when
+such a normal form exists**, and it is one cheap way to get the finiteness clause the leaf
+now asks for.  **But the sibling leaf does not deliver it**, and cannot: Demazure–Gabriel
+covers the CONNECTED factor `𝓀[y]/(y^{3^e})` only, while the ÉTALE factor generally has no
+monic-triangular presentation at all.  Counterexample, inside the intended application:
+`ℤ/5` over `𝔽₃` has Hopf algebra `𝔽₃⁵`, a complete intersection
+(`𝔽₃⁵ ≅ 𝔽₃[x,y]/(x²−x, (1−x)(y³−y)+x(y²−y))`, two relations on two variables) with NO
+triangular monic presentation of matching rank — see the full argument on
+`exists_span_range_le_ker_module_finite_of_span_range_le_ker` above.  So a successor must
+NOT plan on receiving monic relations from
+`exists_generators_span_range_eq_ker_residue_of_hopf_package`.
 
-WHY THE COMPLETENESS HYPOTHESIS IS KEPT even though the route above does not visibly
-use it: it is what makes `R` henselian, hence what lets a finite `R`-algebra be split
+WHY THE COMPLETENESS HYPOTHESIS IS KEPT even though nothing above visibly
+uses it: it is what makes `R` henselian, hence what lets a finite `R`-algebra be split
 into local factors and what the classical proofs of this statement (power series plus
-Weierstrass preparation) run on.  A successor who closes the leaf without it should
-delete it rather than leave it decorative. -/
+Weierstrass preparation) run on.  It is passed straight through to the remaining leaf.
+A successor who closes that leaf without it should delete it rather than leave it
+decorative. -/
 theorem exists_generators_quotient_linearEquiv_of_residue
     {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
     [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
@@ -15323,15 +15515,130 @@ theorem exists_generators_quotient_linearEquiv_of_residue
       simp
     simpa [he] using hez
   set P : Algebra.Generators R S (Fin n) := Algebra.Generators.ofSurjective y hsurj with hP
-  /- THE REMAINING OBLIGATION: lift the `n` relations of the special fibre to `n`
-  relations of `P`, in the rank form that `span_range_eq_ker_of_quotient_linearEquiv`
-  consumes.  See "THE ROUTE THAT WORKS" in the docstring above, and note the explicit
-  counterexample there to the naive Nakayama lift. -/
-  have hcrux : Ideal.span (Set.range fbar) = Pbar.ker →
-      ∃ f : Fin n → P.Ring, Ideal.span (Set.range f) ≤ P.ker ∧
-        Nonempty ((P.Ring ⧸ Ideal.span (Set.range f)) ≃ₗ[R] S) := sorry
-  obtain ⟨f, hf1, hf2⟩ := hcrux hfbar
-  exact ⟨n, P, f, hf1, hf2⟩
+  /- STEP 2, PROVEN: transport the `n` relations `fbar` of the special fibre to `n` elements
+  `g` of `P.ker` generating `Pbar.ker` modulo `𝔪`.  This is pure bookkeeping — the reduction
+  map `φ = MvPolynomial.map (residue R)` identifies `Pbar.ker` with the image of `P.ker`,
+  because `P` was built above as the variable-by-variable LIFT of `Pbar` — and it is NOT the
+  hard part: no choice of lift is being made well, only some lift is being made at all. -/
+  set φ : MvPolynomial (Fin n) R →+* MvPolynomial (Fin n) (IsLocalRing.ResidueField R) :=
+    MvPolynomial.map (algebraMap R (IsLocalRing.ResidueField R)) with hφ
+  have hφsurj : Function.Surjective φ :=
+    MvPolynomial.map_surjective _ Ideal.Quotient.mk_surjective
+  have hPker : ∀ z : MvPolynomial (Fin n) R, z ∈ P.ker ↔ aeval y z = 0 := by
+    intro z
+    rw [Algebra.Generators.ker_eq_ker_aeval_val]
+    exact Iff.rfl
+  have hPbarker : ∀ w : MvPolynomial (Fin n) (IsLocalRing.ResidueField R),
+      w ∈ Pbar.ker ↔ aeval Pbar.val w = 0 := by
+    intro w
+    rw [Algebra.Generators.ker_eq_ker_aeval_val]
+    exact Iff.rfl
+  have hkey2 : (Algebra.TensorProduct.includeRight :
+        S →ₐ[R] (ResidueField R) ⊗[R] S).toRingHom.comp
+          (aeval y : MvPolynomial (Fin n) R →ₐ[R] S).toRingHom =
+      (aeval Pbar.val : MvPolynomial (Fin n) (ResidueField R) →ₐ[ResidueField R]
+          (ResidueField R) ⊗[R] S).toRingHom.comp φ := by
+    apply MvPolynomial.ringHom_ext
+    · intro r
+      have hk : (r • (1 : ResidueField R)) = residue R r := by
+        simp [Algebra.smul_def]
+      simp [hφ, Algebra.TensorProduct.includeRight, Algebra.algebraMap_eq_smul_one,
+        Algebra.TensorProduct.one_def, TensorProduct.smul_tmul', smul_eq_mul, mul_one, hk]
+    · intro i
+      simp [hφ, hy i]
+  have hsq : ∀ z : MvPolynomial (Fin n) R,
+      (Algebra.TensorProduct.includeRight : S →ₐ[R] (ResidueField R) ⊗[R] S) (aeval y z) =
+        aeval Pbar.val (φ z) :=
+    fun z => by simpa using DFunLike.congr_fun hkey2 z
+  have hE : ∀ s : S,
+      e ((Algebra.TensorProduct.includeRight : S →ₐ[R] (ResidueField R) ⊗[R] S) s) =
+      Submodule.Quotient.mk (p := (maximalIdeal R) • (⊤ : Submodule R S)) s := by
+    intro s
+    rw [he, Algebra.TensorProduct.includeRight_apply]
+    exact TensorProduct.quotTensorEquivQuotSMul_mk_one_tmul _ _
+  have hkerinc : ∀ s : S,
+      (Algebra.TensorProduct.includeRight : S →ₐ[R] (ResidueField R) ⊗[R] S) s = 0 →
+      s ∈ (maximalIdeal R) • (⊤ : Submodule R S) := by
+    intro s hs0
+    have hs' : (Algebra.TensorProduct.includeRight :
+          S →ₐ[R] (ResidueField R) ⊗[R] S) s =
+        (Algebra.TensorProduct.includeRight : S →ₐ[R] (ResidueField R) ⊗[R] S) 0 := by
+      rw [hs0, map_zero]
+    rw [← Submodule.Quotient.mk_eq_zero, ← hE s, hs', hE 0]
+    simp
+  have hφsmul : ∀ u ∈ (maximalIdeal R) •
+      (⊤ : Submodule R (MvPolynomial (Fin n) R)), φ u = 0 := by
+    intro u hu
+    refine Submodule.smul_induction_on hu ?_ ?_
+    · intro r hr x _
+      have hr0 : algebraMap R (ResidueField R) r = 0 := by
+        rw [IsLocalRing.ResidueField.algebraMap_eq]
+        exact (IsLocalRing.residue_eq_zero_iff r).mpr hr
+      rw [MvPolynomial.smul_eq_C_mul, hφ, map_mul, MvPolynomial.map_C, hr0, map_zero, zero_mul]
+    · intro a b ha hb
+      rw [map_add, ha, hb, add_zero]
+  have hkerφ : ∀ z : MvPolynomial (Fin n) R, φ z = 0 →
+      z ∈ (maximalIdeal R) • (⊤ : Submodule R (MvPolynomial (Fin n) R)) := by
+    intro z hz
+    have hco : ∀ α, MvPolynomial.coeff α z ∈ maximalIdeal R := by
+      intro α
+      have h1 : algebraMap R (ResidueField R) (MvPolynomial.coeff α z) = 0 := by
+        have := congrArg (MvPolynomial.coeff α) hz
+        rwa [hφ, MvPolynomial.coeff_map, MvPolynomial.coeff_zero] at this
+      rw [IsLocalRing.ResidueField.algebraMap_eq] at h1
+      exact (IsLocalRing.residue_eq_zero_iff _).mp h1
+    rw [MvPolynomial.as_sum z]
+    refine Submodule.sum_mem _ (fun α _ => ?_)
+    have hmon : MvPolynomial.monomial α (MvPolynomial.coeff α z) =
+        (MvPolynomial.coeff α z) • (MvPolynomial.monomial α (1 : R)) := by
+      rw [MvPolynomial.smul_monomial, smul_eq_mul, mul_one]
+    rw [hmon]
+    exact Submodule.smul_mem_smul (hco α) Submodule.mem_top
+  have hlift : ∀ w : MvPolynomial (Fin n) (IsLocalRing.ResidueField R), w ∈ Pbar.ker →
+      ∃ z : MvPolynomial (Fin n) R, z ∈ P.ker ∧ φ z = w := by
+    intro w hw
+    obtain ⟨z₀, hz₀⟩ := hφsurj w
+    have h1 : (Algebra.TensorProduct.includeRight :
+        S →ₐ[R] (ResidueField R) ⊗[R] S) (aeval y z₀) = 0 := by
+      rw [hsq z₀, hz₀]
+      exact (hPbarker w).mp hw
+    have h2 : aeval y z₀ ∈ (maximalIdeal R) • (⊤ : Submodule R S) := hkerinc _ h1
+    have hmapsmul : Submodule.map (aeval y : MvPolynomial (Fin n) R →ₐ[R] S).toLinearMap
+        ((maximalIdeal R) • (⊤ : Submodule R (MvPolynomial (Fin n) R)))
+        = (maximalIdeal R) • (⊤ : Submodule R S) := by
+      rw [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr hsurj]
+    rw [← hmapsmul] at h2
+    obtain ⟨u, hu, hu2⟩ := h2
+    have hu2' : (aeval y : MvPolynomial (Fin n) R →ₐ[R] S) u = aeval y z₀ := hu2
+    refine ⟨z₀ - u, ?_, ?_⟩
+    · rw [hPker, map_sub, hu2', sub_self]
+    · rw [map_sub, hφsmul u hu, sub_zero, hz₀]
+  choose g hg1 hg2 using fun i =>
+    hlift (fbar i) (by rw [← hfbar]; exact Ideal.subset_span ⟨i, rfl⟩)
+  have hgle : Ideal.span (Set.range g) ≤ P.ker :=
+    Ideal.span_le.mpr (by rintro _ ⟨i, rfl⟩; exact hg1 i)
+  have hgmod : P.ker ≤ Ideal.span (Set.range g) ⊔
+      (maximalIdeal R).map (algebraMap R P.Ring) := by
+    intro z hz
+    have hz1 : φ z ∈ Pbar.ker := by
+      rw [hPbarker, ← hsq z, (hPker z).mp hz, map_zero]
+    rw [← hfbar, Ideal.mem_span_range_iff_exists_fun] at hz1
+    obtain ⟨c, hc⟩ := hz1
+    choose C hC using fun i => hφsurj (c i)
+    have hzero : φ (z - ∑ i, C i * g i) = 0 := by
+      rw [map_sub, map_sum]
+      simp only [map_mul, hC, hg2]
+      rw [hc, sub_self]
+    refine Submodule.mem_sup.mpr ⟨∑ i, C i * g i, ?_, z - ∑ i, C i * g i, ?_, by ring⟩
+    · exact Ideal.sum_mem _ (fun i _ => Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩))
+    · have := hkerφ _ hzero
+      rwa [Ideal.smul_top_eq_map] at this
+  /- STEP 3, THE SORRIED LEAF: choose the lift so that the quotient is MODULE-FINITE, which
+  is exactly what the counterexample in the docstring above shows the previous two steps do
+  not give.  Everything after it is proven. -/
+  obtain ⟨f, hf1, hf2, hf3⟩ :=
+    exists_span_range_le_ker_module_finite_of_span_range_le_ker P g hgle hgmod
+  exact ⟨n, P, f, hf1, nonempty_linearEquiv_of_module_finite_span_range_le_ker hf1 hf2 hf3⟩
 
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
@@ -15371,9 +15678,13 @@ combinatorial statement itself factors, and the two factors share no machinery:
   bear on the group-theoretic half.
 * `exists_generators_quotient_linearEquiv_of_residue` — lifting a complete-intersection
   presentation along a finite FLAT algebra over a complete local ring.  Base-generic,
-  no group structure, no `𝒪₃ᵥ`.  Its generator-lifting half (Nakayama) is PROVEN;
-  what remains sorried inside it is the relation-lifting half, together with an
-  explicit counterexample to the naive version of it.
+  no group structure, no `𝒪₃ᵥ`.  **PROVEN 2026-07-27** over one further leaf,
+  `exists_span_range_le_ker_module_finite_of_span_range_le_ker`: the generator lift
+  (Nakayama) and the transport of the special-fibre relations are both proven, and the
+  residue is only that the relation lift can be chosen with MODULE-FINITE quotient — which
+  is precisely what the explicit counterexample to the naive lift violates.  Note that
+  leaf's correction: the ÉTALE factor has no monic-triangular presentation in general, so
+  the relation lift must NOT be planned around receiving one from the sibling.
 
 The bridge between the two is `span_range_eq_ker_of_quotient_linearEquiv` above,
 proven: relations inside the kernel whose quotient is merely `R`-LINEARLY isomorphic
