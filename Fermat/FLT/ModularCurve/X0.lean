@@ -321,6 +321,15 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `CyclicSubgroupOfOrder` and the faithfulness audit of
 -- `exists_coarseModuliY0_of_pos`.
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
+-- `AlgebraicGeometry.Etale`: the hypothesis carried by every declaration in the
+-- torsion-subscheme section below.  It is what repairs the FALSE leaf
+-- `flat_torsionι` (see the REPAIR RECORD there): `geom_cyclic` pins the
+-- CARDINALITY of the geometric fibres of `C`, Katz–Mazur pin their RANK, and
+-- the two agree exactly when `C ⟶ T` is étale.  Consumed through
+-- `Etale.of_comp`, `Etale.iff_flat_and_formallyUnramified` and the base-change
+-- stability instance.  The module is already in the cone through
+-- `Morphisms.Smooth`, which `AbelianSchemeStruct.smooth` needs.
+public import Mathlib.AlgebraicGeometry.Morphisms.Etale
 -- `IsSchemeTheoreticallyDominant` and its stability under FLAT BASE CHANGE
 -- (`IsSchemeTheoreticallyDominant.of_isPullback`) — this is what proves
 -- `ker_sqCover_spanScheme`, since over `Spec ℚ` every structure morphism is
@@ -3972,8 +3981,14 @@ With those in hand the torsion subscheme is the plain fibre product
 closed immersion because it is a section of the SEPARATED (indeed proper)
 morphism `f`; closed immersions are stable under base change and compose,
 so `torsionι n` is a closed immersion and `torsionι n ≫ f` is finite.
-Everything in this section is PROVEN except `flat_torsionι`, which is
-FALSE as stated — see its FALSITY AUDIT. -/
+
+FLATNESS is the fourth conjunct and it was FALSE as originally stated;
+`flat_torsionι` now carries `[Etale (c.ι ≫ f)]` and is PROVEN.  Its
+docstring keeps the counterexample that forced the hypothesis, together
+with a record of the repair and of which consumers were threaded.  The
+only leaf left in this section is
+`CyclicSubgroupOfOrder.etale_of_specQBase` — Cartier's theorem, which is
+what supplies that hypothesis over a `ℚ`-scheme. -/
 
 /-- **The zero section of an abelian scheme is a closed immersion**
 (PROVEN).  It is a section of `f`, and `f` is proper hence separated, so
@@ -4068,11 +4083,171 @@ theorem CyclicSubgroupOfOrder.liesIn_torsionι_iff {E T : Scheme.{u}} {f : E ⟶
       ≫ Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection) ≫ c.ι = x.1
     rw [Limits.pullback.lift_fst, hy]
 
-/-- **`C[n]` is flat over the base** (sorry leaf).
+/-! #### `[n]` and the zero section, RESTRICTED to `C`
 
-**FALSITY AUDIT (2026-07-27, with an explicit counterexample). THIS
-STATEMENT IS FALSE AS STATED.  Do not dispatch a prover at it; it needs a
-CUT-LEVEL repair, described at the end.**
+These declarations are what the étale repair of `flat_torsionι`
+needs, and they are the only place where the *subgroup* axioms of
+`CyclicSubgroupOfOrder` are used geometrically rather than
+point-theoretically.
+
+The point is Yoneda at the TAUTOLOGICAL relative point.  `C` is given as
+a subFUNCTOR of `h_E` — `zero_liesIn` / `add_liesIn` say that its points
+are closed under the group law — and no morphism `C ⟶ C` is part of the
+data.  But `ι : C ⟶ E`, read as a `C`-point of `E` (`tautPoint`), lies in
+`C` tautologically, so `n • tautPoint` lies in `C` too, and a witness of
+THAT is exactly a morphism `[n]_C : C ⟶ C` with `[n]_C ≫ ι = ι ≫ [n]`.
+The same read at the zero section gives `e_C : T ⟶ C` with
+`e_C ≫ ι = e`.  One test object, one point, no fibre products. -/
+
+/-- **`C` is closed under `n • (-)`**, by induction on `n` from
+`zero_liesIn` and `add_liesIn`. -/
+theorem CyclicSubgroupOfOrder.liesIn_nsmul {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    {T' : Scheme.{u}} {g : T' ⟶ T} (x : RelPoint f g) (hx : RelPoint.LiesIn c.ι x) (n : ℕ) :
+    letI := ab.addCommGroup g
+    RelPoint.LiesIn c.ι (n • x) := by
+  letI := ab.addCommGroup g
+  induction n with
+  | zero => rw [zero_nsmul]; exact c.zero_liesIn g
+  | succ k ih => rw [succ_nsmul]; exact c.add_liesIn ih hx
+
+/-- **The tautological relative point**: `ι : C ⟶ E` read as a `C`-point
+of `E` over the base point `ι ≫ f`. -/
+def CyclicSubgroupOfOrder.tautPoint {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) :
+    RelPoint f (c.ι ≫ f) :=
+  ⟨c.ι, rfl⟩
+
+/-- **The tautological point lies in `C`**, witnessed by `𝟙 C`. -/
+theorem CyclicSubgroupOfOrder.tautPoint_liesIn {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) :
+    RelPoint.LiesIn c.ι c.tautPoint :=
+  ⟨𝟙 _, Category.id_comp _⟩
+
+/-- **`[n]` restricts to `C`**: `liesIn_nsmul` at the tautological point,
+with `nsmul_val` identifying `(n • tautPoint).1` as `ι ≫ [n]`. -/
+theorem CyclicSubgroupOfOrder.exists_mulByNatRestrict {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ) :
+    ∃ w : c.C ⟶ c.C, w ≫ c.ι = c.ι ≫ ab.mulByNat n := by
+  letI := ab.addCommGroup (c.ι ≫ f)
+  obtain ⟨w, hw⟩ := c.liesIn_nsmul c.tautPoint c.tautPoint_liesIn n
+  exact ⟨w, by rw [hw, ab.nsmul_val n c.tautPoint]; rfl⟩
+
+/-- **`[n]_C : C ⟶ C`.** -/
+noncomputable def CyclicSubgroupOfOrder.mulByNatRestrict {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ) :
+    c.C ⟶ c.C :=
+  (c.exists_mulByNatRestrict n).choose
+
+/-- **`[n]_C` restricts `[n]`**: `[n]_C ≫ ι = ι ≫ [n]`. -/
+theorem CyclicSubgroupOfOrder.mulByNatRestrict_comp {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ) :
+    c.mulByNatRestrict n ≫ c.ι = c.ι ≫ ab.mulByNat n :=
+  (c.exists_mulByNatRestrict n).choose_spec
+
+/-- **The zero section factors through `C`** — this is `zero_liesIn` at
+the base point `𝟙 T`, and `ab.zeroSection` is by definition
+`(ab.zero (𝟙 T)).1`, so no rewriting is needed. -/
+theorem CyclicSubgroupOfOrder.exists_zeroSectionSub {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) :
+    ∃ z : T ⟶ c.C, z ≫ c.ι = ab.zeroSection :=
+  c.zero_liesIn (𝟙 T)
+
+/-- **The zero section of `C`, `e_C : T ⟶ C`.** -/
+noncomputable def CyclicSubgroupOfOrder.zeroSectionSub {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) : T ⟶ c.C :=
+  c.exists_zeroSectionSub.choose
+
+/-- **`e_C ≫ ι = e`.** -/
+theorem CyclicSubgroupOfOrder.zeroSectionSub_comp {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) :
+    c.zeroSectionSub ≫ c.ι = ab.zeroSection :=
+  c.exists_zeroSectionSub.choose_spec
+
+/-- **`e_C` is a SECTION of `C ⟶ T`**, which is the whole reason it is
+étale below: `e_C ≫ (ι ≫ f) = e ≫ f = 𝟙 T`. -/
+theorem CyclicSubgroupOfOrder.zeroSectionSub_comp_str {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) :
+    c.zeroSectionSub ≫ (c.ι ≫ f) = 𝟙 T := by
+  rw [← Category.assoc, c.zeroSectionSub_comp, ab.zeroSection_comp]
+
+/-- **A section of an étale morphism is étale** (PROVEN), here for
+`e_C : T ⟶ C`.
+
+`e_C ≫ (ι ≫ f) = 𝟙 T` is étale, and `ι ≫ f` is étale hence locally of
+finite type and formally unramified, so `Etale.of_comp` applies.  (This is
+the scheme-theoretic form of "a section of an unramified separated
+morphism is an open immersion"; only étaleness of the section is needed
+below, so the open-immersion refinement is not proven here.) -/
+theorem CyclicSubgroupOfOrder.etale_zeroSectionSub {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    [AlgebraicGeometry.Etale (c.ι ≫ f)] :
+    AlgebraicGeometry.Etale c.zeroSectionSub := by
+  haveI : AlgebraicGeometry.Etale (c.zeroSectionSub ≫ (c.ι ≫ f)) := by
+    rw [c.zeroSectionSub_comp_str]; infer_instance
+  exact AlgebraicGeometry.Etale.of_comp _ (c.ι ≫ f)
+
+/-- **`C[n] ⟶ C` is étale** (PROVEN), because it is a BASE CHANGE of the
+zero section `e_C : T ⟶ C` along `[n]_C : C ⟶ C`.
+
+That re-presentation of the fibre square is the mathematical heart of the
+repair, and it is where `ι` being a MONOMORPHISM is used.  `C[n]` is
+defined as `C ×_{ι ≫ [n], E, e} T`; pasting that square with the square
+
+    T --𝟙--> T
+    |        |
+   e_C       e
+    v        v
+    C --ι--> E
+
+— cartesian by `of_horiz_isIso_mono`, since `𝟙` is iso and `ι` is mono —
+and cancelling `ι` exhibits
+
+    C[n] --snd--> T
+     |            |
+    fst          e_C
+     v            v
+     C --[n]_C--> C
+
+as cartesian.  Now `e_C` is étale (`etale_zeroSectionSub`) and étale is
+stable under base change, so `fst : C[n] ⟶ C` is étale.
+
+Note this is FALSE without the étale hypothesis: over `𝔽̄_p[[t]]` the
+base change of a zero section along `[p]` is the connected-component
+jump that the FALSITY AUDIT below exhibits. -/
+theorem CyclicSubgroupOfOrder.etale_torsionFst {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    [AlgebraicGeometry.Etale (c.ι ≫ f)] (n : ℕ) :
+    AlgebraicGeometry.Etale
+      (Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection) := by
+  haveI := c.isClosedImmersion
+  have hp : Limits.pullback.snd (c.ι ≫ ab.mulByNat n) ab.zeroSection ≫ c.zeroSectionSub
+      = Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection ≫ c.mulByNatRestrict n := by
+    rw [← cancel_mono c.ι, Category.assoc, Category.assoc, c.zeroSectionSub_comp,
+      c.mulByNatRestrict_comp, ← Category.assoc]
+    exact Limits.pullback.condition.symm
+  have ht : IsPullback (𝟙 T) c.zeroSectionSub ab.zeroSection c.ι :=
+    IsPullback.of_horiz_isIso_mono ⟨by rw [Category.id_comp, c.zeroSectionSub_comp]⟩
+  have hs : IsPullback
+      (Limits.pullback.snd (c.ι ≫ ab.mulByNat n) ab.zeroSection ≫ 𝟙 T)
+      (Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection)
+      ab.zeroSection (c.mulByNatRestrict n ≫ c.ι) := by
+    rw [Category.comp_id, c.mulByNatRestrict_comp]
+    exact (IsPullback.of_hasPullback (c.ι ≫ ab.mulByNat n) ab.zeroSection).flip
+  exact MorphismProperty.of_isPullback (P := @AlgebraicGeometry.Etale)
+    (IsPullback.of_right hs hp ht) c.etale_zeroSectionSub
+
+/-- **`C[n]` is flat over the base** (PROVEN 2026-07-27, over the étale
+hypothesis introduced by the cut-level repair recorded below).
+
+`C[n] ⟶ C` is étale (`etale_torsionFst`) and `C ⟶ T` is étale by
+hypothesis, so `C[n] ⟶ T` is étale, and étale implies flat
+(`Etale.iff_flat_and_formallyUnramified`).
+
+**REPAIR RECORD (2026-07-27).  Without `[Etale (ι ≫ f)]` THIS STATEMENT
+IS FALSE**; the audit and its counterexample are kept below because they
+are what pins the hypothesis, and because they refute the version of this
+docstring that claimed flatness of `C[M]` follows from flatness of `C`.
 
 The counterexample lives in characteristic `p`, where `geom_cyclic` — a
 condition on the SET of geometric points — does not pin the RANK of `C`,
@@ -4124,24 +4299,64 @@ invertible and Cartier's theorem applies, and which is the only case this
 development ever evaluates.  Over a general base they come apart, and
 this leaf is where they come apart.
 
-THE REPAIR IS AT CUT LEVEL, and it is a choice between:
+THE REPAIR CARRIED OUT (route 1, 2026-07-27).  `[Etale (c.ι ≫ f)]` is
+now a hypothesis of this leaf and of `exists_torsionSubscheme`,
+`CyclicSubgroupOfOrder.ofDvd`, `liesIn_ofDvd_iff_mem`,
+`Gamma0Datum.ofDvd`, `liesIn_ofDvd_iff` and `IsBaseChangeOf.ofDvd`.  The
+sharp form was chosen over "`T` is a `ℚ`-scheme" because it is what the
+proof actually consumes, and because `Etale` is a `Prop`-valued class, so
+proof irrelevance makes the threading through `Gamma0Datum.ofDvd` and
+`IsBaseChangeOf.ofDvd` free.  Its ℚ-base instance is
+`CyclicSubgroupOfOrder.etale_of_specQBase` below, which is where
+Cartier's theorem now sits as a single named leaf.
 
-1. restrict the base: add a hypothesis making `T` a `ℚ`-scheme (or, more
-   sharply, `[IsEtale (c.ι ≫ f)]`) to `exists_torsionSubscheme`,
-   `CyclicSubgroupOfOrder.ofTorsion`, `ofDvd` and `Gamma0Datum.ofDvd`.
-   With `C ⟶ T` étale the leaf becomes TRUE and provable: the diagonal of
-   an unramified morphism is an open immersion, so `C[n]`, being the
-   equaliser of two `T`-morphisms `C ⇉ C`, is open as well as closed in
-   `C`, hence étale over `T`, hence flat;
-2. strengthen `CyclicSubgroupOfOrder` itself, replacing or supplementing
-   `geom_cyclic` with the Katz–Mazur rank condition.
+`CyclicSubgroupOfOrder.ofTorsion` was deliberately NOT changed: it takes
+flatness as the explicit argument `hflat` and never forms `C[M]` itself,
+so an étale hypothesis there would be an unused binding and an
+unnecessary obligation on its callers.
 
-Route 1 is far cheaper and matches every actual use (the twelve level
-nodes all work over `ℚ`); route 2 changes an interface several owners
-build on.  Either way it is not a repair to be made inside this leaf. -/
+The proof is NOT the one the audit guessed at ("the diagonal of an
+unramified morphism is an open immersion, so `C[n]` is the equaliser of
+two `T`-morphisms `C ⇉ C`").  That route needs `E ⟶ T` unramified, which
+is false for an abelian scheme; unramifiedness is available for `C ⟶ T`,
+not for the ambient `E`, and the equaliser as written lands in `E`.  What
+works instead is `etale_torsionFst`: re-present the fibre square as a
+base change of the SECTION `e_C : T ⟶ C` along `[n]_C : C ⟶ C`, using
+that `ι` is a mono.  Route 2 — strengthening `CyclicSubgroupOfOrder` with
+the Katz–Mazur rank condition — remains unexplored and unneeded. -/
 theorem CyclicSubgroupOfOrder.flat_torsionι {E T : Scheme.{u}} {f : E ⟶ T}
-    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ) :
-    AlgebraicGeometry.Flat (c.torsionι n ≫ f) :=
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    [AlgebraicGeometry.Etale (c.ι ≫ f)] (n : ℕ) :
+    AlgebraicGeometry.Flat (c.torsionι n ≫ f) := by
+  haveI := c.etale_torsionFst n
+  show AlgebraicGeometry.Flat
+    ((Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection ≫ c.ι) ≫ f)
+  rw [Category.assoc]
+  exact (AlgebraicGeometry.Etale.iff_flat_and_formallyUnramified.mp inferInstance).1
+
+/-- **Cartier's theorem: over a `ℚ`-scheme a finite flat commutative group
+scheme is étale** (sorry leaf, and the ONLY thing the étale repair of
+`flat_torsionι` left open).
+
+`ι ≫ f` is finite (`c.isFinite`) and flat (`c.flat`), hence finite
+locally free, hence of finite presentation; `C` is a subgroup scheme of
+`E` because `ι` is a monomorphism and `zero_liesIn` / `add_liesIn` /
+`neg_liesIn` make its points a subgroup at every base.  Étaleness of a
+finite flat morphism of finite presentation may be checked fibrewise, and
+every fibre of `T ⟶ Spec ℚ` has characteristic-zero residue field, where
+a finite group scheme is reduced (Cartier) hence étale.
+
+Faithfulness: this is NOT vacuous and NOT circular — it is the exact
+mathematical content that `geom_cyclic` was silently being asked to
+supply, isolated so that it has a name and an owner.  It is the reason
+the repair costs nothing at the twelve level nodes, all of which work
+over `ℚ`.
+
+REFERENCES: Oort, *Commutative group schemes*, and Katz–Mazur ch. 1;
+Cartier's theorem in the relative form is SGA 3, VI_B 1.6.1. -/
+theorem CyclicSubgroupOfOrder.etale_of_specQBase {E T : Scheme.{0}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    (_q : T ⟶ SpecQ) : AlgebraicGeometry.Etale (c.ι ≫ f) :=
   sorry
 
 /-- **The `M`-torsion of a cyclic subgroup scheme is again cut out by a
@@ -4174,16 +4389,18 @@ strictly larger moduli problem; see the field's own docstring for the
 `Spec ℚ[ε]` counterexample.  It is threaded through `ofTorsion`'s `hflat`
 argument to `ofDvd`.
 
-**AND FLATNESS IS WHERE THIS STATEMENT IS FALSE.**  The earlier claim in
-this docstring — "`C[M]` is a torsion subscheme of an already-flat `C`, so
-whatever construction discharges this leaf produces flatness along with
-finiteness, and no separate argument is needed" — is WRONG: a closed
-subscheme of a flat scheme is not flat, and in characteristic `p` the rank
-of `C[M]` genuinely jumps.  The counterexample, and the two candidate
-cut-level repairs, are in the FALSITY AUDIT of
-`CyclicSubgroupOfOrder.flat_torsionι`.  Read that before working here. -/
+**AND FLATNESS IS WHERE THIS STATEMENT WAS FALSE**, which is why it now
+carries `[Etale (c.ι ≫ f)]`.  The earlier claim in this docstring —
+"`C[M]` is a torsion subscheme of an already-flat `C`, so whatever
+construction discharges this leaf produces flatness along with finiteness,
+and no separate argument is needed" — is WRONG: a closed subscheme of a
+flat scheme is not flat, and in characteristic `p` the rank of `C[M]`
+genuinely jumps.  The counterexample, and the repair actually carried out,
+are in the docstring of `CyclicSubgroupOfOrder.flat_torsionι`.  Read that
+before working here. -/
 theorem exists_torsionSubscheme {E T : Scheme.{u}} {f : E ⟶ T}
-    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (M : ℕ) :
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    [AlgebraicGeometry.Etale (c.ι ≫ f)] (M : ℕ) :
     ∃ (C' : Scheme.{u}) (ι' : C' ⟶ E), IsClosedImmersion ι' ∧ IsFinite (ι' ≫ f) ∧
       AlgebraicGeometry.Flat (ι' ≫ f) ∧
       ∀ (T' : Scheme.{u}) (g : T' ⟶ T) (x : RelPoint f g),
@@ -4274,7 +4491,8 @@ subfunctor is a closed subscheme, finite over the base) fed to
 cyclic of order exactly `M`). -/
 noncomputable def CyclicSubgroupOfOrder.ofDvd {E T : Scheme.{u}} {f : E ⟶ T}
     {ab : AbelianSchemeStruct f} {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
-    (c : CyclicSubgroupOfOrder ab N) : CyclicSubgroupOfOrder ab M :=
+    (c : CyclicSubgroupOfOrder ab N) [AlgebraicGeometry.Etale (c.ι ≫ f)] :
+    CyclicSubgroupOfOrder ab M :=
   CyclicSubgroupOfOrder.ofTorsion hN hMN c (exists_torsionSubscheme c M).choose_spec.choose
     (exists_torsionSubscheme c M).choose_spec.choose_spec.1
     (exists_torsionSubscheme c M).choose_spec.choose_spec.2.1
@@ -4289,7 +4507,8 @@ anything downstream should use; the underlying scheme is obtained by
 choice from `exists_torsionSubscheme` and is not otherwise pinned. -/
 theorem CyclicSubgroupOfOrder.liesIn_ofDvd_iff_mem {E T : Scheme.{u}} {f : E ⟶ T}
     {ab : AbelianSchemeStruct f} {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
-    (c : CyclicSubgroupOfOrder ab N) (T' : Scheme.{u}) (g : T' ⟶ T) (x : RelPoint f g) :
+    (c : CyclicSubgroupOfOrder ab N) [AlgebraicGeometry.Etale (c.ι ≫ f)]
+    (T' : Scheme.{u}) (g : T' ⟶ T) (x : RelPoint f g) :
     letI := ab.addCommGroup g
     RelPoint.LiesIn (c.ofDvd hN hMN).ι x ↔ (RelPoint.LiesIn c.ι x ∧ M • x = 0) :=
   (exists_torsionSubscheme c M).choose_spec.choose_spec.2.2.2 T' g x
@@ -4301,9 +4520,15 @@ morphism, same abelian-scheme structure, same relative dimension — and
 only the level structure is cut down by `CyclicSubgroupOfOrder.ofDvd`.
 Writing it this way is what makes `IsBaseChangeOf.ofDvd` below carry the
 *same* `map` and the *same* cartesian square, so that the only thing left
-to check there is the level-structure axiom. -/
+to check there is the level-structure axiom.
+
+`[Etale (d.cyc.ι ≫ d.f)]` comes from the repair of `flat_torsionι`; over
+a `ℚ`-scheme base it is supplied by
+`CyclicSubgroupOfOrder.etale_of_specQBase`, which is how the two
+universal-property consumers below discharge it. -/
 noncomputable def Gamma0Datum.ofDvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
-    {T : Scheme.{u}} (d : Gamma0Datum N T) : Gamma0Datum M T where
+    {T : Scheme.{u}} (d : Gamma0Datum N T)
+    [AlgebraicGeometry.Etale (d.cyc.ι ≫ d.f)] : Gamma0Datum M T where
   E := d.E
   f := d.f
   ab := d.ab
@@ -4389,7 +4614,8 @@ not inherit verbatim from `hb`, because the other four mention only data
 that `Gamma0Datum.ofDvd` copies unchanged. -/
 theorem liesIn_ofDvd_iff {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
     {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
-    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d)
+    {d : Gamma0Datum N T} [AlgebraicGeometry.Etale (d'.cyc.ι ≫ d'.f)]
+    [AlgebraicGeometry.Etale (d.cyc.ι ≫ d.f)] (hb : IsBaseChangeOf h d' d)
     {T'' : Scheme.{u}} {g : T'' ⟶ T'} (x : RelPoint d'.f g) :
     RelPoint.LiesIn (d'.ofDvd hN hMN).cyc.ι x ↔
       RelPoint.LiesIn (d.ofDvd hN hMN).cyc.ι
@@ -4412,7 +4638,8 @@ Four of the five axioms are `hb`'s own, because `Gamma0Datum.ofDvd`
 changes nothing they mention; the fifth is `liesIn_ofDvd_iff`. -/
 noncomputable def IsBaseChangeOf.ofDvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
     {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
-    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d) :
+    {d : Gamma0Datum N T} [AlgebraicGeometry.Etale (d'.cyc.ι ≫ d'.f)]
+    [AlgebraicGeometry.Etale (d.cyc.ι ≫ d.f)] (hb : IsBaseChangeOf h d' d) :
     IsBaseChangeOf h (d'.ofDvd hN hMN) (d.ofDvd hN hMN) where
   map := hb.map
   isPullback := hb.isPullback
@@ -4444,8 +4671,13 @@ theorem y0HasNoRationalPoint_of_dvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
   intro Y str hcoarse
   obtain ⟨Y', str', ⟨cM⟩⟩ := exists_coarseModuliY0 M
   obtain ⟨u, ⟨hu, -⟩, -⟩ :=
-    hcoarse.universal str' (fun g d => cM.classify g (d.ofDvd hN hMN))
-      (by intro _ _ h _ _ hg _ _ hb; exact cM.classify_natural h hg (hb.ofDvd hN hMN))
+    hcoarse.universal str'
+      (fun g d => haveI := d.cyc.etale_of_specQBase g; cM.classify g (d.ofDvd hN hMN))
+      (by
+        intro _ _ h g g' hg d' d hb
+        haveI := d'.cyc.etale_of_specQBase g'
+        haveI := d.cyc.etale_of_specQBase g
+        exact cM.classify_natural h hg (hb.ofDvd hN hMN))
   refine ⟨fun x => (hM Y' str' cM).elim ⟨x.1 ≫ u, ?_⟩⟩
   rw [Category.assoc, hu, x.2]
 
@@ -5537,6 +5769,7 @@ structure IsJLine where
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) →
       ∃ d : Gamma0Datum N SpecQ,
+        letI := d.cyc.etale_of_specQBase (𝟙 SpecQ)
         jLineVal (jt (𝟙 SpecQ) (d.ofDvd hN (one_dvd N))) = E.j
 
 /-- **Existence of the `j`-invariant of an elliptic scheme** (sorry node).
@@ -5593,8 +5826,13 @@ theorem exists_jMap (N : ℕ) (hN : N ≠ 0) {Y : Scheme.{0}} {strY : Y ⟶ Spec
     (hc : IsCoarseModuliY0 N strY) : Nonempty (IsJMapOn N hc) := by
   obtain ⟨jl⟩ := exists_jLine
   obtain ⟨u, ⟨hu, hu2⟩, -⟩ :=
-    hc.universal jLineStr (fun g d => jl.jt g (d.ofDvd hN (one_dvd N)))
-      (by intro _ _ h _ _ hg _ _ hb; exact jl.jt_natural h hg (hb.ofDvd hN (one_dvd N)))
+    hc.universal jLineStr
+      (fun g d => haveI := d.cyc.etale_of_specQBase g; jl.jt g (d.ofDvd hN (one_dvd N)))
+      (by
+        intro _ _ h g g' hg d' d hb
+        haveI := d'.cyc.etale_of_specQBase g'
+        haveI := d.cyc.etale_of_specQBase g
+        exact jl.jt_natural h hg (hb.ofDvd hN (one_dvd N)))
   refine ⟨{ jm := fun y => jLineVal ⟨y.1 ≫ u, by rw [Category.assoc, hu, y.2]⟩
             classify_jm := ?_ }⟩
   intro E _ g hg hstable
