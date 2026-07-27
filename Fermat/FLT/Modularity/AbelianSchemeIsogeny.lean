@@ -143,6 +143,15 @@ public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 public import Mathlib.RingTheory.Ideal.AssociatedPrime.Basic
 public import Mathlib.RingTheory.Regular.IsSMulRegular
 public import Mathlib.RingTheory.Depth.Rees
+-- The going-down half of `ringKrullDim_stalk_eq_of_isFinite_endo` below.
+-- `Ideal.GoingDown` supplies `Algebra.HasGoingDown`, which occurs in the
+-- SIGNATURE of the leaf `hasGoingDown_stalkMap_of_isFinite_endo`, so it is
+-- `public`; `KrullsHeightTheorem` supplies Stacks 00OM/00ON
+-- (`Ideal.height_le_height_add_of_liesOver`,
+-- `Ideal.height_eq_height_add_of_liesOver_of_hasGoingDown`) and `Ideal.Height`
+-- the identification `(maximalIdeal R).height = ringKrullDim R`.
+public import Mathlib.RingTheory.Ideal.GoingDown
+public import Mathlib.RingTheory.Ideal.Height
 -- `isRegularLocalRing_stalk_of_smooth` below is a one-line corollary of
 -- `isRegularLocalRing_stalk_of_smooth_over_field`, which was PROVEN in
 -- `Modularity/KhareWintenberger.lean` — a module strictly DOWNSTREAM of this
@@ -1828,14 +1837,22 @@ with finite fibres", and no leaf has to redo that step.
   over the hoisted `isRegularLocalRing_stalk_of_smooth_over_field`, once the
   bundled-`K` instance defect in its own signature was repaired (see its
   docstring).  It was never mathematics: it was a HOIST and then a BINDER.
-  It also unblocks `exists_isWeaklyRegular_span_eq_maximalIdeal` below.
+  The binder is now `{K : Type u} [Field K]` with base
+  `Spec (CommRingCat.of K)` here, in `ringKrullDim_stalk_eq_of_isFinite_endo`,
+  in `flat_of_finite_fibres_endo` and in `flat_mulByNat_of_field`.  It also
+  unblocks `exists_isWeaklyRegular_span_eq_maximalIdeal` below.
 * `ringKrullDim_quotient_map_maximalIdeal_stalkMap` — **PROVEN**, over the new
   ring-level lemma `ringKrullDim_quotient_of_quasiFinite`.  The hand-written
   affine descent the survey called for turned out to be already in mathlib as
   `Scheme.Hom.quasiFiniteAt`.
-* `ringKrullDim_stalk_eq_of_isFinite_endo` — OPEN, and still the deepest: it
-  needs `dim 𝒪_{X,x} + dim closure{x} = dim X`, and mathlib has no scheme-level
-  dimension theory at all.
+* `ringKrullDim_stalk_eq_of_isFinite_endo` — **PROVEN 2026-07-27** over ONE new
+  leaf, `hasGoingDown_stalkMap_of_isFinite_endo`.  It does NOT need
+  `dim 𝒪_{X,x} + dim closure{x} = dim X`, and no scheme dimension theory is
+  used: both sides are heights of maximal ideals, the `≤` is Stacks 00OM and
+  the fibre-dimension leaf, and the `≥` is Stacks 00ON given going-down.  The
+  remaining leaf's own irreducible content is **a regular local ring is
+  integrally closed** (regular ⟹ normal), absent from mathlib, this project
+  and `~/cs/FLT`.
 * `flat_of_isRegularLocalRing_of_ringKrullDim_eq` — **PROVEN over three new
   sub-leaves** (`exists_isWeaklyRegular_span_eq_maximalIdeal`,
   `isWeaklyRegular_map_of_ringKrullDim_eq`,
@@ -1881,6 +1898,28 @@ genuinely different schemes, because nothing ties the two ring structures
 together.  `[Field K]` therefore asserts only that the carrier TYPE of `K`
 happens to admit SOME field structure, which constrains `K.str` not at all.
 
+**THE REPAIR, NOW MADE (2026-07-27).**  The signature is
+`{K : Type u} [Field K]` with base `Spec (CommRingCat.of K)`, so that the
+field structure of the hypothesis IS the ring structure of the base scheme.
+Under it this leaf closes in the one line the audit predicted.  The repair was
+threaded through the four declarations of the sub-cluster that share the binder
+and pass `K` to one another — this leaf,
+`ringKrullDim_stalk_eq_of_isFinite_endo`, `flat_of_finite_fibres_endo` and
+`flat_mulByNat_of_field` — and it TERMINATES at `flat_fiberMap_mulByNat`, whose
+`K` is `S.residueField s`, *defined* as
+`CommRingCat.of (IsLocalRing.ResidueField _)`, so the unbundled form is
+discharged there by `rfl`.  No proof body outside those four changed.
+
+The OTHER cluster diagnosed by the FALSITY AUDIT on
+`nonempty_module_infKernel_of_squareZero` below — that leaf,
+`eq_zero_of_nsmul_eq_zero_of_squareZero`, `formallyUnramified_mulByNat`,
+`finite_preimage_mulByNat_of_field_prime_to_char` and
+`finite_preimage_mulByNat_of_field` — is UNTOUCHED and still needs its own
+owner.  The two clusters meet only at
+`flat_mulByNat_of_field`'s call of `finite_preimage_mulByNat_of_field`, which
+survives the repair because the bundled statement instantiates at
+`CommRingCat.of K` for a genuine field `K`.
+
 THE COUNTEREXAMPLE.  Take `K := CommRingCat.of (ZMod 4)`, so `↥K = ZMod 4`, a
 four-element type.  A `Field ↥K` instance exists — transport the field
 structure of `GaloisField 2 2` along any bijection `ZMod 4 ≃ GaloisField 2 2`
@@ -1889,8 +1928,7 @@ structure of `GaloisField 2 2` along any bijection `ZMod 4 ≃ GaloisField 2 2`
 local with maximal ideal `(2)`, so the stalk at the unique point is `ZMod 4`
 itself, which is not even a domain — and a regular local ring IS a domain
 (`GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing`, PROVEN in
-`KhareWintenberger.lean`).  So the conclusion fails.  The same counterexample
-refutes the sibling `ringKrullDim_stalk_eq_of_isFinite_endo` below.
+`KhareWintenberger.lean`).  So the conclusion fails.
 
 **THE REPAIR IS DONE, AND THIS LEAF IS CLOSED (2026-07-27).**  The binder is
 now `{K : Type u} [Field K]` with base `Spec (CommRingCat.of K)` — the idiom
@@ -1923,11 +1961,26 @@ which now pass `↥(S.residueField _)`: `Scheme.residueField` is *defined* as
 defect was found three times in this file — repaired across eleven
 declarations, reintroduced in a declaration opened after that repair, then
 found again in a third cluster.  Reintroducing the bundled binder anywhere
-re-creates the ambiguity for everyone. -/
+re-creates the ambiguity for everyone.
+
+**ONE CLAIM OF THAT AUDIT WAS WRONG, AND IT IS CORRECTED HERE (2026-07-27).**
+The audit closed by saying "the same counterexample refutes the sibling
+`ringKrullDim_stalk_eq_of_isFinite_endo` below".  It does not.  In that
+counterexample `X = Spec K` is a ONE-POINT scheme, so its only endomorphism is
+`𝟙` and the sibling's conclusion
+`dim 𝒪_{X,x} = dim 𝒪_{X,u x}` is `dim 𝒪_{X,x} = dim 𝒪_{X,x}`, which is true.
+The defect is real in both leaves — with `K.str` unconstrained the smoothness
+hypothesis carries no regularity and neither leaf is provable — but a leaf
+whose conclusion is an EQUATION BETWEEN TWO INSTANCES OF THE SAME QUANTITY is
+not refuted by a counterexample that collapses them.  This matters because a
+recorded refutation is what stops the next owner from attempting a proof: it
+must name a counterexample that actually falsifies the CONCLUSION, not merely
+one that voids the hypotheses. -/
 theorem isRegularLocalRing_stalk_of_smooth {X : Scheme.{u}} {K : Type u} [Field K]
     (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] (x : X) :
     IsRegularLocalRing (X.presheaf.stalk x) :=
-  GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field g ‹Smooth g› x
+  _root_.GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field
+    g ‹Smooth g› x
 
 /-- **THE FIBRE OF A QUASI-FINITE ALGEBRA OVER A LOCAL RING IS ZERO-DIMENSIONAL**
 (PROVEN 2026-07-27 — the ring-level core of
@@ -2046,10 +2099,144 @@ theorem ringKrullDim_quotient_map_maximalIdeal_stalkMap {X Y : Scheme.{u}}
   rw [halg]
   exact IsLocalRing.map_maximalIdeal_lt_top _
 
+/-- **A LOCAL HOMOMORPHISM WITH A ZERO-DIMENSIONAL FIBRE AND GOING-DOWN
+PRESERVES THE KRULL DIMENSION** (**PROVEN 2026-07-27** — pure commutative
+algebra, Matsumura 13.B Th. 19(2); this is the ring-level core of
+`ringKrullDim_stalk_eq_of_isFinite_endo` below).
+
+For `A → B` a homomorphism of Noetherian local rings with `𝔪_B` lying over
+`𝔪_A`, satisfying going-down, and whose fibre `B ⧸ 𝔪_A B` is zero-dimensional,
+`dim B = dim A`.
+
+Both halves come from mathlib's height comparison across a `LiesOver` pair:
+the `≤` is Stacks 00OM (`Ideal.height_le_height_add_of_liesOver`, free), and
+the `≥` is Stacks 00ON
+(`Ideal.height_eq_height_add_of_liesOver_of_hasGoingDown`), which upgrades it
+to an equality exactly under `[Algebra.HasGoingDown A B]`.  The remaining work
+is bookkeeping: `IsLocalRing.maximalIdeal_height_eq_ringKrullDim` turns the
+three heights into Krull dimensions, and
+`IsLocalRing.map_maximalIdeal_of_surjective` identifies the fibre term
+`𝔪_B ⬝ (B ⧸ 𝔪_A B)` with the maximal ideal of the fibre ring, so that `hfib`
+applies to it.
+
+**Where going-down is the ONLY input that is not free.**  Dropping
+`[Algebra.HasGoingDown A B]` leaves `dim B ≤ dim A`, which is Stacks 00OM and
+holds for every such pair.  So a consumer that needs only the inequality does
+not need this lemma's hardest hypothesis — see the discussion on
+`hasGoingDown_stalkMap_of_isFinite_endo` below. -/
+theorem ringKrullDim_eq_of_hasGoingDown_of_ringKrullDim_quotient_eq_zero
+    {A B : Type u} [CommRing A] [CommRing B] [IsLocalRing A] [IsLocalRing B]
+    [IsNoetherianRing A] [IsNoetherianRing B] [Algebra A B] [Algebra.HasGoingDown A B]
+    [(IsLocalRing.maximalIdeal B).LiesOver (IsLocalRing.maximalIdeal A)]
+    (hfib : ringKrullDim (B ⧸ (IsLocalRing.maximalIdeal A).map (algebraMap A B)) = 0) :
+    ringKrullDim B = ringKrullDim A := by
+  set I : Ideal B := (IsLocalRing.maximalIdeal A).map (algebraMap A B) with hIdef
+  have hI : I ≤ IsLocalRing.maximalIdeal B := by
+    rw [hIdef, Ideal.LiesOver.over (p := IsLocalRing.maximalIdeal A)
+      (P := IsLocalRing.maximalIdeal B)]
+    exact Ideal.map_comap_le
+  have hIne : I ≠ ⊤ := fun h =>
+    (IsLocalRing.maximalIdeal.isMaximal B).ne_top (top_le_iff.mp (h ▸ hI))
+  haveI : Nontrivial (B ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hIne
+  haveI : IsLocalRing (B ⧸ I) := .of_surjective' _ Ideal.Quotient.mk_surjective
+  have hmapmax : (IsLocalRing.maximalIdeal B).map (Ideal.Quotient.mk I)
+      = IsLocalRing.maximalIdeal (B ⧸ I) :=
+    IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
+  have h := Ideal.height_eq_height_add_of_liesOver_of_hasGoingDown
+    (IsLocalRing.maximalIdeal A) (IsLocalRing.maximalIdeal B)
+  rw [← hIdef, hmapmax] at h
+  have hfib0 : (IsLocalRing.maximalIdeal (B ⧸ I)).height = 0 := by
+    have h0 := IsLocalRing.maximalIdeal_height_eq_ringKrullDim (R := B ⧸ I)
+    rw [hfib] at h0
+    exact_mod_cast h0
+  rw [hfib0, add_zero] at h
+  rw [← IsLocalRing.maximalIdeal_height_eq_ringKrullDim (R := B),
+    ← IsLocalRing.maximalIdeal_height_eq_ringKrullDim (R := A), h]
+
+/-- **GOING-DOWN FOR THE STALK MAP OF A FINITE ENDOMORPHISM OF A SMOOTH
+PROPER GEOMETRICALLY CONNECTED SCHEME OVER A FIELD** (sorry leaf, created
+2026-07-27 — it is now the ONLY open content under
+`ringKrullDim_stalk_eq_of_isFinite_endo` below, which is proven over it.
+General scheme theory, NO abelian varieties, no group law, no `[n]`.)
+
+`u.stalkMap x : 𝒪_{X,u x} ⟶ 𝒪_{X,x}` satisfies going-down: every chain of
+primes below `𝔪_{u x}` lifts to a chain below `𝔪_x`.
+
+**WHY THIS IS THE RIGHT CUT.**  Its consumer needs the two-sided height
+identity across a `LiesOver` pair.  The `≤` half of that identity —
+`dim 𝒪_{X,x} ≤ dim 𝒪_{X,u x}` — is Stacks 00OM
+(`Ideal.height_le_height_add_of_liesOver`) and costs nothing, given that the
+fibre is zero-dimensional (`ringKrullDim_quotient_map_maximalIdeal_stalkMap`,
+already proven).  Going-down is the ONLY hypothesis that upgrades it to the
+equality (Stacks 00ON, Matsumura 13.B Th. 19(2)), so it carries the whole of
+the remaining mathematics and nothing else does.
+
+**THE ROUTE, and it does NOT use flatness** — using flatness would be
+circular, since the node this whole block serves
+(`flat_of_finite_fibres_endo`) exists to PROVE flatness.  Krull's going-down
+theorem for integrally closed domains is in the pin as an INSTANCE,
+`Mathlib/RingTheory/IntegralClosure/GoingDown.lean` (`@[stacks 00H8]`):
+
+    [IsDomain S] [FaithfulSMul R S] [Algebra.IsIntegral R S] [IsIntegrallyClosed R]
+      → Algebra.HasGoingDown R S
+
+so the proof must supply those four for a suitable pair, and then transport
+going-down to the stalks.  **The transport is why the pair cannot be the
+stalks themselves**: `Algebra.IsIntegral 𝒪_{X,u x} 𝒪_{X,x}` is FALSE in
+general — the stalk map of a finite morphism is not even module-finite, see
+the counterexample `Spec ℤ[i] ⟶ Spec ℤ` at `(5)` written out on
+`ringKrullDim_quotient_map_maximalIdeal_stalkMap` above.  The four hypotheses
+hold on an AFFINE CHART: choose affine `V ∋ u x`; `u` finite is affine, so
+`U = u ⁻¹ᵁ V` is affine and `B = Γ(U)` is a finite — hence integral —
+`A = Γ(V)`-algebra, and `𝒪_{X,x} = B_q`, `𝒪_{X,u x} = A_p` by
+`IsAffineOpen.isLocalization_stalk`.  Going-down then descends to the
+localisations, because it is a statement about chains of primes below `q` and
+below `p`, which the localisation maps identify.
+
+**THE FOUR INPUTS, and what each hypothesis of this leaf is for.**
+
+1. `Algebra.IsIntegral A B` — from `[IsFinite u]`, on the chart.
+2. `IsDomain B` and `FaithfulSMul A B` — from `X` being INTEGRAL and `u`
+   DOMINANT.  Integrality is steps 1–2 of the survey on the consumer below:
+   `Smooth g` over a field makes every stalk regular local hence a domain
+   (`isRegularLocalRing_stalk_of_smooth` above, now PROVEN, plus
+   `GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing`), so `X`
+   is locally irreducible; `GeometricallyConnected g` makes it connected; and
+   a connected, locally noetherian, locally irreducible scheme is
+   irreducible.  Dominance of `u` is where `IsProper g` is used: `X` is then
+   quasi-compact and of finite type over `K`, hence finite-dimensional, and a
+   finite morphism preserves the dimension of a closed subset, so `u '' X`
+   closed irreducible of full dimension forces `u '' X = X`.
+3. `IsIntegrallyClosed A` — **the one piece of commutative algebra that is
+   absent everywhere** (mathlib, this project and `~/cs/FLT`): *a regular
+   local ring is integrally closed*, applied at every localisation of `A` via
+   `Mathlib/RingTheory/LocalProperties/IntegrallyClosed.lean`.  There is no
+   `IsNormalRing` class in the pin at all.
+   *Refute with:* `grep -rn "IsIntegrallyClosed" .lake/packages/mathlib/Mathlib/
+   | grep -i "regular\|smooth\|normal"` returning a theorem rather than prose.
+
+**A WEAKER STATEMENT THAT WOULD ALSO SERVE, if going-down proves too
+expensive**: the consumer only needs `dim 𝒪_{X,x} = dim 𝒪_{X,u x}`, and the
+`≤` half is free.  So `dim 𝒪_{X,u x} ≤ dim 𝒪_{X,x}` by ANY route — for
+instance a topological one through
+`AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` (`@[stacks 02IZ]`), which
+turns both sides into `Order.coheight` in the specialisation order and the
+statement into "`u` lifts chains of generalisations", i.e. going-down again,
+but stated topologically and perhaps reachable from
+`Algebra.HasGoingDown.iff_generalizingMap_primeSpectrumComap` — would close
+the node just as well.  Re-cutting this leaf that way is a legitimate move for
+whoever takes it. -/
+theorem hasGoingDown_stalkMap_of_isFinite_endo {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [IsProper g] [GeometricallyConnected g]
+    (u : X ⟶ X) [IsFinite u] (x : X) :
+    @Algebra.HasGoingDown (X.presheaf.stalk (u x)) (X.presheaf.stalk x) _ _
+      (u.stalkMap x).hom.toAlgebra :=
+  sorry
+
 /-- **A FINITE ENDOMORPHISM PRESERVES THE DIMENSION OF EVERY LOCAL RING**
-(sorry leaf — general scheme theory over a field, NO abelian varieties, no
-group law, no `[n]`.  This is the deepest of the three geometric leaves and
-the one that genuinely needs a dimension theory of schemes.)
+(**PROVEN 2026-07-27** over the single leaf
+`hasGoingDown_stalkMap_of_isFinite_endo` immediately above — general scheme
+theory over a field, NO abelian varieties, no group law, no `[n]`.)
 
 **SIGNATURE REPAIRED 2026-07-27 — this leaf was FALSE AS STATED until then.**
 It used to bind `{K : CommRingCat.{u}} [Field K]` with `(g : X ⟶ Spec K)`,
@@ -2148,17 +2335,50 @@ Note this route ALSO discards steps 1–3 of the survey above: irreducibility is
 still wanted (to make the charts domains), but SURJECTIVITY of `u` is not used,
 and neither is `dim 𝒪_{X,x} + dim closure{x} = dim X`.
 
-**Whoever takes this leaf should read the docstring of
-`exists_isWeaklyRegular_span_eq_maximalIdeal` below first**: the same hoist of
-`Modularity/KhareWintenberger.lean`'s regular-local-ring material that closes
-`isRegularLocalRing_stalk_of_smooth` is what would put `IsRegularLocalRing` on
-the charts' localisations here, so all three leaves share one piece of
-bookkeeping. -/
+**STATUS 2026-07-27 — PROVEN, over the SINGLE leaf
+`hasGoingDown_stalkMap_of_isFinite_endo` immediately above, and the signature
+is REPAIRED.**  Two changes landed together:
+
+* The binder is now `{K : Type u} [Field K]` with base
+  `Spec (CommRingCat.of K)`.  Under the old `{K : CommRingCat.{u}} [Field K]`
+  the field structure was a class on the CARRIER TYPE and constrained `K.str`
+  not at all, so `Smooth g` carried no regularity and this leaf was not
+  provable — see the FALSITY AUDIT on `isRegularLocalRing_stalk_of_smooth`
+  above, together with the correction recorded there of its claim that that
+  audit's counterexample refutes THIS leaf (it does not: its `X` is a single
+  point, so its only endomorphism is `𝟙` and the conclusion is `a = a`).
+* Every step of the route above except going-down is now discharged here.
+  The two heights are the heights of the two maximal ideals
+  (`IsLocalRing.maximalIdeal_height_eq_ringKrullDim`), `𝔪_x` lies over
+  `𝔪_{u x}` because a stalk map is a LOCAL homomorphism
+  (`IsLocalRing.maximalIdeal_comap`), the fibre is zero-dimensional by the
+  already-proven `ringKrullDim_quotient_map_maximalIdeal_stalkMap`, and
+  Noetherianness of both stalks comes free from `IsRegularLocalRing`, which
+  mathlib defines as extending `IsNoetherianRing`.  The height algebra is
+  packaged as `ringKrullDim_eq_of_hasGoingDown_of_ringKrullDim_quotient_eq_zero`
+  above.
+
+**No affine cover is descended to, and no scheme dimension theory is used.**
+The route's steps 1 and 2 (irreducibility of `X`, surjectivity of `u`) are NOT
+consumed by this assembly; they survive only as the natural way to prove the
+one remaining leaf. -/
 theorem ringKrullDim_stalk_eq_of_isFinite_endo {X : Scheme.{u}} {K : Type u} [Field K]
     (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [IsProper g] [GeometricallyConnected g]
     (u : X ⟶ X) [IsFinite u] (x : X) :
-    ringKrullDim (X.presheaf.stalk x) = ringKrullDim (X.presheaf.stalk (u x)) :=
-  sorry
+    ringKrullDim (X.presheaf.stalk x) = ringKrullDim (X.presheaf.stalk (u x)) := by
+  letI : Algebra (X.presheaf.stalk (u x)) (X.presheaf.stalk x) := (u.stalkMap x).hom.toAlgebra
+  have halg : algebraMap (X.presheaf.stalk (u x)) (X.presheaf.stalk x)
+      = (u.stalkMap x).hom := rfl
+  haveI : IsRegularLocalRing (X.presheaf.stalk x) := isRegularLocalRing_stalk_of_smooth g x
+  haveI : IsRegularLocalRing (X.presheaf.stalk (u x)) :=
+    isRegularLocalRing_stalk_of_smooth g (u x)
+  haveI := hasGoingDown_stalkMap_of_isFinite_endo g u x
+  haveI : (IsLocalRing.maximalIdeal (X.presheaf.stalk x)).LiesOver
+      (IsLocalRing.maximalIdeal (X.presheaf.stalk (u x))) :=
+    ⟨(IsLocalRing.maximalIdeal_comap (u.stalkMap x).hom).symm⟩
+  refine ringKrullDim_eq_of_hasGoingDown_of_ringKrullDim_quotient_eq_zero ?_
+  rw [halg]
+  exact ringKrullDim_quotient_map_maximalIdeal_stalkMap u x
 
 /-! ### The three sub-leaves of miracle flatness at the ring level
 
@@ -5278,7 +5498,7 @@ theorem flat_mulByNat_of_field {X : Scheme.{u}} (K : Type u) [Field K]
   haveI := ab.connected
   haveI := ab.isProper_mulByNat n
   flat_of_finite_fibres_endo fK (ab.mulByNat n)
-    (finite_preimage_mulByNat_of_field K ab n hn)
+    (finite_preimage_mulByNat_of_field (CommRingCat.of K) ab n hn)
 
 /-- **`[p]` is FLAT ON EVERY FIBRE, for `p` prime** (PROVEN 2026-07-27;
 abelian varieties — Mumford *Abelian Varieties* §6 (Application 2 of the
