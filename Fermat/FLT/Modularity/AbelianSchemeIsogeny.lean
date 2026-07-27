@@ -776,9 +776,20 @@ On 2026-07-27 that leaf was CUT along the source's own seam into
 * `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` — **00R7**, the
   engine, still open;
 * `essFinitePresentation_of_essFiniteType_of_flat_quotientMap` — the
-  **finite-generation of `J`**, 05UV's other conclusion, still open;
+  **finite-generation of `J`**, 05UV's other conclusion.  **PROVEN
+  2026-07-27** by writing out 05UV's own presentation step; its whole
+  remaining content is the new leaf `fg_ker_of_flat_quotientMap` ("`J` is
+  finitely generated"), and the presentation bookkeeping around it —
+  `exists_essFinitePresentation_surjective_of_essFiniteType` and
+  `essFinitePresentation_comp_of_fg_ker` — is proven, needing nothing that
+  was missing from the pin;
 * `flat_of_flat_of_flat_quotientMap` — now **PROVEN**, a two-line assembly of
   those two, exactly as 05UV's proof ends.
+
+So the two OPEN leaves of this block are now
+`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` (00R7) and
+`fg_ker_of_flat_quotientMap` (finite generation of `J`), and the survey below
+applies to both.
 
 Everything below is the route audit that produced that cut, retained verbatim
 because each of its claims is paired with the grep that refutes it if it goes
@@ -1003,8 +1014,268 @@ theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation {R B A : Type 
     v.Flat :=
   sorry
 
-/-- **THE FINITE-GENERATION HALF: 05UV's OTHER conclusion** (SORRY LEAF, cut
-2026-07-27).  Under exactly the hypotheses of
+/-! ### The PRESENTATION half of 05UV's finite-generation argument — PROVEN
+
+**This block discharges the "state it together with the presentation"
+instruction that the leaf below used to carry** (2026-07-27).
+
+05UV's proof of its first conclusion opens by writing down a presentation:
+`S = C_q̄` with `C = R[x₁,…,xₙ]/I`, put `B' = R[x₁,…,xₙ]_q` and `J = I·B'`, so
+that `S = B'/J` with `B'` essentially of finite PRESENTATION over `R`; the
+content is then that `J` is finitely generated.  The previous version of the
+leaf's docstring recorded that bookkeeping as unwritten, and inferred from
+that that a bare statement of **046Y** would be free-floating.
+
+The bookkeeping is now **written and proven**, and it turned out to need no
+missing mathematics whatever — only mathlib's `Algebra.EssFiniteType` API,
+`Algebra.FiniteType.iff_quotient_mvPolynomial''`, `Localization.AtPrime` and
+`IsLocalization.of_surjective`:
+
+* `exists_essFinitePresentation_surjective_of_essFiniteType` — the
+  presentation itself: every local homomorphism essentially of finite TYPE is
+  a SURJECTION out of a LOCAL ring essentially of finite PRESENTATION.  That
+  ring is `B'`;
+* `essFinitePresentation_comp_of_fg_ker` — the converse bookkeeping: if the
+  kernel of such a surjection is finitely generated, the composite is
+  essentially of finite presentation.  That is "`J` finitely generated ⟹ `S`
+  essentially of finite presentation over `R`".
+
+Consequently the leaf that used to stand here is now a THREE-LINE ASSEMBLY,
+and all of its remaining mathematical content sits in the single new leaf
+`fg_ker_of_flat_quotientMap`.
+
+**046Y is still not stated, for the unchanged reason**: its only consumer
+would be inside `fg_ker_of_flat_quotientMap`'s proof, which is still open, so
+stating it now would be free-floating.  But the obstruction the old note
+named — "with the presentation bookkeeping unwritten" — is gone: 046Y may be
+stated the moment someone decomposes `fg_ker_of_flat_quotientMap`, and it can
+then be stated against a presentation that already exists and is proven.
+-/
+
+/-- **Every essentially-of-finite-type LOCAL homomorphism is a surjection out
+of an essentially-of-finite-presentation LOCAL ring** (PROVEN 2026-07-27).
+This is step 0 of 05UV's finite-generation argument — the choice of the
+presentation `S = B'/J` with `B' = R[x₁,…,xₙ]_q`.
+
+**The construction, which is exactly the source's.**  `Algebra.EssFiniteType`
+gives a finite-type subalgebra `T₀ ⊆ B` with `B` a localization of it;
+`Algebra.FiniteType.iff_quotient_mvPolynomial''` presents `T₀` as a quotient
+of `R[x₁,…,xₙ]`, giving `φ : R[x₁,…,xₙ] →+* B`; and `P` is taken to be
+`R[x₁,…,xₙ]` localized at the prime `q = φ⁻¹(𝔪_B)`.
+
+**Why `P` is LOCAL, which is the only step with any content.**  The submonoid
+implicit in `EssFiniteType` is the set of elements of `T₀` that become units
+in `B`; because `B` is local, that set is SATURATED — it is the complement of
+the prime `φ⁻¹(𝔪_B)` — so the localization is a localization at a prime and
+`Localization.AtPrime.isLocalRing` applies.  Locality of `P` is what the
+consumer needs, since 00R7 is a statement about local rings.
+
+Surjectivity of `w` is `IsLocalization.lift_mk'_spec` applied to a fraction
+`t/m` written over `T₀` and then lifted through the polynomial presentation;
+both `IsLocalHom` conclusions are free (`IsLocalHom.of_surjective` for `w`,
+`isLocalHom_of_comp` for `gP`). -/
+theorem exists_essFinitePresentation_surjective_of_essFiniteType {R B : Type u}
+    [CommRing R] [CommRing B] [IsLocalRing B]
+    {g : R →+* B} [IsLocalHom g] (hft : g.EssFiniteType) :
+    ∃ (P : Type u) (_ : CommRing P) (_ : IsLocalRing P) (gP : R →+* P) (w : P →+* B)
+      (_ : IsLocalHom gP) (_ : IsLocalHom w),
+      Function.Surjective w ∧ EssFinitePresentation gP ∧ w.comp gP = g := by
+  letI : Algebra R B := g.toAlgebra
+  haveI hft' : Algebra.EssFiniteType R B := hft
+  obtain ⟨n, π, hπ⟩ := (Algebra.FiniteType.iff_quotient_mvPolynomial''
+    (R := R) (S := ↥(Algebra.EssFiniteType.subalgebra R B))).mp inferInstance
+  set MvP := MvPolynomial (Fin n) R with hMvP
+  set φ : MvP →+* B :=
+    ((Algebra.EssFiniteType.subalgebra R B).val.comp π).toRingHom with hφ
+  set q : Ideal MvP := (IsLocalRing.maximalIdeal B).comap φ with hq
+  haveI : q.IsPrime := Ideal.comap_isPrime φ _
+  set P := Localization q.primeCompl with hP
+  have hunit : ∀ y : q.primeCompl, IsUnit (φ y) := by
+    rintro ⟨y, hy⟩
+    exact IsLocalRing.notMem_maximalIdeal.mp hy
+  set w : P →+* B := IsLocalization.lift hunit with hw
+  set gP : R →+* P := (algebraMap MvP P).comp (algebraMap R MvP) with hgP
+  have hcomp : w.comp gP = g := by
+    ext r
+    simp only [hgP, hw, RingHom.comp_apply, IsLocalization.lift_eq, hφ,
+      AlgHom.toRingHom_eq_coe, RingHom.coe_coe, AlgHom.commutes]
+    rfl
+  have hsurj : Function.Surjective w := by
+    intro b
+    obtain ⟨⟨t, m⟩, e⟩ := IsLocalization.surj (Algebra.EssFiniteType.submonoid R B) b
+    obtain ⟨x, hx⟩ := hπ t
+    obtain ⟨y, hy⟩ := hπ (m : Algebra.EssFiniteType.subalgebra R B)
+    have hφy : φ y = algebraMap (Algebra.EssFiniteType.subalgebra R B) B m := by
+      simp [hφ, hy]
+    have hmu : IsUnit (algebraMap (Algebra.EssFiniteType.subalgebra R B) B m) := m.2
+    have hyq : y ∈ q.primeCompl := by
+      simpa [hq, Ideal.mem_comap, IsLocalRing.notMem_maximalIdeal, hφy] using hmu
+    refine ⟨IsLocalization.mk' P x ⟨y, hyq⟩, ?_⟩
+    rw [hw, IsLocalization.lift_mk'_spec]
+    rw [hφy]
+    have hφx : φ x = algebraMap (Algebra.EssFiniteType.subalgebra R B) B t := by
+      simp [hφ, hx]
+    rw [hφx, ← e]
+    exact mul_comm _ _
+  have hfp : EssFinitePresentation gP := by
+    refine ⟨MvP, inferInstance, algebraMap R MvP, algebraMap MvP P, q.primeCompl, ?_, rfl, ?_⟩
+    · rw [RingHom.finitePresentation_algebraMap]
+      infer_instance
+    · have h : (algebraMap MvP P).toAlgebra = (inferInstance : Algebra MvP P) :=
+        Algebra.algebra_ext _ _ (fun _ => rfl)
+      rw [h]
+      infer_instance
+  have hlw : IsLocalHom w := IsLocalHom.of_surjective w hsurj
+  haveI : IsLocalHom (w.comp gP) := by rw [hcomp]; infer_instance
+  have hlgP : IsLocalHom gP := isLocalHom_of_comp gP w
+  exact ⟨P, inferInstance, inferInstance, gP, w, hlgP, hlw, hsurj, hfp, hcomp⟩
+
+/-- **A quotient of an essentially-of-finite-presentation map by a FINITELY
+GENERATED kernel is again essentially of finite presentation** (PROVEN
+2026-07-27).  This is the second half of 05UV's presentation bookkeeping: it
+is what converts "`J` is finitely generated" into the conclusion "`S` is
+essentially of finite presentation over `R`".
+
+**The proof, and the one step that needs care.**  Write the hypothesis as
+`P = M⁻¹T` with `R → T` finitely presented.  A finite generating set of
+`ker w` lives in the LOCALIZATION, so its members must have their denominators
+cleared: `IsLocalization.surj` writes each generator as `vT a / vT m`, and
+because `vT m` is a unit the ideal `J ⊆ T` spanned by the numerators satisfies
+`J·P = ker w` exactly.  Then `T ⧸ J` is finitely presented over `R`
+(`RingHom.FinitePresentation.comp_surjective`) and `B` is its localization at
+the image of `M` — which is precisely mathlib's
+`IsLocalization.of_surjective`, applied to the square
+`T → P`, `T ⧸ J → B`.
+
+Note this is NOT an instance of a general "`EssFinitePresentation` is stable
+under composition" lemma, which is the one closure property this development
+deliberately does not prove (see `essFinitePresentation_stalkMap`): the
+surjection here is by a finitely generated ideal, which is exactly the
+hypothesis that makes the denominators clearable. -/
+theorem essFinitePresentation_comp_of_fg_ker {R P B : Type u}
+    [CommRing R] [CommRing P] [CommRing B]
+    {gP : R →+* P} {w : P →+* B} (hfpP : EssFinitePresentation gP)
+    (hw : Function.Surjective w) (hker : (RingHom.ker w).FG) :
+    EssFinitePresentation (w.comp gP) := by
+  obtain ⟨T, _, gT, vT, M, hgT, hvT, hloc⟩ := hfpP
+  letI : Algebra T P := vT.toAlgebra
+  haveI : IsLocalization M P := hloc
+  have halg : ∀ t : T, algebraMap T P t = vT t := fun _ => rfl
+  obtain ⟨s, hs⟩ := hker
+  -- clear denominators in the chosen generators of `ker w`
+  set num : P → T := fun x => (IsLocalization.surj M x).choose.1 with hnum
+  set den : P → M := fun x => (IsLocalization.surj M x).choose.2 with hden
+  have hspec : ∀ x : P, x * algebraMap T P (den x) = algebraMap T P (num x) :=
+    fun x => (IsLocalization.surj M x).choose_spec
+  classical
+  set J : Ideal T := Ideal.span (s.image num : Finset T) with hJ
+  have hJmap : J.map vT = RingHom.ker w := by
+    apply le_antisymm
+    · rw [hJ, Ideal.map_span, Ideal.span_le]
+      rintro _ ⟨_, ht, rfl⟩
+      simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe] at ht
+      obtain ⟨x, hx, rfl⟩ := ht
+      have hxk : x ∈ RingHom.ker w := by rw [← hs]; exact Ideal.subset_span hx
+      rw [SetLike.mem_coe, ← halg, ← hspec x]
+      exact Ideal.mul_mem_right _ _ hxk
+    · rw [← hs, Ideal.span_le]
+      intro x hx
+      have hu : IsUnit (algebraMap T P (den x)) := IsLocalization.map_units P (den x)
+      obtain ⟨u, hu'⟩ := hu
+      have : x = vT (num x) * (↑u⁻¹ : P) := by
+        rw [← halg, ← hspec x, ← hu', mul_assoc]
+        simp
+      rw [SetLike.mem_coe, this]
+      refine Ideal.mul_mem_right _ _ ?_
+      exact Ideal.mem_map_of_mem _ (Ideal.subset_span (by
+        simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe]
+        exact ⟨x, hx, rfl⟩))
+  -- the quotient presentation
+  have hJle : J ≤ RingHom.ker (w.comp vT) := by
+    intro t ht
+    have : vT t ∈ RingHom.ker w := by rw [← hJmap]; exact Ideal.mem_map_of_mem _ ht
+    simpa [RingHom.mem_ker] using this
+  set v' : (T ⧸ J) →+* B := Ideal.Quotient.lift J (w.comp vT) (fun a ha => hJle ha) with hv'
+  have hv'mk : v'.comp (Ideal.Quotient.mk J) = w.comp vT := by
+    ext t; simp [hv']
+  letI : Algebra (T ⧸ J) B := v'.toAlgebra
+  have halg' : ∀ t : T ⧸ J, algebraMap (T ⧸ J) B t = v' t := fun _ => rfl
+  refine ⟨T ⧸ J, inferInstance, (Ideal.Quotient.mk J).comp gT, v',
+    M.map (Ideal.Quotient.mk J), ?_, ?_, ?_⟩
+  · exact hgT.comp_surjective Ideal.Quotient.mk_surjective ⟨s.image num, by rw [← hJ]; simp [hJ]⟩
+  · rw [← RingHom.comp_assoc, hv'mk, RingHom.comp_assoc, hvT]
+  · refine IsLocalization.of_surjective M P (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
+      w hw ?_ ?_
+    · ext t; simp [halg, halg', hv']
+    · rw [Ideal.mk_ker, ← hJmap]
+      exact le_of_eq rfl
+
+/-- **THE WHOLE REMAINING CONTENT OF 05UV's FIRST CONCLUSION: the ideal `J` is
+FINITELY GENERATED** (SORRY LEAF, cut 2026-07-27 out of
+`essFinitePresentation_of_essFiniteType_of_flat_quotientMap` once the
+presentation bookkeeping above was proven).
+
+*Let `R → P → B → A` be local homomorphisms of local rings with `R → P`
+essentially of finite presentation and `P → B` SURJECTIVE.  Under 05UV's
+hypotheses — `R → A` essentially of finite presentation, `A` flat over `R`,
+and `A/𝔪_R A` flat over `B/𝔪_R B` — the kernel of `P → B` is finitely
+generated.*
+
+This is 05UV's `J = I·B'` with `P = B'`, `B = S`, `A = M = S'`, and it is
+literally the sentence its proof spends all its work on.  The two lemmas
+above supply `P` (from `R → B` essentially of finite type) and convert this
+conclusion back into `EssFinitePresentation`, so the leaf below is now pure
+assembly and **nothing else in 05UV's first conclusion is open**.
+
+**THE PROOF, from the Stacks argument.**
+
+1. Choose `f₁,…,f_k ∈ J` whose images generate `J̄ ⊂ P/𝔪P`.
+2. For each finitely generated `J' ⊆ J` with
+   `(P/J') ⊗_R R/𝔪 ≅ (P/J) ⊗_R R/𝔪`, apply **00R7** — i.e.
+   `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above — to
+   `R → P/J' → A`, which yields `P/J'` flat over `R`.  Its hypotheses are
+   available: `P/J'` is essentially of finite presentation by
+   `essFinitePresentation_comp_of_fg_ker` above (this is why that lemma is
+   needed twice over), the fibre hypothesis is `hfib` transported along
+   `(P/J')/𝔪 ≅ B/𝔪B`, and `hfp`/`hflat` are unchanged.
+3. For two such ideals `J'`, `J''`, the surjection `P/J' → P/J''` is a map of
+   `R`-flat, essentially-of-finite-presentation algebras that is an
+   isomorphism modulo `𝔪`.  **046Y** (10.128.4) then forces `J' = J''`.
+4. Hence `J` equals the finitely generated `J'` generated by the `fᵢ`.
+
+**046Y is the one genuinely new tool this leaf needs**, and it should be
+stated in the same cut as any decomposition of this leaf: *`R → S` local with
+`S` essentially of finite presentation over `R`, `u : M → N` a map of
+`S`-modules with `M`, `N` finitely presented over `S`, `N` flat over `R`, and
+`ū : M/𝔪M → N/𝔪N` injective; then `u` is injective and `N/u(M)` is flat over
+`R`.*  Its own proof is approximation (10.127.13 / 10.128.3) plus the
+Noetherian 10.99.1, so it shares the engine's missing machinery — see the
+section note above for the survey of what is and is not in the pin.
+
+**FAITHFULNESS.**  Every hypothesis here is one of 05UV's, transported along
+the presentation rather than weakened: `hfpP` is "`B'` is essentially of
+finite presentation over `R`" (which 05UV *proves* about its `B'` and which
+`exists_essFinitePresentation_surjective_of_essFiniteType` proves about this
+one), `hw` is `S = B'/J`, and `hfp`/`hflat`/`hfib` are 05UV's (1), (6) and
+(5) verbatim at `M = S' = A`.  A false instance of this leaf would be a false
+instance of 05UV. -/
+theorem fg_ker_of_flat_quotientMap {R P B A : Type u}
+    [CommRing R] [CommRing P] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing P] [IsLocalRing B] [IsLocalRing A]
+    {gP : R →+* P} {w : P →+* B} {v : B →+* A}
+    [IsLocalHom gP] [IsLocalHom w] [IsLocalHom v]
+    (_hfpP : EssFinitePresentation gP)
+    (_hw : Function.Surjective w)
+    (_hfp : EssFinitePresentation (v.comp (w.comp gP)))
+    (_hflat : (v.comp (w.comp gP)).Flat)
+    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
+        (map_le_comap_map_comp (w.comp gP) v (IsLocalRing.maximalIdeal R))).Flat) :
+    (RingHom.ker w).FG :=
+  sorry
+
+/-- **THE FINITE-GENERATION HALF: 05UV's OTHER conclusion** (PROVEN
+2026-07-27 from the presentation lemmas above and the single leaf
+`fg_ker_of_flat_quotientMap`).  Under exactly the hypotheses of
 `flat_of_flat_of_flat_quotientMap`, the map `R → B` is essentially of finite
 PRESENTATION and not merely of finite type.
 
@@ -1014,33 +1285,16 @@ application, and it is the source's own structure: 05UV's proof ends "*Thus we
 see that `S` is essentially of finite presentation over `R`.  Lemma 10.128.8
 [00R7] applies to `R → S → S'` and we conclude.*"
 
-**THE PROOF, from the Stacks argument.**  Write `S = C_q̄` with
-`C = R[x₁,…,xₙ]/I`, put `B' = R[x₁,…,xₙ]_q` and `J = I·B'`, so `S = B'/J` and
-`B'` IS essentially of finite presentation over `R`.  The content is that `J`
-is FINITELY GENERATED:
+**THE PROOF is 05UV's own opening move, now written out.**  Present `B` as
+`P/J` with `R → P` essentially of finite presentation and `P` LOCAL
+(`exists_essFinitePresentation_surjective_of_essFiniteType`); the content is
+that `J = ker(P → B)` is finitely generated (`fg_ker_of_flat_quotientMap`, the
+one remaining leaf); and a quotient by a finitely generated ideal is again
+essentially of finite presentation (`essFinitePresentation_comp_of_fg_ker`).
 
-1. Choose `f₁,…,f_k ∈ J` whose images generate `J̄ ⊂ B'/𝔪B'`.
-2. For each finitely generated `J' ⊆ J` with
-   `(B'/J') ⊗_R R/𝔪 ≅ (B'/J) ⊗_R R/𝔪`, apply **00R7** — i.e.
-   `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above — to
-   `R → B'/J' → S'`, which yields `B'/J'` flat over `R`.
-3. For two such ideals `J'`, `J''`, the surjection `B'/J' → B'/J''` is a map
-   of `R`-flat, essentially-of-finite-presentation algebras that is an
-   isomorphism modulo `𝔪`.  **046Y** (10.128.4) then forces `J' = J''`.
-4. Hence `J` equals the finitely generated `J'` generated by the `fᵢ`.
-
-**046Y is the one genuinely new tool this half needs**, and it is worth
-stating separately when someone attacks this: *`R → S` local with `S`
-essentially of finite presentation over `R`, `u : M → N` a map of `S`-modules
-with `M`, `N` finitely presented over `S`, `N` flat over `R`, and
-`ū : M/𝔪M → N/𝔪N` injective; then `u` is injective and `N/u(M)` is flat over
-`R`.*  Its own proof is again approximation (10.127.13 / 10.128.3) plus the
-Noetherian 10.99.1, so it shares the engine's missing machinery.
-
-It is NOT stated here, deliberately: with step 1's choice of generators and
-the presentation bookkeeping of steps 2–4 unwritten, a stated 046Y would have
-no consumer and would be FREE-FLOATING.  The next owner of this half should
-state it together with the presentation, in one cut.
+`subst` is what makes the assembly three lines: `g` is an implicit variable,
+so the factorisation `w ∘ gP = g` can simply replace it, and `hfp`, `hflat`
+and `hfib` then match the leaf's hypotheses syntactically.
 
 **WHY THIS SPLIT IS SAFE.**  Both halves are literal Stacks statements
 instantiated at `M = S' = A`, and their conjunction is exactly 05UV — so
@@ -1050,13 +1304,17 @@ theorem essFinitePresentation_of_essFiniteType_of_flat_quotientMap {R B A : Type
     [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
     {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
-    (_hfp : EssFinitePresentation (v.comp g))
-    (_hft : g.EssFiniteType)
-    (_hflat : (v.comp g).Flat)
-    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+    (hfp : EssFinitePresentation (v.comp g))
+    (hft : g.EssFiniteType)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
         (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
-    EssFinitePresentation g :=
-  sorry
+    EssFinitePresentation g := by
+  obtain ⟨P, _, _, gP, w, _, _, hw, hfpP, hcomp⟩ :=
+    exists_essFinitePresentation_surjective_of_essFiniteType hft
+  subst hcomp
+  exact essFinitePresentation_comp_of_fg_ker hfpP hw
+    (fg_ker_of_flat_quotientMap hfpP hw hfp hflat hfib)
 
 /-- **CRITÈRE DE PLATITUDE PAR FIBRES, ring level — Stacks 05UV** (PROVEN
 2026-07-27 from the two leaves above; see the section note for the route
