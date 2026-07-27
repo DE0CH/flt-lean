@@ -18391,12 +18391,17 @@ mathlib at our pin and in `~/cs/FLT`.
 smooth specialization (PROVEN), together with the RIGIDITY LEMMA
 `exists_comp_snd_eq_of_slice_const` (LEAF) and the two-axis corollary
 `eq_comp_of_rigidity_axes` (PROVEN over it).  Consequence:
-**`isAdditiveOn_of_post_zero` is now PROVEN** over that shim, so this
-block's remaining leaves are `exists_albaneseOfCurve` and
-`universal_jacobianBaseChangeAj`, and the shared missing mathematics has
-moved out of this modular-curve file into a reusable, named, general
-statement about schemes — which is where the other two should now be
-pointed as well.
+**`isAdditiveOn_of_post_zero` is now PROVEN** over that shim, and the
+shared missing mathematics has moved out of this modular-curve file into
+a reusable, named, general statement about schemes.
+
+**`exists_albaneseOfCurve` IS NOW PROVEN TOO** (2026-07-27), along the
+RELATIVE PICARD seam: `exists_relPicZero` in
+`ModularCurve/RelativePicard.lean` (representability, general base) plus
+`IsRelPicZeroOf.exists_albaneseFactorisation` (autoduality) and
+`IsRelPicZeroOf.eq_of_aj_eq` (generation) below, with
+`IsRelPicZeroOf.isAlbaneseOf` proven between them.  So this block's
+remaining leaves are those three and `universal_jacobianBaseChangeAj`.
 
 None of them mentions `X_0(N)`, `ℚ` or `ℤ_(ℓ)`.  That is the point:
 the Jacobian half of a Néron datum is a statement about smooth proper
@@ -18746,58 +18751,213 @@ def IsAlbaneseOf.isJacobianOf {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J �
     rw [← hv2 g y]
     exact hu2 g y
 
+/-! ### The Albanese, cut along the RELATIVE PICARD seam
+
+`exists_albaneseOfCurve` below was a single sorry node until 2026-07-27.
+Its docstring recorded the gate as *"no monoidal structure on
+`SheafOfModules`, hence no tensor of invertible sheaves, hence no `Pic`
+of a SCHEME at all; and no Cartier divisors"*.  **That obstruction has
+been CLOSED**, in `ModularCurve/RelativePicard.lean`:
+
+* `modTensor` sheafifies the *presheaf* tensor product (which the pin
+  does have, `ModuleCat/Presheaf/Monoidal.lean`) along
+  `PresheafOfModules.sheafification`, which is the same passage
+  `AlgebraicGeometry/Modules/Sheaf.lean` itself uses;
+* `IsInvertibleSheaf` cuts out the invertible sheaves by local
+  triviality, which mathlib's rank-free `SheafOfModules.IsLocallyFree`
+  does not;
+* `sectionIdeal σ` writes `𝒪(−σ)` as `kernel (𝒪_Z ⟶ σ_*𝒪_T)`, which is
+  the only way a section's divisor can be named at a pin with no divisor
+  theory at all — so the "no Cartier divisors" half of the gate is routed
+  around rather than removed;
+* `RelPicEquiv` is `Pic(X_T)/Pic(T)`, and because `strX` has a section
+  that naive quotient already **is** the relative Picard functor
+  (BLR 8.1/4) — no fppf sheafification, hence no site theory.
+
+So the cut that the old docstring called unavailable is now available,
+and it is the classical one: **representability of `Pic⁰`** plus
+**autoduality**.  Three leaves replace one, and each is a single named
+classical theorem with its own literature:
+
+| leaf | theory | where |
+|---|---|---|
+| `exists_relPicZero` | FGA 232, BLR 8.2/1 + 9.4/4 | `RelativePicard.lean` |
+| `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality + biduality | below |
+| `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | below |
+
+with `IsRelPicZeroOf.isAlbaneseOf` and `exists_albaneseOfCurve` PROVEN
+between them.
+
+**`exists_relPicZero` DELIBERATELY SUBSUMES `exists_relPicZeroOf`** (the
+`S = SpecQ` node ~4700 lines above, whose three hypotheses are the
+unbundled fields of `IsSmoothProperCurve`).  It is stated in
+`RelativePicard.lean` rather than here precisely so that BOTH consumers
+can reach it; `exists_relPicZeroOf` is exactly
+`exists_relPicZero strX hproper hsmooth hconn o` and should be reduced to
+it rather than attacked separately.  A general base is not optional for
+the Albanese: `exists_relativeJacobian` is applied below over
+`Spec ℤ_(ℓ)` and over `Spec 𝔽_ℓ`, so the `SpecQ` node cannot serve it.
+
+**AXIS SEARCHED AND REJECTED: dropping either half of `IsAlbaneseOf`.**
+Stating only the `albanese` half would be a FALSE cut — see the
+counterexample `J ×_S E` recorded on `IsAlbaneseOf`, which satisfies
+`albanese` in full and is not the Jacobian.  Dropping `albanese` instead
+is equally false: the TRIVIAL abelian scheme `J = S`, `jstr = 𝟙 S`,
+`aj g y := ab.zero g` satisfies `generates` — two sections agreeing at
+the zero point are equal, by testing at `T = S`, `g = 𝟙 S` — and has no
+Albanese property at all.  The seam taken here is orthogonal to both: it
+splits off the CONSTRUCTION of the representing object from the two
+properties, and each of the two remaining leaves keeps its own half of
+the interface intact.
+
+**WHY `IsRelPicZeroOf` MAKES BOTH REMAINING LEAVES FAITHFUL, i.e. why
+`J ×_S E` is not a counterexample to them.**  `inj` says the
+classification `J ↪ Pic_{X/S}` is a monomorphism of functors, so a
+factor `E` would have to embed in `Pic/J`, which is discrete (`ℤ`, by
+degree); `E` is a connected abelian scheme, so that forces `E = 0`.  It
+is exactly `inj` — not `aj` — that rules the junk witness out, which is
+why the cut keeps the group law in the interface. -/
+
+/-- **AUTODUALITY: a representing object for `Pic⁰` has the Albanese
+EXISTENCE property** (sorry node) — the first of the two halves of
+"`IsRelPicZeroOf` ⟹ `IsAlbaneseOf`", stated over an ARBITRARY base.
+
+TRUE, and this is the classical autoduality-of-the-Jacobian step
+(Mumford, *Abelian Varieties* §§11–13; BLR *Néron Models* 8.4 and 9.4;
+FGA 236 for the dual abelian scheme).  A pointed natural
+`c : X(−) ⟶ A(−)` into an abelian scheme pulls line bundles back, giving
+`A^∨ = Pic⁰_{A/S} ⟶ Pic⁰_{X/S} = J^∨`; biduality (`A^∨∨ ≅ A`,
+`J^∨∨ ≅ J`) turns that into the wanted `u : J ⟶ A`, and `u ≫ astr = jf`
+and `c = u ∘ aj` hold by construction.  `hpt` is what makes the induced
+map a morphism of abelian schemes rather than a torsor map; `hnat` is
+what makes `c` a natural transformation, i.e. an actual morphism of
+functors, so that Yoneda applies at all.
+
+**WHAT THIS LEAF STILL NEEDS**, none of which exists at this pin: the
+DUAL abelian scheme `A^∨ = Pic⁰_{A/S}` (whose absence
+`Modularity/AbelianScheme.lean`'s own docstring already records),
+biduality, and the identification of `Pic⁰_{A/S}` for `A` abelian with
+the `Pic⁰` of this module.  Note that the first of those is itself an
+instance of `exists_relPicZero` only in *shape*, not in fact: `A` is not
+a curve, so this leaf is NOT circular on the representability leaf.
+
+`_hf` is recorded because the classical proof uses it (the curve is where
+the pullback map on line bundles is computed), and is not consumed by the
+statement; `P` alone already pins `J` as `Pic⁰` up to the group-functor
+embedding, which is what carries the content. -/
+theorem IsRelPicZeroOf.exists_albaneseFactorisation {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (_hf : IsSmoothProperCurve f) (P : IsRelPicZeroOf f ab o)
+    {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint f g → RelPoint astr g)
+    (_hnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint f g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x))
+    (_hpt : c (𝟙 S) o = ab'.zero (𝟙 S)) :
+    ∃ u : J ⟶ A, u ≫ astr = jf ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S) (x : RelPoint f g),
+        (c g x).1 = (P.aj x).1 ≫ u :=
+  sorry
+
+/-- **GENERATION: the image of the Abel–Jacobi map generates `Pic⁰`**
+(sorry node), in the form actually consumed — two HOMOMORPHISMS of
+abelian schemes that agree on `aj(C)` are equal.  The second of the two
+halves of "`IsRelPicZeroOf` ⟹ `IsAlbaneseOf`", again over an ARBITRARY
+base.
+
+TRUE and classical: for a smooth proper geometrically connected curve of
+genus `g` the map `Sym^g C ⟶ Pic⁰_{C/S}`, `(x_1,…,x_g) ↦ Σ([x_i] − [o])`,
+is surjective (Riemann–Roch: every degree-`g` divisor class contains an
+effective divisor), so every point of `Pic⁰` is fppf-locally a sum of
+`aj`-classes.  A homomorphism is determined by its values on a
+generating set, and `hagree` gives those values; `hadu`/`hadv` are what
+make "determined on a generating set" available at all.
+
+**WHY THE HOMOMORPHISM HYPOTHESES ARE NOT REMOVABLE.**  Without them the
+statement is FALSE for `g ≥ 2`: `aj(C)` is a curve inside a
+`g`-dimensional abelian scheme and is nowhere dense, and two arbitrary
+morphisms agreeing on a nowhere dense subscheme need not be equal.  It is
+`IsAdditiveOn` that upgrades agreement on `aj(C)` to agreement on the
+subgroup it generates — which is all of `J` — and `IsAlbaneseOf.generates`
+is stated with exactly those hypotheses for this reason.  Conversely they
+are not too strong: `IsAlbaneseOf.isJacobianOf` supplies them from
+`isAdditiveOn_of_post_zero` (relative rigidity), which is PROVEN, so the
+`∃!` of `IsJacobianOf` over ARBITRARY `S`-morphisms is still recovered in
+full.
+
+**WHY IT IS NOT VACUOUS.**  `P` is what makes it demanding: it is
+`P.inj` that forbids `J` from having a factor invisible to `aj`, so this
+leaf cannot be discharged by shrinking `J`.  Dropping `P` would make the
+statement FALSE — `J ×_S E` with `aj₁ := (aj, 0)` has `pr₂ ≠ 0` agreeing
+with `0` on the image of `aj₁`.
+
+**WHAT THIS LEAF STILL NEEDS**: Riemann–Roch on a relative curve (or the
+`Sym^g` construction and its surjectivity onto `Pic⁰`), plus the fppf
+descent that turns a local surjection into generation.  Its literature is
+disjoint from `IsRelPicZeroOf.exists_albaneseFactorisation`'s, which is
+why the two are separate leaves and not one. -/
+theorem IsRelPicZeroOf.eq_of_aj_eq {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (_hf : IsSmoothProperCurve f) (P : IsRelPicZeroOf f ab o)
+    {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    {u v : J ⟶ A} (hu : u ≫ astr = jf) (hv : v ≫ astr = jf)
+    (_hadu : IsAdditiveOn ab ab' u hu) (_hadv : IsAdditiveOn ab ab' v hv)
+    (_hagree : ∀ {T : Scheme.{0}} (g : T ⟶ S) (y : RelPoint f g),
+      (P.aj y).1 ≫ u = (P.aj y).1 ≫ v) :
+    u = v :=
+  sorry
+
+/-- **A representing object for `Pic⁰` IS the Albanese** (PROVEN, over
+the two leaves above and nothing else).
+
+This is the glue of the relative-Picard cut.  Three of the five fields
+of `IsAlbaneseOf` are transported verbatim from `IsRelPicZeroOf` — `aj`,
+its naturality `aj_pre`, and its pointedness `aj_base` are literally the
+same data, the only difference being that `IsAlbaneseOf.aj` takes the
+base point `g` explicitly — and the two remaining fields are exactly the
+two leaves.
+
+Recording it as a separate definition rather than inlining it into
+`exists_albaneseOfCurve` is what makes the cut reusable: anything that
+already HOLDS an `IsRelPicZeroOf` (as `exists_relPicZeroOf`'s consumers
+over `Spec ℚ` do) gets the Albanese property from it without going back
+through the representability leaf. -/
+def IsRelPicZeroOf.isAlbaneseOf {C J S : Scheme.{0}} {f : C ⟶ S}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (hf : IsSmoothProperCurve f) (P : IsRelPicZeroOf f ab o) :
+    IsAlbaneseOf f ab o where
+  aj := by intro T g x; exact P.aj x
+  aj_pre := by intro T' T h g g' hg x; exact P.aj_pre h hg x
+  aj_base := P.aj_base
+  albanese := by
+    intro A astr ab' c hnat hpt
+    exact P.exists_albaneseFactorisation hf ab' c hnat hpt
+  generates := by
+    intro A astr ab' u v hu hv hadu hadv hagree
+    exact P.eq_of_aj_eq hf ab' hu hv hadu hadv hagree
+
 /-- **The Albanese of a smooth proper curve with a section exists**
-(sorry node — Grothendieck's relative Picard scheme; this is the
-CONSTRUCTION half of the old `exists_relativeJacobian`).
+(PROVEN 2026-07-27 over `exists_relPicZero` and the two halves of
+autoduality; formerly the sorry node that was the CONSTRUCTION half of
+`exists_relativeJacobian`).
+
+The statement is UNCHANGED apart from `_hf` becoming `hf`: it is now
+CONSUMED, which is itself a small faithfulness gain — the previous
+version could not use its own curve hypothesis anywhere.
 
 TRUE: for `f : C ⟶ S` smooth and proper with geometrically connected
 fibres of dimension `1` and a section `o`, the relative Picard functor
 `Pic⁰_{C/S}` is representable by an abelian scheme over `S`, and
-Abel–Jacobi `x ↦ [x] − [o]` is the universal map to an abelian scheme.
-(FGA, exposé 232; BLR *Néron Models* ch. 8–9; the section is what makes
-`Pic` representable rather than only its fppf sheafification.)  The
-image of `C` generates `Pic⁰` — the `generates` field — because
-`Sym^g C ⟶ Pic⁰` is surjective for `g` the genus.
+Abel–Jacobi `x ↦ [x] − [o]` is the universal map to an abelian scheme
+(FGA, exposé 232; BLR *Néron Models* ch. 8–9).  The section is what makes
+`Pic` representable rather than only its fppf sheafification.
 
-Note the base is ARBITRARY: this is the level-free, curve-only content
-of the Jacobian half, so it benefits the whole reduction-theory subtree
-and not only `X_0`.  It is applied TWICE below, once over `Spec ℤ_(ℓ)`
-and once over `Spec 𝔽_ℓ`.
-
-IRREDUCIBLE at this pin ALONG THE PICARD AXIS, and the CHECK THAT WOULD
-REFUTE THAT: a survey on 2026-07-27 found no Picard SCHEME and no
-relative Jacobian in mathlib, `~/cs/FLT` or this project — mathlib's
-`Pic` is the ring-theoretic Picard group of a commutative ring
-(`Mathlib/RingTheory/PicardGroup.lean`), and this project's
-`JacobianPackage` / `ModularJacobianPackage` are axiomatized interfaces,
-not constructions.  Producing a representing scheme for the relative
-`Pic⁰` functor refutes the claim.
-
-**A SHARPER, MECHANICALLY CHECKABLE FORM of that obstruction, added
-2026-07-27, because "no Picard scheme" is not itself actionable.**  What
-is missing upstream is not the scheme but the GROUP whose functor it
-would represent.  At our pin mathlib has sheaves of modules on a scheme
-(`AlgebraicGeometry/Modules/Sheaf.lean`) and even
-`SheafOfModules.IsLocallyFree`
-(`Algebra/Category/ModuleCat/Sheaf/LocallyFree.lean`) — but **no
-monoidal structure on `SheafOfModules`**, hence no tensor product of
-invertible sheaves, hence no `Pic` of a SCHEME at all; and **no Cartier
-divisors** (`grep CartierDivisor` over all of `Mathlib` is empty), which
-is the other classical route to the same group.  So the honest gate is:
-*tensor products of sheaves of modules, or relative effective Cartier
-divisors.*  Either one refutes this note, and either one is the right
-first thing to build.
-
-**AXIS SEARCHED AND REJECTED: dropping `generates`.**  Stating only the
-`albanese` half would be a FALSE cut — see the counterexample
-`J ×_S E` recorded on `IsAlbaneseOf`, which satisfies `albanese` in full
-and is not the Jacobian.  Dropping `albanese` instead is equally false:
-the TRIVIAL abelian scheme `J = S`, `jstr = 𝟙 S`, `aj g y := ab.zero g`
-satisfies `generates` — two sections agreeing at the zero point are
-equal, by testing at `T = S`, `g = 𝟙 S` — and has no Albanese property
-at all.  So neither half may be dropped, and the cut that WAS made —
-splitting off rigidity — is the only one that leaves both halves
-faithful.
+Note the base is ARBITRARY: this is the level-free, curve-only content of
+the Jacobian half, so it benefits the whole reduction-theory subtree and
+not only `X_0`.  It is applied TWICE below, once over `Spec ℤ_(ℓ)` and
+once over `Spec 𝔽_ℓ` — which is why the `SpecQ`-only
+`exists_relPicZeroOf` above cannot serve it and the general
+`exists_relPicZero` was stated.
 
 **FAITHFULNESS NOTE, inherited from `exists_relativeJacobian` and still
 in force, because a future prover is likely to suspect
@@ -18810,18 +18970,16 @@ origin — `c (𝟙 S) o = ab'.zero` and `aj (𝟙 S) o = ab.zero` say exactly
 `0_A = 0_J ≫ u`.  A morphism of abelian schemes sending the origin to
 the origin is a HOMOMORPHISM (rigidity), so any two competitors are
 homomorphisms agreeing on the image of `aj`, i.e. on the curve, which
-generates `J`.  Hence they are equal.  That prose argument is now
-MECHANISED — it is `IsAlbaneseOf.isJacobianOf` above — so the only thing
-a construction has to supply is this leaf.
-
-So rigidity is still built INTO the interface: a construction
-discharging this leaf must supply the full Albanese property plus
-generation, not merely a representing object. -/
+generates `J`.  Hence they are equal.  That prose argument is MECHANISED
+— it is `IsAlbaneseOf.isJacobianOf` above — and the generation step it
+appeals to is now the named leaf `IsRelPicZeroOf.eq_of_aj_eq`. -/
 theorem exists_albaneseOfCurve {C S : Scheme.{0}} (f : C ⟶ S)
-    (_hf : IsSmoothProperCurve f) (o : RelPoint f (𝟙 S)) :
+    (hf : IsSmoothProperCurve f) (o : RelPoint f (𝟙 S)) :
     ∃ (J : Scheme.{0}) (jf : J ⟶ S) (ab : AbelianSchemeStruct jf),
-      Nonempty (IsAlbaneseOf f ab o) :=
-  sorry
+      Nonempty (IsAlbaneseOf f ab o) := by
+  obtain ⟨J, jf, ab, ⟨P⟩⟩ :=
+    exists_relPicZero f hf.isProper hf.smooth hf.connected o
+  exact ⟨J, jf, ab, ⟨P.isAlbaneseOf hf⟩⟩
 
 /-- **The relative Jacobian of a smooth proper curve with a section
 exists** (PROVEN 2026-07-27, over `exists_albaneseOfCurve` and relative
@@ -19427,9 +19585,12 @@ theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
 
 /-- **The relative JACOBIAN of a given integral curve model exists**
 (PROVEN, over the three base-independent statements above — all three of
-which are now themselves PROVEN as of 2026-07-27, so that the open
-inputs reached from here are exactly `exists_albaneseOfCurve`,
-`isAdditiveOn_of_post_zero` and `universal_jacobianBaseChangeAj`).
+which are now themselves PROVEN as of 2026-07-27, and so is
+`exists_albaneseOfCurve`, so that the open inputs reached from here are
+exactly `exists_relPicZero` (in `ModularCurve/RelativePicard.lean`),
+`IsRelPicZeroOf.exists_albaneseFactorisation`,
+`IsRelPicZeroOf.eq_of_aj_eq` and `universal_jacobianBaseChangeAj`;
+`isAdditiveOn_of_post_zero` is PROVEN).
 
 The ten fields of `IsX0JacobianModel` come from exactly three inputs,
 none of which mentions a modular curve:
