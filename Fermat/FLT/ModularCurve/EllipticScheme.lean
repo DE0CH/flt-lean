@@ -63,10 +63,10 @@ and the two things left are `geometricallyReduced_projToSpec` (a general
 and `projMul_assoc_pt` (associativity of the induced operation on `K`-points,
 which is where the Milne I.2.5 content sits).
 
-The open leaves are therefore SIX, and this list is READ OFF the compiler's
-`declaration uses 'sorry'` set for this file at the 2026-07-27 release, not
-inherited from any side of a merge — several earlier versions of this paragraph
-named leaves that had already been closed on a sibling branch:
+The open leaves are therefore FIVE, and this list is READ OFF the compiler's
+`declaration uses 'sorry'` set for this file, not inherited from any side of a
+merge — several earlier versions of this paragraph named leaves that had already
+been closed on a sibling branch:
 
 * `exists_projMul` — the half of the old `exists_projAdd` where all the
   remaining gluing work for the group law lives (`exists_projAdd` itself is
@@ -74,15 +74,14 @@ named leaves that had already been closed on a sibling branch:
 * `geometricallyReduced_projToSpec` and `projMul_assoc_pt` — the two leaves
   `projMul_assoc` now rests on;
 * `exists_projGroupLaw_geomFibreAddEquiv` — item 8, see below;
-* `isIso_projBaseChangeHom` — all that is left of `hbc`, base change for `Proj`;
 * `exists_affineChart_projModel`.
 
 The whole "Dehomogenisation" section is now PROVEN — `exists_projChartRingEquiv`,
 `projChart_jacobian_span_eq_top` and
 `isStandardSmoothOfRelativeDimension_projChartAway` — and with it
 `locally_isStandardSmooth_awayCoord`, the last direct sorry of item 7a.
-`prime_projPolynomial` is PROVEN too, so `geometricallyConnected_projToSpec`
-now consumes only `isIso_projBaseChangeHom`.  Each declaration carries its own
+`prime_projPolynomial` is PROVEN too, and so is `isIso_projBaseChangeHom`, so
+`geometricallyConnected_projToSpec` has NO leaf left.  Each declaration carries its own
 docstring saying what is missing and where the classical argument is.
 **Item 8 was restated on 2026-07-27** and its leaf is now
 `exists_projGroupLaw_geomFibreAddEquiv`, which binds the group law
@@ -111,15 +110,17 @@ three former steps `hbc`/`hne`/`hpre`:
   is prime (`prime_projPolynomial`).  The latter avoids the graded machinery entirely
   by reading `W` as a MONIC cubic in the single variable `X` over `K[Y, Z]`; see its
   docstring.
-* `hbc` is the only remaining leaf of this cluster, and it is now CUT.
-  `nonempty_projPullbackIso` is proven from a single geometric leaf,
-  `isIso_projBaseChangeHom`.  Base change for `Proj` exists nowhere at this pin, so the
-  comparison morphism had to be built: `projBaseChangeGradedHom` (the graded hom),
-  `irrelevant_le_map_projBaseChangeGradedHom` (the hypothesis `Proj.map` demands) and
-  `projBaseChangeHom` (the pullback lift — free here, because the commuting square lands
-  in `Spec ℚ` and `hom_ext_spec_rat` applies) are all PROVEN.  What is left is that that
-  morphism is an isomorphism, whose residue is one ring statement:
-  `Away 𝒜 s ⊗_ℚ K ≅ Away ℬ (φ s)`.  See its docstring for the checked route.
+* `hbc` is **PROVEN OUTRIGHT** as `nonempty_projPullbackIso`.  Base change for `Proj`
+  exists nowhere at this pin, so the whole thing had to be built here:
+  `projBaseChangeGradedHom` (the graded hom), `irrelevant_le_map_projBaseChangeGradedHom`
+  (the hypothesis `Proj.map` demands), `projBaseChangeHom` (the pullback lift — free here,
+  because the commuting square lands in `Spec ℚ` and `hom_ext_spec_rat` applies), and then
+  `isIso_projBaseChangeHom`.  Two pieces of missing MATHLIB infrastructure came out of it
+  and are stated over arbitrary graded rings: `isPullback_awayι_map` (**the standard chart
+  square of `Proj.map` is CARTESIAN**) and `awayDehomEquiv` (**`(A_s)₀ ≅ A ⧸ (s - 1)` for
+  `s` of degree one**), the latter being what makes the ring residue elementary — after
+  dehomogenising, base change of a chart is base change of a quotient of a polynomial ring
+  (`isPushout_quotientMk`), with no graded base-change theory needed at all.
 
 `nonempty_projGroupLaw` has no `sorry` of its own — but it is **REDUCED, NOT
 CLOSED**: its proof runs through `exists_projAdd` and so through the still-open
@@ -2661,10 +2662,10 @@ end Leaves
 
 /-! ### `hbc`: base change for `Proj`
 
-Everything in this block except `isIso_projBaseChangeHom` is PROVEN.  The block replaces
-what used to be a single opaque leaf `nonempty_projPullbackIso` by: the graded base-change
-hom, the irrelevant-ideal hypothesis `Proj.map` demands, the assembled comparison morphism,
-and the reduction of the leaf to that morphism being an isomorphism.
+**Everything in this block is PROVEN.**  The block replaces what used to be a single opaque
+leaf `nonempty_projPullbackIso` by: the graded base-change hom, the irrelevant-ideal
+hypothesis `Proj.map` demands, the assembled comparison morphism, and — in part 2 below —
+the proof that that morphism is an isomorphism.
 
 **There is no base change for `Proj` at this pin, in any form.**  A search over
 `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/` for `Proj` together with `pullback`,
@@ -2779,46 +2780,507 @@ noncomputable def projBaseChangeHom :
   Limits.pullback.lift (projBaseChangeMap E K) (projToSpec (E.baseChange K))
     (hom_ext_spec_rat _ _)
 
-/-- **The comparison morphism is an isomorphism** (sorry leaf) — all that is left of the
-`hbc` step of `geometricallyConnected_projToSpec`.
+/-! #### `hbc`, part 2: the comparison morphism is an isomorphism
 
-This is the whole geometric content of base change for `Proj`, and it is the ONLY thing
-still missing: the graded hom, the irrelevant-ideal hypothesis and the pullback lift above
-are all proven, so a successor gets a concrete morphism and has only to show it is an
-isomorphism.  It carries no ellipticity: it is pure base change of a graded quotient of a
-polynomial ring, true for every Weierstrass curve over every field extension.
+Everything from here to `isIso_projBaseChangeHom` is the proof that `projBaseChangeHom` is an
+isomorphism, and it is fully PROVEN.  The argument has two halves, and each is a piece of
+mathlib infrastructure that did not exist at this pin:
 
-## The route, with every named ingredient checked to exist at this pin
+* **Geometric half.**  `Proj.map` is *cartesian on the standard charts*
+  (`isPullback_awayι_map`): `Proj.map_preimage_basicOpen` says `D₊(φ s)` is exactly the
+  preimage of `D₊(s)` ON THE NOSE, and `Proj.awayι_comp_map` gives the commuting square, so
+  `IsOpenImmersion.isPullback` applies verbatim.  Feeding those charts to
+  `Scheme.isPullback_of_openCover` reduces the whole base-change square to one AFFINE square
+  per chart, and `Proj.awayι_toSpecZero` turns each chart's structure morphism into a
+  `Spec.map` — so the affine square is `Spec` of a ring square, and
+  `isPullback_SpecMap_of_isPushout` closes it from a pushout of rings.
+* **Ring half.**  The residual ring statement is `Away 𝒜 s ⊗_ℚ K ≅ Away ℬ (φ s)`.  It is
+  proven by DEHOMOGENISING: for `s` of degree ONE there is a canonical isomorphism
+  `(A_s)₀ ≅ A ⧸ (s - 1)` (`awayDehomEquiv`), natural in the graded ring
+  (`awayToDehom_comp_awayMap`), and on the right-hand side base change is elementary —
+  a quotient of a polynomial ring, handled by `isPushout_quotientMk` (quotients commute with
+  base change) pasted onto mathlib's `Algebra.IsPushout R S (MvPolynomial σ R)
+  (MvPolynomial σ S)`.  No graded base-change theory is needed anywhere.
 
-Being an isomorphism is local on the target, so work on the standard affine cover.
+The degree-one hypothesis is not a restriction here: the cover used is `D₊(x₀), D₊(x₁),
+D₊(x₂)`, and the coordinates are homogeneous of degree one. -/
 
-1. `Proj.affineOpenCoverOfIrrelevantLESpan (projGrading E) f` — already used in this file by
-   `smoothOfRelativeDimension_projToSpec`, with `f = X̄, Ȳ, Z̄` — covers `proj E` by the
-   charts `D₊(s) ≅ Spec (Away (projGrading E) s)`.  Pulling that cover back along
-   `Limits.pullback.fst` covers the pullback, and `Proj.map_preimage_basicOpen`
-   (`ProjectiveSpectrum/Functor.lean`) says `projBaseChangeMap ⁻¹ᵁ D₊(s) = D₊(φ s)`
-   ON THE NOSE, so the same three elements cover the source compatibly.
-2. On the chart over `D₊(s)` the statement becomes the RING statement
-   `Away (projGrading E) s ⊗[ℚ] K ≅ Away (projGrading (E_K)) (φ s)`: the degree-zero part
-   of a homogeneous localisation commutes with base change.  The comparison map already
-   exists — `HomogeneousLocalization.Away.map (g : 𝒜 →+*ᵍ ℬ) (s) : Away 𝒜 s →+* Away ℬ (g s)`
-   (`RingTheory/GradedAlgebra/HomogeneousLocalization.lean:724`) — and
-   `AlgebraicGeometry.pullbackSpecIso` (`AlgebraicGeometry/Pullbacks.lean:719`) turns the
-   scheme-level pullback of affines into `Spec` of a tensor product.  The compatibility of
-   `Away.map` with the chart embeddings is `Proj.awayToSection_comp_appLE` and the
-   `Spec.map (Away.map …) ≫ awayι` identity at `Functor.lean:188`.
-3. So the mathematical residue is exactly: **`Away 𝒜 s ⊗_ℚ K → Away ℬ (φ s)` is bijective**,
-   for `𝒜 = projGrading E`, `ℬ = projGrading (E_K)`, `s ∈ {X̄, Ȳ, Z̄}`.  This is elementary
-   — degree-zero fractions `a / s ^ n` with `a` homogeneous of degree `n · deg s`, and both
-   the numerator space and the relation module base-change freely because `ℚ → K` is flat
-   (indeed free) — but it is not in mathlib in any form, so it is a genuine small theory
-   build.  `MorphismProperty.isomorphisms Scheme` is the property to feed to the
-   affine/local machinery (`HasAffineProperty.iff_of_isAffine` is used this way in
-   `ValuativeCriterion.lean:292`).
+/-- Transport of `IsPullback` along an isomorphism of the apex. -/
+theorem isPullback_of_isoApex {C : Type*} [Category C] {P P' X Y Z : C}
+    {fst : P ⟶ X} {snd : P ⟶ Y} {f : X ⟶ Z} {g : Y ⟶ Z}
+    (h : IsPullback fst snd f g) [Limits.HasPullback f g] (e : P' ≅ P) :
+    IsPullback (e.hom ≫ fst) (e.hom ≫ snd) f g :=
+  IsPullback.of_iso_pullback ⟨by rw [Category.assoc, Category.assoc, h.w]⟩ (e ≪≫ h.isoPullback)
+    (by simp) (by simp)
 
-**What NOT to reuse**: `Proj.pullbackAwayιIso` looks relevant and is not — it compares two
-charts of one `Proj`. -/
-theorem isIso_projBaseChangeHom : IsIso (projBaseChangeHom E K) := sorry
+/-- The structure map `R → (A_t)₀` of a standard chart of `proj W`. -/
+noncomputable def awayBaseHom {R : Type} [CommRing R] (W : WeierstrassCurve R)
+    (t : MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal) :
+    R →+* HomogeneousLocalization.Away (projGrading W) t :=
+  (HomogeneousLocalization.fromZeroRingHom (projGrading W) (Submonoid.powers t)).comp
+    (algebraMap R (projGrading W 0))
+
+/-- **The chart composite `Spec (A_t)₀ ⟶ proj W ⟶ Spec R` is `Spec.map` of `awayBaseHom`**,
+over an arbitrary base ring and for an arbitrary homogeneous `t` of positive degree.  This is
+the base-free version of `awayι_projToSpec_eq_specMap`, needed because the base-change square
+has `proj E` over `ℚ` on one side and `proj (E_K)` over `K` on the other. -/
+theorem awayι_projToSpec_eq_specMap' {R : Type} [CommRing R] (W : WeierstrassCurve R) {m : ℕ}
+    (t : MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal)
+    (ht : t ∈ projGrading W m) (hm : 0 < m) :
+    Proj.awayι (projGrading W) t ht hm ≫ projToSpec W
+      = Spec.map (CommRingCat.ofHom (awayBaseHom W t)) := by
+  show Proj.awayι (projGrading W) t ht hm ≫
+      (Proj.toSpecZero (projGrading W) ≫
+        Spec.map (CommRingCat.ofHom (algebraMap R (projGrading W 0)))) = _
+  rw [Proj.awayι_toSpecZero_assoc, ← Spec.map_comp]
+  rfl
+
+/-- **The standard chart square of `Proj.map` is CARTESIAN** — a general statement about
+`Proj` that mathlib does not have.
+
+`Proj.map_preimage_basicOpen` gives `map f ⁻¹ᵁ D₊(s) = D₊(f s)` on the nose, so the ranges of
+the two chart immersions match, and `Proj.awayι_comp_map` is the commuting square;
+`IsOpenImmersion.isPullback` then says a commuting square of open immersions with matching
+preimage IS a pullback. -/
+theorem isPullback_awayι_map {A B σ τ : Type} [CommRing A] [SetLike σ A] [AddSubgroupClass σ A]
+    [CommRing B] [SetLike τ B] [AddSubgroupClass τ B] {𝒜 : ℕ → σ} {ℬ : ℕ → τ}
+    [GradedRing 𝒜] [GradedRing ℬ] (f : 𝒜 →+*ᵍ ℬ)
+    (hf : HomogeneousIdeal.irrelevant ℬ ≤ (HomogeneousIdeal.irrelevant 𝒜).map f)
+    {i : ℕ} (hi : 0 < i) (s : A) (hs : s ∈ 𝒜 i) (hfs : f s ∈ ℬ i) :
+    IsPullback (Spec.map (CommRingCat.ofHom (HomogeneousLocalization.Away.map f s)))
+      (Proj.awayι ℬ (f s) hfs hi) (Proj.awayι 𝒜 s hs hi) (Proj.map f hf) :=
+  IsOpenImmersion.isPullback _ _ _ _ (Proj.awayι_comp_map f hf hi s hs)
+    (by rw [Proj.opensRange_awayι, Proj.opensRange_awayι, Proj.map_preimage_basicOpen])
+
+/-- The three homogeneous coordinates have degree one. -/
+theorem projCoord_mem_grading {R : Type} [CommRing R] (W : WeierstrassCurve R) (i : Fin 3) :
+    projCoord W i ∈ projGrading W 1 :=
+  HomogeneousIdeal.mk_mem_quotientGrading
+    ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X R i))
+
+/-- The three coordinates span the irrelevant ideal, so `D₊(x₀), D₊(x₁), D₊(x₂)` cover
+`proj W`.  This is the covering condition of `smoothOfRelativeDimension_projToSpec`, extracted
+as a named lemma over an arbitrary base ring. -/
+theorem irrelevant_le_span_projCoord {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    (HomogeneousIdeal.irrelevant (projGrading W)).toIdeal
+      ≤ Ideal.span (Set.range (projCoord W)) := by
+  classical
+  rw [HomogeneousIdeal.toIdeal_irrelevant_le]
+  intro i hi z hz
+  obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hz
+  have hp' : p ∈ Ideal.span (MvPolynomial.X '' (Set.univ : Set (Fin 3))) := by
+    rw [MvPolynomial.mem_ideal_span_X_image]
+    intro m hm
+    by_contra hcon
+    push Not at hcon
+    have hm0 : m = 0 := by
+      ext j; exact hcon j (Set.mem_univ j)
+    have hdeg := ((MvPolynomial.mem_homogeneousSubmodule _ _).mp hp)
+      (MvPolynomial.mem_support_iff.mp hm)
+    rw [hm0] at hdeg
+    simp at hdeg
+    omega
+  have hle : Ideal.span (MvPolynomial.X '' (Set.univ : Set (Fin 3)))
+      ≤ Ideal.comap (Ideal.Quotient.mk (polynomialHomogeneousIdeal W).toIdeal)
+        (Ideal.span (Set.range (projCoord W))) := by
+    rw [Ideal.span_le]
+    rintro _ ⟨j, -, rfl⟩
+    exact Ideal.subset_span ⟨j, rfl⟩
+  exact hle hp'
+
+/-! #### Dehomogenisation at a degree-one element: `(A_s)₀ ≅ A ⧸ (s - 1)`
+
+This is the standard "set `s = 1`" isomorphism for a graded ring `A` and `s ∈ 𝒜 1`, and it is
+absent from mathlib in every form.  It is what converts the graded base-change question into an
+ungraded one.
+
+Both maps are constructed explicitly and the two round trips are checked on generators, so no
+graded induction on the degree is needed anywhere:
+
+* `awayToDehom` is `IsLocalization.lift` of `A ↠ A ⧸ (s - 1)` (which inverts `s`, since `s ↦ 1`),
+  restricted to the degree-zero part;
+* `dehomToAway` is `DirectSum.toSemiring` applied to `a ↦ a / s^d` on each graded piece — this
+  IS a ring hom because `1 / s^0 = 1` and `(ab) / s^{i+j} = (a/s^i)(b/s^j)`. -/
+
+section Dehom
+
+variable {A σ : Type*} [CommRing A] [SetLike σ A] [AddSubgroupClass σ A]
+  (𝒜 : ℕ → σ) [GradedRing 𝒜] {s : A} (hs : s ∈ 𝒜 1)
+
+/-- `s` becomes `1` in `A ⧸ (s - 1)`. -/
+theorem mk_self_dehom : Ideal.Quotient.mk (Ideal.span {s - 1}) s = 1 := by
+  have h : Ideal.Quotient.mk (Ideal.span {s - 1}) (s - 1) = 0 :=
+    Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.subset_span rfl)
+  rw [map_sub, map_one, sub_eq_zero] at h
+  exact h
+
+/-- Every power of `s` is a unit in `A ⧸ (s - 1)` — indeed it is `1`. -/
+theorem isUnit_mk_dehom (y : Submonoid.powers s) :
+    IsUnit (Ideal.Quotient.mk (Ideal.span {s - 1}) y) := by
+  obtain ⟨n, hn⟩ := y.2
+  rw [show ((y : A)) = s ^ n from hn.symm, map_pow, mk_self_dehom, one_pow]
+  exact isUnit_one
+
+/-- **Dehomogenisation**, `(A_s)₀ → A ⧸ (s - 1)`: the fraction `a / sⁿ` goes to `a`. -/
+noncomputable def awayToDehom :
+    HomogeneousLocalization.Away 𝒜 s →+* A ⧸ Ideal.span {s - 1} :=
+  (IsLocalization.lift (M := Submonoid.powers s) (S := Localization.Away s)
+      (g := Ideal.Quotient.mk (Ideal.span {s - 1})) (isUnit_mk_dehom (s := s))).comp
+    (algebraMap (HomogeneousLocalization.Away 𝒜 s) (Localization.Away s))
+
+@[simp] theorem awayToDehom_apply (x : HomogeneousLocalization.Away 𝒜 s) {n : ℕ} {a : A}
+    (hx : x.val = Localization.mk a (⟨s ^ n, n, rfl⟩ : Submonoid.powers s)) :
+    awayToDehom 𝒜 x = Ideal.Quotient.mk _ a := by
+  show IsLocalization.lift (isUnit_mk_dehom (s := s)) x.val = _
+  rw [hx, Localization.mk_eq_mk', IsLocalization.lift_mk'_spec]
+  rw [map_pow, mk_self_dehom, one_pow, one_mul]
+
+/-- The degree-zero fraction `a / sⁱ` attached to a homogeneous `a` of degree `i`. -/
+noncomputable def homFrac (i : ℕ) (a : 𝒜 i) : HomogeneousLocalization.Away 𝒜 s :=
+  HomogeneousLocalization.mk
+    ⟨i, a, ⟨s ^ i, by simpa using SetLike.pow_mem_graded i hs⟩, ⟨i, rfl⟩⟩
+
+@[simp] theorem val_homFrac (i : ℕ) (a : 𝒜 i) :
+    (homFrac 𝒜 hs i a).val = Localization.mk (a : A) (⟨s ^ i, i, rfl⟩ : Submonoid.powers s) :=
+  rfl
+
+/-- `a ↦ a / sⁱ` is additive on the degree-`i` part. -/
+noncomputable def homFracHom (i : ℕ) : 𝒜 i →+ HomogeneousLocalization.Away 𝒜 s where
+  toFun a := homFrac 𝒜 hs i a
+  map_zero' := by
+    apply HomogeneousLocalization.val_injective
+    rw [val_homFrac, HomogeneousLocalization.val_zero]
+    simp [Localization.mk_zero]
+  map_add' a b := by
+    apply HomogeneousLocalization.val_injective
+    rw [HomogeneousLocalization.val_add, val_homFrac, val_homFrac, val_homFrac,
+      Localization.add_mk]
+    rw [Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+    exact ⟨1, by simp only [AddMemClass.coe_add, Submonoid.coe_mul]; ring⟩
+
+theorem homFracHom_apply (i : ℕ) (a : 𝒜 i) : homFracHom 𝒜 hs i a = homFrac 𝒜 hs i a := rfl
+
+/-- **The dehomogenisation section** `A → (A_s)₀`, `a ↦ Σ_d a_d / s^d`.
+
+`DirectSum.toSemiring` builds it as a RING hom out of the degreewise maps, the two side
+conditions being `1 / s^0 = 1` and `(a b) / s^{i+j} = (a / s^i) (b / s^j)`. -/
+noncomputable def dehomToAway : A →+* HomogeneousLocalization.Away 𝒜 s :=
+  (DirectSum.toSemiring (homFracHom 𝒜 hs)
+    (by
+      apply HomogeneousLocalization.val_injective
+      rw [homFracHom_apply, val_homFrac, HomogeneousLocalization.val_one,
+        ← Localization.mk_one, Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+      exact ⟨1, by simp⟩)
+    (by
+      intro i j ai aj
+      apply HomogeneousLocalization.val_injective
+      rw [HomogeneousLocalization.val_mul, homFracHom_apply, homFracHom_apply, homFracHom_apply,
+        val_homFrac, val_homFrac, val_homFrac, Localization.mk_mul]
+      rw [Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+      exact ⟨1, by simp only [SetLike.coe_gMul, Submonoid.coe_mul, pow_add]; try ring⟩)).comp
+    (DirectSum.decomposeRingEquiv 𝒜).toRingHom
+
+theorem dehomToAway_of_mem {i : ℕ} {a : A} (ha : a ∈ 𝒜 i) :
+    dehomToAway 𝒜 hs a = homFrac 𝒜 hs i ⟨a, ha⟩ := by
+  unfold dehomToAway
+  rw [RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingHom.coe_coe,
+    show (DirectSum.decomposeRingEquiv 𝒜) a = DirectSum.decompose 𝒜 a from rfl,
+    DirectSum.decompose_of_mem 𝒜 ha, DirectSum.toSemiring_of]
+  rfl
+
+theorem dehomToAway_self : dehomToAway 𝒜 hs s = 1 := by
+  rw [dehomToAway_of_mem 𝒜 hs hs]
+  apply HomogeneousLocalization.val_injective
+  rw [val_homFrac, HomogeneousLocalization.val_one, ← Localization.mk_one,
+    Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+  exact ⟨1, by simp⟩
+
+theorem awayToDehom_dehomToAway (a : A) :
+    awayToDehom 𝒜 (dehomToAway 𝒜 hs a) = Ideal.Quotient.mk _ a := by
+  classical
+  conv_lhs => rw [← DirectSum.sum_support_decompose 𝒜 a]
+  conv_rhs => rw [← DirectSum.sum_support_decompose 𝒜 a]
+  rw [map_sum, map_sum, map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [dehomToAway_of_mem 𝒜 hs (DirectSum.decompose 𝒜 a i).2]
+  exact awayToDehom_apply 𝒜 _ (val_homFrac 𝒜 hs i _)
+
+/-- The dehomogenisation section kills `s - 1`, so it descends to the quotient. -/
+noncomputable def dehomQuotToAway :
+    A ⧸ Ideal.span {s - 1} →+* HomogeneousLocalization.Away 𝒜 s :=
+  Ideal.Quotient.lift _ (dehomToAway 𝒜 hs) (by
+    intro x hx
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hx
+    rw [map_mul, map_sub, dehomToAway_self, map_one, sub_self, mul_zero])
+
+@[simp] theorem dehomQuotToAway_mk (a : A) :
+    dehomQuotToAway 𝒜 hs (Ideal.Quotient.mk _ a) = dehomToAway 𝒜 hs a := rfl
+
+/-- **The dehomogenisation isomorphism** `(A_s)₀ ≅ A ⧸ (s - 1)` for `s` homogeneous of degree
+one.  Absent from mathlib; it is the whole reason the base-change residue is elementary. -/
+noncomputable def awayDehomEquiv :
+    HomogeneousLocalization.Away 𝒜 s ≃+* A ⧸ Ideal.span {s - 1} :=
+  RingEquiv.ofRingHom (awayToDehom 𝒜) (dehomQuotToAway 𝒜 hs)
+    (Ideal.Quotient.ringHom_ext (RingHom.ext fun a => by
+      simp only [RingHom.comp_apply, RingHom.id_apply, dehomQuotToAway_mk]
+      exact awayToDehom_dehomToAway 𝒜 hs a))
+    (RingHom.ext fun x => by
+      obtain ⟨n, a, ha, rfl⟩ := HomogeneousLocalization.Away.mk_surjective 𝒜 hs x
+      simp only [RingHom.comp_apply, RingHom.id_apply]
+      rw [awayToDehom_apply 𝒜 _ (HomogeneousLocalization.Away.val_mk 𝒜 n hs a ha),
+        dehomQuotToAway_mk, dehomToAway_of_mem 𝒜 hs ha]
+      apply HomogeneousLocalization.val_injective
+      rw [val_homFrac, HomogeneousLocalization.Away.val_mk]
+      simp)
+
+@[simp] theorem awayDehomEquiv_apply (x : HomogeneousLocalization.Away 𝒜 s) :
+    awayDehomEquiv 𝒜 hs x = awayToDehom 𝒜 x := rfl
+
+end Dehom
+
+section DehomMap
+
+variable {A B σ τ : Type*} [CommRing A] [SetLike σ A] [AddSubgroupClass σ A]
+  [CommRing B] [SetLike τ B] [AddSubgroupClass τ B]
+  {𝒜 : ℕ → σ} {ℬ : ℕ → τ} [GradedRing 𝒜] [GradedRing ℬ]
+
+/-- The map on dehomogenisations induced by a graded ring hom. -/
+noncomputable def dehomMap (φ : 𝒜 →+*ᵍ ℬ) (s : A) :
+    A ⧸ Ideal.span {s - 1} →+* B ⧸ Ideal.span {φ s - 1} :=
+  Ideal.Quotient.lift _ ((Ideal.Quotient.mk _).comp (φ : A →+* B)) (by
+    intro x hx
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hx
+    show Ideal.Quotient.mk _ (φ (c * (s - 1))) = 0
+    rw [map_mul, map_sub, map_one]
+    exact Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mul_mem_left _ _ (Ideal.subset_span rfl)))
+
+omit [AddSubgroupClass σ A] [AddSubgroupClass τ B] [GradedRing 𝒜] [GradedRing ℬ] in
+@[simp] theorem dehomMap_mk (φ : 𝒜 →+*ᵍ ℬ) (s a : A) :
+    dehomMap φ s (Ideal.Quotient.mk _ a) = Ideal.Quotient.mk _ (φ a) := rfl
+
+/-- **Naturality of dehomogenisation** in the graded ring: `(A_s)₀ ≅ A ⧸ (s - 1)` intertwines
+`HomogeneousLocalization.Away.map` with `dehomMap`. -/
+theorem awayToDehom_comp_awayMap (φ : 𝒜 →+*ᵍ ℬ) {s : A} (hs : s ∈ 𝒜 1) :
+    (awayToDehom ℬ).comp (HomogeneousLocalization.Away.map φ s)
+      = (dehomMap φ s).comp (awayToDehom 𝒜) := by
+  refine RingHom.ext fun x => ?_
+  obtain ⟨n, a, ha, rfl⟩ := HomogeneousLocalization.Away.mk_surjective 𝒜 hs x
+  rw [RingHom.comp_apply, RingHom.comp_apply,
+    HomogeneousLocalization.Away.map_mk φ s hs n a ha,
+    awayToDehom_apply 𝒜 _ (HomogeneousLocalization.Away.val_mk 𝒜 n hs a ha),
+    awayToDehom_apply ℬ _ (HomogeneousLocalization.Away.val_mk ℬ n (φ.map_mem hs) (φ a)
+      (φ.map_mem ha)),
+    dehomMap_mk]
+  rfl
+
+end DehomMap
+
+/-- The chart base map `R → (A_t)₀`, dehomogenised, is the structure map of `A ⧸ (t - 1)`. -/
+theorem awayToDehom_comp_awayBaseHom {R : Type} [CommRing R] (W : WeierstrassCurve R)
+    (t : MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal) :
+    (awayToDehom (projGrading W)).comp (awayBaseHom W t)
+      = (Ideal.Quotient.mk (Ideal.span {t - 1})).comp
+        (algebraMap R (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal)) :=
+  RingHom.ext fun r =>
+    awayToDehom_apply (projGrading W) _ (n := 0)
+      (a := algebraMap R (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal) r)
+      (by simp [awayBaseHom, HomogeneousLocalization.fromZeroRingHom])
+
+/-! #### Quotients commute with base change -/
+
+/-- **Pushing out a quotient map along any ring map gives the quotient by the extended ideal**:
+`B ⊗_A (A ⧸ I) = B ⧸ I·B`.  Proved directly from the universal property, since a ring map out
+of `B ⧸ I·B` is a ring map out of `B` killing `I·B`. -/
+theorem isPushout_quotientMk {A B : Type} [CommRing A] [CommRing B] (f : A →+* B) (I : Ideal A) :
+    IsPushout (CommRingCat.ofHom (Ideal.Quotient.mk I)) (CommRingCat.ofHom f)
+      (CommRingCat.ofHom (Ideal.Quotient.lift I ((Ideal.Quotient.mk (I.map f)).comp f)
+        (fun _ ha => Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_map_of_mem f ha))))
+      (CommRingCat.ofHom (Ideal.Quotient.mk (I.map f))) := by
+  refine IsPushout.of_isColimit' ⟨CommRingCat.hom_ext (RingHom.ext fun _ => rfl)⟩
+    (Limits.PushoutCocone.isColimitAux' _ fun c => ?_)
+  have hcw : ∀ a : A, c.inl.hom (Ideal.Quotient.mk I a) = c.inr.hom (f a) := fun a =>
+    congrArg (fun g : CommRingCat.of A ⟶ c.pt => g.hom a) c.condition
+  have hker : I.map f ≤ RingHom.ker c.inr.hom := by
+    rw [Ideal.map_le_iff_le_comap]
+    intro a ha
+    simp only [Ideal.mem_comap, RingHom.mem_ker, ← hcw a,
+      Ideal.Quotient.eq_zero_iff_mem.2 ha, map_zero]
+  refine ⟨CommRingCat.ofHom (Ideal.Quotient.lift (I.map f) c.inr.hom fun b hb => hker hb),
+    ?_, rfl, ?_⟩
+  · exact CommRingCat.hom_ext (Ideal.Quotient.ringHom_ext (RingHom.ext fun a => (hcw a).symm))
+  · intro m _ hr
+    refine CommRingCat.hom_ext (Ideal.Quotient.ringHom_ext (RingHom.ext fun b => ?_))
+    exact congrArg (fun g : CommRingCat.of B ⟶ c.pt => g.hom b) hr
+
+/-- Variant of `isPushout_quotientMk` with the downstairs ideal and the induced map supplied by
+the caller — which is what makes it usable against concrete maps such as `projBaseChangeQuot`
+and `dehomMap` without any transport along `Ideal.quotEquivOfEq`. -/
+theorem isPushout_quotientMk' {A B : Type} [CommRing A] [CommRing B] (f : A →+* B)
+    (I : Ideal A) (J : Ideal B) (hJ : J = I.map f) (g : A ⧸ I →+* B ⧸ J)
+    (hg : g.comp (Ideal.Quotient.mk I) = (Ideal.Quotient.mk J).comp f) :
+    IsPushout (CommRingCat.ofHom (Ideal.Quotient.mk I)) (CommRingCat.ofHom f)
+      (CommRingCat.ofHom g) (CommRingCat.ofHom (Ideal.Quotient.mk J)) := by
+  subst hJ
+  have hgeq : g = Ideal.Quotient.lift I ((Ideal.Quotient.mk (I.map f)).comp f)
+      (fun _ ha => Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_map_of_mem f ha)) :=
+    Ideal.Quotient.ringHom_ext (by rw [hg]; rfl)
+  rw [hgeq]
+  exact isPushout_quotientMk f I
+
+section MvPoly
+
+attribute [local instance] MvPolynomial.algebraMvPolynomial
+
+/-- **Base change of the polynomial ring** is a pushout of rings — mathlib's
+`Algebra.IsPushout R (MvPolynomial σ R) S (MvPolynomial σ S)`, transported into `CommRingCat`. -/
+theorem isPushout_mvPolyBaseChange :
+    IsPushout (CommRingCat.ofHom (algebraMap ℚ (MvPolynomial (Fin 3) ℚ)))
+      (CommRingCat.ofHom (algebraMap ℚ K))
+      (CommRingCat.ofHom (MvPolynomial.map (algebraMap ℚ K)))
+      (CommRingCat.ofHom (algebraMap K (MvPolynomial (Fin 3) K))) :=
+  CommRingCat.isPushout_of_isPushout ℚ (MvPolynomial (Fin 3) ℚ) K (MvPolynomial (Fin 3) K)
+
+end MvPoly
+
+theorem ofHom_algebraMap_projQuot {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    CommRingCat.ofHom (algebraMap R (MvPolynomial (Fin 3) R)) ≫
+        CommRingCat.ofHom (Ideal.Quotient.mk (polynomialHomogeneousIdeal W).toIdeal)
+      = CommRingCat.ofHom (algebraMap R
+          (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal)) := by
+  ext r
+  rfl
+
+/-- **The homogeneous coordinate ring base-changes**: `K[X, Y, Z] ⧸ (W_K)` is
+`(ℚ[X, Y, Z] ⧸ (W)) ⊗_ℚ K`. -/
+theorem isPushout_projQuotBaseChange :
+    IsPushout
+      (CommRingCat.ofHom (algebraMap ℚ
+        (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)))
+      (CommRingCat.ofHom (algebraMap ℚ K))
+      (CommRingCat.ofHom (projBaseChangeQuot E K))
+      (CommRingCat.ofHom (algebraMap K
+        (MvPolynomial (Fin 3) K ⧸ (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal))) := by
+  have hq := isPushout_quotientMk' (MvPolynomial.map (algebraMap ℚ K))
+    (polynomialHomogeneousIdeal E).toIdeal
+    (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal
+    (by
+      show Ideal.span {polynomial (E.baseChange K)}
+        = Ideal.map (MvPolynomial.map (algebraMap ℚ K)) (Ideal.span {polynomial E})
+      rw [Ideal.map_span, Set.image_singleton, polynomial_baseChange])
+    (projBaseChangeQuot E K) rfl
+  have h := (isPushout_mvPolyBaseChange K).paste_horiz hq
+  rwa [ofHom_algebraMap_projQuot, ofHom_algebraMap_projQuot] at h
+
+/-- **The dehomogenised chart base-changes** — the ring residue of `hbc`, in the form the
+dehomogenisation isomorphism delivers it.  Quotients commute with base change, so this is the
+coordinate-ring pushout pasted with one more quotient. -/
+theorem isPushout_dehomBaseChange
+    (s : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) :
+    IsPushout
+      (CommRingCat.ofHom ((Ideal.Quotient.mk (Ideal.span {s - 1})).comp
+        (algebraMap ℚ (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal))))
+      (CommRingCat.ofHom (algebraMap ℚ K))
+      (CommRingCat.ofHom (dehomMap (projBaseChangeGradedHom E K) s))
+      (CommRingCat.ofHom ((Ideal.Quotient.mk
+        (Ideal.span {projBaseChangeGradedHom E K s - 1})).comp
+        (algebraMap K (MvPolynomial (Fin 3) K ⧸
+          (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal)))) := by
+  have hq := isPushout_quotientMk' (projBaseChangeQuot E K) (Ideal.span {s - 1})
+    (Ideal.span {projBaseChangeGradedHom E K s - 1})
+    (by rw [Ideal.map_span, Set.image_singleton, map_sub, map_one]; rfl)
+    (dehomMap (projBaseChangeGradedHom E K) s) rfl
+  have h := (isPushout_projQuotBaseChange E K).paste_horiz hq
+  rwa [← CommRingCat.ofHom_comp, ← CommRingCat.ofHom_comp] at h
+
+/-- **THE RING RESIDUE OF `hbc`, PROVEN**: `Away 𝒜 s ⊗_ℚ K ≅ Away ℬ (φ s)` for `s` of degree
+one, stated as a pushout square of rings.  Transported from `isPushout_dehomBaseChange` along
+the dehomogenisation isomorphism, whose naturality is `awayToDehom_comp_awayMap`. -/
+theorem isPushout_awayBaseChange
+    (s : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)
+    (hs : s ∈ projGrading E 1) :
+    IsPushout (CommRingCat.ofHom (awayBaseHom E s))
+      (CommRingCat.ofHom (algebraMap ℚ K))
+      (CommRingCat.ofHom (HomogeneousLocalization.Away.map (projBaseChangeGradedHom E K) s))
+      (CommRingCat.ofHom
+        (awayBaseHom (E.baseChange K) (projBaseChangeGradedHom E K s))) := by
+  refine (isPushout_dehomBaseChange E K s).of_iso' (Iso.refl _)
+    (awayDehomEquiv (projGrading E) hs).toCommRingCatIso (Iso.refl _)
+    (awayDehomEquiv (projGrading (E.baseChange K))
+      ((projBaseChangeGradedHom E K).map_mem hs)).toCommRingCatIso ?_ ?_ ?_ ?_
+  · rw [Iso.refl_hom, Category.id_comp]
+    exact (congrArg CommRingCat.ofHom (awayToDehom_comp_awayBaseHom E s)).symm
+  · rw [Iso.refl_hom, Iso.refl_hom, Category.id_comp, Category.comp_id]
+  · exact (congrArg CommRingCat.ofHom (awayToDehom_comp_awayMap _ hs)).symm
+  · rw [Iso.refl_hom, Category.id_comp]
+    exact (congrArg CommRingCat.ofHom
+      (awayToDehom_comp_awayBaseHom (E.baseChange K) (projBaseChangeGradedHom E K s))).symm
+
+/-- **The base-change square of projective models is CARTESIAN.**
+
+`Scheme.isPullback_of_openCover` reduces this to the three standard charts `D₊(x₀), D₊(x₁),
+D₊(x₂)` of `proj E`.  Over each chart, `isPullback_awayι_map` identifies the pullback of
+`projBaseChangeMap` with `Spec` of `HomogeneousLocalization.Away.map`, and
+`awayι_projToSpec_eq_specMap'` turns the two structure morphisms into `Spec.map`s — so the
+chart obligation is `Spec` of the ring pushout `isPushout_awayBaseChange`. -/
+theorem isPullback_projBaseChangeMap :
+    IsPullback (projBaseChangeMap E K) (projToSpec (E.baseChange K)) (projToSpec E)
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) := by
+  refine Scheme.isPullback_of_openCover _ _ _ _
+    (Proj.affineOpenCoverOfIrrelevantLESpan (projGrading E) (projCoord E) (m := fun _ => 1)
+      (projCoord_mem_grading E) (fun _ => Nat.one_pos)
+      (irrelevant_le_span_projCoord E)).openCover fun i => ?_
+  have hfs : projBaseChangeGradedHom E K (projCoord E i) ∈ projGrading (E.baseChange K) 1 :=
+    (projBaseChangeGradedHom E K).map_mem (projCoord_mem_grading E i)
+  -- the chart square of `Proj.map` is cartesian
+  have C : IsPullback
+      (Proj.awayι (projGrading (E.baseChange K))
+        (projBaseChangeGradedHom E K (projCoord E i)) hfs Nat.one_pos)
+      (Spec.map (CommRingCat.ofHom
+        (HomogeneousLocalization.Away.map (projBaseChangeGradedHom E K) (projCoord E i))))
+      (projBaseChangeMap E K)
+      (Proj.awayι (projGrading E) (projCoord E i) (projCoord_mem_grading E i) Nat.one_pos) :=
+    (isPullback_awayι_map (projBaseChangeGradedHom E K)
+      (irrelevant_le_map_projBaseChangeGradedHom E K) Nat.one_pos (projCoord E i)
+      (projCoord_mem_grading E i) hfs).flip
+  -- the chart square over the base is cartesian, by the ring pushout
+  have H : IsPullback
+      (Spec.map (CommRingCat.ofHom
+        (HomogeneousLocalization.Away.map (projBaseChangeGradedHom E K) (projCoord E i))))
+      (Proj.awayι (projGrading (E.baseChange K))
+        (projBaseChangeGradedHom E K (projCoord E i)) hfs Nat.one_pos
+        ≫ projToSpec (E.baseChange K))
+      (Proj.awayι (projGrading E) (projCoord E i) (projCoord_mem_grading E i) Nat.one_pos
+        ≫ projToSpec E)
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) := by
+    rw [awayι_projToSpec_eq_specMap' E _ _ Nat.one_pos,
+      awayι_projToSpec_eq_specMap' (E.baseChange K) _ _ Nat.one_pos]
+    exact isPullback_SpecMap_of_isPushout _ _ _ _
+      (isPushout_awayBaseChange E K (projCoord E i) (projCoord_mem_grading E i))
+  have key := isPullback_of_isoApex H C.isoPullback.symm
+  rw [Iso.symm_hom, ← Category.assoc, C.isoPullback_inv_fst, C.isoPullback_inv_snd] at key
+  exact key
+
+
+/-- **The comparison morphism is an isomorphism** (PROVEN) — the last step of `hbc`, and with
+it `geometricallyConnected_projToSpec` has no leaf left in this cluster.
+
+`isPullback_projBaseChangeMap` says the square
+`proj (E_K) → proj E` over `Spec K → Spec ℚ` is CARTESIAN, and `projBaseChangeHom` is exactly
+the canonical map to the pullback of that square, so it is `IsPullback.isoPullback`.
+
+Historical note, since the earlier version of this docstring sent a successor the wrong way:
+`Proj.pullbackAwayιIso` looks relevant and is NOT (it compares two charts of ONE `Proj`), and
+`pullbackSpecIso` is not needed either — the affine chart obligation is discharged by
+`isPullback_SpecMap_of_isPushout` from a pushout of rings, which is strictly less work than
+building the tensor-product comparison by hand. -/
+theorem isIso_projBaseChangeHom : IsIso (projBaseChangeHom E K) := by
+  have h := isPullback_projBaseChangeMap E K
+  have he : projBaseChangeHom E K = h.isoPullback.hom := by
+    refine Limits.pullback.hom_ext ?_ ?_
+    · rw [IsPullback.isoPullback_hom_fst]; exact Limits.pullback.lift_fst _ _ _
+    · rw [IsPullback.isoPullback_hom_snd]; exact Limits.pullback.lift_snd _ _ _
+  rw [he]
+  infer_instance
 
 /-- **`Proj` commutes with base change of the base field** — the `hbc` step of
 `geometricallyConnected_projToSpec`.  Reduced to `isIso_projBaseChangeHom`; everything else
