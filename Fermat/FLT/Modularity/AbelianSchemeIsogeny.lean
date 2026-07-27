@@ -76,6 +76,10 @@ public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.AlgebraicGeometry.Pullbacks
 public import Mathlib.Topology.Connected.Clopen
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+public import Mathlib.RingTheory.EssentialFiniteness
+public import Mathlib.RingTheory.FinitePresentation
+public import Mathlib.RingTheory.RingHom.Flat
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
 
 @[expose] public section
 
@@ -588,7 +592,244 @@ noncomputable def fiberMapOver {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     (by rw [Category.comp_id]; exact h.symm)
     (by rw [Category.comp_id, Category.id_comp])
 
-/-- **The fibrewise criterion of flatness, AT A POINT** (sorry leaf —
+/-! ### The pointwise fibre criterion, cut into ring theory + two transports
+
+`flat_stalkMap_of_flat_stalkMap_fiberMapOver` (Stacks 039C) used to be a
+single opaque leaf, and its docstring recorded that it **could not honestly
+be restated over abstract local rings** because "essentially of finite
+presentation" does not exist in the pin.  That inference is the standard
+one this fleet's doctrine warns about — *stating* a notion is not *proving*
+anything about it.  The notion is a five-line definition
+(`EssFinitePresentation` below), and once it is written the leaf decomposes
+with **no residue** into
+
+* `flat_of_flat_of_flat_quotientMap` — the ring-level *critère de platitude
+  par fibres*, **Stacks 05UV verbatim**, over abstract local rings.  This is
+  where all the missing mathematics now lives (Tor, the local criterion,
+  and the limit argument);
+* `essFinitePresentation_stalkMap` — the stalk of a morphism locally of
+  finite presentation is essentially of finite presentation.  The exact
+  analogue of mathlib's `AlgebraicGeometry.LocallyOfFiniteType.stalkMap`
+  (`Morphisms/FiniteType.lean:99`), which supplies the OTHER finiteness
+  hypothesis (`EssFiniteType`) for free;
+* `flat_quotientMap_of_flat_stalkMap_fiberMapOver` — "the stalk of the
+  fibre is the base change of the stalk", in the flatness form the criterion
+  consumes.
+
+**Why 05UV and not 00MP.**  The Noetherian local engine 00MP cannot be used
+here: `S` is an arbitrary scheme, so its stalks are arbitrary local rings.
+05UV (= Algebra Lemma 10.128.9) is the non-Noetherian local-ring form, and
+its hypotheses were checked against the source on 2026-07-27:
+
+> Let `R`, `S`, `S'` be local rings and let `R → S → S'` be local ring
+> homomorphisms.  Let `M` be an `S'`-module and `𝔪` the maximal ideal of
+> `R`.  Assume (1) `R → S'` is essentially of finite presentation, (2)
+> `R → S` is essentially of finite type, (3) `M` is of finite presentation
+> over `S'`, (4) `M` is not zero, (5) `M/𝔪M` is a flat `S/𝔪S`-module, (6)
+> `M` is a flat `R`-module.  Then `S` is essentially of finite presentation
+> and flat over `R` and `M` is a flat `S`-module.
+
+Note (2) is *finite type*, not presentation — that is exactly why this is
+the right form to cut along, since `LocallyOfFiniteType.stalkMap` already
+delivers it.  Its sibling 00R7 (10.128.8) demands essential finite
+presentation on BOTH maps and is therefore the wrong one to reach for.
+
+Instantiating `M = S' = 𝒪_{X,x}`, `S = 𝒪_{Y,y}`, `R = 𝒪_{S,s}` makes (3)
+automatic (a ring is finitely presented over itself) and (4) automatic (a
+local ring is nontrivial), which is why neither appears below.
+-/
+
+/-- **Essentially of finite presentation**, for a ring homomorphism: `φ`
+factors as a finitely presented ring map followed by a localization.
+
+This is the exact analogue of mathlib's `Algebra.EssFiniteType` — whose
+docstring reads "an `R`-algebra is essentially of finite type if it is the
+localization of an algebra of finite type" — with *finite type* replaced by
+*finite presentation*, and it is the standard definition (Stacks; EGA IV
+1.4).  It is stated for ring homs rather than algebras because that is the
+shape the stalk maps come in.
+
+**Why it is not a `Subalgebra`.**  Mathlib's `EssFiniteType` is equivalently
+witnessed by a sub*algebra* of the target
+(`essFiniteType_iff_exists_subalgebra`), because the image of a finite-type
+algebra is again of finite type.  **That equivalence FAILS for finite
+presentation** — the image of a finitely presented algebra need not be
+finitely presented — so the intermediate ring `T` here genuinely has to be
+abstract, and copying the `EssFiniteType` idiom would have produced a
+strictly stronger, and hence possibly FALSE, notion.
+
+Belongs in mathlib next to `Algebra.EssFiniteType`; it is declared here only
+to avoid a new module.  `grep -rn "EssFinitePresentation"
+.lake/packages/mathlib ~/cs/FLT` returned nothing on 2026-07-27. -/
+def EssFinitePresentation {R S : Type u} [CommRing R] [CommRing S] (φ : R →+* S) : Prop :=
+  ∃ (T : Type u) (_ : CommRing T) (g : R →+* T) (v : T →+* S) (M : Submonoid T),
+    g.FinitePresentation ∧ v.comp g = φ ∧ @IsLocalization T _ M S _ v.toAlgebra
+
+/-- Ideal bookkeeping: `I·B` lands in the contraction of `I·A` along `B → A`.
+This exists only to give the fibre hypothesis of
+`flat_of_flat_of_flat_quotientMap` a stable, nameable proof term, so that the
+statement below elaborates the same way at every use site. -/
+theorem map_le_comap_map_comp {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    (g : R →+* B) (v : B →+* A) (I : Ideal R) :
+    I.map g ≤ (I.map (v.comp g)).comap v := by
+  rw [Ideal.map_le_iff_le_comap, Ideal.comap_comap]
+  exact Ideal.le_comap_map
+
+/-- **CRITÈRE DE PLATITUDE PAR FIBRES, ring level** (sorry leaf — PURE
+COMMUTATIVE ALGEBRA, no schemes, no group schemes: **Stacks 05UV** = Algebra
+Lemma 10.128.9, the non-Noetherian local-ring form; Noetherian case Stacks
+00MP; Matsumura *Commutative Ring Theory* §23 and EGA IV 11.3.10 for the
+classical account).
+
+*Let `R → B → A` be local homomorphisms of local rings, with `R → A`
+essentially of finite presentation and `R → B` essentially of finite type.
+If `A` is flat over `R` and `A/𝔪_R A` is flat over `B/𝔪_R B`, then `A` is
+flat over `B`.*
+
+**FAITHFULNESS — this is 05UV instantiated at `M = S' = A`, with the source
+quoted in the section note above.**  Hypotheses (3) `M` of finite
+presentation over `S'` and (4) `M ≠ 0` are omitted because at `M = S' = A`
+they are theorems, not assumptions: `A` is finitely presented over itself,
+and `[IsLocalRing A]` already gives `Nontrivial A`.  The conclusion is
+likewise *weaker* than 05UV's, which also asserts that `B` is essentially of
+finite presentation and flat over `R`; only `A` flat over `B` is kept,
+because only that is consumed.  A weaker conclusion and fewer hypotheses
+cannot turn a true statement false, so this leaf is safe in both directions.
+
+**This is where ALL the missing mathematics now is**, and the survey below
+is what a prover faces (each claim paired with the grep that refutes it if
+it goes stale; all re-run against the pin on 2026-07-27):
+
+* **Tor of modules over a ring is ABSENT.**  `grep -rn "^def Tor" Mathlib/`
+  finds only the abstract monoidal `CategoryTheory.Monoidal.Tor` — whose own
+  file carries `assert_not_exists ModuleCat.abelian`, i.e. it is
+  *deliberately* disconnected from modules — and the group-homology
+  `Rep k G` version.  `Mathlib/RingTheory/Flat/CategoryTheory.lean:27`
+  carries the literal TODO `- Relate flatness with Tor`.  **`Ext` for
+  modules DOES exist** (`HasExt (ModuleCat.{v} R)`), so the asymmetry is
+  real and worth knowing: the derived-functor apparatus is present, only the
+  `Tor` half is unbuilt.
+* **The local criterion of flatness is ABSENT.**  `grep -rin "local
+  criterion" Mathlib/` returns nothing.  But note two ingredients that ARE
+  present and that a naive survey misses:
+  `Module.Flat.iff_rTensor_injective'` (`Flat/Tensor.lean:67`) is exactly
+  "`Tor₁(R/I, M) = 0` for every ideal `I`" written without Tor, and
+  `Module.free_of_maximalIdeal_rTensor_injective`
+  (`LocalRing/Module.lean:248`) is the local criterion itself in the
+  finitely-*presented* case: `𝔪 ⊗ M → M` injective plus `FinitePresentation`
+  gives `Free`.  The gap is precisely that a stalk is essentially, not
+  actually, of finite presentation.
+* **Spreading out / absolute Noetherian approximation is ABSENT.**
+  `grep -rni "noetherian approximation" Mathlib/` returns nothing.
+  `AffineTransitionLimit.lean` descends *morphisms* along cofiltered limits
+  (`Scheme.exists_π_app_comp_eq_of_locallyOfFinitePresentation:1230`) but
+  not the *property*, so EGA IV 8.8.2 is not available.
+* **Cohen–Macaulay, depth, generic flatness, openness of the flat locus are
+  ABSENT.**  `grep -rn CohenMacaulay Mathlib/` is empty,
+  `RingTheory/Regular/Depth.lean` is a 10-line stub with zero declarations,
+  and `grep -rln "flatLocus\|genericFlat" Mathlib/` is empty.
+* `~/cs/FLT` has none of it either.
+
+A hit on any of those greps means this note has gone stale and the leaf is
+cheaper than it looks. -/
+theorem flat_of_flat_of_flat_quotientMap {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (hfp : EssFinitePresentation (v.comp g))
+    (hft : g.EssFiniteType)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    v.Flat :=
+  sorry
+
+/-- **The stalk of a morphism locally of finite presentation is essentially
+of finite presentation** (sorry leaf — general scheme theory, no abelian
+varieties).
+
+This is the exact analogue of mathlib's
+`AlgebraicGeometry.LocallyOfFiniteType.stalkMap`
+(`Mathlib/AlgebraicGeometry/Morphisms/FiniteType.lean:99`), which proves
+`(f.stalkMap x).hom.EssFiniteType` for `f` locally of finite type.  Mathlib
+has NO finite-presentation counterpart: `grep -rln stalkMap
+Mathlib/AlgebraicGeometry/` does not list
+`Morphisms/FinitePresentation.lean`, and that file contains no `stalkMap` at
+all.  A hit there refutes this note.
+
+**Why it is true**, and why the route is the same as mathlib's: on affine
+opens `f` is a finitely presented `R → S`, and the stalk map is
+`R_𝔭 → S_𝔮`.  Now `S ⊗_R R_𝔭` is finitely presented over `R_𝔭` (finite
+presentation is stable under base change) and `S_𝔮` is a localization of it,
+so the composite is a localization of a finitely presented `R_𝔭`-algebra —
+which is `EssFinitePresentation` by definition.
+
+**The likely shape of a proof**, mirroring the finite-type one verbatim:
+`HasRingHomProperty.stalkMap_of_respectsIso` applied to
+`EssFinitePresentation`, which needs the four closure properties mathlib
+already has for `RingHom.EssFiniteType` — `respectsIso`,
+`stableUnderComposition`, `isStableUnderBaseChange` (hence
+`localizationPreserves`) and `holdsForLocalization` — proved for
+`EssFinitePresentation` instead.  Those four are the natural further cut if
+this leaf wants splitting; `stableUnderComposition` is the only one with any
+content. -/
+theorem essFinitePresentation_stalkMap {X Y : Scheme.{u}} (φ : X ⟶ Y)
+    [LocallyOfFinitePresentation φ] (x : X) :
+    EssFinitePresentation (φ.stalkMap x).hom :=
+  sorry
+
+/-- **The stalk of the fibre is the base change of the stalk**, in the
+flatness form the fibre criterion consumes (sorry leaf — general scheme
+theory, no abelian varieties).
+
+Concretely: `𝒪_{X_s, x_s} = 𝒪_{X,x} ⧸ 𝔪_s 𝒪_{X,x}` and
+`𝒪_{Y_s, y_s} = 𝒪_{Y,y} ⧸ 𝔪_s 𝒪_{Y,y}`, compatibly with `u`, so flatness of
+the stalk map of `fiberMapOver u h s` at `p.asFiber x` IS flatness of
+`𝒪_{Y,y}/𝔪_s 𝒪_{Y,y} → 𝒪_{X,x}/𝔪_s 𝒪_{X,x}`.  The statement is phrased as
+that flatness rather than as the isomorphism, so that it plugs straight into
+hypothesis (5) of `flat_of_flat_of_flat_quotientMap`.
+
+**Why it is true, and why the special feature matters.**  For a general
+fibre product the local ring at a point is a *localization* of a tensor
+product of local rings, not the tensor product itself.  Here it is on the
+nose, because `Scheme.Hom.fiberι` is injective on points (it is a
+homeomorphism onto `p ⁻¹' {s}` — `Scheme.Hom.fiberHomeo`), so the prime of
+`𝒪_{X,x} ⊗_{𝒪_{S,s}} κ(s)` corresponding to `x_s` is already its unique
+maximal ideal and the further localization is trivial.  Concretely on
+affines, with `𝔭 ↔ x` and `𝔯 ↔ s` and `𝔭 ∩ R = 𝔯`, both sides are
+`(A/𝔯A)_𝔭`.
+
+**ABSENT from the pin, with the refuting greps** (re-run 2026-07-27):
+`grep -n stalk Mathlib/AlgebraicGeometry/Fiber.lean` and the same over
+`PullbackCarrier.lean` and `Pullbacks.lean` each return NOTHING, and
+`grep -rn "stalkMap_pullback\|pullback_stalk" Mathlib/` is empty.  Mathlib
+computes the **residue field** of a point of a fibre product
+(`PullbackCarrier.Triplet.tensor`) and the **sections** of one
+(the `pushoutSection` block, `Morphisms/Flat.lean:183–509`), but never the
+stalk.  A hit on any of those means this leaf is cheap.
+
+**FAITHFULNESS — the intermediate map is PINNED, deliberately.**  An earlier
+draft of this leaf took the map `𝒪_{S,s} ⟶ 𝒪_{Y,y}` as an arbitrary
+parameter `g` with `g ≫ u.stalkMap x = p.stalkMap x`.  That is **not safe**:
+`u.stalkMap x` need not be injective, so `g` is not determined by that
+equation, while the conclusion depends on `g` through the ideal `𝔪_s·𝒪_{Y,y}`
+— i.e. the leaf would have quantified over data the statement is not
+invariant under, and could have been FALSE.  It is therefore stated in the
+substituted form `p = u ≫ q`, with the map fixed to `q.stalkMap (u x)`; the
+consumer reaches it by `subst h`, which costs nothing. -/
+theorem flat_quotientMap_of_flat_stalkMap_fiberMapOver
+    {X Y S : Scheme.{u}} {q : Y ⟶ S} (u : X ⟶ Y) (x : X)
+    (hfib : ((fiberMapOver u rfl ((u ≫ q) x)).stalkMap ((u ≫ q).asFiber x)).hom.Flat) :
+    (Ideal.quotientMap
+        ((IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))).map
+          ((u.stalkMap x).hom.comp (q.stalkMap (u x)).hom))
+        (u.stalkMap x).hom
+        (map_le_comap_map_comp (q.stalkMap (u x)).hom (u.stalkMap x).hom
+          (IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))))).Flat :=
+  sorry
+
+/-- **The fibrewise criterion of flatness, AT A POINT** (PROVEN 2026-07-27
+over the three leaves above —
 general scheme theory, NO abelian varieties: Stacks 039C = Stacks Theorem
 37.16.2, of which the global `flat_of_flat_fiberMap` below is the
 specialization Stacks 039E; EGA IV 11.3.10, *critère de platitude par
@@ -627,59 +868,45 @@ asks for and is weaker than the consumer's
 consumer still applies.  This leaf is therefore strictly STRONGER than
 what `flat_of_flat_fiberMap` needs, and correspondingly reusable.
 
-**ROUTE, and what is missing — surveyed 2026-07-27, each claim paired
-with the check that would refute it.**  The classical proof has two
-layers, and *only the first* is Noetherian:
+**HOW IT IS PROVEN, and the TWO STALE CLAIMS this replaces.**  The proof
+is `subst h`, then `flat_of_flat_of_flat_quotientMap` — Stacks 05UV over
+abstract local rings — fed by the three transports declared above:
+`essFinitePresentation_stalkMap` for hypothesis (1),
+`LocallyOfFiniteType.stalkMap` (mathlib, FREE) for hypothesis (2), `hp`
+for hypothesis (6), and `flat_quotientMap_of_flat_stalkMap_fiberMapOver`
+for hypothesis (5).  `subst h` is what lets `p.stalkMap x` factor as
+`q.stalkMap (u x) ≫ u.stalkMap x` by `Scheme.Hom.stalkMap_comp` with no
+`eqToHom` anywhere.
 
-1. *The Noetherian local engine* is Stacks 00MP, checked verbatim: `R`,
-   `S`, `S'` **Noetherian** local, `R → S → S'` local, `M` a finite
-   `S'`-module, `M ≠ 0`, `M/𝔪M` flat over `S/𝔪S`, `M` flat over `R`;
-   then `S` is flat over `R` and `M` is flat over `S`.  Taking
-   `M = S' = O_{X,x}` makes the finiteness hypothesis automatic, so at
-   this level the ONLY real hypothesis is Noetherian-ness.  Its proof
-   runs through the **local criterion of flatness** (`Tor₁` vanishing).
-2. *`S` here is an ARBITRARY scheme*, so layer 1 does not apply directly.
-   That is exactly why 039C carries finite-presentation hypotheses
-   instead of Noetherian ones, and why its proof needs a **limit /
-   spreading-out** argument (absolute Noetherian approximation) to
-   descend to the Noetherian case.  Do not plan a proof that stops at
-   00MP; it does not reach this statement.
+The previous version of this docstring recorded two reasons the leaf could
+NOT be cut further.  **Both were wrong, and both are the same error** —
+treating a missing *definition* as a missing *theory*:
 
-ABSENT from the pin, each with its refuting grep over
-`.lake/packages/mathlib`:
+1. *"Essentially of finite presentation does not exist, so the honest
+   ring-level statement cannot be written down."*  It is a five-line
+   definition (`EssFinitePresentation` above), and writing it is what makes
+   the cut possible.  Nothing about it has to be *proven* for the cut; the
+   proof obligations land on the named leaves instead.
+2. *"The natural seam — the stalk of the fibre — is not available, so the
+   local algebra cannot even be stated over plain rings."*  The seam does
+   not need mathlib's stalk-of-pullback theory to be *stated*; it needs it
+   to be *proven*, and that obligation is now
+   `flat_quotientMap_of_flat_stalkMap_fiberMapOver`, isolated from the
+   commutative algebra it was entangled with.
 
-* **Tor of modules over a ring.**  `grep -rn "^def Tor"` finds only the
-  categorical `CategoryTheory.Monoidal.Tor` and the group-homology
-  `Rep k G` version — there is no `Tor R M N` for modules, hence no
-  local criterion of flatness.  `grep -rn "local criterion"` returns
-  nothing at all.
-* **Cohen–Macaulay and depth.**  `grep -rn CohenMacaulay` returns
-  literally nothing; `RingTheory/Regular/Depth.lean` is a 10-line stub.
-  (Re-verified 2026-07-27.)
-* **Generic flatness and openness of the flat locus.**
-  `grep -rln flatLocus` returns nothing.
-* **Stalks of pullbacks and of fibres.**  `grep -n stalk` over
-  `AlgebraicGeometry/Fiber.lean` and over
-  `AlgebraicGeometry/PullbackCarrier.lean` each return NOTHING.  This is
-  the reason this leaf was not cut further: the natural next seam is
-  "the stalk of `p.fiber s` at `p.asFiber x` is `O_{X,x} ⧸ 𝔪_s O_{X,x}`,
-  compatibly with `u`", and that identification would have to be built
-  from scratch before the local algebra could even be stated over plain
-  rings.  A hit on either grep means that seam is now cheap and this
-  leaf should be re-cut along it.
-* **Essentially of finite presentation.**  `Algebra.EssFiniteType` exists
-  (`RingTheory/EssentialFiniteness.lean`) but there is no
-  essentially-of-finite-*presentation* notion, which is what
-  `LocallyOfFinitePresentation p` becomes at a stalk.  This is the second
-  reason the leaf is not stated over abstract local rings: the honest
-  ring-level statement cannot currently be written down.  Do **not**
-  weaken it to `EssFiniteType` — finite type is strictly weaker than
-  finite presentation and the criterion is not known in that generality,
-  so that would risk a FALSE leaf.
+The old note's positive content survives and has been moved to the leaf it
+actually describes: the Tor / local-criterion / spreading-out survey is on
+`flat_of_flat_of_flat_quotientMap`, and the stalk-of-pullback survey is on
+`flat_quotientMap_of_flat_stalkMap_fiberMapOver`.  One correction to it
+that a prover should know: mathlib's `Module.free_of_maximalIdeal_rTensor_injective`
+IS the local criterion of flatness in the finitely-presented case, so the
+gap is narrower than "no local criterion exists" suggested — it is exactly
+the step from *finitely* to *essentially* finitely presented.
 
-`~/cs/FLT` has none of this either (checked 2026-07-26: no
-`AbelianVariety`, no cube, no `CohenMacaulay`), so there is nothing to
-vendor. -/
+**Route note that remains true and load-bearing**: `S` is an ARBITRARY
+scheme, so the Noetherian engine 00MP does not reach this statement.  05UV
+is the non-Noetherian local-ring form and is what the cut uses; a plan that
+stops at 00MP is still incomplete. -/
 theorem flat_stalkMap_of_flat_stalkMap_fiberMapOver
     {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     (u : X ⟶ Y) (h : u ≫ q = p)
@@ -687,8 +914,17 @@ theorem flat_stalkMap_of_flat_stalkMap_fiberMapOver
     (x : X)
     (hp : (p.stalkMap x).hom.Flat)
     (hfib : ((fiberMapOver u h (p x)).stalkMap (p.asFiber x)).hom.Flat) :
-    (u.stalkMap x).hom.Flat :=
-  sorry
+    (u.stalkMap x).hom.Flat := by
+  subst h
+  have hcomp : (u.stalkMap x).hom.comp (q.stalkMap (u x)).hom = ((u ≫ q).stalkMap x).hom := by
+    rw [← CommRingCat.hom_comp, ← Scheme.Hom.stalkMap_comp]
+    rfl
+  have := q.prop (u x)
+  exact flat_of_flat_of_flat_quotientMap (g := (q.stalkMap (u x)).hom)
+    (v := (u.stalkMap x).hom)
+    (hcomp ▸ essFinitePresentation_stalkMap (u ≫ q) x)
+    (LocallyOfFiniteType.stalkMap (f := q) (u x)) (hcomp ▸ hp)
+    (flat_quotientMap_of_flat_stalkMap_fiberMapOver u x hfib)
 
 /-- **MIRACLE FLATNESS, endomorphism form** (sorry leaf — PURE COMMUTATIVE
 ALGEBRA / general scheme theory, NO abelian varieties, no group law, no
@@ -801,7 +1037,11 @@ theorem flat_of_finite_fibres_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field
   sorry
 
 /-- **The fibrewise criterion of flatness** (PROVEN 2026-07-27 over the
-single pointwise leaf `flat_stalkMap_of_flat_stalkMap_fiberMapOver` above
+pointwise statement `flat_stalkMap_of_flat_stalkMap_fiberMapOver` above,
+itself PROVEN the same day over the three leaves
+`flat_of_flat_of_flat_quotientMap` (Stacks 05UV, ring level),
+`essFinitePresentation_stalkMap` and
+`flat_quotientMap_of_flat_stalkMap_fiberMapOver`
 — general scheme theory, NO abelian varieties: EGA IV 11.3.10, *critère
 de platitude par fibres*; Stacks 039E; Matsumura *Commutative Ring
 Theory* §23 for the local-algebra form).
@@ -830,10 +1070,14 @@ consumed at exactly ONE fibre, `p.fiber (p x)`, and at exactly one point
 of it, `Scheme.Hom.asFiber p x` — flatness of that fibre morphism gives
 flatness of its stalk map there (`AlgebraicGeometry.Flat.stalkMap`).
 Nothing is lost: Stacks 039C, the theorem the literature actually proves,
-IS pointwise, and 039E is its global specialization.  All the remaining
-mathematics is in
-`flat_stalkMap_of_flat_stalkMap_fiberMapOver`, whose docstring carries
-the route survey and the refuting greps.
+IS pointwise, and 039E is its global specialization.  The pointwise
+statement is in turn PROVEN, so the remaining mathematics is now in its
+three leaves: `flat_of_flat_of_flat_quotientMap` carries the Tor /
+local-criterion / spreading-out survey (that is where the depth is),
+`essFinitePresentation_stalkMap` is the finite-presentation analogue of a
+lemma mathlib already has for finite type, and
+`flat_quotientMap_of_flat_stalkMap_fiberMapOver` carries the
+stalk-of-pullback survey.  Each docstring carries its own refuting greps.
 
 **Checked against the source 2026-07-27: Stacks 039E does NOT require `Y`
 flat over `S`** — its hypotheses are `X` locally of finite presentation
