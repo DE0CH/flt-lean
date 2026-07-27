@@ -6777,7 +6777,32 @@ THE ARGUMENT.
    `ℤ_q`, hence free.
 
 This is the half of `exists_padicAlgebra_ringHom_of_frameComparison`
-that survives verbatim when the pinning hypotheses are dropped. -/
+that survives verbatim when the pinning hypotheses are dropped.
+
+MISSING MACHINERY, scouted 2026-07-27 — and it is SHARED with
+`span_range_eq_top_of_adicPin` below, so prove it once:
+
+    IsAdicComplete (Ideal.span {(q : O₁)}) O₁   for `O₁` finite free over `ℤ_q`.
+
+Mathlib has `IsAdicComplete (maximalIdeal ℤ_[p]) ℤ_[p]`
+(`Mathlib/NumberTheory/Padics/PadicIntegers.lean`) and
+`IsAdicComplete.henselianRing` (`Mathlib/RingTheory/Henselian.lean`), but
+it does **not** transfer `IsAdicComplete` through a finite free module
+structure: a grep of `Mathlib/RingTheory/AdicCompletion/` turns up
+instances only for `⊥`, `⊤`, subsingletons, `PowerSeries`, and the
+completion of a Noetherian local ring — nothing for `ι → M`, for a
+product, or for a finite free module.  So the route is: transport along
+`Module.Free.chooseBasis` to `ι → ℤ_[q]`, prove `IsHausdorff` /
+`IsPrecomplete` there coordinatewise from `ℤ_q`'s own instance, and note
+that `Ideal.span {(q : O₁)} ^ n • ⊤` and `Ideal.span {(q : ℤ_[q])} ^ n • ⊤`
+are the SAME submodule `qⁿ · O₁`, so the base ring of the filtration may
+be switched freely.  Do not look for this in mathlib again; it is not
+there at this pin.
+
+Once it exists, step 2 here is `padicIntLiftHom` verbatim, and step 2 of
+`span_range_eq_top_of_adicPin` is `IsAdicComplete.henselianRing` applied
+to `X² - X` (whose derivative `2X - 1` is a unit at an idempotent, since
+`(2e-1)² = 1`). -/
 theorem exists_padicAlgebra_of_additiveEquiv_sq
     (q : ℕ) [Fact q.Prime]
     (O₁ : Type u) [CommRing O₁] [Algebra ℤ_[q] O₁] [Module.Finite ℤ_[q] O₁]
@@ -6829,7 +6854,17 @@ THE ARGUMENT.
    local ring `ℤ_q`, so `O₁ ⧸ M = 0`.
 
 `hI` and `hπ2` are consumed in step 1, `hqI` in step 3, `hπ` only
-through `hdense`/`hker`. -/
+through `hdense`/`hker`.
+
+MISSING MACHINERY, scouted 2026-07-27.  Step 2 needs
+`IsAdicComplete (Ideal.span {(q : O₁)}) O₁` — the SAME gap as
+`exists_padicAlgebra_of_additiveEquiv_sq` above, where the route is
+spelled out; it is not in mathlib at this pin.  With it in hand,
+idempotent lifting is `IsAdicComplete.henselianRing` at `X² - X`, and the
+Artinian decomposition of the finite `𝔽_q`-algebra `O₁ ⧸ (q)` is
+`IsArtinianRing.equivPi` / `IsArtinianRing.isNilpotent_jacobson_bot`.
+Step 4 is `Submodule.eq_top_of_smul_eq_top`-style Nakayama over the
+local ring `ℤ_q` (`Submodule.eq_top_of_le_smul_add` / `IsLocalRing`). -/
 theorem span_range_eq_top_of_adicPin
     {D : Type u} [Field D] [NumberField D]
     (q : ℕ) [Fact q.Prime]
