@@ -948,7 +948,66 @@ and `grep -rn "dim" Mathlib/AlgebraicGeometry/` turns up nothing that proves
 step 3.  Step 3 is the classical `dim 𝒪_{X,x} + dim closure{x} = dim X`
 (Matsumura 5.6 / EGA IV 5.2.3) and it, not steps 1–2, is the real content of
 this leaf.  A hit on a scheme-dimension file means this note has gone stale
-and the leaf is far cheaper than it looks. -/
+and the leaf is far cheaper than it looks.
+
+**THAT SURVEY IS NOW REFUTED, ON EXACTLY THE TERMS IT SET (2026-07-27).  STEP 3
+IS NOT NEEDED AT ALL, AND THE ROUTE BELOW USES NO SCHEME DIMENSION THEORY.**
+The grep that missed it was `grep -rn "dim" Mathlib/AlgebraicGeometry/`: the
+scheme-level statement is stated in terms of `Order.coheight`, and `coheight`
+does not contain the substring `dim`.  Every name below was located and read on
+2026-07-27; each line ends with the check that would refute it.
+
+1. **`ringKrullDim (X.presheaf.stalk x) = Order.coheight x`** — this exists, as
+   `AlgebraicGeometry.ringKrullDim_stalk_eq_coheight`, `@[stacks 02IZ]`, in
+   `Mathlib/AlgebraicGeometry/Properties.lean` (with the affine case
+   `idealHeight_eq_coheight` just above it).  So both sides of this leaf are
+   ideal HEIGHTS, and the whole question is a statement about heights of primes
+   under a module-finite ring extension.
+   *Refute with:* `grep -n ringKrullDim_stalk_eq_coheight
+   .lake/packages/mathlib/Mathlib/AlgebraicGeometry/Properties.lean`.
+2. **`height q ≤ height p + height (q in the fibre)`** is FREE — no going-down,
+   no normality: `Ideal.height_le_height_add_of_liesOver`, `@[stacks 00OM]`,
+   `Mathlib/RingTheory/Ideal/KrullsHeightTheorem.lean`.  Combined with the fibre
+   being zero-dimensional — which is now PROVEN, as
+   `ringKrullDim_quotient_map_maximalIdeal_stalkMap` above — this gives
+   `dim 𝒪_{X,x} ≤ dim 𝒪_{X,u x}` outright.  **Half of this leaf costs nothing.**
+3. **The reverse inequality is `Ideal.height_eq_height_add_of_liesOver_of_hasGoingDown`**,
+   `@[stacks 00ON]`, Matsumura 13.B Th. 19(2), same file, which upgrades step 2
+   to an EQUALITY given `[Algebra.HasGoingDown A B]`.
+4. **Going-down is available from NORMALITY, not from flatness** (using flatness
+   would be circular — this leaf exists to prove flatness).  Krull's going-down
+   theorem is in the pin as an INSTANCE:
+   `Mathlib/RingTheory/IntegralClosure/GoingDown.lean:48`, `@[stacks 00H8]`,
+   `[IsDomain S] [FaithfulSMul R S] [Algebra.IsIntegral R S] [IsIntegrallyClosed R] →
+   Algebra.HasGoingDown R S`.  `u` finite gives `Algebra.IsIntegral`; `X`
+   integral gives `IsDomain` and injectivity.
+   *Refute with:* `grep -n "stacks 00H8"
+   .lake/packages/mathlib/Mathlib/RingTheory/IntegralClosure/GoingDown.lean`.
+
+**SO THE WHOLE LEAF NOW RESTS ON ONE PIECE OF COMMUTATIVE ALGEBRA:**
+
+> **a regular local ring is integrally closed** (regular ⟹ normal),
+
+which is what supplies `[IsIntegrallyClosed A]` for `A = Γ(V)` on an affine
+chart of the smooth `X`.  That is absent from mathlib — `grep -rn
+IsIntegrallyClosed Mathlib/ | grep -i "regular\|smooth\|normal"` returns only
+prose in `IntegralClosure/IntegrallyClosed.lean`, and there is no `IsNormalRing`
+class at all — and absent from this project and from `~/cs/FLT`.  But it is a
+STANDARD, SELF-CONTAINED, MATHLIB-SHAPED statement, and it is enormously smaller
+than "a dimension theory of schemes".  Mathlib even provides the localisation
+step for it: `Mathlib/RingTheory/LocalProperties/IntegrallyClosed.lean` lets
+`IsIntegrallyClosed A` be checked at the localisations of `A`.
+
+Note this route ALSO discards steps 1–3 of the survey above: irreducibility is
+still wanted (to make the charts domains), but SURJECTIVITY of `u` is not used,
+and neither is `dim 𝒪_{X,x} + dim closure{x} = dim X`.
+
+**Whoever takes this leaf should read the docstring of
+`exists_isWeaklyRegular_span_eq_maximalIdeal` below first**: the same hoist of
+`Modularity/KhareWintenberger.lean`'s regular-local-ring material that closes
+`isRegularLocalRing_stalk_of_smooth` is what would put `IsRegularLocalRing` on
+the charts' localisations here, so all three leaves share one piece of
+bookkeeping. -/
 theorem ringKrullDim_stalk_eq_of_isFinite_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
     (g : X ⟶ Spec K) [Smooth g] [IsProper g] [GeometricallyConnected g]
     (u : X ⟶ X) [IsFinite u] (x : X) :
