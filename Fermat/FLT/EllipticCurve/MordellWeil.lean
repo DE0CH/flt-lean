@@ -169,6 +169,7 @@ public import Mathlib.NumberTheory.NumberField.ClassNumber
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 public import Mathlib.RingTheory.Polynomial.Eisenstein.IsIntegral
 public import Mathlib.RingTheory.Localization.NormTrace
+public import Mathlib.NumberTheory.NumberField.Units.DirichletTheorem
 
 @[expose] public section
 
@@ -417,15 +418,14 @@ i.e. `p/e² = F(p', e'²)/(4e'²·G(p', e'²))` for the binary forms
 
 **UPDATED 2026-07-27**: `exists_halving_witness` is PROVEN too, and so, later the
 same day, is `descent_unit_square` — the purely ideal-theoretic half of the
-`2`-descent over `ℤ[s]`. Of its four ingredients (`𝓞_K = ℤ[s]`, `h(K) = 1`, units
-mod squares, valuation bookkeeping) the **valuation bookkeeping is now PROVEN**,
-over a genuine `CommRing` model of `ℤ[s]` built in the `ℤ[s] AS A RING` section
-below, and level `11` stands on exactly TWO open statements, both facts about the
-cubic field `K = ℚ(s)`: `Cubic.ZS.isPrincipalIdealRing_zs` and
-`Cubic.ZS.unit_sq_class`. The norm pruning and the local condition that the
-sentence above expected are PROVEN, and the local condition turned out to be
-**parity mod `4`**, needing no `11`-adic input at all. See the `ℤ[s] IN
-COORDINATES` section below.
+`2`-descent over `ℤ[s]`. **All four of its ingredients are now PROVEN**: the
+valuation bookkeeping over a genuine `CommRing` model of `ℤ[s]` built in the
+`ℤ[s] AS A RING` section below, and, later the same day, the two number-theoretic
+facts about the cubic field `K = ℚ(s)` — `Cubic.ZS.isPrincipalIdealRing_zs`
+(`𝓞_K = ℤ[s]` together with `h(K) = 1`) and `Cubic.ZS.unit_sq_class` (the units
+modulo squares). The norm pruning and the local condition that the sentence above
+expected are PROVEN, and the local condition turned out to be **parity mod `4`**,
+needing no `11`-adic input at all. See the `ℤ[s] IN COORDINATES` section below.
 
 `height_drop_or_small` is PROVEN, over three proven ingredients: the
 coprimality bookkeeping (`reduced_fraction`), the resultant divisibility
@@ -670,43 +670,36 @@ beyond the ring itself:
    (`exists_associated_pow_of_mul_eq_pow'`); and finally split the exponents
    `a = 2⌊a/2⌋ + a%2`, `b = 2⌊b/2⌋ + b%2`.
 
-## THE TWO REMAINING LEAVES, AND THE ROUTE FOR EACH
+## BOTH NUMBER-THEORY STATEMENTS ARE NOW PROVEN (2026-07-27)
 
 Both are statements about the cubic field `K = ℚ(s)`, `s³ = 2s² − 2`, whose data
-was re-derived in PARI/GP (untrusted searcher; every number below is checkable):
-`poldisc(X³ − 2X² + 2) = −44 = disc(K)`, so `[𝓞_K : ℤ[s]] = 1`; `h(K) = 1`;
-signature `(r₁, r₂) = (1, 1)`; unit rank `1`, torsion `{±1}`, fundamental unit
-`ε = −s² + s + 1` with `N(ε) = −1`.
+was re-derived in PARI/GP (untrusted searcher; every number below is now also
+verified in Lean): `poldisc(X³ − 2X² + 2) = −44 = disc(K)`, so `[𝓞_K : ℤ[s]] = 1`;
+`h(K) = 1`; signature `(r₁, r₂) = (1, 1)`; unit rank `1`, torsion `{±1}`,
+fundamental unit `ε = −s² + s + 1` with `N(ε) = −1`.
 
-*Leaf 1, `isPrincipalIdealRing_zs`.* The intended route is mathlib's
-`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`
-(`Mathlib/NumberTheory/NumberField/ClassNumber.lean`), whose hypothesis at
-`finrank = 3`, `nrComplexPlaces = 1` reads
-`|discr K| < (2·(π/4)·(3³/3!))² = (2.25π)² ≈ 49.96`, and `44 < 49.96` with room
-to spare (`pi_gt_three` suffices: `44 < 45.5625`), exactly as in
-`Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean`, the worked precedent.
-What has to be supplied first is the identification `𝓞_K ≃+* ℤ[s]`, i.e. that
-the power basis `1, s, s²` is an integral basis.
+`K` is realised in the `RingOfIntegers` section below as the **fraction field of
+`ℤ[s]` itself** rather than as `ℚ[X]/(X³ − 2X² + 2)`, which makes `ℤ[s] ⊆ K` free
+by construction; `Basis.localizationLocalization` then turns the ℤ-basis `1, s, s²`
+into a ℚ-basis and `Algebra.discr_localizationLocalization` transports the
+discriminant, computed inside `ℤ[s]` from `Tr(a + bs + cs²) = 3a + 2b + 4c`.
 
-**CORRECTION to the previous docstring, and it matters for whoever takes this
-leaf**: the polynomial discriminant `−44 = −2²·11` is NOT squarefree, so "the
-discriminants agree, hence index `1`" is the CONCLUSION, not a cheap input — the
-index could a priori be `2`, and ruling that out is a real argument at `2`. The
-defining polynomial IS Eisenstein at `2` (`−2, 0, 2` all even, `2` not divisible
-by `4`), which gives both irreducibility and `2`-maximality; so an Eisenstein
-argument IS needed, contrary to the earlier note.
+Two corrections to the earlier route notes, both load-bearing, are recorded in
+full at the two sections below and summarised here:
 
-*Leaf 2, `unit_sq_class`.* Needs `𝓞_K = ℤ[s]` as well, then Dirichlet:
-`r₁ + r₂ − 1 = 1`, so `𝓞_K^× ≅ {±1} × ℤ`, hence `𝓞_K^× / (𝓞_K^×)²` has order `4`
-with representatives `{±1, ±ε₀}` for any fundamental `ε₀`. **`ε` need not be
-proven fundamental**: `N(ε) = −1` and `ε = ±ε₀^k` force `k` odd, so `ε ≡ ε₀`
-modulo squares whatever `ε₀` is. Torsion is `{±1}` because `K` has a real
-embedding. Mathlib carries the pieces (`NumberField.Units.rank`, Dirichlet) but
-not the signature computation for this polynomial (one real root: the cubic is
-increasing off `[0, 4/3]` and its two critical values `2` and `2 − 32/27` have
-the same sign, so exactly one real root, near `−0.8393`).
+* **`isPrincipalIdealRing_zs`.** `−44 = −2²·11` is NOT squarefree, so "the
+  discriminants agree, hence index `1`" is a CONCLUSION, not an input.  The
+  polynomial IS Eisenstein at `2`, which kills the `2`-part; the prime `11` is
+  killed separately, by the trace form plus `N(4 + 3s + s²) = 242 = 2·11²`.
+  Minkowski then needs only `2·nrComplexPlaces ≤ finrank = 3` — the exact
+  signature is not required for this half.
+* **`unit_sq_class`.** "`N(ε) = −1` forces the exponent odd" is **invalid**: if
+  the fundamental unit had norm `+1` the equation would constrain only the sign.
+  What actually rules out `ε = −(square)` is a quadratic-residue obstruction at
+  the degree-one prime above `13` (`s ↦ 7`), where `ε ↦ 11` and neither `11` nor
+  `−11 = 2` is a square mod `13`.
 
-Neither leaf needs Galois cohomology, a Selmer group, a connecting map, or
+Neither leaf needed Galois cohomology, a Selmer group, a connecting map, or
 `E(ℚ) ≅ ℤ/5`. -/
 
 namespace Cubic
@@ -1456,24 +1449,200 @@ theorem isPrincipalIdealRing_zs : IsPrincipalIdealRing ZS :=
 
 instance : IsPrincipalIdealRing ZS := isPrincipalIdealRing_zs
 
-/-- **LEAF 2 (sorry leaf, 2026-07-27): the units of `ℤ[s]` modulo squares are
-`{±1, ±ε}`**, `ε = −s² + s + 1`.
+section UnitGroup
 
-Route: `𝓞_K = ℤ[s]` again, then Dirichlet's unit theorem. `K` has signature
-`(r₁, r₂) = (1, 1)` — the cubic `X³ − 2X² + 2` has exactly one real root, since
-it is increasing off `[0, 4/3]` and its two critical values `2` and `2 − 32/27`
-have the same sign — so the unit rank is `r₁ + r₂ − 1 = 1`, and the torsion is
-`{±1}` because a real embedding exists. Hence `𝓞_K^× ≅ {±1} × ℤ` and
-`𝓞_K^×/(𝓞_K^×)²` has exactly the four classes `{±1, ±ε₀}` for any fundamental
-unit `ε₀`.
+open scoped NumberField
+open _root_.Module
 
-**`ε` need NOT be proven fundamental**, which is the expensive half of the
-classical computation and is avoided here: `N(ε) = −1`, and `ε = ±ε₀^k` gives
-`(±1)·N(ε₀)^k = −1`, forcing `k` odd, so `ε ≡ ε₀` modulo squares whichever `ε₀`
-Dirichlet hands back. (PARI/GP confirms `ε` is in fact fundamental, but that is
-not needed here.) -/
+/-! ### The units of `ℤ[s]` modulo squares (PROVEN 2026-07-27)
+
+The signature of `K` is `(r₁, r₂) = (1, 1)`, but it is obtained here from
+`NumberField.sign_discr` — `sign (disc K) = (−1)^{r₂}` with `disc K = −44 < 0`
+forces `r₂` odd, and `r₁ + 2r₂ = 3` forces `r₂ ≤ 1` — rather than from counting
+the real roots of `X³ − 2X² + 2` analytically, which is what the previous
+docstring proposed.  Hence `rank 𝓞_K^× = 1`, and torsion is `{±1}` by
+`NumberField.Units.torsion_eq_one_or_neg_one_of_odd_finrank` (`finrank = 3` is
+odd), so every unit is `±E^n` for a fundamental `E`.
+
+**CORRECTION to the previous docstring, and it is load-bearing.**  The old text
+argued: "`N(ε) = −1`, and `ε = ±ε₀^k` gives `(±1)·N(ε₀)^k = −1`, forcing `k` odd,
+so `ε ≡ ε₀` modulo squares".  **That inference is invalid.**  If `N(ε₀) = +1`
+then `N(ε₀)^k = 1` for every `k`, the equation reads `(±1) = −1`, and it
+constrains the SIGN only — `k` is left completely free.  Concretely `ε = −ε₀²`
+satisfies `N(ε) = −1` with `k` even, and in that case `{±1, ±ε}` would meet only
+two of the four classes of `𝓞_K^×/(𝓞_K^×)²` and the statement would be FALSE.
+
+What actually rules that out is a **quadratic-residue obstruction**, and it is
+needed for the `−` case only:
+
+* `ε = w²` is impossible by the norm: `N(ε) = −1` while `N(w²) = N(w)² ≥ 0`.
+* `ε = −w²` is **not** excluded by the norm (`N(−w²) = −N(w)² = −1` when
+  `N(w) = ±1`), nor by the real embedding (`ε ≈ −0.5437 < 0`, consistent).  It is
+  excluded by reducing at the degree-one prime above `13` with `s ↦ 7`
+  (`7³ − 2·7² + 2 = 247 = 13·19`): there `ε ↦ 1 + 7 − 10 = −2 = 11`, and neither
+  `11` nor `−11 = 2` is a square mod `13` (`13 ≡ 5 mod 8`).  `phi13` below is
+  that reduction, and its multiplicativity is the integer identity
+  `LHS − RHS = −13·(3bb' + 4bc' + 4cb' + 6cc')`.
+
+So `ε` is not `±` a square, its exponent against any fundamental unit is odd, and
+`{±1, ±ε}` is exactly a set of representatives. -/
+
+/-! ## The signature of `K` and the unit rank -/
+
+theorem nrComplexPlaces_KK : NumberField.InfinitePlace.nrComplexPlaces KK = 1 := by
+  have hsign := NumberField.sign_discr (K := KK)
+  rw [discr_KK] at hsign
+  rcases Nat.le_one_iff_eq_zero_or_eq_one.mp nrComplexPlaces_le with h | h
+  · rw [h] at hsign; exact absurd hsign (by decide)
+  · exact h
+
+theorem nrRealPlaces_KK : NumberField.InfinitePlace.nrRealPlaces KK = 1 := by
+  have h := NumberField.InfinitePlace.card_add_two_mul_card_eq_rank KK
+  rw [finrank_KK, nrComplexPlaces_KK] at h
+  omega
+
+theorem rank_KK : NumberField.Units.rank KK = 1 := by
+  rw [NumberField.Units.rank, NumberField.InfinitePlace.card_eq_nrRealPlaces_add_nrComplexPlaces,
+    nrRealPlaces_KK, nrComplexPlaces_KK]
+
+/-! ## Transporting Dirichlet's unit theorem to `ℤ[s]` -/
+
+noncomputable def unitsEquivZS : (ZS)ˣ ≃* (𝓞 KK)ˣ :=
+  Units.mapEquiv ringOfIntegersEquivZS.toRingEquiv.toMulEquiv
+
+theorem unitsEquivZS_neg (X : (ZS)ˣ) : unitsEquivZS (-X) = -unitsEquivZS X := by
+  ext
+  simp [unitsEquivZS]
+
+/-- **Dirichlet for `ℤ[s]`**: `ℤ[s]ˣ = {±1} × ⟨E⟩` for a fundamental unit `E`. -/
+theorem exists_fundamental_unit :
+    ∃ E : (ZS)ˣ, ∀ U : (ZS)ˣ, ∃ (σ : (ZS)ˣ) (n : ℤ), (σ = 1 ∨ σ = -1) ∧ U = σ * E ^ n := by
+  have hsub : Subsingleton (Fin (NumberField.Units.rank KK)) :=
+    Fin.subsingleton_iff_le_one.mpr (le_of_eq rank_KK)
+  have hidx : (0 : ℕ) < NumberField.Units.rank KK := by rw [rank_KK]; norm_num
+  refine ⟨unitsEquivZS.symm (NumberField.Units.fundSystem KK ⟨0, hidx⟩), fun U => ?_⟩
+  obtain ⟨⟨ζ, e⟩, hV, -⟩ := NumberField.Units.exist_unique_eq_mul_prod KK (unitsEquivZS U)
+  have hprod : (∏ i, (NumberField.Units.fundSystem KK i) ^ (e i))
+      = (NumberField.Units.fundSystem KK ⟨0, hidx⟩) ^ (e ⟨0, hidx⟩) :=
+    Finset.prod_eq_single_of_mem _ (Finset.mem_univ _)
+      fun b _ hb => absurd (Subsingleton.elim b ⟨0, hidx⟩) hb
+  rw [hprod] at hV
+  refine ⟨unitsEquivZS.symm (ζ : (𝓞 KK)ˣ), e ⟨0, hidx⟩, ?_, ?_⟩
+  · rcases NumberField.Units.torsion_eq_one_or_neg_one_of_odd_finrank (K := KK)
+      (by rw [finrank_KK]; decide) ζ with hz | hz
+    · left; rw [hz, map_one]
+    · right
+      apply unitsEquivZS.injective
+      rw [MulEquiv.apply_symm_apply, hz, show (-1 : (ZS)ˣ) = -(1 : (ZS)ˣ) from rfl,
+        unitsEquivZS_neg, map_one]
+  · apply unitsEquivZS.injective
+    rw [map_mul, map_zpow, MulEquiv.apply_symm_apply, MulEquiv.apply_symm_apply, hV]
+
+/-! ## `ε` is not `±` a square: reduction mod the prime `s ↦ 7` of `𝔽₁₃` -/
+
+/-- The ring reduction `ℤ[s] → 𝔽₁₃`, `s ↦ 7` (`7³ − 2·7² + 2 = 247 = 13·19`). -/
+def phi13 (x : ZS) : ZMod 13 := (x.a : ZMod 13) + 7 * (x.b : ZMod 13) + 10 * (x.c : ZMod 13)
+
+theorem phi13_mul (x y : ZS) : phi13 (x * y) = phi13 x * phi13 y := by
+  have h : ((x * y).a + 7 * (x * y).b + 10 * (x * y).c : ℤ)
+      = (x.a + 7 * x.b + 10 * x.c) * (y.a + 7 * y.b + 10 * y.c)
+        - 13 * (3 * x.b * y.b + 4 * x.b * y.c + 4 * x.c * y.b + 6 * x.c * y.c) := by
+    simp only [mul_a, mul_b, mul_c]; ring
+  have hc := congrArg (fun z : ℤ => (z : ZMod 13)) h
+  push_cast at hc
+  rw [show (13 : ZMod 13) = 0 from by decide, zero_mul, sub_zero] at hc
+  simp only [phi13]
+  linear_combination hc
+
+theorem phi13_neg (x : ZS) : phi13 (-x) = -phi13 x := by
+  simp only [phi13, neg_a, neg_b, neg_c, Int.cast_neg]; ring
+
+theorem phi13_epsEl : phi13 epsEl = 11 := by decide
+
+theorem sq_ne_eleven : ∀ y : ZMod 13, (11 : ZMod 13) ≠ y ^ 2 ∧ (11 : ZMod 13) ≠ -y ^ 2 := by
+  decide
+
+/-- **`ε` is neither a square nor minus a square in `ℤ[s]`.**  The `+` case is
+already excluded by the norm (`N(ε) = −1` while `N(w²) = N(w)² ≥ 0`); the `−` case
+is NOT, and needs this reduction: `ε ↦ 11` in `𝔽₁₃`, and neither `11` nor `−11 = 2`
+is a square mod `13`. -/
+theorem epsEl_ne_sq (w : ZS) : epsEl ≠ w ^ 2 ∧ epsEl ≠ -(w ^ 2) := by
+  constructor
+  · intro h
+    have hp := congrArg phi13 h
+    rw [phi13_epsEl, pow_two, phi13_mul] at hp
+    exact (sq_ne_eleven (phi13 w)).1 (by rw [hp]; ring)
+  · intro h
+    have hp := congrArg phi13 h
+    rw [phi13_epsEl, phi13_neg, pow_two, phi13_mul] at hp
+    exact (sq_ne_eleven (phi13 w)).2 (by rw [hp]; ring)
+
+theorem isUnit_epsEl : IsUnit epsEl := isUnit_of_norm_isUnit (by decide)
+
+theorem zpow_two_mul (F : (ZS)ˣ) (k : ℤ) : F ^ (2 * k) = (F ^ k) ^ 2 := by
+  rw [← zpow_natCast (F ^ k) 2, ← zpow_mul]
+  congr 1
+  push_cast
+  ring
+
+/-! ## The four classes -/
+
+end UnitGroup
+
+/-- **The units of `ℤ[s]` modulo squares are `{±1, ±ε}`** (PROVEN 2026-07-27),
+`ε = −s² + s + 1`.  See the section above; note in particular the correction
+recorded there: `N(ε) = −1` does **not** by itself force the exponent to be odd,
+and the `−` case genuinely needs the mod-`13` quadratic-residue obstruction. -/
 theorem unit_sq_class {u : ZS} (hu : IsUnit u) :
-    ∃ v w : ZS, (v = 1 ∨ v = -1 ∨ v = epsEl ∨ v = -epsEl) ∧ u = v * w ^ 2 := sorry
+    ∃ v w : ZS, (v = 1 ∨ v = -1 ∨ v = epsEl ∨ v = -epsEl) ∧ u = v * w ^ 2 := by
+  obtain ⟨E, hE⟩ := exists_fundamental_unit
+  obtain ⟨U, rfl⟩ := hu
+  obtain ⟨P, hP⟩ := isUnit_epsEl
+  obtain ⟨σ₀, j, hσ₀, hj⟩ := hE P
+  -- `j` is odd: otherwise `ε = ±(square)`.
+  have hjodd : ¬ (2 ∣ j) := by
+    rintro ⟨t, rfl⟩
+    rw [zpow_two_mul] at hj
+    rcases hσ₀ with rfl | rfl
+    · exact (epsEl_ne_sq ((E ^ t : (ZS)ˣ) : ZS)).1 (by
+        rw [← hP, hj, one_mul]; push_cast; ring_nf)
+    · exact (epsEl_ne_sq ((E ^ t : (ZS)ˣ) : ZS)).2 (by
+        rw [← hP, hj]; push_cast; ring_nf)
+  obtain ⟨σ, n, hσ, hU⟩ := hE U
+  rcases Int.even_or_odd n with ⟨m, hm⟩ | ⟨m, hm⟩
+  · -- `n` even
+    refine ⟨(σ : ZS), ((E ^ m : (ZS)ˣ) : ZS), ?_, ?_⟩
+    · rcases hσ with rfl | rfl
+      · exact Or.inl rfl
+      · exact Or.inr (Or.inl rfl)
+    · have : U = σ * (E ^ m) ^ 2 := by
+        rw [hU, hm, show (m + m : ℤ) = 2 * m by ring, ← zpow_natCast (E ^ m) 2, ← zpow_mul]
+        ring_nf
+      rw [this]; push_cast; ring
+  · -- `n` odd; use `j` odd to replace `E` by `ε`
+    obtain ⟨t, ht⟩ : ∃ t : ℤ, j = 2 * t + 1 := by
+      rcases Int.even_or_odd j with ⟨r, hr⟩ | ⟨r, hr⟩
+      · exact absurd ⟨r, by omega⟩ hjodd
+      · exact ⟨r, hr⟩
+    have hσ₀sq : σ₀ * σ₀ = 1 := by rcases hσ₀ with rfl | rfl <;> simp
+    have hcalc : (σ * σ₀) * (σ₀ * E ^ j) * (E ^ (m - t)) ^ 2 = σ * E ^ n := by
+      have h1 : (σ * σ₀) * (σ₀ * E ^ j) = σ * E ^ j := by
+        rw [mul_assoc, ← mul_assoc σ₀ σ₀, hσ₀sq, one_mul]
+      rw [h1, mul_assoc, ← zpow_natCast (E ^ (m - t)) 2, ← zpow_mul, ← zpow_add, ht, hm]
+      congr 1
+      push_cast
+      ring_nf
+    refine ⟨((σ * σ₀ : (ZS)ˣ) : ZS) * epsEl, ((E ^ (m - t) : (ZS)ˣ) : ZS), ?_, ?_⟩
+    · rcases hσ with rfl | rfl <;> rcases hσ₀ with rfl | rfl
+      · exact Or.inr (Or.inr (Or.inl (by norm_num)))
+      · exact Or.inr (Or.inr (Or.inr (by norm_num)))
+      · exact Or.inr (Or.inr (Or.inr (by norm_num)))
+      · exact Or.inr (Or.inr (Or.inl (by norm_num)))
+    · have hUU : U = (σ * σ₀) * P * (E ^ (m - t)) ^ 2 := by
+        rw [hj, hcalc, hU]
+      rw [hUU, ← hP]
+      push_cast
+      ring_nf
 
 /-- **THE VALUATION BOOKKEEPING** (PROVEN 2026-07-27 over the two leaves above):
 `β = p − 2s·e²` is a unit from `{±1, ±ε}` times `s^r g^t` (`r, t ∈ {0, 1}`) times
@@ -2651,11 +2820,12 @@ the finite-generation content lives — is PROVEN too, over `reduced_fraction`,
 `forms_common_dvd` and `forms_archimedean`. And `smallPoints` — the finite base
 case the height bound leaves behind, `|p| ≤ 512` and `1 ≤ e ≤ 22` — is PROVEN
 as of 2026-07-27 by a bitmask quadratic-residue sieve. And `exists_halving_witness`
-was decomposed later the same day, then `descent_unit_square` after it, so exactly
-TWO open statements remain, both facts about the cubic field `K = ℚ(s)`:
-`Cubic.ZS.isPrincipalIdealRing_zs` (`𝓞_K = ℤ[s]` with `h(K) = 1`) and
-`Cubic.ZS.unit_sq_class` (units mod squares). The valuation bookkeeping that used
-to sit with them is PROVEN, as `Cubic.ZS.descent_zs`. See the
+was decomposed later the same day, then `descent_unit_square` after it, and the
+two number-theoretic statements it rested on — `Cubic.ZS.isPrincipalIdealRing_zs`
+(`𝓞_K = ℤ[s]` with `h(K) = 1`) and `Cubic.ZS.unit_sq_class` (units mod squares) —
+are **PROVEN as of 2026-07-27**, so nothing of the `2`-descent survives as a leaf.
+The valuation bookkeeping that used to sit with them is PROVEN too, as
+`Cubic.ZS.descent_zs`. See the
 section docstring for the computed evidence behind that split, including why the
 earlier routing note — which called the cubic field's class group the
 obstruction — was wrong, and why the ROUTE AUDIT that called for Galois
@@ -2760,10 +2930,10 @@ and BOTH of those are themselves PROVEN — `height_drop_or_small` over
 kernel. Finally `exists_halving_witness` itself was decomposed on 2026-07-27
 and is PROVEN, over `MazurLevel11.descent_square_class` (the norm pruning) and
 `MazurLevel11.epsilon_class_impossible` (the local condition, pure parity mod
-`4`). And `descent_unit_square` was decomposed the same day too, so level `11`
-stands on exactly TWO open statements, both facts about the cubic field `ℚ(s)`:
-`MazurLevel11.Cubic.ZS.isPrincipalIdealRing_zs` and
-`MazurLevel11.Cubic.ZS.unit_sq_class`. See the `MazurLevel11` section docstring.
+`4`). And `descent_unit_square` was decomposed the same day too, into the two
+facts about the cubic field `ℚ(s)` — `MazurLevel11.Cubic.ZS.isPrincipalIdealRing_zs`
+and `MazurLevel11.Cubic.ZS.unit_sq_class` — and **both are PROVEN** as of
+2026-07-27. See the `MazurLevel11` section docstring.
 
 Note the sentence above — "finite generation alone never yields rank `0`, so it
 was never the hard half" — is true but was read the wrong way round when
