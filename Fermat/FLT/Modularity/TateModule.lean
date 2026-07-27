@@ -7531,8 +7531,27 @@ THE SPLIT.  Both sides are evaluated at `Frob_v`, and there both are
   — pure algebraic number theory, valid over any number field `F`, and
   needing only `v ∤ q`;
 * the LEFT side by `det_globalFrob_eq_absNorm_of_tateFrame`, which is
-  where ALL the abelian-variety geometry now lives and is the section's
-  only remaining sorry.
+  where ALL the abelian-variety geometry lives.
+
+STATUS UPDATE (2026-07-27, verified by a clean `lake build` of this
+module: `EXIT=0`, zero errors, no `declaration uses 'sorry'` at this
+declaration).  An earlier version of the bullet above called
+`det_globalFrob_eq_absNorm_of_tateFrame` "the section's only remaining
+sorry".  That is now FALSE and was already false when it was read: that
+declaration was PROVEN later the same day over
+`exists_tateWeilPairing_of_mult` and
+`det_eq_cyclotomicCharacter_of_tateWeilPairing`, and
+`exists_tateWeilPairing_of_mult` was in turn proven over
+`exists_tateWeilSystem_of_mult`.
+
+So the geometry has descended one more level: the only DIRECT sorry left
+anywhere beneath this declaration is `exists_tateWeilSystem_of_mult`
+(the `I`-adic Weil SYSTEM — the compatible family of level-`I^n`
+pairings, before the inverse limit).  This declaration and the whole
+chain between it and that leaf are proven; do NOT dispatch a prover
+here.  The module's other direct sorries (`exists_bettiFrame`,
+`exists_finset_frobSpecialization_of_mult`,
+`exists_frobEndoCharEq_of_mult_finiteBase`) are outside this chain.
 
 `GaloisRepresentation.globalFrob v` is by definition the image of
 `Field.AbsoluteGaloisGroup.adicArithFrob v` under
@@ -7939,7 +7958,19 @@ discriminant literally `1`. Its `Γ_F`-equivariance is then, by
 `bilin_alternating_apply_det_apply`, precisely
 `det (τ σ) = χ_cyc(σ)` — no more and no less. Nothing about abelian
 varieties is used below; the geometry has been relocated, in full, to
-the determinant leaf, where it now sits as the section's only sorry.
+the determinant leaf.
+
+WHERE THE GEOMETRY IS NOW (2026-07-27 — the sentence above used to end
+"…the determinant leaf, where it now sits as the section's only sorry",
+and that is stale).  The determinant leaf itself is PROVEN:
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` and
+`det_globalFrob_eq_absNorm_of_tateFrame` are both closed, over
+`exists_tateWeilPairing_of_mult` (also closed) and
+`det_eq_cyclotomicCharacter_of_tateWeilPairing`.  The geometry has
+descended one further level and now sits, alone, in
+`exists_tateWeilSystem_of_mult` — the compatible family of level-`I^n`
+pairings, before the inverse limit.  That is the declaration the
+"genuine geometric work" paragraph below now refers to.
 
 Consequence for successors: do NOT dispatch a "construct the Weil
 pairing" task at a FRAMED module. Any pairing statement over a frame
