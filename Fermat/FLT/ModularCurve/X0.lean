@@ -1913,22 +1913,51 @@ the fields of `Gamma0GITPresentation` as they stand.
 `Γ₀(N)`-datum — Katz–Mazur's `[Γ(n)]`, in the fibrewise idiom this file
 already uses for `CyclicSubgroupOfOrder.geom_cyclic`.
 
-The data is a pair of sections `P`, `Q` of `E ⟶ T` which at every
-geometric point is a basis of the `n`-torsion: `geom_basis` says a
-geometric point of `E` is killed by `n` exactly when it is `a·P + b·Q`
-for a UNIQUE pair `(a, b)`.
+The data is a pair of sections `P`, `Q` of `E ⟶ T` which are `n`-torsion
+**over the base** and which at every geometric point are a basis of the
+`n`-torsion: `geom_basis` says a geometric point of `E` is killed by `n`
+exactly when it is `a·P + b·Q` for a UNIQUE pair `(a, b)`.
 
 Three remarks.
 
-* `n • P = 0` and `n • Q = 0` are consequences, not fields: apply
-  `geom_basis` at `x = P`, which is `1·P + 0·Q`, and read the `←`
-  direction.
-* Over a `ℚ`-scheme this is equivalent to the scheme-theoretic
-  definition, an isomorphism `(ℤ/n)²_T ≅ E[n]` of group schemes: `n` is
-  invertible, so `E[n] ⟶ T` is finite étale, and a fibrewise
-  isomorphism of finite étale group schemes is an isomorphism.  Stating
-  it fibrewise keeps the same idiom as `geom_cyclic` and needs no
-  `Scheme.Hom.finrank`.
+* **`nsmul_P` and `nsmul_Q` are FIELDS, and they are NOT consequences of
+  `geom_basis`** (repaired 2026-07-27; the previous version of this
+  docstring claimed the opposite, deriving them by reading `geom_basis`
+  at `x = P`).  That derivation is valid only at geometric points, and
+  `n • P = 0` at every geometric point does **not** imply `n • P = 0`
+  over the base.  The counterexample, found while proving
+  `exists_deckAction`:
+
+  > Let `T = Spec ℚ(ζ_n)[ε]`, `ε² = 0`, and let `d` be the constant datum
+  > `E₀ ×_{ℚ(ζ_n)} T` for an elliptic curve `E₀/ℚ(ζ_n)` carrying a full
+  > level-`n` structure `(P₀, Q₀)`.  Every geometric point
+  > `Spec K ⟶ T` kills `ε` (a nilpotent in a field), so every one of them
+  > factors through `Spec ℚ(ζ_n)`.  Hence `(P₀ + εv, Q₀)` satisfies
+  > `geom_basis` verbatim for **every** `v` in the one-dimensional kernel
+  > `ker(E₀(ℚ(ζ_n)[ε]) ↠ E₀(ℚ(ζ_n))) ≅ Lie(E₀)`.  But multiplication by
+  > `n` is injective on that kernel in characteristic `0`, so
+  > `n • (P₀ + εv) = nεv ≠ 0` whenever `v ≠ 0`.
+
+  Two things break without the fields.  `GL₂(ℤ/n)` acts on level
+  structures by `(P, Q) ↦ (aP + bQ, cP + dQ)` with coefficients defined
+  only **modulo `n`**, so `σ • (τ • L) = (στ) • L` holds exactly when the
+  discrepancy `(kn) • P + (ln) • Q` vanishes — i.e. exactly when `P` and
+  `Q` are `n`-torsion over the base (`FullLevelStructure.twist_mul`).
+  And the functor `T ↦ {(d, L)}` acquires strictly more
+  `ℚ(ζ_n)[ε]`-points than any scheme's tangent space can account for, so
+  it is not representable, which would have made
+  `exists_rigidifiedModuliScheme` FALSE.
+
+  *The check that would refute this paragraph*: exhibit
+  `σ, τ : GL₂(ℤ/n)` and a pair `(P, Q)` satisfying `geom_basis` for which
+  `twist_mul` holds without the `n`-torsion hypotheses.
+* With the fields present this IS the scheme-theoretic definition over a
+  `ℚ`-scheme, an isomorphism `(ℤ/n)²_T ≅ E[n]` of group schemes: `n • P =
+  n • Q = 0` over `T` makes `(a, b) ↦ a·P + b·Q` a homomorphism of group
+  schemes `(ℤ/n)²_T ⟶ E[n]`, `n` is invertible so `E[n] ⟶ T` is finite
+  étale, and a fibrewise isomorphism of finite étale group schemes is an
+  isomorphism.  Stating the fibrewise half in the `geom_cyclic` idiom
+  needs no `Scheme.Hom.finrank`.
 * At `n = 0` the condition is unsatisfiable — `Fin 0` is empty while
   `0 • x = 0` always — which is why both consumers below carry
   `3 ≤ n`. -/
@@ -1938,6 +1967,11 @@ structure FullLevelStructure (n : ℕ) {N : ℕ} {T : Scheme.{u}}
   P : RelPoint d.f (𝟙 T)
   /-- the second basis section -/
   Q : RelPoint d.f (𝟙 T)
+  /-- **`P` is `n`-torsion over the base** — see the counterexample in the
+  docstring for why this cannot be read off `geom_basis` -/
+  nsmul_P : letI := d.ab.addCommGroup (𝟙 T); n • P = 0
+  /-- **`Q` is `n`-torsion over the base** -/
+  nsmul_Q : letI := d.ab.addCommGroup (𝟙 T); n • Q = 0
   /-- at every geometric point `P` and `Q` are a basis of the `n`-torsion -/
   geom_basis : ∀ (K : Type u) [Field K] [IsAlgClosed K]
       (t : Spec (CommRingCat.of K) ⟶ T),
@@ -2286,7 +2320,9 @@ theorem toRelPoint_nsmul (bc : IsBaseChangeOf p d' d) {U : Scheme.{u}} {u : U �
 /-- **`n`-torsion descends across a cartesian square.**  `toRelPoint` is an
 injective additive map, so a relative point upstairs is `n`-torsion as soon
 as its image downstairs is.  Consumed by
-`nonempty_rigidifiedModuli_of_iso` to transport `lvlM_nsmul`. -/
+`nonempty_fullLevelStructure_of_geomBasis` and
+`nonempty_rigidifiedModuli_of_iso` to transport `FullLevelStructure`'s
+`nsmul_P` / `nsmul_Q` fields. -/
 theorem nsmul_eq_zero_of_toRelPoint {n : ℕ} (bc : IsBaseChangeOf p d' d)
     {U : Scheme.{u}} {u : U ⟶ T'} (X : RelPoint d'.f u)
     (h : letI := d.ab.addCommGroup (u ≫ p); n • bc.toRelPoint X = 0) :
@@ -2573,10 +2609,21 @@ every geometric point of `T'`.  Katz–Mazur (8.1.1) is the citation for
 rigidifying by `[Γ(n)]`-structures at `n ≥ 3`.
 
 Finite étale gives the properties asked for: `Flat` because étale is
-flat, `QuasiCompact` because finite morphisms are affine, and — the last
+flat, `QuasiCompact` because finite morphisms are affine, and — the third
 clause of the conclusion — a lift of every geometric point of `T` *at
 which the torsion admits a basis*, because the `Isom`-scheme is by
 construction nonempty exactly over those points.
+
+**The last clause — `n • P = 0` and `n • Q = 0` OVER `T'`, not merely at
+geometric points** — is free from the construction and is why it is asked
+for here (added 2026-07-27).  `P` and `Q` are the images of the standard
+generators of `(ℤ/n)²_{T'}` under the tautological isomorphism
+`(ℤ/n)²_{T'} ≅ E[n]_{T'}`, so they are sections of `E[n]`, hence killed
+by `n` on the nose.  Producing them merely as sections that are
+*fibrewise* `n`-torsion would be strictly weaker and would make
+`FullLevelStructure` — and with it the representability that
+`exists_rigidifiedModuliScheme` asserts — false; see that structure's
+docstring for the `Spec ℚ(ζ_n)[ε]` counterexample.
 
 That last clause is where `hfib` used to sit, and separating it is the
 point of this cut: this node owes the `Isom`-scheme and its
@@ -2641,7 +2688,8 @@ theorem exists_isomTorsor_of_geomPoint (n : ℕ) (hn : 3 ≤ n)
           (letI := ab.addCommGroup t
             ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
               ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
-          ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) :=
+          ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) ∧
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
   sorry
 
 /-- **The level-`n` torsor** (PROVEN 2026-07-27) — the scheme-theoretic
@@ -2658,7 +2706,14 @@ surjectivity input in disguise**: it is used here for nothing else, and
 the two other properties of `p` are handed over untouched.  Keeping it a
 hypothesis rather than an internal step is what leaves
 `exists_isomTorsor_of_geomPoint` with a purely scheme-theoretic
-obligation. -/
+obligation.
+
+The last conjunct — `n • P = 0` and `n • Q = 0` **over `T'`** — is handed
+straight through from `exists_isomTorsor_of_geomPoint`, and it is what
+`nonempty_fullLevelStructure_of_geomBasis` needs to fill
+`FullLevelStructure`'s `nsmul_P` / `nsmul_Q` fields (2026-07-27).  It
+cannot be derived from the fibrewise clause; see `FullLevelStructure`'s
+docstring. -/
 theorem exists_torsionBasis_cover_of_geomPoint (n : ℕ) (hn : 3 ≤ n)
     {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ)
@@ -2669,16 +2724,17 @@ theorem exists_torsionBasis_cover_of_geomPoint (n : ℕ) (hn : 3 ≤ n)
     ∃ (T' : Scheme.{0}) (p : T' ⟶ T),
       AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
       ∃ P Q : RelPoint f p,
-        ∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
           letI := ab.addCommGroup (t ≫ p)
           ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
             ∃! c : Fin n × Fin n,
-              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q := by
-  obtain ⟨T', p, hflat, hqc, P, Q, hbasis, hlift⟩ :=
+              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) ∧
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) := by
+  obtain ⟨T', p, hflat, hqc, P, Q, hbasis, hlift, htors⟩ :=
     exists_isomTorsor_of_geomPoint n hn ab hdim g
   exact ⟨T', p, hflat,
     surjective_of_exists_lift_geomPoint p (fun K _ _ t => hlift K t (hfib K t)), hqc,
-    P, Q, hbasis⟩
+    P, Q, hbasis, htors⟩
 
 /-- **A fibrewise basis over the cover IS a full level structure on the
 base-changed datum** (PROVEN 2026-07-27) — the transport half of the
@@ -2705,10 +2761,21 @@ Note that no *type* transport occurs anywhere: the identification
 `𝟙 T' ≫ p = p` is never needed, because the statement is phrased through
 `RelPoint.pre t rfl` on the `d`-side and `RelPoint.pre t (comp_id t)` on
 the `d'`-side, and `toRelPoint` moves the base point from `t` to `t ≫ p`
-on the nose. -/
+on the nose.
+
+**The `n`-torsion hypotheses `hnP` / `hnQ` are new (2026-07-27)** and are
+what fill `FullLevelStructure`'s `nsmul_P` / `nsmul_Q` fields.  They
+descend the same way: `bc.toRelPoint` of the lift is `P` itself
+(`IsPullback.lift_snd`, up to `Category.id_comp`), and
+`IsBaseChangeOf.nsmul_eq_zero_of_toRelPoint` — injectivity of an additive
+map — carries the vanishing upstairs.  They cannot be dropped and cannot
+be derived from `hb`; see `FullLevelStructure`'s docstring for the
+`Spec ℚ(ζ_n)[ε]` counterexample. -/
 theorem nonempty_fullLevelStructure_of_geomBasis {N n : ℕ} {T' T : Scheme.{u}}
     {p : T' ⟶ T} {d : Gamma0Datum N T} {d' : Gamma0Datum N T'}
     (bc : IsBaseChangeOf p d' d) (P Q : RelPoint d.f p)
+    (hnP : letI := d.ab.addCommGroup p; n • P = 0)
+    (hnQ : letI := d.ab.addCommGroup p; n • Q = 0)
     (hb : ∀ (K : Type u) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
         letI := d.ab.addCommGroup (t ≫ p)
         ∀ x : RelPoint d.f (t ≫ p), n • x = 0 ↔
@@ -2719,7 +2786,27 @@ theorem nonempty_fullLevelStructure_of_geomBasis {N n : ℕ} {T' T : Scheme.{u}}
               bc.isPullback.lift_fst _ _ _⟩
             Q := ⟨bc.isPullback.lift (𝟙 T') Q.1 (by rw [Category.id_comp, Q.2]),
               bc.isPullback.lift_fst _ _ _⟩
+            nsmul_P := ?_
+            nsmul_Q := ?_
             geom_basis := ?_ }⟩
+  · refine bc.nsmul_eq_zero_of_toRelPoint _ ?_
+    rw [show bc.toRelPoint
+          (⟨bc.isPullback.lift (𝟙 T') P.1 (by rw [Category.id_comp, P.2]),
+            bc.isPullback.lift_fst _ _ _⟩ : RelPoint d'.f (𝟙 T'))
+        = RelPoint.pre (𝟙 T') (rfl : 𝟙 T' ≫ p = 𝟙 T' ≫ p) P from
+      Subtype.ext (by
+        show bc.isPullback.lift (𝟙 T') P.1 _ ≫ bc.map = 𝟙 T' ≫ P.1
+        rw [bc.isPullback.lift_snd, Category.id_comp])]
+    exact RelPoint.nsmul_pre_eq_zero d.ab (𝟙 T') rfl hnP
+  · refine bc.nsmul_eq_zero_of_toRelPoint _ ?_
+    rw [show bc.toRelPoint
+          (⟨bc.isPullback.lift (𝟙 T') Q.1 (by rw [Category.id_comp, Q.2]),
+            bc.isPullback.lift_fst _ _ _⟩ : RelPoint d'.f (𝟙 T'))
+        = RelPoint.pre (𝟙 T') (rfl : 𝟙 T' ≫ p = 𝟙 T' ≫ p) Q from
+      Subtype.ext (by
+        show bc.isPullback.lift (𝟙 T') Q.1 _ ≫ bc.map = 𝟙 T' ≫ Q.1
+        rw [bc.isPullback.lift_snd, Category.id_comp])]
+    exact RelPoint.nsmul_pre_eq_zero d.ab (𝟙 T') rfl hnQ
   intro K _ _ t
   letI := d'.ab.addCommGroup t
   letI := d.ab.addCommGroup (t ≫ p)
@@ -2796,12 +2883,12 @@ theorem exists_fullLevelStructure_cover_of_baseChange {N : ℕ} (n : ℕ) (hn : 
     ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
       AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
       Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d') := by
-  obtain ⟨T', p, hflat, hsurj, hqc, P, Q, hb⟩ :=
+  obtain ⟨T', p, hflat, hsurj, hqc, P, Q, hb, hnP, hnQ⟩ :=
     exists_torsionBasis_cover_of_geomPoint n hn d.ab d.relativeDimensionOne g
       (fun K _ _ t => exists_torsionBasis_geomPoint n hn d.ab d.relativeDimensionOne g K t)
   obtain ⟨d', ⟨bc⟩⟩ := hbc p d
   exact ⟨T', p, d', hflat, hsurj, hqc, ⟨bc⟩,
-    nonempty_fullLevelStructure_of_geomBasis bc P Q hb⟩
+    nonempty_fullLevelStructure_of_geomBasis bc P Q hnP hnQ hb⟩
 
 /-- **Every `Γ₀(N)`-datum over a `ℚ`-scheme acquires a full level-`n`
 structure after a faithfully flat quasi-compact base change** (sorry
@@ -2893,53 +2980,34 @@ is automatic and stating it would be redundant — the same reason
 at `n ≤ 2` the rigidified problem still has the automorphism `-1` (and
 more at `n = 1`), so it is not representable and no inhabitant exists.
 
-## UNDER-SPECIFICATION AUDIT: why `lvlM_nsmul` is a FIELD (2026-07-27)
+## UNDER-SPECIFICATION AUDIT — RESOLVED IN `FullLevelStructure` (2026-07-27)
 
-`FullLevelStructure.geom_basis` is stated **fibrewise**, at geometric
-points only, and its docstring's claim that "`n • P = 0` and `n • Q = 0`
-are consequences, not fields" is true **only at geometric points**.  Over
-the base it is FALSE, and here is the counterexample that was found while
-proving `exists_deckAction`:
+This structure carried a stopgap field `lvlM_nsmul` for a few hours on
+2026-07-27, asserting `n • lvlM.P = 0 ∧ n • lvlM.Q = 0` over the base.
+**It is gone**, because the honest repair was made where it belongs: the
+`n`-torsion is now `FullLevelStructure.nsmul_P` / `nsmul_Q`, fields of
+the level-structure interface itself.  So `R.lvlM.nsmul_P` is what
+consumers use, and it holds for EVERY full level structure rather than
+only for the universal one.
 
-> Let `T = Spec ℚ(ζ_n)[ε]`, `ε² = 0`, and let `d` be the constant datum
-> `E₀ ×_{ℚ(ζ_n)} T` for an elliptic curve `E₀/ℚ(ζ_n)` carrying a full
-> level-`n` structure `(P₀, Q₀)`.  Every geometric point `Spec K ⟶ T`
-> kills `ε` (a nilpotent in a field), so every one of them factors through
-> `Spec ℚ(ζ_n)`.  Hence `(P₀ + εv, Q₀)` satisfies `geom_basis` verbatim,
-> for **every** `v` in the one-dimensional kernel
-> `ker(E₀(ℚ(ζ_n)[ε]) ↠ E₀(ℚ(ζ_n))) ≅ Lie(E₀)`.  But multiplication by `n`
-> is injective on that kernel in characteristic `0`, so
-> `n • (P₀ + εv) = nεv ≠ 0` whenever `v ≠ 0`.
+The defect the stopgap addressed, the `Spec ℚ(ζ_n)[ε]` counterexample
+that exhibits it, and the reason `GL₂(ℤ/n)` fails to act without it, are
+recorded in full on `FullLevelStructure` and are not repeated here.  Two
+consequences are worth naming at this structure, though:
 
-**Why this is fatal to the deck action, and hence why the field is here.**
-`GL₂(ℤ/n)` acts on level structures by `(P, Q) ↦ (aP + bQ, cP + dQ)`, and
-the coefficients are only defined **modulo `n`**.  So
-`σ • (τ • L) = (στ) • L` holds if and only if the discrepancy
-`(kn) • P + (ln) • Q` vanishes — i.e. exactly when `P` and `Q` are
-`n`-torsion **over the base**.  Without it `GL₂(ℤ/n)` does not act at all,
-`σ ↦ mσ` is not a monoid homomorphism, and no `MulSemiringAction` can be
-built from `universal`.  Everything downstream of
-`exists_deckAction` therefore rests on this field.
-
-*The check that would refute this paragraph*: exhibit
-`σ, τ : GL₂(ℤ/n)` and a `FullLevelStructure` for which
-`FullLevelStructure.twist_mul` holds without its `n`-torsion hypotheses.
-
-**The deeper repair is NOT made here, deliberately.**  The honest fix is
-to put `n • P = 0` and `n • Q = 0` into `FullLevelStructure` itself, which
-is the scheme-theoretic definition (`P`, `Q` are sections of `E[n]`, not
-merely sections that are fibrewise `n`-torsion).  That would also fix the
-*representability* of the rigidified problem: as the counterexample shows,
-the functor `T ↦ {(d, L)}` currently has strictly more `ℚ(ζ_n)[ε]`-points
-than any scheme's tangent space can account for, so
-`exists_rigidifiedModuliScheme` is very likely FALSE as stated.  But
-`FullLevelStructure` is the shared interface of
-`exists_torsionBasis_cover_of_geomPoint` and
-`nonempty_fullLevelStructure_of_geomBasis`, which have their own owner, and
-strengthening it changes their statements.  So the minimal repair is made
-at this structure, where it is enough for the deck action, and the wider
-one is left to the owner of the torsor pair — where it is cheap, since the
-`Isom`-scheme construction produces genuinely `n`-torsion sections. -/
+* `exists_deckAction` rests on the torsion, through
+  `FullLevelStructure.twist_mul`, and now gets it from `R.lvlM` directly;
+* **`exists_rigidifiedModuliScheme` was very likely FALSE against the old
+  interface and is faithful against the new one.**  Against the old
+  `FullLevelStructure` the functor `T ↦ {(d, L)}` had a whole
+  `Lie(E₀)`-worth of spurious `ℚ(ζ_n)[ε]`-points over each
+  `ℚ(ζ_n)`-point, which no scheme's tangent space can account for, so it
+  was not representable and no inhabitant of this structure existed.
+  With `nsmul_P` / `nsmul_Q` in place, `(a, b) ↦ a·P + b·Q` is a
+  homomorphism of group schemes `(ℤ/n)²_T ⟶ E[n]` and the functor is the
+  genuine `[Γ(n)]`-moduli problem, which Katz–Mazur 4.7.2 (with 6.6.2 for
+  the `Γ₀(N)`-part) represent.  The leaf is therefore an ordinary open
+  citation, not a false statement. -/
 structure RigidifiedModuli (N n : ℕ) where
   /-- the coordinate ring of the rigidified moduli scheme -/
   A : Type
@@ -2950,10 +3018,6 @@ structure RigidifiedModuli (N n : ℕ) where
   dM : Gamma0Datum N (Spec (CommRingCat.of A))
   /-- the universal full level-`n` structure on it -/
   lvlM : FullLevelStructure n dM
-  /-- **the universal level structure is genuinely `n`-torsion over its
-  base** — see the UNDER-SPECIFICATION AUDIT above -/
-  lvlM_nsmul : letI := dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of A)))
-    n • lvlM.P = 0 ∧ n • lvlM.Q = 0
   /-- **fine moduli**: a datum-with-level-structure over a `ℚ`-scheme is
   a base change of `(dM, lvlM)` along a UNIQUE morphism -/
   universal : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T)
@@ -3048,11 +3112,6 @@ structure RigidifiedModuliScheme (N n : ℕ) where
   dM : Gamma0Datum N M
   /-- the universal full level-`n` structure on it -/
   lvlM : FullLevelStructure n dM
-  /-- **the universal level structure is genuinely `n`-torsion over its
-  base** — see the UNDER-SPECIFICATION AUDIT below for why this is a field
-  rather than a consequence of `FullLevelStructure.geom_basis` -/
-  lvlM_nsmul : letI := dM.ab.addCommGroup (𝟙 M)
-    n • lvlM.P = 0 ∧ n • lvlM.Q = 0
   /-- **fine moduli**: a datum-with-level-structure over a `ℚ`-scheme is
   a base change of `(dM, lvlM)` along a UNIQUE morphism -/
   universal : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T)
@@ -3102,7 +3161,45 @@ has the automorphism `-1` (and more at `n = 1`), so it is not
 representable and no inhabitant exists.  `hN` is **not** — at `N = 0` the
 problem is supported on the empty scheme (`isEmpty_of_gamma0Datum_zero`)
 and the empty scheme represents it — and is carried only to match the
-signature of the consumer. -/
+signature of the consumer.
+
+## FALSITY AUDIT (2026-07-27): the leaf WAS false, and has been REPAIRED
+
+This declaration was flagged as "very likely FALSE as stated", correctly,
+against the version of `FullLevelStructure` that did **not** carry
+`n`-torsion over the base.  The refutation, in full:
+
+> `FullLevelStructure` asked only that `P` and `Q` be a basis of the
+> `n`-torsion at every **geometric** point.  Take `T = Spec ℚ(ζ_n)[ε]`
+> with `ε² = 0`.  Every geometric point of `T` kills `ε`, so it factors
+> through `Spec ℚ(ζ_n)`; hence for a constant datum `E₀ ×_{ℚ(ζ_n)} T`
+> with a level structure `(P₀, Q₀)`, the pair `(P₀ + εv, Q₀)` satisfied
+> every field of `FullLevelStructure` for **every** `v` in the
+> one-dimensional `ker(E₀(ℚ(ζ_n)[ε]) ↠ E₀(ℚ(ζ_n))) ≅ Lie(E₀)`.  So the
+> functor `T ↦ {(d, L)}` had a whole line of spurious `ℚ(ζ_n)[ε]`-points
+> above each `ℚ(ζ_n)`-point.  A scheme `M` representing it would need
+> `T_x M ⊇ Lie(E₀) ⊕ T_x(\text{the honest }Y)` at every closed point
+> `x`, while `universal`'s `∃!` forces the fibre of `M(ℚ(ζ_n)[ε]) ↠
+> M(ℚ(ζ_n))` over `x` to be exactly `T_x M`; the two are incompatible
+> because the honest tangent space is already one-dimensional and the
+> spurious directions are not tangent to any deformation of `M`.  More
+> simply: `universal` says the classifying map `m` is UNIQUE, and here
+> `(P₀ + εv, Q₀)` and `(P₀, Q₀)` have the same underlying datum but are
+> distinguished only by `v`, so uniqueness forces the map `v ↦ m_v` to be
+> injective into a set that does not grow — no `M` can do it.
+
+**The repair is not a restatement of this leaf.**  It is the
+strengthening of `FullLevelStructure`, which now carries `nsmul_P` and
+`nsmul_Q` as fields (see its docstring).  With them, `(P₀ + εv, Q₀)` is
+excluded — `n • (P₀ + εv) = nεv ≠ 0` in characteristic `0` — the functor
+becomes the genuine `[Γ(n)] × [Γ₀(N)]`-moduli problem, and Katz–Mazur
+4.7.2 + 6.6.2 represent it.  **The statement below is unchanged and is
+now faithful**; it is an ordinary open citation.
+
+*The check that would refute this audit*: exhibit an inhabitant of
+`RigidifiedModuliScheme N n` built from a `FullLevelStructure` without
+`nsmul_P` / `nsmul_Q`, or a second `ℚ(ζ_n)[ε]`-point of the repaired
+functor lying over a given `ℚ(ζ_n)`-point with the same datum. -/
 theorem exists_rigidifiedModuliScheme (N : ℕ) (hN : 0 < N) (n : ℕ) (hn : 3 ≤ n) :
     Nonempty (RigidifiedModuliScheme N n) :=
   sorry
@@ -3304,7 +3401,10 @@ with `dbc` its base-change relation to `R.dM`; this is exactly what
 structure is `dbc.alongInv` applied to `RelPoint.pre φ.hom _ R.lvlM.P`
 (and `Q`), and `geom_basis` transports because `dbc.alongEquiv` is an
 *additive* bijection: `n • x = 0` and the `∃!` both cross it, the first by
-`map_nsmul` plus injectivity, the second by `existsUnique_congr`.
+`map_nsmul` plus injectivity, the second by `existsUnique_congr`.  The
+`nsmul_P` / `nsmul_Q` fields transport the same way, through
+`IsBaseChangeOf.nsmul_eq_zero_of_toRelPoint` and
+`RelPoint.nsmul_pre_eq_zero`.
 
 The universal property is the substantial half.  Given `T, d, L` it takes
 the unique `m₀ : T ⟶ R.M` from `R.universal` and returns `m₀ ≫ φ.inv`; the
@@ -3351,9 +3451,19 @@ theorem nonempty_rigidifiedModuli_of_iso {N n : ℕ} (R : RigidifiedModuliScheme
     refine Subtype.ext ?_
     show (t ≫ X.1) ≫ dbc.map = (t ≫ φ.hom) ≫ Y.1
     rw [Category.assoc, hXY, Category.assoc]
+  have hgφ : φ.hom ≫ 𝟙 R.M = 𝟙 (Spec (CommRingCat.of A)) ≫ φ.hom := by simp
   let lvl : FullLevelStructure n dM' :=
     { P := P'
       Q := Q'
+      nsmul_P := by
+        -- the `n`-torsion of the level structure crosses the cartesian square of `dbc`
+        refine dbc.nsmul_eq_zero_of_toRelPoint P' ?_
+        rw [show dbc.toRelPoint P' = RelPoint.pre φ.hom hgφ R.lvlM.P from Subtype.ext hP']
+        exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM.nsmul_P
+      nsmul_Q := by
+        refine dbc.nsmul_eq_zero_of_toRelPoint Q' ?_
+        rw [show dbc.toRelPoint Q' = RelPoint.pre φ.hom hgφ R.lvlM.Q from Subtype.ext hQ']
+        exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM.nsmul_Q
       geom_basis := by
         intro K _ _ t x
         letI := dM'.ab.addCommGroup t
@@ -3367,14 +3477,7 @@ theorem nonempty_rigidifiedModuli_of_iso {N n : ℕ} (R : RigidifiedModuliScheme
           ← map_nsmul (dbc.alongEquiv t), ← map_nsmul (dbc.alongEquiv t),
           ← (dbc.alongEquiv t).map_add, (dbc.alongEquiv t).injective.eq_iff] }
   refine ⟨{ A := A, strM := φ.hom ≫ R.strM, dM := dM', lvlM := lvl,
-            lvlM_nsmul := ?_, universal := ?_ }⟩
-  · -- the `n`-torsion of the level structure crosses the cartesian square of `dbc`
-    have hgφ : φ.hom ≫ 𝟙 R.M = 𝟙 (Spec (CommRingCat.of A)) ≫ φ.hom := by simp
-    refine ⟨dbc.nsmul_eq_zero_of_toRelPoint P' ?_, dbc.nsmul_eq_zero_of_toRelPoint Q' ?_⟩
-    · rw [show dbc.toRelPoint P' = RelPoint.pre φ.hom hgφ R.lvlM.P from Subtype.ext hP']
-      exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM_nsmul.1
-    · rw [show dbc.toRelPoint Q' = RelPoint.pre φ.hom hgφ R.lvlM.Q from Subtype.ext hQ']
-      exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM_nsmul.2
+            universal := ?_ }⟩
   intro T g d L
   obtain ⟨m₀, ⟨bc₀, e₁, e₂⟩, huniq⟩ := R.universal g d L
   refine ⟨m₀ ≫ φ.inv, ?_, ?_⟩
@@ -3767,11 +3870,12 @@ turned into `ℕ`-coefficients, and `ZMod.val` is the only canonical way to do
 it.  It is **not** multiplicative, so the composite of two twists differs
 from the twist by the product by a multiple of `n` applied to `P` and `Q`.
 
-**That is exactly why `RigidifiedModuli.lvlM_nsmul` exists** (see its
-UNDER-SPECIFICATION AUDIT): the discrepancy vanishes precisely when `P` and
-`Q` are `n`-torsion *over the base*, and `FullLevelStructure.geom_basis`
-gives that only at geometric points.  So `twist_mul` below carries the
-torsion hypotheses explicitly, and everything downstream inherits them.
+**That is exactly why `FullLevelStructure` carries `nsmul_P` and `nsmul_Q`
+as fields** (see its docstring): the discrepancy vanishes precisely when
+`P` and `Q` are `n`-torsion *over the base*, and
+`FullLevelStructure.geom_basis` gives that only at geometric points.  So
+`twist_mul` below carries the torsion hypotheses explicitly and every use
+site discharges them from the structure itself.
 -/
 
 /-- **The `(a, b)`-combination of two relative points**, with coefficients
@@ -3887,6 +3991,25 @@ theorem twistQ_one (h1 : 1 < n) (L : FullLevelStructure n d) :
   rw [ZMod.val_zero, ZMod.val_one_eq_one_mod, Nat.mod_eq_of_lt h1]
   simp
 
+/-- The twisted sections are again `n`-torsion over the base, so the twist
+stays inside the moduli problem the deck group acts on — this is what fills
+`FullLevelStructure.nsmul_P` for `twist` below. -/
+theorem nsmul_twistP_eq_zero [NeZero n] (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) (σ : GL (Fin 2) (ZMod n)) :
+    letI := d.ab.addCommGroup (𝟙 T); n • twistP σ L = 0 := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show n • ((σ.val 0 0).val • L.P + (σ.val 0 1).val • L.Q) = 0
+  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+
+theorem nsmul_twistQ_eq_zero [NeZero n] (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) (σ : GL (Fin 2) (ZMod n)) :
+    letI := d.ab.addCommGroup (𝟙 T); n • twistQ σ L = 0 := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show n • ((σ.val 1 0).val • L.P + (σ.val 1 1).val • L.Q) = 0
+  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+
 /-- **The twisted pair is again a fibrewise basis of the `n`-torsion**
 (sorry leaf, opened 2026-07-27) — the `geom_basis` field of the matrix
 twist, and the only part of the twist that is not bookkeeping.
@@ -3913,6 +4036,12 @@ representatives and `ℕ`-scalar multiplication, so each step needs
 `nsmul_eq_nsmul_of_mod` (above) to move between `ZMod n`-coefficients and
 their `ZMod.val` lifts.
 
+**`L.nsmul_P` and `L.nsmul_Q` are available to the prover of this node**
+(2026-07-27): `L.P` and `L.Q` are `n`-torsion *over the base*, not merely
+at geometric points, so `nsmul_eq_nsmul_of_mod` may be applied to
+`RelPoint.pre t _ L.P` directly through `RelPoint.nsmul_pre_eq_zero`
+rather than re-derived at each geometric point from `geom_basis`.
+
 ## Faithfulness
 
 `hn` is load-bearing exactly as on `FullLevelStructure`: at `n = 0` the
@@ -3937,19 +4066,27 @@ noncomputable def twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
     (σ : GL (Fin 2) (ZMod n)) : FullLevelStructure n d where
   P := twistP σ L
   Q := twistQ σ L
+  nsmul_P :=
+    haveI : NeZero n := ⟨by omega⟩
+    nsmul_twistP_eq_zero L L.nsmul_P L.nsmul_Q σ
+  nsmul_Q :=
+    haveI : NeZero n := ⟨by omega⟩
+    nsmul_twistQ_eq_zero L L.nsmul_P L.nsmul_Q σ
   geom_basis := geomBasis_twist hn L σ
 
-/-- `geom_basis` is a `Prop`, so a full level structure is determined by
-its two sections. -/
+/-- `nsmul_P`, `nsmul_Q` and `geom_basis` are all `Prop`s, so a full level
+structure is determined by its two sections. -/
 theorem ext' {L₁ L₂ : FullLevelStructure n d} (hP : L₁.P = L₂.P) (hQ : L₁.Q = L₂.Q) :
     L₁ = L₂ := by
-  cases L₁; cases L₂; congr
+  cases L₁; cases L₂; subst hP; subst hQ; rfl
 
 theorem twist_one (hn : 3 ≤ n) (L : FullLevelStructure n d) : twist hn L 1 = L :=
   ext' (twistP_one (by omega) L) (twistQ_one (by omega) L)
 
 /-- **The twist is an action** — and this is FALSE without the `n`-torsion
-hypotheses, since `ZMod.val` is not multiplicative. -/
+hypotheses, since `ZMod.val` is not multiplicative.  They are now supplied
+by `L` itself (`FullLevelStructure.nsmul_P` / `nsmul_Q`), but are kept as
+explicit arguments so that the dependence is visible at every use site. -/
 theorem twist_mul (hn : 3 ≤ n) (L : FullLevelStructure n d)
     (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
     (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0)
@@ -3970,29 +4107,11 @@ theorem twist_mul (hn : 3 ≤ n) (L : FullLevelStructure n d)
     rw [RelPoint.comb_comb d.ab hP hQ]
     congr 1 <;> simp [Units.val_mul, Matrix.mul_apply, Fin.sum_univ_two]
 
-/-- The twisted sections are again `n`-torsion, so the twist stays inside
-the part of the moduli problem the deck group acts on. -/
-theorem nsmul_twistP_eq_zero [NeZero n] (L : FullLevelStructure n d)
-    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
-    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) (σ : GL (Fin 2) (ZMod n)) :
-    letI := d.ab.addCommGroup (𝟙 T); n • twistP σ L = 0 := by
-  letI := d.ab.addCommGroup (𝟙 T)
-  show n • ((σ.val 0 0).val • L.P + (σ.val 0 1).val • L.Q) = 0
-  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
-
-theorem nsmul_twistQ_eq_zero [NeZero n] (L : FullLevelStructure n d)
-    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
-    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) (σ : GL (Fin 2) (ZMod n)) :
-    letI := d.ab.addCommGroup (𝟙 T); n • twistQ σ L = 0 := by
-  letI := d.ab.addCommGroup (𝟙 T)
-  show n • ((σ.val 1 0).val • L.P + (σ.val 1 1).val • L.Q) = 0
-  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
-
 end FullLevelStructure
 
 /-- **The deck action, from the `n`-torsion of the universal level
 structure** (2026-07-27) — the working form of `exists_deckAction` below,
-which is this at `R.lvlM_nsmul`.
+which is this at `R.lvlM.nsmul_P` / `R.lvlM.nsmul_Q`.
 
 Everything except the coequalising clause is PROVEN here:
 
@@ -4154,8 +4273,8 @@ moduli theory.
 ## STATUS 2026-07-27: clause (a) is PROVEN; only clause (b) is open
 
 The proof is `exists_deckAction_of_torsion` immediately above, applied at
-`R.lvlM_nsmul`.  What follows records what that discharged and what it did
-not.
+`R.lvlM.nsmul_P` and `R.lvlM.nsmul_Q`.  What follows records what that
+discharged and what it did not.
 
 **(a) The action — PROVEN.**  For `σ : GL₂(ℤ/n)` the pair
 `(R.dM, σ · R.lvlM)` is again a rigidified datum over `Spec R.A`: a matrix
@@ -4181,13 +4300,14 @@ NOT free: the matrix entries live in `ZMod n` and the group law of
 `RelPoint` takes `ℕ`-coefficients, and `ZMod.val` is not multiplicative,
 so `σ • (τ • L) = (στ) • L` holds **only when `P` and `Q` are `n`-torsion
 over the base**.  `FullLevelStructure.geom_basis` gives that only at
-GEOMETRIC points, and over a non-reduced base it genuinely fails — see the
-UNDER-SPECIFICATION AUDIT on `RigidifiedModuli`, which carries the
-`ℚ(ζ_n)[ε]` counterexample.  Without the torsion the twist is not an
-action, `σ ↦ mσ` is not an antihomomorphism, and **no** `MulSemiringAction`
-can be produced.  That is why `RigidifiedModuli` now carries the field
-`lvlM_nsmul`, and why this leaf could not be closed against the interface
-as it stood.
+GEOMETRIC points, and over a non-reduced base it genuinely fails — see
+`FullLevelStructure`'s docstring, which carries the `ℚ(ζ_n)[ε]`
+counterexample.  Without the torsion the twist is not an action,
+`σ ↦ mσ` is not an antihomomorphism, and **no** `MulSemiringAction` can be
+produced.  That is why `FullLevelStructure` now carries `nsmul_P` and
+`nsmul_Q` as FIELDS (a stopgap field `RigidifiedModuli.lvlM_nsmul` did the
+same job for a few hours on 2026-07-27 and has been removed), and why this
+leaf could not be closed against the interface as it originally stood.
 
 **(b) The coequalising clause, which is where the content is.**  Two
 rigidifications `a, b : Z ⟶ Spec R.A` of ONE datum `d₁` differ by a section
@@ -4229,7 +4349,7 @@ theorem exists_deckAction (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n) 
         IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
         a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
           = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A :=
-  exists_deckAction_of_torsion N n hn R R.lvlM_nsmul.1 R.lvlM_nsmul.2
+  exists_deckAction_of_torsion N n hn R R.lvlM.nsmul_P R.lvlM.nsmul_Q
 
 /-- **fppf descent of the classifying map** (opened and **PROVEN**
 2026-07-27, sorry-free and axiom-clean) — the second of the two halves of
