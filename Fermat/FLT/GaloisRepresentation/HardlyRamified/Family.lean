@@ -8920,12 +8920,33 @@ no Hecke-eigenform carrier type is statable on this mathlib pin, so
 the leaf keeps the fused Eichler–Shimura + integrality + hardly
 ramified shape. RE-AUDIT (2026-07-23, fresh against the actual pin —
 see the refreshed VOCABULARY OBSTRUCTION below for the details): the
-obstruction stands; the pin's only new Hecke material is
-`Mathlib.NumberTheory.HeckeRing.Defs` (abstract double-coset modules,
-no ring product, no action on modular forms), and the reference
-project's `IsAutomorphicOfLevel` interface is confirmed unvendorable
-and non-restating (totally-real-`F` quaternionic shape, ≈22.8k-line
-closure with sorried definitions).
+obstruction stands as far as MATHLIB goes; the pin's only new Hecke
+material is `Mathlib.NumberTheory.HeckeRing.Defs` (abstract double-coset
+modules, no ring product, no action on modular forms) — re-checked
+2026-07-27, `grep -rln 'eigenform\|Eigenform\|newform\|Newform\|AtkinLehner'`
+over `.lake/packages/mathlib/Mathlib/` is still EMPTY. The RE-AUDIT then
+went on to say the reference project's `IsAutomorphicOfLevel` interface
+is "confirmed unvendorable and non-restating".
+
+CORRECTION (2026-07-27): the UNVENDORABLE half of that is FALSE, and
+has been since the quaternionic tower was vendored. The tower is IN
+THIS TREE and in the import closure of `Fermat.lean`:
+`IsQuaternionAlgebra` (`Fermat/FLT/Mathlib/Algebra/IsQuaternionAlgebra.lean`),
+`IsQuaternionAlgebra.NumberField.WithRigidification`
+(`Fermat/FLT/QuaternionAlgebra/NumberField.lean`),
+`WeightTwoAutomorphicForm` and `LevelStruct`
+(`Fermat/FLT/AutomorphicForm/QuaternionAlgebra/Basic.lean`), and
+`U₁Data`, `HeckeAlgebra`, `HeckeAlgebra.T`
+(`Fermat/FLT/AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean`).
+The same stale claim was already refuted in
+`Fermat/FLT/Modularity/KhareWintenberger.lean` (search `It IS vendorable`)
+with the full 109-module accounting. Refuting check, if this note goes
+stale in the other direction:
+`grep -rn 'HeckeAlgebra.T' Fermat/FLT/AutomorphicForm/` plus
+`lake build Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete`.
+
+What SURVIVES the correction, and is the operative half for this leaf,
+is NON-RESTATING: see the corrected RE-AUDIT item (2) below.
 
 DECOMPOSED (2026-07-23, opening the modularity subtree — this
 supersedes the "no carrier is statable" conclusion of the notes above:
@@ -9025,10 +9046,19 @@ attached to them, so a "newform-like datum" has no carrier type. The
 reference FLT project states the datum as an `ℤ_p`-algebra hom
 `π : HeckeAlgebra D … →ₐ[ℤ_[p]] A` out of a quaternionic Hecke algebra
 (`GaloisRep.IsAutomorphicOfLevel`,
-`FLT/GaloisRepresentation/Automorphic.lean`), but its entire
-`AutomorphicForm/QuaternionAlgebra` tower is absent from both the
-mathlib pin and the vendored subset, so that interface cannot be
-vendored as a leaf statement here.
+`FLT/GaloisRepresentation/Automorphic.lean`), and this paragraph used
+to continue "but its entire `AutomorphicForm/QuaternionAlgebra` tower
+is absent from both the mathlib pin and the vendored subset, so that
+interface cannot be vendored as a leaf statement here".
+
+CORRECTION (2026-07-27): that continuation is FALSE. The tower is
+absent from the MATHLIB PIN only; it is present in THIS PROJECT, under
+`Fermat/FLT/{AutomorphicForm,QuaternionAlgebra,DivisionAlgebra,HaarMeasure}/…`
+and the `Fermat/FLT/Mathlib/` shim, and every one of those modules is
+reachable from `Fermat.lean`, so it is neither absent nor free-floating.
+The prerequisites of `IsAutomorphicOfLevel` are therefore all available
+here and the predicate IS vendorable. What blocks its USE at this leaf
+is the shape mismatch recorded in RE-AUDIT item (2) below, not absence.
 
 RE-AUDIT (2026-07-23, against the actual pin and reference tree,
 refreshing the above): (1) the pin has gained exactly one Hecke item,
@@ -9036,13 +9066,28 @@ refreshing the above): (1) the pin has gained exactly one Hecke item,
 double-coset modules ONLY; the convolution product/ring structure of
 its "later files" is not in the pin (nothing imports it), and grep
 confirms zero hits for Hecke operators on modular forms, newforms,
-Atkin–Lehner, eigenforms, or attached Galois representations. (2) The
-reference `IsAutomorphicOfLevel` remains unvendorable AND would not
-restate these leaves even if vendored: its transitive FLT-internal
-closure is 122 files / ≈22.8k lines (quaternionic automorphic forms,
-Fujisaki finiteness, adelic Haar measure), it contains sorried
-members (including a sorried `IsQuaternionAlgebra (E ⊗[F] D)`
-instance inside its own interface layer), and it is stated for
+Atkin–Lehner, eigenforms, or attached Galois representations —
+re-verified 2026-07-27. (2) [CORRECTED 2026-07-27; the original read
+"The reference `IsAutomorphicOfLevel` remains unvendorable AND would
+not restate these leaves even if vendored", and the first conjunct is
+FALSE.] `IsAutomorphicOfLevel` HAS BEEN VENDORED in substance: its
+transitive FLT-internal closure — quaternionic automorphic forms,
+Fujisaki finiteness, adelic Haar measure — now lives under
+`Fermat/FLT/{AutomorphicForm,QuaternionAlgebra,DivisionAlgebra,HaarMeasure}/…`
+(`IsQuaternionAlgebra`, `WithRigidification`, `LevelStruct`,
+`WeightTwoAutomorphicForm`, `U₁Data`, `HeckeAlgebra`, `HeckeAlgebra.T`),
+builds green against our pin, and is inside the import closure of
+`Fermat.lean`. The vendoring cost is TWO sorried leaves, both in
+`AutomorphicForm/QuaternionAlgebra/Basic.lean` — `index_ray_ne_zero`
+(finiteness of a ray class group) and `relIndex_unitsOrder_ne_zero`
+(Voight 17.7.13, feeding `isFiniteRelIndex_Δ`). In particular there is
+NO sorried `IsQuaternionAlgebra (E ⊗[F] D)` instance in the vendored
+interface layer; that specific claim was wrong even about the reference
+tree as it now stands here (`grep -rn 'E ⊗\[F\] D' Fermat/` hits only
+this docstring).
+
+What DOES survive, and is the whole of the live obstruction: the
+predicate is stated for
 totally real `F` with `2 < [F(ζ_p):F]` — the quaternionic shape the
 reference project reaches from `ℚ` only through the (sorried)
 `cyclic_base_change`; our leaves are the classical `ℚ`-level
