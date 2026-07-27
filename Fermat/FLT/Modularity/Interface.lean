@@ -35545,8 +35545,126 @@ theorem heckeOp_degeneracyOp_of_dvd {N M d p : ℕ} (hN : 0 < N) (hM : 0 < M) (h
   · have h1 : ¬ d ∣ p * m := fun hh => hdm (hcop.dvd_of_dvd_mul_left hh)
     rw [if_neg h1, if_neg hdm]
 
+/-- **THE CONVERSE OF `Gamma0GL_le_conj_heckeRepInf`, ON THE LOWER-LEFT ENTRY**
+(PROVEN 2026-07-27): if `δ_q γ δ_q⁻¹ ∈ Γ₀(N)` for `δ_q = [q, 0; 0, 1]` and
+`γ = mapGL ρ`, then `N q ∣ ρ₁₀`.
+
+Conjugation by `δ_q` multiplies the upper-right entry by `q` and DIVIDES the
+lower-left entry by `q`, so writing the conjugate as `mapGL ε` and comparing the
+`(1, 0)` entries of `ε δ_q = δ_q ρ` gives `ρ₁₀ = q ε₁₀`; `N ∣ ε₁₀` then yields
+`N q ∣ ρ₁₀`.
+
+This is the injectivity half of Miyake's coset bijection in
+`traceOp_degeneracyOp_comm` below: it is exactly the step "`δ_q γ δ_q⁻¹ ∈ Γ₀(A)`
+says `A ∣ c/q`, i.e. `Aq ∣ c`". -/
+theorem dvd_of_conj_heckeRepInf_mem_Gamma0GL {N q : ℕ} (hq : 0 < q) {ρ : SL(2, ℤ)}
+    (h : heckeRepInf q * mapGL ℝ ρ * (heckeRepInf q)⁻¹ ∈ Gamma0GL N) :
+    ((N * q : ℕ) : ℤ) ∣ ρ 1 0 := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne'
+  obtain ⟨ε, hε, hεeq⟩ := mem_Gamma0GL_iff.mp h
+  have heq : mapGL ℝ ε * heckeRepInf q = heckeRepInf q * mapGL ℝ ρ := by
+    rw [hεeq]; group
+  have h10 := congr_arg
+    (fun g : GL (Fin 2) ℝ => (g : Matrix (Fin 2) (Fin 2) ℝ) 1 0) heq
+  simp [heckeRepInf_coe hq0, mapGL_coe_matrix,
+    Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply,
+    Int.coe_castRingHom, Matrix.map_apply, Matrix.mul_apply, Fin.sum_univ_two] at h10
+  have hcast : ((ρ 1 0 : ℤ) : ℝ) = (((q : ℤ) * ε 1 0 : ℤ) : ℝ) := by
+    push_cast
+    linear_combination -h10
+  have hz : ρ 1 0 = (q : ℤ) * ε 1 0 := by exact_mod_cast hcast
+  have hNε : (N : ℤ) ∣ ε 1 0 := by
+    rw [CongruenceSubgroup.Gamma0_mem] at hε
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hε
+  obtain ⟨t, ht⟩ := hNε
+  exact ⟨t, by rw [hz, ht]; push_cast; ring⟩
+
+/-- **THE SURJECTIVITY INPUT FOR MIYAKE 4.6.6(2)** (PROVEN 2026-07-27): for
+`ρ ∈ Γ₀(Ap)` and DISTINCT primes `p ≠ q`, the coset `ρ Γ₀(p·Ap)` contains a
+matrix whose upper-right entry is divisible by `q`.
+
+This is what makes the conjugation map on cosets SURJECTIVE without any index
+computation: the image of `Γ₀(Ap q)` under `γ ↦ δ_q γ δ_q⁻¹` is exactly
+`{γ ∈ Γ₀(Ap) : q ∣ γ₀₁}`, so surjectivity onto `Γ₀(Ap)/Γ₀(p Ap)` is precisely the
+statement below.
+
+PROOF.  Right multiplication by `[1, 0; A, 1]^j · [1, l; 0, 1] = [1, l; Aj, Ajl+1]`
+(with `A = p·Ap`, so this lies in `Γ₀(A)`) sends the upper-right entry to
+`(ρ₀₀ + ρ₀₁ A j)·l + ρ₀₁`, and some `j ∈ {0, 1}` makes the coefficient a unit
+mod `q`: if `q ∤ ρ₀₀` take `j = 0`; otherwise `det ρ = 1` gives `q ∤ ρ₀₁`, and
+`q ∤ A` because `q ∣ A = p Ap` would force `q ∣ Ap ∣ ρ₁₀` (as `q ≠ p`) and hence
+`q ∣ ρ₀₀ρ₁₁ − ρ₀₁ρ₁₀ = 1`.  Then `l` solves the linear congruence in the field
+`ZMod q`.
+
+`p ≠ q` is consumed EXACTLY here, and nowhere else in Lemma 4.6.6(2). -/
+theorem exists_gamma0_mul_dvd_upperRight {Ap p q : ℕ} (hp : p.Prime) (hq : q.Prime)
+    (hpq : p ≠ q) {ρ : SL(2, ℤ)} (hρ : ρ ∈ CongruenceSubgroup.Gamma0 Ap) :
+    ∃ γ ∈ CongruenceSubgroup.Gamma0 (p * Ap), (q : ℤ) ∣ (ρ * γ) 0 1 := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  have hqz : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.1 hq
+  have hdet : ρ 0 0 * ρ 1 1 - ρ 0 1 * ρ 1 0 = 1 := by
+    have h2 := ρ.2
+    rwa [Matrix.det_fin_two] at h2
+  have hc : (Ap : ℤ) ∣ ρ 1 0 := by
+    rw [CongruenceSubgroup.Gamma0_mem] at hρ
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hρ
+  have hqone : ¬ ((q : ℕ) : ℤ) ∣ 1 := fun hcon => by
+    have h1 : ((q : ℕ) : ℤ) = 1 := Int.eq_one_of_dvd_one (by positivity) hcon
+    exact hq.one_lt.ne' (by exact_mod_cast h1)
+  obtain ⟨j, hj⟩ : ∃ j : ℤ,
+      ¬ (q : ℤ) ∣ (ρ 0 0 + ρ 0 1 * ((p : ℤ) * (Ap : ℤ)) * j) := by
+    by_cases h00 : (q : ℤ) ∣ ρ 0 0
+    · have h01 : ¬ (q : ℤ) ∣ ρ 0 1 := by
+        intro h01
+        exact hqone (by rw [← hdet]; exact dvd_sub (h00.mul_right _) (h01.mul_right _))
+      have hqA : ¬ (q : ℤ) ∣ ((p : ℤ) * (Ap : ℤ)) := by
+        intro hA
+        rcases hqz.2.2 _ _ hA with h | h
+        · have hnat : q ∣ p := by exact_mod_cast h
+          exact hpq ((Nat.prime_dvd_prime_iff_eq hq hp).mp hnat).symm
+        · have hq10 : (q : ℤ) ∣ ρ 1 0 := h.trans hc
+          exact hqone (by
+            rw [← hdet]; exact dvd_sub (h00.mul_right _) (hq10.mul_left _))
+      refine ⟨1, ?_⟩
+      rw [mul_one]
+      intro hcon
+      rcases hqz.2.2 _ _ ((dvd_add_right h00).mp hcon) with h | h
+      · exact h01 h
+      · exact hqA h
+    · exact ⟨0, by simpa using h00⟩
+  set a' : ℤ := ρ 0 0 + ρ 0 1 * ((p : ℤ) * (Ap : ℤ)) * j with ha'
+  obtain ⟨l, hl⟩ : ∃ l : ℤ, (q : ℤ) ∣ a' * l + ρ 0 1 := by
+    have ha'ne : ((a' : ℤ) : ZMod q) ≠ 0 := fun h =>
+      hj ((ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp h)
+    obtain ⟨l, hlz⟩ := ZMod.intCast_surjective (n := q)
+      (-((ρ 0 1 : ℤ) : ZMod q) * ((a' : ℤ) : ZMod q)⁻¹)
+    refine ⟨l, ?_⟩
+    rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+    push_cast
+    rw [hlz]
+    field_simp
+    ring
+  have hdetγ : (!![(1 : ℤ), l; (p : ℤ) * (Ap : ℤ) * j,
+      (p : ℤ) * (Ap : ℤ) * j * l + 1]).det = 1 := by
+    rw [Matrix.det_fin_two_of]; ring
+  set G : SL(2, ℤ) := ⟨!![(1 : ℤ), l; (p : ℤ) * (Ap : ℤ) * j,
+    (p : ℤ) * (Ap : ℤ) * j * l + 1], hdetγ⟩ with hG
+  refine ⟨G, ?_, ?_⟩
+  · rw [CongruenceSubgroup.Gamma0_mem]
+    have hentry : G 1 0 = (p : ℤ) * (Ap : ℤ) * j := by rw [hG]; simp
+    rw [hentry]
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr ⟨j, by push_cast; ring⟩
+  · rw [SL2_mul_apply_zero_one]
+    have h01 : G 0 1 = l := by rw [hG]; simp
+    have h11 : G 1 1 = (p : ℤ) * (Ap : ℤ) * j * l + 1 := by rw [hG]; simp
+    rw [h01, h11]
+    have hrw : ρ 0 0 * l + ρ 0 1 * ((p : ℤ) * (Ap : ℤ) * j * l + 1)
+        = a' * l + ρ 0 1 := by rw [ha']; ring
+    rw [hrw]
+    exact hl
+
 /-- **MIYAKE LEMMA 4.6.6(2) — THE TRACE COMMUTES WITH `V_q` AT A PRIME `q ≠ p`**
-(sorry leaf, cut 2026-07-27; Miyake, *Modular Forms*, Lemma 4.6.6(2), p. 158):
+(PROVEN 2026-07-27; Miyake, *Modular Forms*, Lemma 4.6.6(2), p. 158):
 for `A = p·Ap`, `C = A·q`, `Cp = Ap·q` with `p ≠ q` both prime,
 
     Tr^{Aq}_{Ap q} ∘ V_q  =  V_q ∘ Tr^A_{Ap}.
@@ -35563,26 +35681,221 @@ PROOF (the coset bijection, which is exact — there is NO constant).  Write
   `[a, b; c, d]` to `[a, qb; c/q, d]`;
 * the induced map on cosets `Γ₀(Ap q)/Γ₀(A q) → Γ₀(Ap)/Γ₀(A)` is INJECTIVE,
   because `δ_q γ δ_q⁻¹ ∈ Γ₀(A)` says `A ∣ c/q`, i.e. `Aq ∣ c`;
-* it is therefore BIJECTIVE, because the two indices agree:
-  `[Γ₀(N) : Γ₀(Np)]` is `p` at `p ∣ N` and `p + 1` otherwise, and `q ≠ p` gives
-  `p ∣ Ap ↔ p ∣ Ap q`.
+* it is SURJECTIVE as well, and — this is the one place the formalization
+  departs from the textbook — that is proven DIRECTLY rather than by matching
+  the two indices.  The image of `Γ₀(Ap q)` in `Γ₀(Ap)` is
+  `{γ ∈ Γ₀(Ap) : q ∣ γ₀₁}`, so surjectivity onto `Γ₀(Ap)/Γ₀(A)` is exactly
+  `exists_gamma0_mul_dvd_upperRight` above: right-multiply by
+  `[1, l; Aj, Ajl+1] ∈ Γ₀(A)`.  The index dichotomy
+  `[Γ₀(N) : Γ₀(Np)] = p` at `p ∣ N`, `p + 1` otherwise — which is what Miyake
+  compares, and which `q ≠ p` makes agree through `p ∣ Ap ↔ p ∣ Ap q` — is
+  therefore NOT needed anywhere, and no index formula for `Γ₀` had to be built.
 
-Summing `F ∣ δ_q γ = F ∣ (δ_q γ δ_q⁻¹) δ_q` over that bijection is the claim.
-`p ≠ q` is exactly what makes the index dichotomy match; drop it and the two
-traces have different numbers of cosets, so no diagram commutes on the nose.
+Summing `F ∣ δ_q γ = F ∣ (δ_q γ δ_q⁻¹) δ_q` over that bijection is the claim; on
+the nose, `δ_q γ⁻¹ = (δ_q γ δ_q⁻¹)⁻¹ δ_q`, so the two sums are TERMWISE equal
+along the bijection and the identity is exact — there is no index constant.
+
+`p ≠ q` is consumed in exactly ONE place, `exists_gamma0_mul_dvd_upperRight`:
+at `q ∣ A` the coefficient `ρ₀₀ + ρ₀₁ A j` is `≡ ρ₀₀` for every `j`, and a
+`ρ ∈ Γ₀(Ap)` with `q ∣ ρ₀₀` then has `q ∣ γ₀₁` for NO `γ ∈ ρ Γ₀(A)` — so
+surjectivity genuinely fails without it.
 
 The four levels are passed as VARIABLES with defining equations rather than as
 `A * q`, `A / p`, … so that instantiating this needs no dependent-type rewriting
 inside `CuspForm (Gamma0GL ·) 2` — the same convention as
 `traceOp_degeneracyOp_one_comm` above, and the reason its consumer below can
-instantiate `A := C / q` without ever rewriting a level. -/
+instantiate `A := C / q` without ever rewriting a level.
+
+`0 < A` is carried for the consumer's convenience only; the proof uses the
+strictly stronger `[NeZero A]` instance instead, hence the underscore. -/
 theorem traceOp_degeneracyOp_comm {A Ap C Cp p q : ℕ}
     [NeZero A] [NeZero Ap] [NeZero C] [NeZero Cp]
-    (hA : 0 < A) (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q)
+    (_hA : 0 < A) (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q)
     (hAp : p * Ap = A) (hC : A * q = C) (hCp : Ap * q = Cp)
     (F : CuspForm (Gamma0GL A) 2) :
-    traceOp C Cp (degeneracyOp A C q F) = degeneracyOp Ap Cp q (traceOp A Ap F) :=
-  sorry
+    traceOp C Cp (degeneracyOp A C q F) = degeneracyOp Ap Cp q (traceOp A Ap F) := by
+  classical
+  haveI : Subgroup.IsFiniteRelIndex (Gamma0GL C) (Gamma0GL Cp) :=
+    isFiniteRelIndex_of_isArithmetic _ _
+  haveI : Subgroup.IsFiniteRelIndex (Gamma0GL A) (Gamma0GL Ap) :=
+    isFiniteRelIndex_of_isArithmetic _ _
+  letI : Fintype (Gamma0GL Cp ⧸ (Gamma0GL C).subgroupOf (Gamma0GL Cp)) :=
+    Fintype.ofFinite _
+  letI : Fintype (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)) :=
+    Fintype.ofFinite _
+  have hqAC : q * A ∣ C := ⟨1, by rw [← hC]; ring⟩
+  have hqApCp : q * Ap ∣ Cp := ⟨1, by rw [← hCp]; ring⟩
+  -- `δ_q Γ₀(Nq) δ_q⁻¹ ⊆ Γ₀(N)`, at the two levels the diagram needs
+  have hconjAp : ∀ x : GL (Fin 2) ℝ, x ∈ Gamma0GL Cp →
+      heckeRepInf q * x * (heckeRepInf q)⁻¹ ∈ Gamma0GL Ap := fun x hx =>
+    mem_conjAct_inv_smul_iff.mp (Gamma0GL_le_conj_heckeRepInf hq.pos hqApCp hx)
+  have hconjA : ∀ x : GL (Fin 2) ℝ, x ∈ Gamma0GL C →
+      heckeRepInf q * x * (heckeRepInf q)⁻¹ ∈ Gamma0GL A := fun x hx =>
+    mem_conjAct_inv_smul_iff.mp (Gamma0GL_le_conj_heckeRepInf hq.pos hqAC hx)
+  -- and its converse, which is the injectivity of the coset map
+  have hconjBack : ∀ x : GL (Fin 2) ℝ, x ∈ Gamma0GL Cp →
+      heckeRepInf q * x * (heckeRepInf q)⁻¹ ∈ Gamma0GL A → x ∈ Gamma0GL C := by
+    intro x hx hxa
+    obtain ⟨ρ, hρ, rfl⟩ := mem_Gamma0GL_iff.mp hx
+    have hdv := dvd_of_conj_heckeRepInf_mem_Gamma0GL (N := A) hq.pos hxa
+    refine mem_Gamma0GL_iff.mpr ⟨ρ, ?_, rfl⟩
+    rw [CongruenceSubgroup.Gamma0_mem]
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr (by rw [← hC]; exact hdv)
+  -- conjugation as a map `Γ₀(Ap q) → Γ₀(Ap)`, and its descent to cosets
+  set φ : Gamma0GL Cp → Gamma0GL Ap := fun x =>
+    ⟨heckeRepInf q * (x : GL (Fin 2) ℝ) * (heckeRepInf q)⁻¹, hconjAp x x.2⟩ with hφ
+  have hφval : ∀ x y : Gamma0GL Cp,
+      (((φ x)⁻¹ * φ y : Gamma0GL Ap) : GL (Fin 2) ℝ)
+        = heckeRepInf q * ((x⁻¹ * y : Gamma0GL Cp) : GL (Fin 2) ℝ)
+            * (heckeRepInf q)⁻¹ := by
+    intro x y
+    simp only [hφ, Subgroup.coe_mul, Subgroup.coe_inv]
+    group
+  have hwd : ∀ x y : Gamma0GL Cp,
+      ((x⁻¹ * y : Gamma0GL Cp) : GL (Fin 2) ℝ) ∈ Gamma0GL C →
+      ((φ x : Gamma0GL Ap) : Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap))
+        = (φ y : Gamma0GL Ap) := by
+    intro x y hxy
+    refine QuotientGroup.eq.mpr ?_
+    rw [Subgroup.mem_subgroupOf, hφval x y]
+    exact hconjA _ hxy
+  set Φ : (Gamma0GL Cp ⧸ (Gamma0GL C).subgroupOf (Gamma0GL Cp)) →
+      (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)) := fun x =>
+    Quotient.liftOn x
+      (fun r => ((φ r : Gamma0GL Ap) :
+        Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)))
+      (fun a b hab => hwd a b (by
+        rw [← Quotient.eq_iff_equiv, Quotient.eq, QuotientGroup.leftRel_apply,
+          Subgroup.mem_subgroupOf] at hab
+        exact hab)) with hΦ
+  have hΦmk : ∀ r : Gamma0GL Cp,
+      Φ ((r : Gamma0GL Cp) : Gamma0GL Cp ⧸ (Gamma0GL C).subgroupOf (Gamma0GL Cp))
+        = ((φ r : Gamma0GL Ap) :
+            Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)) := fun _ => rfl
+  have hinj : ∀ a b, Φ a = Φ b → a = b := by
+    refine QuotientGroup.forall_mk.mpr fun x =>
+      QuotientGroup.forall_mk.mpr fun y hxy => ?_
+    rw [hΦmk, hΦmk] at hxy
+    have h1 := QuotientGroup.eq.mp hxy
+    rw [Subgroup.mem_subgroupOf, hφval x y] at h1
+    refine QuotientGroup.eq.mpr ?_
+    rw [Subgroup.mem_subgroupOf]
+    exact hconjBack _ (x⁻¹ * y).2 h1
+  have hsurj : Function.Surjective Φ := by
+    refine QuotientGroup.forall_mk.mpr fun s => ?_
+    obtain ⟨ρ, hρ, hρeq⟩ := mem_Gamma0GL_iff.mp s.2
+    obtain ⟨γ, hγ, hdvd01⟩ := exists_gamma0_mul_dvd_upperRight hp hq hpq hρ
+    rw [hAp] at hγ
+    obtain ⟨σ, hσdef⟩ : ∃ σ : SL(2, ℤ), σ = ρ * γ := ⟨ρ * γ, rfl⟩
+    rw [← hσdef] at hdvd01
+    have hApA : (Ap : ℤ) ∣ (A : ℤ) := ⟨(p : ℤ), by rw [← hAp]; push_cast; ring⟩
+    have hγAp : γ ∈ CongruenceSubgroup.Gamma0 Ap := by
+      rw [CongruenceSubgroup.Gamma0_mem] at hγ ⊢
+      exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr
+        (hApA.trans ((ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hγ))
+    have hσAp : σ ∈ CongruenceSubgroup.Gamma0 Ap := by
+      rw [hσdef]; exact mul_mem hρ hγAp
+    have hσ10 : (Ap : ℤ) ∣ σ 1 0 := by
+      rw [CongruenceSubgroup.Gamma0_mem] at hσAp
+      exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp hσAp
+    obtain ⟨t, ht⟩ := hdvd01
+    have hdetσ : σ 0 0 * σ 1 1 - σ 0 1 * σ 1 0 = 1 := by
+      have h2 := σ.2
+      rwa [Matrix.det_fin_two] at h2
+    rw [ht] at hdetσ
+    have hdetτ : (!![σ 0 0, t; (q : ℤ) * σ 1 0, σ 1 1]).det = 1 := by
+      rw [Matrix.det_fin_two_of]
+      linear_combination hdetσ
+    set τ : SL(2, ℤ) := ⟨_, hdetτ⟩ with hτ
+    have hτmem : τ ∈ CongruenceSubgroup.Gamma0 Cp := by
+      rw [CongruenceSubgroup.Gamma0_mem]
+      have hentry : τ 1 0 = (q : ℤ) * σ 1 0 := by rw [hτ]; simp
+      rw [hentry]
+      refine (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr ?_
+      obtain ⟨u, hu⟩ := hσ10
+      exact ⟨u, by rw [hu, ← hCp]; push_cast; ring⟩
+    have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+    have hconjτ : heckeRepInf q * mapGL ℝ τ * (heckeRepInf q)⁻¹ = mapGL ℝ σ := by
+      rw [mul_inv_eq_iff_eq_mul]
+      ext i j
+      fin_cases i <;> fin_cases j <;>
+        · simp [hτ, heckeRepInf_coe hq0, mapGL_coe_matrix,
+            Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply,
+            Int.coe_castRingHom, Matrix.map_apply, Matrix.mul_apply,
+            Fin.sum_univ_two, ht]
+          try push_cast
+          try ring
+    have hτGL : (mapGL ℝ τ : GL (Fin 2) ℝ) ∈ Gamma0GL Cp :=
+      mem_Gamma0GL_iff.mpr ⟨τ, hτmem, rfl⟩
+    refine ⟨((⟨mapGL ℝ τ, hτGL⟩ : Gamma0GL Cp) :
+      Gamma0GL Cp ⧸ (Gamma0GL C).subgroupOf (Gamma0GL Cp)), ?_⟩
+    rw [hΦmk]
+    refine QuotientGroup.eq.mpr ?_
+    rw [Subgroup.mem_subgroupOf]
+    have hval : (((φ ⟨mapGL ℝ τ, hτGL⟩)⁻¹ * s : Gamma0GL Ap) : GL (Fin 2) ℝ)
+        = (mapGL ℝ γ)⁻¹ := by
+      simp only [hφ, Subgroup.coe_mul, Subgroup.coe_inv, hconjτ,
+        ← hρeq, hσdef, map_mul]
+      group
+    rw [hval]
+    exact inv_mem (mem_Gamma0GL_iff.mpr ⟨γ, hγ, rfl⟩)
+  -- the termwise identity `δ_q γ⁻¹ = (δ_q γ δ_q⁻¹)⁻¹ δ_q`
+  have hmat : ∀ r : Gamma0GL Cp,
+      heckeRepInf q * ((r : Gamma0GL Cp) : GL (Fin 2) ℝ)⁻¹
+        = ((φ r : Gamma0GL Ap) : GL (Fin 2) ℝ)⁻¹ * heckeRepInf q := by
+    intro r
+    show heckeRepInf q * ((r : Gamma0GL Cp) : GL (Fin 2) ℝ)⁻¹
+      = (heckeRepInf q * ((r : Gamma0GL Cp) : GL (Fin 2) ℝ) * (heckeRepInf q)⁻¹)⁻¹
+          * heckeRepInf q
+    group
+  refine DFunLike.coe_injective ?_
+  have hLHS : ⇑(traceOp C Cp (degeneracyOp A C q F))
+      = ∑ x : (Gamma0GL Cp ⧸ (Gamma0GL C).subgroupOf (Gamma0GL Cp)),
+          SlashInvariantForm.quotientFunc (degeneracyOp A C q F) x := by
+    show ⇑(CuspForm.trace (Gamma0GL Cp) (degeneracyOp A C q F)) = _
+    rw [CuspForm.coe_trace]
+  have hTrA : ⇑(traceOp A Ap F)
+      = ∑ y : (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)),
+          SlashInvariantForm.quotientFunc F y := by
+    show ⇑(CuspForm.trace (Gamma0GL Ap) F) = _
+    rw [CuspForm.coe_trace]
+  have hRHS : ⇑(degeneracyOp Ap Cp q (traceOp A Ap F))
+      = (q : ℂ)⁻¹ • ((∑ y : (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)),
+          SlashInvariantForm.quotientFunc F y) ∣[(2 : ℤ)] heckeRepInf q) := by
+    rw [degeneracyOp_coe hq.pos hqApCp, hTrA]
+    rfl
+  have hterm : ∀ x : (Gamma0GL Cp ⧸ (Gamma0GL C).subgroupOf (Gamma0GL Cp)),
+      SlashInvariantForm.quotientFunc (degeneracyOp A C q F) x
+        = (q : ℂ)⁻¹ • (SlashInvariantForm.quotientFunc F (Φ x)
+            ∣[(2 : ℤ)] heckeRepInf q) := by
+    refine QuotientGroup.forall_mk.mpr fun r => ?_
+    rw [hΦmk]
+    show ⇑(degeneracyOp A C q F) ∣[(2 : ℤ)] ((r : Gamma0GL Cp) : GL (Fin 2) ℝ)⁻¹
+      = (q : ℂ)⁻¹ • ((⇑F ∣[(2 : ℤ)] ((φ r : Gamma0GL Ap) : GL (Fin 2) ℝ)⁻¹)
+          ∣[(2 : ℤ)] heckeRepInf q)
+    rw [degeneracyOp_coe hq.pos hqAC F]
+    show ((q : ℂ)⁻¹ • (⇑F ∣[(2 : ℤ)] heckeRepInf q)) ∣[(2 : ℤ)]
+        ((r : Gamma0GL Cp) : GL (Fin 2) ℝ)⁻¹ = _
+    rw [ModularForm.smul_slash, σ_Gamma0GL (inv_mem r.2), ← SlashAction.slash_mul,
+      ← SlashAction.slash_mul, hmat r]
+  rw [hLHS, hRHS]
+  calc ∑ x : (Gamma0GL Cp ⧸ (Gamma0GL C).subgroupOf (Gamma0GL Cp)),
+        SlashInvariantForm.quotientFunc (degeneracyOp A C q F) x
+      = ∑ x : (Gamma0GL Cp ⧸ (Gamma0GL C).subgroupOf (Gamma0GL Cp)),
+          (q : ℂ)⁻¹ • (SlashInvariantForm.quotientFunc F (Φ x)
+            ∣[(2 : ℤ)] heckeRepInf q) :=
+        Finset.sum_congr rfl fun x _ => hterm x
+    _ = ∑ y : (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)),
+          (q : ℂ)⁻¹ • (SlashInvariantForm.quotientFunc F y
+            ∣[(2 : ℤ)] heckeRepInf q) :=
+        Fintype.sum_equiv (Equiv.ofBijective Φ ⟨fun a b h => hinj a b h, hsurj⟩) _ _
+          fun _ => rfl
+    _ = (q : ℂ)⁻¹ • ∑ y : (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)),
+          (SlashInvariantForm.quotientFunc F y ∣[(2 : ℤ)] heckeRepInf q) :=
+        (Finset.smul_sum).symm
+    _ = (q : ℂ)⁻¹ • ((∑ y : (Gamma0GL Ap ⧸ (Gamma0GL A).subgroupOf (Gamma0GL Ap)),
+          SlashInvariantForm.quotientFunc F y) ∣[(2 : ℤ)] heckeRepInf q) := by
+        rw [SlashAction.sum_slash]
 
 /-- **MIYAKE MOVE 4, AS A SIEVE INDUCTION ON `L`** (PROVEN 2026-07-27 over
 `exists_cuspForm_qCoeff_sieve`, `traceOp_degeneracyOp_one_comm` and
@@ -35752,7 +36065,9 @@ the induction hypothesis at `L / q`, and handle the complement — which is
 supported on the multiples of `q`, hence a single `V_q`-image by Theorem 4.6.4 —
 with Lemma 4.6.6(2) alone.  So of Miyake's inputs to move 4 only **4.6.6(1)**
 (`traceOp_degeneracyOp_one_comm`) and **4.6.6(2)** (`traceOp_degeneracyOp_comm`)
-survive as leaves; **4.6.7 does not appear anywhere in the finished proof.**
+are consumed at all; **4.6.7 does not appear anywhere in the finished proof.**
+Of those two, **4.6.6(2) is PROVEN** (2026-07-27, by the coset bijection, with
+surjectivity done directly so that no `Γ₀`-index formula was needed).
 
 `1 < L` is NOT consumed (it is written `_hL`), and that is not an oversight: the
 statement is true at `L = 1` as well, where the hypothesis forces `h = 0`.  It is
@@ -35785,12 +36100,14 @@ coset `Γ₀(M) [1, 0; 0, p] Γ₀(M/p)`, and `Tr ∘ U_p` is `p` times it (thei
 is a single double coset, with multiplicity `p(d+1)/(d+1) = p`), so with the
 constant existential this IS Miyake's witness.
 
-PROOF, in Miyake's four moves.  As of 2026-07-27 the residual leaves are ONLY
-`exists_cuspForm_qCoeff_sieve` (Lemma 4.6.5, move 1) and
-`traceOp_degeneracyOp_one_comm` (Lemma 4.6.6(1), move 3) — plus
-`traceOp_degeneracyOp_comm` (Lemma 4.6.6(2)) which move 4 now consumes.  Move 4
-itself, `qCoeff_traceOp_heckeOp_eq_zero`, is PROVEN over those, and Miyake's
-Lemma 4.6.7 turned out not to be needed at all (see its docstring).
+PROOF, in Miyake's four moves.  The only inputs still cited from Miyake are
+`exists_cuspForm_qCoeff_sieve` (Lemma 4.6.5, move 1),
+`traceOp_degeneracyOp_one_comm` (Lemma 4.6.6(1), move 3) and
+`traceOp_degeneracyOp_comm` (Lemma 4.6.6(2)), which move 4 consumes; the last of
+these is PROVEN (2026-07-27).  Move 4 itself,
+`qCoeff_traceOp_heckeOp_eq_zero`, is PROVEN over those, and Miyake's Lemma 4.6.7
+turned out not to be needed at all (see its docstring).  Check the current
+open/closed status of the other two with the compiler, not with this note.
 
 1. `g` = the `L`-sieve of `f` at level `B = M L²`
    (`exists_cuspForm_qCoeff_sieve`, LEAF).  Its coefficients vanish at every
