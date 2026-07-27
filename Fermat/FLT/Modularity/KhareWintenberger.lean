@@ -379,6 +379,11 @@ import Mathlib.Tactic.Group
 -- `ContinuousSMul` criterion, and base-change of ranks
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 import Mathlib.NumberTheory.Padics.RingHoms
+-- `padicNorm` occurs in the SIGNATURES of the strong-approximation block below
+-- (`exists_rat_strongApprox` and friends, Moret–Bailly §3.8's engine), so this must be
+-- `public`; `Nat.chineseRemainderOfFinset` is proof-only, hence a plain import.
+public import Mathlib.NumberTheory.Padics.PadicNorm
+import Mathlib.Data.Nat.ChineseRemainder
 import Mathlib.Topology.Algebra.Module.ModuleTopology
 import Mathlib.Topology.Algebra.Algebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
@@ -12973,10 +12978,381 @@ theorem hasRationalPoint_residueField {X : AlgebraicGeometry.Scheme.{u}}
   (hasRationalPoint_iff_nonempty fX ↥(X.residueField x)).mpr
     ⟨X.fromSpecResidueField x⟩
 
+/-! ##### Strong approximation for `ℚ` — Moret–Bailly §3.8's engine, PROVEN
+
+(2026-07-27.) §3.8 is the step of Moret–Bailly's §3 that actually MANUFACTURES the point:
+`A = Γ(X̄, ℒ, α)` is an affine space over the ring `R` of `Σ`-integers, each local
+condition cuts out a nonempty open `U_v ⊆ A ⊗_R K_v`, and because the Skolem datum is
+INCOMPLETE — some place is left out of `Σ` — the diagonal image of `A` is DENSE in
+`∏_{v ∈ Σ} (A ⊗_R K_v)`, so a global section meeting every local condition exists. That
+density is Cassels–Fröhlich II §15, and it is the ONE input of §3 that needs neither a
+relative Picard scheme nor a symmetric power of a curve: specialised to `K = ℚ`,
+`Σ = {∞} ∪ S` and `R = ℤ[1/(q · ∏ S)]` for an auxiliary prime `q ∉ S`, every object in it
+is at the pin today. This block proves it.
+
+WHY IT IS STATED WITH `padicNorm` AND NOT WITH `ℚ_[p]`. `ℚ_[p]` needs a `Fact p.Prime`
+instance, so a statement quantifying over `p ∈ S` would carry a dependent family
+`∀ (p : ℕ) [Fact p.Prime], p ∈ S → ℚ_[p]`, which is painful to construct and to consume.
+`padicNorm : ℕ → ℚ → ℚ` needs no instance at all, and the approximating element and the
+targets are RATIONAL in any case, so nothing is lost: a `padicNorm`-ball around a rational
+centre is exactly the trace on `ℚ` of a `ℚ_[p]`-ball around that centre, and `ℚ` is dense
+in `ℚ_[p]`, so every nonempty open of `ℚ_[p]` contains such a ball.
+
+THE PROOF, and it is elementary — no adeles, no idele class group:
+
+* the congruence conditions `c ≡ z p (mod p ^ n)`, `p ∈ S`, confine `c` to a single
+  residue class modulo `P = ∏_{p ∈ S} p ^ n` (Chinese remainder,
+  `Nat.chineseRemainderOfFinset`);
+* inverting the auxiliary prime `q` makes that class arbitrarily fine in `ℝ`: the class
+  `c₀ + P · ℤ`, divided by `q ^ j`, has mesh `P / q ^ j → 0`, so a large enough `j` puts a
+  class member inside ANY interval of positive length (`exists_int_dvd_sub_mem_Ioo`);
+* that is `exists_int_pow_strongApprox`, the integral core. `q ∉ S` is what makes `q` a
+  unit at every `p ∈ S`, so dividing by `q ^ j` does not disturb the congruences — this is
+  exactly the INCOMPLETENESS hypothesis of Moret–Bailly, in its most concrete form;
+* general RATIONAL targets are reduced to integral ones by scaling with `M ^ k`,
+  `M = ∏_{p ∈ S} p`: `M` is exactly divisible by each `p ∈ S`, so `padicNorm p (M ^ k) =
+  p ^ (-k)`, and a large `k` makes every `M ^ k · u p` a `p`-adic integer, which is then
+  rounded to an integer by inverting its (prime-to-`p`) denominator via Bézout
+  (`exists_int_padicNorm_sub_le`).
+
+The third conclusion of `exists_rat_strongApprox` — `padicNorm ℓ a ≤ 1` for every prime
+`ℓ ∉ S ∪ {q}` — is the INTEGRALITY that distinguishes strong from weak approximation, and
+it is what makes the output an element of `R = ℤ[1/(q · ∏ S)]` rather than of `ℚ`. §3.8
+needs it because it must produce a section of `ℒ` over the integral model, not merely over
+the generic fibre. -/
+
+/-- An open interval of length exceeding `P` contains an integer in any prescribed residue
+class modulo `P` (PROVEN): take the least class member above the left endpoint. -/
+theorem exists_int_dvd_sub_mem_Ioo {P : ℕ} (hP : 0 < P) (c₀ : ℤ) {l r : ℝ}
+    (h : (P : ℝ) < r - l) : ∃ c : ℤ, (P : ℤ) ∣ (c - c₀) ∧ l < (c : ℝ) ∧ (c : ℝ) < r := by
+  have hP' : (0 : ℝ) < P := by exact_mod_cast hP
+  refine ⟨c₀ + P * (⌊(l - (c₀ : ℝ)) / P⌋ + 1), ⟨⌊(l - (c₀ : ℝ)) / P⌋ + 1, by ring⟩, ?_, ?_⟩
+  · have h1 : (l - (c₀ : ℝ)) / P < ((⌊(l - (c₀ : ℝ)) / P⌋ : ℤ) : ℝ) + 1 := Int.lt_floor_add_one _
+    have h2 := (div_lt_iff₀ hP').mp h1
+    push_cast
+    nlinarith [h2]
+  · have h1 : ((⌊(l - (c₀ : ℝ)) / P⌋ : ℤ) : ℝ) ≤ (l - (c₀ : ℝ)) / P := Int.floor_le _
+    have h2 := (le_div_iff₀ hP').mp h1
+    push_cast
+    nlinarith [h2]
+
+/-- **Strong approximation for `ℚ`, integral core** (PROVEN). Given integer targets `z p`
+at the primes `p ∈ S`, a real target `X`, a `p`-adic precision `n` and a real precision
+`δ`, there is an element `c / q ^ j` of `ℤ[1/q]` congruent to `z p` modulo `p ^ n` for
+every `p ∈ S` and within `δ` of `X`.
+
+`q ∉ S` is not needed here — it is needed by the consumer, to know that `q ^ j` is a unit
+at each `p ∈ S` so that the congruences survive the division. -/
+theorem exists_int_pow_strongApprox (S : Finset ℕ) (hS : ∀ p ∈ S, p.Prime)
+    (q : ℕ) (hq : q.Prime) (z : ℕ → ℤ) (n : ℕ) (X : ℝ) {δ : ℝ} (hδ : 0 < δ) :
+    ∃ (c : ℤ) (j : ℕ), (∀ p ∈ S, ((p : ℤ) ^ n) ∣ (c - z p * (q : ℤ) ^ j)) ∧
+      |(c : ℝ) / (q : ℝ) ^ j - X| < δ := by
+  classical
+  set P : ℕ := ∏ p ∈ S, p ^ n with hPdef
+  have hPpos : 0 < P := Finset.prod_pos fun p hp => pow_pos (hS p hp).pos n
+  have hq1 : (1 : ℝ) < (q : ℝ) := by exact_mod_cast hq.one_lt
+  obtain ⟨j, hj⟩ : ∃ j : ℕ, (P : ℝ) / δ < (q : ℝ) ^ j := pow_unbounded_of_one_lt _ hq1
+  have hqj : (0 : ℝ) < (q : ℝ) ^ j := by positivity
+  have hjlt : (P : ℝ) < δ * (q : ℝ) ^ j := by
+    rw [div_lt_iff₀ hδ] at hj
+    nlinarith [hj]
+  set a : ℕ → ℕ := fun p => ((z p * (q : ℤ) ^ j) % ((p : ℤ) ^ n)).toNat with hadef
+  have hmod : ∀ p ∈ S, ((p : ℤ) ^ n) ∣ ((a p : ℤ) - z p * (q : ℤ) ^ j) := by
+    intro p hp
+    have hppos : (0 : ℤ) < (p : ℤ) ^ n := by
+      have h := (hS p hp).pos
+      have : (0 : ℤ) < (p : ℤ) := by exact_mod_cast h
+      positivity
+    have hnn : 0 ≤ (z p * (q : ℤ) ^ j) % ((p : ℤ) ^ n) := Int.emod_nonneg _ (ne_of_gt hppos)
+    have hval : ((a p : ℤ)) = (z p * (q : ℤ) ^ j) % ((p : ℤ) ^ n) := by
+      rw [hadef]; exact Int.toNat_of_nonneg hnn
+    rw [hval]
+    exact ⟨-((z p * (q : ℤ) ^ j) / ((p : ℤ) ^ n)),
+      by linarith [Int.mul_ediv_add_emod (z p * (q : ℤ) ^ j) ((p : ℤ) ^ n)]⟩
+  have hcop : Set.Pairwise (S : Set ℕ) (Function.onFun Nat.Coprime fun p => p ^ n) := by
+    intro p hp p' hp' hne
+    exact Nat.Coprime.pow _ _ ((Nat.coprime_primes (hS p hp) (hS p' hp')).mpr hne)
+  have hne0 : ∀ p ∈ S, p ^ n ≠ 0 := fun p hp => pow_ne_zero _ (hS p hp).pos.ne'
+  obtain ⟨c₀, hc₀⟩ := Nat.chineseRemainderOfFinset a (fun p => p ^ n) S hne0 hcop
+  obtain ⟨c, hcdvd, hlo, hhi⟩ :=
+    exists_int_dvd_sub_mem_Ioo hPpos (c₀ : ℤ)
+      (l := (X - δ) * (q : ℝ) ^ j) (r := (X + δ) * (q : ℝ) ^ j)
+      (by
+        have hrw : (X + δ) * (q : ℝ) ^ j - (X - δ) * (q : ℝ) ^ j = 2 * (δ * (q : ℝ) ^ j) := by
+          ring
+        rw [hrw]
+        nlinarith [hjlt, hqj, hδ])
+  refine ⟨c, j, ?_, ?_⟩
+  · intro p hp
+    have hdvdP : ((p : ℤ) ^ n) ∣ (P : ℤ) := by
+      have hd : (p ^ n) ∣ P := Finset.dvd_prod_of_mem (fun p => p ^ n) hp
+      have := Int.natCast_dvd_natCast.mpr hd
+      push_cast at this
+      exact this
+    have h1 : ((p : ℤ) ^ n) ∣ (c - (c₀ : ℤ)) := dvd_trans hdvdP hcdvd
+    have h2 : ((p : ℤ) ^ n) ∣ ((c₀ : ℤ) - (a p : ℤ)) := by
+      have hmm := (Nat.modEq_iff_dvd (n := p ^ n)).mp (hc₀ p hp)
+      push_cast at hmm
+      simpa using dvd_neg.mpr hmm
+    have h3 := hmod p hp
+    have hsplit : c - z p * (q : ℤ) ^ j = (c - (c₀ : ℤ)) + ((c₀ : ℤ) - (a p : ℤ)) +
+        ((a p : ℤ) - z p * (q : ℤ) ^ j) := by ring
+    rw [hsplit]
+    exact dvd_add (dvd_add h1 h2) h3
+  · rw [abs_lt]
+    refine ⟨?_, ?_⟩
+    · have h := (lt_div_iff₀ hqj).mpr hlo
+      linarith
+    · have h := (div_lt_iff₀ hqj).mpr hhi
+      linarith
+
+/-- `padicNorm` is multiplicative, hence takes powers to powers (PROVEN). -/
+theorem padicNorm_pow (p : ℕ) [Fact p.Prime] (x : ℚ) (k : ℕ) :
+    padicNorm p (x ^ k) = (padicNorm p x) ^ k := by
+  induction k with
+  | zero => simp
+  | succ k ih => rw [pow_succ, pow_succ, padicNorm.mul, ih]
+
+/-- A `p`-integral rational is approximated to any prescribed `p`-adic precision by an
+INTEGER (PROVEN): its denominator is prime to `p`, so Bézout inverts it modulo `p ^ n`. -/
+theorem exists_int_padicNorm_sub_le {p : ℕ} (hp : p.Prime) {w : ℚ} (hw : padicNorm p w ≤ 1)
+    (n : ℕ) : ∃ z : ℤ, padicNorm p (w - z) ≤ (p : ℚ) ^ (-n : ℤ) := by
+  haveI := Fact.mk hp
+  have hpQ : (1 : ℚ) < (p : ℚ) := by exact_mod_cast hp.one_lt
+  have hden : ¬ p ∣ w.den := by
+    intro hd
+    have hnum : ¬ ((p : ℤ) ∣ w.num) := by
+      intro hn
+      have h1 : p ∣ w.num.natAbs := Int.natCast_dvd_natCast.mp (Int.dvd_natAbs.mpr hn)
+      have := Nat.dvd_gcd h1 hd
+      rw [w.reduced] at this
+      exact hp.one_lt.ne' (Nat.dvd_one.mp this)
+    have h1 : padicNorm p (w.num : ℚ) = 1 := (padicNorm.int_eq_one_iff _).mpr hnum
+    have h2 : padicNorm p (w.den : ℚ) < 1 := (padicNorm.nat_lt_one_iff _).mpr hd
+    have h3 : (0 : ℚ) < padicNorm p (w.den : ℚ) := by
+      refine lt_of_le_of_ne (padicNorm.nonneg _) (Ne.symm ?_)
+      exact padicNorm.nonzero (by exact_mod_cast w.den_nz)
+    have hsplit : padicNorm p w = padicNorm p (w.num : ℚ) / padicNorm p (w.den : ℚ) := by
+      rw [← padicNorm.div]
+      congr 1
+      exact (Rat.num_div_den w).symm
+    rw [hsplit, h1] at hw
+    rw [div_le_one h3] at hw
+    linarith
+  have hcop : Nat.Coprime w.den (p ^ n) :=
+    (Nat.Coprime.pow_right n ((Nat.Prime.coprime_iff_not_dvd hp).mpr hden).symm)
+  obtain ⟨s, t, hst⟩ : ∃ s t : ℤ, s * (w.den : ℤ) + t * ((p : ℤ) ^ n) = 1 := by
+    have : IsCoprime ((w.den : ℤ)) (((p ^ n : ℕ) : ℤ)) := Nat.isCoprime_iff_coprime.mpr hcop
+    obtain ⟨s, t, h⟩ := this
+    exact ⟨s, t, by push_cast at h ⊢; linarith⟩
+  refine ⟨w.num * s, ?_⟩
+  have hdenQ : ((w.den : ℚ)) ≠ 0 := by exact_mod_cast w.den_nz
+  have hstQ : (s : ℚ) * (w.den : ℚ) + (t : ℚ) * ((p : ℚ) ^ n) = 1 := by exact_mod_cast hst
+  have h1 : (w.num : ℚ) = w * (w.den : ℚ) := (Rat.mul_den_eq_num w).symm
+  have hkey : w - ((w.num * s : ℤ) : ℚ)
+      = (w.num : ℚ) * ((((p : ℤ) ^ n * t : ℤ)) : ℚ) / (w.den : ℚ) := by
+    rw [eq_div_iff hdenQ]
+    push_cast
+    linear_combination -h1 - (w.num : ℚ) * hstQ
+  rw [hkey, padicNorm.div, padicNorm.mul]
+  have hnum1 : padicNorm p (w.num : ℚ) ≤ 1 := padicNorm.of_int _
+  have hden1 : padicNorm p (w.den : ℚ) = 1 := (padicNorm.nat_eq_one_iff _).mpr hden
+  have htp : padicNorm p ((((p : ℤ) ^ n * t : ℤ)) : ℚ) ≤ (p : ℚ) ^ (-n : ℤ) :=
+    (padicNorm.dvd_iff_norm_le).mp (by exact ⟨t, by push_cast; ring⟩)
+  rw [hden1, div_one]
+  have hpos : (0 : ℚ) ≤ padicNorm p ((((p : ℤ) ^ n * t : ℤ)) : ℚ) := padicNorm.nonneg _
+  calc padicNorm p (w.num : ℚ) * padicNorm p ((((p : ℤ) ^ n * t : ℤ)) : ℚ)
+      ≤ 1 * ((p : ℚ) ^ (-n : ℤ)) := by
+        exact mul_le_mul hnum1 htp hpos zero_le_one
+    _ = (p : ℚ) ^ (-n : ℤ) := one_mul _
+
+/-- **Strong approximation for `ℚ`** (PROVEN; Cassels–Fröhlich II §15, in the form
+Moret–Bailly §3.8 consumes).
+
+Let `S` be a finite set of primes and `q` a prime OUTSIDE `S` — the auxiliary prime whose
+omission from `Σ = {∞} ∪ S` is Moret–Bailly's INCOMPLETENESS hypothesis. Then for any real
+target `x`, any rational targets `u p` at the primes `p ∈ S` and any `ε > 0` there is a
+single rational `a` with
+
+* `|a - x| < ε` at the archimedean place,
+* `padicNorm p (a - u p) < ε` at every `p ∈ S`,
+* `padicNorm ℓ a ≤ 1` at every other prime `ℓ ≠ q`,
+
+i.e. `a ∈ ℤ[1/(q · ∏ S)]` approximating the given data simultaneously. Equivalently: the
+diagonal image of `ℤ[1/(q · ∏ S)]` is DENSE in `ℝ × ∏_{p ∈ S} ℚ_p`. -/
+theorem exists_rat_strongApprox (S : Finset ℕ) (hS : ∀ p ∈ S, p.Prime)
+    (q : ℕ) (hq : q.Prime) (hqS : q ∉ S)
+    (x : ℝ) (u : ℕ → ℚ) {ε : ℚ} (hε : 0 < ε) :
+    ∃ a : ℚ, |(a : ℝ) - x| < (ε : ℝ) ∧ (∀ p ∈ S, padicNorm p (a - u p) < ε) ∧
+      ∀ ℓ : ℕ, ℓ.Prime → ℓ ∉ S → ℓ ≠ q → padicNorm ℓ a ≤ 1 := by
+  classical
+  set M : ℕ := ∏ p ∈ S, p with hMdef
+  have hMpos : 0 < M := Finset.prod_pos fun p hp => (hS p hp).pos
+  have hMQ : (0 : ℚ) < (M : ℚ) := by exact_mod_cast hMpos
+  have hMR : (0 : ℝ) < (M : ℝ) := by exact_mod_cast hMpos
+  have hnormM : ∀ p ∈ S, padicNorm p ((M : ℚ)) = (p : ℚ)⁻¹ := by
+    intro p hp
+    haveI := Fact.mk (hS p hp)
+    have hfac : p * ∏ p' ∈ S.erase p, p' = M := Finset.mul_prod_erase S (fun x => x) hp
+    have hnd : ¬ p ∣ ∏ p' ∈ S.erase p, p' := by
+      intro hdd
+      obtain ⟨i, hi, hpi⟩ := (Prime.dvd_finsetProd_iff (hS p hp).prime _).mp hdd
+      have hiS : i ∈ S := Finset.mem_of_mem_erase hi
+      have hEq : p = i := (Nat.prime_dvd_prime_iff_eq (hS p hp) (hS i hiS)).mp hpi
+      exact (Finset.ne_of_mem_erase hi) hEq.symm
+    have hcast : ((M : ℕ) : ℚ) = ((p : ℕ) : ℚ) * ((∏ p' ∈ S.erase p, p' : ℕ) : ℚ) := by
+      rw [← hfac]; push_cast; ring
+    rw [hcast, padicNorm.mul, padicNorm.padicNorm_p_of_prime,
+      (padicNorm.nat_eq_one_iff _).mpr hnd, mul_one]
+  have hnormM' : ∀ ℓ : ℕ, ℓ.Prime → ℓ ∉ S → padicNorm ℓ ((M : ℚ)) = 1 := by
+    intro ℓ hℓ hℓS
+    haveI := Fact.mk hℓ
+    refine (padicNorm.nat_eq_one_iff _).mpr ?_
+    intro hdd
+    obtain ⟨i, hi, hli⟩ := (Prime.dvd_finsetProd_iff hℓ.prime _).mp hdd
+    exact hℓS ((Nat.prime_dvd_prime_iff_eq hℓ (hS i hi)).mp hli ▸ hi)
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, ∀ p ∈ S, padicNorm p (u p) ≤ (2 : ℚ) ^ k := by
+    refine ⟨S.sup (fun p => ⌈padicNorm p (u p)⌉₊), fun p hp => ?_⟩
+    have h1 : padicNorm p (u p) ≤ (⌈padicNorm p (u p)⌉₊ : ℚ) := Nat.le_ceil _
+    have h2 : ⌈padicNorm p (u p)⌉₊ ≤ S.sup (fun p => ⌈padicNorm p (u p)⌉₊) :=
+      Finset.le_sup (f := fun p => ⌈padicNorm p (u p)⌉₊) hp
+    have h3 : ((⌈padicNorm p (u p)⌉₊ : ℕ) : ℚ) ≤
+        ((S.sup (fun p => ⌈padicNorm p (u p)⌉₊) : ℕ) : ℚ) := by exact_mod_cast h2
+    have h4 : ((S.sup (fun p => ⌈padicNorm p (u p)⌉₊) : ℕ) : ℚ) ≤
+        (2 : ℚ) ^ (S.sup (fun p => ⌈padicNorm p (u p)⌉₊)) := by
+      have h := Nat.lt_two_pow_self (n := S.sup (fun p => ⌈padicNorm p (u p)⌉₊))
+      exact_mod_cast h.le
+    linarith
+  have hint : ∀ p ∈ S, padicNorm p ((M : ℚ) ^ k * u p) ≤ 1 := by
+    intro p hp
+    haveI := Fact.mk (hS p hp)
+    have hp0 : (0 : ℚ) < (p : ℚ) := by exact_mod_cast (hS p hp).pos
+    have h2p : (2 : ℚ) ≤ (p : ℚ) := by exact_mod_cast (hS p hp).two_le
+    have hval : padicNorm p ((M : ℚ) ^ k * u p) = ((p : ℚ)⁻¹) ^ k * padicNorm p (u p) := by
+      rw [padicNorm.mul, padicNorm_pow, hnormM p hp]
+    rw [hval]
+    have hstep : ((p : ℚ)⁻¹) ^ k * padicNorm p (u p) ≤ ((p : ℚ)⁻¹) ^ k * (2 : ℚ) ^ k := by
+      have : (0 : ℚ) ≤ ((p : ℚ)⁻¹) ^ k := by positivity
+      exact mul_le_mul_of_nonneg_left (hk p hp) this
+    refine hstep.trans ?_
+    have hrw : ((p : ℚ)⁻¹) ^ k * (2 : ℚ) ^ k = ((2 : ℚ) / (p : ℚ)) ^ k := by
+      rw [div_pow]; ring
+    rw [hrw]
+    exact pow_le_one₀ (by positivity) ((div_le_one hp0).mpr h2p)
+  obtain ⟨m, hm⟩ : ∃ m : ℕ, (1 : ℚ) / ε < 2 ^ m := pow_unbounded_of_one_lt _ one_lt_two
+  set n : ℕ := k + m with hndef
+  have hz : ∀ p ∈ S, ∃ z : ℤ, padicNorm p ((M : ℚ) ^ k * u p - z) ≤ (p : ℚ) ^ (-n : ℤ) :=
+    fun p hp => exists_int_padicNorm_sub_le (hS p hp) (hint p hp) n
+  choose! z hzspec using hz
+  obtain ⟨c, j, hcdvd, hcreal⟩ :=
+    exists_int_pow_strongApprox S hS q hq z n (x * (M : ℝ) ^ k)
+      (δ := (ε : ℝ) * (M : ℝ) ^ k) (by positivity)
+  have hqQ : (0 : ℚ) < (q : ℚ) := by exact_mod_cast hq.pos
+  have hMk : (0 : ℝ) < (M : ℝ) ^ k := by positivity
+  refine ⟨(c : ℚ) / ((M : ℚ) ^ k * (q : ℚ) ^ j), ?_, ?_, ?_⟩
+  · have hcast : (((c : ℚ) / ((M : ℚ) ^ k * (q : ℚ) ^ j) : ℚ) : ℝ)
+        = ((c : ℝ) / (q : ℝ) ^ j) / (M : ℝ) ^ k := by
+      push_cast; ring
+    have heq : ((c : ℝ) / (q : ℝ) ^ j) / (M : ℝ) ^ k - x
+        = (((c : ℝ) / (q : ℝ) ^ j) - x * (M : ℝ) ^ k) / (M : ℝ) ^ k := by
+      field_simp
+    rw [hcast, heq, abs_div, abs_of_pos hMk, div_lt_iff₀ hMk]
+    exact hcreal
+  · intro p hp
+    haveI := Fact.mk (hS p hp)
+    have hpQ : (0 : ℚ) < (p : ℚ) := by exact_mod_cast (hS p hp).pos
+    have hpne : p ≠ q := fun h => hqS (h ▸ hp)
+    haveI := Fact.mk hq
+    have hnq : padicNorm p ((q : ℚ) ^ j) = 1 := by
+      rw [padicNorm_pow, padicNorm.padicNorm_of_prime_of_ne hpne, one_pow]
+    have hnM : padicNorm p ((M : ℚ) ^ k) = ((p : ℚ)⁻¹) ^ k := by
+      rw [padicNorm_pow, hnormM p hp]
+    have hdiff : (c : ℚ) / ((M : ℚ) ^ k * (q : ℚ) ^ j) - u p
+        = ((c : ℚ) - ((M : ℚ) ^ k * u p) * (q : ℚ) ^ j) / ((M : ℚ) ^ k * (q : ℚ) ^ j) := by
+      field_simp
+    have hnum : padicNorm p ((c : ℚ) - ((M : ℚ) ^ k * u p) * (q : ℚ) ^ j)
+        ≤ (p : ℚ) ^ (-n : ℤ) := by
+      have hsplit : (c : ℚ) - ((M : ℚ) ^ k * u p) * (q : ℚ) ^ j
+          = ((c : ℚ) - (z p : ℚ) * (q : ℚ) ^ j)
+            + (((z p : ℚ) - (M : ℚ) ^ k * u p) * (q : ℚ) ^ j) := by ring
+      rw [hsplit]
+      refine le_trans padicNorm.nonarchimedean (max_le ?_ ?_)
+      · have hd : ((p ^ n : ℕ) : ℤ) ∣ (c - z p * (q : ℤ) ^ j) := by
+          have := hcdvd p hp; push_cast; exact_mod_cast this
+        have hb := (padicNorm.dvd_iff_norm_le).mp hd
+        have hc : (((c - z p * (q : ℤ) ^ j : ℤ)) : ℚ)
+            = (c : ℚ) - (z p : ℚ) * (q : ℚ) ^ j := by push_cast; ring
+        rwa [hc] at hb
+      · rw [padicNorm.mul, hnq, mul_one, ← padicNorm.neg]
+        have hz' := hzspec p hp
+        have hc : -((z p : ℚ) - (M : ℚ) ^ k * u p) = (M : ℚ) ^ k * u p - (z p : ℚ) := by ring
+        rwa [hc]
+    rw [hdiff, padicNorm.div, padicNorm.mul, hnM, hnq, mul_one]
+    have hden : ((p : ℚ)⁻¹) ^ k = (p : ℚ) ^ (-k : ℤ) := by
+      rw [zpow_neg, zpow_natCast, inv_pow]
+    rw [hden]
+    have hpk : (0 : ℚ) < (p : ℚ) ^ (-k : ℤ) := by
+      rw [zpow_neg, zpow_natCast]
+      exact inv_pos.mpr (pow_pos hpQ k)
+    rw [div_lt_iff₀ hpk]
+    refine lt_of_le_of_lt hnum ?_
+    have hrw : (p : ℚ) ^ (-n : ℤ) = (p : ℚ) ^ (-m : ℤ) * (p : ℚ) ^ (-k : ℤ) := by
+      rw [← zpow_add₀ (ne_of_gt hpQ)]
+      congr 1
+      omega
+    rw [hrw]
+    have hmp : (p : ℚ) ^ (-m : ℤ) < ε := by
+      have h2p : (2 : ℚ) ≤ (p : ℚ) := by exact_mod_cast (hS p hp).two_le
+      have hpow : (2 : ℚ) ^ m ≤ (p : ℚ) ^ m := pow_le_pow_left₀ (by norm_num) h2p m
+      have hpm : (0 : ℚ) < (p : ℚ) ^ m := pow_pos hpQ m
+      rw [zpow_neg, zpow_natCast, inv_eq_one_div, div_lt_iff₀ hpm]
+      rw [div_lt_iff₀ hε] at hm
+      nlinarith [hm, mul_le_mul_of_nonneg_left hpow hε.le]
+    exact (mul_lt_mul_of_pos_right hmp hpk)
+  · intro ℓ hℓ hℓS hℓq
+    haveI := Fact.mk hℓ
+    haveI := Fact.mk hq
+    have hnM : padicNorm ℓ ((M : ℚ) ^ k) = 1 := by
+      rw [padicNorm_pow, hnormM' ℓ hℓ hℓS, one_pow]
+    have hnq : padicNorm ℓ ((q : ℚ) ^ j) = 1 := by
+      rw [padicNorm_pow, padicNorm.padicNorm_of_prime_of_ne hℓq, one_pow]
+    rw [padicNorm.div, padicNorm.mul, hnM, hnq, mul_one, div_one]
+    exact padicNorm.of_int _
+
+/-- **Strong approximation in an affine space over `ℤ[1/(q · ∏ S)]`** (PROVEN):
+`exists_rat_strongApprox` applied coordinatewise.
+
+This is the shape §3.8 uses: `Γ(X̄, ℒ, α)` is an affine space over the ring of
+`Σ`-integers, the local conditions are opens in its `K_v`-points, and the conclusion is a
+GLOBAL section meeting all of them. Coordinates are independent, so no work beyond
+`choose` is needed — the arithmetic all happened one coordinate at a time. -/
+theorem exists_rat_strongApprox_pi (S : Finset ℕ) (hS : ∀ p ∈ S, p.Prime)
+    (q : ℕ) (hq : q.Prime) (hqS : q ∉ S) (d : ℕ)
+    (t : Fin d → ℝ) (w : ℕ → Fin d → ℚ) {ε : ℚ} (hε : 0 < ε) :
+    ∃ a : Fin d → ℚ,
+      (∀ i, |(a i : ℝ) - t i| < (ε : ℝ)) ∧
+      (∀ p ∈ S, ∀ i, padicNorm p (a i - w p i) < ε) ∧
+      (∀ ℓ : ℕ, ℓ.Prime → ℓ ∉ S → ℓ ≠ q → ∀ i, padicNorm ℓ (a i) ≤ 1) := by
+  have h : ∀ i : Fin d, ∃ ai : ℚ, |(ai : ℝ) - t i| < (ε : ℝ) ∧
+      (∀ p ∈ S, padicNorm p (ai - w p i) < ε) ∧
+      (∀ ℓ : ℕ, ℓ.Prime → ℓ ∉ S → ℓ ≠ q → padicNorm ℓ ai ≤ 1) :=
+    fun i => exists_rat_strongApprox S hS q hq hqS (t i) (fun p => w p i) hε
+  choose a ha1 ha2 ha3 using h
+  exact ⟨a, ha1, fun p hp i => ha2 i p hp, fun ℓ h1 h2 h3 i => ha3 i ℓ h1 h2 h3⟩
+
 open CategoryTheory AlgebraicGeometry in
-/-- **Moret–Bailly §3.2–3.10 in residue-field form: the arithmetic core**
-(SORRY — the whole Picard-theoretic argument; the ONE residual leaf of
-`exists_totallySplitPoint_of_projectiveCompactification`).
+/-- **Moret–Bailly §3.2–3.9 as a LOCAL-CONDITIONS DATUM** (SORRY — the whole
+Picard-theoretic argument; the ONE residual leaf of
+`exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification`, whose
+other half, §3.8's strong-approximation engine, is PROVEN above).
+
+The datum this leaf produces is exactly what §3.2–3.7 and §3.9 construct and what §3.8
+then feeds to strong approximation: an auxiliary prime `q ∉ S` (the omitted place that
+makes the Skolem datum INCOMPLETE), a dimension `d` — the rank of the affine space
+`Γ(X̄, ℒ, α)` of §3.6 — local centres `t` (archimedean) and `w p` (`p`-adic), a radius
+`ε`, and the promise that ANY `ℤ[1/(q · ∏ S)]`-point of that affine space inside all the
+balls has a divisor with a *point entier* component. `exists_rat_strongApprox_pi`
+manufactures such a point; the consumer below applies it.
 
 Given the §3.1 datum — `C` a dense affine open in a smooth proper geometrically
 irreducible curve `X̄/ℚ` with nonempty complement `Z` — and the local solvability of the
@@ -13085,17 +13461,17 @@ The `~/cs/FLT` hits on the bare word "Jacobian" are false positives — `Matrix`
 Jacobians in `ModuleTopology.lean`, `Determinant.lean` and `HaarChar/RealComplex.lean`,
 with no curve or Picard content.
 
-**THE ONE PIECE THAT IS BUILDABLE TODAY, and the recommended first sub-target.** §3.8's
-engine is strong approximation, and it is the only input of §3 that needs NEITHER a
-Picard scheme NOR a symmetric power: specialised to `K = ℚ`, `Σ = {∞} ∪ S` and
-`R = ℤ[1/N]`, it is the statement that the diagonal image of `R` is dense in
-`ℝ × ∏_{p ∈ S} ℚ_p` whenever some prime `q ∤ N` is omitted from `Σ` (Cassels–Fröhlich
-II §15), extended to a finitely generated projective `R`-module componentwise. Every
-object in that sentence — `ℝ`, `ℚ_[p]`, `ℤ[1/N]` — is at the pin today. It is NOT
-committed alongside this leaf only because the free-floating rule forbids a declaration
-with no consumer in the root cone, and its consumer is §3.8, which needs `Γ(X̄, ℒ, α)`.
-Whoever takes this leaf should write it first: it is separable, checkable, and it is the
-step that actually manufactures the point.
+**THE ONE PIECE THAT IS BUILDABLE TODAY — NOW BUILT (2026-07-27).** §3.8's engine is
+strong approximation, and it is the only input of §3 that needs NEITHER a Picard scheme
+NOR a symmetric power: specialised to `K = ℚ`, `Σ = {∞} ∪ S` and `R = ℤ[1/N]`, it is the
+statement that the diagonal image of `R` is dense in `ℝ × ∏_{p ∈ S} ℚ_p` whenever some
+prime `q ∤ N` is omitted from `Σ` (Cassels–Fröhlich II §15), extended componentwise. That
+is now PROVEN, axiom-clean, as `exists_rat_strongApprox` / `exists_rat_strongApprox_pi`
+in the section "Strong approximation for `ℚ`" above, and it is consumed — in the root
+cone, not floating — by
+`exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification`, which
+is now an assembly over THIS leaf and that engine. So a prover here no longer has §3.8's
+analytic half to write; what remains is the geometry, §3.2–3.7 and §3.9.
 
 CONSEQUENCE FOR DISPATCH: this leaf is NOT gated on any repair elsewhere in this file.
 Its dense-open dimension obligation is discharged (it CARRIES `hXdim`), its §3.1
@@ -13114,7 +13490,91 @@ makes the fibre dimension `d + 1 - g - z` and the group `Γ(Z, 𝒪_Z^×)` do th
 3.10 — is bought by inverting one prime `q ∉ S ∪ {∞}`, and is exactly why the conclusion
 is a `ℚ`-point of `C` rather than an integral point. The conclusion is asked on `C`, the
 affine part, which is what MB delivers (his `Y ⊆ X`, not `⊆ X̄`) and what the consumer
-needs. -/
+needs.
+
+WHY THE LOCAL CONDITIONS ARE BALLS AND NOT ARBITRARY OPENS. §3.3(i) and §3.7.2(i) give
+`Ω_v^[d]` and `W_v^d` as OPEN subsets of `U_d(K_v)` and `P_d(K_v)`; this leaf asks instead
+for a ball of rational centre and rational radius inside each. That is no strengthening:
+`ℚ` is dense in `ℝ` and in each `ℚ_[p]`, so every nonempty open of `ℝ^d` or `ℚ_p^d`
+contains such a ball, and shrinking `ε` to the minimum over the finitely many places
+`Σ = {∞} ∪ S` is a finite minimum. The gain is that the whole interface — and hence the
+strong-approximation theorem it is paired with — is stated with `padicNorm : ℕ → ℚ → ℚ`,
+which needs no `Fact p.Prime` instance and no dependent family indexed by `p ∈ S`.
+
+**CUT-STRENGTH AUDIT — READ THIS BEFORE COUNTING THE CUT AS PROGRESS.** This leaf is
+LOGICALLY EQUIVALENT to its consumer, not weaker: taking `d = 0` makes `Fin d → ℚ` a
+singleton, `t`, `w` the empty tuples, both balls all of the (one-point) space, and the
+implication then demands exactly the consumer's conclusion — so anyone who can prove the
+consumer can prove this leaf without using strong approximation at all. That collapse is
+unavoidable for ANY single-leaf decomposition of an existential theorem (the same is true
+of this leaf's own consumer as a decomposition of
+`exists_totallySplitPoint_of_projectiveCompactification`), and it is stated here rather
+than left for a reader to discover.
+
+So what the cut BUYS is not a reduction in logical strength. It is:
+
+* strong approximation — real, reusable, axiom-clean mathematics — lands IN THE ROOT CONE
+  instead of being forbidden as free-floating, which is the only reason it was not
+  committed when it was first written;
+* the interface `(q, d, t, w, ε)` records, in checkable Lean, exactly what §3.2–3.7 and
+  §3.9 have to deliver, so the next prover does not have to re-derive the shape of §3.8's
+  input from the paper;
+* the analytic half of §3.8 is off the table: what remains under this leaf is purely
+  geometric.
+
+A prover who closes this leaf by proving the consumer directly has done nothing wrong and
+nothing extra; a prover following Moret–Bailly will find `d`, `t`, `w`, `ε` waiting for
+exactly the objects §3.6 produces. -/
+theorem exists_skolemBallDatum_of_projectiveCompactification
+    {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hjcomm : j ≫ fX = fC)
+    (hXsmooth : AlgebraicGeometry.Smooth fX)
+    (hXproper : AlgebraicGeometry.IsProper fX)
+    (hXgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hZ : (Set.range j.base)ᶜ.Nonempty)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hXdim : topologicalKrullDim ↥Xbar ≤ 1)
+    (hreal : HasRationalPoint fC (ULift.{u} ℝ))
+    (S : Finset ℕ) (hSprime : ∀ p ∈ S, p.Prime)
+    (hSpt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S →
+      HasRationalPoint fC (ULift.{u} ℚ_[p])) :
+    ∃ (q : ℕ) (_ : q.Prime) (_ : q ∉ S) (d : ℕ) (t : Fin d → ℝ) (w : ℕ → Fin d → ℚ)
+      (ε : ℚ), 0 < ε ∧
+      ∀ a : Fin d → ℚ,
+        (∀ i, |(a i : ℝ) - t i| < (ε : ℝ)) →
+        (∀ p ∈ S, ∀ i, padicNorm p (a i - w p i) < ε) →
+        (∀ ℓ : ℕ, ℓ.Prime → ℓ ∉ S → ℓ ≠ q → ∀ i, padicNorm ℓ (a i) ≤ 1) →
+        ∃ (x : ↥C) (_ : NumberField ↥(C.residueField x))
+          (_ : NumberField.IsTotallyReal ↥(C.residueField x)),
+          ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.2–3.10 in residue-field form: the arithmetic core**
+(**DECOMPOSED 2026-07-27** — an assembly over the geometric datum
+`exists_skolemBallDatum_of_projectiveCompactification` above and the PROVEN strong
+approximation `exists_rat_strongApprox_pi`).
+
+The decomposition is Moret–Bailly's own division of labour at §3.8. §3.2–3.7 and §3.9
+construct the affine space `A = Γ(X̄, ℒ, α)` of sections of a suitable `(ℒ, α)` and, at
+each place `v ∈ Σ = {∞} ∪ S`, the open nonempty set `U_v ⊆ A ⊗ K_v` of sections whose
+divisor is étale, `K_v`-split and inside `Ω_v` — that is the datum the leaf hands over,
+with the opens shrunk to balls of rational centre (no loss, `ℚ` being dense in `ℝ` and in
+`ℚ_[p]`). §3.8 then observes that INCOMPLETENESS of the Skolem datum — an omitted prime
+`q ∉ S` — makes the ring `R = ℤ[1/(q · ∏ S)]` dense in `ℝ × ∏_{p ∈ S} ℚ_p`, so `A` meets
+every `U_v` simultaneously; that is `exists_rat_strongApprox_pi`, proven above from
+Chinese remainder plus the fact that inverting `q` makes a fixed residue class arbitrarily
+fine on the real line. The resulting global section has a divisor component which is a
+*point entier*, i.e. a point `x` of `C` whose residue field is totally real and totally
+split at every `p ∈ S`.
+
+The cut-strength audit — this decomposition is logically equivalent to its leaf, and what
+it buys is placement of the strong-approximation engine in the root cone rather than a
+reduction of the mathematical burden — is recorded in full on the leaf's own docstring,
+where a dispatcher will see it. -/
 theorem exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -13133,8 +13593,12 @@ theorem exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompacti
       HasRationalPoint fC (ULift.{u} ℚ_[p])) :
     ∃ (x : ↥C) (_ : NumberField ↥(C.residueField x))
       (_ : NumberField.IsTotallyReal ↥(C.residueField x)),
-      ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p :=
-  sorry
+      ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p := by
+  obtain ⟨q, hq, hqS, d, t, w, ε, hε, hkey⟩ :=
+    exists_skolemBallDatum_of_projectiveCompactification fC fX j hjimm hjcomm hXsmooth
+      hXproper hXgi hZ hdim hXdim hreal S hSprime hSpt
+  obtain ⟨a, ha1, ha2, ha3⟩ := exists_rat_strongApprox_pi S hSprime q hq hqS d t w hε
+  exact hkey a ha1 ha2 ha3
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.10: the arithmetic core, on the
@@ -13295,6 +13759,20 @@ here, and an unvalidatable interface is exactly the "leaf that looks stronger th
 it is" this project treats as worse than an open sorry. The honest boundary is the
 one drawn above: everything expressible without those two objects is proven, and
 everything that needs them is one named leaf.
+
+**AMENDED LATER THE SAME DAY.** A further cut WAS then taken, one step down —
+`exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification`
+is itself now an assembly over `exists_skolemBallDatum_of_projectiveCompactification`
+and the PROVEN `exists_rat_strongApprox_pi` — and it did NOT require inventing an
+interface for `X̄^(d)` or `PG_d(X̄, Z)`. The reason it could be taken is that §3.8's
+input can be described WITHOUT naming those objects: the affine space `Γ(X̄, ℒ, α)` is
+recorded only by its rank `d` and by rational balls in `ℝ^d` and `ℚ_p^d`, all of which
+exist at the pin. The paragraph above remains correct about §3.7–3.9 themselves: those
+are still one named leaf, and cutting THEM would still mean inventing the interface it
+warns against. What changed is only that §3.8's ANALYTIC half — strong approximation —
+is now proven and consumed rather than blocked behind the free-floating rule. The
+cut-strength audit of that step (it is an equivalence, not a weakening) lives on
+`exists_skolemBallDatum_of_projectiveCompactification`'s docstring.
 
 FAITHFULNESS RE-CHECK (2026-07-27, against the paper and not a summary), since a
 leaf that will sit open a long time should be known to be TRUE: the statement is
