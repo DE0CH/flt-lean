@@ -1331,6 +1331,247 @@ theorem zero_liesIn_of_ratPoint {A : Scheme.{0}} {f : A ⟶ SpecQ}
   have h := ab.pre_zero g (g := 𝟙 SpecQ) (g' := g) (Category.comp_id g)
   exact congrArg Subtype.val h
 
+/-! ### Machinery for the three remaining leaves
+
+**Added 2026-07-27**, and it is what turns leaves (iii)–(v) from
+"rigidity between schemes" into ideal-sheaf bookkeeping.  The whole
+subsection rests on three mathlib facts that were not being used:
+
+* `Scheme.IdealSheafData.map_ker : f.ker.map g = (f ≫ g).ker` — the
+  pushforward of the kernel ideal sheaf along `g` is the kernel of the
+  composite.  With `map_bot : (⊥ : IdealSheafData X).map g = g.ker` this
+  turns *every* "does this composite factor through the span" question
+  into a computation with `ker`.
+* `Scheme.Hom.ker_comp_of_isIso : [IsIso f] → (f ≫ g).ker = g.ker` —
+  precomposing with an isomorphism does not change the kernel.
+* `Scheme.IdealSheafData.subschemeMap I J f (H : J ≤ I.map f) :
+  I.subscheme ⟶ J.subscheme` with
+  `subschemeMap_subschemeι : subschemeMap … ≫ J.subschemeι = I.subschemeι ≫ f`
+  — a morphism of the ambient scheme restricts to the subschemes exactly
+  when the ideal-sheaf inequality holds.
+
+Since `spanScheme p` is by definition `(geomPtDesc p).image`, i.e.
+`(geomPtDesc p).ker.subscheme`, and `spanSchemeι p` is its `subschemeι`,
+these apply verbatim.  **No reducedness, no rigidity and no Galois
+category is needed for the inversion leaf**, which is proven outright
+below; the docstring that predicted otherwise was wrong, and is
+corrected there. -/
+
+/-- **A permutation of the index set of a constant coproduct**, as an
+automorphism of the coproduct.  Used to exhibit `d ≫ negHom ab` as
+`(iso) ≫ d`, which is what makes the inversion leaf collapse. -/
+noncomputable def sigmaPerm {J : Type} (Z : Scheme.{0}) (σ : J ≃ J) :
+    (∐ fun _ : J => Z) ⟶ (∐ fun _ : J => Z) :=
+  Limits.Sigma.desc (fun j => Limits.Sigma.ι (fun _ : J => Z) (σ j))
+
+@[simp] theorem ι_sigmaPerm {J : Type} (Z : Scheme.{0}) (σ : J ≃ J) (j : J) :
+    Limits.Sigma.ι (fun _ : J => Z) j ≫ sigmaPerm Z σ =
+      Limits.Sigma.ι (fun _ : J => Z) (σ j) :=
+  Limits.colimit.ι_desc _ _
+
+theorem sigmaPerm_sigmaPerm {J : Type} (Z : Scheme.{0}) (σ : J ≃ J) :
+    sigmaPerm Z σ ≫ sigmaPerm Z σ.symm = 𝟙 _ := by
+  refine Limits.Sigma.hom_ext _ _ (fun j => ?_)
+  rw [← Category.assoc, ι_sigmaPerm, ι_sigmaPerm, Category.comp_id, Equiv.symm_apply_apply]
+
+instance {J : Type} (Z : Scheme.{0}) (σ : J ≃ J) : IsIso (sigmaPerm Z σ) :=
+  ⟨sigmaPerm Z σ.symm, sigmaPerm_sigmaPerm Z σ, by
+    have h := sigmaPerm_sigmaPerm Z σ.symm
+    rwa [Equiv.symm_symm] at h⟩
+
+/-- **`j ↦ -j` on `Fin N`**, written with `%` so that it is total; it is
+the index permutation matching inversion on `⟨y⟩ = {0•y, …, (N-1)•y}`. -/
+def negIdx {N : ℕ} (hN : N ≠ 0) (j : Fin N) : Fin N :=
+  ⟨(N - j.1) % N, Nat.mod_lt _ (Nat.pos_of_ne_zero hN)⟩
+
+theorem negIdx_negIdx {N : ℕ} (hN : N ≠ 0) (j : Fin N) : negIdx hN (negIdx hN j) = j := by
+  have hj := j.isLt
+  refine Fin.ext ?_
+  show (N - (N - j.1) % N) % N = j.1
+  rcases Nat.eq_zero_or_pos j.1 with h | h
+  · rw [h, Nat.sub_zero, Nat.mod_self, Nat.sub_zero, Nat.mod_self]
+  · rw [Nat.mod_eq_of_lt (by omega : N - j.1 < N), Nat.sub_sub_self (le_of_lt hj),
+      Nat.mod_eq_of_lt hj]
+
+/-- `negIdx` is an involution, hence a permutation of `Fin N`. -/
+def negIdxEquiv {N : ℕ} (hN : N ≠ 0) : Fin N ≃ Fin N :=
+  Function.Involutive.toPerm _ (negIdx_negIdx hN)
+
+@[simp] theorem negIdxEquiv_apply {N : ℕ} (hN : N ≠ 0) (j : Fin N) :
+    negIdxEquiv hN j = negIdx hN j := rfl
+
+/-- **`negIdx` computes inversion on the multiples of an element of order
+`N`.**  This is where `hN : N ≠ 0` is consumed on the inversion route. -/
+theorem negIdx_nsmul {G : Type*} [AddCommGroup G] {N : ℕ} (hN : N ≠ 0) {y : G}
+    (hy : addOrderOf y = N) (j : Fin N) :
+    ((negIdx hN j : Fin N) : ℕ) • y = -((j : ℕ) • y) := by
+  have h0 : (N : ℕ) • y = 0 := by rw [← hy]; exact addOrderOf_nsmul_eq_zero y
+  have hmod := mod_addOrderOf_nsmul y (N - j.1)
+  rw [hy] at hmod
+  show ((N - j.1) % N) • y = -((j : ℕ) • y)
+  rw [hmod]
+  refine eq_neg_of_add_eq_zero_left ?_
+  rw [← add_nsmul, Nat.sub_add_cancel (le_of_lt j.isLt), h0]
+
+/-- **`y` itself is the `(1 % N)`-th multiple of `y`** — the statement is
+written with `%` so that it also covers `N = 1`, where `y = 0`. -/
+theorem one_mod_nsmul {G : Type*} [AddCommGroup G] {N : ℕ} {y : G}
+    (hy : addOrderOf y = N) : (1 % N) • y = y := by
+  have h := mod_addOrderOf_nsmul y 1
+  rw [hy, one_nsmul] at h
+  exact h
+
+/-- **Every integer multiple of an element of order `N` is one of its `N`
+natural multiples.**  This is what makes `AddSubgroup.zmultiples y` —
+which is defined with `ℤ`-multiples — the image of the family
+`zmulPts`, indexed by `Fin N`. -/
+theorem exists_fin_zsmul {G : Type*} [AddCommGroup G] {N : ℕ} (hN : N ≠ 0) {y : G}
+    (hy : addOrderOf y = N) (k : ℤ) :
+    ∃ j : Fin N, (k • y : G) = ((j : ℕ) • y) := by
+  have hNpos : (0 : ℤ) < (N : ℤ) := by exact_mod_cast Nat.pos_of_ne_zero hN
+  have h0 : 0 ≤ k % (N : ℤ) := Int.emod_nonneg k (by omega)
+  have h1 : k % (N : ℤ) < (N : ℤ) := Int.emod_lt_of_pos k hNpos
+  have hlt : (k % (N : ℤ)).toNat < N := by omega
+  have hmod := mod_addOrderOf_zsmul y k
+  rw [hy] at hmod
+  refine ⟨⟨(k % (N : ℤ)).toNat, hlt⟩, ?_⟩
+  calc (k • y : G) = (k % (N : ℤ)) • y := hmod.symm
+    _ = (((k % (N : ℤ)).toNat : ℤ)) • y := by rw [Int.toNat_of_nonneg h0]
+    _ = ((k % (N : ℤ)).toNat) • y := natCast_zsmul _ _
+
+/-- **Inversion permutes the family `zmulPts`** (PROVEN): `-(j • y)` is
+`(N - j) • y`, so composing the `j`-th member with `negHom ab` gives the
+`negIdx j`-th member. -/
+theorem zmulPts_comp_negHom {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N) (j : Fin N) :
+    zmulPts ab N y j ≫ negHom ab = zmulPts ab N y (negIdx hN j) := by
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  show (((j : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).1 ≫ negHom ab
+      = ((((negIdx hN j : Fin N) : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).1
+  rw [← neg_eq_negHom ab ((j : ℕ) • y), negIdx_nsmul hN hy j]
+  rfl
+
+/-- **`d ≫ negHom ab` is `d` precomposed with an automorphism of the
+coproduct** (PROVEN), where `d = geomPtDesc (zmulPts ab N y)`.  This is
+the whole content of the inversion leaf: it makes
+`(d ≫ negHom ab).ker = d.ker` immediate. -/
+theorem geomPtDesc_comp_negHom {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N) :
+    geomPtDesc (zmulPts ab N y) ≫ negHom ab
+      = sigmaPerm (Spec (CommRingCat.of (AlgebraicClosure ℚ))) (negIdxEquiv hN)
+          ≫ geomPtDesc (zmulPts ab N y) := by
+  have hd : ∀ k : Fin N,
+      Limits.Sigma.ι (fun _ : Fin N => Spec (CommRingCat.of (AlgebraicClosure ℚ))) k ≫
+        geomPtDesc (zmulPts ab N y) = zmulPts ab N y k := fun _ => Limits.colimit.ι_desc _ _
+  refine Limits.Sigma.hom_ext _ _ (fun j => ?_)
+  simp only [← Category.assoc, hd, ι_sigmaPerm, negIdxEquiv_apply]
+  exact zmulPts_comp_negHom ab N hN y hy j
+
+/-- **`D ×_ℚ D ⟶ C ×_ℚ C` induced by a factorisation `q : D ⟶ C` of
+`d : D ⟶ A` through `ι : C ⟶ A`.**  Written for a general `q` rather
+than for `d.toImage` specifically, because `spanScheme p` is a `def`
+rather than an `abbrev` and the two spellings of the scheme-theoretic
+image do not rewrite into each other. -/
+noncomputable def sqCover {A C D : Scheme.{0}} {f : A ⟶ SpecQ} {ι : C ⟶ A} {d : D ⟶ A}
+    (q : D ⟶ C) (hq : q ≫ ι = d) :
+    Limits.pullback (d ≫ f) (d ≫ f) ⟶ Limits.pullback (ι ≫ f) (ι ≫ f) :=
+  Limits.pullback.map (d ≫ f) (d ≫ f) (ι ≫ f) (ι ≫ f) q q (𝟙 SpecQ)
+    (by rw [Category.comp_id, ← Category.assoc, hq])
+    (by rw [Category.comp_id, ← Category.assoc, hq])
+
+@[simp] theorem sqCover_fst {A C D : Scheme.{0}} {f : A ⟶ SpecQ} {ι : C ⟶ A} {d : D ⟶ A}
+    (q : D ⟶ C) (hq : q ≫ ι = d) :
+    sqCover (f := f) q hq ≫ Limits.pullback.fst (ι ≫ f) (ι ≫ f)
+      = Limits.pullback.fst (d ≫ f) (d ≫ f) ≫ q :=
+  Limits.pullback.lift_fst _ _ _
+
+@[simp] theorem sqCover_snd {A C D : Scheme.{0}} {f : A ⟶ SpecQ} {ι : C ⟶ A} {d : D ⟶ A}
+    (q : D ⟶ C) (hq : q ≫ ι = d) :
+    sqCover (f := f) q hq ≫ Limits.pullback.snd (ι ≫ f) (ι ≫ f)
+      = Limits.pullback.snd (d ≫ f) (d ≫ f) ≫ q :=
+  Limits.pullback.lift_snd _ _ _
+
+theorem sqCover_sqMap {A C D : Scheme.{0}} {f : A ⟶ SpecQ} {ι : C ⟶ A} {d : D ⟶ A}
+    (q : D ⟶ C) (hq : q ≫ ι = d) :
+    sqCover (f := f) q hq ≫ sqMap ι = sqMap d := by
+  refine Limits.pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sqMap_fst, ← Category.assoc, sqCover_fst, Category.assoc, hq, sqMap_fst]
+  · rw [Category.assoc, sqMap_snd, ← Category.assoc, sqCover_snd, Category.assoc, hq, sqMap_snd]
+
+/-- **The square of the span's tautological cover is schematically
+dominant** (sorry leaf (iii-a), split out 2026-07-27).
+
+`Σ = ∐_{Fin N} Spec ℚ̄ ⟶ C` is schematically dominant by construction —
+`C` *is* the scheme-theoretic image — and `⊥` is its kernel
+(`Hom.toImage_app_injective` is mathlib's form of this).  What is asked
+here is that the fibre square of that map over `Spec ℚ` is again
+schematically dominant.
+
+TRUE, and it is commutative algebra, not geometry: over a field every
+module is flat, so an injection `R ↪ S` of `ℚ`-algebras stays injective
+after `- ⊗_ℚ -` with another injection, i.e. `R ⊗_ℚ R' ↪ S ⊗_ℚ S'`.
+What has to be supplied at this pin is the passage from that ring
+statement to `(sqCover q hq).ker = ⊥` for the *scheme* fibre product,
+i.e. that the kernel ideal sheaf of a fibre product of morphisms over an
+affine base is computed by the tensor product on affine charts.
+
+CHECK THAT WOULD REFUTE THIS OBSTRUCTION: grep
+`.lake/packages/mathlib` for a lemma bounding `Hom.ker` of
+`Limits.pullback.map`, or for `ker` of a base change — e.g. names
+containing `ker` together with `pullback`/`baseChange`. Two nearby
+candidates that do NOT suffice on their own are
+`Scheme.IdealSheafData.ker_fst_of_isClosedImmersion` (the wrong shape:
+one leg a closed immersion) and `comap_bot` (the wrong direction).
+
+Note this leaf mentions neither `y`, nor `N`, nor the group law: it is a
+statement about an arbitrary finite family of geometric points. -/
+theorem ker_sqCover_spanScheme {A : Scheme.{0}} {f : A ⟶ SpecQ} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (q : geomPtSigma J ⟶ spanScheme p) (hq : q ≫ spanSchemeι p = geomPtDesc p) :
+    (sqCover (f := f) q hq).ker = ⊥ :=
+  sorry
+
+/-- **The group law carries the square of the geometric-point family into
+the span** (sorry leaf (iii-b), split out 2026-07-27 — this is the half
+of leaf (iii) that carries the arithmetic).
+
+`Σ ×_ℚ Σ = ∐_{j,k} Spec (ℚ̄ ⊗_ℚ ℚ̄)`, and the composite into `A` is
+`ab.add` of the two points `p j`, `p k` pulled back along the two
+*different* projections.  Every point of `Spec (ℚ̄ ⊗_ℚ ℚ̄)` has residue
+field `ℚ̄` (the ring is integral over each factor and `ℚ̄` is
+algebraically closed), and the corresponding `ℚ̄`-point of `A` is
+`p j + σ (p k)` for the `σ ∈ Γ_ℚ` that the point encodes.
+
+**This is exactly, and only, where `hstable` is consumed on the addition
+route**: `σ (p k) = σ • (k • y) ∈ ⟨y⟩` by `hstable`, so the sum lies in
+`⟨y⟩` and hence in `C`.  Note `hstable` is *not* needed anywhere else in
+leaf (iii): the reduction of leaf (iii) to this statement
+(`ker_sqCover_spanScheme` plus `Scheme.IdealSheafData.map_ker`) is
+formal.
+
+CHECK THAT WOULD REFUTE THE "Galois is unavoidable here" READING: exhibit
+a factorisation of `Spec (ℚ̄ ⊗_ℚ ℚ̄) ⟶ Spec ℚ̄ ×_ℚ Spec ℚ̄` through a
+`Γ_ℚ`-free description of the points — none is expected, since dropping
+`hstable` makes the statement FALSE (take `y` a point whose Galois orbit
+leaves `⟨y⟩`; then `C` is bigger than `⟨y⟩` and the sum of two of its
+geometric points need not lie in it). -/
+theorem exists_addHom_factor_geomSq {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
+    ∃ κ : Limits.pullback (geomPtDesc (zmulPts ab N y) ≫ f)
+            (geomPtDesc (zmulPts ab N y) ≫ f) ⟶ spanScheme (zmulPts ab N y),
+      κ ≫ spanSchemeι (zmulPts ab N y)
+        = sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab :=
+  sorry
+
 /-- **The group law of `A` restricts to the span: the factorisation at
 `C ×_ℚ C`** (sorry leaf (iii) of the descent decomposition).
 
@@ -1347,16 +1588,34 @@ the field into a composite with the single morphism `addHom ab`, and
 asked for here.  So the successor closing this leaf never has to think
 about a general `T'`.
 
-THE ARGUMENT.  `C ×_ℚ C` is reduced — over `ℚ`, `C` is finite étale, and a
-product of étale `ℚ`-schemes is étale hence reduced — and `A` is separated,
-being proper over `ℚ`.  The composite `C ×_ℚ C ⟶ A ×_ℚ A ⟶ A` agrees on
-geometric points with a morphism landing in `C`, because `⟨y⟩` is a
-subgroup of `A(ℚ̄)`.  So by
-`AlgebraicGeometry.ext_of_isDominant_of_isSeparated` it factors through the
-closed immersion `ι`.
+**PROVEN 2026-07-27 over the two leaves `ker_sqCover_spanScheme` and
+`exists_addHom_factor_geomSq` above.**  The route recorded below —
+reducedness of `C ×_ℚ C`, then
+`AlgebraicGeometry.ext_of_isDominant_of_isSeparated` — is NOT the one
+taken, and is not needed:
 
-`hstable` enters exactly here: it is what makes `⟨y⟩` a `Γ_ℚ`-submodule,
-hence `C` defined over `ℚ` at all. -/
+> `C ×_ℚ C` is reduced — over `ℚ`, `C` is finite étale, and a product of
+> étale `ℚ`-schemes is étale hence reduced — and `A` is separated, being
+> proper over `ℚ`.  The composite `C ×_ℚ C ⟶ A ×_ℚ A ⟶ A` agrees on
+> geometric points with a morphism landing in `C`.
+
+What replaces it is ideal-sheaf bookkeeping.  Write `d` for
+`geomPtDesc (zmulPts ab N y)` and `q` for its factorisation through the
+span.  Then `sqCover q ≫ sqMap ι = sqMap d` (`sqCover_sqMap`), and
+
+* `(sqCover q).ker = ⊥` (leaf iii-a) gives, via
+  `Scheme.IdealSheafData.map_ker` and `map_bot`,
+  `(sqCover q ≫ g).ker = g.ker` for every `g` out of `C ×_ℚ C` — this is
+  the *only* place the "dominant plus reduced" input is used, and it is
+  now isolated in a statement with no group law in it;
+* leaf (iii-b) factors `sqMap d ≫ addHom ab` through `ι`, so
+  `ι.ker ≤ (sqMap d ≫ addHom ab).ker` by `Scheme.Hom.le_ker_comp`.
+
+Combining the two gives `ι.ker ≤ (sqMap ι ≫ addHom ab).ker`, and
+`IsClosedImmersion.lift` produces `μ`.
+
+`hstable` enters exactly once, inside leaf (iii-b): it is what makes
+`⟨y⟩` a `Γ_ℚ`-submodule, hence `C` defined over `ℚ` at all. -/
 theorem exists_addHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -1367,27 +1626,161 @@ theorem exists_addHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     ∃ μ : Limits.pullback (spanSchemeι (zmulPts ab N y) ≫ f)
             (spanSchemeι (zmulPts ab N y) ≫ f) ⟶ spanScheme (zmulPts ab N y),
       μ ≫ spanSchemeι (zmulPts ab N y)
-        = sqMap (spanSchemeι (zmulPts ab N y)) ≫ addHom ab :=
-  sorry
+        = sqMap (spanSchemeι (zmulPts ab N y)) ≫ addHom ab := by
+  obtain ⟨κ, hκ⟩ := exists_addHom_factor_geomSq ab N hN y hy hstable
+  obtain ⟨q, hq⟩ : ∃ q : geomPtSigma (Fin N) ⟶ spanScheme (zmulPts ab N y),
+      q ≫ spanSchemeι (zmulPts ab N y) = geomPtDesc (zmulPts ab N y) :=
+    ⟨(geomPtDesc (zmulPts ab N y)).toImage, (geomPtDesc (zmulPts ab N y)).toImage_imageι⟩
+  have hcov := ker_sqCover_spanScheme (f := f) (zmulPts ab N y) q hq
+  have hstep : (sqCover (f := f) q hq ≫
+        (sqMap (spanSchemeι (zmulPts ab N y)) ≫ addHom ab)).ker
+      = (sqMap (spanSchemeι (zmulPts ab N y)) ≫ addHom ab).ker := by
+    rw [← Scheme.IdealSheafData.map_ker, hcov, Scheme.IdealSheafData.map_bot]
+  have hle : (spanSchemeι (zmulPts ab N y)).ker
+      ≤ (sqMap (spanSchemeι (zmulPts ab N y)) ≫ addHom ab).ker := by
+    rw [← hstep, ← Category.assoc, sqCover_sqMap q hq, ← hκ]
+    exact Scheme.Hom.le_ker_comp _ _
+  exact ⟨IsClosedImmersion.lift _ _ hle, IsClosedImmersion.lift_fac _ _ _⟩
 
 /-- **Inversion restricts to the span: the factorisation at `C`** (sorry
 leaf (iv) of the descent decomposition).
 
-Same mechanism as `exists_addHom_factor_zmulPts`, one step shorter: the
-rigidity step happens at `C` itself rather than at `C ×_ℚ C`, because
-`negHom ab ∘ ι` agrees on geometric points with a morphism into `C`
-(`⟨y⟩` is closed under negation).  `neg_liesIn_of_factor` derives the
-`neg_liesIn` field at every base from this one factorisation. -/
+**PROVEN 2026-07-27, and NOT by the route this docstring used to
+predict.**  It used to say:
+
+> Same mechanism as `exists_addHom_factor_zmulPts`, one step shorter: the
+> rigidity step happens at `C` itself rather than at `C ×_ℚ C`, because
+> `negHom ab ∘ ι` agrees on geometric points with a morphism into `C`.
+
+There is **no rigidity step at all**, and no reducedness, no separatedness
+and no Galois input: the proof is three lines of ideal-sheaf algebra.
+Inversion *permutes the defining family* rather than merely preserving its
+span — `-(j • y) = (N - j) • y` — so
+
+    geomPtDesc p ≫ negHom ab  =  sigmaPerm (negIdxEquiv hN) ≫ geomPtDesc p
+
+(`geomPtDesc_comp_negHom`) with `sigmaPerm …` an **isomorphism** of
+`∐_{Fin N} Spec ℚ̄`.  Hence, by `Scheme.IdealSheafData.map_ker` and
+`Scheme.Hom.ker_comp_of_isIso`,
+
+    (geomPtDesc p).ker.map (negHom ab) = (geomPtDesc p ≫ negHom ab).ker
+                                       = (geomPtDesc p).ker,
+
+and `Scheme.IdealSheafData.subschemeMap` turns that equality of ideal
+sheaves into the required `ν`.  `neg_liesIn_of_factor` then derives the
+`neg_liesIn` field at every base from this one factorisation.
+
+**`hstable` is NOT used** — hence the underscore.  That is not an
+oversight: closure of `⟨y⟩` under negation is a property of a cyclic
+group, needing no Galois stability, and the ideal-sheaf route never leaves
+the family.  `hN` and `hy` *are* consumed, inside `negIdx_nsmul`, which is
+what identifies `-(j • y)` with a member of the family.
+
+Note the asymmetry with leaf (iii), which is real rather than an artefact
+of how hard anyone tried: addition is a map out of `C ×_ℚ C`, whose
+tautological cover `∐_{j,k} Spec (ℚ̄ ⊗_ℚ ℚ̄)` genuinely leaves the family,
+and it is exactly there that `hstable` becomes indispensable. -/
 theorem exists_negHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (_hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
+    ∃ ν : spanScheme (zmulPts ab N y) ⟶ spanScheme (zmulPts ab N y),
+      ν ≫ spanSchemeι (zmulPts ab N y)
+        = spanSchemeι (zmulPts ab N y) ≫ negHom ab := by
+  have key : (geomPtDesc (zmulPts ab N y)).ker.map (negHom ab)
+      = (geomPtDesc (zmulPts ab N y)).ker := by
+    rw [Scheme.IdealSheafData.map_ker, geomPtDesc_comp_negHom ab N hN y hy]
+    exact Scheme.Hom.ker_comp_of_isIso _ _
+  exact ⟨Scheme.IdealSheafData.subschemeMap _ _ (negHom ab) key.ge,
+    Scheme.IdealSheafData.subschemeMap_subschemeι _ _ _ _⟩
+
+/-- **A geometric base point over an arbitrary algebraically closed base,
+inducing an injection on relative points** (sorry leaf (v-a), split out
+2026-07-27).
+
+Two things at once, because they are proven by the same object.  `K` is
+algebraically closed and `t : Spec K ⟶ Spec ℚ` makes it a `ℚ`-algebra, so
+`ℚ̄` embeds in `K` (`IsAlgClosed.lift`, `ℚ̄/ℚ` being algebraic); `e` is
+`Spec` of such an embedding.  And precomposition with `e` is injective on
+`Hom(Spec ℚ̄, A)` because `e` is `Spec` of an *injective* map of fields:
+both `Spec ℚ̄` and `Spec K` are one-point schemes with the same image point
+in `A`, so both morphisms factor through one affine open `U ∋ that point`,
+where they are ring maps `Γ(U) → ℚ̄` that become equal after composing with
+the injection `ℚ̄ ↪ K`.
+
+TWO TRAPS RECORDED FOR THE SUCCESSOR, both already paid for elsewhere in
+this development:
+
+* **State the embedding lemma over a VARIABLE base field and instantiate
+  at `ℚ`.**  At the literal `ℚ`, `Algebra ℚ (AlgebraicClosure ℚ)` resolves
+  to the `Rat`-algebra diamond rather than `AlgebraicClosure.instAlgebra`,
+  and `Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)` then fails to
+  synthesize *with every import present*.  `isIntegralHom_specAlgClos` in
+  this very file is stated over a variable field for exactly this reason.
+* The `ℚ`-algebra structure on `K` must be read off `t` (via `Spec`'s full
+  faithfulness, or `ΓSpecIso` and `t.appTop`); `K` carries no `CharZero`
+  instance a priori, and it is `t` that supplies it.
+
+CHECK THAT WOULD REFUTE THE INJECTIVITY HALF being genuine work: find a
+mathlib lemma giving `Epi (Spec.map φ)` for `φ` an injective ring map, or
+`Function.Injective ((· ≫ ·) (Spec.map φ))`; a grep for `Epi` together
+with `Spec.map` found none at this pin. -/
+theorem exists_injective_pre_geomBase {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ SpecQ) :
+    ∃ (e : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+      (he : e ≫ (specAlgClos ℚ ≫ 𝟙 SpecQ) = t),
+      Function.Injective (fun x : GeomFibrePt f (𝟙 SpecQ) => RelPoint.pre e he x) :=
+  sorry
+
+/-- **Every `K`-point of the span is an integer multiple of the geometric
+generator** (sorry leaf (v-b), split out 2026-07-27 — THE CRUX of leaf
+(v), and the only half of it that carries arithmetic).
+
+The reverse inclusion is proven in `geom_cyclic_zmulPts` below from
+`exists_fin_zsmul` and `geomPt_liesIn_spanScheme`; this is the hard
+direction, `C(K) ⊆ ⟨y⟩`.
+
+WHY IT IS TRUE.  `C` is the scheme-theoretic image of `∐_{Fin N} Spec ℚ̄`,
+so `Γ(C) =: R` injects into `∏_{Fin N} ℚ̄`; `R` is therefore a *reduced*
+finite-dimensional `ℚ`-algebra, i.e. a finite product of number fields
+`∏ κ_i`, and its maximal ideals are exactly the kernels of the `N`
+coordinate maps (a proper sub-family of the factors would have nonzero
+intersection of kernels, contradicting injectivity).  A `K`-point of `C`
+is a `ℚ`-algebra map `R → K`; its kernel is one of those maximal ideals,
+so the point is `σ ∘ (j • y)` for some embedding `σ`.  `hstable` says
+exactly that such a translate is again in `⟨y⟩`.
+
+CORRECTION TO THE PREVIOUS AUDIT, which is why this is a leaf and not a
+blocked node: the parent docstring recorded "the computation of
+`Hom_ℚ(Spec K, C)` for `C` finite over `ℚ`" as MISSING and reached for
+`CommAlgCat.FiniteEtale.equivOfIsSepClosed`.  Neither is needed —
+`AlgebraicGeometry.pointEquivClosedPoint` together with finiteness of `C`
+over `ℚ` (leaf (i), `isFinite_spanSchemeι`) describes the points directly,
+and no Galois *category* appears anywhere above; only the Galois *action*
+on `ℚ̄`, which `hstable` already speaks about.
+
+CHECK THAT WOULD REFUTE THE REMAINING OBSTRUCTION: exhibit the
+decomposition `R ≅ ∏ κ_i` in the pin — grep for
+`Algebra.equivProdOfIsArtinian`-style splittings of reduced artinian
+algebras, or for `IsArtinianRing.equivPi`; if such a splitting is
+available for a reduced finite `ℚ`-algebra, the rest of this leaf is
+finite bookkeeping. -/
+theorem mem_zmultiples_of_liesIn_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           addOrderOf y = N)
     (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           ∀ σ : Field.absoluteGaloisGroup ℚ,
-            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
-    ∃ ν : spanScheme (zmulPts ab N y) ⟶ spanScheme (zmulPts ab N y),
-      ν ≫ spanSchemeι (zmulPts ab N y)
-        = spanSchemeι (zmulPts ab N y) ≫ negHom ab :=
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ SpecQ)
+    (e : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+    (he : e ≫ (specAlgClos ℚ ≫ 𝟙 SpecQ) = t)
+    (x : RelPoint f t) (hx : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x) :
+    letI := ab.addCommGroup t
+    x ∈ AddSubgroup.zmultiples (RelPoint.pre e he y) :=
   sorry
 
 /-- **The geometric fibres of the span are cyclic of order exactly `N`**
@@ -1410,14 +1803,35 @@ under any embedding `ℚ̄ ↪ K` — a choice, but the resulting SUBGROUP is
 independent of it because `⟨y⟩` is `Γ_ℚ`-stable, which is exactly what
 `hstable` supplies.
 
-WHAT IS MISSING AT THIS PIN: the identification of the base change of a
-scheme-theoretic image with the scheme-theoretic image of the base change
-(true here because `Spec ℚ̄ ⟶ Spec ℚ` is flat), plus the computation of
-`Hom_ℚ(Spec K, C)` for `C` finite over `ℚ`.  This is the one leaf of the
-five that genuinely needs the finite-étale/Galois-set correspondence, and
-it needs only the SPLIT direction of it, over an algebraically closed
-base — which `CommAlgCat.FiniteEtale.equivOfIsSepClosed` already provides
-in the pin. -/
+**PROVEN 2026-07-27 over the two leaves `exists_injective_pre_geomBase`
+and `mem_zmultiples_of_liesIn_span` above.**  The generator is produced
+explicitly: `z := RelPoint.pre e y` for `e : Spec K ⟶ Spec ℚ̄` any
+embedding over `ℚ`.  Of the three conjuncts,
+
+* `RelPoint.LiesIn ι z` is `geomPt_liesIn_spanScheme` at the index
+  `1 % N` — written with `%` so that it also covers `N = 1`, where
+  `y = 0`;
+* `addOrderOf z = N` is `addOrderOf_injective` applied to the additive
+  map `RelPoint.pre e`, whose additivity is `pre_zero`/`pre_add` and whose
+  injectivity is leaf (v-a).  **This is the second place `hN` is
+  load-bearing**: without `N ≠ 0` the index `1 % N` is not available and
+  the order statement is the false one refuted at the parent;
+* the `←` direction of the membership equivalence is `exists_fin_zsmul`
+  (every `ℤ`-multiple of an element of order `N` is one of its `N`
+  natural multiples) followed by `geomPt_liesIn_spanScheme`.
+
+Only the `→` direction — `C(K) ⊆ ⟨z⟩` — is left, as leaf (v-b).
+
+CORRECTION TO THE PREVIOUS AUDIT.  This docstring used to record as
+MISSING "the identification of the base change of a scheme-theoretic image
+with the scheme-theoretic image of the base change, plus the computation
+of `Hom_ℚ(Spec K, C)`", and to call this "the one leaf of the five that
+genuinely needs the finite-étale/Galois-set correspondence", reaching for
+`CommAlgCat.FiniteEtale.equivOfIsSepClosed`.  **Both halves of that are
+wrong.**  No base change of a scheme-theoretic image occurs anywhere in
+the proof above, and no Galois category is used: `pointEquivClosedPoint`
+plus finiteness of `C` over `ℚ` (leaf (i)) describes `C(K)` directly.  See
+`mem_zmultiples_of_liesIn_span` for what is actually left. -/
 theorem geom_cyclic_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -1430,8 +1844,35 @@ theorem geom_cyclic_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     ∃ z : RelPoint f t, RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) z ∧
       addOrderOf z = N ∧
       ∀ x : RelPoint f t, RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x ↔
-        x ∈ AddSubgroup.zmultiples z :=
-  sorry
+        x ∈ AddSubgroup.zmultiples z := by
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  letI := ab.addCommGroup t
+  obtain ⟨e, he, hinj⟩ := exists_injective_pre_geomBase (f := f) K t
+  let Φ : GeomFibrePt f (𝟙 SpecQ) →+ RelPoint f t :=
+    { toFun := fun x => RelPoint.pre e he x
+      map_zero' := ab.pre_zero e he
+      map_add' := fun a b => ab.pre_add e he a b }
+  have hΦinj : Function.Injective Φ := fun a b h => hinj h
+  have hliesIn : ∀ j : Fin N, RelPoint.LiesIn (spanSchemeι (zmulPts ab N y))
+      (Φ (((j : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))) := by
+    intro j
+    obtain ⟨w, hw⟩ := geomPt_liesIn_spanScheme (zmulPts ab N y) j
+    exact ⟨e ≫ w, by rw [Category.assoc, hw]; rfl⟩
+  refine ⟨Φ y, ?_, ?_, ?_⟩
+  · have h1 : ((⟨1 % N, Nat.mod_lt _ (Nat.pos_of_ne_zero hN)⟩ : Fin N) : ℕ) • y = y :=
+      one_mod_nsmul hy
+    have h2 := hliesIn ⟨1 % N, Nat.mod_lt _ (Nat.pos_of_ne_zero hN)⟩
+    rwa [h1] at h2
+  · rw [← hy]
+    exact addOrderOf_injective Φ hΦinj y
+  · intro x
+    refine ⟨fun hx => mem_zmultiples_of_liesIn_span ab N hN y hy hstable K t e he x hx, ?_⟩
+    rintro ⟨k, rfl⟩
+    obtain ⟨j, hj⟩ := exists_fin_zsmul hN hy k
+    have hz : (k • Φ y : RelPoint f t) = Φ ((k : ℤ) • y) := (map_zsmul Φ k y).symm
+    show RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) (k • Φ y)
+    rw [hz, hj]
+    exact hliesIn j
 
 /-- **Galois descent: a Galois-stable cyclic subgroup of the geometric
 points of an abelian scheme over `ℚ` is cut out by a closed cyclic
@@ -1572,12 +2013,38 @@ are discharged here and five became named leaves:
 | `neg_liesIn` | PROVEN from leaf (iv), via `neg_liesIn_of_factor` |
 | `geom_cyclic` | leaf (v) `geom_cyclic_zmulPts` — the crux |
 
-The five are genuinely independent classical facts, not a chain of
-`∃`-restatements: (i) is Zariski's lemma plus "an artinian scheme is
-affine"; (ii) is fpqc descent of a point along `ℚ̄/ℚ`; (iii) and (iv) are
-the rigidity of morphisms out of a reduced scheme into a separated one;
-(v) is the split finite-étale computation of `C(K)`.  Each carries its own
-route in its docstring.
+**STATUS 2026-07-27.**  Leaf (iv) is now PROVEN outright, and leaves (iii)
+and (v) are proven over four smaller leaves.  The state of the five is:
+
+| leaf | status |
+|---|---|
+| (i) `isFinite_spanSchemeι` | open |
+| (ii) `ratPoint_liesIn_spanScheme` | open |
+| (iii) `exists_addHom_factor_zmulPts` | PROVEN over (iii-a), (iii-b) |
+| (iv) `exists_negHom_factor_zmulPts` | **PROVEN** — no leaf |
+| (v) `geom_cyclic_zmulPts` | PROVEN over (v-a), (v-b) |
+| (iii-a) `ker_sqCover_spanScheme` | open — a fibre square of schematically dominant maps over `ℚ` |
+| (iii-b) `exists_addHom_factor_geomSq` | open — the addition law on `∐ Spec (ℚ̄ ⊗_ℚ ℚ̄)`; the only consumer of `hstable` |
+| (v-a) `exists_injective_pre_geomBase` | open — `ℚ̄ ↪ K` and injectivity of precomposition |
+| (v-b) `mem_zmultiples_of_liesIn_span` | open — `C(K) ⊆ ⟨y⟩`; the crux |
+
+The route recorded here before that date said "(iii) and (iv) are the
+rigidity of morphisms out of a reduced scheme into a separated one; (v) is
+the split finite-étale computation of `C(K)`".  **All three clauses were
+wrong**, and each cost less than it looked:
+
+* (iv) needs *no* rigidity, no reducedness and no `hstable` — inversion
+  permutes the defining family, so the ideal sheaf is literally
+  preserved;
+* (iii) needs rigidity only through leaf (iii-a), a statement with no
+  group law in it, and its arithmetic is concentrated in (iii-b);
+* (v) needs no finite-étale/Galois-set correspondence at all.
+
+(i) is still Zariski's lemma plus "an artinian scheme is affine" — though
+see its own docstring, where the "genuine gap" it names is itself
+retracted — and (ii) is still fpqc descent of a point along `ℚ̄/ℚ`.  Each
+leaf carries its own route, and its own refuting check, in its
+docstring.
 
 **NONE OF THE FIVE QUANTIFIES OVER A TEST SCHEME**, and that is the single
 most useful thing the decomposition does.  Three of the eight fields
