@@ -23109,9 +23109,220 @@ theorem card_y0Le_thirtySeven {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
     (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 2 :=
   sorry
 
-/-- **`#Y_0(p)(ℚ) ≤ 1` at `p = 43, 67, 163`** (sorry leaf, introduced
-2026-07-27; the affine half at the three class-number-one levels, and
-uniform across them).
+/-! #### Cutting `#Y_0(p)(ℚ) ≤ 1` into MAZUR and CLASS NUMBER ONE
+
+(2026-07-27, flt-lean-48.)  `card_y0Le_classNumberOne` was introduced the
+same day as an atom whose own docstring prescribed the cut:
+"`Y_0(p)(ℚ) → (the point is CM by disc −p)` as one leaf and
+`h(−p) = 1 → at most one such point` as another".  That is what the three
+declarations below do, and the atom is now PROVEN over them.
+
+The vocabulary the cut needed is `IsCMByRamifiedMaximalOrder`, an
+endomorphism of the datum's functor of points with the minimal polynomial
+of `(1 + √−p)/2` whose `√−p` cuts out the level structure.  Everything
+else — the passage from the COARSE space to `ℚ̄`-data, the field of
+moduli, and the descent of the resulting equality of `ℚ̄`-points back to
+`ℚ` — is discharged here and is not part of either leaf.
+
+**The two halves have genuinely different characters**, which is the point
+of the cut:
+
+* `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` is **Mazur's
+  isogeny theorem** at these three levels: a rational point forces CM.
+  Deep, and the Eisenstein-ideal descent is the only known route.
+* `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder` is **`h(−p) = 1`
+  and nothing else**: no Eisenstein ideal, no Chabauty, no modular curve —
+  two CM elliptic curves with the same maximal order are isomorphic, and
+  the isomorphism carries `ker √−p` to `ker √−p` because `±√−p` are the
+  only elements of `O_{−p}` of square `−p`.
+
+**THE MAXIMAL ORDER IS LOAD-BEARING AND THE OBVIOUS WEAKER FORM IS FALSE.**
+Stating the CM by an endomorphism `ψ` with `ψ² = [−p]` — the shape the
+prime-power siblings `classPoly500_of_endSq_neg125` and
+`classPoly676_of_endSq_neg169` use — pins only `ℤ[√−p]`, the order of
+discriminant `−4p`, and `h(−4·43) = h(−4·67) = h(−4·163) = 3`
+(PARI/GP, `qfbclassno`, 2026-07-27).  So the second leaf would be FALSE in
+that form: three isomorphism classes, not one.  `IsCMByRamifiedMaximalOrder`
+therefore carries `φ = (1 + √−p)/2` and the relation
+`φ² + (p+1)/4 = φ`, whose discriminant is `1 − (p+1) = −p`; `ψ = 2φ − 1`
+is then recovered inside the structure as the map cutting out `cyc`.  This
+is exactly the trap the doctrine records in the other direction — the
+prime-power CM argument does not transfer to prime level — seen from the
+class-number side.
+
+**THE RANK-`0`-QUOTIENT AXIS WAS RE-OPENED AND RE-REFUTED HERE, ON
+DIFFERENT GROUNDS FROM `37`** (2026-07-27, PARI/GP as untrusted searcher).
+At `37` axis 3 died on CARDINALITY (`#37b(ℚ) = 3 < 4 = #X_0(37)(ℚ)`), and
+the cusp/affine split — which lowered the target from `4` to `2` there —
+was flagged as possibly reviving it.  At `43, 67, 163` the cardinality
+objection genuinely does NOT apply, and the axis still fails:
+
+* the analytic ranks of the newform factors are, recomputed from scratch,
+  `43`: `[dim 1, ord 1], [dim 2, ord 0]`; `67`: `[1, 0], [2, 0], [2, 2]`;
+  `163`: `[1, 1], [5, 5], [7, 0]` — totals `1, 2, 6`, confirming the figure
+  the sibling docstrings record.  So a rank-`0` quotient DOES exist at each
+  level (of dimension `2, 3, 7`), unlike the situation the `HasRankZeroJacobian`
+  hypothesis needs, which is FALSE for the whole Jacobian;
+* but the bound such a quotient `A` yields is `#Y_0(p)(ℚ) ≤ #A(ℚ)`, and
+  `#A(ℚ)` is never `1` in a usable way.  At `67` the rank-`0` factor
+  contains the elliptic curve of conductor `67` with `ellrank = [0,0]` and
+  `elltors = 1`, i.e. `A(ℚ) = 0` — a map to the TRIVIAL group, which
+  separates nothing and whose injectivity IS the conclusion.  In the other
+  direction the Eisenstein quotient carries the cuspidal `ℤ/n` with
+  `n = num((p−1)/12) = 7, 11, 27`, so the bound it gives is `7, 11, 27`
+  against a truth of `1`.
+
+Net: axis 3 is refuted at these levels not by cardinality but by
+STRENGTH — the injection is not contradicted, it is simply never enough.
+The check that would refute this re-refutation: a rank-`0` quotient `A` of
+`J_0(p)` with `#A(ℚ) = 1` **together with** a proof that
+`Y_0(p)(ℚ) → A(ℚ)` is injective; the second half is the whole leaf, so a
+successor should not expect the first half to buy anything on its own. -/
+
+/-- **The `Γ₀(p)`-datum `d` has complex multiplication by the MAXIMAL order
+of discriminant `−p`, with its level structure cut out by `√−p`.**
+
+The data is a single endomorphism `φ` of the functor of points of `d.E`
+(by Yoneda, an endomorphism of the elliptic scheme: `phi_pre` is the
+naturality that makes it one, and `phi_add` that it is a homomorphism),
+subject to
+
+* `phi_sq`: `φ² + (p+1)/4 = φ`, the minimal polynomial of `(1 + √−p)/2`.
+  Its discriminant is `1 − 4·(p+1)/4 = −p`, so `ℤ[φ]` is the order of
+  discriminant `−p` — MAXIMAL for `p` a prime with `p ≡ 3 mod 4`, which
+  every level this is used at satisfies.  The polynomial has no rational
+  root, so `φ ∉ ℤ` and the curve really does have CM.
+* `liesIn_iff`: the level structure is the kernel of `ψ := 2φ − 1`, which
+  satisfies `ψ² = 4φ² − 4φ + 1 = −p`; in characteristic `0` that kernel is
+  cyclic of order `deg ψ = p`, matching `d.cyc`.
+
+**Why not `ψ² = [−p]` alone**, which is the shape the prime-power
+siblings use: that pins only `ℤ[√−p]`, of discriminant `−4p`, and
+`h(−4p) = 3` at all three levels — see the subsection note.
+
+`(p + 1) / 4` is NATURAL division, exact exactly when `p ≡ 3 mod 4`; at
+`43, 67, 163` it is `11, 17, 41`.  At other `p` the structure is not the
+intended one, which is why both consumers carry the membership
+hypothesis. -/
+structure IsCMByRamifiedMaximalOrder (p : ℕ) {T : Scheme.{0}} (d : Gamma0Datum p T) where
+  /-- the endomorphism `φ = (1 + √−p)/2` on relative points -/
+  phi : ∀ {T' : Scheme.{0}} {g : T' ⟶ T}, RelPoint d.f g → RelPoint d.f g
+  /-- `φ` is a homomorphism for the group law -/
+  phi_add : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x y : RelPoint d.f g),
+    phi (d.ab.add x y) = d.ab.add (phi x) (phi y)
+  /-- `φ` is natural, i.e. is an endomorphism of the scheme and not merely
+  of one fibre -/
+  phi_pre : ∀ {T'' T' : Scheme.{0}} (h : T'' ⟶ T') {g : T' ⟶ T} {g' : T'' ⟶ T}
+    (hg : h ≫ g = g') (x : RelPoint d.f g),
+    phi (RelPoint.pre h hg x) = RelPoint.pre h hg (phi x)
+  /-- `φ² + (p+1)/4 = φ`: the minimal polynomial of `(1 + √−p)/2`, of
+  discriminant `−p` -/
+  phi_sq : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    letI := d.ab.addCommGroup g
+    phi (phi x) + ((p + 1) / 4 : ℕ) • x = phi x
+  /-- the level structure is the kernel of `ψ = 2φ − 1 = √−p` -/
+  liesIn_iff : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    RelPoint.LiesIn d.cyc.ι x ↔
+      letI := d.ab.addCommGroup g
+      phi x + phi x = x
+
+/-- **MAZUR: a rational point of `Y_0(p)` at `p = 43, 67, 163` is a CM point
+for the maximal order of discriminant `−p`** (sorry leaf, introduced
+2026-07-27 by the cut of `card_y0Le_classNumberOne`; the DEEP half).
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
+Theorem 1 and the table following it.  At every prime `p ≥ 23` other than
+`37` the non-cuspidal rational points of `X_0(p)` are CM points, and at
+`43, 67, 163` the discriminant is `−p` itself.
+
+**NOT vacuous, and that is checkable.**  `Y_0(p)(ℚ)` is nonempty at all
+three levels — the single CM point, of `j`-invariant `−884736000`,
+`−147197952000`, `−262537412640768000` (`polclass(−p)` is LINEAR, each
+re-verified in the reconnaissance block above) — so the hypothesis `hd`
+really is satisfiable and the leaf really does assert something.
+
+**The hypothesis is stated over `ℚ̄`-data on purpose.**  `d` is a datum over
+`ℚ̄` classifying (the base change of) a `ℚ`-rational point `y`; it is NOT
+asked to be defined over `ℚ`.  That is what keeps the field-of-moduli
+descent — `Fermat.exists_gamma0Datum_descent`, another owner's leaf, and
+one whose hypothesis `p ∉ mazurIsogenyPrimes` is FALSE here — entirely out
+of this cut.  Only `Fermat.exists_gamma0Datum_geomClassify` is consumed,
+and that carries no membership hypothesis at all.
+
+**Where the mathematics is.**  This is Mazur's Eisenstein-ideal descent,
+the same input `exists_eisensteinFormalImmersion` packages at the top of
+this file for the `p ∉ mazurIsogenyPrimes` regime.  There the conclusion is
+"no rational point"; here the primes ARE in the list, so the conclusion is
+the weaker "every rational point is CM", and the classical route is the
+`j`-invariant analysis of Mazur §5 run at the three surviving signatures
+rather than to a contradiction.
+
+**AXES ALREADY REFUTED, inherited from the atom and re-checked here**:
+the rank-`0` Jacobian (ranks `1, 2, 6`), effective Chabauty–Coleman
+(`15, 19, 64` against `3`) and the rank-`0` QUOTIENT — the last one
+re-examined at these levels for the first time, with numbers, in the
+subsection note above.  `classPoly` is not a route either: at `h(−p) = 1`
+the class polynomial is linear, so "`j` is its root" is this leaf's own
+conclusion rewritten. -/
+theorem nonempty_isCMByRamifiedMaximalOrder_of_classify_eq (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
+    (y : RelPoint strY (𝟙 SpecQ))
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (_hd : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = RelPoint.pre (specAlgClos ℚ) rfl y) :
+    Nonempty (IsCMByRamifiedMaximalOrder p d) :=
+  sorry
+
+/-- **CLASS NUMBER ONE: two CM `Γ₀(p)`-data over `ℚ̄` for the maximal order
+of discriminant `−p` are isomorphic** (sorry leaf, introduced 2026-07-27 by
+the cut of `card_y0Le_classNumberOne`; the SHALLOW half, and it contains no
+Mazur, no Eisenstein ideal and no modular curve).
+
+TRUE, and the argument is three steps:
+
+1. `phi_sq` makes `ℤ[φ] ⊆ End(E_i)` the order of discriminant `−p`, which
+   for `p ∈ {43, 67, 163}` is the MAXIMAL order of `ℚ(√−p)`; an order
+   containing a maximal order equals it, so `End(E_i) = O_{−p}` exactly.
+2. `h(−43) = h(−67) = h(−163) = 1` (`qfbclassno`, re-verified 2026-07-27),
+   so there is a single `ℚ̄`-isomorphism class of elliptic curves with that
+   endomorphism ring: `E₁ ≅ E₂`.
+3. Any such isomorphism `α` conjugates `End(E₁)` to `End(E₂)`, and the only
+   elements of `O_{−p}` of square `−p` are `±√−p`; so `α` carries
+   `ψ₁ = 2φ₁ − 1` to `±ψ₂`, hence `ker ψ₁` to `ker ψ₂` — that is, `α`
+   respects the level structures, which by `liesIn_iff` are exactly those
+   kernels.  So `α` is an isomorphism of `Γ₀(p)`-data.
+
+**NOT vacuous**: the hypotheses are satisfiable — the CM curve of
+discriminant `−p` with its ramified `p`-isogeny is a `Γ₀(p)`-datum carrying
+this structure at each of the three levels, and `ellisomat (ellfromj j)`
+returns `[1, p; p, 1]` for each of the three tabulated `j`, confirming the
+`p`-isogeny is there.
+
+**FALSE if `IsCMByRamifiedMaximalOrder` is weakened to `ψ² = [−p]`**: that
+is CM by `ℤ[√−p]`, of discriminant `−4p`, and `h(−4p) = 3` at all three
+levels.  See the subsection note; this is the one place where the
+statement's exact form is load-bearing rather than convenient.
+
+**What is missing.**  CM theory proper is absent from mathlib, from this
+project and from `~/cs/FLT` (re-checked 2026-07-27): there is no statement
+that `End` of a CM elliptic curve is an order, no class-group action on CM
+points, and no class-number-one input.  A theory build is what this leaf
+asks for — and it is a bounded one, since only the imaginary quadratic
+maximal orders of class number one at these three discriminants are
+needed. -/
+theorem nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (_h₁ : IsCMByRamifiedMaximalOrder p d₁) (_h₂ : IsCMByRamifiedMaximalOrder p d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
+  sorry
+
+/-- **`#Y_0(p)(ℚ) ≤ 1` at `p = 43, 67, 163`** (PROVEN 2026-07-27 over
+`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` (Mazur) and
+`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder` (class number one),
+plus `Fermat.exists_gamma0Datum_geomClassify`; a sorry leaf from earlier the
+same day until then.  The affine half at the three class-number-one levels,
+and uniform across them).
 
 TRUE, and sharp: each of `Y_0(43)`, `Y_0(67)`, `Y_0(163)` has exactly one
 rational point, of `j`-invariant `−884736000`, `−147197952000` and
@@ -23133,26 +23344,62 @@ is the reason the bound is `1` rather than `h(−p)`.
 `37` is excluded because its two rational points are NOT CM — see
 `card_y0Le_thirtySeven`, which carries the four-level axis audit.
 
-`_hp` and `_hc` are both LOAD-BEARING in the statement.  Without `_hp` the
-leaf claims `#Y_0(N)(ℚ) ≤ 1` at every level, which is false at `N = 1`
-(where `Y_0(1)` is the `j`-line and has infinitely many rational points)
-and at `N = 37`.  Without `_hc`, `strY` is an arbitrary `ℚ`-scheme.  As
-with the sibling, `IsCoarseModuliY0` rather than `IsX0Compactification` is
-the pinning, because this leaf is about the affine curve and mentions no
-cusps.
+`hp` and `hc` are both LOAD-BEARING in the statement, and both lost their
+underscores when this became a theorem.  Without `hp` the leaf claims
+`#Y_0(N)(ℚ) ≤ 1` at every level, which is false at `N = 1` (where `Y_0(1)`
+is the `j`-line and has infinitely many rational points) and at `N = 37`.
+Without `hc`, `strY` is an arbitrary `ℚ`-scheme.  As with the sibling,
+`IsCoarseModuliY0` rather than `IsX0Compactification` is the pinning,
+because this leaf is about the affine curve and mentions no cusps.
 
-**The route a successor should take, and the check that would refute it.**
-The CM half is the hard half and it is Mazur's theorem; the class-number
-half is finite computation.  So the cut worth making next is
-`Y_0(p)(ℚ) → (the point is CM by disc −p)` as one leaf and
-`h(−p) = 1 → at most one such point` as another.  Refuted if some rational
-point of `Y_0(p)` for `p` in this list is non-CM — which is exactly what
-happens at `37`, so the check is not vacuous and the list may not be
-widened. -/
-theorem card_y0Le_classNumberOne (p : ℕ) (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
-    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (_hc : IsCoarseModuliY0 p strY)
-    (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 1 :=
-  sorry
+**WHAT THE PROOF BELOW DISCHARGES, AND WHAT IT DOES NOT.**  `t.card ≤ 1`
+for every `t` is exactly `Subsingleton (Y_0(p)(ℚ))`, so the whole content
+is "any two rational points coincide".  The four steps are:
+
+1. base-change both points to `ℚ̄` and classify them by `ℚ̄`-data
+   (`Fermat.exists_gamma0Datum_geomClassify`, another owner's leaf, and it
+   carries NO membership hypothesis — the field-of-moduli descent, which
+   does, is never invoked);
+2. Mazur, on each of the two data (the first leaf above);
+3. class number one, identifying the two data (the second leaf above);
+4. `IsCoarseModuliY0.classify_natural` at `h = 𝟙` turns that isomorphism
+   into equality of the two `ℚ̄`-points, and `Fermat.epi_specMap_of_fieldHom`
+   — `Spec` of a map of FIELDS is an epimorphism, faithful flatness being
+   free there — descends it to equality of the two `ℚ`-points.
+
+Step 4 is worth naming because the natural-looking route through the
+descent leaf is BLOCKED: `Fermat.exists_gamma0Datum_descent` needs
+`p ∉ mazurIsogenyPrimes`, which is false at every level here.  Producing a
+`ℚ`-datum is not needed and is deliberately avoided. -/
+theorem card_y0Le_classNumberOne (p : ℕ) (hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
+    (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 1 := by
+  classical
+  have hprime : p.Prime := by fin_cases hp <;> norm_num
+  haveI : Epi (specAlgClos ℚ) := by
+    show Epi (Spec.map (CommRingCat.ofHom (algebraMap ℚ (AlgebraicClosure ℚ))))
+    exact epi_specMap_of_fieldHom _
+  refine Finset.card_le_one.mpr ?_
+  intro y _ z _
+  -- **1.** both rational points, base-changed to `ℚ̄`, are classified by `ℚ̄`-data
+  obtain ⟨d₁, hd₁⟩ :=
+    exists_gamma0Datum_geomClassify hprime hc (RelPoint.pre (specAlgClos ℚ) rfl y)
+  obtain ⟨d₂, hd₂⟩ :=
+    exists_gamma0Datum_geomClassify hprime hc (RelPoint.pre (specAlgClos ℚ) rfl z)
+  -- **2.** Mazur: each of them is a CM datum for the maximal order of discriminant `−p`
+  obtain ⟨e₁⟩ := nonempty_isCMByRamifiedMaximalOrder_of_classify_eq p hp hc y d₁ hd₁
+  obtain ⟨e₂⟩ := nonempty_isCMByRamifiedMaximalOrder_of_classify_eq p hp hc z d₂ hd₂
+  -- **3.** class number one: the two data are isomorphic
+  obtain ⟨iso⟩ := nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder p hp e₁ e₂
+  -- **4.** naturality of `classify` at `h = 𝟙` turns that into equality of `ℚ̄`-points
+  have hcl : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁
+      = hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂ := by
+    rw [hc.classify_natural (𝟙 _) (Category.id_comp _) iso]
+    exact Subtype.ext (Category.id_comp _)
+  -- and `Spec ℚ̄ ⟶ Spec ℚ` is an epimorphism, so the equality descends to `ℚ`
+  have hyz : specAlgClos ℚ ≫ y.1 = specAlgClos ℚ ≫ z.1 :=
+    congrArg Subtype.val (hd₁.symm.trans (hcl.trans hd₂))
+  exact Subtype.ext ((cancel_epi (specAlgClos ℚ)).mp hyz)
 
 /-- **`#X_0(p)(ℚ) ≤ m` at the four higher-genus isogeny primes** (PROVEN
 2026-07-27 by the cusp/affine split, over
