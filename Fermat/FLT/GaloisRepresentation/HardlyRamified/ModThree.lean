@@ -44050,6 +44050,24 @@ statement false while another makes it true. `hv` and `hv₀` are
 load-bearing in the same breath: without them the generator clause of
 `hN` does not fire and `P ⊔ N ≤ Im` fails.
 
+**THE AUXILIARY FIELD IS NOW BUILT (2026-07-27).** "Apply Artin's Lemma
+to get the field `E`" was, until today, not something a consumer could
+literally write: `hartin` yields the SUBGROUP `H` and nothing more, and
+no `E : Type u` with `[NumberField E]` and `Γ E ≅ H` existed in mathlib,
+in `~/cs/FLT` or in this project. It does now —
+`exists_auxiliaryNumberField_ray_class` far above, PROVEN with
+`#print axioms = [propext, Classical.choice, Quot.sound]` — and its
+Artin-facing packaging `exists_artinAuxiliaryNumberField_ray_class`
+delivers `m`, `H`, `E`, an injection `ι : Γ E →* Γ F` with image exactly
+`H`, and the derived clause
+`∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ (ι σ) = 1`,
+which is precisely `hcycl`'s third hypothesis for `χ' := χ ∘ ι`. Note
+those are stated for a general `χ` satisfying `hmul`/`hVopen`/`hVker`,
+so they can be used here *instead of* `hartin`, or applied to the `H`
+that `hartin` hands out — either way. What remains is the ideal side:
+the base change `c'` of `c`, the `Ideal.relNorm` compatibility, and the
+splitting of `v` in `E/F` from `globalFrob v ∈ H`.
+
 **Check that would refute it**: hypotheses as stated together with a
 `v`, `v₀`, `e` for which `ofAdd (single v 1 - e • single v₀ 1)` is
 exhibited outside `P ⊔ N`. -/
@@ -46322,15 +46340,33 @@ same breath: without them the generator clause of `hN` does not fire and
 **MISSING MACHINERY, and it is narrower than "class field theory".**
 `Ideal.relNorm` IS in the pin (it is already used in this project, e.g.
 `Fermat/FLT/EllipticCurve/WeilPairing.lean`), so the ideal norm need not
-be built. What is genuinely absent from mathlib, from `~/cs/FLT` and
+be built. What was absent from mathlib, from `~/cs/FLT` and
 from this project is the **auxiliary-field construction**: turning the
 open subgroup `H ≤ Γ F` that `hartin` hands you into a bona fide
 `E : Type u` with `[NumberField E]` and an identification of `Γ E` with
-`H`, which is what `hcycl` has to be applied to. `IntermediateField.fixedField`
-exists and is used in `Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`,
-but no instance making a fixed field of `Γ F` a `NumberField` was found
-on 2026-07-27. **That, not the Herbrand quotient and not the idele class
-group, is the gate on this leaf**, and it is the thing to dispatch first.
+`H`, which is what `hcycl` has to be applied to.
+
+**THAT GATE IS CLOSED (2026-07-27), and the sentence it replaces was
+wrong the moment it was written.** The note here used to read "no
+instance making a fixed field of `Γ F` a `NumberField` was found on
+2026-07-27"; there is indeed no such *instance*, but the *theorem* is
+eight lines of existing mathlib, and the whole construction is now
+`exists_auxiliaryNumberField_ray_class` far above — PROVEN, with
+`#print axioms` returning `[propext, Classical.choice, Quot.sound]`.
+Its Artin-facing packaging is `exists_artinAuxiliaryNumberField_ray_class`
+immediately after it, which hands a consumer `m`, `H`, `E`, `ι` and,
+already derived, the clause
+`∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ (ι σ) = 1`
+— exactly `hcycl`'s third hypothesis for `χ' := χ ∘ ι`. So a consumer
+never has to build the field itself, and does not need `hartin` and the
+construction separately.
+
+**What is left is ideal arithmetic, not theory-building**: the base
+change `c'` of `c` to `𝓞 E`, the norm compatibility
+`c (N_{E/F} 𝔄) = c' 𝔄` over the pin's `Ideal.relNorm`, and the use of
+`globalFrob p ∈ H` to see that `p` splits completely in `E/F` so that
+every residue degree above it is `1`. **That, not the Herbrand quotient
+and not the idele class group, is now the gate on this leaf.**
 
 **GATE RECON, 2026-07-27 (verified against the pin, not asserted): both
 halves of that construction are assembled from EXISTING mathlib, so the
@@ -46349,8 +46385,12 @@ field. For the `Γ E ≅ H` half the pieces are
 `subgroupEquivAlgEquiv` comes from the FINITE `fixingSubgroup_fixedField`,
 which the `InfiniteGalois` one replaces) composed with
 `IsAlgClosure.equiv` to move `Gal(AlgebraicClosure F / fixedField H)` to
-`Γ (fixedField H)`. This half was NOT compiled and is the owner's to
-build.
+`Γ (fixedField H)`. **Both halves were built and verified the same day
+along exactly those lines** — see `exists_auxiliaryNumberField_ray_class`
+above; the `Γ E ≅ H` half is `AlgEquiv.autCongr (IsAlgClosure.equiv …)`
+followed by `IntermediateField.fixingSubgroupEquiv`, and the resulting
+`ι σ x = e (σ (e.symm x))` is `rfl`, which is what keeps every clause a
+one-liner.
 AXIS SEARCHED: the descent axis as Childress runs it, plus a grep of all
 three trees for the norm and fixed-field machinery; NOT a cohomological
 reproof of 5.2.2.
