@@ -18496,14 +18496,228 @@ theorem rank_relationSpace_le_of_rank_sha2_le
           (n : Cardinal) :=
   sorry
 
-/-- **`dim_k Ш²_S(ad⁰) ≤ g`** (sorry node, items (6)+(7) of the machinery audit
-on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; cut out
-2026-07-26 together with `rank_relationSpace_le_of_rank_sha2_le` above):
+/-- **A presentation exhibits `g` mod-`ℓ` tangent generators** (PROVEN
+2026-07-27; cut out of `rank_sha2_le_of_minimal_mvPowerSeries_presentation`
+below as its COMMUTATIVE-ALGEBRA half, leaving the arithmetic on
+`rank_sha2_le_of_tangent_span`):
+
+if `φ : Λ[[x₁,…,x_g]] ↠ R` is any SURJECTION onto a local ring, over a local
+coefficient ring `Λ` whose maximal ideal is `(ℓ)`, then `𝔪_R` is spanned by
+`g` elements OF `𝔪_R` together with `ℓ` — namely by the images `φ(xᵢ)` of the
+variables. Equivalently: the mod-`ℓ` cotangent space `𝔪_R/(𝔪_R² + ℓR)` is
+spanned by `g` elements, i.e. the mod-`ℓ` tangent dimension of `R` is at
+most `g`.
+
+The conclusion is phrased as an ideal inequality rather than as a
+`Module.rank` of a cotangent quotient deliberately: it needs no quotient
+module, no residue-field scalar action and no `Cardinal`, and it is exactly
+the shape (`𝔪 ≤ span (range t) ⊔ J`) that
+`exists_minimal_span_sup_of_isNoetherianRing` and
+`exists_minimal_mvPowerSeries_presentation` above already speak.
+
+**What is NOT needed, and this is the point of the cut.** *Minimality* of the
+presentation (`ker φ ≤ 𝔪² + (ℓ)`) is what makes `g` EQUAL to the tangent
+dimension; only the inequality `≤ g` is consumed downstream, so this half
+runs on surjectivity ALONE. The `ℤ_ℓ`-compatibility of `φ` is likewise
+unused. So the leaf below inherits a strictly weaker hypothesis than the
+node it was cut from, which is why `hcomp` and `hmin` are unused there.
+
+Proof: `φ⁻¹(𝔪_R)` is maximal (`Ideal.comap_isMaximal_of_surjective`), hence
+IS `𝔪_S` because `S = Λ[[x₁,…,x_g]]` is local, so `φ` carries `𝔪_S` ONTO
+`𝔪_R` (`Ideal.map_comap_of_surjective`); and `maximalIdeal_mvPowerSeries_eq`
+above writes `𝔪_S = 𝔪_Λ·S + (x₁,…,x_g)`, whose image under `φ` is
+`(ℓ) + (φ x₁, …, φ x_g)`. -/
+theorem exists_tangent_family_of_mvPowerSeries_presentation
+    {Λ : Type*} [CommRing Λ] [IsLocalRing Λ]
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    (hΛ : IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)})
+    {g : ℕ} (φ : MvPowerSeries (Fin g) Λ →+* R) (hsurj : Function.Surjective φ) :
+    ∃ t : Fin g → R, (∀ i, t i ∈ IsLocalRing.maximalIdeal R) ∧
+      IsLocalRing.maximalIdeal R ≤
+        Ideal.span (Set.range t) ⊔ Ideal.span {(ℓ : R)} := by
+  -- `φ⁻¹(𝔪_R)` is maximal, hence IS `𝔪_S`.
+  have hmax : (Ideal.comap φ (IsLocalRing.maximalIdeal R)).IsMaximal :=
+    Ideal.comap_isMaximal_of_surjective (K := IsLocalRing.maximalIdeal R) φ hsurj
+  have hcomap : Ideal.comap φ (IsLocalRing.maximalIdeal R) =
+      IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) :=
+    IsLocalRing.eq_maximalIdeal hmax
+  -- hence `φ` carries `𝔪_S` ONTO `𝔪_R`.
+  have hmapeq : Ideal.map φ (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ)) =
+      IsLocalRing.maximalIdeal R := by
+    rw [← hcomap, Ideal.map_comap_of_surjective φ hsurj]
+  refine ⟨fun i => φ (MvPowerSeries.X i), ?_, ?_⟩
+  · intro i
+    have hXi : (MvPowerSeries.X i : MvPowerSeries (Fin g) Λ) ∈
+        IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) := by
+      rw [mem_maximalIdeal_mvPowerSeries_iff]
+      simp
+    have hmem : (MvPowerSeries.X i : MvPowerSeries (Fin g) Λ) ∈
+        Ideal.comap φ (IsLocalRing.maximalIdeal R) := by
+      rw [hcomap]; exact hXi
+    exact Ideal.mem_comap.mp hmem
+  · rw [← hmapeq, maximalIdeal_mvPowerSeries_eq, hΛ, Ideal.map_sup, Ideal.map_map,
+      Ideal.map_span, Ideal.map_span]
+    refine sup_le ?_ ?_
+    · have himg : (⇑(φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ))) '' {(ℓ : Λ)}
+          = {(ℓ : R)} := by
+        rw [Set.image_singleton]
+        exact congrArg (fun x => ({x} : Set R)) (map_natCast _ ℓ)
+      rw [himg]
+      exact le_sup_right
+    · refine le_sup_of_le_left ?_
+      rw [← Set.range_comp]
+      rfl
+
+/-- **`dim_k Ш²_S(ad⁰) ≤ (mod-`ℓ` tangent dimension of `D.R`)`** (sorry node,
+items (6)+(7) of the machinery audit on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; cut out
+2026-07-27 as the ARITHMETIC half of
+`rank_sha2_le_of_minimal_mvPowerSeries_presentation` below, whose
+commutative-algebra half is `exists_tangent_family_of_mvPowerSeries_presentation`
+immediately above):
+
+if `𝔪_{D.R}` is spanned by `g` of its own elements together with `ℓ` — i.e.
+if the mod-`ℓ` cotangent space `𝔪/(𝔪² + ℓ)` of the weakly universal,
+trace-generated hardly ramified deformation ring is spanned by `g` elements —
+then `dim_k Ш²_S(ad⁰) ≤ g`.
+
+**What the recut buys.** The presentation scaffolding — `Λ`, the power series
+ring, `φ`, surjectivity, `ℤ_ℓ`-compatibility, minimality — has been removed
+ENTIRELY from the arithmetic. What remains is a statement about `ρbar` and
+`D` alone, with `g` entering only through the tangent bound, which is the
+form in which Poitou–Tate and Greenberg–Wiles actually prove it. A future
+owner of this leaf never has to look at `MvPowerSeries`.
+
+The argument, unchanged from the node this was cut from: local Tate duality
+and the Poitou–Tate nine-term sequence give `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`;
+`Ш¹_S(ad⁰(1))` sits inside the dual Selmer group `H¹_{L^⊥}(ad⁰(1))` (the
+`Ш` imposes the ZERO local condition at each `v ∈ S`, which is contained in
+`L_v^⊥`); and the Greenberg–Wiles Euler characteristic formula
+
+`dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1)) + Σ_{v ∈ S} (dim L_v − h⁰(ℚ_v, ad⁰))`
+
+with the local computations `0` at `2`, `+1` at `ℓ` and `−1` at `∞` gives
+`dim H¹_{L^⊥} ≤ dim H¹_L`. Absolute irreducibility (`hirr`) kills
+`h⁰(ℚ, ad⁰)`; oddness (`hℓOdd`, and `ρbar` odd) is what makes the
+archimedean term `−1`. Finally weak universality plus trace generation makes
+`D` universal (`isUniversal_of_isWeaklyUniversal_isTraceGenerated` above), so
+`D.R` pro-represents the hardly ramified functor and its mod-`ℓ` tangent
+space IS `H¹_L`; the hypothesis then reads `dim_k H¹_L ≤ g`.
+
+**MACHINERY AUDIT REFRESHED 2026-07-27 — items (6) and (7) RE-CHECKED AND
+CONFIRMED ABSENT.** The audit below records item (1) as missing, and item (1)
+turned out to be PRESENT all along (see the STATUS note on the consumer). So
+items (6)+(7) were re-run rather than believed. They are genuinely absent, and
+here are the exact checks, so that the next owner can refute this note in
+minutes rather than redoing the survey:
+
+* `grep -rniE "poitou|nine.?term" Mathlib` — **no hits.**
+* `grep -rniE "tate.?duality|localduality" Mathlib` — **no hits.**
+* `grep -rniE "tateshafarevich|shafarevich" Mathlib` — **no hits.**
+* `grep -rniE "greenberg" Mathlib` — **no hits.**
+* `grep -rniE "selmer" Mathlib` — hits `Mathlib/RingTheory/DedekindDomain/SelmerGroup.lean`
+  ONLY, which is the `K(S,n)` subgroup of `Kˣ/(Kˣ)ⁿ` unramified outside `S` —
+  a unit-group statement, NOT a Galois-cohomology Selmer structure with local
+  conditions `L_v ⊆ H¹(ℚ_v, M)`. It cannot be used here.
+* `grep -rniE "euler.?char" Mathlib` — hits `Mathlib/Algebra/Homology/EulerCharacteristic.lean`
+  ONLY, the alternating sum of a homological complex. That is not the global
+  Euler characteristic formula, which is an arithmetic theorem about
+  `Hⁱ(G_{ℚ,S}, M)`, not a formal property of complexes.
+* The same six greps over `~/cs/FLT` — **no hits** beyond a passing mention of
+  global Tate duality in a `GLzero.lean` docstring and of the number theorist
+  Poitou in `Assumptions/Odlyzko.lean`. Its `Mathlib/` subtree carries
+  `ContCohomology/{Basic,CupProduct}.lean` and nothing else relevant, so it is
+  a source for the CUP PRODUCT only, not for duality.
+
+So, in contrast to item (1): item (6) and item (7) must be BUILT. What exists
+to build them on is the continuous cochain theory in our own pin
+(`Mathlib/RepresentationTheory/Homological/ContCohomology/{Basic,Functoriality,LowDegree}.lean`),
+which supplies `continuousCohomology n X` in every degree and
+`ContinuousCohomology.map` — verified present, and already consumed by
+`Sha2`/`locRes` above.
+
+**THE NEXT CUT, for whoever owns this leaf.** It cannot be made without new
+DEFINITIONS, but per the "stating a theory is not proving it" rule those
+definitions are cheap next to the theorems, and each is nameable now:
+
+1. `adZeroTwist` — the Tate twist `ad⁰(1) = ad⁰ ⊗ χ` as a `TopRep k (Γ ℚ)`,
+   where `χ` is the mod-`ℓ` cyclotomic character. (`IsHardlyRamified.det`
+   already pins `det ρ` to the cyclotomic character, so a `χ` exists in this
+   development.)
+2. `Sha1` — the degree-`1` analogue of `Sha2` above, verbatim the same
+   `⨅ v ∈ S, ker (locRes …)` with `2` replaced by `1`. Trivial to write.
+3. `selmerGroup L` / `dualSelmerGroup` — `H¹_L` for a family of local
+   conditions `L : ∀ v ∈ S, Submodule k (continuousCohomology 1 (adZeroLocal ρbar v))`,
+   and the orthogonal complement `L^⊥` under the local Tate pairing.
+4. The local Tate pairing itself, which is where `~/cs/FLT`'s
+   `ContCohomology/CupProduct.lean` is worth auditing against our pin.
+
+With (1)–(4) merely STATED, this leaf splits into `rank_sha2_le_rank_sha1_dual`
+(Poitou–Tate) and `rank_sha1_dual_le_of_tangent_span` (Greenberg–Wiles plus the
+tangent identification) — neither of which mentions `MvPowerSeries` either.
+
+**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF**, exactly as for
+`rank_relationSpace_le_of_rank_sha2_le` above: see the EXPOSURE AUDIT AND
+CIRCULARITY GUARD on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
+below, whose BANNED INPUTS clause forbids discharging this leaf from
+`not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`not_isIrreducible_of_isHardlyRamified_of_odd`, or anything proven over them:
+their intended proofs run through modularity lifting, which is proven over the
+very bound this leaf supplies, so a discharge from them would prove this leaf
+from its own consequence. A green build and an honest `#print axioms` would
+BOTH survive such a discharge; only a human reading catches it. `hℓ5 : 5 ≤ ℓ`
+also keeps `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired
+to the prime `3`) inapplicable, so that route stays closed mathematically
+rather than merely by import scope.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, ch. VIII
+(Poitou–Tate); Washington's article in Cornell–Silverman–Stevens (the
+Greenberg–Wiles formula); Darmon–Diamond–Taylor, §2.6–2.7. -/
+theorem rank_sha2_le_of_tangent_span
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.isLocalRing
+    ∀ (g : ℕ) (ts : Fin g → D.R),
+      (∀ i, ts i ∈ IsLocalRing.maximalIdeal D.R) →
+      IsLocalRing.maximalIdeal D.R ≤
+        Ideal.span (Set.range ts) ⊔ Ideal.span {(ℓ : D.R)} →
+      Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) :=
+  sorry
+
+/-- **`dim_k Ш²_S(ad⁰) ≤ g`** (**PROVEN 2026-07-27** over the two leaves
+`exists_tangent_family_of_mvPowerSeries_presentation` (commutative algebra,
+itself PROVEN) and `rank_sha2_le_of_tangent_span` (the arithmetic) immediately
+above — NOT a sorry node any more; formerly items (6)+(7) of the machinery
+audit on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below,
+cut out 2026-07-26 together with `rank_relationSpace_le_of_rank_sha2_le`
+above):
 
 for a minimal presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` — minimality being exactly
 what identifies `g` with the mod-`ℓ` tangent dimension
 `dim_k H¹_{HR}(G_{ℚ,S}, ad⁰ ρbar)` of the deformation functor — the
 Tate–Šafarevič group `Ш²_S(ad⁰)` has dimension at most `g`.
+
+**STATUS 2026-07-27: THIS NODE IS NO LONGER A LEAF.** It is now proven by
+feeding the presentation to `exists_tangent_family_of_mvPowerSeries_presentation`
+— which turns `φ : Λ[[x₁,…,x_g]] ↠ D.R` into `g` elements of `𝔪_{D.R}`
+spanning it modulo `ℓ` — and handing those to `rank_sha2_le_of_tangent_span`.
+The split is along the commutative-algebra/arithmetic seam: everything about
+`Λ`, `MvPowerSeries` and `φ` is discharged in the first leaf, and the second
+mentions none of it.
+
+Two consequences worth recording. First, `hcomp` (`ℤ_ℓ`-compatibility of `φ`)
+and `hmin` (minimality, `ker φ ≤ 𝔪² + (ℓ)`) are **unused** in the proof: the
+tangent bound `dim ≤ g` follows from SURJECTIVITY alone, and minimality is
+what would upgrade it to an equality, which no consumer needs. They are kept
+in the statement because the consumer
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below supplies
+them anyway and removing them would cost a signature change for no gain.
+Second, the machinery audit for what REMAINS open now lives on
+`rank_sha2_le_of_tangent_span` above, refreshed with a re-check of items (6)
+and (7) against both mathlib and `~/cs/FLT`.
 
 The argument is local Tate duality and the Poitou–Tate nine-term sequence,
 giving `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, followed by the Greenberg–Wiles Euler
@@ -18548,7 +18762,13 @@ theorem rank_sha2_le_of_minimal_mvPowerSeries_presentation
           IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
             Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
         Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) :=
-  sorry
+  by
+  letI := D.commRing
+  letI := D.isLocalRing
+  intro Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj _hcomp _hmin
+  obtain ⟨ts, hts, hspan⟩ :=
+    exists_tangent_family_of_mvPowerSeries_presentation (R := D.R) hΛ φ hsurj
+  exact rank_sha2_le_of_tangent_span hℓOdd hdim hℓ5 h hirr D hw ht g ts hts hspan
 
 /-- **Böckle's bound on the minimal relation space** (**PROVEN 2026-07-26**
 over the two arithmetic leaves `rank_relationSpace_le_of_rank_sha2_le` and
