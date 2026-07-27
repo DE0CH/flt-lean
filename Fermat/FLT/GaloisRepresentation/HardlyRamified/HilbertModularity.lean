@@ -16737,12 +16737,216 @@ theorem exists_surjective_ker_le_of_forall_maximalIdeal_pow
   obtain ⟨φ, hφsurj, -⟩ := h 0
   exact ⟨φ, hφsurj, ker_le_smul_of_forall_sup_maximalIdeal_pow 𝔞 φ hφsurj h⟩
 
+/-- **Taylor–Wiles prime sets are closed under subsets** (PROVEN 2026-07-27).
+
+Immediate from the shape of `IsHilbertTaylorWilesPrimeSet`, which is a
+POINTWISE condition `∀ w ∈ Q, …`: goodness away from `2ℓ`, the congruence
+`N w ≡ 1 mod ℓ ^ n`, and split-with-distinct-eigenvalues at `Frob_w` are all
+properties of the individual place `w`, so nothing is lost by discarding
+places. -/
+theorem isHilbertTaylorWilesPrimeSet_of_subset (ℓ : ℕ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (ρbar : GaloisRep ℚ k V) (n : ℕ)
+    {Q Q' : Finset (HeightOneSpectrum (𝓞 F))}
+    (hsub : Q' ⊆ Q) (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q' :=
+  fun w hw => hQ w (hsub hw)
+
+/-- **The Taylor–Wiles prime supply normalises to EXACT cardinality**
+(PROVEN 2026-07-27).
+
+`exists_hilbertTaylorWilesPrimeSet` delivers sets of cardinality `≥ r`, but the
+Taylor–Wiles argument needs sets of cardinality EXACTLY `r`: the Taylor–Wiles
+number `q` is a field of `Modularity.TaylorWilesSystem` and only the depth `n`
+is a parameter of the level, so the auxiliary levels must all be raised at prime
+sets of the SAME size — a level raised at a larger `Q` has a larger
+`dim_k H¹_{Q}(F, ad⁰ ρbar)` and would present its deformation ring over more
+variables.
+
+That normalisation is not arithmetic, and it is performed here rather than
+inside the two arithmetic leaves below: `Finset.exists_subset_card_eq` cuts `Q`
+down to size `r`, and `isHilbertTaylorWilesPrimeSet_of_subset` carries the
+Taylor–Wiles property across. Compare `Modularity/Patching.lean`, whose
+`exists_taylorWilesLevelRaw` takes the exact-cardinality supply
+`Q.card = r` as a hypothesis for the same reason. -/
+theorem exists_card_eq_isHilbertTaylorWilesPrimeSet (ℓ : ℕ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (ρbar : GaloisRep ℚ k V)
+    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q := by
+  intro n r
+  obtain ⟨Q, hcard, hQ⟩ := hTW n r
+  obtain ⟨Q', hsub, hcard'⟩ := Finset.exists_subset_card_eq hcard
+  exact ⟨Q', hcard', isHilbertTaylorWilesPrimeSet_of_subset ℓ F ρbar n hsub hQ⟩
+
+/-- **The BOTTOM Taylor–Wiles level over `F`** (LEAF — new 2026-07-27, the
+first half of the level-wise cut of `exists_hilbertTaylorWilesLevels` below).
+
+This is where the SHARED, level-independent data of the whole Taylor–Wiles
+tower is chosen, together with the depth-`0` level that pins it:
+
+* **`q`**, the Taylor–Wiles number `dim_k H¹_{Q}(F, ad⁰ ρbar)` for a
+  Taylor–Wiles prime set `Q` of the fixed size `r` supplied by `hTW` — a
+  field of the SYSTEM, not of a level, which is why it must be produced here,
+  once, and be independent of the depth. Its independence of the depth is the
+  Greenberg–Wiles formula over `F`; the Poitou–Tate global Euler characteristic
+  has archimedean local terms, and TOTAL REALNESS is exactly what makes them
+  come out — **this is where `htr` is used.**
+* **`coeff`**, the coefficient ring `𝒪` over which the auxiliary deformation
+  rings are presented. It is kept an abstract `Modularity.TaylorWilesCoefficients`
+  and not hardcoded to `ℤ_[ℓ]`, because the residual field of a Hilbert modular
+  deformation need not be `𝔽_ℓ`. Note `coeff.exists_isRegular_maximalIdeal`
+  makes `coeff.carrier` a discrete valuation ring; this matters for the vacuity
+  check recorded at the CUT AUDIT below.
+* **`M₀`**, the bottom Hecke module, with its `𝒟T.R`-action and its
+  nontriviality. Classically `M₀` is the cohomology of the Shimura variety
+  attached to a quaternion algebra over `F` at the ORIGINAL level, localised at
+  the maximal ideal cut out by `ρbar`. Identifying its Hecke action with the
+  given datum `𝒟T`/`T` requires descending the base change from `F` to `ℚ`,
+  which is Brauer induction over the Galois group of `F/ℚ` — **this is where
+  `hgal` is used.**
+* **`d`**, the rank. Through the depth-`0` level's `coordM` together with
+  `bIdeal_le_aug` and `projM_eq_zero`, `d` is forced to be the `ℤ_ℓ`-rank of
+  `M₀`: `M₀` is a quotient of `M ⧸ 𝔫·M ≅ (Λ ⧸ (𝔟₀ ⊔ 𝔫))^d = ℤ_ℓ^d`, which is
+  what `M₀ = H¹(…, ℤ_ℓ)_𝔪` actually is.
+
+Everything else in the depth-`0` `Modularity.TaylorWilesLevelRaw` is the level
+data itself, whose fields are documented on the structure and, role by role, in
+the docstring of `exists_hilbertTaylorWilesLevels` below.
+
+`h𝒟w` and `h𝒟t` identify `ψ` with THE classifying map (see
+`isUniversal_of_isWeaklyUniversal_isTraceGenerated` above), without which the
+tower would be built for the wrong map; `e` supplies `Module.Finite ℤ_[ℓ] 𝒟T.R`
+on the Hecke side.
+
+The prime supply is taken here in EXACT-cardinality form; the conversion from
+the `r ≤ Q.card` form delivered by `exists_hilbertTaylorWilesPrimeSet` is
+proven above as `exists_card_eq_isHilbertTaylorWilesPrimeSet` and performed by
+the glue.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Diamond, Invent. Math.
+128 (1997), Thm. 2.1; Fujiwara, *Deformation rings and Hecke algebras in the
+totally real case*, §3; Skinner–Wiles, Duke 107 (2001); Kisin, Ann. of Math.
+170 (2009), §3; BLGGT §§1–2. -/
+theorem exists_hilbertTaylorWilesBottomLevel
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
+    (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
+    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (ψ : 𝒟.R →+* 𝒟T.R)
+    (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
+    (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
+    (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    ∃ (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
+      (_ : AddCommGroup M0) (_ : Module 𝒟T.R M0) (_ : Nontrivial M0),
+      Nonempty
+        (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0) :=
+  sorry
+
+/-- **The AUXILIARY Taylor–Wiles levels over `F`** (LEAF — new 2026-07-27, the
+second half of the level-wise cut of `exists_hilbertTaylorWilesLevels` below).
+
+Given the shared invariants `q`, `d`, `coeff`, `M₀` and the depth-`0` level
+produced by `exists_hilbertTaylorWilesBottomLevel`, produce a
+`Modularity.TaylorWilesLevelRaw` at EVERY depth `n` over the SAME invariants.
+This is the auxiliary-level arithmetic proper, and it has three ingredients:
+
+* **The auxiliary deformation ring at raised level** (fields `R`, `pres`,
+  `pres_surjective`). For the Taylor–Wiles prime set `Q_n` of size `r` supplied
+  by `hTW` at depth `n`, the deformation problem of `ρbar|_{G_F}` with the level
+  raised at `Q_n` — `IsHilbertHardlyRamified` away from `Q_n`, and the
+  split-torus local condition at each `w ∈ Q_n` supplied by the
+  distinct-eigenvalue clause of `IsHilbertTaylorWilesPrimeSet`. The tangent-space
+  bound making it a quotient of `𝒪⟦x₁, …, x_q⟧` is the Greenberg–Wiles formula
+  over `F`; that the SAME `q` works at every depth is what the shared invariant
+  demands, and it is why `hTW` is asked in exact-cardinality form.
+* **The auxiliary Hecke module** (fields `M`, `bIdeal`, `bIdeal_le`,
+  `bIdeal_le_aug`, `coordM`). The cohomology of the Shimura variety attached to a
+  quaternion algebra over `F` at level raised by `Q_n`, finite free over
+  `ℤ_ℓ[Δ_{Q_n}]` by the Taylor–Wiles freeness lemma in Fujiwara's form.
+  `Δ_{Q_n}` has order divisible by `ℓ ^ n` by the congruence clause of
+  `IsHilbertTaylorWilesPrimeSet`, which supplies `bIdeal_le`; the freeness lemma
+  supplies `coordM`. `bIdeal_le_aug` is the elementary observation that
+  `𝔟_n = ker(Λ ↠ ℤ_ℓ[Δ_{Q_n}])` sits inside the augmentation ideal `𝔫` —
+  unlike `bIdeal_le` it has content at `n = 0`, and it is the field whose ABSENCE
+  made the `ℚ`-level version of this very cut UNSOUND (see the CUT AUDIT below).
+  `diamond_smul` is automatic: it says the diamond action is the diamond action.
+* **The control maps** (fields `diamond`, `toRuniv`, `toRuniv_surjective`,
+  `ker_toRuniv`, `projM`, `projM_surjective`, `projM_smul`, `projM_eq_zero`).
+  `diamond n : Λ → R_{Q_n}` comes from local class field theory at the
+  `w ∈ Q_n`; the control identification is `R_{Q_n} ⧸ 𝔫·R_{Q_n} ≅ R_F` with
+  `𝔫 = Modularity.taylorWilesAug ℓ q` the LEVEL-INDEPENDENT augmentation ideal.
+  `projM` is the corresponding statement on the Hecke side, and it is where the
+  bottom module `M₀` handed in by `hbot` is met.
+
+The diamond ring is `Λ = ℤ_ℓ⟦y₁, …, y_q⟧`, not `𝒪⟦y₁, …, y_q⟧`, and the
+freeness is asked over `Λ ⧸ 𝔟_n = ℤ_ℓ[Δ_{Q_n}]`. That is not a weakening:
+freeness over `𝒪[Δ_{Q_n}]` gives freeness over `ℤ_ℓ[Δ_{Q_n}]` with `d` multiplied
+by `rank_{ℤ_ℓ} 𝒪`, and both power-series rings have dimension `q + 1`, which is
+all the endgame consumes. See `Modularity.TaylorWilesSystem.coeff`.
+
+Note these are FINITE-LEVEL statements only. No level is asked for the
+depth-`(q+1)` regular sequence — that is a property of the patched limit alone
+and is produced by `Modularity.TaylorWilesSystem.exists_patchedModule`.
+
+**`hbot` is a genuine hypothesis, not decoration**: `M₀`, `q`, `d` and `coeff`
+are not this leaf's to choose, and the depth-`n` level must meet the SAME `M₀`
+through `projM`. Taking `n = 0` here is legitimate and gives back `hbot`.
+
+References: as for `exists_hilbertTaylorWilesBottomLevel` above. -/
+theorem exists_hilbertTaylorWilesLevelRaw
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
+    (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
+    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (ψ : 𝒟.R →+* 𝒟T.R)
+    (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
+    (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
+    (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
+    [AddCommGroup M0] [Module 𝒟T.R M0] (hM0 : Nontrivial M0)
+    (hbot : Nonempty
+      (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
+    (n : ℕ) :
+    Nonempty
+      (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d n coeff M0) :=
+  sorry
+
 /-- **The Taylor–Wiles levels over `F` exist** (LEAF — new 2026-07-26 as
 `exists_hilbertPatchingSystem`; RESTATED 2026-07-27 to produce the HOISTED
-`ℚ`-level interface instead of an `F`-level copy of it, and CUT the same day so
-that it is asked only for the RAW level data). This is the whole `F`-specific
-arithmetic of the patching argument, and the ONLY place where `htr` and `hgal`
-are consumed.
+`ℚ`-level interface instead of an `F`-level copy of it, CUT the same day so
+that it is asked only for the RAW level data, and CUT AGAIN 2026-07-27 along
+the LEVEL AXIS, which is what it is now: PROVEN GLUE over
+`exists_hilbertTaylorWilesBottomLevel` and `exists_hilbertTaylorWilesLevelRaw`
+above, plus the exact-cardinality normalisation of the prime supply). This is
+the whole `F`-specific arithmetic of the patching argument, and the ONLY place
+where `htr` and `hgal` are consumed.
 
 Out of the `F`-level deformation and Hecke data, and the Taylor–Wiles prime
 supply `hTW`, produce the shared data `q`, `d`, `coeff`, `M₀` and, at every
@@ -16899,6 +17103,85 @@ none: exhibit a system for a non-injective `ψ` over a local, maximal-adically
 complete `Runiv`, or show the five-step derivation fails to elaborate. Against
 `Modularity.TaylorWilesSystem` it fails at step 3, as just described.
 
+# CUT AUDIT (2026-07-27, the LEVEL-AXIS cut that made this theorem glue)
+
+The node above was cut along the DEPTH axis into
+
+* `exists_hilbertTaylorWilesBottomLevel` — the shared invariants `q`, `d`,
+  `coeff`, `M₀` together with the depth-`0` level, and
+* `exists_hilbertTaylorWilesLevelRaw` — a level at every depth `n` over those
+  fixed invariants,
+
+which is exactly the shape `Modularity/Patching.lean` already uses at the `ℚ`
+level (`exists_taylorWilesBottomLevel` / `exists_taylorWilesLevelRaw`, feeding
+`exists_taylorWilesTower`). Choosing the same axis is deliberate: that cut is
+the one this development has audited hardest, and the audit is not merely
+reassuring — it recorded TWO defects, both of which have already been repaired
+IN THE STRUCTURE this cut consumes, so the `F`-level cut inherits the repairs
+instead of re-introducing the defects.
+
+1. *The `bIdeal_le_aug` defect.* Without a field pinning `𝔟_n ≤ 𝔫`, the
+   level-wise cut is not merely weak but UNSOUND: `bIdeal_le` is vacuous at
+   `n = 0` (`𝔪^0 = ⊤`), so a bottom datum could have `M₀` finite `ℓ`-power
+   torsion, for which NO level exists at large `n` — making the auxiliary-level
+   leaf FALSE as stated. `Modularity.TaylorWilesLevelRaw.bIdeal_le_aug` is that
+   field, added 2026-07-26, and it is present here.
+2. *The residual-field defect.* Presenting over `ℤ_[ℓ]⟦x⟧` would force
+   `k ≃+* ZMod ℓ`. `pres` is over `MvPowerSeries (Fin q) coeff.carrier` for an
+   abstract `Modularity.TaylorWilesCoefficients`, chosen by the bottom leaf.
+
+## The vacuity check, and why it does NOT collapse
+
+The obvious way to trivialise a cut like this is to make the auxiliary leaf a
+restatement of the bottom one. Two routes were checked:
+
+* *Reuse the bottom level at every depth.* Legitimate only when
+  `𝔟₀ ≤ 𝔪^n` for every `n`, i.e. (Krull) `𝔟₀ = ⊥`. For the intended objects
+  `𝔟₀ = ker(Λ ↠ ℤ_ℓ[Δ_{Q_0}]) = 𝔫 ≠ ⊥` whenever `q ≥ 1`, since the depth-`0`
+  congruence `N w ≡ 1 mod ℓ^0` is vacuous and `Δ_{Q_0}` may be trivial; and
+  `𝔫 ⊄ 𝔪^2`. So the auxiliary leaf carries content at the intended
+  instantiation. A prover of the BOTTOM leaf who instead chose `𝔟₀ = ⊥` would
+  be asserting `M ≅ Λ^d` free over the full diamond ring at finite level — the
+  OUTPUT of patching, not a finite-level statement — so that route trivialises
+  the auxiliary leaf only by making the bottom one strictly harder. The cut can
+  be unbalanced; it cannot be emptied.
+* *Take `q = 0`.* Then `Λ = MvPowerSeries (Fin 0) ℤ_[ℓ]`,
+  `Modularity.taylorWilesAug ℓ 0 = Ideal.span (Set.range MvPowerSeries.X) = ⊥`,
+  so `ker_toRuniv` forces `toRuniv` to be an isomorphism `R ≅ 𝒟.R` and `pres`
+  then exhibits `𝒟.R` as a quotient of `coeff.carrier` — which is a DISCRETE
+  VALUATION RING (`coeff.exists_isRegular_maximalIdeal`). So the `q = 0`
+  discharge asserts that the `F`-level universal deformation ring is a quotient
+  of a DVR. That is exactly the assertion the Taylor–Wiles number exists to
+  avoid, and it is not available from these hypotheses.
+
+**THE CHECK THAT WOULD REFUTE THIS AUDIT**: exhibit, for a NON-injective `ψ`,
+either a depth-`0` raw level (refuting the bottom leaf) or — given one — a raw
+level at every depth (refuting the auxiliary leaf). Since
+`exists_hilbertPatchedModule` below turns the conclusion of this theorem into
+`Function.Injective ψ` through the PROVEN engine in `Modularity/PatchingCore.lean`,
+such a witness would refute the engine rather than this cut; conversely its
+absence is what certifies that neither leaf is vacuous.
+
+## The axis NOT taken, and what it would cost
+
+The other natural axis is RING vs HECKE: separate the auxiliary deformation
+ring `R_{Q_n}` (Greenberg–Wiles, local class field theory at `Q_n`) from the
+auxiliary Hecke module `M_{Q_n}` (the freeness lemma). That cut is NOT taken
+here, and the reason is a falsity risk, not effort: the two sides are coupled
+through `moduleRM` and `projM_smul`, so the Hecke leaf would receive `R_{Q_n}`
+as an abstract ring satisfying only the structural fields `pres`/`diamond`/
+`toRuniv`/`ker_toRuniv` — and for such a junk `R` there are no attached Hilbert
+modular forms, so the Hecke leaf would be FALSE. Making it safe requires the
+ring to be PINNED by a universal property, i.e. writing (not proving) three
+new pieces of interface: a raised-level local-condition predicate
+`IsHilbertHardlyRamified` away from `Q` plus the split-torus condition at
+`w ∈ Q`; a `HilbertAuxDeformationDatum` bundling it with its weak universality,
+in the shape of `HilbertDeformationDatum`/`IsWeaklyUniversal` above; and a
+raised-level `HilbertHeckeAlgebra` supplying the map that makes `M_{Q_n}` an
+`R_{Q_n}`-module. That is a real and worthwhile follow-up — per the standing
+rule that STATING a theory is not PROVING it, the cut needs those only stated —
+but it is a separate piece of work and is recorded here rather than half-done.
+
 References: Taylor–Wiles, Ann. of Math. 141 (1995); Diamond, Invent. Math. 128
 (1997); Fujiwara, *Deformation rings and Hecke algebras in the totally real
 case*; Skinner–Wiles, Duke 107 (2001); Kisin, Ann. of Math. 170 (2009);
@@ -16925,8 +17208,18 @@ theorem exists_hilbertTaylorWilesLevels
     ∃ (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
       (_ : AddCommGroup M0) (_ : Module 𝒟T.R M0) (_ : Nontrivial M0),
       ∀ n : ℕ, Nonempty
-        (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d n coeff M0) :=
-  sorry
+        (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d n coeff M0) := by
+  have hTWe : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q :=
+    exists_card_eq_isHilbertTaylorWilesPrimeSet ℓ F ρbar hTW
+  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hbot⟩ :=
+    exists_hilbertTaylorWilesBottomLevel ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
+      ψ hψalg hψπ hψρ hTWe
+  letI := iAG
+  letI := iMod
+  exact ⟨q, d, coeff, M0, iAG, iMod, iNt, fun n =>
+    exists_hilbertTaylorWilesLevelRaw ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
+      ψ hψalg hψπ hψρ hTWe q d coeff M0 iNt hbot n⟩
 
 /-- **The Taylor–Wiles tower over `F` assembles into a system** (PROVEN
 2026-07-27 as pure glue over `exists_hilbertTaylorWilesLevels` above).
