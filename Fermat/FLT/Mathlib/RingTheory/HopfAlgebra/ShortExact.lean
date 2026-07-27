@@ -100,15 +100,20 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 * `HopfAlgebra.IsShortExact.augmentationIdeal_sq_eq` — idempotence of the augmentation ideal is
   extension-closed. **PROVEN**.
 * `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. **PROVEN** as an
-  assembly of the four statements below, three of which are open.
+  assembly of the four statements below, two of which are open, with a third gap
+  (`flat_quotient`) sitting one level under the surjectivity field.
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
+* `HopfAlgebra.IsShortExact.flat_quotient` — `A / i(A'')` is `R`-flat. OPEN, and gated on
+  **Takeuchi's theorem** (bijectivity of the Galois map `A ⊗_{A''} A ≅ A ⊗[R] A'`), *not* on
+  fppf descent, which this pin does carry.
 * `HopfAlgebra.IsShortExact.exists_linearRetraction` — `i(A'')` is an `R`-module direct summand
-  of `A`. OPEN; equivalent to the surjectivity field, and free of Hopf structure.
+  of `A`. **PROVEN** (2026-07-27) from `flat_quotient` by pure module theory; equivalent to the
+  surjectivity field, and free of Hopf structure.
 * `HopfAlgebra.IsShortExact.surjective_cartierDual_map` — **PROVEN** from the retraction.
 * `HopfAlgebra.IsShortExact.le_ker_cartierDual` — the easy half of the dual kernel condition.
   **PROVEN**, from `apply_comp` alone.
-* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. OPEN, and *gated on fppf
-  descent*, which this pin does not carry.
+* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. OPEN, and gated on the same
+  Hopf–Galois input as `flat_quotient`.
 * `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` — OPEN; the deepest field, classically
   `Ext¹(G'', 𝔾ₘ) = 0`.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN** (2026-07-27),
@@ -513,7 +518,8 @@ here. The split is by *where the mathematics is*:
 
 | statement | status | content |
 | --------- | ------ | ------- |
-| `exists_linearRetraction` | OPEN | `i(A'')` is an `R`-module direct summand of `A` |
+| `flat_quotient` | OPEN | `A / i(A'')` is `R`-flat |
+| `exists_linearRetraction` | **PROVEN** from `flat_quotient` | `i(A'')` is an `R`-module summand |
 | `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
 | `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
 | `ker_cartierDual_le` | OPEN | the hard half: a character trivial on `Spec A'` descends |
@@ -521,30 +527,103 @@ here. The split is by *where the mathematics is*:
 
 -/
 
+/-- **The quotient `A / i(A'')` is `R`-flat.**
+
+OPEN, and after the decomposition below this is the *only* mathematical content left underneath
+`exists_linearRetraction`: the passage from flatness of the quotient to an actual `R`-linear
+splitting is pure module theory (flat + finitely presented ⟹ projective ⟹ the surjection
+`A ↠ A/i(A'')` splits) and is proven there.
+
+Why it is true, and — importantly — **what it is really gated on**:
+
+* `A''` is `R`-free, hence `R`-flat, so by transitivity of flatness (`Module.Flat.trans`) it is
+  enough to prove that `Q := A / i(A'')` is flat as a module over `A''` (acting through `i`).
+* `i : A'' → A` is faithfully flat by hypothesis, so `A''`-flatness of `Q` may be checked after
+  base change along `i`: it suffices that `Q ⊗_{A''} A` be `A''`-flat.
+* That base change is where the group structure is spent. **Takeuchi's theorem** — if `A` is
+  faithfully flat over a sub-Hopf-algebra `A''` then `A` is an `A'`-Galois extension of `A''`,
+  where `A' = A / A·i(ker ε_{A''})` — says the *Galois map*
+  `β : A ⊗_{A''} A → A ⊗[R] A'`,  `a ⊗ b ↦ ∑ (a * b₍₁₎) ⊗ π b₍₂₎`,
+  is bijective. This is exactly the statement that `Spec A → Spec A''` is an fppf
+  `Spec A'`-torsor, written without leaving affine algebra. Under `β` the base-changed inclusion
+  `A = A'' ⊗_{A''} A → A ⊗_{A''} A` becomes `a ↦ a ⊗ 1`, which is split by `id ⊗ ε_{A'}`; so
+  `Q ⊗_{A''} A ≅ A ⊗[R] I'` with `I' = ker ε_{A'}`. Now `I'` is an `R`-module direct summand of
+  the finite free `A'` (the counit splits the unit), hence `R`-projective, so `A ⊗[R] I'` is
+  `A`-projective and a fortiori `A''`-flat.
+
+**Correction to an earlier note in this file.** The gap here is *not* "fppf descent is absent
+from the pin". Faithfully flat descent for modules **is** in this pin — categorically, as
+comonadicity of extension of scalars along a faithfully flat map
+(`ModuleCat.comonadicExtendScalars` in `Mathlib/Algebra/Category/ModuleCat/Descent.lean`), and
+for ring-map properties in `CodescendsAlong` form
+(`RingHom.FaithfullyFlat.codescendsAlong_injective` and friends). What is genuinely absent is the
+**Hopf–Galois input**, i.e. bijectivity of `β`; and the module-level convenience form of
+"flatness descends along a faithfully flat base change" is also not stated in the pin, though it
+is a direct consequence of the faithfully flat machinery that is.
+
+Refuting check: exhibit a short exact sequence of finite free commutative Hopf algebras in which
+`A / i(A'')` has `R`-torsion. Equivalently (`exists_linearRetraction` below is an equivalence),
+exhibit an `R`-functional on `A''` that does not extend to `A`. Over a base field no
+counterexample can exist, since every module is flat; so any counterexample must use a non-local,
+non-field base. -/
+theorem IsShortExact.flat_quotient (h : IsShortExact i π) :
+    Module.Flat R (A ⧸ LinearMap.range ((i.toAlgHom : A'' →ₐ[R] A).toLinearMap)) := sorry
+
 /-- **`i(A'')` is an `R`-module direct summand of `A`**: the inclusion of the sub-bialgebra
 admits an `R`-linear retraction.
 
-OPEN, and this is the module-theoretic heart of the surjectivity half of exactness of duality.
+**PROVEN** (2026-07-27) from `IsShortExact.flat_quotient`, by pure module theory: writing
+`f : A'' →ₗ[R] A` for `i` and `Q = A / range f`,
+
+* `f` is injective, because a faithfully flat ring map is (`IsShortExact.injective`);
+* `A` is finite free over `R`, hence finitely presented, and `range f` is finitely generated
+  because `A''` is a finite `R`-module — so `Q` is finitely presented;
+* `Q` is flat (`flat_quotient`) and finitely presented, hence **projective**
+  (`Module.Flat.projective_of_finitePresentation`);
+* therefore the quotient map `A ↠ Q` admits a linear section `s`, and `u = id - s ∘ mkQ` is an
+  idempotent-style projector of `A` onto `range f` restricting to the identity on it; composing
+  with `(LinearEquiv.ofInjective f).symm` gives the retraction.
+
 It is *equivalent* to `surjective_cartierDual_map` — `A''` is finite free over `R`, so a
 retraction can be reassembled from extensions of a dual basis — so stating it this way is a
 change of formulation, not a weakening.
 
-Why it is true. `A` is faithfully flat over `i(A'')`, so `Spec A → Spec A''` is an fppf
-`Spec A'`-torsor; locally on `Spec R` the torsor is trivial and the normal-basis isomorphism
-`A ≅ A'' ⊗[R] A'` of `A''`-modules carries `i(A'')` to `A'' ⊗ R·1`. Since `ε_{A'} : A' → R`
-splits `R·1 ⊆ A'`, the quotient `A / i(A'')` is *locally free*, hence — being finitely presented
-over `R` — projective, hence the sequence `0 → i(A'') → A → A/i(A'') → 0` splits globally.
-Locality is not an obstruction here precisely because it is used to establish projectivity of the
-quotient, which is a local property, rather than to produce the splitting directly.
-
-Refuting check, if this is ever doubted: exhibit a short exact sequence of finite free
-commutative Hopf algebras in which `A / i(A'')` has `R`-torsion. Equivalently, exhibit a
-functional on `A''` that does not extend to `A`.
-
 Note this needs *no* finiteness or freeness over `R` to state, and the freeness enters only
 through the proof; it is stated in the `Dual` section only because that is where it is used. -/
 theorem IsShortExact.exists_linearRetraction (h : IsShortExact i π) :
-    ∃ r : A →ₗ[R] A'', ∀ a : A'', r (i a) = a := sorry
+    ∃ r : A →ₗ[R] A'', ∀ a : A'', r (i a) = a := by
+  set f : A'' →ₗ[R] A := (i.toAlgHom : A'' →ₐ[R] A).toLinearMap with hf_def
+  have hinj : Function.Injective f := h.injective
+  have hFPA : Module.FinitePresentation R A := Module.finitePresentation_of_projective R A
+  have hFP : Module.FinitePresentation R (A ⧸ LinearMap.range f) :=
+    Module.finitePresentation_of_surjective (LinearMap.range f).mkQ
+      (Submodule.mkQ_surjective _) (by rw [Submodule.ker_mkQ]; exact Submodule.fg_range f)
+  have hflat := h.flat_quotient
+  have hproj : Module.Projective R (A ⧸ LinearMap.range f) :=
+    Module.Flat.projective_of_finitePresentation
+  obtain ⟨s, hs⟩ := Module.projective_lifting_property (LinearMap.range f).mkQ
+    (LinearMap.id) (Submodule.mkQ_surjective _)
+  set u : A →ₗ[R] A := LinearMap.id - s ∘ₗ (LinearMap.range f).mkQ with hu_def
+  have hu : ∀ n : A, u n ∈ LinearMap.range f := by
+    intro n
+    have hz : (LinearMap.range f).mkQ (u n) = 0 := by
+      simp only [hu_def, LinearMap.sub_apply, LinearMap.id_apply, LinearMap.comp_apply, map_sub]
+      have hid := LinearMap.congr_fun hs ((LinearMap.range f).mkQ n)
+      simp only [LinearMap.comp_apply, LinearMap.id_apply] at hid
+      rw [hid, sub_self]
+    rwa [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at hz
+  refine ⟨(LinearEquiv.ofInjective f hinj).symm ∘ₗ u.codRestrict (LinearMap.range f) hu, ?_⟩
+  intro a
+  have hfm : u (f a) = f a := by
+    simp only [hu_def, LinearMap.sub_apply, LinearMap.id_apply, LinearMap.comp_apply,
+      Submodule.mkQ_apply, (Submodule.Quotient.mk_eq_zero _).2 (LinearMap.mem_range_self f a),
+      map_zero, sub_zero]
+  have hcod : u.codRestrict (LinearMap.range f) hu (f a) = LinearEquiv.ofInjective f hinj a := by
+    apply Subtype.ext
+    simpa using hfm
+  show ((LinearEquiv.ofInjective f hinj).symm ∘ₗ u.codRestrict (LinearMap.range f) hu) (f a) = a
+  rw [LinearMap.comp_apply, hcod]
+  simp
 
 /-- **The transposed inclusion `(Spec A)^D → (Spec A'')^D` is a closed immersion**, i.e.
 `CartierDual.map i` is surjective.
@@ -589,10 +668,31 @@ sub-bialgebra `i(A'')` lies in the ideal of `CartierDual R A` generated by
 OPEN. In functor-of-points language this is exactness of
 `1 → (Spec A'')^D → (Spec A)^D → (Spec A')^D` at the middle term: a character of `Spec A`
 that is trivial on the subgroup `Spec A'` factors through the fppf quotient
-`Spec A / Spec A' = Spec A''`. That factorisation is **fppf descent along the faithfully flat
-`Spec A → Spec A''`**, and the descent statement for modules is *not in this pin* — the same gap
-`CartierDual.lean`'s "What remains" section records as the reason a definition of the quotient
-could not be written there. So this leaf is gated on descent, not merely hard.
+`Spec A / Spec A' = Spec A''`.
+
+**GATE AUDIT, corrected 2026-07-27.** This docstring previously recorded the leaf as "gated on
+fppf descent, and the descent statement for modules is not in this pin". Both halves of that are
+wrong and they sent work at the wrong subtree:
+
+* Faithfully flat descent for modules **is** in the pin — as comonadicity of extension of
+  scalars along a faithfully flat ring map (`ModuleCat.comonadicExtendScalars`,
+  `Mathlib/Algebra/Category/ModuleCat/Descent.lean`), and for ring-map properties in
+  `CodescendsAlong` form (`Mathlib/RingTheory/Flat/FaithfullyFlat/Descent.lean`).
+* And descent is not what this leaf needs anyway. What it needs is the **fppf-local normal basis
+  decomposition** of `A` over `A''`: an isomorphism `A ≅ A'' ⊗[R] A'` of `A''`-modules and
+  `A'`-comodules after a faithfully flat base change `R → S`. Given that, dualise: `D(A)`
+  becomes `(A'')^∨ ⊗ D(A')`, `CartierDual.map i` becomes evaluation of the second factor at `1`,
+  and both sides of this inclusion become `(A'')^∨ ⊗ ker(ev₁)` — so the two sides are literally
+  equal locally. The inclusion may then be checked after the faithfully flat base change,
+  because `RingHom.ker` commutes with flat base change, `Ideal.map` commutes with any base
+  change, and a finitely generated module vanishes iff it vanishes faithfully-flat-locally.
+
+The local decomposition is in turn the Hopf–Galois input recorded on
+`IsShortExact.flat_quotient`: Takeuchi's theorem that `A` faithfully flat over the sub-Hopf-
+algebra `A''` makes `A` an `A'`-Galois extension of `A''`, i.e. the Galois map
+`β : A ⊗_{A''} A → A ⊗[R] A'`, `a ⊗ b ↦ ∑ (a * b₍₁₎) ⊗ π b₍₂₎`, bijective. So this leaf and
+`flat_quotient` and `faithfullyFlat_cartierDual` are all gated on **one** missing theorem, and
+that theorem — not descent — is what a dispatch here should target.
 
 What is available, and what is not:
 
@@ -622,6 +722,24 @@ subgroup `Spec A'` extends fppf-locally to `Spec A`. Classically (Tate, *Finite 
 schemes*, §2) this is `Ext¹(G'', 𝔾ₘ) = 0` for finite flat `G''`, proven by exhibiting
 `CartierDual R A` as a *free* `CartierDual R A'`-module on a basis dual to an
 `R`-basis of `A''` — the linear dual of the normal-basis decomposition `A ≅ A'' ⊗[R] A'`.
+
+**Gate**: the same single missing theorem as `IsShortExact.flat_quotient` and
+`IsShortExact.ker_cartierDual_le` — the fppf-local normal basis decomposition, i.e. Takeuchi's
+theorem that the Galois map `A ⊗_{A''} A → A ⊗[R] A'` is bijective. Given the decomposition over
+a faithfully flat `R → S`, `D(A) ⊗ S` is `D(A') ⊗ S`-free of rank `rk A'' ≥ 1`; flatness and
+surjectivity of the induced map on prime spectra are both fppf-local on the base, so faithful
+flatness descends to `R`. Do **not** dispatch a "write fppf descent" task at this: descent is in
+the pin (see the gate audit on `ker_cartierDual_le`); the Hopf–Galois input is not.
+
+**CRITICAL-PATH NOTE (2026-07-27).** This field is *not consumed by `(R3)`*. The file's consumer
+chain is `isMultiplicativeType_of_isShortExact = etale_of_isShortExact h.cartierDual _ _`, and
+`etale_of_isShortExact` goes through `IsShortExact.augmentationIdeal_sq_eq`, which uses only the
+`surjective` and `ker_eq` fields — its own docstring says so. So the *only* reason
+`faithfullyFlat_cartierDual` is in the cone at all is that `IsShortExact.cartierDual` builds a
+full `IsShortExact` structure. If the remaining Hopf–Galois input proves expensive, the cheap
+structural repair is to give `etale_of_isShortExact` (or a variant of `cartierDual`) the two
+fields it actually uses, which takes this leaf off the root cone entirely and leaves it as a
+statement of record about duality. That is a cut-level decision, deliberately not taken here.
 
 Refuting check: `RingHom.FaithfullyFlat` unfolds to `Module.FaithfullyFlat` along
 `(CartierDual.map π).toAlgebra`, so a refutation would be a maximal ideal `m` of
