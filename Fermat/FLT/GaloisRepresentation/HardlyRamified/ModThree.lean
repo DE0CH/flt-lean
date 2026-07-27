@@ -8541,17 +8541,186 @@ def IsFontaineAlgebra (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] : Prop :=
     Module.Flat (A ⧸ Ideal.span {(3 : A)})
       ((A ⧸ Ideal.span {(3 : A)}) ⊗[A] Ω[A⁄𝒪₃ᵥ])
 
+/-- **A MATRIX MOVES A VECTOR OF IDEAL ELEMENTS INSIDE THE IDEAL** (PROVEN
+2026-07-27): each coordinate of `M *ᵥ v` is a sum of multiples of the `v j`.
+Used four times by the two halves of Fontaine's inductive step below, where
+the vector of perturbations `μ` is produced and re-read through the inverse
+of the normalised Jacobian. -/
+theorem mulVec_mem_of_forall_mem {O : Type*} [CommRing O] {h : ℕ} (I : Ideal O)
+    (M : Matrix (Fin h) (Fin h) O) (v : Fin h → O) (hv : ∀ j, v j ∈ I) (i : Fin h) :
+    (M.mulVec v) i ∈ I := by
+  rw [Matrix.mulVec_apply_eq_sum]
+  exact Ideal.sum_mem _ fun j _ => Ideal.mul_mem_left _ _ (hv j)
+
+/-- **TRUNCATING TWICE IS TRUNCATING ONCE** (PROVEN 2026-07-27): the
+reduction maps `O ⧸ 𝔪^c → O ⧸ 𝔪^b → O ⧸ 𝔪^a` of `Ideal.Quotient.factorₐ`
+compose to the reduction `O ⧸ 𝔪^c → O ⧸ 𝔪^a`, after an algebra map `V`.
+Every step of Fontaine's induction below has to move between three
+truncation levels at once (`1`, `t`, `n + 1`), and this is the bookkeeping
+that lets the residue-level normalisation `ū` be read off any of them. -/
+theorem factorₐ_pow_comp_factorₐ_pow {R : Type*} [CommRing R] {A : Type*}
+    [CommRing A] [Algebra R A] {O : Type*} [CommRing O] [Algebra R O] (𝔪 : Ideal O)
+    (a b c : ℕ) (hab : a ≤ b) (hbc : b ≤ c) (V : A →ₐ[R] (O ⧸ 𝔪 ^ c)) :
+    (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right (I := 𝔪) hab)).comp
+        ((Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right (I := 𝔪) hbc)).comp V)
+      = (Ideal.Quotient.factorₐ R
+          (Ideal.pow_le_pow_right (I := 𝔪) (hab.trans hbc))).comp V := by
+  refine AlgHom.ext fun y => ?_
+  obtain ⟨z, hz⟩ := Ideal.Quotient.mk_surjective (V y)
+  simp only [AlgHom.comp_apply, ← hz]
+  rfl
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **FONTAINE'S INDUCTIVE STEP, EXISTENCE HALF** (sorry node; created
-2026-07-27 as one of the two leaves of the decomposition of
+/-- **FONTAINE'S PRESENTATION IN COORDINATES** (sorry node, created
+2026-07-27 as the SHARED core of the two halves of Fontaine's inductive
+step below; it is steps 1–4 of his argument, and step 5 — the linear
+algebra that both halves run — is now PROVEN, twice, from this statement).
+
+READ `exists_algHom_quotient_maximalIdeal_pow_succ` below first: its
+docstring carries the FALSITY AUDIT that refuted the `∃!` this cut
+replaces, Fontaine's five-move proof transcribed from pp. 521–522, and the
+dictionary with his notation.  This leaf is that proof's moves 1–4,
+packaged so that move 5 can be run against it without any power-series API
+appearing in the statement.
+
+WHAT IT SAYS.  Fix `𝒪 := 𝒪_E`, `𝔪 := 𝔪_E`, and a residue-level
+`𝒪₃ᵥ`-algebra map `ū : A → 𝒪/𝔪` (every map occurring in either half
+reduces to a common `ū`, because they all agree modulo `𝔪^t` with
+`t ≥ 1`).  Then there are
+
+* a number `h` of coordinates and elements `x₁,…,x_h ∈ A`;
+* an "equation function" `F : 𝒪^h → 𝒪^h` — think `F w = (P_i(w))_i` for
+  Fontaine's `h` equations `P_i ∈ 𝒪₃ᵥ[[X₁,…,X_h]]` cutting out `A`;
+* a "normalised Jacobian" `p : 𝒪^h → Mat_h(𝒪)` — think
+  `p w = ((∂P_i/∂X_j)(w) / 3)`;
+
+satisfying five clauses:
+
+1. **SEPARATION.**  Two `𝒪₃ᵥ`-algebra maps `A → 𝒪/𝔪^k` with the same
+   residue map `ū` and the same values on the `x_i` are EQUAL.  (This is
+   why the residue normalisation is needed: `A` is only semilocal, and the
+   `x_i` topologically generate the local factor `ū` picks out.  Without
+   `ū` the clause is FALSE — take `A = 𝒪₃ᵥ × 𝒪₃ᵥ` and `h = 0`.)
+2. **SOLUTIONS ARE POINTS.**  A tuple `w ∈ 𝔪^h` with `F w ≡ 0 mod 𝔪^k`
+   comes from a map `A → 𝒪/𝔪^k` over `ū` sending `x_i ↦ w_i`.
+3. **POINTS ARE SOLUTIONS.**  Conversely, the coordinates of a map over
+   `ū` lie in `𝔪` and solve `F ≡ 0 mod 𝔪^k`.
+4. **TAYLOR.**  For `w ∈ 𝔪^h` and a perturbation `μ ∈ (𝔪^t)^h`,
+   `F(w + μ) ≡ F w + 3 · (p w) *ᵥ μ  (mod 𝔪^(n+1))`.
+   This is the ONLY clause that consumes the threshold `ht : e < 2t`, and
+   it packages BOTH of Fontaine's estimates: the quadratic-and-higher
+   remainder lies in `𝔪^(n+1)` (his `R ∈ 3·I^[n+1]`), and the linear
+   coefficient `(∂P_i/∂X_j)(w)` is `3·p_ij(w)` up to `𝔪^n` (his
+   `≡ 3·P_ij(u) mod 3I^[n]`, absorbed here because
+   `𝔪^n · 𝔪^t ⊆ 𝔪^(n+1)`).
+5. **INVERTIBILITY.**  `p w` is invertible over `𝒪` for every `w ∈ 𝔪^h`.
+
+WHY THIS IS THE RIGHT CUT.  Clauses 1–3 are the universal property of the
+presentation, clause 4 is the analysis, clause 5 is the algebra; between
+them they are exactly what step 5 needs, and NOTHING of the power-series
+machinery leaks into the statement.  Both halves are then four-line
+manipulations: put `F w = 3δ` with `δ ∈ 𝔪^t` (possible because
+`𝔪^n = (3)·𝔪^t`), solve `δ + (p w) *ᵥ μ = 0` by inverting `p w`, and read
+the answer back through clause 2 — for the EXISTENCE half; and subtract
+two solutions and invert `p w` again — for the RIGIDITY half.  In
+particular the two halves genuinely share this one leaf, which is what the
+decomposition was for.
+
+WHAT REMAINS TO BE BUILT (unchanged from the transcription below, minus
+step 5):
+* step 1 — reduction to `A` LOCAL with residue field `𝔽₃`, and freeness of
+  `Ω[A⁄𝒪₃ᵥ]` over `A/3A` on the `dx_i`;
+* step 2 — the surjection `α : 𝒪₃ᵥ[[X₁,…,X_h]] ↠ A` and, from the
+  complete-intersection half of `hfon`, `ker α = (P₁,…,P_h)` with `h`
+  equations in `h` variables.  Clauses 1–3 are then the universal property
+  of `𝒪₃ᵥ[[X]]/(P)` evaluated at topologically nilpotent tuples, for which
+  `Mathlib/RingTheory/MvPowerSeries/{Substitution,Evaluation}.lean` is the
+  relevant API;
+* step 3 — `(∂P_i/∂X_j)(x) ∈ 3A` and invertibility of `(p_ij)`, which is
+  where `hΩ` and the flatness half of `hfon` are used;
+* step 4 — the Hasse-form Taylor expansion
+  `P(u + μ) = Σ_r (∂^[r]P)(u)·μ^r`, needing `MvPowerSeries.subst` plus a
+  Hasse-derivative API for `MvPowerSeries` (the pin has one only for
+  univariate `Polynomial`).  NOTE that no divided-power structure on `𝒪_E`
+  is required — see the ROUTE CORRECTION in the docstring below. -/
+theorem exists_fontaineCoordinates
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    (hΩ : ∀ ω : Ω[A⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0)
+    (hfon : IsFontaineAlgebra A)
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E]
+    (e t n : ℕ)
+    (he : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e)
+    (ht : e < 2 * t) (htn : t + e = n)
+    (ū : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1)) :
+    ∃ (h : ℕ) (x : Fin h → A)
+      (F : (Fin h → IntegralClosure 𝒪₃ᵥ E) → Fin h → IntegralClosure 𝒪₃ᵥ E)
+      (p : (Fin h → IntegralClosure 𝒪₃ᵥ E) →
+        Matrix (Fin h) (Fin h) (IntegralClosure 𝒪₃ᵥ E)),
+      (∀ (k : ℕ) (hk : 1 ≤ k) (v₁ v₂ : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+            IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)),
+          (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+            (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hk)).comp v₁ = ū →
+          (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+            (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hk)).comp v₂ = ū →
+          (∀ i, v₁ (x i) = v₂ (x i)) → v₁ = v₂) ∧
+      (∀ (k : ℕ) (hk : 1 ≤ k) (w : Fin h → IntegralClosure 𝒪₃ᵥ E),
+          (∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) →
+          (∀ i, F w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) →
+          ∃ v : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+            IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k),
+            (∀ i, v (x i) = Ideal.Quotient.mk
+              (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) (w i)) ∧
+            (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+              (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hk)).comp v = ū) ∧
+      (∀ (k : ℕ) (hk : 1 ≤ k) (v : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+            IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k))
+          (w : Fin h → IntegralClosure 𝒪₃ᵥ E),
+          (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+            (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hk)).comp v = ū →
+          (∀ i, v (x i) = Ideal.Quotient.mk
+            (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) (w i)) →
+          (∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) ∧
+            (∀ i, F w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) ∧
+      (∀ w μ : Fin h → IntegralClosure 𝒪₃ᵥ E,
+          (∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) →
+          (∀ i, μ i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t) →
+          ∀ i, F (w + μ) i - F w i - 3 * ((p w).mulVec μ) i ∈
+            IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1)) ∧
+      (∀ w : Fin h → IntegralClosure 𝒪₃ᵥ E,
+          (∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) →
+          IsUnit (p w).det) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FONTAINE'S INDUCTIVE STEP, EXISTENCE HALF** (PROVEN 2026-07-27 from
+`exists_fontaineCoordinates` above; created 2026-07-27 as one of the two
+leaves of the decomposition of
 `existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` below, RESTATED
 2026-07-27 by the next owner after the `∃!` it originally asserted was
 REFUTED — see the FALSITY AUDIT below).  This leaf and its sibling
 `sub_mem_maximalIdeal_pow_succ_of_algHom_quotient_sub_mem` carry between
 them ALL of the arithmetic of Fontaine's Prop. 1.7 (i) (a), and they are
 the only places the threshold hypothesis `ht : e < 2t` is consumed.
+
+THE PROOF BELOW IS FONTAINE'S STEP 5 — his linear algebra — run against
+`exists_fontaineCoordinates`, which packages steps 1–4.  Read `w` for the
+tuple of lifts of `u(x_i)`.  Clause 3 of that leaf puts `F w` in `𝔪^n`,
+and `𝔪^n = 𝔪^e·𝔪^t = (3)·𝔪^t` by `he`, so `F w = 3δ` with `δ ∈ (𝔪^t)^h`
+— that is Fontaine's `P_i(u) = 3δ_i`.  Clause 5 inverts the normalised
+Jacobian `p w`, so `μ := −(p w)⁻¹ δ` lies in `(𝔪^t)^h` and solves
+`δ + (p w) *ᵥ μ = 0` ON THE NOSE; clause 4 then reads
+`F(w + μ) ≡ F w + 3·(p w) *ᵥ μ = 3(δ − δ) = 0 (mod 𝔪^(n+1))`, and clause 2
+turns the perturbed tuple back into a map `u' : A → 𝒪_E/𝔪^(n+1)`.  That
+`u'` agrees with `u` modulo `𝔪^t` because `μ ∈ (𝔪^t)^h`, which clause 1
+upgrades from "on the `x_i`" to "on all of `A`".  NOTE that `3 ≠ 0` is not
+needed here — only the RIGIDITY half has to cancel a `3`.
 
 STATEMENT.  Let `A` be a Fontaine algebra over `𝒪₃ᵥ ≅ ℤ₃` (finite flat,
 `Ω[A⁄𝒪₃ᵥ]` killed by `3`, locally a complete intersection, `Ω¹` flat over
@@ -8749,7 +8918,67 @@ theorem exists_algHom_quotient_maximalIdeal_pow_succ
       (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
         (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
         (show t ≤ n by omega))).comp u := by
-  sorry
+  classical
+  have ht1 : 1 ≤ t := by omega
+  have hn1 : 1 ≤ n := by omega
+  obtain ⟨h, x, F, p, hsep, hsol, hpt, htay, hinv⟩ :=
+    exists_fontaineCoordinates A hΩ hfon E e t n he ht htn
+      ((Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hn1)).comp u)
+  choose w hw using fun i => Ideal.Quotient.mk_surjective
+    (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ n) (u (x i))
+  obtain ⟨hwm, hFw⟩ := hpt n hn1 u w rfl (fun i => (hw i).symm)
+  -- Fontaine's `P_i(u) = 3·δ_i`: `𝔪^n = (3)·𝔪^t`, so `F w` is `3` times a `𝔪^t`-vector.
+  have hsplit : ∀ i, ∃ z ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t,
+      (3 : IntegralClosure 𝒪₃ᵥ E) * z = F w i := by
+    intro i
+    have hmem : F w i ∈ Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} *
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t := by
+      rw [he, ← pow_add, show e + t = n by omega]
+      exact hFw i
+    exact Ideal.mem_span_singleton_mul.mp hmem
+  choose δ hδmem hδ using hsplit
+  have hMdet : IsUnit (p w).det := hinv w hwm
+  -- The perturbation solving `δ + (p w) *ᵥ μ = 0`.
+  set μ : Fin h → IntegralClosure 𝒪₃ᵥ E := -((p w)⁻¹.mulVec δ) with hμdef
+  have hμmem : ∀ i, μ i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t := by
+    intro i
+    rw [hμdef]
+    exact neg_mem (mulVec_mem_of_forall_mem _ _ _ hδmem i)
+  have hMμ : (p w).mulVec μ = -δ := by
+    rw [hμdef, Matrix.mulVec_neg, Matrix.mulVec_mulVec,
+      Matrix.mul_nonsing_inv _ hMdet, Matrix.one_mulVec]
+  have hnew : ∀ i, F (w + μ) i ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1) := by
+    intro i
+    have h1 := htay w μ hwm hμmem i
+    have h2 : F w i + 3 * ((p w).mulVec μ) i = 0 := by
+      rw [hMμ, Pi.neg_apply, ← hδ i]; ring
+    have h4 : F (w + μ) i =
+        (F (w + μ) i - F w i - 3 * ((p w).mulVec μ) i) +
+          (F w i + 3 * ((p w).mulVec μ) i) := by ring
+    rw [h4, h2, add_zero]
+    exact h1
+  have hwμm : ∀ i, (w + μ) i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) := by
+    intro i
+    have hmu : μ i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1 :=
+      Ideal.pow_le_pow_right ht1 (hμmem i)
+    rw [pow_one] at hmu
+    exact Ideal.add_mem _ (hwm i) hmu
+  obtain ⟨v, hvx, hvred⟩ := hsol (n + 1) (by omega) (w + μ) hwμm hnew
+  refine ⟨v, ?_⟩
+  refine hsep t ht1 _ _ ?_ ?_ ?_
+  · rw [factorₐ_pow_comp_factorₐ_pow _ 1 t (n + 1) ht1 (by omega) v, hvred]
+  · rw [factorₐ_pow_comp_factorₐ_pow _ 1 t n ht1 (by omega) u]
+  · intro i
+    simp only [AlgHom.comp_apply, hvx i, ← hw i]
+    show Ideal.Quotient.mk (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t)
+        ((w + μ) i) =
+      Ideal.Quotient.mk (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t) (w i)
+    rw [Ideal.Quotient.eq]
+    have hdiff : (w + μ) i - w i = μ i := by simp
+    rw [hdiff]
+    exact hμmem i
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -8853,7 +9082,12 @@ theorem isAdicComplete_maximalIdeal_integralClosure
     have hsum := Ideal.add_mem _ h1 h2
     simpa using hsum
   exact ⟨⟩
-/-- **FONTAINE'S INDUCTIVE STEP, RIGIDITY HALF** (sorry node, created
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FONTAINE'S INDUCTIVE STEP, RIGIDITY HALF** (PROVEN 2026-07-27 from
+`exists_fontaineCoordinates` above, the same shared leaf the existence
+half runs against; created
 2026-07-27 as part of the repair of the refuted `∃!` on
 `exists_algHom_quotient_maximalIdeal_pow_succ` above — read that leaf's
 FALSITY AUDIT first, and its transcription of Fontaine's proof, of which
@@ -8874,15 +9108,18 @@ pinning it here is exactly right, and exactly enough: it is the ONLY thing
 that lemma it is what supplies Fontaine 1.7 (i) (b), the uniqueness half of
 `existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow`.
 
-PROOF (steps 1–5 of the sibling, run once and then subtracted).  Let `u_i`
-lift `v₂(x_i)`, so that `v₁(x_i) = u_i + μ_i` with `μ_i ∈ 𝔪^t` by the
-hypothesis `h`, and `μ = 0` realises `v₂`.  Both maps kill `J`, so both
-perturbations satisfy the SAME linear congruence
-`δ_i + Σ_j P_ij(u)·μ_j ≡ 0 mod 𝔪^(t+1)` of step 5; subtracting,
-`Σ_j P_ij(u)·μ_j ≡ 0 mod 𝔪^(t+1)`, and `(p_ij)` is invertible over `A`
-(step 3), so `(P_ij(u))` is invertible over `𝒪_E` and `μ_i ∈ 𝔪^(t+1)`.
-That is agreement of `v₁` and `v₂` modulo `𝔪^(t+1)`, since the `x_i`
-topologically generate `A`.
+PROOF (Fontaine's step 5, run against `exists_fontaineCoordinates`, which
+packages steps 1–4).  Let `w` lift `v₂(x_i)` and `w'` lift `v₁(x_i)`, and
+put `μ := w' − w`, which lies in `(𝔪^t)^h` by the hypothesis `h`.  Clause
+3 of the shared leaf puts BOTH `F w` and `F w'` in `𝔪^(n+1)`, and clause 4
+expands `F w' = F(w + μ) ≡ F w + 3·(p w) *ᵥ μ (mod 𝔪^(n+1))`; subtracting,
+`3·(p w) *ᵥ μ ∈ 𝔪^(n+1)`.  Now `𝔪^(n+1) = 𝔪^e·𝔪^(t+1) = (3)·𝔪^(t+1)` by
+`he`, and `3` is a nonzerodivisor of the domain `𝒪_E`, so the factor `3`
+CANCELS and `(p w) *ᵥ μ ∈ (𝔪^(t+1))^h`.  Clause 5 inverts `p w`, giving
+`μ ∈ (𝔪^(t+1))^h` — i.e. `v₁` and `v₂` agree modulo `𝔪^(t+1)` on the
+`x_i`, which clause 1 upgrades to agreement on all of `A`.  This is where
+the `∃!` died: the cancellation of `3` costs exactly the `e` notches
+between `𝔪^(t+1)` and `𝔪^(n+1)`, and no rearrangement recovers them.
 
 NOT VACUOUS, and not implied by the sibling: the sibling produces ONE lift
 and says nothing about any other, whereas this statement quantifies over
@@ -8915,7 +9152,90 @@ theorem sub_mem_maximalIdeal_pow_succ_of_algHom_quotient_sub_mem
       (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
         (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
         (show t + 1 ≤ n + 1 by omega))).comp v₂ := by
-  sorry
+  classical
+  have ht1 : 1 ≤ t := by omega
+  have hn1 : 1 ≤ n + 1 := by omega
+  haveI : CharZero ℚ₃ᵥ :=
+    charZero_of_injective_algebraMap (algebraMap ℚ ℚ₃ᵥ).injective
+  haveI : CharZero E :=
+    charZero_of_injective_algebraMap (algebraMap ℚ₃ᵥ E).injective
+  have h3 : (3 : IntegralClosure 𝒪₃ᵥ E) ≠ 0 := by
+    intro h0
+    have h2 := congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ E) E) h0
+    rw [map_ofNat, map_zero] at h2
+    exact (by norm_num : (3 : E) ≠ 0) h2
+  -- Both maps have the SAME residue map, because they agree modulo `𝔪^t` with `t ≥ 1`.
+  have hū2 : (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hn1)).comp v₂ =
+      (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hn1)).comp v₁ := by
+    rw [← factorₐ_pow_comp_factorₐ_pow _ 1 t (n + 1) ht1 (by omega) v₂,
+      ← factorₐ_pow_comp_factorₐ_pow _ 1 t (n + 1) ht1 (by omega) v₁, h]
+  obtain ⟨h', x, F, p, hsep, hsol, hpt, htay, hinv⟩ :=
+    exists_fontaineCoordinates A hΩ hfon E e t n he ht htn
+      ((Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hn1)).comp v₁)
+  choose w hw using fun i => Ideal.Quotient.mk_surjective
+    (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1)) (v₂ (x i))
+  choose w' hw' using fun i => Ideal.Quotient.mk_surjective
+    (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1)) (v₁ (x i))
+  obtain ⟨hwm, hFw⟩ := hpt (n + 1) hn1 v₂ w hū2 (fun i => (hw i).symm)
+  obtain ⟨-, hFw'⟩ := hpt (n + 1) hn1 v₁ w' rfl (fun i => (hw' i).symm)
+  set μ : Fin h' → IntegralClosure 𝒪₃ᵥ E := w' - w with hμdef
+  have hμt : ∀ i, μ i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t := by
+    intro i
+    have hval := AlgHom.congr_fun h (x i)
+    simp only [AlgHom.comp_apply, ← hw i, ← hw' i] at hval
+    have hval' : Ideal.Quotient.mk
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t) (w' i) =
+      Ideal.Quotient.mk
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t) (w i) := hval
+    rw [Ideal.Quotient.eq] at hval'
+    exact hval'
+  have hwμ : w + μ = w' := by
+    funext i; rw [hμdef]; simp
+  -- Subtracting the two Taylor expansions kills `F` and leaves `3·(p w) *ᵥ μ`.
+  have key : ∀ i, (3 : IntegralClosure 𝒪₃ᵥ E) * ((p w).mulVec μ) i ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1) := by
+    intro i
+    have h1 := htay w μ hwm hμt i
+    rw [hwμ] at h1
+    have h2 : (3 : IntegralClosure 𝒪₃ᵥ E) * ((p w).mulVec μ) i =
+        (F w' i - F w i) - (F w' i - F w i - 3 * ((p w).mulVec μ) i) := by ring
+    rw [h2]
+    exact Ideal.sub_mem _ (Ideal.sub_mem _ (hFw' i) (hFw i)) h1
+  -- `𝔪^(n+1) = (3)·𝔪^(t+1)`, and `3` is a nonzerodivisor: the factor `3` cancels.
+  have key2 : ∀ i, ((p w).mulVec μ) i ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (t + 1) := by
+    intro i
+    have hmem : (3 : IntegralClosure 𝒪₃ᵥ E) * ((p w).mulVec μ) i ∈
+        Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} *
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (t + 1) := by
+      rw [he, ← pow_add, show e + (t + 1) = n + 1 by omega]
+      exact key i
+    obtain ⟨z, hz, hz3⟩ := Ideal.mem_span_singleton_mul.mp hmem
+    have hzz : z = ((p w).mulVec μ) i := mul_left_cancel₀ h3 hz3
+    rw [← hzz]; exact hz
+  have hMdet : IsUnit (p w).det := hinv w hwm
+  have hμt1 : ∀ i, μ i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (t + 1) := by
+    have hrec : μ = (p w)⁻¹.mulVec ((p w).mulVec μ) := by
+      rw [Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul _ hMdet, Matrix.one_mulVec]
+    intro i
+    rw [hrec]
+    exact mulVec_mem_of_forall_mem _ _ _ key2 i
+  refine hsep (t + 1) (by omega) _ _ ?_ ?_ ?_
+  · rw [factorₐ_pow_comp_factorₐ_pow _ 1 (t + 1) (n + 1) (by omega) (by omega) v₁]
+  · rw [factorₐ_pow_comp_factorₐ_pow _ 1 (t + 1) (n + 1) (by omega) (by omega) v₂, hū2]
+  · intro i
+    simp only [AlgHom.comp_apply, ← hw i, ← hw' i]
+    show Ideal.Quotient.mk
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (t + 1)) (w' i) =
+      Ideal.Quotient.mk
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (t + 1)) (w i)
+    rw [Ideal.Quotient.eq]
+    have hd : w' i - w i = μ i := by rw [hμdef]; simp
+    rw [hd]
+    exact hμt1 i
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -9522,6 +9842,15 @@ The cut is into THREE leaves:
   and they are the only places the threshold `hk` is consumed;
 * `exists_algHom_of_forall_exists_algHom_quotient` — the passage to the
   limit, a soft compactness statement with no arithmetic in it at all.
+UPDATE 2026-07-27 (seventh owner).  The first two of those three are now
+PROVEN, from a single shared leaf `exists_fontaineCoordinates` above which
+packages Fontaine's steps 1–4 (the presentation, the `3 ×` invertible
+Jacobian and the Taylor estimate) as five clauses about `𝒪_E`-coordinates.
+His step 5 — the linear algebra — is what those two proofs now are, and it
+is run twice against the one shared statement, exactly as the cut intended.
+So the arithmetic frontier below this theorem is the single open leaf
+`exists_fontaineCoordinates`, plus
+`exists_algHom_of_forall_exists_algHom_quotient`.
 Everything in between is proven here: `exists_algHom_quotient_maximalIdeal_pow_add`
 iterates the step to give approximate solutions at every level (EXISTENCE),
 and `sub_mem_maximalIdeal_pow_succ_of_algHom_sub_mem` /
