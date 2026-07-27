@@ -13170,37 +13170,47 @@ theorem jt_eq_of_isBaseChangeOf (ja : IsJSectionOnAffine) (R : Type) [CommRing R
   rw [ja.jt_natural (𝟙 (Spec (CommRingCat.of R))) (Category.id_comp g') (h₁'.cancel h₂)]
   exact Subtype.ext (Category.id_comp _)
 
-/-- **THE ZARISKI GLUING** (sorry node — all that is left of
-`exists_jTransformation_of_affine`).
+/-- **THE ZARISKI GLUING** (**PROVEN 2026-07-27**; formerly the last sorry
+node of `exists_jTransformation_of_affine`).
 
 TRUE, and it is descent and nothing else: no elliptic curve, no
 `Γ₀(N)`-structure beyond the ability to restrict one, and — since
 2026-07-27 — no `IsBaseChangeOf` bookkeeping either, all of which is
 discharged above.
 
-THE ARGUMENT.  Take the affine cover `𝒰 := T.affineOpenCover`.  For each
-`i`, `hbc (𝒰.f i) d` gives `dᵢ` on `Spec (𝒰.X i)`, and
-`ja.jt (𝒰.f i ≫ g) dᵢ` is a morphism `uᵢ : Spec (𝒰.X i) ⟶ 𝔸¹_ℚ`.  These
-are compatible: on the overlap `V := Spec (𝒰.X i) ×_T Spec (𝒰.X j)` —
-which is NOT affine, so `ja` does not apply to it directly — compatibility
-is checked by `hom_ext_of_affine` on `V`, i.e. against every affine
-`m : Spec A ⟶ V`.  There `m ≫ p₁` and `m ≫ p₂` are morphisms of AFFINE
-schemes, so `ja.jt_natural` applies to each, and what remains is that the
-two restrictions of `d` to `Spec A` — one through `i`, one through `j`,
-along the SAME composite by `pullback.condition` — have the same
-`ja.jt`.  That is exactly `hwd`.  Then
-`Scheme.Cover.glueMorphisms` produces `u`, and `Scheme.Cover.ι_glueMorphisms`
-gives its restrictions.
+THE ARGUMENT, as written.  Take the canonical affine cover
+`𝒰 := T.affineCover`.  For each `i`, `hbc (𝒰.f i) d` gives `dᵢ` on
+`𝒰.X i = Spec Rᵢ`, and `uᵢ := (ja.jt (𝒰.f i ≫ g) dᵢ).1` is a morphism
+`𝒰.X i ⟶ 𝔸¹_ℚ`.
 
-Finally `IsLocallyJ ja d u`: for an affine `k : Spec R ⟶ T` and any `d'`
-over it, apply `hom_ext_of_affine` to `Spec R` again and use the pullback
-cover of `Spec R` by the `𝒰.f i`, refined to affines.
+Everything then rests on ONE comparison, isolated as the `key` step of the
+proof and used twice:
 
-WHAT IS STILL MISSING, precisely: only the two `hom_ext_of_affine`
-bookkeeping arguments above and the two `glueMorphisms` calls.  The
-mathlib API is `Scheme.Cover.glueMorphisms`, `Scheme.Cover.ι_glueMorphisms`
-and `Scheme.Cover.hom_ext` (`Mathlib/AlgebraicGeometry/Gluing.lean`),
-together with `Scheme.affineOpenCover` and `Scheme.Cover.pullbackCover`.
+> for affine `Spec A`, affine `k₁ : Spec Z₁ ⟶ T` and `k₂ : Spec Z₂ ⟶ T`
+> carrying restrictions `d₁`, `d₂` of `d`, and any
+> `a : Spec A ⟶ Spec Z₁`, `b : Spec A ⟶ Spec Z₂` with `a ≫ k₁ = b ≫ k₂`,
+> one has `a ≫ (ja.jt (k₁ ≫ g) d₁).1 = b ≫ (ja.jt (k₂ ≫ g) d₂).1`.
+
+Its proof is `hbc` twice to restrict `d₁` and `d₂` to `Spec A`,
+`IsBaseChangeOf.comp` to see both results as restrictions of `d` along the
+SAME morphism `a ≫ k₁ = b ≫ k₂`, `hwd` to identify their `ja.jt`, and
+`ja.jt_natural` at `a` and at `b` to read that identification back as the
+displayed equation.  Note the base point is threaded through `jt_natural`'s
+`hg` argument rather than rewritten afterwards — `RelPoint jLineStr g₀`
+depends on `g₀`, so a `rw` there would need a motive.
+
+* OVERLAPS.  On `V := 𝒰.X i ×_T 𝒰.X j` — which is NOT affine, so `ja` does
+  not apply to it directly — compatibility is `hom_ext_of_affine` on `V`:
+  against every affine `m : Spec A ⟶ V`, `key` applies with
+  `a = m ≫ p₁`, `b = m ≫ p₂` and `pullback.condition`.
+  `Scheme.Cover.glueMorphisms` then produces `u`, and `u ≫ jLineStr = g`
+  is `Scheme.Cover.hom_ext` against `ι_glueMorphisms` and each `(uᵢ).2`.
+* LOCAL-GIVENNESS.  For an affine `k : Spec R ⟶ T` and any restriction
+  `d'` of `d` along it, cover `Spec R` by `𝒰.pullback₁ k` — whose pieces
+  are again not affine — and on each piece run `hom_ext_of_affine` once
+  more; `key` applies with `a = m ≫ pullback.snd`, `b = m ≫ pullback.fst`.
+  No affine REFINEMENT of the pullback cover is needed, which is what
+  keeps the proof short: the second `hom_ext_of_affine` does that work.
 
 WHY `hwd` IS A HYPOTHESIS RATHER THAN A CALL: it is PROVEN, as
 `jt_eq_of_isBaseChangeOf`, and threaded in exactly as `hbc` is, so that the
@@ -13217,8 +13227,69 @@ theorem exists_isLocallyJ (ja : IsJSectionOnAffine)
       {d₁ d₂ : Gamma0Datum 1 (Spec (CommRingCat.of R))} {d₀ : Gamma0Datum 1 T₀},
       IsBaseChangeOf k d₁ d₀ → IsBaseChangeOf k d₂ d₀ → ja.jt g₀ d₁ = ja.jt g₀ d₂)
     {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum 1 T) :
-    ∃ u : RelPoint jLineStr g, IsLocallyJ ja d u :=
-  sorry
+    ∃ u : RelPoint jLineStr g, IsLocallyJ ja d u := by
+  classical
+  -- THE KEY COMPARISON, used for both the overlaps and the local-givenness.
+  have key : ∀ (A : Type) [CommRing A] {Z₁ Z₂ : Type} [CommRing Z₁] [CommRing Z₂]
+      {k₁ : Spec (CommRingCat.of Z₁) ⟶ T} {k₂ : Spec (CommRingCat.of Z₂) ⟶ T}
+      {d₁ : Gamma0Datum 1 (Spec (CommRingCat.of Z₁))}
+      {d₂ : Gamma0Datum 1 (Spec (CommRingCat.of Z₂))},
+      IsBaseChangeOf k₁ d₁ d → IsBaseChangeOf k₂ d₂ d →
+      ∀ (a : Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of Z₁))
+        (b : Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of Z₂)),
+        a ≫ k₁ = b ≫ k₂ →
+        a ≫ (ja.jt (k₁ ≫ g) d₁).1 = b ≫ (ja.jt (k₂ ≫ g) d₂).1 := by
+    intro A _ Z₁ Z₂ _ _ k₁ k₂ d₁ d₂ hb₁ hb₂ a b hab
+    obtain ⟨e₁, ⟨he₁⟩⟩ := hbc a d₁
+    obtain ⟨e₂, ⟨he₂⟩⟩ := hbc b d₂
+    have hg₀ : b ≫ (k₂ ≫ g) = a ≫ (k₁ ≫ g) := by
+      rw [← Category.assoc, ← Category.assoc, hab]
+    have hc₁ : IsBaseChangeOf (a ≫ k₁) e₁ d := he₁.comp hb₁
+    have hc₂ : IsBaseChangeOf (a ≫ k₁) e₂ d := by
+      rw [hab]; exact he₂.comp hb₂
+    have n₁ := ja.jt_natural a (rfl : a ≫ (k₁ ≫ g) = a ≫ (k₁ ≫ g)) he₁
+    have n₂ := ja.jt_natural b hg₀ he₂
+    exact congrArg Subtype.val
+      (n₁.symm.trans ((hwd A (g₀ := a ≫ (k₁ ≫ g)) hc₁ hc₂).trans n₂))
+  -- restrict `d` to each affine of the canonical cover
+  choose dd hdd using fun (i : T.affineCover.I₀) => hbc (T.affineCover.f i) d
+  have bc : ∀ i, IsBaseChangeOf (T.affineCover.f i) (dd i) d := fun i => (hdd i).some
+  -- the local `j`-values, as morphisms into the `j`-line
+  set uu : ∀ i, T.affineCover.X i ⟶ jLine :=
+    fun i => (ja.jt (T.affineCover.f i ≫ g) (dd i)).1
+  -- they agree on overlaps
+  have hcompat : ∀ i j,
+      Limits.pullback.fst (T.affineCover.f i) (T.affineCover.f j) ≫ uu i =
+      Limits.pullback.snd (T.affineCover.f i) (T.affineCover.f j) ≫ uu j := by
+    intro i j
+    refine hom_ext_of_affine _ _ fun A _ m => ?_
+    have hab : (m ≫ Limits.pullback.fst (T.affineCover.f i) (T.affineCover.f j)) ≫
+          T.affineCover.f i
+        = (m ≫ Limits.pullback.snd (T.affineCover.f i) (T.affineCover.f j)) ≫
+          T.affineCover.f j := by
+      simp only [Category.assoc, Limits.pullback.condition]
+    rw [← Category.assoc, ← Category.assoc]
+    exact key A (bc i) (bc j) _ _ hab
+  refine ⟨⟨T.affineCover.glueMorphisms uu hcompat, ?_⟩, ?_⟩
+  · refine T.affineCover.hom_ext _ _ fun i => ?_
+    rw [← Category.assoc, T.affineCover.ι_glueMorphisms]
+    exact (ja.jt (T.affineCover.f i ≫ g) (dd i)).2
+  · intro R _ k g' hg d' hd'
+    subst hg
+    refine Subtype.ext ?_
+    show k ≫ T.affineCover.glueMorphisms uu hcompat = (ja.jt (k ≫ g) d').1
+    refine Scheme.Cover.hom_ext (T.affineCover.pullback₁ k) _ _ fun i => ?_
+    have hcond : Limits.pullback.snd k (T.affineCover.f i) ≫ T.affineCover.f i
+        = Limits.pullback.fst k (T.affineCover.f i) ≫ k := Limits.pullback.condition.symm
+    show Limits.pullback.fst k (T.affineCover.f i) ≫ k ≫ _
+        = Limits.pullback.fst k (T.affineCover.f i) ≫ _
+    rw [← Category.assoc, ← hcond, Category.assoc, T.affineCover.ι_glueMorphisms]
+    refine hom_ext_of_affine _ _ fun A _ m => ?_
+    have hab : (m ≫ Limits.pullback.snd k (T.affineCover.f i)) ≫ T.affineCover.f i
+        = (m ≫ Limits.pullback.fst k (T.affineCover.f i)) ≫ k := by
+      simp only [Category.assoc, hcond]
+    rw [← Category.assoc, ← Category.assoc]
+    exact key A (bc i) hd' _ _ hab
 
 /-- **Zariski descent for the `j`-invariant: an affine `j`-theory extends
 to all bases** (PROVEN 2026-07-27 over `exists_isLocallyJ`; formerly a
