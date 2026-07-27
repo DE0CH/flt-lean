@@ -2196,7 +2196,16 @@ explicitly (`AlgEquiv.ofAlgHom`), then `restrictScalars k`.
   followed by `MvPolynomial.algHom_ext` in the one direction that needs it.
 
 NOTE the equivalence needs NO hypothesis on `x` — in particular not that the
-`xᵢ` generate `S`. Both Bertini leaves inherit that. -/
+`xᵢ` generate `S`.
+
+**CORRECTED 2026-07-27**: this note used to end "Both Bertini leaves inherit
+that", and that inference is WRONG for the connectedness leaf. What is
+hypothesis-free is the FIBRE COMPUTATION, not the conclusions drawn from it.
+`exists_bertiniSmoothLocus_algebra` does inherit it, because the empty scheme
+is smooth. `exists_bertiniConnectedLocus_algebra` does NOT: without the
+generation hypothesis it is FALSE, since at `n = 0` the fibre computed here is
+`S ⧸ (−v₀)`, the ZERO ring for `v₀ ≠ 0`, whose `Spec` is empty and therefore
+not geometrically connected. See the FALSITY AUDIT on that leaf. -/
 theorem nonempty_bertiniFibreAlgEquiv {k : Type u} [Field k] {S : Type u} [CommRing S]
     [Algebra k S] {n : ℕ} (x : Fin n → S) (v : Fin (n + 1) → k) :
     Nonempty ((MvPolynomial (Fin n) S ⧸
@@ -2402,7 +2411,8 @@ theorem exists_bertiniSmoothLocus_algebra {k : Type u} [Field k] [CharZero k]
 /-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node,
 2026-07-27; cut out of
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`, which is
-now PROVEN over this leaf).
+PROVEN over this leaf. **STATEMENT REPAIRED 2026-07-27** — see the FALSITY
+AUDIT below; the version first written here was FALSE).
 
 The same statement as the scheme-level connectedness leaf, but over a
 VARIABLE characteristic-zero base field `k` and an ordinary commutative ring
@@ -2421,38 +2431,189 @@ versus `Algebra.toModule`), which is why the standing rule here is to state
 helpers over a variable base field and instantiate at the end. `hgi` and
 `hdim` are carried across unchanged.
 
+**FALSITY AUDIT 2026-07-27 — THE LEAF WAS FALSE AS FIRST STATED, AND `hgen`
+IS THE REPAIR.** The translation from the scheme-level leaf silently DROPPED
+the generation hypothesis. At the scheme level it is present but written
+`_hx` — underscored on the (correct) ground that it is not needed to *state*
+the hyperplane family, from which it was wrongly inferred that it is not
+needed for the statement to be *true*. It is needed, and here is the
+counterexample, entirely over `ℚ`:
+
+  `k = ℚ`, `S = ℚ[a,b]`, `n = 0`, `x` the EMPTY family.
+
+Every hypothesis except `hgen` holds — `ℚ[a,b]` is smooth over `ℚ`, `𝔸²_ℚ`
+is geometrically irreducible, and `topologicalKrullDim = 2 > 1`. But at
+`n = 0` the linear form `ℓ_v` degenerates to the constant `−v₀`, so for every
+`v₀ ≠ 0` the ideal is the UNIT ideal, `S ⧸ (ℓ_v)` is the ZERO ring and its
+`Spec` is EMPTY. `GeometricallyConnected f` instantiated at `K = k` forces
+`ConnectedSpace` of `Spec (S ⧸ (ℓ_v))` itself, and mathlib's `ConnectedSpace`
+extends `Nonempty`; so the empty scheme is NOT geometrically connected (the
+low-priority instance `GeometricallyConnected f → Surjective f` in
+`Mathlib/AlgebraicGeometry/Geometrically/Connected.lean` says the same thing
+a second way). Since `ℚ` is infinite, a nonzero `F ∈ ℚ[X₀]` has finitely many
+roots, so SOME `v₀ ≠ 0` satisfies `F(v₀) ≠ 0`. No `F` can work.
+
+The failure is not confined to `n = 0`: the same argument kills any `x` all of
+whose entries lie in the image of `algebraMap k S`, for any `n`. And it is
+exactly why only the CONNECTEDNESS half needed repair — the empty scheme IS
+smooth over `k`, so `exists_bertiniSmoothLocus_algebra` is true without any
+hypothesis on `x` and was correctly stated without one. That asymmetry is how
+the drop went unnoticed.
+
+`hgen` says the `xᵢ` generate `S` as a ring over `k`, i.e. that
+`Spec S ↪ 𝔸ⁿ_k` is a CLOSED EMBEDDING — which is what makes the word
+"hyperplane section" mean anything, and is supplied all the way up the chain
+by `exists_affineCoordinates_of_locallyOfFiniteType`. It is stated in exactly
+the `Subring.closure … = ⊤` form the consumers already carry, so the consumer
+passes it with `exact hx` and nothing upstream changes. With `hgen` in place
+the degenerate cases are excluded structurally: if every `xᵢ` were in the
+image of `k` then `S = k` and `topologicalKrullDim (Spec S) = 0`, refuting
+`hdim`.
+
 `hdim` REMAINS LOAD-BEARING and the statement is still FALSE without it, by
 the same counterexample as before: `S = k[s,t]/(s²+t²−1)`, `x = (s,t)`, is
 smooth, geometrically irreducible and of dimension `1`, and a general
 `k`-rational line meets the conic in two distinct geometric points, so the
-section is nonempty but DISCONNECTED.
+section is nonempty but DISCONNECTED. Note this counterexample DOES satisfy
+`hgen`, so the two hypotheses are independent and neither subsumes the other.
 
-THE ROUTE, and the check that would refute the obstruction. Pass to `k̄`,
-where `GeometricallyConnected` collapses to `ConnectedSpace`; take the
-projective closure `X̄ ⊆ ℙⁿ` of `Spec S`; a general hyperplane section of an
-irreducible projective variety of dimension `≥ 2` is connected, and
-`X̄ ∩ H ∩ H_∞` has dimension `dim X − 2 < dim X − 1`, so the affine part is a
-nonempty dense open of a connected set. The obstruction recorded here is that
-mathlib has no projective closure of an affine scheme and no
-Enriques–Severi–Zariski statement; the check that would refute it is
-`grep -rn "projectiveClosure\|EnriquesSeveri\|Bertini" .lake/packages/mathlib`
-together with a search for an openness statement about
-`AlgebraicGeometry.GeometricallyConnected` in
-`Mathlib/AlgebraicGeometry/Geometrically/`, all of which returned nothing on
-2026-07-27.
+**ELIMINATION AUDIT 2026-07-27 — THE SARD-STYLE ELIMINATION DOES *NOT*
+TRANSFER TO CONNECTEDNESS, AND HERE IS THE COUNTEREXAMPLE.** The smoothness
+half was reduced to `exists_genericSmoothFibre_of_smooth_of_charZero` (the
+algebraic Sard theorem) by applying a general statement about the fibres of
+an ARBITRARY family `t : Fin m → B` out of a smooth `B` to the incidence
+family `bertiniParam`. The obvious analogue here would be:
+
+  "`B` smooth and geometrically irreducible over `k`, `t : Fin m → B`
+   arbitrary ⟹ the fibre `B ⧸ (tᵢ − vᵢ)` is geometrically connected for `v`
+   in a nonempty basic open."
+
+That statement is **FALSE**, over `ℚ`, in one variable: take `B = ℚ[x,u]`
+(smooth, geometrically irreducible), `m = 1`, `t = (x²)`. The fibre over `v`
+is `ℚ[x,u] ⧸ (x² − v)`, which for every `v` that is a nonzero SQUARE splits as
+`ℚ[u] × ℚ[u]` — two disjoint lines, DISCONNECTED. A nonzero `F ∈ ℚ[X₀]` has
+finitely many roots, so `{v : F(v) ≠ 0}` is cofinite and contains infinitely
+many nonzero squares. No `F` works.
+
+So the elimination is not the missing idea, and the two halves are genuinely
+asymmetric. The structural reason: SMOOTHNESS of a fibre is a source-local
+condition, so the good locus in the base is OPEN by openness of the smooth
+locus, and generic freeness plus spreading out gets you there from nothing.
+CONNECTEDNESS of a fibre is a GLOBAL property of the fibre; the locus where
+it holds is merely CONSTRUCTIBLE (EGA IV 9.7.7 ff.), and it contains a
+nonempty open exactly when the GENERIC fibre is geometrically connected —
+which for a general family is simply false, and for the hyperplane pencil is
+the Bertini theorem itself. Every proof of that passes through the PROPER
+(projective) model, which is where the elimination's whole gain evaporates:
+`Z ≅ Spec (S[Y₀,…,Y_{n−1}])` is affine on purpose, and properness is exactly
+what the argument needs. The note on `nonempty_bertiniFibreAlgEquiv` that
+"both Bertini leaves inherit" the absence of hypotheses on `x` is therefore
+true of the FIBRE COMPUTATION only, and false of this leaf's conclusion.
+
+THE ROUTE, with the step that is usually stated wrongly. Pass to `k̄`, where
+`GeometricallyConnected` collapses to `ConnectedSpace`; take the projective
+closure `X̄ ⊆ ℙⁿ` of `Spec S`; for a general hyperplane `H`, `X̄ ∩ H` is
+IRREDUCIBLE (Bertini irreducibility, valid because `dim X̄ ≥ 2`), and
+`X̄ ∩ H ∩ H_∞` has dimension `dim X − 2 < dim X − 1`, so `X̄ ∩ H ⊄ H_∞` and the
+affine part `X ∩ H = (X̄ ∩ H) ∖ H_∞` is a NONEMPTY OPEN of an IRREDUCIBLE
+space, hence irreducible, hence connected.
+
+The earlier version of this paragraph said "a nonempty dense open of a
+CONNECTED set, hence connected". That step does not exist: a nonempty open
+subset of a connected space need not be connected. Irreducibility of the
+general section is what actually carries the argument across the affine
+restriction, and it is strictly stronger than what the Enriques–Severi–Zariski
+/ Grothendieck connectedness theorem alone provides (which gives connectedness
+of `X̄ ∩ H` for EVERY `H`, and that is not enough). A prover who follows the
+old wording will find the last step unprovable.
+
+OBSTRUCTIONS, EACH WITH THE GREP THAT WOULD REFUTE IT (all measured
+2026-07-27 on this pin, with `.lake/packages` seeded):
+
+* No projective closure of an affine scheme, no Bertini, no
+  Enriques–Severi–Zariski —
+  `grep -rln "Bertini\|projectiveClosure\|EnriquesSeveri" .lake/packages/mathlib/Mathlib`
+  returns NOTHING.
+* No statement anywhere that the locus in the BASE over which the fibres of a
+  family are geometrically connected is open or constructible —
+  `ls .lake/packages/mathlib/Mathlib/AlgebraicGeometry/Geometrically/` is
+  exactly `Basic Connected Integral Irreducible Reduced`, and nothing in them
+  runs in that direction.
+* NEW, and not recorded by either earlier audit: **even step one of the route
+  is unavailable.** There is no reduction of `geometrically P` to the
+  algebraic closure — `grep -rn "IsAlgClosed\|AlgebraicClosure"
+  .lake/packages/mathlib/Mathlib/AlgebraicGeometry/Geometrically/` returns
+  NOTHING, so "pass to `k̄`, where `GeometricallyConnected` collapses to
+  `ConnectedSpace`" is itself a missing lemma at this pin, not a free move.
+  Relatedly `GeometricallyConnected` occurs in NO mathlib file other than the
+  one that defines it, so there is no auxiliary API to lean on.
+* `~/cs/FLT` has none of the above either.
 
 NOTE the contrast with the smoothness half, which was NOT blocked this way:
 generic smoothness needed only the affine incidence family, so the whole
 projective apparatus was avoidable there. It is genuinely unavoidable here,
-because connectedness of an AFFINE section is deduced from connectedness of
-its projective closure's section — the affine statement has no self-contained
-proof. -/
+for the reason given in the ELIMINATION AUDIT — and that is now a measured
+claim with a counterexample behind it, not an expectation.
+
+PREREQUISITE LEDGER 2026-07-27 — the four pieces the `k̄` route needs, in
+dependency order, with the state of each measured on this pin. This is
+recorded INSTEAD of cutting the leaf into them: the cut would replace one
+open leaf by four plus three hypothesis-transfer obligations, while leaving
+the mathematical frontier (item 4) exactly where it is. It is written so
+that whoever does decide to cut does not have to redo the survey.
+
+1. REDUCTION TO THE ALGEBRAIC CLOSURE. ABSENT (grep above).
+
+     theorem geometricallyConnected_of_connectedSpace_baseChange
+         {k : Type u} [Field k] {T : Type u} [CommRing T] [Algebra k T]
+         (h : ConnectedSpace (Spec (CommRingCat.of (AlgebraicClosure k ⊗[k] T)))) :
+         GeometricallyConnected (Spec.map (CommRingCat.ofHom (algebraMap k T)))
+
+   True for any `k`-scheme (Stacks 04KV). Mathlib-facing and reusable well
+   beyond Bertini — `GeometricallyConnected` currently has NO consumer outside
+   its own defining file, so this is the missing front door to the whole
+   `Geometrically/` namespace, not a Bertini-specific lemma.
+
+2. DIMENSION IS INSENSITIVE TO BASE FIELD EXTENSION, needed to transport
+   `hdim` across item 1. ABSENT; the refuting check is
+   `grep -rn "topologicalKrullDim" .lake/packages/mathlib/Mathlib | grep -i
+   "tensor\|baseChange\|extension"`, which returned nothing.
+
+3. DESCENT OF THE GOOD LOCUS FROM `k̄` TO `k`. Absent, but **provable now and
+   cheaply** — this is the one item here that needs no missing theory:
+
+     ∀ (F̄ : MvPolynomial (Fin m) (AlgebraicClosure k)), F̄ ≠ 0 →
+       ∃ F : MvPolynomial (Fin m) k, F ≠ 0 ∧ ∀ v : Fin m → k,
+         eval v F ≠ 0 → eval (algebraMap k (AlgebraicClosure k) ∘ v) F̄ ≠ 0
+
+   PROOF, which needs neither Galois theory nor `CharZero`: `k̄` is free as a
+   `k`-module, so fix a `k`-basis `b` and split `F̄ = ∑ᵢ b i • (map (algebraMap
+   k k̄) Fᵢ)` with `Fᵢ ∈ k[X]`. At a `k`-RATIONAL `v` every `Fᵢ v` lies in `k`,
+   so linear independence of `b` gives `eval v F̄ = 0 ↔ ∀ i, Fᵢ v = 0`. Pick
+   any `i` with `Fᵢ ≠ 0` and take `F := Fᵢ`. (The `∏_σ σF̄` norm construction is
+   the usual textbook route and is strictly worse here — it needs separability
+   and a finite Galois closure.)
+
+4. BERTINI IRREDUCIBILITY OVER AN ALGEBRAICALLY CLOSED FIELD — the actual
+   mathematics, and the whole reason this leaf is hard. Needs the projective
+   closure of an affine scheme, the Enriques–Severi–Zariski / Grothendieck
+   connectedness theorem, and the dimension count on `X̄ ∩ H ∩ H_∞`; all three
+   are absent from mathlib and from `~/cs/FLT`. Note the ROUTE paragraph
+   above: what item 4 must deliver is IRREDUCIBILITY of the general section,
+   not merely connectedness, or the affine restriction step does not close.
+
+   A partial base to build on: `TensorProduct.quotientTensorEquiv`
+   (`Mathlib/LinearAlgebra/TensorProduct/Quotient.lean`) supplies the
+   module-level half of the "base change commutes with the hyperplane
+   quotient" step that items 1 and 3 have to be glued through; an algebra-level
+   version of it does not exist and would have to be written. -/
 theorem exists_bertiniConnectedLocus_algebra {k : Type u} [Field k] [CharZero k]
     {S : Type u} [CommRing S] [Algebra k S] [Algebra.Smooth k S]
     (hgi : AlgebraicGeometry.GeometricallyIrreducible
       (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k S))))
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of S)))
-    {n : ℕ} (x : Fin n → S) :
+    {n : ℕ} (x : Fin n → S)
+    (hgen : Subring.closure (Set.range (algebraMap k S) ∪ Set.range x) = ⊤) :
     ∃ F : MvPolynomial (Fin (n + 1)) k, F ≠ 0 ∧
       ∀ v : Fin (n + 1) → k, MvPolynomial.eval v F ≠ 0 →
         AlgebraicGeometry.GeometricallyConnected (AlgebraicGeometry.Spec.map
@@ -2679,9 +2840,21 @@ the connectedness theorem, and openness of the geometrically-connected locus
 of a family (EGA IV 9.7.7). This is the deepest of the surviving geometric
 leaves.
 
-`_hft` AND `_hx` ARE UNUSED here too — `hsmooth`, `hgi` and `hdim` are all
-passed through to the algebra leaf, but finite type follows from smoothness
-and the generation hypothesis is not needed to state the hyperplane family.
+`_hft` IS UNUSED here — finite type follows from smoothness. `hsmooth`,
+`hgi`, `hdim` AND `hx` are all passed through to the algebra leaf.
+
+`hx` WAS UNUSED AND UNDERSCORED UNTIL 2026-07-27, and that was a BUG, not an
+economy. The previous note here read "the generation hypothesis is not needed
+to state the hyperplane family" — true, and it does not follow that the
+hypothesis is not needed for the statement to be TRUE. It is: without it the
+algebra leaf is FALSE, by the `n = 0` counterexample recorded in the FALSITY
+AUDIT on `exists_bertiniConnectedLocus_algebra`, where `ℓ_v` degenerates to a
+nonzero constant and the section is the EMPTY scheme, which is not
+geometrically connected. `hx` is exactly the closed embedding
+`Spec A ↪ 𝔸ⁿ_ℚ` that makes "hyperplane section" mean anything, it is supplied
+by `exists_affineCoordinates_of_locallyOfFiniteType`, and the parent
+`exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` was already
+passing it here. Nothing upstream changed when it became load-bearing.
 
 ABSENCE AUDIT 2026-07-26 (measured on this pin). `GeometricallyConnected`
 exists (`Mathlib/AlgebraicGeometry/Geometrically/Connected.lean`) and is
@@ -2711,7 +2884,7 @@ theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
     (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
     {n : ℕ} (x : Fin n → A)
-    (_hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
       Set.range x) = ⊤) :
     ∃ F : MvPolynomial (Fin (n + 1)) ℚ, F ≠ 0 ∧
       ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v F ≠ 0 →
@@ -2729,8 +2902,9 @@ theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
     have hof : CommRingCat.ofHom (algebraMap (ULift.{u} ℚ) A)
         = AlgebraicGeometry.Spec.preimage g := rfl
     rw [hof, Spec.map_preimage]; exact hgi
+  have hgen : Subring.closure (Set.range (algebraMap (ULift.{u} ℚ) A) ∪ Set.range x) = ⊤ := hx
   obtain ⟨F₀, hF₀0, hF₀⟩ := exists_bertiniConnectedLocus_algebra (k := ULift.{u} ℚ) (S := A)
-    hgi' hdim x
+    hgi' hdim x hgen
   set f : ULift.{u} ℚ →+* ℚ := (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom with hf
   have hfinj : Function.Injective f := (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).injective
   refine ⟨MvPolynomial.map f F₀, ?_, ?_⟩
