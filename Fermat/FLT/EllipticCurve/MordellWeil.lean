@@ -163,6 +163,8 @@ module reachable from the root theorem.
 
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
+public import Mathlib.RingTheory.PrincipalIdealDomain
+public import Mathlib.RingTheory.UniqueFactorizationDomain.Multiplicity
 
 @[expose] public section
 
@@ -409,13 +411,17 @@ and `c` of the halving carry no arithmetic, and `halving_norm_relation`,
 i.e. `p/e² = F(p', e'²)/(4e'²·G(p', e'²))` for the binary forms
 `F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`.
 
-**UPDATED 2026-07-27**: `exists_halving_witness` is PROVEN too. The ONE open
-statement at level `11` is now `descent_unit_square`, one level below it — the
-purely ideal-theoretic half of the `2`-descent over `ℤ[s]` (`𝓞_K = ℤ[s]`,
-`h(K) = 1`, units mod squares, and the valuation bookkeeping). The norm pruning
-and the local condition that the sentence above expected are PROVEN, and the
-local condition turned out to be **parity mod `4`**, needing no `11`-adic input
-at all. See the `ℤ[s] IN COORDINATES` section below.
+**UPDATED 2026-07-27**: `exists_halving_witness` is PROVEN too, and so, later the
+same day, is `descent_unit_square` — the purely ideal-theoretic half of the
+`2`-descent over `ℤ[s]`. Of its four ingredients (`𝓞_K = ℤ[s]`, `h(K) = 1`, units
+mod squares, valuation bookkeeping) the **valuation bookkeeping is now PROVEN**,
+over a genuine `CommRing` model of `ℤ[s]` built in the `ℤ[s] AS A RING` section
+below, and level `11` stands on exactly TWO open statements, both facts about the
+cubic field `K = ℚ(s)`: `Cubic.ZS.isPrincipalIdealRing_zs` and
+`Cubic.ZS.unit_sq_class`. The norm pruning and the local condition that the
+sentence above expected are PROVEN, and the local condition turned out to be
+**parity mod `4`**, needing no `11`-adic input at all. See the `ℤ[s] IN
+COORDINATES` section below.
 
 `height_drop_or_small` is PROVEN, over three proven ingredients: the
 coprimality bookkeeping (`reduced_fraction`), the resultant divisibility
@@ -623,9 +629,487 @@ theorem descentImage_norm_ne_zero {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p
   have hlo' : -16 ≤ p := by linarith
   interval_cases p <;> norm_num at hn
 
-/-- **THE ONE OPEN STATEMENT AT LEVEL `11`** (sorry leaf, 2026-07-27; this
-replaces `exists_halving_witness`, which is now PROVEN over it): the descent
-image `β = p − 2s·e²` is one of `16` explicit square classes of `ℤ[s]`.
+/-! ### `ℤ[s]` AS A RING, AND THE CUT OF `descent_unit_square` (2026-07-27)
+
+The coordinate development above (`zsMul`, `zsNorm`, `descentImage`) is enough
+to *state* the descent, and enough for the two prunings that consume it, but not
+to *prove* it: the proof factors `β` in `ℤ[s]`, and factoring needs the ring, not
+just its multiplication table. So this section builds `ℤ[s]` as a genuine
+`CommRing` — `Cubic.ZS`, a structure on three integer coordinates whose
+multiplication is `zsMul` *definitionally* — and reduces `descent_unit_square` to
+exactly TWO statements about it:
+
+* `Cubic.ZS.isPrincipalIdealRing_zs` — `ℤ[s]` is a principal ideal ring; and
+* `Cubic.ZS.unit_sq_class` — every unit is `{±1, ±ε}` times a square.
+
+**Everything between those two and the target is PROVEN here**, and that is the
+point of the cut: the earlier docstring's warning that a decomposition naming
+`𝓞_K = ℤ[s]`, `h(K) = 1`, units and local conditions as sub-leaves "would leave
+the entire difficulty in an unwritten assembly" is answered by *writing* the
+assembly. Concretely, the following are proven below with no number theory
+beyond the ring itself:
+
+1. `ℤ[s]` is a commutative ring, an integral domain, with a multiplicative norm
+   `N`, an explicit adjugate (`mul_adj : x * adj x = N x`), and
+   `IsUnit x ↔ IsUnit (N x)`. Domain-ness is a genuine little theorem: `N x = 0`
+   forces `x = 0` by an infinite `2`-adic descent (`norm_eq_zero_aux`), which is
+   the elementary substitute for "`X³ − 2X² + 2` is irreducible over `ℚ`".
+2. `s` and `g = 3 − s²` are irreducible, because `|N|` is `2` and `11`, both prime.
+3. The two identities the descent runs on: `β·γ = n²` and the exact division
+   `γ = Q·β + D·e⁴` with `Q = p + (4s−4)e²` and `D = 12s² − 16s = 4s(3s−4)`;
+   plus `D = uD·s⁸·g` with `uD = 17 − 20s + 7s²` a unit (`N(uD) = 1`), which is
+   what turns "`𝔭 ∣ gcd(β,γ)`" into "`𝔭 ~ s` or `𝔭 ~ g`".
+4. The valuation bookkeeping itself (`descent_zs`): split `β = s^a·g^b·β₂` with
+   `s, g ∤ β₂` (`WfDvdMonoid.max_power_factor`); show `β₂` is coprime to
+   `s^a·g^b·γ` (`isCoprime_of_irreducible_dvd`, using 3 and `IsCoprime p e`);
+   conclude `β₂ ~ δ²` from `β₂ · (s^a g^b γ) = n²`
+   (`exists_associated_pow_of_mul_eq_pow'`); and finally split the exponents
+   `a = 2⌊a/2⌋ + a%2`, `b = 2⌊b/2⌋ + b%2`.
+
+## THE TWO REMAINING LEAVES, AND THE ROUTE FOR EACH
+
+Both are statements about the cubic field `K = ℚ(s)`, `s³ = 2s² − 2`, whose data
+was re-derived in PARI/GP (untrusted searcher; every number below is checkable):
+`poldisc(X³ − 2X² + 2) = −44 = disc(K)`, so `[𝓞_K : ℤ[s]] = 1`; `h(K) = 1`;
+signature `(r₁, r₂) = (1, 1)`; unit rank `1`, torsion `{±1}`, fundamental unit
+`ε = −s² + s + 1` with `N(ε) = −1`.
+
+*Leaf 1, `isPrincipalIdealRing_zs`.* The intended route is mathlib's
+`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`
+(`Mathlib/NumberTheory/NumberField/ClassNumber.lean`), whose hypothesis at
+`finrank = 3`, `nrComplexPlaces = 1` reads
+`|discr K| < (2·(π/4)·(3³/3!))² = (2.25π)² ≈ 49.96`, and `44 < 49.96` with room
+to spare (`pi_gt_three` suffices: `44 < 45.5625`), exactly as in
+`Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean`, the worked precedent.
+What has to be supplied first is the identification `𝓞_K ≃+* ℤ[s]`, i.e. that
+the power basis `1, s, s²` is an integral basis.
+
+**CORRECTION to the previous docstring, and it matters for whoever takes this
+leaf**: the polynomial discriminant `−44 = −2²·11` is NOT squarefree, so "the
+discriminants agree, hence index `1`" is the CONCLUSION, not a cheap input — the
+index could a priori be `2`, and ruling that out is a real argument at `2`. The
+defining polynomial IS Eisenstein at `2` (`−2, 0, 2` all even, `2` not divisible
+by `4`), which gives both irreducibility and `2`-maximality; so an Eisenstein
+argument IS needed, contrary to the earlier note.
+
+*Leaf 2, `unit_sq_class`.* Needs `𝓞_K = ℤ[s]` as well, then Dirichlet:
+`r₁ + r₂ − 1 = 1`, so `𝓞_K^× ≅ {±1} × ℤ`, hence `𝓞_K^× / (𝓞_K^×)²` has order `4`
+with representatives `{±1, ±ε₀}` for any fundamental `ε₀`. **`ε` need not be
+proven fundamental**: `N(ε) = −1` and `ε = ±ε₀^k` force `k` odd, so `ε ≡ ε₀`
+modulo squares whatever `ε₀` is. Torsion is `{±1}` because `K` has a real
+embedding. Mathlib carries the pieces (`NumberField.Units.rank`, Dirichlet) but
+not the signature computation for this polynomial (one real root: the cubic is
+increasing off `[0, 4/3]` and its two critical values `2` and `2 − 32/27` have
+the same sign, so exactly one real root, near `−0.8393`).
+
+Neither leaf needs Galois cohomology, a Selmer group, a connecting map, or
+`E(ℚ) ≅ ℤ/5`. -/
+
+namespace Cubic
+
+/-- `ℤ[s] = ℤ[X]/(X³ − 2X² + 2)`, as a structure on its coordinates in the
+`ℤ`-basis `1, s, s²`: `⟨a, b, c⟩` denotes `a + bs + cs²`.
+
+The multiplication defined below is `zsMul` **definitionally**, so the bridge to
+the coordinate statements (`ofZS_mul`, `ofZS_beta`) is `rfl` and nothing is lost
+in translation. Working with a bespoke structure rather than `AdjoinRoot` buys
+exactly that: `decide` and `ring` see the coordinates. -/
+structure ZS where
+  /-- The coefficient of `1`. -/
+  a : ℤ
+  /-- The coefficient of `s`. -/
+  b : ℤ
+  /-- The coefficient of `s²`. -/
+  c : ℤ
+deriving DecidableEq
+
+namespace ZS
+
+@[ext] theorem ext {x y : ZS} (ha : x.a = y.a) (hb : x.b = y.b) (hc : x.c = y.c) : x = y := by
+  cases x; cases y; simp_all
+
+instance : Zero ZS := ⟨⟨0, 0, 0⟩⟩
+instance : One ZS := ⟨⟨1, 0, 0⟩⟩
+instance : Add ZS := ⟨fun x y => ⟨x.a + y.a, x.b + y.b, x.c + y.c⟩⟩
+instance : Neg ZS := ⟨fun x => ⟨-x.a, -x.b, -x.c⟩⟩
+instance : Sub ZS := ⟨fun x y => ⟨x.a - y.a, x.b - y.b, x.c - y.c⟩⟩
+instance : Mul ZS := ⟨fun x y =>
+  ⟨x.a * y.a - 2 * (x.b * y.c + x.c * y.b) - 4 * (x.c * y.c),
+   x.a * y.b + x.b * y.a - 2 * (x.c * y.c),
+   x.a * y.c + x.b * y.b + x.c * y.a + 2 * (x.b * y.c + x.c * y.b) + 4 * (x.c * y.c)⟩⟩
+instance : NatCast ZS := ⟨fun n => ⟨(n : ℤ), 0, 0⟩⟩
+instance : IntCast ZS := ⟨fun k => ⟨k, 0, 0⟩⟩
+
+@[simp] theorem zero_a : (0 : ZS).a = 0 := rfl
+@[simp] theorem zero_b : (0 : ZS).b = 0 := rfl
+@[simp] theorem zero_c : (0 : ZS).c = 0 := rfl
+@[simp] theorem one_a : (1 : ZS).a = 1 := rfl
+@[simp] theorem one_b : (1 : ZS).b = 0 := rfl
+@[simp] theorem one_c : (1 : ZS).c = 0 := rfl
+@[simp] theorem add_a (x y : ZS) : (x + y).a = x.a + y.a := rfl
+@[simp] theorem add_b (x y : ZS) : (x + y).b = x.b + y.b := rfl
+@[simp] theorem add_c (x y : ZS) : (x + y).c = x.c + y.c := rfl
+@[simp] theorem neg_a (x : ZS) : (-x).a = -x.a := rfl
+@[simp] theorem neg_b (x : ZS) : (-x).b = -x.b := rfl
+@[simp] theorem neg_c (x : ZS) : (-x).c = -x.c := rfl
+@[simp] theorem sub_a (x y : ZS) : (x - y).a = x.a - y.a := rfl
+@[simp] theorem sub_b (x y : ZS) : (x - y).b = x.b - y.b := rfl
+@[simp] theorem sub_c (x y : ZS) : (x - y).c = x.c - y.c := rfl
+@[simp] theorem mul_a (x y : ZS) :
+    (x * y).a = x.a * y.a - 2 * (x.b * y.c + x.c * y.b) - 4 * (x.c * y.c) := rfl
+@[simp] theorem mul_b (x y : ZS) :
+    (x * y).b = x.a * y.b + x.b * y.a - 2 * (x.c * y.c) := rfl
+@[simp] theorem mul_c (x y : ZS) :
+    (x * y).c = x.a * y.c + x.b * y.b + x.c * y.a + 2 * (x.b * y.c + x.c * y.b)
+      + 4 * (x.c * y.c) := rfl
+@[simp] theorem natCast_a (n : ℕ) : ((n : ZS)).a = (n : ℤ) := rfl
+@[simp] theorem natCast_b (n : ℕ) : ((n : ZS)).b = 0 := rfl
+@[simp] theorem natCast_c (n : ℕ) : ((n : ZS)).c = 0 := rfl
+@[simp] theorem intCast_a (k : ℤ) : ((k : ZS)).a = k := rfl
+@[simp] theorem intCast_b (k : ℤ) : ((k : ZS)).b = 0 := rfl
+@[simp] theorem intCast_c (k : ℤ) : ((k : ZS)).c = 0 := rfl
+
+instance instCommRing : CommRing ZS where
+  nsmul := nsmulRec
+  zsmul := zsmulRec
+  add_assoc := by intros; ext <;> simp <;> ring
+  zero_add := by intros; ext <;> simp
+  add_zero := by intros; ext <;> simp
+  add_comm := by intros; ext <;> simp <;> ring
+  left_distrib := by intros; ext <;> simp <;> ring
+  right_distrib := by intros; ext <;> simp <;> ring
+  zero_mul := by intros; ext <;> simp
+  mul_zero := by intros; ext <;> simp
+  mul_assoc := by intros; ext <;> simp <;> ring
+  one_mul := by intros; ext <;> simp
+  mul_one := by intros; ext <;> simp
+  neg_add_cancel := by intros; ext <;> simp
+  mul_comm := by intros; ext <;> simp <;> ring
+  sub_eq_add_neg := by intros; ext <;> simp <;> ring
+  natCast_zero := by ext <;> simp
+  natCast_succ := by intros; ext <;> simp
+  intCast_ofNat := by intros; ext <;> simp
+  intCast_negSucc := by intros; ext <;> simp [Int.negSucc_eq]
+
+/-- The field norm `N : ℤ[s] → ℤ`, the determinant of multiplication-by-`x` in
+the basis `1, s, s²`. Agrees with `zsNorm` on coordinates by construction. -/
+def N (x : ZS) : ℤ :=
+  x.a ^ 3 + 2 * x.a ^ 2 * x.b + 4 * x.a ^ 2 * x.c - 2 * x.b ^ 3
+    + 6 * x.a * x.b * x.c - 4 * x.b ^ 2 * x.c + 8 * x.a * x.c ^ 2 + 4 * x.c ^ 3
+
+@[simp] theorem N_one : N 1 = 1 := by simp [N]
+
+/-- `N` is multiplicative (PROVEN): the same `ring` check as `zsNorm_zsMul`. -/
+theorem N_mul (x y : ZS) : N (x * y) = N x * N y := by simp only [N, mul_a, mul_b, mul_c]; ring
+
+/-- The adjugate `x'·x''` (the product of the two conjugates), in coordinates:
+the first column of the adjugate of the multiplication matrix. -/
+def adj (x : ZS) : ZS :=
+  ⟨x.a ^ 2 + 2 * x.a * x.b + 4 * x.a * x.c + 2 * x.b * x.c + 4 * x.c ^ 2,
+   -(x.a * x.b + 2 * x.b ^ 2 + 4 * x.b * x.c + 2 * x.c ^ 2),
+   x.b ^ 2 + 2 * x.b * x.c - x.a * x.c⟩
+
+/-- **`x` divides its own norm** (PROVEN), with the explicit cofactor. This is
+what makes `N x = ±1 → IsUnit x` elementary. -/
+theorem mul_adj (x : ZS) : x * adj x = ((N x : ℤ) : ZS) := by
+  ext <;> simp only [mul_a, mul_b, mul_c, intCast_a, intCast_b, intCast_c, adj, N] <;> ring
+
+/-- **The norm form has no nontrivial integral zero** (PROVEN), by infinite
+descent at `2`. If `N(a, b, c) = 0` then `a` is even (every other term of `N` is);
+substituting, `b` is even; substituting again, `c` is even; and `N` is homogeneous
+of degree `3`, so `(a/2, b/2, c/2)` is a strictly smaller zero.
+
+This is the elementary stand-in for "`X³ − 2X² + 2` is irreducible over `ℚ`", and
+it is what makes `ℤ[s]` an integral domain. -/
+theorem norm_eq_zero_aux : ∀ n : ℕ, ∀ a b c : ℤ, a.natAbs + b.natAbs + c.natAbs ≤ n →
+    a ^ 3 + 2 * a ^ 2 * b + 4 * a ^ 2 * c - 2 * b ^ 3 + 6 * a * b * c - 4 * b ^ 2 * c
+      + 8 * a * c ^ 2 + 4 * c ^ 3 = 0 → a = 0 ∧ b = 0 ∧ c = 0 := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro a b c hn hN
+    by_cases hz : a = 0 ∧ b = 0 ∧ c = 0
+    · exact hz
+    exfalso
+    obtain ⟨a1, rfl⟩ : (2 : ℤ) ∣ a := by
+      refine Int.prime_two.dvd_of_dvd_pow (n := 3) ⟨-(a ^ 2 * b + 2 * a ^ 2 * c - b ^ 3
+        + 3 * a * b * c - 2 * b ^ 2 * c + 4 * a * c ^ 2 + 2 * c ^ 3), by linear_combination hN⟩
+    obtain ⟨b1, rfl⟩ : (2 : ℤ) ∣ b := by
+      have h2 : 2 * (b ^ 3 - 2 * (2 * a1 ^ 3 + 2 * a1 ^ 2 * b + 4 * a1 ^ 2 * c
+          + 3 * a1 * b * c - b ^ 2 * c + 4 * a1 * c ^ 2 + c ^ 3)) = 0 := by linear_combination -hN
+      have h3 : b ^ 3 = 2 * (2 * a1 ^ 3 + 2 * a1 ^ 2 * b + 4 * a1 ^ 2 * c
+          + 3 * a1 * b * c - b ^ 2 * c + 4 * a1 * c ^ 2 + c ^ 3) := by linarith
+      exact Int.prime_two.dvd_of_dvd_pow (n := 3) ⟨_, h3⟩
+    obtain ⟨c1, rfl⟩ : (2 : ℤ) ∣ c := by
+      have h2 : 4 * (c ^ 3 - 2 * (-(a1 ^ 3) - 2 * a1 ^ 2 * b1 - 2 * a1 ^ 2 * c
+          + 2 * b1 ^ 3 - 3 * a1 * b1 * c + 2 * b1 ^ 2 * c - 2 * a1 * c ^ 2)) = 0 := by
+        linear_combination hN
+      have h3 : c ^ 3 = 2 * (-(a1 ^ 3) - 2 * a1 ^ 2 * b1 - 2 * a1 ^ 2 * c
+          + 2 * b1 ^ 3 - 3 * a1 * b1 * c + 2 * b1 ^ 2 * c - 2 * a1 * c ^ 2) := by linarith
+      exact Int.prime_two.dvd_of_dvd_pow (n := 3) ⟨_, h3⟩
+    have hN1 : a1 ^ 3 + 2 * a1 ^ 2 * b1 + 4 * a1 ^ 2 * c1 - 2 * b1 ^ 3 + 6 * a1 * b1 * c1
+        - 4 * b1 ^ 2 * c1 + 8 * a1 * c1 ^ 2 + 4 * c1 ^ 3 = 0 := by
+      have h8 : (8 : ℤ) * (a1 ^ 3 + 2 * a1 ^ 2 * b1 + 4 * a1 ^ 2 * c1 - 2 * b1 ^ 3
+          + 6 * a1 * b1 * c1 - 4 * b1 ^ 2 * c1 + 8 * a1 * c1 ^ 2 + 4 * c1 ^ 3) = 8 * 0 := by
+        linear_combination hN
+      linarith
+    have habs : (2 * a1).natAbs + (2 * b1).natAbs + (2 * c1).natAbs
+        = 2 * (a1.natAbs + b1.natAbs + c1.natAbs) := by
+      simp [Int.natAbs_mul]; ring
+    have hpos : 0 < a1.natAbs + b1.natAbs + c1.natAbs := by
+      rcases Nat.eq_zero_or_pos (a1.natAbs + b1.natAbs + c1.natAbs) with h | h
+      · exact absurd ⟨by omega, by omega, by omega⟩ hz
+      · exact h
+    exact hz (by
+      have := ih (a1.natAbs + b1.natAbs + c1.natAbs) (by omega) a1 b1 c1 le_rfl hN1
+      exact ⟨by omega, by omega, by omega⟩)
+
+/-- `N x = 0 → x = 0` (PROVEN), the element-level form of `norm_eq_zero_aux`. -/
+theorem norm_eq_zero {x : ZS} (h : N x = 0) : x = 0 := by
+  obtain ⟨a, b, c⟩ := x
+  obtain ⟨h1, h2, h3⟩ := norm_eq_zero_aux (a.natAbs + b.natAbs + c.natAbs) a b c le_rfl
+    (by simpa [N] using h)
+  subst h1; subst h2; subst h3; rfl
+
+instance : Nontrivial ZS := ⟨⟨0, 1, by intro h; simpa using congrArg ZS.a h⟩⟩
+
+instance : NoZeroDivisors ZS :=
+  ⟨fun {x y} h => by
+    have hz : N x * N y = 0 := by rw [← N_mul, h]; simp [N]
+    rcases mul_eq_zero.mp hz with h1 | h1
+    · exact Or.inl (norm_eq_zero h1)
+    · exact Or.inr (norm_eq_zero h1)⟩
+
+instance : IsDomain ZS := NoZeroDivisors.to_isDomain ZS
+
+theorem unit_of_mul_eq_one {x y : ZS} (h : x * y = 1) : IsUnit x :=
+  isUnit_iff_exists.mpr ⟨y, h, by rw [mul_comm]; exact h⟩
+
+/-- **`N x = ±1 → IsUnit x`** (PROVEN), via `mul_adj`. -/
+theorem isUnit_of_norm_isUnit {x : ZS} (h : IsUnit (N x)) : IsUnit x := by
+  rcases Int.isUnit_iff.mp h with h1 | h1
+  · exact unit_of_mul_eq_one (y := adj x) (by rw [mul_adj, h1]; rfl)
+  · exact unit_of_mul_eq_one (y := -adj x) (by rw [mul_neg, mul_adj, h1]; ext <;> simp)
+
+/-- **`IsUnit x → N x = ±1`** (PROVEN), by multiplicativity. -/
+theorem norm_isUnit_of_isUnit {x : ZS} (h : IsUnit x) : IsUnit (N x) := by
+  obtain ⟨y, hy⟩ := h.exists_right_inv
+  exact isUnit_iff_exists.mpr
+    ⟨N y, by rw [← N_mul, hy, N_one], by rw [← N_mul, mul_comm, hy, N_one]⟩
+
+/-- `s`, of norm `−2`; `(2) = (s)³` is totally ramified. -/
+def sEl : ZS := ⟨0, 1, 0⟩
+/-- `g = 3 − s²`, of norm `11`: a generator of the RAMIFIED prime over `11`,
+which is the one that meets `3s − 4`. -/
+def gEl : ZS := ⟨3, 0, -1⟩
+/-- `ε = −s² + s + 1`, the fundamental unit, of norm `−1`. -/
+def epsEl : ZS := ⟨1, 1, -1⟩
+/-- The unit `4s(3s−4)/(s⁸·g) = 17 − 20s + 7s²`, of norm `1`. -/
+def uD : ZS := ⟨17, -20, 7⟩
+/-- `D = 12s² − 16s = 4s(3s−4)`, of norm `2816 = 2⁸·11`. -/
+def DEl : ZS := ⟨0, -16, 12⟩
+/-- `β = p − 2s·e²`, the descent image. -/
+def beta (p e : ℤ) : ZS := ⟨p, -2 * e ^ 2, 0⟩
+/-- `γ = p² + (2s−4)pe² + (4s²−8s)e⁴`, the cofactor: `β·γ = n²`. -/
+def gammaEl (p e : ℤ) : ZS := ⟨p ^ 2 - 4 * p * e ^ 2, 2 * p * e ^ 2 - 8 * e ^ 4, 4 * e ^ 4⟩
+/-- `Q = p + (4s−4)e²`, the quotient in the exact division `γ = Q·β + D·e⁴`. -/
+def QEl (p e : ℤ) : ZS := ⟨p - 4 * e ^ 2, 4 * e ^ 2, 0⟩
+
+theorem beta_eq (p e : ℤ) : beta p e = ((p : ℤ) : ZS) - ((2 * e ^ 2 : ℤ) : ZS) * sEl := by
+  ext <;> simp only [beta, sEl, sub_a, sub_b, sub_c, mul_a, mul_b, mul_c,
+    intCast_a, intCast_b, intCast_c] <;> ring
+
+/-- **`β·γ = n²` on the curve** (PROVEN): the ring-level form of the
+factorisation `U³ − 4U² + 16 = (U − 2s)(U² + (2s−4)U + 4s² − 8s)`. -/
+theorem beta_mul_gamma (p e n : ℤ) (hn : p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6 = n ^ 2) :
+    beta p e * gammaEl p e = ((n ^ 2 : ℤ) : ZS) := by
+  ext
+  · simp only [mul_a, beta, gammaEl, intCast_a]; linear_combination hn
+  · simp only [mul_b, beta, gammaEl, intCast_b]; ring
+  · simp only [mul_c, beta, gammaEl, intCast_c]; ring
+
+/-- **The exact division of `γ` by `β`** (PROVEN, a pure `ring` identity): this
+is what bounds `gcd(β, γ)` by `4s(3s−4)·e⁴`. -/
+theorem gamma_eq (p e : ℤ) :
+    gammaEl p e = QEl p e * beta p e + DEl * ((e ^ 4 : ℤ) : ZS) := by
+  ext <;> simp only [gammaEl, QEl, beta, DEl, add_a, add_b, add_c, mul_a, mul_b, mul_c,
+    intCast_a, intCast_b, intCast_c] <;> ring
+
+/-- **`4s(3s−4) = uD·s⁸·g`** (PROVEN by `decide`): the point of the norm
+`2816 = 2⁸·11` is that the only primes involved are `s` and `g`. Here
+`2 = s³/(s²−1)` with `s² − 1` a unit, so `4` contributes `s⁶`, the explicit factor
+`s` one more, and `3s − 4` the last one together with `g`. -/
+theorem D_eq : DEl = uD * sEl ^ 8 * gEl := by decide
+
+/-- An element of prime norm is irreducible (PROVEN). -/
+theorem irreducible_of_prime_norm {x : ZS} (h : Prime (N x)) : Irreducible x := by
+  refine ⟨fun hu => h.not_unit (norm_isUnit_of_isUnit hu), fun {y z} hyz => ?_⟩
+  have hN : N x = N y * N z := by rw [hyz, N_mul]
+  rcases h.irreducible.isUnit_or_isUnit hN with h1 | h1
+  · exact Or.inl (isUnit_of_norm_isUnit h1)
+  · exact Or.inr (isUnit_of_norm_isUnit h1)
+
+/-- `s` is irreducible (PROVEN): `N(s) = −2`. -/
+theorem irreducible_sEl : Irreducible sEl :=
+  irreducible_of_prime_norm
+    (by show Prime (-2 : ℤ); exact Int.prime_iff_natAbs_prime.mpr (by decide))
+
+/-- `g = 3 − s²` is irreducible (PROVEN): `N(g) = 11`. -/
+theorem irreducible_gEl : Irreducible gEl :=
+  irreducible_of_prime_norm
+    (by show Prime (11 : ℤ); exact Int.prime_iff_natAbs_prime.mpr (by decide))
+
+/-- `uD` is a unit (PROVEN): `N(uD) = 1`. -/
+theorem isUnit_uD : IsUnit uD := isUnit_of_norm_isUnit (by decide)
+
+/-- **LEAF 1 (sorry leaf, 2026-07-27): `ℤ[s]` is a principal ideal ring**, i.e.
+`h(K) = 1` together with `𝓞_K = ℤ[s]`.
+
+Route, with the mathlib lemma named: identify `ℤ[s]` with `𝓞_K` for
+`K = ℚ[X]/(X³ − 2X² + 2)` (the power basis `1, s, s²` is an integral basis —
+index `1`, which needs the Eisenstein-at-`2` argument, see the section
+docstring), then apply
+`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`: at
+`finrank = 3`, `nrComplexPlaces = 1` its hypothesis is
+`|discr K| < (2·(π/4)·(3³/3!))² = (2.25π)² ≈ 49.96`, and `|discr K| = 44`.
+`Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean` is the worked precedent
+for discharging exactly this inequality.
+
+Consumed below only through `WfDvdMonoid`, `UniqueFactorizationMonoid` and
+Bézout, so any route to a PID discharges it — including a Euclidean structure:
+`ℤ[s]` is norm-Euclidean, discriminant `−44` being on the classical list of
+norm-Euclidean complex cubic fields. -/
+theorem isPrincipalIdealRing_zs : IsPrincipalIdealRing ZS := sorry
+
+instance : IsPrincipalIdealRing ZS := isPrincipalIdealRing_zs
+
+/-- **LEAF 2 (sorry leaf, 2026-07-27): the units of `ℤ[s]` modulo squares are
+`{±1, ±ε}`**, `ε = −s² + s + 1`.
+
+Route: `𝓞_K = ℤ[s]` again, then Dirichlet's unit theorem. `K` has signature
+`(r₁, r₂) = (1, 1)` — the cubic `X³ − 2X² + 2` has exactly one real root, since
+it is increasing off `[0, 4/3]` and its two critical values `2` and `2 − 32/27`
+have the same sign — so the unit rank is `r₁ + r₂ − 1 = 1`, and the torsion is
+`{±1}` because a real embedding exists. Hence `𝓞_K^× ≅ {±1} × ℤ` and
+`𝓞_K^×/(𝓞_K^×)²` has exactly the four classes `{±1, ±ε₀}` for any fundamental
+unit `ε₀`.
+
+**`ε` need NOT be proven fundamental**, which is the expensive half of the
+classical computation and is avoided here: `N(ε) = −1`, and `ε = ±ε₀^k` gives
+`(±1)·N(ε₀)^k = −1`, forcing `k` odd, so `ε ≡ ε₀` modulo squares whichever `ε₀`
+Dirichlet hands back. (PARI/GP confirms `ε` is in fact fundamental, but that is
+not needed here.) -/
+theorem unit_sq_class {u : ZS} (hu : IsUnit u) :
+    ∃ v w : ZS, (v = 1 ∨ v = -1 ∨ v = epsEl ∨ v = -epsEl) ∧ u = v * w ^ 2 := sorry
+
+/-- **THE VALUATION BOOKKEEPING** (PROVEN 2026-07-27 over the two leaves above):
+`β = p − 2s·e²` is a unit from `{±1, ±ε}` times `s^r g^t` (`r, t ∈ {0, 1}`) times
+a square.
+
+The argument, in the order it is written below:
+
+* `β ≠ 0` because its `s`-coordinate is `−2e² ≠ 0`.
+* Split off the two bad primes: `β = s^a·β₁` with `s ∤ β₁`, then `β₁ = g^b·β₂`
+  with `g ∤ β₂` (`WfDvdMonoid.max_power_factor`, available since `ℤ[s]` is a PID
+  hence a `WfDvdMonoid`). Note `s ∤ β₂` too, since `β₂ ∣ β₁`.
+* `β₂` is coprime to `s^a·g^b·γ`. This is the only place the arithmetic of the
+  point enters. A prime `z` dividing both divides neither `s` nor `g` (it divides
+  `β₂`), so it divides `γ`; it divides `β` as well, so by `gamma_eq` it divides
+  `D·e⁴ = uD·s⁸·g·e⁴`; `uD` is a unit and `s, g` are excluded, so `z ∣ e`; and
+  then `z ∣ p` by `beta_eq`, contradicting `IsCoprime p e` through Bézout.
+* `β₂ · (s^a g^b γ) = n²` with the two factors coprime, so `β₂` is a square up to
+  a unit (`exists_associated_pow_of_mul_eq_pow'`, the Bézout form).
+* Finally `s^a = (s^{a/2})²·s^{a%2}` and likewise for `g`, and the leftover unit
+  is `{±1, ±ε}` times a square by `unit_sq_class`.
+
+Nothing here uses `E(ℚ) ≅ ℤ/5`, which would be circular: this module's own height
+descent is what proves it. -/
+theorem descent_zs {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hn : p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6 = n ^ 2) :
+    ∃ (v δ : ZS) (r t : ℕ), (v = 1 ∨ v = -1 ∨ v = epsEl ∨ v = -epsEl) ∧
+      r < 2 ∧ t < 2 ∧ beta p e = v * sEl ^ r * gEl ^ t * δ ^ 2 := by
+  have hbne : beta p e ≠ 0 := by
+    intro h
+    have hb : (-2 * e ^ 2 : ℤ) = 0 := congrArg ZS.b h
+    nlinarith
+  obtain ⟨a, β₁, hsβ₁, hβ₁⟩ := WfDvdMonoid.max_power_factor hbne irreducible_sEl
+  have hβ₁ne : β₁ ≠ 0 := by rintro rfl; rw [mul_zero] at hβ₁; exact hbne hβ₁
+  obtain ⟨b, β₂, hgβ₂, hβ₂⟩ := WfDvdMonoid.max_power_factor hβ₁ne irreducible_gEl
+  have hβ₂ne : β₂ ≠ 0 := by rintro rfl; rw [mul_zero] at hβ₂; exact hβ₁ne hβ₂
+  have hsβ₂ : ¬ sEl ∣ β₂ := fun h => hsβ₁ (hβ₂ ▸ h.mul_left _)
+  have hβ : beta p e = sEl ^ a * gEl ^ b * β₂ := by rw [hβ₁, hβ₂]; ring
+  have hnn : ((n ^ 2 : ℤ) : ZS) = ((n : ℤ) : ZS) ^ 2 := by push_cast; ring
+  have hprod : β₂ * (sEl ^ a * gEl ^ b * gammaEl p e) = ((n : ℤ) : ZS) ^ 2 := by
+    have h1 := beta_mul_gamma p e n hn
+    rw [hβ, hnn] at h1; linear_combination h1
+  have hcop2 : IsCoprime β₂ (sEl ^ a * gEl ^ b * gammaEl p e) := by
+    refine isCoprime_of_irreducible_dvd (fun h => hβ₂ne h.1) ?_
+    intro z hz hzβ₂ hzB
+    have hzp : Prime z := UniqueFactorizationMonoid.irreducible_iff_prime.mp hz
+    have hzs : ¬ z ∣ sEl := fun h =>
+      hsβ₂ ((hz.associated_of_dvd irreducible_sEl h).symm.dvd.trans hzβ₂)
+    have hzg : ¬ z ∣ gEl := fun h =>
+      hgβ₂ ((hz.associated_of_dvd irreducible_gEl h).symm.dvd.trans hzβ₂)
+    have hzγ : z ∣ gammaEl p e := by
+      rcases hzp.dvd_mul.mp hzB with h | h
+      · rcases hzp.dvd_mul.mp h with h1 | h1
+        · exact absurd (hzp.dvd_of_dvd_pow h1) hzs
+        · exact absurd (hzp.dvd_of_dvd_pow h1) hzg
+      · exact h
+    have hzβ : z ∣ beta p e := by rw [hβ]; exact hzβ₂.mul_left _
+    have hzD : z ∣ uD * sEl ^ 8 * gEl * ((e ^ 4 : ℤ) : ZS) := by
+      have hid : DEl * ((e ^ 4 : ℤ) : ZS) = gammaEl p e - QEl p e * beta p e := by
+        rw [gamma_eq]; ring
+      have h2 := dvd_sub hzγ (hzβ.mul_left (QEl p e))
+      rw [← hid, D_eq] at h2
+      exact h2
+    have hze : z ∣ ((e : ℤ) : ZS) := by
+      rcases hzp.dvd_mul.mp hzD with h | h
+      · rcases hzp.dvd_mul.mp h with h1 | h1
+        · rcases hzp.dvd_mul.mp h1 with h2 | h2
+          · exact absurd (isUnit_of_dvd_unit h2 isUnit_uD) hzp.not_unit
+          · exact absurd (hzp.dvd_of_dvd_pow h2) hzs
+        · exact absurd h1 hzg
+      · refine hzp.dvd_of_dvd_pow (n := 4) ?_
+        rwa [show (((e ^ 4 : ℤ)) : ZS) = ((e : ℤ) : ZS) ^ 4 by push_cast; ring] at h
+    have hzpp : z ∣ ((p : ℤ) : ZS) := by
+      have hp : ((p : ℤ) : ZS) = beta p e + ((2 * e : ℤ) : ZS) * ((e : ℤ) : ZS) * sEl := by
+        rw [beta_eq]; push_cast; ring
+      rw [hp]
+      exact dvd_add hzβ ((hze.mul_left _).mul_right sEl)
+    obtain ⟨x, y, hxy⟩ := hcop
+    refine absurd (isUnit_of_dvd_one (a := z) ?_) hzp.not_unit
+    have h1 : ((1 : ℤ) : ZS)
+        = ((x : ℤ) : ZS) * ((p : ℤ) : ZS) + ((y : ℤ) : ZS) * ((e : ℤ) : ZS) := by
+      rw [← Int.cast_mul, ← Int.cast_mul, ← Int.cast_add, hxy]
+    rw [show (1 : ZS) = ((1 : ℤ) : ZS) by push_cast; ring, h1]
+    exact dvd_add (hzpp.mul_left _) (hze.mul_left _)
+  obtain ⟨d, u, hu⟩ := exists_associated_pow_of_mul_eq_pow' hcop2 (k := 2) hprod
+  obtain ⟨v, w, hv, hvw⟩ := unit_sq_class (u := (u : ZS)) u.isUnit
+  refine ⟨v, sEl ^ (a / 2) * gEl ^ (b / 2) * d * w, a % 2, b % 2, hv, by omega, by omega, ?_⟩
+  have hsa : sEl ^ a = (sEl ^ (a / 2)) ^ 2 * sEl ^ (a % 2) := by
+    rw [← pow_mul, ← pow_add]; congr 1; omega
+  have hgb : gEl ^ b = (gEl ^ (b / 2)) ^ 2 * gEl ^ (b % 2) := by
+    rw [← pow_mul, ← pow_add]; congr 1; omega
+  rw [hβ, hsa, hgb, ← hu, hvw]
+  ring
+
+/-- The `ℤ`-basis coordinates of an element of `ℤ[s]`. The bridge is definitional:
+`ofZS_mul` and `ofZS_beta` are both `rfl`. -/
+def ofZS (x : ZS) : ℤ × ℤ × ℤ := (x.a, x.b, x.c)
+
+theorem ofZS_mul (x y : ZS) : ofZS (x * y) = zsMul (ofZS x) (ofZS y) := rfl
+
+theorem ofZS_beta (p e : ℤ) : ofZS (beta p e) = descentImage p e := rfl
+
+end ZS
+
+end Cubic
+
+/-- **THE `2`-DESCENT SQUARE CLASSES** (PROVEN 2026-07-27 over the two leaves
+`Cubic.ZS.isPrincipalIdealRing_zs` and `Cubic.ZS.unit_sq_class`; it was itself a
+leaf earlier the same day): the descent image `β = p − 2s·e²` is one of `16`
+explicit square classes of `ℤ[s]`.
 
 ## WHAT THIS ASKS FOR, AND WHY THE LIST HAS EXACTLY THESE `16` ENTRIES
 
@@ -656,8 +1140,12 @@ discard the other fourteen.
 
 ## FIELD AND CURVE DATA, ALL RE-DERIVED IN PARI/GP (2026-07-27)
 
-* `poldisc(X³ − 2X² + 2) = −44 = disc(K)`, so `[𝓞_K : ℤ[s]] = 1` **exactly** —
-  no Eisenstein argument is needed, only that the two discriminants agree.
+* `poldisc(X³ − 2X² + 2) = −44 = disc(K)`, so `[𝓞_K : ℤ[s]] = 1` **exactly**.
+  (CORRECTED 2026-07-27: an earlier version of this line said "no Eisenstein
+  argument is needed, only that the two discriminants agree". That is backwards.
+  `−44 = −2²·11` is not squarefree, so the discriminants *agreeing* is what has
+  to be proven, and the index could a priori be `2`; the polynomial IS Eisenstein
+  at `2`, and that is what rules it out. See `Cubic.ZS.isPrincipalIdealRing_zs`.)
 * `h(K) = 1` (Minkowski: `(4/π)(6/27)√44 ≈ 1.876 < 2`).
 * Unit rank `1`, torsion `{±1}`, fundamental unit exactly `ε = −s² + s + 1`
   with `N(ε) = −1` (not `+1`).
@@ -668,25 +1156,41 @@ discard the other fourteen.
   TRUE, it is exactly `Sel₂(E/ℚ) = 0`, and it is not vacuous — the two known
   points have the explicit witnesses checked by `example` above.
 
-## WHAT REMAINS, AND WHAT NO LONGER DOES
+## WHAT REMAINS, AND WHAT NO LONGER DOES (updated 2026-07-27, second cut)
 
-Remaining: items 1–3 above, i.e. `𝓞_K = ℤ[s]` (discriminants agree), `h(K) = 1`
-(`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`, whose bound
-`81π²/16 ≈ 49.96 > 44` is met, with `Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean`
-as worked precedent), the unit group, and the valuation bookkeeping of item 1.
+**Item 1 — the valuation bookkeeping — is PROVEN**, as `Cubic.ZS.descent_zs`,
+together with everything else this statement needed except two facts about the
+cubic field. What remains is exactly those two, and only those:
 
-No longer remaining, and this is the point of the 2026-07-27 cut: the norm
-pruning (`descent_square_class`), the local condition (`epsilon_class_impossible`,
-which turns out to be pure parity), the non-vanishing (`descentImage_norm_ne_zero`)
-and the whole assembly (`exists_halving_witness`) are PROVEN. **Nothing above
-needs Galois cohomology, a Selmer group, a connecting map, or `E(ℚ) ≅ ℤ/5`.** -/
+* `Cubic.ZS.isPrincipalIdealRing_zs` — `𝓞_K = ℤ[s]` and `h(K) = 1`, i.e. item 2;
+* `Cubic.ZS.unit_sq_class` — the units modulo squares, i.e. item 3.
+
+See the `ℤ[s] AS A RING` section docstring above for the route to each, and for
+the list of what is now proven on the way (the ring itself, its integral-domain
+property by a `2`-adic descent on the norm form, the irreducibility of `s` and
+`g`, the identity `4s(3s−4) = uD·s⁸·g`, and the coprimality/factorisation
+argument that consumes them).
+
+Already proven before this cut: the norm pruning (`descent_square_class`), the
+local condition (`epsilon_class_impossible`, which turns out to be pure parity),
+the non-vanishing (`descentImage_norm_ne_zero`) and the whole assembly
+(`exists_halving_witness`). **Nothing above needs Galois cohomology, a Selmer
+group, a connecting map, or `E(ℚ) ≅ ℤ/5`.** -/
 theorem descent_unit_square {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (hn : zsNorm (descentImage p e) = n ^ 2) :
     ∃ u δ : ℤ × ℤ × ℤ, descentImage p e = zsMul u (zsMul δ δ) ∧
       u ∈ [((1 : ℤ), (0 : ℤ), (0 : ℤ)), (0, 1, 0), (3, 0, -1), (2, 3, -2),
         (-1, 0, 0), (0, -1, 0), (-3, 0, 1), (-2, -3, 2),
         (1, 1, -1), (2, 1, -1), (1, 1, -2), (4, 1, -3),
-        (-1, -1, 1), (-2, -1, 1), (-1, -1, 2), (-4, -1, 3)] := sorry
+        (-1, -1, 1), (-2, -1, 1), (-1, -1, 2), (-4, -1, 3)] := by
+  rw [zsNorm_descentImage] at hn
+  obtain ⟨v, δ, r, t, hv, hr, ht, hbeta⟩ := Cubic.ZS.descent_zs he hcop hn
+  refine ⟨Cubic.ZS.ofZS (v * Cubic.ZS.sEl ^ r * Cubic.ZS.gEl ^ t), Cubic.ZS.ofZS δ, ?_, ?_⟩
+  · rw [← Cubic.ZS.ofZS_beta, hbeta, sq]; simp only [Cubic.ZS.ofZS_mul]
+  · have hr' : r = 0 ∨ r = 1 := by omega
+    have ht' : t = 0 ∨ t = 1 := by omega
+    rcases hv with rfl | rfl | rfl | rfl <;> rcases hr' with rfl | rfl <;>
+      rcases ht' with rfl | rfl <;> decide
 
 /-- **The norm pruning** (PROVEN 2026-07-27): of the `16` square classes only
 the two of norm `1` survive, so `β` is a square or `−ε` times a square.
@@ -786,7 +1290,8 @@ theorem epsilon_class_impossible {p e a b c : ℤ} (hcop : IsCoprime p e) :
         linarith⟩
   exact absurd (hcop.isUnit_of_dvd' hp he) (by decide)
 
-/-- **THE `2`-DESCENT at level `11`** (PROVEN 2026-07-27 over the single leaf
+/-- **THE `2`-DESCENT at level `11`** (PROVEN 2026-07-27, now over the two cubic-field
+leaves `Cubic.ZS.isPrincipalIdealRing_zs` and `Cubic.ZS.unit_sq_class` under
 `descent_unit_square`): every coprime integral point of `W² = U³ − 4U² + 16`
 lies in the TRIVIAL square class of the `2`-division field, written out in
 coordinates.
@@ -1673,9 +2178,11 @@ the finite-generation content lives — is PROVEN too, over `reduced_fraction`,
 `forms_common_dvd` and `forms_archimedean`. And `smallPoints` — the finite base
 case the height bound leaves behind, `|p| ≤ 512` and `1 ≤ e ≤ 22` — is PROVEN
 as of 2026-07-27 by a bitmask quadratic-residue sieve. And `exists_halving_witness`
-was decomposed later the same day, so exactly ONE open statement remains:
-`descent_unit_square`, the ideal-theoretic half of the `2`-descent over `ℤ[s]`
-(`𝓞_K = ℤ[s]`, `h(K) = 1`, units mod squares, valuation bookkeeping). See the
+was decomposed later the same day, then `descent_unit_square` after it, so exactly
+TWO open statements remain, both facts about the cubic field `K = ℚ(s)`:
+`Cubic.ZS.isPrincipalIdealRing_zs` (`𝓞_K = ℤ[s]` with `h(K) = 1`) and
+`Cubic.ZS.unit_sq_class` (units mod squares). The valuation bookkeeping that used
+to sit with them is PROVEN, as `Cubic.ZS.descent_zs`. See the
 section docstring for the computed evidence behind that split, including why the
 earlier routing note — which called the cubic field's class group the
 obstruction — was wrong, and why the ROUTE AUDIT that called for Galois
@@ -1780,8 +2287,10 @@ and BOTH of those are themselves PROVEN — `height_drop_or_small` over
 kernel. Finally `exists_halving_witness` itself was decomposed on 2026-07-27
 and is PROVEN, over `MazurLevel11.descent_square_class` (the norm pruning) and
 `MazurLevel11.epsilon_class_impossible` (the local condition, pure parity mod
-`4`). So level `11` stands on exactly ONE open statement:
-`MazurLevel11.descent_unit_square`. See the `MazurLevel11` section docstring.
+`4`). And `descent_unit_square` was decomposed the same day too, so level `11`
+stands on exactly TWO open statements, both facts about the cubic field `ℚ(s)`:
+`MazurLevel11.Cubic.ZS.isPrincipalIdealRing_zs` and
+`MazurLevel11.Cubic.ZS.unit_sq_class`. See the `MazurLevel11` section docstring.
 
 Note the sentence above — "finite generation alone never yields rank `0`, so it
 was never the hard half" — is true but was read the wrong way round when
