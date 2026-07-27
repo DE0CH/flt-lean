@@ -46377,8 +46377,12 @@ set_option maxHeartbeats 1000000 in
 unramifiedness hypothesis** (**PROVEN 2026-07-27** as a one-line
 repackaging of `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
 just above, which is where the class field theory now sits and which is
-STILL OPEN — the head label here read "sorry node" until 2026-07-27, which
-was STALE and is corrected. Created 2026-07-26 as sub-leaf
+itself **PROVEN 2026-07-27** over the single sub-leaf
+`artinDivisorKernel_le_sup_ramified_ray_class`. So this node is
+transitively `sorryAx` through that sub-leaf and is NOT directly open —
+do not dispatch a prover here. (The head label read "sorry node" until
+2026-07-27; the "STILL OPEN" note that replaced it went stale the same
+day when the descent was proven. Both are corrected.) Created 2026-07-26 as sub-leaf
 (B1a-ii-2-a-ii) of `exists_isAdmissibleModulus_ray_class` below, which is
 now PROVEN by the prime-power reduction over this leaf and
 (B1a-ii-2-a-i) `exists_forall_pow_eq_one_ray_class` just above): if `χ`
@@ -46723,13 +46727,18 @@ THEORY.** `exists_isAdmissibleModulus_primePow_ray_class` above now
 returns a modulus together with
 `∀ v, v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v` — the second half of
 Childress 5.2.1(ii), "the ideal `m` can be chosen so that it is divisible
-only by the ramified primes" — threaded out of the sorried Artin-descent
-leaf `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
-above. Given that, this leaf is two lines: the modulus it returns is
+only by the ramified primes" — threaded out of the Artin-descent leaf
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
+above, which was sorried when this was written and is now PROVEN over its
+own sub-leaf `artinDivisorKernel_le_sup_ramified_ray_class` (that sub-leaf
+is where the residual sorry sits).
+Given that, this leaf is two lines: the modulus it returns is
 supported on ramified primes and `hw` says `w` is not one of them.
 
 **Be precise about what that means: content was RELOCATED, not created.**
-The obligation now sits inside the (still sorried) Artin-descent leaf,
+The obligation now sits inside the Artin-descent leaf — itself proven
+glue, so the obligation has since descended one further step into
+`artinDivisorKernel_le_sup_ramified_ray_class` —
 where it is part of the classical statement being proven anyway and
 therefore costs that leaf nothing extra — see the SUPPORT CLAUSE section
 of its docstring, which records that the clause is literally
@@ -46844,14 +46853,20 @@ exists_radical_isRamifiedChar_ray_class …`, and `hmmiff` is an **iff**,
 `w.asIdeal ∣ mm ↔ IsRamifiedCharRayClass F χ w`. So the support
 information this leaf wants is already present there — it is simply not
 exported (the package's conclusion states only the `←` direction,
-`hmmram`). What blocks the route is the NEXT step: the only thing turning
-the package into admissibility is `artinDivisorKernel_le_sup_ray_class`
-(Childress Prop. 5.2.2, `A ≤ P ⊔ N`), which is SORRIED **and carries
-`hunr`, i.e. `χ` unramified at EVERY finite place**. This leaf has
-unramifiedness at the single place `w` only, so it cannot discharge
-`hunr`, and the route stops. *The check that refutes this:* find any proven
-declaration above this line that yields `A ≤ P ⊔ N` (or admissibility from
-the package) without `hunr`. There is none.
+`hmmram`). What blocked the route when this was written was the NEXT
+step: the only thing turning the package into admissibility was
+`artinDivisorKernel_le_sup_ray_class` (Childress Prop. 5.2.2,
+`A ≤ P ⊔ N`), which then carried
+`hunr`, i.e. `χ` unramified at EVERY finite place. This leaf has
+unramifiedness at the single place `w` only, so it could not discharge
+`hunr`, and the route stopped. *The check that refutes this:* find any
+proven declaration above this line that yields `A ≤ P ⊔ N` (or
+admissibility from the package) without `hunr`. **That check now SUCCEEDS
+and this paragraph is therefore SUPERSEDED (2026-07-27):**
+`artinDivisorKernel_le_sup_ramified_ray_class` is exactly that node, and
+`artinDivisorKernel_le_sup_ray_class` has itself since been proven. The
+paragraph is kept only as the record of why axis (a) was not the route
+taken; the leaf closed on axis (b) below and needs neither.
 
 *(b) Artin's descent to the CYCLOTOMIC base case with support tracked —
 THIS IS THE LIVE ROUTE, BUT THE WORK BELONGS ON ANOTHER DECLARATION.* The
@@ -46862,8 +46877,8 @@ through the package, which takes it from the iff). So in the `hunr` case
 the support clause is available FOR FREE. The `hunr`-free variant that
 this leaf actually depends on —
 `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
-above — is SORRIED, **and its conclusion DROPS the support clause**,
-asserting only `∃ mm ≠ ⊥` killing the ray.
+above — was SORRIED when this was written, **and its conclusion DROPPED
+the support clause**, asserting only `∃ mm ≠ ⊥` killing the ray.
 
 **Hence the concrete repair, and it closes this leaf as pure ideal
 arithmetic:** strengthen that declaration's conclusion by adding
@@ -46872,6 +46887,9 @@ analogue already obtains that clause for nothing from the same
 `exists_radical_isRamifiedChar_ray_class` iff, so the strengthening asks
 for no mathematics beyond what that leaf already owes. With it, this leaf
 is `obtain` + `fun hdvd => hw (…)`, and `mm`/`hmm` are not used at all.
+**THIS REPAIR WAS CARRIED OUT 2026-07-27 and is what the body above
+does** — the clause is in the descent's conclusion, the descent is proven,
+and `mm`/`hmm` are underscored. Nothing in this paragraph is outstanding.
 That last point is itself a finding: **`hmm` is load-bearing ONLY for the
 ideal-arithmetic axis, which is exhausted** — it is inert on the route
 that will actually close this leaf. It is kept in the statement anyway,
