@@ -16353,10 +16353,25 @@ cusps — because a rational point of `X` supported at the image point of
 the residue field of that point of `X` is not pinned to `K d`, so `d`
 need not even lie in `rationalCuspDivisors N`.  `ratPoint` is exactly the
 missing clause: evaluated on `ℚ`-points, `X ∖ Y` really IS
-`∐_{d ∣ N} Spec (K d)`.  It is a consequence of the Deligne–Rapoport
-identification and not an extra assumption on top of it — `Spec ℚ` is
-reduced, so a `ℚ`-point of `X` landing in the closed set `X ∖ Y` factors
-through the reduced induced subscheme, which is that coproduct.
+`∐_{d ∣ N} Spec (K d)`.
+
+**AND IT IS FREE — that is now a theorem rather than a claim**
+(2026-07-27).  When this field was added, the sentence here read "it is a
+consequence of the Deligne–Rapoport identification and not an extra
+assumption on top of it", and on the strength of that it was threaded up
+into `exists_cuspResidueIndexing` as a THIRD CONJUNCT.  The consequence
+is far cheaper than "a consequence of Deligne–Rapoport":
+`exists_residueAlgHom_of_isCusp` proves it with **no moduli input
+whatever** — not the divisor indexing, not the residue fields, not the
+reduced-induced-subscheme argument that was cited.  A morphism out of
+`Spec` of a FIELD is a point plus a residue-field embedding
+(`Scheme.SpecToEquivOfField`), and a rational point whose image lies in
+the open `Set.range j.base` factors through `Y`
+(`IsOpenImmersion.lift`), so a CUSP's image lies off `Y`.  The third
+conjunct has accordingly been REMOVED from the leaf, which is back to the
+two-conjunct Deligne–Rapoport sentence; `e` enters this field only to
+name the divisor `e.symm p` of the point the factorisation already
+produces.
 
 Note the hypothesis is `h.IsCusp x` rather than
 `x.1.base P ∈ (Set.range j.base)ᶜ`; the two are equivalent over `Spec ℚ`
@@ -16364,7 +16379,8 @@ Note the hypothesis is `h.IsCusp x` rather than
 the section through `Y` as soon as its image point lies in
 `Set.range j.base` — the argument `exists_relSectionAlong_of_special`
 runs over a local base), and `IsCusp` is the form every consumer here
-already has.
+already has.  The direction this field needs is no longer merely
+recorded: it is proven, inside `exists_residueAlgHom_of_isCusp`.
 
 Stated over `Spec ℚ` rather than over the general base of
 `IsX0Compactification`, for the same reason `CuspIndexing` is: residue
@@ -16693,6 +16709,79 @@ theorem residueQDegree_eq_totient {X : Scheme.{0}} {strX : X ⟶ SpecQ} {x : X} 
   exact IsCyclotomicExtension.finrank (n := n) (K := ℚ) (X.residueField x)
     (Polynomial.cyclotomic.irreducible_rat (Nat.pos_of_ne_zero hn))
 
+/-- **A `ℚ`-rational CUSP of `X` factors through the residue field of its
+image point, by a `ℚ`-algebra map, and that point lies off `Y`** (PROVEN
+2026-07-27; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+This is the whole of `IsX0Compactification.CuspLocus.ratPoint`, and it is
+**FREE** — it needs no moduli input, no divisor indexing and no
+Deligne–Rapoport.  It was previously an obligation of
+`exists_cuspResidueIndexing` (a third conjunct added at the release that
+introduced `ratPoint`); it is now a theorem, and the leaf is back to the
+two-conjunct Deligne–Rapoport sentence.
+
+Two independent halves, neither of them modular:
+
+* *The factorisation.*  `Spec ℚ` is `Spec` of a FIELD, and mathlib's
+  `Scheme.SpecToEquivOfField` says a morphism `Spec K ⟶ X` is exactly a
+  point `p` of `X` together with an embedding `κ(p) ⟶ K`.  So `x.1`
+  factors through `X.fromSpecResidueField p` for `p := x.1.base ⊥`, with
+  no hypothesis whatever.  That the embedding is a map of `ℚ`-ALGEBRAS
+  for `residueQAlgebra` is then FREE, and carries no content at the base
+  `ℚ`: both `algebraMap`s out of `ℚ` are the rational cast, so every ring
+  map `κ(p) →+* ℚ` whatsoever is `ℚ`-linear.  (Over a base where `ℚ` is
+  not initial this step would be real, and would be `Spec.map_preimage`
+  plus `x.2` — which is the reason `residueQAlgebra` is defined through
+  `Spec.preimage` rather than through `Scheme.Hom.residueFieldMap`; see
+  its docstring.)
+* *The point lies off `Y`.*  This is the converse of the equivalence the
+  `ratPoint` docstring records, and it is where `h.isOpen` is used.  If
+  `p ∈ Set.range j.base` then `Set.range x.1.base = {p}` — a
+  section of `Spec ℚ`, a ONE-POINT space — is contained in the open
+  `Set.range j.base`, so `AlgebraicGeometry.IsOpenImmersion.lift`
+  factors `x.1` through `j`, exhibiting `x` as `sectionAlong j h.comm y`
+  and contradicting `h.IsCusp x`.
+
+Note what this does NOT prove, and what therefore still belongs to
+Deligne–Rapoport: it says nothing about WHICH point `p` is, nor about its
+residue field.  Pinning `p` to be the cusp above a divisor `d` — i.e. the
+bijection `N.divisors ≃ X ∖ Y` with cyclotomic residue fields — is
+exactly what `exists_cuspResidueIndexing` still asks for. -/
+theorem exists_residueAlgHom_of_isCusp {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j)
+    (x : RelPoint strX (𝟙 SpecQ)) (hx : h.IsCusp x) :
+    ∃ p : ((Set.range j.base)ᶜ : Set X),
+      letI := residueQAlgebra strX p.1
+      ∃ f : X.residueField p.1 →ₐ[ℚ] ℚ,
+        Spec.map (CommRingCat.ofHom f.toRingHom) ≫ X.fromSpecResidueField p.1 = x.1 := by
+  classical
+  haveI := h.isOpen
+  set q := Scheme.SpecToEquivOfField ℚ X x.1 with hq
+  have hfac : Spec.map q.2 ≫ X.fromSpecResidueField q.1 = x.1 :=
+    (Scheme.SpecToEquivOfField ℚ X).symm_apply_apply x.1
+  -- every point of `Spec ℚ` maps to `q.1`, since `Spec κ(q.1) ⟶ X` has range `{q.1}`
+  have hpt : ∀ s, x.1.base s = q.1 := by
+    intro s
+    rw [← hfac]
+    simp
+  -- so if `q.1` were in the image of `j`, the section would factor through `Y`
+  have hmem : q.1 ∈ (Set.range j.base)ᶜ := by
+    intro hcon
+    apply hx
+    have hrange : Set.range x.1.base ⊆ Set.range j.base := by
+      rintro _ ⟨s, rfl⟩
+      rw [hpt s]
+      exact hcon
+    refine ⟨⟨IsOpenImmersion.lift j x.1 hrange, ?_⟩, ?_⟩
+    · rw [← h.comm, ← Category.assoc, IsOpenImmersion.lift_fac, x.2]
+    · exact Subtype.ext (IsOpenImmersion.lift_fac _ _ _)
+  refine ⟨⟨q.1, hmem⟩, ?_⟩
+  letI := residueQAlgebra strX q.1
+  -- `ℚ` is initial among `ℚ`-algebras — both `algebraMap`s out of `ℚ` are the
+  -- rational cast — so EVERY ring map `κ(p) →+* ℚ` is automatically `ℚ`-linear.
+  exact ⟨⟨q.2.hom, fun _ => by simp⟩, hfac⟩
+
 /-- **The cusp locus, assembled from a divisor-indexing of the cusps by
 points** (PROVEN; axiom-audited `[propext, Classical.choice, Quot.sound]`).
 
@@ -16716,6 +16805,10 @@ N/d)})`:
   surjectivity of `e` is used, and it is the only place; an injection would
   give every field but this one.
 * `disj` — distinct singletons, from injectivity of `e`.
+* `ratPoint` — `exists_residueAlgHom_of_isCusp` transported along `e.symm`.
+  This field used to be a HYPOTHESIS here, and a third conjunct of
+  `exists_cuspResidueIndexing`; it is free, and `e` is used only to name
+  the divisor `e.symm p` of the point the factorisation already produces.
 
 Note that `d ≠ 0` for `d ∈ N.divisors` (`Nat.pos_of_mem_divisors`) is what
 supplies `residueQDegree_eq_totient`'s hypothesis; `hN : N ≠ 0` is not needed
@@ -16724,14 +16817,19 @@ theorem nonempty_cuspLocus_of_residueIndexing {N : ℕ} {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j)
     (e : N.divisors ≃ ((Set.range j.base)ᶜ : Set X))
-    (hcyc : ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1)))
-    (hrat : ∀ x : RelPoint strX (𝟙 SpecQ), h.IsCusp x →
+    (hcyc : ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1))) :
+    Nonempty h.CuspLocus := by
+  have hrat : ∀ x : RelPoint strX (𝟙 SpecQ), h.IsCusp x →
       ∃ d : N.divisors,
         letI := residueQAlgebra strX (e d).1
         ∃ f : X.residueField (e d).1 →ₐ[ℚ] ℚ,
           Spec.map (CommRingCat.ofHom f.toRingHom) ≫
-            X.fromSpecResidueField (e d).1 = x.1) :
-    Nonempty h.CuspLocus := by
+            X.fromSpecResidueField (e d).1 = x.1 := by
+    intro x hx
+    obtain ⟨p, f, hf⟩ := exists_residueAlgHom_of_isCusp h x hx
+    refine ⟨e.symm p, ?_⟩
+    rw [Equiv.apply_symm_apply]
+    exact ⟨f, hf⟩
   have hdvd : ∀ d : N.divisors, Nat.gcd d.1 (N / d.1) ≠ 0 := fun d hg =>
     (Nat.pos_of_mem_divisors d.2).ne' (Nat.eq_zero_of_gcd_eq_zero_left hg)
   have hr : ∀ d : N.divisors,
@@ -16880,16 +16978,32 @@ is now CLOSED, negatively, and two more are added.
    modular is only the INDEXING — which points, and which residue fields, and
    which of them a rational point of `X` can land on.
 
-   **CORRECTED AT INTEGRATION (2026-07-27).**  The previous version of this
-   paragraph said the axis "is refuted by a field of `CuspLocus` that cannot be
-   recovered from `(e, hcyc)`; `nonempty_cuspLocus_of_residueIndexing` shows
-   there is none."  A branch in the same release added exactly such a field —
-   `ratPoint`, the `ℚ`-POINT half of the identification, which `cover` (a
-   statement about underlying SETS) does not imply and which
-   `card_le_numRationalCusps` needs.  So this leaf now carries a third
-   conjunct, and the constructor a third hypothesis `hrat`.  Both branches were
-   right on their own base; the claim was simply written before the field
-   existed.
+   **CORRECTED AT INTEGRATION (2026-07-27), THEN RESTORED THE SAME DAY.**
+   The original claim was that the axis "is refuted by a field of `CuspLocus`
+   that cannot be recovered from `(e, hcyc)`;
+   `nonempty_cuspLocus_of_residueIndexing` shows there is none."  A branch in
+   the same release added what looked like exactly such a field — `ratPoint`,
+   the `ℚ`-POINT half of the identification, which `cover` (a statement about
+   underlying SETS) does not imply and which `card_le_numRationalCusps` needs
+   — so the leaf was given a third conjunct and the constructor a third
+   hypothesis `hrat`.
+
+   **That was an over-correction, and both are now gone.**  `ratPoint` IS
+   recoverable from `(e, hcyc)` — indeed from `e` alone, and in truth from
+   nothing at all: `exists_residueAlgHom_of_isCusp` derives it from
+   `Scheme.SpecToEquivOfField` and `IsOpenImmersion.lift`, with no moduli
+   input, no residue-field information and no use of `hcyc`.  So the original
+   claim stands as written, the leaf is back to two conjuncts, and the
+   refuting check is unchanged: exhibit a field of `CuspLocus` that cannot be
+   recovered from `(e, hcyc)`.
+
+   The episode is worth keeping, because the failure mode is general and this
+   file has now paid it: **a new field's docstring asserting "this is a
+   consequence of X and not an extra assumption" is a HYPOTHESIS, and threading
+   it up into a leaf is the expensive way to record it.**  Try to prove it
+   first — this one took eight seconds of compiler time and two mathlib lemmas,
+   against a leaf that has been open for a day and is gated on a book nobody
+   has downloaded.
 
 REFERENCES A PROVER CAN ACTUALLY OPEN (checked 2026-07-27).  The two halves
 of this leaf are in two different places, and only one of them is downloaded:
@@ -16949,16 +17063,22 @@ which is how Deligne–Rapoport states it — the rational points come out by
 should NOT go and build descent for this leaf.  What remains is the
 uniformisation and the `ℚ`-structure, and nothing else.
 
-**This leaf now carries BOTH directions of the cusp count** (2026-07-27).
-`CuspLocus` gained the field `ratPoint`, which is the `ℚ`-point form of
-the same identification `cover` records on underlying sets; with it,
+**This leaf supports BOTH directions of the cusp count, and the second
+direction costs it nothing** (2026-07-27).  `CuspLocus` gained the field
+`ratPoint`, which is the `ℚ`-point form of the same identification
+`cover` records on underlying sets; with it,
 `IsX0Compactification.CuspLocus.card_le_numRationalCusps` proves the
 matching UPPER bound, so `nonempty_cuspIndexing_of_ne_zero` (the lower
 bound) and `MazurIsogenyPrimeJ.card_le_numRationalCusps_of_isCusp` (the
-upper) are now both discharged HERE and nowhere else.  No extra
-mathematics is asked for: `Spec ℚ` is reduced, so a `ℚ`-point of `X`
-landing in the closed cusp locus factors through its reduced structure,
-which is the coproduct `∐_{d ∣ N} Spec (K d)` this structure records.
+upper) both run off this leaf.
+
+`ratPoint` was briefly a THIRD CONJUNCT here.  It is not one any more:
+`exists_residueAlgHom_of_isCusp` proves it outright, from
+`Scheme.SpecToEquivOfField` and `IsOpenImmersion.lift`, using no moduli
+input and not even the bijection `e`.  What this leaf asks for is
+therefore exactly what it asked for before that field existed — the
+bijection and the cyclotomic residue fields, i.e. Deligne–Rapoport and
+nothing else.
 
 `hN : N ≠ 0` is carried because every construction of a cusp needs it
 (`Nat.divisors 0 = ∅`, so there is nothing to index at `N = 0`), and
@@ -16977,13 +17097,7 @@ theorem exists_cuspResidueIndexing (N : ℕ) (hN : N ≠ 0) {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) :
     ∃ e : N.divisors ≃ ((Set.range j.base)ᶜ : Set X),
-      (∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1))) ∧
-        ∀ x : RelPoint strX (𝟙 SpecQ), h.IsCusp x →
-          ∃ d : N.divisors,
-            letI := residueQAlgebra strX (e d).1
-            ∃ f : X.residueField (e d).1 →ₐ[ℚ] ℚ,
-              Spec.map (CommRingCat.ofHom f.toRingHom) ≫
-                X.fromSpecResidueField (e d).1 = x.1 :=
+      ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1)) :=
   sorry
 
 /-- **The cusp locus of `X_0(N)` exists: `X ∖ Y` is `∐_{d ∣ N} Spec
@@ -17000,8 +17114,8 @@ theorem nonempty_cuspLocus (N : ℕ) (hN : N ≠ 0) {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) :
     Nonempty h.CuspLocus :=
-  let ⟨e, hcyc, hrat⟩ := exists_cuspResidueIndexing N hN h
-  nonempty_cuspLocus_of_residueIndexing h e hcyc hrat
+  let ⟨e, hcyc⟩ := exists_cuspResidueIndexing N hN h
+  nonempty_cuspLocus_of_residueIndexing h e hcyc
 
 /-- **`X_0(N)` has a `ℚ`-rational cusp above every divisor `d ∣ N` with
 `φ(gcd(d, N/d)) = 1`, and these are pairwise distinct** (PROVEN
@@ -25924,7 +26038,7 @@ the three that remain in this subsection are strictly smaller:
   `Γ₀(N)`-problem at `q ∤ N`, i.e. the special fibre of the integral open
   part is `Y_0(N)/𝔽_q` with finite cusp locus.  **PROVEN as of
   2026-07-27**: its last clause, `exists_unique_specialFibre_universal`,
-  now runs on `exists_gamma0AtlasData_pullbackSpecial`, the one
+  now runs on `exists_gamma0GITPresentationData_pullbackSpecial`, the one
   Deligne-Rapoport leaf of this file's special-fibre story, which is also
   what `nonempty_isCoarseModuliY0_pullbackSpecial` runs on — the two rival
   cuts of this node have been merged into that single leaf;
@@ -26818,7 +26932,8 @@ The node below used to ask for the WHOLE `IsCoarseModuliY0` of the special
 fibre together with the finiteness of its cusp locus.  Three of those four
 obligations are discharged here; the fourth, initiality, is discharged in
 the subsection *Base change of a coarse moduli space* immediately after
-this one, over the single leaf `exists_gamma0AtlasData_pullbackSpecial`.
+this one, over the single leaf
+`exists_gamma0GITPresentationData_pullbackSpecial`.
 So this subsection now costs **no leaf at all**.  The three free
 obligations:
 
@@ -27012,9 +27127,13 @@ through `∀ Z, Subsingleton (Z ⟶ S)`, which holds of `Spec ℤ_(ℓ)` and of
 `Spec 𝔽_ℓ` for the same reason it holds of `Spec ℚ`: all three are `Spec`
 of a ring receiving at most one map from `ℤ`.  So that argument is ported
 here verbatim to a general such base, as `isCoarseModuliY0_of_atlasData`
-over the structure `Gamma0AtlasData`, and the leaf becomes the
-**construction** `exists_gamma0AtlasData_pullbackSpecial` rather than the
-universal property.
+over the structure `Gamma0AtlasData`, and the leaf becomes a
+**construction** rather than the universal property.  Since 2026-07-27 it
+has moved one step further along the same axis: the categorical-quotient
+field of `Gamma0AtlasData` is itself discharged from an affine GIT
+presentation by `specInvariants_universal`, so the leaf is
+`exists_gamma0GITPresentationData_pullbackSpecial` and
+`exists_gamma0AtlasData_pullbackSpecial` is proven.
 
 That is the same trade the `ℚ` side already made when
 `exists_coarseModuliY0_of_pos` was replaced by `exists_gamma0Atlas`: it
@@ -27116,7 +27235,8 @@ the binder `_g` on `cover` is load-bearing — apply here word for word
 with `Spec ℚ` read as `S`.
 
 Note this structure is only ever PRODUCED (by
-`exists_gamma0AtlasData_pullbackSpecial`) and immediately CONSUMED (by
+`exists_gamma0AtlasData_pullbackSpecial`, itself proven from
+`Gamma0GITPresentationData`) and immediately CONSUMED (by
 `isCoarseModuliY0_of_atlasData`); it is never taken as a universally
 quantified hypothesis, so the junk-witness trap does not arise. -/
 structure Gamma0AtlasData (N : ℕ) {Y S : Scheme.{0}} (str : Y ⟶ S)
@@ -27211,23 +27331,171 @@ def isCoarseModuliY0_of_atlasData {N : ℕ} {Y S : Scheme.{0}} {str : Y ⟶ S}
       rintro u₁ ⟨-, h₁⟩
       exact huniq u₁ (h₁ A.strM A.dM).symm
 
-/-- **The special fibre carries a Katz–Mazur atlas for `Γ₀(N)` over
-`𝔽_ℓ`** (sorry node — this is where good reduction lives, and where
+/-- **Katz–Mazur atlas data presented the way (8.1.1) actually builds it,
+over a general base**: the rigidified moduli scheme as `Spec A` with a
+finite group `G` acting, and the coarse space as `Spec` of the
+invariants.
+
+This is `Gamma0GITPresentation` — the `ℚ`-side structure a thousand lines
+above — with `Spec ℚ` replaced by an arbitrary base `S`, and with `Y`,
+`str` and `classify` taken as PARAMETERS, exactly as `Gamma0AtlasData`
+does to `Gamma0Atlas` and for the same reason: the consumer here already
+has them.  Equivalently, it is `Gamma0AtlasData` with its `quotient`
+field replaced by the data that PRODUCES it.
+
+**The one field that is not a transcription** is `iso`.  On the `ℚ` side
+the coarse space is *defined* to be `Spec B`, so `Gamma0GITPresentation`
+can carry `Y := Spec (CommRingCat.of B)` on the nose.  Here `Y` is given
+— it is the base change `Y ×_{ℤ_(ℓ)} 𝔽_ℓ`, an abstract pullback — so the
+identification of it with `Spec` of the invariants has to be carried, and
+`classify_dM` is stated across that identification.  That is not a
+weakening: it is exactly what has to be exhibited, since the leaf's whole
+content is that the special fibre of the given coarse space is the
+Katz–Mazur quotient, not merely that some quotient exists over `𝔽_ℓ`.
+
+The remaining fields are documented on `Gamma0Atlas` and
+`Gamma0GITPresentation` and apply here word for word with `Spec ℚ` read
+as `S` — including the FALSITY AUDIT on `Gamma0Atlas.cover` explaining
+why the binder `_g` is load-bearing.
+
+Like `Gamma0AtlasData`, this structure is only ever PRODUCED (by
+`exists_gamma0GITPresentationData_pullbackSpecial`) and immediately
+CONSUMED (by `toGamma0AtlasData`); it is never taken as a universally
+quantified hypothesis, so the junk-witness trap recorded on
+`exists_gamma0GITPresentation_of_rigidified` does not arise. -/
+structure Gamma0GITPresentationData (N : ℕ) {Y S : Scheme.{0}} (str : Y ⟶ S)
+    (classify : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma0Datum N T → RelPoint str g) where
+  /-- the coordinate ring of the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- the ring of invariants, whose spectrum is the coarse space -/
+  B : Type
+  [commRing_B : CommRing B]
+  [algebra_BA : Algebra B A]
+  /-- the deck group `GL₂(ℤ/n)` of the rigidification -/
+  G : Type
+  [group_G : Group G]
+  [finite_G : Finite G]
+  [action_GA : MulSemiringAction G A]
+  [smulComm_GBA : SMulCommClass G B A]
+  [isInvariant_BAG : Algebra.IsInvariant B A G]
+  /-- `B` is a subring of `A`, not merely an algebra over it -/
+  injective_algebraMap : Function.Injective (algebraMap B A)
+  /-- **the given coarse space IS `Spec` of the invariants.**  On the `ℚ`
+  side this is a definitional equality; here `Y` is handed in, so the
+  identification is data. -/
+  iso : Y ≅ Spec (CommRingCat.of B)
+  /-- the structure morphism of the rigidified moduli scheme -/
+  strM : Spec (CommRingCat.of A) ⟶ S
+  /-- the universal family carried by the rigidified moduli scheme -/
+  dM : Gamma0Datum N (Spec (CommRingCat.of A))
+  /-- the classifying map of the universal family is the quotient map,
+  read across `iso` -/
+  classify_dM : (classify strM dM).1 ≫ iso.hom
+    = Spec.map (CommRingCat.ofHom (algebraMap B A))
+  /-- **rigidification**: every datum over an `S`-scheme is, after a
+  faithfully flat quasi-compact base change, a base change of `dM` -/
+  cover : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma0Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T')
+      (m : T' ⟶ Spec (CommRingCat.of A)),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (IsBaseChangeOf m d' dM)
+  /-- **`G`-equivariance of the universal family**: `σ^*dM ≅ dM` -/
+  dM_equivariant : ∀ σ : G, ∃ d₁ : Gamma0Datum N (Spec (CommRingCat.of A)),
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
+    Nonempty (IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+
+/-- **A GIT presentation IS atlas data** (PROVEN 2026-07-27) — the
+`quotient` field of `Gamma0AtlasData` derived from the affine
+presentation and `specInvariants_universal`.
+
+This is `Gamma0GITPresentation.toGamma0Atlas` at a general base, and the
+only step with content is the same one: turning `quotient`'s separation
+hypothesis into `G`-invariance, which `dM_equivariant` does by exhibiting
+`𝟙` and `Spec σ` as two rigidifications of ONE datum.  Everything else is
+transport along `iso`.
+
+Note `specInvariants_universal` is used verbatim: it is base-independent
+pure algebra, quantified over EVERY triple `(B, A, G)` and every target
+`Y'`, so nothing about `ℚ`, `ℤ_(ℓ)` or `𝔽_ℓ` enters.  That is precisely
+why the subsection docstring above names this split as the safe one. -/
+noncomputable def Gamma0GITPresentationData.toGamma0AtlasData {N : ℕ} {Y S : Scheme.{0}}
+    {str : Y ⟶ S}
+    {classify : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma0Datum N T → RelPoint str g}
+    (P : Gamma0GITPresentationData N str classify) : Gamma0AtlasData N str classify :=
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  letI := P.isInvariant_BAG
+  { M := Spec (CommRingCat.of P.A)
+    strM := P.strM
+    dM := P.dM
+    cover := P.cover
+    quotient := by
+      intro Y' φ hsep
+      -- `𝟙` and `Spec σ` are two rigidifications of the SAME datum, so the
+      -- separation hypothesis says `φ` cannot tell them apart.
+      have hinv : ∀ σ : P.G,
+          Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) ≫ φ = φ := by
+        intro σ
+        obtain ⟨d₁, ⟨h1⟩, ⟨h2⟩⟩ := P.dM_equivariant σ
+        have h := hsep (𝟙 _) _ d₁ h1 h2
+        rw [Category.id_comp] at h
+        exact h.symm
+      obtain ⟨ψ₀, hψ₀, huniq⟩ := specInvariants_universal P.G P.injective_algebraMap φ hinv
+      refine ⟨P.iso.hom ≫ ψ₀, ?_, ?_⟩
+      · show (classify P.strM P.dM).1 ≫ P.iso.hom ≫ ψ₀ = φ
+        rw [← Category.assoc, P.classify_dM, hψ₀]
+      · intro ψ' hψ'
+        have hψ'2 : (classify P.strM P.dM).1 ≫ ψ' = φ := hψ'
+        have hkey : P.iso.inv ≫ ψ' = ψ₀ := by
+          refine huniq _ ?_
+          show Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) ≫ P.iso.inv ≫ ψ' = φ
+          rw [← P.classify_dM, Category.assoc, ← Category.assoc P.iso.hom,
+            Iso.hom_inv_id, Category.id_comp, hψ'2]
+        rw [← hkey, ← Category.assoc, Iso.hom_inv_id, Category.id_comp] }
+
+/-- **The special fibre carries a Katz–Mazur GIT PRESENTATION for `Γ₀(N)`
+over `𝔽_ℓ`** (sorry node — this is where good reduction lives, and where
 `_hℓN` is consumed).
 
 TRUE for `ℓ ∤ N`, and it is the ONE genuinely modular input to the
 identification of the special fibre.  What has to be produced is
 Deligne–Rapoport IV / Katz–Mazur 8.1–8.2 base-changed to the closed
-point: the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])_{𝔽_ℓ}` with its
-universal family, the statement that it rigidifies every `Γ₀(N)`-datum
-over an `𝔽_ℓ`-scheme after an fppf cover, and the statement that the
-special fibre `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` is its categorical quotient *via the
-base-changed classifying map* `IsCoarseModuliY0.classifyPullback`.
+point: the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])_{𝔽_ℓ}` — AFFINE,
+as `Spec A`, which is how (8.1.1) builds it — with its universal family
+and its `GL₂(ℤ/n)`-action, the statement that it rigidifies every
+`Γ₀(N)`-datum over an `𝔽_ℓ`-scheme after an fppf cover, and the statement
+that the special fibre `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` is `Spec` of the INVARIANTS
+`A^{GL₂(ℤ/n)}`, the identification being `iso` and the quotient map being
+the base-changed classifying map `IsCoarseModuliY0.classifyPullback`.
 
 That last clause is the good-reduction content, and it is what makes the
 leaf a statement about `hcoarse` rather than a free-standing existence
 claim: the quotient has to be the base change of the given coarse space,
 not merely some coarse space over `𝔽_ℓ`.
+
+**WHAT CHANGED 2026-07-27, and it is the split the subsection docstring
+above already prescribed.**  This leaf used to ask for `Gamma0AtlasData`,
+whose `quotient` field is the CATEGORICAL QUOTIENT property — a universal
+property, quantified over all targets `Y'`.  That field is now
+DISCHARGED, by `Gamma0GITPresentationData.toGamma0AtlasData` over
+`specInvariants_universal`, which is base-independent pure algebra and
+was already proven for the `ℚ` side; `exists_gamma0AtlasData_pullbackSpecial`
+is accordingly a two-line consumer of this leaf rather than a leaf.
+
+So what is left is a CONSTRUCTION and nothing else: a ring, a finite
+group acting on it, an identification of `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` with the
+spectrum of the invariants, a universal family, its equivariance, and the
+fppf rigidification.  Every one of those is a sentence Katz–Mazur (8.1.1)
+writes down; none of them is a categorical universal property.  This is
+the same trade the `ℚ` side made when `exists_gamma0Atlas` was replaced by
+`exists_gamma0GITPresentation` + `specInvariants_universal`.
 
 **`_hℓN` cannot be dropped.**  At `ℓ ∣ N` the special fibre of the
 `Γ₀(N)`-problem is not the `Γ₀(N)`-problem over `𝔽_ℓ` at all: the moduli
@@ -27245,18 +27513,47 @@ modular-curve half, itself split into
 `exists_gamma0GITPresentation_of_rigidified` and
 `exists_fullLevelStructure_cover`) and `specInvariants_universal` (the
 GIT half, which is base-independent pure algebra and already PROVEN, so
-it can be reused here verbatim).  The subsection docstring above records
-which split of THIS leaf is safe and which is the junk-witness trap.
+it can be reused here verbatim — and now IS, one level up).  The
+subsection docstring above records which split of THIS leaf is safe and
+which is the junk-witness trap.
+
+The `ℚ` side's next split is the one to copy, and it is available in the
+same file: `exists_gamma0GITPresentation` decomposes through
+`RigidifiedModuliScheme` into the representability of the level-`n`
+problem, the fppf cover by full level structures, and the deck-group
+computation.  Each of those three is a statement about the moduli problem
+over a base, and the two that concern the `Γ(n)`-problem are exactly the
+place where `ℓ ∤ N` enters.  Do NOT instead split into "`M` with `cover`"
+and "`M` with `quotient`" — that is the junk-witness trap, recorded above.
 
 `_hℓ`, `_hℓN` and `_hbase` carry underscores only because the body is
 `sorry`; all three are genuinely needed, as the paragraph above says. -/
-theorem exists_gamma0AtlasData_pullbackSpecial {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+theorem exists_gamma0GITPresentationData_pullbackSpecial {N ℓ : ℕ} (_hℓ : ℓ.Prime)
     (_hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
     (_hbase : IsReductionBase ℓ R toF) {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R}
     (hcoarse : IsCoarseModuliY0 N ystr) :
-    Nonempty (Gamma0AtlasData N (pullback.snd ystr (SpecLoc.special toF))
+    Nonempty (Gamma0GITPresentationData N (pullback.snd ystr (SpecLoc.special toF))
       (fun {T} g d => hcoarse.classifyPullback (SpecLoc.special toF) (T := T) g d)) :=
   sorry
+
+/-- **The special fibre carries a Katz–Mazur atlas for `Γ₀(N)` over
+`𝔽_ℓ`** (PROVEN 2026-07-27 over
+`exists_gamma0GITPresentationData_pullbackSpecial` — it was a sorry leaf
+until the GIT split above).
+
+The categorical-quotient field of `Gamma0AtlasData` is derived from the
+affine presentation by `specInvariants_universal`; see
+`Gamma0GITPresentationData.toGamma0AtlasData`, and the subsection
+docstring for why this is the safe split and "`M` with `cover`" / "`M`
+with `quotient`" is not. -/
+theorem exists_gamma0AtlasData_pullbackSpecial {N ℓ : ℕ} (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF) {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R}
+    (hcoarse : IsCoarseModuliY0 N ystr) :
+    Nonempty (Gamma0AtlasData N (pullback.snd ystr (SpecLoc.special toF))
+      (fun {T} g d => hcoarse.classifyPullback (SpecLoc.special toF) (T := T) g d)) :=
+  (exists_gamma0GITPresentationData_pullbackSpecial hℓ hℓN hbase hcoarse).map
+    Gamma0GITPresentationData.toGamma0AtlasData
 
 /-- **The coarse moduli space of `Γ₀(N)` base-changes to the special
 fibre** (PROVEN 2026-07-27 over `exists_gamma0AtlasData_pullbackSpecial`
@@ -27268,9 +27565,11 @@ The whole proof is the assembly:
    `IsCoarseModuliY0.classifyPullback_natural` supply the first two
    clauses of `IsCoarseModuliY0` for the base change, along an arbitrary
    `f : S' ⟶ S` and with no arithmetic hypothesis whatever;
-2. `exists_gamma0AtlasData_pullbackSpecial` — the remaining leaf —
-   supplies Katz–Mazur's construction data over `𝔽_ℓ`, and it is there
-   that `hℓ`, `hℓN` and `hbase` are consumed;
+2. `exists_gamma0AtlasData_pullbackSpecial` supplies Katz–Mazur's
+   construction data over `𝔽_ℓ`, and it is there that `hℓ`, `hℓN` and
+   `hbase` are consumed.  It is itself PROVEN, from the remaining leaf
+   `exists_gamma0GITPresentationData_pullbackSpecial`, by
+   `Gamma0GITPresentationData.toGamma0AtlasData`;
 3. `isCoarseModuliY0_of_atlasData`, applied with
    `subsingleton_hom_specF`, turns that data into the initiality clause.
 
@@ -27389,7 +27688,8 @@ field of an `IsX0Compactification` is legitimate.
 `finite_compl_range_fibreBaseChangeMap_special` transported by
 `IsX0CurveModel.finite_compl_specialOpen_of_fibre` — all PROVEN.  The last
 clause, `exists_unique_specialFibre_universal`, is now PROVEN too, over the
-single Deligne–Rapoport leaf `exists_gamma0AtlasData_pullbackSpecial` in the
+single Deligne–Rapoport leaf
+`exists_gamma0GITPresentationData_pullbackSpecial` in the
 subsection *Base change of a coarse moduli space* above; its docstring
 records why that leaf, not this one, is where good reduction belongs, and
 why the two rival cuts of this node collapsed into one.
@@ -28348,9 +28648,9 @@ classical fact rather than a bundle:
    (`IsCoarseModuliY0.classifyPullback` and its naturality), and
    initiality is `isCoarseModuliY0_of_atlasData` — the `ℚ`-side argument
    of `Gamma0Atlas.toIsCoarseModuliY0` at a general base — so the residue
-   is the single leaf `exists_gamma0AtlasData_pullbackSpecial`, which is
-   Katz–Mazur's *construction* over `𝔽_ℓ` rather than a universal
-   property;
+   is the single leaf `exists_gamma0GITPresentationData_pullbackSpecial`,
+   which is Katz–Mazur's affine *construction* over `𝔽_ℓ` rather than a
+   universal property;
 2. `finite_compl_pullbackSpecial` — the cusp locus of the special fibre
    is still finite.  **PROVEN 2026-07-27**: `jsp` is the base change of
    `jZ`, so the cusp locus upstairs is the PREIMAGE of the one
