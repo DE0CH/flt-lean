@@ -16202,10 +16202,27 @@ follow from the kernel relations (Magma-verified 2026-07-27; see
 
   `E3 :  84s₁s₃ − s₁⁴ + 84Bs₁ + 36As₂ + 10As₁² − 9A² = 0`
 
-which pins `s₃` and which is NOT currently recorded anywhere else in this tree —
-`exists_x0Seven_kernelInvariants` exposes only `s₁, s₂`, so a discharger of this
-leaf must carry `s₃` out of `exists_x0Seven_kernelCoords` and prove `E3`
-alongside `E1`, `E2` in `MazurLevelSeven.kernelRelations`). -/
+which pins `s₃`, and which is recorded NOWHERE ELSE in this tree.
+
+**CORRECTION to the previous version of this paragraph (2026-07-27).**  It said a
+discharger "must carry `s₃` out of `exists_x0Seven_kernelCoords`".  That half is
+already done: `WeierstrassCurve.exists_x0Seven_kernelCoords` — hoisted above —
+returns `∃ (A B s₁ s₂ s₃ : ℚ) …` and pins the third one outright with
+`algebraMap ℚ ℚ̄ s₃ = x₁ * x₂ * x₃`.  Only `exists_x0Seven_kernelInvariants`,
+one level up, forgets it.  So `s₃` needs no new plumbing; it needs only to be
+taken from `kernelCoords` rather than from `kernelInvariants`.
+
+It also said `E3` should be proven "alongside `E1`, `E2` in
+`MazurLevelSeven.kernelRelations`".  Prefer a SIBLING lemma, say
+`MazurLevelSeven.kernelRelationThree`, with the same hypothesis block as
+`kernelRelations` plus `hs3 : φ s₃ = x₁ * x₂ * x₃`, concluding `E3`.  Editing
+`kernelRelations` in place changes an existing declaration that four callers
+already consume, for no gain — the elimination is the same computation either
+way, and a sibling costs the integrator nothing.
+
+**THE THREE REMAINING OBLIGATIONS, and they are all mathematics** — obligations 1
+and 2 above, plus `E3`.  Each is independently dispatchable now that the
+ordering is fixed; none of them is blocked on the others. -/
 theorem WeierstrassCurve.exists_x0Seven_veluFrickeData
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
