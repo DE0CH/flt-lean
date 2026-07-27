@@ -4094,24 +4094,205 @@ theorem exists_rationalCusps (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
       ∀ p ∈ s, ∀ y : RelPoint strY (𝟙 SpecQ), sectionAlong j h.comm y ≠ p :=
   sorry
 
-/-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the eleven Kenku
-levels** (sorry node).
+/-- **The number of cusps of `X_0(N)`**, `ν_∞ = Σ_{d ∣ N} φ(gcd(d, N/d))`.
+
+The sibling of `numRationalCusps`, which counts only those cusps that
+are individually `ℚ`-rational.  The two genuinely differ: `X_0(36)` has
+`12` cusps but only `6` rational ones, and `X_0(50)` has `12` and `4`.
+
+This is the `ν_∞` of the classical genus formula (Diamond–Shurman,
+Theorem 3.1.1), and it is `ν_∞`, not `numRationalCusps`, that enters
+`x0Genus`. -/
+def numCusps (N : ℕ) : ℕ :=
+  ∑ d ∈ N.divisors, Nat.totient (Nat.gcd d (N / d))
+
+/-- **The index `μ(N) = [SL₂(ℤ) : Γ₀(N)] = N ∏_{p ∣ N} (1 + 1/p)`.**
+
+Written as `(N / rad N) * ∏_{p ∣ N} (p + 1)` so that the only `ℕ`
+division is by `rad N = ∏_{p ∣ N} p`, which always divides `N`; the
+product is over `N.divisors.filter Nat.Prime`, which is exactly the set
+of primes dividing `N` for `N ≠ 0`. -/
+def gammaZeroIndex (N : ℕ) : ℕ :=
+  (N / (N.divisors.filter Nat.Prime).prod id) * (N.divisors.filter Nat.Prime).prod (· + 1)
+
+/-- **The number `ν₂(N)` of elliptic points of order `2` on `X_0(N)`**,
+counted as `#{x ∈ ℤ/N : x² + 1 ≡ 0}`.
+
+This counting form is chosen because it needs NO case split.  The usual
+statement — `ν₂ = 0` if `4 ∣ N`, and `∏_{p ∣ N} (1 + (−1/p))` otherwise
+— is precisely the CRT evaluation of this count, and both of its special
+cases are automatic here: `x² + 1 ≡ 0` is insoluble mod `4`, and
+insoluble mod every `p ≡ 3 (mod 4)`.
+
+That is not a cosmetic preference.  The `p = 2` value of the character
+is `0`, not `(−1/2)`; evaluating the product form with a Kronecker
+symbol at `p = 2` gives `ν₂(50) = 4` instead of `2` and so genus `3/2`
+instead of `2`.  The counting form cannot make that mistake. -/
+def numEllipticTwo (N : ℕ) : ℕ :=
+  ((Finset.range N).filter fun x => (x * x + 1) % N = 0).card
+
+/-- **The number `ν₃(N)` of elliptic points of order `3` on `X_0(N)`**,
+counted as `#{x ∈ ℤ/N : x² + x + 1 ≡ 0}`; see `numEllipticTwo` for why
+the counting form absorbs the `9 ∣ N` case split (`x² + x + 1 ≡ 0` is
+insoluble mod `9`) and the `p = 3` value of the character. -/
+def numEllipticThree (N : ℕ) : ℕ :=
+  ((Finset.range N).filter fun x => (x * x + x + 1) % N = 0).card
+
+/-- **The genus of `X_0(N)`, by the classical formula**
+
+`g = 1 + μ/12 − ν₂/4 − ν₃/3 − ν_∞/2`
+
+(Diamond–Shurman, Theorem 3.1.1), cleared of denominators and divided
+back: the numerator `12 + μ − 3ν₂ − 4ν₃ − 6ν_∞` is always divisible by
+`12`, so the `ℤ`-division is exact at every `N` where it is used.
+
+**What this is and is not.**  `x0Genus` is a purely arithmetic,
+fully computable function of `N` — it is evaluated by `decide` in
+`one_le_x0Genus_of_kenkuLevel`, giving `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`
+in the order of `kenkuLevels`.  It is NOT defined as the genus of the
+scheme `X`: no genus of a scheme, and no Riemann–Roch, exists at this
+pin.  The bridge from this number to the geometry of `X` is
+`injective_aj_of_one_le_x0Genus`, and that is a sorry node. -/
+def x0Genus (N : ℕ) : ℤ :=
+  (12 + (gammaZeroIndex N : ℤ) - 3 * numEllipticTwo N - 4 * numEllipticThree N
+    - 6 * numCusps N) / 12
+
+/-- **`genus X_0(N) ≥ 1` at the eleven Kenku levels** (PROVEN).
+
+This is the arithmetic half of `hasRankZeroJacobian_of_kenkuLevel`, and
+it is proven rather than asserted: `decide` evaluates `x0Genus` — index,
+elliptic points and cusps and all — at each of the eleven levels.  The
+values are
+
+`N  : 20 24 28 30 36 42 45 50 54 63 75`
+`g  :  1  1  2  3  1  5  3  2  4  5  5`
+
+matching the table in `kenkuLevels`, and independently reproduced with
+PARI/GP.  Genus `0` would make the leaf below FALSE (see
+`HasRankZeroJacobian`: at `N = 1` the Jacobian is trivial and
+`X_0(1) = ℙ¹` has infinitely many rational points), so this is exactly
+the hypothesis that rules that out. -/
+theorem one_le_x0Genus_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels) : 1 ≤ x0Genus N := by
+  fin_cases hN <;> decide
+
+/-- **`X_0(N)` has at least one rational cusp, at the eleven Kenku
+levels** (PROVEN, by `decide` on `numRationalCusps`, whose values are
+`6, 8, 6, 8, 6, 8, 4, 4, 4, 4, 4`).
+
+This is what supplies the BASE POINT of the Abel–Jacobi map in
+`hasRankZeroJacobian_of_kenkuLevel`, so that no separate existence leaf
+for a rational point on `X_0(N)` is needed: `exists_rationalCusps`
+produces the finset, and this says it is not empty. -/
+theorem numRationalCusps_pos_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels) :
+    0 < numRationalCusps N := by
+  fin_cases hN <;> decide
+
+/-- **The Jacobian of `X_0(N)` exists** (sorry node).
+
+TRUE and classical: `X` is a smooth proper geometrically connected curve
+over `ℚ` with a rational point `o`, so its Albanese — equivalently
+`Pic⁰` — is an abelian variety over `ℚ` and the Abel–Jacobi map based at
+`o` is initial among maps to abelian varieties killing `o`.  That is
+exactly `IsJacobianOf`.
+
+`h` is load-bearing: without properness and smoothness there is no
+abelian Albanese, and without geometric connectedness `Pic⁰` is not
+connected.
+
+IRREDUCIBLE at this pin: neither `Pic⁰` of a relative curve, nor the
+Albanese, nor Riemann–Roch exists in `Mathlib`. -/
+theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j)
+    (o : RelPoint strX (𝟙 SpecQ)) :
+    ∃ (J : Scheme.{0}) (jstr : J ⟶ SpecQ) (ab : AbelianSchemeStruct jstr),
+      Nonempty (IsJacobianOf strX ab o) :=
+  sorry
+
+/-- **`rank J_0(N)(ℚ) = 0` at the eleven Kenku levels** (sorry node) —
+the DEEP half of `hasRankZeroJacobian_of_kenkuLevel`.
 
 TRUE, by the reconnaissance recorded below: decomposing the cuspidal
 subspace `S_2(Γ_0(N))` into newform factors and evaluating `L(A, 1)` on
 each, EVERY factor at EVERY one of the eleven levels has `L(A, 1) ≠ 0`;
 so `J_0(N)` has analytic rank `0`, hence Mordell–Weil rank `0` by
-Kolyvagin–Logachev, hence finite `J_0(N)(ℚ)`.  Positivity of the genus
-is classical and holds at all eleven — the genus values, in the order of
-`kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`.
+Kolyvagin–Logachev, hence `J_0(N)(ℚ)` is finite.
 
-IRREDUCIBLE at this pin, and the deepest of the six leaves here: it
-needs `S_2(Γ_0(N))`, the Hecke algebra, `L`-functions of modular abelian
-varieties and Gross–Zagier/Kolyvagin. -/
+`jac` is load-bearing and may not be dropped: the conclusion is FALSE
+for an arbitrary abelian scheme over `ℚ` receiving `X` — it is true only
+because `jac` pins `J` as the Jacobian of this particular curve, whose
+`L`-function is the one being evaluated.
+
+IRREDUCIBLE at this pin, and this is where the depth of the original
+leaf now lives, alone: it needs `S_2(Γ_0(N))`, the Hecke algebra,
+`L`-functions of modular abelian varieties, and Gross–Zagier/Kolyvagin.
+Nothing else in the decomposition below depends on any of that. -/
+theorem finite_jacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) : Finite (RelPoint jstr (𝟙 SpecQ)) :=
+  sorry
+
+/-- **Positive genus makes Abel–Jacobi injective on rational points**
+(sorry node) — the bridge from the arithmetic `x0Genus` to the geometry.
+
+TRUE and classical, and it is the ONLY thing standing between
+`one_le_x0Genus_of_kenkuLevel` (proven above, by computation) and the
+`Injective` conjunct of `HasRankZeroJacobian`.  Two steps, deliberately
+bundled here because neither can be stated separately at this pin:
+
+* `x0Genus N` is the genus of `X` — the classical formula
+  (Diamond–Shurman, Theorem 3.1.1).  This cannot be stated as an
+  equation because there is no genus of a scheme in `Mathlib`; it is
+  therefore absorbed into this leaf rather than left as a phantom.
+* a smooth proper geometrically connected curve of genus `≥ 1` has
+  injective Abel–Jacobi: if `aj x = aj y` with `x ≠ y` then `x − y` is
+  principal, so some function has a single simple pole, giving a degree
+  `1` map `X → ℙ¹`, i.e. genus `0`.  This is Riemann–Roch.
+
+`hg` is load-bearing: at genus `0` the statement is FALSE, `X_0(1) = ℙ¹`
+having trivial Jacobian and infinitely many rational points.  `N` enters
+only through `hg` and `h`.
+
+IRREDUCIBLE at this pin: Riemann–Roch for curves does not exist in
+`Mathlib`. -/
+theorem injective_aj_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) : Function.Injective (jac.aj (𝟙 SpecQ)) :=
+  sorry
+
+/-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the eleven Kenku
+levels** (PROVEN, from four leaves — two of them closed here).
+
+The original single sorry node has been split along the seam its own
+statement exposes.  `HasRankZeroJacobian` is a conjunction of two
+conditions on the Jacobian with wildly different costs, and they are now
+separated:
+
+* **The genus half is CLOSED.**  `one_le_x0Genus_of_kenkuLevel` proves
+  `1 ≤ x0Genus N` at all eleven levels by `decide` on the classical
+  genus formula, and `numRationalCusps_pos_of_kenkuLevel` likewise
+  supplies the base point.  No sorry, no table lookup: the index,
+  elliptic points and cusps are computed from `N`.
+* **The rank half is Kolyvagin–Logachev** and stays open, alone, in
+  `finite_jacobian_of_kenkuLevel`.
+
+The two remaining geometric leaves — `exists_jacobianOf_x0` and
+`injective_aj_of_one_le_x0Genus` — carry the objects `Mathlib` does not
+have (Albanese/`Pic⁰`, Riemann–Roch).  Neither is level-specific: they
+hold for every smooth proper geometrically connected curve, which is why
+splitting them out is worth doing even though they are still open. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
-    (h : IsX0Compactification N strX strY j) : HasRankZeroJacobian strX :=
-  sorry
+    (h : IsX0Compactification N strX strY j) : HasRankZeroJacobian strX := by
+  obtain ⟨s, hs, -⟩ := exists_rationalCusps N h
+  obtain ⟨o, -⟩ : s.Nonempty :=
+    Finset.card_pos.mp (by rw [hs]; exact numRationalCusps_pos_of_kenkuLevel N hN)
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 N h o
+  exact ⟨J, jstr, ab, o, jac, finite_jacobian_of_kenkuLevel N hN h jac,
+    injective_aj_of_one_le_x0Genus N (one_le_x0Genus_of_kenkuLevel N hN) h jac⟩
 
 /-- **The reduction `X_0(N)_{𝔽_ℓ}` and its Eichler–Shimura point count,
 at the seven witness primes** (sorry node).
