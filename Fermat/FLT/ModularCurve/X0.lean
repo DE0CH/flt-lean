@@ -22957,7 +22957,8 @@ dense open with finite complement — i.e. every field of
 sound.**  One might expect this leaf to carry `IsIntegral`,
 `QuasiCompact`, `IsSeparated`, `SmoothOfRelativeDimension 1` and
 `GeometricallyConnected` on `ystr`, as
-`exists_isSmoothCompactification_field` does over a field.  It does not,
+`AlgebraicGeometry.exists_isSmoothCompactification` does over a perfect
+field.  It does not,
 and deliberately: over a field that theorem is a statement of GENERAL
 curve theory, applicable to an arbitrary smooth curve, so it must be told
 that its input is one.  Here the input is pinned to be the modular curve
@@ -23025,8 +23026,11 @@ theorems: ch. 8 builds the coarse space of the `Γ₀(N)`-problem over
 `ℤ[1/N]`, and 13.11 compactifies it.  Splitting them is exactly the split
 that `exists_x0Compactification_field` already takes over a FIELD base,
 between `exists_isCoarseModuliY0_isSmoothCurve_field` (modular) and
-`exists_isSmoothCompactification_field` (general curve theory) — with the
-one difference recorded on the second leaf above: over a discrete
+`AlgebraicGeometry.exists_isSmoothCompactification` (general curve
+theory, over a PERFECT base field — the perfectness-free restatement that
+used to stand here as a leaf was refuted and deleted on 2026-07-27; see
+the FALSITY AUDIT on `exists_x0Compactification_field`) — with the
+one difference recorded on the compactification leaf above: over a discrete
 valuation base the compactification half cannot be handed to general
 curve theory, so it keeps its modular hypothesis instead of a geometric
 one. -/
