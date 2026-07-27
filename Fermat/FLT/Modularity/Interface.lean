@@ -23302,9 +23302,144 @@ theorem span_singleton_le_pow_of_mul_eq_of_exact_val {A : Type*} [CommRing A]
   rw [pow_mul] at hdvd3
   exact Ideal.dvd_iff_le.mp ((UniqueFactorizationMonoid.pow_dvd_pow_iff_dvd hk).mp hdvd3)
 
-/-- **STICKELBERGER FOR GAUSS SUMS, PACKAGED INSIDE `𝓞 CF`** (SORRY
-LEAF, cut 2026-07-27 out of `span_jacobiSum_le_decompCarryPow_of_two_le`
-below, which is now PROVEN over it — with `htwo` unused, see below).
+/-- **AN EXACT `q`-VALUATION IS MULTIPLIED BY A POWER** (PROVEN
+2026-07-27; Dedekind bookkeeping, no arithmetic input).
+
+If `c ∈ q^n` and `c ∉ q^{n+1}` — i.e. `v_q(c) = n` exactly — then
+`c^k ∉ q^{kn+1}`. Proof: `Ideal.dvd_iff_le` moves into the ideal
+monoid, `(c) = q^n·T` with `q ∤ T` (that is what `c ∉ q^{n+1}` says),
+so `(c^k) = q^{nk}·T^k`; cancelling `q^{nk}` (`mul_dvd_mul_iff_left`,
+legitimate since `q ≠ ⊥`) would give `q ∣ T^k`, hence `q ∣ T` since `q`
+is prime.
+
+This is the "upper half" of `v_q(c^k) = k·v_q(c)`; the lower half is
+`Ideal.pow_mem_pow` and is not needed by the consumer below. -/
+theorem pow_not_mem_pow_succ_of_exact_val {A : Type*} [CommRing A] [IsDedekindDomain A]
+    {q : Ideal A} (hq : q.IsPrime) (hq0 : q ≠ ⊥) {c : A} {n k : ℕ}
+    (hc : c ∈ q ^ n) (hc' : c ∉ q ^ (n + 1)) :
+    c ^ k ∉ q ^ (k * n + 1) := by
+  classical
+  have hqp : Prime q := Ideal.prime_of_isPrime hq0 hq
+  have hd : q ^ n ∣ Ideal.span {c} :=
+    Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hc)
+  obtain ⟨T, hT⟩ := hd
+  have hTnd : ¬ q ∣ T := by
+    rintro ⟨T', rfl⟩
+    apply hc'
+    have hdd : q ^ (n + 1) ∣ Ideal.span {c} := ⟨T', by rw [hT, pow_succ]; ring⟩
+    exact (Ideal.span_singleton_le_iff_mem _).mp (Ideal.dvd_iff_le.mp hdd)
+  intro hmem
+  have hdvd : q ^ (k * n + 1) ∣ Ideal.span {c ^ k} :=
+    Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hmem)
+  rw [← Ideal.span_singleton_pow, hT, mul_pow, ← pow_mul] at hdvd
+  have hkn : k * n + 1 = n * k + 1 := by ring_nf
+  rw [hkn, pow_succ] at hdvd
+  have hne : (q : Ideal A) ^ (n * k) ≠ 0 := pow_ne_zero _ (by simpa using hq0)
+  exact hTnd (hqp.dvd_of_dvd_pow ((mul_dvd_mul_iff_left hne).mp hdvd))
+
+/-- **EXACTNESS OF `v_q(x)` FROM A REFLECTION IDENTITY AND TWO LOWER
+BOUNDS** (PROVEN 2026-07-27; Dedekind bookkeeping, no arithmetic
+input).
+
+This is the step that removes the `∉ q^{N+1}` obligation from the
+Gauss-sum leaf below. Given `x·y = c^k` with `v_q(c) = n` EXACT, and
+lower bounds `v_q(x) ≥ Na`, `v_q(y) ≥ Nb` whose sum is FORCED —
+`Na + Nb = k·n` — both lower bounds are automatically equalities:
+`x ∈ q^{Na+1}` would put `x·y = c^k` in `q^{Na+1+Nb} = q^{kn+1}`,
+contradicting `pow_not_mem_pow_succ_of_exact_val`.
+
+For the Gauss sums this reads: `g(χᵃ)^p · g(χ^{−a})^p = (#F)^p` with
+`v_q(#F) = #D` exact, and `N a + N (−a) = p·#D` because
+`⟨x⟩ + ⟨−x⟩ = p` for `x ≠ 0` in `ZMod p`. So *only the lower bound*
+`v_q(g(χᵃ)^p) ≥ N a` has to be proven by Stickelberger's congruence;
+the matching upper bound is free. -/
+theorem not_mem_pow_succ_of_mul_eq_pow_of_exact_val {A : Type*} [CommRing A]
+    [IsDedekindDomain A] {q : Ideal A} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    {x y c : A} {Na Nb n k : ℕ}
+    (heq : x * y = c ^ k)
+    (hc : c ∈ q ^ n) (hc' : c ∉ q ^ (n + 1))
+    (hy : y ∈ q ^ Nb) (hsum : Na + Nb = k * n) :
+    x ∉ q ^ (Na + 1) := by
+  intro hx
+  refine pow_not_mem_pow_succ_of_exact_val hq hq0 hc hc' (k := k) ?_
+  have hmul : x * y ∈ q ^ (Na + 1) * q ^ Nb := Ideal.mul_mem_mul hx hy
+  rw [← pow_add, heq] at hmul
+  have hidx : Na + 1 + Nb = k * n + 1 := by omega
+  rwa [hidx] at hmul
+
+/-- **THE REFLECTION IDENTITY FOR THE STICKELBERGER EXPONENTS** (PROVEN
+2026-07-27; pure `ZMod m` arithmetic, no number theory whatever).
+
+Writing `⟨x⟩ := (x : ZMod m).val` and `N a := ∑_{u ∈ D} ⟨−a·u⁻¹⟩` as in
+`sum_decompVal_add_eq_add_mul_carryCard` above, whenever `m ∤ a` and
+`m ∣ a + b` — so `b ≡ −a` — one has
+
+  `N a + N b = m · #D`.
+
+Pointwise this is `⟨−x⟩ + ⟨x⟩ = m` for `x ≠ 0` (`ZMod.neg_val`), and
+`(a : ZMod m)·u⁻¹ ≠ 0` because `u⁻¹` is a unit. No hypothesis on `D` is
+needed. -/
+theorem sum_decompVal_add_neg_eq_mul_card {m : ℕ} [NeZero m] (D : Finset (ZMod m)ˣ) (a b : ℕ)
+    (ha : ¬ (m ∣ a)) (hab : m ∣ (a + b)) :
+    (∑ u ∈ D, ((-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val)
+      + (∑ u ∈ D, ((-(b : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val)
+      = m * D.card := by
+  classical
+  have hane : ((a : ZMod m)) ≠ 0 := fun h => ha ((ZMod.natCast_eq_zero_iff _ _).mp h)
+  have hbneg : (-(b : ZMod m)) = ((a : ZMod m)) := by
+    have h0 : (((a + b : ℕ)) : ZMod m) = 0 := (ZMod.natCast_eq_zero_iff _ _).mpr hab
+    push_cast at h0
+    linear_combination -h0
+  have hterm : ∀ u ∈ D, ((-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val
+      + (((a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val = m := by
+    intro u _
+    have hwne : ((a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m) ≠ 0 := fun h =>
+      hane ((Units.mul_left_eq_zero u⁻¹).mp h)
+    have hneg : (-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)
+        = -(((a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)) := by ring
+    rw [hneg, ZMod.neg_val, if_neg hwne]
+    have hlt : (((a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val < m := ZMod.val_lt _
+    omega
+  rw [hbneg, ← Finset.sum_add_distrib, Finset.sum_congr rfl hterm, Finset.sum_const, smul_eq_mul,
+    mul_comm]
+
+/-- **`v_q(#(𝓞 CF ⧸ q)) = #D`: THE RESIDUE CARDINALITY HAS `q`-VALUATION
+THE ORDER OF THE DECOMPOSITION GROUP** (SORRY LEAF, cut 2026-07-27 out
+of `exists_gaussSumPow_of_jacobiSum` below).
+
+`#(𝓞 CF ⧸ q) = ℓ^f`, where `ℓ` is the rational prime under `q` and `f`
+the residue degree. The decomposition group
+`D = {u : σ_u q = q} ≤ Gal(CF/ℚ) ≅ (ZMod p)ˣ` has order `e·f`. The
+hypothesis `hpq : (p : 𝓞 CF) ∉ q` says `ℓ ≠ p`, and `CF = ℚ(ζ_p)` is
+ramified ONLY at `p`, so `e = 1`; hence `#D = f` and
+`v_q(ℓ^f) = f·v_q(ℓ) = f = #D`.
+
+**This is pure algebraic number theory — no Gauss sums, no Jacobi sums,
+no Stickelberger.** It is separated from the Gauss-sum leaf below
+precisely so that it can be attacked from mathlib's ramification API
+(`Ideal.ramificationIdx`, `Ideal.inertiaDeg`, the `IsGalois` sum
+formula, and `IsCyclotomicExtension`'s discriminant/ramification
+results) by an owner who never has to look at a character.
+
+**FAITHFULNESS.** `hpq` is load-bearing and cannot be dropped: at
+`ℓ = p` the prime `q = (1 − ζ_p)` is totally ramified, `e = p − 1`,
+`f = 1`, `#D = p − 1`, while `v_q(#(𝓞 CF ⧸ q)) = v_q(p) = p − 1`. That
+happens to agree here, but the intermediate claim `e = 1` does not, and
+the Gauss-sum theory below is empty at `ℓ = p` anyway (`χ` cannot have
+order `p`). -/
+theorem natCard_mem_pow_decompCard (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q) :
+    ((Nat.card (𝓞 CF ⧸ q) : ℕ) : 𝓞 CF) ∈ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card ∧
+      ((Nat.card (𝓞 CF ⧸ q) : ℕ) : 𝓞 CF) ∉ q ^ ((Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card + 1) :=
+  sorry
+
+/-- **STICKELBERGER FOR GAUSS SUMS — THE LOWER BOUND ONLY** (SORRY LEAF,
+cut 2026-07-27 out of `exists_gaussSumPow_of_jacobiSum` below, which is
+now PROVEN over it and `natCard_mem_pow_decompCard`).
 
 `G a` is `g(χᵃ)^p`, the `p`-th power of the Gauss sum of `χᵃ` against a
 primitive additive character of `F = 𝓞 CF ⧸ q`. The Gauss sum itself
@@ -23316,37 +23451,58 @@ That is the whole point of this cut: it is the largest piece of the
 Gauss-sum route that can be stated without building `L`, `𝓞 L`, the
 prime `𝒬 ∣ q` and the Teichmüller character into the interface.
 
-**(i) the multiplicative relation** is mathlib's
-`jacobiSum_mul_nontrivial : jacobiSum χ φ * gaussSum (χ*φ) ψ =
-gaussSum χ ψ * gaussSum φ ψ` (valid because `χᵃ·χᶜ ≠ 1`, which is
-exactly `p ∤ a+c`), raised to the `p`-th power. Note it is an EQUATION
-in `𝓞 CF`, with no division and no invertibility side condition.
+**WHAT CHANGED ON 2026-07-27 (this is the reason the leaf was
+recut).** The predecessor asked for the EXACT valuation
+`G a ∈ q^{N a} ∧ G a ∉ q^{N a + 1}`. The `∉` half is now FREE:
+`not_mem_pow_succ_of_mul_eq_pow_of_exact_val` above derives it from the
+lower bound together with the reflection identity, because
+`N a + N b = p·#D` is forced (`sum_decompVal_add_neg_eq_mul_card`) and
+`v_q(#F) = #D` is exact (`natCard_mem_pow_decompCard`). So this leaf
+now carries only
 
-**(ii) the valuation** is Stickelberger's congruence. With `d :=
-(ℓ^f − 1)/p`, `f := #D` the residue degree, `ω` the Teichmüller
-character of `F` and `π := ζ_ℓ − 1` (a uniformiser at `𝒬`, `e(𝒬/q) =
-ℓ − 1`), the congruence `g(ω^{−k}) ≡ −π^{s_ℓ(k)}/γ(k) (mod 𝒬^{s_ℓ(k)+1})`
-gives `v_𝒬(g(ω^{−k})) = s_ℓ(k)`, the base-`ℓ` digit sum. Here `χ = ω^d`,
-so `v_𝒬(g(χᵃ)) = s_ℓ(⟨−a⟩_p·d)`; the classical digit identity
-`s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f} ⟨mℓ^i⟩_p` and `v_𝒬 = (ℓ−1)·v_q` on
-`𝓞 CF` then give, after multiplying by `p`,
+* **(i) the multiplicative relation**, mathlib's
+  `jacobiSum_mul_nontrivial : gaussSum (χ*φ) ψ * jacobiSum χ φ =
+  gaussSum χ ψ * gaussSum φ ψ` (valid because `χᵃ·χᶜ ≠ 1`, which is
+  exactly `p ∤ a+c`), raised to the `p`-th power. Note it is an
+  EQUATION with no division and no invertibility side condition, and
+  mathlib requires no primitivity of `ψ` for it — only `[IsDomain]` on
+  the coefficient ring, which `𝓞 L` satisfies;
+* **(ii) the reflection identity**, mathlib's
+  `gaussSum_mul_gaussSum_eq_card : gaussSum χ ψ * gaussSum χ⁻¹ ψ =
+  χ(−1) * #F` for PRIMITIVE `ψ`, raised to the `p`-th power: the factor
+  `χᵃ(−1)^p` is `1` because `χ` is `p`-torsion and `−1 ≠ 0` in a field,
+  so the identity is exactly `G a · G b = (#F)^p` whenever `p ∣ a + b`.
+  This is a one-liner from the pin once `L` exists;
+* **(iii) the valuation LOWER BOUND**, which is Stickelberger's
+  congruence and is the only deep step left. With `d := (ℓ^f − 1)/p`,
+  `f := #D` the residue degree, `ω` the Teichmüller character of `F`
+  and `π := ζ_ℓ − 1` (a uniformiser at `𝒬`, `e(𝒬/q) = ℓ − 1`), the
+  congruence `g(ω^{−k}) ≡ −π^{s_ℓ(k)}/γ(k) (mod 𝒬^{s_ℓ(k)+1})` gives
+  `v_𝒬(g(ω^{−k})) = s_ℓ(k)`, the base-`ℓ` digit sum. Here `χ = ω^d`,
+  so `v_𝒬(g(χᵃ)) = s_ℓ(⟨−a⟩_p·d)`; the classical digit identity
+  `s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f} ⟨mℓ^i⟩_p` and
+  `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF` then give, after multiplying by `p`,
 
-  `v_q(g(χᵃ)^p) = ∑_{i<f} ⟨−a·ℓ^i⟩_p = ∑_{u ∈ D} ⟨−a·u⟩_p`,
+    `v_q(g(χᵃ)^p) = ∑_{i<f} ⟨−a·ℓ^i⟩_p = ∑_{u ∈ D} ⟨−a·u⟩_p`,
 
-the last step because `D`, the decomposition group of `q`, is generated
-by the Frobenius `ℓ` and has order `f`. Since `D` is a group, summing
-`⟨−a·u⟩` and `⟨−a·u⁻¹⟩` over `D` give the same number, so the
-`u⁻¹` written below (matching the parent's carry predicate) is not a
-different normalisation.
+  the last step because `D`, the decomposition group of `q`, is
+  generated by the Frobenius `ℓ` and has order `f`. Since `D` is a
+  group, summing `⟨−a·u⟩` and `⟨−a·u⁻¹⟩` over `D` give the same number,
+  so the `u⁻¹` written below (matching the parent's carry predicate) is
+  not a different normalisation.
 
 **FOUR SUB-STEPS FOR WHOEVER TAKES THIS LEAF**, in dependency order —
 none of them exists in mathlib or in `~/cs/FLT` (surveyed 2026-07-26,
 re-checked 2026-07-27: `Mathlib/NumberTheory/GaussSum.lean` has only
-`gaussSum_mul_gaussSum_eq_card`, `gaussSum_sq`, `gaussSum_frob`, and
-there is no Teichmüller character anywhere in the pin):
+`gaussSum_mulShift`, `gaussSum_mul_gaussSum_eq_card`, `gaussSum_sq`,
+`gaussSum_frob`, and there is no Teichmüller character anywhere in the
+pin). Only step 3 is needed for clause (iii); steps 1–2 are shared
+scaffolding that clauses (i) and (ii) also need:
 
 1. the compositum `L = CF(ζ_ℓ)`, a prime `𝒬 ∣ q` of `𝓞 L` with
-   `e(𝒬/q) = ℓ − 1`, and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF`;
+   `e(𝒬/q) = ℓ − 1`, and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF`; plus the DESCENT
+   `g(χᵃ)^p ∈ 𝓞 CF`, which is `gaussSum_mulShift` (`σ_t(g) =
+   χᵃ(t)⁻¹ g`) together with `Gal(L/CF)`-invariance;
 2. the Teichmüller character `ω : Fˣ → 𝓞 L` with `ω(x) ≡ x (mod 𝒬)`,
    and the identification `χ = ω^d`;
 3. **Stickelberger's congruence** `v_𝒬(g(ω^{−k})) = s_ℓ(k)` — the deep
@@ -23359,7 +23515,9 @@ there is no Teichmüller character anywhere in the pin):
 and rules out an off-by-`⟨a⟩` error): `g(χᵃ)·g(χ^{−a}) = χᵃ(−1)·#F`, so
 `v_q(G a) + v_q(G (−a)) = p·f`; and the formula above gives
 `∑_{u ∈ D}(⟨−a·u⟩ + ⟨a·u⟩) = ∑_{u ∈ D} p = p·#D = p·f`. The two agree
-identically, for every `a` prime to `p`.
+identically, for every `a` prime to `p`. Note that clause (ii) of this
+leaf is now exactly that check, promoted from a comment to an
+obligation — which is what makes the `∉` half free.
 
 **THREE EXPLICIT VERIFICATIONS OF THE VALUATION CLAUSE** (2026-07-27;
 computed in closed form, not sampled — the sign convention is the one
@@ -23374,21 +23532,88 @@ wrong sign would make this leaf FALSE rather than merely hard).
   `N 1 = ⟨−1⟩ + ⟨−1·2⟩ = 2 + 1 = 3`. ✓ (Same for `a = 2`, by symmetry.)
   The relation then reads `J(χ,χ)·g(χ²) = g(χ)²`, i.e. `2·J = 4`, so
   `J = 2` and `v_q(J) = 1` — and the carry count is `1` (carry at
-  `u = 1` only). ✓
+  `u = 1` only). ✓ Reflection: `G 1 · G 2 = 8 · 8 = 64 = 4³ = (#F)^p`,
+  and `v_q(64) = 6 = p·#D = 3·2`. ✓
 * `p = 3`, `ℓ = 7`, `f = 1`, `d = 2`, `D = {1}`. Classically
   `g(χ)³ = 7·J(χ,χ)` for a cubic character, and `7 = q·q̄` with
   `v_q(7) = 1`, `v_q(J) = 1`; so `v_q(G 1) = 2`. The formula:
   `N 1 = ⟨−1⟩_3 = 2`. ✓ Cross-checked against Stickelberger directly:
   `v_𝒬(g(χ)) = s_7(⟨−1⟩_3·d) = s_7(4) = 4`, and `3·4/(ℓ−1) = 12/6 = 2`.
   ✓ This is the case that pins the `e = ℓ − 1` factor, which the first
-  example cannot see.
+  example cannot see. Reflection: `v_q(G 1) + v_q(G 2) = 2 + 1 = 3 =
+  p·#D = 3·1`, and `#F = 7` with `v_q(7) = 1 = #D`. ✓
 * `p = 5`, `ℓ = 11`, `f = 1`, `d = 2`, `D = {1}`: `N a = 5 − a`, and
   `v_𝒬(g(χᵃ)) = s_11(⟨−a⟩·2) = 2(5−a)`, so
-  `v_q(G a) = 5·2(5−a)/10 = 5 − a`. ✓
+  `v_q(G a) = 5·2(5−a)/10 = 5 − a`. ✓ Reflection:
+  `N a + N (5−a) = (5−a) + a = 5 = p·#D`. ✓
 
 Each of the three also reproduces the parent's carry formula
 `v_q(J) = #carries` through the assembly below, which is the
-independent check that the two clauses fit together.
+independent check that the two clauses fit together. -/
+theorem exists_gaussSumPow_lowerBound_of_jacobiSum (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    ∃ G : ℕ → 𝓞 CF,
+      (∀ a c : ℕ, ¬ (p ∣ a) → ¬ (p ∣ c) → ¬ (p ∣ (a + c)) →
+          jacobiSum (χ ^ a) (χ ^ c) ^ p * G (a + c) = G a * G c) ∧
+      (∀ a b : ℕ, ¬ (p ∣ a) → p ∣ (a + b) →
+          G a * G b = ((Nat.card (𝓞 CF ⧸ q) : ℕ) : 𝓞 CF) ^ p) ∧
+      (∀ a : ℕ, ¬ (p ∣ a) →
+          G a ∈ q ^ (∑ u ∈ Finset.univ.filter (fun u : (ZMod p)ˣ =>
+              Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q),
+              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)) :=
+  sorry
+
+/-- **STICKELBERGER FOR GAUSS SUMS, PACKAGED INSIDE `𝓞 CF`** (PROVEN
+2026-07-27 over `exists_gaussSumPow_lowerBound_of_jacobiSum` and
+`natCard_mem_pow_decompCard` above; cut 2026-07-27 out of
+`span_jacobiSum_le_decompCarryPow_of_two_le`
+below, which is PROVEN over it — with `htwo` unused, see below).
+
+`G a` is `g(χᵃ)^p`, the `p`-th power of the Gauss sum of `χᵃ` against a
+primitive additive character of `F = 𝓞 CF ⧸ q`. The Gauss sum itself
+lives in the compositum `L = CF(ζ_ℓ)`, `ℓ` the rational prime under
+`q`; its `p`-th power is `Gal(L/CF)`-invariant, because
+`σ_t(g(χᵃ)) = χᵃ(t)⁻¹·g(χᵃ)` and `χ` is `p`-torsion — **so `G a` is an
+element of `𝓞 CF` and the compositum never appears in this statement.**
+That is the whole point of this cut: it is the largest piece of the
+Gauss-sum route that can be stated without building `L`, `𝓞 L`, the
+prime `𝒬 ∣ q` and the Teichmüller character into the interface.
+
+The construction of `G`, the normalisation audit that fixes the sign,
+and the three closed-form verifications all live on
+`exists_gaussSumPow_lowerBound_of_jacobiSum` above, which is where the
+remaining mathematical content is. What is proven HERE is the
+bookkeeping that turns that leaf's ONE-SIDED valuation bound into the
+two-sided one this statement asserts.
+
+**THE PROOF: THE `∉ q^{N a + 1}` HALF IS FREE.** Given the lower bound
+`G a ∈ q^{N a}` and the reflection identity `G a · G b = (#F)^p` for
+`p ∣ a + b` — both supplied by the leaf above:
+
+* take `b := a·(p−1)`, so `a + b = a·p` is divisible by `p` while
+  `p ∤ b` (`p` prime, `p ∤ a`, and `0 < p−1 < p`);
+* `sum_decompVal_add_neg_eq_mul_card` gives `N a + N b = p·#D`, because
+  pointwise `⟨x⟩ + ⟨−x⟩ = p` for `x ≠ 0` in `ZMod p`, and
+  `(a : ZMod p)·u⁻¹ ≠ 0`;
+* `natCard_mem_pow_decompCard` gives `v_q(#F) = #D` exactly, hence
+  `(#F)^p ∉ q^{p·#D + 1}` by `pow_not_mem_pow_succ_of_exact_val`;
+* so `G a ∈ q^{N a + 1}` would force
+  `(#F)^p = G a · G b ∈ q^{(N a + 1) + N b} = q^{p·#D + 1}`, a
+  contradiction. That is
+  `not_mem_pow_succ_of_mul_eq_pow_of_exact_val`.
+
+No arithmetic input whatever: Dedekind bookkeeping plus `ZMod`
+arithmetic. The point of the cut is that Stickelberger's congruence
+naturally produces a LOWER bound on `v_𝒬(g(ω^{−k}))`, and the matching
+upper bound — which is where a formalisation would otherwise have to
+track the unit `γ(k)` in the congruence — is now supplied for free by
+the reflection formula.
 
 **WHAT THIS BUYS.** `span_jacobiSum_le_decompCarryPow_of_two_le` follows
 from this leaf plus `sum_decompVal_add_eq_add_mul_carryCard` and
@@ -23416,8 +23641,27 @@ theorem exists_gaussSumPow_of_jacobiSum (CF : Type) [Field CF] [NumberField CF]
               ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) ∧
           G a ∉ q ^ ((∑ u ∈ Finset.univ.filter (fun u : (ZMod p)ˣ =>
               Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q),
-              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) + 1)) :=
-  sorry
+              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) + 1)) := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  obtain ⟨G, hmul, hrefl, hlow⟩ :=
+    exists_gaussSumPow_lowerBound_of_jacobiSum CF hq hq0 hpq χ hχ1 hχp hχcong
+  obtain ⟨hc, hc'⟩ := natCard_mem_pow_decompCard CF hq hq0 hpq
+  refine ⟨G, hmul, fun a ha => ⟨hlow a ha, ?_⟩⟩
+  have hp2 : 2 ≤ p := hp.out.two_le
+  have hpb : ¬ (p ∣ a * (p - 1)) := by
+    intro h
+    rcases (Nat.Prime.dvd_mul hp.out).mp h with h' | h'
+    · exact ha h'
+    · have hle' := Nat.le_of_dvd (by omega) h'
+      omega
+  have hmul1 : a * (p - 1) = a * p - a := by rw [Nat.mul_sub, mul_one]
+  have hle : a ≤ a * p := Nat.le_mul_of_pos_right a (by omega)
+  have habeq : a + a * (p - 1) = a * p := by rw [hmul1]; omega
+  have hab : p ∣ (a + a * (p - 1)) := by rw [habeq]; exact dvd_mul_left p a
+  exact not_mem_pow_succ_of_mul_eq_pow_of_exact_val hq hq0
+    (hrefl a (a * (p - 1)) ha hab) hc hc' (hlow _ hpb)
+    (sum_decompVal_add_neg_eq_mul_card _ a (a * (p - 1)) ha hab)
 
 /-- **STICKELBERGER PROPER — THE JACOBI-SUM CARRY FORMULA AT CARRY
 COUNT `≥ 2`** (PROVEN 2026-07-27 over
