@@ -52361,14 +52361,610 @@ theorem finrank_ker_eq_one_of_ne_zero_of_mul_self_eq_zero
       ≤ Module.finrank F (LinearMap.ker N) := Submodule.finrank_mono hle
   omega
 
+/-! ### The monodromy shape from unipotence: PROVEN linear algebra
+
+Six declarations, all PROVEN, cut 2026-07-27 by the FOURTEENTH owner of
+the `q ∥ M₀` cluster out of
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` below.
+They reduce that citation to its two irreducibly arithmetic halves —
+"inertia acts by square-zero unipotents at `q`" and "inertia acts
+nontrivially at `q`" — by DERIVING everything else the leaf used to
+assume: the existence of the monodromy operator `N`, the scalar function
+`t`, and the TAMENESS `t|_{P_q} = 0`.
+
+The block is the PLACE-GENERIC version of the at-`2` route that already
+lives further down this file (`eq_zero_of_forall_exists_nsmul_toLocal_
+two_sub_one` and `isTamelyRamifiedAt_two_of_inertia_sq_eq_zero`, twelfth
+owner). It is written separately rather than by generalizing those in
+place for two reasons: they sit BELOW this point in the file, so they
+could not be consumed here in any case, and they belong to another owner.
+A later owner may retire them as instances of this block; nothing here
+depends on whether that happens.
+-/
+
+/-- **Kolchin in dimension `2`, in the form the monodromy argument
+consumes** (PROVEN, axiom-clean): if every inertia element at `v` acts by
+a square-zero unipotent, then the PRODUCT of any two of the nilpotents
+`τσ − 1`, `τθ − 1` vanishes.
+
+`BrauerNesbitt.exists_fixed_of_unipotent` gives a common nonzero fixed
+vector `w₀` for `τ(I_v)`; in dimension `2` a nonzero square-zero
+endomorphism has `im = ker`, a line, so `w₀` spans it and every
+`τθ − 1` maps INTO `ℚ̄_p·w₀ ⊆ ker (τσ − 1)`. This single statement is the
+only place in the block where Kolchin is used, and it is what makes
+`σ ↦ τσ − 1` additive (next lemma) and all the nilpotents proportional
+(`exists_monodromy_of_inertia_sq_eq_zero` below). -/
+theorem toLocal_sub_one_mul_toLocal_sub_one_eq_zero_of_inertia_sq_eq_zero
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hsq : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) ^ 2 = 0)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion ℚ)}
+    (hσ : σ ∈ localInertiaGroup v)
+    {θ : Field.absoluteGaloisGroup (v.adicCompletion ℚ)}
+    (hθ : θ ∈ localInertiaGroup v) :
+    (τ.toLocal v σ - 1) * (τ.toLocal v θ - 1) = 0 := by
+  obtain ⟨w₀, hw₀ne, hw₀fix⟩ :=
+    BrauerNesbitt.exists_fixed_of_unipotent
+      (F := AlgebraicClosure ℚ_[p]) (V := Fin 2 → AlgebraicClosure ℚ_[p])
+      (by simp)
+      (G := (localInertiaGroup v))
+      { toFun := fun g => τ.toLocal v g.1
+        map_one' := map_one _
+        map_mul' := fun g h => map_mul _ g.1 h.1 }
+      (fun g => hsq g.1 g.2)
+  have hw₀ker : ∀ a ∈ localInertiaGroup v, (τ.toLocal v a - 1) w₀ = 0 := by
+    intro a ha
+    have h : τ.toLocal v a w₀ = w₀ := hw₀fix ⟨a, ha⟩
+    simp only [LinearMap.sub_apply, Module.End.one_apply, h, sub_self]
+  have hspanle : ∀ a ∈ localInertiaGroup v,
+      Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} ≤
+        LinearMap.ker (τ.toLocal v a - 1) := by
+    intro a ha
+    rw [Submodule.span_le, Set.singleton_subset_iff]
+    exact hw₀ker a ha
+  have hrange : ∀ a ∈ localInertiaGroup v,
+      LinearMap.range (τ.toLocal v a - 1) ≤
+        Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} := by
+    intro a ha
+    have hmulzero : (τ.toLocal v a - 1) * (τ.toLocal v a - 1) = 0 := by
+      rw [← pow_two]; exact hsq a ha
+    have hle : LinearMap.range (τ.toLocal v a - 1) ≤
+        LinearMap.ker (τ.toLocal v a - 1) := by
+      rintro y ⟨x, rfl⟩
+      have hx : ((τ.toLocal v a - 1) * (τ.toLocal v a - 1)) x = 0 := by
+        rw [hmulzero]; rfl
+      simpa [Module.End.mul_apply] using hx
+    by_cases hzero : LinearMap.range (τ.toLocal v a - 1) = ⊥
+    · rw [hzero]; exact bot_le
+    · have hrn := LinearMap.finrank_range_add_finrank_ker (τ.toLocal v a - 1)
+      have hV : Module.finrank (AlgebraicClosure ℚ_[p])
+          (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+      have h1 : 1 ≤ Module.finrank (AlgebraicClosure ℚ_[p])
+          (LinearMap.range (τ.toLocal v a - 1)) :=
+        Submodule.one_le_finrank_iff.mpr hzero
+      have hspanrank : Module.finrank (AlgebraicClosure ℚ_[p])
+          (Submodule.span (AlgebraicClosure ℚ_[p]) {w₀}) = 1 :=
+        finrank_span_singleton hw₀ne
+      have hkerle : Module.finrank (AlgebraicClosure ℚ_[p])
+          (LinearMap.ker (τ.toLocal v a - 1)) ≤ 1 := by
+        rw [hV] at hrn; omega
+      have heq : Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} =
+          LinearMap.ker (τ.toLocal v a - 1) :=
+        Submodule.eq_of_le_of_finrank_le (hspanle a ha)
+          (by rw [hspanrank]; exact hkerle)
+      rw [heq]; exact hle
+  refine LinearMap.ext fun x => ?_
+  have hx : (τ.toLocal v θ - 1) x ∈
+      Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} := hrange θ hθ ⟨x, rfl⟩
+  have hy := hspanle σ hσ hx
+  rw [LinearMap.mem_ker] at hy
+  rw [Module.End.mul_apply, hy, LinearMap.zero_apply]
+
+/-- **`σ ↦ τσ − 1` is ADDITIVE on the inertia** (PROVEN, axiom-clean):
+`τ(στ) − 1 = (τσ − 1) + (τθ − 1) + (τσ − 1)(τθ − 1)` is a ring identity,
+and the cross term vanishes by the Kolchin lemma above. This is where
+the square-zero hypothesis earns its shape: without it the map is only a
+`1`-cocycle. -/
+theorem toLocal_mul_sub_one_eq_of_inertia_sq_eq_zero
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hsq : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) ^ 2 = 0)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion ℚ)}
+    (hσ : σ ∈ localInertiaGroup v)
+    {θ : Field.absoluteGaloisGroup (v.adicCompletion ℚ)}
+    (hθ : θ ∈ localInertiaGroup v) :
+    τ.toLocal v (σ * θ) - 1 = (τ.toLocal v σ - 1) + (τ.toLocal v θ - 1) := by
+  have hm : τ.toLocal v (σ * θ) = τ.toLocal v σ * τ.toLocal v θ := map_mul _ _ _
+  have hz := toLocal_sub_one_mul_toLocal_sub_one_eq_zero_of_inertia_sq_eq_zero
+    hsq hσ hθ
+  have key : (τ.toLocal v σ - 1) * (τ.toLocal v θ - 1) =
+      τ.toLocal v σ * τ.toLocal v θ - τ.toLocal v σ - (τ.toLocal v θ - 1) := by
+    rw [sub_mul, one_mul, mul_sub, mul_one]
+  rw [key, sub_sub, sub_eq_zero] at hz
+  rw [hm, hz]
+  abel
+
+/-- **Powers, from additivity** (PROVEN, axiom-clean):
+`τ(σᵐ) − 1 = m·(τσ − 1)` on the inertia. This is what turns an `m`-th
+ROOT of `σ` inside the wild inertia into `m`-DIVISIBILITY of the value
+`τσ − 1`, which is the mechanism of the tameness lemma below. -/
+theorem toLocal_pow_sub_one_eq_nsmul_of_inertia_sq_eq_zero
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hsq : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) ^ 2 = 0)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion ℚ)}
+    (hσ : σ ∈ localInertiaGroup v) (m : ℕ) :
+    τ.toLocal v (σ ^ m) - 1 = (m : ℕ) • (τ.toLocal v σ - 1) := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    have hmem : σ ^ m ∈ localInertiaGroup v := pow_mem hσ m
+    rw [pow_succ, toLocal_mul_sub_one_eq_of_inertia_sq_eq_zero hsq hmem hσ, ih,
+      succ_nsmul]
+
+/-- **An infinitely `p`-divisible value of `σ ↦ τσ − 1` VANISHES**
+(PROVEN, axiom-clean — the place-generic form of the at-`2`
+`eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one` further down this
+file). This is the step where CONTINUITY is genuinely load-bearing:
+abstractly `Hom(ℤ_q, ℚ_p) ≠ 0`, so the tameness lemma below would be
+FALSE without it.
+
+THE PROOF. Fix a vector `u` and a coordinate `i` and let `ev f := f u i`;
+this is `ℚ̄_p`-linear out of `Module.End`, which carries the module
+topology, so `IsModuleTopology.continuous_of_linearMap` makes
+`g ↦ ev (τ_v g)` continuous. `Γ Kᵥ` is compact, so that image is
+norm-bounded by some `C` for the `spectralNorm` on `AlgebraicClosure ℚ_[p]`
+(`PadicAlgCl.normedField`). Then `‖ev x‖ ≤ (1/p)ᵏ (C + ‖ev 1‖)` for every
+`k`, and `‖p‖ = 1/p < 1`, so `ev x = 0`; ranging over `u` and `i` gives
+`x = 0`.
+
+The hypothesis does NOT constrain `θ` to any subgroup: the bound is
+uniform over all of `Γ Kᵥ`, which keeps this lemma independent of the
+pro-`ℓ` input it is used with. -/
+theorem eq_zero_of_forall_exists_nsmul_toLocal_sub_one
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {x : Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hdiv : ∀ k : ℕ, ∃ θ, x = (p ^ k : ℕ) • (τ.toLocal v θ - 1)) :
+    x = 0 := by
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])) :=
+    moduleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p])) := ⟨rfl⟩
+  haveI : IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+    (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) := ⟨⟩
+  haveI : CompactSpace (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+    inferInstanceAs (CompactSpace (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) ≃ₐ[_] _))
+  refine LinearMap.ext fun u => funext fun i => ?_
+  show x u i = 0
+  set ev : Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])
+      →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p] :=
+    { toFun := fun f => f u i
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl }
+  have hcont : Continuous fun g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) =>
+      ev (τ.toLocal v g) :=
+    (IsModuleTopology.continuous_of_linearMap ev).comp
+      (ContinuousMonoidHom.continuous_toFun (τ.toLocal v))
+  obtain ⟨C, hC⟩ := (isCompact_range hcont).isBounded.subset_closedBall
+    (0 : AlgebraicClosure ℚ_[p])
+  have hCg : ∀ g, ‖ev (τ.toLocal v g)‖ ≤ C := by
+    intro g
+    have hmem := hC (Set.mem_range_self g)
+    simpa [Metric.mem_closedBall, dist_zero_right] using hmem
+  have hnp : ‖((p : ℕ) : AlgebraicClosure ℚ_[p])‖ = 1 / (p : ℝ) := by
+    rw [← PadicAlgCl.valuation_coe, PadicAlgCl.valuation_p]
+    simp
+  have hple : (1 : ℝ) / (p : ℝ) < 1 := by
+    have h2 : (2 : ℝ) ≤ (p : ℝ) := by exact_mod_cast hp.out.two_le
+    rw [div_lt_one (by linarith)]
+    linarith
+  have hpnn : (0 : ℝ) ≤ 1 / (p : ℝ) := by positivity
+  have hbound : ∀ k : ℕ, ‖x u i‖ ≤ (1 / (p : ℝ)) ^ k * (C + ‖ev 1‖) := by
+    intro k
+    obtain ⟨θ, hθ⟩ := hdiv k
+    have hx : x u i = ((p : AlgebraicClosure ℚ_[p]) ^ k) *
+        ev (τ.toLocal v θ - 1) := by
+      have h1 : ev x = (p ^ k : ℕ) • ev (τ.toLocal v θ - 1) := by
+        rw [hθ]; exact map_nsmul ev _ _
+      rw [show x u i = ev x from rfl, h1, nsmul_eq_mul]
+      norm_cast
+    have hsub : ‖ev (τ.toLocal v θ - 1)‖ ≤ C + ‖ev 1‖ := by
+      rw [map_sub]
+      exact (norm_sub_le _ _).trans (add_le_add (hCg θ) le_rfl)
+    rw [hx, norm_mul, norm_pow, hnp]
+    exact mul_le_mul_of_nonneg_left hsub (by positivity)
+  have hlim : Filter.Tendsto (fun k : ℕ => (1 / (p : ℝ)) ^ k * (C + ‖ev 1‖))
+      Filter.atTop (nhds 0) := by
+    have h := tendsto_pow_atTop_nhds_zero_of_lt_one hpnn hple
+    simpa using h.mul_const (C + ‖ev 1‖)
+  have hle : ‖x u i‖ ≤ 0 :=
+    ge_of_tendsto hlim (Filter.Eventually.of_forall hbound)
+  simpa using norm_le_zero_iff.mp hle
+
+/-- **A square-zero-unipotent inertia action is TRIVIAL on the WILD
+inertia, at any place whose residue characteristic is prime to `p`**
+(PROVEN 2026-07-27 over the single already-open leaf
+`coprime_card_quotient_wildInertiaGroup` of `ArtinConductor.lean`; Serre,
+*Local Fields* IV §2). This is the place-generic form of the at-`2`
+`isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` further down this file,
+and it is what makes the TAMENESS half of the `q ∥ M₀` monodromy shape a
+THEOREM rather than part of the Carayol citation.
+
+THE ARGUMENT, in three steps over the block above. `σ ↦ τσ − 1` is
+additive on `I_v` and satisfies `τ(σᵐ) − 1 = m(τσ − 1)`; `P_v` is
+pro-`ℓ`, so for `p` prime to `ℓ` every `σ ∈ P_v` is a `pᵏ`-th power
+INSIDE `P_v` for every `k` (`exists_pow_eq_of_mem_wildInertiaGroup`),
+whence `τσ − 1` is infinitely `p`-divisible; and the compactness step
+above kills it.
+
+`hpv : (p : 𝓞 ℚ) ∉ v.asIdeal` is LOAD-BEARING and is exactly `q ≠ p` at
+`v = v_q`: at `v = v_p` the `p`-th power map on `P_p` is not surjective,
+`t_p` does not kill wild inertia, and the conclusion is false — the
+`p`-adic Tate module of a Tate curve at `p` is the standard witness.
+
+WHAT THIS COSTS. The `q ∥ M₀` cluster now depends on
+`coprime_card_quotient_wildInertiaGroup` ("the wild inertia is pro-`ℓ`",
+owned in `ArtinConductor.lean`) instead of on a Carayol citation for its
+tameness. That is a strictly better trade: a general local-field theorem
+with a named owner replaces a specific literature appeal, and it is the
+SAME leaf the at-`2` route already depends on. -/
+theorem toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hpv : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal)
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hsq : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) ^ 2 = 0)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion ℚ)}
+    (hσ : σ ∈ wildInertiaGroup v) :
+    τ.toLocal v σ = 1 := by
+  have hiter : ∀ (k : ℕ) (ρ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)),
+      ρ ∈ wildInertiaGroup v → ∃ θ ∈ wildInertiaGroup v, θ ^ p ^ k = ρ := by
+    intro k
+    induction k with
+    | zero => intro ρ hρ; exact ⟨ρ, hρ, by simp⟩
+    | succ k ih =>
+      intro ρ hρ
+      obtain ⟨θ, hθ, hθpow⟩ := ih ρ hρ
+      obtain ⟨η, hη, hηp⟩ := exists_pow_eq_of_mem_wildInertiaGroup v hpv hθ
+      refine ⟨η, hη, ?_⟩
+      rw [pow_succ p k, pow_mul', hηp, hθpow]
+  have hzero : τ.toLocal v σ - 1 = 0 := by
+    refine eq_zero_of_forall_exists_nsmul_toLocal_sub_one (τ := τ) (v := v) ?_
+    intro k
+    obtain ⟨θ, hθ, hθpow⟩ := hiter k σ hσ
+    refine ⟨θ, ?_⟩
+    rw [← hθpow]
+    exact toLocal_pow_sub_one_eq_nsmul_of_inertia_sq_eq_zero hsq
+      (wildInertiaGroup_le_localInertiaGroup v hθ) (p ^ k)
+  rwa [sub_eq_zero] at hzero
+
+/-- **THE MONODROMY SHAPE, FROM UNIPOTENCE AND RAMIFIEDNESS ALONE**
+(PROVEN 2026-07-27, fourteenth owner of the `q ∥ M₀` cluster, over the
+block above): if inertia at `v` acts by SQUARE-ZERO unipotents and acts
+NONTRIVIALLY, and the residue characteristic of `v` is prime to `p`, then
+there are a nonzero square-zero `N` and a `ℚ̄_p`-valued `t` with
+`τ|_{I_v}(σ) = 1 + t(σ)·N`, `t = 0` on `P_v` and `t ≢ 0` on `I_v`.
+
+This is the whole non-arithmetic content of
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` below,
+and the two hypotheses are exactly what that leaf's two remaining
+sub-leaves supply. The equivalence is EXACT in both directions — from the
+conclusion, `(τσ − 1)² = (t σ)²·N² = 0` gives `hsq` and the `t σ ≠ 0`
+witness gives `hram` — so the split adds no faith.
+
+THE PROOF, once the Kolchin lemma is available, is proportionality in
+dimension `2`. Put `N := τσ₁ − 1` for a witness `σ₁` of `hram`; it is
+nonzero and square-zero, so `dim (ker N) = 1` and `ker N = ℚ̄_p·(N u)` for
+any `u` with `N u ≠ 0`. For any other `σ ∈ I_v`, writing `M := τσ − 1`,
+the Kolchin lemma gives `M N = 0` and `N M = 0`, i.e. `ker N ≤ ker M` and
+`M u ∈ ker N`; so `M u = c·(N u)` for a scalar `c`, and `D := M − c·N`
+kills both `ker N` and `u`. If `D ≠ 0` then `dim (ker D) ≤ 1`, forcing
+`ker D = ker N ∋ u` — contradicting `N u ≠ 0`. Hence `M = c·N`, and `t`
+is the resulting scalar (extended by `0` off `I_v`).
+
+The three conclusion clauses then read off: `t σ₁ = 1 ≠ 0` because
+`N = t σ₁ · N` and `N ≠ 0`; `t = 0` on `P_v` because `τ` is trivial there
+by the tameness lemma above and `N ≠ 0` cancels; and the displayed
+identity is the definition of `t`. -/
+theorem exists_monodromy_of_inertia_sq_eq_zero
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (hpv : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal)
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hsq : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) ^ 2 = 0)
+    (hram : ∃ σ ∈ localInertiaGroup v, τ.toLocal v σ ≠ 1) :
+    ∃ (N : Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]))
+      (t : Field.absoluteGaloisGroup (v.adicCompletion ℚ) →
+        AlgebraicClosure ℚ_[p]),
+      N ≠ 0 ∧ N * N = 0 ∧
+      (∀ σ ∈ wildInertiaGroup v, t σ = 0) ∧
+      (∃ σ ∈ localInertiaGroup v, t σ ≠ 0) ∧
+      (∀ σ ∈ localInertiaGroup v, τ.toLocal v σ = 1 + t σ • N) := by
+  classical
+  obtain ⟨σ₁, hσ₁, hσ₁ne⟩ := hram
+  set N : Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]) :=
+    τ.toLocal v σ₁ - 1 with hNdef
+  have hN0 : N ≠ 0 := sub_ne_zero.mpr hσ₁ne
+  have hN2 : N * N = 0 := by rw [hNdef, ← pow_two]; exact hsq σ₁ hσ₁
+  have hVdim : Module.finrank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+  have hkerN : Module.finrank (AlgebraicClosure ℚ_[p]) (LinearMap.ker N) = 1 :=
+    finrank_ker_eq_one_of_ne_zero_of_mul_self_eq_zero hVdim hN0 hN2
+  obtain ⟨u, hu⟩ : ∃ u, N u ≠ 0 := by
+    by_contra hcon
+    push Not at hcon
+    exact hN0 (LinearMap.ext fun x => by simpa using hcon x)
+  have hkerNspan : LinearMap.ker N
+      = Submodule.span (AlgebraicClosure ℚ_[p]) {N u} := by
+    refine (Submodule.eq_of_le_of_finrank_le ?_ ?_).symm
+    · rw [Submodule.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+        LinearMap.mem_ker]
+      have h := congrArg (fun f : Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]) => f u) hN2
+      simpa [Module.End.mul_apply] using h
+    · rw [hkerN, finrank_span_singleton hu]
+  have key : ∀ σ ∈ localInertiaGroup v, ∃ c : AlgebraicClosure ℚ_[p],
+      τ.toLocal v σ - 1 = c • N := by
+    intro σ hσ
+    set M : Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) := τ.toLocal v σ - 1 with hMdef
+    have hMN : M * N =
+        0 := toLocal_sub_one_mul_toLocal_sub_one_eq_zero_of_inertia_sq_eq_zero
+      hsq hσ hσ₁
+    have hNM : N * M =
+        0 := toLocal_sub_one_mul_toLocal_sub_one_eq_zero_of_inertia_sq_eq_zero
+      hsq hσ₁ hσ
+    have hkerle : LinearMap.ker N ≤ LinearMap.ker M := by
+      rw [hkerNspan, Submodule.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+        LinearMap.mem_ker]
+      have h := congrArg (fun f : Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]) => f u) hMN
+      simpa [Module.End.mul_apply] using h
+    have hMu : M u ∈ LinearMap.ker N := by
+      rw [LinearMap.mem_ker]
+      have h := congrArg (fun f : Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]) => f u) hNM
+      simpa [Module.End.mul_apply] using h
+    rw [hkerNspan, Submodule.mem_span_singleton] at hMu
+    obtain ⟨c, hc⟩ := hMu
+    refine ⟨c, ?_⟩
+    set D : Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) := M - c • N with hDdef
+    have hDu : D u = 0 := by
+      simp only [hDdef, LinearMap.sub_apply, LinearMap.smul_apply, hc, sub_self]
+    have hDker : LinearMap.ker N ≤ LinearMap.ker D := by
+      intro x hx
+      rw [LinearMap.mem_ker] at hx ⊢
+      have hMx : M x = 0 := hkerle hx
+      simp only [hDdef, LinearMap.sub_apply, LinearMap.smul_apply, hMx, hx,
+        smul_zero, sub_zero]
+    have hD0 : D = 0 := by
+      by_contra hD
+      have h1 : 1 ≤ Module.finrank (AlgebraicClosure ℚ_[p])
+          (LinearMap.range D) :=
+        Submodule.one_le_finrank_iff.mpr fun h => hD (LinearMap.range_eq_bot.mp h)
+      have hrn := LinearMap.finrank_range_add_finrank_ker D
+      rw [hVdim] at hrn
+      have hkerDle : Module.finrank (AlgebraicClosure ℚ_[p])
+          (LinearMap.ker D) ≤ 1 := by omega
+      have heq : LinearMap.ker N = LinearMap.ker D :=
+        Submodule.eq_of_le_of_finrank_le hDker (by rw [hkerN]; exact hkerDle)
+      have hmemu : u ∈ LinearMap.ker N := by
+        rw [heq, LinearMap.mem_ker]; exact hDu
+      rw [LinearMap.mem_ker] at hmemu
+      exact hu hmemu
+    exact sub_eq_zero.mp hD0
+  choose! t ht using key
+  refine ⟨N, t, hN0, hN2, ?_, ⟨σ₁, hσ₁, ?_⟩, ?_⟩
+  · intro σ hσ
+    have hσI : σ ∈ localInertiaGroup v := wildInertiaGroup_le_localInertiaGroup v hσ
+    have h1 : τ.toLocal v σ = 1 :=
+      toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero hpv hsq hσ
+    have h2 := ht σ hσI
+    rw [h1, sub_self] at h2
+    exact (smul_eq_zero.mp h2.symm).resolve_right hN0
+  · intro h0
+    have h2 := ht σ₁ hσ₁
+    rw [h0, zero_smul, ← hNdef] at h2
+    exact hN0 h2
+  · intro σ hσ
+    have h2 := ht σ hσ
+    rw [← h2]
+    abel
+
+/-- **INERTIA ACTS BY SQUARE-ZERO UNIPOTENTS AT `q ∥ M₀`**
+(**SORRY LEAF — half of the residual `q ∥ M₀` citation**, cut 2026-07-27
+by the fourteenth owner out of
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` below,
+which is PROVEN over this leaf and its sibling; Carayol, *Sur les
+représentations `ℓ`-adiques associées aux formes modulaires de Hilbert*,
+Ann. Sci. ÉNS 19 (1986), Théorème (A), plus Casselman's conductor-`1`
+classification and Grothendieck's `ℓ`-adic monodromy theorem).
+
+STATEMENT: for a weight-2 NEWFORM `g₀` of level `M₀`, an IRREDUCIBLE `τ`
+matching its Hecke polynomials away from a finite set, and a prime
+`q ≠ p` with `ord_q M₀ = 1`, every inertia element at `q` acts by a
+SQUARE-ZERO unipotent: `(τσ − 1)² = 0` for `σ ∈ I_q`.
+
+WHY IT IS TRUE. At `q ∥ M₀` with trivial nebentypus the local component
+`π_q` of the automorphic representation attached to `g₀` has conductor
+exponent `1`, and the conductor-`1` representations of `GL₂(ℚ_q)` with
+TRIVIAL central character are exactly the unramified twists of
+Steinberg: a principal series `χ₁ ⊞ χ₂` has conductor
+`cond(χ₁) + cond(χ₂)`, and trivial central character forces
+`χ₂ = χ₁⁻¹`, hence an EVEN total conductor, so `1` is not attained;
+supercuspidals have conductor `≥ 2`. The Weil–Deligne parameter of an
+unramified twist of Steinberg is the SPECIAL one — unramified
+Frobenius-semisimple part, nonzero monodromy `N` with `N² = 0` — and an
+unramified twist is invisible to inertia, so on `I_q` the `p`-adic
+realisation is `σ ↦ exp(t_p(σ)N) = 1 + t_p(σ)N`, whose difference from
+`1` squares to zero.
+
+WHAT THIS LEAF DELIBERATELY DOES NOT SAY, and why the cut is here. It
+does NOT produce the operator `N`, does NOT say inertia acts
+nontrivially, and does NOT say the wild inertia is killed. Those were
+all bundled into the old single citation; the first and third are now
+THEOREMS (`exists_monodromy_of_inertia_sq_eq_zero` and
+`toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero` above),
+and the second is the sibling leaf immediately below. So this statement
+is exactly the "shape" half of the local classification and nothing more.
+
+FAITHFULNESS. The quantifier stays over `localInertiaGroup q`; nothing
+is widened to `Γ ℚ`, which is the standing trap in this file. Widening
+it WOULD be false: Frobenius acts through the unramified twist with
+eigenvalues `±q^{1/2}`-scaled, not unipotently.
+
+`hqp : q ≠ p` is carried but is NOT consumed by this half — at `q = p`
+the local representation of a newform of level exactly divisible by `p`
+is still an unramified twist of Steinberg in the ordinary case, but the
+`p`-adic realisation is no longer given by the tame character and the
+square-zero shape can fail. It is retained so the leaf can be quoted
+alongside its sibling without a hypothesis mismatch.
+
+NOT VACUOUS: the hypothesis bundle is inhabited by the PROVEN pair
+`exists_galoisRep_charFrob_of_weightTwoNewform` (a matching `τ` with its
+exceptional set) and the PROVEN Ribet irreducibility below, at any
+newform of level `M₀ = q M'` with `q ∤ M'`, `q ≠ p`.
+
+TERMINALITY at this pin. What is genuinely missing is a
+semistable/Néron model of `X₀(M₀)` at `q ∥ M₀` together with the
+monodromy filtration on `V_p(J₀(M₀))` (Deligne–Rapoport V.1 for the
+model; Grothendieck, SGA 7 I IX for the monodromy pairing), or
+equivalently the automorphic route through local Langlands — the pin has
+no automorphic representations, no Weil–Deligne parameters, and
+`~/cs/FLT` has nothing vendorable here.
+
+**THE CHECK THAT WOULD REFUTE THIS VERDICT**: exhibit anywhere in the
+tree a statement pinning the action of `localInertiaGroup q` on ANY
+realisation of the `g₀`-eigensystem at a prime `q` exactly dividing `M₀`.
+As of 2026-07-27 there is none. In particular
+`nonempty_modularTateModuleData` is PROVEN and carries NO bad-prime local
+data — no field of `ModularTateModuleData` mentions inertia, and its
+`congruence` and `pair_frob` fields are hypothesised only OFF the
+exceptional set `S` — so completing Deligne–Rapoport was necessary for
+the wider programme and could never have closed this cluster. Adding a
+monodromy field to `ModularTateModuleData` (an operator on `Vp` with its
+inertia identity), plus transport along the PROVEN rigidity
+`exists_linearEquiv_of_charFrob_eq`, is the shape of the cut that would
+RETIRE this leaf rather than discharge it.
+AXIS SEARCHED: the carrier axis (does any existing structure in this
+file record bad-prime local data) and the transport axis (is there a
+proven route from `Vp` to `τ` carrying inertia information). NOT
+SEARCHED: any route through `p`-adic Hodge theory at `q ≠ p`, which
+would be perverse; and the automorphic axis, which does not exist on
+this pin. -/
+theorem inertia_sq_eq_zero_of_isWeightTwoNewform_of_factorization_eq_one
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hord : M₀.factorization q = 1) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      (τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ - 1) ^ 2 = 0 :=
+  sorry
+
+/-- **INERTIA ACTS NONTRIVIALLY AT `q ∥ M₀`** (**SORRY LEAF — the other
+half of the residual `q ∥ M₀` citation**, cut 2026-07-27 by the
+fourteenth owner alongside the leaf above; same references).
+
+STATEMENT: under the same hypotheses, SOME inertia element at `q` acts
+nontrivially — `∃ σ ∈ I_q, τσ ≠ 1`. Equivalently `τ` is RAMIFIED at `q`.
+
+WHY IT IS TRUE, and why it is a SEPARATE leaf. The conductor exponent of
+an unramified twist of Steinberg is exactly `1`, not `0`: the monodromy
+operator `N` of the special Weil–Deligne parameter is NONZERO, and the
+`p`-adic tame character `t_p : I_q ↠ ℤ_p(1)` is surjective, so
+`σ ↦ 1 + t_p(σ)N` is a nonconstant map on `I_q`. This is the half of the
+old citation that carries the RAMIFIEDNESS, and it is what ultimately
+pins `dim V^{I_q} = 1` rather than `2` in
+`tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one`
+below. It is logically independent of its sibling: the sibling is
+satisfied vacuously by an UNRAMIFIED `τ`, and it is exactly this clause
+that excludes that.
+
+DO NOT WEAKEN IT. Dropping this leaf would leave the monodromy statement
+inhabitable with `N` arbitrary and `t ≡ 0`, i.e. vacuous, and
+`tameExponent_eq_one_...` would become FALSE (an unramified `τ` has tame
+exponent `0`). The nontriviality clause is precisely what cancels the
+scalar there.
+
+FAITHFULNESS: the quantifier stays over `localInertiaGroup q`.
+`hord : ord_q M₀ = 1` is load-bearing — at `ord_q M₀ = 0` the
+representation is unramified at `q` and the statement is FALSE.
+
+TERMINALITY: identical to the sibling above, including the refuting
+check and the searched axes; see its docstring. -/
+theorem exists_mem_localInertiaGroup_toLocal_ne_one_of_isWeightTwoNewform_of_factorization_eq_one
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hord : M₀.factorization q = 1) :
+    ∃ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ ≠ 1 :=
+  sorry
+
 /-- **THE UNIPOTENT MONODROMY SHAPE AT A PRIME EXACTLY DIVIDING THE
-NEWFORM LEVEL** (**SORRY LEAF — the single literature citation of the
-`q ∥ M₀` case of Carayol's theorem**, cut 2026-07-27 by the thirteenth
-owner out of the two leaves immediately below, BOTH of which are now
-PROVEN over it; Carayol, *Sur les représentations `ℓ`-adiques associées
-aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème
-(A), plus Casselman's conductor-`1` classification and Grothendieck's
-`ℓ`-adic monodromy theorem).
+NEWFORM LEVEL** (**PROVEN 2026-07-27, FOURTEENTH owner**, over the TWO
+new leaves immediately above plus the PROVEN linear-algebra block above;
+Carayol, *Sur les représentations `ℓ`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A), plus
+Casselman's conductor-`1` classification and Grothendieck's `ℓ`-adic
+monodromy theorem).
+
+**WHAT THE FOURTEENTH OWNER'S CUT CHANGED.** This declaration used to be
+the single `q ∥ M₀` citation, carrying FOUR distinct assertions at once:
+inertia acts by square-zero unipotents; inertia acts nontrivially; the
+wild inertia acts trivially; and there is a coordinate `(N, t)` writing
+the action as `1 + t·N`. Only the first two are irreducibly arithmetic.
+The last two are now THEOREMS:
+
+* the coordinate is `exists_monodromy_of_inertia_sq_eq_zero` above —
+  Kolchin in dimension `2` plus proportionality of square-zero
+  endomorphisms sharing a kernel line;
+* the TAMENESS is
+  `toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero` above —
+  `P_q` is pro-`q`, `q ≠ p`, so `τσ − 1` is infinitely `p`-divisible and
+  the compactness of `Γ ℚ_q` kills it.
+
+So the residual citation is exactly the two leaves above, and the
+`hqp : q ≠ p` hypothesis is now CONSUMED IN CHECKED LEAN (through
+`(p : 𝓞 ℚ) ∉ v_q`) rather than merely asserted to be load-bearing.
 
 STATEMENT. For a weight-2 NEWFORM `g₀` of level `M₀`, an IRREDUCIBLE
 `τ` matching its Hecke polynomials away from a finite set, and a prime
@@ -52395,24 +52991,20 @@ supercuspidals have conductor `≥ 2`. The Weil–Deligne parameter of an
 unramified twist of Steinberg is the special one — unramified
 Frobenius-semisimple part, nonzero monodromy `N` with `N² = 0` — and an
 UNRAMIFIED twist is invisible to inertia, so the twisting character
-contributes nothing to `τ|_{I_q}` and the displayed identity is exactly
-Grothendieck's local monodromy theorem for that parameter. `t_p` is
-surjective onto `ℤ_p(1)`, hence not identically zero, which is
-`N ≠ 0`'s companion and is what makes the conclusion RAMIFIED rather
-than vacuous.
+contributes nothing to `τ|_{I_q}`.
 
 `hqp : q ≠ p` IS LOAD-BEARING, in TWO places. (i) `t_p` has pro-`p`
 target and `P_q` is pro-`q`, so `q ≠ p` is exactly what kills wild
 inertia; at `q = p` the local representation of a newform of level
 exactly divisible by `p` is genuinely wildly ramified in general.
 (ii) At `q = p` the Steinberg parameter is cyclotomically twisted and
-the fixed space can vanish. Do not widen this hypothesis.
+the fixed space can vanish. Do not widen this hypothesis. Half of (i) is
+now mechanised, as noted above.
 
-WHAT THIS LEAF BUYS. `GaloisRep.swanExponent` is
-`if ρ.IsTamelyRamifiedAt v then 0 else swanExponentAux ρ v` with
-`swanExponentAux` declared `opaque` (`ArtinConductor.lean`), so the ONLY
+WHAT THIS DECLARATION BUYS. `GaloisRep.swanExponent` is
+`if ρ.IsTamelyRamifiedAt v then 0 else swanExponentAux ρ v`, so the ONLY
 way any conductor-exponent statement of this development becomes
-provable is by discharging that `if`. This leaf discharges it in the
+provable is by discharging that `if`. This discharges it in the
 `q ∥ M₀` case — through `isTamelyRamifiedAt_of_isWeightTwoNewform_of_
 factorization_eq_one` just below — and simultaneously supplies the tame
 number, through `tameExponent_eq_one_of_isWeightTwoNewform_of_
@@ -52423,8 +53015,8 @@ FAITHFULNESS. Every quantifier stays over `localInertiaGroup q` or
 `wildInertiaGroup q` — nothing is widened to `Γ ℚ`, which is the
 standing trap in this file. `t` is deliberately a BARE FUNCTION rather
 than a homomorphism: the homomorphism property is forced by `N² = 0`
-inside the group, so demanding it would only make the leaf harder to
-inhabit without making any consumer stronger. The leaf is not vacuous —
+inside the group, so demanding it would only make the statement harder
+to inhabit without making any consumer stronger. It is not vacuous —
 the `∃ σ ∈ I_q, t σ ≠ 0` clause is precisely the assertion that `τ` IS
 ramified at `q`, which is the classical content, and it is what pins
 `dim V^{I_q} = 1` rather than `2`.
@@ -52434,42 +53026,17 @@ PROVEN pair `exists_galoisRep_charFrob_of_weightTwoNewform` (a matching
 `τ` with its exceptional set) and the PROVEN Ribet irreducibility below,
 at any newform of level `M₀ = q M'` with `q ∤ M'`, `q ∉ {p}`.
 
-TERMINALITY at this pin, and the CORRECTION it carries. The two leaves
-below used to record their terminality as "carried geometrically by
-`nonempty_modularTateModuleData`", with the refuting check "exhibit,
-anywhere in the tree, a statement pinning the action of
-`localInertiaGroup q` on `τ` for a newform of level exactly divisible by
-`q`". **That attribution is now wrong and this leaf is where it gets
-fixed.** `nonempty_modularTateModuleData` is PROVEN (see above in this
-file) and it pins NOTHING at a bad prime: its `congruence` and
-`pair_frob` fields are both hypothesised only OFF the exceptional set
-`S`, and no field of `ModularTateModuleData` mentions inertia at all.
-So completing the Deligne–Rapoport carrier was NECESSARY for the wider
-programme and is NOT SUFFICIENT here — it was already complete when this
-cut was made, and these leaves did not move.
-
-What is genuinely missing at this pin is a semistable/Néron model of
-`X₀(M₀)` at `q ∥ M₀` together with the monodromy filtration on
-`V_p(J₀(M₀))` (Deligne–Rapoport V.1 for the model; Grothendieck, SGA 7 I
-IX for the monodromy pairing), or equivalently the automorphic route
-through local Langlands — the pin has no automorphic representations, no
-Weil–Deligne parameters, and no higher ramification filtration, and
-`~/cs/FLT` has nothing vendorable here.
-
-**THE CHECK THAT WOULD REFUTE THIS VERDICT** (stated so the next owner
-does not redo the survey): exhibit anywhere in the tree a statement
-pinning the action of `localInertiaGroup q` on ANY realisation of the
-`g₀`-eigensystem at a prime `q` exactly dividing `M₀` — a field of a
-carrier structure, a leaf, or a theorem. As of 2026-07-27 there is none,
-and in particular `ModularTateModuleData` has no such field; adding one
-(a monodromy operator on `Vp` with its inertia identity, plus the
-transport along the PROVEN rigidity `exists_linearEquiv_of_charFrob_eq`)
-is the shape of the cut that would replace this leaf.
-AXIS SEARCHED: the carrier axis (does any existing structure in this
-file record bad-prime local data) and the transport axis (is there a
-proven route from `Vp` to `τ` carrying inertia information). NOT
-SEARCHED: any route through `p`-adic Hodge theory at `q ≠ p`, which
-would be perverse. -/
+TERMINALITY — **now attached to the two leaves above, not here.** The
+thirteenth owner's correction stands and is repeated there: the geometric
+carrier `nonempty_modularTateModuleData` is PROVEN and pins NOTHING at a
+bad prime (its `congruence` and `pair_frob` fields are hypothesised only
+OFF the exceptional set `S`, and no field of `ModularTateModuleData`
+mentions inertia), so completing Deligne–Rapoport was necessary for the
+wider programme and could never have closed this cluster. What is
+genuinely missing is a semistable model of `X₀(M₀)` at `q ∥ M₀` together
+with the monodromy filtration on `V_p(J₀(M₀))` (Deligne–Rapoport V.1;
+Grothendieck, SGA 7 I IX), or the automorphic route through local
+Langlands. -/
 theorem exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -52497,8 +53064,18 @@ theorem exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one
       (∃ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
         t σ ≠ 0) ∧
       (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-        τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1 + t σ • N) :=
-  sorry
+        τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1 + t σ • N) := by
+  have hpv : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∉
+      hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+    rw [Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast]
+    intro hdvd
+    have hqp' : (q : ℕ) ∣ p := by exact_mod_cast hdvd
+    exact hqp ((Nat.prime_dvd_prime_iff_eq hq hp.out).mp hqp')
+  exact exists_monodromy_of_inertia_sq_eq_zero hpv
+    (inertia_sq_eq_zero_of_isWeightTwoNewform_of_factorization_eq_one
+      hM₀ hg₀ κ₀ hτ hirr hq hqp hord)
+    (exists_mem_localInertiaGroup_toLocal_ne_one_of_isWeightTwoNewform_of_factorization_eq_one
+      hM₀ hg₀ κ₀ hτ hirr hq hqp hord)
 
 /-- **Tameness at a prime EXACTLY dividing the newform level**
 (**PROVEN 2026-07-27, thirteenth owner**, over the single leaf
@@ -52619,8 +53196,12 @@ theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_one
   simp
 
 /-- **The TAME exponent at a prime exactly dividing the newform level**
-(**PROVEN 2026-07-27, thirteenth owner**, over the single leaf
-`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` above.
+(**PROVEN 2026-07-27, thirteenth owner**, over
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` above —
+which the FOURTEENTH owner then PROVED that same day, so it is no longer
+a leaf; the residual `q ∥ M₀` citation is the pair
+`inertia_sq_eq_zero_...` / `exists_mem_localInertiaGroup_toLocal_ne_one_...`
+above it.
 The proof is the whole classical sentence, in checked Lean: the
 monodromy identity `τ|_{I_q}(σ) = 1 + t(σ)·N` makes the inertia
 invariants EXACTLY `ker N` — one inclusion needs only `N x = 0`, the
@@ -52813,11 +53394,15 @@ NOT here: it is carried by
 `tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one`
 above, neither of whose conclusions contains an opaque constant, and
 which are therefore gated on mathematics alone. **Both are now PROVEN
-(2026-07-27, thirteenth owner)** over the ONE literature leaf
+(2026-07-27, thirteenth owner)** over
 `exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one`, which
-is where the `q ∥ M₀` citation now lives; so the whole `q ∥ M₀` half of
-this cluster is a single citation plus checked Lean, while THIS
-declaration remains independent of the theory. The two cases are
+the FOURTEENTH owner PROVED the same day over the TWO leaves
+`inertia_sq_eq_zero_of_isWeightTwoNewform_of_factorization_eq_one` and
+`exists_mem_localInertiaGroup_toLocal_ne_one_of_isWeightTwoNewform_of_
+factorization_eq_one` — where the `q ∥ M₀` citation now lives — plus a
+proven linear-algebra block. So the whole `q ∥ M₀` half of this cluster
+is two citations plus checked Lean, while THIS declaration remains
+gated on the Swan-conductor side. The two cases are
 exhaustive over `q ∣ M₀` and disjoint, and their union is exactly the
 old composite citation — no faith is added by the split. -/
 theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le
