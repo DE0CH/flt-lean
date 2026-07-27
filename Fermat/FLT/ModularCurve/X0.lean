@@ -19122,9 +19122,178 @@ theorem not_isIso_jacobian_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
   haveI := subsingleton_relPoint_of_isIso hiso g
   exact hxy (Subsingleton.elim _ _)
 
+/-- **A curve NO FIBRE of which contains a rational curve** — the seam of
+the base-general Abel–Jacobi node.
+
+Concretely: for every field `K` and every `K`-point `k : Spec K ⟶ S` of
+the base, every `K`-morphism `𝔸¹_K ⟶ X` lying over `k` is CONSTANT, in
+the sense that it factors through a `K`-point of `X`.  For a smooth
+proper geometrically connected curve this holds exactly when every fibre
+has genus `≥ 1`: a genus-`0` fibre becomes `ℙ¹` over an algebraic closure
+of the residue field, and `𝔸¹ ⊂ ℙ¹` is then a nonconstant witness, while
+a nonconstant `𝔸¹_K ⟶ X_K` into a fibre of genus `≥ 1` would extend to
+`ℙ¹_K ⟶ X_K` (source smooth proper curve, target proper) and force
+`genus X_K ≤ 0`.
+
+**WHY THE SEAM IS FIBREWISE, and why the obvious total-space seam is
+FALSE.**  Over `Spec ℚ` the node factors through `¬ IsIso jstr` ("the
+Jacobian is positive-dimensional"), as `injective_aj_of_not_isIso_jacobian`
+plus `not_isIso_jacobian_of_one_le_x0Genus`.  That seam does **not**
+survive to an arbitrary base: with `S = S₁ ⊔ S₂`, a genus-`1` curve over
+`S₁` and `ℙ¹` over `S₂`, the total space `JZ = J₁ ⊔ S₂` has `¬ IsIso
+jstrZ` while `aj` collapses the whole `ℙ¹`.  `¬ IsIso` is a statement
+about the total space, positive genus is a statement about every FIBRE,
+and the two agree only over a connected base.  This predicate is the
+fibrewise form, so the counterexample is excluded by construction — it
+FAILS over `S₂` — and the split below is therefore sound where the naive
+one is not.
+
+**WHY `Spec K` FOR A FIELD, and not an arbitrary test scheme.**  Over a
+non-reduced base the analogous statement is FALSE in EVERY genus.  For
+`T = Spec K[ε]` a `T`-morphism `𝔸¹_T ⟶ X_T` is a pair `(φ₀, D)` with `D`
+a `φ₀`-derivation valued in `K[t]`; take `φ₀` constant and `D` a nonzero
+`t`-dependent tangent vector and the result is nonconstant, whatever the
+curve.  What that reflects is UNRAMIFIEDNESS of Abel–Jacobi rather than
+its injectivity on points — a genuine part of "closed immersion", and
+discharged by the same Riemann–Roch input, but it must not be smuggled
+into the seam or the seam becomes false.
+
+**WHY "FACTORS THROUGH A SECTION" IS THE RIGHT FORM OF CONSTANCY.**
+`𝔸¹_K` is integral with function field `K(t)`, so a `K`-morphism to `X`
+with one-point image `p` has `κ(p) ↪ K[t]` with `κ(p)/K` finite, hence
+`κ(p) = K`; the point is therefore a `K`-point and the factorisation
+exists.  Stating it as a factorisation rather than as "the image is a
+point" keeps the predicate free of any topology. -/
+def HasNoFibreAffineLine {X S : Scheme.{0}} (strX : X ⟶ S) : Prop :=
+  ∀ (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ S)
+    (u : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ X),
+    u ≫ strX = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ k →
+    ∃ s : Spec (CommRingCat.of K) ⟶ X,
+      u = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s
+
+/-- **RIEMANN–ROCH, base-general and LEVEL-FREE: a curve with no rational
+fibre has a MONOMORPHIC Abel–Jacobi morphism** (sorry leaf, 2026-07-27) —
+the geometric half of `mono_ajHom_of_one_le_x0Genus`, and the exact
+base-general analogue of `injective_aj_of_not_isIso_jacobian`.  It
+mentions neither `N` nor `x0Genus` nor `IsX0Compactification`.
+
+TRUE and classical.  For a smooth proper geometrically connected curve
+over a field, of genus `≥ 1`, with a section, `x ↦ [x] − [o]` is a CLOSED
+IMMERSION into the Jacobian; the relative statement is the fibrewise one
+plus the fact that a proper morphism which is a closed immersion on every
+fibre is a closed immersion.
+
+Two steps, and they are the two theories:
+
+1. **Fibrewise.**  If `ajHom` is not a monomorphism then two distinct
+   `T`-points collapse.  The genus of the fibres is locally constant on
+   `S` (flatness plus `h⁰(𝒪) = 1`), so `S` is the disjoint union of its
+   genus-`0` and higher-genus parts; over the higher-genus part `ajHom`
+   IS a closed immersion, so the two points agree there, and the collapse
+   therefore forces the genus-`0` part to be nonempty.
+2. **Riemann–Roch proper.**  Over a point `s` of that part, with `K` an
+   algebraic closure of `κ(s)`, the fibre `X_K` is a genus-`0` curve with
+   a rational point, hence `ℙ¹_K`, and `𝔸¹_K ⊂ ℙ¹_K = X_K ⟶ X` is a
+   nonconstant witness contradicting `hnr`.  Step 1 uses Abel's theorem —
+   `[x] = [y]` with `x ≠ y` makes `x − y` principal, so a rational
+   function has a single simple pole, giving a degree-`1` map to `ℙ¹` —
+   which is the same Riemann–Roch gap `exists_affineLine_of_not_injective_aj`
+   records at `S = Spec ℚ`.
+
+**ALL THREE CURVE HYPOTHESES ARE LOAD-BEARING**, with the counterexamples
+already recorded on `exists_affineLine_of_not_injective_aj` (`ℙ¹ × E` for
+`hcurve`, `ℙ¹ ⊔ ℙ¹` for `hconn`, `𝔾ₘ` for `hproper`); each of them is a
+scheme over `Spec ℚ`, so each is a counterexample here too, `hnr` being
+vacuously satisfiable for none of them.  `hnr` itself is load-bearing:
+without it `X_0(1) = ℙ¹` has trivial Jacobian and constant `ajHom`.
+
+**WHY `Mono` AND NOT "injective on relative points".**  They are the same
+statement — `IsJacobianOf.aj_val` presents `aj g` as precomposition with
+`ajHom`, so injectivity at every `(T, g)` is exactly left-cancellability
+— and `IsJacobianOf.injective_aj_of_mono` is the conversion.  The
+morphism form is the one the geometry is about.
+
+IRREDUCIBLE at this pin along the geometric axis: Riemann–Roch, the genus
+of a scheme and `Pic⁰` are absent from `Mathlib`, from `~/cs/FLT` and from
+this development.  **The axis a successor should prefer is the DESCENT
+one**: step 1 above is not Riemann–Roch at all, it is "a proper morphism
+that is a monomorphism on every fibre is a monomorphism", and splitting it
+off would leave a purely fibrewise Riemann–Roch statement over a FIELD —
+which is the form the literature proves.  Making that cut needs the base
+change `X ×_S Spec κ(s)` written down, which `ModularCurve/RelativePicard.
+lean` now supplies as `curveBaseChange`.  **The check that would refute
+this verdict**: an `h⁰`, a genus, or a Riemann–Roch statement appearing in
+any of the three trees. -/
+theorem mono_ajHom_of_hasNoFibreAffineLine {X J S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) (hnr : HasNoFibreAffineLine strX) :
+    Mono jac.ajHom :=
+  sorry
+
+/-- **The genus formula, fibrewise: `genus X_0(N) ≥ 1` puts no rational
+curve in any fibre of `X_0(N)`** (sorry leaf, 2026-07-27) — the
+arithmetic half of `mono_ajHom_of_one_le_x0Genus`, and the ONLY half that
+mentions `N`.  The base-general analogue of
+`hasNonconstantAbelianMap_of_one_le_x0Genus`.
+
+TRUE.  `hmodel` makes every fibre of `xstr` a smooth proper geometrically
+connected curve which is the `X_0(N)` of its residue field, and `hg` says
+its genus is `≥ 1` (the classical formula, Diamond–Shurman Thm 3.1.1 —
+this is the ONLY place where the computed number `x0Genus N` meets the
+scheme `X`).  A nonconstant `K`-morphism `𝔸¹_K ⟶ X` over a `K`-point of
+`S` lands in one such fibre `X_K`; it extends to `ℙ¹_K ⟶ X_K` because
+`𝔸¹_K` is a dense open of the smooth proper curve `ℙ¹_K` and `X_K` is
+proper, and a nonconstant morphism of smooth proper curves is finite
+surjective, so Riemann–Hurwitz gives `genus X_K ≤ genus ℙ¹_K = 0` —
+contradicting `hg`.  Hence every such morphism is constant, which is
+`HasNoFibreAffineLine`.
+
+**THE EXTENSION STEP IS ALREADY PROVEN AND IN THIS FILE'S CONE** — do not
+rebuild it.  `exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, `public
+import`ed above, proven outright from `Mathlib` by the valuative
+criterion) extends a morphism from a dense open of a smooth proper curve
+over a field into any PROPER target, which is exactly "`𝔸¹_K ⟶ X_K`
+extends to `ℙ¹_K ⟶ X_K`" once `ℙ¹_K` is written down.  What is still
+missing is therefore only `ℙ¹` itself and the genus, not the extension.
+
+**`hg` IS LOAD-BEARING and the statement is FALSE without it**: at
+`N = 1`, `X_0(1) = ℙ¹` and the identity `𝔸¹ ⟶ 𝔸¹ ⊂ ℙ¹` is a nonconstant
+witness over every base.  `hmodel` is load-bearing twice over — it
+supplies the curve conditions AND it is the only thing tying the
+arithmetic `x0Genus N` to the geometry of `strX`.  `N` enters only
+through those two.
+
+**NOT VACUOUS, and this is worth checking because the conclusion is a
+negative statement.**  `HasNoFibreAffineLine` is refutable: it fails for
+`X = 𝔸¹_ℚ ⊂ ℙ¹_ℚ` over `Spec ℚ` — take `K = ℚ`, `k = 𝟙`, `u` the open
+immersion, which factors through no `ℚ`-point since its image is
+`1`-dimensional.  So the predicate really constrains the curve, and this
+leaf really consumes the genus.
+
+IRREDUCIBLE at this pin, along the axis searched (the identification of
+the arithmetic `x0Genus N` with an invariant of the scheme `X`): that
+needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz for the
+degree-`μ(N)` map to the `j`-line, and none of the three exists in
+`Mathlib`, in `~/cs/FLT`, or here.  **NOT searched, and the axis a
+successor should prefer: the MODULAR one** — a modular parametrisation
+`X_0(N) ↠ A_f` out of the `Modularity` subtree never mentions the genus of
+a scheme, and the same note on
+`hasNonconstantAbelianMap_of_one_le_x0Genus` applies verbatim.  **The
+check that would refute this verdict**: a genus, an `h¹`, or a modular
+parametrisation appearing in any of the three trees. -/
+theorem hasNoFibreAffineLine_of_one_le_x0Genus {N : ℕ} (hg : 1 ≤ x0Genus N)
+    {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY) :
+    HasNoFibreAffineLine strX :=
+  sorry
+
 /-- **The Abel–Jacobi morphism of `X_0(N)` with `genus ≥ 1` is a
-MONOMORPHISM, over an arbitrary base** (sorry leaf — all that survives of
-the base-general Abel–Jacobi node, and it is pure geometry).
+MONOMORPHISM, over an arbitrary base** (PROVEN 2026-07-27 by
+decomposition; formerly the single sorry leaf that was all that survived
+of the base-general Abel–Jacobi node).
 
 TRUE and classical: for a smooth proper geometrically connected curve of
 genus `≥ 1` with a section, `x ↦ [x] − [o]` is a CLOSED IMMERSION into
@@ -19144,13 +19313,12 @@ curve conditions (proper, smooth of relative dimension `1`,
 geometrically connected) *and* it is the only thing tying the arithmetic
 `x0Genus N` to the geometry of `xstr`.  `N` enters only through those two.
 
-**A FAITHFULNESS WARNING for anyone tempted to split this the way the
-`Spec ℚ` version is split.**  Over `SpecQ` this node factors through the
-seam `¬ IsIso jstr` ("the Jacobian is positive-dimensional"), as
-`injective_aj_of_not_isIso_jacobian` plus
-`not_isIso_jacobian_of_one_le_x0Genus`.  That seam does **NOT** survive
-to an arbitrary base, and the general Riemann–Roch half stated with
-`¬ IsIso jstrZ` in place of the genus hypothesis is FALSE.
+**THE SPLIT (2026-07-27), and the FAITHFULNESS TRAP it had to avoid.**
+Over `SpecQ` this node factors through the seam `¬ IsIso jstr` ("the
+Jacobian is positive-dimensional"), as `injective_aj_of_not_isIso_jacobian`
+plus `not_isIso_jacobian_of_one_le_x0Genus`.  That seam does **NOT**
+survive to an arbitrary base, and the general Riemann–Roch half stated
+with `¬ IsIso jstrZ` in place of the genus hypothesis is FALSE.
 Counterexample: take `S = S₁ ⊔ S₂`, `XZ` a genus-`1` curve over `S₁` and
 `ℙ¹` over `S₂`.  Every fibre is a smooth proper geometrically connected
 curve, so all three curve hypotheses hold; `JZ = J₁ ⊔ S₂` is an abelian
@@ -19158,20 +19326,33 @@ scheme and `jstrZ` is not an isomorphism, so `¬ IsIso jstrZ` holds; but
 `aj` collapses the whole `ℙ¹` over `S₂` and is not injective there.  What
 fails is that `¬ IsIso` is a statement about the total space and positive
 genus is a statement about every FIBRE, and the two agree only over a
-connected base.  The hypothesis `hmodel` is what rules the example out —
-it forces every fibre to be `X_0(N)` — which is why the genus hypothesis
-is kept here in its modular form rather than being abstracted.
+connected base.
 
-IRREDUCIBLE at this pin, along the geometric axis: Riemann–Roch, the
-genus of a scheme and `Pic⁰` are absent from `Mathlib`, from `~/cs/FLT`
-and from this development.  The functorial axis has been taken and is
-exhausted — see the note on the assembly below. -/
-theorem mono_ajHom_of_one_le_x0Genus {N : ℕ} (_hg : 1 ≤ x0Genus N)
+**The repair is not to abandon the seam but to make it FIBREWISE**, and
+that is the axis neither previous audit searched: both ranged over how to
+weaken the *conclusion*, and neither asked whether the *hypothesis* could
+be split off in a form that is stable under passage to fibres.
+`HasNoFibreAffineLine` is that form — "no fibre contains a rational
+curve" — and it is refuted by the counterexample above exactly where the
+counterexample is bad, over `S₂`.  So the node splits after all, into the
+same two theories the `Spec ℚ` version splits into:
+
+* `mono_ajHom_of_hasNoFibreAffineLine` — **Riemann–Roch**, level-free and
+  base-general, the analogue of `injective_aj_of_not_isIso_jacobian`;
+* `hasNoFibreAffineLine_of_one_le_x0Genus` — **the genus formula**, the
+  only half that mentions `N`, the analogue of
+  `not_isIso_jacobian_of_one_le_x0Genus`.
+
+`hg` and `hmodel` are now CONSUMED rather than underscored, which is
+itself a faithfulness gain: the previous statement of this node could not
+use either of its modular hypotheses anywhere. -/
+theorem mono_ajHom_of_one_le_x0Genus {N : ℕ} (hg : 1 ≤ x0Genus N)
     {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
     {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
-    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (hmodel : IsX0Compactification N xstr ystr jZ)
     (jacZ : IsJacobianOf xstr abZ oZ) : Mono jacZ.ajHom :=
-  sorry
+  mono_ajHom_of_hasNoFibreAffineLine hmodel.isProper hmodel.smooth hmodel.connected jacZ
+    (hasNoFibreAffineLine_of_one_le_x0Genus hg hmodel)
 
 /-- **Positive genus makes Abel–Jacobi injective on relative points, over
 every base and at every test object** (PROVEN 2026-07-27 over the single
@@ -19237,10 +19418,14 @@ is precomposition with a single morphism `ajHom : XZ ⟶ JZ`
 proven, from `aj_pre` alone, with no hypothesis on the curve, the base or
 the genus.  What is left is the statement below, about one morphism.
 
-So this statement is now a PROVEN assembly over the single leaf
+So this statement is now a PROVEN assembly over
 `mono_ajHom_of_one_le_x0Genus`, and the residue is exactly the sentence
 the docstring above already identified as the mathematics: "Abel–Jacobi
-is a closed immersion, hence a monomorphism". -/
+is a closed immersion, hence a monomorphism".  Since 2026-07-27 that node
+is itself PROVEN, over the two leaves
+`mono_ajHom_of_hasNoFibreAffineLine` (Riemann–Roch, level-free) and
+`hasNoFibreAffineLine_of_one_le_x0Genus` (the genus formula), split along
+the FIBREWISE seam `HasNoFibreAffineLine`. -/
 theorem injective_aj_of_one_le_x0Genus_general {N : ℕ} (hg : 1 ≤ x0Genus N)
     {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
     {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
@@ -30133,48 +30318,117 @@ theorem exists_atkinLehnerPrym_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶
       (fun a b hab => hinj (congrArg Subtype.val hab))
   exact ⟨A, astr, abA, ι, hι, c, hcnat, hfin, hfac⟩
 
-/-- **`x ↦ [x] − [w x]` is injective on `X_0(169)(ℚ)`** (sorry node,
-introduced 2026-07-27 as the geometric half of
-`hasRankZeroAbelianImage_x0OneSixtyNine`).
+/-- **`X_0(169)` IS NOT HYPERELLIPTIC**, in the only form this pin can
+state it: two DISJOINT effective degree-`2` divisors supported on
+rational points are never linearly equivalent (sorry leaf, 2026-07-27) —
+the geometric residue of `injective_ajMinus_x0OneSixtyNine`, with the
+Atkin–Lehner bookkeeping stripped out.
 
-TRUE.  The argument is three lines and uses NOTHING about `w` beyond the
-two hypotheses carried here — that it is an involution over `ℚ` and that
-it fixes no rational point.  The level enters through exactly one fact,
+`aj x = [x] − [o]`, so `aj x₁ + aj x₂ = aj y₁ + aj y₂` says exactly
+`[x₁] + [x₂] = [y₁] + [y₂]` in `Pic` — the base point cancels, both sides
+having degree `2`.  The four hypotheses say the two divisors have no
+point in common.
+
+TRUE.  `X_0(169)` has genus `8` and is NOT hyperelliptic: `169` is not in
+Ogg's list of hyperelliptic levels (and `g ≥ 3` non-hyperelliptic is
+exactly what forces every degree-`2` class to have `h⁰ ≤ 1`).  Two
+distinct effective divisors in one degree-`2` class would give
+`h⁰(D) ≥ 2`, i.e. a base-point-free `g¹₂` after removing the base locus —
+which is a degree-`≤ 2` map to `ℙ¹`, so `X_0(169)` would be hyperelliptic
+or rational.  Disjointness is what makes the pencil base-point-free and
+is therefore not decoration: without it the two divisors could share a
+point and the statement would reduce to the degree-`1` case, which is a
+different theorem (`mono_ajHom_of_hasNoFibreAffineLine`, `h⁰ ≤ 1` in
+degree `1`, needing only `g ≥ 1`).
+
+**Stated over rational points only**, which is weaker than
+non-hyperellipticity and is all the consumer needs.  Weakness in the
+STATEMENT rather than in a proof: a prover may discharge it from the full
+classical fact and lose nothing.
+
+**The check that refutes it**: a hyperelliptic model of `X_0(169)`, or a
+degree-`2` linear system on it of projective dimension `≥ 1`.
+
+**What proving it needs**: linear equivalence of divisors on a curve and
+the hyperelliptic dichotomy for degree-`2` classes — i.e. Riemann–Roch,
+the same gap `mono_ajHom_of_hasNoFibreAffineLine` records at degree `1`.
+The two are worth closing together: both are "a degree-`d` class on a
+curve of genus `g` has the expected `h⁰`", at `d = 1` and `d = 2`.
+
+`o` and `jY` are inert here; they are carried only because `jac` and the
+level pin `hX` mention them. -/
+theorem ajPair_ne_of_disjoint_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification 169 strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (x₁ x₂ y₁ y₂ : RelPoint strX (𝟙 SpecQ))
+    (h₁₁ : x₁ ≠ y₁) (h₁₂ : x₁ ≠ y₂) (h₂₁ : x₂ ≠ y₁) (h₂₂ : x₂ ≠ y₂) :
+    ab.add (jac.aj (𝟙 SpecQ) x₁) (jac.aj (𝟙 SpecQ) x₂) ≠
+      ab.add (jac.aj (𝟙 SpecQ) y₁) (jac.aj (𝟙 SpecQ) y₂) :=
+  sorry
+
+/-- **`x ↦ [x] − [w x]` is injective on `X_0(169)(ℚ)`** (PROVEN
+2026-07-27 by decomposition, over the single leaf
+`ajPair_ne_of_disjoint_x0OneSixtyNine`; introduced as a sorry node
+earlier the same day) — the geometric half of
+`hasRankZeroAbelianImage_x0OneSixtyNine`.
+
+TRUE, and the argument uses NOTHING about `w` beyond the two hypotheses
+carried here — that it is an involution over `ℚ` and that it fixes no
+rational point.  The level enters through exactly one fact,
 non-hyperellipticity, and that is why this is a separate leaf from
 `exists_atkinLehnerPrym_x0OneSixtyNine`: the two halves of the node are
 different theories and neither needs the other's input.
 
-**The proof.**  Suppose `[x] − [w x] = [y] − [w y]`.  Then
-`x + w y ∼ y + w x`, two effective divisors of degree `2` in one linear
-class.  `X_0(169)` has genus `8` and is NOT hyperelliptic — `169` is not
-in Ogg's list of hyperelliptic levels — so no degree-`2` class has
-`h^0 ≥ 2`, i.e. a degree-`2` class contains at most one effective divisor.
-Hence `x + w y = y + w x` as divisors, so `{x, w y} = {y, w x}` as
-multisets.  If `x ≠ y` this forces `x = w x` and `y = w y`, contradicting
-`_hfix`.  So `x = y`.
+**The proof, and what the cut buys.**  Suppose `[x] − [w x] = [y] − [w y]`
+and `x ≠ y`.  Rearranging in the group `RelPoint jstr (𝟙 Spec ℚ)` —
+`sub_eq_sub_iff_add_eq_add`, and `ab.add`/`ab.neg` ARE the operations of
+`ab.addCommGroup`, so this is one rewrite — gives
+`[x] + [w y] = [y] + [w x]`, two effective degree-`2` divisors in one
+class.  They are DISJOINT, and that is the whole of the involution
+bookkeeping, now mechanised rather than asserted:
 
-**The check that refutes it**: a hyperelliptic model of `X_0(169)`, or a
-degree-`2` linear system on it of projective dimension `≥ 1`.  (`_hfix`
-itself is refuted by a rational point fixed by `w`; it is discharged for
-`w_169` at the leaf above, where `h(−676) = 6`.)
+* `x ≠ y` is the assumption;
+* `x ≠ w x` and `w y ≠ y` are `hfix`;
+* `w y ≠ w x` because `hw2` makes `RelPoint.post w hw` an involution,
+  hence injective, so it would give `y = x`.
 
-**What proving it needs**: linear equivalence of divisors on a curve, and
-the hyperelliptic dichotomy for degree-`2` classes — i.e. Riemann–Roch,
-which is the same gap `injective_aj_of_not_isIso_jacobian` records.  The
-two are worth closing together: both are "a degree-`d` class on a curve of
-genus `g` has the expected `h^0`", at `d = 1` and `d = 2`.
+So `ajPair_ne_of_disjoint_x0OneSixtyNine` applies and contradicts the
+displayed equality.  Every hypothesis is consumed: `hw` by `RelPoint.post`
+itself, `hw2` by the injectivity of `post w`, `hfix` by two of the four
+disjointness clauses, and `hX` by the leaf.
 
-`o` and `jY` are inert here; they are carried only because `jac` and the
-level pin `_hX` mention them. -/
+The residue is exactly one classical sentence about the CURVE, with no
+involution in it — which is the point of the cut: the Riemann–Roch gap
+here is now stated in the same shape as the degree-`1` one, and a prover
+who closes "a degree-`d` class has the expected `h⁰`" closes both. -/
 theorem injective_ajMinus_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
-    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification 169 strX strY jY)
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification 169 strX strY jY)
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
-    (_hw2 : w ≫ w = 𝟙 X)
-    (_hfix : ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x) :
+    (hw2 : w ≫ w = 𝟙 X)
+    (hfix : ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x) :
     Function.Injective fun x : RelPoint strX (𝟙 SpecQ) =>
-      ab.add (jac.aj (𝟙 SpecQ) x) (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw x))) :=
-  sorry
+      ab.add (jac.aj (𝟙 SpecQ) x) (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw x))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  -- `RelPoint.post w hw` is an involution, hence injective.
+  have hinvol : ∀ z : RelPoint strX (𝟙 SpecQ),
+      RelPoint.post w hw (RelPoint.post w hw z) = z := by
+    intro z
+    refine Subtype.ext ?_
+    show (z.1 ≫ w) ≫ w = z.1
+    rw [Category.assoc, hw2, Category.comp_id]
+  have hwinj : Function.Injective (RelPoint.post w hw) := fun a b hab => by
+    have h := congrArg (RelPoint.post w hw) hab
+    rwa [hinvol, hinvol] at h
+  intro x y hxy
+  by_contra hne
+  refine ajPair_ne_of_disjoint_x0OneSixtyNine hX jac x (RelPoint.post w hw y) y
+    (RelPoint.post w hw x) hne (fun h => hfix x h.symm) (hfix y)
+    (fun h => hne (hwinj h).symm) ?_
+  have hsub : jac.aj (𝟙 SpecQ) x - jac.aj (𝟙 SpecQ) (RelPoint.post w hw x) =
+      jac.aj (𝟙 SpecQ) y - jac.aj (𝟙 SpecQ) (RelPoint.post w hw y) := hxy
+  exact sub_eq_sub_iff_add_eq_add.mp hsub
 
 /-- **`J_0(169)` has a `5`-dimensional abelian subvariety of Mordell–Weil
 rank `0`, whose induced map is injective on `X_0(169)(ℚ)`** (PROVEN
@@ -30201,7 +30455,10 @@ which is why the leaf above need not assert it.
 degree `0`, so it needs no base point.  The newform table, the
 Kolyvagin–Logachev step and the fixed-point count are stated with their
 refuting checks at `exists_atkinLehnerPrym_x0OneSixtyNine`; the
-non-hyperelliptic argument at `injective_ajMinus_x0OneSixtyNine`.
+non-hyperelliptic argument at `ajPair_ne_of_disjoint_x0OneSixtyNine`,
+since 2026-07-27, `injective_ajMinus_x0OneSixtyNine` having become a
+PROVEN assembly over it — the involution bookkeeping is discharged there
+and the residue is a statement about the CURVE alone.
 
 **What remains open, and it is not small**: `J_0(169)`, its Atkin–Lehner
 decomposition, the Prym, and Kolyvagin–Logachev on the one side, Riemann–Roch
