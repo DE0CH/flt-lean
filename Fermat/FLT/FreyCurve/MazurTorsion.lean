@@ -2836,19 +2836,56 @@ beyond that example is exactly the step from POTENTIALLY multiplicative
 Silverman *ATAEC* V.5.3 — plus the change of local field from `ℚ_[v]` to
 `adicCompletion ℚ v`.
 
-**IMPORT NOTE, checked 2026-07-27 and load-bearing for BOTH leaves.**  This
-module does NOT currently import `TateSepClosure`, so
-`exists_tateEquivSepClosure`, `exists_rep_pow_eq_zpow_of_torsion` and
-`exists_tateTorsionQuotient` are not in scope here.  Whoever proves `T₁` or
-`T₂` will need
-`public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure`
-added to the header.  **This creates no cycle**: `TateSepClosure`'s import
-closure is `TateCurve`, `TateUniformization`, `GoodReduction`,
-`AbsoluteGaloisGroup` and mathlib, and nothing under
-`Fermat/FLT/KnownIn1980s/` mentions `MazurTorsion`.  Budget for it: adding an
-import to this 52k-line module forces a full rebuild of it and of its eight
-`public import` consumers.
+**AVAILABILITY NOTE, established 2026-07-27 by `#check` in a scratch module
+importing ONLY this one — not by reading the header, which is misleading
+here.**  `TateSepClosure` does not appear in this file's import list, but it
+IS in its transitive `public` cone (through `Semistable.lean`), and the
+following are all in scope HERE, with no new import needed:
+
+* `WeierstrassCurve.exists_tateEquivSepClosure`,
+  `exists_rep_pow_eq_zpow_of_torsion`,
+  `WeierstrassCurve.exists_tateTorsionQuotient`,
+  `WeierstrassCurve.tate_inertia_unipotent` (`TateSepClosure.lean`);
+* `algebraRatAlgClosureAdic`, `algClosureEmbeddingRat`, `algClosureSigmaRat`,
+  `point_map_algClosureEmbeddingRat_comm` (`Semistable.lean`) — the adic
+  analogue of the `ℚ_[q]` transport used by `FreyConditions.lean`, i.e.
+  exactly the `ℚ̄ → Ω` plumbing `T₂` needs.
+
+What is genuinely NOT in scope is
+`WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction`:
+`QuadraticTwists.SplitMultiplicativeReduction` is imported by this file with a
+bare `import`, which is not re-exported, so `T₁` (not `T₂`) will need that
+line promoted to `public import`.  That is a header change to a 52k-line
+module, so budget a full rebuild of it and its eight `public import`
+consumers.
 -/
+
+/-- **The two `ℚ`-algebra structures on `Ω = Kᵥᵃˡᵍ` agree** (PROVEN
+2026-07-27, and it is a TRAP worth one lemma): `Semistable.lean` installs the
+tower structure `ℚ → Kᵥ → Ω` as the non-instance `algebraRatAlgClosureAdic`
+and states all of its adic transport lemmas under `letI` with it, while the
+ambient instance found by typeclass search — the one `T₁` and `T₂` below are
+stated with, and the one `(E⁄(AlgebraicClosure ℚ)).Point` already uses — is
+the `CharZero` `ℚ`-algebra structure.
+
+The two are NOT definitionally equal (checked: `rfl` fails), so a proof of
+`T₂` that reaches for `point_map_algClosureEmbeddingRat_comm` or
+`algClosureSigmaRat` will hit a spurious instance mismatch.  They ARE equal,
+for the reason that makes `ℚ` initial: a ring homomorphism out of `ℚ` into a
+division ring is unique, so the two `algebraMap`s coincide and
+`Algebra.algebra_ext` finishes.  Rewriting with this lemma is what lets the
+two idioms be mixed. -/
+theorem algebraRatAlgClosureAdic_eq_inst
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    algebraRatAlgClosureAdic v =
+      (inferInstance :
+        Algebra ℚ (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+  refine Algebra.algebra_ext _ _ fun r => ?_
+  exact congrArg
+    (fun f : ℚ →+* AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) => f r)
+    (Subsingleton.elim _ _)
 
 /-- **`T₁` — Tate's `v`-adic uniformisation, in twisted form** (sorry leaf;
 Silverman *ATAEC* V.3.1, V.5.3; Serre, Invent. Math. 15 (1972), §5.4): at a
