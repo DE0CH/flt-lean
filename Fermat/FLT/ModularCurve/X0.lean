@@ -1989,29 +1989,308 @@ structure RigidifiedModuli (N n : ℕ) where
       ∃ bc : IsBaseChangeOf m d dM,
         L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1
 
-/-- **Katz–Mazur representability: the rigidified moduli scheme exists and
-is affine** (sorry leaf, opened 2026-07-27) — the pure CITATION half of
-`exists_gamma0GITPresentation_of_cover` below.
+/-! #### The citation, split again: REPRESENTABILITY, then AFFINENESS
+
+`exists_rigidifiedModuli` below asks for two independent things at once —
+that the rigidified moduli problem be representable at all, and that the
+scheme representing it be **affine** — and Katz–Mazur supply them in two
+different places, three chapters apart.  Their statements were read off
+the book on 2026-07-27 and are quoted verbatim in the three leaves below,
+so that nobody has to re-derive which theorem says what:
+
+* **(4.7.1)** "Any relatively representable moduli problem `𝒫` which is
+  affine and etale over `(Ell)`, and rigid, is representable by a smooth
+  affine curve over `ℤ`."
+* **(4.7.2)** "For `N ≥ 3`, the naive level `N` moduli problem of 4.6 is
+  representable, by a smooth affine curve `Y(N)` over `ℤ[1/N]`."  This,
+  not 4.7.1, is the sharp citation for the level-`n` half: 4.7.1 is the
+  general criterion and 4.7.2 is its application to `[Γ(n)]`.
+* **(5.1.1, First Main Theorem)** "Each of the four moduli problems
+  `[Γ(N)]`, `[Γ₁(N)]`, `[bal.Γ₁(N)]`, and `[Γ₀(N)]` is relatively
+  representable over `(Ell)`.  Each is finite and flat over `(Ell)` of
+  constant rank `≥ 1`, and regular (necessarily of dimension two).  Each
+  tensored with `ℤ[1/N]` is finite etale over `(Ell/ℤ[1/N])`."
+* **(6.6.1)** "The moduli problem `[Γ₀(N)]` is relatively representable
+  over `(Ell)`.  It is finite and flat over `(Ell)` of degree
+  `N ∏_{p ∣ N} (1 + 1/p)`. … The moduli problem `[Γ₀(N)]` is regular and
+  two-dimensional."
+* **(6.6.2)** — *not* in the itemisation this file inherited, and it is
+  the theorem that does the combining: "Let `N ≥ 1` be an integer, and
+  `𝒮` a representable moduli problem which is etale over `(Ell)`.  Then
+  `M(𝒮, Γ₀(N))` is a regular two-dimensional scheme, finite and flat over
+  `M(𝒮)`."  Take `𝒮 = [Γ(n)]`, which is étale over `(Ell/ℤ[1/n])` by the
+  last sentence of 5.1.1 and hence over `(Ell/ℚ)`.
+* **(8.1.1)** "Let `R` be a ring, `𝒫` a relatively representable moduli
+  problem on `(Ell/R)` which is affine over `(Ell/R)`. … To define `M(𝒫)`
+  as an `R`-scheme, it suffices to do so locally on `R`.  So we may assume
+  that some integer `N ≥ 3` is invertible in `R`.  Let `𝒮` be any
+  representable moduli problem which is finite etale galois over
+  `(Ell/R)`, with galois group `G` (e.g., `𝒮 = [Γ(N)]`,
+  `G = GL(2, ℤ/NZ)`).  We define `M(𝒫)` as the quotient scheme
+  `M(𝒫) = M(𝒫, 𝒮)/G`. … **It "exists" because `M(𝒫, 𝒮)` is itself
+  affine.**"  The emphasised clause is the affineness parenthesis, and
+  `𝒮 = [Γ(n)]`, `G = GL₂(ℤ/n)` is literally Katz–Mazur's own example — the
+  same `G` that `exists_gamma0GITPresentation_of_rigidified` uses as its
+  deck group.
+
+`RigidifiedModuliScheme` below is `RigidifiedModuli` with
+`Spec (CommRingCat.of A)` relaxed to an arbitrary scheme `M`, which is
+exactly the boundary between "representable" (4.7.2 + 5.1.1 + 6.6.1,
+combined by 6.6.2) and "affine" (the parenthesis of 8.1.1).  The three
+leaves it cuts the citation into are, in order: representability, then
+affineness, then a transport with **no citation in it at all** — the same
+citation-on-one-side-of-a-hypothesis principle used throughout this
+cluster, so that no leaf carries both a citation and a formalisation.
+-/
+
+/-- **The rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` as a FINE moduli
+scheme, with affineness NOT asserted** — `RigidifiedModuli` verbatim
+except that the representing object is an arbitrary scheme `M` rather
+than a `Spec`.
+
+Every remark on `RigidifiedModuli` applies unchanged, in particular the
+one that matters: `universal` is a **fine** moduli property, so an
+inhabitant of this structure is pinned up to unique isomorphism and
+quantifying over `RigidifiedModuliScheme N n` is not the junk-witness
+trap.  That is what makes `isAffine_of_rigidifiedModuliScheme` below a
+legitimate `∀`-statement rather than a false one: `IsAffine` transports
+along the unique isomorphism between any two inhabitants, so "some
+inhabitant is affine" and "every inhabitant is affine" are the same
+statement here.
+
+`hn : 3 ≤ n` is not a field: it is load-bearing for the *inhabitedness*
+of this structure (at `n ≤ 2` the rigidified problem still has the
+automorphism `-1`), and inhabitedness is what
+`exists_rigidifiedModuliScheme` asserts. -/
+structure RigidifiedModuliScheme (N n : ℕ) where
+  /-- the rigidified moduli scheme -/
+  M : Scheme.{0}
+  /-- its structure morphism to `Spec ℚ` -/
+  strM : M ⟶ SpecQ
+  /-- the universal `Γ₀(N)`-datum -/
+  dM : Gamma0Datum N M
+  /-- the universal full level-`n` structure on it -/
+  lvlM : FullLevelStructure n dM
+  /-- **fine moduli**: a datum-with-level-structure over a `ℚ`-scheme is
+  a base change of `(dM, lvlM)` along a UNIQUE morphism -/
+  universal : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T)
+      (L : FullLevelStructure n d),
+    ∃! m : T ⟶ M,
+      ∃ bc : IsBaseChangeOf m d dM,
+        L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1
+
+/-- **Katz–Mazur representability of the rigidified moduli problem**
+(sorry leaf, opened 2026-07-27) — the first of the two citation halves of
+`exists_rigidifiedModuli`, and it says NOTHING about affineness.
 
 ## What the prover of this node owes
 
-Exactly the four citations that `exists_gamma0GITPresentation`'s
-itemisation records, and nothing else:
+That the moduli problem "`Γ₀(N)`-datum over a `ℚ`-scheme together with a
+full level-`n` structure" is representable by a scheme, i.e. that a fine
+moduli scheme for it exists.  Katz–Mazur assemble this from:
 
-* **Katz–Mazur 4.7** and **5.1.1** — `[Γ(n)]` is representable, and
-  affine and smooth over `(Ell/ℤ[1/n])`, for `n ≥ 3`.  Over a
-  `ℚ`-scheme every `n` is invertible.
-* **Katz–Mazur 6.6.1** — `[Γ₀(N)]` is relatively representable, finite
-  and flat over `(Ell)`.
-* the parenthesis of **(8.1.1)**, that a relatively representable affine
-  problem over a representable affine one has an affine total moduli
-  scheme: "exists because `𝔐(𝒫, 𝒮)` is itself affine".
+* **(4.7.2)** for `n ≥ 3` the level-`n` problem is representable by a
+  smooth **affine** curve `Y(n)` over `ℤ[1/n]` — over a `ℚ`-scheme every
+  `n` is invertible, so `Y(n) ⊗ ℚ` is the representing object here.
+  (4.7.1 is the general criterion behind it: relatively representable,
+  affine and étale over `(Ell)`, and rigid, implies representable by a
+  smooth affine curve; 5.1.1's last sentence and 2.7.2's rigidity are its
+  two inputs at `[Γ(n)]`, `n ≥ 3`.)
+* **(5.1.1)** and **(6.6.1)** the `Γ₀(N)`-problem is *relatively*
+  representable and finite flat over `(Ell)`.
+* **(6.6.2)** applied with `𝒮 = [Γ(n)]` — legitimate because 5.1.1 makes
+  `[Γ(n)]` finite étale over `(Ell/ℤ[1/n])` — which produces
+  `M(𝒮, Γ₀(N))` and states that it is finite and flat over `M(𝒮)`.
 
-The fine moduli property `universal` is what "representable" means; the
-affineness is what `A : Type` with the moduli scheme spelled
-`Spec (CommRingCat.of A)` records.
+The `∃!` of `universal` is what "representable" means; the finiteness and
+flatness of `M(𝒮, Γ₀(N)) ⟶ M(𝒮)` are NOT part of this statement, and are
+carried only because the *next* leaf needs them.
 
 ## What it does NOT owe
+
+Affineness of `M`.  That is `isAffine_of_rigidifiedModuliScheme`, and it
+is a different citation (the parenthesis of 8.1.1).  Nor anything about
+`GL₂(ℤ/n)`, invariants, descent or the coarse space, all of which live in
+`exists_gamma0GITPresentation_of_rigidified`.
+
+## Faithfulness
+
+`hn` is load-bearing for TRUTH: at `n ≤ 2` the rigidified problem still
+has the automorphism `-1` (and more at `n = 1`), so it is not
+representable and no inhabitant exists.  `hN` is **not** — at `N = 0` the
+problem is supported on the empty scheme (`isEmpty_of_gamma0Datum_zero`)
+and the empty scheme represents it — and is carried only to match the
+signature of the consumer. -/
+theorem exists_rigidifiedModuliScheme (N : ℕ) (hN : 0 < N) (n : ℕ) (hn : 3 ≤ n) :
+    Nonempty (RigidifiedModuliScheme N n) :=
+  sorry
+
+/-- **Katz–Mazur affineness: the rigidified moduli scheme is affine**
+(sorry leaf, opened 2026-07-27) — the second citation half, the
+parenthesis of (8.1.1) and nothing else.
+
+## What the prover of this node owes
+
+The clause of (8.1.1) that reads, of `M(𝒫, 𝒮)` with `𝒮 = [Γ(n)]` and
+`G = GL₂(ℤ/n)` for `n ≥ 3` invertible on the base:
+
+> It "exists" because `M(𝒫, 𝒮)` is itself affine.
+
+Concretely: `M(𝒮) = Y(n) ⊗ ℚ` is affine by (4.7.2), the `Γ₀(N)`-problem is
+affine — indeed finite — over `(Ell)` by (6.6.1), so
+`M(𝒮, Γ₀(N)) ⟶ M(𝒮)` is a finite (hence affine) morphism by (6.6.2), and
+a scheme finite over an affine scheme is affine.
+
+That last step is NOT a citation and is available in the pin
+(`IsAffineHom` is stable under composition and `IsAffine` descends along
+an affine morphism to an affine target), so what is genuinely cited here
+is only "`M(𝒮)` is affine" and "`M(𝒮, Γ₀(N)) ⟶ M(𝒮)` is finite".
+
+## Why the `∀` is legitimate, and not the junk-witness trap
+
+`RigidifiedModuliScheme.universal` is a **fine** moduli property, so any
+two inhabitants are related by a unique isomorphism (apply each one's
+`universal` to the other's universal family, and then to its own to see
+that the two composites are the identity).  `IsAffine` is invariant under
+isomorphism of schemes.  So "the Katz–Mazur `M(𝒫, 𝒮)` is affine" and
+"every inhabitant of `RigidifiedModuliScheme N n` has affine `M`" are the
+same statement, and stating it with a `∀` is what decouples this leaf
+from `exists_rigidifiedModuliScheme` — it applies at whatever inhabitant
+that leaf happens to produce.
+
+*The check that would refute this paragraph*: exhibit two inhabitants of
+`RigidifiedModuliScheme N n` (for some `N ≥ 1`, `n ≥ 3`) that are not
+isomorphic as schemes over `SpecQ`.
+
+The formal cost of the `∀` is exactly that uniqueness argument, which is
+elementary category theory and carries no citation; if a prover would
+rather not pay it, the honest weakening is to prove instead
+`∃ R : RigidifiedModuliScheme N n, IsAffine R.M` and to change the
+assembly at `exists_rigidifiedModuli` accordingly — but note that then
+`exists_rigidifiedModuliScheme` becomes redundant and the two citation
+halves fuse back together, which is the thing this cut exists to prevent.
+
+## Faithfulness
+
+Both `hN` and `hn` are carried.  `hn` is load-bearing for the citation
+(8.1.1 needs `n ≥ 3` invertible, and 4.7.2 needs `n ≥ 3`); at `n ≤ 2` the
+statement is *vacuously* true, since no inhabitant exists at all, but
+proving that vacuity is strictly harder than using the citation, so the
+hypothesis stays.  `hN` is likewise not load-bearing (`N = 0` gives the
+empty scheme, which is `Spec 0`, which is affine) and is carried only to
+match the consumer. -/
+theorem isAffine_of_rigidifiedModuliScheme (N : ℕ) (hN : 0 < N) (n : ℕ) (hn : 3 ≤ n)
+    (R : RigidifiedModuliScheme N n) : IsAffine R.M :=
+  sorry
+
+/-- **From an affine fine moduli scheme to `RigidifiedModuli`** (sorry
+leaf, opened 2026-07-27) — the pure FORMALISATION third of
+`exists_rigidifiedModuli`, with **no Katz–Mazur citation left in it**.
+
+## What the prover of this node owes, and what it does NOT
+
+Owes: transport of a fine moduli scheme along the isomorphism
+`R.M ≅ Spec Γ(R.M, ⊤)` supplied by `IsAffine`.  Nothing here is
+arithmetic; it is bookkeeping about base change, and every ingredient is
+already in this file or in the pin.
+
+Does NOT owe: any statement about elliptic curves, level structures or
+moduli.  Both citations are discharged by the hypotheses.
+
+## The route, which is complete and mechanical
+
+Write `A := Γ(R.M, ⊤)` and `φ : Spec (CommRingCat.of A) ≅ R.M` for the
+inverse of `Scheme.isoSpec` (`hR` is exactly what makes that an
+isomorphism).  Then:
+
+1. **The datum.** `dM' := Gamma0BaseChange.datumBC φ.hom R.dM`, with
+   `dbc := Gamma0BaseChange.isBaseChangeBC φ.hom R.dM :
+   IsBaseChangeOf φ.hom dM' R.dM`.  Nothing new is needed — this is the
+   construction `exists_gamma0Datum_baseChange` was split out to provide.
+
+2. **The level structure.**  `RelPoint.along dbc.map dbc.isPullback.w` is
+   a *bijection* onto the relative points over the shifted base point:
+   injective because `dbc.isPullback.hom_ext` (this is `along_inj` further
+   down the file), surjective with explicit inverse
+   `fun y => ⟨dbc.isPullback.lift g y.1 y.2.symm, dbc.isPullback.lift_fst _ _ _⟩`.
+   Set `P' := ` the preimage of `RelPoint.pre φ.hom (by simp) R.lvlM.P`,
+   and likewise `Q'`.  `geom_basis` transports across that bijection
+   because it is additive (`dbc.map_add`, `dbc.map_zero`), hence commutes
+   with `n • _`, and because
+   `RelPoint.along dbc.map _ (RelPoint.pre t _ P') = RelPoint.pre (t ≫ φ.hom) _ R.lvlM.P`
+   holds by construction of `P'` — check it on the underlying morphisms,
+   where it is `t ≫ P'.1 ≫ dbc.map = t ≫ φ.hom ≫ R.lvlM.P.1`.
+
+3. **The universal property.**  Given `T`, `d`, `L`, let `m₀ : T ⟶ R.M` be
+   the unique map from `R.universal`, with `bc₀ : IsBaseChangeOf m₀ d R.dM`,
+   and put `m := m₀ ≫ φ.inv`.  Define
+   `bc.map := dbc.isPullback.lift (d.f ≫ m) bc₀.map _` — the side
+   condition is `(d.f ≫ m) ≫ φ.hom = bc₀.map ≫ R.dM.f`, which is
+   `bc₀.isPullback.w` after `m ≫ φ.hom = m₀`.  Cartesianness of the new
+   square is pullback pasting, in exactly the form already used for
+   `Gamma0BaseChange.isPullback_iota`:
+
+       IsPullback.of_bot bc₀.isPullback (lift_fst).symm dbc.isPullback
+
+   and the three remaining fields (`map_zero`, `map_add`, `liesIn_iff`)
+   follow from those of `bc₀` and `dbc` by cancelling `dbc.map`, which is
+   legitimate because `RelPoint.along dbc.map _` is injective.  Uniqueness
+   of `m` is uniqueness of `m₀ = m ≫ φ.hom` and `φ` being an isomorphism.
+
+**One trap this route walks into and the way past it.**  The base points
+do not match *definitionally*: `along dbc.map` applied to a point over
+`g ≫ m` lands over `(g ≫ m) ≫ φ.hom`, while `along bc₀.map` lands over
+`g ≫ m₀`, and `(g ≫ m) ≫ φ.hom = g ≫ m₀` holds propositionally only.  So
+the two sides inhabit different types and no `rw` will bridge them.  State
+and prove every step of (3) on the **underlying morphisms** (`.1`), where
+the base index does not appear, and close with `Subtype.ext`; this is the
+same device the docstring of `RigidifiedModuli` records for its own two
+level equations, and for the same reason.
+
+## Faithfulness
+
+No hypothesis is decorative: `hR` is what supplies `φ`, and without it
+there is no ring `A` at all.  Neither `hN` nor `hn` appears, and neither
+is needed — the statement is true for every `N` and `n` for which an
+inhabitant of `RigidifiedModuliScheme N n` exists, which is the honest
+generality. -/
+theorem nonempty_rigidifiedModuli_of_isAffine {N n : ℕ}
+    (R : RigidifiedModuliScheme N n) (hR : IsAffine R.M) :
+    Nonempty (RigidifiedModuli N n) :=
+  sorry
+
+/-- **Katz–Mazur representability: the rigidified moduli scheme exists and
+is affine** (ASSEMBLED 2026-07-27; no longer a leaf) — the pure CITATION
+half of `exists_gamma0GITPresentation_of_cover` below, now three lines
+over three named nodes.
+
+## What used to be here, and where each piece went
+
+This declaration used to carry, in one `sorry`, all four Katz–Mazur
+citations that `exists_gamma0GITPresentation`'s itemisation records.  The
+section comment before `RigidifiedModuliScheme` above now quotes all six
+relevant Katz–Mazur statements verbatim from the book, and the burden is
+split three ways along the line "representable" / "affine" / "transport":
+
+* **`exists_rigidifiedModuliScheme`** — (4.7.2, with 4.7.1 behind it),
+  (5.1.1) and (6.6.1), combined by (6.6.2).  Representability, over an
+  arbitrary scheme, with affineness not mentioned.
+* **`isAffine_of_rigidifiedModuliScheme`** — the affineness parenthesis of
+  (8.1.1), "it exists because `𝔐(𝒫, 𝒮)` is itself affine", and nothing
+  else.  Legitimate as a `∀` because `universal` is a fine moduli
+  property; see its docstring.
+* **`nonempty_rigidifiedModuli_of_isAffine`** — transport along
+  `R.M ≅ Spec Γ(R.M, ⊤)`.  **No citation at all**: it is the Lean work,
+  put on the far side of a hypothesis from the mathematics exactly as
+  `exists_gamma0GITPresentation_of_rigidified` is put on the far side of
+  this node.
+
+The fine moduli property `universal` is still what "representable" means,
+and the affineness is still what `A : Type` with the moduli scheme spelled
+`Spec (CommRingCat.of A)` records; the change is only that the two are no
+longer asserted by one `sorry`.
+
+## What this node does NOT owe
 
 Nothing about `GL₂(ℤ/n)`, invariants, descent, or the coarse space.  All
 of that is `exists_gamma0GITPresentation_of_rigidified`, which is a
@@ -2024,10 +2303,13 @@ formalisation task with no citation left in it.
 representable).  `hN` is **not** — at `N = 0` the moduli problem is
 supported on the empty scheme (`isEmpty_of_gamma0Datum_zero` above) and
 `A = 0` represents it — and is carried only to match the signature of the
-consumer below. -/
+consumer below.  Both are passed straight through to the two citation
+nodes, which record the same analysis. -/
 theorem exists_rigidifiedModuli (N : ℕ) (hN : 0 < N) (n : ℕ) (hn : 3 ≤ n) :
     Nonempty (RigidifiedModuli N n) :=
-  sorry
+  (exists_rigidifiedModuliScheme N hN n hn).elim fun R =>
+    nonempty_rigidifiedModuli_of_isAffine R
+      (isAffine_of_rigidifiedModuliScheme N hN n hn R)
 
 /-- **The GIT presentation, assembled from the fine moduli scheme and the
 level torsor** (sorry leaf, opened 2026-07-27) — the pure FORMALISATION
