@@ -24111,33 +24111,63 @@ theorem ringOfIntegersToAlgebraicClosure_injective (CF : Type) [Field CF] [Numbe
   (algebraMap CF (AlgebraicClosure CF)).injective.comp
     (IsFractionRing.injective (𝓞 CF) CF)
 
-/-- **DESCENT OF `g(χᵃ)^p` TO `𝓞 CF`** (SORRY LEAF, cut 2026-07-27 out of
-`exists_gaussSumPow_lowerBound_of_jacobiSum` below; steps 1–2 of that
-leaf's roadmap, with NO valuation content whatever).
+set_option linter.unusedVariables false in
+set_option linter.unusedSectionVars false in
+/-- **DESCENT OF `g(χᵃ)^p` TO `𝓞 CF`** (**PROVEN** 2026-07-27; cut
+2026-07-27 out of `exists_gaussSumPow_lowerBound_of_jacobiSum` below;
+steps 1–2 of that leaf's roadmap, with NO valuation content whatever).
 
 For a primitive additive character `ψ` of `F = 𝓞 CF ⧸ q` with values in
 `AlgebraicClosure CF`, the `p`-th power of the Gauss sum
 `g(χᵃ) = ∑_{x} χᵃ(x)·ψ(x)` lies in the image of `𝓞 CF`.
 
-**Why it is true, and what a prover has to do.** Two facts, and nothing
-about valuations:
+**THE PROOF AS CARRIED OUT — AND IT IS NOT THE GALOIS ARGUMENT THIS
+DOCSTRING ORIGINALLY PREDICTED.** No integral closure, no automorphism
+of `AlgebraicClosure CF`, no `μ_ℓ`, no infinite Galois descent: the
+witness is written down EXPLICITLY, by expanding the `p`-th power and
+grouping the `p`-tuples by their sum. Write `F := 𝓞 CF ⧸ q` and, for
+`s ∈ F`,
 
-* *Integrality.* `g(χᵃ)` is a `ℤ`-linear combination of roots of unity —
-  the values of `χ` are `p`-th roots of unity in `𝓞 CF` and the values
-  of `ψ` are `ℓ`-th roots of unity — so it is integral over `ℤ`.
-* *Galois invariance.* For `σ ∈ Aut(AlgebraicClosure CF / CF)`, `σ`
-  permutes `μ_ℓ` by `z ↦ z^j` for some `j` prime to `ℓ`, so `σ ∘ ψ` is
-  the shifted character `AddChar.mulShift ψ (j : F)`; hence
-  `σ(g(χᵃ)) = χᵃ(j)⁻¹ · g(χᵃ)` by mathlib's `gaussSum_mulShift`, and
-  `χᵃ(j)^p = 1` because `χ` is `p`-torsion (`hχp`). So `g(χᵃ)^p` is
-  FIXED by every `σ`, hence lies in `CF`; being also integral, it lies
-  in `𝓞 CF`.
+  `D a s := ∑_{v : Fin p → F, ∑ᵢ vᵢ = s} ∏ᵢ χᵃ(vᵢ) ∈ 𝓞 CF`,
 
-That is the whole of the classical "the Gauss sum's `p`-th power
-descends", and it is the reason the parent statement can be written
-entirely inside `𝓞 CF`. Note `hχcong` and `hpq` are NOT needed for this
-leaf — they are carried only so that the signature matches its sibling
-and its consumer.
+a finite sum of products of VALUES of `χ`, hence manifestly an element
+of `𝓞 CF` with no descent argument needed. Then:
+
+* `g(χᵃ)^p = ∑_{v : Fin p → F} ∏ᵢ (χᵃ(vᵢ)·ψ(vᵢ)) = ∑_{s ∈ F} ι(D a s)·ψ(s)`
+  (`Fintype.sum_pow`, `AddChar.map_add_eq_mul` turning `∏ᵢ ψ(vᵢ)` into
+  `ψ(∑ᵢ vᵢ)`, then `Finset.sum_fiberwise` along `v ↦ ∑ᵢ vᵢ`);
+* **`D a s = D a 1` for every `s ≠ 0`**: multiplication by the unit `s`
+  is a bijection `{∑ᵢ vᵢ = 1} → {∑ᵢ vᵢ = s}` (`Equiv.mulLeft₀`
+  pointwise, via `Equiv.piCongrRight`), and it multiplies the summand by
+  `χᵃ(s)^p = 1` — this is the ONLY place `hχp` enters, and it is where
+  `p`-torsion does the work that Galois invariance does in the classical
+  argument;
+* so `∑_{s} ι(D a s)·ψ(s) = ∑_s (ι(D a s) − ι(D a 1))·ψ(s) + ι(D a 1)·∑_s ψ(s)`,
+  whose second term vanishes by `AddChar.sum_eq_zero_of_ne_one` (`ψ` is
+  primitive, hence `≠ 1` via `AddChar.mulShift_one`) and whose first has
+  only the `s = 0` term surviving. Hence
+
+  `g(χᵃ)^p = ι(D a 0) − ι(D a 1) = ι(D a 0 − D a 1)`,  `G a := D a 0 − D a 1`.
+
+**Consequences worth recording.** (a) `Fact p.Prime` is NOT used —
+the argument works for any exponent `p` for which `hχp` holds; the
+instance stays in the signature only because it is a section variable
+and the sibling/consumer signatures carry it (the unused-variable
+linters are silenced for exactly that reason). (b) Neither `hpq`,
+`hχ1` nor `hχcong` is used either — they are carried only so that the
+signature matches its sibling and its consumer. (c) The identity
+`g(χᵃ)^p = D a 0 − D a 1` is uniform in `a`, so the `a` with `p ∣ a`
+(where `χᵃ = 1` and the Gauss sum degenerates to `−1`) need no separate
+treatment.
+
+For the record, the classical route the cut was designed around —
+`g(χᵃ)` is integral, and for `σ ∈ Aut(AlgebraicClosure CF / CF)` the
+shift `σ ∘ ψ = AddChar.mulShift ψ j` gives `σ(g) = χᵃ(j)⁻¹·g` by
+`gaussSum_mulShift`, killed by the `p`-th power since `χ` is
+`p`-torsion — is correct but strictly more expensive here, because the
+pin has no "fixed by every automorphism of the algebraic closure ⟹ in
+the base field" lemma for an INFINITE extension, and would also have
+needed the surjectivity of `c ↦ mulShift ψ c` onto `AddChar F K`.
 
 **FAITHFULNESS.** The conclusion is an EXISTENCE of a function `G`, and
 existence is exactly the right strength: the element is unique (the map
@@ -24154,8 +24184,91 @@ theorem exists_gaussSumPow_descent (CF : Type) [Field CF] [NumberField CF]
     (ψ : AddChar (𝓞 CF ⧸ q) (AlgebraicClosure CF)) (hψ : ψ.IsPrimitive) :
     ∃ G : ℕ → 𝓞 CF, ∀ a : ℕ,
       ringOfIntegersToAlgebraicClosure CF (G a)
-        = gaussSum ((χ ^ a).ringHomComp (ringOfIntegersToAlgebraicClosure CF)) ψ ^ p :=
-  sorry
+        = gaussSum ((χ ^ a).ringHomComp (ringOfIntegersToAlgebraicClosure CF)) ψ ^ p := by
+  classical
+  haveI := hq
+  haveI hmax : q.IsMaximal := hq.isMaximal hq0
+  -- `letI`, not `haveI`: the field structure must stay unfolded, or the `CommRing`-derived
+  -- instances in the STATEMENT will not unify with the `Field`-derived ones (see the trap
+  -- recorded on `exists_gaussSumPow_lowerBound_of_jacobiSum` below).
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  set f := ringOfIntegersToAlgebraicClosure CF with hf
+  -- `D b s` is the fibre sum `∑_{v : Fin p → F, ∑ᵢ vᵢ = s} ∏ᵢ χᵇ(vᵢ)`, an element of `𝓞 CF`
+  -- by construction: it is a sum of products of VALUES of `χ`, so no descent is involved.
+  set D : ℕ → (𝓞 CF ⧸ q) → 𝓞 CF := fun b s =>
+    ∑ v ∈ Finset.univ.filter (fun v : Fin p → (𝓞 CF ⧸ q) => ∑ i, v i = s),
+      ∏ i, (χ ^ b) (v i) with hD
+  -- `ψ` is nontrivial, being primitive.
+  have hψ1 : ψ ≠ 1 := by
+    have h := hψ (a := 1) one_ne_zero
+    rwa [AddChar.mulShift_one] at h
+  -- `ψ` turns finite sums into finite products.
+  have hψsum : ∀ (s : Finset (Fin p)) (v : Fin p → (𝓞 CF ⧸ q)),
+      ψ (∑ i ∈ s, v i) = ∏ i ∈ s, ψ (v i) := by
+    intro s v
+    induction s using Finset.induction with
+    | empty => rw [Finset.sum_empty, Finset.prod_empty, ψ.map_zero_eq_one]
+    | insert x s hx ih =>
+        rw [Finset.sum_insert hx, Finset.prod_insert hx, ψ.map_add_eq_mul, ih]
+  -- every value of `χᵇ` at a nonzero element is a `p`-th root of unity: this is `hχp`, and it
+  -- is the only arithmetic input to the whole proof.
+  have htors : ∀ (b : ℕ) (s : 𝓞 CF ⧸ q), s ≠ 0 → ((χ ^ b) s) ^ p = 1 := by
+    intro b s hs
+    have hu : IsUnit s := IsUnit.mk0 s hs
+    have hval : (χ ^ b) s = (χ s) ^ b := by
+      rw [← hu.unit_spec]
+      exact MulChar.pow_apply_coe χ b hu.unit
+    rw [hval, ← pow_mul, mul_comm b p, pow_mul, hχp s hs, one_pow]
+  -- the fibre sums agree at every nonzero `s`: multiplication by the unit `s` is a bijection
+  -- `{∑ᵢ vᵢ = 1} → {∑ᵢ vᵢ = s}` multiplying the summand by `χᵇ(s)^p = 1`.
+  have hDeq : ∀ (b : ℕ) (s : 𝓞 CF ⧸ q), s ≠ 0 → D b s = D b 1 := by
+    intro b s hs
+    have hap : ∀ (v : Fin p → 𝓞 CF ⧸ q) (i : Fin p),
+        (Equiv.piCongrRight (fun _ : Fin p => Equiv.mulLeft₀ s hs)) v i = s * v i :=
+      fun _ _ => rfl
+    rw [hD]
+    refine (Finset.sum_equiv (Equiv.piCongrRight (fun _ => Equiv.mulLeft₀ s hs)) ?_ ?_).symm
+    · intro v
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, hap]
+      rw [← Finset.mul_sum]
+      constructor
+      · intro h; rw [h, mul_one]
+      · intro h; exact mul_left_cancel₀ hs (by rw [h, mul_one])
+    · intro v _
+      simp only [hap]
+      rw [Finset.prod_congr rfl (fun i (_ : i ∈ (Finset.univ : Finset (Fin p))) =>
+          map_mul (χ ^ b) s (v i)),
+        Finset.prod_mul_distrib, Finset.prod_const, Finset.card_univ, Fintype.card_fin,
+        htors b s hs, one_mul]
+  refine ⟨fun a => D a 0 - D a 1, fun a => ?_⟩
+  show f (D a 0 - D a 1) = _
+  -- expand the `p`-th power of the Gauss sum and group the `p`-tuples by their sum
+  have hmain : gaussSum ((χ ^ a).ringHomComp f) ψ ^ p
+      = ∑ s : 𝓞 CF ⧸ q, f (D a s) * ψ s := by
+    rw [gaussSum, Fintype.sum_pow]
+    rw [Finset.sum_congr rfl (fun v (_ : v ∈ (Finset.univ : Finset (Fin p → 𝓞 CF ⧸ q))) =>
+      show (∏ i, (((χ ^ a).ringHomComp f) (v i) * ψ (v i)))
+          = (∏ i, ((χ ^ a).ringHomComp f) (v i)) * ψ (∑ i, v i) from by
+        rw [Finset.prod_mul_distrib, hψsum])]
+    rw [← Finset.sum_fiberwise Finset.univ (fun v : Fin p → (𝓞 CF ⧸ q) => ∑ i, v i)]
+    refine Finset.sum_congr rfl (fun s _ => ?_)
+    rw [hD, map_sum, Finset.sum_mul]
+    refine Finset.sum_congr rfl (fun v hv => ?_)
+    rw [(Finset.mem_filter.mp hv).2, map_prod]
+    exact congrArg (· * ψ s) (Finset.prod_congr rfl fun i _ => rfl)
+  rw [hmain, map_sub]
+  have hsplit : ∑ s : 𝓞 CF ⧸ q, f (D a s) * ψ s
+      = (∑ s : 𝓞 CF ⧸ q, (f (D a s) - f (D a 1)) * ψ s)
+        + f (D a 1) * ∑ s : 𝓞 CF ⧸ q, ψ s := by
+    rw [Finset.mul_sum, ← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl fun s _ => by ring
+  rw [hsplit, AddChar.sum_eq_zero_of_ne_one hψ1, mul_zero, add_zero,
+    Finset.sum_eq_single (0 : 𝓞 CF ⧸ q)]
+  · rw [AddChar.map_zero_eq_one, mul_one]
+  · intro s _ hs
+    rw [hDeq a s hs, sub_self, zero_mul]
+  · intro h
+    exact absurd (Finset.mem_univ (0 : 𝓞 CF ⧸ q)) h
 
 /-- **STICKELBERGER'S CONGRUENCE, AS A ONE-SIDED VALUATION BOUND** (SORRY
 LEAF, cut 2026-07-27 out of `exists_gaussSumPow_lowerBound_of_jacobiSum`
@@ -24193,6 +24306,25 @@ with `natCard_mem_pow_decompCard` — see that theorem's docstring. A
 formalisation of the congruence therefore never has to track the unit
 `γ(k)`, which is where the upper bound would otherwise cost a full
 Gauss-sum-of-the-Teichmüller-character theory.
+
+**BUT THE ONE-SIDEDNESS BUYS NO MATHEMATICAL SLACK, AND A PROVER SHOULD
+KNOW THAT BEFORE STARTING** (recorded 2026-07-27 by the owner of
+`exists_gaussSumPow_descent`, who checked whether a soft/inductive
+argument could reach the bound). Quantified over ALL `a` prime to `p`,
+this lower bound is EQUIVALENT to the exact valuation. Indeed the
+reflection clause (ii) of `exists_gaussSumPow_lowerBound_of_jacobiSum`
+gives `v_q(G a) + v_q(G b) = p·#D` whenever `p ∣ a + b` (using
+`natCard_mem_pow_decompCard`, which is exact), while
+`sum_decompVal_add_neg_eq_mul_card` gives `N a + N b = p·#D` for the
+same `a, b`; so `v_q(G a) ≥ N a` for every `a` forces
+`v_q(G a) = N a` for every `a`. What the one-sided phrasing saves is
+therefore the BOOKKEEPING of the unit `γ(k)` in the congruence, not the
+depth of the congruence itself. In particular no argument that only
+ever produces inequalities — e.g. an induction on `a` through the
+multiplicativity clause (i), where `v_q(G a) + v_q(G c) = p·v_q(J) +
+v_q(G (a+c)) ≥ v_q(G (a+c))` — can close it: the inequalities are all
+in the wrong direction and are consistent with `N ≡ 0`. Stickelberger's
+congruence, or something equally sharp, is genuinely required.
 
 **REFERENCES**: Ireland–Rosen, *A Classical Introduction to Modern
 Number Theory*, ch. 14 §3; Washington, *Cyclotomic Fields* §6.1–6.2;
@@ -24254,8 +24386,11 @@ be NAMED by a statement — and against that ambient field:
 * the primitive additive character `ψ` is supplied by
   `exists_isPrimitive_addChar_of_isAlgClosed` (PROVEN, mathlib
   repackaging);
-* the descent `g(χᵃ)^p ∈ 𝓞 CF` is the leaf `exists_gaussSumPow_descent`
-  (steps 1–2 of the roadmap below: integrality plus Galois invariance;
+* the descent `g(χᵃ)^p ∈ 𝓞 CF` is `exists_gaussSumPow_descent`
+  (steps 1–2 of the roadmap below; **PROVEN** 2026-07-27, and by an
+  explicit elementary formula — `g(χᵃ)^p = D 0 − D 1` with `D s` the
+  sum of `∏ᵢ χᵃ(vᵢ)` over the `p`-tuples of trace `s` — rather than by
+  the integrality-plus-Galois-invariance route sketched below;
   **no valuations**);
 * clauses **(i)** and **(ii)** — multiplicativity and reflection — are
   PROVEN HERE, directly from mathlib's `jacobiSum_mul_nontrivial` and
@@ -24338,9 +24473,11 @@ pin):
    `e(𝒬/q) = ℓ − 1`, and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF`; plus the DESCENT
    `g(χᵃ)^p ∈ 𝓞 CF`, which is `gaussSum_mulShift` (`σ_t(g) =
    χᵃ(t)⁻¹ g`) together with `Gal(L/CF)`-invariance
-   — **now the leaf `exists_gaussSumPow_descent`**, with the compositum
-   no longer required to be named (it is a subfield of the fixed ambient
-   `AlgebraicClosure CF`), so only the descent itself is owed;
+   — **now `exists_gaussSumPow_descent`, PROVEN 2026-07-27**, with the
+   compositum no longer required to be named (it is a subfield of the
+   fixed ambient `AlgebraicClosure CF`). In the event neither `L` nor
+   `μ_ℓ` nor any automorphism was needed: see that theorem's docstring
+   for the explicit two-term formula that replaced the Galois argument;
 2. the Teichmüller character `ω : Fˣ → 𝓞 L` with `ω(x) ≡ x (mod 𝒬)`,
    and the identification `χ = ω^d`
    — **needed only by step 3**, hence absorbed into
