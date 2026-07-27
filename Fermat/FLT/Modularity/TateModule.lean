@@ -11289,9 +11289,395 @@ theorem exists_verschiebung_of_frobEndomorphism_finiteBase
       Fr ≫ V = ab'.mulByNat N ∧ V ≫ Fr = ab'.mulByNat N :=
   sorry
 
-/-- **THE TRACE OF FROBENIUS IS A GLOBAL INTEGER OF `D`** (sorry leaf —
-Weil; this is the deep half of the finite-field cut, see the subsection
-note above).
+/-! #### The Weil half, cut along the LEVEL / RATIONALITY / DENSITY axes
+
+`exists_frobTraceAct_of_mult_finiteBase` below is **PROVEN
+(2026-07-27)** by assembly over the four leaves stated in this
+subsection.  The subsection note above describes the three-way
+endomorphism cut of `exists_frobEndoCharEq_of_mult_finiteBase` and says
+that its third member — this one — is "gated on the Tate module of an
+abelian variety over a finite field".  That is still exactly right; what
+follows is that gate opened into its four independent pieces.
+
+**WHY A CUT IS POSSIBLE, AND WHERE THE ONLY REAL SUBTLETY IS.**  Write
+`F` for `ab'.galSMul σ` and `W` for `Vpt`.  Two observations do all the
+structural work and are proved inline below, not assumed:
+
+* `F` is INJECTIVE on geometric points — it is the action of a group
+  element, and `specGal` turns the group law into composition.  Hence
+  `F + W = t` is EQUIVALENT to `F² + N = t·F` pointwise, because
+  `F (F y + W y) = F²y + N·y` (the second summand by `hVFr` read on
+  points) and `F (t·y) = t·F y` (`Mult.galSMul_act`).  So the target may
+  be attacked in its characteristic-equation form and transported back,
+  and no cancellation of `N` — which would be illegitimate on
+  `N`-torsion — is ever performed.
+* The Galois action carries `A'[Iⁿ]` into itself (`Mult.torsion`) and is
+  `𝒪_D`-linear there, so in a level frame it is given by a MATRIX over
+  `𝒪_D/Iⁿ`.  That is `exists_frobLevelMatrix_of_levelTateFrame` below,
+  and it is pure algebra: no geometry, no finiteness of `k`.
+
+Given those, the characteristic equation at one level is 2×2
+Cayley–Hamilton, `mulVec_add_det_mul_eq_trace_mul_fin_two`, and the
+remaining content splits into four disjoint theorems:
+
+* `exists_levelTateFrame_finiteBase` — `A'[Iⁿ]` is FREE OF RANK TWO over
+  `𝒪_D/Iⁿ` for `I` of residue characteristic prime to `#k`.  This is
+  where `hdim'` is consumed, and it is the ONLY leaf that uses it.  It is
+  the finite-base analogue of `exists_levelTateFrame`, which cannot be
+  reused: that one is stated over a NUMBER FIELD and its proof runs
+  through `card_torsion_of_isMaximal` and the Betti frame, i.e. through
+  characteristic zero.  The prime-to-`p` restriction is not decoration —
+  at the residue characteristic of `k` the statement is FALSE
+  (`A'[pⁿ](k̄)` has `p`-rank at most `g`, and is `0` in the supersingular
+  case), which is why the hypothesis `¬ q ∣ N` appears.
+* `det_frobLevelMatrix_eq_natCast_finiteBase` — the DETERMINANT of that
+  matrix is `N`.  This is the Weil pairing over a finite field, in the
+  Hilbert–Blumenthal normalisation the rest of this section uses
+  (`det_{𝒪_D} F = N`, not `N²`; consistency check: `deg F = N^g` and
+  `Nm_{D/ℚ}(N) = N^{[D:ℚ]} = N^g`).  It is the finite-base counterpart of
+  `exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult`.
+* `exists_frobLevelTrace_of_mult_finiteBase` — the TRACE is a single
+  global integer of `D`, the SAME one at every level.  Note what the
+  content is and is not: a trace in `𝒪_D/Iⁿ` always lifts to `𝒪_D`,
+  since `Ideal.Quotient.mk` is surjective, so nothing is asserted by
+  "rationality at one level".  The whole statement is the UNIFORMITY —
+  one `t` serving every maximal `I` and every `n` at once — which is
+  precisely the compatible-system content, i.e. Weil (Mumford *AV* §19,
+  Milne *AV* §V, Tate 1966), and the `∃ t` standing outside the `∀ I, ∀ n`
+  is where it lives.
+* `frobTraceAct_of_torsion_of_mult_finiteBase` — an identity verified on
+  all PRIME-TO-`p` torsion holds at EVERY geometric point.  This is the
+  one place where the algebraicity of the maps is unavoidable, and it is
+  worth saying why, because it is the trap of this cluster.  `A'(k̄)` is a
+  torsion group, but it is the direct sum of its primary parts and a
+  homomorphism of abstract groups killing all the prime-to-`p` parts is
+  in general NOT zero on the `p`-part.  What rules that out is that
+  `F + W - t` comes from a MORPHISM of schemes and `⋃ₙ A'[ℓⁿ]` is
+  Zariski dense — equivalently `End(A') ↪ End(T_ℓ A')`.  That is why this
+  leaf carries `Fr`, `V`, `hFrf`, `hVf`, `hFrV` and `hVpt` although the
+  assembly itself needs only `hVFr`: they are the data that makes the
+  operator algebraic, and a prover of this leaf must use them.  It needs
+  neither `hdim'` nor the rank-two theory.
+
+**FAITHFULNESS OF THE TWO FRAME-QUANTIFIED LEAVES.**  Both are stated
+`∀ c, IsLevelTateFrame … c → ∀ Φ, (∀ u, F (c u) = c (Φ *ᵥ u)) → …`.  A
+different frame changes `Φ` by conjugation, and `det`/`trace` are
+conjugation invariants, so neither statement depends on the choice — and
+`Φ` is UNIQUE for a given `c`, since `c` is injective and a matrix is
+determined by its action on the standard basis.  There is therefore no
+junk witness on either side.  The exotic-frame counterexample that
+forces `j`/`hj` on every frame-level statement elsewhere in this file
+cannot touch these two: the coefficient ring is not abstract here, it is
+`𝒪_D/Iⁿ` itself, and the real multiplication enters through `m'.act`
+directly via the last clause of `IsLevelTateFrame`.
+
+**WHAT IS STILL MISSING**, re-checked rather than quoted: the pin has no
+abelian varieties and no Frobenius morphism of schemes
+(`grep -rli frobenius .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`
+is empty), `~/cs/FLT` has no abelian-variety material, and this tree has
+no `End(A)` as a ring and no Weil pairing over a finite field.  So all
+four leaves are gated on machinery that must be built; the gain is that
+the four subtrees are disjoint — `ℓ`-adic torsion of an abelian variety
+in characteristic `p` (Mumford *AV* §6, Milne *AV* §I.7), the Weil
+pairing (Mumford *AV* §16, §20), Weil's rationality of the
+characteristic polynomial (Mumford *AV* §19, Tate 1966), and Zariski
+density of torsion / faithfulness of the Tate module (Mumford *AV* §19,
+Milne *AV* §V.1) — and can be owned independently. -/
+
+/-- **CAYLEY–HAMILTON IN DIMENSION TWO, COORDINATEWISE** (PROVEN).  For a
+`2 × 2` matrix `Φ` over any commutative ring, `Φ² + det Φ = tr Φ · Φ`,
+read on a vector and one coordinate at a time.
+
+Stated in this shape rather than as a matrix identity because that is how
+the assembly of `exists_frobTraceAct_of_mult_finiteBase` consumes it: the
+level frame there transports `Matrix.mulVec` and scalar multiplication
+coordinatewise, and going through `Matrix.charpoly` would buy nothing at
+`n = 2`. -/
+theorem mulVec_add_det_mul_eq_trace_mul_fin_two {R : Type*} [CommRing R]
+    (Φ : Matrix (Fin 2) (Fin 2) R) (u : Fin 2 → R) (i : Fin 2) :
+    (Φ.mulVec (Φ.mulVec u)) i + Φ.det * u i = Φ.trace * (Φ.mulVec u) i := by
+  fin_cases i <;>
+    simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.det_fin_two,
+      Matrix.trace_fin_two] <;> ring
+
+open _root_.NumberField in
+/-- **THE GALOIS ACTION, READ IN A LEVEL FRAME, IS A MATRIX** (PROVEN).
+
+If `c` is a level-`J` frame of the geometric fibre — an additive,
+`𝒪_D`-semilinear bijection `(𝒪_D/J)² ≃ A'[J]` — then for every
+`σ ∈ Γ_k` there is a matrix `Φ` over `𝒪_D/J` with
+`σ · c u = c (Φ *ᵥ u)`.
+
+Three inputs, all already proven, and no geometry:
+`Mult.torsion` carries the Galois-stability of `A[J]`, so `σ · c u` is
+again in the image of `c`; `AbelianSchemeStruct.pre_add` makes the
+transported map additive; and `Mult.galSMul_act` makes it
+`𝒪_D`-linear, hence `𝒪_D/J`-linear because `Ideal.Quotient.mk` is
+surjective.  A linear endomorphism of a free module of rank two is a
+matrix.
+
+`Φ` is UNIQUE, since `c` is injective and `Φ *ᵥ ·` is determined on the
+standard basis; that is what makes the two frame-quantified leaves below
+faithful. -/
+theorem exists_frobLevelMatrix_of_levelTateFrame
+    {k : Type u} [Field k]
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (J : Ideal (NumberField.RingOfIntegers D))
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ J) →
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hc : IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) J c) :
+    ∃ Φ : Matrix (Fin 2) (Fin 2) (NumberField.RingOfIntegers D ⧸ J),
+      ∀ u, ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (c u) = c (Φ.mulVec u) := by
+  classical
+  obtain ⟨hmem, hadd, hinj, hsurj, hsmul⟩ := hc
+  have hgal_add : ∀ u v : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (ab'.add u v)
+        = ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ u)
+            (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ v) :=
+    fun u v => ab'.pre_add (specGal σ) (specGal_comp_base _ σ) u v
+  have hex : ∀ u, ∃ v, c v = ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (c u) := by
+    intro u
+    exact hsurj _ ((m'.torsion (𝟙 (Spec (CommRingCat.of k))) J).2 σ (c u) (hmem u))
+  choose g hg using hex
+  have hgadd : ∀ u v, g (u + v) = g u + g v := by
+    intro u v
+    apply hinj
+    rw [hg, hadd, hgal_add, ← hg, ← hg, ← hadd]
+  have hgsmul : ∀ (r : NumberField.RingOfIntegers D ⧸ J) (u),
+      g (fun i => r * u i) = fun i => r * g u i := by
+    intro r u
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective r
+    apply hinj
+    rw [hg, hsmul, m'.galSMul_act, ← hg, hsmul]
+  refine ⟨LinearMap.toMatrix'
+    { toFun := g, map_add' := hgadd, map_smul' := fun r u => hgsmul r u }, fun u => ?_⟩
+  rw [LinearMap.toMatrix'_mulVec]
+  exact (hg u).symm
+
+open _root_.NumberField in
+/-- **THE PRIME-TO-`p` TORSION OF AN ABELIAN SCHEME WITH REAL
+MULTIPLICATION OVER A FINITE FIELD IS FREE OF RANK TWO** (sorry leaf —
+Mumford *Abelian Varieties* §6, Milne *Abelian Varieties* §I.7; see the
+subsection note above for the cut).
+
+For `k` finite with `N` elements, `I` a maximal ideal of `𝒪_D` whose
+residue characteristic `q` does not divide `N`, and any `n`, the
+`Iⁿ`-torsion of the geometric fibre admits a level frame: an additive,
+injective, `𝒪_D`-semilinear map `(𝒪_D/Iⁿ)² → A'(k̄)` with image exactly
+`A'[Iⁿ]`.
+
+Classically `A'[qⁿ](k̄) ≅ (ℤ/qⁿ)^{2g}` for `q` different from the
+characteristic — this is where the separability of `[qⁿ]` is used, and it
+is exactly what fails at `q = p` — and `hdim'` says `g = [D:ℚ]`, so the
+`𝒪_D/Iⁿ`-module `A'[Iⁿ]` has the cardinality of `(𝒪_D/Iⁿ)²` and is free
+of rank two by the same counting argument that
+`card_torsion_of_isMaximal` runs in characteristic zero.
+
+**THIS IS NOT `exists_levelTateFrame`, AND THAT ONE CANNOT BE REUSED.**
+The existing frame theorem is stated over a base that is a NUMBER FIELD
+and is proved through the Betti frame (`exists_bettiFrame`,
+`card_torsion_of_isMaximal`), i.e. through singular homology of the
+complex points.  Over a finite field there is no such input and the
+statement is genuinely different — in particular it is FALSE without
+`¬ q ∣ N`: at the residue characteristic of `k` the group `A'[pⁿ](k̄)` has
+order `p^{rn}` with `r ≤ g` the `p`-rank, and is trivial in the
+supersingular case, so no rank-two frame can exist.
+
+`hfin` and `hN` are used only to give the prime-to-characteristic
+condition its meaning (`N = #k = p^a`, so `¬ q ∣ N` says `q ≠ p`); `σ`
+and `hσ` do not occur, because this statement is about the torsion
+subgroup alone and not about the Frobenius. -/
+theorem exists_levelTateFrame_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) (n : ℕ) :
+    ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c :=
+  sorry
+
+open _root_.NumberField in
+/-- **THE DETERMINANT OF FROBENIUS AT A PRIME-TO-`p` LEVEL IS `N`**
+(sorry leaf — the Weil pairing over a finite field; Mumford *Abelian
+Varieties* §16 and §20, Milne *Abelian Varieties* §I.13; see the
+subsection note above for the cut).
+
+In any level frame of `A'[Iⁿ]`, the matrix `Φ` of the `N`-power Frobenius
+has `det Φ = N` in `𝒪_D/Iⁿ`.
+
+Classically: the `𝒪_D`-linear Weil pairing identifies `⋀²_{𝒪_D} T_I A'`
+with the `I`-adic Tate module of `μ`, on which the arithmetic Frobenius
+of `k` acts by the absolute norm `N`.  This is the finite-base
+counterpart of `exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult`,
+and the NORMALISATION is the same one used throughout this section — the
+constant coefficient over `𝒪_D` is `N`, not `N²`, which is the
+Hilbert–Blumenthal convention of Shimura / Taylor 2002 §1.  Consistency
+check on degrees: `deg F = N^g` for `g = dim A'`, and
+`Nm_{D/ℚ}(N) = N^{[D:ℚ]} = N^g`, so `N ∈ 𝒪_D` is the right determinant.
+
+FAITHFULNESS.  `hσ` is load-bearing and cannot be dropped: it is what
+makes `σ` the `N`-power Frobenius rather than an arbitrary element of
+`Γ_k`, and for `σ = 1` the determinant is `1`.  The quantification over
+the frame is harmless — a change of frame conjugates `Φ`, and `det` is a
+conjugation invariant — and `Φ` is pinned by `hΦ` because `c` is
+injective, so there is no junk witness.  `hdim'` is deliberately ABSENT:
+the existence of the frame `c` already forces the relative dimension, and
+this statement is about a frame that is handed to it. -/
+theorem det_frobLevelMatrix_eq_natCast_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) (n : ℕ)
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hc : IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c)
+    (Φ : Matrix (Fin 2) (Fin 2) (NumberField.RingOfIntegers D ⧸ I ^ n))
+    (hΦ : ∀ u, ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (c u) = c (Φ.mulVec u)) :
+    Φ.det = Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D) :=
+  sorry
+
+open _root_.NumberField in
+/-- **THE TRACE OF FROBENIUS IS ONE GLOBAL INTEGER OF `D`, THE SAME AT
+EVERY LEVEL** (sorry leaf — Weil; Mumford *Abelian Varieties* §19, Milne
+*Abelian Varieties* §V, Tate 1966.  See the subsection note above for the
+cut).
+
+There is a single `t ∈ 𝒪_D` such that for EVERY maximal `I` of residue
+characteristic prime to `#k`, every `n`, every level frame of `A'[Iⁿ]`
+and the matrix `Φ` of the Frobenius in it, `tr Φ = t mod Iⁿ`.
+
+**WHERE THE CONTENT IS, AND WHAT IS NOT ASSERTED.**  Nothing at all is
+asserted by "the trace at one level is rational": `tr Φ` lives in
+`𝒪_D/Iⁿ` and `Ideal.Quotient.mk` is surjective, so a lift to `𝒪_D`
+exists for free.  The entire statement is the UNIFORMITY — the `∃ t`
+stands OUTSIDE the `∀ I, ∀ n`, so one global integer serves every maximal
+ideal and every level at once.  That is exactly the compatible-system
+content, i.e. Weil's theorem that the characteristic polynomial of the
+Frobenius endomorphism has coefficients in `𝒪_D` independent of `I`, and
+it is the reason the consumer's `∃ t, ∀ I` quantifier order costs
+nothing further downstream.
+
+Classically: `F` commutes with the real multiplication, so `D[F]` is a
+commutative `D`-subalgebra of `End⁰(A')` acting `D_I`-linearly on
+`V_I A' ≅ D_I²`; a commutative subalgebra of `M₂` containing the scalars
+has degree at most two, so `F` satisfies a monic quadratic over `D` whose
+linear coefficient is `tr Φ` for every `I` at once, and the coefficients
+are integral because `F` preserves the lattice `T_I` and `𝒪_D` is
+integrally closed.
+
+FAITHFULNESS.  `hσ` is load-bearing (for `σ = 1` the trace is `2`, and
+the statement is then true but about a different operator; for a general
+`σ` no such `t` need exist).  `hdim'` is deliberately ABSENT: this leaf
+is quantified over frames that are handed to it, and the existence of a
+rank-two frame already forces the relative dimension — the leaf is
+vacuously true for a fibre that admits none.  Frame-independence is
+automatic, since a change of frame conjugates `Φ` and `trace` is a
+conjugation invariant. -/
+theorem exists_frobLevelTrace_of_mult_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N) :
+    ∃ t : NumberField.RingOfIntegers D,
+      ∀ q : ℕ, q.Prime → ¬ q ∣ N →
+        ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+          (q : NumberField.RingOfIntegers D) ∈ I → ∀ n : ℕ,
+          ∀ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+              GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+            IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c →
+            ∀ Φ : Matrix (Fin 2) (Fin 2) (NumberField.RingOfIntegers D ⧸ I ^ n),
+              (∀ u, ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (c u) = c (Φ.mulVec u)) →
+              Φ.trace = Ideal.Quotient.mk (I ^ n) t :=
+  sorry
+
+open _root_.NumberField in
+/-- **AN IDENTITY VERIFIED ON ALL PRIME-TO-`p` TORSION HOLDS AT EVERY
+GEOMETRIC POINT** (sorry leaf — Zariski density of the prime-to-`p`
+torsion, equivalently the faithfulness of the Tate module; Mumford
+*Abelian Varieties* §19, Milne *Abelian Varieties* §V.1.  See the
+subsection note above for the cut).
+
+If `F y + V y = t · y` for every `y` killed by `Iⁿ`, for every maximal
+`I` of residue characteristic prime to `#k` and every `n`, then it holds
+for EVERY geometric point of the fibre.
+
+**WHY THIS IS NOT FREE, WHICH IS THE TRAP OF THIS CLUSTER.**  `A'(k̄)` is
+a torsion group — every geometric point is defined over a finite subfield
+— so one is tempted to conclude that a homomorphism killing all the
+prime-to-`p` torsion kills everything.  That is FALSE: a torsion abelian
+group is the direct sum of its primary components, and an endomorphism of
+abstract groups may be arbitrary on the `p`-component while vanishing on
+all the others.  What excludes it here is that `F + V - t` is ALGEBRAIC:
+it is induced by a morphism of schemes, and `⋃ₙ A'[ℓⁿ]` is Zariski dense
+in `A'` for any `ℓ` different from the characteristic, so a morphism
+vanishing on it vanishes.  Equivalently `End(A') → End(T_ℓ A')` is
+injective.
+
+That is why the leaf carries the whole morphism package `Fr`, `V`,
+`hFrf`, `hVf`, `hFrpt`, `hFrV`, `hVpt` even though the assembly of the
+consumer uses only `hVFr` among them: they are what makes the operator
+algebraic, and any proof of this leaf must use them.  The one piece of
+the arithmetic package it does NOT need is `hdim'` — density is
+independent of the relative dimension — and the rank-two theory does not
+enter.
+
+FAITHFULNESS.  The conclusion is universally quantified over `t`, so a
+junk `t` would falsify the leaf if the hypothesis admitted one; it does
+not, because the prime-to-`p` torsion already pins `t` (it is determined
+modulo `Iⁿ` for every prime-to-`p` `I` and every `n`, hence determined).
+`hσ` is load-bearing for the same reason as in the sibling leaves: it is
+what identifies the Galois action with the Frobenius endomorphism. -/
+theorem frobTraceAct_of_torsion_of_mult_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (Fr V : A' ⟶ A') (hFrf : Fr ≫ f' = f') (hVf : V ≫ f' = f')
+    (hFrpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y).1 = y.1 ≫ Fr)
+    (hFrV : Fr ≫ V = ab'.mulByNat N) (hVFr : V ≫ Fr = ab'.mulByNat N)
+    (Vpt : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hVpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))), (Vpt y).1 = y.1 ≫ V)
+    (t : NumberField.RingOfIntegers D)
+    (htors : ∀ q : ℕ, q.Prime → ¬ q ∣ N →
+      ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+        (q : NumberField.RingOfIntegers D) ∈ I → ∀ n : ℕ,
+        ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+          ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y) :
+    ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y :=
+  sorry
+
+/-- **THE TRACE OF FROBENIUS IS A GLOBAL INTEGER OF `D`** (**PROVEN
+2026-07-27** by assembly over the four leaves in the subsection note
+immediately above — Weil; this is the deep half of the finite-field
+cut, see also the subsection note further above).
 
 With `Fr` the Frobenius endomorphism and `V` its Verschiebung, there is a
 single `t ∈ 𝒪_D` with
@@ -11326,7 +11712,34 @@ NOT ASSERTED: the archimedean bound `|t| ≤ 2√N` (the Riemann-hypothesis
 half of Weil, needed by no consumer in this tree), and nothing about the
 `I`-adic representations — no ideal `I`, no `n` and no torsion occurs
 anywhere in this statement, which is the point of pushing the whole
-cluster down to the residue field. -/
+cluster down to the residue field.
+
+THE ROUTE OF THE PROOF BELOW, which is the paragraph above split four
+ways; see the subsection note immediately above for the audit of each
+piece.  Two facts are proved INLINE and are the reason the cut works.
+First, `Fr` acts INJECTIVELY on geometric points, being the action of a
+group element, so the target `F + V = t` is equivalent to the
+characteristic equation `F² + N = t·F` — and the transport back is by
+injectivity rather than by cancelling `N`, which would be illegitimate on
+`N`-torsion.  Second, the Galois action preserves `A'[Iⁿ]` and is
+`𝒪_D`-linear there, so in a level frame it is a `2 × 2` MATRIX
+(`exists_frobLevelMatrix_of_levelTateFrame`, proven).  The equation at one
+level is then Cayley–Hamilton
+(`mulVec_add_det_mul_eq_trace_mul_fin_two`, proven) fed by
+`det_frobLevelMatrix_eq_natCast_finiteBase` (the determinant is `N`) and
+`exists_frobLevelTrace_of_mult_finiteBase` (one global trace for all
+levels), over the frame supplied by `exists_levelTateFrame_finiteBase`;
+and `frobTraceAct_of_torsion_of_mult_finiteBase` passes from the
+prime-to-`p` torsion to every geometric point.
+
+WHERE THE HYPOTHESES GO, since the split relocates them.  `hdim'` is
+consumed by `exists_levelTateFrame_finiteBase` and by nothing else — it
+is what makes the frame have rank TWO.  `hσ` goes to the determinant, the
+trace and the density leaves, being what identifies the Galois action
+with the Frobenius endomorphism.  `Fr`, `hFrf`, `hVf`, `hFrV` and `hVpt`
+go to the density leaf, where the algebraicity of `F + V - t` is what
+must be used; the assembly itself needs only `hVFr` and `hFrpt`, through
+which it reads `F ∘ V = [N]` on points. -/
 theorem exists_frobTraceAct_of_mult_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -11346,8 +11759,66 @@ theorem exists_frobTraceAct_of_mult_finiteBase
     (hVpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))), (Vpt y).1 = y.1 ≫ V) :
     ∃ t : NumberField.RingOfIntegers D,
       ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
-        ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y :=
-  sorry
+        ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y := by
+  classical
+  -- `N · y` is postcomposition with the morphism `[N]`.
+  have hNact : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (m'.act (N : NumberField.RingOfIntegers D) y).1 = y.1 ≫ ab'.mulByNat N := by
+    intro y
+    letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    letI : Module (NumberField.RingOfIntegers D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    have h1 : m'.act (N : NumberField.RingOfIntegers D) y
+        = (N : NumberField.RingOfIntegers D) • y := rfl
+    rw [h1, Nat.cast_smul_eq_nsmul]
+    exact ab'.nsmul_val N y
+  -- `F ∘ V = [N]` read on geometric points, off the morphism identity `V ≫ Fr = [N]`.
+  have hFVpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (Vpt y)
+        = m'.act (N : NumberField.RingOfIntegers D) y := by
+    intro y
+    apply Subtype.ext
+    rw [hFrpt (Vpt y), hVpt y, hNact y, Category.assoc, hVFr]
+  -- the Galois action is additive (`pre_add`) and injective (it is a group action).
+  have hgal_add : ∀ u v : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (ab'.add u v)
+        = ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ u)
+            (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ v) :=
+    fun u v => ab'.pre_add (specGal σ) (specGal_comp_base _ σ) u v
+  have hFinj : Function.Injective (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ) := by
+    letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    letI : DistribMulAction (Field.absoluteGaloisGroup k)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      ab'.geomFibreAction (𝟙 (Spec (CommRingCat.of k)))
+    exact MulAction.injective σ
+  obtain ⟨t, ht⟩ :=
+    exists_frobLevelTrace_of_mult_finiteBase hfin N hN ab' m' σ hσ
+  refine ⟨t, ?_⟩
+  refine frobTraceAct_of_torsion_of_mult_finiteBase hfin N hN ab' m' σ hσ Fr V hFrf hVf
+    hFrpt hFrV hVFr Vpt hVpt t ?_
+  intro q hq hqN I hI hqI n y hy
+  obtain ⟨c, hc⟩ :=
+    exists_levelTateFrame_finiteBase hfin N hN ab' m' hdim' q hq hqN I hI hqI n
+  obtain ⟨Φ, hΦ⟩ := exists_frobLevelMatrix_of_levelTateFrame ab' m' σ (I ^ n) c hc
+  have hdet := det_frobLevelMatrix_eq_natCast_finiteBase hfin N hN ab' m' σ hσ q hq hqN
+    I hI hqI n c hc Φ hΦ
+  have htr := ht q hq hqN I hI hqI n c hc Φ hΦ
+  obtain ⟨-, hadd, -, hsurj, hsmul⟩ := hc
+  obtain ⟨u, rfl⟩ := hsurj y hy
+  -- the characteristic equation `F² + N = t·F` at level `Iⁿ`, by Cayley–Hamilton
+  have key : ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+        (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (c u)))
+      (m'.act (N : NumberField.RingOfIntegers D) (c u))
+      = m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (c u)) := by
+    rw [hΦ u, hΦ (Φ.mulVec u), ← hsmul (N : NumberField.RingOfIntegers D) u, ← hdet,
+      ← hadd, ← hsmul t (Φ.mulVec u), ← htr]
+    exact congrArg c (funext fun i => mulVec_add_det_mul_eq_trace_mul_fin_two Φ u i)
+  -- `F` is injective, so `F + V = t` follows from `F² + N = t·F`
+  apply hFinj
+  rw [hgal_add, hFVpt, key, m'.galSMul_act]
 
 /-- **WEIL'S CHARACTERISTIC EQUATION FOR THE FROBENIUS ENDOMORPHISM OVER
 A FINITE FIELD** (**PROVEN 2026-07-27** over the three leaves in the
