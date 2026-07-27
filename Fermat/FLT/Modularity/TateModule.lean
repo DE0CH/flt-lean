@@ -3020,10 +3020,23 @@ forms. (It was added 2026-07-27 because without it the whole structure
 was satisfied by the CONSTANT ZERO MAP and so carried no content at all
 over `DualStruct`; the standing refutation test is the proven
 `PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`. Note the axiom is
-LEVEL-GUARDED — `PolarizationStruct d 𝒩` asserts it only at `I ∈ 𝒩` —
-after a second repair the same day; an unguarded version forces a
-PRINCIPAL polarization, see the docstring of
-`exists_tateWeilPairing_of_mult` below.) The gap that
+LEVEL-GUARDED — `PolarizationStruct d 𝒩 𝔞 𝔞pos` asserts it only at
+`I ∈ 𝒩` — after a second repair the same day; an unguarded version forces
+a PRINCIPAL polarization, see the docstring of
+`exists_tateWeilPairing_of_mult` below.
+
+A THIRD repair the same day added POSITIVITY, which is why the structure
+now takes four parameters: the level-guard released it onto every
+polarization class, which made `HasSplitHilbertBlumenthalModuli`
+(`Modularity/MoretBailly.lean`) false, so the structure also carries the
+polarization module `𝔞`, a positivity cone `𝔞pos`, an isomorphism
+`𝔞 ≅ Hom^sym_{𝒪_D}(A, A^∨)` (`lam`, `lam_injective`, `lam_surjective`,
+valued in the new `Fermat.SymHomStruct`) and the datum that `hom = λ_a`
+for a POSITIVE `a`. A consumer that does not care may take
+`𝔞 := ⊤`, `𝔞pos := Set.univ`; a consumer that needs the narrow class
+`[𝔞] ∈ Cl⁺(D)` pinned must hold both fixed. The standing test that the
+positivity datum is not junk is `PolarizationStruct.posElt_ne_zero`.) The
+gap that
 REMAINS is EXISTENCE: nothing asserts that a
 `DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`. That
 remaining gap is the second bullet above, and it is now the content of
@@ -11552,9 +11565,231 @@ theorem exists_finset_frobSpecialization_of_mult
   have hz' : y + -y' = (0 : GeomFibrePt f x) := hz
   exact add_neg_eq_zero.mp hz'
 
+/-! #### The finite-field half, cut along the ENDOMORPHISM seam
+
+`exists_frobEndoCharEq_of_mult_finiteBase` below is **PROVEN
+(2026-07-27)** by assembly over the three leaves stated in this
+subsection.  Its own docstring records what it is and why its
+hypotheses are load-bearing; this note records only the cut.
+
+**WHY A CUT WAS POSSIBLE AT ALL.**  The target is a relation between
+maps on the geometric point set `A'(k̄)`, and *as maps on that set* the
+relation has no purchase: `y ↦ σ · y` is invertible there (it is a group
+ACTION, with inverse `σ⁻¹ · –`), so every factorisation one might hope to
+extract from it is free and carries nothing.  Concretely, a
+"Verschiebung" defined only on points — `V y := N · (σ⁻¹ · y)` — satisfies
+`V ∘ F = F ∘ V = [N]` by `Mult.galSMul_act` alone, so a cut into "V
+exists" plus "the trace is rational" would be a cut into a triviality
+plus the whole theorem.  That is the trap this cut avoids.
+
+What has content is that the Galois action is ALGEBRAIC: that it is
+induced by a MORPHISM of schemes.  So the seam here is the passage from
+`Γ_k` to `End_k(A')`, and it separates three genuinely different
+theorems:
+
+* `exists_frobEndomorphism_of_finiteBase` — the `N`-power Frobenius is an
+  ENDOMORPHISM of `A'` over `Spec k`, inducing the action of `σ` on
+  geometric points.  Pure characteristic-`p` geometry: no `D`, no real
+  multiplication, no relative dimension.  It is where `hfin`, `hN` and
+  `hσ` are really consumed — `z ^ N = z` on `k` is what makes the
+  absolute Frobenius a `k`-morphism.
+* `exists_verschiebung_of_frobEndomorphism_finiteBase` — `[N]` factors
+  through that endomorphism, on both sides, BY A MORPHISM.  This is the
+  Verschiebung: for `N = p ^ a`, `F` is the `a`-th power of the
+  `p`-Frobenius, so `ker F` is infinitesimal and sits inside `A'[N]`,
+  and `[N]` therefore factors through `F`.  Again
+  no `D` and no dimension hypothesis.  Stated at the level of morphisms
+  and not of points, which is exactly what makes it a theorem rather
+  than the triviality described above.
+* `exists_frobTraceAct_of_mult_finiteBase` — `F + V ∈ 𝒪_D`.  This is the
+  Weil content proper, and it is where `hdim'` and the real
+  multiplication are consumed: `T_I A'` is free of rank TWO over
+  `𝒪_{D,I}` exactly because the relative dimension is `[D:ℚ]`, so the
+  commutative algebra `D[F]` has degree at most two over `D`, so `F`
+  satisfies a monic quadratic, whose linear coefficient is `F + V` and
+  whose constant coefficient is `F ∘ V = N`.
+
+**THE ASSEMBLY**, which is where the constant coefficient `N` of the
+target comes from and is not `rfl`: with `t` the trace,
+
+    F²(y) + N · y = F²(y) + F(V y) = F(F y + V y) = F(t · y) = t · F(y),
+
+using only that `F` is additive on geometric points (`pre_add`, the
+naturality axiom) and commutes with the real multiplication
+(`Mult.galSMul_act`).  Both are already proven in
+`Modularity/AbelianScheme.lean`; nothing else is needed.
+
+**WHAT REMAINS MISSING**, re-checked 2026-07-27 in this worktree rather
+than quoted: `grep -rli frobenius .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`
+is EMPTY — the pin has no absolute or relative Frobenius morphism of
+schemes at all — and `~/cs/FLT` has no abelian-variety material.  So the
+first leaf is gated on writing the Frobenius morphism, the second on
+`ker F ⊆ ker[N]` plus factorisation of isogenies, and the third on the
+Tate module of an abelian variety over a finite field.  The three are
+disjoint and can be owned independently, which is the whole gain: the
+first two are characteristic-`p` geometry (Mumford *AV* §15, Milne *AV*
+§I.5), the third is Weil (Mumford *AV* §19, Milne *AV* §V, Tate 1966). -/
+
+/-- **THE FROBENIUS ENDOMORPHISM OF AN ABELIAN SCHEME OVER A FINITE
+FIELD** (sorry leaf — the `N`-power Frobenius morphism; see the
+subsection note above for the cut).
+
+For `k` finite with `N` elements there is a morphism `Fr : A' ⟶ A'` over
+`Spec k` whose action on geometric points is the action of the
+arithmetic Frobenius `σ ∈ Γ_k`.
+
+Classically `Fr` is the ABSOLUTE `N`-power Frobenius of `A'`: the
+identity on the underlying space, `a ↦ a ^ N` on the structure sheaf.
+It is a morphism OVER `Spec k` — which is the clause `Fr ≫ f' = f'` —
+precisely because every element of a field with `N` elements satisfies
+`z ^ N = z`, so the `N`-power Frobenius of `Spec k` is the identity;
+this is the only place `hfin` and `hN` are used, and without them the
+statement is false (over an infinite `k` the `N`-power map does not fix
+the base, and `Fr` is not a `k`-morphism).
+
+The pointwise clause is an equation of morphisms `Spec k̄ ⟶ A'`, and it
+is the standard identification "arithmetic Frobenius = Frobenius
+endomorphism": a geometric point is a ring map `y : 𝒪 → k̄`, the left
+side is `σ ∘ y` and the right side is `y ∘ (·)^N`, and these agree
+because `y (a ^ N) = y a ^ N = σ (y a)` by `hσ`.  Note that it FORCES
+`Fr`: `A'` is smooth over `k`, hence reduced, so a morphism is
+determined by its effect on `k̄`-points.  There is therefore no junk
+witness, and the leaf below that consumes `Fr` is not weakened by
+receiving it existentially.
+
+NOT ASSERTED: that `Fr` is a group endomorphism or commutes with the
+real multiplication.  Both are FREE on geometric points from the
+pointwise clause, since the Galois action is already known to be
+additive (`AbelianSchemeStruct.pre_add`) and `𝒪_D`-linear
+(`Mult.galSMul_act`); stating them here would duplicate proven
+material. -/
+theorem exists_frobEndomorphism_of_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N) :
+    ∃ Fr : A' ⟶ A', Fr ≫ f' = f' ∧
+      ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+        (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y).1 = y.1 ≫ Fr :=
+  sorry
+
+/-- **THE VERSCHIEBUNG: `[N]` FACTORS THROUGH THE FROBENIUS
+ENDOMORPHISM** (sorry leaf — Mumford *AV* §15, Milne *AV* §I.5; see the
+subsection note above for the cut).
+
+Given the Frobenius endomorphism `Fr` of the previous leaf there is a
+morphism `V : A' ⟶ A'` over `Spec k` with
+
+    Fr ≫ V = [N]  and  V ≫ Fr = [N]
+
+as morphisms `A' ⟶ A'`, where `[N] = ab'.mulByNat N` is multiplication by
+`N` (`Modularity/AbelianSchemeIsogeny.lean`).
+
+Classically: `Fr` is purely inseparable of degree `N ^ dim`, and for
+`N = p ^ a` it is the `a`-th power of the `p`-Frobenius, so `ker Fr` is
+infinitesimal and killed by `N`; hence `ker Fr ⊆ ker [N]` and `[N]`
+factors as `V ∘ Fr` for a unique isogeny `V`, the Verschiebung.  The
+second identity follows from the first: `[N]` is central in `End(A')`, so
+`Fr ≫ (V ≫ Fr) = [N] ≫ Fr = Fr ≫ [N]`, and `Fr` — an isogeny, hence
+faithfully flat — is right-cancellable.
+
+**WHY THIS IS STATED FOR MORPHISMS AND NOT FOR POINTS.**  On the
+geometric point set `A'(k̄)` this statement is a TRIVIALITY and carries
+none of the content above: `y ↦ σ · y` is a bijection there, with
+inverse `y ↦ σ⁻¹ · y`, so `V y := N · (σ⁻¹ · y)` satisfies both
+identities by `Mult.galSMul_act` and nothing has been proved.  What is
+true only for a morphism — and what the Weil leaf needs — is that `V` is
+ALGEBRAIC.  Stating it here at the level of `A' ⟶ A'` is the whole
+reason this cut is a cut; see the subsection note.
+
+`hFrpt` is what pins `Fr` as the Frobenius: without it `Fr` could be any
+endomorphism, and `[N]` does not factor through an arbitrary one (take
+`Fr = 0` with `dim ≥ 1`).  `hfin`, `hN` and `hσ` are carried because they
+are what make `hFrpt` say "Frobenius" rather than merely "some
+endomorphism inducing `σ`". -/
+theorem exists_verschiebung_of_frobEndomorphism_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (Fr : A' ⟶ A') (hFrf : Fr ≫ f' = f')
+    (hFrpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y).1 = y.1 ≫ Fr) :
+    ∃ V : A' ⟶ A', V ≫ f' = f' ∧
+      Fr ≫ V = ab'.mulByNat N ∧ V ≫ Fr = ab'.mulByNat N :=
+  sorry
+
+/-- **THE TRACE OF FROBENIUS IS A GLOBAL INTEGER OF `D`** (sorry leaf —
+Weil; this is the deep half of the finite-field cut, see the subsection
+note above).
+
+With `Fr` the Frobenius endomorphism and `V` its Verschiebung, there is a
+single `t ∈ 𝒪_D` with
+
+    Fr(y) + V(y) = t · y
+
+for EVERY geometric point `y`.  Together with `Fr ∘ V = [N]` this is the
+characteristic equation `F² - t F + N = 0`, which is what the consumer
+`exists_frobEndoCharEq_of_mult_finiteBase` assembles.
+
+WHERE THE CONTENT IS.  `hdim'` says the relative dimension is `[D:ℚ]`,
+which is the Hilbert–Blumenthal condition; it makes `T_I A'` free of rank
+TWO over `𝒪_{D,I}` for every maximal `I` of residue characteristic
+different from that of `k`.  `Fr` is central in `End(A')` (Frobenius
+commutes with every `k`-endomorphism, in particular with the real
+multiplication), so `D[Fr]` is a COMMUTATIVE `D`-subalgebra of
+`End⁰(A')`, acting faithfully and `D_I`-linearly on `V_I A' ≅ D_I²`; a
+commutative subalgebra of `M₂` containing the scalars has degree at most
+two, so `[D[Fr] : D] ≤ 2` and `Fr` satisfies a monic quadratic over `D`.
+Its coefficients are integral because `Fr` preserves the lattice `T_I`,
+so they lie in `𝒪_D`, and its linear coefficient is `Fr + V`.
+
+WHY `V` IS A HYPOTHESIS AND NOT AN EXISTENTIAL.  The pair
+`(hFrV, hVFr)` PINS `V`: on geometric points `Fr` is bijective (it is the
+action of a group element), so `V` is determined by `Fr ≫ V = [N]`
+alone, and `A'` is reduced, so the morphism is determined by its effect
+on points.  There is therefore no junk `V` for which this statement could
+be false — which is what makes it safe to universally quantify over `V`
+here while producing it existentially in the previous leaf.
+
+NOT ASSERTED: the archimedean bound `|t| ≤ 2√N` (the Riemann-hypothesis
+half of Weil, needed by no consumer in this tree), and nothing about the
+`I`-adic representations — no ideal `I`, no `n` and no torsion occurs
+anywhere in this statement, which is the point of pushing the whole
+cluster down to the residue field. -/
+theorem exists_frobTraceAct_of_mult_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (Fr V : A' ⟶ A') (hFrf : Fr ≫ f' = f') (hVf : V ≫ f' = f')
+    (hFrpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y).1 = y.1 ≫ Fr)
+    (hFrV : Fr ≫ V = ab'.mulByNat N) (hVFr : V ≫ Fr = ab'.mulByNat N)
+    (Vpt : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hVpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))), (Vpt y).1 = y.1 ≫ V) :
+    ∃ t : NumberField.RingOfIntegers D,
+      ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+        ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) (Vpt y) = m'.act t y :=
+  sorry
+
 /-- **WEIL'S CHARACTERISTIC EQUATION FOR THE FROBENIUS ENDOMORPHISM OVER
-A FINITE FIELD** (sorry leaf — Weil; see the subsection note above for
-the faithfulness audit of the three load-bearing hypotheses).
+A FINITE FIELD** (**PROVEN 2026-07-27** over the three leaves in the
+subsection note immediately above — the Frobenius endomorphism, its
+Verschiebung, and the `𝒪_D`-rationality of the trace.  It was previously
+a leaf; the faithfulness audit of its three load-bearing hypotheses in
+the subsection note further above still applies verbatim, and every one
+of them is passed on to the leaf that consumes it).
 
 Let `k` be a finite field with `N` elements, `f' : A' ⟶ Spec k` an
 abelian scheme of relative dimension `[D:ℚ]` with real multiplication by
@@ -11579,6 +11814,16 @@ characteristic polynomial over `D`, integral by Weil, and the constant
 one is `N` in the Hilbert–Blumenthal normalisation (`deg σ = N^g` and
 `Nm_{D/ℚ}(N) = N^g`).
 
+That paragraph is now the ROUTE of the proof below, split three ways:
+"the arithmetic Frobenius IS an endomorphism" is
+`exists_frobEndomorphism_of_finiteBase`, "`[N]` factors through it" is
+`exists_verschiebung_of_frobEndomorphism_finiteBase`, and "the linear
+coefficient lies in `𝒪_D`" is `exists_frobTraceAct_of_mult_finiteBase`.
+Only the last needs `hdim'`; the assembly itself needs neither, and uses
+just the additivity of the Galois action and its commutation with the
+real multiplication, both already proven in
+`Modularity/AbelianScheme.lean`.
+
 NOT ASSERTED: the archimedean bound `|t| ≤ 2√N`, which is the Riemann
 hypothesis half and which no consumer in this tree needs. -/
 theorem exists_frobEndoCharEq_of_mult_finiteBase
@@ -11595,8 +11840,66 @@ theorem exists_frobEndoCharEq_of_mult_finiteBase
       ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
         ab'.add (ab'.galSMul _ σ (ab'.galSMul _ σ y))
             (m'.act (N : NumberField.RingOfIntegers D) y)
-          = m'.act t (ab'.galSMul _ σ y) :=
-  sorry
+          = m'.act t (ab'.galSMul _ σ y) := by
+  classical
+  obtain ⟨Fr, hFrf, hFrpt⟩ := exists_frobEndomorphism_of_finiteBase hfin N hN ab' σ hσ
+  obtain ⟨V, hVf, hFrV, hVFr⟩ :=
+    exists_verschiebung_of_frobEndomorphism_finiteBase hfin N hN ab' σ hσ Fr hFrf hFrpt
+  -- `V` read on geometric points: postcomposing with `V` preserves the base point,
+  -- because `V` is a morphism over `Spec k`.
+  have hVbase : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (y.1 ≫ V) ≫ f' = specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)) := by
+    intro y
+    rw [Category.assoc, hVf]
+    exact y.2
+  obtain ⟨t, ht⟩ :=
+    exists_frobTraceAct_of_mult_finiteBase hfin N hN ab' m' hdim' σ hσ Fr V hFrf hVf hFrpt
+      hFrV hVFr (fun y => ⟨y.1 ≫ V, hVbase y⟩) (fun _ => rfl)
+  -- `N · y` is postcomposition with the morphism `[N]`: the real multiplication acts
+  -- on a rational integer through the underlying `ℕ`-action, which is `mulByNat`.
+  have hNact : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      (m'.act (N : NumberField.RingOfIntegers D) y).1 = y.1 ≫ ab'.mulByNat N := by
+    intro y
+    letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    letI : Module (NumberField.RingOfIntegers D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    have h1 : m'.act (N : NumberField.RingOfIntegers D) y
+        = (N : NumberField.RingOfIntegers D) • y := rfl
+    rw [h1, Nat.cast_smul_eq_nsmul]
+    exact ab'.nsmul_val N y
+  -- `Frob ∘ V = [N]` on geometric points, read off the morphism identity `V ≫ Fr = [N]`.
+  have hFVpt : ∀ y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (⟨y.1 ≫ V, hVbase y⟩ : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        = m'.act (N : NumberField.RingOfIntegers D) y := by
+    intro y
+    apply Subtype.ext
+    rw [hFrpt ⟨y.1 ≫ V, hVbase y⟩, hNact y, Category.assoc, hVFr]
+  -- the Galois action is additive: this is the naturality axiom `pre_add`.
+  have hgal_add : ∀ u v : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+      ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (ab'.add u v)
+        = ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ u)
+            (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ v) :=
+    fun u v => ab'.pre_add (specGal σ) (specGal_comp_base _ σ) u v
+  refine ⟨t, fun y => ?_⟩
+  -- `F² + N = F ∘ (F + V) = F ∘ [t] = [t] ∘ F`.
+  calc ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+        (m'.act (N : NumberField.RingOfIntegers D) y)
+      = ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+            (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+          (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+            (⟨y.1 ≫ V, hVbase y⟩ : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))) := by
+        rw [hFVpt y]
+    _ = ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+          (ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)
+            (⟨y.1 ≫ V, hVbase y⟩ : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))) :=
+        (hgal_add _ _).symm
+    _ = ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (m'.act t y) := by rw [ht y]
+    _ = m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) :=
+        m'.galSMul_act (𝟙 (Spec (CommRingCat.of k))) σ t y
 
 /-- **FROBENIUS SATISFIES ITS CHARACTERISTIC EQUATION ON THE TORSION OF
 THE FIBRE** (**PROVEN 2026-07-27** over the two leaves immediately above,
