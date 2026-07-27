@@ -7394,12 +7394,291 @@ theorem natCard_affine_point_eq_natCard_frobFixed (q : ℕ) [Fact q.Prime]
         Subtype.ext (WeierstrassCurve.Affine.Point.map_some
           (Algebra.ofId (ZMod q) (AlgebraicClosure (ZMod q))) hns)⟩
 
-/-- **The level-`N` Weil pairing, scaled by the degree of `1 − F`** (sorry leaf,
-opened 2026-07-27 by decomposing
-`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below, of which it is the
-ENTIRE remaining content): for `N` coprime to `q` there is an alternating,
+/-- **Rank-two Cayley–Hamilton** (PROVEN 2026-07-27): over an arbitrary
+commutative ring, on a module with a `Fin 2` basis,
+`f² = (tr f) • f − (det f) • 1`.
+
+The companion of `det_one_sub_fin_two` above — that one expands `det (1 − f)`,
+this one expands `f²` — and proven the same way, by transporting through
+`LinearMap.toMatrix b b` and computing with `Matrix.trace_fin_two` and
+`Matrix.det_fin_two`. Neither needs a field nor a `Module.rank` hypothesis, which
+is exactly what makes them usable at COMPOSITE level `N`, where the coefficient
+ring `ZMod N` is not a field. -/
+theorem sq_eq_trace_smul_sub_det_smul_fin_two {R M : Type*} [CommRing R]
+    [AddCommGroup M] [Module R M] (b : Module.Basis (Fin 2) R M) (f : Module.End R M) :
+    f * f = LinearMap.trace R M f • f - LinearMap.det f • (1 : Module.End R M) := by
+  classical
+  haveI : Module.Finite R M := Module.Finite.of_basis b
+  haveI : Module.Free R M := Module.Free.of_basis b
+  have hmat : ∀ A : Matrix (Fin 2) (Fin 2) R,
+      A * A = Matrix.trace A • A - Matrix.det A • (1 : Matrix (Fin 2) (Fin 2) R) := by
+    intro A
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.mul_apply, Fin.sum_univ_two, Matrix.trace_fin_two, Matrix.det_fin_two] <;>
+      ring
+  apply (LinearMap.toMatrix b b).injective
+  rw [LinearMap.toMatrix_mul, map_sub, map_smul, map_smul, LinearMap.toMatrix_one,
+    LinearMap.trace_eq_matrix_trace R b f, ← LinearMap.det_toMatrix b f]
+  exact hmat _
+
+/-- **A scalar that kills an invertible endomorphism is zero** (PROVEN
+2026-07-27), on a module with a `Fin 2` basis.
+
+Over a ring that is not a field this needs the invertibility, not merely
+`f ≠ 0`: in `Module.End (ZMod 4) (ZMod 4)²` the scalar `2` kills the
+endomorphism `2 • 1` without being zero. Multiplying by `f⁻¹` reduces to
+`c • 1 = 0`, and evaluating at a basis vector reduces that to `c = 0`. -/
+theorem eq_zero_of_smul_eq_zero_of_isUnit_fin_two {R M : Type*} [CommRing R]
+    [AddCommGroup M] [Module R M] (b : Module.Basis (Fin 2) R M) {f : Module.End R M}
+    (hf : IsUnit f) {c : R} (hc : c • f = 0) : c = 0 := by
+  obtain ⟨u, hu⟩ := hf
+  have h1 : c • (1 : Module.End R M) = 0 := by
+    have h0 : (c • f) * (↑u⁻¹ : Module.End R M) = 0 := by rw [hc, zero_mul]
+    rw [smul_mul_assoc, ← hu, u.mul_inv] at h0
+    exact h0
+  have h2 : c • b 0 = 0 := by
+    have h := congrArg (fun g : Module.End R M => g (b 0)) h1
+    simpa using h
+  have h3 := congrArg (fun v => b.repr v 0) h2
+  simpa using h3
+
+/-- **The Frobenius characteristic equation on points** (sorry leaf, opened
+2026-07-27 by decomposing `det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed`
+below, of which it is the ENTIRE remaining content): on `Wbar(𝔽̄_q)` the
+`q`-power Frobenius satisfies
+
+    F² P = a • F P − q • P     for every point `P`,  with  `a = q + 1 − #Wbar(𝔽_q)`.
+
+This is Silverman *AEC* V.2.3.1 (the Frobenius satisfies a monic quadratic with
+constant term `deg F = q`) together with V.1.1 (which evaluates the middle
+coefficient as `q + 1 − #Wbar(𝔽_q)`), stated on points rather than in `End(E)` so
+that it can be used without the `End` layer — which this tree has only over
+`[CharZero F]` and which is refuted in characteristic `p`
+(`Isogeny.isRationalMap_dualHom_is_false`).
+
+WHAT IT COSTS, EXACTLY, AND WHAT IT DOES NOT. Split the statement in two:
+
+* the RING IDENTITY `∃ c : ℤ, ∀ P, F² P = c • F P − q • P`. This needs NO degree
+  theory: it is the endomorphism-algebra axis that
+  `EllipticCurve/HasseBound.lean`'s ROUTE NOTES recommend, where it is step 1 of
+  four and is written with the coefficient left existential.
+* the NORMALISATION `c = q + 1 − #Wbar(𝔽_q)`, which is what naming the
+  coefficient here adds. Given the ring identity, `(1 − F) ∘ ((1 − c) + F)` is
+  multiplication by `1 − c + q`, so pinning `c` is exactly
+  `deg(1 − F) = #ker(1 − F)` — the SEPARABILITY of `1 − F`, at the single point
+  `(m, n) = (1, 1)`. `HasseBound.natCard_ker_one_sub_frobeniusPointEnd` (PROVEN)
+  supplies `#ker(1 − F) = #Wbar(𝔽_q)`, so the separability is all that is left.
+
+SO THIS LEAF IS *SHARED* WITH HASSE'S BOUND, BUT IS STRICTLY WEAKER THAN IT.
+`HasseBound.exists_natCard_ker_degreeFormEnd` needs the same step 1 and then, for
+general `(m, n)`, the SEPARATION `#ker ψ · #ker ψ' = d² ⟹ #ker ψ = d` (its route
+note's step 4, the `ℓ`-adic argument plus the ordinary/supersingular dichotomy at
+`ℓ = q`). The Lefschetz half below never meets that step, because it wants the
+determinant on `Wbar[N]` — where the characteristic equation acts directly
+through rank-two linear algebra — and not a kernel cardinality. That is the
+difference between the two leaves, and it is why closing this one does not close
+Hasse.
+
+CORRECTION TO AN EARLIER VERSION OF THIS AUDIT, written a few hours before by the
+same owner. It said the Lefschetz half "DOES need the degree theory, and it IS
+shared with Hasse's bound", reasoning that `e(ψx, ψy) = e(x, y)^{deg ψ}` rests on
+the dual isogeny. That was correct about the *pairing-shaped* route and wrong as
+a claim about the leaf: the pairing route is not the only one, and the
+characteristic equation reaches `det(1 − F | Wbar[N])` without any `deg`. The
+lesson is the standing one — an irreducibility verdict is only as wide as the
+axis the auditor searched, and that audit searched the pairing/dual axis only.
+
+NOT VACUOUS, AND THE COEFFICIENT IS UNIQUE. If `a'` also satisfied the equation
+then `(a − a') • F P = 0` for every `P`; `F` is injective
+(`Affine.Point.map_injective`) and `Wbar(𝔽̄_q)` contains points of order larger
+than any given integer (`Wbar[n] ≅ (ℤ/n)²` for `n` coprime to `q`), so
+`a = a'`. Hence the coefficient carries genuine arithmetic and cannot be
+satisfied by a junk value. Sanity check at a supersingular curve over `𝔽_p`,
+where `#Wbar(𝔽_p) = p + 1` and so `a = 0`: the equation reads `F² = −p`, which is
+the standard description of the supersingular Frobenius.
+
+THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a statement of the Frobenius
+characteristic equation, or of `deg(1 − F) = #E(𝔽_q)`, in `Fermat/`,
+`.lake/packages/mathlib/` or `~/cs/FLT/`. `EllipticCurve/IsogenyTrace.lean`'s
+`WeierstrassCurve.End.exists_charPoly` is the nearest thing and does NOT serve:
+its whole `End` layer carries `[CharZero F]`, and its constant term is
+`Isogeny.degree`, i.e. `Nat.card (ker ·)`, which is `1` for Frobenius rather than
+`q`. THE AXIS SEARCHED was this development's isogeny, isogeny-trace and
+Weil-pairing developments by binder (`CharZero`, `Fact p.Prime`) and by name,
+plus `EllipticCurve/HasseBound.lean` as it stands on 2026-07-27. -/
+theorem charEquation_point_map_frobAlgHom (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point) :
+    WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q) (WeilPairing.frobAlgHom q)
+        (WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+          (WeilPairing.frobAlgHom q) P)
+      = HasseBound.frobeniusTrace q Wbar •
+          WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+            (WeilPairing.frobAlgHom q) P - (q : ℤ) • P :=
+  sorry
+
+/-- **The characteristic equation on the `N`-torsion** (PROVEN 2026-07-27 over
+`charEquation_point_map_frobAlgHom` above): the same identity, read in
+`Module.End (ZMod N) (Wbar[N])`.
+
+The transfer is bookkeeping and nothing else, which is why the leaf is stated on
+points: `Wbar[N]` is a submodule of the point group and
+`WeilPairing.frobeniusTorsionEnd` is `Affine.Point.map (frobAlgHom q)` restricted
+to it, so both sides have the same underlying point. The only real step is that
+the `ZMod N`-action on an `N`-torsion group is the `ℤ`-action through the
+reduction (`Int.cast_smul_eq_zsmul`), which is what turns the integer
+coefficients `a` and `q` into elements of `ZMod N`. No coprimality is needed
+here; it enters only below, where the determinant is read off. -/
+theorem charEquation_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ) :
+    WeilPairing.frobeniusTorsionEnd q Wbar N * WeilPairing.frobeniusTorsionEnd q Wbar N
+      = ((HasseBound.frobeniusTrace q Wbar : ℤ) : ZMod N) •
+          WeilPairing.frobeniusTorsionEnd q Wbar N - ((q : ℕ) : ZMod N) •
+          (1 : Module.End (ZMod N)
+            ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N)) := by
+  refine LinearMap.ext fun x => Subtype.ext ?_
+  have hstep := charEquation_point_map_frobAlgHom q Wbar x.1
+  have hq : ((q : ℕ) : ZMod N) = ((q : ℤ) : ZMod N) := by push_cast; ring
+  rw [hq]
+  simp only [Module.End.mul_apply, LinearMap.sub_apply, LinearMap.smul_apply,
+    Module.End.one_apply, Int.cast_smul_eq_zsmul, Submodule.coe_sub,
+    AddSubgroupClass.coe_zsmul]
+  exact hstep
+
+/-- **`det(1 − F) = #Wbar(𝔽_q)` on the `N`-torsion** (PROVEN 2026-07-27 over
+`charEquation_point_map_frobAlgHom` above; opened the same day by decomposing
+`exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd` below, of which it is
+the ENTIRE remaining content): for `N` coprime to `q`, the determinant of
+`1 − F` on `Wbar[N]` is the reduction mod `N` of the number of `F`-fixed points
+of `Wbar(𝔽̄_q)` — equivalently, by `natCard_affine_point_eq_natCard_frobFixed`
+above, of `#Wbar(𝔽_q)`.
+
+THE PROOF, WHICH IS RANK-TWO LINEAR ALGEBRA AND NOTHING ELSE. The characteristic
+equation gives `F² = a • F − q • 1` on `Wbar[N]`; Cayley–Hamilton
+(`sq_eq_trace_smul_sub_det_smul_fin_two` above) gives
+`F² = (tr F) • F − (det F) • 1`; and `det F = q` is
+`det_frobeniusTorsionEnd_of_coprime` above. Subtracting,
+`(a − tr F) • F = 0`, and `F` is INVERTIBLE on `Wbar[N]` because its determinant
+`q` is a unit in `ZMod N` — this is the one place the coprimality is used, and it
+is what lets the scalar be cancelled over a ring that is not a field
+(`eq_zero_of_smul_eq_zero_of_isUnit_fin_two`). So `tr F = a`, and
+`det (1 − F) = 1 − tr F + det F = 1 − a + q = #Wbar(𝔽_q)` by
+`det_one_sub_fin_two` and the definition of `HasseBound.frobeniusTrace`.
+
+WHY THE LEAF MOVED HERE, AND WHAT THAT REMOVED. The leaf below used to bundle
+TWO things: the existence of an alternating PERFECT `ZMod N`-valued pairing on
+`Wbar[N]`, and the scaling of that pairing by the fixed-point count. The first
+half was pure duplication — `exists_weilPairing_frobenius_of_coprime` above is
+PROVEN and already produces exactly such a pairing, over the single
+composite-level arithmetic leaf `exists_weilPairing_mu_of_coprime`, which is
+separately owned. The second half is not about a pairing at all: by
+`pairing_map_eq_det_mul_fin_two` above, EVERY alternating form on a rank-two
+module is scaled by `LinearMap.det f` under any `f`, so the scaling constant is
+forced by the endomorphism and the only content is which ring element it equals.
+Hence this statement, which mentions no pairing — and, once stated that way, the
+classical Frobenius characteristic equation closes it outright.
+
+WHAT IS *NOT* NEEDED, contrary to the classical framing. The chain usually
+written is `#Wbar(𝔽_q) = #ker(1 − F) = deg(1 − F) = det(1 − F | T_ℓ)`, whose last
+two joints need a genuine degree of an isogeny (`#ker ψ = deg ψ` is the
+separability of `1 − F`; `deg ψ = det(ψ | T_ℓ)` rests on the dual isogeny). None
+of that is used here. The characteristic equation `F² = a • F − q` pins
+`tr(F | Wbar[N])` directly, and `det (1 − F) = 1 − tr F + det F` finishes; the
+only separability that survives is the normalisation of the coefficient `a`,
+which is absorbed into the leaf above and is a single evaluation rather than a
+theory. See that leaf's audit for the precise split, and for why the
+Weil-pairing/dual-isogeny route — which does need the degree theory — is not the
+only one.
+
+RELATION TO HASSE'S BOUND, stated precisely because the two have been conflated
+in both directions. `HasseBound.exists_natCard_ker_degreeFormEnd`
+(`EllipticCurve/HasseBound.lean`, the only remaining input of
+`hasse_bound_natCard_affine_point` above) needs the SAME characteristic equation
+— it is step 1 of the endomorphism-algebra route recorded in its own docstring —
+and then needs, for general `(m, n)`, the separation
+`#ker ψ · #ker ψ' = d² ⟹ #ker ψ = d`, which is step 4 there and is still open.
+So: the two leaves share their first input and diverge after it, and closing this
+cluster does NOT close Hasse. The reverse also holds — proving Hasse's leaf would
+not have closed this one, because a kernel cardinality does not determine a
+determinant over `ZMod N`. Note as a free consistency check that
+`natCard_ker_degreeFormEnd` at `(m, n) = (1, 1)` is already PROVEN, in this file
+as `natCard_affine_point_eq_natCard_frobFixed` and in `HasseBound.lean` as
+`natCard_ker_one_sub_frobeniusPointEnd`.
+
+WHAT IS AVAILABLE IN THE TREE, checked 2026-07-27 rather than assumed.
+`Isogeny.dualHom` and `Isogeny.dualHom_comp` (`EllipticCurve/Isogeny.lean`) DO
+exist in characteristic `p` — `ψ̂ (ψ P) = ψ.degree • P` as a homomorphism of
+point groups, with no `CharZero` binder — because they are Lagrange in `ker ψ`
+plus descent along surjectivity. What carries `[CharZero F]`, and must, is
+`isRationalMap_dualHom` / `Isogeny.dual`: that `ψ̂` is again a MORPHISM. The same
+file refutes the characteristic-`p` version in `isRationalMap_dualHom_is_false`,
+and the reason is exactly that `Isogeny.degree` is `Nat.card (ker ·)`, i.e. the
+SEPARABLE degree (`frobIsog_degree = 1`, not `q`). So the tree has no
+scheme-theoretic `deg` at all, and the group-level factorisation it does have is
+not enough for the divisor-theoretic proof of pairing adjointness, which needs
+`ψ̂` rational.
+
+A ROUTE ALREADY REFUTED — recorded so that nobody re-searches it while attacking
+the characteristic equation above. Computing `#ker(1 − F)` `ℓ`-part by `ℓ`-part
+from Smith normal form on the Tate module recovers only the VALUATIONS
+`v_ℓ(det)`, never the congruence: over `ZMod N` a kernel count sees an
+endomorphism only through `gcd(dᵢ, N)` for its elementary divisors, so it cannot
+see that `det(1 − F | T_ℓ)` is a rational integer independent of `ℓ` and
+POSITIVE. Positivity is not group theory — for a bare group endomorphism `#ker`
+and `det` agree only up to sign. That is also why a proof of Hasse's leaf would
+not have given this one. -/
+theorem det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    LinearMap.det (1 - WeilPairing.frobeniusTorsionEnd q Wbar N) =
+      ((Nat.card {P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point //
+          WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+            (WeilPairing.frobAlgHom q) P = P} : ℕ) : ZMod N) := by
+  obtain ⟨b⟩ := nonempty_basis_nTorsion q Wbar N hNq
+  haveI : Module.Finite (ZMod N)
+      ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N) :=
+    Module.Finite.of_basis b
+  haveI : Module.Free (ZMod N)
+      ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N) :=
+    Module.Free.of_basis b
+  have hdet : LinearMap.det (WeilPairing.frobeniusTorsionEnd q Wbar N) = ((q : ℕ) : ZMod N) :=
+    det_frobeniusTorsionEnd_of_coprime q Wbar N hNq
+  have hchar := charEquation_frobeniusTorsionEnd q Wbar N
+  have hCH := sq_eq_trace_smul_sub_det_smul_fin_two b (WeilPairing.frobeniusTorsionEnd q Wbar N)
+  rw [hCH, hdet] at hchar
+  have hkey : (((HasseBound.frobeniusTrace q Wbar : ℤ) : ZMod N) -
+      LinearMap.trace (ZMod N) _ (WeilPairing.frobeniusTorsionEnd q Wbar N)) •
+      WeilPairing.frobeniusTorsionEnd q Wbar N = 0 := by
+    rw [sub_smul, sub_eq_zero]
+    exact (sub_left_inj.mp hchar).symm
+  have hunit : IsUnit (WeilPairing.frobeniusTorsionEnd q Wbar N) := by
+    rw [LinearMap.isUnit_iff_isUnit_det, hdet]
+    exact (ZMod.isUnit_iff_coprime q N).mpr hNq.symm
+  have htr : LinearMap.trace (ZMod N) _ (WeilPairing.frobeniusTorsionEnd q Wbar N)
+      = ((HasseBound.frobeniusTrace q Wbar : ℤ) : ZMod N) :=
+    (sub_eq_zero.mp (eq_zero_of_smul_eq_zero_of_isUnit_fin_two b hunit hkey)).symm
+  rw [det_one_sub_fin_two b (WeilPairing.frobeniusTorsionEnd q Wbar N), htr, hdet,
+    ← natCard_affine_point_eq_natCard_frobFixed q Wbar, HasseBound.frobeniusTrace]
+  push_cast
+  ring
+
+/-- **The level-`N` Weil pairing, scaled by the degree of `1 − F`** (PROVEN
+2026-07-27 over `det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed`
+immediately above together with the PROVEN
+`exists_weilPairing_frobenius_of_coprime`; opened the same day by decomposing
+`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below, of which it is
+the ENTIRE remaining content): for `N` coprime to `q` there is an alternating,
 PERFECT (`ZMod N`-valued, unit somewhere) pairing on `Wbar[N]` which the
 endomorphism `1 − F` scales by `#{P ∈ Wbar(𝔽̄_q) : F P = P}`.
+
+THE PROOF IS THREE LINES, AND THAT IS THE POINT. The pairing is the one
+`exists_weilPairing_frobenius_of_coprime` above already builds; its Frobenius
+clause is discarded here (`1 − F` is a different endomorphism), and the scaling
+clause is not an extra property of the pairing at all —
+`pairing_map_eq_det_mul_fin_two` scales EVERY alternating form on a rank-two
+module by `LinearMap.det`. So the arithmetic all sits in the determinant leaf
+above; read its audit before attacking this cluster.
 
 WHAT THIS IS. It is the level-`N` Weil pairing `e_N : Wbar[N] × Wbar[N] → μ_N`
 (transported to `ZMod N` by a discrete logarithm, which is available because
@@ -7410,54 +7689,40 @@ single classical compatibility
 
 specialised to `ψ = 1 − F`. The scaling constant is written as the FIXED-POINT
 COUNT rather than as `deg(1 − F)` because those are equal — and their equality is
-the *separability* of `1 − F`, which is the crux this leaf deliberately absorbs:
-`deg ψ = #ker ψ` holds exactly for separable `ψ`, `F` itself is purely inseparable
-(so `#ker F = 1 ≠ q = deg F`, the defect that `EllipticCurve/Isogeny.lean`'s
-`frobIsog_degree` records), and `1 − F` is separable because `d(1 − F) = 1 ≠ 0`.
-That asymmetry is the whole content of the Lefschetz congruence, and stating the
-leaf with the fixed-point count puts it where a prover must confront it rather
-than hiding it behind a `deg` that this tree does not have.
+the *separability* of `1 − F`: `deg ψ = #ker ψ` holds exactly for separable `ψ`,
+`F` itself is purely inseparable (so `#ker F = 1 ≠ q = deg F`, the defect that
+`EllipticCurve/Isogeny.lean`'s `frobIsog_degree` records), and `1 − F` is
+separable because `d(1 − F) = 1 ≠ 0`. Writing it as the count puts that
+asymmetry where a prover must confront it rather than hiding it behind a `deg`
+that this tree does not have.
+
+That framing is right about the mathematics and turned out to be the WRONG guide
+to the proof, which is worth recording. The route it points at — build the
+level-`N` pairing, then its degree compatibility — needs the dual isogeny in
+characteristic `p` and is genuinely blocked. The route actually taken above needs
+neither: the Frobenius characteristic equation pins `tr(F | Wbar[N])` and
+rank-two linear algebra does the rest, so the separability enters only as the
+normalisation of one integer coefficient. Both statements are true; only one of
+them is attackable in this tree.
 
 NOT VACUOUS. Dropping the unit-valued clause would make the leaf trivial (take
 `e = 0`), and dropping the scaling clause would make it independent of `F`. With
 both, the leaf pins `det(1 − F | Wbar[N])` to the point count — see the assembly
 below, which is three lines over `det_eq_of_pairing_scaling_fin_two`.
 
-MACHINERY, AND WHY IT IS SHARED. What is missing is the Weil pairing at COMPOSITE
-level: the development in `EllipticCurve/WeilPairing.lean` (`weilValueProp`,
-`IsWeilValue`, `dlog`, `exists_weilPairing_frobenius`) carries `[Fact p.Prime]`
-throughout, because it builds the pairing from `μ_p ⊆ 𝔽̄_qˣ` and a discrete
-logarithm into the FIELD `ZMod p`. This is the SAME missing piece that
-`det_frobeniusTorsionEnd_of_coprime` above needs, and building it discharges both
-leaves at once: with the pairing in hand, `det F = q` comes from
-`exists_weilPairing_frobenius`'s scaling `q`, and this leaf from the scaling
-`deg(1 − F)`. Everything downstream of the pairing is already generic here —
-`pairing_map_eq_det_mul_fin_two` and `det_eq_of_pairing_scaling_fin_two` above hold
-over any commutative ring, and `nonempty_basis_nTorsion` supplies the rank-two
-input for every `N` coprime to `q`.
-
-Beyond the pairing itself, the second classical input is the DUAL ISOGENY
-(`ψ̂ ψ = [deg ψ]`), which is what proves the degree compatibility. This tree's
-`Isogeny.dual` (`EllipticCurve/Isogeny.lean`) is restricted to `[CharZero F]` —
-and must be, since the same file REFUTES the characteristic-`p` version in
-`isRationalMap_dualHom_is_false`. So the degree compatibility in characteristic
-`p` is genuinely absent and cannot be lifted from there.
-
-THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a `μ_N`-valued (or `ZMod N`-
-valued) alternating pairing on `nTorsion N` without a primality hypothesis, or an
-isogeny-degree compatibility `e(ψ x, ψ y) = e(x, y) ^ deg ψ` in positive
-characteristic, anywhere in `Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`.
-THE AXIS SEARCHED was the primality binders and the `CharZero` binders of this
-project's own Weil-pairing and isogeny developments; a name-level grep over the
-three trees was run for the pairing, not for a dual isogeny in characteristic `p`.
-
-THE AXIS *NOT* SEARCHED, recorded so the next owner does not assume it is closed:
-a route that avoids the dual isogeny entirely — e.g. computing `#ker(1 − F)`
-`ℓ`-part by `ℓ`-part from Smith normal form on the Tate module. That route
-recovers only the VALUATIONS `v_ℓ(det)`, not the congruence, because it cannot see
-that `det(1 − F | T_ℓ)` is a rational integer independent of `ℓ` and POSITIVE.
-Positivity is essential and is not group theory: for a group endomorphism with the
-same kernel data, `#ker` and `det` agree only up to sign. -/
+MACHINERY. Everything this statement needs beyond the determinant leaf is proven
+and generic: `exists_weilPairing_frobenius_of_coprime` for the pairing (itself
+over the composite-level arithmetic leaf `exists_weilPairing_mu_of_coprime`),
+`nonempty_basis_nTorsion` for the rank-two input at every `N` coprime to `q`, and
+`pairing_map_eq_det_mul_fin_two` / `det_eq_of_pairing_scaling_fin_two` for the
+linear algebra, which hold over an arbitrary commutative ring so that composite
+`N` is not an obstruction. The determinant leaf above is PROVEN, so the only
+sorry left under this whole cluster is `charEquation_point_map_frobAlgHom` — the
+Frobenius characteristic equation on points — plus the separately owned
+composite-level pairing `exists_weilPairing_mu_of_coprime`. Read the
+characteristic equation's audit before attacking either; in particular it records
+why the dual-isogeny route is not needed and how the leaf relates to
+`HasseBound`. -/
 theorem exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ) (hNq : Nat.Coprime N q) :
     ∃ e : ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N) →ₗ[ZMod N]
@@ -7468,8 +7733,13 @@ theorem exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd (q : ℕ) [Fact q
             ((1 - WeilPairing.frobeniusTorsionEnd q Wbar N) y)
           = ((Nat.card {P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point //
                 WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
-                  (WeilPairing.frobAlgHom q) P = P} : ℕ) : ZMod N) * e x y :=
-  sorry
+                  (WeilPairing.frobAlgHom q) P = P} : ℕ) : ZMod N) * e x y := by
+  obtain ⟨b⟩ := nonempty_basis_nTorsion q Wbar N hNq
+  obtain ⟨e, halt, hnd, -⟩ := exists_weilPairing_frobenius_of_coprime q Wbar N hNq
+  exact ⟨e, halt, hnd, fun x y => by
+    rw [pairing_map_eq_det_mul_fin_two b e halt
+        (1 - WeilPairing.frobeniusTorsionEnd q Wbar N) x y,
+      det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed q Wbar N hNq]⟩
 
 /-- **The Lefschetz congruence: `#Wbar(𝔽_q) ≡ det(1 − F)` on `Wbar[N]`** (PROVEN
 2026-07-27 over `exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd` and
@@ -7499,20 +7769,34 @@ above has exactly two joints, and they are separated here:
   as an explicit bijection over `exists_algebraMap_eq_of_pow_card_eq`. The old
   audit here flagged it as "separately available and cheap"; that was right.
 * the REST — `#ker(1 − F) = deg(1 − F) = det(1 − F)` — is
-  `exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd` above, restated as the
-  level-`N` Weil pairing together with its isogeny-degree compatibility, which is
-  the classical input those two equalities actually rest on and is SHARED with
-  `det_frobeniusTorsionEnd_of_coprime`. Read its audit before attacking either.
+  `exists_weilPairing_scaling_one_sub_frobeniusTorsionEnd` above, now PROVEN, and
+  through it the single leaf
+  `det_one_sub_frobeniusTorsionEnd_eq_natCard_frobFixed` above, which carries the
+  whole of it. Read that leaf's audit before attacking this cluster.
 
-What was NOT needed, and this is worth recording because both audits above expect
-it: no degree FORM on `End`, and no `deg` function at all. Only the two joints
-above, and the ambient linear algebra is generic
-(`pairing_map_eq_det_mul_fin_two`, `det_eq_of_pairing_scaling_fin_two`, proven
-here over any commutative ring so that composite `N` is not an obstruction).
-`hasse_bound_natCard_affine_point` above still needs the degree form, because
-positive-definiteness of a quadratic form is not a single-isogeny statement — so
-the "build a degree theory once for both" note in its audit is now half retired:
-the LEFSCHETZ half does not need one, the HASSE half still does. -/
+WHAT WAS NEEDED, after two corrections on 2026-07-27 that are worth keeping
+because they went in opposite directions. The original note said no `deg`
+function was needed; a second pass reversed it, on the ground that the residue
+leaf's Weil-pairing shape hides the degree theory inside its scaling clause
+(`e(ψx, ψy) = e(x, y)^{deg ψ}` IS the isogeny-degree compatibility, which rests
+on the dual isogeny, absent in characteristic `p`). That reversal was right about
+the pairing route and wrong about the leaf, and the third pass — which is what is
+in the file — resolves it: with the pairing factored out into the PROVEN
+`exists_weilPairing_frobenius_of_coprime`, the residue is a bare DETERMINANT
+identity, and a determinant on `Wbar[N]` is reachable from the Frobenius
+CHARACTERISTIC EQUATION `F² = a·F − q` by rank-two linear algebra, with no `deg`
+anywhere. So the original note was correct after all, for a reason it did not
+give.
+
+The one remaining leaf under this whole cluster is therefore
+`charEquation_point_map_frobAlgHom` above. It is SHARED with
+`hasse_bound_natCard_affine_point` — it is step 1 of the endomorphism-algebra
+route recorded in `HasseBound.exists_natCard_ker_degreeFormEnd`'s docstring — but
+only shared, not equivalent: Hasse needs in addition the separation step for
+general `(m, n)`, which the Lefschetz half never meets. Everything else here is
+generic (`pairing_map_eq_det_mul_fin_two`, `det_eq_of_pairing_scaling_fin_two`,
+`sq_eq_trace_smul_sub_det_smul_fin_two`, `det_one_sub_fin_two`, all over an
+arbitrary commutative ring so that composite `N` is not an obstruction). -/
 theorem natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
     (hNq : Nat.Coprime N q) :
