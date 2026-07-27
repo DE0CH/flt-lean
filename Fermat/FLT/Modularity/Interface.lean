@@ -133,6 +133,10 @@ it is split off as separate sorried leaves
 -/
 module
 
+-- Was reached transitively through `ModThree.lean`'s `public import` of it until
+-- 2026-07-27, when that edge was removed to take `MazurTorsion` off the critical
+-- path (see `GaloisRepresentation/SubQuotCharacter.lean`).  Named explicitly here.
+public import Fermat.FLT.FreyCurve.MazurTorsion
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Modularity.HeckeFrame
 public import Fermat.FLT.Modularity.HeckeFrameForm
