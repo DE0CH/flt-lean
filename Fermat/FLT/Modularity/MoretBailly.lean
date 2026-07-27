@@ -534,6 +534,16 @@ lemma discreteTopology_moduleEnd_finTwoFun (R : Type*) [CommRing R]
   haveI : Module.Finite R (Module.End R (Fin 2 → R)) := Module.Finite.of_finite
   exact discreteTopology_moduleTopology R (Module.End R (Fin 2 → R))
 
+-- ARCHIMEDEAN-HALF ADDITION (2026-07-27): the `n`-torsion count
+-- (`WeierstrassCurve.n_torsion_card`) and the divisibility of the geometric
+-- point group (`TorsionCard.smul_surjective`), which are the two algebraic
+-- inputs of `exists_realWeierstrassCurveWithConjTorsion`. Both modules were
+-- ALREADY in this module's transitive import closure (through
+-- `GaloisRepresentation/Chebotarev.lean`), so this adds ZERO modules to any
+-- cone; it is `public` because those names are used in a proof body and a
+-- purely transitive private route does not re-export them.
+public import Fermat.FLT.EllipticCurve.Torsion
+public import Fermat.FLT.EllipticCurve.TorsionCard
 /-- **A framed representation over a finite discrete ring is locally
 constant**: the fibres of `g ↦ ρ g` are open. This is the form in which
 continuity of the two level representations is CONSUMED when the
@@ -25682,8 +25692,415 @@ theorem exists_ellipticSchemeOverField (F : Type u) [Field F]
              = abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of F))) σ (e x)) :=
   sorry
 
-/-- **THE ARCHIMEDEAN HALF of the elliptic-curve leaf** (sorry leaf, cut
-2026-07-27 out of `exists_realEllipticSchemeWithConjTorsion`): a real elliptic
+/-! ### The archimedean half: the real test curves and the conjugation involution
+
+CUT 2026-07-27 of `exists_realWeierstrassCurveWithConjTorsion`.  The node is
+discharged from FOUR leaves and real assembly code; the route taken is the CHEAP
+one recorded on the old leaf — **no Weierstrass uniformisation `E(ℂ) ≅ ℂ/Λ` is
+constructed anywhere**.  What replaces it:
+
+* the torsion of `E(F̄)` is `(ℚ/ℤ)²` for purely algebraic reasons (divisibility
+  plus `#E[n] = n²`, both already PROVEN in `EllipticCurve/TorsionCard.lean` and
+  `EllipticCurve/Torsion.lean`);
+* complex conjugation `c` is an involution of that group whose class is pinned by
+  two invariants — that `c ≠ ±1` on `E[n]` for `n ≥ 3` (an algebraic consequence
+  of the Weil pairing: `det(c | E[n]) = χ_n(c) = −1 ≠ 1`), and the ORDER OF THE
+  FIXED `2`-TORSION, which is `#E(ℝ)[2]`, i.e. the number of real roots of the
+  cubic.
+
+So the only genuinely archimedean inputs left are `exists_unique_realConj`
+(PROVEN below: `Gal(ℝ̄/ℝ)` has order two) and
+`card_fixed_twoTorsion_realTestCurve` (a root count).  Everything else is
+algebra. -/
+
+/-- **The short Weierstrass model `y² = x³ + a x`** over any commutative ring.
+Used only to name the two real test curves below; `a₄ = a` and every other
+coefficient is `0`. -/
+def shortWeierstrassModel {R : Type*} [CommRing R] (a : R) : WeierstrassCurve R where
+  a₁ := 0
+  a₂ := 0
+  a₃ := 0
+  a₄ := a
+  a₆ := 0
+
+/-- **`Δ(y² = x³ + a x) = −64 a³`** (PROVEN 2026-07-27): with
+`a₁ = a₂ = a₃ = a₆ = 0` one has `b₂ = b₆ = 0`, `b₄ = 2a`, `b₈ = −a²`, so
+`Δ = −b₂²b₈ − 8b₄³ − 27b₆² + 9b₂b₄b₆ = −8·(2a)³ = −64a³`. -/
+lemma shortWeierstrassModel_Δ {R : Type*} [CommRing R] (a : R) :
+    (shortWeierstrassModel a).Δ = -64 * a ^ 3 := by
+  simp only [shortWeierstrassModel, WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- **The two real test curves**, one for each sign of the discriminant — this is
+what makes a real-analytic CONSTRUCTION of a curve unnecessary, since both curves
+are defined over `ℚ` and only base changed here:
+
+* `ε = false` → `y² = x³ − x`, `Δ = 64 > 0` (three real `2`-torsion points);
+* `ε = true`  → `y² = x³ + x`, `Δ = −64 < 0` (one real `2`-torsion point).
+
+The base is `ULift ℝ` rather than `ℝ` because the consumer
+`exists_realEllipticSchemeWithConjTorsion` lives in `Scheme.{u}`. -/
+def realTestCurve (ε : Bool) : WeierstrassCurve (ULift.{u} ℝ) :=
+  shortWeierstrassModel (if ε then 1 else -1)
+
+/-- **The real test curves are elliptic** (PROVEN 2026-07-27): `Δ = −64·(±1)³`
+is `∓64 ≠ 0`, and over a field `IsUnit` is `≠ 0`. -/
+instance realTestCurve_isElliptic (ε : Bool) : (realTestCurve.{u} ε).IsElliptic := by
+  constructor
+  rw [realTestCurve, shortWeierstrassModel_Δ, isUnit_iff_ne_zero]
+  intro h
+  apply_fun ULift.down at h
+  cases ε <;> simp at h
+
+/-- **THE STRUCTURE OF THE TORSION** (sorry leaf, cut 2026-07-27 out of
+`exists_realWeierstrassCurveWithConjTorsion`): an abelian group that is DIVISIBLE
+and whose `n`-torsion has exactly `n²` elements for every `n ≥ 1` has torsion
+subgroup `(ℚ/ℤ)²`.
+
+No elliptic curve, no field, nothing archimedean: this is a statement of pure
+abelian group theory, and it is where the "`E[n] ≅ (ℤ/n)²` for all `n`, coherently
+in `n`" content of the node lives.
+
+CLASSICALLY: a divisible torsion abelian group is a direct sum of Prüfer groups
+`ℤ(p^∞)` (Kaplansky, *Infinite Abelian Groups*, Thm. 4; or Fuchs I §23), and
+`#A[p] = p²` says there are exactly two summands at each prime `p`, so
+`A_tors ≅ ⊕_p (ℤ(p^∞))² ≅ (ℚ/ℤ)²`.  An equivalent route that avoids the general
+classification, and is probably the cheaper one in Lean: choose a COMPATIBLE
+system of bases `(P_n, Q_n)` of `A[n]` with `[m] P_{nm} = P_n` — the inverse
+system of bases is an inverse system of NONEMPTY FINITE sets over the divisibility
+order, so it has a section by
+`nonempty_sections_of_finite_cofiltered_system` (Mathlib,
+`CategoryTheory/CofilteredSystem.lean`) — and set `θ (a/n, b/n) = a P_n + b Q_n`.
+Divisibility is what makes each transition map `A[nm] → A[n]` surjective, hence
+each fibre nonempty.
+
+The inputs are exactly what the elliptic-curve side already PROVES: divisibility
+is `TorsionCard.smul_surjective` and the count is
+`WeierstrassCurve.n_torsion_card`.
+
+FAITHFULNESS: `θ` is asked to be additive, injective, TORSION-VALUED and to hit
+every `n`-torsion element, so it is an isomorphism `(ℚ/ℤ)² ≅ A_tors` and not
+merely some injection.  The third clause (image is torsion) is not redundant with
+the fourth: it is what lets a consumer transport an endomorphism of `A` back along
+`θ` without first proving `ℚ/ℤ` is a torsion group. -/
+theorem exists_torsionParam_of_divisible {P : Type*} [AddCommGroup P]
+    (hdiv : ∀ n : ℕ, n ≠ 0 → ∀ y : P, ∃ x : P, (n : ℤ) • x = y)
+    (hcard : ∀ n : ℕ, n ≠ 0 → Nat.card {x : P // (n : ℤ) • x = 0} = n ^ 2) :
+    ∃ θ : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) → P,
+      (∀ v w, θ (v + w) = θ v + θ w) ∧
+      Function.Injective θ ∧
+      (∀ v, ∃ n : ℕ, n ≠ 0 ∧ (n : ℤ) • θ v = 0) ∧
+      (∀ n : ℕ, n ≠ 0 → ∀ y : P, (n : ℤ) • y = 0 → ∃ v, θ v = y) :=
+  sorry
+
+/-- **THE CLASSIFICATION OF THE INVOLUTION** (sorry leaf, cut 2026-07-27 out of
+`exists_realWeierstrassCurveWithConjTorsion`): an involution `c` of `(ℚ/ℤ)²`
+which is neither `+1` nor `−1` on any `n`-torsion with `n ≥ 3`, and whose fixed
+`2`-torsion has `4` elements (`ε = false`) or `2` elements (`ε = true`), is
+conjugate IN `Aut((ℚ/ℤ)²)` to `realConjAdd _ ε`.
+
+Nothing here mentions elliptic curves, `ℝ`, or `ℂ`: this is integral linear
+algebra, and it is the half of the node that "separates the two determinant-`−1`
+involutions by their fixed subgroup".
+
+CLASSICALLY.  `End((ℚ/ℤ)²) = M₂(Ẑ)`, so `c ∈ GL₂(Ẑ)` with `c² = 1`, and the
+problem splits over the primes.  For `p` ODD, `2` is invertible, so
+`e = (1+c)/2` is an idempotent and the `ℤ_p`-lattice splits as `ℤ_p^a ⊕ ℤ_p(−)^b`
+with `a + b = 2`; the multiplicities are visible mod `p`, so
+`c|A[p] ≠ ±1` forces `a = b = 1`, i.e. `c ~ diag(1,−1)` on the `p`-part.  For
+`p = 2` the indecomposable `ℤ₂[C₂]`-lattices are exactly `ℤ₂` (trivial), `ℤ₂(−)`
+(sign) and the regular module `ℤ₂[C₂]` (Diederichsen–Reiner), so a rank-two
+lattice is one of `triv⊕triv` (`c = 1`), `triv⊕sign` (`diag(1,−1)`),
+`sign⊕sign` (`c = −1`) and `ℤ₂[C₂]` (the swap).  The hypotheses at `n = 4` kill
+`c = ±1`, and the two survivors are separated by the fixed `2`-torsion: on
+`A[2]` negation is the identity, so `diag(1,−1)` fixes all `4` elements while the
+swap fixes only the `2` diagonal ones.  Finally the swap IS `[[1,1],[0,−1]]` in
+the basis `(1,1), (0,1)`, and `diag(1,−1)` is `[[1,1],[0,−1]]`-conjugate over
+`ℤ_p` for odd `p` (the `−1`-eigenvector `(1,−2)` is primitive there), so the two
+cases assemble into `realConjAdd _ ε` globally.
+
+WHY THE HYPOTHESES ARE THE RIGHT ONES.  `c ≠ ±1` on `A[n]` for `n ≥ 3` is
+exactly `det(c|A[n]) = −1` in disguise, and `det = −1` is what the WEIL PAIRING
+gives on the elliptic-curve side — algebraically, over any field, because
+conjugation acts on `μ_n` by inversion.  Stating the hypothesis this way keeps
+`ZMod n`-module and `LinearMap.det` infrastructure out of the statement.
+
+FAITHFULNESS: the conclusion is an equation of maps, so no junk `α` satisfies it,
+and both values of `ε` are genuinely reachable (the two conjugacy classes above),
+so this is not vacuous. -/
+theorem exists_conj_realConjAdd (ε : Bool)
+    (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
+    (hc : ∀ x, c (c x) = x)
+    (hne_id : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ x)
+    (hne_neg : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ -x)
+    (hfix2 : Nat.card {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) //
+      (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4) :
+    ∃ α : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) ≃+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))),
+      ∀ v, α (realConjAdd _ ε v) = c (α v) :=
+  sorry
+
+/-- **THE ABSTRACT NODE** (PROVEN 2026-07-27 from the two leaves above): a
+divisible abelian group whose `n`-torsion has `n²` elements, carrying an
+involution `c` that is neither `±1` on any `n`-torsion with `n ≥ 3` and whose
+fixed `2`-torsion has `4` or `2` elements, admits a full torsion parametrisation
+`(ℚ/ℤ)² → P` intertwining `realConjAdd ε` with `c`.
+
+The proof is real code: take `θ` from `exists_torsionParam_of_divisible`,
+transport `c` back along `θ` (possible because `θ` is injective with image the
+whole torsion subgroup, and `c` preserves torsion), check that all three
+invariants transfer along that transport, apply `exists_conj_realConjAdd` to the
+transported involution `c₀` to get `α`, and set `τ = θ ∘ α`.
+
+NOTE the statement is about the AMBIENT group `P`, not about its torsion
+subgroup: that is deliberate, because the consumer's `P` is the full point group
+`E(F̄)`, which is very far from torsion, and phrasing the node this way removes
+all torsion-subgroup bookkeeping from the elliptic-curve side. -/
+theorem exists_conjParam_of_involution {P : Type*} [AddCommGroup P] (ε : Bool)
+    (c : P →+ P) (hc : ∀ x, c (c x) = x)
+    (hdiv : ∀ n : ℕ, n ≠ 0 → ∀ y : P, ∃ x : P, (n : ℤ) • x = y)
+    (hcard : ∀ n : ℕ, n ≠ 0 → Nat.card {x : P // (n : ℤ) • x = 0} = n ^ 2)
+    (hne_id : ∀ n : ℕ, 3 ≤ n → ∃ x : P, (n : ℤ) • x = 0 ∧ c x ≠ x)
+    (hne_neg : ∀ n : ℕ, 3 ≤ n → ∃ x : P, (n : ℤ) • x = 0 ∧ c x ≠ -x)
+    (hfix2 : Nat.card {x : P // (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4) :
+    ∃ τ : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) → P,
+      (∀ v w, τ (v + w) = τ v + τ w) ∧
+      Function.Injective τ ∧
+      (∀ v, τ (realConjAdd _ ε v) = c (τ v)) ∧
+      (∀ n : ℕ, n ≠ 0 → ∀ y : P, (n : ℤ) • y = 0 → ∃ v, τ v = y) := by
+  classical
+  obtain ⟨θ, hθadd, hθinj, hθtor, hθcov⟩ := exists_torsionParam_of_divisible hdiv hcard
+  -- `θ` as a bundled additive map, so that `map_zsmul` is available
+  set θA : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ P := AddMonoidHom.mk' θ hθadd with hθA
+  have hθAe : ∀ v, θA v = θ v := fun _ => rfl
+  -- transport `c` back along `θ`: `c (θ v)` is torsion, hence in the image of `θ`
+  have hex : ∀ v, ∃ w, θ w = c (θ v) := by
+    intro v
+    obtain ⟨n, hn, hnv⟩ := hθtor v
+    refine hθcov n hn _ ?_
+    rw [← map_zsmul c, hnv, map_zero]
+  choose c0 hc0 using hex
+  have hc0add : ∀ v w, c0 (v + w) = c0 v + c0 w := by
+    intro v w
+    apply hθinj
+    rw [hc0, hθadd, map_add, hθadd, hc0, hc0]
+  set cA : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) :=
+    AddMonoidHom.mk' c0 hc0add with hcA
+  have hcAe : ∀ v, cA v = c0 v := fun _ => rfl
+  -- the transported involution has the same invariants
+  have hc0inv : ∀ v, cA (cA v) = v := by
+    intro v
+    apply hθinj
+    rw [hcAe, hcAe, hc0, hc0, hc]
+  have hpull : ∀ (n : ℕ), n ≠ 0 → ∀ y : P, (n : ℤ) • y = 0 →
+      ∃ v, θ v = y ∧ (n : ℤ) • v = 0 := by
+    intro n hn y hy
+    obtain ⟨v, hv⟩ := hθcov n hn y hy
+    refine ⟨v, hv, ?_⟩
+    apply hθinj
+    rw [← hθAe, map_zsmul, hθAe, hv, hy, ← hθAe, map_zero]
+  have hne_id0 : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ cA x ≠ x := by
+    intro n hn
+    obtain ⟨y, hy0, hyne⟩ := hne_id n hn
+    obtain ⟨v, hv, hv0⟩ := hpull n (by omega) y hy0
+    refine ⟨v, hv0, fun hcv => hyne ?_⟩
+    have h := hc0 v
+    rw [← hcAe, hcv, hv] at h
+    exact h.symm
+  have hne_neg0 : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ cA x ≠ -x := by
+    intro n hn
+    obtain ⟨y, hy0, hyne⟩ := hne_neg n hn
+    obtain ⟨v, hv, hv0⟩ := hpull n (by omega) y hy0
+    refine ⟨v, hv0, fun hcv => hyne ?_⟩
+    have h := hc0 v
+    rw [← hcAe, hcv] at h
+    rw [← hv, ← h, ← hθAe, map_neg, hθAe]
+  have hfix20 : Nat.card {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) //
+      (2 : ℤ) • x = 0 ∧ cA x = x} = if ε then 2 else 4 := by
+    rw [← hfix2]
+    refine Nat.card_congr (Equiv.ofBijective
+      (fun x => (⟨θ x.1,
+        by rw [← hθAe, ← map_zsmul, hθAe, x.2.1, ← hθAe, map_zero],
+        by rw [← hc0, ← hcAe, x.2.2]⟩ : {y : P // (2 : ℤ) • y = 0 ∧ c y = y})) ⟨?_, ?_⟩)
+    · intro a b h
+      exact Subtype.ext (hθinj (congrArg Subtype.val h))
+    · rintro ⟨y, hy2, hyc⟩
+      obtain ⟨v, hv, hv0⟩ := hpull 2 (by norm_num) y hy2
+      refine ⟨⟨v, hv0, ?_⟩, Subtype.ext hv⟩
+      apply hθinj
+      rw [hcAe, hc0, hv, hyc]
+  obtain ⟨α, hα⟩ := exists_conj_realConjAdd ε cA hc0inv hne_id0 hne_neg0 hfix20
+  refine ⟨fun v => θ (α v), ?_, ?_, ?_, ?_⟩
+  · intro v w
+    show θ (α (v + w)) = θ (α v) + θ (α w)
+    rw [map_add, hθadd]
+  · intro v w h
+    exact α.injective (hθinj h)
+  · intro v
+    show θ (α (realConjAdd _ ε v)) = c (θ (α v))
+    rw [hα v, hcAe, hc0]
+  · intro n hn y hy
+    obtain ⟨v, hv⟩ := hθcov n hn y hy
+    exact ⟨α.symm v, by simpa using hv⟩
+
+/-- **`Gal(ℝ̄/ℝ)` HAS ORDER TWO** (PROVEN 2026-07-27) — one of the two genuinely
+archimedean inputs of the node, and the only place `ℂ` is used.
+
+The proof: `ℂ` is an algebraic closure of `ℝ` (`Complex.isAlgClosed` plus
+finiteness), and so is `AlgebraicClosure (ULift ℝ)` VIEWED OVER `ℝ`, because
+`ULift ℝ` is algebraic over `ℝ`.  `IsAlgClosure.equiv` then gives an `ℝ`-algebra
+isomorphism, whence `finrank ℝ ℝ̄ = finrank ℝ ℂ = 2`; the tower
+`ℝ ⊆ ULift ℝ ⊆ ℝ̄` has `finrank ℝ (ULift ℝ) = 1`, so `finrank (ULift ℝ) ℝ̄ = 2`,
+and `IsGalois.card_aut_eq_finrank` converts that into the order of the
+automorphism group. -/
+theorem realGal_card : Nat.card (Field.absoluteGaloisGroup (ULift.{u} ℝ)) = 2 := by
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI : IsAlgClosure ℝ ℂ := ⟨Complex.isAlgClosed, Algebra.IsAlgebraic.of_finite ℝ ℂ⟩
+  let e : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] ℂ := IsAlgClosure.equiv ℝ _ ℂ
+  have hR : Module.finrank ℝ (AlgebraicClosure (ULift.{u} ℝ)) = 2 := by
+    rw [e.toLinearEquiv.finrank_eq, Complex.finrank_real_complex]
+  have hone : Module.finrank ℝ (ULift.{u} ℝ) = 1 := by
+    have h1 : Module.finrank ℝ (ULift.{u} ℝ) = Module.finrank ℝ ℝ :=
+      (ULift.moduleEquiv (R := ℝ) (M := ℝ)).finrank_eq
+    rw [h1, Module.finrank_self]
+  have htower := Module.finrank_mul_finrank ℝ (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))
+  rw [hone, hR, one_mul] at htower
+  haveI hfdR : FiniteDimensional ℝ (AlgebraicClosure (ULift.{u} ℝ)) := by
+    apply Module.finite_of_finrank_pos
+    rw [hR]; norm_num
+  haveI hfd : FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    Module.Finite.of_restrictScalars_finite ℝ (ULift.{u} ℝ) _
+  haveI hgal : IsGalois (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    IsAlgClosure.isGalois _ _
+  -- the instance arguments are supplied EXPLICITLY: `hfd` is found by
+  -- `infer_instance` but not by the elaborator's own search at this application
+  have hcard := @IsGalois.card_aut_eq_finrank (ULift.{u} ℝ) _
+    (AlgebraicClosure (ULift.{u} ℝ)) _ _ hfd hgal
+  show Nat.card (AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+    AlgebraicClosure (ULift.{u} ℝ)) = 2
+  rw [hcard]
+  exact htower
+
+/-- **COMPLEX CONJUGATION IS THE UNIQUE NONTRIVIAL REAL AUTOMORPHISM** (PROVEN
+2026-07-27, from `realGal_card`): there is a `σ₀ ≠ 1` in `Gal(ℝ̄/ℝ)`, it is an
+involution, and every `σ ≠ 1` equals it.
+
+This is the form the consumer needs.  The node's conclusion quantifies over all
+`σ ≠ 1` but `τ` must be chosen ONCE, before `σ`; the uniqueness clause is exactly
+what closes that gap. -/
+theorem exists_unique_realConj :
+    ∃ σ₀ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ₀ ≠ 1 ∧
+      (∀ x : AlgebraicClosure (ULift.{u} ℝ), σ₀ (σ₀ x) = x) ∧
+      ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 → σ = σ₀ := by
+  classical
+  have hcard := realGal_card.{u}
+  haveI : Finite (Field.absoluteGaloisGroup (ULift.{u} ℝ)) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
+  haveI : Fintype (Field.absoluteGaloisGroup (ULift.{u} ℝ)) := Fintype.ofFinite _
+  have hfc : Fintype.card (Field.absoluteGaloisGroup (ULift.{u} ℝ)) = 2 := by
+    rw [← Nat.card_eq_fintype_card]; exact hcard
+  obtain ⟨σ₀, hσ₀⟩ : ∃ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 := by
+    by_contra hall
+    push Not at hall
+    rw [Fintype.card_eq_one_iff_nonempty_unique.mpr ⟨⟨⟨1⟩, fun a => hall a⟩⟩] at hfc
+    exact absurd hfc (by norm_num)
+  refine ⟨σ₀, hσ₀, ?_, ?_⟩
+  · intro x
+    have hsq : σ₀ * σ₀ = 1 := by
+      have hp := pow_card_eq_one (G := Field.absoluteGaloisGroup (ULift.{u} ℝ)) (x := σ₀)
+      rw [hfc, pow_two] at hp
+      exact hp
+    have hap := congrArg (fun f : Field.absoluteGaloisGroup (ULift.{u} ℝ) =>
+      (f : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+        AlgebraicClosure (ULift.{u} ℝ)) x) hsq
+    simpa using hap
+  · intro σ hσ
+    by_contra hne
+    have hsub : ({1, σ, σ₀} : Finset (Field.absoluteGaloisGroup (ULift.{u} ℝ))).card
+        ≤ Fintype.card (Field.absoluteGaloisGroup (ULift.{u} ℝ)) := Finset.card_le_univ _
+    rw [Finset.card_insert_of_notMem (by simp [Ne.symm hσ, Ne.symm hσ₀]),
+      Finset.card_insert_of_notMem (by simp [hne]), Finset.card_singleton, hfc] at hsub
+    omega
+
+/-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (sorry
+leaf, cut 2026-07-27 out of `exists_realWeierstrassCurveWithConjTorsion`).  This
+is the WEIL PAIRING input, and — despite appearances — it is ALGEBRAIC, not
+archimedean: it holds over any base field for any `σ` acting nontrivially on
+`μ_n`.
+
+INTENDED PROOF: the Weil pairing `e_n : E[n] × E[n] → μ_n` is alternating,
+nondegenerate and Galois-equivariant, so
+`e_n(σx, σy) = σ(e_n(x,y)) = e_n(x,y)^{χ_n(σ)}` and hence
+`det(σ | E[n]) = χ_n(σ)` (this is `WeilPairing.det_eq_of_conj`, already PROVEN in
+`Fermat/FLT/EllipticCurve/WeilPairing.lean`, together with
+`WeilPairing.pairing_map_eq_det_smul`).  Over `ℝ` the nontrivial automorphism
+inverts every root of unity, so `χ_n(σ) = −1`.  If `σ` were `+1` or `−1` on
+`E[n]` its determinant would be `1`, and `1 ≠ −1` in `ZMod n` for `n ≥ 3`.
+
+MISSING MACHINERY, and this is the honest cost of this leaf: the tree's
+`WeilPairing.exists_weilPairing` is stated for `E : WeierstrassCurve ℚ` only.
+The linear-algebra half (`pairing_map_eq_det_smul`, `det_eq_of_conj`) is already
+stated over an arbitrary field, so what is needed is the pairing itself over
+`ULift ℝ` — or, more cheaply, only the CONSEQUENCE above, for which a direct
+argument on `E[n]` may be shorter than a full pairing.
+
+Do NOT weaken this to `σ ≠ 1` only: the statement is FALSE for `n ≤ 2`, since
+`+1 = −1` on `E[2]`, which is exactly why the sibling
+`card_fixed_twoTorsion_realTestCurve` carries the `n = 2` information separately. -/
+theorem exists_torsion_conj_ne (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsElliptic]
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) (n : ℕ) (hn : 3 ≤ n) :
+    letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+    (∃ x : (WeierstrassCurve.Affine.baseChange E (AlgebraicClosure (ULift.{u} ℝ))).Point,
+        (n : ℤ) • x = 0 ∧
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x ≠ x) ∧
+    (∃ x : (WeierstrassCurve.Affine.baseChange E (AlgebraicClosure (ULift.{u} ℝ))).Point,
+        (n : ℤ) • x = 0 ∧
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x ≠ -x) :=
+  sorry
+
+/-- **THE REAL `2`-TORSION COUNT** (sorry leaf, cut 2026-07-27 out of
+`exists_realWeierstrassCurveWithConjTorsion`) — the second genuinely archimedean
+input, and the ROOT-COUNTING FACT that the old leaf's docstring identified as the
+cheap replacement for Weierstrass uniformisation.  It is the only place the two
+values of `ε` are distinguished.
+
+The `2`-torsion of `y² = x³ + a x` is `{O} ∪ {(x,0) : x(x² + a) = 0}`, because in
+a short model `−(x,y) = (x,−y)` and `char ≠ 2`.  So:
+
+* `ε = false`, `a = −1`: `x ∈ {0, 1, −1}`, all in the image of `ULift ℝ` and
+  therefore fixed by every element of `Gal(ℝ̄/ℝ)` — FOUR fixed points;
+* `ε = true`, `a = 1`: `x ∈ {0, i, −i}` with `i² = −1`; `i ∉ ULift ℝ`, and the
+  fixed field of `σ ≠ 1` is `ULift ℝ` (the extension is Galois of degree two, see
+  `realGal_card`), so `σ` swaps `(i,0)` and `(−i,0)` — TWO fixed points.
+
+FAITHFULNESS: the count `4` versus `2` is `#E(ℝ)[2]`, i.e. one plus the number of
+real roots of the cubic, which is three when `Δ > 0` and one when `Δ < 0`.  That
+is the classical invariant separating the two real forms, and it is what
+`exists_conj_realConjAdd` consumes to decide between `diag(1,−1)` and
+`[[1,1],[0,−1]]`. -/
+theorem card_fixed_twoTorsion_realTestCurve (ε : Bool)
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) :
+    letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+    Nat.card {x : (WeierstrassCurve.Affine.baseChange (realTestCurve.{u} ε)
+        (AlgebraicClosure (ULift.{u} ℝ))).Point //
+        (2 : ℤ) • x = 0 ∧
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x = x}
+      = if ε then 2 else 4 :=
+  sorry
+
+/-- **THE ARCHIMEDEAN HALF of the elliptic-curve leaf** (PROVEN 2026-07-27 from
+the four leaves above — `exists_torsionParam_of_divisible`,
+`exists_conj_realConjAdd`, `exists_torsion_conj_ne` and
+`card_fixed_twoTorsion_realTestCurve` — plus `exists_unique_realConj`, which is
+itself proven; formerly a sorry leaf, cut 2026-07-27 out of
+`exists_realEllipticSchemeWithConjTorsion`): a real elliptic
 curve — a plain `WeierstrassCurve (ULift ℝ)` — whose geometric torsion is
 parametrised by `(ℚ/ℤ)²` in such a way that complex conjugation acts by
 `realConjAdd ε`.
@@ -25719,10 +26136,15 @@ exactly two real forms:
 Recall `realConjAdd M ε v = ![v 0 + (if ε then v 1 else 0), -v 1]`, so those two
 matrices are exactly `ε = false` and `ε = true`.
 
-MISSING MACHINERY, and a route that may AVOID most of it. The Weierstrass
+THE CHEAP ROUTE WAS TAKEN, AND IT WORKED (2026-07-27). The Weierstrass
 uniformisation `E(ℂ) ≅ ℂ/Λ` is NOT in mathlib and building it is a large
-analytic project. But this leaf does not need the uniformisation — it needs only
-its consequences on TORSION, and those have an algebraic shadow:
+analytic project; **none of it was built**. The decomposition above replaces it
+by the two algebraic shadows described in the next two items, and the assembly
+below is real code. What remains open is `exists_torsionParam_of_divisible`
+(divisible torsion groups), `exists_conj_realConjAdd` (integral involutions),
+`exists_torsion_conj_ne` (the Weil pairing over `ULift ℝ`) and
+`card_fixed_twoTorsion_realTestCurve` (the root count) — see their own
+docstrings. The two items below are the audit that produced that cut:
 
 1. `E(F̄)[n] ≅ (ℤ/n)²` for `F̄` algebraically closed of characteristic `0`.
    **Check `Fermat/FLT/EllipticCurve/Torsion.lean` before building this** — that
@@ -25771,8 +26193,76 @@ theorem exists_realWeierstrassCurveWithConjTorsion (ε : Bool) :
           WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
               AlgebraicClosure (ULift.{u} ℝ)).toAlgHom (τ v)) ∧
-      (∀ (n : ℕ), n ≠ 0 → ∀ y, (n : ℤ) • y = 0 → ∃ v, τ v = y) :=
-  sorry
+      (∀ (n : ℕ), n ≠ 0 → ∀ y, (n : ℤ) • y = 0 → ∃ v, τ v = y) := by
+  letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+  obtain ⟨σ₀, hσ₀ne, hσ₀inv, hσ₀uniq⟩ := exists_unique_realConj.{u}
+  refine ⟨realTestCurve.{u} ε, realTestCurve_isElliptic ε, ?_⟩
+  -- `σ₀` acts on the geometric points as an involution: `Point.map` is functorial
+  -- and `σ₀ ∘ σ₀ = id` on `ℝ̄`.
+  have hc : ∀ x : (WeierstrassCurve.Affine.baseChange (realTestCurve.{u} ε)
+      (AlgebraicClosure (ULift.{u} ℝ))).Point,
+      WeierstrassCurve.Affine.Point.map
+        (σ₀ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)).toAlgHom
+        (WeierstrassCurve.Affine.Point.map
+          (σ₀ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x) = x := by
+    intro x
+    rw [WeierstrassCurve.Affine.Point.map_map]
+    have hcomp : (σ₀ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+        AlgebraicClosure (ULift.{u} ℝ)).toAlgHom.comp
+          (σ₀ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom
+        = AlgHom.id (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) := by
+      ext y
+      exact hσ₀inv y
+    rw [hcomp]
+    cases x <;> rfl
+  haveI : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  -- `IsElliptic` does not travel through the `baseChange` abbreviation by itself
+  haveI hell : ((realTestCurve.{u} ε).baseChange
+      (AlgebraicClosure (ULift.{u} ℝ))).IsElliptic :=
+    inferInstanceAs (((realTestCurve.{u} ε).map
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)))).IsElliptic)
+  haveI : CharZero (AlgebraicClosure (ULift.{u} ℝ)) :=
+    charZero_of_injective_algebraMap
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))).injective
+  have hcast : ∀ n : ℕ, n ≠ 0 → (n : AlgebraicClosure (ULift.{u} ℝ)) ≠ 0 := by
+    intro n hn
+    exact_mod_cast hn
+  -- divisibility of `E(ℝ̄)`: `TorsionCard.smul_surjective`
+  have hdiv : ∀ n : ℕ, n ≠ 0 →
+      ∀ y : (WeierstrassCurve.Affine.baseChange (realTestCurve.{u} ε)
+        (AlgebraicClosure (ULift.{u} ℝ))).Point, ∃ x, (n : ℤ) • x = y := by
+    intro n hn y
+    exact TorsionCard.smul_surjective
+      ((realTestCurve.{u} ε).baseChange (AlgebraicClosure (ULift.{u} ℝ))) (hcast n hn) y
+  -- `#E[n] = n²`: `WeierstrassCurve.n_torsion_card`
+  have hcard : ∀ n : ℕ, n ≠ 0 →
+      Nat.card {x : (WeierstrassCurve.Affine.baseChange (realTestCurve.{u} ε)
+        (AlgebraicClosure (ULift.{u} ℝ))).Point // (n : ℤ) • x = 0} = n ^ 2 := by
+    intro n hn
+    rw [← Nat.card_congr (Equiv.subtypeEquivRight
+      (p := fun x => x ∈ Submodule.torsionBy ℤ
+        (WeierstrassCurve.Affine.baseChange (realTestCurve.{u} ε)
+          (AlgebraicClosure (ULift.{u} ℝ))).Point (n : ℤ))
+      (fun x => Submodule.mem_torsionBy_iff _ _))]
+    exact WeierstrassCurve.n_torsion_card
+      ((realTestCurve.{u} ε).baseChange (AlgebraicClosure (ULift.{u} ℝ))) (hcast n hn)
+  obtain ⟨τ, hadd, hinj, hconj, hcov⟩ :=
+    exists_conjParam_of_involution
+      (P := (WeierstrassCurve.Affine.baseChange (realTestCurve.{u} ε)
+        (AlgebraicClosure (ULift.{u} ℝ))).Point) ε
+      (WeierstrassCurve.Affine.Point.map
+        (σ₀ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) hc hdiv hcard
+      (fun n hn => (exists_torsion_conj_ne (realTestCurve.{u} ε) σ₀ hσ₀ne n hn).1)
+      (fun n hn => (exists_torsion_conj_ne (realTestCurve.{u} ε) σ₀ hσ₀ne n hn).2)
+      (card_fixed_twoTorsion_realTestCurve ε σ₀ hσ₀ne)
+  -- every `σ ≠ 1` IS `σ₀`, which is what lets `τ` be chosen before `σ`
+  refine ⟨τ, hadd, hinj, fun σ v hσ => ?_, hcov⟩
+  rw [hconj v, hσ₀uniq σ hσ]
 
 open scoped TensorProduct in
 open CategoryTheory in

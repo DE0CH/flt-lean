@@ -559,6 +559,26 @@ import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
 -- supply it themselves with a `letI := Classical.typeDecidableEq _` rather than
 -- taking an instance argument, so nothing downstream has to carry it.
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+-- ARCHIMEDEAN-HALF ADDITION (2026-07-27): the `n`-torsion count
+-- (`WeierstrassCurve.n_torsion_card`) and the divisibility of the geometric
+-- point group (`TorsionCard.smul_surjective`), which are the two algebraic
+-- inputs of `exists_realWeierstrassCurveWithConjTorsion`. Both modules were
+-- ALREADY in this module's transitive import closure (through
+-- `GaloisRepresentation/Chebotarev.lean`), so this adds ZERO modules to any
+-- cone; it is `public` because those names are used in a proof body and a
+-- purely transitive private route does not re-export them.
+public import Fermat.FLT.EllipticCurve.Torsion
+public import Fermat.FLT.EllipticCurve.TorsionCard
+-- ARCHIMEDEAN-HALF ADDITION (2026-07-27): the `n`-torsion count
+-- (`WeierstrassCurve.n_torsion_card`) and the divisibility of the geometric
+-- point group (`TorsionCard.smul_surjective`), which are the two algebraic
+-- inputs of `exists_realWeierstrassCurveWithConjTorsion`. Both modules were
+-- ALREADY in this module's transitive import closure (through
+-- `GaloisRepresentation/Chebotarev.lean`), so this adds ZERO modules to any
+-- cone; it is `public` because those names are used in a proof body and a
+-- purely transitive private route does not re-export them.
+public import Fermat.FLT.EllipticCurve.Torsion
+public import Fermat.FLT.EllipticCurve.TorsionCard
 -- 2026-07-27, for `formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`
 -- (Stacks 07EC): the `d = 0` base case is `Algebra.FormallySmooth.of_perfectField`
 -- (`Smooth/Field.lean`), the inductive step is
