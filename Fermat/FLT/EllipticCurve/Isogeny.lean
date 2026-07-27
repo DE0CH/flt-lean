@@ -142,33 +142,31 @@ kernels, all of which behave in characteristic `p`.
 
 ## Open leaves left by this file
 
-`exists_y_witness_two`, `IsRationalMap.add_of_x_ne` and
-`Isogeny.isRationalMap_dualHom`. Those THREE are the whole remaining frontier of
-this module; the list is stated from the file's actual sorry set at 2026-07-27,
-not inherited from either side of a merge. **They are mutually independent and
-separately ownable.**
+`IsRationalMap.add_of_x_ne` and `Isogeny.isRationalMap_dualHom`. Those TWO are the
+whole remaining frontier of this module; the list is stated from the file's actual
+sorry set at 2026-07-27, not inherited from either side of a merge. **They are
+independent and separately ownable.**
 
-**`IsRationalMap.add` is PROVEN** (2026-07-27) as an assembly, and so are BOTH of
-its branches, `IsRationalMap.add_self` and `IsRationalMap.add_of_ne`. What is left
-of the sum is exactly two geometric atoms:
+**`IsRationalMap.add` is PROVEN** (2026-07-27) as an assembly; so are both of its
+branches, `IsRationalMap.add_self` and `IsRationalMap.add_of_ne`; and so is the
+whole of the DOUBLING branch. What is left of the sum is one geometric atom:
 
-* `exists_y_witness_two` — the `y`-coordinate witness for DUPLICATION on `W`.
-  This is all that is left of the doubling branch, after two reductions:
-  `φ + φ = φ ∘ [2]_W` puts the doubling on the SOURCE curve, where
-  `IsRationalMap.comp` applies and `[W.IsElliptic]` is available (which is what
-  removed the awkward `[W'.IsElliptic]` question the branch used to carry), and
-  then `veluPointX_nsmul` — PROVEN, general `n`, every characteristic — supplies
-  the `x`-witness `(Φₙ, ΨSqₙ)` from `TorsionCard`. **Only `n = 2` is open**:
-  general `[n]` follows from `IsRationalMap.add` by induction on
-  `[n] = [n-1] + [1]`, which cannot reach `n = 2` and only `n = 2`.
-  The obstruction is precise and is NOT in the pin: mathlib defines every
-  division polynomial needed for the `x`-coordinate but leaves the bivariate
-  `ωₙ` carrying the `y`-coordinate as an explicit TODO, and it is absent from
-  `~/cs/FLT` and this project too. At `n = 2` no `ωₙ` theory is needed — only the
-  tangent-line formula.
 * `IsRationalMap.add_of_x_ne` — the CHORD branch with the degenerate case
   already excluded by the hypothesis `A₂B₁ - A₁B₂ ≠ 0`. Its crux is Step 3
   (`U = 0`), not the branch analysis.
+
+How the doubling branch closed, since the route generalises. `φ + φ = φ ∘ [2]_W`
+puts the doubling on the SOURCE curve, where `IsRationalMap.comp` applies and
+`[W.IsElliptic]` is available — that is what removed the awkward `[W'.IsElliptic]`
+question the branch used to carry. Then `[2]` splits into its two coordinates:
+`veluPointX_nsmul` (PROVEN for general `n`, every characteristic, no hypothesis on
+the field) transports `TorsionCard.exists_smul_some_eq` into the `veluPointX`
+spelling, and `exists_y_witness_two` does the tangent-line algebra over
+`addY_two_core`. **Mathlib's bivariate `ωₙ` — the general `y`-coordinate division
+polynomial — is an explicit TODO in its own module docstring, and is absent from
+`~/cs/FLT` and from this project too**; it was not needed, because only `n = 2` is
+ever required here (general `[n]` follows from `IsRationalMap.add` by induction on
+`[n] = [n-1] + [1]`, and `n = 2` is the one case that induction cannot reach).
 
 `IsRationalMap.isIsogeny` was on this list and is now PROVEN and axiom-clean, as
 are the two halves it was split into for ordering reasons —
@@ -1342,9 +1340,42 @@ theorem veluPointX_nsmul [W.IsElliptic] {n : ℕ} (hn : n ≠ 0) (P : W.Point)
     show x' * (W.ΨSq (n : ℤ)).eval x = (W.Φ (n : ℤ)).eval x
     exact hx'
 
-/-- **LEAF — and it is the LAST piece of `IsRationalMap.add` besides the chord
-formula.** The `y`-coordinate witness for DUPLICATION: `y ([2] P)` is affine in
-`y P` with coefficients rational in `x P`.
+omit [DecidableEq F] in
+/-- **The ring identity behind the duplication `y`-witness**, isolated from the
+curve so that it is a statement about a field and nothing else.
+
+`L` stands for the tangent slope, constrained only by `hLd : L · ψ₂ = 3x² + 2a₂x +
+a₄ - a₁y`; the left-hand side is `Affine.addY x x y L` written out through
+`negY`/`negAddY`/`addX`, and the right-hand side is `C(x) · y + D(x)` with the two
+coefficients that `exists_y_witness_two` uses. Everything is cleared by `ψ₂⁴ =
+Ψ₂Sq²`, which is what makes the right-hand side `y`-affine.
+
+Three steps, each a one-line `linear_combination`, and the curve equation is used
+exactly TWICE — once with coefficient `-a₁²` to make `addX · ψ₂²` `y`-free, and
+once with coefficient `-2a₁` to make `ψ₂ · Ng` `y`-affine. Everything after that is
+pure algebra over `hLd`. -/
+theorem addY_two_core (a₁ a₂ a₃ a₄ a₆ x y L : F)
+    (hEq : y ^ 2 + a₁ * x * y + a₃ * y = x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+    (hLd : L * (2 * y + a₁ * x + a₃) = (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)) :
+    (-(L * ((L ^ 2 + a₁ * L - a₂ - x - x) - x) + y) - a₁ * (L ^ 2 + a₁ * L - a₂ - x - x) - a₃) * ((2 * y + a₁ * x + a₃) ^ 2) ^ 2
+      = (-(2 * (3 * x ^ 2 + 2 * a₂ * x + a₄) + a₁ * (a₁ * x + a₃)) * (((3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2 + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆) - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2) - x * (2 * y + a₁ * x + a₃) ^ 2) - ((2 * y + a₁ * x + a₃) ^ 2) ^ 2) * y
+        + (-((a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - 2 * a₁ * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)) * (((3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2 + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆) - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2) - x * (2 * y + a₁ * x + a₃) ^ 2)
+            - a₁ * ((3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2 + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆) - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2) * (2 * y + a₁ * x + a₃) ^ 2 - a₃ * ((2 * y + a₁ * x + a₃) ^ 2) ^ 2) := by
+  have hAX : (L ^ 2 + a₁ * L - a₂ - x - x) * (2 * y + a₁ * x + a₃) ^ 2 = ((3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2 + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆) - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2) := by
+    linear_combination (L * (2 * y + a₁ * x + a₃) + (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) + a₁ * (2 * y + a₁ * x + a₃)) * hLd + (-a₁ ^ 2) * hEq
+  have hB : (2 * y + a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) = (2 * (3 * x ^ 2 + 2 * a₂ * x + a₄) + a₁ * (a₁ * x + a₃)) * y + ((a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - 2 * a₁ * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)) := by
+    linear_combination (-2 * a₁) * hEq
+  have hAY : (-(L * ((L ^ 2 + a₁ * L - a₂ - x - x) - x) + y) - a₁ * (L ^ 2 + a₁ * L - a₂ - x - x) - a₃) * ((2 * y + a₁ * x + a₃) ^ 2) ^ 2
+      = -((2 * y + a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)) * (((3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2 + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆) - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2) - x * (2 * y + a₁ * x + a₃) ^ 2) - y * ((2 * y + a₁ * x + a₃) ^ 2) ^ 2
+        - a₁ * ((3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2 + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆) - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2) * (2 * y + a₁ * x + a₃) ^ 2 - a₃ * ((2 * y + a₁ * x + a₃) ^ 2) ^ 2 := by
+    linear_combination ((2 * y + a₁ * x + a₃) ^ 3 * (x - (L ^ 2 + a₁ * L - a₂ - x - x))) * hLd
+      + (-((2 * y + a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) + a₁ * (2 * y + a₁ * x + a₃) ^ 2)) * hAX
+  linear_combination hAY + (-(((3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2 + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄) - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆) - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2) - x * (2 * y + a₁ * x + a₃) ^ 2)) * hB
+
+/-- **PROVEN** (2026-07-27). The `y`-coordinate witness for DUPLICATION: `y ([2] P)`
+is affine in `y P` with coefficients rational in `x P`. With `veluPointX_nsmul` this
+closes `isRationalMap_mulByHom_two`, hence `IsRationalMap.add_self`, hence the whole
+doubling branch of `IsRationalMap.add`.
 
 **Why this is stated at `n = 2` and not for general `n`.** General `n` is FREE once
 `IsRationalMap.add` is closed: `mulByHom W n = mulByHom W (n-1) + mulByHom W 1` and
@@ -1354,8 +1385,8 @@ every `[n]` from `add` alone. The one case that induction cannot produce is the 
 atom and everything else is a corollary. Do not state or prove this for general `n`;
 it is strictly more work for nothing.
 
-**MISSING FROM THE PIN, and this is the whole difficulty** (checked 2026-07-27; the
-check that would refute it is
+**`ωₙ` IS MISSING FROM THE PIN — and it turned out not to be needed** (checked
+2026-07-27; the check that would refute the absence claim is
 `grep -rn "ω" .lake/packages/mathlib/Mathlib/AlgebraicGeometry/EllipticCurve/DivisionPolynomial/`).
 Mathlib defines `preΨ`, `ΨSq`, `Ψ`, `Φ`, `ψ`, `φ` — everything needed for the
 `x`-coordinate, which is why `veluPointX_nsmul` above is already PROVEN — but it
@@ -1364,30 +1395,89 @@ module docstring lists `ωₙ := (ψ₂ₙ / ψₙ - ψₙ ⬝ (a₁φₙ + a₃
 "TODO: the bivariate polynomials `ωₙ`". It is absent from `~/cs/FLT` and from this
 project's `Fermat/FLT/Mathlib/` shim tree as well.
 
-That is much less bad than it sounds HERE, precisely because only `n = 2` is
-wanted: at `n = 2` there is no general `ωₙ` theory to build, only the tangent-line
-formula. `2 • P = P + P` is `Affine.Point.add_of_Y_ne` / the doubling branch of
-mathlib's affine group law, whose `y` is `Affine.addY` at slope
-`ℓ = (3x² + 2a₂x + a₄ - a₁y) / (2y + a₁x + a₃)`. Substituting and clearing the
+That absence did not block anything, precisely because only `n = 2` is wanted: at
+`n = 2` there is no general `ωₙ` theory to build, only the tangent-line formula.
+`2 • P = P + P` is `Affine.Point.add_self_of_Y_ne`, whose `y` is `Affine.addY` at
+slope `ℓ = (3x² + 2a₂x + a₄ - a₁y) / (2y + a₁x + a₃)`; substituting and clearing the
 denominator `ψ₂ = 2y + a₁x + a₃` gives a `y`-affine expression once `y²` is reduced
-by the Weierstrass equation — the same reduction that `add_of_x_ne` needs, so the
-two leaves share a technique even though neither depends on the other.
+by the Weierstrass equation. That reduction is `addY_two_core` above, where the
+curve equation is used exactly twice, with coefficients `-a₁²` and `-2a₁`.
 
-The `E ≠ 0` side condition should come out as a power of `Ψ₂Sq` (nonzero by
-`ΨSq_ne_zero'`), and the points where `ψ₂` vanishes are the 2-torsion, where
-`2 • P = 0` and the certificate is vacuous — so no bad-locus multiplier is needed. -/
+The `E ≠ 0` side condition comes out as `Ψ₂Sq²`, nonzero by `ΨSq_ne_zero'` and
+`ΨSq_two` in every characteristic, and the points where `ψ₂` vanishes are the
+2-torsion, where `2 • P = 0` and the certificate is vacuous — so no bad-locus
+multiplier is needed. **Note this holds in characteristic 2 as well**: nothing here
+divides by `2`, and `ψ₂ = a₁x + a₃` there, which is nonzero exactly off the (still
+finite) 2-torsion. -/
 theorem exists_y_witness_two [W.IsElliptic] :
     ∃ C D E : F[X], E ≠ 0 ∧ ∀ P : W.Point, mulByHom W 2 P ≠ 0 →
       veluPointY (mulByHom W 2 P) * E.eval (veluPointX P)
-        = C.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P) :=
-  sorry
+        = C.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P) := by
+  classical
+  have hQ0 : W.Ψ₂Sq ≠ 0 := by
+    have hq := ΨSq_ne_zero' W (n := 2) two_ne_zero
+    rwa [WeierstrassCurve.ΨSq_two] at hq
+  refine ⟨-(Polynomial.C 2 * (Polynomial.C 3 * X ^ 2 + Polynomial.C (2 * W.a₂) * X + Polynomial.C W.a₄) + Polynomial.C W.a₁ * (Polynomial.C W.a₁ * X + Polynomial.C W.a₃))
+          * (((Polynomial.C 3 * X ^ 2 + Polynomial.C (2 * W.a₂) * X + Polynomial.C W.a₄) ^ 2
+            + Polynomial.C W.a₁ * (Polynomial.C W.a₁ * X + Polynomial.C W.a₃) * (Polynomial.C 3 * X ^ 2 + Polynomial.C (2 * W.a₂) * X + Polynomial.C W.a₄)
+            - Polynomial.C (W.a₁ ^ 2) * (X ^ 3 + Polynomial.C W.a₂ * X ^ 2 + Polynomial.C W.a₄ * X + Polynomial.C W.a₆)
+            - (Polynomial.C W.a₂ + Polynomial.C 2 * X) * W.Ψ₂Sq)
+            - X * W.Ψ₂Sq)
+          - W.Ψ₂Sq ^ 2,
+    -((Polynomial.C W.a₁ * X + Polynomial.C W.a₃) * (Polynomial.C 3 * X ^ 2 + Polynomial.C (2 * W.a₂) * X + Polynomial.C W.a₄) - Polynomial.C (2 * W.a₁) * (X ^ 3 + Polynomial.C W.a₂ * X ^ 2 + Polynomial.C W.a₄ * X + Polynomial.C W.a₆))
+          * (((Polynomial.C 3 * X ^ 2 + Polynomial.C (2 * W.a₂) * X + Polynomial.C W.a₄) ^ 2
+            + Polynomial.C W.a₁ * (Polynomial.C W.a₁ * X + Polynomial.C W.a₃) * (Polynomial.C 3 * X ^ 2 + Polynomial.C (2 * W.a₂) * X + Polynomial.C W.a₄)
+            - Polynomial.C (W.a₁ ^ 2) * (X ^ 3 + Polynomial.C W.a₂ * X ^ 2 + Polynomial.C W.a₄ * X + Polynomial.C W.a₆)
+            - (Polynomial.C W.a₂ + Polynomial.C 2 * X) * W.Ψ₂Sq)
+            - X * W.Ψ₂Sq)
+          - Polynomial.C W.a₁ * ((Polynomial.C 3 * X ^ 2 + Polynomial.C (2 * W.a₂) * X + Polynomial.C W.a₄) ^ 2
+            + Polynomial.C W.a₁ * (Polynomial.C W.a₁ * X + Polynomial.C W.a₃) * (Polynomial.C 3 * X ^ 2 + Polynomial.C (2 * W.a₂) * X + Polynomial.C W.a₄)
+            - Polynomial.C (W.a₁ ^ 2) * (X ^ 3 + Polynomial.C W.a₂ * X ^ 2 + Polynomial.C W.a₄ * X + Polynomial.C W.a₆)
+            - (Polynomial.C W.a₂ + Polynomial.C 2 * X) * W.Ψ₂Sq) * W.Ψ₂Sq
+          - Polynomial.C W.a₃ * W.Ψ₂Sq ^ 2,
+    W.Ψ₂Sq ^ 2, pow_ne_zero 2 hQ0, ?_⟩
+  intro P hP
+  simp only [mulByHom_apply] at hP ⊢
+  cases P with
+  | zero => exact absurd (smul_zero 2) hP
+  | some x y h =>
+    have hEq : y ^ 2 + W.a₁ * x * y + W.a₃ * y
+        = x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆ := (Affine.equation_iff ..).1 h.1
+    by_cases hy2 : y = -y - W.a₁ * x - W.a₃
+    · refine absurd ?_ hP
+      rw [two_nsmul]
+      exact Affine.Point.add_self_of_Y_eq (by simpa [Affine.negY] using hy2)
+    have hd : (2 * y + W.a₁ * x + W.a₃) ≠ 0 := by
+      intro hc
+      exact hy2 (by linear_combination hc)
+    have hy2' : y ≠ W.negY x y := by simpa [Affine.negY] using hy2
+    have hLd : W.slope x x y y * (2 * y + W.a₁ * x + W.a₃)
+        = 3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y := by
+      rw [Affine.slope_of_Y_ne' hy2,
+        show y - (-y - W.a₁ * x - W.a₃) = 2 * y + W.a₁ * x + W.a₃ from by ring]
+      exact div_mul_cancel₀ _ hd
+    have hQev : W.Ψ₂Sq.eval x = (2 * y + W.a₁ * x + W.a₃) ^ 2 := by
+      haveI : (W⁄F).IsElliptic := inferInstanceAs W.IsElliptic
+      have hq := TorsionCard.eval_Ψ₂Sq_eq_sq W h.1
+      rw [show (2 * y + W.a₁ * x + W.a₃) = (2 * y + (W.a₁ * x + W.a₃)) from by ring]
+      exact hq
+    have hY : veluPointY ((2 : ℕ) • (Affine.Point.some x y h : W.Point))
+        = W.addY x x y (W.slope x x y y) := by
+      rw [two_nsmul, Affine.Point.add_self_of_Y_ne hy2', veluPointY_some]
+    rw [hY]
+    simp only [veluPointX_some, veluPointY_some, Affine.addY, Affine.negAddY, Affine.addX,
+      Affine.negY, Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+      Polynomial.eval_neg, Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X, hQev]
+    linear_combination addY_two_core W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ x y (W.slope x x y y) hEq hLd
 
-/-- **PROVEN** (2026-07-27). Duplication is a rational map, given the `y`-witness.
 
-The `x`-witness is `(Φ 2, ΨSq 2)` by `veluPointX_nsmul`, and `ΨSq 2 ≠ 0` by
-`ΨSq_ne_zero'` in every characteristic. So the only content left in `[2]` — and
-hence, by the note on `exists_y_witness_two`, in `[n]` for every `n` — is the
-`y`-coordinate. -/
+/-- **PROVEN** (2026-07-27). Duplication is a rational map.
+
+The `x`-witness is `(Φ 2, ΨSq 2)` by `veluPointX_nsmul` and the `y`-witness is
+`exists_y_witness_two`; `ΨSq 2 ≠ 0` by `ΨSq_ne_zero'` in every characteristic. No
+hypothesis on the field. By the note on `exists_y_witness_two`, `[n]` for every `n`
+now follows from `IsRationalMap.add` by induction, so nothing further about
+division polynomials is needed anywhere in this file. -/
 theorem isRationalMap_mulByHom_two [W.IsElliptic] : IsRationalMap (mulByHom W 2) := by
   obtain ⟨C, D, E, hE, hy⟩ := exists_y_witness_two (W := W)
   exact ⟨W.Φ ((2 : ℕ) : ℤ), W.ΨSq ((2 : ℕ) : ℤ), C, D, E,
