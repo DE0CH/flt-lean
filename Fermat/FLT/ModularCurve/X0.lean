@@ -817,12 +817,36 @@ datum along two maps `g₁, g₂ : Z ⟶ T'`, i.e. it requires *base change of
 `Γ₀(N)`-data to be a construction*.  It is not one here — `IsBaseChangeOf`
 is deliberately a *stated relation* (see its docstring) — and it cannot
 become one until something in this project constructs an
-`AbelianSchemeStruct` on a pullback.  Nothing does: every occurrence of
-`AbelianSchemeStruct` in the tree is a binder or an existential.  **The
-check that would refute this**: `grep -rn "AbelianSchemeStruct" Fermat/`
-finding a producer rather than a consumer.  The cut taken here needs no
-base change to be constructed, only to be *exhibited by the leaf*, which
-is why it goes through. -/
+`AbelianSchemeStruct` on a pullback.
+
+**THAT REFUTING CHECK HAS NOW FIRED — the paragraph above is half stale
+(noticed 2026-07-27).**  It read "nothing does: every occurrence of
+`AbelianSchemeStruct` in the tree is a binder or an existential", and
+named its own refutation: `grep -rn "AbelianSchemeStruct" Fermat/`
+finding a producer rather than a consumer.  It now finds one, and of
+exactly the right shape: `AbelianSchemeStruct.baseChange`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:429`) constructs an
+`AbelianSchemeStruct (pullback.snd f g)` — an abelian-scheme structure on
+a pullback — and is sorry-free.  `AbelianSchemeStruct.ofMorphisms`
+(`Modularity/AbelianScheme.lean`) is a second producer.
+
+**What that opens, and what it does not.**  It supplies the
+ABELIAN-SCHEME half of base change only.  A `Gamma0Datum` also carries a
+`CyclicSubgroupOfOrder`, so turning base change of `Γ₀(N)`-data into a
+*construction* still needs (a) the level structure transported to the
+pullback — `C ×_T T'` with its closed immersion, finiteness, flatness and
+geometric fibres — and (b) an `IsBaseChangeOf` witness assembled from the
+two halves.  Neither exists today; the check that would refute THAT is
+`grep -rn "CyclicSubgroupOfOrder" Fermat/`, which currently finds the
+structure only in this file and in `MazurTorsion.lean`, with no transport
+lemma anywhere.  Note also that this file imports
+`Modularity.AbelianScheme` but NOT `Modularity.AbelianSchemeIsogeny`, so
+the descent route additionally costs that import.
+
+So the fppf-descent route is no longer blocked by a missing producer; it
+is blocked by the level-structure half alone.  The cut taken here needs
+no base change to be constructed, only to be *exhibited by the leaf*,
+which is why it goes through either way. -/
 
 /-- **Morphisms to `Spec ℚ` are unique when they exist.**
 
