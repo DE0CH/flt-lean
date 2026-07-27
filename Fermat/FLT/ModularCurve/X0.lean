@@ -227,8 +227,9 @@ DIVISOR-CLOSED; see its docstring.
 *Amended a fourth time 2026-07-26: the sieve layer.*  Shape 4's
 compactification layer now carries a SIXTH leaf:
 
-10. `exists_x0Sieve` — the Mordell–Weil sieve that the four levels
-    `45, 54, 63, 75` need.  The ordinary counting bound
+10. `exists_x0Sieve` — the Mordell–Weil sieve that the five levels
+    `26, 45, 54, 63, 75` need (`26` joined them 2026-07-27).  The
+    ordinary counting bound
     `card_le_of_rankZeroJacobian` is never sharp at those four levels
     (no odd `ℓ ∤ N` attains `#X_0(N)(𝔽_ℓ) = 4`), so the bound must count
     FEWER than all of `X_0(N)(𝔽_ℓ)`: only those `𝔽_ℓ`-points whose
@@ -280,7 +281,7 @@ this pin:
 
 * the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as a
   computable finite object, which is what the multi-prime sieve leaf
-  `exists_x0Sieve` asks for at the four levels `45, 54, 63, 75`.
+  `exists_x0Sieve` asks for at the five levels `26, 45, 54, 63, 75`.
 
 Chabauty–Coleman is **not** on this list: the 2026-07-26 reconnaissance
 found `rank J_0(N)(ℚ) = 0` at all eleven named levels, so none of them
@@ -10593,11 +10594,14 @@ they sit immediately before their consumer
 `y0HasNoRationalPoint_of_chabautySemiprimeLevel` were relocated into that
 same block, by a mechanically pure move, and both are now PROVEN over the
 shared criterion `y0HasNoRationalPoint_of_cardLeCusps`.  The open content
-of `26, 65, 91` is now the two point-count leaves `card_le_x0TwentySix`
-and — since 2026-07-27, when `card_le_of_chabautySemiprimeLevel` was
-itself decomposed — `injective_redX_of_chabautyColemanPrime`, which live
+of `26, 65, 91` moved with them to the two point-count leaves
+`card_le_x0TwentySix` and `card_le_of_chabautySemiprimeLevel`, which live
 down there beside the compactification machinery they are stated over.
-So what stays HERE is
+Both of those are now PROVEN too (2026-07-27): `card_le_x0TwentySix` by
+adding `26` to `x0SieveLevels` and `kenkuLevels` so the multi-prime sieve
+reaches it, and `card_le_of_chabautySemiprimeLevel` by its own
+decomposition, which left `injective_redX_of_chabautyColemanPrime` as the
+single open leaf carrying `65, 91`.  So what stays HERE is
 the partition itself: the three `List ℕ` definitions,
 `y0HasNoRationalPoint_of_isolatedSemiprime` (the `56`-level descent —
 PROVEN, over `mem_isolatedJInvariants_of_stable` and
@@ -15604,11 +15608,27 @@ def HasRankZeroJacobian {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
     (o : RelPoint strX (𝟙 SpecQ)) (jac : IsJacobianOf strX ab o),
     Finite (RelPoint jstr (𝟙 SpecQ)) ∧ Function.Injective (jac.aj (𝟙 SpecQ))
 
-/-- **The thirteen rank-`0` levels of Kenku's non-prime-power
-determination**, i.e. the named level nodes below.  All thirteen have
+/-- **The fourteen rank-`0` levels of Kenku's non-prime-power
+determination**, i.e. the named level nodes below.  All fourteen have
 `rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1`; nine of them additionally
-have a single witness prime (`x0WitnessTable`), and the remaining four —
-`45, 54, 63, 75` — need a multi-prime Mordell–Weil sieve.
+have a single witness prime (`x0WitnessTable`), and the remaining five —
+`26, 45, 54, 63, 75` — need a multi-prime Mordell–Weil sieve.
+
+**THE DEFINING PROPERTY, stated so that no later append can be made on a
+name-shaped argument.**  A level belongs here exactly when it is
+non-prime-power, `genus X_0(N) ≥ 1`, `rank J_0(N)(ℚ) = 0`, and every
+rational point of `X_0(N)` is a CUSP.  The last clause is the one that
+does the work downstream and the one that is easiest to lose: `11, 17,
+19` satisfy the first three and FAIL the fourth (they carry `3 + 2 + 1`
+non-cuspidal points; see `genusOneJTable` in `MazurTorsion.lean`), which
+is why that file's own level list is a different mathematical object and
+was deliberately NOT merged into this one.  Membership widens every
+`∀ N ∈ kenkuLevels` statement below, including sorried ones, so an append
+is a mathematical claim about each of them and must be verified against
+each of them — not against the list's name.
+
+**`26` was added 2026-07-27**, with that verification carried out; see
+the block at the end of this docstring.
 
 **`35` and `39` were added 2026-07-27** (this list previously held the
 eleven levels `20, 24, 28, 30, 36, 42, 45, 50, 54, 63, 75`).  They are
@@ -15636,8 +15656,50 @@ nonzero, so analytic rank `0` on every factor, hence Mordell–Weil rank
 `0` by Kolyvagin–Logachev.  Likewise `S_2(Γ_0(39))` is `3`-dimensional
 and all new with `L(f, 1) = 0.8267…, 0.4797…, 0.7964…`.  (Contrast `65`
 and `91`, whose sharp-looking counts are a trap precisely because their
-ranks are `1` and `2`; see `card_le_of_chabautySemiprimeLevel`.) -/
-def kenkuLevels : List ℕ := [20, 24, 28, 30, 35, 36, 39, 42, 45, 50, 54, 63, 75]
+ranks are `1` and `2`; see `card_le_of_chabautySemiprimeLevel`.)
+
+## `26`, ADDED 2026-07-27 — the four-part check, and what it extends
+
+`26 = 2 · 13` is non-prime-power.  The other three clauses of the
+defining property, each verified rather than asserted:
+
+* **`genus X_0(26) = 2`.**  `gammaZeroIndex 26 = 42`,
+  `numEllipticTwo 26 = 2`, `numEllipticThree 26 = 0`, `numCusps 26 = 4`,
+  so `x0Genus 26 = (12 + 42 − 6 − 0 − 24)/12 = 2`.  Confirmed by
+  `decide` and independently by Magma's `Genus(SmallModularCurve(26))`.
+* **`rank J_0(26)(ℚ) = 0`, and `J_0(26)(ℚ) ≅ ℤ/21ℤ` exactly.**  Magma on
+  the simplified model `y² = x⁶ − 8x⁵ + 8x⁴ − 18x³ + 8x² − 8x + 1`:
+  `RankBound(J) = 0` and `TorsionSubgroup(J) ≅ ℤ/21`.  Analytically,
+  `S_2(Γ_0(26))` is `2`-dimensional and all new (`S_2` vanishes at every
+  proper divisor `1, 2, 13`), with `L(f, 1) = 0.62096…, 0.51557…` on the
+  two newforms — both nonzero, analytic rank `0` on each factor, hence
+  Mordell–Weil rank `0` by Kolyvagin–Logachev.
+* **Every rational point of `X_0(26)` is a cusp.**  `numCusps 26 =
+  numRationalCusps 26 = 4`, so all four cusps are rational and distinct;
+  a Magma search to height `200` finds exactly four rational points, and
+  `card_le_x0TwentySix` — proven below over the sieve — caps
+  `#X_0(26)(ℚ)` at `4`.  So the four rational points ARE the four cusps.
+
+What the append extends, checked leaf by leaf:
+
+* `one_le_x0Genus_of_kenkuLevel`, `numRationalCusps_pos_of_kenkuLevel` —
+  both `decide`, both still close (`2 ≥ 1`, `4 > 0`).
+* `lFunction_apply_one_ne_zero_of_kenkuLevel` (sorry) — one further
+  case, TRUE at `26` by the two nonzero `L`-values above, and there are
+  no oldforms at `26` for its quantifier to reach.
+* `finite_jacobian_of_kenkuLevel` and `isTorsion_jacobian_of_kenkuLevel`
+  (both proven over that leaf) and `hasRankZeroJacobian_of_kenkuLevel`
+  (proven) — carried by `J_0(26)(ℚ) ≅ ℤ/21` and genus `2`.
+* `exists_sharpSievePrime_classCount` (sorry), through the companion
+  append to `x0SieveLevels` — one further case, TRUE at `26` with
+  witness `ℓ = 5`; see that leaf for the survivor computation and for
+  why `ℓ = 3` is REFUTED.
+* `exists_x0Compactification_mod_prime` is NOT extended, contrary to
+  what the `35`/`39` paragraph above says of it: it quantifies over
+  `x0WitnessTable`, not over `kenkuLevels`, and `26` is not a witness
+  level.  (That paragraph's claim was already imprecise for `35, 39`,
+  which were added to both lists.) -/
+def kenkuLevels : List ℕ := [20, 24, 26, 28, 30, 35, 36, 39, 42, 45, 50, 54, 63, 75]
 
 /-- **The witness table `(N, ℓ, #X_0(N)(𝔽_ℓ))` for the nine levels that
 close on a single prime.**
@@ -16841,15 +16903,15 @@ def x0Genus (N : ℕ) : ℤ :=
   (12 + (gammaZeroIndex N : ℤ) - 3 * numEllipticTwo N - 4 * numEllipticThree N
     - 6 * numCusps N) / 12
 
-/-- **`genus X_0(N) ≥ 1` at the thirteen Kenku levels** (PROVEN).
+/-- **`genus X_0(N) ≥ 1` at the fourteen Kenku levels** (PROVEN).
 
 This is the arithmetic half of `hasRankZeroJacobian_of_kenkuLevel`, and
 it is proven rather than asserted: `decide` evaluates `x0Genus` — index,
-elliptic points and cusps and all — at each of the thirteen levels.  The
+elliptic points and cusps and all — at each of the fourteen levels.  The
 values are
 
-`N  : 20 24 28 30 35 36 39 42 45 50 54 63 75`
-`g  :  1  1  2  3  3  1  3  5  3  2  4  5  5`
+`N  : 20 24 26 28 30 35 36 39 42 45 50 54 63 75`
+`g  :  1  1  2  2  3  3  1  3  5  3  2  4  5  5`
 
 matching the table in `kenkuLevels`, and independently reproduced with
 PARI/GP.  Genus `0` would make the leaf below FALSE (see
@@ -16862,13 +16924,22 @@ on 2026-07-27**, which was the one mechanical risk of that extension:
 `x0Genus 35 = x0Genus 39 = 3`, from `gammaZeroIndex 35 = 48`,
 `gammaZeroIndex 39 = 56`, `numEllipticTwo = 0` at both,
 `numEllipticThree 35 = 0`, `numEllipticThree 39 = 2` and
-`numCusps = 4` at both. -/
+`numCusps = 4` at both.
+
+**And after `26` was added, later the same day**: `x0Genus 26 = 2`, from
+`gammaZeroIndex 26 = 42`, `numEllipticTwo 26 = 2`,
+`numEllipticThree 26 = 0`, `numCusps 26 = 4`.  Note `numEllipticTwo 26`
+is where the counting form of `numEllipticTwo` earns its keep — the
+product form with a Kronecker symbol at `p = 2` returns `4` here instead
+of `2`, and would give genus `3/2`; this is the same trap the
+`numEllipticTwo` docstring records at `N = 50`. -/
 theorem one_le_x0Genus_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels) : 1 ≤ x0Genus N := by
   fin_cases hN <;> decide
 
-/-- **`X_0(N)` has at least one rational cusp, at the thirteen Kenku
+/-- **`X_0(N)` has at least one rational cusp, at the fourteen Kenku
 levels** (PROVEN, by `decide` on `numRationalCusps`, whose values are
-`6, 8, 6, 8, 4, 6, 4, 8, 4, 4, 4, 4, 4`).
+`6, 8, 4, 6, 8, 4, 6, 4, 8, 4, 4, 4, 4, 4` in the order of
+`kenkuLevels`; the third entry is the `4` at the new level `26`).
 
 This is what supplies the BASE POINT of the Abel–Jacobi map in
 `hasRankZeroJacobian_of_kenkuLevel`, so that no separate existence leaf
@@ -19203,9 +19274,14 @@ ONE prime at which the single-prime cut is already sharp, and for a curve
 of genus `g ≥ 2` that is what happens at every sufficiently large `ℓ`.
 There `#X_0(N)(𝔽_ℓ)` grows like `ℓ + 1` while `#J_0(N)(𝔽_ℓ)` grows like
 `ℓ^g`, so the FIXED finite subgroup `red_ℓ J_0(N)(ℚ)` — of order at most
-`512, 243, 6144, 2560` — meets the `ℓ + 1` Abel–Jacobi classes only in
-the ones it is forced to contain, namely the reductions of `X_0(N)(ℚ)`.
-All four sieve levels have `g ≥ 3`.  The existential is therefore not a
+`21, 512, 243, 6144, 2560` at `26, 45, 54, 63, 75` — meets the `ℓ + 1`
+Abel–Jacobi classes only in the ones it is forced to contain, namely the
+reductions of `X_0(N)(ℚ)`.  All five sieve levels have `g ≥ 2`, which is
+what the growth argument needs; four of them have `g ≥ 3`, and `26`
+(added 2026-07-27) is the one at `g = 2`, where the compensation is that
+its subgroup is only `21` rather than a power of `2` or `3` — the sieve
+is sharp there at every odd good `ℓ` except the single refuted `ℓ = 3`.
+The existential is therefore not a
 hedge against a numerical accident at a small prime; it is the load-
 bearing part of the statement, and the small primes of the table are the
 *hard* case rather than the easy one.
@@ -19217,13 +19293,33 @@ rest on a strictly stronger unproven statement than they need, which is
 the "repackaging the consumer" failure this module's interfaces are
 shaped to avoid. -/
 
-/-- **The four Kenku levels that no single counting prime settles.**
+/-- **The five Kenku levels that no single counting prime settles.**
 
-A sublist of `kenkuLevels`; the other seven are closed by
+A sublist of `kenkuLevels`; the other nine are closed by
 `y0HasNoRationalPoint_of_witnessPrime` against `x0WitnessTable`.  See the
 table in the subsection docstring for the arithmetic that separates the
-two groups. -/
-def x0SieveLevels : List ℕ := [45, 54, 63, 75]
+two groups.
+
+**`26` was added 2026-07-27**, and unlike the other four it is here
+because no witness prime exists AT ALL, not merely because none was
+convenient.  Over the odd good primes `3 ≤ ℓ < 60` the Eichler–Shimura
+counts `#X_0(26)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(26)))` are
+
+    ℓ  =  3  5  7 11 17 19 23 29 31 37 41 43 47 53 59
+    #  =  6 10  8  8 24 12 28 22 32 42 42 50 32 42 76
+
+with minimum `6 > 4 = numRationalCusps 26`, and for `ℓ ≥ 23` the Weil
+bound already forces `#X_0(26)(𝔽_ℓ) ≥ ℓ + 1 − 4√ℓ > 4` at genus `2`.  So
+the two ranges together exhaust every prime: `y0HasNoRationalPoint_of_
+witnessPrime` cannot close `26` for ANY `ℓ`, and no row of
+`x0WitnessTable` can ever be added for it.  That is a stronger statement
+than the four original levels need, and it is why `26` could not simply
+be given a witness prime instead.
+
+The sieve leaf `exists_sharpSievePrime_classCount` acquires one further
+case; it is TRUE at `26` with witness `ℓ = 5`, and its docstring carries
+the survivor computation together with the reason `ℓ = 3` is refuted. -/
+def x0SieveLevels : List ℕ := [26, 45, 54, 63, 75]
 
 /-- **Good reduction of the pair `(X_0(N), J_0(N))` at an odd prime
 `ℓ ∤ N`, on rational points.**
@@ -24462,8 +24558,10 @@ degree-`1` map to `ℙ¹`.  `d.model` pins the curve as `X_0(N)`, and
 ORIGINAL eleven Kenku levels (this list PREDATES the addition of `35`
 and `39` on 2026-07-27 and has not been re-tabulated for them; both have
 genus `3`), in the order they then had in `kenkuLevels`, are
-`1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`, and the four sieve levels have genus
-`3, 4, 5, 5` (Magma, 2026-07-27).  Positivity is preserved by good
+`1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`, and the sieve levels have genus
+`2, 3, 4, 5, 5` at `26, 45, 54, 63, 75` (Magma, 2026-07-27; `26` was
+added to both lists later that day and is the only sieve level of genus
+`2`).  Positivity is preserved by good
 reduction, so it holds on the special fibre.
 
 This is the same condition that `IsJacobianOf` deliberately does NOT
@@ -24532,10 +24630,54 @@ classes `Set.range (jac'.aj)` of the `ℓ + 1 − Tr T_ℓ` points of
 The second conjunct, `numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)`, is what lets
 the consumer inflate a possibly-smaller survivor set to a `Finset` of
 size exactly `numRationalCusps N`, which is the shape `IsSharpSieve`
-asks for.  It is true with room to spare — the four counts are
-`8, 6, 8, 8` against `numRationalCusps N = 4` — and it must be stated
-here rather than separately, because it has to hold at the SAME `ℓ` the
-existential produces.
+asks for.  It is true with room to spare — the five counts are
+`10, 8, 6, 8, 8` against `numRationalCusps N = 4` — and it must be
+stated here rather than separately, because it has to hold at the SAME
+`ℓ` the existential produces.
+
+## `N = 26`, ADDED 2026-07-27 — the one level where the SURVIVORS were
+## computed rather than inferred, and where a recommended prime FAILED
+
+The four original levels bank a witness `ℓ` and a refutation test that
+the witness passes.  At `26` the test does not merely come close to
+firing: **it fires, at the prime the level's own audit recommended.**
+`J_0(26)(ℚ) ≅ ℤ/21` (Magma: `RankBound = 0`, `TorsionSubgroup ≅ ℤ/21`
+on `y² = x⁶ − 8x⁵ + 8x⁴ − 18x³ + 8x² − 8x + 1`), and
+
+    #J_0(26)(𝔽_3) = (3 + 1 − a_3(f₁))(3 + 1 − a_3(f₂)) = 7 · 3 = 21,
+
+so at `ℓ = 3` reduction is injective out of a group of the SAME order,
+hence surjective, hence EVERY point of `X_0(26)(𝔽_3)` survives — all
+`6` of them, against `numRationalCusps 26 = 4`.  `ℓ = 3` is therefore
+impossible, not unlucky, exactly as the refutation test under
+`exists_x0Sieve` predicts.  Any note recommending that the sieve at `26`
+"cut the `6` points of `X_0(26)(𝔽_3)` down to the `4` cusps" is
+describing something that cannot happen.
+
+The witness is `ℓ = 5`, and the survivor count was computed directly
+(Magma: reduce the generator of `J_0(26)(ℚ)`, enumerate the `21`-element
+image subgroup, and test `[Q − Q₀] ∈ image` for each `Q ∈ X_0(26)(𝔽_ℓ)`
+with `Q₀` a rational cusp):
+
+| `ℓ` | `#X_0(26)(𝔽_ℓ)` | `#J_0(26)(𝔽_ℓ)` | image order | survivors |
+|-----|------------------|------------------|-------------|-----------|
+| `3`  | `6`  | `21`   | `21` | `6` — REFUTED |
+| `5`  | `10` | `63`   | `21` | `4` |
+| `7`  | `8`  | `63`   | `21` | `4` |
+| `11` | `8`  | `84`   | `21` | `4` |
+| `17` | `24` | `441`  | `21` | `4` |
+| `19` | `12` | `252`  | `21` | `4` |
+
+and the same `4` at every odd good `ℓ ≤ 71` tested — `23, 29, 31, 37,
+41, 43, 47, 53, 59, 61, 67, 71` — so `26` has not one witness prime but
+every prime except the single refuted one.  The `#X_0(26)(𝔽_ℓ)` column
+reproduces the Eichler–Shimura table under `x0SieveLevels`
+independently, from the curve rather than from the trace form.
+
+Both conjuncts therefore hold at `ℓ = 5`: survivors `4 ≤
+numRationalCusps 26 = 4`, and `numRationalCusps 26 = 4 ≤ 10`.  Note the
+first is EQUALITY — the four rational cusps must survive, so no witness
+prime can ever do better than `4`, at `26` or anywhere else.
 
 **Why one prime, and why the prime is existentially quantified**: see
 the subsection docstring and the FORMAL-CONTENT AUDIT under
@@ -29478,9 +29620,9 @@ Note `hbound` is stated with `X`, `Y`, `strX`, `strY`, `jm` IMPLICIT and
 universally quantified inside it, so a caller supplies one uniform bound
 rather than a bound at the particular compactification this proof
 happens to obtain from `exists_x0Compactification`.  That is what makes
-the residual leaves (`card_le_x0TwentySix`,
-`card_le_of_chabautySemiprimeLevel`) statements about `X_0(N)` rather
-than about a chosen model. -/
+its two consumers (`card_le_x0TwentySix`, now PROVEN over the sieve, and
+`card_le_of_chabautySemiprimeLevel`, still open) statements about
+`X_0(N)` rather than about a chosen model. -/
 theorem y0HasNoRationalPoint_of_cardLeCusps (N : ℕ) (hN : 0 < N)
     (hbound : ∀ {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
         {jm : Y ⟶ X}, IsX0Compactification N strX strY jm →
@@ -29517,24 +29659,48 @@ with minimum `6 > 4 = numRationalCusps 26`.  So
 of prime, and a prover must use the multi-prime Mordell–Weil sieve
 instead — the same route as `45, 54, 63, 75`, whose apparatus
 (`x0SieveLevels`, `card_le_of_sieve`, `exists_x0Sieve`) is already in
-this file and is the thing to reuse.  The sieve has to cut the `6` points
-of `X_0(26)(𝔽_3)` down to the `4` cusps, using `J_0(26)(ℚ) ≅ ℤ/21ℤ`.
+this file and is the thing that was reused.
 
 **Do not dispatch a prover at this expecting a witness prime**; that is
-the mistake the table above exists to prevent.
+the mistake the table above exists to prevent.  The Weil bound closes the
+table's own gap: at genus `2`, `#X_0(26)(𝔽_ℓ) ≥ ℓ + 1 − 4√ℓ > 4` for
+every `ℓ ≥ 23`, so the tabulated range and the bound together rule out
+ALL primes rather than the fifteen listed.
 
-**THE PREFERRED FIX IS NOT A PROOF OF THIS LEAF.**  `card_le_of_sieve`
-is already universal in `N` given `N ∈ x0SieveLevels`, and
-`exists_x0NeronDatum` and `neronReduction_injective` are already
-universal in `ℓ` and in `N`.  So adding `26` to `x0SieveLevels` and
-`kenkuLevels` discharges this leaf outright, at the cost of extending
-`exists_x0Sieve`'s own two inputs — `hasRankZeroJacobian_of_kenkuLevel`
-(rank `0` at `26`: Kolyvagin–Logachev, exactly as at `35, 39`) and
-`exists_sharpSievePrime` (the arithmetic residue) — by one level each.
-That was not done here only because all four of `x0SieveLevels`,
-`kenkuLevels`, `exists_sharpSievePrime` and `card_le_of_sieve` were under
-concurrent ownership on 2026-07-27.  **Whoever finds them free should
-take that route and delete this leaf rather than prove it.**
+## CLOSED 2026-07-27 BY THE APPEND, NOT BY A PROOF — and the recommended
+## prime in the paragraph this replaces was REFUTED
+
+The docstring here used to say that the preferred fix was to add `26` to
+`x0SieveLevels` and `kenkuLevels` rather than to prove the leaf, and that
+this had not been done only because those lists were under concurrent
+ownership.  Both halves have now been resolved:
+
+* **The ownership claim was a phantom.**  Applying the three-part test —
+  a leaf is owned iff some record names it in its own `TARGET:` line,
+  that record is the latest for its worktree, and the worktree is still
+  `claimed` — `x0SieveLevels`, `kenkuLevels`, `exists_sharpSievePrime`
+  and `card_le_of_sieve` had ZERO owners.  Every live mention of them was
+  in the coordination note of a task prompt, i.e. in a restatement of
+  this very paragraph.  That is the self-reinforcing shape CLAUDE.md
+  records: the more carefully a claim of concurrent ownership is written
+  down, the more convincing the phantom it manufactures.  Three agents
+  declined the append on the strength of it.
+* **The append is sound, and was verified against each statement it
+  widens** rather than against the lists' names; see `kenkuLevels` for
+  the four-part check at `26` and the leaf-by-leaf extension audit, and
+  `exists_sharpSievePrime_classCount` for the survivor computation.
+
+**One thing the old recommendation got WRONG, and it mattered.**  It
+proposed that the sieve "cut the `6` points of `X_0(26)(𝔽_3)` down to the
+`4` cusps, using `J_0(26)(ℚ) ≅ ℤ/21ℤ`".  That is impossible:
+`#J_0(26)(𝔽_3) = 7 · 3 = 21 = #J_0(26)(ℚ)`, so reduction at `3` is an
+isomorphism and every one of the `6` points survives.  `ℓ = 3` is refuted
+by the very test recorded under `exists_x0Sieve`, and the two facts that
+made `3` look attractive — it minimises `#X_0(26)(𝔽_ℓ)`, and `21 ∣ 21` —
+are exactly what makes it fail.  The witness is `ℓ = 5`, where `4` of the
+`10` points survive.  **The prime that minimises the point count is the
+prime most likely to be refuted**, which is the general lesson worth
+carrying to any future sieve level.
 
 Attribution: not a Kenku paper title; genus `2` and rank `0` place it
 inside Ogg's classical method — see the section docstring. -/
@@ -29542,7 +29708,8 @@ theorem card_le_x0TwentySix {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
     (hX : IsX0Compactification 26 strX strY jm)
     (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps 26 :=
-  sorry
+  card_le_of_sieve (by decide) hX
+    (hasRankZeroJacobian_of_kenkuLevel 26 (by decide) hX) t
 
 /-- **`Y_0(26)(ℚ) = ∅`** (PROVEN 2026-07-27 over `card_le_x0TwentySix`;
 introduced as a sorry node the same day).
@@ -29551,12 +29718,18 @@ TRUE: `26` is not in the Mazur–Kenku list.  `X_0(26)` has genus `2`, four
 rational cusps, and `rank J_0(26)(ℚ) = 0` — indeed `J_0(26) ~ 26a × 26b`
 with both factors elliptic of rank `0`.
 
-**The whole content is now `card_le_x0TwentySix` immediately above**, and
-this node is the three-line assembly the audit below predicted.  See that
-leaf's docstring for the arithmetic: why NO witness prime is sharp at
-`26` (the `ℓ`-by-`ℓ` table), why the multi-prime sieve is the route, and
-why adding `26` to `x0SieveLevels` and `kenkuLevels` is a better fix than
-proving the leaf directly.
+**The whole content is `card_le_x0TwentySix` immediately above**, and
+this node is the three-line assembly the audit below predicted.  That
+leaf is itself now PROVEN (2026-07-27) — `26` was added to
+`x0SieveLevels` and `kenkuLevels`, and the leaf became a one-line
+application of `card_le_of_sieve`.  See its docstring for the arithmetic:
+why NO witness prime is sharp at `26` (the `ℓ`-by-`ℓ` table plus the Weil
+bound), why the multi-prime sieve is the route, and why the recommended
+sieve prime `ℓ = 3` is refuted while `ℓ = 5` works.  Nothing about `26`
+remains open here; the residual obligations are the two shared sorry
+leaves `lFunction_apply_one_ne_zero_of_kenkuLevel` and
+`exists_sharpSievePrime_classCount`, each of which gained exactly one
+case.
 
 ## THE HISTORY, KEPT BECAUSE THE TRAP IT RECORDS IS GENERAL
 ## (audited and MEASURED 2026-07-27; DISCHARGED by the move, same day)
@@ -30009,12 +30182,16 @@ that is what changed on 2026-07-27: `y0HasNoRationalPoint_of_witnessPrime`
 is exactly that criterion, and `35, 39` — two of the five residual levels
 — are closed by it.  **Amended later the same day:** all five level
 statements are now PROVEN, and what remains of the `61` has moved down
-one layer, onto point counts for `X_0(N)` and the isolated-prime descent:
-`card_le_x0TwentySix` (`26`, needs the multi-prime sieve),
+one layer, onto point counts for `X_0(N)` and the isolated-prime descent.
+`card_le_x0TwentySix` (`26`) is **also now PROVEN** — later still on
+2026-07-27, by adding `26` to `x0SieveLevels` and `kenkuLevels` so that
+the multi-prime sieve reaches it, which leaves `26` contributing only one
+extra case to each of two SHARED leaves and no leaf of its own.  And
+`card_le_of_chabautySemiprimeLevel` (`65, 91`) was itself decomposed the
+same day and is PROVEN, its Eichler-Shimura half absorbed into
+`x0WitnessTable`.  What remains at this layer is
 `injective_redX_of_chabautyColemanPrime` (`65, 91`, needs
-Chabauty–Coleman — `card_le_of_chabautySemiprimeLevel` was itself
-decomposed on 2026-07-27 and is now PROVEN, its Eichler–Shimura half
-absorbed into `x0WitnessTable`),
+Chabauty-Coleman),
 and — for the `56` isolated-prime levels, whose descent
 `y0HasNoRationalPoint_of_isolatedSemiprime` is itself PROVEN —
 `mem_isolatedJInvariants_of_stable` and
