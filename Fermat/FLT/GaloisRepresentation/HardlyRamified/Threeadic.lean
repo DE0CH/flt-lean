@@ -3832,12 +3832,13 @@ set_option maxHeartbeats 2000000 in
 /-- **Local inertia acts on the connected locus by a SCALAR** (SORRY
 LEAF, cut 2026-07-27 out of
 `connected_locus_displacement_surjective_of_hopf_package` just below,
-which is now PROVEN over it).
+which is PROVEN over it. **REFUTED IN ITS FIRST FORM AND RESTATED
+2026-07-27** — see the FALSITY AUDIT below; the conclusion is unchanged,
+the hypothesis list is not.)
 
-This is the pure RAYNAUD input with every residual identification
-stripped off. For `σ ∈ I₃` with image `g₀` in `Γ ℚ` there is a SINGLE
-scalar `c : R` such that `ρ g₀` acts on the WHOLE connected locus as
-multiplication by `c`, modulo `𝔪ⁿ⁺²V`.
+For `σ ∈ I₃` with image `g₀` in `Γ ℚ` there is a SINGLE scalar `c : R`
+such that `ρ g₀` acts on the WHOLE connected locus as multiplication by
+`c`, modulo `𝔪ⁿ⁺²V`.
 
 **NOTHING IS CLAIMED ABOUT `c`** — in particular the statement does NOT
 say `c ≡ ω σ` residually, and it does NOT say `c − 1` is a unit. Those
@@ -3847,33 +3848,115 @@ are DERIVED in the consumer below out of the residual matrix entries
 scalar action on the connected vector `p := ρ g₀ w₀ − w₀`: residually
 `p ≡ (a g₀ − 1) • w₀` and `ρ g₀ p ≡ (a g₀ − 1) a g₀ • w₀`, so
 `(a g₀ − 1)(a g₀ − c) • w₀ ∈ 𝔪V`; since `w₀` is residually nonzero and
-`a g₀ − 1` is a unit, `c ≡ a g₀ ≡ −1 mod 𝔪`. That is exactly why
-`hV`, `hρ`, `kk`, `π`, `v₀` and `w₀` do NOT appear in this statement:
-the residual half of the old leaf is now PROVEN, and only the
-finite-flat half is left here.
+`a g₀ − 1` is a unit, `c ≡ a g₀ ≡ −1 mod 𝔪`. That derivation stays in
+the consumer and is untouched by the repair below: the residual data now
+reappears among THIS leaf's hypotheses because the finite-flat half
+needs it, not because the identification of `c` moved here.
 
-ROUTE (Raynaud). At `e = 1 < p − 1 = 2` the connected part `G⁰` of the
-finite flat `𝒪ᵥ ≅ ℤ₃`-group scheme `G` is of MULTIPLICATIVE type
-(Raynaud's classification of schemes of type `(p,…,p)` together with
-uniqueness of prolongations; Oort–Tate at each layer). A group scheme of
-multiplicative type is a form of a product of `μ`'s, so local inertia
-acts on the whole of `M⁰` through a single character `χ` — i.e. by the
-scalar `χ σ`, whose image in `R ⧸ 𝔪ⁿ⁺²` is the `c` asked for. Note
-`e = 1` is genuinely used: over a base with `e ≥ p − 1` the connected
-part need not be of multiplicative type and prolongations stop being
-unique.
+# FALSITY AUDIT (2026-07-27) — the first form of this leaf was FALSE
 
-DEGENERATE CASES ARE FINE, which is one reason this form was chosen over
-"`d` is invertible on `M⁰`": if `G` is étale then `M⁰ = 0` and any `c`
-works; if `G` is connected then `M⁰ = M` and `c = χ σ` acts on
-everything. No rank hypothesis on `V` is needed, and none is carried.
+The leaf was first cut as the "pure Raynaud input", carrying ONLY `ρ`,
+`n`, the Hopf package `G`/`fG`/`e₀` and `σ ∈ I₃`, with `hV`, `hρ`, `kk`,
+`π`, `v₀`, `w₀` and `hσω` all dropped. **In that form it is false**, and
+its own docstring named the check that refutes it:
+
+> exhibit a finite flat `ℤ₃`-group scheme with étale generic fibre whose
+> connected geometric points carry a local-inertia action that is not
+> scalar.
+
+Such a scheme exists at `e = 1`. Take `E ⧸ ℚ` with GOOD SUPERSINGULAR
+reduction at `3` (equivalently `3 ∣ a₃`, i.e. `a₃ ∈ {−3, 0, 3}` — an
+infinite family), and put `R = ℤ₃`, `V = T₃E`, `n = 0`, so that
+`M = V ⧸ 𝔪²V = E[9]`, with `G = 𝒪(E[9])` the coordinate ring of the
+`9`-torsion of the abelian scheme over `ℤ₃`. Then every hypothesis of
+the old form holds:
+
+* `G` is a finite flat `𝒪₃ᵥ = ℤ₃`-Hopf algebra of rank `81` with étale
+  generic fibre (characteristic `0`), and `fG` is the tautological
+  Galois-equivariant bijection `E[9](ℚ̄₃) ≅ M`;
+* `E` is supersingular, so `E[9]` has trivial étale quotient, `G ⊗ 𝔽₃`
+  is a LOCAL ring, and `G` is `3`-torsion-free — hence `0` and `1` are
+  the only idempotents of `G`. So `e₀ = 1` satisfies `he₀`, `hε₀`,
+  `hmin₀` and `habs₀`, and the connected locus is ALL of `M`, since
+  every `ℚ₃ᵥ`-algebra map sends `1 ↦ 1`;
+* but `I₃` acts on `E[3]` through the LEVEL-2 fundamental characters
+  `θ, θ³` of `𝔽₉ˣ` (Serre, *Propriétés galoisiennes des points d'ordre
+  fini*, Invent. Math. 15 (1972), §1.11 prop. 12): the image of `I₃` in
+  `GL(E[3])` is a nonsplit Cartan subgroup of order `8`, whose scalars
+  form the subgroup of order `2`. So some `σ ∈ I₃` acts non-scalarly
+  already modulo `3`, a fortiori modulo `9`.
+
+Hence no `c` exists, and the old statement is false. The defective step
+in the old ROUTE is "at `e = 1 < p − 1` the connected part `G⁰` is of
+MULTIPLICATIVE type": Raynaud at `e < p − 1` gives UNIQUENESS OF
+PROLONGATIONS and full faithfulness, NOT that connected implies
+multiplicative. This project already records the very same
+counterexample one file away — the docstring of
+`OortTate.exists_muType_coordinate`
+(`Fermat/FLT/GroupScheme/ConnectedEtale.lean`) says of its own
+one-dimensionality hypothesis `hstab`: "`hstab` is NOT redundant — for
+the `p`-torsion of a supersingular elliptic curve over `ℤ_p` tame
+inertia acts through the level-`2` fundamental characters, no line is
+stable, no `μ_p` sits inside the model". The old form of this leaf had
+no analogue of `hstab`, which is exactly what it was missing.
+
+# THE REPAIR: the residual package is back, and it is what excludes the supersingular counterexample
+
+`hV`, `hρ`, `kk`, `hsurj`, `π`, `hπsurj`, `hπequiv`, `v₀`, `hv₀`, `w₀`,
+`hw₀π`, `hw₀ne` and `hσω` are restored. All thirteen are already in
+scope at the single call site below, so the consumer's proof changes
+only in its argument list.
+
+What they buy: `hπequiv` makes the residual representation `ρ̄` an
+extension of the TRIVIAL character by a character `a`; `hV` together
+with `hρ` forces `det ρ̄ = ω`, hence `a = ω`
+(`residual_twist_eq_cyclotomicCharacterModL` above); and `hσω` says
+`ω ≠ 1` on `I₃`. So `ρ̄|_{D₃}` is reducible with DISTINCT characters —
+it is `3`-DISTINGUISHED ORDINARY — whereas a supersingular `ρ̄|_{I₃}` is
+irreducible. The counterexample is excluded by the very hypotheses that
+were dropped.
+
+ROUTE (corrected). `ρ̄|_{D₃}` is `3`-distinguished ordinary and every
+`ρ ⧸ 𝔪ⁿ⁺²` admits the finite flat model `G`, so by FLAT IMPLIES ORDINARY
+(Wiles, *Modular elliptic curves and Fermat's Last Theorem*, Ann. of
+Math. 141 (1995), ch. 1 §1, prop. 1.1; Ramakrishna, Compositio 87
+(1993); Darmon–Diamond–Taylor §3) the representation `ρ|_{D₃}` is
+ORDINARY: there is a free rank-`1` `R`-summand `L ⊆ V`, stable under
+`D₃`, on which `D₃` acts by `χ_cyc · ε` with `ε` UNRAMIFIED, and with
+`D₃` acting on `V ⧸ L` by an unramified character. Restricted to
+INERTIA the action on `L` is `χ_cyc` alone, so
+`c := χ_cyc σ ∈ ℤ₃ˣ ⊆ Rˣ` is the scalar asked for. Finally `G⁰` is the
+multiplicative part of the model and `G ⧸ G⁰` is étale, so —
+prolongations being unique at `e = 1 < p − 1 = 2` — the connected locus
+of `M` is exactly the image of `L`.
+
+Those are two genuinely separate inputs, and whoever cuts this next
+should cut it there:
+
+1. ORDINARITY: `∃ L : Submodule R V, ∃ c : R`, with `L` stable under
+   `ρ g` for every `g : Γ ℚ`, `ρ g₀ y − c • y ∈ 𝔪ⁿ⁺² • ⊤` for `y ∈ L`,
+   and `ρ g₀ x − x ∈ L ⊔ 𝔪ⁿ⁺² • ⊤` for every `x : V` (inertia trivial on
+   `V ⧸ L`);
+2. CONNECTED-ÉTALE: the connected locus is contained in
+   `L ⊔ 𝔪ⁿ⁺² • ⊤`.
+
+The assembly from those two is three lines — write `x = y + m`,
+`y ∈ L`, `m ∈ 𝔪ⁿ⁺² • ⊤`, and kill the tail with `apply_mem_smul_top`.
+**Do not cut (2) off from (1)**: for an arbitrary `L` satisfying only
+the first two clauses of (1) it is FALSE (`L = 0` satisfies them with
+any `c`), so the clause pinning the action on `V ⧸ L` has to travel
+with it.
+
+DEGENERATE CASES ARE FINE: if `G` is étale then `M⁰ = 0` and any `c`
+works; if `G` is connected then `M⁰ = M` and `c = χ_cyc σ` acts on
+everything.
 
 FAITHFULNESS. The quantifier is over `localInertiaGroup 𝔭₃` and NOT over
 `Γ ℚ₃ᵥ`, deliberately: over the full decomposition group the connected
-character is `ω · ψ` with `ψ` an unramified twist, and no single scalar
-works. Inertia-only conclusions are twist-blind, which is why this form
-is the true one. The conclusion is a VALUE-level congruence in `V`
-modulo `𝔪ⁿ⁺²V` — never an element of `G`, never a coordinate, never
+character is `χ_cyc · ε` with `ε` an unramified twist, and no single
+scalar works. Inertia-only conclusions are twist-blind, which is why
+this form is the true one. The conclusion is a VALUE-level congruence in
+`V` modulo `𝔪ⁿ⁺²V` — never an element of `G`, never a coordinate, never
 `Γ`-wide rationality — so it is on the true side of the development's
 `𝒪ᵥ`-descent rule and blind to the `p − 1` unramified twists `μ₃ ⊗ ψ`
 that killed `exists_muType_closure`.
@@ -3884,27 +3967,44 @@ above), every inertia displacement is connected
 (`inertia_displacement_apply_connected_idempotent_eq_one` above), and
 `mem_span_natCast_of_inertia_invariant`
 (`Fermat/FLT/GroupScheme/ConnectedEtale.lean`) already spends the
-`e = 1 < p − 1` input — that is the proof to read first.
-`OortTate.exists_muType_coordinate` (same file, PROVEN) is the closest
-existing statement of the multiplicative-type input; note its `hstab`
-hypothesis (`σ • φ` is a POWER of `φ`) is the genuinely expensive part.
+`e = 1 < p − 1` input.
+`OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`
+(same file, PROVEN over `exists_muType_coordinate`) is the
+multiplicative-type input in its usable form — but note it needs
+`hord : φ ^ 3 = 1`, so it speaks about the `3`-TORSION of `M` only and
+not about `M = V ⧸ 𝔪ⁿ⁺²V` itself, and it needs `hstab`. Producing
+`hstab` out of the residual package is the crux of step (1).
 
-**The check that would refute this obstruction**: exhibit a finite flat
-`ℤ₃`-group scheme with étale generic fibre whose connected geometric
-points carry a local-inertia action that is not scalar. By Raynaud at
-`e = 1 < p − 1` none exists; any candidate must have `e ≥ p − 1`.
+**The check that would refute the REPAIRED statement**: exhibit a
+`3`-distinguished ordinary residual `ρ̄` admitting a finite flat lift
+whose connected part is not of multiplicative type. Flat-implies-
+ordinary says there is none; such a curve would refute Wiles ch. 1
+prop. 1.1.
 
 Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.5; Oort–Tate, *Group schemes of
-prime order*; Tate, *Finite flat group schemes*, §4, in
-Cornell–Silverman–Stevens. -/
+prime order*; Serre, Invent. Math. 15 (1972), §1.11 prop. 12; Wiles,
+Ann. of Math. 141 (1995), ch. 1 prop. 1.1; Tate, *Finite flat group
+schemes*, §4, in Cornell–Silverman–Stevens. -/
 theorem exists_inertia_scalar_on_connected_locus_of_hopf_package
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
     [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
-    {V : Type v} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
     [Module.Free R V]
-    (ρ : GaloisRep ℚ R V) (n : ℕ)
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (n : ℕ)
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
     [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
     (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
@@ -3916,7 +4016,9 @@ theorem exists_inertia_scalar_on_connected_locus_of_hopf_package
     (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
       Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
     (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
-    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃) :
+    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (hσω : cyclotomicCharacterModL 3
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) ≠ 1) :
     ∃ c : R, ∀ x : V,
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm
           ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
@@ -3978,8 +4080,18 @@ residual linear algebra plus one division:
   `ρ g₀ y − y ≡ (c − 1) • y = z` by the scalar action again.
 
 So `hV`, `hρ`, `kk`, `π`, `hπsurj`, `hπequiv`, `v₀`, `hv₀`, `w₀` and
-`hσω` are all genuinely spent HERE, and none of them is carried into the
-remaining leaf.
+`hσω` are all genuinely spent HERE.
+
+CORRECTION (2026-07-27). An earlier version of this paragraph added
+"and none of them is carried into the remaining leaf". That is no longer
+true, and the leaf above says why: WITHOUT the residual package the
+scalar statement is FALSE — the `9`-torsion of a supersingular-at-`3`
+elliptic curve is connected with a non-scalar inertia action. The
+residual data is therefore passed to the leaf as well; it is spent
+TWICE, once here to identify `c` with `a g₀`, and once there to force
+`ρ̄|_{D₃}` to be `3`-distinguished ordinary. The derivation of
+`c ≡ a g₀ ≡ −1` below is unchanged, and the leaf still claims nothing
+about `c`.
 
 **WHY THIS AND NOT `M⁰ ≠ M`.** The route previously recorded on the
 consumer owed only `M⁰ ≠ M`, with Nakayama finishing from any residually
@@ -4082,7 +4194,8 @@ theorem connected_locus_displacement_surjective_of_hopf_package
   set g₀ : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ with hg₀
   -- ## the Raynaud input: inertia acts on the connected locus by a scalar `c`
   obtain ⟨c, hc⟩ := exists_inertia_scalar_on_connected_locus_of_hopf_package
-    ρ n G fG hfG e₀ he₀ hε₀ hmin₀ habs₀ σ hσ
+    V hV hρ kk hsurj π hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne n G fG hfG
+    e₀ he₀ hε₀ hmin₀ habs₀ σ hσ hσω
   rw [← hg₀] at hc
   -- ## the residual matrix entries along the `w₀`-line
   obtain ⟨a, _c₁, hac⟩ := exists_residual_matrix_entries hV kk hsurj π hπsurj
