@@ -49359,9 +49359,10 @@ theorem tateTorsion_fixed_of_cyclotomicFixed_of_exists_zpow
     exact Subgroup.zpow_mem_zpowers _ _
   rw [← hPt, ← hut, he σ u, hclass]
 
+omit [IsDomain R] [Module.Finite ℤ_[p] R] in
 /-- **The level-`k` kernel acts trivially on `p ^ n`-th roots of unity**
-(sorry leaf — the CYCLOTOMIC half of the 2026-07-27 ELEVENTH cut, and a
-node that contains NO modular-curve geometry whatsoever).
+(PROVEN 2026-07-27 — the CYCLOTOMIC half of the 2026-07-27 ELEVENTH cut,
+and a node that contains NO modular-curve geometry whatsoever).
 
 WHAT THIS IS. If `σ ∈ G_{ℚ_p}` acts trivially on the level-`k` reduction
 `ρ ⊗ R ⧸ 𝔪 ^ k` of the lattice, and `p ^ n` is the exact characteristic
@@ -49383,14 +49384,53 @@ of them geometric:
 3. `σ` acts on `μ_{p ^ n}` through `ζ ↦ ζ ^ χ_cyc(σ)`, so `χ_cyc(σ) ≡ 1`
    mod `p ^ n` gives `σ ζ = ζ`.
 
-WHAT IS MISSING, STATED AS A REFUTABLE CHECK rather than a verdict. Step
-3 needs the compatibility of `cyclotomicCharacter (AlgebraicClosure ℚ) p`
-with `cyclotomicCharacter (AlgebraicClosure ℚᵖᵥ) p` along the
-decomposition embedding `G_{ℚᵖᵥ} → G_ℚ` that `toLocal 𝔭ᵥ` uses. The grep
-that would settle it:
-`grep -rn 'cyclotomicCharacter' Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
-— a compatibility lemma for a field embedding would close step 3 outright,
-and its absence is the only reason this is a leaf rather than a proof.
+HOW THE THREE STEPS WERE DISCHARGED (2026-07-27), and in particular why
+the compatibility lemma the previous owner asked for turned out NOT to be
+needed. The recorded obstruction was "step 3 needs the compatibility of
+`cyclotomicCharacter (AlgebraicClosure ℚ) p` with
+`cyclotomicCharacter (AlgebraicClosure ℚᵖᵥ) p` along the decomposition
+embedding `G_{ℚᵖᵥ} → G_ℚ`". That grep was run, mathlib has no such
+compatibility lemma — and the leaf closes anyway, because the local
+cyclotomic character never has to be mentioned at all:
+
+1. *Step 1 needs a scalar tower that is NOT hypothesised, and gets it for
+   free.* `hdet` lands in `ℚ̄_p` through `algebraMap ℤ_[p] ℚ̄_p`, while
+   `hσ` lives over `R`; the bridge is
+   `isScalarTower_padicInt_of_continuousSMul`
+   (`Fermat/FLT/Mathlib/RingTheory/PadicIntegralClosure.lean`), which
+   derives `IsScalarTower ℤ_[p] R ℚ̄_p` from the `ContinuousSMul R ℚ̄_p`
+   binder because `ℕ` is dense in `ℤ_p`. Without it the statement would
+   be unprovable (nothing else ties the two `ℤ_p`-paths into `ℚ̄_p`
+   together), so that binder is load-bearing and not decoration.
+   Determinants then give
+   `det (ρ γ) = algebraMap ℤ_[p] R (χ_cyc γ)` in `R`, via
+   `LinearMap.det_conj` (to strip `e`) and `LinearMap.det_baseChange`.
+2. *Step 2* reduces that identity mod `𝔪 ^ k`: `hσ` says
+   `ρ.baseChange (R ⧸ 𝔪 ^ k) γ = 1`, so its determinant is `1`, and
+   `CharP (R ⧸ 𝔪 ^ k) (p ^ n)` plus `PadicInt.ker_toZModPow` force
+   `χ_cyc(γ).toZModPow n = 1` in `ℤ ⧸ p ^ n` — this is the only place the
+   exact-exponent hypothesis is used.
+3. *Step 3 needs no character compatibility, only that `μ_{p ^ n}`
+   descends.* `Field.absoluteGaloisGroup.lift_map` says
+   `F (γ x) = σ (F x)` for `F : ℚ̄ → ℚ̄ᵖᵥ` the embedding that
+   `Field.absoluteGaloisGroup.map` — hence `toLocal 𝔭ᵥ` — is built from.
+   `F` is injective, so it carries a primitive `p ^ n`-th root of unity of
+   `ℚ̄` to one of `ℚ̄ᵖᵥ`; every `ζ` with `ζ ^ (p ^ n) = 1` is therefore
+   `F x` for some `p ^ n`-th root of unity `x` of `ℚ̄`, and
+   `cyclotomicCharacter.spec` applied UPSTAIRS gives `γ x = x ^ 1 = x`.
+   So `σ ζ = σ (F x) = F (γ x) = F x = ζ`. The local character is never
+   formed, which is exactly why no comparison of the two characters is
+   required.
+
+ONE ELABORATION NOTE for anyone editing this proof. `γ` and `F` are
+produced by a SINGLE existential (`⟨_, _, GaloisRep.toLocal_apply …,
+Field.absoluteGaloisGroup.lift_map …, RingHom.injective _⟩`) rather than
+written out. At the concrete base `ℚ` a hand-written
+`algebraMap ℚ ℚᵖᵥ` does not match the one `GaloisRep.toLocal_apply`
+produces — the standing "state it over a variable base" trap — so
+`rw`/`set` against the hand-written spelling fails while the two terms
+pretty-print identically. Letting unification fill both slots from the
+lemmas themselves sidesteps it entirely.
 
 FAITHFULNESS: this is IMPLIED BY the node it was split off from, so the
 cut adds no strength. Under Tate's uniformisation `μ_{p ^ n}` embeds in
@@ -49420,8 +49460,129 @@ theorem cyclotomicFixed_of_localLevelTrivial
     (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
     (hσ : (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1)
     (ζ : AlgebraicClosure ℚᵖᵥ) (hζ : ζ ^ p ^ n = 1) :
-    (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) ζ = ζ :=
-  sorry
+    (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) ζ = ζ := by
+  classical
+  haveI := hchar
+  -- `n = 0`: the only first root of unity is `1`, which every automorphism fixes
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · rw [pow_zero, pow_one] at hζ
+    rw [hζ, map_one]
+  -- the scalar tower `ℤ_p → R → ℚ̄_p` comes free from the continuity binder
+  haveI : IsScalarTower ℤ_[p] R (AlgebraicClosure ℚ_[p]) :=
+    isScalarTower_padicInt_of_continuousSMul
+  haveI : NeZero (p ^ n) := ⟨(pow_pos hp.out.pos n).ne'⟩
+  haveI : Fact (1 < p ^ n) := ⟨Nat.one_lt_pow hn.ne' hp.out.one_lt⟩
+  -- the decomposition element upstairs together with the embedding of algebraic
+  -- closures it is built from, produced by ONE existential so that both facts
+  -- speak about the SAME `γ` and the SAME embedding (see the docstring's
+  -- elaboration note: the hand-written `algebraMap ℚ ℚᵖᵥ` does not match)
+  obtain ⟨γ, F, hγ, hlift, hFinj⟩ :
+      ∃ (γ : Field.absoluteGaloisGroup ℚ)
+        (F : AlgebraicClosure ℚ →+* AlgebraicClosure ℚᵖᵥ),
+        (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))).toLocal
+            𝔭ᵥ σ =
+          (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))) γ ∧
+        (∀ x : AlgebraicClosure ℚ, F (γ x) = σ (F x)) ∧
+        Function.Injective F :=
+    ⟨_, _, GaloisRep.toLocal_apply _ _ σ,
+      Field.absoluteGaloisGroup.lift_map _ σ, RingHom.injective _⟩
+  rw [hγ] at hσ
+  -- STEP 1. `det ρ = χ_cyc`, over `ℚ̄_p` and then, by `hlat`, over `R`
+  have hbcQ : (ρ.baseChange (AlgebraicClosure ℚ_[p])) γ =
+      LinearMap.baseChange (AlgebraicClosure ℚ_[p]) (ρ γ) := by
+    apply LinearMap.ext
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a w => simp
+    | add x y hx hy => rw [map_add, map_add, hx, hy]
+  have hconj : (ρ.baseChange (AlgebraicClosure ℚ_[p])) γ =
+      (e : (Fin 2 → AlgebraicClosure ℚ_[p]) →ₗ[AlgebraicClosure ℚ_[p]]
+        (AlgebraicClosure ℚ_[p] ⊗[R] V)) ∘ₗ
+      ((τ γ : (Fin 2 → AlgebraicClosure ℚ_[p]) →ₗ[AlgebraicClosure ℚ_[p]]
+          (Fin 2 → AlgebraicClosure ℚ_[p])) ∘ₗ
+        (e.symm : (AlgebraicClosure ℚ_[p] ⊗[R] V) →ₗ[AlgebraicClosure ℚ_[p]]
+          (Fin 2 → AlgebraicClosure ℚ_[p]))) := by
+    apply LinearMap.ext
+    intro x
+    show _ = e (τ γ (e.symm x))
+    rw [he γ (e.symm x), e.apply_symm_apply]
+  have hdetR : LinearMap.det (ρ γ) =
+      algebraMap ℤ_[p] R
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+          ℤ_[p]ˣ) : ℤ_[p]) := by
+    apply hlat
+    rw [← IsScalarTower.algebraMap_apply ℤ_[p] R (AlgebraicClosure ℚ_[p]),
+      ← hdet γ, ← LinearMap.det_conj (τ γ) e, ← hconj, hbcQ,
+      LinearMap.det_baseChange]
+  -- STEP 2. Level-`k` triviality forces `χ_cyc(σ) ≡ 1 (mod 𝔪 ^ k)`
+  have hbcS : (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))) γ =
+      LinearMap.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))
+        (ρ γ) := by
+    apply LinearMap.ext
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a w => simp
+    | add x y hx hy => rw [map_add, map_add, hx, hy]
+  have hdet1 : algebraMap R (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))
+      (LinearMap.det (ρ γ)) = 1 := by
+    have h1 : (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))) γ
+        = 1 := hσ
+    rw [← LinearMap.det_baseChange, ← hbcS, h1]
+    simp
+  -- STEP 3. The EXACT exponent descends that congruence to `ℤ ⧸ p ^ n`
+  have hmod : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      γ.toRingEquiv).val.toZModPow n) = 1 := by
+    set S := R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R) with hSdef
+    set f : ℤ_[p] →+* S := (algebraMap R S).comp (algebraMap ℤ_[p] R) with hfdef
+    set χ : ℤ_[p] :=
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+        ℤ_[p]) with hχdef
+    have hfχ : f χ = 1 := by
+      show (algebraMap R S) ((algebraMap ℤ_[p] R) χ) = 1
+      rw [← hdetR]
+      exact hdet1
+    set m : ℕ := (χ.toZModPow n).val with hmdef
+    have hker : χ - (m : ℤ_[p]) ∈ Ideal.span {(p : ℤ_[p]) ^ n} := by
+      rw [← PadicInt.ker_toZModPow, RingHom.mem_ker, map_sub, map_natCast,
+        sub_eq_zero, hmdef]
+      exact (ZMod.natCast_rightInverse _).symm
+    obtain ⟨y, hy⟩ := Ideal.mem_span_singleton'.mp hker
+    have hp0 : f ((p : ℤ_[p]) ^ n) = 0 := by
+      rw [map_pow, map_natCast, ← Nat.cast_pow]
+      exact CharP.cast_eq_zero S (p ^ n)
+    have hzero : f χ - ((m : ℕ) : S) = 0 := by
+      have hsub : f (χ - (m : ℤ_[p])) = 0 := by
+        rw [← hy, map_mul, hp0, mul_zero]
+      rwa [map_sub, map_natCast] at hsub
+    have hmS : ((m : ℕ) : S) = ((1 : ℕ) : S) := by
+      rw [sub_eq_zero] at hzero
+      rw [← hzero, hfχ, Nat.cast_one]
+    have hmeq : m ≡ 1 [MOD p ^ n] := (CharP.natCast_eq_natCast S (p ^ n)).mp hmS
+    calc (χ.toZModPow n) = ((m : ℕ) : ZMod (p ^ n)) :=
+          (ZMod.natCast_rightInverse _).symm
+      _ = ((1 : ℕ) : ZMod (p ^ n)) :=
+          (ZMod.natCast_eq_natCast_iff _ _ _).mpr hmeq
+      _ = 1 := Nat.cast_one
+  -- STEP 4. Every `p ^ n`-th root of unity of `ℚ̄ᵖᵥ` descends to `ℚ̄`, where
+  -- `γ` acts through `χ_cyc`; no LOCAL cyclotomic character is ever formed
+  obtain ⟨ξ, hξ⟩ :=
+    HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) (p ^ n)
+  have hFξ : IsPrimitiveRoot (F ξ) (p ^ n) := hξ.map_of_injective hFinj
+  obtain ⟨i, _, hiζ⟩ := hFξ.eq_pow_of_pow_eq_one hζ
+  have hFx : F (ξ ^ i) = ζ := by rw [map_pow, hiζ]
+  have hxpow : (ξ ^ i) ^ p ^ n = 1 := by
+    rw [← pow_mul, mul_comm, pow_mul, hξ.pow_eq_one, one_pow]
+  have hact : γ (ξ ^ i) = ξ ^ i := by
+    have hspec := cyclotomicCharacter.spec (L := AlgebraicClosure ℚ) p
+      γ.toRingEquiv (ξ ^ i) hxpow
+    rw [hmod, ZMod.val_one, pow_one] at hspec
+    simpa using hspec
+  calc (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) ζ
+      = σ (F (ξ ^ i)) := by rw [hFx]
+    _ = F (γ (ξ ^ i)) := (hlift (ξ ^ i)).symm
+    _ = ζ := by rw [hact, hFx]
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
@@ -49556,8 +49717,8 @@ classes of the `N`-th roots of `q`, and NOTHING ELSE. So the torsion
 statement is the conjunction of two independent assertions, which this
 node now assembles rather than cites:
 
-1. `cyclotomicFixed_of_localLevelTrivial` (sorry leaf, above) — the
-   CYCLOTOMIC half: the level-`k` kernel fixes `μ_{p ^ n}` pointwise.
+1. `cyclotomicFixed_of_localLevelTrivial` (PROVEN 2026-07-27, above) —
+   the CYCLOTOMIC half: the level-`k` kernel fixes `μ_{p ^ n}` pointwise.
    This is `det ρ = χ_cyc` plus the exact-exponent hypothesis, and it
    contains NO modular curve, NO Deligne–Rapoport model and NO toric
    reduction. It was previously invisible, fused into the citation.
