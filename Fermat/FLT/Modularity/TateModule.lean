@@ -209,6 +209,10 @@ public import Mathlib.LinearAlgebra.FreeModule.PID
 -- `Fintype.linearCombination`: the finite-rank approximating map
 -- `ℤ_q^ι → 𝒪ᵥ` of the same lemma
 public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
+public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
+public import Mathlib.LinearAlgebra.BilinearForm.Properties
+public import Mathlib.FieldTheory.Finiteness
+public import Mathlib.NumberTheory.NumberField.Ideal.Basic
 
 @[expose] public section
 
@@ -2042,6 +2046,149 @@ end Assembly
 
 end LevelFrame
 
+/-! ### Symplectic linear algebra: a nondegenerate alternating form forces
+an even dimension
+
+This is the algebraic half of `even_dim_torsion_of_isMaximal` below, and
+it is a MATHLIB GAP: there is no "nondegenerate alternating ⇒ even
+`finrank`" anywhere in the pin, in `Fermat/FLT/Mathlib/` or in `~/cs/FLT`
+(all three greped 2026-07-27), and no skew-symmetric-determinant result
+to derive it from either.  `Mathlib/LinearAlgebra/SymplecticGroup.lean`
+is about `Sp(2n)` for a GIVEN `n` and says nothing about which spaces
+carry a symplectic form.
+
+The proof is the classical hyperbolic-plane induction, run over
+`LinearMap.BilinForm.orthogonal` rather than over a chosen symplectic
+basis, which is what keeps it short.  Note that mathlib's
+`isCompl_span_singleton_orthogonal` and
+`restrict_nondegenerate_orthogonal_spanSingleton` both require
+`B x x ≠ 0` and are therefore USELESS for an alternating form — that
+hypothesis is exactly what alternating denies.  What does apply is
+`nondegenerate_restrict_of_disjoint_orthogonal` together with
+`orthogonal_orthogonal`, so the induction step only has to exhibit a
+hyperbolic plane `⟨x, y⟩` meeting its own orthogonal trivially. -/
+
+/-- **Induction step for `even_finrank_of_isAlt_nondegenerate`**: bounding
+the `finrank` by `n` and inducting on `n` keeps the induction inside one
+universe, which a direct induction on `Module.finrank K V` would not. -/
+theorem even_finrank_of_isAlt_nondegenerate_aux {K : Type*} [Field K] (n : ℕ) :
+    ∀ {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
+      (B : LinearMap.BilinForm K V), B.IsAlt → B.Nondegenerate →
+      Module.finrank K V ≤ n → Even (Module.finrank K V) := by
+  induction n with
+  | zero =>
+    intro V _ _ _ B _ _ h
+    rw [Nat.le_zero.mp h]
+    exact ⟨0, rfl⟩
+  | succ n ih =>
+    intro V _ _ _ B halt hnd hle
+    rcases Nat.eq_zero_or_pos (Module.finrank K V) with h0 | hpos
+    · rw [h0]; exact ⟨0, rfl⟩
+    -- pick `x ≠ 0`, and `y` pairing nontrivially with it
+    have hntriv : Nontrivial V := Module.nontrivial_of_finrank_pos hpos
+    obtain ⟨x, hx⟩ := exists_ne (0 : V)
+    have hy : ∃ y : V, B x y ≠ 0 := by
+      by_contra hc
+      push Not at hc
+      exact hx (hnd.1 x hc)
+    obtain ⟨y, hxy⟩ := hy
+    have hrefl : B.IsRefl := halt.isRefl
+    set W : Submodule K V := Submodule.span K {x, y} with hW
+    have hxmem : x ∈ W := Submodule.subset_span (by simp)
+    have hymem : y ∈ W := Submodule.subset_span (by simp)
+    -- `x, y` span a hyperbolic plane
+    have hli : LinearIndependent K ![x, y] := by
+      rw [LinearIndependent.pair_iff]
+      intro a b hab
+      have h1 : a * B x x + b * B x y = 0 := by
+        have := congrArg (fun v => B x v) hab
+        simpa [map_add, map_smul, smul_eq_mul] using this
+      rw [halt.self_eq_zero x, mul_zero, zero_add] at h1
+      have hb : b = 0 := by
+        rcases mul_eq_zero.mp h1 with h | h
+        · exact h
+        · exact absurd h hxy
+      subst hb
+      simp only [zero_smul, add_zero] at hab
+      rcases smul_eq_zero.mp hab with h | h
+      · exact ⟨h, rfl⟩
+      · exact absurd h hx
+    have hrank2 : Module.finrank K W = 2 := by
+      have hspan : Submodule.span K (Set.range ![x, y]) = W := by
+        rw [hW]; congr 1
+        simp [Matrix.range_cons, Matrix.range_empty, Set.pair_comm]
+      rw [← hspan, finrank_span_eq_card hli]
+      simp
+    have hdisj : Disjoint W (B.orthogonal W) := by
+      rw [Submodule.disjoint_def]
+      intro w hwW hwO
+      obtain ⟨a, b, rfl⟩ : ∃ a b : K, w = a • x + b • y := by
+        rw [hW, Submodule.mem_span_pair] at hwW
+        obtain ⟨a, b, hab⟩ := hwW
+        exact ⟨a, b, hab.symm⟩
+      have h1 : B x (a • x + b • y) = 0 := hwO x hxmem
+      have h2 : B y (a • x + b • y) = 0 := hwO y hymem
+      have hyx : B y x = -B x y := (LinearMap.BilinForm.IsAlt.neg_eq halt x y).symm
+      have e1 : b * B x y = 0 := by
+        have h1' : a * B x x + b * B x y = 0 := by
+          simpa [map_add, map_smul, smul_eq_mul] using h1
+        rw [halt.self_eq_zero x, mul_zero, zero_add] at h1'
+        exact h1'
+      have e2 : a * B x y = 0 := by
+        have h2' : a * B y x + b * B y y = 0 := by
+          simpa [map_add, map_smul, smul_eq_mul] using h2
+        rw [halt.self_eq_zero y, mul_zero, add_zero, hyx, mul_neg, neg_eq_zero] at h2'
+        exact h2'
+      have ha : a = 0 := by
+        rcases mul_eq_zero.mp e2 with h | h
+        · exact h
+        · exact absurd h hxy
+      have hb : b = 0 := by
+        rcases mul_eq_zero.mp e1 with h | h
+        · exact h
+        · exact absurd h hxy
+      rw [ha, hb, zero_smul, zero_smul, add_zero]
+    -- the restriction to the orthogonal complement is again nondegenerate alternating
+    have hnd' : (B.restrict (B.orthogonal W)).Nondegenerate := by
+      refine LinearMap.BilinForm.nondegenerate_restrict_of_disjoint_orthogonal B hrefl ?_
+      rw [LinearMap.BilinForm.orthogonal_orthogonal hnd hrefl W]
+      exact hdisj.symm
+    have halt' : (B.restrict (B.orthogonal W)).IsAlt := fun w => halt (w : V)
+    have hfr : Module.finrank K (B.orthogonal W) = Module.finrank K V - 2 := by
+      rw [LinearMap.BilinForm.finrank_orthogonal hnd W, hrank2]
+    have hle2 : 2 ≤ Module.finrank K V := hrank2 ▸ Submodule.finrank_le W
+    have hstep : Module.finrank K (B.orthogonal W) ≤ n := by omega
+    have heven := ih (B.restrict (B.orthogonal W)) halt' hnd' hstep
+    rw [hfr] at heven
+    obtain ⟨k, hk⟩ := heven
+    exact ⟨k + 1, by omega⟩
+
+/-- **A nondegenerate ALTERNATING bilinear form forces an EVEN dimension.**
+Absent from mathlib at this pin — see the section note above.  This is the
+statement that turns "`A[J]` is a symplectic space over `𝒪_D/J`" into the
+parity of its residual rank. -/
+theorem even_finrank_of_isAlt_nondegenerate {K V : Type*} [Field K]
+    [AddCommGroup V] [Module K V] [FiniteDimensional K V]
+    (B : LinearMap.BilinForm K V) (halt : B.IsAlt) (hnd : B.Nondegenerate) :
+    Even (Module.finrank K V) :=
+  even_finrank_of_isAlt_nondegenerate_aux (Module.finrank K V) B halt hnd le_rfl
+
+/-- **A finite symplectic space over a finite field has `#k ^ (2r)`
+elements.**  This is `even_finrank_of_isAlt_nondegenerate` in the
+cardinality form that `LevelFrame.card_tors_eq_sq` consumes. -/
+theorem exists_card_eq_pow_two_mul_of_isAlt_nondegenerate
+    {k M : Type*} [Field k] [Finite k] [AddCommGroup M] [Module k M] [Finite M]
+    (B : LinearMap.BilinForm k M) (halt : B.IsAlt) (hnd : B.Nondegenerate) :
+    ∃ r, Nat.card M = Nat.card k ^ (2 * r) := by
+  classical
+  letI := Fintype.ofFinite k
+  letI := Fintype.ofFinite M
+  haveI : FiniteDimensional k M := Module.Finite.of_finite
+  obtain ⟨r, hr⟩ := even_finrank_of_isAlt_nondegenerate B halt hnd
+  refine ⟨r, ?_⟩
+  rw [Nat.card_eq_fintype_card, Nat.card_eq_fintype_card,
+    Module.card_eq_pow_finrank (K := k) (V := M), hr, two_mul]
+
 /-! ### The three geometric inputs of the rank count
 
 The audit under `card_torsion_of_isMaximal` below establishes that no
@@ -2137,16 +2284,42 @@ argument above assumes `†` preserves `D`, which is automatic when
 `End⁰(A) = D` and needs Albert's classification otherwise.  Reason (i) is
 independent of this and already suffices to license the cut.
 
-WHAT IS STILL MISSING at this pin, both checkable by reading
+STATUS 2026-07-27 — THE ALGEBRA IS DONE; TWO GEOMETRIC INPUTS REMAIN.
+The linear algebra that was listed here as missing is now PROVEN above:
+`even_finrank_of_isAlt_nondegenerate` (the mathlib gap — nondegenerate
+alternating ⇒ even `finrank`, by the hyperbolic-plane induction over
+`LinearMap.BilinForm.orthogonal`) and its cardinality form
+`exists_card_eq_pow_two_mul_of_isAlt_nondegenerate`.  The body below is
+the glue that consumes them, and it reduces this leaf to exactly two
+sorried `have`s, both PURELY GEOMETRIC and both stated in full:
+
+* `hfin` — `A[I]` is FINITE.  Free once `card_torsion_span_natCast` is
+  available (`A[I] ⊆ A[N(I)]`, of order `N(I)^(2g)`); it is a separate
+  `have` here only because that leaf is itself open, and a successor
+  should discharge it from that leaf rather than from scratch.
+* `hpair` — `A[I]` carries a NONDEGENERATE ALTERNATING pairing over the
+  residue field `𝒪_D/I`.  This is the whole geometric content, and it is
+  where the polarization enters.
+
+WHAT `hpair` STILL NEEDS, both checkable by reading
 `Modularity/AbelianScheme.lean`: nothing asserts that a
 `DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`, and
 `PolarizationStruct` does not assert its induced pairing nondegenerate
 (only `DualStruct.weil_nondegenerate` is an axiom, and that is the
-canonical `A × A^∨` pairing, not the polarized one).  Mathlib has NO
-"nondegenerate alternating ⇒ even `finrank`" lemma either — verified
-2026-07-27 — so that piece must be built from
-`LinearMap.BilinForm.finrank_orthogonal` by induction on hyperbolic
-planes.
+canonical `A × A^∨` pairing, not the polarized one).
+
+**DO NOT BUILD ON `PolarizationStruct` AS IT STANDS** (recorded here
+2026-07-27 because this leaf is where it will bite): the structure is
+satisfied by the CONSTANT ZERO MAP, verified field by field, so it
+carries no content over `DualStruct` and its induced pairing may be
+identically `1`.  A repair task for that definition has its own owner;
+`hpair` must be discharged against the REPAIRED structure, not the
+current one.  Note also that `pairing` in that file is multiplicative
+(valued in roots of unity) whereas `hpair` asks for an additive
+`𝒪_D/I`-bilinear form, so the successor's first step is the logarithm
+of the pairing along a choice of `#(𝒪_D/I)`-th root of unity — which is
+where the residue field's characteristic and the `I`-part of the
+polarization degree have to be handled.
 
 NOTE the classical argument is cleanest on the RATIONAL Tate module
 `V_J`, where nondegeneracy holds for ANY isogeny `λ` and the
@@ -2162,8 +2335,41 @@ theorem even_dim_torsion_of_isMaximal
     (x : Spec (CommRingCat.of F) ⟶ S)
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
     ∃ r, Nat.card (m.torsion x I).1
-      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ (2 * r) :=
-  sorry
+      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ (2 * r) := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+    m.module (specAlgClos F ≫ x)
+  haveI : I.IsMaximal := hI
+  letI : Field (NumberField.RingOfIntegers D ⧸ I) := Ideal.Quotient.field I
+  letI : Module (NumberField.RingOfIntegers D ⧸ I)
+      (Submodule.torsionBySet (NumberField.RingOfIntegers D) (GeomFibrePt f x)
+        ((I : Ideal (NumberField.RingOfIntegers D)) :
+          Set (NumberField.RingOfIntegers D))) :=
+    (Submodule.torsionBySet_isTorsionBySet
+      ((I : Ideal (NumberField.RingOfIntegers D)) :
+        Set (NumberField.RingOfIntegers D))).module
+  -- GEOMETRIC INPUT 1 (sorry): `A[I]` is finite.  Immediate from
+  -- `card_torsion_span_natCast` once that leaf is closed, since `A[I] ⊆ A[N(I)]`.
+  haveI hfin : Finite (Submodule.torsionBySet (NumberField.RingOfIntegers D)
+      (GeomFibrePt f x) ((I : Ideal (NumberField.RingOfIntegers D)) :
+        Set (NumberField.RingOfIntegers D))) := sorry
+  -- GEOMETRIC INPUT 2 (sorry): the polarized Weil pairing makes `A[I]` a
+  -- symplectic space over the residue field `𝒪_D/I`.  See the docstring:
+  -- this must be discharged against a REPAIRED `PolarizationStruct`.
+  have hpair : ∃ B : LinearMap.BilinForm (NumberField.RingOfIntegers D ⧸ I)
+      (Submodule.torsionBySet (NumberField.RingOfIntegers D) (GeomFibrePt f x)
+        ((I : Ideal (NumberField.RingOfIntegers D)) :
+          Set (NumberField.RingOfIntegers D))),
+      B.IsAlt ∧ B.Nondegenerate := sorry
+  obtain ⟨B, halt, hnd⟩ := hpair
+  -- `(m.torsion x I).1` IS the coercion of that submodule, but instance search is
+  -- syntactic, so the goal has to be presented in the submodule form.
+  show ∃ r, Nat.card (Submodule.torsionBySet (NumberField.RingOfIntegers D)
+      (GeomFibrePt f x) ((I : Ideal (NumberField.RingOfIntegers D)) :
+        Set (NumberField.RingOfIntegers D)))
+      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ (2 * r)
+  exact exists_card_eq_pow_two_mul_of_isAlt_nondegenerate B halt hnd
 
 open _root_.NumberField in
 /-- **`A[J] ≠ 0` at every maximal `J`** (sorry leaf — Mumford *Abelian
