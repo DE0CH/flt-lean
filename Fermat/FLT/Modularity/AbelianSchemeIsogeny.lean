@@ -116,6 +116,12 @@ public import Mathlib.RingTheory.KrullDimension.Zero
 public import Mathlib.RingTheory.LocalRing.RingHom.Basic
 public import Mathlib.RingTheory.Regular.RegularSequence
 public import Mathlib.RingTheory.RingHom.Flat
+-- `isRegularLocalRing_stalk_of_smooth` below is a one-line corollary of
+-- `isRegularLocalRing_stalk_of_smooth_over_field`, which was PROVEN in
+-- `Modularity/KhareWintenberger.lean` — a module strictly DOWNSTREAM of this
+-- one — and was HOISTED into `Modularity/RegularStalks.lean` on 2026-07-27
+-- precisely so that it could be consumed here.
+public import Fermat.FLT.Modularity.RegularStalks
 
 @[expose] public section
 
@@ -999,41 +1005,70 @@ with finite fibres", and no leaf has to redo that step.
   DIFFERENT (module-finite) theorem and not to that leaf. -/
 
 /-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS**
-(sorry leaf — but see the next paragraph: **DO NOT PROVE THIS, HOIST IT**).
+(sorry leaf — **FALSE AS STATED**; see the FALSITY AUDIT below.  The
+mathematics is finished and sitting one line away; what blocks this leaf is
+its own SIGNATURE, and repairing it is a CLUSTER-LEVEL change that this
+declaration cannot make alone.)
 
-**THIS IS ALREADY PROVEN IN THIS REPOSITORY, AND ITS SUBTREE IS SORRY-FREE.**
-It stands sorried here for one reason only: DECLARATION ORDER.  The proof is
+**THE HOIST THIS LEAF ASKED FOR IS DONE (2026-07-27).**  The earlier version
+of this docstring said the proof —
 `GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
-in `Fermat/FLT/Modularity/KhareWintenberger.lean`, and that module is strictly
-DOWNSTREAM of this one — it `public import`s `Modularity/TateModule.lean`,
-which `public import`s this file — so the proof cannot be imported here.
+— was unreachable because it lived in `Modularity/KhareWintenberger.lean`,
+strictly DOWNSTREAM of this module.  It has been HOISTED, with its entire
+nine-declaration dependency cone, into `Fermat/FLT/Modularity/RegularStalks.lean`,
+which this file now `public import`s (see the import block) and which
+`KhareWintenberger.lean` imports in turn.  Nothing was restated or reproved:
+the declarations moved byte-identically, in the same namespace, and all nine
+are sorry-free.  So there is NO open mathematics under this leaf anywhere in
+the tree, and the `public import` above is deliberate and load-bearing for the
+repair below even though nothing in THIS file consumes it yet.
 
-Verified 2026-07-27, and here is the check that would refute it:
+**FALSITY AUDIT (2026-07-27).**  The hypothesis `[Field K]` does not say what
+it looks like it says.  `K : CommRingCat` is a BUNDLED object, carrying its own
+ring structure `K.str`; `Spec K` is built from `K.str`.  But `[Field K]`
+elaborates to `Field ↥K` — a class on the CARRIER TYPE — and its `CommRing`
+is `Field.toCommRing`, which is a DIFFERENT instance.  Lean says so itself:
+attempting to close this leaf from the hoisted theorem produces
 
-    grep -n 'theorem isRegularLocalRing_stalk_of_smooth_over_field' \
-         Fermat/FLT/Modularity/KhareWintenberger.lean
-    grep -n '^public import Fermat' Fermat/FLT/Modularity/KhareWintenberger.lean
+    X ⟶ Spec (@CommRingCat.of ↑K CommRingCat.instCommRingObjForgetRingHomCarrier)
+    X ⟶ Spec (@CommRingCat.of ↑K Field.toCommRing)
 
-The first must find the declaration; the second must show `TateModule` among
-its imports.  Its own two dependencies were checked the same day and BOTH have
-sorry-free bodies:
-`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` and
-`isRegularLocalRing_quotient_span_list_aux` (which is a general "a quotient of
-a regular local ring by part of a regular system of parameters is regular
-local", a genuine mathlib gap), resting in turn on
-`isDomain_of_isRegularLocalRing`.  So there is NO open mathematics under this
-leaf anywhere in the tree.
+as two non-unifiable types.  They are not a defeq nuisance; they are two
+genuinely different schemes, because nothing ties the two ring structures
+together.  `[Field K]` therefore asserts only that the carrier TYPE of `K`
+happens to admit SOME field structure, which constrains `K.str` not at all.
 
-**THE CORRECT REPAIR IS A HOIST, NOT A PROOF.**  Move
-`isRegularLocalRing_stalk_of_smooth_over_field` together with those
-dependencies into a module upstream of `Modularity/AbelianScheme.lean`, then
-this leaf closes in one line (the only difference in the statements is
-cosmetic: the downstream one takes `{K : Type u} [Field K]` and
-`Spec (CommRingCat.of K)`, this one takes the `K : CommRingCat` that the
-consumer already has).  Re-proving it here would be the single most expensive
-mistake available at this leaf: it would duplicate a large, finished
-development.  Whoever performs the hoist owns the import-cone audit that comes
-with it — that is the real work, and it is bookkeeping, not mathematics. -/
+THE COUNTEREXAMPLE.  Take `K := CommRingCat.of (ZMod 4)`, so `↥K = ZMod 4`, a
+four-element type.  A `Field ↥K` instance exists — transport the field
+structure of `GaloisField 2 2` along any bijection `ZMod 4 ≃ GaloisField 2 2`
+— so the hypothesis `[Field K]` is satisfied while `K.str` is the ordinary
+`ZMod 4`.  Take `X := Spec K` and `g := 𝟙`, which is smooth.  `ZMod 4` is
+local with maximal ideal `(2)`, so the stalk at the unique point is `ZMod 4`
+itself, which is not even a domain — and a regular local ring IS a domain
+(`GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing`, PROVEN in
+`KhareWintenberger.lean`).  So the conclusion fails.  The same counterexample
+refutes the sibling `ringKrullDim_stalk_eq_of_isFinite_endo` below.
+
+**THE REPAIR, AND WHY IT IS NOT MADE HERE.**  Replace `{K : CommRingCat.{u}}
+[Field K]` with `{K : Type u} [Field K]` and `Spec K` with
+`Spec (CommRingCat.of K)` — the idiom `Modularity/AbelianScheme.lean` uses
+everywhere and the one mathlib uses.  Under that signature this leaf closes in
+ONE LINE,
+
+    GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field
+      g ‹Smooth g› x
+
+with no mathematics left to do.  But the signature is shared by a CLUSTER of
+seven declarations in this file, which pass `K` to one another:
+`isRegularLocalRing_stalk_of_smooth`, `ringKrullDim_stalk_eq_of_isFinite_endo`,
+`flat_of_finite_fibres_endo`, `finite_preimage_mulByNat_of_field_prime_to_char`,
+`finite_preimage_mulByNat_of_field_char`, `finite_preimage_mulByNat_of_field`
+and `flat_mulByNat_of_field`.  Changing one forces changing all: this leaf's
+only consumer, `flat_of_finite_fibres_endo`, also calls
+`ringKrullDim_stalk_eq_of_isFinite_endo`, which had a live owner in another
+worktree when this was found, so a unilateral restatement here would collide
+head-on with theirs.  Nothing OUTSIDE this file consumes any of the seven, so
+the repair is contained — it just needs ONE owner for the whole cluster. -/
 theorem isRegularLocalRing_stalk_of_smooth {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
     (g : X ⟶ Spec K) [Smooth g] (x : X) :
     IsRegularLocalRing (X.presheaf.stalk x) :=
