@@ -8543,10 +8543,22 @@ ingredients its own docstring listed:
 * *the twisting/Kummer computation* — this is `exists_gamma0Datum_specQ_of_ratPoint`,
   the one genuinely arithmetic leaf of the bridge.
 
-What is left over is the translation back from a `Γ₀(N)`-datum over `ℚ` to a
+What was left over is the translation back from a `Γ₀(N)`-datum over `ℚ` to a
 Weierstrass curve, `false_of_gamma0Datum_specQ`: the exact converse of
 `nonempty_gamma0Datum_of_stable`, and a statement with no modular curve in it
-at all.
+at all.  **That is now PROVEN too** (2026-07-27), by assembly rather than by
+new mathematics: its one geometric input is
+`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`
+(`ModularCurve/EllipticScheme.lean`), whose own two leaves —
+`exists_weierstrassModel_of_ellipticScheme` and
+`exists_geomFibreAddEquiv_of_weierstrassModel` — are where the residue now
+lives, and the remaining three steps are `nonempty_gamma0Datum_of_stable`'s
+proof read backwards.  So of the two leaves cut here, what survives is
+`exists_gamma0Datum_specQ_of_ratPoint` — itself reported PROVEN on the
+UNRELEASED branch `flt-lean-91` (`35e14d62`), split into a GIT leaf and one
+arithmetic leaf — together with the two elliptic-scheme leaves named above.
+A successor integrating that branch should re-read this paragraph rather than
+trust it.
 
 The degenerate level is separated as everywhere else in this file:
 `y0HasNoRationalPoint_zero` is PROVEN (from `isEmpty_of_gamma0Datum_zero` and
@@ -8767,43 +8779,66 @@ theorem exists_gamma0Datum_specQ_of_ratPoint {N : ℕ} {Y : Scheme.{0}} {str : Y
   sorry
 
 /-- **A `Γ₀(N)`-datum over `ℚ` produces an elliptic curve over `ℚ` with a
-Galois-stable cyclic subgroup of order `N`** (sorry leaf, opened 2026-07-27),
-stated in the contradiction form its only consumer wants.
+Galois-stable cyclic subgroup of order `N`** (PROVEN 2026-07-27; a sorry leaf
+for a few hours the same day), stated in the contradiction form its only
+consumer wants.
 
 THE EXACT CONVERSE OF `nonempty_gamma0Datum_of_stable`, and there is no modular
 curve in it: it is the dictionary between the scheme-theoretic phrasing of the
 moduli problem and the elementary phrasing that `FreyCurve/MazurTorsion.lean`
 uses, read in the direction that has never been needed before.
 
-#### What proving it needs
+#### How it is proven — and note that NOTHING NEW WAS BUILT FOR IT
 
-1. **A Weierstrass model of an elliptic scheme over a field.**  `d.ab` is an
-   abelian scheme of relative dimension one over `Spec ℚ`; classical
-   Riemann–Roch on the genus-one curve `d.E` with the origin `d.ab.zero` gives
-   a Weierstrass equation over `ℚ`.  `IsWeierstrassModel` (below in this file)
-   is the relation to produce, and `exists_weierstrassModel_gamma0Datum` is the
-   same relation produced in the OPPOSITE direction, so its statement is the
-   template.  This is the missing "Zariski-local Weierstrass presentations"
-   item that the cut of `exists_jLine` also records as its honest residue —
-   closing it here would close half of that too.
-2. **The generator.**  `d.cyc.geom_cyclic` applied at the geometric point
-   `specAlgClos ℚ` hands over a point `y` of the geometric fibre with
-   `addOrderOf y = N` whose multiples are exactly the points lying in `d.cyc.C`.
-3. **Stability, which is free.**  `d.cyc.C` is a subscheme over `Spec ℚ`, so
-   `RelPoint.LiesIn d.cyc.ι` is invariant under precomposition with
-   `specGal σ`; the multiples of `y` are therefore a `Γ_ℚ`-stable set, which is
-   the hypothesis `hstable` in the elementary phrasing.
-4. **Transport along the identification** of `E(ℚ̄)` with the geometric fibre.
-   The `≃+` of `exists_ellipticScheme_of_weierstrass` is Galois-equivariant
-   (`he`) and `nonempty_gamma0Datum_of_stable` transports order and stability
-   ACROSS it in the other direction; the same two `have`s run backwards here.
+The four ingredients its opening docstring listed were all already present;
+the leaf was open only because nobody had assembled them.  In order:
 
-`hN : N ≠ 0` is load-bearing for step 2 — a "cyclic subgroup of order `0`" is
-infinite and there is no generator of finite order to produce.  At `N = 0` the
-statement is nevertheless TRUE, and vacuously so, since
-`isEmpty_of_gamma0Datum_zero` makes `Gamma0Datum 0 SpecQ` uninhabited over the
-nonempty base `Spec ℚ`; the hypothesis is kept because the call site supplies
-it and it removes a degenerate branch from the main argument.
+1. **A Weierstrass model of an elliptic scheme over a field**, together with
+   the Galois-equivariant identification of the geometric fibre with `E(ℚ̄)`.
+   This is `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`
+   (`ModularCurve/EllipticScheme.lean`), applied to `d.ab` and
+   `d.relativeDimensionOne`.  It is PROVEN there over two named leaves —
+   `exists_weierstrassModel_of_ellipticScheme` (Riemann–Roch) and
+   `exists_geomFibreAddEquiv_of_weierstrassModel` (rigidity) — which are the
+   honest residue of this node and are separately owned.  **Both conjuncts are
+   consumed here in a PROOF BODY**, which is what keeps `X0.lean`'s
+   `import Fermat.FLT.ModularCurve.EllipticScheme` non-public; see that
+   module's subsection docstring for why the conjuncts are spelled out rather
+   than named.  This is also the "Zariski-local Weierstrass presentations"
+   item that the cut of `exists_jLine` records as its honest residue: closing
+   THAT closes half of this too, and vice versa — but it is one leaf, stated
+   once, not two.
+2. **The generator.**  `d.cyc.geom_cyclic` at `K = ℚ̄` and the geometric point
+   `specAlgClos ℚ ≫ 𝟙 SpecQ` hands over `y` with `addOrderOf y = N` whose
+   multiples are exactly the relative points lying in `d.cyc.C`.
+3. **Stability, which is free.**  `RelPoint.LiesIn d.cyc.ι` is invariant under
+   precomposition with `specGal σ` — if `w ≫ ι = x.1` then
+   `(specGal σ ≫ w) ≫ ι = specGal σ ≫ x.1` — and `galSMul` IS that
+   precomposition (`AbelianSchemeStruct.galSMul_def`, `rfl`).  So the
+   generated subgroup is `Γ_ℚ`-stable with no geometry at all.
+4. **Transport along `e`.**  `AddEquiv.addOrderOf_eq` moves the order and
+   `map_zsmul` moves the multiples, exactly as in
+   `nonempty_gamma0Datum_of_stable`, read in the opposite direction.
+
+Steps 2–4 are, line for line, the opening of `exists_weierstrass_jm_of_gamma0Datum`
+below (which needs the same generator for a different purpose).  They are
+repeated rather than shared because that declaration is six thousand lines
+further down and the shared part cannot be cited from here; a successor
+consolidating the two should hoist a single
+`(E, g, order, stability)`-producing lemma above this point and rebase both.
+
+**`_hN` IS NOT USED, and that is a discovery rather than an oversight.**  The
+opening docstring called it load-bearing for step 2, on the grounds that a
+"cyclic subgroup of order `0`" has no generator of finite order.  That is
+false about `geom_cyclic` as this file states it: the field produces a `y`
+with `addOrderOf y = N` for whatever `N` is, and at `N = 0` that is a point of
+infinite order — which is exactly what the hypothesis `h` is then applied to.
+So the argument goes through uniformly in `N`.  The hypothesis is KEPT in the
+signature because the call site in `y0HasNoRationalPoint_of_not_stableCyclic`
+supplies it and removing it would be a gratuitous restatement; it is
+underscore-prefixed so that its emptiness is mechanically visible.  (At `N = 0`
+the statement is separately true for the vacuity reason the old docstring
+gave — `isEmpty_of_gamma0Datum_zero` — but the proof below does not need it.)
 
 FAITHFULNESS.  The conclusion is `False`, so the leaf cannot be weakened by
 strengthening its own conclusion; the risk is the opposite one, of weakening
@@ -8811,7 +8846,7 @@ strengthening its own conclusion; the risk is the opposite one, of weakening
 and must stay so — in particular the quantifier is over all of
 `Field.absoluteGaloisGroup ℚ` and not over inertia, which is correct here
 because the base is `ℚ` and there is no local field in sight. -/
-theorem false_of_gamma0Datum_specQ {N : ℕ} (hN : N ≠ 0)
+theorem false_of_gamma0Datum_specQ {N : ℕ} (_hN : N ≠ 0)
     (h : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic]
         (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = N →
         (∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -8819,8 +8854,43 @@ theorem false_of_gamma0Datum_specQ {N : ℕ} (hN : N ≠ 0)
             WeierstrassCurve.Affine.Point.map
               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
               AddSubgroup.zmultiples g) → False)
-    (d : Gamma0Datum N SpecQ) : False :=
-  sorry
+    (d : Gamma0Datum N SpecQ) : False := by
+  -- Step 1: the elliptic scheme underlying `d` has a Weierstrass model, and its
+  -- geometric fibre IS `E(ℚ̄)`, Galois-equivariantly.  The model conjunct itself
+  -- is discarded here — only the equivariant `≃+` is used — but it is what pins
+  -- `E` to `d.ab` rather than leaving it an arbitrary curve.
+  obtain ⟨E, hE, -, hequiv⟩ :=
+    exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme d.ab d.relativeDimensionOne
+  haveI := hE
+  letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  obtain ⟨e, he⟩ := hequiv
+  -- Step 2: the level structure supplies a generator of the geometric fibre
+  -- subgroup, of order exactly `N`.
+  obtain ⟨y, -, hyOrd, hyGen⟩ :=
+    d.cyc.geom_cyclic (AlgebraicClosure ℚ) (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- Step 4 for the order: `e.symm y` has the same order as `y`.
+  refine h E (e.symm y) (by rw [AddEquiv.addOrderOf_eq]; exact hyOrd) ?_
+  -- Step 3: stability.  Push `x ∈ ⟪e.symm y⟫` across `e`, use that `LiesIn` is
+  -- preserved by precomposition with `specGal σ` — which is what `galSMul` is —
+  -- and pull the resulting multiple back across `e`.
+  intro σ x hx
+  have hex : e x ∈ AddSubgroup.zmultiples y := by
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    exact AddSubgroup.mem_zmultiples_iff.mpr
+      ⟨k, by rw [← hk, map_zsmul, AddEquiv.apply_symm_apply]⟩
+  obtain ⟨w, hw⟩ := (hyGen (e x)).mpr hex
+  have hIn : RelPoint.LiesIn d.cyc.ι (d.ab.galSMul (𝟙 SpecQ) σ (e x)) := by
+    refine ⟨specGal σ ≫ w, ?_⟩
+    show (specGal σ ≫ w) ≫ d.cyc.ι = specGal σ ≫ (e x).1
+    rw [Category.assoc, hw]
+  have hmem : d.ab.galSMul (𝟙 SpecQ) σ (e x) ∈ AddSubgroup.zmultiples y :=
+    (hyGen _).mp hIn
+  rw [← he σ x] at hmem
+  obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hmem
+  refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+  apply e.injective
+  rw [map_zsmul, AddEquiv.apply_symm_apply]
+  exact hk
 
 /-- **A rational point of `Y_0(N)` comes from an elliptic curve over `ℚ`**
 (PROVEN 2026-07-27 by the decomposition recorded in the subsection above;
@@ -8877,10 +8947,19 @@ its SURJECTIVITY half — the half this node consumes — is now PROVEN, as
 survives inside `exists_gamma0Datum_specQ_of_ratPoint`, packaged as the
 hypothesis `hd`; see that leaf's docstring for how to split it off.
 
-So exactly two leaves remain under this node, and they share no subject
-matter: `exists_gamma0Datum_specQ_of_ratPoint` (the twisting/Kummer descent,
+Two leaves were opened under this node, sharing no subject matter:
+`exists_gamma0Datum_specQ_of_ratPoint` (the twisting/Kummer descent,
 arithmetic) and `false_of_gamma0Datum_specQ` (the Weierstrass dictionary, the
-converse of `nonempty_gamma0Datum_of_stable`, no modular curve in it).
+converse of `nonempty_gamma0Datum_of_stable`, no modular curve in it).  **The
+second is PROVEN** (2026-07-27): it needed no new mathematics, only the
+assembly of `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` with
+`geom_cyclic`, so what survives of it is that theorem's own two leaves in
+`ModularCurve/EllipticScheme.lean` (Riemann–Roch and rigidity), which are also
+the residue of `exists_jLine` and are stated once for both.  Directly under
+this node, then, what remains is `exists_gamma0Datum_specQ_of_ratPoint` —
+itself reported PROVEN on the UNRELEASED branch `flt-lean-91` (`35e14d62`),
+over a GIT leaf and one arithmetic leaf, so this sentence should be re-read
+when that branch integrates.
 
 Cusps are not an obstacle and need no hypothesis: `Y_0(N)` is the coarse space
 of the moduli problem `[Γ₀(N)]`, whose objects are genuine elliptic schemes, so
