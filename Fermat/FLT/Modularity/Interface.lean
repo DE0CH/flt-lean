@@ -56268,8 +56268,195 @@ theorem mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one_of_unitSmul
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AS A TORIC
-BASIS TOGETHER WITH ITS KUMMER COCYCLE** (sorry leaf — THE residual
-AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-27 KUMMER-COCYCLE CUT;
+BASIS TOGETHER WITH A COHERENT KUMMER ROOT TOWER** (sorry leaf — THE
+residual AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-27 ROOT-TOWER
+CUT; Tilouine, *Hecke algebras and the Gorenstein property*, in
+Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
+local–global compatibility at `p` in general; Deligne–Rapoport for the
+models of `X₀(Mp)`).
+
+WHAT IT ASSERTS. There are a Tate parameter `q` with `v(q) < 1`, a
+`ℤ_p`-valued function `c` on `G_{ℚ_p}`, a UNIT-valued function `ψ` on
+`G_{ℚ_p}`, an `R`-basis `b` of `V`, and a sequence `rt : ℕ → ℚ̄ᵖᵥ`, such
+that
+
+1. `rt` is a COHERENT TOWER of `p`-power roots of `q`: `rt 0 = q` and
+   `rt (n + 1) ^ p = rt n` — hence `rt n ^ p ^ n = q`, which is the
+   induction the consumer below now performs rather than cites;
+2. `ρ|_{G_p}` moves the second basis vector by
+   `b 1 ↦ ψ(σ) · (b 1 + c(σ) · b 0)` — the TORIC shape UP TO A TWIST:
+   `R · b 0` is the multiplicative (character-group) line, the quotient
+   is étale and carries the character `ψ`, and `c` is the extension
+   class; and
+3. `c` is the KUMMER COCYCLE OF THAT TOWER: whenever `p ^ n ∣ c(σ)`,
+   `σ` fixes `rt n` ON THE NOSE.
+
+THE ROOT-TOWER CUT (2026-07-27 — what this leaf is, and why a tower
+rather than a per-`σ` root). In Tate's uniformisation
+`Ωˣ ⧸ q ^ ℤ ≅ E_q(Ω)` multiplication by `p` is `r ↦ r ^ p`, so a point
+of `T_p E_q = lim_n E_q[p ^ n]` lying over the `q`-part generator IS a
+coherent tower `rt` with `rt (n + 1) ^ p = rt n` and `rt 0 = q`, chosen
+ONCE; and the Galois action on it reads
+`σ (rt n) = ζ_{p ^ n} ^ (c(σ) mod p ^ n) · rt n` for a compatible tower
+`ζ` of primitive `p ^ n`-th roots of unity, whence clause 3. So the
+tower is not an extra demand invented here: it is the basis vector `b 1`
+of the Tate module itself, written out.
+
+**THIS LEAF IS STRICTLY STRONGER THAN THE STATEMENT IT DISCHARGES, and
+that is deliberate — say so rather than call the cut exact.** Its
+predecessor asked, for each pair `(n, σ)` separately, for SOME `p ^ n`-th
+root of `q` fixed by `σ`. This asks for ONE tower serving every `(n, σ)`
+at once. The gap is real and not a technicality: two `p ^ n`-th roots of
+`q` differ by `ζ ∈ μ_{p ^ n}`, and `σ (ζ r) = ζ ^ (χ_cyc σ) σ(r)`, so
+`σ` fixing `r` does NOT imply `σ` fixes `ζ r` unless `ζ ^ (χ_cyc σ - 1) = 1`.
+The strengthening is nonetheless free ON THE GEOMETRY SIDE, because the
+citation produces the tower — the Tate module is an inverse limit, so its
+`q`-part basis vector is a coherent system by construction — and it is
+what makes the consumer's `rt n ^ p ^ n = q` a two-line induction instead
+of an assumption.
+
+WHY THE CLAUSES MUST STAY IN ONE LEAF (a vacuity check that was run, not
+assumed). Clause 3 alone is satisfiable by junk — take `c ≡ 1`, and only
+`n = 0` triggers it, where `rt 0 = q` is fixed because `q ∈ ℚᵖᵥ`. Clause
+2 alone is satisfiable by `c ≡ 0` for a `ρ` trivial on `G_p`. It is their
+CONJUNCTION that carries the arithmetic, and it is not vacuous: `c ≡ 0`
+would force every `σ` to fix `rt n` for every `n`, hence
+`q ∈ (ℚᵖᵥˣ) ^ (p ^ n)` for all `n`, hence `v(q) = 1` — contradicting
+`v(q) < 1`. The twist `ψ` does not disturb this: it is a unit, so `c ≡ 0`
+is unaffected by it.
+
+**FALSITY AUDIT — INHERITED FROM THE PREDECESSOR AND RE-AIMED AT THIS
+STATEMENT (2026-07-27). Both defects still govern it, so both repairs are
+kept; a full account, with the PARI/GP-checked counterexamples, is in
+`exists_toricKummerCocycle_of_weightTwoEigenform_pNew` below.** In brief,
+and both are refuted by the CITATION THIS CHAIN RESTS ON, which says for
+`p ∥ M₀` that `ρ_{f,𝔭}|_{G_p} ≅ (χ c, ∗ ; 0, c)` with `c` unramified, and
+for `p ² ∣ M₀` that the local type is "ramified principal series or
+supercuspidal … not even semistable":
+
+*DEFECT 1 — `p ∣ M` is too weak; the toric picture needs `p ∥ M`.* With
+`p = 5`, `M = 275 = 5 ² · 11` and `g` the newform of the quadratic twist
+of `X₀(11)` by `χ₅`, the étale quotient character is RAMIFIED, so NO
+`R`-basis gives clause 2, twisted or not. Hence the hypothesis
+`hpM2 : ¬ p ^ 2 ∣ M`, which is threaded through the whole chain.
+
+*DEFECT 2 — even at `p ∥ M`, only SPLIT multiplicative reduction gives the
+UNTWISTED shape.* With `p = 7`, `E = 21a1`, `a₇ = -1` (NON-SPLIT), the
+quotient character is the nontrivial unramified quadratic `ψ`, the
+extension is non-split so `R · b 0` is the UNIQUE stable line, and no
+change of basis removes `ψ`. Hence the twist in clause 2. `ψ` is
+deliberately a BARE FUNCTION into `Rˣ`, not a character and not a
+homomorphism: the truth is stronger, but this leaf is an OBLIGATION, so
+the weaker form is the safe one.
+
+WHY `Valued.v q < 1` AND NOT `≠ 1` (preserved). `< 1` is the standard
+normalisation of the Tate parameter (Silverman, *ATAEC* V.3.1 — `E_q` is
+defined for `|q| < 1`, and `v(q) = -v(j) > 0` for a curve with
+multiplicative reduction). It IS formally stronger than the `≠ 1` the
+eventual consumer needs, and recording that is the honest accounting.
+
+WHAT IS STILL MISSING, AND WHAT CANNOT SUPPLY IT. The geometry:
+Deligne–Rapoport models of `X₀(Mp)` and the toric-reduction computation
+at the `p`-new part of `J₀(Mp)`, together with the rigid (Mumford–Raynaud)
+uniformisation that turns purely toric reduction into the Tate-module
+statement above. Absent from this pin, from `~/cs/FLT` and from this
+project. `nonempty_modularTateGaloisData` above does NOT supply it, and
+this was checked rather than assumed: that leaf is about `J₀(M)` at GOOD
+primes — its `congruence` field is the Eichler–Shimura relation OFF the
+level — whereas what is needed here is the fibre at `p` itself, where the
+reduction is toric.
+
+THE GREP THAT WOULD REFUTE THIS OBSTRUCTION:
+`grep -rn 'DeligneRapoport\|deligneRapoport\|toricReduction\|IsToricAt'
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — RE-RUN 2026-07-27 by the
+owner of this cut, and the only hits outside this file's own docstrings
+are the identical note in `ModularCurve/X0.lean:22901`, i.e. still zero in
+signature position.
+
+**THE AXIS THIS OWNER SEARCHED, AND THE ONE IT DID NOT.** Searched: cuts
+that keep the seam INSIDE the local Galois representation — separating the
+toric shape from the Kummer property, separating clause 2 from clause 3,
+and pushing `q` out of the leaf and recovering it from the cocycle by
+Kummer theory. The last of these is what looks most promising and is
+NOT available, for a reason worth recording so nobody re-searches it:
+`H ¹(G_p, ℤ_p(1))` is the pro-`p` completion `(ℚ_pˣ)^` = `ℤ_p × μ_{p-1} ×
+(1 + p ℤ_p)`, whose "valuation coordinate" is a `ℤ_p`, whereas an honest
+`q ∈ ℚ_pˣ` needs that coordinate to be an INTEGER. Integrality of the
+monodromy is exactly what the Néron model supplies, so a cocycle alone
+cannot produce `q` and the seam must keep `q` on the geometry side.
+NOT searched: cuts that introduce an interface for the integral models
+themselves (a `ToricReductionData` for `J₀(Mp)` at `p` plus a stated
+rigid-uniformisation dictionary), which would split this leaf into two
+smaller ones without proving either. That is the next axis to try.
+
+SOUNDNESS: `p = 11`, `M = 11`, the weight-2 newform of level `11`,
+`E = X₀(11)`. This witness satisfies `hpM2` (`11 ² ∤ 11`) and is SPLIT
+multiplicative (`a₁₁ = 1`), so `ψ ≡ 1` there and clause 2 specialises to
+the untwisted one. Its Tate parameter has `v_p(q) = 1 ≠ 0`, so the
+`p ^ n`-th roots of `q` generate a genuinely ramified extension and the
+statement is not vacuous. **One witness certifies non-vacuity, never
+faithfulness** — that is precisely how the two defects above survived an
+earlier review, and the two counterexamples span the cases it missed.
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat` are
+passed down unchanged: they are exactly what the cited automorphic theory
+assumes about its coefficient ring. -/
+theorem exists_toricKummerRootTower_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : ¬ p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ (q : (ℚᵖᵥ)ˣ) (c : Field.absoluteGaloisGroup ℚᵖᵥ → ℤ_[p])
+        (ψ : Field.absoluteGaloisGroup ℚᵖᵥ → Rˣ)
+        (b : Module.Basis (Fin 2) R V)
+        (rt : ℕ → AlgebraicClosure ℚᵖᵥ),
+      (Valued.v (q : ℚᵖᵥ) : WithZero (Multiplicative ℤ)) < 1 ∧
+      rt 0 = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
+      (∀ n : ℕ, rt (n + 1) ^ p = rt n) ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+        ρ.toLocal 𝔭ᵥ σ (b 1) =
+          (ψ σ : R) • (b 1 + algebraMap ℤ_[p] R (c σ) • b 0)) ∧
+      (∀ (n : ℕ) (σ : Field.absoluteGaloisGroup ℚᵖᵥ), (p : ℤ_[p]) ^ n ∣ c σ →
+        (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) (rt n) = rt n) :=
+  sorry
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem, AS A TORIC
+BASIS TOGETHER WITH ITS KUMMER COCYCLE** (PROVEN 2026-07-27 by the
+ROOT-TOWER CUT — an assembly over the geometric leaf
+`exists_toricKummerRootTower_of_weightTwoEigenform_pNew` just above.
+Formerly THE residual AUTOMORPHIC-TO-GALOIS BRIDGE after the
+2026-07-27 KUMMER-COCYCLE CUT;
 Tilouine, *Hecke algebras and the Gorenstein property*, in
 Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
 forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
@@ -56404,21 +56591,43 @@ things that are not geometry, and all three are now proof terms:
   for `b ≠ 0` because `v(q) < 1`. The assembly below therefore takes
   `b = 0`.
 
-WHAT IS STILL MISSING, AND WHAT CANNOT SUPPLY IT. The geometry:
-Deligne–Rapoport models of `X₀(Mp)` and the toric-reduction computation
-at the `p`-new part of `J₀(Mp)`, absent from this pin and from
-`~/cs/FLT`. `nonempty_modularTateGaloisData` above does NOT supply it,
-and this was checked rather than assumed: that leaf is about `J₀(M)` at
-GOOD primes — its `congruence` field is the Eichler–Shimura relation OFF
-the level — whereas what is needed here is the fibre at `p` itself, where
-the reduction is toric.
+THE ROOT-TOWER CUT (2026-07-27 — what this node now IS, and the only
+reason it is no longer a leaf). The geometry hands down a COHERENT TOWER
+`rt` of `p`-power roots of `q` (`rt 0 = q`, `rt (n + 1) ^ p = rt n`)
+together with the statement that `σ` fixes `rt n` whenever
+`p ^ n ∣ c(σ)`; see
+`exists_toricKummerRootTower_of_weightTwoEigenform_pNew` just above for
+why that tower IS the `q`-part basis vector of `T_p E_q` rather than an
+extra demand. The step performed here, and no longer assumed, is the
+induction `rt n ^ p ^ n = q`: multiplication by `p` in `Ωˣ ⧸ q ^ ℤ` is
+`r ↦ r ^ p`, so telescoping the tower turns "the `n`-th stage of a
+coherent system" into "a `p ^ n`-th root of `q`", which is the form the
+consumer below asks for.
 
-THE GREP THAT WOULD REFUTE THIS OBSTRUCTION:
-`grep -rn 'DeligneRapoport\|deligneRapoport\|toricReduction\|IsToricAt'
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — re-run 2026-07-27 by the
-owner of this cut, and the only hits are this docstring, the predecessor
-docstrings below and the identical note in `ModularCurve/X0.lean`, i.e.
-still zero in signature position.
+WHAT THE CUT BUYS, and what it does not. The `∃ r` in the conclusion is
+now DERIVED from a single tower chosen once, rather than being a
+per-`(n, σ)` obligation on the citation; and the leaf above is thereby
+stated in the language the Tate module actually speaks. It buys nothing
+mathematically deeper than that: the geometry is untouched, and the leaf
+above is STRICTLY STRONGER than this statement (two `p ^ n`-th roots of
+`q` differ by a `ζ ∈ μ_{p ^ n}`, and `σ` fixing one does not imply it
+fixes the other), which its docstring records rather than glossing the
+cut as exact.
+
+WHAT IS STILL MISSING, AND WHERE IT NOW LIVES. The geometry —
+Deligne–Rapoport models of `X₀(Mp)`, the toric-reduction computation at
+the `p`-new part of `J₀(Mp)`, and the rigid (Mumford–Raynaud)
+uniformisation that converts purely toric reduction into a Tate-module
+statement, all absent from this pin, from `~/cs/FLT` and from this
+project — is now confined to
+`exists_toricKummerRootTower_of_weightTwoEigenform_pNew` above, where the
+refuting grep is recorded and was re-run on 2026-07-27, together with the
+axis this owner searched and the axis it did not.
+`nonempty_modularTateGaloisData` above does NOT supply it, and this was
+checked rather than assumed: that leaf is about `J₀(M)` at GOOD primes —
+its `congruence` field is the Eichler–Shimura relation OFF the level —
+whereas what is needed here is the fibre at `p` itself, where the
+reduction is toric.
 
 WHERE THE `CharP` DISCUSSION WENT. It no longer appears in this
 statement, because the exact-exponent hypothesis is consumed one level
@@ -56492,8 +56701,24 @@ theorem exists_toricKummerCocycle_of_weightTwoEigenform_pNew
       (∀ (n : ℕ) (σ : Field.absoluteGaloisGroup ℚᵖᵥ), (p : ℤ_[p]) ^ n ∣ c σ →
         ∃ r : AlgebraicClosure ℚᵖᵥ,
           r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
-          (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) r = r) :=
-  sorry
+          (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) r = r) := by
+  -- the GEOMETRY: a Tate parameter, a toric basis up to an unramified
+  -- twist, and a COHERENT TOWER of `p`-power roots of `q` carrying the
+  -- Kummer cocycle `c`
+  obtain ⟨q, c, ψ, b, rt, hq, hrt0, hrtsucc, hbas, hkum⟩ :=
+    exists_toricKummerRootTower_of_weightTwoEigenform_pNew hpodd hM hpM hpM2 hg hpnew κ
+      hτ hirr e he hdet hpne hpmem hkfin hlat
+  -- telescoping the tower: `rt n` is a `p ^ n`-th root of `q`, because
+  -- multiplication by `p` in `Ωˣ ⧸ q ^ ℤ` is `r ↦ r ^ p`
+  have hpow : ∀ n : ℕ, rt n ^ p ^ n =
+      algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) := by
+    intro n
+    induction n with
+    | zero => simpa using hrt0
+    | succ n ih =>
+        have hexp : p ^ (n + 1) = p * p ^ n := by rw [pow_succ, mul_comm]
+        rw [hexp, pow_mul, hrtsucc n, ih]
+  exact ⟨q, c, ψ, b, hq, hbas, fun n σ hdvd => ⟨rt n, hpow n, hkum n σ hdvd⟩⟩
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
