@@ -1588,12 +1588,180 @@ theorem mazurIsogeny_eigenvalue_quadratic_of_finrank_two
   · exact h
   · exact absurd h hv
 
+/-- **Serre–Tate at a prime of potentially good reduction: the Frobenius
+acts as the `q`-power Frobenius of an elliptic curve over `𝔽_q`** (sorry
+leaf, opened 2026-07-27 by decomposing
+`exists_integerFrobeniusTrace_of_potentiallyGoodReduction` below, which is
+now PROVEN over this leaf and `hasseWeil_trace_frobeniusTorsionEnd`).
+
+This is the exact analogue of `WeilPairing.exists_frobenius_reduction_model`
+(PROVEN, axiom-clean) with the two quantifiers traded. That theorem covers
+EVERY prime outside an *unnamed* finite set `S`, which is useless at a
+NAMED prime `q`; this one covers every prime `q ∉ {2, N}` at which `E` has
+potentially good reduction — at the price that `Wbar` is then a TWIST of
+the reduction rather than the reduction itself. Its conclusion is
+otherwise byte-for-byte the same, deliberately, so that the two can be
+consumed by the same downstream bookkeeping.
+
+WHY A TWIST, AND WHY THAT IS THE WHOLE POINT. Let `K/ℚ_q` be a finite
+TOTALLY RAMIFIED extension over which `E` acquires good reduction, and
+`Ẽ/𝔽_q` the good model — the residue field of `K` is still `𝔽_q`, which is
+exactly what "totally ramified" buys. Because the residue field did not
+grow, `G_K` still surjects onto `Gal(𝔽̄_q/𝔽_q)`, so a Frobenius
+`σ_K ∈ G_K` exists; for the lift `σ := globalFrob q` actually named in the
+statement we then have `τ := σ σ_K⁻¹ ∈ I_q`, whatever that lift is.
+Néron–Ogg–Shafarevich makes `ρ|_{G_K}` unramified and identifies `ρ(σ_K)`
+with the `q`-power Frobenius `F ∈ End(Ẽ)`; Serre–Tate (Invent. Math. 15
+(1972), Thm 2) makes `I_q` act through a finite subgroup of
+`Aut(Ẽ_{𝔽̄_q})`, so `ρ(τ) = φ` is an AUTOMORPHISM. Hence
+`ρ(σ) = φ ∘ F`, an ENDOMORPHISM of `Ẽ_{𝔽̄_q}` of degree
+`deg φ · deg F = 1 · q = q`. Finally `Gal(𝔽̄_q/𝔽_q) ≅ Ẑ` is procyclic, so
+every `φ ∈ Aut(Ẽ_{𝔽̄_q})` is the Frobenius value of a cocycle, and the
+corresponding twist `Wbar/𝔽_q` has `φ ∘ F` as ITS own `q`-power
+Frobenius. That `Wbar` is the one this statement asserts.
+
+That chain is also what DISSOLVES the parent's old faithfulness concern
+about `globalFrob` being defined only up to inertia: the lift is
+unconstrained here, and changing it changes only WHICH twist appears. See
+the parent's docstring for the full resolution.
+
+WHAT MUST BE BUILT (grepped 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT/` — all three):
+
+1. `0 ≤ v_q(j(E))` ⟹ `E` acquires good reduction over a finite TOTALLY
+   RAMIFIED `K/ℚ_q`. Half of this is ALREADY OPEN in this tree as
+   `exists_tameGoodModel_of_jIntegral`
+   (`EllipticCurve/TorsionReduction.lean`, on `main`), whose
+   `TameGoodModel` structure encodes total ramification in precisely the
+   form wanted here — its `res : A →+* ZMod ℓ` lands in the PRIME field,
+   which is the encoding. But `TameGoodModel` carries no Galois action at
+   all, so it is an INPUT to this leaf, not a solution of it; whoever
+   proves that one should expect to extend the structure with the
+   `G_K`-equivariance before it is usable here.
+2. Serre–Tate's theorem that inertia acts through `Aut(Ẽ)`. Absent.
+3. Twists of an elliptic curve over a finite field and the Frobenius of a
+   twist. Absent: `QuadraticTwists/` does the quadratic case over a
+   general field and stops there.
+
+THE PROOF OBLIGATION THAT IS NOT UNIFORM IN `q`, STATED HONESTLY. Step 1
+is the standard statement for `q ≥ 5`, where the twisting is by `u` with
+`v(u) = d/12` and the field is the TAME Kummer extension `ℚ_q(π^{1/e})`,
+`e ∈ {1, 2, 3, 4, 6}` (Silverman *ATAEC* IV.10; Kraus, Manuscripta Math.
+69 (1990)). At `q = 3` the semistability defect can be `12` and the
+extension is wildly ramified. Two remarks keep that from being a hidden
+falsity rather than an open obligation: an unramified layer can always be
+DROPPED (for `K'/K` unramified `I_{K'} = I_K`, so good reduction over `K'`
+already gives good reduction over `K`), and the singular point of an
+additive reduction is unique, hence residue-rational, so the `r, s, t`
+part of the variable change costs no extension. What is genuinely not
+carried out here is the descent of a WILD totally ramified extension of
+`ℚ̆_q` to one of `ℚ_q`. `q = 3` IS used by the consumers (they take
+`q ∈ {3, 5}`), so this cannot be dodged by adding `5 ≤ q`.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit `E/ℚ_3` with
+`0 ≤ v_3(j(E))` acquiring good reduction over NO finite totally ramified
+extension of `ℚ_3`, AND a Frobenius lift whose action on `E[N]` is not
+conjugate to the `q`-Frobenius of any elliptic curve over `𝔽_3`. The first
+half alone refutes only the ROUTE, not the leaf — the conclusion is about
+the Galois action, not about the model. THE AXIS SEARCHED here was the
+LOCAL one (integral models, twists, inertia). The GLOBAL axis — deducing
+the value at one Frobenius from the character of `ρ` by a
+Chebotarev/Brauer–Nesbitt argument, as `WeilPairing.det_galoisRep_eq_cyclotomic`
+does for the determinant — was NOT searched, and is the obvious place to
+look for a route that avoids step 1 entirely. Note the determinant
+analogue succeeds there precisely because `det ρ` is a CHARACTER; the
+trace is not, so the analogy is not automatic.
+
+NOT VACUOUS: `ψ` is a linear EQUIVALENCE and the conclusion is a
+conjugation identity, so it pins `ρ(σ_q)` into the `q`-Frobenius
+conjugacy class. In particular it already implies
+`det ρ(σ_q) = q` via `WeilPairing.det_frobeniusTorsionEnd`, a nontrivial
+consequence that is independently PROVEN — so a junk witness would have
+to reprove that. -/
+theorem WeierstrassCurve.exists_frobenius_reduction_model_of_potentiallyGoodReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
+    (hj : 0 ≤ padicValRat q E.j) :
+    ∃ (Wbar : WeierstrassCurve (ZMod q)) (_ : Wbar.IsElliptic)
+      (ψ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+        ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N)),
+      ∀ x, ψ (E.galoisRep N hN.pos (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) x) =
+        WeilPairing.frobeniusTorsionEnd q Wbar N (ψ x) :=
+  sorry
+
+/-- **Hasse–Weil for the `q`-power Frobenius on the `N`-torsion** (sorry
+leaf, opened 2026-07-27 by decomposing
+`exists_integerFrobeniusTrace_of_potentiallyGoodReduction` below): the
+trace of the `q`-power Frobenius acting on the `N`-torsion of an elliptic
+curve over `𝔽_q` (`N ≠ q`) is the reduction of a RATIONAL INTEGER `a` with
+`a² ≤ 4q`.
+
+This is the exact companion of `WeilPairing.det_frobeniusTorsionEnd`
+(PROVEN, from the Weil pairing: the determinant is `q`) — same operator,
+same module, the other coefficient of the same characteristic polynomial.
+Together the two say `char(F) = X² − aX + q` with `a² ≤ 4q`, which is
+Hasse–Weil.
+
+Proof (not formalised): take `a := q + 1 − #Wbar(𝔽_q)`. Two halves:
+(i) `tr(F | Wbar[N]) ≡ a (mod N)`, which is `#Wbar(𝔽_q) = deg(1 − F)`
+together with `deg(1 − F) = 1 − tr F + deg F`; (ii) the bound `a² ≤ 4q`,
+which is positive definiteness of the degree form —
+`deg(m − nF) = m² − mn·a + n²q ≥ 0` for all `m, n : ℤ` forces
+`a² − 4q ≤ 0`, and the single choice `(m, n) = (a, 2)` already suffices.
+
+**DO NOT ROUTE THIS THROUGH `WeierstrassCurve.End.exists_charPoly`**
+(`EllipticCurve/IsogenyTrace.lean`, publicly imported here). It reads as
+exactly this statement for a general endomorphism — `ψ² − tψ + n = 0` with
+`t² ≤ 4n` — and it is PROVEN there, so it is a natural thing to reach for.
+It is unusable here, and worse than unusable: its `n` is
+`Nat.card (ker ψ)`, i.e. the SEPARABLE degree, and `Isogeny.frobIsog_degree`
+in `EllipticCurve/Isogeny.lean` PROVES that this is `1` for Frobenius,
+with the comment "Frobenius is purely inseparable, so its kernel *of
+points* is trivial — and this file's `degree` counts exactly that. This is
+the whole defect." Feeding Frobenius to `exists_charPoly` would therefore
+yield `t² ≤ 4` and `F² + 1 = tF`, which is false for every `q ≥ 5` with
+`|a| > 2` — and indeed forces `q = 1` on the Tate module. (Consequently
+`End.exists_dual`, the leaf `exists_charPoly` rests on, is itself false in
+characteristic `p`: it would make the inverse Frobenius a rational map,
+which the same file REFUTES in `isRationalMap_dualHom_is_false`. That is
+another owner's region and is reported, not repaired, here.) The moral is
+that this leaf needs the TRUE degree, which in this tree means point
+counting.
+
+MACHINERY. Point counting over a finite field IS present and PROVEN:
+`natCard_affine_point_eq`, `natCard_affine_point_le`, `natCard_affine_point_pos`
+in `EllipticCurve/TorsionReduction.lean` — which is on `main` as of
+2026-07-27, so the previous version of the parent's audit calling it
+"unreleased" is stale. What is absent from all three trees (this one,
+mathlib, `~/cs/FLT`; grepped 2026-07-27) is the degree form on `End`, the
+identity `#E(𝔽_q) = deg(1 − F)`, and the bound itself —
+`TorsionReduction.lean`'s own `natCard_affine_point_le` docstring says so
+in as many words ("not Hasse's `#W(𝔽_q) = q + 1 − a` with `|a| ≤ 2√q`,
+which mathlib does not have").
+
+THE CHECK THAT WOULD REFUTE THE "absent" CLAIM: a declaration in any of
+those trees stating `deg (1 - frobenius)`, a `Nat.card` bound of the shape
+`|#E(𝔽_q) − q − 1| ≤ 2√q`, or a degree function on isogenies that is not
+`Nat.card (ker ·)`. THE AXIS SEARCHED was name-level grep over the three
+trees plus a read of this development's own isogeny-degree API. -/
+theorem hasseWeil_trace_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hqN : q ≠ N) :
+    ∃ a : ℤ, a ^ 2 ≤ 4 * (q : ℤ) ∧
+      (a : ZMod N) = LinearMap.trace (ZMod N)
+        ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N)
+        (WeilPairing.frobeniusTorsionEnd q Wbar N) :=
+  sorry
+
 /-- **The integral Frobenius trace at a prime of potentially good
-reduction** (sorry leaf — Serre–Tate plus Hasse–Weil; Mazur 1978 §5,
-[Michaud-Jacobs, proof of Prop. 4.3]). This is the leaf CUT OUT of
-`exists_frobeniusTrace_of_potentiallyGoodReduction` (2026-07-27): at a
-prime `q ∉ {2, N}` where `E` has potentially good reduction, the trace of
-the mod-`N` representation at the global arithmetic Frobenius is the
+reduction** (PROVEN 2026-07-27 over the two leaves immediately above;
+Mazur 1978 §5, [Michaud-Jacobs, proof of Prop. 4.3]). This is the leaf CUT
+OUT of `exists_frobeniusTrace_of_potentiallyGoodReduction` (2026-07-27):
+at a prime `q ∉ {2, N}` where `E` has potentially good reduction, the trace
+of the mod-`N` representation at the global arithmetic Frobenius is the
 reduction of a RATIONAL INTEGER `a` obeying the Hasse–Weil bound
 `a² ≤ 4q`.
 
@@ -1604,69 +1772,92 @@ above) and the determinant step
 `GaloisRepresentation.cyclotomicCharacterModL_globalFrob`). So this
 statement is exactly the arithmetic input and nothing else.
 
-Proof (not formalised). `hpg` gives `v_q(j(E)) ≥ 0`, so `E` acquires good
-reduction over a finite totally ramified `K/ℚ_q`; the residue field of
-`K` is still `𝔽_q`, so `G_K` surjects onto `Gal(𝔽̄_q/𝔽_q)` and a
-Frobenius lift may be taken inside `G_K`. Néron–Ogg–Shafarevich makes
-`ρ_{E,N}|_{G_K}` unramified, Serre–Tate (Invent. Math. 15 (1972), Thm 3)
-identifies `Frob` with the `q`-power Frobenius of the good model
-`Ẽ/𝔽_q`, and Hasse–Weil bounds its trace `a_q(Ẽ) ∈ ℤ` by `2√q`.
+The proof is now pure conjugation bookkeeping over the two leaves above:
+`exists_frobenius_reduction_model_of_potentiallyGoodReduction` puts
+`ρ_{E,N}(σ_q)` into the `q`-Frobenius conjugacy class of an elliptic curve
+`Wbar/𝔽_q`, and `hasseWeil_trace_frobeniusTorsionEnd` bounds THAT
+Frobenius's trace; `LinearMap.trace_conj'` carries the trace across the
+conjugating equivalence. It mirrors `WeilPairing.det_galoisRep_globalFrob`
+line for line with `trace` in place of `det`.
 
-MACHINERY AUDIT (2026-07-27, replacing a STALE one — see the parent's
-docstring). What is genuinely missing is only:
+`hN23` is NOT used: nothing in this argument needs `N ≥ 23`. It is kept
+because the statement is consumed with it in scope, and underscored so
+that the emptiness is mechanically visible rather than merely asserted.
 
-1. the criterion `0 ≤ v_q(j(E)) ⟹ potentially good reduction`, and the
-   tame totally ramified good model it produces — absent from this tree
-   and from mathlib (verified 2026-07-26 and re-checked 2026-07-27);
-2. the Hasse–Weil bound `|#Ẽ(𝔽_q) − q − 1| ≤ 2√q` over a finite field —
-   absent from mathlib and from `~/cs/FLT`;
-3. the identification of the Serre–Tate Frobenius trace with `a_q(Ẽ)`.
+FAITHFULNESS CONCERN OF 2026-07-27 — **RESOLVED. The statement is TRUE AS
+WRITTEN, for EVERY Frobenius lift; it needs no semistability-defect
+hypothesis and no exclusion of `j(E) ∈ {0, 1728}`.**
 
-What is NOT missing, and must not be rebuilt: the mod-`N` representation
-itself is `WeierstrassCurve.galoisRep` (`EllipticCurve/Torsion.lean`),
-publicly imported here; and the Néron–Ogg–Shafarevich reduction transfer
-already exists, PROVEN and axiom-clean, as
-`WeilPairing.exists_frobenius_reduction_model` — for every prime outside
-a finite set it conjugates `ρ_{E,N}(σ_q)` onto the `q`-power Frobenius
-`WeilPairing.frobeniusTorsionEnd` of a reduced curve over `𝔽_q`. That
-discharges the GOOD-reduction case of items 1 and 3 outright; only the
-potentially-good-but-not-good case, and the Hasse bound, remain. Point
-counting over a finite field (`natCard_affine_point_eq/_le/_pos`) is
-being developed in `EllipticCurve/TorsionReduction.lean`, which as of
-2026-07-27 exists only on the unreleased branch `flt-lean-132` — check
-whether it has landed before building anything in that direction.
+The concern read: `GaloisRepresentation.globalFrob` is well-defined only
+up to inertia at `q` (its own docstring says so, adding that its
+statements "concern places where the representations at hand are
+unramified"), and at potentially-good-but-NOT-good reduction `ρ_{E,N}` is
+precisely ramified there — so different lifts `σ` and `στ` (`τ ∈ I_q`) can
+have different traces. For semistability defect `e ≤ 2` that is harmless
+(the traces are `±a`), but for `e ∈ {3, 4, 6}` — which forces
+`j(E) ∈ {0, 1728}` — the trace of a lift outside `G_K` was recorded as
+`ζ_e · a`, whose congruence mod `N` to a rational integer of square
+`≤ 4q` "is not automatic".
 
-FAITHFULNESS CONCERN (2026-07-27 — inherited verbatim from the parent
-leaf, NOT introduced by this cut; flagged for an author, not repaired
-here). `GaloisRepresentation.globalFrob` is well-defined only **up to
-inertia at `q`**, and its own docstring says so explicitly, adding that
-"every statement below is conjugation-invariant and concerns places where
-the representations at hand are unramified". At a prime of potentially
-good but NOT good reduction `ρ_{E,N}` is precisely NOT unramified, so
-that caveat does not cover this leaf: different Frobenius lifts `σ` and
-`στ` (`τ ∈ I_q`) can have different traces. For semistability defect
-`e ≤ 2` this is harmless (the two traces are `±a`, both obeying the
-bound), but for `e ∈ {3, 4, 6}` — which forces `j(E) ∈ {0, 1728}` — the
-trace of a lift outside `G_K` is `ζ_e · a`, and its being congruent mod
-`N` to a rational integer of square `≤ 4q` is not automatic. The
-situation is believed vacuous in the intended application, because
-FAITHFULNESS AUDIT B on `potentiallyGoodReduction_of_isogenyCharacter`
-records that the only `j`-invariants available for a prime `N > 19` are
-five integers, none of them `0` or `1728` — but that reasoning is not
+**The error is in that last step, and it is instructive.** `ζ_e · a` is
+the trace computed in the CM FIELD, and from an algebraic-integer trace
+one cannot conclude that no RATIONAL integer of square `≤ 4q` has the same
+reduction mod `N`. Computing in `End(Ẽ)` instead settles it outright.
+Write `σ = τ σ_K` with `K/ℚ_q` finite totally ramified realising good
+reduction, `σ_K ∈ G_K` a Frobenius (available because `K` has residue
+field `𝔽_q`) and `τ ∈ I_q`. Then `ρ(σ_K) = F`, the `q`-power Frobenius of
+`Ẽ/𝔽_q`, and `ρ(τ) = φ ∈ Aut(Ẽ_{𝔽̄_q})` by Serre–Tate. So
+`ρ(σ) = φ ∘ F` is an ENDOMORPHISM of `Ẽ_{𝔽̄_q}`, of degree
+`deg φ · deg F = 1 · q = q`. Every endomorphism `α` of an elliptic curve
+satisfies `α² − tr(α)·α + deg(α) = 0` with `tr(α) ∈ ℤ`, and
+`tr(α)² ≤ 4·deg(α)`, because `deg(m − nα) = m² − mn·tr(α) + n²·deg(α) ≥ 0`
+for all integers `m, n`. Take `a := tr(φ ∘ F)`: then `a ∈ ℤ`, `a² ≤ 4q`,
+and `a mod N` is the trace of `ρ(σ)` on `E[N]`. The lift was arbitrary;
+changing it changes `φ`, hence changes `a`, but never the EXISTENCE of
+`a`. In the very case the concern feared — `j = 0`, `e = 6` — the witness
+is explicit: `φ ∘ F = ζ₆ π` in `ℤ[ζ₃]` with `N(ζ₆ π) = N(π) = q`, so
+`a = Tr_{ℚ(ζ₃)/ℚ}(ζ₆ π)` is a rational integer with `a² ≤ 4q` because
+`|ζ₆ π| = √q`. No circular appeal to the available `j`-invariants is
+needed, and the vacuity argument the old note fell back on (FAITHFULNESS
+AUDIT B on `potentiallyGoodReduction_of_isogenyCharacter`) is not used.
+
+**What the concern got right, and what survives it.** The traces at
+different lifts really are different, so no consumer may treat `a` as
+canonical — and this statement correctly returns `a` EXISTENTIALLY rather
+than as a function of `E` and `q`. The decomposition above records the
+dependence structurally: the twist `Wbar` produced by
+`exists_frobenius_reduction_model_of_potentiallyGoodReduction` is the one
+that depends on the lift, and its Frobenius trace is the `a` that comes
+out. The concern was therefore a correct reading of a real
+non-canonicity, mislocated as a falsity.
+
+**THE CHECK THAT WOULD REFUTE THIS RESOLUTION**: exhibit
+`φ ∈ Aut(Ẽ_{𝔽̄_q})` with `deg(φ ∘ F) ≠ q`, or an endomorphism of an
+elliptic curve whose reduced trace is not a rational integer. Both are
+false — the first because `deg` is multiplicative and automorphisms have
+degree `1`, the second because `End` is an order in an imaginary quadratic
+field or a quaternion algebra, where `α + α^† ∈ ℤ`. THE AXIS SEARCHED:
+the local one at `q` (models over `ℚ_q`, inertia, `End(Ẽ)`); the
+resolution does not depend on anything global, which is why it is
 available to a prover of this leaf without circularity.
 
-**The check that would refute this concern**: exhibit `E/ℚ` with
-`j(E) ∈ {0, 1728}`, a prime `q ∉ {2, N}` of potentially good reduction
-with semistability defect `e ∈ {3, 4, 6}`, and a Frobenius lift `σ`
-outside `G_K` for which no integer `a` with `a² ≤ 4q` satisfies
-`(a : ZMod N) = tr ρ_{E,N}(σ)`. Conversely, showing that `tr ρ(στ)` is
-always such a reduction — e.g. because the isogeny hypothesis forces
-`ρ|_{I_q}` to be scalar, so that `στ` is a Frobenius for a twist with the
-same Hasse bound — settles the leaf as stated. Either outcome is a
-correct and complete resolution. -/
+MACHINERY AUDIT (2026-07-27, superseding the previous one — which was
+right that Hasse–Weil is absent and STALE on the rest). The three items it
+listed have been re-cut into the two leaves above, where the current
+audits live; read those, not this paragraph. Two corrections of record:
+`EllipticCurve/TorsionReduction.lean` IS on `main` (the previous note said
+it existed "only on the unreleased branch `flt-lean-132`"), and its point
+counting is available; and `WeierstrassCurve.End.exists_charPoly` — which
+looks like exactly the Hasse bound and is PROVEN — must NOT be used for
+Frobenius, because its degree is the SEPARABLE degree. The full argument
+is in `hasseWeil_trace_frobeniusTorsionEnd`'s docstring above. What is NOT
+missing and must not be rebuilt is unchanged: the representation
+`WeierstrassCurve.galoisRep`, `WeilPairing.det_galoisRep_eq_cyclotomic`,
+and the good-reduction transfer
+`WeilPairing.exists_frobenius_reduction_model`. -/
 theorem WeierstrassCurve.exists_integerFrobeniusTrace_of_potentiallyGoodReduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
-    (hN : N.Prime) (hN23 : 23 ≤ N)
+    (hN : N.Prime) (_hN23 : 23 ≤ N)
     (hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
     {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N) :
     ∃ a : ℤ, a ^ 2 ≤ 4 * (q : ℤ) ∧
@@ -1674,8 +1865,27 @@ theorem WeierstrassCurve.exists_integerFrobeniusTrace_of_potentiallyGoodReductio
         LinearMap.trace (ZMod N)
           ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N)
           (E.galoisRep N hN.pos (GaloisRepresentation.globalFrob
-            hq.toHeightOneSpectrumRingOfIntegersRat)) :=
-  sorry
+            hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : Fact q.Prime := ⟨hq⟩
+  obtain ⟨Wbar, hell, ψ, hψ⟩ :=
+    E.exists_frobenius_reduction_model_of_potentiallyGoodReduction hN hq hq2 hqN
+      (hpg q hq hq2 hqN)
+  haveI := hell
+  obtain ⟨a, ha, hatr⟩ := hasseWeil_trace_frobeniusTorsionEnd q Wbar N hqN
+  refine ⟨a, ha, ?_⟩
+  -- the representation at `σ_q` is the `q`-Frobenius conjugated by `ψ`
+  have hρ : (E.galoisRep N hN.pos
+      (GaloisRepresentation.globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat) : Module.End (ZMod N)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N)) =
+      ψ.symm.conj (WeilPairing.frobeniusTorsionEnd q Wbar N) := by
+    apply LinearMap.ext
+    intro x
+    show _ = ψ.symm (WeilPairing.frobeniusTorsionEnd q Wbar N (ψ.symm.symm x))
+    rw [LinearEquiv.symm_symm, ← hψ x, LinearEquiv.symm_apply_apply]
+  rw [hρ, LinearMap.trace_conj']
+  exact hatr
 
 /-- **The Frobenius characteristic-polynomial relation** (PROVEN
 2026-07-27 from `exists_integerFrobeniusTrace_of_potentiallyGoodReduction`
@@ -1732,10 +1942,20 @@ built module:
 * only the HASSE–WEIL bound, and the potentially-good-but-not-good
   reduction model, are genuinely absent.
 
-Consequently steps 1 and 2 are now discharged HERE, and the residue is
+Consequently steps 1 and 2 are now discharged HERE, and the residue was
 isolated as `exists_integerFrobeniusTrace_of_potentiallyGoodReduction`
-above — read its own MACHINERY AUDIT and its FAITHFULNESS CONCERN before
-attacking it.
+above — which is itself now PROVEN (2026-07-27) over two sharper leaves,
+`exists_frobenius_reduction_model_of_potentiallyGoodReduction`
+(Serre–Tate: `ρ(σ_q)` is the `q`-Frobenius of a TWIST over `𝔽_q`) and
+`hasseWeil_trace_frobeniusTorsionEnd` (the bound on that Frobenius's
+trace). Those two are the dispatchable leaves; read their audits before
+attacking either. The FAITHFULNESS CONCERN that used to be recorded
+against this whole cluster — `globalFrob` being defined only up to
+inertia at a prime where `ρ` is ramified — is RESOLVED, not open: see the
+resolution in `exists_integerFrobeniusTrace_of_potentiallyGoodReduction`'s
+docstring. Its one-line form: `ρ(σ_q) = φ ∘ F` is an endomorphism of
+degree `q` for EVERY lift, and `tr(α)² ≤ 4 deg(α)` holds for every
+endomorphism, so the bound is lift-independent even though `a` is not.
 
 FAITHFULNESS. `q ≠ 2` and `q ≠ N` are both genuinely needed: `q = 2` is
 excluded because the formal-immersion input `hpg` is silent there, and
