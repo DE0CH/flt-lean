@@ -21508,7 +21508,10 @@ theorem exists_hilbertAuxHeckeAlgebra
           e (T.ρT.toLocal w g v) = (χ g (e v).1, δ g (e v).2)) ∧
         localInertiaGroup w ≤ δ.ker := by
     intro w hw
-    obtain ⟨hwℓ, hw2, -, α, β, hαβ, hpoly⟩ := hQ w hw
+    -- `hQ.1` is the LOCAL conjunct of `IsHilbertTaylorWilesPrimeSet`; since the
+    -- dual-Selmer repair of 2026-07-27 the predicate is a conjunction, and this
+    -- clause consumes only its pointwise half.
+    obtain ⟨hwℓ, hw2, -, α, β, hαβ, hpoly⟩ := hQ.1 w hw
     refine exists_isSplitTorusAt_of_isUnramifiedAt w T.πT T.πT_surjective T.ρT
       (T.isHilbertHardlyRamified.isUnramified w hw2 hwℓ) α β hαβ ?_
     -- `charFrob` is the charpoly at `globalFrob w`, so `residT` transports it
