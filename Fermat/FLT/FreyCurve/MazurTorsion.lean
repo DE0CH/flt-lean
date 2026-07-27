@@ -14308,8 +14308,10 @@ Each of those leaves bundled two quite different things:
 * the **main theorem of complex multiplication** — a curve with CM by the order
   of discriminant `D` has `j` a root of the Hilbert class polynomial `H_D`.
 
-The first is PROVEN outright below, uniformly in `(N, m)`, over the single new
-structural leaf `WeierstrassCurve.End.exists_intBasis`. The second remains a
+The first is PROVEN outright below, uniformly in `(N, m)`, over the structural
+node `WeierstrassCurve.End.exists_intBasis` (introduced as a leaf on 2026-07-27
+and since PROVEN, so the only leaf under it is `End.mul_comm_charZero`). The
+second remains a
 leaf, once per level, because this development has no Hilbert class polynomial
 and the identification of `H_{−500}` / `H_{−676}` with the literals is a
 computation no Lean argument here can supply.
@@ -14439,18 +14441,35 @@ end MazurCMOrder
 /-!
 ### The endomorphism ring as a lattice: reducing `exists_intBasis` to ONE leaf
 
-(Added 2026-07-27, decomposing `End.exists_intBasis`.)
+(Added 2026-07-27, decomposing `End.exists_intBasis`; re-cut the same day, see
+the second note below.)
 
 `End.exists_intBasis` bundled three separate assertions: that `End(W)` is
 COMMUTATIVE, that it has `ℚ`-rank `2`, and that it is MONOGENIC (`= ℤ[ω]` with
-`1, ω` a basis). Only the second is genuinely characteristic-zero input; the
+`1, ω` a basis). Only one of them is genuinely characteristic-zero input; the
 other two are consequences, and they are proved outright below.
 
-**The one leaf that remains** is `End.exists_zsmul_rel`: any two endomorphisms
-satisfy a nontrivial `ℤ`-linear relation modulo `ℤ`, i.e. `End(W) ⊗ ℚ` has
-`ℚ`-dimension at most `2`. Note it does NOT assert commutativity — commutativity
-comes out of the assembly, since everything ends up a `ℤ`-combination of `1` and
-a single `ω`.
+**The one leaf that remains** is `End.mul_comm_charZero`: `End(W)` is
+COMMUTATIVE. Everything else in the cluster — including the `ℚ`-rank bound
+`End.exists_zsmul_rel`, which was the leaf for the first few hours of
+2026-07-27 — is now proven.
+
+**Why the leaf moved from the rank bound to commutativity** (2026-07-27). The
+two are EQUIVALENT (each implies the other; see the faithfulness note on
+`End.exists_zsmul_rel`), so this is a reformulation and not a weakening. What it
+buys: `MazurEndLattice.quadRel` shows that once `αβ = βα` is available, the rank
+bound is three characteristic polynomials and a division-free cancellation, with
+no Hasse bound, no dual and no rational-root work. So all the arithmetic is
+discharged and the open node is a single named classical theorem
+(Silverman *AEC* III.9.4 + Deuring) with a documented route.
+
+**The check that the remaining leaf is genuinely irreducible relative to
+everything below, and it passes.** The LIPSCHITZ QUATERNION ORDER `ℤ⟨i, j⟩`
+satisfies every property proven in this section — domain, `ℤ`-torsion-free,
+intersection with `ℚ` equal to `ℤ`, every element quadratic with `t² ≤ 4n`, a
+norm-form anti-involution playing the role of the dual — and is NOT commutative.
+So no consequence of items 1–5 below can supply commutativity, and any argument
+claiming to is wrong.
 
 **The argument, and it needs nothing beyond `End.exists_charPoly`.** Write
 `[c]` for the image of `c : ℤ`.
@@ -14470,7 +14489,7 @@ a single `ω`.
    `v₁ = ±1` and `v ∣ c`; torsion-freeness then gives `ψ = [c/v]`.
 4. **Bounded denominators.** Fix `ψ₀ ∉ ℤ` and put `δ := [2]ψ₀ − [s₀]`, so
    `δ² = [−d]` with `d > 0` (`d = 0` would make `δ` a zero divisor). For any
-   `χ` with traceless part `η`, `η² = [−e]`, the leaf gives
+   `χ` with traceless part `η`, `η² = [−e]`, `exists_zsmul_rel` gives
    `[p] η = [q'] δ + [r']` with `(p, q') ≠ (0,0)`. SQUARING BOTH SIDES — which
    needs no commutativity, only centrality of integer casts — the `δ`-component
    reads `[2q'r'] δ ∈ ℤ`, so by (3) either `δ ∈ ℤ` (false) or `q'r' = 0`.
@@ -14686,12 +14705,174 @@ theorem sq_linear (δ : End W) (m : ℤ) (hδ : δ * δ = ((m : ℤ) : End W)) (
     _ = ((a * a * m + b * b : ℤ) : End W) + ((2 * a * b : ℤ) : End W) * δ := by
         push_cast; noncomm_ring
 
+/-- **The algebraic core of `End.exists_zsmul_rel`, in a general commutative ring
+without zero divisors.** If `α`, `β` and `α + β` each satisfy a monic integral
+quadratic, then `1, α, β` satisfy a nontrivial integral linear relation — with a
+nonzero coefficient on `α` or on `β`, so the relation is not the vacuous `0 = 0`.
+
+**Only three quadratics are needed, and no Hasse bound.** The `t² ≤ 4n` half of
+`End.exists_charPoly` plays no role here at all; it is consumed further up, in
+`exists_traceless`, and the statement below is true over any commutative domain.
+
+**The proof, which is elementary and division-free.** Expanding `(α + β)²` and
+subtracting the quadratics for `α` and `β` gives the *product* relation
+
+  `2αβ = Aα + Bβ + C`,   `A = T − t₁`, `B = T − t₂`, `C = n₁ + n₂ − N`,
+
+and THIS is the one and only step that uses commutativity: without `αβ = βα`
+the expansion yields the symmetric combination `αβ + βα`, which is exactly what
+a quaternion order satisfies while `αβ` itself is not in `ℤ + ℤα + ℤβ`.
+
+Now put `u := 2α − B` and `v := 2β − A`. Then `uv = 2C + AB =: M` is an INTEGER
+(the `α` and `β` terms cancel against `2·(2αβ)`), and `u` satisfies its own
+integral quadratic `u(u − P) = Q` with
+
+  `P = 2t₁ − 2B`,   `Q = PB + B² − 4n₁`.
+
+* If `Q = 0` then `u(u − P) = 0`, and having no zero divisors forces `u = 0` or
+  `u = P`; either way `2α ∈ ℤ`, which is already a relation with `p = 2`.
+* If `Q ≠ 0`, multiply `u(u − P) = Q` by `v` and use `uv = M`:
+  `M(u − P) = Qv`, i.e. `2Mα − 2Qβ + (QA − MB − MP) = 0`, whose `β`-coefficient
+  `−2Q` is nonzero.
+
+Note there is no division anywhere: `u` is not inverted, it is only cancelled
+against `v` through the integer `M`. That is why the conclusion has integer
+rather than rational coefficients. -/
+theorem quadRel {R : Type*} [CommRing R] [NoZeroDivisors R] (α β : R)
+    {t₁ n₁ t₂ n₂ T N : ℤ}
+    (h₁ : α * α + (n₁ : R) = (t₁ : R) * α)
+    (h₂ : β * β + (n₂ : R) = (t₂ : R) * β)
+    (h₃ : (α + β) * (α + β) + (N : R) = (T : R) * (α + β)) :
+    ∃ p q r : ℤ, (p ≠ 0 ∨ q ≠ 0) ∧ (p : R) * α + (q : R) * β + (r : R) = 0 := by
+  classical
+  -- `2αβ = Aα + Bβ + C`: the only step that consumes commutativity.
+  have key : (2 : R) * (α * β)
+      = ((T - t₁ : ℤ) : R) * α + ((T - t₂ : ℤ) : R) * β + ((n₁ + n₂ - N : ℤ) : R) := by
+    push_cast
+    linear_combination h₃ - h₁ - h₂
+  set A : ℤ := T - t₁
+  set B : ℤ := T - t₂
+  set C : ℤ := n₁ + n₂ - N
+  set u : R := 2 * α - (B : R) with hu
+  set v : R := 2 * β - (A : R) with hv
+  set M : ℤ := 2 * C + A * B with hM
+  have huv : u * v = (M : R) := by
+    rw [hu, hv, hM]
+    push_cast
+    linear_combination 2 * key
+  set P : ℤ := 2 * t₁ - 2 * B with hP
+  set Q : ℤ := (2 * t₁ - 2 * B) * B + B ^ 2 - 4 * n₁ with hQ
+  have huu : u * (u - (P : R)) = (Q : R) := by
+    rw [hu, hP, hQ]
+    push_cast
+    linear_combination 4 * h₁
+  by_cases hQ0 : Q = 0
+  · -- `u(u − P) = 0`, so `2α` is an integer.
+    have h0 : u * (u - (P : R)) = 0 := by rw [huu, hQ0, Int.cast_zero]
+    rcases mul_eq_zero.1 h0 with h | h
+    · refine ⟨2, 0, -B, Or.inl two_ne_zero, ?_⟩
+      rw [hu] at h
+      push_cast
+      linear_combination h
+    · refine ⟨2, 0, -B - P, Or.inl two_ne_zero, ?_⟩
+      rw [hu] at h
+      push_cast
+      linear_combination h
+  · -- `Mv⁻¹`-free cancellation: multiply `u(u − P) = Q` by `v` and use `uv = M`.
+    have hkey2 : (M : R) * (u - (P : R)) = (Q : R) * v := by
+      calc (M : R) * (u - (P : R)) = (u * v) * (u - (P : R)) := by rw [huv]
+        _ = v * (u * (u - (P : R))) := by ring
+        _ = v * (Q : R) := by rw [huu]
+        _ = (Q : R) * v := by ring
+    refine ⟨2 * M, -(2 * Q), Q * A - M * B - M * P, Or.inr (by omega), ?_⟩
+    rw [hu, hv] at hkey2
+    push_cast at hkey2 ⊢
+    linear_combination hkey2
+
 end MazurEndLattice
 
 end EndLattice
 
-/-- **LEAF — `End(W) ⊗ ℚ` has `ℚ`-dimension at most `2`** (introduced 2026-07-27
-by the decomposition of `End.exists_intBasis`, which it now carries in full).
+/-- **LEAF — `End(W)` IS COMMUTATIVE in characteristic `0`** (introduced
+2026-07-27 by the re-cut of `End.exists_zsmul_rel`, which is now PROVEN over
+this and nothing else).
+
+This is Silverman *AEC* III.9.4 together with Deuring: over an algebraically
+closed field of characteristic `0`, `End(E)` is `ℤ` or an order in an imaginary
+quadratic field, and in both cases it is commutative.
+
+**`[CharZero F]` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.** In
+characteristic `p` a supersingular curve has `End(W)` a maximal order in a
+QUATERNION algebra, which is noncommutative — `Isogeny.lean`'s `𝔽̄₂`
+counterexample section, and the `[CharZero F]` on `Isogeny.dual` and
+`End.exists_dual`, are the same phenomenon.
+
+## Why this is the whole of the characteristic-zero input, and how to check it
+
+Everything else that `End.exists_intBasis` used to bundle is now proven from
+`End.exists_charPoly` alone (see the section note above and
+`MazurEndLattice.quadRel`): no zero divisors, `ℤ`-torsion-freeness, a ring-level
+characteristic polynomial, a traceless part squaring to a nonpositive integer,
+`End W ∩ ℚ = ℤ`, monogenicity, and the `ℚ`-rank bound itself.
+
+**The claim that no further consequence of that layer can give commutativity has
+a one-line refutation test, and it passes: the LIPSCHITZ QUATERNION ORDER
+`ℤ⟨i, j⟩` satisfies every single property in the list.** It is a domain, it is
+`ℤ`-torsion-free, its intersection with `ℚ` is `ℤ`, every element
+`a + bi + cj + dk` satisfies `x² − 2ax + (a² + b² + c² + d²) = 0` with
+`t² = 4a² ≤ 4n`, and conjugation is an anti-involution with `x x̄ = [N(x)]`
+playing the role of the dual. So ANY argument that derives commutativity from
+the proven layer is necessarily wrong, and the genuinely characteristic-zero
+input is irreducible here rather than merely undiscovered. (The axis this
+verdict ranges over is: consequences of `End.exists_charPoly`, the dual, and the
+trace form. It says nothing about routes through torsion structure or the
+function field, which is where the two live options below sit.)
+
+## Two routes, and the exact statement the cheaper one wants
+
+**Route A — the invariant differential (the standard algebraic proof).** In
+characteristic `0` every nonzero isogeny is separable, so its action on the
+`1`-dimensional space of invariant differentials is nonzero; `φ*ω = c_φ ω`
+defines `c : End(W) → F` which is multiplicative (functoriality of pullback) and
+ADDITIVE (Silverman *AEC* III.5.2 — the genuinely hard input), hence an
+INJECTIVE ring map into a commutative field. Commutativity is then three lines.
+The statement to introduce, in this file's idiom, is
+
+    theorem End.exists_cotangentChar : ∃ c : WeierstrassCurve.End W →+* F,
+      Function.Injective c
+
+and `mul_comm_charZero` follows from it by `c (φ * ψ) = c φ * c ψ = c ψ * c φ
+= c (ψ * φ)` plus injectivity. **What is missing at this pin is the action
+itself**, and it is a subtree rather than a lemma: `IsRationalMap` certifies an
+isogeny only POINTWISE (`x(φP)·B(xP) = A(xP)` and
+`y(φP)·E(xP) = C(xP)·y(P) + D(xP)`), so building `φ*` requires the function
+field of a general `W`, differentials on it, and the transfer from a pointwise
+certificate to a function-field identity. Note in particular that the
+`InvariantDifferential` namespace in `WeilPairingDescent.lean` is a formal
+polynomial identity and does NOT serve, and that
+`EllipticCurve/InvariantDerivation.lean`'s `DK` is the invariant derivation on
+the UNIVERSAL function field `Kuniv` with no pullback along an isogeny — it is
+the closest existing material and the natural place to start.
+
+**Route B — the analytic uniformisation.** `End(W)` embeds in
+`End(H_1(W, ℤ)) = M₂(ℤ)` commuting with the complex structure, hence in `ℂ`.
+This needs the `H_1` layer, absent at this pin, and is strictly heavier than
+Route A.
+
+**A third route that does NOT work, recorded so it is not re-attempted.**
+"`End ⊗ ℚ` is a division algebra of dimension `≤ 4` (positive-definite degree
+form), and a definite quaternion algebra over `ℚ` is ramified at `∞` hence at
+some finite `p`, contradicting `End ⊗ ℚ_p ↪ End(T_p W) ⊗ ℚ_p = M₂(ℚ_p)`" is a
+correct proof, but its last step is the parity of the Hasse invariants — class
+field theory, far heavier than Route A. -/
+theorem WeierstrassCurve.End.mul_comm_charZero {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
+    (φ ψ : WeierstrassCurve.End W) : φ * ψ = ψ * φ :=
+  sorry
+
+/-- **`End(W) ⊗ ℚ` has `ℚ`-dimension at most `2`** (introduced 2026-07-27 by the
+decomposition of `End.exists_intBasis`, which it carries in full; **PROVEN
+2026-07-27 over the single leaf `End.mul_comm_charZero`**).
 
 Any two endomorphisms satisfy a nontrivial `ℤ`-linear relation modulo `ℤ`: there
 are integers `p, q, r`, not both `p` and `q` zero, with `pφ + qψ + r = 0`.
@@ -14706,49 +14887,57 @@ algebra, of `ℚ`-dimension `4`; there `1, φ, ψ` are generically independent a
 such relation exists. `Isogeny.lean`'s `𝔽̄₂` counterexample section, and the
 `[CharZero F]` on `Isogeny.dual` and `End.exists_dual`, are the same phenomenon.
 
-**Note what is NOT asserted: commutativity.** It is not needed as a hypothesis and
-it is not needed as a separate leaf — `End.exists_intBasis` derives it, because
-its conclusion exhibits every endomorphism as a `ℤ`-combination of `1` and one
-fixed `ω`, and those commute. That is why this is the ONLY remaining leaf of the
-`exists_intBasis` cluster.
+**HOW IT IS PROVEN.** Commutativity — `End.mul_comm_charZero`, the sole leaf —
+upgrades `End W` to a commutative ring without zero divisors
+(`MazurEndLattice.end_mul_ne_zero`), and `MazurEndLattice.quadRel` then produces
+the relation from the three characteristic polynomials of `φ`, `ψ` and `φ + ψ`
+(`MazurEndLattice.exists_charPolyRing`) by an elementary division-free
+computation. Nothing else is used: not the Hasse bound, not the dual, not
+`End W ∩ ℚ = ℤ`.
 
-**What it will take to prove.** The classical route is: (1) `End(W) ⊗ ℚ` is a
-division algebra of dimension `≤ 4` over `ℚ` (Silverman III.9.3, from the degree
-being a positive-definite quadratic form — the same input as `End.exists_dual`,
-i.e. `End.dualEnd_add`); (2) in characteristic `0` the quaternion case cannot
-occur, because `End(W)` embeds in `End(H_1(W, ℤ)) = M₂(ℤ)` via the analytic
-uniformisation, or equivalently acts faithfully on the `2`-dimensional
-`ℚ`-vector space `H_1(W, ℚ)`. Step (2) is the genuinely new content and is where
-the `H_1` / analytic layer, absent at this pin, is needed.
-
-An ALTERNATIVE route that may be cheaper here, and which the decomposition below
-was designed to leave open: in characteristic `0` the action of `End(W)` on
-invariant differentials is an injective ring map `End(W) → F`, so `End(W)` is
-COMMUTATIVE; and a commutative domain in which every element is quadratic over
-`ℤ` (which is `End.exists_charPoly`) has `ℚ`-dimension `≤ 2` by the primitive
-element theorem, which mathlib has. That replaces the `H_1` layer by the
-differential action — the grep that would settle whether it is available is
-
-    grep -rn 'invariantDifferential\|differential\|cotangent' Fermat/ ~/cs/FLT/FLT/
-
-which at the time of writing finds nothing usable for isogenies (the
-`InvariantDifferential` namespace in `WeilPairingDescent.lean` is a formal
-polynomial identity, not the action of `End` on `Ω¹`).
+**FAITHFULNESS NOTE — this is an EQUIVALENT reformulation, not a weakening.**
+`mul_comm_charZero` implies this statement (above) and this statement implies
+`mul_comm_charZero` (through `End.exists_intBasis`, which exhibits every
+endomorphism as a `ℤ`-combination of `1` and one fixed `ω`, and those commute).
+So the re-cut buys no logical ground; what it buys is that ALL the arithmetic —
+the characteristic polynomial, the Hasse bound, the gcd and rational-root work,
+the ideal of `δ`-coefficients — is now discharged, and the open node is a single
+named classical theorem with a known one-idea proof rather than a bespoke
+rank encoding. The route to it is documented on `mul_comm_charZero`.
 
 **The `(p ≠ 0 ∨ q ≠ 0)` side condition is not decoration**: without it `r = 0`
-and `p = q = 0` satisfies the conclusion for every `φ, ψ`, and the leaf would be
-vacuous. -/
+and `p = q = 0` satisfies the conclusion for every `φ, ψ`, and the statement
+would be vacuous. -/
 theorem WeierstrassCurve.End.exists_zsmul_rel {F : Type*} [Field F] [DecidableEq F]
     [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
     (φ ψ : WeierstrassCurve.End W) :
     ∃ p q r : ℤ, (p ≠ 0 ∨ q ≠ 0) ∧
       ((p : ℤ) : WeierstrassCurve.End W) * φ + ((q : ℤ) : WeierstrassCurve.End W) * ψ
-        + ((r : ℤ) : WeierstrassCurve.End W) = 0 :=
-  sorry
+        + ((r : ℤ) : WeierstrassCurve.End W) = 0 := by
+  classical
+  letI : CommRing (WeierstrassCurve.End W) :=
+    { (inferInstance : Ring (WeierstrassCurve.End W)) with
+      mul_comm := WeierstrassCurve.End.mul_comm_charZero }
+  haveI : Nontrivial (WeierstrassCurve.End W) := by
+    refine ⟨1, 0, ?_⟩
+    have h := MazurEndLattice.intCast_ne_zero_of_ne_zero (W := W) (c := 1) one_ne_zero
+    rwa [Int.cast_one] at h
+  haveI : NoZeroDivisors (WeierstrassCurve.End W) :=
+    ⟨fun {a b} h => by
+      by_cases ha : a = 0
+      · exact Or.inl ha
+      by_cases hb : b = 0
+      · exact Or.inr hb
+      exact absurd h (MazurEndLattice.end_mul_ne_zero ha hb)⟩
+  obtain ⟨t₁, n₁, -, h₁, -⟩ := MazurEndLattice.exists_charPolyRing φ
+  obtain ⟨t₂, n₂, -, h₂, -⟩ := MazurEndLattice.exists_charPolyRing ψ
+  obtain ⟨T, N, -, h₃, -⟩ := MazurEndLattice.exists_charPolyRing (φ + ψ)
+  exact MazurEndLattice.quadRel φ ψ h₁ h₂ h₃
 
 /-- **`End(E)` is a free `ℤ`-module of rank `2` as soon as it is bigger
 than `ℤ`** (introduced 2026-07-27 by the cut of the two class-polynomial nodes;
-**PROVEN 2026-07-27 over the single leaf `End.exists_zsmul_rel`**).
+**PROVEN 2026-07-27 over `End.exists_zsmul_rel`, itself since re-cut so that the
+cluster's single remaining leaf is `End.mul_comm_charZero`**).
 
 If some `ψ₀ ∈ End W` is not an integer, then there are `ω ∈ End W` and `a, b ∈ ℤ`
 with `ω² = aω − b` such that `1, ω` is a `ℤ`-BASIS of `End W`: every `χ` is
@@ -14773,20 +14962,23 @@ already carries `[CharZero F]` for the same reason.
 (2) in characteristic `0` the quaternion case cannot occur, so the dimension is
 `≤ 2`; (3) a subring of an imaginary quadratic field that is a finitely
 generated `ℤ`-module spanning it is an order, and orders in quadratic fields are
-`ℤ + fO_K = ℤ[fω_K]` — only (1)+(2) remain open, as the single leaf
-`End.exists_zsmul_rel` ("any two endomorphisms are `ℚ`-dependent modulo `ℚ`").
-Step (3), which is where finite generation, monogenicity, INDEPENDENCE of
-`1, ω`, and commutativity of `End(E)` all live, is PROVEN below.
+`ℤ + fO_K = ℤ[fω_K]` — only (1)+(2) remain open, and they are consumed here
+through `End.exists_zsmul_rel` ("any two endomorphisms are `ℚ`-dependent modulo
+`ℚ`"), which is itself now PROVEN over the cluster's single leaf
+`End.mul_comm_charZero`. Step (3), which is where finite generation,
+monogenicity, INDEPENDENCE of `1, ω`, and commutativity of `End(E)` all live, is
+PROVEN below.
 
 The proof is the lattice argument of the section note above: `End.exists_charPoly`
-gives every `χ` a traceless part squaring to a nonpositive integer; the leaf
+gives every `χ` a traceless part squaring to a nonpositive integer;
+`exists_zsmul_rel`
 pins all those traceless parts to a single `ℚ`-line through `δ = 2ψ₀ − t₀`; the
 discriminant congruence bounds the denominators UNIFORMLY by `2d`; and the
 resulting `δ`-coefficients form an ideal of `ℤ`, whose generator supplies `ω`.
 
 Note that `End.exists_charPoly` already gives each individual `χ` a monic
 integral quadratic — that is `(1)` for one element at a time. What was missing,
-and is now isolated in `End.exists_zsmul_rel` alone, is that a single quadratic
+and is now isolated in `End.mul_comm_charZero` alone, is that a single quadratic
 FIELD contains all of them. -/
 theorem WeierstrassCurve.End.exists_intBasis {F : Type*} [Field F] [DecidableEq F]
     [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
