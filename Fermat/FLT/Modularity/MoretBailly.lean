@@ -31305,11 +31305,21 @@ theorem exists_torsionParam_of_divisible {P : Type*} [AddCommGroup P]
       (∀ n : ℕ, n ≠ 0 → ∀ y : P, (n : ℤ) • y = 0 → ∃ v, θ v = y) :=
   sorry
 
-/-- **THE CLASSIFICATION OF THE INVOLUTION** (sorry leaf, cut 2026-07-27 out of
+/-- **THE ADAPTED FRAME OF THE INVOLUTION** (sorry leaf, cut 2026-07-27 out of
+`exists_conj_realConjAdd`, itself cut the same day out of
 `exists_realWeierstrassCurveWithConjTorsion`): an involution `c` of `(ℚ/ℤ)²`
 which is neither `+1` nor `−1` on any `n`-torsion with `n ≥ 3`, and whose fixed
-`2`-torsion has `4` elements (`ε = false`) or `2` elements (`ε = true`), is
-conjugate IN `Aut((ℚ/ℤ)²)` to `realConjAdd _ ε`.
+`2`-torsion has `4` elements (`ε = false`) or `2` elements (`ε = true`), admits
+an ADAPTED FRAME — a pair of additive maps `u, w : ℚ/ℤ → (ℚ/ℤ)²` with
+
+* `c (u t) = u t` (`u` spans the `+1`-line),
+* `c (w t) = [ε]·u t − w t` (`w` spans the second line, twisted by `ε`),
+* `(a, b) ↦ u a + w b` BIJECTIVE (the two lines really do span).
+
+That is exactly a basis in which `c` is the matrix `realConjAdd _ ε`, written
+without the `≃+` bookkeeping; `exists_conj_realConjAdd` below reassembles the
+automorphism from it in real code.  The whole mathematical content of the
+classification is here.
 
 Nothing here mentions elliptic curves, `ℝ`, or `ℂ`: this is integral linear
 algebra, and it is the half of the node that "separates the two determinant-`−1`
@@ -31339,6 +31349,64 @@ conjugation acts on `μ_n` by inversion.  Stating the hypothesis this way keeps
 
 FAITHFULNESS: the conclusion is an equation of maps, so no junk `α` satisfies it,
 and both values of `ε` are genuinely reachable (the two conjugacy classes above),
+so this is not vacuous.
+
+CUT 2026-07-27 (this task): the existential over `≃+` is replaced by an
+existential over an ADAPTED FRAME (`exists_conjFrame_realConjAdd` below), and the
+assembly — building the automorphism out of the frame and checking the
+intertwining equation — is real code. -/
+theorem exists_conjFrame_realConjAdd (ε : Bool)
+    (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
+    (hc : ∀ x, c (c x) = x)
+    (hne_id : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ x)
+    (hne_neg : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ -x)
+    (hfix2 : Nat.card {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) //
+      (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4) :
+    ∃ u w : (ℚ ⧸ (1 : Submodule ℤ ℚ)) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))),
+      (∀ t, c (u t) = u t) ∧
+      (∀ t, c (w t) = (if ε then u t else 0) - w t) ∧
+      Function.Bijective
+        (fun v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)) => u (v 0) + w (v 1)) :=
+  sorry
+
+/-- **THE CLASSIFICATION OF THE INVOLUTION** (PROVEN 2026-07-27 from
+`exists_conjFrame_realConjAdd`; formerly a sorry leaf, cut 2026-07-27 out of
+`exists_realWeierstrassCurveWithConjTorsion`): an involution `c` of `(ℚ/ℤ)²`
+which is neither `+1` nor `−1` on any `n`-torsion with `n ≥ 3`, and whose fixed
+`2`-torsion has `4` elements (`ε = false`) or `2` elements (`ε = true`), is
+conjugate IN `Aut((ℚ/ℤ)²)` to `realConjAdd _ ε`.
+
+THE ASSEMBLY, which is real code: take the frame `u, w` from
+`exists_conjFrame_realConjAdd`, set `α v = u (v 0) + w (v 1)` (additive because
+`u` and `w` are, an equivalence because the frame is bijective), and compute
+both sides of the intertwining equation on the standard basis directions.  With
+`realConjAdd M ε v = ![v 0 + (if ε then v 1 else 0), −v 1]` one gets
+
+  `α (realConjAdd ε v) = u (v 0) + (if ε then u (v 1) else 0) − w (v 1)`
+
+and, from `c ∘ u = u` and `c ∘ w = [ε]·u − w`, exactly the same value for
+`c (α v)`.  So the whole mathematical content is now in the frame leaf, and the
+`≃+` bookkeeping is discharged.
+
+WHAT REMAINS OPEN, and it is the honest cost of this cut: the frame leaf.  It
+still asks for the `ℤ₂`-lattice classification described above.  Two routes, both
+recorded so a successor need not rediscover them:
+
+* *Ẑ-lattices*: `End((ℚ/ℤ)²) = M₂(Ẑ)` and the problem splits over the primes; at
+  odd `p` the idempotent `(1+c)/2` splits the `ℤ_p`-lattice and `c|A[p] ≠ ±1`
+  forces `ℤ_p ⊕ ℤ_p(−)`; at `p = 2` the indecomposable `ℤ₂[C₂]`-lattices are
+  `triv`, `sign` and the regular module (Diederichsen–Reiner), and the fixed
+  `2`-torsion count separates `diag(1,−1)` from the swap.
+* *Compatible finite levels*: for each `n` the set of adapted bases of `A[n]` is
+  finite and (by the previous item at level `n`) nonempty, the restriction maps
+  make an inverse system over the divisibility order, and
+  `nonempty_sections_of_finite_cofiltered_system` (Mathlib,
+  `CategoryTheory/CofilteredSystem.lean`) produces a section — the SAME
+  machinery the sibling `exists_torsionParam_of_divisible` needs, so building it
+  once discharges both.
+
+FAITHFULNESS: the conclusion is an equation of maps, so no junk `α` satisfies it,
+and both values of `ε` are genuinely reachable (the two conjugacy classes above),
 so this is not vacuous. -/
 theorem exists_conj_realConjAdd (ε : Bool)
     (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
@@ -31348,8 +31416,20 @@ theorem exists_conj_realConjAdd (ε : Bool)
     (hfix2 : Nat.card {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) //
       (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4) :
     ∃ α : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) ≃+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))),
-      ∀ v, α (realConjAdd _ ε v) = c (α v) :=
-  sorry
+      ∀ v, α (realConjAdd _ ε v) = c (α v) := by
+  obtain ⟨u, w, hu, hw, hbij⟩ := exists_conjFrame_realConjAdd ε c hc hne_id hne_neg hfix2
+  set φ : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) :=
+    AddMonoidHom.mk' (fun v => u (v 0) + w (v 1)) (by
+      intro v v'
+      show u (v 0 + v' 0) + w (v 1 + v' 1) = (u (v 0) + w (v 1)) + (u (v' 0) + w (v' 1))
+      rw [map_add, map_add]
+      abel) with hφ
+  refine ⟨AddEquiv.ofBijective φ hbij, fun v => ?_⟩
+  show u ((realConjAdd _ ε v) 0) + w ((realConjAdd _ ε v) 1) = c (u (v 0) + w (v 1))
+  have h0 : (realConjAdd _ ε v) 0 = v 0 + (if ε then v 1 else 0) := rfl
+  have h1 : (realConjAdd _ ε v) 1 = -v 1 := rfl
+  rw [h0, h1, map_add, map_neg, map_add, hu (v 0), hw (v 1)]
+  cases ε <;> (simp; try abel)
 
 /-- **THE ABSTRACT NODE** (PROVEN 2026-07-27 from the two leaves above): a
 divisible abelian group whose `n`-torsion has `n²` elements, carrying an
@@ -31558,7 +31638,60 @@ argument on `E[n]` may be shorter than a full pairing.
 
 Do NOT weaken this to `σ ≠ 1` only: the statement is FALSE for `n ≤ 2`, since
 `+1 = −1` on `E[2]`, which is exactly why the sibling
-`card_fixed_twoTorsion_realTestCurve` carries the `n = 2` information separately. -/
+`card_fixed_twoTorsion_realTestCurve` carries the `n = 2` information separately.
+
+CUT 2026-07-27 (this task): the leaf is discharged from the single sub-leaf
+`exists_weilPairing_real` below — the Weil pairing over `ULift ℝ`, stated in the
+ONLY form the node consumes — plus a real assembly.  See that leaf's docstring
+for why the pairing form was chosen over the determinant form.
+
+**WHY THE PAIRING MUST LIVE ON THE `n`-TORSION AND NOT ON `E(ℝ̄)`.**  A tempting
+simplification is to state a biadditive `e : E(ℝ̄) × E(ℝ̄) → ZMod n` and require
+`e x y = 1` for some torsion pair.  That statement is FALSE, not merely
+inconvenient: `E(ℝ̄)` is DIVISIBLE (`TorsionCard.smul_surjective`), so
+`E(ℝ̄)/n E(ℝ̄) = 0` and every additive map `E(ℝ̄) → ZMod n` is zero.  The
+`Submodule.torsionBy` phrasing below is what keeps the leaf true. -/
+theorem exists_weilPairing_real (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsElliptic]
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) (n : ℕ) (hn : 1 ≤ n) :
+    letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+    ∃ e : (Submodule.torsionBy ℤ (WeierstrassCurve.Affine.baseChange E
+              (AlgebraicClosure (ULift.{u} ℝ))).Point (n : ℤ)) →+
+          (Submodule.torsionBy ℤ (WeierstrassCurve.Affine.baseChange E
+              (AlgebraicClosure (ULift.{u} ℝ))).Point (n : ℤ)) →+ ZMod n,
+      (∃ a b, e a b = 1) ∧
+      (∀ a b, e (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map
+                  (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+                    AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) a)
+                (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map
+                  (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+                    AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) b) = - e a b) :=
+  sorry
+
+/-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (PROVEN
+2026-07-27 from `exists_weilPairing_real`; formerly a sorry leaf, cut 2026-07-27
+out of `exists_realWeierstrassCurveWithConjTorsion`).
+
+THE ASSEMBLY, which is real code and is the reason the pairing form was chosen
+over the determinant form: both halves fall out of ONE contradiction.  Suppose
+`σ` acts as `η · id` on `E[n]` with `η = ±1`.  The pairing is biadditive, so
+`e (η a) (η b) = η² · e a b = e a b`; the sub-leaf says the same quantity is
+`− e a b`; so `2 · e a b = 0` for all `a, b`, and the pair with `e a b = 1`
+turns that into `(2 : ZMod n) = 0`, i.e. `n ∣ 2`, contradicting `n ≥ 3`.
+
+That is why the sub-leaf is stated as a PAIRING rather than as
+`det(σ | E[n]) = χ_n(σ)`.  The determinant route needs
+`WeilPairing.det_eq_of_conj`, which is stated over a FIELD of coefficients, and
+`ZMod n` is not a field unless `n` is prime; the argument above needs no
+determinant, no rank hypothesis and no primality, and covers `η = +1` and
+`η = −1` with the same three lines.
+
+WHAT REMAINS OPEN is exactly the Weil pairing over `ULift ℝ`
+(`exists_weilPairing_real`).  The tree's `WeilPairing.exists_weilPairing` is
+stated for `E : WeierstrassCurve ℚ` only; the linear-algebra half
+(`pairing_map_eq_det_smul`, `det_eq_of_conj`) is already over an arbitrary
+field, so what is missing is the pairing itself over a general base, plus the
+observation that complex conjugation inverts `μ_n` — which is what turns the
+Galois-equivariance `σ(e(x,y)) = e(σx, σy)` into the `−1` above. -/
 theorem exists_torsion_conj_ne (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsElliptic]
     (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) (n : ℕ) (hn : 3 ≤ n) :
     letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
@@ -31571,10 +31704,179 @@ theorem exists_torsion_conj_ne (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsEllip
         (n : ℤ) • x = 0 ∧
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
-            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x ≠ -x) :=
-  sorry
+            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x ≠ -x) := by
+  letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+  haveI : NeZero n := ⟨by omega⟩
+  obtain ⟨e, ⟨a₀, b₀, hab⟩, hconj⟩ := exists_weilPairing_real.{u} E σ hσ n (by omega)
+  -- `2 = 0` in `ZMod n` is impossible for `n ≥ 3`
+  have hcontra : (2 : ZMod n) = 0 → False := by
+    intro h2
+    have hd : ((n : ℤ)) ∣ (2 : ℤ) := by
+      rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+      push_cast
+      exact h2
+    have : (n : ℤ) ≤ 2 := Int.le_of_dvd (by norm_num) hd
+    omega
+  constructor
+  · by_contra hno
+    push Not at hno
+    have hfix : ∀ a, TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+        (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) a = a := by
+      intro a
+      exact Subtype.ext (hno a.1 a.2)
+    apply hcontra
+    have h := hconj a₀ b₀
+    rw [hfix a₀, hfix b₀, hab] at h
+    linear_combination h
+  · by_contra hno
+    push Not at hno
+    have hneg : ∀ a, TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+        (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) a = -a := by
+      intro a
+      exact Subtype.ext (hno a.1 a.2)
+    apply hcontra
+    have h := hconj a₀ b₀
+    rw [hneg a₀, hneg b₀] at h
+    simp only [map_neg, AddMonoidHom.neg_apply, neg_neg] at h
+    rw [hab] at h
+    linear_combination h
 
-/-- **THE REAL `2`-TORSION COUNT** (sorry leaf, cut 2026-07-27 out of
+section RealTwoTorsionCount
+
+open _root_.WeierstrassCurve.Affine
+
+/-- **`2`-TORSION IS `P = −P`** (PROVEN 2026-07-27) — `(2 : ℤ) • P = P + P`, and
+`P + P = 0` iff `P = −P`. -/
+lemma two_zsmul_point_eq_zero_iff {F : Type*} [Field F] [DecidableEq F]
+    (W : _root_.WeierstrassCurve.Affine F) (P : W.Point) : (2 : ℤ) • P = 0 ↔ P = -P := by
+  rw [two_zsmul, add_eq_zero_iff_eq_neg]
+
+/-- **`Nat.card (Option X) = Nat.card X + 1`** (PROVEN 2026-07-27) for finite
+`X`; this is what converts the point at infinity into the `+1` of the count. -/
+lemma natCard_option_eq {X : Type*} [Finite X] : Nat.card (Option X) = Nat.card X + 1 := by
+  haveI := Fintype.ofFinite X
+  simp [Nat.card_eq_fintype_card, Fintype.card_option]
+
+/-- **THE EQUATION AT `y = 0` FOR A SHORT MODEL** (PROVEN 2026-07-27): when
+`a₁ = a₂ = a₃ = a₆ = 0`, the affine equation at `y = 0` is `x³ + a₄ x = 0`. -/
+lemma affine_equation_zero_iff_of_short {K : Type*} [Field K]
+    (W : _root_.WeierstrassCurve.Affine K)
+    (h1 : W.a₁ = 0) (h2 : W.a₂ = 0) (h3 : W.a₃ = 0) (h6 : W.a₆ = 0) (x : K) :
+    W.Equation x 0 ↔ x ^ 3 + W.a₄ * x = 0 := by
+  rw [_root_.WeierstrassCurve.Affine.equation_iff, h1, h2, h3, h6]
+  constructor <;> intro h <;> linear_combination -h
+
+/-- **THE FIXED `2`-TORSION AT AN AFFINE POINT** (PROVEN 2026-07-27): for a curve
+with `a₁ = a₃ = 0` over a field of characteristic `≠ 2`, an affine point
+`(x, y)` is `2`-torsion and `f`-fixed exactly when `y = 0` and `f x = x`.
+
+`negY x y = −y − a₁ x − a₃` collapses to `−y`, so `P = −P` reads `y = −y`, i.e.
+`2y = 0`; and `Point.map f (x, y) = (f x, f y)`, so the fixed condition splits
+into the two coordinates, the second of which is free once `y = 0`. -/
+lemma point_some_twoTorsion_fixed_iff {R : Type u} [CommRing R] {K : Type u} [Field K]
+    [Algebra R K] [DecidableEq K] (W' : _root_.WeierstrassCurve R)
+    (h1 : W'.a₁ = 0) (h3 : W'.a₃ = 0) (h2 : (2 : K) ≠ 0) (f : K →ₐ[R] K)
+    (x y : K) (h : (baseChange W' K).Nonsingular x y) :
+    ((2 : ℤ) • (Point.some x y h) = 0 ∧
+        Point.map f (Point.some x y h) = Point.some x y h) ↔ (y = 0 ∧ f x = x) := by
+  have hnegY : (baseChange W' K).negY x y = -y := by
+    simp [_root_.WeierstrassCurve.Affine.negY, h1, h3]
+  constructor
+  · rintro ⟨htor, hfix⟩
+    rw [two_zsmul_point_eq_zero_iff, Point.neg_some, Point.some.injEq] at htor
+    refine ⟨?_, ?_⟩
+    · have hy : y = -y := by rw [hnegY] at htor; exact htor.2
+      have h2' : (2 : K) * y = 0 := by linear_combination hy
+      rcases mul_eq_zero.mp h2' with hz | hz
+      · exact absurd hz h2
+      · exact hz
+    · rw [Point.map_some, Point.some.injEq] at hfix
+      exact hfix.1
+  · rintro ⟨rfl, hfx⟩
+    refine ⟨?_, ?_⟩
+    · rw [two_zsmul_point_eq_zero_iff, Point.neg_some, Point.some.injEq]
+      exact ⟨rfl, by rw [hnegY]; ring⟩
+    · rw [Point.map_some, Point.some.injEq]
+      exact ⟨hfx, map_zero f⟩
+
+/-- **THE FIXED `2`-TORSION AS `Option` OF THE FIXED ROOTS** (PROVEN 2026-07-27):
+for `a₁ = a₃ = 0` and characteristic `≠ 2`, the `f`-fixed `2`-torsion of `W'` over
+`K` is the point at infinity together with the `f`-fixed roots of the cubic. -/
+noncomputable def twoTorsionFixedEquivOptionRoots {R : Type u} [CommRing R] {K : Type u}
+    [Field K] [Algebra R K] [DecidableEq K] (W' : _root_.WeierstrassCurve R)
+    (h1 : W'.a₁ = 0) (h3 : W'.a₃ = 0) (h2 : (2 : K) ≠ 0) (f : K →ₐ[R] K) :
+    {P : (baseChange W' K).Point // (2 : ℤ) • P = 0 ∧ Point.map f P = P}
+      ≃ Option {x : K // (baseChange W' K).Nonsingular x 0 ∧ f x = x} := by
+  refine (nonsingularPointEquivSubtype (W' := baseChange W' K)
+    (p := fun P => (2 : ℤ) • P = 0 ∧ Point.map f P = P)
+    ⟨smul_zero (2 : ℤ), rfl⟩).trans ?_
+  refine Equiv.optionCongr ?_
+  refine ⟨fun z => ⟨z.1.1, ?_, ?_⟩, fun z => ⟨⟨z.1, 0⟩, ⟨z.2.1, ?_⟩⟩, ?_, ?_⟩
+  · obtain ⟨⟨x, y⟩, hns, hp⟩ := z
+    have hy := (point_some_twoTorsion_fixed_iff W' h1 h3 h2 f x y hns).mp hp
+    exact hy.1 ▸ hns
+  · obtain ⟨⟨x, y⟩, hns, hp⟩ := z
+    exact ((point_some_twoTorsion_fixed_iff W' h1 h3 h2 f x y hns).mp hp).2
+  · exact (point_some_twoTorsion_fixed_iff W' h1 h3 h2 f z.1 0 z.2.1).mpr ⟨rfl, z.2.2⟩
+  · rintro ⟨⟨x, y⟩, hns, hp⟩
+    have hy := ((point_some_twoTorsion_fixed_iff W' h1 h3 h2 f x y hns).mp hp).1
+    subst hy
+    rfl
+  · rintro ⟨x, hns, hfx⟩
+    rfl
+
+/-- **`ℝ̄` IS FINITE OVER `ULift ℝ`** (PROVEN 2026-07-27): the same tower
+computation as `realGal_card` — `AlgebraicClosure (ULift ℝ)` is an algebraic
+closure of `ℝ`, hence `ℝ`-isomorphic to `ℂ`, hence of `ℝ`-rank two; and
+`ULift ℝ` has `ℝ`-rank one. -/
+theorem realAlgClos_finiteDimensional :
+    FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) := by
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI : IsAlgClosure ℝ ℂ := ⟨Complex.isAlgClosed, Algebra.IsAlgebraic.of_finite ℝ ℂ⟩
+  let e : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] ℂ := IsAlgClosure.equiv ℝ _ ℂ
+  have hR : Module.finrank ℝ (AlgebraicClosure (ULift.{u} ℝ)) = 2 := by
+    rw [e.toLinearEquiv.finrank_eq, Complex.finrank_real_complex]
+  haveI hfdR : FiniteDimensional ℝ (AlgebraicClosure (ULift.{u} ℝ)) := by
+    apply Module.finite_of_finrank_pos
+    rw [hR]; norm_num
+  exact Module.Finite.of_restrictScalars_finite ℝ (ULift.{u} ℝ) _
+
+/-- **AN ELEMENT OF `ℝ̄` FIXED BY ONE NONTRIVIAL AUTOMORPHISM IS REAL** (PROVEN
+2026-07-27).  `Gal(ℝ̄/ULift ℝ)` has order two (`exists_unique_realConj`), so a
+single `σ ≠ 1` already fixes `x` for EVERY automorphism, and
+`IsGalois.mem_range_algebraMap_iff_fixed` puts `x` in the base field.  This is
+what makes `i ∉ ULift ℝ` do the work in the `ε = true` count.
+
+The instance arguments of `mem_range_algebraMap_iff_fixed` are supplied
+EXPLICITLY, for the same reason recorded on `realGal_card`: the elaborator's own
+search does not find the local `FiniteDimensional` witness at that application. -/
+theorem exists_algebraMap_eq_of_conj_fixed
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1)
+    (x : AlgebraicClosure (ULift.{u} ℝ)) (hx : σ x = x) :
+    ∃ r : ULift.{u} ℝ, algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) r = x := by
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI hfd : FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    realAlgClos_finiteDimensional.{u}
+  obtain ⟨σ₀, hσ₀ne, _, hσ₀uniq⟩ := exists_unique_realConj.{u}
+  haveI hgal : IsGalois (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    IsAlgClosure.isGalois _ _
+  have hall : ∀ τ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+      AlgebraicClosure (ULift.{u} ℝ), τ x = x := by
+    intro τ
+    by_cases hτ : τ = 1
+    · rw [hτ]; rfl
+    · have hτ0 : τ = σ₀ := hσ₀uniq τ hτ
+      have hσσ : σ = σ₀ := hσ₀uniq σ hσ
+      rw [hτ0, ← hσσ]; exact hx
+  exact (@IsGalois.mem_range_algebraMap_iff_fixed (ULift.{u} ℝ) _
+    (AlgebraicClosure (ULift.{u} ℝ)) _ _ hgal hfd x).mpr hall
+
+/-- **THE REAL `2`-TORSION COUNT** (PROVEN 2026-07-27 from the six lemmas above;
+formerly a sorry leaf, cut 2026-07-27 out of
 `exists_realWeierstrassCurveWithConjTorsion`) — the second genuinely archimedean
 input, and the ROOT-COUNTING FACT that the old leaf's docstring identified as the
 cheap replacement for Weierstrass uniformisation.  It is the only place the two
@@ -31593,7 +31895,18 @@ FAITHFULNESS: the count `4` versus `2` is `#E(ℝ)[2]`, i.e. one plus the number
 real roots of the cubic, which is three when `Δ > 0` and one when `Δ < 0`.  That
 is the classical invariant separating the two real forms, and it is what
 `exists_conj_realConjAdd` consumes to decide between `diag(1,−1)` and
-`[[1,1],[0,−1]]`. -/
+`[[1,1],[0,−1]]`.
+
+THE PROOF, which is real code.  `twoTorsionFixedEquivOptionRoots` reduces the
+count to `Option` of the `σ`-fixed roots of `x³ ± x`; then
+
+* `ε = false` (`a = −1`): `x(x−1)(x+1) = 0`, and `0`, `1`, `−1` are fixed by
+  every algebra automorphism, so the root set is exactly `{0, 1, −1}` — THREE
+  roots, plus the point at infinity, gives `4`;
+* `ε = true` (`a = 1`): `x(x² + 1) = 0`, and a fixed `x` with `x² = −1` would be
+  the image of some `r : ULift ℝ` with `r² = −1` by
+  `exists_algebraMap_eq_of_conj_fixed`, which `nlinarith` refutes — so the root
+  set is `{0}`, ONE root, and the count is `2`. -/
 theorem card_fixed_twoTorsion_realTestCurve (ε : Bool)
     (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) :
     letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
@@ -31603,8 +31916,102 @@ theorem card_fixed_twoTorsion_realTestCurve (ε : Bool)
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
             AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x = x}
-      = if ε then 2 else 4 :=
-  sorry
+      = if ε then 2 else 4 := by
+  letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI hcharK : CharZero (AlgebraicClosure (ULift.{u} ℝ)) :=
+    charZero_of_injective_algebraMap
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))).injective
+  haveI hell : ((realTestCurve.{u} ε).baseChange
+      (AlgebraicClosure (ULift.{u} ℝ))).IsElliptic :=
+    inferInstanceAs (((realTestCurve.{u} ε).map
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)))).IsElliptic)
+  set K := AlgebraicClosure (ULift.{u} ℝ) with hK
+  set f : K →ₐ[ULift.{u} ℝ] K :=
+    (σ : K ≃ₐ[ULift.{u} ℝ] K).toAlgHom with hf
+  have hfx : ∀ x : K, f x = σ x := fun _ => rfl
+  -- the coefficients of the base-changed test curve
+  have ha1 : (baseChange (realTestCurve.{u} ε) K).a₁ = 0 := by
+    simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+      _root_.WeierstrassCurve.map]
+  have ha2 : (baseChange (realTestCurve.{u} ε) K).a₂ = 0 := by
+    simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+      _root_.WeierstrassCurve.map]
+  have ha3 : (baseChange (realTestCurve.{u} ε) K).a₃ = 0 := by
+    simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+      _root_.WeierstrassCurve.map]
+  have ha6 : (baseChange (realTestCurve.{u} ε) K).a₆ = 0 := by
+    simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+      _root_.WeierstrassCurve.map]
+  have ha4 : (baseChange (realTestCurve.{u} ε) K).a₄ = (if ε then 1 else -1 : K) := by
+    cases ε <;>
+      simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+        _root_.WeierstrassCurve.map]
+  -- the root condition on the fixed 2-torsion
+  have hroot : ∀ x : K, (baseChange (realTestCurve.{u} ε) K).Nonsingular x 0 ↔
+      x ^ 3 + (if ε then 1 else -1 : K) * x = 0 := by
+    intro x
+    rw [← _root_.WeierstrassCurve.Affine.equation_iff_nonsingular,
+      affine_equation_zero_iff_of_short _ ha1 ha2 ha3 ha6, ha4]
+  cases ε with
+  | false =>
+      have hequiv : {x : K // (baseChange (realTestCurve.{u} false) K).Nonsingular x 0 ∧ f x = x}
+          ≃ ({0, 1, -1} : Set K) := by
+        refine Equiv.subtypeEquivRight fun x => ?_
+        rw [hroot x, hfx x]
+        simp only [Bool.false_eq_true, if_false, Set.mem_insert_iff, Set.mem_singleton_iff]
+        constructor
+        · rintro ⟨heq, -⟩
+          have hfac : x * (x - 1) * (x + 1) = 0 := by linear_combination heq
+          rcases mul_eq_zero.mp hfac with h | h
+          · rcases mul_eq_zero.mp h with h' | h'
+            · exact Or.inl h'
+            · exact Or.inr (Or.inl (by linear_combination h'))
+          · exact Or.inr (Or.inr (by linear_combination h))
+        · rintro (rfl | rfl | rfl)
+          · exact ⟨by ring, map_zero σ⟩
+          · exact ⟨by ring, map_one σ⟩
+          · exact ⟨by ring, by rw [map_neg, map_one]⟩
+      have hcard : Nat.card (Option ({0, 1, -1} : Set K)) = 4 := by
+        rw [natCard_option_eq, Nat.card_coe_set_eq, Set.ncard_eq_three.mpr
+          ⟨0, 1, -1, by norm_num, by norm_num, by norm_num, rfl⟩]
+      simp only [Bool.false_eq_true, if_false]
+      exact (Nat.card_congr ((@twoTorsionFixedEquivOptionRoots (ULift.{u} ℝ) _ K _ _
+        (Classical.typeDecidableEq _) (realTestCurve.{u} false) rfl rfl
+        two_ne_zero f).trans (Equiv.optionCongr hequiv))).trans hcard
+  | true =>
+      have hequiv : {x : K // (baseChange (realTestCurve.{u} true) K).Nonsingular x 0 ∧ f x = x}
+          ≃ ({0} : Set K) := by
+        refine Equiv.subtypeEquivRight fun x => ?_
+        rw [hroot x, hfx x]
+        simp only [if_true, Set.mem_singleton_iff]
+        constructor
+        · rintro ⟨heq, hfix⟩
+          by_contra hx0
+          have hfac : x * (x ^ 2 + 1) = 0 := by linear_combination heq
+          have hsq : x ^ 2 = -1 := by
+            rcases mul_eq_zero.mp hfac with h | h
+            · exact absurd h hx0
+            · linear_combination h
+          obtain ⟨r, hr⟩ := exists_algebraMap_eq_of_conj_fixed.{u} σ hσ x hfix
+          have hz : algebraMap (ULift.{u} ℝ) K (r ^ 2 + 1) = 0 := by
+            rw [map_add, map_pow, hr, map_one, hsq]; ring
+          have hr2 : r ^ 2 + 1 = 0 :=
+            (map_eq_zero_iff _ (algebraMap (ULift.{u} ℝ) K).injective).mp hz
+          have hdown : (r.down) ^ 2 + 1 = 0 := by
+            have h := congrArg ULift.down hr2
+            simpa using h
+          nlinarith [sq_nonneg r.down]
+        · rintro rfl
+          exact ⟨by ring, map_zero σ⟩
+      have hcard : Nat.card (Option ({0} : Set K)) = 2 := by
+        rw [natCard_option_eq, Nat.card_coe_set_eq, Set.ncard_singleton]
+      exact (Nat.card_congr ((@twoTorsionFixedEquivOptionRoots (ULift.{u} ℝ) _ K _ _
+        (Classical.typeDecidableEq _) (realTestCurve.{u} true) rfl rfl
+        two_ne_zero f).trans (Equiv.optionCongr hequiv))).trans hcard
+
+end RealTwoTorsionCount
 
 /-- **THE ARCHIMEDEAN HALF of the elliptic-curve leaf** (PROVEN 2026-07-27 from
 the four leaves above — `exists_torsionParam_of_divisible`,
