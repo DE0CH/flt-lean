@@ -7643,9 +7643,200 @@ noncomputable def systemCount {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) �
   (Finset.univ.filter (fun a : Fin n → ZMod p =>
     ∀ i, MvPolynomial.eval₂ (Int.castRingHom (ZMod p)) a (f i) = 0)).card
 
-/-- **THE BIRATIONAL HYPERSURFACE MODEL, SPREAD OUT OVER `ℤ[1/D]`** (SORRY LEAF,
-cut 2026-07-27) — Schmidt Chapter VI, Theorem 4D together with Lemma 7C; this is
-ALL of the genuinely missing content of item 5.
+/-- **THE BAD LOCUS COUNT** — the number of `𝔽_p`-points lying on BOTH of the
+hypersurfaces `S = 0` and `g = 0`. This is Schmidt's `N(M)`: the points of the
+hypersurface model that his Theorem 4D does NOT match with points of the original
+variety.
+
+The bad locus is presented as a hypersurface SECTION `V(S) ∩ V(g)` rather than as
+an abstract "proper closed subset of `V(S)`" because that is what makes its count
+an ELEMENTARY question — see `exists_bound_badLocusCount`. Nothing is lost: `M` is
+a proper closed subset of the irreducible `V(S)`, so some `g ∉ (S)` of bounded
+degree vanishes on it, and the degree bound comes from the same spreading-out data
+as everything else. -/
+noncomputable def badLocusCount {N p : ℕ} [Fact p.Prime]
+    (S g : MvPolynomial (Fin N) (ZMod p)) : ℕ :=
+  (Finset.univ.filter (fun a : Fin N → ZMod p =>
+    MvPolynomial.eval a S = 0 ∧ MvPolynomial.eval a g = 0)).card
+
+/-- **PROVEN 2026-07-27**: absolute irreducibility implies irreducibility over the
+base field. If `map (𝔽_p → 𝔽̄_p) S` is irreducible then so is `S`.
+
+THE PROOF is the standard one and is fully elementary: `MvPolynomial.map` along an
+injective ring hom preserves the SUPPORT (`support_map_of_injective`), hence the
+total degree; and over a reduced ring the units of a polynomial ring are exactly
+the constants with unit coefficient (`isUnit_iff_eq_C_of_isReduced`). So a unit
+factor upstairs descends to a unit factor downstairs, and a factorisation of `S`
+maps to a factorisation of `map S`.
+
+WHY IT IS HERE: it is the bridge that lets `exists_bound_badLocusCount` be stated
+PURELY over `𝔽_p`, with no algebraic closure anywhere in its signature. That leaf
+is an elementary point count and should not have to carry a base-change argument
+in order to know that `S` generates a prime ideal of `𝔽_p[X]`. -/
+theorem irreducible_of_irreducible_map {N p : ℕ} [Fact p.Prime]
+    {S : MvPolynomial (Fin N) (ZMod p)}
+    (h : Irreducible (MvPolynomial.map
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) S)) : Irreducible S := by
+  have hinj : Function.Injective
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) :=
+    (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+  have key : ∀ a : MvPolynomial (Fin N) (ZMod p),
+      IsUnit (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) a) →
+      IsUnit a := by
+    intro a ha
+    rw [MvPolynomial.isUnit_iff_eq_C_of_isReduced] at ha ⊢
+    obtain ⟨r, hr, hra⟩ := ha
+    have hdeg : a.totalDegree = 0 := by
+      have hs : (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) a).support = a.support :=
+        MvPolynomial.support_map_of_injective a hinj
+      have h0 : (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) a).totalDegree = 0 := by
+        rw [hra, MvPolynomial.totalDegree_C]
+      rw [MvPolynomial.totalDegree, hs] at h0
+      exact h0
+    have hc0 : a.coeff 0 ≠ 0 := by
+      intro h0
+      have hr0 : (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (a.coeff 0) = r := by
+        rw [← MvPolynomial.coeff_map, hra, MvPolynomial.coeff_C, if_pos rfl]
+      rw [h0, map_zero] at hr0
+      exact hr.ne_zero hr0.symm
+    exact ⟨a.coeff 0, isUnit_iff_ne_zero.mpr hc0,
+      MvPolynomial.totalDegree_eq_zero_iff_eq_C.mp hdeg⟩
+  constructor
+  · intro hu
+    exact h.not_isUnit (hu.map (MvPolynomial.map _))
+  · intro a b hab
+    have hmul : MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) S
+        = MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) a
+          * MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) b := by
+      rw [hab, map_mul]
+    rcases h.isUnit_or_isUnit hmul with hu | hu
+    · exact Or.inl (key a hu)
+    · exact Or.inr (key b hu)
+
+/-- **SUB-LEAF (A): SCHMIDT'S THEOREM 4D, SPREAD OUT OVER `ℤ[1/D]`** (SORRY LEAF,
+cut 2026-07-27 out of `exists_birationalHypersurfaceModel`) — the GEOMETRY half.
+This is where birational equivalence lives, and it never appears in the signature.
+
+WHAT IT SAYS. For a FIXED integral system `f` there are `D, e, d, c` such that for
+every `p > D` at which the geometric fibre is irreducible there is an absolutely
+irreducible hypersurface `S ⊆ 𝔸^{e+1}_{𝔽_p}` of total degree exactly `d`, together
+with an auxiliary `g` of degree at most `c` not divisible by `S`, such that
+
+  `N(S) ≤ N(f) + #(V(S) ∩ V(g))`.
+
+THE ARGUMENT, and why the conclusion has this shape. Schmidt's Theorem 4D produces
+`S` birational to the variety `V` of `f`, with proper closed `L ⊆ V`, `M ⊆ S` and
+an isomorphism `V ∖ L ≅ S ∖ M`. Counting `𝔽_p`-points,
+`N(S) = #(S ∖ M) + #M = #(V ∖ L) + #M ≤ N(V) + #M`. The ONLY thing used from the
+birational equivalence is the injection `S ∖ M ↪ V`, so the statement records
+exactly that consequence and nothing else — which is what keeps the whole notion of
+birational equivalence, for which this development has no API, inside the leaf.
+
+`M` IS PRESENTED AS `V(S) ∩ V(g)`, NOT AS AN ABSTRACT PROPER CLOSED SUBSET. That is
+the load-bearing choice in this cut: it turns "`N(M) = O(p^{e−1})`", which needs a
+notion of dimension, into a concrete two-hypersurface point count that is
+elementary and is discharged by `exists_bound_badLocusCount`. It costs nothing,
+since `M` is a proper closed subset of the irreducible `V(S)` and so is contained
+in `V(g)` for some `g ∉ (S)` whose degree is bounded by the spreading-out data.
+
+WHY `e`, `d`, `c` MAY BE CHOSEN BEFORE `p`. `e` is the dimension of the variety of
+`f` over `ℚ̄`, and `d`, `c` come from the model over `ℤ[1/D]`; spreading out is
+precisely what makes ONE construction serve every `p > D`.
+
+THE QUANTIFIER TRAP the literature does not hand over. Schmidt's Theorem 7A is
+ASYMPTOTIC IN THE FIELD EXTENSION — `N_v = q^{ve} + o(q^{v(e−1/2)})` as `v → ∞`
+over `𝔽_{q^v}` for a FIXED base — with implied constants depending on the variety
+over that base. What is needed here is uniformity in `p` for a fixed integral
+system, a DIFFERENT QUANTIFIER ORDER, and the spreading out demanded above is
+exactly the bridge. Chapter V's Theorem 5A is by contrast already uniform, which is
+why item 4 needs no such care.
+
+NOT VACUOUS AT BAD PRIMES, and not cheatable. If the variety over `ℚ̄` is empty then
+`1 ∈ I·ℤ[x][1/N]` for some `N`, so for `p ∤ N` the ideal over `𝔽̄_p` is the unit
+ideal and its radical is not prime; if it is nonempty but reducible, its components
+spread out and the reduction is reducible for `p > D`. Either way the hypothesis
+fails for large `p` and nothing is claimed. Nor can the four constants be gamed:
+`d = 0` is impossible because a constant is never irreducible; inflating `c` is
+capped by `exists_bound_badLocusCount`; and inflating `e` makes the statement FALSE
+rather than easier, since item 4 forces `N(S) ≥ p^e/c` while `N(f) ≤ p^n`.
+
+CIRCULARITY GUARD: inherited from the parent; no Galois representation, no modular
+form, nothing from `Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_spreadOutHypersurfaceModel {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) :
+    ∃ D e d c : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime →
+      ∃ S g : MvPolynomial (Fin (e + 1)) (ZMod p),
+        S.totalDegree = d ∧
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) S) ∧
+        g.totalDegree ≤ c ∧ ¬ S ∣ g ∧
+        zeroCount S ≤ systemCount f p + badLocusCount S g :=
+  sorry
+
+/-- **SUB-LEAF (B): SCHMIDT'S LEMMA 7C** (SORRY LEAF, cut 2026-07-27 out of
+`exists_birationalHypersurfaceModel`) — the elementary COUNTING half: two
+hypersurfaces with no common factor meet in `O(p^{e−1})` rational points, with the
+implied constant depending only on `e` and the two degrees.
+
+NO ALGEBRAIC CLOSURE APPEARS HERE. The hypothesis is irreducibility of `S` over
+`𝔽_p` itself, which the consumer supplies from absolute irreducibility via
+`irreducible_of_irreducible_map`. So this leaf is a self-contained finite-field
+point count, dispatchable to a specialist who needs nothing else from this file
+except `badLocusCount`.
+
+WHY IT IS TRUE. `S` irreducible makes `(S)` a prime ideal of `𝔽_p[X_0,…,X_e]`, and
+`¬ S ∣ g` says exactly `g ∉ (S)`. So `V(S) ∩ V(g)` is a proper closed subset of the
+`e`-dimensional irreducible `V(S)`, hence has dimension at most `e − 1`, and
+Schmidt's Chapter IV §3 elementary upper bounds (his Lemmas 3A/3B — no Lang–Weil,
+no input whatever from item 4) give `#(V(S) ∩ V(g)) ≤ C·p^{e−1}` with `C` depending
+only on the ambient dimension and the degrees. Note `¬ S ∣ g` also forces `g ≠ 0`,
+since every `S` divides `0`.
+
+WHY THE MULTIPLIED FORM `p · #(V(S) ∩ V(g)) ≤ C · p^e`. Same reason as in the
+parent, and it matters more here: `ℕ`-subtraction collapses `p^{e−1}` to `1` at
+`e = 0`, so the unmultiplied form would say nothing in the one case where the
+statement is completely elementary. In the multiplied form `e = 0` reads
+`#(V(S) ∩ V(g)) = 0`, which is TRUE and is a one-line argument: in `𝔽_p[X_0]` a
+common root `a` gives `(X_0 − a) ∣ S`, and `S` irreducible then makes `S` an
+associate of `X_0 − a`, so `S ∣ g`, contradiction.
+
+NOT VACUOUS. The hypotheses are jointly satisfiable and the content is real: at
+`e = 1`, `d = c = 1` it is two distinct lines meeting in at most one point, and the
+general case at `e = 1` is the elementary Bezout bound `#(V(S) ∩ V(g)) ≤ d·c`. (The
+degenerate `d = 0` instance is vacuous, since a constant is never irreducible; the
+consumer never reaches it, because `exists_spreadOutHypersurfaceModel` also
+produces `S` absolutely irreducible.)
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_bound_badLocusCount (e d c : ℕ) :
+    ∃ C : ℕ, ∀ (p : ℕ) [Fact p.Prime],
+      ∀ S g : MvPolynomial (Fin (e + 1)) (ZMod p),
+        S.totalDegree = d → Irreducible S → ¬ S ∣ g → g.totalDegree ≤ c →
+        p * badLocusCount S g ≤ C * p ^ e :=
+  sorry
+
+/-- **THE BIRATIONAL HYPERSURFACE MODEL, SPREAD OUT OVER `ℤ[1/D]`** (PROVEN
+2026-07-27 over `exists_spreadOutHypersurfaceModel` and
+`exists_bound_badLocusCount`) — Schmidt Chapter VI, Theorem 4D together with
+Lemma 7C; this is ALL of the genuinely missing content of item 5.
+
+WHAT IS PROVEN HERE is the assembly, which is three lines of `ℕ`-arithmetic:
+multiply `N(S) ≤ N(f) + #(V(S) ∩ V(g))` by `p` and bound `p·#(V(S) ∩ V(g))` by
+`C·p^e`. The two literature ingredients the old docstring named are now SEPARATE
+NAMED LEAVES, split along the line the literature itself draws:
+
+* `exists_spreadOutHypersurfaceModel` — Theorem 4D plus the spreading out. All of
+  the geometry, and all of the birational equivalence, is in there.
+* `exists_bound_badLocusCount` — Lemma 7C, via the Chapter IV §3 elementary upper
+  bounds. A pure finite-field point count over `𝔽_p`, with no algebraic closure in
+  its signature; the bridge is `irreducible_of_irreducible_map`, PROVEN above.
+
+The cut is made possible by presenting the bad locus as a hypersurface SECTION
+`V(S) ∩ V(g)` rather than as an abstract proper closed subset — that is what turns
+`N(M) = O(p^{e−1})`, which otherwise needs a notion of dimension, into an
+elementary statement about two polynomials. See `badLocusCount`.
 
 For a FIXED integral system `f` there are `D, e, d, C` such that whenever `p > D`
 and the variety of `f` over `𝔽̄_p` is irreducible, there is an absolutely
@@ -7668,7 +7859,8 @@ correct at `e = 0` too, where it forces `N(S) = N(V)` for `p > C` — which is t
 truth, since a proper closed subset of a `0`-dimensional irreducible variety is
 empty.
 
-WHAT `e`, `d`, `C` ARE, AND WHY THEY MAY BE CHOSEN BEFORE `p`. `e` is the
+WHAT `e`, `d`, `C` ARE, AND WHY THEY MAY BE CHOSEN BEFORE `p` — this obligation
+now sits in `exists_spreadOutHypersurfaceModel`, not here. `e` is the
 dimension of the variety of `f` over `ℚ̄`, and `d`, `C` come from the model over
 `ℤ[1/D]`; spreading out makes ONE construction serve every `p > D`. The
 hypothesis is not vacuous-by-cheating at the primes where this fails: if the
@@ -7679,7 +7871,9 @@ for `p > D`. Either way the leaf's hypothesis fails for large `p` and nothing is
 claimed.
 
 ONE THING THE LITERATURE DOES NOT GIVE YOU DIRECTLY, and it is the reason item 5
-is not simply "cite Theorem 7A": Schmidt's Theorem 7A is ASYMPTOTIC IN THE FIELD
+is not simply "cite Theorem 7A" — this too is now discharged inside
+`exists_spreadOutHypersurfaceModel`, whose docstring restates it: Schmidt's
+Theorem 7A is ASYMPTOTIC IN THE FIELD
 EXTENSION — `N_v = q^{ve} + o(q^{v(e−1/2)})` as `v → ∞` over `𝔽_{q^v}` for a
 FIXED base — with implied constants depending on the variety over that base. The
 statement needed here is uniform in `p` for a fixed integral system, a DIFFERENT
@@ -7697,8 +7891,19 @@ theorem exists_birationalHypersurfaceModel {n m : ℕ} (f : Fin m → MvPolynomi
         S.totalDegree = d ∧
         Irreducible (MvPolynomial.map
           (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) S) ∧
-        p * zeroCount S ≤ p * systemCount f p + C * p ^ e :=
-  sorry
+        p * zeroCount S ≤ p * systemCount f p + C * p ^ e := by
+  obtain ⟨D, e, d, c, hmodel⟩ := exists_spreadOutHypersurfaceModel f
+  obtain ⟨C, hC⟩ := exists_bound_badLocusCount e d c
+  refine ⟨D, e, d, C, ?_⟩
+  intro p _ hp hprime
+  obtain ⟨S, g, hSdeg, hSabs, hgdeg, hgdvd, hcount⟩ := hmodel p hp hprime
+  refine ⟨S, hSdeg, hSabs, ?_⟩
+  calc p * zeroCount S ≤ p * (systemCount f p + badLocusCount S g) :=
+        Nat.mul_le_mul_left _ hcount
+    _ = p * systemCount f p + p * badLocusCount S g := by ring
+    _ ≤ p * systemCount f p + C * p ^ e :=
+        Nat.add_le_add_left
+          (hC p S g hSdeg (irreducible_of_irreducible_map hSabs) hgdvd hgdeg) _
 
 /-- **ITEM 5: THE LANG–WEIL INDUCTION ON DIMENSION** (PROVEN 2026-07-27 over
 `exists_birationalHypersurfaceModel`) — Schmidt Chapter VI §7, Theorem 7A via
@@ -7918,12 +8123,22 @@ five-item route is realised in the file rather than merely described):
   `p ≤ cC`; the geometric content — Schmidt Theorem 4D, Lemma 7C and the
   spreading out that makes Theorem 7A's field-extension asymptotic into
   uniformity in `p` — is entirely inside the sub-leaf.
+* `exists_birationalHypersurfaceModel` itself: **PROVEN** (2026-07-27) over two
+  sub-leaves, split along the line the literature draws — the GEOMETRY
+  (`exists_spreadOutHypersurfaceModel`, Theorem 4D plus spreading out) and the
+  elementary COUNT (`exists_bound_badLocusCount`, Lemma 7C via the Chapter IV §3
+  upper bounds). The enabling move was presenting the bad locus as a hypersurface
+  SECTION `V(S) ∩ V(g)` (`badLocusCount`) instead of an abstract proper closed
+  subset, which replaces a dimension argument by a two-polynomial point count.
+  The base-change bridge `irreducible_of_irreducible_map` is PROVEN, which is what
+  lets the counting leaf be stated with no algebraic closure in its signature.
 
 So after the 2026-07-27 work the remaining open leaves under this node are
 `exists_stepanovNormalisation`, `exists_stepanovDiscriminant`,
-`exists_stepanovNormPolynomial`, `exists_bertiniGoodPlaneCount` and
-`exists_birationalHypersurfaceModel`; all the glue between them is written and
-compiles, and this leaf itself has nothing left to prove.
+`exists_stepanovNormPolynomial`, `exists_bertiniGoodPlaneCount`,
+`exists_spreadOutHypersurfaceModel` and `exists_bound_badLocusCount`; all the glue
+between them is written and compiles, and this leaf itself has nothing left to
+prove.
 
 NOTE ON THE FREE-FLOATING RULE, and how it was discharged: proven bricks stacked
 in front of a sorried consumer are free-floating and not allowed here, so item 1
