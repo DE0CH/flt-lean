@@ -3759,8 +3759,8 @@ theorem flat_quotientMap_pow_of_flat_quotientMap
     ψn.Flat :=
   sorry
 
-/-- **THE DESCENT MODULO `t ^ n`** (sorry leaf — pure commutative algebra;
-the elementwise core of Stacks 00MK / Matsumura 22.3).
+/-- **THE DESCENT MODULO `t ^ n`** (**PROVEN 2026-07-27**; pure commutative
+algebra, the elementwise core of Stacks 00MK / Matsumura 22.3).
 
 Write `I = (t) ⊆ R`, `𝔞 ⊆ R` an ideal, and let `ξ ∈ T ⊗[R] 𝔞` map to `0` in
 `T` under `𝔞 ⊗ T → T`.  Given only that `T ⧸ (φ t)^n` is FLAT over
@@ -3839,7 +3839,32 @@ time: `Q` is a `T`-module, and `G`'s source is an `Rₙ`-module, so a bare
 (`Module Rₙ M` from `Module Tₙ M` and `Algebra Rₙ Tₙ` does not fire on its
 own).  Either supply it explicitly from `ψn.toAlgebra` and note `J' • ⊤ ≤ N`
 makes `Q` a `Tₙ`-module, or build `F` and `G` as bare `AddMonoidHom`s — only
-additivity is used above. -/
+additivity is used above.
+
+**HOW IT WAS ACTUALLY PROVED (2026-07-27), and the two facts worth keeping.**
+The plan above was executed VERBATIM, with `F` and `G` built as bare
+`AddMonoidHom`s through `TensorProduct.liftAddHom` (which asks only for
+additivity in each slot plus the `R`-balancing `f (r • m) n = f m (r • n)`).
+Two concrete points that the plan leaves implicit and that are where the
+Lean work actually sits:
+
+* **`Module T (X →ₗ[R] Q)` does NOT synthesise, but `Module T (X →+ Q)`
+  does.**  So the descent of `y ↦ (a ↦ ⟦y ⊗ a⟧)` along `T ↠ Tₙ` — done with
+  `Submodule.liftQ` over `T` — must be valued in the ADDITIVE hom type.  It
+  is then merely `y ↦ y • W` for the single `W : 𝔞ₙ →+ Q`, so `T`-linearity
+  is `add_smul`/`mul_smul` and the vanishing on `J'` is
+  `J' • ⊤ ≤ N`.
+* **Mapping OUT of `↥𝔞ₙ` needs `↥𝔞ₙ` presented as a quotient.**
+  `𝔞ₙ = 𝔞.map (Ideal.Quotient.mk J)` is a submodule, not a quotient, so `W`
+  is built as `(P.liftQ … ) ∘ E.symm` for the `R`-linear equivalence
+  `E : (↥𝔞 ⧸ P) ≃ₗ[R] ↥𝔞ₙ` obtained from `LinearEquiv.ofBijective`, where
+  `P = comap 𝔞.subtype J` is exactly `ker (𝔞 → 𝔞ₙ)`.  That kernel
+  computation is the FIRST summand of the conclusion, appearing here rather
+  than in a right-exactness argument.
+
+Flatness enters exactly once, as advertised: `Module.Flat`'s
+`lTensor_preserves_injective_linearMap` applied to `𝔞ₙ.subtype`, composed
+with `TensorProduct.rid`.  No `Tor`, no exact sequence, no Artin–Rees. -/
 theorem mem_baseChange_sup_of_flat_quotientMap_pow
     {t : R} (n : ℕ)
     (hpow : ∀ ψn : R ⧸ Ideal.span {t ^ n} →+* T ⧸ Ideal.span {(algebraMap R T t) ^ n},
@@ -3848,8 +3873,186 @@ theorem mem_baseChange_sup_of_flat_quotientMap_pow
         ψn.Flat)
     {𝔞 : Ideal R} (ξ : T ⊗[R] ↥𝔞) (hξ : LinearMap.lTensor T 𝔞.subtype ξ = 0) :
     ξ ∈ (Submodule.comap 𝔞.subtype (Ideal.span {t ^ n} : Ideal R)).baseChange T
-      ⊔ (Ideal.span {(algebraMap R T t) ^ n} • (⊤ : Submodule T (T ⊗[R] ↥𝔞))) :=
-  sorry
+      ⊔ (Ideal.span {(algebraMap R T t) ^ n} • (⊤ : Submodule T (T ⊗[R] ↥𝔞))) := by
+  classical
+  set J : Ideal R := Ideal.span {t ^ n} with hJdef
+  set J' : Ideal T := Ideal.span {(algebraMap R T t) ^ n} with hJ'def
+  -- the induced map on the quotients, and its flatness
+  have hcomap : J ≤ J'.comap (algebraMap R T) := by
+    rw [hJdef, Ideal.span_le]
+    rintro x hx
+    rw [Set.mem_singleton_iff] at hx
+    subst hx
+    simp only [SetLike.mem_coe, Ideal.mem_comap, map_pow, hJ'def]
+    exact Ideal.subset_span rfl
+  set ψn : R ⧸ J →+* T ⧸ J' := Ideal.quotientMap J' (algebraMap R T) hcomap with hψndef
+  have hψncomp : ψn.comp (Ideal.Quotient.mk J) = (Ideal.Quotient.mk J').comp (algebraMap R T) :=
+    Ideal.quotientMap_comp_mk hcomap
+  have hflat : ψn.Flat := hpow ψn hψncomp
+  letI : Algebra (R ⧸ J) (T ⧸ J') := ψn.toAlgebra
+  haveI : Module.Flat (R ⧸ J) (T ⧸ J') := hflat
+  have hsmulT : ∀ (s : R ⧸ J) (x : T ⧸ J'), s • x = ψn s * x := fun s x => by
+    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra]
+  have hψnmk : ∀ r : R, ψn (Ideal.Quotient.mk J r) = Ideal.Quotient.mk J' (algebraMap R T r) :=
+    fun r => by rw [hψndef]; exact Ideal.quotientMap_mk
+  -- abbreviations
+  set 𝔞n : Ideal (R ⧸ J) := 𝔞.map (Ideal.Quotient.mk J) with h𝔞ndef
+  set P : Submodule R ↥𝔞 := Submodule.comap 𝔞.subtype J with hPdef
+  set N : Submodule T (T ⊗[R] ↥𝔞) :=
+    P.baseChange T ⊔ (J' • (⊤ : Submodule T (T ⊗[R] ↥𝔞))) with hNdef
+  -- the surjection `𝔞 → 𝔞ₙ`, whose kernel is the first summand of the conclusion
+  let qmap : ↥𝔞 →ₗ[R] ↥𝔞n :=
+    { toFun := fun a => ⟨Ideal.Quotient.mk J (a : R), Ideal.mem_map_of_mem _ a.2⟩
+      map_add' := by intro a b; ext; simp
+      map_smul' := by
+        intro r a
+        ext
+        simp [Algebra.smul_def, Ideal.Quotient.algebraMap_eq] }
+  have hqmap : ∀ a : ↥𝔞, (qmap a : R ⧸ J) = Ideal.Quotient.mk J (a : R) := fun a => rfl
+  have hqsurj : Function.Surjective qmap := by
+    rintro ⟨x, hx⟩
+    obtain ⟨a, ha, rfl⟩ :=
+      (Ideal.mem_map_iff_of_surjective (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective).1 hx
+    exact ⟨⟨a, ha⟩, rfl⟩
+  have hqker : LinearMap.ker qmap = P := by
+    ext a
+    rw [LinearMap.mem_ker, Subtype.ext_iff, hqmap]
+    simp [hPdef, Ideal.Quotient.eq_zero_iff_mem]
+  let ebar : (↥𝔞 ⧸ P) →ₗ[R] ↥𝔞n := P.liftQ qmap hqker.ge
+  have hebij : Function.Bijective ebar := by
+    refine ⟨?_, ?_⟩
+    · rw [← LinearMap.ker_eq_bot]
+      exact Submodule.ker_liftQ_eq_bot' P qmap hqker.symm
+    · intro y
+      obtain ⟨a, rfl⟩ := hqsurj y
+      exact ⟨P.mkQ a, rfl⟩
+  let E : (↥𝔞 ⧸ P) ≃ₗ[R] ↥𝔞n := LinearEquiv.ofBijective ebar hebij
+  have hEsymm : ∀ a : ↥𝔞, E.symm (qmap a) = P.mkQ a := by
+    intro a
+    have h : E (P.mkQ a) = qmap a := rfl
+    rw [← h, E.symm_apply_apply]
+  -- `J'` annihilates `Q := (T ⊗[R] 𝔞) ⧸ N`: that is the second summand
+  have hJQ : ∀ y ∈ J', ∀ q : (T ⊗[R] ↥𝔞) ⧸ N, y • q = 0 := by
+    intro y hy q
+    obtain ⟨w, rfl⟩ := N.mkQ_surjective q
+    rw [← map_smul, Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+    exact Submodule.mem_sup_right (Submodule.smul_mem_smul hy Submodule.mem_top)
+  -- `G : Tₙ ⊗[Rₙ] 𝔞ₙ → Q`
+  let b1 : ↥𝔞 →ₗ[R] ((T ⊗[R] ↥𝔞) ⧸ N) :=
+    (N.mkQ.restrictScalars R).comp (TensorProduct.mk R T ↥𝔞 1)
+  have hb1 : P ≤ LinearMap.ker b1 := by
+    intro a ha
+    rw [LinearMap.mem_ker]
+    show N.mkQ ((1 : T) ⊗ₜ[R] a) = 0
+    rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+    exact Submodule.mem_sup_left (Submodule.tmul_mem_baseChange_of_mem 1 ha)
+  let W : ↥𝔞n →+ ((T ⊗[R] ↥𝔞) ⧸ N) :=
+    (P.liftQ b1 hb1).toAddMonoidHom.comp E.symm.toLinearMap.toAddMonoidHom
+  have hW : ∀ a : ↥𝔞, W (qmap a) = N.mkQ ((1 : T) ⊗ₜ[R] a) := by
+    intro a
+    show (P.liftQ b1 hb1) (E.symm (qmap a)) = _
+    rw [hEsymm, Submodule.mkQ_apply, Submodule.liftQ_apply]
+    rfl
+  let bl0 : T →ₗ[T] (↥𝔞n →+ ((T ⊗[R] ↥𝔞) ⧸ N)) :=
+    { toFun := fun y => y • W
+      map_add' := fun y y' => add_smul y y' W
+      map_smul' := fun c y => mul_smul c y W }
+  have hbl0 : ∀ (y : T) (x : ↥𝔞n), bl0 y x = y • W x := fun y x => rfl
+  have hbl0ker : J' ≤ LinearMap.ker bl0 := by
+    intro y hy
+    rw [LinearMap.mem_ker]
+    ext x
+    rw [hbl0]
+    exact hJQ y hy _
+  let g0 : (T ⧸ J') →ₗ[T] (↥𝔞n →+ ((T ⊗[R] ↥𝔞) ⧸ N)) := J'.liftQ bl0 hbl0ker
+  let g' : (T ⧸ J') →+ (↥𝔞n →+ ((T ⊗[R] ↥𝔞) ⧸ N)) := g0.toAddMonoidHom
+  have hg0val : ∀ (y : T) (a : ↥𝔞),
+      g' (Ideal.Quotient.mk J' y) (qmap a) = N.mkQ (y ⊗ₜ[R] (a : ↥𝔞)) := by
+    intro y a
+    show g0 (Submodule.Quotient.mk y) (qmap a) = _
+    rw [Submodule.liftQ_apply, hbl0, hW, ← map_smul]
+    congr 1
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  have hgbal : ∀ (s : R ⧸ J) (y : T ⧸ J') (x : ↥𝔞n), g' (s • y) x = g' y (s • x) := by
+    intro s y x
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective s
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨a, rfl⟩ := hqsurj x
+    have hs : (Ideal.Quotient.mk J r) • (Ideal.Quotient.mk J' y)
+        = Ideal.Quotient.mk J' (algebraMap R T r * y) := by
+      rw [hsmulT, hψnmk, map_mul]
+    have hx : (Ideal.Quotient.mk J r) • qmap a = qmap (r • a) := by
+      ext
+      rw [hqmap]
+      show (Ideal.Quotient.mk J r) * (qmap a : R ⧸ J) = _
+      rw [hqmap, ← map_mul]
+      rfl
+    rw [hs, hx, hg0val, hg0val, ← Algebra.smul_def, TensorProduct.smul_tmul]
+  let G : ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n) →+ ((T ⊗[R] ↥𝔞) ⧸ N) :=
+    TensorProduct.liftAddHom (R := R ⧸ J) g' hgbal
+  -- `F : T ⊗[R] 𝔞 → Tₙ ⊗[Rₙ] 𝔞ₙ`
+  let mkAdd : (T ⧸ J') →+ (↥𝔞n →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n)) :=
+    LinearMap.toAddMonoidHom'.comp (TensorProduct.mk (R ⧸ J) (T ⧸ J') ↥𝔞n).toAddMonoidHom
+  let precompQ : (↥𝔞n →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n)) →+ (↥𝔞 →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n)) :=
+    AddMonoidHom.mk' (fun h => h.comp qmap.toAddMonoidHom) (fun _ _ => rfl)
+  let f : T →+ (↥𝔞 →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n)) :=
+    precompQ.comp (mkAdd.comp (Ideal.Quotient.mk J' : T →+* T ⧸ J').toAddMonoidHom)
+  have hfval : ∀ (y : T) (a : ↥𝔞),
+      f y a = (Ideal.Quotient.mk J' y) ⊗ₜ[R ⧸ J] (qmap a) := fun y a => rfl
+  have hfbal : ∀ (r : R) (y : T) (a : ↥𝔞), f (r • y) a = f y (r • a) := by
+    intro r y a
+    rw [hfval, hfval]
+    have h1 : (Ideal.Quotient.mk J' (r • y))
+        = (Ideal.Quotient.mk J r) • (Ideal.Quotient.mk J' y) := by
+      rw [hsmulT, hψnmk, ← map_mul, Algebra.smul_def]
+    have h2 : qmap (r • a) = (Ideal.Quotient.mk J r) • qmap a := by
+      ext
+      rw [hqmap]
+      show _ = (Ideal.Quotient.mk J r) * (qmap a : R ⧸ J)
+      rw [hqmap, ← map_mul]
+      rfl
+    rw [h1, h2, TensorProduct.smul_tmul]
+  let F : (T ⊗[R] ↥𝔞) →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n) := TensorProduct.liftAddHom f hfbal
+  have hFval : ∀ (y : T) (a : ↥𝔞),
+      F (y ⊗ₜ[R] a) = (Ideal.Quotient.mk J' y) ⊗ₜ[R ⧸ J] (qmap a) := fun y a => rfl
+  -- `G ∘ F = mkQ N`, so `F ξ = 0` will give `ξ ∈ N` with no kernel computation
+  have hGF : ∀ z : T ⊗[R] ↥𝔞, G (F z) = N.mkQ z := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => rw [map_zero, map_zero, map_zero]
+    | tmul y a =>
+      rw [hFval]
+      show g' (Ideal.Quotient.mk J' y) (qmap a) = _
+      exact hg0val y a
+    | add z z' hz hz' => rw [map_add, map_add, hz, hz', map_add]
+  -- the ONLY use of flatness: `c` is injective
+  let c : ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n) →ₗ[R ⧸ J] (T ⧸ J') :=
+    (TensorProduct.rid (R ⧸ J) (T ⧸ J')).toLinearMap.comp
+      (LinearMap.lTensor (T ⧸ J') 𝔞n.subtype)
+  have hcinj : Function.Injective c := by
+    intro x y hxy
+    exact Module.Flat.lTensor_preserves_injective_linearMap (M := T ⧸ J') 𝔞n.subtype
+      𝔞n.injective_subtype ((TensorProduct.rid (R ⧸ J) (T ⧸ J')).injective hxy)
+  have hcF : ∀ z : T ⊗[R] ↥𝔞, c (F z)
+      = Ideal.Quotient.mk J' ((TensorProduct.rid R T) (LinearMap.lTensor T 𝔞.subtype z)) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => rw [map_zero, map_zero, map_zero, map_zero, map_zero]
+    | tmul y a =>
+      rw [hFval]
+      show (TensorProduct.rid (R ⧸ J) (T ⧸ J'))
+        (LinearMap.lTensor (T ⧸ J') 𝔞n.subtype
+          ((Ideal.Quotient.mk J' y) ⊗ₜ[R ⧸ J] (qmap a))) = _
+      rw [LinearMap.lTensor_tmul, TensorProduct.rid_tmul, LinearMap.lTensor_tmul,
+        TensorProduct.rid_tmul]
+      show (qmap a : R ⧸ J) • (Ideal.Quotient.mk J' y) = _
+      rw [hsmulT, hqmap, hψnmk, ← map_mul, Submodule.subtype_apply, Algebra.smul_def]
+    | add z z' hz hz' => rw [map_add, map_add, hz, hz', map_add, map_add, map_add]
+  have hFxi : F ξ = 0 := by
+    apply hcinj
+    rw [hcF, hξ, map_zero, map_zero, map_zero]
+  have hmk : N.mkQ ξ = 0 := by rw [← hGF, hFxi, map_zero]
+  rwa [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at hmk
 
 /-- The base change of `t ^ m · 𝔞` sits inside `(φ t)^m · (T ⊗[R] 𝔞)`
 (**PROVEN 2026-07-27**).  Pure bookkeeping: `1 ⊗ (r • x) = φ r • (1 ⊗ x)`,
@@ -3994,7 +4197,8 @@ at exactly one place, and both halves are stated above:
    `R ⧸ (t)^n` for all `n`.  This is the local criterion for a NILPOTENT
    ideal; no separatedness, no Artin–Rees.
 2. `mem_baseChange_sup_of_flat_quotientMap_pow` — the elementwise descent of
-   `ker(𝔞 ⊗ T → T)` modulo `t^n`, granted (1).
+   `ker(𝔞 ⊗ T → T)` modulo `t^n`, granted (1).  **PROVEN 2026-07-27**; (1) is
+   the only half of the cut still open.
 
 Everything else is now written out and PROVEN:
 `mem_pow_smul_of_lTensor_ideal_eq_zero` feeds Artin–Rees
