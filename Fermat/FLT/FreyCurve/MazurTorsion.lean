@@ -1222,8 +1222,241 @@ theorem exists_eisensteinQuotientAt_of_jNeronDatum (N q : ℕ)
       Nonempty (IsEisensteinQuotientAt N q d.toJReduction cusp) :=
   sorry
 
-/-- **The Atkin–Lehner involution and the two-cusp dichotomy at prime
+/-! #### The cut of `exists_atkinLehner_of_jNeronDatum` (2026-07-27)
+
+The Atkin–Lehner leaf below is decomposed here into **glue plus two
+classical inputs plus one theorem**, the same day it was cut off from
+`exists_eisensteinFormalImmersion`.
+
+**What the glue proves.**  Everything except the two literature facts:
+that `w_N` exists, is an involution, preserves `Y_0(N)`, and reduces
+(Atkin–Lehner); and that `X_0(N)` mod `q` has exactly TWO `𝔽_q`-rational
+cusps at prime level (Deligne–Rapoport).  Given those, the dichotomy is a
+two-element counting argument — `redX x` is one of the two cusps, and if
+it is not `redX cusp` then `w_N` carries it there, because `w'_N` is an
+involution swapping them.
+
+**One step is now a THEOREM, not a leaf: `isCusp_redX_of_isCusp_of_jNeronDatum`.**
+The glue needs `hX'.IsCusp (redX cusp)` — the reduction of a rational
+cusp is a cusp — to know that `redX cusp` is one of the two.  Over an
+arbitrary `IsX0JReductionAt` that is FALSE (the junk `redX` sends
+everything into the open part, or nowhere near it, at will).  Over
+`IsX0JNeronDatum` it is PROVEN below, by the CONTRAPOSITIVE of
+`exists_relSectionAlong_of_special`: if the reduction landed in the open
+part `𝒴` of the special fibre, the whole integral section would lie in
+`𝒴` — the base is local and `𝒴 ⊆ 𝒳` is open — hence so would its generic
+fibre, making `cusp` come from a rational point of `Y_0(N)`.  This is the
+Néron pinning doing real work rather than merely excluding a witness, and
+it is why the cut is taken over `IsX0JNeronDatum`.
+
+**`N.Prime` ENTERS BOTH LEAVES, NOT ONLY THE COUNT** (a correction to
+what the parent docstring below said before the cut).  The count is
+`card_cusps_specialFibre_of_jNeronDatum`, obviously.  But
+`exists_atkinLehnerInvolution_of_jNeronDatum` also needs `N.Prime`, for
+its fixed-point-freeness clause `al' x' ≠ x'` on the cuspidal locus: at
+COMPOSITE level `w_N` fixes cusps.  The smallest witness is `N = 4`,
+whose three cusps are `0`, `1/2`, `∞` — `w_4` interchanges `0` and `∞`
+and FIXES `1/2`.  So a version of the involution leaf without `N.Prime`
+would be false, and the dichotomy would fail at `x` reducing to a fixed
+cusp other than `cusp`.
+
+**WHY FIXED-POINT-FREENESS CANNOT BE MOVED INTO THE COUNTING LEAF.**  It
+is a statement about `al'`, and `al'` is bound by the existential of the
+involution leaf.  A counting leaf taking `al'` as a HYPOTHESIS satisfying
+only "involutive, preserves cusps, commutes with reduction" would be
+**FALSE**: `al = id`, `al' = id` satisfies all three, and the conclusion
+would then read *"every cuspidal `x'` equals `redX cusp`"*, contradicted
+by the second cusp that the very same leaf counts.  That junk witness is
+what forces the two leaves to be shaped as they are — the involution leaf
+must produce `al'` together with everything that pins it, and the
+counting leaf must mention no `al'` at all.
+
+**THE TWO LEAVES HAVE DISJOINT LITERATURE.**  Atkin–Lehner, *Hecke
+operators on `Γ₀(m)`*, Math. Ann. 185 (1970), §2 for `w_N` and its action
+on cusps; Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), for the cusps of the smooth model of
+`X_0(N)` over `ℤ[1/N]` and their behaviour in the fibre at `q ∤ N`.
+Neither needs the other. -/
+
+/-- **The Atkin–Lehner involution `w_N` with its reduction mod `q`**
+(sorry node, new 2026-07-27) — the first of the two classical inputs of
+`exists_atkinLehner_of_jNeronDatum`.
+
+Produces `w_N` on the rational points of `X_0(N)` AND `w'_N` on the
+`𝔽_q`-points of the special fibre, together with the four properties the
+dichotomy consumes:
+
+* `al` preserves the non-cuspidal locus, because `w_N` is an automorphism
+  of `X_0(N)` restricting to one of the open part `Y_0(N)`;
+* `al'` is an INVOLUTION — `w_N² = 1`, the defining property;
+* `al'` preserves the cuspidal locus of the special fibre;
+* `al'` has NO FIXED CUSP.  At prime level `w_N` interchanges the two
+  cusps `0` and `∞`, and they stay distinct in the fibre at `q ∤ N`
+  because the cuspidal subscheme of the smooth model over `ℤ_(q)` is
+  étale — two disjoint sections;
+* `red_al`, the compatibility `redX ∘ w_N = w'_N ∘ redX`: `w_N` is
+  defined over `ℤ[1/N]`, hence over `ℤ_(q)` for `q ∤ N`, so it extends to
+  the model and commutes with reduction.
+
+**WHERE THE HYPOTHESES ENTER.**  `N.Prime` is the fixed-point-freeness
+clause and nothing else — see the subsection docstring for the `N = 4`
+counterexample without it.  `q.Prime` together with `q ≠ N` is `q ∤ N`,
+i.e. good reduction of the model, which is what makes `w_N` reduce and
+what keeps the two cusps distinct mod `q`.  `q ≠ 2` is NOT needed: it
+belongs to the formal immersion.
+
+**WHY IT IS STATED OVER `IsX0JNeronDatum`.**  The conclusion mentions
+`d.redX`, and over an arbitrary `IsX0JReductionAt` the compatibility
+`red_al` is unconstrained by anything (the junk `redX` is an arbitrary
+function, so demanding it intertwine two involutions is a condition on
+the junk rather than a theorem about reduction).  `d` is genuinely
+consumed by the STATEMENT here, not merely carried.
+
+**NON-VACUITY.**  `N = 37`, `q = 3` satisfies every hypothesis; the
+genuine `w_37` witnesses the conclusion.  No proof can discharge this by
+contradicting its own hypotheses.
+
+**REFERENCES.**  Atkin–Lehner, *Hecke operators on `Γ₀(m)`*, Math. Ann.
+185 (1970), §2.  Deligne–Rapoport (Antwerp II, 1973) for the extension of
+`w_N` to the smooth model at `q ∤ N`. -/
+theorem exists_atkinLehnerInvolution_of_jNeronDatum (N q : ℕ)
+    (_hN : N.Prime) (_hq : q.Prime) (_hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    ∃ (al : RelPoint strX (𝟙 SpecQ) → RelPoint strX (𝟙 SpecQ))
+      (al' : RelPoint strX' (𝟙 (SpecF q)) → RelPoint strX' (𝟙 (SpecF q))),
+      (∀ x : RelPoint strX (𝟙 SpecQ), ¬ hX.IsCusp x → ¬ hX.IsCusp (al x)) ∧
+      (∀ x' : RelPoint strX' (𝟙 (SpecF q)), al' (al' x') = x') ∧
+      (∀ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' → hX'.IsCusp (al' x')) ∧
+      (∀ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' → al' x' ≠ x') ∧
+      (∀ x : RelPoint strX (𝟙 SpecQ), d.redX (al x) = al' (d.redX x)) :=
+  sorry
+
+/-- **`X_0(N)` mod `q` has exactly TWO `𝔽_q`-rational cusps at prime
 level** (sorry node, new 2026-07-27) — the second of the two classical
+inputs, and the two-cusp count itself.
+
+At prime level `X_0(N)` has exactly the two cusps `0` and `∞`, both
+`ℚ`-rational; the cuspidal subscheme of the smooth model over `ℤ_(q)` is
+finite étale of degree `2` for `q ∤ N`, so the fibre at `q` is again two
+distinct `𝔽_q`-rational points, and these are exactly the `𝔽_q`-points of
+`X'` that do not factor through the open part `Y'`.
+
+**WHERE THE HYPOTHESES ENTER.**  `N.Prime` IS the count: at composite
+level the number of cusps is `∑_{e ∣ N} φ(gcd(e, N/e))`, which exceeds
+`2` already at `N = 4`.  `q.Prime` with `q ≠ N` is `q ∤ N`, without which
+the model is not smooth at `q` and the cuspidal fibre can degenerate.
+`q ≠ 2` is not needed.
+
+**WHY `d` IS CARRIED THOUGH THE STATEMENT DOES NOT MENTION IT.**  It is a
+guard, and it is underscored because the proof genuinely need not use it:
+the statement is about `hX'` alone, and `hX'` already pins `X'` as a
+smooth proper geometrically connected curve compactifying the coarse
+space of `Γ₀(N)` over `𝔽_q`.  Carrying `d` records that the count is
+being asserted about the SPECIAL FIBRE OF THE GOOD MODEL at `q ∤ N`,
+which is where Deligne–Rapoport proves it, and keeps every leaf of this
+cut indexed by the same datum so that the counting leaf cannot later be
+instantiated at an `hX'` unrelated to the one the dichotomy is about.
+
+**NO `al'` APPEARS HERE, DELIBERATELY.**  See the subsection docstring:
+a counting leaf quantified over a hypothesised `al'` is FALSE against
+`al' = id`.  This one mentions only the curve.
+
+**NON-VACUITY.**  For `N = 37`, `q = 3` the two cusps of `X_0(37)` reduce
+to two distinct `𝔽_3`-points, so the conclusion is `2` and not `0` or
+`1`.
+
+**REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), IV–VI for the cuspidal subscheme of the
+smooth model of `X_0(N)` over `ℤ[1/N]`; Ogg, *Rational points on certain
+elliptic modular curves* (1973) for the cusp count at prime level. -/
+theorem card_cusps_specialFibre_of_jNeronDatum (N q : ℕ)
+    (_hN : N.Prime) (_hq : q.Prime) (_hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    Nat.card {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'} = 2 :=
+  sorry
+
+/-- **The reduction of a rational cusp is a cusp** (PROVEN 2026-07-27).
+
+Over an arbitrary `IsX0JReductionAt` this is FALSE — the junk `redX` of
+that structure's FORMAL-CONTENT AUDIT may send a cusp anywhere.  Over
+`IsX0JNeronDatum` it is a theorem, and the proof is exactly the
+contrapositive of `exists_relSectionAlong_of_special`:
+
+suppose `redX c` is NOT a cusp, i.e. `redX c = sectionAlong jY' _ y'` for
+some `𝔽_q`-point `y'` of the open part.  Pushing that through `spX` and
+`spX_j` says the integral section `intX c` of the proper model meets the
+open part `𝒴` in the SPECIAL fibre.  The base `Spec ℤ_(q)` is local and
+`𝒴 ⊆ 𝒳` is open, so `exists_relSectionAlong_of_special` factors the whole
+section through `𝒴`.  Reading that on the GENERIC fibre through `genY`
+and `genX_j`, and using that `genX` is an equivalence, gives a rational
+point `y` of `Y_0(N)` with `sectionAlong hX.j hX.over y = c` — i.e. `c`
+comes from `Y_0(N)(ℚ)`, contradicting `hX.IsCusp c`.
+
+Note which fields do the work: `properX` (through `intX`/`pre_intX`),
+`spX_j`, `genX_j`, `genX`/`genY` and `base`.  Nothing is assumed about
+`redX`; it is the DEFINED one throughout.  This is the same shape as
+`IsX0JNeronDatum.red_jm`, and it is the second consumer of
+`exists_relSectionAlong_of_special`.
+
+**NOT the converse.**  `hX'.IsCusp (redX x) → hX.IsCusp x` is FALSE even
+for the genuine reduction — `exists_cuspidalReduction_of_padicValRat_neg`
+produces a non-cusp with cuspidal reduction, and that is the whole point
+of Mazur's Cor. 4.4.  See the CORRECTION note in `IsX0JReductionAt`'s
+docstring in `X0.lean`. -/
+theorem isCusp_redX_of_isCusp_of_jNeronDatum {N q : ℕ}
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    (c : RelPoint strX (𝟙 SpecQ)) (hcusp : hX.IsCusp c) :
+    hX'.IsCusp (d.redX c) := by
+  haveI := d.model.isOpen
+  rintro ⟨y', hy'⟩
+  -- the integral section of `c` meets the open part `𝒴` in the special fibre
+  have hA : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX c)
+      = relSectionAlong jZ d.model.comm
+        (d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) y') := by
+    have hcong := congrArg
+      (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)) hy'.symm
+    rwa [d.redX_def, Equiv.apply_symm_apply,
+      sectionAlong_eq_relSectionAlong jY' hX'.comm y', d.spX_j] at hcong
+  -- so the WHOLE section lies in `𝒴`: the base is local and `𝒴` is open
+  obtain ⟨yZ, hyZ⟩ := exists_relSectionAlong_of_special d.base d.model _ _ hA
+  -- read it on the generic fibre: `c` comes from a rational point of `Y_0(N)`
+  refine hcusp ⟨((d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+      (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)).1, ?_⟩
+  have hkey : sectionAlong hX.j hX.over
+      ((d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+        (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)) = c := by
+    apply (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective
+    rw [sectionAlong_eq_relSectionAlong hX.j hX.over, d.genX_j,
+      Equiv.apply_symm_apply, ← pre_relSectionAlong, hyZ, d.pre_intX]
+  exact congrArg Subtype.val hkey
+
+/-- **The Atkin–Lehner involution and the two-cusp dichotomy at prime
+level** (PROVEN 2026-07-27 over the three declarations immediately above;
+opened as a sorry node the same day) — the second of the two classical
 inputs, and the only one that uses `N.Prime`.
 
 `w_N` is an automorphism of `X_0(N)` over `ℚ` which preserves the open
@@ -1248,13 +1481,28 @@ Eisenstein leaf produced instead of choosing its own.
 185 (1970) for `w_N`; Deligne–Rapoport for the cusps of `X_0(N)` at prime
 level and their behaviour in the good-reduction model at `q ∤ N`.
 
-**WHERE THE HYPOTHESES ENTER.** `N.Prime` is the two-cusp count and
-nothing else — at composite level `X_0(N)` has more cusps and the
-dichotomy is false as stated. `q.Prime` and `q ≠ N` give `q ∤ N`, hence
-good reduction of the model, hence that `w_N` reduces and that the two
-cusps stay distinct and stay the only cusps mod `q`. `q ≠ 2` is NOT
-needed: it belongs to the formal immersion, and demanding it here would
-only weaken the leaf.
+**WHERE THE HYPOTHESES ENTER.** `N.Prime` is the two-cusp count — at
+composite level `X_0(N)` has more cusps and the dichotomy is false as
+stated — **and, as the cut above discovered, also the
+fixed-point-freeness of `w_N` on cusps**: at `N = 4` the cusp `1/2` is
+FIXED by `w_4`, so `N.Prime` is not confined to the counting half.  See
+the subsection docstring for the correction.  `q.Prime` and `q ≠ N` give
+`q ∤ N`, hence good reduction of the model, hence that `w_N` reduces and
+that the two cusps stay distinct and stay the only cusps mod `q`.
+`q ≠ 2` is NOT needed: it belongs to the formal immersion, and demanding
+it here would only weaken the leaf.
+
+**HOW IT IS PROVEN** (2026-07-27).  Over the three declarations above.
+`exists_atkinLehnerInvolution_of_jNeronDatum` supplies `w_N`, `w'_N` and
+their five properties; `isCusp_redX_of_isCusp_of_jNeronDatum` (a THEOREM,
+from the Néron pinning) puts `redX cusp` in the cuspidal locus of the
+special fibre; `card_cusps_specialFibre_of_jNeronDatum` says that locus
+has exactly two elements.  Since `w'_N` preserves it and fixes none of
+it, `redX cusp` and `w'_N (redX cusp)` are two DISTINCT elements of a
+two-element set, hence all of it.  So a cuspidal `redX x` is one or the
+other; in the first case the left disjunct holds, and in the second
+`redX (w_N x) = w'_N (redX x) = w'_N (w'_N (redX cusp)) = redX cusp` by
+`red_al` and involutivity.
 
 **WHY IT IS STATED OVER `IsX0JNeronDatum`** — the conclusion is about
 `d.toJReduction.redX`, and it is false for an arbitrary
@@ -1268,7 +1516,7 @@ dichotomy a theorem about it.
 cusp `∞` is rational at every level — and the conclusion's `∀ x` ranges
 over a nonempty set for `N = 37`, `q = 3`. -/
 theorem exists_atkinLehner_of_jNeronDatum (N q : ℕ)
-    (_hN : N.Prime) (_hq : q.Prime) (_hqN : q ≠ N)
+    (hN : N.Prime) (hq : q.Prime) (hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -1278,13 +1526,54 @@ theorem exists_atkinLehner_of_jNeronDatum (N q : ℕ)
     {hj : IsJMapOn N hc}
     {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
     (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
-    (cusp : RelPoint strX (𝟙 SpecQ)) (_hcusp : hX.IsCusp cusp) :
+    (cusp : RelPoint strX (𝟙 SpecQ)) (hcusp : hX.IsCusp cusp) :
     ∃ al : RelPoint strX (𝟙 SpecQ) → RelPoint strX (𝟙 SpecQ),
       (∀ x : RelPoint strX (𝟙 SpecQ), ¬ hX.IsCusp x → ¬ hX.IsCusp (al x)) ∧
       (∀ x : RelPoint strX (𝟙 SpecQ), hX'.IsCusp (d.toJReduction.redX x) →
         d.toJReduction.redX x = d.toJReduction.redX cusp ∨
-        d.toJReduction.redX (al x) = d.toJReduction.redX cusp) :=
-  sorry
+        d.toJReduction.redX (al x) = d.toJReduction.redX cusp) := by
+  classical
+  obtain ⟨al, al', hnc, hinv, hpres, hfree, hred⟩ :=
+    exists_atkinLehnerInvolution_of_jNeronDatum N q hN hq hqN d
+  refine ⟨al, hnc, ?_⟩
+  -- `toJReduction` carries the DEFINED `redX` of the Néron datum verbatim
+  have hrx : d.toJReduction.redX = d.redX := rfl
+  rw [hrx]
+  -- the residue class of the given cusp is cuspidal — the Néron pinning
+  have hac : hX'.IsCusp (d.redX cusp) :=
+    isCusp_redX_of_isCusp_of_jNeronDatum d cusp hcusp
+  have hbc : hX'.IsCusp (al' (d.redX cusp)) := hpres _ hac
+  -- and it is one of exactly TWO cuspidal points of the special fibre
+  have hcard : Nat.card {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'} = 2 :=
+    card_cusps_specialFibre_of_jNeronDatum N q hN hq hqN d
+  haveI : Finite {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'} :=
+    Nat.finite_of_card_ne_zero (by omega)
+  haveI := Fintype.ofFinite {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'}
+  -- `w'_N` fixes no cusp, so the two exhibited cusps are distinct, hence ALL of them
+  have hne2 : (⟨d.redX cusp, hac⟩ :
+        {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'})
+      ≠ ⟨al' (d.redX cusp), hbc⟩ := by
+    simp only [ne_eq, Subtype.mk.injEq]
+    exact fun h => hfree _ hac h.symm
+  have huniv : ({⟨d.redX cusp, hac⟩, ⟨al' (d.redX cusp), hbc⟩} :
+      Finset {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'}) = Finset.univ := by
+    apply Finset.eq_univ_of_card
+    rw [Finset.card_pair_eq_two_iff.mpr hne2, ← Nat.card_eq_fintype_card, hcard]
+  intro x hx
+  by_cases h1 : d.redX x = d.redX cusp
+  · exact Or.inl h1
+  · refine Or.inr ?_
+    have hmem : (⟨d.redX x, hx⟩ :
+        {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'})
+        ∈ ({⟨d.redX cusp, hac⟩, ⟨al' (d.redX cusp), hbc⟩} :
+          Finset {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'}) := by
+      rw [huniv]; exact Finset.mem_univ _
+    have h2 : d.redX x = al' (d.redX cusp) := by
+      rcases Finset.mem_insert.mp hmem with h | h
+      · exact absurd (congrArg Subtype.val h) h1
+      · exact congrArg Subtype.val (Finset.mem_singleton.mp h)
+    -- `redX (w_N x) = w'_N (redX x) = w'_N (w'_N (redX cusp)) = redX cusp`
+    rw [hred x, h2, hinv]
 
 /-- **Existence of Mazur's Eisenstein-quotient datum** (PROVEN 2026-07-27
 over the two classical leaves above; opened as a sorry node the same
@@ -1327,7 +1616,14 @@ for why that, and not `IsX0JReductionAt`, is the safe index):
   Eisenstein quotient `J_e(N)`, its good reduction at `q`, `f = π ∘ aj_∞`,
   `redA_inj` (rank `0`), the reduction square, and the formal immersion;
 * `exists_atkinLehner_of_jNeronDatum` — `w_N` and the two-cusp dichotomy,
-  the only piece that uses `N.Prime`.
+  the only piece that uses `N.Prime`.  **PROVEN later the same day** over
+  a further cut: `exists_atkinLehnerInvolution_of_jNeronDatum` (`w_N`,
+  `w'_N` and their five properties — Atkin–Lehner),
+  `card_cusps_specialFibre_of_jNeronDatum` (exactly two cusps mod `q` at
+  prime level — Deligne–Rapoport) and the THEOREM
+  `isCusp_redX_of_isCusp_of_jNeronDatum`.  So `N.Prime` turns out to
+  enter BOTH of those leaves, not only the count — `w_4` fixes the cusp
+  `1/2`.
 
 **WHAT IS GENUINELY MISSING, RE-CHECKED BY NAME 2026-07-27.** Neither the
 Eisenstein ideal nor the Eisenstein quotient nor the formal-immersion
