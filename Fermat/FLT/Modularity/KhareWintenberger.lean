@@ -5237,8 +5237,9 @@ theorem exists_threeadic_realization_of_heckePackage
   exact @free_of_finite_of_algebraMap_padicInt_injective 3 _ B hCR hDom
     hAlg hFin hBinj
 
-/-- **Descent-closed enlargement of the Hecke block** (SORRIED citation;
-the discharge of `PotentialModularityWitness.descentClosed`, added
+/-- **Descent-closed enlargement of the Hecke block** (**PROVEN
+2026-07-27**, unconditionally and with no automorphic input; the
+discharge of `PotentialModularityWitness.descentClosed`, added
 2026-07-27 when that field was introduced).
 
 STATEMENT.  Given the `ℓ`-adic Hecke block over `F` produced by
@@ -5288,36 +5289,93 @@ the tower.  Only the enlarged `E₂` satisfies it, so the statement must
 quantify existentially over the new field.  Asserting descent-closure of
 the given `E` would be a false leaf.
 
+**FORMAL-CONTENT AUDIT (2026-07-27, WRITTEN BY THE OWNER WHO PROVED IT —
+READ THIS BEFORE CITING THE LEAF).**  The proof below is a genuine
+construction, but it is NOT the classical argument the prose above
+describes, and the difference matters to every consumer.
+
+*What the proof actually uses.*  Only `F` and `E` being number fields,
+`ψℓ`, `ιO` and `hmod`.  The whole arithmetic package — `hℓ5`, `hZinj`,
+`hρ`, `hρbar`, `hirr`, `hπsurj`, `hπ`, `hFtr`, `hFgal`, `hιO` — is
+UNUSED and is underscore-prefixed in the signature so that the emptiness
+is mechanically visible rather than merely asserted.  The package is
+nevertheless retained VERBATIM, exactly as on the sibling citations of
+this module, because it is what a consumer's own route-(ii) collapse
+argument needs to see in the signature.
+
+*Why no classical input is required.*  The descent-closure clause is
+CONDITIONAL: its hypothesis already hands over a realization `(E', ψ, a)`
+of the eigensystem of `ρ|_{G_{F^H}}` OVER A NUMBER FIELD.  The classical
+theorem this leaf advertises — that the descended Hilbert eigenform has a
+number field as its Hecke field (Shimura rationality; solvable base
+change) — is precisely the assertion that such an `(E', ψ, a)` exists,
+so it has been imported into the clause's own hypothesis.  What remains
+is the ENLARGEMENT bookkeeping, and that is finitary:
+
+* the eigenvalue `ψ (a w)` is pinned by `ρ` alone — `hmod`-style matching
+  plus injectivity of `ψ` force `ψ (a w) = −ιO ((charFrob w).coeff 1)` —
+  so ANY two number-field realizations over the same `H` have the SAME
+  image in `ℚ̄_ℓ` away from a finite set, whatever `E'` they use;
+* `Gal(F/ℚ)` is finite, hence so is its subgroup lattice, so ONE
+  realization may be chosen per `H` (there are finitely many choices to
+  make) and the compositum inside `ℚ̄_ℓ` of their images with `ψℓ(E)` is
+  a finite compositum of number fields, hence a number field.  That
+  compositum is `E₂`.
+
+This is the "enlarging `E` costs nothing" argument of the
+`PotentialModularityWitness` docstring, carried out — and it is why the
+enlargement really is free.
+
+*What a consumer must NOT read into it.*  `descentClosed` does not assert
+that the descended eigensystem EXISTS, nor that it is number-field
+rational; it asserts only that IF it is, THEN `E₂` already contains it.
+The existence and rationality remain where they were, on
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`
+(Arthur–Clozel Ch. 3 Thm 4.2(d)), which is the sole Arthur–Clozel
+citation of the descent route.  In particular this proof does NOT reduce
+that leaf's depth, and nobody should cite `descentClosed` as evidence
+that the Hecke field question has been settled.
+
+*Why the leaf is still worth its statement.*  Finding (6) of the
+`exists_baseChangeDescentData_…` audit block below observed, correctly,
+that nothing in `PotentialModularityWitness` tied `E` to the descent, so
+that a descent leaf demanding `Wit.E`-rationality was unprovable.  The
+`descentClosed` field is the repair, and this leaf is what makes the
+repair honest: without it the field would be an unsupported assumption
+on the carrier.  The content is that the field can be SUPPLIED, not that
+it is vacuous.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+Respected: the proof below cites nothing but mathlib. -/
 theorem exists_descentClosed_heckePackage
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (_hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
     [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
     [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    (_hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
     {ρ : GaloisRep ℚ O (Fin 2 → O)}
     (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (_hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+    (_hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (_hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (_hπsurj : Function.Surjective π)
+    (_hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
       (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (_hFtr : NumberField.IsTotallyReal F) (_hFgal : IsGalois ℚ F)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
       Polynomial E)
     (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_hιO : Function.Injective ιO)
     (hmod : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
     ∃ (E₂ : Type u) (_ : Field E₂) (_ : NumberField E₂)
@@ -5343,8 +5401,128 @@ theorem exists_descentClosed_heckePackage
             (IntermediateField.fixedField H))))
           (b : HeightOneSpectrum (NumberField.RingOfIntegers
             (IntermediateField.fixedField H)) → E₂),
-          ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w) :=
-  sorry
+          ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w) := by
+  classical
+  -- `Gal(F/ℚ)` is finite, hence so is its subgroup lattice: this is what
+  -- makes the compositum below a FINITE compositum.
+  haveI : Finite (Subgroup (F ≃ₐ[ℚ] F)) :=
+    Finite.of_injective (fun H : Subgroup (F ≃ₐ[ℚ] F) => (H : Set (F ≃ₐ[ℚ] F)))
+      SetLike.coe_injective
+  -- STEP 1.  For each subgroup `H ≤ Gal(F/ℚ)` a finite-dimensional
+  -- intermediate field of `ℚ̄_ℓ / ℚ` that already contains the eigenvalues of
+  -- EVERY number-field-rational realization of the eigensystem of
+  -- `ρ|_{G_{F^H}}` away from a finite set.  The point is that the eigenvalue
+  -- is pinned by `ρ` alone: two realizations `(E', ψ, a)` and `(E₀, ψ₀, a₀)`
+  -- have `ψ (a w) = ψ₀ (a₀ w)` in `ℚ̄_ℓ`, being the same coefficient of the
+  -- same characteristic polynomial.  So ONE realization may be chosen per `H`
+  -- and it captures all the others.
+  have key : ∀ H : Subgroup (F ≃ₐ[ℚ] F),
+      ∃ KH : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ]),
+        FiniteDimensional ℚ KH ∧
+        ∀ (E' : Type u) [Field E'] [NumberField E']
+          (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
+          (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+            (IntermediateField.fixedField H))))
+          (a : HeightOneSpectrum (NumberField.RingOfIntegers
+            (IntermediateField.fixedField H)) → E'),
+          (∀ w ∉ S,
+            ((ρ.map (algebraMap ℚ
+              (IntermediateField.fixedField H))).charFrob w).map ιO =
+              (X ^ 2 - C (a w) * X +
+                C ((Ideal.absNorm w.asIdeal : ℕ) : E')).map ψ) →
+          ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+              (IntermediateField.fixedField H))),
+            ∀ w, w ∉ S → w ∉ S' → ψ (a w) ∈ KH := by
+    intro H
+    by_cases hex : ∃ (E₀ : Type u) (_ : Field E₀) (_ : NumberField E₀)
+        (ψ₀ : E₀ →+* AlgebraicClosure ℚ_[ℓ])
+        (S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField H))))
+        (a₀ : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField H)) → E₀),
+        ∀ w ∉ S₀,
+          ((ρ.map (algebraMap ℚ
+            (IntermediateField.fixedField H))).charFrob w).map ιO =
+            (X ^ 2 - C (a₀ w) * X +
+              C ((Ideal.absNorm w.asIdeal : ℕ) : E₀)).map ψ₀
+    · -- a realization exists: take the image of its coefficient field
+      obtain ⟨E₀, hfld₀, hnf₀, ψ₀, S₀, a₀, h₀⟩ := hex
+      refine ⟨AlgHom.fieldRange
+        ({ ψ₀ with commutes' := fun r => ψ₀.map_rat_algebraMap r } :
+          E₀ →ₐ[ℚ] AlgebraicClosure ℚ_[ℓ]), ?_, ?_⟩
+      · exact (AlgEquiv.ofInjectiveField
+          ({ ψ₀ with commutes' := fun r => ψ₀.map_rat_algebraMap r } :
+            E₀ →ₐ[ℚ] AlgebraicClosure ℚ_[ℓ])).toLinearEquiv.finiteDimensional
+      · intro E' _ _ ψ S a hS
+        refine ⟨S₀, fun w hw hw₀ => ?_⟩
+        -- the two realizations compute the same characteristic polynomial
+        have hpoly : (X ^ 2 - C (a w) * X +
+            C ((Ideal.absNorm w.asIdeal : ℕ) : E')).map ψ =
+            (X ^ 2 - C (a₀ w) * X +
+              C ((Ideal.absNorm w.asIdeal : ℕ) : E₀)).map ψ₀ :=
+          (hS w hw).symm.trans (h₀ w hw₀)
+        -- compare the coefficient of `X`: `ψ (a w) = ψ₀ (a₀ w)`
+        have hcoeff := congrArg (fun p => Polynomial.coeff p 1) hpoly
+        simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_pow,
+          Polynomial.map_mul, Polynomial.map_X, Polynomial.map_C,
+          Polynomial.coeff_add, Polynomial.coeff_sub, Polynomial.coeff_X_pow,
+          Polynomial.coeff_C_mul, Polynomial.coeff_X_one, Polynomial.coeff_C] at hcoeff
+        norm_num at hcoeff
+        exact ⟨a₀ w, hcoeff.symm⟩
+    · -- no realization exists: the clause is vacuous at this `H`
+      exact ⟨⊥, inferInstance, fun E' _ _ ψ S a hS =>
+        absurd ⟨E', ‹Field E'›, ‹NumberField E'›, ψ, S, a, hS⟩ hex⟩
+  choose KH hKHfin hKH using key
+  haveI : ∀ H, FiniteDimensional ℚ (KH H) := hKHfin
+  -- STEP 2.  `E₂` is the compositum, inside `ℚ̄_ℓ`, of `ψℓ(E)` with those
+  -- finitely many fields; a finite compositum of number fields is a number
+  -- field.  (`ULift` only moves it into the universe the statement demands.)
+  set ψℓA : E →ₐ[ℚ] AlgebraicClosure ℚ_[ℓ] :=
+    { ψℓ with commutes' := fun r => ψℓ.map_rat_algebraMap r }
+  haveI : FiniteDimensional ℚ ψℓA.fieldRange :=
+    (AlgEquiv.ofInjectiveField ψℓA).toLinearEquiv.finiteDimensional
+  have hfd : FiniteDimensional ℚ (ψℓA.fieldRange ⊔ ⨆ H, KH H :
+      IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])) := inferInstance
+  set K₀ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ]) :=
+    ψℓA.fieldRange ⊔ ⨆ H, KH H
+  haveI : FiniteDimensional ℚ K₀ := hfd
+  haveI : NumberField (ULift.{u} K₀) :=
+    { to_charZero := RingHom.charZero
+        (ULift.algEquiv (R := ℚ) (A := (K₀ : Type))).toRingHom
+      to_finiteDimensional :=
+        (ULift.algEquiv (R := ℚ) (A := (K₀ : Type))).symm.toLinearEquiv.finiteDimensional }
+  -- the embedding of the enlarged field into `ℚ̄_ℓ`
+  set ψ₂ : ULift.{u} K₀ →+* AlgebraicClosure ℚ_[ℓ] :=
+    (K₀.val : (K₀ : Type) →ₐ[ℚ] AlgebraicClosure ℚ_[ℓ]).toRingHom.comp
+      (ULift.algEquiv (R := ℚ) (A := (K₀ : Type))).toAlgHom.toRingHom
+  -- and the enlargement `E ↪ E₂`, along which `heckeF` is transported
+  set ι₂ : E →+* ULift.{u} K₀ :=
+    ((ULift.algEquiv (R := ℚ) (A := (K₀ : Type))).symm.toAlgHom.comp
+      ((IntermediateField.inclusion (le_sup_left : ψℓA.fieldRange ≤ K₀)).comp
+        (AlgEquiv.ofInjectiveField ψℓA).toAlgHom)).toRingHom
+  have hcompatE : ∀ x : E, ψ₂ (ι₂ x) = ψℓ x := by
+    intro x; rfl
+  refine ⟨ULift.{u} K₀, inferInstance, inferInstance,
+    fun w => (heckeF w).map ι₂, ψ₂, ?_, ?_⟩
+  · -- the ℓ-adic clause is carried along `E ↪ E₂` by functoriality of
+    -- `Polynomial.map`; no clause pins `E` as GENERATED by `heckeF`
+    intro w hw
+    have hcomp : ψ₂.comp ι₂ = ψℓ := RingHom.ext hcompatE
+    rw [hmod w hw, Polynomial.map_map, hcomp]
+  · -- STEP 3.  Descent closure: the given realization's eigenvalue agrees
+    -- with the chosen one's, which lies in `KH H ≤ K₀`
+    intro H E' _ _ ψ ι hcompat S a hS
+    obtain ⟨S', hS'⟩ := hKH H E' ψ S a hS
+    refine ⟨S', fun w => if h : ψ (a w) ∈ K₀ then ULift.up ⟨ψ (a w), h⟩ else 0, ?_⟩
+    intro w hw hw'
+    have hmem : ψ (a w) ∈ K₀ := by
+      refine (le_trans (le_iSup KH H) (le_sup_right : (⨆ H, KH H) ≤ K₀)) ?_
+      exact hS' w hw hw'
+    have hψinj : Function.Injective ψ := ψ.injective
+    apply hψinj
+    rw [hcompat]
+    simp only [hmem, dif_pos]
+    rfl
 
 /-- **Carrier inhabitation — potential modularity of the KW lift**
 (PROVEN — Taylor's theorem, the analytic core of pillar β): the
@@ -5398,8 +5576,13 @@ Taylor 1989, producing the `3`-adic block `B`/`τF`/`ψ₃`/`ιB`/
 2026-07-27 there is a FOURTH: `exists_descentClosed_heckePackage`
 (step (ii''), which enlarges the Hecke block's coefficient field to a
 descent-closed one and thereby discharges the carrier's new
-`descentClosed` field). Those four leaves are the residual sorries of
-the inhabitation node; the circularity guard above binds each of them.
+`descentClosed` field) — and that fourth step is **PROVEN**
+(2026-07-27), so the residual sorries of the inhabitation node are the
+first THREE; the circularity guard above binds each of them.  Read step
+(ii'')'s FORMAL-CONTENT AUDIT before drawing any conclusion from its
+proof: it consumes no arithmetic hypothesis and it does NOT settle the
+existence or the number-field rationality of the descended eigensystem,
+which stay on `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`.
 
 BAD-SET ENLARGEMENT (2026-07-26, step (ii') of the proof; extended the
 same day from `{3}` to `{2, 3, ℓ}`): the carrier is built with
@@ -8697,12 +8880,13 @@ The obligation itself did not vanish — it moved to where the carrier's
 `E` is CHOSEN, which is the only place it can be honestly discharged:
 the single inhabitation site
 `exists_potentialModularityWitness_of_five_le` now enlarges the Hecke
-block through the new sorried citation `exists_descentClosed_heckePackage`
+block through `exists_descentClosed_heckePackage`
 (step (ii''), in the same style as the bad-set enlargement of step (ii')),
 and hands the enlarged, descent-closed field to the carrier.  That
-citation carries the FULL arithmetic package, so both soundness routes
-(i) and (ii) are available to it — which is what the CORRECTION above
-observes was NOT true here.  No consumer of this declaration changed:
+step was a sorried citation when this note was written and is **PROVEN**
+since 2026-07-27; it carries the FULL arithmetic package (unused by its
+proof, but retained), so both soundness routes (i) and (ii) are available
+to it — which is what the CORRECTION above observes was NOT true here.  No consumer of this declaration changed:
 `exists_descended_heckeSystem_of_solvable` still applies it with the same
 arguments.  The paragraphs above are retained as the record of why the
 move was necessary. -/
