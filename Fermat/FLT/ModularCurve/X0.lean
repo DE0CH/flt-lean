@@ -532,6 +532,17 @@ public import Fermat.FLT.Mathlib.GroupTheory.Descent
 -- `exists_descentHeight_of_abelianScheme` to the purely geometric leaf
 -- `exists_integralCoordinates_of_abelianScheme` below.
 public import Fermat.FLT.Mathlib.NumberTheory.IntegralHeight
+-- `Fermat.SegreCoordinates` and
+-- `Fermat.nonempty_integralCoordinates_of_segreCoordinates`: the interface between
+-- the geometry of an abelian variety over `ℚ` (a symmetric very ample bundle and
+-- the theorem of the cube, read through the Segre embedding as one family of
+-- degree-2 forms) and the elementary theory of heights.  It reduces
+-- `exists_integralCoordinates_of_abelianScheme` below to the purely geometric
+-- `exists_segreCoordinates_of_abelianScheme`.  Its module docstring also records
+-- that `Mathlib/NumberTheory/Height/` exists at this pin and carries the whole
+-- height machine, upper and lower bound — correcting a stale "absent from the
+-- pin" note that this file used to carry.
+public import Fermat.FLT.Mathlib.NumberTheory.SegreHeight
 -- The relative Picard functor: `IsRelPicZeroOf`, `RelPicEquiv`, `modTensor`,
 -- `sectionIdeal`.  This is the infrastructure the IRREDUCIBILITY audit of
 -- `exists_jacobianOf_x0` named as missing — line bundles on `X ×_S T` modulo
@@ -17389,10 +17400,10 @@ theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
   exact ⟨J, jstr, ab,
     isJacobianOf_of_isRelPicZeroOf h.isProper h.smooth h.connected P⟩
 
-/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
+/-- **A Segre coordinate system exists on `A(ℚ)`, for every abelian
 scheme `A` over `ℚ`** (sorry node) — ALL that is left of the theory of
-heights after `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`, and
-purely geometric: no finiteness statement survives in it.
+heights, and PURELY GEOMETRIC: after the cut of 2026-07-27 there is no
+height, no finiteness and no real number anywhere in it.
 
 TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
 case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
@@ -17400,63 +17411,96 @@ varieties in general).  `ab.proper` and `ab.smooth` make `A` an abelian
 variety over `ℚ`, so it is projective and carries a **symmetric** ample
 line bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀` —
 which after replacing `L` by a power is very ample.  Let
-`φ_L : A ↪ ℙ^N_ℚ` be the resulting closed immersion.  A point of
-`ℙ^N(ℚ)` has a primitive integral representative `(x_0 : … : x_N)`,
-unique up to sign, and the sign is pinned by asking that the first
-nonzero coordinate be positive; sending `P ∈ A(ℚ)` to that vector is the
-required `coords : A(ℚ) → ℤ^{N+1}`.
+`φ_L : A ↪ ℙ^{n-1}_ℚ` be the resulting closed immersion.  A point of
+`ℙ^{n-1}(ℚ)` has a primitive integral representative, unique up to sign,
+and the sign is pinned by asking that the first nonzero coordinate be
+positive; sending `P ∈ A(ℚ)` to that vector is `coords`, and `injective`
+is injectivity of `φ_L` on `ℚ`-points, a closed immersion being a
+monomorphism.
 
-The two fields are then two standard theorems:
+The remaining fields are the **theorem of the cube**,
+`m^* L ⊗ d^* L ≅ p₁^* L² ⊗ p₂^* L²` on `A × A`, read through the Segre
+embedding: it says exactly that `Segre(P,Q) ↦ Segre(P+Q, P−Q)` is given
+by forms of degree `2` in the Segre coordinates (`form`,
+`form_homogeneous`, `form_eval`), and `cert`/`cert_eval` is the
+Nullstellensatz certificate for that morphism on the Segre image — see
+`Fermat/FLT/Mathlib/NumberTheory/SegreHeight.lean` for why the
+certificate rather than "no common zero" is the right hypothesis, and
+for the proof that this yields `IntegralCoordinates`.
 
-* `injective` is injectivity of `φ_L` on `ℚ`-points, which holds because
-  a closed immersion is a monomorphism;
-* `quasiParallelogram` is the **theorem of the cube**, in the form
-  `h_L(P + Q) + h_L(P − Q) = 2 h_L(P) + 2 h_L(Q) + O(1)` for symmetric
-  `L`.  It transfers from the projective height `log max_i |x_i|` to
-  `intHeight`, which is `log (1 + ∑_i |x_i|)`, because
-  `max_i |x_i| ≤ 1 + ∑_i |x_i| ≤ (N + 2) · max_i |x_i|` for a primitive
-  vector — the two differ by at most `log (N + 2)`, and the statement is
-  only asked to hold up to a constant.
+**FAITHFULNESS AUDIT.**  *Not vacuous.*  `form_eval` demands ONE family
+of quadratic forms working uniformly in `P` and `Q`; that is the cube
+theorem and nothing weaker.  An arbitrary injection `A(ℚ) ↪ ℤ^d` does not
+supply it — for `A(ℚ) ≅ ℤ` a linear parametrisation is refuted outright,
+since the height defect `log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is
+unbounded, and by the leaf below an unbounded defect is incompatible with
+degree-2 forms.  *The conclusion is `Nonempty`* because nothing
+downstream depends on WHICH system is used.
 
-**What this leaf NO LONGER carries, and this is the point of the cut.**
-Northcott's theorem has been *proven* rather than assumed: over `ℚ` and
-in primitive integral coordinates it is the statement that an integer
-box is finite, and that is `Fermat.instNorthcottIntHeight`.  So the
-finiteness input to Mordell–Weil's geometric half is gone from the
-frontier; what remains is exactly the projective embedding and the
-theorem of the cube.
-
-**FAITHFULNESS AUDIT.**  *Not vacuous.*  An arbitrary injection
-`A(ℚ) ↪ ℤ^d` would satisfy `injective` and give a Northcott height, but
-`quasiParallelogram` forces that height to be a quadratic form up to
-`O(1)`, which pins the growth rate of the coordinates along every cyclic
-subgroup: for `A(ℚ) ≅ ℤ` a linear parametrisation fails outright, since
-`log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is unbounded.  It *is* cheap
-exactly when `A(ℚ)` is finite — any injection into `ℤ^1` works, with a
-constant absorbing the finitely many defects — and that is correct
-rather than a defect, since a finite group is finitely generated and the
-conclusion of the consumer holds for that reason.
-
-*The conclusion is `Nonempty`, not a chosen coordinate system*, because
-nothing downstream depends on WHICH one is used.
-
-**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist
-because `ℤ` is a PID with unit group `{±1}`; over a general number field
-the normalisation involves the class group and the unit group, and the
-elementary Northcott argument proven upstream would not apply.
-Mordell–Weil is only ever needed over `ℚ` in this development.
+**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist because
+`ℤ` is a PID with unit group `{±1}`; over a general number field the
+normalisation involves the class group and the unit group.  Mordell–Weil
+is only ever needed over `ℚ` in this development.
 
 **MISSING MACHINERY**, and it is the honest remaining cost: projectivity
-of an abelian variety, symmetric very ample line bundles, and the
-theorem of the cube.  None of these exists in `Mathlib`, in `~/cs/FLT`,
-or in this project — the check that would refute this is
-`grep -rn "TheoremOfTheCube\|VeryAmple\|NeronTate" Fermat/
-.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`. -/
+of an abelian variety, symmetric very ample line bundles, and the theorem
+of the cube.  The check that would refute this is
+`grep -rn "TheoremOfTheCube\|VeryAmple\|IsAmple" Fermat/
+.lake/packages/mathlib/Mathlib/ ~/cs/FLT/` — it was run on 2026-07-27 and
+returns nothing in mathlib, so this part of the old note stands.  **The
+rest of that note did NOT**: it also claimed the theory of heights was
+absent from the pin, and `Mathlib/NumberTheory/Height/` is exactly it,
+lower bound included.  That correction is what made this cut cheap; it is
+recorded in full in `SegreHeight.lean`. -/
+theorem exists_segreCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (SegreCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
+  sorry
+
+/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
+scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the geometric leaf above
+and the elementary leaf `nonempty_integralCoordinates_of_segreCoordinates`).
+
+**THE CUT, and what it corrects.**  This node used to be the single
+remaining leaf of the theory of heights, carrying the projective
+embedding, the theorem of the cube AND the passage from the projective
+height to `intHeight`, on the strength of a MISSING MACHINERY note
+saying the theory of heights was absent from `Mathlib`, `~/cs/FLT` and
+this project.  That note was stale: `Mathlib/NumberTheory/Height/` exists
+at this pin and carries `mulHeight`/`logHeight` on tuples, the
+`AdmissibleAbsValues` instance for number fields, Northcott, the
+comparison `Rat.logHeight_eq_max_abs_of_gcd_eq_one` for primitive integer
+tuples, and — the expensive half — the height machine for a family of
+homogeneous forms in BOTH directions, `Height.logHeight_eval_le'` and
+`Height.logHeight_eval_ge'`, the latter from a Nullstellensatz
+certificate supplied as a polynomial identity.
+
+So the cut is along geometry versus arithmetic-of-heights, and the second
+half is now a derivation from named mathlib lemmas rather than a theory
+to be built:
+
+* `exists_segreCoordinates_of_abelianScheme` above is the geometry;
+* `nonempty_integralCoordinates_of_segreCoordinates` is the height
+  machine, whose docstring lists the five steps and the lemma for each.
+
+The old audit's *check* is kept in the geometric leaf, because the part
+of it about ampleness and the cube is still correct.
+
+TRUE and classical (Silverman, *AEC* VIII.5–VIII.6; Hindry–Silverman,
+*Diophantine Geometry* Part B).
+
+**What this node NO LONGER carries.**  Northcott's theorem is proven
+(`Fermat.instNorthcottIntHeight`), the passage to `DescentHeight` is
+proven (`Fermat.WeilHeight.toDescentHeight`), and now the height machine
+has been separated from the geometry as well. -/
 theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
-  sorry
+    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨sc⟩ := exists_segreCoordinates_of_abelianScheme ab
+  exact nonempty_integralCoordinates_of_segreCoordinates sc
 
 /-- **A height function with the Northcott property exists on `A(ℚ)`,
 for every abelian scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the
@@ -18017,10 +18061,15 @@ field `ℚ(p^{-1} A(ℚ))`
 those carries arithmetic; no group cohomology appears anywhere on the
 path.
 
+**FOURTH SPLIT, same day**: `exists_integralCoordinates_of_abelianScheme`
+is PROVEN in turn, over `exists_segreCoordinates_of_abelianScheme` (the
+geometry: a symmetric very ample bundle and the theorem of the cube, read
+through the Segre embedding as one family of degree-2 forms) and
+`nonempty_integralCoordinates_of_segreCoordinates` (the height machine,
+which mathlib supplies in both directions — see `SegreHeight.lean`).
+
 So the OPEN leaves under Mordell–Weil are now those four, together with
-the existence of a projective embedding whose height obeys the theorem of
-the cube (`exists_integralCoordinates_of_abelianScheme`).  Everything
-else between here and them is compiler-checked.
+those two.  Everything else between here and them is compiler-checked.
 
 The retired verdict, kept because its *check* is still the right one:
 "neither heights on abelian varieties, nor the weak Mordell–Weil
@@ -19570,7 +19619,8 @@ docstring).
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
 | `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
-| `exists_integralCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
+| `exists_segreCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
+| `nonempty_integralCoordinates_of_segreCoordinates` (in `SegreHeight.lean`) | the height machine over mathlib's `Height` | no |
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
