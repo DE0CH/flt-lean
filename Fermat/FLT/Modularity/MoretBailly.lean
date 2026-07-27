@@ -27149,16 +27149,24 @@ hypothesis).
   `IsTwistedHilbertBlumenthalModuli`. Leaf B is now PROVEN. The translation
   is where `hdih` is consumed — its ONLY use in the whole descent half.
 
-The remaining sorry nodes of this section are therefore
-`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` and
-`exists_twistedHilbertBlumenthalDescent_of_split`. The `PolarizationStruct`
-lemmas listed above are still not in the cone, for the same reason: they are
-consumed by the proofs of leaf A2, which is still `sorry`.
+**LEAF LIST, CORRECTED 2026-07-28** (the previous version of this paragraph
+named `exists_splitHilbertBlumenthalModuli_of_standardLevelModule` as open;
+that declaration has been PROVEN since the third cut, and the list was never
+updated — a stale list of this kind is what manufactures phantom dispatches,
+so it is stated here in the form the compiler agrees with). The remaining
+sorry nodes of this section are exactly
 
-UPDATE 2026-07-27: `exists_standardLevelModule` (leaf A1) is PROVEN — see
-the subsection "The standard level module, constructed" below, and the
-declaration's own docstring for what its earlier route note got wrong. So
-the count above is two, not three.
+* `exists_splitHilbertBlumenthalFamily_of_standardLevelModule` (leaf A2a,
+  the geometric core of Rapoport §1), and
+* `exists_twistedHilbertBlumenthalDescent_of_split` (leaf B1, Taylor's
+  Lemma 4.4).
+
+`exists_standardLevelModule` (leaf A1),
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` (leaf A2),
+`exists_splitHilbertBlumenthalModuli` (leaf A) and the DESCENT/SEAM
+translation are all PROVEN. The `PolarizationStruct` lemmas listed above are
+still not in the cone, for the same reason as before: they are consumed by
+the proof of leaf A2a, which is still `sorry`.
 
 POSITIVITY REPAIR, 2026-07-27 (same day, and it changes the SIGNATURES in
 this section rather than only its prose). `HasSplitHilbertBlumenthalModuli`
@@ -28177,20 +28185,83 @@ the `Fermat.AbelianSchemeStruct` / `Mult` / `DualStruct` / `SymHomStruct` /
 `PolarizationStruct` vocabulary along a morphism `q : S' ⟶ S`.** Every
 staged cut attempted above collapses into "the second leaf produces
 everything" for one reason only — the family cannot be moved across the
-seam. That transport is bookkeeping rather than mathematics: all five
-structures are functors of points over
-`Fermat.RelPoint f g = {x : T ⟶ A // x ≫ f = g}`
-(`Modularity/AbelianScheme.lean:107`), and for the pulled-back family
-`f' : A ×_S S' ⟶ S'` the universal property of the pullback gives
-`RelPoint f' g' ≃ RelPoint f (g' ≫ q)` for every `g' : T ⟶ S'`. That
-equivalence is what has to be written — it is NOT `Fermat.RelPoint.pre`
-(`:120`), which is precomposition in `T` and not a base change in `S` — and
-once it exists every algebraic field of all five structures transports by
-transport along it. The only fields needing real input are
-`AbelianSchemeStruct`'s `proper`, `smooth` and `connected`, each of which is
-a base-change stability statement about a mathlib morphism property. Nothing in this file consumes such transport
-today, so writing it is a separate task with its own consumer, not
-something to smuggle into this leaf.
+seam. The paragraph as first written called that transport "bookkeeping
+rather than mathematics" for all five structures. **That was true of four of
+them and FALSE of the fifth**, and the correction is what settles the axis;
+see the two dated updates below.
+
+**UPDATE 2026-07-28 (i) — THE `RelPoint` HALF HAS LANDED, AND IT IS ALREADY
+IN THIS FILE'S PUBLIC IMPORT CONE.** The equivalence this paragraph asked
+for is written and proven:
+
+* `Fermat.RelPoint.baseChangeDown` / `baseChangeUp`
+  (`Modularity/AbelianSchemeIsogeny.lean:236,244`), with
+  `baseChangeDown_baseChangeUp`, `baseChangeUp_baseChangeDown`,
+  `baseChangeDown_injective` and the naturality lemma `baseChangeDown_pre`
+  — i.e. exactly `RelPoint (pullback.snd f g) h ≃ RelPoint f (h ≫ g)`, and
+  it is NOT `Fermat.RelPoint.pre` (`Modularity/AbelianScheme.lean:120`),
+  which is precomposition in `T`;
+* `Fermat.AbelianSchemeStruct.baseChange`
+  (`Modularity/AbelianSchemeIsogeny.lean:534`), transporting the whole group
+  law with `baseChange_add` / `baseChange_zero` / `baseChange_mulByNat`.
+
+The three fields this paragraph flagged as "needing real input" — `proper`,
+`smooth`, `connected` — turned out to be one line each off mathlib's
+`IsStableUnderBaseChange` instances. Reachability: this module
+`public import`s `Modularity.TateModule`, which `public import`s
+`Modularity.AbelianSchemeIsogeny`, so both names are usable here with no
+import change (checked 2026-07-28 by import-closure walk, and the module is
+built as part of this file's `lake build`).
+
+`Mult`, `DualStruct` and `SymHomStruct` transports remain unwritten, and for
+those three the "bookkeeping" verdict does stand: every field is an identity
+between relative points, so each transports along the equivalence above the
+way `AbelianSchemeStruct`'s did.
+
+**UPDATE 2026-07-28 (ii) — `PolarizationStruct` DOES NOT BASE-CHANGE, AND
+THIS IS THE REASON THE STAGED AXIS STAYS CLOSED.** The obstruction is
+`Fermat.PolarizationStruct.lam_surjective`, which asserts that
+`lam : 𝔞 → SymHomStruct d` is onto **ALL** symmetric `R`-linear
+homomorphisms `A ⟶ A^∨` — i.e. `𝔞 ≅ Hom^sym_R(A, A^∨)`. Restriction along
+`q : S' ⟶ S` always gives a map `Hom^sym_S → Hom^sym_{S'}` (a natural
+transformation over test objects `T ⟶ S'` is one over fewer test objects
+than over `T ⟶ S`), so `hom`, `hom_add`, `pre_hom`, `hom_act`,
+`hom_torsion`, `weil_self`, `weil_hom_nondegenerate`, `lam`, `lam_add`,
+`lam_smul`, `posElt`, `posElt_pos` and `hom_eq_lam` all transport. But the
+target module can GROW, and then `lam` stops being surjective.
+
+COUNTEREXAMPLE (elementary, and it lives inside the structure's own
+generality — `PolarizationStruct` imposes no relation between the relative
+dimension of `f` and `R`). Take `R = ℤ`, `𝔞 = ⊤`, `S = Spec ℚ`,
+`S' = Spec K` for `K` a quadratic field, and `A = Res_{K/ℚ} E` the Weil
+restriction of an elliptic curve `E/K` that is not `K`-isogenous to any
+curve defined over `ℚ` and not isogenous to its conjugate `E^σ`. Then `A` is
+a simple abelian surface over `ℚ` with `End⁰_ℚ(A) = ℚ`, so
+`Hom^sym(A, A^∨)` has rank 1 and `lam_surjective` holds; but
+`A ×_ℚ K ≅ E × E^σ`, whose symmetric-hom module has rank 2. So the
+base-changed `lam` misses a symmetric hom, and no transport lemma can
+produce a `PolarizationStruct` over `S'`.
+
+WHY THIS IS NOT A DEFECT OF THE STRUCTURE. `lam_surjective` is what pins the
+wide class `[𝔞] ∈ Cl(R)` (see the structure docstring, refuted repair 2);
+dropping it makes `𝔞` carry no information and re-breaks
+`HasSplitHilbertBlumenthalModuli`. And in the intended regime the module
+really is rank one — for an abelian scheme of relative dimension `[D:ℚ]`
+with `𝒪_D`-multiplication, `Hom^sym_{𝒪_D}(A, A^∨)` is the rank-one
+polarization module, which is why the structure is inhabited at all. So the
+transport is available only in a CONDITIONAL form, carrying the hypothesis
+that the symmetric-hom module does not grow along `q` — and that hypothesis
+is a RIGIDITY statement about Hilbert–Blumenthal-type families, i.e. exactly
+the kind of moduli input the staged cut was supposed to move across the
+seam. THE CHECK THAT WOULD REFUTE THIS UPDATE: write
+`PolarizationStruct.baseChange` with no hypothesis beyond `q : S' ⟶ S`, or
+show `Hom^sym` cannot grow for a family carrying a `PolarizationStruct`.
+
+CONCLUSION FOR THE STAGED AXIS: it stays closed, and now for a MATHEMATICAL
+reason rather than a missing-work one. Writing the four available transports
+would be free-floating today — nothing in this file consumes them — so they
+remain a separate task with its own consumer, not something to smuggle into
+this leaf.
 
 THE OTHER AXIS STILL NOT SEARCHED: a cut that separates the analytic
 uniformization (which supplies connectedness) from the GIT/deformation
@@ -28199,7 +28270,31 @@ COMPLEX-ANALYTIC datum. The obstruction there is that
 `GeometricallyConnected` is the all-extensions form and this pin has no
 "test over a single algebraically closed extension" criterion — the same
 gap `geometricallyIrreducible_of_smooth_of_geometricallyConnected` above
-had to route around.
+had to route around. (RE-CHECKED 2026-07-28, since an audit is a dated claim
+about a moving tree: `Mathlib/AlgebraicGeometry/Geometrically/Basic.lean`
+and `.../Connected.lean` still offer only `geometrically_eq_universally`,
+`geometrically_iff_forall_fiberToSpecResidueField`,
+`geometrically_iff_of_commRing` and the base-change instances — every one of
+them all-extensions or all-fibres. The obstruction stands.)
+
+A FOURTH PROPERTY-SHAPED REFUTATION, recorded 2026-07-28 because it is the
+first thing one tries after reading the second bullet above and it is FALSE.
+*"Connectedness need not be produced: take a geometrically connected clopen
+subscheme of whatever the first leaf produces."* The second leaf would then
+be `[all clauses but connectedness] → [some clopen piece satisfies all
+clauses]`, and that implication is FALSE. Witness: let `M` be the true space
+and `x₁ ≠ x₂` two closed points of it whose fibres are pairwise
+non-isomorphic to every other fibre as `𝒪_D`-`Γ`-modules; put
+`U := M ∖ {x₁}`, `V := M ∖ {x₂}`, and take `X := U ⊔ V` with the restricted
+family. Openness keeps smoothness, the relative dimension, separatedness,
+finite type and the universal level structures; quasi-compactness survives
+because removing a closed point from a Noetherian scheme does; and `X` is
+FINE, because `U ∪ V = M` means every object finds a point in one summand or
+the other. But the clopen pieces of `X` are `U`, `V` and `X`, and neither
+`U` nor `V` is fine — the fibre at `x₁` has no point over `U`, the fibre at
+`x₂` none over `V`. So the uniqueness-free fineness clause blocks component
+SELECTION exactly as it blocks component derivation, and the residue really
+is atomic along the whole property-shaped axis.
 
 **FAITHFULNESS QUESTION — NARROW CLASS GROUP versus CONNECTEDNESS:
 SETTLED 2026-07-27, and the answer was NO. The previous form of this leaf
@@ -28943,6 +29038,43 @@ would also serve the `𝔞`-side: the same interface is what would let
 construction over a field containing `μ_{ℓp}` plus a descent to `ℚ` along
 the standard level module `ρ₀`.
 
+UPDATE 2026-07-28 — SCOPING THAT SEPARATE TASK, so it is dispatched once
+rather than twice, and so its author knows how much of it already exists.
+
+*The two open leaves of this section are blocked on the SAME item.* Axis 4
+here and the "construct over `K ⊇ μ_{ℓp}`, descend along `ρ₀`" axis on
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` are one
+interface, not two. Whoever writes it should cut BOTH leaves along it in the
+same task — an interface with one consumer is half of a free-floating
+module, and this one has two.
+
+*How much infrastructure each leaf needs is very different, and this leaf
+needs much less.* The `𝔞`-side leaf has to move an
+`AbelianSchemeStruct` + `Mult` + `DualStruct` + `PolarizationStruct` package
+across its seam, and its own audit now records (UPDATE 2026-07-28 (ii)
+there) that `Fermat.PolarizationStruct` does NOT base-change: the
+symmetric-hom module of `lam_surjective` can grow, with an explicit
+Weil-restriction counterexample. **`HasTwistedHilbertBlumenthalDescent`
+carries only `ab` and `m`** — no `DualStruct`, no polarization, by
+construction (the pairing normalization was deliberately left out of
+`IsTwistedLevelStructure`; see its docstring). So the transport this leaf
+needs is exactly `AbelianSchemeStruct` and `Mult`, and
+`Fermat.AbelianSchemeStruct.baseChange`
+(`Modularity/AbelianSchemeIsogeny.lean:534`, reachable here through
+`Modularity.TateModule`'s `public import`) is already written, with `Mult`
+routine on top of `Fermat.RelPoint.baseChangeUp`/`baseChangeDown`. The
+polarization obstruction does not touch this leaf at all.
+
+*What remains genuinely missing for this leaf is therefore the descent
+interface alone*: a `Γ`-action on `X₀ ⊗ K` as data, a 1-cocycle
+`Γ_ℚ ⟶ Γ` for it, the twisted scheme, and the points formula
+`X_c(F) = {y ∈ X₀(K)-points : σ y = y · c(σ) for σ ∈ Γ_F}` — Lemma 4.4.
+Nothing about that has to be PROVEN to make the cut; per the fleet rule that
+stating a theory is not proving it, the interface can be written and the
+obligation lands on a new named leaf. What must NOT be done is to let the
+second stage hand a bare `X` to a third leaf: axis 1 above kills that with
+the even twist, and it kills it whatever the interface looks like.
+
 WHAT IS GENUINELY MISSING FROM THE PIN for the construction itself, so the
 next owner does not re-survey (checked 2026-07-27 over `Fermat/`,
 `.lake/packages/mathlib` and `~/cs/FLT`): descent data for schemes,
@@ -29364,6 +29496,11 @@ now PROVEN, so only TWO of the three names above are live:
 `exists_splitHilbertBlumenthalModuli_of_standardLevelModule` and
 `exists_twistedHilbertBlumenthalDescent_of_split`. Both are geometry; the
 representation-theoretic half is done and needs no owner.
+**NAME CORRECTION, 2026-07-28: the first of those two is stale — it was
+PROVEN by the third cut later on 2026-07-27, and the open node is
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` (…`Family`…,
+not …`Moduli`…). The count of two is right; one of the names is not. The
+live pair is stated correctly at the end of this docstring.**
 
 AUDIT UPDATE V (2026-07-27) — **RETRACTED THE SAME DAY; SEE AUDIT UPDATE VI
 IMMEDIATELY BELOW BEFORE ACTING ON IT.** It read: "ONE of those two is FALSE
