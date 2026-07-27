@@ -24497,8 +24497,15 @@ theorem seven_split {X Y f : ℤ} (hXY : X * Y = 7 * f ^ 2) (hcop : IsCoprime X 
         (dvd_pow_self γ two_ne_zero)).symm
     · rw [← hmul, hα, hγ]
 
-/-- **The class-`1` homogeneous space of the `2`-isogenous curve
-`Y² = X(X−1)(X−49)`** (sorry leaf, cut 2026-07-27 out of `quartic_one`; it
+/-! ### Background: `dual_quartic`'s descent, as it was first mapped
+
+This block is **historical background**, kept because its reconnaissance is
+still correct and useful; the live statement of the theorem, the corrected
+plan and the proof structure are on `dual_quartic` itself, far below.
+
+**The class-`1` homogeneous space of the `2`-isogenous curve
+`Y² = X(X−1)(X−49)`** (PROVEN 2026-07-27 over the four CASE I leaves; cut
+2026-07-27 out of `quartic_one`; it
 carries `quartic_negThree` too, through the translation trick recorded there).
 
 For coprime `M`, `e`,
@@ -24574,14 +24581,529 @@ into `h²(f² − k²) = g²(49f² − k²)`, whence
 which is **this same system at `(M', e') = (k, f)` with `gcd = −K`** — so the
 descent is self-referential and wants ONE strong induction, exactly as
 `MazurLevel15.concordant_both_aux` carries `concordant_one` and
-`concordant_five` together. What is **not** done: pruning `K ∣ 48` (the
-level-`15` analogue prunes `K ∣ 15` to `K ∈ {1,5}` with
-`three_dvd_of_sq_add_sq`), the `7 ∣ M` sub-branch, and the branch where `M`,
-`e` are both odd (there `8 ∣ A`, `8 ∣ B`). -/
+`concordant_five` together.
+
+**THE PLAN ABOVE IS SUPERSEDED (2026-07-27); see the corrections recorded on
+`dual_quartic` itself.** Two of its claims were wrong and cost real time, so
+they are flagged here rather than deleted: (a) the induction measure is
+**`|e|`**, not `M² + e²` — with `|e|` the whole "egg" `|M| < |e|` collapses to
+a *single* application of the induction hypothesis and needs no descent at
+all; and (b) **`K ∣ 48` never needs pruning**, because `(f²−k²)(49f²−k²) =
+(Kgh)²` is a square for every `K` whatsoever, so the descent lands back on
+this same statement regardless of `K`. -/
+
+/-- **The `d = 7` homogeneous space of `y² = x(x−1)(x−49)` is locally
+insoluble at `7`** (PROVEN 2026-07-27): for coprime `M`, `e` there is no `N`
+with `N² = (M² − 7e²)(7M² − e²)`.
+
+This is the space `N² = 7M⁴ − 50M²e² + 7e⁴` of the same `2`-isogeny descent
+as `dual_quartic` (which is `d = 1`); the classes `d = −1`, `d = −7` are
+excluded by sign, so these two are the whole descent.
+
+The proof is two lines of arithmetic. Mod `7` the equation reads
+`N² ≡ −(Me)²`, and `−1` is not a square mod `7`, so `7 ∣ M` or `7 ∣ e`. In
+either case the `7`-adic valuation of the right-hand side is exactly `1` more
+than an even number: with `M = 7M₁`, `M² − 7e² = 7(7M₁² − e²)` has valuation
+`1` while `7M² − e² ≡ −e²` has valuation `0`, so `N²` would have odd
+valuation unless `7 ∣ e` — contradicting coprimality.
+
+**This lemma is what closes the `7 ∣ M` sub-branches** of `caseI_one` and of
+`caseI_fortyEight` outright, with no descent. -/
+theorem dual_seven (M e N : ℤ) (hcop : IsCoprime M e)
+    (h : N ^ 2 = (M ^ 2 - 7 * e ^ 2) * (7 * M ^ 2 - e ^ 2)) : False := by
+  -- Step 1: `7 ∣ M ∨ 7 ∣ e`, because `−1` is not a square mod `7`.
+  have hmod : ∀ x y z : ZMod 7, z ^ 2 = -(x ^ 2 * y ^ 2) → x = 0 ∨ y = 0 := by decide
+  have h7z : (7 : ZMod 7) = 0 := by decide
+  have hcast : ((N : ZMod 7)) ^ 2 = -(((M : ZMod 7)) ^ 2 * ((e : ZMod 7)) ^ 2) := by
+    have h' := congrArg (fun t : ℤ => (t : ZMod 7)) h
+    push_cast at h'
+    rw [h7z] at h'
+    linear_combination h'
+  have hdvd : (7 : ℤ) ∣ M ∨ (7 : ℤ) ∣ e := by
+    rcases hmod _ _ _ hcast with h0 | h0
+    · exact Or.inl ((ZMod.intCast_zmod_eq_zero_iff_dvd M 7).mp h0)
+    · exact Or.inr ((ZMod.intCast_zmod_eq_zero_iff_dvd e 7).mp h0)
+  -- Step 2: either way the `7`-adic valuation of the right-hand side is odd.
+  have key : ∀ x y z : ℤ, IsCoprime x y → (7 : ℤ) ∣ x →
+      z ^ 2 = (x ^ 2 - 7 * y ^ 2) * (7 * x ^ 2 - y ^ 2) → False := by
+    intro x y z hxy h7 hz
+    obtain ⟨x₁, rfl⟩ := h7
+    have h7p : Prime (7 : ℤ) := by
+      rw [Int.prime_iff_natAbs_prime]; norm_num
+    have hz7 : (7 : ℤ) ∣ z := by
+      refine h7p.dvd_of_dvd_pow (n := 2) ?_
+      exact ⟨(7 * x₁ ^ 2 - y ^ 2) * (343 * x₁ ^ 2 - y ^ 2), by rw [hz]; ring⟩
+    obtain ⟨z₁, rfl⟩ := hz7
+    have hred : 7 * z₁ ^ 2 = (7 * x₁ ^ 2 - y ^ 2) * (343 * x₁ ^ 2 - y ^ 2) :=
+      mul_left_cancel₀ (by norm_num : (7 : ℤ) ≠ 0) (by linear_combination hz)
+    have h7y : (7 : ℤ) ∣ y := by
+      refine h7p.dvd_of_dvd_pow (n := 4) ?_
+      exact ⟨z₁ ^ 2 - 343 * x₁ ^ 4 + 50 * x₁ ^ 2 * y ^ 2, by linear_combination -hred⟩
+    have hu : IsUnit (7 : ℤ) := hxy.isUnit_of_dvd' ⟨x₁, rfl⟩ h7y
+    rw [Int.isUnit_iff] at hu
+    omega
+  rcases hdvd with h7 | h7
+  · exact key M e N hcop h7 h
+  · exact key e M N hcop.symm h7 (by linear_combination h)
+
+/-- `8 ∣ g·X` with `g ∈ {2, 4, 6, 12}` forces `2 ∣ X` (PROVEN 2026-07-27). -/
+theorem two_dvd_aux {g X : ℤ} (hg : g = 2 ∨ g = 4 ∨ g = 6 ∨ g = 12)
+    (h : (8 : ℤ) ∣ g * X) : (2 : ℤ) ∣ X := by
+  rcases hg with rfl | rfl | rfl | rfl <;> omega
+
+/-- An odd square is `1` mod `8` (PROVEN 2026-07-27). -/
+theorem oddsq_mod_eight {e : ℤ} (he : Odd e) : ((e : ZMod 8)) ^ 2 = 1 := by
+  obtain ⟨l, rfl⟩ := he
+  have h : ∀ t : ZMod 8, (2 * t + 1) ^ 2 = 1 := by decide
+  push_cast
+  exact h _
+
+/-- **The even `gcd` classes of CASE I are empty** (PROVEN 2026-07-27).
+
+If `M² − e² = c·a²` and `M² − 49e² = c·b²` with `c` even, then `M² − e²` is
+even, so `M` and `e` have the same parity, so — being coprime — both are odd
+and `8 ∣ M² − e²`, `8 ∣ M² − 49e²`. Then:
+
+* `c ∈ {2, 4, 6, 12}`: `8 ∣ c·a²` forces `2 ∣ a`, and likewise `2 ∣ b`,
+  contradicting `IsCoprime a b`;
+* `c = 8`: subtracting gives `a² − b² = 6e² ≡ 6 (mod 8)`, and no difference of
+  two squares is `6` mod `8`;
+* `c = 24`: likewise `a² − b² = 2e² ≡ 2 (mod 8)`, again impossible. -/
+theorem caseI_even {M e a b c : ℤ} (hcop : IsCoprime M e) (hab : IsCoprime a b)
+    (hc : c = 2 ∨ c = 4 ∨ c = 6 ∨ c = 8 ∨ c = 12 ∨ c = 24)
+    (ha : M ^ 2 - e ^ 2 = c * a ^ 2) (hb : M ^ 2 - 49 * e ^ 2 = c * b ^ 2) : False := by
+  have hnot2 : ¬((2 : ℤ) ∣ M ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have hu := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at hu
+    omega
+  have hd2 : (2 : ℤ) ∣ M ^ 2 - e ^ 2 := by
+    rw [ha]; rcases hc with rfl | rfl | rfl | rfl | rfl | rfl <;>
+      exact Dvd.dvd.mul_right (by norm_num) _
+  have hev : Even (M ^ 2 - e ^ 2) := by obtain ⟨d, hd⟩ := hd2; exact ⟨d, by linarith⟩
+  have hiff : Even M ↔ Even e := by
+    have hx := Int.even_sub.mp hev
+    simpa [Int.even_pow] using hx
+  have hMo : Odd M := by
+    rcases Int.even_or_odd M with hm | hm
+    · exact absurd ⟨hm.two_dvd, (hiff.mp hm).two_dvd⟩ hnot2
+    · exact hm
+  have heo : Odd e := by
+    rcases Int.even_or_odd e with hf | hf
+    · exact absurd ⟨(hiff.mpr hf).two_dvd, hf.two_dvd⟩ hnot2
+    · exact hf
+  obtain ⟨k, hk⟩ := hMo
+  obtain ⟨l, hl⟩ := heo
+  obtain ⟨s, hs⟩ : Even (k * (k + 1)) := Int.even_mul_succ_self k
+  obtain ⟨t, ht⟩ : Even (l * (l + 1)) := Int.even_mul_succ_self l
+  have h8A : (8 : ℤ) ∣ M ^ 2 - e ^ 2 :=
+    ⟨s - t, by rw [hk, hl]; linear_combination 4 * hs - 4 * ht⟩
+  have h8B : (8 : ℤ) ∣ M ^ 2 - 49 * e ^ 2 := by
+    obtain ⟨w, hw⟩ := h8A
+    exact ⟨w - 6 * e ^ 2, by linarith⟩
+  have hp2 : Prime (2 : ℤ) := Int.prime_two
+  have heo' : Odd e := ⟨l, hl⟩
+  rcases hc with rfl | rfl | rfl | rfl | rfl | rfl
+  · exact absurd (hab.isUnit_of_dvd' (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (ha ▸ h8A)))
+      (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (hb ▸ h8B)))) (by
+        rw [Int.isUnit_iff]; omega)
+  · exact absurd (hab.isUnit_of_dvd' (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (ha ▸ h8A)))
+      (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (hb ▸ h8B)))) (by
+        rw [Int.isUnit_iff]; omega)
+  · exact absurd (hab.isUnit_of_dvd' (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (ha ▸ h8A)))
+      (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (hb ▸ h8B)))) (by
+        rw [Int.isUnit_iff]; omega)
+  · have hdiff : a ^ 2 - b ^ 2 = 6 * e ^ 2 := by linarith
+    have hmod8 : ∀ x y : ZMod 8, x ^ 2 - y ^ 2 ≠ 6 := by decide
+    refine hmod8 (a : ZMod 8) (b : ZMod 8) ?_
+    have h' := congrArg (fun t : ℤ => (t : ZMod 8)) hdiff
+    push_cast at h'
+    rw [oddsq_mod_eight heo'] at h'
+    linear_combination h'
+  · exact absurd (hab.isUnit_of_dvd' (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (ha ▸ h8A)))
+      (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (hb ▸ h8B)))) (by
+        rw [Int.isUnit_iff]; omega)
+  · have hdiff : a ^ 2 - b ^ 2 = 2 * e ^ 2 := by linarith
+    have hmod8 : ∀ x y : ZMod 8, x ^ 2 - y ^ 2 ≠ 2 := by decide
+    refine hmod8 (a : ZMod 8) (b : ZMod 8) ?_
+    have h' := congrArg (fun t : ℤ => (t : ZMod 8)) hdiff
+    push_cast at h'
+    rw [oddsq_mod_eight heo'] at h'
+    linear_combination h'
+
+/-- **The `gcd` split of CASE I** (PROVEN 2026-07-27). With `M > 7e > 0` and
+`(M² − e²)(M² − 49e²) = N²`, both cofactors are positive; writing
+`g = gcd(M² − e², M² − 49e²)` one has `M² − e² = g·a²`, `M² − 49e² = g·b²`
+with `a`, `b` coprime, and `g ∣ 48` — because `g` divides `A − B = 48e²` and
+`49A − B = 48M²` while `M²`, `e²` are coprime.
+
+`caseI_even` then kills every even `g`, leaving exactly
+
+    g ∈ {1, 3, 16, 48},
+
+i.e. the four systems `A = g a²`, `B = g b²`. Equivalently, in the form the
+descent uses, `a² − b² = c·e²` and `49a² − b² = c·M²` with `g·c = 48`, so the
+four branches are the pairs `(g, c) ∈ {(1,48), (3,16), (16,3), (48,1)}` — and
+the involution `(g, c) ↦ (c, g)` is the `2`-isogeny pairing. -/
+theorem caseI_split {M e N : ℤ} (hcop : IsCoprime M e) (he : 0 < e) (hM : 7 * e < M)
+    (h : N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2)) :
+    ∃ a b : ℤ, IsCoprime a b ∧
+      ((M ^ 2 - e ^ 2 = a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = b ^ 2) ∨
+       (M ^ 2 - e ^ 2 = 3 * a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = 3 * b ^ 2) ∨
+       (M ^ 2 - e ^ 2 = 16 * a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = 16 * b ^ 2) ∨
+       (M ^ 2 - e ^ 2 = 48 * a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = 48 * b ^ 2)) := by
+  have hApos : 0 < M ^ 2 - e ^ 2 := by nlinarith
+  have hBpos : 0 < M ^ 2 - 49 * e ^ 2 := by nlinarith
+  obtain ⟨a, b, ha, hb, hab⟩ := MazurLevel15.split_gcd h.symm hApos.le hBpos.le hApos.ne'
+  obtain ⟨g, hgdef⟩ : ∃ g : ℕ, g = Int.gcd (M ^ 2 - e ^ 2) (M ^ 2 - 49 * e ^ 2) := ⟨_, rfl⟩
+  rw [← hgdef] at ha hb
+  obtain ⟨u₀, v₀, huv⟩ := hcop.pow (m := 2) (n := 2)
+  have hg48 : ((g : ℤ)) ∣ 48 :=
+    ⟨u₀ * (49 * a ^ 2 - b ^ 2) + v₀ * (a ^ 2 - b ^ 2), by
+      linear_combination (-48 : ℤ) * huv + (49 * u₀ + v₀) * ha - (u₀ + v₀) * hb⟩
+  have hgn : g ∣ 48 := by exact_mod_cast hg48
+  have hgcases : g = 1 ∨ g = 2 ∨ g = 3 ∨ g = 4 ∨ g = 6 ∨ g = 8 ∨ g = 12 ∨ g = 16
+      ∨ g = 24 ∨ g = 48 := by
+    have hgle : g ≤ 48 := Nat.le_of_dvd (by norm_num) hgn
+    interval_cases g <;> revert hgn <;> decide
+  rcases hgcases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · push_cast at ha hb
+    exact ⟨a, b, hab, Or.inl ⟨by linarith, by linarith⟩⟩
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact ⟨a, b, hab, Or.inr (Or.inl ⟨by linarith, by linarith⟩)⟩
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact ⟨a, b, hab, Or.inr (Or.inr (Or.inl ⟨by linarith, by linarith⟩))⟩
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact ⟨a, b, hab, Or.inr (Or.inr (Or.inr ⟨by linarith, by linarith⟩))⟩
+
+/-- **CASE I, `g = 1`: `M² − e² = a²`, `M² − 49e² = b²`** (sorry leaf, cut
+2026-07-27 out of `dual_quartic`).
+
+`M` is the hypotenuse of two Pythagorean triples with legs `e` and `7e`. Both
+triples force `M` odd (an even hypotenuse would give `a² + e² ≡ 2 mod 4`), so
+`e` is even. **The route is fully mapped and non-circular** — it lands back on
+`dual_quartic` at a point with strictly smaller `|e|`, which is exactly what
+the hypothesis `ih` supplies:
+
+* `7 ∤ M`. Both triples are primitive: `M = p² + q²`, `e = 2pq` and
+  `M = r² + s²`, `7e = 2rs`, hence `rs = 7pq` and `p² + q² = r² + s²`. Split
+  `rs = 7pq` four ways (`MazurLevel15.descent_step` is the reusable shape,
+  built on `exists_dvd_and_dvd_of_dvd_mul`). With `7 ∣ r`, `r = 7fg`, `s = hk`,
+  `p = fh`, `q = gk`, the second equation becomes
+  `h²(f² − k²) = g²(49f² − k²)`, so `f² − k² = K g²` and `49f² − k² = K h²`
+  for a common `K`, whence `(k² − f²)(k² − 49f²) = (Kgh)²` — **`dual_quartic`
+  at `(k, f)`**. With `7 ∣ s` instead one gets `dual_quartic` at `(f, k)` by
+  the mirror computation. **`K` needs no pruning at all**: the product is a
+  square for every `K`, which is the correction to the old plan.
+  Strict decrease: `e = 2fghk`, so `|f| ≤ |e|/2 < |e|` (all four factors are
+  nonzero because `e ≠ 0`). Each of the four conclusions of `ih` at `(k, f)`
+  forces `e = 0`, a contradiction.
+* `7 ∣ M`. Write `M = 7M₁`; then `b = 7b₁`, and `e` is a common leg of triples
+  with hypotenuses `M₁` and `7M₁`: `pq = rs` with `7(p² + q²) = r² + s²`. The
+  same four-way split gives `g²(7f² − k²) = h²(f² − 7k²)`, i.e.
+  `(f² − 7k²)(7f² − k²) = (Kgh)²`, which is **`dual_seven`** — already PROVEN
+  above to be locally insoluble at `7`. So this sub-branch closes outright,
+  with no descent. -/
+theorem caseI_one (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = b ^ 2) : False :=
+  sorry
+
+/-- **CASE I, `g = 3`: `M² − e² = 3a²`, `M² − 49e² = 3b²`** (sorry leaf, cut
+2026-07-27 out of `dual_quartic`).
+
+Equivalently `a² − b² = 16e²` and `49a² − b² = 16M²`. Established facts:
+`3 ∤ M`, `3 ∤ e`, and (mod `8`) **`M` is even with `M ≡ 2 mod 4`, `e` odd** —
+the sub-case `M` odd, `e` even is impossible, since `3a² ≡ 3 (mod 8)` for odd
+`a` while `M² − e² ≡ 1 − e²` can never be `3` mod `8` with `e` even. A mod-`9`
+count shows `a² − b² ≡ 1 (mod 3)`, so `3 ∤ a` and `3 ∣ b`.
+
+**AXIS SEARCHED**: congruences mod `2^k`, `3^k` (they constrain but do not
+close the branch — the class `(3,3)` is genuinely in the image of the descent
+map, realised by the `2`-torsion point `(49, 0)`). **AXIS NOT SEARCHED**: the
+four-way split of `(a − b)(a + b) = 16e²` and `(7a − b)(7a + b) = 16M²`. -/
+theorem caseI_three (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = 3 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 3 * b ^ 2) : False :=
+  sorry
+
+/-- **CASE I, `g = 16`: `M² − e² = 16a²`, `M² − 49e² = 16b²`** (sorry leaf,
+cut 2026-07-27 out of `dual_quartic`).
+
+Here `M` and `e` are both odd, and dividing out gives `a² − b² = 3e²`,
+`49a² − b² = 3M²` — the mirror of `caseI_three` under `(g, c) ↦ (c, g)`.
+Mod `8`: `3e² ≡ 3`, so `a` is even and `b` is odd. -/
+theorem caseI_sixteen (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = 16 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 16 * b ^ 2) : False :=
+  sorry
+
+/-- **CASE I, `g = 48`: `M² − e² = 48a²`, `M² − 49e² = 48b²`** (sorry leaf,
+cut 2026-07-27 out of `dual_quartic`).
+
+Here `M`, `e` are both odd and dividing out gives `a² − b² = e²`,
+`49a² − b² = M²`: so `b` is a common **leg** of two Pythagorean triples,
+`b² + e² = a²` and `b² + M² = (7a)²`. **This is the same shape as the `7 ∣ M`
+sub-branch of `caseI_one`**, and it closes the same way: when
+`gcd(b, M) = 1` the two primitive parametrisations give `mn = pq` with
+`7(m² + n²) = p² + q²`, whose four-way split lands on `dual_seven` — PROVEN
+insoluble above. **What is left** is the residual sub-branch `7 ∣ b` and
+`7 ∣ M`, where writing `b = 7b₁`, `M = 7M₁` gives `M₁² = e² + 48b₁²` with
+`M₁² + b₁² = a²` and `e² + 49b₁² = a²` (two triples with the common
+hypotenuse `a`). -/
+theorem caseI_fortyEight (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = 48 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 48 * b ^ 2) : False :=
+  sorry
+
+/-- **CASE I of the descent** (PROVEN 2026-07-27 over the four `g`-branches):
+`M > 7e > 0`, so both cofactors are positive, and `caseI_split` reduces to
+`g ∈ {1, 3, 16, 48}`. -/
+theorem dual_quartic_caseI (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e N : ℤ) (hcop : IsCoprime M e) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (h : N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2)) : False := by
+  obtain ⟨a, b, hab, hcase⟩ := caseI_split hcop he hM h
+  rcases hcase with ⟨hA, hB⟩ | ⟨hA, hB⟩ | ⟨hA, hB⟩ | ⟨hA, hB⟩
+  · exact caseI_one n ih M e a b hcop hab hlen he hM hA hB
+  · exact caseI_three n ih M e a b hcop hab hlen he hM hA hB
+  · exact caseI_sixteen n ih M e a b hcop hab hlen he hM hA hB
+  · exact caseI_fortyEight n ih M e a b hcop hab hlen he hM hA hB
+
+/-- Coprimality is insensitive to signs (PROVEN 2026-07-27). -/
+theorem abs_isCoprime {M e : ℤ} (hcop : IsCoprime M e) : IsCoprime |M| |e| := by
+  rcases abs_choice M with hm | hm <;> rcases abs_choice e with hf | hf <;> rw [hm, hf]
+  · exact hcop
+  · exact hcop.neg_right
+  · exact hcop.neg_left
+  · exact hcop.neg_left.neg_right
+
+/-- `7` is coprime to anything it does not divide (PROVEN 2026-07-27). -/
+theorem coprime_seven {M : ℤ} (h7 : ¬ (7 : ℤ) ∣ M) : IsCoprime (7 : ℤ) M := by
+  have hp : Nat.Prime 7 := by norm_num
+  have hnd : ¬ (7 : ℕ) ∣ M.natAbs := fun hd =>
+    h7 (Int.natAbs_dvd_natAbs.mp (by simpa using hd))
+  rw [Int.isCoprime_iff_gcd_eq_one]
+  simpa [Int.gcd] using (Nat.Prime.coprime_iff_not_dvd hp).mpr hnd
+
+/-- **The induction step of `dual_quartic`** (PROVEN 2026-07-27 over
+`dual_quartic_caseI`): everything outside CASE I is discharged here.
+
+After the four trivial conclusions are ruled out, `A = M² − e²` and
+`B = M² − 49e²` are nonzero with `AB = N² > 0`, so they have the same sign.
+
+* `M² < e²` (the **egg** `0 < x < 1` on `y² = x(x−1)(x−49)`, where both
+  cofactors are negative). Translation by the `2`-torsion point `(0, 0)` sends
+  `x ↦ 49/x`, i.e. `(M, e) ↦ (7e, M)` when `7 ∤ M` and `(M, e) ↦ (e, M/7)`
+  when `7 ∣ M`, and `49(M²−e²)(M²−49e²) = ((7e)²−M²)((7e)²−49M²)` makes this
+  an honest solution again. **Both images have `|e'| = |M| < |e|`**, so this
+  whole half is a single application of `ih` — no descent is needed. (This is
+  why the induction measure is `|e|` and not `M² + e²`, under which the same
+  transformation *increases* the measure.) Each of the four conclusions
+  transports back to one of ours.
+* `M² > e²`: then `A > 0`, hence `B > 0` and `M² > 49e²`. Replacing `M`, `e`
+  by `|M|`, `|e|` (the statement is even in both) puts us in CASE I. -/
+theorem dual_quartic_step (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2) :
+    ∀ M e N : ℤ, e.natAbs ≤ n + 1 → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2 := by
+  intro M e N hlen hcop h
+  by_cases he0 : e = 0
+  · exact Or.inr (Or.inl he0)
+  by_cases hM0 : M = 0
+  · exact Or.inl hM0
+  by_cases h1 : M ^ 2 = e ^ 2
+  · exact Or.inr (Or.inr (Or.inl h1))
+  by_cases h2 : M ^ 2 = 49 * e ^ 2
+  · exact Or.inr (Or.inr (Or.inr h2))
+  exfalso
+  have hA0 : M ^ 2 - e ^ 2 ≠ 0 := fun hc => h1 (by linarith)
+  have hB0 : M ^ 2 - 49 * e ^ 2 ≠ 0 := fun hc => h2 (by linarith)
+  have hNne : N ^ 2 ≠ 0 := by rw [h]; exact mul_ne_zero hA0 hB0
+  have hprodpos : 0 < (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) := by
+    rw [← h]; exact (sq_nonneg N).lt_of_ne (Ne.symm hNne)
+  rcases lt_trichotomy (M ^ 2) (e ^ 2) with hlt | heq | hgt
+  · -- The egg: reduce to a point with a strictly smaller `|e|`.
+    have habs : |M| < |e| := by
+      nlinarith [sq_abs M, sq_abs e, abs_nonneg M, abs_nonneg e]
+    have hnat : M.natAbs < e.natAbs := by
+      have hc : (M.natAbs : ℤ) < (e.natAbs : ℤ) := by
+        rwa [Int.natCast_natAbs, Int.natCast_natAbs]
+      exact_mod_cast hc
+    have hMn : M.natAbs ≤ n := by omega
+    by_cases h7 : (7 : ℤ) ∣ M
+    · obtain ⟨M₁, rfl⟩ := h7
+      have h7p : Prime (7 : ℤ) := by rw [Int.prime_iff_natAbs_prime]; norm_num
+      have h7N : (7 : ℤ) ∣ N := by
+        refine h7p.dvd_of_dvd_pow (n := 2) ?_
+        exact ⟨7 * (49 * M₁ ^ 2 - e ^ 2) * (M₁ ^ 2 - e ^ 2), by rw [h]; ring⟩
+      obtain ⟨N₁, rfl⟩ := h7N
+      have hcop' : IsCoprime e M₁ :=
+        hcop.symm.of_isCoprime_of_dvd_right ⟨7, by ring⟩
+      have hred : N₁ ^ 2 = (e ^ 2 - M₁ ^ 2) * (e ^ 2 - 49 * M₁ ^ 2) :=
+        mul_left_cancel₀ (by norm_num : (49 : ℤ) ≠ 0) (by linear_combination h)
+      have hM₁n : M₁.natAbs ≤ n := by
+        have hle : M₁.natAbs ≤ (7 * M₁).natAbs := by
+          rw [Int.natAbs_mul]; simp; omega
+        omega
+      rcases ih e M₁ N₁ hM₁n hcop' hred with hc | hc | hc | hc
+      · exact he0 hc
+      · exact hM0 (by rw [hc]; ring)
+      · exact h2 (by linarith)
+      · exact h1 (by linarith)
+    · have hcop' : IsCoprime (7 * e) M := ((coprime_seven h7).mul_left hcop.symm)
+      have hred : (7 * N) ^ 2 = ((7 * e) ^ 2 - M ^ 2) * ((7 * e) ^ 2 - 49 * M ^ 2) := by
+        linear_combination 49 * h
+      rcases ih (7 * e) M (7 * N) hMn hcop' hred with hc | hc | hc | hc
+      · exact he0 (by linarith)
+      · exact hM0 hc
+      · exact h2 (by linarith)
+      · exact h1 (by linarith)
+  · exact h1 heq
+  · have hApos : 0 < M ^ 2 - e ^ 2 := by linarith
+    have hBpos : 0 < M ^ 2 - 49 * e ^ 2 := by nlinarith [hprodpos, hApos]
+    refine dual_quartic_caseI n ih |M| |e| N (abs_isCoprime hcop) ?_ ?_ ?_ ?_
+    · rwa [Int.natAbs_abs]
+    · exact abs_pos.mpr he0
+    · nlinarith [sq_abs M, sq_abs e, abs_nonneg M, abs_nonneg e]
+    · rw [sq_abs, sq_abs]; exact h
+
+/-- **The strong induction on `|e|` carrying `dual_quartic`** (PROVEN
+2026-07-27 over `dual_quartic_step`). -/
+theorem dual_quartic_aux : ∀ n : ℕ, ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+    N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+    M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2 := by
+  intro n
+  induction n with
+  | zero =>
+    intro M e N hlen _ _
+    exact Or.inr (Or.inl (Int.natAbs_eq_zero.mp (Nat.le_zero.mp hlen)))
+  | succ n ih => exact dual_quartic_step n ih
+
+/-- **The class-`1` homogeneous space of the `2`-isogenous curve
+`Y² = X(X−1)(X−49)`** (PROVEN 2026-07-27 over the four CASE I leaves
+`caseI_one`, `caseI_three`, `caseI_sixteen`, `caseI_fortyEight`; it carries
+`quartic_negThree` too, through the translation trick recorded on
+`quartic_one`).
+
+For coprime `M`, `e`,
+
+    `N² = M⁴ − 50M²e² + 49e⁴ = (M² − e²)(M² − 49e²)`
+
+only for `M = 0`, `e = 0`, `M² = e²` and `M² = 49e²` — the four rational
+points `X ∈ {0, ∞, 1, 49}` of `Y² = X(X−1)(X−49)`, which are exactly its
+`2`-torsion together with `O`.  Verified by exhaustive search over coprime
+`0 ≤ M, e ≤ 6000`: no further solution.  `ellinit([0,-50,0,49,0])` has
+conductor `21`, `E(ℚ)_tors ≅ ℤ/2 × ℤ/2` and rank `0`, so the statement is true
+and is not weaker than the geometry.
+
+**THE STRUCTURE OF THE PROOF, and two corrections to the plan this leaf was
+cut with** (2026-07-27).
+
+1. **The induction measure is `|e|`.** The old plan proposed `M² + e²` in
+   imitation of `MazurLevel15.concordant_both_aux`. That is the wrong measure
+   here: the "egg" branch `M² < e²` is handled by translating with the
+   `2`-torsion point `(0, 0)`, `x ↦ 49/x`, i.e. `(M, e) ↦ (7e, M)` (or
+   `(e, M/7)` when `7 ∣ M`) — which *raises* `M² + e²` but *lowers* `|e|` to
+   `|M|`. Under `|e|` that entire half of the problem is one application of
+   the induction hypothesis and needs no descent whatsoever
+   (`dual_quartic_step`).
+2. **`K ∣ 48` needs no pruning.** The old plan listed "pruning `K ∣ 48`" as
+   outstanding work, by analogy with the level-`15` pruning of `K ∣ 15` to
+   `K ∈ {1,5}`. It is unnecessary: the descent produces `f² − k² = Kg²` and
+   `49f² − k² = Kh²`, whose product is `(Kgh)²` — **a square for every `K`** —
+   so it is a `dual_quartic` solution at `(k, f)` whatever `K` is.
+
+What the proof actually does, top down:
+
+* `dual_quartic_aux` — strong induction on `|e|`; base case `e = 0`.
+* `dual_quartic_step` — the four trivial conclusions, then the sign split.
+  `A = M²−e²` and `B = M²−49e²` are nonzero with `AB = N² > 0`, so they agree
+  in sign: either `M² < e²` (the egg, discharged by `ih` as above) or
+  `M² > e²`, which forces `M² > 49e²`, i.e. CASE I.
+* `caseI_split` — `g = gcd(A, B)` divides `48`, and `caseI_even` kills every
+  even `g` (`g ∈ {2,4,6,12}` make `a` and `b` both even; `g ∈ {8,24}` give
+  `a² − b² ≡ 6` resp. `2` mod `8`, impossible). Four branches survive,
+  `g ∈ {1, 3, 16, 48}`, which are the four sorry leaves.
+* `dual_seven` — PROVEN here: `N² = (M²−7e²)(7M²−e²)` is **locally insoluble
+  at `7`** (`−1` is not a square mod `7`, and `7 ∣ M` or `7 ∣ e` makes the
+  `7`-adic valuation odd). This is the `d = 7` space of the same `2`-isogeny
+  descent, and it is what closes the `7 ∣ M` sub-branches of `caseI_one` and
+  `caseI_fortyEight` outright.
+
+**THE ISOGENY PICTURE.** Write `E₁ : y² = x(x² + 25x + 144)` (the `X = V − 9`
+model) and `E'' : y² = x(x² − 50x + 49)`, `2`-isogenous by `φ : E₁ → E''`,
+`φ'' : E'' → E₁` with `φ'' ∘ φ = [2]`. This leaf is the class-`1` space of
+`φ''`; `quartic_one` is the class-`1` space of the OTHER `2`-isogeny (kernel
+`V = 0`), and `quartic_one`'s proof is the arrow `quartic_one ⟶ dual_quartic`.
+The return arrow `φ''` sends a solution here to `x = (N/(2Me))²` on `E₁`, i.e.
+to a solution of
+
+    `t² = x₀⁴ + 25x₀²y₀² + 144y₀⁴ = (x₀² + 9y₀²)(x₀² + 16y₀²)`,
+
+whose two factors have `gcd` dividing `7` — and `7` is impossible, since
+`x₀² + 2y₀² ≡ 0 (mod 7)` forces `7 ∣ x₀`, `7 ∣ y₀`. So that space **always**
+splits into the concordant system
+
+    `x² + 9y² = □`,  `x² + 16y² = □`   ⟹   `xy = 0`.
+
+**That route was mapped and then NOT taken; record of what it costs, so the
+next agent does not have to redo the reconnaissance.** The concordant `(9,16)`
+system descends into a `K ∈ {1,7}` split with `K = 7` empty (again because
+`−2` is not a square mod `7`) — but only along the *aligned* four-way split
+`3 ∣ m, 4 ∣ p`. The *crossed* split `3 ∣ m, 4 ∣ q` produces a genuinely
+different system,
+
+    `u² + v² = □`,  `9u² + 16v² = □`,
+
+which has the same Jacobian `Y² = X(X−1)(X−49)` (its quartic invariant is
+`b² − 4ac = 625 − 576 = 49`) and so must be carried alongside. That is why the
+descent was run **inside** `dual_quartic` instead: there the recursion closes
+on this one statement.
+
+**AXIS SEARCHED**: congruences mod `2^k`, `3^k`, `7^k` on the quartic and on
+the split factors — all refuted by the integral points `(1,1)`, `(7,1)`,
+`(1,0)`, `(0,1)`, so no congruence can close this. In particular the
+both-odd branch is **2-adically soluble**: `t² = 65` in `ℤ₂` gives
+`(t²−1)(t²−49) = 1024 = 32²`, so `g ∈ {16, 48}` cannot be killed mod `2^k`. -/
 theorem dual_quartic (M e N : ℤ) (hcop : IsCoprime M e)
     (h : N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2)) :
     M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2 :=
-  sorry
+  dual_quartic_aux e.natAbs M e N le_rfl hcop h
 
 /-- **Both cofactors of `quartic_one` are perfect squares** (PROVEN
 2026-07-27). With `A = S² − 9e²` and `B = S² + 7e²` one has `AB = c²` and
