@@ -20914,8 +20914,161 @@ theorem classPoly500_no_rat_root (x : ℚ)
 
 end MazurLevel125
 
-/-- **Atkin-Lehner fixedness at level `125`, in isogeny vocabulary** (LEAF, cut
-2026-07-26 off `exists_endSq_neg125_of_stable_cyclic_subgroup_order_125`).
+-- (`WeierstrassCurve.isIsogeny_of_veluQuotient` is declared far ABOVE, just before
+-- `exists_tateInvariants_of_stableThreeSubgroup`.  Two branches relocated it out of
+-- the `X_0(7)` section independently — one to there, one to here — and the earlier
+-- position dominates every consumer, including the level-`125` assembly below, so
+-- only that copy survives.  Nothing about the statement or proof changed.)
+
+/-- **Atkin–Lehner fixedness at level `125`, in VÉLU-QUOTIENT vocabulary**
+(LEAF, cut 2026-07-27 off
+`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125`, which is PROVEN
+over it just below).  This is now the only open leaf of the level-`125`
+cluster.
+
+**What it says.**  `C = ⟨g⟩` is a Galois-stable cyclic subgroup of order `125`,
+`φ : E → E'` is *any* isogeny over `ℚ̄` with kernel exactly `C` (in practice the
+Vélu quotient `E' = E.veluModel t w`, which the consumer supplies), and the
+claim is that the quotient PAIR is isomorphic to the original pair: there is an
+isogeny `ι : E' → E` with trivial kernel — hence an isomorphism, `ι` being
+surjective by `IsIsogeny.surjective` over the algebraically closed `ℚ̄` — with
+
+  `ι (φ (E[125])) = C`.
+
+That is exactly `w_125`-fixedness of the point of `X_0(125)` carried by
+`(E, C)`: a fixed point means `(E, C) ≅ (E/C, E[125]/C)` as pairs, and the two
+conjuncts of the consumer are read off from this one by composing, `ψ := ι ∘ φ`.
+
+**Why this cut, and what it buys.**  Everything in the consumer that was Lean
+plumbing rather than mathematics is now PROVEN and lives outside this leaf:
+
+* the QUOTIENT is built, not assumed — `exists_velu_quotient_isogeny_model`
+  produces `t`, `w`, the Galois-equivariant `φ` and `ker φ = C` (`125` is odd,
+  so the `Odd` hypothesis is discharged by `decide` off `Nat.card_zmultiples`);
+* the MORPHISM certificate is supplied — `isIsogeny_of_veluQuotient` turns
+  Vélu's coordinate identification into `IsIsogeny φ`, so the composite carries
+  an `IsIsogeny` witness by `IsIsogeny.comp` and lands in `endSubring`;
+* the KERNEL and IMAGE bookkeeping of the consumer's two conjuncts is discharged
+  from `ker φ = C` and the triviality of `ker ι`.
+
+So a prover of THIS leaf owes only the modular geometry.  The cut is
+one-leaf-for-one-leaf: it does not raise the frontier.
+
+**The second conjunct is not decoration** (carried over from the consumer's
+audit, and re-verified by hand 2026-07-27).  Dropping `ι (φ (E[125])) = C` and
+keeping only `E/C ≅ E`, i.e. `j(E) = j(E/C)`, gives a FALSE weakening: on
+`j = 1728` take `α = 11 + 2i`, of norm `121 + 4 = 125`, with
+`α = i (2 - i)³` and `2 - i` above the split prime `5`, so `ℤ[i]/(α) ≅ ℤ/125`
+is cyclic; there `C := ker α` has `E/C ≅ E`, yet `α² = 117 + 44i ≠ -125`.  That
+curve satisfies the weakened statement and fails this one, because
+`α(E[125]) = ker ᾱ ≠ ker α`.
+
+**WHAT IS GENUINELY MISSING, unchanged by the cut**: `rank J_0(125)⁻(ℚ) = 0`,
+a predicate that exists nowhere in the tree — `HasRankZeroJacobian` is the FULL
+Jacobian and is FALSE here (`rank J_0(125)(ℚ) = 2`; the `w_125 = +1` factor has
+`L(A_f, 1) = 0`).  With it the classical argument is: a rational point `P` of
+`X_0(125)` is not a cusp, `[(P) - (w P)]` lies in the minus part, which is
+trivial, so `P ∼ w P` and hence `P = w P` since the genus is `8 > 0`; the fixed
+points of `w_125` are the CM points of discriminant `-4 · 125 = -500`, and
+`h(-500) = 10`, so none is rational.  The `h(-500)` half of that is ALREADY
+PROVEN in this file (`classPoly500_no_rat_root`, and
+`classPoly500_of_end_closure_eq_top` above it), which is why routing this level
+through a new `Y0HasNoRationalPoint 125` leaf in `X0.lean` is the wrong trade:
+it would relocate the arithmetic into a leaf whose own proof re-derives what is
+already proven here, and turn this whole cluster into `ex falso` laundering —
+exactly what the `169` section of `X0.lean` records as having happened at that
+level.
+
+**THE ISOGENY-CHARACTER AXIS IS NOW DEMONSTRATED DEAD, not merely untried**
+(2026-07-27; the previous audit recorded it as UNTRIED and asked for the
+failure to be exhibited).  The machinery this file already has —
+`exists_isogenyCharacter`,
+`isogenyCharacter_pow_twelve_eq_one_of_mem_localInertiaGroup`,
+`isogenyCharacter_pow_twelve_eq_of_localInertia`,
+`not_isogenyCharacter_of_isogenySignature_ne_six` — carries `hN : N.Prime` and
+`hN19 : 19 < N`, and `125` satisfies neither.  Dropping those hypotheses is not
+a technicality:
+
+* Modulo `M = 5^k` the group `(ℤ/M)ˣ` has order `4 · 5^(k-1)`, so
+  `gcd(12, |(ℤ/M)ˣ|) = 4` and `λ¹² = χ^(12r)` forces `λ = ζ χ^r` with `ζ⁴ = 1`.
+  At a prime `ℓ` of good reduction `a_ℓ ≡ ζ ℓ^r + ζ^(-1) ℓ^(1-r) (mod M)` with
+  `|a_ℓ| ≤ 2√ℓ`.  Enumerating `r` over `ℤ/|(ℤ/M)ˣ|` and `ζ` over `μ₄`, EVERY
+  `r` is killed by `ℓ = 2` or `ℓ = 3` — **at `M = 125` and equally at
+  `M = 25`.**  Since curves with a rational cyclic `25`-isogeny DO exist over
+  `ℚ` (the class `11a`; see the `X1.lean` import note at the head of this
+  file), the model is unsound at `p = 5`, so its verdict at `125` is worth
+  nothing.
+* The step that fails is identified: `λ|I_p` is a power of `χ` by Raynaud's
+  classification of finite flat group schemes, valid only when the
+  semistability defect `e` satisfies `e < p - 1`.  Here `e ∣ 12` and
+  `p - 1 = 4`, so wild inertia at `5` can act through the `5`-part `ℤ/25` of
+  `(ℤ/125)ˣ` and no such power exists.  That is precisely why the chain above
+  is stated at `19 < N` — `p - 1 > 12` needs `p ≥ 17`.
+
+**The check that would refute this paragraph**: a proof that `λ|I_5` is a power
+of `χ` for a `125`-isogeny character, or any elliptic curve over `ℚ` with a
+rational cyclic `25`-isogeny whose isogeny character violates the displayed
+congruence.
+
+**THE SCHEME-LEVEL CUT IS NOW UNBLOCKED — the consumer's audit named two
+refuting conditions and BOTH ARE MET** (checked declaration by declaration
+2026-07-27).  That audit declined the `X_0(125)` route on the grounds that
+`IsCoarseModuliY0` "deliberately OMITS bijectivity on geometric points" and
+that the assembly would have to cross `exists_ellipticScheme_of_weierstrass`,
+then open.  Today:
+
+* `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` (surjectivity on
+  `ℚ̄`-points) and `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq`
+  (injectivity on `ℚ̄`-points) are BOTH PROVEN, for arbitrary `N`, in `X0.lean`;
+* `exists_ellipticScheme_of_weierstrass` is PROVEN;
+* and `X0.lean` now carries an Atkin–Lehner apparatus — `HasRankZeroAbelianImage`,
+  `exists_atkinLehnerPrym_x0OneSixtyNine`, `injective_ajMinus_x0OneSixtyNine` —
+  which that audit listed as "genuinely absent".
+
+So the descent `[(P) - (w P)]` is expressible and the moduli half of the
+assembly is available.  What is still missing for it, and is the honest next
+cut, is TWO things: the level-`125` instance of the Prym/rank-`0` datum (the
+analogue of `exists_atkinLehnerPrym_x0OneSixtyNine`, carrying
+`rank J_0(125)⁻(ℚ) = 0`), and `w` PINNED to its moduli description
+`(E, C) ↦ (E/C, E[125]/C)` — the `169` leaf produces `w` existentially and its
+own docstring says pinning is what it is waiting for.  Note the round trip
+`E ↦ Γ₀(125)`-datum `↦ E` is NOT yet available: `exists_stableCyclic_of_gamma0Datum`
+returns *some* Weierstrass curve, and recovering an isomorphism with the given
+`E` needs `weierstrassModel_j_unique`, still a leaf in `X0.lean`.  **The check
+that refutes this paragraph**: `weierstrassModel_j_unique` closing, or a pinned
+`w_N` appearing in `X0.lean`. -/
+theorem WeierstrassCurve.exists_atkinLehnerIsom_of_veluQuotient_order_125
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (E' : WeierstrassCurve ℚ) (_hE' : E'.IsElliptic)
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hφ : WeierstrassCurve.IsIsogeny φ)
+    (hgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+      φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt))
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples g) :
+    ∃ ι : (E'⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point,
+      WeierstrassCurve.IsIsogeny ι ∧
+      (∀ Q : (E'⁄(AlgebraicClosure ℚ)).Point, ι Q = 0 → Q = 0) ∧
+      (fun P => ι (φ P)) ''
+          {P : (E⁄(AlgebraicClosure ℚ)).Point | (125 : ℕ) • P = 0}
+        = (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)) :=
+  sorry
+
+/-- **Atkin-Lehner fixedness at level `125`, in isogeny vocabulary** (PROVEN
+2026-07-27 over the single leaf
+`exists_atkinLehnerIsom_of_veluQuotient_order_125` immediately above; a leaf
+itself from 2026-07-26, when it was cut off
+`exists_endSq_neg125_of_stable_cyclic_subgroup_order_125`).
 
 This is the MODULAR half of Kenku's argument at level `125`, and after this cut
 it is all that is left of it: a Galois-stable cyclic subgroup `C = ⟨g⟩` of order
@@ -21094,6 +21247,15 @@ rather than assumed, recorded so a successor need not repeat them:
    over `ℚ`), so it may well fail, but the failure has not been demonstrated and
    claiming irreducibility without it overstates what has been searched.
 
+   **SEARCHED 2026-07-27, AND IT IS DEAD.** The failure is now demonstrated
+   rather than expected, with the failing hypothesis named (Raynaud's
+   `e < p - 1`, i.e. `p ≥ 17`, which is where this file's `19 < N` comes from)
+   and with a check that would refute the demonstration. The write-up is in
+   the docstring of `exists_atkinLehnerIsom_of_veluQuotient_order_125`; do not
+   re-run it. The decisive observation, in one line: the same enumeration that
+   kills every `r` at modulus `125` also kills every `r` at modulus `25`, where
+   curves DO exist — so the model, not the level, is what fails.
+
 4. *The two CM leaves this node feeds are CLOSED.*
    `classPoly500_of_end_closure_eq_top` and `classPoly676_of_end_closure_eq_top`
    are PROVEN as of today over the single uniform leaf
@@ -21102,7 +21264,29 @@ rather than assumed, recorded so a successor need not repeat them:
    the ONLY open leaf in the level-`125` cluster; and the level-`125` and
    level-`169` clusters no longer share any open node, so the old "build the CM
    theory once for both" argument no longer touches this leaf at all — it needs
-   modular-curve geometry, and nothing it needs is shared with the CM leaf. -/
+   modular-curve geometry, and nothing it needs is shared with the CM leaf.
+
+**CUT TAKEN 2026-07-27, and this declaration is now PROVEN.** Everything above
+that is an audit of the MATHEMATICS still stands and has moved, unchanged in
+substance, to `exists_atkinLehnerIsom_of_veluQuotient_order_125` — the single
+leaf this is now proven over. What has changed is that the Lean obligations are
+discharged here: the Vélu quotient is CONSTRUCTED
+(`exists_velu_quotient_isogeny_model`, `125` being odd), its `IsIsogeny`
+certificate SUPPLIED (`isIsogeny_of_veluQuotient`), the composite `ψ := ι ∘ φ`
+placed in `endSubring` by `IsIsogeny.comp`, and both conjuncts read off from
+`ker φ = C`, `ker ι = ⊥` and the leaf's image identity. The frontier is
+unchanged in size — one leaf replaced by one leaf — and the surviving leaf is
+purely modular, with no endomorphism-ring plumbing left in it.
+
+**Two paragraphs above are now STALE and are corrected at the new leaf**, not
+here, so that the correction sits where a prover will read it: the paragraph
+"WHY THE NATURAL SCHEME-LEVEL CUT WAS CONSIDERED AND NOT TAKEN" states its own
+refuting check, and BOTH halves of that check now pass —
+`exists_ellipticScheme_of_weierstrass` is PROVEN and `IsCoarseModuliY0` has
+geometric bijectivity as two proven theorems
+(`exists_gamma0Datum_of_algClosPoint`,
+`nonempty_isBaseChangeOf_of_classify_eq`) rather than as an omitted field. So
+that cut IS now takeable; what still blocks it is named at the new leaf. -/
 theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
@@ -21118,8 +21302,41 @@ theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_1
         = AddSubgroup.zmultiples g ∧
       (fun P => (ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P) ''
           {P : (E⁄(AlgebraicClosure ℚ)).Point | (125 : ℕ) • P = 0}
-        = (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point) :=
-  sorry
+        = (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point) := by
+  classical
+  -- the stable subgroup `C = ⟨g⟩`, finite of odd order `125`
+  have hCcard : Nat.card (AddSubgroup.zmultiples g) = 125 := by
+    rw [Nat.card_zmultiples, hg]
+  haveI : Finite (AddSubgroup.zmultiples g) :=
+    Nat.finite_of_card_ne_zero (by rw [hCcard]; norm_num)
+  have hCfin : ((AddSubgroup.zmultiples g :
+      AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
+      Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite :=
+    Set.finite_coe_iff.mp inferInstance
+  have hCodd : Odd (Nat.card (AddSubgroup.zmultiples g)) := by rw [hCcard]; decide
+  -- the Vélu quotient `E' = E.veluModel t w` and the isogeny `φ` with kernel `C`
+  obtain ⟨t, w, hell', φ, -, -, hgal, hker, hcoord⟩ :=
+    WeierstrassCurve.exists_velu_quotient_isogeny_model E
+      (AddSubgroup.zmultiples g) hCfin hCodd hstable
+  haveI := hell'
+  have hφ : WeierstrassCurve.IsIsogeny φ :=
+    WeierstrassCurve.isIsogeny_of_veluQuotient E (E.veluModel t w)
+      (AddSubgroup.zmultiples g) hCfin hCodd φ hker hcoord
+  -- Atkin–Lehner fixedness: the quotient pair is isomorphic to the original pair
+  obtain ⟨ι, hιiso, hιinj, himg⟩ :=
+    E.exists_atkinLehnerIsom_of_veluQuotient_order_125 g hg hstable
+      (E.veluModel t w) hell' φ hφ hgal hker
+  -- `ψ := ι ∘ φ`; its kernel is `ker φ = C` because `ker ι` is trivial
+  have hkerc : AddMonoidHom.ker
+      (ι.comp φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+      = AddSubgroup.zmultiples g := by
+    ext Q
+    simp only [AddMonoidHom.mem_ker, AddMonoidHom.coe_comp, Function.comp_apply]
+    refine ⟨fun h => (hker Q).mp (hιinj _ h), fun h => ?_⟩
+    have h0 : φ Q = 0 := (hker Q).mpr h
+    exact (congrArg (⇑ι) h0).trans (map_zero ι)
+  exact ⟨⟨(ι.comp φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point),
+      hφ.comp hιiso⟩, hkerc, himg⟩
 
 /-- **A subgroup containing the full `p`-torsion is not cyclic of order `n`**
 (PROVEN 2026-07-26). Here `p > 1` is invertible in the base and `p ∣ n`.
