@@ -29358,6 +29358,24 @@ theorem volume_gamma0Domain_ne_top (M : ℕ) [NeZero M] :
   rw [volume_smul_specialLinearGroup]
   exact volume_modularFd_ne_top.lt_top
 
+/-- **THE `Γ₀(M)` DOMAIN IS MEASURABLE** (PROVEN 2026-07-27): a FINITE union
+(`[SL(2,ℤ) : Γ₀(M)] < ∞`) of images of the CLOSED set `𝒟`
+(`ModularGroup.isClosed_fd`) under the measurable embeddings `τ ↦ γ • τ`
+(`measurableEmbedding_const_smul`).
+
+This is what `setIntegral_heckeRep_unfold` below consumes as its `hDmeas`
+hypothesis; see the MEASURABILITY AUDIT there for why that hypothesis is
+genuinely needed rather than cosmetic. -/
+theorem measurableSet_gamma0Domain (M : ℕ) [NeZero M] :
+    MeasurableSet (gamma0Domain M) := by
+  classical
+  refine MeasurableSet.iUnion (fun c => ?_)
+  have h : ((gamma0Rep M c)⁻¹ • (ModularGroup.fd) : Set ℍ)
+      = (Matrix.SpecialLinearGroup.mapGL ℝ ((gamma0Rep M c)⁻¹)) • (ModularGroup.fd) := rfl
+  rw [h, ← Set.image_smul]
+  exact (measurableEmbedding_const_smul _).measurableSet_image.mpr
+    ModularGroup.isClosed_fd.measurableSet
+
 /-- `𝒟 ⊆ gamma0Domain M` — the trivial coset contributes `1⁻¹ 𝒟 = 𝒟`.  This is
 exactly what `gamma0Rep`'s normalisation at the trivial coset buys. -/
 theorem modularFd_subset_gamma0Domain (M : ℕ) :
@@ -29665,7 +29683,7 @@ theorem det_heckeRepInf_pos {q : ℕ} (hq : q.Prime) :
   rw [dif_pos hq0]
   simpa [Matrix.GeneralLinearGroup.val_det_apply, Matrix.det_fin_two_of] using hq'
 
-/-- **INTEGRABILITY OF THE SLASHED PETERSSON INTEGRAND** (sorry leaf — cut
+/-- **INTEGRABILITY OF THE SLASHED PETERSSON INTEGRAND** (PROVEN 2026-07-27; cut
 2026-07-27 out of `peterssonSelfAdjoint_of_gamma0FundamentalDomain` below,
 which is PROVEN over it and over `setIntegral_heckeRep_unfold`): the
 generalisation of `peterssonIntegrableOn` above from a pair of cusp forms to a
@@ -29693,13 +29711,64 @@ needed.  The integrand is the product of two such factors, so
 
 The lemma is stated with a slash in BOTH slots, with `δ = 1` (and
 `SlashAction.slash_one`) recovering the one-sided cases; that is what makes a
-single leaf cover all four uses in the assembly below. -/
+single leaf cover all four uses in the assembly below.
+
+HOW THE EXACT IDENTITY IS OBTAINED, which is the one trick in the proof.
+Rather than expanding `ModularForm.slash_def` and juggling `denom` and
+`im_smul_eq_div_normSq` by hand, take NORMS in `petersson_slash_two` with the
+SAME function in both slots: it reads
+`‖(u∣δ)(τ)‖² · y² = ‖u(δ•τ)‖² · Im(δ•τ)²`, i.e. the squares of the two
+nonnegative quantities `‖(u∣δ)(τ)‖·y` and `‖u(δ•τ)‖·Im(δ•τ)` agree, whence
+`mul_self_inj` gives the identity itself.  The global bound `‖u τ‖·y ≤ √C` for
+a weight-`2` cusp form is `CuspFormClass.petersson_bounded_left` applied to the
+DIAGONAL pair `(u, u)`, since `‖petersson 2 u u τ‖ = (‖u τ‖·y)²`. -/
 theorem peterssonIntegrableOn_slash {M : ℕ} (hM : 0 < M) {D : Set ℍ}
     (hD : volume D ≠ ⊤) (f g : CuspForm (Gamma0GL M) 2)
     {δ₁ δ₂ : GL (Fin 2) ℝ} (hδ₁ : 0 < δ₁.det.val) (hδ₂ : 0 < δ₂.det.val) :
     IntegrableOn
-      (petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] δ₁) (⇑f ∣[(2 : ℤ)] δ₂)) D volume :=
-  sorry
+      (petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] δ₁) (⇑f ∣[(2 : ℤ)] δ₂)) D volume := by
+  haveI : NeZero M := ⟨hM.ne'⟩
+  -- At weight `2` the norm of the Petersson integrand factors as the product of
+  -- the two quantities `‖·‖ · y`.
+  have hnorm : ∀ (u v : ℍ → ℂ) (τ : ℍ),
+      ‖petersson (2 : ℤ) u v τ‖ = (‖u τ‖ * τ.im) * (‖v τ‖ * τ.im) := by
+    intro u v τ
+    simp only [petersson, norm_mul, Complex.norm_conj, Complex.norm_real,
+      Real.norm_of_nonneg τ.im_pos.le, zpow_two]
+    ring
+  -- `‖(u∣δ)(τ)‖ · Im τ = ‖u(δ•τ)‖ · Im (δ•τ)`, EXACTLY.
+  have hslash : ∀ (u : ℍ → ℂ) {δ : GL (Fin 2) ℝ}, 0 < δ.det.val → ∀ τ : ℍ,
+      ‖(u ∣[(2 : ℤ)] δ) τ‖ * τ.im = ‖u (δ • τ)‖ * (δ • τ).im := by
+    intro u δ hδ τ
+    have h := congrArg norm (petersson_slash_two u u hδ τ)
+    rw [hnorm, hnorm] at h
+    exact (mul_self_inj (mul_nonneg (norm_nonneg _) τ.im_pos.le)
+      (mul_nonneg (norm_nonneg _) (δ • τ).im_pos.le)).mp h
+  -- The global bound for a weight-`2` cusp form, from the DIAGONAL Petersson bound.
+  have hbound : ∀ h : CuspForm (Gamma0GL M) 2,
+      ∃ C : ℝ, ∀ τ : ℍ, ‖(h : ℍ → ℂ) τ‖ * τ.im ≤ C := by
+    intro h
+    obtain ⟨C, hC⟩ := CuspFormClass.petersson_bounded_left (2 : ℤ) (Gamma0GL M) h h
+    refine ⟨Real.sqrt C, fun τ => ?_⟩
+    have hCτ := hC τ
+    rw [hnorm] at hCτ
+    have hnn : (0 : ℝ) ≤ ‖(h : ℍ → ℂ) τ‖ * τ.im := mul_nonneg (norm_nonneg _) τ.im_pos.le
+    calc ‖(h : ℍ → ℂ) τ‖ * τ.im
+        = Real.sqrt ((‖(h : ℍ → ℂ) τ‖ * τ.im) ^ 2) := (Real.sqrt_sq hnn).symm
+      _ ≤ Real.sqrt C := Real.sqrt_le_sqrt (by rw [sq]; exact hCτ)
+  obtain ⟨Cg, hCg⟩ := hbound g
+  obtain ⟨Cf, hCf⟩ := hbound f
+  refine Measure.integrableOn_of_bounded hD ?_ (M := Cg * Cf) ?_
+  · have hc1 : Continuous (⇑g ∣[(2 : ℤ)] δ₁) :=
+      ((ModularFormClass.holo g).slash (2 : ℤ) δ₁).continuous
+    have hc2 : Continuous (⇑f ∣[(2 : ℤ)] δ₂) :=
+      ((ModularFormClass.holo f).slash (2 : ℤ) δ₂).continuous
+    exact (UpperHalfPlane.petersson_continuous (2 : ℤ) hc1 hc2).aestronglyMeasurable
+  · refine Filter.Eventually.of_forall fun τ => ?_
+    rw [hnorm, hslash _ hδ₁, hslash _ hδ₂]
+    exact mul_le_mul (hCg _) (hCf _)
+      (mul_nonneg (norm_nonneg _) (δ₂ • τ).im_pos.le)
+      (le_trans (mul_nonneg (norm_nonneg _) (δ₁ • τ).im_pos.le) (hCg (δ₁ • τ)))
 
 /-- **THE UNFOLDING IDENTITY** (sorry leaf — cut 2026-07-27 out of
 `peterssonSelfAdjoint_of_gamma0FundamentalDomain` below, which is PROVEN over
@@ -29748,9 +29817,66 @@ FAITHFULNESS.  This leaf is EQUIVALENT to the consumer given
 `peterssonIntegrableOn_slash`: the assembly below derives the consumer from it
 by proven equalities only, so it can be neither weaker nor stronger, and it
 carries every hypothesis of the consumer.  In particular `hqM` is
-LOAD-BEARING and the identity is FALSE at `q ∣ M`. -/
+LOAD-BEARING and the identity is FALSE at `q ∣ M`.
+
+**MEASURABILITY AUDIT (2026-07-27) — WHY `hDmeas` WAS ADDED, with the explicit
+construction that forces it.**  `hcov`/`hdisj`/`hDvol` alone do NOT make `D`
+behave like a fundamental domain, because for a NON-measurable `D` the
+hypothesis `hdisj` is not an invariant of `volume.restrict D` — which is the
+only thing the conclusion sees.  Concretely, let `𝒟` be mathlib's standard
+domain, let `V ⊆ 𝒟` be a Vitali-style set of inner measure `0` and outer
+measure `volume 𝒟`, fix `γ₀ ∈ Γ₀(M)`, `γ₀ ≠ ±1`, and put
+
+  `D = (𝒟 \ V) ∪ γ₀ • V`.
+
+Then `D` satisfies `hDvol`, `hcov` (it contains a transversal: `z ∈ 𝒟 \ V`
+stays, `z ∈ V` is moved by `γ₀`) and `hdisj` (every cross term is contained in
+`γ 𝒟 ∩ 𝒟` for some `γ ≠ ±1`, or is literally empty by `V ∩ (𝒟 \ V) = ∅`).
+Yet outer measure is superadditive across the two non-measurable pieces, so
+`volume.restrict D = volume.restrict (𝒟 ∪ γ₀ • 𝒟)` and `∫_D H = 2 ∫_𝒟 H` for
+every `Γ₀(M)`-invariant `H` — twice a fundamental-domain integral, from a set
+that satisfies every hypothesis.  (The CONCLUSION survives this, both sides
+being scaled by the same `2`; what does not survive is any proof route through
+"`D` is a.e. a fundamental domain", and in particular the natural auxiliary
+lemma *"any two such `D` give the same integral of a `Γ₀(M)`-invariant
+function"* is FALSE — `𝒟` itself is another such set and gives half.)
+
+So `hDmeas` is not a convenience: without it every measure-theoretic step
+below (a.e.-disjoint additivity, `Measure.restrict_iUnion₀`, all of which need
+at least `NullMeasurableSet`) is unavailable, and the pathological `D` above is
+a live counterexample to the natural reduction.  It costs the consumer nothing:
+`measurableSet_gamma0Domain` above discharges it for the only witness ever used.
+
+**ROUTE AUDIT (2026-07-27), stated so that each claim is refutable by one
+check.**  With `hDmeas` in hand the classical proof factors into four steps,
+of which the first and the third are ALREADY PROVEN here:
+
+1. (PROVEN) Each right-hand term folds back onto `D`:
+   `setIntegral_petersson_slash_adjoint` read backwards gives
+   `∫_{δ • D} petersson 2 g (f∣δ⁻¹) = ∫_D petersson 2 (g∣δ) f`.  So the leaf is
+   equivalent to `Σ_i ∫_D petersson 2 g (f∣δ_i) = Σ_i ∫_D petersson 2 (g∣δ_i) f`
+   — no translated domains occur in the real content.
+2. (OPEN, group theory) `Γ = ⊔_{i} Γ' γ_i` with `Γ' = Γ ∩ α⁻¹Γα`,
+   `α = heckeRep q 0`, the index set `Option (Fin q)` and `Γ α γ_i = Γ δ_i`.
+   **This is hoistable, not new**: `heckeRep_conj_mem_iff`,
+   `heckeConj_isFiniteRelIndex` and the `have`s `hcrit`/`hEval`/`hEinj`/`hfind`
+   inside `exists_cuspForm_heckeTransform` (§HeckeStability) already carry out
+   exactly this enumeration, over exactly this index type.  Check that refutes
+   this claim: grep those names and confirm the index type is `Option (Fin q)`.
+3. (PROVEN) The `α`-move `∫_{D'} petersson 2 g (f∣α) = ∫_{α • D'} petersson 2
+   (g∣α⁻¹) f` is `setIntegral_petersson_slash_adjoint` plus `petersson_symm`;
+   and at weight `2` scalars act trivially, so `α⁻¹` may be replaced by the
+   INTEGRAL adjugate `α' = det(α)·α⁻¹ = heckeRepInf q`.
+4. (OPEN, measure theory) `⊔_i γ_i • D` is a `Γ'`-domain and the integral of a
+   `Γ'`-invariant function over it is `Σ_i ∫_{γ_i • D}`.  Pairwise
+   a.e.-disjointness of the `γ_i • D` reduces to `hdisj` at `γ_i⁻¹γ_j`, which
+   is `≠ ±1` because `−1 ∈ Γ'` so distinct `Γ'`-cosets cannot differ by `±1`.
+   This is the step that consumes `hDmeas`.
+
+The last arithmetic input, `α' ∈ ΓαΓ`, is `qu − Mv = 1`, solvable exactly at
+`q ∤ M` — which is where `hqM` enters and why the identity fails at `q ∣ M`. -/
 theorem setIntegral_heckeRep_unfold {M : ℕ} (hM : 0 < M)
-    {D : Set ℍ} (hDvol : volume D ≠ ⊤)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤) (hDmeas : MeasurableSet D)
     (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
     (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
@@ -29831,7 +29957,7 @@ consumer `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` below: at
 exclusions in `hdisj` are forced, not cosmetic — see
 `volume_smul_inter_gamma0Domain_eq_zero` above. -/
 theorem peterssonSelfAdjoint_of_gamma0FundamentalDomain {M : ℕ} (hM : 0 < M)
-    {D : Set ℍ} (hDvol : volume D ≠ ⊤)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤) (hDmeas : MeasurableSet D)
     (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
     (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
@@ -29897,7 +30023,7 @@ theorem peterssonSelfAdjoint_of_gamma0FundamentalDomain {M : ℕ} (hM : 0 < M)
     setIntegral_petersson_slash_adjoint _ _ (det_heckeRepInf_pos hq) D
   rw [Finset.sum_congr rfl hadjj, hadjinf]
   -- What remains is exactly the coset tiling.
-  exact setIntegral_heckeRep_unfold hM hDvol hcov hdisj hq hqM f g
+  exact setIntegral_heckeRep_unfold hM hDvol hDmeas hcov hdisj hq hqM f g
 
 end PeterssonSlashAdjoint
 
@@ -29915,15 +30041,15 @@ interior by `exists_open_subset_gamma0Domain`, and self-adjointness by
 property `exists_mem_gamma0Domain` and the a.e.-disjointness
 `volume_smul_inter_gamma0Domain_eq_zero` (PROVEN 2026-07-27).
 
-CURRENT LEAF INVENTORY BELOW THIS NODE (2026-07-27).  The whole subtree is now
-proven except for the two leaves cut out of
-`peterssonSelfAdjoint_of_gamma0FundamentalDomain`:
-`peterssonIntegrableOn_slash` (a boundedness statement — `|g∣δ|·y` equals
-`|g|·y` at another point, so the constant from
-`CuspFormClass.petersson_bounded_left` is reused verbatim) and
+CURRENT LEAF INVENTORY BELOW THIS NODE (2026-07-27, updated).  The whole
+subtree is now proven except for the SINGLE leaf
 `setIntegral_heckeRep_unfold` (the coset tiling, which is where `hcov`,
-`hdisj` and `q ∤ M` are consumed).  The geometry and ALL of the weight-2
-analysis are done.
+`hdisj` and `q ∤ M` are consumed).  Its sibling
+`peterssonIntegrableOn_slash` is PROVEN (the boundedness statement — `|g∣δ|·y`
+equals `|g|·y` at another point, so the constant from
+`CuspFormClass.petersson_bounded_left` is reused verbatim).  The geometry,
+the measurability of the domain (`measurableSet_gamma0Domain`) and ALL of the
+weight-2 analysis are done.
 
 Everything ELSE that the Petersson product needs — integrability, additivity,
 homogeneity, conjugate symmetry and DEFINITENESS — is proven below from the
@@ -29949,7 +30075,8 @@ theorem exists_peterssonDomain {M : ℕ} (hM : 0 < M) :
   refine ⟨gamma0Domain M, volume_gamma0Domain_ne_top M,
     exists_open_subset_gamma0Domain M, fun q hq hqM f g => ?_⟩
   exact peterssonSelfAdjoint_of_gamma0FundamentalDomain hM
-    (volume_gamma0Domain_ne_top M) (exists_mem_gamma0Domain M)
+    (volume_gamma0Domain_ne_top M) (measurableSet_gamma0Domain M)
+    (exists_mem_gamma0Domain M)
     (fun γ hγ hne1 hne2 => volume_smul_inter_gamma0Domain_eq_zero hM hγ hne1 hne2)
     hq hqM f g
 
