@@ -3804,8 +3804,109 @@ theorem le_span_singleton_sup_smul_pow_of_displacement_surjective
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **Local inertia acts on the connected locus by a SCALAR** (SORRY
+LEAF, cut 2026-07-27 out of
+`connected_locus_displacement_surjective_of_hopf_package` just below,
+which is now PROVEN over it).
+
+This is the pure RAYNAUD input with every residual identification
+stripped off. For `σ ∈ I₃` with image `g₀` in `Γ ℚ` there is a SINGLE
+scalar `c : R` such that `ρ g₀` acts on the WHOLE connected locus as
+multiplication by `c`, modulo `𝔪ⁿ⁺²V`.
+
+**NOTHING IS CLAIMED ABOUT `c`** — in particular the statement does NOT
+say `c ≡ ω σ` residually, and it does NOT say `c − 1` is a unit. Those
+are DERIVED in the consumer below out of the residual matrix entries
+(`exists_residual_matrix_entries` and
+`residual_twist_eq_cyclotomicCharacterModL` above), by evaluating the
+scalar action on the connected vector `p := ρ g₀ w₀ − w₀`: residually
+`p ≡ (a g₀ − 1) • w₀` and `ρ g₀ p ≡ (a g₀ − 1) a g₀ • w₀`, so
+`(a g₀ − 1)(a g₀ − c) • w₀ ∈ 𝔪V`; since `w₀` is residually nonzero and
+`a g₀ − 1` is a unit, `c ≡ a g₀ ≡ −1 mod 𝔪`. That is exactly why
+`hV`, `hρ`, `kk`, `π`, `v₀` and `w₀` do NOT appear in this statement:
+the residual half of the old leaf is now PROVEN, and only the
+finite-flat half is left here.
+
+ROUTE (Raynaud). At `e = 1 < p − 1 = 2` the connected part `G⁰` of the
+finite flat `𝒪ᵥ ≅ ℤ₃`-group scheme `G` is of MULTIPLICATIVE type
+(Raynaud's classification of schemes of type `(p,…,p)` together with
+uniqueness of prolongations; Oort–Tate at each layer). A group scheme of
+multiplicative type is a form of a product of `μ`'s, so local inertia
+acts on the whole of `M⁰` through a single character `χ` — i.e. by the
+scalar `χ σ`, whose image in `R ⧸ 𝔪ⁿ⁺²` is the `c` asked for. Note
+`e = 1` is genuinely used: over a base with `e ≥ p − 1` the connected
+part need not be of multiplicative type and prolongations stop being
+unique.
+
+DEGENERATE CASES ARE FINE, which is one reason this form was chosen over
+"`d` is invertible on `M⁰`": if `G` is étale then `M⁰ = 0` and any `c`
+works; if `G` is connected then `M⁰ = M` and `c = χ σ` acts on
+everything. No rank hypothesis on `V` is needed, and none is carried.
+
+FAITHFULNESS. The quantifier is over `localInertiaGroup 𝔭₃` and NOT over
+`Γ ℚ₃ᵥ`, deliberately: over the full decomposition group the connected
+character is `ω · ψ` with `ψ` an unramified twist, and no single scalar
+works. Inertia-only conclusions are twist-blind, which is why this form
+is the true one. The conclusion is a VALUE-level congruence in `V`
+modulo `𝔪ⁿ⁺²V` — never an element of `G`, never a coordinate, never
+`Γ`-wide rationality — so it is on the true side of the development's
+`𝒪ᵥ`-descent rule and blind to the `p − 1` unramified twists `μ₃ ⊗ ψ`
+that killed `exists_muType_closure`.
+
+WHAT IS ALREADY AVAILABLE and must NOT be re-proven here: the connected
+locus is an `R`-submodule (`connected_locus_smul_of_hopf_package`
+above), every inertia displacement is connected
+(`inertia_displacement_apply_connected_idempotent_eq_one` above), and
+`mem_span_natCast_of_inertia_invariant`
+(`Fermat/FLT/GroupScheme/ConnectedEtale.lean`) already spends the
+`e = 1 < p − 1` input — that is the proof to read first.
+`OortTate.exists_muType_coordinate` (same file, PROVEN) is the closest
+existing statement of the multiplicative-type input; note its `hstab`
+hypothesis (`σ • φ` is a POWER of `φ`) is the genuinely expensive part.
+
+**The check that would refute this obstruction**: exhibit a finite flat
+`ℤ₃`-group scheme with étale generic fibre whose connected geometric
+points carry a local-inertia action that is not scalar. By Raynaud at
+`e = 1 < p − 1` none exists; any candidate must have `e ≥ p − 1`.
+
+Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.5; Oort–Tate, *Group schemes of
+prime order*; Tate, *Finite flat group schemes*, §4, in
+Cornell–Silverman–Stevens. -/
+theorem exists_inertia_scalar_on_connected_locus_of_hopf_package
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    {V : Type v} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (ρ : GaloisRep ℚ R V) (n : ℕ)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
+    (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃) :
+    ∃ c : R, ∀ x : V,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+          ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] x)))
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) x - c • x ∈
+        (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **The inertia displacement is SURJECTIVE on the connected locus**
-(SORRY LEAF, cut 2026-07-27 out of
+(PROVEN 2026-07-27 over the single leaf
+`exists_inertia_scalar_on_connected_locus_of_hopf_package` just above;
+was itself a SORRY LEAF, cut 2026-07-27 out of
 `connected_locus_cyclic_of_hopf_package` just below, which is now PROVEN
 over it together with the pure local algebra
 `le_span_singleton_sup_smul_pow_of_displacement_surjective` above).
@@ -3826,6 +3927,34 @@ scalar `χ g₀ − 1`. That scalar is a UNIT: `χ ≡ ω` residually, and
 A unit scalar is invertible on `M⁰`, in particular surjective — which is
 exactly this statement. (Only surjectivity is asked for; the consumer
 does not need injectivity, and asking for less keeps the leaf smaller.)
+
+**WHAT THE ASSEMBLY BELOW CONTRIBUTES (2026-07-27), so that the
+remaining leaf is ONLY the multiplicative-type input.** The finite-flat
+half is isolated in
+`exists_inertia_scalar_on_connected_locus_of_hopf_package` above, which
+produces a bare scalar `c` with `ρ g₀ x ≡ c • x` on the connected locus
+and claims NOTHING about `c`. Everything else is written out here and is
+residual linear algebra plus one division:
+
+* `c ≡ a g₀ mod 𝔪`, hence `c − 1` is a UNIT. This is DERIVED, not
+  assumed: `p := ρ g₀ w₀ − w₀` is connected
+  (`inertia_displacement_apply_connected_idempotent_eq_one`) and
+  residually `p ≡ (a g₀ − 1) • w₀`
+  (`exists_residual_matrix_entries`), so applying the scalar action to
+  `p` and comparing with `ρ g₀ p ≡ (a g₀ − 1) a g₀ • w₀` gives
+  `(a g₀ − 1)(a g₀ − c) • w₀ ∈ 𝔪V`; `w₀` is residually nonzero
+  (`mem_maximalIdeal_of_smul_mem_smul_top`) and `a g₀ − 1` is a unit
+  (`residual_twist_eq_cyclotomicCharacterModL` gives `a g₀ ≡ −1`, and
+  `three_mem_maximalIdeal` makes `−2 ≡ 1`), so `a g₀ − c ∈ 𝔪` and
+  `c − 1 ≡ a g₀ − 1` is a unit;
+* the witness is then simply `y := (c − 1)⁻¹ • z`, connected because the
+  connected locus is an `R`-submodule
+  (`connected_locus_smul_of_hopf_package` above), and
+  `ρ g₀ y − y ≡ (c − 1) • y = z` by the scalar action again.
+
+So `hV`, `hρ`, `kk`, `π`, `hπsurj`, `hπequiv`, `v₀`, `hv₀`, `w₀` and
+`hσω` are all genuinely spent HERE, and none of them is carried into the
+remaining leaf.
 
 **WHY THIS AND NOT `M⁰ ≠ M`.** The route previously recorded on the
 consumer owed only `M⁰ ≠ M`, with Nakayama finishing from any residually
@@ -3871,13 +4000,11 @@ coordinate, never `Γ`-wide rationality — so it is on the true side of
 the development's `𝒪ᵥ`-descent rule and blind to the `p − 1` unramified
 twists `μ₃ ⊗ ψ` that killed `exists_muType_closure`.
 
-HYPOTHESIS NOTE. The residual data `hV`/`hρ`/`kk`/`π`/`v₀`/`w₀` is
-carried so that the call site in the consumer is a verbatim
-re-application, and because the intended route spends `hρ` (through the
-determinant, to identify `χ` residually with `ω`). The route does NOT
-need `π` — the statement is already true for `G = μ₉ × μ₉`, where
-`M⁰ = M` and `d` is the unit scalar `χ g₀ − 1` — so a prover may find
-some of these unused; underscore-prefix them when that is settled.
+HYPOTHESIS NOTE (settled 2026-07-27). Every hypothesis is used by the
+proof below: the residual data `hV`/`hρ`/`kk`/`π`/`v₀`/`w₀` and `hσω`
+are spent identifying the abstract scalar `c` of the leaf above with
+`a g₀ ≡ ω g₀ ≡ −1`, which is what makes `c − 1` a unit. Nothing needs
+underscore-prefixing.
 
 Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.5; Oort–Tate, *Group schemes of
 prime order*; Tate, *Finite flat group schemes*, §4, in
@@ -3926,7 +4053,112 @@ theorem connected_locus_displacement_surjective_of_hopf_package
         ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) ∧
       z - (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) y - y) ∈
         (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) := by
-  sorry
+  classical
+  set g₀ : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ with hg₀
+  -- ## the Raynaud input: inertia acts on the connected locus by a scalar `c`
+  obtain ⟨c, hc⟩ := exists_inertia_scalar_on_connected_locus_of_hopf_package
+    ρ n G fG hfG e₀ he₀ hε₀ hmin₀ habs₀ σ hσ
+  rw [← hg₀] at hc
+  -- ## the residual matrix entries along the `w₀`-line
+  obtain ⟨a, _c₁, hac⟩ := exists_residual_matrix_entries hV kk hsurj π hπsurj
+    hπequiv w₀ v₀ hw₀π hw₀ne
+  have ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := fun g => (hac g).1
+  -- `a g₀ ≡ −1 mod 𝔪`, hence `a g₀ − 1 ≡ 1 mod 𝔪` is a UNIT (`3 ∈ 𝔪`)
+  have hαmem : a g₀ + 1 ∈ IsLocalRing.maximalIdeal R :=
+    (residual_twist_eq_cyclotomicCharacterModL V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ w₀ hw₀π hw₀ne a ha g₀).2 hσω
+  have hunit : IsUnit (a g₀ - 1) := by
+    have h1 : (a g₀ - 1) - 1 ∈ IsLocalRing.maximalIdeal R := by
+      have h2 : (a g₀ - 1) - 1 = (a g₀ + 1) - 3 := by ring
+      rw [h2]
+      exact Submodule.sub_mem _ hαmem three_mem_maximalIdeal
+    have h3 : a g₀ - 1 ∉ IsLocalRing.maximalIdeal R := by
+      intro hmem
+      have h4 := Submodule.sub_mem _ hmem h1
+      simp only [sub_sub_cancel] at h4
+      exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top
+        (Ideal.eq_top_of_isUnit_mem _ h4 isUnit_one)
+    exact IsLocalRing.notMem_maximalIdeal.mp h3
+  -- ## `p := ρ g₀ w₀ − w₀` is CONNECTED, and residually `p ≡ (a g₀ − 1) • w₀`
+  have hpconn : (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+      ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] (ρ g₀ w₀ - w₀))))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    have h := inertia_displacement_apply_connected_idempotent_eq_one
+      (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+      fG hfG σ hσ ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] w₀)
+    rw [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+      ← TensorProduct.tmul_sub, ← hg₀] at h
+    exact h
+  have hpw₀ : (ρ g₀ w₀ - w₀) - (a g₀ - 1) • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have h1 : (ρ g₀ w₀ - w₀) - (a g₀ - 1) • w₀ = ρ g₀ w₀ - a g₀ • w₀ := by
+      rw [sub_smul, one_smul]; abel
+    rw [h1]
+    exact ha g₀
+  -- ## identify `c` residually with `a g₀`, by evaluating the scalar action
+  -- ## on the connected vector `p`
+  have hA : ρ g₀ (ρ g₀ w₀ - w₀) - (a g₀ - 1) • ρ g₀ w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have h := apply_mem_smul_top (ρ g₀) hpw₀
+    rwa [map_sub, map_smul] at h
+  have hB : (a g₀ - 1) • ρ g₀ w₀ - ((a g₀ - 1) * a g₀) • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have h := Submodule.smul_mem
+      ((IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V)) (a g₀ - 1) (ha g₀)
+    rwa [smul_sub, smul_smul] at h
+  have hC : c • (ρ g₀ w₀ - w₀) - (c * (a g₀ - 1)) • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have h := Submodule.smul_mem
+      ((IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V)) c hpw₀
+    rwa [smul_sub, smul_smul] at h
+  have hD₂ : ρ g₀ (ρ g₀ w₀ - w₀) - c • (ρ g₀ w₀ - w₀) ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
+    Submodule.smul_mono_left (Ideal.pow_le_self (by omega)) (hc _ hpconn)
+  have hkey : ((a g₀ - 1) * (a g₀ - c)) • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have hid : ((a g₀ - 1) * (a g₀ - c)) • w₀ =
+        (c • (ρ g₀ w₀ - w₀) - (c * (a g₀ - 1)) • w₀)
+          - (ρ g₀ (ρ g₀ w₀ - w₀) - (a g₀ - 1) • ρ g₀ w₀)
+          + (ρ g₀ (ρ g₀ w₀ - w₀) - c • (ρ g₀ w₀ - w₀))
+          - ((a g₀ - 1) • ρ g₀ w₀ - ((a g₀ - 1) * a g₀) • w₀) := by
+      have hcoef : (a g₀ - 1) * (a g₀ - c) =
+          (a g₀ - 1) * a g₀ - c * (a g₀ - 1) := by ring
+      rw [hcoef, sub_smul]
+      abel
+    rw [hid]
+    exact Submodule.sub_mem _
+      (Submodule.add_mem _ (Submodule.sub_mem _ hC hA) hD₂) hB
+  have hprod : (a g₀ - 1) * (a g₀ - c) ∈ IsLocalRing.maximalIdeal R :=
+    mem_maximalIdeal_of_smul_mem_smul_top kk hsurj hw₀ne hkey
+  have hcm : a g₀ - c ∈ IsLocalRing.maximalIdeal R := by
+    by_contra hmem
+    exact (IsLocalRing.notMem_maximalIdeal.mpr
+      (hunit.mul (IsLocalRing.notMem_maximalIdeal.mp hmem))) hprod
+  have hcunit : IsUnit (c - 1) := by
+    refine IsLocalRing.notMem_maximalIdeal.mp fun hmem => ?_
+    refine (IsLocalRing.notMem_maximalIdeal.mpr hunit) ?_
+    have h5 : a g₀ - 1 = (c - 1) + (a g₀ - c) := by ring
+    rw [h5]
+    exact Submodule.add_mem _ hmem hcm
+  -- ## divide by the unit `c − 1`: the witness is `(c − 1)⁻¹ • z`
+  obtain ⟨u, hu⟩ := hcunit
+  have hinv : (↑u⁻¹ : R) * (c - 1) = 1 := by rw [← hu]; exact u.inv_mul
+  have hyconn : (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+      ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R]
+        ((↑u⁻¹ : R) • z)))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 :=
+    connected_locus_smul_of_hopf_package ρ n G fG hfG e₀ he₀ hε₀ hmin₀ habs₀
+      (↑u⁻¹ : R) z hz
+  refine ⟨(↑u⁻¹ : R) • z, hyconn, ?_⟩
+  have hy1 : (c - 1) • ((↑u⁻¹ : R) • z) = z := by
+    rw [smul_smul, mul_comm, hinv, one_smul]
+  have heq : z - (ρ g₀ ((↑u⁻¹ : R) • z) - (↑u⁻¹ : R) • z) =
+      -(((c - 1) • ((↑u⁻¹ : R) • z)) - z)
+        - (ρ g₀ ((↑u⁻¹ : R) • z) - c • ((↑u⁻¹ : R) • z)) := by
+    rw [sub_smul, one_smul]
+    abel
+  rw [heq, hy1, sub_self, neg_zero, zero_sub]
+  exact Submodule.neg_mem _ (hc _ hyconn)
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
