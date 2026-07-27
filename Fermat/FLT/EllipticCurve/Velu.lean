@@ -5131,33 +5131,505 @@ some sixty declarations in this file and collide with the open odd-kernel leaf
 **Faithfulness.** All three leaves are TRUE as stated; the audit above is what
 establishes that the parity-free `veluCurve S` really is the quotient curve, so
 nothing here is a statement weakened to make it provable.
+
+### STATUS 2026-07-27 — the re-derivation is DONE except for two polynomial leaves
+
+The `PolePoly` re-derivation predicted above was carried out; it lives in the two sections
+`PolePolyAllOrders` / `PolePolyAllOrdersChar` immediately below this note. **Two of the
+three leaves are now PROVEN**, and the parity dependence of the entire development has been
+localised to `velu_thetaAll_local_dvd` and `velu_thetaAll_degree_lt`.
+
+* `velu_equation_of_subgroup` — **PROVEN**, over `velu_equation_pole_of_subgroup` ←
+  `velu_pole_identity_of_subgroup` ← `velu_thetaAll_eq_zero` ← the two polynomial leaves.
+* `velu_isElliptic_of_subgroup` — **PROVEN**, over the single new leaf
+  `velu_exists_three_twoTorsion_of_subgroup`.
+* `velu_map_add_of_subgroup` — still open, and BLOCKED: its odd-order counterpart
+  `velu_map_add_of_notMem` (~4634) is itself open and separately owned, so this cannot be
+  closed until that is. Nothing here can change that.
+
+Axiom-clean and standalone (`[propext, Classical.choice, Quot.sound]`, verified against the
+built module 2026-07-27): `veluH_factor_all`, `velu_fiber_card_all`, `veluH_pow_eq_all`,
+`veluUTerm_eq_zero_of_neg_eq`, `veluTTerm_ne_zero_of_neg_eq`, `veluPXAll_eval`,
+`veluPVAll_eval`, `veluXNumAll_eval`, `veluXiAll_eval`, `veluPhiNumAll_eval`,
+`velu_thetaAll_dvd`.
+
+**Two corrections to the audit above.** (1) The prediction that `veluPX`/`veluPV` must
+change was right, and the corrected exponents are `ε_Q` on the `t_Q` summand of `veluPXAll`
+and `2ε_Q` on the `t_Q` summand of `veluPVAll` (the audit named only the first). (2) The
+prediction that `velu_theta_local_dvd` and the degree count "re-derive with the changed
+degree count" understates the local half: at a `2`-torsion `T` BOTH inputs of the odd-order
+contradiction degenerate (`u_T = 0` makes `veluGenN` evaluate to `0`, not just `veluH`
+factor differently), and the repair needs the new coordinate-ring identity recorded in
+`velu_thetaAll_local_dvd`'s docstring. The degree half does re-derive as predicted.
 -/
+
+section PolePolyAllOrders
+
+variable {F : Type*} [Field F] [DecidableEq F] {W : Affine F}
+
+/-- `ε_Q = 0` if `Q` is `2`-torsion, `1` otherwise. This is the exponent that makes every
+statement of the `PolePoly` section parity-free: `Q` and `−Q` are two distinct points of the
+kernel exactly when `ε_Q = 1`, and the pole of Vélu's expansion at `x_Q` has order `1 + ε_Q`
+in `x`. -/
+def veluEps (Q : W.Point) : ℕ := if -Q = Q then 0 else 1
+
+lemma veluEps_of_twoTorsion {Q : W.Point} (h : -Q = Q) : veluEps Q = 0 := if_pos h
+
+lemma veluEps_of_not_twoTorsion {Q : W.Point} (h : -Q ≠ Q) : veluEps Q = 1 := if_neg h
+
+/-- **PROVEN: the parity-free factorisation of `veluH`**, replacing the FALSE
+`veluH_factor` in the even case. A nonzero `Q` of the subgroup `S` contributes the linear
+factor `(T − x_Q)` to `veluH S` twice when `−Q ≠ Q` and only ONCE when `Q` is `2`-torsion;
+`veluHq S Q` erases `Q` and then `−Q`, and at a `2`-torsion point that second erase is
+idempotent, which is exactly why the uniform exponent `1 + ε_Q` is correct. -/
+lemma veluH_factor_all {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    veluH S = (Polynomial.X - Polynomial.C (veluPointX Q)) ^ (1 + veluEps Q) * veluHq S Q := by
+  have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+  have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+  have hnQ0 : -Q ≠ 0 := fun h => hQ0 (neg_eq_zero.mp h)
+  rcases eq_or_ne (-Q) Q with h2 | h2
+  · rw [veluEps_of_twoTorsion h2, veluH, ← Finset.mul_prod_erase _ _ hQ, veluHq, h2,
+      Finset.erase_idem]
+    ring
+  · have h1 : -Q ∈ (S.erase 0).erase Q :=
+      Finset.mem_erase.mpr ⟨h2, Finset.mem_erase.mpr ⟨hnQ0, hS.neg_mem _ hQS⟩⟩
+    rw [veluEps_of_not_twoTorsion h2, veluH, ← Finset.mul_prod_erase _ _ hQ,
+      ← Finset.mul_prod_erase _ _ h1, veluHq, velu_pointX_neg]
+    ring
+
+/-- **PROVEN.** The fibre of `veluPointX` over `x_Q` inside `S ∖ {0}` has `1 + ε_Q`
+elements: `{Q, −Q}` collapses to a singleton exactly at a `2`-torsion point. -/
+lemma velu_fiber_card_all {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    ({Q' ∈ S.erase 0 | veluPointX Q' = veluPointX Q}).card = 1 + veluEps Q := by
+  rw [velu_fiber hS hQ]
+  rcases eq_or_ne (-Q) Q with h2 | h2
+  · rw [veluEps_of_twoTorsion h2, h2]
+    simp
+  · rw [veluEps_of_not_twoTorsion h2,
+      Finset.card_insert_of_notMem (by simpa using fun h => h2 h.symm), Finset.card_singleton]
+
+/-- **PROVEN, parity-free.** `veluH⁴ = ∏_a (T − a)^{4·|fibre(a)|}` over the DISTINCT roots.
+No parity hypothesis is needed at all: the exponent simply records the fibre size, which is
+`2` at an ordinary `±`-pair and `1` at a `2`-torsion point. This is the parity-free form of
+`veluH_pow_eq`, whose uniform exponent `8` is what the odd case's `hodd` bought. -/
+lemma veluH_pow_eq_all (S : Finset W.Point) :
+    (veluH S) ^ 4
+      = ∏ a ∈ (S.erase 0).image veluPointX,
+          (Polynomial.X - Polynomial.C a)
+            ^ (4 * ({Q' ∈ S.erase 0 | veluPointX Q' = a}).card) := by
+  rw [veluH, ← Finset.prod_pow, ← Finset.prod_fiberwise_of_maps_to
+    (g := veluPointX) (t := (S.erase 0).image veluPointX)
+    (fun i hi => Finset.mem_image_of_mem _ hi)
+    (fun Q => (Polynomial.X - Polynomial.C (veluPointX Q)) ^ 4)]
+  refine Finset.prod_congr rfl fun a _ => ?_
+  calc ∏ Q' ∈ {Q' ∈ S.erase 0 | veluPointX Q' = a},
+        (Polynomial.X - Polynomial.C (veluPointX Q')) ^ 4
+      = ∏ _Q' ∈ {Q' ∈ S.erase 0 | veluPointX Q' = a}, (Polynomial.X - Polynomial.C a) ^ 4 :=
+        Finset.prod_congr rfl fun Q' hQ' => by rw [(Finset.mem_filter.mp hQ').2]
+    _ = ((Polynomial.X - Polynomial.C a) ^ 4)
+          ^ ({Q' ∈ S.erase 0 | veluPointX Q' = a}).card := by rw [Finset.prod_const]
+    _ = _ := by rw [← pow_mul]
+
+end PolePolyAllOrders
+
+section PolePolyAllOrdersChar
+
+variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] {W : Affine F}
+
+omit [DecidableEq F] [CharZero F] in
+/-- **PROVEN.** At a `2`-torsion point Vélu's `u`-term vanishes: `u_Q = (g^y_Q)²` and
+`g^y_Q = 2y + a₁x + a₃` is exactly the condition `−Q = Q`. This is the fact that makes the
+whole coefficient layer (`veluT`, `veluW`, `veluCurve`) already correct at even order. -/
+lemma veluUTerm_eq_zero_of_neg_eq {Q : W.Point} (h : -Q = Q) : veluUTerm W Q = 0 := by
+  cases Q with
+  | zero => rfl
+  | some x y hns =>
+      have hy : W.negY x y = y := by
+        have h2 := congrArg veluPointY h
+        rw [Affine.Point.neg_some] at h2
+        exact h2
+      have hv : 2 * y + W.a₁ * x + W.a₃ = 0 := by
+        simp only [Affine.negY] at hy; linear_combination -hy
+      rw [veluUTerm_some, hv]
+      ring
+
+omit [DecidableEq F] in
+/-- **PROVEN.** At a `2`-torsion point of a NONSINGULAR Weierstrass curve, Vélu's `t`-term
+is NONZERO. Indeed `t_Q = 2 g^x_Q + a₁ g^y_Q` in general and `g^y_Q = 0` here, so
+`t_Q = 2 g^x_Q`; and a point with `g^x_Q = g^y_Q = 0` would be a singular point.
+
+This is the replacement, at a `2`-torsion kernel point, for the nonvanishing of `u_Q` that
+the odd-order local-divisibility argument uses: it is what keeps the evaluation of the
+cleared translate nonzero. -/
+lemma veluTTerm_ne_zero_of_neg_eq {Q : W.Point} (hQ : Q ≠ 0) (h : -Q = Q) :
+    veluTTerm W Q ≠ 0 := by
+  cases Q with
+  | zero => exact absurd rfl hQ
+  | some x y hns =>
+      have hy : W.negY x y = y := by
+        have h2 := congrArg veluPointY h
+        rw [Affine.Point.neg_some] at h2
+        exact h2
+      have hv : 2 * y + W.a₁ * x + W.a₃ = 0 := by
+        simp only [Affine.negY] at hy; linear_combination -hy
+      rcases hns.2 with hX | hY
+      · rw [Affine.evalEval_polynomialX] at hX
+        rw [veluTTerm_some]
+        intro hc
+        refine hX ?_
+        simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄] at hc
+        linear_combination -(hc / 2) + (W.a₁ / 2) * hv
+      · rw [Affine.evalEval_polynomialY] at hY
+        exact absurd hv hY
+
+/-- Numerator of `Σ_{Q ∈ S} veluPoleX` over `veluH`, at EVERY kernel order. The `t_Q`
+summand carries the factor `(T − x_Q)^{ε_Q}`, which is absent at a `2`-torsion point
+precisely because the pole there is SIMPLE; the `u_Q` summand needs no correction because
+`u_Q = 0` there (`veluUTerm_eq_zero_of_neg_eq`). At odd order this is `veluPX`. -/
+noncomputable def veluPXAll (S : Finset W.Point) : Polynomial F :=
+  ∑ Q ∈ S.erase 0,
+    (Polynomial.C (veluTTerm W Q) * (Polynomial.X - Polynomial.C (veluPointX Q)) ^ veluEps Q
+      + Polynomial.C (veluUTerm W Q)) * veluHq S Q
+
+/-- Numerator of `Σ_{Q ∈ S} veluPoleV` over `veluH²`, at EVERY kernel order; the `t_Q`
+summand carries `(T − x_Q)^{2ε_Q}`. At odd order this is `veluPV`. -/
+noncomputable def veluPVAll (S : Finset W.Point) : Polynomial F :=
+  ∑ Q ∈ S.erase 0,
+    (Polynomial.C (veluUTerm W Q) * (Polynomial.X - Polynomial.C (veluPointX Q)) ^ veluEps Q
+      + Polynomial.C ((2 : F)⁻¹ * veluTTerm W Q)
+          * (Polynomial.X - Polynomial.C (veluPointX Q)) ^ (2 * veluEps Q))
+    * (veluHq S Q) ^ 2
+
+/-- `veluH² · (1 − D)`, at EVERY kernel order. -/
+noncomputable def veluXiAll (S : Finset W.Point) : Polynomial F := (veluH S) ^ 2 - veluPVAll S
+
+/-- `veluH · X`, at EVERY kernel order. -/
+noncomputable def veluXNumAll (S : Finset W.Point) : Polynomial F :=
+  Polynomial.X * veluH S + Polynomial.C ((2 : F)⁻¹) * veluPXAll S
+
+/-- `veluH³ · Φ(X)`, at EVERY kernel order. -/
+noncomputable def veluPhiNumAll (S : Finset W.Point) : Polynomial F :=
+  Polynomial.C (4 : F) * (veluXNumAll S) ^ 3
+    + Polynomial.C W.b₂ * (veluXNumAll S) ^ 2 * veluH S
+    + Polynomial.C (2 * W.b₄ - 20 * W.veluT S) * veluXNumAll S * (veluH S) ^ 2
+    + Polynomial.C (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S) * (veluH S) ^ 3
+
+/-- `Θ = Ψ·Ξ² − H·Φ_num`, at EVERY kernel order. The whole remaining content of Vélu's
+theorem for an arbitrary kernel is `veluThetaAll S = 0`. -/
+noncomputable def veluThetaAll (S : Finset W.Point) : Polynomial F :=
+  veluPsi W * (veluXiAll S) ^ 2 - veluH S * veluPhiNumAll S
+
+/-- **PROVEN, parity-free.** `veluPXAll S / veluH S = Σ_{Q ∈ S} veluPoleX`, in cleared
+form. The `2`-torsion branch is where the new definition earns its keep. -/
+lemma veluPXAll_eval {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluPXAll S).eval (veluPointX P)
+      = (veluH S).eval (veluPointX P) * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q := by
+  rw [← Finset.sum_erase S (veluPoleX_zero (W := W) (veluPointX P)), veluPXAll,
+    Polynomial.eval_finsetSum, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun Q hQ => ?_
+  have hd : veluPointX P - veluPointX Q ≠ 0 := sub_ne_zero.mpr
+    (velu_X_ne hS hP (Finset.mem_of_mem_erase hQ) (Finset.ne_of_mem_erase hQ))
+  rw [veluH_factor_all hS hQ]
+  rcases eq_or_ne (-Q) Q with h2 | h2
+  · have hu : veluUTerm W Q = 0 := veluUTerm_eq_zero_of_neg_eq h2
+    rw [veluEps_of_twoTorsion h2]
+    simp only [pow_zero, mul_one, hu, map_zero, add_zero, Nat.add_zero, pow_one,
+      Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
+      veluPoleX]
+    field_simp
+    ring
+  · rw [veluEps_of_not_twoTorsion h2]
+    simp only [pow_one, Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_sub,
+      Polynomial.eval_X, Polynomial.eval_C, Polynomial.eval_pow, veluPoleX]
+    field_simp
+    ring
+
+/-- **PROVEN, parity-free.** `veluPVAll S / (veluH S)² = Σ_{Q ∈ S} veluPoleV`. -/
+lemma veluPVAll_eval {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluPVAll S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 2 * ∑ Q ∈ S, veluPoleV W (veluPointX P) Q := by
+  rw [← Finset.sum_erase S (veluPoleV_zero (W := W) (veluPointX P)), veluPVAll,
+    Polynomial.eval_finsetSum, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun Q hQ => ?_
+  have hd : veluPointX P - veluPointX Q ≠ 0 := sub_ne_zero.mpr
+    (velu_X_ne hS hP (Finset.mem_of_mem_erase hQ) (Finset.ne_of_mem_erase hQ))
+  rw [veluH_factor_all hS hQ]
+  rcases eq_or_ne (-Q) Q with h2 | h2
+  · have hu : veluUTerm W Q = 0 := veluUTerm_eq_zero_of_neg_eq h2
+    rw [veluEps_of_twoTorsion h2]
+    simp only [pow_zero, mul_one, hu, map_zero, zero_add, Nat.mul_zero, Nat.add_zero,
+      pow_one, Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C, Polynomial.eval_pow, veluPoleV]
+    field_simp
+    ring
+  · rw [veluEps_of_not_twoTorsion h2, Nat.mul_one]
+    simp only [pow_one, Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_sub,
+      Polynomial.eval_X, Polynomial.eval_C, Polynomial.eval_pow, veluPoleV]
+    field_simp
+    ring
+
+/-- **PROVEN, parity-free.** -/
+lemma veluXNumAll_eval {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluXNumAll S).eval (veluPointX P)
+      = (veluH S).eval (veluPointX P)
+          * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) := by
+  rw [veluXNumAll, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+    Polynomial.eval_X, Polynomial.eval_C, veluPXAll_eval hS hP]
+  ring
+
+/-- **PROVEN, parity-free.** -/
+lemma veluXiAll_eval {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluXiAll S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 2
+        * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) := by
+  rw [veluXiAll, Polynomial.eval_sub, Polynomial.eval_pow, veluPVAll_eval hS hP]
+  ring
+
+/-- **PROVEN, parity-free.** -/
+lemma veluPhiNumAll_eval {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluPhiNumAll S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 3
+        * (4 * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 3 +
+            W.b₂ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 2 +
+            (2 * W.b₄ - 20 * W.veluT S) *
+              (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) +
+            (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S)) := by
+  simp only [veluPhiNumAll, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+    Polynomial.eval_C]
+  rw [veluXNumAll_eval hS hP]
+  ring
+
+/-- **LEAF: no poles, in local form, at EVERY kernel order** — the parity-free
+`velu_theta_local_dvd`.
+
+At a nonzero `Q` of the kernel, `(T − x_Q)` divides `veluThetaAll S` to the order
+`4·(1 + ε_Q)`: EIGHT times at an ordinary `±`-pair (as in the odd case) and only FOUR times
+at a `2`-torsion point — which is exactly the multiplicity `veluH⁴` has there, so the
+assembly `velu_thetaAll_dvd` still goes through.
+
+**Route (worked out 2026-07-27; the two `2`-torsion inputs it needs are already PROVEN
+above).** The odd-order proof translates the generic point `𝐏 = (X, Y)` of the affine
+coordinate ring by `−Q`, uses `x_{𝐏−Q} = N/d²` with `d = X − x_Q` and `N = veluGenN`, and
+derives a contradiction by cancelling `d^k` and evaluating at `Q`, where `d ↦ 0` and
+`N ↦ u_Q ≠ 0`. At a `2`-torsion `T` BOTH of those degenerate: `u_T = 0`
+(`veluUTerm_eq_zero_of_neg_eq`), so `N ↦ 0` as well, and the evaluation is `0 = 0`.
+
+The repair is that `d` DIVIDES `N` there, and the quotient is a unit at `T`. Concretely, at
+a `2`-torsion `(x₀, y₀)` one has `2y₀ + a₁x₀ + a₃ = 0`, and the Weierstrass relation gives
+the coordinate-ring identity
+
+  `(Y − y₀)² = (X − x₀)·(X² + (x₀ + a₂)X + (x₀² + a₂x₀ + a₄) − a₁Y)`
+
+(the cubic `X³ + a₂X² + a₄X + a₆ + y₀²` vanishes at `x₀` because `x₀³ + a₂x₀² + a₄x₀ + a₆ =
+y₀² + a₁x₀y₀ + a₃y₀` and `a₃ + 2y₀ = −a₁x₀`). Since the other two summands of `veluGenN`
+already carry `d` and `d²`, this gives `N = d·M` with
+
+  `M ↦ 3x₀² + 2a₂x₀ + a₄ − a₁y₀ = g^x_T = ½·veluTTerm W T ≠ 0`
+
+under `veluEvalAt`, the nonvanishing being `veluTTerm_ne_zero_of_neg_eq`. So `x_{𝐏−T} =
+M/d`, `veluH(x_𝐏) = d·G` with `G = veluHq` a unit at `T` (`veluH_factor_all` with
+`ε_T = 0`), and multiplying the translation identity `velu_theta_translate` by `d^{4n}`
+gives `Θ(X)·𝓗⁴ = 𝓣·d⁴·G⁴` with `𝓗 = ∏_{Q'}(M − x_{Q'}d)`. Cancelling `d^k` for `k < 4` and
+evaluating at `T` sends the right side to `0` while the left side is
+`Θ₁(x₀)·(g^x_T)^{4n} ≠ 0` — the same contradiction, with `4` in place of `8`.
+
+`hdeg` is deliberately WEAKER than `velu_thetaAll_degree_lt`: `≤ 4n` rather than `< 4n`. -/
+theorem velu_thetaAll_local_dvd {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hdeg : (veluThetaAll S).degree ≤ ((4 * (S.card - 1) : ℕ) : WithBot ℕ))
+    {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    (Polynomial.X - Polynomial.C (veluPointX Q)) ^ (4 * (1 + veluEps Q)) ∣ veluThetaAll S :=
+  sorry
+
+/-- **LEAF: vanishing at infinity, at EVERY kernel order** — the parity-free
+`velu_theta_degree_lt`, `deg (veluThetaAll S) < 4(|S| − 1)`.
+
+The odd-order proof of `velu_theta_degree_lt` uses `hodd` only through
+`velu_twoTorsion_notMem` (so that `veluHq` has degree `n − 2`) and through
+`veluH_natDegree`. Parity-free, `veluHq S Q` has degree `n − 1 − ε_Q`, and the two
+numerators `veluPXAll`, `veluPVAll` carry the compensating factors `(T − x_Q)^{ε_Q}` and
+`(T − x_Q)^{2ε_Q}`, so every summand of `veluPXAll` still has degree `≤ n − 1` and every
+summand of `veluPVAll` degree `≤ 2n − 2`, exactly as in the odd case. The two-jet
+calculus of the `PolePolyDegree` section should therefore re-derive verbatim with those
+two degree bounds re-proven per orbit type. -/
+theorem velu_thetaAll_degree_lt {S : Finset W.Point} (hS : IsPointSubgroup S) :
+    (veluThetaAll S).degree < ((4 * (S.card - 1) : ℕ) : WithBot ℕ) :=
+  sorry
+
+omit [CharZero F] in
+/-- **PROVEN, parity-free.** The local divisibilities assemble: distinct linear factors are
+coprime, and `veluH⁴` is their product with the per-orbit exponents of
+`veluH_pow_eq_all`. -/
+theorem velu_thetaAll_dvd {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hloc : ∀ Q ∈ S.erase 0,
+      (Polynomial.X - Polynomial.C (veluPointX Q)) ^ (4 * (1 + veluEps Q)) ∣ veluThetaAll S) :
+    (veluH S) ^ 4 ∣ veluThetaAll S := by
+  rw [veluH_pow_eq_all S]
+  refine Finset.prod_dvd_of_coprime (fun a _ b _ hab => ?_) (fun a ha => ?_)
+  · exact (Polynomial.isCoprime_X_sub_C_of_isUnit_sub (sub_ne_zero_of_ne hab).isUnit).pow
+  · obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp ha
+    rw [velu_fiber_card_all hS hQ]
+    exact hloc Q hQ
+
+/-- **PROVEN over the two leaves, parity-free.** `veluThetaAll S = 0`: a polynomial
+divisible by `veluH⁴` and of degree below `deg veluH⁴ = 4(|S| − 1)` is zero. -/
+theorem velu_thetaAll_eq_zero {S : Finset W.Point} (hS : IsPointSubgroup S) :
+    veluThetaAll S = 0 :=
+  Polynomial.eq_zero_of_dvd_of_degree_lt
+    (velu_thetaAll_dvd hS fun _ hQ =>
+      velu_thetaAll_local_dvd hS (velu_thetaAll_degree_lt hS).le hQ)
+    (by rw [veluH_pow_degree hS]; exact velu_thetaAll_degree_lt hS)
+
+/-- **PROVEN, parity-free: Vélu's rational-function identity with `y` eliminated.**
+
+This is `velu_pole_identity` with the hypothesis `Odd S.card` DELETED, and it is the single
+node at which parity entered the whole development: everything above it in the pole layer
+(`velu_coordX_eq`, `velu_coordY_eq`, `velu_pole_V`, `velu_sum_pair`) was already stated
+without a parity hypothesis, and everything below it follows formally. -/
+theorem velu_pole_identity_of_subgroup {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆) *
+        (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) ^ 2 =
+      4 * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 3 +
+        W.b₂ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 2 +
+        (2 * W.b₄ - 20 * W.veluT S) *
+          (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) +
+        (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S) := by
+  have hH := veluH_eval_ne_zero hS hP
+  have hTheta : (veluPsi W).eval (veluPointX P) * ((veluXiAll S).eval (veluPointX P)) ^ 2
+      - (veluH S).eval (veluPointX P) * ((veluPhiNumAll S).eval (veluPointX P)) = 0 := by
+    have h0 := congrArg (Polynomial.eval (veluPointX P)) (velu_thetaAll_eq_zero hS)
+    simpa [veluThetaAll] using h0
+  have hPsi : (veluPsi W).eval (veluPointX P)
+      = 4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆ := by
+    simp only [veluPsi, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_X, Polynomial.eval_C]
+  rw [hPsi, veluXiAll_eval hS hP, veluPhiNumAll_eval hS hP] at hTheta
+  have key : ((veluH S).eval (veluPointX P)) ^ 4 *
+      (((4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆) *
+          (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) ^ 2)
+        - (4 * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 3 +
+            W.b₂ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 2 +
+            (2 * W.b₄ - 20 * W.veluT S) *
+              (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) +
+            (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S))) = 0 := by
+    linear_combination hTheta
+  rcases mul_eq_zero.mp key with h1 | h2
+  · exact absurd h1 (pow_ne_zero _ hH)
+  · exact sub_eq_zero.mp h2
+
+end PolePolyAllOrdersChar
 
 section VeluAllOrders
 
 variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] (W : Affine F) [W.IsElliptic]
 
-/-- **LEAF: the Vélu quotient curve is elliptic, at EVERY kernel order.**
+/-- **LEAF: three `2`-torsion points on the quotient, at EVERY kernel order** — the
+parity-free form of `velu_exists_three_twoTorsion`, and the ONLY thing still separating
+`velu_isElliptic_of_subgroup` from a proof.
 
-The parity-free form of `velu_isElliptic`. The odd-order proof goes through
-`velu_exists_three_twoTorsion`, which reads three distinct `2`-torsion points of the
-quotient off the three `2`-torsion points of `W` over the algebraic closure; that
-argument does not survive an even kernel, because a `2`-torsion point `T` inside the
-kernel identifies the other two. Expect either a route through points of order `4`,
-or a direct computation of `Δ (veluCurve W S)`. -/
+**This one needs a genuinely different argument, not a repair** (audited 2026-07-27). The
+odd-order proof pushes the three `2`-torsion points of `W` over `AlgebraicClosure F`
+through the Vélu map and reads off three distinct images; each lies outside `S` by
+`velu_twoTorsion_notMem`, which is exactly where `hodd` is consumed. With a `2`-torsion `T`
+INSIDE the kernel that collapses twice over: `T` itself maps to `0`, and the other two
+`2`-torsion points `T'`, `T'' = T' + T` differ by an element of the kernel and therefore
+have the SAME image. So `W[2]` contributes only ONE nonzero `2`-torsion point to the
+quotient, and the remaining two must come from points `R` of order `4` with `2R ∈ S`.
+
+Such `R` exist over an algebraically closed field — `[2]` is surjective on `W(F̄)` — but
+the group structure of the QUOTIENT is not available here, because `Affine.Point`'s group
+instance is what `IsElliptic` is being established for; so the argument cannot be run on
+the quotient and must produce the three points on `veluCurve W S` directly, e.g. from the
+`2`-division cubic `Φ` of `veluCurve W S` via `velu_pole_identity_of_subgroup`
+(`Ψ(x)·(1 − D)² = Φ(X(x))`, so `X(x_R)` is a root of `Φ` for every `R` with `2R ∈ S`).
+
+An alternative route avoiding the order-`4` points entirely: compute
+`Δ (veluCurve W S) ≠ 0` directly. -/
+theorem velu_exists_three_twoTorsion_of_subgroup (S : Finset W.Point)
+    (hS : IsPointSubgroup S) :
+    ∃ x₁ x₂ x₃ y₁ y₂ y₃ : AlgebraicClosure F,
+      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₁ y₁ ∧
+      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₂ y₂ ∧
+      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₃ y₃ ∧
+      y₁ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₁ y₁ ∧
+      y₂ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₂ y₂ ∧
+      y₃ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₃ y₃ ∧
+      x₁ ≠ x₂ ∧ x₁ ≠ x₃ ∧ x₂ ≠ x₃ :=
+  sorry
+
+/-- **TARGET PROVEN 2026-07-27: the Vélu quotient curve is elliptic, at EVERY kernel
+order** — an assembly over the leaf `velu_exists_three_twoTorsion_of_subgroup` and the
+already-proven `isElliptic_of_three_twoTorsion`, exactly as in the odd case.
+
+`Δ ≠ 0` is detected after base change to the algebraic closure, since
+`Δ (W'⁄L) = algebraMap F L (Δ W')` and `algebraMap` into a field extension is injective. -/
 theorem velu_isElliptic_of_subgroup (S : Finset W.Point) (hS : IsPointSubgroup S) :
-    (W.veluCurve S).IsElliptic := sorry
+    (W.veluCurve S).IsElliptic := by
+  obtain ⟨x₁, x₂, x₃, y₁, y₂, y₃, he₁, he₂, he₃, ht₁, ht₂, ht₃, d₁₂, d₁₃, d₂₃⟩ :=
+    velu_exists_three_twoTorsion_of_subgroup W S hS
+  haveI : ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).IsElliptic :=
+    isElliptic_of_three_twoTorsion he₁ he₂ he₃ ht₁ ht₂ ht₃ d₁₂ d₁₃ d₂₃
+  refine ⟨isUnit_iff_ne_zero.mpr fun h0 => ?_⟩
+  have hne := (isUnit_Δ
+    (W := ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)))).ne_zero
+  rw [show ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Δ =
+      algebraMap F (AlgebraicClosure F) (W.veluCurve S).Δ from
+    WeierstrassCurve.map_Δ (W := W.veluCurve S) (f := algebraMap F (AlgebraicClosure F)),
+    h0, map_zero] at hne
+  exact hne rfl
 
-/-- **LEAF: Vélu's coordinates satisfy the quotient equation, at EVERY kernel order.**
+omit [W.IsElliptic] in
+/-- **PROVEN 2026-07-27, parity-free.** `velu_equation_pole` with `hodd` DELETED: the
+statement in pole form, from which the point form follows by `velu_coordX_eq` and
+`velu_coordY_eq`. The proof is the odd-order one verbatim, over
+`velu_pole_identity_of_subgroup` in place of `velu_pole_identity`. -/
+theorem velu_equation_pole_of_subgroup (S : Finset W.Point) (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (W.veluCurve S).Equation
+      (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q)
+      (veluPointY P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W (veluPointX P) (veluPointY P) Q) := by
+  have hP0 : P ≠ 0 := fun h => hP (by rw [h]; exact hS.zero_mem)
+  have hEq : W.Equation (veluPointX P) (veluPointY P) := by
+    obtain _ | ⟨x, y, hns⟩ := P
+    · exact absurd rfl hP0
+    · exact hns.1
+  have hV := velu_pole_V hS hP
+  have hI := velu_pole_identity_of_subgroup hS hP
+  have hv : (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 2 =
+      4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆ := by
+    rw [Affine.equation_iff] at hEq
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆]
+    linear_combination (4 : F) * hEq
+  rw [Affine.equation_iff']
+  simp only [veluCurve, veluModel, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆] at hv hI ⊢
+  set x := veluPointX P with hxdef
+  set y := veluPointY P with hydef
+  set X := x + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W x Q with hXdef
+  set Y := y + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W x y Q with hYdef
+  set D := ∑ Q ∈ S, veluPoleV W x Q with hDdef
+  linear_combination (2 * Y + W.a₁ * X + W.a₃ + (2 * y + W.a₁ * x + W.a₃) * (1 - D)) / 4 * hV +
+    (1 - D) ^ 2 / 4 * hv + hI / 4
 
-The parity-free form of `velu_equation`. By `velu_coordX_eq` and `velu_coordY_eq` —
-both already parity-free — this reduces exactly as in the odd case to the
-rational-function identity `velu_equation_pole`, hence to `veluTheta S = 0`; that is
-the statement needing the `veluPX` / `veluPV` repair described in the section note
-above. -/
+omit [W.IsElliptic] in
+/-- **TARGET PROVEN 2026-07-27: Vélu's coordinates satisfy the quotient equation, at EVERY
+kernel order** — the parity-free form of `velu_equation`, over the single leaf
+`velu_thetaAll_local_dvd` and its sibling `velu_thetaAll_degree_lt`.
+
+By `velu_coordX_eq` and `velu_coordY_eq` — both already parity-free — this reduces exactly
+as in the odd case to `velu_equation_pole_of_subgroup`. -/
 theorem velu_equation_of_subgroup (S : Finset W.Point) (hS : IsPointSubgroup S)
     {P : W.Point} (hP : P ∉ S) :
-    (W.veluCurve S).Equation (W.veluCoordX S P) (W.veluCoordY S P) := sorry
+    (W.veluCurve S).Equation (W.veluCoordX S P) (W.veluCoordY S P) := by
+  rw [velu_coordX_eq hS hP, velu_coordY_eq hS hP]
+  exact W.velu_equation_pole_of_subgroup S hS hP
 
 /-- The Vélu image of a point as a point of the quotient curve, for a kernel of
 ARBITRARY order: the parity-free counterpart of `veluMap`. -/
