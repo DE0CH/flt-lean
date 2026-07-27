@@ -1899,18 +1899,25 @@ involution is positive and trivial on `𝒪_D` — which is exactly what
 `DualStruct.weil_act` axiomatises) without a rank input, the route is
 sound and this leaf splits three ways.
 
-THE VOCABULARY NOW EXISTS — verified 2026-07-27, and it is NOT yet on
-`main`. `DualStruct`, `PolarizationStruct`, `PolarizationStruct.pairing`
-and its six lemmas (`pairing_add_left`, `pairing_add_right`,
-`pairing_self` — alternating, `pairing_gal`, `pairing_act`,
-`galSMul_hom`) live in `Modularity/AbelianScheme.lean` as of commit
-`4ff8dde1` on branch `flt-lean-169`. Two gaps remain between that layer
-and this leaf, both checkable by reading the structure: nothing asserts
-a `DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`, and
-`PolarizationStruct` does not assert that its induced pairing is
-nondegenerate (only `DualStruct.weil_nondegenerate` is an axiom, and
-that is the canonical `A × A^∨` pairing, not the polarized one). Those
-two gaps are precisely the second bullet above. -/
+THE VOCABULARY NOW EXISTS, and it IS on `main`. `DualStruct`,
+`PolarizationStruct`, `PolarizationStruct.pairing` and its lemmas
+(`pairing_add_left`, `pairing_add_right`, `pairing_self` — alternating,
+`pairing_gal`, `pairing_act`, `galSMul_hom`) live in
+`Modularity/AbelianScheme.lean`, from commit `4ff8dde1`.
+
+GAP UPDATE 2026-07-27 — ONE OF THE TWO GAPS IS CLOSED.
+`PolarizationStruct` now DOES assert that its induced pairing is
+nondegenerate: the axiom is `PolarizationStruct.weil_hom_nondegenerate`,
+with `pairing_nondegenerate` and `exists_pairing_ne_one` as its usable
+forms. It was added because without it the whole structure was satisfied
+by the CONSTANT ZERO MAP and so carried no content at all over
+`DualStruct`; the standing refutation test is the proven
+`PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`. The gap that
+REMAINS is EXISTENCE: nothing asserts that a
+`DualStruct`/`PolarizationStruct` exists for a given `ab`/`m`, so this
+leaf must either gain an existence theorem or be restated to take a
+`PolarizationStruct` hypothesis. That single remaining gap is the second
+bullet above. -/
 theorem card_torsion_of_isMaximal
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -5313,14 +5320,20 @@ WHY THAT LAYER STILL DOES NOT CLOSE THIS LEAF — three gaps, each
 checkable in one reading of the structure, and a successor should
 confirm all three are still open before building anything:
 
-1. IT IS LEVEL ONE. `DualStruct.weil` is a pairing on `I`-TORSION,
-   `GeomFibrePt f x → GeomFibrePt dualMap x → rootsOfUnity n (F̄)` for
-   an integer `n ∈ I`. The determinant identity is a statement about the
-   whole `I`-adic tower: it needs pairings on `A[I^k]` valued in
-   `μ_(q^k)`, COMPATIBLE with the transition maps `·π`, so that they
-   assemble into `∧²_O T_I A ≅ O(1)`. Nothing at level one gives that.
-   REFUTING CHECK: find a `weil`-like field indexed by `I ^ k` with a
-   compatibility axiom, or a lemma deriving one.
+1. THE LEVELS EXIST; THE COMPATIBILITY DOES NOT (corrected 2026-07-27).
+   This item used to read "IT IS LEVEL ONE", and that was wrong:
+   `DualStruct.weil` quantifies its ideal `I` AND its integer `n`
+   INSIDE the field, so `weil x (I ^ k) (q ^ k)` is available at every
+   level `k` with all five axioms — the whole tower is already there.
+   Its own REFUTING CHECK ("find a `weil`-like field indexed by `I ^ k`")
+   is thus answered in the affirmative by one reading of the structure.
+   What is genuinely missing is any axiom relating CONSECUTIVE levels
+   along the transition map `· π`, for `π` a uniformiser of `I`. Without
+   it the level-`k` pairings do not assemble into `∧²_O T_I A ≅ O(1)`,
+   which is what the determinant identity needs. The proposed axiom is
+   written out in the section docstring of
+   `Modularity/AbelianScheme.lean`; it belongs on `DualStruct` and has
+   NOT been added.
 2. NO EXISTENCE IS ASSERTED. Both structures are bundled DATA, by
    deliberate design ("the dual is a BUNDLED DATUM, not a construction"
    — representing `Pic⁰` is Grothendieck representability). This leaf's
@@ -5330,14 +5343,19 @@ confirm all three are still open before building anything:
    to take a `PolarizationStruct` hypothesis — and the latter is a cut
    decision, not a repair, since it relocates the burden onto every
    consumer.
-3. THE POLARIZED PAIRING IS NOT ASSERTED NONDEGENERATE. Only
-   `DualStruct.weil_nondegenerate` is an axiom, and it is about the
-   canonical `A × A^∨` pairing. `PolarizationStruct.pairing` is
-   `weil (·) (hom ·)`, which is degenerate exactly on `ker λ`; perfection
-   of the pairing is what the classical argument above uses when it says
-   "the pairing is perfect".
+3. THE POLARIZED PAIRING IS NOW ASSERTED NONDEGENERATE — GAP CLOSED
+   2026-07-27. This item used to read "only `DualStruct.weil_nondegenerate`
+   is an axiom, and it is about the canonical `A × A^∨` pairing".
+   `PolarizationStruct` now carries `weil_hom_nondegenerate`:
+   nondegeneracy of `weil (·) (hom ·)` on `A[I]` itself, which is exactly
+   the perfection the classical argument above appeals to, with
+   `pairing_nondegenerate` and `exists_pairing_ne_one` as its usable
+   forms. It was added because without it the structure was satisfied by
+   the CONSTANT ZERO MAP and so carried no content whatever; the standing
+   refutation test is `PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`.
+   Only gaps 1 and 2 remain.
 
-The same three gaps block the sibling `card_torsion_of_isMaximal`,
+The same remaining gaps block the sibling `card_torsion_of_isMaximal`,
 where gap 1 does NOT bite (that leaf is level one), and where the layer
 plus two further geometric inputs does give a genuine route — see the
 PARITY section of its docstring.
