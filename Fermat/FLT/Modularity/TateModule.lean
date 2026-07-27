@@ -174,6 +174,14 @@ public import Mathlib.RingTheory.AdicCompletion.Basic
 -- Hausdorffness of the adic topology, used to discharge that pin for
 -- `v.adicCompletionIntegers D`
 public import Mathlib.RingTheory.AdicCompletion.Topology
+-- `IsAdicComplete.of_finite_module` (adic completeness of a finite module
+-- over a complete noetherian local ring), `HenselianRing.of_finite_algebra`,
+-- `HenselianRing.exists_isIdempotentElem_mk_eq`,
+-- `IsIdempotentElem.eq_zero_or_eq_one_of_isDomain` and
+-- `IsLocalRing.of_isArtinianRing_isIdempotentElem`: the commutative-algebra
+-- bricks behind `exists_padicAlgebra_of_additiveEquiv_sq` and
+-- `span_range_eq_top_of_adicPin`
+public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
 -- `IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers` and its
 -- ring / topology / locality / discrete-valuation instances: this is
 -- the coefficient ring `𝒪_{D,I}` that `exists_adicCoefficientRing`
@@ -7206,9 +7214,119 @@ Together they give `O ≃+* 𝒪_{D,I}` over `𝒪_D`, which is exactly the
 conclusion the FAITHFULNESS AUDIT below demands be DERIVED rather than
 assumed. -/
 
+/-! #### The shared adic bricks
+
+The two leaves below were both recorded as gated on one missing lemma,
+`IsAdicComplete (Ideal.span {(q : O₁)}) O₁` for `O₁` finite over `ℤ_q`.
+**That lemma was not missing.**  `IsAdicComplete.of_finite_module` has
+been in this project since 2026-07-26, in
+`Fermat/FLT/Mathlib/RingTheory/AdicCompletion/Finite.lean`, together with
+`HenselianRing.of_finite_algebra`, idempotent lifting along a henselian
+pair, and `IsLocalRing.of_isArtinianRing_isIdempotentElem`.  The
+"MISSING MACHINERY" notes that used to stand here were correct about
+MATHLIB (a grep of `Mathlib/RingTheory/AdicCompletion/` really does turn
+up instances only for `⊥`, `⊤`, subsingletons, `PowerSeries` and the
+completion of a noetherian local ring) and wrong about this development;
+the file they needed is imported above and the gate is
+`isAdicComplete_span_natCast_of_moduleFinite`, six lines.
+
+Everything in this subsection is stated over an arbitrary base and is
+independent of the Tate-module development. -/
+
+/-- `aⁿ • y` lies in the `n`-th step of the `a`-adic filtration. -/
+theorem pow_smul_mem_span_singleton_pow_smul_top {R : Type*} [CommRing R] {M : Type*}
+    [AddCommGroup M] [Module R M] (a : R) (n : ℕ) (y : M) :
+    a ^ n • y ∈ ((Ideal.span {a}) ^ n • ⊤ : Submodule R M) := by
+  rw [Ideal.span_singleton_pow]
+  exact Submodule.smul_mem_smul (Ideal.mem_span_singleton_self _) Submodule.mem_top
+
+/-- An `R`-linear map carries the `I`-adic filtration into the `I`-adic
+filtration (`Submodule.map_smul''`, then `⊤` is the largest submodule). -/
+theorem map_mem_pow_smul_top {R : Type*} [CommRing R] {I : Ideal R} {M N : Type*}
+    [AddCommGroup M] [Module R M] [AddCommGroup N] [Module R N]
+    (t : M →ₗ[R] N) (n : ℕ) {x : M} (hx : x ∈ (I ^ n • ⊤ : Submodule R M)) :
+    t x ∈ (I ^ n • ⊤ : Submodule R N) := by
+  have hmem : t x ∈ Submodule.map t (I ^ n • ⊤ : Submodule R M) := ⟨x, hx, rfl⟩
+  rw [Submodule.map_smul''] at hmem
+  exact Submodule.smul_le.mpr (fun r hr m _ => Submodule.smul_mem_smul hr Submodule.mem_top) hmem
+
+/-- **Adic completeness passes to a module retract** (PROVEN).  If
+`f ∘ s = id` then `s` embeds `N`'s filtration into `M`'s and `f` pushes
+`M`'s back, so both Hausdorffness and precompleteness transfer.  Applied
+twice below: once along an additive bijection (a `ℤ`-linear equivalence,
+which is a retract of itself), once along `Fin 2 → O ↠ O`. -/
+theorem isAdicComplete_of_retract {R : Type*} [CommRing R] (I : Ideal R)
+    {M N : Type*} [AddCommGroup M] [Module R M] [AddCommGroup N] [Module R N]
+    [IsAdicComplete I M] (f : M →ₗ[R] N) (s : N →ₗ[R] M) (hfs : ∀ x, f (s x) = x) :
+    IsAdicComplete I N := by
+  haveI hh : IsHausdorff I N := by
+    refine ⟨fun x hx => ?_⟩
+    have h0 : s x = 0 :=
+      IsHausdorff.haus (inferInstance : IsHausdorff I M) (s x) fun n =>
+        SModEq.zero.mpr (map_mem_pow_smul_top s n (SModEq.zero.mp (hx n)))
+    have h := hfs x
+    rw [h0, map_zero] at h
+    exact h.symm
+  haveI hp : IsPrecomplete I N := by
+    refine ⟨fun a ha => ?_⟩
+    obtain ⟨L, hL⟩ := IsPrecomplete.prec (inferInstance : IsPrecomplete I M)
+      (f := fun n => s (a n)) (by
+        intro m n hmn
+        rw [SModEq.sub_mem, ← map_sub]
+        exact map_mem_pow_smul_top s m (SModEq.sub_mem.mp (ha hmn)))
+    refine ⟨f L, fun n => ?_⟩
+    rw [SModEq.sub_mem]
+    have heq : a n - f L = f (s (a n) - L) := by rw [map_sub, hfs]
+    rw [heq]
+    exact map_mem_pow_smul_top f n (SModEq.sub_mem.mp (hL n))
+  exact ⟨⟩
+
+/-- **The `k`-adic filtration of a module does not see its base ring**
+(PROVEN).  `Ideal.span {(k : R)} = (Ideal.span {(k : ℤ)}).map (algebraMap ℤ R)`,
+so `IsAdicComplete.map_algebraMap_iff` identifies the two conditions.  This
+is what lets an additive (i.e. `ℤ`-linear) bijection transport `q`-adic
+completeness between rings that carry no common algebra structure yet. -/
+theorem isAdicComplete_span_natCast_iff_int {R : Type*} [CommRing R] (k : ℕ)
+    (M : Type*) [AddCommGroup M] [Module R M] :
+    IsAdicComplete (Ideal.span {(k : R)}) M ↔ IsAdicComplete (Ideal.span {(k : ℤ)}) M := by
+  have h : (Ideal.span {(k : ℤ)}).map (algebraMap ℤ R) = Ideal.span {(k : R)} := by
+    rw [Ideal.map_span]; simp
+  rw [← h, IsAdicComplete.map_algebraMap_iff]
+
+/-- **THE SHARED GATE, and it was never missing**: a module-finite
+`ℤ_q`-algebra is `q`-adically complete (PROVEN).  `ℤ_q` is a complete
+noetherian local ring, so `IsAdicComplete.of_finite_module` applies at
+its maximal ideal, and `PadicInt.maximalIdeal_eq_span_p` rewrites that
+ideal as `(q)`; the base of the filtration is then switched by
+`isAdicComplete_span_natCast_iff_int`.  `Module.Free` is NOT needed —
+`Module.Finite` alone suffices. -/
+theorem isAdicComplete_span_natCast_of_moduleFinite (q : ℕ) [Fact q.Prime]
+    (A : Type*) [CommRing A] [Algebra ℤ_[q] A] [Module.Finite ℤ_[q] A] :
+    IsAdicComplete (Ideal.span {(q : A)}) A := by
+  haveI h1 : IsAdicComplete (IsLocalRing.maximalIdeal ℤ_[q]) A :=
+    IsAdicComplete.of_finite_module
+  rw [PadicInt.maximalIdeal_eq_span_p] at h1
+  rw [isAdicComplete_span_natCast_iff_int]
+  exact (isAdicComplete_span_natCast_iff_int (R := ℤ_[q]) q A).mp h1
+
+/-- The image of `c : ℤ_q` in any `ℤ_q`-algebra is `q`-adically close to
+the natural number `PadicInt.appr c n` (PROVEN — apply `algebraMap` to
+`PadicInt.appr_spec`).  The `ℤ_q`-algebra analogue of
+`appr_sub_natCast_mem` above, which is about naturals only. -/
+theorem algebraMap_sub_appr_mem {q : ℕ} [Fact q.Prime] (A : Type*) [CommRing A]
+    [Algebra ℤ_[q] A] (c : ℤ_[q]) (n : ℕ) :
+    algebraMap ℤ_[q] A c - ((c.appr n : ℕ) : A) ∈ Ideal.span {(q : A)} ^ n := by
+  have h := PadicInt.appr_spec n c
+  rw [Ideal.mem_span_singleton] at h
+  obtain ⟨d, hd⟩ := h
+  rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton]
+  refine ⟨algebraMap ℤ_[q] A d, ?_⟩
+  have h2 := congrArg (algebraMap ℤ_[q] A) hd
+  simpa using h2
+
 /-- **An additive bijection of squares transports the `ℤ_q`-structure**
-(sorry leaf — pure `ℤ_q`-module theory; no `𝒪_D`, no frame, no number
-field, no pinning appears).
+(PROVEN 2026-07-27 — pure `ℤ_q`-module theory; no `𝒪_D`, no frame, no
+number field, no pinning appears).
 
 If `O₁` is a finite free `ℤ_q`-algebra and
 `g : (Fin 2 → O₁) → (Fin 2 → O)` is an additive bijection onto the
@@ -7246,30 +7364,28 @@ THE ARGUMENT.
 This is the half of `exists_padicAlgebra_ringHom_of_frameComparison`
 that survives verbatim when the pinning hypotheses are dropped.
 
-MISSING MACHINERY, scouted 2026-07-27 — and it is SHARED with
-`span_range_eq_top_of_adicPin` below, so prove it once:
+STALE-AUDIT CORRECTION, 2026-07-27.  This docstring used to carry a
+"MISSING MACHINERY" note demanding
+`IsAdicComplete (Ideal.span {(q : O₁)}) O₁` be built by hand from
+`Module.Free.chooseBasis`, and instructing the reader not to look in
+mathlib again.  The note was right about mathlib and wrong about this
+project: `IsAdicComplete.of_finite_module` was already in
+`Fermat/FLT/Mathlib/RingTheory/AdicCompletion/Finite.lean`, and the gate
+is now `isAdicComplete_span_natCast_of_moduleFinite` above.  No basis is
+chosen anywhere in the proof.
 
-    IsAdicComplete (Ideal.span {(q : O₁)}) O₁   for `O₁` finite free over `ℤ_q`.
-
-Mathlib has `IsAdicComplete (maximalIdeal ℤ_[p]) ℤ_[p]`
-(`Mathlib/NumberTheory/Padics/PadicIntegers.lean`) and
-`IsAdicComplete.henselianRing` (`Mathlib/RingTheory/Henselian.lean`), but
-it does **not** transfer `IsAdicComplete` through a finite free module
-structure: a grep of `Mathlib/RingTheory/AdicCompletion/` turns up
-instances only for `⊥`, `⊤`, subsingletons, `PowerSeries`, and the
-completion of a Noetherian local ring — nothing for `ι → M`, for a
-product, or for a finite free module.  So the route is: transport along
-`Module.Free.chooseBasis` to `ι → ℤ_[q]`, prove `IsHausdorff` /
-`IsPrecomplete` there coordinatewise from `ℤ_q`'s own instance, and note
-that `Ideal.span {(q : O₁)} ^ n • ⊤` and `Ideal.span {(q : ℤ_[q])} ^ n • ⊤`
-are the SAME submodule `qⁿ · O₁`, so the base ring of the filtration may
-be switched freely.  Do not look for this in mathlib again; it is not
-there at this pin.
-
-Once it exists, step 2 here is `padicIntLiftHom` verbatim, and step 2 of
-`span_range_eq_top_of_adicPin` is `IsAdicComplete.henselianRing` applied
-to `X² - X` (whose derivative `2X - 1` is a unit at an idempotent, since
-`(2e-1)² = 1`). -/
+HOW THE STEPS ARE REALISED.  Step 1 does not go through `O₁`'s own
+completeness at all: `Fin 2 → O₁` is `q`-adically complete over `ℤ_q`
+(`IsAdicComplete.of_finite_module`), the filtration is re-based to `ℤ`
+by `isAdicComplete_span_natCast_iff_int` — which is what makes the merely
+ADDITIVE `g` usable, since at this point `Fin 2 → O` has no `ℤ_q`-action
+— and `isAdicComplete_of_retract` transports it first along `g`, then
+along `Fin 2 → O ↠ O`.  Step 2 is `padicIntLiftHom` verbatim.  Step 3
+compares `c • u` with `PadicInt.appr c n • u` on both sides through
+`algebraMap_sub_appr_mem` and concludes by Hausdorffness of `Fin 2 → O`.
+Step 4 is `Module.finrank_pi_fintype` on `L := g` viewed as a
+`ℤ_q`-linear equivalence, with freeness from
+`Module.free_of_finite_type_torsion_free'` over the PID `ℤ_q`. -/
 theorem exists_padicAlgebra_of_additiveEquiv_sq
     (q : ℕ) [Fact q.Prime]
     (O₁ : Type u) [CommRing O₁] [Algebra ℤ_[q] O₁] [Module.Finite ℤ_[q] O₁]
@@ -7280,12 +7396,101 @@ theorem exists_padicAlgebra_of_additiveEquiv_sq
     (hgbij : Function.Bijective g) :
     ∃ (_ : Algebra ℤ_[q] O) (_ : Module.Finite ℤ_[q] O) (_ : Module.Free ℤ_[q] O),
       Module.finrank ℤ_[q] O = Module.finrank ℤ_[q] O₁ ∧
-      ∀ (c : ℤ_[q]) (u : Fin 2 → O₁), g (c • u) = c • g u :=
-  sorry
+      ∀ (c : ℤ_[q]) (u : Fin 2 → O₁), g (c • u) = c • g u := by
+  classical
+  let G : (Fin 2 → O₁) →+ (Fin 2 → O) := AddMonoidHom.mk' g hgadd
+  let e : (Fin 2 → O₁) ≃+ (Fin 2 → O) := AddEquiv.ofBijective G hgbij
+  have hGg : ∀ u, G u = g u := fun _ => rfl
+  have heg : ∀ u, e u = g u := fun _ => rfl
+  -- Step 1: `q`-adic completeness of `O`, transported along `g` over `ℤ`.
+  have hA1 : IsAdicComplete (IsLocalRing.maximalIdeal ℤ_[q]) (Fin 2 → O₁) :=
+    IsAdicComplete.of_finite_module
+  rw [PadicInt.maximalIdeal_eq_span_p] at hA1
+  haveI hZ1 : IsAdicComplete (Ideal.span {(q : ℤ)}) (Fin 2 → O₁) :=
+    (isAdicComplete_span_natCast_iff_int (R := ℤ_[q]) q (Fin 2 → O₁)).mp hA1
+  haveI hZ2 : IsAdicComplete (Ideal.span {(q : ℤ)}) (Fin 2 → O) :=
+    isAdicComplete_of_retract _ e.toIntLinearEquiv.toLinearMap
+      e.toIntLinearEquiv.symm.toLinearMap (fun x => e.toIntLinearEquiv.apply_symm_apply x)
+  haveI hZ3 : IsAdicComplete (Ideal.span {(q : ℤ)}) O :=
+    isAdicComplete_of_retract _ (LinearMap.proj (0 : Fin 2))
+      (LinearMap.single ℤ (fun _ : Fin 2 => O) 0) (fun x => by simp)
+  haveI hcO : IsAdicComplete (Ideal.span {(q : O)}) O :=
+    (isAdicComplete_span_natCast_iff_int (R := O) q O).mpr hZ3
+  -- Step 2: the `ℤ_q`-algebra structure.
+  letI algO : Algebra ℤ_[q] O := (padicIntLiftHom (p := q) (O := O)).toAlgebra
+  -- Step 3: `ℤ_q`-linearity of `g`.
+  have hlin : ∀ (c : ℤ_[q]) (u : Fin 2 → O₁), g (c • u) = c • g u := by
+    intro c u
+    have hh : ∀ n : ℕ, g (c • u) - c • g u ∈
+        ((Ideal.span {(q : ℤ)}) ^ n • ⊤ : Submodule ℤ (Fin 2 → O)) := by
+      intro n
+      have hO₁ := algebraMap_sub_appr_mem O₁ c n
+      rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hO₁
+      obtain ⟨d, hd⟩ := hO₁
+      have hO := algebraMap_sub_appr_mem O c n
+      rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hO
+      obtain ⟨d', hd'⟩ := hO
+      have hu : c • u - ((c.appr n : ℕ) • u) = ((q : ℤ) ^ n) • (d • u) := by
+        funext i
+        show c • u i - (c.appr n : ℕ) • u i = ((q : ℤ) ^ n) • (d • u i)
+        rw [Algebra.smul_def, nsmul_eq_mul, smul_eq_mul, zsmul_eq_mul]
+        push_cast
+        linear_combination (u i) * hd
+      have hv : c • g u - ((c.appr n : ℕ) • g u) = ((q : ℤ) ^ n) • (d' • g u) := by
+        funext i
+        show c • g u i - (c.appr n : ℕ) • g u i = ((q : ℤ) ^ n) • (d' • g u i)
+        rw [Algebra.smul_def, nsmul_eq_mul, smul_eq_mul, zsmul_eq_mul]
+        push_cast
+        linear_combination (g u i) * hd'
+      have hG1 : g (c • u) - g ((c.appr n : ℕ) • u) = ((q : ℤ) ^ n) • g (d • u) := by
+        have h1 : G (c • u - ((c.appr n : ℕ) • u)) = G (((q : ℤ) ^ n) • (d • u)) := by rw [hu]
+        rw [map_sub, map_zsmul] at h1
+        simpa only [hGg] using h1
+      have hG2 : g ((c.appr n : ℕ) • u) = (c.appr n : ℕ) • g u := by
+        have h2 := map_nsmul G (c.appr n) u
+        simpa only [hGg] using h2
+      have hfin : g (c • u) - c • g u = ((q : ℤ) ^ n) • (g (d • u) - d' • g u) := by
+        rw [smul_sub, ← hG1, ← hv, hG2]
+        abel
+      rw [hfin]
+      exact pow_smul_mem_span_singleton_pow_smul_top _ n _
+    have hzero := IsHausdorff.haus
+      (inferInstance : IsHausdorff (Ideal.span {(q : ℤ)}) (Fin 2 → O))
+      (g (c • u) - c • g u) fun n => SModEq.zero.mpr (hh n)
+    exact sub_eq_zero.mp hzero
+  -- Step 4: finiteness, freeness and the rank.
+  let L : (Fin 2 → O₁) ≃ₗ[ℤ_[q]] (Fin 2 → O) := e.toLinearEquiv (fun c x => by
+    simpa only [heg] using hlin c x)
+  haveI hfinO2 : Module.Finite ℤ_[q] (Fin 2 → O) := Module.Finite.equiv L
+  haveI hfinO : Module.Finite ℤ_[q] O :=
+    Module.Finite.of_surjective (LinearMap.proj (0 : Fin 2) : (Fin 2 → O) →ₗ[ℤ_[q]] O)
+      (fun x => ⟨fun _ => x, rfl⟩)
+  haveI htfO : Module.IsTorsionFree ℤ_[q] O := by
+    have h1 : Function.Injective (L.symm.toLinearMap : (Fin 2 → O) →ₗ[ℤ_[q]] (Fin 2 → O₁)) :=
+      L.symm.injective
+    have h2 : Function.Injective
+        (LinearMap.single ℤ_[q] (fun _ : Fin 2 => O) 0 : O →ₗ[ℤ_[q]] (Fin 2 → O)) := by
+      intro x y hxy
+      simpa using congrFun hxy 0
+    refine Function.Injective.moduleIsTorsionFree
+      (L.symm.toLinearMap ∘ₗ (LinearMap.single ℤ_[q] (fun _ : Fin 2 => O) 0)) ?_ ?_
+    · intro x y hxy
+      simp only [LinearMap.coe_comp, Function.comp_apply] at hxy
+      exact h2 (h1 hxy)
+    · intro r m
+      simp
+  haveI hfreeO : Module.Free ℤ_[q] O := Module.free_of_finite_type_torsion_free'
+  have hrank : Module.finrank ℤ_[q] O = Module.finrank ℤ_[q] O₁ := by
+    have h1 : Module.finrank ℤ_[q] (Fin 2 → O₁) = Module.finrank ℤ_[q] (Fin 2 → O) :=
+      L.finrank_eq
+    rw [Module.finrank_pi_fintype, Module.finrank_pi_fintype] at h1
+    simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul] at h1
+    omega
+  exact ⟨algO, hfinO, hfreeO, hrank, hlin⟩
 
 open _root_.NumberField in
 /-- **The pinned image SPANS: `𝒪_{D,I}` is the `ℤ_q`-span of `j₁(𝒪_D)`**
-(sorry leaf — commutative algebra over a complete local domain).
+(PROVEN 2026-07-27 — commutative algebra over a complete local domain).
 
 `hdense` says `j₁(𝒪_D)` is dense in the `(j₁ π)`-adic topology.  That is
 NOT the `q`-adic topology in general, and this is precisely where
@@ -7296,54 +7501,159 @@ PROPER `ℤ_q`-submodule of `O₁`.  So the "complete Nakayama" step of the
 original argument was wrong as stated, and the domain hypothesis is what
 repairs it.
 
-THE ARGUMENT.
+THE ARGUMENT, as actually carried out.  Write `J := 𝔪_{ℤ_q} · O₁`,
+which is `(q)` as an ideal of `O₁`, and `S := O₁ ⧸ J`.
 
-1. *`j₁ π` is a non-unit, and nonzero.*  If `j₁ π` were a unit then
-   `(j₁ π)ⁿ = ⊤` for every `n`, and `hker` would read "`a ∈ Iⁿ` for
-   every `a`" — false at `a = 1`, `n = 1`, since a maximal `I` is
-   proper.  If `j₁ π` were `0` then `hker` at `n = 2` would give
-   `π ∈ I²`, contradicting `hπ2`.
-2. *`O₁` is local, with `𝔪ᴺ ⊆ (q)`.*  `O₁` is finite free over `ℤ_q`,
-   hence `q`-adically complete, so idempotents lift from `O₁ ⧸ (q)`;
-   `O₁` is a DOMAIN, so it has none but `0` and `1`, so the finite
-   `𝔽_q`-algebra `O₁ ⧸ (q)` is connected.  A finite-dimensional
-   commutative algebra over a field is Artinian, hence a finite product
-   of local rings, and connectedness leaves exactly one factor.  So
-   `O₁ ⧸ (q)` is local with NILPOTENT maximal ideal, `O₁` is local, and
-   `𝔪ᴺ ⊆ (q)` for some `N`.
-3. *The two filtrations are cofinal.*  `(q) ⊆ (j₁ π)` by `hqI` and
-   `hker` at `n = 1`, and step 2 with step 1 gives
-   `(j₁ π)ᴺ ⊆ 𝔪ᴺ ⊆ (q)`.  So `hdense` at precision `N` produces, for
-   every `z : O₁`, an `a : 𝒪_D` with `z - j₁ a ∈ (q)`.
+1. *`j₁ π` is a non-unit.*  If it were a unit then `(j₁ π)¹ = ⊤`, so
+   `j₁ 1 ∈ (j₁ π)¹` and `hker` at `n = 1`, `a = 1` gives `1 ∈ I`,
+   contradicting `hI.ne_top`.  (Nonvanishing of `j₁ π` is NOT needed;
+   see the HYPOTHESIS AUDIT below.)
+2. *`S` is local artinian.*  `(O₁, J)` is a henselian pair
+   (`HenselianRing.of_finite_algebra`, whose hypothesis is exactly
+   `Module.Finite ℤ_[q] O₁`), so idempotents of `S` lift to `O₁`
+   (`HenselianRing.exists_isIdempotentElem_mk_eq`); `O₁` is a DOMAIN, so
+   the lift is `0` or `1` and hence so is the idempotent.  `S` is a
+   module-finite algebra over the residue FIELD of `ℤ_q`, hence artinian
+   (`IsArtinianRing.of_finite`), and an artinian ring with no nontrivial
+   idempotents is local (`IsLocalRing.of_isArtinianRing_isIdempotentElem`).
+   This is the ONLY place `[IsDomain O₁]` is used, and it is exactly the
+   step that the counterexample above breaks: there `O₁ = ℤ₅ × ℤ₅ × ℤ₅`
+   has idempotents, `S` is not local, and `j₁ π` stays a unit in two
+   factors at every precision.
+3. *`(j₁ π)ᴺ ⊆ (q)`.*  `J` sits in the Jacobson radical, so a unit mod
+   `J` is a unit; by step 1 the image of `j₁ π` in `S` is therefore a
+   non-unit, i.e. lies in `𝔪_S`.  `𝔪_S = jacobson ⊥` is nilpotent
+   (`IsArtinianRing.isNilpotent_jacobson_bot`), say `𝔪_S ᴺ = ⊥`, so
+   `(j₁ π)ᴺ ∈ J`.  `hdense` at precision `N` then gives, for every
+   `z : O₁`, an `a : 𝒪_D` with `z - j₁ a ∈ (q)`.
 4. *Nakayama.*  Let `M` be the `ℤ_q`-span of `j₁(𝒪_D)`.  Step 3 says
-   `M + q · O₁ = O₁`; `O₁ ⧸ M` is a finite `ℤ_q`-module with
-   `q · (O₁ ⧸ M) = O₁ ⧸ M`, and `q` lies in the Jacobson radical of the
-   local ring `ℤ_q`, so `O₁ ⧸ M = 0`.
+   `⊤ ≤ 𝔪_{ℤ_q} · ⊤` in the finite `ℤ_q`-module `O₁ ⧸ M`, and
+   `𝔪_{ℤ_q} ≤ jacobson ⊥`, so `O₁ ⧸ M = 0`
+   (`Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`).
 
-`hI` and `hπ2` are consumed in step 1, `hqI` in step 3, `hπ` only
-through `hdense`/`hker`.
+HYPOTHESIS AUDIT, 2026-07-27.  The statement is unchanged, but the proof
+found is strictly stronger than the route sketched above ever needed:
+`hqI`, `hπ` and `hπ2` are **not consumed at all**, and are underscored in
+the binder list so that this is mechanically visible rather than merely
+asserted.  The earlier sketch spent them on "`j₁ π ≠ 0`" and on the
+reverse inclusion `(q) ⊆ (j₁ π)` (cofinality of the two filtrations in
+BOTH directions); only the inclusion `(j₁ π)ᴺ ⊆ (q)` is actually used,
+and it survives `j₁ π = 0` trivially.  `Module.Free ℤ_[q] O₁` is likewise
+unused — `Module.Finite` alone drives steps 2–4.  The hypotheses are kept
+because the caller
+(`exists_padicAlgebra_ringHom_of_frameComparison`) supplies them for free
+and a future consumer may want the pinning; nothing here should be read
+as a claim that they are needed.
 
-MISSING MACHINERY, scouted 2026-07-27.  Step 2 needs
-`IsAdicComplete (Ideal.span {(q : O₁)}) O₁` — the SAME gap as
-`exists_padicAlgebra_of_additiveEquiv_sq` above, where the route is
-spelled out; it is not in mathlib at this pin.  With it in hand,
-idempotent lifting is `IsAdicComplete.henselianRing` at `X² - X`, and the
-Artinian decomposition of the finite `𝔽_q`-algebra `O₁ ⧸ (q)` is
-`IsArtinianRing.equivPi` / `IsArtinianRing.isNilpotent_jacobson_bot`.
-Step 4 is `Submodule.eq_top_of_smul_eq_top`-style Nakayama over the
-local ring `ℤ_q` (`Submodule.eq_top_of_le_smul_add` / `IsLocalRing`). -/
+STALE-AUDIT CORRECTION.  The "MISSING MACHINERY" note that used to close
+this docstring said step 2 was blocked on
+`IsAdicComplete (Ideal.span {(q : O₁)}) O₁` "not in mathlib at this
+pin".  True of mathlib, false of this project: see the correction in the
+docstring of `exists_padicAlgebra_of_additiveEquiv_sq` above.  In the
+event the proof does not even need the gate in that form — the henselian
+pair `(O₁, J)` comes straight from `HenselianRing.of_finite_algebra`. -/
 theorem span_range_eq_top_of_adicPin
     {D : Type u} [Field D] [NumberField D]
     (q : ℕ) [Fact q.Prime]
-    (I : Ideal (𝓞 D)) (hI : I.IsMaximal) (hqI : (q : 𝓞 D) ∈ I)
-    (π : 𝓞 D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (I : Ideal (𝓞 D)) (hI : I.IsMaximal) (_hqI : (q : 𝓞 D) ∈ I)
+    (π : 𝓞 D) (_hπ : π ∈ I) (_hπ2 : π ∉ I ^ 2)
     (O₁ : Type u) [CommRing O₁] [IsDomain O₁] [Algebra ℤ_[q] O₁]
     [Module.Finite ℤ_[q] O₁] [Module.Free ℤ_[q] O₁]
     (j₁ : 𝓞 D →+* O₁)
     (hdense : ∀ (n : ℕ) (z : O₁), ∃ a : 𝓞 D, z - j₁ a ∈ Ideal.span {j₁ π} ^ n)
     (hker : ∀ (n : ℕ) (a : 𝓞 D), j₁ a ∈ Ideal.span {j₁ π} ^ n ↔ a ∈ I ^ n) :
-    Submodule.span ℤ_[q] (Set.range (j₁ : 𝓞 D → O₁)) = ⊤ :=
-  sorry
+    Submodule.span ℤ_[q] (Set.range (j₁ : 𝓞 D → O₁)) = ⊤ := by
+  classical
+  set J : Ideal O₁ := (IsLocalRing.maximalIdeal ℤ_[q]).map (algebraMap ℤ_[q] O₁) with hJdef
+  haveI hHen : HenselianRing O₁ J := HenselianRing.of_finite_algebra ℤ_[q] O₁
+  have hJjac : J ≤ Ideal.jacobson (⊥ : Ideal O₁) := hHen.jac
+  have hJne : J ≠ ⊤ := by
+    intro htop
+    have h1 : (1 : O₁) ∈ J := by rw [htop]; trivial
+    simpa using Ideal.mem_jacobson_bot.mp (hJjac h1) (-1)
+  haveI hntq : Nontrivial (O₁ ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJne
+  haveI hlies : J.LiesOver (IsLocalRing.maximalIdeal ℤ_[q]) := by
+    constructor
+    refine le_antisymm Ideal.le_comap_map (IsLocalRing.le_maximalIdeal ?_)
+    intro htop
+    have h1 : (1 : ℤ_[q]) ∈ Ideal.under ℤ_[q] J := by rw [htop]; trivial
+    have h2 : (1 : O₁) ∈ J := by simpa using h1
+    exact hJne (Ideal.eq_top_of_isUnit_mem _ h2 isUnit_one)
+  letI : Field (ℤ_[q] ⧸ IsLocalRing.maximalIdeal ℤ_[q]) := Ideal.Quotient.field _
+  haveI hart : IsArtinianRing (O₁ ⧸ J) :=
+    IsArtinianRing.of_finite (ℤ_[q] ⧸ IsLocalRing.maximalIdeal ℤ_[q]) (O₁ ⧸ J)
+  haveI hloc : IsLocalRing (O₁ ⧸ J) := by
+    refine IsLocalRing.of_isArtinianRing_isIdempotentElem ?_
+    intro x hx
+    obtain ⟨y, hy, hmk⟩ := HenselianRing.exists_isIdempotentElem_mk_eq (J := J) hx
+    rcases IsIdempotentElem.eq_zero_or_eq_one_of_isDomain hy with h | h
+    · exact Or.inl (by rw [← hmk, h, map_zero])
+    · exact Or.inr (by rw [← hmk, h, map_one])
+  -- Step 1: `j₁ π` is a non-unit.
+  have hnu : ¬ IsUnit (j₁ π) := by
+    intro hu
+    have htop : Ideal.span {j₁ π} = ⊤ := Ideal.span_singleton_eq_top.mpr hu
+    have h1 : j₁ 1 ∈ Ideal.span {j₁ π} ^ 1 := by rw [pow_one, htop]; trivial
+    have h2 := (hker 1 1).mp h1
+    rw [pow_one] at h2
+    exact hI.ne_top (Ideal.eq_top_of_isUnit_mem _ h2 isUnit_one)
+  -- Steps 2–3: its image in the local artinian quotient is a non-unit, hence nilpotent.
+  have hnub : ¬ IsUnit (Ideal.Quotient.mk J (j₁ π)) := by
+    intro hu
+    obtain ⟨v, hv⟩ := hu.exists_right_inv
+    obtain ⟨s, rfl⟩ := Ideal.Quotient.mk_surjective v
+    rw [← map_mul, ← map_one (Ideal.Quotient.mk J), ← sub_eq_zero, ← map_sub,
+      Ideal.Quotient.eq_zero_iff_mem] at hv
+    have hjac := hJjac hv
+    have hunit : IsUnit (j₁ π * s) := by
+      have h := Ideal.mem_jacobson_bot.mp hjac 1
+      simpa using h
+    exact hnu (isUnit_of_mul_isUnit_left hunit)
+  have hmem : Ideal.Quotient.mk J (j₁ π) ∈ IsLocalRing.maximalIdeal (O₁ ⧸ J) :=
+    (IsLocalRing.mem_maximalIdeal _).mpr hnub
+  obtain ⟨N, hN⟩ : IsNilpotent (Ideal.jacobson (⊥ : Ideal (O₁ ⧸ J))) :=
+    IsArtinianRing.isNilpotent_jacobson_bot
+  rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal (O₁ ⧸ J)) bot_ne_top] at hN
+  have hpow : Ideal.Quotient.mk J (j₁ π ^ N) = 0 := by
+    rw [map_pow]
+    have hp2 : (Ideal.Quotient.mk J (j₁ π)) ^ N ∈ (IsLocalRing.maximalIdeal (O₁ ⧸ J)) ^ N :=
+      Ideal.pow_mem_pow hmem N
+    rw [hN] at hp2
+    simpa using hp2
+  have hstep : Ideal.span {j₁ π} ^ N ≤ J := by
+    rw [Ideal.span_singleton_pow, Ideal.span_le, Set.singleton_subset_iff]
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hpow
+  -- Step 4: Nakayama over `ℤ_q`.
+  set M : Submodule ℤ_[q] O₁ := Submodule.span ℤ_[q] (Set.range (j₁ : 𝓞 D → O₁)) with hMdef
+  have hkey : (⊤ : Submodule ℤ_[q] (O₁ ⧸ M)) ≤
+      (IsLocalRing.maximalIdeal ℤ_[q]) • (⊤ : Submodule ℤ_[q] (O₁ ⧸ M)) := by
+    intro x _
+    obtain ⟨z, rfl⟩ := Submodule.Quotient.mk_surjective M x
+    obtain ⟨a, ha⟩ := hdense N z
+    have haJ : z - j₁ a ∈ J := hstep ha
+    have hsm : z - j₁ a ∈ (IsLocalRing.maximalIdeal ℤ_[q]) • (⊤ : Submodule ℤ_[q] O₁) := by
+      rw [Ideal.smul_top_eq_map]
+      exact haJ
+    have h1 : (Submodule.Quotient.mk z : O₁ ⧸ M) = Submodule.Quotient.mk (z - j₁ a) := by
+      rw [Submodule.Quotient.eq]
+      have hja : (j₁ a : O₁) ∈ M := by
+        rw [hMdef]
+        exact Submodule.subset_span (Set.mem_range_self a)
+      simpa using hja
+    rw [h1]
+    have hmem2 : M.mkQ (z - j₁ a) ∈
+        Submodule.map M.mkQ ((IsLocalRing.maximalIdeal ℤ_[q]) • (⊤ : Submodule ℤ_[q] O₁)) :=
+      Submodule.mem_map_of_mem hsm
+    rwa [Submodule.map_smul'', Submodule.map_top, M.range_mkQ] at hmem2
+  have hbot := Submodule.eq_bot_of_le_smul_of_le_jacobson_bot
+    (IsLocalRing.maximalIdeal ℤ_[q]) (⊤ : Submodule ℤ_[q] (O₁ ⧸ M))
+    (Module.Finite.fg_top) hkey (IsLocalRing.maximalIdeal_le_jacobson _)
+  refine Submodule.eq_top_iff'.mpr fun z => ?_
+  have hz0 : (Submodule.Quotient.mk z : O₁ ⧸ M) = 0 := by
+    have hz : (Submodule.Quotient.mk z : O₁ ⧸ M) ∈ (⊤ : Submodule ℤ_[q] (O₁ ⧸ M)) := trivial
+    rw [hbot] at hz
+    simpa using hz
+  exact (Submodule.Quotient.mk_eq_zero M).mp hz0
 
 open _root_.NumberField in
 /-- **A SPANNING pinned image turns the frame comparison into a ring
