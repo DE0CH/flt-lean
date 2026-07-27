@@ -13894,6 +13894,259 @@ theorem exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert
         (Ideal.mem_comap.mpr hx')
       rwa [← RingHom.ker_eq_comap_bot, Ideal.mk_ker] at hcm
 
+/-- **Carayol's Lemme 1 FROM Carayol's Théorème 1** (PROVEN 2026-07-27,
+flt-lean-182; this is AXIS 6 of the leaf below, written out there by
+flt-lean-129 and now discharged, which reduces that leaf's TWO sorried
+`have`s to ONE).
+
+Given the descended framed representation `ρ'` over the trace subring
+`R' = hilbertTraceSubring ℓ 𝒟.ρ` — hardly ramified, with `𝒟.ρ`'s
+characteristic polynomials as the images of its own — the ring `R'` is
+Noetherian, `𝔪'`-adic and `𝔪'`-adically complete. No retraction, no
+finite-level datum, and no second visit to the tame eigenrow question:
+everything here is Mazur's `Φ_ℓ` criterion applied DIRECTLY to `R'`.
+
+THE ARGUMENT.
+`ProfiniteLocalNoetherian.isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`
+concludes exactly the triple for a profinite local ring, from one
+hypothesis `hhom`: that for every finite discrete local `ℤ_ℓ`-algebra `A`
+and every `πA : A → κ`, only finitely many continuous `ℤ_ℓ`-algebra maps
+`R' → A` lift `πA`. The profiniteness package is the one
+`exists_isLocalRing_hilbertTraceSubring` below assembles — `𝒟.R` is
+profinite (`ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient` over
+`Ideal.finite_quotient_pow`, plus `t2Space_of_isAdic_of_isHausdorff`), `R'`
+is closed hence compact and Hausdorff, and `hbasis` is the pullback of the
+`𝔪`-adic basis along the inducing inclusion.
+
+`hhom` is where `ρ'` is spent, and it is spent once. `framePushforward φ ρ'`
+is hardly ramified by `isHilbertBaseChangeClause`, in particular UNRAMIFIED
+outside `2ℓ`, and there are finitely many such framed representations
+(`finite_setOf_framedGaloisRep_isUnramifiedAt`). The assignment
+`φ ↦ framePushforward φ ρ'` is INJECTIVE: two such `φ` agree on
+`range (algebraMap ℤ_[ℓ] R')` by the `ℤ_ℓ` clause; on
+`teichmullerRootSet ℓ R'` because a Teichmüller root of `A` is pinned by its
+residue (`map_mem_teichmullerRootSet` then `eq_of_mem_teichmullerRootSet`,
+whose side condition `ℓ ∈ 𝔪_A` comes from `ker πA ≤ 𝔪_A` and `ℓ = 0` in
+`κ`); and on every charpoly coefficient of `ρ'` because equal pushforwards
+have equal charpolys (`charpoly_framePushforward`). Those three families
+TOPOLOGICALLY GENERATE `R'` — that is
+`hilbertTraceSubring_eq_top_of_charpoly_map ℓ 𝒟.ρ ρ' hcp'` — and
+`RingHom.eqLocus` of two continuous maps into the discrete `A` is closed, so
+agreement on the generators is agreement on `R'`
+(`Subring.topologicalClosure_minimal`).
+
+THE ONE BOOKKEEPING POINT. The upstream criterion carries
+`[Algebra ℤ_[ℓ] κ]` and `[DiscreteTopology κ]` on its residue field, which
+this cluster's `k` does not have and must NOT be made to have (adding them
+is the cut-level change settled against on the leaf below). It is applied
+instead at `κ := IsLocalRing.ResidueField R'`, which carries no ambient
+`TopologicalSpace` instance at all, so `⊥` is installed by `letI` without a
+diamond; `κ` is finite because it injects into `k`, its `Algebra ℤ_[ℓ]`
+comes from `instAlgebraHilbertTraceSubring` composed with the residue map,
+and `IsLocalRing.residue R'` is surjective with open kernel `𝔪'`, hence
+continuous into the discrete `κ`.
+
+The hypotheses are exactly the CONCLUSION of Carayol's Théorème 1 at the
+`F` level, so this declaration converts that one leaf into both; it needs
+neither `hℓ5` nor `hirrF` nor weak universality of `𝒟`. -/
+theorem isNoetherianRing_isAdic_hilbertTraceSubring_of_descent
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    [IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ)]
+    (ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2))
+    (hhr' : IsHilbertHardlyRamified ℓ F
+      (rank_finTwoPi (hilbertTraceSubring ℓ 𝒟.ρ)) ρ')
+    (hcp' : ∀ g : Γ F, ((ρ' g).charpoly).map (hilbertTraceSubring ℓ 𝒟.ρ).subtype =
+      (𝒟.ρ g).charpoly) :
+    IsNoetherianRing (hilbertTraceSubring ℓ 𝒟.ρ) ∧
+      IsAdic (IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ)) ∧
+      IsAdicComplete (IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ))
+        (hilbertTraceSubring ℓ 𝒟.ρ) := by
+  classical
+  have hlk : ((ℓ : ℕ) : k) = 0 := natCast_eq_zero_of_hilbertDeformationDatum ℓ 𝒟
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R := 𝒟.isAdicComplete
+  haveI : IsHausdorff (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R :=
+    (𝒟.isAdicComplete).toIsHausdorff
+  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
+  have hkembed : IsLocalRing.ResidueField 𝒟.R →+* k :=
+    Ideal.Quotient.lift (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.π
+      (fun a ha => by rwa [← RingHom.mem_ker, hker])
+  haveI hresfin : Finite (IsLocalRing.ResidueField 𝒟.R) :=
+    Finite.of_injective hkembed hkembed.injective
+  haveI hqfin : Finite (𝒟.R ⧸ IsLocalRing.maximalIdeal 𝒟.R) := hresfin
+  haveI hT2 : T2Space 𝒟.R := t2Space_of_isAdic_of_isHausdorff 𝒟.isAdic
+  have hmfg : (IsLocalRing.maximalIdeal 𝒟.R).FG :=
+    IsNoetherian.noetherian (IsLocalRing.maximalIdeal 𝒟.R)
+  haveI hcompact : CompactSpace 𝒟.R :=
+    _root_.ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient 𝒟.isAdic
+      (fun n => Ideal.finite_quotient_pow hmfg n)
+  have hclosed : IsClosed ((hilbertTraceSubring ℓ 𝒟.ρ : Subring 𝒟.R) :
+      Set 𝒟.R) := Subring.isClosed_topologicalClosure _
+  haveI : CompactSpace (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    isCompact_iff_compactSpace.mp hclosed.isCompact
+  have hmax : IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ) =
+      Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+        (IsLocalRing.maximalIdeal 𝒟.R) :=
+    maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField 𝒟.isAdic
+      hclosed
+  have hcomapopen : ∀ n : ℕ, IsOpen ((Ideal.comap
+      (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+        ((IsLocalRing.maximalIdeal 𝒟.R) ^ n) :
+      Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+      Set (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+    fun n => ((isAdic_iff.mp 𝒟.isAdic).1 n).preimage continuous_subtype_val
+  have hbasis : ∀ U ∈ nhds (0 : hilbertTraceSubring ℓ 𝒟.ρ),
+      ∃ I : Ideal (hilbertTraceSubring ℓ 𝒟.ρ),
+        IsOpen ((I : Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+          Set (hilbertTraceSubring ℓ 𝒟.ρ)) ∧
+        ((I : Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+          Set (hilbertTraceSubring ℓ 𝒟.ρ)) ⊆ U := by
+    intro U hU
+    rw [nhds_induced, Filter.mem_comap] at hU
+    obtain ⟨t, ht, hts⟩ := hU
+    obtain ⟨n, hn⟩ := (isAdic_iff.mp 𝒟.isAdic).2 t (by simpa using ht)
+    exact ⟨Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+      ((IsLocalRing.maximalIdeal 𝒟.R) ^ n), hcomapopen n,
+      fun z hz => hts (hn hz)⟩
+  have hopen : IsOpen ((IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ) :
+      Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+      Set (hilbertTraceSubring ℓ 𝒟.ρ)) := by
+    rw [hmax, ← pow_one (IsLocalRing.maximalIdeal 𝒟.R)]
+    exact hcomapopen 1
+  -- **the residue field of `R'` is the test field of Mazur's `Φ_ℓ` criterion**:
+  -- finite, discrete and a `ℤ_ℓ`-algebra, none of which `k` itself carries here
+  letI : TopologicalSpace (IsLocalRing.ResidueField (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+    ⊥
+  haveI : DiscreteTopology
+      (IsLocalRing.ResidueField (hilbertTraceSubring ℓ 𝒟.ρ)) := ⟨rfl⟩
+  have hκembed : IsLocalRing.ResidueField (hilbertTraceSubring ℓ 𝒟.ρ) →+*
+      IsLocalRing.ResidueField 𝒟.R :=
+    Ideal.Quotient.lift _
+      ((IsLocalRing.residue 𝒟.R).comp (hilbertTraceSubring ℓ 𝒟.ρ).subtype)
+      (fun a ha => by
+        rw [RingHom.comp_apply, IsLocalRing.residue_eq_zero_iff]
+        rw [hmax] at ha
+        exact ha)
+  haveI hκfin : Finite (IsLocalRing.ResidueField (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+    Finite.of_injective hκembed hκembed.injective
+  letI : Algebra ℤ_[ℓ] (IsLocalRing.ResidueField (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+    ((IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ)).comp
+      (algebraMap ℤ_[ℓ] (hilbertTraceSubring ℓ 𝒟.ρ))).toAlgebra
+  have hlκ : ((ℓ : ℕ) :
+      IsLocalRing.ResidueField (hilbertTraceSubring ℓ 𝒟.ρ)) = 0 := by
+    refine (hkembed.comp hκembed).injective ?_
+    rw [map_natCast, map_zero, hlk]
+  -- **the residue map is continuous** into the discrete residue field: its
+  -- fibres are cosets of the OPEN maximal ideal
+  have hresidcont : Continuous
+      (IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ)) := by
+    have hressurj : Function.Surjective
+        (IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+      Ideal.Quotient.mk_surjective
+    have hpre : ∀ y : IsLocalRing.ResidueField (hilbertTraceSubring ℓ 𝒟.ρ),
+        IsOpen ((IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ)) ⁻¹' {y}) := by
+      intro y
+      obtain ⟨x, rfl⟩ := hressurj y
+      have hset : (IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ)) ⁻¹'
+          {IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ) x} =
+          (fun z => z - x) ⁻¹'
+            ((IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ) :
+              Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+              Set (hilbertTraceSubring ℓ 𝒟.ρ)) := by
+        ext z
+        simp only [Set.mem_preimage, Set.mem_singleton_iff, SetLike.mem_coe,
+          ← IsLocalRing.residue_eq_zero_iff, map_sub, sub_eq_zero]
+      rw [hset]
+      exact hopen.preimage (by fun_prop)
+    rw [continuous_def]
+    intro U _
+    have hU : (IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ)) ⁻¹' U =
+        ⋃ y ∈ U, (IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ)) ⁻¹' {y} := by
+      ext z
+      simp
+    rw [hU]
+    exact isOpen_biUnion fun y _ => hpre y
+  -- **`hhom`**: the continuous `ℤ_ℓ`-points of `R'` in a finite discrete local
+  -- test ring, lifting the residue map, are FINITE in number
+  have hhom : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A]
+      (πA : A →+* IsLocalRing.ResidueField (hilbertTraceSubring ℓ 𝒟.ρ)),
+      {φ : (hilbertTraceSubring ℓ 𝒟.ρ) →+* A | Continuous φ ∧
+        πA.comp φ = IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ) ∧
+        φ.comp (algebraMap ℤ_[ℓ] (hilbertTraceSubring ℓ 𝒟.ρ)) =
+          algebraMap ℤ_[ℓ] A}.Finite := by
+    intro A _ _ _ _ _ _ _ πA
+    rw [← Set.finite_coe_iff]
+    haveI : Finite {τ : FramedGaloisRep F A (Fin 2) |
+        ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
+          ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal → τ.IsUnramifiedAt w} :=
+      (finite_setOf_framedGaloisRep_isUnramifiedAt ℓ F (A := A)).to_subtype
+    have hkerle : RingHom.ker πA ≤ IsLocalRing.maximalIdeal A := by
+      refine IsLocalRing.le_maximalIdeal ?_
+      intro htop
+      have h1 : (1 : A) ∈ RingHom.ker πA := htop ▸ Submodule.mem_top
+      rw [RingHom.mem_ker, map_one] at h1
+      exact one_ne_zero h1
+    have hlA : ((ℓ : ℕ) : A) ∈ IsLocalRing.maximalIdeal A := by
+      refine hkerle ?_
+      rw [RingHom.mem_ker, map_natCast, hlκ]
+    refine Finite.of_injective
+      (fun φ : {φ : (hilbertTraceSubring ℓ 𝒟.ρ) →+* A | Continuous φ ∧
+          πA.comp φ = IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ) ∧
+          φ.comp (algebraMap ℤ_[ℓ] (hilbertTraceSubring ℓ 𝒟.ρ)) =
+            algebraMap ℤ_[ℓ] A} =>
+        (⟨framePushforward φ.1 φ.2.1 ρ',
+            (isHilbertBaseChangeClause ℓ F φ.1 φ.2.1 φ.2.2.2 hhr').isUnramified⟩ :
+          {τ : FramedGaloisRep F A (Fin 2) |
+            ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
+              ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal → τ.IsUnramifiedAt w})) ?_
+    intro φ₁ φ₂ heq
+    have hpush : framePushforward φ₁.1 φ₁.2.1 ρ' =
+        framePushforward φ₂.1 φ₂.2.1 ρ' := congrArg Subtype.val heq
+    refine Subtype.ext ?_
+    have hEclosed : IsClosed ((RingHom.eqLocus φ₁.1 φ₂.1 :
+        Subring (hilbertTraceSubring ℓ 𝒟.ρ)) :
+        Set (hilbertTraceSubring ℓ 𝒟.ρ)) := isClosed_eq φ₁.2.1 φ₂.2.1
+    have hgen : (Set.range (algebraMap ℤ_[ℓ] (hilbertTraceSubring ℓ 𝒟.ρ)) ∪
+        (teichmullerRootSet ℓ (hilbertTraceSubring ℓ 𝒟.ρ) ∪
+          {x : (hilbertTraceSubring ℓ 𝒟.ρ) | ∃ (g : Γ F) (n : ℕ),
+            x = ((ρ' g).charpoly).coeff n})) ⊆
+        ((RingHom.eqLocus φ₁.1 φ₂.1 : Subring (hilbertTraceSubring ℓ 𝒟.ρ)) :
+          Set (hilbertTraceSubring ℓ 𝒟.ρ)) := by
+      rintro x (⟨c, rfl⟩ | hx | ⟨g, n, rfl⟩)
+      · show φ₁.1 _ = φ₂.1 _
+        rw [← RingHom.comp_apply, ← RingHom.comp_apply, φ₁.2.2.2, φ₂.2.2.2]
+      · show φ₁.1 x = φ₂.1 x
+        refine eq_of_mem_teichmullerRootSet hlA
+          (map_mem_teichmullerRootSet φ₁.1 hx)
+          (map_mem_teichmullerRootSet φ₂.1 hx) (hkerle ?_)
+        rw [RingHom.mem_ker, map_sub, ← RingHom.comp_apply, ← RingHom.comp_apply,
+          φ₁.2.2.1, φ₂.2.2.1, sub_self]
+      · show φ₁.1 _ = φ₂.1 _
+        have hcoeff : ((ρ' g).charpoly).map φ₂.1 = ((ρ' g).charpoly).map φ₁.1 := by
+          rw [← charpoly_framePushforward φ₂.1 φ₂.2.1 ρ' g, ← hpush,
+            charpoly_framePushforward φ₁.1 φ₁.2.1 ρ' g]
+        have hn := congrArg (fun p => Polynomial.coeff p n) hcoeff
+        simp only [Polynomial.coeff_map] at hn
+        exact hn.symm
+    have htop : hilbertTraceSubring ℓ ρ' = ⊤ :=
+      hilbertTraceSubring_eq_top_of_charpoly_map ℓ 𝒟.ρ ρ' hcp'
+    have hle : (⊤ : Subring (hilbertTraceSubring ℓ 𝒟.ρ)) ≤
+        RingHom.eqLocus φ₁.1 φ₂.1 := by
+      rw [← htop]
+      exact Subring.topologicalClosure_minimal _ (Subring.closure_le.mpr hgen)
+        hEclosed
+    exact RingHom.ext fun x => hle (Subring.mem_top x)
+  exact _root_.ProfiniteLocalNoetherian.isNoetherianRing_isAdic_of_profinite_of_finite_ringHom
+    hbasis (IsLocalRing.residue (hilbertTraceSubring ℓ 𝒟.ρ))
+    Ideal.Quotient.mk_surjective hresidcont hhom
+
 /-- **Carayol's Théorème 1 over `F`: a weakly universal datum may be taken
 TRACE-GENERATED** (LEAF — new 2026-07-27; it is the SOLE arithmetic input of
 BOTH `exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` and
@@ -13955,16 +14208,25 @@ compatibility; its WEAK UNIVERSALITY, by composing `𝒟`'s classifying maps
 with `R' ↪ 𝒟.R` (this half needs no arithmetic whatever); and its TRACE
 GENERATION, by `hilbertTraceSubring_eq_top_of_charpoly_map`.
 
-Exactly TWO sorried `have`s remain, each stated as an implication so that
-the Carayol hypotheses it spends (`hℓ5`, `hirrF`) are mechanically visible:
+**UPDATE 2026-07-27 (flt-lean-182): AXIS 6 BELOW IS NOW CLOSED, and exactly
+ONE sorried `have` remains.** Carayol's **Lemme 1** is no longer assumed: it
+is DERIVED from Théorème 1 by
+`isNoetherianRing_isAdic_hilbertTraceSubring_of_descent` above, which is
+Mazur's `Φ_ℓ` criterion applied directly to `R'`. So the cluster's single
+atom is now:
 
-* `hLemme1` — Carayol's **Lemme 1**, hard half: `R'` is Noetherian, adic and
-  adically complete. Equivalently `𝔪'` is finitely generated; everything
-  else follows from `exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert`
-  (above) and `ProfiniteLocal.fg_comap_of_uniform_span` (upstream), and
-  `k[[x, xy, xy², …]] ⊆ k[[x, y]]` shows closedness alone cannot suffice.
 * `hThm1` — Carayol's **Théorème 1** proper: the framed deformation descends
-  to `R'` and the `F`-level local conditions descend with it.
+  to `R'` and the `F`-level local conditions descend with it. It is stated as
+  an implication so that the two Carayol hypotheses it spends (`hℓ5`,
+  `hirrF`) are mechanically visible.
+
+(The retired `hLemme1` read: `R'` is Noetherian, adic and adically complete;
+equivalently `𝔪'` is finitely generated, everything else following from
+`exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert` above and
+`ProfiniteLocal.fg_comap_of_uniform_span` upstream, with
+`k[[x, xy, xy², …]] ⊆ k[[x, y]]` showing that closedness alone cannot
+suffice. That route is no longer needed here; the `Φ_ℓ` route replaces it and
+costs neither `hℓ5` nor `hirrF`.)
 
 WHAT IS STILL MISSING FORMALLY, and where the residue really sits. The
 conjugation step is `exists_framedGaloisRep_hilbertTraceSubring` below,
@@ -13994,8 +14256,9 @@ replace `f`/`hf` by `𝒟.IsWeaklyUniversal`.
 AXES SEARCHED, and why each is blocked (2026-07-27, flt-lean-89) — so that a
 successor does not re-walk them:
 
-1. *Trace-subring descent (the route above).* Blocked only as described:
-   `hLemme1` and the tame eigenrow.
+1. *Trace-subring descent (the route above).* Blocked only as described —
+   and since 2026-07-27 only by the TAME EIGENROW, `hLemme1` having been
+   discharged through axis 6.
 2. *Level-by-level (finite quotients of `𝒟.R`).* Needs
    `quotientHilbertDeformationDatum` and a finite-level Carayol descent, and
    the latter bottoms out at the SAME tame-eigenrow question over the finite
@@ -14013,17 +14276,21 @@ successor does not re-walk them:
    `[DiscreteTopology k]` and `[Algebra ℤ_[ℓ] k]` — a cut-level change,
    settled against above.
 
-A note for whoever closes `hLemme1`: it is verbatim the conclusion of
+A note on the retired `hLemme1`: it is verbatim the conclusion of
 `exists_isLocalRing_hilbertTraceSubring` below, which is at present proven
-THROUGH this node. Proving it here directly would let that declaration be
-reproven independently and the inversion removed altogether.
+THROUGH this node. Now that it is derived here rather than assumed, that
+declaration could be reproven independently and the inversion removed
+altogether — a follow-up, not a blocker.
 
-**AXIS 6, NOT SEARCHED ABOVE AND NOT BLOCKED: `hLemme1` FOLLOWS FROM
+**AXIS 6 — CLOSED 2026-07-27 (flt-lean-182). `hLemme1` FOLLOWS FROM
 `hThm1`, through Mazur's `Φ_ℓ` criterion applied DIRECTLY to `R'`**
-(2026-07-27, flt-lean-129). This is *not* axis 2 — it builds no finite-level
-datum, needs no `quotientHilbertDeformationDatum`, and never re-enters the
-tame-eigenrow question. It reduces the TWO sorried `have`s of this leaf to
-ONE, leaving `hThm1` as the cluster's single atom.
+(route written by flt-lean-129, proven as
+`isNoetherianRing_isAdic_hilbertTraceSubring_of_descent` above). This is
+*not* axis 2 — it builds no finite-level datum, needs no
+`quotientHilbertDeformationDatum`, and never re-enters the tame-eigenrow
+question. It reduced the TWO sorried `have`s of this leaf to ONE, leaving
+`hThm1` as the cluster's single atom. The description below is what was
+implemented, verbatim.
 
 The observation is that `ProfiniteLocalNoetherian`'s
 `isNoetherianRing_isAdic_of_profinite_of_finite_ringHom` (UPSTREAM, PROVEN)
@@ -14074,12 +14341,13 @@ without a diamond; it is finite because it injects into `k`; its
 the residue map; and `IsLocalRing.residue R'` is surjective, with open
 kernel `𝔪'`, hence continuous into the discrete `κ`.
 
-THE CHECK THAT WOULD REFUTE THIS AXIS: exhibit a continuous `ℤ_ℓ`-algebra
-map `R' → A` lifting `πA` that is NOT determined by the charpolys of
-`framePushforward φ ρ'` together with the residues of the Teichmüller
-roots — i.e. show the three families above fail to topologically generate
-`R'`. They do generate, by `hilbertTraceSubring_eq_top_of_charpoly_map`,
-which is why the axis is open rather than blocked.
+THE CHECK THAT WOULD HAVE REFUTED THIS AXIS: exhibit a continuous
+`ℤ_ℓ`-algebra map `R' → A` lifting `πA` that is NOT determined by the
+charpolys of `framePushforward φ ρ'` together with the residues of the
+Teichmüller roots — i.e. show the three families above fail to topologically
+generate `R'`. They do generate, by
+`hilbertTraceSubring_eq_top_of_charpoly_map`, which is why the axis went
+through.
 
 References: Carayol, Contemp. Math. 165, Théorème 1 and Lemme 1; Nyssen,
 *Pseudo-représentations*, Math. Ann. 306; Rouquier, *Caractérisation des
@@ -14113,26 +14381,7 @@ theorem exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal
       Set 𝒟.R) := Subring.isClosed_topologicalClosure _
   haveI hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ) :=
     isLocalRing_of_isClosed_subring_of_finite_residueField 𝒟.isAdic hclosed
-  /- **ARITHMETIC INPUT 1 — Carayol's Lemme 1, the hard half**: the closed
-  local subring `R'` is NOETHERIAN, and its subspace topology is the
-  `𝔪'`-adic one, for which it is complete. Only finite generation of `𝔪'`
-  is at stake: `exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert`
-  (above) plus `ProfiniteLocal.fg_comap_of_uniform_span` (upstream) derive
-  everything else, and `C = k[[x, xy, xy², …]] ⊆ k[[x, y]]` shows no argument
-  from closedness alone can work. Stated as an IMPLICATION so that the two
-  Carayol hypotheses it spends — `hℓ5` and `hirrF` — are mechanically
-  visible; it is exactly the conclusion of
-  `exists_isLocalRing_hilbertTraceSubring` below, which is at present proven
-  THROUGH this node, and proving it here directly is what would let that
-  declaration be reproven independently and the inversion removed. -/
-  have hLemme1 : 5 ≤ ℓ → (ρbar.map (algebraMap ℚ F)).IsIrreducible →
-      IsNoetherianRing (hilbertTraceSubring ℓ 𝒟.ρ) ∧
-      IsAdic (IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ)) ∧
-      IsAdicComplete (IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ))
-        (hilbertTraceSubring ℓ 𝒟.ρ) := by
-    sorry
-  obtain ⟨hnoeth, hadic, hcompl⟩ := hLemme1 hℓ5 hirrF
-  /- **ARITHMETIC INPUT 2 — Carayol's Théorème 1 proper**: the framed
+  /- **THE SOLE ARITHMETIC INPUT — Carayol's Théorème 1 proper**: the framed
   deformation descends to `R'`, and the `F`-level local conditions descend
   with it. The Nyssen–Rouquier conjugation itself is available
   retraction-free (`exists_framedGaloisRep_baseChange_hilbertTraceSubring`
@@ -14154,6 +14403,14 @@ theorem exists_isWeaklyUniversal_isTraceGenerated_hilbert_of_isWeaklyUniversal
           (𝒟.ρ g).charpoly := by
     sorry
   obtain ⟨ρ', hhr', hcp'⟩ := hThm1 hℓ5 hirrF
+  /- **Carayol's Lemme 1 is DERIVED, not assumed** (AXIS 6, closed 2026-07-27):
+  Mazur's `Φ_ℓ` criterion applied DIRECTLY to `R'` turns the conclusion of
+  Théorème 1 into Noetherianity, adicness and adic completeness. It consumes
+  only `hcp'` and `hhr'` — no retraction, no `hℓ5`, no `hirrF` — and it is what
+  reduced this leaf from two sorried `have`s to one. See
+  `isNoetherianRing_isAdic_hilbertTraceSubring_of_descent` above. -/
+  obtain ⟨hnoeth, hadic, hcompl⟩ :=
+    isNoetherianRing_isAdic_hilbertTraceSubring_of_descent ℓ F 𝒟 ρ' hhr' hcp'
   -- the descended datum, built on `R'` itself, together with the inclusion
   have hdesc : ∃ 𝒟' : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsTraceDescent 𝒟' := by
     refine ⟨{ R := hilbertTraceSubring ℓ 𝒟.ρ
@@ -17543,7 +17800,37 @@ theorem charpoly_natDegree_eq_two_of_hilbertDeformationDatum {ℓ : ℕ}
   rw [← Module.finrank_eq_rank] at h
   exact_mod_cast h
 
-/-- **The Taylor–Wiles Galois element over `F`, in discriminant form** (LEAF —
+/-- ### ⚠ THIS LEAF IS **FALSE AS STATED**. DO NOT DISPATCH A PROVER AT IT.
+
+**(Banner added 2026-07-27 by flt-lean-182, which was dispatched to prove it,
+re-ran the FALSITY AUDIT's load-bearing computation, and confirmed it
+MACHINE-CHECKED. The audit itself sits ~200 lines below, under
+"FALSITY AUDIT (2026-07-27)"; the banner is here because a dispatcher reads
+the head of a docstring and this one is 180 lines long.)**
+
+The counterexample is `E = 54b1` at `ℓ = 7`, over a field `F` cut out so that
+`ρ̄_{E,7}(Γ F) = H := N(T_ns) ∩ SL₂(𝔽₇)`. Re-verified by exhaustive enumeration
+over all `7⁴` matrices: `|T_ns| = 48`, `|N(T_ns)| = 96`, `|H| = 16`, `H` has no
+common eigenline in `P¹(𝔽₇)` (so `hirrF` holds), `det N(T_ns) = 𝔽₇ˣ` in full
+(so no determinant-size argument helps), and
+
+    {tr(g)² − 4·det(g) : g ∈ H} = {0, 3, 5},   squares mod 7 = {1, 2, 4},
+
+so NO `σ` whatsoever — a fortiori none fixing `μ_{7ⁿ}` — has nonzero square
+discriminant. The `μ_{ℓⁿ}`-fixing clause is not even used.
+
+**What is required is a CUT-LEVEL repair, not a proof.** The falsity is created
+by `F` ranging over ARBITRARY number fields while the eigenvalues are demanded
+in a FIXED `k`; over `F = ℚ` the counterexample cannot be built. The honest fix
+is the quadratic ENLARGEMENT of `k` threaded through `IsTaylorWilesPrimeSet`,
+or the added hypothesis that `ρbar|_{Γ F(ζ_ℓ)}` already contains an element
+with two distinct `k`-rational eigenvalues. That change propagates through
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` (EQUIVALENT to this leaf,
+hence equally false), `exists_hilbertTaylorWilesPrime`,
+`exists_hilbertTaylorWilesPrimeSet` and their consumers, so it belongs to an
+author adjudicating the cut, not to a prover working this leaf in isolation.
+
+**The Taylor–Wiles Galois element over `F`, in discriminant form** (LEAF —
 new 2026-07-27; this is the whole mathematical content of
 `exists_hilbertFixing_rootsOfUnity_charpoly_split` below, which is now PROVEN
 over it).
