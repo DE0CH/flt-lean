@@ -363,6 +363,11 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
 -- below a theorem rather than a leaf.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
+-- `SurjectiveOnStalks` and `SurjectiveOnStalks.mono_of_injective`: the mathlib
+-- criterion that splits `Mono ajHom` into the two classical halves of "the
+-- Abel-Jacobi map is an immersion".  Needed in SIGNATURE position by
+-- `surjectiveOnStalks_ajHom_of_one_le_x0Genus`, hence `public`.
+public import Mathlib.AlgebraicGeometry.Morphisms.SurjectiveOnStalks
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `AlgebraicGeometry.Flat`: the flatness half of "finite locally free", which
 -- is what makes `CyclicSubgroupOfOrder` the Katz–Mazur moduli problem
@@ -19397,10 +19402,146 @@ theorem exists_ne_aj_of_hasNonconstantAbelianMap {X J : Scheme.{0}} {strX : X �
     (by intro T'' T' hT g' g'' hcomm z; exact hnat T'' T' hT g' g'' hcomm z) hzero
   exact Subtype.ext (by rw [hu g x, hu g y, hEq])
 
+/-! ### The genus formula along the MODULAR axis
+
+`hasNonconstantAbelianMap_of_one_le_x0Genus` below is the one place where the
+computed number `x0Genus N` has to meet the scheme `X`.  Its own audit recorded
+the GEOMETRIC axis as exhausted (no genus of a scheme, no `h¹`, no
+Riemann–Hurwitz at this pin) and named the MODULAR axis as the one a successor
+should prefer.  These three leaves are that axis, written out. -/
+
+/-- **A `Γ₀(N)`-compactification over `ℚ` forces `0 < N`** (sorry leaf,
+2026-07-27) — and it is NOT bookkeeping: without it the node below is
+FALSE at `N = 0`.
+
+**THE HOLE IT PLUGS, compiler-verified.**  `x0Genus` is a `ℕ`-arithmetic
+expression, and at `N = 0` every ingredient degenerates to `0`
+(`Nat.divisors 0 = ∅`, so `gammaZeroIndex 0 = 0`; `numCusps 0 = 0`;
+`Finset.range 0 = ∅`, so `numEllipticTwo 0 = numEllipticThree 0 = 0`),
+leaving `x0Genus 0 = (12 - 0)/12 = 1`.  So `1 ≤ x0Genus 0` HOLDS, by
+`decide`, and the hypothesis `hg` of the node below does NOT by itself
+exclude `N = 0` — exactly the trap `x1Genus`'s VALIDITY RANGE note
+records at `x1Genus 0 = x1Genus 1 = 1`.  (At `N = 1` there is no trap:
+`x0Genus 1 = 0`, also by `decide`, so `hg` already excludes the rational
+curve `X_0(1) = ℙ¹`.)
+
+TRUE, and the argument is short.  `strX` is proper, smooth of relative
+dimension `1` and geometrically connected over `Spec ℚ`, so `X` is a
+nonempty curve and has infinitely many points; `finite_compl` then makes
+`Y` nonempty, so `h.coarse : IsCoarseModuliY0 0 strY` is a coarse moduli
+space for a NONEMPTY functor.  A point of it produces a `Gamma0Datum 0`,
+i.e. an elliptic scheme together with a `CyclicSubgroupOfOrder 0`
+subgroup scheme — and a group scheme cannot have order `0`, since its
+geometric fibres contain the identity section.  Contradiction.
+
+**Where the burden actually sits.**  Only the first sentence needs
+anything this file does not have: "a smooth proper geometrically
+connected curve over a field is infinite".  Everything after it is
+unfolding `IsCoarseModuliY0` and `CyclicSubgroupOfOrder`.  A prover who
+finds that first step blocked should look for a `Gamma0Datum 0` refutation
+that does not need a point of `Y` at all.
+
+Stated over `SpecQ` rather than an arbitrary base ON PURPOSE: over an
+EMPTY base `S` the statement is FALSE, because `S = X = Y = ∅` satisfies
+every field of `IsX0Compactification 0` vacuously.  Do not generalise the
+base without adding a nonemptiness hypothesis. -/
+theorem pos_of_isX0Compactification {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j) : 0 < N :=
+  sorry
+
+/-- **The dimension formula, in the one direction used: `genus X_0(N) ≥ 1`
+makes `S_2(Γ_0(N))` nonzero** (sorry leaf, 2026-07-27) — the ARITHMETIC
+half of the genus formula, and it mentions no scheme whatsoever.
+
+TRUE and classical: `dim_ℂ S_2(Γ_0(N)) = genus X_0(N)` for `N ≥ 1`
+(Diamond–Shurman, Theorem 3.5.1; the isomorphism `S_2(Γ) ≅ H⁰(X_Γ, Ω¹)`
+sending `f` to `f(τ) dτ`), and `x0Genus N` is that genus by the formula
+its own docstring records (Diamond–Shurman, Theorem 3.1.1).  Only the
+inequality `1 ≤ dim` is asked for, so no dimension theory is needed in
+the conclusion — just one nonzero form.
+
+**`hN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**
+`x0Genus 0 = 1` (see `pos_of_isX0Compactification`, where this is spelled
+out and checked by `decide`), while `Gamma0GL 0` is the group of real
+matrices with lower-left entry `0` — not a discrete subgroup — and its
+space of weight-`2` cusp forms is `0`.  So `1 ≤ x0Genus N` alone does not
+give a nonzero form.
+
+**WHY THIS IS A DIFFERENT ATTACK SURFACE FROM RIEMANN–ROCH, which is the
+whole point of the cut.**  The textbook proof of the dimension formula is
+Riemann–Roch on `X_0(N)`, so a reader may object that the geometry has
+merely been relocated.  It has not, in the direction that matters: this
+statement is EXISTENTIAL and about a specific level, so at any single `N`
+it can be discharged by EXHIBITING a form — for instance an eta quotient,
+`η(2τ)^2 η(10τ)^2 ∈ S_2(Γ_0(20))`, `η(2τ)η(4τ)η(6τ)η(12τ) ∈ S_2(Γ_0(24))`
+— and verifying its invariance and vanishing at the cusps.  That route
+needs no cohomology, no genus of a scheme and no Riemann–Roch, and the
+fourteen `kenkuLevels` are a finite list.  A prover should consider it
+before attempting the general formula.
+
+The `Γ₁` transposition, `dim S_2(Γ_1(N)) = x1Genus N`, is what
+`hasNonconstantAbelianMap_of_one_le_x1Genus` in `ModularCurve/X1.lean`
+needs; the two are separate leaves for the same reason the two genus
+formulas are (`x0Genus 25 = 0` while `x1Genus 25 = 12`). -/
+theorem exists_ne_zero_cuspForm_of_one_le_x0Genus (N : ℕ) (hN : 0 < N)
+    (hg : 1 ≤ x0Genus N) : ∃ f : CuspForm (Gamma0GL N) 2, f ≠ 0 :=
+  sorry
+
+/-- **EICHLER–SHIMURA: a nonzero weight-`2` cusp form of level `N` gives
+`X_0(N)` a nonconstant map to an abelian variety** (sorry leaf,
+2026-07-27) — the GEOMETRIC half of the genus formula, and the place the
+`Modularity` subtree is meant to be fed in.
+
+TRUE and classical (Diamond–Shurman ch. 6 and §6.6; Shimura,
+*Introduction to the Arithmetic Theory of Automorphic Functions* ch. 7).
+`f ≠ 0` gives a nonzero holomorphic differential `f(τ) dτ` on
+`X_0(N)(ℂ)`, hence `H⁰(X, Ω¹) ≠ 0`; the Jacobian `J_0(N)` is therefore
+positive-dimensional, and Abel–Jacobi `x ↦ [x] − [o]` is a nonconstant
+pointed map from `X` to it.  Concretely, and this is the route that keeps
+everything over `ℚ`: diagonalise the Hecke action on `S_2(Γ_0(N))` to get
+an eigenform `g`, take the newform quotient `A_g = J_0(N)/I_g J_0(N)`
+(an abelian variety over `ℚ`, of dimension `[K_g : ℚ] ≥ 1`), and compose
+Abel–Jacobi with the quotient.  Rationality of `A_g` is the classical
+Eichler–Shimura input; `A_g ≠ 0` is what `f ≠ 0` supplies.
+
+**THE EIGENFORM STEP IS ALREADY AVAILABLE and must not be redone.**
+`Modularity/Interface.lean` carries
+`exists_ne_zero_mem_inf_iInf_maxGenEigenspace` (simultaneous
+diagonalisation of a commuting family) and
+`exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd` (a nonzero
+joint Hecke eigenvector IS a weight-`2` eigenform of some divisor level),
+both PROVEN.  That is why the seam above is `S_2(Γ_0(N)) ≠ 0` and not
+"an eigenform exists": putting the eigenform in the seam would have
+duplicated proven work.
+
+`h` is load-bearing twice over — it is the only thing tying `X` to the
+level `N`, and it supplies the curve conditions.  `o` is what the
+conclusion is pointed at.  `N` enters only through `h` and `f`.
+
+**Not vacuous.**  The junk witness `A = Spec ℚ` is killed by the
+nonconstancy clause of `HasNonconstantAbelianMap` alone, via
+`subsingleton_relPoint_of_isIso`; see that definition's own audit.
+
+**WHAT THIS LEAF STILL NEEDS**, and it is a theory build: the analytic
+Jacobian `H⁰(X, Ω¹)^∨/H_1(X, ℤ)` or the algebraic `J_0(N)` with its
+`ℚ`-structure, the Hecke action on it, and the optimal-quotient
+construction.  `IsHeckeIsotypicDecomposition` in this file states the
+last of those for a Jacobian that is already in hand; what is missing
+here is the passage from a cusp form to an abelian variety WITHOUT
+assuming the Jacobian is nontrivial, which is exactly what makes this
+leaf non-circular with `exists_jacobianOf_x0`. -/
+theorem hasNonconstantAbelianMap_of_ne_zero_cuspForm (N : ℕ) {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) (o : RelPoint strX (𝟙 SpecQ))
+    (f : CuspForm (Gamma0GL N) 2) (hf : f ≠ 0) : HasNonconstantAbelianMap strX o :=
+  sorry
+
 /-- **The genus formula, in its geometric form: `genus X_0(N) ≥ 1` gives
-`X_0(N)` a nonconstant map to an abelian variety** (sorry node) — the
-arithmetic half of `injective_aj_of_one_le_x0Genus`, and the ONLY place
-where the computed number `x0Genus N` meets the scheme `X`.
+`X_0(N)` a nonconstant map to an abelian variety** (PROVEN 2026-07-27 by
+decomposition along the MODULAR axis, over the three leaves immediately
+above; formerly a sorry node audited as irreducible) — the arithmetic
+half of `injective_aj_of_one_le_x0Genus`, and the ONLY place where the
+computed number `x0Genus N` meets the scheme `X`.
 
 TRUE: `x0Genus N` is the genus of `X` by the classical formula
 (Diamond–Shurman, Theorem 3.1.1); a smooth proper geometrically
@@ -19441,24 +19582,55 @@ now a statement about the curve `X_0(N)` ALONE, so it is available to
 the base-general consumers of this file that have no `Spec ℚ`-Jacobian
 in hand, and it can be discharged without first constructing `Pic⁰`.
 
-IRREDUCIBLE at this pin, and the axis searched is the GEOMETRIC one: the
-identification of the arithmetic `x0Genus` with an invariant of `X`
-needs a genus of a scheme, `h¹(𝒪_X)` or Riemann–Hurwitz for the
-degree-`μ(N)` map to the `j`-line, and none of the three exists in
-`Mathlib`, in `~/cs/FLT`, or here.  **NOT searched, and the axis a
-successor should prefer: the MODULAR one** — build a single newform
-factor `A_f` and the modular parametrisation `X_0(N) ↠ A_f` out of the
-`Modularity` subtree, which already carries weight-`2` newforms and
-their attached representations, and feed it here.  That route never
-mentions the genus of a scheme at all, and it is why this leaf is stated
-as "SOME abelian scheme" rather than "the Jacobian".  **The check that
-would refute this verdict:** a genus, an `h¹`, or a modular
-parametrisation appearing in any of the three trees. -/
+The GEOMETRIC axis is exhausted: the identification of the arithmetic
+`x0Genus` with an invariant of `X` needs a genus of a scheme, `h¹(𝒪_X)`
+or Riemann–Hurwitz for the degree-`μ(N)` map to the `j`-line, and none of
+the three exists in `Mathlib`, in `~/cs/FLT`, or here.
+
+**THE MODULAR AXIS — which that verdict named as unsearched — HAS NOW
+BEEN TAKEN, AND IT CUTS** (2026-07-27).  The route the old note described
+in prose is written out below as three named leaves, and this node is a
+three-line assembly over them.  The chain is the classical one, and no
+step of it mentions the genus of a scheme:
+
+`1 ≤ x0Genus N` ⟹ `S_2(Γ_0(N)) ≠ 0` ⟹ a nonconstant `X_0(N) ↠ A_f`.
+
+* `pos_of_isX0Compactification` — `0 < N`.  See its docstring: this is
+  NOT bookkeeping, it repairs a genuine hole this leaf had, since
+  `x0Genus 0 = 1` (compiler-verified by `decide`).
+* `exists_ne_zero_cuspForm_of_one_le_x0Genus` — the DIMENSION FORMULA
+  `dim_ℂ S_2(Γ_0(N)) = genus X_0(N)`, in the only direction used
+  (Diamond–Shurman, Theorem 3.5.1).  It mentions no scheme at all, so it
+  is attackable from the modular-forms side alone — and at any single
+  level it can be discharged by exhibiting one cusp form (an eta
+  quotient), which is a completely different attack surface from
+  Riemann–Roch.
+* `hasNonconstantAbelianMap_of_ne_zero_cuspForm` — EICHLER–SHIMURA: a
+  nonzero weight-`2` cusp form of level `N` produces an abelian variety
+  `A_f/ℚ` and a nonconstant pointed map from `X_0(N)`.  This is where the
+  `Modularity` subtree's newform machinery is meant to be fed in.
+
+**WHY THE SEAM IS `S_2(Γ_0(N)) ≠ 0` AND NOT "AN EIGENFORM EXISTS".**  The
+step from a nonzero cusp form to a Hecke eigenform is ALREADY AVAILABLE —
+`Modularity/Interface.lean` carries
+`exists_ne_zero_mem_inf_iInf_maxGenEigenspace` and
+`exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd` — so putting the
+eigenform condition in the seam would have duplicated proven work.  It is
+left inside the Eichler–Shimura leaf, whose proof may use it.
+
+**THE SAME CUT APPLIES VERBATIM TO THE `Γ₁` SIBLING**
+`hasNonconstantAbelianMap_of_one_le_x1Genus` (`ModularCurve/X1.lean`),
+which is still a bare sorry and whose docstring records the identical
+"prefer the MODULAR axis" note.  Its two halves are
+`dim S_2(Γ_1(N)) = x1Genus N` and the same Eichler–Shimura statement at
+`Γ_1`; only the level structure changes. -/
 theorem hasNonconstantAbelianMap_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) (o : RelPoint strX (𝟙 SpecQ)) :
     HasNonconstantAbelianMap strX o :=
-  sorry
+  let ⟨f, hf⟩ :=
+    exists_ne_zero_cuspForm_of_one_le_x0Genus N (pos_of_isX0Compactification h) hg
+  hasNonconstantAbelianMap_of_ne_zero_cuspForm N h o f hf
 
 /-- **The genus formula, in its geometric form: `genus X_0(N) ≥ 1` makes
 the Jacobian nontrivial** (PROVEN 2026-07-27, over
@@ -19494,9 +19666,101 @@ theorem not_isIso_jacobian_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
   haveI := subsingleton_relPoint_of_isIso hiso g
   exact hxy (Subsingleton.elim _ _)
 
+/-! ### `Mono ajHom` split into the two halves of "Abel–Jacobi is an immersion"
+
+`mono_ajHom_of_one_le_x0Genus` below is the base-general Riemann–Roch residue of
+the whole Abel–Jacobi cluster.  Two audits declared it irreducible, and both
+searched only for ways to weaken its HYPOTHESIS.  The axis neither searched is
+the CONCLUSION: `Mono` for a morphism of schemes is implied by "injective on
+points + surjective on stalks" (`SurjectiveOnStalks.mono_of_injective`), which is
+mathlib's rendering of "immersion", and those two are separate classical
+theorems about the Abel–Jacobi map.  The two leaves are stated here and the node
+below is their assembly. -/
+
+/-- **ABEL–JACOBI SEPARATES POINTS** (sorry leaf, 2026-07-27) — the first
+half of `mono_ajHom_of_one_le_x0Genus`, and the one that is Riemann–Roch
+in the narrow sense.
+
+TRUE and classical.  Contrapositively, if `ajHom` identifies two distinct
+points `x ≠ y` of a fibre then `[x] − [y] = 0` in `Pic⁰`, so `x − y` is a
+principal divisor, so `h⁰(𝒪(x)) = 2` and some rational function has a
+single simple pole — a degree-`1` map to `ℙ¹`, i.e. that fibre is
+rational and has genus `0`.  `hg` together with `hmodel` says every fibre
+is `X_0(N)` of genus `≥ 1`, which excludes it.  (Milne, *Jacobian
+Varieties* §2; Hartshorne IV.1.)
+
+**BOTH HYPOTHESES ARE LOAD-BEARING, and the disjoint-union counterexample
+on the assembly below refutes this leaf too if `hmodel` is weakened to
+`¬ IsIso jstrZ`**: over `S = S₁ ⊔ S₂` with a genus-`1` curve over `S₁`
+and `ℙ¹` over `S₂`, `ajHom` collapses the whole `ℙ¹` and is not injective
+on points, while `¬ IsIso jstrZ` still holds.  Positive genus is a
+FIBREWISE condition and `hmodel` is what makes it one here.
+
+**NOT IMPLIED BY, AND DOES NOT IMPLY, THE STALK HALF.**  A morphism can
+be injective on points and ramified (`Spec k[ε] → Spec k[ε]`, `ε ↦ ε²`,
+is a bijection on points with non-surjective stalk map), and surjective
+on stalks without being injective on points (a disjoint union of two
+copies of `X` mapping to `X`).  So the two halves are independent and the
+cut is not a repackaging.
+
+Stated with `Function.Injective` on the underlying map rather than
+`IsEmbedding`, because that is exactly what
+`SurjectiveOnStalks.mono_of_injective` consumes: asking for a topological
+embedding would be strictly stronger than the assembly needs, and a
+strengthened leaf is a worse leaf. -/
+theorem injective_ajHom_of_one_le_x0Genus {N : ℕ} (_hg : 1 ≤ x0Genus N)
+    {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
+    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (jacZ : IsJacobianOf xstr abZ oZ) : Function.Injective jacZ.ajHom :=
+  sorry
+
+/-- **ABEL–JACOBI IS UNRAMIFIED: it separates tangent directions**
+(sorry leaf, 2026-07-27) — the second half of
+`mono_ajHom_of_one_le_x0Genus`, and the DIFFERENTIAL statement, which the
+point-separating half does not give.
+
+TRUE and classical.  The cotangent space of the Jacobian at the origin is
+`H⁰(X, Ω¹_{X/S})`, and the codifferential of `aj` at a point `x` is the
+evaluation map `H⁰(X, Ω¹) → Ω¹_{X/S} ⊗ κ(x)`.  For a curve of genus
+`≥ 1` that evaluation is surjective at every point — a global differential
+vanishing at `x` to first order would make `h⁰(Ω¹(−x)) = h⁰(Ω¹)`, forcing
+`h⁰(𝒪(x)) = 2` by Riemann–Roch and hence genus `0` again.  Surjectivity of
+the codifferential at every point is exactly `SurjectiveOnStalks`.
+(Milne, *Jacobian Varieties* Prop. 5.1 and §2; Mumford, *Abelian
+Varieties* §II for the identification of the tangent space at the
+origin.)
+
+**WHY THIS IS NOT THE SAME LEAF AS THE POINT-SEPARATING ONE**, i.e. why
+the cut is real: see the two examples recorded on
+`injective_ajHom_of_one_le_x0Genus`.  In particular a purely
+set-theoretic argument cannot close this one, and a purely
+divisor-theoretic argument cannot close it either without differentials —
+it is the first place in this cluster where `Ω¹` is genuinely needed, and
+`Mathlib/AlgebraicGeometry/Morphisms/FormallyUnramified.lean` (already
+imported by this file) is where a prover should start.
+
+`hg` and `hmodel` are load-bearing for the same fibrewise reason as on
+the other half; the same disjoint-union counterexample applies, since the
+codifferential is not surjective along the `ℙ¹` component.
+
+**A NOTE ON STRENGTH.**  `SurjectiveOnStalks` is `∀ x, Surjective
+(stalkMap x)`, which for a MORPHISM OF SCHEMES OVER A BASE is weaker than
+`FormallyUnramified` (the latter also asks `Ω¹_{X/J} = 0` in a relative
+sense) and weaker than `IsClosedImmersion`.  It is the exact hypothesis
+`SurjectiveOnStalks.mono_of_injective` needs, and stating anything
+stronger would put an unused obligation on the prover. -/
+theorem surjectiveOnStalks_ajHom_of_one_le_x0Genus {N : ℕ} (_hg : 1 ≤ x0Genus N)
+    {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
+    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (jacZ : IsJacobianOf xstr abZ oZ) : SurjectiveOnStalks jacZ.ajHom :=
+  sorry
+
 /-- **The Abel–Jacobi morphism of `X_0(N)` with `genus ≥ 1` is a
-MONOMORPHISM, over an arbitrary base** (sorry leaf — all that survives of
-the base-general Abel–Jacobi node, and it is pure geometry).
+MONOMORPHISM, over an arbitrary base** (PROVEN 2026-07-27 by
+decomposition into the two halves of "Abel–Jacobi is an immersion";
+formerly a sorry leaf twice audited as irreducible).
 
 TRUE and classical: for a smooth proper geometrically connected curve of
 genus `≥ 1` with a section, `x ↦ [x] − [o]` is a CLOSED IMMERSION into
@@ -19534,16 +19798,50 @@ connected base.  The hypothesis `hmodel` is what rules the example out —
 it forces every fibre to be `X_0(N)` — which is why the genus hypothesis
 is kept here in its modular form rather than being abstracted.
 
-IRREDUCIBLE at this pin, along the geometric axis: Riemann–Roch, the
-genus of a scheme and `Pic⁰` are absent from `Mathlib`, from `~/cs/FLT`
-and from this development.  The functorial axis has been taken and is
-exhausted — see the note on the assembly below. -/
-theorem mono_ajHom_of_one_le_x0Genus {N : ℕ} (_hg : 1 ≤ x0Genus N)
+The geometric axis is exhausted at this pin: Riemann–Roch, the genus of a
+scheme and `Pic⁰` are absent from `Mathlib`, from `~/cs/FLT` and from
+this development; and the functorial axis has been taken — see the note
+on the assembly below.
+
+**BUT `Mono` ITSELF IS NOT ATOMIC, AND THAT AXIS WAS NOT SEARCHED**
+(2026-07-27).  Both earlier verdicts ranged over ways to *weaken the
+hypothesis*; neither asked what `Mono` decomposes into.  It decomposes,
+and the decomposition is the classical one — "Abel–Jacobi is an
+IMMERSION" — supplied by mathlib rather than built here:
+
+    SurjectiveOnStalks.mono_of_injective :
+      [SurjectiveOnStalks f] → Function.Injective f → Mono f
+
+So this node is now a two-line assembly over two leaves that are
+genuinely different mathematics, with different literature, and that a
+prover can attack separately:
+
+* `injective_ajHom_of_one_le_x0Genus` — `aj` SEPARATES POINTS.  This is
+  the half that is Riemann–Roch in the narrow sense: `aj x = aj y` with
+  `x ≠ y` makes `x − y` principal, so `h⁰(x) = 2` and `X` is rational.
+  (Milne, *Jacobian Varieties* §2; Hartshorne IV.1.)
+* `surjectiveOnStalks_ajHom_of_one_le_x0Genus` — `aj` is UNRAMIFIED, i.e.
+  it separates tangent directions.  This is the differential statement
+  `H⁰(X, Ω¹)^∨ ≅ T_0 J` and injectivity of `d(aj)`, and it does not
+  follow from separating points.  (Milne, *Jacobian Varieties* Prop. 5.1;
+  Mumford, *Abelian Varieties* §II.)
+
+Both are stated at the SAME generality as this node — arbitrary base `S`,
+so the fibrewise reading of `hg` recorded above applies verbatim to each,
+and the disjoint-union counterexample below refutes each of them if the
+genus hypothesis is dropped.  Neither is a restatement of the other, and
+neither alone gives `Mono`.
+
+`hg` and `hmodel` are no longer underscore-prefixed: they are consumed,
+by being handed to both halves. -/
+theorem mono_ajHom_of_one_le_x0Genus {N : ℕ} (hg : 1 ≤ x0Genus N)
     {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
     {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
-    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (hmodel : IsX0Compactification N xstr ystr jZ)
     (jacZ : IsJacobianOf xstr abZ oZ) : Mono jacZ.ajHom :=
-  sorry
+  haveI := surjectiveOnStalks_ajHom_of_one_le_x0Genus hg hmodel jacZ
+  SurjectiveOnStalks.mono_of_injective
+    (injective_ajHom_of_one_le_x0Genus hg hmodel jacZ)
 
 /-- **Positive genus makes Abel–Jacobi injective on relative points, over
 every base and at every test object** (PROVEN 2026-07-27 over the single
