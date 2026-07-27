@@ -7957,12 +7957,24 @@ column: `−17·373³ = −882216989` over `2¹⁷ = 131072`;
 values are the classical singular moduli of discriminants
 `−19, −43, −67, −163`.
 
-**The one property of this table that the argument actually uses** is
-that **no entry is `0` or `1728`** — every entry is negative.  That is
-what makes `y0HasNoRationalPoint_of_no_stable_isolated` true: at
-`j ∉ {0, 1728}` the geometric automorphism group of a pair `(E, C)` is
-`{±1}`, which fixes every subgroup, so a `ℚ`-rational point of the
-coarse space descends to a pair over `ℚ` up to quadratic twist.
+**CORRECTED 2026-07-27 — what this table is FOR.**  This paragraph
+previously read "the one property of this table that the argument
+actually uses is that no entry is `0` or `1728`", and attributed that
+use to `y0HasNoRationalPoint_of_no_stable_isolated`, on the ground that
+at `j ∉ {0, 1728}` the geometric automorphism group of a pair `(E, C)`
+is `{±1}` and so a `ℚ`-rational point of the coarse space descends to a
+pair over `ℚ` up to quadratic twist.  **That descent does not need the
+table**, and the node in question is no longer a leaf: it is a wrapper
+around `y0HasNoRationalPoint_of_not_stableCyclic`, whose FAITHFULNESS
+AUDIT gives the descent with no case split on `j` at all, because a
+twist by any `d ∈ ℚˣ` is allowed and `−1 ∈ Aut(E, C)` always.
+
+The table's real consumers are the two ARITHMETIC leaves,
+`mem_isolatedJInvariants_of_stable` (it is the target of Mazur's
+Theorem 1) and `not_stable_of_mem_isolatedJInvariants` (the CM /
+explicit-check split runs row by row over it).  There it is entirely
+load-bearing, and the `0`/`1728` observation is a true remark about it
+rather than the property the tree consumes.
 
 Levels outside `isolatedIsogenyPrimes` get `∅`, which is *false* as a
 statement about `X_0(p)(ℚ)` for `p ∈ {2, 3, 5, 7, 13}` (there the curve
@@ -8007,9 +8019,10 @@ theorem stable_zmultiples_nsmul {E : WeierstrassCurve ℚ} [E.IsElliptic]
   rw [map_zsmul, map_nsmul, ← hm, smul_comm n m g, smul_smul]
 
 /-- **The coarse-to-fine descent at a level divisible by an isolated
-Mazur prime** (sorry node, introduced 2026-07-27): to prove
-`Y_0(N)(ℚ) = ∅` it is enough to refute the existence of a Weierstrass
-curve over `ℚ` with a Galois-stable cyclic subgroup of order `N`.
+Mazur prime** (PROVEN 2026-07-27 BY CITATION; formerly a sorry leaf): to
+prove `Y_0(N)(ℚ) = ∅` it is enough to refute the existence of a
+Weierstrass curve over `ℚ` with a Galois-stable cyclic subgroup of order
+`N`.
 
 This is the exact CONVERSE of `false_of_stable_of_y0HasNoRationalPoint`,
 and it is the only place where the coarse-space subtlety enters the
@@ -8017,6 +8030,47 @@ and it is the only place where the coarse-space subtlety enters the
 point" rather than "point ⟹ curve" — so that the hypothesis is literally
 the hypothesis shape of the two arithmetic leaves below, with no
 existential repackaging of `[E.IsElliptic]`.
+
+## THIS NODE WAS A REDUNDANT RESTATEMENT (found 2026-07-27)
+
+`y0HasNoRationalPoint_of_not_stableCyclic`, six hundred lines above in
+this same file and introduced on the same day as this one, has
+**verbatim the same hypothesis and verbatim the same conclusion, with no
+`p` in it at all**.  This node is that node plus three hypotheses that
+its proof does not use, so it follows from it by application and nothing
+else — which is what its proof now is.  Two cuts were made
+independently at the same statement, and the frontier carried **two**
+open leaves standing for **one** open question.  It now carries it once,
+at `y0HasNoRationalPoint_of_not_stableCyclic`, and that is where a
+prover should be sent; the general node is also already the descent
+bridge for the prime-square family
+(`y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel`,
+`y0HasNoRationalPoint_oneSixtyNine`), so closing it closes three level
+families at once rather than one.
+
+**`_hp`, `_hN` and `_hpN` are unused, and that is a fact about the
+descent rather than an artefact of the wrapper.**  The
+`isolatedJInvariants` route set out below — push down to level `p`, read
+off Mazur's table, observe that no entry is `0` or `1728`, hence
+`Aut_ℚ̄(E) = {±1}` — is *a* proof, and it is the one this node's cut was
+designed around.  It is not the one the general node needs.  The
+FAITHFULNESS AUDIT of `y0HasNoRationalPoint_of_not_stableCyclic` gives a
+descent that **needs no case split on `j` whatever**, because only
+*some* curve over `ℚ` is asked for, so a quadratic/quartic/sextic TWIST
+is allowed: `−1 ∈ Aut(E, C)` always (`−C = C`), the obstruction lives in
+`H¹(G_ℚ, Aut(E)/A)` with `Aut(E)/A` a quotient of `μ_n` by `μ₂`, and
+`ℚˣ/(ℚˣ)ⁿ ↠ ℚˣ/(ℚˣ)^(n/2)` is surjective.  So the `j = 0, 1728` caveat
+that motivates `_hp`/`_hpN` here is a caveat about a *strictly stronger*
+statement — that the pair `(E, C)` itself descend — and a successor
+should not reintroduce these hypotheses.
+
+The two arithmetic leaves below are untouched by this and the table is
+genuinely load-bearing in them: `mem_isolatedJInvariants_of_stable` is
+Mazur's Theorem 1 and `not_stable_of_mem_isolatedJInvariants` is the
+no-second-isogeny statement.  What the finding removes is only the
+*third* copy of the coarse-space obligation, not any arithmetic.
+
+### The argument this node was cut for, kept for the record
 
 **TRUE, and here is the proof.**  A `ℚ`-rational point of the coarse
 space is a `Γ_ℚ`-stable `ℚ̄`-isomorphism class of pairs `(E, C)` with `C`
@@ -8047,21 +8101,31 @@ It is the SAME argument at `N = p q`, which is why the leaf is stated for
 `p ∣ N` rather than for `N = p q`: the general form is the honest one and
 the divisible form is what the assembly needs.
 
-IRREDUCIBLE at this pin: the descent needs the identification of the
-`ℚ`-points of the coarse space with `Γ_ℚ`-stable `ℚ̄`-classes, which is
-the content of `IsCoarseModuliY0.universal` in the direction initiality
-does not provide, plus `Aut(E) = {±1}` for `j ∉ {0, 1728}` — neither is
-in `Mathlib` or in `~/cs/FLT`. -/
+**The obstruction is REAL and it has simply MOVED, one declaration up
+the chain.**  The verdict this paragraph replaces read "IRREDUCIBLE at
+this pin: the descent needs the identification of the `ℚ`-points of the
+coarse space with `Γ_ℚ`-stable `ℚ̄`-classes, which is the content of
+`IsCoarseModuliY0.universal` in the direction initiality does not
+provide, plus `Aut(E) = {±1}` for `j ∉ {0, 1728}`".  The first half of
+that is exactly right and is now recorded where it belongs, in the
+"What proving it needs" section of
+`y0HasNoRationalPoint_of_not_stableCyclic`: bijectivity of `classify` on
+geometric points is the half of the coarse-moduli definition that
+`IsCoarseModuliY0` deliberately omits, initiality alone can never supply
+it, and it is reachable from `Gamma0Atlas` / `Gamma0GITPresentation`,
+which are already in this file.  The second half is *not* needed, per
+the twisting argument above.  **Nothing here has become easier; one of
+two copies of the same open question has gone away.** -/
 theorem y0HasNoRationalPoint_of_no_stable_isolated {p N : ℕ}
     (_hp : p ∈ isolatedIsogenyPrimes) (_hN : N ≠ 0) (_hpN : p ∣ N)
-    (_hno : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point),
+    (hno : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point),
       addOrderOf g = N →
       (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) → False) :
     Y0HasNoRationalPoint N :=
-  sorry
+  y0HasNoRationalPoint_of_not_stableCyclic hno
 
 /-- **Mazur's Theorem 1, in the form the descent needs** (sorry node,
 introduced 2026-07-27): a curve over `ℚ` with a rational `p`-isogeny, for
@@ -8206,14 +8270,23 @@ theory with *needing it proven before the node can be cut*.  Three
 declarations above carry the three ingredients separately:
 
 * `y0HasNoRationalPoint_of_no_stable_isolated` — the coarse-to-fine
-  descent, and the ONLY piece that touches moduli theory;
+  descent, and the ONLY piece that touches moduli theory.  **It is no
+  longer a leaf** (2026-07-27): it turned out to be a strictly weaker
+  restatement of `y0HasNoRationalPoint_of_not_stableCyclic`, six hundred
+  lines above, which has the same hypothesis and the same conclusion
+  with no `p` in it, and is already the descent bridge for the
+  prime-square family.  So the moduli obligation of this family is the
+  *same* obligation as that of the prime squares, not a second one, and
+  it is open in exactly one place.  See that node's docstring for what
+  proving it needs;
 * `mem_isolatedJInvariants_of_stable` — Mazur's Theorem 1;
 * `not_stable_of_mem_isolatedJInvariants` — no second isogeny.
 
 The last two are statements about Weierstrass curves over `ℚ` and their
 `ℚ̄`-torsion, with **no scheme theory in sight**, so they are ownable by
 someone who never opens this module's first four thousand lines.  That
-separation is most of the value of the cut.
+separation is most of the value of the cut, and it survives the merge of
+the first item into the general bridge.
 
 **The assembly, which is what this proof is.**  A Galois-stable cyclic
 subgroup of order `p q` contains one of order `p` (namely `⟨q • g⟩`) and
