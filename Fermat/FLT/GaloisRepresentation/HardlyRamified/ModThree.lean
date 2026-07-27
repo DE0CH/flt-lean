@@ -43645,6 +43645,218 @@ theorem isOpen_charKernel_inter_muFixer_ray_class (F : Type u) [Field F] [Number
   rw [hsplit]
   exact hker.inter hfix
 
+/-- **An `m`-th root of unity only sees its exponent modulo `m`** (PROVEN
+2026-07-27; the one-line bridge between the `ℕ`-exponent form
+`g ζ = ζ ^ k` in which this cluster states Galois actions and the
+`ZMod m`-valued form `modularCyclotomicCharacter` produces). -/
+theorem pow_eq_pow_val_ray_class {M : Type*} [Monoid M] {m : ℕ} [NeZero m] {t : M}
+    (ht : t ^ m = 1) (k : ℕ) : t ^ k = t ^ ((k : ZMod m)).val := by
+  conv_lhs => rw [← Nat.div_add_mod k m]
+  rw [pow_add, pow_mul, ht, one_pow, one_mul, ZMod.val_natCast]
+
+/-- **THE MOD-`m` CYCLOTOMIC CHARACTER OF A NUMBER FIELD** (PROVEN
+2026-07-27; created the same day as the dictionary that turns every
+`μ_m`-clause of the Artin-modulus cluster into a statement in the finite
+abelian group `(ZMod m)ˣ`).
+
+For any `m > 0` there is a group homomorphism `c : Γ F →* (ZMod m)ˣ` with
+
+* the SPEC: `g ζ = ζ ^ (c g).val` for every `ζ` with `ζ ^ m = 1`;
+* UNIQUENESS in the form actually used at call sites: if `g` acts on
+  `μ_m` by the `k`-th power for a natural number `k`, then `c g = k` in
+  `ZMod m`.
+
+Both come from mathlib's `modularCyclotomicCharacter`, which is stated
+for `L ≃+* L` and needs `Nat.card (rootsOfUnity m L) = m`; here
+`L = Fᵃˡᵍ`, the count is `IsPrimitiveRoot.card_rootsOfUnity` applied to
+the primitive root supplied by `HasEnoughRootsOfUnity` (available because
+`F` has characteristic `0`, so `(m : F) ≠ 0`), and the passage from
+`Γ F = Fᵃˡᵍ ≃ₐ[F] Fᵃˡᵍ` to `Fᵃˡᵍ ≃+* Fᵃˡᵍ` is `AlgEquiv.toRingEquiv`,
+which is a monoid homomorphism by `rfl` in both fields.
+
+**Why this is stated existentially rather than as a `def`.** The
+character depends on the proof `Nat.card (rootsOfUnity m Fᵃˡᵍ) = m`, so a
+`def` would carry a proof argument that every call site would have to
+reproduce; and no consumer in this cluster needs the character itself,
+only the two properties. Note the consequence for its consumers: two
+invocations produce two *syntactically* different characters, so obtain
+it ONCE per proof.
+
+The statement is deliberately valid at `m = 1` as well (`ζ ^ 1 = 1`
+forces `ζ = 1`, `(ZMod 1)ˣ` is trivial and `(c g).val = 0`), so no
+`1 < m` side condition propagates into the callers. -/
+theorem exists_cyclotomicChar_ray_class (F : Type u) [Field F] [NumberField F]
+    (m : ℕ) (hm : 0 < m) :
+    ∃ c : Γ F →* (ZMod m)ˣ,
+      (∀ (g : Γ F) (ζ : AlgebraicClosure F), ζ ^ m = 1 →
+          g ζ = ζ ^ ((c g : ZMod m)).val) ∧
+      (∀ (g : Γ F) (k : ℕ), (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → g ζ = ζ ^ k) →
+          ((c g : ZMod m)) = (k : ZMod m)) := by
+  haveI : NeZero m := ⟨hm.ne'⟩
+  haveI : NeZero ((m : ℕ) : F) := ⟨Nat.cast_ne_zero.mpr hm.ne'⟩
+  obtain ⟨μ, hμ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure F) m
+  let φ : Γ F →* (AlgebraicClosure F ≃+* AlgebraicClosure F) :=
+    { toFun := fun g => g.toRingEquiv
+      map_one' := rfl
+      map_mul' := fun _ _ => rfl }
+  refine ⟨(modularCyclotomicCharacter (AlgebraicClosure F) hμ.card_rootsOfUnity).comp φ, ?_, ?_⟩
+  · intro g ζ hζ
+    have hu : IsUnit ζ := IsUnit.of_pow_eq_one hζ hm.ne'
+    have htm : hu.unit ∈ rootsOfUnity m (AlgebraicClosure F) := by
+      rw [mem_rootsOfUnity']
+      simpa using hζ
+    have hs := modularCyclotomicCharacter.spec (AlgebraicClosure F) hμ.card_rootsOfUnity
+      (φ g) htm
+    rw [show g ζ = (φ g) ζ from rfl]
+    simpa using hs
+  · intro g k hk
+    refine (modularCyclotomicCharacter.unique (AlgebraicClosure F) hμ.card_rootsOfUnity
+      (φ g) (c := (k : ZMod m)) ?_).symm
+    intro t htm
+    have htm' : (t : AlgebraicClosure F) ^ m = 1 := (mem_rootsOfUnity' _ _).mp htm
+    have hgt : (φ g) (t : AlgebraicClosure F) = (t : AlgebraicClosure F) ^ k := hk _ htm'
+    rw [hgt]
+    exact pow_eq_pow_val_ray_class htm' k
+
+/-- **CHILDRESS 2.6, IN PURE ELEMENTARY NUMBER THEORY** (sorry node,
+created 2026-07-27 as sub-leaf (A3a-1-1-b-2-A) of
+`exists_artinModulusCore_ray_class` below, which is now GLUE over this
+leaf, `exists_cyclotomicRealization_ray_class` just below, and the
+cyclotomic dictionary just above).
+
+Given `a > 1`, `n > 1` and a finite set of primes `S`, there is a modulus
+`m > 1` prime to `S` such that `a` is a unit mod `m` whose order is
+divisible by `n`, together with a SECOND unit `β` of order divisible by
+`n` which is INDEPENDENT of `α` — `⟨α⟩ ∩ ⟨β⟩ = 1`, written here in the
+`zpow` form the consumer needs.
+
+**There is no field, no Galois group and no topology in this statement.**
+That is the entire point of the cut: everything the Artin-modulus leaf
+asks of the modulus that is not about `F` lives here, in `ℕ` and
+`(ZMod m)ˣ`, where it can be attacked with nothing but `ZMod`, `orderOf`
+and Dirichlet.
+
+THE CLASSICAL PROOF (Childress, *Class Field Theory*, Lemmas 2.3–2.6;
+local copy at `sources/childress2009cft.txt`, pp. 115–117), which is
+elementary throughout and needs neither Dirichlet nor Zsygmondy:
+
+* *2.3.* For `r > 1`, `a > 1` and a prime `q` there is a prime `P` with
+  `ord_P(a) = q ^ r` exactly. Put `u = a ^ (q ^ (r-1)) − 1` and
+  `t = (a ^ (q ^ r) − 1) / u`; the binomial expansion gives
+  `t ≡ q (mod u)`, so a prime `P ∣ t` with `P ≠ q` satisfies `P ∤ u`,
+  whence `a ^ (q ^ r) ≡ 1` but `a ^ (q ^ (r−1)) ≢ 1 (mod P)`. The
+  remaining case "`t` is a power of `q`" is excluded by a two-line
+  congruence mod `q ^ 2`, splitting on `q > 2` and `q = 2`.
+* *2.4.* Applying 2.3 to `q ^ (r+k)` for every `k` gives INFINITELY many
+  such primes, which is what lets the construction dodge `S`.
+* *2.5.* Writing `n = ∏ qᵢ ^ rᵢ` and taking one prime `Pᵢ ∉ S` per
+  factor, `d = ∏ Pᵢ` has `n ∣ ord_d(a)`.
+* *2.6.* Run 2.5 twice: first for `S` to get `d`, then for
+  `S ∪ {P : P ∣ d}` and `n' = ord_d(a)` to get `d'`, and set `m = d d'`.
+  CRT gives `b ≡ a (mod d)`, `b ≡ 1 (mod d')`; then `ord_m(b) = ord_d(a)`
+  is divisible by `n`, and if `aⁱ ≡ bʲ ≡ 1 (mod m)` then `aⁱ ≡ 1
+  (mod d')` forces `n' ∣ i`, hence `aⁱ ≡ 1 (mod d)` and so `aⁱ ≡ 1
+  (mod m)` — independence.
+
+`1 < m` is free from the construction (`n > 1` divides an order, so the
+unit group is nontrivial) and is REQUIRED by the consumer, which uses it
+to know `(1 : ZMod m).val = 1` when translating "acts trivially on `μ_m`"
+into "`c g = 1`".
+
+FAITHFULNESS. Non-vacuous, and `1 < a` is load-bearing: at `a = 1` the
+unit `α` is `1`, whose order is `1`, and clause `n ∣ ord α` fails for
+every `n > 1` and every `m`. At the call site `a = N p ≥ 2`, supplied by
+`NumberField.HeightOneSpectrum.one_lt_absNorm`. `1 < n` is load-bearing
+in the same way at `n = 0`; at `n = 1` the statement is true but the
+consumer does not need it, since it discharges `n = 1` directly with
+`m = 1`. -/
+theorem exists_modulus_independentOrders_ray_class (a n : ℕ) (ha : 1 < a) (hn : 1 < n)
+    (S : Finset ℕ) :
+    ∃ (m : ℕ) (α β : (ZMod m)ˣ), 1 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+      ((α : ZMod m) = (a : ZMod m)) ∧
+      (∀ i : ℤ, α ^ i = 1 → (n : ℤ) ∣ i) ∧
+      (∀ j : ℤ, β ^ j = 1 → (n : ℤ) ∣ j) ∧
+      (∀ i j : ℤ, β ^ i * α ^ j = 1 → β ^ i = 1 ∧ α ^ j = 1) :=
+  sorry
+
+/-- **CHILDRESS 2.7 AND MINKOWSKI: THE GALOIS SIDE OF THE ARTIN MODULUS**
+(sorry node, created 2026-07-27 as sub-leaf (A3a-1-1-b-2-B) of
+`exists_artinModulusCore_ray_class` below).
+
+There is a finite set `T` of "bad" primes — those ramifying in `F/ℚ`,
+those ramifying in `K/ℚ` where `K` is the fixed field of `ker χ`, and the
+residue characteristic of `p` — such that EVERY modulus `m > 0` prime to
+`T` already has the three Galois-theoretic properties the Artin modulus
+needs:
+
+1. `(m : 𝓞 F) ∉ p`, i.e. `p ∤ (m)`;
+2. `Γ F = ker χ · Γ_{F(ζ_m)}`, i.e. `K ∩ F(ζ_m) = F` — Childress's
+   clause (iii) and Artin's Lemma 2.8(iii);
+3. EVERY exponent `k` prime to `m` is realised by a generator: some
+   `w'` with `χ`-image still generating (so it can replace the input `w`)
+   acts on `μ_m` by the `k`-th power.
+
+**This is where the whole cut pays off: the choice of `m` has been moved
+out.** The statement quantifies over ALL `m` avoiding `T`, so it composes
+with the arithmetic leaf above by simply handing that leaf `S ∪ T`; no
+property of `m` beyond avoiding `T` is used here, and no property of `F`
+is used there.
+
+WHY IT IS TRUE.
+
+* (1) is `p ∩ ℤ = (ℓ)` with `ℓ ∈ T`: `m` prime to `ℓ` gives
+  `(m) ⊄ p`.
+* (2) Since `m` avoids the primes ramifying in `F/ℚ` and in `K/ℚ`, both
+  `F ∩ ℚ(ζ_m)` and `K ∩ ℚ(ζ_m)` are everywhere-unramified extensions of
+  `ℚ`, hence equal `ℚ` by MINKOWSKI (`ℚ` has no nontrivial
+  everywhere-unramified extension). The first equality makes restriction
+  `Gal(F(ζ_m)/F) ≅ Gal(ℚ(ζ_m)/ℚ)` an isomorphism, so the intermediate
+  fields of `F(ζ_m)/F` are exactly the `F·L` for `L` intermediate in
+  `ℚ(ζ_m)/ℚ`; applying this to `E = K ∩ F(ζ_m)` gives
+  `E = F·(E ∩ ℚ(ζ_m))` with `E ∩ ℚ(ζ_m) ⊆ K ∩ ℚ(ζ_m) = ℚ`, so `E = F`.
+  **Note the argument must go through `ℚ`**: "`E/F` is unramified
+  everywhere, hence trivial" is FALSE for a general number field `F`,
+  which has a Hilbert class field; only over `ℚ` is Minkowski available.
+* (3) `F ∩ ℚ(ζ_m) = ℚ` also makes the mod-`m` cyclotomic character of
+  `Γ F` SURJECTIVE onto `(ZMod m)ˣ`, and (2) says `ker χ · ker(cyc) =
+  Γ F`, which is exactly the condition for the joint map
+  `Γ F → Gal(K/F) × (ZMod m)ˣ` to be surjective. So pick `g` with
+  `cyc g = k · (cyc w)⁻¹`, write `g = τ ρ` with `χ τ = 1` and
+  `ρ ∈ Γ_{F(ζ_m)}` by (2), and take `w' = w τ`: then `χ w' = χ w`, so
+  the generation clause transports from `hgen`, and `cyc w' = k`.
+
+`hVopen` and `hVker` are load-bearing and are exactly what makes `K/F`
+FINITE — without an open kernel, "the primes ramifying in `K/ℚ`" is not a
+finite set and `T` does not exist. `hgen` is load-bearing in clause (3),
+which asserts that the realising element still generates.
+
+FAITHFULNESS. Note that `w'` is required to generate, NOT to lie in
+`w · ker χ`; the proof produces an element of that coset, so the
+statement is weaker than what the construction gives and cannot be
+false for that reason. Note also that clause (3) is stated with a natural
+number exponent `k` rather than a unit of `ZMod m`; the two are
+interchangeable through `ZMod.val_coe_unit_coprime` and
+`pow_eq_pow_val_ray_class`, and the `ℕ` form is what
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` above already
+speaks. -/
+theorem exists_cyclotomicRealization_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (w : Γ F)
+    (hgen : ∀ x : Γ F, ∃ i : ℤ, χ (x * w ^ (-i)) = 1) :
+    ∃ T : Finset ℕ, ∀ m : ℕ, 0 < m → (∀ q ∈ T, q.Prime → ¬ q ∣ m) →
+      ((m : NumberField.RingOfIntegers F) ∉ p.asIdeal) ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+      (∀ k : ℕ, Nat.Coprime k m → ∃ w' : Γ F,
+        (∀ x : Γ F, ∃ i : ℤ, χ (x * w' ^ (-i)) = 1) ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → w' ζ = ζ ^ k)) :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **THE ARITHMETIC CHOICE OF THE MODULUS *AND OF THE GENERATOR*:
 CHILDRESS 2.3–2.7 AND MINKOWSKI, AND NOTHING ELSE** (sorry node,
@@ -43800,7 +44012,48 @@ generation clause follows from `hexp` at `n = 1`.
 already quantified `w` existentially, so its STATEMENT is untouched; only
 its glue now discharges that existential with `w'` rather than with the
 `w` it got from `exists_cyclicGenerator_ray_class`. The two universally
-quantified lemmas above are unaffected — they never mention `w`. -/
+quantified lemmas above are unaffected — they never mention `w`.
+
+**STATUS 2026-07-27 (third owner): PROVEN BY DECOMPOSITION — this is now
+GLUE and no longer a leaf.** It runs over
+
+* `exists_modulus_independentOrders_ray_class` (A3a-1-1-b-2-A) — Childress
+  2.3–2.6, PURE ELEMENTARY NUMBER THEORY in `ℕ` and `(ZMod m)ˣ`, with no
+  field, Galois group or topology anywhere in it;
+* `exists_cyclotomicRealization_ray_class` (A3a-1-1-b-2-B) — Childress 2.7
+  plus MINKOWSKI, all of the Galois content, stated so that it fixes only
+  a finite BAD SET `T` and then holds for every modulus avoiding it;
+* `exists_cyclotomicChar_ray_class` (PROVEN above) — the mod-`m`
+  cyclotomic character, which is the dictionary between the two.
+
+**THE AXIS THE EARLIER AUDIT DID NOT SEARCH**, recorded because an
+irreducibility verdict is only as wide as its axis: the FALSITY AUDIT
+above ranged over the *quantifier placement* of the generator and got
+that right, but treated the leaf's arithmetic and Galois content as one
+object. They separate cleanly, and the separator is the observation that
+every `μ_m`-clause in the conclusion — clauses (ii), (iii') and the
+independence clause — is a statement about the image of the mod-`m`
+cyclotomic character, hence a statement in the FINITE ABELIAN GROUP
+`(ZMod m)ˣ`. `map_zpow` then moves all three across at once. For
+`globalFrob p` the image is `N p` mod `m`, by the already-PROVEN
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`, which is why
+the Frobenius clause needed no new Galois input at all.
+
+**`n = 1` IS DISCHARGED OUTRIGHT, with `m = 1` and `w' = w`**: `ζ ^ 1 = 1`
+forces `ζ = 1`, so `muFixerRayClass F 1 = ⊤` and every `μ_1`-clause is
+`one_dvd`. This is why the two sub-leaves may assume `1 < n`, which
+Childress 2.3–2.6 genuinely need.
+
+**`hexp` IS NOW UNUSED, and that is a real observation rather than
+slack** — it is renamed `_hexp` so the emptiness is mechanically visible.
+The old docstring recorded it as "consumed by Childress 2.7". That was
+true of the FALSE form of this leaf, where the generator was the input
+`w` and its exponent had to be pinned; once the generator became an
+OUTPUT, nothing in the conclusion constrains `χ` at all — clauses (ii),
+(iii') and (iv) only ask that `n` divide two orders in `(ZMod m)ˣ`, and
+`n` reaches the sub-leaves as a bare natural number. The hypothesis is
+RETAINED because the consumer passes it positionally and because a
+successor may want it if the cut is ever redrawn. -/
 theorem exists_artinModulusCore_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -43811,7 +44064,7 @@ theorem exists_artinModulusCore_ray_class
     (S : Finset ℕ)
     (n : ℕ) (w : Γ F) (hn : 0 < n)
     (hgen : ∀ x : Γ F, ∃ i : ℤ, χ (x * w ^ (-i)) = 1)
-    (hexp : ∀ x : Γ F, χ (x ^ n) = 1) :
+    (_hexp : ∀ x : Γ F, χ (x ^ n) = 1) :
     ∃ (m : ℕ) (w' : Γ F), 0 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
       (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
@@ -43823,8 +44076,86 @@ theorem exists_artinModulusCore_ray_class
       (∀ i j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
           (w' ^ i * (globalFrob p) ^ j) ζ = ζ) →
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w' ^ i) ζ = ζ) ∧
-        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) :=
-  sorry
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) := by
+  classical
+  rcases Nat.lt_or_ge n 2 with hn1 | hn2
+  · -- `n = 1`: the modulus `m = 1` and the given generator work, and every
+    -- clause is either `one_dvd` or the observation that `ζ ^ 1 = 1` forces `ζ = 1`.
+    have hn1' : n = 1 := by omega
+    subst hn1'
+    have hfix1 : ∀ (g : Γ F) (ζ : AlgebraicClosure F), ζ ^ 1 = 1 → g ζ = ζ := by
+      intro g ζ hζ
+      rw [pow_one] at hζ
+      subst hζ
+      exact map_one g
+    refine ⟨1, w, one_pos, ?_, ?_, ?_, hgen, ?_, ?_, ?_⟩
+    · intro q _ hq hdvd
+      exact hq.ne_one (Nat.dvd_one.mp hdvd)
+    · rw [Nat.cast_one]
+      exact fun h => p.isPrime.ne_top ((Ideal.eq_top_iff_one _).mpr h)
+    · intro σ
+      exact ⟨1, σ, hVker 1 V.one_mem, hfix1 σ, (one_mul σ).symm⟩
+    · intro i _
+      simp
+    · intro j _
+      simp
+    · intro i j _
+      exact ⟨hfix1 _, hfix1 _⟩
+  · -- `n ≥ 2`: the arithmetic leaf chooses the modulus and the two units, the
+    -- realization leaf produces the generator, and the mod-`m` cyclotomic
+    -- character translates every `μ_m`-clause into `(ZMod m)ˣ`.
+    have ha : 1 < Ideal.absNorm p.asIdeal :=
+      NumberField.HeightOneSpectrum.one_lt_absNorm p
+    obtain ⟨T, hT⟩ := exists_cyclotomicRealization_ray_class F χ hmul V hVopen hVker p w hgen
+    obtain ⟨m, α, β, hm1, hmSU, hαa, hαord, hβord, hind⟩ :=
+      exists_modulus_independentOrders_ray_class (Ideal.absNorm p.asIdeal) n ha hn2 (S ∪ T)
+    have hm0 : 0 < m := by omega
+    haveI : NeZero m := ⟨by omega⟩
+    haveI : Fact (1 < m) := ⟨hm1⟩
+    obtain ⟨hmp, hiii, hreal⟩ := hT m hm0 (fun q hq => hmSU q (Finset.mem_union_right _ hq))
+    obtain ⟨c, hcspec, hcuniq⟩ := exists_cyclotomicChar_ray_class F m hm0
+    obtain ⟨w', hw'gen, hw'act⟩ := hreal ((β : ZMod m)).val (ZMod.val_coe_unit_coprime β)
+    have hfix : ∀ g : Γ F, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → g ζ = ζ) ↔ c g = 1 := by
+      intro g
+      constructor
+      · intro h
+        refine Units.ext ?_
+        have h1 := hcuniq g 1 (by simpa using h)
+        simpa using h1
+      · intro h ζ hζ
+        have h2 := hcspec g ζ hζ
+        rw [h] at h2
+        simpa [ZMod.val_one] using h2
+    have hcw' : c w' = β := by
+      refine Units.ext ?_
+      have h1 := hcuniq w' ((β : ZMod m)).val hw'act
+      simpa using h1
+    have hcfrob : c (globalFrob p) = α := by
+      refine Units.ext ?_
+      have h1 := hcuniq (globalFrob p) (Ideal.absNorm p.asIdeal)
+        (fun ζ hζ =>
+          globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class F m hm0 p hmp ζ hζ)
+      rw [h1]
+      exact hαa.symm
+    refine ⟨m, w', hm0, fun q hq => hmSU q (Finset.mem_union_left _ hq), hmp, hiii, hw'gen,
+      ?_, ?_, ?_⟩
+    · intro i hi
+      refine hβord i ?_
+      rw [← hcw', ← map_zpow]
+      exact (hfix _).mp hi
+    · intro j hj
+      refine hαord j ?_
+      rw [← hcfrob, ← map_zpow]
+      exact (hfix _).mp hj
+    · intro i j hij
+      have h1 : c (w' ^ i) * c ((globalFrob p) ^ j) = 1 := by
+        rw [← map_mul]
+        exact (hfix _).mp hij
+      rw [map_zpow, map_zpow, hcw', hcfrob] at h1
+      obtain ⟨hb, hal⟩ := hind i j h1
+      refine ⟨(hfix _).mpr ?_, (hfix _).mpr ?_⟩
+      · rw [map_zpow, hcw']; exact hb
+      · rw [map_zpow, hcfrob]; exact hal
 
 set_option maxHeartbeats 1000000 in
 /-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, GIVEN THE EXPONENT AND *A*
@@ -43940,7 +44271,17 @@ of the generator `w'` inside `w · ker χ`, and the independence of `w'`
 and `globalFrob p` in `Gal(F(ζ_m)/F)` — is untouched and lives entirely
 in `exists_artinModulusCore_ray_class`. What changed
 is that it is no longer entangled with two clauses that never needed the
-arithmetic at all. -/
+arithmetic at all.
+
+**UPDATE 2026-07-27: `exists_artinModulusCore_ray_class` is itself now
+GLUE, and the hard part has been split in two along the
+arithmetic/Galois seam.** The two open leaves of this whole cluster are
+now `exists_modulus_independentOrders_ray_class` (Childress 2.3–2.6, pure
+elementary number theory) and `exists_cyclotomicRealization_ray_class`
+(Childress 2.7 and Minkowski). Nothing above this line is stale — the
+paragraph is accurate about where the mathematics went — but the
+sentence "lives entirely in `exists_artinModulusCore_ray_class`" now
+means "lives entirely in its two sub-leaves". -/
 theorem exists_artinModulus_of_generator_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
