@@ -85,7 +85,18 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 
 ## Main statements
 
-* `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. OPEN.
+* `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. **PROVEN** as an
+  assembly of the four statements below, three of which are open.
+* `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
+* `HopfAlgebra.IsShortExact.exists_linearRetraction` — `i(A'')` is an `R`-module direct summand
+  of `A`. OPEN; equivalent to the surjectivity field, and free of Hopf structure.
+* `HopfAlgebra.IsShortExact.surjective_cartierDual_map` — **PROVEN** from the retraction.
+* `HopfAlgebra.IsShortExact.le_ker_cartierDual` — the easy half of the dual kernel condition.
+  **PROVEN**, from `apply_comp` alone.
+* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. OPEN, and *gated on fppf
+  descent*, which this pin does not carry.
+* `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` — OPEN; the deepest field, classically
+  `Ext¹(G'', 𝔾ₘ) = 0`.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. OPEN.
 * `HopfAlgebra.isMultiplicativeType_of_isShortExact` — `(R3)`: an extension of multiplicative type
   by multiplicative type is of multiplicative type. **PROVEN** from the two above.
@@ -299,6 +310,30 @@ lemma IsShortExact.injective (h : IsShortExact i π) : Function.Injective i := b
   algebraize [(i.toAlgHom.toRingHom : A'' →+* A)]
   exact FaithfulSMul.algebraMap_injective A'' A
 
+/-- **The composite `Spec A' → Spec A → Spec A''` is trivial**, written on coordinate rings:
+`π ∘ i` is the counit of `A''` followed by the unit of `A'`, i.e. `π (i a) = ε(a) • 1`.
+
+This is the only consequence of the kernel condition `ker π = A · i(ker ε)` that the exactness
+proof needs, and it is what makes one half of the dual kernel condition
+(`IsShortExact.le_ker_cartierDual`) formal: a functional pulled back along `π` and killing `1`
+automatically kills `i(A'')`.
+
+Proof: `a - ε(a) • 1` lies in the augmentation ideal of `A''`, so its image under `i` lies in
+`ker π`; expand, and use `i 1 = 1`, `π 1 = 1`. -/
+lemma IsShortExact.apply_comp (h : IsShortExact i π) (a : A'') :
+    π (i a) = Coalgebra.counit (R := R) a • (1 : A') := by
+  have hmem : (a - Coalgebra.counit (R := R) a • (1 : A'')) ∈
+      Bialgebra.augmentationIdeal R A'' := by
+    rw [Bialgebra.mem_augmentationIdeal_iff]
+    simp
+  have h0 : (π.toAlgHom.toRingHom : A →+* A')
+      (i (a - Coalgebra.counit (R := R) a • (1 : A''))) = 0 := by
+    rw [← RingHom.mem_ker, h.ker_eq]
+    exact Ideal.mem_map_of_mem _ hmem
+  simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, map_sub, map_smul, map_one] at h0
+  rw [sub_eq_zero] at h0
+  exact h0
+
 end Def
 
 /-! ### Exactness of Cartier duality -/
@@ -312,6 +347,133 @@ variable [IsCocomm R A''] [IsCocomm R A] [IsCocomm R A']
 variable [Module.Finite R A''] [Module.Free R A''] [Module.Finite R A] [Module.Free R A]
   [Module.Finite R A'] [Module.Free R A']
 
+variable {i : A'' →ₐc[R] A} {π : A →ₐc[R] A'}
+
+/-! #### The four inputs
+
+`IsShortExact.cartierDual` is assembled below out of four statements, of which two are proven
+here. The split is by *where the mathematics is*:
+
+| statement | status | content |
+| --------- | ------ | ------- |
+| `exists_linearRetraction` | OPEN | `i(A'')` is an `R`-module direct summand of `A` |
+| `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
+| `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
+| `ker_cartierDual_le` | OPEN | the hard half: a character trivial on `Spec A'` descends |
+| `faithfullyFlat_cartierDual` | OPEN | `(Spec A)^D → (Spec A')^D` is faithfully flat |
+
+-/
+
+/-- **`i(A'')` is an `R`-module direct summand of `A`**: the inclusion of the sub-bialgebra
+admits an `R`-linear retraction.
+
+OPEN, and this is the module-theoretic heart of the surjectivity half of exactness of duality.
+It is *equivalent* to `surjective_cartierDual_map` — `A''` is finite free over `R`, so a
+retraction can be reassembled from extensions of a dual basis — so stating it this way is a
+change of formulation, not a weakening.
+
+Why it is true. `A` is faithfully flat over `i(A'')`, so `Spec A → Spec A''` is an fppf
+`Spec A'`-torsor; locally on `Spec R` the torsor is trivial and the normal-basis isomorphism
+`A ≅ A'' ⊗[R] A'` of `A''`-modules carries `i(A'')` to `A'' ⊗ R·1`. Since `ε_{A'} : A' → R`
+splits `R·1 ⊆ A'`, the quotient `A / i(A'')` is *locally free*, hence — being finitely presented
+over `R` — projective, hence the sequence `0 → i(A'') → A → A/i(A'') → 0` splits globally.
+Locality is not an obstruction here precisely because it is used to establish projectivity of the
+quotient, which is a local property, rather than to produce the splitting directly.
+
+Refuting check, if this is ever doubted: exhibit a short exact sequence of finite free
+commutative Hopf algebras in which `A / i(A'')` has `R`-torsion. Equivalently, exhibit a
+functional on `A''` that does not extend to `A`.
+
+Note this needs *no* finiteness or freeness over `R` to state, and the freeness enters only
+through the proof; it is stated in the `Dual` section only because that is where it is used. -/
+theorem IsShortExact.exists_linearRetraction (h : IsShortExact i π) :
+    ∃ r : A →ₗ[R] A'', ∀ a : A'', r (i a) = a := sorry
+
+/-- **The transposed inclusion `(Spec A)^D → (Spec A'')^D` is a closed immersion**, i.e.
+`CartierDual.map i` is surjective.
+
+PROVEN from `IsShortExact.exists_linearRetraction`: given `ψ : CartierDual R A''`, the functional
+`ψ ∘ r` on `A` restricts along `i` to `ψ`. This is the dual of `Spec A → Spec A''` being
+faithfully flat. -/
+theorem IsShortExact.surjective_cartierDual_map (h : IsShortExact i π) :
+    Function.Surjective (CartierDual.map i) := by
+  obtain ⟨r, hr⟩ := h.exists_linearRetraction
+  intro ψ
+  refine ⟨(CartierDual.toDual R A).symm ((CartierDual.toDual R A'' ψ) ∘ₗ r), ?_⟩
+  ext a
+  rw [CartierDual.map_apply, ← CartierDual.coe_apply, LinearEquiv.apply_symm_apply,
+    LinearMap.comp_apply, hr, CartierDual.coe_apply]
+
+/-- **The easy half of the dual kernel condition**: the ideal of `CartierDual R A` generated by
+the pullbacks along `π` of the functionals on `A'` killing `1` is contained in the kernel of
+restriction along `i`.
+
+PROVEN, and formal: a generator is `ψ ∘ π` with `ψ 1 = 0`, and
+`(ψ ∘ π) (i a) = ψ (ε(a) • 1) = ε(a) * ψ 1 = 0` by `IsShortExact.apply_comp`. Only the *kernel*
+field of the original sequence is used; neither faithful flatness nor surjectivity enters. -/
+theorem IsShortExact.le_ker_cartierDual (h : IsShortExact i π) :
+    Ideal.map ((CartierDual.map π).toAlgHom.toRingHom : CartierDual R A' →+* CartierDual R A)
+        (Bialgebra.augmentationIdeal R (CartierDual R A'))
+      ≤ RingHom.ker ((CartierDual.map i).toAlgHom.toRingHom :
+          CartierDual R A →+* CartierDual R A'') := by
+  rw [Ideal.map_le_iff_le_comap]
+  intro ψ hψ
+  rw [Bialgebra.mem_augmentationIdeal_iff, CartierDual.counit_apply] at hψ
+  rw [Ideal.mem_comap, RingHom.mem_ker]
+  show (CartierDual.map i) ((CartierDual.map π) ψ) = 0
+  ext a
+  rw [CartierDual.map_apply, CartierDual.map_apply, h.apply_comp, ← CartierDual.coe_apply,
+    map_smul, CartierDual.coe_apply, hψ, smul_zero, CartierDual.zero_apply]
+
+/-- **The hard half of the dual kernel condition**: a functional on `A` vanishing on the
+sub-bialgebra `i(A'')` lies in the ideal of `CartierDual R A` generated by
+`(CartierDual.map π) (ker ε_{CartierDual R A'})`.
+
+OPEN. In functor-of-points language this is exactness of
+`1 → (Spec A'')^D → (Spec A)^D → (Spec A')^D` at the middle term: a character of `Spec A`
+that is trivial on the subgroup `Spec A'` factors through the fppf quotient
+`Spec A / Spec A' = Spec A''`. That factorisation is **fppf descent along the faithfully flat
+`Spec A → Spec A''`**, and the descent statement for modules is *not in this pin* — the same gap
+`CartierDual.lean`'s "What remains" section records as the reason a definition of the quotient
+could not be written there. So this leaf is gated on descent, not merely hard.
+
+What is available, and what is not:
+
+* the image of `CartierDual.map π` is exactly `Ann(ker π)` (transpose of a surjection), and
+  `(CartierDual.map π) (ker ε) = Ann(ker π) ∩ Ann(1)` as an `R`-submodule — that much is
+  elementary;
+* the ideal generated by that submodule is taken in the **convolution** ring structure of
+  `CartierDual R A`, which is where the elementary description stops, and where the comodule
+  decomposition `A ≅ A'' ⊗[R] A'` is spent.
+
+Refuting check: the reverse inclusion `IsShortExact.le_ker_cartierDual` is proven, so a
+counterexample would be a `φ : A →ₗ[R] R` killing `i(A'')` that is not a convolution combination
+of pullbacks along `π`; over a field the rank count `rk A = rk A'' * rk A'` makes both sides free
+of rank `rk A - rk A''`, so any counterexample must use a non-local base. -/
+theorem IsShortExact.ker_cartierDual_le (h : IsShortExact i π) :
+    RingHom.ker ((CartierDual.map i).toAlgHom.toRingHom :
+        CartierDual R A →+* CartierDual R A'')
+      ≤ Ideal.map ((CartierDual.map π).toAlgHom.toRingHom :
+          CartierDual R A' →+* CartierDual R A)
+          (Bialgebra.augmentationIdeal R (CartierDual R A')) := sorry
+
+/-- **`(Spec A)^D → (Spec A')^D` is faithfully flat.**
+
+OPEN, and this is the deepest of the three fields: it is the statement that Cartier duality turns
+the closed immersion `Spec A' ↪ Spec A` into an fppf quotient, i.e. that every character of the
+subgroup `Spec A'` extends fppf-locally to `Spec A`. Classically (Tate, *Finite flat group
+schemes*, §2) this is `Ext¹(G'', 𝔾ₘ) = 0` for finite flat `G''`, proven by exhibiting
+`CartierDual R A` as a *free* `CartierDual R A'`-module on a basis dual to an
+`R`-basis of `A''` — the linear dual of the normal-basis decomposition `A ≅ A'' ⊗[R] A'`.
+
+Refuting check: `RingHom.FaithfullyFlat` unfolds to `Module.FaithfullyFlat` along
+`(CartierDual.map π).toAlgebra`, so a refutation would be a maximal ideal `m` of
+`CartierDual R A'` with `m • CartierDual R A = ⊤`; over a base field this is impossible because
+the module is free of rank `rk A''`, so any counterexample must use a non-local base. -/
+theorem IsShortExact.faithfullyFlat_cartierDual (h : IsShortExact i π) :
+    RingHom.FaithfullyFlat ((CartierDual.map π).toAlgHom.toRingHom :
+      CartierDual R A' →+* CartierDual R A) := sorry
+
 /-- **Cartier duality is exact.**
 
 If `1 → Spec A' → Spec A → Spec A'' → 1` is short exact, then so is the dual sequence
@@ -324,28 +486,15 @@ that a finite locally free Hopf algebra in a short exact sequence is *free* over
 algebra, so that `A ≅ A'' ⊗[R] A'` as an `A''`-comodule, and the linear dual of that
 decomposition supplies all three conditions at once.
 
-OPEN. The three sorried steps below are the three fields of `IsShortExact`, and each is a genuine
-theorem, not bookkeeping — the middle one, surjectivity of the transposed inclusion, is the
-statement that a functional on a sub-Hopf-algebra extends, which is where the freeness of `A` over
-`A''` is spent. -/
-theorem IsShortExact.cartierDual {i : A'' →ₐc[R] A} {π : A →ₐc[R] A'} (h : IsShortExact i π) :
-    IsShortExact (CartierDual.map π) (CartierDual.map i) := by
-  /- Duality turns the faithfully flat quotient `A'' ↪ A` into the closed immersion
-  `(A)^∨ ↠ (A'')^∨`, and the closed immersion `A ↠ A'` into the faithfully flat
-  `(A')^∨ ↪ (A)^∨`. -/
-  have hff : RingHom.FaithfullyFlat
-      ((CartierDual.map π).toAlgHom.toRingHom :
-        CartierDual R A' →+* CartierDual R A) := by
-    sorry
-  have hsurj : Function.Surjective (CartierDual.map i) := by
-    sorry
-  have hker : RingHom.ker
-      ((CartierDual.map i).toAlgHom.toRingHom : CartierDual R A →+* CartierDual R A'') =
-      Ideal.map ((CartierDual.map π).toAlgHom.toRingHom :
-        CartierDual R A' →+* CartierDual R A)
-        (Bialgebra.augmentationIdeal R (CartierDual R A')) := by
-    sorry
-  exact ⟨hff, hsurj, hker⟩
+PROVEN as an assembly of the four statements above; the remaining mathematics is in the three of
+them that are open. Note that the kernel condition is now half proven
+(`IsShortExact.le_ker_cartierDual`), and that the surjectivity field is reduced to a pure module
+statement about `A` (`IsShortExact.exists_linearRetraction`) with no Hopf structure left in
+it. -/
+theorem IsShortExact.cartierDual (h : IsShortExact i π) :
+    IsShortExact (CartierDual.map π) (CartierDual.map i) :=
+  ⟨h.faithfullyFlat_cartierDual, h.surjective_cartierDual_map,
+    le_antisymm h.ker_cartierDual_le h.le_ker_cartierDual⟩
 
 end Dual
 
