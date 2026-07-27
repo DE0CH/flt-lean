@@ -34,13 +34,16 @@ finite flat commutative group schemes: a group scheme is a commutative ring `A` 
 * `CartierDual.toDual` — the defining `R`-linear equivalence with `Module.Dual R A`.
 * The `CommRing`, `Algebra`, `CoalgebraStruct`, `Bialgebra` and `HopfAlgebra` instances.
 * `CartierDual.bidualityLinear` — the biduality isomorphism `A ≃ₗ[R] CartierDual R
-  (CartierDual R A)`, together with `bidualityLinear_one`, `bidualityLinear_mul` and
-  `bidualityLinear_counit`.
+  (CartierDual R A)`, together with `bidualityLinear_one`, `bidualityLinear_mul`,
+  `bidualityLinear_counit` and `bidualityLinear_comul`.
+* `CartierDual.bidualityBialgEquiv` — **biduality as a bundled bialgebra equivalence**
+  `A ≃ₐc[R] CartierDual R (CartierDual R A)`; `bidualityAlgEquiv` is its algebra half.
 * `CartierDual.finrank_cartierDual` — the dual is finite flat of the same rank.
 
-See the section "What remains" at the end of the file for the two commissioned pieces that are
-NOT here (exactness on short exact sequences, and the standard examples) and what each is
-blocked on.
+The standard examples `μ_n^D ≅ ℤ/n` and `(ℤ/n)^D ≅ μ_n` are in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDualExamples.lean`. See the section
+"What remains" at the end of this file for the two pieces that are still open (exactness on
+short exact sequences, and `α_p^D ≅ α_p`) and what each is blocked on.
 
 ## Design notes
 
@@ -117,6 +120,13 @@ instance : FunLike (CartierDual R A) A R where
 @[simp] lemma zero_apply (a : A) : (0 : CartierDual R A) a = 0 := rfl
 
 @[simp] lemma smul_apply (r : R) (f : CartierDual R A) (a : A) : (r • f) a = r * f a := rfl
+
+lemma sum_apply {ι : Type*} (s : Finset ι) (F : ι → CartierDual R A) (a : A) :
+    (∑ i ∈ s, F i) a = ∑ i ∈ s, F i a := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert b s hb ih => rw [Finset.sum_insert hb, Finset.sum_insert hb, add_apply, ih]
 
 end Module
 
@@ -656,6 +666,43 @@ theorem bidualityLinear_counit (a : A) :
     counit (R := R) (bidualityLinear R A a) = counit (R := R) a := by
   rw [counit_apply, bidualityLinear_apply, one_apply]
 
+/-- **Biduality respects the comultiplication.** This is the transpose of `bidualityLinear_mul`:
+pairing `Δ (bidual a)` against `f ⊗ g` gives `(f * g) a`, which is `∑ f a₍₁₎ * g a₍₂₎` by the
+convolution formula — and that is exactly the pairing of `(bidual ⊗ bidual) (Δ a)`. -/
+theorem bidualityLinear_comul (a : A) :
+    comul (R := R) (bidualityLinear R A a)
+      = TensorProduct.map (bidualityLinear R A).toLinearMap (bidualityLinear R A).toLinearMap
+          (comul (R := R) a) := by
+  refine pairMap_injective fun f g => ?_
+  rw [pairMap_comul, bidualityLinear_apply, mul_apply_repr (ℛ R a) f g, ← (ℛ R a).eq, map_sum,
+    map_sum]
+  exact Finset.sum_congr rfl fun i _ => by rw [TensorProduct.map_tmul, pairMap_tmul]; rfl
+
+variable (R A) in
+/-- Biduality as an ALGEBRA equivalence `A ≃ₐ[R] A^{DD}`. -/
+noncomputable def bidualityAlgEquiv : A ≃ₐ[R] CartierDual R (CartierDual R A) :=
+  { bidualityLinear R A with
+    map_mul' := bidualityLinear_mul
+    commutes' := fun r => by
+      rw [Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one]
+      show bidualityLinear R A (r • (1 : A)) = _
+      rw [map_smul, bidualityLinear_one] }
+
+variable (R A) in
+/-- **BIDUALITY.** `G ≅ G^{DD}` for a finite flat commutative group scheme, as a bundled
+equivalence of `R`-bialgebras: the underlying map is `Module.evalEquiv`, and it respects the
+unit, the multiplication, the counit and the comultiplication. Since a bialgebra map between
+Hopf algebras automatically commutes with the antipodes, this is the full statement that Cartier
+duality is an involution. -/
+noncomputable def bidualityBialgEquiv : A ≃ₐc[R] CartierDual R (CartierDual R A) where
+  __ := bidualityAlgEquiv R A
+  map_smul' := map_smul (bidualityLinear R A)
+  counit_comp := LinearMap.ext bidualityLinear_counit
+  map_comp_comul := LinearMap.ext fun a => (bidualityLinear_comul a).symm
+
+@[simp] lemma bidualityBialgEquiv_apply (a : A) (f : CartierDual R A) :
+    bidualityBialgEquiv R A a f = f a := rfl
+
 /-! ### What remains, and why it is a separate task
 
 The construction above is complete and unconditional. Two of the five pieces the Cartier-duality
@@ -675,15 +722,31 @@ definition is pinned by its consumer rather than guessed at in advance. Refuting
 definition of a group-scheme quotient, or of fppf descent for modules, anywhere in `Fermat/`,
 the mathlib pin, or `~/cs/FLT`.
 
-**2. The examples `μ_n^D ≅ ℤ/n`, `(ℤ/n)^D ≅ μ_n`, `α_p^D ≅ α_p`.** Half of each is available
-and half is not. `O(μ_n) = R[ZMod n]` is mathlib's `MonoidAlgebra`, which carries a
-`HopfAlgebra` instance (`MonoidAlgebra.instHopfAlgebra`) — that is the *diagonalizable* side.
-The other side, `O(ℤ/n) = (ZMod n → R)` with pointwise multiplication — the coordinate ring of
-the CONSTANT group scheme — has **no** `HopfAlgebra` instance in the pin: mathlib's
-`Coalgebra.Basic` gives `Π i, A i` a coalgebra instance, but not the bialgebra/Hopf structure
-dual to the group law. So stating `μ_n^D ≅ ℤ/n` requires first building the Hopf algebra of a
-finite constant group scheme. That is a self-contained and worthwhile piece of work, and it is
-the natural next dispatch off this file. -/
+**2. The examples — SUPERSEDED, mostly DONE (2026-07-27).** The blocker recorded here was the
+missing Hopf structure on the coordinate ring of a finite constant group scheme. It now exists as
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/GroupFunctions.lean` (`GroupFunctions R G`), and both
+diagonalizable/constant examples are proven in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDualExamples.lean`:
+
+* `CartierDual.dualGroupAlgebraBialgEquiv : CartierDual R (MonoidAlgebra R G) ≃ₐc[R]
+  GroupFunctions R G` — `μ_n^D ≅ ℤ/n`, at `G := Multiplicative (ZMod n)`;
+* `CartierDual.groupAlgebraBialgEquivDual : MonoidAlgebra R G ≃ₐc[R]
+  CartierDual R (GroupFunctions R G)` — `(ℤ/n)^D ≅ μ_n`, same instantiation.
+
+**Only `α_p^D ≅ α_p` is still open, and it is a THEORY gap, not a proof gap.** `α_p` is
+`Spec R[x]/(x^p)` in characteristic `p`, with `Δ x = x ⊗ 1 + 1 ⊗ x` — the *additive* Hopf
+structure. Nothing in the mathlib pin, in `~/cs/FLT`, or in this tree carries it: mathlib's only
+Hopf structures on polynomial-shaped algebras are `(Add)MonoidAlgebra`'s, whose comultiplication
+is GROUPLIKE (`Δ (single g a) = single g a₍₁₎ ⊗ single g a₍₂₎`), so `AddMonoidAlgebra R ℕ = R[X]`
+receives `Δ X = X ⊗ X` — the multiplicative group `𝔾_m`-shaped structure, not `𝔾_a`. So the
+prerequisite is the Hopf algebra `O(𝔾_a) = R[X]` with additive comultiplication, plus the Hopf
+ideal `(X^p)` (mathlib's `HopfAlgebra.Quotient`/`Ideal.IsHopfIdeal` can then take the quotient;
+`Δ(X)^p = X^p ⊗ 1 + 1 ⊗ X^p` needs `add_pow_char` in `A ⊗ A`). Only then is the self-duality
+statable, and its content is the divided-power pairing `⟨x^i, x^j⟩ = i! δ_{ij}`: the dual basis
+satisfies `e_i * e_j = C(i+j, i) e_{i+j}`, so `y := e_1` has `y^i = i! e_i` with `i!` invertible
+for `i < p`, giving `A^D ≅ R[y]/(y^p)` and `Δ y = y ⊗ 1 + 1 ⊗ y`. Refuting check for the
+"absent" claim: any `HopfAlgebra` instance on a quotient of `Polynomial R`, or any occurrence of
+`add_pow_char` in a coalgebra context, in `Fermat/`, the pin, or `~/cs/FLT`. -/
 
 end Bialg
 
