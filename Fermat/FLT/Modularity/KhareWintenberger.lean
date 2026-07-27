@@ -7110,12 +7110,16 @@ cost:
   nilpotent ideal of a Noetherian ring satisfies `J^s = 0` for one `s`; that
   identity is an identity between finitely many rational coefficients, so it too
   holds over `ℤ[1/N]` and hence in every fibre with `p ∤ N`. The remaining part
-  of `ker φ` is the `a`-torsion, and generic flatness (`Mathlib`'s
-  `Algebra.exists_nonZeroDivisor_isLocalization`-style statements, or Chevalley
-  via `PrimeSpectrum.isConstructible_comap_image`,
-  `Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`) makes the locus of `p`
-  at which the fibre acquires a component inside `V(a)` a CONSTRUCTIBLE subset of
-  `Spec ℤ` missing the generic point, hence finite.
+  of `ker φ` is the `a`-torsion, and THIS is the one genuinely constructible
+  step: generic flatness over `Spec ℤ`, or equivalently Chevalley applied via
+  `PrimeSpectrum.isConstructible_comap_image`
+  (`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`, PRESENT — refute by
+  `grep -rn "isConstructible_comap_image" .lake/packages/mathlib/`), makes the
+  locus of `p` at which the fibre acquires a component inside `V(a)` a
+  CONSTRUCTIBLE subset of `Spec ℤ` missing the generic point, hence finite. No
+  generic-flatness lemma was located in the pin under that name; a prover should
+  check `Mathlib/RingTheory/Flat/` and `Mathlib/RingTheory/Spectrum/` before
+  building one, and record what is found here.
 
 WHY CHEVALLEY APPLIES HERE THOUGH IT DID NOT APPLY TO THE PARENT. The parent's
 route 2 (recorded on the consumer below) failed because a factorisation of the
