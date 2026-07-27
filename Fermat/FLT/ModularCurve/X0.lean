@@ -4735,31 +4735,397 @@ theorem y0HasNoRationalPoint_isogenyPrimeSq {p : ℕ} (hp : p.Prime) (hp11 : 11 
   obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
   exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_isogenyPrimeSq hp hp11 hc hX)
 
-/-- **Kenku's semiprime determination, on `X_0(pq)`** (sorry node): for
-distinct primes `p, q` both in `mazurIsogenyPrimes` with
-`p * q ∉ {6, 10, 14, 15, 21}`, every rational point of `X_0(pq)` is a
-cusp.
+/-! #### The `61` semiprime levels, partitioned by the method that settles each
+
+The five declarations below cut `cuspidal_x0_semiprime_of_mazurPrimes`
+along the partition that the LITERATURE and the arithmetic actually use,
+rather than along a guess.  The partition, and the reconnaissance behind
+it, is the substance of this block; read it before dispatching anyone at
+the leaves, because the four leaves have four genuinely different
+prospects and only one of them is closable with machinery this file
+already has.
+
+**The count.**  `mazurIsogenyPrimes` has `12` elements, so `66` unordered
+pairs; `5` give the excluded products `6, 10, 14, 15, 21`; `61` remain.
+
+**The dividing line: is `X_0(p)(ℚ)` FINITE?**  Split
+`mazurIsogenyPrimes` by the genus of `X_0(p)`:
+
+* `2, 3, 5, 7, 13` — `X_0(p)` has genus `0`, so `X_0(p) ≅ ℙ¹` and
+  `X_0(p)(ℚ)` is INFINITE.  Knowing the level-`p` points says nothing.
+* `11, 17, 19, 37, 43, 67, 163` — `X_0(p)` has genus `≥ 1` and
+  `X_0(p)(ℚ)` is FINITE and explicitly tabulated by Mazur.  These are
+  `isolatedIsogenyPrimes` below.
+
+Of the `61` levels, exactly `56` have at least one prime of the second
+kind and exactly `5` have both primes of the first kind, namely
+`26, 35, 39, 65, 91` (verified with PARI/GP 2.17.4, 2026-07-27, by
+enumerating all `66` pairs).  That is the primary cut, and it is not a
+convenience: the `56` need no curve geometry at all, and the `5` are five
+separate rational-point determinations.
+
+**Reconnaissance on the five (PARI/GP 2.17.4, 2026-07-27).**  Genus and
+cusp number from the standard `Γ₀(N)` index formulas; `rank J_0(N)` as
+the analytic rank, i.e. `Σ_f ord_{s=1} L(f, s)` over the newform factors
+of every level dividing `N` with old multiplicity;
+`#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))` by Eichler–Shimura, all
+cusps being rational since every one of the five is squarefree:
+
+| `N` | genus | `rank J_0(N)` | rational cusps | best odd `ℓ ∤ N` | `#X_0(N)(𝔽_ℓ)` | route |
+|-----|-------|---------------|----------------|-------------------|------------------|-------|
+| `26` | `2` | `0` | `4` | `3`  | `6` | rank `0` + **sieve** |
+| `35` | `3` | `0` | `4` | `3`  | `4` | rank `0` + **witness prime** |
+| `39` | `3` | `0` | `4` | `5`  | `4` | rank `0` + **witness prime** |
+| `65` | `5` | `1` | `4` | `3`  | `4` | **Chabauty–Coleman** |
+| `91` | `7` | `2` | `4` | `5`  | `4` | **Chabauty–Coleman** |
+
+Three facts in that table are load-bearing, and each is the reason for
+one of the three small leaves:
+
+1. At `35` and `39` the count EQUALS the rational-cusp number at an odd
+   prime of good reduction, and the rank is `0`.  That is exactly the
+   hypothesis shape of `y0HasNoRationalPoint_of_witnessPrime`, so these
+   two are closable with machinery ALREADY IN THIS FILE.
+2. At `26` the rank is `0` but the count is NEVER `4`: over
+   `3 ≤ ℓ < 60`, `ℓ ∤ 26`, the minimum is `6` (at `ℓ = 3`; the values run
+   `6, 10, 8, 8, 24, 12, 28, …`).  So `y0HasNoRationalPoint_of_witnessPrime`
+   cannot close `26` however the prime is chosen — it is in the same
+   position as `45, 54, 63, 75` and needs the multi-prime Mordell–Weil
+   sieve.  **This is the single most useful line here**, because it is
+   the route a successor would otherwise try first and waste a cycle on.
+3. At `65` and `91` the count IS sharp, and that is a trap: the rank is
+   `1` and `2`, so `HasRankZeroJacobian` is FALSE at both and
+   `card_le_of_rankZeroJacobian` has no rank input available.  Both do
+   satisfy `rank < genus` (`1 < 5`, `2 < 7`), which is Chabauty–Coleman's
+   hypothesis — a theory this development does not have in any form.
+
+**Which paper settles which level.**  Checked against the published
+titles rather than copied from this node's previous docstring, which was
+wrong in two places:
+
+* `X_0(39)` — Kenku, *The modular curve `X_0(39)` and rational isogeny*,
+  Math. Proc. Cambridge Philos. Soc. **85** (1979) 21–23.  That paper is
+  about `X_0(39)` ONLY; the earlier docstring credited it with `X_0(35)`
+  as well, which its title contradicts.
+* `X_0(65)`, `X_0(91)` — Kenku, *The modular curves `X_0(65)` and
+  `X_0(91)` and rational isogeny*, ibid. **87** (1980) 15–20.  Note these
+  are exactly the two positive-rank levels, which is a strong consistency
+  check on the table above: Kenku grouped them because they are the hard
+  ones.
+* `X_0(26)`, `X_0(35)` — **not the subject of any Kenku paper title.**
+  Both have rank-`0` Jacobian and genus `2`, `3`, which puts them inside
+  the classical method of Ogg, *Rational points on certain elliptic
+  modular curves*, Proc. Sympos. Pure Math. **24** (1973) 221–231, and
+  *Hyperelliptic modular curves*, Bull. Soc. Math. France **102** (1974)
+  449–462.  The standard attribution for the composite levels as a whole
+  is "Fricke, Kenku, Klein, Kubert, Ligozat, Mazur, Ogg"; which of them
+  owns these two is NOT pinned down here, and a successor should not
+  cite Kenku for them.
+* **Two citations in the previous docstring belong to a different node.**
+  J. London Math. Soc. (2) **22** (1980) is *The modular curve `X_0(169)`*
+  and ibid. **23** (1981) is *On the modular curves `X_0(125)`, `X_1(25)`
+  and `X_1(49)`* — PRIME-POWER levels.  They settle none of these `61`
+  and belong to `cuspidal_x0_isogenyPrimeSq`, where they are already
+  correctly cited.
+* The `56` are Mazur, *Rational isogenies of prime degree*, Invent. Math.
+  **44** (1978), Theorem 1 and its table, together with Kenku, *On the
+  number of `ℚ`-isomorphism classes of elliptic curves in each
+  `ℚ`-isogeny class*, J. Number Theory **15** (1982) 199–202.
+
+**FAITHFULNESS AUDIT of the statement being cut.**  The level list and
+the exclusion set were checked, not assumed.  The semiprimes in the
+Mazur–Kenku list `1, …, 19, 21, 25, 27, 37, 43, 67, 163` are `6 = 2·3`,
+`10 = 2·5`, `14 = 2·7`, `15 = 3·5`, `21 = 3·7` and no others, so
+`{6, 10, 14, 15, 21}` is exactly right.  Every one of the `61` remaining
+levels has genus `≥ 2`, the minimum being genus `2` at `N = 26`, so the
+docstring's "none is an elliptic-curve rank computation" is correct.  No
+error was found in the statement. -/
+
+/-- **The seven Mazur primes at which `X_0(p)(ℚ)` is FINITE**,
+`{11, 17, 19, 37, 43, 67, 163}`.
+
+These are exactly the `p ∈ mazurIsogenyPrimes` for which `X_0(p)` has
+positive genus; the other five, `2, 3, 5, 7, 13`, have `X_0(p) ≅ ℙ¹` and
+so infinitely many rational points.  The distinction is what makes the
+`56`-level family uniform and leaves only `5` levels to compute — see
+the section docstring above. -/
+def isolatedIsogenyPrimes : Finset ℕ := {11, 17, 19, 37, 43, 67, 163}
+
+/-- **The five semiprime levels at which BOTH primes have `X_0(p)` of
+genus `0`**, `26 = 2·13`, `35 = 5·7`, `39 = 3·13`, `65 = 5·13`,
+`91 = 7·13`.
+
+Every other product of two distinct `mazurIsogenyPrimes` outside
+`{6, 10, 14, 15, 21}` has a prime in `isolatedIsogenyPrimes` and is
+handled by `y0HasNoRationalPoint_of_isolatedSemiprime`.  These five are
+the residue, and each is a genuine determination of the rational points
+of a curve of genus `2, 3, 3, 5, 7`. -/
+def smallSemiprimeLevels : List ℕ := [26, 35, 39, 65, 91]
+
+/-- **The two small semiprime levels that a single witness prime
+closes**, `35` and `39`.
+
+`rank J_0(N)(ℚ) = 0` at both, and the Eichler–Shimura count equals the
+number of rational cusps at `ℓ = 3` for `N = 35` and `ℓ = 5` for
+`N = 39` (both `4 = 4`). -/
+def witnessSemiprimeLevels : List ℕ := [35, 39]
+
+/-- **The two small semiprime levels whose Jacobian has POSITIVE rank**,
+`65` (rank `1`, genus `5`) and `91` (rank `2`, genus `7`).
+
+Both satisfy `rank < genus`, so Chabauty–Coleman applies; no rank-`0`
+counting argument does. -/
+def chabautySemiprimeLevels : List ℕ := [65, 91]
+
+/-- **The `56` levels with an isolated prime** (sorry node, introduced
+2026-07-27): for `p ∈ isolatedIsogenyPrimes` and any prime `q ≠ p`,
+`Y_0(pq)(ℚ) = ∅`.
+
+TRUE, and it needs NO geometry of `X_0(pq)` — which is why it is one
+statement rather than `56`.
+
+**The argument.**  A rational point of `X_0(pq)` pushes forward along the
+degree-`ψ(q)` map `X_0(pq) → X_0(p)`, `(E, C_{pq}) ↦ (E, C_p)`, which
+sends non-cuspidal points to non-cuspidal points.  For
+`p ∈ isolatedIsogenyPrimes` Mazur's Theorem 1 tabulates `X_0(p)(ℚ)`
+completely, and the non-cuspidal points are these `j`-invariants:
+
+| `p` | non-cuspidal `j` | CM |
+|-----|------------------|----|
+| `11`  | `−2¹⁵ = −32768`; `−11² = −121`; `−11·131³ = −24729001` | first only, disc `−11` |
+| `17`  | `−17·373³/2¹⁷`; `−17²·101³/2` | no |
+| `19`  | `−2¹⁵·3³ = −884736` | disc `−19` |
+| `37`  | `−7·11³ = −9317`; `−7·137³·2083³` | no |
+| `43`  | `−884736000` | disc `−43` |
+| `67`  | `−147197952000` | disc `−67` |
+| `163` | `−262537412640768000` | disc `−163` |
+
+None of these is `0` or `1728`, so the coarse point IS represented by an
+elliptic curve over `ℚ`, determined up to quadratic twist; and possessing
+a Galois-stable cyclic subgroup of order `q` is twist-invariant.  That is
+what disposes of the coarse-space subtlety this node's siblings warn
+about, and it is why the argument works at the level of the coarse space
+and not merely for pairs `(E, C)` defined over `ℚ`.
+
+It then remains that none of those curves has a rational `q`-isogeny for
+any prime `q ≠ p`.  For the five CM rows this is uniform and clean: the
+mod-`ℓ` image lies in the normalizer of a Cartan subgroup attached to
+`K = ℚ(√−p)`, and a Galois-stable line in `E[ℓ]` exists only when `ℓ`
+ramifies in `K`, i.e. only for `ℓ = p`.  For the four non-CM `j`-values
+it is a finite explicit check, confirmed against LMFDB at `p = 11`, where
+the three `j`-invariants give isogeny classes `121.a`, `121.b`, `121.c`,
+each of size `2` with the single isogeny degree `11`.
+
+**CIRCULARITY WARNING for whoever proves this.**  Do NOT discharge it by
+citing Kenku's list of possible cyclic isogeny degrees over `ℚ`
+(J. Number Theory **15** (1982) 199–202).  That list is precisely what
+this whole subtree is proving: "a curve with an `11`-isogeny has no
+`2`-isogeny" is the assertion `22` is not an isogeny degree.  The proof
+must go through the explicit `j`-invariants above.
+
+**Stated uniformly in `q`, which is stronger than needed and easier to
+prove.**  Only the `56` cases with `q ∈ mazurIsogenyPrimes` are consumed
+here; for the other `q` the conclusion already follows from
+`y0HasNoRationalPoint_prime` through `y0HasNoRationalPoint_of_dvd` at
+`q ∣ pq`.  The descent argument does not look at `q` at all, so
+restricting the statement would buy nothing.  It is TRUE as stated: every
+`pq` with `p ≥ 11` is at least `22`, and the only members of the
+Mazur–Kenku list that large are `25, 27, 37, 43, 67, 163`, none of which
+is a product of two distinct primes.
+
+IRREDUCIBLE at this pin: it needs Mazur's determination of `X_0(p)(ℚ)`
+for the seven isolated primes — strictly more than `cuspidal_x0_prime`,
+which only covers `p ∉ mazurIsogenyPrimes` — plus the CM theory of the
+mod-`ℓ` image. -/
+theorem y0HasNoRationalPoint_of_isolatedSemiprime {p q : ℕ}
+    (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime) (_hpq : p ≠ q) :
+    Y0HasNoRationalPoint (p * q) :=
+  sorry
+
+/-- **`Y_0(35)(ℚ) = Y_0(39)(ℚ) = ∅`** (sorry node, introduced
+2026-07-27).
+
+TRUE, and **this is the one leaf here that the machinery already in this
+file can close**, so it should be dispatched first and separately.  Both
+levels have `rank J_0(N)(ℚ) = 0` and a sharp witness prime:
+
+| `N` | genus | rational cusps | `ℓ` | `#X_0(N)(𝔽_ℓ)` |
+|-----|-------|----------------|-----|------------------|
+| `35` | `3` | `4` | `3`  | `4` |
+| `39` | `3` | `4` | `5`  | `4` |
+
+which is exactly the hypothesis shape of
+`y0HasNoRationalPoint_of_witnessPrime`.  Concretely, a successor closes
+this by adding `35, 39` to `kenkuLevels` and the rows `(35, 3, 4)`,
+`(39, 5, 4)` to `x0WitnessTable`, then reusing that theorem verbatim.
+**Those two declarations belong to another owner** (they are the target
+of a separate in-flight task), so they are not edited here; the leaf is
+stated over its own list instead, and the two edits can be made whenever
+that region is free.
+
+`N = 39` is Kenku, *The modular curve `X_0(39)` and rational isogeny*,
+Math. Proc. Cambridge Philos. Soc. **85** (1979) 21–23.  `N = 35` is not
+the subject of a Kenku paper — see the section docstring. -/
+theorem y0HasNoRationalPoint_of_witnessSemiprimeLevel (N : ℕ)
+    (_hN : N ∈ witnessSemiprimeLevels) : Y0HasNoRationalPoint N :=
+  sorry
+
+/-- **`Y_0(26)(ℚ) = ∅`** (sorry node, introduced 2026-07-27).
+
+TRUE: `26` is not in the Mazur–Kenku list.  `X_0(26)` has genus `2`, four
+rational cusps, and `rank J_0(26)(ℚ) = 0` — indeed `J_0(26) ~ 26a × 26b`
+with both factors elliptic of rank `0`.
+
+**Why this is its own leaf and not folded in with `35, 39`.**  The rank
+is `0`, so `card_le_of_rankZeroJacobian` applies — and it is NEVER SHARP.
+Over the odd primes `3 ≤ ℓ < 60` with `ℓ ∤ 26` the Eichler–Shimura counts
+`#X_0(26)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(26)))` are
+
+    ℓ  =  3  5  7 11 17 19 23 29 31 37 41 43 47 53 59
+    #  =  6 10  8  8 24 12 28 22 32 42 42 50 32 42 76
+
+with minimum `6 > 4 = numRationalCusps 26`.  So
+`y0HasNoRationalPoint_of_witnessPrime` cannot close `26` for ANY choice
+of prime, and a successor must use the multi-prime Mordell–Weil sieve
+instead — the same route as `45, 54, 63, 75`, whose apparatus
+(`x0SieveLevels`, `card_le_of_sieve`, `y0HasNoRationalPoint_of_sieveLevel`)
+is already in this file and is the thing to reuse.  The sieve has to cut
+the `6` points of `X_0(26)(𝔽_3)` down to the `4` cusps, using
+`J_0(26)(ℚ) ≅ ℤ/21ℤ`.
+
+**Do not dispatch a prover at this expecting a witness prime**; that is
+the mistake the table above exists to prevent.
+
+Attribution: not a Kenku paper title; genus `2` and rank `0` place it
+inside Ogg's classical method — see the section docstring. -/
+theorem y0HasNoRationalPoint_x0TwentySix : Y0HasNoRationalPoint 26 :=
+  sorry
+
+/-- **`Y_0(65)(ℚ) = Y_0(91)(ℚ) = ∅`** (sorry node, introduced
+2026-07-27) — the two genuinely hard levels of the `61`.
+
+TRUE: neither `65` nor `91` is in the Mazur–Kenku list.  This is Kenku,
+*The modular curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math.
+Proc. Cambridge Philos. Soc. **87** (1980) 15–20 — and the fact that
+Kenku treated exactly these two together is the historical confirmation
+of the arithmetic reason they are grouped here.
+
+**Why no counting argument can work, however sharp it looks.**
+
+| `N` | genus | `rank J_0(N)` | rational cusps | `ℓ` | `#X_0(N)(𝔽_ℓ)` |
+|-----|-------|---------------|----------------|-----|------------------|
+| `65` | `5` | `1` | `4` | `3` | `4` |
+| `91` | `7` | `2` | `4` | `5` | `4` |
+
+The counts ARE equal to the cusp number, which makes these two look like
+`35` and `39`.  They are not: `card_le_of_rankZeroJacobian` needs
+`HasRankZeroJacobian`, and that is FALSE at both — `J_0(65)` contains the
+rank-`1` elliptic curve `65a`, and `J_0(91)` contains a rank-`1` factor
+twice over.  With positive rank, `J_0(N)(ℚ)` is infinite and the
+Abel–Jacobi image is not bounded by any point count.  **The sharp-looking
+count is a trap, and it is the reason these two are split off from
+`witnessSemiprimeLevels` rather than listed beside them.**
+
+Both analytic ranks are unconditional as LOWER bounds on the Mordell–Weil
+rank in the sense that matters here: the vanishing at `65` occurs at a
+`1`-dimensional factor, so Gross–Zagier and Kolyvagin give
+`rank J_0(65)(ℚ) ≥ 1` outright.
+
+What is left is Chabauty–Coleman, whose hypothesis `rank < genus` holds
+at both (`1 < 5` and `2 < 7`).  IRREDUCIBLE at this pin, and strictly
+harder than every other leaf in this block: Chabauty–Coleman exists in
+this development in no form at all — it needs `p`-adic integration of
+differentials on the curve and the Coleman integral, on top of the
+Jacobian and its Mordell–Weil group. -/
+theorem y0HasNoRationalPoint_of_chabautySemiprimeLevel (N : ℕ)
+    (_hN : N ∈ chabautySemiprimeLevels) : Y0HasNoRationalPoint N :=
+  sorry
+
+/-- **The five small semiprime levels, assembled** (PROVEN): a case split
+of `smallSemiprimeLevels` into the three method classes.
+
+Pure dispatch — `26` to the sieve leaf, `35, 39` to the witness-prime
+leaf, `65, 91` to the Chabauty leaf.  It exists so that the three leaves
+can be owned and closed independently while the caller sees one
+statement. -/
+theorem y0HasNoRationalPoint_of_smallSemiprimeLevel (N : ℕ)
+    (hN : N ∈ smallSemiprimeLevels) : Y0HasNoRationalPoint N := by
+  fin_cases hN
+  · exact y0HasNoRationalPoint_x0TwentySix
+  · exact y0HasNoRationalPoint_of_witnessSemiprimeLevel 35 (by decide)
+  · exact y0HasNoRationalPoint_of_witnessSemiprimeLevel 39 (by decide)
+  · exact y0HasNoRationalPoint_of_chabautySemiprimeLevel 65 (by decide)
+  · exact y0HasNoRationalPoint_of_chabautySemiprimeLevel 91 (by decide)
+
+/-- **The arithmetic behind the case split** (PROVEN): if `p, q` are
+distinct members of `mazurIsogenyPrimes`, NEITHER of them isolated, and
+`p * q` is not one of the five excluded products, then
+`p * q ∈ smallSemiprimeLevels`.
+
+Pure finite computation: removing `isolatedIsogenyPrimes` from
+`mazurIsogenyPrimes` leaves `{2, 3, 5, 7, 13}`, whose `10` unordered
+pairs give `6, 10, 14, 26, 15, 21, 39, 35, 65, 91`; discarding the five
+excluded products leaves exactly `26, 35, 39, 65, 91`.  `fin_cases` on
+both memberships reduces this to `144` decidable claims.
+
+Note `hpq` is genuinely needed: without it `p = q` would allow `p * q` to
+be a square such as `4` or `169`, which is not in the list. -/
+theorem mem_smallSemiprimeLevels {p q : ℕ} (hpm : p ∈ mazurIsogenyPrimes)
+    (hqm : q ∈ mazurIsogenyPrimes) (hpq : p ≠ q)
+    (hpi : p ∉ isolatedIsogenyPrimes) (hqi : q ∉ isolatedIsogenyPrimes)
+    (hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ)) :
+    p * q ∈ smallSemiprimeLevels := by
+  fin_cases hpm <;> fin_cases hqm <;> revert hpq hpi hqi hmem <;> decide
+
+/-- **Kenku's semiprime determination, on `X_0(pq)`** (PROVEN 2026-07-27
+over the four leaves above): for distinct primes `p, q` both in
+`mazurIsogenyPrimes` with `p * q ∉ {6, 10, 14, 15, 21}`, every rational
+point of `X_0(pq)` is a cusp.
 
 TRUE, and FINITE: `61` explicit levels, the smallest `2 · 11 = 22` and
-the largest `67 · 163 = 10921`.  Sources: Kenku, Math. Proc. Cambridge
-Philos. Soc. **85** (1979) 21–23 (`X_0(35)`, `X_0(39)`); ibid. **87**
-(1980) 15–20 (`X_0(65)`, `X_0(91)`); J. London Math. Soc. (2) **22**
-(1980) 249–256; ibid. **23** (1981) 415–427; J. Number Theory **15**
-(1982) 199–202.
+the largest `67 · 163 = 10921`.  Every one has genus `≥ 2` (minimum `2`,
+at `N = 26`), so none is an elliptic-curve rank computation.
+
+**The cut.**  The section docstring above carries the full partition, the
+PARI/GP reconnaissance and the corrected literature map; in outline:
+
+* `56` levels have a prime in `isolatedIsogenyPrimes`, where `X_0(p)(ℚ)`
+  is finite and tabulated, and descend to it uniformly —
+  `y0HasNoRationalPoint_of_isolatedSemiprime`;
+* the residual `5` are `26, 35, 39, 65, 91`, split by the route their
+  arithmetic forces: `35, 39` (rank `0`, sharp witness prime — closable
+  with this file's existing machinery), `26` (rank `0`, no sharp prime
+  exists — needs the sieve), `65, 91` (positive rank — needs
+  Chabauty–Coleman).
+
+The proof itself is the case split plus the passage from
+`Y_0(pq)(ℚ) = ∅` to cuspidality of `X_0(pq)(ℚ)`, which is immediate for
+an open immersion: a non-cusp is by definition a point factoring through
+`Y`, and `IsCompactificationY0.over` turns that factorisation into a
+rational point of `Y`.
 
 This is `y0HasNoRationalPoint_semiprime_of_mazurPrimes` moved onto the
-compactification, which is where its two available routes live; see that
-node's docstring for why neither can be stated against the affine
-`Y_0(pq)`.  Every one of the `61` levels has genus `≥ 2`, so none is an
-elliptic-curve rank computation. -/
-theorem cuspidal_x0_semiprime_of_mazurPrimes {p q : ℕ} (_hp : p.Prime)
-    (_hq : q.Prime) (_hpq : p ≠ q) (_hpm : p ∈ mazurIsogenyPrimes)
-    (_hqm : q ∈ mazurIsogenyPrimes)
-    (_hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ))
+compactification; see that node's docstring for why the level statements
+cannot be phrased against the affine `Y_0(pq)`. -/
+theorem cuspidal_x0_semiprime_of_mazurPrimes {p q : ℕ} (hp : p.Prime)
+    (hq : q.Prime) (hpq : p ≠ q) (hpm : p ∈ mazurIsogenyPrimes)
+    (hqm : q ∈ mazurIsogenyPrimes)
+    (hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ))
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 (p * q) strY) (hX : IsCompactificationY0 strY strX)
-    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
-  sorry
+    (hc : IsCoarseModuliY0 (p * q) strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x := by
+  have hY : Y0HasNoRationalPoint (p * q) := by
+    by_cases hpi : p ∈ isolatedIsogenyPrimes
+    · exact y0HasNoRationalPoint_of_isolatedSemiprime hpi hq hpq
+    · by_cases hqi : q ∈ isolatedIsogenyPrimes
+      · rw [Nat.mul_comm]
+        exact y0HasNoRationalPoint_of_isolatedSemiprime hqi hp hpq.symm
+      · exact y0HasNoRationalPoint_of_smallSemiprimeLevel _
+          (mem_smallSemiprimeLevels hpm hqm hpq hpi hqi hmem)
+  rintro ⟨y, hy⟩
+  refine (hY Y strY hc).false ⟨y, ?_⟩
+  rw [← hX.over, ← Category.assoc, hy]
+  exact x.2
 
 /-- **Kenku's semiprime determination, on the residual finite range**
 (sorry node): `Y_0(pq)(ℚ) = ∅` for distinct primes `p, q` BOTH in
