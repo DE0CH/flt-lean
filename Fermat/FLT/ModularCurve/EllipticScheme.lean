@@ -5634,8 +5634,229 @@ theorem mem_projGrading_projCoord (E : WeierstrassCurve ℚ) (i : Fin 3) :
   HomogeneousIdeal.mk_mem_quotientGrading
     (MvPolynomial.mem_homogeneousSubmodule _ _ |>.mpr (MvPolynomial.isHomogeneous_X _ _))
 
+/-! #### Bookkeeping for the chart at `Z ≠ 0`, and the point at infinity
+
+Two independent pieces of infrastructure, used by the two theorems below:
+
+* the algebra isomorphism `ℚ[u, v] ≃ₐ[ℚ] ℚ[X][Y]` sending the two chart
+  coordinates of `ProjChartVar 2` to the inner and outer variables, which
+  carries `projChartPolynomial E 2` to `E.toAffine.polynomial`;
+* the fact that a relevant homogeneous prime of `ℚ[X, Y, Z] ⧸ (W)`
+  containing `Z̄` is forced to be `(X̄, Z̄)`, i.e. `Fermat.pointAtInfinity`. -/
+
+section ProjChartTwoBivar
+
+open _root_.WeierstrassCurve.Projective
+open scoped Polynomial.Bivariate
+
+/-- The chart coordinate `u = X/Z` of the chart `Z ≠ 0`. -/
+def projChartTwoU : ProjChartVar 2 := ⟨0, by decide⟩
+
+/-- The chart coordinate `v = Y/Z` of the chart `Z ≠ 0`. -/
+def projChartTwoV : ProjChartVar 2 := ⟨1, by decide⟩
+
+/-- `ℚ[u, v] → ℚ[X][Y]`, `u ↦ C X`, `v ↦ Y`. -/
+noncomputable def projChartTwoToBivar :
+    MvPolynomial (ProjChartVar 2) ℚ →ₐ[ℚ] ℚ[X][Y] :=
+  MvPolynomial.aeval fun j =>
+    if (j : Fin 3) = 0 then Polynomial.C Polynomial.X else Polynomial.X
+
+/-- `ℚ[X][Y] → ℚ[u, v]`, `X ↦ u`, `Y ↦ v`. -/
+noncomputable def bivarToProjChartTwo :
+    ℚ[X][Y] →ₐ[ℚ] MvPolynomial (ProjChartVar 2) ℚ :=
+  Polynomial.aevalTower (Polynomial.aeval (MvPolynomial.X projChartTwoU))
+    (MvPolynomial.X projChartTwoV)
+
+theorem bivarToProjChartTwo_comp_projChartTwoToBivar :
+    bivarToProjChartTwo.comp projChartTwoToBivar = AlgHom.id ℚ _ := by
+  apply MvPolynomial.algHom_ext
+  rintro ⟨j, hj⟩
+  fin_cases j
+  · simp [projChartTwoToBivar, bivarToProjChartTwo, projChartTwoU]
+  · simp [projChartTwoToBivar, bivarToProjChartTwo, projChartTwoV]
+  · exact absurd rfl hj
+
+theorem projChartTwoToBivar_comp_bivarToProjChartTwo :
+    projChartTwoToBivar.comp bivarToProjChartTwo = AlgHom.id ℚ _ := by
+  apply Polynomial.algHom_ext'
+  · apply Polynomial.algHom_ext
+    simp [projChartTwoToBivar, bivarToProjChartTwo, projChartTwoU]
+  · simp [projChartTwoToBivar, bivarToProjChartTwo, projChartTwoV]
+
+/-- **The bookkeeping isomorphism `ℚ[u, v] ≃ₐ[ℚ] ℚ[X][Y]`** identifying the
+two chart coordinates of the chart `Z ≠ 0` with the two variables of
+mathlib's bivariate polynomial ring. -/
+noncomputable def projChartTwoBivarEquiv :
+    MvPolynomial (ProjChartVar 2) ℚ ≃ₐ[ℚ] ℚ[X][Y] :=
+  AlgEquiv.ofAlgHom projChartTwoToBivar bivarToProjChartTwo
+    projChartTwoToBivar_comp_bivarToProjChartTwo
+    bivarToProjChartTwo_comp_projChartTwoToBivar
+
+/-- **The chart polynomial at `Z ≠ 0` IS the affine Weierstrass
+polynomial**, once the two chart coordinates are renamed to `X` and `Y`. -/
+theorem projChartTwoBivarEquiv_projChartPolynomial (E : WeierstrassCurve ℚ) :
+    projChartTwoBivarEquiv (projChartPolynomial E 2) = E.toAffine.polynomial := by
+  have hcomp : projChartTwoToBivar.comp (dehomogenizeAt ℚ 2) =
+      MvPolynomial.aeval (![Polynomial.C Polynomial.X, (Polynomial.X : ℚ[X][Y]), 1]) := by
+    apply MvPolynomial.algHom_ext
+    intro j
+    fin_cases j <;> simp [projChartTwoToBivar, dehomogenizeAt, projChartTwoU, projChartTwoV]
+  show projChartTwoToBivar (projChartPolynomial E 2) = _
+  rw [projChartPolynomial,
+    show projChartTwoToBivar (dehomogenizeAt ℚ 2 (polynomial E))
+      = (projChartTwoToBivar.comp (dehomogenizeAt ℚ 2)) (polynomial E) from rfl,
+    hcomp, _root_.WeierstrassCurve.Projective.polynomial,
+    WeierstrassCurve.Affine.polynomial]
+  simp only [map_add, map_sub, map_mul, map_pow, MvPolynomial.aeval_C, MvPolynomial.aeval_X,
+    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons, Matrix.cons_val_two,
+    Matrix.tail_cons, Polynomial.algebraMap_apply, Algebra.algebraMap_self_apply]
+  ring
+
+/-- **A homogeneous polynomial is its `Yⁿ`-term modulo `(X, Z)`**: the only
+monomial of degree `n` in `X, Y, Z` involving neither `X` nor `Z` is `Yⁿ`. -/
+theorem sub_monomial_Y_mem_span_X_Z {n : ℕ} {q : MvPolynomial (Fin 3) ℚ}
+    (hq : q.IsHomogeneous n) :
+    q - MvPolynomial.monomial (Finsupp.single (1 : Fin 3) n)
+        (MvPolynomial.coeff (Finsupp.single (1 : Fin 3) n) q)
+      ∈ (Ideal.span {MvPolynomial.X (0 : Fin 3), MvPolynomial.X 2} :
+          Ideal (MvPolynomial (Fin 3) ℚ)) := by
+  classical
+  have himg : ({MvPolynomial.X (0 : Fin 3), MvPolynomial.X 2} :
+      Set (MvPolynomial (Fin 3) ℚ))
+      = MvPolynomial.X '' ({0, 2} : Set (Fin 3)) := (Set.image_pair _ _ _).symm
+  rw [himg, MvPolynomial.mem_ideal_span_X_image]
+  intro m hm
+  by_contra hcon
+  push Not at hcon
+  have h0 : m 0 = 0 := hcon 0 (by simp)
+  have h2 : m 2 = 0 := hcon 2 (by simp)
+  have hkey : MvPolynomial.coeff m q
+      = if Finsupp.single (1 : Fin 3) n = m then
+          MvPolynomial.coeff (Finsupp.single (1 : Fin 3) n) q else 0 := by
+    split_ifs with h
+    · rw [h]
+    · by_contra hne0
+      refine h ?_
+      have hdeg : ∑ i ∈ m.support, m i = n := by
+        simpa [Finsupp.weight_apply, Finsupp.sum] using hq hne0
+      have hsupp : m.support ⊆ {1} := by
+        intro i hi
+        simp only [Finsupp.mem_support_iff] at hi
+        fin_cases i <;> simp_all
+      have hsum : ∑ i ∈ ({1} : Finset (Fin 3)), m i = n := by
+        rw [← Finset.sum_subset hsupp (fun x _ hx => by
+          simpa using Finsupp.notMem_support_iff.mp hx)]
+        exact hdeg
+      simp only [Finset.sum_singleton] at hsum
+      ext i
+      fin_cases i
+      · simpa using h0.symm
+      · simpa using hsum.symm
+      · simpa using h2.symm
+  rw [MvPolynomial.mem_support_iff, MvPolynomial.coeff_sub, MvPolynomial.coeff_monomial,
+    hkey] at hm
+  exact hm (sub_self _)
+
+/-- **`V₊(Z̄)` is the single point `[0 : 1 : 0]`**: a relevant homogeneous
+prime of `ℚ[X, Y, Z] ⧸ (W)` containing `Z̄` is `Fermat.pointAtInfinity`.
+
+Both inclusions are elementary.  For `(X̄, Z̄) ≤ p`: the Weierstrass cubic
+reads `Z(Y² + a₁XY + a₃YZ − a₂X² − a₄XZ − a₆Z²) − X³`, so `X̄³ = Z̄ · c` in
+the quotient and primality gives `X̄ ∈ p`.  For `p ≤ (X̄, Z̄)`: `p` is
+homogeneous, so it suffices to treat a homogeneous `b` of degree `n`; lift
+it to a homogeneous `q` and split off the `Yⁿ`-term with
+`sub_monomial_Y_mem_span_X_Z`.  A nonzero leading coefficient would make
+`Ȳⁿ ∈ p`, hence (`n = 0`) `p = ⊤` or (`n > 0`) `X̄, Ȳ, Z̄ ∈ p`, and the
+latter forces the irrelevant ideal into `p` by
+`irrelevant_le_span_projCoord`, contradicting relevance. -/
+theorem eq_pointAtInfinity_of_projCoord_two_mem (E : WeierstrassCurve ℚ)
+    (p : ProjectiveSpectrum (projGrading E))
+    (hZ : projCoord E 2 ∈ p.asHomogeneousIdeal.toIdeal) : p = pointAtInfinity E := by
+  classical
+  have hcube : projCoord E 0 ^ 3 = projCoord E 2 *
+      Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
+        (MvPolynomial.X 1 ^ 2 + MvPolynomial.C E.a₁ * MvPolynomial.X 0 * MvPolynomial.X 1
+          + MvPolynomial.C E.a₃ * MvPolynomial.X 1 * MvPolynomial.X 2
+          - MvPolynomial.C E.a₂ * MvPolynomial.X 0 ^ 2
+          - MvPolynomial.C E.a₄ * MvPolynomial.X 0 * MvPolynomial.X 2
+          - MvPolynomial.C E.a₆ * MvPolynomial.X 2 ^ 2) := by
+    rw [projCoord, projCoord, ← map_pow, ← map_mul, ← sub_eq_zero, ← map_sub,
+      Ideal.Quotient.eq_zero_iff_mem]
+    refine Ideal.mem_span_singleton.2 ⟨-1, ?_⟩
+    rw [_root_.WeierstrassCurve.Projective.polynomial]
+    ring
+  have hX : projCoord E 0 ∈ p.asHomogeneousIdeal.toIdeal := by
+    refine p.isPrime.mem_of_pow_mem 3 ?_
+    rw [hcube]
+    exact Ideal.mul_mem_right _ _ hZ
+  have hinf_le : infIdeal E ≤ p.asHomogeneousIdeal.toIdeal := by
+    rw [infIdeal_eq_span, Ideal.span_le]
+    intro x hx
+    rcases hx with rfl | rfl
+    · exact hX
+    · exact hZ
+  have hkey : ∀ (n : ℕ)
+      (b : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal),
+      b ∈ p.asHomogeneousIdeal.toIdeal → b ∈ projGrading E n → b ∈ infIdeal E := by
+    intro n b hbp hbn
+    obtain ⟨q, hq, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hbn
+    have hqhom : q.IsHomogeneous n := (MvPolynomial.mem_homogeneousSubmodule _ _).mp hq
+    have hsp := sub_monomial_Y_mem_span_X_Z hqhom
+    by_cases hc0 : MvPolynomial.coeff (Finsupp.single (1 : Fin 3) n) q = 0
+    · rw [hc0] at hsp
+      simp only [map_zero, sub_zero] at hsp
+      exact Ideal.mem_map_of_mem _ hsp
+    · exfalso
+      have hdiff : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal q
+          - Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
+              (MvPolynomial.monomial (Finsupp.single (1 : Fin 3) n)
+                (MvPolynomial.coeff (Finsupp.single (1 : Fin 3) n) q)) ∈ infIdeal E := by
+        rw [← map_sub]
+        exact Ideal.mem_map_of_mem _ hsp
+      have hmono : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
+          (MvPolynomial.monomial (Finsupp.single (1 : Fin 3) n)
+            (MvPolynomial.coeff (Finsupp.single (1 : Fin 3) n) q))
+          ∈ p.asHomogeneousIdeal.toIdeal := by
+        have h1 := sub_mem hbp (hinf_le hdiff)
+        simpa using h1
+      rw [← MvPolynomial.C_mul_X_pow_eq_monomial, map_mul, map_pow] at hmono
+      have hunit : IsUnit (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
+          (MvPolynomial.C (MvPolynomial.coeff (Finsupp.single (1 : Fin 3) n) q))) :=
+        IsUnit.of_mul_eq_one (Ideal.Quotient.mk _ (MvPolynomial.C
+          (MvPolynomial.coeff (Finsupp.single (1 : Fin 3) n) q)⁻¹)) (by
+          rw [← map_mul, ← MvPolynomial.C_mul, mul_inv_cancel₀ hc0]; simp)
+      have hY : projCoord E 1 ^ n ∈ p.asHomogeneousIdeal.toIdeal := by
+        obtain ⟨u, hu⟩ := hunit
+        have h2 := Ideal.mul_mem_left p.asHomogeneousIdeal.toIdeal ((u⁻¹ : _) : _) hmono
+        rw [← mul_assoc, ← hu] at h2
+        simpa using h2
+      rcases Nat.eq_zero_or_pos n with rfl | hn
+      · exact p.isPrime.ne_top ((Ideal.eq_top_iff_one _).2 (by simpa using hY))
+      · have hYmem : projCoord E 1 ∈ p.asHomogeneousIdeal.toIdeal :=
+          p.isPrime.mem_of_pow_mem n hY
+        have hspan : Ideal.span (Set.range (projCoord E)) ≤ p.asHomogeneousIdeal.toIdeal := by
+          rw [Ideal.span_le]
+          rintro _ ⟨i, rfl⟩
+          fin_cases i
+          · exact hX
+          · exact hYmem
+          · exact hZ
+        refine p.not_irrelevant_le ?_
+        rw [← _root_.toIdeal_le_toIdeal_iff]
+        exact le_trans (irrelevant_le_span_projCoord E) hspan
+  have hle : p.asHomogeneousIdeal.toIdeal ≤ infIdeal E := by
+    intro a ha
+    rw [← DirectSum.sum_support_decompose (projGrading E) a]
+    refine Ideal.sum_mem _ fun n _ => ?_
+    exact hkey n _ (p.asHomogeneousIdeal.is_homogeneous' n ha) (SetLike.coe_mem _)
+  exact ProjectiveSpectrum.ext
+    (HomogeneousIdeal.toIdeal_injective (le_antisymm hle hinf_le))
+
+end ProjChartTwoBivar
+
 /-- **The chart ring at `Z ≠ 0` IS mathlib's affine coordinate ring**
-(sorry node — pure commutative algebra, no scheme theory).
+(PROVEN 2026-07-27; formerly a sorry node — pure commutative algebra, no
+scheme theory).
 
 `ProjChartRing E 2` is `ℚ[u, v] ⧸ (dehom₂ W)` in the two chart variables
 `ProjChartVar 2 = {0, 1}`, and `dehomogenizeAt ℚ 2` substitutes `Z ↦ 1`,
@@ -5648,16 +5869,17 @@ missing is the bookkeeping isomorphism
   `MvPolynomial (ProjChartVar 2) ℚ ≃ₐ[ℚ] ℚ[X][Y]`,  `u ↦ X`, `v ↦ Y`,
 
 carrying `projChartPolynomial E 2` to `E.toAffine.polynomial`, and then
-`Ideal.quotientEquiv` / `AdjoinRoot.quotEquiv`-style transport of the
-quotient.  `MvPolynomial.finSuccEquiv`, `MvPolynomial.pUnitAlgEquiv` and
-`MvPolynomial.renameEquiv` are the relevant mathlib entry points, together
-with `AdjoinRoot` being `Polynomial ℚ[X] ⧸ span {polynomial}` by
-definition.
+`Ideal.quotientEquivAlg` transport of the quotient.
 
-THE CHECK THAT WOULD REFUTE "OPEN": a declaration anywhere in the tree
-relating `Fermat.ProjChartRing` (or `Fermat.projChartPolynomial`) to
-`WeierstrassCurve.Affine.CoordinateRing` or to
-`WeierstrassCurve.Affine.polynomial`.  There is none.
+That is exactly how it is done: `Fermat.projChartTwoBivarEquiv` (built by
+`AlgEquiv.ofAlgHom` from `MvPolynomial.aeval` one way and
+`Polynomial.aevalTower` the other, the two round trips checked on
+generators) together with `Fermat.projChartTwoBivarEquiv_`
+`projChartPolynomial`, and `Ideal.quotientEquivAlg` — whose output is an
+`AlgEquiv`, so the commuting triangle below is `AlgEquiv.commutes` and
+needs no separate argument.  `AdjoinRoot` is `Polynomial ℚ[X] ⧸ span
+{polynomial}` by definition, which is what makes the transport typecheck
+with no bridge.
 
 NOT VACUOUS: the commuting triangle over `ℚ` is what the consumer needs —
 without it the isomorphism could be any ring isomorphism whatsoever and
@@ -5671,12 +5893,22 @@ one composition away from this one at `i = 2`. -/
 theorem exists_coordinateRingEquiv_projChartRing (E : WeierstrassCurve ℚ) :
     ∃ e : ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing,
       (e : ProjChartRing E 2 →+* E.toAffine.CoordinateRing).comp
-          (algebraMap ℚ (ProjChartRing E 2)) = algebraMap ℚ E.toAffine.CoordinateRing :=
-  sorry
+          (algebraMap ℚ (ProjChartRing E 2)) = algebraMap ℚ E.toAffine.CoordinateRing := by
+  have hJ : (Ideal.span {E.toAffine.polynomial} :
+        Ideal (Polynomial (Polynomial ℚ)))
+      = (Ideal.span {projChartPolynomial E 2}).map (projChartTwoBivarEquiv : _ →+* _) := by
+    rw [Ideal.map_span, Set.image_singleton]
+    exact congrArg (fun x => Ideal.span {x})
+      (projChartTwoBivarEquiv_projChartPolynomial E).symm
+  refine ⟨(Ideal.quotientEquivAlg (R₁ := ℚ) (Ideal.span {projChartPolynomial E 2})
+    (Ideal.span {E.toAffine.polynomial}) projChartTwoBivarEquiv hJ).toRingEquiv, ?_⟩
+  ext r
+  exact (Ideal.quotientEquivAlg (R₁ := ℚ) (Ideal.span {projChartPolynomial E 2})
+    (Ideal.span {E.toAffine.polynomial}) projChartTwoBivarEquiv hJ).commutes r
 
 /-- **The complement of the standard chart `D₊(Z)` is the point at
-infinity** (sorry node — the topological half, no group law and no
-coordinate ring).
+infinity** (PROVEN 2026-07-27; formerly a sorry node — the topological
+half, no group law and no coordinate ring).
 
 TRUE: modulo `Z̄` the homogeneous coordinate ring becomes
 `ℚ[X, Y] ⧸ (X³)` — substituting `Z = 0` into the Weierstrass cubic leaves
@@ -5701,17 +5933,64 @@ and it was stated as a single equation only because the two singletons
 elaborate in different (defeq but not syntactically equal) ambient types,
 `↥(Proj (projGrading E))` and `↥(proj E)`.
 
-`Proj.mem_basicOpen` (`x ∈ basicOpen 𝒜 f ↔ f ∉ x.asHomogeneousIdeal`) is
-the entry point for the first half; `Proj.fromOfGlobalSections` and
-`ProjectiveSpectrum.mem_basicOpen` for the second.
+## HOW IT IS PROVED (2026-07-27)
+
+Neither half is proved as an equation of singletons; the two are threaded
+together, which avoids naming `{pointAtInfinity E}` in either ambient type.
+
+* `Fermat.eq_pointAtInfinity_of_projCoord_two_mem` (above) gives
+  `V₊(Z̄) ⊆ {pointAtInfinity E}` — the whole algebraic content.
+* `Proj.fromOfGlobalSections_preimage_basicOpen` gives
+  `projInfty ⁻¹ᵁ D₊(Z̄) = (Spec ℚ).basicOpen 0 = ⊥`, since `projInfty` IS
+  `Proj.fromOfGlobalSections` at the coordinates `(0, 1, 0)` and `Z ↦ 0`
+  there.  Hence `range projInfty.base ⊆ V₊(Z̄)`.
+* `Spec ℚ` is nonempty, so picking any point `x` and applying the first
+  bullet to `projInfty.base x` gives `projInfty.base x = pointAtInfinity E`,
+  i.e. `pointAtInfinity E ∈ range projInfty.base`.  The two inclusions then
+  close by `Set.Subset.antisymm`.
 
 NOT VACUOUS: a wrong answer here is not a weaker statement but a false
 one — the equation pins a specific point of an irreducible curve. -/
 theorem compl_basicOpen_projCoord_two (E : WeierstrassCurve ℚ) :
     (↑(Proj.basicOpen (_root_.WeierstrassCurve.Projective.projGrading E)
         (projCoord E 2)) : Set ↥(Proj (_root_.WeierstrassCurve.Projective.projGrading E)))ᶜ
-      = Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base :=
-  sorry
+      = Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base := by
+  classical
+  have hpre : (_root_.WeierstrassCurve.Projective.projInfty E) ⁻¹ᵁ
+      (Proj.basicOpen (_root_.WeierstrassCurve.Projective.projGrading E) (projCoord E 2))
+      = (Spec (CommRingCat.of ℚ)).basicOpen
+          ((((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom.comp
+            (_root_.WeierstrassCurve.Projective.evalInftyQuot E)) (projCoord E 2)) :=
+    Proj.fromOfGlobalSections_preimage_basicOpen _ _ _ Nat.one_pos
+      (projCoord_mem_grading E 2)
+  have hz : (((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom.comp
+      (_root_.WeierstrassCurve.Projective.evalInftyQuot E)) (projCoord E 2) = 0 := by
+    simp [_root_.WeierstrassCurve.Projective.evalInfty]
+  rw [hz, Scheme.basicOpen_zero] at hpre
+  have hsub : Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base ⊆
+      (↑(Proj.basicOpen (_root_.WeierstrassCurve.Projective.projGrading E) (projCoord E 2)) :
+        Set ↥(Proj (_root_.WeierstrassCurve.Projective.projGrading E)))ᶜ := by
+    rintro _ ⟨x, rfl⟩ hmem
+    have hx : x ∈ (_root_.WeierstrassCurve.Projective.projInfty E) ⁻¹ᵁ
+        (Proj.basicOpen (_root_.WeierstrassCurve.Projective.projGrading E)
+          (projCoord E 2)) := hmem
+    rw [hpre] at hx
+    simp at hx
+  have hpt : ∀ y : ↥(Proj (_root_.WeierstrassCurve.Projective.projGrading E)),
+      y ∈ (↑(Proj.basicOpen (_root_.WeierstrassCurve.Projective.projGrading E)
+        (projCoord E 2)) :
+        Set ↥(Proj (_root_.WeierstrassCurve.Projective.projGrading E)))ᶜ →
+      y = pointAtInfinity E := by
+    intro y hy
+    refine eq_pointAtInfinity_of_projCoord_two_mem E y ?_
+    by_contra h
+    exact hy ((Proj.mem_basicOpen _ _ _).mpr h)
+  obtain ⟨x⟩ : Nonempty ↥(Spec (CommRingCat.of ℚ)) := ⟨⟨⊥, Ideal.isPrime_bot⟩⟩
+  have hbase : (_root_.WeierstrassCurve.Projective.projInfty E).base x =
+      pointAtInfinity E := hpt _ (hsub ⟨x, rfl⟩)
+  refine Set.Subset.antisymm (fun y hy => ?_) hsub
+  rw [hpt y hy, ← hbase]
+  exact ⟨x, rfl⟩
 
 /-- **The affine chart `Z ≠ 0`, pinned at the POINT AT INFINITY**
 (PROVEN from `exists_projChartRingEquiv`, `exists_coordinateRingEquiv_`
@@ -5802,11 +6081,11 @@ chart may be composed with it.  So the leaf splits into
 * `exists_affineChart_projInfty` (PROVEN above) — the same statement with
   `gl` deleted and the removed point taken to be `projInfty E`;
 
-and the two genuinely open pieces are the sub-leaves of the latter,
-`exists_coordinateRingEquiv_projChartRing` (commutative algebra) and
-`compl_basicOpen_projCoord_two` (topology of `Proj`).  Neither mentions a
-group law, which is the point of the cut: no `ProjGroupLaw` survives into
-either.
+and the two sub-leaves of the latter — `exists_coordinateRingEquiv_`
+`projChartRing` (commutative algebra) and `compl_basicOpen_projCoord_two`
+(topology of `Proj`) — are both PROVEN as of 2026-07-27, so the whole
+subsection is closed.  Neither mentions a group law, which is the point of
+the cut: no `ProjGroupLaw` survives into either.
 
 The first bullet of the old plan is RETIRED as already available: the
 basic-open cover of `Proj` **is** at this pin, as `Proj.awayι`,
