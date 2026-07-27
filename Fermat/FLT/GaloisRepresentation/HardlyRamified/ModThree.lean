@@ -44418,63 +44418,218 @@ theorem exists_forall_pow_eq_one_ray_class
   exact sub_eq_zero.mp h1
 
 set_option maxHeartbeats 1000000 in
-/-- **Artin's DESCENT with RAMIFICATION ALLOWED** (sorry node, created
+/-- **Childress Proposition 5.2.2 IN THE RAMIFIED CASE: `ker A ⊆ P⁺·N`,
+with NO unramifiedness hypothesis on `χ`** (sorry node, created
+2026-07-27 as the SINGLE sub-leaf of
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
+just below, which is PROVEN over it).
+
+**This is `artinDivisorKernel_le_sup_ray_class` above with the binder
+`hunr` DELETED, and nothing else changed** — same `F`, `χ`, `hmul`, `V`,
+`hVopen`, `hVker`, `ℓ`, `hℓ`, `hℓ3`, `k`, `hord`, `c`, `hcmul`,
+`hcfrob`, `hartin`, `hcycl`, `mm`, `hmm`, `hmmram`, `φ`, `d`, `Im`, `A`,
+`P`, `N`, `hd`, `hA`, `hφv`, `hφd`, `hIm`, `hP`, `hN`, `hidx₁`, `hidx₂`,
+and the same conclusion `A ≤ P ⊔ N`. It is therefore STRICTLY MORE
+GENERAL, and the `hunr`-carrying version is its instantiation.
+
+**WHY A SECOND NODE EXISTS RATHER THAN A DELETED BINDER, and what the
+fleet should do with it.** Deleting `hunr` from
+`artinDivisorKernel_le_sup_ray_class` is the right end state, but that
+declaration is an OPEN leaf under CONCURRENT OWNERSHIP by two other
+worktrees at the time of writing (checked in `~/.flt-inflight.jsonl`,
+2026-07-27), and editing another owner's signature from a third worktree
+is exactly the conflict this development has been burned by. So the
+general form is stated here instead. **When either owner's proof lands,
+the correct integration is to prove `artinDivisorKernel_le_sup_ray_class`
+from THIS one by `exact` — its `hunr` is simply discarded — and to
+delete this paragraph.** Do not keep two independent proofs of Prop
+5.2.2; there is only one theorem here.
+
+**WHY `hunr` IS NOT NEEDED — the mathematics, not binder bookkeeping.**
+Childress's proof of Prop 5.2.2 (pp. 121–123) nowhere uses that `M/F` is
+unramified. What it uses is that the modulus `mm` is DIVISIBLE BY EVERY
+RAMIFIED PRIME, so that the Artin map is defined on `I_F(mm)` and no
+Frobenius at a ramified prime is ever evaluated. That condition is
+exactly `hmmram`, which is already a hypothesis here and which is a
+CONCLUSION of the `hunr`-free `exists_artinDivisorPackage_ray_class`
+above (which obtains it from `exists_radical_isRamifiedChar_ray_class`,
+i.e. from finiteness of the ramified set). Concretely: `hIm` makes `Im`
+the divisors supported away from `mm`, `hA` makes `A = φ.ker ⊓ Im`, `hP`
+generates `P` by divisors of `δ ≡ 1 (mod mm)` and `hN` generates `N` by
+`single v (orderOf (χ (globalFrob v)))` for `v ∤ mm` — so by `hmmram`
+every prime occurring with nonzero exponent anywhere in `Im`, `A`, `P`
+or `N` is UNRAMIFIED for `χ`, and the junk values `χ (globalFrob w)` at
+ramified `w` (Frobenius being well defined only modulo inertia there)
+are never evaluated. `hunr` merely forces the ramified set to be EMPTY,
+which makes `hmmram` vacuous; it adds no information the argument uses.
+
+**THE CHECK THAT WOULD REFUTE THIS**, since a route audit is a dated
+claim: `hmmram` must still be among the hypotheses in the displayed
+form, and `Im`, `A`, `P`, `N` must still be pinned by `hIm`, `hA`, `hP`,
+`hN` to be supported away from `mm`. If any of those pinnings is
+weakened — in particular if `A` is taken in the FULL divisor group
+rather than inside `Im` — the statement becomes FALSE, and false for
+reasons having nothing to do with ramification: see the FALSITY AUDIT on
+`artinDivisorKernel_le_sup_ray_class` above, whose counterexample
+(`F = ℚ`, `χ ≡ 1`, `mm = (5)`, `A = φ.ker`) satisfies `hunr`
+VACUOUSLY. That counterexample is itself the sharpest available evidence
+that `hunr` is not what makes this statement true. AXIS SEARCHED: the
+hypothesis-threading axis, and the mathematics of 5.2.2 as Childress
+runs it; NOT an independent reproof of 5.2.2, which is precisely the
+open content of this leaf.
+
+**FAITHFULNESS (audited 2026-07-27): TRUE as stated, and non-vacuous.**
+True by Childress Prop 5.2.2 as above. Non-vacuous for exactly the
+reasons recorded on the `hunr`-carrying version: the conclusion
+`A ≤ P ⊔ N` is what the counting in the consumer converts into `P ≤ A`,
+i.e. into reciprocity itself; `hidx₁`/`hidx₂` are carried as hypotheses
+precisely to exclude a too-coarse `mm` (at `F = ℚ`, `M = ℚ(i)`,
+`mm = (2)` the clause `hidx₂` reads `2 ≤ 1` and fails, while the true
+conductor `(4)` gives `2 ≤ 2`); and `hartin`/`hcycl` are the two
+genuinely unbounded inputs — Artin's Lemma 5.2.8, and the cyclotomic
+base case at EVERY number field `E`, not merely at `F`, because the
+descent runs over the auxiliary field.
+
+**Mathlib survey (2026-07-27), corrected on one point.** As on the
+sibling: ray class groups, the Artin map, global norm groups and
+conductors are absent from the pin and from `~/cs/FLT`. But cyclic TATE
+COHOMOLOGY *is* in the pin
+(`Mathlib/RepresentationTheory/Homological/TateCohomology/Basic.lean`,
+`Mathlib/RepresentationTheory/Homological/GroupCohomology/FiniteCyclic.lean`)
+and must not be rebuilt. What is genuinely absent from all three trees is
+the ARITHMETIC input, not the homological algebra: the Herbrand quotient
+(no `herbrand` anywhere in mathlib), the idele class group, the local
+norm index, and the ray-class dictionary. References: Childress *Class
+Field Theory* §5.2; Neukirch *ANT* ch. VI. -/
+theorem artinDivisorKernel_le_sup_ramified_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (hartin : ∀ (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (S : Finset ℕ),
+      ∃ (m : ℕ) (H : Subgroup (Γ F)), 0 < m ∧
+        (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+        (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+        IsOpen (H : Set (Γ F)) ∧
+        (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
+        (∀ σ ∈ H, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ) → χ σ = 1) ∧
+        (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+          (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+        globalFrob p ∈ H)
+    (hcycl : ∀ (E : Type u) [Field E] [NumberField E]
+      (χ' : Γ E → Dickson.K 3), (∀ a b : Γ E, χ' (a * b) = χ' a * χ' b) →
+      ∀ m : ℕ, 0 < m →
+      (∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ' σ = 1) →
+      ∀ c' : Ideal (NumberField.RingOfIntegers E) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers E), I ≠ ⊥ → J ≠ ⊥ →
+        c' (I * J) = c' I * c' J) →
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        c' v.asIdeal = χ' (globalFrob v)) →
+      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+        (∀ φ : E →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
+        δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
+        c' (Ideal.span {δ}) = 1)
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+        χ (a * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
+          ≠ 1) → w.asIdeal ∣ mm)
+    (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (Im A P N : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v))
+    (hA : A = φ.ker ⊓ Im)
+    (hφv : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+        = χ (globalFrob v))
+    (hφd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ}))
+    (hIm : ∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), v.asIdeal ∣ mm → Multiplicative.toAdd x v = 0)
+    (hP : P = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) ∧
+      δ - 1 ∈ mm ∧ y = d δ})
+    (hN : N = Subgroup.closure {y | ∃ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
+      y = Multiplicative.ofAdd (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))})
+    (hidx₁ : A.relIndex Im ≠ 0) (hidx₂ : A.relIndex Im ≤ (P ⊔ N).relIndex Im) :
+    A ≤ P ⊔ N :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin's DESCENT with RAMIFICATION ALLOWED** (**PROVEN 2026-07-27**
+as glue over the new sub-leaf
+`artinDivisorKernel_le_sup_ramified_ray_class` just above; created
 2026-07-27 as the SINGLE sub-leaf of
 `exists_isAdmissibleModulus_primePow_ray_class` just below, which is
 PROVEN over it): this is
 `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` above
 WITH THE HYPOTHESIS `hunr` DELETED, and nothing else changed.
 
-**WHY THIS LEAF EXISTS AND WHY IT SHOULD BE SHORT-LIVED — read before
-dispatching a prover at it.** `hunr` is *redundant* everywhere it occurs
-in the Artin chain above, and the correct fleet-level repair is to
-DELETE the `hunr` binder from the four statements that carry it
-(`artinDivisorKernel_le_sup_ray_class`,
-`exists_artinIdealGroup_relIndex_ray_class`,
-`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`,
-`exists_conductor_artinSymbol_span_eq_one_ray_class`) together with the
-three call sites that thread it through — a ~12-line diff. THE MOMENT
-that lands, this leaf's proof is
-`exact exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class …`
-with the `hunr` argument omitted, and this declaration should be deleted
-outright in favour of the generalized original. It is stated separately
-ONLY because `artinDivisorKernel_le_sup_ray_class` is an open leaf under
-active concurrent ownership at the time of writing, and editing its
-signature from a second worktree is exactly the conflict this
-development has been burned by.
+**PROVEN 2026-07-27 as glue over the single new sub-leaf
+`artinDivisorKernel_le_sup_ramified_ray_class` immediately above** —
+Childress Prop 5.2.2 with ramification allowed. The assembly here is the
+concatenation of the two already-proven bodies of
+`exists_artinIdealGroup_relIndex_ray_class` and
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` with
+the `hunr` argument dropped: the package
+`exists_artinDivisorPackage_ray_class` (which is `hunr`-free) supplies
+`mm`, `hmmram`, `φ`, `d`, `Im`, `A`, `P`, `N` and both index facts; the
+new sub-leaf supplies `A ≤ P ⊔ N`; `P ≤ Im` and `N ≤ Im` are the same
+bookkeeping as in the `hunr`-carrying chain; and
+`le_of_le_of_relIndex_le_ray_class` turns the three into `P ⊔ N ≤ A`,
+whence `c ((δ)) = 1` through `hφd`.
 
-**THE ARGUMENT THAT `hunr` IS REDUNDANT** (2026-07-27; this CORRECTS the
-sentence "`hunr` is load-bearing: without it `χ` need not cut out an
-extension unramified outside `mm`" in the docstring of
-`artinDivisorKernel_le_sup_ray_class` above, which is stale). `hunr` is
-consumed in exactly ONE proof body in the whole chain — the application
-of `artinDivisorKernel_le_sup_ray_class` inside
-`exists_artinIdealGroup_relIndex_ray_class`. And that node ALREADY
-receives, as a separate hypothesis `hmmram`, the statement
+**TWO EARLIER FRAMINGS OF THIS LEAF WERE WRONG. Do not act on either.**
+Both are recorded here because each of them was dispatched as work and
+each had to be abandoned.
 
-    ∀ w, IsRamifiedCharRayClass F χ w → w.asIdeal ∣ mm
+*Framing 1 — "`hunr` is redundant, so this is a ~12-line hypothesis
+deletion."* REFUTED. The crux `artinDivisorKernel_le_sup_ray_class`
+above still carries `hunr` — the norm-index repair of 2026-07-27 renamed
+the norm-index leaf and gave it a `mm₀ ∣ mm` modulus choice but never
+touched that binder — so there was no `hunr`-free general node to
+`exact` to. Deleting the binder wholesale would also have broken the
+file: `hunr` is genuinely CONSUMED in proof bodies OUTSIDE the
+four-statement Artin chain, in the downstream conductor /
+narrow-principal chain below (grep `hunr` and look past this cluster).
+The "one call site" claim was about the Artin chain only.
 
-i.e. *`χ` is unramified outside `mm`* — which is precisely the condition
-Childress Prop. 5.2.2 needs in order to run the divisor-group argument
-inside `I_F(mm)`, and precisely what the stale sentence claims is
-missing. `hmmram` is not an extra assumption to be arranged: it is a
-CONCLUSION of the already-PROVEN, `hunr`-free
-`exists_artinDivisorPackage_ray_class`, which produces it from
-`exists_ramifiedModulus_ray_class` (finiteness of the ramified set).
-`hunr` merely forces the ramified set to be EMPTY, which makes `hmmram`
-vacuous; it adds no information the crux does not already have.
+*Framing 2 — "check whether it has become redundant, and delete it if
+so."* ALSO REFUTED, by direct comparison. Diffing this statement against
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` above
+with names normalized, the ONLY differences are the four-line `hunr`
+binder and `:= by …` vs `:= sorry`. Same `F`, `χ`, `hmul`, `V`,
+`hVopen`, `hVker`, `ℓ`, `hℓ`, `hℓ3`, `k`, `hord`, `c`, `hcmul`,
+`hcfrob`, `hcycl`, identical conclusion. So it was not redundant, it was
+never going to become redundant by itself, and it needed a real proof.
 
-**THE CHECK THAT WOULD REFUTE THIS**, since a route audit is a dated
-claim: read the binder list of `artinDivisorKernel_le_sup_ray_class` and
-confirm `hmmram` is still among its hypotheses in the form displayed
-above, and confirm by `grep -n 'hunr'` that no proof body other than
-`exists_artinIdealGroup_relIndex_ray_class`'s single application of the
-crux consumes it. If the crux ever loses `hmmram`, or acquires a genuine
-use of `hunr`, this leaf becomes a real mathematical obligation (the
-ramified case of Childress 5.2.2) rather than a bookkeeping placeholder,
-and this paragraph must be re-derived before it is relied on. AXIS
-SEARCHED: the hypothesis-threading axis (which binders reach which proof
-bodies) — NOT the mathematics of 5.2.2 itself, which is untouched here.
+**What `hunr` was actually buying, and where the obligation went.** An
+everywhere-unramified `χ` has trivial finite conductor, so every nonzero
+`mm` is admissible and the ramified support never has to be handled.
+Without it the support must be handled, and the place it has to be
+handled is Childress Prop 5.2.2 — which is why the whole remaining
+content of this leaf is now the single sub-leaf above, and why that
+sub-leaf takes `hmmram` (`χ` unramified outside `mm`) as the replacement
+for `hunr`. See that leaf's docstring for why `hmmram` is what
+Childress's argument actually consumes, and for the counterexample
+showing `hunr` is not what makes the crux true.
 
 **FAITHFULNESS (audited 2026-07-27): TRUE as stated, and strictly weaker
 in hypotheses than its `hunr`-carrying original**, hence non-vacuous for
@@ -44540,8 +44695,70 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_clas
       ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
-        δ - 1 ∈ mm → c (Ideal.span {δ}) = 1 :=
-  sorry
+        δ - 1 ∈ mm → c (Ideal.span {δ}) = 1 := by
+  classical
+  -- (A3b-1) The divisor package. It is `hunr`-FREE, and among its outputs is
+  -- `hmmram` — `χ` is unramified outside `mm` — which is the hypothesis that
+  -- replaces `hunr` in the ramified case.
+  obtain ⟨mm, hmm, hmmram, φ, d, Im, A, P, N, hd, hA, hφv, hφd, hIm, hP, hN,
+      hidx₁, hidx₂⟩ :=
+    exists_artinDivisorPackage_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c
+      hcmul hcfrob
+  -- (A3b-2') Childress Prop 5.2.2, ramification allowed: the only remaining
+  -- mathematical content of this leaf. Artin's Lemma is supplied by the
+  -- `hunr`-free `exists_artinAuxiliaryField_ray_class`.
+  have hcrux : A ≤ P ⊔ N :=
+    artinDivisorKernel_le_sup_ramified_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord
+      c hcmul hcfrob
+      (fun p S => exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S)
+      hcycl mm hmm hmmram φ d Im A P N hd hA hφv hφd hIm hP hN hidx₁ hidx₂
+  -- `P ≤ Im`: the divisor of a ray element is supported away from `mm`, because
+  -- `δ ≡ 1 (mod mm)` forces `δ ∉ v` for every `v ∣ mm`.
+  have hPIm : P ≤ Im := by
+    rw [hP, Subgroup.closure_le]
+    rintro y ⟨δ, hδ0, _hδpos, hδmem, rfl⟩
+    rw [SetLike.mem_coe, hIm]
+    intro v hv
+    have hmv : mm ≤ v.asIdeal := Ideal.dvd_iff_le.mp hv
+    have hδv : δ ∉ v.asIdeal := by
+      intro hmem
+      have hsub : δ - (δ - 1) ∈ v.asIdeal := Ideal.sub_mem _ hmem (hmv hδmem)
+      rw [sub_sub_cancel] at hsub
+      exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ hsub isUnit_one)
+    have hnot : ¬ (v.asIdeal ^ 1 ∣ Ideal.span {δ}) := by
+      rw [pow_one, Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff]
+      exact hδv
+    have h0 : ((0 : ℕ) : ℤ) ≤ Multiplicative.toAdd (d δ) v :=
+      (hd δ hδ0 v 0).mp (by simp)
+    have h1' : ¬ ((1 : ℕ) : ℤ) ≤ Multiplicative.toAdd (d δ) v := fun h =>
+      hnot ((hd δ hδ0 v 1).mpr h)
+    push_cast at h0 h1'
+    omega
+  -- `N ≤ Im`: each generator is supported at a single prime not dividing `mm`.
+  have hNIm : N ≤ Im := by
+    rw [hN, Subgroup.closure_le]
+    rintro y ⟨v, hv, rfl⟩
+    rw [SetLike.mem_coe, hIm]
+    intro w hw
+    have hwv : w ≠ v := by
+      rintro rfl
+      exact hv hw
+    simp [hwv]
+  -- Pure counting: `A ≤ P ⊔ N ≤ Im` with `[Im : A]` finite and at most
+  -- `[Im : P ⊔ N]` forces `P ⊔ N = A`, in particular `P ≤ A`.
+  have hPNA : P ⊔ N ≤ A :=
+    le_of_le_of_relIndex_le_ray_class A (P ⊔ N) Im hcrux (sup_le hPIm hNIm) hidx₁ hidx₂
+  refine ⟨mm, hmm, ?_⟩
+  intro δ hδ0 hδpos hδcong
+  have hdP : d δ ∈ P := by
+    rw [hP]
+    exact Subgroup.subset_closure ⟨δ, hδ0, hδpos, hδcong, rfl⟩
+  have hdA : d δ ∈ A := hPNA (Subgroup.mem_sup_left hdP)
+  rw [hA] at hdA
+  have hker : φ (d δ) = 1 := MonoidHom.mem_ker.mp (Subgroup.mem_inf.mp hdA).1
+  have h := hφd δ hδ0
+  rw [hker] at h
+  simpa using h.symm
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for a character of PRIME POWER order, WITHOUT an
@@ -44599,13 +44816,29 @@ they make `c` the Artin symbol of `χ` rather than an arbitrary function
 on ideals — and `hℓ3` is load-bearing because the cyclotomic base case
 of the descent fails at the residue characteristic.
 
+**STATUS 2026-07-27: the sub-leaf above is now PROVEN, and the "just
+delete `hunr`" repair it once proposed is REFUTED.** Two things were
+found by running the refutation check below rather than trusting the
+audit. (1) `artinDivisorKernel_le_sup_ray_class` still carries `hunr`
+and is under concurrent ownership, so there never was an `hunr`-free
+general node to `exact` to. (2) The localization claim in the previous
+paragraph is FALSE OUTSIDE THIS CLUSTER: `hunr` is genuinely consumed in
+proof bodies of the downstream conductor / narrow-principal chain below
+— it is applied inside `artinSymbol_span_eq_one_of_pos_of_conductor_ray_class`
+(as `hunr ⟨w, hwmax.isPrime, hw0⟩`) and inside
+`exists_artinSymbol_isNarrowPrincipal_ray_class` (as
+`fun w d σ hσ => by rw [hunr w d σ hσ, one_pow]`) — so a blanket binder
+deletion would not have been grep-safe and would have broken the file. The real obligation was the ramified
+case of Childress Prop 5.2.2, and it now lives in the single new leaf
+`artinDivisorKernel_le_sup_ramified_ray_class`; read that docstring
+rather than this paragraph for the current route.
+
 **THE CHECK THAT WOULD REFUTE THE ROUTE RECORDED HERE**, since a route
-audit is a dated claim: `grep -n 'hunr' ModThree.lean` and confirm the
-only occurrence inside a PROOF body (as opposed to a statement) is still
-the single application of `artinDivisorKernel_le_sup_ray_class` inside
-`exists_artinIdealGroup_relIndex_ray_class`. If further nodes have since
-acquired `hunr`, the localization claim above is stale and must be
-re-derived before it is relied on. -/
+audit is a dated claim: `grep -n 'hunr' ModThree.lean` and confirm which
+occurrences are inside PROOF bodies as opposed to statements. Do this
+over the WHOLE file, not just the Artin cluster — restricting the grep
+to the cluster is precisely the error that produced the refuted "one
+call site" claim. -/
 theorem exists_isAdmissibleModulus_primePow_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
