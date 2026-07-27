@@ -100,7 +100,7 @@ def toDual : CartierDual R A ≃ₗ[R] Module.Dual R A :=
 
 instance : FunLike (CartierDual R A) A R where
   coe f := toDual R A f
-  coe_injective f g h := (toDual R A).injective (DFunLike.coe_injective h)
+  coe_injective _ _ h := (toDual R A).injective (DFunLike.coe_injective h)
 
 @[simp] lemma coe_apply (f : CartierDual R A) (a : A) : toDual R A f a = f a := rfl
 
@@ -166,6 +166,7 @@ noncomputable instance instCoalgebraStruct : CoalgebraStruct R (CartierDual R A)
 
 @[simp] lemma counit_apply (f : CartierDual R A) : counit (R := R) f = f 1 := rfl
 
+omit [Module.Finite R A] [Module.Free R A] in
 /-- `toDual` and its inverse cancel on the tensor square. -/
 lemma map_toDual_map_symm (x : Module.Dual R A ⊗[R] Module.Dual R A) :
     TensorProduct.map (toDual R A).toLinearMap (toDual R A).toLinearMap
@@ -201,6 +202,7 @@ omit [Module.Finite R A] [Module.Free R A] in
 noncomputable def evalAt (a : A) : CartierDual R A →ₗ[R] R :=
   LinearMap.applyₗ a ∘ₗ (toDual R A).toLinearMap
 
+omit [Module.Finite R A] [Module.Free R A] in
 @[simp] lemma evalAt_apply (a : A) (f : CartierDual R A) : evalAt R A a f = f a := rfl
 
 /-- The pairing of the tensor square of the Cartier dual against a pair of elements of `A`:
@@ -209,6 +211,7 @@ noncomputable def pairMap (a b : A) :
     CartierDual R A ⊗[R] CartierDual R A →ₗ[R] R :=
   (TensorProduct.lid R R).toLinearMap ∘ₗ TensorProduct.map (evalAt R A a) (evalAt R A b)
 
+omit [Module.Finite R A] [Module.Free R A] in
 @[simp] lemma pairMap_tmul (a b : A) (f g : CartierDual R A) :
     pairMap a b (f ⊗ₜ[R] g) = f a * g b := by
   simp [pairMap]
@@ -219,16 +222,19 @@ noncomputable def pairMap₃ (a b c : A) :
     CartierDual R A ⊗[R] (CartierDual R A ⊗[R] CartierDual R A) →ₗ[R] R :=
   (TensorProduct.lid R R).toLinearMap ∘ₗ TensorProduct.map (evalAt R A a) (pairMap b c)
 
+omit [Module.Finite R A] [Module.Free R A] in
 @[simp] lemma pairMap₃_tmul (a b c : A) (f g h : CartierDual R A) :
     pairMap₃ a b c (f ⊗ₜ[R] (g ⊗ₜ[R] h)) = f a * (g b * h c) := by
   simp [pairMap₃]
 
+omit [Module.Finite R A] [Module.Free R A] in
 /-- The triple pairing splits off its first factor, for an arbitrary second argument. -/
 @[simp] lemma pairMap₃_tmul_right (a b c : A) (f : CartierDual R A)
     (y : CartierDual R A ⊗[R] CartierDual R A) :
     pairMap₃ a b c (f ⊗ₜ[R] y) = f a * pairMap b c y := by
   simp [pairMap₃]
 
+omit [Module.Finite R A] [Module.Free R A] in
 /-- The pairing agrees with `TensorProduct.dualDistrib` transported along `toDual`. -/
 lemma pairMap_eq_dualDistrib (x : CartierDual R A ⊗[R] CartierDual R A) (a b : A) :
     pairMap a b x
@@ -281,7 +287,7 @@ lemma pairMap₃_eq_tripleEquiv
       | zero => simp [tripleEquiv]
       | add y z hy hz =>
           simp only [tmul_add, map_add, LinearMap.add_apply, hy, hz]
-      | tmul g h => simp [tripleEquiv, TensorProduct.dualDistribEquiv, mul_assoc]
+      | tmul g h => simp [tripleEquiv, TensorProduct.dualDistribEquiv]
 
 /-- **Faithfulness of the triple pairing.** -/
 lemma pairMap₃_injective
@@ -295,11 +301,12 @@ lemma pairMap₃_injective
   | tmul a u =>
       induction u with
       | zero => simp
-      | add u v hu hv => simp only [tmul_add, map_add, LinearMap.add_apply, hu, hv]
+      | add u v hu hv => simp only [tmul_add, map_add, hu, hv]
       | tmul b c => simpa [pairMap₃_eq_tripleEquiv] using h a b c
 
 /-! ### The coalgebra axioms -/
 
+omit [Module.Finite R A] [Module.Free R A] in
 /-- Pairing formula for the left-bracketed coassociator. -/
 lemma pairMap₃_assoc_tmul (a b c : A) (y : CartierDual R A ⊗[R] CartierDual R A)
     (g : CartierDual R A) :
@@ -327,7 +334,7 @@ theorem coassoc_dual :
     induction x with
     | zero => simp
     | tmul u v => rw [LinearMap.rTensor_tmul, pairMap₃_assoc_tmul, pairMap_comul, pairMap_tmul]
-    | add u v hu hv => simp only [map_add, LinearMap.add_apply, hu, hv]
+    | add u v hu hv => simp only [map_add, hu, hv]
   have hR : ∀ x : CartierDual R A ⊗[R] CartierDual R A,
       pairMap₃ a b c ((comul (R := R) (A := CartierDual R A)).lTensor (CartierDual R A) x)
         = pairMap a (b * c) x := by
@@ -335,7 +342,7 @@ theorem coassoc_dual :
     induction x with
     | zero => simp
     | tmul u v => rw [LinearMap.lTensor_tmul, pairMap₃_tmul_right, pairMap_comul, pairMap_tmul]
-    | add u v hu hv => simp only [map_add, LinearMap.add_apply, hu, hv]
+    | add u v hu hv => simp only [map_add, hu, hv]
   simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
   rw [hL, hR, pairMap_comul, pairMap_comul, mul_assoc]
 
@@ -347,7 +354,7 @@ lemma lid_rTensor_counit_apply (x : CartierDual R A ⊗[R] CartierDual R A) (b :
   induction x with
   | zero => simp
   | tmul u v => simp
-  | add u v hu hv => simp only [map_add, add_apply, hu, hv, LinearMap.add_apply]
+  | add u v hu hv => simp only [map_add, add_apply, hu, hv]
 
 /-- Pairing formula for the right counit contraction. -/
 lemma rid_lTensor_counit_apply (x : CartierDual R A ⊗[R] CartierDual R A) (a : A) :
@@ -357,7 +364,7 @@ lemma rid_lTensor_counit_apply (x : CartierDual R A ⊗[R] CartierDual R A) (a :
   induction x with
   | zero => simp
   | tmul u v => simp [mul_comm]
-  | add u v hu hv => simp only [map_add, add_apply, hu, hv, LinearMap.add_apply]
+  | add u v hu hv => simp only [map_add, add_apply, hu, hv]
 
 /-- Left counitality for the Cartier dual: the transpose of `1 * a = a` in `A`. -/
 theorem rTensor_counit_comp_comul_dual :
@@ -433,12 +440,67 @@ theorem comul_one_dual : comul (R := R) (1 : CartierDual R A) = 1 := by
   show counit (R := R) (a * b) = pairMap a b ((1 : CartierDual R A) ⊗ₜ[R] (1 : CartierDual R A))
   rw [pairMap_tmul, one_apply, one_apply, Bialgebra.counit_mul]
 
+/-- The product of two Sweedler representations represents the comultiplication of the product.
+This is `Bialgebra.comul_mul` in indexed form. -/
+def reprMul {ι κ : Type*} {a b : A} (𝓐 : Coalgebra.Repr R a ι) (𝓑 : Coalgebra.Repr R b κ) :
+    Coalgebra.Repr R (a * b) (ι × κ) where
+  index := 𝓐.index ×ˢ 𝓑.index
+  left p := 𝓐.left p.1 * 𝓑.left p.2
+  right p := 𝓐.right p.1 * 𝓑.right p.2
+  eq := by
+    rw [Finset.sum_product, Bialgebra.comul_mul, ← 𝓐.eq, ← 𝓑.eq, Finset.sum_mul_sum]
+    exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ =>
+      (Algebra.TensorProduct.tmul_mul_tmul _ _ _ _).symm
+
+omit [IsCocomm R A] [Module.Finite R A] [Module.Free R A] in
+@[simp] lemma reprMul_index {ι κ : Type*} {a b : A}
+    (𝓐 : Coalgebra.Repr R a ι) (𝓑 : Coalgebra.Repr R b κ) :
+    (reprMul 𝓐 𝓑).index = 𝓐.index ×ˢ 𝓑.index := rfl
+
+omit [IsCocomm R A] [Module.Finite R A] [Module.Free R A] in
+@[simp] lemma reprMul_left {ι κ : Type*} {a b : A}
+    (𝓐 : Coalgebra.Repr R a ι) (𝓑 : Coalgebra.Repr R b κ) (p : ι × κ) :
+    (reprMul 𝓐 𝓑).left p = 𝓐.left p.1 * 𝓑.left p.2 := rfl
+
+omit [IsCocomm R A] [Module.Finite R A] [Module.Free R A] in
+@[simp] lemma reprMul_right {ι κ : Type*} {a b : A}
+    (𝓐 : Coalgebra.Repr R a ι) (𝓑 : Coalgebra.Repr R b κ) (p : ι × κ) :
+    (reprMul 𝓐 𝓑).right p = 𝓐.right p.1 * 𝓑.right p.2 := rfl
+
+omit [Module.Finite R A] [Module.Free R A] in
+/-- The pairing of a PRODUCT in the tensor square of the Cartier dual. This is the statement
+that pairing against `a ⊗ b` is a map of convolution algebras, and it is what makes the
+bialgebra compatibility self-dual. -/
+lemma pairMap_mul {ι κ : Type*} {a b : A} (𝓐 : Coalgebra.Repr R a ι) (𝓑 : Coalgebra.Repr R b κ)
+    (x y : CartierDual R A ⊗[R] CartierDual R A) :
+    pairMap a b (x * y)
+      = ∑ i ∈ 𝓐.index, ∑ j ∈ 𝓑.index,
+          pairMap (𝓐.left i) (𝓑.left j) x * pairMap (𝓐.right i) (𝓑.right j) y := by
+  induction x with
+  | zero => simp
+  | add x₁ x₂ h₁ h₂ =>
+      simp only [add_mul, map_add, h₁, h₂, ← Finset.sum_add_distrib]
+  | tmul u v =>
+      induction y with
+      | zero => simp
+      | add y₁ y₂ h₁ h₂ =>
+          simp only [mul_add, map_add, h₁, h₂, ← Finset.sum_add_distrib]
+      | tmul u' v' =>
+          rw [Algebra.TensorProduct.tmul_mul_tmul, pairMap_tmul, mul_apply_repr 𝓐,
+            mul_apply_repr 𝓑, Finset.sum_mul_sum]
+          exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ => by
+            rw [pairMap_tmul, pairMap_tmul]; ring
+
 /-- The comultiplication of the Cartier dual is multiplicative. This is the self-dual bialgebra
 compatibility: it is the transpose of `Δ_A (a * b) = Δ_A a * Δ_A b` together with the
 convolution formula for the product on the dual. -/
 theorem comul_mul_dual (f g : CartierDual R A) :
-    comul (R := R) (f * g) = comul (R := R) f * comul (R := R) g :=
-  sorry
+    comul (R := R) (f * g) = comul (R := R) f * comul (R := R) g := by
+  refine pairMap_injective fun a b => ?_
+  rw [pairMap_comul, mul_apply_repr (reprMul (ℛ R a) (ℛ R b)) f g,
+    pairMap_mul (ℛ R a) (ℛ R b)]
+  simp only [pairMap_comul, reprMul_index, reprMul_left, reprMul_right]
+  rw [Finset.sum_product]
 
 noncomputable instance instBialgebra : Bialgebra R (CartierDual R A) where
   counit_one := counit_one_dual
@@ -456,6 +518,7 @@ noncomputable instance instHopfAlgebraStruct : HopfAlgebraStruct R (CartierDual 
 @[simp] lemma antipode_apply (f : CartierDual R A) (a : A) :
     HopfAlgebra.antipode R f a = f (HopfAlgebra.antipode R a) := rfl
 
+omit [Module.Finite R A] [Module.Free R A] in
 /-- Evaluating a product in the Cartier dual against `a : A` contracts the tensor square with
 a Sweedler representation of `comul a`. -/
 lemma mul'_apply_repr {ι : Type*} {a : A} (𝓡 : Coalgebra.Repr R a ι)
@@ -476,7 +539,7 @@ lemma pairMap_rTensor_antipode (a b : A) (x : CartierDual R A ⊗[R] CartierDual
   induction x with
   | zero => simp
   | tmul u v => simp
-  | add x y hx hy => simp only [map_add, LinearMap.add_apply, hx, hy]
+  | add x y hx hy => simp only [map_add, hx, hy]
 
 /-- Transposing the antipode through the pairing, on the right factor. -/
 lemma pairMap_lTensor_antipode (a b : A) (x : CartierDual R A ⊗[R] CartierDual R A) :
@@ -485,7 +548,7 @@ lemma pairMap_lTensor_antipode (a b : A) (x : CartierDual R A ⊗[R] CartierDual
   induction x with
   | zero => simp
   | tmul u v => simp
-  | add x y hx hy => simp only [map_add, LinearMap.add_apply, hx, hy]
+  | add x y hx hy => simp only [map_add, hx, hy]
 
 /-- First antipode axiom for the Cartier dual, the transpose of the first antipode axiom
 for `A`. -/
@@ -527,14 +590,16 @@ noncomputable instance instHopfAlgebra : HopfAlgebra R (CartierDual R A) where
   mul_antipode_rTensor_comul := mul_antipode_rTensor_comul_dual
   mul_antipode_lTensor_comul := mul_antipode_lTensor_comul_dual
 
+omit [IsCocomm R A] [Module.Finite R A] [Module.Free R A] in
 /-- Swapping the pairing arguments corresponds to swapping the tensor factors. -/
 lemma pairMap_comm (a b : A) (x : CartierDual R A ⊗[R] CartierDual R A) :
     pairMap a b (TensorProduct.comm R (CartierDual R A) (CartierDual R A) x) = pairMap b a x := by
   induction x with
   | zero => simp
   | tmul u v => simp [mul_comm]
-  | add x y hx hy => simp only [map_add, LinearMap.add_apply, hx, hy]
+  | add x y hx hy => simp only [map_add, hx, hy]
 
+omit [IsCocomm R A] in
 /-- The Cartier dual is cocommutative, because `A` is commutative — this is the statement that
 the dual group scheme is again COMMUTATIVE. -/
 theorem isCocomm_dual : IsCocomm R (CartierDual R A) where
