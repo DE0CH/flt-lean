@@ -6956,8 +6956,13 @@ lemma isHardlyRamified_galoisRepULift (hℓodd : Odd ℓ)
             refine LinearMap.ext fun x => ?_
             simp [LinearEquiv.conj_apply]
 
-/-- **Universe/abstraction transport of a concrete realization** (sorry
-node, purely formal — no arithmetic content): a hardly ramified
+/-- **Universe/abstraction transport of a concrete realization**
+(**PROVEN**, purely formal — no arithmetic content.  The head label read
+"sorry node" until 2026-07-27, when it was found STALE and corrected here:
+the declaration is compiler-certified `sorryAx`-free, `#print axioms`
+against the built olean returning `[propext, Classical.choice, Quot.sound]`.
+The proof plan recorded below is what the proof actually carries out.)
+A hardly ramified
 representation `τ₀` over a coefficient ring `A₀` in `Type 0` carrying
 the full coefficient-ring package (module-finite local topological
 `ℤ_ℓ`-algebra with the module topology, embedded in `ℚ̄_ℓ`), together

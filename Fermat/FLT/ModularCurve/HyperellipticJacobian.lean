@@ -1169,7 +1169,20 @@ want.  **Level `13` has no analogue**: `v² − u²` with `gcd(u, v) = 1` takes
 every odd residue mod `8`.
 
 **PROVEN since 2026-07-27** from the two sign branches above, which is a
-`rcases` on `hC` and nothing more. -/
+`rcases` on `hC` and nothing more.
+
+**NAME COLLISION — there are TWO `descent_system_no_solution` in this file.**
+This one is `Fermat.Hyperelliptic.X18.descent_system_no_solution` (level `18`,
+`C̃ = ±(v² − 2u²)`, conclusion `False`); the other is
+`Fermat.Hyperelliptic.X13.descent_system_no_solution` (level `13`,
+`C̃ = ±(v² − u²)`, conclusion `a * b * (a + b) = 0`), declared further down in
+`namespace X13`.  Their statements are DIFFERENT and neither shadows the other
+at its use site, but a grep or a frontier scan on the SHORT name sees one
+declaration where there are two — which is why a short-name count of this tree
+reads one lower than the census.  The same doubling applies to
+`descent_system_no_solution_pos` and `descent_system_no_solution_neg`.  Always
+qualify with `X18.` / `X13.` when referring to either.  Do not rename: both
+names are consumed within their own namespaces. -/
 theorem descent_system_no_solution (a b u v : ℤ) (hab : Int.gcd a b = 1)
     (ha : 0 < a) (hb : a < b) (huv : IsCoprime u v)
     (hB : a * b * (a - b) = u * v)
@@ -2038,7 +2051,20 @@ odd residue mod `8` (PARI, 2026-07-27).  Recorded so nobody spends the cycle
 looking for the level-`13` analogue.
 
 **PROVEN since 2026-07-27** from the two sign branches above, by `rcases` on
-`hC` and nothing more. -/
+`hC` and nothing more.
+
+**NAME COLLISION — there are TWO `descent_system_no_solution` in this file.**
+This one is `Fermat.Hyperelliptic.X13.descent_system_no_solution` (level `13`,
+`C̃ = ±(v² − u²)`, conclusion `a * b * (a + b) = 0`); the other is
+`Fermat.Hyperelliptic.X18.descent_system_no_solution` (level `18`,
+`C̃ = ±(v² − 2u²)`, conclusion `False`), declared further up in
+`namespace X18`.  Their statements are DIFFERENT and neither shadows the other
+at its use site, but a grep or a frontier scan on the SHORT name sees one
+declaration where there are two — which is why a short-name count of this tree
+reads one lower than the census.  The same doubling applies to
+`descent_system_no_solution_pos` and `descent_system_no_solution_neg`.  Always
+qualify with `X18.` / `X13.` when referring to either.  Do not rename: both
+names are consumed within their own namespaces. -/
 theorem descent_system_no_solution (a b u v : ℤ) (hab : Int.gcd a b = 1)
     (huv : IsCoprime u v) (hB : a * b * (a + b) = u * v)
     (hC : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = v ^ 2 - u ^ 2 ∨

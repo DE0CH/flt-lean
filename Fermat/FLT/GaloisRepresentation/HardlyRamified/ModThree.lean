@@ -29612,16 +29612,20 @@ theorem DedekindContinuation.norm_xi_logDeriv_le_of_gap {K : Type*} [Field K]
   refine (norm_add_le _ _).trans ?_
   linarith
 
-/-- **Landau's log-derivative bound at gap-protected heights** (sorry
-node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-β) of the decomposition of
-`DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; E. Landau,
-*Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02): on the
+/-- **Landau's log-derivative bound at gap-protected heights**
+(**PROVEN**; stated 2026-07-24 as leaf (b₁ᵢᵢᵢ-β) of the decomposition of
+`DedekindContinuation.poitouHorizontal_gap_tendsto_zero` — which is itself
+now PROVEN and `sorryAx`-free.  The head label read "sorry node" until
+2026-07-27, when it was found STALE and corrected here: `#print axioms`
+against the built olean returns `[propext, Classical.choice, Quot.sound]`.
+The proof sketch recorded below is what the proof actually carries out.
+E. Landau, *Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02): on the
 horizontal segments `re s ∈ [−1/4, 5/4]`, `|im s| = τ(T)` of the
 Poitou contour, at heights `τ(T) ∈ [T, T + 1]` whose ordinate gap to
 every zero is `≥ c/log T`, the completed-zeta log-derivative is
 `O(T·log² T)`.
 
-Intended proof (the classical Landau lemma, manufactured from the
+Proof, as carried out (the classical Landau lemma, manufactured from the
 pin's `Complex.borelCaratheodory`):
 
 1. *Reflect to the upper edge.*  `conj_symm` differentiates to
