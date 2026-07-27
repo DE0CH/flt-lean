@@ -144,6 +144,14 @@ Every replacement is an EQUIVALENCE, so no statement was weakened at any step:
   representative with `0 < a < b`, and the degenerate ones are exactly those
   with none.  Written out in both directions in `sq_ne_of_snd_pos` and
   `abd_eq_zero_of_sq_eq`.
+* `<level>.abd_eq_zero_of_sq_eq ↔ <level>.descent_system_no_solution` (BOTH
+  levels, 2026-07-27) by the classical descent `descent_sq_add_four_sq` /
+  `descent_sq_add_eight_sq`, which are proven here generically in `(C, B, t)`
+  over the level-specific `C_odd` and `C_isCoprime`.  Reversible in one `ring`
+  identity each, so again an equivalence.  **This is the step at which the
+  route's elliptic curve becomes visible**, and both levels' Chabauty
+  computations were run and CLOSE the leaves — see the audits on the two
+  `descent_system_no_solution` declarations.
 
 What each step removed is a layer of Lean-specific interface: first the
 obligation to exhibit a *structure*, then the obligation to reason about a
@@ -264,6 +272,12 @@ public import Mathlib.Tactic.NormNum.Prime
 public import Mathlib.Tactic.FinCases
 public import Mathlib.Data.Fin.VecNotation
 public import Mathlib.Data.Finsupp.Basic
+-- for the classical descent in `section Descent` below: `IsCoprime` over `ℤ`,
+-- `Int.sq_of_isCoprime`, `Int.prime_two` and `Nat.prime_iff_prime_int`
+public import Mathlib.RingTheory.Int.Basic
+public import Mathlib.RingTheory.Coprime.Lemmas
+public import Mathlib.Data.Nat.Prime.Int
+public import Mathlib.Tactic.Linarith
 
 @[expose] public section
 
@@ -580,10 +594,10 @@ does satisfy every field — and **not** as an independent statement of the
 four-part Jacobian project.  The project is the content of the injectivity,
 which at both levels is itself PROVEN from the Diophantine determination of
 `X(ℚ)` (level `18` on 2026-07-26, level `13` on 2026-07-27); the sorries now
-live further down, at `X18.sq_ne_of_zero_lt_lt` — the σ-normalised integral form
-of that determination, two steps beyond `X18.affine_rational_points` since
-2026-07-27 — and at `X13.abd_eq_zero_of_sq_eq`, the corresponding integral form
-one step beyond `X13.affine_rational_points`.
+live further down, at `X18.descent_system_no_solution` and
+`X13.descent_system_no_solution` — the descended integral forms of that
+determination, three steps beyond `X18.affine_rational_points` and two beyond
+`X13.affine_rational_points` since 2026-07-27.
 
 This matters for anyone auditing the leaf count: closing `exists_jacobianPackage`
 below is *not* progress on abelian varieties.  It is the removal of an interface
@@ -611,6 +625,266 @@ theorem nonempty_jacobianPackage_of_redPt_injective
     exact Finsupp.mapDomain_single
 
 end Package
+
+section Descent
+
+/-! ### The classical descent on `t² = C² + k·B²`, `k ∈ {4, 8}`
+
+Both levels' integral leaves have the shape `t² = C² + k·B²` with `C` odd and
+`gcd(C, B) = 1`, and both therefore admit the classical descent.  The three
+lemmas below carry it out ONCE, generically in `(C, B, t)`, so neither level
+restates it.
+
+**HONEST ACCOUNTING, and it is the same warning both route audits already
+carry: this descent is REVERSIBLE, so it is a change of coordinates and NOT a
+reduction in difficulty.**  Given any coprime `u, v` the identities
+
+    (u² + v²)²   = (v² − u²)²   + 4(uv)²
+    (v² + 2u²)²  = (v² − 2u²)²  + 8(uv)²
+
+(both `ring`) recover a solution, so nothing is discarded and the leaf count is
+unchanged at one per level.  What it buys is that the surviving obligation is
+stated in the coordinates where the elliptic curve of the verified route is
+visible: `C + 2B√−1 = (v + u√−1)²` at level `13` and `C + 2B√−2 = (v + u√−2)²`
+at level `18`, which is exactly the assertion that `(x, w)` is a point of
+`w² = g(x)` over the imaginary quadratic field.  See the route audits on
+`X18.sq_ne_of_zero_lt_lt` and `X13.abd_eq_zero_of_sq_eq`.
+
+The descent needs no `Zsqrtd` arithmetic — this pin equips neither `Zsqrtd (-1)`
+nor `Zsqrtd (-2)` with a Euclidean-domain instance — only coprime factorisation
+in `ℤ`, via `Int.sq_of_isCoprime`. -/
+
+/-- **Square roots inherit coprimality** (PROVEN).  If `x` and `y` are coprime
+and each is `±` a square, the two square roots are coprime.  The four sign cases
+are all the same one-line argument through `IsCoprime.neg_left_iff` /
+`IsCoprime.neg_right_iff`. -/
+theorem descentCoprimeAux {x y u v : ℤ} (h : IsCoprime x y)
+    (hu : x = u ^ 2 ∨ x = -u ^ 2) (hv : y = v ^ 2 ∨ y = -v ^ 2) : IsCoprime u v := by
+  have h1 : IsCoprime (u ^ 2) (v ^ 2) := by
+    rcases hu with hu | hu <;> rcases hv with hv | hv <;>
+      [ (rw [← hu, ← hv]; exact h);
+        (rw [← hu]; exact (IsCoprime.neg_right_iff _ _).mp (by rw [← hv]; exact h));
+        (rw [← hv]; exact (IsCoprime.neg_left_iff _ _).mp (by rw [← hu]; exact h));
+        (exact (IsCoprime.neg_left_iff _ _).mp ((IsCoprime.neg_right_iff _ _).mp
+          (by rw [← hu, ← hv]; exact h))) ]
+  exact (h1.of_isCoprime_of_dvd_left (dvd_pow_self u two_ne_zero)).of_isCoprime_of_dvd_right
+    (dvd_pow_self v two_ne_zero)
+
+/-- **The descent at level `13`** (PROVEN): `t² = C² + 4B²` with `C` odd and
+`gcd(C, B) = 1` forces `C = ±(v² − u²)` and `B = uv` for some coprime `u, v`.
+
+`t` is odd, so `m := (t − C)/2` and `n := (t + C)/2` are integers with
+`n − m = C` and `mn = B²`; they are coprime because a common prime `p` divides
+`C` and `B²`, and `gcd(C, B) = 1`.  `Int.sq_of_isCoprime` then makes each of
+them `±` a square.  The two MIXED sign choices force `mn ≤ 0`, hence `B = 0` and
+(by coprimality) `{m, n} = {0, ±1}`, so `C = ±1`; those are discharged by the
+explicit degenerate witnesses `(u, v) = (0, 1)` and `(1, 0)`.  The sign of `B`
+is normalised by replacing `u` with `−u`, which changes neither `u²` nor
+coprimality. -/
+theorem descent_sq_add_four_sq (C B t : ℤ) (hodd : ¬ (2 : ℤ) ∣ C) (hcop : IsCoprime C B)
+    (ht : t ^ 2 = C ^ 2 + 4 * B ^ 2) :
+    ∃ u v : ℤ, IsCoprime u v ∧ B = u * v ∧ (C = v ^ 2 - u ^ 2 ∨ C = u ^ 2 - v ^ 2) := by
+  have hCO : Odd C := Int.not_even_iff_odd.mp fun h => hodd h.two_dvd
+  have htO : Odd t := by
+    rcases Int.even_or_odd t with he | ho
+    · exfalso
+      obtain ⟨k, hk⟩ := he
+      apply hodd
+      refine Int.prime_two.dvd_of_dvd_pow (n := 2) ?_
+      exact ⟨2 * (k * k) - 2 * B ^ 2, by rw [hk] at ht; linarith [ht]⟩
+    · exact ho
+  obtain ⟨n, hn⟩ : (2 : ℤ) ∣ (t + C) := (htO.add_odd hCO).two_dvd
+  obtain ⟨m, hm⟩ : (2 : ℤ) ∣ (t - C) := (htO.sub_odd hCO).two_dvd
+  have hC : n - m = C := by linarith
+  have hmn : m * n = B ^ 2 := by
+    have h4 : (2 * m) * (2 * n) = 4 * B ^ 2 := by rw [← hm, ← hn]; linear_combination ht
+    linarith [show (2 * m) * (2 * n) = 4 * (m * n) from by ring, h4]
+  have hcopmn : IsCoprime m n := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    by_contra hne
+    obtain ⟨p, hp, hpd⟩ := Nat.exists_prime_and_dvd hne
+    have hpZ : ((p : ℤ)) ∣ ((Int.gcd m n : ℕ) : ℤ) := Int.natCast_dvd_natCast.mpr hpd
+    have hpZm : (p : ℤ) ∣ m := hpZ.trans (Int.gcd_dvd_left ..)
+    have hpZn : (p : ℤ) ∣ n := hpZ.trans (Int.gcd_dvd_right ..)
+    have hpC : (p : ℤ) ∣ C := hC ▸ dvd_sub hpZn hpZm
+    have hpB2 : (p : ℤ) ∣ B ^ 2 := hmn ▸ Dvd.dvd.mul_right hpZm n
+    have hU : IsUnit ((p : ℤ)) := (hcop.pow_right (n := 2)).isUnit_of_dvd' hpC hpB2
+    rw [Int.isUnit_iff] at hU
+    have := hp.two_le
+    omega
+  obtain ⟨u, hu⟩ := Int.sq_of_isCoprime hcopmn hmn
+  obtain ⟨v, hv⟩ := Int.sq_of_isCoprime hcopmn.symm (by rw [mul_comm]; exact hmn)
+  have hcopuv : IsCoprime u v := descentCoprimeAux hcopmn hu hv
+  have norm : ∀ p q : ℤ, IsCoprime p q → B ^ 2 = (p * q) ^ 2 →
+      (C = q ^ 2 - p ^ 2 ∨ C = p ^ 2 - q ^ 2) →
+      ∃ u v : ℤ, IsCoprime u v ∧ B = u * v ∧ (C = v ^ 2 - u ^ 2 ∨ C = u ^ 2 - v ^ 2) := by
+    intro p q hpq hB2 hCd
+    have hfac : (B - p * q) * (B + p * q) = 0 := by linear_combination hB2
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact ⟨p, q, hpq, by linarith, hCd⟩
+    · refine ⟨-p, q, hpq.neg_left, by linarith, ?_⟩
+      simpa using hCd
+  have degen : B = 0 → (C = 1 ∨ C = -1) →
+      ∃ u v : ℤ, IsCoprime u v ∧ B = u * v ∧ (C = v ^ 2 - u ^ 2 ∨ C = u ^ 2 - v ^ 2) := by
+    rintro hB0 (h | h)
+    · exact ⟨0, 1, isCoprime_zero_left.mpr isUnit_one, by simp [hB0], Or.inl (by simp [h])⟩
+    · exact ⟨1, 0, isCoprime_one_left, by simp [hB0], Or.inl (by simp [h])⟩
+  have mixed : B = 0 → C = 1 ∨ C = -1 := by
+    intro hB0
+    have hmn0 : m * n = 0 := by rw [hmn, hB0]; ring
+    rcases mul_eq_zero.mp hmn0 with h | h
+    · have hc' : IsCoprime (0 : ℤ) n := by rw [← h]; exact hcopmn
+      have hU := isCoprime_zero_left.mp hc'
+      rw [Int.isUnit_iff] at hU
+      rcases hU with h1 | h1
+      · exact Or.inl (by rw [← hC, h, h1]; ring)
+      · exact Or.inr (by rw [← hC, h, h1]; ring)
+    · have hc' : IsCoprime m (0 : ℤ) := by rw [← h]; exact hcopmn
+      have hU := isCoprime_zero_right.mp hc'
+      rw [Int.isUnit_iff] at hU
+      rcases hU with h1 | h1
+      · exact Or.inr (by rw [← hC, h, h1]; ring)
+      · exact Or.inl (by rw [← hC, h, h1]; ring)
+  rcases hu with hu | hu <;> rcases hv with hv | hv
+  · exact norm u v hcopuv (by rw [← hmn, hu, hv]; ring) (Or.inl (by rw [← hC, hu, hv]))
+  · have hz : B ^ 2 = -(u ^ 2 * v ^ 2) := by rw [← hmn, hu, hv]; ring
+    have hB0 : B = 0 := by
+      nlinarith [sq_nonneg B, sq_nonneg u, sq_nonneg v, sq_nonneg (u * v)]
+    exact degen hB0 (mixed hB0)
+  · have hz : B ^ 2 = -(u ^ 2 * v ^ 2) := by rw [← hmn, hu, hv]; ring
+    have hB0 : B = 0 := by
+      nlinarith [sq_nonneg B, sq_nonneg u, sq_nonneg v, sq_nonneg (u * v)]
+    exact degen hB0 (mixed hB0)
+  · exact norm u v hcopuv (by rw [← hmn, hu, hv]; ring) (Or.inr (by rw [← hC, hu, hv]; ring))
+
+/-- **The descent at level `18`** (PROVEN): `t² = C² + 8B²` with `C` odd and
+`gcd(C, B) = 1` forces `C = ±(v² − 2u²)` and `B = uv` for some coprime `u, v`.
+
+The same argument as `descent_sq_add_four_sq`, with one extra layer: here
+`mn = 2B²`, so the factor `2` sits in exactly one of `m`, `n` — they are
+coprime — and is split off before `Int.sq_of_isCoprime` applies.  The two
+placements of that factor give the two orderings of the square roots, which is
+why the conclusion is symmetric under swapping them.  Note also that the odd
+prime step needs `C` odd a second time: `p ∣ 2B²` only gives `p ∣ B²` once
+`p ≠ 2` is known, and that is what `C` odd supplies. -/
+theorem descent_sq_add_eight_sq (C B t : ℤ) (hodd : ¬ (2 : ℤ) ∣ C) (hcop : IsCoprime C B)
+    (ht : t ^ 2 = C ^ 2 + 8 * B ^ 2) :
+    ∃ u v : ℤ, IsCoprime u v ∧ B = u * v ∧ (C = v ^ 2 - 2 * u ^ 2 ∨ C = 2 * u ^ 2 - v ^ 2) := by
+  have hCO : Odd C := Int.not_even_iff_odd.mp fun h => hodd h.two_dvd
+  have htO : Odd t := by
+    rcases Int.even_or_odd t with he | ho
+    · exfalso
+      obtain ⟨k, hk⟩ := he
+      apply hodd
+      refine Int.prime_two.dvd_of_dvd_pow (n := 2) ?_
+      exact ⟨2 * (k * k) - 4 * B ^ 2, by rw [hk] at ht; linarith [ht]⟩
+    · exact ho
+  obtain ⟨n, hn⟩ : (2 : ℤ) ∣ (t + C) := (htO.add_odd hCO).two_dvd
+  obtain ⟨m, hm⟩ : (2 : ℤ) ∣ (t - C) := (htO.sub_odd hCO).two_dvd
+  have hC : n - m = C := by linarith
+  have hmn : m * n = 2 * B ^ 2 := by
+    have h4 : (2 * m) * (2 * n) = 8 * B ^ 2 := by rw [← hm, ← hn]; linear_combination ht
+    linarith [show (2 * m) * (2 * n) = 4 * (m * n) from by ring, h4]
+  have hcopmn : IsCoprime m n := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    by_contra hne
+    obtain ⟨p, hp, hpd⟩ := Nat.exists_prime_and_dvd hne
+    have hpZ : ((p : ℤ)) ∣ ((Int.gcd m n : ℕ) : ℤ) := Int.natCast_dvd_natCast.mpr hpd
+    have hpZm : (p : ℤ) ∣ m := hpZ.trans (Int.gcd_dvd_left ..)
+    have hpZn : (p : ℤ) ∣ n := hpZ.trans (Int.gcd_dvd_right ..)
+    have hpC : (p : ℤ) ∣ C := hC ▸ dvd_sub hpZn hpZm
+    have hp2 : (p : ℤ) ∣ 2 * B ^ 2 := hmn ▸ Dvd.dvd.mul_right hpZm n
+    have hpne : (p : ℤ) ≠ 2 := by
+      rintro h2
+      exact hodd (h2 ▸ hpC)
+    have hpB2 : (p : ℤ) ∣ B ^ 2 := by
+      have hpp : Prime ((p : ℤ)) := Nat.prime_iff_prime_int.mp hp
+      rcases hpp.dvd_mul.mp hp2 with h | h
+      · exfalso
+        have hle : (p : ℤ) ≤ 2 := Int.le_of_dvd (by norm_num) h
+        have h2 := hp.two_le
+        exact hpne (by omega)
+      · exact h
+    have hU : IsUnit ((p : ℤ)) := (hcop.pow_right (n := 2)).isUnit_of_dvd' hpC hpB2
+    rw [Int.isUnit_iff] at hU
+    have := hp.two_le
+    omega
+  have norm : ∀ p q : ℤ, IsCoprime p q → B ^ 2 = (p * q) ^ 2 →
+      (C = q ^ 2 - 2 * p ^ 2 ∨ C = 2 * p ^ 2 - q ^ 2) →
+      ∃ u v : ℤ, IsCoprime u v ∧ B = u * v ∧
+        (C = v ^ 2 - 2 * u ^ 2 ∨ C = 2 * u ^ 2 - v ^ 2) := by
+    intro p q hpq hB2 hCd
+    have hfac : (B - p * q) * (B + p * q) = 0 := by linear_combination hB2
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact ⟨p, q, hpq, by linarith, hCd⟩
+    · refine ⟨-p, q, hpq.neg_left, by linarith, ?_⟩
+      simpa using hCd
+  have degen : B = 0 → (C = 1 ∨ C = -1) →
+      ∃ u v : ℤ, IsCoprime u v ∧ B = u * v ∧
+        (C = v ^ 2 - 2 * u ^ 2 ∨ C = 2 * u ^ 2 - v ^ 2) := by
+    rintro hB0 (h | h)
+    · exact ⟨0, 1, isCoprime_zero_left.mpr isUnit_one, by simp [hB0], Or.inl (by simp [h])⟩
+    · exact ⟨0, 1, isCoprime_zero_left.mpr isUnit_one, by simp [hB0], Or.inr (by simp [h])⟩
+  have mixed : B = 0 → C = 1 ∨ C = -1 := by
+    intro hB0
+    have hmn0 : m * n = 0 := by rw [hmn, hB0]; ring
+    rcases mul_eq_zero.mp hmn0 with h | h
+    · have hc' : IsCoprime (0 : ℤ) n := by rw [← h]; exact hcopmn
+      have hU := isCoprime_zero_left.mp hc'
+      rw [Int.isUnit_iff] at hU
+      rcases hU with h1 | h1
+      · exact Or.inl (by rw [← hC, h, h1]; ring)
+      · exact Or.inr (by rw [← hC, h, h1]; ring)
+    · have hc' : IsCoprime m (0 : ℤ) := by rw [← h]; exact hcopmn
+      have hU := isCoprime_zero_right.mp hc'
+      rw [Int.isUnit_iff] at hU
+      rcases hU with h1 | h1
+      · exact Or.inr (by rw [← hC, h, h1]; ring)
+      · exact Or.inl (by rw [← hC, h, h1]; ring)
+  have h2mn : (2 : ℤ) ∣ m ∨ (2 : ℤ) ∣ n := Int.prime_two.dvd_mul.mp ⟨B ^ 2, hmn⟩
+  rcases h2mn with ⟨m0, hm0⟩ | ⟨n0, hn0⟩
+  · have hmn0 : m0 * n = B ^ 2 := by
+      rw [hm0] at hmn
+      linarith [show (2 * m0) * n = 2 * (m0 * n) from by ring, hmn]
+    have hcop0 : IsCoprime m0 n := hcopmn.of_isCoprime_of_dvd_left ⟨2, by linarith⟩
+    obtain ⟨u, hu⟩ := Int.sq_of_isCoprime hcop0 hmn0
+    obtain ⟨v, hv⟩ := Int.sq_of_isCoprime hcop0.symm (by rw [mul_comm]; exact hmn0)
+    have hcopuv : IsCoprime u v := descentCoprimeAux hcop0 hu hv
+    rcases hu with hu | hu <;> rcases hv with hv | hv
+    · exact norm u v hcopuv (by rw [← hmn0, hu, hv]; ring)
+        (Or.inl (by rw [← hC, hm0, hu, hv]))
+    · have hz : B ^ 2 = -(u ^ 2 * v ^ 2) := by rw [← hmn0, hu, hv]; ring
+      have hB0 : B = 0 := by
+        nlinarith [sq_nonneg B, sq_nonneg u, sq_nonneg v, sq_nonneg (u * v)]
+      exact degen hB0 (mixed hB0)
+    · have hz : B ^ 2 = -(u ^ 2 * v ^ 2) := by rw [← hmn0, hu, hv]; ring
+      have hB0 : B = 0 := by
+        nlinarith [sq_nonneg B, sq_nonneg u, sq_nonneg v, sq_nonneg (u * v)]
+      exact degen hB0 (mixed hB0)
+    · exact norm u v hcopuv (by rw [← hmn0, hu, hv]; ring)
+        (Or.inr (by rw [← hC, hm0, hu, hv]; ring))
+  · have hmn0 : m * n0 = B ^ 2 := by
+      rw [hn0] at hmn
+      linarith [show m * (2 * n0) = 2 * (m * n0) from by ring, hmn]
+    have hcop0 : IsCoprime m n0 := hcopmn.of_isCoprime_of_dvd_right ⟨2, by linarith⟩
+    obtain ⟨u, hu⟩ := Int.sq_of_isCoprime hcop0 hmn0
+    obtain ⟨v, hv⟩ := Int.sq_of_isCoprime hcop0.symm (by rw [mul_comm]; exact hmn0)
+    have hcopuv : IsCoprime u v := descentCoprimeAux hcop0 hu hv
+    rcases hu with hu | hu <;> rcases hv with hv | hv
+    · exact norm v u hcopuv.symm (by rw [← hmn0, hu, hv]; ring)
+        (Or.inr (by rw [← hC, hn0, hu, hv]))
+    · have hz : B ^ 2 = -(u ^ 2 * v ^ 2) := by rw [← hmn0, hu, hv]; ring
+      have hB0 : B = 0 := by
+        nlinarith [sq_nonneg B, sq_nonneg u, sq_nonneg v, sq_nonneg (u * v)]
+      exact degen hB0 (mixed hB0)
+    · have hz : B ^ 2 = -(u ^ 2 * v ^ 2) := by rw [← hmn0, hu, hv]; ring
+      have hB0 : B = 0 := by
+        nlinarith [sq_nonneg B, sq_nonneg u, sq_nonneg v, sq_nonneg (u * v)]
+      exact degen hB0 (mixed hB0)
+    · exact norm v u hcopuv.symm (by rw [← hmn0, hu, hv]; ring)
+        (Or.inl (by rw [← hC, hn0, hu, hv]; ring))
+
+end Descent
 
 namespace X18
 
@@ -679,7 +953,120 @@ theorem hsext18_eq_sq_add_eight_sq (a b : ℤ) :
   simp only [hsext]
   ring
 
-/-- **THE LEAF, σ-NORMALISED: no coprime `0 < a < b` makes `C̃² + 8B̃²` a square.**
+/-- **`C̃` is ODD for every coprime `(a, b)`** (PROVEN 2026-07-27; the route
+audit below previously recorded this only as a numerical observation over
+`|a|, |b| ≤ 80`).  Modulo `2`, `C̃ ≡ a³ + ab² + b³`, whose value at each of the
+three coprime residue pairs `(1,0)`, `(0,1)`, `(1,1)` is `1`; `decide` over
+`ZMod 2` checks all four pairs, and the excluded `(0,0)` is exactly the
+non-coprime one. -/
+theorem C_odd (a b : ℤ) (hab : Int.gcd a b = 1) :
+    ¬ (2 : ℤ) ∣ (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) := by
+  intro hdvd
+  have hnot : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ b) := by
+    rintro ⟨ha, hb⟩
+    have h2 := Int.dvd_gcd ha hb
+    rw [hab] at h2
+    norm_num at h2
+  have key : ∀ x y : ZMod 2,
+      x ^ 3 - 2 * x ^ 2 * y - x * y ^ 2 + y ^ 3 = 0 → x = 0 ∧ y = 0 := by decide
+  have hA : ((a : ZMod 2)) ^ 3 - 2 * (a : ZMod 2) ^ 2 * (b : ZMod 2)
+      - (a : ZMod 2) * (b : ZMod 2) ^ 2 + (b : ZMod 2) ^ 3 = 0 := by
+    have h := (ZMod.intCast_zmod_eq_zero_iff_dvd
+      (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) 2).mpr (by exact_mod_cast hdvd)
+    push_cast at h
+    exact h
+  obtain ⟨h1, h2⟩ := key _ _ hA
+  exact hnot ⟨(ZMod.intCast_zmod_eq_zero_iff_dvd a 2).mp h1,
+    (ZMod.intCast_zmod_eq_zero_iff_dvd b 2).mp h2⟩
+
+/-- **`gcd(C̃, B̃) = 1` for every coprime `(a, b)`** (PROVEN 2026-07-27; also
+previously only numerical).  `a`, `b` and `a − b` are pairwise coprime, and
+
+    C̃ ≡ b³ (mod a),   C̃ ≡ a³ (mod b),   C̃ ≡ −b³ (mod a − b),
+
+with respective cofactors `a² − 2ab − b²`, `−2a² − ab + b²` and
+`a² − ab − 2b²` (three `ring` identities).  Each congruence turns coprimality
+of the modulus with `b` or `a` into coprimality with `C̃`. -/
+theorem C_isCoprime (a b : ℤ) (hab : IsCoprime a b) :
+    IsCoprime (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) (a * b * (a - b)) := by
+  have hca : IsCoprime a (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) := by
+    have e : a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3
+        = b ^ 3 + a * (a ^ 2 - 2 * a * b - b ^ 2) := by ring
+    rw [e]; exact (hab.pow_right).add_mul_left_right _
+  have hcb : IsCoprime b (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) := by
+    have e : a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3
+        = a ^ 3 + b * (-2 * a ^ 2 - a * b + b ^ 2) := by ring
+    rw [e]; exact (hab.symm.pow_right).add_mul_left_right _
+  have hab' : IsCoprime (a - b) b := by
+    have e : a - b = a + b * (-1) := by ring
+    rw [e]; exact hab.add_mul_left_left _
+  have hcd : IsCoprime (a - b) (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) := by
+    have e : a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3
+        = -b ^ 3 + (a - b) * (a ^ 2 - a * b - 2 * b ^ 2) := by ring
+    rw [e]; exact ((hab'.pow_right).neg_right).add_mul_left_right _
+  exact ((hca.symm).mul_right (hcb.symm)).mul_right (hcd.symm)
+
+/-- **THE LEAF, AFTER THE `√−2` DESCENT** (opened 2026-07-27, replacing the
+`t`-form directly above, which is PROVEN over it by
+`descent_sq_add_eight_sq`).
+
+For coprime `0 < a < b` there are no coprime `u, v` with
+
+    ab(a − b) = uv    and    C̃(a, b) = ±(v² − 2u²).
+
+**HONEST ACCOUNTING: this is EQUIVALENT to the `t`-form, not weaker.**  Given
+such `u, v` the identity `(v² + 2u²)² = (v² − 2u²)² + 8(uv)²` (`ring`) returns a
+`t`.  The leaf count at this level is unchanged at one and **no Diophantine
+content was disposed of**; what changed is that the two facts the descent needs
+— `C̃` odd and `gcd(C̃, B̃) = 1` — are now THEOREMS (`C_odd`, `C_isCoprime`)
+rather than the numerical observations the audit below recorded, and the
+statement is in the coordinates where the route's elliptic curve is visible:
+`C̃ + 2B̃√−2 = ±(v + u√−2)²` says exactly that `(a/b, ·)` is a point of
+`w² = g(x)` over `ℚ(√−2)`.
+
+**ROUTE STATUS: the elliptic-Chabauty route of the audit below was EXECUTED on
+2026-07-27 and it CLOSES this leaf.**  Item 4 of that audit's refuting-check
+list — *"This is the one item NOT verified here: only `|n| ≤ 12` was
+enumerated, which is a search, not a Chabauty computation"* — has now been run.
+Magma (untrusted searcher, so each number is a claim to be re-derived, but the
+computation itself is Bruin's algorithm and not a search):
+
+* `δ = +1`, `E : w² = g(x)` over `K = ℚ(√−2)`: `RankBounds` returns the sharp
+  `1 ≤ r ≤ 1`, torsion trivial, `Norm(𝔣_E) = 1296`, generator `(1 − √−2, −1)` —
+  every value the audit predicted.  `Chabauty` on the `x`-coordinate cover
+  `E → ℙ¹_ℚ` succeeds with bound `N = 12` and returns exactly THREE group
+  elements, with rational `x`-coordinates `∞` and `0` (the latter twice, from
+  `±2P`).
+* `δ = −1`, `E_d : w² = −g(−x)`: `RankBounds` returns `0 ≤ r ≤ 0` and torsion
+  `ℤ/3`, `Norm(𝔣) = 324`; the two affine torsion points both have `x = −1`,
+  i.e. `x = 1` after the substitution.  No Chabauty needed, as predicted.
+
+Together: `x ∈ {∞, 0, 1}`, which is exactly `ab(a − b) = 0`.  So the leaf is
+TRUE, the route is complete end-to-end, and what remains is FORMALISATION of
+elliptic Chabauty — not mathematics.  **The refuting check on this paragraph**
+is to re-run `RankBounds` and `Chabauty` on those two curves; a rank `≥ 2` on
+the first, or a Chabauty run returning a fourth element, overturns it.
+
+**Numerical corroboration, extended 2026-07-27**: exact integer search over all
+coprime `(a, b)` with `|a|, |b| ≤ 2000` — five times the previously recorded
+range — finds no non-degenerate solution at either level, and confirms `C̃` odd
+and `gcd(C̃, B̃) = 1` throughout (both now proven above anyway).
+
+**What is NOT available in this pin**, and is therefore the real obstruction:
+elliptic curves over a number field with Mordell–Weil rank machinery, and
+Bruin's elliptic Chabauty on top of it.  Neither mathlib, nor `~/cs/FLT`, nor
+this project has any of it. -/
+theorem descent_system_no_solution (a b u v : ℤ) (hab : Int.gcd a b = 1)
+    (ha : 0 < a) (hb : a < b) (huv : IsCoprime u v)
+    (hB : a * b * (a - b) = u * v)
+    (hC : a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3 = v ^ 2 - 2 * u ^ 2 ∨
+          a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3 = 2 * u ^ 2 - v ^ 2) : False := sorry
+
+/-- **THE σ-NORMALISED FORM: no coprime `0 < a < b` makes `C̃² + 8B̃²` a
+square.**  **PROVEN since 2026-07-27** from `descent_system_no_solution` above
+via `descent_sq_add_eight_sq`, `C_odd` and `C_isCoprime`.  The ROUTE AUDIT
+below is still the current one and is what that leaf's docstring refers to;
+read the two together.
 
 `abd_eq_zero_of_sq_eq` below is PROVEN from this, and the two are EQUIVALENT.
 
@@ -785,7 +1172,12 @@ That reading is recorded because it explains why the fibration is cyclic, not
 because it was found to lead anywhere. -/
 theorem sq_ne_of_zero_lt_lt (a b t : ℤ) (hab : Int.gcd a b = 1) (ha : 0 < a) (hb : a < b) :
     t ^ 2 ≠ (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) ^ 2
-              + 8 * (a * b * (a - b)) ^ 2 := sorry
+              + 8 * (a * b * (a - b)) ^ 2 := by
+  intro ht
+  obtain ⟨u, v, huv, hB, hC⟩ :=
+    descent_sq_add_eight_sq _ _ t (C_odd a b hab)
+      (C_isCoprime a b (Int.isCoprime_iff_gcd_eq_one.mpr hab)) ht
+  exact descent_system_no_solution a b u v hab ha hb huv hB hC
 
 /-- The `0 < b` half of the σ-normalisation (PROVEN from `sq_ne_of_zero_lt_lt`).
 
@@ -1336,8 +1728,117 @@ theorem hsext13_eq_sq_add_four_sq (a b : ℤ) :
   simp only [hsext]
   ring
 
+/-- **`C̃` is ODD for every coprime `(a, b)`** (PROVEN 2026-07-27; the route
+audit below recorded this, correctly, but only as a numerical observation).
+Modulo `2`, `C̃ ≡ a³ + a²b + b³`, whose value at each of the three coprime
+residue pairs is `1`; `decide` over `ZMod 2` checks all four pairs. -/
+theorem C_odd (a b : ℤ) (hab : Int.gcd a b = 1) :
+    ¬ (2 : ℤ) ∣ (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) := by
+  intro hdvd
+  have hnot : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ b) := by
+    rintro ⟨ha, hb⟩
+    have h2 := Int.dvd_gcd ha hb
+    rw [hab] at h2
+    norm_num at h2
+  have key : ∀ x y : ZMod 2,
+      x ^ 3 + x ^ 2 * y - 2 * x * y ^ 2 - y ^ 3 = 0 → x = 0 ∧ y = 0 := by decide
+  have hA : ((a : ZMod 2)) ^ 3 + (a : ZMod 2) ^ 2 * (b : ZMod 2)
+      - 2 * (a : ZMod 2) * (b : ZMod 2) ^ 2 - (b : ZMod 2) ^ 3 = 0 := by
+    have h := (ZMod.intCast_zmod_eq_zero_iff_dvd
+      (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) 2).mpr (by exact_mod_cast hdvd)
+    push_cast at h
+    exact h
+  obtain ⟨h1, h2⟩ := key _ _ hA
+  exact hnot ⟨(ZMod.intCast_zmod_eq_zero_iff_dvd a 2).mp h1,
+    (ZMod.intCast_zmod_eq_zero_iff_dvd b 2).mp h2⟩
+
+/-- **`gcd(C̃, B̃) = 1` for every coprime `(a, b)`** (PROVEN 2026-07-27).  This
+is the second structural claim of the route audit below, which stated exactly
+the right congruences —
+
+    C̃ ≡ −b³ (mod a),   C̃ ≡ a³ (mod b),   C̃ ≡ b³ (mod a + b),
+
+with cofactors `a² + ab − 2b²`, `a² − 2ab − b²` and `a² − 2b²` — and checked
+them numerically.  They are three `ring` identities. -/
+theorem C_isCoprime (a b : ℤ) (hab : IsCoprime a b) :
+    IsCoprime (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) (a * b * (a + b)) := by
+  have hca : IsCoprime a (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) := by
+    have e : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3
+        = -b ^ 3 + a * (a ^ 2 + a * b - 2 * b ^ 2) := by ring
+    rw [e]; exact ((hab.pow_right).neg_right).add_mul_left_right _
+  have hcb : IsCoprime b (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) := by
+    have e : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3
+        = a ^ 3 + b * (a ^ 2 - 2 * a * b - b ^ 2) := by ring
+    rw [e]; exact (hab.symm.pow_right).add_mul_left_right _
+  have hab' : IsCoprime (a + b) b := by
+    have e : a + b = a + b * 1 := by ring
+    rw [e]; exact hab.add_mul_left_left _
+  have hcd : IsCoprime (a + b) (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) := by
+    have e : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3
+        = b ^ 3 + (a + b) * (a ^ 2 - 2 * b ^ 2) := by ring
+    rw [e]; exact ((hab'.pow_right)).add_mul_left_right _
+  exact ((hca.symm).mul_right (hcb.symm)).mul_right (hcd.symm)
+
+/-- **THE LEAF, AFTER THE `ℤ[i]` DESCENT** (opened 2026-07-27, replacing the
+`t`-form below, which is PROVEN over it by `descent_sq_add_four_sq`).
+
+For coprime `a, b`, if there are coprime `u, v` with `ab(a + b) = uv` and
+`C̃(a, b) = ±(v² − u²)`, then `ab(a + b) = 0`.
+
+**HONEST ACCOUNTING: EQUIVALENT, not weaker** — the audit below already proved
+that, and this declaration does not contradict it.  `(u² + v²)² =
+(v² − u²)² + 4(uv)²` recovers a `t` from any such `u, v`, so the descent is a
+bijection and the leaf count is unchanged at one.  What the step banks is that
+the audit's two structural claims are now the THEOREMS `C_odd` and
+`C_isCoprime` above rather than numerical observations, and that the surviving
+statement is in the coordinates of the elliptic curve: `C̃ + 2B̃i = ±(v + ui)²`
+says exactly that `(a/b, ·)` is a point of `w² = g(x)` over `ℚ(i)`.
+
+**ROUTE STATUS: elliptic Chabauty over `ℚ(i)` was EXECUTED on 2026-07-27 and it
+CLOSES this leaf.**  The audit below closes the `ℤ[i]` DESCENT as a route and is
+right to; the route that works changes the BASE FIELD instead.  Over
+`K = ℚ(i)` the sextic splits as `f = g·ḡ` with
+`g(x) = x³ + (1 + 2i)x² + (−2 + 2i)x − 1`, and each branch is an elliptic curve
+over `K` carrying the condition `x ∈ ℚ`.  Magma (untrusted searcher; the
+numbers are claims to be re-derived, but `Chabauty` is Bruin's algorithm, not a
+search):
+
+* the two branches `w² = g(x)` and `w² = −g(−x)` are ISOMORPHIC over `K` —
+  `IsIsomorphic` returns true, both with `Norm(𝔣) = 1352` and
+  `j = 768 − 512i` — which is the level-`13` form of "the two twists coincide
+  because `−1 = i²`";
+* `E(K) ≅ ℤ`, TORSION TRIVIAL, `RankBounds` sharp at `1 ≤ r ≤ 1`, generator
+  `x = −1 − i`.  So `rank = 1 < 2 = [K : ℚ]` and Chabauty applies;
+* `Chabauty` on the `x`-cover of the `δ = +1` branch succeeds with bound
+  `N = 4`, returning FIVE group elements whose rational `x`-coordinates are
+  exactly `∞`, `0` and `−1`; on the `δ = −1` branch it succeeds with `N = 12`
+  and returns only `x = ∞`.
+
+Union: `x ∈ {∞, 0, −1}`, which is exactly `ab(a + b) = 0`.  **The leaf is TRUE
+and the mathematics is complete**; what remains is formalising elliptic
+Chabauty.  Refuting check: re-run `RankBounds`/`Chabauty`; rank `≥ 2`, or a
+sixth element with rational `x`, overturns this.
+
+**CORRECTION to "the two levels are structurally parallel", which is how this
+pair is usually dispatched.**  They are parallel in shape but NOT in cost.  At
+level `18` one of the two branches has RANK `0` (torsion `ℤ/3`), so only one
+Chabauty computation is needed there; at level `13` both covers sit on the same
+RANK-`1` curve, so Chabauty is needed TWICE.  Level `13` is therefore strictly
+the more expensive of the two to formalise, not the easier one.
+
+**Numerical corroboration, extended 2026-07-27** to all coprime `(a, b)` with
+`|a|, |b| ≤ 2000` (previously `400`): no non-degenerate solution at either
+level. -/
+theorem descent_system_no_solution (a b u v : ℤ) (hab : Int.gcd a b = 1)
+    (huv : IsCoprime u v) (hB : a * b * (a + b) = u * v)
+    (hC : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = v ^ 2 - u ^ 2 ∨
+          a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = u ^ 2 - v ^ 2) :
+    a * b * (a + b) = 0 := sorry
+
 /-- **THE LEAF, in integral homogeneous form: a coprime integral point of
-`X_1(13)` is degenerate.**
+`X_1(13)` is degenerate.**  **PROVEN since 2026-07-27** from
+`descent_system_no_solution` above, via `descent_sq_add_four_sq`, `C_odd` and
+`C_isCoprime`.
 
 `t² = C̃(a, b)² + 4·B̃(a, b)²` with `gcd(a, b) = 1` forces `ab(a + b) = 0`, i.e.
 `x = a/b ∈ {0, −1, ∞}`.  Its consumer `affine_rational_points` is PROVEN over it
@@ -1391,29 +1892,151 @@ Two further dead ends checked the same day, both mirroring level `18`:
   `gcd(u, v) = 1` only splits each of them between the two.  So the tempting
   eight-case enumeration is a proper SUBSET of the solutions, not a case
   division;
-* the sextic is irreducible with Galois group `F₁₈(6) = 3 ≀ 2`, so there is no
-  factorisation to descend along and no elementary two-cover route; and
-  `J_1(13)` is `ℚ`-simple of `GL₂`-type, so no quotient to a rank-`0` elliptic
-  curve exists.
+* the sextic is irreducible OVER `ℚ` with Galois group of order `18` (Magma
+  names it `C3*S3`), so there is no factorisation over `ℚ` to descend along;
+  and `J_1(13)` is `ℚ`-simple of `GL₂`-type, so no quotient to a rank-`0`
+  elliptic curve over `ℚ` exists.  The clause "and no elementary two-cover
+  route", which this bullet used to carry, is too strong and is withdrawn:
+  over `ℚ(i)` the sextic DOES factor, and that factorisation is exactly the
+  descent a machine uses.  See the `ℚ(i)` item in the last section.
 
-**NUMERICAL CORROBORATION** (exact integer arithmetic, untrusted searcher, so a
-claim to be re-derived and not a proof): over all coprime `(a, b)` with
-`|a| ≤ 400` and `1 ≤ b ≤ 400`, the only solutions of `t² = C̃² + 4B̃²` have
-`B̃ = ab(a + b) = 0`.  That is a considerably wider search than the
-`|a| ≤ 60`, `b ≤ 30` one recorded on `affine_rational_points`.  The same run
-confirms the two structural claims above: `C̃` is odd, and `gcd(C̃, B̃) = 1`,
-on every coprime pair in the range.
+**AUDIT EXTENSION, 2026-07-27 (second pass).**  Four further routes were
+searched and each is now closed by a stated, cheap, refutable check rather than
+left as an invitation.  The axes searched were: *other quadratic-form
+descents*; *the `ℤ[ζ₃]` descent at the level of the CURVE*; *bielliptic /
+elliptic-Chabauty*; and *congruences*.  The axis deliberately NOT searched, and
+the only one still open, is a descent on the JACOBIAN — for which the last
+section now names the cheapest known certificate.
 
-**What is still needed** is unchanged and is the four-part project recorded on
-`affine_rational_points` and in the module docstring: `Pic⁰` of a genus-`2`
-curve, Abel–Jacobi, good reduction at `3` with torsion-free kernel, and
-`rank J(ℚ) = 0` — with `#J(𝔽₃) = 19 = #J(ℚ)` as the sharp target.  Equivalently
-a Chabauty–Coleman or Mordell–Weil-sieve argument.  Nothing shorter is known to
-the author of this docstring. -/
+**(1) THE `ℤ[i]` REPRESENTATION IS THE ONLY ONE OF ITS SHAPE.**  This is
+strictly stronger than "the descent it invites is reversible": there is no
+*other* quadratic order to try instead.  Write `C = x³ + c₂x² + c₁x + c₀`;
+matching `x⁵` forces `c₂ = 1`, and demanding `f − C² = k·D²` with `D` quadratic
+is then two conditions on `(c₁, c₀)`.  Eliminating `c₀` between them (PARI
+`polresultant`) gives
+
+    c₁⁴ · (c₁ + 2)² · P₉(c₁) · Q₉(c₁),
+    P₉ = 64c₁⁹ − 256c₁⁸ − 160c₁⁷ + 2416c₁⁶ − 3132c₁⁵ − 2140c₁⁴ + 2889c₁³
+           + 2134c₁² + 364c₁ + 8,
+    Q₉ = 64c₁⁹ − 256c₁⁸ + 224c₁⁷ + 16c₁⁶ + 84c₁⁵ + 516c₁⁴ − 295c₁³
+           + 278c₁² + 172c₁ + 8,
+
+and **`P₉` and `Q₉` are both IRREDUCIBLE over `ℚ`** (PARI `factor`).  The root
+`c₁ = 0` is the degenerate branch: it forces `deg D ≤ 1` and `c₀ = 1`, giving
+`C = x³ + x² + 1` and `f − C² = 4x(x + 1)`, which is not a constant times a
+square — precisely the computation the refuted "NOT ANALOGOUS AT LEVEL 13"
+paragraph performed, and precisely why stopping there was wrong.  The root
+`c₁ = −2` is the representation above.  So `k = 4`, i.e. `ℤ[i]`, is the only
+quadratic-form descent that exists here at all.
+*Refuting check*: exhibit a rational root of `P₉` or of `Q₉`.
+
+**(2) THE `ℤ[ζ₃]` DESCENT ON THE CURVE IS REVERSIBLE TOO.**  This corrects the
+sentence above which says a gainful descent "must come from the `ℤ[ζ₃]`-action,
+i.e. a `(1 − ζ₃)`-descent on `J`".  The `J` half of that is still the live
+route; what is now ruled out is the tempting curve-level version, which the
+Shanks fibration makes explicit enough to test outright.  For
+`X³ − sX² − (s + 3)X − 1` with `t = s + 3`, the Lagrange resolvent satisfies
+
+    R³ = N(λ)·λ,        λ := t + 3ω,   ω := ζ₃,
+
+from `e₁ = s`, `e₂ = −(s + 3)`, `e₃ = 1`: `R³ + S³ = 2s³ + 9s² + 27s + 27`,
+`RS = s² + 3s + 9 = N(λ)`, `(R³ − S³)² = −27·disc`, and the factorisation
+`s³ + 6s² + 18s + 27 = (s + 3)(s² + 3s + 9)`.  Hence the cubic is reducible
+over `ℚ` **iff** `λ̄/λ` is a cube in `ℚ(ω)*`, iff `t + 3ω ∈ ℚ*·(ℚ(ω)*)³`.
+Writing `t + 3ω = r·ν³` with `ν = (x + y√−3)/2` and imposing the conic
+condition `(t − 2)² + 4 = z²` clears — the free parameter `r` cancelling
+identically, which is the tell — to
+
+    G(x, y) := (x³ − x²y − 9xy² + y³)² + 16y²(x² − y²)²    must be a square,
+
+i.e. to the genus-`2` curve `w² = x⁶ − 2x⁵ − x⁴ + 20x³ + 47x² − 18x + 17`, of
+discriminant `−2⁴²·13²`.  Magma's `IsIsomorphic` returns TRUE: that curve is
+**isomorphic to the original over `ℚ`** (same conductor `13²`, torsion `ℤ/19`,
+rank `0`; its six rational points are `(±1, ±8)` and `∞±`).  A bijection again,
+and for the same structural reason as at `√−1`: `h(−3) = 1` with units `μ₆`.
+*Refuting check*: run `IsIsomorphic` on the two hyperelliptic curves.
+
+**(3) BIELLIPTIC / ELLIPTIC-CHABAUTY IS CLOSED — although `X` IS geometrically
+bielliptic.**  `#GeometricAutomorphismGroup(X) = 12` (dihedral) against
+`#Aut_ℚ(X) = 6`, so over `ℚ̄` there are three extra involutions and `J` does
+split geometrically.  But they are not defined even over the SPLITTING field of
+the sextic: for `L'` that field, of degree `18` and discriminant `2¹⁸·13¹²`,
+Magma gives `#Aut(X_{L'}) = 6`.  So a bielliptic quotient is an elliptic curve
+over a field of degree `≥ 36`, and the elementary-descent template of
+`Fermat/FLT/EllipticCurve/MordellWeil.lean` — which proves `rank = 0` for the
+level-`14` curve by explicit Fermat descent, with no Mordell–Weil theorem and
+no Selmer group anywhere in it — has nothing here to attach to.
+*Refuting check*: exhibit a degree-`2` map from `X` to an elliptic curve over a
+field of small degree.
+
+**(4) NO CONGRUENCE CAN EVER PROVE THIS LEAF**, so "find a modulus, then
+`decide`" should not be attempted.  A brute-force scan of every prime power
+`≤ 2100` for a coprime residue solution of `t² ≡ F(a, b)` with
+`ab(a + b) ≢ 0 (mod p)` finds an obstruction at exactly the powers of `2`, `3`
+and `5`, and at nothing else.  Those carry no new information: `2 ∣ ab(a + b)`
+holds for every coprime pair outright, and the `3` and `5` obstructions are
+exactly `#X(𝔽₃) = 6` and `#X(𝔽₅) = 6` — the former being `card_X13_F3`, already
+proven above by `decide`.  (By hand at `3`: `3 ∤ ab(a + b)` forces `a ≡ b ≢ 0`,
+and `F(1, 1) = 17 ≡ 2 (mod 3)`, a non-residue.)
+
+The approach is moreover structurally incapable of working, which is the part
+worth remembering.  `X` is smooth and `X(ℚ_p)` is infinite for every `p`, so
+non-degenerate `p`-adic points exist at every `p`; Hensel-lifting one and
+truncating gives, for EVERY modulus `m`, integers `(a, b, t)` with
+`gcd(a, b) = 1`, `ab(a + b) ≠ 0` and `t² ≡ F(a, b) (mod m)`.  The exceptional
+set `ab(a + b) = 0` is not cut out by any congruence, because this is a global
+statement about a curve that has points everywhere locally.
+
+**NUMERICAL CORROBORATION.**  (i) Exact integer arithmetic over all coprime
+`(a, b)` with `|a| ≤ 400`, `1 ≤ b ≤ 400`: the only solutions of
+`t² = C̃² + 4B̃²` have `B̃ = ab(a + b) = 0`; the same run confirms `C̃` odd and
+`gcd(C̃, B̃) = 1` on every coprime pair in the range.  (ii) Magma's point search
+on `y² = f(x)` to height bound `10⁴` — a `25×` wider sweep — returns exactly the
+six known points `(0, ±1)`, `(−1, ±1)`, `∞±`.  Untrusted searchers both, so
+claims to be re-derived and not proofs.
+
+**THE CHEAPEST KNOWN CERTIFICATE, AND WHAT A LEAN PROOF SHOULD TARGET**
+(Magma, untrusted searcher; every number here is a claim to be re-derived).
+The leaf is exactly a NORM EQUATION.  With `L := ℚ[x]/(f)` and `θ` the image of
+`x`, the sextic being monic of degree `6` gives `F(a, b) = N_{L/ℚ}(a − bθ)`, so
+the statement reads
+
+    N_{L/ℚ}(a − bθ) = t²,    gcd(a, b) = 1    ⟹    ab(a + b) = 0.
+
+The descent therefore lives over `L`, and `L` is about as friendly as such a
+field ever gets:
+
+* `[L : ℚ] = 6`, `disc L = 2⁶·13²`, totally complex (signature `(0, 3)`);
+* **`h(L) = 1`** — this removes the single most infeasible ingredient of a
+  formalised descent, namely a class-group computation;
+* `rank O_L^* = 2`, and `i ∈ L`, since `ℚ(√(disc f)) = ℚ(i)`;
+* over `ℚ(i)` the sextic FACTORS, into the two conjugate cubics
+  `z³ + (1 ∓ 2i)z² − (2 ± 2i)z − 1`.  That is the sum-of-two-squares identity
+  re-read as the block decomposition of the order-`18` Galois action, the two
+  blocks being swapped by `Gal(ℚ(i)/ℚ)`; so the descent may equally be run on
+  the relative cubic `L/ℚ(i)`.
+
+And the certificate itself: **the `2`-Selmer group of `J` is TRIVIAL**,
+`#Sel₂(J/ℚ) = 1`.  That one fact delivers more than item `4` of the four-part
+project asks for: it gives `rank J(ℚ) = 0` *and* `J(ℚ)[2] = 0` simultaneously,
+so `J(ℚ)` has odd order and injects into `J(𝔽₃) ≅ ℤ/19`.  With items `1`–`3`
+(`Pic⁰`, Abel–Jacobi, good reduction at `3` with torsion-free kernel) the leaf
+then follows, `#J(𝔽₃) = #J(𝔽₅) = 19` remaining the sharp targets.
+
+So the honest summary of where the difficulty sits has MOVED, and this is the
+one thing to carry away from this pass: it is **not** the rank computation —
+that is a trivial-Selmer statement over a class-number-one sextic field, which
+is the friendliest shape such a computation can have — but items `1`–`3`, the
+genus-`2` Jacobian itself.  Nothing shorter is known to the author of this
+docstring. -/
 theorem abd_eq_zero_of_sq_eq (a b t : ℤ) (hab : Int.gcd a b = 1)
     (ht : t ^ 2 = (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) ^ 2
               + 4 * (a * b * (a + b)) ^ 2) :
-    a * b * (a + b) = 0 := sorry
+    a * b * (a + b) = 0 := by
+  obtain ⟨u, v, huv, hB, hC⟩ :=
+    descent_sq_add_four_sq _ _ t (C_odd a b hab)
+      (C_isCoprime a b (Int.isCoprime_iff_gcd_eq_one.mpr hab)) ht
+  exact descent_system_no_solution a b u v hab huv hB hC
 
 /-- **The affine rational points of `X_1(13)` are its four finite cusps.**
 

@@ -42225,10 +42225,22 @@ theorem artinDivisorNormIndex_le_ray_class
 
 set_option maxHeartbeats 1000000 in
 /-- **THE DIVISOR-GROUP ARTIN PACKAGE: the four subgroups, the divisor map,
-and the counting** (sorry node, created 2026-07-26 as sub-leaf (A3b-1) of
+and the counting** (**PROVEN 2026-07-27** — see the DECOMPOSED AND PROVEN
+section below. The head label read "sorry node" until 2026-07-27; it was
+STALE and is corrected here. Created 2026-07-26 as sub-leaf (A3b-1) of
 `exists_artinIdealGroup_relIndex_ray_class` below, which is now PROVEN as
 glue over this leaf and the crux (A3b-2)
-`artinDivisorKernel_le_sup_ray_class` just below).
+`artinDivisorKernel_le_sup_ray_class` just below, which is still open.)
+
+**NOTE FOR THE SUPPORT QUESTION (recorded 2026-07-27).** The modulus `mm`
+this theorem produces is literally the RAMIFIED RADICAL: the proof opens
+with `obtain ⟨mm, hmm, hmmiff⟩ := exists_radical_isRamifiedChar_ray_class`,
+whose characterisation is an **iff**, `w.asIdeal ∣ mm ↔ IsRamifiedCharRayClass
+F χ w`. The conclusion below exports only the `←` direction (`hmmram`); the
+`→` direction is available for free in the proof and is what a consumer needs
+in order to conclude that the modulus AVOIDS an unramified prime. See the
+ROUTE AUDIT on
+`exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class` below.
 
 **THE DEFERRED DESIGN DECISION, MADE HERE.** (A3b) was deliberately left
 uncut by its author because splitting it requires first fixing what the
@@ -42986,14 +42998,17 @@ above are now three declarations immediately preceding this one:
   everything Childress does *after* 1.–3. `A ≤ Q ≤ R` with `[R:A]` finite
   and `[R:A] ≤ [R:Q]` gives `Q = A`. This is the only part of Theorem
   5.2.1(ii) that needed no class field theory, and it is now closed.
-* `exists_artinAuxiliaryField_ray_class` — sorry node (A3a): **Artin's
+* `exists_artinAuxiliaryField_ray_class` — **PROVEN** (A3a; the label here
+  read "sorry node" until 2026-07-27 and was stale): **Artin's
   Lemma 5.2.8**, stated profinitely over `Γ F` (an open subgroup `H` for the
   auxiliary field `E`, with clauses (i)–(iv) as subgroup identities and
   `globalFrob p ∈ H` for "p splits completely"). Its own input, Van der
   Waerden 5.2.3–5.2.7, rests on Dirichlet in arithmetic progressions, which
   IS in the pin — so this is the ingredient whose prerequisites are all
   already available.
-* `exists_artinIdealGroup_relIndex_ray_class` — sorry node (A3b):
+* `exists_artinIdealGroup_relIndex_ray_class` — **PROVEN** (A3b; the label
+  here read "sorry node" until 2026-07-27 and was stale. The residual open
+  node underneath it is the crux `artinDivisorKernel_le_sup_ray_class`):
   ingredients 2. and 3., stated inside the **divisor group**
   `Multiplicative (HeightOneSpectrum (𝓞 F) →₀ ℤ)` as the four subgroups
   `Im = I_F(mm)`, `A = ker A_{M/F}`, `P = P⁺_{F,mm}`, `N = N_{M/F} I_M(mm)`
@@ -43065,7 +43080,10 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for SOME modulus — the reciprocity law proper**
-(sorry node, created 2026-07-26 as sub-leaf (A) of
+(**PROVEN 2026-07-26** as glue over the three leaves named in the
+DECOMPOSED section at the end of this docstring — the head label read
+"sorry node" until 2026-07-27, which was STALE and is corrected here.
+Created 2026-07-26 as sub-leaf (A) of
 `artinSymbol_span_eq_one_of_pos_primePow_ray_class` below, which is now
 PROVEN as glue over this leaf and the conductor leaf (B)
 `artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` just below):
@@ -44306,7 +44324,9 @@ theorem exists_coprimeExponents_ray_class (a b : ℕ) (ha : 1 < a) (hb : 1 < b)
 
 set_option maxHeartbeats 1000000 in
 /-- **A character trivial on an open subgroup has FINITE ORDER, prime to
-`3`** (sorry node, created 2026-07-26 as sub-leaf (B1a-ii-2-a-i) of
+`3`** (**PROVEN 2026-07-27** by the compactness/open-kernel route sketched
+below — the head label read "sorry node" until 2026-07-27, which was STALE
+and is corrected here. Created 2026-07-26 as sub-leaf (B1a-ii-2-a-i) of
 `exists_isAdmissibleModulus_ray_class` below, which is now PROVEN by the
 prime-power reduction over this leaf and (B1a-ii-2-a-ii)
 `exists_isAdmissibleModulus_primePow_ray_class` just below): there is an
@@ -44462,7 +44482,33 @@ the same reasons recorded there: `hmul`, `hVopen`, `hVker` make the
 extension cut out by `ker χ` finite abelian; `hcmul`/`hcfrob` make `c`
 the Artin symbol of `χ` rather than an arbitrary function on ideals;
 `hℓ3` is load-bearing because the cyclotomic base case fails at the
-residue characteristic; and `mm = ⊥` is excluded by the conclusion. -/
+residue characteristic; and `mm = ⊥` is excluded by the conclusion.
+
+**REQUEST FROM A DOWNSTREAM LEAF — PLEASE CARRY THE SUPPORT CLAUSE
+(recorded 2026-07-27 by the owner of
+`exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class`
+below).** When this node is proven, please also conclude
+
+    ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v
+
+i.e. that the modulus produced is supported on the RAMIFIED primes. This
+is not an extra mathematical obligation: the PROVEN `hunr`-carrying
+analogue `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`
+above already gets that clause for free, because its modulus is threaded
+down through `exists_artinIdealGroup_relIndex_ray_class` and
+`exists_artinDivisorPackage_ray_class` to
+`exists_radical_isRamifiedChar_ray_class`, whose characterisation is an
+**iff** (`v.asIdeal ∣ rr ↔ IsRamifiedCharRayClass F χ v`) of which only
+the `←` direction is currently exported. Whatever route proves THIS node
+will be producing its modulus the same way.
+
+Why it matters: that one clause closes
+`exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class`
+below as pure ideal arithmetic. Without it that leaf is a SECOND,
+independent class-field-theory obligation — its ROUTE AUDIT records that
+all three of its natural reformulations collapse back onto itself, so it
+has no attack of its own. With it, the two collapse into one. -/
 theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -44499,7 +44545,11 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_clas
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for a character of PRIME POWER order, WITHOUT an
-unramifiedness hypothesis** (sorry node, created 2026-07-26 as sub-leaf
+unramifiedness hypothesis** (**PROVEN 2026-07-27** as a one-line
+repackaging of `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
+just above, which is where the class field theory now sits and which is
+STILL OPEN — the head label here read "sorry node" until 2026-07-27, which
+was STALE and is corrected. Created 2026-07-26 as sub-leaf
 (B1a-ii-2-a-ii) of `exists_isAdmissibleModulus_ray_class` below, which is
 now PROVEN by the prime-power reduction over this leaf and
 (B1a-ii-2-a-i) `exists_forall_pow_eq_one_ray_class` just above): if `χ`
@@ -44587,8 +44637,11 @@ theorem exists_isAdmissibleModulus_primePow_ray_class
   exact ⟨mm, hmm, hkill⟩
 
 set_option maxHeartbeats 1000000 in
-/-- **SOME modulus is admissible for the Artin symbol `c`** (sorry node,
-created 2026-07-26 as sub-leaf (B1a-ii-2-a) of
+/-- **SOME modulus is admissible for the Artin symbol `c`**
+(**PROVEN 2026-07-26** by the prime-power reduction recorded in the
+DECOMPOSED AND PROVEN section at the end of this docstring — the head
+label read "sorry node" until 2026-07-27, which was STALE and is
+corrected here. Created 2026-07-26 as sub-leaf (B1a-ii-2-a) of
 `exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class` below,
 which is now PROVEN as ideal arithmetic over this leaf and (B1a-ii-2-b)
 `isAdmissibleModulus_of_mul_unramified_ray_class` just below): there is a
@@ -44881,14 +44934,73 @@ admissible modulus may be taken to divide a power of `rr`, and that is
 `exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class` BELOW
 this leaf, i.e. circular. Note also that ELEMENTWISE APPROXIMATION is
 impossible in general and is not the missing step: when `w ∤ ii` but
-`w ∣ δ`, no multiple of `δ` is ever `≡ 1 (mod w)`. Two axes remain
-untried, and the `hord` supplied here is what opens the first: (a) the
-DIVISOR-GROUP/index route of Childress ch. 5 run inside `I_F(mm)`, which
-is how `exists_isAdmissibleModulus_primePow_ray_class` above is meant to
-go; (b) Artin's descent to the CYCLOTOMIC base case with the support of
-the modulus tracked through the descent, the base case being
-`artinSymbol_span_eq_one_of_cyclotomic_ray_class` above, where the modulus
-is `(m)` and the ramified primes are exactly those dividing `m`.
+`w ∣ δ`, no multiple of `δ` is ever `≡ 1 (mod w)`.
+
+**BOTH REMAINING AXES WERE MAPPED 2026-07-27, AND NEITHER IS OPEN AT THIS
+LEAF. The repair is one clause on ANOTHER declaration; see (b).**
+
+*(a) The DIVISOR-GROUP/index route, run inside `I_F(mm)`.* Fully traced,
+and it terminates in a sorried node this leaf cannot supply.
+`exists_artinDivisorPackage_ray_class` above is **PROVEN, and PROVEN
+WITHOUT any unramifiedness hypothesis**, which is exactly what this leaf
+would need. Better still, the modulus it produces IS the ramified radical:
+its proof opens `obtain ⟨mm, hmm, hmmiff⟩ :=
+exists_radical_isRamifiedChar_ray_class …`, and `hmmiff` is an **iff**,
+`w.asIdeal ∣ mm ↔ IsRamifiedCharRayClass F χ w`. So the support
+information this leaf wants is already present there — it is simply not
+exported (the package's conclusion states only the `←` direction,
+`hmmram`). What blocks the route is the NEXT step: the only thing turning
+the package into admissibility is `artinDivisorKernel_le_sup_ray_class`
+(Childress Prop. 5.2.2, `A ≤ P ⊔ N`), which is SORRIED **and carries
+`hunr`, i.e. `χ` unramified at EVERY finite place**. This leaf has
+unramifiedness at the single place `w` only, so it cannot discharge
+`hunr`, and the route stops. *The check that refutes this:* find any proven
+declaration above this line that yields `A ≤ P ⊔ N` (or admissibility from
+the package) without `hunr`. There is none.
+
+*(b) Artin's descent to the CYCLOTOMIC base case with support tracked —
+THIS IS THE LIVE ROUTE, BUT THE WORK BELONGS ON ANOTHER DECLARATION.* The
+descent `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`
+above is PROVEN, and its modulus is the very same ramified radical (it
+passes through `exists_artinIdealGroup_relIndex_ray_class`, which passes
+through the package, which takes it from the iff). So in the `hunr` case
+the support clause is available FOR FREE. The `hunr`-free variant that
+this leaf actually depends on —
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
+above — is SORRIED, **and its conclusion DROPS the support clause**,
+asserting only `∃ mm ≠ ⊥` killing the ray.
+
+**Hence the concrete repair, and it closes this leaf as pure ideal
+arithmetic:** strengthen that declaration's conclusion by adding
+`∀ v, v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v`. Its PROVEN `hunr`
+analogue already obtains that clause for nothing from the same
+`exists_radical_isRamifiedChar_ray_class` iff, so the strengthening asks
+for no mathematics beyond what that leaf already owes. With it, this leaf
+is `obtain` + `fun hdvd => hw (…)`, and `mm`/`hmm` are not used at all.
+That last point is itself a finding: **`hmm` is load-bearing ONLY for the
+ideal-arithmetic axis, which is exhausted** — it is inert on the route
+that will actually close this leaf. It is kept in the statement anyway,
+because dropping it would strengthen the leaf.
+
+**TWO REFORMULATIONS THAT ARE *NOT* CUTS — do not spend a cycle on
+either (checked 2026-07-27).**
+* "Peel one unramified prime off an admissible modulus", i.e.
+  `IsAdmissibleModulusRayClass F c (w.asIdeal * ii) → IsAdmissibleModulusRayClass F c ii`,
+  is **already in the file** as `isAdmissibleModulus_of_mul_unramified_ray_class`
+  below, and it is PROVEN *from this leaf*. The converse derivation is a
+  two-line induction on `Ideal.absNorm` (the template is
+  `exists_dvd_isAdmissibleModulus_isRamifiedChar_ray_class` below), so the
+  two statements are EQUIVALENT and neither decomposes the other.
+* "Some admissible modulus is supported on the ramified primes" is
+  `exists_isAdmissibleModulus_isRamifiedChar_ray_class` below, likewise
+  PROVEN from this leaf via that same induction. Restating it at
+  prime-power level above this line would also *strengthen* this leaf,
+  discarding the deliberate design choice that `w` is fixed in advance.
+
+So this leaf is ATOMIC in the ideal-arithmetic direction — three
+independent reformulations all collapse back onto it — and its content is
+exactly unramified local norm surjectivity. It should be closed as a
+corollary of (b), not attacked directly.
 
 **Mathlib survey (re-run 2026-07-27, unchanged): nothing to build on.**
 `grep` over `.lake/packages/mathlib`, `Fermat/` and `~/cs/FLT` finds no
@@ -45596,7 +45708,10 @@ theorem exists_isAdmissibleModulus_isRamifiedChar_ray_class
 
 set_option maxHeartbeats 1000000 in
 /-- **The conductor: an admissible modulus contains an admissible
-divisor supported on the RAMIFIED primes** (sorry node, created
+divisor supported on the RAMIFIED primes** (**PROVEN 2026-07-26** as
+glue over the two leaves named in the DECOMPOSED section of this
+docstring — the head label read "sorry node" until 2026-07-27, which was
+STALE and is corrected here. Created
 2026-07-26 as the single sub-leaf (B1a) of
 `artinSymbol_ray_class_descend_unramified_prime` just below, which is now
 PROVEN as ideal arithmetic over it): if `mm ≠ ⊥` is admissible for the
@@ -46274,8 +46389,12 @@ theorem artinSymbol_span_eq_one_of_pos_primePow_ray_class
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, in
-Artin-symbol existence form — THE class-field-theoretic leaf** (sorry
-node, created 2026-07-25 as the isolated global-CFT content of
+Artin-symbol existence form — THE class-field-theoretic leaf**
+(**PROVEN AS GLUE 2026-07-26** over `exists_pow_eq_one_of_isOpen_ker_ray_class`
+and `artinSymbol_span_eq_one_of_pos_primePow_ray_class`, both of which are
+themselves PROVEN — the head label read "sorry node" until 2026-07-27,
+which was STALE and is corrected here. Created 2026-07-25 as the isolated
+global-CFT content of
 `character_ideal_span_singleton_eq_one_of_forall_pos_ray_class` below):
 for a multiplicative `χ : Γ F → 𝔽̄₃` (`hmul`) trivial on an open
 subgroup `V` (`hVopen`, `hVker`) and unramified at every finite place
@@ -46565,8 +46684,9 @@ extension has conductor dividing the archimedean modulus, so
 
 **DECOMPOSED and PROVEN as glue 2026-07-25** over the reciprocity leaf
 `exists_artinSymbol_isNarrowPrincipal_ray_class` (itself PROVEN as glue
-2026-07-26 over the single remaining sorry node
-`artinSymbol_span_eq_one_of_pos_primePow_ray_class`) and the two
+2026-07-26 over `artinSymbol_span_eq_one_of_pos_primePow_ray_class`,
+which was the single remaining sorry node when this was written and is
+itself **PROVEN** as of 2026-07-27 — corrected here) and the two
 bookkeeping bricks `eq_of_forall_asIdeal_eq_ray_class` /
 `eq_one_top_of_forall_asIdeal_ne_zero_ray_class` (both PROVEN just
 above). Assembly: the values of `χ` never vanish (`χ a · χ a⁻¹ = χ 1 =
@@ -47013,8 +47133,9 @@ set_option maxHeartbeats 1000000 in
 /-- **An odd-order character of `Γ_{ℚ(√d)}` unramified at EVERY
 finite place is trivial — the narrow-class leaf over the seven
 quadratic fields** (DECOMPOSED 2026-07-24 along route (α) into the
-three nodes above — the pure-reciprocity sorry leaf
-`character_sq_eq_one_of_narrow_exponent_two_ray_class` (Artin
+three nodes above — the pure-reciprocity leaf
+`character_sq_eq_one_of_narrow_exponent_two_ray_class` (called a "sorry
+leaf" here until 2026-07-27; it is **PROVEN** — Artin
 reciprocity for the narrow Hilbert class field, THE
 class-field-theoretic gap) over the PROVEN narrow-exponent-two glue
 `isNarrowPrincipal_sq_of_quadratic_ray_class` (the `h⁺`-table
@@ -49554,8 +49675,9 @@ theorem dihedral_eigenvalue_character_symmetric_ray_class {k : Type u}
 
 set_option maxHeartbeats 1000000 in
 /-- **The dihedral ray-class computation given unramifiedness at `2`**
-(DECOMPOSED 2026-07-23 into the ray-class sorry node
-`dihedral_eigenvalue_character_symmetric_ray_class` above — the
+(DECOMPOSED 2026-07-23 into the ray-class node
+`dihedral_eigenvalue_character_symmetric_ray_class` above, which was a
+sorry node when this was written and is **PROVEN** as of 2026-07-27 — the
 assembly is proven): the linear-algebra layer of the dihedral
 contradiction. The second eigenvector `w := u σ₀ ·ᵥ v` carries the
 `σ₀`-conjugate eigenvalue on `H` (push `u g` across
@@ -49836,7 +49958,8 @@ theorem dihedral_induced_character_ray_class {k : Type u}
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation with
 an explicit eigenvector** (DECOMPOSED 2026-07-23 into the ray-class
-core sorry node `dihedral_induced_character_ray_class` above — the
+core node `dihedral_induced_character_ray_class` above, which was a sorry
+node when this was written and is **PROVEN** as of 2026-07-27 — the
 whole induced-representation step is PROVEN here as glue; the
 character `θ'` is the possibly SWITCHED character produced by
 `exists_index_two_common_eigenvector`, and `K = ℚ(x)`, `x = √d`,
@@ -54659,8 +54782,9 @@ theorem agreement_additive_character_eq_zero_ray_class
     exact hzero g ((hagree g).mpr hg)
 
 /-- **The agreement homomorphism is killed by ray-class arithmetic**
-(DECOMPOSED 2026-07-24 into the additive-character sorry node
-`agreement_additive_character_eq_zero_ray_class` above — the assembly
+(DECOMPOSED 2026-07-24 into the additive-character node
+`agreement_additive_character_eq_zero_ray_class` above, which was a sorry
+node when this was written and is **PROVEN** as of 2026-07-27 — the assembly
 is proven): the untwisting `b := c/χ`. By `hcocycle` the function `b`
 is additive on the agreement locus `H = {g | ψ g = χ g}`; the kernel
 carrier `hker`, the outside-`{2,3}` inertia vanishing `hunr` and the
