@@ -363,6 +363,13 @@ public import Mathlib.LinearAlgebra.Pi
 -- `public` because `Sha2` — and hence the statements of the two arithmetic
 -- leaves that replaced that node — mention `continuousCohomology`.
 public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functoriality
+-- `ContinuousCohomology.{bdryKer, cocycleClass, cocycleClass_eq_zero_iff}` and the
+-- `cohomologyIsoQuot` they rest on: our pin computes `continuousCohomology` but offers no
+-- way to get AT a class, so an explicit cocycle could not be turned into one. Vendored from
+-- `~/cs/FLT` on 2026-07-27 (pin-drift audit in the file's own header) and `public` because
+-- `exists_obstructionCocycle_relationSpace_sha2` below mentions `bdryKer` and `cocycleClass`
+-- in its SIGNATURE.
+public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.Basic
 -- `Module.Dual`: Böckle's obstruction map has the DUAL of the minimal
 -- relation space as its source, so `Module.Dual` appears in the SIGNATURE of
 -- `exists_injective_dual_relationSpace_to_sha2` below and this must be public.
@@ -17049,9 +17056,161 @@ theorem ker_le_of_exists_section_of_ker_le_sq_sup
     simpa [hθ, hφj] using hzero
   exact Ideal.Quotient.eq_zero_iff_mem.mp hmk
 
-/-- **Böckle's obstruction homomorphism, with its lifting criterion** (sorry
-node, cut out of `exists_injective_dual_relationSpace_to_sha2` below on
-2026-07-27, which is now PROVEN over it together with
+/-- **Böckle's obstruction COCYCLE, with its lifting criterion** (sorry node,
+cut out of `exists_obstructionHom_relationSpace_sha2` below on 2026-07-27,
+which is now PROVEN over it; this is the same statement one level lower, at
+the level of explicit 2-cocycles rather than of cohomology classes):
+
+for a minimal, `ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the
+weakly universal, trace-generated hardly ramified deformation ring, there is a
+`k`-LINEAR map
+
+`oc : (ker φ/𝔪_S·ker φ)^∨ → Z²(Γ_ℚ, ad⁰ ρbar)`
+
+into the CONTINUOUS 2-COCYCLES of `ad⁰`, such that (a) the class of `oc ψ` lies
+in `Ш²_S(ad⁰)` for every `ψ`, and (b) whenever `oc ψ` is a COBOUNDARY the
+surjection `S ⧸ K_ψ ↠ D.R` admits a ring-theoretic section, for the ideal
+`K_ψ = {j ∈ ker φ : ψ(j̄) = 0}` pinned by the `↔`.
+
+**Why this cut, and what it buys.** The node below asks for a map into
+`Ш²_S(ad⁰)`, whose elements are cohomology CLASSES — objects with no chosen
+representative. Obstruction theory does not produce a class directly; it
+produces the explicit 2-cocycle
+
+`c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1 ∈ ad⁰`
+
+attached to any continuous set-theoretic lift `ρ̃` of `D.ρ` along the small
+extension `S ⧸ K_ψ ↠ D.R`, and reads the lifting criterion off it: `ρ̃` can be
+corrected to a homomorphism exactly when `c` is a coboundary. So the cocycle
+level is where the mathematics happens, and the class level is a wrapper.
+Until 2026-07-27 that wrapper could not even be written down here — see the
+machinery audit below — which is why the node below was stated monolithically.
+
+**What discharges the wrapper**, and it is now proven rather than assumed:
+`ContinuousCohomology.cocycleClass` (`k`-linear, so `ψ ↦ [oc ψ]` is `k`-linear
+because `oc` is) together with `cocycleClass_eq_zero_iff` (a class vanishes
+exactly when its cocycle is a coboundary), both vendored in
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`.
+
+**Cocycles are taken in the HOMOGENEOUS model**, `Z² = ker(d² : C²→C³)` for
+`C^n = TopRep.homogeneousCochains`, because that is the model our pin actually
+computes `continuousCohomology` with. Writing the inhomogeneous `c(σ,τ)` above
+in it costs the standard dictionary
+`F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`, which is a translation, not a missing
+theory — that is the difference between this leaf and the previous state,
+where there was no model of `H²` with elements at all.
+
+**MACHINERY AUDIT — what remains missing, and the check that would refute each
+item** (this supersedes the audit that stood on the node below; items 3 and 4
+of that audit are now DISCHARGED and are recorded as such, because a stale
+"this is impossible" note costs more than an open sorry):
+
+1. *No small-extension API anywhere.* Nothing in `Fermat/` or `~/cs/FLT`
+   defines a small/square-zero extension of local rings together with the
+   lifting problem for a representation along it; mathlib has only generic
+   `I ^ 2 = ⊥` algebra (`RingTheory/Derivation/ToSquareZero.lean`,
+   `TrivSqZeroExt`) and the formal-smoothness lifting criteria. REFUTED BY:
+   `grep -rn "SmallExtension\|IsSmallExtension" Fermat/ ~/cs/FLT/FLT/` finding
+   a definition. STILL OPEN as of 2026-07-27 (re-checked; only this docstring
+   and the one below hit).
+2. *No obstruction class exists as a formal object.* REFUTED BY: a `def` whose
+   value lies in `continuousCohomology 2 _`. Now PARTIALLY discharged: the
+   ARROW exists (`ContinuousCohomology.cocycleClass`), so a cocycle can be
+   turned into a class; what is still missing is the cocycle `c(σ,τ)` itself,
+   which is what this leaf asserts to exist.
+3. *No inhomogeneous cochains in our pin.* STILL TRUE, and now known to be
+   NOT BINDING: the homogeneous model has elements and a cocycle condition,
+   and the dictionary above expresses `c(σ,τ)` inside it. The earlier audit's
+   inference "no `C(Gⁿ,X)` ⟹ the 2-cocycle cannot be written" does not hold.
+4. *No long exact sequence, no connecting map, no cup product* for continuous
+   cohomology in our pin. **DISCHARGED for the part this leaf needed**: the
+   binding gap was not a long exact sequence at all but the absence of any
+   `Z/B` model of `continuousCohomology`, i.e. of a way to name a class. That
+   is now vendored (`cohomologyIsoQuot`, `cocycleClass`); see that file's
+   header for the pin-drift audit. A cup product is still absent and is still
+   needed by `rank_sha2_le_rank_sha1_twist` below, but NOT by this leaf.
+5. *Liftability of the four hardly ramified local conditions along a small
+   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
+   being preserved under a square-zero surjection. STILL OPEN; this is what
+   conjunct (a) — the landing in `Ш²` rather than merely in `H²` — rests on,
+   and it is the natural next cut once (1) exists.
+
+So the binding item is now **(1)**, the small-extension API, together with the
+construction of `ρ̃` and `c` over it. Items 4 and the class-level wrapper are
+done; item 3 is a non-obstruction.
+
+References: Böckle, *Presentations of universal deformation rings*; Mazur,
+*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
+*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII.
+
+**CIRCULARITY GUARD — MOVED HERE, NOT DROPPED.** The guard sat on
+`exists_obstructionHom_relationSpace_sha2` below until that became PROVEN over
+this leaf on 2026-07-27; a guard on a proven consumer guards nothing, so it
+belongs here, on the declaration that still contains the `sorry`. It has now
+been moved THREE times for this reason (off
+`rank_relationSpace_le_of_rank_sha2_le`, then off
+`exists_injective_dual_relationSpace_to_sha2`, then off the node below). The
+BANNED INPUTS clause binds: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) nor
+`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
+— nor anything proven over them — may be used to discharge this leaf, since
+their intended proofs run through modularity lifting, which is proven over the
+very bound this leaf supplies. A green build and an honest `#print axioms`
+would BOTH survive such a discharge; only a human reading catches it. `hℓ5`
+is carried for the same reason: it keeps
+`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to the
+prime `3`) inapplicable, so that route stays closed mathematically rather than
+merely by import scope. -/
+theorem exists_obstructionCocycle_relationSpace_sha2
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+        (hsurj : Function.Surjective φ),
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        letI : Module k (↥(RingHom.ker φ) ⧸
+            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+          Module.compHom _
+            (residueRingEquivOfSurjective (D.π.comp φ)
+              (D.π_surjective.comp hsurj)).symm.toRingHom
+        ∃ oc : Module.Dual k (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
+            ↥(TopModuleCat.ker
+              ((TopRep.homogeneousCochains (adZeroTopRep ρbar)).d 2 3)),
+          (∀ ψ, ContinuousCohomology.cocycleClass (adZeroTopRep ρbar) 2 (oc ψ) ∈
+            Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
+          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer (adZeroTopRep ρbar) 2).hom.range →
+            ∃ K : Ideal (MvPowerSeries (Fin g) Λ),
+              K ≤ RingHom.ker φ ∧
+              IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) *
+                  RingHom.ker φ ≤ K ∧
+              (∀ j : ↥(RingHom.ker φ),
+                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
+                  ψ (Submodule.Quotient.mk j) = 0) ∧
+              ∃ s : D.R →+* (MvPowerSeries (Fin g) Λ ⧸ K),
+                ∀ a : D.R, ∃ x : MvPowerSeries (Fin g) Λ,
+                  φ x = a ∧ s a = Ideal.Quotient.mk K x :=
+  sorry
+
+/-- **Böckle's obstruction homomorphism, with its lifting criterion** (PROVEN
+2026-07-27 over the single leaf `exists_obstructionCocycle_relationSpace_sha2`
+above, which is the same statement at the level of explicit 2-cocycles; this
+node was itself cut out of `exists_injective_dual_relationSpace_to_sha2` below
+on 2026-07-27, which is PROVEN over it together with
 `ker_le_of_exists_section_of_ker_le_sq_sup` above; it carries items (4)+(5) of
 the machinery audit on
 `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below):
@@ -17123,62 +17282,32 @@ is `residueRingEquivOfSurjective (D.π ∘ φ)`, i.e. the identification of
 over `k` rather than over `S ⧸ 𝔪_S` is what makes it literally Böckle's
 statement, since `Ш²_S(ad⁰)` is a `k`-vector space.
 
-**MACHINERY AUDIT — what is missing, and the check that would refute each
-item** (surveyed 2026-07-27 across `Fermat/`, our mathlib pin and `~/cs/FLT`;
-this is the reason the leaf is stated rather than proven, and it is a survey
-of the whole tree, not of one file):
+**MACHINERY AUDIT — MOVED, AND PARTLY DISCHARGED.** The five-item audit that
+stood here is now on `exists_obstructionCocycle_relationSpace_sha2` above,
+where the `sorry` went, and two of its items died in the move: item (4) was
+wrong about what was binding (the gap was not a long exact sequence but the
+absence of any `Z/B` model of `continuousCohomology`, now vendored as
+`ContinuousCohomology.cohomologyIsoQuot` / `cocycleClass`), and item (3) —
+"no inhomogeneous cochains, so the 2-cocycle cannot be written" — was a
+non-sequitur, since the homogeneous model has elements and the standard
+dictionary expresses `c(σ,τ)` in it. The binding item is now (1), a
+small-extension API, which is what the leaf above waits on.
 
-1. *No small-extension API anywhere.* Nothing in `Fermat/` or `~/cs/FLT`
-   defines a small/square-zero extension of local rings together with the
-   lifting problem for a representation along it; mathlib has only generic
-   `I ^ 2 = ⊥` algebra (`RingTheory/Derivation/ToSquareZero.lean`,
-   `TrivSqZeroExt`) and the formal-smoothness lifting criteria. REFUTED BY:
-   `grep -rn "SmallExtension\|IsSmallExtension" Fermat/ ~/cs/FLT/FLT/` finding
-   a definition.
-2. *No obstruction class exists as a formal object.* Every `obstruction` hit
-   in the tree is docstring prose. REFUTED BY: a `def` whose value lies in
-   `continuousCohomology 2 _`.
-3. *No inhomogeneous cochains in our pin.* `continuousCohomology` is genuinely
-   computed (`Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`),
-   but through the HOMOGENEOUS resolution `C(G, C(G, …, X))` — there is no
-   `C(Gⁿ, X)` description, which is what one writes an explicit 2-cocycle
-   `c(σ,τ) = ρ̃(σ)ρ̃(τ)ρ̃(στ)⁻¹` in. Basic.lean's own TODO records this.
-   REFUTED BY: an inhomogeneous-cochain equivalence appearing in the pin.
-4. *No long exact sequence, no connecting map, no cup product* for continuous
-   cohomology in our pin; `~/cs/FLT` carries a richer private copy
-   (`FLT/Mathlib/…/ContCohomology/{Basic,CupProduct}.lean`, notably
-   `cohomologyIsoQuot`) which is the natural vendoring target and needs a
-   pin-drift audit. REFUTED BY: `ls` of the pin's `ContCohomology/` showing
-   more than `Basic`, `Functoriality`, `LowDegree`.
-5. *Liftability of the four hardly ramified local conditions along a small
-   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
-   being preserved under a square-zero surjection.
+**CIRCULARITY GUARD — MOVED, NOT DROPPED.** It sits on
+`exists_obstructionCocycle_relationSpace_sha2` above, which is where the
+`sorry` is; see it for the BANNED INPUTS clause (neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
+may be used). Nothing in the proof below touches either: it is the purely
+formal passage from a cocycle-valued map to a class-valued one.
 
-Items 1–3 are the binding ones: 4 and 5 can be *stated* and cut further once
-1–3 exist, per the standing rule that stating a theory is not proving it.
-
-References: Böckle, *Presentations of universal deformation rings*; Mazur,
-*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
-*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII.
-
-**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF.** This leaf carries
-the same hypothesis package as
-`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below, which is
-the package this development ultimately refutes; so the EXPOSURE AUDIT AND
-CIRCULARITY GUARD in that node's docstring applies here VERBATIM and is not
-repeated. In particular the BANNED INPUTS clause binds: neither
-`not_isIrreducible_of_isHardlyRamified_of_five_le`
-(`Modularity/KhareWintenberger.lean`) nor
-`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
-— nor anything proven over them — may be used to discharge this leaf, since
-their intended proofs run through modularity lifting, which is proven over the
-very bound this leaf supplies. A green build and an honest `#print axioms`
-would BOTH survive such a discharge; only a human reading catches it. (The
-guard has now been moved TWICE for the same reason — off
-`rank_relationSpace_le_of_rank_sha2_le` when that was proven on 2026-07-27,
-and off `exists_injective_dual_relationSpace_to_sha2` when THAT was proven
-later the same day. A guard left on a proven consumer guards nothing; it
-belongs on whichever declaration still contains the `sorry`.) -/
+**What the proof below contributes.** Exactly the class-level wrapper:
+`ob := (cocycleClass ∘ oc)` corestricted to `Ш²_S(ad⁰)` along conjunct (a) —
+`k`-linear because `cocycleClass` is a `k`-linear map and `oc` is `k`-linear,
+so no linearity obligation survives into the leaf — and the criterion, which
+is `cocycleClass_eq_zero_iff`: `ob ψ = 0` says the class of `oc ψ` vanishes,
+which says exactly that `oc ψ` is a coboundary, which is conjunct (b)'s
+hypothesis. -/
 theorem exists_obstructionHom_relationSpace_sha2
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -17217,13 +17346,30 @@ theorem exists_obstructionHom_relationSpace_sha2
                   ψ (Submodule.Quotient.mk j) = 0) ∧
               ∃ s : D.R →+* (MvPowerSeries (Fin g) Λ ⧸ K),
                 ∀ a : D.R, ∃ x : MvPowerSeries (Fin g) Λ,
-                  φ x = a ∧ s a = Ideal.Quotient.mk K x :=
-  sorry
+                  φ x = a ∧ s a = Ideal.Quotient.mk K x := by
+  letI := D.commRing
+  letI := D.algebra
+  intro Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin
+  letI : Module k (↥(RingHom.ker φ) ⧸
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+        (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+    Module.compHom _
+      (residueRingEquivOfSurjective (D.π.comp φ)
+        (D.π_surjective.comp hsurj)).symm.toRingHom
+  obtain ⟨oc, hmem, hcob⟩ :=
+    exists_obstructionCocycle_relationSpace_sha2 hℓOdd hdim hℓ5 h hirr D hw ht
+      Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin
+  refine ⟨LinearMap.codRestrict (Sha2 ρbar (hardlyRamifiedPlaces ℓ))
+    ((ContinuousCohomology.cocycleClass (adZeroTopRep ρbar) 2).comp oc) hmem, ?_⟩
+  intro ψ hψ
+  refine hcob ψ ?_
+  rw [← ContinuousCohomology.cocycleClass_eq_zero_iff]
+  exact congrArg Subtype.val hψ
 
-/-- **Böckle's obstruction injection** (PROVEN 2026-07-27 over the single
-arithmetic leaf `exists_obstructionHom_relationSpace_sha2` above, which carries
-items (4)+(5) of the machinery audit on
-`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; this node
+/-- **Böckle's obstruction injection** (PROVEN 2026-07-27 over
+`exists_obstructionHom_relationSpace_sha2` above, which is itself now PROVEN,
+so the arithmetic actually reached from here is the single leaf
+`exists_obstructionCocycle_relationSpace_sha2` above; this node
 was itself cut out of `rank_relationSpace_le_of_rank_sha2_le` on 2026-07-27,
 which is now PROVEN over it):
 
@@ -17286,8 +17432,10 @@ References: Böckle, *Presentations of universal deformation rings*; Mazur,
 *Fermat's Last Theorem*, §2.6–2.7.
 
 **CIRCULARITY GUARD — MOVED, NOT DROPPED.** The guard that used to sit on this
-node now sits on `exists_obstructionHom_relationSpace_sha2` above, which is
-where the arithmetic went; see it for the BANNED INPUTS clause (neither
+node now sits on `exists_obstructionCocycle_relationSpace_sha2` above, which is
+where the arithmetic went (it passed through
+`exists_obstructionHom_relationSpace_sha2` on the way, and moved on when that
+became proven); see it for the BANNED INPUTS clause (neither
 `not_isIrreducible_of_isHardlyRamified_of_five_le` nor
 `not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
 may be used). Nothing in the proof below touches either: it is pure ideal
@@ -17693,17 +17841,34 @@ is 582 lines and **sorry-free** (`grep -c sorry` → 0), culminating in
 `cup (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp) (m n r) (hr : r = m + n) :
 continuousCohomology m (of ρ1) ⟶ TopModuleCat.linHom (continuousCohomology n (of ρ2)) (continuousCohomology r (of ρ3))`.
 It does NOT stand alone on our pin: `grep -rn "def linHom" Mathlib/` returns
-only the discrete `Representation.linHom`, and every one of its infrastructure
-dependencies is likewise absent and would have to be vendored with it —
-`ContRepresentation.linHom` and `continuous_pair_of_discrete`
-(`Continuous/Basic.lean:42,74`), `TopRep.iHom` (`Continuous/TopRep.lean:29`),
-`resolutionCLM`/`resolutionXCast`/`invariantsObjIHom`/`bdryKer`/
-`cohomologyIsoQuot` (`ContCohomology/Basic.lean`, 239 lines),
-`TopModuleCat.linHom`/`linHomMap`/`cokerDescBilinear`
-(`ModuleCat/Topology/{Basic,Homology}.lean`). It is also written against pin
-`81a5d2` and `public import Mathlib`s wholesale, so names such as
-`HomologicalComplex.cyclesIsoKer`, `TopModuleCat.isLimitKer` and
-`ContinuousMap.prodSwap` need re-checking against our `a3364fa` first.
+only the discrete `Representation.linHom`, so `ContRepresentation.linHom` and
+`continuous_pair_of_discrete` (`Continuous/Basic.lean:42,74`), `TopRep.iHom`
+(`Continuous/TopRep.lean:29`), `TopModuleCat.linHom`/`linHomMap`/
+`cokerDescBilinear` (`ModuleCat/Topology/{Basic,Homology}.lean`) and
+`resolutionCLM`/`resolutionXCast`/`invariantsObjIHom` would have to be vendored
+with it.
+
+**This audit was CORRECTED on 2026-07-27 and its estimate was too pessimistic
+by roughly half.** Two of the dependencies it listed are no longer outstanding,
+and one of its re-checking worries was unfounded:
+
+* `bdryKer` and `cohomologyIsoQuot` are now VENDORED and building here, in
+  `Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`
+  (that file's header carries the declaration-by-declaration pin-drift audit).
+* The reference project's four `FLT.Mathlib` shims underneath them —
+  `Algebra.Category.ModuleCat.Topology.{Basic,Homology}` and
+  `RepresentationTheory.Continuous.{Basic,TopRep}` — are largely UPSTREAM in
+  our pin already (`TopModuleCat`, `ker`/`coker`/`kerι`/`cokerπ`/`isLimitKer`/
+  `isColimitCoker`/`comp_cokerπ`, `TopRep`, `resolutionX`,
+  `homogeneousCochains`, `continuousCohomology`, and the `CategoryWithHomology`
+  instance). Only `linHom`/`iHom` and the bilinear descent are genuinely
+  missing from them, so the cup product needs a fraction of the 1706 lines of
+  `FLT.Mathlib` that this audit implied.
+* Of the three names flagged as needing re-checking, `TopModuleCat.isLimitKer`
+  is in our pin verbatim; `HomologicalComplex.cyclesIsoKer` is absent and is
+  now vendored here; `ContinuousMap.prodSwap` remains unchecked. In the event
+  the vendored portion needed NO proof changes against `a3364fa` and compiled
+  first try, so the `81a5d2` drift is far smaller than feared for this subtree.
 
 And the cup product is only the FIRST half: the pairing also needs the local
 invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory), of which this tree
