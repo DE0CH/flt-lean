@@ -350,6 +350,22 @@ public import Mathlib.RingTheory.LocalRing.Module
 -- complete-intersection leaf below to its SPECIAL FIBRE.
 public import Mathlib.LinearAlgebra.TensorProduct.Quotient
 public import Mathlib.RingTheory.Nakayama
+-- `IsAdicComplete.liftAlgHom` / `IsAdicComplete.mkₐ_comp_liftAlgHom`: the
+-- universal property of an `I`-adically complete ring for ALGEBRA maps —
+-- a compatible family `A →ₐ S ⧸ I^n` assembles into a single `A →ₐ S`.
+-- This is what turns the compatible tower produced by the compactness
+-- argument into the honest `𝒪_E`-point of `exists_algHom_of_forall_exists_algHom_quotient`.
+public import Mathlib.RingTheory.AdicCompletion.RingHom
+-- Kőnig's lemma for inverse systems of finite types
+-- (`exists_seq_forall_proj_of_forall_finite`), the compactness input of the
+-- same leaf: nonempty finite Hom-sets at every truncation level have a
+-- compatible section.
+public import Mathlib.Order.KonigLemma
+-- `IsPrecomplete.of_finite_module`: precompleteness of a module-finite
+-- algebra over a precomplete base — the route from the adic completeness of
+-- `𝒪₃ᵥ` to that of the local integral closure `𝒪_E`.  (The module is already
+-- in this file's cone through `ConnectedEtale`, but only non-publicly.)
+public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
 
 /-!
 # Mod-3 hardly ramified representations
@@ -8609,7 +8625,243 @@ theorem existsUnique_algHom_quotient_maximalIdeal_pow_succ
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **PASSAGE TO THE LIMIT** (sorry node, created 2026-07-27 as the SECOND
+/-- **`𝔪_E`-ADIC COMPLETENESS OF THE LOCAL INTEGRAL CLOSURE** (PROVEN
+2026-07-27; the completeness input of `exists_algHom_of_forall_exists_algHom_quotient`
+below).  `𝒪_E` is `𝔪_E`-adically complete for every finite subextension
+`E/ℚ₃ᵥ` of `ℚ₃ᵥᵃˡᵍ`.
+
+WHY THIS IS NOT AN INSTANCE ALREADY, and what the proof has to do.  What
+mathlib and this development supply is completeness for the ideal coming
+from the BASE: `𝒪₃ᵥ` is `𝔪₃ᵥ`-adically complete (`ConnectedEtale`), and
+`IsPrecomplete.of_finite_module` propagates precompleteness to the finite
+`𝒪₃ᵥ`-module `𝒪_E`, which `IsPrecomplete.map_algebraMap_iff` re-reads as
+precompleteness for the EXTENDED ideal `K := 𝔪₃ᵥ·𝒪_E`.  That is not
+`𝔪_E`: in the ramified case `K = 𝔪_E^d` with `d = e(E/ℚ₃ᵥ) > 1`, so the
+two filtrations are merely COFINAL, not equal.  The bridge is the
+reindexing `k ↦ d·k`: a `𝔪_E`-Cauchy sequence `f` gives a `K`-Cauchy
+sequence `k ↦ f (d·k)` because `𝔪_E^(d·k) = K^k`, and the limit `L` it
+produces satisfies `f n ≡ L mod 𝔪_E^n` for every `n` because
+`n ≤ d·n` (this is where `0 < d` is consumed, and it is the ONLY place).
+That `K` is a power of `𝔪_E` at all is the discrete valuation ring
+structure of `𝒪_E`: `K ≠ ⊥` because `algebraMap 𝒪₃ᵥ 𝒪_E` is injective and
+`𝔪₃ᵥ ≠ ⊥`, and `d ≠ 0` because `K ≤ 𝔪_E ≠ ⊤` (the map is local, being
+integral and injective).  Hausdorffness is free — it is the mathlib
+instance for a Noetherian local ring. -/
+theorem isAdicComplete_maximalIdeal_integralClosure
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E] :
+    IsAdicComplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+      (IntegralClosure 𝒪₃ᵥ E) := by
+  classical
+  haveI hMF : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) :=
+    IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ E (IntegralClosure 𝒪₃ᵥ E)
+  haveI hprecJ : IsPrecomplete (IsLocalRing.maximalIdeal 𝒪₃ᵥ) (IntegralClosure 𝒪₃ᵥ E) :=
+    IsPrecomplete.of_finite_module _
+  haveI hprecK : IsPrecomplete
+      ((IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)))
+      (IntegralClosure 𝒪₃ᵥ E) := IsPrecomplete.map_algebraMap_iff.mpr hprecJ
+  -- membership in `I • ⊤` is membership in `I`
+  have hmem : ∀ (I : Ideal (IntegralClosure 𝒪₃ᵥ E)) (x : IntegralClosure 𝒪₃ᵥ E),
+      x ∈ (I • ⊤ : Submodule (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ E)) ↔ x ∈ I := by
+    intro I x
+    simp
+  -- the extended ideal is a power of the maximal ideal
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible (IntegralClosure 𝒪₃ᵥ E)
+  have hmspan : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) = Ideal.span {ϖ} :=
+    (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
+  have hKle : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ≤
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) := by
+    rw [Ideal.map_le_iff_le_comap]
+    intro x hx
+    simp only [Ideal.mem_comap]
+    exact (IsLocalRing.mem_maximalIdeal _).mpr fun hu =>
+      (IsLocalRing.mem_maximalIdeal _).mp hx
+        (isUnit_of_map_unit (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) x hu)
+  have hKne : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ≠ ⊥ := by
+    obtain ⟨a, ha, ha0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot
+      (IsDiscreteValuationRing.not_a_field 𝒪₃ᵥ)
+    intro hbot
+    have hmap0 : algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) a = 0 := by
+      have := Ideal.mem_map_of_mem (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ha
+      rwa [hbot, Ideal.mem_bot] at this
+    exact ha0 (FaithfulSMul.algebraMap_injective 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)
+      (by rw [hmap0, map_zero]))
+  obtain ⟨d, hd⟩ := IsDiscreteValuationRing.ideal_eq_span_pow_irreducible hKne hϖ
+  have hKpow : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ d := by
+    rw [hd, hmspan, Ideal.span_singleton_pow]
+  have hd0 : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with rfl | hpos
+    · exfalso
+      rw [hKpow, pow_zero, Ideal.one_eq_top] at hKle
+      exact (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪₃ᵥ E)).ne_top
+        (top_le_iff.mp hKle)
+    · exact hpos
+  haveI hprec : IsPrecomplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+      (IntegralClosure 𝒪₃ᵥ E) := by
+    constructor
+    intro f hf
+    have hf' : ∀ {m n : ℕ}, m ≤ n →
+        f m - f n ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ m := by
+      intro m n hmn
+      exact (hmem _ _).mp (SModEq.sub_mem.mp (hf hmn))
+    have hg : ∀ {k l : ℕ}, k ≤ l → f (d * k) ≡ f (d * l)
+        [SMOD (((IsLocalRing.maximalIdeal 𝒪₃ᵥ).map
+          (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E))) ^ k •
+          (⊤ : Submodule (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ E)))] := by
+      intro k l hkl
+      refine SModEq.sub_mem.mpr ((hmem _ _).mpr ?_)
+      rw [hKpow, ← pow_mul]
+      exact hf' (Nat.mul_le_mul_left d hkl)
+    obtain ⟨L, hL⟩ := IsPrecomplete.prec hprecK hg
+    refine ⟨L, fun n => ?_⟩
+    refine SModEq.sub_mem.mpr ((hmem _ _).mpr ?_)
+    have h1 : f n - f (d * n) ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ n :=
+      hf' (Nat.le_mul_of_pos_left n hd0)
+    have h2 : f (d * n) - L ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ n := by
+      have hmemK := (hmem _ _).mp (SModEq.sub_mem.mp (hL n))
+      rw [hKpow, ← pow_mul] at hmemK
+      exact Ideal.pow_le_pow_right (Nat.le_mul_of_pos_left n hd0) hmemK
+    have hsum := Ideal.add_mem _ h1 h2
+    simpa using hsum
+  exact ⟨⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FINITENESS OF THE TRUNCATED HOM-SETS** (PROVEN 2026-07-27; the
+compactness input of `exists_algHom_of_forall_exists_algHom_quotient`
+below): for a finite `𝒪₃ᵥ`-algebra `A` there are only finitely many
+`𝒪₃ᵥ`-algebra maps `A → 𝒪_E ⧸ 𝔪_E^N`.
+Two halves.  (i) `𝒪_E ⧸ 𝔪_E^N` is a FINITE ring: `𝒪₃ᵥ` has finite
+quotients (`hasFiniteQuotients_adicCompletionIntegers`), `𝒪_E` is a finite
+`𝒪₃ᵥ`-module, so `Ring.HasFiniteQuotients` transfers, and `𝔪_E^N ≠ ⊥`
+because `𝔪_E = (ϖ)` for an irreducible `ϖ ≠ 0` in the discrete valuation
+ring `𝒪_E`.  (ii) An `𝒪₃ᵥ`-algebra map out of `A` is determined by its
+values on a finite `𝒪₃ᵥ`-module generating set of `A` — it is in
+particular `𝒪₃ᵥ`-LINEAR, so `LinearMap.ext_on` applies — which embeds the
+Hom-set into a finite function type. -/
+theorem finite_algHom_quotient_maximalIdeal_pow
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Finite 𝒪₃ᵥ A]
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E] (N : ℕ) :
+    Finite (A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ N)) := by
+  classical
+  haveI hMF : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) :=
+    IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ E (IntegralClosure 𝒪₃ᵥ E)
+  haveI hfq : Ring.HasFiniteQuotients 𝒪₃ᵥ := hasFiniteQuotients_adicCompletionIntegers _
+  haveI hfqE : Ring.HasFiniteQuotients (IntegralClosure 𝒪₃ᵥ E) :=
+    Ring.HasFiniteQuotients.of_module_finite (R := 𝒪₃ᵥ) (IntegralClosure 𝒪₃ᵥ E)
+  -- `𝔪 ^ N ≠ ⊥` in the discrete valuation ring `𝒪_E`
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible (IntegralClosure 𝒪₃ᵥ E)
+  have hmspan : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) = Ideal.span {ϖ} :=
+    (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
+  have hne : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ N ≠ ⊥ := by
+    rw [hmspan, Ideal.span_singleton_pow]
+    intro hbot
+    have hz : ϖ ^ N = 0 := by
+      have hmemsp := Ideal.mem_span_singleton_self (ϖ ^ N)
+      rwa [hbot, Ideal.mem_bot] at hmemsp
+    exact hϖ.ne_zero (pow_eq_zero_iff'.mp hz).1
+  haveI hfinQ : Finite (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ N) :=
+    Ring.HasFiniteQuotients.finiteQuotient hne
+  -- an `𝒪₃ᵥ`-algebra map out of `A` is determined by its values on a finite
+  -- `𝒪₃ᵥ`-module generating set
+  obtain ⟨s, hs⟩ := (Module.Finite.fg_top : (⊤ : Submodule 𝒪₃ᵥ A).FG)
+  refine Finite.of_injective
+    (fun φ : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ N) => fun x : {x // x ∈ s} => φ x) ?_
+  intro φ₁ φ₂ hEq
+  have hlin : (φ₁.toLinearMap) = (φ₂.toLinearMap) :=
+    LinearMap.ext_on hs (fun x hx => congrFun hEq ⟨x, hx⟩)
+  exact AlgHom.ext fun a => LinearMap.congr_fun hlin a
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **THE COMPACTNESS ARGUMENT, OVER AN ABSTRACT ADICALLY COMPLETE BASE**
+(PROVEN 2026-07-27): let `S` be `I`-adically complete, `A` an `R`-algebra
+with FINITE Hom-sets into every truncation `S ⧸ I^N`.  If, at every level
+`N ≥ j`, some `𝑢 : A →ₐ[R] S ⧸ I^N` reduces to a given `η₀ : A →ₐ[R] S ⧸ I^j`,
+then some honest `χ : A →ₐ[R] S` reduces to `η₀`.
+
+THE PROOF, in two moves, and the reason it is stated abstractly.  The
+family supplied by the hypothesis is NOT a tower — the `u_N` at different
+levels need not be compatible — so the first move is Kőnig's lemma
+(`exists_seq_forall_proj_of_forall_finite`) applied to the inverse system
+`α N := {u : A →ₐ[R] S ⧸ I^(j+N) // u reduces to η₀}` of NONEMPTY FINITE
+sets, whose transition maps are the truncations `Ideal.Quotient.factorₐ`.
+That produces a genuinely compatible section `fam`.  The second move is
+the universal property of adic completeness for algebra maps,
+`IsAdicComplete.liftAlgHom`, applied to the reindexed family
+`n ↦ factorₐ (n ≤ j + n) ∘ fam n`, whose compatibility is exactly the
+section property of `fam` plus `Ideal.Quotient.factorₐ_comp`.  Reading the
+lift at level `j` gives back `η₀`, since `fam j` reduces to it by
+construction.
+
+It is stated over abstract `R`, `S`, `I` because at the concrete
+`IntegralClosure 𝒪₃ᵥ E` the quotient-ring instances of this development
+make the very same `rw`s time out inside `isDefEq`: the abstract version
+elaborates in seconds, the concrete one exhausted four million
+heartbeats. -/
+theorem exists_algHom_of_forall_exists_algHom_quotient_aux
+    {R : Type*} [CommRing R] {S : Type*} [CommRing S] [Algebra R S]
+    (I : Ideal S) [IsAdicComplete I S]
+    (A : Type*) [CommRing A] [Algebra R A]
+    (hfin : ∀ N : ℕ, Finite (A →ₐ[R] S ⧸ I ^ N))
+    (j : ℕ) (η₀ : A →ₐ[R] S ⧸ I ^ j)
+    (h : ∀ N : ℕ, ∀ hjN : j ≤ N, ∃ u : A →ₐ[R] S ⧸ I ^ N,
+      (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right hjN)).comp u = η₀) :
+    ∃ χ : A →ₐ[R] S, (Ideal.Quotient.mkₐ R (I ^ j)).comp χ = η₀ := by
+  classical
+  let α : ℕ → Type _ := fun N =>
+    {u : A →ₐ[R] S ⧸ I ^ (j + N) //
+      (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right (Nat.le_add_right j N))).comp u = η₀}
+  have hfinα : ∀ N : ℕ, Finite (α N) := fun N => by
+    haveI := hfin (j + N)
+    exact Subtype.finite
+  haveI : Finite (α 0) := hfinα 0
+  haveI : ∀ N : ℕ, Nonempty (α N) := fun N => by
+    obtain ⟨u, hu⟩ := h (j + N) (Nat.le_add_right j N)
+    exact ⟨⟨u, hu⟩⟩
+  obtain ⟨fam, hfam⟩ := exists_seq_forall_proj_of_forall_finite (α := α)
+    (fun {i k} hik u => ⟨(Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right
+        (I := I) (Nat.add_le_add_left hik j))).comp u.1, by
+      rw [← AlgHom.comp_assoc, Ideal.Quotient.factorₐ_comp]
+      exact u.2⟩)
+    (fun i a => Subtype.ext (by
+      show (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right
+          (I := I) (Nat.add_le_add_left (le_refl i) j))).comp a.1 = a.1
+      have hid : (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right
+          (I := I) (Nat.add_le_add_left (le_refl i) j))) = AlgHom.id _ _ :=
+        Ideal.Quotient.factorₐ_refl _
+      rw [hid, AlgHom.id_comp]))
+    (fun i₁ i₂ i₃ h12 h23 a => Subtype.ext (by
+      show (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right
+            (I := I) (Nat.add_le_add_left h12 j))).comp
+          ((Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right
+            (I := I) (Nat.add_le_add_left h23 j))).comp a.1) =
+        (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right
+          (I := I) (Nat.add_le_add_left (h12.trans h23) j))).comp a.1
+      rw [← AlgHom.comp_assoc, Ideal.Quotient.factorₐ_comp]))
+    (fun i a => by
+      haveI := hfinα (i + 1)
+      exact Set.toFinite _)
+  refine ⟨IsAdicComplete.liftAlgHom I
+    (fun n => (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right
+      (I := I) (Nat.le_add_left n j))).comp (fam n).1) ?_, ?_⟩
+  · intro m n hle
+    have hstep : (fam m).1 = (Ideal.Quotient.factorₐ R (Ideal.pow_le_pow_right
+        (I := I) (Nat.add_le_add_left hle j))).comp (fam n).1 := by
+      rw [← hfam hle]
+    rw [hstep, ← AlgHom.comp_assoc, ← AlgHom.comp_assoc,
+      Ideal.Quotient.factorₐ_comp, Ideal.Quotient.factorₐ_comp]
+  · rw [IsAdicComplete.mkₐ_comp_liftAlgHom]
+    exact (fam j).2
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **PASSAGE TO THE LIMIT** (PROVEN 2026-07-27; created the same day as the SECOND
 of the two leaves of the decomposition of
 `existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` below): if a
 finite `𝒪₃ᵥ`-algebra `A` admits, at EVERY truncation level `N ≥ j`, an
@@ -8627,8 +8879,24 @@ it is deliberately stated with no reference to `3`, to `Ω`, or to
   `Hom(A, 𝒪_E) = lim_N Hom(A, 𝒪_E ⧸ 𝔪^N)`.
 The nonempty subsets `{u | u ≡ η₀ mod 𝔪^j}` form an inverse system of
 NONEMPTY FINITE sets, whose inverse limit is therefore nonempty
-(the compactness / König argument; mathlib has
-`nonempty_sections_of_finite_inverse_system`).
+(the compactness / König argument).
+
+HOW IT WAS DISCHARGED (2026-07-27).  Three separate pieces, all proven
+above, and the assembly here is a one-line application of the third:
+* `finite_algHom_quotient_maximalIdeal_pow` — the first bullet;
+* `isAdicComplete_maximalIdeal_integralClosure` — the second, which is
+  more than the bare `𝒪_E = lim 𝒪_E ⧸ 𝔪^N` above: the completeness that
+  comes for free from the base is for the EXTENDED ideal `𝔪₃ᵥ·𝒪_E = 𝔪_E^d`,
+  and the cofinality reindexing `k ↦ d·k` is what converts it;
+* `exists_algHom_of_forall_exists_algHom_quotient_aux` — the compactness
+  argument itself, Kőnig plus `IsAdicComplete.liftAlgHom`, stated over an
+  abstract adically complete base because at the concrete
+  `IntegralClosure 𝒪₃ᵥ E` the same script times out inside `isDefEq`.
+Note that mathlib's `nonempty_sections_of_finite_inverse_system` (the
+route this docstring originally named) was NOT used: `Mathlib.Order`'s
+`exists_seq_forall_proj_of_forall_finite` is the same compactness fact for
+an `ℕ`-indexed system with none of the category-theoretic packaging, and
+it hands back the section as an ordinary dependent function.
 
 WHY THE SYSTEM IS NOT HANDED OVER AS A COMPATIBLE TOWER.  Fontaine's step
 `existsUnique_algHom_quotient_maximalIdeal_pow_succ` produces `u'` agreeing
@@ -8651,7 +8919,10 @@ theorem exists_algHom_of_forall_exists_algHom_quotient
     ∃ χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ E,
       (Ideal.Quotient.mkₐ 𝒪₃ᵥ
         (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ j)).comp χ = η₀ := by
-  sorry
+  haveI := isAdicComplete_maximalIdeal_integralClosure E
+  exact exists_algHom_of_forall_exists_algHom_quotient_aux
+    (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) A
+    (fun N => finite_algHom_quotient_maximalIdeal_pow A E N) j η₀ h
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
