@@ -7938,12 +7938,21 @@ into the two leaves consumed below:
   at `N = 32` over `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`, itself
   proven by a cusp count on `X_0(32)` against the four rational points that
   `QuarticDescent.rational_point_x0ThirtyTwo` allows. What is left open is
-  TWO leaves, `MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` and
-  `MazurLevel32.exists_x0ThirtyTwo_mod_three` (2026-07-27;
-  `exists_weierstrassModel_x0ThirtyTwo`, which stood here, and
-  `exists_planeModel_x0ThirtyTwo` before it, are BOTH now PROVEN over them —
-  do not dispatch at either), neither of which is vacuous or
-  refutable. **The same cut should be tried at levels `49`, `81`,
+  TWO leaves, `X0GenusOne.finite_jacobian` and
+  `X0GenusOne.card_relPoint_finiteField` (2026-07-27, second correction;
+  neither is vacuous or refutable).
+
+  **DO NOT DISPATCH AT `MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` OR
+  `MazurLevel32.exists_x0ThirtyTwo_mod_three`**, which is what this
+  paragraph named until 2026-07-27 and what one dispatch was actually sent
+  at. Both are now PROVEN, in two steps: first over the consolidated
+  `X0GenusOne.hasRankZeroJacobian` / `X0GenusOne.exists_mod_prime` (which
+  state the same two shapes once at all four genus-one levels), and then
+  those in turn by decomposition against `X0.lean`'s level-generic leaves —
+  leaving the rank input and Eichler–Shimura named above as the only open
+  content. `exists_weierstrassModel_x0ThirtyTwo` and
+  `exists_planeModel_x0ThirtyTwo` are likewise PROVEN; do not dispatch at
+  those either. **The same cut should be tried at levels `49`, `81`,
   `125` and `169`, whose docstrings all cite this node's old shape as their
   own.** Details in the RESOLUTION section of `exists_x0ThirtyTwo_point`.
 
@@ -10366,6 +10375,41 @@ become one-line corollaries in turn.  That is the intended successor step
 and it is why the statements are written in verbatim the same shape as
 their `X0.lean` analogues rather than in a shape convenient here.
 
+**STATUS 2026-07-27, LATER THE SAME DAY: BOTH LEAVES ARE NOW PROVEN, and
+the successor step taken was NOT the one anticipated above.**  Appending
+`levels` and `countTable` to `Fermat.kenkuLevels` and
+`Fermat.x0WitnessTable` was reconsidered and DELIBERATELY NOT DONE, for a
+reason that is mathematical rather than territorial: `kenkuLevels` is by
+definition the list of levels in Kenku's determination — non-prime-power,
+of genus `≥ 1` — and `11, 17, 19, 32` are none of those things.  Widening
+it would make the name lie, and it would silently widen every `fin_cases
+hN <;> decide` proof stated against it in `X0.lean` and elsewhere.  The
+two lists are different mathematical objects that happen to feed the same
+two theorem shapes; that is an argument for sharing the SHAPES, not for
+merging the LISTS.
+
+What was done instead is the decomposition `X0.lean` had already performed
+on its own analogues, and it is strictly better than a merge would have
+been, because it turns out that **most of the content of both leaves is
+not level-specific at all**.  Five of the seven obligations are already
+level-generic leaves in `X0.lean` and are reused verbatim
+(`exists_jacobianOf_x0`, `injective_aj_of_one_le_x0Genus`,
+`exists_rationalCusps`, `exists_x0Compactification_finiteField`,
+`finite_relPoint_of_x0Compactification_finiteField`); the genus and
+good-prime side conditions are CLOSED here by `decide` (`levels_spec`,
+`countTable_spec`); and exactly two genuinely level-specific leaves
+remain, `finite_jacobian` (Mordell–Weil rank `0`) and
+`card_relPoint_finiteField` (Eichler–Shimura).  So the count of open
+leaves in this section is unchanged at two, while the number of missing
+theories they require drops from seven to two, and those two are now the
+ONLY things standing between this section and closure.
+
+**The upward merge is still available and is now cheaper**, since the
+remaining pair are in verbatim the same shape as
+`Fermat.finite_jacobian_of_kenkuLevel` and
+`Fermat.card_relPoint_x0_finiteField`.  But it buys only table rows, not
+theories, so it is no longer the interesting move.
+
 **The coherent mathematical class**, which is what makes one statement
 honest rather than an ad-hoc union: at `N ∈ {11, 17, 19, 32}` the modular
 curve `X_0(N)` has genus exactly `1` and a rational cusp, so it IS an
@@ -10429,8 +10473,99 @@ levels give a `j`-value table rather than emptiness of `Y_0(N)(ℚ)`. -/
 def countTable : List (ℕ × ℕ × ℕ) :=
   [(11, 3, 5), (17, 3, 4), (19, 5, 3), (32, 3, 4)]
 
+/-- **Each of the four levels has genus `≥ 1` and a rational cusp**
+(PROVEN 2026-07-27, `fin_cases` + `decide`) — the arithmetic half of
+`hasRankZeroJacobian`, and the exact analogue of `X0.lean`'s
+`one_le_x0Genus_of_kenkuLevel` together with
+`numRationalCusps_pos_of_kenkuLevel`.
+
+Both conjuncts are computed from `N`, not looked up in a table:
+
+* `Fermat.x0Genus N = 1` at all four, from the classical genus formula
+  (Diamond–Shurman Thm 3.1.1) as `Fermat.x0Genus` implements it.  The
+  inputs are `gammaZeroIndex = 12, 18, 20, 48`, `numEllipticTwo = 0, 2,
+  0, 0`, `numEllipticThree = 0, 0, 2, 0` and `numCusps = 2, 2, 2, 8`,
+  giving `(12 + μ − 3ν₂ − 4ν₃ − 6ν_∞)/12 = 1` in each case.  This is what
+  makes "these four curves are elliptic curves" a THEOREM here rather
+  than an assertion inside a leaf.
+* `0 < numRationalCusps N`, the values being `2, 2, 2, 4`; this supplies
+  the base point of Abel–Jacobi, so no separate existence leaf for a
+  rational point on `X_0(N)` is needed.
+
+Genus `0` would make `hasRankZeroJacobian` FALSE — at `N = 1`,
+`X_0(1) = ℙ¹` has trivial Jacobian and infinitely many rational points —
+so the first conjunct is exactly the hypothesis that rules that out. -/
+theorem levels_spec {N : ℕ} (hN : N ∈ levels) :
+    1 ≤ x0Genus N ∧ 0 < numRationalCusps N := by
+  fin_cases hN <;> exact ⟨by decide, by decide⟩
+
+/-- **Every row of `countTable` has `0 < N`, `ℓ` prime and `ℓ ∤ N`**
+(PROVEN 2026-07-27, `fin_cases` + `decide`) — the analogue of `X0.lean`'s
+`Fermat.x0WitnessTable_spec`, and the good-prime side conditions that
+`exists_mod_prime`'s three obligations need.
+
+`ℓ ≠ 2` is deliberately NOT among them and is not needed here: the point
+COUNT on the special fibre is a statement about good reduction only.
+Oddness enters one step later, in `Fermat.card_le_of_rankZeroJacobian`,
+where the formal group of the Jacobian has to be torsion-free — and every
+row does satisfy it (`ℓ = 3, 3, 5, 3`).
+
+Re-verified with PARI/GP 2.17.4 on 2026-07-27 (untrusted searcher,
+statement check only): each row's `ℓ` is prime and prime to its `N`. -/
+theorem countTable_spec {N ℓ m : ℕ} (h : (N, ℓ, m) ∈ countTable) :
+    0 < N ∧ ℓ.Prime ∧ ¬ ℓ ∣ N := by
+  fin_cases h <;> exact ⟨by decide, by decide, by decide⟩
+
+/-- **`rank J_0(N)(ℚ) = 0` at the four genus-one levels** (sorry leaf,
+introduced 2026-07-27) — the DEEP half of `hasRankZeroJacobian`, and after
+that decomposition the ONLY open content of it.
+
+The exact analogue of `X0.lean`'s `Fermat.finite_jacobian_of_kenkuLevel`,
+and STRICTLY EASIER than it: there `J_0(N)` must be produced from a
+decomposition of `S_2(Γ_0(N))` into newform factors with `L(A, 1) ≠ 0` at
+each; here `X_0(N)` has genus exactly `1` (PROVEN in `levels_spec`), so
+`J_0(N) = X_0(N)` is a single elliptic curve of conductor `N` and this is
+one Mordell–Weil rank computation.
+
+**TRUE**, re-derived rather than inherited (PARI/GP 2.17.4, 2026-07-27,
+untrusted searcher; models `11a1 = [0,-1,1,-10,-20]`,
+`17a1 = [1,-1,1,-1,-14]`, `19a1 = [0,1,1,-9,-15]`, `32a1 = [0,0,0,4,0]`):
+`ellglobalred` gives conductors `11, 17, 19, 32` — the check that each
+model really IS `X_0(N)` — and `ellrank` returns the INTERVAL `[0, 0]` at
+all four, i.e. rank proven `0` rather than merely bounded above, with
+`elltors = 5, 4, 3, 4`.  So `J_0(N)(ℚ)` is finite of order `5, 4, 3, 4`.
+Equivalently `S_2(Γ_0(N))` is one-dimensional at each level and
+`L(f, 1) ≠ 0`.
+
+**The class does not extend**: the next prime levels `37, 43, 67, 163`
+have ranks `1, 1, 2, 6`, so this leaf is FALSE at every one of them and
+`levels` may not be widened without recomputing.
+
+`jac` is load-bearing and may not be dropped or underscored in a
+successor's proof: the conclusion is FALSE for an arbitrary abelian scheme
+over `ℚ` receiving `X` — it is true only because `jac` pins `J` as the
+Jacobian of this particular curve.
+
+IRREDUCIBLE at this mathlib pin, and this is where the depth of the
+original leaf now lives, ALONE.  AXIS SEARCHED: any rank computation, or
+Mordell–Weil theorem, for elliptic curves over `ℚ` in `Mathlib`, in this
+project, or in `~/cs/FLT` — there is none, and `~/cs/FLT` assumes Mazur's
+torsion theorem outright (`FLT/Assumptions/Mazur.lean`).  NOT searched:
+whether descent on an explicit Weierstrass model — the route
+`MazurLevel32.y0HasNoRationalPoint_thirtyTwo` takes at level `32` through
+`QuarticDescent`, which replaces the rank input entirely — reaches the
+three prime levels; that would need the `Scheme` ↔ `WeierstrassCurve`
+bridge, which does not exist. -/
+theorem finite_jacobian (N : ℕ) (_hN : N ∈ levels)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_h : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (_jac : IsJacobianOf strX ab o) : Finite (RelPoint jstr (𝟙 SpecQ)) :=
+  sorry
+
 /-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the four genus-one
-levels** (sorry leaf, introduced 2026-07-27; consolidates the former
+levels** (PROVEN 2026-07-27 by decomposition; was a sorry leaf introduced
+the same day; consolidates the former
 `MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` and
 `MazurIsogenyPrimeJ.hasRankZeroJacobian_of_genusOnePrime`, which are now
 proven from it).
@@ -10458,25 +10593,103 @@ criterion downstream.
 **Not vacuous**: `Fermat.exists_x0Compactification N` supplies an `hX` at
 each of the four levels.
 
-IRREDUCIBLE at this mathlib pin, and the CHECK that would refute it is one
-grep: a Mordell–Weil theorem, or any rank computation for elliptic curves
-over `ℚ`, anywhere in `Mathlib`, in this project, or in `~/cs/FLT`.  There
-is none — `~/cs/FLT` assumes Mazur's torsion theorem outright
-(`FLT/Assumptions/Mazur.lean`).  AXIS SEARCHED: the rank input, and the
-consolidation axis (the four levels are now one statement; widening to
-`Fermat.kenkuLevels` is the successor step, see the section note).  NOT
-searched: whether an explicit Weierstrass model plus descent — the route
+**THE IRREDUCIBILITY VERDICT IS REFUTED, AND THIS LEAF IS NOW PROVEN BY
+DECOMPOSITION** (2026-07-27).  The previous docstring said "IRREDUCIBLE at
+this mathlib pin", with the refuting check "a Mordell–Weil theorem, or any
+rank computation for elliptic curves over `ℚ`, anywhere".  That grep does
+still come back empty and the verdict was still wrong, in this
+development's commonest way: **the axis it searched was the RANK INPUT,
+and the seam is not there.**  `HasRankZeroJacobian` is a conjunction of a
+finiteness condition and an injectivity condition on the Jacobian, with
+wildly different costs, and `X0.lean` had already split its own Kenku-level
+analogue along exactly that seam.  Three of the four resulting obligations
+are **not level-specific at all** and were therefore already sitting in
+`X0.lean` as level-generic leaves:
+
+* `Fermat.exists_jacobianOf_x0` — the Albanese/`Pic⁰` of a smooth proper
+  geometrically connected curve with a rational point (level-generic);
+* `Fermat.injective_aj_of_one_le_x0Genus` — Riemann–Roch, that positive
+  genus makes Abel–Jacobi injective (level-generic, given `1 ≤ x0Genus N`);
+* `Fermat.exists_rationalCusps` — the base point, PROVEN.
+
+**So the genus half is CLOSED here by COMPUTATION, exactly as it is at the
+Kenku levels.**  `x0Genus` is a computable function of `N` and `decide`
+evaluates it to `1` at all four levels (`levels_spec` below), so no leaf
+carries the assertion "these curves have genus `1`".  What remains open is
+the rank half ALONE, isolated in `finite_jacobian`.
+
+Net effect: this statement needed four missing theories and now needs one.
+AXES SEARCHED: the rank input (empty, as before), the level-consolidation
+axis, and — the one that worked — the CONJUNCTION axis of
+`HasRankZeroJacobian` itself.  NOT searched: whether an explicit
+Weierstrass model plus descent — the route
 `MazurLevel32.y0HasNoRationalPoint_thirtyTwo` takes at level `32`, where
 `QuarticDescent` replaces the rank input entirely — reaches the three
 prime levels. -/
-theorem hasRankZeroJacobian (N : ℕ) (_hN : N ∈ levels)
+theorem hasRankZeroJacobian (N : ℕ) (hN : N ∈ levels)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification N strX strY jY) : HasRankZeroJacobian strX :=
+    (hX : IsX0Compactification N strX strY jY) : HasRankZeroJacobian strX := by
+  obtain ⟨hg, hcusp⟩ := levels_spec hN
+  obtain ⟨s, hs, -⟩ := exists_rationalCusps N hX
+  obtain ⟨o, -⟩ : s.Nonempty := Finset.card_pos.mp (by rw [hs]; exact hcusp)
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 N hX o
+  exact ⟨J, jstr, ab, o, jac, finite_jacobian N hN hX jac,
+    injective_aj_of_one_le_x0Genus N hg hX jac⟩
+
+/-- **Eichler–Shimura: the special fibre has exactly `m` rational points,
+at the four genus-one witness rows** (sorry leaf, introduced 2026-07-27) —
+the arithmetic half of `exists_mod_prime`, and after that decomposition
+the only level-specific content of it.
+
+The exact analogue of `X0.lean`'s `Fermat.card_relPoint_x0_finiteField`,
+whose seven rows are `x0WitnessTable`; `countTable`'s four rows would be
+its eighth through eleventh.
+
+**TRUE.**  `#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`, and the four
+`m` of `countTable` are that formula evaluated.  At each of these levels
+`S_2(Γ_0(N))` is one-dimensional, spanned by the newform `N a`, so the
+trace is the single `a_ℓ`.  Recomputed independently with PARI/GP 2.17.4
+on 2026-07-27 (untrusted searcher, statement check only) as `ellap` of the
+elliptic curve `N a 1`:
+
+| `N` | `ℓ` | `a_ℓ` | `ℓ + 1 − a_ℓ` |
+|-----|-----|-------|----------------|
+| 11  | 3   | `−1`  | 5 |
+| 17  | 3   | `0`   | 4 |
+| 19  | 5   | `3`   | 3 |
+| 32  | 3   | `0`   | 4 |
+
+**Both witness-prime traps re-confirmed rather than taken on trust**, and
+each would make this leaf FALSE if the row were changed: at `N = 19` the
+smallest odd prime fails, `a_3 = −2` giving `3 + 1 − (−2) = 6 ≠ 3`; at
+`N = 32`, `a_5 = −2` gives `5 + 1 − (−2) = 8 ≠ 4`.
+
+**Quantified over every compactification rather than over a chosen one**,
+exactly as `Fermat.card_relPoint_x0_finiteField` is, and safe for the same
+reason: `IsX0Compactification` pins `(X, Y, j)` up to isomorphism and
+`RelPoint strX (𝟙 (SpecF ℓ))` is an isomorphism invariant, so the count
+does not depend on which model is supplied.  **Not vacuous**:
+`Fermat.exists_x0Compactification_finiteField` supplies the model, so this
+is not a statement about an empty class.
+
+The good-prime side conditions are not repeated as hypotheses; they are
+consequences of `_h` through `countTable_spec`.
+
+IRREDUCIBLE at this mathlib pin: it needs `S_2(Γ_0(N))`, the Hecke
+operator `T_ℓ` and the Eichler–Shimura congruence relation, none of which
+exist here.  AXIS SEARCHED: the three theories the old consolidated
+docstring named (integral model, reduction, Hecke) — of which the first
+two turned out to be separable and are now `X0.lean`'s level-generic
+leaves; only the third is genuinely level-specific and it is this. -/
+theorem card_relPoint_finiteField (N ℓ m : ℕ) (_h : (N, ℓ, m) ∈ countTable)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (_hX : IsX0Compactification N strX strY jY) :
+    Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
   sorry
 
 /-- **The reduction `X_0(N)_{𝔽_ℓ}` and its point count, at the four
-genus-one witness primes** (sorry leaf, introduced 2026-07-27;
-consolidates the former `MazurLevel32.exists_x0ThirtyTwo_mod_three` and
+genus-one witness primes** (PROVEN 2026-07-27 by decomposition; was a
+sorry leaf introduced the same day; consolidates the former `MazurLevel32.exists_x0ThirtyTwo_mod_three` and
 `MazurIsogenyPrimeJ.exists_x0GenusOne_mod_prime`, which are now proven
 from it).
 
@@ -10492,17 +10705,45 @@ Quantified over the table rather than over `N` alone so that the witness
 prime and the count travel together, exactly as in the Kenku analogue —
 and that matters here, since `ℓ` is NOT the smallest odd prime at `N = 19`.
 
-IRREDUCIBLE at this mathlib pin: neither the integral model of `X_0(N)`
-nor its reduction exists here.  The CHECK that would refute this: an
-integral model of any modular curve in this project — `Fermat.IsX0NeronDatum`
-in `X0.lean` is the closest thing and carries models only for the SIEVE
-levels, not for these four. -/
-theorem exists_mod_prime (N ℓ m : ℕ) (_h : (N, ℓ, m) ∈ countTable) :
+**THE IRREDUCIBILITY VERDICT IS REFUTED, AND THIS LEAF IS NOW PROVEN BY
+DECOMPOSITION** (2026-07-27).  The previous docstring said "IRREDUCIBLE at
+this mathlib pin: neither the integral model of `X_0(N)` nor its reduction
+exists here", with the refuting check "an integral model of any modular
+curve in this project".  That check was the wrong one, and it is worth
+recording why, because it is the same mistake `X0.lean` had already found
+and fixed on its own analogue: **no integral model is needed anywhere.**
+The special fibre is obtained as the coarse space of the `Γ₀(N)`-problem
+over `𝔽_ℓ` DIRECTLY, so the reduction map — which is the thing that would
+require a model — is never formed.  `IsX0Compactification` was written
+with a general base for exactly this purpose.
+
+Once that is seen, the statement's three sentences are three different
+theories and split along them, and **two of the three are not
+level-specific**, so they are already present in `X0.lean` as level-generic
+leaves and are reused verbatim rather than restated here:
+
+* `Fermat.exists_x0Compactification_finiteField` — the `Γ₀(N)`-problem has
+  a smooth compactification over `𝔽_ℓ` for `ℓ ∤ N` (Deligne–Rapoport);
+* `Fermat.finite_relPoint_of_x0Compactification_finiteField` — a proper
+  scheme over a finite field has finitely many rational points, which is
+  not about modular curves at all;
+* `card_relPoint_finiteField` — Eichler–Shimura evaluates the count.  This
+  one IS level-specific, and it is the single new leaf.
+
+Net effect: this statement needed three missing theories and now needs
+one, with the other two shared with the nine Kenku witness rows instead of
+duplicated at these four. -/
+theorem exists_mod_prime (N ℓ m : ℕ) (h : (N, ℓ, m) ∈ countTable) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (j : Y ⟶ X),
       Nonempty (IsX0Compactification N strX strY j) ∧
         Finite (RelPoint strX (𝟙 (SpecF ℓ))) ∧
-        Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
-  sorry
+        Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m := by
+  obtain ⟨hN, hℓ, hℓN⟩ := countTable_spec h
+  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ :=
+    exists_x0Compactification_finiteField N ℓ hN hℓ hℓN
+  exact ⟨X, Y, strX, strY, j, ⟨hX⟩,
+    finite_relPoint_of_x0Compactification_finiteField N ℓ hℓ.ne_zero hX,
+    card_relPoint_finiteField N ℓ m h hX⟩
 
 end X0GenusOne
 
