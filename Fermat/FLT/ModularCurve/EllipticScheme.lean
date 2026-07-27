@@ -47,7 +47,7 @@ under "Why this is not in `X0.lean`" below.
 step is now fully reduced, and the Jacobian criterion it rests on
 (`jacobianSpan_eq_top`, over an arbitrary commutative ring) is proven here.
 
-The open leaves are therefore EIGHT, and this list is stated from the file's ACTUAL
+The open leaves are therefore NINE, and this list is stated from the file's ACTUAL
 sorry set as merged (2026-07-27), not inherited from any side of a merge:
 `exists_projMul` and `projMul_assoc` — the two disjoint halves into which the old
 `exists_projAdd` was decomposed, and where all the remaining gluing work for the
@@ -59,10 +59,24 @@ direct sorry of item 7a) is now PROVEN — the first is the dehomogenisation
 isomorphism `(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0` ≃ `ℚ[u, v] ⧸ (wᵢ)`, the second
 the chart Jacobian criterion, where `hjac` and hence `Δ` is consumed, and the third
 member of that section, `isStandardSmoothOfRelativeDimension_projChartAway`, is
-PROVEN; `exists_affineChart_projModel`; and the two leaves that
+PROVEN; `exists_coordinateRingEquiv_projChartRing` and
+`compl_basicOpen_projCoord_two`, the two halves of the affine-chart leaf (see the
+next paragraph); and the two leaves that
 `geometricallyConnected_projToSpec` now consumes (`prime_projPolynomial` and
 `nonempty_projPullbackIso`).  Each declaration carries its own docstring saying what
 is missing and where the classical argument is.
+
+**`exists_affineChart_projModel` is PROVEN as of 2026-07-27**, over
+`exists_affineChart_projInfty` and `exists_translation_toZero`, and its cut carries a
+correction worth reading at the leaf: the old plan's third bullet — "the complement of
+`D₊(Z)` is the range of `gl.e`" — is false as an identification of POINTS, because
+`ProjGroupLaw` pins nothing about its unit section and every translate of the
+chord–tangent law is again a `ProjGroupLaw`.  The statement is still true, by
+translation, which is exactly the shape of the FALSITY-OF-CUT AUDIT on
+`exists_projGroupLaw_geomFibreAddEquiv`.  The two residual leaves are the
+GROUP-LAW-FREE halves of the chart: a commutative-algebra one
+(`ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing`) and a topological one
+(`V₊(Z̄)` is the image of `projInfty`).
 **Item 8 was restated on 2026-07-27** and its leaf is now
 `exists_projGroupLaw_geomFibreAddEquiv`, which binds the group law
 EXISTENTIALLY.  `exists_projGeomFibreAddEquiv` survives under its own name
@@ -1921,9 +1935,245 @@ one, the reserved atom `over` would propagate through the whole
 `MazurTorsion` cone, which is exactly what the module docstring above
 explains this file exists to prevent. -/
 
+section AffineChart
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+universe u
+
+/-- **Translation carrying a prescribed section to the zero section**
+(PROVEN, and stated for an arbitrary abelian scheme).
+
+If `p : S ⟶ A` is a section of `f : A ⟶ S` then `x ↦ x ⊖ p` is an
+automorphism of `A` over `S` sending `p` to the zero section of `ab`.
+
+This is what removes the RIGIDITY problem from `exists_affineChart_projModel`
+below, and it is worth stating separately for exactly the reason the
+FALSITY-OF-CUT AUDIT on `exists_projGroupLaw_geomFibreAddEquiv` gives:
+`ProjGroupLaw` pins **nothing** about its unit section `e`, so a leaf
+asserting that the complement of the standard chart `D₊(Z)` *is* the range
+of `gl`'s zero section quantifies over group laws whose unit is an
+arbitrary rational point — every translate of the chord–tangent law is
+again a `ProjGroupLaw`.  The statement is nevertheless TRUE, and this lemma
+is the reason: it is true because `A` has an automorphism over `S` carrying
+`[0 : 1 : 0]` to `gl.e`, not because the two points coincide.
+
+The proof is Yoneda and nothing else — no geometry.  Everything happens
+inside the abelian group `RelPoint f f`, whose tautological element
+`⟨𝟙 A, _⟩` represents the identity morphism: writing `c` for the constant
+point `⊖p` pulled back along `f`, the two morphisms are represented by
+`𝟙 + c` and `𝟙 + (⊖c)`, and `RelPoint.pre` (precomposition) is additive by
+`ab.pre_add`, sends the tautological element to its argument, and fixes
+anything pulled back along `f`.  Those three facts turn "the two composites
+are the identity" into `(𝟙 + c) + (⊖c) = 𝟙`, and `p ≫ τ = 0` into
+`p ⊖ p = 0`. -/
+theorem exists_translation_toZero {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    (p : S ⟶ A) (hp : p ≫ f = 𝟙 S) :
+    ∃ τ : A ⟶ A, IsIso τ ∧ τ ≫ f = f ∧ p ≫ τ = (ab.zero (𝟙 S)).1 := by
+  set P : RelPoint f (𝟙 S) := ⟨p, hp⟩ with hPdef
+  set c : RelPoint f f := RelPoint.pre f (Category.comp_id f) (ab.neg P) with hcdef
+  set c' : RelPoint f f := RelPoint.pre f (Category.comp_id f) (ab.neg (ab.neg P)) with hc'def
+  set slf : RelPoint f f := ⟨𝟙 A, Category.id_comp f⟩ with hslfdef
+  set τ : RelPoint f f := ab.add slf c with hτdef
+  set τ' : RelPoint f f := ab.add slf c' with hτ'def
+  -- `c` and `c'` are inverse to each other
+  have hcc' : ab.add c c' = ab.zero f := by
+    rw [hcdef, hc'def, ← ab.pre_add f (Category.comp_id f), ab.add_comm,
+      ab.neg_add (ab.neg P), ab.pre_zero]
+  have hc'c : ab.add c' c = ab.zero f := by rw [ab.add_comm]; exact hcc'
+  -- precomposition by a point over `f` fixes anything pulled back along `f`
+  have hpre_pull : ∀ (y : RelPoint f f) (z : RelPoint f (𝟙 S)),
+      RelPoint.pre y.1 y.2 (RelPoint.pre f (Category.comp_id f) z)
+        = RelPoint.pre f (Category.comp_id f) z := by
+    intro y z
+    refine Subtype.ext ?_
+    show y.1 ≫ f ≫ z.1 = f ≫ z.1
+    rw [← Category.assoc, y.2]
+  have hpre_slf : ∀ y : RelPoint f f, RelPoint.pre y.1 y.2 slf = y := fun y =>
+    Subtype.ext (Category.comp_id y.1)
+  have hττ' : τ.1 ≫ τ'.1 = 𝟙 A := by
+    have : RelPoint.pre τ.1 τ.2 τ' = slf := by
+      rw [hτ'def, ab.pre_add, hpre_slf, hc'def, hpre_pull, ← hc'def, hτdef, ab.add_assoc,
+        hcc', ab.add_comm, ab.zero_add]
+    exact congrArg Subtype.val this
+  have hτ'τ : τ'.1 ≫ τ.1 = 𝟙 A := by
+    have : RelPoint.pre τ'.1 τ'.2 τ = slf := by
+      rw [hτdef, ab.pre_add, hpre_slf, hcdef, hpre_pull, ← hcdef, hτ'def, ab.add_assoc,
+        hc'c, ab.add_comm, ab.zero_add]
+    exact congrArg Subtype.val this
+  refine ⟨τ.1, ⟨τ'.1, hττ', hτ'τ⟩, τ.2, ?_⟩
+  have hkey : RelPoint.pre p hp τ = ab.zero (𝟙 S) := by
+    have h1 : RelPoint.pre p hp slf = P := Subtype.ext (Category.comp_id p)
+    have h2 : RelPoint.pre p hp c = ab.neg P := by
+      refine Subtype.ext ?_
+      show p ≫ f ≫ (ab.neg P).1 = (ab.neg P).1
+      rw [← Category.assoc, hp, Category.id_comp]
+    rw [hτdef, ab.pre_add, h1, h2, ab.add_comm]
+    exact ab.neg_add P
+  exact congrArg Subtype.val hkey
+
+/-- **Any two endomorphisms of `Spec ℚ` agree** (PROVEN).
+
+`Spec` is fully faithful and `ℚ` has a unique ring endomorphism
+(`Rat.subsingleton_ringHom`).  This is the declaration the docstring of
+`WeierstrassCurve.Projective.projInfty` refers to as
+`Fermat.subsingleton_hom_spec_rat` — that name never existed; this is it. -/
+theorem subsingleton_hom_specRat (φ ψ : Spec (CommRingCat.of ℚ) ⟶ Spec (CommRingCat.of ℚ)) :
+    φ = ψ := by
+  apply (Spec.homEquiv (R := CommRingCat.of ℚ) (S := CommRingCat.of ℚ)).injective
+  exact CommRingCat.hom_ext (Subsingleton.elim _ _)
+
+/-- **The point at infinity is a section of the structure morphism**
+(PROVEN, and free: over `ℚ` there is nothing to check). -/
+theorem projInfty_projToSpec (E : WeierstrassCurve ℚ) :
+    _root_.WeierstrassCurve.Projective.projInfty E ≫
+        _root_.WeierstrassCurve.Projective.projToSpec E = 𝟙 (Spec (CommRingCat.of ℚ)) :=
+  subsingleton_hom_specRat _ _
+
+/-- Each homogeneous coordinate has degree `1` in the homogeneous
+coordinate ring (PROVEN; the same one-liner as in
+`smoothOfRelativeDimension_projToSpec`, named here because three
+declarations below need it). -/
+theorem mem_projGrading_projCoord (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    projCoord E i ∈ _root_.WeierstrassCurve.Projective.projGrading E 1 :=
+  HomogeneousIdeal.mk_mem_quotientGrading
+    (MvPolynomial.mem_homogeneousSubmodule _ _ |>.mpr (MvPolynomial.isHomogeneous_X _ _))
+
+/-- **The chart ring at `Z ≠ 0` IS mathlib's affine coordinate ring**
+(sorry node — pure commutative algebra, no scheme theory).
+
+`ProjChartRing E 2` is `ℚ[u, v] ⧸ (dehom₂ W)` in the two chart variables
+`ProjChartVar 2 = {0, 1}`, and `dehomogenizeAt ℚ 2` substitutes `Z ↦ 1`,
+so `projChartPolynomial E 2` is *literally*
+`v² + a₁uv + a₃v − u³ − a₂u² − a₄u − a₆` — the affine Weierstrass
+polynomial.  Mathlib's `WeierstrassCurve.Affine.CoordinateRing` is
+`AdjoinRoot W.polynomial` with `W.polynomial : ℚ[X][Y]`, so all that is
+missing is the bookkeeping isomorphism
+
+  `MvPolynomial (ProjChartVar 2) ℚ ≃ₐ[ℚ] ℚ[X][Y]`,  `u ↦ X`, `v ↦ Y`,
+
+carrying `projChartPolynomial E 2` to `E.toAffine.polynomial`, and then
+`Ideal.quotientEquiv` / `AdjoinRoot.quotEquiv`-style transport of the
+quotient.  `MvPolynomial.finSuccEquiv`, `MvPolynomial.pUnitAlgEquiv` and
+`MvPolynomial.renameEquiv` are the relevant mathlib entry points, together
+with `AdjoinRoot` being `Polynomial ℚ[X] ⧸ span {polynomial}` by
+definition.
+
+THE CHECK THAT WOULD REFUTE "OPEN": a declaration anywhere in the tree
+relating `Fermat.ProjChartRing` (or `Fermat.projChartPolynomial`) to
+`WeierstrassCurve.Affine.CoordinateRing` or to
+`WeierstrassCurve.Affine.polynomial`.  There is none.
+
+NOT VACUOUS: the commuting triangle over `ℚ` is what the consumer needs —
+without it the isomorphism could be any ring isomorphism whatsoever and
+the chart would not be a chart *over the base*.
+
+**A second consumer is waiting for this.**  `exists_projChartRingEquiv`
+(LEAF A of item 7a) identifies `(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` with
+`ProjChartRing E i`; composing the two is exactly what
+`exists_affineChart_projInfty` does below, so anybody proving that leaf is
+one composition away from this one at `i = 2`. -/
+theorem exists_coordinateRingEquiv_projChartRing (E : WeierstrassCurve ℚ) :
+    ∃ e : ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing,
+      (e : ProjChartRing E 2 →+* E.toAffine.CoordinateRing).comp
+          (algebraMap ℚ (ProjChartRing E 2)) = algebraMap ℚ E.toAffine.CoordinateRing :=
+  sorry
+
+/-- **The complement of the standard chart `D₊(Z)` is the point at
+infinity** (sorry node — the topological half, no group law and no
+coordinate ring).
+
+TRUE: modulo `Z̄` the homogeneous coordinate ring becomes
+`ℚ[X, Y] ⧸ (X³)` — substituting `Z = 0` into the Weierstrass cubic leaves
+`−X³` — so `X̄` is nilpotent modulo `(Z̄)` and every prime containing `Z̄`
+contains `X̄`.  A relevant homogeneous prime containing `(X̄, Z̄)` therefore
+corresponds to a homogeneous prime of `ℚ[Y]` not containing `(Y)`, i.e. to
+`(0)`; so `V₊(Z̄) = {(X̄, Z̄)}`, a single point.  And `projInfty` is
+`Proj.fromOfGlobalSections` at the coordinates `(0, 1, 0)`, whose image is
+that prime.
+
+**Half of this is already PROVEN in this file and should be reused, not
+redone**: `Fermat.pointAtInfinity` is the prime `(X̄, Z̄)` as a point of
+`ProjectiveSpectrum (projGrading W)`, with `isPrime_infIdeal`,
+`isHomogeneous_infIdeal`, `mk_X1_notMem_infIdeal` and
+`projPolynomial_mem_span_X_Z` all discharged there over an arbitrary base
+FIELD.  So the two remaining halves are
+
+* `(↑(Proj.basicOpen 𝒜 Z̄))ᶜ = {pointAtInfinity E}`, and
+* `Set.range (projInfty E).base = {pointAtInfinity E}`,
+
+and it was stated as a single equation only because the two singletons
+elaborate in different (defeq but not syntactically equal) ambient types,
+`↥(Proj (projGrading E))` and `↥(proj E)`.
+
+`Proj.mem_basicOpen` (`x ∈ basicOpen 𝒜 f ↔ f ∉ x.asHomogeneousIdeal`) is
+the entry point for the first half; `Proj.fromOfGlobalSections` and
+`ProjectiveSpectrum.mem_basicOpen` for the second.
+
+NOT VACUOUS: a wrong answer here is not a weaker statement but a false
+one — the equation pins a specific point of an irreducible curve. -/
+theorem compl_basicOpen_projCoord_two (E : WeierstrassCurve ℚ) :
+    (↑(Proj.basicOpen (_root_.WeierstrassCurve.Projective.projGrading E)
+        (projCoord E 2)) : Set ↥(Proj (_root_.WeierstrassCurve.Projective.projGrading E)))ᶜ
+      = Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base :=
+  sorry
+
+/-- **The affine chart `Z ≠ 0`, pinned at the POINT AT INFINITY**
+(PROVEN from `exists_projChartRingEquiv`, `exists_coordinateRingEquiv_`
+`projChartRing` and `compl_basicOpen_projCoord_two`).
+
+This is `exists_affineChart_projModel` with the group law removed: the
+removed point is the concrete `projInfty E` rather than the unit of an
+arbitrary `ProjGroupLaw`, so nothing about rigidity or translation enters
+here.  The chart is `Proj.awayι` at the homogeneous coordinate `Z̄`,
+transported along the dehomogenisation isomorphism; the structure-map
+clause is `awayι_projToSpec_eq_specMap` composed with the two commuting
+triangles, and the range clause is `Proj.opensRange_awayι`.
+
+The internal `aux` restates the goal with `Proj (projGrading E)` in place
+of `proj E`: the two are equal by `rfl`, but `proj` is a semireducible
+`def`, so instance search does not see through it and neither
+`IsOpenImmersion (Proj.awayι …)` nor the `rw` of
+`awayι_projToSpec_eq_specMap` fires at the unfolded spelling. -/
+theorem exists_affineChart_projInfty (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
+        _root_.WeierstrassCurve.Projective.proj E,
+      IsOpenImmersion ι ∧
+        ι ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
+          Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+        Set.range ι.base =
+          (Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base)ᶜ := by
+  classical
+  obtain ⟨e₀, he₀⟩ := exists_projChartRingEquiv E 2 (mem_projGrading_projCoord E 2)
+  obtain ⟨e₁, he₁⟩ := exists_coordinateRingEquiv_projChartRing E
+  set e : HomogeneousLocalization.Away (_root_.WeierstrassCurve.Projective.projGrading E)
+      (projCoord E 2) ≃+* E.toAffine.CoordinateRing := e₀.trans e₁ with he
+  have aux : ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
+      Proj (_root_.WeierstrassCurve.Projective.projGrading E),
+      IsOpenImmersion ι ∧
+        ι ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
+          Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+        Set.range ι.base =
+          (Set.range (_root_.WeierstrassCurve.Projective.projInfty E).base)ᶜ := by
+    refine ⟨Spec.map e.toCommRingCatIso.hom ≫
+      Proj.awayι (_root_.WeierstrassCurve.Projective.projGrading E) (projCoord E 2)
+        (mem_projGrading_projCoord E 2) Nat.one_pos, inferInstance, ?_, ?_⟩
+    · rw [Category.assoc, awayι_projToSpec_eq_specMap E _ (mem_projGrading_projCoord E 2),
+        ← Spec.map_comp]
+      congr 1
+      refine CommRingCat.hom_ext (RingHom.ext fun x => ?_)
+      have h0 := congrArg (fun g : ℚ →+* ProjChartRing E 2 => e₁ (g x)) he₀
+      have h1 := congrArg (fun g : ℚ →+* E.toAffine.CoordinateRing => g x) he₁
+      simpa [he] using h0.trans h1
+    · rw [← Scheme.Hom.coe_opensRange, Scheme.Hom.opensRange_comp_of_isIso,
+        Proj.opensRange_awayι, ← compl_basicOpen_projCoord_two E]
+      exact (compl_compl _).symm
+  exact aux
+
 /-- **The affine chart `Z ≠ 0` of the projective Weierstrass model is
 `Spec` of the affine coordinate ring, and its complement is the unit
-section** (sorry node — the coordinate half of item 8).
+section** (PROVEN 2026-07-27 from `exists_affineChart_projInfty` and
+`exists_translation_toZero`; formerly a sorry node).
 
 TRUE and classical, and it is the *definition* of the projective closure
 read backwards: `Proj (R[X,Y,Z]/(F))` is covered by the three basic opens
@@ -1936,26 +2186,36 @@ read backwards: `Proj (R[X,Y,Z]/(F))` is covered by the three basic opens
 — substituting `Z = 0` into `F` leaves `-X³`, so `X = 0` too — and that
 point is the unit `gl.e` of the group law.
 
-WHAT IT NEEDS, as three separately checkable pieces:
+## THE CUT (2026-07-27), and the DEFECT it repairs
 
-* `Proj.awayIso` / the basic-open cover of `Proj` at this pin — the
-  identification of `D₊(Z) ⊆ Proj 𝒜` with `Spec (𝒜_(Z))`, and that its
-  inclusion is an open immersion over `Spec 𝒜₀`.
-* The RING isomorphism `(R[X,Y,Z]/(F))_(Z) ≅ R[x,y]/(f)` — pure
-  commutative algebra, the dehomogenisation map, and the only place where
-  the shape of the Weierstrass polynomial is used.
-* `V₊(Z) = {[0 : 1 : 0]}` as a set, and that this point is the range of
-  `gl.e`.  The second half is the only place `gl` is consumed, and it is
-  what makes the statement about the group law rather than about the bare
-  scheme: `IsWeierstrassModel` pins the removed point to BE the origin,
-  which is what lets `WeierstrassCurve.variableChange_j` be applied
-  without a translation argument downstream.
+The third bullet of the previous plan — "`V₊(Z) = {[0 : 1 : 0]}`, and
+this point is the range of `gl.e`" — is **FALSE as an identification of
+points**, for exactly the reason recorded in the FALSITY-OF-CUT AUDIT on
+`exists_projGroupLaw_geomFibreAddEquiv`: `ProjGroupLaw` pins nothing about
+its unit `e`, so if `E(ℚ) ≠ {∞}` then translating the chord–tangent law by
+a rational point `P` gives another `ProjGroupLaw` whose unit section is
+`P`, and the complement of `D₊(Z)` is then not the range of `gl.e`.
 
-THE CHECK THAT WOULD REFUTE THE "MISSING" HALF: a declaration in
-`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/` giving `D₊(f) ≅ Spec` of
-the degree-zero localization together with the open immersion into
-`Proj`, and one identifying the degree-zero part of a localization of a
-graded quotient ring.
+The statement itself is nevertheless TRUE — the same shape as that audit's
+verdict, and repaired the same way rather than refuted.  It is true because
+`proj E` has an automorphism over `ℚ` carrying `[0 : 1 : 0]` to `gl.e`,
+namely translation by `⊖[0 : 1 : 0]` in `gl`'s own group law, and the
+chart may be composed with it.  So the leaf splits into
+
+* `exists_translation_toZero` (PROVEN above) — the translation, for an
+  arbitrary abelian scheme, by Yoneda inside `RelPoint f f`;
+* `exists_affineChart_projInfty` (PROVEN above) — the same statement with
+  `gl` deleted and the removed point taken to be `projInfty E`;
+
+and the two genuinely open pieces are the sub-leaves of the latter,
+`exists_coordinateRingEquiv_projChartRing` (commutative algebra) and
+`compl_basicOpen_projCoord_two` (topology of `Proj`).  Neither mentions a
+group law, which is the point of the cut: no `ProjGroupLaw` survives into
+either.
+
+The first bullet of the old plan is RETIRED as already available: the
+basic-open cover of `Proj` **is** at this pin, as `Proj.awayι`,
+`Proj.opensRange_awayι` and the `IsOpenImmersion` instance beside them.
 
 NOT VACUOUS: `IsOpenImmersion` alone would be satisfiable by the empty
 scheme were the coordinate ring trivial, but `range_eq` forces the range
@@ -1970,8 +2230,22 @@ theorem exists_affineChart_projModel (E : WeierstrassCurve ℚ) [E.IsElliptic]
           Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
         Set.range ι.base =
           (Set.range (gl.toAbelianSchemeStruct.zero
-            (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ :=
-  sorry
+            (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ := by
+  classical
+  obtain ⟨ι₀, hopen₀, hstr₀, hrange₀⟩ := exists_affineChart_projInfty E
+  obtain ⟨τ, hτiso, hτf, hτp⟩ := exists_translation_toZero gl.toAbelianSchemeStruct
+    (_root_.WeierstrassCurve.Projective.projInfty E) (projInfty_projToSpec E)
+  refine ⟨ι₀ ≫ τ, inferInstance, ?_, ?_⟩
+  · rw [Category.assoc, hτf]; exact hstr₀
+  · have hbij : Function.Bijective (τ.base : _root_.WeierstrassCurve.Projective.proj E →
+        _root_.WeierstrassCurve.Projective.proj E) := (Scheme.homeoOfIso (asIso τ)).bijective
+    rw [← hτp]
+    show Set.range ((ι₀ ≫ τ).base) = (Set.range
+      ((_root_.WeierstrassCurve.Projective.projInfty E ≫ τ).base))ᶜ
+    simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
+    rw [hrange₀, Set.image_compl_eq hbij]
+
+end AffineChart
 
 /-- **The projective Weierstrass model as an elliptic scheme, remembering
 the COORDINATES as well as the geometric fibre** (PROVEN from the six
