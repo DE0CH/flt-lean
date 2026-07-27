@@ -3544,6 +3544,26 @@ theorem exists_projMul (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ((Limits.pullback (projToSpec E) (projToSpec E)).residueField x) (Field.toIsField _) _ _
 
 
+/-- **`m` IS THE CHORD-TANGENT MULTIPLICATION**, as a named predicate: the first conjunct of
+`exists_projMul` above, pulled out so that a downstream statement can take it as a
+hypothesis without restating it.
+
+Written as an `abbrev` on purpose — it must unfold definitionally, so that the witness
+`exists_projMul` hands back is accepted where an `IsProjMulLaw E m` is expected, with no
+bridging lemma.
+
+**Why it exists at all** (integration, 2026-07-27).  `exists_projMul_geomFibreEquivVal`
+needs exactly this clause to pin its `m`, and restating the clause inline in that
+declaration's signature — five thousand lines further down — sent the elaborator into a
+`whnf` timeout, while the identical text elaborates here in milliseconds.  Naming it once,
+at the point where it is already being elaborated, is both cheaper and the honest statement
+of what the downstream leaf assumes. -/
+abbrev IsProjMulLaw (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E) : Prop :=
+  ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
+      (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤),
+    Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m = (c.add d h).toHom
+
 /-- **Associativity of any commutative unital multiplication with
 `projNeg`-inverses on the projective Weierstrass model** (PROVEN from
 `geometricallyReduced_projToSpec` and `projMul_assoc_pt`, whose own
@@ -5084,10 +5104,7 @@ would have been a second, independent assertion that the group law exists
 (reconciled at integration, 2026-07-27). -/
 theorem exists_projMul_geomFibreEquivVal (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hlaw : ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
-        (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤),
-        Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m =
-          (c.add d h).toHom) :
+    (hlaw : IsProjMulLaw E m) :
     ∃ eqv : (E⁄(AlgebraicClosure ℚ)).Point ≃
         GeomFibrePt (projToSpec E) (𝟙 (Spec (CommRingCat.of ℚ))),
       (∀ x y : (E⁄(AlgebraicClosure ℚ)).Point,

@@ -28522,7 +28522,7 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum
       (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
         HasRationalPoint fX (ULift.{u} ℝ)) :=
   exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split hℓodd hℓ5 hW hρbar hirr
-    D p hp hpℓ lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hdih
+    D p hp hpℓ lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hstdp hdih
     -- the PRINCIPAL narrow class: this assembly needs *a* split moduli space and
     -- does not care which component, so it takes `𝔞 = ⊤ = 𝒪_D`. See
     -- `HasSplitHilbertBlumenthalModuli` for why the class must be pinned at all.

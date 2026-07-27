@@ -372,7 +372,18 @@ theorem isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected {n : �
     IsIntegral X :=
   sorry
 
-/-- **A nonempty smooth proper curve over a field has infinitely many points** (sorry leaf).
+/-- **A nonempty smooth curve over a field has infinitely many points** (sorry leaf).
+
+**RECONCILED AT INTEGRATION, 2026-07-27.**  Two branches cut this leaf on the same day,
+here with `[IsProper strX]` and in `CurveCompactification.lean` without it, and since that
+file `public import`s this one the two collided outright (`has already been declared`).
+The PROPERNESS-FREE form is the survivor, for a reason that is not a matter of taste: its
+consumer over there,
+`isDominant_of_finite_compl_of_smoothOfRelativeDimension_one`, applies it to an OPEN
+subscheme `U.ι ≫ strX`, and an open of a proper scheme is not proper — so with `IsProper`
+in the signature that consumer cannot be discharged at all.  The statement is true without
+it (see the argument below, which never uses properness), and `isDominant_of_finite_compl`
+just below keeps its own `[IsProper strX]` because its other steps want it.
 
 TRUE: `X` is one-dimensional, so it has a generic point and infinitely many closed points —
 over a finite field because there are closed points of every residue degree, over an infinite
@@ -389,7 +400,7 @@ which is the same observation at `𝔽_ℓ` and has a separate owner.
 is stated for the proper case because that is where it is consumed and because properness is
 what makes "curve" mean "complete curve". -/
 theorem infinite_of_smoothOfRelativeDimension_one
-    {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K)) [IsProper strX]
+    {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [SmoothOfRelativeDimension 1 strX] [Nonempty X] :
     Infinite X :=
   sorry

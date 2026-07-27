@@ -102,7 +102,7 @@ Every one of the original five leaves has now been cut down; the remaining leave
 | `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
 | `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
-| `infinite_of_smoothOfRelativeDimension_one` | a nonempty smooth curve over a field has infinitely many points (added 2026-07-27; the only input to the density subsection at the end of this file) |
+| `infinite_of_smoothOfRelativeDimension_one` (in `CurveExtension.lean`) | a nonempty smooth curve over a field has infinitely many points — the only input to the density subsection at the end of this file; stated upstream, see the note there |
 | `isDiscreteValuationRing_stalk_normalization` | the relative normalization is NORMAL, hence its local rings in dimension one are DVRs |
 
 ## Third decomposition pass, 2026-07-27: the DVR node is shared with `X0.lean`
@@ -2204,40 +2204,21 @@ complement is empty, so on a space with *no nonempty finite open subset* a finit
 is automatically dense.  All the geometry sits in that parenthesis, and it is isolated as
 the single leaf below. -/
 
-/-- **A nonempty smooth curve over a field has infinitely many points** (sorry leaf — the
-one-dimensionality of a smooth curve, in its point-counting form).
-
-TRUE and classical.  On an affine chart `Spec A` the algebra `A` is standard smooth of
-relative dimension `1` over `K` (`Smooth.exists_isStandardSmooth`, and `A` is of finite type
-over `K`), so `dim A = 1`; a finite-type `K`-algebra is Jacobson, and a Jacobson ring of
-dimension one has infinitely many maximal ideals — a chain `p ⊊ m` forces the Jacobson
-radical (an intersection of *finitely many* maximals, were there only finitely many) to
-differ from the nilradical, which is contained in the minimal prime `p`.
-
-**`Nonempty X` is load-bearing**, not decoration: the empty scheme satisfies
-`SmoothOfRelativeDimension 1` vacuously and is finite.
-
-**Why this and not a `topologicalKrullDim` statement.**  The sibling leaf
-`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` above bounds the dimension
-from ABOVE, and its companion lower bound `1 ≤ topologicalKrullDim X` would **not** suffice
-for the consumer below: `Spec` of a discrete valuation ring has Krull dimension one and just
-two points, so a finite nonempty open of Krull dimension one is not by itself a
-contradiction.  Finiteness of the point set is the property that actually has to fail, so it
-is the property that is stated.  (What rules the DVR out here is `LocallyOfFiniteType`, which
-is why the argument above goes through Jacobson-ness rather than through dimension alone.)
-
-**Where the missing input lives.**  This is the same class of fact as
-`AlgebraicGeometry.GeometricallyReduced.of_smooth` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean` — a property of smooth
-morphisms over a field that `Mathlib` does not derive from smoothness at this pin — and, as
-there, the route is through the local structure theorem
-`Algebra.Smooth.exists_span_eq_top_isStandardSmooth`
-(`Mathlib/RingTheory/Smooth/StandardSmoothOfFree.lean`), which IS present and should not be
-re-derived. -/
-theorem infinite_of_smoothOfRelativeDimension_one {X : Scheme.{u}}
-    (f : X ⟶ Spec (CommRingCat.of K)) [SmoothOfRelativeDimension 1 f] [Nonempty X] :
-    Infinite X :=
-  sorry
+-- **THE LEAF THIS SUBSECTION RESTS ON LIVES UPSTREAM**, as
+-- `AlgebraicGeometry.infinite_of_smoothOfRelativeDimension_one` in
+-- `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, which this file
+-- `public import`s.  It used to be stated HERE as well, by a second branch on the same
+-- day, and the two collided at integration (`has already been declared`); the properness-
+-- free form survived, because the consumer below applies it to an OPEN subscheme and an
+-- open of a proper scheme is not proper.  The reasoning that made this file's copy worth
+-- writing is preserved in that declaration's docstring; do not restate it here.
+--
+-- What that leaf says: a NONEMPTY scheme smooth of relative dimension one over a field has
+-- infinitely many points.  `Nonempty X` is load-bearing — the empty scheme satisfies
+-- `SmoothOfRelativeDimension 1` vacuously and is finite — and a `topologicalKrullDim`
+-- statement would NOT do instead: `Spec` of a DVR has Krull dimension one and two points,
+-- so a finite nonempty open of Krull dimension one is not by itself a contradiction.  The
+-- route is `Algebra.Smooth.exists_span_eq_top_isStandardSmooth` plus Jacobson-ness.
 
 /-- **On a smooth curve over a field, an open immersion with finite complement is dense**
 (PROVEN, over the single leaf above).
