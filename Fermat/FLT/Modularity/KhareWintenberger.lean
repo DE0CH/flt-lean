@@ -2549,9 +2549,153 @@ theorem smooth_quotient_of_smooth_localizationAway
       rfl
   exact Algebra.Smooth.comp k (R ⧸ J) _
 
-/-- **THE GENERIC FIBRE IS SMOOTH** (sorry node, 2026-07-27; the ONLY remaining
-leaf under `exists_genericSmoothFibre_of_smooth_of_charZero`, and the only
-place where `CharZero` is used).
+/-- **REGULAR ⟹ FORMALLY SMOOTH, OVER A PERFECT FIELD** (SORRY LEAF, cut
+2026-07-27; Stacks 07EC, EGA IV 22.5.8, Matsumura *CRT* 28.7).
+
+**THIS IS THE SINGLE CLASSICAL THEOREM SHARED BY TWO LEAVES OF THIS FILE**, and
+it was cut precisely so that it is proven once and instantiated twice:
+
+* `formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` (immediately
+  below) — the generic-fibre step of the algebraic Sard theorem, and the only
+  place `CharZero` enters that chain; and
+* `smooth_of_isRegularLocalRing_stalk_of_perfectField` (~8000 lines below) — the
+  scheme-level converse of this file's PROVEN
+  `isRegularLocalRing_stalk_of_smooth_over_field`.
+
+**Both of those are now PROVEN over this leaf**, with no other new obligation on
+the `#1` side; so this statement is the entire remaining mathematical content of
+the regular-⟹-smooth direction in this development.
+
+PERFECTNESS IS LOAD-BEARING, and a draft proof that never uses `PerfectField K`
+is proving something false. Over an imperfect `k` take `t ∈ k \ kᵖ`: then
+`k[x]/(xᵖ − t)` is a FIELD, hence a regular local ring, essentially (indeed
+finitely) of finite type over `k`, and it is not formally smooth over `k` —
+base change to `k^{1/p}` produces a nonreduced ring. In the `CharZero`
+instantiation below the same counterexample is `B = 𝔽_p[y]`, `t₀ = yᵖ`, whose
+generic fibre `𝔽_p(X)[y]/(yᵖ − X)` is regular and purely inseparable over
+`𝔽_p(X)`.
+
+WHAT MATHLIB HAS, re-verified BY NAME on this pin 2026-07-27 (each grep is the
+check that would refute the claim, so re-run them rather than trusting this):
+
+* `Algebra.FormallySmooth.of_perfectField` (`Mathlib/RingTheory/Smooth/Field.lean`,
+  line 53) settles the case where `A` is a **FIELD**:
+  `[PerfectField K] [Algebra.EssFiniteType K L] : Algebra.FormallySmooth K L`
+  for `L` a field. It goes through
+  `exists_isTranscendenceBasis_and_isSeparable_of_perfectField` and
+  `FormallySmooth.of_algebraicIndependent_of_isSeparable`. So the `d = 0` case of
+  this leaf — a regular local ring of dimension `0` is a field — is already done,
+  and the content is the step from the residue field to the local ring.
+* `Algebra.formallySmooth_iff` (`Mathlib/RingTheory/Smooth/Basic.lean`, aliased
+  `FormallySmooth.iff_subsingleton_and_projective`) plus
+  `Algebra.smoothLocus_eq_compl_support_inter`
+  (`Mathlib/RingTheory/Smooth/Locus.lean`:56) reduce the goal, for a LOCAL `A`
+  essentially of finite type, to `Subsingleton (H1Cotangent K A)` — the freeness
+  half `Module.Free A Ω[A⁄K]` follows from flatness by
+  `Module.free_of_flat_of_isLocalRing`, exactly as in that file's own proof.
+* The two Jacobian criteria in `Mathlib/RingTheory/Smooth/Local.lean`,
+  `Algebra.FormallySmooth.iff_injective_lTensor_residueField` and
+  `…iff_injective_cotangentComplexBaseChange`, turn formal smoothness of a local
+  algebra into INJECTIVITY of `κ ⊗_A I/I² → κ ⊗_P Ω[P⁄K]` for a presentation
+  `0 → I → P → A → 0` with `P` formally smooth and `Ω[P⁄K]` finite free.
+* `IsRegularLocalRing.iff_finrank_cotangentSpace`
+  (`Mathlib/RingTheory/RegularLocalRing/Defs.lean`) supplies the input on the
+  other side: regularity is `finrank κ (CotangentSpace A) = ringKrullDim A`.
+  `IsRegularLocalRing` already extends `IsLocalRing` and `IsNoetherianRing`, so
+  no separate noetherianity hypothesis is needed here.
+
+WHAT IS ABSENT, re-checked BY NAME 2026-07-27:
+`grep -rn "IsRegularLocalRing\|IsRegularRing" .lake/packages/mathlib/Mathlib/RingTheory/Smooth/
+.lake/packages/mathlib/Mathlib/RingTheory/Etale/ .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`
+returns **NOTHING** — mathlib relates regularity to smoothness in neither
+direction. `grep -rin "geometrically regular"` is empty, there is no Cohen
+structure theorem, and `~/cs/FLT` has no `FormallySmooth` or
+`IsRegularLocalRing` occurrence at all.
+
+THE TWO CLASSICAL ROUTES, and what each still owes:
+
+* **Jacobian criterion plus a dimension count.** With `A = P/I`, `P` a
+  localization of a polynomial ring, the second fundamental sequence gives
+  `κ ⊗ I/I² → κ^n → κ ⊗ Ω[A⁄K] → 0`, so injectivity of the first map is
+  equivalent to `dim_κ (κ ⊗ I/I²) = n − dim_κ (κ ⊗ Ω[A⁄K])`. Regularity enters
+  through `dim_κ (κ ⊗ Ω[A⁄K]) = dim A + trdeg_K κ`, which is the missing
+  ingredient — it is dimension theory over a field, and `Algebra.trdeg` exists at
+  the pin while the comparison with `ringKrullDim` does not.
+* **Cohen structure theorem**, i.e. `Â ≅ κ[[x₁,…,x_d]]` with `κ/K` separably
+  generated, plus a "formally smooth after completion ⟹ formally smooth"
+  transfer. Neither half is at the pin.
+
+The first route is the shorter one from here, because its Jacobian half is
+already packaged in `Mathlib/RingTheory/Smooth/Local.lean` and only the
+dimension formula is owed. See also `~/cs/FLT/FLT/Slop/DimensionTheorem/`
+(Stacks 00KQ, Hilbert–Samuel growth), which is vendorable modulo a pin-drift
+audit and is the engine that dimension formula wants.
+
+A STRICTLY SMALLER STATEMENT WOULD ALSO DISCHARGE BOTH CONSUMERS, and whoever
+takes this leaf may prefer it: in both instantiations the base field has
+characteristic zero and the local rings that arise are of dimension `≤ 1`. So
+"a regular local ring of dimension `≤ 1` essentially of finite type over a field
+of characteristic zero is formally smooth over it" is enough, and in dimension
+`≤ 1` the local ring is a field or a DVR. Cutting it that way is legitimate and
+probably cheaper; the general form is stated because it is the reusable one. -/
+theorem formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField
+    (K A : Type u) [Field K] [PerfectField K] [CommRing A] [Algebra K A]
+    [Algebra.EssFiniteType K A] [IsRegularLocalRing A] :
+    Algebra.FormallySmooth K A :=
+  sorry
+
+/-- **A LOCALIZATION OF A SMOOTH ALGEBRA OVER A FIELD IS A REGULAR LOCAL RING**
+(SORRY LEAF, cut 2026-07-27 — **and it is NOT new mathematics: it is BLOCKED
+ONLY BY LEAN'S DECLARATION ORDER**).
+
+This is the AFFINE form of this file's own **PROVEN**
+`isRegularLocalRing_stalk_of_smooth_over_field` (~1600 lines below this point,
+sorry-free over `exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field`
+and `isRegularLocalRing_quotient_span_list_aux`, both PROVEN 2026-07-26). The
+only reason it is a separate declaration here is that its consumer,
+`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` immediately
+below, sits ~1600 lines ABOVE the proof, and Lean has no forward references.
+
+**THE RECIPE THAT CLOSES IT, once the proof is reachable** — this is scheme
+bookkeeping with no mathematical content, and it is written out here so that
+nobody dispatches a proof effort at it:
+
+1. `Algebra.Smooth k B` gives `AlgebraicGeometry.Smooth (Spec.map (algebraMap k B))`
+   through `HasRingHomProperty @Smooth RingHom.Smooth` together with
+   `AlgebraicGeometry.HasRingHomProperty.iff_of_isAffine`;
+2. `Spec (CommRingCat.of B)` has a point `y` with `y.asIdeal = q`, and
+   `AlgebraicGeometry.Spec.stalkIso` (or `IsAffineOpen.isLocalization_stalk` at
+   `⊤`) identifies `(Spec (CommRingCat.of B)).presheaf.stalk y` with
+   `Localization.AtPrime q` as a ring;
+3. `isRegularLocalRing_stalk_of_smooth_over_field` applied to that morphism and
+   that point, then `IsRegularLocalRing.of_ringEquiv` across the iso of (2).
+
+**THE PROPER REPAIR IS A HOIST, AND ONE IS ALREADY IN FLIGHT.** As of
+2026-07-27 the worker on `flt-lean-149` is hoisting
+`isRegularLocalRing_stalk_of_smooth_over_field` (with the block it depends on:
+`isDomain_of_isRegularLocalRing`, `isRegularLocalRing_quotient_span_singleton`,
+`isRegularLocalRing_quotient_span_list_aux` and the standard-smooth
+presentation lemmas) into a module UPSTREAM of
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, because a leaf there wants
+the same theorem. Once that lands, the hoisted theorem is in scope at THIS line
+too, and this leaf closes by the three steps above. **Do not hoist it a second
+time, and do not re-prove it** — check `git log --oneline -S
+isRegularLocalRing_stalk_of_smooth_over_field` first.
+
+The check that would refute the "already proven" claim:
+`grep -n "theorem isRegularLocalRing_stalk_of_smooth_over_field" \
+Fermat/FLT/Modularity/KhareWintenberger.lean` and then `#print axioms` on it. -/
+theorem isRegularLocalRing_localizationAtPrime_of_smooth_over_field
+    {k B : Type u} [Field k] [CommRing B] [Algebra k B] [Algebra.Smooth k B]
+    (q : Ideal B) [q.IsPrime] :
+    IsRegularLocalRing (Localization.AtPrime q) :=
+  sorry
+
+/-- **THE GENERIC FIBRE IS SMOOTH** (**PROVEN 2026-07-27** over the shared
+classical leaf `formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`
+and the order-blocked `isRegularLocalRing_localizationAtPrime_of_smooth_over_field`,
+both stated immediately above; it remains the only place where `CharZero` is
+used in the algebraic-Sard chain).
 
 If `B` is smooth over a characteristic-zero field `k` and finite type over a
 `k`-subalgebra `R` which is a domain, then every prime `q` of `B` lying over
@@ -2577,24 +2721,69 @@ regular, but NOT formally smooth, because `K` is not perfect. Every fibre of
 that family is non-reduced, so no `F` can work: this is not a defect of the
 proof route but the reason the theorem carries `CharZero`.
 
-MISSING FROM THE PIN, with the checks that would refute it:
-`grep -rln "IsRegularLocalRing" .lake/packages/mathlib/Mathlib` returns only
-`Mathlib/RingTheory/RegularLocalRing/{Defs,Polynomial}.lean`, and
-`grep -rn "IsRegularRing\|IsRegularLocalRing" Mathlib/RingTheory/Smooth/
-Mathlib/RingTheory/Etale/` returns NOTHING — so mathlib relates smoothness to
-regularity in neither direction. What it DOES have, and what a prover here
-should start from, is `Algebra.FormallySmooth.of_perfectField`
-(`Mathlib/RingTheory/Smooth/Field.lean`), which settles the case where `B_q`
-is a FIELD essentially of finite type over `K`; the general case needs the
-step from the residue field to the local ring, i.e. the Cohen structure
-theorem or the Jacobian criterion. -/
+**STATUS 2026-07-27: PROVEN, and the paragraph that used to stand here — a
+survey of what the pin lacks — has been RETRACTED as the wrong level to record
+it at.** The pin genuinely lacks the classical theorem, but that gap is not
+this leaf's; it now lives at the shared leaf
+`formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`
+(stated above), where the same survey is recorded once, kept current, and
+serves the scheme-level consumer as well. Everything below that line in this
+statement is `K`-algebra bookkeeping, and it is written out here:
+
+* `hq` says exactly that `Ideal.comap (algebraMap R B) q = ⊥`, so a nonzero
+  `r : R` has `algebraMap R B r ∈ q.primeCompl`, hence a unit image in `B_q`
+  (`IsLocalization.map_units`) — this is the ONLY use of `hq`, and dropping it
+  makes the statement false, since a `q` meeting `R` gives `B_q = 0`-flavoured
+  fibres that are not `K`-algebras at all.
+* `IsLocalization.lift` on `nonZeroDivisors R` therefore produces
+  `Frac R →+* B_q`, and `IsLocalization.lift_eq` makes `R → Frac R → B_q`
+  a scalar tower.
+* `Algebra.EssFiniteType`: `FiniteType R B` gives `EssFiniteType R B`, a
+  localization is essentially finite type, `EssFiniteType.comp` composes them,
+  and `EssFiniteType.of_comp` drops the base from `R` to `Frac R`.
+* `CharZero (Frac R)` comes from `CharZero k` through two applications of
+  `charZero_of_injective_algebraMap` (`k ↪ R` because `k` is a field and `R`
+  nontrivial, then `R ↪ Frac R`), and `PerfectField.ofCharZero` is an instance.
+* Regularity of `B_q` is `isRegularLocalRing_localizationAtPrime_of_smooth_over_field`,
+  which is order-blocked rather than open — see its docstring.
+* Finally `Algebra.FormallySmooth.of_isLocalization (nonZeroDivisors R)` gives
+  `FormallySmooth R (Frac R)` and `Algebra.FormallySmooth.comp` composes. -/
 theorem formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero
     {k R B : Type u} [Field k] [CharZero k] [CommRing R] [IsDomain R] [Algebra k R]
     [CommRing B] [Algebra k B] [Algebra R B] [IsScalarTower k R B]
     [Algebra.Smooth k B] [Algebra.FiniteType R B]
-    (q : Ideal B) [q.IsPrime] (_hq : Ideal.comap (algebraMap R B) q = ⊥) :
-    Algebra.FormallySmooth R (Localization.AtPrime q) :=
-  sorry
+    (q : Ideal B) [q.IsPrime] (hq : Ideal.comap (algebraMap R B) q = ⊥) :
+    Algebra.FormallySmooth R (Localization.AtPrime q) := by
+  classical
+  -- every nonzero element of `R` becomes a unit in `B_q`; this is where `hq` enters
+  have hunit : ∀ r : nonZeroDivisors R,
+      IsUnit (algebraMap R (Localization.AtPrime q) (r : R)) := by
+    rintro ⟨r, hr⟩
+    have hr0 : r ≠ 0 := mem_nonZeroDivisors_iff_ne_zero.mp hr
+    have hnq : algebraMap R B r ∈ q.primeCompl := by
+      intro hmem
+      exact hr0 (Ideal.mem_bot.mp (hq ▸ (hmem : r ∈ Ideal.comap (algebraMap R B) q)))
+    rw [IsScalarTower.algebraMap_apply R B (Localization.AtPrime q)]
+    exact IsLocalization.map_units (Localization.AtPrime q) ⟨algebraMap R B r, hnq⟩
+  letI : Algebra (FractionRing R) (Localization.AtPrime q) :=
+    (IsLocalization.lift (S := FractionRing R) hunit).toAlgebra
+  haveI : IsScalarTower R (FractionRing R) (Localization.AtPrime q) :=
+    IsScalarTower.of_algebraMap_eq fun r => (IsLocalization.lift_eq hunit r).symm
+  haveI : Algebra.FormallySmooth R (FractionRing R) :=
+    Algebra.FormallySmooth.of_isLocalization (nonZeroDivisors R)
+  haveI : CharZero R := charZero_of_injective_algebraMap (algebraMap k R).injective
+  haveI : CharZero (FractionRing R) :=
+    charZero_of_injective_algebraMap (IsFractionRing.injective R (FractionRing R))
+  haveI : Algebra.EssFiniteType R (Localization.AtPrime q) :=
+    Algebra.EssFiniteType.comp R B (Localization.AtPrime q)
+  haveI : Algebra.EssFiniteType (FractionRing R) (Localization.AtPrime q) :=
+    Algebra.EssFiniteType.of_comp R (FractionRing R) (Localization.AtPrime q)
+  haveI : IsRegularLocalRing (Localization.AtPrime q) :=
+    isRegularLocalRing_localizationAtPrime_of_smooth_over_field (k := k) q
+  haveI : Algebra.FormallySmooth (FractionRing R) (Localization.AtPrime q) :=
+    formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField
+      (FractionRing R) (Localization.AtPrime q)
+  exact Algebra.FormallySmooth.comp R (FractionRing R) (Localization.AtPrime q)
 
 /-- **GENERIC SMOOTHNESS ON THE TARGET — THE ALGEBRAIC SARD THEOREM**
 (**PROVEN 2026-07-27** over the single leaf
@@ -9957,8 +10146,39 @@ theorem krullDimLE_stalk_of_topologicalKrullDim_le {X : AlgebraicGeometry.Scheme
   exact_mod_cast h1.trans h
 
 open CategoryTheory AlgebraicGeometry in
-/-- **LEAF C2 — REGULAR ⟹ SMOOTH OVER A PERFECT FIELD** (SORRY LEAF, and this
-is THE genuinely missing theory in the whole smooth-proper-model cluster).
+set_option backward.isDefEq.respectTransparency false in
+/-- **LEAF C2 — REGULAR ⟹ SMOOTH OVER A PERFECT FIELD** (**PROVEN 2026-07-27**
+over the single shared leaf
+`formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`, stated
+~7500 lines above beside the other consumer of the same classical theorem).
+
+**READ THAT LEAF'S DOCSTRING, NOT THIS ONE, FOR THE MISSING THEORY.** Everything
+below in this docstring that surveys what mathlib has and lacks was written when
+this node was itself the leaf; it is kept because it is accurate and because the
+scheme-side entry points it names are exactly the ones this proof uses, but the
+*obligation* has moved. The proof here is scheme bookkeeping in six steps:
+
+1. `Scheme.Hom.smoothLocus_eq_top_iff` (valid under `hfp`) turns `Smooth f` into
+   `f.smoothLocus = ⊤`, i.e. into a POINTWISE claim with no gluing to do;
+2. `Scheme.Hom.mem_smoothLocus` unfolds membership to
+   `(f.stalkMap z).hom.FormallySmooth`;
+3. `LocallyOfFiniteType.stalkMap f z` supplies `EssFiniteType` for the stalk map,
+   and `algebraize` turns the `RingHom` statement into the `Algebra` one;
+4. the base stalk `𝒪_{Spec K, f z}` is `K` up to a canonical iso —
+   `IsLocalization.atUnits` at `(f z).asIdeal.primeCompl`, every element of which
+   is a unit because `Spec K` is a one-point space — so it is a FIELD and, being
+   algebraic over the perfect `K`, is PERFECT (`Algebra.IsAlgebraic.perfectField`);
+5. `hreg z` gives `IsRegularLocalRing` of the upstairs stalk, which already
+   carries `IsLocalRing` and `IsNoetherianRing`;
+6. the shared leaf then closes it.
+
+Steps 3–4 are copied from mathlib's own
+`Scheme.Hom.genericPoint_mem_smoothLocus_of_perfectField`, which is the same
+argument restricted to the generic point (where the stalk is a field and
+`Algebra.FormallySmooth.of_perfectField` finishes directly). The
+`set_option backward.isDefEq.respectTransparency false` is taken from that proof
+too and is load-bearing here for the same reason — without it the `algebraize`d
+instance on the base stalk is not found. It is NOT a resource bump.
 
 This is the EXACT CONVERSE of `isRegularLocalRing_stalk_of_smooth_over_field`
 (PROVEN above in this file): that node says a scheme smooth over a field has
@@ -10026,8 +10246,24 @@ theorem smooth_of_isRegularLocalRing_stalk_of_perfectField {K : Type u} [Field K
     (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
     (hfp : AlgebraicGeometry.LocallyOfFinitePresentation f)
     (hreg : ∀ z : Z, IsRegularLocalRing (Z.presheaf.stalk z)) :
-    AlgebraicGeometry.Smooth f :=
-  sorry
+    AlgebraicGeometry.Smooth f := by
+  haveI := hfp
+  rw [← AlgebraicGeometry.Scheme.Hom.smoothLocus_eq_top_iff, ← top_le_iff]
+  rintro z -
+  have := AlgebraicGeometry.LocallyOfFiniteType.stalkMap f z
+  rw [AlgebraicGeometry.Scheme.Hom.mem_smoothLocus]
+  algebraize [(f.stalkMap z).hom]
+  let K' := (Spec.structureSheaf K).presheaf.stalk (f.base z)
+  let e : K ≃ₐ[K] K' := IsLocalization.atUnits _ (f.base z).asIdeal.primeCompl
+      (fun x hx ↦ by aesop (add simp IsUnit.mem_submonoid_iff))
+  have : Algebra.IsAlgebraic K K' := .of_injective e.symm.toAlgHom e.symm.injective
+  let : Field K' := (e.toRingEquiv.symm.isField (Field.toIsField K)).toField
+  let : Field ((Spec (.of K)).presheaf.stalk (f.base z)) := this
+  have : PerfectField ((Spec (.of K)).presheaf.stalk (f.base z)) :=
+    Algebra.IsAlgebraic.perfectField (K := K) (L := K')
+  haveI := hreg z
+  exact formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField
+    ((Spec (.of K)).presheaf.stalk (f.base z)) (Z.presheaf.stalk z)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF C1a — THE STALKS OF THE NORMALIZED MODEL ARE INTEGRALLY CLOSED**
@@ -10183,15 +10419,19 @@ this file:
   `isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one` (PROVEN above);
 * and regular stalks over a perfect field give smoothness by LEAF C2.
 
-THE THREE RESIDUAL LEAVES, in decreasing order of expected cost:
+THE RESIDUAL LEAVES, UPDATED 2026-07-27 — the list below has changed, and the
+first entry is no longer one of them:
 
-* `smooth_of_isRegularLocalRing_stalk_of_perfectField` — regular ⟹ smooth over
-  a perfect field. **This is the one genuinely missing THEORY**, and it is the
-  exact converse of this file's own PROVEN
-  `isRegularLocalRing_stalk_of_smooth_over_field`. Its docstring records what
-  mathlib has, what it lacks (re-checked by name 2026-07-27), why perfectness
-  is load-bearing, and a strictly smaller statement that would also discharge
-  this consumer.
+* ~~`smooth_of_isRegularLocalRing_stalk_of_perfectField`~~ — **PROVEN
+  2026-07-27**. It is scheme bookkeeping over
+  `Scheme.Hom.smoothLocus_eq_top_iff` plus the single shared classical leaf
+  `formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`
+  (Stacks 07EC), which is stated ~7500 lines above beside the OTHER consumer of
+  the same theorem, `formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero`
+  (also PROVEN 2026-07-27 over it). So "regular ⟹ smooth over a perfect field"
+  is still the one genuinely missing THEORY in this cluster, but it is now a
+  SINGLE named leaf serving two consumers instead of two independent nodes, and
+  its docstring — not this one — is where its status is maintained.
 * `topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve` — the
   model has dimension `≤ 1`; the content is "a dense open of an integral
   finite-type scheme has the same dimension".
