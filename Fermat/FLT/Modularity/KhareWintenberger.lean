@@ -16621,6 +16621,450 @@ noncomputable def divisibleTensorEquiv :
 
 end ArchimedeanDivisibleModule
 
+/-! ### The `ℤ`-basis retraction on `𝒪_D ⊗_ℤ N`, for an ARBITRARY abelian group `N`
+
+`divisibleTheta` / `divisibleCoord` above are the case `N = ℚ/ℤ` of a
+retraction that costs nothing to state for a general `N`, and the general case
+is what the geometric assembly needs: it is applied once at `N = ℚ/ℤ` (the
+source of the level structure) and once at `N = B(ℂ)` (its target).  They are
+restated here rather than generalised in place because the declarations above
+have their own owner.
+
+TWO INSTANCE HAZARDS, both measured while writing this, both invisible in the
+pretty-printed goal:
+
+* the binder is `[AddCommGroup N]` and **not** `[AddCommGroup N] [Module ℤ N]`.
+  With the second binder present, `r • n` on the right of `coordAt_tmul`
+  elaborates through `SubNegMonoid.toZSMul` while the left goes through
+  `Module.toSMul`, and the two are propositionally but not definitionally equal
+  for an arbitrary `Module ℤ N` instance — so the lemma is not `rfl` and cannot
+  be closed by `simp`.  With only `[AddCommGroup N]` the module instance is
+  forced to be `AddCommGroup.toIntModule`, whose `smul` IS `zsmul`, and
+  everything is definitional again.  (This is the same trap the `divisibleBil`
+  docstring records for `ℚ/ℤ`, in its generic form.)
+* the coordinate map is taken ONE index at a time (`tensorBasisCoordAt j`)
+  rather than bundled as a map into `ι → N`.  A bundled `LinearMap.pi` forces a
+  `Module ℤ (ι → N)` instance, and instance search answers
+  `AddCommGroup.toIntModule (ι → N)` where `LinearMap.proj` wants `Pi.module`.
+
+Neither dodge costs anything mathematically: the results below are exactly the
+statements `divisibleTheta_coord` / `divisibleCoord_theta` prove at `ℚ/ℤ`. -/
+
+section ArchimedeanTensorLevel
+
+open scoped TensorProduct
+
+variable (D : Type u) [Field D] [NumberField D]
+
+section Retraction
+
+variable (N : Type*) [AddCommGroup N]
+
+/-- **`f ↦ ∑ bⱼ ⊗ fⱼ`**, from basis coordinates into `𝒪_D ⊗_ℤ N`. -/
+noncomputable def tensorBasisTheta
+    (f : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N) :
+    NumberField.RingOfIntegers D ⊗[ℤ] N :=
+  ∑ j, (NumberField.RingOfIntegers.basis D j) ⊗ₜ[ℤ] f j
+
+/-- **The `j`-th basis coordinate of a tensor**, `a ⊗ n ↦ bⱼ*(a) • n`. -/
+noncomputable def tensorBasisCoordAt
+    (j : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    (NumberField.RingOfIntegers D ⊗[ℤ] N) →ₗ[ℤ] N :=
+  TensorProduct.lift ((LinearMap.lsmul ℤ N).comp ((NumberField.RingOfIntegers.basis D).coord j))
+
+@[simp] theorem tensorBasisCoordAt_tmul (a : NumberField.RingOfIntegers D) (n : N)
+    (j : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    tensorBasisCoordAt D N j (a ⊗ₜ n)
+      = (NumberField.RingOfIntegers.basis D).repr a j • n := by
+  simp [tensorBasisCoordAt]
+
+theorem tensorBasisCoordAt_theta
+    (f : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N)
+    (j : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    tensorBasisCoordAt D N j (tensorBasisTheta D N f) = f j := by
+  rw [tensorBasisTheta, map_sum, Finset.sum_eq_single j]
+  · simp
+  · intro i _ hij
+    rw [tensorBasisCoordAt_tmul]
+    simp [Module.Basis.repr_self, hij]
+  · intro h; exact absurd (Finset.mem_univ j) h
+
+/-- **Every element of `𝒪_D ⊗_ℤ N` is `∑ bⱼ ⊗ nⱼ`** — freeness of `𝒪_D` over
+`ℤ` used as a retraction rather than through flatness. -/
+theorem tensorBasisTheta_coord (x : NumberField.RingOfIntegers D ⊗[ℤ] N) :
+    tensorBasisTheta D N (fun j => tensorBasisCoordAt D N j x) = x := by
+  induction x with
+  | zero => simp [tensorBasisTheta]
+  | tmul a n =>
+    rw [tensorBasisTheta]
+    have h : ∀ j, (NumberField.RingOfIntegers.basis D j) ⊗ₜ[ℤ]
+        (tensorBasisCoordAt D N j (a ⊗ₜ n))
+        = ((NumberField.RingOfIntegers.basis D).repr a j •
+            (NumberField.RingOfIntegers.basis D j)) ⊗ₜ[ℤ] n := by
+      intro j
+      rw [tensorBasisCoordAt_tmul, TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+    simp only [h]
+    rw [← TensorProduct.sum_tmul]
+    congr 1
+    exact (NumberField.RingOfIntegers.basis D).sum_repr a
+  | add x y hx hy =>
+    have h : ∀ j, tensorBasisCoordAt D N j (x + y)
+        = tensorBasisCoordAt D N j x + tensorBasisCoordAt D N j y := fun j => map_add _ _ _
+    simp only [h, tensorBasisTheta, TensorProduct.tmul_add]
+    rw [Finset.sum_add_distrib]
+    rw [show (∑ j, (NumberField.RingOfIntegers.basis D j) ⊗ₜ[ℤ] tensorBasisCoordAt D N j x)
+        = x from hx,
+      show (∑ j, (NumberField.RingOfIntegers.basis D j) ⊗ₜ[ℤ] tensorBasisCoordAt D N j y)
+        = y from hy]
+
+theorem tensorBasisTheta_add
+    (f g : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N) :
+    tensorBasisTheta D N (f + g) = tensorBasisTheta D N f + tensorBasisTheta D N g := by
+  simp only [tensorBasisTheta, Pi.add_apply, TensorProduct.tmul_add]
+  rw [Finset.sum_add_distrib]
+
+theorem tensorBasisTheta_lTensor {N' : Type*} [AddCommGroup N'] (s : N →ₗ[ℤ] N')
+    (f : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N) :
+    LinearMap.lTensor _ s (tensorBasisTheta D N f)
+      = tensorBasisTheta D N' (fun j => s (f j)) := by
+  simp [tensorBasisTheta, map_sum]
+
+end Retraction
+
+/-! ### The level map `(𝒪_D ⊗ ℚ/ℤ)² → 𝒪_D ⊗ M` induced by a level map `(ℚ/ℤ)² → M`
+
+This is the whole non-geometric content of the archimedean node's assembly: it
+turns a full torsion level structure of ONE elliptic curve into a level
+structure over `(𝒪_D ⊗_ℤ ℚ/ℤ)²` for the `g`-fold construction, and it does so
+for an ARBITRARY abelian group `M` and an arbitrary additive `t`, so no geometry
+appears anywhere below.
+
+`𝒪_D`-EQUIVARIANCE IS THE ONLY CLAUSE THAT IS NOT MANIFEST IN COORDINATES, and
+that is worth recording because it dictates the shape of the proof.  The
+definition is written in the `ℤ`-basis of `𝒪_D`, where additivity, injectivity,
+the conjugation clause and torsion coverage all reduce to the corresponding
+statement about `t` one coordinate at a time.  Multiplication by `a : 𝒪_D` is
+NOT diagonal in that basis, so `tensorLevel_smul` is instead proved by reducing
+to `Pi.single k (b ⊗ₜ n)` — where `tensorLevel_single` computes the value as the
+pure tensor `b ⊗ t (Pi.single k n)`, in which the `𝒪_D`-action is visible. -/
+
+section Level
+
+open scoped TensorProduct
+
+variable (M : Type*) [AddCommGroup M]
+variable (t : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) → M)
+
+/-- **The induced level map**, in basis coordinates: the `j`-th coordinate of
+`tensorLevel v` is `t` applied to the `j`-th coordinates of the two entries
+of `v`. -/
+noncomputable def tensorLevel
+    (v : Fin 2 → (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))) :
+    NumberField.RingOfIntegers D ⊗[ℤ] M :=
+  tensorBasisTheta D M (fun j => t (fun k => tensorBasisCoordAt D _ j (v k)))
+
+variable {D M t}
+
+theorem tensorLevel_add (ht : ∀ x y, t (x + y) = t x + t y)
+    (v w : Fin 2 → (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))) :
+    tensorLevel D M t (v + w) = tensorLevel D M t v + tensorLevel D M t w := by
+  rw [tensorLevel, tensorLevel, tensorLevel, ← tensorBasisTheta_add]
+  congr 1
+  funext j
+  have h : (fun k => tensorBasisCoordAt D _ j ((v + w) k))
+      = (fun k => tensorBasisCoordAt D _ j (v k))
+        + (fun k => tensorBasisCoordAt D _ j (w k)) := by
+    funext k
+    exact map_add (tensorBasisCoordAt D _ j) (v k) (w k)
+  rw [h, ht]
+  rfl
+
+/-- The additive bundling of `tensorLevel`, used only to sum over `Fin 2`. -/
+noncomputable def tensorLevelHom (ht : ∀ x y, t (x + y) = t x + t y) :
+    (Fin 2 → (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))) →+
+      (NumberField.RingOfIntegers D ⊗[ℤ] M) :=
+  AddMonoidHom.mk' (tensorLevel D M t) (tensorLevel_add ht)
+
+/-- The additive bundling of `t`, used only to get `ℤ`-homogeneity of `t`. -/
+def tensorLevelSrcHom (ht : ∀ x y, t (x + y) = t x + t y) :
+    (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ M :=
+  AddMonoidHom.mk' t ht
+
+/-- **The value at a `Pi.single` of a pure tensor is a pure tensor** — the one
+place where the `𝒪_D`-action is visible, and hence the engine of
+`tensorLevel_smul`. -/
+theorem tensorLevel_single (ht : ∀ x y, t (x + y) = t x + t y)
+    (k : Fin 2) (b : NumberField.RingOfIntegers D) (n : ℚ ⧸ (1 : Submodule ℤ ℚ)) :
+    tensorLevel D M t (Pi.single k (b ⊗ₜ n)) = b ⊗ₜ t (Pi.single k n) := by
+  have hc : ∀ j, (fun k' => tensorBasisCoordAt D _ j
+        ((Pi.single k (b ⊗ₜ[ℤ] n) :
+          Fin 2 → NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))) k'))
+      = Pi.single k ((NumberField.RingOfIntegers.basis D).repr b j • n) := by
+    intro j
+    funext k'
+    by_cases hk : k' = k
+    · subst hk; simp [Pi.single_eq_same]
+    · simp [Pi.single_eq_of_ne hk]
+  rw [tensorLevel]
+  have hst : ∀ j, t (Pi.single k ((NumberField.RingOfIntegers.basis D).repr b j • n))
+      = (NumberField.RingOfIntegers.basis D).repr b j • t (Pi.single k n) := by
+    intro j
+    have hsingle : Pi.single k ((NumberField.RingOfIntegers.basis D).repr b j • n)
+        = (NumberField.RingOfIntegers.basis D).repr b j • Pi.single (M := fun _ : Fin 2 =>
+            (ℚ ⧸ (1 : Submodule ℤ ℚ))) k n := by
+      funext k'
+      by_cases hk : k' = k
+      · subst hk; simp
+      · rw [Pi.single_eq_of_ne hk, Pi.smul_apply, Pi.single_eq_of_ne hk]
+        exact (zsmul_zero _).symm
+    rw [hsingle]
+    exact map_zsmul (tensorLevelSrcHom ht) _ _
+  simp only [hc, hst]
+  rw [tensorBasisTheta]
+  have hsm : ∀ j, (NumberField.RingOfIntegers.basis D j) ⊗ₜ[ℤ]
+      ((NumberField.RingOfIntegers.basis D).repr b j • t (Pi.single k n))
+      = ((NumberField.RingOfIntegers.basis D).repr b j •
+          (NumberField.RingOfIntegers.basis D j)) ⊗ₜ[ℤ] t (Pi.single k n) := by
+    intro j
+    rw [TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+  simp only [hsm]
+  rw [← TensorProduct.sum_tmul]
+  congr 1
+  exact (NumberField.RingOfIntegers.basis D).sum_repr b
+
+/-- **`tensorLevel` is `𝒪_D`-linear** for the action on the left tensor factor
+— the real-multiplication clause of the archimedean node. -/
+theorem tensorLevel_smul (ht : ∀ x y, t (x + y) = t x + t y)
+    (c : NumberField.RingOfIntegers D)
+    (v : Fin 2 → (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))) :
+    tensorLevel D M t (c • v) = c • tensorLevel D M t v := by
+  classical
+  have key : ∀ (k : Fin 2) (x : NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))),
+      tensorLevel D M t (Pi.single k (c • x)) = c • tensorLevel D M t (Pi.single k x) := by
+    intro k x
+    induction x with
+    | zero =>
+      have h0 : (Pi.single k (0 : NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))))
+          = (0 : Fin 2 → NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))) := by
+        funext k'
+        by_cases hk : k' = k
+        · subst hk; simp
+        · simp [Pi.single_eq_of_ne hk]
+      rw [smul_zero, h0]
+      show (tensorLevelHom (M := M) ht) 0 = c • (tensorLevelHom (M := M) ht) 0
+      rw [map_zero, smul_zero]
+    | tmul b n =>
+      rw [TensorProduct.smul_tmul', tensorLevel_single ht, tensorLevel_single ht,
+        TensorProduct.smul_tmul']
+    | add x y hx hy =>
+      rw [smul_add, Pi.single_add, Pi.single_add, tensorLevel_add ht, tensorLevel_add ht,
+        hx, hy, smul_add]
+  have hsum : ∀ (u : Fin 2 → (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))),
+      tensorLevel D M t u = ∑ k, tensorLevel D M t (Pi.single k (u k)) := by
+    intro u
+    conv_lhs => rw [← Finset.univ_sum_single u]
+    exact map_sum (tensorLevelHom (M := M) ht) _ _
+  rw [hsum (c • v), hsum v, Finset.smul_sum]
+  exact Finset.sum_congr rfl fun k _ => key k (v k)
+
+theorem tensorLevel_injective (hinj : Function.Injective t) :
+    Function.Injective (tensorLevel D M t) := by
+  intro v w h
+  funext k
+  have hcoord : ∀ j, (fun k' => tensorBasisCoordAt D _ j (v k'))
+      = (fun k' => tensorBasisCoordAt D _ j (w k')) := by
+    intro j
+    apply hinj
+    have hj := congrArg (tensorBasisCoordAt D M j) h
+    rwa [tensorLevel, tensorLevel, tensorBasisCoordAt_theta, tensorBasisCoordAt_theta] at hj
+  have hk : ∀ j, tensorBasisCoordAt D _ j (v k) = tensorBasisCoordAt D _ j (w k) :=
+    fun j => congrFun (hcoord j) k
+  calc v k = tensorBasisTheta D _ (fun j => tensorBasisCoordAt D _ j (v k)) :=
+        (tensorBasisTheta_coord D _ (v k)).symm
+    _ = tensorBasisTheta D _ (fun j => tensorBasisCoordAt D _ j (w k)) := by simp only [hk]
+    _ = w k := tensorBasisTheta_coord D _ (w k)
+
+/-- **The conjugation clause transports for free**: `realConjAdd` has integral
+matrix entries, so the coordinate maps intertwine it (`realConjAdd_map`), and
+whatever additive `s` conjugates `t` conjugates `tensorLevel t` through
+`lTensor s`. -/
+theorem tensorLevel_conj (ε : Bool) (s : M →ₗ[ℤ] M)
+    (hs : ∀ c, t (realConjAdd _ ε c) = s (t c))
+    (v : Fin 2 → (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))) :
+    tensorLevel D M t (realConjAdd _ ε v)
+      = LinearMap.lTensor _ s (tensorLevel D M t v) := by
+  rw [tensorLevel, tensorLevel, tensorBasisTheta_lTensor]
+  congr 1
+  funext j
+  have h : (fun k => tensorBasisCoordAt D _ j ((realConjAdd _ ε v) k))
+      = realConjAdd _ ε (fun k => tensorBasisCoordAt D _ j (v k)) :=
+    realConjAdd_map (tensorBasisCoordAt D _ j) (fun x y => map_add _ x y) ε v
+  rw [h, hs]
+
+/-- **`n`-torsion coverage passes to the tensor**: if `t` hits every `n`-torsion
+point of `M`, then `tensorLevel t` hits every `n`-torsion element of
+`𝒪_D ⊗_ℤ M`.  This is where the retraction replaces flatness — the coordinates
+of an `n`-torsion element are `n`-torsion, and `∑ bⱼ ⊗ (-)` puts them back. -/
+theorem tensorLevel_torsion
+    (hcov : ∀ (n : ℕ), n ≠ 0 → ∀ y : M, (n : ℤ) • y = 0 → ∃ c, t c = y)
+    (n : ℕ) (hn : n ≠ 0) (x : NumberField.RingOfIntegers D ⊗[ℤ] M)
+    (hx : (n : ℤ) • x = 0) : ∃ v, tensorLevel D M t v = x := by
+  classical
+  have hcoordz : ∀ j, (n : ℤ) • tensorBasisCoordAt D M j x = 0 := by
+    intro j
+    rw [← map_zsmul, hx, map_zero]
+  choose c hc using fun j => hcov n hn (tensorBasisCoordAt D M j x) (hcoordz j)
+  refine ⟨fun k => tensorBasisTheta D _ (fun j => c j k), ?_⟩
+  rw [tensorLevel]
+  have h : ∀ j, (fun k => tensorBasisCoordAt D _ j
+      (tensorBasisTheta D _ (fun j' => c j' k))) = c j := by
+    intro j
+    funext k
+    exact tensorBasisCoordAt_theta D _ _ j
+  simp only [h, hc]
+  exact tensorBasisTheta_coord D M x
+
+end Level
+
+end ArchimedeanTensorLevel
+
+open scoped TensorProduct in
+open CategoryTheory in
+/-- **THE ELLIPTIC-CURVE HALF of the archimedean node** (sorry leaf, cut
+2026-07-27 out of `exists_realAbelianSchemeWithTensorLevelStructure`): ONE real
+elliptic scheme, of relative dimension `1` over `ℝ`, together with a full
+torsion level structure `(ℚ/ℤ)² → E(ℂ)` on which complex conjugation acts by
+`realConjAdd ε`.
+
+Nothing about `D` appears here.  That is the point of the cut: the class of the
+conjugation involution is a property of the elliptic curve ALONE, so it is
+established once, and `exists_tensorAbelianSchemeByRingOfIntegers` then carries
+it to every totally real `D` at once with no further geometry (see
+`tensorLevel_conj`, which needs only additivity).
+
+CLASSICALLY: complex conjugation acts on `H₁(E(ℂ), ℤ) = ℤ²` by an involution
+`C ∈ GL₂(ℤ)` of determinant `-1`; there are exactly two conjugacy classes of
+such `C` over `ℤ`, `diag(1,-1)` realized when `Δ(E) > 0` and `[[1,1],[0,-1]]`
+when `Δ(E) < 0`, and `realConjAdd ε` is the induced action on
+`H₁ ⊗ ℚ/ℤ = E(ℂ)_tors`.
+
+BOTH SIGNS ARE REALIZED ALREADY OVER `ℚ`: `y² = x³ - x` has `Δ = 64 > 0` and
+`y² = x³ + x` has `Δ = -64 < 0`.  So NO REAL-ANALYTIC CONSTRUCTION OF `E` IS
+NEEDED — a base change of a rational curve along `ℚ → ULift ℝ`, plus a universe
+lift, suffices.  This corrects the older docstring premise that a *real*
+elliptic curve had to be constructed.
+
+WHAT IS AVAILABLE, and it is the reason this leaf is attackable at all:
+`exists_ellipticScheme_of_weierstrass` (`Fermat/FLT/ModularCurve/X0.lean`) is
+PROVEN, over `exists_ellipticScheme_of_projModel`
+(`Fermat/FLT/ModularCurve/EllipticScheme.lean`), which genuinely CONSTRUCTS an
+`AbelianSchemeStruct` as `gl.toAbelianSchemeStruct`.  It is stated over `SpecQ`
+in `Scheme.{0}` and hands over a Galois-equivariant `≃+` from
+`(E⁄ℚᵃˡᵍ).Point`, so what remains here is (i) the base change `ℚ → ULift ℝ`
+with its `AbelianSchemeStruct` and the relative-dimension clause, (ii) the
+universe lift `Scheme.{0} → Scheme.{u}`, and (iii) the identification of the
+torsion of `(E⁄ℚᵃˡᵍ).Point` with `(ℚ/ℤ)²` carrying the conjugation action —
+which is the genuinely archimedean input and the only part not already stated
+somewhere in the tree.
+
+FAITHFULNESS: the torsion-coverage clause is what forbids a junk witness.  `t`
+is injective on `(ℚ/ℤ)²`, which is infinite, so `A` cannot be a point; and `t`
+must hit EVERY `n`-torsion point, so `t` really is a full level structure and
+not merely some injection.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be discharged
+by the independent construction — never through `Family.lean`, `Lift.lean`,
+or `Modularity/Interface.lean`. -/
+theorem exists_realEllipticSchemeWithConjTorsion (ε : Bool) :
+    ∃ (A : AlgebraicGeometry.Scheme.{u})
+      (fA : A ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))
+      (abA : Fermat.AbelianSchemeStruct fA)
+      (t : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →
+        Fermat.GeomFibrePt fA (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))),
+      AlgebraicGeometry.SmoothOfRelativeDimension 1 fA ∧
+      (∀ v w, t (v + w) = abA.add (t v) (t w)) ∧
+      Function.Injective t ∧
+      (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) v, σ ≠ 1 →
+        t (realConjAdd _ ε v) =
+          abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (t v)) ∧
+      (letI := abA.addCommGroup (Fermat.specAlgClos (ULift.{u} ℝ) ≫
+          𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
+       ∀ (n : ℕ), n ≠ 0 → ∀ y, (n : ℤ) • y = 0 → ∃ v, t v = y) :=
+  sorry
+
+open scoped TensorProduct in
+open CategoryTheory in
+/-- **THE TENSOR HALF of the archimedean node** (sorry leaf, cut 2026-07-27 out
+of `exists_realAbelianSchemeWithTensorLevelStructure`): `B = A ⊗_ℤ 𝒪_D` for an
+abelian scheme `A` of relative dimension `1`, with its real multiplication by
+`𝒪_D` and the induced identification of geometric fibre points.
+
+Nothing about level structures, torsion, `ε` or complex conjugation appears
+here.  That is the point of the cut: this leaf is pure geometry, and everything
+the node says about level structures is derived from it by
+`tensorLevel_*` above, which are proven.
+
+THE CONSTRUCTION is the `g`-fold fibre power `B = A^g`, `g = [D:ℚ]`, with `𝒪_D`
+acting through its regular representation `𝒪_D → M_g(ℤ)` on a `ℤ`-basis.  On
+points this is formal — `RelPoint f g` is a Hom-set, so `RelPoint` of a fibre
+power is the power of `RelPoint` by the universal property of the limit, and
+`Mult` is then the matrix action, which is exactly why `ι` can be asked to be a
+BIJECTION rather than merely a map: as abelian groups
+`𝒪_D ⊗_ℤ A(ℂ) ≅ A(ℂ)^g` because `𝒪_D` is `ℤ`-free of rank `g`.
+
+WHAT IS NOT FREE, and is the whole content of this leaf: the geometry.
+Stability of `IsProper`, `Smooth` and `GeometricallyConnected` under fibre
+product over the base, and ADDITIVITY of `SmoothOfRelativeDimension` — the
+relative dimension of the `g`-fold power is `g · 1 = Module.finrank ℚ D`, which
+is where the degree of `D` enters.  `AbelianSchemeStruct.ofMorphisms`
+(`Modularity/AbelianScheme.lean`) is the intended bridge: it accepts the group
+law as equations of MORPHISMS, which is what a fibre power supplies.
+
+WHY THE EQUIVARIANCE CLAUSES ARE STATED ON PURE TENSORS.  Both `act` and
+`galSMul` are additive in the tensor argument, so the pure-tensor form implies
+the general one by `TensorProduct.induction_on` — and stating them this way
+keeps every bundled `LinearMap` out of the statement, which matters because
+`GeomFibrePt` carries its `AddCommGroup` through a `letI` and bundling would
+force the instance into the statement twice.
+
+Note the `𝒪_D`-action clause is `ι ((a * b) ⊗ₜ y) = m.act a (ι (b ⊗ₜ y))`
+rather than `ι (a • x) = m.act a (ι x)`: they are equivalent, since
+`a • (b ⊗ₜ y) = (a * b) ⊗ₜ y`, and the former needs no `Module` instance on the
+tensor to be stated.
+
+NOT NEEDED: no dual abelian scheme, no polarization, no Weil pairing — this
+node asks only for torsion with a prescribed Galois action.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be discharged
+by the independent construction — never through `Family.lean`, `Lift.lean`,
+or `Modularity/Interface.lean`. -/
+theorem exists_tensorAbelianSchemeByRingOfIntegers
+    (D : Type u) [Field D] [NumberField D]
+    {A : AlgebraicGeometry.Scheme.{u}}
+    {fA : A ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))}
+    (abA : Fermat.AbelianSchemeStruct fA)
+    (hdimA : AlgebraicGeometry.SmoothOfRelativeDimension 1 fA) :
+    letI := abA.addCommGroup (Fermat.specAlgClos (ULift.{u} ℝ) ≫
+      𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
+    ∃ (B : AlgebraicGeometry.Scheme.{u})
+      (fB : B ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))
+      (abB : Fermat.AbelianSchemeStruct fB)
+      (m : Fermat.Mult abB (NumberField.RingOfIntegers D))
+      (ι : (NumberField.RingOfIntegers D ⊗[ℤ]
+          Fermat.GeomFibrePt fA (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))) →
+        Fermat.GeomFibrePt fB (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB ∧
+      (∀ x y, ι (x + y) = abB.add (ι x) (ι y)) ∧
+      Function.Bijective ι ∧
+      (∀ (a b : NumberField.RingOfIntegers D) y,
+        ι ((a * b) ⊗ₜ y) = m.act a (ι (b ⊗ₜ y))) ∧
+      (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ))
+          (a : NumberField.RingOfIntegers D) y,
+        ι (a ⊗ₜ abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ y)
+          = abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ
+              (ι (a ⊗ₜ y))) :=
+  sorry
+
 open scoped TensorProduct in
 open CategoryTheory in
 /-- **THE GEOMETRIC LEAF of the archimedean node, in TENSOR form** (sorry leaf,
@@ -16714,8 +17158,116 @@ theorem exists_realAbelianSchemeWithTensorLevelStructure
       (∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
         ∀ y ∈ (Fermat.Mult.torsion m
             (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) I).1,
-          ∃ v, e v = y) :=
-  sorry
+          ∃ v, e v = y) := by
+  classical
+  obtain ⟨A, fA, abA, t, hdimA, haddt, hinjt, hconjt, hcovt⟩ :=
+    exists_realEllipticSchemeWithConjTorsion.{u} ε
+  letI := abA.addCommGroup (Fermat.specAlgClos (ULift.{u} ℝ) ≫
+    𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
+  -- the crossings between `AbelianSchemeStruct`'s bundled fields and the
+  -- instances it builds are definitional, so a type ascription suffices
+  have haddt' : ∀ x y, t (x + y) = t x + t y := haddt
+  have hcovt' : ∀ (n : ℕ), n ≠ 0 → ∀ y : Fermat.GeomFibrePt fA
+      (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))),
+      (n : ℤ) • y = 0 → ∃ v, t v = y := hcovt
+  have hgalAddA : ∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ))
+      (x y : Fermat.GeomFibrePt fA
+        (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))),
+      abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (x + y)
+        = abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ x
+          + abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ y :=
+    fun σ x y => abA.pre_add (Fermat.specGal σ)
+      (Fermat.specGal_comp_base _ σ) x y
+  obtain ⟨B, fB, abB, m, ι, hdimB, haddι, hbijι, hactι, hgalι⟩ :=
+    exists_tensorAbelianSchemeByRingOfIntegers D abA hdimA
+  letI := abB.addCommGroup (Fermat.specAlgClos (ULift.{u} ℝ) ≫
+    𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
+  letI := m.module (Fermat.specAlgClos (ULift.{u} ℝ) ≫
+    𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
+  have haddι' : ∀ x y, ι (x + y) = ι x + ι y := haddι
+  have hzeroι : ι 0 = 0 := by
+    have h : ι (0 + 0) = ι 0 + ι 0 := haddι' 0 0
+    rw [add_zero] at h
+    have h2 : ι 0 + 0 = ι 0 + ι 0 := by rw [add_zero]; exact h
+    exact (add_left_cancel h2).symm
+  -- `𝒪_D`-equivariance of `ι` in general, from its pure-tensor form
+  have hsmulι : ∀ (a : NumberField.RingOfIntegers D) x, ι (a • x) = m.act a (ι x) := by
+    intro a x
+    have hact0 : m.act a (ι 0) = 0 := by rw [hzeroι]; exact smul_zero a
+    induction x with
+    | zero => rw [smul_zero, hact0]; exact hzeroι
+    | tmul b y => rw [TensorProduct.smul_tmul']; exact hactι a b y
+    | add x y hx hy =>
+      rw [smul_add, haddι', hx, hy, haddι' x y]
+      exact (m.act_addPt a (ι x) (ι y)).symm
+  -- Galois-equivariance of `ι` in general, likewise
+  have hlTι : ∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) x,
+      ι (LinearMap.lTensor _
+          (AddMonoidHom.mk' (abA.galSMul
+            (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ)
+            (hgalAddA σ)).toIntLinearMap x)
+        = abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (ι x) := by
+    intro σ x
+    have hgal0 : abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ
+        (0 : Fermat.GeomFibrePt fB
+          (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))) = 0 :=
+      abB.pre_zero (Fermat.specGal σ) (Fermat.specGal_comp_base _ σ)
+    induction x with
+    | zero => rw [map_zero, hzeroι, hgal0]
+    | tmul a y => rw [LinearMap.lTensor_tmul]; exact hgalι σ a y
+    | add x y hx hy =>
+      rw [map_add, haddι', hx, hy, haddι' x y]
+      exact (abB.pre_add (Fermat.specGal σ) (Fermat.specGal_comp_base _ σ) (ι x) (ι y)).symm
+  refine ⟨B, fB, abB, m, fun v => ι (tensorLevel D _ t v), hdimB, ?_, ?_, ?_, ?_, ?_⟩
+  · -- additivity
+    intro v w
+    show ι (tensorLevel D _ t (v + w))
+      = abB.add (ι (tensorLevel D _ t v)) (ι (tensorLevel D _ t w))
+    rw [tensorLevel_add haddt']
+    exact haddι _ _
+  · -- `𝒪_D`-equivariance
+    intro a v
+    show ι (tensorLevel D _ t (a • v)) = m.act a (ι (tensorLevel D _ t v))
+    rw [tensorLevel_smul haddt']
+    exact hsmulι a _
+  · -- injectivity
+    exact fun v w h => tensorLevel_injective hinjt (hbijι.1 h)
+  · -- complex conjugation
+    intro σ v hσ
+    show ι (tensorLevel D _ t (realConjAdd _ ε v))
+      = abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ
+          (ι (tensorLevel D _ t v))
+    rw [tensorLevel_conj ε (AddMonoidHom.mk' (abA.galSMul
+      (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ)
+      (hgalAddA σ)).toIntLinearMap (fun c => hconjt σ c hσ)]
+    exact hlTι σ _
+  · -- torsion coverage: a maximal ideal contains its own absolute norm, a
+    -- nonzero natural number, so an `I`-torsion point is `n`-torsion
+    intro I hI y hy
+    haveI := hI
+    haveI : Finite (NumberField.RingOfIntegers D ⧸ I) :=
+      I.finiteQuotientOfFreeOfNeBot
+        (I.bot_lt_of_maximal (NumberField.RingOfIntegers.not_isField D)).ne'
+    have hn : Ideal.absNorm I ≠ 0 := (Ideal.absNorm_ne_zero_iff I).mpr inferInstance
+    have hnI : ((Ideal.absNorm I : ℕ) : NumberField.RingOfIntegers D) ∈ I :=
+      Ideal.absNorm_mem I
+    obtain ⟨x, hx⟩ := hbijι.2 y
+    have hact0y : m.act ((Ideal.absNorm I : ℕ) : NumberField.RingOfIntegers D) y
+        = abB.zero _ :=
+      (mem_multTorsion_iff m
+        (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) I y).mp hy _ hnI
+    have hxn : ((Ideal.absNorm I : ℕ) : NumberField.RingOfIntegers D) • x = 0 := by
+      apply hbijι.1
+      rw [hsmulι, hx, hzeroι]
+      exact hact0y
+    have hxz : ((Ideal.absNorm I : ℕ) : ℤ) • x = 0 := by
+      rw [natCast_zsmul, ← Nat.cast_smul_eq_nsmul (NumberField.RingOfIntegers D)]
+      exact hxn
+    obtain ⟨v, hv⟩ := tensorLevel_torsion hcovt' (Ideal.absNorm I) hn x hxz
+    refine ⟨v, ?_⟩
+    show ι (tensorLevel D _ t v) = y
+    rw [hv]
+    exact hx
 
 open scoped TensorProduct in
 open CategoryTheory in
