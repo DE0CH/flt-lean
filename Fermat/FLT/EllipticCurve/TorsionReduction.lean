@@ -73,10 +73,11 @@ That leaf was in turn DECOMPOSED on 2026-07-27 and is now PROVEN, over
   number theory from the curve theory. What remains open under it is:
   * `nonempty_tameBase` — the field `ℚ(ℓ^{1/12})` with `ℓ` totally ramified and
     residue field `𝔽_ℓ`. Independent of `E` and of `Δ`: ONE field serves every
-    curve and every `ℓ`. **DECOMPOSED AND PROVEN 2026-07-27** over the single
-    leaf `TameBaseAux.exists_tameResidueHom` (residue degree `1`); the field,
-    the Eisenstein irreducibility, the Chevalley extension and the integrality
-    criterion `mem_iff` are all proven in `TameBaseAux`.
+    curve and every `ℓ`. **DECOMPOSED AND FULLY PROVEN 2026-07-27**: the field,
+    the Eisenstein irreducibility, the Chevalley extension, the integrality
+    criterion `mem_iff` and finally residue degree `1`
+    (`TameBaseAux.exists_tameResidueHom`, by the power-basis argument) are all
+    proven in `TameBaseAux`. **The potentially-good chain carries no `sorry`.**
   * `padicValRat_Δ_le_of_jIntegral` — `v_ℓ(j) ≥ 0 ⟹ 3v(A) ≥ v(Δ)` and
     `2v(B) ≥ v(Δ)`, a statement about three rational numbers. **PROVEN
     2026-07-27**, entirely out of mathlib's short-normal-form and `padicValRat`
@@ -602,9 +603,9 @@ attribute [instance] TameBase.instField TameBase.instDec TameBase.instAlgebra
 
 /-! ### Constructing `ℚ(ℓ^{1/12})` — the number-theoretic half
 
-Everything in this namespace is PROVEN except `exists_tameResidueHom`, which is the
-single residue of `nonempty_tameBase`. See that declaration's docstring for the proof
-that remains to be written. -/
+Everything in this namespace is PROVEN, `exists_tameResidueHom` — the last one, residue
+degree `1` — included (2026-07-27). See that declaration's docstring for the power-basis
+argument and for what it turned out NOT to need. -/
 
 namespace TameBaseAux
 
@@ -878,10 +879,202 @@ theorem tame_mem_iff (m : ℤ) {q : ℚ} (hq : q ≠ 0) :
     ← zpow_add₀ (valuation_unif_ne_zero ℓ),
     zpow_le_one_iff_of_lt_one (valuation_unif_ne_zero ℓ) (valuation_unif_lt_one ℓ)]
 
-/-! ### The residue map — the one genuinely missing piece -/
+/-! ### The residue map — residue degree one -/
 
-/-- **The residue field of `A` is `𝔽_ℓ`, i.e. the residue degree is `1`** (sorry leaf,
-opened 2026-07-27 while proving `nonempty_tameBase`).
+/-- `p ^ n < p ^ m ↔ m < n` for `0 < p < 1` — the strict companion of
+`zpow_le_one_iff_of_lt_one`. -/
+theorem zpow_lt_zpow_iff_of_lt_one {Γ : Type*} [LinearOrderedCommGroupWithZero Γ]
+    {p : Γ} (hp0 : p ≠ 0) (hp1 : p < 1) (m n : ℤ) : p ^ n < p ^ m ↔ m < n := by
+  have hpos : (0 : Γ) < p := zero_lt_iff.mpr hp0
+  have h1 : 1 < p⁻¹ := (one_lt_inv₀ hpos).mpr hp1
+  have key : ∀ k : ℤ, p ^ k = (p⁻¹) ^ (-k) := fun k => by rw [inv_zpow, zpow_neg, inv_inv]
+  rw [key n, key m, zpow_lt_zpow_iff_right₀ h1]
+  omega
+
+/-- **The valuation of the monomial `c · π^i` is `v(π) ^ (12·v_ℓ(c) + i)`.** This is step 1
+of the power-basis argument, and the source of its pairwise-distinct exponents: the exponent
+is `i` modulo `12`, so it determines `i`. -/
+theorem valuation_term {c : ℚ} (hc : c ≠ 0) (i : ℕ) :
+    (tameSubring ℓ).valuation (ofQ ℓ c * unif ℓ ^ i)
+      = (tameSubring ℓ).valuation (unif ℓ) ^ (12 * padicValRat ℓ c + (i : ℤ)) := by
+  rw [map_mul, valuation_ofQ ℓ hc, map_pow,
+    ← zpow_natCast ((tameSubring ℓ).valuation (unif ℓ)) i,
+    ← zpow_add₀ (valuation_unif_ne_zero ℓ)]
+
+/-- **Every `π`-coordinate of an integral element is `ℓ`-integral** — steps 2–4 of the
+power-basis argument. The exponents `12·v_ℓ(cᵢ) + i` are pairwise distinct because they are
+pairwise distinct mod `12`, so the minimum is attained UNIQUELY and
+`Valuation.map_sum_eq_of_lt` computes `v x` exactly; `v x ≤ 1` then forces that minimum
+`≥ 0`, hence every exponent `≥ 0`, hence (as `0 ≤ i < 12`) every `v_ℓ(cᵢ) ≥ 0`.
+
+Note UNIQUENESS of the representation is never needed: the conclusion holds of ANY
+representation of length `12`, which is why this is stated for a bare `c : ℕ → ℚ` and no
+`PowerBasis` appears anywhere (avoiding the `AdjoinRoot.instAlgebra` /
+`DivisionRing.toRatAlgebra` clash that `ofQ` exists to sidestep). -/
+theorem padicValRat_coeff_nonneg (c : ℕ → ℚ)
+    (hx : (∑ i ∈ Finset.range 12, ofQ ℓ (c i) * unif ℓ ^ i) ∈ tameSubring ℓ)
+    (i : ℕ) (hi : i < 12) : 0 ≤ padicValRat ℓ (c i) := by
+  classical
+  by_cases hci : c i = 0
+  · simp [hci]
+  set e : ℕ → ℤ := fun k => 12 * padicValRat ℓ (c k) + (k : ℤ) with he
+  set S : Finset ℕ := (Finset.range 12).filter (fun k => c k ≠ 0) with hS
+  have hmemS : ∀ k, k ∈ S ↔ (k < 12 ∧ c k ≠ 0) := by
+    intro k; simp [hS, Finset.mem_filter, Finset.mem_range]
+  have hiS : i ∈ S := (hmemS i).mpr ⟨hi, hci⟩
+  obtain ⟨j, hjS, hj⟩ := S.exists_min_image e ⟨i, hiS⟩
+  obtain ⟨hj12, hcj⟩ := (hmemS j).mp hjS
+  have hsum : ∑ k ∈ S, ofQ ℓ (c k) * unif ℓ ^ k
+      = ∑ k ∈ Finset.range 12, ofQ ℓ (c k) * unif ℓ ^ k := by
+    refine Finset.sum_subset (Finset.filter_subset _ _) ?_
+    intro k hk hkn
+    have hck : c k = 0 := by
+      by_contra h
+      exact hkn ((hmemS k).mpr ⟨Finset.mem_range.mp hk, h⟩)
+    simp [hck]
+  have hlt : ∀ k ∈ S \ {j}, (tameSubring ℓ).valuation (ofQ ℓ (c k) * unif ℓ ^ k)
+      < (tameSubring ℓ).valuation (ofQ ℓ (c j) * unif ℓ ^ j) := by
+    intro k hk
+    obtain ⟨hkS, hkj⟩ := Finset.mem_sdiff.mp hk
+    have hkj' : k ≠ j := by simpa using hkj
+    obtain ⟨hk12, hck⟩ := (hmemS k).mp hkS
+    have hejk : e j < e k := by
+      rcases lt_or_eq_of_le (hj k hkS) with h | h
+      · exact h
+      · exfalso; simp only [he] at h; omega
+    rw [valuation_term ℓ hck k, valuation_term ℓ hcj j]
+    exact (zpow_lt_zpow_iff_of_lt_one (valuation_unif_ne_zero ℓ)
+      (valuation_unif_lt_one ℓ) _ _).mpr hejk
+  have hvj : (tameSubring ℓ).valuation (∑ k ∈ Finset.range 12, ofQ ℓ (c k) * unif ℓ ^ k)
+      = (tameSubring ℓ).valuation (unif ℓ) ^ (e j) := by
+    rw [← hsum, Valuation.map_sum_eq_of_lt _ hjS hlt, valuation_term ℓ hcj j]
+  have hle1 : (tameSubring ℓ).valuation (unif ℓ) ^ (e j) ≤ 1 := by
+    rw [← hvj]; exact ((tameSubring ℓ).valuation_le_one_iff _).mpr hx
+  have hej : 0 ≤ e j := (zpow_le_one_iff_of_lt_one (valuation_unif_ne_zero ℓ)
+    (valuation_unif_lt_one ℓ) _).mp hle1
+  have hei : 0 ≤ e i := le_trans hej (hj i hiS)
+  simp only [he] at hei
+  omega
+
+/-- **An integral element is congruent to its constant coordinate** — step 5. Every term
+`cᵢ π^i` with `1 ≤ i` has exponent `12·v_ℓ(cᵢ) + i ≥ i ≥ 1 > 0`, hence valuation `< 1`. -/
+theorem valuation_sub_const_lt_one (c : ℕ → ℚ)
+    (h : ∀ i, i < 12 → 0 ≤ padicValRat ℓ (c i)) :
+    (tameSubring ℓ).valuation
+      ((∑ i ∈ Finset.range 12, ofQ ℓ (c i) * unif ℓ ^ i) - ofQ ℓ (c 0)) < 1 := by
+  have hsplit : (∑ i ∈ Finset.range 12, ofQ ℓ (c i) * unif ℓ ^ i)
+      = (∑ i ∈ Finset.range 11, ofQ ℓ (c (i + 1)) * unif ℓ ^ (i + 1))
+        + ofQ ℓ (c 0) * unif ℓ ^ 0 :=
+    Finset.sum_range_succ' (fun i => ofQ ℓ (c i) * unif ℓ ^ i) 11
+  rw [hsplit, pow_zero, mul_one, add_sub_cancel_right]
+  refine Valuation.map_sum_lt _ one_ne_zero ?_
+  intro k hk
+  have hk11 : k < 11 := Finset.mem_range.mp hk
+  by_cases hc : c (k + 1) = 0
+  · simp [hc]
+  · rw [valuation_term ℓ hc (k + 1)]
+    have hpos : (0 : ℤ) < 12 * padicValRat ℓ (c (k + 1)) + ((k + 1 : ℕ) : ℤ) := by
+      have := h (k + 1) (by omega)
+      push_cast
+      omega
+    have := (zpow_lt_zpow_iff_of_lt_one (valuation_unif_ne_zero ℓ)
+      (valuation_unif_lt_one ℓ) 0 (12 * padicValRat ℓ (c (k + 1)) + ((k + 1 : ℕ) : ℤ))).mpr hpos
+    simpa using this
+
+/-- **`AdjoinRoot.mk` IS evaluation at `π`**, as a `RingHom` identity on `ℚ[X]`. Stated at
+the `RingHom` level on purpose: `aeval` would drag in an `Algebra ℚ L` instance, and the two
+available ones print identically without being defeq. -/
+theorem mk_eq_eval₂ :
+    (AdjoinRoot.mk (qpoly ℓ) : ℚ[X] →+* AdjoinRoot (qpoly ℓ))
+      = Polynomial.eval₂RingHom (ofQ ℓ) (unif ℓ) := by
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · simp only [Polynomial.coe_eval₂RingHom, Polynomial.eval₂_C]
+    rfl
+  · simp only [Polynomial.coe_eval₂RingHom, Polynomial.eval₂_X]
+    rfl
+
+/-- **Every element of `L` is a `ℚ`-combination of `1, π, …, π¹¹`.** Obtained from
+`AdjoinRoot.mk_surjective` and division by the monic `X¹² − ℓ`; no basis is constructed,
+because only EXISTENCE of a length-`12` representation is ever used. -/
+theorem exists_repr (x : AdjoinRoot (qpoly ℓ)) :
+    ∃ c : ℕ → ℚ, x = ∑ i ∈ Finset.range 12, ofQ ℓ (c i) * unif ℓ ^ i := by
+  obtain ⟨p, rfl⟩ := AdjoinRoot.mk_surjective x
+  have hmonic : (qpoly ℓ).Monic := qpoly_monic ℓ
+  set g := p %ₘ qpoly ℓ with hg
+  have hmk : AdjoinRoot.mk (qpoly ℓ) p = AdjoinRoot.mk (qpoly ℓ) g := by
+    refine AdjoinRoot.mk_eq_mk.mpr ?_
+    have hsub : p - g = qpoly ℓ * (p /ₘ qpoly ℓ) := by
+      rw [hg, Polynomial.modByMonic_eq_sub_mul_div p (qpoly ℓ)]; ring
+    rw [hsub]; exact dvd_mul_right _ _
+  have hdeg : g.natDegree < 12 := by
+    by_cases h0 : g = 0
+    · rw [h0]; simp
+    · have hlt := Polynomial.degree_modByMonic_lt p hmonic
+      rw [← hg] at hlt
+      have hd : (qpoly ℓ).degree = ((12 : ℕ) : WithBot ℕ) := by
+        rw [Polynomial.degree_eq_natDegree hmonic.ne_zero, qpoly_natDegree]
+      rw [hd, Polynomial.degree_eq_natDegree h0] at hlt
+      exact_mod_cast hlt
+  have h2 : AdjoinRoot.mk (qpoly ℓ) g = Polynomial.eval₂ (ofQ ℓ) (unif ℓ) g := by
+    have := DFunLike.congr_fun (mk_eq_eval₂ ℓ) g
+    simpa using this
+  exact ⟨fun i => g.coeff i, by
+    rw [hmk, h2, Polynomial.eval₂_eq_sum_range' (ofQ ℓ) hdeg (unif ℓ)]⟩
+
+/-- **Every `ℓ`-integral rational is congruent to an integer modulo `m_A`** — step 6, and
+the only place Bézout is used. With `a·ℓ + b·den(q) = 1` and `n := num(q)·b` one has the
+IDENTITY `q − n = ℓ · (q·a)`, so no valuation of a difference ever has to be computed: the
+factor `q·a` is `ℓ`-integral and `v(ℓ) < 1` does the rest. -/
+theorem exists_intCast_sub_valuation_lt_one {q : ℚ} (hq : 0 ≤ padicValRat ℓ q) :
+    ∃ n : ℤ, (tameSubring ℓ).valuation (ofQ ℓ q - ofQ ℓ (n : ℚ)) < 1 := by
+  have hden : ¬ (ℓ ∣ q.den) := by
+    intro hdvd
+    have hd1 : 1 ≤ padicValNat ℓ q.den := one_le_padicValNat_of_dvd q.den_nz hdvd
+    have hnum1 : 1 ≤ padicValInt ℓ q.num := by
+      have h := hq; rw [padicValRat_def] at h; omega
+    have hnum0 : ℓ ∣ q.num.natAbs := by
+      by_contra h
+      have : padicValInt ℓ q.num = 0 := padicValNat.eq_zero_of_not_dvd h
+      omega
+    have h1 : ℓ = 1 := Nat.Coprime.eq_one_of_dvd
+      (Nat.Coprime.coprime_dvd_left hnum0 q.reduced) hdvd
+    exact hℓ.out.one_lt.ne' h1
+  have hcop : Nat.Coprime ℓ q.den := (Nat.Prime.coprime_iff_not_dvd hℓ.out).mpr hden
+  obtain ⟨a, b, hab⟩ : IsCoprime (ℓ : ℤ) (q.den : ℤ) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    simpa using hcop
+  refine ⟨q.num * b, ?_⟩
+  have hd0 : ((q.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr q.den_nz
+  have hnum : (q.num : ℚ) = q * (q.den : ℚ) := (div_eq_iff hd0).mp (Rat.num_div_den q)
+  have hab' : (a : ℚ) * (ℓ : ℚ) + (b : ℚ) * (q.den : ℚ) = 1 := by exact_mod_cast hab
+  have hkey : q - ((q.num * b : ℤ) : ℚ) = (ℓ : ℚ) * (q * (a : ℚ)) := by
+    push_cast
+    rw [hnum]
+    linear_combination (-q) * hab'
+  have hrnn : 0 ≤ padicValRat ℓ (q * (a : ℚ)) := by
+    by_cases ha : ((a : ℤ) : ℚ) = 0
+    · simp [ha]
+    by_cases hq0 : q = 0
+    · simp [hq0]
+    · rw [padicValRat.mul hq0 ha, padicValRat.of_int]
+      have : (0 : ℤ) ≤ ((padicValInt ℓ a : ℕ) : ℤ) := Int.natCast_nonneg _
+      omega
+  have hrmem : ofQ ℓ (q * (a : ℚ)) ∈ tameSubring ℓ := algebraMap_mem_tameSubring ℓ hrnn
+  have hvr : (tameSubring ℓ).valuation (ofQ ℓ (q * (a : ℚ))) ≤ 1 :=
+    ((tameSubring ℓ).valuation_le_one_iff _).mpr hrmem
+  have hvl : (tameSubring ℓ).valuation (ofQ ℓ (ℓ : ℚ)) < 1 := valuation_ell_lt_one ℓ
+  have hfac : ofQ ℓ q - ofQ ℓ (((q.num * b : ℤ) : ℚ))
+      = ofQ ℓ (ℓ : ℚ) * ofQ ℓ (q * (a : ℚ)) := by
+    rw [← map_sub, hkey, map_mul]
+  rw [hfac, map_mul]
+  calc (tameSubring ℓ).valuation (ofQ ℓ (ℓ : ℚ))
+        * (tameSubring ℓ).valuation (ofQ ℓ (q * (a : ℚ)))
+      ≤ (tameSubring ℓ).valuation (ofQ ℓ (ℓ : ℚ)) * 1 := mul_le_mul_right hvr _
+    _ = (tameSubring ℓ).valuation (ofQ ℓ (ℓ : ℚ)) := mul_one _
+    _ < 1 := hvl
+
+/-- **The residue field of `A` is `𝔽_ℓ`, i.e. the residue degree is `1`** (PROVEN
+2026-07-27, the same day it was opened while proving `nonempty_tameBase`).
 
 EVERY OTHER FIELD OF `TameBase` IS PROVEN ABOVE; this is the entire residue. Note the
 `IsLocalHom` half is FREE and is included only to keep the leaf self-contained: `ZMod ℓ`
@@ -893,12 +1086,15 @@ subring over `ℤ_(ℓ)`, and domination only gives an INJECTION `𝔽_ℓ ↪ A
 nothing about surjectivity. Residue degree `1` is a genuine theorem about THIS extension,
 not a formal consequence of the construction.
 
-THE PROOF TO WRITE (Silverman-style, and it is elementary — no completion, no Hensel):
-let `pb := AdjoinRoot.powerBasis (qpoly_ne_zero ℓ)`, so every `x : L` is uniquely
-`∑_{i<12} c i • π^i` with `c i : ℚ`.
+THE PROOF, as written (Silverman-style, and it is elementary — no completion, no Hensel).
+Each step is a named lemma above; `exists_repr` writes every `x : L` as
+`∑_{i<12} ofQ ℓ (c i) * π^i` with `c i : ℚ`. **No `PowerBasis` is used and UNIQUENESS of
+the representation is never needed** — the coordinate bound holds of any length-`12`
+representation — which is what keeps the whole development at the `RingHom` level and away
+from the `Algebra ℚ L` instance clash recorded on `ofQ`.
 
-1. `v (ofQ ℓ (c i) * π^i) = v(π) ^ (12 * padicValRat ℓ (c i) + i)` — immediate from
-   `valuation_ofQ` above.
+1. `v (ofQ ℓ (c i) * π^i) = v(π) ^ (12 * padicValRat ℓ (c i) + i)` — `valuation_term`,
+   immediate from `valuation_ofQ` above.
 2. The twelve exponents `12 * padicValRat ℓ (c i) + i` are PAIRWISE DISTINCT for distinct
    `i`, because they are pairwise distinct MOD 12 (`i` ranges over `0..11`). This is the
    whole reason the argument works and is where "totally ramified of degree exactly 12"
@@ -915,17 +1111,87 @@ let `pb := AdjoinRoot.powerBasis (qpoly_ne_zero ℓ)`, so every `x : L` is uniqu
    pick `n := a * m` where `b * m ≡ 1 (mod ℓ)`; then `ℓ ∣ a - n * b`, so
    `padicValRat ℓ (c 0 - n) > 0`.
 
-Steps 1–4 give residue degree `1`; steps 5–6 turn it into the ring hom.
+Steps 1–4 (`padicValRat_coeff_nonneg`) give residue degree `1`; steps 5–6
+(`valuation_sub_const_lt_one`, `exists_intCast_sub_valuation_lt_one`) turn it into the ring
+hom: `ℤ → A/m_A` is then SURJECTIVE, `ℓ` lies in `m_A` by `valuation_ell_lt_one`, so
+`ringChar (A/m_A) = ℓ` and `ZMod.castHom (dvd_refl ℓ) (A/m_A)` is bijective — injective
+because `ZMod ℓ` is a field, surjective because it factors the surjection from `ℤ`. The
+residue hom is its inverse composed with `IsLocalRing.residue`.
 
-AUDITED AT THE STRONG LEVEL (2026-07-27): with this leaf replaced by a NAMED AXIOM the
-whole chain gives `#print axioms nonempty_tameBase =
-[propext, Classical.choice, Quot.sound, AUDIT_residue]` — **no `sorryAx`**. So the field,
-the irreducibility, the Chevalley extension, `mem_iff` and the assembly are all genuinely
-complete, and this statement is the entire residue. The same audit shows
-`exists_tameGoodModel_of_isShortNF` reduced to this one axiom too, its other half
-(`padicValRat_Δ_le_of_jIntegral`) being proven outright. -/
-theorem exists_tameResidueHom : ∃ res : tameSubring ℓ →+* ZMod ℓ, IsLocalHom res :=
-  sorry
+WHAT THE SURJECTIVITY OF `ℤ → A/m_A` NEEDED, and it is worth recording because the earlier
+plan expected worse: no `𝓞_L`, no completion, no Eisenstein-implies-totally-ramified, and
+no fundamental inequality `e·f ≤ n`. `Valuation.map_sum_eq_of_lt` (mathlib) does the entire
+unique-maximum step once the exponents are known to be pairwise distinct, and distinctness
+is `omega` on `12·aᵢ + i = 12·aⱼ + j` with `i, j < 12`.
+
+AXIOM AUDIT (2026-07-27): `#print axioms exists_tameResidueHom` and all five auxiliary
+lemmas return `[propext, Classical.choice, Quot.sound]` — no `sorryAx`, so none of the
+`simp` steps here imported a sorried lemma out of the ambient simp set. -/
+theorem exists_tameResidueHom : ∃ res : tameSubring ℓ →+* ZMod ℓ, IsLocalHom res := by
+  classical
+  have hsurj : Function.Surjective
+      (Int.castRingHom (IsLocalRing.ResidueField (tameSubring ℓ))) := by
+    intro y
+    obtain ⟨x, rfl⟩ := IsLocalRing.residue_surjective y
+    obtain ⟨c, hc⟩ := exists_repr ℓ (x : AdjoinRoot (qpoly ℓ))
+    have hmem : (∑ i ∈ Finset.range 12, ofQ ℓ (c i) * unif ℓ ^ i) ∈ tameSubring ℓ := by
+      rw [← hc]; exact x.2
+    have hnn : ∀ i, i < 12 → 0 ≤ padicValRat ℓ (c i) :=
+      fun i hi => padicValRat_coeff_nonneg ℓ c hmem i hi
+    obtain ⟨n, hn⟩ := exists_intCast_sub_valuation_lt_one ℓ (hnn 0 (by norm_num))
+    refine ⟨n, ?_⟩
+    have h1 := valuation_sub_const_lt_one ℓ c hnn
+    rw [← hc] at h1
+    have hadd := Valuation.map_add_lt ((tameSubring ℓ).valuation) h1 hn
+    have hsimp : ((x : AdjoinRoot (qpoly ℓ)) - ofQ ℓ (c 0))
+        + (ofQ ℓ (c 0) - ofQ ℓ ((n : ℤ) : ℚ))
+          = (x : AdjoinRoot (qpoly ℓ)) - (n : AdjoinRoot (qpoly ℓ)) := by
+      rw [map_intCast]; ring
+    rw [hsimp] at hadd
+    have hmemmax : x - (n : tameSubring ℓ) ∈ IsLocalRing.maximalIdeal (tameSubring ℓ) := by
+      rw [ValuationSubring.valuation_lt_one_iff]
+      push_cast
+      exact hadd
+    have hz : IsLocalRing.residue (tameSubring ℓ) (x - (n : tameSubring ℓ)) = 0 :=
+      (IsLocalRing.residue_eq_zero_iff _).mpr hmemmax
+    rw [map_sub, sub_eq_zero, map_intCast] at hz
+    simpa using hz.symm
+  have hchar : ((ℓ : ℕ) : IsLocalRing.ResidueField (tameSubring ℓ)) = 0 := by
+    have hmem : ((ℓ : ℕ) : tameSubring ℓ) ∈ IsLocalRing.maximalIdeal (tameSubring ℓ) := by
+      rw [ValuationSubring.valuation_lt_one_iff]
+      have h := valuation_ell_lt_one ℓ
+      rw [map_natCast (ofQ ℓ) ℓ] at h
+      push_cast
+      exact h
+    have h := (IsLocalRing.residue_eq_zero_iff _).mpr hmem
+    rwa [map_natCast] at h
+  haveI : CharP (IsLocalRing.ResidueField (tameSubring ℓ)) ℓ := by
+    have hdvd : ringChar (IsLocalRing.ResidueField (tameSubring ℓ)) ∣ ℓ := ringChar.dvd hchar
+    have hne : ringChar (IsLocalRing.ResidueField (tameSubring ℓ)) ≠ 1 := CharP.ringChar_ne_one
+    have heq : ringChar (IsLocalRing.ResidueField (tameSubring ℓ)) = ℓ :=
+      (hℓ.out.eq_one_or_self_of_dvd _ hdvd).resolve_left hne
+    have hcp0 := ringChar.charP (IsLocalRing.ResidueField (tameSubring ℓ))
+    rwa [heq] at hcp0
+  have hinj : Function.Injective
+      (ZMod.castHom (dvd_refl ℓ) (IsLocalRing.ResidueField (tameSubring ℓ))) :=
+    (ZMod.castHom (dvd_refl ℓ) _).injective
+  have hsurj2 : Function.Surjective
+      (ZMod.castHom (dvd_refl ℓ) (IsLocalRing.ResidueField (tameSubring ℓ))) := by
+    intro y
+    obtain ⟨n, rfl⟩ := hsurj y
+    exact ⟨(n : ZMod ℓ), by simp⟩
+  refine ⟨(RingEquiv.ofBijective _ ⟨hinj, hsurj2⟩).symm.toRingHom.comp
+    (IsLocalRing.residue (tameSubring ℓ)), ?_⟩
+  constructor
+  intro a ha
+  by_contra hna
+  have hmem : a ∈ IsLocalRing.maximalIdeal (tameSubring ℓ) := by
+    by_contra h
+    exact hna (IsLocalRing.notMem_maximalIdeal.mp h)
+  have h0 : IsLocalRing.residue (tameSubring ℓ) a = 0 :=
+    (IsLocalRing.residue_eq_zero_iff _).mpr hmem
+  rw [RingHom.comp_apply, h0, map_zero] at ha
+  exact not_isUnit_zero ha
 
 end TameBaseAux
 
@@ -961,9 +1227,10 @@ construction never proves it. Instead:
   `zpow_le_one_iff_right₀`.
 
 *What Chevalley does NOT give is residue degree `1`*: domination yields only an
-injection `𝔽_ℓ ↪ A/m_A`. That single statement is the whole residue and is
-`TameBaseAux.exists_tameResidueHom`; its docstring carries the power-basis proof
-to be written. So the original item 2 is retired and item 3 is all that is left.
+injection `𝔽_ℓ ↪ A/m_A`. That single statement was the whole residue; it is
+`TameBaseAux.exists_tameResidueHom` and it is **PROVEN 2026-07-27** by the power-basis
+argument, whose steps are the named lemmas above it. So the original item 2 is retired
+and item 3 is closed too — nothing here remains open.
 
 THE ORIGINAL PLAN, kept because item 1 and item 4 were accurate:
 
@@ -1307,14 +1574,15 @@ and it puts `E` in short Weierstrass form (`char ≠ 2, 3`).
 
 **WHERE THE FOUR-ITEM "WHAT MUST BE BUILT" LIST STANDS NOW.** The
 pre-decomposition version of this docstring listed four items, "none of which
-exists in this tree or in mathlib". Two are done, one was never missing, and
-only one is genuinely open:
+exists in this tree or in mathlib". All four are now settled — three done and
+one that was never missing:
 
-1. *(Open — now `nonempty_tameBase`.)* The number field `ℚ(ℓ^{1/12})` with `ℓ`
-   totally ramified. Still absent; see that leaf for the reduced list, and for a
-   cheaper alternative route through the DVR `ℤ_(ℓ)[X]/(X¹² − ℓ)`.
-2. *(Open — also `nonempty_tameBase`.)* Residue degree `1`, `𝓞_L/𝔭 ≃+* ZMod ℓ`.
-   Folded into the same leaf because it is the same construction.
+1. *(DONE — `nonempty_tameBase`.)* The number field `ℚ(ℓ^{1/12})` with `ℓ`
+   totally ramified. Built in `TameBaseAux` as `AdjoinRoot (X¹² − ℓ)` over `ℚ`
+   with a Chevalley extension of `ℤ_(ℓ)`; note it needed neither `𝓞_L` nor
+   `ℚ_ℓ`, and the DVR route suggested here was not taken.
+2. *(DONE — `TameBaseAux.exists_tameResidueHom`.)* Residue degree `1`. Proven by
+   the power-basis argument, which is what Chevalley does not supply.
 3. *(RETIRED — IT WAS NEVER MISSING.)* "The `VariableChange`-induced map on
    `Affine.Point`, needed for `emb`." True of mathlib, FALSE of this project:
    `Affine.Point.equivVariableChange` is in
@@ -1325,9 +1593,10 @@ only one is genuinely open:
 4. *(DONE — `exists_tameGoodModel_of_isShortNF`.)* The valuation bookkeeping of
    the scaling argument, together with the reduction to short Weierstrass form.
 
-So the residue of this leaf is ONE construction, `nonempty_tameBase`, which is
-independent of `E` and of every curve-theoretic concern, plus the elementary
-`padicValRat` inequality `padicValRat_Δ_le_of_jIntegral`.
+So this leaf rested on ONE construction, `nonempty_tameBase`, independent of `E`
+and of every curve-theoretic concern, plus the elementary `padicValRat`
+inequality `padicValRat_Δ_le_of_jIntegral`. **Both are proven (2026-07-27), so
+nothing under this leaf is open.**
 
 THE PROOF BELOW is only the reduction to short form: `E.toShortNF` puts `E` in
 the form `y² = x³ + Ax + B` (mathlib's `toShortNF_spec`; `Invertible 2` and
