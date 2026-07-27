@@ -13355,10 +13355,12 @@ fully computable function of `N` — it is evaluated by `decide` in
 in the order of `kenkuLevels`.  It is NOT defined as the genus of the
 scheme `X`: no genus of a scheme, and no Riemann–Roch, exists at this
 pin.  The bridge from this number to the geometry of `X` is
-`not_isIso_jacobian_of_one_le_x0Genus` — "the Jacobian is
-positive-dimensional" — and that is the sorry node.  (Before 2026-07-27
-the bridge was `injective_aj_of_one_le_x0Genus`; that is now a PROVEN
-assembly over the bridge and the Riemann–Roch leaf.) -/
+`hasNonconstantAbelianMap_of_one_le_x0Genus` — "`X` receives a
+nonconstant pointed map from some abelian variety over `ℚ`" — and that
+is the sorry node.  (Before 2026-07-27 the bridge was
+`injective_aj_of_one_le_x0Genus`, then briefly
+`not_isIso_jacobian_of_one_le_x0Genus`; both are now PROVEN assemblies
+over that leaf and the Riemann–Roch leaf.) -/
 def x0Genus (N : ℕ) : ℤ :=
   (12 + (gammaZeroIndex N : ℤ) - 3 * numEllipticTwo N - 4 * numEllipticThree N
     - 6 * numCusps N) / 12
@@ -13863,14 +13865,164 @@ theorem injective_aj_of_not_isIso_jacobian {X J : Scheme.{0}} {strX : X ⟶ Spec
   exact hJ (jac.isIso_of_ajMor_eq_const
     (ajMor_eq_const_of_not_injective hproper hcurve hconn jac hni))
 
-/-- **The genus formula, in its geometric form: `genus X_0(N) ≥ 1` makes
-the Jacobian nontrivial** (sorry node) — the arithmetic half of
-`injective_aj_of_one_le_x0Genus`, and the ONLY place where the computed
-number `x0Genus N` meets the scheme `X`.
+/-- **An isomorphism has at most one relative point over each base
+point** (PROVEN, one line, and stated at full universe generality
+because nothing about it is modular).
+
+`RelPoint f g` is `{x : T ⟶ A // x ≫ f = g}`, so for `f` a monomorphism
+the defining equation determines `x`.  An isomorphism is a
+monomorphism, and this is the whole content.
+
+Its role below is to say what `IsIso jstr` MEANS for the Jacobian: `J`
+is `Spec ℚ`, so `J` has exactly one `T`-point over every `g`, so
+Abel–Jacobi is constant.  That is the only handle on `¬ IsIso jstr`
+available at this pin — there is no dimension theory here — and it is
+what makes the seam below usable. -/
+theorem subsingleton_relPoint_of_isIso {A S : Scheme.{u}} {f : A ⟶ S} (hf : IsIso f)
+    {T : Scheme.{u}} (g : T ⟶ S) : Subsingleton (RelPoint f g) := by
+  haveI := hf
+  exact ⟨fun x y => Subtype.ext ((cancel_mono f).mp (x.2.trans y.2.symm))⟩
+
+/-- **`X` admits a NONCONSTANT pointed map to SOME abelian scheme over
+`ℚ`.**
+
+The pin-available rendering of "`X` has positive genus", and the seam
+along which the genus formula is cut below.  The data is exactly the
+input of `IsJacobianOf.universal`:
+
+* an abelian scheme `A/ℚ` presented by its functor of points,
+* a map `c` on relative points, natural in the test object,
+* pointed: `c` sends the chosen base point `o` to the origin,
+
+together with the one extra clause that makes it say something —
+NONCONSTANCY, at *some* test object `T`.
+
+**Why nonconstancy is tested at an arbitrary `T` and not at `𝟙 SpecQ`.**
+`X_0(N)(ℚ)` is tiny — at every Kenku level it is exactly the set of
+rational cusps, and at several levels a single Galois orbit would not
+separate anything.  Requiring two *rational* points with distinct images
+would therefore be a strictly stronger, and at some levels FALSE,
+statement.  Taking `T = X` and comparing the tautological point with the
+constant point at `o` is what actually witnesses this for a curve of
+positive genus.
+
+**Not vacuous, and not cheaply satisfiable.**  The obvious junk witness
+`A = Spec ℚ` with its trivial abelian structure is killed by the
+nonconstancy clause alone: `subsingleton_relPoint_of_isIso` makes
+`RelPoint astr g` a subsingleton there, so `c T g x ≠ c T g y` is
+unsatisfiable.  Any `A` receiving only constant `c` fails for the same
+reason.  So inhabiting this predicate really does require an abelian
+variety with a nonconstant map from `X`.
+
+**`T` is written as an EXPLICIT binder of `c`** (rather than the
+implicit `{T}` of `IsJacobianOf.aj`) so that the two naturality
+quantifiers can be stated without implicit-lambda gymnastics inside an
+existential; `exists_ne_aj_of_hasNonconstantAbelianMap` converts to the
+implicit shape at the one place `universal` is applied. -/
+def HasNonconstantAbelianMap {X : Scheme.{0}} (strX : X ⟶ SpecQ)
+    (o : RelPoint strX (𝟙 SpecQ)) : Prop :=
+  ∃ (A : Scheme.{0}) (astr : A ⟶ SpecQ) (abA : AbelianSchemeStruct astr)
+    (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g),
+    (∀ (T' T : Scheme.{0}) (hT : T' ⟶ T) (g : T ⟶ SpecQ) (g' : T' ⟶ SpecQ)
+        (hcomm : hT ≫ g = g') (x : RelPoint strX g),
+        c T' g' (RelPoint.pre hT hcomm x) = RelPoint.pre hT hcomm (c T g x)) ∧
+      c SpecQ (𝟙 SpecQ) o = abA.zero (𝟙 SpecQ) ∧
+      ∃ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x y : RelPoint strX g), c T g x ≠ c T g y
+
+/-- **Nonconstancy transfers from ANY abelian scheme under `X` to the
+Jacobian** (PROVEN, from `IsJacobianOf.universal` alone).
+
+This is the whole force of the Albanese property in the direction this
+development needs, and it is what makes the seam
+`HasNonconstantAbelianMap` cheap to discharge: a prover does NOT have to
+produce the Jacobian, or even a large abelian variety.  ANY abelian
+scheme `A/ℚ` receiving a nonconstant pointed map from `X` will do — an
+elliptic curve factor of `J_0(N)` is enough — because `universal`
+factors that map as `aj ≫ u`, and a factorisation through a constant
+`aj` is constant.
+
+Note the direction: `universal` is used only for EXISTENCE of `u`; the
+`∃!` is not needed here, and the uniqueness clause is discarded.  So
+this lemma survives any future weakening of the interface's `∃!` to
+`∃`. -/
+theorem exists_ne_aj_of_hasNonconstantAbelianMap {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (hnc : HasNonconstantAbelianMap strX o) :
+    ∃ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x y : RelPoint strX g),
+      jac.aj g x ≠ jac.aj g y := by
+  obtain ⟨A, astr, abA, c, hnat, hzero, T, g, x, y, hxy⟩ := hnc
+  refine ⟨T, g, x, y, fun hEq => hxy ?_⟩
+  obtain ⟨u, ⟨-, hu⟩, -⟩ := jac.universal abA (fun {T'} g' => c T' g')
+    (by intro T'' T' hT g' g'' hcomm z; exact hnat T'' T' hT g' g'' hcomm z) hzero
+  exact Subtype.ext (by rw [hu g x, hu g y, hEq])
+
+/-- **The genus formula, in its geometric form: `genus X_0(N) ≥ 1` gives
+`X_0(N)` a nonconstant map to an abelian variety** (sorry node) — the
+arithmetic half of `injective_aj_of_one_le_x0Genus`, and the ONLY place
+where the computed number `x0Genus N` meets the scheme `X`.
 
 TRUE: `x0Genus N` is the genus of `X` by the classical formula
-(Diamond–Shurman, Theorem 3.1.1), and `dim J = genus X` for the
-Jacobian, so `1 ≤ x0Genus N` gives `dim J ≥ 1`, i.e. `J ≇ Spec ℚ`.
+(Diamond–Shurman, Theorem 3.1.1); a smooth proper geometrically
+connected curve of genus `≥ 1` over `ℚ` with a rational point embeds in
+its Jacobian by `x ↦ [x] − [o]`, which is a nonconstant pointed map to
+an abelian variety.  Concretely at every level in `kenkuLevels` one may
+take `A` to be an elliptic-curve or higher-dimensional newform factor
+`A_f` of `J_0(N)` — `S_2(Γ_0(N)) ≠ 0` is exactly `x0Genus N ≥ 1` — and
+`c` the composite of Abel–Jacobi with the quotient.
+
+`hg` is load-bearing and is exactly what makes the already-proven
+arithmetic of `one_le_x0Genus_of_kenkuLevel` consumed rather than
+floating: at genus `0` the conclusion is FALSE, `X_0(1) = ℙ¹` receiving
+only constant maps to abelian varieties.  `N` enters only through `hg`
+and `h`.
+
+**STRENGTH AUDIT (2026-07-27), recorded because this leaf replaced a
+`jac`-carrying one and a successor should know what moved.**  The
+previous statement was `¬ IsIso jstr` given `jac : IsJacobianOf strX ab
+o`.  This one drops `jac` entirely, and the two are equivalent GIVEN
+that a Jacobian exists — which is the sibling leaf
+`exists_jacobianOf_x0`, already open beside this one, so no new
+obligation is created:
+
+* *this ⟹ old*: `exists_ne_aj_of_hasNonconstantAbelianMap` then
+  `subsingleton_relPoint_of_isIso`; that is the proof of
+  `not_isIso_jacobian_of_one_le_x0Genus` below.
+* *old ⟹ this*: take `A := J`, `c := jac.aj`, which is natural
+  (`aj_pre`) and pointed (`aj_base`).  If it were constant then
+  `aj g x = ab.zero g` for every `g` and `x`, so BOTH `𝟙 J` and
+  `jstr ≫ (ab.zero (𝟙 SpecQ)).1` satisfy the equation of
+  `jac.universal ab jac.aj`; uniqueness forces them equal, and together
+  with `(ab.zero (𝟙 SpecQ)).1 ≫ jstr = 𝟙 SpecQ` that makes `jstr` an
+  isomorphism — contradicting `¬ IsIso jstr`.
+
+Dropping `jac` is a deliberate improvement, not an accident: the leaf is
+now a statement about the curve `X_0(N)` ALONE, so it is available to
+the base-general consumers of this file that have no `Spec ℚ`-Jacobian
+in hand, and it can be discharged without first constructing `Pic⁰`.
+
+IRREDUCIBLE at this pin, and the axis searched is the GEOMETRIC one: the
+identification of the arithmetic `x0Genus` with an invariant of `X`
+needs a genus of a scheme, `h¹(𝒪_X)` or Riemann–Hurwitz for the
+degree-`μ(N)` map to the `j`-line, and none of the three exists in
+`Mathlib`, in `~/cs/FLT`, or here.  **NOT searched, and the axis a
+successor should prefer: the MODULAR one** — build a single newform
+factor `A_f` and the modular parametrisation `X_0(N) ↠ A_f` out of the
+`Modularity` subtree, which already carries weight-`2` newforms and
+their attached representations, and feed it here.  That route never
+mentions the genus of a scheme at all, and it is why this leaf is stated
+as "SOME abelian scheme" rather than "the Jacobian".  **The check that
+would refute this verdict:** a genus, an `h¹`, or a modular
+parametrisation appearing in any of the three trees. -/
+theorem hasNonconstantAbelianMap_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) (o : RelPoint strX (𝟙 SpecQ)) :
+    HasNonconstantAbelianMap strX o :=
+  sorry
+
+/-- **The genus formula, in its geometric form: `genus X_0(N) ≥ 1` makes
+the Jacobian nontrivial** (PROVEN 2026-07-27, over
+`hasNonconstantAbelianMap_of_one_le_x0Genus` and the two proven bridges
+above) — the arithmetic half of `injective_aj_of_one_le_x0Genus`.
 
 `hg` is load-bearing and is exactly what makes the already-proven
 arithmetic of `one_le_x0Genus_of_kenkuLevel` consumed rather than
@@ -13879,16 +14031,27 @@ trivial Jacobian.  `jac` is load-bearing too — without it `J` is an
 arbitrary abelian scheme, and `Spec ℚ` itself is one.  `N` enters only
 through `hg` and `h`.
 
-IRREDUCIBLE at this pin: this is the identification of the arithmetic
-`x0Genus` with a geometric invariant of `X`, and no such invariant
-exists in `Mathlib` (no genus, no `h¹(𝒪_X)`, no Riemann–Hurwitz for the
-degree-`μ(N)` map to the `j`-line). -/
+**Why `¬ IsIso jstr` rather than a dimension statement.**  There is no
+genus of a scheme at this pin, but `dim J = genus X` for the Jacobian
+and `dim J = 0 ⟺ J ≅ Spec ℚ` for an abelian scheme over a field, so this
+phrasing renders `genus ≥ 1` faithfully with no dimension theory.
+
+The proof is the two-step reading of that phrasing.  `IsIso jstr` makes
+every `RelPoint jstr g` a subsingleton
+(`subsingleton_relPoint_of_isIso`), hence Abel–Jacobi constant; and
+`exists_ne_aj_of_hasNonconstantAbelianMap` says Abel–Jacobi cannot be
+constant once ANY abelian scheme receives a nonconstant pointed map from
+`X`, which is what the leaf supplies. -/
 theorem not_isIso_jacobian_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (jac : IsJacobianOf strX ab o) : ¬ IsIso jstr :=
-  sorry
+    (jac : IsJacobianOf strX ab o) : ¬ IsIso jstr := by
+  intro hiso
+  obtain ⟨T, g, x, y, hxy⟩ := exists_ne_aj_of_hasNonconstantAbelianMap jac
+    (hasNonconstantAbelianMap_of_one_le_x0Genus N hg h o)
+  haveI := subsingleton_relPoint_of_isIso hiso g
+  exact hxy (Subsingleton.elim _ _)
 
 /-- **Positive genus makes Abel–Jacobi injective on relative points, over
 every base and at every test object** (sorry node) — the bridge from the
@@ -13950,15 +14113,17 @@ theorem injective_aj_of_one_le_x0Genus_general {N : ℕ} (_hg : 1 ≤ x0Genus N)
   sorry
 
 /-- **Positive genus makes Abel–Jacobi injective on rational points**
-(PROVEN, from the two leaves above) — the bridge from the arithmetic
-`x0Genus` to the geometry.
+(PROVEN) — the bridge from the arithmetic `x0Genus` to the geometry.
 
 The seam is `¬ IsIso jstr`, "the Jacobian is positive-dimensional".  It
 splits the old single leaf into the two theories it was carrying:
 `not_isIso_jacobian_of_one_le_x0Genus` is the genus formula and is the
 only half that mentions `N`, while `injective_aj_of_not_isIso_jacobian`
 is Riemann–Roch and holds for every smooth proper geometrically
-connected curve over `ℚ`. -/
+connected curve over `ℚ`.  Since 2026-07-27 the genus half is itself a
+PROVEN assembly over one leaf,
+`hasNonconstantAbelianMap_of_one_le_x0Genus`, so exactly one open leaf
+sits under each of the two seams. -/
 theorem injective_aj_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -14007,7 +14172,7 @@ needs, are:
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `isTorsion_jacobian_of_kenkuLevel` | Kolyvagin–Logachev | **yes** |
 | `ajMor_eq_const_of_not_injective` | Riemann–Roch | no |
-| `not_isIso_jacobian_of_one_le_x0Genus` | genus formula | **yes** |
+| `hasNonconstantAbelianMap_of_one_le_x0Genus` | genus formula | **yes** |
 
 Only two of the six mention `N` at all, and each of the other four is
 a named classical theorem stated for an arbitrary object — which is what
