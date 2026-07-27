@@ -47546,8 +47546,182 @@ theorem isNewAtPrime_of_isWeightTwoNewform {M : ℕ}
   · exact absurd hold
       (not_exists_eigenform_level_not_dvd_of_isWeightTwoNewform hg hqM)
 
-/-- **Tameness at a prime EXACTLY dividing the newform level** (**sorry
-node — the WILD-side half of the `q ∥ M₀` case of Carayol's theorem**,
+/-- **A nonzero square-zero endomorphism of a PLANE has a LINE for its
+kernel** (PROVEN — pure linear algebra, 2026-07-27, thirteenth owner of
+the `q ∥ M₀` cluster; it is the whole arithmetic content of
+"`dim V^{I_q} = 1`" once the monodromy shape below is granted).
+
+`N² = 0` puts `range N ≤ ker N`, and `N ≠ 0` puts `1 ≤ dim (range N)`;
+rank–nullity `dim (range N) + dim (ker N) = 2` then forces both to be
+`1`, since `dim (range N) = 2` would need `dim (ker N) = 0 < 1`. -/
+theorem finrank_ker_eq_one_of_ne_zero_of_mul_self_eq_zero
+    {F : Type*} [Field F] {V : Type*} [AddCommGroup V] [Module F V]
+    [FiniteDimensional F V] (hV : Module.finrank F V = 2)
+    {N : Module.End F V} (hN : N ≠ 0) (hN2 : N * N = 0) :
+    Module.finrank F (LinearMap.ker N) = 1 := by
+  have hrk : Module.finrank F (LinearMap.range N)
+      + Module.finrank F (LinearMap.ker N) = 2 := by
+    rw [LinearMap.finrank_range_add_finrank_ker, hV]
+  have hle : LinearMap.range N ≤ LinearMap.ker N := by
+    rintro y ⟨x, rfl⟩
+    have h := congrArg (fun f : Module.End F V => f x) hN2
+    simpa [Module.End.mul_apply] using h
+  have h1 : 1 ≤ Module.finrank F (LinearMap.range N) :=
+    Submodule.one_le_finrank_iff.mpr fun h => hN (LinearMap.range_eq_bot.mp h)
+  have h2 : Module.finrank F (LinearMap.range N)
+      ≤ Module.finrank F (LinearMap.ker N) := Submodule.finrank_mono hle
+  omega
+
+/-- **THE UNIPOTENT MONODROMY SHAPE AT A PRIME EXACTLY DIVIDING THE
+NEWFORM LEVEL** (**SORRY LEAF — the single literature citation of the
+`q ∥ M₀` case of Carayol's theorem**, cut 2026-07-27 by the thirteenth
+owner out of the two leaves immediately below, BOTH of which are now
+PROVEN over it; Carayol, *Sur les représentations `ℓ`-adiques associées
+aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème
+(A), plus Casselman's conductor-`1` classification and Grothendieck's
+`ℓ`-adic monodromy theorem).
+
+STATEMENT. For a weight-2 NEWFORM `g₀` of level `M₀`, an IRREDUCIBLE
+`τ` matching its Hecke polynomials away from a finite set, and a prime
+`q ≠ p` with `ord_q M₀ = 1`, there are a NONZERO SQUARE-ZERO
+`N ∈ End(V)` — the monodromy operator — and a `ℚ̄_p`-valued function `t`
+on `Γ ℚ_q` such that on the inertia `I_q`
+
+  `τ|_{I_q}(σ) = 1 + t(σ)·N`,   `t` vanishes on the WILD inertia `P_q`,
+  and `t` is NOT identically zero on `I_q`.
+
+This is the classical Steinberg picture written in coordinates-free
+form: `t` is the `p`-adic TAME character `t_p : I_q ↠ ℤ_p(1)` and the
+displayed identity is `σ ↦ exp(t_p(σ)N)`, which terminates after one
+term because `N² = 0`.
+
+WHY IT IS TRUE. At `q ∥ M₀` with trivial nebentypus the local component
+`π_q` of the automorphic representation attached to `g₀` has conductor
+exponent `1`, and the conductor-`1` representations of `GL₂(ℚ_q)` with
+TRIVIAL central character are exactly the unramified twists of
+Steinberg: a principal series `χ₁ ⊞ χ₂` has conductor
+`cond(χ₁) + cond(χ₂)`, and trivial central character forces
+`χ₂ = χ₁⁻¹`, hence an EVEN total conductor, so `1` is not attained;
+supercuspidals have conductor `≥ 2`. The Weil–Deligne parameter of an
+unramified twist of Steinberg is the special one — unramified
+Frobenius-semisimple part, nonzero monodromy `N` with `N² = 0` — and an
+UNRAMIFIED twist is invisible to inertia, so the twisting character
+contributes nothing to `τ|_{I_q}` and the displayed identity is exactly
+Grothendieck's local monodromy theorem for that parameter. `t_p` is
+surjective onto `ℤ_p(1)`, hence not identically zero, which is
+`N ≠ 0`'s companion and is what makes the conclusion RAMIFIED rather
+than vacuous.
+
+`hqp : q ≠ p` IS LOAD-BEARING, in TWO places. (i) `t_p` has pro-`p`
+target and `P_q` is pro-`q`, so `q ≠ p` is exactly what kills wild
+inertia; at `q = p` the local representation of a newform of level
+exactly divisible by `p` is genuinely wildly ramified in general.
+(ii) At `q = p` the Steinberg parameter is cyclotomically twisted and
+the fixed space can vanish. Do not widen this hypothesis.
+
+WHAT THIS LEAF BUYS. `GaloisRep.swanExponent` is
+`if ρ.IsTamelyRamifiedAt v then 0 else swanExponentAux ρ v` with
+`swanExponentAux` declared `opaque` (`ArtinConductor.lean`), so the ONLY
+way any conductor-exponent statement of this development becomes
+provable is by discharging that `if`. This leaf discharges it in the
+`q ∥ M₀` case — through `isTamelyRamifiedAt_of_isWeightTwoNewform_of_
+factorization_eq_one` just below — and simultaneously supplies the tame
+number, through `tameExponent_eq_one_of_isWeightTwoNewform_of_
+factorization_eq_one`. Both derivations are CHECKED LEAN over this one
+statement; nothing but this statement is cited.
+
+FAITHFULNESS. Every quantifier stays over `localInertiaGroup q` or
+`wildInertiaGroup q` — nothing is widened to `Γ ℚ`, which is the
+standing trap in this file. `t` is deliberately a BARE FUNCTION rather
+than a homomorphism: the homomorphism property is forced by `N² = 0`
+inside the group, so demanding it would only make the leaf harder to
+inhabit without making any consumer stronger. The leaf is not vacuous —
+the `∃ σ ∈ I_q, t σ ≠ 0` clause is precisely the assertion that `τ` IS
+ramified at `q`, which is the classical content, and it is what pins
+`dim V^{I_q} = 1` rather than `2`.
+
+NOT VACUOUS in its hypotheses either: the bundle is inhabited by the
+PROVEN pair `exists_galoisRep_charFrob_of_weightTwoNewform` (a matching
+`τ` with its exceptional set) and the PROVEN Ribet irreducibility below,
+at any newform of level `M₀ = q M'` with `q ∤ M'`, `q ∉ {p}`.
+
+TERMINALITY at this pin, and the CORRECTION it carries. The two leaves
+below used to record their terminality as "carried geometrically by
+`nonempty_modularTateModuleData`", with the refuting check "exhibit,
+anywhere in the tree, a statement pinning the action of
+`localInertiaGroup q` on `τ` for a newform of level exactly divisible by
+`q`". **That attribution is now wrong and this leaf is where it gets
+fixed.** `nonempty_modularTateModuleData` is PROVEN (see above in this
+file) and it pins NOTHING at a bad prime: its `congruence` and
+`pair_frob` fields are both hypothesised only OFF the exceptional set
+`S`, and no field of `ModularTateModuleData` mentions inertia at all.
+So completing the Deligne–Rapoport carrier was NECESSARY for the wider
+programme and is NOT SUFFICIENT here — it was already complete when this
+cut was made, and these leaves did not move.
+
+What is genuinely missing at this pin is a semistable/Néron model of
+`X₀(M₀)` at `q ∥ M₀` together with the monodromy filtration on
+`V_p(J₀(M₀))` (Deligne–Rapoport V.1 for the model; Grothendieck, SGA 7 I
+IX for the monodromy pairing), or equivalently the automorphic route
+through local Langlands — the pin has no automorphic representations, no
+Weil–Deligne parameters, and no higher ramification filtration, and
+`~/cs/FLT` has nothing vendorable here.
+
+**THE CHECK THAT WOULD REFUTE THIS VERDICT** (stated so the next owner
+does not redo the survey): exhibit anywhere in the tree a statement
+pinning the action of `localInertiaGroup q` on ANY realisation of the
+`g₀`-eigensystem at a prime `q` exactly dividing `M₀` — a field of a
+carrier structure, a leaf, or a theorem. As of 2026-07-27 there is none,
+and in particular `ModularTateModuleData` has no such field; adding one
+(a monodromy operator on `Vp` with its inertia identity, plus the
+transport along the PROVEN rigidity `exists_linearEquiv_of_charFrob_eq`)
+is the shape of the cut that would replace this leaf.
+AXIS SEARCHED: the carrier axis (does any existing structure in this
+file record bad-prime local data) and the transport axis (is there a
+proven route from `Vp` to `τ` carrying inertia information). NOT
+SEARCHED: any route through `p`-adic Hodge theory at `q ≠ p`, which
+would be perverse. -/
+theorem exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hord : M₀.factorization q = 1) :
+    ∃ (N : Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]))
+      (t : Field.absoluteGaloisGroup
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) →
+        AlgebraicClosure ℚ_[p]),
+      N ≠ 0 ∧ N * N = 0 ∧
+      (∀ σ ∈ wildInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        t σ = 0) ∧
+      (∃ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        t σ ≠ 0) ∧
+      (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1 + t σ • N) :=
+  sorry
+
+/-- **Tameness at a prime EXACTLY dividing the newform level**
+(**PROVEN 2026-07-27, thirteenth owner**, over the single leaf
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` above:
+the wild inertia `P_q` lies in `I_q`, so `τ|_{P_q}(σ) = 1 + t(σ)·N` with
+`t(σ) = 0`, i.e. the identity. **The citation this leaf used to carry
+has moved ONE STEP UP to that monodromy statement, which is now the sole
+`q ∥ M₀` literature leaf**; the audits below are kept because they
+transfer verbatim to it, except the terminality attribution, which was
+WRONG and is corrected there — see its docstring.
+
+Originally the WILD-side half of the `q ∥ M₀` case of Carayol's theorem,
 cut out 2026-07-27, twelfth owner, from the citation
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform` below,
 which is now PROVEN from this leaf and its two siblings; Carayol, *Sur
@@ -47608,16 +47782,29 @@ NOT VACUOUS: the hypothesis bundle is inhabited by the PROVEN pair
 exceptional set) and the PROVEN Ribet irreducibility below, at any
 newform of level `M₀ = q M'` with `q ∤ M'`, `q ∉ {p}`.
 
-TERMINALITY: this is a genuine literature citation at this pin. Its
-content is the local–global compatibility at `q` (Carayol) plus the
-conductor-`1` classification above (Casselman's newvector theory), and
-the Galois-side monodromy theorem; the pin has no automorphic
-representations, no local Langlands, and no Weil–Deligne parameters, and
-`~/cs/FLT` has nothing vendorable here. THE CHECK THAT WOULD REFUTE THIS
-VERDICT: exhibit, anywhere in the tree, a statement pinning the action
-of `localInertiaGroup q` on `τ` for a newform of level exactly divisible
-by `q` — there is none as of 2026-07-27, and the geometric carrier that
-would produce one is `nonempty_modularTateModuleData`. -/
+TERMINALITY — **SUPERSEDED 2026-07-27, and this paragraph is kept only
+to record what it got wrong.** It read: "this is a genuine literature
+citation at this pin. Its content is the local–global compatibility at
+`q` (Carayol) plus the conductor-`1` classification above (Casselman's
+newvector theory), and the Galois-side monodromy theorem; the pin has no
+automorphic representations, no local Langlands, and no Weil–Deligne
+parameters, and `~/cs/FLT` has nothing vendorable here. THE CHECK THAT
+WOULD REFUTE THIS VERDICT: exhibit, anywhere in the tree, a statement
+pinning the action of `localInertiaGroup q` on `τ` for a newform of
+level exactly divisible by `q` — there is none as of 2026-07-27, and the
+geometric carrier that would produce one is
+`nonempty_modularTateModuleData`."
+
+The first half stands and has MOVED, verbatim in substance, to
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` above,
+from which this declaration is now proven. The last clause was WRONG:
+`nonempty_modularTateModuleData` was already PROVEN when this was
+written, and it produces no such statement — no field of
+`ModularTateModuleData` mentions inertia, and its two Frobenius fields
+are hypothesised only OFF the exceptional set. Following that clause
+would have sent an owner at a subtree that was already complete and
+could not have helped. The corrected verdict, with the axis searched,
+is on the monodromy leaf. -/
 theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -47634,12 +47821,30 @@ theorem isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_one
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
     (hord : M₀.factorization q = 1) :
-    τ.IsTamelyRamifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    τ.IsTamelyRamifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  obtain ⟨N, t, -, -, hwild, -, hloc⟩ :=
+    exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one
+      hM₀ hg₀ κ₀ hτ hirr hq hqp hord
+  intro σ hσ x
+  rw [hloc σ (wildInertiaGroup_le_localInertiaGroup _ hσ), hwild σ hσ]
+  simp
 
 /-- **The TAME exponent at a prime exactly dividing the newform level**
-(**sorry node — the TAME-side half of the `q ∥ M₀` case of Carayol's
-theorem**, cut out 2026-07-27, twelfth owner, from the citation
+(**PROVEN 2026-07-27, thirteenth owner**, over the single leaf
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one` above.
+The proof is the whole classical sentence, in checked Lean: the
+monodromy identity `τ|_{I_q}(σ) = 1 + t(σ)·N` makes the inertia
+invariants EXACTLY `ker N` — one inclusion needs only `N x = 0`, the
+other needs the leaf's nontriviality clause `∃ σ ∈ I_q, t σ ≠ 0` to
+cancel the scalar — and `finrank_ker_eq_one_of_ne_zero_of_mul_self_eq_
+zero` turns `N ≠ 0`, `N² = 0` and `dim V = 2` into `dim (ker N) = 1` by
+rank–nullity. Hence `tameExponent = 2 − 1 = 1`. **The citation has moved
+ONE STEP UP to the monodromy leaf**; the audits below are kept because
+they transfer verbatim to it, except the terminality attribution, which
+was WRONG and is corrected there.
+
+Originally the TAME-side half of the `q ∥ M₀` case of Carayol's
+theorem, cut out 2026-07-27, twelfth owner, from the citation
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform` below;
 Carayol, Théorème (A), together with the Langlands/Deligne local
 computation at a prime exactly dividing the level): for a weight-2
@@ -47683,13 +47888,20 @@ FAITHFULNESS: the quantifier stays over `localInertiaGroup q`
 throughout — `inertiaInvariants` is defined by fixedness under
 `localInertiaGroup v` and nothing wider.
 
-TERMINALITY at this pin: the same as the tame sibling's — Carayol plus
-Casselman, carried geometrically by the Deligne–Rapoport model of
-`X₀(M₀)` at `q` and Néron–Ogg–Shafarevich on `J₀(M₀)`, i.e. by
-`nonempty_modularTateModuleData`. Unlike the deep-level sibling below,
-this leaf's conclusion contains NO opaque constant, so it is gated on
-mathematics only and is genuinely attackable once the geometric carrier
-exists. -/
+TERMINALITY at this pin — **SUPERSEDED 2026-07-27.** It read: "the same
+as the tame sibling's — Carayol plus Casselman, carried geometrically by
+the Deligne–Rapoport model of `X₀(M₀)` at `q` and Néron–Ogg–Shafarevich
+on `J₀(M₀)`, i.e. by `nonempty_modularTateModuleData`. Unlike the
+deep-level sibling below, this leaf's conclusion contains NO opaque
+constant, so it is gated on mathematics only and is genuinely attackable
+once the geometric carrier exists."
+
+The last sentence was right and this declaration is now PROVEN. The
+`nonempty_modularTateModuleData` attribution was wrong for the reason
+recorded on the tame sibling above; the residual citation is
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one`, and
+`ModularTateModuleData` would have to GROW a bad-prime field before it
+could carry any of this. -/
 theorem tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -47706,8 +47918,29 @@ theorem tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
     (hord : M₀.factorization q = 1) :
-    τ.tameExponent hq.toHeightOneSpectrumRingOfIntegersRat = 1 :=
-  sorry
+    τ.tameExponent hq.toHeightOneSpectrumRingOfIntegersRat = 1 := by
+  obtain ⟨N, t, hN0, hN2, -, ⟨σ₀, hσ₀, ht₀⟩, hloc⟩ :=
+    exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one
+      hM₀ hg₀ κ₀ hτ hirr hq hqp hord
+  have hinv : τ.inertiaInvariants hq.toHeightOneSpectrumRingOfIntegersRat
+      = LinearMap.ker N := by
+    ext x
+    constructor
+    · intro hx
+      have h := hx σ₀ hσ₀
+      rw [hloc σ₀ hσ₀] at h
+      have h' : t σ₀ • N x = 0 := by
+        have hx' : x + t σ₀ • N x = x := by
+          simpa [LinearMap.add_apply, LinearMap.smul_apply] using h
+        simpa using hx'
+      exact (smul_eq_zero.mp h').resolve_left ht₀
+    · intro hx σ hσ
+      rw [hloc σ hσ]
+      have hker : N x = 0 := hx
+      simp [LinearMap.add_apply, LinearMap.smul_apply, hker]
+  rw [GaloisRep.tameExponent, hinv,
+    finrank_ker_eq_one_of_ne_zero_of_mul_self_eq_zero (by simp) hN0 hN2]
+  simp
 
 /-- **Carayol's conductor theorem at the NEWFORM level, DEEP-LEVEL case
 `q² ∣ M₀`** (**sorry node — and this one is INDEPENDENT OF THE THEORY at
@@ -47769,7 +48002,12 @@ NOT here: it is carried by
 `isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_one` and
 `tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one`
 above, neither of whose conclusions contains an opaque constant, and
-which are therefore gated on mathematics alone. The two cases are
+which are therefore gated on mathematics alone. **Both are now PROVEN
+(2026-07-27, thirteenth owner)** over the ONE literature leaf
+`exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one`, which
+is where the `q ∥ M₀` citation now lives; so the whole `q ∥ M₀` half of
+this cluster is a single citation plus checked Lean, while THIS
+declaration remains independent of the theory. The two cases are
 exhaustive over `q ∣ M₀` and disjoint, and their union is exactly the
 old composite citation — no faith is added by the split. -/
 theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le
@@ -48172,9 +48410,16 @@ declaration and the arithmetic making them exhaustive is
   `isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_one`,
   and then `conductorExponent = tameExponent + 0 = 1` by
   `tameExponent_eq_one_of_isWeightTwoNewform_of_factorization_eq_one`.
-  **Neither leaf's conclusion contains an opaque constant**, so this
-  half is gated on mathematics alone — the Steinberg local computation
-  carried geometrically by `nonempty_modularTateModuleData`.
+  **Neither declaration's conclusion contains an opaque constant**, so
+  this half is gated on mathematics alone — and BOTH ARE NOW PROVEN
+  (2026-07-27) over the single literature leaf
+  `exists_monodromy_of_isWeightTwoNewform_of_factorization_eq_one`, the
+  Steinberg unipotent-monodromy shape on `I_q`. (An earlier version of
+  this note said that computation was "carried geometrically by
+  `nonempty_modularTateModuleData`". **That was wrong**: that carrier is
+  proven and records no bad-prime local data at all — its `congruence`
+  and `pair_frob` fields are hypothesised only OFF the exceptional set.
+  See the monodromy leaf's docstring for the corrected verdict.)
 * `2 ≤ ord_q M₀` — `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`,
   which inherits the independence verdict IN FULL and says so in its own
   docstring, including the check that would refute it.
