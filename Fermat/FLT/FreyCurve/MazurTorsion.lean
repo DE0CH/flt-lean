@@ -22929,6 +22929,14 @@ which is the atom in disguise.
 * `card_le_of_cuspBound_of_y0Bound`, the splitting itself, PROVEN and
   generic in the level and in both bounds.
 
+*Amended 2026-07-27 (flt-lean-37).*  `card_y0Le_thirtySeven` is now PROVEN,
+over the `∃`-form leaf `exists_coarseModuliY0_thirtySeven_cardLe` through
+the initiality transport `card_y0Le_of_exists_coarseModuli`; the open leaf
+at `37` is the `∃`-form, and the audit of every axis searched — including
+the two axes RE-REFUTED that day, with the explicit genus-`2` model and the
+action of all three involutions on the four rational points — stays on
+`card_y0Le_thirtySeven`.
+
 **Why the affine half is TWO leaves and not one.**  The four levels do not
 share an argument, and the split is exactly `37` against `43, 67, 163`.
 At `43, 67, 163` the single non-cuspidal point is CM by the maximal order
@@ -23045,9 +23053,61 @@ theorem card_le_of_cuspBound_of_y0Bound {N c k : ℕ} {X Y : Scheme.{0}}
   have h2 : (s.filter fun x => ¬ hX.IsCusp x).card ≤ k := himg ▸ hy0 _
   omega
 
-/-- **`#Y_0(37)(ℚ) ≤ 2`** (sorry leaf, introduced 2026-07-27; the affine
+/-- **A point bound on ONE coarse moduli space of `Γ_0(N)` gives it on
+every one** (PROVEN 2026-07-27, flt-lean-37).
+
+Pure initiality, no geometry and no arithmetic: `IsCoarseModuliY0` is an
+initiality property, so any two spaces satisfying it at the same level are
+`ℚ`-isomorphic (`Fermat.IsCoarseModuliY0.exists_inverse`), and
+`Fermat.relPointEquivOfInverse` turns that inverse pair into a bijection of
+`ℚ`-points.  A `Finset` cardinality bound transports across a bijection.
+
+**Why this is worth a name.**  Every route to a bound of this shape runs on
+an EXPLICIT model — for `Y_0(37)` the reconnaissance below is carried out
+on the genus-`2` curve `y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4` — and
+without this lemma a successor must either argue for an arbitrary coarse
+space or re-derive the initiality transport itself.  With it the obligation
+becomes the `∃`-form leaf below: build ONE model and count on it.
+
+Generic in `N` and in `k`, so `card_y0Le_classNumberOne` (another owner's
+declaration, at `p = 43, 67, 163`) can be reduced the same way; it is not
+done here for that reason.  This is the cardinality analogue of
+`Fermat.y0HasNoRationalPoint_of_isEmpty`, which does the same job for
+emptiness. -/
+theorem card_y0Le_of_exists_coarseModuli {N k : ℕ}
+    (h : ∃ (Y' : Scheme.{0}) (strY' : Y' ⟶ SpecQ) (_ : IsCoarseModuliY0 N strY'),
+      ∀ t : Finset (RelPoint strY' (𝟙 SpecQ)), t.card ≤ k)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 N strY)
+    (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ k := by
+  classical
+  obtain ⟨Y', strY', hc', hb⟩ := h
+  obtain ⟨u, v, hu, hv, huv, hvu⟩ := hc.exists_inverse hc'
+  have e : RelPoint strY (𝟙 SpecQ) ≃ RelPoint strY' (𝟙 SpecQ) :=
+    relPointEquivOfInverse hu hv huv hvu
+  calc t.card = (t.image e).card := (Finset.card_image_of_injective t e.injective).symm
+    _ ≤ k := hb _
+
+/-- **SOME coarse moduli space of `Γ_0(37)` has at most `2` rational
+points** (sorry leaf, introduced 2026-07-27, flt-lean-37; the `∃`-form of
+`card_y0Le_thirtySeven`, which is proven over it by
+`card_y0Le_of_exists_coarseModuli`).
+
+Equivalent in strength to the `∀`-form — initiality makes all coarse moduli
+spaces `ℚ`-isomorphic — but it is the form every actual route needs, since
+every route runs on one explicit model.  The full audit, the explicit model,
+the four rational points with their `j`-invariants and the three involutions
+acting on them, and the state of every axis searched are on
+`card_y0Le_thirtySeven` immediately below; read that first. -/
+theorem exists_coarseModuliY0_thirtySeven_cardLe :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (_ : IsCoarseModuliY0 37 strY),
+      ∀ t : Finset (RelPoint strY (𝟙 SpecQ)), t.card ≤ 2 :=
+  sorry
+
+/-- **`#Y_0(37)(ℚ) ≤ 2`** (PROVEN 2026-07-27, flt-lean-37, over the
+`∃`-form leaf `exists_coarseModuliY0_thirtySeven_cardLe` through
+`card_y0Le_of_exists_coarseModuli`; a sorry leaf until then).  The affine
 half at `p = 37`, and the level that does NOT share an argument with the
-other three).
+other three.
 
 TRUE, and sharp: `Y_0(37)(ℚ)` has exactly two points, of `j`-invariants
 `−7·11³ = −9317` and `−7·137³·2083³ = −162677523113838677`
@@ -23062,15 +23122,57 @@ non-cuspidal rational point is CM by the maximal order of discriminant
 classical source is a different paper.  `X_0(37)` has genus `2` and
 `J_0(37)` has rank `1`.
 
-`_hc` is unused by the (absent) proof and is LOAD-BEARING in the
-statement: without it `strY` is an arbitrary `ℚ`-scheme and the leaf is
-wildly false.  `IsCoarseModuliY0 37 strY` — rather than the
-compactification — is what pins `Y` as `Y_0(37)`, and it is deliberately
-the weakest pinning that does so: this leaf is about the AFFINE curve and
-mentions no cusps, no compactification and no `j`-map.
+`hc` is LOAD-BEARING in the statement: without it `strY` is an arbitrary
+`ℚ`-scheme and the leaf is wildly false.  `IsCoarseModuliY0 37 strY` —
+rather than the compactification — is what pins `Y` as `Y_0(37)`, and it is
+deliberately the weakest pinning that does so: this leaf is about the
+AFFINE curve and mentions no cusps, no compactification and no `j`-map.
+It is now consumed, by the initiality transport.
 
-**AXES SEARCHED for the four levels together, inherited verbatim from the
-atom this leaf was cut out of, and all three still refuted:**
+## RECONNAISSANCE (2026-07-27, flt-lean-37) — the explicit model
+
+Magma's `SmallModularCurve(37)`, simplified, is the genus-`2` curve
+
+    S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4
+
+and `S(ℚ)` (searched to height `500`) is exactly four points, whose
+`j`-invariants Magma's `jInvariant(·, 37)` returns as:
+
+    A = (1 : −1 : 0)   j = −9317 = −7·11³               AFFINE
+    C = (1 : −1 : 1)   j = −162677523113838677          AFFINE
+    B = (1 :  1 : 0)   cusp
+    D = (1 :  1 : 1)   cusp
+
+(coordinates are the weighted-projective `(x : y : z)`, weights `(1,3,1)`;
+`z = 0` is the pair of points at infinity, `z = 1` gives `x = 1`, where
+`f(1) = 1`).  The three involutions, transported to this model, are
+
+    w₃₇ : (x : y : z) ↦ (x :  y : x − z)    orbits {A, C}, {B, D}
+    ι   : (x : y : z) ↦ (x : −y : z)        orbits {A, B}, {C, D}
+    σ = ι∘w₃₇ : (x : y : z) ↦ (x : −y : x − z)   orbits {A, D}, {B, C}
+
+`ι` is the hyperelliptic involution, and `37` is Ogg's exceptional level —
+the one hyperelliptic `X_0(N)` whose hyperelliptic involution is not an
+Atkin–Lehner involution — which is exactly why there are three and not two.
+`X/ι = ℙ¹`, `X/w₃₇ = 37a` (rank `1`), `X/σ = 37b` (rank `0`); these are ALL
+the degree-`2` quotients, since the two elliptic ones are the two isogeny
+factors of `J_0(37)`.
+
+`X/σ` computed explicitly, with `u = x²/(x−1)` and
+`V = y((x−1)³ − 1)/((x−1)³(u−1))`:
+
+    C : V² = u⁴ + 4u³ − 44u² + 52u − 16
+
+whose rational points are the two at `u = ∞` (the leading coefficient is a
+square) and `(u, V) = (4, 0)` — three in all, matching `#37b(ℚ) = 3`.  The
+three fibres of `X → C` over `C(ℚ)` are therefore
+
+    u = ∞  ⟶  {A, D}          affine + CUSP
+    u = ∞  ⟶  {B, C}          CUSP + affine
+    (4,0)  ⟶  x² − 4x + 4 = 0, so x = 2 and y² = f(2) = 148 = 4·37,
+              i.e. the conjugate pair (2, ±2√37) — NOT rational.
+
+**AXES SEARCHED, and the state of each:**
 
 1. *The rank-`0` counting layer of `X0.lean`* — inapplicable, and its
    `HasRankZeroJacobian` hypothesis is FALSE here, not merely unavailable
@@ -23084,30 +23186,72 @@ atom this leaf was cut out of, and all three still refuted:**
    that criterion as a general interface would be correct mathematics that
    discharges NOTHING here.
 3. *A rank-`0` isogeny factor or Atkin–Lehner quotient of `J_0(p)`
-   receiving `X_0(p)(ℚ)` injectively* — fails at `37`, which is the level
-   where it looks most promising: `J_0(37) ~ 37a × 37b` with `37b` of rank
-   `0`, but `#37b(ℚ) = 3 < 4 = #X_0(37)(ℚ)`, so no injection exists; and
-   the quotient `X_0(37)/w_37` has genus `1` with Jacobian the `w`-invariant
-   factor `37a`, of rank `1`, hence infinitely many rational points.
+   receiving the points injectively.*  The cusp/affine split REOPENED this
+   axis — `#37b(ℚ) = 3` refutes an injection out of `X_0(37)(ℚ)` (`4`
+   points) on cardinality alone, but not one out of `Y_0(37)(ℚ)`.
+   **RE-REFUTED 2026-07-27 (flt-lean-37), on the data above, for two
+   independent reasons:**
 
-Note that the cusp/affine split SHARPENS objection 3 rather than escaping
-it: this leaf now asks only for `#Y_0(37)(ℚ) ≤ 2` against `#37b(ℚ) = 3`,
-so a rank-`0` quotient receiving the AFFINE points injectively is no
-longer refuted on cardinality alone.  **That is the check worth running
-first**, and it is the one axis the split reopens: does
-`Y_0(37)(ℚ) → 37b(ℚ)` separate the two non-cuspidal points?  If it does,
-this leaf closes by the existing `neronReduction_injective` route with no
-formal-immersion theory at all.
+   * an injection `Y_0(37)(ℚ) ↪ 37b(ℚ)` gives only `≤ 3`, and this leaf
+     asks for `2`.  The split converted "no injection exists" into "an
+     injection would not be sharp enough"; that is not a route.
+   * and the injection is not there to be had, for a structural reason
+     that no cardinality bookkeeping can repair: **every degree-`2`
+     quotient of `X_0(37)` pairs an affine rational point with a CUSP.**
+     `ι` and `σ` do so directly ({A,B},{C,D} and {A,D},{B,C}); `w₃₇` pairs
+     the two affine points with each other.  So passing from `X` to `Y`
+     removes no collision, and no "subtract the classes of the cusps"
+     refinement recovers `2`.
 
-AXIS NOT SEARCHED, and the fallback if that check fails: **Mazur's
-formal-immersion criterion** at the cusp `∞` in characteristic `ℓ ≠ 2`
-(*Rational isogenies of prime degree*, Invent. Math. 44 (1978), §4).
-`X0.lean` names the same missing objects in the docstring of
-`Fermat.exists_cuspidalReduction_of_padicValRat_neg`. -/
+   The check that would refute THIS: any degree-`2` map from `X_0(37)` to a
+   rank-`0` curve whose fibres do not mix cusps with affine points — there
+   is none, because the list of quotients above is complete.
+4. *Mazur's formal-immersion criterion in its PLAIN COUNTING form* — the
+   fallback this docstring previously named as unsearched.  **REFUTED WITH
+   NUMBERS 2026-07-27 (flt-lean-37).**  Any criterion of the shape
+   `#X(ℚ) ≤ #X(𝔽_ℓ)` — which is the shape of
+   `Fermat.card_le_of_rankZeroJacobian`, and the shape a formal immersion
+   produces — is capped by `min_ℓ #X_0(37)(𝔽_ℓ)`.  By Eichler–Shimura
+   `#X_0(37)(𝔽_ℓ) = ℓ + 1 − a_ℓ(37a) − a_ℓ(37b)`, and over every odd
+   `ℓ ≠ 37` up to `200` the minimum is **`6`**, at `ℓ = 3` (then `8` at
+   `5`, `10` at `7`, `12` at `17`, `14` at `11`, growing after).  So this
+   axis cannot do better than `#X_0(37)(ℚ) ≤ 6`, i.e. `#Y_0(37)(ℚ) ≤ 4`.
+   The check that would refute it: any odd `ℓ ≠ 37` with
+   `#X_0(37)(𝔽_ℓ) = 4`.
+
+**AXIS OPEN, and it is the one the data above makes concrete: the
+rank-`0`-QUOTIENT Mordell–Weil SIEVE.**  Counting only those `𝔽_ℓ`-points
+whose image lies in the image of `C(ℚ)` — the refinement
+`Fermat.exists_x0Sieve` already makes at `45, 54, 63, 75`, there against a
+rank-`0` Jacobian and here against a rank-`0` QUOTIENT — is sharp, and the
+witness is explicit and cheap.  The third fibre is `(2, ±2√37)`, so it has
+an `𝔽_ℓ`-point exactly when `37` is a square mod `ℓ`; at any odd `ℓ ≠ 37`
+with `(37/ℓ) = −1` precisely the four reductions of `A, B, C, D` lie over
+the image of `C(ℚ)`, giving `#X_0(37)(ℚ) ≤ 4`.  **`ℓ = 5` is such a
+prime** (`37 ≡ 2 mod 5`, a non-residue), and note the contrast that makes
+the sieve the whole content: `#X_0(37)(𝔽₅) = 8`, so the plain count at `5`
+gives `8` and the sieved count gives `4`.  The consistency check at `ℓ = 3`,
+where `37 ≡ 1` IS a square, is that the third fibre survives and
+`4 + 2 = 6 = #X_0(37)(𝔽₃)` — the whole special fibre lies over `C(𝔽₃)`.
+
+**A CUT-LEVEL observation for whoever owns the cusp/affine split, recorded
+and deliberately NOT acted on.**  The fibre count above is elementary and
+needs no Chabauty, no formal immersion and no Coleman integration: on the
+model `S`, for `P = (x, y) ∈ S(ℚ)` the value `u = x²/(x−1)` is a rational
+point of `C`, hence `u ∈ {∞, 4}`; `u = 4` forces `x = 2` and `y² = 148`,
+not a square in `ℚ`; `u = ∞` forces `x ∈ {1, ∞}`, giving exactly the four
+points.  Its only deep input is `rank 37b(ℚ) = 0`, whence `#C(ℚ) = 3`.  But
+it bounds `X`, not `Y`, and converting it needs the two rational cusps
+back — `Fermat.exists_rationalCusps` is PROVEN and would supply them, yet
+the resulting sub-leaf `#X_0(37)(ℚ) ≤ 4` is literally
+`card_le_of_isogenyPrimeHigherGenus 37 4`, which is proven OVER this leaf.
+Routing this leaf through it would re-merge the atom the split exists to
+break, so it is not done here.  If the split is ever revisited, this is the
+argument that says the arithmetic wants to live on the COMPACT side. -/
 theorem card_y0Le_thirtySeven {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 37 strY)
+    (hc : IsCoarseModuliY0 37 strY)
     (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 2 :=
-  sorry
+  card_y0Le_of_exists_coarseModuli exists_coarseModuliY0_thirtySeven_cardLe hc t
 
 /-- **`#Y_0(p)(ℚ) ≤ 1` at `p = 43, 67, 163`** (sorry leaf, introduced
 2026-07-27; the affine half at the three class-number-one levels, and
