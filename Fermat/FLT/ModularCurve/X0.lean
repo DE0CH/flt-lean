@@ -10243,6 +10243,37 @@ def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
   [(20, 3, 6), (24, 5, 8), (28, 5, 6), (30, 17, 8), (35, 3, 4), (36, 5, 6), (39, 5, 4),
     (42, 11, 8), (50, 3, 4)]
 
+/-- **Existence of the compactified coarse moduli space `X_0(N)` over an
+ARBITRARY base field whose characteristic does not divide `N`** (sorry
+node — the single remaining existence leaf for `X_0(N)` in POSITIVE
+characteristic).
+
+IRREDUCIBLE at this pin for the same reason as `exists_coarseModuliY0`:
+neither modular curves nor a smooth-compactification theorem for curves
+exists anywhere in `Mathlib`.  AXIS SEARCHED: the BASE direction, which
+is what produced this merge; not searched is a cut along the moduli
+problem itself (generalised elliptic curves / Néron polygons), which
+would need the Deligne–Rapoport degeneration theory that
+`Gamma0Datum` deliberately does not carry.
+
+INTEGRATION NOTE (2026-07-27).  As introduced, this leaf also carried the
+characteristic-`0` case, and `exists_x0Compactification` was derived from
+it.  That derivation is NOT kept: the ℚ case was PROVEN independently, from
+`exists_isSmoothCompactification` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, and
+routing it through a sorry node would have REGRESSED a proven declaration.
+So this leaf's remaining consumer is
+`exists_x0Compactification_finiteField`, i.e. characteristic `ℓ` only —
+which is also where the generality was wanted.  A prover who closes it may
+optionally re-derive the ℚ case from it, but must not delete the direct
+proof below in the process. -/
+theorem exists_x0Compactification_field (N : ℕ) (hN : 0 < N) (K : Type)
+    [Field K] (hchar : ¬ ringChar K ∣ N) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K))
+      (strY : Y ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY j) :=
+  sorry
+
 /-- **Existence of the compactified coarse moduli space `X_0(N)` over
 `ℚ`** (PROVEN, over `exists_coarseModuliY0` and one modular leaf;
 formerly a sorry node).
@@ -10297,44 +10328,9 @@ Neither is assumed here, which is what keeps the interface from
 smuggling in a cusp count; see `exists_rationalCusps` for the count
 itself, which is a genuinely separate and still-open statement.
 
-The GENERAL-BASE leaf `exists_x0Compactification_field` is stated first;
-this ℚ statement does NOT go through it (see the integration note there). -/
-
-/-- **Existence of the compactified coarse moduli space `X_0(N)` over an
-ARBITRARY base field whose characteristic does not divide `N`** (sorry
-node — the single remaining existence leaf for `X_0(N)` in POSITIVE
-characteristic).
-
-IRREDUCIBLE at this pin for the same reason as `exists_coarseModuliY0`:
-neither modular curves nor a smooth-compactification theorem for curves
-exists anywhere in `Mathlib`.  AXIS SEARCHED: the BASE direction, which
-is what produced this merge; not searched is a cut along the moduli
-problem itself (generalised elliptic curves / Néron polygons), which
-would need the Deligne–Rapoport degeneration theory that
-`Gamma0Datum` deliberately does not carry.
-
-INTEGRATION NOTE (2026-07-27).  As introduced, this leaf also carried the
-characteristic-`0` case, and `exists_x0Compactification` was derived from
-it.  That derivation is NOT kept: the ℚ case was PROVEN independently, from
-`exists_isSmoothCompactification` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, and
-routing it through a sorry node would have REGRESSED a proven declaration.
-So this leaf's remaining consumer is
-`exists_x0Compactification_finiteField`, i.e. characteristic `ℓ` only —
-which is also where the generality was wanted.  A prover who closes it may
-optionally re-derive the ℚ case from it, but must not delete the direct
-proof below in the process. -/
-theorem exists_x0Compactification_field (N : ℕ) (hN : 0 < N) (K : Type)
-    [Field K] (hchar : ¬ ringChar K ∣ N) :
-    ∃ (X Y : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K))
-      (strY : Y ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
-      Nonempty (IsX0Compactification N strX strY j) :=
-  sorry
-
-/-- **Existence of the compactified coarse moduli space `X_0(N)` over
-`ℚ`** (PROVEN, over `exists_coarseModuliY0` and the general
-smooth-compactification theorem for curves — NOT over
-`exists_x0Compactification_field`). -/
+This is the ℚ case.  The GENERAL-BASE leaf
+`exists_x0Compactification_field` is stated just above; this statement
+does NOT go through it (see the integration note there). -/
 theorem exists_x0Compactification (N : ℕ) (hN : 0 < N) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (j : Y ⟶ X),
       Nonempty (IsX0Compactification N strX strY j) := by
