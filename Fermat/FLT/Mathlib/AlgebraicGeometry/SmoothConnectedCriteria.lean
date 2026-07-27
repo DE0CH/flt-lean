@@ -47,8 +47,11 @@ ring so that a consumer can discharge them by commutative algebra.
   `rank_L Ω[L⁄K] = trdeg K L` (PROVEN 2026-07-27; mathlib has neither this nor
   any other computation of the rank of a module of Kähler differentials of a
   field extension).
+* `ringKrullDim_eq_of_isIntegral_of_injective` — an injective integral ring
+  extension preserves the Krull dimension, Stacks `00OJ`+`00OK` (LEAF).
 * `Algebra.trdeg_fractionRing_eq_of_ringKrullDim` — *dimension equals
-  transcendence degree* for a finite-type domain over a field (LEAF).
+  transcendence degree* for a finite-type domain over a field, PROVEN from the
+  leaf above by Noether normalisation.
 * `Algebra.rank_kaehlerDifferential_eq_of_ringKrullDim` — the combination,
   PROVEN from the two above.
 
@@ -77,6 +80,11 @@ public import Mathlib.RingTheory.Etale.Kaehler
 public import Mathlib.RingTheory.Kaehler.Polynomial
 public import Mathlib.RingTheory.RingHom.StandardSmooth
 public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
+public import Mathlib.RingTheory.AlgebraicIndependent.AlgebraicClosure
+public import Mathlib.RingTheory.NoetherNormalization
+public import Mathlib.RingTheory.KrullDimension.Polynomial
+public import Mathlib.RingTheory.KrullDimension.Field
+public import Mathlib.RingTheory.Localization.FractionRing
 public import Mathlib.LinearAlgebra.Dimension.Localization
 public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 
@@ -232,32 +240,64 @@ theorem rank_kaehlerDifferential_eq_trdeg_of_perfectField
     simpa using hs.lift_cardinalMk_eq_trdeg
   rw [h1, h2, h3, h4, h5]
 
+end Algebra
+
+/-- **An injective integral ring extension preserves the Krull dimension**
+(sorry leaf, opened 2026-07-27).
+
+Stacks `00OK` (`dim S ≤ dim R`, by incomparability) together with `00OJ`
+(`dim R ≤ dim S`, by lying over and going up).  This is the only gap left in the
+dimension half of this file, and it is stated in full mathlib generality rather
+than for the finite-type case that needs it, because that is what it is.
+
+## What the pin has, checked 2026-07-27
+
+Both halves of the argument are present as statements about a *single* prime; only
+the passage to chains is missing.
+
+* Incomparability: `Ideal.IsIntegral.comap_lt_comap` — for `I < J` primes of `S`,
+  `comap I < comap J`.  So `PrimeSpectrum.comap (algebraMap R S)` is strictly
+  monotone and `Order.krullDim_le_of_strictMono` gives `dim S ≤ dim R` directly.
+* Lying over and going up: `Ideal.exists_ideal_over_prime_of_isIntegral` and
+  `Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime` (the latter takes a
+  prime `I` of `S` with `comap I ≤ P` and produces `Q ≥ I` over `P`).  Turning a
+  chain `p₀ < ⋯ < p_n` of `R` into a chain of `S` is an induction on the chain
+  using the second, i.e. an `RelSeries`/`LTSeries` induction; that induction is the
+  work.
+
+*The check that would refute this*: `grep -rn "krullDim" Mathlib/RingTheory/Ideal/GoingUp.lean`
+or `grep -rn "IsIntegral" Mathlib/RingTheory/KrullDimension/` returning anything —
+both are empty at this pin.
+
+## Faithfulness
+
+Injectivity is load-bearing on both sides: without it take `R` any ring and
+`S = 0`, which is integral over `R` with `ringKrullDim S = ⊥ ≠ ringKrullDim R`. -/
+theorem ringKrullDim_eq_of_isIntegral_of_injective (R S : Type u) [CommRing R] [CommRing S]
+    [Algebra R S] [Algebra.IsIntegral R S] (h : Function.Injective (algebraMap R S)) :
+    ringKrullDim S = ringKrullDim R :=
+  sorry
+
+namespace Algebra
+
 /-- **Krull dimension equals transcendence degree for a finite-type domain over a
-field** (sorry leaf, opened 2026-07-27).
+field** (PROVEN 2026-07-27 over `ringKrullDim_eq_of_isIntegral_of_injective`).
 
 This is the fundamental theorem of dimension theory for affine varieties
 (Stacks `00OS`/`00P0`, Matsumura §14, Eisenbud Thm. A).  Mathlib does not have it,
-and does not have the standard ingredient it is usually deduced from either:
+but it does have both ingredients apart from the one leaf above:
 
-* Noether normalisation IS present, as
-  `MvPolynomial.exists_finite_inj_algHom_of_fg` in
-  `Mathlib/RingTheory/NoetherNormalization.lean` — it produces an injective
+* Noether normalisation, as `exists_finite_inj_algHom_of_fg`
+  (`Mathlib/RingTheory/NoetherNormalization.lean`): an injective
   `K[X₁,…,X_s] →ₐ[K] B` making `B` a finite module.
-* `MvPolynomial.ringKrullDim_of_isNoetherianRing` gives
-  `ringKrullDim K[X₁,…,X_s] = s`.
-* **Missing**: invariance of `ringKrullDim` under an injective *integral* (here
-  module-finite) ring extension.  `grep -rn "krullDim" Mathlib/RingTheory/Ideal/GoingUp.lean`
-  and `grep -rn "IsIntegral" Mathlib/RingTheory/KrullDimension/` are both empty at
-  this pin; that lemma — lying-over plus going-up plus incomparability — is the one
-  real gap, and it is the natural thing for a successor to build first, in mathlib
-  generality and not just here.
+* `MvPolynomial.ringKrullDim_of_isNoetherianRing` plus
+  `ringKrullDim_eq_zero_of_field`, giving `ringKrullDim K[X₁,…,X_s] = s`.
+* `IsTranscendenceBasis.mvPolynomial` (the variables are a transcendence basis of
+  the polynomial ring) and `IsTranscendenceBasis.algebraMap_comp` (a transcendence
+  basis survives an algebraic extension), applied twice: once along
+  `K[X₁,…,X_s] → B`, which is integral, and once along `B → Frac B`.
 
-Given it, the proof is: normalise, read `ringKrullDim B = s` off the two bullets
-above, and observe that the `s` normalising elements form a transcendence basis of
-`Frac B` over `K` (they are algebraically independent because the map is injective,
-and `Frac B` is algebraic over `K(X₁,…,X_s)` because `B` is finite over
-`K[X₁,…,X_s]`), so `trdeg K (Frac B) = s` by
-`IsTranscendenceBasis.lift_cardinalMk_eq_trdeg`.
+So `trdeg K (Frac B) = s = ringKrullDim B`, the middle equality being the leaf.
 
 ## Faithfulness
 
@@ -270,8 +310,35 @@ statement is characteristic-free — and is deliberately absent from the hypothe
 theorem trdeg_fractionRing_eq_of_ringKrullDim
     (K B : Type u) [Field K] [CommRing B] [IsDomain B] [Algebra K B]
     [Algebra.FiniteType K B] (n : ℕ) (hdim : ringKrullDim B = n) :
-    Algebra.trdeg K (FractionRing B) = n :=
-  sorry
+    Algebra.trdeg K (FractionRing B) = n := by
+  obtain ⟨s, g, hginj, hgfin⟩ := exists_finite_inj_algHom_of_fg K B
+  letI : Algebra (MvPolynomial (Fin s) K) B := g.toRingHom.toAlgebra
+  haveI : IsScalarTower K (MvPolynomial (Fin s) K) B :=
+    IsScalarTower.of_algebraMap_eq fun x ↦ (g.commutes x).symm
+  haveI : Module.Finite (MvPolynomial (Fin s) K) B := hgfin
+  haveI : Algebra.IsIntegral (MvPolynomial (Fin s) K) B := Algebra.IsIntegral.of_finite _ _
+  haveI : FaithfulSMul (MvPolynomial (Fin s) K) B :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr hginj
+  haveI : FaithfulSMul B (FractionRing B) :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr (IsFractionRing.injective B _)
+  -- the Krull dimension of `B` is the number of normalising variables
+  have hdimP : ringKrullDim (MvPolynomial (Fin s) K) = (s : ℕ∞) := by
+    rw [MvPolynomial.ringKrullDim_of_isNoetherianRing, ringKrullDim_eq_zero_of_field]
+    simp
+  have hns : (n : WithBot ℕ∞) = (s : ℕ∞) := by
+    rw [← hdim, ringKrullDim_eq_of_isIntegral_of_injective _ B hginj, hdimP]
+  -- the normalising variables are a transcendence basis of `Frac B`
+  have hb1 : IsTranscendenceBasis K
+      (algebraMap (MvPolynomial (Fin s) K) B ∘ (MvPolynomial.X : Fin s → _)) :=
+    (IsTranscendenceBasis.mvPolynomial (Fin s) K).algebraMap_comp
+  haveI : Algebra.IsAlgebraic B (FractionRing B) :=
+    IsLocalization.isAlgebraic _ (nonZeroDivisors B)
+  have hb2 := hb1.algebraMap_comp (A := FractionRing B)
+  have hcard : (s : Cardinal.{u}) = Algebra.trdeg K (FractionRing B) := by
+    simpa using hb2.lift_cardinalMk_eq_trdeg
+  rw [← hcard]
+  have : n = s := by exact_mod_cast hns
+  simp [this]
 
 /-- **The module of Kähler differentials of a finite-type domain over a perfect
 field has rank the Krull dimension** (PROVEN 2026-07-27 over the two results above).
@@ -352,7 +419,7 @@ theorem geometricallyConnected_specMap_algebraMap_of_forall_isDomain
 /-- **Regular + finite type over a perfect field ⟹ smooth of relative dimension
 the Krull dimension** (opened 2026-07-27 as a sorry leaf; **PROVEN the same day**
 over `Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField` and
-`Algebra.trdeg_fractionRing_eq_of_ringKrullDim`, the two ring-theoretic leaves at
+`ringKrullDim_eq_of_isIntegral_of_injective`, the two ring-theoretic leaves at
 the top of this file).
 
 This is the ring form of Stacks `056S` ("regular is equivalent to smooth over a
@@ -432,10 +499,11 @@ whole content and it is not in the pin.  That step, and it alone, is now the lea
 A *second* thing was missing and had not been noticed when this leaf was first
 stated: mathlib's `SmoothOfRelativeDimension` is a statement about the RANK of
 `Ω`, so identifying the relative dimension with `ringKrullDim` needs "dimension =
-transcendence degree", which is also absent from the pin.  That is the second
-leaf, `Algebra.trdeg_fractionRing_eq_of_ringKrullDim`.  The bridge between the
-two — that the rank of `Ω` of a finitely generated field extension of a perfect
-field *is* the transcendence degree — is proven above.
+transcendence degree", which is also absent from the pin.  That reduces, by
+Noether normalisation, to the second leaf
+`ringKrullDim_eq_of_isIntegral_of_injective`.  The bridge between the two — that
+the rank of `Ω` of a finitely generated field extension of a perfect field *is*
+the transcendence degree — is proven above.
 
 ## Faithfulness
 
