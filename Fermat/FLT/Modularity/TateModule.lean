@@ -10108,12 +10108,183 @@ specialization on one side (Bosch–Lütkebohmert–Raynaud, Mumford §6), the
 characteristic equation of the Frobenius endomorphism of an abelian
 variety over a finite field on the other (Weil; Mumford *Abelian
 Varieties* §19, Milne *Abelian Varieties* §§V–VI, Tate's 1966 theorem for
-the `𝒪_D`-rationality of the coefficients). -/
+the `𝒪_D`-rationality of the coefficients).
 
-/-- **THE REDUCTION MAP AT A PLACE OF GOOD REDUCTION** (sorry leaf —
-Néron models and the specialization isomorphism; see the subsection note
-above for why this is one of the two halves of the frame-free Weil leaf
-and for the faithfulness audit).
+**UPDATE 2026-07-27 — THE FIRST OF THE TWO LEAVES IS NOW PROVEN, over a
+strictly smaller geometric one.**  `exists_finset_frobSpecialization_of_mult`
+below is no longer a `sorry`: it is assembled from four statements, three
+of which are PROVEN outright and only one of which is open.
+
+* `finite_residueField_heightOneSpectrum` and
+  `natCard_residueField_heightOneSpectrum` (PROVEN) discharge the two
+  clauses `Finite κ(w)` and `Nat.card κ(w) = N w`.  These are pure
+  algebraic number theory — `𝒪_F/w` is finite for `w` maximal and
+  `Ideal.absNorm` is by definition `Nat.card (𝒪_F ⧸ w)` — and they have
+  nothing to do with abelian schemes.
+* `exists_absoluteGaloisGroup_pow_natCard_of_finite` (PROVEN) discharges
+  the existence of `σ` and the clause `hσ`: over a finite field the
+  `#k`-power map really is a `k`-algebra automorphism of `k̄`.  This is
+  mathlib's `FiniteField.frobeniusAlgEquivOfAlgebraic`.
+* `exists_finset_reductionMap_of_mult` (OPEN) keeps everything geometric:
+  the finite set `bad`, the reduced abelian scheme with its real
+  multiplication, and the reduction map `e`.
+
+Two clauses were also made MORE PRIMITIVE in the passage, and the algebra
+that converts them back is what the assembly proves:
+
+* injectivity on `A[Iⁿ]` became **"the kernel of reduction contains no
+  nonzero prime-to-`w` torsion"**, which is the classical statement (the
+  kernel of reduction is a formal group, hence pro-`p` for `p` the
+  residue characteristic).  The assembly recovers `Set.InjOn` from it by
+  the difference trick, using that `A[Iⁿ]` is closed under `ab.add` and
+  `ab.neg`, that `e` is additive hence sends `0` to `0` and `neg` to
+  `neg`, and that `(q : 𝒪_D)ⁿ ∈ Iⁿ` whenever `q ∈ I`;
+* the Frobenius intertwining is likewise stated on points killed by
+  `(q : 𝒪_D)ⁿ` rather than on `A[Iⁿ]`, and the assembly specialises it
+  through the same `Ideal.pow_mem_pow` step.
+
+So the ideal `I` and its maximality, which are bookkeeping rather than
+geometry, no longer appear in the open leaf at all: it quantifies only
+over a prime `q` prime to `w` and an exponent `n`.  What remains open is
+exactly the Néron-model content, and nothing else. -/
+
+/-- **THE RESIDUE FIELD AT A FINITE PLACE OF A NUMBER FIELD IS FINITE**
+(PROVEN).  `w.asIdeal` is a nonzero prime of the Dedekind domain `𝒪_F`,
+hence maximal, and `𝒪_F ⧸ w.asIdeal` is finite; `Ideal.ResidueField` of a
+maximal ideal is the fraction field of that finite domain, i.e. the
+quotient itself.  Stated separately because the pin carries no `Finite`
+instance for `Ideal.ResidueField` at a height-one prime, and
+`exists_finset_frobSpecialization_of_mult` has to produce one. -/
+theorem finite_residueField_heightOneSpectrum {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    Finite w.asIdeal.ResidueField := by
+  haveI : w.asIdeal.IsMaximal := w.isPrime.isMaximal w.ne_bot
+  infer_instance
+
+/-- **THE RESIDUE FIELD AT `w` HAS `N w` ELEMENTS** (PROVEN).
+`Ideal.absNorm` is by definition `Submodule.cardQuot`, i.e.
+`Nat.card (𝒪_F ⧸ w)`, and for `w` maximal the algebra map
+`𝒪_F ⧸ w → w.asIdeal.ResidueField` is bijective
+(`Ideal.bijective_algebraMap_quotient_residueField`). -/
+theorem natCard_residueField_heightOneSpectrum {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    Nat.card w.asIdeal.ResidueField = Ideal.absNorm w.asIdeal := by
+  haveI : w.asIdeal.IsMaximal := w.isPrime.isMaximal w.ne_bot
+  rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  exact (Nat.card_eq_of_bijective _
+    (w.asIdeal.bijective_algebraMap_quotient_residueField)).symm
+
+/-- **THE FROBENIUS ELEMENT OF THE ABSOLUTE GALOIS GROUP OF A FINITE
+FIELD** (PROVEN).  For `k` finite with `#k = N` the `N`-power map is a
+`k`-algebra automorphism of `k̄`: it is a ring homomorphism because the
+characteristic divides `N`, it fixes `k` pointwise by `x^{#k} = x`, and
+it is bijective because `k̄` is perfect.  This is mathlib's
+`FiniteField.frobeniusAlgEquivOfAlgebraic`, read into
+`Field.absoluteGaloisGroup k`.
+
+This is the clause `hσ` of `exists_finset_frobSpecialization_of_mult`,
+and it is the reason that leaf does not have to *assume* a Frobenius: the
+element is unique with this property, so producing it costs nothing and
+asserting it would have been a hypothesis in disguise. -/
+theorem exists_absoluteGaloisGroup_pow_natCard_of_finite {k : Type u} [Field k]
+    (hfin : Finite k) :
+    ∃ σ : Field.absoluteGaloisGroup k, ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ Nat.card k := by
+  haveI := hfin
+  haveI : Fintype k := Fintype.ofFinite k
+  refine ⟨FiniteField.frobeniusAlgEquivOfAlgebraic k (AlgebraicClosure k), fun z => ?_⟩
+  rw [Nat.card_eq_fintype_card]
+  rfl
+
+/-- **THE REDUCTION MAP AT A PLACE OF GOOD REDUCTION, IN ITS PRIMITIVE
+FORM** (sorry leaf — Néron models and the specialization isomorphism;
+Bosch–Lütkebohmert–Raynaud *Néron Models*, Mumford *Abelian Varieties*
+§6).
+
+This is the whole geometric content of
+`exists_finset_frobSpecialization_of_mult`, and nothing else: the number
+theory of `κ(w)` and the existence of the Frobenius `σ` have been peeled
+off into the three proven statements above, and `σ` enters here only as a
+HYPOTHESIS pinned by its defining property `z ↦ z^{N w}` (which
+determines it uniquely, so nothing is assumed by taking it as input).
+
+Outside a finite set of places `w` of `F` the fibre `A_x` reduces at `w`:
+there is an abelian scheme `f' : A' ⟶ Spec κ(w)` of the same relative
+dimension `[D:ℚ]` carrying the same real multiplication `m'`, and a
+REDUCTION MAP `e` on geometric points which
+
+* is additive (`hadd`) and `𝒪_D`-equivariant (`hact`) on ALL geometric
+  points — the reduction of an `F̄`-point is defined unconditionally by
+  the valuative criterion of properness, since `ab.proper` holds and the
+  Néron model is proper at a place of good reduction;
+* has a KERNEL CONTAINING NO NONZERO PRIME-TO-`w` TORSION: if `y` is
+  killed by `(q : 𝒪_D)ⁿ` for a prime `q` with `q ∉ w`, and `e y = e 0`,
+  then `y = 0`.  Classically the kernel of reduction is the group of
+  points of a formal group over the maximal ideal, hence pro-`p` for `p`
+  the residue characteristic of `w`, so it meets the prime-to-`p`
+  torsion trivially;
+* intertwines `Frob_w` with `σ` on that same prime-to-`w` torsion.
+
+WHY BOTH TORSION CLAUSES ARE RESTRICTED THE SAME WAY, and why that is
+where they are TRUE rather than merely convenient.  On the full geometric
+point set `Frob_w` is only defined modulo the inertia group at `w`, and
+inertia acts trivially precisely on the prime-to-`w` torsion; on
+`q`-power torsion at `w ∣ q` the reduction map is not injective either.
+The two clauses are stated together, under the same quantifiers, for
+exactly that reason.
+
+WHAT IS DELIBERATELY ABSENT.  No characteristic equation, no coefficient
+ring, no frame, no representation — those live on the other side of the
+seam, in `exists_frobEndoCharEq_of_mult_finiteBase`, over a finite base
+field.  Also no ideal `I` and no `I.IsMaximal`: the passage from
+`(q : 𝒪_D)ⁿ`-torsion to `A[Iⁿ]` is `Ideal.pow_mem_pow` and is carried out
+in the consumer, not here.
+
+`κ(w)` is written as `w.asIdeal.ResidueField`, i.e. the residue field of
+the local ring at `w`. -/
+theorem exists_finset_reductionMap_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad,
+        ∀ σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField,
+          (∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+            (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+                AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal) →
+        ∃ (A' : Scheme.{u}) (f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField))
+          (ab' : AbelianSchemeStruct f')
+          (m' : Mult ab' (NumberField.RingOfIntegers D))
+          (e : GeomFibrePt f x →
+            GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField)))),
+          SmoothOfRelativeDimension (Module.finrank ℚ D) f' ∧
+          (∀ y y' : GeomFibrePt f x, e (ab.add y y') = ab'.add (e y) (e y')) ∧
+          (∀ (c : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+            e (m.act c y) = m'.act c (e y)) ∧
+          (∀ q n : ℕ, q.Prime → (q : NumberField.RingOfIntegers F) ∉ w.asIdeal →
+            ∀ y : GeomFibrePt f x,
+              m.act ((q : NumberField.RingOfIntegers D) ^ n) y
+                  = ab.zero (specAlgClos F ≫ x) →
+                e y = e (ab.zero (specAlgClos F ≫ x)) →
+                y = ab.zero (specAlgClos F ≫ x)) ∧
+          (∀ q n : ℕ, q.Prime → (q : NumberField.RingOfIntegers F) ∉ w.asIdeal →
+            ∀ y : GeomFibrePt f x,
+              m.act ((q : NumberField.RingOfIntegers D) ^ n) y
+                  = ab.zero (specAlgClos F ≫ x) →
+                e (ab.galSMul x
+                    (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+                      (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)
+                  = ab'.galSMul _ σ (e y)) :=
+  sorry
+
+/-- **THE REDUCTION MAP AT A PLACE OF GOOD REDUCTION** (**PROVEN
+2026-07-27** over `exists_finset_reductionMap_of_mult` and the three
+proven statements immediately above; see the subsection note above for
+why this is one of the two halves of the frame-free Weil leaf and for the
+faithfulness audit).
 
 Outside a finite set of places `w` of `F` the fibre `A_x` reduces at `w`:
 there is an abelian scheme `f' : A' ⟶ Spec κ(w)` over the residue field,
@@ -10140,7 +10311,9 @@ quantifiers, for exactly that reason.
 
 `κ(w)` is written as `w.asIdeal.ResidueField`, i.e. the residue field of
 the local ring at `w`; `Finite` and `Nat.card = N w` are part of the
-conclusion because the pin carries no `Finite` instance for it. -/
+conclusion because the pin carries no `Finite` instance for it, and they
+are discharged here by `finite_residueField_heightOneSpectrum` and
+`natCard_residueField_heightOneSpectrum`. -/
 theorem exists_finset_frobSpecialization_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -10173,8 +10346,81 @@ theorem exists_finset_frobSpecialization_of_mult
                   e (ab.galSMul x
                       (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
                         (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)
-                    = ab'.galSMul _ σ (e y)) :=
-  sorry
+                    = ab'.galSMul _ σ (e y)) := by
+  classical
+  obtain ⟨bad, hbad⟩ := exists_finset_reductionMap_of_mult m x hdim
+  refine ⟨bad, fun w hw => ?_⟩
+  have hfin : Finite w.asIdeal.ResidueField := finite_residueField_heightOneSpectrum w
+  have hcard : Nat.card w.asIdeal.ResidueField = Ideal.absNorm w.asIdeal :=
+    natCard_residueField_heightOneSpectrum w
+  obtain ⟨σ, hσ0⟩ := exists_absoluteGaloisGroup_pow_natCard_of_finite hfin
+  rw [hcard] at hσ0
+  obtain ⟨A', f', ab', m', e, hdim', hadd, hact, hker, hint⟩ := hbad w hw σ hσ0
+  refine ⟨A', f', ab', m', σ, e, hfin, hcard, hdim', hσ0, hadd, hact, ?_⟩
+  -- `A[J]` is closed under the group law and under negation: both are
+  -- `mem_torsion_iff` plus one axiom of `Mult`.
+  have hTadd : ∀ (J : Ideal (NumberField.RingOfIntegers D)) (u v : GeomFibrePt f x),
+      u ∈ (m.torsion x J).1 → v ∈ (m.torsion x J).1 → ab.add u v ∈ (m.torsion x J).1 := by
+    intro J u v hu hv
+    rw [mem_torsion_iff] at hu hv ⊢
+    intro a ha
+    rw [m.act_addPt a u v, hu a ha, hv a ha]
+    exact ab.zero_add _
+  have hTneg : ∀ (J : Ideal (NumberField.RingOfIntegers D)) (u : GeomFibrePt f x),
+      u ∈ (m.torsion x J).1 → ab.neg u ∈ (m.torsion x J).1 := by
+    intro J u hu
+    rw [mem_torsion_iff] at hu ⊢
+    intro a ha
+    letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+    letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+      m.module (specAlgClos F ≫ x)
+    have hu' : (a : NumberField.RingOfIntegers D) • u = (0 : GeomFibrePt f x) := hu a ha
+    show (a : NumberField.RingOfIntegers D) • (-u) = (0 : GeomFibrePt f x)
+    rw [smul_neg, hu', neg_zero]
+  -- an additive map kills the zero point and commutes with negation
+  have hzero : e (ab.zero (specAlgClos F ≫ x))
+      = ab'.zero (specAlgClos w.asIdeal.ResidueField ≫
+          𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))) := by
+    letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField)))) :=
+      ab'.addCommGroup (specAlgClos w.asIdeal.ResidueField ≫ 𝟙 _)
+    have h := hadd (ab.zero (specAlgClos F ≫ x)) (ab.zero (specAlgClos F ≫ x))
+    rw [ab.zero_add] at h
+    show e (ab.zero (specAlgClos F ≫ x)) = 0
+    have h' : (0 : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))))
+        + e (ab.zero (specAlgClos F ≫ x))
+        = e (ab.zero (specAlgClos F ≫ x)) + e (ab.zero (specAlgClos F ≫ x)) :=
+      (zero_add _).trans h
+    exact (add_right_cancel h').symm
+  have hneg : ∀ u : GeomFibrePt f x, e (ab.neg u) = ab'.neg (e u) := by
+    intro u
+    letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField)))) :=
+      ab'.addCommGroup (specAlgClos w.asIdeal.ResidueField ≫ 𝟙 _)
+    have h := hadd (ab.neg u) u
+    rw [ab.neg_add, hzero] at h
+    show e (ab.neg u) = -(e u)
+    have h' : e (ab.neg u) + e u
+        = (0 : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField)))) := h.symm
+    exact eq_neg_of_add_eq_zero_left h'
+  intro q hq hqw I hI hqI n
+  -- `A[Iⁿ]` is killed by `(q : 𝒪_D)ⁿ`, which is what the leaf's two
+  -- torsion clauses are stated over
+  have hpow : ∀ y : GeomFibrePt f x, y ∈ (m.torsion x (I ^ n)).1 →
+      m.act ((q : NumberField.RingOfIntegers D) ^ n) y = ab.zero (specAlgClos F ≫ x) := by
+    intro y hy
+    exact (mem_torsion_iff m x _ y).mp hy _ (Ideal.pow_mem_pow hqI n)
+  refine ⟨?_, fun y hy => hint q n hq hqw y (hpow y hy)⟩
+  intro y hy y' hy' hee
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField)))) :=
+    ab'.addCommGroup (specAlgClos w.asIdeal.ResidueField ≫ 𝟙 _)
+  have hzmem : ab.add y (ab.neg y') ∈ (m.torsion x (I ^ n)).1 :=
+    hTadd _ _ _ hy (hTneg _ _ hy')
+  have hez : e (ab.add y (ab.neg y')) = e (ab.zero (specAlgClos F ≫ x)) := by
+    rw [hadd, hneg, hee, hzero]
+    exact (ab'.add_comm (e y') (ab'.neg (e y'))).trans (ab'.neg_add _)
+  have hz := hker q n hq hqw _ (hpow _ hzmem) hez
+  have hz' : y + -y' = (0 : GeomFibrePt f x) := hz
+  exact add_neg_eq_zero.mp hz'
 
 /-- **WEIL'S CHARACTERISTIC EQUATION FOR THE FROBENIUS ENDOMORPHISM OVER
 A FINITE FIELD** (sorry leaf — Weil; see the subsection note above for
@@ -10339,6 +10585,15 @@ the reduction map, and the specialization injectivity) and
 characteristic equation, over a finite field).  So the obligation moved
 rather than vanishing, and it moved into two subtrees with disjoint
 literature — which is the whole gain.
+
+UPDATE 2026-07-27: `exists_finset_frobSpecialization_of_mult` has since
+been PROVEN in its turn, over `exists_finset_reductionMap_of_mult` plus
+three proven statements of algebraic number theory and finite-field
+theory; the Néron-model obligation now sits there, with the residue-field
+arithmetic and the ideal bookkeeping stripped out of it.  The chain from
+this theorem down to open leaves is therefore
+`exists_finset_reductionMap_of_mult` and
+`exists_frobEndoCharEq_of_mult_finiteBase`, and nothing else.
 
 SUBSUMPTION — DONE 2026-07-27, and it is why this leaf now sits HERE.
 This leaf subsumes what used to be the independent sibling trace leaf
