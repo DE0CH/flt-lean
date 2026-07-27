@@ -293,8 +293,13 @@ public import Fermat.FLT.Modularity.AbelianScheme
 -- `AbelianSchemeStruct.mulByNat` / `zeroSection` and their free properties
 -- (`isProper_mulByNat`, `locallyOfFiniteType_mulByNat`, `nsmul_val`,
 -- `zero_val`, `zeroSection_comp_mulByNat`), consumed by the étale-rigidity
--- half of `neronKernel_torsionFree`.  This module imports only
--- `AbelianScheme` from the project, so no cycle is created.
+-- half of `neronKernel_torsionFree`.  It is ALSO the source of
+-- `AbelianSchemeStruct.baseChange` and the relative-point bijection
+-- `RelPoint.baseChangeDown` / `RelPoint.baseChangeUp`, out of which
+-- `exists_gamma0Datum_baseChange` is built.  PUBLIC on both counts: those
+-- names appear in the SIGNATURES of the `Gamma0BaseChange` helpers, not only
+-- in their proof bodies.  This module imports only `AbelianScheme` from the
+-- project, so no cycle is created.
 public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
 -- `AlgebraicGeometry.FormallyUnramified`, and in particular the instance
 -- `FormallyUnramified.isOpenImmersion_diagonal`: the diagonal of a formally
@@ -584,8 +589,14 @@ base-change relation is *stated*: a morphism `map` on total spaces making
 a cartesian square, compatible with the group law and with the level
 structure.  `RelPoint.along map isPullback.w` is the induced map on
 relative points, and cartesianness is what makes it a bijection onto the
-points over the shifted base point — a fact this development never needs
-and therefore never proves.
+points over the shifted base point.  **That bijection IS needed and IS
+available** (corrected 2026-07-27; this docstring previously said the
+development never needs it and therefore never proves it):
+`exists_gamma0Datum_baseChange` consumes it in both directions, as
+`RelPoint.baseChangeDown` / `RelPoint.baseChangeUp` from
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` at the defining
+cartesian square, and as `IsPullback.lift` at the level structure
+(`Gamma0BaseChange.liesIn_iota_iff`).
 
 Taking `h = 𝟙` recovers *isomorphism* of `Γ₀(N)`-data over a fixed base,
 which is why a natural transformation out of the moduli problem (in the
@@ -1439,6 +1450,33 @@ hypothesis and so owes only representability.  Neither quantifies over
 an under-determined structure, so neither can be false for that reason,
 and the assembly is three lines.
 
+**Both halves were split again the same day**, on the same principle —
+put the citation on one side of a hypothesis and the formalisation on the
+other — so that neither of the four leaves below carries both:
+
+* item 2 became `exists_gamma0Datum_baseChange` (the `Γ₀(N)`-moduli
+  problem is a FUNCTOR: base change as a construction, no `ℚ`, no `n`, no
+  moduli scheme) and `exists_fullLevelStructure_cover_of_baseChange`
+  (the finite étale `GL₂(ℤ/n)`-torsor), which receives the former as a
+  hypothesis.  **The first of those is PROVEN**, the same day it was
+  opened — so item 2 is now exactly the torsor and nothing else;
+* item 1 became `exists_rigidifiedModuli` (Katz–Mazur 4.7, 5.1.1, 6.6.1
+  and the affineness parenthesis of 8.1.1, and NOTHING else) and
+  `exists_gamma0GITPresentation_of_rigidified` (deck group, invariants,
+  fppf descent of the classifying map, and NO citation), which receives
+  the former as a parameter.
+
+The second of those needed a structure to be interposed, and the
+junk-witness objection above applies to it verbatim — the escape is that
+`RigidifiedModuli`'s universal property is a **fine** moduli property,
+which pins its inhabitant up to unique isomorphism, whereas the rejected
+`Gamma0Rigidification` pinned nothing.  See `RigidifiedModuli`'s
+docstring.  Note this also *strengthens* what is available downstream:
+`exists_gamma0GITPresentation_of_rigidified` can compare two full level
+structures over a base and get a locally constant `GL₂(ℤ/n)`-valued
+answer, which is exactly the "torsor property" the paragraph below finds
+missing from `dM_equivariant`.
+
 **Why the Katz–Mazur presentation and not fppf descent.**  The section
 comment before `Gamma0Atlas` records that the descent route — build
 `classify` by descending `m ≫ π` along the rigidifying cover instead of
@@ -1496,6 +1534,312 @@ structure FullLevelStructure (n : ℕ) {N : ℕ} {T : Scheme.{u}}
           x = (ab.1 : ℕ) • RelPoint.pre t (Category.comp_id t) P
               + (ab.2 : ℕ) • RelPoint.pre t (Category.comp_id t) Q
 
+/-! #### Base change of a `Γ₀(N)`-datum, as a construction
+
+The `Γ₀(N)`-moduli problem is a FUNCTOR: every datum pulls back along
+every `h : T' ⟶ T`.  `exists_fullLevelStructure_cover`'s docstring
+recorded this as "what it needs that this project does not have"; it was
+split off as its own leaf on 2026-07-27 and PROVEN the same day.  The
+construction is here and the leaf is `exists_gamma0Datum_baseChange`
+below.
+
+Everything rests on `AbelianSchemeStruct.baseChange`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`) and its bijection
+`RelPoint.baseChangeDown` / `RelPoint.baseChangeUp` on relative points,
+which is why this file now carries that import.  The only genuinely new
+work is the level structure, and its two non-formal steps are:
+
+* `iota` is a base change of `d.cyc.ι` — obtained by pullback PASTING
+  (`IsPullback.of_bot`) rather than by definition, because `C'` is built
+  as `C ×_T T'` (which makes `IsFinite` and `Flat` of `ι' ≫ f'`
+  immediate, those being properties of the composite) and the closed
+  immersion then has to be recovered;
+* `geom_cyclic`, where the generator at a geometric point `t` of `T'` is
+  the one at `t ≫ h` transported by `baseChangeUp`, and `addOrderOf` and
+  `AddSubgroup.zmultiples` transport because `baseChangeDown` is an
+  injective additive map (`downHom`).
+-/
+
+namespace Gamma0BaseChange
+
+open CategoryTheory.Limits
+
+variable {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ T) (d : Gamma0Datum N T)
+
+/-- the projection of the base-changed total space to `E` -/
+noncomputable abbrev qq : pullback d.f h ⟶ d.E := pullback.fst d.f h
+
+/-- the structure morphism of the base-changed total space -/
+noncomputable abbrev fb : pullback d.f h ⟶ T' := pullback.snd d.f h
+
+/-- the base-changed level subscheme, built as `C ×_T T'` -/
+noncomputable abbrev Cb : Scheme.{u} := pullback (d.cyc.ι ≫ d.f) h
+
+/-- its projection to `C` -/
+noncomputable abbrev cq : Cb h d ⟶ d.cyc.C := pullback.fst (d.cyc.ι ≫ d.f) h
+
+/-- its projection to `T'` -/
+noncomputable abbrev cp : Cb h d ⟶ T' := pullback.snd (d.cyc.ι ≫ d.f) h
+
+/-- the inclusion of the base-changed level subscheme into the
+base-changed total space -/
+noncomputable def iota : Cb h d ⟶ pullback d.f h :=
+  pullback.lift (cq h d ≫ d.cyc.ι) (cp h d) (by
+    rw [Category.assoc]; exact pullback.condition)
+
+lemma iota_snd : iota h d ≫ fb h d = cp h d := pullback.lift_snd _ _ _
+
+lemma iota_fst : iota h d ≫ qq h d = cq h d ≫ d.cyc.ι := pullback.lift_fst _ _ _
+
+/-- **`iota` is a base change of `d.cyc.ι`** — pullback pasting: the outer
+square `C ×_T T'` and the lower square `E ×_T T'` are cartesian, hence so
+is the upper one. -/
+lemma isPullback_iota : IsPullback (cq h d) (iota h d) d.cyc.ι (qq h d) := by
+  refine IsPullback.of_bot ?_ (iota_fst h d).symm (IsPullback.of_hasPullback d.f h)
+  rw [iota_snd]
+  exact IsPullback.of_hasPullback (d.cyc.ι ≫ d.f) h
+
+lemma isClosedImmersion_iota : IsClosedImmersion (iota h d) :=
+  MorphismProperty.of_isPullback (P := @IsClosedImmersion)
+    (isPullback_iota h d) d.cyc.isClosedImmersion
+
+lemma isFinite_iota_comp : IsFinite (iota h d ≫ fb h d) := by
+  rw [iota_snd]
+  haveI := d.cyc.isFinite
+  infer_instance
+
+lemma flat_iota_comp : AlgebraicGeometry.Flat (iota h d ≫ fb h d) := by
+  rw [iota_snd]
+  haveI := d.cyc.flat
+  infer_instance
+
+/-- **Lying in the base-changed level subscheme is lying in the original
+one.**  The `←` direction is exactly where cartesianness of
+`isPullback_iota` is consumed. -/
+lemma liesIn_iota_iff {U : Scheme.{u}} {g : U ⟶ T'} (x : RelPoint (fb h d) g) :
+    RelPoint.LiesIn (iota h d) x ↔
+      RelPoint.LiesIn d.cyc.ι (RelPoint.baseChangeDown h x) := by
+  constructor
+  · rintro ⟨y, hy⟩
+    refine ⟨y ≫ cq h d, ?_⟩
+    show (y ≫ cq h d) ≫ d.cyc.ι = x.1 ≫ qq h d
+    rw [Category.assoc, ← iota_fst h d, ← Category.assoc, hy]
+  · rintro ⟨z, hz⟩
+    have hz' : z ≫ d.cyc.ι = x.1 ≫ qq h d := hz
+    exact ⟨(isPullback_iota h d).lift z x.1 hz',
+      (isPullback_iota h d).lift_snd z x.1 hz'⟩
+
+/-- **`baseChangeDown` as an additive map on relative points.**  This is
+what carries `addOrderOf` and `AddSubgroup.zmultiples` between the two
+sides in `geom_cyclic`; it is injective by
+`RelPoint.baseChangeDown_injective`. -/
+noncomputable def downHom {U : Scheme.{u}} (g : U ⟶ T') :
+    letI := (d.ab.baseChange h).addCommGroup g
+    letI := d.ab.addCommGroup (g ≫ h)
+    RelPoint (fb h d) g →+ RelPoint d.f (g ≫ h) :=
+  letI := (d.ab.baseChange h).addCommGroup g
+  letI := d.ab.addCommGroup (g ≫ h)
+  { toFun := RelPoint.baseChangeDown h
+    map_zero' := by
+      show RelPoint.baseChangeDown h ((d.ab.baseChange h).zero g) = d.ab.zero (g ≫ h)
+      rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+    map_add' := by
+      intro x y
+      show RelPoint.baseChangeDown h ((d.ab.baseChange h).add x y)
+          = d.ab.add (RelPoint.baseChangeDown h x) (RelPoint.baseChangeDown h y)
+      rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp] }
+
+lemma downHom_apply {U : Scheme.{u}} (g : U ⟶ T') (x : RelPoint (fb h d) g) :
+    downHom h d g x = RelPoint.baseChangeDown h x := rfl
+
+/-- **The base-changed cyclic subgroup scheme of order `N`.** -/
+noncomputable def cycBC : CyclicSubgroupOfOrder (d.ab.baseChange h) N where
+  C := Cb h d
+  ι := iota h d
+  isClosedImmersion := isClosedImmersion_iota h d
+  isFinite := isFinite_iota_comp h d
+  flat := flat_iota_comp h d
+  zero_liesIn := by
+    intro U g
+    rw [liesIn_iota_iff]
+    show RelPoint.LiesIn d.cyc.ι
+      (RelPoint.baseChangeDown h ((d.ab.baseChange h).zero g))
+    rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+    exact d.cyc.zero_liesIn (g ≫ h)
+  add_liesIn := by
+    intro U g x y hx hy
+    rw [liesIn_iota_iff] at hx hy ⊢
+    show RelPoint.LiesIn d.cyc.ι
+      (RelPoint.baseChangeDown h ((d.ab.baseChange h).add x y))
+    rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp]
+    exact d.cyc.add_liesIn hx hy
+  neg_liesIn := by
+    intro U g x hx
+    rw [liesIn_iota_iff] at hx ⊢
+    show RelPoint.LiesIn d.cyc.ι
+      (RelPoint.baseChangeDown h ((d.ab.baseChange h).neg x))
+    show RelPoint.LiesIn d.cyc.ι
+      (RelPoint.baseChangeDown h
+        (RelPoint.baseChangeUp h (d.ab.neg (RelPoint.baseChangeDown h x))))
+    rw [RelPoint.baseChangeDown_baseChangeUp]
+    exact d.cyc.neg_liesIn hx
+  geom_cyclic := by
+    intro K _ _ t
+    letI := (d.ab.baseChange h).addCommGroup t
+    letI := d.ab.addCommGroup (t ≫ h)
+    obtain ⟨y, hy1, hy2, hy3⟩ := d.cyc.geom_cyclic K (t ≫ h)
+    have hinj : Function.Injective (downHom h d t) :=
+      RelPoint.baseChangeDown_injective h
+    have hdu : ∀ z : RelPoint d.f (t ≫ h),
+        downHom h d t (RelPoint.baseChangeUp h z) = z :=
+      fun z => RelPoint.baseChangeDown_baseChangeUp h z
+    refine ⟨RelPoint.baseChangeUp h y, ?_, ?_, ?_⟩
+    · rw [liesIn_iota_iff, ← downHom_apply, hdu]
+      exact hy1
+    · rw [← addOrderOf_injective (downHom h d t) hinj, hdu]
+      exact hy2
+    · intro x
+      rw [liesIn_iota_iff, ← downHom_apply, hy3]
+      constructor
+      · rintro ⟨k, hk⟩
+        have hk' : k • y = downHom h d t x := hk
+        refine ⟨k, hinj ?_⟩
+        show downHom h d t (k • RelPoint.baseChangeUp h y) = downHom h d t x
+        rw [map_zsmul, hdu]
+        exact hk'
+      · rintro ⟨k, hk⟩
+        have hk' : k • RelPoint.baseChangeUp h y = x := hk
+        refine ⟨k, ?_⟩
+        show k • y = downHom h d t x
+        rw [← hdu y, ← map_zsmul]
+        exact congrArg (downHom h d t) hk'
+
+/-- **The base-changed `Γ₀(N)`-datum.** -/
+noncomputable def datumBC : Gamma0Datum N T' where
+  E := pullback d.f h
+  f := fb h d
+  ab := d.ab.baseChange h
+  relativeDimensionOne :=
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    MorphismProperty.of_isPullback (P := @SmoothOfRelativeDimension 1)
+      (IsPullback.of_hasPullback d.f h) d.relativeDimensionOne
+  cyc := cycBC h d
+
+/-- **And it IS a base change**, with the cartesian square the defining
+one and all three compatibilities holding because
+`RelPoint.along (qq h d) _` and `RelPoint.baseChangeDown h` are the same
+function. -/
+noncomputable def isBaseChangeBC : IsBaseChangeOf h (datumBC h d) d where
+  map := qq h d
+  isPullback := (IsPullback.of_hasPullback d.f h).flip
+  map_zero := by
+    intro U g
+    show RelPoint.baseChangeDown h ((d.ab.baseChange h).zero g) = d.ab.zero (g ≫ h)
+    rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+  map_add := by
+    intro U g x y
+    show RelPoint.baseChangeDown h ((d.ab.baseChange h).add x y)
+        = d.ab.add (RelPoint.baseChangeDown h x) (RelPoint.baseChangeDown h y)
+    rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp]
+  liesIn_iff := by
+    intro U g x
+    exact liesIn_iota_iff h d x
+
+end Gamma0BaseChange
+
+/-- **Base change of a `Γ₀(N)`-datum, as a CONSTRUCTION** (PROVEN
+2026-07-27, on the day it was split out of
+`exists_fullLevelStructure_cover` below, whose docstring recorded exactly
+this as the one thing it needed that the project does not have).
+
+Given any `h : T' ⟶ T` and any datum over `T`, there is a datum over `T'`
+which is a base change of it.  Nothing here mentions the level `n`, `ℚ`,
+or any moduli scheme: it is the statement that the `Γ₀(N)`-moduli problem
+is a FUNCTOR, and `exists_fullLevelStructure_cover_of_baseChange` consumes
+it purely to produce the datum living on the cover.
+
+## How it is proven
+
+`E' = E ×_T T'`, `f' = pullback.snd d.f h`, and the three components are
+built in the `Gamma0BaseChange` namespace above:
+
+* the abelian-scheme structure is `AbelianSchemeStruct.baseChange`
+  (`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), with the bijection
+  `RelPoint.baseChangeDown` / `RelPoint.baseChangeUp` on relative points
+  and `baseChange_add` / `baseChange_zero`.  **This file now imports that
+  module**, which was the anticipated cost; the import creates no cycle,
+  since `AbelianSchemeIsogeny.lean`'s only project import is
+  `Fermat.FLT.Modularity.AbelianScheme`.
+* `relativeDimensionOne` is mathlib's
+  `smoothOfRelativeDimension_isStableUnderBaseChange`
+  (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`), which is a `lemma`
+  and NOT an instance — `infer_instance` does not find it, unlike the
+  `IsFinite` and `Flat` cases below.
+* the level structure is `Gamma0BaseChange.cycBC`.  `C'` is built as
+  `C ×_T T'`, so `IsFinite` and `Flat` of `ι' ≫ f'` — which is what the
+  structure actually asks for — are immediate; the price is that
+  `IsClosedImmersion ι'` must be recovered by pullback PASTING
+  (`IsPullback.of_bot`, in `isPullback_iota`) instead of holding by
+  definition.
+
+  The step with real content is `geom_cyclic`: a geometric point
+  `t : Spec K ⟶ T'` is carried to `t ≫ h` and the generator produced there
+  is transported by `RelPoint.baseChangeUp`.  That `baseChangeDown` is a
+  bijection preserving `LiesIn` and the group law is `liesIn_iota_iff`
+  together with `downHom`; `addOrderOf` and `AddSubgroup.zmultiples`
+  transport because `downHom` is an INJECTIVE additive map, via
+  `addOrderOf_injective` and `map_zsmul`.
+
+  Note this consumes the fact `IsBaseChangeOf`'s docstring used to call
+  "a fact this development never needs and therefore never proves"; that
+  sentence has been corrected.
+
+Stated at universe `u` rather than at `0` because nothing in it is
+specific to the modular-curve layer. -/
+theorem exists_gamma0Datum_baseChange {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ T)
+    (d : Gamma0Datum N T) :
+    ∃ d' : Gamma0Datum N T', Nonempty (IsBaseChangeOf h d' d) :=
+  ⟨Gamma0BaseChange.datumBC h d, ⟨Gamma0BaseChange.isBaseChangeBC h d⟩⟩
+
+/-- **The level-`n` torsor** (sorry leaf, opened 2026-07-27) — what
+remains of `exists_fullLevelStructure_cover` once base change is supplied
+as the hypothesis `hbc`.
+
+## What the prover of this node owes, and what it does NOT
+
+Owes: that over a `ℚ`-scheme the full level-`n` structures on an elliptic
+scheme form a finite étale `GL₂(ℤ/n)`-torsor.  Concretely — `n` is
+invertible on a `ℚ`-scheme, so `E[n] ⟶ T` is finite étale of rank `n²`
+(Katz–Mazur 2.3.1; Silverman *AEC* III.6.4 for the fibres, plus flatness
+of the multiplication-by-`n` kernel), hence the sheaf
+`Isom_T((ℤ/n)²_T, E[n])` is representable by a finite étale
+`GL₂(ℤ/n)`-torsor `T' ⟶ T`, in particular flat, surjective and
+quasi-compact; and the tautological isomorphism over `T'` is a full
+level-`n` structure on the pulled-back datum.  Katz–Mazur (8.1.1) is the
+citation for rigidifying by `[Γ(n)]`-structures at `n ≥ 3`.
+
+Does NOT owe: the production of `d'` itself.  That is `hbc`, and it is a
+hypothesis here — apply it to the `p : T' ⟶ T` this node builds.
+
+## Faithfulness
+
+`hbc` is a Prop-valued hypothesis, not an under-determined structure, so
+this node cannot be false for the junk-witness reason discussed in the
+section comment above; and it is not vacuous, because `hbc` is TRUE (it is
+the statement of `exists_gamma0Datum_baseChange`).  The conclusion is
+verbatim that of `exists_fullLevelStructure_cover`, so nothing is weakened.
+
+`hn` is load-bearing for TRUTH exactly as on the parent: at `n = 0` a
+`FullLevelStructure` is unsatisfiable. -/
+theorem exists_fullLevelStructure_cover_of_baseChange {N : ℕ} (n : ℕ) (hn : 3 ≤ n)
+    (hbc : ∀ {U V : Scheme.{0}} (h : U ⟶ V) (d₀ : Gamma0Datum N V),
+      ∃ d' : Gamma0Datum N U, Nonempty (IsBaseChangeOf h d' d₀))
+    {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d') :=
+  sorry
+
 /-- **Every `Γ₀(N)`-datum over a `ℚ`-scheme acquires a full level-`n`
 structure after a faithfully flat quasi-compact base change** (sorry
 node) — item 2 of the itemisation on `exists_gamma0GITPresentation`
@@ -1520,18 +1864,14 @@ alone.  That is what lets it be dispatched independently of
 `exists_gamma0GITPresentation_of_cover`, and it is why the split is safe
 — nothing here is quantified over an under-determined structure.
 
-## What it needs that this project does not have
+## What it needs that this project does not have — NOW A SEPARATE LEAF
 
 Base change of a `Γ₀(N)`-datum as a **construction**: `d'` must be
-produced, not merely related to `d`.  The abelian-scheme half exists and
-is sorry-free — `AbelianSchemeStruct.baseChange`
-(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`) — and the
-level-structure half does not.  *The check that would refute this*: a
-`CyclicSubgroupOfOrder`-valued function taking a base-change square;
-`grep -rn "CyclicSubgroupOfOrder" Fermat/` finds the structure only in
-this file and in `MazurTorsion.lean`, with no transport lemma anywhere.
-Note also that this file does not import
-`Modularity.AbelianSchemeIsogeny`, so that import is part of the cost.
+produced, not merely related to `d`.  That is **no longer part of this
+declaration** (2026-07-27): it is
+`exists_gamma0Datum_baseChange` immediately below, and this leaf is
+`exists_fullLevelStructure_cover_of_baseChange`, which receives it as a
+hypothesis and so owes only the torsor.  The two are assembled here.
 
 `hn` is load-bearing for TRUTH, not merely for the intended proof: at
 `n = 0` the conclusion asks for an unsatisfiable `FullLevelStructure`
@@ -1541,9 +1881,179 @@ theorem exists_fullLevelStructure_cover {N : ℕ} (n : ℕ) (hn : 3 ≤ n)
     ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
       AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
       Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d') :=
+  exists_fullLevelStructure_cover_of_baseChange n hn
+    (fun {_ _} h d₀ => exists_gamma0Datum_baseChange h d₀) g d
+
+/-- **The rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])`, as a FINE
+moduli scheme which is AFFINE** — Katz–Mazur (8.1.1).
+
+The data is an affine `ℚ`-scheme `Spec A`, a universal `Γ₀(N)`-datum `dM`
+on it carrying a universal full level-`n` structure `lvlM`, and the fine
+moduli property: every datum-with-level-structure over a `ℚ`-scheme is
+the base change of `(dM, lvlM)` along a **unique** morphism.
+
+## Why this is NOT the junk-witness trap
+
+The section comment above rejects the "obvious" split precisely because
+an arbitrary inhabitant of a `Gamma0Rigidification`-shaped structure need
+not be the genuine moduli scheme — the fields did not pin it, so the
+companion leaf `∀ R, «cover» R` would have been FALSE at the junk
+witness.  `universal` here is a **fine** moduli property, and a fine
+moduli scheme is pinned up to unique isomorphism by it: the junk witness
+`A = ℚ`, `G = 1`, `dM` a single datum fails `universal` as soon as the
+rigidified problem has two non-isomorphic objects over some base.  So
+quantifying over `RigidifiedModuli N n` — which is what
+`exists_gamma0GITPresentation_of_rigidified` does — is safe, and that is
+what lets the citation and the assembly be separated at all.
+
+## Level compatibility is stated on the underlying morphisms
+
+`IsBaseChangeOf` compares only the `Γ₀(N)`-data, so on its own it would
+make `m` far from unique (the classifying map of a `Γ₀(N)`-datum is not
+unique; that is the whole reason for rigidifying).  The two equations
+pin the level structure as well.  They are stated between morphisms
+`T ⟶ dM.E` rather than between relative points because
+`RelPoint.along bc.map _ L.P` lands over `𝟙 T ≫ m` while
+`RelPoint.pre m _ lvlM.P` lands over `m`, and `𝟙 T ≫ m = m` holds
+propositionally but not definitionally, so the two relative points
+inhabit different types.  Unfolding both to `.1` — `L.P.1 ≫ bc.map` and
+`m ≫ lvlM.P.1` — removes the transport with no loss.
+
+## The structure morphism needs no compatibility field
+
+A morphism `T ⟶ Spec ℚ` is unique when it exists, because `ℚ` is initial
+in `CommRing` and `Hom(T, Spec R) ≅ Hom(R, Γ(T, 𝒪))`.  So `m ≫ strM = g`
+is automatic and stating it would be redundant — the same reason
+`Gamma0Atlas.cover`'s repaired binder is written `_g`.
+
+`hn : 3 ≤ n` is load-bearing for TRUTH of the existence statement below:
+at `n ≤ 2` the rigidified problem still has the automorphism `-1` (and
+more at `n = 1`), so it is not representable and no inhabitant exists. -/
+structure RigidifiedModuli (N n : ℕ) where
+  /-- the coordinate ring of the rigidified moduli scheme -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- the structure morphism to `Spec ℚ` -/
+  strM : Spec (CommRingCat.of A) ⟶ SpecQ
+  /-- the universal `Γ₀(N)`-datum -/
+  dM : Gamma0Datum N (Spec (CommRingCat.of A))
+  /-- the universal full level-`n` structure on it -/
+  lvlM : FullLevelStructure n dM
+  /-- **fine moduli**: a datum-with-level-structure over a `ℚ`-scheme is
+  a base change of `(dM, lvlM)` along a UNIQUE morphism -/
+  universal : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T)
+      (L : FullLevelStructure n d),
+    ∃! m : T ⟶ Spec (CommRingCat.of A),
+      ∃ bc : IsBaseChangeOf m d dM,
+        L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1
+
+/-- **Katz–Mazur representability: the rigidified moduli scheme exists and
+is affine** (sorry leaf, opened 2026-07-27) — the pure CITATION half of
+`exists_gamma0GITPresentation_of_cover` below.
+
+## What the prover of this node owes
+
+Exactly the four citations that `exists_gamma0GITPresentation`'s
+itemisation records, and nothing else:
+
+* **Katz–Mazur 4.7** and **5.1.1** — `[Γ(n)]` is representable, and
+  affine and smooth over `(Ell/ℤ[1/n])`, for `n ≥ 3`.  Over a
+  `ℚ`-scheme every `n` is invertible.
+* **Katz–Mazur 6.6.1** — `[Γ₀(N)]` is relatively representable, finite
+  and flat over `(Ell)`.
+* the parenthesis of **(8.1.1)**, that a relatively representable affine
+  problem over a representable affine one has an affine total moduli
+  scheme: "exists because `𝔐(𝒫, 𝒮)` is itself affine".
+
+The fine moduli property `universal` is what "representable" means; the
+affineness is what `A : Type` with the moduli scheme spelled
+`Spec (CommRingCat.of A)` records.
+
+## What it does NOT owe
+
+Nothing about `GL₂(ℤ/n)`, invariants, descent, or the coarse space.  All
+of that is `exists_gamma0GITPresentation_of_rigidified`, which is a
+formalisation task with no citation left in it.
+
+## Faithfulness
+
+`hn` is load-bearing for TRUTH (see `RigidifiedModuli`'s docstring: at
+`n ≤ 2` the rigidified problem has automorphisms and is not
+representable).  `hN` is **not** — at `N = 0` the moduli problem is
+supported on the empty scheme (`isEmpty_of_gamma0Datum_zero` above) and
+`A = 0` represents it — and is carried only to match the signature of the
+consumer below. -/
+theorem exists_rigidifiedModuli (N : ℕ) (hN : 0 < N) (n : ℕ) (hn : 3 ≤ n) :
+    Nonempty (RigidifiedModuli N n) :=
   sorry
 
-/-- **Representability of the rigidified moduli problem** (sorry node) —
+/-- **The GIT presentation, assembled from the fine moduli scheme and the
+level torsor** (sorry leaf, opened 2026-07-27) — the pure FORMALISATION
+half of `exists_gamma0GITPresentation_of_cover` below, with the
+Katz–Mazur citation discharged by `R` and the torsor by `hcov`.
+
+## What the prover of this node owes, and what it does NOT
+
+Owes, and every step of it is available in principle from `R` alone:
+
+* **the deck group and its action on `A`.**  For `σ : GL₂(ℤ/n)` the pair
+  `(R.dM, σ · R.lvlM)` is again a rigidified datum over `Spec R.A` — a
+  matrix acts on a full level structure by `(P, Q) ↦ (aP + bQ, cP + dQ)`,
+  and `geom_basis` is preserved exactly because the matrix is invertible
+  mod `n`.  `R.universal` classifies it by a unique endomorphism of
+  `Spec R.A`, which is an automorphism because `σ⁻¹` gives the inverse,
+  and `Spec` is fully faithful on affines, so this is a
+  `MulSemiringAction (GL₂(ℤ/n)) R.A`.  `Finite` is `Finite (GL₂(ZMod n))`.
+* **`B` and `Algebra.IsInvariant`**: take `B` the fixed subring; then
+  `Algebra.IsInvariant B A G` and injectivity of `algebraMap B A` hold by
+  construction.
+* **`classify`, by fppf descent along the torsor.**  Given `d` over a
+  `ℚ`-scheme `T`, `hcov` gives a flat surjective quasi-compact
+  `p : T' ⟶ T` with `d'` and a full level structure; `R.universal`
+  classifies `(d', L')` by `m : T' ⟶ Spec A`; and `m ≫ π` descends along
+  `p` because `AlgebraicGeometry.fpqcTopology` is `Subcanonical` and
+  `p` is an `EffectiveEpi` (the two facts
+  `Gamma0Atlas.toIsCoarseModuliY0` already runs on).
+* **the descent datum, which is where the real content is.**  On
+  `T' ×_T T'` the two pullbacks of `(d', L')` share their `Γ₀(N)`-datum
+  and differ only in the level structure, so the two classifying maps
+  differ by the `GL₂(ℤ/n)`-valued *comparison* of two full level
+  structures.  That comparison is **locally constant**, not global — this
+  is the same obstruction the section comment above records against the
+  naive descent route — but here it suffices: locally constant means a
+  finite clopen decomposition of `T' ×_T T'`, on each piece the two maps
+  differ by composition with a global `Spec σ`, and `π ∘ Spec σ = π`, so
+  the two composites with `π` agree piecewise and hence globally.  **This
+  is exactly what the fine moduli property buys and `dM_equivariant`
+  alone does not**, and it is why the citation had to be interposed as a
+  fine moduli scheme rather than as a bare rigidification.
+* `classify_dM` then holds because the descent is independent of the
+  chosen cover and `(R.dM, R.lvlM)` is already rigidified over
+  `Spec A` itself, so the trivial cover `𝟙` computes it as `π`; and
+  `dM_equivariant` is the action above, read back through `R.universal`.
+
+Does NOT owe: any Katz–Mazur citation.  Representability is `R`; the
+torsor is `hcov`.
+
+## Faithfulness
+
+Both `R` and `hcov` are non-degenerate — `R` is pinned by a fine moduli
+property (see `RigidifiedModuli`) rather than being an under-determined
+structure, and `hcov` is a Prop which is TRUE (it is the statement of
+`exists_fullLevelStructure_cover`).  So this node is neither false for
+the junk-witness reason nor vacuous, and its conclusion carries the full
+strength of `Nonempty (Gamma0GITPresentation N)`. -/
+theorem exists_gamma0GITPresentation_of_rigidified (N : ℕ) (hN : 0 < N)
+    (n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n)
+    (hcov : ∀ {T : Scheme.{0}}, (T ⟶ SpecQ) → ∀ d : Gamma0Datum N T,
+      ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
+        AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+        Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d')) :
+    Nonempty (Gamma0GITPresentation N) :=
+  sorry
+
+/-- **Representability of the rigidified moduli problem** (PROVEN
+2026-07-27 from the two halves it was split into) —
 item 1 of the itemisation on `exists_gamma0GITPresentation` below, with
 item 2 discharged by the hypothesis `hcov`.
 
@@ -1555,20 +2065,27 @@ finite deck group `G = GL₂(ℤ/n)` acting, carrying a universal family
 `dM`, and the classifying map of `dM` is the quotient map onto
 `Spec A^G`.
 
-## What the prover of this node owes, and what it does NOT
+## What this node owed, and where each half now lives
 
-Owes: Katz–Mazur **4.7** and **5.1.1** (the moduli problem `[Γ(n)]` is
+It owed Katz–Mazur **4.7** and **5.1.1** (the moduli problem `[Γ(n)]` is
 representable, and affine, over `(Ell/ℤ[1/n])` for `n ≥ 3`), **6.6.1**
 (`[Γ₀(N)]` is relatively representable, finite and flat over `(Ell)`),
 and the fact that a relatively representable affine problem over a
 representable one has an affine total moduli scheme — which is precisely
 Katz–Mazur's parenthesis in (8.1.1), "exists because `𝔐(𝒫, 𝒮)` is itself
-affine".  The universal property of `(Spec A, dM)` supplies the
-classifying map `m : T' ⟶ Spec A` of a datum-with-level-structure, and
-`hcov` supplies the `T'` to apply it to; together they are the `cover`
-field of the conclusion.
+affine" — and then the assembly of those into the presentation.
 
-Does NOT owe: the torsor.  That is `hcov`, and it is a hypothesis here.
+**Those two are now SEPARATE LEAVES** (2026-07-27): the whole citation is
+`exists_rigidifiedModuli` above, which asserts nothing but that the
+rigidified problem has an affine FINE moduli scheme; and the assembly —
+deck group, invariants, fppf descent of the classifying map — is
+`exists_gamma0GITPresentation_of_rigidified`, which contains no citation
+at all.  The interposed structure is `RigidifiedModuli`, and its
+docstring records why a *fine* moduli property escapes the junk-witness
+trap that the section comment above rejects the naive split for.
+
+Did NOT owe, and still does not: the torsor.  That is `hcov`, and it is a
+hypothesis here, passed straight through to the assembly half.
 
 ## Faithfulness
 
@@ -1584,7 +2101,9 @@ theorem exists_gamma0GITPresentation_of_cover (N : ℕ) (hN : 0 < N)
         AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
         Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d')) :
     Nonempty (Gamma0GITPresentation N) :=
-  sorry
+  (exists_rigidifiedModuli N hN n hn).elim fun R =>
+    exists_gamma0GITPresentation_of_rigidified N hN n hn R
+      (fun {_T} g₀ d₀ => hcov g₀ d₀)
 
 /-- **Existence of the Katz–Mazur GIT presentation for `N ≥ 1`** (PROVEN
 2026-07-27 from the two halves it was split into; the docstring below is
@@ -1613,6 +2132,17 @@ carries the check that would refute its being open.
 declaration** (2026-07-27): item 1 is
 `exists_gamma0GITPresentation_of_cover`, item 2 is
 `exists_fullLevelStructure_cover`, item 3 is `specInvariants_universal`.
+
+**And items 1 and 2 were each split once more, later the same day**, so
+that no leaf carries both a citation and a formalisation task.  Item 1 is
+now `exists_rigidifiedModuli` (the citation: 4.7, 5.1.1, 6.6.1, and the
+affineness parenthesis of 8.1.1) plus
+`exists_gamma0GITPresentation_of_rigidified` (the assembly); item 2 is now
+`exists_gamma0Datum_baseChange` (functoriality of the moduli problem —
+**PROVEN 2026-07-27**) plus
+`exists_fullLevelStructure_cover_of_baseChange` (the torsor).  The refuting
+checks recorded under each item below are still the right first thing to
+run, and each new leaf carries its own.
 The section comment above explains why items 1 and 2 had to be separated
 through `FullLevelStructure` rather than through a rigidification
 structure.  The itemisation is kept here because it is the record of what
@@ -1956,8 +2486,11 @@ ABSENT WHEN WRITTEN, as exact statements to route:
    with `toAffineAddEquiv` yields the `≃+` of the last conjunct.
 
 `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` does NOT help, and was
-checked rather than assumed: it is not on `main` at all, and everything in
-it — `flat_mulByNat`, `finite_preimage_mulByNat`, `surjective_mulByNat` —
+checked rather than assumed.  **Correction (2026-07-27): that module IS on
+`main`** — the claim that it "is not on `main` at all" was true when
+written and is now stale — but the substance of the objection stands:
+everything in it — `flat_mulByNat`, `finite_preimage_mulByNat`,
+`surjective_mulByNat`, and `AbelianSchemeStruct.baseChange` —
 takes an `AbelianSchemeStruct` as INPUT.  Those are CONSUMERS of this
 node, not producers of it, so no amount of progress there closes this
 leaf.  `~/cs/FLT` has no abelian schemes and no elliptic-curve-as-scheme
