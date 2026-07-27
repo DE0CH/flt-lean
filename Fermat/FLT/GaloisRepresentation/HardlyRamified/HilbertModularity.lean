@@ -10231,10 +10231,46 @@ are recorded rather than made:
   pure commutative algebra — Witt vectors of a finite field, an unramified
   base change, and the splitting of a finite algebra over a complete local
   ring into local factors — and formalizing it would return this leaf to the
-  classical `ℤ_ℓ`-Hecke algebra. It is a substantial construction at this
-  pin (mathlib has `WittVector` but not the idempotent decomposition of a
-  finite algebra over `ℤ_[ℓ]` in usable form), so it is named here as the
-  next real reduction rather than attempted.
+  classical `ℤ_ℓ`-Hecke algebra.
+
+  **STALE-BLOCKER CORRECTION (2026-07-27).** This bullet used to end "it is a
+  substantial construction at this pin (mathlib has `WittVector` but not the
+  idempotent decomposition of a finite algebra over `ℤ_[ℓ]` in usable form),
+  so it is named here as the next real reduction rather than attempted."
+  **The decomposition now EXISTS**, and so does the `W(k)` half:
+
+  - `exists_isIdempotentElem_isLocalRing_quotient_of_moduleFinite`
+    (`Fermat/FLT/Mathlib/RingTheory/AdicCompletion/Finite.lean`, 2026-07-26)
+    — the local factor of a module-finite algebra over a complete Noetherian
+    local ring, cut out by an idempotent. Axiom-clean.
+  - `Fermat/FLT/Mathlib/RingTheory/WittVector/Coefficients.lean` (2026-07-27)
+    — `W(k)` as a complete Noetherian local `ℤ_[p]`-algebra with residue
+    field `k`, and `exists_localFactor_wittBaseChange`, which DERIVES
+    `isLocalRing`, `moduleFinite`, `moduleFree` and `isAdicComplete` for the
+    local factor of `W(k) ⊗_{ℤ_[ℓ]} 𝕋` from nothing but "`𝕋` is module-finite
+    and free over `ℤ_[ℓ]`".
+
+  Note in passing that mathlib DOES have adic completeness for `W(k)`
+  (`WittVector.isAdicCompleteIdealSpanP`, for `span {p}`); only the
+  identification with the maximal ideal was missing, and it is three lines.
+
+  What remains open is three named commutative-algebra leaves, all in
+  `Coefficients.lean`: `WittVector.moduleFinite_padicInt` (`W(k)` is
+  module-finite over `ℤ_[p]` for finite `k`),
+  `WittVector.adjoin_teichmullerRootSet_eq_top` (`W(k) = ℤ_[p][μ_{|k|-1}]`,
+  which is what turns the Teichmüller half of `adjoin_heckeT` into a
+  theorem), and `isAdicComplete_maximalIdeal_of_moduleFinite`. Freeness is
+  NOT among them — it follows from module-finiteness plus torsion-freeness
+  over the PID `ℤ_[ℓ]`, both of which are settled.
+
+  So this narrowing is no longer blocked on missing theory; it is blocked
+  only on the cut-level edit to `HilbertHeckeAlgebra` that consumes the
+  above, which was deliberately not made on 2026-07-27 because
+  `HilbertHeckeAlgebra` had a concurrent owner (see `flt-lean-168`, whose
+  own dispatch names `HilbertHeckeAlgebra.T`'s base ring as its obstruction
+  1 and assigns it a spanning cut-level repair). Whoever makes that edit
+  should consume `exists_localFactor_wittBaseChange` rather than re-deriving
+  it.
 
 TERMINALITY VERDICT (2026-07-26): the arithmetic residue — Moret–Bailly /
 Taylor, plus Carayol / Taylor with level lowering — is IRREDUCIBLY a
