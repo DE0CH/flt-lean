@@ -9,7 +9,43 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- The PROVEN character bookkeeping (stable-line characters, kernel
 -- openness, the Minkowski triviality, the generic unramifiedness
 -- bridge) used by the derivation of `mod_three_of_stable_line`.
-public import Fermat.FLT.FreyCurve.MazurTorsion
+-- **`MazurTorsion` IS DELIBERATELY NOT IMPORTED HERE** (2026-07-27).  This file used to
+-- `public import` it, for exactly nine lines of use, all naming lemmas that now live in
+-- `GaloisRepresentation.SubQuotCharacter` below.  That single edge put the two largest
+-- modules in the tree (48 000 and 62 000 lines) on a serial critical path; with it gone
+-- they elaborate concurrently.  What replaces it is `SubQuotCharacter` plus the modules
+-- `MazurTorsion` itself `public import`s, so the NAMES available here are unchanged except
+-- for `MazurTorsion`'s own.  If you need one of those, import it where you need it rather
+-- than restoring this edge -- and say so in your report, because it is a wall-clock
+-- regression the next merger will want to know about.
+public import Fermat.FLT.GaloisRepresentation.SubQuotCharacter
+public import Fermat.FLT.FreyCurve.Basic
+public import Fermat.FLT.EllipticCurve.MordellWeil
+public import Fermat.FLT.EllipticCurve.Torsion
+public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
+public import Fermat.FLT.EllipticCurve.Velu
+public import Fermat.FLT.EllipticCurve.Isogeny
+public import Fermat.FLT.EllipticCurve.IsogenyTrace
+public import Fermat.FLT.GaloisRepresentation.Chebotarev
+public import Fermat.FLT.EllipticCurve.WeilPairing
+public import Fermat.FLT.EllipticCurve.HasseBound
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
+public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
+public import Fermat.FLT.GaloisRepresentation.MinkowskiUnramified
+public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
+public import Fermat.FLT.EllipticCurve.TorsionReduction
+public import Fermat.FLT.EllipticCurve.KernelPolynomial
+public import Fermat.FLT.EllipticCurve.GenusOneKernelPolynomials
+public import Fermat.FLT.FreyCurve.QuarticDescent
+public import Fermat.FLT.ModularCurve.X0
+public import Fermat.FLT.ModularCurve.X1
+public import Fermat.FLT.FreyCurve.TateNormalForm
+public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
+public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+public import Mathlib.AlgebraicGeometry.EllipticCurve.IsomOfJ
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
+public import Mathlib.Data.Rat.Lemmas
 -- The PROVEN quantitative local-to-global inertia transport
 -- (`inertia_card_dvd_of_card_map_localInertiaGroup_dvd`), consumed by
 -- `inertia_card_dvd_of_map_localInertiaGroup_card_dvd`.
