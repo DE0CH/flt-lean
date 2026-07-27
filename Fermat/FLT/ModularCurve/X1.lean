@@ -1647,9 +1647,11 @@ still evaluates, and it evaluates WRONG in a direction that matters:
 * `x1Genus 0 = x1Genus 1 = 1`, while `X_1(1) = ℙ¹` has genus `0` and a
   TRIVIAL Jacobian.
 
-That is why `not_isIso_jacobian_of_one_le_x1Genus` below carries
-`5 ≤ N` — without it the leaf would be FALSE at `N = 1`, since
-`1 ≤ x1Genus 1` holds and `¬ IsIso jstr` fails.  Inside the range the
+That is why `hasNonconstantAbelianMap_of_one_le_x1Genus` below — and the
+`not_isIso_jacobian_of_one_le_x1Genus` proven over it — carries `5 ≤ N`:
+without it the leaf would be FALSE at `N = 1`, since `1 ≤ x1Genus 1`
+holds while `X_1(1)` receives only constant maps to abelian varieties
+and `¬ IsIso jstr` fails.  Inside the range the
 definition is faithful; `x1Genus N` for `5 ≤ N ≤ 30` reproduces the
 classical table `0,0,0,0,0,0,1,0,2,1,1,2,5,2,7,3,5,6,12,5,12,10,13,10,22,9`
 (PARI/GP), with the first positive value at `N = 11` and `x1Genus 25 = 12`.
@@ -1659,9 +1661,9 @@ computable function of `N`, evaluated by `decide` in
 `x1Genus_twentyFive`.  It is NOT defined as the genus of the scheme `X`:
 no genus of a scheme, and no Riemann–Roch, exists at this pin.  The
 bridge from this number to the geometry of `X` is
-`not_isIso_jacobian_of_one_le_x1Genus`, and that is the sorry node —
-exactly the split `X0.lean` makes between `x0Genus` and
-`not_isIso_jacobian_of_one_le_x0Genus`. -/
+`hasNonconstantAbelianMap_of_one_le_x1Genus`, and that is the sorry node
+— exactly the split `X0.lean` makes between `x0Genus` and
+`hasNonconstantAbelianMap_of_one_le_x0Genus`. -/
 def x1Genus (N : ℕ) : ℤ :=
   (12 + (gammaOneIndex N : ℤ) - 6 * numCuspsX1 N) / 12
 
@@ -1812,14 +1814,95 @@ theorem isTorsion_jacobian_x1TwentyFive {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ
     AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
   sorry
 
-/-- **The genus formula in its geometric form: `genus X_1(N) ≥ 1` makes
-the Jacobian nontrivial** (sorry node) — the arithmetic-to-geometry
-bridge, and the ONLY place where the computed number `x1Genus N` meets
-the scheme `X`.
+/-- **The genus formula, in its geometric form: `genus X_1(N) ≥ 1` gives
+`X_1(N)` a nonconstant map to an abelian variety** (sorry node) — the
+arithmetic-to-geometry bridge, and the ONLY place where the computed
+number `x1Genus N` meets the scheme `X`.
 
 TRUE: `x1Genus N` is the genus of `X` by the classical formula for
-`N ≥ 5` (Diamond–Shurman, Theorem 3.1.1), and `dim J = genus X` for the
-Jacobian, so `1 ≤ x1Genus N` gives `dim J ≥ 1`, i.e. `J ≇ Spec ℚ`.
+`N ≥ 5` (Diamond–Shurman, Theorem 3.1.1); a smooth proper geometrically
+connected curve of genus `≥ 1` over `ℚ` with a rational point embeds in
+its Jacobian by `x ↦ [x] − [o]`, which is a nonconstant pointed map to
+an abelian variety.  Concretely at `N = 25` one may take `A` to be
+either newform factor `A₄` or `A₈` of `J_1(25)` — `S_2(Γ_1(25)) ≠ 0` is
+exactly `x1Genus 25 ≥ 1`, and its dimension `12` is the genus — and `c`
+the composite of Abel–Jacobi with the quotient.
+
+**This is the exact `Γ₁` transposition of `X0.lean`'s
+`hasNonconstantAbelianMap_of_one_le_x0Genus`**, and it is stated in that
+file's vocabulary rather than a parallel one: `HasNonconstantAbelianMap`
+is reused VERBATIM, as are the two bridges
+`subsingleton_relPoint_of_isIso` and
+`exists_ne_aj_of_hasNonconstantAbelianMap` that carry it to
+`not_isIso_jacobian_of_one_le_x1Genus` below.  Both bridges are proven
+and level-free, so the whole `Γ₁` side of the genus formula is this one
+leaf.
+
+**The `Γ₀` leaf does NOT imply this one, and the failure is at exactly
+the level this file exists for.**  There is a natural degree-`φ(N)/2`
+map `X_1(N) ↠ X_0(N)`, so `1 ≤ x0Genus N` would give the conclusion by
+composition — but `x0Genus 25 = 0` (`X_0(25)` is rational, which is the
+whole reason `MazurTorsion.lean` cannot use the `Γ₀` layer at all).  So
+the two genus formulas are genuinely independent leaves at this level,
+not one leaf and a corollary.
+
+EVERY HYPOTHESIS IS LOAD-BEARING, and two of them make the leaf FALSE if
+dropped.
+
+* `hN : 5 ≤ N` — see the VALIDITY RANGE note on `x1Genus`.  At `N = 1`
+  the definition evaluates to `x1Genus 1 = 1`, so `hg` is satisfiable,
+  while `X_1(1) = ℙ¹` has genus `0` and receives only constant maps to
+  abelian varieties.  So the statement is FALSE without `hN`, and this
+  is not a hypothetical: the `decide`-computable definition really does
+  return `1` there.
+* `hg` — at genus `0` the conclusion is FALSE outright, `X_1(5)` (genus
+  `0`, and `5 ≤ 5`) being a witness inside the validity range.  This is
+  also what makes `one_le_x1Genus_twentyFive` consumed rather than
+  floating.
+* `h` — `N` enters the conclusion only through `hg` and `h`; without `h`
+  the curve is unrelated to `x1Genus N`.
+
+**STRENGTH AUDIT (2026-07-27), recorded because this leaf replaced a
+`jac`-carrying one and a successor should know what moved.**  The
+previous statement was `¬ IsIso jstr` given `jac : IsJacobianOf strX ab
+o`.  This one drops `jac`, `J`, `jstr` and `ab` entirely, and the two
+are equivalent GIVEN that a Jacobian exists — which is the sibling leaf
+`exists_jacobianOf_curve`, already open beside this one, so no new
+obligation is created.  The two directions are exactly those recorded in
+the `Γ₀` sibling's own strength audit; the forward one is the proof of
+`not_isIso_jacobian_of_one_le_x1Genus` immediately below.  Dropping
+`jac` is a deliberate improvement: the leaf is now a statement about the
+curve `X_1(N)` ALONE, so it can be discharged without first constructing
+`Pic⁰`.
+
+IRREDUCIBLE at this pin along the GEOMETRIC axis, which is the only one
+searched: identifying the arithmetic `x1Genus` with an invariant of `X`
+needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz for the
+degree-`μ₁(N)` map to the `j`-line, and none of the three exists in
+`Mathlib`, in `~/cs/FLT`, or here.  **NOT searched, and the axis a
+successor should prefer: the MODULAR one** — build a newform factor
+`A_f` of `J_1(25)` and the modular parametrisation `X_1(25) ↠ A_f` out
+of the `Modularity` subtree, which already carries weight-`2` newforms
+and their attached representations, and feed it here.  That route never
+mentions the genus of a scheme, and it is why this leaf is stated as
+"SOME abelian scheme" rather than "the Jacobian".  It is also the route
+that would close the `Γ₀` sibling, since the two differ only in the
+level structure.  **The check that would refute this verdict:** a genus,
+an `h¹`, or a modular parametrisation appearing in any of the three
+trees — `grep -rn "modularParametri\|Riemann.*Roch\|arithmeticGenus"
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`. -/
+theorem hasNonconstantAbelianMap_of_one_le_x1Genus (N : ℕ) (hN : 5 ≤ N)
+    (hg : 1 ≤ x1Genus N) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
+    {jY : Y ⟶ X} (h : IsX1Compactification N strX strY jY)
+    (o : RelPoint strX (𝟙 SpecQ)) :
+    HasNonconstantAbelianMap strX o :=
+  sorry
+
+/-- **The genus formula in its geometric form: `genus X_1(N) ≥ 1` makes
+the Jacobian nontrivial** (PROVEN 2026-07-27, over
+`hasNonconstantAbelianMap_of_one_le_x1Genus` and the two proven bridges
+of `X0.lean`) — the arithmetic-to-geometry bridge, and the ONLY place
+where the computed number `x1Genus N` meets the scheme `X`.
 
 **Why `¬ IsIso jstr` rather than a genus.**  There is no genus of a
 scheme at this pin, but `dim J = 0` ⟺ `J ≅ Spec ℚ` ⟺ `IsIso jstr` for an
@@ -1828,14 +1911,17 @@ pin-available rendering of `genus ≥ 1` needing no dimension theory — and
 it is precisely the hypothesis of `X0.lean`'s
 `injective_aj_of_not_isIso_jacobian`, which is where this feeds.
 
-EVERY HYPOTHESIS IS LOAD-BEARING, and two of them make the leaf FALSE if
-dropped.
+EVERY HYPOTHESIS IS LOAD-BEARING, and two of them make the statement
+FALSE if dropped.
 
 * `hN : 5 ≤ N` — see the VALIDITY RANGE note on `x1Genus`.  At `N = 1`
   the definition evaluates to `x1Genus 1 = 1`, so `hg` is satisfiable,
   while `X_1(1) = ℙ¹` has genus `0` and its Jacobian IS trivial.  So the
   statement is FALSE without `hN`, and this is not a hypothetical: the
-  `decide`-computable definition really does return `1` there.
+  `decide`-computable definition really does return `1` there.  In the
+  proof `hN` is consumed by
+  `hasNonconstantAbelianMap_of_one_le_x1Genus`, which carries the
+  falsity for the same reason.
 * `hg` — at genus `0` the conclusion is FALSE outright, `X_1(5)` (genus
   `0`, and `5 ≤ 5`) being a witness inside the validity range.  This is
   also what makes `one_le_x1Genus_twentyFive` consumed rather than
@@ -1845,20 +1931,24 @@ dropped.
 * `h` — `N` enters the conclusion only through `hg` and `h`; without `h`
   the curve is unrelated to `x1Genus N`.
 
-IRREDUCIBLE at this pin, along the same axis as its `Γ₀` sibling
-`not_isIso_jacobian_of_one_le_x0Genus`: this is the identification of an
-arithmetic genus formula with a geometric invariant of `X`, and no such
-invariant exists in `Mathlib` — no genus, no `h¹(𝒪_X)`, no
-Riemann–Hurwitz for the degree-`μ₁(N)` map to the `j`-line.  The two
-siblings differ only in which index and cusp count appear, so a successor
-building the genus formula for `Γ₀` gets `Γ₁` for the cost of a second
-congruence-subgroup instance. -/
+The proof is the two-step reading of the `¬ IsIso` phrasing, identical
+to `not_isIso_jacobian_of_one_le_x0Genus`'s.  `IsIso jstr` makes every
+`RelPoint jstr g` a subsingleton (`subsingleton_relPoint_of_isIso`),
+hence Abel–Jacobi constant; and `exists_ne_aj_of_hasNonconstantAbelianMap`
+says Abel–Jacobi cannot be constant once ANY abelian scheme receives a
+nonconstant pointed map from `X`, which is what the leaf supplies.  Both
+bridges are stated for an arbitrary curve over `ℚ` and are reused here
+VERBATIM, with no edit to `X0.lean`. -/
 theorem not_isIso_jacobian_of_one_le_x1Genus (N : ℕ) (hN : 5 ≤ N) (hg : 1 ≤ x1Genus N)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : IsX1Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (jac : IsJacobianOf strX ab o) : ¬ IsIso jstr :=
-  sorry
+    (jac : IsJacobianOf strX ab o) : ¬ IsIso jstr := by
+  intro hiso
+  obtain ⟨T, g, x, y, hxy⟩ := exists_ne_aj_of_hasNonconstantAbelianMap jac
+    (hasNonconstantAbelianMap_of_one_le_x1Genus N hN hg h o)
+  haveI := subsingleton_relPoint_of_isIso hiso g
+  exact hxy (Subsingleton.elim _ _)
 
 /-- **`rank J_1(25)(ℚ) = 0` and `genus X_1(25) ≥ 1`** (PROVEN, from three
 leaves stated here plus two reused VERBATIM from `X0.lean`).
@@ -1888,7 +1978,7 @@ needs:
 | `fg_relPoint_of_abelianScheme` | Mordell–Weil | no | `X0.lean`, REUSED |
 | `isTorsion_jacobian_x1TwentyFive` | Kolyvagin–Logachev | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
-| `not_isIso_jacobian_of_one_le_x1Genus` | genus formula | **yes** | here |
+| `hasNonconstantAbelianMap_of_one_le_x1Genus` | genus formula | **yes** | here |
 
 **Only ONE of the five is both new and level-specific**, and it is the
 Kolyvagin–Logachev leaf.  Two of the five are `X0.lean` theorems used
