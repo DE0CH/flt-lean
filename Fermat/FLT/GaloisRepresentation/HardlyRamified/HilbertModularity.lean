@@ -12612,6 +12612,69 @@ A note for whoever closes `hLemme1`: it is verbatim the conclusion of
 THROUGH this node. Proving it here directly would let that declaration be
 reproven independently and the inversion removed altogether.
 
+**AXIS 6, NOT SEARCHED ABOVE AND NOT BLOCKED: `hLemme1` FOLLOWS FROM
+`hThm1`, through Mazur's `Φ_ℓ` criterion applied DIRECTLY to `R'`**
+(2026-07-27, flt-lean-129). This is *not* axis 2 — it builds no finite-level
+datum, needs no `quotientHilbertDeformationDatum`, and never re-enters the
+tame-eigenrow question. It reduces the TWO sorried `have`s of this leaf to
+ONE, leaving `hThm1` as the cluster's single atom.
+
+The observation is that `ProfiniteLocalNoetherian`'s
+`isNoetherianRing_isAdic_of_profinite_of_finite_ringHom` (UPSTREAM, PROVEN)
+concludes *exactly* `hLemme1`'s triple for any profinite local ring, from
+one hypothesis `hhom`: that for every FINITE discrete local `ℤ_ℓ`-algebra
+`A` and every `πA : A → κ`, only finitely many continuous `ℤ_ℓ`-algebra maps
+`R' → A` lift `πA`. Everything else it wants is already discharged inside
+`exists_isLocalRing_hilbertTraceSubring` below and can be copied verbatim:
+`𝒟.R` is profinite (`ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient`
+over `Ideal.finite_quotient_pow`, plus `t2Space_of_isAdic_of_isHausdorff`),
+`R'` is closed hence compact and Hausdorff, and `hbasis` is the pullback of
+the `𝔪`-adic basis along the inducing inclusion.
+
+`hhom` is where `hThm1` is spent, and it is spent *once*:
+
+* Given `φ : R' → A` continuous and `ℤ_ℓ`-compatible, `framePushforward φ`
+  applied to the `ρ'` produced by `hThm1` is a framed representation over
+  `A`, and it is hardly ramified by `isHilbertBaseChangeClause` (above,
+  PROVEN) — in particular UNRAMIFIED outside `2ℓ`.
+* The set of such framed representations is FINITE:
+  `finite_setOf_framedGaloisRep_isUnramifiedAt` (above, PROVEN, and already
+  universe-polymorphic in `A`).
+* The assignment `φ ↦ framePushforward φ ρ'` is INJECTIVE on the set in
+  question, so `Set.Finite.of_finite_image` closes it. Injectivity is the
+  generator computation this file already owns: two such `φ` agree on
+  `range (algebraMap ℤ_[ℓ] R')` by the `ℤ_ℓ` clause; on
+  `teichmullerRootSet ℓ R'` because a Teichmüller root of `A` is pinned by
+  its residue (`map_mem_teichmullerRootSet` then `eq_of_mem_teichmullerRootSet`);
+  and on every charpoly coefficient of `ρ'` because equal pushforwards have
+  equal charpolys. Those three families TOPOLOGICALLY GENERATE `R'` — that is
+  `hilbertTraceSubring_eq_top_of_charpoly_map ℓ 𝒟.ρ ρ' hcp'`, which this
+  proof already invokes for trace generation — and the equaliser of two
+  continuous maps into the discrete `A` is closed, so agreement on the
+  generators is agreement on `R'`.
+
+Note this consumes `hcp'` (`hThm1`'s charpoly clause) and `hhr'` (its local
+conditions) and NOTHING else from `hThm1`; it does not need `hℓ5` or
+`hirrF` again, and it does not need the retraction.
+
+THE ONE COST, and it is bookkeeping rather than mathematics: that upstream
+theorem carries `[Algebra ℤ_[ℓ] κ]` and `[DiscreteTopology κ]` on its
+residue field, which this leaf's `k` does not have. **Do not add them to
+this statement** — settled against above. Apply it instead at
+`κ := IsLocalRing.ResidueField R'`, which carries no ambient
+`TopologicalSpace` instance at all, so `⊥` may be installed by `letI`
+without a diamond; it is finite because it injects into `k`; its
+`Algebra ℤ_[ℓ]` comes from `instAlgebraHilbertTraceSubring` composed with
+the residue map; and `IsLocalRing.residue R'` is surjective, with open
+kernel `𝔪'`, hence continuous into the discrete `κ`.
+
+THE CHECK THAT WOULD REFUTE THIS AXIS: exhibit a continuous `ℤ_ℓ`-algebra
+map `R' → A` lifting `πA` that is NOT determined by the charpolys of
+`framePushforward φ ρ'` together with the residues of the Teichmüller
+roots — i.e. show the three families above fail to topologically generate
+`R'`. They do generate, by `hilbertTraceSubring_eq_top_of_charpoly_map`,
+which is why the axis is open rather than blocked.
+
 References: Carayol, Contemp. Math. 165, Théorème 1 and Lemme 1; Nyssen,
 *Pseudo-représentations*, Math. Ann. 306; Rouquier, *Caractérisation des
 caractères et pseudo-caractères*, J. Algebra 180; Mazur, *Deforming Galois
