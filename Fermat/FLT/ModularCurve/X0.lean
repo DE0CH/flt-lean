@@ -227,8 +227,9 @@ DIVISOR-CLOSED; see its docstring.
 *Amended a fourth time 2026-07-26: the sieve layer.*  Shape 4's
 compactification layer now carries a SIXTH leaf:
 
-10. `exists_x0Sieve` — the Mordell–Weil sieve that the four levels
-    `45, 54, 63, 75` need.  The ordinary counting bound
+10. `exists_x0Sieve` — the Mordell–Weil sieve that the five levels
+    `26, 45, 54, 63, 75` need (`26` joined them 2026-07-27).  The
+    ordinary counting bound
     `card_le_of_rankZeroJacobian` is never sharp at those four levels
     (no odd `ℓ ∤ N` attains `#X_0(N)(𝔽_ℓ) = 4`), so the bound must count
     FEWER than all of `X_0(N)(𝔽_ℓ)`: only those `𝔽_ℓ`-points whose
@@ -280,7 +281,7 @@ this pin:
 
 * the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as a
   computable finite object, which is what the multi-prime sieve leaf
-  `exists_x0Sieve` asks for at the four levels `45, 54, 63, 75`.
+  `exists_x0Sieve` asks for at the five levels `26, 45, 54, 63, 75`.
 
 Chabauty–Coleman is **not** on this list: the 2026-07-26 reconnaissance
 found `rank J_0(N)(ℚ) = 0` at all eleven named levels, so none of them
@@ -350,6 +351,13 @@ public import Fermat.FLT.ModularCurve.WeightTwoEigenform
 -- turns `Y_0(N)` into `X_0(N)`; see `exists_compactificationY0` and
 -- `exists_x0Compactification` below.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification
+-- `exists_unique_extension_of_isSmoothProperCurve`: the ONE extension theorem behind
+-- `exists_unique_extension_of_isX0Compactification` (over `Spec ℚ`) and
+-- `exists_extension_of_isX0Compactification` (over `Spec 𝔽_ℓ`), and through the latter
+-- `exists_inverse_of_isX0Compactification`.  Stated over an arbitrary FIELD base with an
+-- arbitrary proper target, so all three sites are one-line specialisations; its own residue
+-- is the shared "smooth curve ⟹ DVR local rings" node.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
 -- `f_*𝒪_X = 𝒪_S` for a proper flat morphism with geometrically connected fibres,
 -- and the RIGIDITY LEMMA over it; this is what makes `isAdditiveOn_of_post_zero`
 -- below a theorem rather than a leaf.
@@ -512,9 +520,18 @@ public import Mathlib.Algebra.Category.CommAlgCat.Basic
 -- `Fermat.DescentHeight` and `Fermat.fg_of_descentHeight`: Silverman's descent
 -- theorem (AEC VIII.3.1), PROVEN there for an arbitrary `AddCommGroup`.  It is
 -- the whole proof of `fg_relPoint_of_abelianScheme` — Mordell–Weil — from its
--- two leaves `exists_descentHeight_of_abelianScheme` (heights) and
--- `finite_quotient_nsmul_of_abelianScheme` (weak Mordell–Weil).
+-- two leaves `exists_integralCoordinates_of_abelianScheme` (heights) and
+-- `finite_quotient_psmul_of_abelianScheme` (weak Mordell–Weil).  Also
+-- `Fermat.WeilHeight` / `WeilHeight.toDescentHeight` and
+-- `Fermat.finite_quotient_nsmul_of_prime`, the two reductions that shrank those
+-- leaves to what they are now.
 public import Fermat.FLT.Mathlib.GroupTheory.Descent
+-- `Fermat.intHeight` and Northcott's theorem for it, `Fermat.IntegralCoordinates`
+-- and `IntegralCoordinates.toDescentHeight`: the naive height on `ℤ^d` and the
+-- finiteness half of the theory of heights over `ℚ`, PROVEN there.  It reduces
+-- `exists_descentHeight_of_abelianScheme` to the purely geometric leaf
+-- `exists_integralCoordinates_of_abelianScheme` below.
+public import Fermat.FLT.Mathlib.NumberTheory.IntegralHeight
 -- The relative Picard functor: `IsRelPicZeroOf`, `RelPicEquiv`, `modTensor`,
 -- `sectionIdeal`.  This is the infrastructure the IRREDUCIBILITY audit of
 -- `exists_jacobianOf_x0` named as missing — line bundles on `X ×_S T` modulo
@@ -765,6 +782,19 @@ omitted: initiality already determines `(Y, classify)` up to unique
 isomorphism, which is all that faithfulness of the level statements
 requires, and stating the geometric bijection would additionally require
 a theory of isomorphisms of `Γ₀(N)`-data that nothing here consumes.
+
+**That last clause is stale as of 2026-07-27, and the omission is now a
+deliberate economy rather than a necessity.**  Isomorphism of `Γ₀(N)`-data IS
+expressible — it is `IsBaseChangeOf (𝟙 _)`, see the last paragraph of that
+structure's docstring — and both halves of the geometric bijection are now
+stated and consumed over `ℚ̄`, as
+`IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` (surjectivity, PROVEN)
+and `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (injectivity,
+PROVEN from a presentation-level leaf).  They are kept OUT of this structure
+because they are theorems about a presentation and not clauses of a universal
+property: adding them as fields would oblige every producer of an
+`IsCoarseModuliY0` to prove them, and `exists_coarseModuliY0_zero` — the
+empty scheme at the degenerate level — is a producer that should not have to.
 
 Over `S = Spec ℚ` the unique such `Y` is the modular curve `Y_0(N)`. -/
 structure IsCoarseModuliY0 (N : ℕ) {Y S : Scheme.{u}} (str : Y ⟶ S) where
@@ -1041,23 +1071,34 @@ exactly the right shape: `AbelianSchemeStruct.baseChange`
 a pullback — and is sorry-free.  `AbelianSchemeStruct.ofMorphisms`
 (`Modularity/AbelianScheme.lean`) is a second producer.
 
-**What that opens, and what it does not.**  It supplies the
-ABELIAN-SCHEME half of base change only.  A `Gamma0Datum` also carries a
-`CyclicSubgroupOfOrder`, so turning base change of `Γ₀(N)`-data into a
-*construction* still needs (a) the level structure transported to the
-pullback — `C ×_T T'` with its closed immersion, finiteness, flatness and
-geometric fibres — and (b) an `IsBaseChangeOf` witness assembled from the
-two halves.  Neither exists today; the check that would refute THAT is
-`grep -rn "CyclicSubgroupOfOrder" Fermat/`, which currently finds the
-structure only in this file and in `MazurTorsion.lean`, with no transport
-lemma anywhere.  Note also that this file imports
-`Modularity.AbelianScheme` but NOT `Modularity.AbelianSchemeIsogeny`, so
-the descent route additionally costs that import.
+**What that opened, and the rest is now CLOSED too** (corrected 2026-07-27 —
+the paragraph that stood here is superseded, and the correction is recorded
+rather than deleted because the claim it made propagated).  It read:
 
-So the fppf-descent route is no longer blocked by a missing producer; it
-is blocked by the level-structure half alone.  The cut taken here needs
-no base change to be constructed, only to be *exhibited by the leaf*,
-which is why it goes through either way. -/
+> It supplies the ABELIAN-SCHEME half of base change only.  A `Gamma0Datum`
+> also carries a `CyclicSubgroupOfOrder`, so turning base change of
+> `Γ₀(N)`-data into a *construction* still needs (a) the level structure
+> transported to the pullback … and (b) an `IsBaseChangeOf` witness assembled
+> from the two halves.  Neither exists today … Note also that this file
+> imports `Modularity.AbelianScheme` but NOT
+> `Modularity.AbelianSchemeIsogeny`, so the descent route additionally costs
+> that import.
+
+Every clause of that is now false.  (a) is `Gamma0BaseChange.cycBC`, (b) is
+`Gamma0BaseChange.isBaseChangeBC`, the two are packaged as
+`exists_gamma0Datum_baseChange` (PROVEN), and this file DOES import
+`Modularity.AbelianSchemeIsogeny` — the import was paid when that proof
+landed.  **The refuting command is `grep -n "exists_gamma0Datum_baseChange"
+Fermat/FLT/ModularCurve/X0.lean`**, which finds the theorem and a dozen
+consumers.
+
+So **base change of `Γ₀(N)`-data IS a construction today**, and the
+fppf-descent route is no longer blocked by either half.  The cut taken here
+needs base change only to be *exhibited by the leaf* rather than constructed,
+which is why it went through even before that; it is recorded now because two
+separate docstrings elsewhere in this file cite this paragraph as evidence
+that the construction is missing, and a reader arriving through one of them
+would be misled. -/
 
 /-- **Morphisms to `Spec ℚ` are unique when they exist.**
 
@@ -1091,8 +1132,12 @@ The three non-trivial fields, and what supplies each:
   so after a finite étale surjective — hence flat, surjective and
   quasi-compact — base change `p : T' ⟶ T` the datum acquires one and is
   classified by a map `m : T' ⟶ M`.  Note that `d'` is *supplied* by the
-  field rather than constructed: this development states base change and
-  never builds it.
+  field rather than constructed — which is a convenience of the interface
+  and no longer a necessity: base change of `Γ₀(N)`-data IS a construction
+  in this file since 2026-07-27 (`exists_gamma0Datum_baseChange`, and the
+  `Gamma0BaseChange` namespace it is assembled from).  An earlier version of
+  this bullet said "this development states base change and never builds
+  it"; that is stale.
 * `quotient` — the categorical quotient property of `classify dM`, in the
   form that is actually available from GIT: a morphism out of `M` that
   cannot distinguish two rigidifications of the same datum is invariant
@@ -2016,7 +2061,34 @@ theorem toRelPoint_nsmul (bc : IsBaseChangeOf p d' d) {U : Scheme.{u}} {u : U �
   | zero => rw [zero_nsmul, zero_nsmul]; exact bc.toRelPoint_zero u
   | succ k ih => rw [succ_nsmul, succ_nsmul, bc.toRelPoint_add, ih]
 
+/-- **`n`-torsion descends across a cartesian square.**  `toRelPoint` is an
+injective additive map, so a relative point upstairs is `n`-torsion as soon
+as its image downstairs is.  Consumed by
+`nonempty_rigidifiedModuli_of_iso` to transport `lvlM_nsmul`. -/
+theorem nsmul_eq_zero_of_toRelPoint {n : ℕ} (bc : IsBaseChangeOf p d' d)
+    {U : Scheme.{u}} {u : U ⟶ T'} (X : RelPoint d'.f u)
+    (h : letI := d.ab.addCommGroup (u ≫ p); n • bc.toRelPoint X = 0) :
+    letI := d'.ab.addCommGroup u
+    n • X = 0 := by
+  letI := d'.ab.addCommGroup u
+  letI := d.ab.addCommGroup (u ≫ p)
+  refine bc.toRelPoint_injective ?_
+  rw [bc.toRelPoint_nsmul, h, bc.toRelPoint_zero]
+
 end IsBaseChangeOf
+
+/-- **`n`-torsion is preserved by precomposition of relative points** —
+`pre_nsmul` and `pre_zero`, read at a torsion point. -/
+theorem RelPoint.nsmul_pre_eq_zero {n : ℕ} {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U' U : Scheme.{u}} (k : U' ⟶ U) {g : U ⟶ S}
+    {g' : U' ⟶ S} (hg : k ≫ g = g') {Y : RelPoint f g}
+    (h : letI := ab.addCommGroup g; n • Y = 0) :
+    letI := ab.addCommGroup g'
+    n • RelPoint.pre k hg Y = 0 := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  rw [← ab.pre_nsmul k hg, h]
+  exact ab.pre_zero k hg
 
 /-! #### The level-`n` torsor, split into its fibre input and its descent
 
@@ -2597,7 +2669,55 @@ is automatic and stating it would be redundant — the same reason
 
 `hn : 3 ≤ n` is load-bearing for TRUTH of the existence statement below:
 at `n ≤ 2` the rigidified problem still has the automorphism `-1` (and
-more at `n = 1`), so it is not representable and no inhabitant exists. -/
+more at `n = 1`), so it is not representable and no inhabitant exists.
+
+## UNDER-SPECIFICATION AUDIT: why `lvlM_nsmul` is a FIELD (2026-07-27)
+
+`FullLevelStructure.geom_basis` is stated **fibrewise**, at geometric
+points only, and its docstring's claim that "`n • P = 0` and `n • Q = 0`
+are consequences, not fields" is true **only at geometric points**.  Over
+the base it is FALSE, and here is the counterexample that was found while
+proving `exists_deckAction`:
+
+> Let `T = Spec ℚ(ζ_n)[ε]`, `ε² = 0`, and let `d` be the constant datum
+> `E₀ ×_{ℚ(ζ_n)} T` for an elliptic curve `E₀/ℚ(ζ_n)` carrying a full
+> level-`n` structure `(P₀, Q₀)`.  Every geometric point `Spec K ⟶ T`
+> kills `ε` (a nilpotent in a field), so every one of them factors through
+> `Spec ℚ(ζ_n)`.  Hence `(P₀ + εv, Q₀)` satisfies `geom_basis` verbatim,
+> for **every** `v` in the one-dimensional kernel
+> `ker(E₀(ℚ(ζ_n)[ε]) ↠ E₀(ℚ(ζ_n))) ≅ Lie(E₀)`.  But multiplication by `n`
+> is injective on that kernel in characteristic `0`, so
+> `n • (P₀ + εv) = nεv ≠ 0` whenever `v ≠ 0`.
+
+**Why this is fatal to the deck action, and hence why the field is here.**
+`GL₂(ℤ/n)` acts on level structures by `(P, Q) ↦ (aP + bQ, cP + dQ)`, and
+the coefficients are only defined **modulo `n`**.  So
+`σ • (τ • L) = (στ) • L` holds if and only if the discrepancy
+`(kn) • P + (ln) • Q` vanishes — i.e. exactly when `P` and `Q` are
+`n`-torsion **over the base**.  Without it `GL₂(ℤ/n)` does not act at all,
+`σ ↦ mσ` is not a monoid homomorphism, and no `MulSemiringAction` can be
+built from `universal`.  Everything downstream of
+`exists_deckAction` therefore rests on this field.
+
+*The check that would refute this paragraph*: exhibit
+`σ, τ : GL₂(ℤ/n)` and a `FullLevelStructure` for which
+`FullLevelStructure.twist_mul` holds without its `n`-torsion hypotheses.
+
+**The deeper repair is NOT made here, deliberately.**  The honest fix is
+to put `n • P = 0` and `n • Q = 0` into `FullLevelStructure` itself, which
+is the scheme-theoretic definition (`P`, `Q` are sections of `E[n]`, not
+merely sections that are fibrewise `n`-torsion).  That would also fix the
+*representability* of the rigidified problem: as the counterexample shows,
+the functor `T ↦ {(d, L)}` currently has strictly more `ℚ(ζ_n)[ε]`-points
+than any scheme's tangent space can account for, so
+`exists_rigidifiedModuliScheme` is very likely FALSE as stated.  But
+`FullLevelStructure` is the shared interface of
+`exists_torsionBasis_cover_of_geomPoint` and
+`nonempty_fullLevelStructure_of_geomBasis`, which have their own owner, and
+strengthening it changes their statements.  So the minimal repair is made
+at this structure, where it is enough for the deck action, and the wider
+one is left to the owner of the torsor pair — where it is cheap, since the
+`Isom`-scheme construction produces genuinely `n`-torsion sections. -/
 structure RigidifiedModuli (N n : ℕ) where
   /-- the coordinate ring of the rigidified moduli scheme -/
   A : Type
@@ -2608,6 +2728,10 @@ structure RigidifiedModuli (N n : ℕ) where
   dM : Gamma0Datum N (Spec (CommRingCat.of A))
   /-- the universal full level-`n` structure on it -/
   lvlM : FullLevelStructure n dM
+  /-- **the universal level structure is genuinely `n`-torsion over its
+  base** — see the UNDER-SPECIFICATION AUDIT above -/
+  lvlM_nsmul : letI := dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of A)))
+    n • lvlM.P = 0 ∧ n • lvlM.Q = 0
   /-- **fine moduli**: a datum-with-level-structure over a `ℚ`-scheme is
   a base change of `(dM, lvlM)` along a UNIQUE morphism -/
   universal : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T)
@@ -2702,6 +2826,11 @@ structure RigidifiedModuliScheme (N n : ℕ) where
   dM : Gamma0Datum N M
   /-- the universal full level-`n` structure on it -/
   lvlM : FullLevelStructure n dM
+  /-- **the universal level structure is genuinely `n`-torsion over its
+  base** — see the UNDER-SPECIFICATION AUDIT below for why this is a field
+  rather than a consequence of `FullLevelStructure.geom_basis` -/
+  lvlM_nsmul : letI := dM.ab.addCommGroup (𝟙 M)
+    n • lvlM.P = 0 ∧ n • lvlM.Q = 0
   /-- **fine moduli**: a datum-with-level-structure over a `ℚ`-scheme is
   a base change of `(dM, lvlM)` along a UNIQUE morphism -/
   universal : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T)
@@ -3015,7 +3144,15 @@ theorem nonempty_rigidifiedModuli_of_iso {N n : ℕ} (R : RigidifiedModuliScheme
         rw [← hpre t P' R.lvlM.P hP', ← hpre t Q' R.lvlM.Q hQ',
           ← map_nsmul (dbc.alongEquiv t), ← map_nsmul (dbc.alongEquiv t),
           ← (dbc.alongEquiv t).map_add, (dbc.alongEquiv t).injective.eq_iff] }
-  refine ⟨{ A := A, strM := φ.hom ≫ R.strM, dM := dM', lvlM := lvl, universal := ?_ }⟩
+  refine ⟨{ A := A, strM := φ.hom ≫ R.strM, dM := dM', lvlM := lvl,
+            lvlM_nsmul := ?_, universal := ?_ }⟩
+  · -- the `n`-torsion of the level structure crosses the cartesian square of `dbc`
+    have hgφ : φ.hom ≫ 𝟙 R.M = 𝟙 (Spec (CommRingCat.of A)) ≫ φ.hom := by simp
+    refine ⟨dbc.nsmul_eq_zero_of_toRelPoint P' ?_, dbc.nsmul_eq_zero_of_toRelPoint Q' ?_⟩
+    · rw [show dbc.toRelPoint P' = RelPoint.pre φ.hom hgφ R.lvlM.P from Subtype.ext hP']
+      exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM_nsmul.1
+    · rw [show dbc.toRelPoint Q' = RelPoint.pre φ.hom hgφ R.lvlM.Q from Subtype.ext hQ']
+      exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM_nsmul.2
   intro T g d L
   obtain ⟨m₀, ⟨bc₀, e₁, e₂⟩, huniq⟩ := R.universal g d L
   refine ⟨m₀ ≫ φ.inv, ?_, ?_⟩
@@ -3400,29 +3537,435 @@ noncomputable abbrev specInvariantsQuotient (G A : Type) [Monoid G] [CommRing A]
     Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of ↥(FixedPoints.subring A G)) :=
   Spec.map (CommRingCat.ofHom (Subring.subtype (FixedPoints.subring A G)))
 
-/-- **The deck group acts on the rigidified coordinate ring, and its
-quotient map coequalises rigidifications** (sorry leaf, opened 2026-07-27)
-— the first of the two halves of
-`exists_gamma0GITPresentation_of_rigidified`, and the one that is pure
-moduli theory.
+/-! #### The matrix twist of a full level structure
+
+`GL₂(ℤ/n)` acts on full level structures by `(P, Q) ↦ (aP + bQ, cP + dQ)`.
+Writing that down needs the matrix entries — which live in `ZMod n` — to be
+turned into `ℕ`-coefficients, and `ZMod.val` is the only canonical way to do
+it.  It is **not** multiplicative, so the composite of two twists differs
+from the twist by the product by a multiple of `n` applied to `P` and `Q`.
+
+**That is exactly why `RigidifiedModuli.lvlM_nsmul` exists** (see its
+UNDER-SPECIFICATION AUDIT): the discrepancy vanishes precisely when `P` and
+`Q` are `n`-torsion *over the base*, and `FullLevelStructure.geom_basis`
+gives that only at geometric points.  So `twist_mul` below carries the
+torsion hypotheses explicitly, and everything downstream inherits them.
+-/
+
+/-- **The `(a, b)`-combination of two relative points**, with coefficients
+read out of `ZMod n` through `ZMod.val`.  This is one entry of the matrix
+twist. -/
+noncomputable def RelPoint.comb {n : ℕ} {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U : Scheme.{u}} {g : U ⟶ S} (a b : ZMod n)
+    (P Q : RelPoint f g) : RelPoint f g :=
+  letI := ab.addCommGroup g
+  a.val • P + b.val • Q
+
+/-- **Congruent natural multiples of an `n`-torsion point agree.** -/
+theorem nsmul_eq_nsmul_of_mod {M : Type*} [AddCommGroup M] {n : ℕ} {x : M}
+    (hx : n • x = 0) {a b : ℕ} (h : a % n = b % n) : a • x = b • x := by
+  have key : ∀ c : ℕ, c • x = (c % n) • x := by
+    intro c
+    conv_lhs => rw [← Nat.div_add_mod c n]
+    rw [add_nsmul, mul_comm, mul_nsmul', hx, smul_zero, zero_add]
+  rw [key a, key b, h]
+
+/-- Two naturals with the same image in `ZMod n` are congruent mod `n`. -/
+theorem mod_eq_of_zmod_eq {n a b : ℕ} (h : (a : ZMod n) = (b : ZMod n)) : a % n = b % n :=
+  (ZMod.natCast_eq_natCast_iff' a b n).mp h
+
+/-- **Bilinearity of `comb` against `n`-torsion points.**  This is the one
+place the `n`-torsion hypothesis is consumed, and it is what makes the matrix
+twist an ACTION rather than merely a family of maps: the `ZMod n`-arithmetic
+of the matrix product is matched by `ℕ`-arithmetic only modulo `n`. -/
+theorem RelPoint.comb_comb {n : ℕ} [NeZero n] {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U : Scheme.{u}} {g : U ⟶ S} {P Q : RelPoint f g}
+    (hP : letI := ab.addCommGroup g; n • P = 0)
+    (hQ : letI := ab.addCommGroup g; n • Q = 0) (a b c e x y : ZMod n) :
+    RelPoint.comb ab a b (RelPoint.comb ab c e P Q) (RelPoint.comb ab x y P Q)
+      = RelPoint.comb ab (a * c + b * x) (a * e + b * y) P Q := by
+  letI := ab.addCommGroup g
+  show a.val • (c.val • P + e.val • Q) + b.val • (x.val • P + y.val • Q)
+      = (a * c + b * x).val • P + (a * e + b * y).val • Q
+  have h1 : (a * c + b * x).val • P = (a.val * c.val + b.val * x.val) • P := by
+    refine nsmul_eq_nsmul_of_mod hP (mod_eq_of_zmod_eq ?_)
+    push_cast [ZMod.natCast_val, ZMod.cast_id]
+    ring
+  have h2 : (a * e + b * y).val • Q = (a.val * e.val + b.val * y.val) • Q := by
+    refine nsmul_eq_nsmul_of_mod hQ (mod_eq_of_zmod_eq ?_)
+    push_cast [ZMod.natCast_val, ZMod.cast_id]
+    ring
+  rw [h1, h2, add_nsmul, add_nsmul, mul_nsmul', mul_nsmul', mul_nsmul', mul_nsmul',
+    smul_add, smul_add]
+  abel
+
+/-- `RelPoint.pre` is additive, hence commutes with `comb`. -/
+theorem RelPoint.pre_comb {n : ℕ} {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U' U : Scheme.{u}} (k : U' ⟶ U) {g : U ⟶ S}
+    {g' : U' ⟶ S} (hg : k ≫ g = g') (a b : ZMod n) (P Q : RelPoint f g) :
+    RelPoint.pre k hg (RelPoint.comb ab a b P Q)
+      = RelPoint.comb ab a b (RelPoint.pre k hg P) (RelPoint.pre k hg Q) := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  show RelPoint.pre k hg (a.val • P + b.val • Q)
+      = a.val • RelPoint.pre k hg P + b.val • RelPoint.pre k hg Q
+  rw [show (a.val • P + b.val • Q) = ab.add (a.val • P) (b.val • Q) from rfl,
+    ab.pre_add k hg, ab.pre_nsmul k hg, ab.pre_nsmul k hg]
+  rfl
+
+namespace IsBaseChangeOf
+
+/-- `toRelPoint` is additive, hence commutes with `comb`. -/
+theorem toRelPoint_comb {N n : ℕ} {T' T : Scheme.{u}} {p : T' ⟶ T}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T} (bc : IsBaseChangeOf p d' d)
+    {U : Scheme.{u}} {u : U ⟶ T'} (a b : ZMod n) (X Y : RelPoint d'.f u) :
+    bc.toRelPoint (RelPoint.comb d'.ab a b X Y)
+      = RelPoint.comb d.ab a b (bc.toRelPoint X) (bc.toRelPoint Y) := by
+  letI := d'.ab.addCommGroup u
+  letI := d.ab.addCommGroup (u ≫ p)
+  show bc.toRelPoint (a.val • X + b.val • Y)
+      = a.val • bc.toRelPoint X + b.val • bc.toRelPoint Y
+  rw [bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul]
+
+end IsBaseChangeOf
+
+namespace FullLevelStructure
+
+variable {N n : ℕ} {T : Scheme.{u}} {d : Gamma0Datum N T}
+
+/-- The first section of the `σ`-twist of a full level structure. -/
+noncomputable def twistP (σ : GL (Fin 2) (ZMod n)) (L : FullLevelStructure n d) :
+    RelPoint d.f (𝟙 T) :=
+  RelPoint.comb d.ab (σ.val 0 0) (σ.val 0 1) L.P L.Q
+
+/-- The second section of the `σ`-twist of a full level structure. -/
+noncomputable def twistQ (σ : GL (Fin 2) (ZMod n)) (L : FullLevelStructure n d) :
+    RelPoint d.f (𝟙 T) :=
+  RelPoint.comb d.ab (σ.val 1 0) (σ.val 1 1) L.P L.Q
+
+theorem twistP_one (h1 : 1 < n) (L : FullLevelStructure n d) :
+    letI := d.ab.addCommGroup (𝟙 T)
+    twistP 1 L = L.P := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show (((1 : GL (Fin 2) (ZMod n)).val 0 0).val • L.P
+      + ((1 : GL (Fin 2) (ZMod n)).val 0 1).val • L.Q) = L.P
+  rw [Units.val_one]
+  rw [Matrix.one_apply_eq, Matrix.one_apply_ne (by decide)]
+  rw [ZMod.val_zero, ZMod.val_one_eq_one_mod, Nat.mod_eq_of_lt h1]
+  simp
+
+theorem twistQ_one (h1 : 1 < n) (L : FullLevelStructure n d) :
+    letI := d.ab.addCommGroup (𝟙 T)
+    twistQ 1 L = L.Q := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show (((1 : GL (Fin 2) (ZMod n)).val 1 0).val • L.P
+      + ((1 : GL (Fin 2) (ZMod n)).val 1 1).val • L.Q) = L.Q
+  rw [Units.val_one]
+  rw [Matrix.one_apply_eq, Matrix.one_apply_ne (by decide)]
+  rw [ZMod.val_zero, ZMod.val_one_eq_one_mod, Nat.mod_eq_of_lt h1]
+  simp
+
+/-- **The twisted pair is again a fibrewise basis of the `n`-torsion**
+(sorry leaf, opened 2026-07-27) — the `geom_basis` field of the matrix
+twist, and the only part of the twist that is not bookkeeping.
 
 ## What the prover of this node owes
 
-**(a) The action.**  For `σ : GL₂(ℤ/n)` the pair `(R.dM, σ · R.lvlM)` is
-again a rigidified datum over `Spec R.A`: a matrix acts on a full level
-structure by `(P, Q) ↦ (aP + bQ, cP + dQ)`, and `FullLevelStructure`'s
-`geom_basis` is preserved exactly because the matrix is invertible mod `n`
-— the twisted pair is again a basis of the `n`-torsion at every geometric
-point, with the unique coordinate pair of a point transformed by `σ⁻¹`.
-`R.universal` then classifies it by a UNIQUE endomorphism of
-`Spec (CommRingCat.of R.A)`, which is an automorphism because `σ⁻¹` supplies
-the inverse (uniqueness in `R.universal` makes `σ ↦ mσ` a monoid
-antihomomorphism into endomorphisms, hence into automorphisms), and `Spec`
-is fully faithful on affines (`Spec.preimage`, `Spec.map_injective`), so
-this is a `MulSemiringAction (GL₂(ℤ/n)) R.A`.  The first clause of the
-conclusion is then `Gamma0GITPresentation.dM_equivariant` verbatim, with
-`d₁ := R.dM` and the base change along `Spec σ` supplied by `R.universal`'s
-witness.
+Work at ONE geometric point `t : Spec K ⟶ T` and write `M` for
+`RelPoint d.f t` with `d.ab.addCommGroup t`, `P₀ := pre t _ L.P`,
+`Q₀ := pre t _ L.Q`.  `L.geom_basis` at `x = 0` says the map
+`φ : Fin n × Fin n → M`, `(a, b) ↦ a • P₀ + b • Q₀`, is INJECTIVE (both
+`(0, 0)` and any other representation of `0` satisfy the `∃!`), and the
+two directions of the `↔` then say that its image is exactly the
+`n`-torsion `M[n]`.  In particular `P₀ = φ (1, 0)` and `Q₀ = φ (0, 1)` are
+`n`-torsion, so `M[n]` is a `ZMod n`-module (`AddCommGroup.zmodModule`)
+and `φ` is a `ZMod n`-linear isomorphism `(ZMod n)² ≃ M[n]`.
+
+The twisted pair is `φ` composed with the `ZMod n`-linear automorphism of
+`(ZMod n)²` given by `σ`, which is bijective because `σ` is a UNIT of
+`Matrix (Fin 2) (Fin 2) (ZMod n)`.  So the twisted `φ_σ` is again a
+bijection `(ZMod n)² ≃ M[n]`, which is the `∃!` in both directions.
+
+The only friction is that the statement is phrased with `Fin n`
+representatives and `ℕ`-scalar multiplication, so each step needs
+`nsmul_eq_nsmul_of_mod` (above) to move between `ZMod n`-coefficients and
+their `ZMod.val` lifts.
+
+## Faithfulness
+
+`hn` is load-bearing exactly as on `FullLevelStructure`: at `n = 0` the
+`∃!` is unsatisfiable (`Fin 0` is empty) while `0 • x = 0` always, so the
+statement is FALSE, and at `n = 1, 2` it is true but `Matrix.one_apply_ne`
+arguments in the callers want `1 < n` anyway.
+
+Nothing here mentions `Γ₀(N)`, moduli, or the deck group; it is a
+statement about one abelian scheme and one matrix. -/
+theorem geomBasis_twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (σ : GL (Fin 2) (ZMod n)) :
+    ∀ (K : Type u) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+      letI := d.ab.addCommGroup t
+      ∀ x : RelPoint d.f t, n • x = 0 ↔
+        ∃! ab : Fin n × Fin n,
+          x = (ab.1 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistP σ L)
+              + (ab.2 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistQ σ L) :=
+  sorry
+
+/-- **The `GL₂(ℤ/n)`-twist of a full level structure.** -/
+noncomputable def twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (σ : GL (Fin 2) (ZMod n)) : FullLevelStructure n d where
+  P := twistP σ L
+  Q := twistQ σ L
+  geom_basis := geomBasis_twist hn L σ
+
+/-- `geom_basis` is a `Prop`, so a full level structure is determined by
+its two sections. -/
+theorem ext' {L₁ L₂ : FullLevelStructure n d} (hP : L₁.P = L₂.P) (hQ : L₁.Q = L₂.Q) :
+    L₁ = L₂ := by
+  cases L₁; cases L₂; congr
+
+theorem twist_one (hn : 3 ≤ n) (L : FullLevelStructure n d) : twist hn L 1 = L :=
+  ext' (twistP_one (by omega) L) (twistQ_one (by omega) L)
+
+/-- **The twist is an action** — and this is FALSE without the `n`-torsion
+hypotheses, since `ZMod.val` is not multiplicative. -/
+theorem twist_mul (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0)
+    (σ τ : GL (Fin 2) (ZMod n)) :
+    twist hn (twist hn L τ) σ = twist hn L (σ * τ) := by
+  haveI : NeZero n := ⟨by omega⟩
+  refine ext' ?_ ?_
+  · show RelPoint.comb d.ab (σ.val 0 0) (σ.val 0 1)
+        (RelPoint.comb d.ab (τ.val 0 0) (τ.val 0 1) L.P L.Q)
+        (RelPoint.comb d.ab (τ.val 1 0) (τ.val 1 1) L.P L.Q)
+      = RelPoint.comb d.ab ((σ * τ).val 0 0) ((σ * τ).val 0 1) L.P L.Q
+    rw [RelPoint.comb_comb d.ab hP hQ]
+    congr 1 <;> simp [Units.val_mul, Matrix.mul_apply, Fin.sum_univ_two]
+  · show RelPoint.comb d.ab (σ.val 1 0) (σ.val 1 1)
+        (RelPoint.comb d.ab (τ.val 0 0) (τ.val 0 1) L.P L.Q)
+        (RelPoint.comb d.ab (τ.val 1 0) (τ.val 1 1) L.P L.Q)
+      = RelPoint.comb d.ab ((σ * τ).val 1 0) ((σ * τ).val 1 1) L.P L.Q
+    rw [RelPoint.comb_comb d.ab hP hQ]
+    congr 1 <;> simp [Units.val_mul, Matrix.mul_apply, Fin.sum_univ_two]
+
+/-- The twisted sections are again `n`-torsion, so the twist stays inside
+the part of the moduli problem the deck group acts on. -/
+theorem nsmul_twistP_eq_zero [NeZero n] (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) (σ : GL (Fin 2) (ZMod n)) :
+    letI := d.ab.addCommGroup (𝟙 T); n • twistP σ L = 0 := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show n • ((σ.val 0 0).val • L.P + (σ.val 0 1).val • L.Q) = 0
+  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+
+theorem nsmul_twistQ_eq_zero [NeZero n] (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) (σ : GL (Fin 2) (ZMod n)) :
+    letI := d.ab.addCommGroup (𝟙 T); n • twistQ σ L = 0 := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show n • ((σ.val 1 0).val • L.P + (σ.val 1 1).val • L.Q) = 0
+  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+
+end FullLevelStructure
+
+/-- **The deck action, from the `n`-torsion of the universal level
+structure** (2026-07-27) — the working form of `exists_deckAction` below,
+which is this at `R.lvlM_nsmul`.
+
+Everything except the coequalising clause is PROVEN here:
+
+* the twisted level structure `twist hn R.lvlM σ` and its classifying map
+  `mm σ`, from `R.universal`;
+* `mm 1 = 𝟙` and `mm (σ * τ) = mm τ ≫ mm σ`, from `twist_one` /
+  `twist_mul` and the UNIQUENESS half of `R.universal` — the composite
+  `mm τ ≫ mm σ` classifies `σ • (τ • R.lvlM)` because `toRelPoint` and
+  `pre` are both additive, which is `toRelPoint_comb` and `pre_comb`;
+* the ring action, by transporting along the full faithfulness of `Spec`
+  on affines (`Spec.preimage`, `Spec.map_preimage`, `Spec.map_injective`).
+  Note `σ ↦ mm σ` is an ANTIhomomorphism into `End (Spec A)`, so the
+  monoid homomorphism into `RingAut A` is `σ ↦ Spec.preimage (mm σ⁻¹)`;
+* the equivariance clause, which is then immediate: take `d₁ := R.dM`,
+  `IsBaseChangeOf.refl` on the `𝟙` side, and the base change produced by
+  `R.universal` at `σ⁻¹` on the other, using
+  `Spec.map (ofHom (toRingHom σ)) = mm σ⁻¹`.
+
+The **coequalising clause is the one open step**, and it is left as a
+sorried `have` INSIDE this proof rather than as a separate leaf, because a
+leaf quantifying over an arbitrary `MulSemiringAction` would be false —
+`σ ↦ id` satisfies the equivariance clause alone, and under it `A^G = A`,
+`π = 𝟙` and the coequalising clause fails.  See `exists_deckAction`'s
+docstring for the piecewise argument the `have` owes. -/
+theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n)
+    (hP : letI := R.commRing_A
+          letI := R.dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of R.A)))
+          n • R.lvlM.P = 0)
+    (hQ : letI := R.commRing_A
+          letI := R.dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of R.A)))
+          n • R.lvlM.Q = 0) :
+    letI := R.commRing_A
+    ∃ act : MulSemiringAction (gamma0DeckGroup n) R.A,
+      letI := act
+      (∀ σ : gamma0DeckGroup n, ∃ d₁ : Gamma0Datum N (Spec (CommRingCat.of R.A)),
+          Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of R.A))) d₁ R.dM) ∧
+          Nonempty (IsBaseChangeOf
+            (Spec.map (CommRingCat.ofHom
+              (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ))) d₁ R.dM)) ∧
+      ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A)) (d₁ : Gamma0Datum N Z),
+        IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
+        a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
+          = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A := by
+  classical
+  letI := R.commRing_A
+  haveI : NeZero n := ⟨by omega⟩
+  -- the classifying map of the `σ`-twisted universal level structure
+  have huniv : ∀ σ : gamma0DeckGroup n,
+      ∃! m : Spec (CommRingCat.of R.A) ⟶ Spec (CommRingCat.of R.A),
+        ∃ bc : IsBaseChangeOf m R.dM R.dM,
+          (FullLevelStructure.twist hn R.lvlM σ).P.1 ≫ bc.map = m ≫ R.lvlM.P.1 ∧
+          (FullLevelStructure.twist hn R.lvlM σ).Q.1 ≫ bc.map = m ≫ R.lvlM.Q.1 :=
+    fun σ => R.universal R.strM R.dM (FullLevelStructure.twist hn R.lvlM σ)
+  choose mm hmm hmmu using huniv
+  choose bcm e1 e2 using hmm
+  -- `σ ↦ mm σ` is an antihomomorphism into the automorphisms of `Spec A`
+  have hone : mm 1 = 𝟙 (Spec (CommRingCat.of R.A)) := by
+    refine (hmmu 1 _ ⟨IsBaseChangeOf.refl R.dM, ?_, ?_⟩).symm <;>
+      · rw [FullLevelStructure.twist_one]
+        simp [IsBaseChangeOf.refl]
+  have hmul : ∀ σ τ : gamma0DeckGroup n, mm (σ * τ) = mm τ ≫ mm σ := by
+    intro σ τ
+    have hTP : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM τ).P)
+        = RelPoint.pre (mm τ) (by simp) R.lvlM.P := Subtype.ext (e1 τ)
+    have hTQ : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp) R.lvlM.Q := Subtype.ext (e2 τ)
+    have hstepP : (FullLevelStructure.twist hn R.lvlM (σ * τ)).P.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM σ).P.1 := by
+      refine congrArg Subtype.val (?_ :
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM (σ * τ)).P)
+          = RelPoint.pre (mm τ) (by simp)
+              ((FullLevelStructure.twist hn R.lvlM σ).P))
+      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ]
+      show (bcm τ).toRelPoint (RelPoint.comb R.dM.ab (σ.val 0 0) (σ.val 0 1)
+          (FullLevelStructure.twist hn R.lvlM τ).P
+          (FullLevelStructure.twist hn R.lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp)
+            (RelPoint.comb R.dM.ab (σ.val 0 0) (σ.val 0 1) R.lvlM.P R.lvlM.Q)
+      rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
+    have hstepQ : (FullLevelStructure.twist hn R.lvlM (σ * τ)).Q.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM σ).Q.1 := by
+      refine congrArg Subtype.val (?_ :
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM (σ * τ)).Q)
+          = RelPoint.pre (mm τ) (by simp)
+              ((FullLevelStructure.twist hn R.lvlM σ).Q))
+      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ]
+      show (bcm τ).toRelPoint (RelPoint.comb R.dM.ab (σ.val 1 0) (σ.val 1 1)
+          (FullLevelStructure.twist hn R.lvlM τ).P
+          (FullLevelStructure.twist hn R.lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp)
+            (RelPoint.comb R.dM.ab (σ.val 1 0) (σ.val 1 1) R.lvlM.P R.lvlM.Q)
+      rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
+    refine (hmmu (σ * τ) (mm τ ≫ mm σ) ⟨(bcm τ).comp (bcm σ), ?_, ?_⟩).symm
+    · show (FullLevelStructure.twist hn R.lvlM (σ * τ)).P.1 ≫ (bcm τ).map ≫ (bcm σ).map
+          = (mm τ ≫ mm σ) ≫ R.lvlM.P.1
+      rw [← Category.assoc, hstepP, Category.assoc, e1 σ, Category.assoc]
+    · show (FullLevelStructure.twist hn R.lvlM (σ * τ)).Q.1 ≫ (bcm τ).map ≫ (bcm σ).map
+          = (mm τ ≫ mm σ) ≫ R.lvlM.Q.1
+      rw [← Category.assoc, hstepQ, Category.assoc, e2 σ, Category.assoc]
+  -- transport to ring homomorphisms through full faithfulness of `Spec` on affines
+  have hw : ∀ (σ τ : gamma0DeckGroup n) (x : R.A),
+      (Spec.preimage (mm τ)).hom ((Spec.preimage (mm σ)).hom x)
+        = (Spec.preimage (mm (σ * τ))).hom x := by
+    intro σ τ x
+    have h : Spec.preimage (mm (σ * τ)) = Spec.preimage (mm σ) ≫ Spec.preimage (mm τ) := by
+      refine Spec.map_injective ?_
+      rw [Spec.map_preimage, Spec.map_comp, Spec.map_preimage, Spec.map_preimage, hmul]
+    rw [h]; rfl
+  have hw1 : ∀ x : R.A, (Spec.preimage (mm (1 : gamma0DeckGroup n))).hom x = x := by
+    intro x
+    have h : Spec.preimage (mm (1 : gamma0DeckGroup n)) = 𝟙 (CommRingCat.of R.A) := by
+      refine Spec.map_injective ?_
+      rw [Spec.map_preimage, Spec.map_id, hone]
+    rw [h]; rfl
+  -- the deck action itself
+  let ρ : gamma0DeckGroup n →* RingAut R.A :=
+    { toFun := fun σ =>
+        { toFun := (Spec.preimage (mm σ⁻¹)).hom
+          invFun := (Spec.preimage (mm σ)).hom
+          left_inv := fun x => by rw [hw σ⁻¹ σ x, inv_mul_cancel, hw1]
+          right_inv := fun x => by rw [hw σ σ⁻¹ x, mul_inv_cancel, hw1]
+          map_mul' := map_mul _
+          map_add' := map_add _ }
+      map_one' := by
+        ext x
+        show (Spec.preimage (mm (1 : gamma0DeckGroup n)⁻¹)).hom x = x
+        rw [inv_one, hw1]
+      map_mul' := fun σ τ => by
+        ext x
+        show (Spec.preimage (mm (σ * τ)⁻¹)).hom x
+            = (Spec.preimage (mm σ⁻¹)).hom ((Spec.preimage (mm τ⁻¹)).hom x)
+        rw [hw τ⁻¹ σ⁻¹ x, ← mul_inv_rev] }
+  letI act : MulSemiringAction (gamma0DeckGroup n) R.A := MulSemiringAction.compHom R.A ρ
+  have hmap : ∀ σ : gamma0DeckGroup n, Spec.map (CommRingCat.ofHom
+      (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ)) = mm σ⁻¹ := by
+    intro σ
+    have h : CommRingCat.ofHom (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ)
+        = Spec.preimage (mm σ⁻¹) := by
+      ext x; rfl
+    rw [h, Spec.map_preimage]
+  -- **the coequalising clause** — the one open step; see the docstring of
+  -- `exists_deckAction` below for the piecewise argument it owes.
+  have hcoeq : ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A))
+      (d₁ : Gamma0Datum N Z), IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
+      a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
+        = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A := sorry
+  refine ⟨act, fun σ => ⟨R.dM, ⟨IsBaseChangeOf.refl R.dM⟩, ⟨?_⟩⟩, fun {Z} a b d₁ ha hb =>
+    hcoeq a b d₁ ha hb⟩
+  rw [hmap σ]
+  exact bcm σ⁻¹
+
+/-- **The deck group acts on the rigidified coordinate ring, and its
+quotient map coequalises rigidifications** (opened 2026-07-27; **PROVEN
+later the same day from `exists_deckAction_of_torsion`**, whose only open
+step is the coequalising clause) — the first of the two halves of
+`exists_gamma0GITPresentation_of_rigidified`, and the one that is pure
+moduli theory.
+
+## STATUS 2026-07-27: clause (a) is PROVEN; only clause (b) is open
+
+The proof is `exists_deckAction_of_torsion` immediately above, applied at
+`R.lvlM_nsmul`.  What follows records what that discharged and what it did
+not.
+
+**(a) The action — PROVEN.**  For `σ : GL₂(ℤ/n)` the pair
+`(R.dM, σ · R.lvlM)` is again a rigidified datum over `Spec R.A`: a matrix
+acts on a full level structure by `(P, Q) ↦ (aP + bQ, cP + dQ)`
+(`FullLevelStructure.twist`), and `FullLevelStructure`'s `geom_basis` is
+preserved exactly because the matrix is invertible mod `n` — the twisted
+pair is again a basis of the `n`-torsion at every geometric point, with the
+unique coordinate pair of a point transformed by `σ⁻¹`.  That last step is
+the one remaining sub-leaf of the construction,
+`FullLevelStructure.geomBasis_twist`.  `R.universal` then classifies the
+twist by a UNIQUE endomorphism of `Spec (CommRingCat.of R.A)`, which is an
+automorphism because `σ⁻¹` supplies the inverse (uniqueness in
+`R.universal` makes `σ ↦ mσ` a monoid antihomomorphism into endomorphisms,
+hence into automorphisms), and `Spec` is fully faithful on affines
+(`Spec.preimage`, `Spec.map_injective`), so this is a
+`MulSemiringAction (GL₂(ℤ/n)) R.A`.  The first clause of the conclusion is
+then `Gamma0GITPresentation.dM_equivariant` verbatim, with `d₁ := R.dM` and
+the base change along `Spec σ` supplied by `R.universal`'s witness.
+
+**A CORRECTION to the paragraph above, and it is load-bearing** (found
+while proving this node).  "A matrix acts on a full level structure" is
+NOT free: the matrix entries live in `ZMod n` and the group law of
+`RelPoint` takes `ℕ`-coefficients, and `ZMod.val` is not multiplicative,
+so `σ • (τ • L) = (στ) • L` holds **only when `P` and `Q` are `n`-torsion
+over the base**.  `FullLevelStructure.geom_basis` gives that only at
+GEOMETRIC points, and over a non-reduced base it genuinely fails — see the
+UNDER-SPECIFICATION AUDIT on `RigidifiedModuli`, which carries the
+`ℚ(ζ_n)[ε]` counterexample.  Without the torsion the twist is not an
+action, `σ ↦ mσ` is not an antihomomorphism, and **no** `MulSemiringAction`
+can be produced.  That is why `RigidifiedModuli` now carries the field
+`lvlM_nsmul`, and why this leaf could not be closed against the interface
+as it stood.
 
 **(b) The coequalising clause, which is where the content is.**  Two
 rigidifications `a, b : Z ⟶ Spec R.A` of ONE datum `d₁` differ by a section
@@ -3464,7 +4007,7 @@ theorem exists_deckAction (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n) 
         IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
         a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
           = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A :=
-  sorry
+  exists_deckAction_of_torsion N n hn R R.lvlM_nsmul.1 R.lvlM_nsmul.2
 
 /-- **fppf descent of the classifying map** (opened and **PROVEN**
 2026-07-27, sorry-free and axiom-clean) — the second of the two halves of
@@ -8495,30 +9038,35 @@ isomorphic over `SpecQ` (that is `gamma0Atlas_isIso` below).  So
 
 **Which of the four are modular.**  `isAffine` is NOT: it is
 `exists_gamma0GITPresentation` read for what it already says, since that
-leaf's coarse space is literally `Spec (A^G)`.  It is proven below.  The
-other three remain open, with distinct citations:
+leaf's coarse space is literally `Spec (A^G)`.  It is proven below.  All
+four per-atlas statements are now PROVEN; the three that are not free
+have been relocated onto `Gamma0GITPresentation`, where the coarse space
+is an explicit `Spec B` and the remaining work is commutative algebra:
 
-* `isDomain_of_gamma0Atlas` — `Γ_0(N)\ℍ` is irreducible, so
+* `isDomain_of_gamma0GITPresentation` — `Γ_0(N)\ℍ` is irreducible, so
   `𝔐([Γ₀(N)], [Γ(n)]) = Spec A` is an integral scheme and `A^G ⊆ A` is a
   domain.  This one becomes a ONE-LINE consequence of
   `Function.Injective.isDomain` applied to
   `Gamma0GITPresentation.injective_algebraMap` **as soon as the GIT
   presentation carries `IsDomain A`**; folding that in belongs with the
-  owner of `Gamma0GITPresentation`, not here.
-* `smoothOfRelativeDimension_of_gamma0Atlas` — Deligne–Rapoport III.1,
-  Katz–Mazur 8.2 (and 8.2.1 for the `ℤ[1/N]`-smoothness that specialises
-  to this): the coarse space of a smooth Deligne–Mumford stack of
-  dimension one is normal, and a normal curve over a perfect field is
-  smooth.
-* `geometricallyConnected_of_gamma0Atlas` — Deligne–Rapoport IV.5.5, or
-  Shimura 6.6: `Γ_0(N)\ℍ` is connected and the moduli problem is defined
-  over `ℚ`, so `ℚ` is algebraically closed in the function field.
+  owner of `Gamma0GITPresentation`, not here — and it must be folded in
+  as a FIELD, because the per-presentation statement `IsDomain A` is
+  FALSE (counterexample in the section comment below).
+* `smoothOfRelativeDimension_of_gamma0GITPresentation` —
+  Deligne–Rapoport III.1, Katz–Mazur 8.2 (and 8.2.1 for the
+  `ℤ[1/N]`-smoothness that specialises to this): the coarse space of a
+  smooth Deligne–Mumford stack of dimension one is normal, and a normal
+  curve over a perfect field is smooth.
+* `geometricallyConnected_of_gamma0GITPresentation` — Deligne–Rapoport
+  IV.5.5, or Shimura 6.6: `Γ_0(N)\ℍ` is connected and the moduli problem
+  is defined over `ℚ`, so `ℚ` is algebraically closed in the function
+  field.
 
-All three carry `hN : 0 < N`, and it is load-bearing for the first and
-third: at `N = 0` every coarse space is initial hence EMPTY
-(`isEmpty_of_gamma0Datum_zero` forces the base of a `Γ₀(0)`-datum to be
-empty), so `Γ(Y, ⊤)` is the zero ring — not a domain — and `Y` is not
-connected. -/
+Two of the three carry a load-bearing `hN : 0 < N`: at `N = 0` every
+coarse space is initial hence EMPTY (`isEmpty_of_gamma0Datum_zero` forces
+the base of a `Γ₀(0)`-datum to be empty), so the global sections are the
+zero ring — not a domain — and the space is not connected.  Smoothness
+holds vacuously at `N = 0`, so there `hN` is underscored. -/
 
 /-- **Any two atlases of the same level have isomorphic coarse spaces
 over `ℚ`** (PROVEN 2026-07-27).
@@ -8554,86 +9102,321 @@ theorem isAffine_of_gamma0Atlas {N : ℕ} (hN : 0 < N) (A : Gamma0Atlas N) :
     infer_instance
   exact IsAffine.of_isIso u
 
-/-- **The ring of global functions of the coarse space is a DOMAIN**
-(sorry leaf — the integrality half of Katz–Mazur (8.1.1)).
+/-! #### The three geometric leaves, moved onto the affine GIT model
 
-TRUE and classical: `Γ_0(N)\ℍ` is irreducible, so the rigidified moduli
-scheme `𝔐([Γ₀(N)], [Γ(n)]) = Spec A` is integral over `ℚ`, hence `A` is a
-domain, and the coarse space is `Spec (A^G)` with `A^G ⊆ A` a subring.
+Until 2026-07-27 the three statements below were bare `sorry`s of the
+shape `∀ A : Gamma0Atlas N, …`.  In that shape almost nothing can be done
+with them: a `Gamma0Atlas` presents its coarse space by a universal
+property and by nothing else, and no geometry can be read off a universal
+property.
 
-**This is the cheapest of the three open leaves, and it is not really
+What is done here is to move each of the three onto
+`Gamma0GITPresentation`, where the coarse space is literally
+`Spec (CommRingCat.of B)` with `B = A^G` — so that a prover has a RING to
+work with — and to prove the three consumers from the relocated leaves.
+The move is an equivalence and costs the tree nothing, because
+
+* every atlas is isomorphic over `SpecQ` to `P.toGamma0Atlas` for the
+  presentation `P` that `exists_gamma0GITPresentation` supplies
+  (`gamma0Atlas_isIso`), and
+* each of the three properties transports along such an isomorphism —
+  `isDomain_globalSections_transport`,
+  `smoothOfRelativeDimension_transport` and
+  `geometricallyConnected_transport` below, all PROVEN.
+
+So the per-presentation forms are equivalent to the per-atlas forms in
+both directions, and in particular they are exactly as junk-proof: a
+presentation's coarse space is pinned up to canonical isomorphism by the
+atlas it carries.  No new existence assertion is introduced —
+`exists_gamma0GITPresentation` is already a THEOREM, so the leaves below
+are stated `∀ P`, not `∃ P`, and nothing is asserted twice.
+
+**FALSITY AUDIT — the ONE statement in this family that is not pinned,
+and must therefore never be stated as a per-presentation lemma.**
+`IsDomain A` — integrality of the RIGIDIFIED moduli scheme — is FALSE for
+a general `P : Gamma0GITPresentation N`, though it is true for the
+Katz–Mazur presentation.  *Counterexample*: from any presentation `P₀`
+build `P` with
+
+* `A := A₀ × A₀` and `G := G₀ × ZMod 2`, acting diagonally through `G₀`
+  and by the factor swap through `ZMod 2`;
+* `dM :=` the pullback of `dM₀` along `Spec (diag)`, `diag : A₀ → A₀ × A₀`;
+* every other field taken from `P₀` unchanged.
+
+Then `A^G = A₀^{G₀} = B₀`, so `B`, `str`, `classify`, `classify_natural`
+and the coarse space are untouched.  `classify_dM` holds because
+`classify` is natural and `Spec (diag) ≫ (classify₀ …)` is
+`Spec (algebraMap B₀ (A₀ × A₀))`.  `cover` holds by composing `P₀`'s
+rigidifying map with `Spec (pr₁) : Spec A₀ ⟶ Spec (A₀ × A₀)`, along which
+`dM` pulls back to `dM₀` (`pr₁ ∘ diag = id`).  `dM_equivariant` holds
+because `τ_σ ∘ diag = diag ∘ (g · )` for `σ = (g, ε)` — the swap is
+invisible to the diagonal — so `dM` itself is the required `d₁`.  Yet
+`A₀ × A₀` is not a domain.
+
+Consequence for the owner of `Gamma0GITPresentation`: folding integrality
+in as a **FIELD** `[isDomain_A : IsDomain A]` is sound, because a field
+only makes the structure harder to inhabit and cannot be refuted by a
+junk witness; stating it as a *theorem* about an arbitrary presentation is
+not sound, and no proof of such a theorem can exist.  That is why the
+first leaf below asks for `IsDomain B` — which IS pinned, hence true —
+rather than `IsDomain A`, while its intended proof still runs through the
+field. -/
+
+/-- **`IsDomain Γ(·, ⊤)` transports along an isomorphism of schemes**
+(PROVEN 2026-07-27).
+
+An isomorphism `u : Y ⟶ Y'` induces an isomorphism `u.appTop` of global
+sections, whose inverse is `(inv u).appTop` by functoriality
+(`Scheme.Hom.comp_appTop`); a ring isomorphism carries `IsDomain` back
+along itself. -/
+theorem isDomain_globalSections_transport {Y Y' : Scheme.{0}} (u : Y ⟶ Y') [IsIso u]
+    (h : IsDomain Γ(Y', ⊤)) : IsDomain Γ(Y, ⊤) := by
+  haveI := h
+  haveI : IsIso (Scheme.Hom.appTop u) :=
+    ⟨Scheme.Hom.appTop (inv u), by rw [← Scheme.Hom.comp_appTop]; simp,
+      by rw [← Scheme.Hom.comp_appTop]; simp⟩
+  exact MulEquiv.isDomain Γ(Y', ⊤)
+    (asIso (Scheme.Hom.appTop u)).symm.commRingCatIsoToRingEquiv.toMulEquiv
+
+/-- **`SmoothOfRelativeDimension 1` transports along an isomorphism over
+the base** (PROVEN 2026-07-27).
+
+An isomorphism is an open immersion, hence smooth of relative dimension
+`0`, and relative dimensions add under composition: `0 + 1 = 1`.  This is
+the single-property form of the fourth clause of
+`isSmoothCurve_transport`, extracted because the three leaves below need
+the clauses one at a time. -/
+theorem smoothOfRelativeDimension_transport {Y Y' : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strY' : Y' ⟶ SpecQ}
+    (u : Y ⟶ Y') [IsIso u] (hu : u ≫ strY' = strY)
+    (h : SmoothOfRelativeDimension 1 strY') : SmoothOfRelativeDimension 1 strY := by
+  haveI := h
+  subst hu
+  exact inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (u ≫ strY'))
+
+/-- **`GeometricallyConnected` transports along an isomorphism over the
+base** (PROVEN 2026-07-27) — it is stable under base change, hence
+respects isomorphisms on the left. -/
+theorem geometricallyConnected_transport {Y Y' : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strY' : Y' ⟶ SpecQ}
+    (u : Y ⟶ Y') [IsIso u] (hu : u ≫ strY' = strY)
+    (h : GeometricallyConnected strY') : GeometricallyConnected strY := by
+  subst hu
+  exact MorphismProperty.RespectsIso.precomp (P := @GeometricallyConnected) u strY' h
+
+/-- **The ring of invariants of a GIT presentation is a DOMAIN** (sorry
+leaf, relocated here 2026-07-27 from `isDomain_of_gamma0Atlas`) — the
+integrality half of Katz–Mazur (8.1.1).
+
+TRUE and pinned: `Γ_0(N)\ℍ` is irreducible, so the coarse space is an
+integral scheme, and here it is literally `Spec B`; by
+`gamma0Atlas_isIso` every presentation's `Spec B` is isomorphic to the
+Katz–Mazur one, so no junk presentation can refute this even though a
+junk presentation can and does refute `IsDomain A` (see the FALSITY AUDIT
+in the section comment above).
+
+**This is the cheapest of the three open leaves and it is barely
 modular.**  The only genuinely new input is `IsDomain A` for the
-rigidified moduli scheme; once `Gamma0GITPresentation` carries that,
-`Function.Injective.isDomain` applied to
-`Gamma0GITPresentation.injective_algebraMap` gives `IsDomain B`, and
-transport of `IsDomain Γ(·, ⊤)` along `gamma0Atlas_isIso` (a scheme
-isomorphism induces a ring isomorphism on global sections) finishes it.
+rigidified moduli scheme.  Once `Gamma0GITPresentation` carries that as a
+field, this leaf is ONE LINE:
+
+    Function.Injective.isDomain (algebraMap P.B P.A) P.injective_algebraMap
+
+— `B` is a subring of `A` by `injective_algebraMap`, and a subring of a
+domain is a domain.  Everything downstream of this point is already
+proven: `isDomain_of_gamma0Atlas` below converts `IsDomain B` into
+`IsDomain Γ(A.Y, ⊤)` for an arbitrary atlas, through
+`Scheme.ΓSpecIso` and `isDomain_globalSections_transport`.
+
 Strengthening `Gamma0GITPresentation` belongs with that structure's
 owner, which is why the leaf is stated here rather than folded in.
 
 `hN` is REQUIRED: at `N = 0` a `Γ₀(0)`-datum forces its base to be empty
-(`isEmpty_of_gamma0Datum_zero`), every coarse space is initial, and
-`Γ(∅, ⊤)` is the zero ring, which is not `Nontrivial`. -/
+(`isEmpty_of_gamma0Datum_zero`), every coarse space is initial, and the
+global sections of `∅` form the zero ring, which is not `Nontrivial`. -/
+theorem isDomain_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    letI := P.commRing_B; IsDomain P.B :=
+  sorry
+
+/-- **The ring of global functions of the coarse space is a DOMAIN**
+(PROVEN 2026-07-27 over `isDomain_of_gamma0GITPresentation`).
+
+Take the Katz–Mazur presentation `P`; its coarse space is
+`Spec (CommRingCat.of B)`, whose global sections are `B` by
+`Scheme.ΓSpecIso`, and `B` is a domain by the leaf.  Any atlas is
+isomorphic to `P.toGamma0Atlas` over `SpecQ` (`gamma0Atlas_isIso`), and
+`isDomain_globalSections_transport` carries the conclusion across. -/
 theorem isDomain_of_gamma0Atlas {N : ℕ} (hN : 0 < N) (A : Gamma0Atlas N) :
-    IsDomain Γ(A.Y, ⊤) :=
+    IsDomain Γ(A.Y, ⊤) := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  letI := P.commRing_B
+  haveI : IsDomain P.B := isDomain_of_gamma0GITPresentation hN P
+  obtain ⟨u, hu, -⟩ := gamma0Atlas_isIso A P.toGamma0Atlas
+  haveI := hu
+  refine isDomain_globalSections_transport u ?_
+  show IsDomain Γ(Spec (CommRingCat.of P.B), ⊤)
+  exact MulEquiv.isDomain P.B
+    (Scheme.ΓSpecIso (CommRingCat.of P.B)).commRingCatIsoToRingEquiv.toMulEquiv
+
+/-- **The coarse space of a GIT presentation is smooth of relative
+dimension `1` over `ℚ`** (sorry leaf, relocated here 2026-07-27 from
+`smoothOfRelativeDimension_of_gamma0Atlas`) — Deligne–Rapoport III.1,
+Katz–Mazur 8.2.
+
+TRUE and classical, and one of the two genuinely modular inputs left
+below `X_0(N)`.  The stack-theoretic argument is: `𝔐([Γ₀(N)])` is a
+smooth Deligne–Mumford stack of dimension one over `ℚ`, its coarse space
+is therefore normal, and a normal curve over a perfect field is smooth
+(Katz–Mazur 8.2.1 proves the stronger `ℤ[1/N]`-smoothness, which
+specialises to this).
+
+## Why the statement is worth having at THIS model rather than at an atlas
+
+Here `str` is a morphism out of the affine `Spec (CommRingCat.of B)`, so
+the whole statement is about the ring `B = A^G` and the argument can be
+run in commutative algebra:
+
+1. `A` is a smooth `ℚ`-algebra of dimension one and a domain, hence a
+   Dedekind domain (regular of dimension one);
+2. `A` is integral over `B` because `G` is finite and
+   `Algebra.IsInvariant B A G` holds, so `dim B = dim A = 1`, and `B` is
+   of finite type over `ℚ` (Noether's theorem on invariants);
+3. invariants of an integrally closed domain under a group are integrally
+   closed, so `B` is a normal Noetherian domain of dimension one, i.e.
+   Dedekind, i.e. regular;
+4. regular + finite type over a PERFECT field (char `0`) ⟹ smooth.
+
+## What blocks it in the pin, checked 2026-07-27
+
+Step 4 has **nothing to cite**.  Mathlib's entire
+`SmoothOfRelativeDimension` API lives in
+`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` and consists of:
+`SmoothOfRelativeDimension.smooth`, additivity of the dimension under
+composition, stability under base change, "open immersions are smooth of
+relative dimension `0`", and the
+`HasRingHomProperty (@SmoothOfRelativeDimension n)
+(Locally (IsStandardSmoothOfRelativeDimension n))` instance.  There is no
+lemma relating it to regularity, normality or Krull dimension in either
+direction.  *The check that would refute this*:
+`grep -rn "SmoothOfRelativeDimension" .lake/packages/mathlib/Mathlib/` —
+if it returns anything dimension-theoretic, step 4 is citable and this
+leaf is a short proof away.
+
+So the two honest routes are: build the "regular curve over a perfect
+field is smooth" bridge (mathlib-facing, reusable, and also wanted by
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`), or
+go through `HasRingHomProperty.Spec_iff` and exhibit
+`Locally (IsStandardSmoothOfRelativeDimension 1)` for `ℚ → B` directly.
+
+`hN` is NOT load-bearing here and is underscored: at `N = 0` the coarse
+space is empty and `SmoothOfRelativeDimension` quantifies over its
+points, so the statement holds vacuously.  It is kept in the signature
+only to match its two siblings. -/
+theorem smoothOfRelativeDimension_of_gamma0GITPresentation {N : ℕ} (_hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    SmoothOfRelativeDimension 1 P.str :=
   sorry
 
 /-- **The coarse space is smooth of relative dimension `1` over `ℚ`**
-(sorry leaf — Deligne–Rapoport III.1, Katz–Mazur 8.2).
-
-TRUE and classical, and this is one of the two genuinely modular inputs
-left below `X_0(N)`.  The argument is: `𝔐([Γ₀(N)])` is a smooth
-Deligne–Mumford stack of dimension one over `ℚ`, its coarse space is
-therefore normal, and a normal curve over a perfect field is smooth
-(Katz–Mazur 8.2.1 proves the stronger `ℤ[1/N]`-smoothness, which
-specialises to this).  At the level of the GIT presentation the same
-argument reads: `A` is a smooth `ℚ`-algebra of dimension one, invariants
-of a normal domain under a finite group are normal, and a normal
-finite-type algebra of dimension one over a field of characteristic zero
-is smooth.
-
-By `gamma0Atlas_isIso` the statement does not depend on which atlas is
-used, so a proof may exhibit any single model — in particular the
-Katz–Mazur one supplied by `exists_gamma0GITPresentation`. -/
+(PROVEN 2026-07-27 over `smoothOfRelativeDimension_of_gamma0GITPresentation`
+by transport along `gamma0Atlas_isIso`). -/
 theorem smoothOfRelativeDimension_of_gamma0Atlas {N : ℕ} (hN : 0 < N)
     (A : Gamma0Atlas N) :
-    SmoothOfRelativeDimension 1 A.str :=
-  sorry
+    SmoothOfRelativeDimension 1 A.str := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  obtain ⟨u, hu, hus⟩ := gamma0Atlas_isIso A P.toGamma0Atlas
+  haveI := hu
+  exact smoothOfRelativeDimension_transport u hus
+    (smoothOfRelativeDimension_of_gamma0GITPresentation hN P)
 
-/-- **The coarse space is geometrically connected over `ℚ`** (sorry leaf
-— Deligne–Rapoport IV.5.5, or Shimura 6.6).
+/-- **The coarse space of a GIT presentation is geometrically connected
+over `ℚ`** (sorry leaf, relocated here 2026-07-27 from
+`geometricallyConnected_of_gamma0Atlas`) — Deligne–Rapoport IV.5.5, or
+Shimura 6.6.
 
 TRUE and classical, and the second of the two genuinely modular inputs.
 Connectedness over `ℂ` is the connectedness of `Γ_0(N)\ℍ` (a quotient of
 the connected `ℍ`); what upgrades it to *geometric* connectedness over
 `ℚ` is that the `Γ₀(N)`-moduli problem is defined over `ℚ`, so `ℚ` is
-algebraically closed in the function field of the coarse space.  Note
-this is exactly where the rigidified moduli scheme cannot be used
-directly: `𝔐([Γ₀(N)], [Γ(n)])` is *not* geometrically connected over `ℚ`
-for `n ≥ 3` — its geometric components are permuted by
-`Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing — and connectedness is
-recovered only after quotienting by the full `G = GL₂(ℤ/n)`.
+algebraically closed in the function field of the coarse space.
+
+**The rigidified moduli scheme cannot be used directly**, and this is the
+one place in this family where that matters: `𝔐([Γ₀(N)], [Γ(n)])` is
+*not* geometrically connected over `ℚ` for `n ≥ 3` — its geometric
+components are permuted by `Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing — and
+connectedness is recovered only after quotienting by the full
+`G = GL₂(ℤ/n)`.  So the leaf must be stated about `str` (the coarse
+space), never about `strM`.
+
+## What the statement unfolds to at this model
+
+`GeometricallyConnected` is `geometrically (ConnectedSpace ·)`
+(`GeometricallyConnected.eq_geometrically`), i.e. for every field `K`,
+every `Spec K ⟶ SpecQ` and every pullback square over them, the pullback
+is a connected space.  Since `str` is a morphism out of an affine scheme,
+`AlgebraicGeometry.pullbackSpecIso` identifies that pullback with
+`Spec (CommRingCat.of (B ⊗[ℚ] K))`, so the obligation is exactly
+
+> `B ⊗[ℚ] K` has no nontrivial idempotents, for every field extension
+> `K/ℚ`,
+
+which is the algebraic form of "`ℚ` is algebraically closed in
+`Frac B`" — `Frac B / ℚ` is a regular field extension, `ℚ` being perfect.
+That is the q-expansion-principle content of Deligne–Rapoport IV.5.5.
+
+## What blocks it in the pin, checked 2026-07-27
+
+Two things, and both are worth knowing before a prover is sent here.
+
+1. **Mathlib has no way to CONSTRUCT a `GeometricallyConnected`.**  The
+   string occurs 31 times in the whole of mathlib, all of them in
+   `Mathlib/AlgebraicGeometry/Geometrically/Connected.lean`, and every
+   one is either a consequence of the class or a stability property
+   (base change, restriction, fibres, composition).  There is no
+   sufficient criterion at all.  *The check that would refute this*:
+   `grep -rln "GeometricallyConnected" .lake/packages/mathlib/Mathlib/`
+   returning a second file.
+2. **The usual cheap criterion is unavailable MATHEMATICALLY, not just
+   formally.**  "Connected + a `k`-rational point ⟹ geometrically
+   connected" (EGA IV 4.5.13) cannot be used: `Y_0(N)(ℚ)` is empty for
+   most `N`, and stating that emptiness is the entire purpose of this
+   module.  A prover must go through the function field, not through a
+   point.
 
 `hN` is REQUIRED: at `N = 0` the coarse space is empty, and
-`GeometricallyConnected` carries nonemptiness through `ConnectedSpace`.
+`GeometricallyConnected` carries nonemptiness through `ConnectedSpace`. -/
+theorem geometricallyConnected_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    GeometricallyConnected P.str :=
+  sorry
 
-By `gamma0Atlas_isIso` the statement does not depend on which atlas is
-used. -/
+/-- **The coarse space is geometrically connected over `ℚ`** (PROVEN
+2026-07-27 over `geometricallyConnected_of_gamma0GITPresentation` by
+transport along `gamma0Atlas_isIso`). -/
 theorem geometricallyConnected_of_gamma0Atlas {N : ℕ} (hN : 0 < N)
     (A : Gamma0Atlas N) :
-    GeometricallyConnected A.str :=
-  sorry
+    GeometricallyConnected A.str := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  obtain ⟨u, hu, hus⟩ := gamma0Atlas_isIso A P.toGamma0Atlas
+  haveI := hu
+  exact geometricallyConnected_transport u hus
+    (geometricallyConnected_of_gamma0GITPresentation hN P)
 
 /-- **Existence of the affine integral Katz–Mazur model of `Y_0(N)` for
 `N ≥ 1`** (PROVEN 2026-07-27 — formerly a sorry leaf that re-asserted the
 entire Katz–Mazur construction).
 
 The atlas half is `exists_gamma0Atlas`, already a THEOREM; the four
-geometric fields are the four per-atlas statements above, of which
-`isAffine_of_gamma0Atlas` is proven and three remain open.  See the
-section comment above for why stating them per-atlas is equivalent to
-stating them for the Katz–Mazur model, and for the citation attached to
-each. -/
+geometric fields are the four per-atlas statements above, and since
+2026-07-27 all four are PROVEN — `isAffine_of_gamma0Atlas` outright, and
+the other three by transport from the GIT model, where the three
+remaining leaves now live
+(`isDomain_of_gamma0GITPresentation`,
+`smoothOfRelativeDimension_of_gamma0GITPresentation`,
+`geometricallyConnected_of_gamma0GITPresentation`).  See the section
+comment above for why stating them per-atlas is equivalent to stating
+them for the Katz–Mazur model, and for the citation attached to each. -/
 theorem exists_gamma0AffineModel (N : ℕ) (hN : 0 < N) :
     Nonempty (Gamma0AffineModel N) :=
   (exists_gamma0Atlas N hN).map fun A =>
@@ -8999,16 +9782,22 @@ ingredients its own docstring listed:
   `A → ℚ̄` because `A` is integral over `B`; the lift is a `ℚ̄`-point `m` of the
   rigidified moduli scheme, and the base change of the universal family `dM`
   along `m` is the datum wanted.  Only two general facts are used, and both
-  were already here: `exists_gamma0Datum_baseChange` (PROVEN — note the
-  docstring of `Gamma0Atlas` above still says base change "does not exist
-  today"; that is stale) and `classify_dM`, which is what makes `classify dM`
+  were already here: `exists_gamma0Datum_baseChange` (PROVEN — the docstring
+  of `Gamma0Atlas` above used to say base change "does not exist today"; that
+  was stale and has been corrected in place, 2026-07-27) and `classify_dM`,
+  which is what makes `classify dM`
   the quotient map `Spec A ⟶ Spec B` and hence lets `m` be pushed to the given
   point.  Transport from the GIT presentation to an ARBITRARY coarse moduli
   space is pure initiality, exactly as in `IsCoarseModuliY0.exists_inverse`
   (which cannot be cited here — it is declared six thousand lines below — so
   the two-line argument is repeated inline).
-* *the twisting/Kummer computation* — this is `exists_gamma0Datum_specQ_of_ratPoint`,
-  the one genuinely arithmetic leaf of the bridge.
+* *the twisting/Kummer computation* — this was
+  `exists_gamma0Datum_specQ_of_ratPoint`, which is now PROVEN; the arithmetic
+  leaf of the bridge is `exists_stableCyclic_of_gamma0Datum_algClos`, and the
+  INJECTIVITY half of the geometric bijection, which used to ride inside it as
+  the hypothesis `hd`, is now the separate leaf
+  `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq`.  See the
+  subsection "The injectivity split, taken 2026-07-27" below.
 
 What is left over is the translation back from a `Γ₀(N)`-datum over `ℚ` to a
 Weierstrass curve, `exists_stableCyclic_of_gamma0Datum`: the exact converse of
@@ -9083,9 +9872,13 @@ and the datum is the base change of the universal family along the lift,
 structure-morphism bookkeeping, as it does throughout this file.
 
 Note what is NOT needed: no properness, no finiteness of `G` beyond what
-`Algebra.IsInvariant` already carries, and no injectivity of `classify`.  The
-descent leaf below is where injectivity would enter, and it enters there in
-the packaged form of the hypothesis `hd` rather than as a separate statement. -/
+`Algebra.IsInvariant` already carries, and no injectivity of `classify`.
+Injectivity is a SEPARATE statement (updated 2026-07-27): it used to enter the
+descent leaf below in the packaged form of the hypothesis `hd`, and is now
+split off as this lemma's mirror image,
+`Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq`, together with
+its own initiality transport.  That split is what consumes `P.finite_G`, which
+this lemma does not. -/
 theorem Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint {N : ℕ}
     (P : Gamma0GITPresentation N) (x : RelPoint P.str (specAlgClos ℚ)) :
     ∃ d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
@@ -9185,18 +9978,144 @@ theorem y0HasNoRationalPoint_zero : Y0HasNoRationalPoint 0 := by
   have hne : Nonempty ↥SpecQ := inferInstanceAs (Nonempty (PrimeSpectrum ℚ))
   exact (‹IsEmpty ↥SpecQ›).elim hne.some
 
-/-- **A `ℚ̄`-datum whose class is a RATIONAL point of the coarse space descends
-to `ℚ`, after a twist** (sorry leaf, opened 2026-07-27) — the twisting/Kummer
-computation of the section above, and the one genuinely arithmetic ingredient
-of the descent bridge.
+/-! #### The injectivity split, taken 2026-07-27
 
-`hd` says that the class of `d` in the coarse space is the base change to `ℚ̄`
-of the rational point `y`.  That is precisely "the field of moduli of `d` is
-`ℚ`": the class of `σ^*d` is `σ^*(classify d) = σ^*(y|_ℚ̄) = y|_ℚ̄`, because a
-`ℚ`-rational point is Galois-invariant by construction, so `classify` cannot
-separate `σ^*d` from `d`.  Injectivity of `classify` on geometric points — the
-other half of the omitted clause — then makes `σ^*d ≅ d` for every `σ`, and
-that is the input to the twisting argument.
+`exists_gamma0Datum_specQ_of_ratPoint` used to carry the injectivity half of
+the geometric bijection *inside* itself: its hypothesis `hd` was phrased through
+`classify` rather than as `σ^*d ≅ d`, because — as its docstring recorded — the
+Galois-twisted datum had to be PRODUCED before it could be compared, and no
+producer existed.  `exists_gamma0Datum_baseChange` is now proven, so `σ^*d` is
+available as `exists_gamma0Datum_baseChange (specGal σ) d`, and the split the
+old docstring prescribed has been taken.
+
+The three declarations below are the result, and they mirror the surjectivity
+trio above one for one:
+
+* `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` — injectivity
+  over a *presentation*.  A leaf, exactly as its surjectivity partner was.
+* `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` — the same
+  statement over an arbitrary coarse space, PROVEN by initiality alone, in the
+  same `v ≫ u = 𝟙` style as
+  `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` (with the composite
+  taken in the other order, `u ≫ v = 𝟙`, since here it is `u` that must be
+  cancelled).
+* `exists_stableCyclic_of_gamma0Datum_algClos` — the twisting/Kummer descent,
+  now the ONLY arithmetic left under this node, and stated so that its
+  conclusion is verbatim the hypothesis list of the already-proven
+  `nonempty_gamma0Datum_of_stable`.  That is the second half of the split:
+  the leaf no longer has to BUILD a `Γ₀(N)`-datum over `ℚ`, only to produce a
+  Weierstrass curve over `ℚ` with a Galois-stable cyclic subgroup — which is
+  the language a twist is written in. -/
+
+/-- **`classify` is INJECTIVE on `ℚ̄`-points, over the GIT presentation**
+(sorry leaf, opened 2026-07-27): two `Γ₀(N)`-data over `ℚ̄` with the same class
+in the coarse space are isomorphic, an isomorphism of data being
+`IsBaseChangeOf (𝟙 _)` (see the last paragraph of `IsBaseChangeOf`'s
+docstring).
+
+This is the half of the geometric bijection that `IsCoarseModuliY0`
+deliberately omits which the surjectivity lemma
+`Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint` above does not
+cover, and it is stated over a PRESENTATION for exactly the reason recorded
+there: initiality determines `(Y, classify)` up to unique isomorphism and says
+nothing about which points of `Y` there are or which of them are separated,
+whereas a presentation says which points there are.
+`IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` below transports it
+off the presentation, and that transport is PROVEN — so a presentation has to
+be entered exactly once.
+
+#### The route
+
+`classify_dM` identifies `(P.classify P.strM P.dM).1` with the quotient map
+`Spec A ⟶ Spec B`, `B = A^G`.  Two `ℚ̄`-points of `Spec A` with the same image
+in `Spec A^G` lie in a single `G`-orbit — the geometric-quotient half of the
+GIT quotient by a FINITE group, and the one place in this subsection where
+`P.finite_G` is consumed (the surjectivity partner uses only
+`Algebra.IsInvariant.isIntegral`).  The deck group changes the auxiliary
+`[Γ(n)]`-rigidification and not the underlying `Γ₀(N)`-datum, so points of one
+orbit carry isomorphic data: `exists_gamma0Datum_baseChange` realises the data
+at the two points as base changes of `P.dM` along the two lifts, and the
+comparison across the deck transformation is the `IsBaseChangeOf (𝟙 _)` asked
+for.
+
+`P.classify_natural` is what turns "same point of `Spec A`" into "isomorphic
+data", and `subsingleton_hom_specQ` disposes of the structure-morphism
+bookkeeping, as everywhere else in this file.
+
+**The check that would refute this**: exhibit `P` and two `ℚ̄`-data with equal
+class and no isomorphism.  Since a `ℚ̄`-point of `Spec A^G` determines the
+`G`-orbit and hence the datum up to the deck action, that is exactly a failure
+of the finite-group quotient to be a geometric quotient on `ℚ̄`-points — which
+does not happen for `Spec A^G` with `G` finite acting on a ring.
+
+`N = 0` needs no hypothesis: `isEmpty_of_gamma0Datum_zero` makes
+`Gamma0Datum 0 (Spec ℚ̄)` uninhabited, so the statement is vacuous there. -/
+theorem Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq {N : ℕ}
+    (P : Gamma0GITPresentation N)
+    (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (h : P.classify (specAlgClos ℚ) d₁ = P.classify (specAlgClos ℚ) d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
+  sorry
+
+/-- **`classify` is INJECTIVE on `ℚ̄`-points, over ANY coarse moduli space**
+(PROVEN 2026-07-27) — the previous leaf transported off the presentation by
+initiality alone, the exact mirror of
+`IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint`.
+
+Initiality supplies `u : Y_P ⟶ Y` and `v : Y ⟶ Y_P` over `Spec ℚ` compatible
+with both classifying maps.  Surjectivity needed `v ≫ u = 𝟙 Y` (push a point of
+`Y` to `Y_P`, lift it, push it back); injectivity needs the OTHER composite,
+`u ≫ v = 𝟙 Y_P`, because what has to be cancelled here is `u` — the two classes
+agree in `Y`, and `hucl` writes each of them as the `Y_P`-class followed by `u`.
+Both identities come from the same `∃!` clause, applied on the relevant side.
+
+`hN : 0 < N` is consumed only by `exists_gamma0GITPresentation`, exactly as in
+the surjectivity transport; the degenerate level is `y0HasNoRationalPoint_zero`.
+-/
+theorem IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq {N : ℕ} (hN : 0 < N)
+    {Y : Scheme.{0}} {str : Y ⟶ SpecQ} (hY : IsCoarseModuliY0 N str)
+    (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (h : hY.classify (specAlgClos ℚ) d₁ = hY.classify (specAlgClos ℚ) d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  let h₁ := P.toGamma0Atlas.toIsCoarseModuliY0
+  obtain ⟨u, ⟨hu, hucl⟩, -⟩ := h₁.universal str hY.classify hY.classify_natural
+  obtain ⟨v, ⟨hv, hvcl⟩, -⟩ := hY.universal P.toGamma0Atlas.str h₁.classify h₁.classify_natural
+  obtain ⟨w, -, hwuniq⟩ :=
+    h₁.universal P.toGamma0Atlas.str h₁.classify h₁.classify_natural
+  have huv : u ≫ v = 𝟙 _ := by
+    refine (hwuniq (u ≫ v) ⟨?_, ?_⟩).trans (hwuniq (𝟙 _) ⟨Category.id_comp _, ?_⟩).symm
+    · rw [Category.assoc, hv, hu]
+    · intro T g dd
+      conv_lhs => rw [hvcl g dd, hucl g dd]
+      exact Category.assoc _ _ _
+    · intro T g dd
+      exact (Category.comp_id _).symm
+  refine P.nonempty_isBaseChangeOf_of_classify_eq d₁ d₂ (Subtype.ext ?_)
+  show (h₁.classify (specAlgClos ℚ) d₁).1 = (h₁.classify (specAlgClos ℚ) d₂).1
+  have h1 : (h₁.classify (specAlgClos ℚ) d₁).1 ≫ u
+      = (h₁.classify (specAlgClos ℚ) d₂).1 ≫ u := by
+    rw [← hucl, ← hucl]; exact congrArg Subtype.val h
+  calc (h₁.classify (specAlgClos ℚ) d₁).1
+      = ((h₁.classify (specAlgClos ℚ) d₁).1 ≫ u) ≫ v := by
+        rw [Category.assoc, huv, Category.comp_id]
+    _ = ((h₁.classify (specAlgClos ℚ) d₂).1 ≫ u) ≫ v := by rw [h1]
+    _ = (h₁.classify (specAlgClos ℚ) d₂).1 := by
+        rw [Category.assoc, huv, Category.comp_id]
+
+/-- **A `ℚ̄`-datum whose Galois conjugates are all isomorphic to it comes from a
+Weierstrass curve over `ℚ` carrying a Galois-stable cyclic subgroup of order
+`N`** (sorry leaf, opened 2026-07-27) — the twisting/Kummer computation, and
+after the injectivity split above the ONE genuinely arithmetic ingredient of
+the descent bridge.
+
+`hinv` is "the field of moduli of `d` is `ℚ`", stated in the only comparison of
+data this development has.  It is NOT vacuous: `exists_gamma0Datum_baseChange`
+guarantees that a `dσ` with `IsBaseChangeOf (specGal σ) dσ d` exists for every
+`σ`, so quantifying over all such `dσ` really does constrain `d`, and the
+`∀ dσ` form is what makes the hypothesis cheap to supply — any producer will
+do.  It is satisfied by every datum that is itself a base change of one over
+`ℚ`, which is what makes the leaf non-trivial in the other direction too.
 
 #### The argument, and it is the one written out in the section docstring above
 
@@ -9209,8 +10128,8 @@ defined over `ℚ` and carries a `G_ℚ`-stable subgroup.
 
 **NO CASE SPLIT ON `j`, and do not reintroduce one.**  The `j ∈ {0, 1728}`
 caveat is a caveat about the strictly stronger statement that the PAIR
-`(E, C)` descend; only `Nonempty (Gamma0Datum N SpecQ)` is asked for here, so a
-twist is allowed and the obstruction vanishes.  Neither
+`(E, C)` descend; only a curve over `ℚ` with a stable subgroup is asked for
+here, so a twist is allowed and the obstruction vanishes.  Neither
 `isolatedJInvariants` nor any `p`-hypothesis belongs in this leaf; the former
 is load-bearing for the two arithmetic level leaves, not for this one.
 
@@ -9218,22 +10137,99 @@ is load-bearing for the two arithmetic level leaves, not for this one.
 `ℚˣ/(ℚˣ)^{n/2}` outside the image of `ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being
 induced by the identity on representatives.
 
-WHAT A PROVER OWES.  The injectivity half of the geometric bijection is
-*inside* this leaf: `hd` is stated in terms of `classify` rather than in terms
-of an isomorphism `σ^*d ≅ d`, because `IsBaseChangeOf` along `specGal σ` is the
-only comparison of data this development has and the Galois-twisted datum
-would have to be produced before it could be compared.  A successor who wants
-to split that off should state it as
-`classify _ d₁ = classify _ d₂ → Nonempty (IsBaseChangeOf (𝟙 _) d₁ d₂)` and
-obtain `σ^*d` from `exists_gamma0Datum_baseChange (specGal σ) d`, both of which
-are now available. -/
+#### Why the conclusion is ELEMENTARY and not a `Gamma0Datum N SpecQ`
+
+Because the scheme-theoretic half of that conversion is already PROVEN:
+`nonempty_gamma0Datum_of_stable` takes exactly this conclusion — `E`, a point
+`g` of order `N` over `ℚ̄`, and Galois-stability of `AddSubgroup.zmultiples g` —
+and builds the datum over `Spec ℚ`, through
+`exists_ellipticScheme_of_weierstrass` and
+`exists_cyclicSubgroupOfOrder_of_galoisStable`.  Asking this leaf for a datum
+would make it re-do that work, and — worse — would state it in a language in
+which a *twist* cannot be written.  Twists live on Weierstrass equations.
+
+WHAT IS MISSING FOR IT, surveyed 2026-07-27 and worth recording because two
+of the three obvious places do NOT have it:
+
+* **Twist theory is absent from mathlib, from `~/cs/FLT`, and from this
+  project.**  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean`
+  covers only `j ∉ {0, 1728}` (its `u⁴ = u⁶ = 1` argument), and
+  `.../GaloisDescent.lean` is a STUB — header, imports, `variable` block and a
+  module docstring announcing "Galois descent for Weierstrass curve data",
+  with zero declarations.  Do not read a grep hit on that filename as
+  evidence.
+* At `j ∈ {0, 1728}` the two genuinely missing pieces are `Aut(E⁄ℚ̄) ≅ μ₄`,
+  `μ₆` (a direct extension of `Aut.lean`) and the twist attached to a cocycle.
+* **Conjugating a curve given only over `ℚ̄` is not expressible with mathlib's
+  point API** — `WeierstrassCurve.Affine.Point.map` needs a common base
+  algebra.  That is why every statement in this bridge is phrased in the
+  `ℚ`-model language rather than through an intermediate `Ē/ℚ̄`; a prover who
+  finds itself wanting to write `σ(E)` for `E/ℚ̄` has hit that wall, not a gap
+  in its own understanding.
+
+`hN : N ≠ 0` is load-bearing: at `N = 0` a generator of order `0` is of
+infinite order, and the conclusion would assert a `ℚ̄`-point of infinite order
+generating a Galois-stable subgroup, which is not what the hypotheses give.
+The `N = 0` branch of the consumer is discharged instead by
+`isEmpty_of_gamma0Datum_zero`, `Spec ℚ̄` being nonempty. -/
+theorem exists_stableCyclic_of_gamma0Datum_algClos {N : ℕ} (hN : N ≠ 0)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g :=
+  sorry
+
+/-- **A `ℚ̄`-datum whose class is a RATIONAL point of the coarse space descends
+to `ℚ`, after a twist** (PROVEN 2026-07-27 by the injectivity split recorded in
+the subsection above; formerly the single sorry leaf that carried both halves).
+
+`hd` says that the class of `d` in the coarse space is the base change to `ℚ̄`
+of the rational point `y`.  That is precisely "the field of moduli of `d` is
+`ℚ`", and the proof turns it into that statement in three lines: for `σ ∈ G_ℚ`
+and any `dσ` which is a base change of `d` along `specGal σ`,
+`classify_natural` gives `classify dσ = RelPoint.pre (specGal σ) (classify d)`,
+and `specGal_comp_base` says a point of the shape `specAlgClos ℚ ≫ y.1` is
+fixed by that precomposition — a `ℚ`-rational point is Galois-invariant by
+construction, so `classify` cannot separate `σ^*d` from `d`.
+`IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` then upgrades the
+equality of classes to an isomorphism `σ^*d ≅ d`, which is the input
+`exists_stableCyclic_of_gamma0Datum_algClos` wants, and
+`nonempty_gamma0Datum_of_stable` converts its elementary output back into a
+datum over `Spec ℚ`.
+
+The degenerate level is handled here rather than pushed onto the leaves: at
+`N = 0` the hypothesis `d` is itself contradictory, `isEmpty_of_gamma0Datum_zero`
+emptying `Spec ℚ̄`, which is nonempty. -/
 theorem exists_gamma0Datum_specQ_of_ratPoint {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ SpecQ}
     (hY : IsCoarseModuliY0 N str) (y : RelPoint str (𝟙 SpecQ))
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (hd : hY.classify (specAlgClos ℚ) d
       = RelPoint.pre (specAlgClos ℚ) (Category.comp_id _) y) :
-    Nonempty (Gamma0Datum N SpecQ) :=
-  sorry
+    Nonempty (Gamma0Datum N SpecQ) := by
+  rcases eq_or_ne N 0 with rfl | hN
+  · haveI : IsEmpty ↥(Spec (CommRingCat.of (AlgebraicClosure ℚ))) :=
+      isEmpty_of_gamma0Datum_zero d
+    have hne : Nonempty ↥(Spec (CommRingCat.of (AlgebraicClosure ℚ))) :=
+      inferInstanceAs (Nonempty (PrimeSpectrum (AlgebraicClosure ℚ)))
+    exact (‹IsEmpty ↥(Spec (CommRingCat.of (AlgebraicClosure ℚ)))›).elim hne.some
+  · have hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        IsBaseChangeOf (specGal σ) dσ d →
+          Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d) := by
+      intro σ dσ hbc
+      refine hY.nonempty_isBaseChangeOf_of_classify_eq (Nat.pos_of_ne_zero hN) dσ d ?_
+      rw [hY.classify_natural (specGal σ) (specGal_comp_specAlgClos σ) hbc, hd]
+      exact Subtype.ext (specGal_comp_base y.1 σ)
+    obtain ⟨E, hE, g, hg, hstable⟩ := exists_stableCyclic_of_gamma0Datum_algClos hN d hinv
+    haveI := hE
+    exact nonempty_gamma0Datum_of_stable E hN g hg hstable
 
 /-- **The Galois action preserves the property of lying in a subscheme**
 (PROVEN 2026-07-27, no leaf).
@@ -9444,25 +10440,39 @@ over the single leaf `exists_weierstrassCurve_of_abelianSchemeStruct`, so the
 open frontier of this assembly is `exists_gamma0Datum_specQ_of_ratPoint` and
 that Weierstrass-model leaf:
 
-1. `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` (PROVEN) gives the
-   SURJECTIVITY half of geometric bijectivity at an arbitrary coarse space —
-   precisely the half of the coarse-moduli definition that `IsCoarseModuliY0`
-   deliberately omits, and one that **initiality alone can never supply**, since
-   initiality determines `Y` only up to isomorphism and says nothing about which
-   points of `Y` are hit.  The INJECTIVITY half survives inside
-   `exists_gamma0Datum_specQ_of_ratPoint`, packaged as its hypothesis `hd`.
-2. *The field-of-moduli step.*  Base-changing the rational point `y` to `ℚ̄`
-   gives `x` with `x.1 = specAlgClos ℚ ≫ y.1`, which is Galois-fixed on the nose
-   by `specGal_comp_base`; that is what makes the field of moduli of the
-   classifying datum equal to `ℚ`, and it is where the rationality of `y` is
-   consumed.
-3. `exists_gamma0Datum_specQ_of_ratPoint` (LEAF) performs the twisting/Kummer
-   descent and returns a datum over `Spec ℚ`; `exists_stableCyclic_of_gamma0Datum`
-   (PROVEN, over the Weierstrass-model leaf) converts that datum back into a
-   Weierstrass curve with a stable cyclic subgroup, contradicting `h`.
-4. *The degenerate level, PROVEN here.*  At `N = 0` no descent happens at all:
-   `y0HasNoRationalPoint_zero` empties an arbitrary coarse space, and a
-   section of `str` would give a map out of the nonempty `Spec ℚ` into it.
+#### What proving it needs — and what of that is now DONE
+
+Precisely the half of the coarse-moduli definition that `IsCoarseModuliY0`
+deliberately omits — bijectivity of `classify` on geometric points, i.e.
+`Y(ℚ̄) ↔ {(E, C)/ℚ̄}/≅`, `G_ℚ`-equivariantly — together with the descent
+computation above.  The first was correctly diagnosed as reachable from
+`Gamma0Atlas` / `Gamma0GITPresentation` and unreachable from initiality: its
+SURJECTIVITY half is PROVEN as
+`IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint`, and its INJECTIVITY
+half — which used to survive inside `exists_gamma0Datum_specQ_of_ratPoint`,
+packaged as the hypothesis `hd` — **has been split off** (2026-07-27), exactly
+as that leaf's docstring prescribed, into
+`Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` plus a PROVEN
+initiality transport.  `exists_gamma0Datum_specQ_of_ratPoint` is itself now
+PROVEN.
+
+**This list was REGENERATED at integration (2026-07-27) from a
+comment-stripped scan of the merged source, not merged as prose** — two
+branches rewrote it in the same release, and one of them still named
+`false_of_gamma0Datum_specQ`, a cut retired at release 5.  THREE leaves remain
+under this node, and no two of them share subject matter:
+
+* `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` — injectivity
+  of `classify` on `ℚ̄`-points over a presentation; GIT, no arithmetic;
+* `exists_stableCyclic_of_gamma0Datum_algClos` — the twisting/Kummer descent,
+  arithmetic, and the only place a twist appears;
+* `exists_weierstrassCurve_of_abelianSchemeStruct` — the Weierstrass
+  dictionary, no modular curve in it.  (`exists_stableCyclic_of_gamma0Datum`
+  above is PROVEN over it.)
+
+The degenerate level is PROVEN here: at `N = 0` no descent happens at all,
+`y0HasNoRationalPoint_zero` empties an arbitrary coarse space, and a section of
+`str` would give a map out of the nonempty `Spec ℚ` into it.
 
 Cusps are not an obstacle and need no hypothesis: `Y_0(N)` is the coarse space
 of the moduli problem `[Γ₀(N)]`, whose objects are genuine elliptic schemes, so
@@ -9839,11 +10849,14 @@ they sit immediately before their consumer
 `y0HasNoRationalPoint_of_chabautySemiprimeLevel` were relocated into that
 same block, by a mechanically pure move, and both are now PROVEN over the
 shared criterion `y0HasNoRationalPoint_of_cardLeCusps`.  The open content
-of `26, 65, 91` is now the two point-count leaves `card_le_x0TwentySix`
-and — since 2026-07-27, when `card_le_of_chabautySemiprimeLevel` was
-itself decomposed — `injective_redX_of_chabautyColemanPrime`, which live
+of `26, 65, 91` moved with them to the two point-count leaves
+`card_le_x0TwentySix` and `card_le_of_chabautySemiprimeLevel`, which live
 down there beside the compactification machinery they are stated over.
-So what stays HERE is
+Both of those are now PROVEN too (2026-07-27): `card_le_x0TwentySix` by
+adding `26` to `x0SieveLevels` and `kenkuLevels` so the multi-prime sieve
+reaches it, and `card_le_of_chabautySemiprimeLevel` by its own
+decomposition, which left `injective_redX_of_chabautyColemanPrime` as the
+single open leaf carrying `65, 91`.  So what stays HERE is
 the partition itself: the three `List ℕ` definitions,
 `y0HasNoRationalPoint_of_isolatedSemiprime` (the `56`-level descent —
 PROVEN, over `mem_isolatedJInvariants_of_stable` and
@@ -10204,8 +11217,204 @@ theorem y0HasNoRationalPoint_of_no_stable_isolated {p N : ℕ}
     Y0HasNoRationalPoint N :=
   y0HasNoRationalPoint_of_not_stableCyclic hno
 
-/-- **Mazur's Theorem 1, in the form the descent needs** (sorry node,
-introduced 2026-07-27): a curve over `ℚ` with a rational `p`-isogeny, for
+/-! #### Mazur's Theorem 1 at the isolated primes, split by TECHNIQUE
+
+`mem_isolatedJInvariants_of_stable` below was a single leaf when it was
+introduced earlier on 2026-07-27, carrying an ATOMICITY audit that recorded
+cuts along the *level*, the *prime* and the *`j`-value* as all tried and all
+failed.  That audit is right about each of the three axes it searched — the
+level cut is vacuous at prime level, `fin_cases` on `_hp` really does hand
+back seven goals of the same shape, and the `j`-value cut really does need
+the conclusion in order to case on.  What it did not ask is what happens
+when the seven primes are grouped by the ARGUMENT that settles them instead
+of enumerated one by one.  They fall into three groups whose proofs have
+nothing in common, and that is the split taken here.
+
+**A second, independent development in this tree had already converged on
+exactly this split.**  `FreyCurve/MazurTorsion.lean` carries
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_ge_eleven`, which is
+verbatim `mem_isolatedJInvariants_of_stable` modulo the `Finset ℚ` versus
+`List (ℕ × ℚ)` phrasing, and it is PROVEN there over
+`jInvariant_mem_of_isogenyPrime_genusOne`, `…_thirtySeven` and
+`…_classNumberOne` — the same three groups, `{11, 17, 19}`, `{37}`,
+`{43, 67, 163}`.  Two developments reaching the same three-way cut from
+opposite directions is the strongest evidence available here that the cut is
+the mathematics and not a convenience.
+
+**Why this file must state them again rather than cite them: IMPORT
+DIRECTION.**  `MazurTorsion.lean` `public import`s this module, so nothing in
+it can be used here.  This is the same forced duplication that
+`false_of_stable_of_forall_padicValRat_nonneg` records some three thousand
+lines below, and it has the same repair — a HOIST of the
+`MazurIsogenyPrimeJ` section, and of the three
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_*` wrappers over it, into a
+module upstream of both.  That is a cross-module refactor with several
+concurrent owners and is deliberately not attempted here.  What IS done here
+is to make the hoist mechanical: the three leaves below are stated with the
+same hypotheses, the same grouping and matching names, so the repair is
+three `exact`s and three deletions rather than a reconciliation.
+
+**Their state over there, read off the build's `declaration uses 'sorry'`
+set at `60313518` rather than off docstrings.**  The genus-one branch is
+proven down to the single leaf `exists_kernelPolynomial_of_genusOneJTable`;
+the `37` branch down to `exists_coarseModuliY0_thirtySeven_cardLe` and
+`exists_x0ThirtySevenPoints`; the class-number-one branch down to
+`exists_x0ClassNumberOnePoints`,
+`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` and
+`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`, with
+`card_le_of_isogenyPrimeHigherGenus` (`#X_0(p)(ℚ) ≤ 3`) already PROVEN.  So
+"Mazur's Theorem 1 is a single irreducible leaf" is not a true statement
+about this tree: it is already seven leaves in the module next door, and the
+only thing keeping it one leaf here is the direction of an import.
+-/
+
+/-- **Mazur's Theorem 1 at the three genus-one levels** (sorry node, new
+2026-07-27): for `p ∈ {11, 17, 19}` a curve over `ℚ` with a rational
+`p`-isogeny has one of the six tabulated `j`-invariants.
+
+TRUE, and this is the group that needs **no modular-curve depth at all**:
+`X_0(11)`, `X_0(17)` and `X_0(19)` have genus `1`, so each is an elliptic
+curve over `ℚ` — the curves `11a1`, `17a1`, `19a1` — and the determination
+of `X_0(p)(ℚ)` is a Mordell–Weil computation on a specific curve.
+
+**Machine-checked in PARI/GP 2.17.4, 2026-07-27** (untrusted searcher,
+statement check only).  `ellinit` on `[0,-1,1,-10,-20]`, `[1,-1,1,-1,-14]`,
+`[0,1,1,-9,-15]` gives conductors `11, 17, 19`; `ellanalyticrank` gives
+`0, 0, 0`; `elltors` gives `ℤ/5`, `ℤ/4`, `ℤ/3`.  Two points of each are the
+cusps `0` and `∞`, leaving `3 + 2 + 1 = 6` non-cuspidal `j`-invariants —
+exactly the counts of the three rows of `isolatedJInvariants` at these
+primes.  Independently, `numerator((p − 1)/12) = 5, 4, 3`, the order of the
+cuspidal divisor class group, agrees with the torsion order at each of the
+three, so the row counts are checked twice by different means.
+
+**WHY THIS GROUP CANNOT GO THROUGH THE EISENSTEIN QUOTIENT**, which is the
+reason it is a separate leaf and not three more cases of the two below.
+Mazur's Thm 4 (*Modular curves and the Eisenstein ideal*, IHÉS 47 (1977))
+gives a NONTRIVIAL Eisenstein quotient only for `19 < p`; at `p ≤ 19` the
+quotient can vanish and the formal-immersion argument carries nothing.  That
+hypothesis is recorded in the same words on
+`exists_eisensteinQuotientAt_of_jNeronDatum` in `FreyCurve/MazurTorsion.lean`
+and is why `exists_eisensteinFormalImmersionAt` in this file is stated for
+`p ∉ mazurIsogenyPrimes`.  So the `19 < p` boundary is not an artefact of
+this cut — it is where Mazur's own method starts working.
+
+REFERENCES: Fricke; Ligozat, *Courbes modulaires de genre 1*, Bull. SMF Mém.
+**43** (1975); Mazur–Swinnerton-Dyer, *Arithmetic of Weil curves*, Invent.
+Math. **25** (1974).
+
+**The check that refutes any irreducibility verdict here**: the counterpart
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_genusOne` in
+`FreyCurve/MazurTorsion.lean` is PROVEN, over
+`MazurIsogenyPrimeJ.exists_jMap_genusOne`, down to the single open leaf
+`MazurIsogenyPrimeJ.exists_kernelPolynomial_of_genusOneJTable`.  This leaf is
+therefore one hoist away from three lines; a successor should hoist rather
+than reprove. -/
+theorem mem_isolatedJInvariants_of_stable_genusOne {p : ℕ}
+    (_hp : p ∈ ({11, 17, 19} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg : addOrderOf g = p)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    E.j ∈ isolatedJInvariants p :=
+  sorry
+
+/-- **Mazur's Theorem 1 at `p = 37`** (sorry node, new 2026-07-27): a curve
+over `ℚ` with a rational `37`-isogeny has `j = −7·11³ = −9317` or
+`j = −7·137³·2083³ = −162677523113838677`.
+
+TRUE, and `37` is the exceptional level of the seven.  `X_0(37)` has genus
+`2`; its two non-cuspidal rational points are **not** CM, so the
+class-number-one argument of the sibling below says nothing about them; and
+`J_0(37)` splits as `37a × 37b` with `37a` of rank `1`, so
+`HasRankZeroJacobian` is FALSE here and the genus-one route above does not
+extend either.  The classical determination is Mazur–Swinnerton-Dyer,
+*Arithmetic of Weil curves*, Invent. Math. **25** (1974), refined by
+Mazur–Vélu; it is the one level of the seven settled by a Chabauty-style
+argument on a rank-deficient quotient rather than by torsion or by CM.
+
+Stated at the literal level `37` rather than with a membership hypothesis
+because the group is a singleton: there is nothing for a proof to case on,
+and the assembly stays a plain `rcases`.
+
+**The check that refutes any irreducibility verdict here**: the counterpart
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_thirtySeven` in
+`FreyCurve/MazurTorsion.lean` is PROVEN over
+`MazurIsogenyPrimeJ.exists_jMap_thirtySeven`, whose own residue is the two
+open leaves `exists_coarseModuliY0_thirtySeven_cardLe` (`#X_0(37)(ℚ) ≤ 4`)
+and `exists_x0ThirtySevenPoints` (the four points, two cusps and two
+non-cuspidal).  The honest description of this node is "two leaves in the
+module next door, unreachable by import direction", not "irreducible". -/
+theorem mem_isolatedJInvariants_of_stable_thirtySeven
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg : addOrderOf g = 37)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    E.j ∈ isolatedJInvariants 37 :=
+  sorry
+
+/-- **Mazur's Theorem 1 at the three class-number-one levels** (sorry node,
+new 2026-07-27): for `p ∈ {43, 67, 163}` a curve over `ℚ` with a rational
+`p`-isogeny has `j` equal to the singular modulus of discriminant `−p`.
+
+TRUE.  `X_0(43)`, `X_0(67)`, `X_0(163)` have genus `3, 5, 13` and each has
+exactly one non-cuspidal rational point, the CM point of the
+class-number-one discriminant `−p`.  Because `h(−p) = 1` the Hilbert class
+polynomial is LINEAR —
+
+    polclass(−43)  = x + 884736000
+    polclass(−67)  = x + 147197952000
+    polclass(−163) = x + 262537412640768000
+
+— so the three values are forced the moment CM is known, and **all the
+content of this leaf is the converse**: that a rational `p`-isogeny forces
+CM, i.e. that there is no third rational point.  That is the Eisenstein-ideal
+descent of Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), over *Modular curves and the Eisenstein ideal*, IHÉS 47 (1977).
+
+**Two routes are known to be dead here; do not spend a cycle rediscovering
+them.**  (i) The cut into "`E` has CM by an order of `ℚ(√−p)`" plus "`h = 1`
+pins `j`" was tried and rejected in `FreyCurve/MazurTorsion.lean`: the first
+half is the whole of Mazur and the second half is the displayed line above,
+so it is a restatement rather than a reduction.  Note in particular that
+"`p`-isogeny ⟹ CM" is FALSE in general at PRIME level — it holds at these
+three primes only as a consequence of the very theorem being proven — so
+there is no endomorphism to descend from, unlike at prime-power levels
+`125`/`169` where `k ≥ 2` manufactures one.  (ii) `rank J_0(p)(ℚ) = 1, 2, 6`
+at these three, so `HasRankZeroJacobian` is FALSE and routing through
+`card_le_of_rankZeroJacobian` would manufacture a false sub-leaf.  The check
+that would refute (ii): any source giving rank `0` for one of the three
+Jacobians.
+
+**The check that refutes any irreducibility verdict here**: the counterpart
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_classNumberOne` in
+`FreyCurve/MazurTorsion.lean` is PROVEN over
+`MazurIsogenyPrimeJ.exists_jMap_classNumberOne`, itself PROVEN over
+`card_le_of_isogenyPrimeHigherGenus` (`#X_0(p)(ℚ) ≤ 3`, PROVEN) and
+`exists_x0ClassNumberOnePoints` (the CM point and the two cusps, open), with
+the class-number-one identification carried by the two further open leaves
+`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` and
+`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`.  Recorded there and
+worth knowing before choosing a different route: effective Chabauty–Coleman
+cannot close these levels, since `#X(𝔽_ℓ) + 2g − 2` gives `15, 19, 64` and
+`#X(𝔽_ℓ) + 2r` gives `8, 10, 20` against a truth of `3`. -/
+theorem mem_isolatedJInvariants_of_stable_classNumberOne {p : ℕ}
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg : addOrderOf g = p)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    E.j ∈ isolatedJInvariants p :=
+  sorry
+
+/-- **Mazur's Theorem 1, in the form the descent needs** (PROVEN 2026-07-27
+by the split into the three technique leaves above; introduced as a single
+leaf earlier the same day): a curve over `ℚ` with a rational `p`-isogeny, for
 `p` one of the seven isolated Mazur primes, has one of the tabulated
 `j`-invariants.
 
@@ -10232,9 +11441,9 @@ eleven are strictly negative, and in particular **none is `0` and none is
 `1728`** — the single property the sibling descent
 `y0HasNoRationalPoint_of_no_stable_isolated` consumes.  No error was
 found in the statement, and none of its hypotheses is redundant: dropping
-`_hp` makes it false at `p ∈ {2, 3, 5, 7, 13}` (where `X_0(p) ≅ ℙ¹` and
+`hp` makes it false at `p ∈ {2, 3, 5, 7, 13}` (where `X_0(p) ≅ ℙ¹` and
 `isolatedJInvariants p = ∅` while infinitely many `j` occur), dropping
-`_hg` or `_hstable` makes it false for any curve with no `p`-isogeny.
+`hg` or `hstable` makes it false for any curve with no `p`-isogeny.
 
 The direction proved here is the easy one to state and the only one used:
 a `Γ_ℚ`-stable order-`p` subgroup of `E(ℚ̄)` gives a NON-CUSPIDAL rational
@@ -10242,27 +11451,71 @@ point of `X_0(p)` with that `j`-invariant, so no coarse-space subtlety
 enters — the subtlety is entirely in the converse, which is where
 `y0HasNoRationalPoint_of_no_stable_isolated` lives.
 
-ATOMICITY, and the axis searched: cuts along the *level* (push to a
-divisor), along the *prime* (`fin_cases` on `_hp`) and along the
-*`j`-value* were all considered.  The first is vacuous at prime level; the
-second yields seven copies of the same theorem, each still Mazur; the
-third runs backwards (it needs the conclusion to case on).  There is no
-sub-statement here that is not Mazur's Theorem 1, which is why — unlike
-its sibling `not_stable_of_mem_isolatedJInvariants`, which DID cut — this
-node stays a single leaf.
+## THE ATOMICITY VERDICT WAS WRONG, AND HERE IS THE AXIS IT MISSED
 
-IRREDUCIBLE at this pin: Mazur's theorem is not in `Mathlib`, not in
-`~/cs/FLT`, and not in this project.  Its proof is the Eisenstein-ideal
-argument — the deepest input to the whole `X_0` subtree. -/
-theorem mem_isolatedJInvariants_of_stable {p : ℕ} (_hp : p ∈ isolatedIsogenyPrimes)
+The paragraph this one replaces read: "ATOMICITY, and the axis searched:
+cuts along the *level* (push to a divisor), along the *prime* (`fin_cases`
+on `_hp`) and along the *`j`-value* were all considered.  The first is
+vacuous at prime level; the second yields seven copies of the same theorem,
+each still Mazur; the third runs backwards (it needs the conclusion to case
+on).  There is no sub-statement here that is not Mazur's Theorem 1, which is
+why — unlike its sibling `not_stable_of_mem_isolatedJInvariants`, which DID
+cut — this node stays a single leaf."
+
+Each of those three findings is correct, and the conclusion drawn from them
+is not.  An irreducibility verdict is only as wide as the axes it searched,
+and the axis that settles this node is **the argument, not the enumeration**:
+`fin_cases` on `hp` gives seven goals of the same SHAPE, but they are settled
+by three different theorems, and grouping them accordingly is a genuine cut.
+
+* `p ∈ {11, 17, 19}` — `X_0(p)` has genus `1` and is an elliptic curve of
+  rank `0` with torsion `ℤ/5`, `ℤ/4`, `ℤ/3`; the determination is a
+  Mordell–Weil TORSION computation and touches no Eisenstein ideal.  It
+  cannot use one either: Mazur's Thm 4 gives a nontrivial Eisenstein quotient
+  only for `19 < p`.
+* `p = 37` — genus `2`, two NON-CM `j`-invariants, `J_0(37) = 37a × 37b`
+  with `37a` of rank `1`; Mazur–Swinnerton-Dyer, not torsion and not CM.
+* `p ∈ {43, 67, 163}` — genus `3, 5, 13`, one CM point each, class number
+  one; the Eisenstein-ideal descent proper.
+
+Only the third group is "still Mazur" in the sense the old paragraph meant.
+
+**This is confirmed by a second, independent development in this tree.**
+`FreyCurve/MazurTorsion.lean` proves
+`WeierstrassCurve.jInvariant_mem_of_isogenyPrime_ge_eleven` — verbatim this
+statement modulo `Finset ℚ` versus `List (ℕ × ℚ)` — over exactly these three
+groups, and carries it down to seven open leaves.  See the subsection
+docstring above for their names, for the state of each read off the build's
+warning set, and for why the import direction forces this file to state them
+again instead of citing them.
+
+So the corrected verdict is: **not irreducible, and not in fact undivided
+anywhere but here.**  What remains genuinely absent from `Mathlib`, from
+`~/cs/FLT` and from this project is the Eisenstein-ideal machinery behind the
+third group, which is now confined to
+`mem_isolatedJInvariants_of_stable_classNumberOne`. -/
+theorem mem_isolatedJInvariants_of_stable {p : ℕ} (hp : p ∈ isolatedIsogenyPrimes)
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hg : addOrderOf g = p)
-    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+    (hg : addOrderOf g = p)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    E.j ∈ isolatedJInvariants p :=
-  sorry
+    E.j ∈ isolatedJInvariants p := by
+  -- the seven isolated primes, as a disjunction
+  have hp' : p = 11 ∨ p = 17 ∨ p = 19 ∨ p = 37 ∨ p = 43 ∨ p = 67 ∨ p = 163 := by
+    simpa [isolatedIsogenyPrimes] using hp
+  rcases hp' with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  -- genus `1`, rank `0`, Mordell–Weil torsion
+  · exact mem_isolatedJInvariants_of_stable_genusOne (by decide) E g hg hstable
+  · exact mem_isolatedJInvariants_of_stable_genusOne (by decide) E g hg hstable
+  · exact mem_isolatedJInvariants_of_stable_genusOne (by decide) E g hg hstable
+  -- genus `2`, the exceptional non-CM level
+  · exact mem_isolatedJInvariants_of_stable_thirtySeven E g hg hstable
+  -- class number one, the Eisenstein-ideal descent proper
+  · exact mem_isolatedJInvariants_of_stable_classNumberOne (by decide) E g hg hstable
+  · exact mem_isolatedJInvariants_of_stable_classNumberOne (by decide) E g hg hstable
+  · exact mem_isolatedJInvariants_of_stable_classNumberOne (by decide) E g hg hstable
 
 /-! #### No second isogeny: the CM half and the non-CM half
 
@@ -12141,13 +13394,19 @@ by composing base changes (`IsBaseChangeOf.comp`, proven earlier in this file).
   elliptic scheme have the same `j`.
 * `isWeierstrassModel_map_of_isBaseChangeOf` — the productive half of
   step (ii): a base change of a model is a model of the base-changed
-  datum.  Pure scheme theory, no `j`.
+  datum.  Pure scheme theory, no `j`.  **PROVEN 2026-07-27**, over the
+  new pushout lemma `isPushout_weierstrassCoordinateRing` (the affine
+  Weierstrass curve base-changes) plus two applications of
+  `IsPullback.of_bot`; see its own docstring.
 * `exists_isBaseChangeOf_cancel` — the converse of `IsBaseChangeOf.comp`.
   Shared with `exists_jTransformation_of_affine`, whose docstring
   records its `h₁ = 𝟙` case as the step it is missing; proving it
   unblocks both.
-* `exists_jValueOnAffine_of_localModels` — step (iii), the gluing,
-  stated with the other four as HYPOTHESES.  They are hypotheses and not
+* `exists_jValueOnAffine_of_localModels` — step (iii), the gluing.
+  **PROVEN 2026-07-27**, over `Localization.existsUnique_algebraMap_eq_of_span_eq_top`
+  plus `exists_gamma0Datum_baseChange` (which the hypothesis list does not
+  contain and the argument needs; see the leaf's docstring).  Stated with
+  the other four as HYPOTHESES.  They are hypotheses and not
   calls for the same reason `exists_jTransformation_of_affine` takes
   `hbc`: a sorried body contributes no dependency edges, so a leaf that
   merely *called* them would leave them free-floating, and the five can
@@ -12349,6 +13608,218 @@ theorem weierstrassModel_j_unique {R : Type} [CommRing R] {A : Scheme.{0}}
     W.j = W'.j :=
   sorry
 
+/-! #### The affine Weierstrass curve base-changes: `S[W.map φ] = S ⊗_R R[W]`
+
+The one piece of algebra behind `isWeierstrassModel_map_of_isBaseChangeOf`
+below, and the reason that leaf is not a one-liner: the leaf needs
+`Spec S[W.map φ]` to BE the pullback of `Spec R[W] ⟶ Spec R` along
+`Spec φ`, i.e. the ring square
+
+    R  ⟶  R[W]
+    ↓        ↓
+    S  ⟶  S[W.map φ]
+
+to be a PUSHOUT in `CommRingCat`.  `Mathlib` has
+`AdjoinRoot.tensorAlgEquiv` (adjoining a root commutes with base change),
+but it is stated with the coefficient ring *literally* a tensor product
+`T ⊗[R] S`, and `W.toAffine.CoordinateRing = AdjoinRoot W.polynomial`
+has coefficient ring `R[X]` — so using it would need `S ⊗[R] R[X] ≅ S[X]`
+and a transport of the whole equivalence along it.  It is shorter, and
+much more robust, to verify the universal property directly: a ring map
+out of `AdjoinRoot q` is `AdjoinRoot.lift` of a map on coefficients
+together with the image of the root, and two such maps agreeing on `S`,
+on `X` and on `Y` are equal by `Polynomial.ringHom_ext` twice.  That is
+what the four declarations below do; nothing here is specific to
+Weierstrass equations beyond `map_polynomial`.
+-/
+
+/-- **The base-change map on affine coordinate rings**,
+`R[W] →+* S[W.map φ]`; `Mathlib`'s
+`WeierstrassCurve.Affine.CoordinateRing.map` under a shorter name. -/
+noncomputable abbrev weierstrassCoordMap {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    W.toAffine.CoordinateRing →+* (W.map φ).toAffine.CoordinateRing :=
+  WeierstrassCurve.Affine.CoordinateRing.map W.toAffine φ
+
+/-- `weierstrassCoordMap` is a map of `R`-algebras into `S[W.map φ]`
+(PROVEN). -/
+theorem weierstrassCoordMap_algebraMap {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) (r : R) :
+    weierstrassCoordMap W φ (algebraMap R W.toAffine.CoordinateRing r)
+      = algebraMap S (W.map φ).toAffine.CoordinateRing (φ r) := by
+  rw [show algebraMap R W.toAffine.CoordinateRing r
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine
+          (Polynomial.C (Polynomial.C r)) from rfl, weierstrassCoordMap,
+    WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+  rfl
+
+/-- `weierstrassCoordMap` sends the class of `Y` to the class of `Y`
+(PROVEN). -/
+theorem weierstrassCoordMap_root {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    weierstrassCoordMap W φ (AdjoinRoot.root W.toAffine.polynomial)
+      = AdjoinRoot.root (W.map φ).toAffine.polynomial := by
+  rw [show AdjoinRoot.root W.toAffine.polynomial
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine Polynomial.X from rfl,
+    weierstrassCoordMap, WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+
+/-- `weierstrassCoordMap` sends the class of `X` to the class of `X`
+(PROVEN). -/
+theorem weierstrassCoordMap_ofX {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    weierstrassCoordMap W φ (AdjoinRoot.of W.toAffine.polynomial Polynomial.X)
+      = AdjoinRoot.of (W.map φ).toAffine.polynomial Polynomial.X := by
+  rw [show AdjoinRoot.of W.toAffine.polynomial Polynomial.X
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine
+          (Polynomial.C Polynomial.X) from rfl,
+    weierstrassCoordMap, WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+
+section WeierstrassCoordDesc
+
+variable {R S U : Type} [CommRing R] [CommRing S] [CommRing U]
+  (W : WeierstrassCurve R) (φ : R →+* S)
+  (u : S →+* U) (v : W.toAffine.CoordinateRing →+* U)
+
+/-- The coefficient map `S[X] →+* U` out of which the descent map is
+built: it sends `X` to the image of the `x`-coordinate under `v` and the
+constants through `u`. -/
+noncomputable def weierstrassCoordDescAux : Polynomial S →+* U :=
+  Polynomial.eval₂RingHom u (v (AdjoinRoot.of W.toAffine.polynomial Polynomial.X))
+
+/-- The coefficient map is compatible with `φ` (PROVEN): after
+restricting along `φ` it is `v` on `R[X]`. -/
+theorem weierstrassCoordDescAux_comp
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    (weierstrassCoordDescAux W u v).comp (Polynomial.mapRingHom φ)
+      = v.comp (AdjoinRoot.of W.toAffine.polynomial) := by
+  have hw' : ∀ r : R, u (φ r)
+      = v (AdjoinRoot.of W.toAffine.polynomial (Polynomial.C r)) := hw
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · simpa [weierstrassCoordDescAux] using hw' a
+  · simp [weierstrassCoordDescAux]
+
+/-- The image of the base-changed Weierstrass polynomial vanishes
+(PROVEN) — the side condition of `AdjoinRoot.lift`. -/
+theorem weierstrassCoordDescAux_eval
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    Polynomial.eval₂ (weierstrassCoordDescAux W u v)
+      (v (AdjoinRoot.root W.toAffine.polynomial)) (W.map φ).toAffine.polynomial = 0 := by
+  have h0 : Polynomial.eval₂ (AdjoinRoot.of W.toAffine.polynomial)
+      (AdjoinRoot.root W.toAffine.polynomial) W.toAffine.polynomial = 0 := by
+    rw [← AdjoinRoot.algebraMap_eq, ← Polynomial.aeval_def, AdjoinRoot.aeval_eq,
+      AdjoinRoot.mk_self]
+  rw [show (W.map φ).toAffine.polynomial
+      = Polynomial.map (Polynomial.mapRingHom φ) W.toAffine.polynomial from
+      W.toAffine.map_polynomial φ, Polynomial.eval₂_map,
+    weierstrassCoordDescAux_comp W φ u v hw, ← Polynomial.hom_eval₂, h0, map_zero]
+
+/-- **The descent map** `S[W.map φ] →+* U` determined by `u` on `S` and
+`v` on `R[W]`. -/
+noncomputable def weierstrassCoordDesc
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    (W.map φ).toAffine.CoordinateRing →+* U :=
+  AdjoinRoot.lift (weierstrassCoordDescAux W u v)
+    (v (AdjoinRoot.root W.toAffine.polynomial)) (weierstrassCoordDescAux_eval W φ u v hw)
+
+/-- The descent map restricts to `u` on `S` (PROVEN). -/
+theorem weierstrassCoordDesc_left
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) (s : S) :
+    weierstrassCoordDesc W φ u v hw
+        (algebraMap S (W.map φ).toAffine.CoordinateRing s) = u s := by
+  rw [show algebraMap S (W.map φ).toAffine.CoordinateRing s
+      = AdjoinRoot.of (W.map φ).toAffine.polynomial (Polynomial.C s) from rfl,
+    weierstrassCoordDesc, AdjoinRoot.lift_of]
+  simp [weierstrassCoordDescAux]
+
+/-- The descent map restricts to `v` on `R[W]` (PROVEN). -/
+theorem weierstrassCoordDesc_right
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r))
+    (a : W.toAffine.CoordinateRing) :
+    weierstrassCoordDesc W φ u v hw (weierstrassCoordMap W φ a) = v a := by
+  obtain ⟨p, rfl⟩ := AdjoinRoot.mk_surjective (g := W.toAffine.polynomial) a
+  rw [show AdjoinRoot.mk W.toAffine.polynomial p
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine p from rfl, weierstrassCoordMap,
+    WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  rw [show WeierstrassCurve.Affine.CoordinateRing.mk (W.toAffine.map φ)
+      (Polynomial.map (Polynomial.mapRingHom φ) p)
+      = AdjoinRoot.mk (W.map φ).toAffine.polynomial
+          (Polynomial.map (Polynomial.mapRingHom φ) p) from rfl,
+    weierstrassCoordDesc, AdjoinRoot.lift_mk, Polynomial.eval₂_map,
+    weierstrassCoordDescAux_comp W φ u v hw, ← Polynomial.hom_eval₂,
+    ← AdjoinRoot.algebraMap_eq, ← Polynomial.aeval_def, AdjoinRoot.aeval_eq]
+
+end WeierstrassCoordDesc
+
+/-- **A ring map out of `S[W.map φ]` is determined by its restrictions to
+`S` and to `R[W]`** (PROVEN).
+
+`AdjoinRoot.mk` is surjective, so it is enough to compare on
+`S[X][Y]`; `Polynomial.ringHom_ext` reduces that to the constants and `Y`,
+and a second application reduces the constants to `S` and `X`. -/
+theorem weierstrassCoord_hom_ext {R S U : Type} [CommRing R] [CommRing S] [CommRing U]
+    (W : WeierstrassCurve R) (φ : R →+* S)
+    {m n : (W.map φ).toAffine.CoordinateRing →+* U}
+    (h1 : ∀ s : S, m (algebraMap S (W.map φ).toAffine.CoordinateRing s)
+      = n (algebraMap S (W.map φ).toAffine.CoordinateRing s))
+    (h2 : ∀ a : W.toAffine.CoordinateRing,
+      m (weierstrassCoordMap W φ a) = n (weierstrassCoordMap W φ a)) :
+    m = n := by
+  refine RingHom.ext fun b => ?_
+  obtain ⟨p, rfl⟩ := AdjoinRoot.mk_surjective (g := (W.map φ).toAffine.polynomial) b
+  have key : m.comp (AdjoinRoot.mk (W.map φ).toAffine.polynomial)
+      = n.comp (AdjoinRoot.mk (W.map φ).toAffine.polynomial) := by
+    refine Polynomial.ringHom_ext (fun a => ?_) ?_
+    · have hC : (m.comp (AdjoinRoot.of (W.map φ).toAffine.polynomial))
+          = (n.comp (AdjoinRoot.of (W.map φ).toAffine.polynomial)) := by
+        refine Polynomial.ringHom_ext (fun s => h1 s) ?_
+        have := h2 (AdjoinRoot.of W.toAffine.polynomial Polynomial.X)
+        rwa [weierstrassCoordMap_ofX] at this
+      exact congrArg (fun f => (f : Polynomial S →+* U) a) hC
+    · have := h2 (AdjoinRoot.root W.toAffine.polynomial)
+      rwa [weierstrassCoordMap_root] at this
+  exact congrArg (fun f => (f : Polynomial (Polynomial S) →+* U) p) key
+
+open _root_.CategoryTheory.Limits in
+/-- **The affine coordinate ring of a Weierstrass curve base-changes**
+(PROVEN): `S[W.map φ]` is the pushout of `R[W] ← R → S`.
+
+Proved from the universal property directly — see the subsection
+docstring for why the `AdjoinRoot.tensorAlgEquiv` route is longer here.
+`weierstrassCoordDesc` is the descent map, `weierstrassCoordDesc_left` /
+`_right` are the two factorisations, and `weierstrassCoord_hom_ext` is
+uniqueness. -/
+theorem isPushout_weierstrassCoordinateRing {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    IsPushout (CommRingCat.ofHom φ)
+      (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing))
+      (CommRingCat.ofHom (algebraMap S (W.map φ).toAffine.CoordinateRing))
+      (CommRingCat.ofHom (weierstrassCoordMap W φ)) := by
+  have w : CommRingCat.ofHom φ ≫
+      CommRingCat.ofHom (algebraMap S (W.map φ).toAffine.CoordinateRing)
+      = CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing) ≫
+        CommRingCat.ofHom (weierstrassCoordMap W φ) := by
+    ext r
+    exact (weierstrassCoordMap_algebraMap W φ r).symm
+  have hcond : ∀ s : PushoutCocone (CommRingCat.ofHom φ)
+      (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing)),
+      ∀ r : R, s.inl.hom (φ r) = s.inr.hom (algebraMap R W.toAffine.CoordinateRing r) :=
+    fun s r => congrArg (fun f => (CommRingCat.Hom.hom f) r) s.condition
+  refine IsPushout.of_isColimit (PushoutCocone.IsColimit.mk w
+    (fun s => CommRingCat.ofHom (weierstrassCoordDesc W φ s.inl.hom s.inr.hom (hcond s)))
+    (fun s => ?_) (fun s => ?_) (fun s m h₁ h₂ => ?_))
+  · exact CommRingCat.hom_ext (RingHom.ext fun x =>
+      weierstrassCoordDesc_left W φ s.inl.hom s.inr.hom (hcond s) x)
+  · exact CommRingCat.hom_ext (RingHom.ext fun x =>
+      weierstrassCoordDesc_right W φ s.inl.hom s.inr.hom (hcond s) x)
+  · refine CommRingCat.hom_ext (weierstrassCoord_hom_ext W φ (fun x => ?_) (fun a => ?_))
+    · exact (congrArg (fun f => (CommRingCat.Hom.hom f) x) h₁).trans
+        (weierstrassCoordDesc_left W φ s.inl.hom s.inr.hom (hcond s) x).symm
+    · exact (congrArg (fun f => (CommRingCat.Hom.hom f) a) h₂).trans
+        (weierstrassCoordDesc_right W φ s.inl.hom s.inr.hom (hcond s) a).symm
+
 /-- **A base change of a Weierstrass model is a Weierstrass model of the
 base-changed datum** (sorry leaf, the productive half of step (ii)).
 
@@ -12379,14 +13850,78 @@ WILL ALSO NEED" note on `exists_jValueOnAffine_of_localModels`.
 
 NOT VACUOUS: the conclusion is `IsWeierstrassModel`, which is an
 existence-of-open-immersion statement with a range condition, not an
-equation that could hold degenerately. -/
+equation that could hold degenerately.
+
+**PROVEN 2026-07-27**, and the three bullets above are exactly the three
+steps of the proof, with one correction to the plan: the first bullet's
+`AlgebraicGeometry.pullbackSpecIso` route is NOT what is used.  Rather
+than exhibit `S[W.map φ]` as a tensor product and transport, the square
+of rings is shown to be a PUSHOUT directly
+(`isPushout_weierstrassCoordinateRing`, subsection above), and
+`AlgebraicGeometry.isPullback_SpecMap_of_isPushout` turns that into the
+cartesian square
+
+    Spec S[W.map φ] ⟶ Spec R[W]
+           ↓                ↓
+       Spec S      ⟶     Spec R
+
+The model `ι'` is then `hb.isPullback.lift`, the top square
+`Spec S[W.map φ] → Spec R[W]` over `d'.E → d.E` is cartesian by
+`IsPullback.of_bot` (the outer rectangle being the square just named),
+and `IsOpenImmersion` transfers along it by
+`MorphismProperty.IsStableUnderBaseChange`.  The zero-section square is
+cartesian by the SAME pasting argument, its outer rectangle being
+cartesian because both vertical composites are `𝟙`; the two range
+identities then come from one lemma,
+`AlgebraicGeometry.range_base_of_isPullback`, applied to those two
+squares, and complements pass through `Set.preimage_compl`. -/
 theorem isWeierstrassModel_map_of_isBaseChangeOf {R S : Type} [CommRing R] [CommRing S]
     (φ : R →+* S) {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
     {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))}
     (hb : IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d)
     (W : WeierstrassCurve R) (hW : IsWeierstrassModel d.ab W) :
-    IsWeierstrassModel d'.ab (W.map φ) :=
-  sorry
+    IsWeierstrassModel d'.ab (W.map φ) := by
+  obtain ⟨ι, hoi, hcomp, hrange⟩ := hW
+  set sφ := Spec.map (CommRingCat.ofHom φ) with hsφ
+  set ψ : weierstrassAffine (W.map φ) ⟶ weierstrassAffine W :=
+    Spec.map (CommRingCat.ofHom (weierstrassCoordMap W φ)) with hψ
+  -- the coordinate-ring square is cartesian
+  have hA : IsPullback (weierstrassAffineStr (W.map φ)) ψ sφ (weierstrassAffineStr W) :=
+    _root_.AlgebraicGeometry.isPullback_SpecMap_of_isPushout _ _ _ _
+      (isPushout_weierstrassCoordinateRing W φ)
+  -- the model over `S`, as the map into the base change induced by the two projections
+  have hw : weierstrassAffineStr (W.map φ) ≫ sφ = (ψ ≫ ι) ≫ d.f := by
+    rw [Category.assoc, hcomp]; exact hA.w
+  set ι' : weierstrassAffine (W.map φ) ⟶ d'.E :=
+    hb.isPullback.lift (weierstrassAffineStr (W.map φ)) (ψ ≫ ι) hw with hι'
+  have hfst : ι' ≫ d'.f = weierstrassAffineStr (W.map φ) := hb.isPullback.lift_fst _ _ _
+  have hsnd : ι' ≫ hb.map = ψ ≫ ι := hb.isPullback.lift_snd _ _ _
+  -- the model square is cartesian
+  have hC : IsPullback ψ ι' ι hb.map := by
+    refine IsPullback.of_bot ?_ hsnd.symm hb.isPullback.flip
+    rw [hfst, hcomp]
+    exact hA.flip
+  -- the zero-section square is cartesian
+  have hz' : (d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).1 ≫ hb.map
+      = sφ ≫ (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).1 := by
+    have hzc : ∀ {g g' : Spec (CommRingCat.of S) ⟶ Spec (CommRingCat.of R)}, g = g' →
+        (d.ab.zero g).1 = (d.ab.zero g').1 := by rintro g g' rfl; rfl
+    have h1 := congrArg Subtype.val (hb.map_zero (𝟙 (Spec (CommRingCat.of S))))
+    have h2 := congrArg Subtype.val
+      (d.ab.pre_zero sφ (g := 𝟙 (Spec (CommRingCat.of R))) (Category.comp_id sφ))
+    simp only [RelPoint.along, RelPoint.pre] at h1 h2
+    rw [h1, hzc (Category.id_comp sφ)]
+    exact h2.symm
+  have hZ : IsPullback sφ (d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).1
+      (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).1 hb.map := by
+    refine IsPullback.of_bot ?_ hz'.symm hb.isPullback.flip
+    rw [(d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).2,
+      (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).2]
+    exact IsPullback.of_vert_isIso ⟨by rw [Category.comp_id, Category.id_comp]⟩
+  refine ⟨ι', ?_, hfst, ?_⟩
+  · exact MorphismProperty.IsStableUnderBaseChange.of_isPullback (P := @IsOpenImmersion) hC hoi
+  · rw [_root_.AlgebraicGeometry.range_base_of_isPullback hC.flip, hrange, Set.preimage_compl,
+      ← _root_.AlgebraicGeometry.range_base_of_isPullback hZ.flip]
 
 /-- **Base changes cancel** (PROVEN 2026-07-27; formerly a sorry leaf) —
 the exact converse of `IsBaseChangeOf.comp`.
@@ -12413,8 +13948,288 @@ theorem exists_isBaseChangeOf_cancel {N : ℕ} {T'' T' T : Scheme.{u}}
     Nonempty (IsBaseChangeOf h₁ e d') :=
   ⟨hb.cancel hb₂⟩
 
+/-! #### Preliminaries for the gluing
+
+Six small declarations, all PROVEN, out of which
+`exists_jValueOnAffine_of_localModels` is assembled.  Three of them are
+`Eq.rec` transports that exist for one reason only, and it is worth
+recording because it is invisible from the statement of the leaf:
+
+**`Mathlib`'s sheaf condition is indexed by a SET, the leaf's cover by a
+`Fin n`-FAMILY, and the two do not line up definitionally.**
+`Localization.existsUnique_algebraMap_eq_of_span_eq_top` takes
+`s : Set R` and a family `f : Π x : ↥s, Localization.Away x.1`; the leaf
+supplies `a : Fin n → R` with `Ideal.span (Set.range a) = ⊤`.  Choosing,
+for each `x : ↥(Set.range a)`, an index `ix x` with `a (ix x) = x.1`
+gives a family only after transporting along that equation, and every
+statement about it has to be moved back and forth.  `away_transport_eq`,
+`away_transport_val` and `away_transport_compat` are those moves; each is
+`subst`-then-`id`.
+
+Note the DELIBERATE asymmetry in what the rest of the proof asserts: it
+never claims `algebraMap R (Away (a i)) r = (V i).j` for an ARBITRARY
+`i : Fin n`, only for `i` of the form `ix x`.  That is not laziness — the
+stronger form does not follow, since two indices `i ≠ i'` with
+`a i = a i'` are indistinguishable to `Set.range a` while `V i` and
+`V i'` are a priori different curves.  (It is in fact true, because
+`Away (a i) → Away (a i * a i')` is then an isomorphism, but proving that
+is pure overhead.)  Every use downstream is at an index `ix x`, so the
+weaker form suffices. -/
+
+/-- **The point of the `j`-line over an affine base with a prescribed
+coordinate** (PROVEN) — the inverse of `jLineCoord`.
+
+`jLine = Spec ℚ[X]` and `Spec` is fully faithful, so a point of the
+`j`-line over `g : Spec R ⟶ Spec ℚ` is a `ℚ`-algebra map `ℚ[X] ⟶ R`; the
+one sending `X ↦ r` is `Polynomial.eval₂RingHom (Spec.preimage g).hom r`,
+and it lies over `g` because it agrees with `Spec.preimage g` on the
+constants. -/
+noncomputable def jLinePointOfCoord {R : Type} [CommRing R]
+    (g : Spec (CommRingCat.of R) ⟶ SpecQ) (r : R) : RelPoint jLineStr g :=
+  ⟨Spec.map (CommRingCat.ofHom (Polynomial.eval₂RingHom (Spec.preimage g).hom r)), by
+    have h : CommRingCat.ofHom (algebraMap ℚ (Polynomial ℚ)) ≫
+        CommRingCat.ofHom (Polynomial.eval₂RingHom (Spec.preimage g).hom r)
+        = Spec.preimage g := CommRingCat.hom_ext (RingHom.ext fun q => by simp)
+    rw [jLineStr, ← Spec.map_comp, h, Spec.map_preimage]⟩
+
+/-- `jLineCoord` really is inverse to `jLinePointOfCoord` (PROVEN). -/
+theorem jLineCoord_jLinePointOfCoord {R : Type} [CommRing R]
+    (g : Spec (CommRingCat.of R) ⟶ SpecQ) (r : R) :
+    jLineCoord (jLinePointOfCoord g r) = r := by
+  rw [jLineCoord, jLinePointOfCoord, Spec.preimage_map]
+  simp
+
+/-- Transport of an equation between `algebraMap`-images along `b = x`
+(PROVEN, by `subst`). -/
+theorem away_transport_eq {R : Type} [CommRing R] {b x : R} (h : b = x) (u v : R) :
+    algebraMap R (Localization.Away b) u = algebraMap R (Localization.Away b) v →
+      algebraMap R (Localization.Away x) u = algebraMap R (Localization.Away x) v := by
+  subst h; exact id
+
+/-- Transport of a value equation back across `b = x` (PROVEN, by
+`subst`). -/
+theorem away_transport_val {R : Type} [CommRing R] {b x : R} (h : b = x)
+    (z : Localization.Away b) (w : R) :
+    algebraMap R (Localization.Away x) w = h ▸ z →
+      algebraMap R (Localization.Away b) w = z := by
+  subst h; exact id
+
+/-- Transport of the overlap-compatibility condition (PROVEN, by
+`subst`). -/
+theorem away_transport_compat {R : Type} [CommRing R] {b c x y : R}
+    (h : b = x) (h' : c = y) (z : Localization.Away b) (z' : Localization.Away c) :
+    IsLocalization.Away.awayToAwayRight (P := Localization.Away (b * c)) b c z
+        = IsLocalization.Away.awayToAwayLeft c b z' →
+      IsLocalization.Away.awayToAwayRight (P := Localization.Away (x * y)) x y (h ▸ z)
+        = IsLocalization.Away.awayToAwayLeft y x (h' ▸ z') := by
+  subst h; subst h'; exact id
+
+/-- **The workhorse of the gluing** (PROVEN): the `j` of a local model is
+carried to the `j` of any model upstairs by any ring map that factors the
+structure map.
+
+Precisely: `Dl` is a base change of `d` along `αL : R →+* L` with model
+`Vl`; `e` is a base change of `d` along `ψ : R →+* T` with model `W'`;
+and `β : L →+* T` satisfies `β ∘ αL = ψ`.  Then `β Vl.j = W'.j`.
+
+`hcancel` makes `e` a base change of `Dl` along `Spec β` — this is the
+step for which nothing else at this pin serves, and it is why `hcancel`
+is in the hypothesis list — then `hmodel` pushes `Vl` up to a model
+`Vl.map β` of `e.ab`, `huniq` compares it with `W'`, and
+`WeierstrassCurve.map_j` reads off the value.
+
+**All four obligations of the leaf are this lemma at different
+instantiations**: the overlap step (`β` a localization map between basic
+opens), both pinning clauses, and uniqueness.  That is the whole reason
+the leaf's hypothesis list is what it is. -/
+theorem jvalue_key
+    (huniq : ∀ {R : Type} [CommRing R] {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)}
+      (ab : AbelianSchemeStruct f) (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic],
+      IsWeierstrassModel ab W → IsWeierstrassModel ab W' → W.j = W'.j)
+    (hmodel : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
+      {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+      {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))},
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d →
+      ∀ (W : WeierstrassCurve R), IsWeierstrassModel d.ab W →
+        IsWeierstrassModel d'.ab (W.map φ))
+    (hcancel : ∀ {T'' T' T : Scheme.{0}} {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T}
+      {e : Gamma0Datum 1 T''} {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+      IsBaseChangeOf (h₁ ≫ h₂) e d → IsBaseChangeOf h₂ d' d →
+      Nonempty (IsBaseChangeOf h₁ e d'))
+    {R : Type} [CommRing R] {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+    {L : Type} [CommRing L] (αL : R →+* L)
+    {Dl : Gamma0Datum 1 (Spec (CommRingCat.of L))}
+    (hbcL : IsBaseChangeOf (Spec.map (CommRingCat.ofHom αL)) Dl d)
+    (Vl : WeierstrassCurve L) [Vl.IsElliptic] (hmodL : IsWeierstrassModel Dl.ab Vl)
+    {T : Type} [CommRing T] {ψ : R →+* T}
+    {e : Gamma0Datum 1 (Spec (CommRingCat.of T))}
+    (hbe : IsBaseChangeOf (Spec.map (CommRingCat.ofHom ψ)) e d)
+    (W' : WeierstrassCurve T) [W'.IsElliptic] (hmW' : IsWeierstrassModel e.ab W')
+    (β : L →+* T) (hβ : β.comp αL = ψ) :
+    β Vl.j = W'.j := by
+  have hsq : Spec.map (CommRingCat.ofHom β) ≫ Spec.map (CommRingCat.ofHom αL)
+      = Spec.map (CommRingCat.ofHom ψ) := by
+    rw [← Spec.map_comp]
+    exact congrArg Spec.map (CommRingCat.hom_ext hβ)
+  have hbe' : IsBaseChangeOf (Spec.map (CommRingCat.ofHom β) ≫
+      Spec.map (CommRingCat.ofHom αL)) e d := by rw [hsq]; exact hbe
+  obtain ⟨bc⟩ := hcancel hbe' hbcL
+  have hm := hmodel β bc Vl hmodL
+  have hj := huniq e.ab (Vl.map β) W' hm hmW'
+  rwa [WeierstrassCurve.map_j] at hj
+
+/-- **The overlap step** (PROVEN): the two local `j`-values agree on
+`R[1/(bc)]`.
+
+`Vb.j` and `Vc.j` are pushed into `Localization.Away (b * c)` by
+`IsLocalization.Away.awayToAwayRight` / `awayToAwayLeft`, whose defining
+property `awayToAway*_eq` says exactly that they factor the structure
+map `R ⟶ R[1/(bc)]`.  A datum over `R[1/(bc)]` restricting `Db` comes
+from `exists_gamma0Datum_baseChange` — **note that the leaf's hypothesis
+list contains no producer of base changes, so this call is essential and
+was missing from the leaf's original account of the argument** — and
+`jvalue_key` at `β = awayToAwayLeft` finishes. -/
+theorem jvalue_compat_aux
+    (huniq : ∀ {R : Type} [CommRing R] {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)}
+      (ab : AbelianSchemeStruct f) (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic],
+      IsWeierstrassModel ab W → IsWeierstrassModel ab W' → W.j = W'.j)
+    (hmodel : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
+      {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+      {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))},
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d →
+      ∀ (W : WeierstrassCurve R), IsWeierstrassModel d.ab W →
+        IsWeierstrassModel d'.ab (W.map φ))
+    (hcancel : ∀ {T'' T' T : Scheme.{0}} {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T}
+      {e : Gamma0Datum 1 T''} {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+      IsBaseChangeOf (h₁ ≫ h₂) e d → IsBaseChangeOf h₂ d' d →
+      Nonempty (IsBaseChangeOf h₁ e d'))
+    {R : Type} [CommRing R] {d : Gamma0Datum 1 (Spec (CommRingCat.of R))} (b c : R)
+    {Db : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away b)))}
+    (hbcB : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away b)))) Db d)
+    (Vb : WeierstrassCurve (Localization.Away b)) [Vb.IsElliptic]
+    (hmodB : IsWeierstrassModel Db.ab Vb)
+    {Dc : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away c)))}
+    (hbcC : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away c)))) Dc d)
+    (Vc : WeierstrassCurve (Localization.Away c)) [Vc.IsElliptic]
+    (hmodC : IsWeierstrassModel Dc.ab Vc) :
+    IsLocalization.Away.awayToAwayRight (P := Localization.Away (b * c)) b c Vb.j
+      = IsLocalization.Away.awayToAwayLeft c b Vc.j := by
+  have hβR : (IsLocalization.Away.awayToAwayRight (S := Localization.Away b)
+        (P := Localization.Away (b * c)) b c).comp (algebraMap R (Localization.Away b))
+      = algebraMap R (Localization.Away (b * c)) :=
+    RingHom.ext fun u => IsLocalization.Away.awayToAwayRight_eq b c u
+  have hβL : (IsLocalization.Away.awayToAwayLeft (S := Localization.Away c)
+        (P := Localization.Away (b * c)) c b).comp (algebraMap R (Localization.Away c))
+      = algebraMap R (Localization.Away (b * c)) :=
+    RingHom.ext fun u => IsLocalization.Away.awayToAwayLeft_eq c b u
+  obtain ⟨e, ⟨bce⟩⟩ := exists_gamma0Datum_baseChange
+    (Spec.map (CommRingCat.ofHom (IsLocalization.Away.awayToAwayRight
+      (S := Localization.Away b) (P := Localization.Away (b * c)) b c))) Db
+  have hme := hmodel (IsLocalization.Away.awayToAwayRight
+    (S := Localization.Away b) (P := Localization.Away (b * c)) b c) bce Vb hmodB
+  have hbe : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (b * c))))) e d := by
+    have h0 := bce.comp hbcB
+    have hsq : Spec.map (CommRingCat.ofHom (IsLocalization.Away.awayToAwayRight
+          (S := Localization.Away b) (P := Localization.Away (b * c)) b c)) ≫
+        Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away b)))
+        = Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (b * c)))) := by
+      rw [← Spec.map_comp]
+      exact congrArg Spec.map (CommRingCat.hom_ext hβR)
+    rwa [hsq] at h0
+  have hkey := jvalue_key huniq hmodel hcancel (algebraMap R (Localization.Away c))
+    hbcC Vc hmodC hbe _ hme
+    (IsLocalization.Away.awayToAwayLeft (S := Localization.Away c)
+      (P := Localization.Away (b * c)) c b) hβL
+  rw [WeierstrassCurve.map_j] at hkey
+  exact hkey.symm
+
+/-- **The second pinning clause, checked on one basic open** (PROVEN).
+
+Given a base change `d''` of `d` along `φ : R →+* S` with a model `W'`
+over `S`, and a local model `Vb` over `R[1/b]` whose `j` is the image of
+`r`, the images of `φ r` and of `W'.j` in `S[1/φ b]` agree.
+
+Both sides are computed as `Localization.awayMap φ b` applied to `Vb.j`:
+the left because `awayMap` factors the structure maps
+(`IsLocalization.map_comp`), the right by `jvalue_key` at
+`β = awayMap φ b`, whose datum over `S[1/φ b]` again comes from
+`exists_gamma0Datum_baseChange`.  This is the step that forced `hmodel`
+and `hcancel` into the leaf's hypothesis list: it must PRODUCE a model
+over `S[1/φ b]`, which a comparison principle cannot do. -/
+theorem jvalue_clause2_aux
+    (huniq : ∀ {R : Type} [CommRing R] {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)}
+      (ab : AbelianSchemeStruct f) (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic],
+      IsWeierstrassModel ab W → IsWeierstrassModel ab W' → W.j = W'.j)
+    (hmodel : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
+      {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+      {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))},
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d →
+      ∀ (W : WeierstrassCurve R), IsWeierstrassModel d.ab W →
+        IsWeierstrassModel d'.ab (W.map φ))
+    (hcancel : ∀ {T'' T' T : Scheme.{0}} {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T}
+      {e : Gamma0Datum 1 T''} {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+      IsBaseChangeOf (h₁ ≫ h₂) e d → IsBaseChangeOf h₂ d' d →
+      Nonempty (IsBaseChangeOf h₁ e d'))
+    {R : Type} [CommRing R] {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+    {S : Type} [CommRing S] (φ : R →+* S)
+    {d'' : Gamma0Datum 1 (Spec (CommRingCat.of S))}
+    (hbd'' : IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d'' d)
+    (W' : WeierstrassCurve S) [W'.IsElliptic] (hmW' : IsWeierstrassModel d''.ab W')
+    (b : R) {Db : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away b)))}
+    (hbcB : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away b)))) Db d)
+    (Vb : WeierstrassCurve (Localization.Away b)) [Vb.IsElliptic]
+    (hmodB : IsWeierstrassModel Db.ab Vb)
+    (r : R) (hr : algebraMap R (Localization.Away b) r = Vb.j) :
+    algebraMap S (Localization.Away (φ b)) (φ r)
+      = algebraMap S (Localization.Away (φ b)) W'.j := by
+  have hy : Submonoid.powers b ≤ (Submonoid.powers (φ b)).comap φ := by
+    rintro _ ⟨m, rfl⟩
+    exact ⟨m, by simp⟩
+  have hβ : (Localization.awayMap φ b).comp (algebraMap R (Localization.Away b))
+      = (algebraMap S (Localization.Away (φ b))).comp φ := IsLocalization.map_comp hy
+  obtain ⟨e, ⟨bce⟩⟩ := exists_gamma0Datum_baseChange
+    (Spec.map (CommRingCat.ofHom (algebraMap S (Localization.Away (φ b))))) d''
+  have hme := hmodel (algebraMap S (Localization.Away (φ b))) bce W' hmW'
+  have hbe : IsBaseChangeOf (Spec.map (CommRingCat.ofHom
+      ((algebraMap S (Localization.Away (φ b))).comp φ))) e d := by
+    have h0 := bce.comp hbd''
+    rw [← Spec.map_comp] at h0
+    exact h0
+  have hkey := jvalue_key huniq hmodel hcancel (algebraMap R (Localization.Away b))
+    hbcB Vb hmodB hbe _ hme (Localization.awayMap φ b) hβ
+  rw [WeierstrassCurve.map_j] at hkey
+  have hlhs : algebraMap S (Localization.Away (φ b)) (φ r)
+      = Localization.awayMap φ b (algebraMap R (Localization.Away b) r) :=
+    (congrArg (fun f : R →+* Localization.Away (φ b) => f r) hβ).symm
+  rw [hlhs, hr, hkey]
+
 /-- **The local `j`-values glue to a unique `j`-value over the affine
-base** (sorry leaf, step (iii) of the cut of `exists_jSectionOnAffine`).
+base** (**PROVEN 2026-07-27**; formerly a sorry leaf, step (iii) of the cut
+of `exists_jSectionOnAffine`).
+
+**TWO CORRECTIONS TO THE ACCOUNT BELOW, both found by writing the proof.**
+
+1. *The argument needs a PRODUCER of base changes, and the hypothesis list
+   has none.*  Every use of `hmodel` needs a datum over the target ring to
+   push a model onto, and neither `hloc` nor `hmodel` supplies one.  The
+   producer is `exists_gamma0Datum_baseChange`, PROVEN far earlier in this
+   file, so the leaf is fine as stated — but the account below reads as if
+   `hmodel` alone sufficed, and it does not.  It is called twice, once in
+   `jvalue_compat_aux` and once in `jvalue_clause2_aux`.
+2. *`Mathlib`'s sheaf condition is indexed by a SET and the cover here by a
+   `Fin n`-FAMILY.*  See the preliminaries subsection above for why that
+   costs three `subst` transports, and for the one place where the
+   mismatch is not merely bureaucratic: nothing here proves
+   `algebraMap R R[1/aᵢ] r = Wᵢ.j` for an ARBITRARY `i`, only for `i` in
+   the image of the choice function, because two indices with `aᵢ = aⱼ`
+   are indistinguishable to `Set.range a`.
+
+Otherwise the argument is exactly as described, and all four obligations
+turned out to be ONE lemma at four instantiations (`jvalue_key`).
 
 TRUE, and it is commutative algebra and nothing else — no elliptic curve
 enters the argument, which is the point of cutting here.
@@ -12508,8 +14323,95 @@ theorem exists_jValueOnAffine_of_localModels
       Nonempty (IsBaseChangeOf h₁ e d'))
     {R : Type} [CommRing R] (g : Spec (CommRingCat.of R) ⟶ SpecQ)
     (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) :
-    ∃! x : RelPoint jLineStr g, IsJValueOnAffine d x :=
-  sorry
+    ∃! x : RelPoint jLineStr g, IsJValueOnAffine d x := by
+  classical
+  obtain ⟨n, a, hspan, hcov⟩ := hloc d
+  choose D V hE hbcN hmodD using hcov
+  have BC : ∀ i : Fin n, IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (a i))))) (D i) d :=
+    fun i => (hbcN i).some
+  set s : Set R := Set.range a with hs
+  have hmem : ∀ x : ↥s, ∃ i : Fin n, a i = (x : R) := fun x => x.2
+  choose ix hix using hmem
+  -- the local values are a compatible family on the basic-open cover
+  have hcompat : ∀ x y : ↥s,
+      IsLocalization.Away.awayToAwayRight (P := Localization.Away ((x : R) * (y : R)))
+          (x : R) (y : R) (hix x ▸ (V (ix x)).j)
+        = IsLocalization.Away.awayToAwayLeft (y : R) (x : R) (hix y ▸ (V (ix y)).j) := by
+    intro x y
+    haveI := hE (ix x); haveI := hE (ix y)
+    exact away_transport_compat (hix x) (hix y) _ _
+      (jvalue_compat_aux huniq hmodel hcancel (a (ix x)) (a (ix y)) (BC (ix x)) (V (ix x))
+        (hmodD (ix x)) (BC (ix y)) (V (ix y)) (hmodD (ix y)))
+  -- so they glue, by the affine sheaf condition
+  obtain ⟨r, hr, -⟩ := Localization.existsUnique_algebraMap_eq_of_span_eq_top s hspan
+    (fun x => hix x ▸ (V (ix x)).j) hcompat
+  have hrk : ∀ x : ↥s, algebraMap R (Localization.Away (a (ix x))) r = (V (ix x)).j :=
+    fun x => away_transport_val (hix x) _ r (hr x)
+  -- FIRST PINNING CLAUSE
+  have hclause1 : ∀ (W : WeierstrassCurve R) [W.IsElliptic],
+      IsWeierstrassModel d.ab W → r = W.j := by
+    intro W _ hW
+    refine Localization.algebraMap_injective_of_span_eq_top s hspan ?_
+    funext x
+    show algebraMap R (Localization.Away (x : R)) r = algebraMap R (Localization.Away (x : R)) W.j
+    refine away_transport_eq (hix x) r W.j ?_
+    haveI := hE (ix x)
+    have hid : IsBaseChangeOf (Spec.map (CommRingCat.ofHom (RingHom.id R))) d d := by
+      rw [show CommRingCat.ofHom (RingHom.id R) = 𝟙 (CommRingCat.of R) from rfl, Spec.map_id]
+      exact IsBaseChangeOf.id d
+    have hkey := jvalue_key huniq hmodel hcancel (RingHom.id R) hid W hW
+      (BC (ix x)) (V (ix x)) (hmodD (ix x))
+      (algebraMap R (Localization.Away (a (ix x)))) (RingHom.comp_id _)
+    rw [hrk x]
+    exact hkey.symm
+  -- SECOND PINNING CLAUSE
+  have hclause2 : ∀ {S : Type} [CommRing S] (φ : R →+* S)
+      (d'' : Gamma0Datum 1 (Spec (CommRingCat.of S))),
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d'' d →
+      ∀ (W' : WeierstrassCurve S) [W'.IsElliptic], IsWeierstrassModel d''.ab W' →
+        φ r = W'.j := by
+    intro S _ φ d'' hbd'' W' _ hmW'
+    have hspanS : Ideal.span (Set.range fun x : ↥s => φ (x : R)) = ⊤ := by
+      rw [← Set.image_eq_range, ← Ideal.map_span, hspan]
+      exact (Ideal.eq_top_iff_one _).2
+        (by simpa using Ideal.mem_map_of_mem φ (Submodule.mem_top : (1 : R) ∈ (⊤ : Ideal R)))
+    refine Localization.algebraMap_injective_of_span_eq_top _ hspanS ?_
+    funext y
+    show algebraMap S (Localization.Away (y : S)) (φ r)
+      = algebraMap S (Localization.Away (y : S)) W'.j
+    obtain ⟨x, hx⟩ := y.2
+    have hxy : φ (a (ix x)) = (y : S) := by rw [hix x]; exact hx
+    refine away_transport_eq hxy _ _ ?_
+    haveI := hE (ix x)
+    exact jvalue_clause2_aux huniq hmodel hcancel φ hbd'' W' hmW' (a (ix x))
+      (BC (ix x)) (V (ix x)) (hmodD (ix x)) r (hrk x)
+  -- ASSEMBLY
+  refine ⟨jLinePointOfCoord g r, ⟨?_, ?_⟩, ?_⟩
+  · intro W _ hW
+    rw [jLineCoord_jLinePointOfCoord]
+    exact hclause1 W hW
+  · intro S _ h g' hg d'' hbd'' W' _ hmW'
+    rw [jLineCoord_pre, jLineCoord_jLinePointOfCoord]
+    have hh : Spec.map (CommRingCat.ofHom (Spec.preimage h).hom) = h := by
+      rw [show CommRingCat.ofHom (Spec.preimage h).hom = Spec.preimage h from rfl,
+        Spec.map_preimage]
+    exact hclause2 (Spec.preimage h).hom d'' (by rw [hh]; exact hbd'') W' hmW'
+  · intro y hy
+    refine jLineCoord_injective ?_
+    rw [jLineCoord_jLinePointOfCoord]
+    refine (Localization.algebraMap_injective_of_span_eq_top s hspan ?_).symm
+    funext x
+    show algebraMap R (Localization.Away (x : R)) r
+      = algebraMap R (Localization.Away (x : R)) (jLineCoord y)
+    refine away_transport_eq (hix x) _ _ ?_
+    haveI := hE (ix x)
+    have h1 := hy.2
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (a (ix x))))))
+      rfl (D (ix x)) (BC (ix x)) (V (ix x)) (hmodD (ix x))
+    rw [jLineCoord_pre, Spec.preimage_map] at h1
+    rw [hrk x, ← h1]
+    rfl
 
 /-- **Existence of the `j`-invariant of an elliptic scheme over an affine
 base** (PROVEN 2026-07-27, over the three-leaf cut of the subsection
@@ -12531,9 +14433,12 @@ the line bundle `ω = f_* Ω¹_{E/T}` and the classical formulas for
 `exists_weierstrassModel_localization`, which carries the irreducibility
 verdict; the well-definedness and functoriality of `j` are
 `weierstrassModel_j_unique`,
-`isWeierstrassModel_map_of_isBaseChangeOf` and
-`exists_isBaseChangeOf_cancel`; the gluing of the local values is
-`exists_jValueOnAffine_of_localModels`.
+`isWeierstrassModel_map_of_isBaseChangeOf` (PROVEN 2026-07-27) and
+`exists_isBaseChangeOf_cancel` (PROVEN); the gluing of the local values
+is `exists_jValueOnAffine_of_localModels` (PROVEN 2026-07-27).  **So of
+the five leaves of the cut, exactly TWO remain open**: step (i),
+`exists_weierstrassModel_localization` (which carries the irreducibility
+verdict), and `weierstrassModel_j_unique`.
 
 HOW IT IS PROVEN, and what the assembly contributes.  The gluing leaf
 returns, for every affine base, a UNIQUE point of the `j`-line satisfying
@@ -14141,11 +16046,27 @@ def HasRankZeroJacobian {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
     (o : RelPoint strX (𝟙 SpecQ)) (jac : IsJacobianOf strX ab o),
     Finite (RelPoint jstr (𝟙 SpecQ)) ∧ Function.Injective (jac.aj (𝟙 SpecQ))
 
-/-- **The thirteen rank-`0` levels of Kenku's non-prime-power
-determination**, i.e. the named level nodes below.  All thirteen have
+/-- **The fourteen rank-`0` levels of Kenku's non-prime-power
+determination**, i.e. the named level nodes below.  All fourteen have
 `rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1`; nine of them additionally
-have a single witness prime (`x0WitnessTable`), and the remaining four —
-`45, 54, 63, 75` — need a multi-prime Mordell–Weil sieve.
+have a single witness prime (`x0WitnessTable`), and the remaining five —
+`26, 45, 54, 63, 75` — need a multi-prime Mordell–Weil sieve.
+
+**THE DEFINING PROPERTY, stated so that no later append can be made on a
+name-shaped argument.**  A level belongs here exactly when it is
+non-prime-power, `genus X_0(N) ≥ 1`, `rank J_0(N)(ℚ) = 0`, and every
+rational point of `X_0(N)` is a CUSP.  The last clause is the one that
+does the work downstream and the one that is easiest to lose: `11, 17,
+19` satisfy the first three and FAIL the fourth (they carry `3 + 2 + 1`
+non-cuspidal points; see `genusOneJTable` in `MazurTorsion.lean`), which
+is why that file's own level list is a different mathematical object and
+was deliberately NOT merged into this one.  Membership widens every
+`∀ N ∈ kenkuLevels` statement below, including sorried ones, so an append
+is a mathematical claim about each of them and must be verified against
+each of them — not against the list's name.
+
+**`26` was added 2026-07-27**, with that verification carried out; see
+the block at the end of this docstring.
 
 **`35` and `39` were added 2026-07-27** (this list previously held the
 eleven levels `20, 24, 28, 30, 36, 42, 45, 50, 54, 63, 75`).  They are
@@ -14173,8 +16094,50 @@ nonzero, so analytic rank `0` on every factor, hence Mordell–Weil rank
 `0` by Kolyvagin–Logachev.  Likewise `S_2(Γ_0(39))` is `3`-dimensional
 and all new with `L(f, 1) = 0.8267…, 0.4797…, 0.7964…`.  (Contrast `65`
 and `91`, whose sharp-looking counts are a trap precisely because their
-ranks are `1` and `2`; see `card_le_of_chabautySemiprimeLevel`.) -/
-def kenkuLevels : List ℕ := [20, 24, 28, 30, 35, 36, 39, 42, 45, 50, 54, 63, 75]
+ranks are `1` and `2`; see `card_le_of_chabautySemiprimeLevel`.)
+
+## `26`, ADDED 2026-07-27 — the four-part check, and what it extends
+
+`26 = 2 · 13` is non-prime-power.  The other three clauses of the
+defining property, each verified rather than asserted:
+
+* **`genus X_0(26) = 2`.**  `gammaZeroIndex 26 = 42`,
+  `numEllipticTwo 26 = 2`, `numEllipticThree 26 = 0`, `numCusps 26 = 4`,
+  so `x0Genus 26 = (12 + 42 − 6 − 0 − 24)/12 = 2`.  Confirmed by
+  `decide` and independently by Magma's `Genus(SmallModularCurve(26))`.
+* **`rank J_0(26)(ℚ) = 0`, and `J_0(26)(ℚ) ≅ ℤ/21ℤ` exactly.**  Magma on
+  the simplified model `y² = x⁶ − 8x⁵ + 8x⁴ − 18x³ + 8x² − 8x + 1`:
+  `RankBound(J) = 0` and `TorsionSubgroup(J) ≅ ℤ/21`.  Analytically,
+  `S_2(Γ_0(26))` is `2`-dimensional and all new (`S_2` vanishes at every
+  proper divisor `1, 2, 13`), with `L(f, 1) = 0.62096…, 0.51557…` on the
+  two newforms — both nonzero, analytic rank `0` on each factor, hence
+  Mordell–Weil rank `0` by Kolyvagin–Logachev.
+* **Every rational point of `X_0(26)` is a cusp.**  `numCusps 26 =
+  numRationalCusps 26 = 4`, so all four cusps are rational and distinct;
+  a Magma search to height `200` finds exactly four rational points, and
+  `card_le_x0TwentySix` — proven below over the sieve — caps
+  `#X_0(26)(ℚ)` at `4`.  So the four rational points ARE the four cusps.
+
+What the append extends, checked leaf by leaf:
+
+* `one_le_x0Genus_of_kenkuLevel`, `numRationalCusps_pos_of_kenkuLevel` —
+  both `decide`, both still close (`2 ≥ 1`, `4 > 0`).
+* `lFunction_apply_one_ne_zero_of_kenkuLevel` (sorry) — one further
+  case, TRUE at `26` by the two nonzero `L`-values above, and there are
+  no oldforms at `26` for its quantifier to reach.
+* `finite_jacobian_of_kenkuLevel` and `isTorsion_jacobian_of_kenkuLevel`
+  (both proven over that leaf) and `hasRankZeroJacobian_of_kenkuLevel`
+  (proven) — carried by `J_0(26)(ℚ) ≅ ℤ/21` and genus `2`.
+* `exists_sharpSievePrime_classCount` (sorry), through the companion
+  append to `x0SieveLevels` — one further case, TRUE at `26` with
+  witness `ℓ = 5`; see that leaf for the survivor computation and for
+  why `ℓ = 3` is REFUTED.
+* `exists_x0Compactification_mod_prime` is NOT extended, contrary to
+  what the `35`/`39` paragraph above says of it: it quantifies over
+  `x0WitnessTable`, not over `kenkuLevels`, and `26` is not a witness
+  level.  (That paragraph's claim was already imprecise for `35, 39`,
+  which were added to both lists.) -/
+def kenkuLevels : List ℕ := [20, 24, 26, 28, 30, 35, 36, 39, 42, 45, 50, 54, 63, 75]
 
 /-- **The witness table `(N, ℓ, #X_0(N)(𝔽_ℓ))` for the nine levels that
 close on a single prime.**
@@ -15378,15 +17341,15 @@ def x0Genus (N : ℕ) : ℤ :=
   (12 + (gammaZeroIndex N : ℤ) - 3 * numEllipticTwo N - 4 * numEllipticThree N
     - 6 * numCusps N) / 12
 
-/-- **`genus X_0(N) ≥ 1` at the thirteen Kenku levels** (PROVEN).
+/-- **`genus X_0(N) ≥ 1` at the fourteen Kenku levels** (PROVEN).
 
 This is the arithmetic half of `hasRankZeroJacobian_of_kenkuLevel`, and
 it is proven rather than asserted: `decide` evaluates `x0Genus` — index,
-elliptic points and cusps and all — at each of the thirteen levels.  The
+elliptic points and cusps and all — at each of the fourteen levels.  The
 values are
 
-`N  : 20 24 28 30 35 36 39 42 45 50 54 63 75`
-`g  :  1  1  2  3  3  1  3  5  3  2  4  5  5`
+`N  : 20 24 26 28 30 35 36 39 42 45 50 54 63 75`
+`g  :  1  1  2  2  3  3  1  3  5  3  2  4  5  5`
 
 matching the table in `kenkuLevels`, and independently reproduced with
 PARI/GP.  Genus `0` would make the leaf below FALSE (see
@@ -15399,13 +17362,22 @@ on 2026-07-27**, which was the one mechanical risk of that extension:
 `x0Genus 35 = x0Genus 39 = 3`, from `gammaZeroIndex 35 = 48`,
 `gammaZeroIndex 39 = 56`, `numEllipticTwo = 0` at both,
 `numEllipticThree 35 = 0`, `numEllipticThree 39 = 2` and
-`numCusps = 4` at both. -/
+`numCusps = 4` at both.
+
+**And after `26` was added, later the same day**: `x0Genus 26 = 2`, from
+`gammaZeroIndex 26 = 42`, `numEllipticTwo 26 = 2`,
+`numEllipticThree 26 = 0`, `numCusps 26 = 4`.  Note `numEllipticTwo 26`
+is where the counting form of `numEllipticTwo` earns its keep — the
+product form with a Kronecker symbol at `p = 2` returns `4` here instead
+of `2`, and would give genus `3/2`; this is the same trap the
+`numEllipticTwo` docstring records at `N = 50`. -/
 theorem one_le_x0Genus_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels) : 1 ≤ x0Genus N := by
   fin_cases hN <;> decide
 
-/-- **`X_0(N)` has at least one rational cusp, at the thirteen Kenku
+/-- **`X_0(N)` has at least one rational cusp, at the fourteen Kenku
 levels** (PROVEN, by `decide` on `numRationalCusps`, whose values are
-`6, 8, 6, 8, 4, 6, 4, 8, 4, 4, 4, 4, 4`).
+`6, 8, 4, 6, 8, 4, 6, 4, 8, 4, 4, 4, 4, 4` in the order of
+`kenkuLevels`; the third entry is the `4` at the new level `26`).
 
 This is what supplies the BASE POINT of the Abel–Jacobi map in
 `hasRankZeroJacobian_of_kenkuLevel`, so that no separate existence leaf
@@ -15417,75 +17389,98 @@ theorem numRationalCusps_pos_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels) :
 
 /-- **`Pic⁰` is representable: the degree-zero relative Picard functor of
 a smooth proper geometrically connected curve over `ℚ` carrying a
-rational point is an abelian scheme** (sorry node) — LEVEL-FREE and
-CURVE-GENERAL, in the same spirit as `fg_relPoint_of_abelianScheme`
-below: no `N`, no modular curve, no `IsX0Compactification`.
+rational point is an abelian scheme** (PROVEN 2026-07-27 — it is the
+`S = SpecQ` instance of `Fermat.exists_relPicZero`, and nothing else).
 
-TRUE and classical: this is Grothendieck's representability theorem for
-the relative Picard functor (FGA, exposé 232; Bosch–Lütkebohmert–Raynaud,
-*Néron Models* 8.2/1 and 9.4/4; Stacks 0D2C), specialised to a curve,
-where the degree-zero part is represented by an abelian scheme — the
-Jacobian.
+Grothendieck's representability theorem (FGA, exposé 232;
+Bosch–Lütkebohmert–Raynaud, *Néron Models* 8.2/1 and 9.4/4; Stacks 0D2C),
+specialised to a curve, where the degree-zero part is represented by an
+abelian scheme — the Jacobian.
 
-The section `o` is load-bearing twice over.  It is what makes the naive
-quotient `Pic(X_T)/Pic(T)` — `RelPicEquiv` — already the relative Picard
-functor, with no fppf sheafification anywhere (BLR 8.1/4), which is the
-only reason `IsRelPicZeroOf` is statable at a pin with no site theory;
-and it is what the Abel–Jacobi fields `aj`, `aj_spec`, `aj_base` are
-based at.
+**THIS NODE IS NOW A ONE-LINE INSTANCE, AND THAT IS THE WHOLE POINT.**
+The sorried statement lives ONCE, over an arbitrary base and
+universe-polymorphically, in `ModularCurve/RelativePicard.lean` as
+`exists_relPicZero`.  It has to be there rather than here because its
+other consumer — `exists_albaneseOfCurve`, ~4700 lines below — needs
+`S = Spec ℤ_(ℓ)` and `S = Spec 𝔽_ℓ`, which this `SpecQ` statement cannot
+serve; and a declaration reachable from only one of two consumers forces
+two independently sorried copies of one classical theorem, which is the
+single most expensive object this development produces.  Anything that
+needs representability over `ℚ` should call THIS; anything that needs it
+over another base should call `exists_relPicZero` directly.
+
+The section `o` is load-bearing twice over, and travels with the general
+statement.  It is what makes the naive quotient `Pic(X_T)/Pic(T)` —
+`RelPicEquiv` — already the relative Picard functor, with no fppf
+sheafification anywhere (BLR 8.1/4), which is the only reason
+`IsRelPicZeroOf` is statable at a pin with no site theory; and it is what
+the Abel–Jacobi fields `aj`, `aj_spec`, `aj_base` are based at.
 
 The three geometric hypotheses are exactly what `IsX0Compactification`
 supplies, and each is load-bearing: without properness `Pic⁰` is not
 proper, without smoothness it is not smooth, and without geometric
 connectedness `f_*𝒪_X = 𝒪_S` fails universally, so the quotient
-presentation above is not the Picard functor at all.
-
-**What this leaf still needs**, none of which exists at this pin:
-cohomology and base change for a proper morphism, the `𝒪(D)`/divisor
-dictionary on a relative curve, the smoothness criterion for `Pic⁰`
-(`H²` vanishing on a curve), and properness of `Pic⁰`.  The module
-docstring of `ModularCurve/RelativePicard.lean` records the survey behind
-that list — including that the pin has **no tensor product of sheaves of
-modules at all**, which is why `modTensor` had to be written before the
-statement could be made. -/
+presentation above is not the Picard functor at all.  The inventory of
+what the proof still needs is on `exists_relPicZero`, not duplicated
+here. -/
 theorem exists_relPicZeroOf {X : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 SpecQ)) :
     ∃ (J : Scheme.{0}) (jstr : J ⟶ SpecQ) (ab : AbelianSchemeStruct jstr),
       Nonempty (IsRelPicZeroOf strX ab o) :=
-  sorry
+  exists_relPicZero strX hproper hsmooth hconn o
 
 /-- **Autoduality: a representing object for `Pic⁰` is the Albanese**
-(sorry node) — the second half of the cut, and again LEVEL-FREE and
-CURVE-GENERAL.
+(sorry node — but see below: it is DEAD MATHEMATICS, kept sorried only
+by Lean's declaration order) — LEVEL-FREE and CURVE-GENERAL.
 
 TRUE, and this is the classical "autoduality of the Jacobian" step.
 Given `P : IsRelPicZeroOf strX ab o`, the fields `inj`, `sheaf_zero` and
 `sheaf_add` exhibit `J` as an abelian *subscheme* of `Pic_{X/ℚ}`, and
 `aj` puts the image of the Abel–Jacobi map inside it.  For a smooth
 proper geometrically connected curve that image generates `Pic⁰` as a
-group, and an abelian subscheme containing a generating set is
-everything, so `J = Pic⁰`.  The universal property then follows from
-autoduality: a pointed `φ : X ⟶ A` into an abelian scheme pulls line
-bundles back, giving `A^∨ = Pic⁰_A ⟶ Pic⁰_X = J^∨`, and biduality
-(`A^∨∨ = A`, `J^∨∨ = J`) turns that into the wanted `u : J ⟶ A`, with
-`u ≫ astr = jstr` and `c = u ∘ aj` by construction.
+group, so `J = Pic⁰`; the universal property then follows from
+autoduality and biduality, and uniqueness from rigidity plus generation.
 
-Uniqueness of `u` is the rigidity argument recorded on
-`exists_jacobianOf_x0` below and is NOT weakened here: `u` is a bare
-morphism of schemes, and two such agreeing on `aj(X)` agree on the
-subgroup it generates, which is all of `J`.
+## ⚠ DO NOT PROVE THIS LEAF.  IT HAS NO MATHEMATICAL CONTENT LEFT.
 
-**What this leaf still needs**: the dual abelian scheme, biduality, the
-theorem that `aj(X)` generates `Pic⁰`, and the rigidity lemma (a
-morphism of abelian schemes over a field is a homomorphism followed by a
-translation).  None of the four exists at this pin — `Modularity/
-AbelianScheme.lean`'s own docstring already records `A^∨ = Pic⁰_{A/S}`
-as out of reach — and that is precisely the theory this cut isolates.
+Every ingredient it needs is ALREADY IN THIS FILE, further down, as of
+2026-07-27, and the statement below is EXACTLY
 
-The three geometric hypotheses are load-bearing for the *generation*
-step, which is where the curve enters; they are not needed to state the
-conclusion.
+    ⟨(P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf⟩
+
+* `IsRelPicZeroOf.isAlbaneseOf` (PROVEN) turns `P` into an
+  `IsAlbaneseOf`, over an ARBITRARY base, over the two named leaves
+  `IsRelPicZeroOf.exists_albaneseFactorisation` (autoduality and
+  biduality) and `IsRelPicZeroOf.eq_of_aj_eq` (generation, i.e.
+  `Sym^g C ↠ Pic⁰`);
+* `IsAlbaneseOf.isJacobianOf` (PROVEN) turns that into an `IsJacobianOf`,
+  supplying the `∃!` over arbitrary `S`-morphisms out of
+  `isAdditiveOn_of_post_zero` (relative RIGIDITY, also PROVEN).
+
+So the two genuinely open pieces of autoduality are those two named
+general-base leaves, and a prover dispatched HERE would be writing a
+THIRD copy of a rigidity/generation argument that already exists twice.
+
+**WHAT ACTUALLY BLOCKS IT, and the exact repair.**  `RelPoint.post`,
+`IsAdditiveOn`, `isAdditiveOn_of_post_zero`, `IsAlbaneseOf`,
+`IsAlbaneseOf.isJacobianOf`, `IsRelPicZeroOf.exists_albaneseFactorisation`,
+`IsRelPicZeroOf.eq_of_aj_eq` and `IsRelPicZeroOf.isAlbaneseOf` are all
+declared BELOW this point, in one contiguous block that begins at
+`RelPoint.post` and ends at `IsRelPicZeroOf.isAlbaneseOf`.  Move that
+block — and ONLY that block; `exists_albaneseOfCurve` and
+`exists_relativeJacobian`, which follow it, must stay where they are — to
+just above `exists_relPicZeroOf`.  It depends on nothing but
+`AbelianSchemeStruct`, `RelPoint`, `IsJacobianOf` (declared far above),
+`IsRelPicZeroOf` (imported from `ModularCurve/RelativePicard.lean`) and
+the `ProperPushforward` shim (imported at the top of this file), so it is
+a pure relocation with no import change and no semantic change.  Then
+replace the `sorry` below by the one line above and delete this section.
+
+That relocation was NOT done on 2026-07-27 because the block was owned by
+two other concurrent worktrees at the time.  It is bookkeeping for
+whoever next has this file to themselves; it is not new mathematics, and
+it should not be dispatched as a proof task.
 
 Stated with `Nonempty` because `IsJacobianOf` is DATA — it carries the
 Abel–Jacobi map as a field — so the bare structure is not a proposition
@@ -15577,80 +17572,188 @@ theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
   exact ⟨J, jstr, ab,
     isJacobianOf_of_isRelPicZeroOf h.isProper h.smooth h.connected P⟩
 
-/-- **A height function with the Northcott property exists on `A(ℚ)`,
-for every abelian scheme `A` over `ℚ`** (sorry node) — the GEOMETRIC
-half of Mordell–Weil, and the only half that needs a theory of heights.
+/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
+scheme `A` over `ℚ`** (sorry node) — ALL that is left of the theory of
+heights after `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`, and
+purely geometric: no finiteness statement survives in it.
 
 TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
 case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
 varieties in general).  `ab.proper` and `ab.smooth` make `A` an abelian
-variety over `ℚ`, so it is projective and carries a symmetric ample line
-bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀`.  Let
-`height` be the associated Weil height `h_L`.  The three fields of
-`DescentHeight` are then three standard theorems about `h_L`:
+variety over `ℚ`, so it is projective and carries a **symmetric** ample
+line bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀` —
+which after replacing `L` by a power is very ample.  Let
+`φ_L : A ↪ ℙ^N_ℚ` be the resulting closed immersion.  A point of
+`ℙ^N(ℚ)` has a primitive integral representative `(x_0 : … : x_N)`,
+unique up to sign, and the sign is pinned by asking that the first
+nonzero coordinate be positive; sending `P ∈ A(ℚ)` to that vector is the
+required `coords : A(ℚ) → ℤ^{N+1}`.
 
-* `translate` is the **quasi-parallelogram law**
-  `h_L(P + Q) + h_L(P − Q) = 2 h_L(P) + 2 h_L(Q) + O(1)`, which gives
-  `h_L(P + Q) ≤ 2 h_L(P) + C(Q)` because `h_L` is bounded below for `L`
-  ample;
-* `double` is **quadraticity**, `h_L(m • P) = m² h_L(P) + O(1)` for
-  symmetric `L`, of which only the `≥` direction is used;
-* `northcott` is **Northcott's theorem**: a projective variety over a
-  number field has only finitely many rational points of bounded height.
+The two fields are then two standard theorems:
 
-`m` may be taken to be any integer `≥ 2`, and the descent theorem uses
-whichever one this leaf supplies — which is why the sibling leaf
-`finite_quotient_nsmul_of_abelianScheme` is stated for every `n ≥ 2`
-rather than for one fixed `n`.
+* `injective` is injectivity of `φ_L` on `ℚ`-points, which holds because
+  a closed immersion is a monomorphism;
+* `quasiParallelogram` is the **theorem of the cube**, in the form
+  `h_L(P + Q) + h_L(P − Q) = 2 h_L(P) + 2 h_L(Q) + O(1)` for symmetric
+  `L`.  It transfers from the projective height `log max_i |x_i|` to
+  `intHeight`, which is `log (1 + ∑_i |x_i|)`, because
+  `max_i |x_i| ≤ 1 + ∑_i |x_i| ≤ (N + 2) · max_i |x_i|` for a primitive
+  vector — the two differ by at most `log (N + 2)`, and the statement is
+  only asked to hold up to a constant.
 
-**FAITHFULNESS AUDIT.**  *Not vacuous in general.*  `DescentHeight`
-cannot be met by a junk height when `A(ℚ)` is infinite: `northcott`
-alone forces every level set to be finite, so a constant or bounded
-`height` is immediately excluded.  It *is* cheap exactly when `A(ℚ)` is
-finite — `height = 0`, `m = 2` works — and that is correct rather than a
-defect, since a finite group is finitely generated and the conclusion of
-the consumer holds for that reason.  So the leaf carries content exactly
-where the theorem it feeds needs content.
+**What this leaf NO LONGER carries, and this is the point of the cut.**
+Northcott's theorem has been *proven* rather than assumed: over `ℚ` and
+in primitive integral coordinates it is the statement that an integer
+box is finite, and that is `Fermat.instNorthcottIntHeight`.  So the
+finiteness input to Mordell–Weil's geometric half is gone from the
+frontier; what remains is exactly the projective embedding and the
+theorem of the cube.
 
-*The conclusion is `Nonempty`, not a chosen height*, because nothing
-downstream depends on WHICH height is used; only its existence is
-consumed.  A prover may pick any `m ≥ 2`.
+**FAITHFULNESS AUDIT.**  *Not vacuous.*  An arbitrary injection
+`A(ℚ) ↪ ℤ^d` would satisfy `injective` and give a Northcott height, but
+`quasiParallelogram` forces that height to be a quadratic form up to
+`O(1)`, which pins the growth rate of the coordinates along every cyclic
+subgroup: for `A(ℚ) ≅ ℤ` a linear parametrisation fails outright, since
+`log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is unbounded.  It *is* cheap
+exactly when `A(ℚ)` is finite — any injection into `ℤ^1` works, with a
+constant absorbing the finitely many defects — and that is correct
+rather than a defect, since a finite group is finitely generated and the
+conclusion of the consumer holds for that reason.
 
-**MISSING MACHINERY**, and it is the honest cost of this leaf: Weil
-heights on projective space, functoriality of heights along morphisms,
-the theory of the canonical (Néron–Tate) height, and Northcott's
-theorem.  None of these exists in `Mathlib`, in `~/cs/FLT`, or in this
-project — the check that refutes this is
-`grep -rn "Northcott\|WeilHeight\|NeronTate" Fermat/
-.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`, whose only hit is
-`Mathlib/Order/Northcott.lean`, the *class* `Northcott` (a function all
-of whose level sets are finite) with no instance for any height.  That
-class is precisely the `northcott` field below, so the statement of this
-leaf is pin-available even though its proof is not. -/
+*The conclusion is `Nonempty`, not a chosen coordinate system*, because
+nothing downstream depends on WHICH one is used.
+
+**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist
+because `ℤ` is a PID with unit group `{±1}`; over a general number field
+the normalisation involves the class group and the unit group, and the
+elementary Northcott argument proven upstream would not apply.
+Mordell–Weil is only ever needed over `ℚ` in this development.
+
+**MISSING MACHINERY**, and it is the honest remaining cost: projectivity
+of an abelian variety, symmetric very ample line bundles, and the
+theorem of the cube.  None of these exists in `Mathlib`, in `~/cs/FLT`,
+or in this project — the check that would refute this is
+`grep -rn "TheoremOfTheCube\|VeryAmple\|NeronTate" Fermat/
+.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`. -/
+theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
+  sorry
+
+/-- **A height function with the Northcott property exists on `A(ℚ)`,
+for every abelian scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the
+leaf above) — the GEOMETRIC half of Mordell–Weil.
+
+**SPLIT, 2026-07-27.  The IRREDUCIBILITY note this docstring used to
+carry — "Weil heights, functoriality, the Néron–Tate height and
+Northcott's theorem are all missing from the pin" — was correct about
+the pin and wrong about the CUT: it searched only the "is the theory
+available?" axis, and never asked which part of it is a *finiteness*
+statement about `ℚ` and which part is *geometry*.**
+
+* The finiteness part is Northcott's theorem, and over `ℚ` in primitive
+  integral coordinates it is elementary — an integer box is finite.  It
+  is now PROVEN, as `Fermat.instNorthcottIntHeight` in
+  `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`.
+* The bookkeeping part is the passage from a symmetric two-sided
+  parallelogram bound to the asymmetric three-field `DescentHeight`
+  (a translation bound with a `Q`-dependent constant, a one-sided
+  quadraticity bound, and a choice of `m`).  That is pure real
+  arithmetic once one knows a Northcott height is bounded below, and it
+  is now PROVEN, as `Fermat.WeilHeight.toDescentHeight` and
+  `Fermat.exists_lowerBound_of_northcott`.
+* The geometry — a symmetric very ample line bundle and the theorem of
+  the cube — is what is left, and it is the single leaf above.
+
+`m` is taken to be `2` by `WeilHeight.toDescentHeight`; the descent
+theorem uses whichever `m` this node supplies, which is why the sibling
+leaf `finite_quotient_nsmul_of_abelianScheme` is deliberately stated for
+every `n ≥ 2` rather than for one fixed `n`.  Do not narrow it: that
+choice is what keeps this node free to change its `m`. -/
 theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) :=
-  sorry
+    Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨ic⟩ := exists_integralCoordinates_of_abelianScheme ab
+  exact ⟨ic.toDescentHeight⟩
 
-/-- **Weak Mordell–Weil: `A(ℚ) / n A(ℚ)` is finite, for every abelian
-scheme `A` over `ℚ` and every `n ≥ 2`** (sorry node) — the ARITHMETIC
-half of Mordell–Weil.
+/-- **Weak Mordell–Weil at a PRIME: `A(ℚ) / p A(ℚ)` is finite, for every
+abelian scheme `A` over `ℚ` and every prime `p`** (sorry node) — the
+ARITHMETIC half of Mordell–Weil, and the whole of what is left of it.
 
 TRUE and classical (Silverman, *AEC* Theorem VIII.1.1 for elliptic
 curves; the abelian-variety case is the same argument).  Adjoin the
-`n`-torsion to get `L = ℚ(A[n])`, a finite extension; the Kummer
-sequence `0 → A[n] → A →[n] A → 0` embeds `A(ℚ)/nA(ℚ)` into
-`H¹(Gal(ℚ̄/ℚ), A[n])`, and the image consists of classes unramified
-outside the finite set `S` of places dividing `n` and the places of bad
+`p`-torsion to get `L = ℚ(A[p])`, a finite extension; the Kummer
+sequence `0 → A[p] → A →[p] A → 0` embeds `A(ℚ)/pA(ℚ)` into
+`H¹(Gal(ℚ̄/ℚ), A[p])`, and the image consists of classes unramified
+outside the finite set `S` of places dividing `p` and the places of bad
 reduction.  Finiteness of `H¹_S` is then finiteness of the class group
 of `L` together with Dirichlet's unit theorem (finite generation of the
-`S`-units), via the `n`-Selmer group of `L`.
+`S`-units), via the `p`-Selmer group of `L`.
 
-The subgroup `n A(ℚ)` is written as the range of the
-multiplication-by-`n` endomorphism `nsmulAddMonoidHom n`, which is the
+The subgroup `p A(ℚ)` is written as the range of the
+multiplication-by-`p` endomorphism `nsmulAddMonoidHom p`, which is the
 form `Fermat.exists_finset_nsmul_repr` — the coset-representative step
 inside the descent theorem — consumes.
+
+**FAITHFULNESS AUDIT.**  `hp` is load-bearing, and not only because `p`
+must be nonzero: at `p = 0` the range is the trivial subgroup, the
+quotient is `A(ℚ)` itself, and the statement is FALSE for every abelian
+scheme with infinitely many rational points (an elliptic curve of
+positive rank, for instance); at `p = 1` the quotient is trivial and the
+statement is vacuously true.  Primality is what makes the leaf carry its
+intended content rather than either of those degenerate readings, and it
+is exactly what the reduction
+`Fermat.finite_quotient_nsmul_of_prime` asks for.
+
+*Not vacuous.*  This is the whole arithmetic content of Mordell–Weil:
+`A(ℚ)` finitely generated implies this, and it is strictly weaker only
+because it says nothing about the rank.  There is no junk witness — the
+statement is about a specific quotient of a specific group.
+
+**MISSING MACHINERY:** Galois cohomology of the Kummer sequence for an
+abelian scheme, the `p`-Selmer group, and the two finiteness theorems of
+algebraic number theory (class group, unit group) applied to
+`ℚ(A[p])`.  `Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
+counterexample: despite its name it is an explicit `2`-descent for the
+two named curves `11a3` and `14a4`, with no general theory.
+
+**WHY THE PRIME CASE SUFFICES, and why it is the right leaf.**  `A / nA`
+is finite as soon as `A / pA` is finite for every prime `p`:
+`A / (m k) A` is an extension of `A / mA` by a quotient of `A / kA`
+(Noether's third isomorphism theorem plus the surjection
+`A / kA ↠ mA / mkA`), so an induction on the prime factorisation does
+the rest.  That reduction is pure group theory and is PROVEN, as
+`Fermat.finite_quotient_nsmul_mul` and
+`Fermat.finite_quotient_nsmul_of_prime` in
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
+
+The gain is not bookkeeping.  At a PRIME the arithmetic input is a
+different and much better-behaved object: `A[p]` is an `𝔽_p`-vector
+space, so `H¹(G_ℚ, A[p])` and the `p`-Selmer group are `𝔽_p`-vector
+spaces, and their finiteness is a statement about dimensions rather than
+about a general finite abelian group.  Every classical treatment of weak
+Mordell–Weil that is written uniformly in `n` specialises to a prime at
+the first opportunity. -/
+theorem finite_quotient_psmul_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Finite (RelPoint jstr (𝟙 SpecQ) ⧸
+      (nsmulAddMonoidHom p : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) :=
+  sorry
+
+/-- **Weak Mordell–Weil: `A(ℚ) / n A(ℚ)` is finite, for every abelian
+scheme `A` over `ℚ` and every `n ≥ 2`** (PROVEN, 2026-07-27, from the
+prime case above) — the ARITHMETIC half of Mordell–Weil.
+
+The statement is kept at "every `n ≥ 2`" rather than narrowed to `n = 2`
+on purpose: the descent theorem consumes whichever `m` the sibling leaf
+`exists_descentHeight_of_abelianScheme` supplies, and that node is free
+to change its `m` (it currently supplies `2`, through
+`Fermat.WeilHeight.toDescentHeight`).  Narrowing here would couple the
+two leaves.
 
 **FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the range of
 `nsmulAddMonoidHom 0` is the trivial subgroup, the quotient is `A(ℚ)`
@@ -15659,25 +17762,18 @@ infinitely many rational points (an elliptic curve of positive rank, for
 instance).  At `n = 1` the quotient is trivial and the statement is
 vacuously true, so `2 ≤ n` — rather than `0 < n` — is the honest
 hypothesis, and it is exactly what `DescentHeight.two_le` supplies at
-the one call site.
-
-*Not vacuous.*  This is the whole arithmetic content of Mordell–Weil:
-`A(ℚ)` finitely generated implies this, and it is strictly weaker only
-because it says nothing about the rank.  There is no junk witness — the
-statement is about a specific quotient of a specific group.
-
-**MISSING MACHINERY:** Galois cohomology of the Kummer sequence for an
-abelian scheme, the `n`-Selmer group, and the two finiteness theorems of
-algebraic number theory (class group, unit group) applied to
-`ℚ(A[n])`.  `Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
-counterexample: despite its name it is an explicit `2`-descent for the
-two named curves `11a3` and `14a4`, with no general theory. -/
+the one call site.  The proof below uses `hn` only through `n ≠ 0`,
+which is all the reduction needs; the stronger hypothesis is retained
+because it is what the call site has and because `n = 1` would otherwise
+invite a reader to think the leaf says something at `n = 1`. -/
 theorem finite_quotient_nsmul_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : 2 ≤ n) :
     letI := ab.addCommGroup (𝟙 SpecQ)
     Finite (RelPoint jstr (𝟙 SpecQ) ⧸
-      (nsmulAddMonoidHom n : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) :=
-  sorry
+      (nsmulAddMonoidHom n : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  exact finite_quotient_nsmul_of_prime
+    (fun p hp => finite_quotient_psmul_of_abelianScheme ab p hp) n (by omega)
 
 /-- **Mordell–Weil: `A(ℚ)` is finitely generated, for EVERY abelian
 scheme `A` over `ℚ`** (PROVEN, from the two leaves above plus the
@@ -15708,10 +17804,28 @@ lemma is pure group theory: it holds for an arbitrary `AddCommGroup`
 carrying a height function, and it is now PROVEN, in
 `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`
 (`Fermat.fg_of_descentHeight`, Silverman *AEC* Theorem VIII.3.1).  So
-this node is now a two-line assembly over the two leaves above —
+this node is now a two-line assembly over the two nodes above —
 `exists_descentHeight_of_abelianScheme` and
 `finite_quotient_nsmul_of_abelianScheme` — and neither of them is the
 descent argument.
+
+**SECOND SPLIT, same day, and it cut both of those in turn.**  Each is
+now itself PROVEN, over one strictly smaller leaf:
+
+* `exists_descentHeight_of_abelianScheme` over
+  `exists_integralCoordinates_of_abelianScheme`, having shed Northcott's
+  theorem (proven over `ℚ` in primitive integral coordinates, where it
+  is the finiteness of an integer box) and the passage from the
+  parallelogram law to the three fields of `DescentHeight` (proven as
+  real arithmetic);
+* `finite_quotient_nsmul_of_abelianScheme` over
+  `finite_quotient_psmul_of_abelianScheme`, having shed the reduction
+  from a general `n` to its prime factors (proven as group theory).
+
+So the two OPEN leaves under Mordell–Weil are now the prime case of weak
+Mordell–Weil and the existence of a projective embedding whose height
+obeys the theorem of the cube.  Everything else between here and them is
+compiler-checked.
 
 The retired verdict, kept because its *check* is still the right one:
 "neither heights on abelian varieties, nor the weak Mordell–Weil
@@ -16002,6 +18116,330 @@ theorem lFunction_apply_one_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLev
     (mul_ne_zero (by norm_num) (Complex.ofReal_ne_zero.mpr Real.pi_ne_zero))
     (cuspPeriod_ne_zero_of_kenkuLevel N hN f a hf)
 
+/-! #### The Eichler–Shimura seam of `isTorsion_jacobian_of_lFunction_ne_zero`
+
+The declarations in this block exist to cut `isTorsion_jacobian_of_lFunction_ne_zero`
+below.  `RelPoint.post` and `IsAdditiveOn` were HOISTED here verbatim from ~4000
+lines down (see the note at their old site); the rest is new on 2026-07-27. -/
+
+/-- **Postcomposition of a relative point along an `S`-morphism**
+(PROVEN — the dual of `RelPoint.pre`, which precomposes in the TEST
+scheme; this one postcomposes in the TARGET).
+
+Together with `RelPoint.pre` it is everything needed to say that a
+morphism of abelian schemes is a homomorphism, which is what
+`IsAdditiveOn` below does.  The development had no such notion before
+2026-07-27 — `grep` for `RelPoint.post` and `IsAdditiveOn` returned
+nothing in this project, in mathlib and in `~/cs/FLT`. -/
+def RelPoint.post {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ bf = af) {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
+    RelPoint bf g :=
+  ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩
+
+/-- **`u : A ⟶ B` is a HOMOMORPHISM of abelian schemes**, read on the
+functor of points: postcomposition by `u` carries sums to sums, at every
+test scheme and every base point.
+
+By Yoneda this is exactly the classical condition that `u` commute with
+the two group laws, and it is stated on points rather than as an
+equation of morphisms `A ×_S A ⟶ B` for the same reason
+`AbelianSchemeStruct` itself is: the group law of an abelian scheme in
+this development is primitively a functor-of-points datum, and
+`addHom` — the morphism-level multiplication — is currently available
+only over the base `SpecQ`. -/
+def IsAdditiveOn {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
+    (u : A ⟶ B) (hu : u ≫ bf = af) : Prop :=
+  ∀ {T : Scheme.{0}} {g : T ⟶ S} (x y : RelPoint af g),
+    RelPoint.post u hu (abA.add x y)
+      = abB.add (RelPoint.post u hu x) (RelPoint.post u hu y)
+
+/-- **ISOGENY INVARIANCE OF TORSION, in the only form the argument needs**
+(PROVEN 2026-07-27) — pure group theory, no geometry: if a group maps to
+finitely many torsion groups with FINITE joint kernel, it is torsion.
+
+This is the elementary third step of Kolyvagin–Logachev's classical
+assembly ("a `ℚ`-isogeny has finite kernel, so torsion pulls back"),
+extracted so that it is proven once rather than reproduced inside a
+geometric argument.  It is stated for an arbitrary family rather than for
+a product because the product of abelian schemes is not available in this
+development — a family of quotient maps with finite joint kernel is
+exactly the content of "the map to the product is an isogeny", written in
+the one form that is expressible here.
+
+The proof: for `x` pick `k i > 0` killing `φ i x`, set `n = ∏ k i`, then
+`n • x` lies in the joint kernel, which is a FINITE subgroup, so
+`m • (n • x) = 0` for some `m > 0` and `x` has order dividing `m * n`.
+`Fintype ι` is what makes `n` exist; the statement is false for an
+infinite family (take `G = ℤ`, `H i = ℤ/i`).
+
+Note the kernel hypothesis is `Set.Finite` rather than `Finite` of a
+subtype, because that is the shape `IsHeckeIsotypicDecomposition` below
+can state without first bundling the `φ i` as `AddMonoidHom`s. -/
+theorem isTorsion_of_finite_jointKer {G : Type*} [AddCommGroup G] {ι : Type*} [Fintype ι]
+    {H : ι → Type*} [∀ i, AddCommGroup (H i)] (φ : ∀ i, G →+ H i)
+    (htor : ∀ i, AddMonoid.IsTorsion (H i))
+    (hker : {x : G | ∀ i, φ i x = 0}.Finite) :
+    AddMonoid.IsTorsion G := by
+  have hset : ((⨅ i, (φ i).ker : AddSubgroup G) : Set G) = {x : G | ∀ i, φ i x = 0} := by
+    ext y
+    simp [AddMonoidHom.mem_ker]
+  haveI : Finite ((⨅ i, (φ i).ker : AddSubgroup G)) := by
+    have h2 : (((⨅ i, (φ i).ker : AddSubgroup G) : Set G)).Finite := hset ▸ hker
+    exact h2.to_subtype
+  intro x
+  rw [isOfFinAddOrder_iff_nsmul_eq_zero]
+  choose k hk hkx using fun i => isOfFinAddOrder_iff_nsmul_eq_zero.mp (htor i (φ i x))
+  set n : ℕ := ∏ i, k i
+  have hnpos : 0 < n := Finset.prod_pos fun i _ => hk i
+  have hmem : n • x ∈ (⨅ i, (φ i).ker : AddSubgroup G) := by
+    rw [AddSubgroup.mem_iInf]
+    intro i
+    rw [AddMonoidHom.mem_ker, map_nsmul]
+    obtain ⟨m, hm⟩ : k i ∣ n := Finset.dvd_prod_of_mem k (Finset.mem_univ i)
+    rw [hm, mul_comm, ← smul_smul, hkx i, smul_zero]
+  obtain ⟨m, hmpos, hmz⟩ := isOfFinAddOrder_iff_nsmul_eq_zero.mp
+    (isOfFinAddOrder_of_finite (⟨n • x, hmem⟩ : (⨅ i, (φ i).ker : AddSubgroup G)))
+  refine ⟨m * n, Nat.mul_pos hmpos hnpos, ?_⟩
+  have hcoe : ((m • (⟨n • x, hmem⟩ : (⨅ i, (φ i).ker : AddSubgroup G)) : _) : G) = 0 := by
+    rw [hmz]; rfl
+  rw [← smul_smul]
+  simpa using hcoe
+
+/-- **EICHLER–SHIMURA, as a datum: the Hecke-isotypic decomposition of
+`J₀(N)`** (new 2026-07-27).
+
+`J₀(N)` is `ℚ`-isogenous to a product `∏ A_i` in which each factor is
+cut out by ONE system of Hecke eigenvalues.  Written here as a family of
+quotient maps `u i : J ⟶ A i` with finite joint kernel on rational
+points, because the product of abelian schemes is not available in this
+development and is not needed: "the map to the product is an isogeny" is
+`finite_ker`, and nothing downstream inspects the product itself.
+
+The fields, in blocks:
+
+* `T`, `T_comp`, `T_add` — the Hecke operators `T_n` as endomorphisms of
+  `J₀(N)` over `ℚ`;
+* `idx`, `fintypeIdx`, `A`, `astr`, `abA` — the factors, finitely many;
+* `u`, `u_comp`, `u_add`, `u_surj` — the optimal quotient maps, which are
+  surjective homomorphisms;
+* `form`, `coeff`, `isEigen` — the eigenform each factor is labelled by;
+* `S`, `S_comp`, `S_add`, `equivariant` — the descended Hecke action, and
+  the equivariance `u i ∘ T n = S i n ∘ u i` that says `u i` is a map of
+  Hecke modules;
+* `integral`, `isotypic` — `A i` is ISOTYPIC for the system `coeff i`
+  away from `N`: `T n` acts on it as a root of `minpoly ℤ (coeff i n)`;
+* `cover` — every eigenform of level `N` labels some factor;
+* `finite_ker` — the joint kernel on `ℚ`-points is finite.
+
+**WHY IT IS TRUE.**  Take `idx` to be, for each newform `g` of each level
+`M ∣ N`, `σ₀(N/M)` copies, with `A` the modular abelian variety `A_g` and
+the `σ₀(N/M)` maps `u` the distinct degeneracy-twisted optimal quotients
+`J₀(N) ↠ A_g`; those cut out everything, which is `finite_ker`.  Label
+the copies by the eigenforms of `S₂(Γ₀(N))` lying above `g`, of which
+there are at most `σ₀(N/M) = dim` of the `g`-old space (distinct
+eigenforms are independent), so every eigenform gets a label and `cover`
+holds.  `isotypic` holds because `T_n` acts on `A_g` through
+`a_n(g) ∈ O_g` and `ℤ[a_n] ≅ ℤ[X]/(minpoly ℤ a_n)`; `integral` is
+Shimura's theorem that the `a_n` are algebraic integers.
+
+**WHY `isotypic` IS RESTRICTED TO `n` COPRIME TO `N`.**  It is FALSE for
+`n ∣ N`: a `p`-stabilization and its newform share every `a_n` with
+`(n, N) = 1` but not `a_p`, and `U_p` is not semisimple on the old part,
+so `A_g` is not `U_p`-isotypic as a quotient of `J₀(N)`.  The anemic
+Hecke algebra is exactly the part that does descend.
+
+**DEGENERACY AUDIT — this is NOT the cut the 2026-07-27 audit rejected.**
+That audit rejected "isogeny decomposition + each factor torsion" because
+the empty product (`idx` empty) makes the first half assert the
+conclusion.  Two fields kill that here, and both are load-bearing even
+though the assembly consumes neither:
+
+* `cover` makes `idx` empty only when `S₂(Γ₀(N))` has no eigenform at
+  all, in which case `J₀(N)` is trivial and there is nothing to prove.
+* `isotypic` kills the residual "one factor, `A = J`, `u = 𝟙`" witness:
+  if two eigenforms differ at some `a_n` with `(n, N) = 1`, their
+  `minpoly`s are distinct monic irreducibles over `ℚ`, hence coprime, so
+  `P(T_n) = Q(T_n) = 0` on the SAME `J` forces `c • x = 0` for a nonzero
+  integer `c` and every `x ∈ J(ℚ)` — i.e. that witness already proves the
+  conclusion and is not a cheaper route.  The one case it does not
+  exclude is a level whose eigenforms all share the anemic system, and
+  there `J₀(N)` really is isotypic and the decomposition has nothing to
+  say.
+
+**WHAT IS NOT PINNED, and it is the crux.**  `T` is an ARBITRARY family
+of endomorphisms; nothing here says it is the family of genuine Hecke
+correspondences.  Pinning it needs the modular interpretation (`T_ℓ` on
+`Y₀(N)` sends `(E, C)` to `∑_D (E/D, (C+D)/D)`), and quotients of
+elliptic curves by finite subgroups do not exist at this pin — there is
+no isogeny theory for elliptic curves in this project, in mathlib or in
+`~/cs/FLT` (`Modularity/TateModule.lean` records the same absence).  The
+consequence is carried honestly by
+`isTorsion_factor_of_heckeIsotypic` below, which therefore keeps the FULL
+analytic hypothesis rather than the single value `L(form i, 1) ≠ 0`; see
+its docstring for the counterexample that makes the sharper statement
+false.  **The check that would let the sharper statement be written:
+land a pin for `T` — either elliptic-curve isogenies (for the moduli
+description) or the action of `T_n` on `H⁰(J, Ω¹) ≅ S₂(Γ₀(N))` against
+`heckeOp N n`, which already exists in
+`Fermat/FLT/Modularity/HeckeOperator.lean`.** -/
+structure IsHeckeIsotypicDecomposition (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) where
+  /-- the Hecke operators `T_n`, as endomorphisms of `J₀(N)` -/
+  T : ℕ → (J ⟶ J)
+  /-- they are endomorphisms over the base -/
+  T_comp : ∀ n, T n ≫ jstr = jstr
+  /-- they are homomorphisms -/
+  T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n)
+  /-- the index set of the isogeny factors -/
+  idx : Type
+  /-- there are finitely many factors -/
+  fintypeIdx : Fintype idx
+  /-- the factors -/
+  A : idx → Scheme.{0}
+  /-- their structure morphisms -/
+  astr : ∀ i, A i ⟶ SpecQ
+  /-- each factor is an abelian scheme over `ℚ` -/
+  abA : ∀ i, AbelianSchemeStruct (astr i)
+  /-- the optimal quotient maps -/
+  u : ∀ i, J ⟶ A i
+  /-- they are morphisms over the base -/
+  u_comp : ∀ i, u i ≫ astr i = jstr
+  /-- they are homomorphisms -/
+  u_add : ∀ i, IsAdditiveOn ab (abA i) (u i) (u_comp i)
+  /-- they are surjective; this is what bounds the rank of a factor by
+  the rank of `J₀(N)` -/
+  u_surj : ∀ i, AlgebraicGeometry.Surjective (u i)
+  /-- the eigenform labelling the factor -/
+  form : idx → CuspForm (Gamma0GL N) 2
+  /-- its `q`-expansion -/
+  coeff : idx → (ℕ → ℂ)
+  /-- the labels really are eigenforms of `S₂(Γ₀(N))` -/
+  isEigen : ∀ i, IsWeightTwoEigenform N (form i) (coeff i)
+  /-- the Hecke action descended to the factor -/
+  S : ∀ i, ℕ → (A i ⟶ A i)
+  /-- over the base -/
+  S_comp : ∀ i n, S i n ≫ astr i = astr i
+  /-- homomorphisms -/
+  S_add : ∀ i n, IsAdditiveOn (abA i) (abA i) (S i n) (S_comp i n)
+  /-- `u i` is a map of Hecke modules: `u i ∘ T n = S i n ∘ u i` -/
+  equivariant : ∀ i n, T n ≫ u i = u i ≫ S i n
+  /-- the Hecke eigenvalues are algebraic integers (Shimura); without
+  this `minpoly ℤ (coeff i n)` would be `0` and `isotypic` vacuous -/
+  integral : ∀ i n, IsIntegral ℤ (coeff i n)
+  /-- **`A i` is isotypic for the eigenvalue system `coeff i`**: for `n`
+  coprime to `N`, the descended `T n` is annihilated by the minimal
+  polynomial of `coeff i n`, read on relative points over every base -/
+  isotypic : ∀ (i : idx) (n : ℕ), Nat.Coprime n N →
+    ∀ {T' : Scheme.{0}} (g : T' ⟶ SpecQ) (x : RelPoint (astr i) g),
+      letI := (abA i).addCommGroup g
+      ∑ k ∈ Finset.range ((minpoly ℤ (coeff i n)).natDegree + 1),
+        (minpoly ℤ (coeff i n)).coeff k •
+          ((fun y : RelPoint (astr i) g => RelPoint.post (S i n) (S_comp i n) y)^[k] x) = 0
+  /-- **every eigenform of level `N` labels some factor** — the field
+  that makes an empty decomposition unavailable -/
+  cover : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+    ∃ i, coeff i = a
+  /-- **the joint kernel on rational points is finite** — i.e. the map to
+  the product of the factors is an isogeny, in the one form expressible
+  without the product -/
+  finite_ker : {x : RelPoint jstr (𝟙 SpecQ) |
+      ∀ i, RelPoint.post (u i) (u_comp i) x = (abA i).zero (𝟙 SpecQ)}.Finite
+
+/-- **EICHLER–SHIMURA: the Hecke-isotypic decomposition exists** (sorry
+node, new 2026-07-27) — the first of the two leaves
+`isTorsion_jacobian_of_lFunction_ne_zero` decomposes into, and the one
+carrying Eichler–Shimura.
+
+TRUE; the witness is spelled out in `IsHeckeIsotypicDecomposition`'s
+docstring ("WHY IT IS TRUE"), and it is the classical statement
+`J₀(N) ∼ ∏_{M ∣ N} ∏_{g new of level M} A_g^{σ₀(N/M)}` together with the
+Hecke action on each factor.
+
+**REFERENCES.** Shimura, *Introduction to the arithmetic theory of
+automorphic functions*, §7.5 (the abelian variety `A_g` attached to a
+newform, as `J₀(M)/I_g J₀(M)`); Diamond–Shurman, *A first course in
+modular forms*, §6.6 and Thm 6.6.6 (`J₀(N)` up to isogeny, and the
+Eichler–Shimura relation); Cornell–Silverman–Stevens, *Modular forms and
+Fermat's Last Theorem*, Ch. V.
+
+**WHAT IS GENUINELY MISSING, checked by name 2026-07-27.**  Neither the
+Hecke algebra acting on a Jacobian, nor `A_g`, nor an old/new
+decomposition of `S₂(Γ₀(N))`, exists in this project, in mathlib at this
+pin, or in `~/cs/FLT` — the Hecke algebras there
+(`AutomorphicForm/QuaternionAlgebra/HeckeOperators/`) act on spaces of
+automorphic forms, not on abelian varieties.  There is also no isogeny
+theory for abelian schemes here: `Modularity/AbelianSchemeIsogeny.lean`
+supplies `[n] : A ⟶ A` and its flatness, nothing more.  The check that
+would refute this:
+`grep -rn "heckeAlgebra\|HeckeAlgebra\|AbelianVarietyAttachedTo" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/`. -/
+theorem exists_heckeIsotypicDecomposition (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    Nonempty (IsHeckeIsotypicDecomposition N h jac) :=
+  sorry
+
+/-- **KOLYVAGIN–LOGACHEV: a Hecke-isotypic factor of `J₀(N)` has torsion
+Mordell–Weil group** (sorry node, new 2026-07-27) — the second of the two
+leaves `isTorsion_jacobian_of_lFunction_ne_zero` decomposes into, and the
+one carrying the Euler system.
+
+The intended proof uses only `hL (D.form i) (D.coeff i) (D.isEigen i)`:
+`A i` is the modular abelian variety attached to the newform underlying
+`D.form i`, its `L`-function is `∏_σ L(g^σ, s)`, and Kolyvagin–Logachev
+(*Finiteness of the Shafarevich–Tate group and the group of rational
+points for some modular abelian varieties*, 1989) turns `L(g, 1) ≠ 0`
+into finiteness of `A_g(ℚ)` via Heegner points and Gross–Zagier.  The
+passage from the eigenform `D.form i` of level `N` to its newform `g` of
+level `M ∣ N` is free in the direction needed: `L(f, s)` differs from
+`L(g, s)` by Euler factors, so `L(f, 1) ≠ 0` implies `L(g, 1) ≠ 0`
+without any appeal to Deligne (Deligne is needed only for the converse,
+which is what `lFunction_apply_one_ne_zero_of_kenkuLevel` uses).
+
+**WHY THE HYPOTHESIS IS THE WHOLE OF `hL` AND NOT `L(form i, 1) ≠ 0`.**
+Because `IsHeckeIsotypicDecomposition.T` is not pinned to be the genuine
+Hecke correspondences (see that structure's docstring), and with an
+unpinned `T` the sharper statement is **FALSE**.  The counterexample, at
+`N = 37`: `J₀(37) ∼ E_{37a} × E_{37b}` with `rank E_{37a}(ℚ) = 1` and
+`rank E_{37b}(ℚ) = 0`, and `L(37b, 1) ≠ 0`.  Take `T n` to act on the
+`E_{37a}` part by `a_n(37b)` and on the `E_{37b}` part by `a_n(37a)` —
+a perfectly good family of additive endomorphisms.  Then `E_{37a}` is
+"isotypic for `37b`" in the sense of the `isotypic` field, `cover`,
+`u_surj` and `finite_ker` all hold, and a leaf concluding
+`AddMonoid.IsTorsion (E_{37a}(ℚ))` from `L(37b, 1) ≠ 0` would be false.
+
+With the full `hL` the statement is TRUE for any `T` whatsoever, because
+`hL` already forces `J₀(N)(ℚ)` to be torsion and `u_surj` bounds the
+rank of a factor: by Poincaré reducibility there is `v : A i ⟶ J` with
+`u i ∘ v = [m]` for some `m ≠ 0`, so `m • x = u i (v x)` is torsion for
+every `x ∈ A i(ℚ)`, hence so is `x`.  That is a strictly weaker theorem
+than the one a prover should actually prove, and the honest reading is:
+**this leaf is stated at the strength its hypotheses can support, and it
+becomes the sharp Kolyvagin–Logachev statement the moment `T` is
+pinned.**  Sharpening it is a cut-level repair, gated on the same missing
+input, and it should be done rather than routed around.
+
+`D.u_surj`, `D.isotypic`, `D.cover`, `D.equivariant` and `D.integral` are
+all available to a prover and none of them is decoration: the first
+carries the rank bound, the rest identify which eigenform `A i` belongs
+to. -/
+theorem isTorsion_factor_of_heckeIsotypic (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {h : IsX0Compactification N strX strY j} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {jac : IsJacobianOf strX ab o} (D : IsHeckeIsotypicDecomposition N h jac)
+    (hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0) (i : D.idx) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+  sorry
+
 /-- **Kolyvagin–Logachev: analytic rank `0` forces `J₀(N)(ℚ)` to be
 torsion** (sorry node) — LEVEL-FREE in the arithmetic sense that matters:
 `hN : N ∈ kenkuLevels` has been REPLACED by the analytic input `hL`, so
@@ -16062,25 +18500,46 @@ an elliptic curve of rank `1`.  `h` may not be dropped either: it is
 what makes `X` the modular curve whose Jacobian the `L`-functions in
 `hL` belong to.  `N` enters only through `h` and `hL`.
 
-IRREDUCIBLE at this pin, and here is the axis searched, so the next
-reader need not redo it.  *Cuts along the arithmetic* were tried:
+**DECOMPOSED AND PROVEN 2026-07-27, over three inputs.**  The previous
+version of this docstring recorded the node as IRREDUCIBLE at this pin
+after searching the "cuts along the arithmetic" axis.  That verdict was
+right about the cut it examined and wrong as a verdict; it is superseded,
+and what it got right is preserved in the two places it belongs:
 
-* "isogeny decomposition of `J₀(N)`" + "each factor is torsion" is NOT a
-  cut — the degenerate witness `n = 0` (empty product) makes the first
-  half assert exactly the conclusion, so no content moves across the
-  seam.  Any decomposition that keeps both halves geometric has this
-  defect; the seam has to be analytic, which is why it is `L(f, 1)`.
-* "`A_g(ℚ)` is torsion when `L(g, 1) ≠ 0`" as a separate leaf requires
-  the modular abelian variety `A_g`, hence the Hecke algebra acting on
-  `J₀(M)` and its quotients — none of which exists in `Mathlib`, in
-  `~/cs/FLT`, or here.  Stating it is a real, statable next step and is
-  the correct further decomposition of THIS leaf; it is not attempted
-  now because it needs a Hecke-algebra interface, not because it is
-  impossible.  The check that would refute this:
-  `grep -rn "heckeAlgebra\|HeckeAlgebra\|AbelianVarietyAttachedTo"
-  Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+* it rejected "isogeny decomposition + each factor torsion" because the
+  empty product makes the first half assert the conclusion.  Correct, and
+  that is exactly what the `cover` and `isotypic` fields of
+  `IsHeckeIsotypicDecomposition` are for — see its DEGENERACY AUDIT.
+* it said "`A_g(ℚ)` is torsion when `L(g, 1) ≠ 0`" needs the modular
+  abelian variety, hence a Hecke-algebra interface, and that STATING it
+  is "a real, statable next step and the correct further decomposition of
+  THIS leaf".  That is precisely what has been done: the interface is
+  `IsHeckeIsotypicDecomposition`, the two halves are
+  `exists_heckeIsotypicDecomposition` (Eichler–Shimura) and
+  `isTorsion_factor_of_heckeIsotypic` (Kolyvagin–Logachev), and the third
+  step — isogeny invariance, the only elementary one — is PROVEN as
+  `isTorsion_of_finite_jointKer`.
 
-The *axis not searched*: a `p`-adic / Iwasawa route (Kato's Euler
+The assembly also consumes `isLFunctionOf_apply_eq`, the identity-theorem
+uniqueness of `IsLFunctionOf`, which was machine-checked and recorded in
+`WeightTwoEigenform.lean` as a docstring rather than a declaration
+because it had no consumer.  It has one now: `hL` hands over an
+`L`-function it CHOSE, and the leaves want the statement "*the*
+`L`-function does not vanish at `1`", i.e. quantified over every witness.
+Uniqueness is exactly the bridge, so the leaves take the `∀`-form and
+this assembly does the conversion.
+
+**WHAT IS STILL NOT PINNED, and it is the one thing a reader should carry
+away**: the Hecke operators in the datum are an arbitrary family of
+endomorphisms, because pinning them needs either elliptic-curve isogenies
+(for the moduli description of `T_ℓ`) or the action on `H⁰(J, Ω¹)`, and
+neither exists at this pin.  The cost is paid, visibly, in
+`isTorsion_factor_of_heckeIsotypic`, which therefore carries the whole of
+`hL` instead of the single value `L(form i, 1) ≠ 0`; its docstring gives
+the `N = 37` counterexample showing the sharper statement is FALSE
+without the pin, so this is a faithfulness fact, not a stylistic choice.
+
+The *axis still not searched*: a `p`-adic / Iwasawa route (Kato's Euler
 system, which also gives rank `0` from `L(f, 1) ≠ 0` and might factor
 through the same seam), and Mazur's Eisenstein-ideal argument, which
 proves finiteness of `J₀(N)(ℚ)` for `N` prime by an entirely different
@@ -16093,8 +18552,26 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero (N : ℕ)
     (hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
       ∃ L : ℂ → ℂ, IsLFunctionOf a L ∧ L 1 ≠ 0) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
-  sorry
+    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  -- `hL` supplies an `L`-function it chose; the leaves want "*the*
+  -- `L`-function does not vanish".  Uniqueness (`isLFunctionOf_apply_eq`)
+  -- is the bridge.
+  have hL' : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0 := by
+    intro f a hf L hLf
+    obtain ⟨L₀, hL₀, hne⟩ := hL f a hf
+    rw [isLFunctionOf_apply_eq hLf hL₀ 1]
+    exact hne
+  obtain ⟨D⟩ := exists_heckeIsotypicDecomposition N h jac
+  letI := D.fintypeIdx
+  letI : ∀ i, AddCommGroup (RelPoint (D.astr i) (𝟙 SpecQ)) :=
+    fun i => (D.abA i).addCommGroup (𝟙 SpecQ)
+  refine isTorsion_of_finite_jointKer
+    (φ := fun i => AddMonoidHom.mk' (fun x => RelPoint.post (D.u i) (D.u_comp i) x)
+      (fun x y => D.u_add i x y))
+    (fun i => isTorsion_factor_of_heckeIsotypic N D hL' i) ?_
+  exact D.finite_ker
 
 /-- **`rank J_0(N)(ℚ) = 0` at the thirteen Kenku levels** (PROVEN
 2026-07-27, from three leaves) — `J₀(N)(ℚ)` is a TORSION group.
@@ -16882,21 +19359,40 @@ row and is now PROVEN too, in
 `locallyIntegrableOn_axisRestrict` and `isBigO_atTop_coeff` — mathlib's
 `AbstractFuncEq` / `MellinEqDirichlet` supply the analysis.
 
+Updated in the same integration: `exists_relPicZeroOf` is now PROVEN as the
+`SpecQ` instance of the general-base `exists_relPicZero`, which lives in
+`ModularCurve/RelativePicard.lean` and is the row below; and the autoduality
+node `isJacobianOf_of_isRelPicZeroOf` is DEAD MATHEMATICS, still sorried only
+because the proven glue it needs is declared below it in this file (see its
+docstring).
+
 | leaf | theory | level-specific? |
 |---|---|---|
-| `exists_relPicZeroOf` | representability of `Pic⁰` | no |
-| `isJacobianOf_of_isRelPicZeroOf` | autoduality / biduality | no |
+| `exists_relPicZero` (in `RelativePicard.lean`) | representability of `Pic⁰` | no |
+| `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality / biduality | no |
+| `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
 | `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
-| `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |
-| `exists_affineLine_of_not_injective_aj` | Riemann–Roch | no |
+| `exists_integralCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
+| `finite_quotient_psmul_of_abelianScheme` | weak Mordell–Weil at a prime | no |
+| `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
+| `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `exists_heckeIsotypicDecomposition` | Eichler-Shimura | no |
+| `isTorsion_factor_of_heckeIsotypic` | Kolyvagin-Logachev | no |
+| `exists_affineLine_of_not_injective_aj` | Riemann-Roch | no |
 | `exists_const_of_affineLine_to_abelianScheme` | rigidity of abelian varieties | no |
 | `hasNonconstantAbelianMap_of_one_le_x0Genus` | genus formula | **yes** |
 
-Only two of the ten mention `N` or `kenkuLevels` at all, and each of
-the other eight is a named classical theorem stated for an arbitrary
+(`isTorsion_jacobian_of_lFunction_ne_zero` stood in this table until
+2026-07-27, when it was decomposed into the two rows that replace it;
+the elementary third step, isogeny invariance, is PROVEN as
+`isTorsion_of_finite_jointKer`.  `ajMor_eq_const_of_not_injective` is
+likewise PROVEN, over the two Riemann-Roch/rigidity rows above it.)
+
+Only two of the eleven mention `N` or `kenkuLevels` at all, and each of
+the other nine is a named classical theorem stated for an arbitrary
 object — which is what makes them dispatchable independently, and
 reusable by the rest of the modular-curve subtree. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
@@ -17617,9 +20113,14 @@ ONE prime at which the single-prime cut is already sharp, and for a curve
 of genus `g ≥ 2` that is what happens at every sufficiently large `ℓ`.
 There `#X_0(N)(𝔽_ℓ)` grows like `ℓ + 1` while `#J_0(N)(𝔽_ℓ)` grows like
 `ℓ^g`, so the FIXED finite subgroup `red_ℓ J_0(N)(ℚ)` — of order at most
-`512, 243, 6144, 2560` — meets the `ℓ + 1` Abel–Jacobi classes only in
-the ones it is forced to contain, namely the reductions of `X_0(N)(ℚ)`.
-All four sieve levels have `g ≥ 3`.  The existential is therefore not a
+`21, 512, 243, 6144, 2560` at `26, 45, 54, 63, 75` — meets the `ℓ + 1`
+Abel–Jacobi classes only in the ones it is forced to contain, namely the
+reductions of `X_0(N)(ℚ)`.  All five sieve levels have `g ≥ 2`, which is
+what the growth argument needs; four of them have `g ≥ 3`, and `26`
+(added 2026-07-27) is the one at `g = 2`, where the compensation is that
+its subgroup is only `21` rather than a power of `2` or `3` — the sieve
+is sharp there at every odd good `ℓ` except the single refuted `ℓ = 3`.
+The existential is therefore not a
 hedge against a numerical accident at a small prime; it is the load-
 bearing part of the statement, and the small primes of the table are the
 *hard* case rather than the easy one.
@@ -17631,13 +20132,33 @@ rest on a strictly stronger unproven statement than they need, which is
 the "repackaging the consumer" failure this module's interfaces are
 shaped to avoid. -/
 
-/-- **The four Kenku levels that no single counting prime settles.**
+/-- **The five Kenku levels that no single counting prime settles.**
 
-A sublist of `kenkuLevels`; the other seven are closed by
+A sublist of `kenkuLevels`; the other nine are closed by
 `y0HasNoRationalPoint_of_witnessPrime` against `x0WitnessTable`.  See the
 table in the subsection docstring for the arithmetic that separates the
-two groups. -/
-def x0SieveLevels : List ℕ := [45, 54, 63, 75]
+two groups.
+
+**`26` was added 2026-07-27**, and unlike the other four it is here
+because no witness prime exists AT ALL, not merely because none was
+convenient.  Over the odd good primes `3 ≤ ℓ < 60` the Eichler–Shimura
+counts `#X_0(26)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(26)))` are
+
+    ℓ  =  3  5  7 11 17 19 23 29 31 37 41 43 47 53 59
+    #  =  6 10  8  8 24 12 28 22 32 42 42 50 32 42 76
+
+with minimum `6 > 4 = numRationalCusps 26`, and for `ℓ ≥ 23` the Weil
+bound already forces `#X_0(26)(𝔽_ℓ) ≥ ℓ + 1 − 4√ℓ > 4` at genus `2`.  So
+the two ranges together exhaust every prime: `y0HasNoRationalPoint_of_
+witnessPrime` cannot close `26` for ANY `ℓ`, and no row of
+`x0WitnessTable` can ever be added for it.  That is a stronger statement
+than the four original levels need, and it is why `26` could not simply
+be given a witness prime instead.
+
+The sieve leaf `exists_sharpSievePrime_classCount` acquires one further
+case; it is TRUE at `26` with witness `ℓ = 5`, and its docstring carries
+the survivor computation together with the reason `ℓ = 3` is refuted. -/
+def x0SieveLevels : List ℕ := [26, 45, 54, 63, 75]
 
 /-- **Good reduction of the pair `(X_0(N), J_0(N))` at an odd prime
 `ℓ ∤ N`, on rational points.**
@@ -18415,51 +20936,413 @@ theorem sqzSum_sqzBase (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (b :
   simp only [sqzBase]
   rw [← Category.assoc, ← Spec.map_comp, ← Category.assoc, ← Spec.map_comp, sqzDiag_comp_sqzSum]
 
-/-- **`Spec (R ×_{S'} R)` is the pushout `Spec R ⊔_{Spec S'} Spec R`** (SORRY
-LEAF — the ONE geometric input of the `R`-module structure on the kernel of
-reduction, and the only remaining gap in the `q ≠ ℓ` half of
-`neronKernel_torsionFree`).
+/-! #### `Spec (R ×_{S'} R)` is the pushout `Spec R ⊔_{Spec S'} Spec R`
 
-TRUE.  `φ` is surjective with nilpotent kernel, so `Spec.map φ` is a
-homeomorphism onto `Spec R`, and both `Spec.map (sqzFst φ)` and
-`Spec.map (sqzSnd φ)` are homeomorphisms onto `Spec (R ×_{S'} R)`.  The square
+This block proves the pushout property of `Spec (R ×_{S'} R)` for an ARBITRARY
+scheme target.  Everything below is PROVEN except the single leaf
+`exists_hom_sqzRing` (the existence half); see its docstring for the route.
 
-    Spec S' ⟶ Spec R
-       ↓          ↓
-    Spec R  ⟶ Spec (R ×_{S'} R)
+The affine-target case is `existsUnique_hom_sqzRing_affine` — `Spec.homEquiv`
+plus `sqzPair` and `sqz_hom_ext`, no new mathematics.  The affine-LOCAL step is
+`exists_sqzAwayIso`: localisation commutes with the fibre product,
+`(R ×_{S'} R)_{(g,g)} ≅ R_g ×_{S'_{φ g}} R_g`, because localisation is exact.
+Uniqueness for an arbitrary target (`hom_ext_sqzRing`) then follows by covering
+`Spec (R ×_{S'} R)` by basic opens landing in affine charts of `Z`. -/
 
-is therefore a pushout of schemes: this is the affine case of Ferrand's gluing
-theorem, and for a NILPOTENT thickening it needs none of Ferrand's work.
+/-- **The pushout property for an AFFINE target** (PROVEN).  By the `Γ ⊣ Spec`
+adjunction (`Spec.map_surjective` / `Spec.map_inj`) this is exactly the
+universal property of `R ×_{S'} R` as a fibre product of RINGS: existence is
+`sqzPair`, uniqueness is `sqz_hom_ext`.  No Ferrand theorem is involved, and no
+hypothesis on `φ` is needed. -/
+theorem existsUnique_hom_sqzRing_affine (φ : R ⟶ S') {C : CommRingCat.{u}}
+    (u v : Spec R ⟶ Spec C) (huv : Spec.map φ ≫ u = Spec.map φ ≫ v) :
+    ∃! w : Spec (sqzRing φ) ⟶ Spec C,
+      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v := by
+  obtain ⟨a, rfl⟩ := Spec.map_surjective u
+  obtain ⟨b, rfl⟩ := Spec.map_surjective v
+  rw [← Spec.map_comp, ← Spec.map_comp, Spec.map_inj] at huv
+  refine ⟨Spec.map (sqzPair φ a b huv), ⟨?_, ?_⟩, ?_⟩
+  · rw [← Spec.map_comp, sqzPair_fst]
+  · rw [← Spec.map_comp, sqzPair_snd]
+  · rintro w ⟨h1, h2⟩
+    obtain ⟨c, rfl⟩ := Spec.map_surjective w
+    rw [← Spec.map_comp, Spec.map_inj] at h1 h2
+    rw [Spec.map_inj]
+    exact sqz_hom_ext (h1.trans (sqzPair_fst φ a b huv).symm)
+      (h2.trans (sqzPair_snd φ a b huv).symm)
 
-WHAT IS PROVEN HERE AND WHAT IS NOT, so the successor does not re-survey it.
+/-- The localisation of `φ` away from `g`, i.e. `φ_g : R_g ⟶ S'_{φ g}`. -/
+noncomputable def sqzAway (φ : R ⟶ S') (g : R) :
+    CommRingCat.of (Localization.Away g) ⟶ CommRingCat.of (Localization.Away (φ.hom g)) :=
+  CommRingCat.ofHom (Localization.awayMap φ.hom g)
 
-* The AFFINE-TARGET case (`Z = Spec C`) is immediate from what is already in
-  this file and needs no new mathematics: `Spec.homEquiv` turns
-  `Spec (R ×_{S'} R) ⟶ Spec C` into `C ⟶ R ×_{S'} R`, existence is `sqzPair`
-  (PROVEN above) and uniqueness is `sqz_hom_ext` (PROVEN above).  That is
-  reduction (1) of the route: for an affine target the pushout is free by the
-  `Γ ⊣ Spec` adjunction, with no Ferrand theorem involved.  It is NOT stated as
-  a separate declaration here only because a proven brick standing in front of
-  a sorried consumer is free-floating; state it inside the proof when you write
-  it.
-* What is genuinely left is the AFFINE-LOCAL REDUCTION, i.e. reduction (2):
-  `hker` forces `u` and `v` to have the same underlying continuous map (their
-  composites with the surjection `Spec.map φ` agree), so one may cover
-  `Spec R` by basic opens `D(g)` whose common image lies in an affine chart of
-  `Z`, apply the affine case over each `R_g`, and glue by the uniqueness half.
-  The one ring-theoretic input is that localisation commutes with this fibre
-  product — `(R ×_{S'} R)_{(g,g)} ≅ R_g ×_{S'_{φ g}} R_g`, which holds because
-  localisation is exact — so that the pieces are again of the same shape.
+/-- The first projection localised away from `(g, g)`, i.e.
+`(R ×_{S'} R)_{(g,g)} ⟶ R_g`.  It typechecks because
+`sqzFst φ ((g, g)) = g` holds by `rfl`. -/
+noncomputable def sqzFstAway (φ : R ⟶ S') (g : R) :
+    CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)) ⟶
+      CommRingCat.of (Localization.Away g) :=
+  CommRingCat.ofHom (IsLocalization.Away.lift
+    (S := Localization.Away ((sqzDiag φ).hom g))
+    (g := (algebraMap R (Localization.Away g)).comp (sqzFst φ).hom) ((sqzDiag φ).hom g)
+    (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g))
 
-THE CHECK THAT WOULD REFUTE THIS VERDICT: a scheme-level pushout along a closed
-immersion, or a `Scheme.IsPushout`/Ferrand API, appearing in the pin; nothing
-under `Mathlib/AlgebraicGeometry/` provides one as of 2026-07-27. -/
+/-- The second projection localised away from `(g, g)`. -/
+noncomputable def sqzSndAway (φ : R ⟶ S') (g : R) :
+    CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)) ⟶
+      CommRingCat.of (Localization.Away g) :=
+  CommRingCat.ofHom (IsLocalization.Away.lift
+    (S := Localization.Away ((sqzDiag φ).hom g))
+    (g := (algebraMap R (Localization.Away g)).comp (sqzSnd φ).hom) ((sqzDiag φ).hom g)
+    (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g))
+
+theorem sqzAway_naturality (φ : R ⟶ S') (g : R) :
+    CommRingCat.ofHom (algebraMap R (Localization.Away g)) ≫ sqzAway φ g =
+      φ ≫ CommRingCat.ofHom (algebraMap S' (Localization.Away (φ.hom g))) := by
+  ext x
+  simp [sqzAway, Localization.awayMap, IsLocalization.Away.map]
+
+theorem sqzFstAway_naturality (φ : R ⟶ S') (g : R) :
+    CommRingCat.ofHom (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) ≫
+        sqzFstAway φ g = sqzFst φ ≫ CommRingCat.ofHom (algebraMap R (Localization.Away g)) := by
+  ext x
+  exact IsLocalization.Away.lift_eq (S := Localization.Away ((sqzDiag φ).hom g))
+    (g := (algebraMap R (Localization.Away g)).comp (sqzFst φ).hom) ((sqzDiag φ).hom g)
+    (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g) x
+
+theorem sqzSndAway_naturality (φ : R ⟶ S') (g : R) :
+    CommRingCat.ofHom (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) ≫
+        sqzSndAway φ g = sqzSnd φ ≫ CommRingCat.ofHom (algebraMap R (Localization.Away g)) := by
+  ext x
+  exact IsLocalization.Away.lift_eq (S := Localization.Away ((sqzDiag φ).hom g))
+    (g := (algebraMap R (Localization.Away g)).comp (sqzSnd φ).hom) ((sqzDiag φ).hom g)
+    (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g) x
+
+/-- The comparison map `R ×_{S'} R ⟶ R_g ×_{S'_{φ g}} R_g`. -/
+noncomputable def sqzToAway (φ : R ⟶ S') (g : R) : sqzRing φ ⟶ sqzRing (sqzAway φ g) :=
+  sqzPair (sqzAway φ g)
+    (sqzFst φ ≫ CommRingCat.ofHom (algebraMap R (Localization.Away g)))
+    (sqzSnd φ ≫ CommRingCat.ofHom (algebraMap R (Localization.Away g)))
+    (by rw [Category.assoc, Category.assoc, sqzAway_naturality, ← Category.assoc,
+      ← Category.assoc, sqzFst_comp_base])
+
+/-- **Localisation commutes with the fibre product** (PROVEN):
+`(R ×_{S'} R)_{(g,g)} ≅ R_g ×_{S'_{φ g}} R_g`, compatibly with both
+projections.  This is the one ring-theoretic input of the affine-local
+reduction, and it holds because localisation is exact: the comparison map
+`sqzToAway` exhibits `R_g ×_{S'_{φ g}} R_g` as `IsLocalization.Away (g, g)`
+over `R ×_{S'} R`. -/
+theorem exists_sqzAwayIso (φ : R ⟶ S') (g : R) :
+    ∃ e : CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)) ≅ sqzRing (sqzAway φ g),
+      e.hom ≫ sqzFst (sqzAway φ g) = sqzFstAway φ g ∧
+      e.hom ≫ sqzSnd (sqzAway φ g) = sqzSndAway φ g := by
+  letI : Algebra (sqzRing φ) (sqzRing (sqzAway φ g)) := (sqzToAway φ g).hom.toAlgebra
+  have halg : ∀ x : sqzRing φ, (algebraMap (sqzRing φ) (sqzRing (sqzAway φ g)) x).1
+      = (algebraMap R (Localization.Away g) (x.1).1,
+        algebraMap R (Localization.Away g) (x.1).2) := fun _ => rfl
+  haveI : IsLocalization.Away ((sqzDiag φ).hom g) (sqzRing (sqzAway φ g)) := by
+    refine IsLocalization.Away.mk _ ?_ ?_ ?_
+    · have h : algebraMap (sqzRing φ) (sqzRing (sqzAway φ g)) ((sqzDiag φ).hom g)
+          = (sqzDiag (sqzAway φ g)).hom (algebraMap R (Localization.Away g) g) := rfl
+      rw [h]
+      exact (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g).map
+        (sqzDiag (sqzAway φ g)).hom
+    · intro z
+      obtain ⟨n, a, ha⟩ := IsLocalization.Away.surj (S := Localization.Away g) g (z.1).1
+      obtain ⟨m, b, hb⟩ := IsLocalization.Away.surj (S := Localization.Away g) g (z.1).2
+      have ha' : (z.1).1 * algebraMap R (Localization.Away g) g ^ (n + m)
+          = algebraMap R (Localization.Away g) (a * g ^ m) := by
+        rw [pow_add, ← mul_assoc, ha, map_mul, map_pow]
+      have hb' : (z.1).2 * algebraMap R (Localization.Away g) g ^ (n + m)
+          = algebraMap R (Localization.Away g) (b * g ^ n) := by
+        rw [pow_add, mul_comm (_ ^ n), ← mul_assoc, hb, map_mul, map_pow]
+      have key : algebraMap S' (Localization.Away (φ.hom g)) (φ.hom (a * g ^ m))
+          = algebraMap S' (Localization.Away (φ.hom g)) (φ.hom (b * g ^ n)) := by
+        have e1 := congrArg (sqzAway φ g).hom ha'
+        have e2 := congrArg (sqzAway φ g).hom hb'
+        rw [map_mul, map_pow] at e1 e2
+        have hnat : ∀ x : R, (sqzAway φ g).hom (algebraMap R (Localization.Away g) x)
+            = algebraMap S' (Localization.Away (φ.hom g)) (φ.hom x) := fun x =>
+          congrArg (fun k => (CommRingCat.Hom.hom k) x) (sqzAway_naturality φ g)
+        rw [hnat, hnat] at e1
+        rw [hnat, hnat] at e2
+        rw [← e1, ← e2, sqzMem (sqzAway φ g) z]
+      obtain ⟨k, hk⟩ := IsLocalization.Away.exists_of_eq
+        (S := Localization.Away (φ.hom g)) (φ.hom g) key
+      refine ⟨n + m + k, ⟨(g ^ k * (a * g ^ m), g ^ k * (b * g ^ n)), ?_⟩, ?_⟩
+      · show φ.hom (g ^ k * (a * g ^ m)) = φ.hom (g ^ k * (b * g ^ n))
+        rw [map_mul, map_pow, hk, ← map_pow, ← map_mul]
+      · refine Subtype.ext (Prod.ext ?_ ?_)
+        · show (z.1).1 * (algebraMap R (Localization.Away g) g) ^ (n + m + k)
+            = algebraMap R (Localization.Away g) (g ^ k * (a * g ^ m))
+          rw [pow_add, ← mul_assoc, ha', mul_comm, ← map_pow, ← map_mul]
+        · show (z.1).2 * (algebraMap R (Localization.Away g) g) ^ (n + m + k)
+            = algebraMap R (Localization.Away g) (g ^ k * (b * g ^ n))
+          rw [pow_add, ← mul_assoc, hb', mul_comm, ← map_pow, ← map_mul]
+    · intro x y hxy
+      have h1 : algebraMap R (Localization.Away g) (x.1).1
+          = algebraMap R (Localization.Away g) (y.1).1 := by
+        have := congrArg (fun t : sqzRing (sqzAway φ g) => (t.1).1) hxy
+        simpa [halg] using this
+      have h2 : algebraMap R (Localization.Away g) (x.1).2
+          = algebraMap R (Localization.Away g) (y.1).2 := by
+        have := congrArg (fun t : sqzRing (sqzAway φ g) => (t.1).2) hxy
+        simpa [halg] using this
+      obtain ⟨k, hk⟩ := IsLocalization.Away.exists_of_eq (S := Localization.Away g) g h1
+      obtain ⟨l, hl⟩ := IsLocalization.Away.exists_of_eq (S := Localization.Away g) g h2
+      refine ⟨k + l, Subtype.ext (Prod.ext ?_ ?_)⟩
+      · show g ^ (k + l) * (x.1).1 = g ^ (k + l) * (y.1).1
+        rw [pow_add, mul_comm (g ^ k), mul_assoc, hk, ← mul_assoc]
+      · show g ^ (k + l) * (x.1).2 = g ^ (k + l) * (y.1).2
+        rw [pow_add, mul_assoc, hl, ← mul_assoc]
+  set E := IsLocalization.algEquiv (Submonoid.powers ((sqzDiag φ).hom g))
+    (Localization.Away ((sqzDiag φ).hom g)) (sqzRing (sqzAway φ g)) with hE
+  refine ⟨{ hom := CommRingCat.ofHom E.toRingEquiv.toRingHom
+            inv := CommRingCat.ofHom E.symm.toRingEquiv.toRingHom
+            hom_inv_id := by ext x; exact E.symm_apply_apply x
+            inv_hom_id := by ext x; exact E.apply_symm_apply x }, ?_, ?_⟩
+  · refine CommRingCat.hom_ext (IsLocalization.ringHom_ext
+      (Submonoid.powers ((sqzDiag φ).hom g)) (RingHom.ext fun x => ?_))
+    show (sqzFst (sqzAway φ g)).hom (E (algebraMap _ _ x))
+        = (sqzFstAway φ g).hom (algebraMap _ _ x)
+    rw [E.commutes]
+    exact (congrArg (fun k => (CommRingCat.Hom.hom k) x) (sqzFstAway_naturality φ g)).symm
+  · refine CommRingCat.hom_ext (IsLocalization.ringHom_ext
+      (Submonoid.powers ((sqzDiag φ).hom g)) (RingHom.ext fun x => ?_))
+    show (sqzSnd (sqzAway φ g)).hom (E (algebraMap _ _ x))
+        = (sqzSndAway φ g).hom (algebraMap _ _ x)
+    rw [E.commutes]
+    exact (congrArg (fun k => (CommRingCat.Hom.hom k) x) (sqzSndAway_naturality φ g)).symm
+
+/-- **The pushout property on a basic open, for an AFFINE target** (PROVEN):
+`existsUnique_hom_sqzRing_affine` at `φ_g`, transported along the isomorphism
+`exists_sqzAwayIso`. -/
+theorem existsUnique_hom_sqzRing_away (φ : R ⟶ S') (g : R) {C : CommRingCat.{u}}
+    (u v : Spec (CommRingCat.of (Localization.Away g)) ⟶ Spec C)
+    (huv : Spec.map (sqzAway φ g) ≫ u = Spec.map (sqzAway φ g) ≫ v) :
+    ∃! w : Spec (CommRingCat.of (Localization.Away ((sqzDiag φ).hom g))) ⟶ Spec C,
+      Spec.map (sqzFstAway φ g) ≫ w = u ∧ Spec.map (sqzSndAway φ g) ≫ w = v := by
+  obtain ⟨e, he1, he2⟩ := exists_sqzAwayIso φ g
+  obtain ⟨w, ⟨hw1, hw2⟩, hwu⟩ := existsUnique_hom_sqzRing_affine (sqzAway φ g) u v huv
+  have hfst : Spec.map (sqzFstAway φ g) ≫ Spec.map e.inv = Spec.map (sqzFst (sqzAway φ g)) := by
+    rw [← Spec.map_comp, ← he1, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+  have hsnd : Spec.map (sqzSndAway φ g) ≫ Spec.map e.inv = Spec.map (sqzSnd (sqzAway φ g)) := by
+    rw [← Spec.map_comp, ← he2, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+  refine ⟨Spec.map e.inv ≫ w, ⟨?_, ?_⟩, ?_⟩
+  · rw [← Category.assoc, hfst, hw1]
+  · rw [← Category.assoc, hsnd, hw2]
+  · rintro y ⟨hy1, hy2⟩
+    have hy : Spec.map e.hom ≫ y = w := by
+      refine hwu _ ⟨?_, ?_⟩
+      · rw [← Category.assoc, ← Spec.map_comp, he1, hy1]
+      · rw [← Category.assoc, ← Spec.map_comp, he2, hy2]
+    rw [← hy, ← Category.assoc, ← Spec.map_comp, e.hom_inv_id, Spec.map_id, Category.id_comp]
+
+/-- `Spec` of a surjective ring map whose kernel is square-zero is surjective on
+points: the kernel lies in every prime. -/
+theorem specMap_base_surjective {A₀ B₀ : CommRingCat.{u}} (ψ : A₀ ⟶ B₀)
+    (hψ : Function.Surjective ψ.hom) (hnil : ∀ a : A₀, ψ.hom a = 0 → a ^ 2 = 0) :
+    Function.Surjective (Spec.map ψ).base := by
+  have h : Function.Surjective (PrimeSpectrum.comap ψ.hom) := by
+    intro p
+    have hsub : (RingHom.ker ψ.hom : Set A₀) ⊆ p.asIdeal := fun a ha =>
+      p.isPrime.mem_of_pow_mem 2 (by rw [hnil a ha]; exact Ideal.zero_mem _)
+    have hz : p ∈ PrimeSpectrum.zeroLocus (RingHom.ker ψ.hom : Set A₀) :=
+      (PrimeSpectrum.mem_zeroLocus _ _).mpr hsub
+    rw [← range_comap_of_surjective _ ψ.hom hψ] at hz
+    exact hz
+  exact h
+
+/-- **Every basic open of `Spec (R ×_{S'} R)` is a basic open at a DIAGONAL
+element** (PROVEN): `t` and `(t₁, t₁)` differ by an element of the square-zero
+ideal `ker (sqzFst φ)`, hence lie in exactly the same primes.  This is what
+makes the basic opens `D((g, g))` a basis, so that `exists_sqzAwayIso` applies
+to every member of a refining cover. -/
+theorem basicOpen_sqz (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (t : sqzRing φ) :
+    PrimeSpectrum.basicOpen t
+      = PrimeSpectrum.basicOpen ((sqzDiag φ).hom ((sqzFst φ).hom t)) := by
+  have hm : t - (sqzDiag φ).hom ((sqzFst φ).hom t) ∈ RingHom.ker (sqzFst φ).hom := by
+    show (sqzFst φ).hom _ = 0
+    rw [map_sub]
+    exact sub_self _
+  have h2 : (t - (sqzDiag φ).hom ((sqzFst φ).hom t))
+      * (t - (sqzDiag φ).hom ((sqzFst φ).hom t)) ∈ RingHom.ker (sqzFst φ).hom ^ 2 := by
+    rw [pow_two]; exact Ideal.mul_mem_mul hm hm
+  rw [sqzKer_sq φ hsq, Ideal.mem_bot] at h2
+  ext p
+  have hnp : t - (sqzDiag φ).hom ((sqzFst φ).hom t) ∈ p.asIdeal :=
+    p.isPrime.mem_of_pow_mem 2 (by rw [pow_two, h2]; exact Ideal.zero_mem _)
+  constructor
+  · intro h hc
+    exact h (by simpa using p.asIdeal.add_mem hc hnp)
+  · intro h hc
+    exact h (by simpa using p.asIdeal.sub_mem hc hnp)
+
+/-- The two localised projections become equal after `φ_g` — a pure ring
+identity, which is why the affine-local step needs no hypothesis transported
+from `huv`. -/
+theorem sqzFstAway_comp_sqzAway (φ : R ⟶ S') (g : R) :
+    sqzFstAway φ g ≫ sqzAway φ g = sqzSndAway φ g ≫ sqzAway φ g := by
+  have key : CommRingCat.ofHom
+        (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) ≫
+        (sqzFstAway φ g ≫ sqzAway φ g)
+      = CommRingCat.ofHom
+        (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) ≫
+        (sqzSndAway φ g ≫ sqzAway φ g) := by
+    rw [← Category.assoc, ← Category.assoc, sqzFstAway_naturality, sqzSndAway_naturality,
+      Category.assoc, Category.assoc, sqzAway_naturality, ← Category.assoc, ← Category.assoc,
+      sqzFst_comp_base]
+  exact CommRingCat.hom_ext (IsLocalization.ringHom_ext
+    (Submonoid.powers ((sqzDiag φ).hom g))
+    (RingHom.ext fun x => congrArg (fun k => (CommRingCat.Hom.hom k) x) key))
+
+/-- **UNIQUENESS in the pushout property, for an ARBITRARY scheme target**
+(PROVEN — this is the whole affine-local reduction, reduction (2) of the route,
+for the uniqueness half).
+
+`sqzFst φ` is surjective with square-zero kernel, so `Spec.map (sqzFst φ)` is
+surjective on points and `w`, `w'` already have the same underlying map.  Cover
+`Spec (R ×_{S'} R)` by basic opens; by `basicOpen_sqz` every basic open is
+`D((g, g))`, which is `Spec ((R ×_{S'} R)_{(g,g)})`, and shrinking it inside
+`w ⁻¹ V` for an affine open `V ∋ w x` lets both restrictions factor through
+`Spec Γ(Z, V)`.  There `existsUnique_hom_sqzRing_away` applies. -/
+theorem hom_ext_sqzRing (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥)
+    {Z : Scheme.{u}} {w w' : Spec (sqzRing φ) ⟶ Z}
+    (h1 : Spec.map (sqzFst φ) ≫ w = Spec.map (sqzFst φ) ≫ w')
+    (h2 : Spec.map (sqzSnd φ) ≫ w = Spec.map (sqzSnd φ) ≫ w') : w = w' := by
+  have hsurj : Function.Surjective (Spec.map (sqzFst φ)).base := by
+    refine specMap_base_surjective _ (sqzFst_surjective φ) fun a ha => ?_
+    have hh : a * a ∈ RingHom.ker (sqzFst φ).hom ^ 2 := by
+      rw [pow_two]
+      exact Ideal.mul_mem_mul (RingHom.mem_ker.mpr ha) (RingHom.mem_ker.mpr ha)
+    rw [sqzKer_sq φ hsq, Ideal.mem_bot] at hh
+    rw [pow_two]; exact hh
+  have hbase : ∀ x, w.base x = w'.base x := by
+    intro x
+    obtain ⟨y, rfl⟩ := hsurj x
+    exact congrArg (fun k : Spec R ⟶ Z => k.base y) h1
+  refine Scheme.hom_ext_of_forall w w' fun x => ?_
+  obtain ⟨V, hVaff, hxV, -⟩ := (TopologicalSpace.Opens.isBasis_iff_nbhd.mp Z.isBasis_affineOpens)
+    (show w.base x ∈ (⊤ : Z.Opens) from trivial)
+  have hVa : IsAffineOpen V := hVaff
+  obtain ⟨-, ⟨t, rfl⟩, hxt, htV⟩ :=
+    (TopologicalSpace.Opens.isBasis_iff_nbhd.mp
+      (PrimeSpectrum.isBasis_basic_opens (R := sqzRing φ)))
+      (show x ∈ w ⁻¹ᵁ V from hxV)
+  set g : R := (sqzFst φ).hom t
+  have hbo : PrimeSpectrum.basicOpen t = PrimeSpectrum.basicOpen ((sqzDiag φ).hom g) :=
+    basicOpen_sqz φ hsq t
+  refine ⟨PrimeSpectrum.basicOpen ((sqzDiag φ).hom g), hbo ▸ hxt, ?_⟩
+  set algD := CommRingCat.ofHom
+    (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) with halgD
+  have hrange := PrimeSpectrum.localization_away_comap_range
+    (Localization.Away ((sqzDiag φ).hom g)) ((sqzDiag φ).hom g)
+  have hmemV : ∀ y, w.base ((Spec.map algD).base y) ∈ V := by
+    intro y
+    have hy : (Spec.map algD).base y ∈ Set.range (PrimeSpectrum.comap
+        (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g)))) := ⟨y, rfl⟩
+    rw [hrange] at hy
+    refine htV ?_
+    rw [hbo]
+    exact hy
+  have hsubw : Set.range (Spec.map algD ≫ w).base ⊆ Set.range hVa.fromSpec.base := by
+    rw [hVa.range_fromSpec]
+    rintro _ ⟨y, rfl⟩
+    exact hmemV y
+  have hsubw' : Set.range (Spec.map algD ≫ w').base ⊆ Set.range hVa.fromSpec.base := by
+    rw [hVa.range_fromSpec]
+    rintro _ ⟨y, rfl⟩
+    show w'.base ((Spec.map algD).base y) ∈ V
+    rw [← hbase]
+    exact hmemV y
+  set a := IsOpenImmersion.lift hVa.fromSpec (Spec.map algD ≫ w) hsubw
+  set a' := IsOpenImmersion.lift hVa.fromSpec (Spec.map algD ≫ w') hsubw'
+  have hfac : a ≫ hVa.fromSpec = Spec.map algD ≫ w := IsOpenImmersion.lift_fac _ _ _
+  have hfac' : a' ≫ hVa.fromSpec = Spec.map algD ≫ w' := IsOpenImmersion.lift_fac _ _ _
+  have hcompat : ∀ (b : Spec (CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)))
+        ⟶ Spec Γ(Z, V)),
+      Spec.map (sqzAway φ g) ≫ (Spec.map (sqzFstAway φ g) ≫ b)
+        = Spec.map (sqzAway φ g) ≫ (Spec.map (sqzSndAway φ g) ≫ b) := by
+    intro b
+    rw [← Category.assoc, ← Category.assoc, ← Spec.map_comp, ← Spec.map_comp,
+      sqzFstAway_comp_sqzAway]
+  have hpre : ∀ (c : Spec (CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)))
+        ⟶ Spec Γ(Z, V)) (y : Spec (sqzRing φ) ⟶ Z), c ≫ hVa.fromSpec = Spec.map algD ≫ y →
+      Spec.map (sqzFstAway φ g) ≫ c ≫ hVa.fromSpec
+        = Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away g)))
+          ≫ Spec.map (sqzFst φ) ≫ y := by
+    intro c y hc
+    rw [hc, ← Category.assoc, ← Spec.map_comp, halgD, sqzFstAway_naturality, Spec.map_comp,
+      Category.assoc]
+  have hpre2 : ∀ (c : Spec (CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)))
+        ⟶ Spec Γ(Z, V)) (y : Spec (sqzRing φ) ⟶ Z), c ≫ hVa.fromSpec = Spec.map algD ≫ y →
+      Spec.map (sqzSndAway φ g) ≫ c ≫ hVa.fromSpec
+        = Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away g)))
+          ≫ Spec.map (sqzSnd φ) ≫ y := by
+    intro c y hc
+    rw [hc, ← Category.assoc, ← Spec.map_comp, halgD, sqzSndAway_naturality, Spec.map_comp,
+      Category.assoc]
+  have haa' : a = a' := by
+    refine (existsUnique_hom_sqzRing_away φ g (Spec.map (sqzFstAway φ g) ≫ a)
+      (Spec.map (sqzSndAway φ g) ≫ a) (hcompat a)).unique ⟨rfl, rfl⟩ ⟨?_, ?_⟩
+    · refine (cancel_mono hVa.fromSpec).1 ?_
+      rw [Category.assoc, Category.assoc, hpre a' w' hfac', hpre a w hfac, h1]
+    · refine (cancel_mono hVa.fromSpec).1 ?_
+      rw [Category.assoc, Category.assoc, hpre2 a' w' hfac', hpre2 a w hfac, h2]
+  have hkey : Spec.map algD ≫ w = Spec.map algD ≫ w' := by
+    rw [← hfac, ← hfac', haa']
+  rw [← basicOpenIsoSpecAway_hom_SpecMap ((sqzDiag φ).hom g), Category.assoc, Category.assoc]
+  exact congrArg _ hkey
+
+/-- **EXISTENCE of the amalgamated morphism** (SORRY LEAF — the ONLY remaining
+gap in the pushout property, and the last geometric input of the `R`-module
+structure on the kernel of reduction).
+
+TRUE, and the route is the mirror image of `hom_ext_sqzRing`, which is PROVEN
+just above and supplies everything except the gluing step.
+
+* `Spec.map (sqzDiag φ) : Spec (R ×_{S'} R) ⟶ Spec R` is a retraction of both
+  `Spec.map (sqzFst φ)` and `Spec.map (sqzSnd φ)` (`sqzDiag_fst`,
+  `sqzDiag_snd`), so it is surjective on points; and `Spec.map φ` is surjective
+  by `specMap_base_surjective`, so `u` and `v` already have the same underlying
+  map and one affine chart `V ∋ u y` serves both.
+* Choose, for each point, `g : R` with the basic open `D((g, g))` inside the
+  preimage of `V`; `basicOpen_sqz` says these already exhaust the basic opens,
+  so they cover.  On each, `existsUnique_hom_sqzRing_away` (with `C := Γ(Z, V)`)
+  produces `w_g : Spec ((R ×_{S'} R)_{(g,g)}) ⟶ Spec Γ(Z, V)`, and composing
+  with `IsAffineOpen.fromSpec` gives a morphism to `Z`.
+* Glue with `AlgebraicGeometry.Scheme.Cover.glueMorphisms`.  The compatibility
+  hypothesis is over `pullback` of two cover maps; since
+  `D((g,g)) ⊓ D((h,h)) = D((gh, gh))` (because `sqzDiag` is a ring map), that
+  pullback is again a basic open of the same shape, so the hypothesis is an
+  instance of uniqueness there.  Getting it in the form
+  `hom_ext_sqzRing` wants needs `RingHom.ker (sqzAway φ g) ^ 2 = ⊥`, which is
+  the localisation of `hsq` and is the one small lemma still to write.
+* Finally `Spec.map (sqzFst φ) ≫ w = u` is checked on the cover `{D(g)}` of
+  `Spec R`, using `sqzFstAway_naturality`.
+
+WHAT WOULD REFUTE THE VERDICT: a counterexample to the affine case, which is
+`existsUnique_hom_sqzRing_affine` and is proven; so the statement is not in
+doubt, only the Lean gluing. -/
+theorem exists_hom_sqzRing (φ : R ⟶ S') (hφ : Function.Surjective φ)
+    (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {Z : Scheme.{u}} (u v : Spec R ⟶ Z)
+    (huv : Spec.map φ ≫ u = Spec.map φ ≫ v) :
+    ∃ w : Spec (sqzRing φ) ⟶ Z,
+      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v :=
+  sorry
+
+/-- **`Spec (R ×_{S'} R)` is the pushout `Spec R ⊔_{Spec S'} Spec R`** for an
+arbitrary scheme target: existence is `exists_hom_sqzRing` (the one remaining
+leaf), uniqueness is `hom_ext_sqzRing` (PROVEN). -/
 theorem existsUnique_hom_sqzRing (φ : R ⟶ S') (hφ : Function.Surjective φ)
     (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {Z : Scheme.{u}} (u v : Spec R ⟶ Z)
     (huv : Spec.map φ ≫ u = Spec.map φ ≫ v) :
     ∃! w : Spec (sqzRing φ) ⟶ Z,
-      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v :=
-  sorry
+      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v := by
+  obtain ⟨w, hw1, hw2⟩ := exists_hom_sqzRing φ hφ hsq u v huv
+  refine ⟨w, ⟨hw1, hw2⟩, ?_⟩
+  rintro y ⟨hy1, hy2⟩
+  exact hom_ext_sqzRing φ hsq (hy1.trans hw1.symm) (hy2.trans hw2.symm)
 
 /-- **The amalgamation, read on relative points** (PROVEN over the leaf above).
 
@@ -19132,7 +22015,63 @@ distinction that makes `hℓ2` load-bearing here and absent there.  So the
 two halves really do share no argument, as the cut's docstring claims,
 and the rigidity machinery
 (`section_eq_of_formallyUnramified`, proven above) buys nothing at this
-leaf. -/
+leaf.
+
+**NOR DOES THE SQUARE-ZERO DEFORMATION CLUSTER, AND THE REASON IS ONE
+LINE** (2026-07-27, third owner, recorded because the natural next
+suspicion after the two retirements above is that
+`exists_smul_kerPre_of_squareZero` and the ~30 `sqz*` lemmas it is built
+from close this leaf too).  They do not, and not for a subtle reason:
+the reduction here is along `R ↠ R ⧸ ℓ`, whose kernel `ℓR` has
+`(ℓR) ^ 2 = ℓ ^ 2 R ≠ 0`.  `hsq : RingHom.ker φ.hom ^ 2 = ⊥` is simply
+false for it.  So the "treat a deformation-theory blocker with
+suspicion" heuristic that correctly retired the ÉTALE audit above does
+NOT retire the formal-group audit; the two situations differ at the
+hypothesis, not at the argument.
+
+WHAT THE `sqz*` CLUSTER *DOES* SUGGEST, with the check for each claim.
+The `ℓ`-adic tower `R ⧸ ℓ ^ (k+1) ↠ R ⧸ ℓ ^ k` IS square-zero for every
+`k ≥ 1` — its kernel is `(ℓ ^ k) ⧸ (ℓ ^ (k+1))`, whose square lands in
+`(ℓ ^ (2k)) ⊆ (ℓ ^ (k+1))` — so the cluster applies to each STEP of the
+tower even though it does not apply to the leaf.  Filtering
+`K = ker (𝒥(R) → 𝒥(𝔽_ℓ))` by `K_k = ker (𝒥(R) → 𝒥(R ⧸ ℓ ^ k))` then
+leaves exactly three obligations, and only the third is the mathematics:
+
+(a) THE TOWER ITSELF, in this file's language.  `SpecLoc` is built only
+    for SUBRINGS OF `ℚ`, and `R ⧸ ℓ ^ k` is not one; the only reduction
+    map in scope is `RelPoint.pre (SpecLoc.special toF)`, which is the
+    `k = 1` step.  This is bookkeeping, not mathematics, but it is not
+    free.  The refuting check: any construction in this file that takes
+    a QUOTIENT of the base `R` and produces a `Scheme` over it.
+
+(b) SEPARATEDNESS OF THE FILTRATION, `⋂ k, K_k = 0`.  This is NOT a
+    blocker and should not be recorded as one: a section
+    `Spec R ⟶ 𝒥` out of a LOCAL scheme factors through an affine open,
+    because the only open subset of `Spec ℤ_(ℓ)` containing the closed
+    point is the whole space, so the question reduces to Krull's
+    intersection theorem in the Noetherian local domain `R`.
+
+(c) THE `ℓ`-SHIFT: for `x ∈ K_k \ K_(k+1)`, that `ℓ • x ∉ K_(k+2)`.
+    THIS is where `e < ℓ − 1` enters and where the formal group law is
+    genuinely irreplaceable — one needs `v(ℓ) + k < ℓ k`, i.e.
+    `e < (ℓ − 1) k`, for every `k ≥ 1`, which is exactly the comparison
+    between the `ℓ T` term and the `T ^ ℓ` term of `[ℓ](T)`.
+
+CAUTION for anyone attempting (c) through the module structure alone:
+`exists_smul_kerPre_of_squareZero` yields an action of `R` that factors
+through `R ⧸ I` — for `r ∈ I` the endomorphism `sqzScal φ hsq r` equals
+`sqzScal φ hsq 0` outright, since `r (a₂ − a₁) ∈ I ^ 2 = 0` — so at the
+`k`-th step of the tower the graded piece is visibly an
+`R ⧸ ℓ ^ k`-module and is NOT visibly killed by `ℓ` once `k ≥ 2`.  Being
+killed by `ℓ` is a consequence of the identification with
+`Hom(ω, (ℓ ^ k) ⧸ (ℓ ^ (k+1)))`, which is precisely the theorem the
+survey above records as absent.
+
+NET EFFECT ON THE VERDICT: unchanged, but the missing object is sharper
+than "formal groups".  It is (c) alone.  A successor should consider
+STATING (c) as an interface over the tower — which is a legitimate cut,
+since a cut needs its theory stated and not proven — rather than
+building `FormalGroup.Point` for an abelian scheme first. -/
 theorem neronKernel_torsionFree_residue (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
     (_hbase : IsReductionBase ℓ R toF) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
@@ -19655,6 +22594,278 @@ def IsFibreIdent.congrFibre {S S' A A' A'' : Scheme.{0}} {s : S' ⟶ S} {f : A �
       Subtype.ext (Category.assoc _ _ _)]
     exact hf.nat hmap hg h₀ h₀' _
 
+/-! ### Yoneda in the slice category: a fibre identification IS the pullback
+
+`IsX0CurveModel` pins the special fibre `X'` only through a natural
+equivalence of functors of points — `spX` together with `spX_nat` — so a
+consumer that needs an actual MORPHISM out of, or into, `X'` cannot read
+one off the structure directly.  Recovering one is Yoneda in `Over S'`,
+and it is PROVEN here from those two fields alone.
+
+The argument is the usual one, written out rather than invoked through
+the `Over`-category API so that no transport is needed at the use sites:
+a natural transformation of representable functors is composition with
+the image of the IDENTITY (`IsFibreIdent.apply_eq_comp`), and the two
+comparison morphisms built from that image are mutually inverse
+(`IsFibreIdent.compareIso`).  Only `nat` is ever used; `apply_eq_comp` is
+the single place it enters.
+
+This is what
+`exists_x0JOpenModel_of_curveModel`'s previous docstring named as the
+CHEAPER of the two attacks on it, and what
+`isSmoothProperCurve_of_fibreIdent`'s docstring names as the whole of its
+residue ("the passage from a natural equivalence of `RelPoint`-functors
+to an isomorphism of schemes over `S'`").
+
+**Possible duplication, and it is deliberate rather than overlooked.**
+`isSmoothProperCurve_of_fibreIdent` is owned concurrently and asks for
+the same transport in the `Arrow.mk f' ≅ Arrow.mk (pullback.snd f s)`
+form.  If both land, keep one — this one is a plain `Iso` of schemes plus
+the two identities that pin it over the base, which is the shape every
+consumer here wants. -/
+
+namespace IsFibreIdent
+
+variable {S S' A A' : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S} {f' : A' ⟶ S'}
+  (e : IsFibreIdent s f f')
+
+/-- **The universal relative point**: the identity of `A'`, read through
+the identification.  Yoneda's lemma, in one line. -/
+noncomputable def universalPoint : RelPoint f (f' ≫ s) :=
+  e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩
+
+/-- **Every value of a fibre identification is composition with the
+universal point** (PROVEN).
+
+This is Yoneda for the two representable functors involved, and it is the
+ONLY place `nat` is consumed: everything below is a corollary of it
+together with the universal property of the pullback. -/
+theorem apply_eq_comp {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
+    (x : RelPoint f' g) : (e.toEquiv g g₀ h x).1 = x.1 ≫ e.universalPoint.1 := by
+  have hx : RelPoint.pre x.1 x.2 (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f') = x :=
+    Subtype.ext (Category.comp_id _)
+  have hnat := e.nat x.1 x.2 (rfl : f' ≫ s = f' ≫ s) h
+    (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f')
+  rw [hx] at hnat
+  exact congrArg Subtype.val hnat
+
+/-- The comparison morphism `A' ⟶ A ×_S S'`, built from the universal
+point and `f'` by the universal property of the pullback. -/
+noncomputable def compareHom : A' ⟶ Limits.pullback f s :=
+  Limits.pullback.lift e.universalPoint.1 f' e.universalPoint.2
+
+theorem compareHom_fst : e.compareHom ≫ Limits.pullback.fst f s = e.universalPoint.1 :=
+  Limits.pullback.lift_fst _ _ _
+
+theorem compareHom_snd : e.compareHom ≫ Limits.pullback.snd f s = f' :=
+  Limits.pullback.lift_snd _ _ _
+
+/-- The inverse comparison, as a relative point of `A'`: the identification
+run backwards on the tautological point of the pullback. -/
+noncomputable def compareInvPt : RelPoint f' (Limits.pullback.snd f s) :=
+  (e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl).symm
+    ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩
+
+/-- The comparison morphism `A ×_S S' ⟶ A'`. -/
+noncomputable def compareInv : Limits.pullback f s ⟶ A' := e.compareInvPt.1
+
+theorem compareInv_comp : e.compareInv ≫ f' = Limits.pullback.snd f s := e.compareInvPt.2
+
+theorem compareInv_universalPoint :
+    e.compareInv ≫ e.universalPoint.1 = Limits.pullback.fst f s := by
+  have h := e.apply_eq_comp (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl
+    e.compareInvPt
+  rw [show e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl e.compareInvPt
+      = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ from
+    Equiv.apply_symm_apply _ _] at h
+  exact h.symm
+
+theorem compareInv_compareHom : e.compareInv ≫ e.compareHom = 𝟙 (Limits.pullback f s) := by
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, e.compareHom_fst, e.compareInv_universalPoint, Category.id_comp]
+  · rw [Category.assoc, e.compareHom_snd, e.compareInv_comp, Category.id_comp]
+
+theorem compareHom_compareInv : e.compareHom ≫ e.compareInv = 𝟙 A' := by
+  have hcomp : (e.compareHom ≫ e.compareInv) ≫ f' = f' := by
+    rw [Category.assoc, e.compareInv_comp, e.compareHom_snd]
+  have key := e.nat e.compareHom e.compareHom_snd
+    (rfl : Limits.pullback.snd f s ≫ s = Limits.pullback.snd f s ≫ s) (rfl : f' ≫ s = f' ≫ s)
+    e.compareInvPt
+  rw [show e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl e.compareInvPt
+      = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ from
+    Equiv.apply_symm_apply _ _] at key
+  have h1 : (⟨e.compareHom ≫ e.compareInv, hcomp⟩ : RelPoint f' f')
+      = RelPoint.pre e.compareHom e.compareHom_snd e.compareInvPt := rfl
+  have h2 : e.toEquiv f' (f' ≫ s) rfl ⟨e.compareHom ≫ e.compareInv, hcomp⟩
+      = e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩ := by
+    rw [h1, key]
+    exact Subtype.ext e.compareHom_fst
+  exact congrArg Subtype.val ((e.toEquiv f' (f' ≫ s) rfl).injective h2)
+
+/-- **Yoneda in the slice category** (PROVEN): a fibre identification of
+functors of points IS an isomorphism onto the pullback, over `S'`. -/
+noncomputable def compareIso : A' ≅ Limits.pullback f s where
+  hom := e.compareHom
+  inv := e.compareInv
+  hom_inv_id := e.compareHom_compareInv
+  inv_hom_id := e.compareInv_compareHom
+
+end IsFibreIdent
+
+/-- **The base change of an open immersion of models to a fibre**
+(PROVEN).
+
+`𝒴 ⊆ 𝒳` over `S` gives `𝒴 ×_S S' ⊆ 𝒳 ×_S S'`; the morphism is written as
+an explicit `Limits.pullback.lift` so that its two projections are
+definitional, and identified with `Limits.pullback.map` only where the
+open-immersion instance is needed. -/
+noncomputable def fibreBaseChangeMap {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    Limits.pullback fY s ⟶ Limits.pullback f s :=
+  Limits.pullback.lift (Limits.pullback.fst fY s ≫ jZ) (Limits.pullback.snd fY s)
+    (by rw [Category.assoc, hjZ]; exact Limits.pullback.condition)
+
+theorem fibreBaseChangeMap_fst {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    fibreBaseChangeMap hjZ s ≫ Limits.pullback.fst f s
+      = Limits.pullback.fst fY s ≫ jZ :=
+  Limits.pullback.lift_fst _ _ _
+
+theorem fibreBaseChangeMap_snd {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    fibreBaseChangeMap hjZ s ≫ Limits.pullback.snd f s = Limits.pullback.snd fY s :=
+  Limits.pullback.lift_snd _ _ _
+
+theorem isOpenImmersion_fibreBaseChangeMap {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} [IsOpenImmersion jZ] (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    IsOpenImmersion (fibreBaseChangeMap hjZ s) := by
+  have hmap : fibreBaseChangeMap hjZ s
+      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+          (by rw [Category.comp_id, hjZ]) (by simp) := by
+    apply Limits.pullback.hom_ext
+    · rw [fibreBaseChangeMap_fst]
+      exact (Limits.pullback.lift_fst _ _ _).symm
+    · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+            (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
+            = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
+        Category.comp_id]
+  rw [hmap]
+  infer_instance
+
+namespace IsFibreIdent
+
+variable {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S} {f' : A' ⟶ S'} {fY : B ⟶ S}
+  {jZ : B ⟶ A} (e : IsFibreIdent s f f') (hjZ : jZ ≫ f = fY)
+
+/-- **The inclusion of the open part into the fibre `A'`, reconstructed
+from the identification** (PROVEN).
+
+`A'` is pinned only as a functor, so this cannot be written down directly;
+it is `e.toEquiv` run BACKWARDS on the tautological open point of
+`B ×_S S'`.  Everything the consumers need about it —
+`openSection_comp`, `apply_openSection`, `isOpenImmersion_openSection` —
+follows from `apply_eq_comp` and the pullback's universal property. -/
+noncomputable def openSection : Limits.pullback fY s ⟶ A' :=
+  ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
+    ⟨Limits.pullback.fst fY s ≫ jZ, by
+      rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩).1
+
+theorem openSection_comp : openSection e hjZ ≫ f' = Limits.pullback.snd fY s :=
+  ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
+    ⟨Limits.pullback.fst fY s ≫ jZ, by
+      rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩).2
+
+theorem openSection_universalPoint :
+    openSection e hjZ ≫ e.universalPoint.1 = Limits.pullback.fst fY s ≫ jZ := by
+  have h := e.apply_eq_comp (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl
+    ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
+      ⟨Limits.pullback.fst fY s ≫ jZ, by
+        rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩)
+  rw [Equiv.apply_symm_apply] at h
+  exact h.symm
+
+/-- **The identification carries the open immersion** (PROVEN) — this is
+`spX_j`, in the generality in which it is true. -/
+theorem apply_openSection {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
+    (y : RelPoint (Limits.pullback.snd fY s) g) :
+    (e.toEquiv g g₀ h ⟨y.1 ≫ openSection e hjZ, by
+        rw [Category.assoc, openSection_comp e hjZ, y.2]⟩).1
+      = (y.1 ≫ Limits.pullback.fst fY s) ≫ jZ := by
+  rw [e.apply_eq_comp, Category.assoc, openSection_universalPoint e hjZ, Category.assoc]
+
+/-- **The reconstructed inclusion is an open immersion** (PROVEN): it is
+the base change of `jZ` composed with `compareIso.inv`. -/
+theorem isOpenImmersion_openSection [IsOpenImmersion jZ] :
+    IsOpenImmersion (openSection e hjZ) := by
+  have hfac : openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
+    apply Limits.pullback.hom_ext
+    · rw [Category.assoc, e.compareHom_fst, openSection_universalPoint e hjZ,
+        fibreBaseChangeMap_fst]
+    · rw [Category.assoc, e.compareHom_snd, openSection_comp e hjZ, fibreBaseChangeMap_snd]
+  have h : openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
+    rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
+  haveI := isOpenImmersion_fibreBaseChangeMap (f := f) hjZ s
+  haveI : IsIso e.compareInv := e.compareIso.isIso_inv
+  rw [h]
+  infer_instance
+
+end IsFibreIdent
+
+/-- **`openSection` is the base change of `jZ` followed by the comparison
+isomorphism** (PROVEN).
+
+Already established inside the proof of `isOpenImmersion_openSection`;
+exported here because the cusp-locus count needs the factorisation itself,
+not merely the open-immersion consequence. -/
+theorem IsFibreIdent.openSection_eq {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S}
+    {f' : A' ⟶ S'} {fY : B ⟶ S} {jZ : B ⟶ A} (e : IsFibreIdent s f f')
+    (hjZ : jZ ≫ f = fY) :
+    IsFibreIdent.openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
+  have hfac : IsFibreIdent.openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
+    apply Limits.pullback.hom_ext
+    · rw [Category.assoc, e.compareHom_fst, IsFibreIdent.openSection_universalPoint e hjZ,
+        fibreBaseChangeMap_fst]
+    · rw [Category.assoc, e.compareHom_snd, IsFibreIdent.openSection_comp e hjZ,
+        fibreBaseChangeMap_snd]
+  rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
+
+/-- **`openSection` transports along `congrFibre` by postcomposition with
+the inverse isomorphism** (PROVEN, by `rfl`).
+
+`congrFibre` precomposes the identification with `relPointEquivOfIso`, so
+its inverse postcomposes with `E.inv`; `openSection` is that inverse run
+on the tautological open point, and taking `.1` commutes with the
+postcomposition.
+
+This is the lemma that lets `exists_x0CompactificationModel` state its
+generic open part over the TRANSPORTED identification `eGen.congrFibre E hE`
+— i.e. over the caller's own `X` — while still constructing it as the
+honest pullback `𝒴 ×_{ℤ_(ℓ)} ℚ` of the integral model.  Without it the
+comparison datum that pins `j` against the model cannot be produced, which
+is precisely the gap that made `exists_genericOpenIso_of_curveModel` false. -/
+theorem IsFibreIdent.openSection_congrFibre {S S' A A' A'' B : Scheme.{0}} {s : S' ⟶ S}
+    {f : A ⟶ S} {f' : A' ⟶ S'} {f'' : A'' ⟶ S'} {fY : B ⟶ S} {jZ : B ⟶ A}
+    (e : IsFibreIdent s f f') (E : A'' ≅ A') (hE : E.hom ≫ f' = f'')
+    (hjZ : jZ ≫ f = fY) :
+    IsFibreIdent.openSection (e.congrFibre E hE) hjZ
+      = IsFibreIdent.openSection e hjZ ≫ E.inv :=
+  rfl
+
+/-- **`fibreBaseChangeMap` is `Limits.pullback.map`** (PROVEN) — the form in
+which mathlib's `Scheme.Pullback.range_map` computes its range. -/
+theorem fibreBaseChangeMap_eq_map {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    fibreBaseChangeMap hjZ s
+      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+          (by rw [Category.comp_id, hjZ]) (by simp) := by
+  apply Limits.pullback.hom_ext
+  · rw [fibreBaseChangeMap_fst]
+    exact (Limits.pullback.lift_fst _ _ _).symm
+  · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+          (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
+          = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
+      Category.comp_id]
+
 /-! ### Uniqueness of `X_0(N)` over `ℚ`
 
 The docstring that used to sit on `exists_x0CompactificationModel` named
@@ -19698,8 +22909,26 @@ theorem exists_iso_of_isCoarseModuliY0 {N : ℕ} {Y Y₀ S : Scheme.{0}}
   exact ⟨⟨u, v, huv, hvu⟩, hu₁⟩
 
 /-- **A morphism from `Y_0(N)` into a proper `ℚ`-scheme extends uniquely
-over the compactification** (sorry leaf — a rational map from a smooth
-curve to a proper scheme is a morphism).
+over the compactification** (PROVEN 2026-07-27 — a one-line specialisation
+of `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`).
+
+**CONSOLIDATED, 2026-07-27.**  This leaf, `exists_extension_of_isX0Compactification`
+further down (the same theorem over `Spec 𝔽_ℓ`, with an `∃` conclusion),
+and the extension steps inside `exists_inverse_of_isX0Compactification`
+were three independent cuts of ONE statement.  They are now all derived
+from a single declaration in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, stated over an
+arbitrary FIELD base with an arbitrary PROPER target and an `∃!`
+conclusion.  Its hypotheses are, field for field, those of
+`IsX0Compactification` minus the moduli clause, which is what makes each
+site a specialisation rather than a re-proof.  Everything the paragraphs
+below describe — the passage to a rational map, the valuative criterion at
+each missing point, the spreading out of the local lift, the gluing, the
+uniqueness — is PROVEN there from `Mathlib` alone; what is left open is the
+single ring-theoretic node "smooth of relative dimension one over a field
+⟹ the local rings away from the generic point are discrete valuation
+rings", which that module shares with
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
 
 TRUE: `X` is a smooth — hence normal — proper curve over `ℚ` and `Y` is a
 dense open of it, so a morphism `Y ⟶ Z` into a proper `Z` extends over
@@ -19746,20 +22975,29 @@ target than properness (a weak Néron property), so a base-general
 restatement is very likely FALSE.  Generalize to `Spec` of a FIELD, not
 further.
 
-IRREDUCIBLE at this pin ALONG THE CURVE-EXTENSION AXIS, and the CHECK
-THAT WOULD REFUTE THAT: produce, in mathlib or this project, an extension
+**The old "IRREDUCIBLE at this pin ALONG THE CURVE-EXTENSION AXIS" verdict
+is RETIRED, by exactly the check it named.**  It asked for "an extension
 theorem for morphisms from a dense open of a normal (or regular
-one-dimensional) scheme into a proper scheme.  mathlib's
-`ValuativeCriterion` gives the lift along ONE valuation ring at a time
-(`IsProper.eq_valuativeCriterion`, used a few declarations above in
-`bijective_pre_generic_of_isProper`); what is missing is the glueing of
-those local lifts into a morphism on all of `X`. -/
+one-dimensional) scheme into a proper scheme", and observed that
+`ValuativeCriterion` lifts along ONE valuation ring at a time while "what
+is missing is the glueing of those local lifts into a morphism on all of
+`X`".  The glueing is **not** missing: it is
+`Mathlib.AlgebraicGeometry.Birational.RationalMap`, whose
+`PartialMap.ofFromSpecStalk` spreads a lift out of `Spec 𝒪ₓ` to a
+neighbourhood and whose `RationalMap.domain` / `RationalMap.toPartialMap`
+glue the resulting partial maps over the maximal domain of definition.
+That is the subtree the earlier survey never looked at. -/
 theorem exists_unique_extension_of_isX0Compactification {N : ℕ} {X Y Z : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X} {strZ : Z ⟶ SpecQ}
-    (_hX : IsX0Compactification N strX strY j) (_hZ : IsProper strZ)
-    (φ : Y ⟶ Z) (_hφ : φ ≫ strZ = strY) :
-    ∃! Φ : X ⟶ Z, Φ ≫ strZ = strX ∧ j ≫ Φ = φ :=
-  sorry
+    (hX : IsX0Compactification N strX strY j) (hZ : IsProper strZ)
+    (φ : Y ⟶ Z) (hφ : φ ≫ strZ = strY) :
+    ∃! Φ : X ⟶ Z, Φ ≫ strZ = strX ∧ j ≫ Φ = φ := by
+  haveI := hX.isOpen
+  haveI := hX.isProper
+  haveI := hX.smooth
+  haveI := hZ
+  exact _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+    hX.connected hX.finite_compl hX.comm φ hφ
 
 /-- **The smooth compactification of `Y_0(N)` is unique** (PROVEN, over
 the extension property).
@@ -19773,17 +23011,28 @@ the whole proof, and it is why the leaf above is stated as `∃!` rather
 than `∃` — the existence half alone would give two maps and no way to see
 they are mutually inverse.
 
-Note that no compatibility between `E` and `e` is claimed.  It is true
-(`j ≫ Φ = e.hom ≫ j₀` by construction) but nothing downstream consumes
-it, and leaving it out keeps the statement at the strength its one
-consumer needs. -/
+**The compatibility between `E` and `e` IS claimed, and it is the whole
+point of the strengthening made on 2026-07-27.**  The previous version of
+this docstring said "no compatibility between `E` and `e` is claimed.  It
+is true (`j ≫ Φ = e.hom ≫ j₀` by construction) but nothing downstream
+consumes it, and leaving it out keeps the statement at the strength its
+one consumer needs."  That was the source of a FALSE leaf three
+declarations downstream: with the compatibility discarded, nothing
+anywhere pinned the given embedding `j : Y ⟶ X` against the integral
+model's own generic open part, and
+`exists_genericOpenIso_of_curveModel` — which asked for exactly that pin
+out of thin air — was refuted by postcomposing `j` with a
+`ℚ`-automorphism of `X`.  The datum costs nothing: it is `hΦ₂`, produced
+by the extension property inside this proof and previously thrown away.
+See the subsection *Yoneda on the GENERIC side* far below for the full
+history. -/
 theorem exists_iso_of_isX0Compactification {N : ℕ} {X Y X₀ Y₀ : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     {strX₀ : X₀ ⟶ SpecQ} {strY₀ : Y₀ ⟶ SpecQ} {j₀ : Y₀ ⟶ X₀}
     (hX : IsX0Compactification N strX strY j)
     (hX₀ : IsX0Compactification N strX₀ strY₀ j₀)
     (e : Y ≅ Y₀) (he : e.hom ≫ strY₀ = strY) :
-    ∃ E : X ≅ X₀, E.hom ≫ strX₀ = strX := by
+    ∃ E : X ≅ X₀, E.hom ≫ strX₀ = strX ∧ j ≫ E.hom = e.hom ≫ j₀ := by
   have hφ : (e.hom ≫ j₀) ≫ strX₀ = strY := by rw [Category.assoc, hX₀.comm, he]
   have hψ : (e.inv ≫ j) ≫ strX = strY₀ := by
     rw [Category.assoc, hX.comm, ← he, ← Category.assoc, e.inv_hom_id, Category.id_comp]
@@ -19805,12 +23054,110 @@ theorem exists_iso_of_isX0Compactification {N : ℕ} {X Y X₀ Y₀ : Scheme.{0}
           rw [← Category.assoc, hΨ₂, Category.assoc, hΦ₂, ← Category.assoc,
             e.inv_hom_id, Category.id_comp]⟩,
       hw (𝟙 X₀) ⟨Category.id_comp _, Category.comp_id _⟩]
-  exact ⟨⟨Φ, Ψ, hΦΨ, hΨΦ⟩, hΦ₁⟩
+  exact ⟨⟨Φ, Ψ, hΦΨ, hΨΦ⟩, hΦ₁, hΦ₂⟩
 
 /-! ### The integral model, and its generic fibre -/
 
+/-- **`Y_0(N)` exists over `ℤ_(ℓ)`: the `Γ₀(N)`-problem has a coarse
+moduli space over the local base** (sorry leaf — the MODULI half of the
+integral model; Katz–Mazur ch. 8).
+
+This is the base-`ℤ_(ℓ)` form of `exists_coarseModuliY0`, and the exact
+analogue over a DISCRETE VALUATION base of what
+`exists_isCoarseModuliY0_isSmoothCurve_field` is over a field.  It asks
+for nothing but the coarse space: no compactification, no cusps, no
+geometry.  Katz–Mazur build the `[Γ₀(N)]`-moduli problem over `ℤ[1/N]`
+and show it is relatively representable and (for `ℓ ∤ N`) étale there, so
+it has a coarse space over `ℤ[1/N]`; `ℤ_(ℓ)` is a `ℤ[1/N]`-algebra once
+`ℓ ∤ N`, and the coarse space base changes to it.
+
+**No `N ≠ 0` hypothesis, and that is not an oversight.**  At `N = 0` the
+statement is TRUE with `YZ = ∅`: `exists_coarseModuliY0_zero` proves
+exactly that over `Spec ℚ`, from `isEmpty_of_gamma0Datum_zero` (every
+`Γ₀(0)`-datum is supported on the empty scheme) together with the
+initiality of `∅`, and neither step sees the base.  The degenerate level
+is ruled out only in the COMPANION leaf below, where it genuinely
+matters.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
+REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from
+mathlib entirely (zero hits), and no `DeligneRapoport` or integral model
+of a modular curve in mathlib, `~/cs/FLT` or this project.  Producing the
+`Γ₀(N)`-coarse space over `ℤ[1/N]` refutes the claim.  The nearest usable
+foothold in this file is `Gamma0Atlas` / `Gamma0GITPresentation` /
+`exists_coarseModuliY0_of_pos`, whose base was deliberately left general
+— extending that GIT construction from `Spec ℚ` to `Spec ℤ_(ℓ)` is the
+concrete attack, and it is the same attack that
+`exists_isCoarseModuliY0_isSmoothCurve_field`'s docstring names ("build
+that integral model once and obtain every base by pullback, which is how
+Katz–Mazur state it").  A prover of THIS leaf should expect to subsume
+that one as well. -/
+theorem exists_isCoarseModuliY0_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (_toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R _toF) :
+    ∃ (YZ : Scheme.{0}) (ystr : YZ ⟶ SpecLoc R), Nonempty (IsCoarseModuliY0 N ystr) :=
+  sorry
+
+/-- **The integral `Y_0(N)` has a smooth proper compactification over
+`ℤ_(ℓ)`** (sorry leaf — the COMPACTIFICATION half of the integral model;
+Deligne–Rapoport IV.3, Katz–Mazur 13.11, Igusa).
+
+Given ANY coarse moduli space `ystr` of the `Γ₀(N)`-problem over the
+local base, this produces the smooth proper `𝒳/ℤ_(ℓ)` containing it as a
+dense open with finite complement — i.e. every field of
+`IsX0Compactification` except `coarse`, which is the hypothesis.
+
+**Why no geometric hypothesis on `ystr` is needed, and why that is
+sound.**  One might expect this leaf to carry `IsIntegral`,
+`QuasiCompact`, `IsSeparated`, `SmoothOfRelativeDimension 1` and
+`GeometricallyConnected` on `ystr`, as
+`exists_isSmoothCompactification_field` does over a field.  It does not,
+and deliberately: over a field that theorem is a statement of GENERAL
+curve theory, applicable to an arbitrary smooth curve, so it must be told
+that its input is one.  Here the input is pinned to be the modular curve
+by `_hc` alone — `exists_iso_of_isCoarseModuliY0` was stated over an
+ARBITRARY base precisely so that it applies at `Spec ℤ_(ℓ)`, and it says
+that every coarse space of the `Γ₀(N)`-problem over the base is
+isomorphic *over the base* to the Deligne–Rapoport one.  So it suffices
+to compactify THAT one and transport, and the geometric properties come
+along with the isomorphism rather than being assumed.
+
+**Do NOT generalize this leaf by dropping `_hc`.**  The general form — "a
+smooth relative curve over a Dedekind base admits a smooth proper
+relative compactification with finite complement" — is a much stronger
+statement than the one used here, and this development does not know it
+to be true; the number of points at infinity is not obviously constant in
+such a family.  The truth of the leaf as stated rests on
+Deligne–Rapoport constructing the COMPACTIFIED moduli problem
+(generalised elliptic curves with `Γ₀(N)`-structure) directly over
+`ℤ[1/N]`, where the cusps form a finite étale scheme over the base.  That
+is a modular fact, not a curve-theoretic one, and it is why the base
+cannot be handed to general curve theory the way the field case is.
+
+`_hX` is retained only to keep the leaf no stronger than its consumer
+needs — it is what rules out the degenerate level `N = 0`, and here the
+degeneracy is REAL rather than notional: at `N = 0` the companion leaf
+above returns `YZ = ∅` (`isEmpty_of_isCoarseModuliY0_zero`), whose
+complement in `XZ` is all of `XZ`, so `finite_compl` would force `XZ`
+finite, while `isProper`, `smooth` and `connected` force a smooth proper
+geometrically connected relative curve, which is not.  So this leaf is
+FALSE at `N = 0` and the hypothesis is load-bearing.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, with the SAME refuting
+check as the leaf above: no modular curve, and no compactified
+`Γ₀(N)`-moduli problem, exists anywhere in the pin. -/
+theorem exists_isX0Compactification_of_isCoarseModuliY0_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (_toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R _toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (_hX : IsX0Compactification N strX strY j)
+    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (_hc : IsCoarseModuliY0 N ystr) :
+    ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsX0Compactification N xstr ystr jZ) :=
+  sorry
+
 /-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists**
-(sorry leaf — Deligne–Rapoport / Igusa).
+(PROVEN 2026-07-27 over the two leaves above; formerly a single sorry
+citation).
 
 This is the pure citation, with EVERY identification stripped off: no
 generic fibre is claimed, no comparison with the given `X/ℚ` is made.
@@ -19820,78 +23167,280 @@ elliptiques*, IV.3; Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*,
 ch. 8 for the moduli side and 13.11 for the compactification; Igusa for
 good reduction away from the level).
 
-`_hX` is retained only to keep the leaf no stronger than its consumer
+`hX` is retained only to keep the statement no stronger than its consumer
 needs — it is what rules out the degenerate level `N = 0`, where
-`Gamma0Datum 0` is supported on the empty scheme and the assertion would
-have to be discharged some other way.
+`Gamma0Datum 0` is supported on the empty scheme; it is passed straight
+through to the compactification leaf, which is where it is needed.
 
-IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
-REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from
-mathlib entirely (zero hits), and no `DeligneRapoport` or integral model
-of a modular curve in mathlib, `~/cs/FLT` or this project — mathlib's
-`integralModel` is only the Weierstrass-coefficient model of a single
-elliptic curve (`Mathlib/AlgebraicGeometry/EllipticCurve/Reduction.lean`).
-Producing a smooth proper `ℤ[1/N]`-model of the `Γ₀(N)` moduli problem
-refutes the claim.  The nearest usable foothold in this file is
-`Gamma0Atlas` / `exists_coarseModuliY0_of_pos`, whose base was
-deliberately left general — extending that construction from `Spec ℚ` to
-`Spec ℤ_(ℓ)` is the concrete attack. -/
-theorem exists_x0IntegralModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
-    (R : Subring ℚ) (_toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R _toF)
+**The cut (2026-07-27), and why it is the right one.**  The citation
+above names TWO chapters of Katz–Mazur, and they are two different
+theorems: ch. 8 builds the coarse space of the `Γ₀(N)`-problem over
+`ℤ[1/N]`, and 13.11 compactifies it.  Splitting them is exactly the split
+that `exists_x0Compactification_field` already takes over a FIELD base,
+between `exists_isCoarseModuliY0_isSmoothCurve_field` (modular) and
+`exists_isSmoothCompactification_field` (general curve theory) — with the
+one difference recorded on the second leaf above: over a discrete
+valuation base the compactification half cannot be handed to general
+curve theory, so it keeps its modular hypothesis instead of a geometric
+one. -/
+theorem exists_x0IntegralModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
-    (_hX : IsX0Compactification N strX strY j) :
+    (hX : IsX0Compactification N strX strY j) :
     ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
-      (jZ : YZ ⟶ XZ), Nonempty (IsX0Compactification N xstr ystr jZ) :=
-  sorry
+      (jZ : YZ ⟶ XZ), Nonempty (IsX0Compactification N xstr ystr jZ) := by
+  obtain ⟨YZ, ystr, ⟨hc⟩⟩ := exists_isCoarseModuliY0_loc N ℓ hℓ hℓN R toF hbase
+  obtain ⟨XZ, xstr, jZ, hmodel⟩ :=
+    exists_isX0Compactification_of_isCoarseModuliY0_loc N ℓ hℓ hℓN R toF hbase hX hc
+  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel⟩
 
-/-- **The generic fibre of an integral model carries the cuspidal open**
+/-! #### The generic fibre, cut down to initiality
+
+`exists_genericFibreOpen_of_x0IntegralModel` used to be one leaf asking
+for FOUR things at once: the coarse-moduli structure of the generic fibre
+(`classify`, `classify_natural`, `universal`) and the finiteness of its
+cusp locus.  Three of the four are formal and are PROVEN below; only
+`universal` is Katz–Mazur.  This is the exact mirror, on the GENERIC
+side, of the split already carried out at the closed point in
+`isX0CoarseModuli_specialOpen_of_curveModel`'s subsection further down
+this file, and the pieces are the same pieces:
+
+* `classify`/`classify_natural` are the universal property of the
+  PULLBACK.  A `Γ₀(N)`-datum over a `ℚ`-scheme `g : T ⟶ Spec ℚ` is in
+  particular a datum over the `ℤ_(ℓ)`-scheme `g ≫ SpecLoc.generic R`, so
+  the integral coarse space already classifies it; `RelPoint.baseChangeUp`
+  lands the resulting point in `𝒴 ×_{ℤ_(ℓ)} ℚ`.
+* the open immersion and its commutation with the structure morphisms are
+  `IsFibreIdent.openSection`, which reconstructs a MORPHISM into the
+  abstractly-presented generic fibre `X₀` by Yoneda in the slice category.
+* the finiteness of the cusp locus is PROVEN outright, and — unlike the
+  special fibre, where surjectivity of `toF` makes `SpecLoc.special` a
+  closed immersion — the input on this side is that `ℚ` is a LOCALIZATION
+  of `R`, hence `Spec ℚ ⟶ Spec R` is a monomorphism and therefore
+  universally injective.
+* what genuinely remains is `universal`, INITIALITY of the generic fibre,
+  which is the flat-base-change statement for the coarse space. -/
+
+/-- **`R ⊆ ℚ` is an epimorphism of rings** (PROVEN).
+
+Every subring of `ℚ` contains `ℤ`, and `ℤ → ℚ` is a localization hence an
+epimorphism (`IsLocalization.epi` at `nonZeroDivisors ℤ`, through
+`Rat.isFractionRing`); an epimorphism factoring through `R.subtype` makes
+that second factor an epimorphism.  The factorisation itself is free —
+there is only one ring map out of `ℤ` (`RingHom.ext_int`). -/
+theorem epi_ofHom_subringSubtypeQ (R : Subring ℚ) :
+    Epi (CommRingCat.ofHom (R.subtype : R →+* ℚ)) := by
+  have h1 : Epi (CommRingCat.ofHom (algebraMap ℤ ℚ)) :=
+    IsLocalization.epi (nonZeroDivisors ℤ) ℚ
+  have hfac : CommRingCat.ofHom (algebraMap ℤ ℚ)
+      = CommRingCat.ofHom (Int.castRingHom R) ≫ CommRingCat.ofHom (R.subtype : R →+* ℚ) := by
+    apply CommRingCat.hom_ext
+    exact RingHom.ext_int _ _
+  rw [hfac] at h1
+  exact epi_of_epi (CommRingCat.ofHom (Int.castRingHom R)) _
+
+/-- **The generic point `Spec ℚ ⟶ Spec R` is a monomorphism of schemes**
+(PROVEN) — `Spec` is a right adjoint, hence preserves monomorphisms, and
+the ring map is an epimorphism.
+
+This is the generic-side counterpart of `IsClosedImmersion.spec_of_surjective`
+on the special side: it is what makes the base change
+`𝒳 ×_{ℤ_(ℓ)} ℚ ⟶ 𝒳` injective on points, and hence what keeps the cusp
+locus finite in the generic fibre. -/
+instance mono_specLocGeneric (R : Subring ℚ) : Mono (SpecLoc.generic R) := by
+  haveI := epi_ofHom_subringSubtypeQ R
+  haveI : Mono (CommRingCat.ofHom (R.subtype : R →+* ℚ)).op := inferInstance
+  exact (inferInstance : Mono (Scheme.Spec.map (CommRingCat.ofHom (R.subtype : R →+* ℚ)).op))
+
+/-- **The cusp locus of the generic fibre is finite** (PROVEN).
+
+`SpecLoc.generic R` is a monomorphism (`mono_specLocGeneric`), hence
+universally injective, hence so is its base change `pullback.fst`, which
+is therefore injective on points.  `Scheme.Pullback.range_map` identifies
+the range of the base-changed open immersion with the preimage of
+`Set.range jZ.base` under that injection, and the complement of a
+preimage is the preimage of the complement — finite because the integral
+cusp locus is.
+
+Exactly the argument of `finite_compl_range_fibreBaseChangeMap_special`,
+with `UniversallyInjective` in place of `IsClosedImmersion`; note that no
+moduli input enters on either side. -/
+theorem finite_compl_range_fibreBaseChangeMap_generic {R : Subring ℚ} {XZ YZ : Scheme.{0}}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hcomm : jZ ≫ xstr = ystr) (hfin : (Set.range jZ.base)ᶜ.Finite) :
+    (Set.range (fibreBaseChangeMap hcomm (SpecLoc.generic R)).base)ᶜ.Finite := by
+  haveI : UniversallyInjective (Limits.pullback.fst xstr (SpecLoc.generic R)) :=
+    MorphismProperty.pullback_fst (P := @UniversallyInjective) xstr _ inferInstance
+  have hinj : Function.Injective (Limits.pullback.fst xstr (SpecLoc.generic R)).base :=
+    Scheme.Hom.injective _
+  have hrange : Set.range (fibreBaseChangeMap hcomm (SpecLoc.generic R)).base
+      = (Limits.pullback.fst xstr (SpecLoc.generic R)).base ⁻¹' Set.range jZ.base := by
+    rw [fibreBaseChangeMap_eq_map, Scheme.Pullback.range_map]
+    simp
+  rw [hrange, ← Set.preimage_compl]
+  exact hfin.preimage hinj.injOn
+
+/-- **The classifying map of the generic fibre** (PROVEN) — the universal
+property of the pullback, not moduli theory.
+
+A `Γ₀(N)`-datum over `g : T ⟶ Spec ℚ` is a datum over the `ℤ_(ℓ)`-scheme
+`g ≫ SpecLoc.generic R`, which the integral coarse space classifies;
+pairing that point with `g` is `RelPoint.baseChangeUp`. -/
+noncomputable def genericFibreClassify {N : ℕ} {R : Subring ℚ} {XZ YZ : Scheme.{0}}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX0Compactification N xstr ystr jZ)
+    {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T) :
+    RelPoint (Limits.pullback.snd ystr (SpecLoc.generic R)) g :=
+  RelPoint.baseChangeUp (SpecLoc.generic R)
+    (hmodel.coarse.classify (g ≫ SpecLoc.generic R) d)
+
+/-- **`genericFibreClassify` is natural** (PROVEN) — `baseChangeDown` is
+injective and carries both sides to the integral `classify_natural`. -/
+theorem genericFibreClassify_natural {N : ℕ} {R : Subring ℚ} {XZ YZ : Scheme.{0}}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX0Compactification N xstr ystr jZ)
+    {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hbc : IsBaseChangeOf h d' d) :
+    genericFibreClassify hmodel g' d'
+      = RelPoint.pre h hg (genericFibreClassify hmodel g d) := by
+  apply RelPoint.baseChangeDown_injective (SpecLoc.generic R)
+  rw [genericFibreClassify, RelPoint.baseChangeDown_baseChangeUp, genericFibreClassify,
+    RelPoint.baseChangeDown_pre, RelPoint.baseChangeDown_baseChangeUp]
+  exact hmodel.coarse.classify_natural h
+    (show h ≫ (g ≫ SpecLoc.generic R) = g' ≫ SpecLoc.generic R by
+      rw [← Category.assoc, hg]) hbc
+
+/-- **INITIALITY of the generic fibre of `Y_0(N)`'s integral model**
 (sorry leaf — formation of the coarse moduli space commutes with the flat
 base change `ℤ_(ℓ) → ℚ`).
 
-TRUE: the `Γ₀(N)`-moduli problem is defined over `ℤ[1/N]` and its coarse
-moduli space commutes with flat base change (Katz–Mazur 8.1; the
-`ℓ ∤ N` hypothesis is what makes the problem étale, so no inseparability
-correction arises), so the generic fibre `𝒴 ×_{ℤ_(ℓ)} ℚ` of the integral
-`Y_0(N)` is a coarse moduli space over `ℚ`.  The open immersion and the
-finiteness of the cusp locus base change too — an open immersion is
-stable under base change, and the cusp locus is finite over the base, so
-its generic fibre is finite.
+This is the entire residue of `exists_genericFibreOpen_of_x0IntegralModel`:
+`classify`, `classify_natural`, the open immersion and the cusp-locus
+count are PROVEN above, so what is left is the one clause that is
+genuinely Katz–Mazur.
 
-**What this leaf deliberately does NOT carry, because it is already
-PROVEN.**  The three GEOMETRIC fields of the generic fibre —
-`isProper`, `smooth`, `connected` — are not asked for here.  They are
-base change of the corresponding fields of `_hmodel` (the same three
-facts `isSmoothProperCurve_of_fibreIdent` assembles, inlined at the use
-site because that theorem is declared later in this file), which is why
-this leaf's conclusion mentions only `IsCoarseModuliY0`,
-`IsOpenImmersion` and `finite_compl`.  That is a genuine reduction: three
-of the seven fields of the generic-fibre `IsX0Compactification` are
-discharged by base-change instances already in the tree.
+TRUE, and NOT formal.  The `Γ₀(N)`-moduli problem is defined over
+`ℤ[1/N]` and its coarse moduli space commutes with FLAT base change
+(Katz–Mazur 8.1; the `ℓ ∤ N` hypothesis is what makes the problem étale,
+so no inseparability correction arises), and `ℤ_(ℓ) → ℚ` is flat.
+
+**Why no rearrangement of `hmodel.coarse.universal` proves it**, which is
+the first thing an attacker should check and the reason this is a leaf
+rather than a `have` — this is the same obstruction as on the special
+side, verbatim: `hmodel.coarse.universal` quantifies over cocones defined
+on ALL `ℤ_(ℓ)`-schemes, while `c` here is defined only on `ℚ`-schemes.
+There is no way to extend `c` — a `Γ₀(N)`-datum over a scheme lying over
+the CLOSED point has no `ℚ`-structure, so `c` assigns it nothing.  The
+integral initiality is therefore strictly weaker input than the
+conclusion.
+
+**FAITHFULNESS at `N = 0`, since no `hN` hypothesis is carried.**  The
+statement is still TRUE there, and vacuously so in a checkable way: at
+`N = 0`, `hmodel.coarse` forces `YZ` to be empty — that is
+`isEmpty_of_isCoarseModuliY0_zero`, whose proof (through
+`isEmpty_of_gamma0Datum_zero` and the initiality of `∅`) never sees the
+base and so applies over `SpecLoc R` — hence `𝒴 ×_{ℤ_(ℓ)} ℚ` is empty,
+hence initial, and the `∃!` holds for trivial reasons.  A prover may
+therefore split on `N = 0` and dispatch that half by
+`isInitialOfIsEmpty`.  Contrast the compactification leaf above, where
+`N = 0` is genuinely FALSE and the hypothesis `_hX` is load-bearing. -/
+theorem exists_unique_genericFibre_universal {N : ℕ} {R : Subring ℚ}
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX0Compactification N xstr ystr jZ)
+    {Y' : Scheme.{0}} (str' : Y' ⟶ SpecQ)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum N T → RelPoint str' g)
+    (_hc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+      IsBaseChangeOf h d' d → c g' d' = RelPoint.pre h hg (c g d)) :
+    ∃! u : Limits.pullback ystr (SpecLoc.generic R) ⟶ Y',
+      u ≫ str' = Limits.pullback.snd ystr (SpecLoc.generic R) ∧
+        ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
+          (c g d).1 = (genericFibreClassify hmodel g d).1 ≫ u :=
+  sorry
+
+/-- **The generic fibre of an integral model carries the cuspidal open**
+(PROVEN 2026-07-27 over the initiality leaf above; formerly a sorry leaf
+carrying four obligations).
+
+TRUE: the `Γ₀(N)`-moduli problem is defined over `ℤ[1/N]` and its coarse
+moduli space commutes with flat base change (Katz–Mazur 8.1), so the
+generic fibre `𝒴 ×_{ℤ_(ℓ)} ℚ` of the integral `Y_0(N)` is a coarse
+moduli space over `ℚ`.  The open immersion and the finiteness of the cusp
+locus base change too — an open immersion is stable under base change,
+and `Spec ℚ ⟶ Spec R` is a monomorphism, so the generic fibre of the
+finite cusp locus is finite.
+
+**The generic open part is CONSTRUCTED, not posited.**  `Y₀` is
+`𝒴 ×_{ℤ_(ℓ)} ℚ` and `j₀` is `IsFibreIdent.openSection` — the inclusion
+into the abstractly-presented `X₀` reconstructed by Yoneda in the slice
+category, exactly as `IsX0CurveModel.specialOpen` does at the closed
+point.  That is what makes `j₀ ≫ strX₀ = strY₀` and `IsOpenImmersion j₀`
+theorems rather than obligations.
+
+**What this statement deliberately does NOT carry, because it is already
+PROVEN.**  The three GEOMETRIC fields of the generic fibre — `isProper`,
+`smooth`, `connected` — are not asked for here.  They are base change of
+the corresponding fields of `hmodel` (the same three facts
+`isSmoothProperCurve_of_fibreIdent` assembles, inlined at the use site
+because that theorem is declared later in this file), which is why the
+conclusion mentions only `IsCoarseModuliY0`, `IsOpenImmersion` and
+`finite_compl`.
 
 **Why it is stated over an abstract `IsFibreIdent` rather than over the
-literal pullback.**  The consumer instantiates `_eGen` at
+literal pullback.**  The consumer instantiates `eGen` at
 `fibreIdentPullback`, so `X₀` really is `𝒳 ×_{ℤ_(ℓ)} ℚ` there; but
 stating it this way means a prover may work with ANY presentation of the
 generic fibre, and the statement is invariant under isomorphism over
 `Spec ℚ` by `IsFibreIdent.congrFibre`.
 
-IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and with the SAME refuting
-check as `exists_x0IntegralModel`: it is the moduli interpretation of the
-integral model that supplies `IsCoarseModuliY0` on the generic fibre, and
-nothing in this file's `Gamma0Atlas` development is stated over a base
-other than `Spec ℚ`. -/
+**RESTATED 2026-07-27 — `Y₀` and `j₀` are no longer existentially
+quantified, and that change is a FAITHFULNESS REPAIR, not a tidy-up.**
+The previous conclusion posited an ARBITRARY `(Y₀, strY₀, j₀)` with the
+four properties, even though the proof *constructs* them as
+`𝒴 ×_{ℤ_(ℓ)} ℚ` and `IsFibreIdent.openSection`.  Hiding that behind an
+existential is what let the generic open part DRIFT away from the model
+downstream: three declarations further on,
+`exists_genericOpenIso_of_curveModel` had to ask for a comparison
+isomorphism that nothing in its hypotheses could supply, and it was
+FALSE as stated — refuted by postcomposing the embedding with a
+`ℚ`-automorphism of `X`.  With the objects pinned here the comparison is
+produced rather than assumed.  Two of the four conclusions disappear with
+the existentials, because at the constructed values they are the theorems
+`IsFibreIdent.openSection_comp` and
+`IsFibreIdent.isOpenImmersion_openSection`; what is left is the coarse
+structure and the cusp-locus count.  This is the exact mirror, on the
+generic side, of what `IsX0CurveModel.specialOpen` does at the closed
+point, where nothing could drift because `Y'` was never posited. -/
 theorem exists_genericFibreOpen_of_x0IntegralModel {N : ℕ} {R : Subring ℚ}
     {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (hmodel : IsX0Compactification N xstr ystr jZ)
     {X₀ : Scheme.{0}} {strX₀ : X₀ ⟶ SpecQ}
-    (_eGen : IsFibreIdent (SpecLoc.generic R) xstr strX₀) :
-    ∃ (Y₀ : Scheme.{0}) (strY₀ : Y₀ ⟶ SpecQ) (j₀ : Y₀ ⟶ X₀)
-      (_ : IsCoarseModuliY0 N strY₀),
-      j₀ ≫ strX₀ = strY₀ ∧ IsOpenImmersion j₀ ∧ (Set.range j₀.base)ᶜ.Finite :=
-  sorry
+    (eGen : IsFibreIdent (SpecLoc.generic R) xstr strX₀) :
+    ∃ _ : IsCoarseModuliY0 N (Limits.pullback.snd ystr (SpecLoc.generic R)),
+      (Set.range (IsFibreIdent.openSection eGen hmodel.comm).base)ᶜ.Finite := by
+  refine ⟨{ classify := genericFibreClassify hmodel
+            classify_natural := by
+              intro T' T h g g' hg d' d hbc
+              exact genericFibreClassify_natural hmodel h hg hbc
+            universal := by
+              intro Y' str' c hc
+              exact exists_unique_genericFibre_universal hmodel str' c hc }, ?_⟩
+  have hfin := finite_compl_range_fibreBaseChangeMap_generic
+    (R := R) hmodel.comm hmodel.finite_compl
+  have hrange : Set.range (IsFibreIdent.openSection eGen hmodel.comm).base
+      = ⇑(Scheme.homeoOfIso eGen.compareIso.symm) ''
+        Set.range (fibreBaseChangeMap hmodel.comm (SpecLoc.generic R)).base := by
+    rw [← Set.range_comp, IsFibreIdent.openSection_eq eGen hmodel.comm]
+    rfl
+  rw [hrange, ← Set.image_compl_eq (Scheme.homeoOfIso eGen.compareIso.symm).bijective]
+  exact hfin.image _
 
 /-- **The integral model exists, and its generic fibre is SOME
-`X_0(N)/ℚ`** (PROVEN, over the two leaves above).
+`X_0(N)/ℚ`** (PROVEN, over the two assemblies above — hence over the
+three leaves `exists_isCoarseModuliY0_loc`,
+`exists_isX0Compactification_of_isCoarseModuliY0_loc` and
+`exists_unique_genericFibre_universal`).
 
 The generic fibre is not posited: it is `Limits.pullback xstr
 (SpecLoc.generic R)`, i.e. literally `𝒳 ×_{ℤ_(ℓ)} ℚ`, and its
@@ -19907,38 +23456,48 @@ from `exists_genericFibreOpen_of_x0IntegralModel`.
 
 What is still missing at this point, and is supplied by
 `exists_iso_of_isX0Compactification` in the assembly below, is the
-comparison of this `X₀` with the `X` the caller handed in. -/
+comparison of this `X₀` with the `X` the caller handed in.
+
+**RESTATED 2026-07-27, together with the leaf above: the generic
+compactification is no longer existentially quantified.**  `X₀`, `Y₀` and
+`j₀` are now written out as `𝒳 ×_{ℤ_(ℓ)} ℚ`, `𝒴 ×_{ℤ_(ℓ)} ℚ` and
+`IsFibreIdent.openSection (fibreIdentPullback …) hmodel.comm`, and the
+`IsFibreIdent` conclusion disappears because it is now literally
+`fibreIdentPullback (SpecLoc.generic R) xstr`.  Pinning them is what lets
+`exists_x0CompactificationModel` below carry the comparison of `j` with
+the model's own generic open part — the datum whose absence made
+`exists_genericOpenIso_of_curveModel` false as stated. -/
 theorem exists_x0IntegralCompactification (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (hX : IsX0Compactification N strX strY j) :
     ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
-      (jZ : YZ ⟶ XZ) (_ : IsX0Compactification N xstr ystr jZ)
-      (X₀ Y₀ : Scheme.{0}) (strX₀ : X₀ ⟶ SpecQ) (strY₀ : Y₀ ⟶ SpecQ) (j₀ : Y₀ ⟶ X₀)
-      (_ : IsX0Compactification N strX₀ strY₀ j₀),
-      Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX₀) := by
+      (jZ : YZ ⟶ XZ) (hmodel : IsX0Compactification N xstr ystr jZ),
+      Nonempty (IsX0Compactification N
+        (Limits.pullback.snd xstr (SpecLoc.generic R))
+        (Limits.pullback.snd ystr (SpecLoc.generic R))
+        (IsFibreIdent.openSection (fibreIdentPullback (SpecLoc.generic R) xstr)
+          hmodel.comm)) := by
   obtain ⟨XZ, YZ, xstr, ystr, jZ, ⟨hmodel⟩⟩ :=
     exists_x0IntegralModel N ℓ hℓ hℓN R toF hbase hX
-  -- the generic fibre is not posited: it is the pullback along the generic point
-  have eGen : IsFibreIdent (SpecLoc.generic R) xstr
-      (Limits.pullback.snd xstr (SpecLoc.generic R)) :=
-    fibreIdentPullback (SpecLoc.generic R) xstr
+  haveI : IsOpenImmersion jZ := hmodel.isOpen
   -- the three geometric fields are base change, verbatim as in
   -- `isSmoothProperCurve_of_fibreIdent` (which is declared later in this
   -- file, hence inlined here rather than cited)
   haveI := hmodel.isProper
   haveI := hmodel.connected
   haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
-  obtain ⟨Y₀, strY₀, j₀, hcoarse, hcomm, hopen, hfin⟩ :=
-    exists_genericFibreOpen_of_x0IntegralModel hmodel eGen
-  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel, _, Y₀, _, strY₀, j₀,
-    { comm := hcomm
-      coarse := hcoarse
-      isOpen := hopen
-      isProper := inferInstance
-      smooth := MorphismProperty.pullback_snd xstr (SpecLoc.generic R) hmodel.smooth
-      connected := inferInstance
-      finite_compl := hfin }, ⟨eGen⟩⟩
+  obtain ⟨hcoarse, hfin⟩ :=
+    exists_genericFibreOpen_of_x0IntegralModel hmodel
+      (fibreIdentPullback (SpecLoc.generic R) xstr)
+  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel,
+    ⟨{ comm := IsFibreIdent.openSection_comp _ hmodel.comm
+       coarse := hcoarse
+       isOpen := IsFibreIdent.isOpenImmersion_openSection _ hmodel.comm
+       isProper := inferInstance
+       smooth := MorphismProperty.pullback_snd xstr (SpecLoc.generic R) hmodel.smooth
+       connected := inferInstance
+       finite_compl := hfin }⟩⟩
 
 /-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists,
 with its generic fibre identified with the given `X/ℚ`** (PROVEN, over
@@ -19962,32 +23521,62 @@ the two open parts, PROVEN from initiality alone;
 compactifications; and `IsFibreIdent.congrFibre` transports the
 identification along the resulting isomorphism.
 
-**What is left open, and it is three leaves rather than one:**
+**What is left open, and it is four leaves rather than one** (the count
+went UP on 2026-07-27, by decomposition rather than regression —
+`exists_x0IntegralModel` and `exists_genericFibreOpen_of_x0IntegralModel`
+are both PROVEN assemblies now):
 
-* `exists_x0IntegralModel` — the Deligne–Rapoport / Igusa construction,
-  with no identification attached;
-* `exists_genericFibreOpen_of_x0IntegralModel` — coarse moduli commutes
-  with the flat base change `ℤ_(ℓ) → ℚ`, carrying only the three fields
-  that are NOT base-change instances;
+* `exists_isCoarseModuliY0_loc` — the `Γ₀(N)`-coarse space exists over
+  `ℤ_(ℓ)` (Katz–Mazur ch. 8);
+* `exists_isX0Compactification_of_isCoarseModuliY0_loc` — it has a smooth
+  proper compactification with finite cusp locus there (Deligne–Rapoport
+  IV.3, Katz–Mazur 13.11);
+* `exists_unique_genericFibre_universal` — INITIALITY of the generic
+  fibre, i.e. coarse moduli commutes with the flat base change
+  `ℤ_(ℓ) → ℚ` (Katz–Mazur 8.1).  Its three companions —
+  `classify`, `classify_natural`, and the cusp-locus count — are PROVEN,
+  as are the open immersion and its commutation with the structure maps;
 * `exists_unique_extension_of_isX0Compactification` — a rational map
   from a smooth proper curve to a proper scheme is a morphism.
 
-The third is not modular at all: it is a general fact about curves, so
-it is reusable, and it is the only one of the three that does not depend
-on the missing moduli theory.  The first two remain IRREDUCIBLE ALONG
-THE MODULI AXIS, with the refuting check recorded on each. -/
+The fourth is not modular at all: it is a general fact about curves, so
+it is reusable, and it is the only one of the four that does not depend
+on the missing moduli theory.  The first three remain IRREDUCIBLE ALONG
+THE MODULI AXIS, with the refuting check recorded on each.
+
+**The conclusion now carries the COMPARISON of `j` with the model's own
+generic open part (2026-07-27), and that is the repair of a false leaf.**
+Beside the fibre identification `eGen : IsFibreIdent … xstr strX`, this
+returns
+
+    ι : Y ≅ 𝒴 ×_{ℤ_(ℓ)} ℚ    with    ι.hom ≫ openSection eGen hmodel.comm = j,
+
+i.e. it says that the `Y ⊆ X` the caller handed in IS the generic fibre
+of the model's open part, as an open subscheme of `X`.  That is TRUE here
+— and only here — because `cm` is *chosen* rather than given: `ι` is the
+`eY` that `exists_iso_of_isCoarseModuliY0` already produced, and the
+triangle is the compatibility `j ≫ E.hom = eY.hom ≫ j₀` that
+`exists_iso_of_isX0Compactification` produces and, until today, threw
+away.  Stated over an INDEPENDENTLY quantified `(hX, cm)` the same
+assertion is FALSE — see the FALSITY AUDIT further down this file, in the
+subsection *Yoneda on the GENERIC side*. -/
 theorem exists_x0CompactificationModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (hX : IsX0Compactification N strX strY j) :
     ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
-      (jZ : YZ ⟶ XZ) (_ : IsX0Compactification N xstr ystr jZ),
-      Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) := by
-  obtain ⟨XZ, YZ, xstr, ystr, jZ, hmodel, X₀, Y₀, strX₀, strY₀, j₀, h₀, ⟨eGen⟩⟩ :=
+      (jZ : YZ ⟶ XZ) (hmodel : IsX0Compactification N xstr ystr jZ)
+      (eGen : IsFibreIdent (SpecLoc.generic R) xstr strX)
+      (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R)),
+      ι.hom ≫ IsFibreIdent.openSection eGen hmodel.comm = j := by
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, hmodel, ⟨h₀⟩⟩ :=
     exists_x0IntegralCompactification N ℓ hℓ hℓN R toF hbase hX
   obtain ⟨eY, heY⟩ := exists_iso_of_isCoarseModuliY0 hX.coarse h₀.coarse
-  obtain ⟨E, hE⟩ := exists_iso_of_isX0Compactification hX h₀ eY heY
-  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel, ⟨eGen.congrFibre E hE⟩⟩
+  obtain ⟨E, hE, hEj⟩ := exists_iso_of_isX0Compactification hX h₀ eY heY
+  refine ⟨XZ, YZ, xstr, ystr, jZ, hmodel,
+    (fibreIdentPullback (SpecLoc.generic R) xstr).congrFibre E hE, eY, ?_⟩
+  rw [IsFibreIdent.openSection_congrFibre, ← Category.assoc, ← hEj, Category.assoc,
+    E.hom_inv_id, Category.comp_id]
 
 /-- **The integral CURVE model of `X_0(N)` over `ℤ_(ℓ)` exists, at every
 `ℓ ∤ N`** (PROVEN, over the integral model and the valuative criterion).
@@ -20004,8 +23593,9 @@ recorded the node as irreducible along the MODULI axis, citing the
 absence of a Deligne–Rapoport integral model from mathlib, `~/cs/FLT`
 and this project.  That citation is still correct, but it no longer sits
 on `exists_x0CompactificationModel`, which is now PROVEN: it has moved
-down to `exists_x0IntegralModel` and
-`exists_genericFibreOpen_of_x0IntegralModel`, the only two parts of this
+down to `exists_isCoarseModuliY0_loc`,
+`exists_isX0Compactification_of_isCoarseModuliY0_loc` and
+`exists_unique_genericFibre_universal`, the only parts of this
 statement that need it.  It covered three further obligations that
 need no moduli theory at all, and those are now discharged here:
 
@@ -20018,25 +23608,42 @@ need no moduli theory at all, and those are now discharged here:
   over the observation that `IsReductionBase` makes `R` a valuation ring.
 
 So what a Deligne–Rapoport specialist is now asked for is the model and
-its generic fibre, and nothing else. -/
+its generic fibre, and nothing else.
+
+**The conclusion carries the GENERIC OPEN COMPARISON `(ι, hι)`
+(2026-07-27), and the `Nonempty` became an `∃` to make room for it.**
+`IsX0CurveModel` deliberately mentions neither `Y`, nor `strY`, nor the
+embedding `j` — it is a statement about `X` and the model alone — so the
+relation between the caller's `Y ⊆ X` and the model's own generic open
+part `𝒴 ×_{ℤ_(ℓ)} ℚ` has to be carried BESIDE `cm`, and it has to be
+carried by the theorem that CHOOSES `cm`.  Discarding it here is what
+made `exists_genericOpenIso_of_curveModel` false as stated: that leaf was
+asked to reconstruct the comparison from `hX` and `cm` quantified
+independently, and no such reconstruction exists — `IsCompactificationY0`
+is stable under postcomposing `j` with a `ℚ`-automorphism of `X` while
+the model's generic open part is not.  The datum is free here, since
+`cm` is built from `hX` rather than handed in alongside it. -/
 theorem exists_x0CurveModel_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (hX : IsX0Compactification N strX strY j) :
     ∃ (X' XZ YZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R)
-      (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
-      Nonempty (IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ) := by
-  obtain ⟨XZ, YZ, xstr, ystr, jZ, hmodel, ⟨eGen⟩⟩ :=
+      (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ)
+      (cm : IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+      (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R)),
+      ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = j := by
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, hmodel, eGen, ι, hι⟩ :=
     exists_x0CompactificationModel N ℓ hℓ hℓN R toF hbase hX
   -- the special fibre is not posited: it is the pullback along the closed point
   exact ⟨Limits.pullback xstr (SpecLoc.special toF), XZ, YZ,
     Limits.pullback.snd xstr (SpecLoc.special toF), xstr, ystr, jZ,
-    ⟨{ model := hmodel
-       genX := eGen.toEquiv
-       spX := (fibreIdentPullback (SpecLoc.special toF) xstr).toEquiv
-       genX_nat := eGen.nat
-       spX_nat := (fibreIdentPullback (SpecLoc.special toF) xstr).nat
-       properX := bijective_pre_generic_of_isProper ℓ R toF hbase xstr hmodel.isProper }⟩⟩
+    { model := hmodel
+      genX := eGen.toEquiv
+      spX := (fibreIdentPullback (SpecLoc.special toF) xstr).toEquiv
+      genX_nat := eGen.nat
+      spX_nat := (fibreIdentPullback (SpecLoc.special toF) xstr).nat
+      properX := bijective_pre_generic_of_isProper ℓ R toF hbase xstr hmodel.isProper },
+    ι, hι⟩
 
 /-! ### The Jacobian half: base-independent statements
 
@@ -20083,49 +23690,12 @@ curves over an arbitrary base, and everything specific to this file
 happens in the assembly `exists_x0JacobianModel_of_curveModel`, which
 instantiates them at the generic and the closed point. -/
 
-/-- **Postcomposition of a relative point along an `S`-morphism**
-(PROVEN — the dual of `RelPoint.pre`, which precomposes in the TEST
-scheme; this one postcomposes in the TARGET).
-
-Together with `RelPoint.pre` it is everything needed to say that a
-morphism of abelian schemes is a homomorphism, which is what
-`IsAdditiveOn` below does.  The development had no such notion before
-2026-07-27 — `grep` for `RelPoint.post` and `IsAdditiveOn` returned
-nothing in this project, in mathlib and in `~/cs/FLT`.
-
-The companion of `RelPoint.pre`, and the operation `pre` cannot express:
-`pre` moves the TEST object `T`, this moves the TARGET.  The `169` chain
-far below uses it in two further shapes — the Atkin–Lehner involution
-`w : X ⟶ X` acting on `X(T)`, and the inclusion `A ⟶ J` of an abelian
-subvariety read on points.
-
-INTEGRATION NOTE (2026-07-27): two branches defined this independently on
-the same day, this one at `Scheme.{0}` and one in the `169` chain at
-`Scheme.{u}`; the second was deleted at integration.  Every use site is at
-universe `0` (the `169` chain is all `⟶ SpecQ`), so nothing needed the
-polymorphic form, and no call site names an implicit argument. -/
-def RelPoint.post {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (u : A ⟶ B)
-    (hu : u ≫ bf = af) {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
-    RelPoint bf g :=
-  ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩
-
-/-- **`u : A ⟶ B` is a HOMOMORPHISM of abelian schemes**, read on the
-functor of points: postcomposition by `u` carries sums to sums, at every
-test scheme and every base point.
-
-By Yoneda this is exactly the classical condition that `u` commute with
-the two group laws, and it is stated on points rather than as an
-equation of morphisms `A ×_S A ⟶ B` for the same reason
-`AbelianSchemeStruct` itself is: the group law of an abelian scheme in
-this development is primitively a functor-of-points datum, and
-`addHom` — the morphism-level multiplication — is currently available
-only over the base `SpecQ`. -/
-def IsAdditiveOn {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
-    (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
-    (u : A ⟶ B) (hu : u ≫ bf = af) : Prop :=
-  ∀ {T : Scheme.{0}} {g : T ⟶ S} (x y : RelPoint af g),
-    RelPoint.post u hu (abA.add x y)
-      = abB.add (RelPoint.post u hu x) (RelPoint.post u hu y)
+-- `RelPoint.post` and `IsAdditiveOn` used to stand here.  They were HOISTED
+-- VERBATIM (names, statements and docstrings unchanged) to just above
+-- `IsHeckeIsotypicDecomposition`, ~4000 lines up, on 2026-07-27: that structure
+-- states what it means for the optimal quotients `J₀(N) ↠ A_f` to be
+-- homomorphisms, and Lean's declaration order made them unusable where they
+-- stood.  Every consumer below resolves unchanged.
 
 /-- **RELATIVE RIGIDITY: an `S`-morphism of abelian schemes carrying the
 origin to the origin is a homomorphism** (PROVEN 2026-07-27 over the
@@ -20964,6 +24534,50 @@ and the input has therefore been written down where it belongs, as
 `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`.
 `isAdditiveOn_of_post_zero` is PROVEN over it. -/
 
+/-! #### The Abel–Jacobi map GENERATES the Jacobian — over its own base, for free
+
+The uniqueness half of `IsJacobianOf.universal` already says that an
+`S`-morphism out of `J` is determined by its restriction along `aj`.
+Read that way it is a GENERATION statement — `aj(C)` generates `J` — and
+it costs nothing, because it is literally the `∃!` the structure
+carries.
+
+It is written out below because it is the exact shape the base-change
+leaf needs, and having it in that shape is what makes the two halves of
+that leaf visibly INDEPENDENT: over the base `S` that `IsJacobianOf` is
+stated over, generation is FREE; over `S'` it is not, and that gap is
+one of the two things the base-change leaf still has to buy. -/
+
+/-- **A morphism out of the Jacobian is determined by its restriction
+along Abel–Jacobi** (PROVEN, from the uniqueness half of
+`IsJacobianOf.universal` and nothing else — no rigidity, no coherent
+sheaf, no hypothesis on the curve).
+
+The proof is one line of bookkeeping: `c g x := w₁ ∘ aj g x` is a natural
+family into `ab'` sending the base point to the origin (that is `h0`), so
+`jac.universal` produces a UNIQUE morphism extending it — and `w₁` and
+`w₂` both extend it, `w₁` by definition and `w₂` by `hw`.
+
+**Why it is here.**  This is exactly the uniqueness half of
+`universal_jacobianBaseChangeAj`, but for the base `S` instead of `S'`.
+Comparing the two is the sharpest available description of what that leaf
+is missing: nothing at all over `S`, and over `S'` the base change of the
+epimorphism `C^g ⟶ J`, which no symmetric power in this development can
+express yet. -/
+theorem IsJacobianOf.eq_of_comp_aj {X Y B : Scheme.{0}} {strX : X ⟶ B} {jstr : Y ⟶ B}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 B)}
+    (jac : IsJacobianOf strX ab o) {A : Scheme.{0}} {astr : A ⟶ B}
+    (ab' : AbelianSchemeStruct astr) {w₁ w₂ : Y ⟶ A}
+    (h₁ : w₁ ≫ astr = jstr) (h₂ : w₂ ≫ astr = jstr)
+    (h0 : RelPoint.post w₁ h₁ (jac.aj (𝟙 B) o) = ab'.zero (𝟙 B))
+    (hw : ∀ {T : Scheme.{0}} (g : T ⟶ B) (x : RelPoint strX g),
+      (jac.aj g x).1 ≫ w₁ = (jac.aj g x).1 ≫ w₂) :
+    w₁ = w₂ := by
+  obtain ⟨w, -, huniq⟩ :=
+    jac.universal ab' (fun g x => RelPoint.post w₁ h₁ (jac.aj g x))
+      (by intro T' T h g g' hg x; rw [jac.aj_pre, RelPoint.post_pre]) h0
+  exact (huniq w₁ ⟨h₁, fun g x => rfl⟩).trans (huniq w₂ ⟨h₂, fun g x => hw g x⟩).symm
+
 /-! #### The base change of a Jacobian, as a Jacobian
 
 `J ×_S S'` carries the base-changed group law for free
@@ -21032,45 +24646,100 @@ theorem jacobianBaseChangeAj_base (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
     (eX.toEquiv_base_congr (𝟙 S') rfl (Category.id_comp s) o').symm]
   rw [ho, jac.aj_pre, jac.aj_base, ab.pre_zero]
 
-/-- **FORMATION OF THE JACOBIAN COMMUTES WITH BASE CHANGE, in Albanese
-form: `(J ×_S S', jacobianBaseChangeAj)` is INITIAL among abelian
-schemes under `C'`** (sorry node — FGA exposé 232; BLR *Néron Models*
-8.1/8.4, 9.4).
+/-! #### The base-change statement, split into its two independent halves
 
-TRUE.  This is the honest content of "cohomology and base change" for
-`Pic⁰`: the relative Picard functor is compatible with base change
-because `R¹f_*𝒪` is, and the Albanese property transports with it.
+`(J ×_S S', jacobianBaseChangeAj)` is INITIAL among abelian schemes under
+`C'` — FGA exposé 232; BLR *Néron Models* 8.1/8.4, 9.4.  TRUE: this is
+the honest content of "cohomology and base change" for `Pic⁰`, since the
+relative Picard functor is compatible with base change because `R¹f_*𝒪`
+is, and the Albanese property transports with it.
 
 **This statement is strictly weaker and more canonical than the leaf it
-replaces.**  It does not mention a second Jacobian, an `IsFibreIdent`
-of Jacobians, or an additivity clause; it is a statement about ONE
-smooth proper curve, ONE base change, and the object `J ×_S S'` that is
+replaced.**  It does not mention a second Jacobian, an `IsFibreIdent` of
+Jacobians, or an additivity clause; it is a statement about ONE smooth
+proper curve, ONE base change, and the object `J ×_S S'` that is
 CONSTRUCTED rather than posited.  Everything else that
-`exists_jacobianFibreIdent` used to assert is now derived from it:
+`exists_jacobianFibreIdent` used to assert is derived from it:
 
 * the comparison `u : J' ⟶ J ×_S S'` and its inverse both come from
   initiality, so **`IsIso u` is FREE** — it is uniqueness of an
-  endomorphism of an initial object, not a second geometric input.  The
-  previous audit of `exists_jacobianFibreIdent` listed `IsIso u` as a
-  residual obligation; that was wrong, and this is the correction;
+  endomorphism of an initial object, not a second geometric input.  An
+  earlier audit listed `IsIso u` as a residual obligation of
+  `exists_jacobianFibreIdent`; that was wrong, and this is the
+  correction.  Do not reintroduce it there;
 * additivity of `u` is `isAdditiveOn_of_post_zero` (rigidity), the same
   leaf `exists_relativeJacobian` consumes — this route adds no rigidity
   statement of its own;
 * the additivity of the pullback identification itself is
   `fibreIdentPullback_toEquiv_add`, which is free.
 
-IRREDUCIBLE at this pin ALONG THE COHERENT-SHEAF AXIS, with the same
-refuting check as `exists_relativeJacobian` and the same survey behind
-it: no Picard scheme, no higher direct image, no
-cohomology-and-base-change in this project, in mathlib at our pin, or in
-`~/cs/FLT`.  Note honestly that this leaf and `isAdditiveOn_of_post_zero`
-are NOT independent — both reduce to coherent pushforward — so the
-number of leaves went from one to two while the amount of missing
-mathematics did not change.  What did change is that the ~150 lines of
-glue between them are now written and compiler-checked, and that both
-residual statements are textbook statements reusable outside this
-file. -/
-theorem universal_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+**GATE VERDICT, 2026-07-27 — COHERENT PUSHFORWARD HAS LANDED, AND IT DOES
+NOT CLOSE THIS STATEMENT.**  The previous version of this audit said that
+this leaf and `isAdditiveOn_of_post_zero` "both reduce to coherent
+pushforward".  For the rigidity leaf that was right, and it is now PROVEN
+over `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`.  For
+THIS statement the claim is **necessary but not sufficient**, which is
+the worst shape an audit can have: it points a dispatcher at a subtree
+whose completion would leave the work here exactly as open as before.
+
+* `f_*𝒪_X = 𝒪_S` buys RIGIDITY (Mumford *AV* §4) — that a pointed
+  `S`-morphism of abelian schemes is a homomorphism.  That is real, and
+  it is consumed by the uniqueness half below.
+* It does **not** buy REPRESENTABILITY of the relative Picard functor,
+  and it does not buy compatibility of `Pic⁰` with base change.  Those
+  are Grothendieck FGA 232 / Artin, a strictly larger theory, and they
+  are what the existence half below actually needs.
+
+So `ProperPushforward.lean` is NOT the gate for the existence half.  The
+survey behind that is unchanged and was re-run on 2026-07-27: nothing in
+this development, in mathlib at our pin, or in `~/cs/FLT` represents
+`Pic`, and mathlib has no higher direct images at all.
+
+**THE SPLIT, and why the two halves are genuinely independent.**  The
+`∃!` is assembled below from `exists_comp_jacobianBaseChangeAj`
+(EXISTENCE) and `eq_of_comp_jacobianBaseChangeAj` (UNIQUENESS).  Neither
+implies the other.  Write `jac' : IsJacobianOf f' ab' o'` for an Albanese
+of the fibre — that is what `exists_albaneseOfCurve` supplies, with
+`IsSmoothProperCurve f'` coming from `isSmoothProperCurve_of_fibreIdent`
+— and let `u : J' ⟶ J ×_S S'` be the comparison from initiality of `J'`.
+
+* EXISTENCE applied to `(ab', jac'.aj)` produces `v : J ×_S S' ⟶ J'`
+  with `jac'.aj = ajBC ≫ v`, whence `jac'.aj ≫ (u ≫ v) = jac'.aj` and
+  therefore `u ≫ v = 𝟙` by `IsJacobianOf.eq_of_comp_aj` for `jac'`.  So
+  EXISTENCE alone makes `u` a SPLIT MONO and no more; a retract does not
+  give `v ≫ u = 𝟙`.
+* UNIQUENESS is exactly `v ≫ u = 𝟙`, the other half of `IsIso u`.  Over
+  the base that an `IsJacobianOf` is stated over, the corresponding
+  statement is FREE — it is `IsJacobianOf.eq_of_comp_aj` above.  What is
+  missing over `S'` is the base change of the epimorphism `C^g ⟶ J`.
+  Epimorphy IS stable under base change, so the mathematics is soft; it
+  cannot be transported at this pin only because no symmetric power of a
+  relative curve exists anywhere in this development.
+
+THE CHECKS THAT WOULD REFUTE THESE VERDICTS, and they are different,
+which is the point of splitting: for UNIQUENESS, produce `Sym^g` of a
+relative curve — or any other witness that `aj(C')` generates
+`J ×_S S'` — and combine it with the rigidity that has already landed;
+for EXISTENCE, represent the rigidified relative Picard functor. -/
+
+/-- **THE COMPARISON MORPHISM EXISTS** (sorry node — FGA exposé 232; BLR
+*Néron Models* 8.1, 9.4): every abelian scheme under `C'` receives an
+`S'`-morphism from `J ×_S S'` compatible with Abel–Jacobi.
+
+This is the EXISTENCE half of `universal_jacobianBaseChangeAj`.  See the
+block docstring above for the gate verdict on coherent pushforward — it
+is **not** the gate for this half — and for why this half is independent
+of the uniqueness half.
+
+**The classical proof.**  `Pic⁰_{C/S}` represents the relative Picard
+functor rigidified along `o`, and the formation of that FUNCTOR commutes
+with base change BY INSPECTION: its value at `T ⟶ S` depends on `T` only
+through `C ×_S T`, and `C ×_S T = C' ×_{S'} T` whenever `T ⟶ S` factors
+through `S'`.  Initiality identifies `J` with `Pic⁰_{C/S}`, so
+`J ×_S S'` represents the corresponding functor for `C'/S'` and `d` is
+classified by it.  Every step of that is representability; none of it is
+`f_*𝒪_X = 𝒪_S`. -/
+theorem exists_comp_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
     (jac : IsJacobianOf f ab o) (_hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
     {o' : RelPoint f' (𝟙 S')}
@@ -21082,10 +24751,94 @@ theorem universal_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶
       (hg : h ≫ g = g') (x : RelPoint f' g),
       d g' (RelPoint.pre h hg x) = RelPoint.pre h hg (d g x))
     (_hd0 : d (𝟙 S') o' = ab₂.zero (𝟙 S')) :
-    ∃! w : Limits.pullback jf s ⟶ A, w ≫ astr = Limits.pullback.snd jf s ∧
+    ∃ w : Limits.pullback jf s ⟶ A, w ≫ astr = Limits.pullback.snd jf s ∧
       ∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
         (d g x).1 = (jacobianBaseChangeAj s jac eX g x).1 ≫ w :=
   sorry
+
+/-- **THE COMPARISON MORPHISM IS UNIQUE** (sorry node — Mumford *AV* §4
+Cor. 1, plus generation of the Jacobian by the curve): two `S'`-morphisms
+out of `J ×_S S'` that carry the origin to the origin and agree on every
+Abel–Jacobi point are equal.
+
+This is the UNIQUENESS half of `universal_jacobianBaseChangeAj`, and read
+correctly it is a GENERATION statement: `aj(C')` generates `J ×_S S'`.
+
+**What of the classical proof has already landed.**  `hz₁` and `hz₂` say
+each `wᵢ` is pointed, so `isAdditiveOn_of_post_zero` — PROVEN, over the
+coherent-pushforward shim — makes each of them a HOMOMORPHISM of abelian
+schemes.  Their difference is then a homomorphism killing `aj(C')`, and
+it vanishes because `C'` generates.  **So rigidity is no longer the
+obstruction to this half; generation is**, and generation over the base
+an `IsJacobianOf` is stated over is free (`IsJacobianOf.eq_of_comp_aj`).
+
+**`hz₁` and `hz₂` are not decoration.**  Without them the statement is
+FALSE as soon as the genus is `≥ 2`: two `S'`-morphisms out of `J ×_S S'`
+that are not pointed may agree on the curve `aj(C')` — a divisor, not the
+whole abelian scheme — and differ elsewhere.  It is precisely rigidity,
+i.e. being pointed, that upgrades "agree on `aj(C')`" to "agree". -/
+theorem eq_of_comp_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (_hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
+    {o' : RelPoint f' (𝟙 S')}
+    (_ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+      = RelPoint.pre s (Category.comp_id s) o)
+    {A : Scheme.{0}} {astr : A ⟶ S'} (ab₂ : AbelianSchemeStruct astr)
+    {w₁ w₂ : Limits.pullback jf s ⟶ A}
+    (h₁ : w₁ ≫ astr = Limits.pullback.snd jf s)
+    (h₂ : w₂ ≫ astr = Limits.pullback.snd jf s)
+    (_hz₁ : RelPoint.post w₁ h₁ ((ab.baseChange s).zero (𝟙 S')) = ab₂.zero (𝟙 S'))
+    (_hz₂ : RelPoint.post w₂ h₂ ((ab.baseChange s).zero (𝟙 S')) = ab₂.zero (𝟙 S'))
+    (_hw : ∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
+      (jacobianBaseChangeAj s jac eX g x).1 ≫ w₁
+        = (jacobianBaseChangeAj s jac eX g x).1 ≫ w₂) :
+    w₁ = w₂ :=
+  sorry
+
+/-- **FORMATION OF THE JACOBIAN COMMUTES WITH BASE CHANGE, in Albanese
+form: `(J ×_S S', jacobianBaseChangeAj)` is INITIAL among abelian schemes
+under `C'`** (PROVEN 2026-07-27, as the conjunction of the two halves
+above — see the block docstring for the provenance of the statement, the
+gate verdict on coherent pushforward, and the proof that the halves are
+independent).
+
+The assembly is `∃!` bookkeeping, with one step that is not.  The
+uniqueness half needs each candidate to be POINTED, and that is not
+hypothesized here — it is DERIVED: a `w` compatible with `d` carries the
+origin of `J ×_S S'` to `d (𝟙 S') o'`, which is the origin of `A`.  That
+is exactly what `jacobianBaseChangeAj_base` and `hd0` say between them,
+and it is the second place — after `jacobianBaseChangeAj_base` itself —
+where the hypothesis `ho` that the base points correspond is doing real
+work rather than decorating the statement. -/
+theorem universal_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
+    {o' : RelPoint f' (𝟙 S')}
+    (ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+      = RelPoint.pre s (Category.comp_id s) o)
+    {A : Scheme.{0}} {astr : A ⟶ S'} (ab₂ : AbelianSchemeStruct astr)
+    (d : ∀ {T : Scheme.{0}} (g : T ⟶ S'), RelPoint f' g → RelPoint astr g)
+    (hd : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S'} {g' : T' ⟶ S'}
+      (hg : h ≫ g = g') (x : RelPoint f' g),
+      d g' (RelPoint.pre h hg x) = RelPoint.pre h hg (d g x))
+    (hd0 : d (𝟙 S') o' = ab₂.zero (𝟙 S')) :
+    ∃! w : Limits.pullback jf s ⟶ A, w ≫ astr = Limits.pullback.snd jf s ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
+        (d g x).1 = (jacobianBaseChangeAj s jac eX g x).1 ≫ w := by
+  obtain ⟨w, hwa, hwd⟩ := exists_comp_jacobianBaseChangeAj s jac hf eX ho ab₂ d hd hd0
+  -- POINTEDNESS, derived from `hd0`: a `w` compatible with `d` fixes the origin
+  have hzero : ∀ {v : Limits.pullback jf s ⟶ A} (hv : v ≫ astr = Limits.pullback.snd jf s),
+      (∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
+        (d g x).1 = (jacobianBaseChangeAj s jac eX g x).1 ≫ v) →
+      RelPoint.post v hv ((ab.baseChange s).zero (𝟙 S')) = ab₂.zero (𝟙 S') := by
+    intro v hv hvd
+    refine Subtype.ext ?_
+    show ((ab.baseChange s).zero (𝟙 S')).1 ≫ v = (ab₂.zero (𝟙 S')).1
+    rw [← jacobianBaseChangeAj_base s jac eX ho, ← hvd (𝟙 S') o', hd0]
+  refine ⟨w, ⟨hwa, fun g x => hwd g x⟩, ?_⟩
+  rintro w' ⟨hw'a, hw'd⟩
+  exact eq_of_comp_jacobianBaseChangeAj s jac hf eX ho ab₂ hw'a hwa
+    (hzero hw'a hw'd) (hzero hwa hwd) (fun g x => by rw [← hw'd g x, hwd g x])
 
 /-- **The base change of the Jacobian IS a Jacobian of the base-changed
 curve** (PROVEN, over `universal_jacobianBaseChangeAj`).
@@ -21411,7 +25164,7 @@ theorem exists_x0NeronDatum_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (_hℓ2 : �
       (jacZ : IsJacobianOf xstr abZ oZ),
       Nonempty (IsX0NeronDatum N ℓ R toF jac jac'
         (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) := by
-  obtain ⟨X', XZ, YZ, strX', xstr, ystr, jZ, ⟨cm⟩⟩ :=
+  obtain ⟨X', XZ, YZ, strX', xstr, ystr, jZ, cm, -⟩ :=
     exists_x0CurveModel_of_base N ℓ hℓ hℓN R toF hbase hX
   obtain ⟨J', JZ, jstr', ab', o', jac', jstrZ, abZ, oZ, jacZ, ⟨jm⟩⟩ :=
     exists_x0JacobianModel_of_curveModel N ℓ hℓ hℓN R toF hbase cm jac
@@ -21701,8 +25454,10 @@ degree-`1` map to `ℙ¹`.  `d.model` pins the curve as `X_0(N)`, and
 ORIGINAL eleven Kenku levels (this list PREDATES the addition of `35`
 and `39` on 2026-07-27 and has not been re-tabulated for them; both have
 genus `3`), in the order they then had in `kenkuLevels`, are
-`1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`, and the four sieve levels have genus
-`3, 4, 5, 5` (Magma, 2026-07-27).  Positivity is preserved by good
+`1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`, and the sieve levels have genus
+`2, 3, 4, 5, 5` at `26, 45, 54, 63, 75` (Magma, 2026-07-27; `26` was
+added to both lists later that day and is the only sieve level of genus
+`2`).  Positivity is preserved by good
 reduction, so it holds on the special fibre.
 
 This is the same condition that `IsJacobianOf` deliberately does NOT
@@ -21771,10 +25526,54 @@ classes `Set.range (jac'.aj)` of the `ℓ + 1 − Tr T_ℓ` points of
 The second conjunct, `numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)`, is what lets
 the consumer inflate a possibly-smaller survivor set to a `Finset` of
 size exactly `numRationalCusps N`, which is the shape `IsSharpSieve`
-asks for.  It is true with room to spare — the four counts are
-`8, 6, 8, 8` against `numRationalCusps N = 4` — and it must be stated
-here rather than separately, because it has to hold at the SAME `ℓ` the
-existential produces.
+asks for.  It is true with room to spare — the five counts are
+`10, 8, 6, 8, 8` against `numRationalCusps N = 4` — and it must be
+stated here rather than separately, because it has to hold at the SAME
+`ℓ` the existential produces.
+
+## `N = 26`, ADDED 2026-07-27 — the one level where the SURVIVORS were
+## computed rather than inferred, and where a recommended prime FAILED
+
+The four original levels bank a witness `ℓ` and a refutation test that
+the witness passes.  At `26` the test does not merely come close to
+firing: **it fires, at the prime the level's own audit recommended.**
+`J_0(26)(ℚ) ≅ ℤ/21` (Magma: `RankBound = 0`, `TorsionSubgroup ≅ ℤ/21`
+on `y² = x⁶ − 8x⁵ + 8x⁴ − 18x³ + 8x² − 8x + 1`), and
+
+    #J_0(26)(𝔽_3) = (3 + 1 − a_3(f₁))(3 + 1 − a_3(f₂)) = 7 · 3 = 21,
+
+so at `ℓ = 3` reduction is injective out of a group of the SAME order,
+hence surjective, hence EVERY point of `X_0(26)(𝔽_3)` survives — all
+`6` of them, against `numRationalCusps 26 = 4`.  `ℓ = 3` is therefore
+impossible, not unlucky, exactly as the refutation test under
+`exists_x0Sieve` predicts.  Any note recommending that the sieve at `26`
+"cut the `6` points of `X_0(26)(𝔽_3)` down to the `4` cusps" is
+describing something that cannot happen.
+
+The witness is `ℓ = 5`, and the survivor count was computed directly
+(Magma: reduce the generator of `J_0(26)(ℚ)`, enumerate the `21`-element
+image subgroup, and test `[Q − Q₀] ∈ image` for each `Q ∈ X_0(26)(𝔽_ℓ)`
+with `Q₀` a rational cusp):
+
+| `ℓ` | `#X_0(26)(𝔽_ℓ)` | `#J_0(26)(𝔽_ℓ)` | image order | survivors |
+|-----|------------------|------------------|-------------|-----------|
+| `3`  | `6`  | `21`   | `21` | `6` — REFUTED |
+| `5`  | `10` | `63`   | `21` | `4` |
+| `7`  | `8`  | `63`   | `21` | `4` |
+| `11` | `8`  | `84`   | `21` | `4` |
+| `17` | `24` | `441`  | `21` | `4` |
+| `19` | `12` | `252`  | `21` | `4` |
+
+and the same `4` at every odd good `ℓ ≤ 71` tested — `23, 29, 31, 37,
+41, 43, 47, 53, 59, 61, 67, 71` — so `26` has not one witness prime but
+every prime except the single refuted one.  The `#X_0(26)(𝔽_ℓ)` column
+reproduces the Eichler–Shimura table under `x0SieveLevels`
+independently, from the curve rather than from the trace form.
+
+Both conjuncts therefore hold at `ℓ = 5`: survivors `4 ≤
+numRationalCusps 26 = 4`, and `numRationalCusps 26 = 4 ≤ 10`.  Note the
+first is EQUALITY — the four rational cusps must survive, so no witness
+prime can ever do better than `4`, at `26` or anywhere else.
 
 **Why one prime, and why the prime is existentially quantified**: see
 the subsection docstring and the FORMAL-CONTENT AUDIT under
@@ -22309,15 +26108,17 @@ the three that remain in this subsection are strictly smaller:
   part is `Y_0(N)/𝔽_q` with finite cusp locus.  **PROVEN as of
   2026-07-27**: its last clause, `exists_unique_specialFibre_universal`,
   now runs on `exists_gamma0AtlasData_pullbackSpecial`, the one
-  Deligne–Rapoport leaf of this file's special-fibre story, which is also
+  Deligne-Rapoport leaf of this file's special-fibre story, which is also
   what `nonempty_isCoarseModuliY0_pullbackSpecial` runs on — the two rival
   cuts of this node have been merged into that single leaf;
-* `exists_genericOpenIso_of_curveModel` and
-  `exists_x0IntegralJ_of_curveModel` — the generic fibre of the open
-  part, and Igusa's integrality of `j` on the model.  These two were one
-  leaf (`exists_x0JGenericOpen_of_curveModel`, now PROVEN over them)
-  until 2026-07-27; the split is along the geometric/modular line and
-  neither mentions the other's data.
+* `exists_x0IntegralJ_of_curveModel` — Igusa's integrality of `j` on the
+  model.  This and the generic fibre of the open part were one leaf
+  (`exists_x0JGenericOpen_of_curveModel`, now PROVEN) until 2026-07-27;
+  the geometric half of that split, `exists_genericOpenIso_of_curveModel`,
+  turned out to be FALSE AS STATED and was deleted the same day — the
+  comparison it asked for is now a HYPOTHESIS, supplied by
+  `exists_x0CurveModel_of_base`, which is the theorem that chooses the
+  model.  See the sub-subsection *Yoneda on the GENERIC side*.
 
 What made that possible was closing the YONEDA axis, which the old
 verdict on `exists_x0JOpenModel_of_curveModel` itself named as the
@@ -23107,223 +26908,6 @@ def IsX0JOpenModel.toJNeronDatum
   jmSp_pre := om.jmSp_pre
   jm_gen := om.jm_gen
 
-/-! #### Yoneda in the slice category: a fibre identification IS the pullback
-
-`IsX0CurveModel` pins the special fibre `X'` only through a natural
-equivalence of functors of points — `spX` together with `spX_nat` — so a
-consumer that needs an actual MORPHISM out of, or into, `X'` cannot read
-one off the structure directly.  Recovering one is Yoneda in `Over S'`,
-and it is PROVEN here from those two fields alone.
-
-The argument is the usual one, written out rather than invoked through
-the `Over`-category API so that no transport is needed at the use sites:
-a natural transformation of representable functors is composition with
-the image of the IDENTITY (`IsFibreIdent.apply_eq_comp`), and the two
-comparison morphisms built from that image are mutually inverse
-(`IsFibreIdent.compareIso`).  Only `nat` is ever used; `apply_eq_comp` is
-the single place it enters.
-
-This is what
-`exists_x0JOpenModel_of_curveModel`'s previous docstring named as the
-CHEAPER of the two attacks on it, and what
-`isSmoothProperCurve_of_fibreIdent`'s docstring names as the whole of its
-residue ("the passage from a natural equivalence of `RelPoint`-functors
-to an isomorphism of schemes over `S'`").
-
-**Possible duplication, and it is deliberate rather than overlooked.**
-`isSmoothProperCurve_of_fibreIdent` is owned concurrently and asks for
-the same transport in the `Arrow.mk f' ≅ Arrow.mk (pullback.snd f s)`
-form.  If both land, keep one — this one is a plain `Iso` of schemes plus
-the two identities that pin it over the base, which is the shape every
-consumer here wants. -/
-
-namespace IsFibreIdent
-
-variable {S S' A A' : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S} {f' : A' ⟶ S'}
-  (e : IsFibreIdent s f f')
-
-/-- **The universal relative point**: the identity of `A'`, read through
-the identification.  Yoneda's lemma, in one line. -/
-noncomputable def universalPoint : RelPoint f (f' ≫ s) :=
-  e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩
-
-/-- **Every value of a fibre identification is composition with the
-universal point** (PROVEN).
-
-This is Yoneda for the two representable functors involved, and it is the
-ONLY place `nat` is consumed: everything below is a corollary of it
-together with the universal property of the pullback. -/
-theorem apply_eq_comp {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
-    (x : RelPoint f' g) : (e.toEquiv g g₀ h x).1 = x.1 ≫ e.universalPoint.1 := by
-  have hx : RelPoint.pre x.1 x.2 (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f') = x :=
-    Subtype.ext (Category.comp_id _)
-  have hnat := e.nat x.1 x.2 (rfl : f' ≫ s = f' ≫ s) h
-    (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f')
-  rw [hx] at hnat
-  exact congrArg Subtype.val hnat
-
-/-- The comparison morphism `A' ⟶ A ×_S S'`, built from the universal
-point and `f'` by the universal property of the pullback. -/
-noncomputable def compareHom : A' ⟶ Limits.pullback f s :=
-  Limits.pullback.lift e.universalPoint.1 f' e.universalPoint.2
-
-theorem compareHom_fst : e.compareHom ≫ Limits.pullback.fst f s = e.universalPoint.1 :=
-  Limits.pullback.lift_fst _ _ _
-
-theorem compareHom_snd : e.compareHom ≫ Limits.pullback.snd f s = f' :=
-  Limits.pullback.lift_snd _ _ _
-
-/-- The inverse comparison, as a relative point of `A'`: the identification
-run backwards on the tautological point of the pullback. -/
-noncomputable def compareInvPt : RelPoint f' (Limits.pullback.snd f s) :=
-  (e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl).symm
-    ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩
-
-/-- The comparison morphism `A ×_S S' ⟶ A'`. -/
-noncomputable def compareInv : Limits.pullback f s ⟶ A' := e.compareInvPt.1
-
-theorem compareInv_comp : e.compareInv ≫ f' = Limits.pullback.snd f s := e.compareInvPt.2
-
-theorem compareInv_universalPoint :
-    e.compareInv ≫ e.universalPoint.1 = Limits.pullback.fst f s := by
-  have h := e.apply_eq_comp (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl
-    e.compareInvPt
-  rw [show e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl e.compareInvPt
-      = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ from
-    Equiv.apply_symm_apply _ _] at h
-  exact h.symm
-
-theorem compareInv_compareHom : e.compareInv ≫ e.compareHom = 𝟙 (Limits.pullback f s) := by
-  apply Limits.pullback.hom_ext
-  · rw [Category.assoc, e.compareHom_fst, e.compareInv_universalPoint, Category.id_comp]
-  · rw [Category.assoc, e.compareHom_snd, e.compareInv_comp, Category.id_comp]
-
-theorem compareHom_compareInv : e.compareHom ≫ e.compareInv = 𝟙 A' := by
-  have hcomp : (e.compareHom ≫ e.compareInv) ≫ f' = f' := by
-    rw [Category.assoc, e.compareInv_comp, e.compareHom_snd]
-  have key := e.nat e.compareHom e.compareHom_snd
-    (rfl : Limits.pullback.snd f s ≫ s = Limits.pullback.snd f s ≫ s) (rfl : f' ≫ s = f' ≫ s)
-    e.compareInvPt
-  rw [show e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl e.compareInvPt
-      = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ from
-    Equiv.apply_symm_apply _ _] at key
-  have h1 : (⟨e.compareHom ≫ e.compareInv, hcomp⟩ : RelPoint f' f')
-      = RelPoint.pre e.compareHom e.compareHom_snd e.compareInvPt := rfl
-  have h2 : e.toEquiv f' (f' ≫ s) rfl ⟨e.compareHom ≫ e.compareInv, hcomp⟩
-      = e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩ := by
-    rw [h1, key]
-    exact Subtype.ext e.compareHom_fst
-  exact congrArg Subtype.val ((e.toEquiv f' (f' ≫ s) rfl).injective h2)
-
-/-- **Yoneda in the slice category** (PROVEN): a fibre identification of
-functors of points IS an isomorphism onto the pullback, over `S'`. -/
-noncomputable def compareIso : A' ≅ Limits.pullback f s where
-  hom := e.compareHom
-  inv := e.compareInv
-  hom_inv_id := e.compareHom_compareInv
-  inv_hom_id := e.compareInv_compareHom
-
-end IsFibreIdent
-
-/-- **The base change of an open immersion of models to a fibre**
-(PROVEN).
-
-`𝒴 ⊆ 𝒳` over `S` gives `𝒴 ×_S S' ⊆ 𝒳 ×_S S'`; the morphism is written as
-an explicit `Limits.pullback.lift` so that its two projections are
-definitional, and identified with `Limits.pullback.map` only where the
-open-immersion instance is needed. -/
-noncomputable def fibreBaseChangeMap {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    Limits.pullback fY s ⟶ Limits.pullback f s :=
-  Limits.pullback.lift (Limits.pullback.fst fY s ≫ jZ) (Limits.pullback.snd fY s)
-    (by rw [Category.assoc, hjZ]; exact Limits.pullback.condition)
-
-theorem fibreBaseChangeMap_fst {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    fibreBaseChangeMap hjZ s ≫ Limits.pullback.fst f s
-      = Limits.pullback.fst fY s ≫ jZ :=
-  Limits.pullback.lift_fst _ _ _
-
-theorem fibreBaseChangeMap_snd {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    fibreBaseChangeMap hjZ s ≫ Limits.pullback.snd f s = Limits.pullback.snd fY s :=
-  Limits.pullback.lift_snd _ _ _
-
-theorem isOpenImmersion_fibreBaseChangeMap {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} [IsOpenImmersion jZ] (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    IsOpenImmersion (fibreBaseChangeMap hjZ s) := by
-  have hmap : fibreBaseChangeMap hjZ s
-      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
-          (by rw [Category.comp_id, hjZ]) (by simp) := by
-    apply Limits.pullback.hom_ext
-    · rw [fibreBaseChangeMap_fst]
-      exact (Limits.pullback.lift_fst _ _ _).symm
-    · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
-            (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
-            = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
-        Category.comp_id]
-  rw [hmap]
-  infer_instance
-
-namespace IsFibreIdent
-
-variable {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S} {f' : A' ⟶ S'} {fY : B ⟶ S}
-  {jZ : B ⟶ A} (e : IsFibreIdent s f f') (hjZ : jZ ≫ f = fY)
-
-/-- **The inclusion of the open part into the fibre `A'`, reconstructed
-from the identification** (PROVEN).
-
-`A'` is pinned only as a functor, so this cannot be written down directly;
-it is `e.toEquiv` run BACKWARDS on the tautological open point of
-`B ×_S S'`.  Everything the consumers need about it —
-`openSection_comp`, `apply_openSection`, `isOpenImmersion_openSection` —
-follows from `apply_eq_comp` and the pullback's universal property. -/
-noncomputable def openSection : Limits.pullback fY s ⟶ A' :=
-  ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
-    ⟨Limits.pullback.fst fY s ≫ jZ, by
-      rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩).1
-
-theorem openSection_comp : openSection e hjZ ≫ f' = Limits.pullback.snd fY s :=
-  ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
-    ⟨Limits.pullback.fst fY s ≫ jZ, by
-      rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩).2
-
-theorem openSection_universalPoint :
-    openSection e hjZ ≫ e.universalPoint.1 = Limits.pullback.fst fY s ≫ jZ := by
-  have h := e.apply_eq_comp (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl
-    ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
-      ⟨Limits.pullback.fst fY s ≫ jZ, by
-        rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩)
-  rw [Equiv.apply_symm_apply] at h
-  exact h.symm
-
-/-- **The identification carries the open immersion** (PROVEN) — this is
-`spX_j`, in the generality in which it is true. -/
-theorem apply_openSection {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
-    (y : RelPoint (Limits.pullback.snd fY s) g) :
-    (e.toEquiv g g₀ h ⟨y.1 ≫ openSection e hjZ, by
-        rw [Category.assoc, openSection_comp e hjZ, y.2]⟩).1
-      = (y.1 ≫ Limits.pullback.fst fY s) ≫ jZ := by
-  rw [e.apply_eq_comp, Category.assoc, openSection_universalPoint e hjZ, Category.assoc]
-
-/-- **The reconstructed inclusion is an open immersion** (PROVEN): it is
-the base change of `jZ` composed with `compareIso.inv`. -/
-theorem isOpenImmersion_openSection [IsOpenImmersion jZ] :
-    IsOpenImmersion (openSection e hjZ) := by
-  have hfac : openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
-    apply Limits.pullback.hom_ext
-    · rw [Category.assoc, e.compareHom_fst, openSection_universalPoint e hjZ,
-        fibreBaseChangeMap_fst]
-    · rw [Category.assoc, e.compareHom_snd, openSection_comp e hjZ, fibreBaseChangeMap_snd]
-  have h : openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
-    rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
-  haveI := isOpenImmersion_fibreBaseChangeMap (f := f) hjZ s
-  haveI : IsIso e.compareInv := e.compareIso.isIso_inv
-  rw [h]
-  infer_instance
-
-end IsFibreIdent
-
 /-! #### The two residues of the open-and-`j` half
 
 With the Yoneda reconstruction above, the first bullet of the old
@@ -23351,12 +26935,15 @@ along the modular/formal line rather than along the generic/special one:
   and `j` is a regular function on `𝒴` valued in `ℤ_(q)` on integral
   sections.  This was ONE leaf,
   `exists_x0JGenericOpen_of_curveModel`, until 2026-07-27, and is now
-  PROVEN over two: `exists_genericOpenIso_of_curveModel` (geometric — the
-  given `Y` and the model's generic open fibre are the same open
-  subscheme of `X`, reduced by Yoneda to a single isomorphism filling a
-  single triangle) and `exists_x0IntegralJ_of_curveModel` (modular —
-  Igusa's good-reduction statement for the `j`-line).  See the
-  sub-subsection *Yoneda on the GENERIC side* below.
+  PROVEN over the single modular leaf `exists_x0IntegralJ_of_curveModel`
+  (Igusa's good-reduction statement for the `j`-line).  The geometric
+  half — that the given `Y` and the model's generic open fibre are the
+  same open subscheme of `X` — briefly had its own leaf,
+  `exists_genericOpenIso_of_curveModel`, which was FALSE AS STATED and
+  was deleted: it is not derivable from `hX` and `cm` quantified
+  independently, and it now travels with `cm` out of
+  `exists_x0CurveModel_of_base` instead.  See the sub-subsection *Yoneda
+  on the GENERIC side* below.
 
 Note what is NOT assumed, exactly as before the cut: `q` is not required
 to be odd.  Mazur needs `q ≠ 2` for the FORMAL IMMERSION, which is a
@@ -23450,39 +27037,6 @@ obligations:
   `RelPoint.baseChangeUp` map `IsX0CurveModel.specialClassify` used here —
   the two were cut by two agents thirty-six seconds apart and were the same
   map all along. -/
-
-/-- **`openSection` is the base change of `jZ` followed by the comparison
-isomorphism** (PROVEN).
-
-Already established inside the proof of `isOpenImmersion_openSection`;
-exported here because the cusp-locus count needs the factorisation itself,
-not merely the open-immersion consequence. -/
-theorem IsFibreIdent.openSection_eq {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S}
-    {f' : A' ⟶ S'} {fY : B ⟶ S} {jZ : B ⟶ A} (e : IsFibreIdent s f f')
-    (hjZ : jZ ≫ f = fY) :
-    IsFibreIdent.openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
-  have hfac : IsFibreIdent.openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
-    apply Limits.pullback.hom_ext
-    · rw [Category.assoc, e.compareHom_fst, IsFibreIdent.openSection_universalPoint e hjZ,
-        fibreBaseChangeMap_fst]
-    · rw [Category.assoc, e.compareHom_snd, IsFibreIdent.openSection_comp e hjZ,
-        fibreBaseChangeMap_snd]
-  rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
-
-/-- **`fibreBaseChangeMap` is `Limits.pullback.map`** (PROVEN) — the form in
-which mathlib's `Scheme.Pullback.range_map` computes its range. -/
-theorem fibreBaseChangeMap_eq_map {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    fibreBaseChangeMap hjZ s
-      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
-          (by rw [Category.comp_id, hjZ]) (by simp) := by
-  apply Limits.pullback.hom_ext
-  · rw [fibreBaseChangeMap_fst]
-    exact (Limits.pullback.lift_fst _ _ _).symm
-  · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
-          (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
-          = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
-      Category.comp_id]
 
 /-- **The classifying map of the special fibre** (PROVEN) — the universal
 property of the pullback, not moduli theory.
@@ -24116,8 +27670,8 @@ That comparison is a single morphism plus a single triangle, and the
 three functorial fields it was previously carried by — `genY`,
 `genY_nat`, `genX_j` — are Yoneda-equivalent to it.  Turning them into
 theorems over it is the same trade the special side already got, and it
-is what makes `exists_genericOpenIso_of_curveModel` below strictly
-smaller than the `∀`-families it replaces:
+is what reduces the whole geometric side of this subsection to the pair
+`(ι, hι)` below, strictly smaller than the `∀`-families it replaces:
 
 * `genY` and `genY_nat` become `IsFibreIdent.ofIso` applied to
   `fibreIdentPullback` — the model's generic open fibre IS a pullback, so
@@ -24131,7 +27685,64 @@ The comparison is moreover UNIQUE (`genericOpenIso_unique`), because
 `IsFibreIdent.openSection` is an open immersion and hence a mono.  That
 matters beyond tidiness: it is what makes the `gi` argument of
 `IsX0IntegralJ` below a *pinned* datum rather than an arbitrary
-identification, so `jm_gen` cannot be satisfied by relabelling. -/
+identification, so `jm_gen` cannot be satisfied by relabelling.
+
+## WHERE THE COMPARISON COMES FROM (settled 2026-07-27) — it is a
+HYPOTHESIS here, not a leaf
+
+An earlier version of this subsection carried the comparison as a leaf,
+`exists_genericOpenIso_of_curveModel`, stated over `hX` and `cm`
+quantified INDEPENDENTLY.  **That leaf was FALSE AS STATED and has been
+deleted.**  The refutation, compiler-checked on 2026-07-27, is worth
+keeping because it is the sharpest available illustration of a trap this
+file falls into repeatedly:
+
+`IsCompactificationY0 strY strX` is stable under replacing `hX.j` by
+`hX.j ≫ α.hom` for any `ℚ`-automorphism `α : X ≅ X` — `over` is
+`Category.assoc`, and `IsOpenImmersion` / `IsDominant` survive
+composition with an iso.  `hc`, `strY`, `strX` and `cm` are all
+UNCHANGED by that twist, since `IsX0CurveModel` mentions neither `Y`, nor
+`strY`, nor `hX`; but the conclusion is not, because
+`IsFibreIdent.openSection cm.genIdent cm.model.comm` is fixed.  Applying
+the leaf to `hX` and to its twist and composing the two witnesses gives
+`β` with
+
+    β.hom ≫ openSection = openSection ≫ α.hom,
+
+i.e. every `ℚ`-automorphism of `X` would have to preserve the model's
+generic open fibre.  That fails already at `N = 1`, admitted by
+`N ≠ 0`: there `X = ℙ¹_ℚ`, the model is `𝔸¹ ⊆ ℙ¹` over `ℤ_(q)`, and
+`α : z ↦ 1/z` sends `𝔸¹_ℚ` to `ℙ¹ ∖ {0}`.  More generally it fails at
+every genus-`0` level, where `Aut_ℚ(X_0(N))` is infinite and cannot
+preserve a finite cusp locus.  The coarse-moduli hypothesis does not save
+it: the older counterexample recorded for `hc` shrinks `Y`, whereas this
+one moves only the EMBEDDING and never mentions `hc`.
+
+**The repair, carried out the same day, was three declarations upstream.**
+`exists_x0CurveModel_of_base` was handed `hX : IsX0Compactification N
+strX strY j` and returned a model whose conclusion mentioned `strX` but
+not `j`, discarding the comparison that
+`exists_iso_of_isX0Compactification` produces inside its own proof; and
+`exists_genericFibreOpen_of_x0IntegralModel` posited an ARBITRARY
+`(Y₀, j₀)` instead of the model's own generic open part.  Both are now
+pinned, `exists_iso_of_isX0Compactification` returns its
+`j ≫ E.hom = e.hom ≫ j₀` compatibility, and
+`exists_x0CurveModel_of_base` carries
+
+    ι : Y ≅ 𝒴 ×_{ℤ_(q)} ℚ   with   ι.hom ≫ openSection cm.genIdent cm.model.comm = j
+
+beside `cm`.  So `(ι, hι)` are HYPOTHESES of the two consumers below, and
+`exists_x0JNeronDatum` — which constructs its own `cm` — discharges them
+with no new leaf.  Everything PROVEN in this subsection is a statement
+ABOUT a given `(ι, hι)` and was untouched by the refutation: it is
+exactly the machinery the repair consumes.
+
+**The reusable moral.**  Where a conclusion asserts a RELATION between
+two pieces of data, that relation must be produced by whatever CHOOSES
+one of them.  A leaf that receives both as independent universally
+quantified inputs and is asked to relate them is not hard — it is false,
+and no hypothesis expressible in its own parameters can rescue it, since
+any hypothesis strong enough to pin them IS the conclusion. -/
 
 /-- **An isomorphism over the base induces an equivalence of relative
 points** (PROVEN).
@@ -24212,11 +27823,11 @@ noncomputable def IsX0CurveModel.genericOpen {N q : ℕ} {R : Subring ℚ} {toF 
 hence a monomorphism, so `ι.hom` is determined by the triangle it is
 asked to fill.
 
-This is why `exists_genericOpenIso_of_curveModel` may be stated
+This is why `exists_x0CurveModel_of_base` may return `(ι, hι)`
 existentially without loss: the `IsFibreIdent` that `IsX0IntegralJ` is
-stated over does not depend on which witness the leaf returns, so the
-`j`-leaf below is a statement about the genuine generic fibre and not
-about an arbitrary relabelling of it. -/
+stated over does not depend on which witness it returns, so the `j`-leaf
+below is a statement about the genuine generic fibre and not about an
+arbitrary relabelling of it. -/
 theorem IsX0CurveModel.genericOpenIso_unique {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
     {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
@@ -24261,74 +27872,6 @@ theorem IsX0CurveModel.genX_genericOpen {N q : ℕ} {R : Subring ℚ} {toF : R �
   simp only [Category.assoc]
   rw [IsFibreIdent.openSection_universalPoint]
 
-/-- **The generic fibre of the open part of the curve model is `Y`, as an
-open subscheme of `X`** (sorry node — good reduction of the
-`Γ₀(N)`-problem, generic side).
-
-TRUE for `q ∤ N`.  This is the FIRST of the two statements the old
-`exists_x0JGenericOpen_of_curveModel` bundled, reduced by Yoneda from a
-`∀`-family of equivalences with a naturality axiom and a compatibility
-axiom to ONE isomorphism filling ONE triangle:
-
-    Y ---ι---> 𝒴 ×_{ℤ_(q)} ℚ ---openSection---> X          equals   hX.j
-
-`openSection` here is the reconstructed inclusion of the model's generic
-open fibre into `X = 𝒳 ×_{ℤ_(q)} ℚ`, which is PROVEN
-(`IsFibreIdent.openSection`, an open immersion by
-`isOpenImmersion_openSection`).  So the leaf says precisely: *the two
-open subschemes of `X` — the given `Y`, and the generic fibre of the
-model's open part — coincide.*
-
-**Why this is not formal.**  `cm` identifies the generic fibre of the
-PROPER model with `X`, and nothing in `IsX0CurveModel` forces the model's
-open part to restrict to the given `Y ⊆ X` rather than to some other
-dense open.  It is true because both are the complement of the cusp
-locus, which is a statement about the model; and the reason `Y` is
-determined at all is `_hc`, the coarse-moduli property.
-
-**`_hc` IS LOAD-BEARING and the statement is FALSE without it.**  Drop
-`_hc` and take `Y` to be `X` minus the cusps minus one further rational
-point: `hX` still holds (the inclusion is an open immersion, dense, and
-`X` is still proper and smooth), while the model's generic open fibre is
-strictly larger, so no isomorphism can fill the triangle.  Only the
-coarse-moduli property pins `Y` as *the* `Y_0(N)`.  `_hqN` is load-bearing
-for the usual reason — at `q ∣ N` the model is not smooth.  Every
-hypothesis is underscored only because the proof is a `sorry`.
-
-**IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
-REFUTE THAT.**  The route is: `hc.universal` applied to
-`Limits.pullback.snd ystr (SpecLoc.generic R)`, with the classifying map
-obtained from `cm.model.coarse.classify` composed with
-`(fibreIdentPullback (SpecLoc.generic R) ystr).toEquiv _ _ rfl |>.symm`,
-already produces a canonical comparison morphism `u : Y ⟶ 𝒴 ×_{ℤ_(q)} ℚ`
-over `ℚ` — that half needs nothing new and can be written today.  What is
-missing is the CONVERSE initiality, i.e. that the generic fibre of a
-coarse moduli space over `ℤ_(q)` is again a coarse moduli space, which is
-base change of coarse spaces (true here because `q ∤ N` makes the
-`Γ₀(N)`-problem tame and `Spec ℚ ⟶ Spec ℤ_(q)` is flat; Deligne–Rapoport
-III, Katz–Mazur 8.6).  **Exhibiting `IsCoarseModuliY0 N (pullback.snd ystr
-(SpecLoc.generic R))` refutes the verdict**, since `hc.universal` and that
-one's `universal` then give mutually inverse maps.  The remaining
-`hX.j`-compatibility is separate and small: `hX.j` and `u ≫ openSection`
-are both `hc`-classifying, so they agree by the uniqueness clause of
-`hc.universal`.
-
-Note which axis this verdict was searched along: the MODULI axis.  The
-Yoneda axis is closed (`IsFibreIdent.compareIso`, and everything in this
-sub-subsection), which is what shrank the statement to a single
-isomorphism. -/
-theorem exists_genericOpenIso_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
-    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
-    (_hbase : IsReductionBase q R toF)
-    {Y X X' XZ YZ : Scheme.{0}}
-    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
-    (_hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX)
-    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
-    ∃ ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R),
-      ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j :=
-  sorry
-
 /-- **The `j`-invariant of an integral model of `Y_0(N)`, on the three
 kinds of point.**
 
@@ -24370,35 +27913,179 @@ structure IsX0IntegralJ (q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
   jm_gen : ∀ y : RelPoint strY (𝟙 SpecQ),
     jm y = jmGen (gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)
 
-/-- **The integral `j`-invariant exists on the model** (sorry node —
-Igusa).
+/-! ##### The two residues of the integral `j`, and the two fields that carry none
 
-TRUE for `q ∤ N`.  This is the SECOND of the two statements the old
-`exists_x0JGenericOpen_of_curveModel` bundled, and the only genuinely
-modular input left on the generic side: `j` is a regular function on
-`𝒴`, valued in `ℤ_(q)` on integral sections, compatible with the `j`-map
-of the generic curve and with reduction.
+`IsX0IntegralJ` has six fields and only TWO of them have content.  The cut
+below makes that mechanical rather than asserted.
 
-The classical statement is Igusa's: `X_0(N)` has good reduction at
-`q ∤ N` and the `j`-line `Y_0(1) ≅ 𝔸¹` has an integral model over
-`ℤ[1/N]`, so the degeneracy map `Y_0(N) ⟶ Y_0(1)` is a morphism of
-integral models and `j` of an integral point is integral.
+* `jmGen` is constrained by nothing except `jmGen_pre` and `jm_gen`, and
+  `jm_gen` fixes it on the whole of `RelPoint ystr (SpecLoc.generic R)` —
+  because `gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) _` is an EQUIVALENCE,
+  not merely a map.  So `jmGen := hj.jm ∘ (gi.toEquiv …).symm` is forced,
+  total, and makes `jm_gen` hold by `Equiv.symm_apply_apply`.  **`jmGen`
+  and `jm_gen` therefore carry no content whatever**; recording them as
+  open was overstating the frontier by two fields.
+* With `jmGen` so defined, `jmGen_pre` becomes an equation determining the
+  RATIONAL number `jmZ yZ` outright, and the only assertion left in it is
+  that this rational number lies in `R`.  That is
+  `exists_x0GenericJIntegral` — Igusa's `q`-integrality of `j` at good
+  reduction, and the first genuine residue (now a THEOREM; see the cut
+  recorded below).
+* `jmSp` is then constrained only by `jmSp_pre`, i.e. only on the image of
+  `RelPoint.pre (SpecLoc.special toF) _`, and that image is NOT all of
+  `RelPoint ystr (SpecLoc.special toF)`.  What `jmSp_pre` asserts is
+  exactly that `toF ∘ jmZ` DESCENDS along `RelPoint.pre (SpecLoc.special
+  toF) _` — two integral sections with the same reduction have `j`'s with
+  the same reduction.  That is `exists_x0SpecialJ`, the second residue
+  (now a THEOREM; see the cut recorded below).
 
-**IRREDUCIBLE at this pin, and the CHECK THAT WOULD REFUTE THAT**: it
-needs the `j`-line over `ℤ_(q)`, and the survey recorded in
+Neither leaf mentions `X`, `X'` or the compactification, and neither
+mentions the other's data.  Both are quantified over the same `(ι, hι)`
+as the assembly, so if the geometric comparison should be unavailable
+they go vacuous together rather than false — the safe direction, exactly
+as the bundled leaf's docstring recorded.
+
+**CUT OF 2026-07-27: the two leaves are now THEOREMS over ONE leaf, the
+integral `j`-LINE.**  The analysis above is correct and is what made the
+next step visible.  Both residues are statements about the SAME missing
+object — an integral model of the `j`-line over `ℤ_(q)` together with the
+degeneracy map to it — and once that object is *stated* (it need not be
+constructed) they are both consequences, one of them purely formal:
+
+* `jLineZ R = Spec R[X]` with its structure map `jLineZStr` is the
+  integral `j`-line, defined exactly as `jLine = Spec ℚ[X]` is defined
+  above for the generic one, and for the same anti-tautology reason:
+  fixing the target to the honest affine line with the honest coordinate
+  `jLineZCoord` is what stops the new leaf from being a repackaging;
+* `IsX0IntegralJLine` is the datum "the model `𝒴 ⟶ Spec ℤ_(q)` carries a
+  morphism to `jLineZ` over the base which is `hj.jm` on the generic
+  fibre";
+* `exists_x0GenericJIntegral` is then `jLineZCoord` of the section — an
+  element of `R` BY CONSTRUCTION, which is exactly where Igusa's
+  integrality has gone — together with `jLineZCoord_pre` along
+  `SpecLoc.generic`;
+* `exists_x0SpecialJ` is `jLineZCoord_pre` along `SpecLoc.special`, i.e.
+  **pure functoriality**.  This is the promised gain: the descent that
+  "cannot be discharged by choice" is free once `j` is a MORPHISM rather
+  than a family of values, and `hjmZ` is consumed exactly to identify the
+  given `jmZ` with `jLineZCoord`, using injectivity of `R ↪ ℚ`.
+
+So the frontier here is ONE leaf, `exists_x0IntegralJLine`, and it is
+strictly stronger than the two it replaces — which is the direction that
+keeps the cut faithful.
+
+**What the cut does NOT fix**, stated so that nobody reads more into it:
+`IsJMapOn.jm` is pinned only by `classify_jm`, which is existential, so
+`gen_eq` inherits whatever under-determination `jm` has.  That is not a
+regression — `exists_x0GenericJIntegral` had exactly the same exposure —
+but it means the honest reading of the new leaf is the conditional one:
+for a `jm` that IS the genuine `j`-map, the integral `j`-line exists over
+it.  Sharpening `IsJMapOn` is a separate, upstream repair. -/
+
+/-- **The integral `j`-line `𝔸¹_{ℤ_(q)} = Spec R[X]`** (a definition).
+
+The integral companion of `jLine = Spec ℚ[X]` above, and presented the
+same way and for the same reason: were the target of the integral
+`j`-map left abstract, `IsX0IntegralJLine` below would be satisfiable by
+taking it to be `𝒴` itself with the identity, and the leaf would be a
+restatement rather than a reduction.  Fixing it to `Spec R[X]` with the
+honest coordinate `jLineZCoord` is what makes the two residues below
+follow. -/
+noncomputable abbrev jLineZ (R : Subring ℚ) : Scheme.{0} :=
+  Spec (CommRingCat.of (Polynomial R))
+
+/-- **The structure morphism `𝔸¹_{ℤ_(q)} ⟶ Spec ℤ_(q)`**, `Spec` of
+`R ↪ R[X]`. -/
+noncomputable def jLineZStr (R : Subring ℚ) : jLineZ R ⟶ SpecLoc R :=
+  Spec.map (CommRingCat.ofHom (algebraMap R (Polynomial R)))
+
+/-- **The coordinate of a relative point of the integral `j`-line over an
+affine base** (PROVEN).
+
+Verbatim `jLineCoord` with `ℚ[X]` replaced by `R[X]`: `Spec` is fully
+faithful, so a morphism `Spec A ⟶ jLineZ R` is a ring map `R[X] ⟶ A`,
+and its value at `X` is the coordinate.
+
+**This is where the `q`-integrality of `j` lives.**  At `A = R` the
+coordinate is an element of `R = ℤ_(q)` because the polynomial ring is
+over `R`; nothing has to be proved about denominators.  The content has
+not vanished — it has moved into the hypothesis that the model carries a
+morphism to `jLineZ R` at all, which is `exists_x0IntegralJLine`. -/
+noncomputable def jLineZCoord {A : Type} [CommRing A] {R : Subring ℚ}
+    {g : Spec (CommRingCat.of A) ⟶ SpecLoc R} (x : RelPoint (jLineZStr R) g) : A :=
+  (Spec.preimage x.1).hom Polynomial.X
+
+/-- **The integral coordinate is natural** (PROVEN): precomposing a
+relative point with a morphism of affine bases applies the corresponding
+ring map to the coordinate.
+
+Proved exactly as `jLineCoord_pre` is, by `Spec.preimage_comp`.  Applied
+at `SpecLoc.generic R` it says the generic value of an integral point is
+its integral value viewed in `ℚ`; applied at `SpecLoc.special toF` it
+says the special value is its reduction — which is the whole of
+`exists_x0SpecialJ`. -/
+theorem jLineZCoord_pre {A B : Type} [CommRing A] [CommRing B] {R : Subring ℚ}
+    {g : Spec (CommRingCat.of A) ⟶ SpecLoc R}
+    (h : Spec (CommRingCat.of B) ⟶ Spec (CommRingCat.of A))
+    {g' : Spec (CommRingCat.of B) ⟶ SpecLoc R} (hg : h ≫ g = g')
+    (x : RelPoint (jLineZStr R) g) :
+    jLineZCoord (RelPoint.pre h hg x) = (Spec.preimage h).hom (jLineZCoord x) := by
+  simp [jLineZCoord, RelPoint.pre]
+
+/-- **The integral `j`-line of a model of `Y_0(N)`**: a morphism from the
+integral open model to `𝔸¹_{ℤ_(q)}` over the base, restricting on the
+generic fibre to the `j`-map the consumers use.
+
+This is the single datum the two residues of `IsX0IntegralJ` need, and it
+is deliberately a MORPHISM rather than a family of values — that is the
+difference that makes `exists_x0SpecialJ` formal, since a morphism
+automatically has the same value on two sections with the same
+reduction, whereas a family of values does not.
+
+`comm` is not consumed by either residue below; it is carried because
+without it `jmap` need not be a morphism over `Spec ℤ_(q)` at all, and
+the datum would then say nothing about the model.  `gen_eq` is what pins
+`jmap` to be the genuine `j` rather than an arbitrary map to the line —
+compare `IsJLine.jt_weierstrass`, which plays the same role for the
+generic `j`-line. -/
+structure IsX0IntegralJLine (R : Subring ℚ) {Y YZ : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (ystr : YZ ⟶ SpecLoc R) (jm : RelPoint strY (𝟙 SpecQ) → ℚ)
+    (gi : IsFibreIdent (SpecLoc.generic R) ystr strY) where
+  /-- the `j`-map of the integral model -/
+  jmap : YZ ⟶ jLineZ R
+  /-- it is a morphism over the base -/
+  comm : jmap ≫ jLineZStr R = ystr
+  /-- on the generic fibre it is the `j`-map the consumers use -/
+  gen_eq : ∀ y : RelPoint strY (𝟙 SpecQ),
+    jm y = jLineZCoord (RelPoint.post jmap comm
+      (gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y))
+
+/-- **The integral model of `Y_0(N)` carries an integral `j`-line**
+(sorry leaf — Igusa, and the SINGLE residue of the integral `j` after
+the cut of 2026-07-27).
+
+TRUE for `q ∤ N`.  This is the classical statement: `X_0(N)` has good
+reduction at `q ∤ N` (Igusa; Deligne–Rapoport; Katz–Mazur ch. 8), the
+`j`-line `Y_0(1) ≅ 𝔸¹` has an integral model over `ℤ[1/N]`, and the
+degeneracy map `Y_0(N) ⟶ Y_0(1)` extends to a morphism of integral
+models.  `gen_eq` says that morphism restricts on the generic fibre to
+the `j`-map already carried by `hj`.
+
+**IRREDUCIBLE at this pin ALONG THE INTEGRAL-MODEL AXIS, and the CHECK
+THAT WOULD REFUTE THAT**: the survey recorded in
 `exists_x0CurveModel_of_base` found no integral model of a modular curve
 in mathlib, `~/cs/FLT` or this project.  Producing one — even just
-`Y_0(1)` over `ℤ_(q)` together with the degeneracy map from `𝒴` — refutes
-it.  Note the axis searched is the MODULI/INTEGRAL-MODEL axis; nothing
-here is blocked by Yoneda, unlike the leaf above before this cut.
+`Y_0(1)` over `ℤ_(q)` together with the degeneracy map from `𝒴` —
+refutes it.  Note the axis: what is missing is the INTEGRAL model, not
+the `j`-invariant itself, which is `exists_jLine`'s business over `ℚ` and
+is a different leaf with a different obstruction.
 
-`ι` and `hι` are hypotheses rather than a second existential because the
-`gi` this is stated over must be the genuine generic-fibre
-identification; `IsX0CurveModel.genericOpenIso_unique` shows the choice
-is immaterial.  If `exists_genericOpenIso_of_curveModel` should turn out
-false, this leaf becomes vacuous rather than false, which is the safe
-direction. -/
-theorem exists_x0IntegralJ_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
+`_hbase` is load-bearing in the intended proof (it is what makes `R` the
+valuation ring `ℤ_(q)`), and `_hqN` for the usual reason — at `q ∣ N` the
+model is not smooth and `j` acquires a pole, so no such morphism to the
+affine line exists.  Every hypothesis is underscored only because the
+proof is a `sorry`. -/
+theorem exists_x0IntegralJLine (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
     (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
     (_hbase : IsReductionBase q R toF)
     {Y X X' XZ YZ : Scheme.{0}}
@@ -24409,8 +28096,163 @@ theorem exists_x0IntegralJ_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Pr
     (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
     (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
     (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
-    Nonempty (IsX0IntegralJ q R toF hj.jm (cm.genericOpen hX ι hι)) :=
+    Nonempty (IsX0IntegralJLine R ystr hj.jm (cm.genericOpen hX ι hι)) :=
   sorry
+
+/-- **The `j`-invariant of an integral point is INTEGRAL** (PROVEN
+2026-07-27 over `exists_x0IntegralJLine`; was a sorry leaf — Igusa).
+
+TRUE for `q ∤ N`.  Read off the statement: `yZ` is a section of the
+integral open model `𝒴 ⟶ Spec ℤ_(q)`, its generic fibre is a rational
+point of `Y = Y_0(N)` under the comparison `(ι, hι)`, and `hj.jm` of that
+point is a rational number; the theorem asserts that this rational number
+lies in `R = ℤ_(q)`, i.e. that `v_q(j) ≥ 0` at a point with good
+reduction.
+
+The classical statement is Igusa's: `X_0(N)` has good reduction at
+`q ∤ N` and the `j`-line `Y_0(1) ≅ 𝔸¹` has an integral model over
+`ℤ[1/N]`, so the degeneracy map `Y_0(N) ⟶ Y_0(1)` is a morphism of
+integral models and `j` of an integral point is a regular function
+evaluated at a section, hence an element of `ℤ_(q)`.  That sentence is
+now exactly the statement of `exists_x0IntegralJLine`, and what remains
+here is the *evaluation*: `jLineZCoord` of the postcomposed section is an
+element of `R` by construction, and `jLineZCoord_pre` along
+`SpecLoc.generic R` identifies its image in `ℚ` with `hj.jm` of the
+generic point, using `gen_eq`.
+
+So the integrality is no longer asserted — it is the type of
+`jLineZCoord` at the base `R`. -/
+theorem exists_x0GenericJIntegral (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
+    {Y X X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
+    ∃ jmZ : RelPoint ystr (𝟙 (SpecLoc R)) → R,
+      ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+        ((jmZ yZ : R) : ℚ)
+          = hj.jm (((cm.genericOpen hX ι hι).toEquiv (𝟙 SpecQ) (SpecLoc.generic R)
+              (Category.id_comp _)).symm
+              (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)) := by
+  obtain ⟨jl⟩ := exists_x0IntegralJLine N q hN hq hqN R toF hbase hX hj cm ι hι
+  refine ⟨fun yZ => jLineZCoord (RelPoint.post jl.jmap jl.comm yZ), fun yZ => ?_⟩
+  rw [jl.gen_eq, Equiv.apply_symm_apply, RelPoint.post_pre, jLineZCoord_pre]
+  simp [SpecLoc.generic]
+
+/-- **The `j`-invariant of the REDUCTION is the reduction of the
+`j`-invariant** (PROVEN 2026-07-27 over `exists_x0IntegralJLine`; was a
+sorry leaf — the descent half of the integral `j`).
+
+TRUE for `q ∤ N`.  This is `jmSp` together with `jmSp_pre`, stated as
+what they actually assert: that `toF ∘ jmZ` factors through
+`RelPoint.pre (SpecLoc.special toF) _`.  Equivalently — and this is the
+form to attack — two integral sections of `𝒴` that agree on the special
+fibre have `j`-invariants congruent mod `q`.
+
+**Why this was not formal AS A LEAF, and what discharged it.**
+`RelPoint.pre (SpecLoc.special toF) _` is composition with a CLOSED
+immersion, which is a monomorphism and therefore says nothing about
+injectivity in this direction: distinct sections `Spec ℤ_(q) ⟶ 𝒴` may
+well agree over `Spec 𝔽_q`.  So no function `jmSp` can be manufactured by
+choice, and the content is genuine descent — which is exactly why it goes
+away once `j` is presented as a MORPHISM to the integral `j`-line rather
+than as a family of values: `jmSp` is then `jLineZCoord` of the
+postcomposed special-fibre point, defined on ALL of
+`RelPoint ystr (SpecLoc.special toF)` and not merely on the image, and
+the compatibility is `jLineZCoord_pre`.  The observation above is
+therefore still correct and is the reason the cut had to go through
+`exists_x0IntegralJLine` rather than through a second value-level leaf.
+
+`hjmZ` pins `jmZ` as the genuine `j` rather than an arbitrary
+`R`-valued function; without it the statement would be FALSE, since an
+arbitrary function on integral sections need not descend.  It is now
+CONSUMED, and consumed at exactly that point: it identifies the given
+`jmZ` with `jLineZCoord` of the integral section, using that `R ↪ ℚ` is
+injective. -/
+theorem exists_x0SpecialJ (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
+    {Y X X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j)
+    (jmZ : RelPoint ystr (𝟙 (SpecLoc R)) → R)
+    (hjmZ : ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+      ((jmZ yZ : R) : ℚ)
+        = hj.jm (((cm.genericOpen hX ι hι).toEquiv (𝟙 SpecQ) (SpecLoc.generic R)
+            (Category.id_comp _)).symm
+            (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ))) :
+    ∃ jmSp : RelPoint ystr (SpecLoc.special toF) → ZMod q,
+      ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+        jmSp (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) yZ) = toF (jmZ yZ) := by
+  obtain ⟨jl⟩ := exists_x0IntegralJLine N q hN hq hqN R toF hbase hX hj cm ι hι
+  refine ⟨fun yS => jLineZCoord (RelPoint.post jl.jmap jl.comm yS), fun yZ => ?_⟩
+  have hZ : jmZ yZ = jLineZCoord (RelPoint.post jl.jmap jl.comm yZ) := by
+    have h1 := hjmZ yZ
+    rw [jl.gen_eq, Equiv.apply_symm_apply, RelPoint.post_pre, jLineZCoord_pre] at h1
+    simp only [SpecLoc.generic, Spec.preimage_map, CommRingCat.hom_ofHom] at h1
+    exact Subtype.ext h1
+  rw [hZ]
+  simp only [RelPoint.post_pre, jLineZCoord_pre, SpecLoc.special, Spec.preimage_map,
+    CommRingCat.hom_ofHom]
+
+/-- **The integral `j`-invariant exists on the model** (PROVEN over the
+two residues above, was a sorry node until 2026-07-27; those two are
+themselves PROVEN over the single leaf `exists_x0IntegralJLine` as of the
+same day).
+
+TRUE for `q ∤ N`.  This is the SECOND of the two statements the old
+`exists_x0JGenericOpen_of_curveModel` bundled; it is now an assembly, and
+the assembly is where four of the six fields of `IsX0IntegralJ` are shown
+to carry no content:
+
+* `jmGen := hj.jm ∘ (gi.toEquiv …).symm`, which is forced by `jm_gen`
+  since that field's argument runs over an EQUIVALENCE;
+* `jm_gen` is then `Equiv.symm_apply_apply`;
+* `jmGen_pre` is `exists_x0GenericJIntegral` read backwards;
+* `jmZ`, `jmSp` and `jmSp_pre` come from the two residues, and hence —
+  after the cut of 2026-07-27 — from `exists_x0IntegralJLine` alone.
+
+`ι` and `hι` are hypotheses rather than a second existential because the
+`gi` this is stated over must be the genuine generic-fibre
+identification; `IsX0CurveModel.genericOpenIso_unique` shows the choice
+is immaterial.  This is the shape the whole subsection now takes: the
+comparison is never reconstructed from `(hX, cm)` — which is impossible,
+and was a false leaf until 2026-07-27 — but supplied by
+`exists_x0CurveModel_of_base`, the theorem that CHOOSES `cm`. -/
+theorem exists_x0IntegralJ_of_curveModel (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
+    {Y X X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
+    Nonempty (IsX0IntegralJ q R toF hj.jm (cm.genericOpen hX ι hι)) := by
+  obtain ⟨jmZ, hjmZ⟩ :=
+    exists_x0GenericJIntegral N q hN hq hqN R toF hbase hX hj cm ι hι
+  obtain ⟨jmSp, hjmSp⟩ :=
+    exists_x0SpecialJ N q hN hq hqN R toF hbase hX hj cm ι hι jmZ hjmZ
+  exact ⟨{ jmZ := jmZ
+           jmGen := fun z => hj.jm
+             (((cm.genericOpen hX ι hι).toEquiv (𝟙 SpecQ) (SpecLoc.generic R)
+               (Category.id_comp _)).symm z)
+           jmSp := jmSp
+           jmGen_pre := fun yZ => (hjmZ yZ).symm
+           jmSp_pre := hjmSp
+           jm_gen := fun y => (congrArg hj.jm (Equiv.symm_apply_apply _ y)).symm }⟩
 
 /-- **The generic open part and the integral `j` exist over a given curve
 model** (PROVEN over two smaller leaves, was a sorry node until
@@ -24419,8 +28261,9 @@ model** (PROVEN over two smaller leaves, was a sorry node until
 The two statements the old leaf bundled are now separate, and the glue
 between them — which is what kept them together — is proven here:
 
-1. `exists_genericOpenIso_of_curveModel` supplies the comparison
-   isomorphism `ι` of `Y` with the model's generic open fibre;
+1. the comparison isomorphism `ι` of `Y` with the model's generic open
+   fibre is a HYPOTHESIS, supplied by `exists_x0CurveModel_of_base`
+   alongside `cm` (see step 1 below on why it cannot be a leaf here);
 2. `genY` and `genY_nat` are then `IsX0CurveModel.genericOpen`, i.e.
    `fibreIdentPullback` transported along `ι` by `IsFibreIdent.ofIso`;
 3. `genX_j` is `IsX0CurveModel.genX_genericOpen`, a theorem — the exact
@@ -24429,8 +28272,21 @@ between them — which is what kept them together — is proven here:
    only dependence on the geometry is through the `gi` of step 2, which
    `genericOpenIso_unique` pins.
 
-So the residue is one geometric leaf (the two opens of `X` coincide) and
-one modular leaf (Igusa), neither of which mentions the other's data. -/
+So the residue is the modular leaf (Igusa) and nothing geometric at all.
+
+**Step 1 used to be the leaf `exists_genericOpenIso_of_curveModel`, and
+that leaf was FALSE AS STATED (refuted and deleted 2026-07-27).**  Stated
+over `hX` and `cm` quantified independently, the comparison cannot exist:
+`IsCompactificationY0` is stable under postcomposing `hX.j` with a
+`ℚ`-automorphism of `X` while the model's generic open part is fixed, so
+the leaf would force every such automorphism to preserve that open —
+false already at `N = 1`, where `X = ℙ¹_ℚ` and `z ↦ 1/z` moves `𝔸¹`.  The
+subsection docstring above carries the compiler-checked derivation.  The
+repair was three declarations upstream: `exists_x0CurveModel_of_base` now
+returns `(ι, hι)` beside `cm`, because it is the theorem that CHOOSES
+`cm` and therefore the only place the relation can be produced.  Taking
+them as hypotheses here costs nothing — `exists_x0JNeronDatum`, which
+builds its own `cm`, discharges them with no new leaf. -/
 theorem exists_x0JGenericOpen_of_curveModel (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
     (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
     (hbase : IsReductionBase q R toF)
@@ -24439,10 +28295,10 @@ theorem exists_x0JGenericOpen_of_curveModel (N q : ℕ) (hN : N ≠ 0) (hq : q.P
     {hc : IsCoarseModuliY0 N strY}
     (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
     {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
     Nonempty (IsX0JGenericOpen N q R toF hX hj cm) := by
-  obtain ⟨ι, hι⟩ :=
-    exists_genericOpenIso_of_curveModel N q hN hq hqN R toF hbase hc hX cm
   obtain ⟨ij⟩ :=
     exists_x0IntegralJ_of_curveModel N q hN hq hqN R toF hbase hX hj cm ι hι
   exact ⟨{ genY := (cm.genericOpen hX ι hι).toEquiv
@@ -24483,7 +28339,12 @@ The old *"IRREDUCIBLE at this pin ALONG THE MODULI AXIS"* verdict on this
 statement is retired in the same way its predecessor's was: the axis it
 did not search is named in its own last sentence — the Yoneda
 reconstruction — and searching it turned the whole special-fibre bullet
-into theorems. -/
+into theorems.
+
+`ι` and `hι` are threaded through from `exists_x0JGenericOpen_of_curveModel`
+(2026-07-27): the comparison of the given `Y ⊆ X` with the model's own
+generic open part is not reconstructible from `(hX, cm)` — that was a
+false leaf — and must travel with `cm` from the theorem that chose it. -/
 theorem exists_x0JOpenModel_of_curveModel (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
     (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
     (hbase : IsReductionBase q R toF)
@@ -24492,7 +28353,9 @@ theorem exists_x0JOpenModel_of_curveModel (N q : ℕ) (hN : N ≠ 0) (hq : q.Pri
     {hc : IsCoarseModuliY0 N strY}
     (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
     {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
     ∃ (Y' : Scheme.{0}) (strY' : Y' ⟶ SpecF q) (jY' : Y' ⟶ X')
       (hX' : IsX0Compactification N strX' strY' jY'),
       Nonempty (IsX0JOpenModel N q R toF hX hX' hj cm) := by
@@ -24502,7 +28365,8 @@ theorem exists_x0JOpenModel_of_curveModel (N q : ℕ) (hN : N ≠ 0) (hq : q.Pri
       ⟨cm.model.isProper, cm.model.smooth, cm.model.connected⟩
   obtain ⟨hcoarse, hfin⟩ :=
     isX0CoarseModuli_specialOpen_of_curveModel N q hN hq hqN R toF hbase cm
-  obtain ⟨go⟩ := exists_x0JGenericOpen_of_curveModel N q hN hq hqN R toF hbase hX hj cm
+  obtain ⟨go⟩ :=
+    exists_x0JGenericOpen_of_curveModel N q hN hq hqN R toF hbase hX hj cm ι hι
   refine ⟨Limits.pullback ystr (SpecLoc.special toF),
     Limits.pullback.snd ystr (SpecLoc.special toF), cm.specialOpen,
     { comm := cm.specialOpen_comm
@@ -24538,11 +28402,21 @@ assembly and nothing else:
    facts about `X/ℚ` that `IsCompactificationY0` omits, and
    `IsCompactificationY0.toX0Compactification` packages them;
 3. `exists_x0CurveModel_of_base` — the SHARED Deligne–Rapoport / Igusa
-   model, already required by `exists_x0NeronDatum` — produces `cm`;
+   model, already required by `exists_x0NeronDatum` — produces `cm`,
+   together with the comparison `(ι, hι)` of the given `Y ⊆ X` with the
+   model's own generic open part;
 4. `exists_x0JOpenModel_of_curveModel` produces the open-part fibres and
-   the integral `j` over that same `cm`;
+   the integral `j` over that same `cm` and that same `(ι, hι)`;
 5. `IsX0JOpenModel.toJNeronDatum` assembles them, taking every curve
    field verbatim from `cm`.
+
+**This theorem is where the comparison gets DISCHARGED, and that is why
+it is existential in `cm` that makes it true** (2026-07-27).  Its two
+consumers-in-the-middle take `(ι, hι)` as hypotheses because no theorem
+handed `hX` and `cm` independently can produce them — the leaf that once
+tried, `exists_genericOpenIso_of_curveModel`, was refuted and deleted.
+Here `cm` is constructed from `hX` in step 3, so the comparison arrives
+with it and costs no new leaf.
 
 The old docstring's *"IRREDUCIBLE at this pin"* verdict is retired: it
 was true of the leaf as a single statement, and the axis it did not
@@ -24559,12 +28433,12 @@ theorem exists_x0JNeronDatum (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime) (hqN : ¬
       (ystr : YZ ⟶ SpecLoc R) (xstr : XZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
       Nonempty (IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) := by
   obtain ⟨R, toF, hbase⟩ := exists_isReductionBase q hq
-  obtain ⟨X', XZ, YZ, strX', xstr, ystr, jZ, ⟨cm⟩⟩ :=
+  obtain ⟨X', XZ, YZ, strX', xstr, ystr, jZ, cm, ι, hι⟩ :=
     exists_x0CurveModel_of_base N q hq hqN R toF hbase
       (hX.toX0Compactification hc
         (isX0Compactification_data_of_compactificationY0 N hN hc hX))
   obtain ⟨Y', strY', jY', hX', ⟨om⟩⟩ :=
-    exists_x0JOpenModel_of_curveModel N q hN hq hqN R toF hbase hX hj cm
+    exists_x0JOpenModel_of_curveModel N q hN hq hqN R toF hbase hX hj cm ι hι
   exact ⟨R, toF, Y', X', YZ, XZ, strY', strX', jY', hX', ystr, xstr, jZ,
     ⟨om.toJNeronDatum hbase⟩⟩
 
@@ -25227,12 +29101,30 @@ one, and `Mathlib` has that subtree:
    `jY₁ ≫ w = f` because the two agree on the dense domain.
 
 Step 2's DVR input is the piece with no `Mathlib` citation: there is no
-`IsRegular` for schemes at this pin, so "smooth of relative dimension `1`
+scheme-level `IsRegular` at this pin, so "smooth of relative dimension `1`
 over a field ⟹ the local rings at non-generic points are DVRs" has to be
-built.  That is the honest residue of this leaf, and it is shared with
+built.  That is the honest residue of this statement, and it is shared with
 `smoothOfRelativeDimension_one_fromNormalization` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` — the
-two should be proven by one owner.
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
+
+**PROVEN 2026-07-27, and CONSOLIDATED.**  The route above is carried out in
+full, once, in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`,
+over an arbitrary FIELD base and an arbitrary PROPER target with an `∃!`
+conclusion; `exists_unique_extension_of_isX0Compactification` above (over
+`Spec ℚ`) is the same specialisation, and
+`exists_inverse_of_isX0Compactification` below is a third.  Note the target
+here is another compactification only because that is what the consumer
+supplies — `X₂` enters the proof solely through `IsProper strX₂`.
+
+One correction to the survey above, worth recording because two verdicts in
+this file rested on it: **`IsRegularLocalRing` IS at this pin**
+(`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), together with
+`IsLocalRing.finrank_CotangentSpace_eq_one_iff`, which identifies it with
+`IsDiscreteValuationRing` for a one-dimensional noetherian local domain.
+What is absent is only the link from SMOOTHNESS to regularity — a grep for
+`IsRegularLocalRing` over `Mathlib/RingTheory/Smooth/` is empty — and a
+scheme-level `IsRegular`.  So the residue is one named ring-theoretic
+statement, not a missing theory.
 
 **`f` is deliberately arbitrary**, not specialised to `u ≫ jY₂`: the
 classical theorem does not care, the consumer needs both `u ≫ jY₂` and
@@ -25241,15 +29133,25 @@ hide the fact that no property of `f` beyond being a morphism over the
 base is used.  `_h₂` is passed whole although only `h₂.isProper` is
 consumed.
 
-The hypotheses carry underscores only because the body is `sorry`. -/
-theorem exists_extension_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+The conclusion is left as a bare `∃` rather than upgraded to the `∃!` the
+general statement provides: its consumer `exists_inverse_of_isX0Compactification`
+gets uniqueness from `eq_of_isX0Compactification`, which has a different
+owner, and strengthening this statement would change nothing downstream. -/
+theorem exists_extension_of_isX0Compactification {N ℓ : ℕ} (hℓ : ℓ.Prime)
     {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
     {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
-    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
-    (_h₂ : IsX0Compactification N strX₂ strY₂ jY₂)
-    {f : Y₁ ⟶ X₂} (_hf : f ≫ strX₂ = strY₁) :
-    ∃ w : X₁ ⟶ X₂, w ≫ strX₂ = strX₁ ∧ jY₁ ≫ w = f :=
-  sorry
+    (h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
+    (h₂ : IsX0Compactification N strX₂ strY₂ jY₂)
+    {f : Y₁ ⟶ X₂} (hf : f ≫ strX₂ = strY₁) :
+    ∃ w : X₁ ⟶ X₂, w ≫ strX₂ = strX₁ ∧ jY₁ ≫ w = f := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI := h₁.isOpen
+  haveI := h₁.isProper
+  haveI := h₁.smooth
+  haveI := h₂.isProper
+  obtain ⟨w, hw, -⟩ := _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+    h₁.connected h₁.finite_compl h₁.comm f hf
+  exact ⟨w, hw⟩
 
 /-- **An extension over the cusps is unique** (PROVEN 2026-07-27 — one
 citation, once density and reducedness are available).
@@ -26540,9 +30442,9 @@ Note `hbound` is stated with `X`, `Y`, `strX`, `strY`, `jm` IMPLICIT and
 universally quantified inside it, so a caller supplies one uniform bound
 rather than a bound at the particular compactification this proof
 happens to obtain from `exists_x0Compactification`.  That is what makes
-the residual leaves (`card_le_x0TwentySix`,
-`card_le_of_chabautySemiprimeLevel`) statements about `X_0(N)` rather
-than about a chosen model. -/
+its two consumers (`card_le_x0TwentySix`, now PROVEN over the sieve, and
+`card_le_of_chabautySemiprimeLevel`, still open) statements about
+`X_0(N)` rather than about a chosen model. -/
 theorem y0HasNoRationalPoint_of_cardLeCusps (N : ℕ) (hN : 0 < N)
     (hbound : ∀ {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
         {jm : Y ⟶ X}, IsX0Compactification N strX strY jm →
@@ -26579,24 +30481,48 @@ with minimum `6 > 4 = numRationalCusps 26`.  So
 of prime, and a prover must use the multi-prime Mordell–Weil sieve
 instead — the same route as `45, 54, 63, 75`, whose apparatus
 (`x0SieveLevels`, `card_le_of_sieve`, `exists_x0Sieve`) is already in
-this file and is the thing to reuse.  The sieve has to cut the `6` points
-of `X_0(26)(𝔽_3)` down to the `4` cusps, using `J_0(26)(ℚ) ≅ ℤ/21ℤ`.
+this file and is the thing that was reused.
 
 **Do not dispatch a prover at this expecting a witness prime**; that is
-the mistake the table above exists to prevent.
+the mistake the table above exists to prevent.  The Weil bound closes the
+table's own gap: at genus `2`, `#X_0(26)(𝔽_ℓ) ≥ ℓ + 1 − 4√ℓ > 4` for
+every `ℓ ≥ 23`, so the tabulated range and the bound together rule out
+ALL primes rather than the fifteen listed.
 
-**THE PREFERRED FIX IS NOT A PROOF OF THIS LEAF.**  `card_le_of_sieve`
-is already universal in `N` given `N ∈ x0SieveLevels`, and
-`exists_x0NeronDatum` and `neronReduction_injective` are already
-universal in `ℓ` and in `N`.  So adding `26` to `x0SieveLevels` and
-`kenkuLevels` discharges this leaf outright, at the cost of extending
-`exists_x0Sieve`'s own two inputs — `hasRankZeroJacobian_of_kenkuLevel`
-(rank `0` at `26`: Kolyvagin–Logachev, exactly as at `35, 39`) and
-`exists_sharpSievePrime` (the arithmetic residue) — by one level each.
-That was not done here only because all four of `x0SieveLevels`,
-`kenkuLevels`, `exists_sharpSievePrime` and `card_le_of_sieve` were under
-concurrent ownership on 2026-07-27.  **Whoever finds them free should
-take that route and delete this leaf rather than prove it.**
+## CLOSED 2026-07-27 BY THE APPEND, NOT BY A PROOF — and the recommended
+## prime in the paragraph this replaces was REFUTED
+
+The docstring here used to say that the preferred fix was to add `26` to
+`x0SieveLevels` and `kenkuLevels` rather than to prove the leaf, and that
+this had not been done only because those lists were under concurrent
+ownership.  Both halves have now been resolved:
+
+* **The ownership claim was a phantom.**  Applying the three-part test —
+  a leaf is owned iff some record names it in its own `TARGET:` line,
+  that record is the latest for its worktree, and the worktree is still
+  `claimed` — `x0SieveLevels`, `kenkuLevels`, `exists_sharpSievePrime`
+  and `card_le_of_sieve` had ZERO owners.  Every live mention of them was
+  in the coordination note of a task prompt, i.e. in a restatement of
+  this very paragraph.  That is the self-reinforcing shape CLAUDE.md
+  records: the more carefully a claim of concurrent ownership is written
+  down, the more convincing the phantom it manufactures.  Three agents
+  declined the append on the strength of it.
+* **The append is sound, and was verified against each statement it
+  widens** rather than against the lists' names; see `kenkuLevels` for
+  the four-part check at `26` and the leaf-by-leaf extension audit, and
+  `exists_sharpSievePrime_classCount` for the survivor computation.
+
+**One thing the old recommendation got WRONG, and it mattered.**  It
+proposed that the sieve "cut the `6` points of `X_0(26)(𝔽_3)` down to the
+`4` cusps, using `J_0(26)(ℚ) ≅ ℤ/21ℤ`".  That is impossible:
+`#J_0(26)(𝔽_3) = 7 · 3 = 21 = #J_0(26)(ℚ)`, so reduction at `3` is an
+isomorphism and every one of the `6` points survives.  `ℓ = 3` is refuted
+by the very test recorded under `exists_x0Sieve`, and the two facts that
+made `3` look attractive — it minimises `#X_0(26)(𝔽_ℓ)`, and `21 ∣ 21` —
+are exactly what makes it fail.  The witness is `ℓ = 5`, where `4` of the
+`10` points survive.  **The prime that minimises the point count is the
+prime most likely to be refuted**, which is the general lesson worth
+carrying to any future sieve level.
 
 Attribution: not a Kenku paper title; genus `2` and rank `0` place it
 inside Ogg's classical method — see the section docstring. -/
@@ -26604,7 +30530,8 @@ theorem card_le_x0TwentySix {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
     (hX : IsX0Compactification 26 strX strY jm)
     (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps 26 :=
-  sorry
+  card_le_of_sieve (by decide) hX
+    (hasRankZeroJacobian_of_kenkuLevel 26 (by decide) hX) t
 
 /-- **`Y_0(26)(ℚ) = ∅`** (PROVEN 2026-07-27 over `card_le_x0TwentySix`;
 introduced as a sorry node the same day).
@@ -26613,12 +30540,18 @@ TRUE: `26` is not in the Mazur–Kenku list.  `X_0(26)` has genus `2`, four
 rational cusps, and `rank J_0(26)(ℚ) = 0` — indeed `J_0(26) ~ 26a × 26b`
 with both factors elliptic of rank `0`.
 
-**The whole content is now `card_le_x0TwentySix` immediately above**, and
-this node is the three-line assembly the audit below predicted.  See that
-leaf's docstring for the arithmetic: why NO witness prime is sharp at
-`26` (the `ℓ`-by-`ℓ` table), why the multi-prime sieve is the route, and
-why adding `26` to `x0SieveLevels` and `kenkuLevels` is a better fix than
-proving the leaf directly.
+**The whole content is `card_le_x0TwentySix` immediately above**, and
+this node is the three-line assembly the audit below predicted.  That
+leaf is itself now PROVEN (2026-07-27) — `26` was added to
+`x0SieveLevels` and `kenkuLevels`, and the leaf became a one-line
+application of `card_le_of_sieve`.  See its docstring for the arithmetic:
+why NO witness prime is sharp at `26` (the `ℓ`-by-`ℓ` table plus the Weil
+bound), why the multi-prime sieve is the route, and why the recommended
+sieve prime `ℓ = 3` is refuted while `ℓ = 5` works.  Nothing about `26`
+remains open here; the residual obligations are the two shared sorry
+leaves `lFunction_apply_one_ne_zero_of_kenkuLevel` and
+`exists_sharpSievePrime_classCount`, each of which gained exactly one
+case.
 
 ## THE HISTORY, KEPT BECAUSE THE TRAP IT RECORDS IS GENERAL
 ## (audited and MEASURED 2026-07-27; DISCHARGED by the move, same day)
@@ -27071,12 +31004,16 @@ that is what changed on 2026-07-27: `y0HasNoRationalPoint_of_witnessPrime`
 is exactly that criterion, and `35, 39` — two of the five residual levels
 — are closed by it.  **Amended later the same day:** all five level
 statements are now PROVEN, and what remains of the `61` has moved down
-one layer, onto point counts for `X_0(N)` and the isolated-prime descent:
-`card_le_x0TwentySix` (`26`, needs the multi-prime sieve),
+one layer, onto point counts for `X_0(N)` and the isolated-prime descent.
+`card_le_x0TwentySix` (`26`) is **also now PROVEN** — later still on
+2026-07-27, by adding `26` to `x0SieveLevels` and `kenkuLevels` so that
+the multi-prime sieve reaches it, which leaves `26` contributing only one
+extra case to each of two SHARED leaves and no leaf of its own.  And
+`card_le_of_chabautySemiprimeLevel` (`65, 91`) was itself decomposed the
+same day and is PROVEN, its Eichler-Shimura half absorbed into
+`x0WitnessTable`.  What remains at this layer is
 `injective_redX_of_chabautyColemanPrime` (`65, 91`, needs
-Chabauty–Coleman — `card_le_of_chabautySemiprimeLevel` was itself
-decomposed on 2026-07-27 and is now PROVEN, its Eichler–Shimura half
-absorbed into `x0WitnessTable`),
+Chabauty-Coleman),
 and — for the `56` isolated-prime levels, whose descent
 `y0HasNoRationalPoint_of_isolatedSemiprime` is itself PROVEN —
 `mem_isolatedJInvariants_of_stable` and
