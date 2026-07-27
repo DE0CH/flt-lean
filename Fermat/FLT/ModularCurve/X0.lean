@@ -14630,8 +14630,15 @@ theorem isTorsion_jacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     (jac : IsJacobianOf strX ab o) :
     letI := ab.addCommGroup (𝟙 SpecQ)
     AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
+  -- `N ≠ 0` is a hypothesis of Hecke's continuation: `Γ₀(0)` is not of finite
+  -- index in `SL(2, ℤ)` and the statement is FALSE there (see the FALSITY
+  -- AUDIT on `exists_isLFunctionOf_of_isWeightTwoEigenform`).  All thirteen
+  -- Kenku levels are positive.
+  have hN0 : N ≠ 0 := by
+    simp only [kenkuLevels, List.mem_cons, List.not_mem_nil, or_false] at hN
+    omega
   isTorsion_jacobian_of_lFunction_ne_zero N h jac fun f a hf =>
-    let ⟨L, hL⟩ := exists_isLFunctionOf_of_isWeightTwoEigenform N f a hf
+    let ⟨L, hL⟩ := exists_isLFunctionOf_of_isWeightTwoEigenform N hN0 f a hf
     ⟨L, hL, lFunction_apply_one_ne_zero_of_kenkuLevel N hN f a hf L hL⟩
 
 /-- **`J_0(N)(ℚ)` is finite at the thirteen Kenku levels** (PROVEN, from
