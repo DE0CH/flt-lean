@@ -34,6 +34,7 @@ public import Mathlib.Algebra.MvPolynomial.PDeriv
 public import Mathlib.RingTheory.Localization.Away.AdjoinRoot
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.AlgebraicGeometry.ResidueField
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
 
 /-!
 # The projective Weierstrass model as an elliptic scheme over `Spec ℚ`
@@ -157,10 +158,11 @@ correct on its own branch and wrong once the others landed:
   node and is listed here only so that this count matches the compiler's:
   `exists_affineComplement_zeroSection`,
   `exists_weierstrassRingEquiv_of_affineComplement`,
-  `isElliptic_of_isOpenImmersion_coordinateRing`, `relPointPost_add`,
-  `exists_hom_of_affineChart` and `exists_hom_symm_of_affineChart` (the last
-  two replaced `exists_isIso_of_affineChart` on 2026-07-27, which is now
-  PROVEN from them).  Both
+  `isElliptic_of_isOpenImmersion_coordinateRing`, `relPointPost_add` and
+  `smoothOfRelativeDimension_one_of_affineChart` (that last one replaced
+  `exists_isIso_of_affineChart` on 2026-07-27, in two steps: first a cut into
+  two extension leaves, then release 6's `CurveExtension.lean`, which closed
+  both of those and left only the statement that `A` is a CURVE).  Both
   `exists_weierstrassModel_of_ellipticScheme` and
   `exists_geomFibreAddEquiv_of_weierstrassModel` were leaves here until
   2026-07-27 and are now PROVEN — the first from the affineness /
@@ -5946,9 +5948,9 @@ means a prover at either one need not carry the other.
 **The second is itself now DECOMPOSED and PROVEN** (2026-07-27), along the
 axis its own audit named as untried — prove the identification for the
 concrete projective model and TRANSPORT it — leaving
-`exists_hom_of_affineChart` and `exists_hom_symm_of_affineChart` (curve
-geometry: each chart extends across the one removed point; the gluing of
-the two into an isomorphism, `exists_isIso_of_affineChart`, is PROVEN) and
+`smoothOfRelativeDimension_one_of_affineChart` (that `A` is a curve, which
+is all that is left of the curve geometry: both extensions and their gluing
+into `exists_isIso_of_affineChart` are PROVEN) and
 `relPointPost_add` (rigidity proper, for arbitrary abelian schemes over
 `Spec ℚ`).  See the "Transport along an isomorphism of models" subsection
 below. -/
@@ -6242,11 +6244,13 @@ and `galSMul` IS `RelPoint.pre` (`AbelianSchemeStruct.galSMul_def` is
 this is the same observation that discharged the generator's Galois
 stability in `X0.lean`.  What is genuinely open is
 
-* the two EXTENSION leaves `exists_hom_of_affineChart` and
-  `exists_hom_symm_of_affineChart` — that each chart extends across the one
-  removed point (valuative criterion; `exists_isIso_of_affineChart`, which
-  glues them into an isomorphism, is PROVEN from them as of 2026-07-27),
-  and
+* `smoothOfRelativeDimension_one_of_affineChart` — that `A` is a curve,
+  i.e. that `f` is smooth of relative DIMENSION ONE, which
+  `AbelianSchemeStruct.smooth` does not say.  Everything else in the curve
+  geometry is PROVEN as of 2026-07-27: both extensions
+  (`exists_hom_of_affineChart`, `exists_hom_symm_of_affineChart`, from
+  release 6's `CurveExtension.lean`) and the gluing of the two into
+  `exists_isIso_of_affineChart`; and
 * `relPointPost_add` — that an isomorphism carrying zero to zero is a
   homomorphism, i.e. the RIGIDITY theorem.
 
@@ -6425,8 +6429,12 @@ classical division of that argument into its two halves:
 
 * EXISTENCE of the two extensions `u : proj E ⟶ A` and `v : A ⟶ proj E` —
   the valuative criterion at the one removed point, and the only place
-  properness is used.  These are the two leaves
-  `exists_hom_of_affineChart` and `exists_hom_symm_of_affineChart`;
+  properness is used.  These are `exists_hom_of_affineChart` and
+  `exists_hom_symm_of_affineChart`, and both are PROVEN, by specialising
+  `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` from
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` (release 6).
+  The residue is one statement about `A` alone,
+  `smoothOfRelativeDimension_one_of_affineChart`;
 * UNIQUENESS, i.e. that `u` and `v` are mutually inverse — PROVEN here as
   `isIso_of_isDominant_of_inverse`, from mathlib's
   `ext_of_isDominant_of_isSeparated`: two morphisms over a separated base
@@ -6538,132 +6546,179 @@ theorem isIso_of_isDominant_of_inverse {S P B C : Scheme.{u}}
   exact ⟨v, h1, h2⟩
 
 /-- **The chart of the projective model extends to a morphism
-`proj E ⟶ A`** (sorry node, introduced 2026-07-27 as the forward half of
+`proj E ⟶ A`** (**PROVEN 2026-07-27**, the forward half of
 `exists_isIso_of_affineChart`).
 
-TRUE, and it is the classical statement that a rational map from a SMOOTH
-CURVE to a proper scheme is a morphism.  `_hrange₀` says `ι₀` identifies
-`Spec ℚ[E]` with the complement of a single rational point `O` of
-`proj E`, so `ι₀⁻¹ ≫ ι` is a morphism defined on all of `proj E` except
-`O`; `f` is proper (`ab.proper`), and the local ring of `proj E` at `O` is
-a discrete valuation ring, so the valuative criterion extends it across
-`O`.
+This is the classical statement that a rational map from a SMOOTH CURVE to
+a proper scheme is a morphism.  `hrange₀` says `ι₀` identifies `Spec ℚ[E]`
+with the complement of a single rational point `O` of `proj E`, so
+`ι₀⁻¹ ≫ ι` is a morphism defined on all of `proj E` except `O`; `f` is
+proper (`ab.proper`); and the local ring of `proj E` at `O` is a discrete
+valuation ring, so the valuative criterion extends it across `O`.
 
-## THE INTENDED PROOF, AND THE ONE THING THIS PIN DOES NOT HAVE
+## THE ROUTE NOTE THIS DOCSTRING USED TO CARRY IS RETIRED (2026-07-27)
 
-1. `proj E` is INTEGRAL — irreducible by `irreducibleSpace_projectiveSpectrum`
-   applied to `isDomain_projCoordinateRing`, reduced by
-   `geometricallyReduced_projToSpec` descended along the reduced noetherian
-   base.  Both are PROVEN above and both are already used in
-   `exists_isIso_of_affineChart`'s own proof, so they cost nothing here.
-   `Mathlib/AlgebraicGeometry/FunctionField.lean` then supplies, for free,
-   `IsDomain ((proj E).presheaf.stalk O)`, the algebra structure on the
-   function field, and `IsFractionRing (stalk O) (proj E).functionField`.
-2. `ValuationRing ((proj E).presheaf.stalk O)` — **THIS IS THE GAP**, and it
-   is the ONLY input the valuative criterion is missing.  Searched
-   2026-07-27: `Mathlib/AlgebraicGeometry/Morphisms/` contains no regularity
-   file at all, and there is no `Smooth → IsRegularLocalRing` bridge anywhere
-   — `IsRegularLocalRing` occurs only in
-   `RingTheory/RegularLocalRing/{Defs,Polynomial}.lean`, connected to nothing.
-   So "smooth of relative dimension one over a field ⟹ regular local of
-   dimension one ⟹ DVR" has to be built; the cheaper alternative, and the one
-   a prover should price first, is to compute the stalk directly in the chart
-   at `Z`, which the `AffineChart` section above already produces.
-3. With 2 in hand, `IsProper.eq_valuativeCriterion`
-   (`Mathlib/AlgebraicGeometry/ValuativeCriterion.lean`) turns `ab.proper`
-   into `ValuativeCriterion.Existence f`, which lifts the function-field
-   point `Spec (proj E).functionField ⟶ A` to `φ : Spec (stalk O) ⟶ A` over
-   `Spec ℚ`.
-4. `AlgebraicGeometry.PartialMap.ofFromSpecStalk`
-   (`Mathlib/AlgebraicGeometry/Birational/RationalMap.lean`) spreads `φ` out
-   to a morphism on an open NEIGHBOURHOOD of `O`; its side conditions
-   `IrreducibleSpace`, `IsGermInjectiveAt O` and `LocallyOfFiniteType f` are
-   all free from 1 and from `ab.proper`.  Gluing that with `ι₀⁻¹ ≫ ι` over
-   the dense overlap — where the two agree by
-   `fromSpecStalkOfMem_ofFromSpecStalk` together with the same
-   `ext_of_isDominant_of_isSeparated` used in
-   `isIso_of_isDominant_of_inverse` — covers `proj E` and produces `u`.
+An earlier version of this leaf recorded a four-step route and named its
+one missing input as `ValuationRing` of the stalk at the removed point,
+observing that mathlib has no `Smooth → IsRegularLocalRing` bridge.  That
+was accurate when written and was overtaken within the day: release 6
+landed `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, whose
+`exists_unique_extension_of_isSmoothProperCurve` is exactly this
+theorem in mathlib-facing form — and whose
+`exists_unique_extension_of_valuationRing_stalk` carries out the whole
+valuative-criterion / spreading-out / gluing argument with no sorry at all.
+So the proof here is a specialisation, and the three curve inputs it needs
+are supplied by declarations PROVEN above:
 
-WHAT WOULD REFUTE THE "OPEN" DIAGNOSIS: any declaration extending a
-morphism from a dense open of a curve to a proper target, or exhibiting a
-scheme stalk as a valuation ring from smoothness.  Searched 2026-07-27 over
-`Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: the valuative criterion
-has exactly ONE consumer in the whole of mathlib
-(`ProjectiveSpectrum/Proper.lean`) and it is not this.
+* `isProper_projToSpec`;
+* `smoothOfRelativeDimension_projToSpec`;
+* `geometricallyConnected_projToSpec`;
 
-`ab` IS LOAD-BEARING, through `ab.proper`: properness of `f` is exactly what
-the valuative criterion consumes, and it is the hypothesis without which a
-rational map from a curve need not extend at all.
+plus finiteness of the complement, which is `range_hom_specRat_eq_singleton`
+applied to `hrange₀` — the removed locus is the range of a SECTION, hence a
+single point.
 
-NOT VACUOUS: the conclusion pins `ι₀ ≫ u = ι`, so it cannot be discharged
-by an unrelated morphism `proj E ⟶ A`. -/
+**`ab` is used only through `ab.proper`**, and that is load-bearing:
+properness of `f` is what the valuative criterion consumes, and without it a
+rational map from a curve need not extend at all. -/
 theorem exists_hom_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
     (ι₀ : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
       _root_.WeierstrassCurve.Projective.proj E)
     (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
-    (_h₀ : IsOpenImmersion ι₀) (_h₁ : IsOpenImmersion ι)
-    (_hstr₀ : ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
+    (h₀ : IsOpenImmersion ι₀) (_h₁ : IsOpenImmersion ι)
+    (hstr₀ : ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
       Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
-    (_hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
-    (_hrange₀ : Set.range ι₀.base = (Set.range ((projGroupLaw E).toAbelianSchemeStruct.zero
+    (hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (hrange₀ : Set.range ι₀.base = (Set.range ((projGroupLaw E).toAbelianSchemeStruct.zero
       (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ)
     (_hrange : Set.range ι.base =
       (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
     ∃ u : _root_.WeierstrassCurve.Projective.proj E ⟶ A,
-      u ≫ f = _root_.WeierstrassCurve.Projective.projToSpec E ∧ ι₀ ≫ u = ι :=
+      u ≫ f = _root_.WeierstrassCurve.Projective.projToSpec E ∧ ι₀ ≫ u = ι := by
+  haveI := h₀
+  haveI := isProper_projToSpec E
+  haveI := smoothOfRelativeDimension_projToSpec E
+  haveI := ab.proper
+  have hfin : (Set.range ι₀.base)ᶜ.Finite := by
+    obtain ⟨z, hz⟩ := range_hom_specRat_eq_singleton
+      ((projGroupLaw E).toAbelianSchemeStruct.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+    rw [hrange₀, compl_compl, hz]
+    exact Set.finite_singleton z
+  obtain ⟨u, ⟨h1, h2⟩, -⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strX := _root_.WeierstrassCurve.Projective.projToSpec E) (j := ι₀) (strZ := f)
+      (geometricallyConnected_projToSpec E) hfin hstr₀ ι hstr
+  exact ⟨u, h1, h2⟩
+
+/-- **The abelian scheme of a Weierstrass model is a CURVE** (sorry node,
+introduced 2026-07-27 — the whole residue of the backward extension).
+
+TRUE: `A` carries an open immersion `ι` from the affine Weierstrass curve
+`Spec ℚ[E]`, which is smooth of relative dimension one over `ℚ`, and
+`hrange` makes its range the complement of a single point.  `ab.smooth`
+makes `f` smooth, and the relative dimension of a smooth morphism is
+LOCALLY CONSTANT on the source, so it is `1` on the whole connected
+component of the image of `ι` — and `ab.connected` makes `A` connected.
+
+**Why this is a separate leaf rather than a hypothesis.**  With release 6's
+`exists_unique_extension_of_isSmoothProperCurve` in hand, the backward
+extension `A ⟶ proj E` needs exactly four things about `f`: properness
+(`ab.proper`), geometric connectedness (`ab.connected`), finiteness of the
+removed locus (`hrange`) — and `SmoothOfRelativeDimension 1 f`, which is the
+ONE that `AbelianSchemeStruct` does not carry: its `smooth` field is a bare
+`Smooth f`, with no dimension.  Everything else in the backward half is
+therefore already discharged, and this is all that is left of it.
+
+**Do NOT repair this by adding `hdim` to the consumer.**  The outer
+statement `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` does
+carry `SmoothOfRelativeDimension 1 f`, so threading it down looks free — but
+the immediate consumer `exists_geomFibreAddEquiv_of_weierstrassModel` does
+not, and it is consumed in `X0.lean` from data that supplies the model
+without the dimension.  The dimension is genuinely derivable from the chart,
+which is what this leaf says; deriving it is strictly better than
+propagating a hypothesis.
+
+## WHAT TO CHECK FIRST
+
+`SmoothOfRelativeDimension` is a `MorphismProperty`; the question is whether
+it, or `Smooth` together with a fibre-dimension statement, is local at the
+source in a usable form at this pin
+(`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`,
+`Morphisms/SmoothFiber.lean`).  Note that `{range ι}` is NOT an open cover
+of `A` — the point `ab.zero` is missing — so a bare local-at-source lemma
+does not suffice on its own; what closes the gap is connectedness of `A`
+plus local constancy, or a direct computation of the fibre dimension at the
+removed point.
+
+**A cheaper route worth pricing first**: `CurveExtension.lean`'s
+`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` derives
+exactly this conclusion over a PERFECT field from DVR stalks, and it takes
+its dimension pin from a dense open `j` that is already a smooth curve —
+which is precisely `ι`.  `ℚ` is perfect, so if the DVR hypothesis can be got
+from `ab.smooth`, that declaration discharges this leaf directly.
+
+NOT VACUOUS: dropping `hrange` leaves `ι` an arbitrary open immersion, and a
+smooth `f` can then have any relative dimension away from its range. -/
+theorem smoothOfRelativeDimension_one_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (_ab : AbelianSchemeStruct f)
+    (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
+    (_h₁ : IsOpenImmersion ι)
+    (_hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (_hrange : Set.range ι.base =
+      (Set.range (_ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
+    SmoothOfRelativeDimension 1 f :=
   sorry
 
-/-- **The chart of the abelian scheme extends to a morphism
-`A ⟶ proj E`** (sorry node, introduced 2026-07-27 as the backward half of
-`exists_isIso_of_affineChart`) — the mirror image of
-`exists_hom_of_affineChart`, with the roles of the two models exchanged.
+/-- **The chart of the abelian scheme extends to a morphism `A ⟶ proj E`**
+(**PROVEN 2026-07-27** over `smoothOfRelativeDimension_one_of_affineChart`)
+— the mirror image of `exists_hom_of_affineChart`, with the roles of the two
+models exchanged.
 
-TRUE for the same classical reason, and the four-step route in that
-declaration's docstring transposes verbatim: `_hrange` makes `ι` identify
-`Spec ℚ[E]` with the complement of the single point `ab.zero`, and
-`isProper_projToSpec` (PROVEN above) supplies the properness of the target
-that the valuative criterion consumes.
+The same specialisation of
+`exists_unique_extension_of_isSmoothProperCurve`, transposed: `hrange` makes
+`ι` identify `Spec ℚ[E]` with the complement of the single point `ab.zero`,
+and `isProper_projToSpec` (PROVEN above) supplies the properness of the
+TARGET that the valuative criterion consumes.
 
-**Where the two halves genuinely DIFFER, and this is what a prover should
-price first.**  Step 2 of the forward route needs a discrete valuation ring
-at the removed point of `proj E`, and there the curve is explicit — its
-charts are constructed in the `AffineChart` section above.  Here the removed
-point lies on `A`, about which the hypotheses say only that `f` is proper,
-smooth and geometrically connected (`ab`); the RELATIVE DIMENSION of `f` is
-NOT among them.  So the stalk cannot be seen to be one-dimensional from `ab`
-alone, and the dimension has to come from the chart: `ι` is an open
-immersion of the one-dimensional `Spec ℚ[E]` onto a dense open of `A`, and
-smoothness of `f` propagates the relative dimension from that open to all of
-`A`.  (Note the outer consumer
-`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` does carry
-`SmoothOfRelativeDimension 1 f` — but this leaf's own consumer,
-`exists_geomFibreAddEquiv_of_weierstrassModel`, does not, so it may not be
-assumed here.  If a prover finds the propagation step to be the real cost,
-the honest repair is to thread `hdim` down from that outer statement, not to
-weaken this one.)
+**Where the two halves genuinely differ** is the source: `proj E` comes with
+`smoothOfRelativeDimension_projToSpec`, whereas `AbelianSchemeStruct` gives
+only a bare `Smooth f`.  That single difference is
+`smoothOfRelativeDimension_one_of_affineChart` above, and it is the entire
+residue of this half.
 
-`ab` IS LOAD-BEARING here too, and now on BOTH sides: `ab.proper` and
-`ab.smooth` are what make `A` a curve at all, and `ab.zero` is what
-`_hrange` removes.
-
-NOT VACUOUS: the conclusion pins `ι ≫ v = ι₀`. -/
+`ab` IS LOAD-BEARING here on both sides: `ab.proper` and `ab.smooth` are
+what make `A` a curve at all, `ab.connected` is what the extension theorem
+consumes for integrality, and `ab.zero` is what `hrange` removes. -/
 theorem exists_hom_symm_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
     (ι₀ : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
       _root_.WeierstrassCurve.Projective.proj E)
     (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
-    (_h₀ : IsOpenImmersion ι₀) (_h₁ : IsOpenImmersion ι)
-    (_hstr₀ : ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
+    (_h₀ : IsOpenImmersion ι₀) (h₁ : IsOpenImmersion ι)
+    (hstr₀ : ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
       Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
-    (_hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
     (_hrange₀ : Set.range ι₀.base = (Set.range ((projGroupLaw E).toAbelianSchemeStruct.zero
       (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ)
-    (_hrange : Set.range ι.base =
+    (hrange : Set.range ι.base =
       (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
     ∃ v : A ⟶ _root_.WeierstrassCurve.Projective.proj E,
-      v ≫ _root_.WeierstrassCurve.Projective.projToSpec E = f ∧ ι ≫ v = ι₀ :=
-  sorry
+      v ≫ _root_.WeierstrassCurve.Projective.projToSpec E = f ∧ ι ≫ v = ι₀ := by
+  haveI := h₁
+  haveI := ab.proper
+  haveI := isProper_projToSpec E
+  haveI := smoothOfRelativeDimension_one_of_affineChart E ab ι h₁ hstr hrange
+  have hfin : (Set.range ι.base)ᶜ.Finite := by
+    obtain ⟨z, hz⟩ :=
+      range_hom_specRat_eq_singleton (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1
+    rw [hrange, compl_compl, hz]
+    exact Set.finite_singleton z
+  obtain ⟨v, ⟨h1, h2⟩, -⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strX := f) (j := ι) (strZ := _root_.WeierstrassCurve.Projective.projToSpec E)
+      ab.connected hfin hstr ι₀ hstr₀
+  exact ⟨v, h1, h2⟩
 
 /-- **Two Weierstrass charts of the same affine curve glue to an
 isomorphism of the proper models** (**PROVEN 2026-07-27** from
@@ -6691,9 +6746,11 @@ criteria are used for different things and need different hypotheses:
   across that point to `u : proj E ⟶ A`, and symmetrically to
   `v : A ⟶ proj E`.  That is `exists_hom_of_affineChart` and
   `exists_hom_symm_of_affineChart`, and it is where PROPERNESS is
-  consumed.  Both remain OPEN; the forward one's docstring carries the
-  four-step route and names the single missing input, which is
-  `ValuationRing` of the stalk at the removed point;
+  consumed.  **Both are PROVEN** as of release 6, by specialising
+  `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`; only
+  `smoothOfRelativeDimension_one_of_affineChart` — that `A` is a curve —
+  survives, and it is a statement about `A` alone with no extension theory
+  in it;
 * `u ≫ v` and `v ≫ u` agree with the identity on a dense open of a
   reduced SEPARATED scheme, hence are the identity.  That is
   `isIso_of_isDominant_of_inverse`, and it is PROVEN above from mathlib's
@@ -6819,9 +6876,10 @@ taken here, and it decomposes the leaf into three:
 * `exists_isIso_of_affineChart` — the two affine charts glue to an
   isomorphism `proj E ≅ A` over `Spec ℚ` (PROVEN 2026-07-27, itself cut into
   the two extension leaves `exists_hom_of_affineChart` and
-  `exists_hom_symm_of_affineChart` — the valuative criterion at the one
-  removed point, which is what is still OPEN — plus the formal gluing step
-  `isIso_of_isDominant_of_inverse`);
+  `exists_hom_symm_of_affineChart`, both since PROVEN over release 6's
+  `CurveExtension.lean`, plus the formal gluing step
+  `isIso_of_isDominant_of_inverse`; the residue is
+  `smoothOfRelativeDimension_one_of_affineChart`);
 * `hom_specRat_eq_of_range_eq` — a `ℚ`-point is determined by its image, so
   matching charts force matching zero SECTIONS (PROVEN here);
 * `relPointPost_add` — rigidity: a base-point-preserving morphism of
