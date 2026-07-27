@@ -273,6 +273,72 @@ the homogeneous coordinate ring. -/
 noncomputable def projNeg : proj W ⟶ proj W :=
   Proj.map (negGradedHom W) (irrelevant_le_map_negGradedHom W)
 
+/-! ### The point at infinity as a section of the model
+
+`[0 : 1 : 0]` is a *rational* point of the Weierstrass cubic, so it is a
+section `Spec R ⟶ proj W` of the structure morphism, and it is the identity
+of the chord–tangent group law.
+
+Like the inversion, and unlike the group law `m`, it needs no gluing.
+Mathlib's `Proj.fromOfGlobalSections` is the relevant universal property:
+a ring map `A →+* Γ(X, ⊤)` whose restriction to the irrelevant ideal
+generates the unit ideal gives a morphism `X ⟶ Proj 𝒜`.  Reading it
+concretely, a map out of `R[X, Y, Z] ⧸ (W)` is a choice of coordinates
+with no common zero, and here the choice is `X ↦ 0`, `Y ↦ 1`, `Z ↦ 0`:
+the Weierstrass polynomial vanishes there (every one of its monomials
+contains an `X` or a `Z`), and `Y ↦ 1` is a unit, so the irrelevant ideal
+maps onto everything. -/
+
+/-- Evaluation of `R[X, Y, Z]` at the point at infinity `[0 : 1 : 0]`. -/
+noncomputable def evalInfty : MvPolynomial (Fin 3) R →ₐ[R] R :=
+  aeval ![0, 1, 0]
+
+/-- **The Weierstrass polynomial vanishes at `[0 : 1 : 0]`** — every one of
+its monomials contains an `X` or a `Z`. -/
+@[simp] theorem evalInfty_polynomial : evalInfty (polynomial W) = (0 : R) := by
+  rw [polynomial]
+  simp [evalInfty]
+
+/-- Evaluation at the point at infinity, descended to the homogeneous
+coordinate ring. -/
+noncomputable def evalInftyQuot :
+    (MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal W).toIdeal) →+* R :=
+  Ideal.Quotient.lift _ (evalInfty (R := R)).toRingHom (by
+    intro a ha
+    have h : (polynomialHomogeneousIdeal W).toIdeal = Ideal.span {polynomial W} := rfl
+    rw [h, Ideal.mem_span_singleton] at ha
+    obtain ⟨c, rfl⟩ := ha
+    simp)
+
+@[simp] theorem evalInftyQuot_mk (p : MvPolynomial (Fin 3) R) :
+    evalInftyQuot W (Ideal.Quotient.mk _ p) = evalInfty p := rfl
+
+/-- The coordinates `(0, 1, 0)` have no common zero, so the irrelevant
+ideal maps onto the unit ideal — the hypothesis
+`Proj.fromOfGlobalSections` needs. -/
+theorem map_irrelevant_evalInfty_eq_top :
+    (HomogeneousIdeal.irrelevant (projGrading W)).toIdeal.map
+        (((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W)) = ⊤ := by
+  rw [Ideal.eq_top_iff_one]
+  have hmem : (Ideal.Quotient.mk (polynomialHomogeneousIdeal W).toIdeal (X (1 : Fin 3))) ∈
+      (HomogeneousIdeal.irrelevant (projGrading W)).toIdeal :=
+    HomogeneousIdeal.mem_irrelevant_of_mem _ one_pos
+      (HomogeneousIdeal.mk_mem_quotientGrading
+        (mem_homogeneousSubmodule _ _ |>.mpr (isHomogeneous_X _ _)))
+  have h := Ideal.mem_map_of_mem
+    (((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W)) hmem
+  simpa [evalInfty] using h
+
+/-- **The point at infinity `[0 : 1 : 0]` as a section `Spec R ⟶ proj W`.**
+
+This is the unit section of the chord–tangent group law, and — like
+`projNeg` — it is obtained from a universal property rather than by
+gluing. -/
+noncomputable def projInfty : Spec (CommRingCat.of R) ⟶ proj W :=
+  Proj.fromOfGlobalSections (𝒜 := projGrading W)
+    (((Scheme.ΓSpecIso (CommRingCat.of R)).inv).hom.comp (evalInftyQuot W))
+    (map_irrelevant_evalInfty_eq_top W)
+
 /-- **Inversion is an involution of the projective model.** -/
 @[simp] theorem projNeg_comp_projNeg : projNeg W ≫ projNeg W = 𝟙 (proj W) := by
   show Proj.map (negGradedHom W) _ ≫ Proj.map (negGradedHom W) _ =
