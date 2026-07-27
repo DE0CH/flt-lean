@@ -5346,6 +5346,216 @@ theorem exists_descentClosed_heckePackage
           ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w) :=
   sorry
 
+/-- **Ramanujan–Petersson for the Hilbert newform over `F`** (SORRIED
+CITATION — Deligne's theorem; the discharge of
+`PotentialModularityWitness.weilBoundF`, added 2026-07-27 when that field
+was introduced).
+
+Away from `badF`, the linear coefficient of the Hecke polynomial
+`heckeF w = X² − a_w·X + Nw` satisfies `‖φ(a_w)‖ ≤ 2√(Nw)` at every
+complex embedding `φ` of the Hecke field `E`.  (The bound is stated for
+`(heckeF w).coeff 1 = −a_w`; the two are equivalent since `‖−z‖ = ‖z‖`.)
+
+CLASSICAL CONTENT.  Eichler–Shimura for parallel weight `2`: the
+Blasius/Carayol realization of a Hilbert newform of parallel weight `2`
+in the `H¹` of a quaternionic Shimura variety, together with the Weil
+conjectures for that variety.  Deligne, *La conjecture de Weil I*,
+Publ. IHÉS 43 (1974); Blasius, *Hilbert modular forms and the Ramanujan
+conjecture*, in *Noncommutative Geometry and Number Theory* (2006);
+Carayol, Ann. Sci. ÉNS 19 (1986); Shimura, Duke Math. J. 45 (1978) for
+the parallel-weight-`2` normalization `X² − a_w·X + Nw`.  When
+`[F : ℚ] > 1` the quaternionic Shimura variety may be taken to be a
+CURVE (Jacquet–Langlands to a quaternion algebra split at exactly one
+infinite place), so the input from the Weil conjectures is the Riemann
+Hypothesis for curves over finite fields — the theorem the Stepanov
+subtree of `MoretBailly.lean` is building.
+
+**WHY THIS LEAF EXISTS: A FALSITY REPAIR (2026-07-27).**  This clause
+used to be the leaf `weilBound_heckeF_of_witness`, quantified over an
+arbitrary `PotentialModularityWitness ℓ O ρ` with NO hypothesis on `ρ`.
+In that form it was FALSE: `ρ = 1 ⊕ χ_ℓ` satisfies every clause of
+`IsHardlyRamified` (and, a fortiori, the empty hypothesis package of the
+old leaf), carries a genuine witness with `F = ℚ`, `E = ℚ` and
+`heckeF w = (X − 1)(X − Nw)`, and its EISENSTEIN eigensystem has
+`a_w = 1 + Nw > 2√(Nw)` at every `Nw ≠ 1`.  See the FALSITY AUDIT on
+`PotentialModularityWitness.weilBoundF` for the full construction.
+
+`hirrF` is what deletes those instances: it is the non-Eisenstein
+condition (the maximal ideal of the Hecke algebra cut out by
+`ρbar|_{G_F}` is non-Eisenstein iff `ρbar|_{G_F}` is irreducible), and it
+is the same hypothesis under which `exists_heckePackage_of_seed` produces
+`heckeF` in the first place and under which the Carayol citation
+`exists_threeadic_realization_of_heckePackage` is stated.  It is FREE at
+the single call site, which already holds it from
+`exists_moretBailly_seed_of_five_le`.
+
+RESIDUAL FAITHFULNESS GAP, INHERITED AND NAMED.  Even with `hirrF`, the
+true hypothesis of Deligne's theorem — that `heckeF` IS the Hecke
+eigensystem of a cuspidal Hilbert newform over `F` — is not stateable at
+this pin, which has no Hilbert modular forms.  `hirrF` is the sharpest
+in-tree PROXY for it (the same status it has in
+`exists_threeadic_realization_of_heckePackage`), not the thing itself.
+
+SOUNDNESS AUDIT.  BOTH routes are available, which is exactly what was
+NOT true of the leaf this replaces.  (i) Direct: the classical theorem
+applied to the cuspidal newform `hirrF` guarantees.  (ii) Collapse: the
+arithmetic package is carried in full — `hℓ5`, `hρ`, `hρbar`, `hirr` —
+and is classically unsatisfiable (the module headline), so the statement
+is classically true for every package.  Route (ii) is a soundness
+justification only, NOT an available Lean discharge: the headline
+consumes this subtree, so `absurd hirr …` is circular here.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem weilBound_heckeF_of_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
+    ∀ w ∉ badF, ∀ φ : E →+* ℂ,
+      ‖φ ((heckeF w).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) :=
+  sorry
+
+/-- **Ramanujan–Petersson for the DESCENDED eigensystems, at the inert
+places** (SORRIED CITATION — cyclic base change; the discharge of
+`PotentialModularityWitness.weilBoundDescent`, added 2026-07-27 with it).
+
+For a subgroup `C ≤ Gal(F/ℚ)` and an eigenvalue function `a` over
+`L = F^C` pinned by the Frobenius traces of `ρ|_{G_L}` (the hypothesis
+`ha` determines `a w` uniquely at every good `w`, `ψ` being injective on
+a field), all but finitely many of its values satisfy
+`‖φ(a w)‖ ≤ 2√(Nw)` — at those `w` matching NO good place of `F`, i.e.
+where no `W ∉ badF` has both the same residue cardinality and the same
+Frobenius characteristic polynomial.
+
+WHY ONLY THE INERT PLACES.  `ρ` is a representation of `G_ℚ`, so its
+Frobenius characteristic polynomial at a place depends only on the
+residue cardinality; hence at a place `w` of `L` matching a good place
+`W` of `F` the eigenvalue at `w` IS the newform's eigenvalue at `W`, read
+inside `ℚ̄_ℓ`, and the bound follows from `weilBoundF` with no automorphic
+input.  That half is proven in `weilBound_of_charFrob_baseChange`.  What
+remains is a place `w` lying under places of `F` of strictly larger
+residue degree, where the eigenvalue is that of the form DESCENDED to
+`L`, related to the one upstairs only by the Dickson identity
+`a_W = D_f(a_w, Nw)`.
+
+WHY THE INEQUALITY UPSTAIRS DOES NOT SUFFICE, recorded so the cheap route
+is not re-attempted.  From `|φ(a_W)| ≤ 2·Nw^{f/2}` and `α_W β_W = Nw^f`
+one cannot conclude `|α_w| = |β_w| = √(Nw)`: that needs the SHARP form of
+the bound (both Frobenius eigenvalues of absolute value exactly `√(NW)`),
+which needs `φ(a_W)` REAL — total reality of the Hecke field of a
+parallel-weight-`2` Hilbert newform with trivial nebentypus, which is not
+recorded anywhere in this development, and the eigenvalues live in `ℚ̄_ℓ`
+rather than `ℂ`.  CHECK THAT WOULD REFUTE THIS: exhibit a proof of
+`|α| = |β| = √q` from `αβ = q` and `|α^f + β^f| ≤ 2 q^{f/2}` alone, for
+some `f > 1`, with `α + β` not assumed real.
+
+AXIS SEARCHED, AXIS NOT SEARCHED.  Searched: the elementary/algebraic
+axis — deducing the bound downstairs from the bound upstairs by pure
+inequalities on Frobenius eigenvalues.  NOT searched: any route that
+first constructs the descended automorphic object, which is the citation
+itself (Langlands, *Base Change for GL(2)*, Ann. of Math. Studies 96
+(1980); Arthur–Clozel, Ann. of Math. Studies 120 (1989), Ch. 3 Thm 4.2).
+
+**WHY THIS LEAF EXISTS: A FALSITY REPAIR (2026-07-27).**  This clause
+used to be the leaf `weilBound_of_charFrob_baseChange_of_inert`, which
+carried `hρ : IsHardlyRamified` but NOT the non-Eisenstein condition.
+`IsHardlyRamified` does not imply irreducibility — `1 ⊕ χ_ℓ` satisfies it
+— and with `F` real quadratic, `C = Gal(F/ℚ)` and `p` inert in `F` the
+inert hypothesis holds at `w = (p)` of `L = ℚ` while `a_p = 1 + p`
+exceeds `2√p`.  So the old statement was false; at `C = ⊥` it was merely
+vacuous, which is why the base case of the descent never exposed it.  See
+the FALSITY AUDIT on `PotentialModularityWitness.weilBoundF`.
+
+SOUNDNESS AUDIT.  (i) Direct: the classical theorem applied to the
+Hilbert newform obtained by descending the carrier's newform to `L`,
+which `hirrF` guarantees is cuspidal.  (ii) Collapse: the arithmetic
+package is carried in full and is classically unsatisfiable (the module
+headline).  Route (ii) is a soundness justification only, NOT an
+available Lean discharge: see the ROUTE AUDIT on
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`, whose chain
+shows the headline CONSUMES this subtree, so `absurd hirr …` is circular
+here.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem weilBound_descended_of_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
+    ∀ (C : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
+      [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C))))
+      (a : HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C)) → E'),
+      (∀ w ∉ S, ψ (a w) =
+        - ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+          w).coeff 1)) →
+      ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField C))),
+        ∀ w, w ∉ S → w ∉ S' →
+          (∀ W ∉ badF,
+            Ideal.absNorm W.asIdeal = Ideal.absNorm w.asIdeal →
+              (ρ.map (algebraMap ℚ F)).charFrob W ≠
+                (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
+          ∀ φ : E' →+* ℂ,
+            ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) :=
+  sorry
+
 /-- **Carrier inhabitation — potential modularity of the KW lift**
 (PROVEN — Taylor's theorem, the analytic core of pillar β): the
 Khare–Wintenberger lift `ρ` of an irreducible hardly ramified mod-`ℓ`
@@ -5534,9 +5744,21 @@ theorem exists_potentialModularityWitness_of_five_le
       hW hρbar hirr π hπsurj hπ F hFtr hFgal hev hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO
       hmod₂ hbad2 hbad3 hbadℓ
   -- glue: instantiate the carrier fieldwise
+  -- (iii') CUSPIDALITY of the newform and of all its solvable descents
+  -- (2026-07-27, when `weilBoundF`/`weilBoundDescent` were added to the
+  -- carrier after the free-standing `weilBound_*_of_witness` leaves were
+  -- found FALSE — `IsHardlyRamified` alone admits `1 ⊕ χ_ℓ`, whose
+  -- eigensystem is Eisenstein). Both citations are stated with `hirrF`,
+  -- the non-Eisenstein condition, which step (i) already produced and
+  -- steps (ii)/(iii) already consume.
+  have hweil := weilBound_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
+    hirr π hπsurj hπ F hFtr hFgal hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂
+  have hweild := weilBound_descended_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
+    hirr π hπsurj hπ F hFtr hFgal hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂
   exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E₂,
            badF := badF', heckeF := heckeF₂, ψℓ := ψ₂, ιO := ιO,
            ιO_injective := hιO, modularF := hmod₂, descentClosed := hdc,
+           weilBoundF := hweil, weilBoundDescent := hweild,
            B := B, τF := τF,
            ψ₃ := ψ₃, ιB := ιB, ιB_injective := hιB, matchF₃ := hmatch }⟩
 
@@ -6302,107 +6524,46 @@ theorem forall_complexEmbedding_norm_le_of_ringHom_eq {Ω : Type*} [Field Ω]
   rw [← hφ']
   exact hB φ'
 
-/-- **Ramanujan–Petersson for the CARRIER's Hilbert newform** (SORRIED
-CITATION — Eichler–Shimura for parallel weight `2`, i.e. Deligne's
-theorem via the Blasius/Carayol realization of a Hilbert newform of
-parallel weight `2` in the `H¹` of a quaternionic Shimura variety,
-together with the Weil conjectures for that variety; Deligne, *La
-conjecture de Weil I*, Publ. IHÉS 43 (1974); Blasius, *Hilbert modular
-forms and the Ramanujan conjecture*, in *Noncommutative Geometry and
-Number Theory* (2006); Carayol, Ann. Sci. ÉNS 19 (1986); Shimura, Duke
-Math. J. 45 (1978), for the parallel-weight-`2` normalization
-`X² − a_w·X + Nw`).
-
-**THIS IS THE IRREDUCIBLE CLASSICAL CONTENT** extracted from
-`weilBound_of_charFrob_baseChange` below (2026-07-27).  It is stated at
-the places of `F` — where the witness's newform actually lives — rather
-than at the places of an intermediate field, so it is LITERALLY the
-classical theorem and nothing else: no base change, no descent, no
-coefficient-field bookkeeping.  That is what makes it the reusable form.
+/-- **Ramanujan–Petersson for the CARRIER's Hilbert newform**
+(**PROVEN 2026-07-27 — it is now the carrier field
+`PotentialModularityWitness.weilBoundF`**).
 
 STATEMENT.  Away from the witness's own bad set, the linear coefficient
 of the Hecke polynomial `Wit.heckeF W = X² − a_W·X + NW` — i.e. `−a_W` —
 satisfies `‖φ(a_W)‖ ≤ 2√(NW)` at EVERY complex embedding `φ` of the
 carrier's Hecke field.  (The bound is stated for `(heckeF W).coeff 1`
 itself rather than for `a_W = −(heckeF W).coeff 1`; the two are
-equivalent because `‖−z‖ = ‖z‖`.)
+equivalent because `‖−z‖ = ‖z‖`.)  It is genuinely discriminating rather
+than decorative: an Eisenstein eigensystem has `a_W = 1 + NW`, and
+`1 + NW > 2√(NW)` for every `NW ≠ 1`, so the bound is exactly what
+excludes the objects Arthur–Clozel Ch. 3 Thm 4.2(d) must exclude.
 
-FALSITY AUDIT — **THIS STATEMENT WAS FALSE AS FIRST WRITTEN (2026-07-27,
-the day it was split off) AND IS REPAIRED HERE BY RESTORING THE
-RESIDUAL-IRREDUCIBILITY HALF OF THE HYPOTHESIS PACKAGE.**  As split off
-from `weilBound_of_charFrob_baseChange` the leaf quantified over an
-ARBITRARY `ρ` carrying NO hypotheses at all, and argued faithfulness
-from `Wit.modularF` PINNING `heckeF` in terms of `ρ` (the paragraph
-below, retained because it is correct as far as it goes).  That is true
-and beside the point: the junk freedom is in `ρ`, not in `heckeF`.
+**FALSITY AUDIT AND REPAIR (2026-07-27).**  Until today this was a
+SORRIED leaf, and in that form it was **FALSE**.  Its FAITHFULNESS
+paragraph argued that `Wit.heckeF W` is PINNED by `Wit.modularF` and so
+"carries no freedom for a junk witness to exploit" — which is true, and
+beside the point: the freedom is not in the witness, it is in **`ρ`**,
+which the old statement quantified over with **no hypothesis at all**.
+`ρ = 1 ⊕ χ_ℓ` (trivial ⊕ cyclotomic, on `Fin 2 → ℤ_[ℓ]`) satisfies every
+clause of `IsHardlyRamified`, and carries a genuine
+`PotentialModularityWitness` with `F = ℚ`, `E = ℚ`,
+`heckeF w = (X − 1)(X − Nw)`, `B = ℤ_[3]`, `τF = 1 ⊕ χ_3` — for which
+`a_w = 1 + Nw > 2√(Nw)` at every place with `Nw ≠ 1`.  The very
+Eisenstein system this bound was written to exclude is a MODEL of the
+old hypotheses.  Both soundness routes failed with it: the direct route
+because an Eisenstein eigensystem is not a cuspidal newform, and the
+collapse route because the package was satisfiable.
 
-COUNTEREXAMPLE to the unrepaired statement.  Take `ℓ ≥ 5`,
-`O = ℤ_[ℓ]`, `ρ = 1 ⊕ ε_ℓ` (trivial character ⊕ `ℓ`-adic cyclotomic
-character), `F = ℚ` (totally real, Galois over `ℚ`), `E = ℚ`,
-`badF = ∅`, `heckeF w = X² − (1 + Nw)·X + Nw`, `ψℓ`/`ιO` the evident
-embeddings, `B = ℤ_[3]`, `τF = 1 ⊕ ε_3`.  Every field of
-`PotentialModularityWitness` holds — `modularF` and `matchF₃` because
-`Frob_w` acts as `diag(1, Nw)` in both realizations, and
-`descentClosed` because `a w = 1 + Nw` is already rational, so it is
-`ι`-rational for every `ι`.  The conclusion demands
-`‖1 + Nw‖ ≤ 2√(Nw)`, which FAILS at every `Nw ≥ 2`.  This is precisely
-the EISENSTEIN eigensystem that the FAITHFULNESS paragraph below names
-as what the bound exists to exclude: nothing in the witness structure
-excludes it, because the structure records MODULARITY of `ρ|_{G_F}` but
-never CUSPIDALITY of the form.
-
-WHY THE REPAIR IS THE RESIDUAL PACKAGE AND NOT `hρ`.  `1 ⊕ ε_ℓ` is
-itself HARDLY RAMIFIED — cyclotomic determinant; unramified outside
-`ℓ`; flat at `ℓ`, its mod-`ℓ` reduction being the generic fibre of the
-finite flat `ℤ/ℓ × μ_ℓ`; upper-triangular at `2` with the trivial (hence
-unramified, square-one) quotient character.  So adding `hρ` alone would
-NOT have repaired it, and the sibling
-`weilBound_of_charFrob_baseChange_of_inert`, which DID carry `hρ`, was
-false for the same `ρ` taken over `F = ℚ(√5)` with `C = ⊤`.  What
-`1 ⊕ ε_ℓ` fails is IRREDUCIBILITY, which in this module is always a
-SEPARATE hypothesis (`hirr`), is exactly what makes the attached Hilbert
-form cuspidal rather than Eisenstein, and is exactly what both soundness
-audits in this cluster already invoked — "an irreducible hardly ramified
-mod-`ℓ` representation with `ℓ ≥ 5`" — while neither statement carried
-it.  The residual block below is copied from
-`exists_potentialModularityWitness_of_five_le`, where the witness is
-built; the sole consumer, `heckeSystemDescendsTo_bot`, already binds
-every piece of it, so the repair costs no new obligation anywhere.
-
-CHECK THAT WOULD REFUTE THIS REPAIR: exhibit a residually irreducible
-hardly ramified `ρ` with `ℓ ≥ 5` whose witness carries an Eisenstein
-`heckeF`.  There is none, twice over — route (i), residual
-irreducibility makes the attached Hilbert newform cuspidal, so Deligne
-applies; route (ii), the package is classically unsatisfiable by this
-module's headline `not_isIrreducible_of_isHardlyRamified_of_five_le`.
-Note that route (ii) was ASSERTED by the sibling's soundness audit
-before the repair and was NOT available to it, the irreducibility half
-being absent from its binders; it is available now.
-
-FAITHFULNESS (correct as far as it goes, and no longer the whole
-story).  At every `W ∉ Wit.badF` the polynomial `Wit.heckeF W` is PINNED
-by the structure field `Wit.modularF` — `(charFrob W).map Wit.ιO =
-(heckeF W).map Wit.ψℓ` with `Wit.ψℓ` injective — so `heckeF W` is
-determined by `ρ` and carries no freedom of its own for a junk witness
-to exploit.  The bound is genuinely discriminating rather than
-decorative: an Eisenstein eigensystem has `a_W = 1 + NW`, and
-`1 + NW > 2√(NW)` for every `NW ≠ 1`, so it is exactly what excludes the
-objects Arthur–Clozel Ch. 3 Thm 4.2(d) must exclude.
-
-WHY IT IS NOT A FIELD OF `PotentialModularityWitness`, RE-REPORTED
-UPWARD 2026-07-27 AND NOW WITH EVIDENCE.  It should be — CUSPIDALITY is
-a property of the newform the structure records, in the same family as
-`modularF` and `matchF₃`, and the producing leaf
-`exists_potentialModularityWitness_of_five_le` is entitled to supply it
-(it holds the whole residual package).  The falsity audit above is the
-evidence: because the structure does not record it, EVERY leaf in this
-cluster that needs cuspidality must re-import the entire residual
-package as hypotheses, and the two that forgot to were both false.  The
-architecturally correct repair is a `weilBoundF`/cuspidality FIELD on
-`PotentialModularityWitness` (in `Modularity/MoretBailly.lean`),
-discharged once at the inhabitation site; this leaf would then be a
-one-line projection.  Not done here because that structure is outside
-this task's region and adding a field breaks every construction site.
+The repair is the `descentClosed` pattern.  The missing input is the
+non-Eisenstein condition `hirrF`, which mentions the residual
+representation `ρbar` and is therefore not in scope for any consumer of a
+carrier — but is FREE for the carrier the inhabitation leaf builds.  So
+the clause moved onto `PotentialModularityWitness` as the field
+`weilBoundF` (see its FALSITY AUDIT for the full construction), and the
+citation is now stated, with `hirrF` and the whole arithmetic package, at
+the single inhabitation site as `weilBound_heckeF_of_heckePackage`.  This
+declaration is retained, unchanged in statement, as the reusable named
+form its consumers already cite.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -6428,11 +6589,37 @@ theorem weilBound_heckeF_of_witness
     (Wit : PotentialModularityWitness ℓ O ρ) :
     ∀ W ∉ Wit.badF, ∀ φ : Wit.E →+* ℂ,
       ‖φ ((Wit.heckeF W).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm W.asIdeal) :=
-  sorry
+  Wit.weilBoundF
 
 /-- **Ramanujan–Petersson at the places of `L = F^C` that do NOT match a
-good place of `F`** (SORRIED CITATION; the residual half of
+good place of `F`** (**PROVEN 2026-07-27 — it is now the carrier field
+`PotentialModularityWitness.weilBoundDescent`**; the residual half of
 `weilBound_of_charFrob_baseChange` after the 2026-07-27 split).
+
+**FALSITY AUDIT AND REPAIR (2026-07-27).**  Until today this was a
+SORRIED leaf carrying `hρ : IsHardlyRamified` but NOT the non-Eisenstein
+condition, and in that form it was **FALSE**.  `IsHardlyRamified` does
+not imply irreducibility: `ρ = 1 ⊕ χ_ℓ` satisfies every one of its
+clauses and carries a genuine `PotentialModularityWitness` (see the
+FALSITY AUDIT on `weilBound_heckeF_of_witness` above and on
+`PotentialModularityWitness.weilBoundF`).  With `F` real quadratic and
+`C = Gal(F/ℚ)`, so `L = ℚ`, take `p` inert in `F`: no place of `F` has
+residue cardinality `p`, so the inert hypothesis below HOLDS at `w = (p)`
+— while `a_p = 1 + p > 2√p`.  At `C = ⊥` the old statement was merely
+VACUOUS, every place matching itself, which is why the base case of the
+descent (`heckeSystemDescendsTo_bot`, its only consumer) never exposed
+the falsity.  The SOUNDNESS AUDIT below was wrong on both counts for the
+same reason: route (i) does not apply to an Eisenstein system, and route
+(ii)'s package was satisfiable.
+
+The clause has moved onto `PotentialModularityWitness` as the field
+`weilBoundDescent`, and the citation is now stated with `hirrF` and the
+whole arithmetic package at the single inhabitation site as
+`weilBound_descended_of_heckePackage`.  This declaration is retained,
+unchanged in statement, as the reusable named form; the hypotheses
+`hℓodd`, `hℓ5`, `hrank`, `hρ` are now unused here and are deliberately
+LEFT IN PLACE — removing them deletes no instance and would cost the
+integrator a conflict at the call site for nothing.
 
 THE SPLIT, and why this is the shape that is left.  `ρ` is a
 representation of `G_ℚ` unramified outside `{2, ℓ}`, so its Frobenius
@@ -6561,7 +6748,7 @@ theorem weilBound_of_charFrob_baseChange_of_inert
               (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
         ∀ φ : E' →+* ℂ,
           ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) :=
-  sorry
+  Wit.weilBoundDescent C E' ψ S a ha
 
 /-- **Ramanujan–Petersson for the descended Hilbert eigensystem** (the
 CUSPIDALITY clause of `HeckeSystemDescendsTo`).
@@ -6579,8 +6766,30 @@ this module:
   stated at the places of `F` where the carrier's newform actually
   lives, so that it is literally Deligne's theorem and nothing else.
   This is the reusable form, and it is what the SPLIT half consumes.
+  **Since 2026-07-27 it is PROVEN**, being the carrier field
+  `PotentialModularityWitness.weilBoundF`.
 * `weilBound_of_charFrob_baseChange_of_inert` — the residual citation,
   needed only at places of `L = F^C` matching NO good place of `F`.
+  **Since 2026-07-27 it is PROVEN**, being the carrier field
+  `PotentialModularityWitness.weilBoundDescent`.
+
+**WHERE THE TWO CITATIONS NOW LIVE, and why they moved (2026-07-27).**
+Both were FALSE in their free-standing form: `IsHardlyRamified` does not
+imply irreducibility, and the reducible `ρ = 1 ⊕ χ_ℓ` satisfies it,
+carries a genuine `PotentialModularityWitness`, and has the EISENSTEIN
+eigensystem `a_w = 1 + Nw > 2√(Nw)` — the very system this clause exists
+to exclude.  The missing input is the non-Eisenstein condition
+`hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible`, which mentions the
+residual representation and so is not in scope for any consumer of a
+carrier.  Following the `descentClosed` precedent the two clauses became
+FIELDS of `PotentialModularityWitness`, discharged at the single
+inhabitation site `exists_potentialModularityWitness_of_five_le` by
+`weilBound_heckeF_of_heckePackage` and
+`weilBound_descended_of_heckePackage`, which carry `hirrF` and the whole
+arithmetic package.  **This theorem's own hypotheses `hℓodd`, `hℓ5`,
+`hrank`, `hρ` are consequently no longer consumed**; they are retained
+because removing them deletes no instance and would cost a conflict at
+the call site.
 * `forall_complexEmbedding_norm_le_of_ringHom_eq` — PROVEN here, the
   bookkeeping that reads a bound over `Wit.E` as a bound over the
   existential coefficient field `E'`, the two being related only by a

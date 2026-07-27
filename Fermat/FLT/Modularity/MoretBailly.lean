@@ -1035,6 +1035,114 @@ structure PotentialModularityWitness (ℓ : ℕ) [Fact ℓ.Prime]
         (b : HeightOneSpectrum (NumberField.RingOfIntegers
           (IntermediateField.fixedField H)) → E),
         ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w
+  /-- **RAMANUJAN–PETERSSON AT THE PLACES OF `F`** — the newform
+  recorded by `heckeF` is CUSPIDAL (added 2026-07-27; see the FALSITY
+  AUDIT below for why this had to become a field).
+
+  Away from `badF`, the linear coefficient of `heckeF w = X² − a_w·X + Nw`
+  satisfies `‖φ(a_w)‖ ≤ 2√(Nw)` at every complex embedding `φ` of `E`.
+  Classically this is Deligne's theorem (Eichler–Shimura for parallel
+  weight `2`, via the Blasius/Carayol realization of a Hilbert newform of
+  parallel weight `2` in the `H¹` of a quaternionic Shimura variety
+  together with the Weil conjectures for that variety; Deligne, *La
+  conjecture de Weil I*, Publ. IHÉS 43 (1974); Blasius, in
+  *Noncommutative Geometry and Number Theory* (2006); Carayol, Ann. Sci.
+  ÉNS 19 (1986)).
+
+  **FALSITY AUDIT (2026-07-27) — WHY THIS IS A FIELD AND NOT A LEAF
+  ABOUT AN ARBITRARY CARRIER.**  Until today this clause was stated in
+  `Modularity/KhareWintenberger.lean` as
+  `weilBound_heckeF_of_witness (Wit : PotentialModularityWitness ℓ O ρ)`,
+  a sorried leaf universally quantified over the carrier AND over `ρ`,
+  with **no hypothesis on `ρ` whatsoever**.  In that form it was **FALSE**,
+  and its own docstring contained the refutation:
+
+  * `IsHardlyRamified` does **not** imply irreducibility.  The reducible
+    representation `ρ = 1 ⊕ χ_ℓ` (trivial character ⊕ `ℓ`-adic cyclotomic
+    character, on `Fin 2 → ℤ_[ℓ]`) satisfies **every** clause of
+    `IsHardlyRamified`: `det ρ = χ_ℓ`; unramified outside `{2, ℓ}`; flat at
+    `ℓ` (its `ℓ`-torsion is `ℤ/ℓ ⊕ μ_ℓ`, finite flat); and the projection
+    onto the trivial line is a `1`-dimensional quotient which is
+    unramified with trivial square, so `isTameAtTwo` holds with
+    `δ = 1`.
+  * That `ρ` carries a genuine `PotentialModularityWitness`: take
+    `F = ℚ` (totally real and Galois over `ℚ`), `E = ℚ`,
+    `heckeF w = (X − 1)(X − Nw) = X² − (1 + Nw)·X + Nw`, `ψℓ` and `ιO`
+    the tautological embeddings into `ℚ̄_ℓ`, `B = ℤ_[3]` with
+    `τF = 1 ⊕ χ_3`.  `modularF` and `matchF₃` hold by construction, and
+    `descentClosed` holds with `b w = 1 + Nw ∈ ℚ = E`.
+  * But its eigensystem is the EISENSTEIN one, `a_w = 1 + Nw`, and
+    `1 + Nw > 2√(Nw)` for every `Nw ≠ 1`.  So the old leaf failed at
+    every place of every such carrier — not on a measure-zero edge.
+
+  Neither soundness route survived: route (i) "the classical theorem
+  applied to the attached newform" fails because an Eisenstein
+  eigensystem is not a cuspidal newform, and route (ii) "the hypothesis
+  package is classically unsatisfiable" fails because the package was
+  satisfiable — `1 ⊕ χ_ℓ` satisfies it.
+
+  **THE REPAIR IS THE `descentClosed` PATTERN.**  The missing input is
+  the non-Eisenstein condition, whose sharpest in-tree proxy is
+  `hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible` (see the round-4
+  audit on `exists_threeadic_realization_of_heckePackage` in
+  `KhareWintenberger.lean`).  `hirrF` mentions the residual
+  representation `ρbar`, which is NOT data of this structure and is not
+  in scope for any consumer of a carrier — so the clause is not
+  derivable for an arbitrary carrier, exactly as `descentClosed` was
+  not.  It is however FREE for the carrier the inhabitation leaf builds,
+  which holds `hirrF` from `exists_moretBailly_seed_of_five_le`.  So it
+  belongs here, where the choice is made, and is discharged at the single
+  inhabitation site by `weilBound_heckeF_of_heckePackage`. -/
+  weilBoundF : ∀ w ∉ badF, ∀ φ : E →+* ℂ,
+    ‖φ ((heckeF w).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)
+  /-- **RAMANUJAN–PETERSSON FOR THE DESCENDED EIGENSYSTEMS, AT THE INERT
+  PLACES** (added 2026-07-27 together with `weilBoundF`, and false for the
+  same reason in its old free-standing form).
+
+  For a subgroup `C ≤ Gal(F/ℚ)` and an eigenvalue function `a` over
+  `L = F^C` pinned by the Frobenius traces of `ρ|_{G_L}`, all but
+  finitely many of its values satisfy `‖φ(a w)‖ ≤ 2√(Nw)` — at the places
+  `w` matching NO good place of `F` (same residue cardinality AND same
+  Frobenius characteristic polynomial).  At the places that DO match, the
+  bound is a consequence of `weilBoundF` and needs no automorphic input;
+  that half is proven in `weilBound_of_charFrob_baseChange`.
+
+  Classically this is cyclic base change (Langlands, *Base Change for
+  GL(2)*, Ann. of Math. Studies 96 (1980); Arthur–Clozel, Ann. of Math.
+  Studies 120 (1989), Ch. 3 Thm 4.2): the descended eigensystem is
+  CUSPIDAL, so Ramanujan–Petersson applies to it as well.  At an inert
+  place the eigenvalue downstairs is related to the one upstairs only by
+  the Dickson identity `a_W = D_f(a_w, Nw)`, from which the bound
+  upstairs does NOT follow (that step needs the SHARP form of Deligne's
+  bound, i.e. reality of the Hecke field, which is not recorded here).
+
+  FALSITY AUDIT: the counterexample of `weilBoundF` applies verbatim,
+  with `F` real quadratic and `C = Gal(F/ℚ)` so that `L = ℚ`: at a prime
+  `p` inert in `F` no place of `F` has residue cardinality `p`, the inert
+  hypothesis therefore holds, and `a_p = 1 + p > 2√p`.  (At `C = ⊥` the
+  old statement was merely VACUOUS, every place matching itself — which
+  is why the base case of the descent never exposed the falsity.)
+
+  Discharged at the single inhabitation site by
+  `weilBound_descended_of_heckePackage`. -/
+  weilBoundDescent : ∀ (C : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
+      [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C))))
+      (a : HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C)) → E'),
+      (∀ w ∉ S, ψ (a w) =
+        - ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+          w).coeff 1)) →
+      ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField C))),
+        ∀ w, w ∉ S → w ∉ S' →
+          (∀ W ∉ badF,
+            Ideal.absNorm W.asIdeal = Ideal.absNorm w.asIdeal →
+              (ρ.map (algebraMap ℚ F)).charFrob W ≠
+                (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
+          ∀ φ : E' →+* ℂ,
+            ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)
   /-- The `3`-adic coefficient ring: classically the integers of
   `E_λ`, `λ | 3`. -/
   B : Type u
