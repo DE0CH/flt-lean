@@ -48,7 +48,14 @@ Ribet irreducibility.
 * `linearIndependent_one_tmul` — a `k`-independent family in `T`
   stays `F`-independent after base change (this is `padic_indep`);
 * `linearIndependent_frameAction` — and stays independent inside
-  `End_F`.
+  `End_F`;
+* `frameSymplectic` and its four lemmas (`_self`, `_frameMul`,
+  `_frameAction`, `_nondegenerate`) — the ALTERNATING, NONDEGENERATE,
+  Hecke-SELF-ADJOINT form on the frame attached to a Frobenius
+  functional `θ : F ⊗ₖ T →ₗ[F] F`. See the section note before it: this
+  is the general shape of such a form, so the four pairing fields of
+  `ModularTateGaloisData` are equivalent to ONE Frobenius functional
+  and carry no geometry at all.
 
 Everything here is elementary and none of it mentions modular forms,
 so it is deliberately stated over an arbitrary field extension
@@ -244,5 +251,161 @@ theorem linearIndependent_frameAction {ι : Type*} (x : ι → T)
   exact this
 
 end HeckeFrame
+
+/-!
+## The symplectic form on the frame
+
+The Atkin–Lehner-twisted Weil pairing of `ModularTateGaloisData`
+(`Modularity/Interface.lean`) is, on the frame `(F ⊗ₖ T)²`, completely
+determined by ONE linear functional on `F ⊗ₖ T`. That is the content of
+this section, and it is what lets the geometric leaf shed its four
+pairing fields.
+
+Write `A := F ⊗ₖ T` and suppose `A` is commutative. A bilinear form
+`⟨-,-⟩ : A² × A² → F` is *alternating* and *`A`-self-adjoint*
+(`⟨a·x, y⟩ = ⟨x, a·y⟩` for every `a ∈ A`) **exactly** when it has the
+shape
+
+  `⟨x, y⟩ = θ (x₀y₁ − x₁y₀)`   for a unique `θ : A →ₗ[F] F`.
+
+*Proof of the "only if" half*, which is the part that makes the cut
+below faithful rather than merely convenient. Self-adjointness forces
+`⟨x, y⟩ = Σᵢⱼ θᵢⱼ (xᵢyⱼ)` with `θᵢⱼ : A →ₗ[F] F`. Alternating at
+`x = (x₀, 0)` gives `θ₀₀ (x₀²) = 0` for every `x₀`, and squares span a
+commutative `F`-algebra in characteristic `0` by polarization
+(`xy = ((x+y)² − x² − y²)/2`), so `θ₀₀ = 0`; likewise `θ₁₁ = 0`. The
+cross terms then give `θ₀₁ + θ₁₀ = 0` on all products, i.e. on all of
+`A`. So `θ := θ₀₁` is the only datum.
+
+And `⟨-,-⟩` is NONDEGENERATE exactly when `θ` is a *Frobenius form*:
+`a ↦ θ(a·-)` is injective `A → A^∨`, hence — both sides having the same
+finite `F`-dimension — an isomorphism of `A`-modules. So a nondegenerate
+alternating self-adjoint form on `A²` exists **iff** `A ≅ A^∨`, i.e.
+iff `A` is a Frobenius algebra. `frameSymplectic` below builds the "if"
+direction; the "only if" direction above is not formalized here, and is
+recorded because it is what shows the corresponding cut in
+`Interface.lean` loses nothing.
+
+Everything here is stated with commutativity as an explicit HYPOTHESIS
+on `F ⊗ₖ T` rather than as a `CommRing` instance. That is deliberate:
+the consumer's `T` is `↥(modularHeckeAlgebraQ M)`, whose commutativity
+is a theorem (`modularHeckeAlgebraQ_mul_comm`) carried by a `letI`-only
+`@[reducible] def` instance, and letting that instance into the TYPE of
+`frameSymplectic` would make the pairing's type disagree syntactically
+with the `Ring`-derived one in `ModularTateGaloisData.pair`.
+-/
+
+section FrameSymplectic
+
+variable {k : Type*} [Field k] {F : Type*} [Field F] [Algebra k F]
+variable {T : Type*} [Ring T] [Algebra k T]
+
+/-- `frameAction` is multiplication by `1 ⊗ t`, by definition. -/
+theorem frameAction_eq_frameMul (t : T) :
+    frameAction k F T t = frameMul (k := k) (F := F) (T := T) ((1 : F) ⊗ₜ[k] t) := rfl
+
+/-- Commutativity of `T` passes to `F ⊗ₖ T`, as a statement about the
+ambient (non-commutative) `Ring` structure — so no `CommRing` instance
+enters any type. -/
+theorem mul_comm_tensor (hT : ∀ a b : T, a * b = b * a) :
+    ∀ x y : F ⊗[k] T, x * y = y * x := by
+  intro x
+  induction x using TensorProduct.induction_on with
+  | zero => intro y; simp
+  | tmul a t =>
+      intro y
+      induction y using TensorProduct.induction_on with
+      | zero => simp
+      | tmul b s =>
+          rw [Algebra.TensorProduct.tmul_mul_tmul, Algebra.TensorProduct.tmul_mul_tmul,
+            mul_comm a b, hT t s]
+      | add y z hy hz => rw [mul_add, add_mul, hy, hz]
+  | add x z hx hz =>
+      intro y
+      rw [add_mul, mul_add, hx, hz]
+
+/-- **The symplectic form on the frame attached to a functional**:
+`⟨x, y⟩ = θ (x₀y₁ − x₁y₀)`. By the section note above this is the
+general shape of an alternating `A`-self-adjoint form on `A²`, so
+nothing is lost by building the pairing this way. -/
+noncomputable def frameSymplectic (θ : (F ⊗[k] T) →ₗ[F] F) :
+    HeckeFrame k F T →ₗ[F] HeckeFrame k F T →ₗ[F] F :=
+  LinearMap.mk₂ F (fun x y => θ (x 0 * y 1 - x 1 * y 0))
+    (by
+      intro x x' y
+      simp only [Pi.add_apply]
+      rw [← map_add]
+      congr 1
+      rw [add_mul, add_mul]
+      abel)
+    (by
+      intro c x y
+      simp only [Pi.smul_apply]
+      rw [← map_smul]
+      congr 1
+      rw [smul_mul_assoc, smul_mul_assoc, ← smul_sub])
+    (by
+      intro x y y'
+      simp only [Pi.add_apply]
+      rw [← map_add]
+      congr 1
+      rw [mul_add, mul_add]
+      abel)
+    (by
+      intro c x y
+      simp only [Pi.smul_apply]
+      rw [← map_smul]
+      congr 1
+      rw [mul_smul_comm, mul_smul_comm, ← smul_sub])
+
+theorem frameSymplectic_apply (θ : (F ⊗[k] T) →ₗ[F] F) (x y : HeckeFrame k F T) :
+    frameSymplectic θ x y = θ (x 0 * y 1 - x 1 * y 0) := rfl
+
+/-- The form is alternating. -/
+theorem frameSymplectic_self (hcomm : ∀ x y : F ⊗[k] T, x * y = y * x)
+    (θ : (F ⊗[k] T) →ₗ[F] F) (x : HeckeFrame k F T) :
+    frameSymplectic θ x x = 0 := by
+  rw [frameSymplectic_apply, hcomm (x 0) (x 1), sub_self, map_zero]
+
+/-- Multiplication by any element of `F ⊗ₖ T` is self-adjoint. -/
+theorem frameSymplectic_frameMul (hcomm : ∀ x y : F ⊗[k] T, x * y = y * x)
+    (θ : (F ⊗[k] T) →ₗ[F] F) (r : F ⊗[k] T) (x y : HeckeFrame k F T) :
+    frameSymplectic θ (frameMul (k := k) (F := F) (T := T) r x) y =
+      frameSymplectic θ x (frameMul (k := k) (F := F) (T := T) r y) := by
+  rw [frameSymplectic_apply, frameSymplectic_apply]
+  congr 1
+  show r • x 0 * y 1 - r • x 1 * y 0 = x 0 * (r • y 1) - x 1 * (r • y 0)
+  simp only [smul_eq_mul, hcomm r (x 0), hcomm r (x 1), mul_assoc]
+
+/-- **`pair_hecke` at the frame**: every Hecke operator is self-adjoint
+for the form, with no Galois input whatever. -/
+theorem frameSymplectic_frameAction (hcomm : ∀ x y : F ⊗[k] T, x * y = y * x)
+    (θ : (F ⊗[k] T) →ₗ[F] F) (t : T) (x y : HeckeFrame k F T) :
+    frameSymplectic θ (frameAction k F T t x) y =
+      frameSymplectic θ x (frameAction k F T t y) := by
+  rw [frameAction_eq_frameMul, frameSymplectic_frameMul hcomm]
+
+/-- **`pair_nondeg` at the frame**, from the Frobenius property of `θ`. -/
+theorem frameSymplectic_nondegenerate (θ : (F ⊗[k] T) →ₗ[F] F)
+    (hθ : ∀ a : F ⊗[k] T, (∀ b : F ⊗[k] T, θ (a * b) = 0) → a = 0)
+    (x : HeckeFrame k F T) (h : ∀ y, frameSymplectic θ x y = 0) : x = 0 := by
+  classical
+  have h0 : x 0 = 0 := by
+    refine hθ _ fun b => ?_
+    have hb := h (Pi.single 1 b)
+    rw [frameSymplectic_apply] at hb
+    simpa using hb
+  have h1 : x 1 = 0 := by
+    refine hθ _ fun b => ?_
+    have hb := h (Pi.single 0 b)
+    rw [frameSymplectic_apply] at hb
+    have hb' : -θ (x 1 * b) = 0 := by simpa using hb
+    exact neg_eq_zero.mp hb'
+  funext i
+  fin_cases i
+  · exact h0
+  · exact h1
+
+end FrameSymplectic
 
 end GaloisRepresentation.Modularity
