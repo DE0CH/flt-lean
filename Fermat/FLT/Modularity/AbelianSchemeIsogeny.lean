@@ -32,7 +32,9 @@ so every existing consumer resolves unchanged through the `public import`.
 
 ## The reduction, in full
 
-Everything here except the one leaf is PROVEN.  The chain is:
+The chain below is PROVEN except at step 3, and step 3 has since been cut
+down further — see "The open leaves" at the end of this docstring for the
+list the compiler actually reports.  The chain is:
 
 1. **Yoneda.** `mulByNat n : A ⟶ A` is the `n`-fold sum of the
    tautological point `𝟙 A`, and `nsmul_val` says precomposition with it
@@ -62,6 +64,24 @@ Everything here except the one leaf is PROVEN.  The chain is:
 Step 6 is why the leaf may be stated about the morphism rather than about
 points: the passage from "surjective as a map of schemes" to "surjective
 on `F̄`-points" is proven here once and for all.
+
+## The open leaves
+
+**Regenerated at release 8 from a comment-stripped scan of this file, not
+merged as prose.**  `flat_mulByNat` and `isDominant_of_isFinite_endo` and
+`irreducibleSpace_of_smooth_geometricallyConnected` are PROVEN; what is left
+is six pieces of commutative algebra and one sheaf-theoretic statement, none
+of them about abelian schemes:
+
+* `lTensor_subtype_injective_of_pow_le` — the local flatness criterion's
+  tensor step;
+* `nonempty_flatNoetherianStage_of_essFinitePresentation` — descent of
+  flatness to a noetherian stage;
+* `topologicalKrullDim_lt_top_of_isProper` — Noether normalisation;
+* `height_map_le_of_isFinite` — Cohen–Seidenberg (`@[stacks 00OK]`);
+* `isIntegrallyClosed_of_isRegularRing` — a regular ring is normal;
+* `exists_isAmpleSheaf_cube_of_isAlgClosed` — the theorem of the cube's
+  ample-sheaf output.
 -/
 module
 
