@@ -7894,8 +7894,212 @@ theorem exists_chainModel_of_ratTwoTorsion (E : WeierstrassCurve ℚ)
     exists_chainModel_chain_of_halvingParams a β μ hβ hμ h₀ hh₀16 hh₀st hx
   exact ⟨μ, β, hβ, j_chainModel_of_twoTorsionModel E.j a β μ hμ hj, h, hh16, hhst, hhx⟩
 
+/-! #### Step 4 through the first `2`-isogeny: the two leaves it cuts into
+
+(Added 2026-07-27, cutting `exists_sq_of_chainModel_stable` into
+`exists_isogenyChain_of_chainModel` and
+`exists_halvingParams_of_order_eight_chain`.  The algebra that glues them back
+together is PROVEN, in the consumer's body.)
+
+The route is the one derived in the consumer's docstring below: push the
+`16`-chain through the FIRST `2`-isogeny `φ : E → E/⟨(0,0)⟩`, where the whole
+obstruction collapses to one visible square root.  Concretely, with
+`E = chainModel γ δ = twoTorsionModel (γ² − 2δ²) δ⁴`:
+
+* `E' = twoTorsionModel (−2(γ² − 2δ²)) (γ²(γ² − 4δ²))` is the quotient, and
+  `x(φ(P)) = y²/x² = x + a + b/x`, so `φ(4 • h) = (γ², 0)` — the computation is
+  `δ² + (γ² − 2δ²) + δ⁴/δ² = γ²`, and this is the ONLY place the tie
+  `hx : x(4 • h) = δ²` is used;
+* translating that rational `2`-torsion point to the origin (`x ↦ x + γ²`)
+  turns `E'` into
+
+      `E'' : y² = x(x + 4δ²)(x + γ²) = twoTorsionModel (γ² + 4δ²) (4δ²γ²)`,
+
+  the constant term vanishing identically because `γ²` is a root of
+  `x² − 2(γ² − 2δ²)x + γ²(γ² − 4δ²)`.  (In general, translating
+  `twoTorsionModel A B` by a root `e` of `x² + Ax + B` gives
+  `twoTorsionModel (3e + A) (−Ae − 2B)`; here that is
+  `3γ² − 2γ² + 4δ² = γ² + 4δ²` and `2(γ² − 2δ²)γ² − 2γ²(γ² − 4δ²) = 4δ²γ²`.)
+
+`k := φ(h)` translated has order `8` — `ker φ ∩ ⟨h⟩ = {0, 8 • h}` — and
+`4 • k = (0, 0)`.  That is `exists_isogenyChain_of_chainModel`.
+
+`exists_halvingParams_of_order_eight_chain` is then the level-`8` HALVING step,
+and it is **the same statement as `exists_halvingParams_of_twoTorsionChain`
+above with `16, 8, 4` replaced by `8, 4, 2`** — literally that lemma one level
+down, on the same model `twoTorsionModel A B`, with the same shape of
+conclusion `B = β² ∧ μ² = β(A + 2β)` and the same `HasXCoord` tie.  Its proof
+should be that one's, transcribed: `exists_isogenyCharacter` at `N = 8` (every
+unit of `ℤ/8` is odd, so `{x(k), x(5k)}` is a Galois-stable PAIR — `λ = 3` sends
+it to `{x(3k), x(7k)} = {x(5k), x(k)}` because `x(P) = x(−P)`), the pair has
+product `B` because adding `(0,0)` is `x ↦ B/x`, so its sum `p` is rational by
+`exists_rat_of_galois_fixed`, and the halving quartic
+`(x² − B)² − 4β x(x² + Ax + B) = (x² − px + B)(x² − qx + B)` with `p + q = 4β`
+then gives `(p − 2β)² = 4(β² + Aβ + B)`, i.e. `μ = (p − 2β)/2`.
+
+**WHY THOSE TWO SUFFICE, and the rest is pure algebra** (PROVEN in the
+consumer's body): at `A = γ² + 4δ²`, `B = 4δ²γ²` the two halving conditions
+give
+
+      `μ²γ² = β(γ² + β)²`,
+
+so `β = (μγ/(γ² + β))²` once `γ² + β ≠ 0`; and `γ² + β = 0` would force
+`γ⁴ = 4δ²γ²`, i.e. `γ² = 4δ²`, which is a cusp and is excluded.  Writing
+`β = t²`, we get `t⁴ = β² = 4δ²γ²`, hence `γ² = t⁴/(4δ²) = 4v⁴δ²` with
+`v = t/(2δ)`.  This is exactly the "`2γ` is a square" of the route sketch, since
+`β = x(2 • k) = ±2δγ`.
+
+**THE PLUMBING `exists_isogenyChain_of_chainModel` NEEDS IS ALREADY IN THIS
+FILE — BUT BELOW IT.**  `WeierstrassCurve.twoIsogenyFun` and everything about
+it (`twoIsogenyFun_map`, `twoIsogenyFun_eq_zero_iff`, `twoIsogenyFun_add`),
+together with the packaged
+`WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion` — an
+`AddMonoidHom` carrying Galois equivariance and kernel exactly `{0, (0,0)}`,
+stated for the shape `⟨0, a, 0, b, 0⟩`, which is DEFINITIONALLY
+`twoTorsionModel a b` and hence `chainModel γ δ` — live at lines 35065–35755 of
+this file, some 27000 lines BELOW this point, so they are not in scope here.
+(The docstring of the consumer used to name a `WeierstrassCurve.exists_quotient_isogeny`;
+no declaration of that name exists anywhere in the tree.  The real name is the
+one above.)
+
+**Relocating them above `namespace MazurLevel16` is a PURE MOVE**, checked
+mechanically 2026-07-27 and recorded here so the successor need not redo the
+survey: the block `namespace WeierstrassCurve` (line 35065) … `end
+WeierstrassCurve` (line 35710), plus
+`exists_quotient_isogeny_of_normalForm_two_torsion` (line 35732),
+
+* references **no** declaration of this file declared between line 6824 and its
+  own start — the blocker set is EMPTY — and
+* is used by **nothing** between line 6824 and its own start,
+
+and the only scope in effect at 35065 is the file-level
+`open WeierstrassCurve WeierstrassCurve.Affine`, already in effect here
+(`section TwoTorsion` closes at line 34870, well above it).  So nothing has to
+travel with the block.  This is the same kind of pure move that
+`exists_point_eq_baseChange_of_fixed` needed in order to unblock step 1.
+**The check that refutes this**: re-run it — extract the block, strip comments,
+and cross-check every identifier in it against the declarations of this file
+whose line number lies strictly between 6824 and 35065; a nonempty answer
+refutes the claim.  (Line numbers drift; locate the block by the name
+`twoIsogenyFun` and the enclosing `namespace WeierstrassCurve`.)
+
+The explicit coordinate formula `twoIsogenyFun_some_of_ne_zero` is genuinely
+needed and CANNOT be replaced by an abstract argument.  `φ(4 • h)` is a
+rational `2`-torsion point of `E'` different from `0` and from `(0, 0)` — not
+`(0,0)` because `φ(4 • h) = φ(P)` with `P ∈ E[2]` would force
+`4 • h ∈ E[2] + ker φ = E[2]`, false — but `E'` has TWO such points, `(γ², 0)`
+and `(γ² − 4δ², 0)`, and only the formula, fed by `hx`, picks the first.  This
+is also why the tie `hx` cannot be dropped, in a second and independent sense
+from the one recorded below.
+-/
+
+/-- **Pushing the `16`-chain through the first `2`-isogeny** (SORRY LEAF, cut
+2026-07-27 out of `exists_sq_of_chainModel_stable` below): the transport half
+of step 4, which is plumbing rather than mathematics.
+
+On the nondegenerate `X_0(8)` normal form `chainModel γ δ` (nondegenerate
+meaning `δ ≠ 0`, `γ ≠ 0` and `γ² ≠ 4δ²` — exactly the non-vanishing of
+`Δ = 16δ⁸γ²(γ − 2δ)(γ + 2δ)`), a Galois-stable cyclic `16`-subgroup `⟨h⟩` whose
+`X_0(4)`-part is the one displayed by the coordinates pushes forward along
+`φ : E → E/⟨(0,0)⟩`, followed by the translation `x ↦ x + γ²`, to a
+Galois-stable cyclic `8`-subgroup `⟨k⟩` of
+
+  `E'' = twoTorsionModel (γ² + 4δ²) (4δ²γ²) : y² = x(x + 4δ²)(x + γ²)`,
+
+whose `2`-torsion point `4 • k` is the ORIGIN.
+
+The full derivation, the reason `E''` has this shape, the reason the tie `hx`
+is what pins `φ(4 • h) = (γ², 0)`, and — most usefully — the mechanical check
+showing that the `twoIsogenyFun` block far below this point can be relocated
+above `namespace MazurLevel16` as a PURE MOVE, are all in the section note
+immediately above.  The instance `[(chainModel γ δ).IsElliptic]` is supplied by
+the consumer from `hδ`, `hγ` and `hcusp`.
+
+**WHAT IS DELIBERATELY NOT CLAIMED.**  Nothing is said about `x(2 • k)` here;
+producing it, and the halving relation it satisfies, is the OTHER leaf,
+`exists_halvingParams_of_order_eight_chain`, which needs only `⟨k⟩` and
+`4 • k = (0,0)` and is stated over an arbitrary `twoTorsionModel A B`.  Keeping
+the two apart is what makes the second one a verbatim copy of
+`exists_halvingParams_of_twoTorsionChain` one level down. -/
+theorem exists_isogenyChain_of_chainModel (γ δ : ℚ) (hδ : δ ≠ 0) (hγ : γ ≠ 0)
+    (hcusp : γ ^ 2 ≠ 4 * δ ^ 2)
+    [(chainModel γ δ).IsElliptic]
+    (h : ((chainModel γ δ)⁄(AlgebraicClosure ℚ)).Point)
+    (hh : addOrderOf h = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hx : HasXCoord ((4 : ℕ) • h)
+      (algebraMap ℚ (AlgebraicClosure ℚ) (δ ^ 2))) :
+    ∃ k : ((twoTorsionModel (γ ^ 2 + 4 * δ ^ 2)
+        (4 * δ ^ 2 * γ ^ 2))⁄(AlgebraicClosure ℚ)).Point,
+      addOrderOf k = 8 ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ AddSubgroup.zmultiples k,
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples k) ∧
+      HasXCoord ((4 : ℕ) • k) 0 :=
+  sorry
+
+/-- **The halving conditions at level `8`** (SORRY LEAF, cut 2026-07-27 out of
+`exists_sq_of_chainModel_stable` below).
+
+This is `exists_halvingParams_of_twoTorsionChain` above **one level down**: the
+same model `twoTorsionModel A B`, the same hypotheses with `16, 8` replaced by
+`8, 4`, and the same conclusion.  On a Galois-stable cyclic `8`-subgroup `⟨k⟩`
+whose `2`-torsion point `4 • k` is the origin there are rationals `β` (the
+`x`-coordinate of the `4`-torsion point `2 • k`) and `μ` with
+
+  `B = β²`  and  `μ² = β(A + 2β)`.
+
+**WHERE EACH COMES FROM** (identical to the level-`16` argument; see that
+leaf's docstring and the section note above for the derivation).
+`exists_isogenyCharacter` at `N = 8` gives `σ(k) = λ(σ) • k` with
+`λ(σ) ∈ (ℤ/8)ˣ`, hence `λ(σ)` odd.
+
+* `β ∈ ℚ`: `λ ≡ ±1 (mod 4)` on `2 • k`, so `σ(2 • k) = ±(2 • k)` and its
+  `x`-coordinate is Galois-fixed; `exists_rat_of_galois_fixed` descends it.
+* `B = β²`: the duplication formula on `y² = x(x² + Ax + B)` is
+  `x(2P) = ((x² − B)/(2y))²`, and `2 • (2 • k) = 4 • k = (0,0)` forces the
+  numerator to vanish.
+* `μ`: the order-`8` `x`-coordinates `x(k) = x(7 • k)` and `x(3 • k) = x(5 • k)`
+  form a Galois-stable pair (for `λ` odd, `λ mod 8 ∈ {1,3,5,7}` and
+  `x(P) = x(−P)`) whose product is `B`, since `5 • k = k + (0,0)` and adding
+  `(0,0)` is `x ↦ B/x`.  So their sum `p` is rational, and the halving quartic
+  `(x² − B)² − 4β x(x² + Ax + B) = (x² − px + B)(x² − qx + B)` with `p + q = 4β`
+  gives `(p − 2β)² = 4(β² + Aβ + B) = 4β(A + 2β)` once `β² = B`; take
+  `μ = (p − 2β)/2`.
+
+**FAITHFULNESS: the statement is true even at the nodal models it admits.**  No
+`Δ ≠ 0` is hidden in the `IsElliptic` instance beyond what the consumer
+supplies, but it is worth recording that the conclusion survives `A² = 4B`
+anyway: there `β = ±A/2`, so `β(A + 2β) ∈ {A², 0}`, both squares.  `B = 0` is
+impossible, because `HasXCoord ((4 : ℕ) • k) 0` forces `(0,0)` to be a
+NONSINGULAR point of the model, which for `⟨0, A, 0, B, 0⟩` is exactly
+`B ≠ 0`. -/
+theorem exists_halvingParams_of_order_eight_chain (A B : ℚ)
+    [(twoTorsionModel A B).IsElliptic]
+    (k : ((twoTorsionModel A B)⁄(AlgebraicClosure ℚ)).Point)
+    (hk : addOrderOf k = 8)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples k,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples k)
+    (h4 : HasXCoord ((4 : ℕ) • k) 0) :
+    ∃ β μ : ℚ, β ≠ 0 ∧ B = β ^ 2 ∧ μ ^ 2 = β * (A + 2 * β) ∧
+      HasXCoord ((2 : ℕ) • k) (algebraMap ℚ (AlgebraicClosure ℚ) β) :=
+  sorry
+
 /-- **Step 4 of the `X_0(16)` route: the `X_0(8)` Hauptmodul is twice a
-square** (SORRY LEAF, cut 2026-07-26 out of
+square** (PROVEN 2026-07-27 over the two leaves
+`exists_isogenyChain_of_chainModel` and
+`exists_halvingParams_of_order_eight_chain` just above, by discharging the two
+degenerate branches and the algebra that glues the halving conditions to the
+conclusion; was itself a sorry leaf, cut 2026-07-26 out of
 `exists_univCurveV_param_of_ratTwoTorsion` below).  This is the ONLY
 genuinely modular step of the route; steps 1–3 are Galois arithmetic in
 `ZMod 16` and coordinate normalisation.
@@ -7988,15 +8192,39 @@ So the leaf is TRUE, non-vacuous, and its hypothesis is not idle: the four
 negative controls satisfy everything except the `16`-chain and fail the
 conclusion.  (`γ = 2` is a cusp, `Δ = 0`.)
 
-*TOOLS.*  `WeierstrassCurve.exists_quotient_isogeny` (PROVEN, later in this
-file) supplies `E'`; `MazurLevel16.twoTorsionModel` and its `_c₄` / `_Δ`
-(PROVEN, above) are the model bookkeeping; `exists_rat_of_galois_fixed`
-(PROVEN, above) descends the Galois-fixed `p`; and the halving-quartic
-factorization is the `linear_combination (4 * x ^ 2) * hμ` recorded in the
-section note above `twoTorsionModel`.  The genuinely new work is
-transporting the `16`-chain along `φ` and along the translation, which is
-the same class of plumbing as
-`exists_twoTorsionChain_of_variableChange` above. -/
+*TOOLS.*  `WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion`
+(PROVEN, ~line 35732 of this file, i.e. BELOW here — see the section note just
+above for the mechanical check that relocating it is a pure move) supplies
+`E'`; `MazurLevel16.twoTorsionModel` and its `_c₄` / `_Δ` (PROVEN, above) are
+the model bookkeeping; `exists_rat_of_galois_fixed` (PROVEN, above) descends
+the Galois-fixed `p`; and the halving-quartic factorization is the
+`linear_combination (4 * x ^ 2) * hμ` recorded in the section note above
+`twoTorsionModel`.  The genuinely new work is transporting the `16`-chain
+along `φ` and along the translation, which is the same class of plumbing as
+`exists_twoTorsionChain_of_variableChange` above.
+
+**HOW IT IS NOW PROVED, AND WHAT IS LEFT** (2026-07-27).  The route above is
+cut into the two leaves stated just above this docstring, and everything else
+is discharged here:
+
+* the two DEGENERATE branches, which are not part of the route at all and are
+  the reason no nondegeneracy hypothesis is needed.  `γ = 0` gives `v = 0`, and
+  `γ² = 4δ²` gives `v = 1`; both are cusps of `chainModel` (`Δ = 0`), where the
+  smooth locus is a torus and can perfectly well carry a stable cyclic
+  `16`-subgroup, so they must be — and are — handled rather than excluded;
+* the two `IsElliptic` instances, from `chainModel_Δ` and `twoTorsionModel_Δ`:
+  `Δ(chainModel γ δ) = 16δ⁸γ²(γ − 2δ)(γ + 2δ)` and
+  `Δ(twoTorsionModel (γ² + 4δ²) (4δ²γ²)) = 256δ⁴γ⁴(γ² − 4δ²)²`, both nonzero on
+  the remaining branch;
+* the transport, `exists_isogenyChain_of_chainModel` (leaf);
+* the halving, `exists_halvingParams_of_order_eight_chain` (leaf);
+* and the algebra that ties `B = β²`, `μ² = β(A + 2β)` to the conclusion,
+  namely `μ²γ² = β(γ² + β)²` followed by `v = μγ/(2δ(γ² + β))`.
+
+So the sorry count under this node is two, and BOTH remaining leaves are
+plumbing-plus-transcription rather than new mathematics: the first is the
+`2`-isogeny push-forward, the second is `exists_halvingParams_of_twoTorsionChain`
+one level down. -/
 theorem exists_sq_of_chainModel_stable (γ δ : ℚ) (hδ : δ ≠ 0)
     (h : ((chainModel γ δ)⁄(AlgebraicClosure ℚ)).Point)
     (hh : addOrderOf h = 16)
@@ -8007,8 +8235,60 @@ theorem exists_sq_of_chainModel_stable (γ δ : ℚ) (hδ : δ ≠ 0)
           AddSubgroup.zmultiples h)
     (hx : HasXCoord ((4 : ℕ) • h)
       (algebraMap ℚ (AlgebraicClosure ℚ) (δ ^ 2))) :
-    ∃ v : ℚ, γ ^ 2 = 4 * v ^ 4 * δ ^ 2 :=
-  sorry
+    ∃ v : ℚ, γ ^ 2 = 4 * v ^ 4 * δ ^ 2 := by
+  -- The two cusps of `chainModel` in the `γ`-direction, where the conclusion
+  -- holds outright and the isogeny route does not apply.
+  rcases eq_or_ne γ 0 with hγ | hγ
+  · exact ⟨0, by rw [hγ]; ring⟩
+  rcases eq_or_ne (γ ^ 2) (4 * δ ^ 2) with hcusp | hcusp
+  · exact ⟨1, by rw [hcusp]; ring⟩
+  -- On the remaining branch both models are elliptic.
+  have hsub : γ - 2 * δ ≠ 0 := fun hc => hcusp (by linear_combination (γ + 2 * δ) * hc)
+  have hadd : γ + 2 * δ ≠ 0 := fun hc => hcusp (by linear_combination (γ - 2 * δ) * hc)
+  haveI hell : (chainModel γ δ).IsElliptic := by
+    refine ⟨?_⟩
+    rw [chainModel_Δ]
+    refine isUnit_iff_ne_zero.mpr ?_
+    exact mul_ne_zero (mul_ne_zero (mul_ne_zero (mul_ne_zero (by norm_num)
+      (pow_ne_zero 8 hδ)) (pow_ne_zero 2 hγ)) hsub) hadd
+  haveI hell2 : (twoTorsionModel (γ ^ 2 + 4 * δ ^ 2) (4 * δ ^ 2 * γ ^ 2)).IsElliptic := by
+    refine ⟨?_⟩
+    rw [twoTorsionModel_Δ]
+    refine isUnit_iff_ne_zero.mpr ?_
+    rw [show (16 : ℚ) * (4 * δ ^ 2 * γ ^ 2) ^ 2 *
+        ((γ ^ 2 + 4 * δ ^ 2) ^ 2 - 4 * (4 * δ ^ 2 * γ ^ 2))
+        = 256 * δ ^ 4 * γ ^ 4 * (γ ^ 2 - 4 * δ ^ 2) ^ 2 from by ring]
+    exact mul_ne_zero (mul_ne_zero (mul_ne_zero (by norm_num) (pow_ne_zero 4 hδ))
+      (pow_ne_zero 4 hγ)) (pow_ne_zero 2 (sub_ne_zero.mpr hcusp))
+  -- Push the `16`-chain through the first `2`-isogeny, then halve at level `8`.
+  obtain ⟨k, hk8, hkst, hk4⟩ :=
+    exists_isogenyChain_of_chainModel γ δ hδ hγ hcusp h hh hstable hx
+  obtain ⟨β, μ, -, hB, hμ, -⟩ :=
+    exists_halvingParams_of_order_eight_chain (γ ^ 2 + 4 * δ ^ 2) (4 * δ ^ 2 * γ ^ 2)
+      k hk8 hkst hk4
+  -- `γ² + β = 0` would say `β = −γ²`, whence `γ⁴ = 4δ²γ²`, i.e. the cusp `γ² = 4δ²`.
+  have hne : γ ^ 2 + β ≠ 0 := by
+    intro hc
+    have hβeq : β = -γ ^ 2 := by linarith
+    rw [hβeq] at hB
+    have hfac : γ ^ 2 * (γ ^ 2 - 4 * δ ^ 2) = 0 := by linear_combination -hB
+    rcases mul_eq_zero.mp hfac with h5 | h5
+    · exact hγ (pow_eq_zero_iff (n := 2) (by norm_num) |>.mp h5)
+    · exact hcusp (by linarith)
+  -- `B = β²` and `μ² = β(A + 2β)` at `A = γ² + 4δ²`, `B = 4δ²γ²` say exactly this.
+  have key : μ ^ 2 * γ ^ 2 = β * (γ ^ 2 + β) ^ 2 := by
+    linear_combination γ ^ 2 * hμ + β * hB
+  set t : ℚ := μ * γ / (γ ^ 2 + β) with ht
+  have hts : t ^ 2 = β := by
+    rw [ht, div_pow, div_eq_iff (pow_ne_zero 2 hne)]
+    linear_combination key
+  have h4d : t ^ 4 = 4 * δ ^ 2 * γ ^ 2 := by
+    rw [show t ^ 4 = (t ^ 2) ^ 2 from by ring, hts]
+    exact hB.symm
+  refine ⟨t / (2 * δ), ?_⟩
+  rw [div_pow, h4d]
+  field_simp
+  ring
 
 /-- **Scaling the `X_0(8)` normal form down to `univCurveV`** (PROVEN
 2026-07-26 — the algebraic glue between steps 2–3 and step 4, and the
