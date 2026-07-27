@@ -23543,6 +23543,37 @@ are integral points — so, exactly as for the two leaves it replaces, **no
 congruence can close it**; it is a genuine infinite descent. Verified by
 exhaustive search over coprime `0 ≤ M, e ≤ 6000`: no further solution.
 
+**FAITHFULNESS CHECK (PARI/GP, 2026-07-27, as an untrusted searcher).**
+`ellinit([0,-50,0,49,0])` — that is `y² = x(x−1)(x−49)` — has conductor `21`,
+`E(ℚ)_tors ≅ ℤ/2 × ℤ/2` and `ellrank` returns rank `0` with a matching upper
+bound. So `E(ℚ) = {O, (0,0), (1,0), (49,0)}` **exactly**, and the four
+conclusions of this leaf are precisely those four points: the statement is
+true and is not weaker than the geometry. (Companion: the curve this one is
+`2`-isogenous to, `ellinit([0,25,0,144,0])` = `y² = x(x²+25x+144)`, the
+`X = V−9` model of `W² = V(V−9)(V+7)`, has conductor `21`, torsion
+`ℤ/4 × ℤ/2` and rank `0` — the eight points the parent `rank_zero_x0TwentyOne`
+wants.) None of this is a proof; it is the reconnaissance that says the
+descent below terminates.
+
+**THE ISOGENY PICTURE, which says the descent is SELF-REFERENTIAL.** Write
+`E₁ : y² = x(x² + 25x + 144)` (the `X = V − 9` model) and `E'' : y² = x(x² −
+50x + 49)`, `2`-isogenous by `φ : E₁ → E''`, `φ'' : E'' → E₁` with
+`φ'' ∘ φ = [2]`. This leaf is the class-`1` space of `φ''`; `quartic_one` is
+the class-`1` space of the OTHER `2`-isogeny (kernel `V = 0`), and the proof
+above is the arrow `quartic_one ⟶ dual_quartic`. The return arrow is
+`φ''`: a solution here gives `x = (N/(2Me))²` on `E₁`, i.e. a solution of
+
+    `t² = x₀⁴ + 25x₀²y₀² + 144y₀⁴ = (x₀² + 9y₀²)(x₀² + 16y₀²)`
+
+(the class-`1` space of `φ`, whose own conclusion is `x₀y₀ = 0` — checked over
+coprime `0 ≤ x₀, y₀ ≤ 3000`, no nontrivial solution), and the
+`gcd` split of THAT lands back on `quartic_one`. Each arrow halves the
+canonical height, so the loop `quartic_one ⟶ dual_quartic ⟶ … ⟶ quartic_one`
+quarters it — **the two must be carried by ONE strong induction**, exactly as
+`MazurLevel15.concordant_both_aux` carries `concordant_one` and
+`concordant_five`. Whoever attacks this should expect to restate both as an
+`∀ Nn : ℕ, …` pair, not to prove this leaf in isolation.
+
 **AXIS SEARCHED**: congruences mod `2^k`, `3^k`, `7^k` on the quartic and on
 the split factors (inherited from the two leaves this replaces — the reduction
 below is an equivalence, so every congruence obstruction there is refuted here
