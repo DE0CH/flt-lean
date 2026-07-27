@@ -7438,7 +7438,7 @@ theorem stepanov_natDegree_det_le_of_weights {n : Type*} [Fintype n] [DecidableE
     · obtain ⟨i, hi⟩ := hz
       have : (∏ i, M (σ i) i) = 0 := Finset.prod_eq_zero (Finset.mem_univ i) hi
       simp [this]
-    · push_neg at hz
+    · simp only [not_exists] at hz
       have hbd : ∀ i, (M (σ i) i).natDegree + r (σ i) ≤ c i := by
         intro i
         rcases h (σ i) i with h0 | h1
@@ -7714,10 +7714,65 @@ theorem exists_stepanovDiscriminant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.P
       exact isUnit_iff_ne_zero.mpr hne
     exact (Polynomial.isUnit_resultant_iff_isCoprime hmonx).mp hu
 
+/-- **SCHMIDT LEMMA 5A(ii)** (PROVEN 2026-07-27), and Lemma 3B with it.
+
+**THE NORM IS A RESULTANT.** `Polynomial.resultant_eq_prod_eval` says that for
+`F` monic in `Y`,
+
+  `Res_Y(F, c) = ∏_{j=1}^{d} c(X, η_j)`,
+
+where the `η_j` are the roots of `F`. The right-hand side is *literally*
+Schmidt's `r(X) = 𝔑(c(X, η))`, the norm from `𝔽_p(X, η)` down to `𝔽_p(X)`. So
+item 2c's `r` may be TAKEN to be a resultant, and then:
+
+* Lemma 5A(ii) — the degree bound — is this lemma, an instance of
+  `stepanov_natDegree_resultant_le` with `m = d` and `n` the total degree bound
+  on `c`. **Schmidt's Lemma 3B (symmetric functions of the `η_j` are polynomials
+  in the `gᵢ` of controlled degree) therefore never has to be formalised at
+  all**, and neither does any function-field norm: `Algebra.norm` is not needed.
+* `r ≠ 0` becomes `¬ (F ∣ c)` over `𝔽_p(X)[Y]`, which is Lemma 4A(i)
+  (`c(X, η) ≠ 0`) transported by the same identity.
+
+The arithmetic matches Schmidt's statement exactly. With `M = d·M'` (his `d ∣ M`)
+and `c` of total degree at most `(d−1)·p·M' + p·(d−1)` — his `(ε₂/d)qM + q(d−1)`
+at `ε₂ = d − 1`, `q = p`, after the `f_Y^{2M}` correction of his §4 Remark —
+this gives
+
+  `deg_X Res_Y(F, c) ≤ d·((d−1)pM' + p(d−1)) = (d−1)pM + p·d(d−1)`,
+
+which is the bound `exists_stepanovNormPolynomial` asks for, on the nose.
+
+WHAT THIS LEAVES OPEN in item 2c: only Lemma 4A's dimension count (construct
+`c`) and Lemma 5A(i)'s Leibniz expansion (5.1) (the vanishing of `D_ℓ r` on
+`𝔄`). Do NOT re-derive the degree bound; call this. -/
+theorem stepanov_natDegree_norm_le (d p M : ℕ) (hd : 2 ≤ d) (hMd : d ∣ M)
+    (F c : Polynomial (Polynomial (ZMod p)))
+    (hF : ∀ i, F.coeff i = 0 ∨ (F.coeff i).natDegree + i ≤ d)
+    (hc : ∀ i, c.coeff i = 0 ∨
+      (c.coeff i).natDegree + i ≤ (d - 1) * p * (M / d) + p * (d - 1)) :
+    (F.resultant c d ((d - 1) * p * (M / d) + p * (d - 1))).natDegree
+      ≤ (d - 1) * p * M + p * (d * (d - 1)) := by
+  obtain ⟨M', rfl⟩ := hMd
+  have hd0 : 0 < d := by omega
+  rw [Nat.mul_div_cancel_left M' hd0] at hc ⊢
+  refine le_trans (stepanov_natDegree_resultant_le F c d _ hF hc) ?_
+  obtain ⟨e, rfl⟩ : ∃ e, d = e + 1 := ⟨d - 1, by omega⟩
+  simp only [Nat.add_sub_cancel]
+  exact le_of_eq (by ring)
+
 /-- **ITEM 2c: THE AUXILIARY FUNCTION AND ITS NORM** (SORRY LEAF, cut
-2026-07-27) — Schmidt III Lemma 4A together with Lemma 5A, for the SECOND of his
+2026-07-27; its degree half CLOSED 2026-07-27, see `stepanov_natDegree_norm_le`)
+— Schmidt III Lemma 4A together with Lemma 5A, for the SECOND of his
 two algebraic functions (`λ = 2`, `ε₂ = d − 1`). **This is the genuinely hard
 step of the whole route and the place the `√q` comes from.**
+
+**START HERE (2026-07-27).** Take `r := Polynomial.resultant F c d n` for the
+`c` that Lemma 4A produces. `Polynomial.resultant_eq_prod_eval` then makes `r`
+equal to Schmidt's norm `∏_j c(X, η_j)` because `F` is monic, and
+`stepanov_natDegree_norm_le` above already PROVES the degree clause of this
+leaf's conclusion. That removes Lemma 3B, `Algebra.norm`, and every symmetric
+function argument from the remaining work. Only two things are left: Lemma 4A's
+dimension count, and Lemma 5A(i)'s Leibniz expansion.
 
 Let `η` satisfy `F(X, η) = 0`, so `𝔽_p(X, η)/𝔽_p(X)` has degree `d`.
 
@@ -7731,10 +7786,14 @@ Let `η` satisfy `F(X, η) = 0`, so `𝔽_p(X, η)/𝔽_p(X)` has degree `d`.
   `d ∣ M`, `M ≥ d²`, `2(d−1)(M+8)² ≤ q` are exactly what makes that count come
   out; they are the hypotheses `hMd`, `hMsq`, `hMq` here.
 * **Lemma 5A** takes `r(X) := N(a(X, η))`, the NORM from `𝔽_p(X, η)` down to
-  `𝔽_p(X)`, i.e. `r = ∏_{j=1}^{d} a(X, η_j)`. Then `r ≠ 0`,
-  `deg r ≤ ε₂ p M + p d(d−1)` — via his Lemma 3B, using `deg gᵢ ≤ i` — and the
-  Leibniz expansion (5.1) of `D_ℓ r` shows every summand has a zero factor, so
-  `D_ℓ r(x) = 0` for `x ∈ 𝔄` and `0 ≤ ℓ < M·|𝔐₂(x)|`.
+  `𝔽_p(X)`, i.e. `r = ∏_{j=1}^{d} a(X, η_j)` — which by
+  `Polynomial.resultant_eq_prod_eval` is exactly `Res_Y(F, a)`, see
+  `stepanov_natDegree_norm_le`. Then `r ≠ 0`, `deg r ≤ ε₂ p M + p d(d−1)` —
+  Schmidt proves this via his Lemma 3B using `deg gᵢ ≤ i`; **here it is PROVEN
+  instead by weighting the Sylvester matrix, so Lemma 3B is not needed** — and
+  the Leibniz expansion (5.1) of `D_ℓ r` shows every summand has a zero factor,
+  so `D_ℓ r(x) = 0` for `x ∈ 𝔄` and `0 ≤ ℓ < M·|𝔐₂(x)|`. That last clause is
+  the only part of Lemma 5A still open.
 
 `|𝔐₂(x)| = d − |𝔐₁(x)|` is written here as `d − #{y ∈ 𝔽_p : F(x,y) = 0}`,
 which is correct on `𝔄` precisely because `hΔsep` gives `F(x, Y)` degree `d`
@@ -7749,10 +7808,19 @@ here — item 2 needs only Schmidt III §§1–6.
 
 WHAT IS MISSING AT THIS PIN, verified by grep 2026-07-27 across `Fermat/`,
 `.lake/packages/mathlib/` and `~/cs/FLT/` on the host owning this worktree's
-`.lake`: no `[Ss]tepanov`, no hyperderivative theory beyond
-`Polynomial.hasseDeriv` itself, no norm from a function field to its base
-beyond `Algebra.norm`. If any of those returns a hit, this note is stale and
+`.lake`: no `[Ss]tepanov`, and no hyperderivative theory beyond
+`Polynomial.hasseDeriv` itself. If either returns a hit, this note is stale and
 the route should be re-planned.
+
+CORRECTED 2026-07-27, and this was the load-bearing error in the original note:
+it also claimed there was "no norm from a function field to its base beyond
+`Algebra.norm`", and concluded that such a norm had to be built. **That is
+false.** `Mathlib.RingTheory.Polynomial.Resultant.Basic` — which this module now
+imports — carries `Polynomial.resultant`, `resultant_eq_prod_eval`,
+`resultant_map_map`, `exists_mul_add_mul_eq_C_resultant`,
+`isUnit_resultant_iff_isCoprime` and `resultant_eq_zero_iff`, and for monic `F`
+the resultant IS the norm. An agent following the original note would have
+rebuilt a theory that is already in the pin.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_stepanovNormPolynomial (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
@@ -8257,7 +8325,17 @@ five-item route is realised in the file rather than merely described):
   (his §1 Reduction, (4.1)–(4.2)), `exists_stepanovDiscriminant` ((4.1), (4.3))
   and `exists_stepanovNormPolynomial` (Lemmas 4A + 5A). The last of these is
   the genuinely hard one, a dimension count over `𝔽_p(X, η)`; the first two are
-  classical and self-contained. Proven glue landed with it:
+  classical and self-contained.
+  **`exists_stepanovDiscriminant` is itself PROVEN as of 2026-07-27** — do not
+  dispatch at it — over `stepanov_natDegree_det_le_of_weights`,
+  `stepanov_sum_range_add_eq`, `stepanov_natDegree_resultant_le` (Schmidt (4.1),
+  by weighting the Sylvester matrix) and `stepanov_natDegree_derivative_of_monic`.
+  The same day, `stepanov_natDegree_norm_le` closed the DEGREE half of
+  `exists_stepanovNormPolynomial` as well, because
+  `Polynomial.resultant_eq_prod_eval` identifies Schmidt's norm
+  `∏_j c(X, η_j)` with `Res_Y(F, c)` for monic `F`; so Lemma 5A(ii) and Lemma 3B
+  are both done and only Lemma 4A's dimension count and Lemma 5A(i)'s Leibniz
+  expansion remain there. Proven glue landed with it:
   `stepanov_M_le`/`stepanov_M_spec` (Schmidt's `M` may be taken to be `11d²`),
   `stepanov_card_rationalRoots_le`, `stepanov_card_nonvanishing_ge` ((4.5)) and
   `stepanov_derivative_ne_zero_of_monic` — the last of which removes Schmidt's
@@ -8277,8 +8355,7 @@ five-item route is realised in the file rather than merely described):
   Theorem 7A is asymptotic in the field extension rather than uniform in `p`.
 
 So after the 2026-07-27 work the remaining open leaves under this node are
-`exists_stepanovNormalisation`, `exists_stepanovDiscriminant`,
-`exists_stepanovNormPolynomial`,
+`exists_stepanovNormalisation`, `exists_stepanovNormPolynomial`,
 `exists_bound_forall_hypersurfaceCount_of_planeCurveCount` and
 `exists_bound_forall_zmodSolvable_of_hypersurfaceCount`; all the glue between
 them is written and compiles, and this leaf itself has nothing left to prove.
