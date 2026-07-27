@@ -12775,8 +12775,8 @@ set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **THE COUNTING HALF OF FONTAINE'S PROP. 1.5 (ii): a point at depth
 `j + 2` from a monogenic generator is a root of its minimal polynomial to
-depth `Σ_{i=0}^{j+1} #G_i`** (sorry node, created 2026-07-27 — leaf
-(Y-3-b), the arithmetic half; the geometric half is
+depth `Σ_{i=0}^{j+1} #G_i`** (**PROVEN 2026-07-27**, same day it was cut —
+leaf (Y-3-b), the arithmetic half; the geometric half is
 `exists_not_le_sub_mem_of_ne_one_of_mem_inertia` above).
 
 Nothing about `τ`, about `E ⊉ L`, or about ramification-creating fields
@@ -12808,7 +12808,40 @@ THE INTENDED PROOF, which is three steps and no analysis.
 FAITHFULNESS.  Every hypothesis is used: `hθtop` and `hcrit` in steps 1
 and 3, `hM3`/`hE3` in steps 2 and 4, `hclose` in step 2.  The statement is
 FALSE without `hM3`/`hE3` (a ramified `E` rescales `k`), which is why they
-are hypotheses rather than derived. -/
+are hypotheses rather than derived.
+
+**AS ACTUALLY PROVEN, with two simplifications over the plan above.**
+
+* **No valuation of the product, hence NO `addVal_prod`.**  Step 2 was
+  planned as an `ℕ∞` computation `addVal_M(P(x)) = Σ_σ addVal_M(x − σ•θ)`,
+  which forces the `min (j+2) (i_L σ)` to be handled in `ℕ∞` where it may
+  be `⊤`.  It is strictly cheaper to stay at the level of IDEALS:
+  `Ideal.prod_mem_prod` says a product of elements of `𝔪^{n_σ}` lies in
+  `∏_σ 𝔪^{n_σ}`, and `Finset.prod_pow_eq_pow_sum` collapses that to
+  `𝔪^{Σ_σ n_σ}`.  So `addVal` is used ONLY through
+  `exists_addVal_integralClosureLE`, and only to transport MEMBERSHIP
+  along `integralClosureLE` in both directions (`a = 1`, so
+  `y ∈ 𝔪_L^t ↔ φ y ∈ 𝔪_M^t`, and likewise for `E`).
+* **`min (j+2) (i_L σ)` never appears; the truncated depth is a CARDINAL
+  from the start.**  Put `n_σ := #{i < j+2 | σ ∈ G_i}`, which is the
+  `min` by definition rather than by computation.  Then:
+  - `n_σ ≤ j + 2` is `Finset.card_filter_le`, giving
+    `x − θ ∈ 𝔪_M^{n_σ}` from `hclose` by `Ideal.pow_le_pow_right`;
+  - `θ − σ•θ ∈ 𝔪_L^{n_σ}` because the predicate `i ↦ σ ∈ G_i` is
+    DOWNWARD CLOSED (`hcrit` plus `Ideal.pow_le_pow_right`), so
+    `filter_range_eq_range_card` makes the filter an INITIAL SEGMENT
+    `range n_σ`; at `n_σ > 0` its last element `n_σ − 1` re-enters `hcrit`
+    at level `n_σ`, and at `n_σ = 0` the claim is `𝔪^0 = ⊤`.  This is the
+    one place the group structure of `G_{j+1}` is felt, and it is felt as
+    down-closedness rather than as a group law;
+  - `Σ_σ n_σ = Σ_{i<j+2} #G_i` is `Finset.card_filter` + `Finset.sum_comm`
+    (the file's own `hdc` idiom), and `Finset.sum_range_succ'` peels
+    `#G_0` off the front to match `k = g₀ + Σ_{i<j+1} #G_{i+1}`.
+* Step 4's `𝒪_L ≅ 𝒪₃ᵥ[X]/(P)` is `minpoly.equivAdjoin` (available because
+  `𝒪₃ᵥ` is a DVR, hence an integrally closed domain) composed with
+  `Subalgebra.equivOfEq hθtop` and `Subalgebra.topEquiv`; the map out is
+  `AdjoinRoot.liftAlgHom` at the root `x̄`, whose hypothesis is exactly
+  `P(x) ∈ 𝔪_E^k` read through `Ideal.Quotient.eq_zero_iff_mem`. -/
 theorem nonempty_algHom_quotient_of_sub_mem_of_span_three_eq
     (L M E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
     [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
@@ -12837,7 +12870,143 @@ theorem nonempty_algHom_quotient_of_sub_mem_of_span_three_eq
           ∑ i ∈ Finset.range (j + 1),
             Nat.card ((IsLocalRing.maximalIdeal
               (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))))) := by
-  sorry
+  classical
+  set g₀ : ℕ := Nat.card ((IsLocalRing.maximalIdeal
+    (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) with hg₀def
+  set k : ℕ := g₀ + ∑ i ∈ Finset.range (j + 1),
+      Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) with hkdef
+  have hg₀pos : 0 < g₀ := Nat.card_pos
+  have hL3 : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ g₀ :=
+    span_three_eq_maximalIdeal_pow_card_inertia L
+  -- STEP 1: no ramification is created, so depths transport on the nose
+  obtain ⟨aL, haLpos, haLmul, haLval⟩ :=
+    exists_addVal_integralClosureLE L M hLM g₀ g₀ hL3 hM3 hg₀pos
+  have haL1 : aL = 1 := Nat.eq_of_mul_eq_mul_right hg₀pos (by rw [one_mul]; exact haLmul)
+  obtain ⟨aE, haEpos, haEmul, haEval⟩ :=
+    exists_addVal_integralClosureLE E M hEM g₀ g₀ hE3 hM3 hg₀pos
+  have haE1 : aE = 1 := Nat.eq_of_mul_eq_mul_right hg₀pos (by rw [one_mul]; exact haEmul)
+  have hmemL : ∀ (y : IntegralClosure 𝒪₃ᵥ L) (t : ℕ),
+      y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ t →
+      integralClosureLE L M hLM y ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ t := by
+    intro y t hy
+    rw [mem_maximalIdeal_pow_iff_le_addVal] at hy ⊢
+    rw [haLval y, haL1, Nat.cast_one, one_mul]
+    exact hy
+  have hmemE : ∀ (y : IntegralClosure 𝒪₃ᵥ E) (t : ℕ),
+      integralClosureLE E M hEM y ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ t →
+      y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t := by
+    intro y t hy
+    rw [mem_maximalIdeal_pow_iff_le_addVal] at hy ⊢
+    rw [haEval y, haE1, Nat.cast_one, one_mul] at hy
+    exact hy
+  -- STEP 2: the truncated depth `n_σ = #{i < j+2 | σ ∈ G_i}` of each substitution
+  have hdown : ∀ (σ : L ≃ₐ[ℚ₃ᵥ] L) (i i' : ℕ), i ≤ i' →
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i' + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) →
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) := by
+    intro σ i i' hii h
+    rw [hcrit] at h ⊢
+    exact Ideal.pow_le_pow_right (by omega) h
+  have key : ∀ σ : L ≃ₐ[ℚ₃ᵥ] L, ∃ c : ℕ,
+      c = ((Finset.range (j + 2)).filter (fun i =>
+            σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+              (L ≃ₐ[ℚ₃ᵥ] L))).card ∧
+      c ≤ j + 2 ∧
+      θ - σ • θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ c := by
+    intro σ
+    set c := ((Finset.range (j + 2)).filter (fun i =>
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L))).card with hc
+    refine ⟨c, rfl, ?_, ?_⟩
+    · rw [hc]
+      exact le_trans (Finset.card_filter_le _ _) (le_of_eq (Finset.card_range _))
+    · rcases Nat.eq_zero_or_pos c with h0 | hpos
+      · rw [h0, pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top
+      · have hfr := filter_range_eq_range_card (hdown σ) (j + 2)
+        rw [← hc] at hfr
+        have hmem : c - 1 ∈ (Finset.range (j + 2)).filter (fun i =>
+            σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+              (L ≃ₐ[ℚ₃ᵥ] L)) := by
+          rw [hfr]
+          exact Finset.mem_range.mpr (by omega)
+        have h2 := (Finset.mem_filter.mp hmem).2
+        rw [hcrit] at h2
+        rw [show c - 1 + 1 = c from by omega] at h2
+        rw [show θ - σ • θ = -(σ • θ - θ) from by ring]
+        exact neg_mem h2
+  choose N hNeq hNle hNmem using key
+  -- STEP 3: the counting identity `Σ_σ n_σ = Σ_{i<j+2} #G_i = k`
+  have hsumN : ∑ σ : L ≃ₐ[ℚ₃ᵥ] L, N σ = k := by
+    have hcardK : ∀ K : Subgroup (L ≃ₐ[ℚ₃ᵥ] L),
+        Nat.card ↥K = (Finset.univ.filter (fun σ : L ≃ₐ[ℚ₃ᵥ] L => σ ∈ K)).card := by
+      intro K
+      rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+    have h1 : ∑ i ∈ Finset.range (j + 2),
+        Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L)) = ∑ σ : L ≃ₐ[ℚ₃ᵥ] L, N σ := by
+      simp only [hNeq, hcardK, Finset.card_filter]
+      exact Finset.sum_comm
+    rw [← h1, Finset.sum_range_succ' (fun i =>
+      Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L))) (j + 1)]
+    simp only [zero_add, pow_one, show ∀ i : ℕ, i + 1 + 1 = i + 2 from fun _ => rfl]
+    rw [hkdef, Nat.add_comm]
+  -- STEP 4: `x` is within `𝔪_M^{n_σ}` of every conjugate `σ•θ`
+  have hθadj : Algebra.adjoin ℚ₃ᵥ
+      ({algebraMap (IntegralClosure 𝒪₃ᵥ L) L θ} : Set L) = ⊤ :=
+    adjoin_eq_top_of_local_adjoin_eq_top L θ hθtop
+  have hfac : ∀ σ : L ≃ₐ[ℚ₃ᵥ] L,
+      integralClosureLE E M hEM x - integralClosureLE L M hLM (σ • θ) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (N σ) := by
+    intro σ
+    have h1 : integralClosureLE E M hEM x - integralClosureLE L M hLM θ ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (N σ) :=
+      Ideal.pow_le_pow_right (hNle σ) hclose
+    have h2 : integralClosureLE L M hLM θ - integralClosureLE L M hLM (σ • θ) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (N σ) := by
+      have h3 := hmemL (θ - σ • θ) (N σ) (hNmem σ)
+      rwa [map_sub] at h3
+    have h4 : integralClosureLE E M hEM x - integralClosureLE L M hLM (σ • θ) =
+        (integralClosureLE E M hEM x - integralClosureLE L M hLM θ) +
+          (integralClosureLE L M hLM θ - integralClosureLE L M hLM (σ • θ)) := by
+      ring
+    rw [h4]
+    exact Ideal.add_mem _ h1 h2
+  -- STEP 5: hence `P(x) ∈ 𝔪_M^k`, and therefore already `P(x) ∈ 𝔪_E^k`
+  have hprodM : Polynomial.aeval (integralClosureLE E M hEM x) (minpoly 𝒪₃ᵥ θ) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k := by
+    rw [aeval_minpoly_eq_prod_sub_integralClosureLE L M hLM θ hθadj
+      (integralClosureLE E M hEM x)]
+    have h5 := Ideal.prod_mem_prod (s := (Finset.univ : Finset (L ≃ₐ[ℚ₃ᵥ] L)))
+      (I := fun σ => IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (N σ))
+      (x := fun σ => integralClosureLE E M hEM x - integralClosureLE L M hLM (σ • θ))
+      (fun σ _ => hfac σ)
+    rwa [Finset.prod_pow_eq_pow_sum, hsumN] at h5
+  have hprodE : Polynomial.aeval x (minpoly 𝒪₃ᵥ θ) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k := by
+    refine hmemE _ k ?_
+    rw [← Polynomial.aeval_algHom_apply]
+    exact hprodM
+  -- STEP 6: `𝒪_L = 𝒪₃ᵥ[X]/(P)` sends `θ ↦ x̄`
+  have hint : IsIntegral 𝒪₃ᵥ θ := Algebra.IsIntegral.isIntegral θ
+  have hzero : Polynomial.aeval
+      ((Ideal.Quotient.mkₐ 𝒪₃ᵥ
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) x)
+      (minpoly 𝒪₃ᵥ θ) = 0 := by
+    rw [Polynomial.aeval_algHom_apply, Ideal.Quotient.mkₐ_eq_mk,
+      Ideal.Quotient.eq_zero_iff_mem]
+    exact hprodE
+  refine ⟨(AdjoinRoot.liftAlgHom (minpoly 𝒪₃ᵥ θ) (Algebra.ofId 𝒪₃ᵥ _)
+      ((Ideal.Quotient.mkₐ 𝒪₃ᵥ
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) x) ?_).comp
+    (((minpoly.equivAdjoin hint).trans
+      ((Subalgebra.equivOfEq _ _ hθtop).trans Subalgebra.topEquiv)).symm.toAlgHom)⟩
+  simpa [Polynomial.aeval_def] using hzero
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -12896,7 +13065,8 @@ what four owners were sent to build.  The assembly below is written and
 compiles over the two leaves
 `exists_not_le_sub_mem_of_ne_one_of_mem_inertia` (geometric half) and
 `nonempty_algHom_quotient_of_sub_mem_of_span_three_eq` (arithmetic half),
-both directly above.
+both directly above.  **The arithmetic half is PROVEN as of 2026-07-27**, so
+the only remaining sorry under this node is the geometric half.
 
 THE CONSTRUCTION.  Let `n := ord(τ)` (a power of `3`), let `U/ℚ₃ᵥ` be the
 UNRAMIFIED extension of degree `f_L·n`, and put `M := L·U`.  Since `τ` is
