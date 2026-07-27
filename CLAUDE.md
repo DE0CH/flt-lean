@@ -23,6 +23,23 @@ must never strand its remaining leaves unowned. Track the new leaves in
 progress-entries.json (wip flags at dispatch) as part of the same
 integration step.
 
+**A prompt MENTION is not ownership — ownership is a record's own TARGET** (2026-07-27).
+The rule below (grep the prompt) is necessary but not sufficient, and its naive form
+manufactured a phantom *non*-dispatch. Task prompts contain "coordinate, do not edit:
+`flt-lean-36` owns `X`" notes written by the orchestrator. When that worktree is
+**reallocated** the note goes stale — and a later grep for `X` hits the orchestrator's
+own stale claim and reads it back as evidence that `X` is owned. Self-reinforcing:
+the more carefully coordination is written down, the more convincing the phantom.
+
+So the check has three parts, all required. A leaf is owned iff some record:
+(a) names it in its own **`TARGET:` line** — not merely anywhere in the prompt;
+(b) is the **latest** record for its worktree (the file is append-only; earlier
+records for a reallocated worktree are history, not state); and
+(c) that worktree is still `claimed`.
+
+A hit that fails any part is a stale note. `flt-lean-173` reached this conclusion
+correctly against a gate this file's rule had told it to trust, and was right.
+
 **Check overlap by grepping the PROMPT, not the `targets` field** (2026-07-25).
 `~/.flt-inflight.jsonl`'s `targets` is harvested by a regex for bold
 `**\`name\`**`, so tasks not written in that style get junk targets (one batch
