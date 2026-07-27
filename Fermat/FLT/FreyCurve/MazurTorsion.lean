@@ -11722,8 +11722,366 @@ theorem WeierstrassCurve.not_exists_five_mul_of_ker_order_125
   rintro ⟨φ, hφ⟩
   exact h ⟨φ, by rw [hφ, ← hcast]⟩
 
+/-!
+### The complex-multiplication step at levels `125` and `169`: shared machinery
+
+(Added 2026-07-27, by the cut of `classPoly500_of_endSq_neg125` and
+`classPoly676_of_endSq_neg169`. The two nodes are ONE task — the same theorem at
+`ψ² = [−125]` and `ψ² = [−169]` — so the structure is proved once here and
+instantiated twice below.)
+
+Each of those leaves bundled two quite different things:
+
+* an **order-determination** step — `ψ² = [−N]` together with
+  `¬ ∃ φ, ψ = [m] ∘ φ` forces `End(E) = ℤ[ψ]`, the order of discriminant `−4N`,
+  ruling out the maximal order of discriminant `−4N/m²`; and
+* the **main theorem of complex multiplication** — a curve with CM by the order
+  of discriminant `D` has `j` a root of the Hilbert class polynomial `H_D`.
+
+The first is PROVEN outright below, uniformly in `(N, m)`, over the single new
+structural leaf `WeierstrassCurve.End.exists_intBasis`. The second remains a
+leaf, once per level, because this development has no Hilbert class polynomial
+and the identification of `H_{−500}` / `H_{−676}` with the literals is a
+computation no Lean argument here can supply.
+
+**Why the order-determination step is where `hnd` is consumed, and why that
+matters.** A proof of either level node that never uses `hnd` would be proving
+something FALSE: `ψ² = [−125]` alone is satisfied inside the MAXIMAL order
+`ℤ[√−5]` by `ψ = 5√−5`, whose `j` is a root of `H_{−20}` and not of `H_{−500}`;
+at `169` the same with `13i ∈ ℤ[i]` and `H_{−4}`. `hnd` is exactly what excludes
+that curve, and `End.closure_singleton_eq_top_of_sq_eq_neg` is exactly where it
+is used — see the `m ∣ v` branch of its proof.
+
+**The argument, in coordinates.** Write `End(E) = ℤ ⊕ ℤω` with `ω² = aω − b`
+(`End.exists_intBasis`), and `ψ = u + vω`. Since integer casts are central,
+`ψ² = (u² − bv²) + (2uv + av²)ω`, so `ψ² = [−N]` gives, by ℤ-independence of
+`1, ω`,
+
+  `u² − bv² = −N`  and  `v(2u + av) = 0`.
+
+`v ≠ 0` because `ψ ∉ ℤ` (no integer squares to `−N`), hence `2u = −av`;
+multiplying the first relation by `4` and substituting `4u² = a²v²` gives the
+conductor equation
+
+  `v² · (a² − 4b) = −4N`,
+
+i.e. `v²` times the discriminant of `End(E)` is `−4N`. Now `a² − 4b ≡ 0, 1`
+mod `4`, which is `disc_emod_four`, and that congruence together with
+`v² ∣ 4N` leaves only `v = ±1` and `v = ±m` — this is the arithmetic content,
+discharged at `N = 125, m = 5` by `arith_five` and at `N = 169, m = 13` by
+`arith_thirteen`. At `v = ±1` we get `ω = ±(ψ − u)`, so `ℤ[ψ] = End(E)`; at
+`v = ±m` we get `m ∣ v` and, from `2u = −av` with `m` odd, also `m ∣ u`, so
+`ψ = [m] ∘ (u/m + (v/m)ω)`, contradicting `hnd`.
+
+The two square divisors that the mod-`4` congruence kills are exactly the ones
+that would place `End(E)` at a NON-order: at `N = 125`, `v = 2` wants
+`a² − 4b = −125 ≡ 3` and `v = 10` wants `−5 ≡ 3`; at `N = 169`, `v = 2` wants
+`−169 ≡ 3` and `v = 26` wants `−1 ≡ 3`. So the whole conductor computation is
+the single congruence `disc ≡ 0, 1 (mod 4)` plus divisibility, and needs no
+number-field vocabulary at all — which is why it can be proven here, at a pin
+with no quadratic orders and no class polynomials.
+-/
+
+namespace MazurCMOrder
+
+/-- The square of `u + vω` in ANY ring in which `ω² = aω − b`, expanded on the
+basis `1, ω`. No commutativity is needed: integer casts are central, which is
+the only exchange the expansion performs. -/
+theorem sq_intBasis_expand {R : Type*} [Ring R] (ω : R) (a b : ℤ)
+    (hω : ω * ω = a • ω - (b : R)) (u v : ℤ) :
+    ((u : R) + v • ω) * ((u : R) + v • ω)
+      = ((u * u - v * v * b : ℤ) : R) + (2 * u * v + v * v * a) • ω := by
+  have h1 : (u : R) = u • (1 : R) := by rw [zsmul_eq_mul, mul_one]
+  have hb : (b : R) = b • (1 : R) := by rw [zsmul_eq_mul, mul_one]
+  have hc : ((u * u - v * v * b : ℤ) : R) = (u * u - v * v * b) • (1 : R) := by
+    rw [zsmul_eq_mul, mul_one]
+  rw [hc, h1]
+  simp only [add_mul, mul_add, smul_mul_assoc, mul_smul_comm, one_mul, mul_one, hω, hb,
+    smul_smul, smul_sub]
+  module
+
+/-- Left multiplication by an integer, on the basis `1, ω`. This is what turns
+`m ∣ u` and `m ∣ v` into a factorisation `ψ = [m] ∘ φ`. -/
+theorem intCast_mul_intBasis {R : Type*} [Ring R] (ω : R) (m u v : ℤ) :
+    ((m : ℤ) : R) * ((u : R) + v • ω) = ((m * u : ℤ) : R) + (m * v) • ω := by
+  rw [mul_add, mul_smul_comm, Int.cast_mul, ← zsmul_eq_mul (a := ω), smul_smul, mul_comm v m]
+
+/-- A discriminant `a² − 4b` is `0` or `1` mod `4`. This one congruence is the
+whole conductor computation: it is what excludes the square divisors `4` and
+`4m²` of `4N` below, and hence the orders that do not exist. -/
+theorem disc_emod_four (a b : ℤ) : (a ^ 2 - 4 * b) % 4 = 0 ∨ (a ^ 2 - 4 * b) % 4 = 1 := by
+  rcases Int.even_or_odd a with ⟨c, rfl⟩ | ⟨c, rfl⟩
+  · left
+    have h : (c + c) ^ 2 - 4 * b = 4 * (c ^ 2 - b) := by ring
+    rw [h]
+    set k := c ^ 2 - b with hk
+    clear_value k
+    omega
+  · right
+    have h : (2 * c + 1) ^ 2 - 4 * b = 4 * (c ^ 2 + c - b) + 1 := by ring
+    rw [h]
+    set k := c ^ 2 + c - b with hk
+    clear_value k
+    omega
+
+/-- **The conductor arithmetic at `N = 125`.** The square divisors of
+`4 · 125 = 500` are `1, 4, 25, 100`; the discriminant congruence kills `4` and
+`100` (they would force `a² − 4b = −125` resp. `−5`, both `≡ 3` mod `4`),
+leaving `v = 1` and `v = 5`. -/
+theorem arith_five (v a b : ℤ) (hv : 0 < v)
+    (h : v ^ 2 * (a ^ 2 - 4 * b) = -(4 * 125 : ℤ)) : v = 1 ∨ (5 : ℤ) ∣ v := by
+  have hX := disc_emod_four a b
+  set X := a ^ 2 - 4 * b with hXdef
+  clear_value X
+  have hv2 : 0 < v ^ 2 := by positivity
+  have hXneg : X < 0 := by
+    rcases lt_trichotomy X 0 with h1 | h1 | h1
+    · exact h1
+    · rw [h1] at h; simp at h
+    · nlinarith [mul_pos hv2 h1]
+  have hXle : X ≤ -1 := by omega
+  have hvsq : v ^ 2 ≤ 500 := by nlinarith [mul_nonneg (le_of_lt hv2) (by omega : (0:ℤ) ≤ -1 - X)]
+  have hvb : v ≤ 22 := by nlinarith [sq_nonneg (v - 23)]
+  interval_cases v <;> norm_num at h ⊢ <;> omega
+
+/-- **The conductor arithmetic at `N = 169`.** The square divisors of
+`4 · 169 = 676` are `1, 4, 169, 676`; the discriminant congruence kills `4` and
+`676` (they would force `a² − 4b = −169` resp. `−1`, both `≡ 3` mod `4`),
+leaving `v = 1` and `v = 13`. -/
+theorem arith_thirteen (v a b : ℤ) (hv : 0 < v)
+    (h : v ^ 2 * (a ^ 2 - 4 * b) = -(4 * 169 : ℤ)) : v = 1 ∨ (13 : ℤ) ∣ v := by
+  have hX := disc_emod_four a b
+  set X := a ^ 2 - 4 * b with hXdef
+  clear_value X
+  have hv2 : 0 < v ^ 2 := by positivity
+  have hXneg : X < 0 := by
+    rcases lt_trichotomy X 0 with h1 | h1 | h1
+    · exact h1
+    · rw [h1] at h; simp at h
+    · nlinarith [mul_pos hv2 h1]
+  have hXle : X ≤ -1 := by omega
+  have hvsq : v ^ 2 ≤ 676 := by nlinarith [mul_nonneg (le_of_lt hv2) (by omega : (0:ℤ) ≤ -1 - X)]
+  have hvb : v ≤ 26 := by nlinarith [sq_nonneg (v - 27)]
+  interval_cases v <;> norm_num at h ⊢ <;> omega
+
+end MazurCMOrder
+
+/-- **LEAF — `End(E)` is a free `ℤ`-module of rank `2` as soon as it is bigger
+than `ℤ`** (introduced 2026-07-27 by the cut of the two class-polynomial nodes).
+
+If some `ψ₀ ∈ End W` is not an integer, then there are `ω ∈ End W` and `a, b ∈ ℤ`
+with `ω² = aω − b` such that `1, ω` is a `ℤ`-BASIS of `End W`: every `χ` is
+`u + vω`, and `u + vω = 0` forces `u = v = 0`.
+
+This is the structure theorem for endomorphism rings in characteristic `0`,
+Silverman *AEC* III.9.4 together with Deuring: over an algebraically closed
+field of characteristic `0`, `End(E)` is either `ℤ` or an ORDER in an imaginary
+quadratic field, and every order in a quadratic field is monogenic — `O = ℤ[ω]`
+with `1, ω` a `ℤ`-basis and `ω` a root of a monic integral quadratic. The
+hypothesis `h₀` is exactly what excludes the rank-`1` case `End(E) = ℤ`.
+
+**`[CharZero F]` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.** In
+characteristic `p` a supersingular curve has `End(E)` a maximal order in a
+quaternion algebra, of rank `4` over `ℤ` and NOT commutative — so no such
+`ω` exists, and `Isogeny.lean`'s own `𝔽̄₂` counterexample section is a live
+reminder that this file's ambient hypotheses do not come for free. `Isogeny.dual`
+already carries `[CharZero F]` for the same reason.
+
+**What it will take to prove.** The classical route is: (1) `End(E) ⊗ ℤ ℚ` is a
+division algebra of dimension `≤ 4` over `ℚ` (Silverman III.9.3, from the degree
+being a positive-definite quadratic form — the same input as
+`End.exists_dual`); (2) in characteristic `0` the quaternion case cannot occur,
+because `End(E)` embeds in `End(H_1(E, ℤ)) = M₂(ℤ)` via the analytic
+uniformisation, or equivalently acts faithfully on the `2`-dimensional
+`ℚ`-vector space `H_1(E, ℚ)`, forcing commutativity; (3) `End(E)` is then a
+subring of an imaginary quadratic field `K` that is finitely generated as a
+`ℤ`-module and spans `K`, i.e. an order, and orders in quadratic fields are
+`ℤ + fO_K = ℤ[fω_K]`. Step (1) shares its missing input with `End.exists_dual`
+(the parallelogram law for the degree); step (2) is the genuinely new content
+and is where the `H_1` / analytic layer, absent at this pin, is needed.
+
+Note that `End.exists_charPoly` already gives each individual `χ` a monic
+integral quadratic — that is `(1)` for one element at a time. What is missing
+here, and only here, is that a SINGLE `ω` works for all of them at once. -/
+theorem WeierstrassCurve.End.exists_intBasis {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
+    (ψ₀ : WeierstrassCurve.End W) (h₀ : ¬ ∃ c : ℤ, ψ₀ = (c : WeierstrassCurve.End W)) :
+    ∃ (ω : WeierstrassCurve.End W) (a b : ℤ),
+      ω * ω = a • ω - (b : WeierstrassCurve.End W) ∧
+      (∀ χ : WeierstrassCurve.End W, ∃ u v : ℤ,
+        χ = (u : WeierstrassCurve.End W) + v • ω) ∧
+      (∀ u v : ℤ, (u : WeierstrassCurve.End W) + v • ω = 0 → u = 0 ∧ v = 0) :=
+  sorry
+
+/-- **The order-determination step, PROVEN** (2026-07-27), uniformly in `(n, m)`.
+
+If `ψ² = [−n]` and `ψ` is not `[m]` composed with anything, and the conductor
+arithmetic `harith` holds for `(n, m)`, then `ψ` GENERATES `End(W)` as a ring:
+`End(W) = ℤ[ψ]`, the order of discriminant `−4n`.
+
+This is the half of the level-`N` complex-multiplication nodes that does not
+need class polynomials, class numbers, or any number-field vocabulary — see the
+section note above for the argument and for why `hnd` is exactly what rules out
+the maximal order. The only input is `End.exists_intBasis`.
+
+`hm` says `m` is ODD (as `m = 2k + 1`), which is used once, to pass from
+`m ∣ 2u` to `m ∣ u`. Both intended instances — `m = 5` and `m = 13` — are odd
+primes; at an even `m` the conclusion can fail, since `m ∣ 2u` no longer forces
+`m ∣ u`.
+
+`harith` is a purely arithmetic side condition, discharged by
+`MazurCMOrder.arith_five` at `(125, 5)` and `MazurCMOrder.arith_thirteen` at
+`(169, 13)`. Stating it as a hypothesis rather than deriving it is deliberate:
+the general statement "the square divisors of `4n` compatible with the
+discriminant congruence are `1` and `m²`" is false for general `(n, m)` and true
+for these two, so the pair-specific fact belongs at the instantiation site. -/
+theorem WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg {F : Type*} [Field F]
+    [DecidableEq F] [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
+    (n m : ℤ) (hn : 0 < n) (hm : ∃ k : ℤ, m = 2 * k + 1) (ψ : WeierstrassCurve.End W)
+    (hsq : ψ * ψ = ((-n : ℤ) : WeierstrassCurve.End W))
+    (hnd : ¬ ∃ φ : WeierstrassCurve.End W, ψ = ((m : ℤ) : WeierstrassCurve.End W) * φ)
+    (harith : ∀ v a b : ℤ, 0 < v → v ^ 2 * (a ^ 2 - 4 * b) = -(4 * n) → v = 1 ∨ m ∣ v) :
+    Subring.closure ({ψ} : Set (WeierstrassCurve.End W)) = ⊤ := by
+  classical
+  have hnotint : ¬ ∃ c : ℤ, ψ = (c : WeierstrassCurve.End W) := by
+    rintro ⟨c, rfl⟩
+    have hc : ((c * c : ℤ) : WeierstrassCurve.End W) = ((-n : ℤ) : WeierstrassCurve.End W) := by
+      push_cast; push_cast at hsq; exact hsq
+    have hcc := WeierstrassCurve.End.intCast_injective (W := W) hc
+    nlinarith [mul_self_nonneg c]
+  obtain ⟨ω, a, b, hω, hspan, hindep⟩ := WeierstrassCurve.End.exists_intBasis ψ hnotint
+  obtain ⟨u, v, huv⟩ := hspan ψ
+  have hexp : ψ * ψ = ((u * u - v * v * b : ℤ) : WeierstrassCurve.End W)
+      + (2 * u * v + v * v * a) • ω := by
+    conv_lhs => rw [huv]
+    exact MazurCMOrder.sq_intBasis_expand ω a b hω u v
+  have hzero : ((u * u - v * v * b + n : ℤ) : WeierstrassCurve.End W)
+      + (2 * u * v + v * v * a) • ω = 0 := by
+    have hsplit : ((u * u - v * v * b + n : ℤ) : WeierstrassCurve.End W)
+          + (2 * u * v + v * v * a) • ω
+        = (((u * u - v * v * b : ℤ) : WeierstrassCurve.End W)
+            + (2 * u * v + v * v * a) • ω)
+          + ((n : ℤ) : WeierstrassCurve.End W) := by push_cast; abel
+    rw [hsplit, ← hexp, hsq]
+    push_cast
+    abel
+  obtain ⟨h1, h2⟩ := hindep _ _ hzero
+  have hv0 : v ≠ 0 := by
+    rintro rfl
+    exact hnotint ⟨u, by simpa using huv⟩
+  have h3 : 2 * u + a * v = 0 := by
+    have hfac : v * (2 * u + a * v) = 0 := by linear_combination h2
+    rcases mul_eq_zero.1 hfac with h | h
+    · exact absurd h hv0
+    · exact h
+  have h4 : v ^ 2 * (a ^ 2 - 4 * b) = -(4 * n) := by
+    linear_combination (4 : ℤ) * h1 + (a * v - 2 * u) * h3
+  have hw0 : 0 < |v| := abs_pos.2 hv0
+  have h5 : |v| ^ 2 * (a ^ 2 - 4 * b) = -(4 * n) := by rw [sq_abs]; exact h4
+  rcases harith |v| a b hw0 h5 with hcase | hcase
+  · have hvpm : v = 1 ∨ v = -1 := by
+      rcases abs_eq (by norm_num : (0:ℤ) ≤ 1) |>.1 hcase with h | h
+      · exact Or.inl h
+      · exact Or.inr h
+    have hψmem : ψ ∈ Subring.closure ({ψ} : Set (WeierstrassCurve.End W)) :=
+      Subring.subset_closure rfl
+    have hωmem : ω ∈ Subring.closure ({ψ} : Set (WeierstrassCurve.End W)) := by
+      rcases hvpm with rfl | rfl
+      · have hrw : ω = ψ - (u : WeierstrassCurve.End W) := by rw [huv]; simp
+        rw [hrw]; exact sub_mem hψmem (_root_.intCast_mem _ u)
+      · have hrw : ω = (u : WeierstrassCurve.End W) - ψ := by rw [huv]; simp
+        rw [hrw]; exact sub_mem (_root_.intCast_mem _ u) hψmem
+    rw [Subring.eq_top_iff']
+    intro χ
+    obtain ⟨u', v', hχ⟩ := hspan χ
+    rw [hχ]
+    exact add_mem (_root_.intCast_mem _ u') (zsmul_mem hωmem v')
+  · exfalso
+    obtain ⟨k, hk⟩ := hm
+    have hmv : m ∣ v := (dvd_abs m v).1 hcase
+    have hm2u : m ∣ 2 * u := by
+      have hrw : 2 * u = -(a * v) := by linarith
+      rw [hrw]
+      exact dvd_neg.2 (hmv.mul_left a)
+    have hmu : m ∣ u := by
+      have hrw : u = m * u - k * (2 * u) := by rw [hk]; ring
+      rw [hrw]
+      exact dvd_sub (Dvd.intro u rfl) (hm2u.mul_left k)
+    obtain ⟨u₁, hu1⟩ := hmu
+    obtain ⟨v₁, hv1⟩ := hmv
+    refine hnd ⟨(u₁ : WeierstrassCurve.End W) + v₁ • ω, ?_⟩
+    rw [huv, hu1, hv1]
+    exact (MazurCMOrder.intCast_mul_intBasis ω m u₁ v₁).symm
+
+/-- **LEAF — the main theorem of complex multiplication at discriminant `−500`**
+(introduced 2026-07-27 by the cut of `classPoly500_of_endSq_neg125`).
+
+`htop` says `End(E_ℚ̄) = ℤ[ψ]`; with `ψ² = [−125]` that identifies the
+endomorphism ring as `ℤ[√−125]`, the order of conductor `5` in `ℚ(√−5)`, whose
+discriminant is `−4 · 125 = −500`. The conclusion is that `j(E)` is a root of
+the Hilbert class polynomial `H_{−500}`.
+
+This is the main theorem of complex multiplication (Silverman *ATAEC* II.6.1,
+Cox *Primes of the Form x² + ny²* §11): for an order `O` of discriminant `D` in
+an imaginary quadratic field, the `j`-invariants of the `h(D)` proper `O`-ideal
+classes are conjugate algebraic integers, and `H_D` is their minimal polynomial.
+
+**`htop` IS LOAD-BEARING: the statement is FALSE with `hsq` alone.** Over `ℚ̄`
+take the curve with CM by the MAXIMAL order `ℤ[√−5]` and `ψ = 5√−5`. Then
+`ψ² = [−125]` — but `End = ℤ[√−5]` has discriminant `−20`, so `j` is a root of
+`H_{−20}` (a quadratic) and not of the degree-`10` `H_{−500}`. That curve is
+excluded here precisely because `ℤ[ψ] = ℤ[5√−5] ⊊ ℤ[√−5] = End`, i.e. because
+it fails `htop`. `htop` is what the hypothesis `hnd` of the consumer buys, via
+`End.closure_singleton_eq_top_of_sq_eq_neg`.
+
+**VACUITY, inherited from the consumer.** The hypotheses are jointly
+unsatisfiable — `j(E) ∈ ℚ` cannot be a root of the irreducible degree-`10`
+`H_{−500}`, which is what `MazurLevel125.classPoly500_no_rat_root` PROVES — so
+this leaf cannot be discharged by exhibiting a witness. But that
+unsatisfiability is knowable only THROUGH this leaf: the sibling alone does not
+contradict the hypotheses without the complex-multiplication step, so an
+`exfalso` route here would be circular.
+
+**The literal is the same one as in the consumer and the sibling**, which is
+what makes the three compose; it is PARI/GP `polclass(-500)`, cross-checked
+against Magma's `HilbertClassPolynomial(-500)` coefficient by coefficient, along
+with `h(−500) = 10` and `h(−20) = 2`. Do not re-derive it.
+
+**IRREDUCIBLE at this mathlib pin.** Neither mathlib, nor `~/cs/FLT`, nor this
+project has the Hilbert class polynomial, the class group of an order, complex
+multiplication, or the analytic uniformisation. What a successor needs, in
+dependency order: (1) lattices in `ℂ` and the analytic `j`, or the algebraic
+theory of CM over `ℚ̄`; (2) proper ideals of a non-maximal order and their class
+group; (3) the first main theorem — `j(a)` generates the ring class field, and
+`Gal` permutes the `h(D)` values simply transitively; (4) integrality of `j` and
+the identification of `∏ (X − j(a))` with the literal at `D = −500`. Step (4) is
+the only level-specific part; (1)–(3) are shared with the `−676` sibling
+`classPoly676_of_end_closure_eq_top` and with
+`not_isogenyCharacter_of_prime_ge_twentyThree`, which is the argument for
+building them once. -/
+theorem WeierstrassCurve.classPoly500_of_end_closure_eq_top
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+    (hsq : ψ * ψ = (-125 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine))
+    (htop : Subring.closure
+      ({ψ} : Set (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) = ⊤) :
+    E.j ^ 10
+      - 3223908749006824266704683757440 * E.j ^ 9
+      - 5788655235893465137488657517731653977535262720 * E.j ^ 8
+      - 85513345743278838162291325580790125628876982826827776000 * E.j ^ 7
+      - 1263255684065627337408638443352833529354350351162180211933446144000 * E.j ^ 6
+      + 200050352444241778217084607085539849216954485891061015890608338763776000 * E.j ^ 5
+      - 25167927250522335028015421713735943766651382344880916018374545607890042880000 * E.j ^ 4
+      + 778178490640825346779670618315835464511684096015509575297442424938919142359040000 * E.j ^ 3
+      - 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 * E.j ^ 2
+      + 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 * E.j
+      - 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000
+      = 0 :=
+  sorry
+
 /-- **The complex-multiplication half at level `125`** (LEAF, restated
-2026-07-26 over `not_exists_five_mul_of_ker_order_125`).
+2026-07-26 over `not_exists_five_mul_of_ker_order_125`; DECOMPOSED and no longer
+a leaf 2026-07-27 — see below).
 
 An endomorphism `ψ` of `E` with `ψ² = [-125]` forces `End(E) ≠ ℤ`, so `E` has
 complex multiplication by an order `O` in `K = ℚ(√-5)`, and `O ⊇ ℤ[ψ] = ℤ[√-125]`,
@@ -11755,7 +12113,25 @@ Hence `j(E)` is a root of the Hilbert class polynomial `H_{-500}`, which is the
 degree-`10` literal below (PARI/GP `polclass(-500)`, cross-checked against Magma's
 `HilbertClassPolynomial(-500)` on every coefficient; re-verified against
 `polclass(-500)` coefficient by coefficient on 2026-07-26, together with
-`h(-500) = 10`, `h(-20) = 2`). -/
+`h(-500) = 10`, `h(-20) = 2`).
+
+**DECOMPOSED 2026-07-27 — this is no longer a leaf.** It is now PROVEN over
+exactly two things, and the split is the one the docstring above describes:
+
+* `WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg` (PROVEN here,
+  uniformly in `(n, m)`, over the single new structural leaf
+  `WeierstrassCurve.End.exists_intBasis`) — the order determination
+  `End(E) = ℤ[ψ]`, which is where the conductor arithmetic lives and where
+  `hnd` is CONSUMED; and
+* `WeierstrassCurve.classPoly500_of_end_closure_eq_top` (LEAF) — the main
+  theorem of complex multiplication at discriminant `−500`.
+
+So the whole "orders containing `ℤ[5√−5]` have conductor dividing `5`, and the
+maximal order contains `√−5`" paragraph above is now Lean-checked rather than
+prose: see the section note preceding `End.exists_intBasis` for the argument in
+coordinates. What is left open is the CM main theorem and the rank-`2`
+structure of `End`, neither of which is level-specific — both are shared verbatim
+with the `169` node, which is the point of the cut. -/
 theorem WeierstrassCurve.classPoly500_of_endSq_neg125
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
@@ -11774,7 +12150,11 @@ theorem WeierstrassCurve.classPoly500_of_endSq_neg125
       + 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 * E.j
       - 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000
       = 0 :=
-  sorry
+  E.classPoly500_of_end_closure_eq_top ψ hsq
+    (WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg 125 5 (by norm_num)
+      ⟨2, by norm_num⟩ ψ (by rw [hsq]; norm_num)
+      (by rintro ⟨φ, hφ⟩; exact hnd ⟨φ, by rw [hφ]; norm_num⟩)
+      (fun v a b hv h => MazurCMOrder.arith_five v a b hv (by linarith)))
 
 
 /-- **Kenku's Atkin–Lehner descent at level `125`** (sorry node,
@@ -15317,6 +15697,51 @@ theorem WeierstrassCurve.not_exists_thirteen_mul_of_ker_order_169
   rintro ⟨φ, hφ⟩
   exact h ⟨φ, by rw [hφ, ← hcast]⟩
 
+/-- **LEAF — the main theorem of complex multiplication at discriminant `−676`**
+(introduced 2026-07-27 by the cut of `classPoly676_of_endSq_neg169`; the exact
+mirror of `classPoly500_of_end_closure_eq_top`, whose docstring carries the full
+discussion).
+
+`htop` says `End(E_ℚ̄) = ℤ[ψ]`; with `ψ² = [−169]` that identifies the
+endomorphism ring as `ℤ[√−169] = ℤ[13i]`, the order of conductor `13` in
+`ℚ(i)`, whose discriminant is `−4 · 169 = −676`. The conclusion is that `j(E)`
+is a root of the Hilbert class polynomial `H_{−676}`, the degree-`6` literal
+below.
+
+**`htop` IS LOAD-BEARING: the statement is FALSE with `hsq` alone.** Over `ℚ̄`
+take the curve `j = 1728`, with CM by the MAXIMAL order `ℤ[i]`, and `ψ = 13i`.
+Then `ψ² = [−169]` — but `End = ℤ[i]` has discriminant `−4`, so `j = 1728` is
+the root of the linear `H_{−4}` and is not a root of the degree-`6` `H_{−676}`.
+That curve is excluded here precisely because `ℤ[13i] ⊊ ℤ[i]`, i.e. because it
+fails `htop`; `htop` is what the consumer's `hnd` buys, via
+`End.closure_singleton_eq_top_of_sq_eq_neg`.
+
+**VACUITY, inherited from the consumer**, exactly as at `−500`: the hypotheses
+are jointly unsatisfiable because `j(E) ∈ ℚ` and `H_{−676}` is irreducible of
+degree `6` (`MazurLevel169.classPoly676_no_rat_root`, PROVEN) — but that is
+knowable only THROUGH this leaf, so an `exfalso` route here is circular.
+
+**IRREDUCIBLE at this mathlib pin**, and blocked on exactly the same missing
+theory as the `−500` sibling; see that docstring for the dependency-ordered
+list. Only the final identification of `∏ (X − j(a))` with the literal is
+level-specific. The literal is PARI/GP `polclass(-676)`, cross-checked against
+Magma's `HilbertClassPolynomial(-676)` coefficient by coefficient, with
+`h(−676) = 6` and `h(−4) = 1`. Do not re-derive it. -/
+theorem WeierstrassCurve.classPoly676_of_end_closure_eq_top
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+    (hsq : ψ * ψ = (-169 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine))
+    (htop : Subring.closure
+      ({ψ} : Set (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) = ⊤) :
+    E.j ^ 6
+      - 297704363274819300973648925452724352 * E.j ^ 5
+      - 162434321923500244963691319577164899941782327177547776 * E.j ^ 4
+      + 1250093798808181921331239024003439064057314451090248756625408 * E.j ^ 3
+      - 25139996004850385022058823419251332525548857652725838427880085782528 * E.j ^ 2
+      + 183121307244468811013362819441915945367491906284343782971561865394520064 * E.j
+      - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0 :=
+  sorry
+
 /-- **The complex-multiplication half at level `169`** (LEAF, restated
 2026-07-26 over `not_exists_thirteen_mul_of_ker_order_169`).
 
@@ -15350,7 +15775,22 @@ Hence `j(E)` is a root of the Hilbert class polynomial `H_{-676}`, which is the
 degree-`6` literal below (PARI/GP `polclass(-676)`, cross-checked against Magma's
 `HilbertClassPolynomial(-676)` on every coefficient; re-verified against
 `polclass(-676)` coefficient by coefficient on 2026-07-26, together with
-`h(-676) = 6`, `h(-4) = 1`). -/
+`h(-676) = 6`, `h(-4) = 1`).
+
+**DECOMPOSED 2026-07-27 — this is no longer a leaf**, by the same cut as at
+level `125` and over the SAME shared machinery, which is the whole point of
+treating the two as one task. It is PROVEN over:
+
+* `WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg` (PROVEN,
+  uniformly in `(n, m)`, over the structural leaf
+  `WeierstrassCurve.End.exists_intBasis`) — the order determination
+  `End(E) = ℤ[ψ]`, instantiated here at `(n, m) = (169, 13)` with the conductor
+  arithmetic `MazurCMOrder.arith_thirteen`; this is where `hnd` is CONSUMED; and
+* `WeierstrassCurve.classPoly676_of_end_closure_eq_top` (LEAF) — the main
+  theorem of complex multiplication at discriminant `−676`.
+
+The "orders containing `ℤ[13√−13]` have conductor dividing `13`" paragraph above
+is now Lean-checked; see the section note preceding `End.exists_intBasis`. -/
 theorem WeierstrassCurve.classPoly676_of_endSq_neg169
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
@@ -15364,7 +15804,11 @@ theorem WeierstrassCurve.classPoly676_of_endSq_neg169
       - 25139996004850385022058823419251332525548857652725838427880085782528 * E.j ^ 2
       + 183121307244468811013362819441915945367491906284343782971561865394520064 * E.j
       - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0 :=
-  sorry
+  E.classPoly676_of_end_closure_eq_top ψ hsq
+    (WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg 169 13 (by norm_num)
+      ⟨6, by norm_num⟩ ψ (by rw [hsq]; norm_num)
+      (by rintro ⟨φ, hφ⟩; exact hnd ⟨φ, by rw [hφ]; norm_num⟩)
+      (fun v a b hv h => MazurCMOrder.arith_thirteen v a b hv (by linarith)))
 
 
 /-- **Kenku's Atkin–Lehner descent at level `169`** (sorry node,
