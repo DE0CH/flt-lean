@@ -6944,8 +6944,315 @@ would delete the `ex falso` laundering and let that module's genuine work (the
 quotient) discharge them instead.  That re-basing is a cut-level repair across
 two modules and two owners' regions; it is recorded here rather than performed. -/
 
+/-! #### The cut of the descent bridge (2026-07-27)
+
+`y0HasNoRationalPoint_of_not_stableCyclic` was a single `sorry`.  It is now
+DERIVED from four proven lemmas and two named leaves, along the two
+ingredients its own docstring listed:
+
+* *bijectivity of `classify` on geometric points* — the half of the
+  coarse-moduli definition that `IsCoarseModuliY0` deliberately omits.  The
+  half the descent actually consumes is SURJECTIVITY on `ℚ̄`-points, and that
+  is now **PROVEN**, in `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint`.
+  It really is unreachable from initiality and really is reachable from the
+  presentation: over `Gamma0GITPresentation` the coarse space is `Spec B` with
+  `B = A^G`, so a `ℚ̄`-point of it is a ring map `B → ℚ̄`, which lifts to
+  `A → ℚ̄` because `A` is integral over `B`; the lift is a `ℚ̄`-point `m` of the
+  rigidified moduli scheme, and the base change of the universal family `dM`
+  along `m` is the datum wanted.  Only two general facts are used, and both
+  were already here: `exists_gamma0Datum_baseChange` (PROVEN — note the
+  docstring of `Gamma0Atlas` above still says base change "does not exist
+  today"; that is stale) and `classify_dM`, which is what makes `classify dM`
+  the quotient map `Spec A ⟶ Spec B` and hence lets `m` be pushed to the given
+  point.  Transport from the GIT presentation to an ARBITRARY coarse moduli
+  space is pure initiality, exactly as in `IsCoarseModuliY0.exists_inverse`
+  (which cannot be cited here — it is declared six thousand lines below — so
+  the two-line argument is repeated inline).
+* *the twisting/Kummer computation* — this is `exists_gamma0Datum_specQ_of_ratPoint`,
+  the one genuinely arithmetic leaf of the bridge.
+
+What is left over is the translation back from a `Γ₀(N)`-datum over `ℚ` to a
+Weierstrass curve, `false_of_gamma0Datum_specQ`: the exact converse of
+`nonempty_gamma0Datum_of_stable`, and a statement with no modular curve in it
+at all.
+
+The degenerate level is separated as everywhere else in this file:
+`y0HasNoRationalPoint_zero` is PROVEN (from `isEmpty_of_gamma0Datum_zero` and
+initiality), which is what lets the two leaves carry `N ≠ 0`. -/
+
+/-- **A ring map into an algebraically closed field extends along an integral
+extension** (PROVEN 2026-07-27) — pure commutative algebra, stated here
+because the geometric surjectivity below is exactly this fact read through
+`Spec`.
+
+`p := ker f` is prime because `K` is a domain; lying over
+(`Ideal.exists_ideal_over_prime_of_isIntegral`, applicable because `hinj`
+makes `⊥.comap (algebraMap B A) = ⊥ ≤ p`) produces a prime `Q` of `A` over
+`p`; `A ⧸ Q` is then an integral — hence algebraic — extension of the domain
+`B ⧸ p`, and `IsAlgClosed.lift` embeds it into `K` over `B ⧸ p`.  Composing
+with `Ideal.Quotient.mk Q` gives `f'`, and `AlgHom.commutes` is the
+compatibility.
+
+`hinj` is load-bearing and the statement is FALSE without it: take `A = 0`,
+`B = ℚ`, which satisfies `Algebra.IsIntegral B A` vacuously while admitting no
+ring map to a field at all. -/
+theorem exists_ringHom_of_isIntegral_isAlgClosed {B A K : Type} [CommRing B] [CommRing A]
+    [Algebra B A] [Field K] [IsAlgClosed K] [Algebra.IsIntegral B A]
+    (hinj : Function.Injective (algebraMap B A)) (f : B →+* K) :
+    ∃ f' : A →+* K, f'.comp (algebraMap B A) = f := by
+  classical
+  haveI hp : (RingHom.ker f).IsPrime := RingHom.ker_isPrime f
+  obtain ⟨Q, -, hQprime, hQcomap⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral (R := B) (S := A) (RingHom.ker f) ⊥
+      (by rw [Ideal.comap_bot_of_injective _ hinj]; exact bot_le)
+  haveI : Q.IsPrime := hQprime
+  haveI : Q.LiesOver (RingHom.ker f) := ⟨hQcomap.symm⟩
+  letI : Algebra (B ⧸ RingHom.ker f) K :=
+    (Ideal.Quotient.lift (RingHom.ker f) f (fun _ ha => ha)).toAlgebra
+  haveI : Module.IsTorsionFree (B ⧸ RingHom.ker f) K :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr
+      (RingHom.lift_injective_of_ker_le_ideal _ _ le_rfl)
+  haveI : Module.IsTorsionFree (B ⧸ RingHom.ker f) (A ⧸ Q) :=
+    Module.isTorsionFree_iff_faithfulSMul.mpr inferInstance
+  have φ : (A ⧸ Q) →ₐ[B ⧸ RingHom.ker f] K := IsAlgClosed.lift
+  refine ⟨(φ.toRingHom).comp (Ideal.Quotient.mk Q), RingHom.ext fun b => ?_⟩
+  show φ (Ideal.Quotient.mk Q (algebraMap B A b)) = f b
+  have hb : Ideal.Quotient.mk Q (algebraMap B A b)
+      = algebraMap (B ⧸ RingHom.ker f) (A ⧸ Q) (Ideal.Quotient.mk _ b) := rfl
+  rw [hb, AlgHom.commutes]
+  rfl
+
+/-- **`classify` is surjective on `ℚ̄`-points, over the GIT presentation**
+(PROVEN 2026-07-27): every `ℚ̄`-point of the coarse space `Spec B` is the class
+of an honest `Γ₀(N)`-datum over `Spec ℚ̄`.
+
+This is the half of the coarse-moduli definition that `IsCoarseModuliY0`
+omits, and the reason it is proved HERE rather than there is exactly the
+reason recorded in the docstring of `y0HasNoRationalPoint_of_not_stableCyclic`:
+initiality determines `(Y, classify)` up to unique isomorphism and says
+nothing about which points of `Y` are hit, whereas a *presentation* says which
+points there are.
+
+The argument in one line: `classify_dM` identifies `(classify strM dM).1` with
+the quotient map `Spec A ⟶ Spec B`, so lifting the point is lifting a ring map
+`B → ℚ̄` to `A → ℚ̄` — `exists_ringHom_of_isIntegral_isAlgClosed`, available
+because `Algebra.IsInvariant.isIntegral` makes `A` integral over `B = A^G` —
+and the datum is the base change of the universal family along the lift,
+`exists_gamma0Datum_baseChange`.  `subsingleton_hom_specQ` disposes of the
+structure-morphism bookkeeping, as it does throughout this file.
+
+Note what is NOT needed: no properness, no finiteness of `G` beyond what
+`Algebra.IsInvariant` already carries, and no injectivity of `classify`.  The
+descent leaf below is where injectivity would enter, and it enters there in
+the packaged form of the hypothesis `hd` rather than as a separate statement. -/
+theorem Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint {N : ℕ}
+    (P : Gamma0GITPresentation N) (x : RelPoint P.str (specAlgClos ℚ)) :
+    ∃ d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+      P.classify (specAlgClos ℚ) d = x := by
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  letI := P.isInvariant_BAG
+  haveI : Algebra.IsIntegral P.B P.A := Algebra.IsInvariant.isIntegral P.B P.A P.G
+  obtain ⟨f', hf'⟩ := exists_ringHom_of_isIntegral_isAlgClosed (K := AlgebraicClosure ℚ)
+    P.injective_algebraMap (Spec.preimage x.1).hom
+  have hmx : Spec.map (CommRingCat.ofHom f') ≫
+      Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) = x.1 := by
+    rw [← Spec.map_comp]
+    have hcomp : CommRingCat.ofHom (algebraMap P.B P.A) ≫ CommRingCat.ofHom f'
+        = Spec.preimage x.1 := CommRingCat.hom_ext hf'
+    rw [hcomp, Spec.map_preimage]
+  obtain ⟨d, ⟨hbc⟩⟩ := exists_gamma0Datum_baseChange (Spec.map (CommRingCat.ofHom f')) P.dM
+  have hg : Spec.map (CommRingCat.ofHom f') ≫ P.strM = specAlgClos ℚ :=
+    (subsingleton_hom_specQ _).elim _ _
+  refine ⟨d, (P.classify_natural _ hg hbc).trans (Subtype.ext ?_)⟩
+  show Spec.map (CommRingCat.ofHom f') ≫ (P.classify P.strM P.dM).1 = x.1
+  rw [P.classify_dM]
+  exact hmx
+
+/-- **`classify` is surjective on `ℚ̄`-points, over ANY coarse moduli space**
+(PROVEN 2026-07-27) — the previous lemma transported off the presentation by
+initiality alone.
+
+`Y0HasNoRationalPoint` quantifies over every coarse moduli space rather than a
+chosen one, so the surjectivity statement has to be available at an arbitrary
+`IsCoarseModuliY0` too.  Initiality supplies mutually inverse `u : Y_P ⟶ Y`
+and `v : Y ⟶ Y_P` over `Spec ℚ` that are compatible with both classifying
+maps; a point of `Y` is pushed to `Y_P` by `v`, lifted there, and pushed back
+by `u`.  This is `IsCoarseModuliY0.exists_inverse` in miniature — it cannot be
+cited, being declared six thousand lines below this one, so the `v ≫ u = 𝟙`
+argument is repeated here.
+
+`hN : 0 < N` is consumed only by `exists_gamma0GITPresentation`, which is
+stated for `N ≥ 1` because `[Γ₀(N)]` is a moduli problem only there; the
+degenerate level is `y0HasNoRationalPoint_zero`. -/
+theorem IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint {N : ℕ} (hN : 0 < N)
+    {Y : Scheme.{0}} {str : Y ⟶ SpecQ} (hY : IsCoarseModuliY0 N str)
+    (x : RelPoint str (specAlgClos ℚ)) :
+    ∃ d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+      hY.classify (specAlgClos ℚ) d = x := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  let h₁ := P.toGamma0Atlas.toIsCoarseModuliY0
+  obtain ⟨u, ⟨hu, hucl⟩, -⟩ := h₁.universal str hY.classify hY.classify_natural
+  obtain ⟨v, ⟨hv, hvcl⟩, -⟩ := hY.universal P.toGamma0Atlas.str h₁.classify h₁.classify_natural
+  obtain ⟨w, -, hwuniq⟩ := hY.universal str hY.classify hY.classify_natural
+  have hvu : v ≫ u = 𝟙 Y := by
+    refine (hwuniq (v ≫ u) ⟨?_, ?_⟩).trans (hwuniq (𝟙 Y) ⟨Category.id_comp _, ?_⟩).symm
+    · rw [Category.assoc, hu, hv]
+    · intro T g dd
+      conv_lhs => rw [hucl g dd, hvcl g dd]
+      exact Category.assoc _ _ _
+    · intro T g dd
+      exact (Category.comp_id _).symm
+  obtain ⟨d, hd⟩ := P.exists_gamma0Datum_of_algClosPoint
+    (⟨x.1 ≫ v, by rw [Category.assoc, hv]; exact x.2⟩ :
+      RelPoint P.toGamma0Atlas.str (specAlgClos ℚ))
+  refine ⟨d, Subtype.ext ?_⟩
+  have hd' : (h₁.classify (specAlgClos ℚ) d).1 = x.1 ≫ v := congrArg Subtype.val hd
+  rw [hucl (specAlgClos ℚ) d, hd', Category.assoc, hvu, Category.comp_id]
+
+/-- **The degenerate level has no rational point** (PROVEN 2026-07-27).
+
+VACUITY AUDIT — this carries no arithmetic, and is recorded only so that
+`y0HasNoRationalPoint_of_not_stableCyclic` can be stated for every `N` while
+its two leaves are restricted, correctly, to `N ≥ 1`.  By
+`isEmpty_of_gamma0Datum_zero` the `Γ₀(0)`-problem has no object over a
+nonempty base, so the empty scheme is a cocone for it; initiality then gives
+`Y ⟶ ∅`, which forces `Y` — and hence `Spec ℚ`, through the supposed rational
+point — to be empty, contradicting `Nontrivial ℚ`.
+
+This is the same observation as `exists_coarseModuliY0_zero`, read in the
+opposite direction: there it produced a coarse space, here it empties an
+arbitrary one. -/
+theorem y0HasNoRationalPoint_zero : Y0HasNoRationalPoint 0 := by
+  intro Y str hY
+  have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
+    intro T d
+    have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    exact isInitialOfIsEmpty
+  obtain ⟨u, -, -⟩ := hY.universal (emptyIsInitial.to SpecQ)
+    (fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩)
+    (fun {_T' _T} _h {_g _g'} _hg {d'} {_d} _hbc => Subtype.ext ((hinit d').hom_ext _ _))
+  constructor
+  intro y
+  haveI : IsEmpty ↥Y := u.base.hom.1.isEmpty
+  haveI : IsEmpty ↥SpecQ := y.1.base.hom.1.isEmpty
+  have hne : Nonempty ↥SpecQ := inferInstanceAs (Nonempty (PrimeSpectrum ℚ))
+  exact (‹IsEmpty ↥SpecQ›).elim hne.some
+
+/-- **A `ℚ̄`-datum whose class is a RATIONAL point of the coarse space descends
+to `ℚ`, after a twist** (sorry leaf, opened 2026-07-27) — the twisting/Kummer
+computation of the section above, and the one genuinely arithmetic ingredient
+of the descent bridge.
+
+`hd` says that the class of `d` in the coarse space is the base change to `ℚ̄`
+of the rational point `y`.  That is precisely "the field of moduli of `d` is
+`ℚ`": the class of `σ^*d` is `σ^*(classify d) = σ^*(y|_ℚ̄) = y|_ℚ̄`, because a
+`ℚ`-rational point is Galois-invariant by construction, so `classify` cannot
+separate `σ^*d` from `d`.  Injectivity of `classify` on geometric points — the
+other half of the omitted clause — then makes `σ^*d ≅ d` for every `σ`, and
+that is the input to the twisting argument.
+
+#### The argument, and it is the one written out in the section docstring above
+
+`j(E) ∈ ℚ`, so `E` has a model over `ℚ` and we may take `E^σ = E`; the
+comparison isomorphisms `α_σ` form a cocycle in `Z¹(G_ℚ, Aut(E)/Aut(E, C))`;
+`−1 ∈ Aut(E, C)` always, since `−C = C`, so the quotient is `1` or `μ_{n/2}`
+with `n ∈ {2, 4, 6}`; and `ℚˣ/(ℚˣ)ⁿ ↠ ℚˣ/(ℚˣ)^{n/2}` is surjective, so the
+cocycle is realised by a quadratic/quartic/sextic twist `E^{(d)}`, which is
+defined over `ℚ` and carries a `G_ℚ`-stable subgroup.
+
+**NO CASE SPLIT ON `j`, and do not reintroduce one.**  The `j ∈ {0, 1728}`
+caveat is a caveat about the strictly stronger statement that the PAIR
+`(E, C)` descend; only `Nonempty (Gamma0Datum N SpecQ)` is asked for here, so a
+twist is allowed and the obstruction vanishes.  Neither
+`isolatedJInvariants` nor any `p`-hypothesis belongs in this leaf; the former
+is load-bearing for the two arithmetic level leaves, not for this one.
+
+**The check that refutes this**: exhibit `n ∈ {4, 6}` and a class in
+`ℚˣ/(ℚˣ)^{n/2}` outside the image of `ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being
+induced by the identity on representatives.
+
+WHAT A PROVER OWES.  The injectivity half of the geometric bijection is
+*inside* this leaf: `hd` is stated in terms of `classify` rather than in terms
+of an isomorphism `σ^*d ≅ d`, because `IsBaseChangeOf` along `specGal σ` is the
+only comparison of data this development has and the Galois-twisted datum
+would have to be produced before it could be compared.  A successor who wants
+to split that off should state it as
+`classify _ d₁ = classify _ d₂ → Nonempty (IsBaseChangeOf (𝟙 _) d₁ d₂)` and
+obtain `σ^*d` from `exists_gamma0Datum_baseChange (specGal σ) d`, both of which
+are now available. -/
+theorem exists_gamma0Datum_specQ_of_ratPoint {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ SpecQ}
+    (hY : IsCoarseModuliY0 N str) (y : RelPoint str (𝟙 SpecQ))
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hd : hY.classify (specAlgClos ℚ) d
+      = RelPoint.pre (specAlgClos ℚ) (Category.comp_id _) y) :
+    Nonempty (Gamma0Datum N SpecQ) :=
+  sorry
+
+/-- **A `Γ₀(N)`-datum over `ℚ` produces an elliptic curve over `ℚ` with a
+Galois-stable cyclic subgroup of order `N`** (sorry leaf, opened 2026-07-27),
+stated in the contradiction form its only consumer wants.
+
+THE EXACT CONVERSE OF `nonempty_gamma0Datum_of_stable`, and there is no modular
+curve in it: it is the dictionary between the scheme-theoretic phrasing of the
+moduli problem and the elementary phrasing that `FreyCurve/MazurTorsion.lean`
+uses, read in the direction that has never been needed before.
+
+#### What proving it needs
+
+1. **A Weierstrass model of an elliptic scheme over a field.**  `d.ab` is an
+   abelian scheme of relative dimension one over `Spec ℚ`; classical
+   Riemann–Roch on the genus-one curve `d.E` with the origin `d.ab.zero` gives
+   a Weierstrass equation over `ℚ`.  `IsWeierstrassModel` (below in this file)
+   is the relation to produce, and `exists_weierstrassModel_gamma0Datum` is the
+   same relation produced in the OPPOSITE direction, so its statement is the
+   template.  This is the missing "Zariski-local Weierstrass presentations"
+   item that the cut of `exists_jLine` also records as its honest residue —
+   closing it here would close half of that too.
+2. **The generator.**  `d.cyc.geom_cyclic` applied at the geometric point
+   `specAlgClos ℚ` hands over a point `y` of the geometric fibre with
+   `addOrderOf y = N` whose multiples are exactly the points lying in `d.cyc.C`.
+3. **Stability, which is free.**  `d.cyc.C` is a subscheme over `Spec ℚ`, so
+   `RelPoint.LiesIn d.cyc.ι` is invariant under precomposition with
+   `specGal σ`; the multiples of `y` are therefore a `Γ_ℚ`-stable set, which is
+   the hypothesis `hstable` in the elementary phrasing.
+4. **Transport along the identification** of `E(ℚ̄)` with the geometric fibre.
+   The `≃+` of `exists_ellipticScheme_of_weierstrass` is Galois-equivariant
+   (`he`) and `nonempty_gamma0Datum_of_stable` transports order and stability
+   ACROSS it in the other direction; the same two `have`s run backwards here.
+
+`hN : N ≠ 0` is load-bearing for step 2 — a "cyclic subgroup of order `0`" is
+infinite and there is no generator of finite order to produce.  At `N = 0` the
+statement is nevertheless TRUE, and vacuously so, since
+`isEmpty_of_gamma0Datum_zero` makes `Gamma0Datum 0 SpecQ` uninhabited over the
+nonempty base `Spec ℚ`; the hypothesis is kept because the call site supplies
+it and it removes a degenerate branch from the main argument.
+
+FAITHFULNESS.  The conclusion is `False`, so the leaf cannot be weakened by
+strengthening its own conclusion; the risk is the opposite one, of weakening
+`h`.  `h` is transcribed VERBATIM from `y0HasNoRationalPoint_of_not_stableCyclic`
+and must stay so — in particular the quantifier is over all of
+`Field.absoluteGaloisGroup ℚ` and not over inertia, which is correct here
+because the base is `ℚ` and there is no local field in sight. -/
+theorem false_of_gamma0Datum_specQ {N : ℕ} (hN : N ≠ 0)
+    (h : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic]
+        (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = N →
+        (∀ σ : Field.absoluteGaloisGroup ℚ,
+          ∀ x ∈ AddSubgroup.zmultiples g,
+            WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+              AddSubgroup.zmultiples g) → False)
+    (d : Gamma0Datum N SpecQ) : False :=
+  sorry
+
 /-- **A rational point of `Y_0(N)` comes from an elliptic curve over `ℚ`**
-(sorry node, introduced 2026-07-27), in the contrapositive form that its
+(PROVEN 2026-07-27 by the decomposition recorded in the subsection above;
+formerly a single sorry node), in the contrapositive form that its
 consumers want: if no elliptic curve over `ℚ` carries a Galois-stable cyclic
 subgroup of order `N`, then `Y_0(N)` has no rational point.
 
@@ -6997,15 +7304,22 @@ this**: exhibit `n ∈ {4, 6}` and a class in `ℚˣ/(ℚˣ)^{n/2}` not in the i
 of `ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being induced by the identity on
 representatives.
 
-#### What proving it needs
+#### What proving it needs — and what of that is now DONE
 
 Precisely the half of the coarse-moduli definition that `IsCoarseModuliY0`
 deliberately omits — bijectivity of `classify` on geometric points, i.e.
 `Y(ℚ̄) ↔ {(E, C)/ℚ̄}/≅`, `G_ℚ`-equivariantly — together with the descent
-computation above.  The first is reachable from `Gamma0Atlas` /
-`Gamma0GITPresentation`, which present `Y_0(N)` concretely and are already in
-this file; initiality alone can never supply it, since it determines `Y` only
-up to isomorphism and says nothing about which points of `Y` are hit.
+computation above.  The first was correctly diagnosed as reachable from
+`Gamma0Atlas` / `Gamma0GITPresentation` and unreachable from initiality, and
+its SURJECTIVITY half — the half this node consumes — is now PROVEN, as
+`IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint`.  Its injectivity half
+survives inside `exists_gamma0Datum_specQ_of_ratPoint`, packaged as the
+hypothesis `hd`; see that leaf's docstring for how to split it off.
+
+So exactly two leaves remain under this node, and they share no subject
+matter: `exists_gamma0Datum_specQ_of_ratPoint` (the twisting/Kummer descent,
+arithmetic) and `false_of_gamma0Datum_specQ` (the Weierstrass dictionary, the
+converse of `nonempty_gamma0Datum_of_stable`, no modular curve in it).
 
 Cusps are not an obstacle and need no hypothesis: `Y_0(N)` is the coarse space
 of the moduli problem `[Γ₀(N)]`, whose objects are genuine elliptic schemes, so
@@ -7019,8 +7333,16 @@ theorem y0HasNoRationalPoint_of_not_stableCyclic {N : ℕ}
             WeierstrassCurve.Affine.Point.map
               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
               AddSubgroup.zmultiples g) → False) :
-    Y0HasNoRationalPoint N :=
-  sorry
+    Y0HasNoRationalPoint N := by
+  rcases Nat.eq_zero_or_pos N with rfl | hN
+  · exact y0HasNoRationalPoint_zero
+  intro Y str hY
+  constructor
+  intro y
+  obtain ⟨d, hd⟩ := hY.exists_gamma0Datum_of_algClosPoint hN
+    (RelPoint.pre (specAlgClos ℚ) (Category.comp_id _) y)
+  obtain ⟨d₀⟩ := exists_gamma0Datum_specQ_of_ratPoint hY y d hd
+  exact false_of_gamma0Datum_specQ hN.ne' h d₀
 
 /-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
 `p²`, for the seven isogeny primes with `genus X_0(p) ≥ 1`** (sorry node,
