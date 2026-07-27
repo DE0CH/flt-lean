@@ -12620,7 +12620,35 @@ entire patching argument silently, and `exists_patchedModule_of_hilbertPatchingS
 would have been a repackaging. The repair moves the depth conclusion to where
 it is produced and leaves each level with exactly what Taylor–Wiles supplies:
 freeness over the finite group ring, and an augmentation ideal deepening with
-`d`. -/
+`d`.
+
+# THE AUDIT ABOVE IS SUPERSEDED — THE DEAD CUT SURVIVED THE 2026-07-26 REPAIR
+
+(2026-07-27, mechanically verified; the full account, with the derivation and
+the refuting check, is the CUT AUDIT in the docstring of
+`exists_hilbertPatchingSystem` below.)
+
+Removing `rs`/`rs_regular` did remove the impossible finite-level depth demand,
+but its replacement `free` reintroduces the same disease by a different route,
+because it is stated over `S ⧸ aug` for the SAME `S` that `toRuniv` presents
+`Runiv` from. Taylor–Wiles needs the diamond ring and the presentation of the
+auxiliary deformation ring to be DISTINCT — `𝒪[Δ_{Q_d}]` is a SUBRING of
+`R_{Q_d}`, not a quotient of the presenting power-series ring. With one ring in
+both roles, `free` + `aug_smul` + `proj_smul` force
+`ker proj = (aug ⊔ ker toRuniv)·N` exactly, hence
+`M₀ ≅ (Runiv ⧸ toRuniv aug)^rank`; demanding a level at every `d` then forces
+`Ann_Runiv M₀ ⊆ ⋂_d 𝔪_Runiv^d = 0`, so `M₀` is FREE over `Runiv` of rank
+`rank ≥ 1` and `ψ` is injective outright — the cluster's conclusion, obtained
+with no patching. So no finite Taylor–Wiles level satisfies this structure
+either, and `exists_hilbertPatchingSystem` is once again carrying the entire
+argument.
+
+Repair prescription: mirror the `ℚ`-level `Modularity.TaylorWilesLevelRaw`,
+which already separates the two rings correctly (`pres`, `diamond`, `coordM`
+over the diamond quotient, `toRuniv`/`projM_smul` over the auxiliary ring `R`).
+This is a cut-level change that also rewrites
+`exists_patchedModule_of_hilbertPatchingSystem`, so it needs a single named
+owner rather than an incidental edit. -/
 structure HilbertPatchingLevel (q : ℕ)
     (coeff : Modularity.TaylorWilesCoefficients)
     {Runiv : Type u} [CommRing Runiv] {T : Type u} [CommRing T]
@@ -13001,6 +13029,87 @@ supply `hTW`, build the level-wise tower:
 `isUniversal_of_isWeaklyUniversal_isTraceGenerated` above), without which the
 tower would be built for the wrong map; `e` is what supplies
 `Module.Finite ℤ_[ℓ] 𝒟T.R` on the Hecke side.
+
+# CUT AUDIT (2026-07-27): THIS LEAF IS CURRENTLY A DEAD CUT — DO NOT ATTEMPT IT
+
+**`HilbertPatchingSystem ψ` ALONE implies `Function.Injective ψ`**, which is the
+conclusion the entire cluster exists to produce
+(`exists_hilbertPatchedModule` → `Modularity.PatchedModule.injective`). So this
+leaf is at least as hard as the theorem it feeds, and everything below it —
+`exists_patchedModule_of_hilbertPatchingSystem`, the pigeonhole leaf
+`exists_surjective_ker_le_of_forall_maximalIdeal_pow`, the Auslander–Buchsbaum
+endgame — contributes nothing to the cluster's conclusion. Anyone dispatched
+here would have to perform the whole Taylor–Wiles argument silently, which is
+EXACTLY the defect the SATISFIABILITY AUDIT on `HilbertPatchingLevel` set out to
+remove on 2026-07-26. The 2026-07-26 repair removed the depth-`(q+1)` regular
+sequence and reintroduced the same disease through its replacement field,
+`free`.
+
+MECHANICALLY VERIFIED, not merely argued. The derivation below was elaborated
+against the built module and `#print axioms` returned
+`[propext, Classical.choice, Quot.sound]` — no `sorryAx`. It needs only
+`[IsLocalRing Runiv]` and `[IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv]`,
+BOTH of which `𝒟.R` carries as instance fields of `HilbertDeformationDatum`, so
+it applies verbatim at this leaf's instantiation.
+
+THE DERIVATION, in five steps (`S := 𝒪⟦y₁, …, y_q⟧`, `𝔞 := ker toRuniv`):
+
+1. STEP 1 of `exists_patchedModule_of_hilbertPatchingSystem` — already PROVEN
+   there — gives, for every `d`, a surjection `φ_d : S^rank ↠ M₀` with
+   `ker φ_d ⊆ (𝔞 ⊔ 𝔪_S^d)·S^rank`.
+2. `rank ≥ 1` (from `nontrivialM0`, as proven there), so fix `i : Fin rank`.
+3. Let `x : S` with `ψ (toRuniv x) = 0`. Since `φ_d` is `S`-linear and `S` acts
+   on `M₀` through `ψ ∘ toRuniv`, `φ_d (Pi.single i x) = x • φ_d (Pi.single i 1) = 0`.
+   Hence `Pi.single i x ∈ (𝔞 ⊔ 𝔪_S^d)·S^rank`, and applying the `i`-th coordinate
+   projection (`Submodule.map_smul''`, then `I • ⊤ = I` on the free rank-one
+   module) gives `x ∈ 𝔞 ⊔ 𝔪_S^d`.
+4. `toRuniv` is surjective from a local ring, so `Ideal.map toRuniv 𝔪_S ≤ 𝔪_Runiv`
+   (`Ideal.comap_isMaximal_of_surjective` plus `IsLocalRing.eq_maximalIdeal`), and
+   `Ideal.map_pow` gives `toRuniv x ∈ 𝔪_Runiv^d` — for EVERY `d`.
+5. `IsAdicComplete` gives `IsHausdorff`, i.e. `⋂_d 𝔪_Runiv^d = 0`, so
+   `toRuniv x = 0`. As `toRuniv` is surjective, `ψ` is injective.
+
+WHY THE INTERFACE COLLAPSES, stated so the repair is unambiguous. Taylor–Wiles
+needs TWO power-series rings: the DIAMOND ring `Λ = 𝒪⟦y₁, …, y_q⟧`, over whose
+finite quotients `Λ/𝔟_d = 𝒪[Δ_{Q_d}]` the auxiliary Hecke module is FREE, and
+the PRESENTATION of the auxiliary deformation ring `R_{Q_d}`, through which the
+control map to `Runiv` and the `ψ`-equivariance of `proj` are stated. The two
+are related only by a structure map `Λ → R_{Q_d}`; neither is a quotient of the
+other. `HilbertPatchingLevel` uses ONE ring for both roles: `free` is stated
+over `S ⧸ aug` for the SAME `S` that `toRuniv` presents `Runiv` from, and
+`proj_smul` is stated over that same `S`. Chasing the consequences,
+`ker proj = (aug ⊔ 𝔞)·N` exactly (`⊇` follows from `aug_smul` and `proj_smul`),
+so `free` forces `M₀ ≅ (Runiv ⧸ ā_d)^rank` as a `Runiv`-module via `ψ`, with
+`ā_d := toRuniv aug ⊆ 𝔪_Runiv^d`. Demanding a level at EVERY `d` then drives
+`Ann_Runiv M₀` into `⋂_d 𝔪_Runiv^d = 0`, i.e. **`M₀` free of rank `rank ≥ 1`
+over `Runiv`** — which is `R_F = T_F` together with freeness of the bottom Hecke
+module, the OUTPUT of patching, demanded at every finite level.
+
+The classical finite-level data does not satisfy it: `M_{Q_d}` is free over
+`𝒪[Δ_{Q_d}]`, which sits in `R_{Q_d}` as a SUBRING (the diamond operators), not
+as a quotient of the presenting power-series ring, and `M_∅` is free over `R_F`
+only once the patching argument has been run.
+
+THE CHECK THAT WOULD REFUTE THIS AUDIT: exhibit a `HilbertPatchingSystem ψ`, for
+any `ψ` that is not injective, over a `Runiv` that is local and maximal-adically
+complete — or show that the five-step derivation above fails to elaborate. Both
+are cheap; neither requires re-doing the survey.
+
+THE REPAIR, and it is a CUT-LEVEL change, deliberately NOT made here (it would
+restate a structure that a PROVEN theorem and a second agent's in-flight leaf
+both depend on). **Mirror the `ℚ`-level `Modularity.TaylorWilesLevelRaw`, which
+already has the correct two-ring shape and does NOT collapse this way**: it
+carries the auxiliary ring `R` with its own presentation `pres` from
+`MvPowerSeries (Fin q) coeff.carrier`, a SEPARATE diamond ring with structure
+map `diamond : MvPowerSeries (Fin q) ℤ_[ℓ] →+* R`, freeness (`coordM`) over the
+DIAMOND quotient `Λ ⧸ 𝔟_n`, and `projM_smul`/`toRuniv` over `R`. Note also that
+the `ℚ`-level interface took a repair of its own on 2026-07-26 —
+`bIdeal_le_aug`, added because `bIdeal_le` is vacuous at `n = 0` — so it is the
+more mature of the two; the sensible move is to reuse its shape rather than
+re-derive one. Downstream, `exists_patchedModule_of_hilbertPatchingSystem` would
+then have to take a genuine inverse limit (`M_∞` free over `Λ`, finite over the
+presentation ring) instead of presenting `M₀` on the free module `S^rank`, and
+the pigeonhole leaf would need restating to match.
 
 References: Taylor–Wiles, Ann. of Math. 141 (1995); Diamond, Invent. Math. 128
 (1997); Fujiwara, *Deformation rings and Hecke algebras in the totally real
