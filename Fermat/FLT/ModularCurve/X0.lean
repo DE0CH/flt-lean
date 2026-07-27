@@ -4538,9 +4538,195 @@ theorem mem_isogenyPrimeSqLevels_of_mem_mazurIsogenyPrimes {p : ℕ}
     p ^ 2 ∈ isogenyPrimeSqLevels := by
   fin_cases hmem <;> first | omega | decide
 
-/-- **Kenku's determination at the eight prime-square levels** (sorry
-node, introduced 2026-07-27): `Y_0(N)(ℚ) = ∅` for each of the eight
-levels `N = p²`, `p ∈ {11, 13, 17, 19, 37, 43, 67, 163}`.
+/-- **The seven prime-square levels that reduce to a FINITE set of
+`p`-isogeny classes**: `p²` for `p ∈ {11, 17, 19, 37, 43, 67, 163}`, i.e.
+every entry of `isogenyPrimeSqLevels` except `169`.
+
+**Why these seven are one node and `169` is another** — this is the
+substantive content of the cut, and it corrects the route analysis that
+`y0HasNoRationalPoint_of_isogenyPrimeSqLevel` carried before.
+
+*The uniform reduction.*  A rational point of `Y_0(p²)` is a pair
+`(E, C)` with `C` cyclic of order `p²`.  Put `E' = E/C[p]`.  Then `E'[p]`
+contains TWO DISTINCT Galois-stable lines: the image `C/C[p]` of `C`, and
+the image `E[p]/C[p]` of `E[p]` — which is the kernel of the dual
+isogeny.  They are distinct because a generator of `C` has order `p²` and
+so does not lie in `E[p]`.  Conversely two independent stable lines
+`L₁ ≠ L₂` in `E'[p]` give a cyclic `p²`-subgroup of `E'/L₁`.  So, for
+each prime `p`, the level node is EQUIVALENT to
+
+> no elliptic curve over `ℚ` admits two independent rational
+> `p`-isogenies.
+
+This is the same circle of ideas as
+`WeierstrassCurve.not_two_stable_lines_of_jInvariant` and
+`not_cyclicIsogeny_sq_of_jInvariant` in `FreyCurve/MazurTorsion.lean`,
+whose Vélu construction is exactly the passage `(E, C) ↦ E/C[p]` above.
+**That module imports this one**, so the implication may not be used
+here; the ARGUMENT may be copied, the declarations may not.
+
+*What the reduction then needs.*  `E'` carries a rational `p`-isogeny, so
+its point on `Y_0(p)(ℚ)` lies in a set one can enumerate — PROVIDED that
+set is finite.  That is the whole of the split, and it is decided by a
+single computable number.  Genus of `X_0(p)`, PARI/GP 2.17.4, 2026-07-27:
+
+| `p`             | `11` | `13`  | `17` | `19` | `37` | `43` | `67` | `163` |
+|-----------------|------|-------|------|------|------|------|------|-------|
+| `genus X_0(p)`  | `1`  | **`0`** | `1`  | `1`  | `2`  | `3`  | `5`  | `13`  |
+
+* `p = 11, 17, 19`: `X_0(p)` is an elliptic curve of ANALYTIC rank `0`
+  (verified 2026-07-27 with PARI/GP on the models `[0,-1,1,-10,-20]`,
+  `[1,-1,1,-1,-14]`, `[0,1,1,-9,-15]`, of conductors `11, 17, 19`), so
+  Kolyvagin–Gross–Zagier gives Mordell–Weil rank `0` and `X_0(p)(ℚ)` is
+  finite: `3`, `2`, `1` non-cuspidal points respectively.
+* `p = 37, 43, 67, 163`: `genus X_0(p) ≥ 2`, so `X_0(p)(ℚ)` is finite by
+  Faltings; the non-cuspidal points are `2, 1, 1, 1` respectively.  The
+  three singletons are CM by the class-number-one order `ℚ(√-p)`, in
+  which `p` RAMIFIES — so `E[p]` has a unique stable line and two
+  independent `p`-isogenies are impossible on the nose, with no
+  enumeration at all.  `p = 37` has two explicit non-CM `j`-invariants,
+  `-7·11³` and `-7·137³·2083³`.
+* `p = 13` is the exception: `genus X_0(13) = 0`, so `X_0(13) ≅ ℙ¹_ℚ`,
+  `Y_0(13)(ℚ)` is INFINITE — a one-parameter family of curves with a
+  rational `13`-isogeny — and the reduction above degenerates into a
+  tautology.  Level `169` is therefore the only one of the eight that
+  must be settled on its own curve; it is `y0HasNoRationalPoint_oneSixtyNine`.
+
+**Correction to the previous reconnaissance** (recorded 2026-07-27 in the
+docstring of `y0HasNoRationalPoint_of_isogenyPrimeSqLevel`, and to the
+dispatch that quoted it).  That analysis grouped `121, 169, 289, 361` as
+"genuine rational-point determinations on curves of genus `6, 8, 17, 22`"
+and pointed all four at Chabauty–Coleman, keeping the isogeny-character
+route for `1369, 1849, 4489, 26569` alone.  Three of those four do not
+need the geometry of `X_0(N)` at all: `121, 289, 361` reduce to the
+finite sets `Y_0(11)(ℚ)`, `Y_0(17)(ℚ)`, `Y_0(19)(ℚ)` by exactly the
+argument that handles the four large levels, and the genus-`17` and
+genus-`22` curves never appear.  Splitting `4 + 4` therefore separates
+levels that share a route and joins levels that do not.  **The check that
+refutes this correction**, if it is wrong: exhibit a prime among
+`11, 17, 19` for which `X_0(p)(ℚ)` is infinite — equivalently for which
+`genus X_0(p) = 0`, or `genus = 1` with positive rank.  The table above
+is that check, and it is one `gp` line per entry. -/
+def isogenyClassPrimeSqLevels : List ℕ := [121, 289, 361, 1369, 1849, 4489, 26569]
+
+/-- **Kenku's prime-square determination at the seven levels with a
+finite isogeny classification** (sorry node, introduced 2026-07-27):
+`Y_0(N)(ℚ) = ∅` for `N = p²`, `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
+
+TRUE: none of `121, 289, 361, 1369, 1849, 4489, 26569` lies in the
+Mazur–Kenku list `1, …, 19, 21, 25, 27, 37, 43, 67, 163` of levels with a
+non-cuspidal rational point — every one of them exceeds `163`.
+
+See `isogenyClassPrimeSqLevels` for the route: the two-independent-lines
+reduction, and the finiteness of `Y_0(p)(ℚ)` that makes it terminate.
+The seven fall into two sub-families, and a successor may split this node
+again along them if it prefers — they share the reduction and differ only
+in how the finite set is obtained and checked:
+
+* `121, 289, 361` (`p = 11, 17, 19`): `X_0(p)` elliptic of rank `0`,
+  `Y_0(p)(ℚ)` explicitly `3, 2, 1` points, checked by enumeration.  For
+  `p = 11` the check is visible in the isogeny graph: the three
+  `j`-invariants `-32768`, `-121`, `-24729001` sit in conductor-`121`
+  classes that are single `11`-isogeny EDGES, so no vertex has degree
+  `2` and no chain of two `11`-isogenies exists.
+* `1369, 1849, 4489, 26569` (`p = 37, 43, 67, 163`): `genus X_0(p) ≥ 2`,
+  finiteness by Faltings, and at `43, 67, 163` the CM argument needs no
+  enumeration.
+
+**The one obligation the reduction does not discharge, and it is
+shared by both sub-families.**  `Y0HasNoRationalPoint` is a statement
+about the COARSE moduli space, and `IsCoarseModuliY0` deliberately omits
+bijectivity on geometric points (see its docstring).  So a rational point
+of `Y_0(p²)` does not come with a pair `(E, C)` defined over `ℚ`: what it
+carries is a `ℚ̄`-pair whose field of moduli is `ℚ`, and descending it to
+`ℚ` is Weil descent against `Aut(E, C)`.  This is exactly the gap the
+module docstring names when it says the modular-curve statement is
+STRONGER than the elliptic-curve one — and it is why
+`nonempty_gamma0Datum_of_stable` (curve ⟶ point) exists here while its
+converse does not.  A successor must build that bridge, or else run the
+whole argument on `X_0(p²)` itself.  **Do not state the bridge as a
+universally quantified leaf without the descent hypothesis**: for a pair
+with extra automorphisms it is false as a bare implication, which is the
+standard `j = 0, 1728` caveat.
+
+IRREDUCIBLE at this pin: it needs the classification of `Y_0(p)(ℚ)` for
+the seven primes (Mazur's Theorem 1 in its sharp, point-listing form —
+`cuspidal_x0_prime` above is only the emptiness half, which says nothing
+at these seven), the Vélu quotient at the modular-curve level, and the
+field-of-moduli descent above.
+
+Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), Theorem 1 and Table 1; Kenku, *The modular curves `X_0(65)` and
+`X_0(91)` and rational isogeny*, Math. Proc. Cambridge Philos. Soc. **87**
+(1980); *On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`*,
+J. London Math. Soc. (2) **23** (1981). -/
+theorem y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel (N : ℕ)
+    (_hN : N ∈ isogenyClassPrimeSqLevels) : Y0HasNoRationalPoint N :=
+  sorry
+
+/-- **Kenku's determination at level `169`** (sorry node, introduced
+2026-07-27): `Y_0(169)(ℚ) = ∅`.
+
+TRUE: `169 > 163`, so it is outside the Mazur–Kenku list.
+
+**Why this is a node of its own**, and not a member of
+`isogenyClassPrimeSqLevels`: `genus X_0(13) = 0`.  Every other prime
+`p` with `p² ∈ isogenyPrimeSqLevels` has `genus X_0(p) ≥ 1`, hence
+`Y_0(p)(ℚ)` finite, hence a finite list of `p`-isogeny classes to check;
+at `p = 13` the curve `X_0(13)` is `ℙ¹_ℚ`, `Y_0(13)(ℚ)` is infinite, and
+that route does not exist even in principle.  `169` must be settled on
+`X_0(169)`, of genus `8`.  This is Kenku, *The modular curve `X_0(169)`
+and rational isogeny*, J. London Math. Soc. (2) **22** (1980).
+
+#### Reconnaissance (PARI/GP 2.17.4, 2026-07-27, and its consequence)
+
+`genus X_0(169) = 8`; `dim S_2(Γ_0(169))^new = 8` with newform factors
+`(deg 𝕋_f, ord_{s=1} L(f,s)) = (2,0), (3,0), (3,3)`, and the old part
+`J_0(13)² = 0`; so the analytic rank of `J_0(169)` is `3`.
+
+`3 < 8`, which is Chabauty's hypothesis — but note two things before
+reaching for it.
+
+* **`rank J_0(169)(ℚ) < 8` is not available unconditionally.**  The two
+  analytic-rank-`0` factors have Mordell–Weil rank `0` by
+  Kolyvagin–Logachev; the analytic-rank-`3` factor is a `3`-dimensional
+  modular abelian variety, and Gross–Zagier/Kolyvagin say nothing at
+  analytic rank `3`.  Chabauty's input at `169` is thus conditional on
+  BSD unless a descent supplies the upper bound directly.  (At `121`,
+  `289`, `361` the corresponding vanishing sits on a `deg 𝕋_f = 1`
+  factor, so positivity of the rank IS unconditional there — but by the
+  correction recorded at `isogenyClassPrimeSqLevels` those three do not
+  need a rank input at all.)
+* **The CRUDE Chabauty–Coleman bounds cannot close this level, whatever
+  the prime.**  What has to be proven is
+  `#X_0(169)(ℚ) = numRationalCusps 169 = 2` (the divisors of `p²` are
+  `1, p, p²`, and `φ(gcd(p, p)) = p − 1 ≠ 1` for odd `p`, so only the
+  cusps `0` and `∞` are rational).  Coleman's bound, for `ℓ > 2g` of good
+  reduction and `r < g`, is `#X(ℚ) ≤ #X(𝔽_ℓ) + 2g − 2 = #X(𝔽_ℓ) + 14`;
+  Stoll's refinement, for `ℓ > 2`, is `#X(ℚ) ≤ #X(𝔽_ℓ) + 2r`, and
+  `r ≥ 3`.  Since `#X(𝔽_ℓ) ≥ 1`, both bounds exceed `2` for EVERY
+  admissible `ℓ`.  So "Chabauty–Coleman" here means the refined method —
+  Coleman integration residue disk by residue disk, or Chabauty combined
+  with a Mordell–Weil sieve — and NOT a counting bound of the shape
+  `card_le_of_rankZeroJacobian`, which this file's
+  `y0HasNoRationalPoint_of_witnessPrime` and
+  `y0HasNoRationalPoint_of_sieveLevel` are the two instances of.  **The
+  check that refutes this**: exhibit a prime `ℓ ∤ 169` with
+  `#X_0(169)(𝔽_ℓ) + 2·3 ≤ 2`, which is impossible since point counts are
+  positive.
+
+IRREDUCIBLE at this pin, and strictly harder than the eleven
+`kenkuLevels`: it needs `p`-adic integration on curves, which exists in
+no form here, on top of the integral model and Jacobian machinery the
+rank-`0` route already lacks. -/
+theorem y0HasNoRationalPoint_oneSixtyNine : Y0HasNoRationalPoint 169 :=
+  sorry
+
+/-- **Kenku's determination at the eight prime-square levels** (PROVEN
+2026-07-27 over `y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel` and
+`y0HasNoRationalPoint_oneSixtyNine`; introduced as a sorry node earlier
+the same day): `Y_0(N)(ℚ) = ∅` for each of the eight levels `N = p²`,
+`p ∈ {11, 13, 17, 19, 37, 43, 67, 163}`.
 
 TRUE: none of `121, 169, 289, 361, 1369, 1849, 4489, 26569` lies in the
 Mazur–Kenku list `1, …, 19, 21, 25, 27, 37, 43, 67, 163` of levels with a
@@ -4567,17 +4753,36 @@ whose mod-`p` representation has TWO independent stable lines, hence is
 diagonal — which the CM description of `Y_0(p)(ℚ)` at `p = 43, 67, 163`
 and the two `j`-invariants at `p = 37` exclude.
 
-IRREDUCIBLE at this pin, but no longer uniformly so, and the two halves
-have different prospects — which is the reason for splitting the node
-out rather than leaving it inside the `p ≥ 11` statement:
+IRREDUCIBLE at this pin, but no longer uniformly so, and the halves have
+different prospects — which is the reason for splitting the node out
+rather than leaving it inside the `p ≥ 11` statement.
 
-* `121, 169, 289, 361` are genuine rational-point determinations on
-  curves of genus `6, 8, 17, 22`.  The file already carries the machinery
-  their arguments need in outline (`HasRankZeroJacobian`,
-  `card_le_of_rankZeroJacobian`, `IsSharpSieve`) — **and that machinery
-  does NOT apply at any of the four**, which is the single most useful
-  fact recorded here, because it is exactly the route a successor would
-  otherwise try first.
+**The split is `7 + 1`, not `4 + 4`** (corrected 2026-07-27; the
+superseded `4 + 4` reading is kept below, struck through in prose, because
+a dispatch was written from it and the next reader should be able to see
+what was wrong with it).  The cut is
+`isogenyClassPrimeSqLevels = [121, 289, 361, 1369, 1849, 4489, 26569]`
+against the singleton `169`, and the discriminating fact is
+`genus X_0(13) = 0` while `genus X_0(p) ≥ 1` for the other seven primes.
+See `isogenyClassPrimeSqLevels` for the reduction and the genus table.
+
+*The superseded reading, and why it is wrong.*  It ran:
+
+* ~~`121, 169, 289, 361` are genuine rational-point determinations on
+  curves of genus `6, 8, 17, 22`, so the route at all four is
+  Chabauty–Coleman~~ — **false for three of the four.**  `121, 289, 361`
+  reduce to the FINITE sets `Y_0(11)(ℚ)`, `Y_0(17)(ℚ)`, `Y_0(19)(ℚ)` by
+  the same two-independent-lines argument that handles the four large
+  levels, and their genus-`6`, `17`, `22` curves never enter.  Only `169`
+  is forced onto its own curve.
+* ~~and `1369, 1849, 4489, 26569` are the isogeny-character half~~ — true,
+  but not a HALF: it is four members of a seven-member family.
+
+What survives from it unchanged, and is the reason the table below is
+kept: the machinery this file already carries (`HasRankZeroJacobian`,
+`card_le_of_rankZeroJacobian`, `IsSharpSieve`) **does NOT apply at
+`121, 169, 289, 361`**, because its rank-`0` input is false at all four.
+That warning was right and still is.
 
   #### Reconnaissance (PARI/GP 2.17.4, 2026-07-27)
 
@@ -4607,28 +4812,44 @@ out rather than leaving it inside the `p ≥ 11` statement:
 
   **What this leaves.**  Every one of the four satisfies
   `rank J_0(N)(ℚ) < genus X_0(N)` (`1 < 6`, `3 < 8`, `6 < 17`, `8 < 22`),
-  which is precisely Chabauty–Coleman's hypothesis.  So the route at these
-  four levels is Chabauty–Coleman — a theory this development does not
-  have in any form, and a strictly larger obligation than the rank-`0`
-  counting the eleven `kenkuLevels` use.  **Do not dispatch a prover at
-  `121, 169, 289, 361` expecting to reuse `card_le_of_rankZeroJacobian`;
-  the rank input it needs is false at all four.**
-* `1369, 1849, 4489, 26569` do NOT need the geometry of `X_0(p²)` at all.
-  The isogeny-character route above is a statement about elliptic curves
-  with a rational `p`-isogeny for the four largest Mazur primes, and it
-  is the same circle of ideas as
-  `WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree` in
-  `FreyCurve/MazurTorsion.lean`.  **Note the direction**: that module
-  imports this one, so the implication may not be used here, and a
-  successor must prove the modular-curve form directly — but it may
-  freely copy the ARGUMENT.
+  which is precisely Chabauty–Coleman's hypothesis.  **Do not dispatch a
+  prover at `121, 169, 289, 361` expecting to reuse
+  `card_le_of_rankZeroJacobian`; the rank input it needs is false at all
+  four.**  But `r < g` says only that Chabauty is *available*, not that it
+  is *needed* — and at `121, 289, 361` it is not: see
+  `isogenyClassPrimeSqLevels`.  At `169` it is, and there the CRUDE bounds
+  do not suffice either; see `y0HasNoRationalPoint_oneSixtyNine` for that
+  computation.
+
+The isogeny-character route is the same circle of ideas as
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree` and
+`not_two_stable_lines_of_jInvariant` in `FreyCurve/MazurTorsion.lean`.
+**Note the direction**: that module imports this one, so the implication
+may not be used here, and a successor must prove the modular-curve form
+directly — but it may freely copy the ARGUMENT.
 
 Stated as a membership in an explicit list, in the idiom of
 `hasRankZeroJacobian_of_kenkuLevel`, so that a successor may close the
-eight levels independently. -/
+levels independently.
+
+**PROVEN 2026-07-27** over the two nodes below, along an axis that is NOT
+the one this docstring previously proposed — see
+`isogenyClassPrimeSqLevels` for the correction and for the computation
+that forces it. -/
 theorem y0HasNoRationalPoint_of_isogenyPrimeSqLevel (N : ℕ)
-    (_hN : N ∈ isogenyPrimeSqLevels) : Y0HasNoRationalPoint N :=
-  sorry
+    (hN : N ∈ isogenyPrimeSqLevels) : Y0HasNoRationalPoint N := by
+  have h : N = 121 ∨ N = 169 ∨ N = 289 ∨ N = 361 ∨ N = 1369 ∨ N = 1849 ∨
+      N = 4489 ∨ N = 26569 := by
+    simpa [isogenyPrimeSqLevels] using hN
+  rcases h with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 121 (by decide)
+  · exact y0HasNoRationalPoint_oneSixtyNine
+  · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 289 (by decide)
+  · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 361 (by decide)
+  · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 1369 (by decide)
+  · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 1849 (by decide)
+  · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 4489 (by decide)
+  · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 26569 (by decide)
 
 /-- **Kenku's prime-square determination, on `X_0(p²)` for `p ≥ 11`**
 (PROVEN 2026-07-27 over `y0HasNoRationalPoint_of_isogenyPrimeSqLevel`;
