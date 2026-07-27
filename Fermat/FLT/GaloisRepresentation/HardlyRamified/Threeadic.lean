@@ -2165,8 +2165,242 @@ theorem one_tmul_quotient_eq_zero_of_mem_smul_top {R : Type u} [CommRing R]
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **The connected part is `3`-PRIMARY** (SORRY LEAF, cut 2026-07-27
+out of `exists_localInertia_no_fixed_connected_vector_of_hopf_package`
+below, which is PROVEN over it together with the tameness leaf
+`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
+just after it).
+
+Content: every CONNECTED vector — every `z` whose point takes the value
+`1` at the connected counit idempotent `e₀` — is killed by SOME power of
+`3`. Nothing about inertia, nothing about ramification: this is the
+ORDER statement alone, and it is the half of the parent leaf that the
+Raynaud classification does NOT supply.
+
+WHY THE PARENT NEEDS IT, AND WHY IT IS NOT FREE. The proven
+`inertiaFixed_connected_vector_eq_zero_of_hopf_package` above carries a
+`3`-power-torsion hypothesis `hm3 : (3 ^ N) • m = 0`, and the parent
+leaf carries none. The gap is exactly this statement. It is NOT
+formal: `N` is finite (see below), so every vector has finite additive
+order, but a priori that order may have a prime-to-`3` part, and a
+nonzero connected vector of order coprime to `3` would refute the
+parent leaf outright — every hypothesis of the parent is blind to it,
+since `inertiaFixed_connected_vector_eq_zero_of_hopf_package` cannot
+see it and the tameness leaf only constrains WHICH `σ` acts freely.
+
+MATHEMATICAL CONTENT. `hprim₀` pins `e₀ G` as the connected component
+of the identity of the finite flat `𝒪ᵥ`-group scheme `Spec G`
+(`𝒪ᵥ ≅ ℤ₃` is henselian local, so connected components of `Spec G`
+correspond to primitive idempotents of `G`, and `hε₀` picks the one
+through the identity section). A CONNECTED finite flat group scheme
+over a base of residue characteristic `3` has `3`-power order — its
+special fibre is infinitesimal — so its geometric points form a
+`3`-group. Equivalently, and this is the form to prove: a point of the
+connected component reduces to the counit
+(`OortTate.point_sub_counit_mem_maximalIdeal`, PROVEN, and it spends
+exactly `he₀`/`hε₀`/`hprim₀`), i.e. lies in the KERNEL OF REDUCTION,
+and the kernel of reduction has no nontrivial prime-to-`3` torsion.
+
+ROUTE FOR A PROVER — the prime-to-`3` half is ELEMENTARY, by Nakayama
+in the convolution filtration, and the pieces are already in
+`Fermat/FLT/GroupScheme/ConnectedEtale.lean`. Let `z` be connected of
+finite additive order `n = 3 ^ a * m` with `gcd (m, 3) = 1`; the
+connected locus is closed under `ℕ`-multiples
+(`convMul_apply_one_of_comul_absorbs`, as re-performed in the parent's
+glue below), so `w := (3 ^ a) • z` is connected of order dividing `m`.
+Write `c := φ_w` in the convolution ring `WithConv (G →ₗ[𝒪ᵥ] 𝒪̄)` and
+`d := c - 1`, `𝔞 := span (range d.ofConv)`. Then:
+
+* `d` is valued in the maximal ideal of `𝒪̄`, by
+  `OortTate.point_sub_counit_mem_maximalIdeal` — this is where
+  connectedness is spent;
+* `c ^ m = 1` expands binomially to `m • d = -∑_{i≥2} C(m,i) • d ^ i`,
+  whose values lie in `𝔞 ^ 2` by `OortTate.convPow_apply_mem_pow`;
+* `m` is a UNIT of `𝒪̄`: `3` lies in the maximal ideal
+  (`OortTate.natCast_mem_maximalIdeal_integralClosure`) and
+  `gcd (m, 3) = 1` gives `a * m + b * 3 = 1`, so `m ∈ 𝔪` would force
+  `1 ∈ 𝔪`;
+* hence `𝔞 ⊆ 𝔞 ^ 2 ⊆ 𝔞`, and `𝔞` is FINITELY GENERATED
+  (`OortTate.fg_span_range`, which is where `Module.Finite 𝒪ᵥ G` is
+  spent) and contained in the maximal ideal of the LOCAL ring `𝒪̄`, so
+  Nakayama gives `𝔞 = 0`, i.e. `d = 0` and `w = 0`.
+
+So `(3 ^ a) • z = 0` and `k := a` works. Note this is the exact
+prime-to-`3` mirror of the PROVEN
+`OortTate.eq_convOne_of_convPow_prime_eq_one`, which does the `p`-part
+at `e = 1` and needs Raynaud's bound; the prime-to-`p` part needs no
+ramification input at all, only that `m` is invertible. The
+`AlgHom`-to-`WithConv` transport is the same plumbing as in
+`OortTate.eq_one_of_inertia_invariant_of_reduction_counit`
+(`AlgHom.liftEquiv`, `vendored_mul_eq_convMul`, `liftEquiv_symm_convMul`).
+
+FINITENESS, which the route above assumes and which is genuinely
+available: `Module.Finite 𝒪ᵥ G` base-changes to
+`Module.Finite ℚ₃ᵥ (ℚ₃ᵥ ⊗ G)`, mathlib's instance `Finite (S →ₐ[R] K)`
+then makes the geometric point set FINITE, and `fG` transports that to
+the space. So `addOrderOf z` is positive and the decomposition
+`n = 3 ^ a * m` is legitimate.
+
+`hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE, and the
+witness is the same one recorded on the parent: `e₀ = 1` satisfies
+`he₀`, `hε₀` and `hcomul₀` and makes the "connected locus" all of `M`;
+for the CONSTANT group scheme `G = ℤ/5` over `𝒪ᵥ` the points then form
+a group of order `5`, killed by no power of `3`. Primitivity is what
+pins `e₀ G` as the identity component and makes the leaf true. Do not
+drop or underscore it.
+
+FAITHFULNESS. The conclusion is a VALUE-level statement about a vector
+(its additive order), with no quantifier over `Γ` at all, no element of
+`G`, no coordinate and no normal form. So the leaf is on the true side
+of the development's `𝒪ᵥ`-descent rule, and it is twist-blind: an
+unramified twist `μ₃ ⊗ ψ` changes WHICH vectors are connected, not the
+order of the connected group.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 1.1 and 3.3.2; Tate, *Finite flat group schemes*, §1 and §4, in
+Cornell–Silverman–Stevens (connected–étale sequence over a henselian
+base); Fontaine, *Il n'y a pas de variété abélienne sur `ℤ`*, §1. -/
+theorem connected_vector_threePow_torsion_of_hopf_package
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (ρ' : GaloisRep ℚ A N)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      ((ρ'.toLocal 𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (z : N)
+    (hz : (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) :
+    ∃ k : ℕ, (3 ^ k : ℕ) • z = 0 := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Raynaud TAMENESS at `e = 1 < p − 1`: local inertia acts on the
+connected `3`-torsion through a CYCLIC quotient** (SORRY LEAF, cut
+2026-07-27 out of
+`exists_localInertia_no_fixed_connected_vector_of_hopf_package` below,
+which is PROVEN over it together with the order leaf
+`connected_vector_threePow_torsion_of_hopf_package` just above).
+
+Content: there is ONE `σ ∈ localInertiaGroup 𝔭₃` whose fixed locus on
+the connected `3`-torsion is contained in the fixed locus of EVERY
+`τ ∈ localInertiaGroup 𝔭₃` — i.e. the image of `σ` GENERATES the image
+of local inertia in the automorphism group of the connected socle.
+
+THIS IS THE ENTIRE CLASSIFICATION CONTENT OF THE PARENT, and it is
+stated in the smallest form that carries it: only `3`-torsion vectors,
+and only the containment of fixed loci. Everything else the parent
+needs — closure of the connected locus under `ℕ`-multiples, the
+Nakayama descent from `3 ^ k`-torsion to the socle, and the passage
+from "fixed by all of `I₃`" to `0` — is discharged below over the
+PROVEN `inertiaFixed_connected_vector_eq_zero_of_hopf_package`.
+
+ROUTE FOR A PROVER. The socle is the geometric point group of a finite
+flat `𝒪ᵥ`-group scheme KILLED BY `3` — the schematic closure inside
+`Spec (e₀ G)` of the `3`-torsion of the generic fibre — so Raynaud's
+hypothesis is met at `e = 1 < p − 1 = 2`. Raynaud (Bull. SMF 102
+(1974), 3.3.2–3.3.5 and 3.4.3) then gives: WILD inertia acts TRIVIALLY,
+and tame inertia acts through products of fundamental characters
+`∏ ψᵢ ^ nᵢ` with `nᵢ ≤ e = 1`. So the action factors through the TAME
+quotient `I₃ ↠ I₃^t ≅ ∏_{ℓ ≠ 3} ℤ_ℓ`, which is PROCYCLIC; its image in
+the (finite) automorphism group of the socle is therefore CYCLIC, and
+any `σ` mapping to a generator satisfies the conclusion, because
+`x` fixed by a generator is fixed by every power of it and hence by the
+whole image.
+
+WHY TAMENESS AND NOT ω-ISOTYPY. An earlier framing of the parent
+attributed the defeat of the `S₃` counterexample below to "Raynaud's
+ω-isotypy at `e = 1`". That is WRONG as stated and must not be
+reinstated: supersingular `E[3]/ℚ₃` has good reduction and `e = 1`, yet
+tame inertia acts there through the LEVEL-2 fundamental characters (of
+order `8`), so the connected part is not ω-isotypic in general. The
+correct input is tameness alone — which still yields cyclicity, since
+the nonsplit-Cartan image `𝔽₉ˣ ≅ ℤ/8` is cyclic and its generators act
+without fixed vectors. This is also why the parent is stated as
+fixed-point-freeness rather than as a scalar action: a scalar-action
+leaf would have been FALSE.
+
+WHAT DEFEATS THE `S₃` COUNTEREXAMPLE, MECHANICALLY. For `A = 𝔽₃²` with
+`I` acting through a copy of `S₃` by `σ ↦ [[1,1],[0,1]]` and
+`τ ↦ diag(−1,1)` one has `A^I = 0` while EVERY single element fixes a
+nonzero vector — so no derivation of the parent from
+`(M⁰)^{I₃} = 0` alone can exist. This leaf is refuted by that
+configuration too, and correctly so: `S₃` is NOT cyclic. What rules the
+configuration out over `ℤ₃` is exactly what this leaf asserts —
+`[[1,1],[0,1]]` has order `3`, so that image is wildly ramified, which
+`e = 1 < p − 1` forbids. Any proof of this leaf must therefore spend
+`e < p − 1`; a proof that does not is wrong.
+
+CHECKS THAT WOULD REFUTE THIS OBSTRUCTION RECORD (state them, do not
+just believe them): (i) exhibit a derivation of the conclusion from
+`(M⁰)^{I₃} = 0` alone — it must contend with the `S₃` configuration;
+(ii) find a Cartier-duality development in the tree transporting the
+proven "no unramified sub" half to this one —
+`grep -rn 'CartierDual\|cartierDual' Fermat/` returns nothing as of
+2026-07-27, which is why that route was not taken; a Cartier-duality
+build has its own owner, so re-run the grep before assuming it is
+unavailable.
+
+`hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
+idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
+"connected locus" all of `M`; for the CONSTANT group scheme `G = ℤ/3`
+over `𝒪ᵥ` the module `M` is unramified, so every `σ ∈ I₃` fixes every
+vector — the conclusion then holds vacuously for that `G`, but the
+parent's use of it does not, which is where the falsity surfaces.
+Primitivity of `e₀` — supplied by consumers as minimality, through
+`mul_eq_zero_or_mul_eq_of_minimal` — is what pins `e₀ G` as the
+connected component of the identity. Do not drop or underscore it.
+
+FAITHFULNESS. The conclusion is a VALUE-level statement about vectors,
+both quantifiers `σ, τ ∈ localInertiaGroup 𝔭₃` are over INERTIA and
+neither is widened to `Γ`, and no element of `G`, no coordinate and no
+normal form appears. So the leaf is on the true side of the
+development's `𝒪ᵥ`-descent rule and blind to the `p − 1` unramified
+twists `μ₃ ⊗ ψ` that killed `exists_muType_closure`: a twist changes
+WHICH vectors are connected, not whether one inertia element's fixed
+locus contains the others'.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 3.3.2–3.3.5 and 3.4.3; Serre, *Propriétés galoisiennes…*,
+Invent. Math. 15 (1972), §1.11 (fundamental characters and the
+procyclic tame quotient); Tate, *Finite flat group schemes*, §4, in
+Cornell–Silverman–Stevens. -/
+theorem exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (ρ' : GaloisRep ℚ A N)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      ((ρ'.toLocal 𝔭₃).Space))
+    (hfG : Function.Bijective fG) :
+    ∃ σ ∈ localInertiaGroup 𝔭₃, ∀ τ ∈ localInertiaGroup 𝔭₃, ∀ w : N,
+      (3 : ℕ) • w = 0 →
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm w))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (ρ'.toLocal 𝔭₃) σ w = w → (ρ'.toLocal 𝔭₃) τ w = w := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **Raynaud at `e = 1 < p − 1`: a SINGLE inertia element already
-detects the connected part** (SORRY LEAF, cut 2026-07-27 out of
+detects the connected part** (PROVEN 2026-07-27 over the two leaves
+`connected_vector_threePow_torsion_of_hopf_package` and
+`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
+just above, into which it was decomposed on that date; it was itself a
+SORRY LEAF, cut 2026-07-27 out of
 `connected_locus_mem_displacement_closure_of_hopf_package` below, which
 is PROVEN over it — and with it the whole `R`-stability chain
 `connected_locus_smul_of_hopf_package_aux` /
@@ -2176,14 +2410,32 @@ Content: there is ONE `σ` in the local inertia group at `3` fixing no
 nonzero CONNECTED vector — no nonzero `z` whose point takes the value
 `1` at the connected counit idempotent `e₀`.
 
-HOW THIS DIFFERS FROM THE PROVEN HALF, WHICH IS THE ENTIRE CONTENT.
-`inertiaFixed_connected_vector_eq_zero_of_hopf_package` above already
-says a connected vector fixed by ALL of `I₃` (and killed by a power of
-`3`) vanishes, i.e. `(M⁰)^{I₃} = 0`. This leaf says a single, suitably
-chosen `σ` suffices — `(M⁰)^{σ} = 0` — and needs no torsion hypothesis.
-That quantifier swap, from "for all `σ`" inside the hypothesis to "for
-one `σ`", is precisely the classification input; everything else in the
-route is discharged below.
+HOW THIS DIFFERS FROM THE PROVEN HALF, AND WHERE THE DIFFERENCE NOW
+LIVES. `inertiaFixed_connected_vector_eq_zero_of_hopf_package` above
+already says a connected vector fixed by ALL of `I₃` (and killed by a
+power of `3`) vanishes, i.e. `(M⁰)^{I₃} = 0`. This statement says a
+single, suitably chosen `σ` suffices — `(M⁰)^{σ} = 0` — and carries no
+torsion hypothesis. Those are TWO independent gaps, and the
+decomposition of 2026-07-27 separates them:
+
+* the QUANTIFIER SWAP, "for all `σ`" inside the hypothesis to "for one
+  `σ`", is the classification input and is now
+  `exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
+  — stated only on the `3`-torsion socle, which is where Raynaud's
+  hypothesis "killed by `p`" actually holds;
+* the MISSING TORSION HYPOTHESIS is now
+  `connected_vector_threePow_torsion_of_hopf_package`, a pure statement
+  about the ORDER of a connected vector with no ramification content
+  whatever, and one whose route (Nakayama in the convolution
+  filtration) is elementary.
+
+Everything joining them is PROVEN here: closure of the connected locus
+under `ℕ`-multiples, and the descending induction that pushes a
+`3 ^ k`-torsion vector down to the socle, one power at a time, killing
+it there with the proven all-of-`I₃` lemma. Splitting this way matters
+because the two halves fail for different reasons: a nonzero connected
+vector of order prime to `3` would refute the statement while every
+tameness input still held.
 
 WHAT THE CONSUMER'S PROOF CONTRIBUTES, so that this leaf is only the
 finite-flat content. Write `M⁰` for the connected locus and
@@ -2209,24 +2461,20 @@ Note this is strictly stronger than the consumer needs, and it is what
 makes the reduction cheap: no sum, no closure induction, no coefficient
 ring.
 
-ROUTE FOR A PROVER. `e = 1 < p − 1 = 2`, so (Raynaud, Bull. SMF 102
-(1974), 3.3.2–3.3.5 and 3.4.3) wild inertia acts TRIVIALLY on the
-points of a finite flat `𝒪ᵥ`-group scheme killed by `3`, and tame
-inertia acts through products of fundamental characters `∏ ψᵢ ^ nᵢ`
-with exponents `nᵢ ≤ e = 1`. The TRIVIAL character cannot occur on the
-connected part: it would produce a nonzero `I₃`-fixed connected vector,
-contradicting the PROVEN
-`inertiaFixed_connected_vector_eq_zero_of_hopf_package`. The tame
-quotient is procyclic, so a `σ` mapping to a topological generator has
-`θᵢ(σ) ≠ 1` for every character occurring on the socle `M⁰[3]`; its
-tame image has order prime to `3`, hence acts semisimply there, so
-`ρ'(σ) − 1` is injective on `M⁰[3]`. Nakayama lifts that to all of
-`M⁰`: the connected part is `3`-primary (points of a CONNECTED finite
-flat `ℤ₃`-group scheme), so a nonzero `σ`-fixed connected vector yields
-a nonzero `σ`-fixed connected vector of order `3`.
-`mem_span_natCast_of_inertia_invariant`
-(`Fermat/FLT/GroupScheme/ConnectedEtale.lean`) spends the same
-absolute-unramifiedness input and is the proof to read first.
+PROOF (what is discharged HERE, and it is all of the non-classification
+content). Take `σ` from the tameness leaf. The connected locus is
+closed under `0` and `+` — counit-one and comultiplication absorption,
+through `convMul_apply_one_of_comul_absorbs`, exactly as in
+`exists_connectedEtale_subgroup_at_three_of_threePowTorsion` above —
+hence under `ℕ`-multiples. Given a connected `σ`-fixed `z`, the order
+leaf supplies `k` with `3 ^ k • z = 0`, and we descend on `k`: the
+vector `w := 3 ^ k • z` is again connected (`ℕ`-multiple), again
+`σ`-fixed (`map_nsmul`), and is killed by `3`, so the tameness leaf
+upgrades its `σ`-fixedness to fixedness by ALL of `I₃`, and the PROVEN
+`inertiaFixed_connected_vector_eq_zero_of_hopf_package` (at exponent
+`1`) gives `w = 0`. That is `3 ^ k • z = 0` with the exponent dropped
+by one, and the induction hypothesis finishes. So no Raynaud input and
+no coefficient ring enter here.
 
 WHY `(M⁰)^{I₃} = 0` ALONE CANNOT PROVE THIS, AND WHAT DEFEATS THE
 COUNTEREXAMPLE. For `A = 𝔽₃²` with `I` acting through a copy of `S₃` by
@@ -2235,17 +2483,12 @@ single element of that image fixes a nonzero vector — so the conclusion
 here fails for it, and no derivation from the proven half alone can
 exist. What rules it out over `ℤ₃` is TAMENESS: the unipotent
 `[[1,1],[0,1]]` has order `3`, so that image is wildly ramified, which
-`e = 1 < p − 1` forbids. This makes the obstruction mechanically
-checkable: any proof of this leaf must spend `e < p − 1` (or a
-Cartier-duality input), never `(M⁰)^{I₃} = 0` by itself.
-
-CHECKS THAT WOULD REFUTE THIS OBSTRUCTION RECORD (state them, do not
-just believe them): (i) exhibit a derivation of `(M⁰)^{σ} = 0` for some
-single `σ` from `(M⁰)^{I₃} = 0` alone — it must contend with the `S₃`
-configuration above; (ii) find a Cartier-duality development in the
-tree transporting the proven "no unramified sub" half to this one —
-`grep -rn 'CartierDual\|cartierDual' Fermat/` returns nothing as of
-2026-07-27, which is why that route was not taken.
+`e = 1 < p − 1` forbids. That obstruction, the refuting checks it
+comes with, and the `S₃` configuration are now recorded on
+`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
+above, which is the declaration that must spend `e < p − 1`; the
+assembly here spends none of it and is correspondingly unable to
+manufacture it.
 
 `hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
 idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
@@ -2286,7 +2529,87 @@ theorem exists_localInertia_no_fixed_connected_vector_of_hopf_package
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
       (ρ'.toLocal 𝔭₃) σ z = z → z = 0 := by
-  sorry
+  classical
+  set g := Equiv.ofBijective fG hfG
+  have hfs : ∀ x : N, fG (g.symm x) = x :=
+    fun x => g.apply_symm_apply x
+  have hgs_add : ∀ x y : N,
+      g.symm (x + y) = g.symm x + g.symm y := by
+    intro x y
+    apply g.injective
+    show fG (g.symm (x + y)) = fG (g.symm x + g.symm y)
+    rw [map_add fG, hfs, hfs, hfs]
+  have hgs_zero : g.symm (0 : N) = 0 := by
+    apply g.injective
+    show fG (g.symm (0 : N)) = fG 0
+    rw [map_zero fG, hfs]
+  -- the connected locus contains `0` …
+  have hPzero : (Additive.toMul (g.symm (0 : N)))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    rw [hgs_zero, toMul_zero, ← AlgHom.liftEquiv_symm_apply,
+      vendored_one_eq_convOne, liftEquiv_symm_convOne]
+    show algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) e₀) = 1
+    rw [hε₀, map_one]
+  -- … and is closed under addition …
+  have hPadd : ∀ x y : N,
+      (Additive.toMul (g.symm x)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul (g.symm y)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul (g.symm (x + y))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro x y hx hy
+    have hx' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (g.symm x)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hx
+    have hy' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (g.symm y)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hy
+    rw [hgs_add, toMul_add, ← AlgHom.liftEquiv_symm_apply,
+      vendored_mul_eq_convMul, liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hx' hy'
+  -- … hence under natural multiples
+  have hPnsmul : ∀ (j : ℕ) (x : N),
+      (Additive.toMul (g.symm x)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul (g.symm (j • x))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro j x hx
+    induction j with
+    | zero => rw [zero_nsmul]; exact hPzero
+    | succ j ih => rw [succ_nsmul]; exact hPadd _ _ ih hx
+  obtain ⟨σ, hσ, hgen⟩ :=
+    exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package
+      ρ' G e₀ he₀ hε₀ hprim₀ hcomul₀ fG hfG
+  refine ⟨σ, hσ, ?_⟩
+  -- descending induction on the `3`-power exponent: each step pushes the
+  -- vector one power closer to the socle, where the tameness leaf turns
+  -- `σ`-fixedness into fixedness by all of `I₃` and the proven
+  -- all-of-`I₃` lemma kills it
+  have key : ∀ (k : ℕ) (x : N),
+      (Additive.toMul (g.symm x)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (ρ'.toLocal 𝔭₃) σ x = x → (3 ^ k : ℕ) • x = 0 → x = 0 := by
+    intro k
+    induction k with
+    | zero =>
+      intro x _ _ hx
+      rwa [pow_zero, one_smul] at hx
+    | succ k ih =>
+      intro x hxconn hxfix hx
+      have hstep : (3 : ℕ) • ((3 ^ k : ℕ) • x) = 0 := by
+        rw [smul_smul, show (3 : ℕ) * 3 ^ k = 3 ^ (k + 1) by ring]
+        exact hx
+      have hwconn : (Additive.toMul (g.symm ((3 ^ k : ℕ) • x)))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := hPnsmul _ _ hxconn
+      have hwfix : (ρ'.toLocal 𝔭₃) σ ((3 ^ k : ℕ) • x) = (3 ^ k : ℕ) • x := by
+        rw [map_nsmul, hxfix]
+      have hwall : ∀ τ ∈ localInertiaGroup 𝔭₃,
+          (ρ'.toLocal 𝔭₃) τ ((3 ^ k : ℕ) • x) = (3 ^ k : ℕ) • x :=
+        fun τ hτ => hgen τ hτ _ hstep hwconn hwfix
+      have hw0 : (3 ^ k : ℕ) • x = 0 :=
+        inertiaFixed_connected_vector_eq_zero_of_hopf_package ρ' G e₀ he₀ hε₀
+          hprim₀ hcomul₀ fG hfG 1 _ (by rwa [pow_one]) hwconn hwall
+      exact ih x hxconn hxfix hw0
+  intro z hzconn hzfix
+  obtain ⟨k, hk⟩ :=
+    connected_vector_threePow_torsion_of_hopf_package ρ' G e₀ he₀ hε₀ hprim₀
+      hcomul₀ fG hfG z hzconn
+  exact key k z hzconn hzfix hk
 
 /-- **Raynaud at `e = 1 < p − 1`: the connected locus is GENERATED BY
 INERTIA DISPLACEMENTS** (PROVEN 2026-07-27 over the single leaf
