@@ -23229,7 +23229,11 @@ harvested from this note.**
   with `j` eliminated and the cusps excluded — which is itself now **PROVEN**
   as well (2026-07-27), over the two leaves
   `MazurLevel21.rank_zero_x0TwentyOne` and
-  `MazurLevel21.exists_x0TwentyOne_modularPoint`.
+  `MazurLevel21.exists_x0TwentyOne_modularPoint`. **Of those two, the second
+  is now PROVEN as well (2026-07-27) and is NOT a dispatchable leaf**: the
+  modular parametrisation is the explicit birational inverse, whose only
+  arithmetic input turned out to be that `21` and `3` are not rational
+  squares. `rank_zero_x0TwentyOne` is the sole remaining leaf here.
 
   **THE COST ESTIMATE THAT USED TO SIT HERE IS WITHDRAWN, and the withdrawal
   is the part worth reading.** It said: a complete `2`-descent bounds
@@ -23789,8 +23793,31 @@ theorem rank_zero_x0TwentyOne (V W : ℚ) (h : W ^ 2 = V * (V - 9) * (V + 7)) :
   · exact absurd (sqClass_three (-63 / V) (63 * W / V ^ 2) (1 / r) h1r
       (by rw [hc]; field_simp; ring) hinv) id
 
+/-- `3` is not a perfect square (helper for `exists_x0TwentyOne_modularPoint`:
+the `j = 1728` factor of the parametrisation's denominator reduces, through the
+plane relation, to `(t₃ + 9)² = 6² · 3`). -/
+theorem not_isSquare_three : ¬ IsSquare (3 : ℕ) := by
+  rintro ⟨k, hk⟩
+  have h1 : k ≤ 3 := by nlinarith
+  interval_cases k <;> omega
+
+/-- `21` is not a perfect square (helper for `exists_x0TwentyOne_modularPoint`:
+the `j = 0` factor of the parametrisation's denominator satisfies
+`4(t₇² + 245t₇ + 2401) = (2t₇ + 245)² − 49² · 21`). -/
+theorem not_isSquare_twentyone : ¬ IsSquare (21 : ℕ) := by
+  rintro ⟨k, hk⟩
+  have h1 : k ≤ 21 := by nlinarith
+  interval_cases k <;> omega
+
+/-- A natural number that is not a perfect square is not the square of a
+rational either.  Routed through `Rat.isSquare_natCast_iff`, so this stays
+inside `ℚ` and never mentions `ℝ`. -/
+theorem sq_ne_of_not_isSquare {n : ℕ} (hn : ¬ IsSquare n) (r : ℚ) : r ^ 2 ≠ (n : ℚ) :=
+  fun h => hn (Rat.isSquare_natCast_iff.mp ⟨r, by rw [← h]; ring⟩)
+
 /-- **The modular parametrisation of the `X_0(21)` plane model by `21a1`**
-(sorry leaf, cut 2026-07-27 out of `rational_point_x0TwentyOne`): every
+(**PROVEN** 2026-07-27; was a sorry leaf cut the same day out of
+`rational_point_x0TwentyOne`): every
 rational point `(t₃, t₇)` of the plane curve with `t₃ ≠ 0 ≠ t₇` is the image
 of a rational point `(x, y)` of `21a1 : y² + xy = x³ − 4x − 1` under the two
 degree-`8` and degree-`4` projections `X_0(21) → X_0(3)` and
@@ -23835,7 +23862,8 @@ discharged by a cusp, carrying no information at all. `N₃` also vanishes at
 `(5, 8)` and `(−1, −1)`, the two poles of `t₃`, where the relation reads
 `0 = nonzero` and excludes itself.
 
-THE FORWARD DIRECTION IS A VERIFIED IDENTITY, so only surjectivity is open.
+THE FORWARD DIRECTION IS A VERIFIED IDENTITY (surjectivity, once open here,
+is now proven too — see the proof note at the end).
 Substituting `t₃ = 729(x + 2)⁴/N₃` and `t₇ = A₇/B₇` into
 `(t₃ + 27)(t₃ + 3)³ t₇⁷ − t₃(t₇² + 13t₇ + 49)(t₇² + 245t₇ + 2401)³` and
 clearing denominators leaves a polynomial that is EXACTLY divisible by
@@ -23863,8 +23891,60 @@ root needs `t₃` as well; the gcd of that quartic with the corresponding
 denominator `D(t₇)` of degree `8`. That `D` is not arbitrary: it satisfies
 `D = t₇ · N_j′(t₇) − 7 · N_j(t₇) = t₇⁸ · dj/dt₇`, i.e. it is the numerator of
 the derivative of the `X_0(7)` `j`-map, vanishing exactly at the elliptic
-points. Handling `D(t₇) = 0` (where `j ∈ {0, 1728}`) is the one case the
-elimination does not cover and is where the remaining work sits.
+points.
+
+**THE PROOF, and the correction to "handling `D(t₇) = 0` is where the
+remaining work sits".** That sentence, written when the leaf was cut, made the
+elliptic points sound like a residual case analysis. They are not a case at
+all: **`D` HAS NO RATIONAL ROOT**, so `D(t₇) ≠ 0` holds for *every* rational
+`t₇` and the elimination above is valid verbatim at every rational point. The
+whole leaf is therefore the single explicit substitution
+
+    `x = N_x(t₃, t₇)/D(t₇)`,   `y = N_y(t₃, t₇)/D(t₇)`
+
+with `N_x` (`26` terms, bidegree `(3, 10)`) and `N_y` (`30` terms, bidegree
+`(3, 11)`) computed by the gcd above, and the three required identities are
+polynomial identities modulo `h`, discharged by `linear_combination` against
+cofactors of `78`, `21` and `213` terms (all verified by exact division in
+Magma, 2026-07-27; the divisions are exact, not approximate).
+
+The rootlessness of `D` is the one arithmetic input, and it is elementary
+because `D` factors and each factor collapses **through `h` itself** onto a
+square root that is irrational:
+
+* `D = (t₇² + 245t₇ + 2401)² · (t₇⁴ − 490t₇³ − 21609t₇² − 235298t₇ − 823543)`
+  (both factors irreducible over `ℚ`).
+* The quadratic is the `j = 0` locus: `4(t₇² + 245t₇ + 2401) =
+  (2t₇ + 245)² − 50421` and `50421 = 49² · 21`, so a rational root would make
+  `21` a rational square.
+* The quartic is the `j = 1728` locus: `N_j(t₇) − 1728 t₇⁷` is EXACTLY its
+  square, so a rational root gives `N_j(t₇) = 1728 t₇⁷`, and then `h` with
+  `t₇ ≠ 0` forces `(t₃ + 27)(t₃ + 3)³ = 1728 t₃`, i.e. `(t₃² + 18t₃ − 27)² = 0`
+  — and `(t₃ + 9)² = 108 = 6² · 3` would make `3` a rational square.
+
+  Note this second one is a genuine simplification and not just a restatement:
+  the quartic in `t₇` would need the rational-root theorem plus the eight
+  divisors of `7⁷`, whereas pushed through `h` onto the `X_0(3)` side it
+  becomes a quadratic whose discriminant is `108`. **The `j`-line, not the
+  `t₇`-line, is where this locus is cheap.** Both facts are packaged as
+  `not_isSquare_twentyone` / `not_isSquare_three` with
+  `sq_ne_of_not_isSquare`, which routes through `Rat.isSquare_natCast_iff` and
+  so never mentions `ℝ`.
+
+The two `≠ 0` side conditions are then FREE, and their proofs are exactly the
+cusp analysis recorded above, run backwards: if `N₃ = 0` then `729(x + 2)⁴ = 0`
+so `x = −2`, whence `N₃ = −343(y − 1)` forces `y = 1` and the `t₇`-relation
+reads `−t₇ = 0`; if `B₇ = 0` then `A₇ = 0`, so `y = x² + 2x` and
+`x³ + 6x² + 18x + 13 = (x + 1)(x² + 5x + 13) = 0` with the quadratic factor
+positive definite, forcing `(x, y) = (−1, −1)`, where `N₃ = 0` and the
+`t₃`-relation reads `0 = 729`.
+
+**`t₃ ≠ 0` IS REDUNDANT and the binder is underscored to say so.** The proof
+never uses it, because `h` already implies it: at `t₃ = 0` the relation reads
+`729 t₇⁷ = 0`, which `t₇ ≠ 0` refutes. It is kept in the signature because
+`rational_point_x0TwentyOne` passes it positionally and because it documents
+the intended (cusp-free) domain; nothing is lost by leaving it in, but no
+consumer should read it as carrying content.
 
 THE DICTIONARY, from Magma's projections applied to the eight points of
 `21a1` (`s₃ = 729/t₃`); the four cusps and the four solutions:
@@ -23887,7 +23967,7 @@ negation type, which is why `X_0(21)/w₃` has genus `0` and `X_0(21)/w₇` does
 not. The "untried route" through `X_0(21)/w₃` recorded below is therefore
 sound as stated but is no longer needed: it existed only to find a small
 model, and the small model is the one above. -/
-theorem exists_x0TwentyOne_modularPoint (t₃ t₇ : ℚ) (ht₃ : t₃ ≠ 0) (ht₇ : t₇ ≠ 0)
+theorem exists_x0TwentyOne_modularPoint (t₃ t₇ : ℚ) (_ht₃ : t₃ ≠ 0) (ht₇ : t₇ ≠ 0)
     (h : (t₃ + 27) * (t₃ + 3) ^ 3 * t₇ ^ 7
       = t₃ * ((t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3)) :
     ∃ x y : ℚ, y ^ 2 + x * y = x ^ 3 - 4 * x - 1 ∧
@@ -23896,8 +23976,259 @@ theorem exists_x0TwentyOne_modularPoint (t₃ t₇ : ℚ) (ht₃ : t₃ ≠ 0) (
       x ^ 3 * y - 12 * x ^ 4 + 62 * x ^ 2 * y - 118 * x ^ 3 + 138 * x * y + 161 * x ^ 2
           - 307 * y + 402 * x - 249 ≠ 0 ∧
       t₃ * (x ^ 3 * y - 12 * x ^ 4 + 62 * x ^ 2 * y - 118 * x ^ 3 + 138 * x * y + 161 * x ^ 2
-          - 307 * y + 402 * x - 249) = 729 * (x + 2) ^ 4 :=
-  sorry
+          - 307 * y + 402 * x - 249) = 729 * (x + 2) ^ 4 := by
+  have hquad : t₇ ^ 2 + 245 * t₇ + 2401 ≠ 0 := by
+    intro H
+    refine sq_ne_of_not_isSquare not_isSquare_twentyone ((2 * t₇ + 245) / 49) ?_
+    rw [div_pow, div_eq_iff (by norm_num : ((49 : ℚ) ^ 2) ≠ 0)]
+    push_cast
+    linear_combination 4 * H
+  have hquart : t₇ ^ 4 - 490 * t₇ ^ 3 - 21609 * t₇ ^ 2 - 235298 * t₇ - 823543 ≠ 0 := by
+    intro H
+    have hM : (t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3 = 1728 * t₇ ^ 7 := by
+      linear_combination
+        (t₇ ^ 4 - 490 * t₇ ^ 3 - 21609 * t₇ ^ 2 - 235298 * t₇ - 823543) * H
+    have h2 : (t₃ ^ 2 + 18 * t₃ - 27) ^ 2 * t₇ ^ 7 = 0 := by
+      linear_combination h + t₃ * hM
+    have h3 : (t₃ ^ 2 + 18 * t₃ - 27) ^ 2 = 0 :=
+      (mul_eq_zero.mp h2).resolve_right (pow_ne_zero 7 ht₇)
+    have h4 : t₃ ^ 2 + 18 * t₃ - 27 = 0 := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp h3
+    refine sq_ne_of_not_isSquare not_isSquare_three ((t₃ + 9) / 6) ?_
+    rw [div_pow, div_eq_iff (by norm_num : ((6 : ℚ) ^ 2) ≠ 0)]
+    push_cast
+    linear_combination h4
+  obtain ⟨NX, NY, DD, hD, hE, h7, h3e⟩ :
+      ∃ NX NY DD : ℚ, DD ≠ 0 ∧
+        NY ^ 2 * DD + NX * NY * DD = NX ^ 3 - 4 * NX * DD ^ 2 - DD ^ 3 ∧
+        t₇ * (NX ^ 2 + 2 * NX * DD - NY * DD)
+          = NX * NY - 5 * NX ^ 2 + 9 * NY * DD + 13 * DD ^ 2 ∧
+        t₃ * (NX ^ 3 * NY - 12 * NX ^ 4 + 62 * NX ^ 2 * NY * DD - 118 * NX ^ 3 * DD
+            + 138 * NX * NY * DD ^ 2 + 161 * NX ^ 2 * DD ^ 2 - 307 * NY * DD ^ 3
+            + 402 * NX * DD ^ 3 - 249 * DD ^ 4) = 729 * (NX + 2 * DD) ^ 4 := by
+    refine ⟨
+      (-t₃ ^ 3 * t₇ ^ 9 - 17 * t₃ ^ 3 * t₇ ^ 8 - 49 * t₃ ^ 3 * t₇ ^ 7 - 36 * t₃ ^ 2 * t₇ ^ 9
+          - 1341 * t₃ ^ 2 * t₇ ^ 8 - 19992 * t₃ ^ 2 * t₇ ^ 7 - 144060 * t₃ ^ 2 * t₇ ^ 6
+          - 352947 * t₃ ^ 2 * t₇ ^ 5 - 270 * t₃ * t₇ ^ 9 - 30834 * t₃ * t₇ ^ 8 - 1200843 * t₃ * t₇ ^ 7
+          - 22711059 * t₃ * t₇ ^ 6 - 228709656 * t₃ * t₇ ^ 5 - 1193313807 * t₃ * t₇ ^ 4
+          - 2542277241 * t₃ * t₇ ^ 3 + t₇ ^ 10 + 9 * t₇ ^ 9 - 36 * t₇ ^ 8 + 98 * t₇ ^ 7 + 249704 * t₇ ^ 6
+          + 66001089 * t₇ ^ 5 + 3731473333 * t₇ ^ 4 + 83572320097 * t₇ ^ 3 + 895729014579 * t₇ ^ 2
+          + 4650672499536 * t₇ + 9495123019886),
+      (-t₃ ^ 3 * t₇ ^ 10 - 21 * t₃ ^ 3 * t₇ ^ 9 - 114 * t₃ ^ 3 * t₇ ^ 8 - 49 * t₃ ^ 3 * t₇ ^ 7
+          - 36 * t₃ ^ 2 * t₇ ^ 10 - 1485 * t₃ ^ 2 * t₇ ^ 9 - 25245 * t₃ ^ 2 * t₇ ^ 8
+          - 216090 * t₃ ^ 2 * t₇ ^ 7 - 864360 * t₃ ^ 2 * t₇ ^ 6 - 1058841 * t₃ ^ 2 * t₇ ^ 5
+          - 270 * t₃ * t₇ ^ 10 - 31914 * t₃ * t₇ ^ 9 - 1323297 * t₃ * t₇ ^ 8 - 27392274 * t₃ * t₇ ^ 7
+          - 317025639 * t₃ * t₇ ^ 6 - 2086975611 * t₃ * t₇ ^ 5 - 7263649260 * t₃ * t₇ ^ 4
+          - 10169108964 * t₃ * t₇ ^ 3 + t₇ ^ 11 + 13 * t₇ ^ 10 - 2 * t₇ ^ 9 - 64 * t₇ ^ 8 + 882 * t₇ ^ 7
+          + 182476 * t₇ ^ 6 + 28353409 * t₇ ^ 5 + 662128572 * t₇ ^ 4 - 2098387564 * t₇ ^ 3
+          - 177959406870 * t₇ ^ 2 - 1647113176919 * t₇ - 4747561509943),
+      (t₇ ^ 8 - 196882 * t₇ ^ 6 - 41412448 * t₇ ^ 5 - 2087681505 * t₇ ^ 4 - 43904724416 * t₇ ^ 3
+          - 454785150890 * t₇ ^ 2 - 2325336249768 * t₇ - 4747561509943), ?_, ?_, ?_, ?_⟩
+    · have hfac : ((t₇ ^ 8 - 196882 * t₇ ^ 6 - 41412448 * t₇ ^ 5 - 2087681505 * t₇ ^ 4
+          - 43904724416 * t₇ ^ 3 - 454785150890 * t₇ ^ 2 - 2325336249768 * t₇
+          - 4747561509943 : ℚ))
+          = (t₇ ^ 2 + 245 * t₇ + 2401) ^ 2
+            * (t₇ ^ 4 - 490 * t₇ ^ 3 - 21609 * t₇ ^ 2 - 235298 * t₇ - 823543) := by ring
+      rw [hfac]
+      exact mul_ne_zero (pow_ne_zero 2 hquad) hquart
+    · linear_combination
+        (t₃ ^ 5 * t₇ ^ 20 + 51 * t₃ ^ 5 * t₇ ^ 19 + 1014 * t₃ ^ 5 * t₇ ^ 18 + 9911 * t₃ ^ 5 * t₇ ^ 17
+            + 49686 * t₃ ^ 5 * t₇ ^ 16 + 122451 * t₃ ^ 5 * t₇ ^ 15 + 117649 * t₃ ^ 5 * t₇ ^ 14
+            + 72 * t₃ ^ 4 * t₇ ^ 20 + 5859 * t₃ ^ 4 * t₇ ^ 19 + 202050 * t₃ ^ 4 * t₇ ^ 18
+            + 3851397 * t₃ ^ 4 * t₇ ^ 17 + 44136603 * t₃ ^ 4 * t₇ ^ 16 + 308425257 * t₃ ^ 4 * t₇ ^ 15
+            + 1269550359 * t₃ ^ 4 * t₇ ^ 14 + 2801693286 * t₃ ^ 4 * t₇ ^ 13 + 2542277241 * t₃ ^ 4 * t₇ ^ 12
+            + 1836 * t₃ ^ 3 * t₇ ^ 20 + 251100 * t₃ ^ 3 * t₇ ^ 19 + 14341266 * t₃ ^ 3 * t₇ ^ 18
+            + 457729326 * t₃ ^ 3 * t₇ ^ 17 + 9124416126 * t₃ ^ 3 * t₇ ^ 16 + 119274678684 * t₃ ^ 3 * t₇ ^ 15
+            + 1037223702144 * t₃ ^ 3 * t₇ ^ 14 + 5919666614064 * t₃ ^ 3 * t₇ ^ 13
+            + 21156831199602 * t₃ ^ 3 * t₇ ^ 12 + 42603482004678 * t₃ ^ 3 * t₇ ^ 11
+            + 36624045933846 * t₃ ^ 3 * t₇ ^ 10 - t₃ ^ 2 * t₇ ^ 21 + 19397 * t₃ ^ 2 * t₇ ^ 20
+            + 4415624 * t₃ ^ 2 * t₇ ^ 19 + 374838896 * t₃ ^ 2 * t₇ ^ 18 + 17297381852 * t₃ ^ 2 * t₇ ^ 17
+            + 503242737452 * t₃ ^ 2 * t₇ ^ 16 + 9929054676639 * t₃ ^ 2 * t₇ ^ 15
+            + 137844937462764 * t₃ ^ 2 * t₇ ^ 14 + 1366376308601808 * t₃ ^ 2 * t₇ ^ 13
+            + 9640017326837912 * t₃ ^ 2 * t₇ ^ 12 + 47351745465614765 * t₃ ^ 2 * t₇ ^ 11
+            + 154108947061082804 * t₃ ^ 2 * t₇ ^ 10 + 299120112933958715 * t₃ ^ 2 * t₇ ^ 9
+            + 260778806179659047 * t₃ ^ 2 * t₇ ^ 8 - 11398895185373143 * t₃ ^ 2 * t₇ ^ 7 - 36 * t₃ * t₇ ^ 21
+            + 69894 * t₃ * t₇ ^ 20 + 24877485 * t₃ * t₇ ^ 19 + 3278001432 * t₃ * t₇ ^ 18
+            + 231686460042 * t₃ * t₇ ^ 17 + 10217793263517 * t₃ * t₇ ^ 16 + 304878836569062 * t₃ * t₇ ^ 15
+            + 6451935990010854 * t₃ * t₇ ^ 14 + 99510006475074510 * t₃ * t₇ ^ 13
+            + 1133484364059068007 * t₃ * t₇ ^ 12 + 9549495054356001507 * t₃ * t₇ ^ 11
+            + 58866410654200149021 * t₃ * t₇ ^ 10 + 258453592978934263890 * t₃ * t₇ ^ 9
+            + 766018318504830518778 * t₃ * t₇ ^ 8 + 1371321287485945222329 * t₃ * t₇ ^ 7
+            + 1097542622923653073755 * t₃ * t₇ ^ 6 - 82106242020242749029 * t₃ * t₇ ^ 5 - 270 * t₇ ^ 21
+            - 64098 * t₇ ^ 20 - 4449087 * t₇ ^ 19 - 148432446 * t₇ ^ 18 - 2799716976 * t₇ ^ 17
+            - 31773227976 * t₇ ^ 16 - 283660348986 * t₇ ^ 15 - 11886820129296 * t₇ ^ 14
+            - 845231047729236 * t₇ ^ 13 - 37366645842307026 * t₇ ^ 12 - 1063559410976496546 * t₇ ^ 11
+            - 20614066614144105165 * t₇ ^ 10 - 281190158796448324962 * t₇ ^ 9
+            - 2742121249990045113771 * t₇ ^ 8 - 19129557506722096343742 * t₇ ^ 7
+            - 93897703756904957700777 * t₇ ^ 6 - 310607913562578319576707 * t₇ ^ 5
+            - 627620114002735573577676 * t₇ ^ 4 - 591411261271808521255887 * t₇ ^ 3) * h
+    · linear_combination
+        (t₃ ^ 2 * t₇ ^ 11 + 37 * t₃ ^ 2 * t₇ ^ 10 + 585 * t₃ ^ 2 * t₇ ^ 9 + 4312 * t₃ ^ 2 * t₇ ^ 8
+            + 9604 * t₃ ^ 2 * t₇ ^ 7 + 36 * t₃ * t₇ ^ 11 + 2793 * t₃ * t₇ ^ 10 + 87186 * t₃ * t₇ ^ 9
+            + 1406349 * t₃ * t₇ ^ 8 + 12432378 * t₃ * t₇ ^ 7 + 57530361 * t₃ * t₇ ^ 6
+            + 103766418 * t₃ * t₇ ^ 5 + 270 * t₇ ^ 11 + 62550 * t₇ ^ 10 + 4121523 * t₇ ^ 9
+            + 129451581 * t₇ ^ 8 + 2297706579 * t₇ ^ 7 + 24536522493 * t₇ ^ 6 + 157517422524 * t₇ ^ 5
+            + 564385547502 * t₇ ^ 4 + 872001093663 * t₇ ^ 3) * h
+    · linear_combination
+        (t₃ ^ 9 * t₇ ^ 30 + 60 * t₃ ^ 9 * t₇ ^ 29 + 1383 * t₃ ^ 9 * t₇ ^ 28 + 13908 * t₃ ^ 9 * t₇ ^ 27
+            + 20136 * t₃ ^ 9 * t₇ ^ 26 - 868911 * t₃ ^ 9 * t₇ ^ 25 - 8594061 * t₃ ^ 9 * t₇ ^ 24
+            - 36742503 * t₃ ^ 9 * t₇ ^ 23 - 76589499 * t₃ ^ 9 * t₇ ^ 22 - 63412811 * t₃ ^ 9 * t₇ ^ 21
+            + 108 * t₃ ^ 8 * t₇ ^ 30 + 8667 * t₃ ^ 8 * t₇ ^ 29 + 298089 * t₃ ^ 8 * t₇ ^ 28
+            + 5564286 * t₃ ^ 8 * t₇ ^ 27 + 55270530 * t₃ ^ 8 * t₇ ^ 26 + 130891491 * t₃ ^ 8 * t₇ ^ 25
+            - 3748407831 * t₃ ^ 8 * t₇ ^ 24 - 52424600886 * t₃ ^ 8 * t₇ ^ 23
+            - 334843642476 * t₃ ^ 8 * t₇ ^ 22 - 1184234245425 * t₃ ^ 8 * t₇ ^ 21
+            - 2229577140357 * t₃ ^ 8 * t₇ ^ 20 - 1744002187326 * t₃ ^ 8 * t₇ ^ 19 + 4698 * t₃ ^ 7 * t₇ ^ 30
+            + 518076 * t₃ ^ 7 * t₇ ^ 29 + 25748172 * t₃ ^ 7 * t₇ ^ 28 + 746365608 * t₃ ^ 7 * t₇ ^ 27
+            + 13460141502 * t₃ ^ 7 * t₇ ^ 26 + 142368800229 * t₃ ^ 7 * t₇ ^ 25
+            + 491121617742 * t₃ ^ 7 * t₇ ^ 24 - 9473204646234 * t₃ ^ 7 * t₇ ^ 23
+            - 175529743722396 * t₃ ^ 7 * t₇ ^ 22 - 1493056128078459 * t₃ ^ 7 * t₇ ^ 21
+            - 7598170089384966 * t₃ ^ 7 * t₇ ^ 20 - 23496194040334344 * t₃ ^ 7 * t₇ ^ 19
+            - 40677107017191624 * t₃ ^ 7 * t₇ ^ 18 - 30208733887767309 * t₃ ^ 7 * t₇ ^ 17
+            - 3 * t₃ ^ 6 * t₇ ^ 31 + 104820 * t₃ ^ 6 * t₇ ^ 30 + 15979672 * t₃ ^ 6 * t₇ ^ 29
+            + 1090686588 * t₃ ^ 6 * t₇ ^ 28 + 43968498503 * t₃ ^ 6 * t₇ ^ 27
+            + 1152029860567 * t₃ ^ 6 * t₇ ^ 26 + 20028383378199 * t₃ ^ 6 * t₇ ^ 25
+            + 215528727216551 * t₃ ^ 6 * t₇ ^ 24 + 846784448488377 * t₃ ^ 6 * t₇ ^ 23
+            - 14838328398849501 * t₃ ^ 6 * t₇ ^ 22 - 325734254314634151 * t₃ ^ 6 * t₇ ^ 21
+            - 3350564639761438715 * t₃ ^ 6 * t₇ ^ 20 - 21862498911736311822 * t₃ ^ 6 * t₇ ^ 19
+            - 94408302455698282765 * t₃ ^ 6 * t₇ ^ 18 - 262298315464092913523 * t₃ ^ 6 * t₇ ^ 17
+            - 427141028799900324945 * t₃ ^ 6 * t₇ ^ 16 - 318690311592662331994 * t₃ ^ 6 * t₇ ^ 15
+            - 23458926291497928294 * t₃ ^ 6 * t₇ ^ 14 - 216 * t₃ ^ 5 * t₇ ^ 31 + 1252854 * t₃ ^ 5 * t₇ ^ 30
+            + 262701846 * t₃ ^ 5 * t₇ ^ 29 + 24024305592 * t₃ ^ 5 * t₇ ^ 28
+            + 1300545889962 * t₃ ^ 5 * t₇ ^ 27 + 46719613210668 * t₃ ^ 5 * t₇ ^ 26
+            + 1167296363020992 * t₃ ^ 5 * t₇ ^ 25 + 20313943859323611 * t₃ ^ 5 * t₇ ^ 24
+            + 229160205484726551 * t₃ ^ 5 * t₇ ^ 23 + 1073933946572685933 * t₃ ^ 5 * t₇ ^ 22
+            - 15189585927347445873 * t₃ ^ 5 * t₇ ^ 21 - 403044730071918128208 * t₃ ^ 5 * t₇ ^ 20
+            - 4872489086194928597133 * t₃ ^ 5 * t₇ ^ 19 - 38541000457371333674739 * t₃ ^ 5 * t₇ ^ 18
+            - 212260203189857668993203 * t₃ ^ 5 * t₇ ^ 17 - 811862339330040868365720 * t₃ ^ 5 * t₇ ^ 16
+            - 2068404410728429513526367 * t₃ ^ 5 * t₇ ^ 15 - 3192161665652434843641903 * t₃ ^ 5 * t₇ ^ 14
+            - 2378864150052493167617217 * t₃ ^ 5 * t₇ ^ 13 - 309786851142375892086417 * t₃ ^ 5 * t₇ ^ 12
+            - 5508 * t₃ ^ 4 * t₇ ^ 31 + 7271856 * t₃ ^ 4 * t₇ ^ 30 + 2133326187 * t₃ ^ 4 * t₇ ^ 29
+            + 261386431074 * t₃ ^ 4 * t₇ ^ 28 + 18747000107109 * t₃ ^ 4 * t₇ ^ 27
+            + 891607283310717 * t₃ ^ 4 * t₇ ^ 26 + 29862797289023898 * t₃ ^ 4 * t₇ ^ 25
+            + 722445697328273415 * t₃ ^ 4 * t₇ ^ 24 + 12528800181595793844 * t₃ ^ 4 * t₇ ^ 23
+            + 144814772415029559066 * t₃ ^ 4 * t₇ ^ 22 + 737561300235327543843 * t₃ ^ 4 * t₇ ^ 21
+            - 9700319811565899519444 * t₃ ^ 4 * t₇ ^ 20 - 290403401183998488509571 * t₃ ^ 4 * t₇ ^ 19
+            - 3936809253416369779088577 * t₃ ^ 4 * t₇ ^ 18 - 35834102723665332846910332 * t₃ ^ 4 * t₇ ^ 17
+            - 235655452257898399977962880 * t₃ ^ 4 * t₇ ^ 16
+            - 1132772043937998187215274230 * t₃ ^ 4 * t₇ ^ 15
+            - 3912449934059634278504386620 * t₃ ^ 4 * t₇ ^ 14
+            - 9297731619251520021459464337 * t₃ ^ 4 * t₇ ^ 13
+            - 13994564675474805038478054081 * t₃ ^ 4 * t₇ ^ 12
+            - 11264610293444136904360879689 * t₃ ^ 4 * t₇ ^ 11
+            - 3042810939243454841861538615 * t₃ ^ 4 * t₇ ^ 10 + 3 * t₃ ^ 3 * t₇ ^ 32
+            - 58188 * t₃ ^ 3 * t₇ ^ 31 + 9802567 * t₃ ^ 3 * t₇ ^ 30 + 6223122400 * t₃ ^ 3 * t₇ ^ 29
+            + 1063830388811 * t₃ ^ 3 * t₇ ^ 28 + 102151508258373 * t₃ ^ 3 * t₇ ^ 27
+            + 6488874889395741 * t₃ ^ 3 * t₇ ^ 26 + 292786055502261605 * t₃ ^ 3 * t₇ ^ 25
+            + 9724274596726748268 * t₃ ^ 3 * t₇ ^ 24 + 240883835765727694323 * t₃ ^ 3 * t₇ ^ 23
+            + 4399384825429382240109 * t₃ ^ 3 * t₇ ^ 22 + 55601579717168954268989 * t₃ ^ 3 * t₇ ^ 21
+            + 359593753386946672456289 * t₃ ^ 3 * t₇ ^ 20 - 2747126910071438478760631 * t₃ ^ 3 * t₇ ^ 19
+            - 115300700458627283214101319 * t₃ ^ 3 * t₇ ^ 18
+            - 1818152181783310547099631111 * t₃ ^ 3 * t₇ ^ 17
+            - 19122022917913922721997569014 * t₃ ^ 3 * t₇ ^ 16
+            - 147537930265946656987010787579 * t₃ ^ 3 * t₇ ^ 15
+            - 854980811248655909342418358689 * t₃ ^ 3 * t₇ ^ 14
+            - 3706562558120247266160251841666 * t₃ ^ 3 * t₇ ^ 13
+            - 11740351584777581974899485153177 * t₃ ^ 3 * t₇ ^ 12
+            - 25891353719814550586753432270399 * t₃ ^ 3 * t₇ ^ 11
+            - 36071937661883599151558255836351 * t₃ ^ 3 * t₇ ^ 10
+            - 24193592631987325677963884297106 * t₃ ^ 3 * t₇ ^ 9
+            + 4058771702846408375171974563675 * t₃ ^ 3 * t₇ ^ 8
+            + 13258654229298267358895116908005 * t₃ ^ 3 * t₇ ^ 7 + 108 * t₃ ^ 2 * t₇ ^ 32
+            - 211761 * t₃ ^ 2 * t₇ ^ 31 - 53705871 * t₃ ^ 2 * t₇ ^ 30 - 5689013544 * t₃ ^ 2 * t₇ ^ 29
+            - 343084615152 * t₃ ^ 2 * t₇ ^ 28 - 13191132287091 * t₃ ^ 2 * t₇ ^ 27
+            - 328010209691490 * t₃ ^ 2 * t₇ ^ 26 - 3675826666142937 * t₃ ^ 2 * t₇ ^ 25
+            + 142726125507877464 * t₃ ^ 2 * t₇ ^ 24 + 12082230325288808643 * t₃ ^ 2 * t₇ ^ 23
+            + 525802302827966875851 * t₃ ^ 2 * t₇ ^ 22 + 16655841626044543671168 * t₃ ^ 2 * t₇ ^ 21
+            + 417655515249323186641659 * t₃ ^ 2 * t₇ ^ 20 + 8779199276898922463106522 * t₃ ^ 2 * t₇ ^ 19
+            + 162306840706415832188790336 * t₃ ^ 2 * t₇ ^ 18
+            + 2697127932036310712764014015 * t₃ ^ 2 * t₇ ^ 17
+            + 39698727993386001369633559014 * t₃ ^ 2 * t₇ ^ 16
+            + 499414576788895588102976133594 * t₃ ^ 2 * t₇ ^ 15
+            + 5182176436755780215967544534938 * t₃ ^ 2 * t₇ ^ 14
+            + 43155117924537937612745639233395 * t₃ ^ 2 * t₇ ^ 13
+            + 282456853303231044289024757102610 * t₃ ^ 2 * t₇ ^ 12
+            + 1428484001522261245500850772703696 * t₃ ^ 2 * t₇ ^ 11
+            + 5521048256026443900464076498962115 * t₃ ^ 2 * t₇ ^ 10
+            + 16446977887255375140205447738207056 * t₃ ^ 2 * t₇ ^ 9
+            + 39839441877327319903673040406190877 * t₃ ^ 2 * t₇ ^ 8
+            + 84484144749088559610879684937807860 * t₃ ^ 2 * t₇ ^ 7
+            + 144617445140647921390412598162373737 * t₃ ^ 2 * t₇ ^ 6
+            + 133702920979089587700570137923704021 * t₃ ^ 2 * t₇ ^ 5 + 810 * t₃ * t₇ ^ 32
+            + 114372 * t₃ * t₇ ^ 31 + 6199173 * t₃ * t₇ ^ 30 + 174168378 * t₃ * t₇ ^ 29
+            + 2386066824 * t₃ * t₇ ^ 28 - 57685168836 * t₃ * t₇ ^ 27 - 7815849539931 * t₃ * t₇ ^ 26
+            - 426549746537127 * t₃ * t₇ ^ 25 - 14389896631916421 * t₃ * t₇ ^ 24
+            - 320439039411406797 * t₃ * t₇ ^ 23 - 3890617891564360509 * t₃ * t₇ ^ 22
+            + 74978531690224908501 * t₃ * t₇ ^ 21 + 7973250139130125760001 * t₃ * t₇ ^ 20
+            + 397575420235518513119481 * t₃ * t₇ ^ 19 + 17277631530726080100316716 * t₃ * t₇ ^ 18
+            + 728955438262373415928409253 * t₃ * t₇ ^ 17 + 27578390682175704325443434463 * t₃ * t₇ ^ 16
+            + 856258004706370843355803156482 * t₃ * t₇ ^ 15
+            + 21054788283769139598801604134570 * t₃ * t₇ ^ 14
+            + 407757358286873889110295302834640 * t₃ * t₇ ^ 13
+            + 6239991631916194253675323975619100 * t₃ * t₇ ^ 12
+            + 75697318860023812546716226193992554 * t₃ * t₇ ^ 11
+            + 727795641463459703516425311158051511 * t₃ * t₇ ^ 10
+            + 5517590894688614585241016520761079304 * t₃ * t₇ ^ 9
+            + 32605020143265350593100155102876765089 * t₃ * t₇ ^ 8
+            + 147138278596763404787864193612788766837 * t₃ * t₇ ^ 7
+            + 489992359860222077612123543274030181287 * t₃ * t₇ ^ 6
+            + 1135195100364318780829712143888500154299 * t₃ * t₇ ^ 5
+            + 1634117100206432940876368225703510544662 * t₃ * t₇ ^ 4
+            + 1100642445499865485951093375387931500872 * t₃ * t₇ ^ 3 - t₇ ^ 33 - 36 * t₇ ^ 32
+            - 350 * t₇ ^ 31 + 364 * t₇ ^ 30 + 585207 * t₇ ^ 29 + 82772732 * t₇ ^ 28 + 3673751424 * t₇ ^ 27
+            + 73911001044 * t₇ ^ 26 + 584370755016 * t₇ ^ 25 - 28830187947204 * t₇ ^ 24
+            - 2993568975378030 * t₇ ^ 23 - 141633772444803828 * t₇ ^ 22 - 3814523434776069288 * t₇ ^ 21
+            - 58493948158595431608 * t₇ ^ 20 + 5660109436428055812 * t₇ ^ 19
+            + 47470824476180715671292 * t₇ ^ 18 + 2480062207106374769982264 * t₇ ^ 17
+            + 78642831897907078519604460 * t₇ ^ 16 + 1654375619779493556331349418 * t₇ ^ 15
+            + 20663944985651395060544128896 * t₇ ^ 14 - 75517516032220368366184952937 * t₇ ^ 13
+            - 14882668491965375404067546071668 * t₇ ^ 12 - 576532604970164495826714179699634 * t₇ ^ 11
+            - 14847268585687114908220665068809152 * t₇ ^ 10 - 280599914779226029500242690384634567 * t₇ ^ 9
+            - 3980298436638367232508389566187012268 * t₇ ^ 8
+            - 42599133236400973864721831525283267852 * t₇ ^ 7
+            - 342474899662885817535715779991812761056 * t₇ ^ 6
+            - 2037880821146000768648132817927679016079 * t₇ ^ 5
+            - 8714043307171837515188758549131435000668 * t₇ ^ 4
+            - 25345349647760791329262678005460978172858 * t₇ ^ 3
+            - 44942899857911174009669646161673869618940 * t₇ ^ 2
+            - 36703368217294125441230211032033660188801 * t₇) * h
+  obtain ⟨x, y, hEq, h7q, h3q⟩ :
+      ∃ x y : ℚ, y ^ 2 + x * y = x ^ 3 - 4 * x - 1 ∧
+        t₇ * (x ^ 2 + 2 * x - y) = x * y - 5 * x ^ 2 + 9 * y + 13 ∧
+        t₃ * (x ^ 3 * y - 12 * x ^ 4 + 62 * x ^ 2 * y - 118 * x ^ 3 + 138 * x * y + 161 * x ^ 2
+          - 307 * y + 402 * x - 249) = 729 * (x + 2) ^ 4 := by
+    refine ⟨NX / DD, NY / DD, ?_, ?_, ?_⟩
+    · field_simp
+      linear_combination hE
+    · field_simp
+      linear_combination h7
+    · field_simp
+      linear_combination h3e
+  have hN : (x ^ 3 * y - 12 * x ^ 4 + 62 * x ^ 2 * y - 118 * x ^ 3 + 138 * x * y + 161 * x ^ 2
+          - 307 * y + 402 * x - 249) ≠ 0 := by
+    intro H
+    rw [H, mul_zero] at h3q
+    have hx4 : (x + 2) ^ 4 = 0 := by linarith
+    have hx : x = -2 := by
+      have := pow_eq_zero_iff (n := 4) (by norm_num) |>.mp hx4
+      linarith
+    subst hx
+    have hy1 : y = 1 := by linear_combination (-1 / 343 : ℚ) * H
+    subst hy1
+    exact ht₇ (by linear_combination -h7q)
+  have hB : x ^ 2 + 2 * x - y ≠ 0 := by
+    intro H
+    rw [H, mul_zero] at h7q
+    have hy : y = x ^ 2 + 2 * x := by linarith
+    subst hy
+    have hfac : (x + 1) * (x ^ 2 + 5 * x + 13) = 0 := by linear_combination -h7q
+    have hpos : x ^ 2 + 5 * x + 13 ≠ 0 := by nlinarith [sq_nonneg (2 * x + 5)]
+    have hx1 : x = -1 := by
+      rcases mul_eq_zero.mp hfac with h1 | h1
+      · linarith
+      · exact absurd h1 hpos
+    subst hx1
+    have hcontra : (0 : ℚ) = 729 := by linear_combination h3q
+    norm_num at hcontra
+  exact ⟨x, y, hEq, hB, h7q, hN, h3q⟩
 
 /-- **The rational points of the affine `X_0(21)` plane model** (PROVEN
 2026-07-27 over `rank_zero_x0TwentyOne` and `exists_x0TwentyOne_modularPoint`;
@@ -27559,11 +27890,13 @@ today are:
   the bullets below say. These three ARE accurate.
 * `21` — `velu_map_add_of_notMem`,
   `MazurLevel21.rank_zero_x0TwentyOne`,
-  `MazurLevel21.exists_x0TwentyOne_modularPoint`,
   `exists_x0Seven_hauptmodul`, through `no_torsion_order_21`.
   (Updated 2026-07-27: `MazurLevel21.rational_point_x0TwentyOne` is PROVEN
-  and is no longer a leaf; it was cut into the two named above — the
-  elementary rank-`0` statement for `21a1` and the modular parametrisation.)
+  and is no longer a leaf; it was cut into two — the elementary rank-`0`
+  statement for `21a1` and the modular parametrisation.  Updated again the
+  same day: the second of those, `MazurLevel21.exists_x0TwentyOne_modularPoint`,
+  is now PROVEN too and has been struck from this list, so `21` contributes
+  exactly one leaf here, `MazurLevel21.rank_zero_x0TwentyOne`.)
 * `27` — `velu_map_add_of_notMem`, `MazurLevel9.exists_tateParam`,
   `exists_x0Nine_param_of_cyclicNineChain`, through
   `no_torsion_order_27`.
