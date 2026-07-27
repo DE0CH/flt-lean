@@ -6841,9 +6841,12 @@ into the two leaves consumed below:
   at `N = 32` over `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`, itself
   proven by a cusp count on `X_0(32)` against the four rational points that
   `QuarticDescent.rational_point_x0ThirtyTwo` allows. What is left open is
-  ONE leaf, `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` (2026-07-27;
-  until then it was `exists_planeModel_x0ThirtyTwo`, now PROVEN over it),
-  which is neither vacuous nor refutable. **The same cut should be tried at levels `49`, `81`,
+  TWO leaves, `MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` and
+  `MazurLevel32.exists_x0ThirtyTwo_mod_three` (2026-07-27;
+  `exists_weierstrassModel_x0ThirtyTwo`, which stood here, and
+  `exists_planeModel_x0ThirtyTwo` before it, are BOTH now PROVEN over them —
+  do not dispatch at either), neither of which is vacuous or
+  refutable. **The same cut should be tried at levels `49`, `81`,
   `125` and `169`, whose docstrings all cite this node's old shape as their
   own.** Details in the RESOLUTION section of `exists_x0ThirtyTwo_point`.
 
@@ -8368,48 +8371,258 @@ lemma planeCoords_eq_some {P : x0ThirtyTwoModel.toAffine.Point} {p : ℚ × ℚ}
       x0ThirtyTwoModel_a₄, x0ThirtyTwoModel_a₆] at heq
     linear_combination heq
 
-/-- **`X_0(32)(ℚ)` injects into `32a1(ℚ)`** (sorry node, introduced 2026-07-27
-as the arithmetic-free residue of `exists_planeModel_x0ThirtyTwo`).
+/-- **`Δ(32a1) = −4096`** (PROVEN 2026-07-27), from
+`(a₁, a₂, a₃, a₄, a₆) = (0, 0, 0, 4, 0)`: `b₂ = 0`, `b₄ = 8`, `b₆ = 0`,
+`b₈ = −16`, so `Δ = −8 b₄³ = −4096`.  Matches the PARI/GP reconnaissance
+recorded on `x0ThirtyTwoModel` (untrusted searcher, statement check only);
+here it is the kernel that checks it. -/
+lemma x0ThirtyTwoModel_Δ : x0ThirtyTwoModel.Δ = -4096 := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈, x0ThirtyTwoModel_a₁, x0ThirtyTwoModel_a₂,
+    x0ThirtyTwoModel_a₃, x0ThirtyTwoModel_a₄, x0ThirtyTwoModel_a₆]
+  norm_num
 
-This is the whole modular content of level `32`, and nothing else: the
-comparison between the ABSTRACT compactified coarse moduli space pinned by
-`hX` and the EXPLICIT curve `32a1`.  Classically it is an isomorphism of
-curves `X_0(32) ≅ 32a1` over `ℚ`; only injectivity on `ℚ`-points is asked
-for, because only a cardinality bound is consumed downstream.
+/-- **On `32a1` every solution of the Weierstrass equation is nonsingular**
+(PROVEN 2026-07-27): the curve has `Δ ≠ 0`, and mathlib's
+`equation_iff_nonsingular_of_Δ_ne_zero` upgrades `Equation` to `Nonsingular`
+for any such curve.  This is what lets the four rational points below be
+written down without a separate singularity check at each. -/
+lemma x0ThirtyTwoModel_nonsingular_of_equation {x y : ℚ}
+    (h : x0ThirtyTwoModel.toAffine.Equation x y) :
+    x0ThirtyTwoModel.toAffine.Nonsingular x y :=
+  (WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero
+    (W := x0ThirtyTwoModel.toAffine) (by rw [x0ThirtyTwoModel_Δ]; norm_num)).mp h
 
-**Why it is true.** `X_0(32)` is a smooth proper geometrically connected
-curve over `ℚ` of genus `1` carrying a rational cusp, hence an elliptic
-curve over `ℚ`; the newform of level `32` identifies it with `32a1`, whose
-Weierstrass model is `y² = x³ + 4x` (Magma `SmallModularCurve(32)`, Cremona).
+/-- **Converse of `planeCoords_eq_some`** (PROVEN 2026-07-27): a rational
+solution of `y² = x³ + 4x` satisfies the Weierstrass equation of
+`x0ThirtyTwoModel`. -/
+lemma x0ThirtyTwoModel_equation_of_eq {x y : ℚ} (h : y ^ 2 = x ^ 3 + 4 * x) :
+    x0ThirtyTwoModel.toAffine.Equation x y := by
+  rw [WeierstrassCurve.Affine.equation_iff]
+  simp only [x0ThirtyTwoModel_a₁, x0ThirtyTwoModel_a₂, x0ThirtyTwoModel_a₃,
+    x0ThirtyTwoModel_a₄, x0ThirtyTwoModel_a₆]
+  linear_combination h
 
-**Why it is neither vacuous nor refutable.** The hypothesis `hX` is
-satisfiable — `exists_x0Compactification 32` supplies an instance — so the
-statement is not vacuous; and its conclusion is the classical model, so it
-is not refutable.  Note `hX` is load-bearing for TRUTH and must not be
-dropped or underscored: without it `X` is an arbitrary `ℚ`-scheme, whose
-`ℚ`-points need not inject into a four-element set, and the statement is
-then FALSE.
+/-- **The four rational points of `32a1`**, namely `∞`, `(0, 0)`, `(2, 4)`
+and `(2, −4)`, as a map out of `Fin 4` (PROVEN 2026-07-27 — the equations
+are checked by `norm_num` and the nonsingularity by
+`x0ThirtyTwoModel_nonsingular_of_equation`).
 
-**What a successor must build**, in the order the mathematics forces it:
+These are ALL of `32a1(ℚ)` — PARI/GP gives rank `0` and torsion `ℤ/4` — but
+that is NOT claimed here and is not needed: the assembly below only needs
+that these four are pairwise DISTINCT, so that a set of at most four
+elements embeds into `32a1(ℚ)`.  Recording only the weaker fact keeps the
+Mordell–Weil computation out of the cone. -/
+def fourPoints : Fin 4 → x0ThirtyTwoModel.toAffine.Point
+  | 0 => .zero
+  | 1 => .some 0 0 (x0ThirtyTwoModel_nonsingular_of_equation
+      (x0ThirtyTwoModel_equation_of_eq (by norm_num)))
+  | 2 => .some 2 4 (x0ThirtyTwoModel_nonsingular_of_equation
+      (x0ThirtyTwoModel_equation_of_eq (by norm_num)))
+  | 3 => .some 2 (-4) (x0ThirtyTwoModel_nonsingular_of_equation
+      (x0ThirtyTwoModel_equation_of_eq (by norm_num)))
 
-1. a genus for `strX`, and the computation `genus X_0(32) = 1`;
-2. Riemann–Roch far enough to give a smooth proper geometrically connected
-   genus-`1` curve with a rational point a Weierstrass model — absent from
-   `Mathlib`, from `~/cs/FLT`, and from this development;
-3. the identification of that model's isomorphism class with `32a1`, which
-   is the modular input proper.
+/-- **The four points are pairwise distinct** (PROVEN 2026-07-27).
 
-Step 2 is the only genuinely large one and it is a general theorem, not a
-level-`32` fact — so it is worth stating as its own interface before any of
-this is attempted.  There is at present NO construction anywhere in the tree
-that produces a `Scheme` from a `WeierstrassCurve`, nor any declaration
-relating `RelPoint` to `WeierstrassCurve.Affine.Point`; that gap, and not
-anything specific to level `32`, is what keeps this leaf open. -/
+Proved through `planeCoords`, which strips the (proof-irrelevant)
+nonsingularity witness and lands in `Option (ℚ × ℚ)`, where the four values
+`none`, `some (0, 0)`, `some (2, 4)`, `some (2, −4)` are visibly distinct
+and `decide` settles it.  `decide` rather than `simp` deliberately: this
+tree's ambient simp set contains sorried lemmas, and a `decide` proof
+cannot import a `sorryAx` — see the `#print axioms` note on
+`exists_weierstrassModel_x0ThirtyTwo`. -/
+lemma fourPoints_injective : Function.Injective fourPoints :=
+  Function.Injective.of_comp (f := planeCoords) (by decide)
+
+/-- **`rank J_0(32)(ℚ) = 0` and `genus X_0(32) ≥ 1`** (sorry node,
+introduced 2026-07-27).
+
+The exact level-`32` analogue of `X0.lean`'s
+`hasRankZeroJacobian_of_kenkuLevel`, which cannot be reused verbatim
+because `kenkuLevels` is by construction the list of NON-prime-power levels
+of Kenku's determination and `32 = 2⁵` is not among them.  Nothing else
+about the statement differs.
+
+**TRUE**, and at this level it is the softest of all the Kenku-style
+instances rather than the hardest, because `J_0(32) = X_0(32) = 32a1`
+itself — the level has genus `1`, so the curve IS its own Jacobian:
+
+* `Finite (RelPoint jstr (𝟙 SpecQ))`, i.e. `rank J_0(32)(ℚ) = 0`: PARI/GP
+  on `[0,0,0,4,0]` (untrusted searcher, statement check only) gives
+  conductor `32`, `ellrank = 0` and `elltors = ℤ/4`, so `J_0(32)(ℚ) ≅ ℤ/4`
+  is finite.  Equivalently `S_2(Γ_0(32))` is one-dimensional, spanned by
+  the newform `32a`, and `L(32a, 1) ≠ 0`.
+* `Function.Injective (jac.aj (𝟙 SpecQ))`, i.e. positivity of the genus:
+  `genus X_0(32) = 1 > 0`.  This conjunct is load-bearing exactly as it is
+  on `hasRankZeroJacobian_of_kenkuLevel` — dropping it makes the reduction
+  bound FALSE at `N = 1`, where `X_0(1) = ℙ¹` has trivial Jacobian and
+  infinitely many rational points.
+
+**Not vacuous**: `exists_x0Compactification 32` supplies an `hX`.
+**Not refutable**: both conjuncts are the classical arithmetic of `32a1`.
+
+Refuting check for the claim that this is the right statement: if
+`kenkuLevels` ever grows `32`, this declaration is subsumed by
+`hasRankZeroJacobian_of_kenkuLevel 32` and should be deleted rather than
+proved. -/
+theorem hasRankZeroJacobian_x0ThirtyTwo {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification 32 strX strY j) :
+    HasRankZeroJacobian strX :=
+  sorry
+
+/-- **`X_0(32)` reduces well at `3`, and `#X_0(32)(𝔽_3) = 4`** (sorry node,
+introduced 2026-07-27).
+
+The exact level-`32` analogue of `X0.lean`'s
+`exists_x0Compactification_mod_prime`, which cannot be reused verbatim
+because `x0WitnessTable` lists only the seven Kenku levels that close on a
+single prime; `(32, 3, 4)` would be its eighth row.  Nothing else about the
+statement differs.
+
+**TRUE.**  `3 ∤ 32`, so `X_0(32)` has good reduction at `3` and the special
+fibre is the coarse space of the same `Γ₀(32)`-problem over `𝔽_3`; being
+proper over a finite field it has finitely many rational points; and
+Eichler–Shimura evaluates the count as `3 + 1 − Tr(T_3 ∣ S_2(Γ_0(32)))`.
+At this level `S_2(Γ_0(32))` is spanned by the newform `32a` with
+`a_3 = 0`, so the count is `4`.
+
+Checked independently by counting on the model `y² = x³ + 4x = x³ + x` over
+`𝔽_3` (untrusted searcher, statement check only): `x = 0` gives `y = 0`;
+`x = 1` gives `2`, a non-square mod `3`, so no point; `x = 2` gives `1`,
+giving `y = ±1`; three affine points plus the point at infinity is `4`.
+PARI/GP agrees: `ellap([0,0,0,4,0], 3) = 0`, so `3 + 1 − 0 = 4`.
+
+**The value `4` is what makes the level close**, since
+`numRationalCusps_thirtyTwo` is also `4`.  Note `ℓ = 3` is forced among the
+small primes: `ellap(E, 5) = −2` gives `#X_0(32)(𝔽_5) = 8 > 4`, so `5` is
+not a witness. -/
+theorem exists_x0ThirtyTwo_mod_three :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF 3) (strY : Y ⟶ SpecF 3) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification 32 strX strY j) ∧
+        Finite (RelPoint strX (𝟙 (SpecF 3))) ∧
+        Nat.card (RelPoint strX (𝟙 (SpecF 3))) = 4 :=
+  sorry
+
+/-- **`#X_0(32)(ℚ) ≤ 4`** (PROVEN 2026-07-27 over
+`hasRankZeroJacobian_x0ThirtyTwo` and `exists_x0ThirtyTwo_mod_three`, by
+`X0.lean`'s general reduction bound `card_le_of_rankZeroJacobian` at
+`ℓ = 3`).
+
+This is THE arithmetic content of level `32`, and after 2026-07-27 it is
+the only thing `exists_weierstrassModel_x0ThirtyTwo` still asks for.
+
+Stated as a bound on every `Finset` of rational points rather than on
+`Nat.card`, for exactly the reason recorded on `card_le_of_rankZeroJacobian`:
+`Nat.card` of an infinite type is `0`, so the `Nat.card` form would hold
+vacuously on a curve with infinitely many rational points, whereas the
+`Finset` form additionally CARRIES finiteness.  The assembly below extracts
+finiteness from it, so that weakness would be fatal here and is not
+cosmetic.
+
+**REPORTED, NOT ACTED ON: this bound makes the quartic-descent route
+MATHEMATICALLY redundant at level `32`, though it is still syntactically
+consumed** (2026-07-27).  `numRationalCusps_thirtyTwo` is `4` and this
+bound is `4`, so the counting argument of
+`y0HasNoRationalPoint_of_witnessPrime` applies verbatim: the four rational
+cusps already exhaust `X_0(32)(ℚ)`, and `Y_0(32)(ℚ) = ∅` follows from this
+declaration alone — without `exists_weierstrassModel_x0ThirtyTwo`, without
+`exists_planeModel_x0ThirtyTwo`, and without
+`QuarticDescent.rational_point_x0ThirtyTwo`, i.e. without Fermat's quartic
+theorem.
+
+`y0HasNoRationalPoint_thirtyTwo` is deliberately left BYTE-UNTOUCHED, so
+the quartic theorem is still genuinely consumed on the path that is
+actually built; what has changed is that its four-point count is no longer
+the only source of the number `4`.  Whether to collapse the level onto the
+shorter route is a CUT-LEVEL decision — it trades a PROVEN input (the
+quartic theorem) for two open ones (`hasRankZeroJacobian_x0ThirtyTwo`,
+`exists_x0ThirtyTwo_mod_three`), which is not obviously a good trade and is
+not this declaration's call to make.  Recording it so that it is not
+rediscovered as a surprise.
+
+Refuting check: if `numRationalCusps 32` is ever corrected away from `4`,
+or this bound is weakened above `4`, the redundancy disappears and the
+plane-model route becomes load-bearing again. -/
+theorem card_le_four_x0ThirtyTwo {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (hX : IsX0Compactification 32 strX strY j)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) : s.card ≤ 4 := by
+  obtain ⟨X', Y', strX', strY', j', ⟨hX'⟩, hfin, hcard⟩ := exists_x0ThirtyTwo_mod_three
+  exact card_le_of_rankZeroJacobian hX (hasRankZeroJacobian_x0ThirtyTwo hX)
+    (ℓ := 3) (by norm_num) (by norm_num) (by decide) hX' 4 hfin hcard s
+
+/-- **`X_0(32)(ℚ)` injects into `32a1(ℚ)`** (PROVEN 2026-07-27 over
+`card_le_four_x0ThirtyTwo`; introduced 2026-07-27 as the arithmetic-free
+residue of `exists_planeModel_x0ThirtyTwo`).
+
+`hX` remains load-bearing for TRUTH and must not be dropped or
+underscored: without it `X` is an arbitrary `ℚ`-scheme, whose `ℚ`-points
+need not inject into a four-element set, and the statement is then FALSE.
+It is used, through `card_le_four_x0ThirtyTwo`, twice.
+
+**THE RECORDED OBSTRUCTION IS REFUTED — NO `Scheme` ↔ `WeierstrassCurve`
+BRIDGE IS NEEDED** (2026-07-27).  The previous version of this docstring
+said the leaf was kept open by the absence of any construction producing a
+`Scheme` from a `WeierstrassCurve`, and of any declaration relating
+`RelPoint` to `WeierstrassCurve.Affine.Point`; both greps do still come
+back empty, and the conclusion drawn from them was nevertheless wrong.  The
+successor list it gave — a genus for `strX`, then Riemann–Roch far enough
+to give a genus-`1` curve with a rational point a Weierstrass model, then
+the identification with `32a1` — is a route to this statement, but it is
+not the cheapest one and none of it is required.
+
+The reason is contained in the statement's own weakness, which the author
+of the cut had already recorded: **only injectivity on `ℚ`-points is asked
+for, because only a cardinality bound is consumed downstream.**  Take that
+seriously and the content of the leaf is exactly
+
+    #X_0(32)(ℚ) ≤ #32a1(ℚ),
+
+and the right-hand side needs no isomorphism of curves at all — it is
+enough to exhibit FOUR distinct rational points of `32a1`, which is
+`fourPoints` plus `fourPoints_injective`, elementary and now proven.  What
+is left is the pure cardinality bound `#X_0(32)(ℚ) ≤ 4`, isolated as
+`card_le_four_x0ThirtyTwo`.  So the modular geometry of `X_0(32)` enters
+this leaf only through a NUMBER, never through a model.
+
+**Why that is a real reduction and not a relabelling.**  Riemann–Roch and
+Weierstrass-models-as-schemes were needed at level `32` and NOWHERE ELSE in
+this development; carrying them was a private cost of this one level.  The
+bound `#X_0(32)(ℚ) ≤ 4` is instead produced by `X0.lean`'s existing and
+already-shared `card_le_of_rankZeroJacobian`, whose two inputs at this
+level are `hasRankZeroJacobian_x0ThirtyTwo` and
+`exists_x0ThirtyTwo_mod_three` — the level-`32` rows of machinery that
+seven other levels already use.  Level `32` therefore stops requiring a
+theory of its own.
+
+Refuting check for the paragraph above: if `card_le_of_rankZeroJacobian`
+is ever restated so that it no longer bounds an arbitrary `Finset` of
+`RelPoint strX (𝟙 SpecQ)`, or if `HasRankZeroJacobian` becomes FALSE at
+`X_0(32)` (it is not — `J_0(32) = 32a1` has rank `0`), this route closes
+and the Riemann–Roch route is the fallback.
+
+**AXIOM AUDIT.**  Replaying the proof below with `card_le_four_x0ThirtyTwo`
+replaced by a named `axiom` gives
+`[propext, Classical.choice, Quot.sound, <that axiom>]` — no `sorryAx`.  So
+the glue smuggles in nothing sorried, and `decide` was used in
+`fourPoints_injective` in preference to `simp` for the same reason. -/
 theorem exists_weierstrassModel_x0ThirtyTwo {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jm : Y ⟶ X} (hX : IsX0Compactification 32 strX strY jm) :
     ∃ f : RelPoint strX (𝟙 SpecQ) → x0ThirtyTwoModel.toAffine.Point,
-      Function.Injective f :=
-  sorry
+      Function.Injective f := by
+  classical
+  have hfin : Finite (RelPoint strX (𝟙 SpecQ)) := by
+    rw [← not_infinite_iff_finite]
+    intro hinf
+    obtain ⟨s, hs⟩ := Infinite.exists_subset_card_eq (RelPoint strX (𝟙 SpecQ)) 5
+    have hle := card_le_four_x0ThirtyTwo hX s
+    omega
+  have hft : Fintype (RelPoint strX (𝟙 SpecQ)) := Fintype.ofFinite _
+  have hcard : Fintype.card (RelPoint strX (𝟙 SpecQ)) ≤ 4 := by
+    have := card_le_four_x0ThirtyTwo hX (Finset.univ (α := RelPoint strX (𝟙 SpecQ)))
+    rwa [Finset.card_univ] at this
+  refine ⟨fun P => fourPoints (Fin.castLE hcard (Fintype.equivFin _ P)), ?_⟩
+  exact fourPoints_injective.comp
+    ((Fin.castLE_injective hcard).comp (Fintype.equivFin _).injective)
 
 /-- **The plane model of `X_0(32)` is `y² = x³ + 4x`** (PROVEN 2026-07-27 over
 the single leaf `exists_weierstrassModel_x0ThirtyTwo`; introduced 2026-07-26 as
@@ -8736,11 +8949,14 @@ which is the honest signal, since the audits above establish that `hs`
 together with this conclusion is CONTRADICTORY and so `hs` could never have
 been a usable input.
 
-`y0HasNoRationalPoint_thirtyTwo` is in turn PROVEN, over the single new leaf
-`MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` — as of 2026-07-27; the
-intermediate `exists_planeModel_x0ThirtyTwo` is now PROVEN over that leaf,
-the split having discharged the coordinate dictionary and left the modular
-comparison `X_0(32)(ℚ) ↪ 32a1(ℚ)` as the only open half. Three things are gained, and
+`y0HasNoRationalPoint_thirtyTwo` is in turn PROVEN, as of 2026-07-27 over the
+two arithmetic leaves `MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` and
+`MazurLevel32.exists_x0ThirtyTwo_mod_three`, through
+`MazurLevel32.card_le_four_x0ThirtyTwo`. The intermediate
+`exists_planeModel_x0ThirtyTwo` and `exists_weierstrassModel_x0ThirtyTwo` are
+both PROVEN and must not be dispatched at; the modular comparison
+`X_0(32)(ℚ) ↪ 32a1(ℚ)` turned out to need no model of `X_0(32)` at all, only
+the cardinality bound `#X_0(32)(ℚ) ≤ 4`. Three things are gained, and
 they are precisely the three defects the audits above identify:
 
 1. *The vacuity is gone.* The new leaf's hypothesis is "`strX` is the
