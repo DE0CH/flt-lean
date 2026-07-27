@@ -38,6 +38,7 @@ public import Mathlib.Algebra.DualNumber
 public import Mathlib.RingTheory.DedekindDomain.Factorization
 public import Mathlib.RingTheory.DedekindDomain.AdicValuation
 import Fermat.FLT.EllipticCurve.TorsionCard
+import Fermat.FLT.EllipticCurve.TorsionCardSep
 
 @[expose] public section
 
@@ -8085,54 +8086,385 @@ theorem eval_derivative_Φ_eq_eval_ΨSq_of_two_eq_zero (h2 : (2 : F) = 0) (hp : 
     Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_add, hx0]
   ring
 
-omit [IsAlgClosed F] in
-/-- **THE RESIDUAL LEAF of the characteristic-`2` case (sorry, cut 2026-07-26):
-the roots of `Φ_p'` away from the two-torsion abscissa are DOUBLE.**
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Characteristic two, as a `CharP` instance** (PROVEN): in a field, `2 = 0`
+forces `ringChar = 2`. -/
+lemma charP_two_of_two_eq_zero (h2 : (2 : F) = 0) : CharP F 2 := by
+  have h : ringChar F = 2 :=
+    CharP.ringChar_of_prime_eq_zero Nat.prime_two (by exact_mod_cast h2)
+  exact h ▸ ringChar.charP F
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **In characteristic `2` every root of a polynomial with vanishing derivative
+has EVEN multiplicity** (PROVEN): `f' = 0` puts `f` in `F[X²]`
+(`Polynomial.expand_contract`), and `Polynomial.rootMultiplicity_expand` reads
+off `mult_a(expand 2 g) = 2·mult_{a²}(g)`.
+
+This is the "even half" of the residual leaf below, and it is exactly the half
+that the factorization `G = (X − x)·Φ_p'` supplies for free; the fibre count is
+needed only for the matching UPPER bound. -/
+lemma two_dvd_rootMultiplicity_of_derivative_eq_zero (h2 : (2 : F) = 0)
+    {f : Polynomial F} (hf : Polynomial.derivative f = 0) (a : F) :
+    2 ∣ f.rootMultiplicity a := by
+  haveI : CharP F 2 := charP_two_of_two_eq_zero h2
+  haveI : ExpChar F 2 := ExpChar.prime Nat.prime_two
+  have hexp : Polynomial.expand F 2 (Polynomial.contract 2 f) = f :=
+    Polynomial.expand_contract 2 hf two_ne_zero
+  rw [← hexp, Polynomial.rootMultiplicity_expand]
+  exact ⟨_, rfl⟩
+
+/-- **THE FIBRE COUNT** (PROVEN 2026-07-27): `G := Φ_p − x·Ψ²_p` has at least
+`(p² + 1)/2` DISTINCT roots, when `x` is the abscissa of an affine point `P₀`
+with `Ψ₂Sq(x) = 0` — i.e. of a nonzero `2`-torsion point.
+
+This is the separability of `[p]` in the only form the residual leaf needs, and
+it is what the algebra around `G = (X − x)·Φ_p'` cannot supply.
+
+**Proof.**  `P₀` is `2`-torsion (`TorsionCard.two_smul_some_eq_zero_iff`), and `p`
+is odd, so `[p]P₀ = P₀`.  Hence the whole coset `P₀ + E[p]` lies in the fibre
+`[p]⁻¹(P₀)`, and it has `p²` elements because `E[p]` does
+(`TorsionCard.card_torsionBy`, over the separably closed `F`) and translation is
+injective.  Every point of that coset is affine (its image `P₀` is nonzero) with
+`Ψ²_p` nonvanishing at its abscissa (`TorsionCard.smul_some_eq_zero_iff`), so the
+multiplication formula `TorsionCard.exists_smul_some_eq` makes its abscissa a root
+of `G`.  Finally the abscissa map is at most `2`-to-`1`, since the `y`-fibre over
+a point is cut out by the quadratic `TorsionCard.yQuad`.  So `p² ≤ 2·#roots(G)`.
+
+Note NO surjectivity of `[p]` is used: the fibre is exhibited explicitly as a
+coset, because `P₀` is visibly one of its own preimages. -/
+theorem card_le_two_mul_card_roots_Φ_sub_C_mul_ΨSq (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    {x y : F} (hxy : W.Nonsingular x y) (hodd : Odd p)
+    (hx0 : W.Ψ₂Sq.eval x = 0) :
+    p ^ 2 ≤ 2 *
+      (W.Φ ((p : ℕ) : ℤ) - Polynomial.C x * W.ΨSq ((p : ℕ) : ℤ)).roots.toFinset.card := by
+  classical
+  haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+  set G := W.Φ ((p : ℕ) : ℤ) - Polynomial.C x * W.ΨSq ((p : ℕ) : ℤ) with hGdef
+  have hGne : G ≠ 0 := Φ_sub_C_mul_ΨSq_ne_zero x
+  set P₀ : W.Point := Point.some x y hxy with hP₀def
+  have hzero : (0 : W.Point) = Point.zero := rfl
+  have hP₀ne : P₀ ≠ 0 := fun h => nomatch (h.trans hzero)
+  -- `P₀` is `2`-torsion, hence fixed by `[p]` for odd `p`
+  have h2P₀ : (2 : ℤ) • P₀ = 0 := (TorsionCard.two_smul_some_eq_zero_iff W hxy).mpr hx0
+  obtain ⟨k, hk⟩ : ∃ k, p = k * 2 + 1 := ⟨p / 2, by
+    have := Nat.odd_iff.mp hodd; omega⟩
+  have hcast : ((p : ℕ) : ℤ) = (k : ℤ) * 2 + 1 := by exact_mod_cast hk
+  have hpP₀ : ((p : ℕ) : ℤ) • P₀ = P₀ := by
+    rw [hcast, add_smul, one_smul, mul_smul, h2P₀, smul_zero, zero_add]
+  -- the `p`-torsion, as a finset of size `p²`
+  have hbc : (WeierstrassCurve.Affine.baseChange W F) = W := WeierstrassCurve.map_id _
+  have hM : Nat.card (Submodule.torsionBy ℤ W.Point ((p : ℕ) : ℤ)) = p ^ 2 := by
+    have h := TorsionCard.card_torsionBy W p hp
+    rwa [hbc] at h
+  haveI : Finite (Submodule.torsionBy ℤ W.Point ((p : ℕ) : ℤ)) :=
+    Nat.finite_of_card_ne_zero (by rw [hM]; exact pow_ne_zero _ (Fact.out : p.Prime).pos.ne')
+  haveI : Fintype (Submodule.torsionBy ℤ W.Point ((p : ℕ) : ℤ)) := Fintype.ofFinite _
+  set T : Finset W.Point :=
+    Finset.univ.image (Subtype.val : (Submodule.torsionBy ℤ W.Point ((p : ℕ) : ℤ)) → W.Point)
+    with hTdef
+  have hTcard : T.card = p ^ 2 := by
+    rw [hTdef, Finset.card_image_of_injective _ Subtype.val_injective, Finset.card_univ,
+      ← Nat.card_eq_fintype_card, hM]
+  have hTtor : ∀ Q ∈ T, ((p : ℕ) : ℤ) • Q = 0 := by
+    intro Q hQ
+    obtain ⟨m, -, rfl⟩ := Finset.mem_image.mp hQ
+    exact (Submodule.mem_torsionBy_iff _ _).mp m.2
+  -- the fibre `P₀ + E[p]`
+  set S : Finset W.Point := T.image (fun κ => P₀ + κ) with hSdef
+  have hScard : S.card = p ^ 2 := by
+    rw [hSdef, Finset.card_image_of_injective _ (add_right_injective P₀), hTcard]
+  have hSfib : ∀ Q ∈ S, ((p : ℕ) : ℤ) • Q = P₀ := by
+    intro Q hQ
+    obtain ⟨κ, hκ, rfl⟩ := Finset.mem_image.mp hQ
+    rw [smul_add, hTtor κ hκ, add_zero, hpP₀]
+  -- coordinate functions
+  set xc : W.Point → F := fun P =>
+    match P with
+    | .zero => 0
+    | @Point.some _ _ _ x _ _ => x with hxcdef
+  set yc : W.Point → F := fun P =>
+    match P with
+    | .zero => 0
+    | @Point.some _ _ _ _ y _ => y with hycdef
+  -- every point of the fibre is affine, with abscissa a root of `G`
+  have hne0 : ∀ Q ∈ S, Q ≠ 0 := by
+    intro Q hQ hQ0
+    have h := hSfib Q hQ
+    rw [hQ0, smul_zero] at h
+    exact hP₀ne h.symm
+  have hmaps : ∀ Q ∈ S, xc Q ∈ G.roots.toFinset := by
+    have key : ∀ Q : W.Point, ((p : ℕ) : ℤ) • Q = P₀ → xc Q ∈ G.roots.toFinset := by
+      intro Q hQp
+      cases Q with
+      | zero =>
+        rw [show (Point.zero : W.Point) = 0 from rfl, smul_zero] at hQp
+        exact absurd hQp.symm hP₀ne
+      | some x₁ y₁ h₁ =>
+        have hΨ₁ : (W.ΨSq ((p : ℕ) : ℤ)).eval x₁ ≠ 0 := by
+          intro h0
+          have hz : ((p : ℕ) : ℤ) • (Point.some x₁ y₁ h₁ : W.Point) = 0 :=
+            (TorsionCard.smul_some_eq_zero_iff W hpZ h₁).mpr h0
+          exact hP₀ne (hQp.symm.trans hz)
+        obtain ⟨x', y', h', heq, hx'⟩ := TorsionCard.exists_smul_some_eq W hpZ h₁ hΨ₁
+        have heq' : ((p : ℕ) : ℤ) • (Point.some x₁ y₁ h₁ : W.Point)
+            = Point.some x' y' h' := heq
+        have hx'' : x' * (W.ΨSq ((p : ℕ) : ℤ)).eval x₁
+            = (W.Φ ((p : ℕ) : ℤ)).eval x₁ := hx'
+        have hxx : x' = x := by
+          have hpts := heq'.symm.trans hQp
+          injection hpts with h1 _
+        rw [Multiset.mem_toFinset, Polynomial.mem_roots hGne]
+        show G.eval x₁ = 0
+        rw [hGdef, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+        rw [← hx'', hxx]
+        ring
+    exact fun Q hQ => key Q (hSfib Q hQ)
+  -- the abscissa map is at most two-to-one
+  have hfibre : ∀ x₀ ∈ G.roots.toFinset, (S.filter (fun Q => xc Q = x₀)).card ≤ 2 := by
+    intro x₀ _
+    have hstep : (S.filter (fun Q => xc Q = x₀)).card ≤
+        (TorsionCard.yQuad W x₀).roots.toFinset.card := by
+      refine Finset.card_le_card_of_injOn yc ?_ ?_
+      · intro P hP
+        obtain ⟨hP', hx⟩ := Finset.mem_filter.mp hP
+        have hPne : P ≠ 0 := hne0 P hP'
+        cases P with
+        | zero => exact absurd rfl hPne
+        | some x₂ y₂ h₂ =>
+          have hxx : x₂ = x₀ := hx
+          subst hxx
+          rw [Finset.mem_coe, Multiset.mem_toFinset,
+            Polynomial.mem_roots (TorsionCard.yQuad_ne_zero W x₂)]
+          exact (TorsionCard.eval_yQuad_eq_zero_iff_equation W x₂ y₂).mpr h₂.1
+      · intro P hP Q hQ hy
+        obtain ⟨hP', hxP⟩ := Finset.mem_filter.mp hP
+        obtain ⟨hQ', hxQ⟩ := Finset.mem_filter.mp hQ
+        have hPne : P ≠ 0 := hne0 P hP'
+        have hQne : Q ≠ 0 := hne0 Q hQ'
+        cases P with
+        | zero => exact absurd rfl hPne
+        | some xP yP hP'' =>
+          cases Q with
+          | zero => exact absurd rfl hQne
+          | some xQ yQ hQ'' =>
+            have h1 : xP = x₀ := hxP
+            have h2 : xQ = x₀ := hxQ
+            have hxx : xQ = xP := h2.trans h1.symm
+            have h3 : yP = yQ := hy
+            subst hxx
+            subst h3
+            rfl
+    refine hstep.trans ?_
+    calc (TorsionCard.yQuad W x₀).roots.toFinset.card
+        ≤ Multiset.card (TorsionCard.yQuad W x₀).roots := Multiset.toFinset_card_le _
+      _ ≤ (TorsionCard.yQuad W x₀).natDegree := Polynomial.card_roots' _
+      _ = 2 := TorsionCard.yQuad_natDegree W x₀
+  have hcount := Finset.card_le_mul_card_image_of_maps_to hmaps 2 hfibre
+  rwa [hScard] at hcount
+
+/-- **The residual leaf over an ALGEBRAICALLY CLOSED field** (PROVEN 2026-07-27).
+
+With `G := Φ_p − x·Ψ²_p` and `H := Φ_p'`, step 5 gives `G = (X − x)·H` and step 4
+gives `(Ψ²_p)' = 0`, whence `G' = H` and therefore `(X − x)·H' = 0`, i.e. `H' = 0`.
+So every root of `H` has EVEN multiplicity
+(`two_dvd_rootMultiplicity_of_derivative_eq_zero`), i.e. `≥ 2`.
+
+The matching upper bound is the fibre count.  `G` is monic of degree `p²`
+(`natDegree_Φ`, `natDegree_ΨSq_le`), it has `mult_x(G) = 1` — because
+`H(x) = Ψ²_p(x) ≠ 0` by step 6 and by `[p]P₀ = P₀ ≠ O` — and by
+`card_le_two_mul_card_roots_Φ_sub_C_mul_ΨSq` it has at least `(p²+1)/2` distinct
+roots.  Summing multiplicities over the distinct roots,
+
+  `p² ≥ mult_x(G) + mult_a(G) + 2·(#roots − 2) ≥ 1 + mult_a(G) + (p² + 1) − 4`,
+
+so `mult_a(G) ≤ 2`; with the even lower bound, `mult_a(G) = mult_a(H) = 2`.
+
+Note the hypothesis `Ψ²_p(a) ≠ 0` of the leaf below is NOT needed here: it is
+implied by `hroot` together with the coprimality of `Φ_p` and `Ψ²_p`. -/
+theorem rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero_isAlgClosed
+    (h2 : (2 : F) = 0) (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0) {a x : F}
+    (hx0 : W.Ψ₂Sq.eval x = 0) (hax : a ≠ x)
+    (hroot : (W.Φ ((p : ℕ) : ℤ)).eval a = x * (W.ΨSq ((p : ℕ) : ℤ)).eval a) :
+    (Polynomial.derivative (W.Φ ((p : ℕ) : ℤ))).rootMultiplicity a = 2 := by
+  classical
+  haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+  have hodd : Odd p := Nat.not_even_iff_odd.mp (not_even_of_two_eq_zero (p := p) (F := F) h2 hp)
+  set G := W.Φ ((p : ℕ) : ℤ) - Polynomial.C x * W.ΨSq ((p : ℕ) : ℤ) with hGdef
+  set H := Polynomial.derivative (W.Φ ((p : ℕ) : ℤ)) with hHdef
+  have hGne : G ≠ 0 := Φ_sub_C_mul_ΨSq_ne_zero x
+  have hfact : G = (Polynomial.X - Polynomial.C x) * H :=
+    Φ_sub_C_mul_ΨSq_eq_X_sub_C_mul_derivative_Φ h2 hΔ hp hx0
+  have hHne : H ≠ 0 := by
+    intro h0
+    rw [hfact, h0, mul_zero] at hGne
+    exact hGne rfl
+  -- the derivative of `H` vanishes
+  have hΨ' : Polynomial.derivative (W.ΨSq ((p : ℕ) : ℤ)) = 0 :=
+    derivative_ΨSq_eq_zero_of_two_eq_zero h2 hp
+  have hHd : Polynomial.derivative H = 0 := by
+    have h1 := congrArg Polynomial.derivative hfact
+    rw [hGdef, Polynomial.derivative_sub, Polynomial.derivative_mul, Polynomial.derivative_C,
+      hΨ', mul_zero, zero_mul, add_zero, sub_zero, Polynomial.derivative_mul,
+      Polynomial.derivative_sub, Polynomial.derivative_X, Polynomial.derivative_C, sub_zero,
+      one_mul] at h1
+    have h2' : (Polynomial.X - Polynomial.C x) * Polynomial.derivative H = 0 := by
+      linear_combination -h1
+    rcases mul_eq_zero.mp h2' with hz | hz
+    · exact absurd hz (Polynomial.X_sub_C_ne_zero x)
+    · exact hz
+  -- a point above the two-torsion abscissa `x`
+  obtain ⟨y, hy⟩ : ∃ y : F, W.Nonsingular x y := by
+    obtain ⟨y, hyroot⟩ := IsAlgClosed.exists_root (TorsionCard.yQuad W x) (by
+      rw [Polynomial.degree_eq_natDegree (TorsionCard.yQuad_ne_zero W x),
+        TorsionCard.yQuad_natDegree]
+      decide)
+    exact ⟨y, W.equation_iff_nonsingular.mp
+      ((TorsionCard.eval_yQuad_eq_zero_iff_equation W x y).mp hyroot)⟩
+  -- `Ψ²_p(x) ≠ 0`, since `[p]P₀ = P₀ ≠ O`
+  have hzero : (0 : W.Point) = Point.zero := rfl
+  have hP₀ne : (Point.some x y hy : W.Point) ≠ 0 := fun h => nomatch (h.trans hzero)
+  have h2P₀ : (2 : ℤ) • (Point.some x y hy : W.Point) = 0 :=
+    (TorsionCard.two_smul_some_eq_zero_iff W hy).mpr hx0
+  obtain ⟨k, hk⟩ : ∃ k, p = k * 2 + 1 := ⟨p / 2, by have := Nat.odd_iff.mp hodd; omega⟩
+  have hcast : ((p : ℕ) : ℤ) = (k : ℤ) * 2 + 1 := by exact_mod_cast hk
+  have hpP₀ : ((p : ℕ) : ℤ) • (Point.some x y hy : W.Point) = Point.some x y hy := by
+    rw [hcast, add_smul, one_smul, mul_smul, h2P₀, smul_zero, zero_add]
+  have hΨx : (W.ΨSq ((p : ℕ) : ℤ)).eval x ≠ 0 := by
+    intro h0
+    have hz : ((p : ℕ) : ℤ) • (Point.some x y hy : W.Point) = 0 :=
+      (TorsionCard.smul_some_eq_zero_iff W hpZ hy).mpr h0
+    exact hP₀ne (hpP₀.symm.trans hz)
+  -- multiplicities: `1` at `x`, even and positive elsewhere
+  have hmultX : G.rootMultiplicity x = 1 := by
+    have hHx : H.rootMultiplicity x = 0 := by
+      refine Polynomial.rootMultiplicity_eq_zero ?_
+      rw [Polynomial.IsRoot.def, hHdef,
+        eval_derivative_Φ_eq_eval_ΨSq_of_two_eq_zero h2 hp hx0]
+      exact hΨx
+    rw [hfact, Polynomial.rootMultiplicity_mul (hfact ▸ hGne), hHx,
+      Polynomial.rootMultiplicity_X_sub_C_self]
+  have hshift : ∀ r : F, r ≠ x → G.rootMultiplicity r = H.rootMultiplicity r := by
+    intro r hrx
+    have hXm : (Polynomial.X - Polynomial.C x : Polynomial F).rootMultiplicity r = 0 := by
+      refine Polynomial.rootMultiplicity_eq_zero ?_
+      simp only [Polynomial.IsRoot.def, Polynomial.eval_sub, Polynomial.eval_X,
+        Polynomial.eval_C]
+      exact sub_ne_zero.mpr hrx
+    rw [hfact, Polynomial.rootMultiplicity_mul (hfact ▸ hGne), hXm, zero_add]
+  have hkey : ∀ r : F, G.eval r = 0 → r ≠ x → 2 ≤ G.rootMultiplicity r := by
+    intro r hr hrx
+    have hHr : H.eval r = 0 := by
+      have hev := hr
+      rw [hfact, Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+        Polynomial.eval_C] at hev
+      rcases mul_eq_zero.mp hev with hz | hz
+      · exact absurd (sub_eq_zero.mp hz) hrx
+      · exact hz
+    have hpos : 0 < H.rootMultiplicity r :=
+      (Polynomial.rootMultiplicity_pos hHne).mpr hHr
+    have heven := two_dvd_rootMultiplicity_of_derivative_eq_zero h2 hHd r
+    rw [hshift r hrx]
+    omega
+  -- the counting
+  set R := G.roots.toFinset with hRdef
+  have hxR : x ∈ R := by
+    rw [hRdef, Multiset.mem_toFinset, Polynomial.mem_roots hGne]
+    show G.eval x = 0
+    rw [hfact, Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C, sub_self, zero_mul]
+  have hGa : G.eval a = 0 := by
+    rw [hGdef, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C, hroot, sub_self]
+  have haR : a ∈ R := by
+    rw [hRdef, Multiset.mem_toFinset, Polynomial.mem_roots hGne]
+    exact hGa
+  have hamem : a ∈ R.erase x := Finset.mem_erase.mpr ⟨hax, haR⟩
+  have hsum : ∑ r ∈ R, G.rootMultiplicity r = Multiset.card G.roots := by
+    rw [hRdef, ← Multiset.toFinset_sum_count_eq G.roots]
+    exact Finset.sum_congr rfl (fun r _ => (Polynomial.count_roots G).symm)
+  have hGdeg : G.natDegree = p ^ 2 := by
+    have h1 : (W.Φ ((p : ℕ) : ℤ)).natDegree = p ^ 2 := by
+      have h := W.natDegree_Φ ((p : ℕ) : ℤ)
+      rwa [Int.natAbs_natCast] at h
+    have h2' : (Polynomial.C x * W.ΨSq ((p : ℕ) : ℤ)).natDegree < p ^ 2 := by
+      refine lt_of_le_of_lt (Polynomial.natDegree_C_mul_le x _) ?_
+      refine lt_of_le_of_lt (W.natDegree_ΨSq_le ((p : ℕ) : ℤ)) ?_
+      rw [Int.natAbs_natCast]
+      exact Nat.sub_lt (pow_pos (Fact.out : p.Prime).pos 2) one_pos
+    rw [hGdef, Polynomial.natDegree_sub_eq_left_of_natDegree_lt (by rw [h1]; exact h2'), h1]
+  have hle : ∑ r ∈ R, G.rootMultiplicity r ≤ p ^ 2 := by
+    rw [hsum, ← hGdeg]
+    exact Polynomial.card_roots' G
+  have hsplit : ∑ r ∈ R, G.rootMultiplicity r
+      = (∑ r ∈ (R.erase x).erase a, G.rootMultiplicity r)
+        + G.rootMultiplicity a + G.rootMultiplicity x := by
+    rw [Finset.sum_erase_add _ _ hamem, Finset.sum_erase_add _ _ hxR]
+  have hbig : 2 * ((R.erase x).erase a).card
+      ≤ ∑ r ∈ (R.erase x).erase a, G.rootMultiplicity r := by
+    have hall : ∀ r ∈ (R.erase x).erase a, 2 ≤ G.rootMultiplicity r := by
+      intro r hr
+      have hrx : r ≠ x := Finset.ne_of_mem_erase (Finset.mem_of_mem_erase hr)
+      have hrR : r ∈ R := Finset.mem_of_mem_erase (Finset.mem_of_mem_erase hr)
+      rw [hRdef, Multiset.mem_toFinset, Polynomial.mem_roots hGne] at hrR
+      exact hkey r hrR hrx
+    have hns := Finset.card_nsmul_le_sum ((R.erase x).erase a)
+      (fun r => G.rootMultiplicity r) 2 hall
+    simpa [mul_comm] using hns
+  have hcards : ((R.erase x).erase a).card + 2 = R.card := by
+    rw [Finset.card_erase_of_mem hamem, Finset.card_erase_of_mem hxR]
+    have h1 : 1 ≤ R.card := Finset.card_pos.mpr ⟨x, hxR⟩
+    have h2' : 1 ≤ (R.erase x).card := Finset.card_pos.mpr ⟨a, hamem⟩
+    rw [Finset.card_erase_of_mem hxR] at h2'
+    omega
+  have hfib := card_le_two_mul_card_roots_Φ_sub_C_mul_ΨSq (W := W) hΔ hp hy hodd hx0
+  rw [← hGdef, ← hRdef] at hfib
+  have hma : 2 ≤ G.rootMultiplicity a := hkey a hGa hax
+  have hoddsq : p ^ 2 % 2 = 1 := Nat.odd_iff.mp (hodd.pow)
+  rw [← hshift a hax]
+  obtain ⟨n, hn⟩ : ∃ n : ℕ, p ^ 2 = n := ⟨p ^ 2, rfl⟩
+  rw [hn] at hle hfib hoddsq
+  omega
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **THE RESIDUAL LEAF of the characteristic-`2` case (PROVEN 2026-07-27 by the
+fibre count): the roots of `Φ_p'` away from the two-torsion abscissa are DOUBLE.**
 
 After `Φ_sub_C_mul_ΨSq_eq_X_sub_C_mul_derivative_Φ` this is all that is left of
 `rootMultiplicity_Φ_sub_C_mul_ΨSq_of_Ψ₂Sq_inseparable`, and it is exactly the
 separability of `[p]` in the form the descent needs.
 
-**WHAT IS ALREADY KNOWN, and why it is not enough.**  Put `G = Φ_p − x·Ψ²_p` and
+**THE EVEN HALF, which the algebra supplies.**  Put `G = Φ_p − x·Ψ²_p` and
 `H = Φ_p'`, so `G = (X − x)·H`.  Differentiating and using `(Ψ²_p)' = 0` gives
 `G' = H`, hence `H = H + (X − x)·H'`, hence `H' = 0`.  A polynomial with zero
 derivative in characteristic `2` lies in `F[X²]`, so EVERY root of `H` has EVEN
-multiplicity (mathlib: `Polynomial.rootMultiplicity_expand` at `p = 2`).  Since
-`a` is a root of `H` here, `2 ∣ mult_a(H)` and `mult_a(H) ≥ 2`.
+multiplicity (`two_dvd_rootMultiplicity_of_derivative_eq_zero`, over mathlib's
+`Polynomial.rootMultiplicity_expand` at `p = 2`).  Since `a` is a root of `H`
+here, `2 ∣ mult_a(H)` and `mult_a(H) ≥ 2`.
 
-What is missing is the upper bound `mult_a(H) ≤ 2`, and the identity
+**THE UPPER HALF `mult_a(H) ≤ 2` IS THE FIBRE COUNT**, and the identity
 `G = (X − x)·H` alone CANNOT supply it: `G = (X − x)(X − β)⁴` satisfies
-`G' · (X − x) = G` just as well as `G = (X − x)(X − β)²` does.  So this leaf is
-not an algebraic-manipulation problem — it needs the fibre count.
+`G' · (X − x) = G` just as well as `G = (X − x)(X − β)²` does.  It is proven as
+`card_le_two_mul_card_roots_Φ_sub_C_mul_ΨSq` above: `[p]⁻¹(P₀) ⊇ P₀ + E[p]` has
+`p²` points (`TorsionCard.card_torsionBy`; `[p]P₀ = P₀` because `p` is odd and
+`P₀` is `2`-torsion, so NO surjectivity of `[p]` is needed), each contributing a
+root of `G` through the multiplication formula, and the abscissa map is at most
+`2`-to-`1`.  So `G` has at least `(p² + 1)/2` distinct roots; with `mult_x(G) = 1`
+and every other multiplicity `≥ 2` and even, `deg G = p²` forces `mult = 2` at
+each of them.
 
-**THE ROUTE.**  `G` is monic of degree `p²` (`natDegree_Φ`, `leadingCoeff_Φ`),
-and every root of `G` has `Ψ²_p ≠ 0` there (else `Φ_p` and `Ψ²_p` would share a
-root, contradicting `WeierstrassCurve.isCoprime_Φ_ΨSq`).  Over an algebraically
-closed field the roots of `G` are the abscissae of `[p]⁻¹(P₀)`, where `P₀` is the
-unique nonzero `2`-torsion point; that fibre has `p²` points
-(`TorsionCard.card_torsionBy`, plus surjectivity of `[p]`,
-`TorsionCard.smul_surjective`), is stable under negation because `−P₀ = P₀`, and
-has exactly ONE fixed point of negation, namely `P₀` itself (which lies in the
-fibre since `p` is odd).  So `G` has `(p² − 1)/2 + 1` distinct roots.  With
-`mult_x(G) ≥ 1` and `mult_α(G) = mult_α(H)` even, hence `≥ 2`, at the other
-`(p² − 1)/2`, the total is `≥ 1 + 2·(p² − 1)/2 = p² = deg G`; equality forces
-`mult = 2` at each of the others.
+Assembled in `rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero_isAlgClosed`
+above and transported here along `F ↪ AlgebraicClosure F`
+(`Polynomial.eq_rootMultiplicity_map`, `map_Φ` / `map_ΨSq` / `map_Ψ₂Sq`), which is
+what lets `IsAlgClosed F` stay OMITTED on this leaf and on its consumer.
 
-Two notes for whoever takes this.  (a) `card_torsionBy` lives in
-`Fermat/FLT/EllipticCurve/TorsionCardSep.lean`, which this file does NOT import;
-the import looks cycle-free (TorsionCardSep depends only on TorsionCard,
-WronskianInduction, WronskianStep, TautMultiplication, PhiPsiCoprime and
-DivisionPolynomial.Points, none of which touch `WeilPairing*`).  Likewise
-`isCoprime_Φ_ΨSq` is in `PhiPsiCoprime.lean`, imported only PRIVATELY through
-`TorsionCard`, so it needs a `public import` here to be usable in proof bodies.
-(b) `IsAlgClosed F` is OMITTED on this leaf and on its consumer, so the fibre
-argument must either be run over `AlgebraicClosure F` and transported back
-(root multiplicities are preserved by an injective coefficient map, and `Φ`,
-`ΨSq`, `Ψ₂Sq` all base-change by `map_Φ` / `map_ΨSq`), or the `omit` must be
-dropped on BOTH declarations.
+The hypothesis `hΨ : Ψ²_p(a) ≠ 0` is REDUNDANT for this statement — it is implied
+by `hroot` and the coprimality of `Φ_p, Ψ²_p` — so it is bound as `_hΨ`.  It is
+retained in the signature because the consumer's other branches need it and call
+this positionally.
 
-**NUMERICAL CERTIFICATE — a check of the STATEMENT, not a proof** (PARI/GP over
-`𝔽₂`, 2026-07-26).  Division polynomials were built from the standard
+**NUMERICAL CERTIFICATE — a check of the STATEMENT, made before the proof**
+(PARI/GP over `𝔽₂`, 2026-07-26).  Division polynomials were built from the standard
 recursions for `(a₁,a₂,a₃,a₄,a₆) ∈ {(1,0,0,0,1), (1,1,0,0,1), (1,0,1,1,1)}` and
 `p ∈ {3,5,7}` (six `Δ ≠ 0` instances).  In every one: `deg G = p²` (9, 25, 49);
 the identity `G = (X − x₀)·Φ_p'` of step 5 HOLDS; and every irreducible factor of
@@ -8140,16 +8472,42 @@ the identity `G = (X − x₀)·Φ_p'` of step 5 HOLDS; and every irreducible fa
 correct, and in particular the leaf is neither false nor vacuous. -/
 theorem rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero
     (h2 : (2 : F) = 0) (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0) {a x : F}
-    (hΨ : ((W.ΨSq ((p : ℕ) : ℤ)).eval a) ≠ 0)
+    (_hΨ : ((W.ΨSq ((p : ℕ) : ℤ)).eval a) ≠ 0)
     (hx0 : W.Ψ₂Sq.eval x = 0) (hax : a ≠ x)
     (hroot : (W.Φ ((p : ℕ) : ℤ)).eval a = x * (W.ΨSq ((p : ℕ) : ℤ)).eval a) :
     (Polynomial.derivative (W.Φ ((p : ℕ) : ℤ))).rootMultiplicity a = 2 := by
-  sorry
+  classical
+  let K := AlgebraicClosure F
+  let φ : F →+* K := algebraMap F K
+  have hinj : Function.Injective φ := (algebraMap F K).injective
+  have hev : ∀ (q : Polynomial F) (t : F), (q.map φ).eval (φ t) = φ (q.eval t) := by
+    intro q t
+    rw [Polynomial.eval_map, Polynomial.eval₂_at_apply]
+  have h2K : (2 : K) = 0 := by
+    rw [← map_ofNat φ 2, h2, map_zero]
+  have hpK : (p : K) ≠ 0 := by
+    intro h0
+    exact hp (hinj (by rw [map_natCast, h0, map_zero]))
+  have hΔK : (W.map φ).Δ ≠ 0 := by
+    rw [WeierstrassCurve.map_Δ]
+    intro h0
+    exact hΔ (hinj (by rw [h0, map_zero]))
+  have hx0K : (W.map φ).Ψ₂Sq.eval (φ x) = 0 := by
+    rw [WeierstrassCurve.map_Ψ₂Sq, hev, hx0, map_zero]
+  have haxK : φ a ≠ φ x := fun h => hax (hinj h)
+  have hrootK : ((W.map φ).Φ ((p : ℕ) : ℤ)).eval (φ a)
+      = φ x * (((W.map φ).ΨSq ((p : ℕ) : ℤ)).eval (φ a)) := by
+    rw [WeierstrassCurve.map_Φ, WeierstrassCurve.map_ΨSq, hev, hev, hroot, map_mul]
+  rw [Polynomial.eq_rootMultiplicity_map hinj a, ← Polynomial.derivative_map,
+    ← WeierstrassCurve.map_Φ]
+  exact rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero_isAlgClosed
+    (W := (W.map φ)) h2K hΔK hpK hx0K haxK hrootK
 
 omit [IsAlgClosed F] in
-/-- **L4-7: the inseparable residue of `Ψ₂Sq`** (DECOMPOSED 2026-07-26; the only
-`sorry` left underneath is `rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero`
-above).  The multiplicity statement `rootMultiplicity_Φ_sub_C_mul_ΨSq` below is
+/-- **L4-7: the inseparable residue of `Ψ₂Sq`** (DECOMPOSED 2026-07-26; the last
+leaf underneath, `rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero` above, was
+PROVEN 2026-07-27 by the fibre count, so this node is now sorry-free).
+The multiplicity statement `rootMultiplicity_Φ_sub_C_mul_ΨSq` below is
 derived from `(★)` in every case EXCEPT the one where `x` is a MULTIPLE root of
 `Ψ₂Sq` — this node.
 
