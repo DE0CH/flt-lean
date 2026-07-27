@@ -1,0 +1,12 @@
+module
+
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
+
+open GaloisRepresentation.IsHardlyRamified in
+#print axioms
+  GaloisRepresentation.IsHardlyRamified.connected_locus_mem_of_displacement_stable_of_hopf_package
+
+#print axioms
+  GaloisRepresentation.IsHardlyRamified.mem_smul_top_of_one_tmul_quotient_eq_zero
+
+#print axioms GaloisRepresentation.IsHardlyRamified.exists_one_tmul_quotient
