@@ -9794,7 +9794,11 @@ with the degree bookkeeping and the point/branch bridge PROVEN as glue:
   at the generic point of the curve, i.e. `F ∤ a`. This is the clause Schmidt
   discharges in one sentence — "By Lemma 2D, if not all `a_{ijk}` are zero, then
   `a(X, η) ≠ 0`" — and it is a self-contained classical theorem, INDEPENDENT of
-  the other two, so it takes its own owner.
+  the other two, so it took its own owner. **It is now PROVEN (2026-07-27)** over
+  three further sub-leaves — `stepanov_dvd_specZ_resultant`,
+  `stepanov_dvd_resultant_of_dvd_specZ` and `stepanov_irreducible_stepanovFZ`
+  (Corollary 2C) — see the section note before it; the symmetric-function
+  apparatus of his pp. 101–102 is NOT needed, `Polynomial.resultant` is it.
 * `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` — §3: the DERIVATION CALCULUS.
   Vanishing of `a^{(ν)}(x, y)` for `ν < M` at a SIMPLE root `y` says exactly
   that `a` vanishes to order `M` along the branch through `(x, y)`, which in
@@ -14409,10 +14413,15 @@ five-item route is realised in the file rather than merely described):
   The base-change bridge `irreducible_of_irreducible_map` is PROVEN, which is what
   lets the counting leaf be stated with no algebraic closure in its signature.
 
-So after the 2026-07-27 work the remaining open leaves under this node are FIVE:
-`exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz` and
-`stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the three children of the
-now-proven `exists_stepanovAuxiliaryFunction`),
+So after the 2026-07-27 work the remaining open leaves under this node are SEVEN.
+`stepanov_not_dvd_stepanovAnsatz` — one of the three children of the now-proven
+`exists_stepanovAuxiliaryFunction` — was itself PROVEN later the same day over
+three sub-leaves of its own, so the list is `exists_stepanovJetSolution` and
+`stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the two children of
+`exists_stepanovAuxiliaryFunction` still open), the Lemma 2D trio
+`stepanov_dvd_specZ_resultant`, `stepanov_dvd_resultant_of_dvd_specZ` and
+`stepanov_irreducible_stepanovFZ` (Schmidt's Corollary 2C, the only genuinely
+field-theoretic one and the only one absent from the pin),
 `exists_bertiniNoetherWitness_of_three_le`, and
 `exists_integralHypersurfaceCertificate`.  All the glue between them is written
 and compiles, and this leaf itself has nothing left to prove.
