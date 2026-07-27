@@ -116,6 +116,15 @@ public import Mathlib.RingTheory.KrullDimension.Zero
 public import Mathlib.RingTheory.LocalRing.RingHom.Basic
 public import Mathlib.RingTheory.Regular.RegularSequence
 public import Mathlib.RingTheory.RingHom.Flat
+-- `QuotSMulTop` appears in the `isWeaklyRegular_cons_iff` step of
+-- `exists_isWeaklyRegular_span_eq_maximalIdeal_aux`.  It arrives transitively
+-- through `Regular.RegularSequence`, but named explicitly so that a proof-body
+-- use cannot be broken by a private import upstream.
+public import Mathlib.RingTheory.QuotSMulTop
+-- `Ideal.Quotient.isNoetherianRing`, the instance that lets the induction of
+-- `flat_of_isWeaklyRegular_span_eq_maximalIdeal_aux` re-enter itself at
+-- `R ⧸ (t) → T ⧸ (φ t)`.  Nothing else in the file needs it.
+public import Mathlib.RingTheory.Ideal.Quotient.Noetherian
 -- `isRegularLocalRing_stalk_of_smooth` below is a one-line corollary of
 -- `isRegularLocalRing_stalk_of_smooth_over_field`, which was PROVEN in
 -- `Modularity/KhareWintenberger.lean` — a module strictly DOWNSTREAM of this
@@ -1300,16 +1309,181 @@ theorem ringKrullDim_stalk_eq_of_isFinite_endo {X : Scheme.{u}} {K : CommRingCat
 statements in this block.  See its docstring for why the previously recorded
 "`Tor`-free affine route" is NOT a route to it. -/
 
+/-- **THE EMBEDDING DIMENSION DROPS BY EXACTLY ONE ON QUOTIENTING BY
+`x ∈ 𝔪 ∖ 𝔪²`** (**PROVEN 2026-07-27**).
+
+`isRegularLocalRing_quotient_span_singleton` (in `Modularity/RegularStalks.lean`)
+says `R ⧸ (x)` is again regular local; this records the numerical half its
+statement drops, namely that its embedding dimension is `m` when that of `R` is
+`m + 1`.  That is what lets the induction of
+`exists_isWeaklyRegular_span_eq_maximalIdeal_aux` below descend.
+
+The `≤` half is the exchange lemma `exists_finset_card_span_insert_eq_maximalIdeal`
+(a generating set of `𝔪` of size `m + 1` containing `x`, whose image without `x`
+generates `𝔪 (R ⧸ (x))`).  The `≥` half is Krull's height theorem in the form
+`ringKrullDim_le_ringKrullDim_quotient_add_encard`, transported across
+regularity of `R ⧸ (x)` — which is exactly why that instance is a hypothesis
+here rather than being derived: the caller already has it in hand. -/
+theorem spanFinrank_maximalIdeal_quotient_span_singleton {R : Type u} [CommRing R]
+    [IsRegularLocalRing R] {x : R}
+    (hxm : x ∈ IsLocalRing.maximalIdeal R)
+    (hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2) (m : ℕ)
+    (hn : (IsLocalRing.maximalIdeal R).spanFinrank = m + 1)
+    [IsRegularLocalRing (R ⧸ Ideal.span {x})] :
+    (IsLocalRing.maximalIdeal (R ⧸ Ideal.span {x})).spanFinrank = m := by
+  classical
+  have hdim : ringKrullDim R = ((m + 1 : ℕ) : WithBot ℕ∞) := by
+    rw [← IsRegularLocalRing.spanFinrank_maximalIdeal (R := R), hn]
+  obtain ⟨T, hTcard, hTspan⟩ :=
+    GaloisRepresentation.Modularity.exists_finset_card_span_insert_eq_maximalIdeal hxm hx2 hn
+  set I : Ideal R := Ideal.span {x} with hI
+  have hIm : I ≤ IsLocalRing.maximalIdeal R := by rw [hI, Ideal.span_le]; simpa using hxm
+  have hInt : I ≠ ⊤ := fun h =>
+    (IsLocalRing.maximalIdeal.isMaximal R).ne_top (top_le_iff.mp (h ▸ hIm))
+  haveI : Nontrivial (R ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hInt
+  have hmapmax : (IsLocalRing.maximalIdeal R).map (Ideal.Quotient.mk I)
+      = IsLocalRing.maximalIdeal (R ⧸ I) :=
+    IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
+  have hsr : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank ≤ m := by
+    have himg : IsLocalRing.maximalIdeal (R ⧸ I)
+        = Ideal.span ((Ideal.Quotient.mk I) '' (T : Set R)) := by
+      rw [← hmapmax, ← hTspan, Ideal.map_span, Set.image_insert_eq]
+      have hx0 : (Ideal.Quotient.mk I) x = 0 := by
+        rw [Ideal.Quotient.eq_zero_iff_mem, hI]; exact Ideal.subset_span rfl
+      rw [hx0, Ideal.span_insert_zero]
+    rw [himg]
+    refine le_trans (Submodule.spanFinrank_span_le_ncard_of_finite
+      ((T : Set R).toFinite.image _)) ?_
+    exact le_trans (Set.ncard_image_le (T : Set R).toFinite) (by simp [hTcard])
+  have hjac : ({x} : Set R) ⊆ Ring.jacobson R := by
+    intro y hy
+    rw [Set.mem_singleton_iff] at hy
+    subst hy
+    show y ∈ Ring.jacobson R
+    rw [IsLocalRing.ringJacobson_eq_maximalIdeal]
+    exact hxm
+  have hkey : ringKrullDim R ≤ ringKrullDim (R ⧸ I) + 1 := by
+    have h := ringKrullDim_le_ringKrullDim_quotient_add_encard ({x} : Set R) hjac
+    simpa [hI] using h
+  have hdimq : ((m : ℕ) : WithBot ℕ∞) ≤ ringKrullDim (R ⧸ I) := by
+    rw [hdim] at hkey
+    push_cast at hkey
+    exact ENat.WithBot.add_le_add_one_right_iff.mp hkey
+  refine le_antisymm hsr ?_
+  have hfr := IsRegularLocalRing.spanFinrank_maximalIdeal (R := R ⧸ I)
+  have h2 : ((m : ℕ) : WithBot ℕ∞)
+      ≤ (((IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank : ℕ) : WithBot ℕ∞) := by
+    rw [hfr]; exact hdimq
+  exact_mod_cast h2
+
+/-- **THE INDUCTION CARRIER OF `exists_isWeaklyRegular_span_eq_maximalIdeal`**
+(**PROVEN 2026-07-27**) — the same statement with the length measured against
+the embedding dimension `n` rather than against `ringKrullDim R`, so that the
+strong induction on `n` can be stated at all.  The two agree by
+`IsRegularLocalRing.spanFinrank_maximalIdeal`, which is the DEFINITION of
+`IsRegularLocalRing`. -/
+theorem exists_isWeaklyRegular_span_eq_maximalIdeal_aux (n : ℕ) :
+    ∀ (R : Type u) [CommRing R] [IsRegularLocalRing R],
+      (IsLocalRing.maximalIdeal R).spanFinrank = n →
+      ∃ rs : List R, Ideal.span {r | r ∈ rs} = IsLocalRing.maximalIdeal R ∧
+        rs.length = n ∧ RingTheory.Sequence.IsWeaklyRegular R rs := by
+  classical
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro R _ _ hn
+    match n, hn, ih with
+    | 0, hn, _ =>
+      refine ⟨[], ?_, rfl, RingTheory.Sequence.IsWeaklyRegular.nil R R⟩
+      have hbot : IsLocalRing.maximalIdeal R = ⊥ :=
+        (Submodule.spanFinrank_eq_zero_iff_eq_bot (IsNoetherian.noetherian _)).1 hn
+      rw [hbot]
+      simp
+    | (m + 1), hn, ih =>
+      -- `𝔪 ⊄ 𝔪²`, else Nakayama forces `𝔪 = ⊥` and the embedding dimension is `0`.
+      have hm2 : ¬ (IsLocalRing.maximalIdeal R ≤ (IsLocalRing.maximalIdeal R) ^ 2) := by
+        intro hle
+        have hb : IsLocalRing.maximalIdeal R = ⊥ := by
+          refine Submodule.eq_bot_of_le_smul_of_le_jacobson_bot (IsLocalRing.maximalIdeal R) _
+            (IsNoetherian.noetherian _) ?_ ?_
+          · rwa [smul_eq_mul, ← pow_two]
+          · rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+        rw [hb] at hn
+        simp at hn
+      obtain ⟨x, hxm, hx2⟩ := Set.not_subset.1 hm2
+      set I : Ideal R := Ideal.span {x} with hI
+      have hIm : I ≤ IsLocalRing.maximalIdeal R := by rw [hI, Ideal.span_le]; simpa using hxm
+      have hInt : I ≠ ⊤ := fun h =>
+        (IsLocalRing.maximalIdeal.isMaximal R).ne_top (top_le_iff.mp (h ▸ hIm))
+      haveI : Nontrivial (R ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hInt
+      haveI : IsLocalRing (R ⧸ I) := IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+      haveI hreg : IsRegularLocalRing (R ⧸ I) :=
+        GaloisRepresentation.Modularity.isRegularLocalRing_quotient_span_singleton hxm hx2
+      have hsrq : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank = m :=
+        spanFinrank_maximalIdeal_quotient_span_singleton hxm hx2 m hn
+      obtain ⟨rs', hspan', hlen', hreg'⟩ := ih m (Nat.lt_succ_self m) (R ⧸ I) hsrq
+      -- lift `rs'` along the surjection `R → R ⧸ I`
+      obtain ⟨rs, hrs⟩ : ∃ rs : List R, rs.map (Ideal.Quotient.mk I) = rs' := by
+        clear hspan' hlen' hreg'
+        induction rs' with
+        | nil => exact ⟨[], rfl⟩
+        | cons a l ihl =>
+          obtain ⟨b, hb⟩ := Ideal.Quotient.mk_surjective a
+          obtain ⟨l', hl'⟩ := ihl
+          exact ⟨b :: l', by simp [hb, hl']⟩
+      refine ⟨x :: rs, ?_, ?_, ?_⟩
+      · -- `(x) + (rs) = 𝔪`, read off by taking `comap` of the corresponding
+        -- identity in `R ⧸ (x)`, where `ker (mk) = (x) ≤ 𝔪` absorbs the join.
+        have hmapofl : (Ideal.span {r | r ∈ rs}).map (Ideal.Quotient.mk I)
+            = IsLocalRing.maximalIdeal (R ⧸ I) := by
+          rw [show (Ideal.span {r | r ∈ rs}) = Ideal.ofList rs from rfl,
+            Ideal.map_ofList, hrs]
+          exact hspan'
+        have hcm : Ideal.comap (Ideal.Quotient.mk I)
+            (IsLocalRing.maximalIdeal (R ⧸ I)) = IsLocalRing.maximalIdeal R := by
+          rw [← IsLocalRing.map_maximalIdeal_of_surjective (Ideal.Quotient.mk I)
+            Ideal.Quotient.mk_surjective,
+            Ideal.comap_map_of_surjective _ Ideal.Quotient.mk_surjective,
+            ← RingHom.ker_eq_comap_bot, Ideal.mk_ker]
+          exact sup_eq_left.2 hIm
+        have hsup : Ideal.span {r | r ∈ rs} ⊔ I = IsLocalRing.maximalIdeal R := by
+          rw [← hcm, ← hmapofl,
+            Ideal.comap_map_of_surjective _ Ideal.Quotient.mk_surjective,
+            ← RingHom.ker_eq_comap_bot, Ideal.mk_ker]
+        rw [show (Ideal.span {r | r ∈ (x :: rs)}) =
+            Ideal.ofList (x :: rs) from rfl,
+          Ideal.ofList_cons, ← hI, sup_comm]
+        exact hsup
+      · have hlrs : rs.length = m := by rw [← hlen', ← hrs, List.length_map]
+        simp [hlrs]
+      · -- `x` is a nonzerodivisor because `R` is a DOMAIN; the tail is the
+        -- induction hypothesis transported along `R ⧸ (x) ≃ₗ QuotSMulTop x R`.
+        have hx0 : x ≠ 0 := by
+          intro h
+          exact hx2 (h ▸ Ideal.zero_mem _)
+        haveI : IsDomain R := GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing R
+        have hxreg : IsSMulRegular R x := mul_right_injective₀ hx0
+        have hstep : RingTheory.Sequence.IsWeaklyRegular (QuotSMulTop x R) rs := by
+          have hquot : RingTheory.Sequence.IsWeaklyRegular (R := R) (R ⧸ I) rs := by
+            rw [← RingTheory.Sequence.isWeaklyRegular_map_algebraMap_iff (R ⧸ I) (R ⧸ I) rs]
+            rw [show (rs.map (algebraMap R (R ⧸ I))) = rs' from hrs]
+            exact hreg'
+          have he : (R ⧸ I) ≃ₗ[R] QuotSMulTop x R :=
+            Submodule.quotEquivOfEq _ _ (by
+              rw [hI, ← Submodule.ideal_span_singleton_smul, Ideal.smul_eq_mul, Ideal.mul_top])
+          exact (he.isWeaklyRegular_congr rs).1 hquot
+        exact (RingTheory.Sequence.isWeaklyRegular_cons_iff R x rs).2 ⟨hxreg, hstep⟩
+
 /-- **A REGULAR LOCAL RING HAS A REGULAR SYSTEM OF PARAMETERS, AND IT IS A
-REGULAR SEQUENCE** (sorry leaf — pure commutative algebra; would be at home in
-`Mathlib/RingTheory/RegularLocalRing/`).
+REGULAR SEQUENCE** (**PROVEN 2026-07-27** — pure commutative algebra; would be
+at home in `Mathlib/RingTheory/RegularLocalRing/`).
 
 `𝔪_R` is generated by `dim R` elements *by the definition of
 `IsRegularLocalRing`* (`spanFinrank_maximalIdeal`); the CONTENT of this leaf is
 that some such generating list is a weakly regular sequence.
 
-**THIS IS BLOCKED BY DECLARATION ORDER, NOT BY MATHEMATICS — DO NOT PROVE IT
-FROM SCRATCH.**  The induction is on `n = (𝔪_R).spanFinrank`:
+**IT WAS BLOCKED BY DECLARATION ORDER, NOT BY MATHEMATICS, AND THE HOIST THAT
+UNBLOCKED IT LANDED ON 2026-07-27.**  The induction is on `n = (𝔪_R).spanFinrank`
+and lives in `exists_isWeaklyRegular_span_eq_maximalIdeal_aux` above:
 
 * `n = 0`: `𝔪_R = ⊥`, so `R` is a field and `rs = []` works
   (`IsWeaklyRegular R []` is vacuous).
@@ -1320,19 +1494,22 @@ FROM SCRATCH.**  The induction is on `n = (𝔪_R).spanFinrank`:
   identification `QuotSMulTop t R ≃ₗ R ⧸ (t)` and
   `isWeaklyRegular_map_algebraMap_iff` assemble the two halves.
 
-Both non-trivial inputs are **already proven in this repository**:
-`isDomain_of_isRegularLocalRing` and `isRegularLocalRing_quotient_span_singleton`
-in `Fermat/FLT/Modularity/KhareWintenberger.lean`, together with
-`exists_finset_card_span_insert_eq_maximalIdeal` there.  That module is strictly
-DOWNSTREAM of this one, which is exactly the situation of
-`isRegularLocalRing_stalk_of_smooth` above — and the SAME hoist fixes both.
+All three non-trivial inputs now live in `Modularity/RegularStalks.lean`, which
+is UPSTREAM of this module and which this file `public import`s:
+`isRegularLocalRing_quotient_span_singleton` and the exchange lemma
+`exists_finset_card_span_insert_eq_maximalIdeal` were hoisted there out of
+`Modularity/KhareWintenberger.lean` with the cone of
+`isRegularLocalRing_stalk_of_smooth_over_field`, and
+`isDomain_of_isRegularLocalRing` — which that hoist deliberately left behind, as
+a sibling consumer of the exchange lemma rather than a member of the cone — was
+hoisted after it on 2026-07-27, byte-identical, precisely for this leaf.
 
 The check that would refute this note:
 
     grep -n 'theorem isDomain_of_isRegularLocalRing\b' \
-         Fermat/FLT/Modularity/KhareWintenberger.lean
+         Fermat/FLT/Modularity/RegularStalks.lean
     grep -n 'theorem isRegularLocalRing_quotient_span_singleton' \
-         Fermat/FLT/Modularity/KhareWintenberger.lean
+         Fermat/FLT/Modularity/RegularStalks.lean
 
 Mathlib itself has neither: its entire `IsRegularLocalRing` API is three lemmas
 in `RingTheory/RegularLocalRing/Defs.lean` (`of_ringEquiv`,
@@ -1343,8 +1520,9 @@ theorem exists_isWeaklyRegular_span_eq_maximalIdeal (R : Type u) [CommRing R]
     [IsRegularLocalRing R] :
     ∃ rs : List R, Ideal.span {r | r ∈ rs} = IsLocalRing.maximalIdeal R ∧
       (rs.length : WithBot ℕ∞) = ringKrullDim R ∧
-      RingTheory.Sequence.IsWeaklyRegular R rs :=
-  sorry
+      RingTheory.Sequence.IsWeaklyRegular R rs := by
+  obtain ⟨rs, hspan, hlen, hreg⟩ := exists_isWeaklyRegular_span_eq_maximalIdeal_aux _ R rfl
+  exact ⟨rs, hspan, by rw [hlen, IsRegularLocalRing.spanFinrank_maximalIdeal], hreg⟩
 
 /-- **A SYSTEM OF PARAMETERS OF A REGULAR LOCAL RING IS A REGULAR SEQUENCE**
 (sorry leaf — pure commutative algebra; this is "regular local ⟹
@@ -1370,15 +1548,43 @@ keeps `IsRegularLocalRing` on the quotient.
 **ABSENT EVERYWHERE, re-checked 2026-07-27 with the refuting greps.**
 `grep -rl CohenMacaulay .lake/packages/mathlib/Mathlib/` is empty and
 `Mathlib/RingTheory/Regular/Depth.lean` is a 10-line file with ZERO
-declarations.  `~/cs/FLT` DOES have a small `Module.depth` development
-(`FLT/Patching/Utils/Depth.lean`, 259 lines: `Module.depth`,
-`Module.length_le_depth`, `Module.depth_le_dim`, `Module.depth_le_of_free`,
-`RingTheory.Sequence.isWeaklyRegular_of_free`), already vendored into this
-project and consumed by `Fermat/FLT/Modularity/PatchingVendored/System.lean` —
-but it proves only `depth ≤ dim`, which is the wrong inequality here.  What is
-needed is `dim ≤ depth` for a regular local ring (that is sub-leaf 1 above) AND
-the unmixedness statement that in a Cohen–Macaulay ring every system of
-parameters is regular; only the latter is genuinely new. -/
+declarations.
+
+**CORRECTION (2026-07-27) — `Module.depth` IS NOT VENDORED INTO THIS PROJECT.**
+The previous version of this paragraph said `~/cs/FLT`'s
+`FLT/Patching/Utils/Depth.lean` was "already vendored into this project and
+consumed by `Fermat/FLT/Modularity/PatchingVendored/System.lean`".  That is
+FALSE, and a prover who believed it would go looking for an API that is not
+there.  The refuting greps, both run on 2026-07-27:
+
+    ls Fermat/FLT/Modularity/PatchingVendored/          # no Depth.lean
+    grep -rn "Module.depth" Fermat/                     # only PROSE, no code
+
+`PatchingVendored/System.lean:258-261` names `Module.depth` in a COMMENT
+explaining what it did *instead* of vendoring it, and
+`Modularity/Patching.lean:6749` says outright that the depth endgame was
+"deliberately not vendored".  So there is **no depth layer anywhere in this
+repository**, and `~/cs/FLT`'s file remains an unvendored external reference.
+
+That file (259 lines) does contain `Module.depth`, `Module.length_le_depth`,
+`Module.depth_le_dim`, `Module.depth_le_of_free` and
+`RingTheory.Sequence.isWeaklyRegular_of_free`, and it is the natural thing to
+vendor first — but note it proves only `depth ≤ dim`, which is the WRONG
+inequality here.
+
+**SO THE ROUTE, IN THE ORDER THE PIECES ARE NEEDED.**  What is required is
+`dim ≤ depth` for a regular local ring — and that half is now **available**, not
+missing: `exists_isWeaklyRegular_span_eq_maximalIdeal` above (**PROVEN
+2026-07-27**) produces a weakly regular sequence generating `𝔪_T` of length
+exactly `dim T`, which is precisely a witness that `depth T ≥ dim T`, i.e. that
+a regular local ring is Cohen–Macaulay.  What remains genuinely new is only the
+UNMIXEDNESS half: in a Cohen–Macaulay local ring every system of parameters is a
+regular sequence.  Stating it needs a depth predicate (vendor `Depth.lean`, or
+state Cohen–Macaulayness directly as "some weakly regular sequence in `𝔪`
+generates an ideal of the full length `dim`"); proving it is the real work.
+
+Whoever takes this leaf should therefore NOT restate it as "regular ⟹ CM" — that
+direction is done — but cut it at the unmixedness statement. -/
 theorem isWeaklyRegular_map_of_ringKrullDim_eq {R T : Type u} [CommRing R] [CommRing T]
     [IsRegularLocalRing R] [IsRegularLocalRing T] (φ : R →+* T) [IsLocalHom φ] (rs : List R)
     (hspan : Ideal.span {r | r ∈ rs} = IsLocalRing.maximalIdeal R)
@@ -1388,13 +1594,209 @@ theorem isWeaklyRegular_map_of_ringKrullDim_eq {R T : Type u} [CommRing R] [Comm
     RingTheory.Sequence.IsWeaklyRegular T (rs.map φ) :=
   sorry
 
-/-- **THE LOCAL CRITERION OF FLATNESS** (sorry leaf — pure commutative algebra;
-Matsumura *Commutative Ring Theory* 22.3, Stacks 00MK.  Absent from mathlib,
-from `~/cs/FLT` and from this project).
+/-- **THE ONE-ELEMENT LOCAL CRITERION OF FLATNESS — THE ATOM**
+(sorry leaf — pure commutative algebra; Matsumura *Commutative Ring Theory*
+22.3 / Stacks 00MK in the length-one case.  Absent from mathlib, from
+`~/cs/FLT` and from this project).
+
+`R`, `T` noetherian local, `φ : R → T` a local homomorphism, `t ∈ 𝔪_R` a
+nonzerodivisor on `R` and on `T`, and `T ⧸ tT` flat over `R ⧸ tR`.  Then `T` is
+flat over `R`.
+
+**THIS IS THE WHOLE CONTENT OF `flat_of_isWeaklyRegular_span_eq_maximalIdeal`
+BELOW, WHICH IS NOW PROVEN OVER IT** (2026-07-27).  The list induction that
+lemma's own docstring predicted to be "mechanical" is mechanical, and it is
+written out in `flat_of_isWeaklyRegular_span_eq_maximalIdeal_aux` below: nothing
+is left there but this statement.
+
+**WHY THE INDUCED MAP IS PASSED AS DATA (`ψ`) RATHER THAN CONSTRUCTED.**  The
+map `R ⧸ (t) → T ⧸ (φ t)` is `Ideal.quotientMap (Ideal.span {φ t}) φ h`, whose
+`h : Ideal.span {t} ≤ (Ideal.span {φ t}).comap φ` would have to appear inside
+this signature.  Taking `ψ` together with the intertwining `hψ` says exactly the
+same thing, keeps the proof obligation at the call site where it is one line,
+and lets a prover of this leaf use whichever description of `ψ` is convenient.
+
+**FAITHFULNESS — the separatedness hypothesis is present, disguised as
+`[IsNoetherianRing T] [IsLocalRing T] [IsLocalHom φ]`, and it is LOAD-BEARING.**
+The classical criterion needs `T` to be `𝔪_R`-adically *ideally separated*; the
+statement is false for an arbitrary `R`-module with a regular element acting
+regularly.  Here it is automatic: `φ` local gives `𝔪_R T ⊆ 𝔪_T`, hence
+`𝔪_R^n T ⊆ 𝔪_T^n`, so `⋂ₙ 𝔪_R^n T ⊆ ⋂ₙ 𝔪_T^n = 0` by Krull's intersection
+theorem.  **A prover who weakens `T` to a bare `R`-module produces a FALSE
+leaf.**
+
+**WHAT MATHLIB HAS THAT A PROVER WILL WANT**, since there is no `Tor`:
+`Module.Flat.iff_rTensor_injective` (`RingTheory/Flat/Basic.lean`) expresses
+`Tor₁(R ⧸ I, M) = 0` as injectivity of `I ⊗ M → M`, which is enough to run the
+argument without ever constructing derived functors;
+`Module.Flat.of_isLocalized_maximal` and the equational criterion
+(`RingTheory/Flat/EquationalCriterion.lean`) are the other two handles.
+`RingHom.flat_algebraMap_iff` moves between `RingHom.Flat` and `Module.Flat`. -/
+theorem flat_of_flat_quotient_isSMulRegular {R T : Type u} [CommRing R] [CommRing T]
+    [IsLocalRing R] [IsNoetherianRing R] [IsLocalRing T] [IsNoetherianRing T]
+    (φ : R →+* T) [IsLocalHom φ] {t : R} (htm : t ∈ IsLocalRing.maximalIdeal R)
+    (hRt : IsSMulRegular R t) (hTt : IsSMulRegular T (φ t))
+    (ψ : R ⧸ Ideal.span {t} →+* T ⧸ Ideal.span {φ t})
+    (hψ : ψ.comp (Ideal.Quotient.mk (Ideal.span {t}))
+      = (Ideal.Quotient.mk (Ideal.span {φ t})).comp φ)
+    (hflat : ψ.Flat) :
+    φ.Flat :=
+  sorry
+
+/-- **THE INDUCTION CARRIER OF THE LOCAL CRITERION OF FLATNESS**
+(**PROVEN 2026-07-27** over the one-element atom above).
+
+Induction is on the LENGTH of the list rather than on the list itself, because
+each step changes the pair of rings (`R, T` becomes `R ⧸ (t), T ⧸ (φ t)`) and a
+`List R` cannot be recursed on across a change of `R`.
+
+* Base: `rs = []` forces `𝔪_R = ⊥`, so `R` is a field and `RingHom.Flat.of_isField`
+  applies — every ring is flat over a field, so **no hypothesis on `T` is used at
+  the bottom of the induction**.
+* Step: `isWeaklyRegular_cons_iff` splits both regularity hypotheses at the head;
+  the tails transport to the quotient RINGS along `A ⧸ (a) ≃ₗ[A] QuotSMulTop a A`
+  followed by `isWeaklyRegular_map_algebraMap_iff`; the span hypothesis descends
+  because `t ↦ 0`, so `Ideal.ofList` of the image of `t :: rs₀` is that of the
+  image of `rs₀`; and `IsLocalHom ψ` follows from surjectivity of
+  `Ideal.Quotient.mk` on the source. -/
+theorem flat_of_isWeaklyRegular_span_eq_maximalIdeal_aux (n : ℕ) :
+    ∀ (R T : Type u) [CommRing R] [CommRing T] [IsLocalRing R] [IsNoetherianRing R]
+      [IsLocalRing T] [IsNoetherianRing T] (φ : R →+* T) [IsLocalHom φ] (rs : List R),
+      rs.length = n →
+      Ideal.span {r | r ∈ rs} = IsLocalRing.maximalIdeal R →
+      RingTheory.Sequence.IsWeaklyRegular R rs →
+      RingTheory.Sequence.IsWeaklyRegular T (rs.map φ) →
+      φ.Flat := by
+  classical
+  induction n with
+  | zero =>
+    intro R T _ _ _ _ _ _ φ _ rs hlen hspan _ _
+    -- `rs = []`, so `𝔪_R = ⊥` and `R` is a field; everything is flat over a field.
+    have hrs : rs = [] := List.eq_nil_of_length_eq_zero hlen
+    subst hrs
+    have hbot : IsLocalRing.maximalIdeal R = ⊥ := by
+      rw [← hspan]; simp
+    exact RingHom.Flat.of_isField (IsLocalRing.isField_iff_maximalIdeal_eq.2 hbot) φ
+  | succ n ih =>
+    intro R T _ _ _ _ _ _ φ _ rs hlen hspan hR hT
+    obtain ⟨t, rs₀, rfl⟩ : ∃ t rs₀, rs = t :: rs₀ := by
+      cases rs with
+      | nil => simp at hlen
+      | cons a l => exact ⟨a, l, rfl⟩
+    set I : Ideal R := Ideal.span {t} with hI
+    set J : Ideal T := Ideal.span {φ t} with hJ
+    have htm : t ∈ IsLocalRing.maximalIdeal R := by
+      rw [← hspan]
+      exact Ideal.subset_span (by simp)
+    have hIm : I ≤ IsLocalRing.maximalIdeal R := by rw [hI, Ideal.span_le]; simpa using htm
+    have hJm : J ≤ IsLocalRing.maximalIdeal T := by
+      rw [hJ, Ideal.span_le]
+      have hnu : φ t ∈ IsLocalRing.maximalIdeal T :=
+        (IsLocalRing.mem_maximalIdeal _).2 fun H =>
+          ((IsLocalRing.mem_maximalIdeal _).1 htm) (isUnit_of_map_unit φ t H)
+      simpa using hnu
+    have hInt : I ≠ ⊤ := fun h =>
+      (IsLocalRing.maximalIdeal.isMaximal R).ne_top (top_le_iff.mp (h ▸ hIm))
+    have hJnt : J ≠ ⊤ := fun h =>
+      (IsLocalRing.maximalIdeal.isMaximal T).ne_top (top_le_iff.mp (h ▸ hJm))
+    haveI : Nontrivial (R ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hInt
+    haveI : Nontrivial (T ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJnt
+    haveI : IsLocalRing (R ⧸ I) := IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+    haveI : IsLocalRing (T ⧸ J) := IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+    haveI : IsLocalHom (Ideal.Quotient.mk J) :=
+      IsLocalHom.of_surjective _ Ideal.Quotient.mk_surjective
+    -- the induced map on quotients
+    have hIJ : I ≤ J.comap φ := by
+      rw [hI, Ideal.span_le]
+      intro y hy
+      simp only [Set.mem_singleton_iff] at hy
+      subst hy
+      exact Ideal.mem_comap.2 (Ideal.subset_span rfl)
+    set ψ : R ⧸ I →+* T ⧸ J := Ideal.quotientMap J φ hIJ with hψdef
+    have hψ : ψ.comp (Ideal.Quotient.mk I) = (Ideal.Quotient.mk J).comp φ := by
+      ext r; simp [hψdef, Ideal.quotientMap_mk]
+    haveI : IsLocalHom ψ := by
+      constructor
+      intro a ha
+      obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective a
+      have h1 : IsUnit ((Ideal.Quotient.mk J) (φ r)) := by
+        rw [← RingHom.comp_apply, ← hψ, RingHom.comp_apply]; exact ha
+      have h2 : IsUnit (φ r) :=
+        IsLocalHom.map_nonunit (f := Ideal.Quotient.mk J) _ h1
+      exact (IsLocalHom.map_nonunit (f := φ) r h2).map (Ideal.Quotient.mk I)
+    -- split both regularity hypotheses at the head
+    rw [RingTheory.Sequence.isWeaklyRegular_cons_iff] at hR
+    obtain ⟨hRt, hRtail⟩ := hR
+    rw [List.map_cons, RingTheory.Sequence.isWeaklyRegular_cons_iff] at hT
+    obtain ⟨hTt, hTtail⟩ := hT
+    -- the identifications `A ⧸ (a) ≃ₗ[A] QuotSMulTop a A`
+    have heR : (R ⧸ I) ≃ₗ[R] QuotSMulTop t R :=
+      Submodule.quotEquivOfEq _ _ (by
+        rw [hI, ← Submodule.ideal_span_singleton_smul, Ideal.smul_eq_mul, Ideal.mul_top])
+    have heT : (T ⧸ J) ≃ₗ[T] QuotSMulTop (φ t) T :=
+      Submodule.quotEquivOfEq _ _ (by
+        rw [hJ, ← Submodule.ideal_span_singleton_smul, Ideal.smul_eq_mul, Ideal.mul_top])
+    -- transport the tails to the quotient rings
+    have hRq : RingTheory.Sequence.IsWeaklyRegular (R ⧸ I)
+        (rs₀.map (Ideal.Quotient.mk I)) := by
+      rw [← Ideal.Quotient.algebraMap_eq I,
+        RingTheory.Sequence.isWeaklyRegular_map_algebraMap_iff (R ⧸ I) (R ⧸ I) rs₀]
+      exact (heR.isWeaklyRegular_congr rs₀).2 hRtail
+    have hTq : RingTheory.Sequence.IsWeaklyRegular (T ⧸ J)
+        ((rs₀.map φ).map (Ideal.Quotient.mk J)) := by
+      rw [← Ideal.Quotient.algebraMap_eq J,
+        RingTheory.Sequence.isWeaklyRegular_map_algebraMap_iff (T ⧸ J) (T ⧸ J) (rs₀.map φ)]
+      exact (heT.isWeaklyRegular_congr (rs₀.map φ)).2 hTtail
+    -- the two descriptions of the descended list agree
+    have hlists : (rs₀.map (Ideal.Quotient.mk I)).map ψ
+        = (rs₀.map φ).map (Ideal.Quotient.mk J) := by
+      simp only [List.map_map]
+      exact congrArg (fun f : R →+* T ⧸ J => rs₀.map f) hψ
+    -- the span condition descends, because `t ↦ 0`
+    have hspanq : Ideal.span {r | r ∈ rs₀.map (Ideal.Quotient.mk I)}
+        = IsLocalRing.maximalIdeal (R ⧸ I) := by
+      have h1 : (Ideal.span {r | r ∈ (t :: rs₀)}).map (Ideal.Quotient.mk I)
+          = IsLocalRing.maximalIdeal (R ⧸ I) := by
+        rw [hspan]
+        exact IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
+      rw [show (Ideal.span {r | r ∈ (t :: rs₀)}) = Ideal.ofList (t :: rs₀) from rfl,
+        Ideal.map_ofList, List.map_cons] at h1
+      have ht0 : (Ideal.Quotient.mk I) t = 0 := by
+        rw [Ideal.Quotient.eq_zero_iff_mem, hI]; exact Ideal.subset_span rfl
+      rw [ht0, Ideal.ofList_cons, Ideal.span_singleton_eq_bot.2 rfl, bot_sup_eq] at h1
+      exact h1
+    have hlenq : (rs₀.map (Ideal.Quotient.mk I)).length = n := by
+      simp only [List.length_map]
+      simpa using hlen
+    have hTq' : RingTheory.Sequence.IsWeaklyRegular (T ⧸ J)
+        ((rs₀.map (Ideal.Quotient.mk I)).map ψ) := by rw [hlists]; exact hTq
+    have hflat : ψ.Flat :=
+      ih (R ⧸ I) (T ⧸ J) ψ (rs₀.map (Ideal.Quotient.mk I)) hlenq hspanq hRq hTq'
+    exact flat_of_flat_quotient_isSMulRegular φ htm hRt hTt ψ hψ hflat
+
+/-- **THE LOCAL CRITERION OF FLATNESS** (**PROVEN 2026-07-27** over the ONE
+atom `flat_of_flat_quotient_isSMulRegular` above — pure commutative algebra;
+Matsumura *Commutative Ring Theory* 22.3, Stacks 00MK).
 
 If `𝔪_R` is generated by an `R`-regular sequence `rs` — equivalently, `R` is
 regular local with regular system of parameters `rs` — and the image of `rs` is
 `T`-regular, then `T` is flat over `R`.
+
+**THE CUT (2026-07-27).**  The previous version of this docstring predicted that
+"the induction along `rs` is mechanical … so the whole content is the one-element
+case", and named that case as "the statement to state and dispatch next if this
+leaf is cut further.  That prediction was correct and has now been carried out:
+the one-element case is
+`flat_of_flat_quotient_isSMulRegular` above, the induction is
+`flat_of_isWeaklyRegular_span_eq_maximalIdeal_aux` above, and this declaration is
+their composition.  **Nothing is open here any more — the open leaf is the atom.**
+
+The induction really did need nothing beyond `isWeaklyRegular_cons_iff`,
+`isWeaklyRegular_map_algebraMap_iff`, the identification
+`A ⧸ (a) ≃ₗ[A] QuotSMulTop a A`, and the fact that quotients of noetherian local
+rings are noetherian local.  The one thing worth recording that the prediction
+did not mention: the base case is `𝔪_R = ⊥`, i.e. `R` a FIELD, and it discharges
+by `RingHom.Flat.of_isField` **without using any hypothesis on `T` at all**.
 
 **FAITHFULNESS — the separatedness hypothesis is present, disguised as
 `[IsNoetherianRing T] [IsLocalRing T] [IsLocalHom φ]`, and it is LOAD-BEARING.**
@@ -1405,25 +1807,7 @@ regularly.  Here it is automatic and the derivation is short enough to record:
 `⋂ₙ 𝔪_R^n T ⊆ ⋂ₙ 𝔪_T^n = 0` by Krull's intersection theorem; and `T ⧸ I T` for
 `I` finitely generated is again a noetherian local ring, so the same applies to
 it.  **A prover who weakens `T` to a bare `R`-module produces a FALSE leaf.**
-
-**THE SINGLE ATOMIC LEMMA THIS REDUCES TO.**  The induction along `rs` is
-mechanical — pass from `R → T` to `R ⧸ (t) → T ⧸ tT` and shorten the list — so
-the whole content is the one-element case:
-
-> `R`, `T` noetherian local, `φ : R → T` a local homomorphism, `t ∈ 𝔪_R` a
-> nonzerodivisor on `R` and on `T`, and `T ⧸ tT` flat over `R ⧸ tR`.  Then `T`
-> is flat over `R`.
-
-That is the statement to state and dispatch next if this leaf is cut further;
-the surrounding induction needs nothing beyond `isWeaklyRegular_cons_iff` and
-the fact that quotients of noetherian local rings are noetherian local.
-
-**WHAT MATHLIB HAS THAT A PROVER WILL WANT**, since there is no `Tor`:
-`Module.Flat.iff_rTensor_injective` (`RingTheory/Flat/Basic.lean`) expresses
-`Tor₁(R ⧸ I, M) = 0` as injectivity of `I ⊗ M → M`, which is enough to run the
-argument without ever constructing derived functors;
-`Module.Flat.of_isLocalized_maximal` and the equational criterion
-(`RingTheory/Flat/EquationalCriterion.lean`) are the other two handles. -/
+That hypothesis is carried, unweakened, into the atom. -/
 theorem flat_of_isWeaklyRegular_span_eq_maximalIdeal {R T : Type u} [CommRing R] [CommRing T]
     [IsLocalRing R] [IsNoetherianRing R] [IsLocalRing T] [IsNoetherianRing T]
     (φ : R →+* T) [IsLocalHom φ] (rs : List R)
@@ -1431,7 +1815,7 @@ theorem flat_of_isWeaklyRegular_span_eq_maximalIdeal {R T : Type u} [CommRing R]
     (hR : RingTheory.Sequence.IsWeaklyRegular R rs)
     (hT : RingTheory.Sequence.IsWeaklyRegular T (rs.map φ)) :
     φ.Flat :=
-  sorry
+  flat_of_isWeaklyRegular_span_eq_maximalIdeal_aux rs.length R T φ rs rfl hspan hR hT
 
 /-- **MIRACLE FLATNESS, RING LEVEL** (**PROVEN 2026-07-27** over the three
 sub-leaves stated immediately above — PURE COMMUTATIVE ALGEBRA,
