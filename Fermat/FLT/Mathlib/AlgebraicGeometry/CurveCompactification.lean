@@ -7,7 +7,11 @@ module
 
 public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
+public import Mathlib.AlgebraicGeometry.Morphisms.Finite
+public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
 public import Mathlib.AlgebraicGeometry.Normalization
+public import Mathlib.RingTheory.FiniteType
+public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyOpen
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
@@ -42,7 +46,8 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
 
 1. compactify `Y` as a *scheme*, ignoring smoothness — Nagata's compactification theorem
    produces a proper `strP : P ⟶ Spec K` and an open immersion `i : Y ⟶ P`
-   (`exists_isOpenImmersion_isProper`, LEAF);
+   (`exists_isOpenImmersion_isProper`, PROVEN as of the third pass below over three
+   sharper leaves);
 2. take `X := i.normalization`, the normalization of `P` in `Y`.  Then
    `j := i.toNormalization : Y ⟶ X` is an open immersion **by Zariski's Main Theorem**
    and dominant **by construction** — both free from `Mathlib`;
@@ -59,19 +64,22 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
 Step 2, the assembly, and the whole of steps 3 and 5 apart from their two named inputs are
 PROVEN here.
 
-## The leaves, after the 2026-07-27 decomposition
+## The leaves, after the 2026-07-27 decompositions
 
-Four of the original five leaves have been cut down; the remaining leaves are:
+Every one of the original five leaves has now been cut down; the remaining leaves are:
 
 | leaf | content |
 | --- | --- |
-| `exists_isOpenImmersion_isProper` | Nagata compactification (unchanged — a single citation, no cut available) |
+| `nonempty_projChart_mvPolynomial` | dehomogenisation: the standard affine chart of `ℙⁿ` |
+| `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
+| `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) |
 | `locallyOfFiniteType_fromNormalization` | Nagata/Japanese rings: the normalization of a finite-type `K`-algebra is of finite type |
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
 | `universallyOpen_of_specField` | a field extension `Spec L ⟶ Spec K` is universally open (Stacks `0383`) |
 
-`isFinite_fromNormalization`, `finite_compl_range_toNormalization`, `denseRange_of_isPullback`
+`exists_isOpenImmersion_isProper`, `isFinite_fromNormalization`,
+`finite_compl_range_toNormalization`, `denseRange_of_isPullback`
 and `geometricallyConnected_of_isSmoothCompactification` are now THEOREMS over those.  What was
 removed from them was, in each case, real: the integrality half of finiteness (free from
 `Mathlib`), the entire noetherian-ness bookkeeping and point-set argument behind the finite
@@ -119,6 +127,11 @@ That module independently states the SAME construction as its LEAF A/B/C
 model), in the special case of an **affine** `C` over `Spec (ULift ℚ)`.  Those three are
 exactly `exists_isOpenImmersion_isProper`, `isFinite_fromNormalization` and
 `smoothOfRelativeDimension_one_fromNormalization` below, specialised.
+
+**Its LEAF A is now REDUNDANT (2026-07-27)**: `exists_quasiFinite_toProper_of_isAffine_finiteType`
+is the affine case, and the affine case is PROVEN here as
+`exists_isOpenImmersion_isProper_of_isAffine`, modulo the two purely ring-theoretic chart
+leaves.  It should be re-derived from that rather than attacked.
 
 Neither file can use the other today — `X0.lean` and `KhareWintenberger.lean` are
 siblings, both importing only `Modularity/AbelianScheme.lean`, and neither imports the
@@ -234,34 +247,289 @@ structure IsSmoothCompactification {Y X S : Scheme.{u}} (strY : Y ⟶ S) (strX :
 
 /-! ### The four leaves -/
 
-/-- **Nagata's compactification theorem, for a quasi-compact separated finite-type scheme
-over a field** (sorry leaf).
+/-! #### Nagata compactification, decomposed (2026-07-27)
 
-TRUE and classical: Nagata (1962), *Imbedding of an abstract variety in a complete
-variety*; see also Conrad's *Deligne's notes on Nagata compactifications* and Stacks
-project tag `0F41`.  Any separated finite-type morphism to a quasi-compact
-quasi-separated base factors as an open immersion followed by a proper morphism.
+`exists_isOpenImmersion_isProper` below is no longer a citation: it is PROVEN from three
+sharper leaves, two of which are pure commutative algebra.  The route is the classical one
+for a scheme over a field, and it exists here only because `Mathlib` turns out to carry the
+one hard geometric input — `AlgebraicGeometry.Proj.instIsProperToSpecZero`, the properness
+of `Proj 𝒜` over `Spec 𝒜₀` for `𝒜` a finite-type graded algebra
+(`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Proper.lean`, proven there by the valuative
+criterion).  Every previous audit of this leaf recorded "`Proj` exists only as
+`ProjectiveSpectrum` of a graded ring, with no closure-of-a-quasi-projective-scheme API",
+which is true of the *closure* and false of the *properness*; the properness is the part
+one cannot write oneself.
+
+The three pieces:
+
+* `nonempty_projChart_mvPolynomial` (LEAF) — the standard affine chart of `ℙⁿ`:
+  dehomogenisation at `X₀`;
+* `nonempty_projChart_of_surjective` (LEAF) — the projective closure: a chart for `B'`
+  descends along a surjection `B' ↠ B`;
+* `exists_isOpenImmersion_isProper_of_affineCase` (LEAF) — Nagata's gluing induction, which
+  is the only piece that is still Nagata's theorem proper.
+
+Everything joining them is proven here.  Note the same `Proj`-chart pattern (a
+`HomogeneousLocalization.Away` identified with a concrete ring, together with the commuting
+triangle out of the base field) is already used by
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` for the projective Weierstrass model, whose
+`exists_projChartRingEquiv` is the Weierstrass instance of `nonempty_projChart_mvPolynomial`
+composed with `nonempty_projChart_of_surjective`.  Whoever proves one should look at the
+other; the second file's docstring carries a full proof plan for the dehomogenisation
+isomorphism (surjectivity from `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`, the
+kernel by a UFD divisibility argument). -/
+
+/-- For an affine `Y` and an affine target, a morphism is recovered from its ring map:
+`g = Y.isoSpec.hom ≫ Spec.map (Γ g)`.  This is `Scheme.isoSpec_hom_naturality` with the
+target's own `isoSpec` cancelled away, which is what every consumer here wants. -/
+theorem eq_isoSpec_hom_comp_specMap {Y : Scheme.{u}} [IsAffine Y] (R : CommRingCat.{u})
+    (g : Y ⟶ Spec R) :
+    g = Y.isoSpec.hom ≫ Spec.map ((Scheme.ΓSpecIso R).inv ≫ g.appTop) := by
+  rw [Spec.map_comp, ← Category.assoc, Scheme.isoSpec_hom_naturality g, Category.assoc,
+    Scheme.isoSpec_Spec_hom, ← Spec.map_comp, Iso.inv_hom_id, Spec.map_id, Category.comp_id]
+
+/-- **A projective chart for a `K`-algebra `B`**: a presentation of `Spec B` as the standard
+affine open `D₊(f)` of a `Proj` that is proper over `Spec K`.
+
+The data is a finitely generated graded `K`-algebra `A = ⨁ 𝒜ᵢ` whose degree-zero part is a
+finite `K`-module, a degree-one element `f`, and an identification of the degree-zero part
+of the localisation `A_f` with `B`, compatible with the two structure maps out of `K`.
+Given one, `Proj 𝒜` is a proper `K`-scheme containing `Spec B` as an open subscheme —
+that is `exists_isOpenImmersion_isProper_of_proj` below.
+
+Two deliberate choices, both learned expensively elsewhere in this development:
+
+* `zeroFinite : Module.Finite K ↥(grading 0)` rather than `grading 0 ≅ K`.  The weaker
+  hypothesis is all that properness needs (`Spec (𝒜₀) ⟶ Spec K` is then finite, hence
+  proper), and it is what makes the DEGENERATE case `B = 0` fall out uniformly: the
+  projective closure of the empty scheme has `𝒜₀ = 0`, which is finite over `K` but is not
+  isomorphic to it.  A chart demanding `𝒜₀ ≅ K` would make
+  `nonempty_projChart_of_surjective` FALSE for the zero ring.
+* the identification is a `CommRingCat` iso plus a commuting triangle, not an `AlgEquiv`.
+  The source carries an `Algebra ↥(𝒜 0)` instance and the target an `Algebra K` one, and
+  forcing them into one `Algebra K` structure is exactly the "two defeq but never
+  syntactically equal instances" trap — the same reasoning as in
+  `Fermat.exists_projChartRingEquiv`. -/
+structure ProjChart (K : Type u) [Field K] (B : CommRingCat.{u})
+    (b : CommRingCat.of K ⟶ B) where
+  /-- the homogeneous coordinate ring -/
+  A : Type u
+  [commRing : CommRing A]
+  [algebra : Algebra K A]
+  /-- its grading -/
+  grading : ℕ → Submodule K A
+  [gradedAlgebra : GradedAlgebra grading]
+  [finiteType : Algebra.FiniteType ↥(grading 0) A]
+  [zeroFinite : Module.Finite K ↥(grading 0)]
+  /-- the degree-one element cutting out the chart -/
+  f : A
+  /-- `f` has degree one -/
+  f_deg : f ∈ grading 1
+  /-- the chart `D₊(f)` is `Spec B` -/
+  awayIso : CommRingCat.of (HomogeneousLocalization.Away grading f) ≅ B
+  /-- the identification is compatible with the structure maps out of `K` -/
+  compat : CommRingCat.ofHom (algebraMap K ↥(grading 0)) ≫
+    CommRingCat.ofHom (HomogeneousLocalization.fromZeroRingHom grading (Submonoid.powers f)) ≫
+      awayIso.hom = b
+
+/-- **A projective chart compactifies an affine scheme** (PROVEN).
+
+`Proj 𝒜` is proper over `Spec 𝒜₀` (`Mathlib`, by the valuative criterion) and `𝒜₀` is finite
+over `K`, so `Proj 𝒜 ⟶ Spec K` is proper; `Spec (A_f)₀ ⟶ Proj 𝒜` is an open immersion
+(`Mathlib`'s `Proj.awayι`); and the triangle commutes by `Proj.awayι_toSpecZero` together
+with the chart's own `compat`.  Quasi-compactness of the immersion is then free: the
+composite is `strY`, which is quasi-compact because `Y` is affine, and the proper `strP` is
+quasi-separated, so `QuasiCompact.of_comp` applies.
+
+Everything in this proof is `Mathlib`; the content of the compactification is entirely in
+producing the chart. -/
+theorem exists_isOpenImmersion_isProper_of_proj {Y : Scheme.{u}} [IsAffine Y]
+    (strY : Y ⟶ Spec (CommRingCat.of K))
+    (A : Type u) [CommRing A] [Algebra K A] (𝒜 : ℕ → Submodule K A) [GradedAlgebra 𝒜]
+    [Algebra.FiniteType ↥(𝒜 0) A] [Module.Finite K ↥(𝒜 0)] (f : A) (hf : f ∈ 𝒜 1)
+    (e : CommRingCat.of (HomogeneousLocalization.Away 𝒜 f) ≅ Γ(Y, ⊤))
+    (hcomp : CommRingCat.ofHom (algebraMap K ↥(𝒜 0)) ≫
+        CommRingCat.ofHom (HomogeneousLocalization.fromZeroRingHom 𝒜 (Submonoid.powers f)) ≫
+          e.hom
+        = (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strY.appTop) :
+    ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K)) (i : Y ⟶ P),
+      IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strY := by
+  have hfin : IsFinite (Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0)))) :=
+    (IsFinite.SpecMap_iff _).mpr (RingHom.finite_algebraMap.mpr inferInstance)
+  have hiso : IsIso e.hom := inferInstance
+  have hcomm : (Y.isoSpec.hom ≫ Spec.map e.hom ≫ Proj.awayι 𝒜 f hf one_pos) ≫
+      (Proj.toSpecZero 𝒜 ≫ Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0)))) = strY := by
+    simp only [Category.assoc]
+    rw [← Category.assoc (Proj.awayι 𝒜 f hf one_pos), Proj.awayι_toSpecZero 𝒜 f hf one_pos]
+    simp only [← Spec.map_comp, Category.assoc]
+    rw [hcomp]
+    exact (eq_isoSpec_hom_comp_specMap _ strY).symm
+  have hqcY : QuasiCompact strY :=
+    (HasAffineProperty.iff_of_isAffine (P := @QuasiCompact) (f := strY)).mpr inferInstance
+  refine ⟨Proj 𝒜, Proj.toSpecZero 𝒜 ≫ Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0))),
+    Y.isoSpec.hom ≫ Spec.map e.hom ≫
+      Proj.awayι 𝒜 f hf one_pos, inferInstance, ?_, inferInstance, hcomm⟩
+  have h3 : QuasiCompact ((Y.isoSpec.hom ≫ Spec.map e.hom ≫
+      Proj.awayι 𝒜 f hf one_pos) ≫
+      (Proj.toSpecZero 𝒜 ≫ Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0))))) := by
+    rw [hcomm]; exact hqcY
+  have h4 : IsProper (Proj.toSpecZero 𝒜 ≫
+    Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0)))) := inferInstance
+  have h5 : QuasiSeparated (Proj.toSpecZero 𝒜 ≫
+    Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0)))) := inferInstance
+  exact QuasiCompact.of_comp (Y.isoSpec.hom ≫ Spec.map e.hom ≫ Proj.awayι 𝒜 f hf one_pos)
+    (Proj.toSpecZero 𝒜 ≫ Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0))))
+
+/-- **The standard affine chart of `ℙⁿ`** (sorry leaf — dehomogenisation).
+
+TRUE and elementary: take `A := K[X₀, …, Xₙ]` with its grading by total degree
+(`MvPolynomial.homogeneousSubmodule`) and `f := X₀`.  Then `𝒜₀ = K` (so `Module.Finite K 𝒜₀`
+is immediate), `A` is generated over `𝒜₀` by `n + 1` elements, and the degree-zero part of
+`A[X₀⁻¹]` is `K[X₁/X₀, …, Xₙ/X₀] ≅ K[Y₁, …, Yₙ]` — dehomogenisation, `Xᵢ ↦ Yᵢ`, `X₀ ↦ 1`.
+Stacks tag `01M3`.
+
+**Why it is not free at this pin**: a grep for `dehomogeni` over the whole of `Mathlib`
+returns NOTHING.  `HomogeneousLocalization.Away` and `Proj.awayι` exist, but no
+identification of an away-localisation's degree-zero part with a concrete polynomial ring.
+The same gap is recorded independently at `Fermat.exists_projChartRingEquiv`
+(`Fermat/FLT/ModularCurve/EllipticScheme.lean`), whose docstring carries a full proof plan —
+surjectivity from `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`, injectivity by a
+UFD divisibility argument.  Here the ideal is zero, so only the surjectivity half plus the
+triviality of the kernel is needed, which makes this the EASIER of the two; a proof here
+should be lifted to that one, and vice versa.
+
+This is `Mathlib`-ready material: stated for an arbitrary base commutative ring it is the
+standard affine cover of projective space. -/
+theorem nonempty_projChart_mvPolynomial (n : ℕ) :
+    Nonempty (ProjChart K (CommRingCat.of (MvPolynomial (Fin n) K))
+      (CommRingCat.ofHom (algebraMap K (MvPolynomial (Fin n) K)))) :=
+  sorry
+
+/-- **Projective closure: a chart descends along a surjection** (sorry leaf).
+
+TRUE and classical.  Given a chart `(A', 𝒜', f')` for `B'` and a surjection `q : B' ↠ B`,
+let `I ⊆ A'` be the homogeneous ideal whose degree-`d` part is
+`{a ∈ 𝒜'_d : q(a / f'^d) = 0}` — the homogeneous vanishing ideal of the closed subscheme
+`Spec B ⊆ Spec B'` — and take `A := A' ⧸ I` with the induced grading and `f :=` the image of
+`f'`.  Geometrically `Proj A` is the SCHEME-THEORETIC CLOSURE of `Spec B` inside `Proj A'`,
+which is exactly the classical construction of the projective closure of an affine variety
+(Stacks tag `01MZ`, Hartshorne I.2.9 in the classical language).
+
+The obligations are: `I` is a homogeneous ideal; `A ⧸ I` is still of finite type over its
+degree-zero part (a quotient of a finite-type algebra is); `Module.Finite K (𝒜 0)` — here
+`𝒜₀ = 𝒜'₀ ⧸ I₀` is a quotient of a finite `K`-module; and
+`(A_f)₀ ≅ (A'_{f'})₀ ⧸ (that ideal) ≅ B`, which is where the surjectivity of `q` and the
+saturation built into `I` are consumed.
+
+**The degenerate case is real and is the reason `ProjChart` asks only for
+`Module.Finite K 𝒜₀`.**  If `B = 0` then `I = A'` and `A = 0`, so `𝒜₀ = 0`; that is finite
+over `K` but NOT isomorphic to `K`.  (A chart still exists for `B = 0` by other means —
+`A := K` concentrated in degree zero and `f := 0`, whose away-localisation is the zero ring
+by `HomogeneousLocalization.subsingleton` — but the uniform construction is the one above,
+and it only works because the chart does not demand `𝒜₀ ≅ K`.)
+
+`Mathlib` has no Nagata/Japanese-ring theory and no projective closure at this pin; it does
+have `HomogeneousIdeal`, `GradedRing`, and the quotient grading, which is what this is to be
+built from. -/
+theorem nonempty_projChart_of_surjective {B B' : CommRingCat.{u}}
+    {b' : CommRingCat.of K ⟶ B'} (_C : ProjChart K B' b') (q : B' ⟶ B)
+    (_hq : Function.Surjective q.hom) : Nonempty (ProjChart K B (b' ≫ q)) :=
+  sorry
+
+/-- **Every finite-type `K`-algebra has a projective chart** (PROVEN over the two leaves
+above).
+
+A finite-type algebra is a quotient of a polynomial ring
+(`Algebra.FiniteType.iff_quotient_mvPolynomial''`), so the chart of `ℙⁿ` descends to it.
+This is the whole of the affine case of Nagata's theorem over a field. -/
+theorem nonempty_projChart (B : CommRingCat.{u}) (b : CommRingCat.of K ⟶ B)
+    (hb : RingHom.FiniteType b.hom) : Nonempty (ProjChart K B b) := by
+  letI : Algebra K B := b.hom.toAlgebra
+  haveI : Algebra.FiniteType K B := hb
+  obtain ⟨n, φ, hφ⟩ := Algebra.FiniteType.iff_quotient_mvPolynomial''.mp ‹Algebra.FiniteType K B›
+  obtain ⟨C⟩ := nonempty_projChart_mvPolynomial (K := K) n
+  have hb' : CommRingCat.ofHom (algebraMap K (MvPolynomial (Fin n) K)) ≫
+      CommRingCat.ofHom (φ : MvPolynomial (Fin n) K →+* B) = b := by
+    ext x; exact φ.commutes x
+  rw [← hb']
+  exact nonempty_projChart_of_surjective C _ hφ
+
+/-- **Nagata's theorem for an AFFINE scheme of finite type over a field** (PROVEN).
+
+This is the case that `Modularity/KhareWintenberger.lean` states independently as its
+`exists_quasiFinite_toProper_of_isAffine_finiteType`; that leaf is now redundant with this
+one and should be re-derived from it (its `C` is affine over `Spec (ULift ℚ)`). -/
+theorem exists_isOpenImmersion_isProper_of_isAffine {Y : Scheme.{u}} [IsAffine Y]
+    (strY : Y ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType strY] :
+    ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K)) (i : Y ⟶ P),
+      IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strY := by
+  set b : CommRingCat.of K ⟶ Γ(Y, ⊤) := (Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫ strY.appTop
+    with hb
+  have hSpec : Spec.map b = Y.isoSpec.inv ≫ strY := by
+    rw [Iso.eq_inv_comp]
+    exact (eq_isoSpec_hom_comp_specMap _ strY).symm
+  have hft : LocallyOfFiniteType (Spec.map b) := by rw [hSpec]; infer_instance
+  obtain ⟨C⟩ := nonempty_projChart (K := K) _ b
+    ((HasRingHomProperty.Spec_iff (P := @LocallyOfFiniteType)).mp hft)
+  letI := C.commRing
+  letI := C.algebra
+  letI := C.gradedAlgebra
+  letI := C.finiteType
+  letI := C.zeroFinite
+  exact exists_isOpenImmersion_isProper_of_proj strY C.A C.grading C.f C.f_deg C.awayIso
+    C.compat
+
+/-- **Nagata's gluing induction: the affine case implies the general case** (sorry leaf).
+
+TRUE and classical, and this is the only part of the decomposition that is still Nagata's
+theorem proper: Nagata (1962), Deligne's notes as written up by Conrad, Lütkebohmert
+(1993), Temkin; Stacks tags `0F3T`–`0F41`.  A quasi-compact separated finite-type `Y` has a
+FINITE affine open cover, and the induction is on its size: given compactifications of
+`U = U₁ ∪ ⋯ ∪ Uₖ₋₁` and of the affine `V = Uₖ`, one produces a compactification of `U ∪ V`
+by blowing up along the boundary and gluing the two proper models along the closure of the
+graph over `U ∩ V`.  Nothing of this is in `Mathlib` and nothing of it is in this project.
+
+`H` is the affine case, which is PROVEN here — see
+`exists_isOpenImmersion_isProper_of_isAffine`.  Passing it as a hypothesis rather than
+using it directly is what makes this leaf strictly the gluing content and nothing else.
+
+Note that the induction genuinely needs blowups (equivalently, scheme-theoretic images of
+non-quasi-compact opens): the naive "glue the two closures along `U ∩ V`" fails because the
+two proper models need not agree there.  That is the whole reason Nagata's theorem was open
+for so long and why Deligne's write-up exists. -/
+theorem exists_isOpenImmersion_isProper_of_affineCase {Y : Scheme.{u}}
+    (strY : Y ⟶ Spec (CommRingCat.of K)) [QuasiCompact strY] [IsSeparated strY]
+    [LocallyOfFiniteType strY]
+    (_H : ∀ (Z : Scheme.{u}) (strZ : Z ⟶ Spec (CommRingCat.of K)), IsAffine Z →
+      LocallyOfFiniteType strZ → ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K))
+        (i : Z ⟶ P), IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strZ) :
+    ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K)) (i : Y ⟶ P),
+      IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strY :=
+  sorry
+
+/-- **Nagata's compactification theorem, for a quasi-compact separated finite-type scheme
+over a field** (PROVEN over the three leaves above — no longer a citation).
+
+Any separated finite-type morphism to a quasi-compact quasi-separated base factors as an
+open immersion followed by a proper morphism.  Nagata (1962); Stacks tag `0F41`.
 
 Note what is NOT claimed: `P` is **not** asserted normal, smooth, or even reduced.  That
 is the whole point of routing through the normalization afterwards — Nagata's `P` is an
-arbitrary proper model, and steps 3–4 of the module docstring repair it.  Weakening the
-conclusion this far is what makes the leaf a citation rather than a construction.
+arbitrary proper model, and steps 3–4 of the module docstring repair it.
 
 `QuasiCompact i` is part of the conclusion rather than derived: an open immersion need not
-be quasi-compact in general, and every consumer here needs it (Zariski's Main Theorem
-takes it as a hypothesis).  Nagata's construction does deliver it, since `Y` is
-quasi-compact and `P` is noetherian.
-
-IRREDUCIBLE at this pin: there is no compactification statement of any kind in
-`Mathlib.AlgebraicGeometry`, and no projective closure to build one from — `Proj` exists
-only as `ProjectiveSpectrum` of a graded ring, with no closure-of-a-quasi-projective-scheme
-API. -/
+be quasi-compact in general, and every consumer here needs it (Zariski's Main Theorem takes
+it as a hypothesis).  In the affine case it is free (see
+`exists_isOpenImmersion_isProper_of_proj`); in general it is carried through the
+induction. -/
 theorem exists_isOpenImmersion_isProper {Y : Scheme.{u}}
     (strY : Y ⟶ Spec (CommRingCat.of K)) [QuasiCompact strY] [IsSeparated strY]
     [LocallyOfFiniteType strY] :
     ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K)) (i : Y ⟶ P),
       IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strY :=
-  sorry
+  exists_isOpenImmersion_isProper_of_affineCase strY fun _ strZ hZ hft => by
+    letI := hZ; letI := hft
+    exact exists_isOpenImmersion_isProper_of_isAffine strZ
 
 /-- **The normalization of a scheme of finite type over a field is of finite type over it**
 (sorry leaf — the Nagata/Japanese input, and all that is left of the old
