@@ -32304,8 +32304,9 @@ produces a complement).
   which must hold at every point of `A` and not merely on the image of
   `p`.  `p` is faithfully flat and quasi-compact, hence a (universal
   effective) epimorphism of schemes (Stacks 023Q);
-* `Mono ι₀` gives the injectivity clause of the node.  `ι₀` is a closed
-  immersion, and closed immersions are monomorphisms.
+* `Mono ι₀` gives the `Mono ι` clause of the node, `ι` being `ι₀`
+  composed with a translation and translations being automorphisms.
+  `ι₀` is a closed immersion, and closed immersions are monomorphisms.
 
 `_hadd` is the hypothesis that makes the statement true rather than
 merely plausible: the image of an ARBITRARY morphism of abelian varieties
@@ -32366,13 +32367,30 @@ consumer (`hasRankZeroAbelianImage_x0OneSixtyNine`, through
 Demanding it would force the constant `t` into `c` instead, and then
 `hfac` would no longer be the equation the consumer wants.
 
-**Injectivity of `ι` on `ℚ`-points IS asked for, and it is not
-decoration.**  Without it the statement is FALSE: take
-`A := ker(1 + w_J)⁰ × E` for an elliptic curve `E/ℚ` of rank `1` and
-`ι := (a, e) ↦ a + t`.  Every other clause holds — `hanti` because the
-`E`-coordinate is discarded — and `A(ℚ)` is infinite, so the assembly's
-finiteness step would break.  Injectivity is exactly what makes `A(ℚ)`
-embed into the anti-invariant subgroup of `J(ℚ)`.
+**`ι` IS ASKED TO BE A MONOMORPHISM, and that is not decoration.**  With
+no such clause the statement is FALSE: take `A := ker(1 + w_J)⁰ × E` for
+an elliptic curve `E/ℚ` of rank `1` and `ι := (a, e) ↦ a + t`.  Every
+other clause holds — `hanti` because the `E`-coordinate is discarded —
+and `A(ℚ)` is infinite, so the assembly's finiteness step would break.
+Injectivity on `ℚ`-points is exactly what makes `A(ℚ)` embed into the
+anti-invariant subgroup of `J(ℚ)`, and that is all the consumer
+(`exists_atkinLehnerPrym_x0OneSixtyNine`) needs; it derives it from
+`Mono ι` in one line.
+
+**Why `Mono ι` and not merely injectivity on `ℚ`-points** (strengthened
+2026-07-27, on a finding relayed from the owner of
+`exists_x0AbelianNeronDatum_oneSixtyNine`).  Injectivity on `ℚ`-points is
+strictly weaker, and the gap is load-bearing downstream: a consumer
+wanting to import good reduction into `A` along "a subvariety of a
+good-reduction abelian variety has good reduction" cannot state it
+truthfully against the weak clause, because `A := Prym × C` with `C` of
+bad reduction and `C(ℚ) = 0`, with `ι` the composite `A ↠ Prym ↪ J`,
+satisfies every clause of the weak form while `A` has bad reduction.
+`Mono ι` excludes it.  The strengthening is free here: the construction
+produces `ι` as `ι₀ ≫ τ` with `ι₀` a closed immersion and `τ` a
+translation by a rational point, and a translation is an automorphism —
+so this is a case where the honest statement and the provable one
+coincide, and stating the weak form would have been an avoidable loss.
 
 **`hchar` is a PIN, not an extra hypothesis**: by the uniqueness half of
 `IsJacobianOf.existsUnique_mapEnd`, the only `wJ` satisfying it is
@@ -32410,7 +32428,7 @@ theorem exists_prym_of_involution {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ S
       (∀ (T' T : Scheme.{0}) (h : T' ⟶ T) (g : T ⟶ SpecQ) (g' : T' ⟶ SpecQ)
           (hg : h ≫ g = g') (x : RelPoint strX g),
         c T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c T g x)) ∧
-      Function.Injective (fun a : RelPoint astr (𝟙 SpecQ) => RelPoint.post ι hι a) ∧
+      Mono ι ∧
       (∀ a : RelPoint astr (𝟙 SpecQ),
         RelPoint.post wJ hwJ (RelPoint.post ι hι a) = ab.neg (RelPoint.post ι hι a)) ∧
       ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint strX g),
@@ -32541,16 +32559,26 @@ theorem exists_prym_of_involution {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ S
     show RelPoint.post p hp (jac.aj g' (RelPoint.pre h hg x))
       = RelPoint.pre h hg (RelPoint.post p hp (jac.aj g x))
     rw [jac.aj_pre, RelPoint.post_pre]
-  · intro a b hab
-    simp only [hιsplit, hτpt] at hab
-    have h2 : RelPoint.post ι₀ hι₀ a = RelPoint.post ι₀ hι₀ b := by
-      letI := ab.addCommGroup (𝟙 SpecQ)
-      have hab' : RelPoint.post ι₀ hι₀ a
-            + RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) t
-          = RelPoint.post ι₀ hι₀ b
-            + RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) t := hab
-      exact add_right_cancel hab'
-    exact Subtype.ext ((cancel_mono ι₀).mp (congrArg Subtype.val h2))
+  · -- translation by a rational point is an automorphism, hence a monomorphism,
+    -- and `ι₀` is one by the leaf; so `ι = ι₀ ≫ τ` is a monomorphism of schemes,
+    -- which is strictly stronger than injectivity on `ℚ`-points
+    haveI : Mono τ := by
+      constructor
+      intro Z f₁ f₂ hf
+      have hb : f₂ ≫ jstr = f₁ ≫ jstr := by
+        have h0 : (f₁ ≫ τ) ≫ jstr = (f₂ ≫ τ) ≫ jstr := by rw [hf]
+        rw [Category.assoc, Category.assoc, hτ] at h0
+        exact h0.symm
+      letI := ab.addCommGroup (f₁ ≫ jstr)
+      have key : (⟨f₁, rfl⟩ : RelPoint jstr (f₁ ≫ jstr))
+            + RelPoint.pre (f₁ ≫ jstr) (Category.comp_id (f₁ ≫ jstr)) t
+          = (⟨f₂, hb⟩ : RelPoint jstr (f₁ ≫ jstr))
+            + RelPoint.pre (f₁ ≫ jstr) (Category.comp_id (f₁ ≫ jstr)) t := by
+        show ab.add _ _ = ab.add _ _
+        rw [← hτpt, ← hτpt]
+        exact Subtype.ext hf
+      exact congrArg Subtype.val (add_right_cancel key)
+    infer_instance
   · intro a
     letI := ab.addCommGroup (𝟙 SpecQ)
     have hA : RelPoint.post wJ hwJ (RelPoint.post ι₀ hι₀ a)
@@ -32790,9 +32818,13 @@ theorem exists_atkinLehnerPrym_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶
   obtain ⟨w, hw, hw2, hal⟩ := exists_atkinLehner_x0 169 _hX
   refine ⟨w, hw, hw2,
     noFixedRationalPoint_atkinLehner_x0OneSixtyNine _hX w hw hw2 hal, ?_⟩
-  obtain ⟨A, astr, abA, ι, hι, c, hcnat, hinj, hanti, hfac⟩ :=
+  obtain ⟨A, astr, abA, ι, hι, c, hcnat, hmono, hanti, hfac⟩ :=
     exists_prym_of_involution _hX jac w hw hw2 (jac.mapEnd w hw) (jac.mapEnd_comp w hw)
       (fun g x => jac.post_mapEnd_aj w hw g x)
+  haveI := hmono
+  -- `ι` is a monomorphism of schemes, so it is injective on `ℚ`-points
+  have hinj : Function.Injective (fun a : RelPoint astr (𝟙 SpecQ) => RelPoint.post ι hι a) :=
+    fun a b hab => Subtype.ext ((cancel_mono ι).mp (congrArg Subtype.val hab))
   -- `A(ℚ)` is finite because `ι` embeds it into the `w_169`-anti-invariant
   -- subgroup of `J_0(169)(ℚ)`, which is finite by Kolyvagin–Logachev.
   haveI : Finite {z : RelPoint jstr (𝟙 SpecQ) //
