@@ -76,6 +76,18 @@ public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.AlgebraicGeometry.Pullbacks
 public import Mathlib.Topology.Connected.Clopen
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+-- The decomposition of `flat_of_finite_fibres_endo` (miracle flatness) below.
+-- `IsFinite` and `LocallyQuasiFinite` occur in the SIGNATURES of its geometric
+-- leaves, and `IsRegularLocalRing` / `ringKrullDim` in the signature of its
+-- commutative-algebra leaf, so all four are `public import`s and not bare ones.
+-- `QuasiFinite` supplies `LocallyQuasiFinite.of_finite_preimage_singleton` and
+-- `ZariskisMainTheorem` supplies `IsFinite.of_isProper_of_locallyQuasiFinite`;
+-- together they turn the hypothesis "`IsProper u` with finite fibres" into
+-- `IsFinite u`, which is the form all three geometric leaves consume.
+public import Mathlib.AlgebraicGeometry.Morphisms.Finite
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
+public import Mathlib.RingTheory.RegularLocalRing.Defs
 
 @[expose] public section
 
@@ -690,7 +702,234 @@ theorem flat_stalkMap_of_flat_stalkMap_fiberMapOver
     (u.stalkMap x).hom.Flat :=
   sorry
 
-/-- **MIRACLE FLATNESS, endomorphism form** (sorry leaf — PURE COMMUTATIVE
+/-! ### The four inputs of miracle flatness
+
+`flat_of_finite_fibres_endo` below is PROVEN over the four leaves in this
+block.  The cut is at the stalks: `AlgebraicGeometry.Flat.of_stalkMap` turns
+`Flat u` into a statement about each local homomorphism
+`𝒪_{X,u x} ⟶ 𝒪_{X,x}`, and Matsumura 23.1 is exactly a criterion for such a
+homomorphism to be flat.  Three of the four leaves are geometry (they say what
+`u` and `X` do to stalks) and one is pure commutative algebra.
+
+**What the glue itself contributes, and it is not nothing**: the hypothesis
+`IsProper u` together with finite fibres is upgraded ONCE, here, to
+`IsFinite u` — via `LocallyQuasiFinite.of_finite_preimage_singleton` and
+Zariski's main theorem in mathlib's form
+`IsFinite.of_isProper_of_locallyQuasiFinite`.  Every geometric leaf below is
+therefore stated with `[IsFinite u]`, which is far more usable than "proper
+with finite fibres", and no leaf has to redo that step. -/
+
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS**
+(sorry leaf — but see the next paragraph: **DO NOT PROVE THIS, HOIST IT**).
+
+**THIS IS ALREADY PROVEN IN THIS REPOSITORY, AND ITS SUBTREE IS SORRY-FREE.**
+It stands sorried here for one reason only: DECLARATION ORDER.  The proof is
+`GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
+in `Fermat/FLT/Modularity/KhareWintenberger.lean`, and that module is strictly
+DOWNSTREAM of this one — it `public import`s `Modularity/TateModule.lean`,
+which `public import`s this file — so the proof cannot be imported here.
+
+Verified 2026-07-27, and here is the check that would refute it:
+
+    grep -n 'theorem isRegularLocalRing_stalk_of_smooth_over_field' \
+         Fermat/FLT/Modularity/KhareWintenberger.lean
+    grep -n '^public import Fermat' Fermat/FLT/Modularity/KhareWintenberger.lean
+
+The first must find the declaration; the second must show `TateModule` among
+its imports.  Its own two dependencies were checked the same day and BOTH have
+sorry-free bodies:
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` and
+`isRegularLocalRing_quotient_span_list_aux` (which is a general "a quotient of
+a regular local ring by part of a regular system of parameters is regular
+local", a genuine mathlib gap), resting in turn on
+`isDomain_of_isRegularLocalRing`.  So there is NO open mathematics under this
+leaf anywhere in the tree.
+
+**THE CORRECT REPAIR IS A HOIST, NOT A PROOF.**  Move
+`isRegularLocalRing_stalk_of_smooth_over_field` together with those
+dependencies into a module upstream of `Modularity/AbelianScheme.lean`, then
+this leaf closes in one line (the only difference in the statements is
+cosmetic: the downstream one takes `{K : Type u} [Field K]` and
+`Spec (CommRingCat.of K)`, this one takes the `K : CommRingCat` that the
+consumer already has).  Re-proving it here would be the single most expensive
+mistake available at this leaf: it would duplicate a large, finished
+development.  Whoever performs the hoist owns the import-cone audit that comes
+with it — that is the real work, and it is bookkeeping, not mathematics. -/
+theorem isRegularLocalRing_stalk_of_smooth {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
+    (g : X ⟶ Spec K) [Smooth g] (x : X) :
+    IsRegularLocalRing (X.presheaf.stalk x) :=
+  sorry
+
+/-- **THE FIBRE RING OF A FINITE MORPHISM AT A POINT IS ZERO-DIMENSIONAL**
+(sorry leaf — general scheme theory, NO abelian varieties, no smoothness, no
+field; true for an arbitrary finite morphism of schemes).
+
+`𝒪_{X,x} ⧸ 𝔪_{u x} 𝒪_{X,x}` is the local ring at `x` of the scheme-theoretic
+fibre `u ⁻¹ (u x)`.  For `u` finite that fibre is `Spec` of a finite
+`κ(u x)`-algebra, hence artinian, hence zero-dimensional; and localising an
+artinian ring keeps it artinian.  This is the hypothesis `dim M/𝔪M = 0` of
+Matsumura 23.1, which is what collapses the general dimension identity
+`dim M = dim A + dim M/𝔪M` to the equality supplied by
+`ringKrullDim_stalk_eq_of_isFinite_endo`.
+
+The quotient is NONTRIVIAL, so `0` is the right value and not `⊥`: the stalk
+map of a morphism of schemes is a LOCAL homomorphism
+(`AlgebraicGeometry.Scheme.instIsLocalHomStalkMap`), so
+`𝔪_{u x} 𝒪_{X,x} ⊆ 𝔪_x ≠ ⊤`.
+
+**ROUTE.**  Purely affine-local bookkeeping.  Choose an affine open `V ∋ u x`;
+`u` finite is affine, so `U = u ⁻¹ᵁ V` is affine, and `B = Γ(U)` is a FINITE
+`A = Γ(V)`-module.  With `p ⊆ A` and `q ⊆ B` the primes of `x` and `u x`,
+`IsAffineOpen.isLocalization_stalk` identifies the two stalks with `B_q` and
+`A_p`, and the fibre ring with `(B ⧸ pB)_q`.  Now `B ⧸ pB` is a finite
+`κ(p)`-algebra, so it is artinian, so its localisation is artinian and
+`ringKrullDim = 0`.
+
+**A WARNING FOR WHOEVER TAKES THIS LEAF, because it is the trap that decided
+the shape of `flat_of_isRegularLocalRing_of_ringKrullDim_eq` below.**  Do NOT
+try to prove this by showing the stalk map is module-finite and quoting a
+finiteness argument at the level of stalks: **THE STALK MAP OF A FINITE
+MORPHISM IS NOT MODULE-FINITE.**  Counterexample: `u : Spec ℤ[i] ⟶ Spec ℤ` is
+finite; take `p = (5)`, which splits, and `q` one of the two primes above it.
+Then `A_p = ℤ_(5)` and `B_q` is a DVR with fraction field `ℚ(i)`.  If `B_q`
+were a finite `A_p`-module it would be integral over `A_p`, hence contained in
+the integral closure `ℤ[i]_(5) = B_p`; but `B_q ⊋ B_p`, since it inverts the
+elements of the OTHER prime above `5`.  So `B_q` is not finite over `A_p`.
+Finiteness survives only BEFORE localising at `q`, which is why the route
+above localises last. -/
+theorem ringKrullDim_quotient_map_maximalIdeal_stalkMap {X Y : Scheme.{u}}
+    (u : X ⟶ Y) [IsFinite u] (x : X) :
+    ringKrullDim ((X.presheaf.stalk x) ⧸
+      Ideal.map (u.stalkMap x).hom (IsLocalRing.maximalIdeal (Y.presheaf.stalk (u x)))) = 0 :=
+  sorry
+
+/-- **A FINITE ENDOMORPHISM PRESERVES THE DIMENSION OF EVERY LOCAL RING**
+(sorry leaf — general scheme theory over a field, NO abelian varieties, no
+group law, no `[n]`.  This is the deepest of the three geometric leaves and
+the one that genuinely needs a dimension theory of schemes.)
+
+For `X` smooth, proper and geometrically connected over a field and `u` a
+FINITE endomorphism of `X`, `dim 𝒪_{X,x} = dim 𝒪_{X,u x}` for every `x`.
+
+**ROUTE, in the order the hypotheses are used.**
+
+1. *`X` is irreducible.*  `Smooth g` over a field makes every stalk regular
+   local, hence a domain, so `X` is locally irreducible;
+   `GeometricallyConnected g` makes it connected; a connected, locally
+   noetherian, locally irreducible scheme is irreducible.  Only ORDINARY
+   connectedness is used, so this hypothesis may be weakened freely — it is
+   `GeometricallyConnected` merely because that is what the caller has in hand
+   (`AbelianSchemeStruct.connected`).
+2. *`u` is surjective.*  `IsProper g` makes `X` quasi-compact and of finite
+   type over the field, hence finite-dimensional.  A finite morphism preserves
+   the dimension of a closed subset, so `u '' X` is a closed irreducible subset
+   of `X` of the full dimension `dim X`; in an irreducible finite-dimensional
+   scheme of finite type over a field the only such subset is `X`.
+3. *The dimension formula.*  On an irreducible scheme of finite type over a
+   field, `dim 𝒪_{X,x} = dim X - dim (closure {x})`.  Since `u` is finite,
+   `dim (closure {x}) = dim (closure {u x})`, and the two local dimensions
+   agree.
+
+**WHAT IS MISSING, with the greps that would refute it** (re-run 2026-07-27
+against `.lake/packages/mathlib`).  Mathlib has the RING-level dimension
+theory — `ringKrullDim`, `Ideal.height`, `Module.supportDim`,
+`topologicalKrullDim`, and the dimension-drop lemmas in
+`RingTheory/KrullDimension/Regular.lean` — but essentially NO scheme-level
+dimension theory: `ls Mathlib/AlgebraicGeometry/` shows no `Dimension.lean`,
+and `grep -rn "dim" Mathlib/AlgebraicGeometry/` turns up nothing that proves
+step 3.  Step 3 is the classical `dim 𝒪_{X,x} + dim closure{x} = dim X`
+(Matsumura 5.6 / EGA IV 5.2.3) and it, not steps 1–2, is the real content of
+this leaf.  A hit on a scheme-dimension file means this note has gone stale
+and the leaf is far cheaper than it looks. -/
+theorem ringKrullDim_stalk_eq_of_isFinite_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
+    (g : X ⟶ Spec K) [Smooth g] [IsProper g] [GeometricallyConnected g]
+    (u : X ⟶ X) [IsFinite u] (x : X) :
+    ringKrullDim (X.presheaf.stalk x) = ringKrullDim (X.presheaf.stalk (u x)) :=
+  sorry
+
+/-- **MIRACLE FLATNESS, RING LEVEL** (sorry leaf — PURE COMMUTATIVE ALGEBRA,
+no schemes at all: Matsumura *Commutative Ring Theory* Theorem 23.1, in the
+special case `M = T` of the source ring itself.  It would be at home in
+mathlib, which has nothing of it.)
+
+A local homomorphism `φ : R ⟶ T` of regular local rings whose fibre ring
+`T ⧸ 𝔪_R T` is zero-dimensional and which does not change the Krull dimension
+is FLAT.
+
+**FAITHFULNESS.**  Matsumura 23.1 reads: *let `(A,𝔪) → (B,𝔫)` be a local
+homomorphism of noetherian local rings and `M` a finite `B`-module with `A`
+regular, `M` Cohen–Macaulay and `dim M = dim A + dim M/𝔪M`; then `M` is flat
+over `A`.*  Instantiate `A = R`, `B = M = T`: `T` is a finite `T`-module, and
+`T` regular makes it Cohen–Macaulay.  The dimension identity becomes
+`hdim` together with `hfib`.  Note there is **no finiteness hypothesis
+relating `R` and `T`** and there must not be — see the counterexample in the
+docstring of `ringKrullDim_quotient_map_maximalIdeal_stalkMap` above, which is
+exactly why this statement is the one that had to be cut here.
+
+**WHAT MATHLIB HAS, AND ONE CLAIM OF THE OLD SURVEY THAT IS NOW REFUTED.**
+
+* PRESENT: `IsRegularLocalRing` (`RingTheory/RegularLocalRing/Defs.lean`,
+  defined by `(maximalIdeal R).spanFinrank = ringKrullDim R`), `ringKrullDim`,
+  the regular-sequence theory in `RingTheory/Regular/RegularSequence.lean` —
+  including the recursor `IsWeaklyRegular.ndrecWithRing`, which does induction
+  along a regular sequence while quotienting the BASE RING as well — and the
+  dimension-drop lemmas of `RingTheory/KrullDimension/Regular.lean`.
+* **REFUTED (2026-07-27).**  Every earlier survey of this node, including the
+  one that used to stand in this file, said that the induction step needs the
+  **local criterion of flatness** in its `Tor₁` form and that mathlib has no
+  `Tor` of modules, so the leaf was hopeless.  The second half is true —
+  `grep -rn "^def Tor" Mathlib/` finds only `CategoryTheory.Monoidal.Tor` and
+  the group-homology `Rep k G` version — but the first half is FALSE for
+  MODULE-FINITE base changes.  `Module.free_quotSMulTop_iff_free`
+  (`Mathlib/RingTheory/Regular/Free.lean`) states exactly the induction step:
+  for `M` finitely presented over `R` and `x` in the Jacobson radical and
+  `M`-regular, `M ⧸ xM` free over `R ⧸ (x)` **iff** `M` free over `R`.  Its
+  proof is Nakayama plus a lifting argument, no `Tor` anywhere.  Refuting
+  grep: `grep -n free_quotSMulTop_iff_free
+  .lake/packages/mathlib/Mathlib/RingTheory/Regular/Free.lean`.
+* So the honest statement of the obstruction is much narrower than "no local
+  criterion": *with* module-finiteness the criterion is already in the pin,
+  and the two remaining gaps are (a) **the fibre-dimension hypothesis has to be
+  turned into a regular sequence**, i.e. "regular local ⟹ Cohen–Macaulay", or
+  concretely "a system of parameters of a regular local ring is a regular
+  sequence" — `grep -rl CohenMacaulay Mathlib/` is still empty and
+  `RingTheory/Regular/Depth.lean` is a deprecation stub with ZERO declarations
+  — and (b) the passage from the module-finite case to this one.
+
+**THE ROUTE THAT AVOIDS `Tor` ENTIRELY, and it is worth taking.**  Do not
+attack this leaf at the stalks; go back to an affine cover, where finiteness
+survives.  For `u` finite and `V ⊆ Y` affine, `U = u ⁻¹ᵁ V` is affine and
+`B = Γ(U)` is a FINITE `A = Γ(V)`-module.  Then:
+
+1. `Module.Flat A B` may be checked at the maximal ideals of `A`
+   (`Module.flat_of_isLocalized_maximal`, `RingTheory/Flat/Localization.lean`),
+   and `B_p := B ⊗_A A_p` is still a FINITE `A_p`-module — the localisation is
+   at a prime of `A`, not of `B`, which is precisely what dodges the
+   counterexample above.
+2. A finite module over a local ring is flat iff free
+   (`Module.free_of_flat_of_isLocalRing`).
+3. Freeness follows by induction along a regular system of parameters
+   `t₁, …, t_d` of `A_p` using `Module.free_quotSMulTop_iff_free` at each step,
+   with `IsWeaklyRegular.ndrecWithRing` as the recursor; the base case is
+   `𝔪 = ⊥`, i.e. `A_p` a field, where every module is free.
+4. The ONLY remaining input is that `t₁, …, t_d` is a `B_p`-regular sequence.
+   That is gap (a): `B_p` is Cohen–Macaulay because `B` is regular, and
+   `𝔪_p B_p` is `𝔪`-primary because the fibre is finite.
+
+So a prover who first proves "a system of parameters of a regular local ring is
+a regular sequence" gets the rest from the pin.  That statement — not `Tor`,
+not depth in its full generality, not generic flatness, not openness of the
+flat locus (`grep -rln "flatLocus\|genericFlat" Mathlib/` is empty) — is the
+one genuinely missing piece of commutative algebra under this node. -/
+theorem flat_of_isRegularLocalRing_of_ringKrullDim_eq {R T : Type u} [CommRing R] [CommRing T]
+    [IsRegularLocalRing R] [IsRegularLocalRing T] (φ : R →+* T) [IsLocalHom φ]
+    (hdim : ringKrullDim T = ringKrullDim R)
+    (hfib : ringKrullDim (T ⧸ Ideal.map φ (IsLocalRing.maximalIdeal R)) = 0) :
+    φ.Flat :=
+  sorry
+
+/-- **MIRACLE FLATNESS, endomorphism form** (**PROVEN 2026-07-27** over the
+four leaves stated immediately above — PURE COMMUTATIVE
 ALGEBRA / general scheme theory, NO abelian varieties, no group law, no
 `[n]`: Matsumura *Commutative Ring Theory* Theorem 23.1, the theorem
 usually called *miracle flatness*; also in the Stacks Project under that
@@ -789,6 +1028,37 @@ looks.  Note that a prover does NOT need the whole of CM theory: only
 where BOTH rings are regular, which is the classical dimension count and
 does not need depth in its full generality.
 
+**STATUS 2026-07-27 — DECOMPOSED, and the survey above is now out of date in
+two places that matter.**  The four steps are separated into the four leaves
+stated immediately above this docstring, and this node is proven over them:
+
+* step 1 (`u` is FINITE) is **PROVEN HERE**, in the two `haveI` lines below,
+  exactly as the survey predicted — `LocallyQuasiFinite.of_finite_preimage_singleton`
+  followed by `IsFinite.of_isProper_of_locallyQuasiFinite`, with the two
+  modules added to this file's header.  Nothing else in the chain has to
+  re-derive it: all three geometric leaves take `[IsFinite u]`.
+* steps 2 and 3 (regularity, irreducibility, surjectivity) and the dimension
+  count of step 4 are `isRegularLocalRing_stalk_of_smooth` and
+  `ringKrullDim_stalk_eq_of_isFinite_endo`;
+* the finiteness of the fibres becomes
+  `ringKrullDim_quotient_map_maximalIdeal_stalkMap`;
+* and the local algebra is `flat_of_isRegularLocalRing_of_ringKrullDim_eq`.
+
+**FIRST CORRECTION.**  The survey says regularity of the stalks has to be
+proven.  It does not: it is ALREADY PROVEN in this repository, sorry-free, as
+`GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
+in `Modularity/KhareWintenberger.lean`, which is DOWNSTREAM of this module.
+See the leaf's own docstring — the repair is a hoist, not a proof.
+
+**SECOND CORRECTION.**  The survey says the local criterion of flatness (the
+`Tor₁` statement) is missing and therefore blocking.  Missing, yes; blocking,
+no — for MODULE-FINITE base changes `Module.free_quotSMulTop_iff_free`
+(`Mathlib/RingTheory/Regular/Free.lean`) already IS the induction step, with no
+`Tor` in its proof.  The one genuinely missing piece of commutative algebra
+under this node is "a system of parameters of a regular local ring is a
+regular sequence" (regular ⟹ Cohen–Macaulay).  The ring leaf's docstring
+writes out the four-step route that consumes it.
+
 **Two routes considered and REJECTED for this leaf**, recorded so they are
 not re-attempted: the *theorem of the cube* route needs ample line
 bundles, absent as above; the *homogeneity/translation* route needs
@@ -797,8 +1067,19 @@ translation layer would have been free-floating since nothing could
 consume it. -/
 theorem flat_of_finite_fibres_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
     (g : X ⟶ Spec K) [Smooth g] [IsProper g] [GeometricallyConnected g]
-    (u : X ⟶ X) [IsProper u] (hu : ∀ a : X, (⇑u ⁻¹' {a}).Finite) : Flat u :=
-  sorry
+    (u : X ⟶ X) [IsProper u] (hu : ∀ a : X, (⇑u ⁻¹' {a}).Finite) : Flat u := by
+  -- Zariski's main theorem: proper with finite fibres ⟹ FINITE.
+  haveI : LocallyQuasiFinite u := LocallyQuasiFinite.of_finite_preimage_singleton u hu
+  haveI : IsFinite u := IsFinite.of_isProper_of_locallyQuasiFinite u
+  -- Flatness of a morphism is flatness of every stalk map.
+  refine AlgebraicGeometry.Flat.of_stalkMap u fun x => ?_
+  -- Both stalks are regular local, `X` being smooth over a field.
+  haveI := isRegularLocalRing_stalk_of_smooth g x
+  haveI := isRegularLocalRing_stalk_of_smooth g (u x)
+  -- Matsumura 23.1, with the two dimension inputs supplied by the geometry.
+  exact flat_of_isRegularLocalRing_of_ringKrullDim_eq (u.stalkMap x).hom
+    (ringKrullDim_stalk_eq_of_isFinite_endo g u x)
+    (ringKrullDim_quotient_map_maximalIdeal_stalkMap u x)
 
 /-- **The fibrewise criterion of flatness** (PROVEN 2026-07-27 over the
 single pointwise leaf `flat_stalkMap_of_flat_stalkMap_fiberMapOver` above
