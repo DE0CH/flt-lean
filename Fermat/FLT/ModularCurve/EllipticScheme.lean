@@ -17,6 +17,8 @@ public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.RingTheory.RingHom.StandardSmooth
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.RingTheory.Localization.Away.AdjoinRoot
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
@@ -38,14 +40,18 @@ under "Why this is not in `X0.lean`" below.
   which `X0.lean` transports verbatim onto
   `exists_ellipticScheme_of_weierstrass`.
 
-`isProper_projToSpec` is PROVEN, and so is `smoothOfRelativeDimension_projToSpec`
-apart from ONE named leaf: its `hchart` step is now fully reduced, and the
-Jacobian criterion it rests on (`jacobianSpan_eq_top`, over an arbitrary
-commutative ring) is proven here.  The four open leaves are therefore
-`nonempty_projGroupLaw`, `exists_projGeomFibreAddEquiv`,
-`locally_isStandardSmooth_awayCoord` (all that is left of item 7a — and what it
-wants is a missing piece of MATHLIB, the dehomogenisation isomorphism for a chart
-of `Proj` of a polynomial quotient), and the interior of
+`isProper_projToSpec` is PROVEN, and so now is `smoothOfRelativeDimension_projToSpec`
+apart from three leaves that are all missing pieces of MATHLIB rather than of
+this development.  `locally_isStandardSmooth_awayCoord` — the last direct sorry of
+item 7a — is now PROVEN from them, and they are, in the "Dehomogenisation"
+section: `exists_projChartRingEquiv` (the dehomogenisation isomorphism
+`(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0` ≃ `ℚ[u, v] ⧸ (wᵢ)`),
+`projChart_jacobian_span_eq_top` (the chart Jacobian criterion, where `hjac` and
+hence `Δ` is consumed), and
+`isStandardSmoothOfRelativeDimension_projChartAway` (a plane curve is standard
+smooth of relative dimension `1` where a partial derivative is invertible).
+The remaining open leaves of the file are those three plus
+`nonempty_projGroupLaw`, `exists_projGeomFibreAddEquiv`, and the interior of
 `geometricallyConnected_projToSpec`, which still carries three named sorried
 steps `hbc`/`hne`/`hpre`.  Each declaration carries its own docstring saying what
 is missing and where the classical argument is.
@@ -395,6 +401,195 @@ theorem smoothOfRelativeDimension_specMap_of_locally {A : Type} [CommRing A] (φ
   rw [HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)]
   exact h
 
+/-! ### Dehomogenisation: the standard affine chart of `Proj` of a polynomial quotient
+
+This is the MISSING MATHLIB PIECE of item 7a, and nothing below is elliptic-curve
+mathematics: it is the identification of the degree-zero part of an away-localisation of a
+graded polynomial quotient with a concrete polynomial quotient.  Mathlib has
+`HomogeneousLocalization.Away` and `Proj.awayι` but no such identification — a grep for
+`dehomogeni` over the pin returns NOTHING, and neither `~/cs/FLT` nor this project has one.
+
+The three declarations below cut the residual leaf into three independent pieces, each
+stated exactly as `locally_isStandardSmooth_awayCoord` consumes it and each carrying its own
+proof plan.  The assembly is written and PROVEN. -/
+
+/-- The two affine coordinates on the standard chart `D₊(Xᵢ)` of `Proj ℚ[X, Y, Z]`, namely
+the two homogeneous coordinates OTHER than `Xᵢ` — the chart coordinates being the ratios
+`Xⱼ / Xᵢ` for `j ≠ i`. -/
+abbrev ProjChartVar (i : Fin 3) : Type := {j : Fin 3 // j ≠ i}
+
+/-- **Dehomogenisation at the `i`-th coordinate**: substitute `Xᵢ ↦ 1` and send each other
+variable `Xⱼ` to the corresponding affine chart coordinate.
+
+For a polynomial `p` homogeneous of degree `d` this is the numerator of `p / Xᵢ^d` written
+in the chart coordinates, which is exactly what the chart identification needs. -/
+noncomputable def dehomogenizeAt (R : Type) [CommRing R] (i : Fin 3) :
+    MvPolynomial (Fin 3) R →ₐ[R] MvPolynomial (ProjChartVar i) R :=
+  MvPolynomial.aeval fun j => if h : j = i then 1 else MvPolynomial.X ⟨j, h⟩
+
+/-- The dehomogenisation of the projective Weierstrass polynomial at the `i`-th chart.
+
+For `i = 2` (the chart `Z ≠ 0`) this is literally the affine Weierstrass polynomial
+`y² + a₁xy + a₃y - x³ - a₂x² - a₄x - a₆`.  For `i = 0` and `i = 1` it is a different plane
+cubic — the charts at `X ≠ 0` and `Y ≠ 0` — and in particular the chart `i = 1` is the one
+containing the point at infinity `[0 : 1 : 0]`. -/
+noncomputable def projChartPolynomial {R : Type} [CommRing R] (E : WeierstrassCurve R)
+    (i : Fin 3) : MvPolynomial (ProjChartVar i) R :=
+  dehomogenizeAt R i (polynomial E)
+
+/-- The coordinate ring of the standard chart `D₊(Xᵢ)` of the projective Weierstrass model:
+a plane curve in the two chart coordinates. -/
+abbrev ProjChartRing {R : Type} [CommRing R] (E : WeierstrassCurve R) (i : Fin 3) : Type :=
+  MvPolynomial (ProjChartVar i) R ⧸ Ideal.span {projChartPolynomial E i}
+
+/-- The image of the `i`-th homogeneous coordinate in the homogeneous coordinate ring. -/
+noncomputable abbrev projCoord {R : Type} [CommRing R] (E : WeierstrassCurve R) (i : Fin 3) :
+    MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal E).toIdeal :=
+  Ideal.Quotient.mk _ (MvPolynomial.X i)
+
+/-- **LEAF A — THE DEHOMOGENISATION ISOMORPHISM** (sorry node; a missing piece of MATHLIB,
+not of this development).
+
+  `(ℚ[X, Y, Z] ⧸ (W))_{(Xᵢ)}` in degree `0`  ≃  `ℚ[u, v] ⧸ (wᵢ)`,
+
+compatibly with the two structure maps out of `ℚ`.  It is stated as a `RingEquiv` together
+with the commuting triangle rather than as an `AlgEquiv` deliberately: the source carries an
+`Algebra (projGrading E 0)` instance and the target an `Algebra ℚ` one, and forcing them
+into a common `Algebra ℚ` structure invites exactly the "two defeq but never syntactically
+equal instances" trap this development has been bitten by repeatedly.  The commuting
+triangle is what the consumer actually needs, and it is instance-free.
+
+## Proof plan
+
+*Surjectivity is already in mathlib.*  `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`
+says that if the graded ring is generated over its degree-zero part by homogeneous `vₗ` of
+degrees `dvₗ`, then `𝒜_(f)` for `f` of degree `d` is generated as a `𝒜₀`-algebra by the
+elements `(∏ vₗ^aₗ) / f^a` with `∑ aₗ dvₗ = a d` and `aₗ ≤ d`.  Here `d = 1` (that is what
+`hcoord` supplies), the `vₗ` are the three coordinates `x₀, x₁, x₂` of degree `1`, so the
+constraint `aₗ ≤ 1` forces each generator to be a product of a SUBSET of the coordinates
+divided by `xᵢ^{card}` — i.e. a product of the three ratios `xⱼ / xᵢ`, one of which is `1`.
+So the chart ring is generated over `ℚ` by the two ratios, which is exactly surjectivity of
+the map `ℚ[u, v] → (B_{xᵢ})₀` sending `u, v` to the two ratios.
+
+*The kernel is the one genuinely new argument.*  Let `q ∈ ℚ[u, v]` of degree `n` and let
+`Q := Xᵢ^n · q(Xⱼ/Xᵢ, Xₖ/Xᵢ)` be its homogenisation, so the image of `q` is `Q̄ / xᵢ^n`.
+That vanishes iff `Xᵢ^m · Q ∈ (W)` in `ℚ[X, Y, Z]` for some `m`.  Now `ℚ[X, Y, Z]` is a UFD,
+`Xᵢ` is prime, and `Xᵢ ∤ W` for each of the three `i` — `W` contains the monomial `-X³` (so
+`Y ∤ W` and `Z ∤ W`) and the monomial `Y²Z` (so `X ∤ W`).  Hence no prime factor of `W` is
+associate to `Xᵢ`, and `W ∣ Xᵢ^m Q` forces `W ∣ Q`.  Dehomogenising, `wᵢ ∣ q`.  The reverse
+inclusion is immediate since `W` maps to `0`.
+
+Note this argument does NOT need `W` irreducible, only `Xᵢ ∤ W`, which is a monomial check.
+The relevant mathlib entry points are `UniqueFactorizationMonoid` and
+`MvPolynomial.prime_X` / `MvPolynomial.isDomain`.
+
+This is the piece that ought to be upstreamed: stated for an arbitrary homogeneous ideal of
+`R[X₀ .. Xₙ]` it is the standard affine chart of `Proj` of a projective scheme over `R`, and
+its absence is what has kept every `Proj`-level smoothness argument out of reach. -/
+theorem exists_projChartRingEquiv (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) :
+    ∃ e : HomogeneousLocalization.Away (projGrading E) (projCoord E i) ≃+* ProjChartRing E i,
+      (e : HomogeneousLocalization.Away (projGrading E) (projCoord E i) →+* ProjChartRing E i).comp
+          ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
+            (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0)))
+        = algebraMap ℚ (ProjChartRing E i) :=
+  sorry
+
+/-- **LEAF B — THE CHART JACOBIAN CRITERION** (sorry node): on each of the three charts the
+two partial derivatives of the dehomogenised Weierstrass cubic generate the UNIT ideal of
+the chart ring.  This is what makes the chart ring locally a hypersurface with an invertible
+partial, and it is where `hjac` — hence `Δ` — is consumed.
+
+## NOT VACUOUS, and true on all three charts
+
+Checked with a Gröbner basis over `ℚ(a₁, …, a₆)`: for each of the three charts the ideal
+generated by `wᵢ` and its two partials is `(1)`.  So the statement holds for all `i`, not
+merely for the affine chart, and `Δ` is genuinely doing the work (over `ℚ[a₁, …, a₆]` the
+ideal is proper — that is the content of `Δ_mem_jacobianSpan`).
+
+## Proof plan — the same two ingredients on every chart, then three easy cases
+
+*Ingredient 1 — dehomogenisation commutes with `∂`.*  For `j ≠ i`,
+`pderiv j (dehomogenizeAt R i p) = dehomogenizeAt R i (pderiv j p)`, by
+`MvPolynomial.induction_on`; the substitution `Xᵢ ↦ 1` is a constant in the `j`-th variable.
+So the two chart partials are the dehomogenisations `pⱼ := dehom(W_{Xⱼ})`, `j ≠ i`, and
+these are the dehomogenisations of mathlib's `polynomialX`, `polynomialY`, `polynomialZ`.
+
+*Ingredient 2 — Euler.*  `WeierstrassCurve.Projective.polynomial_relation` is Euler's
+theorem `3W = X·W_X + Y·W_Y + Z·W_Z`.  Dehomogenising at `i` and using `wᵢ = 0` in the chart
+ring gives `pᵢ = -∑_{j ≠ i} uⱼ pⱼ`.  Hence in the chart ring
+`span {pⱼ : j ≠ i} = span {p₀, p₁, p₂}`, and it suffices to show the LATTER is `⊤`.
+
+*Chart `i = 2` (`Z ≠ 0`).*  `w₂` IS the affine Weierstrass polynomial, so `hjac` applies
+directly at `S := ProjChartRing E 2` with `x, y` the images of the two chart coordinates:
+the affine `Equation` holds because the chart ring is the quotient by `w₂`.
+
+*Chart `i = 0` (`X ≠ 0`).*  Here `z := Z/X` is already a UNIT of the chart ring: `w₀ = 0`
+reads `z · (v² + a₁v + a₃vz - a₂ - a₄z - a₆z²) = 1`.  So `x := 1/z` and `y := v/z` are
+honest elements satisfying the affine equation, `hjac` applies at `S := ProjChartRing E 0`,
+and the affine partials are `W_X(x,y) = x²·p₀` and `W_Y(x,y) = x²·p₁` (both partials are
+homogeneous of degree `2`, and `x = X/Z` is a unit), so `span {p₀, p₁} = ⊤`.
+
+*Chart `i = 1` (`Y ≠ 0`).*  This is the only chart containing the point at infinity, `z` is
+NOT a unit there, and the argument needs one extra step.  Modulo `z` the chart relation
+`w₁` becomes `-u³`, and `p₂ = dehom(W_Z) = 1 + a₁u + 2a₃z - a₂u² - 2a₄uz - 3a₆z²` has
+constant term `1`, so `p₂` is a unit modulo `(z, u³)`: hence `span {p₂, z} = ⊤`.  On the
+localisation away from `z` the previous argument applies verbatim (`x = u/z`, `y = 1/z`),
+giving `zᵐ ∈ span {p₀, p₁}` for some `m`.  Since `span {p₂, z} = ⊤` implies
+`span {p₂, zᵐ} = ⊤` (`IsCoprime.pow_right`), the two together give `1 ∈ span {p₀, p₁, p₂}`.
+
+An explicit `Δᴺ = A·w₁ + B·p₀ + C·p₂` certificate from a Gröbner `lift` would also close
+chart `i = 1` outright and is the fallback if the localisation bookkeeping proves painful;
+the cofactors are large, which is why the structural argument is given first. -/
+theorem projChart_jacobian_span_eq_top (E : WeierstrassCurve ℚ) [E.IsElliptic] (i : Fin 3)
+    (hjac : ∀ (S : Type) [CommRing S] [Algebra ℚ S] (x y : S),
+      (E.map (algebraMap ℚ S)).toAffine.Equation x y →
+      Ideal.span {Polynomial.evalEval x y (E.map (algebraMap ℚ S)).toAffine.polynomialX,
+        Polynomial.evalEval x y (E.map (algebraMap ℚ S)).toAffine.polynomialY} = ⊤) :
+    Ideal.span (Set.range fun j : ProjChartVar i =>
+        (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
+          (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i)) = ⊤ :=
+  sorry
+
+/-- **LEAF C — A PLANE CURVE IS STANDARD SMOOTH OF RELATIVE DIMENSION `1` WHERE A PARTIAL
+DERIVATIVE IS INVERTIBLE** (sorry node; also a missing piece of MATHLIB rather than of this
+development).
+
+## Proof plan
+
+`Algebra.PreSubmersivePresentation.naive` (`Mathlib/RingTheory/Extension/Presentation/
+Submersive.lean`) builds a pre-submersive presentation of `R[Xₛ] ⧸ (vᵣ)` from an INJECTIVE
+assignment `a : relations → variables`, with `jacobiMatrix_naive` computing the Jacobian
+matrix as `(vⱼ).pderiv (a i)`.  So the whole of the construction is:
+
+* variables `σ := ProjChartVar i ⊕ Unit`, i.e. `(u, v, t)` — three of them;
+* relations `ι := Fin 2`, namely `wᵢ` and `t · ∂wᵢ/∂uⱼ - 1`;
+* the assignment `a` sends the first relation to `uⱼ` and the second to `t`, which is
+  injective;
+* the Jacobian matrix is then LOWER TRIANGULAR,
+  `[[∂wᵢ/∂uⱼ, 0], [t · ∂²wᵢ/∂uⱼ², ∂wᵢ/∂uⱼ]]`, with determinant `(∂wᵢ/∂uⱼ)²`, a unit in the
+  quotient because the second relation says `t` inverts it;
+* `dimension = card σ - card ι = 3 - 2 = 1`, using
+  `Fintype.card (ProjChartVar i) = 2`.
+
+The one piece of plumbing is the identification of the presented ring with `T`:
+
+  `ℚ[u, v, t] ⧸ (wᵢ, t·∂wᵢ/∂uⱼ - 1)`  ≃  `(ℚ[u, v] ⧸ (wᵢ))_{∂wᵢ/∂uⱼ}`,
+
+obtained from `MvPolynomial.optionEquivLeft` (or `sumAlgEquiv`) to split off `t`, then
+`Ideal.polynomialQuotientEquivQuotientPolynomial` to push the quotient by `wᵢ` inside, then
+`Localization.awayEquivAdjoin` — which is precisely
+`Localization.Away r ≃ₐ[R] AdjoinRoot (C r * X - 1)` — to recognise the remaining quotient.
+Finally `SubmersivePresentation.ofAlgEquiv` transports the presentation onto `T`, and
+`IsLocalization.algEquiv` moves between `T` and `Localization.Away`. -/
+theorem isStandardSmoothOfRelativeDimension_projChartAway (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (j : ProjChartVar i) (T : Type) [CommRing T] [Algebra (ProjChartRing E i) T]
+    [IsLocalization.Away (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
+      (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i) T] :
+    RingHom.IsStandardSmoothOfRelativeDimension 1
+      ((algebraMap (ProjChartRing E i) T).comp (algebraMap ℚ (ProjChartRing E i))) :=
+  sorry
+
 /-- **THE RESIDUAL LEAF OF ITEM 7a** — the degree-zero part of the localisation of the
 homogeneous coordinate ring at a coordinate is locally standard smooth of relative
 dimension `1` over `ℚ`.
@@ -405,32 +600,27 @@ the three coordinate charts, the identification of each chart composite with a `
 (`smoothOfRelativeDimension_specMap_of_locally`), and the Jacobian criterion itself
 (`jacobianSpan_eq_top`, supplied here as `hjac` and therefore genuinely consumed).
 
-## What is missing, precisely
+## THIS IS NOW PROVEN, from three named sub-leaves
 
-ONE thing, and it is missing from mathlib rather than from this development: the
-**dehomogenisation isomorphism for a chart of `Proj` of a quotient of a polynomial ring**,
+The recipe below is written out and compiles; what remain are the three declarations in the
+"Dehomogenisation" section above, each of which is a missing piece of MATHLIB rather than
+any further elliptic-curve mathematics:
 
-  `(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0`  ≃ₐ[ℚ]  `ℚ[u, v] ⧸ (wᵢ)`,
+* `exists_projChartRingEquiv` (LEAF A) — the **dehomogenisation isomorphism**
+  `(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0` ≃ `ℚ[u, v] ⧸ (wᵢ)`, with the commuting triangle
+  over `ℚ`.  Mathlib has `HomogeneousLocalization.Away` and `Proj.awayι` but NO
+  identification of the degree-zero away-part with a concrete polynomial quotient — a grep
+  for `dehomogeni` over the pin returns nothing, and neither does one over `~/cs/FLT`.
+* `projChart_jacobian_span_eq_top` (LEAF B) — the two chart partials generate the unit
+  ideal.  This is where `hjac`, and hence `Δ`, is consumed.
+* `isStandardSmoothOfRelativeDimension_projChartAway` (LEAF C) — on each of the two
+  localisations the `2 × 2` Jacobian of the relations `(wᵢ, t·∂wᵢ/∂u - 1)` in the generators
+  `(u, v, t)` is triangular with determinant `(∂wᵢ/∂u)²`, a unit there, so the presentation
+  is submersive of dimension `3 - 2 = 1`.
 
-where `wᵢ` is the dehomogenisation of `W` at the `i`-th coordinate.  Mathlib has
-`HomogeneousLocalization.Away` and `Proj.awayι` but NO identification of the degree-zero
-away-part with a concrete polynomial quotient — a grep for `dehomogeni`, and for
-`MvPolynomial` in the `HomogeneousLocalization` files, returns nothing.  Building it is the
-whole of the remaining work.
-
-Given that isomorphism the rest is mechanical, and is why `hjac` is the right hypothesis to
-carry: transport along it with
-`Algebra.IsStandardSmoothOfRelativeDimension.of_algEquiv`, then apply
-`RingHom.locally_of_exists` to the two-element family `{∂wᵢ/∂u, ∂wᵢ/∂v}`, which spans the
-unit ideal by `hjac` — that is exactly what `hjac` says, at the chart ring, for the point
-`(u, v)` given by the images of the two coordinates, which lies on the curve because the
-chart ring is the quotient by `wᵢ`.  On each of the two localisations the `2 × 2` Jacobian
-of the relations `(wᵢ, t·∂wᵢ/∂u - 1)` in the generators `(u, v, t)` is triangular with
-determinant `(∂wᵢ/∂u)²`, a unit there, so the presentation is submersive of dimension
-`3 - 2 = 1`.
-
-The three charts differ only in which dehomogenisation `wᵢ` appears; a Gröbner computation
-confirms `Δ` lies in the Jacobian ideal for all three, so no chart is exceptional. -/
+Each carries its own proof plan; see their docstrings.  A Gröbner computation confirms the
+Jacobian ideal of each of the three charts is the unit ideal over `ℚ(a₁, …, a₆)` and is
+PROPER over `ℚ[a₁, …, a₆]`, so no chart is exceptional and none of this is vacuous. -/
 theorem locally_isStandardSmooth_awayCoord (E : WeierstrassCurve ℚ) [E.IsElliptic] (i : Fin 3)
     (hcoord : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.X i))
       ∈ projGrading E 1)
@@ -441,7 +631,32 @@ theorem locally_isStandardSmooth_awayCoord (E : WeierstrassCurve ℚ) [E.IsEllip
     RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1)
       ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
         (Submonoid.powers (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
-          (MvPolynomial.X i)))).comp (algebraMap ℚ (projGrading E 0))) := sorry
+          (MvPolynomial.X i)))).comp (algebraMap ℚ (projGrading E 0))) := by
+  classical
+  obtain ⟨e, he⟩ := exists_projChartRingEquiv E i hcoord
+  /- The chart ring is locally standard smooth of relative dimension `1`: the two partial
+  derivatives generate the unit ideal (LEAF B, where `hjac` and hence `Δ` is consumed), and
+  on each of the two localisations the curve is a hypersurface with an invertible partial
+  (LEAF C). -/
+  have hloc : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1)
+      (algebraMap ℚ (ProjChartRing E i)) :=
+    RingHom.locally_of_exists RingHom.isStandardSmoothOfRelativeDimension_respectsIso _
+      (fun j : ProjChartVar i =>
+        (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
+          (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i))
+      (projChart_jacobian_span_eq_top E i hjac)
+      (fun j => Localization.Away
+        (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
+          (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i))
+      (fun j => isStandardSmoothOfRelativeDimension_projChartAway E i j _)
+  -- transport back along the dehomogenisation isomorphism (LEAF A)
+  have htrans := (RingHom.locally_respectsIso
+    RingHom.isStandardSmoothOfRelativeDimension_respectsIso).left _ e.symm hloc
+  rw [← he, ← RingHom.comp_assoc] at htrans
+  have hid : e.symm.toRingHom.comp
+      (e : HomogeneousLocalization.Away (projGrading E) (projCoord E i) →+* ProjChartRing E i)
+      = RingHom.id _ := RingHom.ext fun x => e.symm_apply_apply x
+  rwa [hid, RingHom.id_comp] at htrans
 
 /-- **The projective Weierstrass model is smooth of relative dimension
 `1` over `Spec ℚ`** (sorry node — item 7a).
