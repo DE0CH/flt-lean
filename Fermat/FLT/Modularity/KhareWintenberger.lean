@@ -8620,7 +8620,186 @@ theorem exists_quasiFinite_toProper_of_isAffine_finiteType
       (eC.hom ≫ AlgebraicGeometry.Spec.map (CommRingCat.ofHom φ.toRingHom) ≫ ι) fP
 
 open CategoryTheory AlgebraicGeometry in
-/-- **LEAF B — finiteness of the normalization (E. Noether)** (SORRY LEAF).
+set_option backward.isDefEq.respectTransparency false in
+/-- **The affine-local criterion for finiteness of `fromNormalization`** (PROVEN,
+2026-07-27 — this is the structural half of LEAF B, and it is now done).
+
+For a qcqs `f : X ⟶ Y`, `IsFinite f.fromNormalization` follows from the purely
+ring-theoretic statement that, for every AFFINE open `U ⊆ Y`, the integral
+closure of `Γ(Y, U)` in `Γ(X, f ⁻¹ᵁ U)` is a FINITE `Γ(Y, U)`-module.
+
+Why this is available at all: mathlib's `Scheme.Hom.normalizationObjIso`
+identifies `Γ(f.normalization, f.fromNormalization ⁻¹ᵁ U)` with exactly
+`integralClosure Γ(Y, U) Γ(X, f ⁻¹ᵁ U)` for affine `U`, and
+`Scheme.Hom.fromNormalization_preimage` identifies `f.fromNormalization ⁻¹ᵁ U`
+with the range of the `U`-piece of `normalizationOpenCover`. The proof below is
+the `IsFinite` transcription of mathlib's own proof of
+`instance : IsIntegralHom f.fromNormalization` in
+`Mathlib/AlgebraicGeometry/Normalization.lean` — same `IsZariskiLocalAtTarget`
+reduction, same `isoOfRangeEq` transport, with `IsIntegralHom.SpecMap_iff`
+replaced by `IsFinite.SpecMap_iff` and `RingHom.IsIntegral` by
+`RingHom.Finite`. Nothing about curves, dimension or quasi-finiteness enters.
+
+**So LEAF B is NOT a scheme-theoretic problem at all.** Everything that remains
+after this lemma is commutative algebra plus one gluing step, both isolated
+below. -/
+theorem isFinite_fromNormalization_of_forall_affineOpens
+    {X Y : AlgebraicGeometry.Scheme.{u}} (f : X ⟶ Y)
+    [AlgebraicGeometry.QuasiCompact f] [AlgebraicGeometry.QuasiSeparated f]
+    (H : ∀ U : Y.affineOpens,
+      letI := (f.app U.1).hom.toAlgebra
+      Module.Finite Γ(Y, U.1) (integralClosure Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1))) :
+    AlgebraicGeometry.IsFinite f.fromNormalization := by
+  rw [IsZariskiLocalAtTarget.iff_of_iSup_eq_top (P := @AlgebraicGeometry.IsFinite) _
+    (iSup_affineOpens_eq_top _)]
+  intro U
+  let e := IsOpenImmersion.isoOfRangeEq (f.fromNormalization ⁻¹ᵁ U).ι
+      (f.normalizationOpenCover.f U)
+      (by simpa using congr($(f.fromNormalization_preimage U).1))
+  rw [← MorphismProperty.cancel_left_of_respectsIso @AlgebraicGeometry.IsFinite e.inv,
+    ← MorphismProperty.cancel_right_of_respectsIso @AlgebraicGeometry.IsFinite _
+      U.2.isoSpec.hom]
+  have hfin : (f.normalizationDiagramMap.app (.op U.1)).hom.Finite := by
+    letI := (f.app U.1).hom.toAlgebra
+    change (algebraMap Γ(Y, U.1) (integralClosure Γ(Y, U.1) Γ(X, f ⁻¹ᵁ U.1))).Finite
+    rw [RingHom.finite_algebraMap]
+    exact H U
+  convert! AlgebraicGeometry.IsFinite.SpecMap_iff _ |>.mpr hfin
+  rw [← cancel_mono U.2.fromSpec]
+  simp [IsAffineOpen.isoSpec_hom, e, AlgebraicGeometry.Scheme.Hom.ι_fromNormalization]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF B-i — a scheme smooth over a field is reduced** (SORRY LEAF, new
+2026-07-27).
+
+Mathematically this is "smooth over a field ⟹ regular ⟹ reduced", and it is
+the ONE place where the standard chain is unavailable at this pin: mathlib has
+**no regularity theory for schemes at all**.
+**CHECK THAT WOULD REFUTE THIS:**
+`grep -rln 'IsRegularLocalRing\|IsRegular' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`
+returns only `EffectiveEpi.lean` and `Sites/Fpqc.lean`, neither of which is
+about regularity of schemes; and `grep -rn 'IsReduced' Mathlib/RingTheory/Smooth/`
+is empty, so the ring-level shortcut `Algebra.Smooth k B ⟹ IsReduced B` is
+absent too. Note mathlib's `Scheme.Hom.dense_smoothLocus_of_perfectField`
+takes `[IsReduced X]` as an INPUT, so it cannot be run backwards.
+
+Routes for a successor, cheapest first:
+
+* ring-level only: `Smooth` is `HasRingHomProperty @Smooth RingHom.Smooth`, so
+  it suffices to prove `Algebra.Smooth k B → IsReduced B` for `k` a field, and
+  then transport with `HasRingHomProperty.iff_appLE`. `IsReduced` of a scheme
+  is affine-local (`AlgebraicGeometry.isReduced_of_isReduced_Γ` and friends).
+* via standard-smooth presentations (`Algebra.StandardSmooth`), which at this
+  pin is the concrete form smoothness takes locally.
+
+This is stated over `ℚ` only because that is where it is used; nothing in it is
+special to `ℚ` beyond `k` being a field (perfectness is not even needed —
+smooth always implies geometrically regular). -/
+theorem isReduced_of_smooth_over_rat {C : AlgebraicGeometry.Scheme.{u}}
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC) : IsReduced C :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF B-ii — E. Noether's finiteness theorem for the integral closure**
+(SORRY LEAF, new 2026-07-27). This is the mathematical content of LEAF B,
+reduced to pure commutative algebra with every scheme gone.
+
+`A` is a finite-type algebra over a field `k` of characteristic `0`, `B` is a
+REDUCED finite-type `A`-algebra. Then the integral closure of `A` in `B` is a
+finite `A`-module. Equivalently (Stacks 0335, specialised): a finite-type
+algebra over a field is NAGATA.
+
+**CORRECTION TO THE 2026-07-27 CUT-OBSTRUCTION AUDIT BELOW.** That audit
+records that `IsIntegralClosure.finite` "does not apply", and it is right that
+it does not apply *to `A = Γ(P, U)`*, which is not integrally closed. But it is
+precisely the ENGINE one level down, and this is the standard proof:
+
+1. Reduce to `A ⊆ B` with `A` a domain: replace `A` by its image in `B` (still
+   finite type over `k`), and `B` by the finitely many `B/𝔭ᵢ` for `𝔭ᵢ` the
+   minimal primes — `B` reduced Noetherian embeds in `∏ B/𝔭ᵢ`, and a submodule
+   of a finite module over a Noetherian ring is finite.
+2. An element of `B` integral over `A` is algebraic over `K = Frac A`, hence
+   lies in the relative algebraic closure `L₀` of `K` in `Frac B`, which is a
+   FINITE extension of `K` because `Frac B` is a finitely generated field
+   extension. So `integralClosure A B ⊆ integralClosure A L₀`.
+3. `Mathlib/RingTheory/NoetherNormalization.lean`'s
+   `exists_finite_inj_algHom_of_fg` gives `A₀ = MvPolynomial (Fin s) k ↪ A`
+   finite. Then `integralClosure A L₀ = integralClosure A₀ L₀`, and `A₀` is a
+   UFD, hence `IsIntegrallyClosed`, and Noetherian. `L₀` is finite over
+   `Frac A₀` and separable because `CharZero`.
+4. `IsIntegralClosure.finite A₀ (Frac A₀) L₀ _` now applies verbatim, and
+   `Module.Finite A₀ _` gives `Module.Finite A _` by
+   `Module.Finite.of_restrictScalars_finite` / tower.
+
+So the ingredient genuinely missing from the pin is not a single theorem but
+steps 1–2 (the reduction to the domain-with-finite-fraction-field case); step 3
+is `NoetherNormalization.lean` and step 4 is
+`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean:174`, both PRESENT. The
+audit's conclusion "there is no Nagata/Japanese theory in mathlib" stands; its
+implicit conclusion that no foothold exists does not. -/
+theorem module_finite_integralClosure_of_finiteType
+    (k A B : Type u) [Field k] [CharZero k] [CommRing A] [CommRing B]
+    [Algebra k A] [Algebra k B] [Algebra A B] [IsScalarTower k A B]
+    [Algebra.FiniteType k A] [Algebra.FiniteType A B] [IsReduced B] :
+    Module.Finite A (integralClosure A B) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF B-iii — globalising Noether's theorem over one affine open of the
+target** (SORRY LEAF, new 2026-07-27).
+
+This supplies the hypothesis of `isFinite_fromNormalization_of_forall_affineOpens`
+above from LEAF B-ii, and it is the ONE step that is neither pure algebra nor
+pure formalism.
+
+**Why it is not immediate.** `g ⁻¹ᵁ U` is an open subscheme of the affine `C`,
+and it is NOT affine in general, so `Γ(C, g ⁻¹ᵁ U)` need not be a finite-type
+`Γ(P, U)`-algebra and LEAF B-ii cannot be applied to it directly. (This is the
+same phenomenon as Nagata's examples of a quasi-compact open in a Noetherian
+affine with non-Noetherian sections.) The standard fix, Stacks 03GR:
+
+* `g ⁻¹ᵁ U` is quasi-compact (`hgqc` plus `U` affine), so it is covered by
+  FINITELY many affine opens `Vᵢ ≤ g ⁻¹ᵁ U` of the affine scheme `C`;
+* `Γ(C, g ⁻¹ᵁ U) → ∏ᵢ Γ(C, Vᵢ)` is INJECTIVE — this is the sheaf axiom, and
+  needs no reducedness: use `TopCat.Presheaf.IsSheaf.section_ext`;
+* each `Γ(C, Vᵢ)` IS a finite-type `Γ(P, U)`-algebra (`hgft` through
+  `HasRingHomProperty.iff_appLE`) and is reduced (`[IsReduced C]`), so LEAF B-ii
+  gives `Module.Finite Γ(P, U) (integralClosure Γ(P, U) Γ(C, Vᵢ))`;
+* `integralClosure Γ(P, U) Γ(C, g ⁻¹ᵁ U)` therefore embeds `Γ(P, U)`-linearly
+  into the finite module `∏ᵢ integralClosure Γ(P, U) Γ(C, Vᵢ)`, and `Γ(P, U)` is
+  Noetherian (finite type over a field), so the submodule is finite.
+
+`hPproper` is used only for "`Γ(P, U)` is a finite-type `ULift ℚ`-algebra", via
+`IsProper.toLocallyOfFiniteType` and `HasRingHomProperty.iff_appLE`, transporting
+the base along `Scheme.ΓSpecIso (CommRingCat.of (ULift ℚ))`.
+
+`hNoether` is LEAF B-ii, passed as an explicit hypothesis rather than invoked
+inside the (currently sorried) proof: a sorried body contributes no dependency
+edges, so stating it this way is what keeps LEAF B-ii from being free-floating
+while this leaf is open. Discharge it with
+`module_finite_integralClosure_of_finiteType` and delete the hypothesis once
+this leaf is proven. -/
+theorem module_finite_integralClosure_sections_of_isReduced
+    {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C] [IsReduced C]
+    (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
+    (hPproper : AlgebraicGeometry.IsProper fP)
+    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgqc : AlgebraicGeometry.QuasiCompact g)
+    (hNoether : ∀ (A B : Type u) [CommRing A] [CommRing B] [Algebra A B]
+      [Algebra (ULift.{u} ℚ) A] [Algebra (ULift.{u} ℚ) B]
+      [IsScalarTower (ULift.{u} ℚ) A B]
+      [Algebra.FiniteType (ULift.{u} ℚ) A] [Algebra.FiniteType A B] [IsReduced B],
+      Module.Finite A (integralClosure A B))
+    (U : P.affineOpens) :
+    letI := (g.app U.1).hom.toAlgebra
+    Module.Finite Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1)) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF B — finiteness of the normalization (E. Noether)**
+(**DECOMPOSED AND PROVEN OVER THREE SMALLER LEAVES, 2026-07-27** — no longer a
+bare `sorry`).
 
 `g.fromNormalization` is ALREADY integral, unconditionally, by mathlib's
 `instance : IsIntegralHom f.fromNormalization`. Since
@@ -8684,22 +8863,59 @@ The remaining genuine foothold at this pin:
   which is why this leaf is still much cheaper here than it would be in
   characteristic `p`.
 
-`hsmooth` is recorded because reducedness of `C` (which smoothness gives) is
-what makes the integral closure a torsion-free picture; `hft`, `hPproper`
-supply "finite type over `ℚ`" on both sides via `IsProper.toLocallyOfFiniteType`. -/
+`hsmooth` is used, but ONLY through LEAF B-i, to give `IsReduced C`; that is the
+whole of its role and the "torsion-free picture" gloss above is retired.
+
+**HYPOTHESES THAT TURN OUT TO BE UNUSED**, underscore-prefixed below so the fact
+is mechanically visible rather than merely asserted:
+
+* `_hft` (`LocallyOfFiniteType fC`) and `_hcomm` (`g ≫ fP = fC`) — the finiteness
+  of the normalization is a statement about `g` and `P` alone; `LocallyOfFiniteType g`
+  is supplied directly as `hgft`, so the triangle over `Spec ℚ` never enters.
+* `_hgqf` (`LocallyQuasiFinite g`) — **quasi-finiteness is irrelevant to this
+  leaf.** It is what makes `g.toNormalization` an OPEN IMMERSION (mathlib's half
+  of Zariski's Main Theorem); finiteness of `g.fromNormalization` is Nagata, and
+  Nagata does not see the fibre dimension. This is worth flagging because the
+  audit below frames the leaf as "the finite half of ZMT", which invites the
+  guess that `hgqf` is load-bearing. It is not.
+
+DECOMPOSITION, 2026-07-27. The leaf is now proven from three strictly smaller
+statements, in increasing order of expected cost:
+
+* `isFinite_fromNormalization_of_forall_affineOpens` — PROVEN above, out of
+  mathlib. This is the entire scheme-theoretic half and it cost nothing: it is
+  mathlib's own `IsIntegralHom f.fromNormalization` proof with `IsFinite`
+  substituted throughout.
+* LEAF B-i `isReduced_of_smooth_over_rat` — smooth over a field ⟹ reduced.
+  Small statement, genuinely missing (mathlib has no scheme regularity).
+* LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` — the gluing
+  step over one affine open of `P`, needed because `g ⁻¹ᵁ U` is not affine.
+* LEAF B-ii `module_finite_integralClosure_of_finiteType` — E. Noether's
+  finiteness theorem, pure commutative algebra, the real content. Its docstring
+  carries a four-step proof plan and a correction to the audit below. -/
 theorem isFinite_fromNormalization_of_smooth_affine
     {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
     (hsmooth : AlgebraicGeometry.Smooth fC)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
-    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
+    (_hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hPproper : AlgebraicGeometry.IsProper fP) (_hcomm : g ≫ fP = fC)
+    (_hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
     (hgsep : AlgebraicGeometry.IsSeparated g)
     (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
     (hgqc : AlgebraicGeometry.QuasiCompact g) :
-    AlgebraicGeometry.IsFinite g.fromNormalization :=
-  sorry
+    AlgebraicGeometry.IsFinite g.fromNormalization := by
+  haveI : CharZero (ULift.{u} ℚ) :=
+    ⟨fun a b h => Nat.cast_injective (R := ℚ) (congrArg ULift.down h)⟩
+  haveI : IsReduced C := isReduced_of_smooth_over_rat fC hsmooth
+  haveI := hgsep
+  haveI := hgqc
+  haveI : AlgebraicGeometry.QuasiSeparated g := inferInstance
+  refine isFinite_fromNormalization_of_forall_affineOpens g ?_
+  intro U
+  exact module_finite_integralClosure_sections_of_isReduced fP g hPproper hgft hgqc
+    (fun A B _ _ _ _ _ _ _ _ _ =>
+      module_finite_integralClosure_of_finiteType (ULift.{u} ℚ) A B) U
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF C — the normalized model is smooth over `ℚ`** (SORRY LEAF).
@@ -8871,11 +9087,22 @@ modulo the strictly smaller LEAF A1), in decreasing order of expected cost:
 * LEAF C `smooth_normalizationModel_of_smooth_affine_curve` — normal of
   dimension `≤ 1` over a perfect field implies smooth. The one place where
   mathlib genuinely lacks a theorem (regular ⟹ smooth over a perfect field).
-* LEAF B `isFinite_fromNormalization_of_smooth_affine` — E. Noether's
-  finiteness of integral closure; integrality is already free, but see the
-  CUT-OBSTRUCTION AUDIT in its docstring: this needs NAGATA, which is absent
-  from the pin, and the `IsIntegralClosure.finite` foothold once recorded
-  there does not apply. It is NOT cheaper than LEAF A.
+* ~~LEAF B `isFinite_fromNormalization_of_smooth_affine`~~ — **DECOMPOSED
+  2026-07-27** and proven over three smaller leaves. Its scheme-theoretic half
+  turned out to be free (`isFinite_fromNormalization_of_forall_affineOpens`,
+  PROVEN, is mathlib's own `IsIntegralHom f.fromNormalization` argument with
+  `IsFinite` substituted throughout). What survives is
+  LEAF B-i `isReduced_of_smooth_over_rat` (smooth over a field ⟹ reduced —
+  small, and mathlib has no scheme regularity at all),
+  LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` (the gluing
+  step over one affine open, needed because `g ⁻¹ᵁ U` is not affine), and
+  LEAF B-ii `module_finite_integralClosure_of_finiteType` (E. Noether's
+  finiteness theorem, pure commutative algebra — the real content, and still
+  the most expensive item under this node). The 2026-07-27 audit's verdict that
+  NAGATA is absent from the pin STANDS; its corollary that no foothold exists
+  does not — see the correction in LEAF B-ii's docstring, which routes step 4
+  through `IsIntegralClosure.finite` applied to the POLYNOMIAL subring produced
+  by Noether normalization, where `[IsIntegrallyClosed]` is free.
 * LEAF A1 `exists_properCompactification_affineSpace` — projective `n`-space
   over `ℚ`, i.e. `Spec ℚ[x₁, …, xₙ]` as an open subscheme of a proper
   `ℚ`-scheme. Pure graded-ring bookkeeping: `Proj` is already known proper
