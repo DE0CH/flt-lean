@@ -99,12 +99,23 @@ own branch and wrong once the others landed:
   `Γ(X, ⊤)` satisfying the Weierstrass equation and generating the unit ideal,
   i.e. a TRIVIALISED `Proj`-coordinate datum — together with
   `ProjCoords.toHom`, the morphism `X ⟶ proj E` it determines through
-  `Proj.fromOfGlobalSections`.  Its five successor leaves are
-  `ProjCoords.toHom_smul` (the missing mathlib congruence lemma),
-  `ProjCoords.exists_of_specField`, `ProjCoords.toHom_eq_of_addXYZ_not_span`
-  and `exists_projMulOfCoords` (the gluing) — the fifth,
-  `WeierstrassCurve.Projective.equation_addXYZ`, is PROVEN in
-  `Fermat/FLT/Mathlib/.../ProjectiveAddition.lean`.  `hcomm` is now PROVEN rather than assumed, from antisymmetry of the
+  `Proj.fromOfGlobalSections`.  Of its five successor leaves, two are now
+  CLOSED and one has been cut in two (2026-07-27):
+  `ProjCoords.toHom_eq_of_addXYZ_not_span` is **PROVEN** over the new ring-level
+  `ProjCoords.exists_units_smul_of_addXYZ_not_span`;
+  `WeierstrassCurve.Projective.equation_addXYZ` is PROVEN in
+  `Fermat/FLT/Mathlib/.../ProjectiveAddition.lean`;
+  `ProjCoords.toHom_smul` is **PROVEN as a reduction** to
+  `ProjCoords.toBasicOpenOfGlobalSections_eq_of_gradedSmul` (the chart identity,
+  the only genuinely new MATHLIB work left) and
+  `ProjCoords.ringHom_smul_apply_of_mem_projGrading` (a `MvPolynomial`
+  computation), the gluing half having been discharged by
+  `ProjCoords.openCover_eq_of_gradedSmul` and
+  `ProjCoords.fromOfGlobalSections_eq_of_gradedSmul`;
+  `ProjCoords.exists_of_specField` and `exists_projMulOfCoords` (the gluing)
+  remain open.  **The `[Field K]` binder on the `K`-point leaves was REFUTED and
+  replaced by `(hK : IsField ↥K)` on 2026-07-27** — see the FALSITY AUDIT on
+  `ProjCoords.exists_of_specField`.  `hcomm` is now PROVEN rather than assumed, from antisymmetry of the
   chord–tangent forms plus a residue-field density argument; `hunit` and `hinv`
   stayed with the constructor because — correcting this file's earlier prose —
   they are NOT chart identities of the standard law, which degenerates exactly
@@ -495,9 +506,155 @@ noncomputable def smul (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) : ProjCoords E 
 @[simp] theorem smul_coord (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) :
     (smul u c).coord = (u : Γ(X, ⊤)) • c.coord := rfl
 
+section GradedSmul
+
+/-! ### The `fromOfGlobalSections` congruence, cut into three (2026-07-27)
+
+`ProjCoords.toHom_smul` was a single opaque leaf described as "the one piece of
+genuinely new MATHLIB work".  It is now a REDUCTION: the scheme-theoretic half
+below is PROVEN, and what is left is two much smaller statements, one of them a
+plain computation in `MvPolynomial`.
+
+The general shape is stated for an arbitrary graded ring, because nothing in the
+scheme-theoretic half is special to the Weierstrass ring; `g` is the rescaled map
+`f_u`, characterised by `g a = u ^ n * f a` on `𝒜 n`, and no sum over graded
+pieces is needed because that characterisation is all the proof uses. -/
+
+/-- **Rescaling by a unit does not move the basic opens of the
+`fromOfGlobalSections` cover** (PROVEN, and the whole reason the two covers
+coincide on the nose). -/
+theorem basicOpen_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
+    {n : ℕ} {a : A} (ha : a ∈ 𝒜 n) :
+    X.basicOpen (g a) = X.basicOpen (f a) := by
+  rw [h n a ha, Scheme.basicOpen_mul, Scheme.basicOpen_of_isUnit _ ((u.isUnit).pow n),
+    top_inf_eq]
+
+/-- **The two `fromOfGlobalSections` covers are EQUAL**, not merely isomorphic
+(PROVEN) — the index type is the same and the opens agree by
+`basicOpen_eq_of_gradedSmul`, so the two `Scheme.OpenCover` structures differ
+only in proof fields. -/
+theorem openCover_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a) :
+    Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg = Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf := by
+  have key : (fun ir : Σ' i r, 0 < i ∧ r ∈ 𝒜 i ↦ X.basicOpen (g ir.2.1)) =
+      (fun ir : Σ' i r, 0 < i ∧ r ∈ 𝒜 i ↦ X.basicOpen (f ir.2.1)) :=
+    funext fun ir ↦ basicOpen_eq_of_gradedSmul 𝒜 u f g h ir.2.2.2
+  unfold Proj.openCoverOfMapIrrelevantEqTop
+  congr 1
+
+/-- **The chart-level half of the congruence** (sorry node — this is where ALL
+the remaining content of `ProjCoords.toHom_smul` now sits, and it is the piece
+that lives in `HomogeneousLocalization` rather than in scheme theory).
+
+`Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht` is, after composing with
+`Proj.basicOpenIsoSpec`, the map determined by the ring homomorphism
+
+    Away 𝒜 t →+* Localization.Away (f t),   mk (a, t ^ k) ↦ f a / (f t) ^ k
+
+(`IsLocalization.map` composed with `algebraMap (Away 𝒜 t) (Localization.Away t)`
+in mathlib's definition).  For `g` the same formula reads, on `a ∈ 𝒜 (k * n)`,
+
+    g a / (g t) ^ k = u ^ (k * n) * f a / (u ^ n * f t) ^ k = f a / (f t) ^ k,
+
+so the two ring maps are literally equal once `Localization.Away (g t)` is
+identified with `Localization.Away (f t)` — which is legitimate because
+`g t = u ^ n * f t` and `u ^ n` is a unit, so the two `Submonoid.powers` invert
+the same elements.  **That is the whole mathematical content**: `Away` is the
+degree-`0` part and the rescaling is by `u` to the power of the degree, so it
+cancels between numerator and denominator.
+
+The `Scheme.isoOfEq` on the left is `basicOpen_eq_of_gradedSmul`: the two charts
+have equal — but not syntactically equal — domains.
+
+*What is NOT missing.*  The gluing is already done: `openCover_eq_of_gradedSmul`
+shows the two covers are equal, and `fromOfGlobalSections_eq_of_gradedSmul` below
+derives the full congruence from this leaf by `Scheme.Cover.hom_ext` plus
+`Scheme.Cover.ι_glueMorphisms`, with no further scheme theory.  So an owner of
+this leaf never has to touch `glueMorphisms`. -/
+theorem toBasicOpenOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
+    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι =
+      (X.isoOfEq (basicOpen_eq_of_gradedSmul 𝒜 u f g h ht)).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+  sorry
+
+/-- **The missing mathlib congruence for `Proj.fromOfGlobalSections`** (PROVEN
+from `openCover_eq_of_gradedSmul` and
+`toBasicOpenOfGlobalSections_eq_of_gradedSmul`).
+
+This is the statement `ProjCoords.toHom_smul` needs, and — modulo the one chart
+leaf above — it is done.  Note that no hypothesis says `g` is *built* from `f` by
+rescaling; only the degreewise identity `g a = u ^ n * f a` is used, which is
+exactly what `ProjCoords.smul` provides. -/
+theorem fromOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a) :
+    Proj.fromOfGlobalSections 𝒜 g hg = Proj.fromOfGlobalSections 𝒜 f hf := by
+  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).hom_ext _ _ fun i ↦ ?_
+  obtain ⟨n, t, hn, ht⟩ := i
+  have hopen : X.basicOpen (g t) = X.basicOpen (f t) :=
+    basicOpen_eq_of_gradedSmul 𝒜 u f g h ht
+  have hfeq : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ =
+      (X.isoOfEq hopen).hom ≫ (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).f ⟨n, t, hn, ht⟩ := by
+    simp [Proj.openCoverOfMapIrrelevantEqTop]
+  have hL : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
+        Proj.fromOfGlobalSections 𝒜 g hg =
+      Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
+  have hR : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
+        Proj.fromOfGlobalSections 𝒜 f hf =
+      (X.isoOfEq hopen).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
+    rw [hfeq]
+    exact (Category.assoc _ _ _).trans (congrArg ((X.isoOfEq hopen).hom ≫ ·)
+      ((Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩))
+  rw [hL, hR]
+  exact toBasicOpenOfGlobalSections_eq_of_gradedSmul 𝒜 u f g h hn ht
+
+end GradedSmul
+
+/-- **The rescaled coordinate ring map is `u ^ n` times the original in degree
+`n`** (sorry node — the arithmetic half of `ProjCoords.toHom_smul`).
+
+`ProjCoords.ringHom` is `Ideal.Quotient.lift` of `MvPolynomial.eval₂Hom base coord`,
+so on the class of a polynomial `p` this says
+
+    eval₂ base (u • coord) p = u ^ n * eval₂ base coord p   for `p` homogeneous of degree `n`,
+
+which is a monomial-by-monomial computation: a monomial of total degree `n`
+picks up exactly `u ^ n`.  The one step that is not literally that computation
+is passing from `a ∈ projGrading E n` — membership in the quotient grading — to
+a homogeneous representative of degree `n`, i.e. surjectivity of
+`HomogeneousIdeal.quotientGrading` onto its graded pieces; `Ideal.Quotient.mk`
+is surjective and the quotient grading is defined as the image, so this is
+`HomogeneousIdeal.mk_mem_quotientGrading` read backwards.
+
+This is deliberately stated in the exact form
+`fromOfGlobalSections_eq_of_gradedSmul` consumes. -/
+theorem ringHom_smul_apply_of_mem_projGrading (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X)
+    (n : ℕ) (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)
+    (ha : a ∈ projGrading E n) :
+    (smul u c).ringHom a = (u : Γ(X, ⊤)) ^ n * c.ringHom a :=
+  sorry
+
 /-- **Rescaling the coordinates by a unit does not change the morphism**
-(sorry node — this is item 3 of `exists_projMul`'s plan, the one piece of
-genuinely new MATHLIB work, now stated in its concrete form).
+(**PROVEN 2026-07-27** from `fromOfGlobalSections_eq_of_gradedSmul` and
+`ringHom_smul_apply_of_mem_projGrading` — it is a REDUCTION, not a result: the
+two leaves above still carry the content, and this declaration has no `sorry`
+of its own).
 
 The general statement is: for `u : Γ(X, ⊤)ˣ` and `f : A →+* Γ(X, ⊤)` with
 `A` graded, the rescaled map `f_u : a ↦ ∑ n, u ^ n * f aₙ` satisfies
@@ -528,7 +685,9 @@ Bosma–Lenstra laws on their overlap (where the unit is `add2Z / addZ`),
 and for the identification of a degenerate sum with the point at
 infinity. -/
 theorem toHom_smul (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) : (smul u c).toHom = c.toHom :=
-  sorry
+  fromOfGlobalSections_eq_of_gradedSmul (projGrading E) u c.ringHom (smul u c).ringHom
+    c.map_irrelevant_eq_top (smul u c).map_irrelevant_eq_top
+    (ringHom_smul_apply_of_mem_projGrading u c)
 
 /-- **The chord–tangent sum of two coordinate data**, where it is
 non-degenerate (PROVEN from `equation_addXYZ`). -/
