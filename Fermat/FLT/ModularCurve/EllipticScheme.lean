@@ -566,13 +566,174 @@ is a unit, so `span_coord` holds.  Mathlib supplies the factorisation as
 
 *What it is used for*: it is the bridge from the residue-field ext lemma
 `ext_of_fromSpecResidueField_eq` to the polynomial identities.  Without it
-no `K`-point argument in this cluster can start. -/
-theorem exists_of_specField (E : WeierstrassCurve ℚ) (K : CommRingCat.{0}) [Field K]
-    (a : Spec K ⟶ proj E) : ∃ c : ProjCoords E (Spec K), c.toHom = a :=
+no `K`-point argument in this cluster can start.
+
+## FALSITY AUDIT (2026-07-27): the hypothesis is `IsField ↥K`, NOT `[Field K]`
+
+This leaf, `toHom_eq_of_addXYZ_not_span` and `projMulCoords_comm` were all
+stated with `(K : CommRingCat.{0}) [Field K]`, and that binder is **false-shaped**
+— not merely awkward.  `[Field K]` elaborates to `Field ↥K`, an arbitrary field
+structure ON THE CARRIER TYPE, and `Field` extends `CommRing`, so it supplies a
+SECOND ring structure unrelated to `K.str`.  Everything the statement is about —
+`Spec K`, `Γ(Spec K, ⊤)`, `ProjCoords E (Spec K)` — is built from `K.str`, so the
+hypothesis constrains nothing about the ring whose spectrum is being taken.
+
+This was verified, not guessed.  The transport
+
+    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField (Field.toIsField _)
+
+fails with *"synthesized type class instance is not definitionally equal"*,
+`Field.toSemifield.toDivisionSemiring.toSemiring` against
+`CommRing.toCommSemiring.toSemiring`, exactly because the two ring structures on
+`↥K` are different terms.  With `(hK : IsField ↥K)` the same line elaborates, and
+it also elaborates at the one instantiation site, `Scheme.residueField x`, where
+the `Field` instance genuinely IS `K.str` — so the repair costs the consumers a
+`Field.toIsField _` and nothing else.
+
+Under the old binder the statement is not just unprovable but FALSE.  Take
+`K := CommRingCat.of ℚ[X]` with a junk `Field ℚ[X]` transported along a bijection
+`ℚ[X] ≃ ℚ` (`Equiv.field`; both types are denumerable): every hypothesis holds,
+`Spec K = 𝔸¹_ℚ`, and `c := ![0,1,0]`, `d := ![x₀,y₀,t]` have
+`addXYZ c d = t • d` (`addXYZ_of_Z_eq_zero_left`), whose span is `(t) ≠ ⊤`, while
+`c.toHom ≠ d.toHom`.  The earlier note claiming the binder is false-shaped "only
+when a proof needs `AlgebraicClosure K` or `algebraMap K _`" is too narrow: it is
+false-shaped whenever the proof needs the field structure to BE `K.str`, which
+"a proper ideal of a field is zero" does. -/
+theorem exists_of_specField (E : WeierstrassCurve ℚ) (K : CommRingCat.{0})
+    (hK : _root_.IsField ↥K) (a : Spec K ⟶ proj E) :
+    ∃ c : ProjCoords E (Spec K), c.toHom = a :=
   sorry
 
+/-- **Over a FIELD the chord–tangent triple degenerates exactly on the
+diagonal** (PROVEN) — the ring-level content of
+`ProjCoords.toHom_eq_of_addXYZ_not_span`, stated over an arbitrary
+commutative ring that happens to be a field so that it can be instantiated
+at `Γ(Spec K, ⊤)` without transporting the ambient `CommRing` structure.
+
+`IsField` is taken as a HYPOTHESIS rather than as an instance on purpose:
+`Γ(Spec K, ⊤)` is a field only through `Scheme.ΓSpecIso`, and installing a
+`Field` instance obtained by transport would create a second `CommRing`
+path on the same type, which is exactly the "instances that print
+identically" trap.  Everything below is therefore phrased with the
+`[NoZeroDivisors]`-general forms of mathlib's addition lemmas.
+
+The conclusion is the strongest possible one: not merely that the two
+points agree, but that the two coordinate triples differ by a UNIT, which
+is what `ProjCoords.toHom_smul` consumes. -/
+theorem exists_units_smul_of_addXYZ_not_span {R : Type*} [CommRing R] (hR : IsField R)
+    (W' : WeierstrassCurve R) {P Q : Fin 3 → R}
+    (hP : Equation W' P) (hQ : Equation W' Q)
+    (hPs : Ideal.span (Set.range P) = ⊤) (hQs : Ideal.span (Set.range Q) = ⊤)
+    (h : Ideal.span (Set.range (addXYZ W' P Q)) ≠ ⊤) :
+    ∃ u : Rˣ, (u : R) • P = Q := by
+  haveI : Nontrivial R := ⟨hR.exists_pair_ne⟩
+  have hunit : ∀ a : R, a ≠ 0 → IsUnit a := fun a ha =>
+    isUnit_iff_exists_inv.mpr (hR.mul_inv_cancel ha)
+  haveI : NoZeroDivisors R := by
+    refine ⟨fun {a b} hab => ?_⟩
+    by_cases ha : a = 0
+    · exact Or.inl ha
+    · obtain ⟨a', ha'⟩ := hR.mul_inv_cancel ha
+      refine Or.inr ?_
+      calc b = a' * (a * b) := by rw [← mul_assoc, mul_comm a' a, ha', one_mul]
+        _ = 0 := by rw [hab, mul_zero]
+  -- a triple with a nonzero entry spans the unit ideal
+  have hspan_top : ∀ (v : Fin 3 → R) (i : Fin 3), v i ≠ 0 →
+      Ideal.span (Set.range v) = ⊤ := fun v i hvi =>
+    Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span ⟨i, rfl⟩) (hunit _ hvi)
+  -- a spanning triple whose outer entries vanish has a nonzero middle entry
+  have hmid : ∀ (v : Fin 3 → R), Ideal.span (Set.range v) = ⊤ →
+      v 0 = 0 → v 2 = 0 → v 1 ≠ 0 := by
+    intro v hv h0 h2 h1
+    have hle : Ideal.span (Set.range v) ≤ ⊥ := by
+      rw [Ideal.span_le]
+      rintro _ ⟨i, rfl⟩
+      fin_cases i <;> simp [h0, h1, h2]
+    rw [hv] at hle
+    exact one_ne_zero (Ideal.mem_bot.mp (hle Submodule.mem_top))
+  -- the hypothesis says all three chord–tangent forms vanish
+  have hzero : ∀ i, addXYZ W' P Q i = 0 := fun i => by
+    by_contra hi
+    exact h (hspan_top _ i hi)
+  have hY : addY W' P Q = 0 := by have := hzero 1; rwa [addXYZ_Y] at this
+  have hZ : addZ W' P Q = 0 := by have := hzero 2; rwa [addXYZ_Z] at this
+  -- packaging: a cross-multiplication identity produces the rescaling unit
+  have hmk : ∀ p q : R, p ≠ 0 → q ≠ 0 → (∀ i, q * P i = p * Q i) →
+      ∃ u : Rˣ, (u : R) • P = Q := by
+    intro p q hp hq hpq
+    obtain ⟨up, hup⟩ := hunit p hp
+    obtain ⟨uq, huq⟩ := hunit q hq
+    refine ⟨uq * up⁻¹, ?_⟩
+    funext i
+    simp only [Pi.smul_apply, smul_eq_mul, Units.val_mul]
+    refine mul_left_cancel₀ hp ?_
+    calc p * ((uq : R) * (up⁻¹ : Rˣ) * P i)
+        = ((up : R) * (up⁻¹ : Rˣ)) * ((uq : R) * P i) := by rw [← hup]; ring
+      _ = (uq : R) * P i := by rw [Units.mul_inv, one_mul]
+      _ = q * P i := by rw [huq]
+      _ = p * Q i := hpq i
+  by_cases hPz : P 2 = 0
+  · -- `P` is at infinity, and `addZ = 0` forces `Q` to be there too
+    have hPx : P 0 = 0 := X_eq_zero_of_Z_eq_zero hP hPz
+    have hPy : P 1 ≠ 0 := hmid P hPs hPx hPz
+    have hQz : Q 2 = 0 := by
+      have h0 : P 1 ^ 2 * Q 2 * Q 2 = 0 := by
+        rw [← addZ_of_Z_eq_zero_left hP hPz]; exact hZ
+      rcases mul_eq_zero.mp h0 with h' | h'
+      · rcases mul_eq_zero.mp h' with h'' | h''
+        · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h'') hPy
+        · exact h''
+      · exact h'
+    have hQx : Q 0 = 0 := X_eq_zero_of_Z_eq_zero hQ hQz
+    have hQy : Q 1 ≠ 0 := hmid Q hQs hQx hQz
+    refine hmk (P 1) (Q 1) hPy hQy ?_
+    intro i
+    fin_cases i
+    · show Q 1 * P 0 = P 1 * Q 0
+      rw [hPx, hQx, mul_zero, mul_zero]
+    · show Q 1 * P 1 = P 1 * Q 1
+      ring
+    · show Q 1 * P 2 = P 1 * Q 2
+      rw [hPz, hQz, mul_zero, mul_zero]
+  · by_cases hQz : Q 2 = 0
+    · -- impossible: `Q` at infinity and `P` not
+      exfalso
+      have hQx : Q 0 = 0 := X_eq_zero_of_Z_eq_zero hQ hQz
+      have hQy : Q 1 ≠ 0 := hmid Q hQs hQx hQz
+      have h0 : -(Q 1 ^ 2 * P 2) * P 2 = 0 := by
+        rw [← addZ_of_Z_eq_zero_right hQ hQz]; exact hZ
+      rw [neg_mul, neg_eq_zero] at h0
+      rcases mul_eq_zero.mp h0 with h' | h'
+      · rcases mul_eq_zero.mp h' with h'' | h''
+        · exact hQy (pow_eq_zero_iff two_ne_zero |>.mp h'')
+        · exact hPz h''
+      · exact hPz h'
+    · -- both affine: `addZ = 0` forces equal `x`, then `addY = 0` forces equal `y`
+      have hx : P 0 * Q 2 - Q 0 * P 2 = 0 := by
+        refine pow_eq_zero_iff three_ne_zero |>.mp ?_
+        rw [← addZ_eq' hP hQ, hZ, zero_mul]
+      have hy : P 1 * Q 2 - Q 1 * P 2 = 0 := by
+        refine pow_eq_zero_iff three_ne_zero |>.mp ?_
+        have h1 : -(P 1 * Q 2 - Q 1 * P 2) ^ 3 * (P 2 * Q 2) ^ 2 = 0 := by
+          rw [← addY_of_X_eq' hP hQ hPz hQz (sub_eq_zero.mp hx), hY, zero_mul]
+        have hne : (P 2 * Q 2) ^ 2 ≠ 0 := pow_ne_zero _ (mul_ne_zero hPz hQz)
+        rcases mul_eq_zero.mp h1 with h' | h'
+        · exact neg_eq_zero.mp h'
+        · exact absurd h' hne
+      refine hmk (P 2) (Q 2) hPz hQz ?_
+      intro i
+      fin_cases i
+      · show Q 2 * P 0 = P 2 * Q 0
+        linear_combination hx
+      · show Q 2 * P 1 = P 2 * Q 1
+        linear_combination hy
+      · show Q 2 * P 2 = P 2 * Q 2
+        ring
+
 /-- **Over a field the standard addition law degenerates exactly on the
-DIAGONAL** (sorry node) — the Lean form of the 2026-07-27 correction
+DIAGONAL** (**PROVEN 2026-07-27** from
+`ProjCoords.exists_units_smul_of_addXYZ_not_span` and
+`ProjCoords.toHom_smul`) — the Lean form of the 2026-07-27 correction
 recorded in `exists_projMul`'s docstring.
 
 Over a field, `Ideal.span (Set.range v) ≠ ⊤` says precisely that all three
@@ -599,11 +760,22 @@ by a unit" into "the morphisms are equal".
 `exists_projMul`'s docstring asserted that the standard law vanishes on the
 whole locus `x(P) = x(Q)`; mathlib's `negAddY_of_X_eq'` refutes that — on
 the antidiagonal `addY` is a unit and `[0 : addY : 0]` is the point at
-infinity, the correct value of `P + Q`. -/
-theorem toHom_eq_of_addXYZ_not_span {K : CommRingCat.{0}} [Field K] (c d : ProjCoords E (Spec K))
+infinity, the correct value of `P + Q`.
+
+**The `[Field K]` binder was replaced by `(hK : IsField ↥K)` on 2026-07-27**; see
+the FALSITY AUDIT on `ProjCoords.exists_of_specField` for why the old one made
+this statement false rather than merely unprovable. -/
+theorem toHom_eq_of_addXYZ_not_span {K : CommRingCat.{0}} (hK : _root_.IsField ↥K)
+    (c d : ProjCoords E (Spec K))
     (h : ¬ Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤) :
-    c.toHom = d.toHom :=
-  sorry
+    c.toHom = d.toHom := by
+  have hR : _root_.IsField Γ(Spec K, ⊤) :=
+    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField hK
+  have hQ : Equation (E.map c.base) d.coord := by rw [c.base_eq d]; exact d.equation
+  obtain ⟨u, hu⟩ := exists_units_smul_of_addXYZ_not_span hR (E.map c.base) c.equation hQ
+    c.span_coord d.span_coord h
+  have hd : smul u c = d := ProjCoords.ext (by rw [smul_coord]; exact hu)
+  rw [← toHom_smul u c, hd]
 
 end ProjCoords
 
@@ -708,17 +880,23 @@ addition law:
   trivial.
 
 This is the precise sense in which `hcomm` — alone among the three axioms
-of the old leaf — is genuinely cheap. -/
+of the old leaf — is genuinely cheap.
+
+**The `[Field K]` binder was replaced by `(hK : IsField ↥K)` on 2026-07-27**, in
+step with the two `ProjCoords` leaves this consumes; see the FALSITY AUDIT on
+`ProjCoords.exists_of_specField`.  The one caller, `exists_projMul`, supplies
+`Field.toIsField _` at `Scheme.residueField x`, where the `Field` instance really
+is the `CommRingCat` structure. -/
 theorem projMulCoords_comm (E : WeierstrassCurve ℚ)
     (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
     (hlaw : ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
       (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤),
       Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m = (c.add d h).toHom)
-    (K : CommRingCat.{0}) [Field K] (a b : Spec K ⟶ proj E) :
+    (K : CommRingCat.{0}) (hK : _root_.IsField ↥K) (a b : Spec K ⟶ proj E) :
     Limits.pullback.lift b a (hom_ext_spec_rat _ _) ≫ m =
       Limits.pullback.lift a b (hom_ext_spec_rat _ _) ≫ m := by
-  obtain ⟨c, rfl⟩ := ProjCoords.exists_of_specField E K a
-  obtain ⟨d, rfl⟩ := ProjCoords.exists_of_specField E K b
+  obtain ⟨c, rfl⟩ := ProjCoords.exists_of_specField E K hK a
+  obtain ⟨d, rfl⟩ := ProjCoords.exists_of_specField E K hK b
   by_cases h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤
   · have hcomm : addXYZ (E.map d.base) d.coord c.coord =
         ((-1 : (Γ(Spec K, ⊤))ˣ) : Γ(Spec K, ⊤)) • addXYZ (E.map c.base) c.coord d.coord := by
@@ -731,7 +909,7 @@ theorem projMulCoords_comm (E : WeierstrassCurve ℚ)
     have hEq : ProjCoords.smul (-1 : (Γ(Spec K, ⊤))ˣ) (c.add d h) = d.add c h' :=
       ProjCoords.ext (by simp [hcomm])
     rw [← hEq, ProjCoords.toHom_smul]
-  · rw [ProjCoords.toHom_eq_of_addXYZ_not_span c d h]
+  · rw [ProjCoords.toHom_eq_of_addXYZ_not_span hK c d h]
 
 /-- **The projective Weierstrass model is proper over `Spec ℚ`** (PROVEN).
 
@@ -2930,7 +3108,7 @@ theorem exists_projMul (E : WeierstrassCurve ℚ) [E.IsElliptic] :
   rw [comp_swap_eq_lift_comp, comp_eq_lift_comp E m
     ((Limits.pullback (projToSpec E) (projToSpec E)).fromSpecResidueField x)]
   exact projMulCoords_comm E m hlaw
-    ((Limits.pullback (projToSpec E) (projToSpec E)).residueField x) _ _
+    ((Limits.pullback (projToSpec E) (projToSpec E)).residueField x) (Field.toIsField _) _ _
 
 
 /-- **Associativity of any commutative unital multiplication with
