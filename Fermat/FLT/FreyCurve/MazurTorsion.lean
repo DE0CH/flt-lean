@@ -3131,12 +3131,353 @@ theorem WeierstrassCurve.exists_frobeniusAut_of_potentiallyGoodReduction
   (E.exists_potentiallyGoodModel_of_jIntegral hq hq2 hj).elim
     (E.exists_frobeniusAut_of_potentiallyGoodModel hN hq hq2 hqN)
 
+open Polynomial in
+/-- **Solvability of `x^n = a·x + b` over an algebraically closed field**
+(PROVEN 2026-07-27): for `1 < n` the polynomial `X^n − aX − b` is nonconstant,
+so it has a root. This is the only input Lang's theorem needs below: over
+`𝔽̄_q` the additive components of a Lang equation are exactly equations of this
+shape with `n = q`, and the multiplicative component is `x^{q−1} = a`, which is
+`IsAlgClosed.exists_pow_nat_eq`. -/
+theorem exists_pow_eq_linear {k : Type*} [Field k] [IsAlgClosed k] {n : ℕ} (hn : 1 < n)
+    (a b : k) : ∃ x : k, x ^ n = a * x + b := by
+  set p : k[X] := X ^ n - (C a * X + C b) with hp
+  have h1 : (C a * X + C b).degree < (X ^ n : k[X]).degree := by
+    rw [degree_X_pow]
+    exact lt_of_le_of_lt degree_linear_le (by exact_mod_cast hn)
+  have hdeg : p.degree = (n : ℕ) := by
+    rw [hp, degree_sub_eq_left_of_degree_lt h1, degree_X_pow]
+  have hne : p.degree ≠ 0 := by
+    rw [hdeg]
+    exact_mod_cast (by omega : (n : ℕ) ≠ 0)
+  obtain ⟨x, hx⟩ := IsAlgClosed.exists_root p hne
+  refine ⟨x, ?_⟩
+  have hev : x ^ n - (a * x + b) = 0 := by
+    simpa only [hp, IsRoot.def, eval_sub, eval_add, eval_pow, eval_X, eval_mul, eval_C] using hx
+  linear_combination hev
+
+/-- The `q`-power Frobenius of `𝔽̄_q`, as an algebra map, is `x ↦ x^q`. -/
+theorem frobAlgHom_apply (q : ℕ) [Fact q.Prime] (x : AlgebraicClosure (ZMod q)) :
+    WeilPairing.frobAlgHom q x = x ^ q := rfl
+
+open Polynomial in
+/-- **The fixed field of the `q`-power Frobenius on `𝔽̄_q` is `𝔽_q`**
+(PROVEN 2026-07-27): if `x^q = x` then `x` is in the image of
+`algebraMap (ZMod q) (AlgebraicClosure (ZMod q))`.
+
+Counting: `X^q − X` has degree `q`, hence at most `q` roots; the `q` elements
+of the image of `ZMod q` are all roots (Fermat's little theorem, `ZMod.pow_card`)
+and are distinct (the algebra map is injective). So the root set IS the image.
+
+This is the descent step of `exists_twist_curve` below. Note that
+`EllipticCurve/FrobeniusFixedField.lean` develops the same fixed fields
+`frobFixed q n` at every level `n`; that module is *not* in this file's import
+cone, and reproving the `n = 1` case here in 25 lines is cheaper than importing
+it. -/
+theorem exists_algebraMap_eq_of_pow_card_eq (q : ℕ) [Fact q.Prime]
+    {x : AlgebraicClosure (ZMod q)} (hx : x ^ q = x) :
+    ∃ y : ZMod q, algebraMap (ZMod q) (AlgebraicClosure (ZMod q)) y = x := by
+  classical
+  have hq1 : 1 < q := (Fact.out : q.Prime).one_lt
+  set f := algebraMap (ZMod q) (AlgebraicClosure (ZMod q)) with hf
+  have hfinj : Function.Injective f := f.injective
+  set p : (AlgebraicClosure (ZMod q))[X] := X ^ q - X with hp
+  have hp0 : p ≠ 0 := FiniteField.X_pow_card_sub_X_ne_zero _ hq1
+  have hpdeg : p.natDegree = q := FiniteField.X_pow_card_sub_X_natDegree_eq _ hq1
+  have hroot : ∀ z : AlgebraicClosure (ZMod q), p.IsRoot z ↔ z ^ q = z := by
+    intro z
+    simp [hp, IsRoot.def, sub_eq_zero]
+  set S : Finset (AlgebraicClosure (ZMod q)) := Finset.image f Finset.univ with hS
+  have hScard : S.card = q := by
+    rw [hS, Finset.card_image_of_injective _ hfinj, Finset.card_univ, ZMod.card]
+  have hsub : S ⊆ p.roots.toFinset := by
+    intro z hz
+    rw [hS, Finset.mem_image] at hz
+    obtain ⟨y, -, rfl⟩ := hz
+    rw [Multiset.mem_toFinset, mem_roots hp0, hroot]
+    rw [← map_pow, ZMod.pow_card]
+  have hle : p.roots.toFinset.card ≤ S.card := by
+    rw [hScard]
+    exact le_trans p.roots.toFinset_card_le (le_trans (Polynomial.card_roots' p) hpdeg.le)
+  have heq : S = p.roots.toFinset := Finset.eq_of_subset_of_card_le hsub hle
+  have hxmem : x ∈ p.roots.toFinset := by
+    rw [Multiset.mem_toFinset, mem_roots hp0, hroot]
+    exact hx
+  rw [← heq, hS, Finset.mem_image] at hxmem
+  obtain ⟨y, -, hy⟩ := hxmem
+  exact ⟨y, hy⟩
+
+/-- **Lang's theorem for the group of admissible variable changes over `𝔽̄_q`**
+(PROVEN 2026-07-27): for every `C` there is a `D` with `φ(D) = C · D`, where `φ`
+is the `q`-power Frobenius applied entrywise.
+
+This is the whole cohomological content of the twist classification, and over
+`𝔽̄_q` it is elementary rather than a general theorem about connected algebraic
+groups. `VariableChange` is `𝔾_m ⋉ 𝔾_a³` with the group law of
+`WeierstrassCurve.VariableChange.mul_def`, so the Lang equation splits into four
+scalar equations solved in order:
+
+* `u`: `u^q = C.u · u`, i.e. `u^{q−1} = C.u` — solvable because `𝔽̄_q` is
+  algebraically closed (`IsAlgClosed.exists_pow_nat_eq`), and the solution is
+  nonzero because `C.u` is;
+* `r`, `s`, `t`: each of the shape `x^q = x + (known)`, i.e. Artin–Schreier,
+  solvable by `exists_pow_eq_linear` above.
+
+The order matters only in that `t`'s constant term mentions `s`.
+
+Note the LEFT form `φ(D) = C · D`, not the right form `φ(D) = D · C`: it is the
+left form that makes every map in the torsion transport of
+`exists_torsionEquiv_of_twist_curve` a FORWARD map (no `AddEquiv.symm`), which
+is what keeps that proof to a `simp only` plus two `ring` calls. Both forms are
+solvable; only this one is convenient. -/
+theorem exists_variableChange_lang (q : ℕ) [Fact q.Prime]
+    (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q))) :
+    ∃ D : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)),
+      D.map (WeilPairing.frobAlgHom q).toRingHom = C * D := by
+  have hq1 : 1 < q := (Fact.out : q.Prime).one_lt
+  obtain ⟨z, hz⟩ := IsAlgClosed.exists_pow_nat_eq
+    ((C.u : (AlgebraicClosure (ZMod q)))) (n := q - 1) (by omega)
+  have hz0 : z ≠ 0 := by
+    intro h
+    rw [h, zero_pow (by omega : q - 1 ≠ 0)] at hz
+    exact C.u.ne_zero hz.symm
+  have hzq : z ^ q = (C.u : (AlgebraicClosure (ZMod q))) * z := by
+    have h1 : z ^ q = z ^ (q - 1) * z := by
+      rw [← pow_succ]; congr 1; omega
+    rw [h1, hz]
+  obtain ⟨r, hr⟩ := exists_pow_eq_linear (k := (AlgebraicClosure (ZMod q))) hq1 1 (C.r * z ^ 2)
+  obtain ⟨s, hs⟩ := exists_pow_eq_linear (k := (AlgebraicClosure (ZMod q))) hq1 1 (z * C.s)
+  obtain ⟨t, ht⟩ := exists_pow_eq_linear (k := (AlgebraicClosure (ZMod q))) hq1 1
+    (C.t * z ^ 3 + C.r * s * z ^ 2)
+  refine ⟨⟨Units.mk0 z hz0, r, s, t⟩, ?_⟩
+  ext <;>
+    simp only [WeierstrassCurve.VariableChange.map, WeierstrassCurve.VariableChange.mul_def,
+      Units.coe_map, MonoidHom.coe_coe, RingHom.coe_coe, AlgHom.toRingHom_eq_coe,
+      Units.val_mk0, Units.val_mul, frobAlgHom_apply]
+  · exact hzq
+  · rw [hr]; ring
+  · rw [hs]; ring
+  · rw [ht]; ring
+
+/-- Base change along the identity is the identity. -/
+theorem WeierstrassCurve.map_algebraMap_self {F : Type*} [Field F] (W : WeierstrassCurve F) :
+    W.map (algebraMap F F) = W := by
+  rw [Algebra.algebraMap_self, WeierstrassCurve.map_id]
+
+/-- **Galois descent for Weierstrass curves over `𝔽̄_q`** (PROVEN 2026-07-27):
+a curve whose coefficients are fixed by the `q`-power Frobenius is the base
+change of a curve over `𝔽_q`. Immediate from
+`exists_algebraMap_eq_of_pow_card_eq` applied to the five coefficients. -/
+theorem exists_descent_weierstrass (q : ℕ) [Fact q.Prime]
+    (V : WeierstrassCurve (AlgebraicClosure (ZMod q)))
+    (hV : V.map (WeilPairing.frobAlgHom q).toRingHom = V) :
+    ∃ Wbar : WeierstrassCurve (ZMod q),
+      Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) = V := by
+  have key : ∀ x : AlgebraicClosure (ZMod q),
+      (WeilPairing.frobAlgHom q).toRingHom x = x →
+      ∃ y : ZMod q, algebraMap (ZMod q) (AlgebraicClosure (ZMod q)) y = x := by
+    intro x hxx
+    exact exists_algebraMap_eq_of_pow_card_eq q (by rw [← frobAlgHom_apply q x]; exact hxx)
+  obtain ⟨b₁, hb₁⟩ := key V.a₁ (by rw [← WeierstrassCurve.map_a₁, hV])
+  obtain ⟨b₂, hb₂⟩ := key V.a₂ (by rw [← WeierstrassCurve.map_a₂, hV])
+  obtain ⟨b₃, hb₃⟩ := key V.a₃ (by rw [← WeierstrassCurve.map_a₃, hV])
+  obtain ⟨b₄, hb₄⟩ := key V.a₄ (by rw [← WeierstrassCurve.map_a₄, hV])
+  obtain ⟨b₆, hb₆⟩ := key V.a₆ (by rw [← WeierstrassCurve.map_a₆, hV])
+  refine ⟨⟨b₁, b₂, b₃, b₄, b₆⟩, ?_⟩
+  ext <;> simpa using ‹_›
+
+/-- **The twist, at the level of CURVES** (PROVEN 2026-07-27): given an
+automorphism `C` of `Wbar₀` over `𝔽̄_q`, there is a curve `Wbar` over `𝔽_q` and
+an `𝔽̄_q`-variable change `d` carrying `Wbar` to `Wbar₀` and satisfying the Lang
+relation `φ(d) = C · d`.
+
+This is ALL the mathematics of `exists_twist_frobeniusTorsionEnd` below; what
+remains there is point-level bookkeeping. The construction:
+
+1. Lang (`exists_variableChange_lang`) supplies `d` with `φ(d) = C · d`.
+2. `V := d⁻¹ • (Wbar₀ ⁄ 𝔽̄_q)` is Frobenius-stable:
+   `φ(V) = φ(d)⁻¹ • φ(Wbar₀) = (C·d)⁻¹ • Wbar₀ = d⁻¹ • (C⁻¹ • Wbar₀) = V`,
+   using `C • Wbar₀ = Wbar₀` (so also `C⁻¹ • Wbar₀ = Wbar₀`) and that `Wbar₀` is
+   defined over `𝔽_q`, hence Frobenius-stable.
+3. Descent (`exists_descent_weierstrass`) turns `V` into a curve `Wbar` over
+   `𝔽_q`, and `d • V = Wbar₀` by `smul_inv_smul`.
+4. `Wbar` is elliptic because `V` is and `algebraMap` is injective.
+
+The old audit above (`H¹(Gal, Aut)`, Lang's theorem for connected groups, the
+`j ∈ {0, 1728}` case analysis of Silverman *AEC* X.5) is RETIRED: none of it is
+needed. Working in the full variable-change group `𝔾_m ⋉ 𝔾_a³` rather than in
+`Aut` makes the Lang equation four scalar equations over an algebraically
+closed field, and the descent is a root count for `X^q − X`. In particular
+there is no case split on `j`, no restriction to `q ≥ 5`, and no cohomology. -/
+theorem exists_twist_curve (q : ℕ) [Fact q.Prime]
+    (Wbar₀ : WeierstrassCurve (ZMod q)) [Wbar₀.IsElliptic]
+    (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+    (hC : C • ((Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+          (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+        = (Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+          (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))) :
+    ∃ (Wbar : WeierstrassCurve (ZMod q)) (_ : Wbar.IsElliptic)
+      (d : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q))),
+      d • ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+        = (Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))
+      ∧ d.map (WeilPairing.frobAlgHom q).toRingHom = C * d := by
+  set k := (AlgebraicClosure (ZMod q))
+  set E₀ : WeierstrassCurve k := (Wbar₀.map (algebraMap (ZMod q) k)).map (algebraMap k k) with hE₀
+  obtain ⟨d, hd⟩ := exists_variableChange_lang q C
+  have hCinv : C⁻¹ • E₀ = E₀ := by
+    rw [inv_smul_eq_iff]; exact hC.symm
+  have hE₀frob : E₀.map (WeilPairing.frobAlgHom q).toRingHom = E₀ := by
+    rw [hE₀, WeierstrassCurve.map_algebraMap_self, WeierstrassCurve.map_map]
+    congr 1
+    exact (WeilPairing.frobAlgHom q).comp_algebraMap
+  have hdinv : (d⁻¹).map (WeilPairing.frobAlgHom q).toRingHom
+      = (C * d)⁻¹ := by
+    have h : (d⁻¹).map (WeilPairing.frobAlgHom q).toRingHom
+        = (d.map (WeilPairing.frobAlgHom q).toRingHom)⁻¹ :=
+      map_inv (WeierstrassCurve.VariableChange.mapHom _) d
+    rw [h, hd]
+  have hVfrob : (d⁻¹ • E₀).map (WeilPairing.frobAlgHom q).toRingHom = d⁻¹ • E₀ := by
+    rw [← WeierstrassCurve.map_variableChange, hdinv, hE₀frob, mul_inv_rev, mul_smul, hCinv]
+  obtain ⟨Wbar, hWbar⟩ := exists_descent_weierstrass q (d⁻¹ • E₀) hVfrob
+  haveI : E₀.IsElliptic := by rw [hE₀]; infer_instance
+  haveI : (d⁻¹ • E₀).IsElliptic := inferInstance
+  have hell : Wbar.IsElliptic := by
+    rw [WeierstrassCurve.isElliptic_iff]
+    have h1 : IsUnit ((d⁻¹ • E₀).Δ) := WeierstrassCurve.isUnit_Δ _
+    rw [← hWbar, WeierstrassCurve.map_Δ] at h1
+    refine isUnit_iff_ne_zero.mpr ?_
+    intro h0
+    rw [h0, map_zero] at h1
+    exact (isUnit_iff_ne_zero.mp h1) rfl
+  refine ⟨Wbar, hell, d, ?_, hd⟩
+  rw [WeierstrassCurve.map_algebraMap_self, hWbar, smul_inv_smul]
+
+/-- **Transport of the twist to the `N`-torsion** (PROVEN 2026-07-27): the
+curve-level data produced by `exists_twist_curve` induces the asserted
+`ZMod N`-linear conjugation on `N`-torsion.
+
+The whole proof is a coordinate computation on `Point.some x y`. Writing `c`
+for `C` and `d` for the variable change, and using that both
+`Affine.Point.equivVariableChange` and the Frobenius `Affine.Point.map` are
+given on coordinates by `(x, y) ↦ (u²x + r, u³y + u²sx + t)` and
+`(x, y) ↦ (x^q, y^q)`, the two sides are
+
+* `d ∘ c ∘ φ : x ↦ d.u²(c.u²x^q + c.r) + d.r`,
+* `φ ∘ d : x ↦ φ(d.u)²x^q + φ(d.r)`,
+
+and these agree exactly because the Lang relation `φ(d) = C · d` reads
+`φ(d.u) = c.u·d.u`, `φ(d.r) = c.r·d.u² + d.r`, `φ(d.s) = d.u·c.s + d.s`,
+`φ(d.t) = c.t·d.u³ + c.r·d.s·d.u² + d.t` on components. The `y`-coordinates
+match by the same four identities.
+
+TWO FORMATTING FACTS THAT COST AN HOUR EACH, recorded because nothing in the
+error messages points at them:
+
+* `Affine.Point.map_some` only fires when the point's curve is written with the
+  `baseChange` head (`W⁄K`), not with the unfolded `W.map (algebraMap ..)`. The
+  two are definitionally equal, so the application typechecks and `simp`
+  silently does nothing. Hence `hC'`/`hd'` here, which are `hC`/`hd` retyped.
+* The `Module (ZMod N)` instance on the torsion, conversely, is keyed on the
+  form `(Wbar.map (algebraMap ..))⁄K` that `nTorsion` produces. Hence the
+  SECOND retyping `hd2`, used only in the final `refine`. Using one form
+  everywhere fails at one end or the other. -/
+theorem exists_torsionEquiv_of_twist_curve (q : ℕ) [Fact q.Prime]
+    (Wbar₀ : WeierstrassCurve (ZMod q)) [Wbar₀.IsElliptic]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+    (hC : C • ((Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+          (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+        = (Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+          (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+    (d : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+    (hd : d • ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+          (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+        = (Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+          (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+    (hdlang : d.map (WeilPairing.frobAlgHom q).toRingHom = C * d) :
+    ∃ χ : ((Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N)
+        ≃ₗ[ZMod N]
+        ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N),
+      ∀ y, χ (WeierstrassCurve.autTorsionEnd _ C hC N
+          (WeilPairing.frobeniusTorsionEnd q Wbar₀ N y)) =
+        WeilPairing.frobeniusTorsionEnd q Wbar N (χ y) := by
+  have hC' : C • (Wbar₀.baseChange (AlgebraicClosure (ZMod q)))
+      = (Wbar₀.baseChange (AlgebraicClosure (ZMod q))) := hC
+  have hd' : d • (Wbar.baseChange (AlgebraicClosure (ZMod q)))
+      = (Wbar₀.baseChange (AlgebraicClosure (ZMod q))) := hd
+  have hd2 : d • ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).baseChange
+        (AlgebraicClosure (ZMod q)))
+      = (Wbar₀.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).baseChange
+        (AlgebraicClosure (ZMod q)) := hd
+  have key : ∀ P : (Wbar₀.baseChange (AlgebraicClosure (ZMod q))).toAffine.Point,
+      ((WeierstrassCurve.Affine.Point.equivOfEq hd'.symm).trans
+        (WeierstrassCurve.Affine.Point.equivVariableChange
+          (Wbar.baseChange (AlgebraicClosure (ZMod q))) d))
+        (((WeierstrassCurve.Affine.Point.equivOfEq hC'.symm).trans
+          (WeierstrassCurve.Affine.Point.equivVariableChange
+            (Wbar₀.baseChange (AlgebraicClosure (ZMod q))) C))
+          (WeierstrassCurve.Affine.Point.map (W' := Wbar₀) (S := ZMod q)
+            (WeilPairing.frobAlgHom q) P))
+        = WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+            (WeilPairing.frobAlgHom q)
+            (((WeierstrassCurve.Affine.Point.equivOfEq hd'.symm).trans
+              (WeierstrassCurve.Affine.Point.equivVariableChange
+                (Wbar.baseChange (AlgebraicClosure (ZMod q))) d)) P) := by
+    have hu : (WeilPairing.frobAlgHom q) ((d.u : (AlgebraicClosure (ZMod q)))) =
+        (C.u : (AlgebraicClosure (ZMod q))) * (d.u : (AlgebraicClosure (ZMod q))) := by
+      have h := congrArg (fun X : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)) =>
+        ((X.u : (AlgebraicClosure (ZMod q))ˣ) : (AlgebraicClosure (ZMod q)))) hdlang
+      simpa [WeierstrassCurve.VariableChange.map,
+        WeierstrassCurve.VariableChange.mul_def] using h
+    have hr : (WeilPairing.frobAlgHom q) d.r =
+        C.r * (d.u : (AlgebraicClosure (ZMod q))) ^ 2 + d.r := by
+      have h := congrArg WeierstrassCurve.VariableChange.r hdlang
+      simpa [WeierstrassCurve.VariableChange.map,
+        WeierstrassCurve.VariableChange.mul_def] using h
+    have hs : (WeilPairing.frobAlgHom q) d.s =
+        (d.u : (AlgebraicClosure (ZMod q))) * C.s + d.s := by
+      have h := congrArg WeierstrassCurve.VariableChange.s hdlang
+      simpa [WeierstrassCurve.VariableChange.map,
+        WeierstrassCurve.VariableChange.mul_def] using h
+    have ht : (WeilPairing.frobAlgHom q) d.t =
+        C.t * (d.u : (AlgebraicClosure (ZMod q))) ^ 3
+          + C.r * d.s * (d.u : (AlgebraicClosure (ZMod q))) ^ 2 + d.t := by
+      have h := congrArg WeierstrassCurve.VariableChange.t hdlang
+      simpa [WeierstrassCurve.VariableChange.map,
+        WeierstrassCurve.VariableChange.mul_def] using h
+    rintro (_ | ⟨x, y, hns⟩)
+    · simp only [← WeierstrassCurve.Affine.Point.zero_def, map_zero]
+    · simp only [AddEquiv.trans_apply, WeierstrassCurve.Affine.Point.map_some,
+        WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.equivVariableChange_some]
+      refine WeierstrassCurve.Affine.Point.some_eq_some _ ?_ ?_
+      · simp only [map_add, map_mul, map_pow, hu, hr]
+        ring
+      · simp only [map_add, map_mul, map_pow, hu, hs, ht]
+        ring
+  refine ⟨{ TorsionCounting.torsionByCongr (N : ℤ)
+      ((WeierstrassCurve.Affine.Point.equivOfEq hd2.symm).trans
+        (WeierstrassCurve.Affine.Point.equivVariableChange
+          ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).baseChange
+            (AlgebraicClosure (ZMod q))) d)) with
+      map_smul' := ZMod.map_smul (TorsionCounting.torsionByCongr (N : ℤ)
+        ((WeierstrassCurve.Affine.Point.equivOfEq hd2.symm).trans
+          (WeierstrassCurve.Affine.Point.equivVariableChange
+            ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).baseChange
+              (AlgebraicClosure (ZMod q))) d))).toAddMonoidHom }, ?_⟩
+  intro y
+  apply Subtype.ext
+  exact key y.1
+
 /-- **Twisting over a finite field: an automorphism composed with the
-Frobenius is the Frobenius of a twist** (sorry leaf, opened 2026-07-27 by
-decomposing `exists_frobenius_reduction_model_of_potentiallyGoodReduction`
-below). This is the half of that leaf which is purely a statement about
-elliptic curves over `𝔽_q` — no number field, no inertia, no reduction theory
-— and it is the standard classification of twists.
+Frobenius is the Frobenius of a twist** (PROVEN 2026-07-27, over
+`exists_twist_curve` and `exists_torsionEquiv_of_twist_curve` immediately
+above; opened the same day by decomposing
+`exists_frobenius_reduction_model_of_potentiallyGoodReduction` below). This is
+the half of that leaf which is purely a statement about elliptic curves over
+`𝔽_q` — no number field, no inertia, no reduction theory — and it is the
+standard classification of twists.
 
 THE CONTENT. Twists of `Wbar₀/𝔽_q` are classified by
 `H¹(Gal(𝔽̄_q/𝔽_q), Aut(Wbar₀_{𝔽̄_q}))`. The Galois group is procyclic,
@@ -3149,25 +3490,31 @@ the Lang map). The twist `Wbar` attached to `ξ := C` comes with an isomorphism
 `χ` asserted here. Because `C` ranges over ALL automorphisms, the direction of
 the twisting convention is immaterial to the truth of the statement.
 
-MACHINERY. Absent from all three trees (grepped 2026-07-27 over `Fermat/`,
-`.lake/packages/mathlib/`, `~/cs/FLT/`): `QuadraticTwists/` does the quadratic
-case over a general field and stops there; there is no `H¹` classification of
-twists, no Lang's theorem, and no "Frobenius of a twist" lemma. What IS
-available and should be used rather than rebuilt is the point-level transport
-of a `VariableChange`, `WeierstrassCurve.Affine.Point.equivVariableChange` and
-its Galois-equivariant base-changed form
-`equivVariableChangeBaseChange_galois`, in the project shim
-`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` — the
-latter is exactly the compatibility a cocycle argument needs.
+HOW IT WAS PROVEN, AND WHY THE OLD MACHINERY AUDIT WAS WRONG. That audit said
+`H¹` classification of twists, Lang's theorem and a "Frobenius of a twist"
+lemma are absent from all three trees. All three claims about ABSENCE are
+still true, and all three turned out to be UNNECESSARY. The route actually
+taken avoids `Aut` entirely:
 
-A ROUTE THAT AVOIDS `H¹` ENTIRELY, worth trying first: over a finite field one
-does not need the cohomological classification, only Lang's theorem in the
-form "`x ↦ x^{-1} · F(x)` is surjective on a connected group". For the
-concrete `Aut` groups here (cyclic of order `2`, `4` or `6`, and the extra
-automorphisms only at `j ∈ {0, 1728}`) the twist can be written down as an
-explicit `VariableChange` over `𝔽_{q^k}` and descended by hand, which is how
-Silverman *AEC* X.5 does it. That is elementary and finite, and it does not
-require any general cohomology.
+* **Work in the full variable-change group, not in `Aut`.** `VariableChange`
+  over `𝔽̄_q` is `𝔾_m ⋉ 𝔾_a³`, a connected solvable group, and its Lang
+  equation `φ(d) = C · d` splits into `u^{q−1} = C.u` (solvable because `𝔽̄_q`
+  is algebraically closed) and three Artin–Schreier equations `x^q = x + …`
+  (likewise). That is `exists_variableChange_lang`, and it is ~25 lines with
+  no cohomology, no connectedness theorem, and no case split on `j`.
+* **Descend by counting roots of `X^q − X`.** The twisted curve `d⁻¹ • Wbar₀`
+  is Frobenius-stable by the Lang relation, so its five coefficients lie in
+  the fixed field, which is `𝔽_q` because `X^q − X` has at most `q` roots and
+  the image of `𝔽_q` already supplies `q` of them
+  (`exists_algebraMap_eq_of_pow_card_eq`).
+* **Transport to torsion by coordinates.** `equivVariableChange` and the
+  Frobenius `Affine.Point.map` are both explicit on `Point.some x y`, so the
+  conjugation identity is two polynomial identities discharged by `ring` from
+  the four components of the Lang relation.
+
+The audit's suggestion to use `equivVariableChangeBaseChange_galois` was also
+not needed: that lemma is for a variable change defined over the BASE field,
+and `C` here is only defined over `𝔽̄_q`.
 
 NOT VACUOUS: `χ` is a linear EQUIVALENCE and the conclusion is a conjugation
 identity, so it pins `C ∘ F₀` into the `q`-Frobenius conjugacy class of a
@@ -3189,8 +3536,12 @@ theorem WeierstrassCurve.exists_twist_frobeniusTorsionEnd (q : ℕ) [Fact q.Prim
           (AlgebraicClosure (ZMod q)))).nTorsion N)),
       ∀ y, χ (WeierstrassCurve.autTorsionEnd _ C hC N
           (WeilPairing.frobeniusTorsionEnd q Wbar₀ N y)) =
-        WeilPairing.frobeniusTorsionEnd q Wbar N (χ y) :=
-  sorry
+        WeilPairing.frobeniusTorsionEnd q Wbar N (χ y) := by
+  obtain ⟨Wbar, hell, d, hd, hdlang⟩ := exists_twist_curve q Wbar₀ C hC
+  haveI := hell
+  obtain ⟨χ, hχ⟩ :=
+    exists_torsionEquiv_of_twist_curve q Wbar₀ Wbar N C hC d hd hdlang
+  exact ⟨Wbar, hell, χ, hχ⟩
 
 /-- **Serre–Tate at a prime of potentially good reduction: the Frobenius
 acts as the `q`-power Frobenius of an elliptic curve over `𝔽_q`** (PROVEN
@@ -3245,9 +3596,14 @@ to the two leaves above, which is where a prover should read them:
   records, with the reason, that the GLOBAL/Chebotarev axis is a dead end for
   this leaf: `det ρ` is a character and is unramified at `q`, the trace is
   neither, and a global argument cannot see inside a Frobenius coset.
-* `exists_twist_frobeniusTorsionEnd` carries the twist classification over
-  `𝔽_q`, which is elementary, self-contained, and needs nothing from number
-  theory.
+* `exists_twist_frobeniusTorsionEnd` carried the twist classification over
+  `𝔽_q`. It is now PROVEN (2026-07-27) and carries no remaining work: the
+  route was Lang's equation in the full variable-change group `𝔾_m ⋉ 𝔾_a³`
+  over `𝔽̄_q` (four scalar equations over an algebraically closed field),
+  Galois descent by a root count for `X^q − X`, and a coordinate computation
+  on `Point.some`. No `H¹`, no `Aut` classification, no case split on `j`.
+  So the LOCAL leaf above is the only thing still standing between this node
+  and its consumers.
 
 NOT VACUOUS: `ψ` is a linear EQUIVALENCE and the conclusion is a
 conjugation identity, so it pins `ρ(σ_q)` into the `q`-Frobenius
@@ -3323,14 +3679,185 @@ THE CHECK THAT WOULD REFUTE THE "absent" CLAIM: a declaration in any of those
 trees stating `deg (1 - frobenius)`, a `Nat.card` bound of the shape
 `|#E(𝔽_q) − q − 1| ≤ 2√q`, or a degree function on isogenies that is not
 `Nat.card (ker ·)`. THE AXIS SEARCHED was name-level grep over the three trees
-plus a read of this development's own isogeny-degree API. -/
+plus a read of this development's own isogeny-degree API.
+
+CUT AUDIT OF 2026-07-27 — THIS LEAF WAS DELIBERATELY LEFT UNDECOMPOSED, AND
+HERE IS WHICH CUTS WERE TRIED AND WHY THEY WERE REJECTED. Recording this so
+the next owner does not repeat the survey.
+
+* *Degree-form positivity*, i.e. the leaf `∀ m n : ℤ, 0 ≤ m² − a·m·n + n²q`
+  with `a := q + 1 − #Wbar(𝔽_q)`, from which this bound is `(m, n) = (a, 2)`
+  and two lines of `nlinarith`. REJECTED as a cut because it is EQUIVALENT,
+  not smaller: positive semidefiniteness of a binary quadratic form over `ℤ`
+  is precisely the discriminant condition `a² ≤ 4q`. It would add a leaf and
+  remove no difficulty. It is still the right SHAPE to aim at, because it is
+  what a `deg` theory outputs and it covers all twists and extensions at once.
+* *Interface-only cut* (`∃ deg : End → ℕ, …axioms…`, then derive the bound).
+  REJECTED: the axioms that make it non-vacuous are exactly the quadraticity
+  and positivity of `deg`, so the existential leaf is again equivalent.
+* *Character-sum route*: `a = −Σ_x χ(f(x))` for `y² = f(x)`, `q` odd, reducing
+  the bound to Weil's character-sum estimate. Elementary proofs exist
+  (Stepanov's method) but are a multi-hundred-line polynomial-counting
+  development, and the reduction needs `q` odd while the consumers use
+  `q ∈ {3, 5}`.
+
+THE AXIS NOT SEARCHED, and where the next owner should look: the ISOGENY axis,
+i.e. giving this tree a `deg` that is the true degree rather than
+`Nat.card (ker ·)`. That is a real piece of missing infrastructure and it is
+shared with `natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below,
+so it should be built once for both rather than twice. -/
 theorem hasse_bound_natCard_affine_point (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
     ((q : ℤ) + 1 - (Nat.card Wbar.toAffine.Point : ℤ)) ^ 2 ≤ 4 * (q : ℤ) :=
   sorry
 
-/-- **The Frobenius trace on the `N`-torsion is the point-count trace**
+/-- **Rank-two linear algebra: `det (1 − f) = 1 − tr f + det f`** (PROVEN
+2026-07-27). Over an arbitrary commutative ring, for a module with a basis
+indexed by `Fin 2`. Pass to matrices (`LinearMap.det_toMatrix`,
+`LinearMap.trace_eq_matrix_trace`, `LinearMap.toMatrix_one`) and expand with
+`Matrix.det_fin_two` / `Matrix.trace_fin_two`.
+
+This is what lets `trace_frobeniusTorsionEnd_eq_natCard` below be assembled
+from a DETERMINANT statement — the Lefschetz congruence
+`#Wbar(𝔽_q) ≡ det(1 − F)` — together with `det F = q`. Stating the Lefschetz
+half as a determinant rather than as a trace is what makes it the shape a
+degree theory actually produces. -/
+theorem det_one_sub_fin_two {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
+    (b : Module.Basis (Fin 2) R M) (f : Module.End R M) :
+    LinearMap.det ((1 : Module.End R M) - f)
+      = 1 - LinearMap.trace R M f + LinearMap.det f := by
+  haveI : Module.Finite R M := Module.Finite.of_basis b
+  haveI : Module.Free R M := Module.Free.of_basis b
+  -- The matrix identity, isolated so that no ambient `simp` lemma can fold
+  -- `(toMatrix b b g).det` back into `LinearMap.det g` (which is what a bare
+  -- `simp` does here, leaving the goal unprovable by `ring`).
+  have hmat : ∀ A : Matrix (Fin 2) (Fin 2) R,
+      ((1 : Matrix (Fin 2) (Fin 2) R) - A).det = 1 - A.trace + A.det := by
+    intro A
+    have h00 : (1 : Matrix (Fin 2) (Fin 2) R) 0 0 = 1 := Matrix.one_apply_eq 0
+    have h11 : (1 : Matrix (Fin 2) (Fin 2) R) 1 1 = 1 := Matrix.one_apply_eq 1
+    have h01 : (1 : Matrix (Fin 2) (Fin 2) R) 0 1 = 0 :=
+      Matrix.one_apply_ne (by decide)
+    have h10 : (1 : Matrix (Fin 2) (Fin 2) R) 1 0 = 0 :=
+      Matrix.one_apply_ne (by decide)
+    simp only [Matrix.det_fin_two, Matrix.trace_fin_two, Matrix.sub_apply,
+      h00, h11, h01, h10]
+    ring
+  rw [← LinearMap.det_toMatrix b, ← LinearMap.det_toMatrix b f,
+    LinearMap.trace_eq_matrix_trace R b f, map_sub, LinearMap.toMatrix_one, hmat]
+
+/-- **`Wbar[N]` is free of rank two over `ZMod N` when `N` is coprime to `q`**
+(PROVEN 2026-07-27). This is exactly what coprimality buys, and it is the
+hypothesis whose failure at `N = q^k`, `k ≥ 2`, made the predecessor of
+`hasseWeil_trace_frobeniusTorsionEnd` FALSE (see its falsity audit below).
+
+From `WeierstrassCurve.n_torsion_dimension` (`EllipticCurve/Torsion.lean`),
+which needs `(N : 𝔽̄_q) ≠ 0`; the algebraic closure has characteristic `q`, so
+that is `¬ q ∣ N`, which is `Nat.Coprime N q` for prime `q`. The additive
+equivalence is made `ZMod N`-linear by `ZMod.map_smul`, exactly as in
+`WeierstrassCurve.p_torsion_rank`. -/
+theorem nonempty_basis_nTorsion (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    Nonempty (Module.Basis (Fin 2) (ZMod N)
+      ((Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N)) := by
+  haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+  have hqN : ¬ (q ∣ N) :=
+    (Nat.Prime.coprime_iff_not_dvd (Fact.out : q.Prime)).mp hNq.symm
+  have hNk : ((N : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := fun hz =>
+    hqN ((CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod q)) q N).mp hz)
+  obtain ⟨φ⟩ := WeierstrassCurve.n_torsion_dimension
+    (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) hNk
+  let ψ : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion N) ≃ₗ[ZMod N] (ZMod N × ZMod N) :=
+    { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
+  exact ⟨(Module.Basis.finTwoProd (ZMod N)).map ψ.symm⟩
+
+/-- **The Frobenius determinant on the `N`-torsion for `N` coprime to `q`**
 (sorry leaf, opened 2026-07-27 by decomposing
+`trace_frobeniusTorsionEnd_eq_natCard` below): `det F = q` on `Wbar[N]`.
+
+THIS IS A GENERALISATION OF SOMETHING ALREADY PROVEN, AND THAT IS THE WHOLE
+TASK. `WeilPairing.det_frobeniusTorsionEnd` (`EllipticCurve/WeilPairing.lean`,
+PROVEN, axiom-clean) is EXACTLY this statement for `N` a PRIME `p ≠ q`. Its
+proof is: the Weil pairing `e` on `Wbar[p]` is alternating and nondegenerate,
+Frobenius scales it by `q` (`exists_weilPairing_frobenius`), and on a rank-two
+module an endomorphism scaling a nonzero alternating form by `c` has
+determinant `c` (`det_eq_of_conj`).
+
+WHAT IS MISSING is only the Weil pairing at COMPOSITE level: that whole
+development (`weilValueProp`, `IsWeilValue`, `dlog`, `exists_weilPairing_frobenius`)
+carries `[Fact p.Prime]`, because it builds the pairing out of `μ_p ⊆ 𝔽̄_qˣ`
+and a discrete logarithm to `ZMod p`, and `ZMod N` is not a field for composite
+`N`. The rank-two input the last step needs is available here in general:
+`nonempty_basis_nTorsion` above gives a `Fin 2` basis whenever `N` is coprime
+to `q`, so `det_eq_of_conj`'s `Module.rank = 2` hypothesis has a coprime-`N`
+replacement already.
+
+WHY IT CANNOT BE REDUCED TO THE PRIME CASE BY CRT: the prime case covers
+`N = p`, not `N = p^k`, and every composite `N` divisible by a square needs the
+prime-power level. So this is genuinely "redo the Weil pairing at level `N`",
+not "assemble the prime cases".
+
+THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a `μ_N`-valued pairing on
+`nTorsion N` anywhere in `Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`
+without a primality hypothesis. THE AXIS SEARCHED was the primality binders of
+this project's own Weil-pairing development. -/
+theorem det_frobeniusTorsionEnd_of_coprime (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    LinearMap.det (WeilPairing.frobeniusTorsionEnd q Wbar N) = (q : ZMod N) :=
+  sorry
+
+/-- **The Lefschetz congruence: `#Wbar(𝔽_q) ≡ det(1 − F)` on `Wbar[N]`**
+(sorry leaf, opened 2026-07-27 by decomposing
+`trace_frobeniusTorsionEnd_eq_natCard` below, of which it is the ENTIRE
+remaining arithmetic content).
+
+THE CONTENT, and why this is the right shape for the cut. The classical chain
+is `#Wbar(𝔽_q) = #ker(1 − F) = deg(1 − F) = det(1 − F | T_ℓ)`, the middle step
+because `1 − F` is separable and the last because the degree of an isogeny is
+the determinant of its action on the Tate module; reducing mod `N` gives this
+statement. Every ingredient of that chain is a statement about the point count
+alone — no trace, no `ZMod N`-linear algebra — which is exactly why the trace
+leaf below can be assembled from this plus `det F = q` by pure rank-two linear
+algebra (`det_one_sub_fin_two`).
+
+Stating the Lefschetz half as a DETERMINANT rather than as a trace is
+deliberate: `det(1 − F)` is what a degree theory produces directly, whereas the
+trace only appears after expanding the characteristic polynomial. The
+expansion is now done once, generically, in `det_one_sub_fin_two`.
+
+MACHINERY. The point count over a finite field IS present and PROVEN
+(`natCard_affine_point_eq`, `natCard_affine_point_le`, `natCard_affine_point_pos`,
+`natCard_affine_point_le_two_mul` in `EllipticCurve/TorsionReduction.lean`).
+What is absent from all three trees is the degree form on `End` and the
+identity `#E(𝔽_q) = deg(1 − F)`; see the machinery audit of
+`hasse_bound_natCard_affine_point` above, which is the same audit and is not
+repeated here. NOTE that `EllipticCurve/Isogeny.lean`'s `degree` is
+`Nat.card (ker ·)`, i.e. the SEPARABLE degree, which is `1` for Frobenius — so
+it cannot serve here either; that file says so itself.
+
+A FIRST STEP THAT IS SEPARATELY AVAILABLE AND CHEAP: the identity
+`Wbar(𝔽_q) = Wbar(𝔽̄_q)^{Frob}`, i.e. that a point of the base-changed curve
+fixed by the `q`-power Frobenius has coordinates in `𝔽_q`. Its field-theoretic
+half is now PROVEN in this file as `exists_algebraMap_eq_of_pow_card_eq`
+(the fixed field of `x ↦ x^q` on `𝔽̄_q` is `𝔽_q`), so what remains is only to
+transport it through `Affine.Point`. Whoever attacks this leaf should start
+there rather than with the degree form. -/
+theorem natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    ((Nat.card Wbar.toAffine.Point : ℤ) : ZMod N) =
+      LinearMap.det (1 - WeilPairing.frobeniusTorsionEnd q Wbar N) :=
+  sorry
+
+/-- **The Frobenius trace on the `N`-torsion is the point-count trace**
+(PROVEN 2026-07-27 over `det_frobeniusTorsionEnd_of_coprime` and
+`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` immediately above;
+itself opened the same day by decomposing
 `hasseWeil_trace_frobeniusTorsionEnd` below): for `N` COPRIME TO `q`, the
 trace of the `q`-power Frobenius on `Wbar[N]` is the reduction mod `N` of the
 rational integer `q + 1 − #Wbar(𝔽_q)`.
@@ -3361,7 +3888,21 @@ MACHINERY: as for `hasse_bound_natCard_affine_point` above — the point count
 is available, the degree form and `#E(𝔽_q) = deg(1 − F)` are not. This half
 additionally needs the freeness of `Wbar[N]` over `ZMod N` for `N` coprime to
 `q`, which is the same statement `WeilPairing.det_frobeniusTorsionEnd` already
-relies on. -/
+relies on — and which is now PROVEN in general as `nonempty_basis_nTorsion`
+above.
+
+HOW THE DECOMPOSITION SPLITS THE WORK. The two leaves above are genuinely
+independent and neither carries any of this leaf's linear algebra:
+
+* `det_frobeniusTorsionEnd_of_coprime` — the Weil-pairing half, `det F = q`.
+  A direct generalisation of the PROVEN prime-level
+  `WeilPairing.det_frobeniusTorsionEnd`.
+* `natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` — the Lefschetz
+  half, `#Wbar(𝔽_q) ≡ det(1 − F)`. Mentions no trace.
+
+and the assembly is `det(1 − F) = 1 − tr F + det F` in rank two
+(`det_one_sub_fin_two`, PROVEN generically over any commutative ring), which
+is where the freeness input `nonempty_basis_nTorsion` is consumed. -/
 theorem trace_frobeniusTorsionEnd_eq_natCard (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
     (hNq : Nat.Coprime N q) :
@@ -3369,8 +3910,13 @@ theorem trace_frobeniusTorsionEnd_eq_natCard (q : ℕ) [Fact q.Prime]
       LinearMap.trace (ZMod N)
         ((Wbar.map (algebraMap (ZMod q)
           (AlgebraicClosure (ZMod q)))).nTorsion N)
-        (WeilPairing.frobeniusTorsionEnd q Wbar N) :=
-  sorry
+        (WeilPairing.frobeniusTorsionEnd q Wbar N) := by
+  obtain ⟨b⟩ := nonempty_basis_nTorsion q Wbar N hNq
+  have h1 := det_one_sub_fin_two b (WeilPairing.frobeniusTorsionEnd q Wbar N)
+  rw [det_frobeniusTorsionEnd_of_coprime q Wbar N hNq,
+    ← natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd q Wbar N hNq] at h1
+  push_cast at h1 ⊢
+  linear_combination -h1
 
 /-- **Hasse–Weil for the `q`-power Frobenius on the `N`-torsion** (PROVEN
 2026-07-27 over the two leaves immediately above; itself opened earlier the
