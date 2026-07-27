@@ -749,7 +749,10 @@ be the docstring of a single sorry leaf `flat_of_flat_of_flat_quotientMap`.
 On 2026-07-27 that leaf was CUT along the source's own seam into
 
 * `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` — **00R7**, the
-  engine, still open;
+  engine.  **PROVEN later the same day** over its own two-way cut
+  `approximation + 00MP`; see the section note "00R7 CUT" immediately below
+  for the filtered-system design decision that produced it, and read that note
+  before touching the approximation leaf;
 * `essFinitePresentation_of_essFiniteType_of_flat_quotientMap` — the
   **finite-generation of `J`**, 05UV's other conclusion, still open;
 * `flat_of_flat_of_flat_quotientMap` — now **PROVEN**, a two-line assembly of
@@ -917,9 +920,375 @@ A hit on any of those greps means this note has gone stale and the leaf is
 cheaper than it looks.
 -/
 
+/-! ### 00R7 CUT — the filtered-system design decision, TAKEN 2026-07-27
+
+**SECTION NOTE for the six declarations that follow, and for the 00R7 leaf
+below them.**  Until 2026-07-27 `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation`
+(Stacks **00R7**) was deliberately ATOMIC, and its own docstring said why:
+
+> Stating a filtered system of rings is a design decision, and a wrong one
+> manufactures a false or useless sub-leaf; so 00R7 is left ATOMIC rather than
+> split into `00MP + approximation`, because the assembly of those two is
+> exactly the piece that cannot be written without first making that decision.
+> Stating 00MP alone would leave it FREE-FLOATING — no consumer could be
+> written — which this development forbids.
+
+The decision has now been taken.  It is: **do NOT state the filtered system;
+pass 00MP to the approximation leaf as a HYPOTHESIS.**  That makes the
+assembly writable with no new definitions, and 00MP is not free-floating —
+its consumer is `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian`,
+which takes it as an argument, and it appears in the proof term of 00R7.
+
+**WHY NOT THE FILTERED SYSTEM — this is a REFUTATION, not a preference.**
+The lightweight realisation everyone reaches for first is a directed family of
+NOETHERIAN LOCAL SUBRINGS `R_λ ⊆ R`, `B_λ ⊆ B`, `A_λ ⊆ A` with
+`⨆ λ, R_λ = ⊤` etc. — cheap to state (`Subring`, `Monotone`, `iSup = ⊤`) and
+needing no colimit machinery.  **A leaf stated that way would be FALSE.**  It
+is fine for `R` alone: `R` is the directed union of its finitely generated
+`ℤ`-subalgebras `C`; each `C_{𝔪 ∩ C}` is essentially of finite type over `ℤ`,
+hence Noetherian; and since localisation is exact and `C ↪ R`, the map
+`C_{𝔪 ∩ C} → R` is INJECTIVE, so these really are local subrings of `R` whose
+union is `R`.  It is false for `B` and `A`.  In the Stacks proof `S_λ` is a
+localisation of `R_λ[x₁,…,xₙ]/I_λ` where `I_λ` is a FINITELY GENERATED
+approximation to the full ideal `I`, growing with `λ`: the transition maps of
+that system are surjections with shrinking kernels, not injections, so
+`S_λ → S` is not injective and `S_λ` is not a subring of `S`.  The refuting
+check is one line of the source: read the construction of `S_λ` in the proof
+of 10.128.8 and ask whether `S_λ → S` is injective.
+
+The correct datum is therefore a genuine filtered colimit — `Ring.DirectLimit`
+over a directed order, or a functor from a filtered category — plus a
+`DirectedSystem` of the two maps `g` and `v`, plus a descent lemma "a filtered
+colimit of flat ring maps is flat over the colimit of the bases".  Three
+interlocking pieces of new infrastructure, none of them in the pin
+(`grep -rn "Ring.DirectLimit" Fermat/ ~/cs/FLT` finds no use of it anywhere in
+this development).  Building them correctly is a task in its own right, and
+the wrong version of it is a FALSE leaf, as above.  So the system stays inside
+the approximation leaf's PROOF, where a wrong guess costs nothing.
+
+**WHAT THE CUT BUYS, concretely.**  00R7 is now PROVEN, and what was one leaf
+is two, along the source's own seam `00R7 = approximation + 00MP`:
+
+* `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian` —
+  the APPROXIMATION half.  Open.  Whoever proves it takes the filtered-system
+  decision, and should record what they pinned.
+* `flat_of_rTensor_injective_of_flat_quotientMap` — **10.99.10**, the local
+  criterion of flatness in the Noetherian setting.  Open, and the only thing
+  standing between this development and 00MP.
+
+and 00MP itself (`flat_of_flat_of_flat_quotientMap_noetherian`) is PROVEN
+here, because its OTHER half is proven outright:
+
+* `rTensor_map_subtype_injective_of_flat` — **PROVEN**.  `A` flat over `R`
+  implies `Tor₁^B(B/I·B, A) = 0` for every ideal `I ⊆ R`.  This is the first
+  half of 00MP's own proof, it needs neither Noetherian hypotheses nor any
+  finiteness, and it is stated over an arbitrary tower `R → B → A`.
+
+**A CORRECTION TO THE SURVEY ABOVE, worth reading before believing it.**  The
+route audit in the previous section note says the missing machinery is "Tor,
+the local criterion, and Noetherian approximation", and that Tor for modules
+is absent from the pin.  Both remain true as stated, and the Tor half of 00MP
+turned out **not to need Tor at all**: `Module.Flat.iff_rTensor_injective'`
+(`Mathlib/RingTheory/Flat/Tensor.lean:67`) is "`Tor₁(R/I, M) = 0` for every
+ideal" written without Tor, and that is enough to prove the whole step.  The
+audit itself flags this lemma as "an ingredient a naive survey misses"; it was
+right, and the ingredient was sufficient.  What is genuinely missing is only
+the local criterion (10.99.10) and the approximation.
+
+**AXIS SEARCHED.**  Cuts of 00R7 along the Stacks proof's own structure.  Not
+searched: whether a *different* proof of 00R7 exists that avoids approximation
+entirely.  The direct non-Noetherian route is the one the previous section
+note flags as hazardous (Matsumura 22.3 needs ideal separatedness, which an
+arbitrary local `R` does not supply), and mathlib's non-Noetherian criterion
+`Module.free_of_maximalIdeal_rTensor_injective` needs finite presentation of a
+MODULE, which `EssFinitePresentation` of a ring map does not give — so that
+axis is documented as closed above rather than merely unexamined.
+-/
+
+section FibreCriterionRingLevel
+
+open scoped TensorProduct
+
+/-- The comparison map `I ⊗[R] A → (I·B) ⊗[B] A` of a tower `R → B → A`,
+sending `x ⊗ₜ a` to `(g x) ⊗ₜ a`.  It is the map whose SURJECTIVITY carries
+the first half of Stacks 00MP's proof ("the surjectivity of
+`𝔪 ⊗_R S' → I ⊗_S S'` implies `𝔪 ⊗_R M → I ⊗_S M` is also surjective"), and
+it exists only to give `rTensor_map_subtype_injective_of_flat` below a
+nameable factorisation. -/
+noncomputable def idealMapTensorComparison {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [Algebra R B] [Algebra B A] [Algebra R A] [IsScalarTower R B A] (I : Ideal R) :
+    ↥I ⊗[R] A →ₗ[R] ↥(I.map (algebraMap R B)) ⊗[B] A :=
+  TensorProduct.lift <| LinearMap.mk₂ R
+    (fun (x : ↥I) (a : A) =>
+      (⟨algebraMap R B x.1, Ideal.mem_map_of_mem _ x.2⟩ :
+        ↥(I.map (algebraMap R B))) ⊗ₜ[B] a)
+    (fun x y a => by
+      rw [show (⟨algebraMap R B (x + y).1, _⟩ : ↥(I.map (algebraMap R B))) =
+          ⟨algebraMap R B x.1, Ideal.mem_map_of_mem _ x.2⟩ +
+            ⟨algebraMap R B y.1, Ideal.mem_map_of_mem _ y.2⟩ from by ext; simp,
+        TensorProduct.add_tmul])
+    (fun c x a => by
+      rw [show (⟨algebraMap R B (c • x).1, _⟩ : ↥(I.map (algebraMap R B))) =
+          c • (⟨algebraMap R B x.1, Ideal.mem_map_of_mem _ x.2⟩ :
+            ↥(I.map (algebraMap R B))) from by ext; simp [Algebra.smul_def, map_mul]]
+      rfl)
+    (fun x a b => TensorProduct.tmul_add _ _ _)
+    (fun c x a => by
+      rw [show c • a = (algebraMap R B c) • a from (IsScalarTower.algebraMap_smul B c a).symm,
+        ← TensorProduct.smul_tmul, IsScalarTower.algebraMap_smul]
+      rfl)
+
+@[simp] lemma idealMapTensorComparison_tmul {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [Algebra R B] [Algebra B A] [Algebra R A] [IsScalarTower R B A]
+    (I : Ideal R) (x : ↥I) (a : A) :
+    idealMapTensorComparison (B := B) I (x ⊗ₜ[R] a) =
+      (⟨algebraMap R B x.1, Ideal.mem_map_of_mem _ x.2⟩ :
+        ↥(I.map (algebraMap R B))) ⊗ₜ[B] a := rfl
+
+/-- `I ⊗[R] A → (I·B) ⊗[B] A` is SURJECTIVE, because `I·B` is generated over
+`B` by the image of `I` and `(b · g x) ⊗ₜ a = (g x) ⊗ₜ (b • a)`.  The
+`smul` case of the span induction is why the statement is proved for all `a`
+simultaneously. -/
+lemma idealMapTensorComparison_surjective {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [Algebra R B] [Algebra B A] [Algebra R A] [IsScalarTower R B A] (I : Ideal R) :
+    Function.Surjective (idealMapTensorComparison (R := R) (B := B) (A := A) I) := by
+  intro z
+  induction z with
+  | zero => exact ⟨0, map_zero _⟩
+  | tmul y a =>
+      obtain ⟨y, hy⟩ := y
+      induction hy using Submodule.span_induction generalizing a with
+      | mem b hb =>
+          obtain ⟨x, hx, rfl⟩ := hb
+          exact ⟨(⟨x, hx⟩ : ↥I) ⊗ₜ[R] a, rfl⟩
+      | zero =>
+          refine ⟨0, ?_⟩
+          rw [map_zero, show (⟨0, _⟩ : ↥(I.map (algebraMap R B))) = 0 from rfl,
+            TensorProduct.zero_tmul]
+      | add b₁ b₂ hb₁ hb₂ ih₁ ih₂ =>
+          obtain ⟨w₁, hw₁⟩ := ih₁ a
+          obtain ⟨w₂, hw₂⟩ := ih₂ a
+          refine ⟨w₁ + w₂, ?_⟩
+          rw [map_add, hw₁, hw₂, ← TensorProduct.add_tmul]
+          rfl
+      | smul c b hb ih =>
+          obtain ⟨w, hw⟩ := ih (c • a)
+          refine ⟨w, ?_⟩
+          rw [hw, show (⟨c • b, _⟩ : ↥(I.map (algebraMap R B))) =
+            c • (⟨b, hb⟩ : ↥(I.map (algebraMap R B))) from rfl, TensorProduct.smul_tmul]
+  | add z₁ z₂ ih₁ ih₂ =>
+      obtain ⟨w₁, hw₁⟩ := ih₁
+      obtain ⟨w₂, hw₂⟩ := ih₂
+      exact ⟨w₁ + w₂, by rw [map_add, hw₁, hw₂]⟩
+
+/-- The comparison map commutes with the two multiplication maps to `A`:
+`(I·B) ⊗[B] A → A` pulled back along it is `I ⊗[R] A → A`.  Both are
+`x ⊗ₜ a ↦ x • a`, and `IsScalarTower` identifies the two scalar actions. -/
+lemma lid_rTensor_idealMapTensorComparison {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [Algebra R B] [Algebra B A] [Algebra R A] [IsScalarTower R B A]
+    (I : Ideal R) (z : ↥I ⊗[R] A) :
+    (TensorProduct.lid B A)
+        (LinearMap.rTensor A (I.map (algebraMap R B)).subtype
+          (idealMapTensorComparison (B := B) I z)) =
+      (TensorProduct.lid R A) (LinearMap.rTensor A I.subtype z) := by
+  induction z with
+  | zero => simp
+  | tmul x a => simp
+  | add z₁ z₂ ih₁ ih₂ => simp [ih₁, ih₂]
+
+/-- **PROVEN — the first half of Stacks 00MP's proof, and it needs neither
+Noetherian hypotheses nor any finiteness.**
+
+*Let `R → B → A` be a tower of rings with `A` flat over `R`.  Then for every
+ideal `I ⊆ R` the map `(I·B) ⊗_B A → B ⊗_B A` is injective, i.e.
+`Tor₁^B(B/I·B, A) = 0`.*
+
+This is 00MP's step "the surjectivity of `𝔪 ⊗_R S' → I ⊗_S S'` implies
+`𝔪 ⊗_R M → I ⊗_S M` is also surjective; the flatness of `M` over `R` makes the
+composition injective, yielding `Tor₁^S(S/I, M) = 0`", at `M = S' = A`.  The
+factorisation is `idealMapTensorComparison` (surjective) followed by the map
+whose injectivity is wanted; the composite is the `R`-side multiplication map,
+injective by `Module.Flat.iff_rTensor_injective'`.
+
+**Note for the survey in the section note above**: this closes the "Tor" item
+without Tor.  `Module.Flat.iff_rTensor_injective'` IS the vanishing of `Tor₁`
+against every ideal, written as injectivity of `I ⊗ M → M`, so the absence of
+`Tor` for modules from the pin does not obstruct this half at all. -/
+theorem rTensor_map_subtype_injective_of_flat {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [Algebra R B] [Algebra B A] [Algebra R A] [IsScalarTower R B A]
+    [Module.Flat R A] (I : Ideal R) :
+    Function.Injective
+      (LinearMap.rTensor A (I.map (algebraMap R B)).subtype) := by
+  rw [injective_iff_map_eq_zero]
+  intro z hz
+  obtain ⟨w, rfl⟩ := idealMapTensorComparison_surjective (R := R) (B := B) (A := A) I z
+  have hw : LinearMap.rTensor A I.subtype w = 0 := by
+    have h := lid_rTensor_idealMapTensorComparison (B := B) I w
+    rw [hz] at h
+    simpa using h.symm
+  rw [(Module.Flat.iff_rTensor_injective'.mp inferInstance I).eq_iff' (map_zero _) |>.mp hw]
+  exact map_zero _
+
+/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (SORRY
+LEAF, cut out of `flat_of_flat_of_flat_quotientMap_noetherian` on 2026-07-27).
+
+*Let `B → A` be a local homomorphism of NOETHERIAN local rings and `I ⊆ 𝔪_B`
+an ideal, `J = I·A`.  If `Tor₁^B(B/I, A) = 0` and `A/J` is flat over `B/I`,
+then `A` is flat over `B`.*
+
+This is 10.99.10 with the module `M` taken to be `A` itself — which is the
+only instantiation 00MP needs at `M = S' = A`, and which is where the
+Noetherian hypotheses earn their keep: `M = A` is a FINITE module over the
+Noetherian local ring `S' = A`, so it is ideally separated by Artin–Rees, and
+that is exactly what the classical criterion (Matsumura *Commutative Ring
+Theory* Thm 22.3; Bourbaki) requires and what a general local ring does not
+supply.  **Do not try to drop `IsNoetherianRing` here**: the section note
+above records that a separatedness-free version of this statement is precisely
+the shape of leaf that can be FALSE, and the Stacks route never proves one —
+it approximates down to the Noetherian case instead.
+
+**FAITHFULNESS.**  `_hJ : J = I.map (algebraMap B A)` is load-bearing and not
+bookkeeping: without it `J` would be an arbitrary ideal above `I` and the
+hypothesis "`A/J` flat over `B/I`" would be a different statement, so the leaf
+could be false.  It is carried as an equation rather than substituted into the
+type because `J` occurs inside `A ⧸ J`, and the consumer supplies `J` as
+`(𝔪_R).map (v.comp g)` while `I.map v` is `((𝔪_R).map g).map v` — equal by
+`Ideal.map_map`, but only propositionally, and a dependent rewrite there is
+gratuitous friction.
+
+**WHAT PROVING IT COSTS.**  `grep -rin "local criterion" .lake/packages/mathlib`
+returns nothing, re-run 2026-07-27, so this is genuinely new.  Its own Stacks
+proof cites Nakayama (10.20.1), 10.99.7 and 10.39.15; the standard textbook
+route is Matsumura 22.3 via the `I`-adic filtration and Artin–Rees.  Note that
+mathlib's `Module.free_of_maximalIdeal_rTensor_injective`
+(`Mathlib/RingTheory/LocalRing/Module.lean:248`) is the NON-Noetherian
+criterion for a finitely presented MODULE, and does not apply: `A` is not a
+finite `B`-module here. -/
+theorem flat_of_rTensor_injective_of_flat_quotientMap {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A]
+    [IsLocalRing B] [IsLocalRing A]
+    [IsNoetherianRing B] [IsNoetherianRing A] [IsLocalHom (algebraMap B A)]
+    {I : Ideal B} {J : Ideal A}
+    (_hI : I ≤ IsLocalRing.maximalIdeal B)
+    (_hJ : J = I.map (algebraMap B A))
+    (hIJ : I ≤ J.comap (algebraMap B A))
+    (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
+    (_hquot : (Ideal.quotientMap J (algebraMap B A) hIJ).Flat) :
+    Module.Flat B A :=
+  sorry
+
+/-- **Stacks 00MP** = Algebra Lemma 10.99.15, at `M = S' = A` (**PROVEN**
+2026-07-27 over `rTensor_map_subtype_injective_of_flat` and the local
+criterion `flat_of_rTensor_injective_of_flat_quotientMap` above).
+
+*Let `R → B → A` be local homomorphisms of NOETHERIAN local rings.  If `A` is
+flat over `R` and `A/𝔪_R A` is flat over `B/𝔪_R B`, then `A` is flat over `B`.*
+
+**FAITHFULNESS.**  00MP's hypotheses are (1) `M` finite over `S'`, (2)
+`M ≠ 0`, (3) `M/𝔪M` flat over `S/𝔪S`, (4) `M` flat over `R`, with all three
+rings Noetherian local.  At `M = S' = A`, (1) and (2) are theorems rather than
+assumptions — `A` is finite over itself, and `[IsLocalRing A]` supplies
+`Nontrivial A` — exactly as in the leaves below.  00MP also concludes `S` flat
+over `R`; only `M` flat over `S` is kept, because only that is consumed.
+Fewer hypotheses and a weaker conclusion cannot turn a true statement false.
+Note in particular that 00MP asks for NO finite-presentation hypothesis of any
+kind: that is the whole reason the approximation half exists.
+
+**THE PROOF** is 00MP's own, in two steps: `I := 𝔪_R B`, so that `B/I` is
+`B/𝔪_R B` and `A/I·A` is `A/𝔪_R A` (`Ideal.map_map`), then `Tor₁^B(B/I, A) = 0`
+from flatness of `A` over `R`, then the local criterion.  `algebraize` supplies
+the three `Algebra` instances and the `IsScalarTower` from the three ring
+maps. -/
+theorem flat_of_flat_of_flat_quotientMap_noetherian {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    [IsNoetherianRing R] [IsNoetherianRing B] [IsNoetherianRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    v.Flat := by
+  algebraize [g, v, v.comp g]
+  exact flat_of_rTensor_injective_of_flat_quotientMap
+    (I := (IsLocalRing.maximalIdeal R).map g)
+    (J := (IsLocalRing.maximalIdeal R).map (v.comp g))
+    (IsLocalRing.map_maximalIdeal_le g)
+    (Ideal.map_map (f := g) (g := v)).symm
+    (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))
+    (rTensor_map_subtype_injective_of_flat (R := R) (B := B) (A := A)
+      (IsLocalRing.maximalIdeal R))
+    hfib
+
+/-- **THE APPROXIMATION HALF OF 00R7** (SORRY LEAF, cut 2026-07-27; the
+section note above is the design decision that produced it and should be read
+first).
+
+*Assume Stacks 00MP — the statement of
+`flat_of_flat_of_flat_quotientMap_noetherian` above, quantified over all
+Noetherian local `R`, `B`, `A`.  Then Stacks 00R7 holds: for local
+homomorphisms `R → B → A` of ARBITRARY local rings with both `R → A` and
+`R → B` essentially of finite presentation, `A` flat over `R` and `A/𝔪_R A`
+flat over `B/𝔪_R B` imply `A` flat over `B`.*
+
+**WHY 00MP IS A HYPOTHESIS AND NOT AN IMPORT.**  Because that is what makes
+the assembly writable without first inventing a filtered system, and because
+it is what keeps 00MP from free-floating.  The alternative — state the
+filtered system, then state 00MP, then assemble — was examined and rejected in
+the section note above, where the cheap version of the system is REFUTED (the
+subring realisation is false for `B` and `A`, whose approximating system has
+non-injective transition maps).
+
+**WHAT A PROVER MUST DO, and what will not work.**  The hypothesis is not a
+shortcut: `Stacks`' proof of 00R7 is the approximation argument and nothing
+else, so proving this leaf means writing
+`R = colim R_λ` over local `ℤ`-algebras essentially of finite type (10.127.13,
+each `R_λ` Noetherian because essentially of finite type over `ℤ`), descending
+`B`, `A` and the two maps to a finite stage, using **10.128.3** twice — once to
+get `A_λ` flat over `R_λ` for large `λ`, once to get `A_λ/𝔪_λ A_λ` flat over
+`B_λ/𝔪_λ B_λ` — applying `_hNoeth` at that stage, and pushing flatness back up
+the colimit.  The `M = S' = A` instantiation is stable under this: `M_λ = A_λ`
+is finite over `S'_λ = A_λ` and nonzero because `A_λ` is local, so no extra
+hypothesis of 00MP has to be re-established at the finite stage.  What the
+prover chooses is exactly the shape of the system and the descent lemma
+"a filtered colimit of flat maps is flat over the colimit"; **say what you
+pinned**, because the next owner of the finite-generation half
+(`essFinitePresentation_of_essFiniteType_of_flat_quotientMap` below) needs the
+same machinery for 046Y.
+
+**FAITHFULNESS.**  The hypotheses are 00R7's, verbatim, at `M = S' = A`; see
+the 00R7 docstring below, which is unchanged in content.  Adding a hypothesis
+can only weaken a statement, so this leaf cannot be false unless 00R7 is. -/
+theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    (_hNoeth : ∀ {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+      [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+      [IsNoetherianRing R] [IsNoetherianRing B] [IsNoetherianRing A]
+      {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v],
+      (v.comp g).Flat →
+      (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat →
+      v.Flat)
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (_hfpA : EssFinitePresentation (v.comp g))
+    (_hfpB : EssFinitePresentation g)
+    (_hflat : (v.comp g).Flat)
+    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    v.Flat :=
+  sorry
+
+end FibreCriterionRingLevel
+
 /-- **THE ENGINE: Stacks 00R7** = Algebra Lemma 10.128.8, at `M = S' = A`
-(SORRY LEAF, cut out of `flat_of_flat_of_flat_quotientMap` on 2026-07-27
-along the source's own seam).
+(cut out of `flat_of_flat_of_flat_quotientMap` on 2026-07-27 along the
+source's own seam, and itself **PROVEN** the same day over the two leaves
+above — see the section note "00R7 CUT" for the design decision).
 
 *Let `R → B → A` be local homomorphisms of local rings with **both** `R → A`
 and `R → B` essentially of finite **presentation**.  If `A` is flat over `R`
@@ -958,25 +1327,41 @@ DIRECT attack and absent from this route.  Concretely a prover needs:
   ring map as a filtered colimit of such maps of NOETHERIAN local rings, plus
   descent of flatness along that colimit.
 
-**THE APPROXIMATION HALF IS DELIBERATELY NOT CUT HERE, and this is the pin.**
-Stating a filtered system of rings is a design decision, and a wrong one
-manufactures a false or useless sub-leaf; so 00R7 is left ATOMIC rather than
-split into `00MP + approximation`, because the assembly of those two is
-exactly the piece that cannot be written without first making that decision.
-Stating 00MP alone would leave it FREE-FLOATING — no consumer could be
-written — which this development forbids.  Whoever takes the design decision
-should cut here first, and say what they pinned. -/
+**BOTH OF THOSE ARE NOW CUT OUT, 2026-07-27, and this paragraph replaces the
+pin that used to stand here.**  The old text read:
+
+> **THE APPROXIMATION HALF IS DELIBERATELY NOT CUT HERE, and this is the pin.**
+> Stating a filtered system of rings is a design decision, and a wrong one
+> manufactures a false or useless sub-leaf; so 00R7 is left ATOMIC rather than
+> split into `00MP + approximation`, because the assembly of those two is
+> exactly the piece that cannot be written without first making that decision.
+> Stating 00MP alone would leave it FREE-FLOATING — no consumer could be
+> written — which this development forbids.  Whoever takes the design decision
+> should cut here first, and say what they pinned.
+
+The decision was taken, and what was pinned is written out in the section note
+"00R7 CUT" above: **the filtered system is NOT stated; 00MP is passed to the
+approximation leaf as a hypothesis**, which makes the assembly a one-liner,
+needs no new definitions, and leaves 00MP with a written consumer.  The note
+also REFUTES the cheap subring realisation of the system, so nobody has to
+rediscover that it is false.  The residue of 00R7 is now exactly two open
+leaves — `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian`
+(the approximation) and `flat_of_rTensor_injective_of_flat_quotientMap`
+(the local criterion 10.99.10) — and 00MP's other half is PROVEN. -/
 theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
     {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
-    (_hfpA : EssFinitePresentation (v.comp g))
-    (_hfpB : EssFinitePresentation g)
-    (_hflat : (v.comp g).Flat)
-    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+    (hfpA : EssFinitePresentation (v.comp g))
+    (hfpB : EssFinitePresentation g)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
         (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
     v.Flat :=
-  sorry
+  -- Stacks 00R7 = Noetherian approximation + 00MP: feed the Noetherian engine
+  -- to the approximation half.
+  flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian
+    flat_of_flat_of_flat_quotientMap_noetherian hfpA hfpB hflat hfib
 
 /-- **THE FINITE-GENERATION HALF: 05UV's OTHER conclusion** (SORRY LEAF, cut
 2026-07-27).  Under exactly the hypotheses of
