@@ -407,9 +407,15 @@ and `c` of the halving carry no arithmetic, and `halving_norm_relation`,
     e²·(p'⁴ − 128p'e'⁶ + 256e'⁸)  =  4·p·e'²·n'² ,
 
 i.e. `p/e² = F(p', e'²)/(4e'²·G(p', e'²))` for the binary forms
-`F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`. So the ONE
-open statement at level `11` is now `exists_halving_witness` — the `2`-descent
-over `ℤ[s]` (PID + units + the local conditions killing the nontrivial classes).
+`F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`.
+
+**UPDATED 2026-07-27**: `exists_halving_witness` is PROVEN too. The ONE open
+statement at level `11` is now `descent_unit_square`, one level below it — the
+purely ideal-theoretic half of the `2`-descent over `ℤ[s]` (`𝓞_K = ℤ[s]`,
+`h(K) = 1`, units mod squares, and the valuation bookkeeping). The norm pruning
+and the local condition that the sentence above expected are PROVEN, and the
+local condition turned out to be **parity mod `4`**, needing no `11`-adic input
+at all. See the `ℤ[s] IN COORDINATES` section below.
 
 `height_drop_or_small` is PROVEN, over three proven ingredients: the
 coprimality bookkeeping (`reduced_fraction`), the resultant divisibility
@@ -423,9 +429,367 @@ field. -/
 
 namespace MazurLevel11
 
-/-- **THE `2`-DESCENT LEAF at level `11`** (sorry leaf, 2026-07-27): every
-coprime integral point of `W² = U³ − 4U² + 16` lies in the TRIVIAL square class
-of the `2`-division field, written out in coordinates.
+/-! ### `ℤ[s]` IN COORDINATES, AND THE CUT OF 2026-07-27
+
+**The `2`-descent at level `11` does NOT need descent theory, and this section
+is the refutation of the ROUTE AUDIT below that said it did.** That audit
+searched two axes, both Galois-cohomological — `Sel₂` over the cubic field, and
+the `5`-isogeny over `ℚ` — and was right that each needs a connecting map,
+`H¹`, and local conditions, none of which exist in mathlib, in `Fermat/`, or in
+`~/cs/FLT`. What it did not search is the axis on which the answer actually
+lies: for *this* curve `Sel₂(E/ℚ) = 0` is equivalent to a statement of pure
+`ℤ[s]`-arithmetic. No `H¹`, no Selmer group, no descent map homomorphism
+property, and — importantly — no `E(ℚ) ≅ ℤ/5`, which would be circular here,
+since this module's own height descent is what proves it.
+
+**Refuting check for anyone re-auditing**: `exists_halving_witness` below is now
+PROVEN, and its whole proof term mentions no cohomology, no number field, and no
+elliptic curve — only `Int`, `Prod` and the two `ℤ[s]` operations defined here.
+
+`ℤ[s] = ℤ[X]/(X³ − 2X² + 2)` is free of rank `3` on `1, s, s²`, so an element is
+a triple `(x₀, x₁, x₂) ↦ x₀ + x₁s + x₂s²`. Reducing with `s³ = 2s² − 2` and
+`s⁴ = 4s² − 2s − 4` gives `zsMul`, and the determinant of multiplication-by-`x`
+in that basis gives `zsNorm`. Working in coordinates rather than in `𝓞_K` is
+deliberate: it keeps the assembly elementary, and it costs nothing, since the
+leaf's prover is free to build any ring they like and transport along the
+`ℤ`-basis.
+
+**`zsNorm_zsMul` certifies the multiplication table.** A mis-transcribed table
+would not admit a multiplicative cubic form, so the fact that `ring` closes
+`N(xy) = N(x)N(y)` is a real check on the two definitions, not decoration. Both
+were additionally cross-checked against PARI/GP.
+-/
+
+/-- Multiplication of `ℤ[s] = ℤ[X]/(X³ − 2X² + 2)` in the `ℤ`-basis `1, s, s²`,
+with `(x₀, x₁, x₂)` denoting `x₀ + x₁s + x₂s²`.
+
+Derivation: `∑ xᵢyⱼ sⁱ⁺ʲ` with `s³ = 2s² − 2` and `s⁴ = 4s² − 2s − 4`, so the
+`s³` term contributes `(−2, 0, 2)` and the `s⁴` term `(−4, −2, 4)`. Certified by
+`zsNorm_zsMul`. -/
+def zsMul (x y : ℤ × ℤ × ℤ) : ℤ × ℤ × ℤ :=
+  (x.1 * y.1 - 2 * (x.2.1 * y.2.2 + x.2.2 * y.2.1) - 4 * (x.2.2 * y.2.2),
+   x.1 * y.2.1 + x.2.1 * y.1 - 2 * (x.2.2 * y.2.2),
+   x.1 * y.2.2 + x.2.1 * y.2.1 + x.2.2 * y.1
+     + 2 * (x.2.1 * y.2.2 + x.2.2 * y.2.1) + 4 * (x.2.2 * y.2.2))
+
+/-- The field norm `N : ℤ[s] → ℤ`, as the determinant of multiplication-by-`x`
+in the basis `1, s, s²`.
+
+Spot values, all re-derived in PARI/GP: `N(s) = −2`, `N(s − 1) = −1`,
+`N(s² − 1) = −1` (so `s² − 1` is a unit), `N(−s² + s + 1) = −1` for the
+fundamental unit `ε`, `N(s² − s − 1) = N(−ε) = 1`, `N(3s − 4) = −22`,
+`N(3 − s²) = 11`. -/
+def zsNorm (x : ℤ × ℤ × ℤ) : ℤ :=
+  x.1 ^ 3 + 2 * x.1 ^ 2 * x.2.1 + 4 * x.1 ^ 2 * x.2.2 - 2 * x.2.1 ^ 3
+    + 6 * x.1 * x.2.1 * x.2.2 - 4 * x.2.1 ^ 2 * x.2.2 + 8 * x.1 * x.2.2 ^ 2
+    + 4 * x.2.2 ^ 3
+
+/-- **THE DESCENT MAP, in coordinates.** The classical `2`-descent on
+`W² = U³ − 4U² + 16` sends a point to `x(P) − 2s` modulo squares, where the
+cubic factors over `K = ℚ(s)` as `(U − 2s)(U² + (2s − 4)U + 4s² − 8s)`. On the
+coprime integral point `(p, e, n)` with `U = p/e²` this is
+`β = p − 2s·e² ∈ ℤ[s]`, i.e. the triple `(p, −2e², 0)`.
+
+**On the kernel property, which is what the previous cut was told to state.**
+The map `P ↦ x(P) − 2s mod (K*)²` is a group homomorphism `E(ℚ) → K*/(K*)²`
+with kernel exactly `2E(ℚ)`; that is the standard fact that makes descent
+compute a rank. **It is not what this leaf needs, and stating it would not help
+prove it.** What is needed is that the IMAGE is trivial — `Sel₂(E/ℚ) = 0` — and
+image-triviality is proved here directly, by factorisation in `ℤ[s]`, without
+ever knowing that the map is a homomorphism. The kernel property is what the
+module's own height descent (`height_drop_or_small`, `smallPoints`) replaces. -/
+def descentImage (p e : ℤ) : ℤ × ℤ × ℤ := (p, -2 * e ^ 2, 0)
+
+/-- **The multiplication table is right** (PROVEN 2026-07-27): `zsNorm` is
+multiplicative for `zsMul`. This is the machine check that `zsMul` transcribes
+`s³ = 2s² − 2` correctly — no other cubic form would be multiplicative for a
+wrong table. -/
+theorem zsNorm_zsMul (x y : ℤ × ℤ × ℤ) :
+    zsNorm (zsMul x y) = zsNorm x * zsNorm y := by
+  simp only [zsNorm, zsMul]
+  ring
+
+/-- **`N(β) = n²` on the curve** (PROVEN 2026-07-27): the norm of the descent
+image is exactly the curve's right-hand side. This is the homogeneous form of
+the factorisation `U³ − 4U² + 16 = (U − 2s)(U² + (2s − 4)U + 4s² − 8s)`, and it
+is why the descent map lands in the norm-square classes at all. -/
+theorem zsNorm_descentImage (p e : ℤ) :
+    zsNorm (descentImage p e) = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6 := by
+  simp only [zsNorm, descentImage]
+  ring
+
+/-- `1` is a left unit for `zsMul` (PROVEN 2026-07-27). -/
+theorem zsMul_one_left (x : ℤ × ℤ × ℤ) : zsMul (1, 0, 0) x = x := by
+  simp only [zsMul]
+  ring_nf
+
+/-- Sanity: `s·s·s = 2s² − 2`, the defining relation. -/
+example : zsMul (0, 1, 0) (zsMul (0, 1, 0) (0, 1, 0)) = (-2, 0, 2) := by decide
+
+/-- Sanity: `ε·(s − 1) = 1` for the fundamental unit `ε = −s² + s + 1`. -/
+example : zsMul (1, 1, -1) (-1, 1, 0) = (1, 0, 0) := by decide
+
+/-- Sanity, and a NON-VACUITY witness: `(s² − 2)² = −2s` and
+`(s² − 2s)² = 4 − 2s`, so the two known rational points `(p, e) = (0, 1)` and
+`(4, 1)` really do lie in the trivial square class. The leaf below is therefore
+not vacuously about an empty set of points. -/
+example : zsMul (-2, 0, 1) (-2, 0, 1) = descentImage 0 1 := by decide
+
+example : zsMul (0, -2, 1) (0, -2, 1) = descentImage 4 1 := by decide
+
+/-- A negative integer is not a square (PROVEN 2026-07-27). -/
+theorem not_isSquare_of_neg {k : ℤ} (hk : k < 0) : ¬ IsSquare k := by
+  rintro ⟨r, rfl⟩
+  nlinarith [mul_self_nonneg r]
+
+/-- Non-squareness of a positive `k` reduces to a finite check, since a square
+root of `k` divides `k` and is therefore bounded by `k` in absolute value. -/
+theorem not_isSquare_of_bounded {k : ℤ} (hk : 0 < k)
+    (h : ∀ r : ℤ, -k ≤ r → r ≤ k → k ≠ r * r) : ¬ IsSquare k := by
+  rintro ⟨r, hr⟩
+  have hup : r ≤ k := Int.le_of_dvd hk ⟨r, hr⟩
+  have hlo : -r ≤ k := Int.le_of_dvd hk ⟨-r, by linear_combination hr⟩
+  exact h r (by linarith) hup hr
+
+/-- `2` is not a square (PROVEN 2026-07-27). -/
+theorem not_isSquare_two : ¬ IsSquare (2 : ℤ) :=
+  not_isSquare_of_bounded (by norm_num) (by intro r h1 h2; interval_cases r <;> decide)
+
+/-- `11` is not a square (PROVEN 2026-07-27). -/
+theorem not_isSquare_eleven : ¬ IsSquare (11 : ℤ) :=
+  not_isSquare_of_bounded (by norm_num) (by intro r h1 h2; interval_cases r <;> decide)
+
+/-- `22` is not a square (PROVEN 2026-07-27). -/
+theorem not_isSquare_twentyTwo : ¬ IsSquare (22 : ℤ) :=
+  not_isSquare_of_bounded (by norm_num) (by intro r h1 h2; interval_cases r <;> decide)
+
+/-- **`n² = k·m²` forces `k` to be a square** (PROVEN 2026-07-27), for `m ≠ 0`.
+
+Divide out `d = gcd(n, m)`: the reduced pair is coprime, so `m'²` divides `n'²`
+while being coprime to it, hence is a unit, hence `k = ±n'²`; the sign `−1` dies
+because `m'² > 0`. This is the step that prunes the `16` square classes of the
+leaf below down to the `2` with norm `1`. -/
+theorem sq_ne_mul_sq_of_not_isSquare {k : ℤ} (hk : ¬ IsSquare k) {n m : ℤ}
+    (hm : m ≠ 0) : n ^ 2 ≠ k * m ^ 2 := by
+  intro h
+  have hdposN : 0 < Int.gcd n m := Int.gcd_pos_of_ne_zero_right n hm
+  have hdpos : (0 : ℤ) < (Int.gcd n m : ℤ) := by exact_mod_cast hdposN
+  obtain ⟨n', hn'⟩ : ((Int.gcd n m : ℤ)) ∣ n := Int.gcd_dvd_left n m
+  obtain ⟨m', hm'⟩ : ((Int.gcd n m : ℤ)) ∣ m := Int.gcd_dvd_right n m
+  have hq1 : n / (Int.gcd n m : ℤ) = n' := by
+    nth_rewrite 1 [hn']; exact Int.mul_ediv_cancel_left _ hdpos.ne'
+  have hq2 : m / (Int.gcd n m : ℤ) = m' := by
+    nth_rewrite 1 [hm']; exact Int.mul_ediv_cancel_left _ hdpos.ne'
+  have hcop : IsCoprime n' m' := by
+    rw [Int.isCoprime_iff_gcd_eq_one, ← hq1, ← hq2]
+    exact Int.gcd_div_gcd_div_gcd (i := n) (j := m) hdposN
+  obtain ⟨g, hg⟩ : ∃ g : ℤ, (Int.gcd n m : ℤ) = g := ⟨_, rfl⟩
+  rw [hg] at hn' hm' hdpos
+  have hm'0 : m' ≠ 0 := by rintro rfl; rw [mul_zero] at hm'; exact hm hm'
+  have key : n' ^ 2 = k * m' ^ 2 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 hdpos.ne') ?_
+    rw [hn', hm'] at h
+    linear_combination h
+  have hunit : IsUnit (m' ^ 2) :=
+    (hcop.pow (m := 2) (n := 2)).isUnit_of_dvd' ⟨k, by rw [key]; ring⟩ dvd_rfl
+  rcases Int.isUnit_iff.mp hunit with h1 | h1
+  · rw [h1, mul_one] at key
+    exact hk ⟨n', by rw [← key]; ring⟩
+  · nlinarith [sq_nonneg m']
+
+/-- **`β ≠ 0`, in the form `n ≠ 0`** (PROVEN 2026-07-27): no coprime integral
+point of `W² = U³ − 4U² + 16` has `W = 0`.
+
+`n = 0` forces `e² ∣ p³`, and `IsCoprime p e` then makes `e²` a unit, so
+`e = 1`; the remaining `p³ − 4p² + 16 = 0` has `p ∣ 16`, and none of the
+`33` candidates works. (`X³ − 4X² + 16` has no rational root — its only
+candidates are `±1, ±2, ±4, ±8, ±16`.) Needed below because a zero norm would
+make the square-class pruning vacuous. -/
+theorem descentImage_norm_ne_zero {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hn : zsNorm (descentImage p e) = n ^ 2) : n ≠ 0 := by
+  rintro rfl
+  rw [zsNorm_descentImage] at hn
+  have hdvd : e ^ 2 ∣ p ^ 3 := ⟨4 * p ^ 2 - 16 * e ^ 4, by linarith⟩
+  have hu : IsUnit (e ^ 2) :=
+    (hcop.pow (m := 3) (n := 2)).isUnit_of_dvd' hdvd dvd_rfl
+  have he1 : e = 1 := by
+    rcases Int.isUnit_iff.mp hu with h | h
+    · nlinarith
+    · nlinarith
+  subst he1
+  have hdvd16 : p ∣ 16 := ⟨p * (4 - p), by linear_combination hn⟩
+  have hup : p ≤ 16 := Int.le_of_dvd (by norm_num) hdvd16
+  have hlo : -p ≤ 16 := Int.le_of_dvd (by norm_num) (neg_dvd.mpr hdvd16)
+  have hlo' : -16 ≤ p := by linarith
+  interval_cases p <;> norm_num at hn
+
+/-- **THE ONE OPEN STATEMENT AT LEVEL `11`** (sorry leaf, 2026-07-27; this
+replaces `exists_halving_witness`, which is now PROVEN over it): the descent
+image `β = p − 2s·e²` is one of `16` explicit square classes of `ℤ[s]`.
+
+## WHAT THIS ASKS FOR, AND WHY THE LIST HAS EXACTLY THESE `16` ENTRIES
+
+Write `β = p − 2s·e²` and `γ = p² + (2s − 4)pe² + (4s² − 8s)e⁴`, the two factors
+of `n² = p³ − 4p²e² + 16e⁶` over `ℤ[s]`. Then:
+
+1. **Only `(s)` and one prime over `11` can have odd valuation in `(β)`.** For
+   any prime `𝔭 ∤ γ` the valuation `v_𝔭(β) = v_𝔭(n²)` is even, and for
+   `𝔭 ∤ β` it is `0`; so odd valuation forces `𝔭 ∣ gcd(β, γ)`. Dividing `γ` by
+   `β` as polynomials in `p` gives the exact identity
+   `γ = (p + (4s − 4)e²)·β + (12s² − 16s)·e⁴` — a pure `ring` identity, so
+   `𝔭 ∣ gcd(β, γ)` implies `𝔭 ∣ e⁴·4s(3s − 4)`; and `𝔭 ∤ e`, since `𝔭 ∣ β` and
+   `𝔭 ∣ e` would give `𝔭 ∣ p`, against `IsCoprime p e`. Hence
+   `𝔭 ∣ 4s(3s − 4)`, of norm `2816 = 2⁸·11`.
+2. **Both bad primes are principal, with `h(K) = 1`.** `(2) = (s)³` (indeed
+   `s³ = 2(s² − 1)` and `s² − 1` is a unit), and the prime over `11` occurring
+   in `(3s − 4)` is the RAMIFIED one, `𝔮` with `e(𝔮) = 2`, generated by
+   `g = 3 − s²` of norm `11`. (PARI/GP: `idealfactor` of `(3s − 4)` is
+   `𝔭₂ · 𝔮` with `𝔭₂` over `2`; `bnfisprincipal` returns `3 − s²` for `𝔮`.)
+3. **Units mod squares are `{±1, ±ε}`**, `ε = −s² + s + 1` the fundamental unit,
+   `N(ε) = −1`, unit rank `1`, torsion `{±1}`.
+
+So `β = u·d·δ²` with `u ∈ {±1, ±ε}` and `d ∈ {1, s, g, sg}` — the `16` triples
+listed, in that order (`u` outer, `d` inner). Their norms are
+`1, −2, 11, −22, −1, 2, −11, 22, −1, 2, −11, 22, 1, −2, 11, −22`, and exactly
+the first and thirteenth are `1`; that is what `descent_square_class` uses to
+discard the other fourteen.
+
+## FIELD AND CURVE DATA, ALL RE-DERIVED IN PARI/GP (2026-07-27)
+
+* `poldisc(X³ − 2X² + 2) = −44 = disc(K)`, so `[𝓞_K : ℤ[s]] = 1` **exactly** —
+  no Eisenstein argument is needed, only that the two discriminants agree.
+* `h(K) = 1` (Minkowski: `(4/π)(6/27)√44 ≈ 1.876 < 2`).
+* Unit rank `1`, torsion `{±1}`, fundamental unit exactly `ε = −s² + s + 1`
+  with `N(ε) = −1` (not `+1`).
+* `(2)` is totally ramified, `e = 3`, `f = 1`. `(11) = 𝔭²·𝔮'` with both
+  residue degrees `1`; `(3s − 4)` meets the ramified one.
+* `E = [0, −4, 0, 0, 16]` has conductor `11`, torsion `ℤ/5`, analytic rank `0`,
+  and `ellrank` returns rank `0` with **trivial `2`-Selmer**. So this leaf is
+  TRUE, it is exactly `Sel₂(E/ℚ) = 0`, and it is not vacuous — the two known
+  points have the explicit witnesses checked by `example` above.
+
+## WHAT REMAINS, AND WHAT NO LONGER DOES
+
+Remaining: items 1–3 above, i.e. `𝓞_K = ℤ[s]` (discriminants agree), `h(K) = 1`
+(`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`, whose bound
+`81π²/16 ≈ 49.96 > 44` is met, with `Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean`
+as worked precedent), the unit group, and the valuation bookkeeping of item 1.
+
+No longer remaining, and this is the point of the 2026-07-27 cut: the norm
+pruning (`descent_square_class`), the local condition (`epsilon_class_impossible`,
+which turns out to be pure parity), the non-vanishing (`descentImage_norm_ne_zero`)
+and the whole assembly (`exists_halving_witness`) are PROVEN. **Nothing above
+needs Galois cohomology, a Selmer group, a connecting map, or `E(ℚ) ≅ ℤ/5`.** -/
+theorem descent_unit_square {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hn : zsNorm (descentImage p e) = n ^ 2) :
+    ∃ u δ : ℤ × ℤ × ℤ, descentImage p e = zsMul u (zsMul δ δ) ∧
+      u ∈ [((1 : ℤ), (0 : ℤ), (0 : ℤ)), (0, 1, 0), (3, 0, -1), (2, 3, -2),
+        (-1, 0, 0), (0, -1, 0), (-3, 0, 1), (-2, -3, 2),
+        (1, 1, -1), (2, 1, -1), (1, 1, -2), (4, 1, -3),
+        (-1, -1, 1), (-2, -1, 1), (-1, -1, 2), (-4, -1, 3)] := sorry
+
+/-- **The norm pruning** (PROVEN 2026-07-27): of the `16` square classes only
+the two of norm `1` survive, so `β` is a square or `−ε` times a square.
+
+`N(β) = N(u)·N(δ)²` with `N(β) = n²` and `N(δ) ≠ 0` (else `n = 0`, refuted by
+`descentImage_norm_ne_zero`), so `N(u)` must be a rational square. The other
+fourteen classes have `N(u) ∈ {−22, −11, −2, −1, 2, 11, 22}`, none of which is a
+square — the negatives trivially, and `2`, `11`, `22` by
+`sq_ne_mul_sq_of_not_isSquare`. -/
+theorem descent_square_class {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hn : zsNorm (descentImage p e) = n ^ 2) :
+    ∃ a b c : ℤ, descentImage p e = zsMul (a, b, c) (a, b, c) ∨
+      descentImage p e = zsMul (-1, -1, 1) (zsMul (a, b, c) (a, b, c)) := by
+  obtain ⟨u, δ, hbeta, hu⟩ := descent_unit_square he hcop hn
+  obtain ⟨a, b, c⟩ := δ
+  have hn0 : n ≠ 0 := descentImage_norm_ne_zero he hcop hn
+  obtain ⟨M, hM⟩ : ∃ M : ℤ, zsNorm (a, b, c) = M := ⟨_, rfl⟩
+  have hnorm : n ^ 2 = zsNorm u * M ^ 2 := by
+    rw [← hM, ← hn, hbeta, zsNorm_zsMul, zsNorm_zsMul]; ring
+  have hm0 : M ≠ 0 := by
+    rintro rfl
+    exact hn0 ((pow_eq_zero_iff two_ne_zero).mp (by rw [hnorm]; ring))
+  fin_cases hu
+  · exact ⟨a, b, c, Or.inl (by rw [hbeta, zsMul_one_left])⟩
+  · exact absurd (show n ^ 2 = -2 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare (not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = 11 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare not_isSquare_eleven hm0)
+  · exact absurd (show n ^ 2 = -22 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare (not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = -1 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare (not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = 2 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare not_isSquare_two hm0)
+  · exact absurd (show n ^ 2 = -11 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare (not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = 22 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare not_isSquare_twentyTwo hm0)
+  · exact absurd (show n ^ 2 = -1 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare (not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = 2 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare not_isSquare_two hm0)
+  · exact absurd (show n ^ 2 = -11 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare (not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = 22 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare not_isSquare_twentyTwo hm0)
+  · exact ⟨a, b, c, Or.inr hbeta⟩
+  · exact absurd (show n ^ 2 = -2 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare (not_isSquare_of_neg (by norm_num)) hm0)
+  · exact absurd (show n ^ 2 = 11 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare not_isSquare_eleven hm0)
+  · exact absurd (show n ^ 2 = -22 * M ^ 2 by rw [hnorm]; norm_num [zsNorm])
+      (sq_ne_mul_sq_of_not_isSquare (not_isSquare_of_neg (by norm_num)) hm0)
+
+/-- **THE LOCAL CONDITION, AND IT IS PURE PARITY** (PROVEN 2026-07-27): the
+surviving nontrivial square class `−ε = s² − s − 1` is impossible for a coprime
+point.
+
+This is the one place where the arithmetic of the curve enters, and the audit
+that expected "local conditions at `2` and `11`" over-estimated it: the class
+dies modulo `4`, with no `11`-adic input at all. Writing
+`β = (s² − s − 1)·(a + bs + cs²)²` in coordinates gives
+
+    p = −a² − 4ab − 4ac − 2b² − 4bc,
+    −2e² = −a² − 2ab − 4ac − 2b² − 4bc − 2c²,
+    0 = a² + 2ab + 2ac + b² − 2c².
+
+The second forces `a` even; the third then forces `b` even and, with `a, b`
+even, `c` even; the first then makes `p` even and the second makes `e` even —
+contradicting `IsCoprime p e`. (Brute force over `ℤ/4` independently confirms:
+zero solutions with `p, e` not both even.)
+
+Note what is NOT used: `he : 0 < e`, the curve equation, and any information
+about `n`. The class is killed by coprimality alone. -/
+theorem epsilon_class_impossible {p e a b c : ℤ} (hcop : IsCoprime p e) :
+    descentImage p e ≠ zsMul (-1, -1, 1) (zsMul (a, b, c) (a, b, c)) := by
+  intro h
+  simp only [descentImage, zsMul, Prod.mk.injEq] at h
+  obtain ⟨h1, h2, h3⟩ := h
+  have ha : (2 : ℤ) ∣ a := by
+    refine Int.prime_two.dvd_of_dvd_pow (n := 2) ⟨e ^ 2 - a * b - 2 * (a * c) - b ^ 2
+      - 2 * (b * c) - c ^ 2, by linarith⟩
+  obtain ⟨a₁, rfl⟩ := ha
+  have hb : (2 : ℤ) ∣ b := by
+    refine Int.prime_two.dvd_of_dvd_pow (n := 2)
+      ⟨c ^ 2 - 2 * a₁ ^ 2 - 2 * (a₁ * b) - 2 * (a₁ * c), by linarith⟩
+  obtain ⟨b₁, rfl⟩ := hb
+  have hc : (2 : ℤ) ∣ c := by
+    refine Int.prime_two.dvd_of_dvd_pow (n := 2)
+      ⟨a₁ ^ 2 + 2 * (a₁ * b₁) + a₁ * c + b₁ ^ 2, by linarith⟩
+  obtain ⟨c₁, rfl⟩ := hc
+  have hp : (2 : ℤ) ∣ p :=
+    ⟨-2 * a₁ ^ 2 - 8 * (a₁ * b₁) - 8 * (a₁ * c₁) - 4 * b₁ ^ 2 - 8 * (b₁ * c₁), by linarith⟩
+  have he : (2 : ℤ) ∣ e := by
+    refine Int.prime_two.dvd_of_dvd_pow (n := 2)
+      ⟨a₁ ^ 2 + 2 * (a₁ * b₁) + 4 * (a₁ * c₁) + 2 * b₁ ^ 2 + 4 * (b₁ * c₁) + 2 * c₁ ^ 2, by
+        linarith⟩
+  exact absurd (hcop.isUnit_of_dvd' hp he) (by decide)
+
+/-- **THE `2`-DESCENT at level `11`** (PROVEN 2026-07-27 over the single leaf
+`descent_unit_square`): every coprime integral point of `W² = U³ − 4U² + 16`
+lies in the TRIVIAL square class of the `2`-division field, written out in
+coordinates.
 
 MEANING. With `s³ = 2s² − 2` the cubic factors as `U³ − 4U² + 16 =
 (U − 2s)(U² + (2s − 4)U + 4s² − 8s)` over `K = ℚ(s)`, and a coprime integral
@@ -442,9 +806,12 @@ algebraic integer, so the root lies in `𝓞_K`, which is `ℤ[s]` on the nose
 force `e = 0`. Both known points have explicit witnesses:
 `(a, b, c) = (−2, 0, 1)` for `(p, e) = (0, 1)` and `(0, −2, 1)` for `(4, 1)`.
 
-**THIS IS NOW THE ONLY OPEN STATEMENT AT LEVEL `11`** — `smallPoints` was
-closed on 2026-07-27, so the entire height half is PROVEN and nothing here
-needs heights or finite generation.
+**STATUS (2026-07-27): this statement is PROVEN**, from `descent_square_class`
+(the norm pruning) and `epsilon_class_impossible` (the local condition, which is
+pure parity mod `4`). The only open statement at level `11` is now
+`descent_unit_square`, one level down. `smallPoints` was closed earlier the same
+day, so the entire height half is PROVEN too and nothing here needs heights or
+finite generation.
 
 ## FIELD AND CURVE DATA, VERIFIED IN PARI/GP (2026-07-27)
 
@@ -516,18 +883,40 @@ are absent from mathlib entirely; `MordellWeil` and `Selmer` appear in `Fermat/`
 only inside docstrings. If any of those becomes available, re-audit — the
 ingredient list above is otherwise complete.
 
-**DO NOT decompose this leaf on the strength of this note alone.** The four
-field facts are verified but they are *inputs*, not a cut: the assembly that
-consumes them is the descent map itself, so a decomposition that merely names
-"`𝓞_K = ℤ[s]`", "`h(K) = 1`", "units", "local conditions" as sub-leaves would
-leave the entire difficulty in an unwritten assembly, which is exactly the shape
-the glue-first rule forbids. A cut here has to start by *stating* the descent
-map and its kernel property — that much can be stated before anything is proven,
-and it is where a decomposition should begin. -/
+## HOW THE CUT WAS MADE (2026-07-27), against the previous owner's warning
+
+The previous version of this docstring said: "DO NOT decompose this leaf on the
+strength of this note alone … a decomposition that merely names `𝓞_K = ℤ[s]`,
+`h(K) = 1`, units, local conditions as sub-leaves would leave the entire
+difficulty in an unwritten assembly." **That warning was right, and it is
+answered rather than ignored**: the assembly is written and PROVEN, and the four
+field facts are *not* what was named as sub-leaves. Concretely, of the route
+
+  (i) valuation parity + `gcd(β, γ) ∣ 4s(3s − 4)`, (ii) `h(K) = 1` and
+  `𝓞_K = ℤ[s]`, (iii) units mod squares, (iv) norm pruning, (v) local condition,
+
+items (iv) and (v) are PROVEN here, and (i)–(iii) are gathered into ONE leaf,
+`descent_unit_square`, whose statement is a concrete `ℤ[s]` fact rather than a
+field-theoretic wish. The three coordinate equations of the conclusion below are
+extracted from `zsMul δ δ = descentImage p e` by `linarith`, which is the whole
+assembly — nothing is deferred to prose.
+
+The warning also asked a cut to "start by stating the descent map and its kernel
+property". The map is stated (`descentImage`). **The kernel property is not, and
+should not be**: see `descentImage`'s docstring — this leaf needs the image to be
+trivial, not the kernel to be `2E(ℚ)`, and the image-triviality is proved by
+factorisation in `ℤ[s]` without the homomorphism property ever being used. -/
 theorem exists_halving_witness {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6) :
     ∃ a b c : ℤ, b ^ 2 + 2 * a * c + 4 * b * c + 4 * c ^ 2 = 0 ∧
-      p = a ^ 2 - 4 * c ^ 2 - 4 * b * c ∧ e ^ 2 = c ^ 2 - a * b := sorry
+      p = a ^ 2 - 4 * c ^ 2 - 4 * b * c ∧ e ^ 2 = c ^ 2 - a * b := by
+  obtain ⟨a, b, c, hsq | hbad⟩ :=
+    descent_square_class (n := n) he hcop (by rw [zsNorm_descentImage]; linarith)
+  · refine ⟨a, b, c, ?_, ?_, ?_⟩ <;>
+      · simp only [descentImage, zsMul, Prod.mk.injEq] at hsq
+        obtain ⟨h1, h2, h3⟩ := hsq
+        linarith
+  · exact absurd hbad (epsilon_class_impossible hcop)
 
 /-! ### `halving_descends`, decomposed (2026-07-27): eliminate `m` and `c` first
 
@@ -1283,11 +1672,14 @@ and `c`. `height_drop_or_small` — the resultant/archimedean height bound, wher
 the finite-generation content lives — is PROVEN too, over `reduced_fraction`,
 `forms_common_dvd` and `forms_archimedean`. And `smallPoints` — the finite base
 case the height bound leaves behind, `|p| ≤ 512` and `1 ≤ e ≤ 22` — is PROVEN
-as of 2026-07-27 by a bitmask quadratic-residue sieve. So exactly ONE open
-statement remains: `exists_halving_witness`, the `2`-descent over `ℤ[s]` (PID,
-units, and the local conditions). See the section docstring for the computed
-evidence behind that split, including why the earlier routing note — which
-called the cubic field's class group the obstruction — was wrong.
+as of 2026-07-27 by a bitmask quadratic-residue sieve. And `exists_halving_witness`
+was decomposed later the same day, so exactly ONE open statement remains:
+`descent_unit_square`, the ideal-theoretic half of the `2`-descent over `ℤ[s]`
+(`𝓞_K = ℤ[s]`, `h(K) = 1`, units mod squares, valuation bookkeeping). See the
+section docstring for the computed evidence behind that split, including why the
+earlier routing note — which called the cubic field's class group the
+obstruction — was wrong, and why the ROUTE AUDIT that called for Galois
+cohomology was searching the wrong axis.
 
 Verified by exhaustive search (`|p| < 6000`, `1 ≤ e < 260`, coprime): `(0, 1)`
 and `(4, 1)` are the only solutions, so the statement is true as written.
@@ -1385,8 +1777,11 @@ and `MazurLevel11.smallPoints` (the finite base case `|p| ≤ 512`, `e ≤ 22`);
 and BOTH of those are themselves PROVEN — `height_drop_or_small` over
 `reduced_fraction`, `forms_common_dvd` and `forms_archimedean`, and
 `smallPoints` (2026-07-27) by a bitmask quadratic-residue sieve decided in the
-kernel. So level `11` stands on exactly ONE open statement:
-`exists_halving_witness`. See the `MazurLevel11` section docstring.
+kernel. Finally `exists_halving_witness` itself was decomposed on 2026-07-27
+and is PROVEN, over `MazurLevel11.descent_square_class` (the norm pruning) and
+`MazurLevel11.epsilon_class_impossible` (the local condition, pure parity mod
+`4`). So level `11` stands on exactly ONE open statement:
+`MazurLevel11.descent_unit_square`. See the `MazurLevel11` section docstring.
 
 Note the sentence above — "finite generation alone never yields rank `0`, so it
 was never the hard half" — is true but was read the wrong way round when
