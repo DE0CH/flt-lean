@@ -4476,7 +4476,7 @@ theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ
     haveI : IsEmpty Y := isEmpty_of_isCoarseModuliY0_zero hc
     haveI : SmoothOfRelativeDimension 1 strY := ⟨fun x => isEmptyElim x⟩
     exact ⟨Y, strY, ⟨{ j := 𝟙 Y
-                       over := Category.id_comp strY
+                       «over» := Category.id_comp strY
                        isOpenImmersion := inferInstance
                        isDominant := inferInstance
                        proper := inferInstance
@@ -4486,7 +4486,7 @@ theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ
     obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := ℚ) strY
     haveI := hX.smooth
     exact ⟨X, strX, ⟨{ j := j
-                       over := hX.comm
+                       «over» := hX.comm
                        isOpenImmersion := hX.isOpenImmersion
                        isDominant := hX.isDominant
                        proper := hX.isProper
