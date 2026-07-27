@@ -373,6 +373,8 @@ public import Mathlib.FieldTheory.Normal.Closure
 import Mathlib.Algebra.Polynomial.Eval.Irreducible
 import Mathlib.Algebra.Polynomial.Lifts
 import Mathlib.RingTheory.Polynomial.GaussLemma
+import Mathlib.RingTheory.Polynomial.Resultant.Basic
+import Mathlib.RingTheory.Polynomial.IsIntegral
 import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.FieldTheory.Finite.Basic
 -- (`Mathlib.Algebra.Field.ULift` is already `public import`ed above)
@@ -7415,18 +7417,175 @@ theorem exists_stepanovNormalisation (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.
         (Finset.univ.filter (fun a : Fin 2 → ZMod p => MvPolynomial.eval a g = 0)).card) :=
   sorry
 
-/-- **ITEM 2b: THE DISCRIMINANT BOUND** (SORRY LEAF, cut 2026-07-27), Schmidt
-III (4.1) and (4.3).
+/-- **A WEIGHTED-DEGREE BOUND FOR DETERMINANTS** (PROVEN 2026-07-27). If every
+entry of a square matrix over `S[X]` obeys `deg Mᵢⱼ + rᵢ ≤ cⱼ` for row weights
+`r` and column weights `c` (or vanishes), then `deg det M + ∑ r ≤ ∑ c`.
+
+This is the mechanism behind Schmidt III (4.1): the determinant expands as
+`∑_σ ± ∏ᵢ M_{σ(i),i}`, each summand has degree at most `∑ᵢ (c_i − r_{σ(i)})`,
+and `∑ᵢ r_{σ(i)} = ∑ᵢ rᵢ` because `σ` is a bijection. The `hrc` hypothesis is
+needed only to absorb the summands containing a zero entry. -/
+theorem stepanov_natDegree_det_le_of_weights {n : Type*} [Fintype n] [DecidableEq n]
+    {S : Type*} [CommRing S] (M : Matrix n n (Polynomial S)) (r c : n → ℕ)
+    (h : ∀ i j, M i j = 0 ∨ (M i j).natDegree + r i ≤ c j)
+    (hrc : ∑ i, r i ≤ ∑ i, c i) :
+    M.det.natDegree + ∑ i, r i ≤ ∑ i, c i := by
+  classical
+  have key : ∀ σ : Equiv.Perm n,
+      (Equiv.Perm.sign σ • ∏ i, M (σ i) i).natDegree ≤ ∑ i, c i - ∑ i, r i := by
+    intro σ
+    by_cases hz : ∃ i, M (σ i) i = 0
+    · obtain ⟨i, hi⟩ := hz
+      have : (∏ i, M (σ i) i) = 0 := Finset.prod_eq_zero (Finset.mem_univ i) hi
+      simp [this]
+    · push_neg at hz
+      have hbd : ∀ i, (M (σ i) i).natDegree + r (σ i) ≤ c i := by
+        intro i
+        rcases h (σ i) i with h0 | h1
+        · exact absurd h0 (hz i)
+        · exact h1
+      have hsum : (∑ i, (M (σ i) i).natDegree) + ∑ i, r (σ i) ≤ ∑ i, c i := by
+        rw [← Finset.sum_add_distrib]
+        exact Finset.sum_le_sum fun i _ => hbd i
+      have hperm : ∑ i, r (σ i) = ∑ i, r i := Equiv.sum_comp σ r
+      rw [hperm] at hsum
+      have hprod : (∏ i, M (σ i) i).natDegree ≤ ∑ i, (M (σ i) i).natDegree :=
+        Polynomial.natDegree_prod_le _ _
+      have hsmul : (Equiv.Perm.sign σ • ∏ i, M (σ i) i).natDegree
+          ≤ (∏ i, M (σ i) i).natDegree := by
+        rcases Int.units_eq_one_or (Equiv.Perm.sign σ) with hs | hs <;> rw [hs] <;> simp
+      omega
+  rw [Matrix.det_apply]
+  have := Polynomial.natDegree_sum_le_of_forall_le (Finset.univ : Finset (Equiv.Perm n))
+    (fun σ => Equiv.Perm.sign σ • ∏ i, M (σ i) i) (fun σ _ => key σ)
+  omega
+
+/-- Gauss's summation identity in the shape the Sylvester weight count needs
+(PROVEN): `∑_{i<m+n} i = ∑_{i<m} i + (mn + ∑_{i<n} i)`. Stated this way to keep
+the whole argument in `ℕ` with no division by two. -/
+theorem stepanov_sum_range_add_eq {m n : ℕ} :
+    ∑ i ∈ Finset.range (m + n), i
+      = (∑ i ∈ Finset.range m, i) + (m * n + ∑ i ∈ Finset.range n, i) := by
+  induction n with
+  | zero => simp
+  | succ k ih =>
+    rw [show m + (k + 1) = (m + k) + 1 from rfl, Finset.sum_range_succ, ih,
+      Finset.sum_range_succ]
+    ring
+
+/-- **SCHMIDT III (4.1)** (PROVEN 2026-07-27): the resultant of two polynomials in
+`S[X][Y]` whose `Y`-coefficients satisfy the weighted bounds `deg_X f_j + j ≤ m`
+and `deg_X g_j + j ≤ n` has `deg_X ≤ m·n`.
+
+This is the formal content of Schmidt's assertion that every monomial
+`a₁^{i₁} ⋯ a_d^{i_d}` of the discriminant satisfies `i₁ + 2i₂ + ⋯ + d i_d =
+d(d−1)`: rather than track the monomials, weight the Sylvester matrix. The
+first `m` columns carry `g`, so they get weight `n + j₁`; the last `n` carry
+`f`, weight `m + j₁`; rows get weight `i`. The entry at `(i, j)` is
+`g.coeff (i − j₁)` resp. `f.coeff (i − j₁)`, nonzero only when `i − j₁ ≤ n`
+resp. `≤ m`, which is exactly `deg + rᵢ ≤ c_j`. Then
+
+  `∑ c − ∑ r = (2mn + S(m) + S(n)) − (S(m) + S(n) + mn) = mn`
+
+by `stepanov_sum_range_add_eq`. Instantiated at `m = d`, `n = d − 1` this is
+(4.3), `deg Δ ≤ d(d−1)`. -/
+theorem stepanov_natDegree_resultant_le {S : Type*} [CommRing S]
+    (f g : Polynomial (Polynomial S)) (m n : ℕ)
+    (hf : ∀ i, f.coeff i = 0 ∨ (f.coeff i).natDegree + i ≤ m)
+    (hg : ∀ i, g.coeff i = 0 ∨ (g.coeff i).natDegree + i ≤ n) :
+    (f.resultant g m n).natDegree ≤ m * n := by
+  classical
+  set r : Fin (m + n) → ℕ := fun i => (i : ℕ) with hr
+  set c : Fin (m + n) → ℕ :=
+    fun j => Fin.addCases (fun j₁ : Fin m => n + (j₁ : ℕ)) (fun j₁ : Fin n => m + (j₁ : ℕ)) j
+    with hc
+  have hsumr : ∑ i, r i = ∑ i ∈ Finset.range (m + n), i := by
+    rw [hr]; exact Fin.sum_univ_eq_sum_range (fun i => i) (m + n)
+  have hsumc : ∑ j, c j
+      = (∑ j₁ ∈ Finset.range m, (n + j₁)) + ∑ j₁ ∈ Finset.range n, (m + j₁) := by
+    rw [hc, Fin.sum_univ_add]
+    simp only [Fin.addCases_left, Fin.addCases_right]
+    rw [Fin.sum_univ_eq_sum_range (fun i => n + i) m, Fin.sum_univ_eq_sum_range (fun i => m + i) n]
+  have hcr : ∑ j, c j = (∑ i, r i) + m * n := by
+    rw [hsumr, hsumc, stepanov_sum_range_add_eq]
+    rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
+    simp [Finset.sum_const, Finset.card_range, mul_comm]
+    ring
+  have hentry : ∀ i j, Polynomial.sylvester f g m n i j = 0 ∨
+      (Polynomial.sylvester f g m n i j).natDegree + r i ≤ c j := by
+    intro i j
+    induction j using Fin.addCases with
+    | left j₁ =>
+      simp only [Polynomial.sylvester, Matrix.of_apply, Fin.addCases_left, hc, hr]
+      by_cases hmem : (i : ℕ) ∈ Set.Icc (j₁ : ℕ) ((j₁ : ℕ) + n)
+      · rw [if_pos hmem]
+        rcases hg ((i : ℕ) - (j₁ : ℕ)) with h0 | h1
+        · exact Or.inl h0
+        · refine Or.inr ?_
+          simp only [Set.mem_Icc] at hmem
+          omega
+      · exact Or.inl (by rw [if_neg hmem])
+    | right j₁ =>
+      simp only [Polynomial.sylvester, Matrix.of_apply, Fin.addCases_right, hc, hr]
+      by_cases hmem : (i : ℕ) ∈ Set.Icc (j₁ : ℕ) ((j₁ : ℕ) + m)
+      · rw [if_pos hmem]
+        rcases hf ((i : ℕ) - (j₁ : ℕ)) with h0 | h1
+        · exact Or.inl h0
+        · refine Or.inr ?_
+          simp only [Set.mem_Icc] at hmem
+          omega
+      · exact Or.inl (by rw [if_neg hmem])
+  have := stepanov_natDegree_det_le_of_weights (Polynomial.sylvester f g m n) r c hentry (by omega)
+  rw [Polynomial.resultant]
+  omega
+
+/-- **THE DERIVATIVE OF A MONIC POLYNOMIAL HAS FULL DEGREE `d − 1`** (PROVEN),
+provided `d` is invertible. Used to pin the second Sylvester size argument to
+`d − 1`, which is what lets `Polynomial.isUnit_resultant_iff_isCoprime` — stated
+at the DEFAULT sizes `natDegree` — be applied to a resultant written with
+explicit sizes `d` and `d − 1`. -/
+theorem stepanov_natDegree_derivative_of_monic {K : Type*} [CommRing K] [Nontrivial K]
+    (G : Polynomial K) (d : ℕ) (hmon : G.Monic) (hdeg : G.natDegree = d) (hd : (d : K) ≠ 0) :
+    (Polynomial.derivative G).natDegree = d - 1 := by
+  have hd0 : d ≠ 0 := by rintro rfl; simp at hd
+  refine le_antisymm (by rw [← hdeg]; exact Polynomial.natDegree_derivative_le G) ?_
+  refine Polynomial.le_natDegree_of_ne_zero ?_
+  rw [Polynomial.coeff_derivative]
+  have hsucc : d - 1 + 1 = d := Nat.succ_pred_eq_of_pos (Nat.pos_of_ne_zero hd0)
+  have hcast : ((d - 1 : ℕ) : K) + 1 = ((d : ℕ) : K) := by
+    rw [← Nat.cast_one (R := K), ← Nat.cast_add, hsucc]
+  rw [hsucc, hcast, ← hdeg, hmon.coeff_natDegree, one_mul, hdeg]
+  exact hd
+
+/-- **ITEM 2b: THE DISCRIMINANT BOUND** (PROVEN 2026-07-27; it was a sorry leaf
+from its cut earlier the same day), Schmidt III (4.1) and (4.3).
 
 `Δ(X)`, the discriminant of the normalised `F` as a polynomial in `Y`, is a
 NONZERO polynomial of degree at most `d(d−1)`, and off its zero set the fibre
 `F(x, Y)` has full degree `d` and `d` distinct roots.
 
-WHY `deg Δ ≤ d(d−1)`. The discriminant of `a₀Yᵈ + ⋯ + a_d` is a polynomial of
-degree `2d − 2` in the `aᵢ` in which every monomial `a₁^{i₁} ⋯ a_d^{i_d}`
-satisfies `i₁ + 2i₂ + ⋯ + d i_d = d(d−1)` — Schmidt (4.1), from Lemma 5A of his
-Chapter I. Substituting `aᵢ = gᵢ(X)` with `deg gᵢ ≤ i` (hypothesis `hcoeff`)
-gives each monomial degree at most `d(d−1)` in `X`, hence (4.3).
+HOW IT IS PROVEN. `Δ` is taken to be `Polynomial.resultant F (∂F/∂Y) d (d−1)`,
+which is legitimate because `F` is monic: for monic `F` the resultant and the
+discriminant differ by a sign, and only `Δ ≠ 0` and its degree matter here.
+
+WHY `deg Δ ≤ d(d−1)`. Schmidt (4.1) says the discriminant of `a₀Yᵈ + ⋯ + a_d` is
+a polynomial of degree `2d − 2` in the `aᵢ` in which every monomial
+`a₁^{i₁} ⋯ a_d^{i_d}` satisfies `i₁ + 2i₂ + ⋯ + d i_d = d(d−1)`; substituting
+`aᵢ = gᵢ(X)` with `deg gᵢ ≤ i` (hypothesis `hcoeff`) then gives (4.3). The
+FORMAL proof does not track monomials: it weights the Sylvester matrix and
+bounds its determinant — see `stepanov_natDegree_resultant_le`, which proves the
+general statement `deg_X Res(f, g, m, n) ≤ m·n` under exactly the weighted
+coefficient bounds, and is instantiated here at `m = d`, `n = d − 1`. That
+detour is what makes (4.1) formalisable at all; the monomial characterisation is
+never needed.
+
+WHY THE SPECIALISATION CLAUSE IS FREE OF THE DEGREE BOUND. `Polynomial.resultant`
+commutes with the coefficient map `evalRingHom x` (`resultant_map_map`), and
+`F.map (evalRingHom x)` is monic of degree `d` with derivative of degree exactly
+`d − 1` — the latter because `d < p`, which is `stepanov_natDegree_derivative_of_monic`.
+So `Δ(x) ≠ 0` is literally `IsUnit` of the fibre's resultant at its DEFAULT
+Sylvester sizes, and `Polynomial.isUnit_resultant_iff_isCoprime` turns that into
+`IsCoprime (F(x,·)) (∂F/∂Y(x,·))`, which is `Polynomial.Separable` by definition.
 
 WHY `Δ ≠ 0` NEEDS `hirrF`, and would be FALSE without it. `Δ = 0` says exactly
 that `F` has a repeated root over `𝔽_p(X)^alg`. Monicity and `hsep` alone do not
@@ -7451,8 +7610,109 @@ theorem exists_stepanovDiscriminant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.P
     ∃ Δ : Polynomial (ZMod p), Δ ≠ 0 ∧ Δ.natDegree ≤ d * (d - 1) ∧
       ∀ x : ZMod p, Δ.eval x ≠ 0 →
         (F.map (Polynomial.evalRingHom x)).Separable ∧
-        (F.map (Polynomial.evalRingHom x)).natDegree = d :=
-  sorry
+        (F.map (Polynomial.evalRingHom x)).natDegree = d := by
+  classical
+  -- `d < p`, hence `d` is invertible in every `𝔽_p`-algebra below.
+  have hdp : d < p := by
+    have h1 : d ≤ d ^ 5 := by
+      calc d = d ^ 1 := (pow_one d).symm
+        _ ≤ d ^ 5 := Nat.pow_le_pow_right (by omega) (by omega)
+    have h2 : d ^ 5 ≤ 250 * d ^ 5 := le_mul_of_one_le_left (Nat.zero_le _) (by norm_num)
+    omega
+  have hdZ : ((d : ℕ) : ZMod p) ≠ 0 := by
+    intro hcon
+    have hdvd := (ZMod.natCast_eq_zero_iff d p).mp hcon
+    exact absurd (Nat.le_of_dvd (by omega) hdvd) (by omega)
+  have hdR : ((d : ℕ) : Polynomial (ZMod p)) ≠ 0 := by
+    intro hcon
+    exact hdZ (by simpa using congrArg (fun q => Polynomial.coeff q 0) hcon)
+  -- Schmidt (4.2): the weighted degree bounds on the coefficients of `F` and `∂F/∂Y`.
+  have hcoeffF : ∀ i, F.coeff i = 0 ∨ (F.coeff i).natDegree + i ≤ d := by
+    intro i
+    by_cases hi : i ≤ d
+    · exact Or.inr (by have := hcoeff i; omega)
+    · exact Or.inl (Polynomial.coeff_eq_zero_of_natDegree_lt (by omega))
+  have hcoeffF' : ∀ i, (Polynomial.derivative F).coeff i = 0 ∨
+      ((Polynomial.derivative F).coeff i).natDegree + i ≤ d - 1 := by
+    intro i
+    rw [Polynomial.coeff_derivative]
+    by_cases hi : i + 1 ≤ d
+    · refine Or.inr ?_
+      have h1 : (F.coeff (i + 1) * ((i : Polynomial (ZMod p)) + 1)).natDegree
+          ≤ (F.coeff (i + 1)).natDegree + ((i : Polynomial (ZMod p)) + 1).natDegree :=
+        Polynomial.natDegree_mul_le
+      have h2 : ((i : Polynomial (ZMod p)) + 1).natDegree = 0 := by
+        rw [show ((i : Polynomial (ZMod p)) + 1) = ((i + 1 : ℕ) : Polynomial (ZMod p)) by
+          push_cast; ring]
+        exact Polynomial.natDegree_natCast _
+      have h3 := hcoeff (i + 1)
+      omega
+    · refine Or.inl ?_
+      rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega), zero_mul]
+  refine ⟨F.resultant (Polynomial.derivative F) d (d - 1), ?_, ?_, ?_⟩
+  · -- `Δ ≠ 0`: over `F̄_p(X)` the normalised `F` is irreducible with nonzero
+    -- derivative, hence separable, hence coprime to its derivative, hence has
+    -- unit resultant. This is the step that consumes `hirrF`.
+    set A := AlgebraicClosure (ZMod p)
+    set φ : Polynomial (ZMod p) →+* Polynomial A :=
+      Polynomial.mapRingHom (algebraMap (ZMod p) A) with hφ
+    have hφinj : Function.Injective φ :=
+      Polynomial.map_injective _ (algebraMap (ZMod p) A).injective
+    set L := FractionRing (Polynomial A)
+    set ι : Polynomial A →+* L := algebraMap (Polynomial A) L with hι
+    have hιinj : Function.Injective ι := IsFractionRing.injective _ _
+    set ψ : Polynomial (ZMod p) →+* L := ι.comp φ with hψ
+    have hψinj : Function.Injective ψ := hιinj.comp hφinj
+    -- Gauss: the monic `F̄` stays irreducible over the fraction field `F̄_p(X)`.
+    have hmonbar : (F.map φ).Monic := hmon.map φ
+    have hirrL : Irreducible ((F.map φ).map ι) :=
+      (Polynomial.Monic.irreducible_iff_irreducible_map_fraction_map hmonbar).mp hirrF
+    have hmapmap : (F.map φ).map ι = F.map ψ := by rw [Polynomial.map_map]
+    rw [hmapmap] at hirrL
+    have hmonL : (F.map ψ).Monic := hmon.map ψ
+    have hderivL : Polynomial.derivative (F.map ψ) ≠ 0 := by
+      rw [Polynomial.derivative_map]
+      exact (Polynomial.map_ne_zero_iff hψinj).mpr hsep
+    have hsepL : (F.map ψ).Separable :=
+      (Polynomial.separable_iff_derivative_ne_zero hirrL).mpr hderivL
+    have hdL : ((d : ℕ) : L) ≠ 0 := by
+      intro hcon
+      refine hdR (hψinj ?_)
+      rw [map_natCast, map_zero]
+      exact hcon
+    have hdeg1 : (F.map ψ).natDegree = d := by rw [hmon.natDegree_map ψ, hdegY]
+    have hdeg2 : (Polynomial.derivative (F.map ψ)).natDegree = d - 1 :=
+      stepanov_natDegree_derivative_of_monic _ d hmonL hdeg1 hdL
+    have hunit0 : IsUnit ((F.map ψ).resultant (Polynomial.derivative (F.map ψ))) :=
+      (Polynomial.isUnit_resultant_iff_isCoprime hmonL).mpr hsepL
+    have hunit : IsUnit ((F.map ψ).resultant (Polynomial.derivative (F.map ψ)) d (d - 1)) := by
+      rwa [hdeg1, hdeg2] at hunit0
+    have hval : (F.map ψ).resultant (Polynomial.derivative (F.map ψ)) d (d - 1)
+        = ψ (F.resultant (Polynomial.derivative F) d (d - 1)) := by
+      rw [← Polynomial.resultant_map_map, Polynomial.derivative_map]
+    rw [hval] at hunit
+    intro hcon
+    rw [hcon, map_zero] at hunit
+    exact not_isUnit_zero hunit
+  · -- Schmidt (4.3): `deg Δ ≤ d(d−1)`, by the weighted determinant bound.
+    exact stepanov_natDegree_resultant_le F (Polynomial.derivative F) d (d - 1) hcoeffF hcoeffF'
+  · -- Off the zero set of `Δ` the fibre is separable of full degree `d`.
+    intro x hx
+    set ev : Polynomial (ZMod p) →+* ZMod p := Polynomial.evalRingHom x with hev
+    have hmonx : (F.map ev).Monic := hmon.map ev
+    have hdeg1 : (F.map ev).natDegree = d := by rw [hmon.natDegree_map ev, hdegY]
+    have hdeg2 : (Polynomial.derivative (F.map ev)).natDegree = d - 1 :=
+      stepanov_natDegree_derivative_of_monic _ d hmonx hdeg1 (by simpa using hdZ)
+    refine ⟨?_, hdeg1⟩
+    have hval : (F.map ev).resultant (Polynomial.derivative (F.map ev)) d (d - 1)
+        = ev (F.resultant (Polynomial.derivative F) d (d - 1)) := by
+      rw [← Polynomial.resultant_map_map, Polynomial.derivative_map]
+    have hne : (F.map ev).resultant (Polynomial.derivative (F.map ev)) d (d - 1) ≠ 0 := by
+      rw [hval]; exact hx
+    have hu : IsUnit ((F.map ev).resultant (Polynomial.derivative (F.map ev))) := by
+      rw [hdeg1, hdeg2]
+      exact isUnit_iff_ne_zero.mpr hne
+    exact (Polynomial.isUnit_resultant_iff_isCoprime hmonx).mp hu
 
 /-- **ITEM 2c: THE AUXILIARY FUNCTION AND ITS NORM** (SORRY LEAF, cut
 2026-07-27) — Schmidt III Lemma 4A together with Lemma 5A, for the SECOND of his
