@@ -35,7 +35,22 @@ ring so that a consumer can discharge them by commutative algebra.
   the spectrum of a domain is irreducible (PROVEN).
 * `smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` — *regular +
   finite type over a perfect field ⟹ smooth*, with the relative dimension read
-  off the Krull dimension (LEAF; see its docstring).
+  off the Krull dimension.  **PROVEN 2026-07-27** over the two leaves below; see
+  its docstring for the assembly.
+* `Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField` — the local
+  form of Stacks `056S`: a regular local ring essentially of finite type over a
+  perfect field is formally smooth over it (LEAF).
+* `Algebra.FormallySmooth.of_isRegularRing_of_perfectField` — the global
+  consequence, PROVEN from the leaf above by `Algebra.smoothLocus_eq_univ_iff`.
+* `Algebra.rank_kaehlerDifferential_eq_trdeg_of_perfectField` — for a finitely
+  generated field extension `L/K` with `K` perfect,
+  `rank_L Ω[L⁄K] = trdeg K L` (PROVEN 2026-07-27; mathlib has neither this nor
+  any other computation of the rank of a module of Kähler differentials of a
+  field extension).
+* `Algebra.trdeg_fractionRing_eq_of_ringKrullDim` — *dimension equals
+  transcendence degree* for a finite-type domain over a field (LEAF).
+* `Algebra.rank_kaehlerDifferential_eq_of_ringKrullDim` — the combination,
+  PROVEN from the two above.
 
 ## Why the connectedness criterion has to go through the function field
 
@@ -57,12 +72,226 @@ public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
 public import Mathlib.RingTheory.KrullDimension.Basic
 public import Mathlib.FieldTheory.PerfectClosure
+public import Mathlib.RingTheory.Smooth.Field
+public import Mathlib.RingTheory.Etale.Kaehler
+public import Mathlib.RingTheory.Kaehler.Polynomial
+public import Mathlib.RingTheory.RingHom.StandardSmooth
+public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
+public import Mathlib.LinearAlgebra.Dimension.Localization
+public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 
 @[expose] public section
 
 universe u
 
 open CategoryTheory Limits TensorProduct CommRingCat
+
+/-! ### Commutative-algebra input: regularity, smoothness, and the rank of `Ω`
+
+The two `sorry` leaves of this file both live here, in ring-theoretic form.  The
+scheme-level statement at the end of the file is then *assembled* from them with
+no further mathematical content.
+-/
+
+namespace Algebra
+
+/-- **A regular local ring essentially of finite type over a perfect field is
+formally smooth over it** (sorry leaf, opened 2026-07-27).
+
+This is the local form of Stacks `056S` ("regular is equivalent to smooth over a
+perfect field"), equivalently Matsumura *Commutative Ring Theory* §28, and it is
+the single piece of this file's development that mathlib does not supply in any
+form.
+
+## What mathlib has, checked 2026-07-27
+
+1. `IsRegularLocalRing` (`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), and
+   `IsRegularRing` as "every localization at a prime is regular local".
+2. The local Jacobian criterion
+   `Algebra.FormallySmooth.iff_injective_lTensor_residueField`
+   (`Mathlib/RingTheory/Smooth/Local.lean`): for a presentation `0 → I → P → A → 0`
+   with `P` formally smooth over the base and `Ω[P⁄R]` finite free, `A` is
+   formally smooth iff `κ ⊗ I/I² → κ ⊗ Ω[P⁄R]` is injective.
+3. `Algebra.FormallySmooth.of_perfectField` (`Mathlib/RingTheory/Smooth/Field.lean`):
+   a field extension essentially of finite type over a perfect field is formally
+   smooth.  That is this statement at the GENERIC point, and it is as far as
+   mathlib's `Scheme.Hom.dense_smoothLocus_of_perfectField` gets as well.
+
+*The check that would refute this*: `grep -rn "IsRegularRing"` over
+`Mathlib/RingTheory/Smooth/` or `Mathlib/AlgebraicGeometry/` returning anything —
+at this pin it returns nothing in either.
+
+## The intended route
+
+Present `A = P/I` with `P` a localization of a polynomial ring at a prime, so
+that ingredient 2 applies, and prove injectivity of `κ ⊗ I/I² → κ ⊗ Ω[P⁄K]` by
+counting: `dim_κ (I/I² ⊗ κ) = μ(I) ≥ ht I = dim P - dim A` always, and regularity
+of `A` together with separability of `κ/K` (automatic over a perfect field) forces
+equality.  The separability of the residue field is exactly where `PerfectField K`
+enters, and it is genuinely needed — see the faithfulness note on the theorem at
+the end of this file for the standard counterexample over an imperfect field.
+
+## Faithfulness
+
+Both hypotheses are load-bearing.  `EssFiniteType K A` cannot be dropped (formal
+smoothness of a general regular local `K`-algebra is false — a complete local ring
+such as `K⟦t⟧` is regular but not formally smooth over `K` for the discrete
+topology), and `PerfectField K` cannot be dropped (same counterexample as below). -/
+theorem FormallySmooth.of_isRegularLocalRing_of_perfectField
+    (K A : Type u) [Field K] [PerfectField K] [CommRing A] [Algebra K A]
+    [Algebra.EssFiniteType K A] [IsRegularLocalRing A] :
+    Algebra.FormallySmooth K A :=
+  sorry
+
+/-- **A regular ring of finite type over a perfect field is formally smooth over
+it** (PROVEN 2026-07-27 over `FormallySmooth.of_isRegularLocalRing_of_perfectField`).
+
+`Algebra.smoothLocus_eq_univ_iff` turns formal smoothness of `B` into formal
+smoothness of every `Bₚ`, and `IsRegularRing` is *defined* as regularity of every
+`Bₚ`, so the two match up point by point.  The only work is producing
+`EssFiniteType K Bₚ`, which is `EssFiniteType.of_isLocalization` composed with
+`EssFiniteType K B`. -/
+theorem FormallySmooth.of_isRegularRing_of_perfectField
+    (K B : Type u) [Field K] [PerfectField K] [CommRing B] [Algebra K B]
+    [Algebra.FiniteType K B] [IsRegularRing B] :
+    Algebra.FormallySmooth K B := by
+  haveI : Algebra.FinitePresentation K B :=
+    Algebra.FinitePresentation.of_finiteType.mp inferInstance
+  rw [← Algebra.smoothLocus_eq_univ_iff, Set.eq_univ_iff_forall]
+  intro p
+  show Algebra.FormallySmooth K (Localization.AtPrime p.asIdeal)
+  haveI : Algebra.EssFiniteType B (Localization.AtPrime p.asIdeal) :=
+    .of_isLocalization _ p.asIdeal.primeCompl
+  haveI : Algebra.EssFiniteType K (Localization.AtPrime p.asIdeal) := .comp _ B _
+  exact FormallySmooth.of_isRegularLocalRing_of_perfectField K _
+
+open scoped IntermediateField.algebraAdjoinAdjoin in
+/-- **The rank of the module of Kähler differentials of a finitely generated field
+extension of a perfect field is its transcendence degree** (PROVEN 2026-07-27).
+
+Mathlib computes `Ω` for a polynomial ring (`KaehlerDifferential.mvPolynomialBasis`)
+and has the whole separably-generated theory
+(`exists_isTranscendenceBasis_and_isSeparable_of_perfectField`), but nowhere
+connects them: `grep -rn "trdeg" Mathlib/RingTheory/Kaehler/` is empty at this pin,
+and so is the reverse grep for `Ω[` over `Mathlib/FieldTheory/`.
+
+The proof is a chain of three base changes along formally étale maps, each of
+which multiplies the rank by nothing:
+
+    K[s]  ⟶  Algebra.adjoin K s  ⟶  IntermediateField.adjoin K s  ⟶  L
+          ≃                     localization                  separable algebraic
+
+`KaehlerDifferential.isBaseChange_of_formallyEtale` turns each arrow into a base
+change of `Ω`, and `IsBaseChange.rank_eq` — which needs only that the target has no
+zero divisors and receives the source faithfully — reads the rank back unchanged.
+The left-hand end is `KaehlerDifferential.mvPolynomialBasis`, of rank `#s`; the
+right-hand end is `Ω[L⁄K]`; and `#s = trdeg K L` because `s` is a transcendence
+basis.
+
+`PerfectField K` is load-bearing and is used exactly once, to produce a
+*separating* transcendence basis: over an imperfect field the third arrow can fail
+to be separable and the rank strictly exceeds the transcendence degree (e.g.
+`L = K(t^{1/p})` over `K = 𝔽_p(t)`, where `trdeg = 0` but `Ω[L⁄K]` is
+one-dimensional). -/
+theorem rank_kaehlerDifferential_eq_trdeg_of_perfectField
+    (K L : Type u) [Field K] [PerfectField K] [Field L] [Algebra K L]
+    [Algebra.EssFiniteType K L] :
+    Module.rank L Ω[L⁄K] = Algebra.trdeg K L := by
+  obtain ⟨s, hs, hsep⟩ := exists_isTranscendenceBasis_and_isSeparable_of_perfectField K L
+  have hrange : Set.range (Subtype.val : {x // x ∈ s} → L) = (s : Set L) := Subtype.range_coe
+  set P := MvPolynomial {x // x ∈ s} K with hP
+  set A := Algebra.adjoin K (s : Set L) with hA
+  set E := IntermediateField.adjoin K (s : Set L) with hE
+  -- `L` is formally étale over `E`, because `L/E` is separable algebraic.
+  haveI : Algebra.FormallyEtale E L := Algebra.FormallyEtale.of_isSeparable E L
+  haveI : FaithfulSMul E L :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr (algebraMap E L).injective
+  have h1 : Module.rank L Ω[L⁄K] = Module.rank E Ω[E⁄K] :=
+    (KaehlerDifferential.isBaseChange_of_formallyEtale K E L).rank_eq
+  -- `E` is the fraction field of `A`, hence formally étale over it.
+  haveI : Algebra.FormallyEtale A E := Algebra.FormallyEtale.of_isLocalization (nonZeroDivisors A)
+  haveI : FaithfulSMul A E :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr (IsLocalization.injective E le_rfl)
+  have h2 : Module.rank E Ω[E⁄K] = Module.rank A Ω[A⁄K] :=
+    (KaehlerDifferential.isBaseChange_of_formallyEtale K A E).rank_eq
+  -- `A` is a polynomial ring on the transcendence basis.
+  have hAeq : Algebra.adjoin K (Set.range (Subtype.val : {x // x ∈ s} → L)) = A := by
+    rw [hrange]
+  let e : P ≃ₐ[K] A := hs.1.aevalEquiv.trans (Subalgebra.equivOfEq _ _ hAeq)
+  letI : Algebra P A := e.toAlgHom.toRingHom.toAlgebra
+  haveI : IsScalarTower K P A := IsScalarTower.of_algebraMap_eq fun x ↦ (e.commutes x).symm
+  haveI : Algebra.FormallyEtale P A :=
+    Algebra.FormallyEtale.of_equiv (AlgEquiv.ofRingEquiv (f := e.toRingEquiv) fun _ ↦ rfl)
+  haveI : FaithfulSMul P A :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr e.injective
+  have h3 : Module.rank A Ω[A⁄K] = Module.rank P Ω[P⁄K] :=
+    (KaehlerDifferential.isBaseChange_of_formallyEtale K P A).rank_eq
+  have h4 : Module.rank P Ω[P⁄K] = Cardinal.mk {x // x ∈ s} :=
+    (KaehlerDifferential.mvPolynomialBasis K {x // x ∈ s}).mk_eq_rank''.symm
+  have h5 : Cardinal.mk {x // x ∈ s} = Algebra.trdeg K L := by
+    simpa using hs.lift_cardinalMk_eq_trdeg
+  rw [h1, h2, h3, h4, h5]
+
+/-- **Krull dimension equals transcendence degree for a finite-type domain over a
+field** (sorry leaf, opened 2026-07-27).
+
+This is the fundamental theorem of dimension theory for affine varieties
+(Stacks `00OS`/`00P0`, Matsumura §14, Eisenbud Thm. A).  Mathlib does not have it,
+and does not have the standard ingredient it is usually deduced from either:
+
+* Noether normalisation IS present, as
+  `MvPolynomial.exists_finite_inj_algHom_of_fg` in
+  `Mathlib/RingTheory/NoetherNormalization.lean` — it produces an injective
+  `K[X₁,…,X_s] →ₐ[K] B` making `B` a finite module.
+* `MvPolynomial.ringKrullDim_of_isNoetherianRing` gives
+  `ringKrullDim K[X₁,…,X_s] = s`.
+* **Missing**: invariance of `ringKrullDim` under an injective *integral* (here
+  module-finite) ring extension.  `grep -rn "krullDim" Mathlib/RingTheory/Ideal/GoingUp.lean`
+  and `grep -rn "IsIntegral" Mathlib/RingTheory/KrullDimension/` are both empty at
+  this pin; that lemma — lying-over plus going-up plus incomparability — is the one
+  real gap, and it is the natural thing for a successor to build first, in mathlib
+  generality and not just here.
+
+Given it, the proof is: normalise, read `ringKrullDim B = s` off the two bullets
+above, and observe that the `s` normalising elements form a transcendence basis of
+`Frac B` over `K` (they are algebraically independent because the map is injective,
+and `Frac B` is algebraic over `K(X₁,…,X_s)` because `B` is finite over
+`K[X₁,…,X_s]`), so `trdeg K (Frac B) = s` by
+`IsTranscendenceBasis.lift_cardinalMk_eq_trdeg`.
+
+## Faithfulness
+
+`IsDomain B` is load-bearing: `Frac B` does not exist without it, and for a
+reducible finite-type algebra `ringKrullDim` records only the largest component
+while no single transcendence degree exists.  `Algebra.FiniteType K B` is
+load-bearing: for `B = K(t)` (not of finite type) the dimension is `0` and the
+transcendence degree is `1`.  `PerfectField K` is *not* needed here — this
+statement is characteristic-free — and is deliberately absent from the hypotheses. -/
+theorem trdeg_fractionRing_eq_of_ringKrullDim
+    (K B : Type u) [Field K] [CommRing B] [IsDomain B] [Algebra K B]
+    [Algebra.FiniteType K B] (n : ℕ) (hdim : ringKrullDim B = n) :
+    Algebra.trdeg K (FractionRing B) = n :=
+  sorry
+
+/-- **The module of Kähler differentials of a finite-type domain over a perfect
+field has rank the Krull dimension** (PROVEN 2026-07-27 over the two results above).
+
+`Ω[B⁄K]` and `Ω[Frac B⁄K]` have the same rank, because `Frac B` is a localization of
+`B`, hence formally étale over it, so `Ω` base-changes; then the rank at the generic
+point is the transcendence degree, which is the dimension. -/
+theorem rank_kaehlerDifferential_eq_of_ringKrullDim
+    (K B : Type u) [Field K] [PerfectField K] [CommRing B] [IsDomain B] [Algebra K B]
+    [Algebra.FiniteType K B] (n : ℕ) (hdim : ringKrullDim B = n) :
+    Module.rank B Ω[B⁄K] = n := by
+  haveI : Algebra.FormallyEtale B (FractionRing B) :=
+    Algebra.FormallyEtale.of_isLocalization (nonZeroDivisors B)
+  haveI : Algebra.EssFiniteType B (FractionRing B) := .of_isLocalization _ (nonZeroDivisors B)
+  haveI : Algebra.EssFiniteType K (FractionRing B) := .comp K B _
+  rw [← (KaehlerDifferential.isBaseChange_of_formallyEtale K B (FractionRing B)).rank_eq,
+    rank_kaehlerDifferential_eq_trdeg_of_perfectField K (FractionRing B),
+    trdeg_fractionRing_eq_of_ringKrullDim K B n hdim]
+
+end Algebra
 
 namespace AlgebraicGeometry
 
@@ -121,12 +350,36 @@ theorem geometricallyConnected_specMap_algebraMap_of_forall_isDomain
 /-! ### Smoothness of an affine curve over a perfect field -/
 
 /-- **Regular + finite type over a perfect field ⟹ smooth of relative dimension
-the Krull dimension** (sorry leaf, opened 2026-07-27).
+the Krull dimension** (opened 2026-07-27 as a sorry leaf; **PROVEN the same day**
+over `Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField` and
+`Algebra.trdeg_fractionRing_eq_of_ringKrullDim`, the two ring-theoretic leaves at
+the top of this file).
 
 This is the ring form of Stacks `056S` ("regular is equivalent to smooth over a
 perfect field"), together with the identification of the relative dimension: for
 an *integral* finite-type algebra over a field the local dimensions are all
 equal to `ringKrullDim`, so a single `n` governs every point.
+
+## The assembly (no mathematical content beyond the two leaves)
+
+1. `Algebra.FinitePresentation.of_finiteType` upgrades finite type to finite
+   presentation, since a field is Noetherian.
+2. `Algebra.FormallySmooth.of_isRegularRing_of_perfectField` (proven here from the
+   first leaf) gives `Algebra.Smooth K B`.
+3. `Algebra.Smooth.exists_span_eq_top_isStandardSmooth` covers `Spec B` by basic
+   opens `D(t)` on which `B_t` is *standard* smooth.  Mathlib's
+   `SmoothOfRelativeDimension` is defined through standard smoothness, so this
+   step is unavoidable and is exactly what mathlib supplies.
+4. On each such `B_t`, `IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth`
+   reduces the relative dimension to `rank_{B_t} Ω[B_t⁄K] = n`, and
+   `KaehlerDifferential.isBaseChange_of_formallyEtale` transports the rank from `B`
+   itself (a localization is formally étale), where it is `n` by
+   `Algebra.rank_kaehlerDifferential_eq_of_ringKrullDim` — the second leaf.
+5. `HasRingHomProperty.Spec_iff` and `RingHom.locally_iff_span_eq_top` turn the
+   covering statement into the scheme-level conclusion.  The element `0` is
+   discarded from the cover before step 4 (it would give the trivial ring, where
+   the relative dimension is not `n`); `Submodule.span_insert_zero` shows this
+   costs nothing.
 
 ## Why this leaf is worth having stated here
 
@@ -146,7 +399,7 @@ Proving it once here serves both.  A consumer of the scheme form can obtain it
 from this one on an affine cover; the two are deliberately not merged in this
 release because `CurveCompactification.lean` has a different owner.
 
-## What blocks it in the pin, checked 2026-07-27
+## What blocks it in the pin, checked 2026-07-27 (now localised in the two leaves)
 
 Mathlib has all three ingredients and no link between them.
 
@@ -173,7 +426,16 @@ smoothness of a regular local ring essentially of finite type over a perfect
 field.  In characteristic zero every residue field is separable over the base,
 so the Jacobian criterion of ingredient 2 applies once `dim_k m/m² = dim` is
 converted into injectivity of `k ⊗ I/I² → k ⊗ Ω[P/K]`; that conversion is the
-whole content and it is not in the pin.
+whole content and it is not in the pin.  That step, and it alone, is now the leaf
+`Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField`.
+
+A *second* thing was missing and had not been noticed when this leaf was first
+stated: mathlib's `SmoothOfRelativeDimension` is a statement about the RANK of
+`Ω`, so identifying the relative dimension with `ringKrullDim` needs "dimension =
+transcendence degree", which is also absent from the pin.  That is the second
+leaf, `Algebra.trdeg_fractionRing_eq_of_ringKrullDim`.  The bridge between the
+two — that the rank of `Ω` of a finitely generated field extension of a perfect
+field *is* the transcendence degree — is proven above.
 
 ## Faithfulness
 
@@ -189,7 +451,43 @@ application is unaffected. -/
 theorem smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing
     (K B : Type u) [Field K] [PerfectField K] [CommRing B] [IsDomain B] [Algebra K B]
     [Algebra.FiniteType K B] [IsRegularRing B] (n : ℕ) (hdim : ringKrullDim B = n) :
-    SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B))) :=
-  sorry
+    SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B))) := by
+  haveI : Algebra.FinitePresentation K B :=
+    Algebra.FinitePresentation.of_finiteType.mp inferInstance
+  haveI : Algebra.FormallySmooth K B :=
+    Algebra.FormallySmooth.of_isRegularRing_of_perfectField K B
+  haveI : Algebra.Smooth K B := ⟨inferInstance, inferInstance⟩
+  have hrank : Module.rank B Ω[B⁄K] = n :=
+    Algebra.rank_kaehlerDifferential_eq_of_ringKrullDim K B n hdim
+  rw [HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension n)]
+  show RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension n) _
+  rw [RingHom.locally_iff_span_eq_top]
+  obtain ⟨s, hs, hst⟩ := Algebra.Smooth.exists_span_eq_top_isStandardSmooth K B
+  refine top_le_iff.mp ?_
+  calc (⊤ : Ideal B)
+      = Ideal.span s := hs.symm
+    _ ≤ Ideal.span (insert 0 {g : B | RingHom.IsStandardSmoothOfRelativeDimension n
+          ((algebraMap B (Localization.Away g)).comp (Hom.hom (ofHom (algebraMap K B))))}) := by
+        refine Ideal.span_mono fun t ht ↦ ?_
+        rcases eq_or_ne t 0 with rfl | ht0
+        · exact Set.mem_insert _ _
+        refine Set.mem_insert_of_mem _ ?_
+        haveI : Algebra.IsStandardSmooth K (Localization.Away t) := hst t ht
+        have hle : Submonoid.powers t ≤ nonZeroDivisors B :=
+          powers_le_nonZeroDivisors_of_noZeroDivisors ht0
+        haveI : IsDomain (Localization.Away t) := IsLocalization.isDomain_localization hle
+        haveI : FaithfulSMul B (Localization.Away t) :=
+          (faithfulSMul_iff_algebraMap_injective _ _).mpr (IsLocalization.injective _ hle)
+        haveI : Algebra.FormallyEtale B (Localization.Away t) :=
+          Algebra.FormallyEtale.of_isLocalization (Submonoid.powers t)
+        have hr : Module.rank (Localization.Away t) Ω[Localization.Away t⁄K] = n := by
+          rw [(KaehlerDifferential.isBaseChange_of_formallyEtale K B
+            (Localization.Away t)).rank_eq, hrank]
+        haveI : Algebra.IsStandardSmoothOfRelativeDimension n K (Localization.Away t) :=
+          (Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth n).mpr hr
+        show RingHom.IsStandardSmoothOfRelativeDimension n _
+        rw [CommRingCat.hom_ofHom, ← IsScalarTower.algebraMap_eq K B (Localization.Away t)]
+        exact (RingHom.isStandardSmoothOfRelativeDimension_algebraMap n).mpr inferInstance
+    _ = _ := Submodule.span_insert_zero
 
 end AlgebraicGeometry
