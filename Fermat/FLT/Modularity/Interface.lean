@@ -3333,22 +3333,36 @@ here:
   `grep -rn 'newform\|oldform\|AtkinLehner' .lake/packages/mathlib` is
   empty — and `~/cs/FLT` is quaternionic. That half of the draft stands.
 * But THIS FILE already has the degeneracy operators, PROVEN:
-  `degeneracyOp N M d` (~30889) with `qCoeff_degeneracyOp` (~30901) —
+  `degeneracyOp N M d` (~32464) with `qCoeff_degeneracyOp` (~32476) —
   literally `a_m(V_d f) = if d ∣ m then a_{m/d}(f) else 0`, i.e. the
   rationality-preservation above is one `rw` away — together with
-  `degeneracyOp_injective` (~30982) and `heckeOp_degeneracyOp` (~30964),
-  `T_q ∘ V_d = V_d ∘ T_q` at `q ∤ M`. The file's own line ~27673, "no
-  Petersson product and no oldform degeneracy maps", is itself STALE:
-  that block was built 2026-07-26.
-* `atkinLehnerOp M Q` (~36221) exists too, though `exists_atkinLehnerOp`
-  (~36191) and `atkinLehnerOp_apply_eq_neg_qCoeff_smul` (~36272) are
-  still OPEN leaves.
+  `degeneracyOp_injective` (~32557) and `heckeOp_degeneracyOp` (~32539),
+  `T_q ∘ V_d = V_d ∘ T_q` at `q ∤ M`. The `IsWeightTwoNewform` carrier
+  docstring's "no Petersson product and no oldform degeneracy maps"
+  (~29207) was itself STALE: that block was built 2026-07-26, and the
+  carrier docstring has since been corrected in place (2026-07-27).
+* `atkinLehnerOp M Q` (~39586), `exists_atkinLehnerOp` (~39501) and
+  `atkinLehnerOp_apply_eq_neg_qCoeff_smul` (~39879) exist too, and as of
+  2026-07-27 ALL THREE are PROVEN (this bullet previously called the
+  latter two "still OPEN leaves"). What remains open on the Atkin–Lehner
+  side is `heckeTransform_slash_atkinLehnerRep` (~39675),
+  `heckeOp_self_atkinLehnerOp_eigen_of_newform` (~39756) and
+  `qCoeff_one_atkinLehnerOp_of_newform` (~39834).
+* the PETERSSON PRODUCT is present and PROVEN as well —
+  `exists_peterssonProduct_selfAdjoint_heckeOp` (~32056) over
+  `exists_peterssonDomain` (~31971), definiteness included — with
+  `setIntegral_heckeRep_unfold` (~31782) the only open leaf of the
+  `PeterssonProduct` section.
 
 So what axis 4 is actually missing is narrower than "the whole
 Atkin–Lehner theory": it is the DIRECT-SUM decomposition (old ⊕ new,
 with multiplicity one) plus rationality on the new part. The nearest
-existing statement is the OPEN leaf
-`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` (~31779).
+existing statement,
+`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` (~33817), is as of
+2026-07-27 PROVEN (this line previously called it an OPEN leaf), as are
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero` (~34727) and its converse
+`qCoeff_eq_zero_of_mem_oldSubspace` (~32580). So axis 4's residue is the
+SPLITTING itself, not any of its ingredients.
 
 **Second obstacle on axis 4 — DECLARATION ORDER — REMOVED 2026-07-27,
 and the line numbers in the bullets above are pre-hoist.** The degeneracy
@@ -29585,8 +29599,56 @@ section ConductorCut
 (`IsWeightTwoEigenform`, Prop. 5.8.5) whose away-from-`M` prime
 eigensystem does not arise from any normalized eigenform of a strictly
 smaller level dividing `M` — the *minimal-level* characterization of
-newform-ness, the only spelling available on a pin with no newform
-theory, no Petersson product and no oldform degeneracy maps.
+newform-ness.
+
+WHY THIS SPELLING, AND A CORRECTION (2026-07-27; the sentence corrected
+here was harvested verbatim by at least one route audit far below, which
+is exactly the damage a stale absence claim does).  The original version
+of this paragraph justified the spelling by saying it was "the only
+spelling available on a pin with no newform theory, no Petersson product
+and no oldform degeneracy maps".  **The second and third clauses were
+true when written (2026-07-24) and are now FALSE**: the degeneracy block
+landed 2026-07-26 and the Petersson section closed out 2026-07-26/27, in
+THIS FILE.  What is actually true:
+
+* the OLDFORM DEGENERACY MAPS exist here and are PROVEN — `degeneracyOp
+  N M d` (~32464) is `V_d : S₂(Γ₀(N)) → S₂(Γ₀(M))`, `f ↦ (z ↦ f(dz))`,
+  with `degeneracyOp_coe`, the coefficient identity `qCoeff_degeneracyOp`
+  (`a_m(V_d f) = a_{m/d}(f)`, `0` unless `d ∣ m`), `degeneracyOp_injective`
+  and `heckeOp_degeneracyOp` (`T_q ∘ V_d = V_d ∘ T_q` at `q ∤ M`).  The
+  old subspace is `⨆ p ∈ M.primeFactors, range (degeneracyOp (M/p) M p)`,
+  and the Atkin–Lehner Main Lemma over it —
+  `mem_oldSubspace_of_qCoeff_coprime_eq_zero` (~34727), its converse
+  `qCoeff_eq_zero_of_mem_oldSubspace` (~32580), and
+  `mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` (~33817) — is
+  PROVEN;
+* the PETERSSON PRODUCT exists here too, in the `PeterssonProduct`
+  section (~30963–32090), over mathlib's integrand
+  `Mathlib/NumberTheory/ModularForms/Petersson.lean`.  PROVEN:
+  `peterssonIntegrableOn`, `petersson_self_eq_ofReal`,
+  `cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero` (definiteness),
+  `petersson_slash_two`, `setIntegral_petersson_slash_adjoint`,
+  `peterssonIntegrableOn_slash`,
+  `peterssonSelfAdjoint_of_gamma0FundamentalDomain`,
+  `exists_peterssonDomain` and `exists_peterssonProduct_selfAdjoint_heckeOp`
+  (the inner product with `T_q` self-adjoint at every `q ∤ M`, definiteness
+  included).  The ONE open leaf left in that section is
+  `setIntegral_heckeRep_unfold` (~31782, the coset tiling of the Hecke
+  integral); the Atkin–Lehner involution `atkinLehnerOp M Q` (~39586) and
+  `exists_atkinLehnerOp` (~39501) are PROVEN as well, with open leaves
+  `heckeTransform_slash_atkinLehnerRep` (~39675),
+  `heckeOp_self_atkinLehnerOp_eigen_of_newform` (~39756) and
+  `qCoeff_one_atkinLehnerOp_of_newform` (~39834).
+
+So the honest justification is narrower, and it survives the correction:
+what is still missing is not the product or the maps but the OLD ⊕ NEW
+DIRECT-SUM DECOMPOSITION itself — `S₂(Γ₀(M)) = old ⊕ new` with the new
+part the Petersson-orthogonal complement and multiplicity one on it.
+Without that decomposition there is no `S₂(Γ₀(M))^new` to be a member of,
+so the minimal-level spelling is what this carrier uses; the soundness
+audit below is what pins it to the classical notion.  A future owner who
+wants the classical spelling should build the decomposition, NOT the
+degeneracy maps or the Petersson product.
 
 SOUNDNESS AUDIT (2026-07-24, both directions):
 
@@ -29608,11 +29670,15 @@ SOUNDNESS AUDIT (2026-07-24, both directions):
   eigensystem away from `M` IS that newform (strong multiplicity one
   again, in the full-eigenvalue form).
 
-Consequently the two sorried leaves below that quantify over this
-carrier (`exists_galoisRep_charFrob_of_weightTwoNewform` and
-`weightTwoNewform_level_dvd_two_of_isHardlyRamified`) quantify exactly
-over the forms for which the classical theory provides attached
-representations and conductor control. -/
+Consequently the two nodes below that quantify over this carrier
+(`exists_galoisRep_charFrob_of_weightTwoNewform` ~44161 and
+`weightTwoNewform_level_dvd_two_of_isHardlyRamified` ~52096) quantify
+exactly over the forms for which the classical theory provides attached
+representations and conductor control.  (This sentence used to call them
+"the two sorried leaves below"; corrected 2026-07-27 — both are now
+PROVEN assemblies over named sub-leaves of their own, so the audit above
+is what justifies THEIR statements, not what justifies dispatching
+anyone at them.) -/
 structure IsWeightTwoNewform (M : ℕ) (g : CuspForm (Gamma0GL M) 2) : Prop
     extends IsWeightTwoEigenform M g where
   /-- The away-from-`M` eigensystem of `g` occurs at no strictly
@@ -34869,8 +34935,13 @@ Diamond–Shurman Theorem 5.7.1, Atkin–Lehner 1970 Lemma 18): if every
 
 This is the ANALYTIC half of the Atkin–Lehner content, and it is the half with
 no elementary substitute: the classical proof runs through the Petersson inner
-product and the Atkin–Lehner involutions `W_Q`, neither of which exists on this
-pin.  Note it needs NO eigenvector hypothesis — it is a statement about a single
+product and the Atkin–Lehner involutions `W_Q`.  (CORRECTED 2026-07-27: this
+sentence used to end "neither of which exists on this pin".  FALSE — both exist
+HERE and are proven: the Petersson inner product with `T_q` self-adjoint is
+`exists_peterssonProduct_selfAdjoint_heckeOp` (~32056) over `exists_peterssonDomain`
+(~31971), and `W_Q` is `atkinLehnerOp` (~39586) over `exists_atkinLehnerOp`
+(~39501).  The claim was only ever true of mathlib and of `~/cs/FLT`.)  Note it
+needs NO eigenvector hypothesis — it is a statement about a single
 cusp form, exactly as in Diamond–Shurman.
 
 STATUS 2026-07-26 (SUPERSEDES the paragraph this replaces).  This node is still
@@ -35053,9 +35124,21 @@ already IS the matrix `[[d,0],[0,1]]`, and this file's existing
 `smul`/`slash`/`σ` lemmas for it are stated at arbitrary POSITIVE `d`
 rather than at a prime, so they applied verbatim.
 
-What remains genuinely missing is therefore only the Petersson product and
-the involutions `W_Q`, and both are needed on the ANALYTIC side alone —
-`mem_oldSubspace_of_qCoeff_coprime_eq_zero`. The algebraic side
+SUPERSEDED 2026-07-27, and the superseded sentence is recorded because it
+was harvested: this paragraph used to end "what remains genuinely missing
+is therefore only the Petersson product and the involutions `W_Q`".  All
+FOUR items are now present and none of them is missing.  The Petersson
+product is `exists_peterssonProduct_selfAdjoint_heckeOp` (~32056, PROVEN
+over `exists_peterssonDomain`, itself PROVEN 2026-07-27), and `W_Q` is
+`atkinLehnerOp` (~39586, PROVEN over `exists_atkinLehnerOp`).  The analytic
+consumer `mem_oldSubspace_of_qCoeff_coprime_eq_zero` is itself PROVEN, over
+`exists_oldSubspace_complement_vanishing`.  The residual open leaves in this
+whole cluster are `setIntegral_heckeRep_unfold` (~31782, the coset tiling of
+the Hecke integral) and, on the Atkin–Lehner side,
+`heckeTransform_slash_atkinLehnerRep` (~39675),
+`heckeOp_self_atkinLehnerOp_eigen_of_newform` (~39756) and
+`qCoeff_one_atkinLehnerOp_of_newform` (~39834) — a materially different and
+much shorter list than "the Petersson product and `W_Q`".  The algebraic side
 (`exists_weightTwoEigenform_of_mem_oldSubspace`) needs no analysis at all
 beyond what is now present: injectivity of `V_d` and its commutation with
 `T_q` at `q ∤ d` both follow from `qCoeff_degeneracyOp` against
@@ -46942,11 +47025,18 @@ theorem cyclotomicCharacter_eq_one_of_inertia_two
 away-from-`M` prime eigensystem of the level-`M` cusp form `g` is
 realized at NO level `M' ∣ M` prime to `q`.
 
-This is the minimal-level spelling of "`g` is `q`-new", the only one
+This is the minimal-level spelling of "`g` is `q`-new" — the same
+design constraint that dictates the newform carrier
+`IsWeightTwoNewform`, of which this is the one-prime localization.
+(CORRECTED 2026-07-27: this sentence used to add "the only one
 available on a pin with no oldform degeneracy maps and no Petersson
-product — the same design constraint that dictates the newform
-carrier `IsWeightTwoNewform`, of which this is the one-prime
-localization: `IsWeightTwoNewform` forbids realization at every
+product".  That absence claim was true when written (2026-07-25) and
+is now FALSE — `degeneracyOp` and the whole `PeterssonProduct` section
+are PROVEN in this file; see the corrected `IsWeightTwoNewform`
+docstring for the declaration names.  What is genuinely missing, and
+what actually forces the minimal-level spelling, is the old ⊕ new
+DIRECT-SUM DECOMPOSITION with multiplicity one on the new part.)
+Concretely: `IsWeightTwoNewform` forbids realization at every
 PROPER divisor level, `IsNewAtPrime M q` forbids it only at the
 divisor levels PRIME TO `q` (which are automatically proper as soon
 as `q ∣ M`).
@@ -53349,14 +53439,28 @@ sense (`S₂(Γ₀(M)) = S₂(Γ₀(M))^new ⊕ S₂(Γ₀(M))^old` with the
 away-from-`M` eigensystem of an old form realized at `M/2` or `M/4`)
 requires the oldform degeneracy maps
 `α_d : S₂(Γ₀(M/d)) → S₂(Γ₀(M))` and the Petersson orthogonality that
-splits the space; this pin carries NEITHER (recorded verbatim in the
-`IsWeightTwoNewform` carrier docstring: "no newform theory, no
-Petersson product and no oldform degeneracy maps"), and the in-file
-Hecke/Sturm material — `exists_cuspForm_sturm_bound`,
-`cuspForm_finiteDimensional`, `hecke_eigen_coeff_identity`,
-`cuspForm_eq_of_forall_qCoeff_eq` — supplies finite-dimensionality and
-coefficient rigidity but no degeneracy maps, so the dichotomy is not
-formalizable in that shape here without building oldform theory. What
+splits the space.
+
+CORRECTED 2026-07-27.  This paragraph used to continue "this pin carries
+NEITHER", quoting the `IsWeightTwoNewform` carrier docstring's "no
+newform theory, no Petersson product and no oldform degeneracy maps" —
+and that quotation is exactly how the stale claim propagated.  Both
+halves are FALSE of this file: the degeneracy maps are `degeneracyOp`
+(~32464) with `qCoeff_degeneracyOp`, `degeneracyOp_injective` and
+`heckeOp_degeneracyOp`, all PROVEN, and the Petersson product with
+self-adjoint `T_q` is `exists_peterssonProduct_selfAdjoint_heckeOp`
+(~32056), also PROVEN.  What is genuinely absent is only the SPLITTING
+they would be used for — `S₂(Γ₀(M)) = old ⊕ new` as an orthogonal
+decomposition with multiplicity one — so the `4`-old/`4`-new dichotomy
+in the classical shape would need that decomposition built, not the two
+ingredients named above.  The in-file Hecke/Sturm material —
+`exists_cuspForm_sturm_bound`, `cuspForm_finiteDimensional`,
+`hecke_eigen_coeff_identity`, `cuspForm_eq_of_forall_qCoeff_eq` —
+supplies finite-dimensionality and coefficient rigidity, but not that
+decomposition.
+
+The route taken below is unaffected by the correction, because it never
+used the classical dichotomy in the first place. What
 IS available, and is strictly STRONGER than `4`-oldness, is the
 LEVEL-MINIMALITY dichotomy carried by the newform carrier:
 `exists_weightTwoNewform_of_weightTwoEigenform` is exactly "either the
