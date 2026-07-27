@@ -149,6 +149,7 @@ public import Mathlib.RingTheory.NoetherNormalization
 -- item 4's Bertini step (`exists_bertiniGoodPlaneCount`), used in the statement-facing
 -- form `schwartzZippel_card_zeros_mul_le` below.
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 -- proof-only: `RingHom.injective` (a ring hom out of a field is
 -- injective), the descent step of the automorphic joint's transport
 import Mathlib.RingTheory.SimpleRing.Basic
