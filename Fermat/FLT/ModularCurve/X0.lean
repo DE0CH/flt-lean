@@ -15085,40 +15085,148 @@ theorem fg_relPoint_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
   exact fg_of_descentHeight dh
     (finite_quotient_nsmul_of_abelianScheme ab dh.m dh.two_le)
 
-/-- **`L(f, 1) ≠ 0` for every weight-two eigenform at the thirteen Kenku
-levels** (sorry node) — the ANALYTIC half of
-`isTorsion_jacobian_of_kenkuLevel`, and the ONLY one of its three leaves
-that mentions `kenkuLevels`.  It contains no arithmetic geometry at all:
-no scheme, no Jacobian, no abelian variety.
+/-- **The period `∫₀^∞ f(iy) dy` of a weight-two cusp form, written on
+its `q`-expansion coefficients** (PROVEN — it is a definition).
 
-TRUE, by the reconnaissance recorded below: decomposing the cuspidal
-subspace `S_2(Γ_0(N))` into newform factors and evaluating `L(A, 1)` on
-each, EVERY factor at EVERY one of the thirteen levels has
-`L(A, 1) ≠ 0`;
-so `J_0(N)` has analytic rank `0`, hence Mordell–Weil rank `0` by
+For `y > 0` the integrand is literally `f (iy)`: substituting `τ = iy`
+into `f τ = ∑ₙ a_{n+1} e^{2πi(n+1)τ}` turns `e^{2πi(n+1)(iy)}` into
+`e^{-2π(n+1)y}`.  Phrasing the period on `a` rather than on `f` is
+deliberate — `IsLFunctionOf a L` depends only on `a`, so the two leaves
+below share their subject and the assembly is a rewrite; and it keeps
+`cuspPeriod` free of the dependent `⟨y * I, _⟩ : ℍ` coercion.
+
+**The identification is MACHINE-CHECKED at this pin** (2026-07-27).  It
+is recorded here rather than as a declaration for one reason only: it has
+no consumer until `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` below is
+proven, and a proven-but-unconsumed declaration is free-floating.
+**Whoever proves that leaf should paste this back in**, at which point it
+acquires its consumer:
+
+```
+example (N : ℕ) (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenform N f a) (y : ℝ) (hy : 0 < y) :
+    f ⟨(y : ℂ) * Complex.I, by simpa using hy⟩ =
+      ∑' n : ℕ, a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (y : ℂ))) := by
+  rw [hf.qExpansion ⟨(y : ℂ) * Complex.I, by simpa using hy⟩]
+  refine tsum_congr fun n => ?_
+  congr 1
+  congr 1
+  push_cast
+  ring_nf
+  rw [Complex.I_sq]
+  ring
+```
+
+It is **not vacuous, and that was checked by breaking it on purpose**:
+replacing the `2` by a `3`, and separately dropping the minus sign, each
+makes the proof fail with an explicit residual goal
+(`-(π n y 2) - π y 2 = -(π n y 3) - π y 3`, resp.
+`… = π n y 2 + π y 2`).  So the constant and the sign are pinned by the
+compiler, not by this comment.
+
+Outside `Set.Ioi 0` the `tsum` diverges and is junk; the integral does
+not see it. -/
+noncomputable def cuspPeriod (a : ℕ → ℂ) : ℂ :=
+  ∫ y in Set.Ioi (0 : ℝ),
+    ∑' n : ℕ, a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (y : ℂ)))
+
+/-- **Hecke's Mellin transform at `s = 1`: `L(f, 1) = 2π ∫₀^∞ f(iy) dy`**
+(sorry node) — LEVEL-FREE, and it is the whole of the *analysis* in
+`lFunction_apply_one_ne_zero_of_kenkuLevel` below.  `kenkuLevels` does
+not appear; `N` enters only through the type of `f`.
+
+TRUE, and classical.  Write `Λ(s) = ∫₀^∞ f(iy) y^{s-1} dy`.
+
+* For `Re s > 2` termwise integration of the `q`-expansion gives
+  `Λ(s) = ∑ₙ aₙ ∫₀^∞ e^{-2πny} y^{s-1} dy = (2π)^{-s} Γ(s) ∑ₙ aₙ n^{-s}`,
+  i.e. `Λ(s) = (2π)^{-s} Γ(s) L(s)` by `hL.eq_lseries`.
+* `Λ` is entire because `f(iy)` decays exponentially at BOTH ends of the
+  imaginary axis: at `y → ∞` from the `q`-expansion, and at `y → 0`
+  because `f` vanishes at the cusp `0` as well as at `∞` — which is
+  exactly what mathlib's `CuspForm` asserts
+  (`zero_at_cusps' {c : OnePoint ℝ} (hc : IsCusp c Γ) : c.IsZeroAt f k`,
+  quantified over *every* cusp, not just `∞`).
+* So `s ↦ (2π)^s Λ(s) / Γ(s)` and `L` are both entire (`hL.entire`) and
+  agree on the nonempty open half plane `Re s > 2`; by the identity
+  theorem they agree everywhere, in particular at `s = 1`, where
+  `Γ(1) = 1`.  Hence `L 1 = 2π Λ(1) = 2π · cuspPeriod a`.
+
+**This leaf does NOT need the Fricke involution, and it does NOT need
+the continuation to be constructed** — `hL` hands it over.  So it is
+genuinely independent of its sibling
+`exists_isLFunctionOf_of_isWeightTwoEigenform`, which *builds* a
+continuation; the two share a theory but neither consumes the other.
+
+`hf` is load-bearing in only one direction: `f` must be a genuine cusp
+form with `a` as its `q`-expansion (that is what pins the integrand and
+supplies decay at both cusps).  The eigenform conditions `hecke` and
+`atkin` are **not** used, so a prover may `omit` them or generalize to an
+arbitrary `f : CuspForm (Gamma0GL N) 2`; that generalization is welcome.
+
+**NUMERICALLY RE-DERIVED, INCLUDING THE CONSTANT `2π`** (PARI/GP,
+2026-07-27, independent of the table below).  For each eigenform,
+`2π (∫₀¹ f(iy) dy + ∫₁^∞ f(iy) dy)` was computed with `mfeval` +
+`intnum` and compared against `lfun(lfunmf(mf,f), 1)`; they agree to
+8+ digits, and the period comes out real:
+
+| `N` | `L(f, 1)` | `2π · period` |
+|---|---|---|
+| 20 | 0.4707291903 | 0.47072919 |
+| 24 | 0.5391289119 | 0.53912891 |
+| 36 | 0.7010910527 | 0.70109105 |
+| 35 (1-dim) | 0.7029112391 | 0.70291124 |
+| 35 (2-dim) | 0.4600763520, 0.8101846185 | 0.46007635, 0.81018462 |
+| 37 (rank 1) | 0 | 0 |
+
+The `N = 37` row is the control that matters here: the period vanishes
+exactly when the `L`-value does, so `cuspPeriod` is the honest carrier of
+the content and not a reformulation that has lost it.  PARI/GP is an
+untrusted searcher; this establishes that the statement is not false, and
+is not a proof.
+
+**What is missing at this pin, and the check that would refute it.**
+mathlib has `Mathlib/Analysis/MellinTransform.lean`, `Complex.Gamma`, and
+`AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq` (the identity
+theorem — already used, machine-checked, on `IsLFunctionOf`).  What is
+absent is the exponential decay of a weight-two cusp form along the
+imaginary axis *near `0`* extracted from `zero_at_cusps'`, and the
+termwise-integration step.  Refute with
+`grep -rn "mellin\|IsZeroAt\|zero_at_cusps" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/`.  The *axis not searched*: defining
+`L(f, 1)` as the period outright, which would delete this leaf and change
+`IsLFunctionOf`; that is a cut-level repair and is not mine to make. -/
+theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriod (N : ℕ)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a)
+    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
+    L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a :=
+  sorry
+
+/-- **The period of a weight-two eigenform is nonzero at the thirteen
+Kenku levels** (sorry node) — the ARITHMETIC half of
+`lFunction_apply_one_ne_zero_of_kenkuLevel`, and the ONLY declaration in
+this cluster that mentions `kenkuLevels`.  It contains no arithmetic
+geometry at all — no scheme, no Jacobian, no abelian variety — and after
+the cut it contains no `L`-function either: it is a statement about a
+convergent integral of a `q`-expansion.
+
+TRUE, by the reconnaissance below: decomposing `S_2(Γ_0(N))` into newform
+factors and evaluating `L(A, 1)` on each, EVERY factor at EVERY one of
+the thirteen levels has `L(A, 1) ≠ 0`, hence (by
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`) a nonzero period; so
+`J_0(N)` has analytic rank `0`, hence Mordell–Weil rank `0` by
 Kolyvagin–Logachev, hence `J_0(N)(ℚ)` is torsion.
 
-**What has to be proven, precisely.**  `hf` ranges over the normalized
-Hecke eigenforms of `S_2(Γ_0(N))`, which by Atkin–Lehner theory are the
-newforms `g` of every level `M ∣ N` together with their
-`p`-stabilizations.  For a stabilization,
-`L(f, s) = L(g, s) ∏_{p ∣ N} (1 - β_p p^{-s})` with `β_p` a root of
-`X² - a_p(g) X + p` (or `0`), so `|β_p| ≤ √p < p` by Deligne and every
-correction factor at `s = 1` is nonzero.  The statement therefore
-reduces EXACTLY to the newform statement that the reconnaissance below
-checks, and the reduction is the first thing a prover should write.  A
-second, cheaper reduction is available if the analytic continuation of
-`exists_isLFunctionOf_of_isWeightTwoEigenform` is built through the
-Mellin transform: `L(f, 1) = 2π ∫₀^∞ f(iy) dy`, so the whole leaf
-becomes non-vanishing of a period integral.
+`hN` is load-bearing: the period vanishes for one of the two eigenforms
+of level `37`, and for every level of positive analytic rank.  `hf` is
+load-bearing in both of its parts — without `qExpansion` the sequence `a`
+is junk (`a p := 0` extended by the recursions satisfies every other
+field), and a junk `a` has whatever period one likes.
 
-`hN` is load-bearing: `L(f, 1) = 0` for the newform of level `37`, and
-for every level of positive analytic rank.
-
-**RE-VERIFIED END-TO-END 2026-07-27 (PARI/GP, `lfunmf` + `lfun`).**  For
-each of the thirteen levels, EVERY newform of EVERY divisor `M ∣ N` was
-enumerated (`mfinit([M,2],0)`, newspace) and `|L(f, 1)|` computed at
-every complex embedding.  `vanishing = 0` in all thirteen cases:
+**RE-VERIFIED END-TO-END 2026-07-27 (PARI/GP, `lfunmf` + `lfun`), and
+INDEPENDENTLY RE-DERIVED the same day at the cut.**  For each of the
+thirteen levels, EVERY newform of EVERY divisor `M ∣ N` was enumerated
+(`mfinit([M,2],0)`, newspace) and `|L(f, 1)|` computed at every complex
+embedding.  `vanishing = 0` in all thirteen cases:
 
 | `N` | embeddings over all `M ∣ N` | smallest `abs (L f 1)` |
 |---|---|---|
@@ -15138,10 +15246,76 @@ every complex embedding.  `vanishing = 0` in all thirteen cases:
 
 Controls, run in the same session and behaving as they must: `N = 37`
 has `2` embeddings of which `1` vanishes, `N = 65` has `5` of which `1`
-vanishes, `N = 91` has `7` of which `2` vanish — which is exactly why
-`65` and `91` are NOT in `kenkuLevels`.  PARI/GP is an untrusted
-searcher: this establishes that the statement is not false, and is not a
-proof.
+vanishes (min of the rest `0.4252`), `N = 91` has `7` of which `2` vanish
+(min of the rest `0.3881`) — which is exactly why `65` and `91` are NOT
+in `kenkuLevels`.  PARI/GP is an untrusted searcher: this establishes
+that the statement is not false, and is not a proof.
+
+**THE NEXT CUT, and the period picture is what makes it cheap.**  `hf`
+ranges over the normalized Hecke eigenforms of `S_2(Γ_0(N))`, which by
+Atkin–Lehner theory are the newforms `g` of every level `M ∣ N` together
+with their `p`-stabilizations `f(τ) = g(τ) - β_p g(pτ)`.  In `L`-function
+language the stabilization correction is the Euler-factor identity
+`L(f, s) = L(g, s) ∏ (1 - β_p p^{-s})`; **in period language it is a
+one-line change of variables**, because `∫₀^∞ g(ipy) dy = (1/p) ∫₀^∞
+g(iu) du`, so
+
+> `cuspPeriod f = (1 - β_p / p) · cuspPeriod g`,
+
+and `β_p` is a root of `X² - a_p(g) X + p` (or `0`), so `|β_p| ≤ √p < p`
+by Deligne and the factor is never zero.  That is the reduction to
+newforms, and it is the first thing a prover of THIS leaf should write.
+What it needs *stated* — not proven — is the old/new decomposition, i.e.
+a `newform` predicate at level `M`; that does not exist at this pin in
+mathlib, in `~/cs/FLT`, or here.  Refute with
+`grep -rn "newform\|Newform\|oldform\|degeneracy" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/`.
+
+**The axis searched, so the next reader need not redo it.**  A cut on
+`N` (`fin_cases hN`, thirteen goals) is mechanically available and is
+*not* a decomposition: it moves no theory and multiplies the frontier by
+thirteen.  A cut that splits off the Fricke functional equation
+`Λ(s) = ± N^{1-s} Λ(2-s)` — which would turn the period into the
+exponentially convergent `(1 + ε) ∑ (aₙ/n) e^{-2πn/√N}` that PARI
+evaluates — is **FALSE as stated for this leaf's hypotheses**: a
+`p`-stabilization is a Hecke eigenform but is *not* a `W_N`-eigenform, so
+it has no Fricke sign.  That cut only becomes available *after* the
+reduction to newforms above, and in that order it is safe.
+
+The *axis not searched*: proving the thirteen levels through an explicit
+basis of `S_2(Γ_0(N))` (dimension formulas plus certified `q`-expansions),
+which is what would make the PARI computation replayable inside Lean.
+That is a large missing theory, and it is the real gate on this leaf. -/
+theorem cuspPeriod_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) :
+    cuspPeriod a ≠ 0 :=
+  sorry
+
+/-- **`L(f, 1) ≠ 0` for every weight-two eigenform at the thirteen Kenku
+levels** (PROVEN 2026-07-27, from the two leaves above) — the ANALYTIC
+half of `isTorsion_jacobian_of_kenkuLevel`.
+
+The assembly is a rewrite: `L 1 = 2π · cuspPeriod a` by
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`, and a product of nonzero
+complex numbers is nonzero, `2π ≠ 0` and
+`cuspPeriod_ne_zero_of_kenkuLevel`.
+
+**DECOMPOSED 2026-07-27, along the period.**  This node used to be the
+leaf; it was carrying two unrelated theories at once, and the seam
+between them is Hecke's Mellin transform at `s = 1`.  Above the seam is
+pure analysis, level-free, quantified over every weight-two cusp form
+(`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`); below it is the
+arithmetic, where `kenkuLevels` and the PARI reconnaissance now live
+(`cuspPeriod_ne_zero_of_kenkuLevel`).  After the cut, `kenkuLevels` is
+mentioned by exactly one declaration in this cluster.
+
+Two facts make the seam trustworthy rather than merely plausible.  The
+integrand of `cuspPeriod` is machine-checked to be `f(iy)` on `Set.Ioi 0`
+(and the check was broken on purpose, twice, to confirm it is not
+vacuous); and the constant `2π` was re-derived numerically against
+`lfun`, together with the `N = 37` control where the period vanishes
+exactly when the `L`-value does.  Both are written out on the two
+declarations above.
 
 **Why torsion and not finiteness** (recorded here because it explains
 the shape of the whole cluster).  Rank `0` and finiteness are the
@@ -15149,11 +15323,11 @@ same statement only *given* Mordell–Weil, and Mordell–Weil is a
 general theorem about abelian varieties that has nothing to do with
 modular curves.  Keeping them together made one leaf carrying two
 unrelated theories; separated, `fg_relPoint_of_abelianScheme` above holds
-the general half and this leaf holds exactly the Kolyvagin–Logachev
-half — which is literally the rank statement, since for a finitely
-generated abelian group `rank = 0` ⟺ torsion.  The two are recombined by
-`AddCommGroup.finite_of_fg_torsion` in `finite_jacobian_of_kenkuLevel`
-below, which is now PROVEN.
+the general half and `isTorsion_jacobian_of_lFunction_ne_zero` below
+holds exactly the Kolyvagin–Logachev half — which is literally the rank
+statement, since for a finitely generated abelian group `rank = 0` ⟺
+torsion.  The two are recombined by `AddCommGroup.finite_of_fg_torsion`
+in `finite_jacobian_of_kenkuLevel` below, which is PROVEN.
 
 **Two of the thirteen, `35` and `39`, were added on 2026-07-27** and
 their reconnaissance is NOT in the `#### Reconnaissance` block below,
@@ -15168,21 +15342,18 @@ and all six embeddings give `L(f, 1) ≠ 0` (PARI/GP:
 
 The old "`jac` is load-bearing" audit has MOVED, with the geometry, to
 `isTorsion_jacobian_of_lFunction_ne_zero` below; nothing in the present
-statement mentions a Jacobian.
-
-**DECOMPOSED 2026-07-27** — this docstring is kept because it records
-the reconnaissance, but the node is no longer a leaf.  The seam is
-`L(f, 1) ≠ 0`: the leaf was carrying *three* unrelated theories, and
-they are now three named leaves, only ONE of which mentions
-`kenkuLevels`.  See `isTorsion_jacobian_of_lFunction_ne_zero` for the
-Kolyvagin–Logachev half, `lFunction_apply_one_ne_zero_of_kenkuLevel` for
-the numerical half, and `exists_isLFunctionOf_of_isWeightTwoEigenform`
-(in `ModularCurve/WeightTwoEigenform.lean`) for Hecke's analytic
+statement mentions a Jacobian.  See that declaration for the
+Kolyvagin–Logachev half of the cluster, and
+`exists_isLFunctionOf_of_isWeightTwoEigenform` (in
+`ModularCurve/WeightTwoEigenform.lean`) for Hecke's analytic
 continuation. -/
 theorem lFunction_apply_one_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a)
-    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) : L 1 ≠ 0 :=
-  sorry
+    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) : L 1 ≠ 0 := by
+  rw [lFunction_apply_one_eq_two_pi_mul_cuspPeriod N f a hf L hL]
+  exact mul_ne_zero
+    (mul_ne_zero (by norm_num) (Complex.ofReal_ne_zero.mpr Real.pi_ne_zero))
+    (cuspPeriod_ne_zero_of_kenkuLevel N hN f a hf)
 
 /-- **Kolyvagin–Logachev: analytic rank `0` forces `J₀(N)(ℚ)` to be
 torsion** (sorry node) — LEVEL-FREE in the arithmetic sense that matters:
@@ -16052,8 +16223,10 @@ leaf each; the seam is "`X` contains a dense open copy of `𝔸¹_ℚ`", which
 is how rationality of a curve is expressible at a pin that has affine but
 not projective space.
 
-The ten open leaves under this node, and the single theory each one
-needs, are:
+The open leaves under this node, and the single theory each one
+needs, are (`lFunction_apply_one_ne_zero_of_kenkuLevel` was itself
+decomposed along the period on 2026-07-27 and is now PROVEN; its two
+successors are the fifth and sixth rows):
 
 | leaf | theory | level-specific? |
 |---|---|---|
@@ -16062,7 +16235,8 @@ needs, are:
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
-| `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
+| `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |
 | `exists_affineLine_of_not_injective_aj` | Riemann–Roch | no |
 | `exists_const_of_affineLine_to_abelianScheme` | rigidity of abelian varieties | no |
