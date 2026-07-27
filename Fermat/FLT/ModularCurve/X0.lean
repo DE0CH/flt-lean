@@ -2438,8 +2438,73 @@ theorem exists_injective_pre_geomBase {A : Scheme.{0}} {f : A ⟶ SpecQ}
   exact Subtype.ext ((cancel_epi (Spec.map (CommRingCat.ofHom φ))).mp
     (congrArg Subtype.val hab))
 
+/-- **An element integral over an algebraically closed subfield lies in
+it** (PROVEN) — the POINTWISE form of
+`IsAlgClosed.algebraMap_bijective_of_isIntegral`.
+
+Mathlib's version asks for `Algebra.IsIntegral k K`, i.e. that ALL of `K`
+be integral over `k`, and that is exactly what fails in the application
+below: `K` is an arbitrary algebraically closed field containing `ℚ̄`, and
+`K = ℂ` is not integral over `ℚ̄`.  Only the individual values of a ring
+map out of a finite `ℚ`-algebra are.  The proof is mathlib's, restricted
+to one element: over an algebraically closed field an irreducible
+polynomial is linear, so `minpoly k a = X + C c` and `a = -c`. -/
+theorem exists_algebraMap_eq_of_isIntegral {k K : Type} [Field k] [Field K]
+    [IsAlgClosed k] [Algebra k K] {a : K} (ha : IsIntegral k a) :
+    ∃ c : k, algebraMap k K c = a := by
+  refine ⟨-(minpoly k a).coeff 0, ?_⟩
+  have hq : (minpoly k a).leadingCoeff = 1 := minpoly.monic ha
+  have h : (minpoly k a).degree = 1 :=
+    IsAlgClosed.degree_eq_one_of_irreducible k (minpoly.irreducible ha)
+  have h0 : Polynomial.aeval a (minpoly k a) = 0 := minpoly.aeval k a
+  rw [Polynomial.eq_X_add_C_of_degree_eq_one h, hq, Polynomial.C_1, one_mul, map_add,
+    Polynomial.aeval_X, Polynomial.aeval_C, add_eq_zero_iff_eq_neg] at h0
+  rw [map_neg]
+  exact h0.symm
+
+/-- **A ring map out of an integral `ℚ`-algebra into an algebraically
+closed field factors through any copy of `ℚ̄` inside it** (PROVEN).  This
+is the ring core of leaf (v-b-i).
+
+NOTE WHAT IS NOT HYPOTHESISED: no compatibility between `χ`, `φ` and `ψ`
+over `ℚ`.  None is needed, and this is the step that makes the leaf
+cheap.  `χ ∘ ψ` and `φ ∘ (algebraMap ℚ ℚ̄)` are both ring maps `ℚ → K`,
+and `Rat.subsingleton_ringHom` says there is at most one — so they are
+equal on the nose.  Hence the monic `ℚ`-polynomial killing `r` maps to a
+monic `ℚ̄`-polynomial killing `χ r`, and
+`exists_algebraMap_eq_of_isIntegral` puts `χ r` in the image of `φ`.
+Injectivity of `φ` (a map of fields) then makes the pointwise preimage a
+ring map. -/
+theorem exists_ringHom_factor_of_isIntegral {R : Type} [CommRing R]
+    (ψ : ℚ →+* R) (hint : ψ.IsIntegral)
+    {K : Type} [Field K] [IsAlgClosed K]
+    (φ : AlgebraicClosure ℚ →+* K) (χ : R →+* K) :
+    ∃ ρ : R →+* AlgebraicClosure ℚ, φ.comp ρ = χ := by
+  letI : Algebra (AlgebraicClosure ℚ) K := φ.toAlgebra
+  have hmap : (algebraMap (AlgebraicClosure ℚ) K) = φ := rfl
+  have hmem : ∀ r : R, ∃ c : AlgebraicClosure ℚ, φ c = χ r := by
+    intro r
+    obtain ⟨q, hqm, hq⟩ := hint r
+    have hsub : χ.comp ψ = φ.comp (algebraMap ℚ (AlgebraicClosure ℚ)) :=
+      Subsingleton.elim _ _
+    have hint2 : IsIntegral (AlgebraicClosure ℚ) (χ r) := by
+      refine ⟨q.map (algebraMap ℚ (AlgebraicClosure ℚ)), hqm.map _, ?_⟩
+      rw [hmap, Polynomial.eval₂_map, ← hsub, ← Polynomial.hom_eval₂, hq, map_zero]
+    obtain ⟨c, hc⟩ := exists_algebraMap_eq_of_isIntegral hint2
+    exact ⟨c, by rw [← hmap]; exact hc⟩
+  choose g hg using hmem
+  have hinj : Function.Injective φ := φ.injective
+  refine ⟨{ toFun := g
+            map_one' := hinj (by rw [hg, map_one, map_one])
+            map_mul' := fun a b => hinj (by rw [hg, map_mul, map_mul, hg, hg])
+            map_zero' := hinj (by rw [hg, map_zero, map_zero])
+            map_add' := fun a b => hinj (by rw [hg, map_add, map_add, hg, hg]) }, ?_⟩
+  ext r
+  exact hg r
+
 /-- **A finite `ℚ`-scheme acquires no new points over a larger
-algebraically closed field** (sorry leaf (v-b-i), split out 2026-07-27).
+algebraically closed field** (leaf (v-b-i), split out and **PROVEN**
+2026-07-27).
 
 Every `K`-point of the span factors through the given embedding
 `e : Spec K ⟶ Spec ℚ̄`, for `K` any algebraically closed field.
@@ -2463,12 +2528,20 @@ integral over the algebraically closed `ℚ̄` and
 image of `ℚ̄`.  That image map is the required `ρ : R → ℚ̄`, and
 `v := Spec.map ρ` transported back along `isoSpec`.
 
-CHECK THAT WOULD REFUTE THE ONE LEMMA THIS LEANS ON:
-`IsAlgClosed.algebraMap_surjective_of_isIntegral` must resolve at this pin
-and must be applicable to a SUBALGEBRA rather than to all of `K` (all of
-`K` is *not* integral over `ℚ̄` — take `K = ℂ`); if it cannot be so
-applied, the fallback is `minpoly`-splitting by hand, which is longer but
-uses nothing beyond `IsAlgClosed.splits_codomain`. -/
+HOW IT CLOSED, correcting the route above in one place.  The `Algebra.adjoin`
+detour is unnecessary: mathlib's
+`IsAlgClosed.algebraMap_bijective_of_isIntegral` demands `Algebra.IsIntegral ℚ̄ K`
+— FALSE here, since `K` may be `ℂ` — but its proof is pointwise, and
+`exists_algebraMap_eq_of_isIntegral` above is exactly that proof restricted
+to one element.  With it, `exists_ringHom_factor_of_isIntegral` is the whole
+mathematical content, and the scheme half is six rewrites: `Spec.map_surjective`
+turns `w`, `e` and the structure morphism into ring maps, `IsIntegralHom.SpecMap_iff`
+turns `IsFinite` into `RingHom.IsIntegral`, and `Spec.map_comp` reassembles.
+
+Note `IsFinite` — not merely finiteness of the SPACE — is what is used: a
+`ℚ`-algebra with a one-point spectrum need not be algebraic over `ℚ` (take
+`ℚ(x)`), so `isAffine_spanScheme` alone would not do.  `isFinite_spanSchemeι`
+is leaf (i), and this leaf therefore consumes it. -/
 theorem exists_geomPt_factor_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
     (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
@@ -2476,8 +2549,21 @@ theorem exists_geomPt_factor_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (K : Type) [Field K] [IsAlgClosed K]
     (e : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
     (w : Spec (CommRingCat.of K) ⟶ spanScheme p) :
-    ∃ v : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ spanScheme p, e ≫ v = w :=
-  sorry
+    ∃ v : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ spanScheme p, e ≫ v = w := by
+  haveI := isAffine_spanScheme ab p hp
+  haveI := isFinite_spanSchemeι ab p hp
+  haveI : IsFinite ((spanScheme p).isoSpec.inv ≫ spanSchemeι p ≫ f) := inferInstance
+  obtain ⟨ψ, hψ⟩ := Spec.map_surjective ((spanScheme p).isoSpec.inv ≫ spanSchemeι p ≫ f)
+  obtain ⟨χ, hχ⟩ := Spec.map_surjective (w ≫ (spanScheme p).isoSpec.hom)
+  obtain ⟨φ, hφ⟩ := Spec.map_surjective e
+  have hint : ψ.hom.IsIntegral := by
+    rw [← IsIntegralHom.SpecMap_iff, hψ]
+    infer_instance
+  obtain ⟨ρ, hρ⟩ := exists_ringHom_factor_of_isIntegral ψ.hom hint φ.hom χ.hom
+  refine ⟨Spec.map (CommRingCat.ofHom ρ) ≫ (spanScheme p).isoSpec.inv, ?_⟩
+  have hcomp : CommRingCat.ofHom ρ ≫ φ = χ := CommRingCat.hom_ext hρ
+  rw [← hφ, ← Category.assoc, ← Spec.map_comp, hcomp, hχ, Category.assoc,
+    Iso.hom_inv_id, Category.comp_id]
 
 /-- **Every `ℚ̄`-point of the span is a Galois translate of a member of the
 family** (sorry leaf (v-b-ii), split out 2026-07-27 — the arithmetic half
@@ -2878,7 +2964,7 @@ and (v) are proven over four smaller leaves.  The state of the five is:
 | (iii-b) `exists_addHom_factor_geomSq` | open — the addition law on `∐ Spec (ℚ̄ ⊗_ℚ ℚ̄)`; the only consumer of `hstable` |
 | (v-a) `exists_injective_pre_geomBase` | **PROVEN** — no leaf; `he` is `subsingleton_hom_specQ`, injectivity is `epi_specMap_of_fieldHom` |
 | (v-b) `mem_zmultiples_of_liesIn_span` | PROVEN over (v-b-i), (v-b-ii) |
-| (v-b-i) `exists_geomPt_factor_span` | open — a finite `ℚ`-scheme gains no points over a larger algebraically closed field |
+| (v-b-i) `exists_geomPt_factor_span` | **PROVEN** — no leaf; consumes leaf (i) `isFinite_spanSchemeι` |
 | (v-b-ii) `exists_specGal_factor_span` | open — the `ℚ̄`-points of the span are the `Γ_ℚ`-orbits of the family; the arithmetic crux |
 
 The route recorded here before that date said "(iii) and (iv) are the
