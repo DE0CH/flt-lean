@@ -2162,11 +2162,270 @@ theorem one_tmul_quotient_eq_zero_of_mem_smul_top {R : Type u} [CommRing R]
       Ideal.Quotient.eq_zero_iff_mem.mpr hr, zero_smul]
   · rw [TensorProduct.tmul_add, hy, hw, add_zero]
 
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **The geometric points of the generic fibre are FINITE** (PROVEN
+2026-07-27, one instance step): `Module.Finite 𝒪ᵥ G` base-changes to
+`Module.Finite ℚ₃ᵥ (ℚ₃ᵥ ⊗ G)`, `Module.Free` is automatic over the
+field `ℚ₃ᵥ`, and mathlib's `Module.Finite.algHom` then makes the set of
+`ℚ₃ᵥ`-points valued in the domain `ℚ₃ᵥᵃˡᵍ` finite.
+
+This is stated as its own declaration ONLY for a performance reason,
+and the reason is worth recording. Every neighbouring declaration in
+this file runs under `backward.isDefEq.respectTransparency false`, and
+under that option this instance search does not terminate inside the
+heartbeat budget — it was measured to exhaust 2·10⁶ heartbeats twice,
+once at `whnf` and once at `isDefEq`, while the same search costs
+almost nothing at default transparency. Isolating it here lets the
+consumers keep the option they need for their own `show`/`rw` steps. -/
+theorem finite_points_of_hopf_order
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
+    Finite (Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) :=
+  inferInstanceAs (Finite (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ))
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **Every vector of a Hopf package has POSITIVE FINITE additive
+order** (PROVEN 2026-07-27): the geometric point set is finite by
+`finite_points_of_hopf_order` above, `fG` transports finiteness across
+the bijection to the space, and `addOrderOf` of an element of a finite
+`AddCommGroup` is positive and kills it.
+
+Note the order is taken in `N`, NOT in the point group: the points
+form only a MONOID under convolution as far as the instance graph is
+concerned (no `AddLeftCancelMonoid (Additive …)` instance exists), so
+`addOrderOf_pos` is unavailable there, while `N` is an `AddCommGroup`
+and supplies it immediately. Transporting finiteness rather than the
+order statement is what makes this one line. -/
+theorem exists_pos_nsmul_eq_zero_of_hopf_package
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (ρ' : GaloisRep ℚ A N)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      ((ρ'.toLocal 𝔭₃).Space))
+    (hfG : Function.Bijective fG) (z : N) :
+    ∃ n : ℕ, 0 < n ∧ (n : ℕ) • z = 0 := by
+  haveI : Finite (Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) := finite_points_of_hopf_order G
+  haveI : Finite N := Finite.of_equiv _ (Equiv.ofBijective fG hfG)
+  exact ⟨addOrderOf z, addOrderOf_pos z, addOrderOf_nsmul_eq_zero z⟩
+
+/-- **NAKAYAMA IN THE CONVOLUTION FILTRATION, PRIME-TO-`p` FORM**
+(PROVEN 2026-07-27): if a point `c` of the convolution ring
+`WithConv (G →ₗ[R] A)` over a LOCAL ring `A` satisfies `c ^ m = 1` for
+an `m` that is a UNIT of `A`, and its displacement `c − 1` takes its
+values in the maximal ideal, then `c = 1`.
+
+This is the exact prime-to-`p` mirror of
+`OortTate.eq_convOne_of_convPow_prime_eq_one`, and the comparison is
+the point of the statement. That lemma does the `p`-part: it must
+fight the fact that `p` is a NONUNIT, which costs it the hypotheses
+`IsDomain A`, `Odd p`, `(p : A) ≠ 0` and the value condition
+`c − 1 ∈ (p)` — the absolute unramifiedness `e = 1` — and it spends
+Raynaud's bound `𝔞 ^ p ≤ (p)·𝔞²` to cancel `p` in the domain. Here `m`
+is invertible, so ALL of that disappears: no domain hypothesis, no
+primality, no oddness, and NO RAMIFICATION INPUT WHATEVER.
+
+PROOF. Write `d := c − 1` and `𝔞 := span (range d.ofConv)`. The
+first-order expansion `OortTate.exists_convPow_rem` gives
+`c ^ m = 1 + m·d + r` with `r` valued in `𝔞²`; against `c ^ m = 1` this
+is `m·d + r = 0`, so every value `m · d(x)` lies in `𝔞²`. Multiplying
+by `m⁻¹` — legitimate exactly because `m` is a unit, and this is the
+one step the `p`-part cannot take — puts `d(x)` itself in `𝔞²`, i.e.
+`𝔞 ≤ 𝔞·𝔞`. Since `𝔞` is finitely generated (`OortTate.fg_span_range`,
+which is where `Module.Finite R G` is spent) and contained in the
+maximal ideal, hence in the Jacobson radical of the local ring `A`,
+Nakayama (`Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`) gives
+`𝔞 = ⊥`, so `d = 0` and `c = 1`. -/
+theorem eq_convOne_of_convPow_natCast_isUnit
+    {R G A : Type*} [CommRing R] [AddCommMonoid G] [Module R G] [Coalgebra R G]
+    [CommRing A] [Algebra R A] [Module.Finite R G] [IsLocalRing A]
+    {m : ℕ} (hm : IsUnit ((m : ℕ) : A))
+    (c : WithConv (G →ₗ[R] A)) (hcm : c ^ m = 1)
+    (hmax : ∀ x, (c - 1).ofConv x ∈ IsLocalRing.maximalIdeal A) :
+    c = 1 := by
+  classical
+  have hd : ∀ x, (c - 1).ofConv x ∈ Ideal.span (Set.range (c - 1).ofConv) :=
+    fun x => Ideal.subset_span ⟨x, rfl⟩
+  obtain ⟨r, hr, hcmr⟩ := OortTate.exists_convPow_rem c hd m
+  -- `c ^ m = 1` turns the first-order expansion into `m·d + r = 0`
+  have hkey : (m : ℕ) • (c - 1) + r = 0 := by
+    have h : (1 : WithConv (G →ₗ[R] A)) + ((m : ℕ) • (c - 1) + r) = 1 + 0 := by
+      rw [add_zero, ← add_assoc]
+      exact hcmr.symm.trans hcm
+    exact add_left_cancel h
+  -- so `m · d(x) ∈ 𝔞²`, and `m` cancels because it is a unit
+  have hsq : ∀ x : G, (c - 1).ofConv x ∈ Ideal.span (Set.range (c - 1).ofConv) ^ 2 := by
+    intro x
+    have h0 : ((m : ℕ) • (c - 1)).ofConv x + r.ofConv x = 0 := by
+      have h1 := congrArg (fun f : WithConv (G →ₗ[R] A) => f.ofConv x) hkey
+      simpa only [WithConv.ofConv_add, WithConv.ofConv_zero, LinearMap.add_apply,
+        LinearMap.zero_apply] using h1
+    have h2 : ((m : ℕ) • (c - 1)).ofConv x = ((m : ℕ) : A) * (c - 1).ofConv x := by
+      rw [WithConv.ofConv_smul, LinearMap.smul_apply, nsmul_eq_mul]
+    have hmm : ((m : ℕ) : A) * (c - 1).ofConv x ∈
+        Ideal.span (Set.range (c - 1).ofConv) ^ 2 := by
+      rw [← h2, eq_neg_of_add_eq_zero_left h0]
+      exact Submodule.neg_mem _ (hr x)
+    obtain ⟨u, hu⟩ := hm
+    have h3 : (c - 1).ofConv x = (↑u⁻¹ : A) * (((m : ℕ) : A) * (c - 1).ofConv x) := by
+      rw [← hu, ← mul_assoc, Units.inv_mul, one_mul]
+    rw [h3]
+    exact Ideal.mul_mem_left _ _ hmm
+  -- Nakayama
+  have hle : Ideal.span (Set.range (c - 1).ofConv) ≤
+      Ideal.span (Set.range (c - 1).ofConv) • Ideal.span (Set.range (c - 1).ofConv) := by
+    rw [Ideal.smul_eq_mul, ← sq, Ideal.span_le]
+    rintro _ ⟨x, rfl⟩
+    exact hsq x
+  have hjac : Ideal.span (Set.range (c - 1).ofConv) ≤ Ideal.jacobson ⊥ := by
+    rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top, Ideal.span_le]
+    rintro _ ⟨x, rfl⟩
+    exact hmax x
+  have hbot : Ideal.span (Set.range (c - 1).ofConv) = ⊥ :=
+    Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ _ (OortTate.fg_span_range _) hle hjac
+  have hzero : c - 1 = 0 := by
+    apply WithConv.ofConv_injective
+    ext x
+    have hx := hd x
+    rw [hbot, Ideal.mem_bot] at hx
+    simpa using hx
+  exact sub_eq_zero.mp hzero
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The connected part is `3`-PRIMARY** (SORRY LEAF, cut 2026-07-27
-out of `exists_localInertia_no_fixed_connected_vector_of_hopf_package`
+/-- **A CONNECTED point of order PRIME TO `3` is the identity** (PROVEN
+2026-07-27): a geometric point `φ` of the generic fibre of a
+module-finite Hopf order `G` over `𝒪ᵥ ≅ ℤ₃`, taking the value `1` on a
+PRIMITIVE counit-one idempotent `e₀`, and satisfying `φ ^ m = 1` for
+some `m` not divisible by `3`, is the convolution unit.
+
+This is the point-level statement behind
+`connected_vector_threePow_torsion_of_hopf_package` below, and the
+prime-to-`3` mirror of the proven
+`OortTate.eq_one_of_inertia_invariant_of_reduction_counit`. Note what
+is ABSENT relative to that lemma: there is no inertia hypothesis, no
+`Odd p`, and no use of `e = 1`. The whole ramification content of the
+`p`-part is replaced here by the single observation that `m` is a UNIT
+of the integral closure.
+
+PROOF, in three moves, all of them transcriptions of existing proven
+material.
+
+1. CONNECTEDNESS is spent exactly once:
+   `OortTate.point_sub_counit_mem_maximalIdeal` (which consumes `he₀`,
+   `hε₀`, `hprim₀` and `hφe`) says the point reduces to the counit, so
+   the displacement `c − 1` of the corresponding element `c` of the
+   convolution ring over `𝒪̄` takes its values in `𝔪 𝒪̄`.
+2. `m` IS A UNIT of `𝒪̄`: were it a nonunit it would lie in `𝔪 𝒪̄`, and
+   `OortTate.dvd_of_natCast_mem_maximalIdeal` (Bézout against `3`,
+   over `OortTate.natCast_mem_maximalIdeal_integralClosure`) would give
+   `3 ∣ m`, contradicting `hm3`.
+3. `φ ^ m = 1` is transported to `c ^ m = 1` through
+   `OortTate.liftEquiv_symm_vendored_pow`, `OortTate.comp_convPow` and
+   `AlgHom.toLinearMap_convPow` — the same plumbing as in
+   `OortTate.eq_one_of_inertia_invariant_of_reduction_counit` — and
+   `eq_convOne_of_convPow_natCast_isUnit` above finishes.
+
+FAITHFULNESS. `hprim₀` is essential and is spent in move 1: without it
+`e₀ = 1` is admissible, the "connected locus" is everything, and the
+constant group scheme `ℤ/5` over `𝒪ᵥ` refutes the statement with
+`m = 5`. -/
+theorem connected_point_eq_one_of_pow_coprime_three
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)
+    (hφe : φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1)
+    {m : ℕ} (hm3 : ¬ (3 ∣ m)) (hord : φ ^ m = 1) :
+    φ = 1 := by
+  classical
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  haveI : Algebra.IsIntegral 𝒪₃ᵥ G := Algebra.IsIntegral.of_finite 𝒪₃ᵥ G
+  -- STEP 1: connectedness — the point reduces to the counit
+  have hred : ∀ g : G, φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] g) -
+      algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) g) ∈
+      Submodule.map (Algebra.linearMap (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)) := fun g =>
+    OortTate.point_sub_counit_mem_maximalIdeal 𝔭₃ G e₀ he₀ hε₀ hprim₀ φ hφe g
+  -- the point, read inside the integral closure
+  set χ : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ := (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm φ
+  have hint : ∀ a : G, χ a ∈ integralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ := fun a =>
+    (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) a).map χ
+  set χI : G →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ :=
+    AlgHom.codRestrict χ (integralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) hint
+  set ι : IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ :=
+    { algebraMap (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ with
+      commutes' := fun _ => rfl }
+  have hιinj : Function.Injective ι := fun a b h => Subtype.ext h
+  have hιχ : ι.comp χI = χ := AlgHom.ext fun _ => rfl
+  set c : WithConv (G →ₗ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) :=
+    WithConv.toConv χI.toLinearMap with hc
+  have hdval : ∀ g : G, ι ((c - 1).ofConv g) =
+      φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] g) -
+        algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) g) := by
+    intro g
+    rw [WithConv.ofConv_sub, LinearMap.sub_apply, map_sub]
+    congr 1
+  have hmax : ∀ g : G, (c - 1).ofConv g ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) := by
+    intro g
+    obtain ⟨y, hy, hyeq⟩ := hred g
+    have hgm : ι ((c - 1).ofConv g) = ι y := by rw [hdval g, ← hyeq]; rfl
+    rwa [hιinj hgm]
+  -- STEP 2: `m` is a unit of `𝒪̄`
+  have hunit : IsUnit ((m : ℕ) : IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) := by
+    by_contra hnu
+    exact hm3 (OortTate.dvd_of_natCast_mem_maximalIdeal (p := 3) m
+      ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu)))
+  -- STEP 3: `φ ^ m = 1`, transported to the convolution ring over `𝒪̄`
+  have hχp : (WithConv.toConv χ) ^ m = (1 : WithConv (G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ)) := by
+    apply WithConv.ofConv_injective
+    have h := OortTate.liftEquiv_symm_vendored_pow (R := 𝒪₃ᵥ) (S := ℚ₃ᵥ) (H := G)
+      (L := ℚ₃ᵥᵃˡᵍ) φ m
+    rw [hord, vendored_one_eq_convOne, liftEquiv_symm_convOne] at h
+    exact h.symm
+  have hχIp : (WithConv.toConv χI) ^ m =
+      (1 : WithConv (G →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)) := by
+    apply WithConv.ofConv_injective
+    refine AlgHom.ext fun a => hιinj ?_
+    have h := OortTate.comp_convPow ι (WithConv.toConv χI) m
+    rw [WithConv.ofConv_toConv, hιχ, hχp] at h
+    have h2 := congrArg (fun f : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ => f a) h
+    simpa [OortTate.comp_convOne ι] using h2
+  have hcp : c ^ m = 1 := by
+    have h := AlgHom.toLinearMap_convPow (WithConv.toConv χI) m
+    rw [hχIp, AlgHom.toLinearMap_convOne] at h
+    exact h.symm
+  have hc1 : c = 1 := eq_convOne_of_convPow_natCast_isUnit hunit c hcp hmax
+  -- and back to `φ`
+  apply (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm.injective
+  rw [vendored_one_eq_convOne, liftEquiv_symm_convOne]
+  refine AlgHom.ext fun a => ?_
+  have h : χI a = (1 : WithConv (G →ₗ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)).ofConv a := by
+    have h0 := congrArg (fun f : WithConv (G →ₗ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) =>
+      f.ofConv a) hc1
+    rw [hc] at h0
+    exact h0
+  calc ((AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm φ) a
+      = ι (χI a) := rfl
+    _ = ι (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)
+          (Coalgebra.counit (R := 𝒪₃ᵥ) a)) := by
+        rw [h, LinearMap.convOne_apply]
+    _ = algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) a) := ι.commutes _
+    _ = (1 : WithConv (G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ)).ofConv a := (AlgHom.convOne_apply a).symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The connected part is `3`-PRIMARY** (PROVEN 2026-07-27; cut the
+same day out of
+`exists_localInertia_no_fixed_connected_vector_of_hopf_package`
 below, which is PROVEN over it together with the tameness leaf
 `exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
 just after it).
@@ -2200,6 +2459,23 @@ connected component reduces to the counit
 (`OortTate.point_sub_counit_mem_maximalIdeal`, PROVEN, and it spends
 exactly `he₀`/`hε₀`/`hprim₀`), i.e. lies in the KERNEL OF REDUCTION,
 and the kernel of reduction has no nontrivial prime-to-`3` torsion.
+
+THE ROUTE BELOW WAS FOLLOWED AS WRITTEN, and it is recorded here
+unchanged because it is an accurate account of the proof. Three
+declarations were added above to carry it:
+`finite_points_of_hopf_order` and
+`exists_pos_nsmul_eq_zero_of_hopf_package` (finiteness, hence a finite
+additive order `n` for `z`), `eq_convOne_of_convPow_natCast_isUnit`
+(the prime-to-`p` Nakayama, generic in `R`, `G`, `A`), and
+`connected_point_eq_one_of_pow_coprime_three` (its point-level
+instance at `3`). Only two adjustments to the sketch were needed. The
+`3`-adic splitting `n = 3 ^ a · m` is taken from mathlib's
+`Nat.exists_eq_pow_mul_and_not_dvd` rather than from `Nat.factorization`
+(the `ord_proj`/`ord_compl` lemma names named below do not exist at
+this pin). And the additive order is taken in `N`, not in the point
+group: the points carry no `AddLeftCancelMonoid` instance, so
+`addOrderOf_pos` is unavailable there — see
+`exists_pos_nsmul_eq_zero_of_hopf_package`.
 
 ROUTE FOR A PROVER — the prime-to-`3` half is ELEMENTARY, by Nakayama
 in the convolution filtration, and the pieces are already in
@@ -2277,7 +2553,79 @@ theorem connected_vector_threePow_torsion_of_hopf_package
     (hz : (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
       ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) :
     ∃ k : ℕ, (3 ^ k : ℕ) • z = 0 := by
-  sorry
+  classical
+  set g := Equiv.ofBijective fG hfG
+  have hfs : ∀ x : N, fG (g.symm x) = x := fun x => g.apply_symm_apply x
+  have hgs_add : ∀ x y : N, g.symm (x + y) = g.symm x + g.symm y := by
+    intro x y
+    apply g.injective
+    show fG (g.symm (x + y)) = fG (g.symm x + g.symm y)
+    rw [map_add fG, hfs, hfs, hfs]
+  have hgs_zero : g.symm (0 : N) = 0 := by
+    apply g.injective
+    show fG (g.symm (0 : N)) = fG 0
+    rw [map_zero fG, hfs]
+  have hgs_nsmul : ∀ (j : ℕ) (x : N), g.symm (j • x) = j • g.symm x := by
+    intro j x
+    induction j with
+    | zero => rw [zero_nsmul, zero_nsmul, hgs_zero]
+    | succ j ih => rw [succ_nsmul, succ_nsmul, hgs_add, ih]
+  -- the connected locus contains `0` …
+  have hPzero : (Additive.toMul (g.symm (0 : N)))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    rw [hgs_zero, toMul_zero, ← AlgHom.liftEquiv_symm_apply,
+      vendored_one_eq_convOne, liftEquiv_symm_convOne]
+    show algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) e₀) = 1
+    rw [hε₀, map_one]
+  -- … is closed under addition (comultiplication absorption) …
+  have hPadd : ∀ x y : N,
+      (Additive.toMul (g.symm x)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul (g.symm y)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul (g.symm (x + y))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro x y hx hy
+    have hx' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (g.symm x)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hx
+    have hy' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (g.symm y)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hy
+    rw [hgs_add, toMul_add, ← AlgHom.liftEquiv_symm_apply,
+      vendored_mul_eq_convMul, liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hx' hy'
+  -- … hence under natural multiples
+  have hPnsmul : ∀ (j : ℕ) (x : N),
+      (Additive.toMul (g.symm x)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (Additive.toMul (g.symm (j • x))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+    intro j x hx
+    induction j with
+    | zero => rw [zero_nsmul]; exact hPzero
+    | succ j ih => rw [succ_nsmul]; exact hPadd _ _ ih hx
+  -- FINITENESS: `z` has a positive finite additive order `n`
+  obtain ⟨n, hnpos, hnz⟩ := exists_pos_nsmul_eq_zero_of_hopf_package ρ' G fG hfG z
+  -- split off the `3`-part: `n = 3 ^ a · m` with `m` prime to `3`
+  obtain ⟨a, mm, hmm3, hnfac⟩ :=
+    Nat.exists_eq_pow_mul_and_not_dvd hnpos.ne' 3 (by norm_num)
+  refine ⟨a, ?_⟩
+  -- `w := 3 ^ a • z` is connected and killed by the prime-to-`3` part `m`
+  have hwconn : (Additive.toMul (g.symm ((3 ^ a : ℕ) • z)))
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := hPnsmul _ _ hz
+  have hw3 : (mm : ℕ) • ((3 ^ a : ℕ) • z) = 0 := by
+    rw [smul_smul, mul_comm, ← hnfac]
+    exact hnz
+  -- so its point has order dividing `m`, hence is the convolution unit
+  have hord : (Additive.toMul (g.symm ((3 ^ a : ℕ) • z))) ^ (mm : ℕ) = 1 := by
+    have h0 : (mm : ℕ) • g.symm ((3 ^ a : ℕ) • z) = 0 := by
+      rw [← hgs_nsmul, hw3, hgs_zero]
+    have h1 := congrArg Additive.toMul h0
+    rwa [toMul_nsmul, toMul_zero] at h1
+  have hone := connected_point_eq_one_of_pow_coprime_three G e₀ he₀ hε₀ hprim₀
+    _ hwconn hmm3 hord
+  have hX : g.symm ((3 ^ a : ℕ) • z) = 0 := by
+    refine Additive.toMul.injective ?_
+    rw [toMul_zero]
+    exact hone
+  have h2 := congrArg g hX
+  rwa [g.apply_symm_apply, show g 0 = fG 0 from rfl, map_zero fG] at h2
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
