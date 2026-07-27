@@ -11427,14 +11427,120 @@ theorem addVal_smul_eq (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [Fini
 
 /-! ### The three plumbing leaves -/
 
+open scoped Classical in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE MINIMAL POLYNOMIAL OF A MONOGENIC INTEGRAL GENERATOR OF A GALOIS
+SUBEXTENSION SPLITS ALREADY IN `𝒪_F[X]`** (PROVEN 2026-07-27 — the local
+analogue of `CompletionInvariance.map_minpoly_eq_prod_X_sub_C`, which is
+stated over `ℤ ⊆ ℚ` for a number field and therefore does not apply at the
+`3`-adic completion).  This is the `hnodal` step of
+`aeval_derivative_minpoly_eq_prod_sub_smul_local` in UNDIFFERENTIATED form:
+that declaration computes the same nodal factorisation and then exports only
+the value of the DERIVATIVE at `θ`, whereas the consumer
+`aeval_minpoly_eq_prod_sub_integralClosureLE` below needs the factorisation
+itself, so that it can be mapped along `integralClosureLE` and evaluated at
+an arbitrary point of `𝒪_M`.
+PROOF.  Write `θK` for `θ` viewed in `F` and `P := (minpoly ℚ₃ᵥ θK).map`.
+`P` is monic, splits (`F/ℚ₃ᵥ` is normal) and has degree `#Gal(F/ℚ₃ᵥ)`
+(`IsGalois.card_aut_eq_finrank`, since `hθ` makes `θK` primitive); the
+conjugate map `σ ↦ σ θK` is injective by the rigidity lemma
+`algEquiv_eq_one_of_algebraMap_fixed_local`, so the `#Gal` conjugates are
+distinct roots of a degree-`#Gal` polynomial and therefore ARE its root
+multiset.  Monic + split + known roots gives `P = ∏_σ (X − σ θK)`, and
+`minpoly.isIntegrallyClosed_eq_field_fractions` identifies `P` with the
+image of `minpoly 𝒪₃ᵥ θ` — the coefficients are integral, which is what
+lets the identity be read in `𝒪_F[X]` rather than only in `F[X]`. -/
+theorem map_minpoly_eq_prod_X_sub_C_smul_local
+    (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
+    (θ : IntegralClosure 𝒪₃ᵥ F)
+    (hθ : Algebra.adjoin ℚ₃ᵥ
+      ({algebraMap (IntegralClosure 𝒪₃ᵥ F) F θ} : Set F) = ⊤) :
+    (minpoly 𝒪₃ᵥ θ).map (algebraMap 𝒪₃ᵥ ↥F) =
+      ∏ σ : F ≃ₐ[ℚ₃ᵥ] F, (Polynomial.X -
+        Polynomial.C (σ (algebraMap (IntegralClosure 𝒪₃ᵥ F) F θ))) := by
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ ↥F := IsScalarTower.of_algebraMap_eq' rfl
+  have hint : IsIntegral 𝒪₃ᵥ θ := Algebra.IsIntegral.isIntegral θ
+  have hintK : IsIntegral ℚ₃ᵥ (algebraMap (IntegralClosure 𝒪₃ᵥ F) F θ) :=
+    IsIntegral.of_finite ℚ₃ᵥ _
+  set θK : F := algebraMap (IntegralClosure 𝒪₃ᵥ F) F θ with hθKdef
+  set v : (F ≃ₐ[ℚ₃ᵥ] F) → F := fun σ => σ θK with hvdef
+  have hvinj : Function.Injective v := by
+    intro σ τ hστ
+    have h1 : (τ⁻¹ * σ) θK = θK := by
+      have h2 : τ⁻¹ (σ θK) = τ⁻¹ (τ θK) := congrArg _ hστ
+      rwa [← AlgEquiv.mul_apply, ← AlgEquiv.mul_apply, inv_mul_cancel,
+        AlgEquiv.one_apply] at h2
+    have h3 : τ⁻¹ * σ = 1 := algEquiv_eq_one_of_algebraMap_fixed_local F hθ h1
+    rw [← one_mul σ, ← mul_inv_cancel τ, mul_assoc, h3, mul_one]
+  set P : Polynomial F := (minpoly ℚ₃ᵥ θK).map (algebraMap ℚ₃ᵥ F) with hPdef
+  have hPmonic : P.Monic := (minpoly.monic hintK).map _
+  have hPsplits : P.Splits := by
+    rw [hPdef]
+    exact Normal.splits inferInstance θK
+  have hPdeg : P.natDegree = Fintype.card (F ≃ₐ[ℚ₃ᵥ] F) := by
+    have hadj : IntermediateField.adjoin ℚ₃ᵥ {θK} = ⊤ := by
+      refine IntermediateField.toSubalgebra_injective ?_
+      rw [IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic
+        hintK.isAlgebraic, IntermediateField.top_toSubalgebra]
+      exact hθ
+    have hdeg : (minpoly ℚ₃ᵥ θK).natDegree = Module.finrank ℚ₃ᵥ F := by
+      rw [← IntermediateField.adjoin.finrank hintK, hadj]
+      exact IntermediateField.finrank_top'
+    have h2 : P.natDegree = (minpoly ℚ₃ᵥ θK).natDegree := by
+      rw [hPdef]
+      exact Polynomial.natDegree_map_eq_of_injective (algebraMap ℚ₃ᵥ F).injective _
+    rw [h2, hdeg, ← Nat.card_eq_fintype_card]
+    exact (IsGalois.card_aut_eq_finrank ℚ₃ᵥ F).symm
+  have hroots : P.roots = Finset.univ.val.map v := by
+    symm
+    refine Multiset.eq_of_le_of_card_le ?_ ?_
+    · rw [Multiset.le_iff_count]
+      intro a
+      by_cases ha : a ∈ Finset.univ.val.map v
+      · rw [Multiset.count_eq_one_of_mem (Finset.univ.nodup.map hvinj) ha]
+        rw [Nat.one_le_iff_ne_zero, Ne, Multiset.count_eq_zero, not_not]
+        obtain ⟨σ, -, rfl⟩ := Multiset.mem_map.mp ha
+        rw [Polynomial.mem_roots (hPmonic.ne_zero)]
+        rw [Polynomial.IsRoot, hPdef, Polynomial.eval_map,
+          ← Polynomial.aeval_def, hvdef]
+        have h2 : Polynomial.aeval (σ θK) (minpoly ℚ₃ᵥ θK) =
+            σ (Polynomial.aeval θK (minpoly ℚ₃ᵥ θK)) :=
+          Polynomial.aeval_algHom_apply σ.toAlgHom θK (minpoly ℚ₃ᵥ θK)
+        rw [h2, minpoly.aeval, map_zero]
+      · rw [Multiset.count_eq_zero_of_notMem ha]
+        exact Nat.zero_le _
+    · rw [Multiset.card_map, ← Finset.card_def, Finset.card_univ,
+        Polynomial.splits_iff_card_roots.mp hPsplits, hPdeg]
+  have hnodal : P = ∏ σ : F ≃ₐ[ℚ₃ᵥ] F, (Polynomial.X - Polynomial.C (σ θK)) := by
+    rw [hPsplits.eq_prod_roots_of_monic hPmonic, hroots,
+      Finset.prod_eq_multiset_prod, Multiset.map_map]
+    rfl
+  have hPmap : P = (minpoly 𝒪₃ᵥ θ).map (algebraMap 𝒪₃ᵥ ↥F) := by
+    rw [hPdef, hθKdef, minpoly.isIntegrallyClosed_eq_field_fractions ℚ₃ᵥ F hint,
+      Polynomial.map_map]
+    congr 1
+  rw [← hPmap, hnodal]
+
+open scoped Classical in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **THE MINIMAL POLYNOMIAL OF A MONOGENIC GENERATOR OF `𝒪_F` SPLITS OVER
-ANY OVERFIELD `M ⊇ F`** (sorry node).  `F/ℚ₃ᵥ` is Galois and `θF` generates
-it, so `minpoly 𝒪₃ᵥ θF = ∏_{σ ∈ Gal(F/ℚ₃ᵥ)} (X − σ•θF)` already in `𝒪_F[X]`;
-mapping that identity along `integralClosureLE` and evaluating gives the
-statement below.  The `𝒪_F`-level identity is the `hnodal` step inside the
-proof of `aeval_derivative_minpoly_eq_prod_sub_smul_local` (which currently
-only exports the value of the DERIVATIVE at `θF`); this leaf asks for the
-undifferentiated identity, evaluated at an arbitrary point of `𝒪_M`. -/
+ANY OVERFIELD `M ⊇ F`** (PROVEN 2026-07-27).  `F/ℚ₃ᵥ` is Galois and `θF`
+generates it, so `minpoly 𝒪₃ᵥ θF = ∏_{σ ∈ Gal(F/ℚ₃ᵥ)} (X − σ•θF)` already in
+`𝒪_F[X]` — that is `map_minpoly_eq_prod_X_sub_C_smul_local` just above.
+PROOF.  Both sides live in `𝒪_M`, which embeds in the field `↥M` by
+`Subtype.val`, so it suffices to check the identity there.  On the left,
+`Polynomial.aeval_algebraMap_apply` turns `aeval x (minpoly 𝒪₃ᵥ θF)` into the
+evaluation of the polynomial mapped to `↥M`; that map factors as
+`𝒪₃ᵥ → ↥F → ↥M` through `IntermediateField.inclusion hFM`, so the split
+identity above pushes forward to `∏_σ (X − ι(σ θF))` in `↥M[X]`, and
+`Polynomial.eval_prod` evaluates it termwise.  On the right, the image of
+`integralClosureLE F M hFM (σ • θF)` in `↥M` IS `ι(σ θF)` — that is
+`integralClosureLE_val`, a `rfl` — so the two products agree factor by
+factor. -/
 theorem aeval_minpoly_eq_prod_sub_integralClosureLE
     (F M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hFM : F ≤ M)
     [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F] [FiniteDimensional ℚ₃ᵥ M]
@@ -11443,21 +11549,102 @@ theorem aeval_minpoly_eq_prod_sub_integralClosureLE
     (x : IntegralClosure 𝒪₃ᵥ M) :
     Polynomial.aeval x (minpoly 𝒪₃ᵥ θF) =
       ∏ σ : F ≃ₐ[ℚ₃ᵥ] F, (x - integralClosureLE F M hFM (σ • θF)) := by
-  sorry
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ ↥F := IsScalarTower.of_algebraMap_eq' rfl
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ ↥M := IsScalarTower.of_algebraMap_eq' rfl
+  have hsplit := map_minpoly_eq_prod_X_sub_C_smul_local F θF hθ
+  -- pass to `↥M`, where `𝒪_M` embeds injectively
+  have hinj : Function.Injective (algebraMap (IntegralClosure 𝒪₃ᵥ M) ↥M) :=
+    fun a b hab => Subtype.ext hab
+  apply hinj
+  rw [map_prod]
+  have hLHS : algebraMap (IntegralClosure 𝒪₃ᵥ M) ↥M
+      (Polynomial.aeval x (minpoly 𝒪₃ᵥ θF)) =
+      Polynomial.eval (algebraMap (IntegralClosure 𝒪₃ᵥ M) ↥M x)
+        ((minpoly 𝒪₃ᵥ θF).map (algebraMap 𝒪₃ᵥ ↥M)) := by
+    rw [Polynomial.eval_map, ← Polynomial.aeval_def]
+    exact (Polynomial.aeval_algebraMap_apply (↥M : Type _) x _).symm
+  rw [hLHS]
+  have hmapM : (minpoly 𝒪₃ᵥ θF).map (algebraMap 𝒪₃ᵥ ↥M) =
+      ((minpoly 𝒪₃ᵥ θF).map (algebraMap 𝒪₃ᵥ ↥F)).map
+        (IntermediateField.inclusion hFM : ↥F →ₐ[ℚ₃ᵥ] ↥M).toRingHom := by
+    rw [Polynomial.map_map]
+    congr 1
+  rw [hmapM, hsplit, Polynomial.map_prod, Polynomial.eval_prod]
+  refine Finset.prod_congr rfl fun σ _ => ?_
+  rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+    Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, map_sub]
+  congr 1
 
-/-- **`integralClosureLE` IS EQUIVARIANT FOR `restrictToLEHom`** (sorry node).
-Pure plumbing: `restrictToLEHom F M hFM σ` is `σ` restricted to `F`, so it acts
-on `𝒪_F` compatibly with the inclusion `𝒪_F ↪ 𝒪_M`.  The proof is the
-`AlgEquiv.restrictNormal_commutes` computation already carried out for the
-reified subextension inside `exists_relative_depth_witness` (`hstep`/`hkey`
-there), transported through `reifyEquiv`. -/
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`integralClosureLE` IS EQUIVARIANT FOR `restrictToLEHom`** (PROVEN
+2026-07-27).  Pure plumbing: `restrictToLEHom F M hFM σ` is `σ` restricted to
+`F`, so it acts on `𝒪_F` compatibly with the inclusion `𝒪_F ↪ 𝒪_M`.
+PROOF.  The image of `y : 𝒪_F` inside `↥M` lies in the reification
+`F' = IntermediateField.comap M.val F` of `F` as an intermediate field of
+`↥M` (that is literally `y.1.2`), so it is `w := ⟨ι y, _⟩ : ↥F'`, and
+`reifyEquiv` sends `w` back to `y.1` — hence `reifyEquiv.symm y.1 = w`.
+Unfolding `restrictToLEHom = autCongr reifyEquiv ∘ restrictNormalHom F'`
+therefore turns `(restrictToLEHom σ) y.1` into
+`reifyEquiv ((restrictNormalHom F' σ) w)`, whose ambient value in `↥M` is
+`((restrictNormalHom F' σ) w).1`.  `AlgEquiv.restrictNormal_commutes` says
+exactly that this equals `σ (w.1) = σ (ι y)`, which is the left-hand side.
+This is the `hstep`/`hkey` computation of `exists_relative_depth_witness`,
+isolated and stated for an arbitrary integral point instead of for the one
+monogenic generator used there. -/
 theorem smul_integralClosureLE
     (F M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hFM : F ≤ M)
     [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F] [FiniteDimensional ℚ₃ᵥ M]
     (σ : M ≃ₐ[ℚ₃ᵥ] M) (y : IntegralClosure 𝒪₃ᵥ F) :
     σ • integralClosureLE F M hFM y =
       integralClosureLE F M hFM (restrictToLEHom F M hFM σ • y) := by
-  sorry
+  letI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M hFM
+  -- `y`, viewed inside `↥M`, lies in the reification of `F` inside `↥M`
+  have hmem : (integralClosureLE F M hFM y).1 ∈
+      reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M := y.1.2
+  -- `reifyEquiv` carries that reified point back to `y`
+  have hjw : reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M hFM
+      ⟨(integralClosureLE F M hFM y).1, hmem⟩ = y.1 := Subtype.ext rfl
+  have hsymm : (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+      F M hFM).symm y.1 = ⟨(integralClosureLE F M hFM y).1, hmem⟩ := by
+    rw [← hjw, AlgEquiv.symm_apply_apply]
+  -- the restricted automorphism computes the same value inside `↥M`
+  have hrc := AlgEquiv.restrictNormal_commutes σ
+    ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M)
+    (⟨(integralClosureLE F M hFM y).1, hmem⟩ :
+      ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M))
+  refine Subtype.ext ?_
+  rw [IntegralClosure.coe_smul, AlgEquiv.smul_def]
+  have hrhs : (integralClosureLE F M hFM (restrictToLEHom F M hFM σ • y)).1 =
+      ((AlgEquiv.restrictNormalHom
+        (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) σ)
+          ⟨(integralClosureLE F M hFM y).1, hmem⟩).1 := by
+    refine Subtype.ext ?_
+    have hstep : (restrictToLEHom F M hFM σ) y.1 =
+        reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M hFM
+          ((AlgEquiv.restrictNormalHom
+            (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) σ)
+              ⟨(integralClosureLE F M hFM y).1, hmem⟩) := by
+      show reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M hFM
+          ((AlgEquiv.restrictNormalHom
+            (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) σ)
+              ((reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+                F M hFM).symm y.1)) = _
+      rw [hsymm]
+    show (((restrictToLEHom F M hFM σ) y.1 : ↥F) : ℚ₃ᵥᵃˡᵍ) = _
+    rw [hstep]
+    rfl
+  rw [hrhs]
+  rw [show σ.restrictNormal
+      ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) =
+      AlgEquiv.restrictNormalHom (F := ℚ₃ᵥ)
+        ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) σ
+      from rfl] at hrc
+  exact hrc.symm
 
 /-- **A CONJUGATE OF A MONOGENIC GENERATOR OF `F` STILL GENERATES `F` INSIDE
 `ℚ₃ᵥᵃˡᵍ`** (sorry node).  `σ₀` is a `ℚ₃ᵥ`-automorphism of `F`, so it carries
@@ -11550,19 +11737,23 @@ DECOMPOSED AND MOSTLY CLOSED, 2026-07-27 (sixth owner).  The body below
 is now a COMPLETE proof of the whole arithmetic argument — the
 compositum, the three-ring depth transport, the nearest-root choice and
 the sharp `e < k` estimate are all written out and verified.  What
-remains open is four pieces of PURE PLUMBING, all stated and PROVEN-
-free-of-mathematics, each above:
+remained open was four pieces of PURE PLUMBING, all stated and
+PROVEN-free-of-mathematics, each above; **two of the four are now PROVEN
+(2026-07-27, seventh owner)** and only the last two are still open:
 
-* `aeval_minpoly_eq_prod_sub_integralClosureLE` — `P` splits as
-  `∏_σ (X − σ•θ)` over `𝒪_M`.  The `𝒪_F`-level identity is already
-  computed as `hnodal` inside
+* `aeval_minpoly_eq_prod_sub_integralClosureLE` — **PROVEN 2026-07-27.**
+  `P` splits as `∏_σ (X − σ•θ)` over `𝒪_M`.  The `𝒪_F`-level identity is
+  now exported in its own right as
+  `map_minpoly_eq_prod_X_sub_C_smul_local` above (the undifferentiated
+  form of the `hnodal` step of
   `aeval_derivative_minpoly_eq_prod_sub_smul_local`, which exports only
-  the DERIVATIVE at `θ`; this asks for the undifferentiated form at an
-  arbitrary point of `𝒪_M`.
-* `smul_integralClosureLE` — `𝒪_F ↪ 𝒪_M` is equivariant for
-  `restrictToLEHom`.  The `AlgEquiv.restrictNormal_commutes` computation
-  is already carried out (for the reified subextension) as
-  `hstep`/`hkey` inside `exists_relative_depth_witness`.
+  the DERIVATIVE at `θ`), and this leaf maps it along
+  `integralClosureLE` and evaluates at an arbitrary point of `𝒪_M`.
+* `smul_integralClosureLE` — **PROVEN 2026-07-27.**  `𝒪_F ↪ 𝒪_M` is
+  equivariant for `restrictToLEHom`, by the same
+  `AlgEquiv.restrictNormal_commutes` computation as the `hstep`/`hkey`
+  steps of `exists_relative_depth_witness`, applied at an arbitrary
+  integral point rather than at the one monogenic generator used there.
 * `le_adjoin_val_smul_of_adjoin_eq_top` — a conjugate `σ₀•θ` of a
   monogenic generator still generates `F` inside `ℚ₃ᵥᵃˡᵍ`.
 * `sum_addVal_sub_smul_erase_le` — the COUNTING half of tame conjugate
