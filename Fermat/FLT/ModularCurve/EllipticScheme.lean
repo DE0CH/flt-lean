@@ -41,17 +41,24 @@ under "Why this is not in `X0.lean`" below.
   `exists_ellipticScheme_of_weierstrass`.
 
 `isProper_projToSpec` and `nonempty_projGroupLaw` are both PROVEN, and so now is
-`smoothOfRelativeDimension_projToSpec` apart from two leaves that are both missing
-pieces of MATHLIB rather than of this development.
-`locally_isStandardSmooth_awayCoord` — the last direct sorry of
-item 7a — is now PROVEN from them, and they are, in the "Dehomogenisation"
-section: `exists_projChartRingEquiv` (the dehomogenisation isomorphism
-`(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0` ≃ `ℚ[u, v] ⧸ (wᵢ)`),
-and `projChart_jacobian_span_eq_top` (the chart Jacobian criterion, where `hjac`
-and hence `Δ` is consumed).  The third,
-`isStandardSmoothOfRelativeDimension_projChartAway` (a plane curve is standard
-smooth of relative dimension `1` where a partial derivative is invertible), is
-PROVEN.  The remaining open leaves of the file are those two plus
+`smoothOfRelativeDimension_projToSpec` apart from ONE leaf.
+`locally_isStandardSmooth_awayCoord` — the last direct sorry of item 7a — is PROVEN
+from the three declarations of the "Dehomogenisation" section, and two of those three
+are now proven as well:
+
+* `exists_projChartRingEquiv` (the dehomogenisation isomorphism
+  `(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0` ≃ `ℚ[u, v] ⧸ (wᵢ)`) is **PROVEN**, as the
+  first isomorphism theorem for the chart map `projChartHom : ℚ[u, v] → (B_{xᵢ})₀`,
+  `uⱼ ↦ xⱼ/xᵢ`.  Surjectivity is `HomogeneousLocalization.Away.mk_surjective` composed
+  with `projChartHom_dehomogenizeAt`; the kernel is `projChartHom_ker`, whose only
+  arithmetic input is `not_X_dvd_polynomial` (`Xᵢ ∤ W`, checked by evaluation), NOT
+  irreducibility of `W`.
+* `isStandardSmoothOfRelativeDimension_projChartAway` (a plane curve is standard smooth
+  of relative dimension `1` where a partial derivative is invertible) is PROVEN.
+* `projChart_jacobian_span_eq_top` (the chart Jacobian criterion, where `hjac` and hence
+  `Δ` is consumed) is the one that remains.
+
+The remaining open leaves of the file are therefore that one plus
 `exists_projAdd` — where all the remaining gluing work for the group law now
 lives — `exists_projGeomFibreAddEquiv`, and the interior of
 `geometricallyConnected_projToSpec`, which still carries three named sorried
@@ -531,7 +538,13 @@ graded polynomial quotient with a concrete polynomial quotient.  Mathlib has
 
 The three declarations below cut the residual leaf into three independent pieces, each
 stated exactly as `locally_isStandardSmooth_awayCoord` consumes it and each carrying its own
-proof plan.  The assembly is written and PROVEN. -/
+proof plan.  The assembly is written and PROVEN, and so now are two of the three pieces:
+only `projChart_jacobian_span_eq_top` is still open.
+
+The identification itself (`exists_projChartRingEquiv`) is built here out of the material
+between `eval₂_dehomogenizeAt` and `projChartHom_ker`, and that material is written to be
+upstreamable: the only place the Weierstrass equation enters is `not_X_dvd_polynomial`,
+everything else being generic "dehomogenise a homogeneous polynomial and divide by `Xᵢ^n`". -/
 
 /-- The two affine coordinates on the standard chart `D₊(Xᵢ)` of `Proj ℚ[X, Y, Z]`, namely
 the two homogeneous coordinates OTHER than `Xᵢ` — the chart coordinates being the ratios
@@ -567,8 +580,330 @@ noncomputable abbrev projCoord {R : Type} [CommRing R] (E : WeierstrassCurve R) 
     MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal E).toIdeal :=
   Ideal.Quotient.mk _ (MvPolynomial.X i)
 
-/-- **LEAF A — THE DEHOMOGENISATION ISOMORPHISM** (sorry node; a missing piece of MATHLIB,
-not of this development).
+open _root_.MvPolynomial in
+/-- Evaluating a dehomogenisation is evaluating the original polynomial with `Xᵢ ↦ 1`. -/
+theorem eval₂_dehomogenizeAt {S : Type} [CommRing S] (c : ℚ →+* S) (i : Fin 3)
+    (g : Fin 3 → S) (p : MvPolynomial (Fin 3) ℚ) :
+    MvPolynomial.eval₂ c (fun j : ProjChartVar i => g j.1) (dehomogenizeAt ℚ i p)
+      = MvPolynomial.eval₂ c (fun j => if j = i then 1 else g j) p := by
+  classical
+  have key : (MvPolynomial.eval₂Hom c (fun j : ProjChartVar i => g j.1)).comp
+      ((dehomogenizeAt ℚ i).toRingHom)
+      = MvPolynomial.eval₂Hom c (fun j => if j = i then 1 else g j) := by
+    apply MvPolynomial.ringHom_ext
+    · intro r; simp [dehomogenizeAt]
+    · intro j
+      by_cases h : j = i <;> simp [dehomogenizeAt, h]
+  exact congrArg (fun φ : MvPolynomial (Fin 3) ℚ →+* S => φ p) key
+
+open _root_.MvPolynomial in
+/-- **The core dehomogenisation identity** (PROVEN).  If `t i` is invertible with inverse `s`,
+then evaluating the dehomogenisation of a degree-`n` homogeneous `p` at the ratios `t j / t i`
+gives `p(t) / t i ^ n`.
+
+The proof is the one-line monomial computation made uniform: after reducing to a monomial `d`
+with `∑ⱼ dⱼ = n`, the two products over `Fin 3` are compared factorwise, the factor at `j = i`
+being `1 ^ dᵢ · t i ^ dᵢ` and the factor at `j ≠ i` being `(s · t j) ^ dⱼ · t i ^ dⱼ = t j ^ dⱼ`.
+No case split on `i` is needed. -/
+theorem eval₂_dehomogenizeAt_mul_pow {S : Type} [CommRing S] (c : ℚ →+* S) (i : Fin 3)
+    (t : Fin 3 → S) (s : S) (hs : s * t i = 1) {n : ℕ} {p : MvPolynomial (Fin 3) ℚ}
+    (hp : p.IsHomogeneous n) :
+    MvPolynomial.eval₂ c (fun j : ProjChartVar i => s * t j.1) (dehomogenizeAt ℚ i p) * t i ^ n
+      = MvPolynomial.eval₂ c t p := by
+  classical
+  rw [eval₂_dehomogenizeAt c i (fun j => s * t j)]
+  conv_lhs => rw [p.as_sum]
+  conv_rhs => rw [p.as_sum]
+  simp only [← MvPolynomial.coe_eval₂Hom, map_sum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  have hdn : ∑ j : Fin 3, d j = n := by
+    rw [← Finsupp.degree_eq_sum, Finsupp.degree_eq_weight_one]
+    exact hp (MvPolynomial.mem_support_iff.mp hd)
+  simp only [MvPolynomial.coe_eval₂Hom, MvPolynomial.eval₂_monomial]
+  rw [Finsupp.prod_fintype _ _ (fun j => pow_zero _),
+      Finsupp.prod_fintype _ _ (fun j => pow_zero _)]
+  rw [mul_assoc, ← hdn, ← Finset.prod_pow_eq_pow_sum, ← Finset.prod_mul_distrib]
+  congr 1
+  refine Finset.prod_congr rfl fun j _ => ?_
+  by_cases h : j = i
+  · subst h; simp
+  · simp only [h, if_false, ← mul_pow]
+    congr 1
+    rw [mul_right_comm, hs, one_mul]
+
+/-! #### Homogenisation, the section of `dehomogenizeAt` -/
+
+/-- The inclusion `ℚ[uⱼ : j ≠ i] → ℚ[X₀, X₁, X₂]` sending each chart variable to the
+corresponding homogeneous coordinate. -/
+noncomputable def inclChartVar (i : Fin 3) :
+    MvPolynomial (ProjChartVar i) ℚ →ₐ[ℚ] MvPolynomial (Fin 3) ℚ :=
+  MvPolynomial.aeval fun j => MvPolynomial.X j.1
+
+theorem dehomogenizeAt_inclChartVar (i : Fin 3) (q : MvPolynomial (ProjChartVar i) ℚ) :
+    dehomogenizeAt ℚ i (inclChartVar i q) = q := by
+  have key : (dehomogenizeAt ℚ i).comp (inclChartVar i) = AlgHom.id ℚ _ := by
+    apply MvPolynomial.algHom_ext
+    intro j
+    simp [dehomogenizeAt, inclChartVar, dif_neg j.2]
+  exact congrArg (fun φ : MvPolynomial (ProjChartVar i) ℚ →ₐ[ℚ] _ => φ q) key
+
+/-- **Homogenisation at the `i`-th coordinate.**  The homogeneous component of degree `d` of
+`q` (viewed in the big polynomial ring) is multiplied by `Xᵢ^(n - d)`, where `n` is the total
+degree.  This is a section of `dehomogenizeAt` landing in a single degree, and it is the only
+thing the kernel computation needs: the *value* of `n` is irrelevant. -/
+noncomputable def homogenizeAt (i : Fin 3) (q : MvPolynomial (ProjChartVar i) ℚ) :
+    MvPolynomial (Fin 3) ℚ :=
+  ∑ d ∈ Finset.range ((inclChartVar i q).totalDegree + 1),
+    MvPolynomial.X i ^ ((inclChartVar i q).totalDegree - d) *
+      MvPolynomial.homogeneousComponent d (inclChartVar i q)
+
+theorem isHomogeneous_homogenizeAt (i : Fin 3) (q : MvPolynomial (ProjChartVar i) ℚ) :
+    (homogenizeAt i q).IsHomogeneous (inclChartVar i q).totalDegree := by
+  refine MvPolynomial.IsHomogeneous.sum _ _ _ fun d hd => ?_
+  have hdle : d ≤ (inclChartVar i q).totalDegree := Nat.lt_succ_iff.mp (Finset.mem_range.mp hd)
+  have h := (MvPolynomial.isHomogeneous_X_pow (R := ℚ) i
+      ((inclChartVar i q).totalDegree - d)).mul
+    (MvPolynomial.homogeneousComponent_isHomogeneous d (inclChartVar i q))
+  rwa [Nat.sub_add_cancel hdle] at h
+
+theorem dehomogenizeAt_homogenizeAt (i : Fin 3) (q : MvPolynomial (ProjChartVar i) ℚ) :
+    dehomogenizeAt ℚ i (homogenizeAt i q) = q := by
+  have hXi : dehomogenizeAt ℚ i (MvPolynomial.X i) = 1 := by simp [dehomogenizeAt]
+  rw [homogenizeAt, map_sum]
+  simp only [map_mul, map_pow, hXi, one_pow, one_mul]
+  rw [← map_sum, MvPolynomial.sum_homogeneousComponent]
+  exact dehomogenizeAt_inclChartVar i q
+
+/-! #### The chart homomorphism `ℚ[u, v] → (B_{xᵢ})₀` -/
+
+section ChartHom
+
+variable (E : WeierstrassCurve ℚ) (i : Fin 3) (hcoord : projCoord E i ∈ projGrading E 1)
+
+/-- The chart ratio `xⱼ / xᵢ`, an element of the degree-zero away-localisation. -/
+noncomputable def projChartRatio (j : ProjChartVar i) :
+    HomogeneousLocalization.Away (projGrading E) (projCoord E i) :=
+  HomogeneousLocalization.Away.mk (projGrading E) hcoord 1
+    (Ideal.Quotient.mk _ (MvPolynomial.X j.1))
+    (by
+      simpa using HomogeneousIdeal.mk_mem_quotientGrading (I := polynomialHomogeneousIdeal E)
+        ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ j.1)))
+
+/-- The base map `ℚ → (B_{xᵢ})₀`, exactly the composite appearing in the commuting triangle of
+`exists_projChartRingEquiv`. -/
+noncomputable def projChartBase :
+    ℚ →+* HomogeneousLocalization.Away (projGrading E) (projCoord E i) :=
+  (HomogeneousLocalization.fromZeroRingHom (projGrading E)
+    (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0))
+
+/-- **The chart homomorphism** `ℚ[u, v] → (B_{xᵢ})₀`, sending `uⱼ ↦ xⱼ / xᵢ`. -/
+noncomputable def projChartHom :
+    MvPolynomial (ProjChartVar i) ℚ →+*
+      HomogeneousLocalization.Away (projGrading E) (projCoord E i) :=
+  MvPolynomial.eval₂Hom (projChartBase E i) (projChartRatio E i hcoord)
+
+/-- **The chart homomorphism computes dehomogenisations** (PROVEN): a homogeneous `p` of
+degree `n` dehomogenises to a polynomial whose image is the fraction `p̄ / xᵢ^n`.
+
+This is the whole content of the identification.  It is proved by transporting both sides into
+the ordinary localisation `B_{xᵢ}` along `HomogeneousLocalization.val` — which is available as
+a ring hom, being `algebraMap (HomogeneousLocalization 𝒜 x) (Localization x)` — and then
+applying `eval₂_dehomogenizeAt_mul_pow` with `t j = xⱼ/1` and `s = 1/xᵢ`, cancelling the unit
+`xᵢ^n`. -/
+theorem projChartHom_dehomogenizeAt {n : ℕ} {p : MvPolynomial (Fin 3) ℚ}
+    (hp : p.IsHomogeneous n) (hmem : Ideal.Quotient.mk _ p ∈ projGrading E (n • 1)) :
+    projChartHom E i hcoord (dehomogenizeAt ℚ i p)
+      = HomogeneousLocalization.Away.mk (projGrading E) hcoord n
+        (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal p) hmem := by
+  classical
+  set B := MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal with hB
+  set f : B := projCoord E i with hf
+  set L := Localization (Submonoid.powers f) with hL
+  set V := algebraMap (HomogeneousLocalization.Away (projGrading E) f) L with hV
+  set t : Fin 3 → L := fun j => algebraMap B L (Ideal.Quotient.mk _ (MvPolynomial.X j)) with ht
+  set s : L := Localization.mk 1 ⟨f, ⟨1, pow_one f⟩⟩ with hs'
+  set c : ℚ →+* L := V.comp (projChartBase E i) with hc
+  have hti : t i = algebraMap B L f := rfl
+  have htj : ∀ j : Fin 3, t j = Localization.mk
+      (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.X j)) 1 := fun j => by
+    rw [ht]; exact (Localization.mk_one_eq_algebraMap _).symm
+  -- `s` inverts `t i`
+  have hs : s * t i = 1 := by
+    rw [hs', hti, Localization.mk_eq_mk']
+    exact (IsLocalization.mk'_spec L 1 (⟨f, ⟨1, pow_one f⟩⟩ : Submonoid.powers f)).trans (map_one _)
+  -- the ratios are `s * t j`
+  have hratio : ∀ j : ProjChartVar i, V (projChartRatio E i hcoord j) = s * t j.1 := fun j => by
+    rw [hs', htj]
+    show Localization.mk _ ⟨f ^ 1, _⟩ = Localization.mk 1 ⟨f, _⟩ * Localization.mk _ 1
+    rw [Localization.mk_mul, one_mul, mul_one]
+    congr 1
+    exact Subtype.ext (pow_one f)
+  -- `V ∘ projChartHom` is `eval₂` into the localisation
+  have hcomp : V.comp (projChartHom E i hcoord)
+      = MvPolynomial.eval₂Hom c (fun j : ProjChartVar i => s * t j.1) := by
+    apply MvPolynomial.ringHom_ext
+    · intro r; simp [projChartHom, hc]
+    · intro j; simp [projChartHom, hratio j]
+  -- `eval₂ c t` is the quotient map followed by localisation
+  have hct : MvPolynomial.eval₂Hom c t
+      = (algebraMap B L).comp (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal) := by
+    apply MvPolynomial.ringHom_ext
+    · intro r
+      have hcr : ((algebraMap ℚ (projGrading E 0) r : B)) =
+          Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.C r) := by
+        rw [SetLike.GradeZero.coe_algebraMap,
+          IsScalarTower.algebraMap_apply ℚ (MvPolynomial (Fin 3) ℚ) B r,
+          Ideal.Quotient.algebraMap_eq, MvPolynomial.algebraMap_eq]
+      simp only [MvPolynomial.eval₂Hom_C, RingHom.comp_apply, hc]
+      show Localization.mk ((algebraMap ℚ (projGrading E 0) r : B))
+            (1 : ↥(Submonoid.powers f))
+          = algebraMap B L
+            (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.C r))
+      rw [hcr, Localization.mk_one_eq_algebraMap]
+    · intro j; simp [ht]
+  -- assemble
+  have hcore := eval₂_dehomogenizeAt_mul_pow c i t s hs hp
+  have h1 : V (projChartHom E i hcoord (dehomogenizeAt ℚ i p))
+      = MvPolynomial.eval₂ c (fun j : ProjChartVar i => s * t j.1) (dehomogenizeAt ℚ i p) :=
+    RingHom.congr_fun hcomp _
+  have h2 : MvPolynomial.eval₂ c t p
+      = algebraMap B L (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal p) :=
+    RingHom.congr_fun hct p
+  have hVeq : V (projChartHom E i hcoord (dehomogenizeAt ℚ i p)) * t i ^ n
+      = algebraMap B L (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal p) := by
+    rw [h1, hcore, h2]
+  have hunit : IsUnit (t i ^ n) := by
+    rw [hti]
+    exact (IsLocalization.map_units L (⟨f, ⟨1, pow_one f⟩⟩ : Submonoid.powers f)).pow n
+  apply HomogeneousLocalization.val_injective
+  apply hunit.mul_left_cancel
+  have hlhs : (projChartHom E i hcoord (dehomogenizeAt ℚ i p)).val
+      = V (projChartHom E i hcoord (dehomogenizeAt ℚ i p)) := rfl
+  rw [hlhs, mul_comm (t i ^ n) (V _), hVeq, HomogeneousLocalization.Away.val_mk, hti, ← map_pow,
+    Localization.mk_eq_mk', mul_comm]
+  exact (IsLocalization.mk'_spec L _ _).symm
+
+/-- **The chart homomorphism is surjective.**  This is the half that was already in mathlib:
+`HomogeneousLocalization.Away.mk_surjective` says every element of `(B_{xᵢ})₀` is `a / xᵢ^m`
+with `a` of degree `m`, and `projChartHom_dehomogenizeAt` exhibits `dehomogenizeAt ℚ i p` as a
+preimage. -/
+theorem projChartHom_surjective : Function.Surjective (projChartHom E i hcoord) := by
+  intro z
+  obtain ⟨m, a, ha, rfl⟩ := HomogeneousLocalization.Away.mk_surjective (projGrading E) hcoord z
+  obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp ha
+  have hp' : p.IsHomogeneous m := by
+    have h := (MvPolynomial.mem_homogeneousSubmodule _ _).mp hp
+    simpa using h
+  exact ⟨dehomogenizeAt ℚ i p, projChartHom_dehomogenizeAt E i hcoord hp' _⟩
+
+end ChartHom
+
+/-! #### `Xᵢ ∤ W`, and the kernel -/
+
+/-- **`Xᵢ` does not divide the projective Weierstrass polynomial**, for any of the three
+coordinates.  This — *not* irreducibility of `W` — is the only input the kernel computation
+needs beyond primality of `Xᵢ`.
+
+It is checked by evaluation.  If `Xᵢ ∣ W` then `eval P W = 0` for every `P` with `P i = 0`;
+for `i = 1, 2` the point `(1, 0, 0)` gives `-1 = 0`, and for `i = 0` the three points
+`(0, 0, 1)`, `(0, 1, 1)`, `(0, -1, 1)` give `-a₆ = 0`, `1 + a₃ - a₆ = 0` and
+`1 - a₃ - a₆ = 0`, whose sum of the last two forces `a₆ = 1` against the first. -/
+theorem not_X_dvd_polynomial (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    ¬ (MvPolynomial.X i ∣ polynomial E) := by
+  rintro ⟨S, hS⟩
+  have hev : ∀ P : Fin 3 → ℚ, P i = 0 → MvPolynomial.eval P (polynomial E) = 0 := by
+    intro P hP
+    rw [hS, map_mul, MvPolynomial.eval_X, hP, zero_mul]
+  fin_cases i
+  · have h0 := hev ![0, 0, 1] rfl
+    have h1 := hev ![0, 1, 1] rfl
+    have h2 := hev ![0, -1, 1] rfl
+    simp only [eval_polynomial, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+      Matrix.cons_val_two, Matrix.tail_cons] at h0 h1 h2
+    norm_num at h0 h1 h2
+    linarith
+  · have h := hev ![1, 0, 0] rfl
+    simp only [eval_polynomial, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+      Matrix.cons_val_two, Matrix.tail_cons] at h
+    norm_num at h
+  · have h := hev ![1, 0, 0] rfl
+    simp only [eval_polynomial, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+      Matrix.cons_val_two, Matrix.tail_cons] at h
+    norm_num at h
+
+/-- `W ∣ Xᵢ^k · P → W ∣ P`.  This is the UFD half of the kernel argument, and mathlib's
+`MvPolynomial.dvd_X_mul_iff` packages it so that a bare induction on `k` suffices: at each step
+the alternative disjunct says `Xᵢ ∣ W`, refuted by `not_X_dvd_polynomial`. -/
+theorem polynomial_dvd_of_dvd_X_pow_mul (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    ∀ (k : ℕ) (P : MvPolynomial (Fin 3) ℚ),
+      polynomial E ∣ MvPolynomial.X i ^ k * P → polynomial E ∣ P := by
+  intro k
+  induction k with
+  | zero => intro P h; simpa using h
+  | succ k ih =>
+    intro P h
+    rw [pow_succ', mul_assoc] at h
+    rcases MvPolynomial.dvd_X_mul_iff.mp h with h' | ⟨h'', -⟩
+    · exact ih P h'
+    · exact absurd h'' (not_X_dvd_polynomial E i)
+
+section Kernel
+
+variable (E : WeierstrassCurve ℚ) (i : Fin 3) (hcoord : projCoord E i ∈ projGrading E 1)
+
+/-- **The kernel of the chart homomorphism is the dehomogenised Weierstrass ideal** (PROVEN).
+
+`⊇` is immediate since `W ↦ 0`.  For `⊆`: a `q` in the kernel homogenises to some `Q` of a
+single degree `n` with `dehom Q = q`; the vanishing of `Q̄ / xᵢ^n` in the localisation says
+`xᵢ^k · Q̄ = 0` in `B`, i.e. `W ∣ Xᵢ^k · Q`, whence `W ∣ Q` by
+`polynomial_dvd_of_dvd_X_pow_mul`, and dehomogenising the factorisation gives `wᵢ ∣ q`. -/
+theorem projChartHom_ker :
+    RingHom.ker (projChartHom E i hcoord) = Ideal.span {projChartPolynomial E i} := by
+  have hW0 : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (polynomial E) = 0 :=
+    Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.subset_span rfl)
+  apply le_antisymm
+  · intro q hq
+    rw [RingHom.mem_ker] at hq
+    have hQhom : (homogenizeAt i q).IsHomogeneous (inclChartVar i q).totalDegree :=
+      isHomogeneous_homogenizeAt i q
+    have hmem : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (homogenizeAt i q)
+        ∈ projGrading E ((inclChartVar i q).totalDegree • 1) := by
+      simpa using HomogeneousIdeal.mk_mem_quotientGrading (I := polynomialHomogeneousIdeal E)
+        ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr hQhom)
+    have h0 : HomogeneousLocalization.Away.mk (projGrading E) hcoord
+        (inclChartVar i q).totalDegree
+        (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (homogenizeAt i q)) hmem = 0 := by
+      rw [← projChartHom_dehomogenizeAt E i hcoord hQhom hmem, dehomogenizeAt_homogenizeAt, hq]
+    have hval := congrArg HomogeneousLocalization.val h0
+    rw [HomogeneousLocalization.Away.val_mk, HomogeneousLocalization.val_zero,
+      Localization.mk_eq_mk', IsLocalization.mk'_eq_zero_iff] at hval
+    obtain ⟨⟨-, k, rfl⟩, hk⟩ := hval
+    have hdvd : polynomial E ∣ MvPolynomial.X i ^ k * homogenizeAt i q := by
+      rw [← Ideal.mem_span_singleton]
+      show _ ∈ (polynomialHomogeneousIdeal E).toIdeal
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_mul, map_pow]
+      exact hk
+    obtain ⟨T, hT⟩ := polynomial_dvd_of_dvd_X_pow_mul E i k _ hdvd
+    rw [Ideal.mem_span_singleton]
+    refine ⟨dehomogenizeAt ℚ i T, ?_⟩
+    rw [← dehomogenizeAt_homogenizeAt i q, hT, map_mul]
+    rfl
+  · rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, RingHom.mem_ker]
+    have hhom : (polynomial E).IsHomogeneous 3 := isHomogeneous_polynomial E
+    have hmem : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (polynomial E)
+        ∈ projGrading E (3 • 1) := by
+      simpa using HomogeneousIdeal.mk_mem_quotientGrading (I := polynomialHomogeneousIdeal E)
+        ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr hhom)
+    show projChartHom E i hcoord (dehomogenizeAt ℚ i (polynomial E)) = 0
+    rw [projChartHom_dehomogenizeAt E i hcoord hhom hmem]
+    apply HomogeneousLocalization.val_injective
+    rw [HomogeneousLocalization.Away.val_mk, HomogeneousLocalization.val_zero, hW0,
+      Localization.mk_zero]
+
+end Kernel
+
+/-- **LEAF A — THE DEHOMOGENISATION ISOMORPHISM** (PROVEN; it was a missing piece of MATHLIB,
+not of this development, and it is written above in a form fit to be upstreamed).
 
   `(ℚ[X, Y, Z] ⧸ (W))_{(Xᵢ)}` in degree `0`  ≃  `ℚ[u, v] ⧸ (wᵢ)`,
 
@@ -579,41 +914,56 @@ into a common `Algebra ℚ` structure invites exactly the "two defeq but never s
 equal instances" trap this development has been bitten by repeatedly.  The commuting
 triangle is what the consumer actually needs, and it is instance-free.
 
-## Proof plan
+## How it is proved
 
-*Surjectivity is already in mathlib.*  `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`
-says that if the graded ring is generated over its degree-zero part by homogeneous `vₗ` of
-degrees `dvₗ`, then `𝒜_(f)` for `f` of degree `d` is generated as a `𝒜₀`-algebra by the
-elements `(∏ vₗ^aₗ) / f^a` with `∑ aₗ dvₗ = a d` and `aₗ ≤ d`.  Here `d = 1` (that is what
-`hcoord` supplies), the `vₗ` are the three coordinates `x₀, x₁, x₂` of degree `1`, so the
-constraint `aₗ ≤ 1` forces each generator to be a product of a SUBSET of the coordinates
-divided by `xᵢ^{card}` — i.e. a product of the three ratios `xⱼ / xᵢ`, one of which is `1`.
-So the chart ring is generated over `ℚ` by the two ratios, which is exactly surjectivity of
-the map `ℚ[u, v] → (B_{xᵢ})₀` sending `u, v` to the two ratios.
+Everything is routed through the single ring hom `projChartHom E i hcoord : ℚ[u, v] → (B_{xᵢ})₀`
+sending `uⱼ ↦ xⱼ / xᵢ`, of which this is the first isomorphism theorem:
+`projChartHom_surjective` and `projChartHom_ker`, glued by
+`RingHom.quotientKerEquivOfSurjective` and `Ideal.quotEquivOfEq`.
 
-*The kernel is the one genuinely new argument.*  Let `q ∈ ℚ[u, v]` of degree `n` and let
-`Q := Xᵢ^n · q(Xⱼ/Xᵢ, Xₖ/Xᵢ)` be its homogenisation, so the image of `q` is `Q̄ / xᵢ^n`.
-That vanishes iff `Xᵢ^m · Q ∈ (W)` in `ℚ[X, Y, Z]` for some `m`.  Now `ℚ[X, Y, Z]` is a UFD,
-`Xᵢ` is prime, and `Xᵢ ∤ W` for each of the three `i` — `W` contains the monomial `-X³` (so
-`Y ∤ W` and `Z ∤ W`) and the monomial `Y²Z` (so `X ∤ W`).  Hence no prime factor of `W` is
-associate to `Xᵢ`, and `W ∣ Xᵢ^m Q` forces `W ∣ Q`.  Dehomogenising, `wᵢ ∣ q`.  The reverse
-inclusion is immediate since `W` maps to `0`.
+*Surjectivity was already in mathlib*, and more cheaply than the original plan supposed.  The
+plan called for `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top` at `d = 1`, which does
+force every algebra generator to be a product of a SUBSET of the coordinates over `xᵢ^card`.
+But `HomogeneousLocalization.Away.mk_surjective` is stronger and immediate: every element of
+`(B_{xᵢ})₀` is literally `ā / xᵢ^m` with `a` homogeneous of degree `m`, and
+`projChartHom_dehomogenizeAt` says `dehomogenizeAt ℚ i a` is a preimage.  So no generation
+argument is needed at all.
 
-Note this argument does NOT need `W` irreducible, only `Xᵢ ∤ W`, which is a monomial check.
-The relevant mathlib entry points are `UniqueFactorizationMonoid` and
-`MvPolynomial.prime_X` / `MvPolynomial.isDomain`.
+*The kernel is the one genuinely new argument.*  Given `q` in the kernel, `homogenizeAt i q`
+is a homogeneous `Q` of a single degree with `dehom Q = q` (built from the homogeneous
+components of `q`, each pushed up by a power of `Xᵢ` — the degree itself is never needed).
+Its image `Q̄ / xᵢ^n` vanishes iff `Xᵢ^k · Q ∈ (W)` for some `k`.  Now `ℚ[X, Y, Z]` is a UFD,
+`Xᵢ` is prime, and `Xᵢ ∤ W` for each of the three `i` — `W` contains the monomial `Y²Z` (so
+`X ∤ W`) and the monomial `-X³` (so `Y ∤ W` and `Z ∤ W`).  Hence `W ∣ Xᵢ^k Q` forces `W ∣ Q`
+(`polynomial_dvd_of_dvd_X_pow_mul`, an induction on `k` off `MvPolynomial.dvd_X_mul_iff`).
+Dehomogenising, `wᵢ ∣ q`.  The reverse inclusion is immediate since `W` maps to `0`.
+
+Note this argument does NOT need `W` irreducible, only `Xᵢ ∤ W`, which is a numerical check
+(`not_X_dvd_polynomial`, done by evaluation at three rational points).
 
 This is the piece that ought to be upstreamed: stated for an arbitrary homogeneous ideal of
 `R[X₀ .. Xₙ]` it is the standard affine chart of `Proj` of a projective scheme over `R`, and
-its absence is what has kept every `Proj`-level smoothness argument out of reach. -/
+its absence is what had kept every `Proj`-level smoothness argument out of reach.  The one
+genuinely elliptic-curve-specific input is `not_X_dvd_polynomial`; everything else above is
+stated for the Weierstrass ideal only because that is the ideal at hand. -/
 theorem exists_projChartRingEquiv (E : WeierstrassCurve ℚ) (i : Fin 3)
     (hcoord : projCoord E i ∈ projGrading E 1) :
     ∃ e : HomogeneousLocalization.Away (projGrading E) (projCoord E i) ≃+* ProjChartRing E i,
       (e : HomogeneousLocalization.Away (projGrading E) (projCoord E i) →+* ProjChartRing E i).comp
           ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
             (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0)))
-        = algebraMap ℚ (ProjChartRing E i) :=
-  sorry
+        = algebraMap ℚ (ProjChartRing E i) := by
+  have hsurj := projChartHom_surjective E i hcoord
+  have hker := projChartHom_ker E i hcoord
+  refine ⟨(RingHom.quotientKerEquivOfSurjective hsurj).symm.trans (Ideal.quotEquivOfEq hker), ?_⟩
+  refine RingHom.ext fun r => ?_
+  show Ideal.quotEquivOfEq hker ((RingHom.quotientKerEquivOfSurjective hsurj).symm
+      (projChartBase E i r)) = algebraMap ℚ (ProjChartRing E i) r
+  have h1 : projChartBase E i r = projChartHom E i hcoord (MvPolynomial.C r) :=
+    (MvPolynomial.eval₂Hom_C _ _ r).symm
+  rw [h1, RingHom.quotientKerEquivOfSurjective_symm_apply, Ideal.quotEquivOfEq_mk,
+    IsScalarTower.algebraMap_apply ℚ (MvPolynomial (ProjChartVar i) ℚ) (ProjChartRing E i) r,
+    Ideal.Quotient.algebraMap_eq, MvPolynomial.algebraMap_eq]
 
 /-- **LEAF B — THE CHART JACOBIAN CRITERION** (sorry node): on each of the three charts the
 two partial derivatives of the dehomogenised Weierstrass cubic generate the UNIT ideal of
