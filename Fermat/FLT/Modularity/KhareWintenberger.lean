@@ -9143,11 +9143,301 @@ theorem three_lt_card_of_sq_eq_neg_one (F : Type*) [Field F] [Finite F]
     rw [Nat.card_eq_fintype_card]
     omega
 
+/-- **A complex number whose square is a positive natural number is real**
+(PROVEN helper, 2026-07-27, and elementary). Taking imaginary parts of
+`z² = d` gives `2·re(z)·im(z) = 0`; if `im(z) ≠ 0` then `re(z) = 0`, and
+taking real parts then gives `−im(z)² = d > 0`, which is impossible.
+
+This is the entire reason the quadratic twist below is TOTALLY REAL: every
+complex embedding of `D(√d)` sends `√d` to a complex square root of the
+positive integer `d`, hence to a real number. -/
+theorem conj_eq_of_sq_eq_natCast (z : ℂ) (d : ℕ) (hd : 0 < d) (hz : z ^ 2 = (d : ℂ)) :
+    (starRingEnd ℂ) z = z := by
+  rw [Complex.conj_eq_iff_im]
+  have hre := congrArg Complex.re hz
+  have him := congrArg Complex.im hz
+  simp only [pow_two, Complex.mul_re, Complex.mul_im, Complex.natCast_re,
+    Complex.natCast_im] at hre him
+  have hdR : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd
+  by_contra hcon
+  have hre0 : z.re = 0 := by
+    rcases mul_eq_zero.mp (show z.re * z.im = 0 by linarith) with h | h
+    · exact h
+    · exact absurd h hcon
+  rw [hre0] at hre
+  nlinarith [mul_self_nonneg z.im]
+
+/-- **Adjoining a square root of a POSITIVE integer to a totally real field
+keeps it totally real** (PROVEN helper, 2026-07-27).
+
+The proof is the standard one and needs no ramification theory: fix an
+infinite place `v` of `L` and let `φ` be its embedding. The set of `x ∈ L`
+with `conj (φ x) = φ x` is a `D`-subalgebra of `L` — it contains the image
+of `D` because `D` is totally real, and it contains `y` because `φ y` is a
+complex square root of `d > 0`, hence real. Since `y` generates `L` over
+`D`, that subalgebra is everything, so `φ` is a real embedding. -/
+theorem isTotallyReal_of_adjoin_sqrt
+    (D : Type u) [Field D] [NumberField.IsTotallyReal D]
+    (L : Type u) [Field L] [Algebra D L]
+    (d : ℕ) (hd : 0 < d) (y : L) (hy : y ^ 2 = ((d : ℕ) : L))
+    (hgen : Algebra.adjoin D ({y} : Set L) = ⊤) :
+    NumberField.IsTotallyReal L := by
+  refine ⟨fun v => ?_⟩
+  rw [← v.mk_embedding, NumberField.InfinitePlace.isReal_mk_iff,
+    NumberField.ComplexEmbedding.isReal_iff]
+  set φ := v.embedding with hφ
+  set S : Subalgebra D L :=
+    { carrier := {x : L | (starRingEnd ℂ) (φ x) = φ x}
+      one_mem' := by simp
+      mul_mem' := by
+        intro a b ha hb
+        simp only [Set.mem_setOf_eq, map_mul] at *
+        rw [ha, hb]
+      zero_mem' := by simp
+      add_mem' := by
+        intro a b ha hb
+        simp only [Set.mem_setOf_eq, map_add] at *
+        rw [ha, hb]
+      algebraMap_mem' := by
+        intro r
+        have h := NumberField.IsTotallyReal.complexEmbedding_isReal
+          (K := D) (φ.comp (algebraMap D L))
+        rw [NumberField.ComplexEmbedding.isReal_iff] at h
+        exact congrArg (fun ψ : D →+* ℂ => ψ r) h } with hS
+  have hyS : y ∈ S := by
+    show (starRingEnd ℂ) (φ y) = φ y
+    refine conj_eq_of_sq_eq_natCast (φ y) d hd ?_
+    rw [← map_pow, hy, map_natCast]
+  have hStop : S = ⊤ := by
+    rw [← top_le_iff, ← hgen]
+    exact Algebra.adjoin_le (by simpa using hyS)
+  ext x
+  exact (show x ∈ S by rw [hStop]; trivial)
+
+/-- **`1` and `√d` are linearly independent over the base field**
+(PROVEN helper, 2026-07-27): if `a + b·√d = 0` with `b ≠ 0` then
+`√d = −a/b` lies in `D`, so its minimal polynomial would have degree `1`
+rather than the degree `2` recorded by `hmin`. -/
+theorem eq_zero_of_add_mul_powerBasisGen_eq_zero
+    (D : Type u) [Field D] (L : Type u) [Field L] [Algebra D L]
+    (d : ℕ) (pb : PowerBasis D L) (hmin : minpoly D pb.gen = X ^ 2 - C ((d : ℕ) : D))
+    (a b : D) (h : algebraMap D L a + algebraMap D L b * pb.gen = 0) : a = 0 ∧ b = 0 := by
+  by_cases hb : b = 0
+  · subst hb
+    simp only [map_zero, zero_mul, add_zero] at h
+    exact ⟨(map_eq_zero_iff _ (algebraMap D L).injective).mp h, rfl⟩
+  · exfalso
+    have hb' : algebraMap D L b ≠ 0 := (map_ne_zero_iff _ (algebraMap D L).injective).mpr hb
+    have hgen : pb.gen = algebraMap D L (-a / b) := by
+      rw [map_div₀, map_neg, eq_div_iff hb']
+      linear_combination h
+    have hdvd : minpoly D pb.gen ∣ (X - C (-a / b)) :=
+      minpoly.dvd D _ (by simp [hgen])
+    have h1 : (minpoly D pb.gen).natDegree ≤ (X - C (-a / b)).natDegree :=
+      natDegree_le_of_dvd hdvd (X_sub_C_ne_zero _)
+    rw [hmin, natDegree_X_pow_sub_C, natDegree_X_sub_C] at h1
+    omega
+
+/-- **The discriminant of the power basis `1, √d` is `4d`** (PROVEN helper,
+2026-07-27). Computed from `Algebra.discr_powerBasis_eq_norm`: the minimal
+polynomial is `X² − d`, its derivative is `2X`, and
+`N(2√d) = 2² · N(√d) = 4 · (−d)`, so the discriminant is `(−1)¹ · (−4d) = 4d`.
+
+This is the ONLY thing the residue-field argument below needs about the
+index `[𝒪_L : 𝒪_D[√d]]`: it is killed by `4d`, which is a UNIT modulo `λ`
+because `ℓ ≥ 5` is odd and `d ≡ 1 (mod ℓ)`. -/
+theorem discr_powerBasis_eq_of_minpoly_sq
+    (D : Type u) [Field D] (L : Type u) [Field L] [Algebra D L]
+    [FiniteDimensional D L] [Algebra.IsSeparable D L]
+    (d : ℕ) (pb : PowerBasis D L) (hmin : minpoly D pb.gen = X ^ 2 - C ((d : ℕ) : D)) :
+    Algebra.discr D pb.basis = ((4 * d : ℕ) : D) := by
+  have hdim : pb.dim = 2 := by
+    have h := pb.natDegree_minpoly
+    rw [hmin, natDegree_X_pow_sub_C] at h
+    exact h.symm
+  have hfr : Module.finrank D L = 2 := by rw [pb.finrank, hdim]
+  have hnorm : Algebra.norm D pb.gen = -((d : ℕ) : D) := by
+    rw [Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly, hmin, hdim]
+    simp
+  have hder : derivative (X ^ 2 - C ((d : ℕ) : D)) = C 2 * X := by
+    rw [derivative_sub, derivative_X_pow, derivative_C, sub_zero]
+    norm_num
+  rw [Algebra.discr_powerBasis_eq_norm, hfr, hmin, hder]
+  simp only [map_mul, aeval_C, aeval_X, hnorm, Algebra.norm_algebraMap, hfr]
+  push_cast
+  norm_num
+
+/-- **The residue field at `λ` is UNCHANGED in the quadratic extension
+generated by a square root of a `d ≡ 1 (mod ℓ)`** (PROVEN, 2026-07-27 — the
+arithmetic heart of the twist, and it needs NO ramification theory).
+
+Write `R = 𝒪_D`, `O = 𝒪_L`, `q : R ↠ k` for the residue map at `λ`, and
+`√d = pb.gen`. The proof produces the required prime as the KERNEL OF AN
+EXPLICIT RING MAP `φ : O →+* k`, so maximality and the residue-field
+identification are both automatic and no counting of primes occurs:
+
+* `d ≡ 1 (mod ℓ)` and `ℓ ∈ λ` give `q d = 1`, hence `4d ↦ 4` in `k`, which
+  is NONZERO because `k` has characteristic `ℓ ≥ 5`. So `4d` is a unit
+  modulo `λ`. This is the one place `hℓ5` and `hdℓ` are consumed.
+* `Algebra.discr_mul_isIntegral_mem_adjoin` with the discriminant computed
+  above gives `4d · O ⊆ R[√d]`; i.e. `R[√d]` and `O` agree away from `λ`.
+* `R[√d]` is presented as `AdjoinRoot (X² − d)` over `R`. The comparison map
+  `ι` to `L` is INJECTIVE (divide by the monic `X² − d` and apply the linear
+  independence of `1, √d`), so each `z ∈ O` has a UNIQUE `σ z` with
+  `ι (σ z) = 4d · z`.
+* Sending `√d ↦ 1` — legitimate precisely because `d ≡ 1 (mod λ)` — gives
+  `ψ : R[√d] →+* k`, and `φ z := ψ (σ z) / q (4d)` is a ring homomorphism
+  because `σ z · σ w = 4d · σ (z w)`. It restricts to `q` on `R`, hence is
+  surjective, so its kernel is maximal with residue field exactly `k`.
+
+The `λ`-splitting is thus witnessed by the CHOICE `√d ↦ +1` (the other
+choice, `√d ↦ −1`, gives the conjugate prime); no `Ideal.inertiaDeg`, no
+`Ideal.sum_ramification_inertia` and no completion appears anywhere. -/
+theorem exists_maximal_residueField_of_powerBasis_sq
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (k : Type u) [Field k]
+    (D : Type u) [Field D] [NumberField D]
+    (L : Type u) [Field L] [Algebra D L] [NumberField L]
+    (lam : Ideal (NumberField.RingOfIntegers D)) (_hlam : lam.IsMaximal)
+    (hℓlam : ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam)
+    (e : (NumberField.RingOfIntegers D ⧸ lam) ≃+* k)
+    (d : ℕ) (hdℓ : d % ℓ = 1)
+    (pb : PowerBasis D L) (hmin : minpoly D pb.gen = X ^ 2 - C ((d : ℕ) : D)) :
+    ∃ lam' : Ideal (NumberField.RingOfIntegers L), lam'.IsMaximal ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers L) ∈ lam' ∧
+      Nonempty ((NumberField.RingOfIntegers L ⧸ lam') ≃+* k) := by
+  classical
+  have hℓprime : ℓ.Prime := Fact.out
+  -- the residue map at `λ`
+  set q : NumberField.RingOfIntegers D →+* k :=
+    e.toRingHom.comp (Ideal.Quotient.mk lam) with hqdef
+  have hqsurj : Function.Surjective q := e.surjective.comp Ideal.Quotient.mk_surjective
+  have hqℓ : q ((ℓ : ℕ) : NumberField.RingOfIntegers D) = 0 := by
+    simp only [hqdef, RingHom.coe_comp, Function.comp_apply,
+      Ideal.Quotient.eq_zero_iff_mem.mpr hℓlam, map_zero]
+  have hℓk : ((ℓ : ℕ) : k) = 0 := by rw [← map_natCast q ℓ]; exact hqℓ
+  haveI hchar : CharP k ℓ := (CharP.charP_iff_prime_eq_zero hℓprime).mpr hℓk
+  -- `d ≡ 1 (mod ℓ)`, so `d ↦ 1` and `4d ↦ 4 ≠ 0` in `k`
+  have hdsplit : d = ℓ * (d / ℓ) + 1 := by have h := Nat.div_add_mod d ℓ; omega
+  have hdk : ((d : ℕ) : k) = 1 := by rw [hdsplit]; push_cast; rw [hℓk]; ring
+  have hqd : q ((d : ℕ) : NumberField.RingOfIntegers D) = 1 := by rw [map_natCast]; exact hdk
+  have hck : ((4 * d : ℕ) : k) = 4 := by push_cast; rw [hdk]; ring
+  have hck0 : ((4 * d : ℕ) : k) ≠ 0 := by
+    rw [hck]
+    intro h
+    have h4 : ((4 : ℕ) : k) = 0 := by exact_mod_cast h
+    have := Nat.le_of_dvd (by norm_num) ((CharP.cast_eq_zero_iff k ℓ 4).mp h4)
+    omega
+  have hgensq : pb.gen ^ 2 = ((d : ℕ) : L) := by
+    have h := minpoly.aeval D pb.gen
+    rw [hmin] at h
+    simp only [map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero] at h
+    simpa using h
+  have hdiscr : Algebra.discr D pb.basis = ((4 * d : ℕ) : D) :=
+    discr_powerBasis_eq_of_minpoly_sq D L d pb hmin
+  -- the order `R[√d]`, presented as `AdjoinRoot g`
+  set g : (NumberField.RingOfIntegers D)[X] :=
+    X ^ 2 - C ((d : ℕ) : NumberField.RingOfIntegers D) with hgdef
+  have hgm : g.Monic := monic_X_pow_sub_C _ two_ne_zero
+  have hgnd : g.natDegree = 2 := by rw [hgdef, natDegree_X_pow_sub_C]
+  have hgne1 : g ≠ 1 := by intro h; rw [h] at hgnd; simp at hgnd
+  have hgev : g.eval₂ (algebraMap (NumberField.RingOfIntegers D) L) pb.gen = 0 := by
+    rw [hgdef]; simp [hgensq]
+  set ι : AdjoinRoot g →+* L := AdjoinRoot.lift _ pb.gen hgev with hιdef
+  have hιmk : ∀ p : (NumberField.RingOfIntegers D)[X],
+      ι (AdjoinRoot.mk g p) = aeval pb.gen p := fun p => by
+    rw [hιdef, AdjoinRoot.lift_mk, aeval_def]
+  have hιof : ∀ r : NumberField.RingOfIntegers D,
+      ι (algebraMap _ (AdjoinRoot g) r) = algebraMap _ L r := fun r => by
+    rw [hιdef, AdjoinRoot.algebraMap_eq, AdjoinRoot.lift_of]
+  -- `ι` is injective: `1, √d` are linearly independent over `D`
+  have hιinj : Function.Injective ι := by
+    rw [injective_iff_map_eq_zero]
+    intro s hs
+    induction s using AdjoinRoot.induction_on with
+    | ih p =>
+      have hmk : AdjoinRoot.mk g p = AdjoinRoot.mk g (p %ₘ g) :=
+        AdjoinRoot.mk_eq_mk.mpr ⟨p /ₘ g, by rw [modByMonic_eq_sub_mul_div p g]; ring⟩
+      have hrle : (p %ₘ g).natDegree ≤ 1 := by
+        have h := natDegree_modByMonic_lt p hgm hgne1
+        omega
+      have hform := eq_X_add_C_of_natDegree_le_one hrle
+      rw [hmk] at hs ⊢
+      rw [hιmk, hform] at hs
+      simp only [map_add, map_mul, aeval_C, aeval_X] at hs
+      have hkey := eq_zero_of_add_mul_powerBasisGen_eq_zero D L d pb hmin
+        (algebraMap _ D ((p %ₘ g).coeff 0)) (algebraMap _ D ((p %ₘ g).coeff 1)) (by
+          rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply]
+          linear_combination hs)
+      have h0 : (p %ₘ g).coeff 0 = 0 :=
+        NumberField.RingOfIntegers.coe_injective (by simpa using hkey.1)
+      have h1 : (p %ₘ g).coeff 1 = 0 :=
+        NumberField.RingOfIntegers.coe_injective (by simpa using hkey.2)
+      rw [hform, h0, h1]
+      simp
+  -- `4d · 𝒪_L ⊆ R[√d]`, because `4d` is the discriminant
+  have hex : ∀ z : NumberField.RingOfIntegers L,
+      ∃ s : AdjoinRoot g, ι s = ((4 * d : ℕ) : L) * (algebraMap _ L z) := by
+    intro z
+    have hint : IsIntegral (NumberField.RingOfIntegers D) (algebraMap _ L z) :=
+      (NumberField.RingOfIntegers.isIntegral_coe z).tower_top
+    have hgenint : IsIntegral (NumberField.RingOfIntegers D) pb.gen :=
+      ⟨X ^ 2 - C ((d : ℕ) : NumberField.RingOfIntegers D), monic_X_pow_sub_C _ two_ne_zero, by
+        simp [hgensq]⟩
+    have hmem := Algebra.discr_mul_isIntegral_mem_adjoin (R := NumberField.RingOfIntegers D)
+      (K := D) (L := L) (B := pb) hgenint hint
+    rw [hdiscr, Algebra.adjoin_singleton_eq_range_aeval, AlgHom.mem_range] at hmem
+    obtain ⟨p, hp⟩ := hmem
+    exact ⟨AdjoinRoot.mk g p, by rw [hιmk, hp, Algebra.smul_def, map_natCast]⟩
+  -- the residue map of `R[√d]` sending `√d ↦ 1`
+  set ψ : AdjoinRoot g →+* k := AdjoinRoot.lift q 1 (by rw [hgdef]; simp [hdk]) with hψdef
+  have hψof : ∀ r : NumberField.RingOfIntegers D,
+      ψ (algebraMap _ (AdjoinRoot g) r) = q r := fun r => by
+    rw [hψdef, AdjoinRoot.algebraMap_eq, AdjoinRoot.lift_of]
+  -- the section `σ` of `ι` on `4d · 𝒪_L`, and the residue map `φ` of `𝒪_L`
+  set σ : NumberField.RingOfIntegers L → AdjoinRoot g := fun z => (hex z).choose with hσdef
+  have hσ : ∀ z, ι (σ z) = ((4 * d : ℕ) : L) * (algebraMap _ L z) := fun z => (hex z).choose_spec
+  have hcS : ι ((4 * d : ℕ) : AdjoinRoot g) = ((4 * d : ℕ) : L) := map_natCast ι _
+  have hσ0 : σ 0 = 0 := hιinj (by rw [hσ]; simp)
+  have hσadd : ∀ z w, σ (z + w) = σ z + σ w := fun z w =>
+    hιinj (by rw [hσ, map_add ι, hσ, hσ, map_add]; ring)
+  have hσone : σ 1 = ((4 * d : ℕ) : AdjoinRoot g) := hιinj (by rw [hσ, hcS]; simp)
+  have hσmul : ∀ z w, σ z * σ w = ((4 * d : ℕ) : AdjoinRoot g) * σ (z * w) := fun z w =>
+    hιinj (by rw [map_mul, hσ, hσ, map_mul, hcS, hσ, map_mul]; ring)
+  let φ : NumberField.RingOfIntegers L →+* k :=
+    { toFun := fun z => ψ (σ z) * (((4 * d : ℕ) : k))⁻¹
+      map_one' := by rw [hσone, map_natCast]; field_simp
+      map_mul' := fun z w => by
+        have h := congrArg ψ (hσmul z w)
+        rw [map_mul, map_mul, map_natCast] at h
+        field_simp
+        linear_combination -h
+      map_zero' := by rw [hσ0, map_zero, zero_mul]
+      map_add' := fun z w => by rw [hσadd, map_add]; ring }
+  have hφapp : ∀ z, φ z = ψ (σ z) * (((4 * d : ℕ) : k))⁻¹ := fun _ => rfl
+  have hφof : ∀ r : NumberField.RingOfIntegers D,
+      φ (algebraMap _ (NumberField.RingOfIntegers L) r) = q r := by
+    intro r
+    have hs : σ (algebraMap _ (NumberField.RingOfIntegers L) r)
+        = ((4 * d : ℕ) : AdjoinRoot g) * algebraMap _ (AdjoinRoot g) r := by
+      refine hιinj ?_
+      rw [hσ, map_mul, hcS, hιof, ← IsScalarTower.algebraMap_apply]
+    rw [hφapp, hs, map_mul, map_natCast, hψof]
+    field_simp
+  have hφsurj : Function.Surjective φ := fun t => by
+    obtain ⟨r, hr⟩ := hqsurj t
+    exact ⟨algebraMap _ _ r, by rw [hφof, hr]⟩
+  refine ⟨RingHom.ker φ, RingHom.ker_isMaximal_of_surjective φ hφsurj, ?_,
+    ⟨RingHom.quotientKerEquivOfSurjective hφsurj⟩⟩
+  rw [RingHom.mem_ker,
+    show ((ℓ : ℕ) : NumberField.RingOfIntegers L)
+      = algebraMap (NumberField.RingOfIntegers D) _ ((ℓ : ℕ) : NumberField.RingOfIntegers D) from
+      (map_natCast _ ℓ).symm, hφof, hqℓ]
+
 /-- **A real quadratic twist of a coefficient datum: the residue field at
 `λ` is UNCHANGED, and a prescribed positive integer acquires a square root**
-(sorry leaf, cut 2026-07-26 out of
+(**PROVEN 2026-07-27**, cut 2026-07-26 out of
 `exists_totallyRealCoefficientDatum_enlarge` below, which is PROVEN over it;
-PURE algebraic number theory, and now the only residual of that node).
+PURE algebraic number theory, and it was the last residual of that node).
 
 Given a coefficient datum as produced by
 `exists_totallyRealCoefficientDatum_core` and a positive `d` with
@@ -9156,25 +9446,36 @@ maximal ideal `λ ∋ ℓ` whose residue field is STILL `k`, together with an
 element `y ∈ 𝒪_D` with `y² = d`. Only the `λ`-half of `hdatum` is used; the
 `𝔭`-half is rebuilt from scratch by the consumer.
 
-INTENDED DISCHARGE — `D' := D · ℚ(√d)`:
+DISCHARGE AS CARRIED OUT (2026-07-27) — `D' := D(√d) = D[X]/(X² − d)`, NOT
+a compositum inside `ℝ`. Case split on whether `d` is already a square in
+`D`; if it is, `D' = D` and `λ' = λ` serve verbatim. Otherwise `X² − d` is
+irreducible (`X_pow_sub_C_irreducible_of_prime` at the prime `2`), and
+`AdjoinRoot` supplies the field, its power basis, and — through
+`NumberField.of_module_finite` — its `NumberField` instance. Then:
 
-* `D'` is TOTALLY REAL because `d > 0`, so `√d ∈ ℝ`. Realise `D` inside `ℝ`
-  through any embedding (every embedding of a totally real field is real)
-  and take the join of the two subfields `D` and `ℚ(√d)`; mathlib's
-  `NumberField.isTotallyReal_sup` says a join of totally real subfields is
-  totally real.
-* `y := √d` lies in `𝒪_{D'}` because `y² = d ∈ ℤ`, so `y` is integral.
-* `λ` has a prime `λ'` of `D'` above it with `f(λ'∣λ) = 1`, i.e. with the
-  SAME residue field `k`. If `√d ∈ D` already then `D' = D` and `λ' = λ`.
-  Otherwise `[D' : D] = 2`, and `d ≡ 1 (mod ℓ)` with `ℓ` odd makes `d` a
-  square in `ℤ_ℓ` (Hensel lifting the root `1` of `x² − d ≡ x² − 1`, the
-  derivative `2` being a unit), hence a square in the unramified `D_λ`; so
-  `λ` SPLITS. Concretely and without completions:
-  `𝒪_D[√d]/λ ≅ k[x]/(x² − 1) ≅ k × k` has TWO maximal ideals over `λ` since
-  `ℓ` is odd; lying-over lifts both to `𝒪_{D'}` (which is integral over
-  `𝒪_D[√d]`), so there are at least two primes of `D'` over `λ`, and
-  `∑ eᵢfᵢ = [D' : D] = 2` (`Ideal.sum_ramification_inertia`) then forces
-  `e = f = 1` at each.
+* TOTALLY REAL is `isTotallyReal_of_adjoin_sqrt` above: every complex
+  embedding sends `√d` to a complex square root of the POSITIVE integer
+  `d`, hence to a real number, and `√d` generates `D'` over `D`.
+* `y := √d` lies in `𝒪_{D'}` because it is a root of the monic integer
+  polynomial `X² − d`.
+* The residue field at a prime over `λ` is `k` again by
+  `exists_maximal_residueField_of_powerBasis_sq` above. That step
+  produces the prime as the kernel of an explicitly built ring map
+  `𝒪_{D'} →+* k`, extending the residue map of `𝒪_D` and sending
+  `√d ↦ 1`; the extension is possible because the discriminant `4d` of
+  `𝒪_D[√d]` is a UNIT modulo `λ` (`ℓ` is odd and `d ≡ 1 (mod λ)`), so
+  `4d · 𝒪_{D'} ⊆ 𝒪_D[√d]`.
+
+**THE RECORDED PLAN'S RAMIFICATION-THEORETIC ROUTE WAS NOT USED, AND IS
+NOT NEEDED.** This paragraph used to prescribe: realise the compositum
+`D · ℚ(√d)` inside `ℝ` via `NumberField.isTotallyReal_sup`, Hensel-lift a
+square root of `d` in `D_λ` to see that `λ` SPLITS, then count with
+`∑ eᵢfᵢ = [D' : D] = 2` (`Ideal.sum_ramification_inertia`) plus lying-over
+to force `e = f = 1`. None of that occurs in the proof: no
+`Ideal.inertiaDeg`, no `Ideal.sum_ramification_inertia`, no completion, no
+compositum and no count of primes. Choosing `√d ↦ +1` (rather than `−1`)
+IS the choice of one of the two primes above `λ`, and building the residue
+map directly makes both its maximality and its residue field automatic.
 
 WHY `d ≡ 2 (mod 3)` IS DELIBERATELY NOT HYPOTHESIZED. It is not needed for
 the truth of this statement, and the consumer is what turns it into the
@@ -9210,8 +9511,46 @@ theorem exists_totallyRealCoefficientDatum_sqrtAdjoin (ℓ : ℕ) [Fact ℓ.Prim
       ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
       ∃ y : NumberField.RingOfIntegers D,
-        y ^ 2 = ((d : ℕ) : NumberField.RingOfIntegers D) :=
-  sorry
+        y ^ 2 = ((d : ℕ) : NumberField.RingOfIntegers D) := by
+  classical
+  obtain ⟨D, hDf, hDnf, hDtr, lam, frp, kp, hkpf, hkpfin, hkptop, hkpdisc,
+    hlam, hfrp, hne, hℓlam, h3frp, ⟨eD⟩, hkpe, h3kp⟩ := hdatum
+  letI := hDf; letI := hDnf; letI := hDtr
+  by_cases hsq : ∃ y : D, y ^ 2 = ((d : ℕ) : D)
+  · -- `d` is already a square in `D`: take `D' = D` and `λ' = λ`.
+    obtain ⟨y0, hy0⟩ := hsq
+    have hyint : IsIntegral ℤ y0 :=
+      ⟨X ^ 2 - C (d : ℤ), monic_X_pow_sub_C _ two_ne_zero, by simp [hy0]⟩
+    refine ⟨D, hDf, hDnf, hDtr, lam, hlam, hℓlam, ⟨eD⟩, ⟨⟨y0, hyint⟩, ?_⟩⟩
+    refine NumberField.RingOfIntegers.eq_iff.mp ?_
+    simpa using hy0
+  · -- `X² − d` is irreducible over `D`: adjoin a root.
+    push Not at hsq
+    set f : D[X] := X ^ 2 - C ((d : ℕ) : D) with hf
+    have hfm : f.Monic := monic_X_pow_sub_C _ two_ne_zero
+    have hirr : Irreducible f := X_pow_sub_C_irreducible_of_prime Nat.prime_two hsq
+    haveI : Fact (Irreducible f) := ⟨hirr⟩
+    have hf0 : f ≠ 0 := hirr.ne_zero
+    set pb : PowerBasis D (AdjoinRoot f) := AdjoinRoot.powerBasis hf0 with hpb
+    haveI : Module.Finite D (AdjoinRoot f) := pb.finite
+    haveI : NumberField (AdjoinRoot f) := NumberField.of_module_finite D (AdjoinRoot f)
+    have hmin : minpoly D pb.gen = X ^ 2 - C ((d : ℕ) : D) :=
+      AdjoinRoot.minpoly_powerBasis_gen_of_monic hfm hf0
+    have hgensq : pb.gen ^ 2 = ((d : ℕ) : AdjoinRoot f) := by
+      have h := minpoly.aeval D pb.gen
+      rw [hmin] at h
+      simp only [map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero] at h
+      simpa using h
+    haveI : NumberField.IsTotallyReal (AdjoinRoot f) :=
+      isTotallyReal_of_adjoin_sqrt D (AdjoinRoot f) d hdpos pb.gen hgensq
+        (by rw [hpb, AdjoinRoot.powerBasis_gen]; exact AdjoinRoot.adjoinRoot_eq_top)
+    obtain ⟨lam', hlam'max, hℓlam', ⟨e'⟩⟩ :=
+      exists_maximal_residueField_of_powerBasis_sq ℓ hℓ5 k D (AdjoinRoot f) lam hlam hℓlam eD d
+        hdℓ pb hmin
+    have hyint : IsIntegral ℤ pb.gen :=
+      ⟨X ^ 2 - C (d : ℤ), monic_X_pow_sub_C _ two_ne_zero, by simp [hgensq]⟩
+    exact ⟨AdjoinRoot f, inferInstance, inferInstance, inferInstance, lam', hlam'max, hℓlam',
+      ⟨e'⟩, ⟨⟨pb.gen, hyint⟩, NumberField.RingOfIntegers.eq_iff.mp (by simpa using hgensq)⟩⟩
 
 /-- **Enlarging a coefficient datum so that the residue field at `3` has
 MORE THAN THREE elements** (**PROVEN 2026-07-26** over the single sub-leaf
@@ -9264,8 +9603,9 @@ quadratic route below. The quadratic route is chosen here because it keeps
 `_core` intact and consumed.
 
 DISCHARGE AS CARRIED OUT (2026-07-26) — a real quadratic twist, and it is
-elementary. The construction of the twisted field is the single sub-leaf
-`exists_totallyRealCoefficientDatum_sqrtAdjoin` above; everything else is
+elementary. The construction of the twisted field is the sub-leaf
+`exists_totallyRealCoefficientDatum_sqrtAdjoin` above (**PROVEN 2026-07-27**,
+so this node is now sorry-free); everything else is
 PROVEN below, and the `3`-half turned out to need NO ramification theory at
 all (see the correction at the end of this docstring). Take the EXPLICIT
 level `d = ℓ² + 1`. Generically one wants a positive integer `d` with
@@ -9495,14 +9835,15 @@ is still `k`, and no strengthening of `_core` at its own level can
 deliver the clause. The full table, the machine cross-check and the
 corrected construction are in the docstring of
 `exists_totallyRealCoefficientDatum_enlarge` above, which is itself PROVEN
-(2026-07-26) over the single residual leaf
+(2026-07-26) over the sub-leaf
 `exists_totallyRealCoefficientDatum_sqrtAdjoin` — the real quadratic twist
-at the explicit level `d = ℓ² + 1`.
+at the explicit level `d = ℓ² + 1`, itself **PROVEN 2026-07-27**.
 
-So this node is now PROVEN over one sub-leaf: `_core` supplies the datum,
+So this node is now FULLY PROVEN: `_core` supplies the datum,
 `exists_totallyRealCoefficientDatum_enlarge` (PROVEN) upgrades it by the real
-quadratic twist `ℚ(√(ℓ²+1))`, and the ONE remaining sorry in the chain is
-`exists_totallyRealCoefficientDatum_sqrtAdjoin`, which constructs that twist. -/
+quadratic twist `ℚ(√(ℓ²+1))`, and `exists_totallyRealCoefficientDatum_sqrtAdjoin`,
+which constructs that twist, is PROVEN as of 2026-07-27. No sorry remains
+anywhere in the chain. -/
 theorem exists_totallyRealCoefficientDatum_of_residueField
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (k : Type u) [Field k] [Finite k] [Algebra ℤ_[ℓ] k] :
