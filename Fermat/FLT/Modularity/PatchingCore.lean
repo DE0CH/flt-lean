@@ -3909,19 +3909,23 @@ have to be supplied with their bodies visible (`letI`, not `haveI` — a `haveI`
 forgets the body and the resulting instance is then not definitionally equal to
 the one the statement carries).
 
-STATUS (2026-07-27) — NAMING THE CONSUMER THAT MUST EXIST.  This theorem has no
-consumer yet, and that is a fact about the endgame rather than about this
-theorem.  The patching endgame in this module reaches `Function.Injective ψ`
-through `PatchedModule.injective`, i.e. through Auslander–Buchsbaum freeness of
-`M_∞` over the PRESENTATION ring `R_∞ = 𝒪⟦x₁, …, x_q⟧`; that route never sees
-the diamond-ring family, so it cannot consume this.  The consumer that must
-exist is the OTHER half of the Taylor–Wiles output, which nothing in the tree
-currently demands: `M_∞` free of rank `r` over `R_∞` gives `M₀ ≅ R_univ^r`, and
-comparing that with `M₀ ≅ ℤ_p^d` proven here yields `R_univ` finite free over
-`ℤ_p` and `M₀` free over `R_univ` — the multiplicity-one half of `R = T`.  That
-comparison is a `PatchedModule`-interface theorem and is not written.
+STATUS (2026-07-27, UPDATED the same day) — THE CONSUMER IS NOW WRITTEN.  The
+first version of this note recorded that this theorem had no consumer, and named
+the one that had to exist.  It exists now, at the bottom of this module:
+`exists_addEquiv_pi_padicInt_of_taylorWilesAug` turns the kernel bound proven
+here into `M₀ ≅ ℤ_p^d`, and `free_of_patchedFields_of_taylorWilesAug` compares
+that with the presentation-side `M₀ ≅ R_univ^r` of
+`exists_addEquiv_pi_runiv_of_patchedFields` to get `R_univ` finite free over
+`ℤ_p` and `M₀` free over `R_univ` — the multiplicity-one half of `R = T`.
 
-THE CHECK THAT WOULD REFUTE THIS NOTE: exhibit an in-cone declaration whose
+The rest of the original note stands and explains why NO EXISTING consumer could
+have been used, so it is kept: the patching endgame in this module reaches
+`Function.Injective ψ` through `PatchedModule.injective`, i.e. through
+Auslander–Buchsbaum freeness of `M_∞` over the PRESENTATION ring
+`R_∞ = 𝒪⟦x₁, …, x_q⟧`; that route never sees the diamond-ring family, so it
+cannot consume this.
+
+THE CHECK THAT WOULD REFUTE THAT: exhibit an in-cone declaration whose
 proof needs a bound on `ker(Λ^d ↠ M₀)` rather than merely a surjection
 `Λ^d ↠ M₀` (which `fM 0` and `prM 0` already give for free).  Every step of
 `exists_patchedModule_of_fields` that touches `M₀` — `hM0finΛ`, `hM0finR`, the
@@ -3954,5 +3958,429 @@ theorem exists_surjective_ker_le_taylorWilesAug
   exact exists_surjective_ker_le_of_forall_linearEquiv_pi_quotient
     (TaylorWilesCoefficients.padicInt p) q d (taylorWilesAug p q) M bI hbI fM prM hprM
     hprMzero
+
+/-- **`M₀` IS FREE OF RANK `d` OVER `ℤ_p`** (PROVEN 2026-07-27), and the first
+consumer of `exists_surjective_ker_le_taylorWilesAug` above.
+
+The pigeonhole theorem hands back ONE surjection `φ : Λ^d ↠ M₀` with
+`ker φ ⊆ 𝔫·Λ^d`, `Λ = ℤ_p⟦S₁, …, S_q⟧` the DIAMOND ring and `𝔫` its
+augmentation ideal.  Here the reverse inclusion is supplied — `𝔫` ANNIHILATES
+`M₀`, which is the `←` direction of `projM_eq_zero_iff` read through
+surjectivity of `prM 0`, exactly the form `exists_patchedModule_of_fields`
+carries the field in — so `ker φ = 𝔫·Λ^d` and `M₀ ≅ (Λ/𝔫)^d`.  Since
+`Λ/𝔫 = ℤ_p` (`ker_constantCoeff_mvPowerSeries`: `𝔫` is exactly the kernel of
+`constantCoeff`), that reads `M₀ ≅ ℤ_p^d`.
+
+PROOF, with no quotient module anywhere.  Compose `φ` with the coefficient
+inclusion `ℤ_p^d → Λ^d`, `c ↦ (C c₁, …, C c_d)`, giving
+`α : ℤ_p^d →+ M₀`.  It is INJECTIVE because `α c = 0` puts `C∘c` in
+`ker φ ⊆ 𝔫·Λ^d`, whose coordinates lie in `𝔫 = ker constantCoeff`
+(`Submodule.apply_mem_of_mem_smul_top_pi`), and `constantCoeff (C cᵢ) = cᵢ`.  It
+is SURJECTIVE because `x − C∘(constantCoeff ∘ x)` has every coordinate in `𝔫`
+(`mem_smul_top_pi_of_forall_mem`), hence lies in `𝔫·Λ^d ⊆ ker φ`, so
+`φ x = α (constantCoeff ∘ x)`.  Semilinearity `α (c • v) = C c • α v` is
+`map_smul` for `φ` plus multiplicativity of `C`.
+
+The conclusion is stated as an `AddEquiv` carrying the semilinearity equation
+rather than as a `ℤ_p`-`LinearEquiv`, because `M₀`'s `ℤ_p`-structure is the one
+RESTRICTED along `C : ℤ_p → Λ` and naming it in the statement would force a
+`Module ℤ_[p] M0` instance the caller has no reason to already have.  The
+consumer below reads the equation directly. -/
+theorem exists_addEquiv_pi_padicInt_of_taylorWilesAug
+    {p : ℕ} [Fact p.Prime] (q d : ℕ)
+    (M : ℕ → Type v) [∀ n, AddCommGroup (M n)]
+    [∀ n, Module (MvPowerSeries (Fin q) ℤ_[p]) (M n)]
+    (bI : ℕ → Ideal (MvPowerSeries (Fin q) ℤ_[p]))
+    (hbI : ∀ n, bI n ≤ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n)
+    (fM : ∀ n, M n ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+      (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ bI n))
+    {M0 : Type u} [AddCommGroup M0] [Module (MvPowerSeries (Fin q) ℤ_[p]) M0]
+    (prM : ∀ n, M n →ₗ[MvPowerSeries (Fin q) ℤ_[p]] M0)
+    (hprM : ∀ n, Function.Surjective (prM n))
+    (hprMzero : ∀ (n : ℕ) (m : M n), prM n m = 0 ↔
+      m ∈ (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) (M n))) :
+    ∃ e : M0 ≃+ (Fin d → ℤ_[p]),
+      ∀ (c : ℤ_[p]) (m : M0),
+        e ((MvPowerSeries.C c : MvPowerSeries (Fin q) ℤ_[p]) • m) = c • e m := by
+  classical
+  obtain ⟨φ, hφsurj, hφker⟩ :=
+    exists_surjective_ker_le_taylorWilesAug q d M bI hbI fM prM hprM
+      (fun n m h => (hprMzero n m).mp h)
+  -- `𝔫` annihilates `M₀`
+  have hann : ∀ a ∈ taylorWilesAug p q, ∀ m0 : M0, a • m0 = 0 := by
+    intro a ha m0
+    obtain ⟨m, rfl⟩ := hprM 0 m0
+    rw [← map_smul]
+    exact (hprMzero 0 _).mpr (Submodule.smul_mem_smul ha Submodule.mem_top)
+  have hφzero : ∀ x ∈ (taylorWilesAug p q • ⊤ :
+      Submodule (MvPowerSeries (Fin q) ℤ_[p]) (Fin d → MvPowerSeries (Fin q) ℤ_[p])),
+      φ x = 0 := by
+    intro x hx
+    refine Submodule.smul_induction_on hx ?_ ?_
+    · intro a ha y _
+      rw [map_smul]
+      exact hann a ha _
+    · intro a b ha hb
+      rw [map_add, ha, hb, add_zero]
+  -- coordinates of a member of `I·Λ^d` lie in `I`
+  have hcoord : ∀ (I : Ideal (MvPowerSeries (Fin q) ℤ_[p]))
+      (x : Fin d → MvPowerSeries (Fin q) ℤ_[p]),
+      x ∈ I • (⊤ : Submodule (MvPowerSeries (Fin q) ℤ_[p])
+        (Fin d → MvPowerSeries (Fin q) ℤ_[p])) → ∀ i, x i ∈ I := by
+    intro I x hx i
+    have h := Submodule.apply_mem_of_mem_smul_top_pi I hx i
+    refine Submodule.smul_induction_on h ?_ ?_
+    · intro a ha y _
+      rw [smul_eq_mul]
+      exact Ideal.mul_mem_right _ _ ha
+    · intro a b ha hb
+      exact Ideal.add_mem _ ha hb
+  have hnaug : taylorWilesAug p q =
+      RingHom.ker (MvPowerSeries.constantCoeff (σ := Fin q) (R := ℤ_[p])) := by
+    rw [ker_constantCoeff_mvPowerSeries]
+    rfl
+  set α : (Fin d → ℤ_[p]) →+ M0 :=
+    { toFun := fun c => φ (fun i => MvPowerSeries.C (c i))
+      map_zero' := by
+        simp only [Pi.zero_apply, map_zero]
+        exact map_zero φ
+      map_add' := fun c c' => by
+        simp only [Pi.add_apply, map_add]
+        rw [show (fun i => MvPowerSeries.C (c i) + MvPowerSeries.C (c' i))
+            = (fun i => MvPowerSeries.C (c i)) + (fun i => MvPowerSeries.C (c' i)) from rfl,
+          map_add] } with hα
+  have hαapply : ∀ c, α c = φ (fun i => MvPowerSeries.C (c i)) := fun _ => rfl
+  have hαsmul : ∀ (c : ℤ_[p]) (v : Fin d → ℤ_[p]),
+      α (c • v) = (MvPowerSeries.C c : MvPowerSeries (Fin q) ℤ_[p]) • α v := by
+    intro c v
+    rw [hαapply, hαapply, ← map_smul]
+    congr 1
+    funext i
+    simp [Pi.smul_apply, smul_eq_mul, map_mul]
+  have hαinj : Function.Injective α := by
+    rw [injective_iff_map_eq_zero]
+    intro v hv
+    have hmem := hφker _ hv
+    funext i
+    have hi := hcoord _ _ hmem i
+    rw [hnaug, RingHom.mem_ker] at hi
+    simpa using hi
+  have hαsurj : Function.Surjective α := by
+    intro m0
+    obtain ⟨x, rfl⟩ := hφsurj m0
+    refine ⟨fun i => MvPowerSeries.constantCoeff (x i), ?_⟩
+    rw [hαapply]
+    have hsub : x - (fun i => MvPowerSeries.C (MvPowerSeries.constantCoeff (x i)))
+        ∈ (taylorWilesAug p q • ⊤ :
+          Submodule (MvPowerSeries (Fin q) ℤ_[p]) (Fin d → MvPowerSeries (Fin q) ℤ_[p])) := by
+      refine mem_smul_top_pi_of_forall_mem _ _ fun i => ?_
+      rw [hnaug, RingHom.mem_ker]
+      simp
+    have := hφzero _ hsub
+    rw [map_sub, sub_eq_zero] at this
+    exact this.symm
+  have hbij : Function.Bijective α := ⟨hαinj, hαsurj⟩
+  set E := AddEquiv.ofBijective α hbij with hE
+  refine ⟨E.symm, fun c m => ?_⟩
+  obtain ⟨v, rfl⟩ := hαsurj m
+  rw [← hαsmul, show α (c • v) = E (c • v) from rfl, show α v = E v from rfl,
+    E.symm_apply_apply, E.symm_apply_apply]
+
+/-- **`M₀` IS FREE OF FINITE POSITIVE RANK OVER `R_univ`** (PROVEN 2026-07-27) —
+the presentation-side half of multiplicity one, stated in the raw fields of
+`PatchedModule` so that it can be fed either from a `PatchedModule` or directly
+from `exists_patchedModule_of_fields`'s inputs.
+
+The hypotheses are exactly the `PatchedModule` fields: `Minf` finite over the
+presentation ring `R_∞ = 𝒪⟦x₁, …, x_q⟧` carrying an `M_∞`-regular sequence of
+length `q + 1` in the maximal ideal, the patching surjection
+`toRuniv : R_∞ ↠ R_univ`, and the bottom identification `proj : M_∞ ↠ M₀` with
+`proj_smul` and `mem_smul_top_of_proj_eq_zero`.
+
+PROOF.  Auslander–Buchsbaum (`free_of_isRegular_mvPowerSeries`) makes `M_∞` FREE
+over `R_∞`, with a finite basis (`Module.Finite`) that is nonempty (`M₀` is
+nontrivial and `proj` surjective).  Push the basis coordinates through
+`toRuniv`: `E : M_∞ →+ (ι → R_univ)`, `E m i = toRuniv (b.repr m i)`.  `E` is
+surjective because `toRuniv` is and `b.equivFun` is an equivalence, and
+`ker E = ker proj`:
+
+* `⊇` — `proj m = 0` puts `m` in `𝔞·M_∞` (`𝔞 = ker toRuniv`), and a coordinate
+  functional maps `𝔞·M_∞` into `𝔞`, which is the same computation
+  `PatchedModule.injective` performs at a single basis vector;
+* `⊆` — if every coordinate of `m` lies in `𝔞` then `m = ∑ᵢ (b.repr m i) • b i`
+  lies in `𝔞·M_∞`, and `proj` kills `𝔞·M_∞` by `proj_smul`.
+
+Two surjections out of `M_∞` with the same kernel give `M₀ ≅ (ι → R_univ)`;
+rather than routing through `M_∞/ker`, the map is built directly by transporting
+`E` along a set-theoretic section of `proj` (well defined precisely by the kernel
+equality).  Reindex `ι` by `Fin r`, `r = #ι > 0`.
+
+The `R_univ`-action on `M₀` is the `T`-action pulled back along `ψ`, so the
+semilinearity equation is `e (ψ a • m) = a • e m`; the consumer below turns it
+into an honest `R_univ`-`LinearEquiv` once a compatible `Module R_univ M₀` is in
+hand. -/
+theorem exists_addEquiv_pi_runiv_of_patchedFields
+    {O : Type} [CommRing O] [IsLocalRing O] [IsNoetherianRing O]
+    (hO : ∃ ts : List O, ts.length = 0 + 1 ∧ RingTheory.Sequence.IsRegular O ts ∧
+      Ideal.ofList ts = IsLocalRing.maximalIdeal O)
+    (q : ℕ) {Runiv : Type uR} [CommRing Runiv] {T : Type s} [CommRing T]
+    (ψ : Runiv →+* T)
+    {Minf : Type v} [AddCommGroup Minf] [Module (MvPowerSeries (Fin q) O) Minf]
+    (hfin : Module.Finite (MvPowerSeries (Fin q) O) Minf)
+    {rs : List (MvPowerSeries (Fin q) O)} (hlen : rs.length = q + 1)
+    (hmem : ∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) O))
+    (hreg : RingTheory.Sequence.IsRegular Minf rs)
+    (toRuniv : MvPowerSeries (Fin q) O →+* Runiv)
+    (htoRuniv : Function.Surjective toRuniv)
+    {M0 : Type w} [AddCommGroup M0] [Module T M0] [Nontrivial M0]
+    (proj : Minf →+ M0) (hproj : Function.Surjective proj)
+    (hprojsmul : ∀ (x : MvPowerSeries (Fin q) O) (m : Minf),
+      proj (x • m) = ψ (toRuniv x) • proj m)
+    (hprojker : ∀ m : Minf, proj m = 0 →
+      m ∈ RingHom.ker toRuniv • (⊤ : Submodule (MvPowerSeries (Fin q) O) Minf)) :
+    ∃ r : ℕ, 0 < r ∧ ∃ e : M0 ≃+ (Fin r → Runiv),
+      ∀ (a : Runiv) (m : M0), e (ψ a • m) = a • e m := by
+  classical
+  haveI := hfin
+  haveI : Nontrivial Minf := hproj.nontrivial
+  haveI hfree : Module.Free (MvPowerSeries (Fin q) O) Minf :=
+    free_of_isRegular_mvPowerSeries hO hfin hlen hmem hreg
+  set b := Module.Free.chooseBasis (MvPowerSeries (Fin q) O) Minf with hb
+  haveI : Nonempty (Module.Free.ChooseBasisIndex (MvPowerSeries (Fin q) O) Minf) :=
+    b.index_nonempty
+  -- the coordinate map into `Runiv`
+  set E : Minf →+ (Module.Free.ChooseBasisIndex (MvPowerSeries (Fin q) O) Minf → Runiv) :=
+    { toFun := fun m i => toRuniv (b.repr m i)
+      map_zero' := by funext i; simp
+      map_add' := fun m m' => by funext i; simp } with hE
+  have hEapply : ∀ (m : Minf) i, E m i = toRuniv (b.repr m i) := fun _ _ => rfl
+  have hEsurj : Function.Surjective E := by
+    intro g
+    choose x hx using fun i => htoRuniv (g i)
+    refine ⟨b.equivFun.symm x, ?_⟩
+    funext i
+    rw [hEapply, ← b.equivFun_apply, LinearEquiv.apply_symm_apply]
+    exact hx i
+  have hprojzero : ∀ m ∈ RingHom.ker toRuniv •
+      (⊤ : Submodule (MvPowerSeries (Fin q) O) Minf), proj m = 0 := by
+    intro m hm
+    refine Submodule.smul_induction_on hm ?_ ?_
+    · intro a ha y _
+      rw [hprojsmul, RingHom.mem_ker.mp ha, map_zero, zero_smul]
+    · intro x y hx hy
+      rw [map_add, hx, hy, add_zero]
+  have hker : ∀ m : Minf, proj m = 0 ↔ E m = 0 := by
+    intro m
+    constructor
+    · intro h
+      have hm := hprojker m h
+      funext i
+      rw [hEapply, Pi.zero_apply, ← RingHom.mem_ker, ← Module.Basis.coord_apply]
+      refine Submodule.smul_induction_on hm ?_ ?_
+      · intro a ha y _
+        rw [map_smul, smul_eq_mul]
+        exact Ideal.mul_mem_right _ _ ha
+      · intro x y hx hy
+        rw [map_add]
+        exact Ideal.add_mem _ hx hy
+    · intro h
+      have hsum : ∑ i, b.repr m i • b i = m := b.sum_repr m
+      have hmem2 : (∑ i, b.repr m i • b i) ∈ RingHom.ker toRuniv •
+          (⊤ : Submodule (MvPowerSeries (Fin q) O) Minf) := by
+        refine Submodule.sum_mem _ fun i _ => Submodule.smul_mem_smul ?_ Submodule.mem_top
+        rw [RingHom.mem_ker, ← hEapply, h, Pi.zero_apply]
+      exact hprojzero _ (hsum ▸ hmem2)
+  -- transport `E` across the surjection `proj`
+  obtain ⟨sec, hsec⟩ := hproj.hasRightInverse
+  have hgwd : ∀ (m : Minf), E (sec (proj m)) = E m := by
+    intro m
+    have : proj (sec (proj m) - m) = 0 := by rw [map_sub, hsec (proj m), sub_self]
+    have h2 := (hker _).mp this
+    rw [map_sub, sub_eq_zero] at h2
+    exact h2
+  set g : M0 →+ (Module.Free.ChooseBasisIndex (MvPowerSeries (Fin q) O) Minf → Runiv) :=
+    AddMonoidHom.mk' (fun m0 => E (sec m0)) (by
+      intro m0 m0'
+      obtain ⟨y, rfl⟩ := hproj m0
+      obtain ⟨y', rfl⟩ := hproj m0'
+      rw [← map_add, hgwd, hgwd, hgwd, map_add]) with hg
+  have hgproj : ∀ m : Minf, g (proj m) = E m := fun m => hgwd m
+  have hgbij : Function.Bijective g := by
+    constructor
+    · intro m0 m0' h
+      obtain ⟨y, rfl⟩ := hproj m0
+      obtain ⟨y', rfl⟩ := hproj m0'
+      rw [hgproj, hgproj] at h
+      have : proj (y - y') = 0 := by
+        refine (hker _).mpr ?_
+        rw [map_sub, h, sub_self]
+      rw [map_sub, sub_eq_zero] at this
+      exact this
+    · intro y
+      obtain ⟨m, rfl⟩ := hEsurj y
+      exact ⟨proj m, hgproj m⟩
+  have hgsmul : ∀ (a : Runiv) (m0 : M0), g (ψ a • m0) = a • g m0 := by
+    intro a m0
+    obtain ⟨y, rfl⟩ := hproj m0
+    obtain ⟨x, rfl⟩ := htoRuniv a
+    rw [← hprojsmul, hgproj, hgproj]
+    funext i
+    rw [Pi.smul_apply, hEapply, hEapply, map_smul, Finsupp.smul_apply, smul_eq_mul, map_mul,
+      smul_eq_mul]
+  -- reindex by `Fin r`
+  set eqv := Fintype.equivFin (Module.Free.ChooseBasisIndex (MvPowerSeries (Fin q) O) Minf)
+    with heqv
+  refine ⟨Fintype.card (Module.Free.ChooseBasisIndex (MvPowerSeries (Fin q) O) Minf),
+    Fintype.card_pos, ?_⟩
+  refine ⟨(AddEquiv.ofBijective g hgbij).trans
+    { toFun := fun h j => h (eqv.symm j)
+      invFun := fun h i => h (eqv i)
+      left_inv := fun h => by funext i; simp
+      right_inv := fun h => by funext j; simp
+      map_add' := fun h h' => rfl }, ?_⟩
+  intro a m0
+  funext j
+  simpa using congrFun (hgsmul a m0) (eqv.symm j)
+
+/-- **THE MULTIPLICITY-ONE HALF OF `R = T`** (PROVEN 2026-07-27): `R_univ` is
+finite free over `ℤ_p` and `M₀` is finite free over `R_univ`.
+
+This is the OTHER half of the Taylor–Wiles output — `PatchedModule.injective`
+gives `ψ : R_univ ↪ T`, this gives the module-theoretic statement that makes the
+bottom Hecke module a free `R_univ`-module of the expected rank — and it is the
+consumer that `exists_surjective_ker_le_taylorWilesAug` was written for.
+
+The two halves being compared are the two theorems immediately above, and they
+see DIFFERENT power-series rings, which is the whole point:
+
+* the PRESENTATION ring `R_∞ = 𝒪⟦x₁, …, x_{qP}⟧`, over which `M_∞` is free by
+  Auslander–Buchsbaum, gives `M₀ ≅ R_univ^r` with `r > 0`;
+* the DIAMOND ring `Λ = ℤ_p⟦S₁, …, S_q⟧`, over which the finite-level modules are
+  free, gives `M₀ ≅ ℤ_p^d`.
+
+Comparing them: `R_univ^r ≅ ℤ_p^d` as `ℤ_p`-modules, so `R_univ` — a direct
+summand of the left side (`r > 0`) — is `ℤ_p`-finite, and torsion-free because it
+injects into `ℤ_p^d`; over the DVR `ℤ_p` finite + torsion-free is FREE
+(`Module.free_of_finite_type_torsion_free'`).  And `e` from the presentation side
+is `R_univ`-linear as soon as the `R_univ`-action on `M₀` is the `T`-action pulled
+back along `ψ`, which is `hRunivM0`.
+
+WHY THE RAW-FIELD FORM.  A `TaylorWilesSystem`-level corollary was drafted and
+deliberately dropped: stating it needs `(toRuniv n) ∘ (diamond n)` to be
+independent of `n`, which drags in `hcomplete`, `hres` and
+`ringHom_mvPowerSeries_eq_of_taylorWilesAug_le_ker` for no gain — the raw-field
+form is equally expressive and costs nothing.
+
+THE TWO LINKING HYPOTHESES, and both are equations rather than structure:
+
+* `hRunivM0` — the `Module R_univ M₀` supplied by the caller is the `T`-action
+  restricted along `ψ`.  (At the instantiation it IS `Module.compHom M₀ ψ`.)
+* `hpadic` — the two `ℤ_p`-actions on `M₀` agree: the one through
+  `algebraMap ℤ_[p] R_univ` and `ψ`, and the one through `C : ℤ_p → Λ` and the
+  diamond action.  At the instantiation this holds because `Λ ↠ R_n ↠ R_univ`
+  sends `C c` to `algebraMap c` — the composite kills `𝔫` by
+  `ker_toRuniv`/`hkertR`, so it factors through `Λ/𝔫 = ℤ_p`, and that factoring
+  IS the `ℤ_p`-algebra structure of `R_univ`.
+
+FAITHFULNESS NOTE.  Nothing here is vacuous: the conclusion `Module.Free ℤ_[p]
+R_univ` genuinely requires `r > 0` (else `R_univ^0 ≅ ℤ_p^d` forces nothing about
+`R_univ`), and `r > 0` comes from `Nontrivial M₀` through the basis being
+nonempty.  Dropping `Nontrivial M₀` would make the statement false for
+`R_univ` a non-free `ℤ_p`-algebra with `M₀ = 0`. -/
+theorem free_of_patchedFields_of_taylorWilesAug
+    {p : ℕ} [Fact p.Prime]
+    {O : Type} [CommRing O] [IsLocalRing O] [IsNoetherianRing O]
+    (hO : ∃ ts : List O, ts.length = 0 + 1 ∧ RingTheory.Sequence.IsRegular O ts ∧
+      Ideal.ofList ts = IsLocalRing.maximalIdeal O)
+    (qP : ℕ) {Runiv : Type uR} [CommRing Runiv] {T : Type s} [CommRing T]
+    (ψ : Runiv →+* T)
+    {Minf : Type v} [AddCommGroup Minf] [Module (MvPowerSeries (Fin qP) O) Minf]
+    (hfin : Module.Finite (MvPowerSeries (Fin qP) O) Minf)
+    {rs : List (MvPowerSeries (Fin qP) O)} (hlen : rs.length = qP + 1)
+    (hmem : ∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin qP) O))
+    (hreg : RingTheory.Sequence.IsRegular Minf rs)
+    (toRuniv : MvPowerSeries (Fin qP) O →+* Runiv)
+    (htoRuniv : Function.Surjective toRuniv)
+    {M0 : Type w} [AddCommGroup M0] [Module T M0] [Nontrivial M0]
+    (proj : Minf →+ M0) (hproj : Function.Surjective proj)
+    (hprojsmul : ∀ (x : MvPowerSeries (Fin qP) O) (m : Minf),
+      proj (x • m) = ψ (toRuniv x) • proj m)
+    (hprojker : ∀ m : Minf, proj m = 0 →
+      m ∈ RingHom.ker toRuniv • (⊤ : Submodule (MvPowerSeries (Fin qP) O) Minf))
+    (q d : ℕ) (M : ℕ → Type v) [∀ n, AddCommGroup (M n)]
+    [∀ n, Module (MvPowerSeries (Fin q) ℤ_[p]) (M n)]
+    (bI : ℕ → Ideal (MvPowerSeries (Fin q) ℤ_[p]))
+    (hbI : ∀ n, bI n ≤ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n)
+    (fM : ∀ n, M n ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+      (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ bI n))
+    [Module (MvPowerSeries (Fin q) ℤ_[p]) M0]
+    (prM : ∀ n, M n →ₗ[MvPowerSeries (Fin q) ℤ_[p]] M0)
+    (hprM : ∀ n, Function.Surjective (prM n))
+    (hprMzero : ∀ (n : ℕ) (m : M n), prM n m = 0 ↔
+      m ∈ (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) (M n)))
+    [Algebra ℤ_[p] Runiv] [Module Runiv M0]
+    (hRunivM0 : ∀ (a : Runiv) (m : M0), a • m = ψ a • m)
+    (hpadic : ∀ (c : ℤ_[p]) (m : M0),
+      (algebraMap ℤ_[p] Runiv c) • m
+        = (MvPowerSeries.C c : MvPowerSeries (Fin q) ℤ_[p]) • m) :
+    Module.Free Runiv M0 ∧ Module.Finite Runiv M0 ∧
+      Module.Free ℤ_[p] Runiv ∧ Module.Finite ℤ_[p] Runiv := by
+  classical
+  obtain ⟨r, hr, eR, heR⟩ := exists_addEquiv_pi_runiv_of_patchedFields hO qP ψ hfin hlen hmem
+    hreg toRuniv htoRuniv proj hproj hprojsmul hprojker
+  obtain ⟨eZ, heZ⟩ := exists_addEquiv_pi_padicInt_of_taylorWilesAug q d M bI hbI fM prM hprM
+    hprMzero
+  -- `eR` is `Runiv`-linear
+  set LR : M0 ≃ₗ[Runiv] (Fin r → Runiv) :=
+    { eR with
+      map_smul' := fun a m => by
+        simp only [RingHom.id_apply]
+        rw [hRunivM0]
+        exact heR a m } with hLR
+  have hfreeR : Module.Free Runiv M0 := Module.Free.of_equiv LR.symm
+  have hfinR : Module.Finite Runiv M0 := Module.Finite.equiv LR.symm
+  -- the composite is `ℤ_[p]`-linear
+  set LZ : (Fin d → ℤ_[p]) ≃ₗ[ℤ_[p]] (Fin r → Runiv) :=
+    { eZ.symm.trans eR with
+      map_smul' := fun c v => by
+        simp only [RingHom.id_apply]
+        show eR (eZ.symm (c • v)) = c • eR (eZ.symm v)
+        have h1 : eZ.symm (c • v) =
+            (MvPowerSeries.C c : MvPowerSeries (Fin q) ℤ_[p]) • eZ.symm v := by
+          apply eZ.injective
+          rw [eZ.apply_symm_apply, heZ, eZ.apply_symm_apply]
+        rw [h1, ← hpadic, hRunivM0, heR, algebraMap_smul] } with hLZ
+  haveI : Module.Finite ℤ_[p] (Fin r → Runiv) := Module.Finite.equiv LZ
+  have hfinZ : Module.Finite ℤ_[p] Runiv := by
+    refine Module.Finite.of_surjective
+      ((LinearMap.proj ⟨0, hr⟩ : (Fin r → Runiv) →ₗ[ℤ_[p]] Runiv)) ?_
+    intro a
+    exact ⟨fun _ => a, rfl⟩
+  haveI := hfinZ
+  haveI hnz : NoZeroSMulDivisors ℤ_[p] (Fin d → ℤ_[p]) := by
+    refine ⟨fun {c x} h => ?_⟩
+    by_cases hc : c = 0
+    · exact Or.inl hc
+    refine Or.inr ?_
+    funext i
+    have hi := congrFun h i
+    simp only [Pi.smul_apply, Pi.zero_apply, smul_eq_mul] at hi
+    rcases mul_eq_zero.mp hi with h' | h'
+    · exact absurd h' hc
+    · exact h'
+  haveI : NoZeroSMulDivisors ℤ_[p] Runiv := by
+    refine Function.Injective.noZeroSMulDivisors
+      (fun a => LZ.symm (Pi.single (⟨0, hr⟩ : Fin r) a)) ?_ ?_ ?_
+    · intro a a' h
+      have h2 : Pi.single (⟨0, hr⟩ : Fin r) a = Pi.single (⟨0, hr⟩ : Fin r) a' :=
+        LZ.symm.injective h
+      simpa using congrFun h2 ⟨0, hr⟩
+    · simp
+    · intro c a
+      rw [Pi.single_smul, map_smul]
+  have hfreeZ : Module.Free ℤ_[p] Runiv := inferInstance
+  exact ⟨hfreeR, hfinR, hfreeZ, hfinZ⟩
 
 end GaloisRepresentation.Modularity
