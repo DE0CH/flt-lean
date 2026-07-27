@@ -54,8 +54,9 @@ a **left adjoint whose counit is an iso** (`sheafificationAdjunction`, plus the
 `IsIso` instance in `Presheaf/Sheafification.lean`).  Consequently:
 
 * FUNCTORIALITY of `modTensor` is free — `modTensorMapIso` below;
-* both UNITORS are free — `a(𝟙 ⊗ M) ≅ a(M) ≅ M` — `modTensorUnitLeftIso`,
-  `modTensorUnitRightIso`;
+* both UNITORS are free — `a(𝟙 ⊗ M) ≅ a(M) ≅ M`; only the left one is kept
+  (`modTensorUnitLeftIso`), since nothing here consumes the right one and this
+  project does not allow free-floating declarations;
 * the ASSOCIATOR is *not*, and is the only one of the three that is a real
   theorem.  It is now the single named leaf `nonempty_modTensor_assoc`.
 
@@ -71,7 +72,7 @@ PROVEN (free from the pin): `modPullbackCompIso`, `modPullbackCongrIso`,
 `Scheme.Modules.pullbackComp` / `pullbackCongr` / `Functor.mapIso`.
 
 PROVEN here, in the tensor/ampleness API: `modTensorMapIso`,
-`modTensorUnitLeftIso`, `modTensorUnitRightIso`, `modTensorPowMapIso`,
+`modTensorUnitLeftIso`, `modTensorPowMapIso`,
 `modTensorPowUnitIso`, `modPullbackUnitIso`, `trivializedSection_of_iso`,
 `nonvanishingAt_of_iso`, `nonvanishingLocus_of_iso`, `unitEndoApply_eq`,
 `trivializedSection_restrictUnitIso`, `trivializedSection_trans`,
@@ -251,12 +252,6 @@ then use that `M` is already a sheaf. -/
 noncomputable def modTensorUnitLeftIso {Z : Scheme.{u}} (M : Z.Modules) :
     modTensor (modUnit Z) M ≅ M :=
   (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (λ_ M.val) ≪≫
-    modSheafifyValIso M
-
-/-- **The RIGHT UNITOR**, `M ⊗ 𝒪_Z ≅ M`. -/
-noncomputable def modTensorUnitRightIso {Z : Scheme.{u}} (M : Z.Modules) :
-    modTensor M (modUnit Z) ≅ M :=
-  (PresheafOfModules.sheafification (𝟙 Z.ringCatSheaf.obj)).mapIso (ρ_ M.val) ≪≫
     modSheafifyValIso M
 
 /-- **Tensor powers transport along an isomorphism**: `L ≅ M` gives
