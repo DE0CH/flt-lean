@@ -6227,9 +6227,11 @@ NOT by itself let the level-`9` leaf `MazurLevel9.jQuotient_of_tateParam` drop
 its abstract `π`. That leaf's kernel `⟨h⟩` has order `9`, while a chain built
 from this node supplies the TWO-STEP composite
 `(E.veluModel t₁ w₁).veluModel t₂ w₂`. Identifying that with the direct
-order-`9` Vélu model needs a composition theorem that is **absent from this
-tree** (checked 2026-07-27: no `veluModel`-of-`veluModel` lemma, and no
-`IsRationalMap` certificate for `veluMap`, anywhere under `Fermat/`). It
+order-`9` Vélu model needs a `veluModel`-of-`veluModel` composition theorem,
+which is still absent from this tree. (Corrected 2026-07-27: the parenthesis
+here also claimed there is "no `IsRationalMap` certificate for `veluMap`
+anywhere under `Fermat/`". That was already false when written — see the
+correction to the *cheaper route* paragraph below.) It
 splits into two halves of very unequal cost:
 
 * the MODEL half is easy — `veluModel` preserves `a₁`, `a₂`, `a₃`, hence `b₂`,
@@ -6248,11 +6250,23 @@ file — defines `IsIsogeny` (a genuine morphism-of-curves certificate) and
 PROVES `IsIsogeny.comp`. Strengthening the abstract `φ`, `ψ`, `π` of the
 `X_0(9)` cluster to carry `IsIsogeny` certificates therefore threads through a
 chain **for free**, with no composition theorem to prove — the composition
-lemma the Vélu route needs is exactly what `IsIsogeny.comp` already is. The
-single missing piece on that route is one bridge lemma, "the Vélu quotient map
-is an `IsRationalMap`", whose polynomials (`veluXNum`, `veluPhiNum`,
-`veluTheta`, `veluPsi`) are already defined in `Velu.lean`. That is one lemma
-rather than a theory, and it is the recommended next cut. -/
+lemma the Vélu route needs is exactly what `IsIsogeny.comp` already is.
+
+**AND THAT ROUTE IS NOW OPEN END TO END** (corrected 2026-07-27, having been
+carried out at level `49`). This paragraph used to close by naming "the Vélu
+quotient map is an `IsRationalMap`" as the single missing piece. It was not
+missing: `Isogeny.lean` already PROVES it in three forms —
+`isRationalMap_of_veluCoords`, `isRationalMap_of_veluMap` and
+`isRationalMap_veluMap` — and `IsRationalMap.isIsogeny` is PROVEN and
+axiom-clean, so the full `IsIsogeny` certificate is available. The only piece
+that really had to be written is the `ℚ`-level repackaging between the
+`AddSubgroup` spelling of the kernel returned by
+`exists_velu_quotient_isogeny_model` and the `Finset` spelling the bridge
+wants; that is `WeierstrassCurve.isIsogeny_of_veluQuotient` below, and the
+level-`7` cluster (`exists_x0Seven_param_of_stableSevenSubgroup` →
+`x0Seven_param_mul_ne_49` → `not_stableCyclicFortyNine_of_j_eq`) is the worked
+example of threading it. Strengthening the `X_0(9)` cluster the same way is
+now a transcription rather than a cut. -/
 theorem WeierstrassCurve.exists_x0Three_param_model_of_stableThreeSubgroup
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 3)
@@ -15096,6 +15110,67 @@ theorem WeierstrassCurve.exists_x0Seven_veluParam
     E.exists_x0Seven_veluFrickeData P hP hstable hCfin t w hE' ht hw
   exact ⟨u, hju, X0Seven.quot_fricke_jmap _ A' B' s₁ u hΔ' hj' h1' h2'⟩
 
+/-- **PROVEN 2026-07-27: the Vélu quotient datum over `ℚ` carries an `IsIsogeny`
+certificate.**  This is the seam lemma that lets a `Gal(ℚ̄/ℚ)`-equivariant
+`AddMonoidHom` produced by `exists_velu_quotient_isogeny_model` be used as a
+genuine MORPHISM OF CURVES rather than as a homomorphism of abstract groups.
+
+It exists because of a specific and expensive gap: a bare `AddMonoidHom` between
+point groups carries no geometry, so upgrading one to an element of `End(E_ℚ̄)`
+is Faltings' isogeny theorem.  Every consumer that wants to argue with
+endomorphisms — the level-`49` CM leaf `not_stableCyclicFortyNine_of_j_eq` below
+is the first — must therefore be handed the certificate at the point where the
+map is CONSTRUCTED, which is here.
+
+**Nothing new is proven.**  All the mathematics is already in
+`Fermat/FLT/EllipticCurve/Isogeny.lean`: `isRationalMap_of_veluMap` builds the
+`IsRationalMap` certificate out of Vélu's own polynomials (`veluXNum`, `veluH`,
+`veluXi`), and `IsRationalMap.isIsogeny` — PROVEN and axiom-clean as of
+2026-07-27 — supplies the `surjective` and `finite_ker` fields over an
+algebraically closed base.  This lemma only converts between the two spellings of
+the kernel: `exists_velu_quotient_isogeny_model` states it as membership in an
+`AddSubgroup C`, while the bridge wants a `Finset`, and `hCfin.toFinset` is the
+translation.  The `Odd` hypothesis is inherited verbatim from Vélu.
+
+(Docstrings elsewhere in the tree record this bridge as MISSING — see the audit
+under `not_stableCyclicFortyNine_of_j_eq` below, corrected in place.  They were
+written before `isRationalMap_of_veluMap` and before the coordinate
+identification became part of `exists_velu_quotient_isogeny_model`'s conclusion
+on 2026-07-27, which is the conjunct `hcoord` consumed here.) -/
+theorem WeierstrassCurve.isIsogeny_of_veluQuotient
+    (E E' : WeierstrassCurve ℚ) [E.IsElliptic]
+    (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
+    (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (hCodd : Odd (Nat.card C))
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C)
+    (hcoord : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Pt ∉ C →
+      veluPointX (φ Pt) =
+          veluCoordX (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt ∧
+        veluPointY (φ Pt) =
+          veluCoordY (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt) :
+    WeierstrassCurve.IsIsogeny φ := by
+  classical
+  haveI : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ))).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  set S : Finset ((E⁄(AlgebraicClosure ℚ)).Point) := hCfin.toFinset with hSdef
+  have hmem : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, P ∈ S ↔ P ∈ C := fun P => by
+    rw [hSdef]; exact hCfin.mem_toFinset
+  have hS : IsPointSubgroup S :=
+    { zero_mem := (hmem _).mpr (zero_mem C)
+      add_mem := fun P hP Q hQ =>
+        (hmem _).mpr (add_mem ((hmem P).mp hP) ((hmem Q).mp hQ))
+      neg_mem := fun P hP => (hmem _).mpr (neg_mem ((hmem P).mp hP)) }
+  have hcard : S.card = Nat.card C := by
+    rw [hSdef, ← Set.ncard_eq_toFinset_card _ hCfin, ← Nat.card_coe_set_eq]
+    rfl
+  have hodd : Odd S.card := hcard ▸ hCodd
+  refine (WeierstrassCurve.isRationalMap_of_veluMap hS hodd (fun P => ?_)
+    (fun P hP => ?_) (fun P hP => ?_)).isIsogeny
+  · rw [hker P]; exact (hmem P).symm
+  · exact (hcoord P fun hc => hP ((hmem P).mpr hc)).1
+  · exact (hcoord P fun hc => hP ((hmem P).mpr hc)).2
+
 /-- **`X_0(7)`: the hauptmodul parameter of a rational `7`-isogeny, TOGETHER
 WITH the quotient curve and the isogeny** (PROVEN 2026-07-27 over the single
 leaf `exists_x0Seven_veluParam` just above; introduced
@@ -15134,7 +15209,17 @@ relation is corrected here: that leaf has been PROVEN since 2026-07-26, and
 those two is the pairing of a hauptmodul value with a NAMED quotient — the
 existential in `exists_x0Seven_hauptmodul` forgets which of the (up to eight)
 roots of the degree-`8` `j`-map it returned — which is exactly why the leaf
-above has to produce both relations for one and the same `u`. -/
+above has to produce both relations for one and the same `u`.
+
+**THE `IsIsogeny φ` CONJUNCT (added 2026-07-27, and it is load-bearing).**  The
+conclusion now also returns a certificate that `φ` is a morphism of curves and
+not merely a Galois-equivariant homomorphism of point groups.  It is free here —
+`isIsogeny_of_veluQuotient` above reads it straight off Vélu's coordinates — and
+it is NOT free downstream: without it the level-`49` consumer
+`not_stableCyclicFortyNine_of_j_eq` cannot pass from `j(E'') = j(E)` to a
+self-isogeny of `E_ℚ̄`, because that step is Faltings' isogeny theorem for an
+abstract `AddMonoidHom`.  Carrying the certificate across the seam is what keeps
+the level-`49` argument inside CM theory.  See the audit at that leaf. -/
 theorem WeierstrassCurve.exists_x0Seven_param_of_stableSevenSubgroup
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
@@ -15153,6 +15238,7 @@ theorem WeierstrassCurve.exists_x0Seven_param_of_stableSevenSubgroup
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
       (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
         φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples P) ∧
+      WeierstrassCurve.IsIsogeny φ ∧
       u ≠ 0 ∧
       E.j * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 ∧
       E'.j * u = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3 := by
@@ -15172,7 +15258,11 @@ theorem WeierstrassCurve.exists_x0Seven_param_of_stableSevenSubgroup
   haveI := hell'
   obtain ⟨u, hju, hju'⟩ :=
     E.exists_x0Seven_veluParam P hP hstable hCfin t w hell' ht hw
-  exact ⟨u, E.veluModel t w, hell', φ, hgal, hker.1,
+  -- the isogeny certificate, from Vélu's own coordinates
+  have hiso : WeierstrassCurve.IsIsogeny φ :=
+    WeierstrassCurve.isIsogeny_of_veluQuotient E (E.veluModel t w)
+      (AddSubgroup.zmultiples P) hCfin hCodd φ hker.1 hker.2
+  exact ⟨u, E.veluModel t w, hell', φ, hgal, hker.1, hiso,
     X0Seven.param_ne_zero u E.j hju, hju, hju'⟩
 
 namespace MazurLevelFortyNine
@@ -15317,61 +15407,69 @@ in `Fermat/FLT/` — that claim is refutable in one grep for `Cartan` and for
 `End`/`ringOfIntegers` over `WeierstrassCurve`, and should be re-run before
 building anything, since docstrings of this kind go stale.
 
-**ROUTE AUDIT, 2026-07-27: STEP 1 ABOVE IS NOT AVAILABLE FROM THESE HYPOTHESES,
-AND THE GAP IS EXACTLY FALTINGS.  Do not start on steps 2–5 until it is closed.**
+**ROUTE AUDIT, 2026-07-27 — RAISED, AND NOW CARRIED OUT.  The `hΦiso`
+hypothesis in the statement above IS the repair; steps 2–5 are back on.**
 
-`Φ` is hypothesised only as an `AddMonoidHom` of point groups together with
-Galois-equivariance.  Nothing makes it a morphism of curves.  So the sentence
-"`Φ` becomes a degree-`49` self-isogeny of `E_ℚ̄` with cyclic kernel" is not a
-consequence of `hj` and `hΦker`: transporting `Φ` along a `ℚ̄`-isomorphism
-`E'' ≅ E` yields a Galois-equivariant endomorphism of the ABSTRACT group
-`E(ℚ̄)`, and upgrading that to an element of `End(E_ℚ̄)` is precisely
-`Hom(E, E) ⊗ Ẑ ≅ Hom_Gal(TE, TE)` — **Faltings' isogeny theorem**.  Steps 2–5
-all speak about `End(E_ℚ̄)` and so are downstream of that upgrade.
+*The defect, as recorded.*  `Φ` was hypothesised only as an `AddMonoidHom` of
+point groups together with Galois-equivariance.  Nothing made it a morphism of
+curves, so the sentence "`Φ` becomes a degree-`49` self-isogeny of `E_ℚ̄` with
+cyclic kernel" did not follow from `hj` and `hΦker`: transporting `Φ` along a
+`ℚ̄`-isomorphism `E'' ≅ E` yields a Galois-equivariant endomorphism of the
+ABSTRACT group `E(ℚ̄)`, and upgrading that to an element of `End(E_ℚ̄)` is
+precisely `Hom(E, E) ⊗ Ẑ ≅ Hom_Gal(TE, TE)` — **Faltings' isogeny theorem**.
+Steps 2–5 all speak about `End(E_ℚ̄)` and so were downstream of that upgrade.
+The check that established it: `Fermat/FLT/EllipticCurve/Isogeny.lean` defines
+`IsIsogeny` with `isRationalMap : IsRationalMap φ` as a FIELD, and its own
+docstring gives the reason — surjectivity and finiteness of the kernel "are
+genuinely geometric ... and it is false for a general group homomorphism with
+divisible image".  `E(ℚ̄)` is divisible, so the abstract hypothesis was strictly
+weaker than an isogeny hypothesis, by exactly the amount Faltings supplies.
 
-This is checkable in one place, and it is checked:
-`Fermat/FLT/EllipticCurve/Isogeny.lean` defines `IsIsogeny` with
-`isRationalMap : IsRationalMap φ` as a FIELD, and its own docstring gives the
-reason — surjectivity and finiteness of the kernel "are genuinely geometric ...
-and it is false for a general group homomorphism with divisible image".  `E(ℚ̄)`
-is divisible, so the abstract hypothesis here is strictly weaker than an isogeny
-hypothesis, by exactly the amount Faltings supplies.
+That reading also made this docstring inconsistent with its SIBLING
+`exists_x0Seven_veluParam`, which names its quotient as `E.veluModel t w`
+precisely to avoid Faltings.  The sibling was the right half; this one was
+wrong, and is corrected here rather than left to mislead the next reader.
 
-Note this contradicts nothing in the mathematics and everything in the plan: the
-SIBLING leaf `exists_x0Seven_veluParam` above is stated with its quotient NAMED
-as `E.veluModel t w` precisely to avoid Faltings (see its "WHY THE VÉLU PINNING
-IS PART OF THE STATEMENT" section, and the same argument at
-`exists_x0Three_param_model_of_stableThreeSubgroup`).  The two docstrings were
-written the same day and are inconsistent; this one is the wrong half.
+*The repair, carried out 2026-07-27.*  `Φ` now carries `hΦiso : IsIsogeny Φ`, so
+step 1 is immediate and `End(E_ℚ̄)` — `WeierstrassCurve.endSubring` / `End` in
+`Isogeny.lean`, with `End.intCast_apply` a `rfl` — is genuinely in reach.  The
+certificate is threaded across the whole seam: `x0Seven_param_mul_ne_49` below
+now takes `IsIsogeny φ` and `IsIsogeny ψ` and composes them with the PROVEN
+`IsIsogeny.comp`; those come from `exists_x0Seven_param_of_stableSevenSubgroup`,
+which now returns an `IsIsogeny` conjunct; and that in turn comes from
+`isIsogeny_of_veluQuotient` above.
 
-**CONSEQUENCE FOR THE CIRCULARITY CLAIM ABOVE.**  The "not circular" argument
-rests on this leaf being closable by CM theory alone.  With step 1 unavailable,
-the only remaining route to `False` from these hypotheses is Kenku's theorem —
-no elliptic curve over `ℚ` admits a rational cyclic `49`-isogeny, which is why
-the hypothesis set is empty and the statement is TRUE — and that is
-`not_cyclicIsogeny_fortyNine` itself.  So AS CURRENTLY STATED this leaf does not
-break the circularity; it relocates it.
+**TWO CLAIMS OF THE ORIGINAL AUDIT WERE ALREADY STALE WHEN IT WAS WRITTEN, and
+this is why the repair cost one lemma instead of a theory.**  It recorded the
+missing piece as the bridge "the Vélu quotient map is an `IsRationalMap`".  That
+bridge already existed, in three forms — `isRationalMap_of_veluCoords`,
+`isRationalMap_of_veluMap` and `isRationalMap_veluMap`, all PROVEN at the end of
+`Isogeny.lean` — and `exists_velu_quotient_isogeny_model` had, the same day,
+gained the coordinate-identification conjunct expressly so that the bridge could
+be applied at the call site.  What was genuinely absent was only the `ℚ`-level
+repackaging between the `AddSubgroup` spelling of the kernel and the `Finset`
+spelling the bridge wants, which is `isIsogeny_of_veluQuotient` above.  It also
+said `IsRationalMap.isIsogeny` was an open leaf; it has been PROVEN and
+axiom-clean since 2026-07-27, so the certificate costs no new `sorry`.
 
-**THE REPAIR, and it is a cut-level change that needs an owner for the whole
-chain rather than for this leaf.**  Carry an isogeny certificate across the seam:
-give `Φ` an `IsIsogeny` hypothesis, which makes step 1 immediate and puts
-`End(E_ℚ̄)` (already defined as `WeierstrassCurve.endSubring` / `End` in
-`Isogeny.lean`, with `End.intCast_apply` a `rfl`) genuinely in reach.  The cost
-is that the consumer `x0Seven_param_mul_ne_49` must then supply certificates for
-`φ` and `ψ`, and it obtains them from
-`exists_x0Seven_param_of_stableSevenSubgroup` ←
-`exists_velu_quotient_isogeny_model`, which currently returns a bare
-`AddMonoidHom`.  `IsIsogeny.comp` already exists, so the single missing piece is
-the bridge lemma "the Vélu quotient map is an `IsRationalMap`" — whose
-polynomials (`veluXNum`, `veluPhiNum`, `veluTheta`, `veluPsi`) are all already
-defined in `Velu.lean`.  That is one lemma, not a theory, and it is the same
-bridge already recommended at
-`exists_x0Three_param_model_of_stableThreeSubgroup`.  It was not done here
-because it changes statements owned by other agents.
+**CONSEQUENCE FOR THE CIRCULARITY CLAIM ABOVE — now restored.**  The "not
+circular" argument rests on this leaf being closable by CM theory alone.  Under
+the old statement the only remaining route to `False` was Kenku's theorem, i.e.
+`not_cyclicIsogeny_fortyNine` itself, so the leaf relocated the circularity
+rather than breaking it.  With `hΦiso` the CM route is available and the claim
+stands as originally written.
 
-*The refuting check for this audit:* exhibit an elementary derivation of
-`IsRationalMap Φ` from `hΦgal` and `hΦker` alone.  If one exists, the audit is
-wrong and steps 2–5 are back on. -/
+*The refuting check for the repaired statement:* exhibit an elliptic curve
+`E/ℚ`, a `Gal(ℚ̄/ℚ)`-stable cyclic `⟨h⟩` of order `49`, and a genuine isogeny
+`Φ` with that kernel and `j(E/⟨h⟩) = j(E)`.  A weaker but still fatal refutation
+would be a non-CM `E_ℚ̄` admitting a cyclic degree-`49` self-isogeny, which
+would break step 2.
+
+**WHAT REMAINS OPEN HERE, unchanged by the repair.**  Steps 2 and 4 still need
+the CM theory named under MISSING MACHINERY above: `End(E_ℚ̄) = ℤ` for non-CM
+curves, and the normalizer-of-Cartan description of the mod-`p` image of a CM
+curve over `ℚ` at a split `p`.  That absence was re-checked on 2026-07-27 and is
+accurate: neither is in the mathlib pin, in `~/cs/FLT`, or in `Fermat/FLT/`. -/
 theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
     (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
     (Φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
@@ -15388,6 +15486,7 @@ theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples h)
+    (hΦiso : WeierstrassCurve.IsIsogeny Φ)
     (hΦker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       Φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
     (hj : E''.j = E.j) :
@@ -15435,7 +15534,18 @@ complex multiplication, and for a CM curve over `ℚ` at a split `7` complex
 conjugation swaps the two eigenlines of `E[7]`, so the stable line `⟨7h⟩` cannot
 exist.  That is "close it group-theoretically rather than modularly" carried out,
 but the group theory lives on `E[7]` and not, as the paragraph above supposed, on
-`⟨h⟩` alone. -/
+`⟨h⟩` alone.
+
+**`hφiso` AND `hψiso` ARE NEW (2026-07-27) AND ARE NOT DECORATION.**  The CM leaf
+argues inside `End(E_ℚ̄)`, and a Galois-equivariant `AddMonoidHom` of point groups
+is not an element of it — the upgrade is Faltings' isogeny theorem, which is
+neither available here nor wanted.  So the two isogeny certificates are threaded
+through this node rather than manufactured in it: they are composed by the PROVEN
+`IsIsogeny.comp` into a certificate for `ψ ∘ φ` and handed to the leaf.  Every
+caller obtains them for free, since
+`exists_x0Seven_param_of_stableSevenSubgroup` returns one alongside each `φ` and
+Vélu's coordinates certify it (`isIsogeny_of_veluQuotient`).  See the ROUTE AUDIT
+on the leaf for the full account of the defect this repairs. -/
 theorem WeierstrassCurve.x0Seven_param_mul_ne_49
     (E E' E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E'.IsElliptic] [E''.IsElliptic]
     (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
@@ -15459,6 +15569,7 @@ theorem WeierstrassCurve.x0Seven_param_mul_ne_49
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples h)
+    (hφiso : WeierstrassCurve.IsIsogeny φ) (hψiso : WeierstrassCurve.IsIsogeny ψ)
     (hφker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((7 : ℕ) • h))
     (hψker : ∀ Pt : (E'⁄(AlgebraicClosure ℚ)).Point,
@@ -15484,8 +15595,10 @@ theorem WeierstrassCurve.x0Seven_param_mul_ne_49
     intro σ Pt
     rw [AddMonoidHom.comp_apply, AddMonoidHom.comp_apply, hφgal, hψgal]
   have hcker := MazurLevelFortyNine.ker_comp_eq_seven φ ψ h hφker hψker
+  -- and it is a genuine morphism of curves, not merely a homomorphism of groups
+  have hciso : WeierstrassCurve.IsIsogeny (ψ.comp φ) := hφiso.comp hψiso
   exact WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq E E'' (ψ.comp φ)
-    hcgal h h49 h7 hhstable hcker hjeq
+    hcgal h h49 h7 hhstable hciso hcker hjeq
 
 /-- **`X_0(7)`: the two hauptmodul parameters of the `7`-isogeny chain of a
 rational cyclic `49`-subgroup** (PROVEN 2026-07-26 over the two level-`7`
@@ -15538,7 +15651,7 @@ theorem WeierstrassCurve.exists_x0Seven_chainParameters
   have h49 : (49 : ℕ) • g = 0 := by
     rw [← hg]; exact addOrderOf_nsmul_eq_zero g
   -- STEP 1 : the isogeny with kernel `⟨7g⟩`
-  obtain ⟨u₁, E₁, hE₁, φ₁, hφ₁gal, hφ₁ker, hu₁0, hj1, hj1'⟩ :=
+  obtain ⟨u₁, E₁, hE₁, φ₁, hφ₁gal, hφ₁ker, hφ₁iso, hu₁0, hj1, hj1'⟩ :=
     E.exists_x0Seven_param_of_stableSevenSubgroup ((7 : ℕ) • g) hord7 hst7
   haveI := hE₁
   -- the image of `g` still has order `7` : this is CYCLICITY of `⟨g⟩`
@@ -15569,13 +15682,14 @@ theorem WeierstrassCurve.exists_x0Seven_chainParameters
       Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
     φ₁ hφ₁gal g hstable
   -- STEP 2 : the isogeny with kernel `⟨φ₁ g⟩`
-  obtain ⟨u₂, E₂, hE₂, φ₂, hφ₂gal, hφ₂ker, hu₂0, hj2, hj2'⟩ :=
+  obtain ⟨u₂, E₂, hE₂, φ₂, hφ₂gal, hφ₂ker, hφ₂iso, hu₂0, hj2, hj2'⟩ :=
     E₁.exists_x0Seven_param_of_stableSevenSubgroup (φ₁ g) hord₁ hst₁
   haveI := hE₂
   -- non-backtracking
   have hnb : u₁ * u₂ ≠ 49 :=
     WeierstrassCurve.x0Seven_param_mul_ne_49 E E₁ E₂ φ₁ φ₂ hφ₁gal hφ₂gal
-      g h49 h7ne hstable hφ₁ker hφ₂ker u₁ u₂ hu₁0 hu₂0 hj1 hj1' hj2 hj2'
+      g h49 h7ne hstable hφ₁iso hφ₂iso hφ₁ker hφ₂ker u₁ u₂ hu₁0 hu₂0
+      hj1 hj1' hj2 hj2'
   exact ⟨u₁, u₂, hu₁0, hnb,
     MazurLevelFortyNine.residual_of_matching E₁.j u₁ u₂ hj1' hj2 hnb⟩
 
