@@ -6685,19 +6685,288 @@ compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.
 Both leaves inherit the pinning hypotheses `j`/`hj` verbatim; neither is
 provable without them, by the two counterexamples in the audit below. -/
 
+/-! ### Pinning the coefficient ring: the frame COMPARISON
+
+`exists_algebraicClosureEmbedding_of_tateFrame_mult` below is PROVEN
+(2026-07-27) over the two leaves of this subsection, and the move that
+makes that possible is worth stating separately because it removes ALL
+geometry from the remaining obligation.
+
+The leaf quantifies over an arbitrary frame `(O, τ, φ, j)` of
+`TatePt m x I π`.  But the HONEST frame at the very same `(q, I, π)`
+already exists and is PROVEN: instantiate `exists_tateFrame_of_adicCoefficientRing`
+at `O₁ := v.adicCompletionIntegers D` (`v = ⟨I, …⟩`), whose three pin
+conjuncts are `isAdicComplete_span_uniformizer`,
+`exists_sub_mem_span_uniformizer_pow` and `mem_span_uniformizer_pow_iff`
+and whose `ℤ_q`-structure is `padicIntAlgebra`.  That produces
+`φ₁ : (Fin 2 → O₁) → TatePt m x I π`, additive, bijective and
+`𝒪_D`-equivariant along `j₁ = algebraMap`.
+
+Composing, `g := φ⁻¹ ∘ φ₁ : (Fin 2 → O₁) → (Fin 2 → O)` is an ADDITIVE
+BIJECTION intertwining the two `𝒪_D`-actions,
+
+    g (j₁ a • u) = j a • g u,
+
+and `TatePt`, `ab`, `m`, `x`, `hdim`, `τ`, `hφequiv` all disappear from
+the problem: what is left is a question about two commutative rings
+related by an additive bijection of their squares.  That is the content
+of this subsection, and it is why the leaves below mention no scheme.
+
+Note in passing what this settles about faithfulness.  A frame is only
+hypothesised, never constructed, so a priori `O` could be the ZERO ring
+— and then no `ι : O →+* ℚ̄_q` exists at all and the leaf would be
+FALSE, since a ring hom must send `1` to `1`.  The comparison rules
+that out unconditionally: `O₁ = 𝒪_{D,I}` is nontrivial and
+`(Fin 2 → O) ≃ TatePt m x I π ≃ (Fin 2 → O₁)`, so `O` is nontrivial too.
+The hypothesis block is therefore satisfiable and the leaf is not
+vacuous.
+
+The remaining algebra splits at a clean seam:
+
+* `exists_padicAlgebra_ringHom_of_frameComparison` — TRANSPORT.  `O`
+  inherits from `O₁`, along `g`, everything that makes it a coefficient
+  ring: `q`-adic completeness (hence a `ℤ_q`-algebra structure through
+  `padicIntLiftHom`), finiteness and freeness over `ℤ_q` of the SAME
+  rank as `O₁`, and an injective ring map `ρ : O₁ →+* O` with
+  `ρ ∘ j₁ = j`.
+* `surjective_of_finrank_eq_of_isIntegrallyClosed` — CLOSURE.  Such a
+  `ρ` is automatically surjective.  Pure commutative algebra over
+  `ℤ_q`, with no `𝒪_D`, no frame and no `g`.
+
+Together they give `O ≃+* 𝒪_{D,I}` over `𝒪_D`, which is exactly the
+conclusion the FAITHFULNESS AUDIT below demands be DERIVED rather than
+assumed. -/
+
+open _root_.NumberField in
+/-- **Transport of the coefficient-ring structure along a frame
+comparison** (sorry leaf).
+
+Let `O₁` be a `ℤ_q`-algebra, finite and free over `ℤ_q`, carrying
+`j₁ : 𝒪_D →+* O₁` which is `π`-adically dense (`hdense`) and detects the
+`I`-adic filtration (`hker`) — i.e. `O₁` is the `I`-adic completion
+`𝒪_{D,I}`, pinned exactly as in `exists_adicCoefficientRing`.  Let `O` be
+any commutative ring with `j : 𝒪_D →+* O`, and suppose the two squares
+are related by an ADDITIVE BIJECTION `g` intertwining the two
+`𝒪_D`-actions.  Then `O` is itself a finite free `ℤ_q`-algebra of the
+same rank as `O₁`, and `O₁` sits inside it over `𝒪_D`.
+
+THE ARGUMENT.
+
+1. *`O` is `q`-adically complete.*  `g` is additive and bijective, so it
+   carries the `q`-adic filtration of `Fin 2 → O₁` onto that of
+   `Fin 2 → O`; `O₁` is finite free over `ℤ_q`, hence `q`-adically
+   complete and separated, and so therefore is `Fin 2 → O`.  The ring
+   `O` is an additive direct summand of `Fin 2 → O`, and completeness
+   and separatedness pass to summands.
+2. *Hence `Algebra ℤ_[q] O`*, namely `padicIntLiftHom` of the
+   `PadicIntLift` section above — this is the same construction that
+   gives `𝒪ᵥ` its `ℤ_q`-structure in `padicIntAlgebra`, and it is
+   available for exactly this reason.
+3. *`g` is `ℤ_q`-linear.*  Every ADDITIVE endomorphism of a finite free
+   `ℤ_q`-module is automatically `ℤ_q`-linear: for `c : ℤ_q` and
+   integer approximants `cₖ` with `c - cₖ ∈ qᵏℤ_q`, additivity gives
+   `f (c • y) - cₖ • f y ∈ qᵏ M` and `c • f y - cₖ • f y ∈ qᵏ M`, so the
+   difference lies in `⋂ₖ qᵏ M = 0`.  The same computation applies to
+   `g` itself.  Hence `Fin 2 → O` is `ℤ_q`-free of rank
+   `2 · rank_{ℤ_q} O₁`, and `O`, as a summand, is free of rank
+   `rank_{ℤ_q} O₁`.
+4. *`ρ` exists.*  `O` acts faithfully on `Fin 2 → O` by scalars (test on
+   `u = 1`), so `O` embeds in the additive endomorphism ring, and `g`
+   conjugates "multiplication by `j₁ a`" to "multiplication by `j a`".
+   By `hdense` the `ℤ_q`-submodule spanned by `j₁ (𝒪_D)` satisfies
+   `M + (j₁ π) O₁ = O₁`, and `(j₁ π)` is a proper ideal by `hker` at
+   `n = 1` (`1 ∈ I` is false); `O₁` is a finite `ℤ_q`-algebra, so some
+   power of `(j₁ π)` lies in `(q)` and Nakayama over the local ring
+   `ℤ_q` gives `M = O₁`.  So the subring of endomorphisms generated by
+   `j₁ (𝒪_D)` over `ℤ_q` is all of `O₁`, and its image under the
+   conjugation is a subring of `O`.  That is `ρ`, injective and
+   satisfying `ρ ∘ j₁ = j` and `ρ ∘ algebraMap = algebraMap` by
+   construction.
+
+`hI`, `hqI`, `hπ` and `hπ2` are carried because the `π`-adic bookkeeping
+of step 4 is stated relative to them; `hqI` in particular is what makes
+`(q)` and `(j₁ π)` cofinal filtrations of `O₁`. -/
+theorem exists_padicAlgebra_ringHom_of_frameComparison
+    {D : Type u} [Field D] [NumberField D]
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (𝓞 D)) (hI : I.IsMaximal) (hqI : (q : 𝓞 D) ∈ I)
+    (π : 𝓞 D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O₁ : Type u) [CommRing O₁] [Algebra ℤ_[q] O₁] [Module.Finite ℤ_[q] O₁]
+    [Module.Free ℤ_[q] O₁]
+    (j₁ : 𝓞 D →+* O₁)
+    (hdense : ∀ (n : ℕ) (z : O₁), ∃ a : 𝓞 D, z - j₁ a ∈ Ideal.span {j₁ π} ^ n)
+    (hker : ∀ (n : ℕ) (a : 𝓞 D), j₁ a ∈ Ideal.span {j₁ π} ^ n ↔ a ∈ I ^ n)
+    (O : Type u) [CommRing O] (j : 𝓞 D →+* O)
+    (g : (Fin 2 → O₁) → (Fin 2 → O))
+    (hgadd : ∀ u u' : Fin 2 → O₁, g (u + u') = g u + g u')
+    (hgbij : Function.Bijective g)
+    (hgj : ∀ (a : 𝓞 D) (u : Fin 2 → O₁), g (j₁ a • u) = j a • g u) :
+    ∃ (_ : Algebra ℤ_[q] O) (_ : Module.Finite ℤ_[q] O) (_ : Module.Free ℤ_[q] O)
+      (ρ : O₁ →+* O), Function.Injective ρ ∧
+      (∀ c : ℤ_[q], ρ (algebraMap ℤ_[q] O₁ c) = algebraMap ℤ_[q] O c) ∧
+      (∀ a : 𝓞 D, ρ (j₁ a) = j a) ∧
+      Module.finrank ℤ_[q] O = Module.finrank ℤ_[q] O₁ :=
+  sorry
+
+/-- **An injection of `ℤ_q`-algebras of equal rank out of an integrally
+closed domain is surjective** (sorry leaf — pure commutative algebra;
+Serre, *Local Fields* I, or Neukirch I.2 for the integral-closure step).
+
+THE ARGUMENT.  Write `n` for the common rank and `K` for the fraction
+field of `O₁`.  Since `O₁` is a domain finite over `ℤ_q`, the
+localization `O₁ ⊗_{ℤ_q} ℚ_q` is a field, hence equal to `K`, of
+`ℚ_q`-dimension `n`.  Now `ρ` is an injection of finite free
+`ℤ_q`-modules of equal rank `n`, so `ρ ⊗ ℚ_q : K → O ⊗_{ℤ_q} ℚ_q` is an
+injection of `ℚ_q`-spaces of equal dimension, hence an ISOMORPHISM.
+`O` is `ℤ_q`-free, so `O → O ⊗_{ℤ_q} ℚ_q ≅ K` is injective: `O` is a
+domain, and a subring of `K` containing `O₁`.  Being finite over `ℤ_q`
+it is integral over `O₁`, and `O₁` is integrally closed in `K`, so
+`O ⊆ O₁`.  With `O₁ ⊆ O` that is surjectivity.
+
+WHY EACH HYPOTHESIS IS NEEDED, since each excludes a genuine
+counterexample.  Drop `IsIntegrallyClosed O₁` and take `O₁ = ℤ_q[q√d]`
+inside `O = ℤ_q[√d]` — equal rank, injective, not surjective.  Drop the
+rank equality and take `O₁ = ℤ_q ⊆ O = ℤ_q[√d]`.  Drop `IsDomain O₁`
+and the fraction field of the first paragraph does not exist.  Drop
+`hρZ` and `ρ` need not be `ℤ_q`-linear, so the rank comparison says
+nothing.
+
+Note that `IsDomain O` is NOT a hypothesis — it is part of what the
+argument PROVES, which is the whole point of the leaf as far as
+`exists_algebraicClosureEmbedding_of_tateFrame_mult` is concerned: the
+audit there rejects `IsDomain O` as an ad-hoc assumption and requires it
+to be derived. -/
+theorem surjective_of_finrank_eq_of_isIntegrallyClosed
+    (q : ℕ) [Fact q.Prime]
+    (O₁ : Type u) [CommRing O₁] [IsDomain O₁] [IsIntegrallyClosed O₁]
+    [Algebra ℤ_[q] O₁] [Module.Finite ℤ_[q] O₁] [Module.Free ℤ_[q] O₁]
+    (O : Type u) [CommRing O] [Algebra ℤ_[q] O] [Module.Finite ℤ_[q] O]
+    [Module.Free ℤ_[q] O]
+    (ρ : O₁ →+* O) (hρinj : Function.Injective ρ)
+    (hρZ : ∀ c : ℤ_[q], ρ (algebraMap ℤ_[q] O₁ c) = algebraMap ℤ_[q] O c)
+    (hrank : Module.finrank ℤ_[q] O = Module.finrank ℤ_[q] O₁) :
+    Function.Surjective ρ :=
+  sorry
+
+open _root_.NumberField in
+/-- **An `𝒪_D`-frame comparison identifies the coefficient rings**
+(PROVEN 2026-07-27 over the two leaves above).
+
+If two commutative rings `O₁`, `O` carry ring maps from `𝒪_D` and their
+squares are related by an additive bijection `g` intertwining the two
+`𝒪_D`-actions, and `O₁` is the `I`-adic completion `𝒪_{D,I}` (finite
+free over `ℤ_q`, an integrally closed domain, pinned by `hdense` and
+`hker`), then `O ≃+* O₁` over `𝒪_D`.
+
+This is the algebraic core of
+`exists_algebraicClosureEmbedding_of_tateFrame_mult`, and the reason its
+`Function.Injective ι` clause is derivable rather than assumed. -/
+theorem exists_ringEquiv_of_frameComparison
+    {D : Type u} [Field D] [NumberField D]
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (𝓞 D)) (hI : I.IsMaximal) (hqI : (q : 𝓞 D) ∈ I)
+    (π : 𝓞 D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O₁ : Type u) [CommRing O₁] [IsDomain O₁] [IsIntegrallyClosed O₁]
+    [Algebra ℤ_[q] O₁] [Module.Finite ℤ_[q] O₁] [Module.Free ℤ_[q] O₁]
+    (j₁ : 𝓞 D →+* O₁)
+    (hdense : ∀ (n : ℕ) (z : O₁), ∃ a : 𝓞 D, z - j₁ a ∈ Ideal.span {j₁ π} ^ n)
+    (hker : ∀ (n : ℕ) (a : 𝓞 D), j₁ a ∈ Ideal.span {j₁ π} ^ n ↔ a ∈ I ^ n)
+    (O : Type u) [CommRing O] (j : 𝓞 D →+* O)
+    (g : (Fin 2 → O₁) → (Fin 2 → O))
+    (hgadd : ∀ u u' : Fin 2 → O₁, g (u + u') = g u + g u')
+    (hgbij : Function.Bijective g)
+    (hgj : ∀ (a : 𝓞 D) (u : Fin 2 → O₁), g (j₁ a • u) = j a • g u) :
+    ∃ e : O ≃+* O₁, ∀ a : 𝓞 D, e (j a) = j₁ a := by
+  obtain ⟨iAlg, iFin, iFree, ρ, hρinj, hρZ, hρj, hrank⟩ :=
+    exists_padicAlgebra_ringHom_of_frameComparison q I hI hqI π hπ hπ2 O₁ j₁ hdense hker
+      O j g hgadd hgbij hgj
+  letI := iAlg; letI := iFin; letI := iFree
+  have hsurj : Function.Surjective ρ :=
+    surjective_of_finrank_eq_of_isIntegrallyClosed q O₁ O ρ hρinj hρZ hrank
+  refine ⟨(RingEquiv.ofBijective ρ ⟨hρinj, hsurj⟩).symm, fun a => ?_⟩
+  exact (RingEquiv.ofBijective ρ ⟨hρinj, hsurj⟩).symm_apply_eq.mpr (hρj a).symm
+
+/-- **An injective ring map from a finite `ℤ_ℓ`-algebra domain into
+`ℚ̄_ℓ`** (PROVEN).  Factor through `FractionRing O`, which is algebraic
+over `ℤ_ℓ` because `O` is finite and torsion-free over it, and lift into
+the algebraically closed target with `IsAlgClosed.lift`.
+
+This is a REPRODUCTION of `exists_injective_ringHom_algebraicClosure_of_moduleFinite`
+in the DOWNSTREAM `Modularity/KhareWintenberger.lean`, which imports this
+module and is therefore unusable from here — the same situation as
+`adicArithFrob_rootsOfUnity_pow_absNorm` and
+`cyclotomicCharacter_adicArithFrob_absNorm` above, and with the same
+intended cleanup: delete the downstream copy, not this one. -/
+theorem exists_injective_ringHom_algebraicClosure_of_padicModuleFinite {ℓ : ℕ}
+    [Fact ℓ.Prime] (O : Type*) [CommRing O] [IsDomain O] [Algebra ℤ_[ℓ] O]
+    [Module.Finite ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O)) :
+    ∃ ι : O →+* AlgebraicClosure ℚ_[ℓ], Function.Injective ι := by
+  classical
+  -- the fraction field of `O`, an algebraic torsion-free `ℤ_ℓ`-algebra
+  have hOK : Function.Injective (algebraMap O (FractionRing O)) :=
+    IsFractionRing.injective O (FractionRing O)
+  haveI : Module.IsTorsionFree ℤ_[ℓ] O :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : IsScalarTower ℤ_[ℓ] O (FractionRing O) :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : Module.IsTorsionFree ℤ_[ℓ] (FractionRing O) :=
+    Module.isTorsionFree_iff_faithfulSMul.mpr inferInstance
+  haveI : Algebra.IsAlgebraic ℤ_[ℓ] (FractionRing O) :=
+    (IsFractionRing.isAlgebraic_iff' ℤ_[ℓ] O (FractionRing O)).1 inferInstance
+  -- `ℚ̄_ℓ` as a torsion-free `ℤ_ℓ`-algebra through `ℤ_ℓ → ℚ_ℓ → ℚ̄_ℓ`
+  letI : Algebra ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ]) :=
+    ((algebraMap ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])).comp
+      (algebraMap ℤ_[ℓ] ℚ_[ℓ])).toAlgebra
+  haveI : Module.IsTorsionFree ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ]) :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr
+      (fun _ _ hxy => IsFractionRing.injective ℤ_[ℓ] ℚ_[ℓ]
+        ((algebraMap ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])).injective hxy))
+  -- lift the algebraic extension into the algebraically closed target
+  refine ⟨(IsAlgClosed.lift (R := ℤ_[ℓ]) (S := FractionRing O)
+    (M := AlgebraicClosure ℚ_[ℓ])).toRingHom.comp
+      (algebraMap O (FractionRing O)), fun _ _ hxy => hOK ?_⟩
+  exact RingHom.injective _ hxy
+
+open _root_.NumberField in
 /-- **The coefficient ring of an `𝒪_D`-frame of the Tate module is
-`𝒪_{D,I}`, hence embeds in `ℚ̄_q` compatibly with `D`** (sorry leaf —
-the commutative-algebra half of `exists_weilFrobeniusSystem_of_mult`).
+`𝒪_{D,I}`, hence embeds in `ℚ̄_q` compatibly with `D`** (PROVEN
+2026-07-27 over `exists_ringEquiv_of_frameComparison` — i.e. over the
+two commutative-algebra leaves
+`exists_padicAlgebra_ringHom_of_frameComparison` and
+`surjective_of_finrank_eq_of_isIntegrallyClosed` — plus the PROVEN
+`exists_tateFrame_of_adicCoefficientRing`; the commutative-algebra half
+of `exists_weilFrobeniusSystem_of_mult`).
 
 Given a frame `(O, τ, φ)` of `TatePt m x I π` which REMEMBERS THE REAL
 MULTIPLICATION — i.e. carries `j : 𝒪_D →+* O` with the intertwining
 `hj` — there are a ring map `ψ : D →+* ℚ̄_q`, an INJECTIVE ring map
 `ι : O →+* ℚ̄_q`, and the compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.
 
-THE ARGUMENT (this is the guidance the repairer of the sibling left for
-its prover, and it is recorded here because this is now where it is
-owed).  Do NOT look for a hypothesis that hands you `Function.Injective
-ι`, and do NOT reintroduce `IsDomain O`: derive `O = 𝒪_{D,I}` instead.
+HOW IT IS PROVEN (2026-07-27).  The step that removes the geometry is
+the FRAME COMPARISON of the subsection above: the honest frame `φ₁` by
+`O₁ := 𝒪_{D,I}` at the same `(q, I, π)` already exists, PROVEN, as
+`exists_tateFrame_of_adicCoefficientRing`, so `g := φ⁻¹ ∘ φ₁` is an
+additive bijection `(Fin 2 → O₁) → (Fin 2 → O)` intertwining the two
+`𝒪_D`-actions.  `exists_ringEquiv_of_frameComparison` then returns
+`e : O ≃+* O₁` with `e ∘ j = j₁`, and the two embeddings are read off
+`O₁` alone: `ι = ι₁ ∘ e` with `ι₁` from
+`exists_injective_ringHom_algebraicClosure_of_padicModuleFinite`, and
+`ψ = IsFractionRing.lift (ι₁ ∘ j₁)`, which is legitimate because
+`𝒪_D ↪ 𝒪_{D,I} ↪ ℚ̄_q` is injective and `D` is the fraction field of
+`𝒪_D`.  The compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)` is then
+`IsFractionRing.lift_algebraMap`, and `Function.Injective ι` is a
+composite of two injections — DERIVED, exactly as the audit demands.
+
+Note that `hφequiv` and `τ` are indeed never used, as predicted below,
+and neither is `hdim` except through `exists_tateFrame_of_adicCoefficientRing`.
+
+THE ARGUMENT the repairer of the sibling left for its prover is recorded
+below; it is now discharged by the two leaves above, and steps 1–3 are
+what `exists_padicAlgebra_ringHom_of_frameComparison` and
+`surjective_of_finrank_eq_of_isIntegrallyClosed` say.  Do NOT look for a
+hypothesis that hands you `Function.Injective ι`, and do NOT reintroduce
+`IsDomain O`: derive `O = 𝒪_{D,I}` instead.
 
 1. `O` is a `ℤ_q`-algebra, finite and free.  Nothing says so, but `φ`
    forces `O ⊕ O ≅ T ≅ ℤ_q^{2d}` as abelian groups, and every additive
@@ -6755,8 +7024,89 @@ theorem exists_algebraicClosureEmbedding_of_tateFrame_mult
     ∃ (ψ : D →+* AlgebraicClosure ℚ_[q]) (ι : O →+* AlgebraicClosure ℚ_[q]),
       Function.Injective ι ∧
       ∀ a : NumberField.RingOfIntegers D,
-        ι (j a) = ψ (algebraMap (NumberField.RingOfIntegers D) D a) :=
-  sorry
+        ι (j a) = ψ (algebraMap (NumberField.RingOfIntegers D) D a) := by
+  haveI := hq
+  classical
+  -- `I` is nonzero: it contains the rational prime `q`.
+  have hI0 : I ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot, Nat.cast_eq_zero] at hqI
+    exact (Fact.out : q.Prime).ne_zero hqI
+  let v : HeightOneSpectrum (𝓞 D) := ⟨I, hI.isPrime, hI0⟩
+  -- The HONEST coefficient ring `𝒪_{D,I}` and its `ℤ_q`-structure.
+  letI iAlg₁ : Algebra ℤ_[q] (v.adicCompletionIntegers D) := padicIntAlgebra v q hqI
+  obtain ⟨iFin₁, iFree₁, iMT₁⟩ := module_finite_free_moduleTopology_padicIntAlgebra v q hqI
+  haveI := iFin₁; haveI := iFree₁; haveI := iMT₁
+  have hcplt : IsAdicComplete
+      (Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π})
+      (v.adicCompletionIntegers D) :=
+    isAdicComplete_span_uniformizer v π hπ hπ2
+  have hdense : ∀ (n : ℕ) (z : v.adicCompletionIntegers D),
+      ∃ a : 𝓞 D, z - algebraMap (𝓞 D) (v.adicCompletionIntegers D) a ∈
+        Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π} ^ n :=
+    fun n z => exists_sub_mem_span_uniformizer_pow v π hπ hπ2 n z
+  have hker : ∀ (n : ℕ) (a : 𝓞 D),
+      algebraMap (𝓞 D) (v.adicCompletionIntegers D) a ∈
+        Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π} ^ n ↔ a ∈ I ^ n :=
+    fun n a => mem_span_uniformizer_pow_iff v π hπ hπ2 n a
+  -- The HONEST frame at the same `(q, I, π)`.
+  obtain ⟨τ₁, φ₁, hφadd₁, hφbij₁, hφequiv₁, hφj₁⟩ :=
+    exists_tateFrame_of_adicCoefficientRing m x hdim q I hI hqI π hπ hπ2
+      (v.adicCompletionIntegers D) (algebraMap (𝓞 D) (v.adicCompletionIntegers D))
+      hcplt hdense hker
+  -- The comparison `g = φ⁻¹ ∘ φ₁`, characterized by `φ ∘ g = φ₁`.
+  obtain ⟨g, hgdef⟩ :
+      ∃ g : (Fin 2 → v.adicCompletionIntegers D) → (Fin 2 → O), ∀ u, φ (g u) = φ₁ u := by
+    refine ⟨fun u => (Equiv.ofBijective φ hφbij).symm (φ₁ u), fun u => ?_⟩
+    exact (Equiv.ofBijective φ hφbij).apply_symm_apply (φ₁ u)
+  have hgadd : ∀ u u' : Fin 2 → v.adicCompletionIntegers D, g (u + u') = g u + g u' := by
+    intro u u'
+    refine hφbij.1 (Subtype.ext (funext fun n => ?_))
+    rw [hgdef, hφadd, hgdef, hgdef, hφadd₁]
+  have hgbij : Function.Bijective g := by
+    constructor
+    · intro u u' huu
+      exact hφbij₁.1 (by rw [← hgdef, ← hgdef, huu])
+    · intro w
+      obtain ⟨u, hu⟩ := hφbij₁.2 (φ w)
+      exact ⟨u, hφbij.1 (by rw [hgdef, hu])⟩
+  have hgj : ∀ (a : 𝓞 D) (u : Fin 2 → v.adicCompletionIntegers D),
+      g (algebraMap (𝓞 D) (v.adicCompletionIntegers D) a • u) = j a • g u := by
+    intro a u
+    refine hφbij.1 (Subtype.ext (funext fun n => ?_))
+    rw [hgdef, hj, hgdef, hφj₁]
+  -- The pinning: the frame's coefficient ring IS `𝒪_{D,I}`.
+  obtain ⟨e, he⟩ :=
+    exists_ringEquiv_of_frameComparison q I hI hqI π hπ hπ2 (v.adicCompletionIntegers D)
+      (algebraMap (𝓞 D) (v.adicCompletionIntegers D)) hdense hker O j g hgadd hgbij hgj
+  -- `𝒪_{D,I}` embeds into `ℚ̄_q`, injectively.
+  have hj₁inj : Function.Injective (algebraMap (𝓞 D) (v.adicCompletionIntegers D)) :=
+    FaithfulSMul.algebraMap_injective (𝓞 D) (v.adicCompletionIntegers D)
+  have hqne : (q : v.adicCompletionIntegers D) ≠ 0 := by
+    intro h0
+    refine (Fact.out : q.Prime).ne_zero ?_
+    have : ((q : 𝓞 D)) = 0 := hj₁inj (by simpa using h0)
+    exact_mod_cast this
+  have hZinj : Function.Injective (algebraMap ℤ_[q] (v.adicCompletionIntegers D)) := by
+    rw [injective_iff_map_eq_zero]
+    intro c hc
+    by_contra hcne
+    rw [PadicInt.unitCoeff_spec hcne, map_mul, map_pow, map_natCast] at hc
+    rcases mul_eq_zero.mp hc with h | h
+    · exact ((PadicInt.unitCoeff hcne).isUnit.map
+        (algebraMap ℤ_[q] (v.adicCompletionIntegers D))).ne_zero h
+    · exact hqne (pow_eq_zero_iff'.mp h).1
+  obtain ⟨ι₁, hι₁inj⟩ :=
+    exists_injective_ringHom_algebraicClosure_of_padicModuleFinite (ℓ := q)
+      (v.adicCompletionIntegers D) hZinj
+  -- `ψ` is the place of `D` over `q` determined by `I`: the fraction-field
+  -- extension of the injective `𝒪_D → 𝒪_{D,I} → ℚ̄_q`.
+  have hgψ : Function.Injective
+      (ι₁.comp (algebraMap (𝓞 D) (v.adicCompletionIntegers D))) := hι₁inj.comp hj₁inj
+  refine ⟨IsFractionRing.lift (A := 𝓞 D) (K := D) hgψ, ι₁.comp e.toRingHom,
+    hι₁inj.comp e.injective, fun a => ?_⟩
+  rw [RingHom.comp_apply, show e.toRingHom (j a) = e (j a) from rfl, he a]
+  exact (IsFractionRing.lift_algebraMap (K := D) hgψ a).symm
 
 /-! #### The arithmetic half, cut into RATIONALITY and INDEPENDENCE
 
