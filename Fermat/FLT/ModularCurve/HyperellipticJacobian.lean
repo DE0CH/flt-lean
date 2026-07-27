@@ -81,9 +81,24 @@ the kernel:
   the structural identity behind `disc f = −2¹⁵·3⁴`; see its docstring for the
   `σ`-derivation, the genus-`0` quotient conic `z² = t² − 4t + 12`, and the
   cyclic-cubic fibration.
-* `X18.affine_rational_points` (PROVEN from the leaf below, 2026-07-27) — the
-  affine rational points of `X_1(18)` are `(0, ±1)` and `(1, ±1)`.  It carries
-  the whole `ℚ`-to-`ℤ` passage.
+* `X13.sext13_eq_sq_add_four_sq` and `X13.hsext13_eq_sq_add_four_sq` (PROVEN,
+  `ring`, axiom-clean, 2026-07-27) — the exact level-`13` analogue:
+  `f = (x³ + x² − 2x − 1)² + 4(x² + x)²`, the PRINCIPAL form of discriminant
+  `−16`, i.e. a norm form from `ℤ[i]`.  **This REFUTES the paragraph headed
+  "NOT ANALOGOUS AT LEVEL 13" in `X18.abd_eq_zero_of_sq_eq`'s route audit**,
+  which asserts no such identity exists; that argument only forces the top two
+  coefficients of the cube, not its linear one.  See the docstring for the
+  refutation, the `σ`-derivation, the quotient conic `z² = t² − 4t + 8`, and the
+  Shanks simplest-cubic fibration with the SAME discriminant `(t² − 3t + 9)²` as
+  at level `18`.
+* `holds_num_den_of_sq_eq_sext` and `eq_intCast_of_num_eq_mul_den` (PROVEN,
+  axiom-clean, 2026-07-27) — the `ℚ`-to-`ℤ` passage and the reading-off of a
+  degenerate abscissa, stated GENERICALLY for an arbitrary sextic, so neither
+  level has to open-code them.
+* `X18.affine_rational_points` and `X13.affine_rational_points` (both PROVEN
+  from the leaves below, 2026-07-27) — the affine rational points of `X_1(18)`
+  are `(0, ±1)` and `(1, ±1)`; those of `X_1(13)` are `(0, ±1)` and `(−1, ±1)`.
+  They carry the whole `ℚ`-to-`ℤ` passage.
 
 ## The remaining leaves — one per level, and the SAME statement shape
 
@@ -92,14 +107,14 @@ the kernel:
 `C̃ = a³ − 2a²b − ab² + b³` and `B̃ = ab(a − b)`.  A statement about integers
 only: no rationals, no denominators, no `redPt`, no `Classical.choose`.
 
-`X13.affine_rational_points` — the affine rational points of `X_1(13)` are
-`(0, ±1)` and `(−1, ±1)`.
+`X13.abd_eq_zero_of_sq_eq` — for coprime `a, b : ℤ`, if
+`t² = C̃(a, b)² + 4·B̃(a, b)²` then `ab(a + b) = 0`, where
+`C̃ = a³ + a²b − 2ab² − b³` and `B̃ = ab(a + b)`.  Same shape, same purity.
 
-The two chains ran the same route at different speeds.  Level `18` reached
-`affine_rational_points` on 2026-07-26 and went one step further on 2026-07-27,
-to `abd_eq_zero_of_sq_eq`; level `13` reached `affine_rational_points` on
-2026-07-27.  Every replacement is an EQUIVALENCE, so no statement was weakened
-at any step:
+The two chains ran the same route and, since 2026-07-27, have reached the same
+stage: both levels are now down to an integral sextic Diophantine leaf, and
+`X13.affine_rational_points` and `X18.affine_rational_points` are both PROVEN.
+Every replacement is an EQUIVALENCE, so no statement was weakened at any step:
 
 * `exists_jacobianPackage ↔ redPt_injective` (at either prime) by
   `redPt_injective` and `nonempty_jacobianPackage_of_redPt_injective`, both
@@ -111,10 +126,14 @@ at any step:
   `y² = 1 ⟹ y = ±1` at the two cuspidal abscissae); the backwards direction is
   written out in `affine_rational_points`' docstring rather than as a
   declaration, since nothing in the root cone consumes it.
-* `affine_rational_points ↔ abd_eq_zero_of_sq_eq` (level `18` only, so far) by
-  `exists_int_coords` and `hsext18_eq_sq_add_eight_sq` forwards (the direction
-  that is written), and by `x := a/b` backwards; the two differ only by
-  clearing denominators.
+* `affine_rational_points ↔ abd_eq_zero_of_sq_eq` (BOTH levels since
+  2026-07-27) by `exists_int_coords` and the level's sum-of-squares identity
+  forwards (the direction that is written), and by `x := a/b` backwards; the two
+  differ only by clearing denominators.  At level `13` the forward direction
+  goes through the GENERIC bridge `holds_num_den_of_sq_eq_sext`, which states
+  the whole `ℚ`-to-`ℤ` passage once for an arbitrary sextic; level `18` still
+  open-codes it and can be rewritten over the bridge without changing either its
+  statement or its leaf.
 
 What each step removed is a layer of Lean-specific interface: first the
 obligation to exhibit a *structure*, then the obligation to reason about a
@@ -292,6 +311,38 @@ lemma exists_int_coords (x y : ℚ) (h : y ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c
   have hkey := key
   rw [← Rat.coe_int_num_of_den_eq_one hden] at hkey
   exact_mod_cast hkey
+
+/-- **THE `ℚ`-TO-`ℤ` BRIDGE, STATED GENERICALLY** (PROVEN, for an ARBITRARY
+sextic).  `(x.num, x.den)` is a COPRIME integral solution of the homogeneous
+form, so any property `P` of coprime integral solutions of `t² = F(a, b)`
+transfers to every rational point `(x, y)` of `y² = sext x`.
+
+This packages the whole passage from `ℚ` to `ℤ` — denominators, the integrality
+of `y · den³`, and coprimality — ONCE and for all levels, so a level-specific
+Diophantine leaf never has to restate it.  It is the generic form of the step
+that `X18.affine_rational_points` and `X13.affine_rational_points` each perform
+by hand; `X13` is written over it below, and `X18` can be rewritten over it
+without changing its statement or its leaf. -/
+lemma holds_num_den_of_sq_eq_sext (P : ℤ → ℤ → Prop)
+    (hP : ∀ a b t : ℤ, Int.gcd a b = 1 →
+      t ^ 2 = hsext c₀ c₁ c₂ c₃ c₄ c₅ a b → P a b)
+    (x y : ℚ) (h : y ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ x) :
+    P x.num (x.den : ℤ) := by
+  obtain ⟨t, -, ht⟩ := exists_int_coords c₀ c₁ c₂ c₃ c₄ c₅ x y h
+  refine hP x.num (x.den : ℤ) t ?_ ht
+  rw [Int.gcd_def]
+  exact x.reduced
+
+/-- **Reading off a degenerate abscissa** (PROVEN): `x.num = k · x.den` forces
+`x = k`.  Generic in `k`, so it serves every level: `k = 0` gives `x = 0`,
+`k = 1` gives `x = 1` (level `18`), `k = −1` gives `x = −1` (level `13`). -/
+lemma eq_intCast_of_num_eq_mul_den (x : ℚ) (k : ℤ)
+    (h : x.num = k * (x.den : ℤ)) : x = (k : ℚ) := by
+  have hd : ((x.den : ℚ)) ≠ 0 := by exact_mod_cast x.den_ne_zero
+  have hnum : ((x.num : ℚ)) = (k : ℚ) * (x.den : ℚ) := by exact_mod_cast h
+  have hx := Rat.num_div_den x
+  rw [hnum, mul_div_assoc, div_self hd, mul_one] at hx
+  exact hx.symm
 
 end IntCoords
 
@@ -512,9 +563,9 @@ does satisfy every field — and **not** as an independent statement of the
 four-part Jacobian project.  The project is the content of the injectivity,
 which at both levels is itself PROVEN from the Diophantine determination of
 `X(ℚ)` (level `18` on 2026-07-26, level `13` on 2026-07-27); the sorries now
-live further down, at `X18.abd_eq_zero_of_sq_eq` — the integral form of that
-determination, one step beyond `X18.affine_rational_points` since 2026-07-27 —
-and at `X13.affine_rational_points`.
+live further down, at `X18.abd_eq_zero_of_sq_eq` and `X13.abd_eq_zero_of_sq_eq`
+— the integral forms of that determination, one step beyond
+`affine_rational_points` at each level since 2026-07-27.
 
 This matters for anyone auditing the leaf count: closing `exists_jacobianPackage`
 below is *not* progress on abelian varieties.  It is the removal of an interface
@@ -995,10 +1046,170 @@ satisfies the formal-group hypothesis `p > e + 1 = 2` that
 `red_ker_torsionFree` needs. -/
 theorem card_X13_F3 : Fintype.card (Pt 1 4 6 2 1 2 (ZMod 3)) = 6 := by decide
 
-/-- **THE REMAINING LEAF, now in purely Diophantine form: the affine rational
-points of `X_1(13)` are its four finite cusps.**
+/-- **The `X_1(13)` sextic is a SUM OF TWO SQUARES — a norm form from `ℤ[i]`**
+(PROVEN, `ring`):
 
-This *replaces* the former leaf `redPt_injective_three`, which is now PROVEN
+`x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1 = (x³ + x² − 2x − 1)² + 4(x² + x)²`.
+
+**THIS REFUTES A CLAIM DOCUMENTED ELSEWHERE IN THIS FILE** (2026-07-27).  The
+ROUTE AUDIT on `X18.abd_eq_zero_of_sq_eq` closes with a paragraph headed *"NOT
+ANALOGOUS AT LEVEL 13"*, asserting that level `13` has **no** identity of the
+shape `C² + kB²` with `B` quadratic, on the ground that "the polynomial square
+root is forced to be `x³ + x² + 1`, and the remainder is `4x² + 4x`, which is
+not a constant times a square".  **That inference is wrong.**  `kB²` has degree
+`4`, so it contributes to the `x⁴` coefficient of `C² + kB²`; only the TOP TWO
+coefficients of `C` are forced, and its linear coefficient is free.  Taking that
+coefficient to be `−2` rather than `0` — `C = x³ + x² − 2x − 1` in place of
+`x³ + x² + 1` — gives the identity above, verified here by `ring` and so by the
+kernel.  The `√−2` structure at level `18` therefore **does** have a level-`13`
+analogue, namely `√−1`; the two levels are parallel after all.
+
+**The refuting check, in one line**: expand `(x³ + x² − 2x − 1)² + 4(x² + x)²`.
+That paragraph should be corrected by the owner of `X18.abd_eq_zero_of_sq_eq`;
+it is not edited here because it lies in another agent's region.
+
+**What the audit's conclusion DOES survive**, and it is the important half: the
+resulting descent is still reversible, so the identity buys no elementary route.
+See `abd_eq_zero_of_sq_eq` below, where that is worked out for `ℤ[i]`.
+
+**Where the identity comes from**, by the same `σ`-semi-invariant construction
+the level-`18` docstring describes.  The order-`3` automorphism acts on the
+`x`-line by `τ(x) = −1/(x + 1)`.  For the weight-`3` action
+`(S₃g)(x) = g(τx)·(x + 1)³` the `(−1)`-eigenspace is TWO-dimensional, spanned by
+
+* `A(x) = x³ + 3x² − 1`, since `A(τx)(x + 1)³ = −1 + 3(x + 1) − (x + 1)³ = −A(x)`;
+* `B(x) = x² + x`, since `B(τx)(x + 1)³ = (x + 1) − (x + 1)² = −B(x)`.
+
+Every product of two of them is therefore a weight-`6` INVARIANT, and the sextic
+is the binary quadratic form
+
+    f = A² − 4AB + 8B²,
+
+of discriminant `16 − 32 = −16`.  Completing the square with
+`C := A − 2B = x³ + x² − 2x − 1` puts it in the PRINCIPAL form of that
+discriminant, `C² + 4B²`, which is the statement below.
+
+Two corollaries worth recording, because each replaces a separate computation:
+
+* the `σ`-invariance asserted in the reconnaissance on `affine_rational_points`
+  is now a CONSEQUENCE, not an independent check:
+  `f(τx)(x + 1)⁶ = (−A)² − 4(−A)(−B) + 8(−B)² = f(x)`;
+* the genus-`0` quotient is explicit.  With `t := A/B` the identity reads
+  `y² = B²·(t² − 4t + 8)`, so `X/⟨σ⟩` is the conic `z² = t² − 4t + 8`, which
+  carries the rational point `(t, z) = (2, 2)` and hence is `≅ P¹`.  The fibre
+  over `t` is the cubic `X³ + (3 − t)X² − tX − 1`, which is Shanks' SIMPLEST
+  CUBIC with parameter `s = t − 3` (`X³ − sX² − (s + 3)X − 1`), of discriminant
+  `(s² + 3s + 9)² = (t² − 3t + 9)²` — a square, hence cyclic, which is the same
+  `ℤ/3` again.  The expression `t² − 3t + 9` is literally the one that appears
+  at level `18`: *that*, and not the quadratic form, is what is generic across
+  the two levels. -/
+theorem sext13_eq_sq_add_four_sq {R : Type*} [CommRing R] (x : R) :
+    sext 1 4 6 2 1 2 x
+      = (x ^ 3 + x ^ 2 - 2 * x - 1) ^ 2 + 4 * (x ^ 2 + x) ^ 2 := by
+  simp only [sext]
+  push_cast
+  ring
+
+/-- The homogeneous form of `sext13_eq_sq_add_four_sq` (PROVEN, `ring`):
+`F(a, b) = C̃(a, b)² + 4·B̃(a, b)²` with `C̃ = a³ + a²b − 2ab² − b³` and
+`B̃ = ab(a + b)`, the degree-`3` homogenisations of `C` and `B`. -/
+theorem hsext13_eq_sq_add_four_sq (a b : ℤ) :
+    hsext 1 4 6 2 1 2 a b
+      = (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) ^ 2 + 4 * (a * b * (a + b)) ^ 2 := by
+  simp only [hsext]
+  ring
+
+/-- **THE LEAF, in integral homogeneous form: a coprime integral point of
+`X_1(13)` is degenerate.**
+
+`t² = C̃(a, b)² + 4·B̃(a, b)²` with `gcd(a, b) = 1` forces `ab(a + b) = 0`, i.e.
+`x = a/b ∈ {0, −1, ∞}`.  Its consumer `affine_rational_points` is PROVEN over it
+and discharges the whole `ℚ`-to-`ℤ` passage (through the generic bridge
+`holds_num_den_of_sq_eq_sext`), so what remains is a statement about INTEGERS
+only: no rationals, no denominators, no `redPt`, no `Classical.choose`, no
+weighted-projective coordinates.
+
+**HONEST ACCOUNTING.**  This is *equivalent* to `affine_rational_points`, not
+weaker; it is the same arithmetic in the coordinates the literature uses.  The
+net leaf count is unchanged at one, and **this is not progress on abelian
+varieties**.  What was bought is (a) one fewer layer of Lean bookkeeping, shared
+generically with level `18`, and (b) the elimination of the `ℤ[i]` descent as a
+candidate route — which, unlike at level `18`, was not previously known to be a
+dead end, because the identity it rests on was believed not to exist.
+
+**ROUTE AUDIT: THE `ℤ[i]` DESCENT IS REVERSIBLE AND THEREFORE GAINS NOTHING.**
+A negative result, established 2026-07-27, recorded so nobody spends the cycle
+again.  The identity invites the classical descent, and the descent goes through
+completely:
+
+* `C̃` is ODD for every coprime `(a, b)`: mod `2`, `C̃ ≡ a³ + a²b + b³`, whose
+  values at the three coprime residues `(1,0), (0,1), (1,1)` are all `1`;
+* `gcd(C̃, B̃) = 1`, since `C̃ ≡ −b³ (mod a)`, `C̃ ≡ a³ (mod b)` and
+  `C̃ ≡ b³ (mod a + b)`, while `a`, `b`, `a + b` are pairwise coprime;
+* hence `t² = C̃² + (2B̃)²` is a PRIMITIVE Pythagorean triple with `t` odd, so
+  `m := (t − C̃)/2` and `n := (t + C̃)/2` are coprime integers with `mn = B̃²`.
+  Normalising `t > 0` makes both positive, so `m = u²`, `n = v²` with
+  `gcd(u, v) = 1`, and
+
+      C̃(a, b) = v² − u²    and    B̃(a, b) = u·v.
+
+**And that system is EQUIVALENT to the original**: given any coprime `u, v`,
+`(u² + v²)² = (v² − u²)² + 4(uv)²`, so `t = ±(u² + v²)` recovers the point.  The
+descent is a bijection, not a reduction — exactly what to expect, since the
+class number of the relevant order is `1` and its units are `±1`, so there is no
+Selmer bookkeeping for it to expose.
+
+**The refuting check, so this audit can be overturned cheaply**: it would be
+wrong if the order had class number `> 1` or units beyond `±1`.  It does not —
+`h(−16) = 1`, and `A² + 4B²` is the principal form of discriminant `−16` (the
+only other reduced form of that discriminant, `2A² + 2B²`, is imprimitive).  A
+descent that *does* gain something must therefore come from elsewhere: the
+`ℤ[ζ₃]`-action, i.e. a `(1 − ζ₃)`-descent on `J`, not from `√−1`.
+
+Two further dead ends checked the same day, both mirroring level `18`:
+
+* here `C̃` factors further, as `(v − u)(v + u)` — level `18`'s `C̃ = p² − 2q²`
+  does not — but this gains nothing, because `a`, `b`, `a + b` being pairwise
+  coprime does NOT force each of them wholesale into `u` or into `v`:
+  `gcd(u, v) = 1` only splits each of them between the two.  So the tempting
+  eight-case enumeration is a proper SUBSET of the solutions, not a case
+  division;
+* the sextic is irreducible with Galois group `F₁₈(6) = 3 ≀ 2`, so there is no
+  factorisation to descend along and no elementary two-cover route; and
+  `J_1(13)` is `ℚ`-simple of `GL₂`-type, so no quotient to a rank-`0` elliptic
+  curve exists.
+
+**NUMERICAL CORROBORATION** (exact integer arithmetic, untrusted searcher, so a
+claim to be re-derived and not a proof): over all coprime `(a, b)` with
+`|a| ≤ 400` and `1 ≤ b ≤ 400`, the only solutions of `t² = C̃² + 4B̃²` have
+`B̃ = ab(a + b) = 0`.  That is a considerably wider search than the
+`|a| ≤ 60`, `b ≤ 30` one recorded on `affine_rational_points`.  The same run
+confirms the two structural claims above: `C̃` is odd, and `gcd(C̃, B̃) = 1`,
+on every coprime pair in the range.
+
+**What is still needed** is unchanged and is the four-part project recorded on
+`affine_rational_points` and in the module docstring: `Pic⁰` of a genus-`2`
+curve, Abel–Jacobi, good reduction at `3` with torsion-free kernel, and
+`rank J(ℚ) = 0` — with `#J(𝔽₃) = 19 = #J(ℚ)` as the sharp target.  Equivalently
+a Chabauty–Coleman or Mordell–Weil-sieve argument.  Nothing shorter is known to
+the author of this docstring. -/
+theorem abd_eq_zero_of_sq_eq (a b t : ℤ) (hab : Int.gcd a b = 1)
+    (ht : t ^ 2 = (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) ^ 2
+              + 4 * (a * b * (a + b)) ^ 2) :
+    a * b * (a + b) = 0 := sorry
+
+/-- **The affine rational points of `X_1(13)` are its four finite cusps.**
+
+**PROVEN since 2026-07-27** from the integral leaf `abd_eq_zero_of_sq_eq`
+above, through the identity `hsext13_eq_sq_add_four_sq` and the generic bridge
+`holds_num_den_of_sq_eq_sext`.  What that step discharges is the whole passage
+from `ℚ` to `ℤ` — denominators, the integrality of `y · den³`, coprimality of
+`(num, den)`, and the reading off of `y = ±1` at the two surviving abscissae —
+so no later attack has to redo it.  This mirrors what was done at level `18`,
+except that the bridge is now stated once, generically, for an arbitrary sextic
+rather than open-coded per level.
+
+This *replaced* the former leaf `redPt_injective_three`, which is now PROVEN
 from it below, and which had itself replaced `exists_jacobianPackage`.  Nothing
 has been weakened at either step, because each is an EQUIVALENCE:
 
@@ -1013,10 +1224,11 @@ has been weakened at either step, because each is an EQUIVALENCE:
 
 What each step removed is a layer of Lean-specific interface: first the
 obligation to exhibit a *structure*, then the obligation to reason about a
-`Classical.choose`n reduction map.  What is left is one sextic Diophantine
-equation, mentioning neither `redPt` nor weighted-projective coordinates nor
-reduction at all.  **Neither step is progress on abelian varieties**, and the
-leaf count is unchanged at one throughout.
+`Classical.choose`n reduction map, and finally the passage from `ℚ` to `ℤ`.
+What is left, in `abd_eq_zero_of_sq_eq`, is one sextic Diophantine equation over
+the integers, mentioning neither `redPt` nor weighted-projective coordinates nor
+reduction nor denominators at all.  **No step of this is progress on abelian
+varieties**, and the leaf count is unchanged at one throughout.
 
 This is exactly the shape of `X18.affine_rational_points`, and deliberately so:
 the machinery that computes `redPt` at a concrete point (`ptData`,
@@ -1087,8 +1299,30 @@ six cusps, which is the classical statement that no elliptic curve over `ℚ` ha
 a rational point of order `13`. -/
 theorem affine_rational_points (x y : ℚ)
     (h : y ^ 2 = sext 1 4 6 2 1 2 x) :
-    (x = 0 ∧ y = 1) ∨ (x = 0 ∧ y = -1) ∨ (x = -1 ∧ y = 1) ∨ (x = -1 ∧ y = -1) :=
-  sorry
+    (x = 0 ∧ y = 1) ∨ (x = 0 ∧ y = -1) ∨ (x = -1 ∧ y = 1) ∨ (x = -1 ∧ y = -1) := by
+  have hzero : x.num * (x.den : ℤ) * (x.num + (x.den : ℤ)) = 0 := by
+    refine holds_num_den_of_sq_eq_sext 1 4 6 2 1 2
+      (fun a b => a * b * (a + b) = 0) (fun a b t hab ht => ?_) x y h
+    exact abd_eq_zero_of_sq_eq a b t hab (by rw [hsext13_eq_sq_add_four_sq] at ht; exact ht)
+  have hden : ((x.den : ℤ)) ≠ 0 := by exact_mod_cast x.den_ne_zero
+  have hx : x = 0 ∨ x = -1 := by
+    rcases mul_eq_zero.mp hzero with h1 | h2
+    · rcases mul_eq_zero.mp h1 with h3 | h4
+      · exact Or.inl (Rat.num_eq_zero.mp h3)
+      · exact absurd h4 hden
+    · refine Or.inr ?_
+      have h' := eq_intCast_of_num_eq_mul_den x (-1) (by linear_combination h2)
+      rw [h', Int.cast_neg, Int.cast_one]
+  rw [sext13_eq_sq_add_four_sq] at h
+  have hy : (y - 1) * (y + 1) = 0 := by
+    rcases hx with rfl | rfl <;> linear_combination h
+  rcases hx with rfl | rfl
+  · rcases mul_eq_zero.mp hy with h1 | h1
+    · exact Or.inl ⟨rfl, by linear_combination h1⟩
+    · exact Or.inr (Or.inl ⟨rfl, by linear_combination h1⟩)
+  · rcases mul_eq_zero.mp hy with h1 | h1
+    · exact Or.inr (Or.inr (Or.inl ⟨rfl, by linear_combination h1⟩))
+    · exact Or.inr (Or.inr (Or.inr ⟨rfl, by linear_combination h1⟩))
 
 /-- The six cusps of `X_1(13)`: `(0, ±1)`, `(−1, ±1)`, and the two points at
 infinity.  Under the order-`3` automorphism `σ(x, y) = (−1/(x + 1), y/(x + 1)³)`
