@@ -76,6 +76,11 @@ public import Fermat.FLT.EllipticCurve.Torsion
 -- PRIVATE imports there, which are not re-exported — so they must be
 -- imported publicly here.
 public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
+-- Short normal forms (`IsShortNF`, `exists_variableChange_isShortNF`,
+-- `j_of_isShortNF`, `Δ_of_isShortNF`): PUBLIC because `IsShortNF` occurs in the
+-- SIGNATURE of `MazurLevelSeven.exists_kernelCoords_of_isShortNF` below, and a
+-- bare `import` is not re-exported.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 -- Vélu's construction of the quotient of an elliptic curve by a finite
 -- Galois-stable subgroup of odd order (`exists_velu_quotient_isogeny`), which
@@ -19926,8 +19931,379 @@ theorem MazurLevelSeven.kernelInvariants_of_relations (A B s₁ s₂ : ℚ)
     linear_combination (4 * (A ^ 2 - A * s₁ ^ 2 / 147 + s₁ ^ 4 / 21609) / 147) * h147
       + (27 * (B - 2 * s₁ ^ 3 / 9261) / 9261) * h9261
 
-/-- **Coordinates of the kernel of a stable order-`7` subgroup** (SORRY LEAF, cut
-2026-07-26 out of `exists_x0Seven_kernelInvariants`, which is now PROVEN over it).
+open Polynomial in
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **The kernel coordinates of a stable order-`7` point on a SHORT model**
+(PROVEN 2026-07-27).  This is the whole geometric content of
+`WeierstrassCurve.exists_x0Seven_kernelCoords`, isolated at a curve that is
+already in short normal form so that the variable change stays out of it.
+
+Everything is read off mathlib's division polynomials at the short model
+`y² = x³ + a₄x + a₆`, where `b₂ = 0`, `b₄ = 2a₄`, `b₆ = 4a₆`, `b₈ = −a₄²` turn
+them into the classical expressions:
+
+* `ΨSq 2 = Ψ₂Sq = 4(x³ + ax + b)` and `Φ 2 = x⁴ − 2ax² − 8bx + a²`, so
+  `TorsionCard.exists_smul_some_eq` at `n = 2` IS the duplication formula;
+* `Ψ₃ = 3x⁴ + 6ax² + 12bx − a²`, `preΨ₄ = 2(x⁶ + 5ax⁴ + 20bx³ − 5a²x² − 4abx
+  − a³ − 8b²)`, and `Φ 3 = X·Ψ₃² − preΨ₄·Ψ₂Sq`, which is `x(3P) = x − ψ₂ψ₄/ψ₃²`;
+* `preΨ 5 = preΨ₄·Ψ₂Sq² − Ψ₃³` and hence
+  `ΨSq 7 = (preΨ 5·Ψ₃³ − preΨ₄³·Ψ₂Sq²)²`, whose vanishing is `7P = 0` via
+  `TorsionCard.smul_some_eq_zero_iff`.
+
+RATIONALITY is the `ℤ/3`-descent and needs no Vélu sum: `velu_pointX_map` makes
+`σ(x(iP)) = x(σ(iP))`, stability puts `σ(iP) = k·P` with `k ≢ 0 (mod 7)`, and
+`velu_pointX_neg` folds `k ∈ {4,5,6}` back onto `{3,2,1}`.  So `σ` maps the
+`3`-element FINSET `{x₁, x₂, x₃}` into itself, hence onto itself by injectivity
+(`Finset.eq_of_subset_of_card_le`), and `Finset.sum_image` / `Finset.prod_image`
+make `e₁` and `e₃` Galois-fixed.  `e₂` follows from
+`e₁² = (x₁² + x₂² + x₃²) + 2e₂`.  `exists_rat_of_galois_fixed` then descends all
+three to `ℚ`.
+
+PERFORMANCE NOTE (measured): `ΨSq 7`'s evaluation is stated in the shape the
+rewrites literally produce, and converted to the shape the consumer wants by the
+THREE-ATOM identity `hkey`.  Doing that conversion with `ring` on the expanded
+polynomial instead makes it expand a degree-`24` polynomial in three variables
+and costs more than ten minutes. -/
+theorem MazurLevelSeven.exists_kernelCoords_of_isShortNF (E₀ : WeierstrassCurve ℚ)
+    [E₀.IsElliptic] [E₀.IsShortNF]
+    (P : (E₀⁄(AlgebraicClosure ℚ)).Point) (hPord : addOrderOf P = 7)
+    (hstab : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, ∀ n : ℤ, ∃ k : ℤ,
+      Affine.Point.map σ.toAlgHom (n • P) = k • P) :
+    ∃ (s₁ s₂ s₃ : ℚ) (x₁ x₂ x₃ : AlgebraicClosure ℚ),
+      letI a := algebraMap ℚ (AlgebraicClosure ℚ) E₀.a₄
+      letI b := algebraMap ℚ (AlgebraicClosure ℚ) E₀.a₆
+      (x₁ ^ 3 + a * x₁ + b) ≠ 0 ∧
+      x₂ ≠ x₁ ∧
+      x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) ∧
+      x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
+        x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+          - 2 * (x₁ ^ 3 + a * x₁ + b) *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ∧
+      (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+          - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3)
+          * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
+        - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+            - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₁ = x₁ + x₂ + x₃ ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ := by
+  classical
+  set K := AlgebraicClosure ℚ with hKdef
+  haveI hEK : ((E₀⁄K) : WeierstrassCurve K).IsElliptic :=
+    inferInstanceAs (E₀.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  -- ### basic order facts
+  have hz : ∀ m : ℤ, (7 : ℤ) ∣ m → m • P = 0 := by
+    intro m hm
+    exact addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hPord]; exact_mod_cast hm)
+  have h7P : (7 : ℤ) • P = 0 := hz 7 dvd_rfl
+  have hnz : ∀ n : ℤ, ¬ ((7 : ℤ) ∣ n) → n • P ≠ 0 := by
+    intro n hn h0
+    have hd := addOrderOf_dvd_iff_zsmul_eq_zero.mpr h0
+    rw [hPord] at hd
+    exact hn (by exact_mod_cast hd)
+  have hred : ∀ n : ℤ, n • P = (n % 7) • P := by
+    intro n
+    have hkk : n = n / 7 * 7 + n % 7 := by omega
+    conv_lhs => rw [hkk]
+    rw [add_zsmul, hz (n / 7 * 7) ⟨n / 7, by ring⟩, zero_add]
+  -- ### the curve base changed, in short normal form
+  have ha₁ : ((E₀⁄K)⁄K).a₁ = 0 := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
+  have ha₂ : ((E₀⁄K)⁄K).a₂ = 0 := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map, WeierstrassCurve.a₂_of_isShortNF]
+  have ha₃ : ((E₀⁄K)⁄K).a₃ = 0 := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
+  have ha₄ : ((E₀⁄K)⁄K).a₄ = algebraMap ℚ K E₀.a₄ := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
+  have ha₆ : ((E₀⁄K)⁄K).a₆ = algebraMap ℚ K E₀.a₆ := by
+    simp [WeierstrassCurve.baseChange, WeierstrassCurve.map]
+  haveI hshort : ((E₀⁄K)⁄K).IsShortNF := ⟨ha₁, ha₂, ha₃⟩
+  set a : K := algebraMap ℚ K E₀.a₄ with hadef
+  set b : K := algebraMap ℚ K E₀.a₆ with hbdef
+  have hb₂ : ((E₀⁄K)⁄K).b₂ = 0 := WeierstrassCurve.b₂_of_isShortNF _
+  have hb₄ : ((E₀⁄K)⁄K).b₄ = 2 * a := by rw [WeierstrassCurve.b₄_of_isShortNF, ha₄]
+  have hb₆ : ((E₀⁄K)⁄K).b₆ = 4 * b := by rw [WeierstrassCurve.b₆_of_isShortNF, ha₆]
+  have hb₈ : ((E₀⁄K)⁄K).b₈ = -a ^ 2 := by rw [WeierstrassCurve.b₈_of_isShortNF, ha₄]
+  -- ### the three division-polynomial evaluations, as functions of `x`
+  have hΨ2ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 2).eval x = 4 * (x ^ 3 + a * x + b) := by
+    intro x
+    rw [WeierstrassCurve.ΨSq_two, WeierstrassCurve.Ψ₂Sq]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, hb₂, hb₄, hb₆]
+    ring
+  have hΨ3ev : ∀ x : K, ((E₀⁄K)⁄K).Ψ₃.eval x
+      = 3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2 := by
+    intro x
+    rw [WeierstrassCurve.Ψ₃]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, eval_ofNat, hb₂, hb₄, hb₆, hb₈]
+    ring
+  have hΨ4ev : ∀ x : K, ((E₀⁄K)⁄K).preΨ₄.eval x
+      = 2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
+          - 4 * a * b * x - a ^ 3 - 8 * b ^ 2) := by
+    intro x
+    rw [WeierstrassCurve.preΨ₄]
+    simp only [eval_add, eval_mul, eval_pow, eval_C, eval_X, eval_ofNat,
+      hb₂, hb₄, hb₆, hb₈]
+    ring
+  have hΦ2ev : ∀ x : K, (((E₀⁄K)⁄K).Φ 2).eval x
+      = x ^ 4 - 2 * a * x ^ 2 - 8 * b * x + a ^ 2 := by
+    intro x
+    rw [WeierstrassCurve.Φ_two]
+    simp only [eval_sub, eval_mul, eval_pow, eval_C, eval_X, hb₄, hb₆, hb₈]
+    ring
+  have hΨSq3ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 3).eval x
+      = (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 2 := by
+    intro x
+    rw [WeierstrassCurve.ΨSq_three, eval_pow, hΨ3ev]
+  have hΦ3ev : ∀ x : K, (((E₀⁄K)⁄K).Φ 3).eval x
+      = x * (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 2
+          - 2 * (x ^ 3 + a * x + b) *
+            (4 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
+              - 4 * a * b * x - a ^ 3 - 8 * b ^ 2)) := by
+    intro x
+    rw [WeierstrassCurve.Φ_three]
+    simp only [eval_sub, eval_mul, eval_pow, eval_X]
+    rw [hΨ3ev, hΨ4ev, show ((E₀⁄K)⁄K).Ψ₂Sq = ((E₀⁄K)⁄K).ΨSq 2 from
+      (WeierstrassCurve.ΨSq_two _).symm, hΨ2ev]
+    ring
+  -- `preΨ 5` and `ΨSq 7`
+  have h3odd : ¬ Even (3 : ℤ) := by decide
+  have hpre2 : ((E₀⁄K)⁄K).preΨ 2 = 1 := by
+    rw [show ((2 : ℤ)) = ((2 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
+      WeierstrassCurve.preΨ'_two]
+  have hpre3 : ((E₀⁄K)⁄K).preΨ 3 = ((E₀⁄K)⁄K).Ψ₃ := by
+    rw [show ((3 : ℤ)) = ((3 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
+      WeierstrassCurve.preΨ'_three]
+  have hpre4 : ((E₀⁄K)⁄K).preΨ 4 = ((E₀⁄K)⁄K).preΨ₄ := by
+    rw [show ((4 : ℤ)) = ((4 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat,
+      WeierstrassCurve.preΨ'_four]
+  have hpre5 : ((E₀⁄K)⁄K).preΨ 5
+      = ((E₀⁄K)⁄K).preΨ₄ * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2 - ((E₀⁄K)⁄K).Ψ₃ ^ 3 := by
+    have h := WeierstrassCurve.preΨ'_odd ((E₀⁄K)⁄K) 0
+    norm_num at h
+    rw [show ((5 : ℤ)) = ((5 : ℕ) : ℤ) by norm_num, WeierstrassCurve.preΨ_ofNat]
+    simpa using h
+  have hΨSq7eq : ((E₀⁄K)⁄K).ΨSq 7
+      = ((((E₀⁄K)⁄K).preΨ₄ * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2 - ((E₀⁄K)⁄K).Ψ₃ ^ 3) * ((E₀⁄K)⁄K).Ψ₃ ^ 3
+          - ((E₀⁄K)⁄K).preΨ₄ ^ 3 * ((E₀⁄K)⁄K).Ψ₂Sq ^ 2) ^ 2 := by
+    rw [show ((7 : ℤ)) = 2 * 3 + 1 by norm_num, WeierstrassCurve.ΨSq_odd]
+    simp only [if_neg h3odd, show ((3 : ℤ) + 2) = 5 from by norm_num,
+      show ((3 : ℤ) - 1) = 2 from by norm_num, show ((3 : ℤ) + 1) = 4 from by norm_num,
+      hpre5, hpre3, hpre2, hpre4, one_mul, mul_one]
+  -- NOTE: the `ΨSq 7` evaluation is stated in the shape the rewrites literally produce.
+  -- Converting it to the shape the conclusion demands is a THREE-ATOM `ring` identity
+  -- (`hkey` below); doing it here instead would make `ring` expand a degree-`24`
+  -- polynomial in three variables, which costs minutes.
+  have hΨSq7ev : ∀ x : K, (((E₀⁄K)⁄K).ΨSq 7).eval x
+      = ((2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
+              - 4 * a * b * x - a ^ 3 - 8 * b ^ 2) * (4 * (x ^ 3 + a * x + b)) ^ 2
+          - (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 3)
+          * (3 * x ^ 4 + 6 * a * x ^ 2 + 12 * b * x - a ^ 2) ^ 3
+        - (2 * (x ^ 6 + 5 * a * x ^ 4 + 20 * b * x ^ 3 - 5 * a ^ 2 * x ^ 2
+            - 4 * a * b * x - a ^ 3 - 8 * b ^ 2)) ^ 3
+            * (4 * (x ^ 3 + a * x + b)) ^ 2) ^ 2 := by
+    intro x
+    rw [hΨSq7eq]
+    simp only [eval_sub, eval_mul, eval_pow]
+    rw [hΨ3ev, hΨ4ev, show ((E₀⁄K)⁄K).Ψ₂Sq = ((E₀⁄K)⁄K).ΨSq 2 from
+      (WeierstrassCurve.ΨSq_two _).symm, hΨ2ev]
+  have hkey : ∀ e f₃ G : K,
+      (2 * G * (4 * e) ^ 2 - f₃ ^ 3) * f₃ ^ 3 - (2 * G) ^ 3 * (4 * e) ^ 2
+        = (8 * e ^ 2 * (4 * G) - f₃ ^ 3) * f₃ ^ 3 - 2 * e ^ 2 * (4 * G) ^ 3 := by
+    intro e f₃ G; ring
+  -- ### unpack the point
+  have hP0 : P ≠ 0 := by simpa using hnz 1 (by norm_num)
+  obtain ⟨x₁, y₁, hns, hPeq⟩ : ∃ (x y : K) (h : (E₀⁄K).toAffine.Nonsingular x y),
+      P = Affine.Point.some x y h := by
+    rcases P with _ | ⟨x, y, h⟩
+    · exact absurd rfl hP0
+    · exact ⟨x, y, h, rfl⟩
+  subst hPeq
+  -- the `2`- and `3`-division values do not vanish at `x₁`
+  have hΨ2ne : (((E₀⁄K)⁄K).ΨSq 2).eval x₁ ≠ 0 := by
+    intro h
+    exact hnz 2 (by norm_num) ((TorsionCard.smul_some_eq_zero_iff (E₀⁄K)
+      (by norm_num : (2 : ℤ) ≠ 0) hns).mpr h)
+  have hΨ3ne : (((E₀⁄K)⁄K).ΨSq 3).eval x₁ ≠ 0 := by
+    intro h
+    exact hnz 3 (by norm_num) ((TorsionCard.smul_some_eq_zero_iff (E₀⁄K)
+      (by norm_num : (3 : ℤ) ≠ 0) hns).mpr h)
+  have hΨ7 : (((E₀⁄K)⁄K).ΨSq 7).eval x₁ = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff (E₀⁄K) (by norm_num : (7 : ℤ) ≠ 0) hns).mp
+      h7P
+  obtain ⟨x₂, y₂, hns₂, h2P, hx₂⟩ := TorsionCard.exists_smul_some_eq (E₀⁄K)
+    (by norm_num : (2 : ℤ) ≠ 0) hns hΨ2ne
+  obtain ⟨x₃, y₃, hns₃, h3P, hx₃⟩ := TorsionCard.exists_smul_some_eq (E₀⁄K)
+    (by norm_num : (3 : ℤ) ≠ 0) hns hΨ3ne
+  -- ### the three identities
+  have he0 : x₁ ^ 3 + a * x₁ + b ≠ 0 := by
+    intro h
+    exact hΨ2ne (by rw [hΨ2ev, h, mul_zero])
+  have hdup : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b))
+      = x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2 := by
+    rw [← hΨ2ev, ← hΦ2ev]; exact hx₂
+  have htri : x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+      = x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+          - 2 * (x₁ ^ 3 + a * x₁ + b) *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) := by
+    rw [← hΦ3ev, ← hΨSq3ev]; exact hx₃
+  have hpsi7 : (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+              - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+          - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3)
+          * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
+        - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2
+            - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 := by
+    have h := hΨ7
+    rw [hΨSq7ev, hkey] at h
+    exact pow_eq_zero_iff two_ne_zero |>.mp h
+  -- ### the `x`-coordinates as `veluPointX` values
+  have hxv1 : veluPointX ((1 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₁ := by
+    rw [one_zsmul]; rfl
+  have hxv2 : veluPointX ((2 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₂ := by
+    rw [h2P]; rfl
+  have hxv3 : veluPointX ((3 : ℤ) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₃ := by
+    rw [h3P]; rfl
+  -- ### distinctness
+  have hxne : ∀ i j : ℤ, ¬((7 : ℤ) ∣ i) → ¬((7 : ℤ) ∣ j) → ¬((7 : ℤ) ∣ (i - j)) →
+      ¬((7 : ℤ) ∣ (i + j)) →
+      veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))
+        ≠ veluPointX (j • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
+    intro i j hi hj hij hij' h
+    rcases velu_pointX_eq_iff (hnz i hi) (hnz j hj) h with h' | h'
+    · exact hnz (i - j) hij (by rw [sub_zsmul, h']; simp)
+    · exact hnz (i + j) hij' (by rw [add_zsmul, h']; simp)
+  have h12 : x₁ ≠ x₂ := by
+    have := hxne 1 2 (by decide) (by decide) (by decide) (by decide)
+    rwa [hxv1, hxv2] at this
+  have h13 : x₁ ≠ x₃ := by
+    have := hxne 1 3 (by decide) (by decide) (by decide) (by decide)
+    rwa [hxv1, hxv3] at this
+  have h23 : x₂ ≠ x₃ := by
+    have := hxne 2 3 (by decide) (by decide) (by decide) (by decide)
+    rwa [hxv2, hxv3] at this
+  -- ### the Galois action permutes `{x₁, x₂, x₃}`
+  have hnegmul : ∀ i : ℤ,
+      ((7 : ℤ) - i) • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)
+        = -(i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
+    intro i
+    rw [eq_neg_iff_add_eq_zero, ← add_zsmul]
+    simpa using h7P
+  set T : Finset K := {x₁, x₂, x₃} with hTdef
+  have hTstab : ∀ σ : K ≃ₐ[ℚ] K, ∀ x ∈ T, σ x ∈ T := by
+    intro σ x hx
+    have hmain : ∀ i : ℤ, ¬((7 : ℤ) ∣ i) →
+        σ (veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))) ∈ T := by
+      intro i hi
+      obtain ⟨k, hk⟩ := hstab σ i
+      have h0 : σ (veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)))
+          = veluPointX (k • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) := by
+        rw [← velu_pointX_map E₀ σ, hk]
+      have hk0 : ¬ ((7 : ℤ) ∣ k) := by
+        intro hd
+        obtain ⟨m, rfl⟩ := hd
+        rw [hz (7 * m) ⟨m, rfl⟩] at hk
+        have := velu_point_map_symm_map E₀ σ
+          (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point))
+        rw [hk] at this
+        exact hnz i hi (by rw [← this]; rfl)
+      rw [h0, hred k]
+      have h7 : k % 7 = 1 ∨ k % 7 = 2 ∨ k % 7 = 3 ∨ k % 7 = 4 ∨ k % 7 = 5 ∨ k % 7 = 6 := by
+        have h1 : (0 : ℤ) ≤ k % 7 := Int.emod_nonneg k (by norm_num)
+        have h2 : k % 7 < 7 := Int.emod_lt_of_pos k (by norm_num)
+        have h3 : k % 7 ≠ 0 := by
+          intro h; exact hk0 (Int.dvd_of_emod_eq_zero h)
+        omega
+      simp only [hTdef, Finset.mem_insert, Finset.mem_singleton]
+      rcases h7 with h | h | h | h | h | h
+      · rw [h, hxv1]; exact Or.inl rfl
+      · rw [h, hxv2]; exact Or.inr (Or.inl rfl)
+      · rw [h, hxv3]; exact Or.inr (Or.inr rfl)
+      · rw [h, show ((4 : ℤ)) = 7 - 3 by norm_num, hnegmul, velu_pointX_neg, hxv3]
+        exact Or.inr (Or.inr rfl)
+      · rw [h, show ((5 : ℤ)) = 7 - 2 by norm_num, hnegmul, velu_pointX_neg, hxv2]
+        exact Or.inr (Or.inl rfl)
+      · rw [h, show ((6 : ℤ)) = 7 - 1 by norm_num, hnegmul, velu_pointX_neg, hxv1]
+        exact Or.inl rfl
+    simp only [hTdef, Finset.mem_insert, Finset.mem_singleton] at hx
+    rcases hx with rfl | rfl | rfl
+    · have := hmain 1 (by decide); rwa [hxv1] at this
+    · have := hmain 2 (by decide); rwa [hxv2] at this
+    · have := hmain 3 (by decide); rwa [hxv3] at this
+  have hTcard : T.card = 3 := by
+    rw [hTdef, Finset.card_insert_of_notMem (by simp [h12, h13]),
+      Finset.card_insert_of_notMem (by simp [h23]), Finset.card_singleton]
+  have himg : ∀ σ : K ≃ₐ[ℚ] K, T.image (σ : K → K) = T := by
+    intro σ
+    refine Finset.eq_of_subset_of_card_le ?_ ?_
+    · intro x hx
+      obtain ⟨y, hy, rfl⟩ := Finset.mem_image.mp hx
+      exact hTstab σ y hy
+    · rw [Finset.card_image_of_injective _ σ.injective]
+  -- ### the symmetric functions are Galois-fixed
+  have hinj : ∀ σ : K ≃ₐ[ℚ] K, Set.InjOn ((σ : K → K)) (↑T : Set K) :=
+    fun σ _ _ _ _ h => σ.injective h
+  have hnm1 : x₁ ∉ ({x₂, x₃} : Finset K) := by simp [h12, h13]
+  have hnm2 : x₂ ∉ ({x₃} : Finset K) := by simp [h23]
+  -- the three sums/products over `T`, written out
+  have hsum_id : ∑ y ∈ T, y = x₁ + x₂ + x₃ := by
+    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
+  have hsum_sq : ∑ y ∈ T, y ^ 2 = x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2 := by
+    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
+  have hprod_id : ∏ y ∈ T, y = x₁ * x₂ * x₃ := by
+    rw [hTdef, Finset.prod_insert hnm1, Finset.prod_insert hnm2, Finset.prod_singleton]; ring
+  have hsum_id' : ∀ σ : K ≃ₐ[ℚ] K, ∑ y ∈ T, σ y = σ x₁ + σ x₂ + σ x₃ := by
+    intro σ
+    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
+  have hsum_sq' : ∀ σ : K ≃ₐ[ℚ] K, ∑ y ∈ T, (σ y) ^ 2 = (σ x₁) ^ 2 + (σ x₂) ^ 2 + (σ x₃) ^ 2 := by
+    intro σ
+    rw [hTdef, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton]; ring
+  have hprod_id' : ∀ σ : K ≃ₐ[ℚ] K, ∏ y ∈ T, σ y = σ x₁ * σ x₂ * σ x₃ := by
+    intro σ
+    rw [hTdef, Finset.prod_insert hnm1, Finset.prod_insert hnm2, Finset.prod_singleton]; ring
+  have hfix1 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ + x₂ + x₃) = x₁ + x₂ + x₃ := by
+    intro σ
+    have h2 : ∑ y ∈ T.image (σ : K → K), y = ∑ y ∈ T, σ y := Finset.sum_image (hinj σ)
+    rw [himg σ, hsum_id, hsum_id' σ] at h2
+    rw [map_add, map_add]
+    exact h2.symm
+  have hfixp2 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2) = x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2 := by
+    intro σ
+    have h2 : ∑ y ∈ T.image (σ : K → K), y ^ 2 = ∑ y ∈ T, (σ y) ^ 2 := Finset.sum_image (hinj σ)
+    rw [himg σ, hsum_sq, hsum_sq' σ] at h2
+    rw [map_add, map_add, map_pow, map_pow, map_pow]
+    exact h2.symm
+  have hfix3 : ∀ σ : K ≃ₐ[ℚ] K, σ (x₁ * x₂ * x₃) = x₁ * x₂ * x₃ := by
+    intro σ
+    have h2 : ∏ y ∈ T.image (σ : K → K), y = ∏ y ∈ T, σ y := Finset.prod_image (hinj σ)
+    rw [himg σ, hprod_id, hprod_id' σ] at h2
+    rw [map_mul, map_mul]
+    exact h2.symm
+  have hfix2 : ∀ σ : K ≃ₐ[ℚ] K,
+      σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ := by
+    intro σ
+    have hexp : (2 : K) * σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
+        = σ (x₁ + x₂ + x₃) ^ 2 - σ (x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2) := by
+      simp only [map_add, map_mul, map_pow]
+      ring
+    have h2 : (2 : K) * σ (x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
+        = 2 * (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) := by
+      rw [hexp, hfix1 σ, hfixp2 σ]; ring
+    exact mul_left_cancel₀ two_ne_zero h2
+  obtain ⟨s₁, hs₁⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ + x₂ + x₃) hfix1
+  obtain ⟨s₂, hs₂⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) hfix2
+  obtain ⟨s₃, hs₃⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ * x₂ * x₃) hfix3
+  exact ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h12.symm, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩
+
+/-- **Coordinates of the kernel of a stable order-`7` subgroup** (PROVEN
+2026-07-27 over `MazurLevelSeven.exists_kernelCoords_of_isShortNF`; cut
+2026-07-26 out of `exists_x0Seven_kernelInvariants`, which is PROVEN over it).
 
 This is the purely GEOMETRIC half: read the three `±`-pairs of `⟨g⟩` off a short
 Weierstrass model and record that their symmetric functions are rational.  It
@@ -20013,8 +20389,45 @@ theorem WeierstrassCurve.exists_x0Seven_kernelCoords (E : WeierstrassCurve ℚ)
           (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 ∧
       algebraMap ℚ (AlgebraicClosure ℚ) s₁ = x₁ + x₂ + x₃ ∧
       algebraMap ℚ (AlgebraicClosure ℚ) s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ :=
-  sorry
+      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ := by
+  classical
+  haveI hi2 : Invertible (2 : ℚ) := invertibleOfNonzero (by norm_num)
+  haveI hi3 : Invertible (3 : ℚ) := invertibleOfNonzero (by norm_num)
+  obtain ⟨C, hC⟩ := E.exists_variableChange_isShortNF
+  haveI hCi : (C • E).IsShortNF := hC
+  -- the Galois-equivariant identification of points induced by `C`
+  set ee := Affine.Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)
+  have hee := Affine.Point.equivVariableChangeBaseChange_galois E C (AlgebraicClosure ℚ)
+  obtain ⟨P, hPee⟩ : ∃ P : ((C • E)⁄(AlgebraicClosure ℚ)).Point, ee P = g :=
+    ⟨ee.symm g, ee.apply_symm_apply g⟩
+  have hPord : addOrderOf P = 7 := by
+    have h := ee.addOrderOf_eq P
+    rw [hPee, hg] at h
+    exact h.symm
+  have hstab : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, ∀ n : ℤ, ∃ k : ℤ,
+      Affine.Point.map σ.toAlgHom (n • P) = k • P := by
+    intro σ n
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ (n • g) (AddSubgroup.mem_zmultiples_iff.mpr ⟨n, rfl⟩))
+    refine ⟨k, ee.injective ?_⟩
+    have hL : ee (Affine.Point.map σ.toAlgHom (n • P))
+        = Affine.Point.map σ.toAlgHom (n • g) := by
+      rw [hee σ (n • P), map_zsmul, hPee]
+    have hR : ee (k • P) = k • g := by rw [map_zsmul, hPee]
+    rw [hL, hR]
+    exact hk.symm
+  obtain ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩ :=
+    MazurLevelSeven.exists_kernelCoords_of_isShortNF (C • E) P hPord hstab
+  have hΔ : (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2 : ℚ) ≠ 0 := by
+    intro h0
+    have hΔ0 : (C • E).Δ = 0 := by
+      rw [WeierstrassCurve.Δ_of_isShortNF, h0, mul_zero]
+    exact not_isUnit_zero (hΔ0 ▸ (C • E).isUnit_Δ)
+  have hjeq : E.j * (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2) = 6912 * (C • E).a₄ ^ 3 := by
+    rw [← WeierstrassCurve.variableChange_j (W := E) (C := C), WeierstrassCurve.j_of_isShortNF,
+      div_mul_cancel₀ _ hΔ]
+  exact ⟨(C • E).a₄, (C • E).a₆, s₁, s₂, s₃, _, _, x₁, x₂, x₃, rfl, rfl, hΔ, hjeq,
+    he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩
 
 /-- **The kernel-polynomial invariants of a stable order-`7` subgroup** (PROVEN
 2026-07-26 over the single geometric leaf
