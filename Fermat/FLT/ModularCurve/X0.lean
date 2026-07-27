@@ -19095,6 +19095,15 @@ surjective, so Riemann–Hurwitz gives `genus X_K ≤ genus ℙ¹_K = 0` —
 contradicting `hg`.  Hence every such morphism is constant, which is
 `HasNoFibreAffineLine`.
 
+**THE EXTENSION STEP IS ALREADY PROVEN AND IN THIS FILE'S CONE** — do not
+rebuild it.  `exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, `public
+import`ed above, proven outright from `Mathlib` by the valuative
+criterion) extends a morphism from a dense open of a smooth proper curve
+over a field into any PROPER target, which is exactly "`𝔸¹_K ⟶ X_K`
+extends to `ℙ¹_K ⟶ X_K`" once `ℙ¹_K` is written down.  What is still
+missing is therefore only `ℙ¹` itself and the genus, not the extension.
+
 **`hg` IS LOAD-BEARING and the statement is FALSE without it**: at
 `N = 1`, `X_0(1) = ℙ¹` and the identity `𝔸¹ ⟶ 𝔸¹ ⊂ ℙ¹` is a nonconstant
 witness over every base.  `hmodel` is load-bearing twice over — it
