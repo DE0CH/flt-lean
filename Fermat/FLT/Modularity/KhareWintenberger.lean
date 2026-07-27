@@ -211,6 +211,25 @@ public import Mathlib.RingTheory.KrullDimension.Field
 -- in the SIGNATURE of `isRegularLocalRing_stalk_of_smooth_over_field`, so its
 -- defining module must be a `public import` and not a bare one.
 public import Mathlib.RingTheory.RegularLocalRing.Defs
+-- `exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (PROVEN
+-- 2026-07-26) presents the stalk of a smooth `K`-scheme as a localized
+-- polynomial ring modulo the relations of a standard-smooth presentation.  It
+-- needs: the regularity of `MvPolynomial ι K` localized at a prime
+-- (`RegularLocalRing.Polynomial`), the `SubmersivePresentation` /
+-- `IsStandardSmooth` package and its `RespectsIso` transfer along
+-- `Γ(Spec K, ⊤) ≅ K` (`Smooth.StandardSmooth`, `RingHom.StandardSmooth`), the
+-- residue field `κ(q)` of a prime (`LocalRing.ResidueField.Ideal`), partial
+-- derivatives on `MvPolynomial` (`MvPolynomial.PDeriv`), the determinant
+-- criterion for linear independence of the columns of the Jacobian
+-- (`Matrix.NonsingularInverse`), and `IsLocalization.of_surjective` together
+-- with `mem_map_algebraMap_iff` (`Localization.Ideal`).
+public import Mathlib.RingTheory.RegularLocalRing.Polynomial
+public import Mathlib.RingTheory.Smooth.StandardSmooth
+public import Mathlib.RingTheory.RingHom.StandardSmooth
+public import Mathlib.RingTheory.LocalRing.ResidueField.Ideal
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+public import Mathlib.RingTheory.Localization.Ideal
 public import Mathlib.RingTheory.Nakayama
 public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 public import Mathlib.RingTheory.LocalRing.RingHom.Basic
@@ -2818,52 +2837,369 @@ theorem isRegularLocalRing_quotient_span_list_aux (c : ℕ) :
       ((DoubleQuot.quotQuotEquivQuotSup I (Ideal.span {y | y ∈ t})).trans
         (Ideal.quotEquivOfEq hsup))
 
+/-- **LOCALIZATION COMMUTES WITH THE QUOTIENT** (**PROVEN 2026-07-26**).
+
+For `f : R →+* A` surjective, `p` a prime of `A` and `q = f⁻¹ p`, any
+localization `Bq` of `R` at `q` satisfies `Bq ⧸ (ker f)·Bq ≅ A_p`.
+
+STATED OVER AN ABSTRACT `Bq` ON PURPOSE. With the concrete
+`Localization.AtPrime q` in the statement, the unification that
+`IsLocalization.of_surjective` performs has to unfold the Ore-localization
+`CommRing` instance underneath a quotient, and elaboration dies at `whnf`
+inside the default heartbeat budget. Over a variable `Bq` nothing can be
+unfolded and the same proof is instant. This is the project's standing
+"state helpers over a variable base" rule in a new spot.
+
+THE PROOF is `IsLocalization.of_surjective` applied to the pair of quotient
+maps `R ↠ R ⧸ ker f` and `Bq ↠ Bq ⧸ (ker f)·Bq`, whose compatibility square
+is definitional once the `R ⧸ ker f`-algebra structure on the target is taken
+to be mathlib's `Ideal.Quotient.algebraQuotientOfLEComap`; the resulting
+localization of `R ⧸ ker f` is transported to `A` along
+`RingHom.quotientKerEquivOfSurjective` by `IsLocalization.ringEquivOfRingEquiv`. -/
+theorem nonempty_ringEquiv_localizationAtPrime_quotient_map_ker
+    {R : Type*} [CommRing R] {A : Type*} [CommRing A]
+    (f : R →+* A) (hf : Function.Surjective f) {p : Ideal A} [p.IsPrime]
+    (Bq : Type*) [CommRing Bq] [Algebra R Bq]
+    [IsLocalization (Ideal.comap f p).primeCompl Bq] :
+    Nonempty ((Localization.AtPrime p) ≃+*
+      (Bq ⧸ Ideal.map (algebraMap R Bq) (RingHom.ker f))) := by
+  classical
+  set q : Ideal R := Ideal.comap f p with hqdef
+  haveI : q.IsPrime := Ideal.IsPrime.comap _
+  set J : Ideal R := RingHom.ker f with hJdef
+  set fB : R →+* Bq := algebraMap R Bq with hfBdef
+  have hle : J ≤ Ideal.comap fB (Ideal.map fB J) := Ideal.le_comap_map
+  letI : Algebra (R ⧸ J) (Bq ⧸ Ideal.map fB J) := Ideal.Quotient.algebraQuotientOfLEComap hle
+  have hH : (Ideal.Quotient.mk (Ideal.map fB J)).comp (algebraMap R Bq)
+      = (algebraMap (R ⧸ J) (Bq ⧸ Ideal.map fB J)).comp (Ideal.Quotient.mk J) := by
+    refine RingHom.ext fun x => ?_
+    rfl
+  have hH' : RingHom.ker (Ideal.Quotient.mk (Ideal.map fB J))
+      ≤ Ideal.map (algebraMap R Bq) (RingHom.ker (Ideal.Quotient.mk J)) := by
+    rw [Ideal.mk_ker, Ideal.mk_ker]
+  haveI hloc : IsLocalization (Submonoid.map (Ideal.Quotient.mk J) q.primeCompl)
+      (Bq ⧸ Ideal.map fB J) :=
+    IsLocalization.of_surjective q.primeCompl Bq (Ideal.Quotient.mk J)
+      Ideal.Quotient.mk_surjective (Ideal.Quotient.mk (Ideal.map fB J))
+      Ideal.Quotient.mk_surjective hH hH'
+  have hmon : Submonoid.map f q.primeCompl = p.primeCompl := by
+    ext a
+    constructor
+    · rintro ⟨x, hx, rfl⟩; exact hx
+    · intro ha
+      obtain ⟨x, rfl⟩ := hf a
+      exact ⟨x, ha, rfl⟩
+  let ε : (R ⧸ J) ≃+* A := RingHom.quotientKerEquivOfSurjective hf
+  have hεmk : ∀ x : R, ε (Ideal.Quotient.mk J x) = f x := fun _ => rfl
+  have hHmon : Submonoid.map ε.toMonoidHom (Submonoid.map (Ideal.Quotient.mk J) q.primeCompl)
+      = p.primeCompl := by
+    rw [← hmon]
+    ext a
+    constructor
+    · rintro ⟨_, ⟨x, hx, rfl⟩, rfl⟩; exact ⟨x, hx, hεmk x⟩
+    · rintro ⟨x, hx, rfl⟩; exact ⟨Ideal.Quotient.mk J x, ⟨x, hx, rfl⟩, hεmk x⟩
+  exact ⟨(IsLocalization.ringEquivOfRingEquiv
+    (M := Submonoid.map (Ideal.Quotient.mk J) q.primeCompl)
+    (S := Bq ⧸ Ideal.map fB J) (T := p.primeCompl)
+    (Q := Localization.AtPrime p) ε hHmon).symm⟩
+
+/-- **THE JACOBIAN CRITERION, IN THE FORM THE REGULARITY ENGINE CONSUMES**
+(**PROVEN 2026-07-26** — this is the whole mathematical content of
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field`).
+
+Given a `SubmersivePresentation` `P` of a `K`-algebra `A` (so
+`A = K[x_ι] ⧸ (r_σ)` with the `σ x σ` Jacobian minor a unit in `A`) and a prime
+`p` of `A`, the localization `A_p` is `B ⧸ (r_σ)B` for `B := K[x_ι]_q` the
+polynomial ring localized at `q := f⁻¹ p`, which is REGULAR LOCAL for free, and
+the images of the `r_σ` in `B` satisfy the iterated independence condition of
+`isRegularLocalRing_quotient_span_list_aux`.
+
+THE ROUTE ACTUALLY TAKEN, and it is NOT the cotangent-complex route the parent
+docstring predicted. The parent proposed base-changing
+`SubmersivePresentation.cotangentComplex_injective` (split by
+`sectionCotangent_comp`) to the residue field. That works, but it is not
+needed: `PreSubmersivePresentation.jacobian` is by definition the image in `A`
+of the DETERMINANT of the concrete matrix
+`M i j = pderiv (P.map i) (P.relation j)` over `K[x_ι]`
+(`jacobian_eq_jacobiMatrix_det`, `jacobiMatrix_apply`), so the independence is
+plain linear algebra over the residue field, with no `Extension.Cotangent`
+translation anywhere. Concretely, writing `e : K[x_ι] → κ(q)` for the residue
+map and `d f := fun i => e (pderiv (P.map i) f)`:
+
+* `d` is a `K`-derivation into `σ → κ(q)`, so it KILLS `q²` (both factors
+  die under `e`) and sends `Ideal.span T` into the `κ(q)`-span of `d '' T`
+  whenever `T ⊆ q` (the Leibniz term `e b * d a` vanishes for `b ∈ q`);
+* `det M ∉ q`, since its image is the jacobian, a UNIT of `A`, and `p` is
+  proper — so the matrix `e ∘ M` is invertible over the field `κ(q)` and its
+  COLUMNS `j ↦ d (P.relation j)` are linearly independent
+  (`Matrix.linearIndependent_cols_iff_isUnit`);
+* a membership `r_n ∈ 𝔪_B² ⊔ (r_0, …, r_{n-1})` descends through
+  `IsLocalization.mem_map_algebraMap_iff` to `u * r_n ∈ q² ⊔ (r_0, …, r_{n-1})`
+  in `K[x_ι]` for some `u ∉ q`; applying `d` gives
+  `e u • d r_n ∈ span_κ {d r_i : i < n}` with `e u ≠ 0`, contradicting the
+  independence just established.
+
+THE LIST is `Finset.univ.toList` over `σ`; its `Nodup` is exactly what supplies
+`L[n] ∉ L.take n`, which is the index-level input to
+`LinearIndependent.notMem_span_image`. No enumeration by `Fin c` and no list
+surgery is needed.
+
+NO DIMENSION THEORY IS USED, and none is available: this is why the route goes
+through independence in `𝔪_B/𝔪_B²` rather than through `dim A_p = dim B - c`. -/
+theorem exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation
+    {K : Type u} [Field K] {A : Type u} [CommRing A] [Algebra K A]
+    {ι σ : Type} [Finite ι] [Finite σ]
+    (P : Algebra.SubmersivePresentation K A ι σ) (p : Ideal A) [hp : p.IsPrime] :
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsRegularLocalRing B) (l : List B),
+      (∀ (n : ℕ) (hn : n < l.length),
+        l[n] ∈ IsLocalRing.maximalIdeal B ∧
+          l[n] ∉ (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) ∧
+      Nonempty ((Localization.AtPrime p) ≃+* (B ⧸ Ideal.span {y | y ∈ l})) := by
+  classical
+  haveI : Fintype σ := Fintype.ofFinite σ
+  -- The prime of the polynomial ring under `p`.
+  have hsurjA : Function.Surjective (algebraMap P.Ring A) := P.algebraMap_surjective
+  set q : Ideal P.Ring := p.comap (algebraMap P.Ring A) with hqdef
+  haveI hq : q.IsPrime := Ideal.IsPrime.comap _
+  set B := Localization.AtPrime q with hBdef
+  haveI hBreg : IsRegularLocalRing B := inferInstance
+  set fB : P.Ring →+* B := algebraMap P.Ring B with hfBdef
+  have hmax : Ideal.map fB q = IsLocalRing.maximalIdeal B :=
+    IsLocalization.AtPrime.map_eq_maximalIdeal q B
+  -- The residue field of `q` and the "partial derivatives mod q" map.
+  set κ := q.ResidueField with hκdef
+  set e : P.Ring →+* κ := algebraMap P.Ring κ with hedef
+  have hezero : ∀ x : P.Ring, e x = 0 ↔ x ∈ q := fun x =>
+    Ideal.algebraMap_residueField_eq_zero
+  set d : P.Ring → (σ → κ) := fun g i => e (MvPolynomial.pderiv (P.map i) g) with hddef
+  have hdadd : ∀ x y : P.Ring, d (x + y) = d x + d y := by
+    intro x y; funext i; simp [hddef]
+  have hdzero : d 0 = 0 := by funext i; simp [hddef]
+  have hdmul : ∀ x y : P.Ring, d (x * y) = e x • d y + e y • d x := by
+    intro x y; funext i
+    simp only [hddef, Pi.add_apply, Pi.smul_apply, smul_eq_mul, MvPolynomial.pderiv_mul,
+      map_add, map_mul]
+    ring
+  -- `d` kills `q²`.
+  have hd_sq : ∀ x ∈ q ^ 2, d x = 0 := by
+    intro x hx
+    rw [sq] at hx
+    refine Submodule.mul_induction_on hx ?_ ?_
+    · intro m hm n hn
+      rw [hdmul, (hezero m).mpr hm, (hezero n).mpr hn, zero_smul, zero_smul, add_zero]
+    · intro a b ha hb; rw [hdadd, ha, hb, add_zero]
+  -- `d` sends `span T` into the κ-span of `d '' T`, for `T ⊆ q`.
+  have hd_span : ∀ (T : Set P.Ring), T ⊆ (q : Set P.Ring) →
+      ∀ x ∈ Ideal.span T, d x ∈ Submodule.span κ (d '' T) := by
+    intro T hT x hx
+    induction hx using Submodule.span_induction with
+    | mem y hy => exact Submodule.subset_span ⟨y, hy, rfl⟩
+    | zero => rw [hdzero]; exact Submodule.zero_mem _
+    | add a b _ _ ia ib => rw [hdadd]; exact Submodule.add_mem _ ia ib
+    | smul a b hb ib =>
+        have hbq : b ∈ q := (Ideal.span_le.mpr hT) hb
+        rw [smul_eq_mul, hdmul, (hezero b).mpr hbq, zero_smul, add_zero]
+        exact Submodule.smul_mem _ _ ib
+  have hd_sup : ∀ (T : Set P.Ring), T ⊆ (q : Set P.Ring) →
+      ∀ x ∈ q ^ 2 ⊔ Ideal.span T, d x ∈ Submodule.span κ (d '' T) := by
+    intro T hT x hx
+    obtain ⟨y, hy, z, hz, rfl⟩ := Submodule.mem_sup.mp hx
+    rw [hdadd, hd_sq y hy, zero_add]
+    exact hd_span T hT z hz
+  -- Every relation lies in `q`.
+  have hrelq : ∀ s : σ, P.relation s ∈ q := by
+    intro s
+    have h1 : P.relation s ∈ P.ker := by
+      rw [← P.span_range_relation_eq_ker]; exact Ideal.subset_span ⟨s, rfl⟩
+    have h2 : algebraMap P.Ring A (P.relation s) = 0 := h1
+    exact Ideal.mem_comap.mpr (by rw [h2]; exact p.zero_mem)
+  -- The Jacobian determinant is not in `q`.
+  have hjac : P.jacobiMatrix.det ∉ q := by
+    intro hmem
+    have h1 : P.jacobian ∈ p := by
+      rw [P.jacobian_eq_jacobiMatrix_det]; exact Ideal.mem_comap.mp hmem
+    exact hp.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 P.jacobian_isUnit)
+  -- Hence the family `j ↦ d (relation j)` is linearly independent over κ.
+  have hLI : LinearIndependent κ (fun j : σ => d (P.relation j)) := by
+    have hdet : (e.mapMatrix P.jacobiMatrix).det ≠ 0 := by
+      rw [← RingHom.map_det]
+      intro h
+      exact hjac ((hezero _).mp h)
+    have hu : IsUnit (e.mapMatrix P.jacobiMatrix) :=
+      Matrix.isUnit_iff_isUnit_det _ |>.mpr (isUnit_iff_ne_zero.mpr hdet)
+    have hcols := Matrix.linearIndependent_cols_iff_isUnit.mpr hu
+    have hcoleq : (e.mapMatrix P.jacobiMatrix).col = fun j : σ => d (P.relation j) := by
+      funext j i
+      simp [hddef, Matrix.col, P.jacobiMatrix_apply]
+    rwa [hcoleq] at hcols
+  -- The list of relations, indexed by a duplicate-free enumeration of `σ`.
+  set L : List σ := (Finset.univ : Finset σ).toList with hLdef
+  have hLnodup : L.Nodup := Finset.nodup_toList _
+  have hLmem : ∀ s : σ, s ∈ L := by intro s; simp [hLdef]
+  set l : List B := L.map (fun s => fB (P.relation s)) with hldef
+  have hllen : l.length = L.length := by simp [hldef]
+  have hlget : ∀ (n : ℕ) (hnL : n < L.length),
+      l[n]'(by rw [hllen]; exact hnL) = fB (P.relation (L[n]'hnL)) := by
+    intro n hnL; simp only [hldef, List.getElem_map]
+  refine ⟨B, inferInstance, inferInstance, l, ?_, ?_⟩
+  · -- the independence conditions
+    intro n hn
+    have hnL : n < L.length := by rw [← hllen]; exact hn
+    constructor
+    · rw [hlget n hnL, ← hmax]
+      exact Ideal.mem_map_of_mem _ (hrelq _)
+    · -- the real content
+      intro hcon
+      set T : Set P.Ring := P.relation '' {s | s ∈ L.take n} with hTdef
+      have hTq : T ⊆ (q : Set P.Ring) := by rintro _ ⟨s, _, rfl⟩; exact hrelq s
+      have hspan : Ideal.span {y : B | y ∈ l.take n} = Ideal.map fB (Ideal.span T) := by
+        rw [Ideal.map_span]
+        congr 1
+        rw [hTdef, Set.image_image]
+        ext y
+        simp only [Set.mem_setOf_eq, Set.mem_image, hldef, ← List.map_take, List.mem_map]
+      have hJ : (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y : B | y ∈ l.take n}
+          = Ideal.map fB (q ^ 2 ⊔ Ideal.span T) := by
+        rw [Ideal.map_sup, Ideal.map_pow, hmax, hspan]
+      rw [hJ, hlget n hnL] at hcon
+      obtain ⟨⟨⟨y, hyJ⟩, ⟨s, hs⟩⟩, hey⟩ :=
+        (IsLocalization.mem_map_algebraMap_iff q.primeCompl B).mp hcon
+      simp only at hey
+      rw [← map_mul] at hey
+      obtain ⟨⟨t, ht⟩, hct⟩ := (IsLocalization.eq_iff_exists q.primeCompl B).mp hey
+      simp only at hct
+      -- `u * relation L[n] ∈ J` with `u ∉ q`
+      set u : P.Ring := t * s with hudef
+      have huq : u ∉ q := fun h => (hq.mem_or_mem h).elim ht hs
+      have hmemJ : u * P.relation (L[n]'hnL) ∈ q ^ 2 ⊔ Ideal.span T := by
+        have hrw : u * P.relation (L[n]'hnL) = t * y := by rw [hudef]; rw [← hct]; ring
+        rw [hrw]
+        exact Ideal.mul_mem_left _ _ hyJ
+      have hdmem := hd_sup T hTq _ hmemJ
+      rw [hdmul, (hezero _).mpr (hrelq _), zero_smul, add_zero] at hdmem
+      have heu : e u ≠ 0 := fun h => huq ((hezero u).mp h)
+      have hfin : d (P.relation (L[n]'hnL)) ∈ Submodule.span κ (d '' T) := by
+        have hsm := Submodule.smul_mem (Submodule.span κ (d '' T)) (e u)⁻¹ hdmem
+        rwa [smul_smul, inv_mul_cancel₀ heu, one_smul] at hsm
+      -- but `d ∘ relation` is linearly independent and `L[n] ∉ L.take n`
+      have hnotmem : (L[n]'hnL) ∉ {s | s ∈ L.take n} := by
+        intro hmem
+        obtain ⟨j, hj, hji⟩ := List.mem_iff_getElem.mp hmem
+        rw [List.length_take] at hj
+        have hjn : j < n := lt_of_lt_of_le hj (min_le_left _ _)
+        rw [List.getElem_take] at hji
+        have hij := hLnodup.getElem_inj_iff.mp hji
+        omega
+      have himg : d '' T = (fun j : σ => d (P.relation j)) '' {s | s ∈ L.take n} := by
+        rw [hTdef, ← Set.image_comp]; rfl
+      rw [himg] at hfin
+      exact hLI.notMem_span_image hnotmem hfin
+  · -- the presentation of the stalk
+    have hspanl : Ideal.span {y : B | y ∈ l} = Ideal.map fB P.ker := by
+      rw [← P.span_range_relation_eq_ker, Ideal.map_span]
+      congr 1
+      rw [← Set.range_comp]
+      ext y
+      simp [hldef, List.mem_map, hLmem, Function.comp_def]
+    have hkerP : P.ker = RingHom.ker (algebraMap P.Ring A) := rfl
+    rw [hspanl, hkerP]
+    exact nonempty_ringEquiv_localizationAtPrime_quotient_map_ker
+      (algebraMap P.Ring A) hsurjA B
+
+/-- **THE SAME, FROM THE `IsStandardSmooth` CLASS** (**PROVEN 2026-07-26**):
+unpacks the existential of `Algebra.IsStandardSmooth.out` into a concrete
+`SubmersivePresentation` and applies the previous theorem. -/
+theorem exists_isRegularLocalRing_quotient_indepList_of_isStandardSmooth
+    {K : Type u} [Field K] {A : Type u} [CommRing A] [Algebra K A]
+    [hA : Algebra.IsStandardSmooth K A] (p : Ideal A) [p.IsPrime] :
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsRegularLocalRing B) (l : List B),
+      (∀ (n : ℕ) (hn : n < l.length),
+        l[n] ∈ IsLocalRing.maximalIdeal B ∧
+          l[n] ∉ (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) ∧
+      Nonempty ((Localization.AtPrime p) ≃+* (B ⧸ Ideal.span {y | y ∈ l})) := by
+  obtain ⟨ι, σ, hσ, hι, ⟨Pr⟩⟩ := hA.out
+  haveI := hσ
+  haveI := hι
+  exact exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation Pr p
+
+/-- **THE SAME, FOR AN ARBITRARY LOCALIZATION OF `A` AT `p`**
+(**PROVEN 2026-07-26**).
+
+This restatement exists purely for ELABORATION COST at the call site: the
+scheme-level consumer holds the stalk `𝒪_{Z,z}`, a colimit in `CommRingCat`,
+and asking Lean to unify that against the concrete `Localization.AtPrime p`
+sends `whnf` into the colimit and blows the heartbeat budget. Taking the
+localization as a variable `S` makes the consumer a single application. -/
+theorem exists_isRegularLocalRing_quotient_indepList_of_isStandardSmooth_of_isLocalization
+    {K : Type u} [Field K] {A : Type u} [CommRing A] [Algebra K A]
+    [Algebra.IsStandardSmooth K A] (p : Ideal A) [p.IsPrime]
+    (S : Type u) [CommRing S] [Algebra A S] [IsLocalization.AtPrime S p] :
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsRegularLocalRing B) (l : List B),
+      (∀ (n : ℕ) (hn : n < l.length),
+        l[n] ∈ IsLocalRing.maximalIdeal B ∧
+          l[n] ∉ (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) ∧
+      Nonempty (S ≃+* (B ⧸ Ideal.span {y | y ∈ l})) := by
+  obtain ⟨B, hBc, hBr, l, hindep, ⟨eqB⟩⟩ :=
+    exists_isRegularLocalRing_quotient_indepList_of_isStandardSmooth (K := K) (A := A) p
+  exact ⟨B, hBc, hBr, l, hindep,
+    ⟨(IsLocalization.algEquiv p.primeCompl S (Localization.AtPrime p)).toRingEquiv.trans eqB⟩⟩
+
 open CategoryTheory AlgebraicGeometry in
 /-- **THE STALK OF A SMOOTH `K`-SCHEME IS A REGULAR LOCAL RING MODULO AN
-INDEPENDENT LIST** (sorry node, cut 2026-07-26 out of
-`isRegularLocalRing_stalk_of_smooth_over_field`; it is now the ONLY open leaf
-below that node, and carries all of its remaining GEOMETRIC content).
+INDEPENDENT LIST** (**PROVEN 2026-07-26**; cut 2026-07-26 out of
+`isRegularLocalRing_stalk_of_smooth_over_field`, whose entire remaining
+GEOMETRIC content it carried, and closed the same day).
 
 For `Z` smooth over `Spec K` and `z : Z`, the stalk `𝒪_{Z,z}` is
 `B ⧸ (f₀, …, f_{c-1})` for some REGULAR LOCAL `B` and some list satisfying the
 iterated independence condition of `isRegularLocalRing_quotient_span_list_aux`.
 
-WHAT IS LEFT TO DO, and it is a presentation-plus-Jacobian argument over
-machinery that already exists at this pin:
+THIS DECLARATION IS NOW ONLY THE CHART BOOKKEEPING. All the algebra lives in
+`exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation` and
+its two restatements, immediately above. What happens here:
 
-1. `AlgebraicGeometry.Smooth.exists_isStandardSmooth` (mathlib) gives affine
-   opens `U ∋ f.base z` in `Spec K` and `V ∋ z` in `Z` with
-   `(f.appLE U V e).hom.IsStandardSmooth`. `Spec K` is a one-point space, so
-   `U = ⊤` and `Γ(Spec K, U) ≅ K` by `Scheme.ΓSpecIso`; put `A := Γ(Z, V)`, so
-   `A` is a standard smooth `K`-algebra and
-   `𝒪_{Z,z} ≅ A_p` by `IsAffineOpen.isLocalization_stalk`.
-2. `Algebra.IsStandardSmooth K A` unpacks to a `SubmersivePresentation`:
-   `A = P ⧸ (r_σ)` with `P = MvPolynomial ι K`, `ι` and `σ` finite, and the
-   Jacobian a unit. Take `q` the preimage of `p` in `P` and put `B := P_q`.
-3. `B` IS REGULAR LOCAL FOR FREE: `MvPolynomial.isRegularRing_of_isRegularRing`
-   (`Mathlib/RingTheory/RegularLocalRing/Polynomial.lean`) gives
-   `IsRegularRing (MvPolynomial ι K)`, whose `isRegularLocalRing_localization`
-   field is exactly `IsRegularLocalRing (Localization.AtPrime q)`. Nothing has
-   to be proven here — it is `infer_instance`.
-4. `A_p ≅ B ⧸ (r_σ)B` is the commutation of localization with the quotient.
-5. THE ONLY REAL CONTENT: the images of the `r_σ` in `𝔪_B/𝔪_B²` are linearly
-   independent. This is the Jacobian criterion, and mathlib supplies it in
-   cotangent-complex form: `SubmersivePresentation.cotangentComplex_injective`
-   says `I/I² → S ⊗_P Ω_{P/K}` is INJECTIVE, and `sectionCotangent_comp`
-   exhibits a RETRACTION of it — so the injection is SPLIT and therefore stays
-   injective after base change to the residue field `κ(p)`. Since the composite
-   `J/𝔪J → 𝔪_B/𝔪_B² → κ ⊗_P Ω_{P/K}` is injective, its FIRST factor is, which
-   is the required independence. Then convert independence to the iterated
-   prefix form the engine consumes.
+1. `AlgebraicGeometry.Smooth.exists_isStandardSmooth` gives affine opens
+   `U ∋ f.base z` in `Spec K` and `V ∋ z` in `Z` with
+   `(f.appLE U V e).hom.IsStandardSmooth`.
+2. `Spec K` is a ONE-POINT space (`Unique (PrimeSpectrum K)` for a field), so
+   the nonempty `U` is `⊤`, and `Scheme.ΓSpecIso` identifies `Γ(Spec K, ⊤)`
+   with `K`. Transporting `IsStandardSmooth` across that iso is
+   `RingHom.isStandardSmooth_respectsIso.2`, so `A := Γ(Z, V)` is a standard
+   smooth `K`-algebra.
+3. `IsAffineOpen.isLocalization_stalk` makes `𝒪_{Z,z}` a localization of `A` at
+   `p := hV.primeIdealOf z`; the `Algebra Γ(Z, V) 𝒪_{Z,z}` instance has to be
+   supplied by hand as `Z.presheaf.algebra_section_stalk ⟨z, hzV⟩`, because
+   instance search cannot solve `↑?x = z` for `?x : ↥V` through the coercion.
+
+CORRECTION TO THE ORIGINAL RECIPE (which is preserved below as the record of a
+route that WORKS but is not the cheapest). The recipe's step 5 proposed the
+cotangent complex: `SubmersivePresentation.cotangentComplex_injective`, split
+by `sectionCotangent_comp`, hence stable under base change to `κ(p)`. That is
+correct mathematics, and it is NOT what the proof does — the whole
+`Extension.Cotangent` translation is avoidable. `jacobian` is by DEFINITION the
+image of `Matrix.det` of `pderiv (P.map i) (P.relation j)`
+(`jacobian_eq_jacobiMatrix_det` + `jacobiMatrix_apply`), so "the images of the
+`r_σ` are independent in `𝔪_B/𝔪_B²`" is a statement about an explicit matrix
+over `κ(q)` being invertible, and `Matrix.linearIndependent_cols_iff_isUnit`
+closes it. See that theorem's docstring for the argument in full.
+
+The estimate attached to this leaf at dispatch — "budget the translation, not
+the mathematics" — was therefore the right shape but aimed at the wrong cost:
+there was no translation to pay for. What DID cost real cycles was elaboration
+performance, twice, and both times the fix was the project's own
+"state helpers over a VARIABLE base" rule: unifying against the concrete
+`Localization.AtPrime q` (an Ore localization) and against the stalk (a colimit
+in `CommRingCat`) both send `whnf` past the heartbeat limit, and both dissolve
+once the ring in question is a variable. That is why two of the three helper
+theorems above exist at all.
 
 WHY THIS IS THE RIGHT PLACE TO CUT. Everything downstream of the independence
-statement is now PROVEN: `isRegularLocalRing_quotient_span_singleton` and
+statement was already PROVEN when the cut was made:
+`isRegularLocalRing_quotient_span_singleton` and
 `isRegularLocalRing_quotient_span_list_aux` (both above) are a complete,
 general "quotient by part of a regular system of parameters is regular", which
 mathlib does not have in any form — `RegularLocalRing/` is two files and
-neither mentions quotients. So the remaining gap is no longer commutative
-algebra at all; it is the presentation bookkeeping of items 1–4 plus the
-cotangent-complex translation of item 5.
+neither mentions quotients.
 
 TWO ROUTES EXPLICITLY REJECTED, both recorded so nobody re-walks them:
 
@@ -2887,8 +3223,31 @@ theorem exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field
       (∀ (n : ℕ) (hn : n < l.length),
         l[n] ∈ IsLocalRing.maximalIdeal B ∧
           l[n] ∉ (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) ∧
-      Nonempty ((Z.presheaf.stalk z : Type u) ≃+* (B ⧸ Ideal.span {y | y ∈ l})) :=
-  sorry
+      Nonempty ((Z.presheaf.stalk z : Type u) ≃+* (B ⧸ Ideal.span {y | y ∈ l})) := by
+  haveI := hf
+  obtain ⟨U, hU, V, hV, hzV, ele, hss⟩ := Smooth.exists_isStandardSmooth f z
+  have hfz : f.base z ∈ U := ele hzV
+  -- `Spec K` is a ONE-POINT space, so the affine open `U` downstairs is `⊤`
+  -- and `Γ(Spec K, U)` is `K` itself.
+  haveI : Subsingleton ↥(Spec (CommRingCat.of K)) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum K))
+  have hUtop : U = ⊤ := by
+    refine le_antisymm le_top fun x _ => ?_
+    have hx : x = f.base z := Subsingleton.elim _ _
+    exact hx ▸ hfz
+  subst hUtop
+  let eK : K ≃+* ↥Γ(Spec (CommRingCat.of K), ⊤) :=
+    (Scheme.ΓSpecIso (CommRingCat.of K)).symm.commRingCatIsoToRingEquiv
+  letI : Algebra K ↥Γ(Z, V) := ((f.appLE ⊤ V ele).hom.comp eK.toRingHom).toAlgebra
+  haveI : Algebra.IsStandardSmooth K ↥Γ(Z, V) :=
+    RingHom.isStandardSmooth_respectsIso.2 _ eK hss
+  -- and the stalk is the localization of `Γ(Z, V)` at the prime of `z`
+  letI : Algebra ↥Γ(Z, V) ↥(Z.presheaf.stalk z) :=
+    Z.presheaf.algebra_section_stalk ⟨z, hzV⟩
+  haveI hstalk : IsLocalization.AtPrime ↥(Z.presheaf.stalk z)
+      (hV.primeIdealOf ⟨z, hzV⟩).asIdeal := hV.isLocalization_stalk ⟨z, hzV⟩
+  exact exists_isRegularLocalRing_quotient_indepList_of_isStandardSmooth_of_isLocalization
+    (K := K) (A := ↥Γ(Z, V)) (hV.primeIdealOf ⟨z, hzV⟩).asIdeal ↥(Z.presheaf.stalk z)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS**
@@ -2966,13 +3325,16 @@ here — it is scheme-theoretic bookkeeping with no mathematical content, and it
 is folded into the single remaining leaf above, whose docstring writes the
 recipe out in five steps.
 
-**STATUS 2026-07-26.** This node is now PROVEN, in three lines, over
-`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (SORRY —
-present the stalk as regular-local-modulo-an-independent-list) and
-`isRegularLocalRing_quotient_span_list_aux` (PROVEN — that such a quotient is
-regular local). The whole COMMUTATIVE-ALGEBRA half is therefore closed, and
-what remains is presentation bookkeeping plus the cotangent-complex form of
-the Jacobian criterion. -/
+**STATUS 2026-07-26.** This node is PROVEN, in three lines, over
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (**PROVEN
+2026-07-26** — present the stalk as regular-local-modulo-an-independent-list)
+and `isRegularLocalRing_quotient_span_list_aux` (PROVEN — that such a quotient
+is regular local). **Both halves are now closed and this whole subtree is
+sorry-free**: the presentation bookkeeping went through
+`Smooth.exists_isStandardSmooth` plus `IsAffineOpen.isLocalization_stalk`, and
+the Jacobian criterion did NOT need its cotangent-complex form — `jacobian` is
+literally a determinant of partial derivatives, so the independence is an
+invertible matrix over the residue field `κ(q)`. -/
 theorem isRegularLocalRing_stalk_of_smooth_over_field {K : Type u} [Field K]
     {Z : AlgebraicGeometry.Scheme.{u}}
     (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
