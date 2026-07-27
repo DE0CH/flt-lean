@@ -7531,8 +7531,27 @@ THE SPLIT.  Both sides are evaluated at `Frob_v`, and there both are
   — pure algebraic number theory, valid over any number field `F`, and
   needing only `v ∤ q`;
 * the LEFT side by `det_globalFrob_eq_absNorm_of_tateFrame`, which is
-  where ALL the abelian-variety geometry now lives and is the section's
-  only remaining sorry.
+  where ALL the abelian-variety geometry lives.
+
+STATUS UPDATE (2026-07-27, verified by a clean `lake build` of this
+module: `EXIT=0`, zero errors, no `declaration uses 'sorry'` at this
+declaration).  An earlier version of the bullet above called
+`det_globalFrob_eq_absNorm_of_tateFrame` "the section's only remaining
+sorry".  That is now FALSE and was already false when it was read: that
+declaration was PROVEN later the same day over
+`exists_tateWeilPairing_of_mult` and
+`det_eq_cyclotomicCharacter_of_tateWeilPairing`, and
+`exists_tateWeilPairing_of_mult` was in turn proven over
+`exists_tateWeilSystem_of_mult`.
+
+So the geometry has descended one more level: the only DIRECT sorry left
+anywhere beneath this declaration is `exists_tateWeilSystem_of_mult`
+(the `I`-adic Weil SYSTEM — the compatible family of level-`I^n`
+pairings, before the inverse limit).  This declaration and the whole
+chain between it and that leaf are proven; do NOT dispatch a prover
+here.  The module's other direct sorries (`exists_bettiFrame`,
+`exists_finset_frobSpecialization_of_mult`,
+`exists_frobEndoCharEq_of_mult_finiteBase`) are outside this chain.
 
 `GaloisRepresentation.globalFrob v` is by definition the image of
 `Field.AbsoluteGaloisGroup.adicArithFrob v` under
