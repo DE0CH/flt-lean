@@ -105,6 +105,13 @@ public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `det_galoisRep_eq_cyclotomic` (the DERIVED determinant node), the
 -- `χ₁χ₂ = ω̄` input of the dichotomy derivation.
 public import Fermat.FLT.EllipticCurve.WeilPairing
+-- `HasseBound.sq_frobeniusTrace_le` — Hasse's bound, proven there over the
+-- single isogeny-degree leaf `HasseBound.natCard_ker_degreeFormEnd`, together
+-- with the point-level Frobenius `HasseBound.frobeniusPointEnd` and the
+-- endomorphism `HasseBound.degreeFormEnd` (`[m] − [n]∘F`).  Shared
+-- infrastructure between `hasse_bound_natCard_affine_point` and
+-- `natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below.
+public import Fermat.FLT.EllipticCurve.HasseBound
 -- `FreyCurve.torsion_isUnramified` (unramifiedness outside `{2, p}`),
 -- consumed by the derivation of the semistability leaf.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
@@ -3642,9 +3649,41 @@ theorem WeierstrassCurve.exists_frobenius_reduction_model_of_potentiallyGoodRedu
   refine ⟨Wbar, hell, ψ₀.trans χ, fun x => ?_⟩
   rw [LinearEquiv.trans_apply, LinearEquiv.trans_apply, hψ₀ x, hχ]
 
-/-- **Hasse's bound** (sorry leaf, opened 2026-07-27 by decomposing
-`hasseWeil_trace_frobeniusTorsionEnd` below): for an elliptic curve over
-`𝔽_q`, the trace `a := q + 1 − #Wbar(𝔽_q)` satisfies `a² ≤ 4q`.
+/-- **Hasse's bound** (PROVEN 2026-07-27 — see
+`Fermat/FLT/EllipticCurve/HasseBound.lean`, where it is
+`HasseBound.sq_frobeniusTrace_le`, proven over the single isogeny-degree
+leaf `HasseBound.natCard_ker_degreeFormEnd`; opened as a sorry leaf earlier
+the same day by decomposing `hasseWeil_trace_frobeniusTorsionEnd` below):
+for an elliptic curve over `𝔽_q`, the trace `a := q + 1 − #Wbar(𝔽_q)`
+satisfies `a² ≤ 4q`.
+
+WHERE THE WORK WENT, AND WHAT IS LEFT.  The whole of the inequality is now
+machine-checked; what remains is one leaf in the new module, and it is a
+NAMED classical theorem rather than an inert inequality:
+
+    HasseBound.natCard_ker_degreeFormEnd :
+      q ∤ m → (#ker ([m] − [n]∘F) : ℤ) = m² − a·m·n + n²·q
+
+i.e. the degree of `[m] − [n]∘F` on `Wbar(𝔽̄_q)`, counted by its kernel
+(Silverman *AEC* III.6.2 + III.4.10 + V.1.1).  The point of routing
+through it is that the value of the quadratic form becomes a CARDINALITY,
+so its positivity is `Int.natCast_nonneg` rather than an assumption; the
+bound then follows from two explicit evaluations, both arranged to
+respect the separability condition `q ∤ m`.  That module also supplies
+`HasseBound.frobeniusPointEnd` (the `q`-power Frobenius on the full point
+group, of which `WeilPairing.frobeniusTorsionEnd` is the restriction to
+the `N`-torsion) and `HasseBound.degreeFormEnd`, which are exactly the
+shared infrastructure that
+`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below also needs
+— note that `natCard_ker_degreeFormEnd` at `(m, n) = (1, 1)` says
+`#ker(1 − F) = #Wbar(𝔽_q)`, which is that leaf's own "cheap first step".
+
+THE AUDIT BELOW IS RETAINED because it records the three cuts that were
+tried and rejected on the ALGEBRAIC axis, and it is still correct on that
+axis: it is the reason the cut finally taken is a geometric one.  The
+missing-machinery claim is likewise unchanged — the degree of an isogeny
+is still absent from all three trees; it has simply been isolated into one
+named leaf instead of hiding inside an inequality.
 
 This is the ARITHMETIC half of that leaf, and it mentions neither `N` nor the
 torsion: it is a statement about the point count alone. It is genuinely
@@ -3713,15 +3752,16 @@ the next owner does not repeat the survey.
   development, and the reduction needs `q` odd while the consumers use
   `q ∈ {3, 5}`.
 
-THE AXIS NOT SEARCHED, and where the next owner should look: the ISOGENY axis,
-i.e. giving this tree a `deg` that is the true degree rather than
-`Nat.card (ker ·)`. That is a real piece of missing infrastructure and it is
-shared with `natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` below,
-so it should be built once for both rather than twice. -/
+THE AXIS THAT WAS NOT SEARCHED THEN, AND WAS TAKEN ON 2026-07-27: the ISOGENY
+axis, i.e. giving this tree a `deg` that is the true degree rather than
+`Nat.card (ker ·)`. It is now `Fermat/FLT/EllipticCurve/HasseBound.lean`; see
+the head of this docstring. The key observation, which is what the three
+rejected cuts all miss, is that the quadratic form does not have to be
+POSTULATED nonnegative — for `q ∤ m` it IS the cardinality of a kernel. -/
 theorem hasse_bound_natCard_affine_point (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
     ((q : ℤ) + 1 - (Nat.card Wbar.toAffine.Point : ℤ)) ^ 2 ≤ 4 * (q : ℤ) :=
-  sorry
+  _root_.HasseBound.sq_frobeniusTrace_le q Wbar
 
 /-- **Rank-two linear algebra: `det (1 − f) = 1 − tr f + det f`** (PROVEN
 2026-07-27). Over an arbitrary commutative ring, for a module with a basis
