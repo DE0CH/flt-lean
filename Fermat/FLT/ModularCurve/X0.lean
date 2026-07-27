@@ -380,6 +380,17 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Flat
 -- `CyclicSubgroupOfOrder.locallyOfFinitePresentation_of_specQBase`.  It also
 -- brings in `Scheme.Hom.finrank`, in which the former leaf is stated.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.FinitePresentationOfFinrank
+-- `AlgebraicGeometry.Scheme.Hom.finrank_eq_card_geometricPoints`: the rank of a
+-- finite flat morphism at a point is the number of geometric points of the fibre
+-- there, PROVIDED that fibre is reduced.  This is what reduces
+-- `CyclicSubgroupOfOrder.finrank_eq_of_specQBase` to Cartier's theorem alone —
+-- the counting (`geom_cyclic` gives exactly `N` geometric points) is then
+-- discharged mechanically.  The shim also carries the two halves separately:
+-- `Algebra.finrank_eq_card_algHom` (a finite reduced algebra over an
+-- algebraically closed field has rank = number of `K`-points) and
+-- `AlgebraicGeometry.fibrePointEquivAlgHom` (the `RelPoint`-to-fibre-algebra
+-- translation, which needs no hypothesis at all).
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.FinrankGeometricPoints
 -- `AlgebraicGeometry.Etale`: the hypothesis carried by every declaration in the
 -- torsion-subscheme section below.  It is what repairs the FALSE leaf
 -- `flat_torsionι` (see the REPAIR RECORD there): `geom_cyclic` pins the
@@ -7796,10 +7807,14 @@ with a record of the repair and of which consumers were threaded.  The
 only open work left in this section is Cartier's theorem, which is what
 supplies that hypothesis over a `ℚ`-scheme:
 `CyclicSubgroupOfOrder.etale_of_specQBase` is now PROVEN, over the two
-leaves `CyclicSubgroupOfOrder.finrank_eq_of_specQBase` (Cartier fibrewise)
-and `CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero` (Cartier
-infinitesimal).  `CyclicSubgroupOfOrder.locallyOfFinitePresentation_of_specQBase`
-was itself closed on 2026-07-27 over the first of those. -/
+leaves `CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase` (Cartier
+proper: every geometric fibre of `C` is reduced) and
+`CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero` (Cartier
+infinitesimal).  Both `locallyOfFinitePresentation_of_specQBase` and
+`finrank_eq_of_specQBase` were closed on 2026-07-27 over the first of
+those; the sharpening to reducedness is what took the counting out of the
+leaf, and a route that would ALSO absorb the second leaf is recorded in
+the docstring of `finrank_eq_of_specQBase`. -/
 
 /-- **The zero section of an abelian scheme is a closed immersion**
 (PROVEN).  It is a section of `f`, and `f` is proper hence separated, so
@@ -8120,9 +8135,10 @@ proof irrelevance makes the threading through `Gamma0Datum.ofDvd` and
 `IsBaseChangeOf.ofDvd` free.  Its ℚ-base instance is
 `CyclicSubgroupOfOrder.etale_of_specQBase` below, which is where
 Cartier's theorem now sits.  That node is itself PROVEN, over the two
-leaves `CyclicSubgroupOfOrder.finrank_eq_of_specQBase` (Cartier proper, in
-fibrewise form — it is what `locallyOfFinitePresentation_of_specQBase`,
-now PROVEN, reduces to) and
+leaves `CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase` (Cartier
+proper: the geometric fibres of `C` are reduced — it is what
+`finrank_eq_of_specQBase`, and through it
+`locallyOfFinitePresentation_of_specQBase`, now reduce to) and
 `CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero` (Cartier proper,
 in infinitesimal form).
 
@@ -8150,59 +8166,138 @@ theorem CyclicSubgroupOfOrder.flat_torsionι {E T : Scheme.{u}} {f : E ⟶ T}
   rw [Category.assoc]
   exact (AlgebraicGeometry.Etale.iff_flat_and_formallyUnramified.mp inferInstance).1
 
-/-- **The rank of `C` over a `ℚ`-base is `N` everywhere** (sorry leaf, and
-after the 2026-07-27 cut it is CARTIER'S THEOREM IN FIBREWISE FORM, with
-nothing else left in it).
+/-- **CARTIER'S THEOREM, in the one form the rest of this section needs:
+over a `ℚ`-base every GEOMETRIC FIBRE of `C` is reduced** (sorry leaf, and
+after the 2026-07-27 cut this is *all* that is left — `finrank_eq_of_specQBase`
+below is now PROVEN over it, and the counting that used to be tangled up
+with it is discharged).
+
+`Limits.pullback (c.ι ≫ f) g` is `C ×_T Spec K`, the fibre of `C` at the
+geometric point `g`.  It is a finite flat `K`-scheme, and it is a
+**subgroup scheme** of `E ×_T Spec K`: for every `K`-scheme `T'`,
+`Hom_K(T', C_K) = Hom_T(T', C)`, and `zero_liesIn` / `add_liesIn` /
+`neg_liesIn` say exactly that this subfunctor of the points of `E_K` is a
+subgroup at every `T'`.  Cartier's theorem — a group scheme locally of
+finite type over a field of characteristic zero is reduced (indeed smooth)
+— then gives the conclusion.  Formalising it is the one piece of
+mathematics still missing here; `Fermat/FLT/GroupScheme/HopfKaehler.lean`
+(sorry-free) already supplies the standard input `Ω[G⁄R] ≅ G ⊗_R ω_G`.
+
+**`q` IS LOAD-BEARING.**  In residue characteristic `p` this is FALSE, and
+the witnesses are the `ker F`-type subgroup schemes exhibited in the
+FALSITY AUDIT of `flat_torsionι` above: `ker F ⊆ 𝔾_a` over `𝔽̄_p` is finite
+flat of rank `p` with a single, non-reduced, geometric point.
+
+`N` plays no role: Cartier needs finite, flat, subgroup and characteristic
+zero, and not cyclicity.  It is present only because `c` bundles it.  The
+statement is vacuous when `T` is empty (in particular at `N = 0`, where
+`isEmpty_of_gamma0Datum_zero`'s argument forces emptiness), since then
+there is no `g` at all.
+
+REFERENCES: SGA 3, VI_B 1.6.1; Oort, *Commutative group schemes*;
+Waterhouse, *Introduction to Affine Group Schemes*, Thm. 11.4; Tate,
+*Finite flat group schemes*, §3.7 in Cornell–Silverman–Stevens;
+Katz–Mazur (6.7.1). -/
+theorem CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase
+    {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
+    (c : CyclicSubgroupOfOrder ab N) (q : T ⟶ SpecQ)
+    (K : Type) [Field K] [IsAlgClosed K] (g : Spec (CommRingCat.of K) ⟶ T) :
+    AlgebraicGeometry.IsReduced (Limits.pullback (c.ι ≫ f) g) :=
+  sorry
+
+/-- **The rank of `C` over a `ℚ`-base is `N` everywhere** (PROVEN
+2026-07-27 over the single leaf `isReduced_geomFibre_of_specQBase` above,
+which is Cartier's theorem; this used to be the sorry leaf itself).
 
 `Scheme.Hom.finrank` (mathlib, `AlgebraicGeometry/Morphisms/FlatRank.lean`)
 is defined for an arbitrary morphism — no `Flat`/`IsFinite` instance is
 needed to *state* this — and for a finite flat morphism it is the rank of
 `f_* 𝒪_C` at the point, i.e. `dim_{κ(t)}` of the fibre algebra.
 
-**WHAT IS FREE AND WHAT IS NOT.**  The inequality `≥ N` is free: over an
-algebraic closure `K` of `κ(t)`, `geom_cyclic` supplies `N` distinct
-`K`-points of the fibre (the group `AddSubgroup.zmultiples y` has exactly
-`addOrderOf y = N` elements), and a finite `K`-algebra with `N` distinct
-`K`-points has dimension `≥ N`.  EQUALITY holds iff the geometric fibre is
-REDUCED, and that is precisely Cartier's theorem: over a `ℚ`-base every
-fibre is a finite commutative group scheme over a field of characteristic
-zero, where Cartier gives reducedness.  So `q` is load-bearing — in
-residue characteristic `p` the statement is FALSE, and the witnesses are
-the `ker F`-type subgroup schemes exhibited in the FALSITY AUDIT of
-`flat_torsionι` above, whose rank exceeds their geometric point count.
+**WHAT THE PROOF DOES, AND WHERE THE OLD ENTANGLEMENT WENT.**  The generic
+half is now a mathlib-facing shim,
+`AlgebraicGeometry.Scheme.Hom.finrank_eq_card_geometricPoints`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/FinrankGeometricPoints.lean`): for a
+finite flat `h : X ⟶ Y` and a geometric point `g : Spec K ⟶ Y`, if the
+fibre `X ×_Y Spec K` is REDUCED then `h.finrank (g y)` is the number of
+`K`-points of `X` over `g`.  Its two halves are separately reusable —
+`Algebra.finrank_eq_card_algHom` (a finite reduced algebra over an
+algebraically closed field has `dim_K A = #(A →ₐ[K] K)`; without
+reducedness only `≤` holds, which is mathlib's `card_algHom_le_finrank`)
+and `AlgebraicGeometry.fibrePointEquivAlgHom` (`K`-points of `X` over `g`
+are the `K`-algebra maps out of the fibre algebra, with NO hypothesis on
+the fibre).  All that is left here is to take `K = κ(t)‾`, note that
+`geom_cyclic` makes the `K`-points of `C` over that geometric point a
+bijective copy of `AddSubgroup.zmultiples y` — `ι` is a monomorphism, so a
+`K`-point of `C` is the same thing as a relative point of `E` lying in
+`C` — and read off `Nat.card = addOrderOf y = N`.
 
-`N = 0` is not a special case to worry about: a geometric point of
-infinite order would make `C_t(K)` infinite, contradicting finiteness of
-`C ⟶ T`, so `N = 0` forces `T` to have no points at all and the statement
-is vacuous there.
+So the inequality `≥ N` really was free, exactly as the previous version of
+this docstring recorded, and *both* directions now come from the same
+count; the only thing reducedness buys is `≤`.
 
 **A ROUTE FOR THE SIBLING LEAF, RECORDED HERE BECAUSE THIS NODE IS THE
-COMMON INPUT.**  With this leaf in hand `C ⟶ T` is finite, flat and
-locally of finite presentation (see the theorem directly below), and its
-geometric fibres have `#C_t(K) = N = dim_K Γ(C_t ⊗ K)`, hence are reduced,
-hence are étale over `K`.  Mathlib's
+COMMON INPUT, AND NOT TAKEN.**  With this theorem `C ⟶ T` is finite, flat
+and locally of finite presentation (see directly below), and its geometric
+fibres are reduced, hence étale over `K`.  Mathlib's
 `AlgebraicGeometry.Smooth.of_smooth_fiberToSpecResidueField`
-(`Morphisms/SmoothFiber.lean`) then upgrades "LFP + flat + smooth fibres"
-to smooth, and a finite smooth morphism is étale.  That would close
-`eq_zero_of_liesIn_of_squareZero` below as well, making this the SINGLE
-Cartier input of the whole section.  The work in that route is entirely
-the translation between `RelPoint`/`LiesIn` and the points of the fibre
-scheme; no new mathematics beyond this leaf is involved.  It was NOT taken
-in this pass only for want of time.
-
-REFERENCES: SGA 3, VI_B 1.6.1; Oort, *Commutative group schemes*;
-Waterhouse, *Introduction to Affine Group Schemes*, Thm. 11.4; Tate,
-*Finite flat group schemes*, §3.7 in Cornell–Silverman–Stevens;
-Katz–Mazur (6.7.1). -/
+(`Morphisms/SmoothFiber.lean`) upgrades "LFP + flat + smooth fibres" to
+smooth, and a finite smooth morphism is étale — which would close
+`eq_zero_of_liesIn_of_squareZero` below and make
+`isReduced_geomFibre_of_specQBase` the SINGLE Cartier input of the whole
+section.  **What that route still costs**, measured rather than guessed at
+on 2026-07-27: `Smooth.of_smooth_fiberToSpecResidueField` wants the fibre
+over `κ(t)`, not over `K`, so one must descend étaleness along `κ(t) ⊆ K`
+(`Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat`, available) after
+identifying `K ⊗_{κ(t)} A_{κ(t)}` with the geometric fibre algebra `A_K`
+(a pullback-pasting argument, `pullbackRightPullbackFstIso`), and then get
+`Etale` from `Smooth` for a finite morphism (`Etale` is
+`SmoothOfRelativeDimension 0`, so this needs the relative dimension). None
+of that is new mathematics; all of it is real formalisation work. -/
 theorem CyclicSubgroupOfOrder.finrank_eq_of_specQBase
     {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
     (c : CyclicSubgroupOfOrder ab N) (q : T ⟶ SpecQ) (t : T) :
-    Scheme.Hom.finrank (c.ι ≫ f) t = N :=
-  sorry
+    Scheme.Hom.finrank (c.ι ≫ f) t = N := by
+  classical
+  haveI := c.isFinite
+  haveI := c.flat
+  haveI := c.isClosedImmersion
+  -- A geometric point of `T` above `t`: the algebraic closure of the residue field.
+  let K := AlgebraicClosure (T.residueField t)
+  let g : Spec (CommRingCat.of K) ⟶ T :=
+    Spec.map (CommRingCat.ofHom (algebraMap (T.residueField t) K)) ≫
+      T.fromSpecResidueField t
+  obtain ⟨y0⟩ : Nonempty (Spec (CommRingCat.of K)) := inferInstance
+  have hpt : g y0 = t := by
+    have hmem : T.fromSpecResidueField t
+        (Spec.map (CommRingCat.ofHom (algebraMap (T.residueField t) K)) y0)
+          ∈ Set.range (T.fromSpecResidueField t) := ⟨_, rfl⟩
+    rw [Scheme.range_fromSpecResidueField] at hmem
+    exact hmem
+  -- Cartier makes the geometric fibre reduced, so the rank IS the point count.
+  rw [← hpt, Scheme.Hom.finrank_eq_card_geometricPoints (c.ι ≫ f) g
+    (c.isReduced_geomFibre_of_specQBase q K g) y0]
+  -- and `geom_cyclic` says that count is `addOrderOf y = N`.
+  letI := ab.addCommGroup g
+  obtain ⟨w, -, hword, hwall⟩ := c.geom_cyclic K g
+  have hbij : Function.Bijective
+      (fun s : {s : Spec (CommRingCat.of K) ⟶ c.C // s ≫ (c.ι ≫ f) = g} =>
+        (⟨⟨s.1 ≫ c.ι, by rw [Category.assoc]; exact s.2⟩,
+          (hwall _).mp ⟨s.1, rfl⟩⟩ : AddSubgroup.zmultiples w)) := by
+    constructor
+    · intro s₁ s₂ hs
+      exact Subtype.ext ((cancel_mono c.ι).mp
+        (congrArg Subtype.val (congrArg Subtype.val hs)))
+    · intro z
+      obtain ⟨u, hu⟩ := (hwall z.1).mpr z.2
+      refine ⟨⟨u, by rw [← Category.assoc, hu]; exact z.1.2⟩, ?_⟩
+      exact Subtype.ext (Subtype.ext hu)
+  rw [Nat.card_congr (Equiv.ofBijective _ hbij), Nat.card_zmultiples, hword]
 
 /-- **`C ⟶ T` is locally of finite presentation over a `ℚ`-base** (PROVEN
-2026-07-27 over the single leaf `finrank_eq_of_specQBase` above; this used
-to be one of the two leaves `etale_of_specQBase` below is proven over).
+2026-07-27 over `finrank_eq_of_specQBase` above, which is now itself
+PROVEN over `isReduced_geomFibre_of_specQBase`; this used to be one of the
+two leaves `etale_of_specQBase` below is proven over).
 
 `ι ≫ f` is finite (`c.isFinite`) and flat (`c.flat`); "finite locally
 free" is exactly finite + flat + FINITELY PRESENTED, and it is the last
@@ -8227,14 +8322,16 @@ locally free, and that implication is now PROVEN in general as
 together with its commutative-algebra core
 `Module.finitePresentation_of_rankAtStalk_const`.  Mathlib had only the
 converse (`Scheme.Hom.isLocallyConstant_finrank`, which *assumes* finite
-presentation), so that shim is new.  All that is left here is the value of
-the rank, which is `finrank_eq_of_specQBase` above.
+presentation), so that shim is new.  The value of the rank is
+`finrank_eq_of_specQBase` above, and that is now a theorem too, so nothing
+on this branch is open below Cartier.
 
 So the previously recorded ENTANGLEMENT with
-`eq_zero_of_liesIn_of_squareZero` is now sharper, not weaker: both leaves
-consume Cartier, but this one consumes it *only* through the fibrewise
-rank statement, and the general commutative algebra that used to be tangled
-up with it has been separated out and proven. -/
+`eq_zero_of_liesIn_of_squareZero` is now sharper, not weaker: both consume
+Cartier, but this branch consumes it *only* through
+`isReduced_geomFibre_of_specQBase`, and both the general commutative
+algebra and the geometric-point counting that used to be tangled up with
+it have been separated out and proven. -/
 theorem CyclicSubgroupOfOrder.locallyOfFinitePresentation_of_specQBase
     {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
     (c : CyclicSubgroupOfOrder ab N) (q : T ⟶ SpecQ) :
@@ -8273,30 +8370,37 @@ between this statement and a false one.**
 characteristic zero, and not cyclicity.  It is present only because `c`
 bundles it.  Note also that this leaf does NOT need
 `LocallyOfFinitePresentation`, so it and its sibling
-`finrank_eq_of_specQBase` above may be attacked independently even though
-both consume Cartier.
+`isReduced_geomFibre_of_specQBase` above may be attacked independently
+even though both consume Cartier.
 
-**SIBLING UPDATE, 2026-07-27.**  The other half of the entanglement,
-`locallyOfFinitePresentation_of_specQBase`, is now PROVEN, over the single
-leaf `finrank_eq_of_specQBase` (Cartier in FIBREWISE form: the rank of
-`C ⟶ T` is `N`).  Two consequences for whoever takes this leaf.
+**SIBLING UPDATE, 2026-07-27 (SECOND PASS).**  The other branch is now
+fully closed down to Cartier: `locallyOfFinitePresentation_of_specQBase`
+is PROVEN over `finrank_eq_of_specQBase`, which is itself PROVEN over
+`isReduced_geomFibre_of_specQBase` — "every geometric fibre of `C` is
+reduced", which is Cartier's theorem in its standard form and carries no
+counting.  Three consequences for whoever takes this leaf.
 
-* The commutative algebra that used to sit on top of that sibling —
+* The commutative algebra that used to sit on top of that branch —
   "finite + flat + locally constant rank ⟹ finite locally free" — is
   discharged in general, as
   `AlgebraicGeometry.locallyOfFinitePresentation_of_finrank_const`.  Do not
   redo it.
+* So is the counting: the `RelPoint`/`LiesIn`-to-fibre-algebra translation
+  is `AlgebraicGeometry.fibrePointEquivAlgHom`, and
+  "reduced + algebraically closed base ⟹ rank = point count" is
+  `Algebra.finrank_eq_card_algHom`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/FinrankGeometricPoints.lean`).
+  Do not redo that either.
 * **There is a route that would close THIS leaf as a corollary of the
-  sibling**, and it is recorded in full in the docstring of
-  `finrank_eq_of_specQBase`: rank `N` plus `#C_t(K) = N` makes every
-  geometric fibre reduced, hence étale, and
+  sibling**, and what it still costs is measured in the docstring of
+  `finrank_eq_of_specQBase`: reduced geometric fibres are étale over `K`,
+  so descending along `κ(t) ⊆ K` gives smooth `κ(t)`-fibres,
   `AlgebraicGeometry.Smooth.of_smooth_fiberToSpecResidueField` upgrades
-  "LFP + flat + smooth fibres" to smooth, whence étale for a finite
-  morphism.  If that route is taken, `etale_of_specQBase` becomes provable
-  from `finrank_eq_of_specQBase` alone and this declaration disappears
-  rather than being proven.  Check which of the two shapes the tree is in
-  before starting; the work is entirely the `RelPoint`/`LiesIn`-to-fibre
-  translation, with no new mathematics beyond the sibling leaf.
+  "LFP + flat + smooth fibres" to smooth, and a finite smooth morphism is
+  étale.  If that route is taken, `etale_of_specQBase` becomes provable
+  from `isReduced_geomFibre_of_specQBase` alone and this declaration
+  disappears rather than being proven.  Check which of the two shapes the
+  tree is in before starting.
 
 **THE ROUTE, INCLUDING THE ONE TO AVOID.**
 
