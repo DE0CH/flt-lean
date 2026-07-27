@@ -3111,6 +3111,108 @@ def IsHilbertResidualRigidityClause (F : Type u) [Field F] [NumberField F]
     (∀ g : Γ F, (τ g).charpoly = ((ρbar.map (algebraMap ℚ F)) g).charpoly) →
     ∃ e : (Fin 2 → k) ≃ₗ[k] V, τ.conj e = ρbar.map (algebraMap ℚ F)
 
+/-- **THE TAME-SEPARATION CLAUSE: `χ_ℓ` IS NONTRIVIAL MODULO `ℓ` ON `Γ F_w`
+FOR EVERY `w ∣ 2`** (added 2026-07-27 as the FAITHFULNESS REPAIR of
+`isHilbertTameAtTwo_of_subring_entries` below; the `F`-level analogue of
+`Deformation.lean`'s PROVEN `exists_cyclotomicCharacter_padicTwo_sub_one_isUnit`,
+which at the `ℚ` level is a THEOREM and here is not).
+
+Concretely: at every place `w ∣ 2` some `g ∈ Γ F_w` has
+`1 − χ_ℓ(g) ∈ ℤ_ℓˣ`, i.e. `χ_ℓ(g) ≢ 1 (mod ℓ)` — equivalently `μ_ℓ ⊄ F_w`,
+equivalently `N(w) ≢ 1 (mod ℓ)` since `χ_ℓ` is unramified at `w` and sends a
+Frobenius to `N(w)`.
+
+**WHY IT IS A CLAUSE AND NOT A THEOREM.** Over `ℚ` the only place over `2`
+has `F_w = ℚ_2`, and `ℚ_2` contains no primitive `ℓ`-th root of unity for
+odd `ℓ`, so the `ℚ`-level statement is unconditionally true. Over a general
+totally real `F` it is FALSE: `ℓ = 7`, `F = ℚ(ζ₇)⁺` (totally real, cubic,
+`ℓ ≥ 5`) has `2` INERT with residue degree `3`, so the unique `w ∣ 2` has
+`F_w = ℚ_2(μ_7)`, `N(w) = 8 ≡ 1 (mod 7)` and `χ_7(Γ F_w) ⊆ 1 + 7ℤ_7`.
+(Machine-checked in PARI/GP: `polsubcyclo(7,3)` has signature `[3,0]`,
+discriminant `49`, one prime over `2` with `e = 1`, `f = 3`.)
+
+**IT COSTS THE CONSUMER NOTHING**, which is the point of stating it this
+way. `isHilbertTameSeparationClause` immediately below derives it from the
+hypothesis `hw2 : ℓ ∤ N(w)² − 1` that
+`exists_isWeaklyUniversal_hilbertDeformationDatum` ALREADY carries for the
+fibre-product clause — `ℓ ∤ (N(w) − 1)(N(w) + 1)` gives `ℓ ∤ N(w) − 1` a
+fortiori — and that hypothesis is in turn imposed at the top of the module
+by `PotentialHeckeDatum.residueCardTwo` (every place of `F` over `2` has
+residue field `𝔽₂`, free in Taylor's Moret–Bailly argument). So no new
+condition enters the development anywhere: the `ℓ = 7`, `F = ℚ(ζ₇)⁺`
+witness above is exactly one of the fields `hw2` already excludes. -/
+def IsHilbertTameSeparationClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] : Prop :=
+  ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+    ∃ g : Γ (w.adicCompletion F),
+      IsUnit (1 - ((cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+          (Field.absoluteGaloisGroup.map
+            (algebraMap F (w.adicCompletion F)) g)).toRingEquiv : ℤ_[ℓ]ˣ) :
+              ℤ_[ℓ]))
+
+/-- **THE TAME-SEPARATION CLAUSE FOLLOWS FROM `hw2`** (PROVEN 2026-07-27),
+so the clause is discharged from a hypothesis the chain already carries and
+nothing downstream of `exists_isWeaklyUniversal_hilbertDeformationDatum`
+changes.
+
+Three steps. `ℓ ∉ w`, since `2 ∈ w` and `2`, `ℓ` are coprime (the argument
+is the one inside `isHilbertTameAtTwo_of_fibreProduct`). Then
+`exists_cyclotomicCharacter_adicCompletion_eq_residueCard` supplies a
+`g ∈ Γ F_w` — an arithmetic Frobenius — with `χ_ℓ(g) = N(w)` in `ℤ_ℓ`. And
+`1 − N(w)` is a unit of `ℤ_ℓ` exactly when `ℓ ∤ N(w) − 1`
+(`PadicInt.norm_int_lt_one_iff_dvd`), which `hw2` gives because
+`N(w)² − 1 = (N(w) + 1)(N(w) − 1)`.
+
+Note that only `ℓ ∤ N(w) − 1` is used: `hw2`'s extra content `ℓ ∤ N(w) + 1`
+is what the FIBRE-PRODUCT clause needs (there `δ̄` and `χ̄δ̄` must be
+separated, not `δ̄` from `1`), and it is stated in the joint form here so
+that both clauses are discharged from one hypothesis. -/
+theorem isHilbertTameSeparationClause (ℓ : ℕ) [Fact ℓ.Prime] (hodd : Odd ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1))) :
+    IsHilbertTameSeparationClause ℓ F := by
+  intro w hw
+  have hne : (2 : ℕ) ≠ ℓ := by obtain ⟨t, ht⟩ := hodd; omega
+  -- `ℓ ∉ w`, since `2 ∈ w` and `2`, `ℓ` are coprime
+  have hwl : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal := by
+    intro hmem
+    have hgcd : Int.gcd 2 (ℓ : ℤ) = 1 := by
+      have : Nat.Coprime 2 ℓ :=
+        (Nat.coprime_primes Nat.prime_two (Fact.out : ℓ.Prime)).mpr hne
+      simpa [Int.gcd] using this
+    obtain ⟨a, b, hab⟩ := Int.isCoprime_iff_gcd_eq_one.mpr hgcd
+    have hone : (1 : 𝓞 F) ∈ w.asIdeal := by
+      have hsum := w.asIdeal.add_mem (w.asIdeal.mul_mem_left ((a : ℤ) : 𝓞 F) hw)
+        (w.asIdeal.mul_mem_left ((b : ℤ) : 𝓞 F) hmem)
+      have hcast : ((a : 𝓞 F) * ((2 : ℕ) : 𝓞 F) + (b : 𝓞 F) * ((ℓ : ℕ) : 𝓞 F))
+          = 1 := by
+        have := congrArg (fun z : ℤ => (z : 𝓞 F)) hab
+        push_cast at this ⊢
+        exact this
+      rwa [hcast] at hsum
+    exact w.isPrime.ne_top (Ideal.eq_top_iff_one _ |>.mpr hone)
+  obtain ⟨g, hg⟩ :=
+    exists_cyclotomicCharacter_adicCompletion_eq_residueCard ℓ F w hwl
+  refine ⟨g, ?_⟩
+  rw [hg]
+  set n : ℕ := Nat.card (𝓞 F ⧸ w.asIdeal) with hn
+  have hnd : ¬ ((ℓ : ℤ) ∣ ((n : ℤ) - 1)) := by
+    intro hdvd
+    refine hw2 w hw ?_
+    rw [show ((n : ℤ) ^ 2 - 1) = ((n : ℤ) + 1) * ((n : ℤ) - 1) by ring]
+    exact hdvd.mul_left _
+  have hcast : (1 : ℤ_[ℓ]) - ((n : ℕ) : ℤ_[ℓ]) = (((1 - (n : ℤ)) : ℤ) : ℤ_[ℓ]) := by
+    push_cast
+    ring
+  rw [hcast, PadicInt.isUnit_iff]
+  refine le_antisymm (PadicInt.norm_le_one _) ?_
+  by_contra hlt
+  rw [not_le] at hlt
+  have hdvd := (PadicInt.norm_int_lt_one_iff_dvd (p := ℓ) (1 - (n : ℤ))).mp hlt
+  exact hnd (by rw [← neg_sub 1 (n : ℤ)]; exact dvd_neg.mpr hdvd)
+
 /-! #### The functoriality clause, and the base-field hoist it needed
 
 `isHilbertBaseChangeClause` is now PROVEN (2026-07-26), through
@@ -7746,11 +7848,128 @@ lemma isAdic_maximalIdeal_of_finite_hilbert {A : Type*} [CommRing A]
   rw [hx0]
   exact mem_of_mem_nhds hs
 
-/-- **THE TAME-AT-`2` CLAUSE OF THE SUBRING DESCENT** (LEAF — cut out
-2026-07-27 from `isHilbertHardlyRamified_of_subring_entries` below, which is
-otherwise now PROVEN over it. This is the ONLY genuinely open content of that
-theorem: its determinant, unramifiedness and flatness clauses are all
-discharged there.)
+/-- **A UNIT OF THE AMBIENT RING LYING IN A FINITE SUBRING IS A UNIT THERE**
+(PROVEN 2026-07-27; the local copy of `Deformation.lean`'s
+`isUnit_of_isUnit_coe_subring`, which lives DOWNSTREAM of this module and so
+cannot be imported back — hence the `_hilbert` suffix used throughout this
+file for exactly that situation).
+
+Multiplication by `x` is injective on `C` because it is injective on `A`,
+hence — `C` being FINITE — surjective, which produces an inverse of `x`
+inside `C`. -/
+lemma isUnit_of_isUnit_coe_subring_hilbert {A : Type*} [CommRing A] [Finite A]
+    (C : Subring A) {x : C} (hx : IsUnit ((x : A))) : IsUnit x := by
+  haveI : Finite C := Subtype.finite
+  have hinj : Function.Injective (fun y : C => x * y) := by
+    intro y z hyz
+    have h : ((x : A)) * ((y : A)) = ((x : A)) * ((z : A)) := by
+      have h2 := congrArg (fun c : C => (c : A)) hyz
+      simpa using h2
+    exact Subtype.ext (hx.mul_left_cancel h)
+  obtain ⟨y, hy⟩ := (Finite.injective_iff_surjective.mp hinj) 1
+  exact isUnit_iff_exists_inv.mpr ⟨y, hy⟩
+
+/-- **A unimodular `d`-eigenrow over the big ring produces one over a local
+subring** (PROVEN 2026-07-27; the local copy of `Deformation.lean`'s
+`exists_unimodular_eigenrow_of_subring`, which lives downstream — pure
+commutative algebra, and the engine of
+`isHilbertTameAtTwo_of_subring_entries` below).
+
+Data: a `2 × 2` matrix `(tᵢⱼ)` with entries in a subring `C` of a
+commutative ring `S`, a scalar `d₀ ∈ C` with `d₀² = 1`, and a row
+`(a, b) ∈ S²`, at least one entry of which is a UNIT of `S`, satisfying the
+two eigen-equations `hE1`, `hE2` — i.e. `(a,b) · t = d₀ · (a,b)`.
+
+Conclusion: a row `(p, q)` with entries in `C`, PROPORTIONAL to `(a,b)` (the
+cross relation `p·b = q·a`) and unimodular over `C`.
+
+The construction is the eigen-projector written out in coordinates. Set
+`κ := t₀₀ + t₁₁ − d₀`, the other eigenvalue, and `B := t − κ`; the rows of
+`B` are `(d₀ − t₁₁, t₀₁)` and `(t₁₀, d₀ − t₀₀)`, each satisfying the cross
+relation by literally one of `hE1`, `hE2`. Their diagonal entries SUM to
+`u := 2d₀ − (t₀₀ + t₁₁) = d₀ − κ`, so in a local ring one of them is a unit
+as soon as `u` is, and `u·d₀ = 1 − det t`, which is the hypothesis `hunit`.
+That `det t = d₀·tr t − 1` is not assumed: it is forced, being the vanishing
+of the determinant of the singular matrix `t − d₀` applied to the unimodular
+kernel vector `(a, b)` (the first step `hP0`). -/
+theorem exists_unimodular_eigenrow_of_subring_hilbert {S : Type*} [CommRing S]
+    {C : Subring S} [IsLocalRing C] {a b : S} (hab : IsUnit a ∨ IsUnit b)
+    {t00 t01 t10 t11 d₀ : C} (hd₀sq : d₀ * d₀ = 1)
+    (hE1 : (t00 : S) * a + (t10 : S) * b = (d₀ : S) * a)
+    (hE2 : (t01 : S) * a + (t11 : S) * b = (d₀ : S) * b)
+    (hunit : IsUnit (1 - (t00 * t11 - t01 * t10))) :
+    ∃ p q : C, ((p : S) * b = (q : S) * a) ∧ (IsUnit p ∨ IsUnit q) := by
+  have hP0 : (t00 - d₀) * (t11 - d₀) - t01 * t10 = 0 := by
+    refine Subtype.ext ?_
+    push_cast
+    rcases hab with ha | ha
+    · exact ha.mul_left_eq_zero.mp (by
+        linear_combination ((t11 : S) - (d₀ : S)) * hE1 - (t10 : S) * hE2)
+    · exact ha.mul_left_eq_zero.mp (by
+        linear_combination (-(t01 : S)) * hE1 + ((t00 : S) - (d₀ : S)) * hE2)
+  have hdetid : t00 * t11 - t01 * t10 = d₀ * (t00 + t11) - 1 := by
+    linear_combination hP0 - hd₀sq
+  have huid : (2 * d₀ - (t00 + t11)) * d₀ = 1 - (t00 * t11 - t01 * t10) := by
+    linear_combination 2 * hd₀sq + hdetid
+  have hu : IsUnit (2 * d₀ - (t00 + t11)) :=
+    isUnit_of_mul_isUnit_left (by rw [huid]; exact hunit)
+  have hsum : (d₀ - t11) + (d₀ - t00) = 2 * d₀ - (t00 + t11) := by ring
+  rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add (hsum ▸ hu) with h | h
+  · exact ⟨d₀ - t11, t01, by push_cast; linear_combination -hE2, Or.inl h⟩
+  · exact ⟨t10, d₀ - t00, by push_cast; linear_combination hE1, Or.inr h⟩
+
+/-- **A proportional row inherits the equivariance of the big-ring
+functional** (PROVEN 2026-07-27; the local copy of `Deformation.lean`'s
+`eigenrow_equivariance_of_cross`, which lives downstream — the second half of
+the descent engine).
+
+`φ` is the `S`-valued functional `v ↦ v₀·a + v₁·b` on the `C`-lattice `C²`,
+and it scales by `d` along a map `F` (`hFφ`). If `(p, q)` is a `C`-row
+proportional to `(a, b)` (`hcross`) then the `C`-valued functional
+`v ↦ p·v₀ + q·v₁` scales by `c` along `F`, whenever `(c : S) = d`.
+
+The two identities `(p v₀ + q v₁)·a = p·φ(v)` and `(p v₀ + q v₁)·b = q·φ(v)`
+are both one `linear_combination` of the cross relation; multiplying the
+target by whichever of `a`, `b` is a unit and cancelling therefore reduces it
+to `hFφ`. Cancelling in `S` and then descending along the INJECTION `C → S`
+is what makes this work over a subring that is neither flat nor finite over
+anything in particular. -/
+theorem eigenrow_equivariance_of_cross_hilbert {S : Type*} [CommRing S]
+    {C : Subring S} {a b : S} (hab : IsUnit a ∨ IsUnit b)
+    {p q : C} (hcross : (p : S) * b = (q : S) * a)
+    (φ : (Fin 2 → C) → S)
+    (hφw : ∀ v : Fin 2 → C, φ v = ((v 0 : C) : S) * a + ((v 1 : C) : S) * b)
+    (T : (Fin 2 → C) → (Fin 2 → C)) {c : C} {d : S} (hcd : (c : S) = d)
+    (hTφ : ∀ v, φ (T v) = d * φ v) (v : Fin 2 → C) :
+    p * (T v) 0 + q * (T v) 1 = c * (p * v 0 + q * v 1) := by
+  have hida : ∀ v' : Fin 2 → C,
+      ((p : S) * ((v' 0 : C) : S) + (q : S) * ((v' 1 : C) : S)) * a =
+        (p : S) * φ v' := by
+    intro v'
+    rw [hφw]
+    linear_combination (-(((v' 1 : C) : S))) * hcross
+  have hidb : ∀ v' : Fin 2 → C,
+      ((p : S) * ((v' 0 : C) : S) + (q : S) * ((v' 1 : C) : S)) * b =
+        (q : S) * φ v' := by
+    intro v'
+    rw [hφw]
+    linear_combination (((v' 0 : C) : S)) * hcross
+  refine Subtype.ext ?_
+  push_cast
+  rcases hab with ha | ha
+  · refine ha.mul_right_cancel ?_
+    rw [hida (T v), hTφ, hcd]
+    linear_combination (-d) * hida v
+  · refine ha.mul_right_cancel ?_
+    rw [hidb (T v), hTφ, hcd]
+    linear_combination (-d) * hidb v
+
+/-- **THE TAME-AT-`2` CLAUSE OF THE SUBRING DESCENT** (cut out 2026-07-27
+from `isHilbertHardlyRamified_of_subring_entries` below, which is otherwise
+now PROVEN over it; **REFUTED as first stated and REPAIRED, then PROVEN, on
+2026-07-27** — see the REPAIR section at the end of this docstring. The
+repair added the hypothesis `hsep`, which the consumer chain discharges for
+free from a hypothesis it already carries.)
 
 Setting: `A` a finite discrete local `ℤ_ℓ`-algebra in which `2` is a unit,
 `C ⊆ A` a local subring, `ρC` a framed `F`-level representation whose matrix
@@ -7794,19 +8013,35 @@ two residual eigenvalues. Nothing in the hypotheses excludes such an `F`, and
 nothing downstream does either: the consumer chain carries only `Odd ℓ` and,
 further down, `5 ≤ ℓ`.
 
-WHAT WOULD REFUTE THIS LEAF, stated so the next owner can aim at it. Over
-that `(F, ℓ, w)` the LATTICE obstruction is realisable in the FINITE setting
-this leaf lives in — the sibling audit's `ℤ_7[[Z]] ↪ ℤ_7[[Y]]`, `Z ↦ 7Y`
-witness truncates: with `A = (ℤ/49)[Y]/(Y²)` (finite, local, discrete,
-`2 ∈ Aˣ`), `C = ℤ/49 + (7Y)·(ℤ/7) ⊆ A` and `M_c = [[1, (1−c)Y], [0, c]]` for
-`c ∈ χ_7(Γ F_w) ⊆ 1 + 7ℤ_7`, the entries lie in `C`, the row `(1, Y)` is a
-unimodular `δ = 1` eigenrow over `A`, and a direct computation shows every
-`δ = 1` eigenrow over `C` lies in `𝔪_C·C²` while the only other eigenrow has
-character `χ_7`, barred by `δ² = 1`. **The one thing still missing for a
-refutation is GLOBAL**: a genuinely `F`-level hardly ramified `ρA` over `A`
-restricting to that shape at `w` (it must also be flat at the places over
-`7`). Producing it — or proving no such `ρA` exists — is the check that
-decides this leaf.
+THE LATTICE OBSTRUCTION, MACHINE-CHECKED EXHAUSTIVELY (2026-07-27; the
+earlier version of this paragraph called for exactly this check and it has
+now been run). Over that `(F, ℓ, w)` the obstruction is realisable in the
+FINITE setting this leaf lives in — the sibling audit's
+`ℤ_7[[Z]] ↪ ℤ_7[[Y]]`, `Z ↦ 7Y` witness truncates: take
+`A = (ℤ/49)[Y]/(Y²)` (finite, local with `𝔪_A = (7, Y)`, residue field
+`𝔽_7`, discrete, `2 ∈ Aˣ`, a `ℤ_7`-algebra), `C = ℤ/49 + (7Y)·(ℤ/7) ⊆ A`
+(the subring GENERATED by `ℤ_7` and `7Y`, local with `𝔪_C = (7, 7Y)` and the
+same residue field, so it also contains the Teichmüller lifts of `𝔽_7`, which
+are the sixth roots of unity of `ℤ/49`), and `M_c = [[1, (1−c)Y], [0, c]]`
+for `c ∈ χ_7(Γ F_w) = 1 + 7ℤ_7`. Exhaustive enumeration over all
+`|C|² = 343² = 117649` rows and both admissible characters `δ = ±1`:
+
+* every entry of every `M_c` lies in `C`;
+* over `A` the row `(1, Y)` is a common left eigenrow, `(1,Y)·M_c = (1,Y)`,
+  and it is unimodular — `100842` unimodular common eigenrows over `A` in
+  all;
+* over `C` there are `2401` common eigenrows for `δ = 1`, `0` for `δ = −1`,
+  and **NOT ONE of them is unimodular** — all `2401` lie in `𝔪_C·C²`.
+
+So the linear-algebra statement the `ℚ`-level proof descends through is
+FALSE without a separation hypothesis, and the failure is not an artefact of
+the route: by the display above, `1 − χ_ℓ` is the eigenvalue separation for
+EVERY element of the group. (`ℓ = 7`, `F = ℚ(ζ₇)⁺` was checked in PARI/GP:
+signature `[3,0]`, discriminant `49`, one prime over `2` with `e = 1`,
+`f = 3`, `N(w) = 8`, `N(w)² − 1 = 63 = 7·9`.) What is still missing for a
+REFUTATION OF THE LEAF ITSELF is global: a genuinely `F`-level hardly
+ramified `ρA` over that `A` restricting to that shape at `w`. That question
+is now moot, because the repair below removes the case entirely.
 
 WHY THE RETRACTION ROUTE IS UNAVAILABLE, and why residual fullness is not a
 substitute. The sibling leaf
@@ -7829,6 +8064,43 @@ it. So a proof needs either a new hypothesis with real content or a genuinely
 different argument, and saying which is worth more than another proof
 attempt.
 
+**THE REPAIR, PERFORMED 2026-07-27, AND WHY IT COSTS THE CONSUMER NOTHING.**
+The hypothesis `hsep` below is the sharp condition the audit above isolates:
+some `g ∈ Γ F_w` has `1 − χ_ℓ(g) ∈ ℤ_ℓˣ`. With it the `ℚ`-level proof of
+`Deformation.lean`'s `isHardlyRamified_of_subring_entries` transcribes step
+for step, and this theorem is PROVEN (`#print axioms` returns
+`[propext, Classical.choice, Quot.sound]`).
+
+The audit's worry — that a hypothesis the consumer cannot supply is not a
+repair — does not apply, and this was CHECKED rather than hoped:
+
+* the consumer takes it in the packaged form
+  `IsHilbertTameSeparationClause ℓ F` (`∀ w ∣ 2, ∃ g ∈ Γ F_w, …`), threaded
+  through the same six signatures as `hbase`/`hglue`/`hfin`;
+* `isHilbertTameSeparationClause` DERIVES that clause from
+  `hw2 : ∀ w ∣ 2, ℓ ∤ N(w)² − 1`, which
+  `exists_isWeaklyUniversal_hilbertDeformationDatum` ALREADY carries for the
+  fibre-product clause — `ℓ ∤ (N(w) − 1)(N(w) + 1)` gives `ℓ ∤ N(w) − 1` a
+  fortiori, and `χ_ℓ(Frob_w) = N(w)` is the PROVEN
+  `exists_cyclotomicCharacter_adicCompletion_eq_residueCard`;
+* so **not one signature downstream of that theorem changed**, and no new
+  condition enters the development. `hw2` is imposed at the top of the module
+  by `PotentialHeckeDatum.residueCardTwo` (every place of `F` over `2` has
+  residue field `𝔽₂` — free in Taylor's Moret–Bailly argument).
+
+That the SAME hypothesis discharges both this leaf and the fibre-product
+leaf is not a coincidence: `hw2` says `χ̄_ℓ ≠ ±1` on `Γ F_w`, this leaf needs
+the `−1` half (`δ̄` separated from `χ̄_ℓ δ̄`, i.e. `χ̄_ℓ ≠ 1`) and
+`isHilbertTameAtTwo_of_fibreProduct` needs the other. `ℓ = 7`, `F = ℚ(ζ₇)⁺`
+— the witness of the audit above — is exactly one of the fields `hw2`
+already excluded, `N(w)² − 1 = 63`.
+
+The inertia quantifier is NOT widened anywhere: `hsep` quantifies over the
+whole decomposition group `Γ F_w` (it must — `χ_ℓ` is trivial on inertia at
+`w ∣ 2`, so an inertia-only hypothesis would be empty), while the produced
+character `δ` is asserted trivial only on `localInertiaGroup w`, exactly as
+before.
+
 References: Carayol, *Formes modulaires et représentations galoisiennes*,
 Théorème 1; Mazur, *Deforming Galois representations*, §1.8; de Smit–Lenstra,
 in Cornell–Silverman–Stevens, Prop. 2.3. -/
@@ -7843,33 +8115,306 @@ theorem isHilbertTameAtTwo_of_subring_entries
       ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
         LinearMap.toMatrix' (ρA g) i j)
     (hHRA : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA)
-    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal) :
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal)
+    (hsep : ∃ g : Γ (w.adicCompletion F),
+      IsUnit (1 - ((cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+          (Field.absoluteGaloisGroup.map
+            (algebraMap F (w.adicCompletion F)) g)).toRingEquiv : ℤ_[ℓ]ˣ) :
+              ℤ_[ℓ]))) :
     ∃ (p : (Fin 2 → C) →ₗ[C] C) (_ : Function.Surjective p)
       (δ : GaloisRep (w.adicCompletion F) C C),
       (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → C,
         p (ρC.toLocal w g v) = δ g (p v)) ∧
       localInertiaGroup w ≤ δ.ker ∧
-      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
-  sorry
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 := by
+  classical
+  haveI : Finite C := Subtype.finite
+  haveI : ContinuousSMul C A := ⟨continuous_of_discreteTopology⟩
+  have hinjC : Function.Injective (fun c : C => (c : A)) := Subtype.val_injective
+  -- the `ℤ_ℓ`-structures agree, both being ring maps into the finite ring `A`
+  have halgC : ∀ r : ℤ_[ℓ], ((algebraMap ℤ_[ℓ] C r : C) : A) = algebraMap ℤ_[ℓ] A r := by
+    intro r
+    have h := hilbertRingHom_padicInt_ext_finite (ℓ := ℓ)
+      ((C.subtype : C →+* A).comp (algebraMap ℤ_[ℓ] C)) (algebraMap ℤ_[ℓ] A)
+    exact RingHom.congr_fun h r
+  -- the two matrix actions agree entrywise
+  have hact : ∀ (g : Γ F) (v : Fin 2 → C) (i : Fin 2),
+      ρA g (fun j => ((v j : C) : A)) i = ((ρC g v i : C) : A) := by
+    intro g v i
+    have h1 : ρA g (fun j => ((v j : C) : A)) =
+        Matrix.mulVec (LinearMap.toMatrix' (ρA g)) (fun j => ((v j : C) : A)) :=
+      (LinearMap.toMatrix'_mulVec _ _).symm
+    have h2 : ρC g v = Matrix.mulVec (LinearMap.toMatrix' (ρC g)) v :=
+      (LinearMap.toMatrix'_mulVec _ _).symm
+    rw [h1, h2, Matrix.mulVec_apply_eq_sum, Matrix.mulVec_apply_eq_sum,
+      Fin.sum_univ_two, Fin.sum_univ_two]
+    push_cast
+    rw [← hent g i 0, ← hent g i 1]
+  -- the determinant clause for `ρC` (re-derived here: this leaf is stated
+  -- separately from the theorem that discharges the other three clauses)
+  have hdetC : ∀ g : Γ F, ρC.det g = algebraMap ℤ_[ℓ] C
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+    intro g
+    refine hinjC ?_
+    simp only
+    have hd1 : ((LinearMap.det (ρC g) : C) : A) = LinearMap.det (ρA g) := by
+      rw [← LinearMap.det_toMatrix' (ρC g), ← LinearMap.det_toMatrix' (ρA g)]
+      have hmap : (LinearMap.toMatrix' (ρC g)).map (fun c : C => (c : A)) =
+          LinearMap.toMatrix' (ρA g) := by
+        ext i j
+        exact hent g i j
+      rw [← hmap]
+      exact (RingHom.map_det (C.subtype : C →+* A) (LinearMap.toMatrix' (ρC g))).symm
+    show ((ρC.det g : C) : A) = _
+    rw [GaloisRep.det_apply, hd1, halgC, ← GaloisRep.det_apply]
+    exact hHRA.det g
+  -- the tame quotient of `ρA` at `w`, and its character in coordinates
+  obtain ⟨πA2, hπA2surj, δA, hδAeq, hδAker, hδAsq⟩ := hHRA.isTameAtTwo w hw
+  set dA : Γ (w.adicCompletion F) → A := fun g => δA g 1 with hdAdef
+  have hδAapp : ∀ (g : Γ (w.adicCompletion F)) (c : A), δA g c = c * dA g := by
+    intro g c
+    have h := map_smul (δA g) c (1 : A)
+    rw [smul_eq_mul, mul_one, smul_eq_mul] at h
+    exact h
+  have hdAsq : ∀ g, dA g * dA g = 1 := by
+    intro g
+    have h1 : δA g * δA g = 1 := hδAsq g
+    have h3 := congrArg (fun E : Module.End A A => E 1) h1
+    simpa [Module.End.mul_apply, hδAapp] using h3
+  have hdAunit : ∀ g, IsUnit (dA g) :=
+    fun g => ⟨⟨dA g, dA g, hdAsq g, hdAsq g⟩, rfl⟩
+  -- `δ(g)² = 1` in a ring where `2` is a unit forces `δ(g) = ±1`, hence the
+  -- character itself is defined over `C` for free — this is where `Odd ℓ` goes
+  have hdApm : ∀ g, dA g = 1 ∨ dA g = -1 := by
+    intro g
+    have hz : (dA g - 1) * (dA g + 1) = 0 := by
+      have h := hdAsq g; linear_combination h
+    have hsum : IsUnit ((dA g - 1) + (dA g + 1)) := by
+      have hrw : (dA g - 1) + (dA g + 1) = 2 * dA g := by ring
+      rw [hrw]
+      exact h2.mul (hdAunit g)
+    rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add hsum with h | h
+    · exact Or.inr (eq_neg_of_add_eq_zero_left (h.mul_right_eq_zero.mp hz))
+    · exact Or.inl (sub_eq_zero.mp (h.mul_left_eq_zero.mp hz))
+  have hdAmul : ∀ g h, dA (g * h) = dA g * dA h := by
+    intro g h
+    have hh : δA (g * h) 1 = (δA g * δA h) 1 := by rw [map_mul δA g h]
+    rw [Module.End.mul_apply, hδAapp (g * h) 1, hδAapp g (δA h 1),
+      hδAapp h 1] at hh
+    simp only [one_mul] at hh
+    rw [hh]; ring
+  have hdAone : dA 1 = 1 := by
+    have hh : δA (1 : Γ (w.adicCompletion F)) 1 = (1 : Module.End A A) 1 := by
+      rw [map_one δA]
+    rw [hδAapp 1 1, one_mul, Module.End.one_apply] at hh
+    exact hh
+  have hdAinertia : ∀ σ ∈ localInertiaGroup w, dA σ = 1 := by
+    intro σ hσ
+    have h1 : δA σ = 1 := by
+      have h := hδAker hσ
+      rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
+    have hh := congrArg (fun E : Module.End A A => E 1) h1
+    simpa [hδAapp] using hh
+  set ε : Γ (w.adicCompletion F) → C :=
+    fun g => if dA g = 1 then 1 else -1 with hεdef
+  have hεd : ∀ g, ((ε g : C) : A) = dA g := by
+    intro g
+    by_cases hc : dA g = 1
+    · simp [hεdef, hc]
+    · have h1 : dA g = -1 := (hdApm g).resolve_left hc
+      have h3 : ε g = -1 := by simp only [hεdef, if_neg hc]
+      rw [h3, h1]
+      push_cast
+      ring
+  have hεmul : ∀ g h, ε (g * h) = ε g * ε h := by
+    intro g h
+    refine hinjC ?_
+    simp only
+    push_cast
+    rw [hεd, hεd, hεd, hdAmul]
+  have hεone : ε 1 = 1 := by
+    refine hinjC ?_
+    simp only
+    push_cast
+    rw [hεd, hdAone]
+  have hεsq : ∀ g, ε g * ε g = 1 := by
+    intro g
+    refine hinjC ?_
+    simp only
+    push_cast
+    rw [hεd, hdAsq]
+  have hεinertia : ∀ σ ∈ localInertiaGroup w, ε σ = 1 := by
+    intro σ hσ
+    refine hinjC ?_
+    simp only
+    push_cast
+    rw [hεd, hdAinertia σ hσ]
+  -- the frame coordinates of the `A`-level functional
+  set a : A := πA2 (Pi.single (0 : Fin 2) (1 : A)) with hadef
+  set b : A := πA2 (Pi.single (1 : Fin 2) (1 : A)) with hbdef
+  have hdecomp : ∀ v : Fin 2 → A,
+      v = v 0 • (Pi.single (0 : Fin 2) (1 : A)) +
+        v 1 • (Pi.single (1 : Fin 2) (1 : A)) := by
+    intro v
+    funext i
+    fin_cases i <;> simp
+  have hπform : ∀ v : Fin 2 → A, πA2 v = v 0 * a + v 1 * b := by
+    intro v
+    conv_lhs => rw [hdecomp v]
+    rw [map_add, map_smul, map_smul, smul_eq_mul, smul_eq_mul, hadef, hbdef]
+  have hab : IsUnit a ∨ IsUnit b := by
+    by_contra hc
+    rw [not_or] at hc
+    have hA : a ∈ IsLocalRing.maximalIdeal A :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hc.1
+    have hB : b ∈ IsLocalRing.maximalIdeal A :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hc.2
+    obtain ⟨z, hz⟩ := hπA2surj 1
+    have h1 : (1 : A) ∈ IsLocalRing.maximalIdeal A := by
+      rw [← hz, hπform]
+      exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hA)
+        (Ideal.mul_mem_left _ _ hB)
+    exact (IsLocalRing.mem_maximalIdeal _).mp h1 isUnit_one
+  have hequi : ∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → C),
+      (((ρC.toLocal w g v) 0 : C) : A) * a + (((ρC.toLocal w g v) 1 : C) : A) * b =
+        ((ε g : C) : A) * (((v 0 : C) : A) * a + ((v 1 : C) : A) * b) := by
+    intro g v
+    have hv : ρA.toLocal w g (fun j => ((v j : C) : A)) =
+        fun i => (((ρC.toLocal w g v) i : C) : A) := by
+      funext i
+      rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+      exact hact _ v i
+    have h := hδAeq g (fun j => ((v j : C) : A))
+    rw [hv, hδAapp] at h
+    rw [hπform, hπform] at h
+    rw [h, hεd]
+    ring
+  -- THE ARITHMETIC INPUT: `χ_ℓ` is nontrivial modulo `ℓ` on `Γ F_w`, so the
+  -- residual root of the eigen-quadratic at `g₀` is SIMPLE
+  obtain ⟨g₀, hg₀⟩ := hsep
+  set G₀ : Γ F :=
+    Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) g₀ with hG₀def
+  set T : Module.End C (Fin 2 → C) := ρC.toLocal w g₀ with hTdef
+  have hE1 : ((T (Pi.single 0 1) 0 : C) : A) * a +
+      ((T (Pi.single 0 1) 1 : C) : A) * b = ((ε g₀ : C) : A) * a := by
+    have h := hequi g₀ (Pi.single 0 1)
+    simpa using h
+  have hE2 : ((T (Pi.single 1 1) 0 : C) : A) * a +
+      ((T (Pi.single 1 1) 1 : C) : A) * b = ((ε g₀ : C) : A) * b := by
+    have h := hequi g₀ (Pi.single 1 1)
+    simpa using h
+  have hdetT : LinearMap.det T =
+      T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+        T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1 := by
+    rw [← LinearMap.det_toMatrix', Matrix.det_fin_two, LinearMap.toMatrix'_apply,
+      LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply,
+      LinearMap.toMatrix'_apply]
+  have hunit1sub : IsUnit (1 - (T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+      T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1)) := by
+    refine isUnit_of_isUnit_coe_subring_hilbert C ?_
+    have h1 : ((1 - (T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+        T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1) : C) : A) =
+        algebraMap ℤ_[ℓ] A
+          (1 - ((cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) G₀).toRingEquiv :
+              ℤ_[ℓ]ˣ) : ℤ_[ℓ])) := by
+      rw [← hdetT]
+      have hTG : T = ρC G₀ := rfl
+      rw [hTG, ← GaloisRep.det_apply, hdetC G₀, map_sub, map_one]
+      push_cast
+      rw [halgC]
+    rw [h1]
+    exact hg₀.map (algebraMap ℤ_[ℓ] A)
+  obtain ⟨p, q, hcross, hpq⟩ :=
+    exists_unimodular_eigenrow_of_subring_hilbert hab (hεsq g₀) hE1 hE2 hunit1sub
+  set π : (Fin 2 → C) →ₗ[C] C :=
+    p • LinearMap.proj 0 + q • LinearMap.proj 1 with hπdef
+  have hπapp : ∀ v, π v = p * v 0 + q * v 1 := by
+    intro v
+    simp [hπdef]
+  have hπsurjC : Function.Surjective π := by
+    rcases hpq with h | h
+    · obtain ⟨v, hv⟩ := h.exists_right_inv
+      intro c
+      refine ⟨Pi.single 0 (v * c), ?_⟩
+      rw [hπapp]
+      have h0 : (Pi.single (0 : Fin 2) (v * c) : Fin 2 → C) 0 = v * c := by simp
+      have h1 : (Pi.single (0 : Fin 2) (v * c) : Fin 2 → C) 1 = 0 := by simp
+      rw [h0, h1, mul_zero, add_zero, ← mul_assoc, hv, one_mul]
+    · obtain ⟨v, hv⟩ := h.exists_right_inv
+      intro c
+      refine ⟨Pi.single 1 (v * c), ?_⟩
+      rw [hπapp]
+      have h0 : (Pi.single (1 : Fin 2) (v * c) : Fin 2 → C) 0 = 0 := by simp
+      have h1 : (Pi.single (1 : Fin 2) (v * c) : Fin 2 → C) 1 = v * c := by simp
+      rw [h0, h1, mul_zero, zero_add, ← mul_assoc, hv, one_mul]
+  have hπequi : ∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → C),
+      π (ρC.toLocal w g v) = ε g * π v := by
+    intro g v
+    rw [hπapp, hπapp]
+    exact eigenrow_equivariance_of_cross_hilbert hab hcross
+      (fun v => ((v 0 : C) : A) * a + ((v 1 : C) : A) * b) (fun _ => rfl)
+      (fun v => ρC.toLocal w g v) rfl (hequi g) v
+  obtain ⟨x₀, hx₀⟩ := hπsurjC 1
+  letI := moduleTopology C (Module.End C (Fin 2 → C))
+  letI := moduleTopology C (Module.End C C)
+  haveI : ContinuousAdd (Module.End C C) := ModuleTopology.continuousAdd _ _
+  haveI : ContinuousSMul C (Module.End C C) := ModuleTopology.continuousSMul _ _
+  have hεcont : Continuous ε := by
+    have h1 : ε = fun g =>
+        (π ∘ₗ (LinearMap.applyₗ x₀ :
+          Module.End C (Fin 2 → C) →ₗ[C] (Fin 2 → C))) ((ρC.toLocal w) g) := by
+      funext g
+      have h2 := hπequi g x₀
+      rw [hx₀, mul_one] at h2
+      exact h2.symm
+    rw [h1]
+    exact (IsModuleTopology.continuous_of_linearMap _).comp
+      (ρC.toLocal w).continuous_toFun
+  set δ : GaloisRep (w.adicCompletion F) C C :=
+    { toFun := fun g => ε g • (1 : Module.End C C)
+      map_one' := by rw [hεone, one_smul]
+      map_mul' := fun g h => by
+        refine LinearMap.ext fun c => ?_
+        simp only [hεmul, LinearMap.smul_apply, Module.End.one_apply,
+          Module.End.mul_apply, smul_eq_mul]
+        ring
+      continuous_toFun := hεcont.smul continuous_const } with hδdef
+  have hδapp : ∀ (g : Γ (w.adicCompletion F)) (c : C), δ g c = ε g * c := by
+    intro g c
+    show (ε g • (1 : Module.End C C)) c = ε g * c
+    rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
+  refine ⟨π, hπsurjC, δ, fun g v => ?_, ?_, ?_⟩
+  · rw [hπequi, hδapp]
+  · intro σ hσ
+    show ε σ • (1 : Module.End C C) = 1
+    rw [hεinertia σ hσ, one_smul]
+  · intro g'
+    refine LinearMap.ext fun c => ?_
+    show (δ g') ((δ g') c) = c
+    rw [hδapp, hδapp, ← mul_assoc, hεsq, one_mul]
 
 open scoped TensorProduct in
 /-- **`IsHilbertHardlyRamified` DESCENDS TO A SUBRING CARRYING THE MATRIX
-ENTRIES** (PROVEN 2026-07-27 over the single leaf
-`isHilbertTameAtTwo_of_subring_entries` above; item 4 of the `CUT AUDIT`
-decomposition recorded on `hilbertFrameLevels_classification` below. The
-`F`-level twin of `Deformation.lean`'s PROVEN
-`isHardlyRamified_of_subring_entries`.)
+ENTRIES** (fully PROVEN 2026-07-27, sorry-free: the last open clause was
+`isHilbertTameAtTwo_of_subring_entries` above, which was refuted as first
+stated, repaired with the hypothesis `htsep`, and PROVEN the same day. Item 4
+of the `CUT AUDIT` decomposition recorded on
+`hilbertFrameLevels_classification` below. The `F`-level twin of
+`Deformation.lean`'s PROVEN `isHardlyRamified_of_subring_entries`.)
 
 Setting: `A` a finite discrete local `ℤ_ℓ`-algebra in which `2` is a unit,
 `C ⊆ A` a local subring, and `ρC` a framed representation over `C` whose
 matrix entries are exactly those of the hardly ramified `ρA` (hypothesis
 `hent`). Then `ρC` is itself `F`-level hardly ramified.
 
-**CLAUSE-BY-CLAUSE STATUS — three of the four clauses are PROVEN here and
-only the tame one is genuinely open**, which is now a fact about the file and
-not a forecast: the tame clause is the named leaf
-`isHilbertTameAtTwo_of_subring_entries` immediately above, and this theorem's
-proof discharges the other three outright.
+**CLAUSE-BY-CLAUSE STATUS — all four clauses are now PROVEN.** Three of them
+are discharged outright by this theorem's proof; the tame one is the named
+theorem `isHilbertTameAtTwo_of_subring_entries` immediately above, which
+carries all of the arithmetic and is where the new hypothesis `htsep` is
+spent (`htsep w hw`, once, at the very last line of this proof).
 
 * *Determinant.* PROVEN. `LinearMap.det` commutes with `Matrix.map` along
   `C.subtype` (`RingHom.map_det`), the `ℤ_ℓ`-structures agree because
@@ -7903,11 +8448,16 @@ proof discharges the other three outright.
   (`hasFlatProlongationAt_of_pi_surjection_of_numberField`) was already
   further up, and it changed nothing at the block's former use site further
   down. Do not re-copy those three lemmas; use them from here.
-* *Tameness at the places over `2`.* THE ONLY GENUINELY OPEN CONTENT, and it
-  is NOT a transcription. It is now the named leaf
-  `isHilbertTameAtTwo_of_subring_entries` above, which carries the full
-  obstruction audit; the summary below is kept because the two records were
-  written independently and agree.
+* *Tameness at the places over `2`.* THE ONLY CLAUSE WITH ARITHMETIC
+  CONTENT, and it is NOT a transcription. It is the named theorem
+  `isHilbertTameAtTwo_of_subring_entries` above, PROVEN 2026-07-27 under the
+  separation hypothesis `htsep` — see its docstring for the exhaustively
+  machine-checked counterexample that forced the hypothesis, and for why the
+  hypothesis costs the consumer nothing (it is derived from the `hw2` that
+  `exists_isWeaklyUniversal_hilbertDeformationDatum` already carries). The
+  summary below is the record as it stood before the repair; it is kept
+  because the two records were written independently and agree, and because
+  it states exactly what `htsep` excludes.
 
 **OBSTRUCTION AUDIT FOR THE TAME CLAUSE: THE `ℚ`-LEVEL ARITHMETIC INPUT DOES
 NOT TRANSPORT** (2026-07-27; this is the same obstruction already recorded,
@@ -7986,7 +8536,8 @@ theorem isHilbertHardlyRamified_of_subring_entries
     (hent : ∀ (g : Γ F) (i j : Fin 2),
       ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
         LinearMap.toMatrix' (ρA g) i j)
-    (hHRA : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA) :
+    (hHRA : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA)
+    (htsep : IsHilbertTameSeparationClause ℓ F) :
     IsHilbertHardlyRamified ℓ F (rank_finTwoPi C) ρC := by
   classical
   haveI : Finite C := Subtype.finite
@@ -8070,9 +8621,11 @@ theorem isHilbertHardlyRamified_of_subring_entries
     exact isFlatAt_of_subring_baseChange_of_numberField w
       isAdic_maximalIdeal_of_finite_hilbert
       (isFlatAt_of_conj_eq_of_numberField w e hbc (hHRA.isFlat w hw))
-  · -- tameness at the places over `2` — the single open leaf
+  · -- tameness at the places over `2` — the only clause with arithmetic
+    -- content, and the only one needing `htsep`
     intro w hw
     exact isHilbertTameAtTwo_of_subring_entries ℓ F h2 C hent hHRA w hw
+      (htsep w hw)
 
 /-- **TRANSPORT OF A FRAMED `F`-LEVEL HARDLY RAMIFIED REPRESENTATION ALONG A
 CONTINUOUS RING MAP INTO A FINITE LOCAL RING** (PROVEN 2026-07-27; the
@@ -9066,6 +9619,7 @@ theorem hilbertFrameLevels_repClause_ker {ρbar : GaloisRep ℚ k V}
     (hodd : Odd ℓ) (e0 : V ≃ₗ[k] (Fin 2 → k))
     (hbase : IsHilbertBaseChangeClause ℓ F) (_hglue : IsHilbertFibreProductClause ℓ F)
     (_hfin : IsHilbertFiniteFramesClause ℓ F)
+    (htsep : IsHilbertTameSeparationClause ℓ F)
     (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
     (πA : A →+* k) (hπsurj : Function.Surjective πA)
@@ -9157,7 +9711,7 @@ theorem hilbertFrameLevels_repClause_ker {ρbar : GaloisRep ℚ k V}
       rw [hfC, ← hentf g i j]
     rw [hent g i j, hR]
   have hHRC : IsHilbertHardlyRamified ℓ F (rank_finTwoPi C) ρC :=
-    isHilbertHardlyRamified_of_subring_entries ℓ F h2 C hent hHRA
+    isHilbertHardlyRamified_of_subring_entries ℓ F h2 C hent hHRA htsep
   -- STEP 4: transport along `range f ≃+* P ⧸ ker f`.
   obtain ⟨σ, hσfC⟩ : ∃ σ : C →+* (hilbertFrameRing ℓ F k ⧸ RingHom.ker f),
       ∀ x : hilbertFrameRing ℓ F k,
@@ -9299,6 +9853,7 @@ theorem hilbertFrameLevels_classification {ρbar : GaloisRep ℚ k V}
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (hbase : IsHilbertBaseChangeClause ℓ F) (hglue : IsHilbertFibreProductClause ℓ F)
     (hfin : IsHilbertFiniteFramesClause ℓ F)
+    (htsep : IsHilbertTameSeparationClause ℓ F)
     (hrig : IsHilbertResidualRigidityClause F ρbar)
     (e0 : V ≃ₗ[k] (Fin 2 → k)) :
     ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
@@ -9458,8 +10013,8 @@ theorem hilbertFrameLevels_classification {ρbar : GaloisRep ℚ k V}
     rw [Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk] at hxy
     rw [Ideal.Quotient.eq, RingHom.mem_ker, map_sub, hxy, sub_self]
   · intro _ _ _ _ _
-    exact hilbertFrameLevels_repClause_ker ℓ F k hodd e0 hbase hglue hfin A πA hπsurj ρA'
-      hHRA' f hc2 (fun g => by rw [hmatf g, ← hρA'mat g])
+    exact hilbertFrameLevels_repClause_ker ℓ F k hodd e0 hbase hglue hfin htsep A πA
+      hπsurj ρA' hHRA' f hc2 (fun g => by rw [hmatf g, ← hρA'mat g])
 
 omit [DiscreteTopology k] [Module.Finite k V] [Module.Free k V] in
 /-- **RIGIDITY OF THE `F`-LEVEL TAUTOLOGICAL FRAME RING** (PROVEN
@@ -9636,6 +10191,7 @@ theorem exists_hilbertLevelIdealSystem_of_clauses
     (hbase : IsHilbertBaseChangeClause ℓ F)
     (hglue : IsHilbertFibreProductClause ℓ F)
     (hfin : IsHilbertFiniteFramesClause ℓ F)
+    (htsep : IsHilbertTameSeparationClause ℓ F)
     (hrig : IsHilbertResidualRigidityClause F ρbar) :
     ∃ (P : Type u) (_ : CommRing P) (_ : Algebra ℤ_[ℓ] P)
       (evbar : P →+* k) (_ : Function.Surjective evbar)
@@ -9686,7 +10242,7 @@ theorem exists_hilbertLevelIdealSystem_of_clauses
     fun J hJ => hJ.1, fun J hJ => ⟨hJ.2.1, hJ.2.2.1⟩,
     ?_,
     fun J hJ _ _ _ _ _ => hJ.2.2.2,
-    hilbertFrameLevels_classification ℓ F k hodd hirrF 𝒟₀ hbase hglue hfin hrig e0,
+    hilbertFrameLevels_classification ℓ F k hodd hirrF 𝒟₀ hbase hglue hfin htsep hrig e0,
     fun A _ _ _ πA f₁ f₂ h₁ h₂ hM =>
       hilbertFrameRing_rigid ℓ F k e0 A πA f₁ f₂ h₁ h₂ hM⟩
   intro g
@@ -10141,6 +10697,7 @@ theorem exists_universalFrame_profinite_hilbert_of_clauses
     (hbase : IsHilbertBaseChangeClause ℓ F)
     (hglue : IsHilbertFibreProductClause ℓ F)
     (hfin : IsHilbertFiniteFramesClause ℓ F)
+    (htsep : IsHilbertTameSeparationClause ℓ F)
     (hrig : IsHilbertResidualRigidityClause F ρbar) :
     ∃ (R : Type u) (_ : CommRing R) (_ : TopologicalSpace R)
       (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[ℓ] R)
@@ -10168,7 +10725,8 @@ theorem exists_universalFrame_profinite_hilbert_of_clauses
       IsHilbertWeaklyUniversalOnFiniteFrames ℓ F ρbar ρuniv πuniv := by
   obtain ⟨P, iP, iPalg, evbar, hevsurj, M, 𝒥, hne, hdir, hker, hlev,
       hres, hrep, hclass, hsep⟩ :=
-    exists_hilbertLevelIdealSystem_of_clauses ℓ F hodd hirrF 𝒟₀ hbase hglue hfin hrig
+    exists_hilbertLevelIdealSystem_of_clauses ℓ F hodd hirrF 𝒟₀ hbase hglue hfin
+      htsep hrig
   letI := iP
   letI := iPalg
   exact exists_universalFrame_profinite_hilbert_of_levelIdealSystem ℓ F hbase
@@ -10699,6 +11257,7 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses
     (hbase : IsHilbertBaseChangeClause ℓ F)
     (hglue : IsHilbertFibreProductClause ℓ F)
     (hfin : IsHilbertFiniteFramesClause ℓ F)
+    (htsep : IsHilbertTameSeparationClause ℓ F)
     (hlim : IsHilbertProLimitClause ℓ F)
     (hrig : IsHilbertResidualRigidityClause F ρbar) :
     ∃ 𝒟 : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsWeaklyUniversal := by
@@ -10706,7 +11265,7 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses
   obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
       hπcont, hbasis, hres, hquot, hinj, huniv⟩ :=
     exists_universalFrame_profinite_hilbert_of_clauses ℓ F hodd hirrF 𝒟₀ hbase
-      hglue hfin hrig
+      hglue hfin htsep hrig
   -- **The `πuniv`-compatible continuous points of `R` in a finite DISCRETE
   -- test ring are finite in number**: they inject, by the minimality clause
   -- `hinj`, into the hardly ramified frames over that ring, of which `hfin`
@@ -10816,6 +11375,8 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum
     ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) hirrF 𝒟₀
     (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ hℓ5 F hw2)
     (isHilbertFiniteFramesClause ℓ F)
+    (isHilbertTameSeparationClause ℓ
+      ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) F hw2)
     (isHilbertProLimitClause ℓ ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) F)
     (isHilbertResidualRigidityClause F ρbar)
 
