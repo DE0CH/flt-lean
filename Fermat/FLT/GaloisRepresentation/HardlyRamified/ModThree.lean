@@ -40801,6 +40801,292 @@ theorem isAdmissibleModulus_of_dvd_ray_class
     IsAdmissibleModulusRayClass F c mm :=
   ⟨hmm, fun δ hδ0 hδpos hδmem => hff.2 δ hδ0 hδpos ((Ideal.dvd_iff_le.mp hdvd) hδmem)⟩
 
+/-- **A character trivial on a subgroup never takes the value `0`**
+(PROVEN 2026-07-26; created the same day as the first helper of the
+(B1a-ii-2-a) split recorded on `exists_isAdmissibleModulus_ray_class`
+below).
+
+`Dickson.K 3` is a FIELD, and `χ` is only assumed MULTIPLICATIVE, so
+a priori `χ` could be the constant `0` (which satisfies `hmul`). It is
+`hVker` that rules this out: a subgroup contains `1`, so `χ 1 = 1`, and
+then `χ a · χ a⁻¹ = χ (a a⁻¹) = χ 1 = 1` exhibits every value as a
+UNIT. This is the fact that makes the Artin symbol `c` unit-valued and
+hence `c ⊤ = 1` below; without it `c ≡ 0` would satisfy `hcmul` and
+`hcfrob` while making every admissibility statement in this cluster
+false. -/
+theorem charValue_ne_zero_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVker : ∀ a ∈ V, χ a = 1) :
+    ∀ a : Γ F, χ a ≠ 0 := by
+  have h1 : χ 1 = 1 := hVker 1 V.one_mem
+  intro a ha
+  have hinv : χ (a * a⁻¹) = 1 := by simpa using h1
+  rw [hmul, ha, zero_mul] at hinv
+  exact zero_ne_one hinv
+
+/-- **Cancelling a prime out of a divisibility** (PROVEN 2026-07-26;
+pure ideal arithmetic, created the same day as the divisibility half of
+`isAdmissibleModulus_of_mul_unramified_ray_class` below).
+
+If `g ∣ p · ii` and the prime `p` does NOT divide `g`, then `g ∣ ii`.
+Writing `p · ii = g · h`, primality sends `p` into `g` or into `h`;
+`hwg` excludes the first, so `h = p · h'` and cancelling the nonzero `p`
+in the Dedekind (hence cancellative) monoid of ideals gives `ii = g · h'`.
+
+This is the step that turns "some admissible modulus avoids `w`" into
+"`ii` itself is admissible" in the removal leaf below: the gcd of the two
+admissible moduli divides `w · ii` and is prime to `w`, hence divides
+`ii`. -/
+theorem dvd_of_dvd_mul_prime_not_dvd_ray_class
+    {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (p ii g : Ideal R) (hp : Prime p) (hwg : ¬ p ∣ g) (hg : g ∣ p * ii) :
+    g ∣ ii := by
+  obtain ⟨h, hh⟩ := hg
+  have hwgh : p ∣ g * h := by rw [← hh]; exact dvd_mul_right _ _
+  rcases hp.2.2 _ _ hwgh with hc | hc
+  · exact absurd hc hwg
+  · obtain ⟨h', rfl⟩ := hc
+    refine ⟨h', ?_⟩
+    apply mul_left_cancel₀ hp.ne_zero
+    rw [hh]; ring
+
+set_option maxHeartbeats 1000000 in
+/-- **The Artin symbol is killed by the order of the character** (PROVEN
+2026-07-26; created the same day as the counting half of the
+(B1a-ii-2-a) split recorded on `exists_isAdmissibleModulus_ray_class`
+below).
+
+If `χ a ^ n = 1` for every `a`, then `c I ^ n = 1` for every NONZERO
+ideal `I` — not merely for primes. This is what lets the prime-power
+reduction below recombine its two components: the exponents produced by
+the Chinese Remainder Theorem are only determined modulo `n`, so the
+recombination `c I ^ (e + f) = c I` needs exactly `c I ^ n = 1`.
+
+**Proof.** Induction on the factorization of `I`
+(`UniqueFactorizationMonoid.induction_on_prime`, available because the
+ideals of a Dedekind domain are a unique factorization monoid). The
+`0` case is vacuous, the multiplicative step is `hcmul` plus `mul_pow`,
+and the prime step is `hcfrob` plus `hord`. The UNIT case is the only
+one with content: it needs `c ⊤ = 1`, which is NOT free — `c ⊤` is
+idempotent, so it is `0` or `1`, and `c ≡ 0` is excluded only because
+`c` is unit-valued at primes (`charValue_ne_zero_ray_class` above,
+applied at a maximal ideal, which exists and is nonzero because
+`𝓞 F` is not a field, `NumberField.RingOfIntegers.not_isField`). -/
+theorem pow_artinSymbol_eq_one_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVker : ∀ a ∈ V, χ a = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (n : ℕ) (hord : ∀ a : Γ F, χ a ^ n = 1) :
+    ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → c I ^ n = 1 := by
+  classical
+  have hχ0 : ∀ a : Γ F, χ a ≠ 0 := charValue_ne_zero_ray_class F χ hmul V hVker
+  have hcne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal ≠ 0 := fun v => by rw [hcfrob v]; exact hχ0 _
+  have hcpow : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal ^ n = 1 := fun v => by rw [hcfrob v]; exact hord _
+  have htop : (⊤ : Ideal (NumberField.RingOfIntegers F)) ≠ ⊥ := by
+    intro h
+    exact absurd (h ▸ Submodule.mem_top (x := (1 : NumberField.RingOfIntegers F)))
+      (by simp)
+  have hone : c ⊤ = 1 := by
+    obtain ⟨M, hM⟩ := Ideal.exists_maximal (NumberField.RingOfIntegers F)
+    haveI : M.IsMaximal := hM
+    have hM0 : M ≠ ⊥ := by
+      have h := NeZero.ne (M : Ideal (NumberField.RingOfIntegers F))
+      simpa using h
+    have h1 : c M = c M * c ⊤ := by
+      conv_lhs => rw [show M = M * ⊤ from (Ideal.mul_top M).symm]
+      exact hcmul _ _ hM0 htop
+    exact (mul_left_cancel₀ (hcne ⟨M, hM.isPrime, hM0⟩)
+      (by rw [mul_one]; exact h1)).symm
+  intro I
+  induction I using UniqueFactorizationMonoid.induction_on_prime with
+  | h₁ => intro h; exact absurd (by simp) h
+  | h₂ x hx => intro _; rw [Ideal.isUnit_iff.mp hx, hone, one_pow]
+  | h₃ a p ha hp iha =>
+      intro _
+      have hp0 : p ≠ ⊥ := by simpa using hp.ne_zero
+      have ha0 : a ≠ ⊥ := by simpa using ha
+      rw [hcmul _ _ hp0 ha0, mul_pow, iha ha0, mul_one]
+      exact hcpow ⟨p, (Ideal.prime_iff_isPrime hp0).mp hp, hp0⟩
+
+/-- **Complementary idempotent exponents for a coprime factorization**
+(PROVEN 2026-07-26; the arithmetic half of the prime-power reduction on
+`exists_isAdmissibleModulus_ray_class` below).
+
+For coprime `a, b > 1` there are naturals `e, f` with `b ∣ e`, `a ∣ f`
+and `e + f ≡ 1 (mod a·b)`. Concretely `e = b^φ(a)` and `f = a^φ(b)`:
+Euler's theorem gives `e ≡ 1 (mod a)` and `f ≡ 1 (mod b)`, while
+divisibility gives `e ≡ 0 (mod b)` and `f ≡ 0 (mod a)`, so `e + f ≡ 1`
+modulo both factors and hence modulo their product by coprimality.
+
+This is the Chinese Remainder Theorem in the only form the reduction
+needs, and taking the witnesses to be explicit prime powers avoids
+`Nat.chineseRemainder`'s subtype packaging entirely. `b ∣ e` is what
+makes `χ ^ e` killed by `a`, and `e + f ≡ 1` is what makes the two
+components recombine to `χ` itself. -/
+theorem exists_coprimeExponents_ray_class (a b : ℕ) (ha : 1 < a) (hb : 1 < b)
+    (hab : Nat.Coprime a b) :
+    ∃ e f s : ℕ, b ∣ e ∧ a ∣ f ∧ e + f = 1 + a * b * s := by
+  have hta : a.totient ≠ 0 := (Nat.totient_pos.mpr (show 0 < a by omega)).ne'
+  have htb : b.totient ≠ 0 := (Nat.totient_pos.mpr (show 0 < b by omega)).ne'
+  have key : ∃ s : ℕ, b ^ a.totient + a ^ b.totient = 1 + a * b * s := by
+    have hea : b ^ a.totient ≡ 1 [MOD a] := Nat.ModEq.pow_totient hab.symm
+    have hfb : a ^ b.totient ≡ 1 [MOD b] := Nat.ModEq.pow_totient hab
+    have hea0 : a ^ b.totient ≡ 0 [MOD a] :=
+      (Nat.modEq_zero_iff_dvd).mpr (dvd_pow_self a htb)
+    have hfb0 : b ^ a.totient ≡ 0 [MOD b] :=
+      (Nat.modEq_zero_iff_dvd).mpr (dvd_pow_self b hta)
+    have hsa : b ^ a.totient + a ^ b.totient ≡ 1 [MOD a] := by simpa using hea.add hea0
+    have hsb : b ^ a.totient + a ^ b.totient ≡ 1 [MOD b] := by simpa using hfb0.add hfb
+    have hmm : b ^ a.totient + a ^ b.totient ≡ 1 [MOD a * b] :=
+      (Nat.modEq_and_modEq_iff_modEq_mul hab).mp ⟨hsa, hsb⟩
+    have hle : 1 ≤ b ^ a.totient + a ^ b.totient := by
+      have := Nat.one_le_pow a.totient b (by omega)
+      omega
+    obtain ⟨s, hs⟩ := (Nat.modEq_iff_dvd' hle).mp hmm.symm
+    exact ⟨s, by omega⟩
+  obtain ⟨s, hs⟩ := key
+  exact ⟨b ^ a.totient, a ^ b.totient, s, dvd_pow_self b hta, dvd_pow_self a htb, hs⟩
+
+set_option maxHeartbeats 1000000 in
+/-- **A character trivial on an open subgroup has FINITE ORDER, prime to
+`3`** (sorry node, created 2026-07-26 as sub-leaf (B1a-ii-2-a-i) of
+`exists_isAdmissibleModulus_ray_class` below, which is now PROVEN by the
+prime-power reduction over this leaf and (B1a-ii-2-a-ii)
+`exists_isAdmissibleModulus_primePow_ray_class` just below): there is an
+`n` not divisible by `3` with `χ a ^ n = 1` for every `a`.
+
+**This is the input the whole Artin apparatus of this file already
+assumes and nobody had supplied.** Every node of the reciprocity chain
+above — `exists_artinIdealGroup_relIndex_ray_class`,
+`exists_conductor_artinSymbol_span_eq_one_ray_class` — carries the
+hypothesis `hord : ∀ a, χ a ^ (ℓ ^ k) = 1` with `ℓ ≠ 3` prime, while the
+target leaf `exists_isAdmissibleModulus_ray_class` has NO order
+hypothesis at all. This leaf plus the prime-power reduction is exactly
+what closes that gap; it is step (i) of Childress's proof of Theorem
+5.2.1 ("reduce to cyclic extensions of prime power degree").
+
+**Route, and it is BOUNDED — no class field theory whatsoever.**
+`ker χ` is a subgroup of `Γ F` (it is a subgroup because `χ` is
+multiplicative and unit-valued, `charValue_ne_zero_ray_class` above)
+containing the OPEN subgroup `V`, hence itself open; `Γ F` is COMPACT,
+so an open subgroup has FINITE INDEX. Therefore the image of `χ` is a
+finite subgroup of `(Dickson.K 3)ˣ = 𝔽̄₃ˣ`, and `n` may be taken to be
+its exponent (or its cardinality). That `3 ∤ n` is the standard fact
+that a field of characteristic `p` has no nontrivial `p`-th root of
+unity: `x ^ 3 = 1` gives `(x - 1) ^ 3 = x ^ 3 - 1 = 0` in
+characteristic `3`, hence `x = 1`, so the finite group has no element of
+order `3`.
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+True by the paragraph above. `hVopen` is LOAD-BEARING and the statement
+is FALSE without it: drop it and `V = ⊥` satisfies `hVker` for every
+multiplicative `χ` whatsoever, including one with infinite image — for
+instance any surjection of `Γ F` onto the infinite group `𝔽̄₃ˣ`, for
+which no single `n` works. `hVker` is load-bearing for the same reason
+and additionally supplies `χ 1 = 1`. `¬ 3 ∣ n` is not decoration: it is
+precisely what lets the consumer feed `ℓ ≠ 3` to the Artin chain, whose
+cyclotomic base case genuinely fails at the residue characteristic.
+
+**Mathlib survey (2026-07-26).** Everything needed is in the pin — this
+is compactness plus `Subgroup.index`, not arithmetic. The one place to
+be careful is that `ker χ` must be built by hand (as
+`{a | χ a = 1}` with the subgroup structure coming from `hmul` and
+unit-valuedness), since `χ` is a bare function and not bundled as a
+`MonoidHom`. -/
+theorem exists_forall_pow_eq_one_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1) :
+    ∃ n : ℕ, ¬ (3 ∣ n) ∧ ∀ a : Γ F, χ a ^ n = 1 :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin reciprocity for a character of PRIME POWER order, WITHOUT an
+unramifiedness hypothesis** (sorry node, created 2026-07-26 as sub-leaf
+(B1a-ii-2-a-ii) of `exists_isAdmissibleModulus_ray_class` below, which is
+now PROVEN by the prime-power reduction over this leaf and
+(B1a-ii-2-a-i) `exists_forall_pow_eq_one_ray_class` just above): if `χ`
+is killed by `ℓ ^ k` for a prime `ℓ ≠ 3`, some modulus is admissible
+for the Artin symbol `c`.
+
+**THIS IS EXACTLY `exists_conductor_artinSymbol_span_eq_one_ray_class`
+(above, PROVEN) WITH THE HYPOTHESIS `hunr` DELETED — and that is the
+whole remaining mathematical content of the target leaf.** Compare the
+two statements side by side: same `F`, `χ`, `hmul`, `V`, `hVopen`,
+`hVker`, `ℓ`, `hℓ`, `hℓ3`, `k`, `hord`, `c`, `hcmul`, `hcfrob`, and the
+same conclusion (that node's conclusion is `IsAdmissibleModulusRayClass`
+unfolded). The proven node additionally assumes that `χ` kills inertia
+at EVERY finite place; this leaf does not.
+
+**Where `hunr` actually enters, so the next owner does not have to
+re-survey the chain (checked by grep 2026-07-26).** It is threaded
+through `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`
+into `exists_artinIdealGroup_relIndex_ray_class`, and inside the latter
+it is consumed at EXACTLY ONE call site: `artinDivisorKernel_le_sup_ray_class`
+(Childress Prop. 5.2.2, `A ≤ P ⊔ N`). Every other node of the chain —
+`exists_artinDivisorPackage_ray_class`, `exists_artinAuxiliaryField_ray_class`,
+`exists_artinPackage_ray_class`, `le_of_le_of_relIndex_le_ray_class` — is
+already stated WITHOUT it. So generalizing this leaf is a single,
+well-localized obligation and not a re-run of the whole descent.
+
+**Why `hunr` is not a real restriction, mathematically.** Artin
+reciprocity holds for every finite abelian `M/F`, ramified or not; the
+role of `hunr` in the development above is bookkeeping, not mathematics.
+`c` is specified at EVERY prime by `hcfrob`, and at a RAMIFIED prime
+`χ (globalFrob v)` is a junk value (Frobenius is well defined only
+modulo inertia, and inertia is not killed there). The classical fix is
+to run the divisor-group argument inside `I_F(mm)` for a modulus `mm`
+divisible by all ramified primes — of which there are finitely many
+(`exists_radical_isRamifiedChar_ray_class` above, already PROVEN over
+`finite_isRamifiedChar_ray_class`) — so the junk values are never
+evaluated. `hunr` is the degenerate case "there are none".
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated.** True because the
+finite part of the conductor `𝔣(M/F)` is such a modulus, `M` being the
+finite abelian extension cut out by `ker χ` (finite by `hVopen`/`hVker`,
+abelian because `Dickson.K 3` is commutative). Non-vacuous: `mm = ⊥` is
+excluded by the first clause of `IsAdmissibleModulusRayClass`, and
+`mm = ⊤` asserts that `M` lies in the NARROW Hilbert class field, a
+genuine and usually false statement. `hcmul`/`hcfrob` are load-bearing —
+they make `c` the Artin symbol of `χ` rather than an arbitrary function
+on ideals — and `hℓ3` is load-bearing because the cyclotomic base case
+of the descent fails at the residue characteristic.
+
+**THE CHECK THAT WOULD REFUTE THE ROUTE RECORDED HERE**, since a route
+audit is a dated claim: `grep -n 'hunr' ModThree.lean` and confirm the
+only occurrence inside a PROOF body (as opposed to a statement) is still
+the single application of `artinDivisorKernel_le_sup_ray_class` inside
+`exists_artinIdealGroup_relIndex_ray_class`. If further nodes have since
+acquired `hunr`, the localization claim above is stale and must be
+re-derived before it is relied on. -/
+theorem exists_isAdmissibleModulus_primePow_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1) :
+    ∃ mm : Ideal (NumberField.RingOfIntegers F), IsAdmissibleModulusRayClass F c mm :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **SOME modulus is admissible for the Artin symbol `c`** (sorry node,
 created 2026-07-26 as sub-leaf (B1a-ii-2-a) of
@@ -40845,7 +41131,36 @@ nontrivial value).
 
 **Mathlib survey (2026-07-26): nothing to build on.** Ray class groups,
 the Artin map, local norm groups and conductors are all absent from the
-pin, and `~/cs/FLT` has no class field theory. -/
+pin, and `~/cs/FLT` has no class field theory.
+
+**DECOMPOSED AND PROVEN 2026-07-26.** The cut is Childress's own step (i)
+of Theorem 5.2.1 — *reduce to characters of PRIME POWER order* — which
+was the step this file's Artin apparatus silently assumed and nobody had
+supplied: every node of the reciprocity chain above carries
+`hord : ∀ a, χ a ^ (ℓ ^ k) = 1`, while this leaf had no order hypothesis
+at all. The two new sub-leaves are (B1a-ii-2-a-i)
+`exists_forall_pow_eq_one_ray_class` (`χ` has finite order prime to `3`,
+which is compactness and nothing else) and (B1a-ii-2-a-ii)
+`exists_isAdmissibleModulus_primePow_ray_class` (reciprocity at prime
+power order, ramification allowed — literally
+`exists_conductor_artinSymbol_span_eq_one_ray_class` with `hunr`
+deleted). Everything between them is discharged here.
+
+The reduction itself, for the record, is `Nat.recOnPrimeCoprime` on the
+order `n`. At a prime power it is the second sub-leaf; the `n = 1` corner
+is that same leaf at `ℓ = 2, k = 0`, since `2 ^ 0 = 1` (taking `ℓ = p`
+would be wrong exactly when `p = 3`, which `hℓ3` forbids and which the
+`k = 0` split avoids). At a coprime product `n = a · b` one splits `χ`
+into `χ ^ e` and `χ ^ f` with `b ∣ e`, `a ∣ f` and `e + f ≡ 1 (mod n)`
+(`exists_coprimeExponents_ray_class` above, with the explicit Euler
+witnesses `e = b^φ(a)`, `f = a^φ(b)`), applies the inductive hypothesis
+to each component with symbol `c ^ e` resp. `c ^ f`, and takes the
+PRODUCT `mm₁ · mm₂` of the two moduli — a product, not a gcd, because
+what is needed is that `δ ≡ 1` modulo the witness implies it modulo
+both. Recombining needs `c I ^ n = 1` for the NONZERO ideal
+`I = (δ)` and not merely at primes, which is why
+`pow_artinSymbol_eq_one_ray_class` above exists and why it has to know
+`c ⊤ = 1`. -/
 theorem exists_isAdmissibleModulus_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -40857,12 +41172,172 @@ theorem exists_isAdmissibleModulus_ray_class
       c (I * J) = c I * c J)
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       c v.asIdeal = χ (globalFrob v)) :
-    ∃ mm : Ideal (NumberField.RingOfIntegers F), IsAdmissibleModulusRayClass F c mm :=
+    ∃ mm : Ideal (NumberField.RingOfIntegers F), IsAdmissibleModulusRayClass F c mm := by
+  classical
+  -- (B1a-ii-2-a-i): `χ` has finite order `n`, and `3 ∤ n`.
+  obtain ⟨n, hn3, hord⟩ := exists_forall_pow_eq_one_ray_class F χ hmul V hVopen hVker
+  -- Childress 5.2.1 step (i): induct on the order, splitting `χ` into its
+  -- primary components at each coprime factorization.
+  suffices H : ∀ m : ℕ, ∀ χ' : Γ F → Dickson.K 3,
+      (∀ a b : Γ F, χ' (a * b) = χ' a * χ' b) → (∀ a ∈ V, χ' a = 1) →
+      ¬ (3 ∣ m) → (∀ a : Γ F, χ' a ^ m = 1) →
+      ∀ c' : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+        c' (I * J) = c' I * c' J) →
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        c' v.asIdeal = χ' (globalFrob v)) →
+      ∃ mm : Ideal (NumberField.RingOfIntegers F),
+        IsAdmissibleModulusRayClass F c' mm by
+    exact H n χ hmul hVker hn3 hord c hcmul hcfrob
+  intro m
+  induction m using Nat.recOnPrimeCoprime with
+  | zero =>
+      -- `3 ∣ 0`, so this case is vacuous.
+      exact fun _ _ _ h3 _ _ _ _ => absurd (dvd_zero 3) h3
+  | prime_pow p k hp =>
+      intro χ' hmul' hVker' h3 hord' c' hcmul' hcfrob'
+      rcases Nat.eq_zero_or_pos k with rfl | hk
+      · -- `p ^ 0 = 1`: `χ'` is trivial. Use `ℓ = 2`, which is legitimate even
+        -- when `p = 3`, since `2 ^ 0 = 1 = p ^ 0`.
+        exact exists_isAdmissibleModulus_primePow_ray_class F χ' hmul' V hVopen hVker'
+          c' hcmul' hcfrob' 2 Nat.prime_two (by norm_num) 0 (by simpa using hord')
+      · have hp3 : p ≠ 3 := by
+          rintro rfl
+          exact h3 (dvd_pow_self 3 hk.ne')
+        exact exists_isAdmissibleModulus_primePow_ray_class F χ' hmul' V hVopen hVker'
+          c' hcmul' hcfrob' p hp hp3 k hord'
+  | coprime a b ha hb hab iha ihb =>
+      intro χ' hmul' hVker' h3 hord' c' hcmul' hcfrob'
+      obtain ⟨e, f, s, hbe, haf, hef⟩ := exists_coprimeExponents_ray_class a b ha hb hab
+      have h3a : ¬ (3 ∣ a) := fun h => h3 (h.trans (dvd_mul_right a b))
+      have h3b : ¬ (3 ∣ b) := fun h => h3 (h.trans (dvd_mul_left b a))
+      obtain ⟨t, rfl⟩ := hbe
+      obtain ⟨u, rfl⟩ := haf
+      -- the `a`-primary component `χ' ^ e`, with symbol `c' ^ e`
+      obtain ⟨mm₁, hmm₁⟩ :=
+        iha (fun x => χ' x ^ (b * t)) (fun x y => by rw [hmul', mul_pow])
+          (fun x hx => by rw [hVker' x hx, one_pow]) h3a
+          (fun x => by
+            rw [← pow_mul, show b * t * a = a * b * t by ring, pow_mul, hord', one_pow])
+          (fun I => c' I ^ (b * t))
+          (fun I J hI hJ => by rw [hcmul' I J hI hJ, mul_pow])
+          (fun v => by rw [hcfrob' v])
+      -- the `b`-primary component `χ' ^ f`, with symbol `c' ^ f`
+      obtain ⟨mm₂, hmm₂⟩ :=
+        ihb (fun x => χ' x ^ (a * u)) (fun x y => by rw [hmul', mul_pow])
+          (fun x hx => by rw [hVker' x hx, one_pow]) h3b
+          (fun x => by
+            rw [← pow_mul, show a * u * b = a * b * u by ring, pow_mul, hord', one_pow])
+          (fun I => c' I ^ (a * u))
+          (fun I J hI hJ => by rw [hcmul' I J hI hJ, mul_pow])
+          (fun v => by rw [hcfrob' v])
+      have hbot : mm₁ * mm₂ ≠ ⊥ := by
+        rw [Ne, Ideal.mul_eq_bot]
+        rintro (h | h)
+        · exact hmm₁.1 h
+        · exact hmm₂.1 h
+      refine ⟨mm₁ * mm₂, hbot, ?_⟩
+      intro δ hδ0 hδpos hδmem
+      have hδ1 : δ - 1 ∈ mm₁ := Ideal.mul_le_right hδmem
+      have hδ2 : δ - 1 ∈ mm₂ := Ideal.mul_le_left hδmem
+      have he : c' (Ideal.span {δ}) ^ (b * t) = 1 := hmm₁.2 δ hδ0 hδpos hδ1
+      have hf : c' (Ideal.span {δ}) ^ (a * u) = 1 := hmm₂.2 δ hδ0 hδpos hδ2
+      -- the recombination needs the order of `c'` at the NONZERO ideal `(δ)`
+      have hn : c' (Ideal.span {δ}) ^ (a * b) = 1 := by
+        refine pow_artinSymbol_eq_one_ray_class F χ' hmul' V hVker' c' hcmul' hcfrob'
+          (a * b) hord' (Ideal.span {δ}) ?_
+        simpa [Ideal.span_singleton_eq_bot] using hδ0
+      calc c' (Ideal.span {δ})
+          = c' (Ideal.span {δ}) ^ (1 + a * b * s) := by
+            rw [pow_add, pow_one, pow_mul, hn, one_pow, mul_one]
+        _ = c' (Ideal.span {δ}) ^ (b * t + a * u) := by rw [hef]
+        _ = 1 := by rw [pow_add, he, hf, one_mul]
+
+set_option maxHeartbeats 1000000 in
+/-- **SOME admissible modulus AVOIDS a given unramified prime** (sorry
+node, created 2026-07-26 as the single sub-leaf (B1a-ii-2-b-i) of
+`isAdmissibleModulus_of_mul_unramified_ray_class` just below, which is
+now PROVEN as ideal arithmetic over this leaf): given that `χ` is
+UNRAMIFIED at the finite place `w`, and given that SOME modulus `mm` is
+admissible at all, some admissible modulus `nn` is not divisible by `w`.
+
+**This is where LOCAL NORM SURJECTIVITY lives, and it is now the only
+place in the whole (B1a) cluster that needs it** — the consumer below is
+pure ideal arithmetic over it. In the classical language this says
+`ord_w 𝔣(M/F) = 0` at an unramified `w`, where `M/F` is the finite
+abelian extension cut out by `ker χ`: the global norm group of unit
+ideles factors place by place,
+
+    N_{M/F} E_M = ∏_{v fin. unram} U_v × ∏_{v fin. ram} ∏_{w∣v} N_{M_w/F_v} U_w
+                    × ∏_{v infinite} ∏_{w∣v} N_{M_w/F_v} M_w^×,
+
+and at an UNRAMIFIED finite `v` the local norm `N_{M_w/F_v} : U_w → U_v`
+is SURJECTIVE (Serre, *Corps Locaux* V §2; Neukirch *ANT* V (1.2), via
+surjectivity of the norm on residue fields plus successive approximation
+in the unit filtration). Hence the conductor's prime support omits `w`,
+and the conductor is admissible.
+
+**Why this shape, and why it is NOT circular.** The consumer two nodes
+below, `exists_isAdmissibleModulus_isRamifiedChar_ray_class`, asks for an
+admissible modulus all of whose prime divisors are ramified — a
+quantifier over ALL primes at once. This leaf fixes ONE prime `w` in
+advance and is therefore strictly weaker; the all-primes statement is
+recovered by iterating it, which is what
+`exists_dvd_isAdmissibleModulus_isRamifiedChar_ray_class` below already
+does by induction on `Ideal.absNorm`. Taking `mm` as an INPUT rather
+than asserting existence outright is deliberate for the same reason: it
+keeps this leaf from silently subsuming
+`exists_isAdmissibleModulus_ray_class` above, which is a separate and
+much larger obligation (Artin reciprocity proper).
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+True by the paragraph above, with witness the finite part of `𝔣(M/F)`
+(admissible, and prime to `w` exactly because `w` is unramified). `hw`
+is essential and the statement is FALSE without it: at a ramified `w`
+every admissible modulus is divisible by `w`, since the conductor is
+and every admissible modulus is a multiple of the conductor —
+concretely `F = ℚ`, `M = ℚ(i)`, `𝔣 = (4)·∞`, `w = (2)`: `(4)` and every
+multiple of it are admissible, and none avoids `2`, because `3 ≡ 1
+(mod 2)` is totally positive with `Frob_3` nontrivial in `Gal(ℚ(i)/ℚ)`.
+`hmm` is load-bearing: without an admissible modulus to start from the
+conclusion would assert reciprocity itself. `hmul`, `hVopen`, `hVker`
+produce the finite abelian `M/F`; `hcmul` and `hcfrob` are what make `c`
+the Artin symbol of `χ`, without which `c` carries no relation to the
+ramification of `χ` and the statement is false.
+
+**THE CHECK THAT WOULD REFUTE THE CUT**: exhibit an admissible `mm`, a
+`w` unramified for `χ`, and a proof that every admissible modulus is
+divisible by `w`. That is exactly a failure of `ord_w 𝔣 = 0`, i.e. a
+counterexample to unramified local norm surjectivity.
+
+**Mathlib survey (2026-07-26): nothing to build on.** Local class field
+theory, local norm groups, the Artin map and conductors are all absent
+from the pin, and `~/cs/FLT` has no class field theory. -/
+theorem exists_isAdmissibleModulus_not_dvd_of_unramified_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hw : ¬ IsRamifiedCharRayClass F χ w)
+    (mm : Ideal (NumberField.RingOfIntegers F))
+    (hmm : IsAdmissibleModulusRayClass F c mm) :
+    ∃ nn : Ideal (NumberField.RingOfIntegers F),
+      IsAdmissibleModulusRayClass F c nn ∧ ¬ w.asIdeal ∣ nn :=
   sorry
 
 set_option maxHeartbeats 1000000 in
 /-- **AN UNRAMIFIED PRIME CAN BE REMOVED from an admissible modulus**
-(sorry node, created 2026-07-26 as sub-leaf (B1a-ii-2-b) of
+(**PROVEN 2026-07-26** as ideal arithmetic over its single new sub-leaf
+(B1a-ii-2-b-i) `exists_isAdmissibleModulus_not_dvd_of_unramified_ray_class`
+just above — see the DECOMPOSED note at the end of this docstring;
+created 2026-07-26 as sub-leaf (B1a-ii-2-b) of
 `exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class` below,
 which is now PROVEN as ideal arithmetic over this leaf and (B1a-ii-2-a)
 `exists_isAdmissibleModulus_ray_class` just above): if `w` is a finite
@@ -40913,7 +41388,32 @@ relation to the ramification of `χ` and the statement is false.
 
 **Mathlib survey (2026-07-26): nothing to build on.** Local class field
 theory, local norm groups, the Artin map and conductors are all absent
-from the pin, and `~/cs/FLT` has no class field theory. -/
+from the pin, and `~/cs/FLT` has no class field theory.
+
+**DECOMPOSED AND PROVEN 2026-07-26.** All of the class field theory is
+isolated into the single sub-leaf
+`exists_isAdmissibleModulus_not_dvd_of_unramified_ray_class` just above
+("some admissible modulus avoids the unramified `w`"), and what remains
+here is ideal arithmetic in three steps, using a lemma that was already
+sitting proven a few hundred lines above and had not been exploited:
+
+1. `isAdmissibleModulus_sup_ray_class` — the GCD of two admissible
+   moduli is admissible. Ideal `⊔` IS the gcd, because divisibility of
+   ideals is reverse inclusion (`Ideal.dvd_iff_le`).
+2. so `g := (w · ii) ⊔ nn` is admissible; it divides `w · ii`, and it is
+   prime to `w` because it divides `nn`, which `w` does not divide.
+3. `dvd_of_dvd_mul_prime_not_dvd_ray_class` — a divisor of `w · ii` that
+   is prime to the prime `w` divides `ii`. Hence `g ∣ ii`, and
+   `isAdmissibleModulus_of_dvd_ray_class` (a multiple of an admissible
+   modulus is admissible) makes `ii` admissible.
+
+Note what this route AVOIDS, and why it is the right one: no attempt is
+made to adjust a given `δ ≡ 1 (mod ii)` multiplicatively into the finer
+ray `δ' ≡ 1 (mod w · ii)`. That adjustment is impossible in general —
+when `w ∤ ii` and `w ∣ δ`, no multiple of `δ` is ever `≡ 1 (mod w)` —
+which is exactly why the classical proof also goes through the
+conductor's minimality rather than through elementwise approximation.
+Step 1 is the ideal-theoretic form of that minimality. -/
 theorem isAdmissibleModulus_of_mul_unramified_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -40929,8 +41429,26 @@ theorem isAdmissibleModulus_of_mul_unramified_ray_class
     (hw : ¬ IsRamifiedCharRayClass F χ w)
     (ii : Ideal (NumberField.RingOfIntegers F)) (hii : ii ≠ ⊥)
     (hadm : IsAdmissibleModulusRayClass F c (w.asIdeal * ii)) :
-    IsAdmissibleModulusRayClass F c ii :=
-  sorry
+    IsAdmissibleModulusRayClass F c ii := by
+  classical
+  -- (B1a-ii-2-b-i): the local-norm-surjectivity input — some admissible
+  -- modulus avoids the unramified prime `w`.
+  obtain ⟨nn, hnnadm, hnndvd⟩ :=
+    exists_isAdmissibleModulus_not_dvd_of_unramified_ray_class F χ hmul V hVopen hVker c
+      hcmul hcfrob w hw (w.asIdeal * ii) hadm
+  -- the GCD of two admissible moduli is admissible (proven above), and ideal
+  -- `⊔` IS the gcd, since `I ∣ J ↔ J ≤ I`.
+  have hsup : IsAdmissibleModulusRayClass F c (w.asIdeal * ii ⊔ nn) :=
+    isAdmissibleModulus_sup_ray_class F χ hmul V hVopen hVker c hcmul hcfrob
+      (w.asIdeal * ii) nn hadm hnnadm
+  -- that gcd divides `w · ii` and is prime to `w`, hence divides `ii`.
+  have hwp : Prime w.asIdeal := (Ideal.prime_iff_isPrime w.ne_bot).mpr w.isPrime
+  have hdvd : (w.asIdeal * ii ⊔ nn) ∣ ii :=
+    dvd_of_dvd_mul_prime_not_dvd_ray_class w.asIdeal ii _ hwp
+      (fun h => hnndvd (h.trans (Ideal.dvd_iff_le.mpr le_sup_right)))
+      (Ideal.dvd_iff_le.mpr le_sup_left)
+  -- a multiple of an admissible modulus is admissible.
+  exact isAdmissibleModulus_of_dvd_ray_class F c (w.asIdeal * ii ⊔ nn) ii hsup hdvd hii
 
 set_option maxHeartbeats 1000000 in
 /-- **Every admissible modulus contains an admissible divisor supported
