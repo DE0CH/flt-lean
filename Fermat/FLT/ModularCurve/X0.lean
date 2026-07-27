@@ -2945,15 +2945,6 @@ theorem RelPoint.along_val {E' T' E T : Scheme.{u}} {f' : E' ⟶ T'} {f : E ⟶ 
     {T'' : Scheme.{u}} {g : T'' ⟶ T'} (x : RelPoint f' g) :
     (RelPoint.along map hw x).1 = x.1 ≫ map := rfl
 
-/-- **`LiesIn` depends only on the underlying morphism**, so it transfers
-between relative points over different base points that happen to have the
-same underlying morphism.  This is what makes `LiesIn` a subfunctor with no
-naturality axiom (see `RelPoint.LiesIn`'s docstring). -/
-theorem RelPoint.liesIn_congr {E T C : Scheme.{u}} {f : E ⟶ T} (ι : C ⟶ E)
-    {T' : Scheme.{u}} {g₁ g₂ : T' ⟶ T} (x : RelPoint f g₁) (y : RelPoint f g₂)
-    (h : x.1 = y.1) : RelPoint.LiesIn ι x ↔ RelPoint.LiesIn ι y := by
-  unfold RelPoint.LiesIn; rw [h]
-
 /-- **A datum is a base change of itself along the identity** (PROVEN
 2026-07-27).  Together with `IsBaseChangeOf.comp` this makes
 `IsBaseChangeOf` the morphism relation of a category over `Scheme`.
@@ -2983,7 +2974,7 @@ def IsBaseChangeOf.refl {N : ℕ} {T : Scheme.{u}} (d : Gamma0Datum N T) :
     rw [hal, hal, hal, RelPoint.transport_add]
   liesIn_iff := by
     intro T'' g x
-    exact RelPoint.liesIn_congr _ _ _ (by
+    exact RelPoint.liesIn_congr _ (by
       simp only [RelPoint.along_val, Category.comp_id])
 
 /-- **Base changes compose** (PROVEN 2026-07-27): if `d''` is a base change
@@ -3022,7 +3013,7 @@ def IsBaseChangeOf.comp {N : ℕ} {T'' T' T : Scheme.{u}} {k : T'' ⟶ T'} {h : 
   liesIn_iff := by
     intro T₀ g x
     rw [bk.liesIn_iff, bh.liesIn_iff]
-    exact RelPoint.liesIn_congr _ _ _ (by
+    exact RelPoint.liesIn_congr _ (by
       simp only [RelPoint.along_val, Category.assoc])
 
 /-! #### The deck group, the invariant quotient, and the two leaves the
@@ -10816,7 +10807,7 @@ clause pins the value after every base change, and it is exactly what
 makes uniqueness true: by (i) there is a cover of `Spec R` by basic
 opens on which models exist, and `R` injects into the product of the
 corresponding localizations.  It is also what makes NATURALITY provable,
-by composing base changes (`IsBaseChangeOf.comp`, proven below).
+by composing base changes (`IsBaseChangeOf.comp`, proven earlier in this file).
 
 **Five leaves, and each is smaller than the node it replaces.**
 
@@ -10915,68 +10906,11 @@ theorem jLineCoord_injective {R : Type} [CommRing R]
   have := congrArg (fun f => CommRingCat.Hom.hom f a) hcomp
   simpa [jLineStr, Polynomial.C_eq_algebraMap] using this
 
-/-- **Base changes compose** (PROVEN).
-
-If `d''` is a base change of `d'` along `h₁` and `d'` is a base change of
-`d` along `h₂`, then `d''` is a base change of `d` along `h₁ ≫ h₂`.  The
-cartesian square is `IsPullback.paste_vert`; the three remaining axioms
-are the corresponding axioms of the two halves, chased through
-`RelPoint.along` and reassociated.
-
-Consumed by `exists_jSectionOnAffine` below to prove `jt_natural`: the
-pinning `IsJValueOnAffine` quantifies over base changes, so transporting
-it along one more base change is exactly this composition. -/
-noncomputable def IsBaseChangeOf.comp {N : ℕ} {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {d'' : Gamma0Datum N T''} {d' : Gamma0Datum N T'}
-    {d : Gamma0Datum N T} (hb₁ : IsBaseChangeOf h₁ d'' d') (hb₂ : IsBaseChangeOf h₂ d' d) :
-    IsBaseChangeOf (h₁ ≫ h₂) d'' d where
-  map := hb₁.map ≫ hb₂.map
-  isPullback := hb₁.isPullback.paste_vert hb₂.isPullback
-  map_zero := by
-    intro U g
-    have e₁ := congrArg Subtype.val (hb₁.map_zero g)
-    have e₂ := congrArg Subtype.val (hb₂.map_zero (g ≫ h₁))
-    refine Subtype.ext ?_
-    show (d''.ab.zero g).1 ≫ hb₁.map ≫ hb₂.map = _
-    rw [← Category.assoc]
-    show ((d''.ab.zero g).1 ≫ hb₁.map) ≫ hb₂.map = _
-    rw [show (d''.ab.zero g).1 ≫ hb₁.map = (d'.ab.zero (g ≫ h₁)).1 from e₁]
-    rw [show (d'.ab.zero (g ≫ h₁)).1 ≫ hb₂.map = (d.ab.zero ((g ≫ h₁) ≫ h₂)).1 from e₂,
-      Category.assoc]
-  map_add := by
-    intro U g x y
-    have key : ∀ {b₁ b₂ : U ⟶ T}, b₁ = b₂ → ∀ (p q : RelPoint d.f b₁)
-        (p' q' : RelPoint d.f b₂), p.1 = p'.1 → q.1 = q'.1 →
-        (d.ab.add p q).1 = (d.ab.add p' q').1 := by
-      rintro b₁ b₂ rfl p q p' q' hp hq
-      rw [Subtype.ext hp, Subtype.ext hq]
-    have e₁ := congrArg Subtype.val (hb₁.map_add x y)
-    have e₂ := congrArg Subtype.val
-      (hb₂.map_add (RelPoint.along hb₁.map hb₁.isPullback.w x)
-        (RelPoint.along hb₁.map hb₁.isPullback.w y))
-    refine Subtype.ext ?_
-    show (d''.ab.add x y).1 ≫ hb₁.map ≫ hb₂.map = _
-    rw [← Category.assoc]
-    show ((d''.ab.add x y).1 ≫ hb₁.map) ≫ hb₂.map = _
-    rw [show (d''.ab.add x y).1 ≫ hb₁.map
-        = (d'.ab.add (RelPoint.along hb₁.map hb₁.isPullback.w x)
-            (RelPoint.along hb₁.map hb₁.isPullback.w y)).1 from e₁]
-    rw [show (d'.ab.add (RelPoint.along hb₁.map hb₁.isPullback.w x)
-            (RelPoint.along hb₁.map hb₁.isPullback.w y)).1 ≫ hb₂.map
-          = (d.ab.add (RelPoint.along hb₂.map hb₂.isPullback.w
-                (RelPoint.along hb₁.map hb₁.isPullback.w x))
-              (RelPoint.along hb₂.map hb₂.isPullback.w
-                (RelPoint.along hb₁.map hb₁.isPullback.w y))).1 from e₂]
-    exact key (Category.assoc g h₁ h₂) _ _ _ _ (by simp [RelPoint.along]) (by
-      simp [RelPoint.along])
-  liesIn_iff := by
-    intro U g x
-    rw [hb₁.liesIn_iff x, hb₂.liesIn_iff]
-    constructor
-    · rintro ⟨z, hz⟩
-      exact ⟨z, by simpa [RelPoint.along, ← Category.assoc] using hz⟩
-    · rintro ⟨z, hz⟩
-      exact ⟨z, by simpa [RelPoint.along, ← Category.assoc] using hz⟩
+/-! **`IsBaseChangeOf.comp` lives EARLIER IN THIS FILE.**  A second, byte-inequivalent
+but statement-identical copy of it was written in this block on another branch of the same
+batch and deleted at integration (2026-07-27); the surviving definition is the one in the
+`Gamma0Datum` transport section above, and it has the same signature, so every use below is
+unaffected. -/
 
 /-- **`x` is THE `j`-value of the datum `d` over the affine base
 `Spec R`.**
