@@ -29,3 +29,5 @@
 - [Minimal orchestration](flt-minimal-orchestration.md) — Deyao 2026-07-25: orchestrator only advances the pointer + prompts (incl. ".lake may be stale, rebuild it"); agents own their own environment; central management caused every outage
 - [Scope is Deyaos call](flt-scope-is-deyaos-call.md) — Deyao 2026-07-25: scope is deliberately enormous; effort estimates are info, "not worth it" is not mine to conclude; build whole missing theories when a node needs them
 - [Merge batch is for Lean edits only](orchestrator-never-commits-to-main.md) — Deyao 2026-07-26: the batch protects a green build; tooling unrelated to the math goes straight to main
+- [Release deletes non-leaf tasks](flt-release-deletes-nonleaf-tasks.md) — flt-cycle.py release drops queued tasks naming no Lean declaration; re-verify relocations/reconciliations and queue ORDER after every release
+- [Preflight finds unowned leaves](flt-preflight-finds-unowned-leaves.md) — the only check that catches sorries no agent reported; run it BETWEEN releases; count leaves back when grouping into tasks
