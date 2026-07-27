@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
 import Mathlib.RingTheory.RingHom.FaithfullyFlat
 import Mathlib.RingTheory.Etale.Basic
+import Mathlib.RingTheory.HopfAlgebra.Convolution
+import Mathlib.RingTheory.Finiteness.ModuleFinitePresentation
 
 /-!
 # Short exact sequences of finite flat commutative group schemes, and exactness of Cartier duality
@@ -23,7 +25,7 @@ was missing, and is supplied here, is
 4. the definition of **multiplicative type** as "the Cartier dual is étale"
    (`HopfAlgebra.IsMultiplicativeType`), and `(R3)` itself
    (`HopfAlgebra.isMultiplicativeType_of_isShortExact`) *proven* from 3 together with the étale
-   side `HopfAlgebra.etale_of_isShortExact`.
+   side `HopfAlgebra.etale_of_isShortExact` (now proven).
 
 ## The definition, and why it is what it is
 
@@ -65,15 +67,12 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   correct definition for affine group schemes in general; the finite flat hypotheses are imposed
   where they are used, namely wherever a Cartier dual is formed (which needs `Module.Finite R` and
   `Module.Free R` — see the "Why finite free" design note in `CartierDual.lean`).
-* `etale_of_isShortExact` is stated over an **arbitrary** base `R`, and it is true there: `G → G''`
-  is an fppf torsor under the étale `G'`, hence étale after the faithfully flat base change
-  `G → G''` trivialising it, hence étale by fppf descent of étaleness; and `G'' → S` is étale by
-  hypothesis. The *elementary* route recorded in `Family.lean` — `H°` maps trivially to an étale
-  quotient, so `H° ⊆ H'`, and `H'` étale gives `H'° = 0` — proves the same statement but needs
-  `R` henselian local for the connected component to exist
-  (`Bialgebra.exists_connected_counit_idempotent`, already in this cone). Specialising the
-  statement to a henselian local `R` is therefore a legitimate weakening if the general form
-  resists; it is *not* a correction, and the general form is not false.
+* `etale_of_isShortExact` is stated over an **arbitrary** base `R`, and is now PROVEN there — but
+  by neither of the two routes this docstring used to record. No torsor, no fppf descent, and no
+  henselian local hypothesis: étaleness of a finite free group scheme is equivalent to idempotence
+  of its augmentation ideal, and *that* property is extension-closed by pure ideal theory. See
+  `IsShortExact.augmentationIdeal_sq_eq` and `derivation_eq_zero`. The faithful-flatness field of
+  `IsShortExact` turns out not to be needed for this half at all.
 
 ## Main definitions
 
@@ -82,13 +81,25 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   transposes to `CartierDual R B →ₐc[R] CartierDual R A`.
 * `HopfAlgebra.IsShortExact i π` — a short exact sequence of group schemes, on coordinate rings.
 * `HopfAlgebra.IsMultiplicativeType R A` — the Cartier dual of `Spec A` is étale.
+* `HopfAlgebra.invariantAux d` — the invariant derivative `a ↦ ∑ S(a₍₁₎) · d a₍₂₎` of a derivation.
 
 ## Main statements
 
-* `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. OPEN.
-* `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. OPEN.
+* `Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified` and
+  `HopfAlgebra.formallyUnramified_of_augmentationIdeal_sq_eq` — a group scheme is unramified iff
+  its augmentation ideal is idempotent. **PROVEN**, over an arbitrary base.
+* `HopfAlgebra.IsShortExact.augmentationIdeal_sq_eq` — idempotence of the augmentation ideal is
+  extension-closed. **PROVEN**.
+* `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN**, modulo the leaf below.
+* `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. OPEN (three leaves).
 * `HopfAlgebra.isMultiplicativeType_of_isShortExact` — `(R3)`: an extension of multiplicative type
   by multiplicative type is of multiplicative type. **PROVEN** from the two above.
+
+The one non-Hopf leaf this file assumes:
+
+* `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation` — flat + unramified
+  + finitely presented is étale (Stacks 00UU). OPEN; absent from the pin, see its docstring for a
+  survey of what mathlib does and does not carry towards it.
 
 ## References
 
@@ -122,9 +133,92 @@ lemma mem_augmentationIdeal_iff {a : A} :
     a ∈ augmentationIdeal R A ↔ Coalgebra.counit (R := R) a = 0 :=
   RingHom.mem_ker
 
+/-- The counit splits `A` as `R · 1 ⊕ I`: every `a` differs from `ε(a) · 1` by an element of the
+augmentation ideal. This is the identity section of `Spec A`, written on rings. -/
+lemma sub_algebraMap_counit_mem_augmentationIdeal (a : A) :
+    a - algebraMap R A (Coalgebra.counit (R := R) a) ∈ augmentationIdeal R A := by
+  rw [mem_augmentationIdeal_iff, map_sub]
+  simp
+
+/-- **A formally unramified bialgebra has idempotent augmentation ideal**: `I = I²`.
+
+Geometrically, `I/I²` is the cotangent space at the identity, which is a quotient of `Ω[A⁄R]`
+because the identity section `Spec R → Spec A` is a retraction of `Spec A → Spec R`; so `Ω = 0`
+forces it to vanish. The proof below avoids the Kähler machinery: the two `R`-algebra maps
+`A → A ⧸ I²` given by the quotient map and by `a ↦ ε(a) · 1` agree modulo the square-zero ideal
+`I/I²`, so formal unramifiedness identifies them, and evaluating at `a ∈ I` gives `a ∈ I²`. -/
+theorem augmentationIdeal_sq_eq_of_formallyUnramified [Algebra.FormallyUnramified R A] :
+    augmentationIdeal R A ^ 2 = augmentationIdeal R A := by
+  refine le_antisymm (Ideal.pow_le_self two_ne_zero) fun a ha => ?_
+  have hJ2 : (Ideal.map (Ideal.Quotient.mk (augmentationIdeal R A ^ 2))
+      (augmentationIdeal R A)) ^ 2 = ⊥ := by
+    rw [← Ideal.map_pow, Ideal.map_quotient_self]
+  have heq : (Ideal.Quotient.mkₐ R (Ideal.map (Ideal.Quotient.mk
+        (augmentationIdeal R A ^ 2)) (augmentationIdeal R A))).comp
+        (Ideal.Quotient.mkₐ R (augmentationIdeal R A ^ 2)) =
+      (Ideal.Quotient.mkₐ R (Ideal.map (Ideal.Quotient.mk
+        (augmentationIdeal R A ^ 2)) (augmentationIdeal R A))).comp
+        ((Ideal.Quotient.mkₐ R (augmentationIdeal R A ^ 2)).comp
+          ((Algebra.ofId R A).comp (counitAlgHom R A))) := by
+    ext b
+    simp only [AlgHom.comp_apply, Ideal.Quotient.mkₐ_eq_mk, Algebra.ofId_apply,
+      counitAlgHom_apply]
+    rw [Ideal.Quotient.mk_eq_mk_iff_sub_mem, ← map_sub]
+    exact Ideal.mem_map_of_mem _ (sub_algebraMap_counit_mem_augmentationIdeal b)
+  have := Algebra.FormallyUnramified.comp_injective (R := R) (A := A) _ hJ2 heq
+  have h2 := AlgHom.congr_fun this a
+  simp only [AlgHom.comp_apply, Ideal.Quotient.mkₐ_eq_mk, Algebra.ofId_apply,
+    counitAlgHom_apply] at h2
+  rw [mem_augmentationIdeal_iff] at ha
+  rw [ha, map_zero] at h2
+  rw [← Ideal.Quotient.eq_zero_iff_mem, h2, map_zero]
+
 end AugmentationIdeal
 
 end Bialgebra
+
+/-! ### The commutative-algebra input: flat + unramified + finitely presented is étale
+
+This is not about Hopf algebras at all; it is the standard equivalence between the "formally
+étale + finitely presented" definition of étaleness used by mathlib and the "flat + unramified"
+definition used by the Stacks project. It is the only thing this file still assumes. -/
+
+section FlatUnramified
+
+variable {R : Type u} {A : Type v} [CommRing R] [CommRing A] [Algebra R A]
+
+/-- **A flat, finitely presented, formally unramified algebra is formally étale**
+(Stacks [00UU](https://stacks.math.columbia.edu/tag/00UU), and the direction of
+[02GH](https://stacks.math.columbia.edu/tag/02GH) that mathlib does not carry).
+
+OPEN, and this is the only remaining gap under `HopfAlgebra.etale_of_isShortExact`. Note the whole
+of its content is `Subsingleton (Algebra.H1Cotangent R A)`: the other half of `FormallyEtale`,
+`Subsingleton Ω[A⁄R]`, is the `FormallyUnramified` hypothesis verbatim.
+
+**Status of the pin**, checked 2026-07-27, so that nobody re-surveys it: mathlib has no lemma
+deriving `FormallySmooth`/`FormallyEtale`/`Etale` from a flatness hypothesis — the only
+flat-hypothesis smoothness lemmas are `Algebra.FormallySmooth.of_surjective_of_ker_eq_map_of_flat`
+(a square-zero deformation statement, not this) and `Algebra.FormallySmooth.flat_of_algHom_of_isNoetherianRing`
+(the converse direction). `Mathlib/RingTheory/Etale/Weakly.lean` records the neighbouring statement
+"a weakly étale algebra of finite presentation is étale" as an explicit TODO.
+
+**The intended route**, which is available in the pin: mathlib carries the local structure theorem
+for unramified algebras, `Algebra.IsUnramifiedAt.exists_hasStandardEtaleSurjectionOn`
+(`Mathlib/RingTheory/Unramified/LocalStructure.lean`) — an unramified finite-type algebra is, after
+localisation, a quotient of a standard étale algebra. Flatness then forces the surjection to be an
+isomorphism, and étaleness is local on the source (`Mathlib/RingTheory/Etale/Locus.lean`).
+
+Alternatively, for the special case actually used here one may go through separability: `I = I²`
+with `I` finitely generated makes the diagonal ideal of `A ⊗[R] A` generated by an idempotent, i.e.
+`A` is a separable `R`-algebra, and the separability idempotent averages the Hochschild obstruction
+to lifting along a square-zero extension. That route needs no localisation but does need the
+averaging computation written out. -/
+theorem Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation
+    [Module.Flat R A] [Algebra.FinitePresentation R A] [Algebra.FormallyUnramified R A] :
+    Algebra.FormallyEtale R A :=
+  sorry
+
+end FlatUnramified
 
 namespace CartierDual
 
@@ -299,6 +393,76 @@ lemma IsShortExact.injective (h : IsShortExact i π) : Function.Injective i := b
   algebraize [(i.toAlgHom.toRingHom : A'' →+* A)]
   exact FaithfulSMul.algebraMap_injective A'' A
 
+/-- A homomorphism of group schemes carries the augmentation ideal into the augmentation ideal,
+because a bialgebra map commutes with the counit. -/
+lemma map_augmentationIdeal_le (f : A →ₐc[R] A') :
+    Ideal.map (f.toAlgHom.toRingHom : A →+* A') (Bialgebra.augmentationIdeal R A) ≤
+      Bialgebra.augmentationIdeal R A' := by
+  rw [Ideal.map_le_iff_le_comap]
+  intro a ha
+  rw [Bialgebra.mem_augmentationIdeal_iff] at ha
+  rw [Ideal.mem_comap, Bialgebra.mem_augmentationIdeal_iff]
+  show Coalgebra.counit (R := R) (f a) = 0
+  rw [CoalgHomClass.counit_comp_apply, ha]
+
+/-- A closed immersion of group schemes is surjective on augmentation ideals. -/
+lemma IsShortExact.map_augmentationIdeal (h : IsShortExact i π) :
+    Ideal.map (π.toAlgHom.toRingHom : A →+* A') (Bialgebra.augmentationIdeal R A) =
+      Bialgebra.augmentationIdeal R A' := by
+  refine le_antisymm (map_augmentationIdeal_le π) fun b hb => ?_
+  obtain ⟨a, rfl⟩ := h.surjective b
+  refine Ideal.mem_map_of_mem _ ?_
+  rw [Bialgebra.mem_augmentationIdeal_iff] at hb ⊢
+  rwa [CoalgHomClass.counit_comp_apply] at hb
+
+/-- **Idempotence of the augmentation ideal is an extension-closed property.**
+
+This is the whole of the reduction of "étale by étale is étale" to a statement about a single
+group scheme, and it is pure ideal theory — in particular it uses neither the faithful flatness
+nor the Cartier duality. Writing `I`, `I'`, `I''` for the three augmentation ideals and
+`J = ker π = i(I'')·A` for the ideal cutting out `Spec A'` inside `Spec A`:
+
+* `J = J²`, because `J = Ideal.map i I''` and `I'' = I''²` (ideal maps commute with powers);
+* `I = I² + J`, because `π(I) = I' = I'² = π(I²)` and `π` is surjective with kernel `J`;
+* `J ⊆ I`, so `J = J² ⊆ I²`, and the two displayed facts collapse to `I = I²`.
+
+Geometrically: the cotangent space at the identity of an extension is squeezed between those of
+the sub and the quotient, so it vanishes when both of them do. -/
+theorem IsShortExact.augmentationIdeal_sq_eq (h : IsShortExact i π)
+    (h'' : Bialgebra.augmentationIdeal R A'' ^ 2 = Bialgebra.augmentationIdeal R A'')
+    (h' : Bialgebra.augmentationIdeal R A' ^ 2 = Bialgebra.augmentationIdeal R A') :
+    Bialgebra.augmentationIdeal R A ^ 2 = Bialgebra.augmentationIdeal R A := by
+  -- `J = ker π = i(I'')·A` is idempotent because `I''` is.
+  have hJ : RingHom.ker (π.toAlgHom.toRingHom : A →+* A') ^ 2 =
+      RingHom.ker (π.toAlgHom.toRingHom : A →+* A') := by
+    rw [h.ker_eq, ← Ideal.map_pow, h'']
+  -- and it sits inside the augmentation ideal of `A`.
+  have hJle : RingHom.ker (π.toAlgHom.toRingHom : A →+* A') ≤ Bialgebra.augmentationIdeal R A := by
+    rw [h.ker_eq, Ideal.map_le_iff_le_comap]
+    intro a ha
+    rw [Bialgebra.mem_augmentationIdeal_iff] at ha
+    rw [Ideal.mem_comap, Bialgebra.mem_augmentationIdeal_iff]
+    show Coalgebra.counit (R := R) (i a) = 0
+    rw [CoalgHomClass.counit_comp_apply, ha]
+  have hJsq : RingHom.ker (π.toAlgHom.toRingHom : A →+* A') ≤
+      Bialgebra.augmentationIdeal R A ^ 2 := by
+    calc RingHom.ker (π.toAlgHom.toRingHom : A →+* A')
+        = RingHom.ker (π.toAlgHom.toRingHom : A →+* A') ^ 2 := hJ.symm
+      _ ≤ Bialgebra.augmentationIdeal R A ^ 2 := by
+          rw [sq, sq]; exact Ideal.mul_mono hJle hJle
+  refine le_antisymm (Ideal.pow_le_self two_ne_zero) fun a ha => ?_
+  -- `π a ∈ I' = I'² = π(I²)`, so `a` differs from an element of `I²` by an element of `ker π`.
+  have hmem : (π.toAlgHom.toRingHom : A →+* A') a ∈
+      Ideal.map (π.toAlgHom.toRingHom : A →+* A') (Bialgebra.augmentationIdeal R A ^ 2) := by
+    rw [Ideal.map_pow, h.map_augmentationIdeal, h']
+    exact map_augmentationIdeal_le π (Ideal.mem_map_of_mem _ ha)
+  obtain ⟨b, hb, hab⟩ := (Ideal.mem_map_iff_of_surjective _ h.surjective).mp hmem
+  have hker : a - b ∈ RingHom.ker (π.toAlgHom.toRingHom : A →+* A') := by
+    rw [RingHom.mem_ker, map_sub, sub_eq_zero]
+    exact hab.symm
+  have hsub := hJsq hker
+  simpa using add_mem hsub hb
+
 end Def
 
 /-! ### Exactness of Cartier duality -/
@@ -349,6 +513,187 @@ theorem IsShortExact.cartierDual {i : A'' →ₐc[R] A} {π : A →ₐc[R] A'} (
 
 end Dual
 
+/-! ### Invariant derivations, and unramifiedness from the augmentation ideal
+
+The converse of `Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified` is where the group
+structure is spent, and it is what makes "the identity is isolated" propagate to the whole
+scheme: for a group scheme `Ω[A⁄R] ≅ A ⊗[R] I/I²`, the module of *invariant* differentials being
+free on the cotangent space at the identity. Rather than construct that isomorphism we prove the
+consequence directly, by translating an arbitrary derivation back to the identity:
+
+given `d : Derivation R A M`, its **invariant derivative** is `D(a) = ∑ S(a₍₁₎) · d a₍₂₎`. Then
+
+* `D` is an `ε`-derivation, `D(xy) = ε(x) D(y) + ε(y) D(x)` (`invariantAux_mul`) — this is where
+  the antipode axiom `∑ S(a₍₁₎) a₍₂₎ = ε(a)` enters, and where commutativity of `A` is used to
+  regroup the four Sweedler factors;
+* hence `D` kills `I²`, so `I = I²` makes `D` vanish on `I`, and `D(1) = 0` makes it vanish on
+  `R · 1`, hence everywhere;
+* and `d` is recovered from `D` by `d(a) = ∑ a₍₁₎ · D(a₍₂₎)` (`invariantAct_comul`), which is
+  coassociativity followed by the other antipode axiom `∑ a₍₁₎ S(a₍₂₎) = ε(a)`.
+
+So every derivation vanishes, i.e. `Ω[A⁄R] = 0`. No finiteness or flatness over `R` is needed. -/
+
+section Invariant
+
+variable {R : Type u} {A : Type v} [CommRing R] [CommRing A] [HopfAlgebra R A]
+variable {M : Type w} [AddCommGroup M] [Module R M] [Module A M] [IsScalarTower R A M]
+variable (d : Derivation R A M)
+
+/-- `x ⊗ y ↦ x • d y`. -/
+noncomputable def actAux : A ⊗[R] A →ₗ[R] M :=
+  TensorProduct.lift (LinearMap.mk₂ R (fun x y => x • d y)
+    (fun _ _ _ => by rw [add_smul]) (fun _ _ _ => by rw [smul_assoc])
+    (fun _ _ _ => by rw [map_add, smul_add]) (fun _ _ _ => by rw [d.map_smul, smul_comm]))
+
+@[simp] lemma actAux_tmul (x y : A) : actAux d (x ⊗ₜ[R] y) = x • d y := rfl
+
+/-- `x ⊗ y ↦ S x • d y`; composed with the comultiplication this is the invariant derivative. -/
+noncomputable def antipodeAux : A ⊗[R] A →ₗ[R] M :=
+  TensorProduct.lift (LinearMap.mk₂ R (fun x y => antipode R x • d y)
+    (fun _ _ _ => by rw [map_add, add_smul]) (fun _ _ _ => by rw [map_smul, smul_assoc])
+    (fun _ _ _ => by rw [map_add, smul_add]) (fun _ _ _ => by rw [d.map_smul, smul_comm]))
+
+@[simp] lemma antipodeAux_tmul (x y : A) :
+    antipodeAux d (x ⊗ₜ[R] y) = antipode R x • d y := rfl
+
+/-- `x ⊗ (y ⊗ z) ↦ x • (S y • d z)`, the three-fold version needed for coassociativity. -/
+noncomputable def antipodeAux3 : A ⊗[R] (A ⊗[R] A) →ₗ[R] M :=
+  TensorProduct.lift (LinearMap.mk₂ R (fun x u => x • antipodeAux d u)
+    (fun _ _ _ => by rw [add_smul]) (fun _ _ _ => by rw [smul_assoc])
+    (fun _ _ _ => by rw [map_add, smul_add]) (fun _ _ _ => by rw [map_smul, smul_comm]))
+
+@[simp] lemma antipodeAux3_tmul (x : A) (u : A ⊗[R] A) :
+    antipodeAux3 d (x ⊗ₜ[R] u) = x • antipodeAux d u := rfl
+
+/-- The **invariant derivative** `a ↦ ∑ S(a₍₁₎) · d a₍₂₎` of a derivation. -/
+noncomputable def invariantAux : A →ₗ[R] M := antipodeAux d ∘ₗ (Coalgebra.comul (R := R))
+
+@[simp] lemma invariantAux_apply (a : A) :
+    invariantAux d a = antipodeAux d (Coalgebra.comul (R := R) a) := rfl
+
+/-- `x ⊗ y ↦ x • D(y)`: composed with the comultiplication this recovers `d`. -/
+noncomputable def invariantAct : A ⊗[R] A →ₗ[R] M :=
+  TensorProduct.lift (LinearMap.mk₂ R (fun x y => x • invariantAux d y)
+    (fun _ _ _ => by rw [add_smul]) (fun _ _ _ => by rw [smul_assoc])
+    (fun _ _ _ => by rw [map_add, smul_add]) (fun _ _ _ => by rw [map_smul, smul_comm]))
+
+@[simp] lemma invariantAct_tmul (x y : A) :
+    invariantAct d (x ⊗ₜ[R] y) = x • invariantAux d y := rfl
+
+/-- The Leibniz rule for `antipodeAux` on the algebra `A ⊗[R] A`: the correcting factor is
+`x ⊗ y ↦ S x * y`, which is exactly what evaluates to `ε` on the image of the comultiplication. -/
+lemma antipodeAux_mul (u v : A ⊗[R] A) :
+    antipodeAux d (u * v) =
+      LinearMap.mul' R A ((antipode R).rTensor A u) • antipodeAux d v +
+        LinearMap.mul' R A ((antipode R).rTensor A v) • antipodeAux d u := by
+  induction u with
+  | zero => simp
+  | add u₁ u₂ h₁ h₂ => simp only [add_mul, map_add, h₁, h₂, add_smul, smul_add]; abel
+  | tmul x₁ x₂ =>
+    induction v with
+    | zero => simp
+    | add v₁ v₂ h₁ h₂ => simp only [mul_add, map_add, h₁, h₂, smul_add, add_smul]; abel
+    | tmul y₁ y₂ =>
+      simp only [Algebra.TensorProduct.tmul_mul_tmul, antipodeAux_tmul,
+        HopfAlgebra.antipode_mul_distrib, LinearMap.rTensor_tmul, LinearMap.mul'_apply,
+        Derivation.leibniz, smul_add, smul_smul]
+      simp only [mul_comm, mul_left_comm]
+
+/-- The invariant derivative is an `ε`-derivation: `D(xy) = ε(x) D(y) + ε(y) D(x)`. In particular
+it kills every product of two elements of the augmentation ideal. -/
+lemma invariantAux_mul (x y : A) :
+    invariantAux d (x * y) =
+      Coalgebra.counit (R := R) x • invariantAux d y +
+        Coalgebra.counit (R := R) y • invariantAux d x := by
+  rw [invariantAux_apply, Bialgebra.comul_mul, antipodeAux_mul,
+    HopfAlgebra.mul_antipode_rTensor_comul_apply, HopfAlgebra.mul_antipode_rTensor_comul_apply]
+  simp [algebraMap_smul]
+
+@[simp] lemma invariantAux_one : invariantAux d 1 = 0 := by
+  rw [invariantAux_apply, Bialgebra.comul_one, Algebra.TensorProduct.one_def, antipodeAux_tmul,
+    HopfAlgebra.antipode_one, one_smul, Derivation.map_one_eq_zero]
+
+lemma invariantAux_algebraMap (r : R) : invariantAux d (algebraMap R A r) = 0 := by
+  rw [Algebra.algebraMap_eq_smul_one, map_smul, invariantAux_one, smul_zero]
+
+/-- The derivation is recovered from its invariant derivative: `d a = ∑ a₍₁₎ · D(a₍₂₎)`. This is
+coassociativity followed by the antipode axiom `∑ a₍₁₎ S(a₍₂₎) = ε(a) · 1` and counitality. -/
+lemma invariantAct_comul (a : A) : invariantAct d (Coalgebra.comul (R := R) a) = d a := by
+  have e1 : invariantAct d = antipodeAux3 d ∘ₗ (Coalgebra.comul (R := R)).lTensor A := by
+    ext x y
+    simp [invariantAux]
+  have e2 : antipodeAux3 d ∘ₗ (TensorProduct.assoc R A A A).toLinearMap =
+      actAux d ∘ₗ (LinearMap.mul' R A ∘ₗ (antipode R).lTensor A).rTensor A := by
+    ext x y z
+    simp [smul_smul]
+  calc invariantAct d (Coalgebra.comul (R := R) a)
+      = antipodeAux3 d ((Coalgebra.comul (R := R)).lTensor A (Coalgebra.comul (R := R) a)) := by
+        rw [e1]; rfl
+    _ = antipodeAux3 d (TensorProduct.assoc R A A A
+          ((Coalgebra.comul (R := R)).rTensor A (Coalgebra.comul (R := R) a))) := by
+        rw [Coalgebra.coassoc_apply]
+    _ = actAux d ((LinearMap.mul' R A ∘ₗ (antipode R).lTensor A).rTensor A
+          ((Coalgebra.comul (R := R)).rTensor A (Coalgebra.comul (R := R) a))) := by
+        simpa using LinearMap.congr_fun e2
+          ((Coalgebra.comul (R := R)).rTensor A (Coalgebra.comul (R := R) a))
+    _ = actAux d ((LinearMap.mul' R A ∘ₗ (antipode R).lTensor A ∘ₗ
+          (Coalgebra.comul (R := R))).rTensor A (Coalgebra.comul (R := R) a)) := by
+        simp only [LinearMap.rTensor_comp, LinearMap.comp_apply]
+    _ = actAux d ((Algebra.linearMap R A ∘ₗ (Coalgebra.counit (R := R) (A := A))).rTensor A
+          (Coalgebra.comul (R := R) a)) := by
+        rw [HopfAlgebra.mul_antipode_lTensor_comul]
+    _ = d a := by
+        rw [LinearMap.rTensor_comp, LinearMap.comp_apply, Coalgebra.rTensor_counit_comul]
+        simp
+
+/-- **Every derivation of a Hopf algebra with idempotent augmentation ideal vanishes.** -/
+theorem derivation_eq_zero
+    (h : Bialgebra.augmentationIdeal R A ^ 2 = Bialgebra.augmentationIdeal R A) : d = 0 := by
+  have hI : ∀ a ∈ Bialgebra.augmentationIdeal R A, invariantAux d a = 0 := by
+    intro a ha
+    rw [← h, sq] at ha
+    refine Submodule.mul_induction_on ha ?_ ?_
+    · intro y hy z hz
+      rw [invariantAux_mul, Bialgebra.mem_augmentationIdeal_iff.mp hy,
+        Bialgebra.mem_augmentationIdeal_iff.mp hz, zero_smul, zero_smul, add_zero]
+    · intro y z hy hz
+      rw [map_add, hy, hz, add_zero]
+  have hall : invariantAux d = 0 := by
+    ext a
+    have hsplit : a = algebraMap R A (Coalgebra.counit (R := R) a) +
+        (a - algebraMap R A (Coalgebra.counit (R := R) a)) := by ring
+    rw [hsplit, map_add, invariantAux_algebraMap,
+      hI _ (Bialgebra.sub_algebraMap_counit_mem_augmentationIdeal a), add_zero]
+    rfl
+  have hact : invariantAct d = 0 := by
+    ext x y
+    simp [hall]
+  ext a
+  rw [← invariantAct_comul d a, hact]
+  simp
+
+/-- **A Hopf algebra with idempotent augmentation ideal is formally unramified.**
+
+Together with `Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified` this is the group-scheme
+dictionary "unramified ⟺ the cotangent space at the identity vanishes", over an arbitrary base
+and with no finiteness hypothesis. -/
+theorem formallyUnramified_of_augmentationIdeal_sq_eq
+    (h : Bialgebra.augmentationIdeal R A ^ 2 = Bialgebra.augmentationIdeal R A) :
+    Algebra.FormallyUnramified R A := by
+  have hD : (KaehlerDifferential.D R A) = 0 := derivation_eq_zero _ h
+  refine ⟨⟨fun x y => ?_⟩⟩
+  suffices h0 : ∀ z : Ω[A⁄R], z = 0 by rw [h0 x, h0 y]
+  intro z
+  have hz : z ∈ (⊤ : Submodule A Ω[A⁄R]) := Submodule.mem_top
+  rw [← KaehlerDifferential.span_range_derivation] at hz
+  induction hz using Submodule.span_induction with
+  | mem w hw => obtain ⟨a, rfl⟩ := hw; rw [hD]; rfl
+  | zero => rfl
+  | add u v _ _ hu hv => rw [hu, hv, add_zero]
+  | smul c u _ hu => rw [hu, smul_zero]
+
+end Invariant
+
 /-! ### `(R3)`: an extension of multiplicative type by multiplicative type -/
 
 section R3
@@ -369,32 +714,56 @@ def IsMultiplicativeType (R : Type u) (A : Type v) [CommRing R] [CommRing A] [Ho
     [IsCocomm R A] [Module.Finite R A] [Module.Free R A] : Prop :=
   Algebra.Etale R (CartierDual R A)
 
+/-- **A finite free Hopf algebra with idempotent augmentation ideal is étale.**
+
+`Module.Finite` and `Module.Free` supply the finite presentation (a finite projective module is
+finitely presented, and a module-finitely-presented algebra is algebra-finitely-presented) and the
+flatness; `formallyUnramified_of_augmentationIdeal_sq_eq` supplies `Ω[A⁄R] = 0`; the remaining
+`H¹` vanishing is the commutative-algebra leaf
+`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`. -/
+theorem etale_of_augmentationIdeal_sq_eq [Module.Finite R A] [Module.Free R A]
+    (h : Bialgebra.augmentationIdeal R A ^ 2 = Bialgebra.augmentationIdeal R A) :
+    Algebra.Etale R A := by
+  have := formallyUnramified_of_augmentationIdeal_sq_eq (A := A) h
+  have : Module.FinitePresentation R A := Module.finitePresentation_of_projective R A
+  have hfp : Algebra.FinitePresentation R A := inferInstance
+  exact ⟨Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation, hfp⟩
+
 /-- **The étale half of `(R3)`: an extension of étale by étale is étale.**
 
 If `1 → Spec A' → Spec A → Spec A'' → 1` is short exact and both `Spec A'` and `Spec A''` are
 étale over the base, then so is `Spec A`.
 
-OPEN, and elementary in the sense recorded in `Family.lean`: `Spec A → Spec A''` is an fppf torsor
-under `Spec A'`, and a torsor under an étale group scheme is étale (trivialise it along the
-faithfully flat `Spec A → Spec A''` itself, where it becomes `Spec A' × Spec A → Spec A`, then
-descend); `Spec A'' → Spec R` is étale by hypothesis; compose.
+PROVEN over an **arbitrary** base, modulo the single commutative-algebra leaf
+`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation` ("flat + unramified +
+finitely presented is étale", Stacks 00UU). The route is *not* the torsor argument this docstring
+used to advertise, and no descent statement is needed:
 
-Over a **henselian local** `R` there is the shorter route `Family.lean` names, and both halves of
-its machinery are already in this cone: the connected component `H°` of `Spec A` maps to the étale
-`Spec A''` by a homomorphism out of a connected scheme, hence trivially, so `H° ⊆ Spec A'`; and
-`Spec A'` étale forces `(Spec A')° = 0`, whence `H° = 0` and `Spec A` is étale. The connected
-idempotent is `Bialgebra.exists_connected_counit_idempotent`, and the splitting of a finite algebra
-over a henselian local ring is recorded in the supply survey under
-`exists_unramified_grouplike_family_generating_corner`. Specialising this statement by adding
-`[IsLocalRing R] [HenselianLocalRing R]` is a legitimate weakening for `(R3)`'s purposes, since
-that is the base `(R3)` runs over; the general statement above is nevertheless true. -/
+* étale forces the augmentation ideals of `A''` and `A'` to be idempotent
+  (`Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified`);
+* idempotence is extension-closed, by three lines of ideal theory
+  (`IsShortExact.augmentationIdeal_sq_eq`) — this is where the short exact sequence is consumed,
+  through `surjective` and `ker_eq` only;
+* an idempotent augmentation ideal makes every derivation of `A` vanish, by translating it back to
+  the identity with the antipode (`derivation_eq_zero`), so `A` is formally unramified;
+* finite free gives flatness and finite presentation, and the leaf above converts that into
+  étaleness.
+
+Note the faithful flatness field of `IsShortExact` is *not* used: the argument only needs that
+`Spec A'` is the scheme-theoretic kernel of a surjection. The **henselian local** route recorded
+in `Family.lean` (`Bialgebra.exists_connected_counit_idempotent`, connected component of the
+identity) is therefore not needed either, and specialising to that base is not required. -/
 theorem etale_of_isShortExact [IsCocomm R A''] [IsCocomm R A] [IsCocomm R A']
     [Module.Finite R A''] [Module.Free R A''] [Module.Finite R A] [Module.Free R A]
     [Module.Finite R A'] [Module.Free R A']
-    {i : A'' →ₐc[R] A} {π : A →ₐc[R] A'} (_h : IsShortExact i π)
-    (_h'' : Algebra.Etale R A'') (_h' : Algebra.Etale R A') :
-    Algebra.Etale R A :=
-  sorry
+    {i : A'' →ₐc[R] A} {π : A →ₐc[R] A'} (h : IsShortExact i π)
+    (h'' : Algebra.Etale R A'') (h' : Algebra.Etale R A') :
+    Algebra.Etale R A := by
+  haveI := h''
+  haveI := h'
+  refine etale_of_augmentationIdeal_sq_eq (h.augmentationIdeal_sq_eq ?_ ?_)
+  · exact Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified
+  · exact Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified
 
 /-- **`(R3)`: an extension of multiplicative type by multiplicative type is of multiplicative
 type.** This is the requirement that
