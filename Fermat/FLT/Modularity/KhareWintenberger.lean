@@ -9912,9 +9912,163 @@ theorem irreducible_of_irreducible_map {N p : ℕ} [Fact p.Prime]
     · exact Or.inl (key a hu)
     · exact Or.inr (key b hu)
 
-/-- **SUB-LEAF (A): SCHMIDT'S THEOREM 4D, SPREAD OUT OVER `ℤ[1/D]`** (SORRY LEAF,
-cut 2026-07-27 out of `exists_birationalHypersurfaceModel`) — the GEOMETRY half.
+/-- **THE INTEGRAL HYPERSURFACE CERTIFICATE** (SORRY LEAF, cut 2026-07-27 out of
+`exists_spreadOutHypersurfaceModel`) — Schmidt Chapter VI, Theorem 4D together
+with the spreading out, packaged as a FINITE ALGEBRAIC CERTIFICATE over `ℤ`.
+
+This is the whole geometric content of item 5. It is stated with no geometry in
+it at all: the data are polynomials over `ℤ`, and the assertions are polynomial
+IDENTITIES over `ℤ` plus four properties of the reductions mod `p` for `p > D`.
+Its consumer `exists_spreadOutHypersurfaceModel` turns it into the point count by
+a purely mechanical evaluation argument, which is PROVEN.
+
+WHAT THE DATA MEAN. Write `X₀ … X_e` for the variables of `Fin (e + 1)`, `T` for
+the extra variable `Fin.last (e + 1)` of `Fin (e + 2)`, `Y₁ … Y_n` for the
+variables of `Fin n` and `U` for the extra variable `Fin.last n` of `Fin (n + 1)`.
+
+* `S₀` is the hypersurface, `d` its total degree, `e + 1` its ambient dimension.
+* `g₀` is the auxiliary polynomial of degree at most `c`; the open subset
+  `V(S₀) ∖ V(g₀)` is where the birational map is defined, and `V(S₀) ∩ V(g₀)` is
+  Schmidt's bad locus `M`, counted by `badLocusCount`.
+* `T` is a formal inverse of `g₀`. The ideal
+  `J = (S₀, g₀·T − 1) ⊆ ℤ[X₀ … X_e, T]` presents the coordinate ring of that open
+  subset — this is the standard localisation trick, and it is what lets a RATIONAL
+  map be written with POLYNOMIAL data.
+* `P` are the coordinates of the birational map `φ : V(S₀) ∖ V(g₀) → V(f)`: its
+  first `n` components `P ∘ Fin.castSucc` are `φ` itself, and its last component
+  is a formal inverse of `w ∘ φ`.
+* `R` and `w` are the inverse map `ψ : V(f) ⇢ V(S₀)`, written over
+  `ℤ[Y₁ … Y_n, U]` with `U` a formal inverse of the denominator `w`.
+
+THE FOUR ASSERTIONS.
+
+1. For `p > D` at which the geometric fibre is irreducible: the reduction of `S₀`
+   still has total degree exactly `d`, is still ABSOLUTELY irreducible, the
+   reduction of `g₀` still has degree at most `c`, and `S₀ ∤ g₀` still holds.
+   This is the spreading-out half — Noether's theorem on absolute irreducibility
+   for almost all `p`, plus two coefficient conditions absorbed into `D`.
+2. `f_i(φ) ∈ J` for every `i` — `φ` lands in `V(f)`.
+3. `R_l(φ, U) − X_l ∈ J` for every `l` — `ψ ∘ φ = id` on the open subset, which is
+   what makes `φ` INJECTIVE there. This is the only place birational equivalence
+   is used, and it is used only through this one consequence.
+4. `w(φ)·(last coordinate of P) − 1 ∈ J` — the value substituted for `U` is
+   `1/w(φ(x))`, hence is determined by `φ(x)` alone. Without this, item 3 would
+   not give injectivity, because the `U`-slot could carry extra information.
+
+WHY IT IS TRUE — SCHMIDT, LNM 536, READ FOR THIS LEAF.
+
+*Chapter VI, Theorem 4D (p. 248).* "Suppose `V` is a variety defined over a
+perfect ground field `k`. Then `V` is birationally equivalent to a hypersurface."
+The proof is an induction on `n − d` (`d = dim V`, `n` the ambient dimension)
+using the theorem of the primitive element: pick `x₁ … x_d` a transcendence base,
+so `(x₁ … x_{d+1})` is the generic point of a hypersurface `f(z) = 0` with `f`
+irreducible over `k`; perfectness of `k` forces `f` not to be a polynomial in the
+`p`-th powers alone, so `f` is separable in some variable and `x_{d+2}` is
+separable algebraic over `k(x₁ … x_{d+1})`; the primitive element theorem then
+replaces two coordinates by one, dropping `n` by one. Since `k(x) = k(y)` with
+`y` the new generic point, Theorem 4B makes the two varieties birationally
+equivalent OVER `k` — this is what makes the maps `k`-rational, and hence
+`ℚ`-rational here, and hence integral after clearing denominators.
+
+*Chapter VI §6, Remark (1) (pp. 259–260).* The `S` produced by that construction
+is again an ABSOLUTE variety when `V` is, because `k(x) = k(y)` and `k` is
+algebraically closed in that common field. This is where the absolute
+irreducibility in assertion 1 comes from; Theorem 6D then presents `S` as a single
+absolutely irreducible equation.
+
+*Chapter VI §7, eq. (7.3) (p. 262).* Theorem 4A gives proper algebraic subsets
+`L ⊆ V`, `M ⊆ S` such that the birational correspondence restricts to a bijection
+`V ∖ L ≅ S ∖ M`, and both it and its inverse are defined over `k = 𝔽_q`, so it
+matches `𝔽_{q^v}`-points with `𝔽_{q^v}`-points; Schmidt concludes
+`|N_v(V) − N_v(S)| ≤ N_v(L) + N_v(M)`. The consumer needs only the one-sided
+half `N(S) ≤ N(V) + N(M)`, i.e. only the INJECTION `S ∖ M ↪ V`, and assertions
+2–4 are exactly that injection written algebraically.
+
+THE QUANTIFIER TRAP, and why the certificate has this shape. Schmidt's Theorem 7A
+is asymptotic in the FIELD EXTENSION — `N_v = q^{ve} + o(q^{v(e−1/2)})` as
+`v → ∞` over `𝔽_{q^v}` for a FIXED base — with implied constants depending on the
+variety over that base. What item 5 needs is uniformity in `p` for a fixed
+INTEGRAL system: a different quantifier order, which no statement in the book
+supplies. Spreading out is the bridge, and a finite algebraic certificate over `ℤ`
+is precisely what "spread out" means once the geometry is stripped away: ONE
+construction, base-changed to every `𝔽_p` at once by a ring homomorphism.
+
+WHY THE `ℤ`-COEFFICIENT DESCENT IS LEGITIMATE (the one step where clearing
+denominators is not automatic). Over `ℚ` the identities hold with `A, B ∈ ℚ[X, T]`,
+so `N·q ∈ J_ℤ` for some nonzero integer `N`. Choose `S₀` PRIMITIVE; by Gauss it is
+then irreducible in `ℤ[X]`, so `ℤ[X]/(S₀)` is a domain of characteristic `0`, hence
+`ℤ`-torsion-free, and so is its localisation at `g₀`. Therefore `N·q ∈ J_ℤ` with
+`N ≠ 0` already forces `q ∈ J_ℤ`, and the identities descend verbatim.
+
+NOT VACUOUS, AND NOT CHEATABLE — but note the DEGENERATE branch, which is how the
+statement stays true when there is no variety at all. If the system's variety over
+`ℚ̄` is empty or reducible, then for `p > D` the hypothesis of assertion 1 fails (if
+empty, `1 ∈ I·ℤ[x][1/N]` for some `N`, so the ideal over `𝔽̄_p` is the unit ideal
+and its radical is not prime; if reducible, the components spread out). Assertions
+2–4 are unconditional, so they must still be witnessed — and they are, trivially,
+by `S₀ = 1`: then `J` is the unit ideal and every identity holds with `A` the
+left-hand side and `B = 0`. Assertion 1 is then vacuous because `Irreducible 1` is
+false, which is exactly the branch just described. So the degenerate case is
+discharged by the statement itself and costs the prover nothing.
+
+In the honest branch nothing can be gamed either: `d = 0` is impossible because a
+constant is never irreducible; inflating `c` is capped by
+`exists_bound_badLocusCount`; and inflating `e` makes the CONSUMER's statement
+FALSE rather than easier, since item 4 forces `N(S) ≥ p^e/c` while `N(f) ≤ p^n`.
+`e` is the dimension of the variety of `f` over `ℚ̄`, and `e ≤ n`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ℤ` and `ZMod p`
+only, no Galois representation, no modular form, nothing from `Family.lean`,
+`Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_integralHypersurfaceCertificate {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ) :
+    ∃ (D e d c : ℕ) (S₀ g₀ : MvPolynomial (Fin (e + 1)) ℤ)
+      (P : Fin (n + 1) → MvPolynomial (Fin (e + 2)) ℤ)
+      (R : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ)
+      (w : MvPolynomial (Fin n) ℤ),
+      (∀ (p : ℕ) [Fact p.Prime], D < p →
+          (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime →
+          (MvPolynomial.map (Int.castRingHom (ZMod p)) S₀).totalDegree = d ∧
+          Irreducible (MvPolynomial.map
+              (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+              (MvPolynomial.map (Int.castRingHom (ZMod p)) S₀)) ∧
+          (MvPolynomial.map (Int.castRingHom (ZMod p)) g₀).totalDegree ≤ c ∧
+          ¬ MvPolynomial.map (Int.castRingHom (ZMod p)) S₀ ∣
+              MvPolynomial.map (Int.castRingHom (ZMod p)) g₀) ∧
+      (∀ i : Fin m, ∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) (f i)
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∀ l : Fin (e + 1), ∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C P (R l)
+              - MvPolynomial.X l.castSucc
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) w
+              * P (Fin.last n) - 1
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
+  sorry
+
+/-- **SUB-LEAF (A): SCHMIDT'S THEOREM 4D, SPREAD OUT OVER `ℤ[1/D]`** (PROVEN
+2026-07-27 over `exists_integralHypersurfaceCertificate`) — the GEOMETRY half.
 This is where birational equivalence lives, and it never appears in the signature.
+
+**WHAT IS PROVEN HERE** (2026-07-27): everything except the certificate. The
+birational geometry is now isolated in `exists_integralHypersurfaceCertificate`,
+a statement about POLYNOMIAL IDENTITIES OVER `ℤ` with no geometry in it, and this
+leaf's proof is the mechanical part: evaluate the certificate at the point
+`(a, 1/g(a))` for each `a` in the good locus `V(S) ∖ V(g)`, read off (i) that the
+resulting `φ(a)` solves the system `f`, (ii) that the `U`-slot is the inverse of
+`w(φ(a))` and so is determined by `φ(a)`, and (iii) that `R(φ(a), U) = a`, whence
+`φ` is INJECTIVE on the good locus. Then count: `V(S)` is covered by the good
+locus and the bad locus, the good locus injects into the solutions of `f`, and the
+bad locus is `badLocusCount S g`. That is exactly Schmidt's `(7.3)` in the one
+direction the consumer needs.
 
 WHAT IT SAYS. For a FIXED integral system `f` there are `D, e, d, c` such that for
 every `p > D` at which the geometric fibre is irreducible there is an absolutely
@@ -9969,8 +10123,145 @@ theorem exists_spreadOutHypersurfaceModel {n m : ℕ} (f : Fin m → MvPolynomia
         Irreducible (MvPolynomial.map
           (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) S) ∧
         g.totalDegree ≤ c ∧ ¬ S ∣ g ∧
-        zeroCount S ≤ systemCount f p + badLocusCount S g :=
-  sorry
+        zeroCount S ≤ systemCount f p + badLocusCount S g := by
+  obtain ⟨D, e, d, c, S₀, g₀, P, R, w, hred, hsys, hinv, hden⟩ :=
+    exists_integralHypersurfaceCertificate f
+  refine ⟨D, e, d, c, ?_⟩
+  intro p _ hp hprime
+  obtain ⟨hSdeg, hSabs, hgdeg, hgdvd⟩ := hred p hp hprime
+  set S : MvPolynomial (Fin (e + 1)) (ZMod p) :=
+    MvPolynomial.map (Int.castRingHom (ZMod p)) S₀ with hSdef
+  set g : MvPolynomial (Fin (e + 1)) (ZMod p) :=
+    MvPolynomial.map (Int.castRingHom (ZMod p)) g₀ with hgdef
+  refine ⟨S, g, hSdeg, hSabs, hgdeg, hgdvd, ?_⟩
+  -- Evaluating a renamed polynomial at `(a, t)` is evaluating it at `a`.
+  have hev : ∀ (a : Fin (e + 1) → ZMod p) (t : ZMod p) (q : MvPolynomial (Fin (e + 1)) ℤ),
+      MvPolynomial.eval₂ (Int.castRingHom (ZMod p)) (Fin.snoc a t)
+          (MvPolynomial.rename Fin.castSucc q)
+        = MvPolynomial.eval a (MvPolynomial.map (Int.castRingHom (ZMod p)) q) := by
+    intro a t q
+    rw [MvPolynomial.eval₂_rename, Fin.snoc_comp_castSucc, MvPolynomial.eval_map]
+  -- `φ` is the birational map, evaluated at `(a, 1/g(a))`; `u` is its `U`-slot.
+  set φ : (Fin (e + 1) → ZMod p) → Fin n → ZMod p := fun a j =>
+    MvPolynomial.eval₂ (Int.castRingHom (ZMod p))
+      (Fin.snoc a (MvPolynomial.eval a g)⁻¹) (P j.castSucc) with hφdef
+  set u : (Fin (e + 1) → ZMod p) → ZMod p := fun a =>
+    MvPolynomial.eval₂ (Int.castRingHom (ZMod p))
+      (Fin.snoc a (MvPolynomial.eval a g)⁻¹) (P (Fin.last n)) with hudef
+  -- Both generators of the localised ideal vanish at `(a, 1/g(a))`, so every
+  -- element of that ideal does.
+  have hpt : ∀ a : Fin (e + 1) → ZMod p, MvPolynomial.eval a S = 0 →
+      MvPolynomial.eval a g ≠ 0 →
+      ∀ A B : MvPolynomial (Fin (e + 2)) ℤ,
+        MvPolynomial.eval₂ (Int.castRingHom (ZMod p))
+          (Fin.snoc a (MvPolynomial.eval a g)⁻¹)
+          (A * MvPolynomial.rename Fin.castSucc S₀
+            + B * (MvPolynomial.rename Fin.castSucc g₀
+                * MvPolynomial.X (Fin.last (e + 1)) - 1)) = 0 := by
+    intro a hS0 hg0 A B
+    have h1 : MvPolynomial.eval₂ (Int.castRingHom (ZMod p))
+        (Fin.snoc a (MvPolynomial.eval a g)⁻¹)
+        (MvPolynomial.rename Fin.castSucc S₀) = 0 := by
+      rw [hev]; exact hS0
+    have h2 : MvPolynomial.eval₂ (Int.castRingHom (ZMod p))
+        (Fin.snoc a (MvPolynomial.eval a g)⁻¹)
+        (MvPolynomial.rename Fin.castSucc g₀
+          * MvPolynomial.X (Fin.last (e + 1)) - 1) = 0 := by
+      rw [MvPolynomial.eval₂_sub, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_X,
+        MvPolynomial.eval₂_one, hev, Fin.snoc_last, mul_inv_cancel₀ hg0, sub_self]
+    rw [MvPolynomial.eval₂_add, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_mul, h1, h2,
+      mul_zero, mul_zero, add_zero]
+  -- Certificate 2: the good locus maps into the solution set of `f`.
+  have hmapsto : ∀ a : Fin (e + 1) → ZMod p, MvPolynomial.eval a S = 0 →
+      MvPolynomial.eval a g ≠ 0 →
+      ∀ i, MvPolynomial.eval₂ (Int.castRingHom (ZMod p)) (φ a) (f i) = 0 := by
+    intro a hS0 hg0 i
+    obtain ⟨A, B, hAB⟩ := hsys i
+    have hassoc := MvPolynomial.eval₂_assoc (Int.castRingHom (ZMod p))
+      (Fin.snoc a (MvPolynomial.eval a g)⁻¹) (fun j : Fin n => P j.castSucc) (f i)
+    have hφa : φ a = fun j : Fin n => MvPolynomial.eval₂ (Int.castRingHom (ZMod p))
+        (Fin.snoc a (MvPolynomial.eval a g)⁻¹) (P j.castSucc) := by
+      rw [hφdef]
+    rw [hφa, hassoc, hAB]
+    exact hpt a hS0 hg0 A B
+  -- Certificate 4: `u a` is the inverse of `w(φ a)`, hence determined by `φ a`.
+  have hu : ∀ a : Fin (e + 1) → ZMod p, MvPolynomial.eval a S = 0 →
+      MvPolynomial.eval a g ≠ 0 →
+      MvPolynomial.eval₂ (Int.castRingHom (ZMod p)) (φ a) w * u a = 1 := by
+    intro a hS0 hg0
+    obtain ⟨A, B, hAB⟩ := hden
+    have hassoc := MvPolynomial.eval₂_assoc (Int.castRingHom (ZMod p))
+      (Fin.snoc a (MvPolynomial.eval a g)⁻¹) (fun j : Fin n => P j.castSucc) w
+    have h0 := hpt a hS0 hg0 A B
+    rw [← hAB, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_mul, MvPolynomial.eval₂_one,
+      ← hassoc, sub_eq_zero] at h0
+    exact h0
+  -- Certificate 3: the inverse map recovers `a` from `(φ a, u a)`.
+  have hrec : ∀ a : Fin (e + 1) → ZMod p, MvPolynomial.eval a S = 0 →
+      MvPolynomial.eval a g ≠ 0 →
+      ∀ l, MvPolynomial.eval₂ (Int.castRingHom (ZMod p))
+        (Fin.snoc (φ a) (u a)) (R l) = a l := by
+    intro a hS0 hg0 l
+    obtain ⟨A, B, hAB⟩ := hinv l
+    have hpts : (fun j : Fin (n + 1) => MvPolynomial.eval₂ (Int.castRingHom (ZMod p))
+        (Fin.snoc a (MvPolynomial.eval a g)⁻¹) (P j)) = Fin.snoc (φ a) (u a) := by
+      funext j
+      refine Fin.lastCases ?_ ?_ j
+      · rw [Fin.snoc_last, hudef]
+      · intro j'
+        rw [Fin.snoc_castSucc, hφdef]
+    have hassoc := MvPolynomial.eval₂_assoc (Int.castRingHom (ZMod p))
+      (Fin.snoc a (MvPolynomial.eval a g)⁻¹) P (R l)
+    have h0 := hpt a hS0 hg0 A B
+    rw [← hAB, MvPolynomial.eval₂_sub, MvPolynomial.eval₂_X, ← hassoc, hpts,
+      Fin.snoc_castSucc, sub_eq_zero] at h0
+    exact h0
+  -- Hence `φ` is injective on the good locus: this is the whole use of the
+  -- birational equivalence, and it never leaves this proof.
+  have hinjOn : Set.InjOn φ
+      {a : Fin (e + 1) → ZMod p |
+        MvPolynomial.eval a S = 0 ∧ MvPolynomial.eval a g ≠ 0} := by
+    intro a ha b hb hab
+    simp only [Set.mem_setOf_eq] at ha hb
+    have hua := hu a ha.1 ha.2
+    have hub := hu b hb.1 hb.2
+    rw [hab] at hua
+    have hxne : MvPolynomial.eval₂ (Int.castRingHom (ZMod p)) (φ b) w ≠ 0 := by
+      intro h0
+      rw [h0, zero_mul] at hub
+      exact zero_ne_one hub
+    have huu : u a = u b := mul_left_cancel₀ hxne (hua.trans hub.symm)
+    funext l
+    rw [← hrec a ha.1 ha.2 l, ← hrec b hb.1 hb.2 l, hab, huu]
+  -- THE COUNT: `V(S)` is covered by the good and bad loci, and the good locus
+  -- injects into the solutions of `f`.
+  have hgood : (Finset.univ.filter (fun a : Fin (e + 1) → ZMod p =>
+        MvPolynomial.eval a S = 0 ∧ MvPolynomial.eval a g ≠ 0)).card
+      ≤ systemCount f p := by
+    refine Finset.card_le_card_of_injOn φ ?_ ?_
+    · intro a ha
+      simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_setOf_eq] at ha
+      simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_setOf_eq]
+      exact hmapsto a ha.1 ha.2
+    · intro a ha b hb hab
+      simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_setOf_eq] at ha hb
+      exact hinjOn ha hb hab
+  have hsub : (Finset.univ.filter (fun a : Fin (e + 1) → ZMod p =>
+        MvPolynomial.eval a S = 0))
+      ⊆ (Finset.univ.filter (fun a : Fin (e + 1) → ZMod p =>
+          MvPolynomial.eval a S = 0 ∧ MvPolynomial.eval a g ≠ 0))
+        ∪ (Finset.univ.filter (fun a : Fin (e + 1) → ZMod p =>
+          MvPolynomial.eval a S = 0 ∧ MvPolynomial.eval a g = 0)) := by
+    intro a ha
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha
+    by_cases hg0 : MvPolynomial.eval a g = 0
+    · exact Finset.mem_union_right _ (by simp [ha, hg0])
+    · exact Finset.mem_union_left _ (by simp [ha, hg0])
+  calc zeroCount S
+      ≤ (Finset.univ.filter (fun a : Fin (e + 1) → ZMod p =>
+          MvPolynomial.eval a S = 0 ∧ MvPolynomial.eval a g ≠ 0)).card
+        + badLocusCount S g := le_trans (Finset.card_le_card hsub) (Finset.card_union_le _ _)
+    _ ≤ systemCount f p + badLocusCount S g := Nat.add_le_add_right hgood _
 
 /-- **SUB-LEAF (B): SCHMIDT'S LEMMA 7C** (SORRY LEAF, cut 2026-07-27 out of
 `exists_birationalHypersurfaceModel`) — the elementary COUNTING half: two
@@ -10025,7 +10316,10 @@ multiply `N(S) ≤ N(f) + #(V(S) ∩ V(g))` by `p` and bound `p·#(V(S) ∩ V(g)
 NAMED LEAVES, split along the line the literature itself draws:
 
 * `exists_spreadOutHypersurfaceModel` — Theorem 4D plus the spreading out. All of
-  the geometry, and all of the birational equivalence, is in there.
+  the geometry, and all of the birational equivalence, is in there. It is itself
+  **PROVEN** (2026-07-27) over `exists_integralHypersurfaceCertificate`, which
+  packages Theorem 4D and the spreading out as polynomial IDENTITIES OVER `ℤ`;
+  the evaluation-and-counting argument on top of them is proven.
 * `exists_bound_badLocusCount` — Lemma 7C, via the Chapter IV §3 elementary upper
   bounds. A pure finite-field point count over `𝔽_p`, with no algebraic closure in
   its signature; the bridge is `irreducible_of_irreducible_map`, PROVEN above.
@@ -10365,7 +10659,7 @@ five-item route is realised in the file rather than merely described):
 So after the 2026-07-27 work the remaining open leaves under this node are
 `exists_stepanovAuxiliaryFunction`,
 `stepanov_pow_sub_dvd_resultant`, `exists_bertiniNoetherWitness`,
-`exists_spreadOutHypersurfaceModel` and `exists_bound_badLocusCount`; all the
+`exists_integralHypersurfaceCertificate` and `exists_bound_badLocusCount`; all the
 glue between them is written and compiles, and this leaf itself has nothing left to
 prove.  (This list is stated from the file's ACTUAL sorry set as merged,
 2026-07-27.  `exists_stepanovDiscriminant` and `exists_stepanovNormalisation` were
@@ -10374,7 +10668,10 @@ on it and are now PROVEN, and so is
 `exists_stepanovAuxiliaryFunction` and `stepanov_pow_sub_dvd_resultant`; so is
 `exists_bertiniGoodPlaneCount`, over `exists_bertiniNoetherWitness`; so is
 `exists_birationalHypersurfaceModel`, over `exists_spreadOutHypersurfaceModel` and
-`exists_bound_badLocusCount`; items 4 and
+`exists_bound_badLocusCount`; and so is `exists_spreadOutHypersurfaceModel` itself,
+over the single new leaf `exists_integralHypersurfaceCertificate` — Schmidt's
+Theorem 4D and the spreading out written as polynomial identities over `ℤ`, with
+the evaluation, injectivity and counting argument PROVEN on top of it; items 4 and
 5 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount` and
 `exists_bound_forall_zmodSolvable_of_hypersurfaceCount` — are PROVEN over the last
 two names above, so it is those sub-leaves and not the items that are open.)
