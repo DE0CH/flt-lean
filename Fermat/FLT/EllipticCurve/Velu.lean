@@ -5662,7 +5662,17 @@ below.
 `exists_velu_quotient_isogeny_model_of_subgroup` in the `VeluAllOrders` /
 `DescentAllOrders` sections at the end of this file, which is this statement with
 `hCodd` deleted, together with an audit of exactly which parts of this development
-already work at even order. Do not re-cut it. -/
+already work at even order. Do not re-cut it.
+
+**The COORDINATE IDENTIFICATION is now part of the conclusion** (added 2026-07-27).
+The final conjunct pins `φ` pointwise off the kernel: for `Pt ∉ C` the image
+`φ Pt` is the affine point whose coordinates are literally Vélu's sums,
+`veluPointX (φ Pt) = veluCoordX … Pt` and `veluPointY (φ Pt) = veluCoordY … Pt`.
+Without it the theorem exhibits `φ` only up to its kernel and its equivariance,
+which is not enough to apply the `IsRationalMap` bridge of
+`Fermat/FLT/EllipticCurve/Isogeny.lean` at the call site — the bridge's
+certificate is written in `veluXNum` / `veluH` / `veluXi`, and it needs to know
+that `φ`'s coordinates are the Vélu ones. -/
 theorem exists_velu_quotient_isogeny_model (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
     (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
@@ -5683,7 +5693,12 @@ theorem exists_velu_quotient_isogeny_model (E : WeierstrassCurve ℚ) [E.IsEllip
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
-      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Pt ∉ C →
+        veluPointX (φ Pt) =
+            veluCoordX (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt ∧
+          veluPointY (φ Pt) =
+            veluCoordY (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt) := by
   classical
   haveI : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ))).IsElliptic :=
     inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
@@ -5733,7 +5748,7 @@ theorem exists_velu_quotient_isogeny_model (E : WeierstrassCurve ℚ) [E.IsEllip
   refine ⟨t, w, isElliptic_of_baseChange _ hE'K,
     AddMonoidHom.mk' (fun P => ψ (veluMap (E⁄(AlgebraicClosure ℚ)) S hS hodd P))
       (fun P Q => by
-        rw [velu_map_add _ S hS hodd P Q, map_add]), ht, hw, ?_, ?_⟩
+        rw [velu_map_add _ S hS hodd P Q, map_add]), ht, hw, ?_, ?_, ?_⟩
   · -- Galois equivariance
     intro σ Pt
     show ψ (veluMap (E⁄(AlgebraicClosure ℚ)) S hS hodd
@@ -5764,6 +5779,15 @@ theorem exists_velu_quotient_isogeny_model (E : WeierstrassCurve ℚ) [E.IsEllip
       exact ψ.injective (by rw [h, map_zero])
     · intro h
       rw [h, map_zero]
+  · -- the coordinate identification off the kernel
+    intro Pt hPt
+    have hPtS : Pt ∉ S := fun hc => hPt ((hmem Pt).mp hc)
+    show veluPointX (ψ (veluMap (E⁄(AlgebraicClosure ℚ)) S hS hodd Pt)) =
+          veluCoordX (E⁄(AlgebraicClosure ℚ)) S Pt ∧
+        veluPointY (ψ (veluMap (E⁄(AlgebraicClosure ℚ)) S hS hodd Pt)) =
+          veluCoordY (E⁄(AlgebraicClosure ℚ)) S Pt
+    rw [veluMap_of_notMem _ hS hodd hPtS, hψdef, pointAddEquivOfEq_some]
+    exact ⟨rfl, rfl⟩
 
 /-- **The quotient isogeny by a finite Galois-stable subgroup of ODD order**,
 in the form that forgets the model: for an elliptic curve `E/ℚ` and a finite
@@ -5790,7 +5814,7 @@ theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
       (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
-  obtain ⟨t, w, hell, φ, -, -, hgal, hker⟩ :=
+  obtain ⟨t, w, hell, φ, -, -, hgal, hker, -⟩ :=
     exists_velu_quotient_isogeny_model E C hCfin hCodd hCstable
   exact ⟨E.veluModel t w, hell, φ, hgal, hker⟩
 
@@ -7545,7 +7569,14 @@ proven for the odd case, which are themselves parity-free).
 This is `exists_velu_quotient_isogeny_model` with the hypothesis `Odd (Nat.card C)`
 REMOVED. The Galois-descent half — `velu_t_mem_range`, `velu_w_mem_range`,
 `velu_coordX_map`, `velu_coordY_map`, `isElliptic_of_baseChange` — never used the
-parity hypothesis, so the assembly is the odd-order one with `hodd` deleted. -/
+parity hypothesis, so the assembly is the odd-order one with `hodd` deleted.
+
+**The COORDINATE IDENTIFICATION is now part of the conclusion** (added 2026-07-27,
+mirroring `exists_velu_quotient_isogeny_model`): the final conjunct pins `φ`
+pointwise off the kernel, `veluPointX (φ Pt) = veluCoordX … Pt` and
+`veluPointY (φ Pt) = veluCoordY … Pt` for `Pt ∉ C`. It is what lets a call site
+apply the `IsRationalMap` bridge of `Fermat/FLT/EllipticCurve/Isogeny.lean`, whose
+certificate is written in `veluXNum` / `veluH` / `veluXi`. -/
 theorem exists_velu_quotient_isogeny_model_of_subgroup
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
@@ -7566,7 +7597,12 @@ theorem exists_velu_quotient_isogeny_model_of_subgroup
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
-      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Pt ∉ C →
+        veluPointX (φ Pt) =
+            veluCoordX (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt ∧
+          veluPointY (φ Pt) =
+            veluCoordY (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt) := by
   classical
   haveI : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ))).IsElliptic :=
     inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
@@ -7608,7 +7644,7 @@ theorem exists_velu_quotient_isogeny_model_of_subgroup
   refine ⟨t, w, isElliptic_of_baseChange _ hE'K,
     AddMonoidHom.mk' (fun P => ψ (veluMapAll (E⁄(AlgebraicClosure ℚ)) S hS P))
       (fun P Q => by
-        rw [velu_map_add_of_subgroup _ S hS P Q, map_add]), ht, hw, ?_, ?_⟩
+        rw [velu_map_add_of_subgroup _ S hS P Q, map_add]), ht, hw, ?_, ?_, ?_⟩
   · -- Galois equivariance
     intro σ Pt
     show ψ (veluMapAll (E⁄(AlgebraicClosure ℚ)) S hS
@@ -7639,6 +7675,15 @@ theorem exists_velu_quotient_isogeny_model_of_subgroup
       exact ψ.injective (by rw [h, map_zero])
     · intro h
       rw [h, map_zero]
+  · -- the coordinate identification off the kernel
+    intro Pt hPt
+    have hPtS : Pt ∉ S := fun hc => hPt ((hmem Pt).mp hc)
+    show veluPointX (ψ (veluMapAll (E⁄(AlgebraicClosure ℚ)) S hS Pt)) =
+          veluCoordX (E⁄(AlgebraicClosure ℚ)) S Pt ∧
+        veluPointY (ψ (veluMapAll (E⁄(AlgebraicClosure ℚ)) S hS Pt)) =
+          veluCoordY (E⁄(AlgebraicClosure ℚ)) S Pt
+    rw [veluMapAll_of_notMem _ hS hPtS, hψdef, pointAddEquivOfEq_some]
+    exact ⟨rfl, rfl⟩
 
 /-- **The quotient isogeny by a finite Galois-stable subgroup of ARBITRARY order**,
 in the form that forgets the model.
@@ -7662,7 +7707,7 @@ theorem exists_velu_quotient_isogeny_of_subgroup
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
       (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
-  obtain ⟨t, w, hell, φ, -, -, hgal, hker⟩ :=
+  obtain ⟨t, w, hell, φ, -, -, hgal, hker, -⟩ :=
     exists_velu_quotient_isogeny_model_of_subgroup E C hCfin hCstable
   exact ⟨E.veluModel t w, hell, φ, hgal, hker⟩
 
