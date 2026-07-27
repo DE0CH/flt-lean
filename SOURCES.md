@@ -52,6 +52,29 @@ Populated 2026-07-22 on the shared-terminal machine.
   179–230 (§4.1 = Frey-curve conditions). Pages 185–236 of the issue
   scan, OCR'd locally (fra+eng).
 
+- `schmidt1976eqff.djvu` / `.txt` — W. M. Schmidt, *Equations over
+  Finite Fields: An Elementary Approach*, Lecture Notes in Mathematics
+  536 (Springer, 1976). md5 `98e627e92286763bc7e9e4a116453457`,
+  fetched with `domain_index: 2` (indices 0 and 1 gave a self-signed
+  cert chain and an `http://` URL respectively). Text extracted with
+  `djvutxt` — clean, no OCR needed.
+
+  This is the reference for the **Stepanov–Bombieri route** to the Weil
+  bound in `Modularity/KhareWintenberger.lean` (the Lang–Weil subtree
+  under `exists_bound_forall_zmodSolvable_of_irreducibleFibre`).
+  Chapter III §§1–6 is all that item 2 needs — §§7 ff. exist only to
+  remove the restriction to prime `q`, which this development never
+  needs. Chapter V is the plane-curve → hypersurface step and Chapter
+  VI §7 the induction on dimension. Landmarks in the extracted text:
+  III §1 Reduction ≈ line 3160, (4.3)/(4.5) ≈ 3300, Lemma 4A ≈ 3541,
+  Lemma 5A ≈ 3689, §6 ≈ 3751; V Thm 4C ≈ 6639, Thm 5A ≈ 6709;
+  VI Thm 7A / Lemmas 7B, 7C ≈ 8157.
+
+  (Downloaded 2026-07-27. A task prompt of that date asserted the book
+  was already here and told agents to check this file before
+  re-downloading — it was not, and this entry is what that check
+  should have found.)
+
 ## Other reference material
 
 - `~/cs/FLT` — the reference Lean FLT project (same mathlib pin),
