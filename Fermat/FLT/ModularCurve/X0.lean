@@ -4203,11 +4203,19 @@ theorem geomBasis_twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
 
 /-- **The `GL₂(ℤ/n)`-twist of a full level structure.**
 
-The `n`-torsion hypotheses are not decoration: see the FALSITY AUDIT on
-`geomBasis_twist`, which is where they are consumed. -/
+The `n`-torsion hypotheses are not decoration — see the FALSITY AUDIT on
+`geomBasis_twist`, which is where they are consumed — but they are **not
+binders here**: they are the fields `L.nsmul_P` / `L.nsmul_Q` of the
+structure itself, and are discharged from `L` at this one point.
+
+(Two branches repaired the same defect from opposite ends on 2026-07-27:
+one made the `n`-torsion FIELDS of `FullLevelStructure`, the other passed
+it as hypotheses through `twist` / `twist_one` / `twist_mul` /
+`geomBasis_twist`.  Reconciled here in the FIELD shape — it is the one
+that leaves every call site of `twist` unchanged — while keeping the
+hypothesis form on `geomBasis_twist`, which is where the proof consumes
+it and where the audit lives.) -/
 noncomputable def twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
-    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
-    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0)
     (σ : GL (Fin 2) (ZMod n)) : FullLevelStructure n d where
   P := twistP σ L
   Q := twistQ σ L
@@ -4217,7 +4225,7 @@ noncomputable def twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
   nsmul_Q :=
     haveI : NeZero n := ⟨by omega⟩
     nsmul_twistQ_eq_zero L L.nsmul_P L.nsmul_Q σ
-  geom_basis := geomBasis_twist hn L σ
+  geom_basis := geomBasis_twist hn L L.nsmul_P L.nsmul_Q σ
 
 /-- `nsmul_P`, `nsmul_Q` and `geom_basis` are all `Prop`s, so a full level
 structure is determined by its two sections. -/
@@ -4225,35 +4233,28 @@ theorem ext' {L₁ L₂ : FullLevelStructure n d} (hP : L₁.P = L₂.P) (hQ : L
     L₁ = L₂ := by
   cases L₁; cases L₂; subst hP; subst hQ; rfl
 
-theorem twist_one (hn : 3 ≤ n) (L : FullLevelStructure n d)
-    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
-    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) : twist hn L hP hQ 1 = L :=
+theorem twist_one (hn : 3 ≤ n) (L : FullLevelStructure n d) : twist hn L 1 = L :=
   ext' (twistP_one (by omega) L) (twistQ_one (by omega) L)
 
 /-- **The twist is an action** — and this is FALSE without the `n`-torsion
-hypotheses, since `ZMod.val` is not multiplicative.  They are now supplied
-by `L` itself (`FullLevelStructure.nsmul_P` / `nsmul_Q`), but are kept as
-explicit arguments so that the dependence is visible at every use site. -/
+hypotheses, since `ZMod.val` is not multiplicative.  They are supplied by
+`L` itself (`FullLevelStructure.nsmul_P` / `nsmul_Q`). -/
 theorem twist_mul (hn : 3 ≤ n) (L : FullLevelStructure n d)
-    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
-    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0)
-    (σ τ : GL (Fin 2) (ZMod n))
-    (hP' : letI := d.ab.addCommGroup (𝟙 T); n • (twist hn L hP hQ τ).P = 0)
-    (hQ' : letI := d.ab.addCommGroup (𝟙 T); n • (twist hn L hP hQ τ).Q = 0) :
-    twist hn (twist hn L hP hQ τ) hP' hQ' σ = twist hn L hP hQ (σ * τ) := by
+    (σ τ : GL (Fin 2) (ZMod n)) :
+    twist hn (twist hn L τ) σ = twist hn L (σ * τ) := by
   haveI : NeZero n := ⟨by omega⟩
   refine ext' ?_ ?_
   · show RelPoint.comb d.ab (σ.val 0 0) (σ.val 0 1)
         (RelPoint.comb d.ab (τ.val 0 0) (τ.val 0 1) L.P L.Q)
         (RelPoint.comb d.ab (τ.val 1 0) (τ.val 1 1) L.P L.Q)
       = RelPoint.comb d.ab ((σ * τ).val 0 0) ((σ * τ).val 0 1) L.P L.Q
-    rw [RelPoint.comb_comb d.ab hP hQ]
+    rw [RelPoint.comb_comb d.ab L.nsmul_P L.nsmul_Q]
     congr 1 <;> simp [Units.val_mul, Matrix.mul_apply, Fin.sum_univ_two]
   · show RelPoint.comb d.ab (σ.val 1 0) (σ.val 1 1)
         (RelPoint.comb d.ab (τ.val 0 0) (τ.val 0 1) L.P L.Q)
         (RelPoint.comb d.ab (τ.val 1 0) (τ.val 1 1) L.P L.Q)
       = RelPoint.comb d.ab ((σ * τ).val 1 0) ((σ * τ).val 1 1) L.P L.Q
-    rw [RelPoint.comb_comb d.ab hP hQ]
+    rw [RelPoint.comb_comb d.ab L.nsmul_P L.nsmul_Q]
     congr 1 <;> simp [Units.val_mul, Matrix.mul_apply, Fin.sum_univ_two]
 
 end FullLevelStructure
@@ -4286,10 +4287,10 @@ leaf quantifying over an arbitrary `MulSemiringAction` would be false —
 `π = 𝟙` and the coequalising clause fails.  See `exists_deckAction`'s
 docstring for the piecewise argument the `have` owes. -/
 theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n)
-    (hP : letI := R.commRing_A
+    (_hP : letI := R.commRing_A
           letI := R.dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of R.A)))
           n • R.lvlM.P = 0)
-    (hQ : letI := R.commRing_A
+    (_hQ : letI := R.commRing_A
           letI := R.dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of R.A)))
           n • R.lvlM.Q = 0) :
     letI := R.commRing_A
@@ -4311,9 +4312,9 @@ theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedM
   have huniv : ∀ σ : gamma0DeckGroup n,
       ∃! m : Spec (CommRingCat.of R.A) ⟶ Spec (CommRingCat.of R.A),
         ∃ bc : IsBaseChangeOf m R.dM R.dM,
-          (FullLevelStructure.twist hn R.lvlM hP hQ σ).P.1 ≫ bc.map = m ≫ R.lvlM.P.1 ∧
-          (FullLevelStructure.twist hn R.lvlM hP hQ σ).Q.1 ≫ bc.map = m ≫ R.lvlM.Q.1 :=
-    fun σ => R.universal R.strM R.dM (FullLevelStructure.twist hn R.lvlM hP hQ σ)
+          (FullLevelStructure.twist hn R.lvlM σ).P.1 ≫ bc.map = m ≫ R.lvlM.P.1 ∧
+          (FullLevelStructure.twist hn R.lvlM σ).Q.1 ≫ bc.map = m ≫ R.lvlM.Q.1 :=
+    fun σ => R.universal R.strM R.dM (FullLevelStructure.twist hn R.lvlM σ)
   choose mm hmm hmmu using huniv
   choose bcm e1 e2 using hmm
   -- `σ ↦ mm σ` is an antihomomorphism into the automorphisms of `Spec A`
@@ -4323,45 +4324,41 @@ theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedM
         simp [IsBaseChangeOf.refl]
   have hmul : ∀ σ τ : gamma0DeckGroup n, mm (σ * τ) = mm τ ≫ mm σ := by
     intro σ τ
-    have hTP : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM hP hQ τ).P)
+    have hTP : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM τ).P)
         = RelPoint.pre (mm τ) (by simp) R.lvlM.P := Subtype.ext (e1 τ)
-    have hTQ : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM hP hQ τ).Q)
+    have hTQ : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM τ).Q)
         = RelPoint.pre (mm τ) (by simp) R.lvlM.Q := Subtype.ext (e2 τ)
-    have hstepP : (FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).P.1 ≫ (bcm τ).map
-        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM hP hQ σ).P.1 := by
+    have hstepP : (FullLevelStructure.twist hn R.lvlM (σ * τ)).P.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM σ).P.1 := by
       refine congrArg Subtype.val (?_ :
-        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).P)
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM (σ * τ)).P)
           = RelPoint.pre (mm τ) (by simp)
-              ((FullLevelStructure.twist hn R.lvlM hP hQ σ).P))
-      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ
-        (FullLevelStructure.nsmul_twistP_eq_zero R.lvlM hP hQ τ)
-        (FullLevelStructure.nsmul_twistQ_eq_zero R.lvlM hP hQ τ)]
+              ((FullLevelStructure.twist hn R.lvlM σ).P))
+      rw [← FullLevelStructure.twist_mul hn R.lvlM σ τ]
       show (bcm τ).toRelPoint (RelPoint.comb R.dM.ab (σ.val 0 0) (σ.val 0 1)
-          (FullLevelStructure.twist hn R.lvlM hP hQ τ).P
-          (FullLevelStructure.twist hn R.lvlM hP hQ τ).Q)
+          (FullLevelStructure.twist hn R.lvlM τ).P
+          (FullLevelStructure.twist hn R.lvlM τ).Q)
         = RelPoint.pre (mm τ) (by simp)
             (RelPoint.comb R.dM.ab (σ.val 0 0) (σ.val 0 1) R.lvlM.P R.lvlM.Q)
       rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
-    have hstepQ : (FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).Q.1 ≫ (bcm τ).map
-        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM hP hQ σ).Q.1 := by
+    have hstepQ : (FullLevelStructure.twist hn R.lvlM (σ * τ)).Q.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM σ).Q.1 := by
       refine congrArg Subtype.val (?_ :
-        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).Q)
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM (σ * τ)).Q)
           = RelPoint.pre (mm τ) (by simp)
-              ((FullLevelStructure.twist hn R.lvlM hP hQ σ).Q))
-      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ
-        (FullLevelStructure.nsmul_twistP_eq_zero R.lvlM hP hQ τ)
-        (FullLevelStructure.nsmul_twistQ_eq_zero R.lvlM hP hQ τ)]
+              ((FullLevelStructure.twist hn R.lvlM σ).Q))
+      rw [← FullLevelStructure.twist_mul hn R.lvlM σ τ]
       show (bcm τ).toRelPoint (RelPoint.comb R.dM.ab (σ.val 1 0) (σ.val 1 1)
-          (FullLevelStructure.twist hn R.lvlM hP hQ τ).P
-          (FullLevelStructure.twist hn R.lvlM hP hQ τ).Q)
+          (FullLevelStructure.twist hn R.lvlM τ).P
+          (FullLevelStructure.twist hn R.lvlM τ).Q)
         = RelPoint.pre (mm τ) (by simp)
             (RelPoint.comb R.dM.ab (σ.val 1 0) (σ.val 1 1) R.lvlM.P R.lvlM.Q)
       rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
     refine (hmmu (σ * τ) (mm τ ≫ mm σ) ⟨(bcm τ).comp (bcm σ), ?_, ?_⟩).symm
-    · show (FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).P.1 ≫ (bcm τ).map ≫ (bcm σ).map
+    · show (FullLevelStructure.twist hn R.lvlM (σ * τ)).P.1 ≫ (bcm τ).map ≫ (bcm σ).map
           = (mm τ ≫ mm σ) ≫ R.lvlM.P.1
       rw [← Category.assoc, hstepP, Category.assoc, e1 σ, Category.assoc]
-    · show (FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).Q.1 ≫ (bcm τ).map ≫ (bcm σ).map
+    · show (FullLevelStructure.twist hn R.lvlM (σ * τ)).Q.1 ≫ (bcm τ).map ≫ (bcm σ).map
           = (mm τ ≫ mm σ) ≫ R.lvlM.Q.1
       rw [← Category.assoc, hstepQ, Category.assoc, e2 σ, Category.assoc]
   -- transport to ring homomorphisms through full faithfulness of `Spec` on affines
