@@ -8485,19 +8485,79 @@ def IsFontaineAlgebra (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] : Prop :=
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **FONTAINE'S INDUCTIVE STEP** (sorry node, created 2026-07-27 as the
-FIRST of the two leaves of the decomposition of
-`existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` below; this leaf
-carries ALL of the arithmetic of Fontaine's Prop. 1.7 (i) (a) and both of
-its halves — existence and uniqueness of the target `∃!` are *both* derived
-from it, by the proven lemmas that follow).
+/-- **FONTAINE'S INDUCTIVE STEP, EXISTENCE HALF** (sorry node; created
+2026-07-27 as one of the two leaves of the decomposition of
+`existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` below, RESTATED
+2026-07-27 by the next owner after the `∃!` it originally asserted was
+REFUTED — see the FALSITY AUDIT below).  This leaf and its sibling
+`sub_mem_maximalIdeal_pow_succ_of_algHom_quotient_sub_mem` carry between
+them ALL of the arithmetic of Fontaine's Prop. 1.7 (i) (a), and they are
+the only places the threshold hypothesis `ht : e < 2t` is consumed.
 
 STATEMENT.  Let `A` be a Fontaine algebra over `𝒪₃ᵥ ≅ ℤ₃` (finite flat,
 `Ω[A⁄𝒪₃ᵥ]` killed by `3`, locally a complete intersection, `Ω¹` flat over
 `A/3A`), let `𝒪_E` be the ring of integers of a finite extension `E/ℚ₃ᵥ`
 with `(3) = 𝔪_E^e`, and let `t` be an "agreement level" with `e < 2t`.
-Then every `𝒪₃ᵥ`-algebra map `u : A → 𝒪_E/𝔪^(t+e)` has ONE AND ONLY ONE
+Then every `𝒪₃ᵥ`-algebra map `u : A → 𝒪_E/𝔪^(t+e)` HAS a
 lift-by-one-notch `u' : A → 𝒪_E/𝔪^(t+e+1)` agreeing with `u` modulo `𝔪^t`.
+
+# FALSITY AUDIT (2026-07-27) — the `∃!` this leaf used to assert is FALSE
+
+The previous statement of this leaf was `∃!` rather than `∃`, and it is
+refuted by an explicit two-line counterexample.  The uniqueness that
+Fontaine's argument actually delivers is uniqueness of the perturbation
+`μ` **modulo `I^[n+1] = 𝔪^(t+1)`**, and `u'` lives in `𝒪_E/𝔪^(t+e+1)`,
+which is `e` notches FINER.  So for `e ≥ 1` the lift is never unique: the
+set of lifts is a torsor under `(𝔪^(t+1)/𝔪^(t+e+1))^h`.
+
+THE COUNTEREXAMPLE.  Take `A := 𝒪₃ᵥ[x]/(x³ − 3x)` (write `𝒪₃ᵥ = ℤ₃`),
+`E := ℚ₃ᵥ(√3)`, so `𝒪_E = ℤ₃[π]` with `π = √3`, `𝔪 = (π)`, `3 = π²`,
+hence `e = 2`.  Take `t := 2` (so `ht : 2 < 4` holds) and `n := t + e = 4`.
+
+* `A` satisfies EVERY hypothesis.  It is finite free of rank `3` over
+  `𝒪₃ᵥ`, hence flat.  `Ω[A⁄𝒪₃ᵥ] = A·dx/(3(x²−1)·dx)`, and `x² − 1` is a
+  UNIT of `A` (imposing `x² = 1` forces `x³ = x` and `x³ = 3x`, so
+  `2x = 0`, so `x = 0`, so `1 = x² = 0`); therefore
+  `Ω[A⁄𝒪₃ᵥ] ≅ A/3A`, which is killed by `3` (`hΩ`) and is FREE of rank one
+  over `A/3A` (so `hfon`'s flatness half holds).  (Unit check without
+  hand-waving: `Res(x³ − 3x, x² − 1) = (1−3)(−1+3) = −4`, a unit of `ℤ₃`.)
+  `A` is a hypersurface, so
+  `H¹(L_{A⁄𝒪₃ᵥ}) = Ann_A(∂(x³−3x)) = Ann_A(3·unit) = 0` because `A` is
+  `𝒪₃ᵥ`-torsion-free (`hfon`'s LCI half).
+* Everything else is one normalised valuation, `v(π) = 1`, `v(3) = 2`.
+  Let `u : A → 𝒪_E/𝔪⁴` send `x ↦ 0` (legitimate: `0³ − 3·0 = 0`).  Then
+  BOTH `x ↦ 0` and `x ↦ 9` define `𝒪₃ᵥ`-algebra maps `A → 𝒪_E/𝔪⁵`: for the
+  second, `9³ − 3·9 = 702 = 27·26` has `v = v(27) = 6 ≥ 5`.  BOTH agree
+  with `u` modulo `𝔪^t = 𝔪²`, since `v(9) = 4 ≥ 2`.  And they are DISTINCT
+  in `𝒪_E/𝔪⁵`, since `v(9) = 4 < 5`.
+
+WHERE THE OVER-CLAIM CAME FROM, and why it is not a mistranslation.
+Fontaine's own reduction sentence (p. 521, l. 40–50) does say "il existe un
+unique 𝒪_K-homomorphisme `u' : B → S/aI^[n+1]` tel que `u` et `u'`
+induisent le même homomorphisme de `B` dans `S/I^[n]`", and the paragraph
+that discharges it ends "l'existence des `μ_j ∈ I^[n]` et leur unicité
+**mod `I^[n+1]`** est alors évidente" (p. 522, last line).  Those two
+sentences are not equivalent, and the second is the true one.  The slip is
+harmless in the paper: Fontaine's PROPOSITION 1.7 (i) (a) is about a
+homomorphism into `S` ITSELF — unique `ũ : B → S` with
+`ũ ≡ u mod I` — and its uniqueness is what he then reuses as 1.7 (i) (b)
+("le (b) résulte immédiatement du (a)").  Uniqueness into `S` is TRUE and
+survives: it is `algHom_eq_of_forall_sub_mem_maximalIdeal_pow` below, and
+it is obtained here from the SIBLING leaf, not from this one.
+So nothing above `existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow`
+changes; only the internal cut does.
+
+WHAT THE CUT LOOKS LIKE AFTER THE REPAIR.  Fontaine's one paragraph gives
+two statements, and they are now two leaves because their consumers differ:
+* THIS leaf — `∃ μ ∈ (I^[n])^h` solving the system: the EXISTENCE half,
+  iterated by `exists_algHom_quotient_maximalIdeal_pow_add`;
+* `sub_mem_maximalIdeal_pow_succ_of_algHom_quotient_sub_mem` — `μ` is
+  determined modulo `I^[n+1]`: the RIGIDITY half, which is the honest form
+  of "uniqueness", stated at the level `𝔪^(t+1)` where it is true.  It
+  feeds `sub_mem_maximalIdeal_pow_succ_of_algHom_sub_mem` and hence
+  `algHom_eq_of_forall_sub_mem_maximalIdeal_pow`.
+Both come from the SAME linear system in step 5 below, so a prover should
+expect to build the presentation (steps 1–3) once and discharge both.
 
 THE DICTIONARY WITH FONTAINE (Invent. Math. 81 (1985) 515–538, §1.6–1.7,
 pp. 520–523; freely downloadable from GDZ at
@@ -8505,10 +8565,17 @@ pp. 520–523; freely downloadable from GDZ at
 where it is a SCANNED image, so `pdftotext` returns only the cover sheet
 and the mathematics has to be OCR'd — `pdftoppm -r 300 -gray` then
 `tesseract … --psm 6` on pp. 521–523 is what produced the transcription
-this docstring records).  Fontaine's Prop. 1.7 (i) (a) is stated with a
-DIVIDED-POWER FILTRATION `I^[n]` on a topologically nilpotent
-divided-power ideal `I ⊆ S`, and reads: for `u : B → S/aI^[n]` there is a
-unique `u' : B → S/aI^[n+1]` inducing the same map `B → S/I^[n]`.  Put
+this docstring records).  Fontaine's Prop. 1.7 (i) (a) itself reads: for
+`u : B → S/aI` there is one and only one `ũ : B → S` with `ũ ≡ u mod I`,
+where `I ⊆ S` is an ideal with topologically nilpotent divided powers and
+`a ∈ 𝒪_K` annihilates `Ω_{B⁄𝒪_K}`.  That statement is
+`existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` below and is NOT
+what this leaf says.  Its PROOF runs an induction along the divided-power
+filtration `I^[n]`, and the step is what this leaf and its sibling
+transcribe: from `u : B → S/aI^[n]` one produces `u' : B → S/aI^[n+1]`
+inducing the same map `B → S/I^[n]` — and the perturbation realising it is
+unique only modulo `I^[n+1]`, which is why the step is TWO statements here
+and not one `∃!` (see the FALSITY AUDIT above).  Put
 `a := 3` (so `v_K(a) = 1`), `S := 𝒪_E`, `I := 𝔪_E^j` with `j = k − e`.
 Then `a·I^[n]` and `I^[n]` are the two levels above, with `t := ` the
 exponent of `I^[n]` and `n := t + e` the exponent of `a·I^[n]`.
@@ -8554,11 +8621,31 @@ missing machinery.
    `P(u+μ) = P(u) + Σ_j (∂P/∂X_j)(u)·μ_j + R`,
    `R = Σ_{|r|≥2} (∂^r P/∂X^r)(u)·γ_r(μ)`.
    NOTE the shape: ORDINARY iterated derivatives paired with DIVIDED
-   POWERS `γ_r(μ) = μ^r/r!`.  One cannot dodge the divided powers by using
-   Hasse derivatives `∂^[r] = (1/r!)∂^r` and plain `μ^r`: step 5 needs
-   `(∂^r P)(u) ∈ 3·𝒪_E` for `P ∈ J`, and that estimate is destroyed by
-   dividing by `r!`.  This is exactly why the threshold `e/(p−1)` enters
-   here and not in the naive derivation estimate.
+   POWERS `γ_r(μ) = μ^r/r!`.
+
+   ROUTE CORRECTION (2026-07-27), and it REMOVES divided powers from this
+   leaf entirely.  An earlier version of this docstring asserted that one
+   "cannot dodge the divided powers by using Hasse derivatives
+   `∂^[r] = (1/r!)∂^r` and plain `μ^r`, because step 5 needs
+   `(∂^r P)(u) ∈ 3·𝒪_E` and that estimate is destroyed by dividing by
+   `r!`".  That is wrong, and the case that "destroys" the estimate is
+   exactly the case in which it is not needed.  Write the Taylor expansion
+   with Hasse derivatives — `P(u+μ) = Σ_r (∂^[r]P)(u)·μ^r`, an identity of
+   formal power series requiring NO division — and bound each term with
+   `|r| ≥ 2` against the target `3·𝔪^(t+1) = 𝔪^(e+t+1)`, using only
+   `r!·∂^[r]P = ∂^r P`, hence `v((∂^[r]P)(u)) ≥ e − e·v₃(r!)`, and
+   `v((∂^[r]P)(u)) ≥ 0`:
+   * if `v₃(r!) = 0` then `v((∂^[r]P)(u)) ≥ e` and `v(μ^r) ≥ |r|t ≥ 2t
+     ≥ t + 1` (as `t ≥ 1`), so the term lies in `𝔪^(e+t+1)`;
+   * if `v₃(r!) ≥ 1` then `3 ∣ r!` forces `|r| ≥ 3`, so
+     `v(μ^r) ≥ 3t = t + 2t ≥ t + e + 1` by `ht`, and no information about
+     `(∂^[r]P)(u)` beyond integrality is used.
+   So the ONLY arithmetic input replacing the divided-power estimate is
+   `3 ∣ n! → 3 ≤ n`.  The threshold `ht : e < 2t` is still consumed, in the
+   second bullet — it is what makes `|r| = 3` enough — so this is a change
+   of route, not a weakening of hypotheses, and `hΩ`/`hfon` are untouched.
+   A prover may still take the divided-power route; it is simply no longer
+   forced, and `DividedPowers.Padic.dividedPowers` is then not needed.
 5. The linear algebra.  For `P ∈ J`, `(∂P/∂X_j)(X) ∈ 3·𝒪₃ᵥ[[X]] + J`, and
    by induction on `|r|` the same for `∂^r P`; so `(∂^r P_i)(u) ∈ 3𝒪_E`
    and, with `γ_r(μ) ∈ I^[n+1]` for `|r| ≥ 2` (the estimate above),
@@ -8567,17 +8654,23 @@ missing machinery.
    `P_i(u+μ) ≡ 3(δ_i + Σ_j P_ij(u)μ_j) mod 3I^[n+1]`.
    `𝒪_E` is `𝒪₃ᵥ`-flat, so the condition on `μ` is
    `δ_i + Σ_j P_ij(u)μ_j ≡ 0 mod I^[n+1]`, and invertibility of `(p_ij)`
-   from step 3 gives existence and uniqueness of `μ mod I^[n+1]` at once.
+   from step 3 gives existence of `μ`, and its uniqueness `mod I^[n+1]`, at
+   once — the two conclusions that are this leaf and its sibling.
 
 MACHINERY THAT DOES NOT EXIST UPSTREAM AND WILL HAVE TO BE BUILT: the
 `h`-equations-in-`h`-variables presentation of a finite complete
 intersection (step 2), the multivariate Taylor expansion of a formal power
-series at a topologically nilpotent perturbation (step 4), and the
-`3·𝒪[[X]] + J` stability of iterated derivatives (step 5).  What DOES
-exist and should be reused: `Mathlib/RingTheory/DividedPowers/`, in
-particular `DividedPowers.Padic.dividedPowers`, the divided-power
-structure on `(p) ⊆ ℤ_p`, which is Fontaine's §1.6 input at `K = ℚ₃`. -/
-theorem existsUnique_algHom_quotient_maximalIdeal_pow_succ
+series at a topologically nilpotent perturbation (step 4 — in the Hasse
+form above, so `MvPowerSeries.subst` plus a Hasse-derivative API for
+`MvPowerSeries`, which the pin has only for univariate `Polynomial`,
+`Mathlib/Algebra/Polynomial/HasseDeriv.lean`), and the `3·𝒪[[X]] + J`
+stability of iterated derivatives (step 5).  What DOES exist and is worth
+knowing about: `Mathlib/RingTheory/MvPowerSeries/{Substitution,Evaluation,
+LinearTopology}.lean` for the substitution `X ↦ u + μ`, and
+`Mathlib/RingTheory/DividedPowers/` (including
+`DividedPowers.Padic.dividedPowers`) if the divided-power route is
+preferred to the Hasse one after all. -/
+theorem exists_algHom_quotient_maximalIdeal_pow_succ
     (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
     (hΩ : ∀ ω : Ω[A⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0)
@@ -8589,7 +8682,7 @@ theorem existsUnique_algHom_quotient_maximalIdeal_pow_succ
     (ht : e < 2 * t) (htn : t + e = n)
     (u : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ n)) :
-    ∃! u' : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+    ∃ u' : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
         IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1)),
       (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
         (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
@@ -8597,6 +8690,73 @@ theorem existsUnique_algHom_quotient_maximalIdeal_pow_succ
       (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
         (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
         (show t ≤ n by omega))).comp u := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FONTAINE'S INDUCTIVE STEP, RIGIDITY HALF** (sorry node, created
+2026-07-27 as part of the repair of the refuted `∃!` on
+`exists_algHom_quotient_maximalIdeal_pow_succ` above — read that leaf's
+FALSITY AUDIT first, and its transcription of Fontaine's proof, of which
+this is the second conclusion).
+
+STATEMENT.  With the hypotheses of the sibling leaf, two `𝒪₃ᵥ`-algebra maps
+`A → 𝒪_E/𝔪^(t+e+1)` that agree modulo `𝔪^t` already agree modulo
+`𝔪^(t+1)`.
+
+This is the honest form of the "uniqueness" in Fontaine's inductive step.
+Fontaine's own words are "l'existence des `μ_j ∈ I^[n]` et leur unicité
+**mod `I^[n+1]`** est alors évidente" (p. 522): the perturbation is pinned
+one notch down, at `I^[n+1] = 𝔪^(t+1)`, and NOT at the level
+`aI^[n+1] = 𝔪^(t+e+1)` where `u'` lives.  Pinning it at the finer level is
+false for every `e ≥ 1` — the counterexample is on the sibling — and
+pinning it here is exactly right, and exactly enough: it is the ONLY thing
+`sub_mem_maximalIdeal_pow_succ_of_algHom_sub_mem` below needs, and through
+that lemma it is what supplies Fontaine 1.7 (i) (b), the uniqueness half of
+`existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow`.
+
+PROOF (steps 1–5 of the sibling, run once and then subtracted).  Let `u_i`
+lift `v₂(x_i)`, so that `v₁(x_i) = u_i + μ_i` with `μ_i ∈ 𝔪^t` by the
+hypothesis `h`, and `μ = 0` realises `v₂`.  Both maps kill `J`, so both
+perturbations satisfy the SAME linear congruence
+`δ_i + Σ_j P_ij(u)·μ_j ≡ 0 mod 𝔪^(t+1)` of step 5; subtracting,
+`Σ_j P_ij(u)·μ_j ≡ 0 mod 𝔪^(t+1)`, and `(p_ij)` is invertible over `A`
+(step 3), so `(P_ij(u))` is invertible over `𝒪_E` and `μ_i ∈ 𝔪^(t+1)`.
+That is agreement of `v₁` and `v₂` modulo `𝔪^(t+1)`, since the `x_i`
+topologically generate `A`.
+
+NOT VACUOUS, and not implied by the sibling: the sibling produces ONE lift
+and says nothing about any other, whereas this statement quantifies over
+all pairs.  Nor is it implied by the development's own rigidity lemma
+`algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal`, which needs the
+difference to lie in `(3)·𝔪` — i.e. `t > e` — and therefore stalls below
+the divided-power threshold; the whole point of this leaf is that it works
+at `2t > e`. -/
+theorem sub_mem_maximalIdeal_pow_succ_of_algHom_quotient_sub_mem
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    (hΩ : ∀ ω : Ω[A⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0)
+    (hfon : IsFontaineAlgebra A)
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E]
+    (e t n : ℕ)
+    (he : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e)
+    (ht : e < 2 * t) (htn : t + e = n)
+    (v₁ v₂ : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1)))
+    (h : (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+        (show t ≤ n + 1 by omega))).comp v₁ =
+      (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+        (show t ≤ n + 1 by omega))).comp v₂) :
+    (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+        (show t + 1 ≤ n + 1 by omega))).comp v₁ =
+      (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+        (show t + 1 ≤ n + 1 by omega))).comp v₂ := by
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
@@ -8624,7 +8784,7 @@ NONEMPTY FINITE sets, whose inverse limit is therefore nonempty
 `nonempty_sections_of_finite_inverse_system`).
 
 WHY THE SYSTEM IS NOT HANDED OVER AS A COMPATIBLE TOWER.  Fontaine's step
-`existsUnique_algHom_quotient_maximalIdeal_pow_succ` produces `u'` agreeing
+`exists_algHom_quotient_maximalIdeal_pow_succ` produces `u'` agreeing
 with `u` only modulo `𝔪^t`, one full factor of `3` coarser than the level
 `𝔪^(t+e)` at which `u` lives; the reduction of `u'` back to `𝒪_E ⧸ 𝔪^(t+e)`
 therefore need NOT equal `u`, and the maps this leaf receives really are
@@ -8650,7 +8810,7 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **THE TOWER OF APPROXIMATE SOLUTIONS** (PROVEN 2026-07-27): iterating
-`existsUnique_algHom_quotient_maximalIdeal_pow_succ` from the level
+`exists_algHom_quotient_maximalIdeal_pow_succ` from the level
 `n = j + e` upwards produces, for every `N`, an `𝒪₃ᵥ`-point of
 `𝒪_E ⧸ 𝔪^(n + N)` whose reduction modulo `𝔪^j` is that of `η`.
 The invariant maintained along the induction is agreement at the FIXED
@@ -8693,7 +8853,7 @@ theorem exists_algHom_quotient_maximalIdeal_pow_add
   | zero => exact ⟨η, rfl⟩
   | succ N ih =>
       obtain ⟨u, hu⟩ := ih
-      obtain ⟨u', hu', -⟩ := existsUnique_algHom_quotient_maximalIdeal_pow_succ
+      obtain ⟨u', hu'⟩ := exists_algHom_quotient_maximalIdeal_pow_succ
         A hΩ hfon E e (j + N) (n + N) he (by omega) (by omega) u
       refine ⟨u', ?_⟩
       calc (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
@@ -8726,12 +8886,18 @@ set_option maxHeartbeats 4000000 in
 in `𝒪_E` that agree modulo `𝔪^m` for some `m ≥ j` with `e < 2j` already
 agree modulo `𝔪^(m+1)`.
 This is the UNIQUENESS half of
-`existsUnique_algHom_quotient_maximalIdeal_pow_succ`, applied at the level
-`n := m + e` to the truncation of `χ₂`: both `χ₁` and `χ₂`, read modulo
-`𝔪^(m+e+1)`, satisfy the step's defining equation — `χ₂` tautologically and
-`χ₁` because `h` says the two agree at level `m = n − e` — so the step's
-uniqueness identifies them, giving agreement modulo `𝔪^(m+e+1)`, which is
-stronger than what is claimed.
+`sub_mem_maximalIdeal_pow_succ_of_algHom_quotient_sub_mem`, applied at the
+level `n := m + e` to the reductions of `χ₁` and `χ₂` modulo `𝔪^(m+e+1)`:
+`h` says those two reductions agree modulo `𝔪^m`, which is the step's
+hypothesis at `t := m`, so the step upgrades the agreement to `𝔪^(m+1)`,
+which is exactly the claim.
+REPAIRED 2026-07-27: this lemma previously read its rigidity off an `∃!`
+that has since been REFUTED (see the FALSITY AUDIT on
+`exists_algHom_quotient_maximalIdeal_pow_succ`).  The STATEMENT is
+unaffected — it is true, and it is the form Fontaine's argument actually
+delivers — but the old proof claimed agreement modulo `𝔪^(m+e+1)`, one
+full factor of `3` finer than the step can give, and that surplus was
+exactly the falsity.  The proof below claims only `𝔪^(m+1)`.
 NOTE the contrast with `algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal`,
 the development's own rigidity lemma: that one is Fontaine's derivation
 estimate `3·𝔞 ⊆ 𝔞²` plus Nakayama and improves `m` to `2m − e`, which is
@@ -8754,33 +8920,20 @@ theorem sub_mem_maximalIdeal_pow_succ_of_algHom_sub_mem
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ m) :
     ∀ x : A, χ₁ x - χ₂ x ∈
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (m + 1) := by
-  obtain ⟨u', -, huniq⟩ := existsUnique_algHom_quotient_maximalIdeal_pow_succ
+  have hstep := sub_mem_maximalIdeal_pow_succ_of_algHom_quotient_sub_mem
     A hΩ hfon E e m (m + e) he (by omega) rfl
     ((Ideal.Quotient.mkₐ 𝒪₃ᵥ
-      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (m + e))).comp χ₂)
-  have hkey : ∀ ψ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ E,
-      (∀ x : A, χ₂ x - ψ x ∈
-        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ m) →
-      (Ideal.Quotient.mkₐ 𝒪₃ᵥ
-        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (m + e + 1))).comp ψ = u' := by
-    intro ψ hψ
-    refine huniq _ ?_
-    show _ = _
-    rw [← AlgHom.comp_assoc, ← AlgHom.comp_assoc, Ideal.Quotient.factorₐ_comp_mk,
-      Ideal.Quotient.factorₐ_comp_mk]
-    refine AlgHom.ext fun x => ?_
-    have hx : ψ x - χ₂ x ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ m := by
-      have := Submodule.neg_mem _ (hψ x)
-      rwa [neg_sub] at this
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (m + e + 1))).comp χ₁)
+    ((Ideal.Quotient.mkₐ 𝒪₃ᵥ
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (m + e + 1))).comp χ₂) ?_
+  · rw [← AlgHom.comp_assoc, ← AlgHom.comp_assoc,
+      Ideal.Quotient.factorₐ_comp_mk] at hstep
+    intro x
+    have hx := AlgHom.congr_fun hstep x
     simpa only [AlgHom.comp_apply, Ideal.Quotient.mkₐ_eq_mk, Ideal.Quotient.eq] using hx
-  have h1 := hkey χ₁ (fun x => by
-    have := Submodule.neg_mem _ (h x)
-    rwa [neg_sub] at this)
-  have h2 := hkey χ₂ (fun x => by rw [sub_self]; exact Submodule.zero_mem _)
-  intro x
-  have hx := AlgHom.congr_fun (h1.trans h2.symm) x
-  simp only [AlgHom.comp_apply, Ideal.Quotient.mkₐ_eq_mk, Ideal.Quotient.eq] at hx
-  exact Ideal.pow_le_pow_right (by omega) hx
+  · rw [← AlgHom.comp_assoc, ← AlgHom.comp_assoc, Ideal.Quotient.factorₐ_comp_mk]
+    refine AlgHom.ext fun x => ?_
+    simpa only [AlgHom.comp_apply, Ideal.Quotient.mkₐ_eq_mk, Ideal.Quotient.eq] using h x
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -9050,20 +9203,31 @@ DECOMPOSED 2026-07-27 (fifth owner; this leaf had never been attempted,
 having been explicitly out of scope in the two dispatches that produced the
 falsity audit and the repair above).  Fontaine's paper was obtained from
 the GDZ scan and OCR'd; his proof of Prop. 1.7 (i) (a) is now transcribed
-in full on `existsUnique_algHom_quotient_maximalIdeal_pow_succ` above.
-The cut is into exactly TWO leaves:
-* `existsUnique_algHom_quotient_maximalIdeal_pow_succ` — Fontaine's
-  inductive step, one notch at a time.  It carries ALL of the arithmetic,
-  and it is the ONLY place the threshold `hk` is consumed;
+in full on `exists_algHom_quotient_maximalIdeal_pow_succ` above.
+The cut is into THREE leaves:
+* `exists_algHom_quotient_maximalIdeal_pow_succ` — Fontaine's inductive
+  step, EXISTENCE half, one notch at a time;
+* `sub_mem_maximalIdeal_pow_succ_of_algHom_quotient_sub_mem` — the same
+  step's RIGIDITY half.  Together these two carry ALL of the arithmetic,
+  and they are the only places the threshold `hk` is consumed;
 * `exists_algHom_of_forall_exists_algHom_quotient` — the passage to the
   limit, a soft compactness statement with no arithmetic in it at all.
 Everything in between is proven here: `exists_algHom_quotient_maximalIdeal_pow_add`
 iterates the step to give approximate solutions at every level (EXISTENCE),
 and `sub_mem_maximalIdeal_pow_succ_of_algHom_sub_mem` /
-`algHom_eq_of_forall_sub_mem_maximalIdeal_pow` extract from the very same
-step the rigidity that gives UNIQUENESS.  Note the economy this buys: the
-one-notch `∃!` yields BOTH halves of this `∃!`, so no separate existence
-and uniqueness leaves are needed and no second threshold argument appears.
+`algHom_eq_of_forall_sub_mem_maximalIdeal_pow` turn the rigidity half into
+UNIQUENESS.  THE STATEMENT AND PROOF OF THIS THEOREM ARE UNCHANGED by that
+repair; only the internal cut moved.
+
+CORRECTION 2026-07-27 (sixth owner).  The version of this note written on
+the same day claimed the cut was into exactly TWO leaves, on the ground
+that "the one-notch `∃!` yields BOTH halves of this `∃!`, so no separate
+existence and uniqueness leaves are needed".  That economy was illusory:
+the one-notch `∃!` is FALSE (explicit counterexample on
+`exists_algHom_quotient_maximalIdeal_pow_succ`; Fontaine's own step pins
+the perturbation only modulo `I^[n+1]`, `e` notches coarser than the ring
+`u'` lives in).  The existence and rigidity halves really are two
+statements, and both are now leaves.
 
 FAITHFULNESS RE-CHECK OF THE HYPOTHESES, since the statement was still
 unaudited at the level of its edge cases.  `hk : 3e < 2k` forces `k > e`
