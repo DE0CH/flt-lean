@@ -26,7 +26,7 @@ public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
 public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
-public import Mathlib.AlgebraicGeometry.EllipticCurve.Projective.Formula
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveAddition
 public import Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.RingTheory.RingHom.StandardSmooth
 public import Mathlib.Algebra.MvPolynomial.PDeriv
@@ -75,10 +75,11 @@ named leaves that had already been closed on a sibling branch:
   i.e. a TRIVIALISED `Proj`-coordinate datum — together with
   `ProjCoords.toHom`, the morphism `X ⟶ proj E` it determines through
   `Proj.fromOfGlobalSections`.  Its five successor leaves are
-  `equation_projAddXYZ` (a polynomial certificate), `ProjCoords.toHom_smul`
-  (the missing mathlib congruence lemma), `ProjCoords.exists_of_specField`,
-  `ProjCoords.toHom_eq_of_addXYZ_not_span` and `exists_projMulOfCoords` (the
-  gluing).  `hcomm` is now PROVEN rather than assumed, from antisymmetry of the
+  `ProjCoords.toHom_smul` (the missing mathlib congruence lemma),
+  `ProjCoords.exists_of_specField`, `ProjCoords.toHom_eq_of_addXYZ_not_span`
+  and `exists_projMulOfCoords` (the gluing) — the fifth,
+  `WeierstrassCurve.Projective.equation_addXYZ`, is PROVEN in
+  `Fermat/FLT/Mathlib/.../ProjectiveAddition.lean`.  `hcomm` is now PROVEN rather than assumed, from antisymmetry of the
   chord–tangent forms plus a residue-field density argument; `hunit` and `hinv`
   stayed with the constructor because — correcting this file's earlier prose —
   they are NOT chart identities of the standard law, which degenerates exactly
@@ -358,52 +359,17 @@ theorem projAddXYZ_comm (P Q : Fin 3 → R) :
 
 end Antisymmetry
 
-/-- **The chord–tangent triple again satisfies the Weierstrass equation**
-(sorry node — a pure polynomial certificate).
+/-! **`equation_addXYZ` — the chord–tangent triple again satisfies the
+Weierstrass equation — is PROVEN**, over an arbitrary commutative ring, in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`.
 
-`W(addX P Q, addY P Q, addZ P Q) ∈ (W(P), W(Q))` as an identity in
-`ℤ[a₁, …, a₆][Px, Py, Pz, Qx, Qy, Qz]`, so the statement holds over an
-arbitrary commutative ring.  **It is absent from mathlib**: `Formula.lean`
-proves `addX_eq'`, `addY_of_X_eq'`, `addZ_eq'` and the whole
-`of_Z_eq_zero` / `of_X_eq` family, and it proves `Nonsingular` of the sum
-only through `Point.lean`'s `F`-valued `add`, i.e. over a FIELD and after
-dividing by `P z * Q z`.  Nothing in the pin gives the ring-level
-statement, and `Point.lean`'s route cannot supply it, because the
-`ProjCoords` datum lives over an arbitrary base where `P z` is not a unit.
-*Refuting check*: `grep -n "Equation (.*addXYZ\|equation_add"` over
-`EllipticCurve/Projective/` — no hit.
-
-## HOW TO CLOSE IT: a `linear_combination` with two CAS-computed cofactors
-
-Both cofactors exist for degree reasons and the shape is forced.  `addX`,
-`addY`, `addZ` are bihomogeneous of bidegree `(2, 2)`, so `W(add…)` is
-bihomogeneous of bidegree `(6, 6)`, while `W(P)` has bidegree `(3, 0)` and
-`W(Q)` bidegree `(0, 3)`.  Hence
-
-    W(addXYZ P Q) = A · W(P) + B · W(Q)
-
-with `A` of bidegree `(3, 6)` and `B` of bidegree `(6, 3)`.  Get `A` and
-`B` from `Magma` (`/opt/bin/magma`) or `Singular` by reducing
-`W(addXYZ P Q)` modulo the Gröbner basis `{W(P), W(Q)}` — the two
-generators have coprime leading terms, so they already ARE a Gröbner basis
-and the reduction returns the cofactors directly — then feed them to
-
-    linear_combination (norm := (rw [...]; ring1)) A * hP + B * hQ
-
-exactly as mathlib's own `addZ_eq'` and `addX_eq'` do with their (much
-smaller) cofactors.  **Budget warning, and it is the reason this is its own
-leaf**: the expanded identity has bidegree `(6, 6)` in six variables with
-five parameters, so `ring1` is being asked to normalise a polynomial with
-of order `10⁴`–`10⁵` monomials.  If it does not terminate, the standard
-remedy is to prove the three coordinate identities separately against
-`addX_eq'`/`addY_of_X_eq'`/`addZ_eq'`-style factored right-hand sides
-rather than expanding `W` at the triple in one go.
-
-*Do not try to route around this by base-changing to a field*: the whole
-point of `ProjCoords` is that its base is an arbitrary `Γ(X, ⊤)`. -/
-theorem equation_projAddXYZ {R : Type*} [CommRing R] (W' : WeierstrassCurve R) {P Q : Fin 3 → R}
-    (hP : Equation W' P) (hQ : Equation W' Q) : Equation W' (addXYZ W' P Q) :=
-  sorry
+It was a leaf of this cut for a few hours.  It is a single
+`linear_combination` against the two curve equations with cofactors of 130 and
+186 monomials, computed by `Singular` and — the point that makes the statement
+true over an arbitrary ring — carrying no denominators in the `aᵢ`.  It lives
+in its own module because its `ring1` takes about four and a half minutes and
+this file is edited concurrently by several owners; see that module's
+docstring for the regeneration recipe. -/
 
 /-- **Homogeneous coordinates for a morphism into the projective
 Weierstrass model** — three sections of `Γ(X, ⊤)` satisfying the
@@ -532,13 +498,13 @@ theorem toHom_smul (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) : (smul u c).toHom 
   sorry
 
 /-- **The chord–tangent sum of two coordinate data**, where it is
-non-degenerate (PROVEN from `equation_projAddXYZ`). -/
+non-degenerate (PROVEN from `equation_addXYZ`). -/
 noncomputable def add (c d : ProjCoords E X)
     (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤) :
     ProjCoords E X where
   base := c.base
   coord := addXYZ (E.map c.base) c.coord d.coord
-  equation := equation_projAddXYZ _ c.equation (by rw [c.base_eq d]; exact d.equation)
+  equation := equation_addXYZ c.equation (by rw [c.base_eq d]; exact d.equation)
   span_coord := h
 
 @[simp] theorem add_coord (c d : ProjCoords E X) (h) :
@@ -985,17 +951,21 @@ is proven from this together with `projMul_assoc`).
 
 ## STATUS: this declaration has NO `sorry` of its own any more
 
-It is a REDUCTION, not a result: it is proven from five leaves, of which
-one (`exists_projMulOfCoords`) still carries the gluing.  Do not read it
-as finished.  The five are, with the machinery they need:
+It is a REDUCTION, not a result: it is proven from four open leaves, of
+which one (`exists_projMulOfCoords`) still carries the gluing.  Do not read
+it as finished.  The four are, with the machinery they need:
 
 | leaf | what it is |
 |---|---|
-| `equation_projAddXYZ` | a polynomial certificate, `W(add…) ∈ (W(P), W(Q))` |
 | `ProjCoords.toHom_smul` | the missing MATHLIB congruence for `fromOfGlobalSections` |
 | `ProjCoords.exists_of_specField` | `Pic (Spec K) = 0`, i.e. `K`-points have coordinates |
 | `ProjCoords.toHom_eq_of_addXYZ_not_span` | the exceptional set is the DIAGONAL |
 | `exists_projMulOfCoords` | the gluing, plus `hunit` and `hinv` |
+
+A fifth, `WeierstrassCurve.Projective.equation_addXYZ` (the polynomial
+certificate `W(add…) ∈ (W(P), W(Q))` over an arbitrary commutative ring), was
+also cut out and is now PROVEN, in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`.
 
 ## THE STATEMENT NOW PUBLISHES A CHART DESCRIPTION OF `m`
 
