@@ -597,6 +597,296 @@ theorem equation_addXYZ (hP : Equation W' P) (hQ : Equation W' Q) :
       W'.a₂ ^ 3 * W'.a₆ ^ 2 - 18 * W'.a₂ ^ 2 * W'.a₄ ^ 2 * W'.a₆ + 36 * W'.a₂ * W'.a₄ *
       W'.a₆ ^ 2 + 8 * W'.a₄ ^ 3 * W'.a₆ - 27 * W'.a₆ ^ 3) * P 2 ^ 6 * Q 2 ^ 3) * hQ
 
+/-! ## The SECOND Bosma-Lenstra addition law -- the line `Y = 0`
+
+Bosma-Lenstra (*Complete systems of two addition laws for elliptic curves*,
+J. Number Theory **53** (1995), Theorem 2) give a 1-to-1 correspondence between
+LINES in `P²` and addition laws of bidegree `(2, 2)` on a Weierstrass model, under
+which `(P, Q)` is exceptional for the law of the line `L` exactly when `P - Q`
+lies on `L`.  Mathlib's `addXYZ` is the law of the line `Z = 0`, which meets the
+curve only at `O = [0 : 1 : 0]` (with multiplicity `3`): its exceptional set is
+the DIAGONAL, which is what `addXYZ_self` records.
+
+The law defined here is the law of the line `Y = 0`.  Since `O` has `Y = 1 ≠ 0`,
+the two lines meet the curve in DISJOINT sets, so the two laws form a COMPLETE
+SYSTEM: at every geometric point of `E × E` at least one of them is
+non-degenerate.  That is the only reason a second law is needed anywhere in this
+development, and it is exactly what `Fermat.exists_projMulOfCoords` consumes to
+glue the group law -- together with the two special values proved below, which
+are the halves of `hunit` and `hinv` that the standard law cannot supply.
+
+## Where these polynomials come from, and how to regenerate them
+
+They were COMPUTED, not copied: the published closed forms (Renes-Costello-Batina,
+*Complete addition formulas for prime order elliptic curves*, §3) are for the
+SHORT Weierstrass model `y² = x³ + ax + b`, and no source to hand carries the
+general `a₁, …, a₆` form.  The derivation is three lines of divisor bookkeeping:
+
+* `A_L / A_{Z=0}` is the function `ℓ / z` evaluated at `P - Q`;
+* a representative of `P - Q` is `addXYZ P (neg Q)`, so for `L : Y = 0` that
+  ratio is `addY P (neg Q) / addZ P (neg Q)`;
+* hence `add2• P Q * addZ P (neg Q) = add• P Q * addY P (neg Q)` modulo
+  `(W(P), W(Q))`, and the left factor is recovered by a `lift` in `Singular`.
+
+Concretely, in `ℚ[X₁,Y₁,Z₁,X₂,Y₂,Z₂,a₁,a₂,a₃,a₄,a₆]` with
+`nY₂ := -Y₂ - a₁*X₂ - a₃*Z₂`, `D := addZ P (X₂, nY₂, Z₂)` and
+`N := addY P (X₂, nY₂, Z₂)`:
+
+    ideal J = D, W1, W2;  matrix T = lift(J, addX*N);  T[1,1]
+
+is `add2X`, and likewise for `Y` and `Z`.  The output was checked to be
+bihomogeneous of bidegree `(2, 2)`, to satisfy the Weierstrass equation modulo
+`(W(P), W(Q))`, and to be proportional to `addXYZ` modulo the same ideal; and
+specialising `a₁ = a₂ = a₃ = 0`, `a₄ = a`, `a₆ = b` reproduces Renes-Costello-
+Batina's published formulas exactly, up to the global sign `-1` (irrelevant
+projectively).  The transcription into Lean below was checked mechanically, by
+parsing it back into `Singular` and differencing against the computed output.
+
+## Completeness is NOT a small certificate -- do not go looking for one
+
+The saturation exponent was probed: `(X₁,Y₁,Z₁)ⁿ * (X₂,Y₂,Z₂)ⁿ` is NOT contained
+in `(addX, addY, addZ, add2X, add2Y, add2Z, W(P), W(Q))` for any `n ≤ 6`, even
+though the variety of that ideal is exactly the two irrelevant cones (its `dim`
+is `7`, which is the right answer, so completeness itself is confirmed).  A
+ring-level "the six forms generate the unit ideal" statement would therefore need
+one `linear_combination` per monomial pair -- hundreds of them.  The
+non-degeneracy dichotomy the gluing actually consumes is stated over a FIELD in
+`EllipticScheme.lean`, where it is a finite case analysis.
+-/
+
+variable (W') in
+/-- The `X`-coordinate of the second Bosma-Lenstra addition law, i.e. the law of
+the line `Y = 0`.  See the section docstring for the derivation. -/
+def add2X (P Q : Fin 3 → R) : R :=
+  P 0 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2 + P 2 ^ 2 * Q 2 ^ 2 * W'.a₂ * W'.a₃ ^ 3
+    - P 0 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄
+    - P 2 ^ 2 * Q 2 ^ 2 * W'.a₁ * W'.a₃ ^ 2 * W'.a₄ + P 0 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 3 * W'.a₆
+    + P 2 ^ 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ * W'.a₆ + P 0 ^ 2 * Q 0 * Q 2 * W'.a₁ ^ 2 * W'.a₃
+    + 2 * P 0 * P 2 * Q 0 * Q 2 * W'.a₁ * W'.a₃ ^ 2 + P 0 ^ 2 * Q 2 ^ 2 * W'.a₁ * W'.a₃ ^ 2
+    + P 2 ^ 2 * Q 1 * Q 2 * W'.a₂ * W'.a₃ ^ 2 + P 1 * P 2 * Q 2 ^ 2 * W'.a₂ * W'.a₃ ^ 2
+    + P 2 ^ 2 * Q 0 * Q 2 * W'.a₃ ^ 3 + P 0 * P 2 * Q 2 ^ 2 * W'.a₃ ^ 3
+    - P 2 ^ 2 * Q 1 * Q 2 * W'.a₁ * W'.a₃ * W'.a₄ - P 1 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄
+    - P 0 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₄ ^ 2 - P 2 ^ 2 * Q 2 ^ 2 * W'.a₃ * W'.a₄ ^ 2
+    + P 2 ^ 2 * Q 1 * Q 2 * W'.a₁ ^ 2 * W'.a₆ + P 1 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₆
+    + 4 * P 0 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₆
+    + 4 * P 2 ^ 2 * Q 2 ^ 2 * W'.a₂ * W'.a₃ * W'.a₆ - P 0 * P 1 * Q 0 ^ 2 * W'.a₁ ^ 2
+    + P 0 ^ 2 * Q 0 ^ 2 * W'.a₁ * W'.a₂ - P 1 * P 2 * Q 0 ^ 2 * W'.a₁ * W'.a₃
+    + P 0 ^ 2 * Q 1 * Q 2 * W'.a₁ * W'.a₃ + P 0 * P 2 * Q 0 ^ 2 * W'.a₂ * W'.a₃
+    + 2 * P 0 * P 2 * Q 1 * Q 2 * W'.a₃ ^ 2 + P 0 * P 1 * Q 2 ^ 2 * W'.a₃ ^ 2
+    + P 0 * P 2 * Q 0 ^ 2 * W'.a₁ * W'.a₄ + 2 * P 0 ^ 2 * Q 0 * Q 2 * W'.a₁ * W'.a₄
+    + P 2 ^ 2 * Q 0 ^ 2 * W'.a₃ * W'.a₄ + 2 * P 0 * P 2 * Q 0 * Q 2 * W'.a₃ * W'.a₄
+    - P 2 ^ 2 * Q 1 * Q 2 * W'.a₄ ^ 2 - P 1 * P 2 * Q 2 ^ 2 * W'.a₄ ^ 2
+    + 6 * P 0 * P 2 * Q 0 * Q 2 * W'.a₁ * W'.a₆ + 3 * P 0 ^ 2 * Q 2 ^ 2 * W'.a₁ * W'.a₆
+    + 4 * P 2 ^ 2 * Q 1 * Q 2 * W'.a₂ * W'.a₆ + 4 * P 1 * P 2 * Q 2 ^ 2 * W'.a₂ * W'.a₆
+    + 6 * P 2 ^ 2 * Q 0 * Q 2 * W'.a₃ * W'.a₆ + 3 * P 0 * P 2 * Q 2 ^ 2 * W'.a₃ * W'.a₆
+    - P 1 ^ 2 * Q 0 ^ 2 * W'.a₁ - 2 * P 0 * P 1 * Q 0 * Q 1 * W'.a₁ + P 0 * P 1 * Q 0 ^ 2 * W'.a₂
+    + P 0 ^ 2 * Q 0 * Q 1 * W'.a₂ - 2 * P 1 * P 2 * Q 0 * Q 1 * W'.a₃
+    - P 1 ^ 2 * Q 0 * Q 2 * W'.a₃ + P 1 * P 2 * Q 0 ^ 2 * W'.a₄
+    + 2 * P 0 * P 2 * Q 0 * Q 1 * W'.a₄ + 2 * P 0 * P 1 * Q 0 * Q 2 * W'.a₄
+    + P 0 ^ 2 * Q 1 * Q 2 * W'.a₄ + 3 * P 2 ^ 2 * Q 0 * Q 1 * W'.a₆
+    + 6 * P 1 * P 2 * Q 0 * Q 2 * W'.a₆ + 6 * P 0 * P 2 * Q 1 * Q 2 * W'.a₆
+    + 3 * P 0 * P 1 * Q 2 ^ 2 * W'.a₆ - P 1 ^ 2 * Q 0 * Q 1 - P 0 * P 1 * Q 1 ^ 2
+
+variable (W') in
+/-- The `Y`-coordinate of the second Bosma-Lenstra addition law. -/
+def add2Y (P Q : Fin 3 → R) : R :=
+  -P 0 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₃ ^ 2
+    - P 2 ^ 2 * Q 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ ^ 3
+    + P 0 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 3 * W'.a₃ * W'.a₄
+    + P 2 ^ 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ ^ 2 * W'.a₄ - P 0 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 4 * W'.a₆
+    - P 2 ^ 2 * Q 2 ^ 2 * W'.a₁ ^ 3 * W'.a₃ * W'.a₆
+    - P 1 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ ^ 2
+    - P 2 ^ 2 * Q 0 * Q 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2 - P 0 * P 2 * Q 2 ^ 2 * W'.a₂ ^ 2 * W'.a₃ ^ 2
+    + P 0 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₃ ^ 3 + P 2 ^ 2 * Q 2 ^ 2 * W'.a₃ ^ 4
+    + P 1 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ * W'.a₄
+    + P 2 ^ 2 * Q 0 * Q 2 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄
+    + P 0 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₄
+    - P 2 ^ 2 * Q 2 ^ 2 * W'.a₂ * W'.a₃ ^ 2 * W'.a₄ + P 0 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₄ ^ 2
+    + 2 * P 2 ^ 2 * Q 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄ ^ 2 - P 1 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 3 * W'.a₆
+    - P 2 ^ 2 * Q 0 * Q 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆
+    - 5 * P 0 * P 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₂ * W'.a₆
+    - 4 * P 2 ^ 2 * Q 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₃ * W'.a₆
+    - P 2 ^ 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₄ * W'.a₆
+    + 2 * P 0 ^ 2 * Q 0 * Q 2 * W'.a₁ * W'.a₂ * W'.a₃
+    - 2 * P 0 * P 2 * Q 0 * Q 2 * W'.a₂ * W'.a₃ ^ 2 - P 0 ^ 2 * Q 2 ^ 2 * W'.a₂ * W'.a₃ ^ 2
+    + P 1 * P 2 * Q 2 ^ 2 * W'.a₃ ^ 3 - P 0 ^ 2 * Q 0 * Q 2 * W'.a₁ ^ 2 * W'.a₄
+    + 4 * P 0 * P 2 * Q 0 * Q 2 * W'.a₁ * W'.a₃ * W'.a₄
+    + 2 * P 0 ^ 2 * Q 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₄ + 2 * P 2 ^ 2 * Q 0 * Q 2 * W'.a₃ ^ 2 * W'.a₄
+    + P 0 * P 2 * Q 2 ^ 2 * W'.a₃ ^ 2 * W'.a₄ + P 1 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₄ ^ 2
+    + P 2 ^ 2 * Q 0 * Q 2 * W'.a₂ * W'.a₄ ^ 2 + P 0 * P 2 * Q 2 ^ 2 * W'.a₂ * W'.a₄ ^ 2
+    + P 2 ^ 2 * Q 2 ^ 2 * W'.a₄ ^ 3 - 6 * P 0 * P 2 * Q 0 * Q 2 * W'.a₁ ^ 2 * W'.a₆
+    - 3 * P 0 ^ 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₆ - 4 * P 1 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₂ * W'.a₆
+    - 4 * P 2 ^ 2 * Q 0 * Q 2 * W'.a₂ ^ 2 * W'.a₆ - 4 * P 0 * P 2 * Q 2 ^ 2 * W'.a₂ ^ 2 * W'.a₆
+    - 3 * P 2 ^ 2 * Q 0 * Q 2 * W'.a₁ * W'.a₃ * W'.a₆
+    + 3 * P 0 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₃ * W'.a₆ + 6 * P 2 ^ 2 * Q 2 ^ 2 * W'.a₃ ^ 2 * W'.a₆
+    - 4 * P 2 ^ 2 * Q 2 ^ 2 * W'.a₂ * W'.a₄ * W'.a₆ - P 0 * P 1 * Q 0 ^ 2 * W'.a₁ * W'.a₂
+    + P 0 ^ 2 * Q 0 ^ 2 * W'.a₂ ^ 2 + P 1 * P 2 * Q 0 ^ 2 * W'.a₂ * W'.a₃
+    + 2 * P 0 * P 1 * Q 0 * Q 2 * W'.a₂ * W'.a₃ - 3 * P 0 ^ 2 * Q 0 * Q 2 * W'.a₃ ^ 2
+    - P 1 * P 2 * Q 0 ^ 2 * W'.a₁ * W'.a₄ - 2 * P 0 * P 1 * Q 0 * Q 2 * W'.a₁ * W'.a₄
+    + P 0 * P 2 * Q 0 ^ 2 * W'.a₂ * W'.a₄ + P 0 ^ 2 * Q 0 * Q 2 * W'.a₂ * W'.a₄
+    + 2 * P 1 * P 2 * Q 0 * Q 2 * W'.a₃ * W'.a₄ + P 0 * P 1 * Q 2 ^ 2 * W'.a₃ * W'.a₄
+    + P 2 ^ 2 * Q 0 ^ 2 * W'.a₄ ^ 2 + 4 * P 0 * P 2 * Q 0 * Q 2 * W'.a₄ ^ 2
+    + P 0 ^ 2 * Q 2 ^ 2 * W'.a₄ ^ 2 - 6 * P 1 * P 2 * Q 0 * Q 2 * W'.a₁ * W'.a₆
+    - 3 * P 0 * P 1 * Q 2 ^ 2 * W'.a₁ * W'.a₆ - 3 * P 2 ^ 2 * Q 0 ^ 2 * W'.a₂ * W'.a₆
+    - 12 * P 0 * P 2 * Q 0 * Q 2 * W'.a₂ * W'.a₆ - 3 * P 0 ^ 2 * Q 2 ^ 2 * W'.a₂ * W'.a₆
+    + 3 * P 1 * P 2 * Q 2 ^ 2 * W'.a₃ * W'.a₆ + 3 * P 2 ^ 2 * Q 0 * Q 2 * W'.a₄ * W'.a₆
+    + 3 * P 0 * P 2 * Q 2 ^ 2 * W'.a₄ * W'.a₆ + 9 * P 2 ^ 2 * Q 2 ^ 2 * W'.a₆ ^ 2
+    - P 1 ^ 2 * Q 0 * Q 1 * W'.a₁ + 3 * P 0 * P 1 * Q 0 ^ 2 * W'.a₃ - P 1 ^ 2 * Q 1 * Q 2 * W'.a₃
+    - 3 * P 0 ^ 2 * Q 0 ^ 2 * W'.a₄ - 9 * P 0 * P 2 * Q 0 ^ 2 * W'.a₆
+    - 9 * P 0 ^ 2 * Q 0 * Q 2 * W'.a₆ - P 1 ^ 2 * Q 1 ^ 2
+
+variable (W') in
+/-- The `Z`-coordinate of the second Bosma-Lenstra addition law. -/
+def add2Z (P Q : Fin 3 → R) : R :=
+  -P 0 ^ 2 * Q 0 * Q 2 * W'.a₁ ^ 3 - 2 * P 0 * P 2 * Q 0 * Q 2 * W'.a₁ ^ 2 * W'.a₃
+    - P 0 ^ 2 * Q 2 ^ 2 * W'.a₁ ^ 2 * W'.a₃ - P 2 ^ 2 * Q 0 * Q 2 * W'.a₁ * W'.a₃ ^ 2
+    - 2 * P 0 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₃ ^ 2 - P 2 ^ 2 * Q 2 ^ 2 * W'.a₃ ^ 3
+    - 2 * P 0 * P 1 * Q 0 * Q 2 * W'.a₁ ^ 2 - P 0 ^ 2 * Q 1 * Q 2 * W'.a₁ ^ 2
+    - P 0 * P 2 * Q 0 ^ 2 * W'.a₁ * W'.a₂ - 2 * P 0 ^ 2 * Q 0 * Q 2 * W'.a₁ * W'.a₂
+    - 2 * P 1 * P 2 * Q 0 * Q 2 * W'.a₁ * W'.a₃ - 2 * P 0 * P 2 * Q 1 * Q 2 * W'.a₁ * W'.a₃
+    - 2 * P 0 * P 1 * Q 2 ^ 2 * W'.a₁ * W'.a₃ - P 2 ^ 2 * Q 0 ^ 2 * W'.a₂ * W'.a₃
+    - 2 * P 0 * P 2 * Q 0 * Q 2 * W'.a₂ * W'.a₃ - P 2 ^ 2 * Q 1 * Q 2 * W'.a₃ ^ 2
+    - 2 * P 1 * P 2 * Q 2 ^ 2 * W'.a₃ ^ 2 - 2 * P 0 * P 2 * Q 0 * Q 2 * W'.a₁ * W'.a₄
+    - P 0 ^ 2 * Q 2 ^ 2 * W'.a₁ * W'.a₄ - 2 * P 2 ^ 2 * Q 0 * Q 2 * W'.a₃ * W'.a₄
+    - P 0 * P 2 * Q 2 ^ 2 * W'.a₃ * W'.a₄ - 3 * P 0 * P 2 * Q 2 ^ 2 * W'.a₁ * W'.a₆
+    - 3 * P 2 ^ 2 * Q 2 ^ 2 * W'.a₃ * W'.a₆ - 3 * P 0 ^ 2 * Q 0 ^ 2 * W'.a₁
+    - P 1 ^ 2 * Q 0 * Q 2 * W'.a₁ - 2 * P 0 * P 1 * Q 1 * Q 2 * W'.a₁
+    - P 1 * P 2 * Q 0 ^ 2 * W'.a₂ - 2 * P 0 * P 2 * Q 0 * Q 1 * W'.a₂
+    - 2 * P 0 * P 1 * Q 0 * Q 2 * W'.a₂ - P 0 ^ 2 * Q 1 * Q 2 * W'.a₂
+    - 3 * P 0 * P 2 * Q 0 ^ 2 * W'.a₃ - 2 * P 1 * P 2 * Q 1 * Q 2 * W'.a₃
+    - P 1 ^ 2 * Q 2 ^ 2 * W'.a₃ - P 2 ^ 2 * Q 0 * Q 1 * W'.a₄ - 2 * P 1 * P 2 * Q 0 * Q 2 * W'.a₄
+    - 2 * P 0 * P 2 * Q 1 * Q 2 * W'.a₄ - P 0 * P 1 * Q 2 ^ 2 * W'.a₄
+    - 3 * P 2 ^ 2 * Q 1 * Q 2 * W'.a₆ - 3 * P 1 * P 2 * Q 2 ^ 2 * W'.a₆ - 3 * P 0 * P 1 * Q 0 ^ 2
+    - 3 * P 0 ^ 2 * Q 0 * Q 1 - P 1 * P 2 * Q 1 ^ 2 - P 1 ^ 2 * Q 1 * Q 2
+
+variable (W') in
+/-- The coordinates of a representative of `P + Q` given by the SECOND
+Bosma-Lenstra addition law, the one of the line `Y = 0`.
+
+It returns `![0, 0, 0]` exactly when `P - Q` meets the line `Y = 0`, i.e. on the
+three translates of the diagonal by the points of `E ∩ {Y = 0}` -- a set DISJOINT
+from the diagonal, which is where `addXYZ` degenerates. -/
+noncomputable def add2XYZ (P Q : Fin 3 → R) : Fin 3 → R :=
+  ![add2X W' P Q, add2Y W' P Q, add2Z W' P Q]
+
+lemma add2XYZ_X (P Q : Fin 3 → R) : add2XYZ W' P Q 0 = add2X W' P Q := rfl
+
+lemma add2XYZ_Y (P Q : Fin 3 → R) : add2XYZ W' P Q 1 = add2Y W' P Q := rfl
+
+lemma add2XYZ_Z (P Q : Fin 3 → R) : add2XYZ W' P Q 2 = add2Z W' P Q := rfl
+
+lemma add2X_smul (P Q : Fin 3 → R) (u v : R) :
+    add2X W' (u • P) (v • Q) = (u * v) ^ 2 * add2X W' P Q := by
+  simp only [add2X, smul_fin3_ext]
+  ring1
+
+lemma add2Y_smul (P Q : Fin 3 → R) (u v : R) :
+    add2Y W' (u • P) (v • Q) = (u * v) ^ 2 * add2Y W' P Q := by
+  simp only [add2Y, smul_fin3_ext]
+  ring1
+
+lemma add2Z_smul (P Q : Fin 3 → R) (u v : R) :
+    add2Z W' (u • P) (v • Q) = (u * v) ^ 2 * add2Z W' P Q := by
+  simp only [add2Z, smul_fin3_ext]
+  ring1
+
+/-- **The second law is bihomogeneous of bidegree `(2, 2)`** (PROVEN, `ring`). -/
+lemma add2XYZ_smul (P Q : Fin 3 → R) (u v : R) :
+    add2XYZ W' (u • P) (v • Q) = (u * v) ^ 2 • add2XYZ W' P Q := by
+  rw [add2XYZ, add2X_smul, add2Y_smul, add2Z_smul, smul_fin3, add2XYZ_X, add2XYZ_Y, add2XYZ_Z]
+
+lemma add2X_of_infty_left (Q : Fin 3 → R) :
+    add2X W' ![0, 1, 0] Q = negY W' Q * Q 0 := by
+  simp only [add2X, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+lemma add2Y_of_infty_left (Q : Fin 3 → R) :
+    add2Y W' ![0, 1, 0] Q = negY W' Q * Q 1 := by
+  simp only [add2Y, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+lemma add2Z_of_infty_left (Q : Fin 3 → R) :
+    add2Z W' ![0, 1, 0] Q = negY W' Q * Q 2 := by
+  simp only [add2Z, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+/-- **The second law computes the UNIT LAW at the point at infinity** (PROVEN,
+`ring`): `add2XYZ O Q = negY Q • Q`, with NO curve equation used.
+
+This is the half of `hunit` that the standard law cannot supply.  `addXYZ` gives
+`addXYZ O Q = (Q z) • Q` (`addXYZ_of_Z_eq_zero_left`), a legitimate rescaling of
+`Q` only where `Q z` is a unit -- and it says NOTHING at `Q = O`.  Here the scalar
+is `negY Q`, the `Y`-coordinate of `-Q`, which is a unit exactly where `Q z` is
+not: at `Q = ![0, Q y, 0]` it is `-Q y`, a unit by non-degeneracy.  The two
+together cover every point, which is the content of completeness at `P = O`. -/
+lemma add2XYZ_of_infty_left (Q : Fin 3 → R) :
+    add2XYZ W' ![0, 1, 0] Q = negY W' Q • Q := by
+  rw [add2XYZ, add2X_of_infty_left, add2Y_of_infty_left, add2Z_of_infty_left, smul_fin3]
+
+lemma add2X_neg (P : Fin 3 → R) : add2X W' P ![P 0, negY W' P, P 2] = 0 := by
+  simp only [add2X, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+lemma add2Z_neg (P : Fin 3 → R) : add2Z W' P ![P 0, negY W' P, P 2] = 0 := by
+  simp only [add2Z, negY, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons]
+  ring1
+
+/-- **The second law sends `(P, -P)` to the point at infinity** (PROVEN, `ring`):
+`add2XYZ P (-P) = add2Y P (-P) • ![0, 1, 0]`, and the two vanishing coordinates
+vanish IDENTICALLY, with no curve equation used.
+
+This is the half of `hinv` that the standard law cannot supply.  Mathlib's
+`addXYZ_neg` gives `addXYZ P (-P) = -dblZ P • ![0, 1, 0]` with
+`dblZ P = P z * (P y - negY P) ^ 3`, which degenerates on the `2`-torsion
+(`P y = negY P`) and at `P z = 0`; the scalar here is a unit exactly there. -/
+lemma add2XYZ_neg (P : Fin 3 → R) :
+    add2XYZ W' P ![P 0, negY W' P, P 2] =
+      add2Y W' P ![P 0, negY W' P, P 2] • ![0, 1, 0] := by
+  rw [add2XYZ, add2X_neg, add2Z_neg, smul_fin3]
+  norm_num [Matrix.cons_val_two, Matrix.tail_cons]
+
+/-- **The second triple again satisfies the Weierstrass equation** (sorry node).
+
+Exactly what `equation_addXYZ` proves for the standard law, for the law of the
+line `Y = 0`.  It was VERIFIED in `Singular` -- `W(add2X, add2Y, add2Z)` reduces
+to `0` modulo `(W(P), W(Q))` -- so the statement is TRUE; what is missing is only
+the Lean-side certificate.
+
+*Cost warning, and it is why this is a leaf rather than a `linear_combination`.*
+Both sides are bihomogeneous of bidegree `(6, 6)`, the same shape as
+`equation_addXYZ`, whose `ring1` already takes about four and a half minutes with
+cofactors of 130 and 186 monomials.  The second law's coefficients are markedly
+denser (56, 74 and 43 monomials against mathlib's 18, 18 and 12), so the cofactors
+here must be expected to be several times larger again.  Whoever closes this
+should budget a long `ring1`, and should consider splitting the identity by
+bidegree so that no single `ring1` sees the whole thing. -/
+theorem equation_add2XYZ (hP : Equation W' P) (hQ : Equation W' Q) :
+    Equation W' (add2XYZ W' P Q) :=
+  sorry
+
+/-- **The two addition laws are PROPORTIONAL** (sorry node) -- they compute the
+same point of `P²` wherever both are non-degenerate.
+
+Verified in `Singular`: each of the three cross-differences reduces to `0` modulo
+`(W(P), W(Q))`.  This is what makes the glued morphism well defined on the overlap
+of the two pieces of the cover, via `ProjCoords.toHom_smul` with the transition
+unit `add2Z / addZ`.  Only the `X`/`Z` and `Y`/`Z` cross-differences are stated;
+the `X`/`Y` one follows from them wherever `addZ` is a unit, and is not needed. -/
+theorem add2X_mul_addZ (hP : Equation W' P) (hQ : Equation W' Q) :
+    add2X W' P Q * addZ W' P Q = add2Z W' P Q * addX W' P Q :=
+  sorry
+
+/-- **The `Y`/`Z` half of the proportionality of the two addition laws**
+(sorry node); see `add2X_mul_addZ`. -/
+theorem add2Y_mul_addZ (hP : Equation W' P) (hQ : Equation W' Q) :
+    add2Y W' P Q * addZ W' P Q = add2Z W' P Q * addY W' P Q :=
+  sorry
+
 end WeierstrassCurve.Projective
 
 end
