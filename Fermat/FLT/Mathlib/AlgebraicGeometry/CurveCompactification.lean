@@ -701,9 +701,28 @@ over `K` but NOT isomorphic to `K`.  (A chart still exists for `B = 0` by other 
 by `HomogeneousLocalization.subsingleton` — but the uniform construction is the one above,
 and it only works because the chart does not demand `𝒜₀ ≅ K`.)
 
-`Mathlib` has no Nagata/Japanese-ring theory and no projective closure at this pin; it does
-have `HomogeneousIdeal`, `GradedRing`, and the quotient grading, which is what this is to be
-built from.
+`Mathlib` has no Nagata/Japanese-ring theory and no projective closure at this pin.
+
+**CORRECTION 2026-07-27 (grep over all three trees, not just `Mathlib`).**  An earlier
+version of this line said `Mathlib` "does have `HomogeneousIdeal`, `GradedRing`, and the
+quotient grading".  It has the first two and NOT the third: `quotientGrading` does not occur
+anywhere in the pin, and `Mathlib/RingTheory/GradedAlgebra/` carries `Ideal.IsHomogeneous`
+and `HomogeneousIdeal` but no induced grading on `A ⧸ I`.  What supplies it is THIS PROJECT:
+
+    Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/Quotient.lean
+
+defining `HomogeneousIdeal.quotientGrading 𝒜 I i := (𝒜 i).map (Ideal.Quotient.mk I)`, with
+`mem_quotientGrading` / `mk_mem_quotientGrading` and the instance
+`instGradedAlgebraQuotientGrading : GradedAlgebra (quotientGrading 𝒜 I)`.  It imports only
+`Mathlib`, so importing it here is acyclic; it is already used throughout
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` and
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`.  So the
+saturated-ideal route is NOT blocked on missing infrastructure — only on the saturation
+argument itself.
+
+The corresponding question for the cheaper route below is whether a graded structure on a
+`Φ.range`-style graded SUBalgebra is equally available; that one was not found in any of the
+three trees and is the piece to check first.
 
 **A CHEAPER ROUTE THAN THE SATURATED IDEAL ABOVE (2026-07-27, from the author of
 `nonempty_projChart_mvPolynomial`, which closed by an analogous reversal).**  Do not construct
@@ -797,7 +816,37 @@ using it directly is what makes this leaf strictly the gluing content and nothin
 Note that the induction genuinely needs blowups (equivalently, scheme-theoretic images of
 non-quasi-compact opens): the naive "glue the two closures along `U ∩ V`" fails because the
 two proper models need not agree there.  That is the whole reason Nagata's theorem was open
-for so long and why Deligne's write-up exists. -/
+for so long and why Deligne's write-up exists.
+
+**AXIS SEARCHED, and a BYPASS that makes this leaf optional for every current consumer
+(2026-07-27).**  The axis searched is the *proof* axis — routes to a Lean proof of the gluing
+induction — and on that axis the verdict stands: this is a research-level formalisation, and
+nothing in `Mathlib`, `~/cs/FLT` or this project is a starting point.
+
+The axis NOT searched, and the one that pays, is the *consumer* axis.  Trace it:
+
+* the only consumer of `exists_isOpenImmersion_isProper` is `exists_isSmoothCompactification`
+  below;
+* its only consumers are `Fermat/FLT/ModularCurve/X1.lean:1029`
+  (`exists_x1Compactification_field`) and `Fermat/FLT/ModularCurve/X0.lean:9569`, `:16168`,
+  `:16216`;
+* every one of them obtains its `Y` from a coarse-moduli existential whose exhibited model is
+  **AFFINE** — `X1.lean` says so in as many words at its `exists_x1Compactification_field`
+  docstring ("the model is affine over the affine `Spec K`, so `QuasiCompact` and
+  `IsSeparated` come from `isAffineHom_of_isAffine`"), and derives three of its five
+  conclusions from that affineness.  The affineness is simply not EXPORTED by the existential.
+
+So the whole of Nagata is being invoked to compactify a scheme already known to be affine,
+and the affine case is **PROVEN** here as `exists_isOpenImmersion_isProper_of_isAffine`.  The
+repair is a two-file edit that touches no hard mathematics: add `IsAffine Y` to the conclusion
+of the coarse-moduli existentials in `X0.lean` / `X1.lean`, and add an `[IsAffine Y]` variant
+of `exists_isSmoothCompactification` here that routes through
+`exists_isOpenImmersion_isProper_of_isAffine`.  That variant is deliberately NOT written yet:
+with no consumer it would be free-floating, so it must land in the same change as the
+`X0.lean` / `X1.lean` side, by one owner.
+
+This leaf then survives only as the general statement, wanted for its own sake rather than by
+anything downstream — which is the right place for a research-level citation to sit. -/
 theorem exists_isOpenImmersion_isProper_of_affineCase {Y : Scheme.{u}}
     (strY : Y ⟶ Spec (CommRingCat.of K)) [QuasiCompact strY] [IsSeparated strY]
     [LocallyOfFiniteType strY]
