@@ -29416,11 +29416,21 @@ multiplicative on the ideal monoid, sends a prime to its Frobenius, and kills
 `P_K` — the last being reciprocity. For `p = 2` take `CF = ℚ`, `N = Γℚ`,
 `art0 ≡ 1`: all four clauses hold trivially, so the leaf is inhabited.
 
-**`hart0prin` is the ONLY clause carrying arithmetic** — the other three are
-satisfied by the constant function `1` — so a reader auditing this cut should
-check that clause and nothing else. Dropping it makes the leaf vacuous, and
-makes the parent FALSE, since it is exactly what lets the map descend from
-ideals to `ClassGroup (𝓞 CF)`.
+**`hart0prin` is the clause carrying the class-field theory.** Dropping it
+makes the leaf vacuous, and makes the parent FALSE, since it is exactly what
+lets the map descend from ideals to `ClassGroup (𝓞 CF)`.
+
+*Correction, 2026-07-27, made by the prover of this node.* An earlier version
+of this paragraph said `hart0prin` was the ONLY clause carrying arithmetic
+because "the other three are satisfied by the constant function `1`". That is
+**false of `hart0frob`**: with `art0 ≡ 1` that clause reads
+`g · Frob_v · g⁻¹ ∈ N` for every `v` with `χ (g Frob_v g⁻¹) = 1`, i.e. every
+degree-one prime of `𝓞 CF` has trivial Artin symbol — which holds only when
+`h_K = 1`. The constant function satisfies `hart0ker` and `hart0mul` and
+nothing else. So an audit must check `hart0frob` and `hart0prin` TOGETHER;
+they are jointly what forces the symbol to be the Artin map, and separately
+they are each satisfiable by junk. The cut recorded below splits along exactly
+that pair.
 
 **HOW TO PROVE IT — the survey, run 2026-07-27, that the parent leaf asked
 for.** `Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean` carries
