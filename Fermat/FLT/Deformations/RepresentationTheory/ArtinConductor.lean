@@ -31,11 +31,13 @@ representation (`GaloisRep.tameExponent_eq_zero_of_isUnramifiedAt`) and
 it drops by at least one as soon as inertia fixes a nonzero vector
 (`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`).
 
-The **wild** part is not a *number* on this pin, but since 2026-07-26 it
-is no longer wholly opaque either: its **vanishing criterion** is now
-definable and is built in. See "## The wild part" below for what changed;
-the two bullets immediately following are the (still accurate) reason the
-NUMBER `Sw_v(V)` is unavailable:
+The **wild** part is not *computable* on this pin, but it is no longer
+opaque either: its **vanishing criterion** has been definable since
+2026-07-26, and since 2026-07-27 the NUMBER itself has a real definition
+by Serre's formula, gated on one satisfiability leaf. See "## The wild
+part" and "## 2026-07-27" below for what changed; the two bullets
+immediately following are the (still accurate) reason the number cannot
+simply be COMPUTED here:
 
 * mathlib has the decomposition and inertia subgroups of a valuation
   subring (`ValuationSubring.decompositionSubgroup`,
@@ -79,32 +81,82 @@ leaf's own soundness audit refutes with a conductor-`14` curve at
 single honest local statement that a square-zero-unipotent inertia
 action in residue characteristic `≠ p` is trivial on wild inertia.
 
-So the wild part enters as an **uninterpreted constant**
-`GaloisRep.swanExponentAux`, declared with Lean's `opaque` command,
-guarded by that criterion, and the conductor exponent is the honest sum
+So the wild part enters as `GaloisRep.swanExponentAux`, guarded by that
+criterion, and the conductor exponent is the honest sum
 
   `GaloisRep.conductorExponent ρ v = ρ.tameExponent v + ρ.swanExponent v`,
 
 with `HasConductorExponentAt ρ v a` the *equation* `a = conductorExponent ρ v`.
 
-`opaque` introduces **no axiom and no `sorry`** (`#print axioms` on
-anything using it stays empty) and the kernel will not unfold it, so
-nothing about its value is provable — which is exactly the intent: the
-symbol *denotes* the Swan conductor without computing it. The one
-property of the Swan conductor that this development actually needs,
-vanishing on a TAMELY RAMIFIED representation, is built into
+The one property of the Swan conductor that this development needs
+first, vanishing on a TAMELY RAMIFIED representation, is built into
 `swanExponent` by construction (`swanExponent ρ v =
 if ρ.IsTamelyRamifiedAt v then 0 else swanExponentAux ρ v`), so both
 `GaloisRep.swanExponent_eq_zero_of_isTamelyRamifiedAt` and its
 specialization `GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt` are
 *theorems* rather than further leaves.
 
-Soundness of this packaging is model-theoretic and is the standard one
-for axiomatising an invariant that cannot yet be defined: interpret
-`swanExponentAux ρ v` as the true Swan conductor `Sw_v(V)`. Under that
-interpretation `conductorExponent ρ v` **is** `a_v(V)`, so every leaf
+## 2026-07-27: `swanExponentAux` IS NO LONGER `opaque` — WHY THAT HAD TO CHANGE
+
+Until 2026-07-27 `swanExponentAux` was declared with Lean's `opaque`
+command and this docstring forbade stating any equation about it. That
+packaging was sound but it had a consequence nobody had priced in: **a
+leaf whose conclusion survives into the `else` branch of `swanExponent`
+is neither provable nor refutable** — it is INDEPENDENT of the theory,
+not merely unproven, and no amount of upstream mathematics can change
+that. `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
+in `Fermat/FLT/Modularity/Interface.lean` is exactly such a leaf: at
+`2 ≤ ord_q M₀` the local component can be supercuspidal with nontrivial
+wild inertia, so the tame branch is unavailable, and the conclusion
+reduces to an equation in an uninterpreted symbol. Its own audit
+correctly named "a real definition of `swanExponentAux` having landed in
+`ArtinConductor.lean`" as the one check that would refute the verdict.
+
+That is what this section supplies. `swanExponentAux` is now an ordinary
+
+  `swanExponentAux ρ v := sInf {s | ρ.IsSwanExponentAt v s}`,
+
+where `GaloisRep.IsSwanExponentAt ρ v s` is **Serre's defining formula**
+for the Swan conductor, written out in full against a
+`RamificationFiltration v` — the higher ramification filtration of
+`Γ Kᵥ` in the UPPER numbering, introduced below as DATA with its
+defining axioms. The single remaining leaf is
+`GaloisRep.exists_isSwanExponentAt`: that the specification is
+SATISFIABLE. Everything else about the Swan conductor is now ordinary
+mathematics over `GaloisRep.isSwanExponentAt_swanExponentAux`.
+
+**Why this is sound, and it is a STRICTLY stronger soundness claim than
+the `opaque` packaging's.** `IsSwanExponentAt` quantifies UNIVERSALLY
+over ramification filtrations. The genuine upper-numbering filtration is
+one of them, so any `s` in the set is forced to equal the true Swan
+conductor `Sw_v(V)`; hence the set is contained in `{Sw_v(V)}` and, once
+`exists_isSwanExponentAt` is discharged, `swanExponentAux ρ v` **equals**
+`Sw_v(V)` on the nose rather than merely admitting it as one
+interpretation. `conductorExponent ρ v` is then `a_v(V)` and every leaf
 stated with `HasConductorExponentAt` is precisely the corresponding
-statement of the literature — no weaker and no stronger.
+statement of the literature — no weaker and no stronger, exactly as
+before, but now as a consequence rather than as a reading.
+
+**What the universal quantifier costs, and where it can bite.** If the
+axioms of `RamificationFiltration` are too weak to pin the filtration —
+e.g. if two of them gave different break sums — then
+`exists_isSwanExponentAt` would be FALSE and the definition would
+degenerate to `sInf ∅ = 0`. That is the honest failure mode and it is
+mechanically visible: it shows up as an unprovable leaf, not as a silent
+weakening, and the repair is to STRENGTHEN the axioms below (that is
+precisely the content of "the upper-numbering filtration is unique",
+Serre VI §3). The axioms were chosen with this in mind — the
+normalisation `G^u = P_v` on `(0, 1]`, left continuity, and
+separatedness together already exclude the obvious junk filtrations
+(the constant `G^u = P_v`, and any rescaling `u ↦ G^{cu}`).
+
+**The old policy line "do not state any equation about `swanExponentAux`"
+is WITHDRAWN.** It was the right rule while the symbol was
+uninterpreted; it is the wrong rule now, and following it is what kept a
+true citation permanently unattackable. What replaces it: state facts
+about `swanExponent`, and derive them from
+`isSwanExponentAt_swanExponentAux` — never by a fresh axiom about
+`swanExponentAux`.
 
 ## HISTORY: why the previous, existential packaging was WITHDRAWN
 
@@ -234,9 +286,10 @@ Two declarations, cut 2026-07-27 out of
 hoisted here, beside `wildInertiaGroup` itself, because they are pure
 local Galois theory stated generically in `K` and `v`:
 
-* `exists_localInertia_generator_mod_pow_wildInertiaGroup` — **the one
-  open leaf**: modulo `n`-th powers and wild inertia, `I_v` is generated
-  by a single element (`Q / Qⁿ` is cyclic, `Q := I_v / P_v`);
+* `exists_localInertia_generator_mod_pow_wildInertiaGroup` — **PROVEN
+  2026-07-27** over the two leaves named below: modulo `n`-th powers and
+  wild inertia, `I_v` is generated by a single element (`Q / Qⁿ` is
+  cyclic, `Q := I_v / P_v`);
 * `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker` — PROVEN over
   it: every finite ABSTRACT quotient of `I_v` that kills `P_v` is
   cyclic, generated by the image of one inertia element with
@@ -244,11 +297,565 @@ local Galois theory stated generically in `K` and `v`:
 
 The second is the form consumers want, and it carries NO continuity
 hypothesis; see its docstring for why none is needed.
+
+The `TameProcyclic` section immediately below carries out the
+decomposition. Everything in it is PROVEN except **two leaves**:
+
+* `exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq` — the KERNEL of
+  the tame character `θ_n(σ) = σ(π^{1/n})/π^{1/n}`, i.e.
+  `ker θ_n ⊆ I_vⁿ · P_v` (Serre, *Corps Locaux* IV §2 Prop. 8; Neukirch
+  II.7.7). The reverse inclusion is free from the definition of
+  `tameFixingSubgroup`, so this is the half carrying the arithmetic.
+* `exists_pow_prime_mul_mem_wildInertiaGroup` — the tame quotient is
+  `ℓ`-DIVISIBLE, `Q = Q^ℓ` for `ℓ` the residue characteristic. This is
+  the exact complement of `mem_of_pow_prime_mem_of_mem_wildInertiaGroup`
+  further down ("`P_v` is pro-`ℓ`"); neither implies the other.
+
+Everything between those two and the statement is proven here: the tame
+character itself, the unramifiedness of `μ_n` for `n` prime to `ℓ`
+(`smul_eq_self_of_pow_eq_one_integralClosure`, which is what makes `θ_n`
+a homomorphism), normality of `P_v` in `I_v` — hence the tame quotient
+`Q` as an actual group — and the strong induction that reduces an
+arbitrary `n` to one prime to `ℓ`.
 -/
+
+section TameProcyclic
+
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
+local notation "Kᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+local notation "Oᵥ" => IntegralClosure
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+  (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v))
+local notation "Γᵥ" => Field.absoluteGaloisGroup
+  (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+
+/-- **An integer prime to the residue characteristic is a UNIT of `𝒪ᵥ`**
+(PROVEN 2026-07-27). `(n : 𝓞 K) ∉ v.asIdeal` says exactly that the
+`v`-adic valuation of `n` is `1`, and in the valuation ring
+`𝒪ᵥ = adicCompletionIntegers` that is precisely unitness
+(`adicCompletionIntegers.isUnit_iff_valued_eq_one`). -/
+theorem isUnit_natCast_adicCompletionIntegers_of_notMem_asIdeal
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) : IsUnit ((n : ℕ) : 𝒪ᵥ) := by
+  rw [IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers.isUnit_iff_valued_eq_one]
+  have h1 : (((n : ℕ) : 𝒪ᵥ) : Kᵥ) = algebraMap (𝓞 K) Kᵥ (n : 𝓞 K) := by
+    push_cast
+    rfl
+  rw [h1]
+  have h2 : Valued.v (algebraMap (𝓞 K) Kᵥ (n : 𝓞 K)) =
+      v.valuation K (algebraMap (𝓞 K) K (n : 𝓞 K)) :=
+    IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation v _
+  rw [h2]
+  exact (IsDedekindDomain.HeightOneSpectrum.valuation_eq_one_iff_notMem v).mpr hn
+
+/-- **… hence a unit of the integral closure `Oᵥ`** (PROVEN 2026-07-27):
+units are preserved by any ring map. -/
+theorem isUnit_natCast_integralClosure_of_notMem_asIdeal
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) : IsUnit ((n : ℕ) : Oᵥ) := by
+  have := (isUnit_natCast_adicCompletionIntegers_of_notMem_asIdeal v hn).map
+    (algebraMap 𝒪ᵥ Oᵥ)
+  simpa using this
+
+/-- The Galois action on the integral closure commutes with powers — the
+action is by ring automorphisms. -/
+theorem smul_pow_integralClosure (σ : Γᵥ) (x : Oᵥ) (m : ℕ) : σ • (x ^ m) = (σ • x) ^ m :=
+  map_pow (MulSemiringAction.toRingHom _ _ σ) x m
+
+/-- The Galois action on `Kᵥᵃˡᵍ` commutes with powers. -/
+theorem smul_pow_algebraicClosure (σ : Γᵥ) (y : Kᵥᵃˡᵍ) (m : ℕ) : σ • (y ^ m) = (σ • y) ^ m :=
+  map_pow (MulSemiringAction.toRingHom _ _ σ) y m
+
+/-- **Every element of `Γ Kᵥ` fixes the image of `𝒪ᵥ` in the integral
+closure**: the elements of `𝒪ᵥ` already live in the base field `Kᵥ`,
+which a `Kᵥ`-algebra automorphism fixes pointwise. -/
+theorem smul_algebraMap_integralClosure_eq (σ : Γᵥ) (a : 𝒪ᵥ) :
+    σ • (algebraMap 𝒪ᵥ Oᵥ a) = algebraMap 𝒪ᵥ Oᵥ a := by
+  apply Subtype.ext
+  rw [IntegralClosure.coe_smul]
+  have h : ((algebraMap 𝒪ᵥ Oᵥ a).1 : Kᵥᵃˡᵍ) = algebraMap Kᵥ Kᵥᵃˡᵍ (algebraMap 𝒪ᵥ Kᵥ a) := by
+    rw [← IsScalarTower.algebraMap_apply]
+    rfl
+  rw [h]
+  exact σ.commutes _
+
+/-- The same statement inside `Kᵥᵃˡᵍ` itself. -/
+theorem smul_algebraMap_algebraicClosure_eq (σ : Γᵥ) (a : 𝒪ᵥ) :
+    σ • (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ a) = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ a := by
+  rw [IsScalarTower.algebraMap_apply 𝒪ᵥ Kᵥ Kᵥᵃˡᵍ]
+  exact σ.commutes _
+
+/-- `∑_{i < m} (uⁱ − 1) = (∑_{i < m} uⁱ) − m`, by induction (the `rw` with
+`Finset.sum_sub_distrib` does NOT fire at the `IntegralClosure` type
+synonym — its `AddCommGroup` instance is not found by keyed matching
+through the `def` barrier). -/
+theorem sum_pow_sub_one_range (u : Oᵥ) (m : ℕ) :
+    ∑ i ∈ Finset.range m, (u ^ i - 1) = (∑ i ∈ Finset.range m, u ^ i) - (m : Oᵥ) := by
+  induction m with
+  | zero => simp
+  | succ j ih =>
+      rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
+      push_cast
+      ring
+
+/-- **INERTIA ACTS TRIVIALLY ON `n`-TH ROOTS OF UNITY FOR `n` PRIME TO THE
+RESIDUE CHARACTERISTIC** (PROVEN 2026-07-27) — i.e. `μ_n ⊆ Kᵥⁿʳ`, the
+statement that makes the tame character a HOMOMORPHISM.
+
+THE PROOF is separability of `Xⁿ − 1` in the residue characteristic,
+spelled without any theory of the residue field. Put
+`u := (σ • ζ) · ζ^{n−1}`, so `u · ζ = σ • ζ` and `uⁿ = 1`. Since `σ` is
+inertial, `u − 1 ∈ 𝔪`. Now `(∑_{i<n} uⁱ)(u − 1) = uⁿ − 1 = 0`, while
+`∑_{i<n} uⁱ ≡ n mod 𝔪` and `n` is a UNIT of `Oᵥ` (this is the only place
+`hn` is used), so the geometric sum is a unit and `u = 1`. -/
+theorem smul_eq_self_of_pow_eq_one_integralClosure {σ : Γᵥ}
+    (hσ : σ ∈ localInertiaGroup v) {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {ζ : Oᵥ} (hζ : ζ ^ n = 1) :
+    σ • ζ = ζ := by
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact hn (by simp)
+  set u : Oᵥ := (σ • ζ) * ζ ^ (n - 1) with hu
+  have hpred : n - 1 + 1 = n := Nat.succ_pred_eq_of_pos (Nat.pos_of_ne_zero hn0)
+  have huζ : u * ζ = σ • ζ := by
+    rw [hu, mul_assoc, ← pow_succ, hpred, hζ, mul_one]
+  have hun : u ^ n = 1 := by
+    have h1 : (σ • ζ) ^ n = 1 := by
+      rw [← smul_pow_integralClosure, hζ, smul_one]
+    have h2 : (ζ ^ (n - 1)) ^ n = 1 := by
+      rw [← pow_mul, mul_comm, pow_mul, hζ, one_pow]
+    rw [hu, mul_pow, h1, h2, mul_one]
+  have hmem : u - 1 ∈ IsLocalRing.maximalIdeal Oᵥ := by
+    have h1 : (u - 1) * ζ ∈ IsLocalRing.maximalIdeal Oᵥ := by
+      have hrw : (u - 1) * ζ = σ • ζ - ζ := by rw [sub_mul, huζ, one_mul]
+      rw [hrw]
+      exact hσ ζ
+    have h2 : (u - 1) * ζ ^ n = u - 1 := by rw [hζ, mul_one]
+    have h3 : (u - 1) * ζ ^ n = ((u - 1) * ζ) * ζ ^ (n - 1) := by
+      rw [mul_assoc, ← pow_succ', hpred]
+    rw [← h2, h3]
+    exact Ideal.mul_mem_right _ _ h1
+  set S : Oᵥ := ∑ i ∈ Finset.range n, u ^ i with hS
+  have hSmul : S * (u - 1) = 0 := by rw [hS, geom_sum_mul, hun, sub_self]
+  have hSn : S - (n : Oᵥ) ∈ IsLocalRing.maximalIdeal Oᵥ := by
+    have hsum : ∑ i ∈ Finset.range n, (u ^ i - 1) = S - (n : Oᵥ) := by
+      rw [hS, sum_pow_sub_one_range]
+    rw [← hsum]
+    refine Ideal.sum_mem _ fun i _ => ?_
+    obtain ⟨c, hc⟩ : (u - 1) ∣ u ^ i - 1 := by
+      simpa using sub_dvd_pow_sub_pow u 1 i
+    rw [hc]
+    exact Ideal.mul_mem_right _ _ hmem
+  have hSunit : IsUnit S := by
+    rw [← IsLocalRing.notMem_maximalIdeal]
+    intro hSm
+    have hnm : ((n : ℕ) : Oᵥ) ∈ IsLocalRing.maximalIdeal Oᵥ := by
+      have := Ideal.sub_mem _ hSm hSn
+      simpa using this
+    exact (IsLocalRing.notMem_maximalIdeal.mpr
+      (isUnit_natCast_integralClosure_of_notMem_asIdeal v hn)) hnm
+  have hzero : u - 1 = 0 := hSunit.mul_right_eq_zero.mp hSmul
+  have hu1 : u = 1 := by linear_combination hzero
+  rw [← huζ, hu1, one_mul]
+
+/-- The same statement for a root of unity of `Kᵥᵃˡᵍ`: such a root is
+integral over `𝒪ᵥ` (it satisfies the monic `Xⁿ − 1`), so this is the
+lemma above read through the inclusion `Oᵥ ⊆ Kᵥᵃˡᵍ`. -/
+theorem smul_eq_self_of_pow_eq_one_algebraicClosure {σ : Γᵥ}
+    (hσ : σ ∈ localInertiaGroup v) {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {y : Kᵥᵃˡᵍ} (hy : y ^ n = 1) :
+    σ • y = y := by
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact hn (by simp)
+  have hint : y ∈ integralClosure 𝒪ᵥ Kᵥᵃˡᵍ := by
+    refine ⟨Polynomial.X ^ n - Polynomial.C 1, Polynomial.monic_X_pow_sub_C 1 hn0, ?_⟩
+    simp [hy]
+  have hz : (⟨y, hint⟩ : Oᵥ) ^ n = 1 := by
+    apply Subtype.ext
+    show y ^ n = (1 : Kᵥᵃˡᵍ)
+    exact hy
+  exact congrArg Subtype.val (smul_eq_self_of_pow_eq_one_integralClosure v hσ hn hz)
+
+/-- **`tameFixingSubgroup v` is NORMAL in `Γ Kᵥ`** (PROVEN 2026-07-27).
+The defining condition is stable under conjugation because the SET of
+tame generators is: if `xⁿ = a` with `a ∈ 𝒪ᵥ`, then `(g⁻¹ • x)ⁿ = a` as
+well, since `g` fixes `𝒪ᵥ` pointwise. -/
+instance tameFixingSubgroup_normal : (tameFixingSubgroup v).Normal := by
+  constructor
+  intro a ha g m hm y hy
+  obtain ⟨b, hb⟩ := hy
+  have hy' : (g⁻¹ • y) ^ m = algebraMap 𝒪ᵥ Oᵥ b := by
+    rw [← smul_pow_integralClosure, hb, smul_algebraMap_integralClosure_eq]
+  have hfix : a • (g⁻¹ • y) = g⁻¹ • y := ha m hm _ ⟨b, hy'⟩
+  calc (g * a * g⁻¹) • y = g • (a • (g⁻¹ • y)) := by rw [mul_smul, mul_smul]
+    _ = g • (g⁻¹ • y) := by rw [hfix]
+    _ = y := by rw [← mul_smul, mul_inv_cancel, one_smul]
+
+/-- **The wild inertia is NORMAL inside the local inertia** — immediate
+from the normality of `tameFixingSubgroup v` in the whole of `Γ Kᵥ`. This
+is what makes the TAME QUOTIENT `Q := I_v / P_v` a group. -/
+instance wildInertiaGroup_subgroupOf_normal :
+    ((wildInertiaGroup v).subgroupOf (localInertiaGroup v)).Normal := by
+  constructor
+  intro a ha b
+  rw [Subgroup.mem_subgroupOf] at ha ⊢
+  rw [wildInertiaGroup, Subgroup.mem_inf] at ha ⊢
+  refine ⟨?_, ?_⟩
+  · exact (localInertiaGroup v).mul_mem ((localInertiaGroup v).mul_mem b.2 ha.1)
+      ((localInertiaGroup v).inv_mem b.2)
+  · exact (tameFixingSubgroup_normal v).conj_mem _ ha.2 _
+
+set_option quotPrecheck false in
+local notation "Qᵥ" =>
+  localInertiaGroup v ⧸ Subgroup.subgroupOf (wildInertiaGroup v) (localInertiaGroup v)
+
+/-- **THE KERNEL OF THE TAME CHARACTER** (SORRY LEAF, cut 2026-07-27 out
+of `exists_localInertia_generator_mod_pow_wildInertiaGroup` below, which
+is PROVEN over it together with
+`exists_pow_prime_mul_mem_wildInertiaGroup`).
+
+SET-UP. `n` is prime to the residue characteristic `ℓ` (spelled
+`(n : 𝓞 K) ∉ v.asIdeal`), `π` is a UNIFORMIZER of `𝒪ᵥ` (`Irreducible π`
+in the discrete valuation ring `𝒪ᵥ`), and `x ∈ Oᵥ` is an `n`-th root of
+it, `xⁿ = π`. The TAME CHARACTER is then
+`θ_n(σ) = σ(x) / x ∈ μ_n(Kᵥᵃˡᵍ)`; it is a homomorphism on `I_v` because
+inertia fixes `μ_n` pointwise
+(`smul_eq_self_of_pow_eq_one_algebraicClosure` above, PROVEN).
+
+STATEMENT IN WORDS: `ker θ_n ⊆ I_vⁿ · P_v`. If an inertia element fixes
+`x` then it is an `n`-th power times a wild element.
+
+THE REVERSE INCLUSION IS FREE and is worth recording, because it shows
+the statement is the sharp one: `P_v ⊆ ker θ_n` holds BY THE DEFINITION
+of `tameFixingSubgroup` (take `n := n` and `a := π` there — `x` is
+literally one of the generators that `P_v` is defined to fix), and
+`θ_n(ρⁿ) = θ_n(ρ)ⁿ = 1` because `θ_n` lands in `μ_n`. So this leaf is the
+one half that carries arithmetic.
+
+### ROUTE, AND WHY IT IS THE ONE GENUINELY MISSING INPUT
+
+`ker θ_n = P_v · I_vⁿ` is Serre, *Corps Locaux* IV §2 Prop. 8 (Neukirch,
+*ANT* II.7.7): every finite TAMELY ramified extension of `Kᵥⁿʳ` is
+`Kᵥⁿʳ(π^{1/e})`, so the fixed field of `P_v · I_vⁿ` is exactly
+`Kᵥⁿʳ(x)`. Equivalently: the tame quotient is
+`Q ≅ lim_{ℓ ∤ m} μ_m(k̄_v) ≅ ∏_{ℓ' ≠ ℓ} ℤ_{ℓ'}`, and `θ_n` induces
+`Q / Qⁿ ≅ μ_n`.
+
+It must be proved against THIS file's `tameFixingSubgroup`, which is
+spelled through GENERATORS (`xⁿ ∈ 𝒪ᵥ`, `ℓ ∤ n`) precisely so that no
+theory of `Kᵥᵗᵃᵐᵉ` is presupposed — mathlib's `RamificationGroup.lean`
+has only `decompositionSubgroup`/`inertiaSubgroup`, and `~/cs/FLT` has
+only a `localTameAbelianInertiaGroup` whose own docstring calls it
+"somewhat cheating" (absence re-verified 2026-07-27).
+
+### FAITHFULNESS
+
+* `hπ` is ESSENTIAL. For a non-uniformizer `π = ϖ^d · unit` the extension
+  `Kᵥⁿʳ(π^{1/n})/Kᵥⁿʳ` has degree `n / gcd(n, d)`, `θ_n` is no longer
+  injective on `Q/Qⁿ`, and the kernel is strictly larger than
+  `I_vⁿ · P_v` — the statement is then FALSE. (Extreme case `π = 1`: `x`
+  is a root of unity, fixed by ALL of `I_v`, while `I_vⁿ · P_v` has
+  index `n`.)
+* `hn` is ESSENTIAL. For `ℓ ∣ n` the element `x = π^{1/n}` generates a
+  WILDLY ramified extension, `μ_n ⊄ Kᵥⁿʳ`, and `θ_n` is not even a
+  homomorphism.
+* It is NOT vacuous: `ρ := 1, w := σ` would need `σ ∈ P_v`, but the
+  hypothesis only puts `σ` in `ker θ_n`, a subgroup of index `n` in
+  `I_v` that strictly contains `P_v` whenever `Q ≠ 1`.
+
+Every hypothesis is underscore-prefixed because the body is `sorry`;
+all four are genuinely needed and must be consumed by a real proof. -/
+theorem exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq
+    {n : ℕ} (_hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {π : 𝒪ᵥ} (_hπ : Irreducible π)
+    {x : Oᵥ} (_hx : x ^ n = algebraMap 𝒪ᵥ Oᵥ π)
+    {σ : localInertiaGroup v} (_hσ : (σ : Γᵥ) • x = x) :
+    ∃ ρ w : localInertiaGroup v,
+      (w : Γᵥ) ∈ wildInertiaGroup v ∧ σ = ρ ^ n * w :=
+  sorry
+
+/-- **THE TAME QUOTIENT IS DIVISIBLE BY THE RESIDUE CHARACTERISTIC**
+(SORRY LEAF, cut 2026-07-27 out of
+`exists_localInertia_generator_mod_pow_wildInertiaGroup` below).
+
+STATEMENT IN WORDS: with `q` the residue characteristic `ℓ` — which is
+what `q.Prime` together with `(q : 𝓞 K) ∈ v.asIdeal` says, since
+`v.asIdeal ∩ ℤ = ℓℤ` — every `τ ∈ I_v` is a `q`-th power times a wild
+element. I.e. the tame quotient `Q := I_v / P_v` satisfies `Q = Q^ℓ`: it
+is `ℓ`-DIVISIBLE.
+
+WHY IT IS TRUE: `Q ≅ ∏_{ℓ' ≠ ℓ} ℤ_{ℓ'}` (Serre, *Corps Locaux* IV §2;
+Neukirch II.7.11), on which multiplication by `ℓ` is an isomorphism
+coordinatewise — `ℤ_{ℓ'}` is uniquely `ℓ`-divisible for `ℓ' ≠ ℓ`. Said
+without the structure theorem: a quotient of `I_v` of order `ℓ` killing
+`P_v` would be a totally and TAMELY ramified extension of `Kᵥⁿʳ` of
+degree equal to the residue characteristic, and tame degrees are prime
+to `ℓ`.
+
+RELATION TO THE OTHER OPEN LEAF OF THIS FILE. This is the exact
+COMPLEMENT of `mem_of_pow_prime_mem_of_mem_wildInertiaGroup` further
+down, which says `P_v` has no quotient of order `q` for `q ≠ ℓ`
+("`P_v` is pro-`ℓ`"). Here it is `Q` that has no quotient of order `ℓ`
+("`Q` is pro-prime-to-`ℓ`"). The two together are the statement that
+`P_v` is the Sylow pro-`ℓ` subgroup of `I_v`; neither implies the other,
+and they are stated over different objects (that one over open normal
+subgroups of `Γ Kᵥ`, this one continuity-free over `I_v` itself).
+
+### FAITHFULNESS — both hypotheses are load-bearing
+
+* `_hqv` is ESSENTIAL: for `q` prime to `ℓ` the statement is FALSE, since
+  then `Q / Q^q ≅ ℤ/q ≠ 1` by the tame character (that is exactly what
+  `exists_localInertia_generator_mod_pow_wildInertiaGroup` below is
+  about, and its `n = 0` audit records why no junk witness discharges
+  it).
+* `_hq` is ESSENTIAL TOO, and not merely bookkeeping: dropping primality
+  makes the statement FALSE for a composite `q = ℓ · m` with `ℓ ∤ m`,
+  because `Q^{ℓm} = Q^m ≠ Q`. Primality plus `_hqv` is what pins
+  `q = ℓ`.
+* It is NOT vacuous: `ρ := 1` would force `τ ∈ P_v` for every `τ`, i.e.
+  `Q = 1`, which the tame character refutes.
+
+Both hypotheses are underscore-prefixed because the body is `sorry`. -/
+theorem exists_pow_prime_mul_mem_wildInertiaGroup
+    {q : ℕ} (_hq : q.Prime) (_hqv : (q : 𝓞 K) ∈ v.asIdeal) (τ : localInertiaGroup v) :
+    ∃ ρ w : localInertiaGroup v,
+      (w : Γᵥ) ∈ wildInertiaGroup v ∧ τ = ρ ^ q * w :=
+  sorry
+
+/-- **THE PRIME-TO-`ℓ` CASE OF PROCYCLICITY, PROVEN** (2026-07-27) from
+the single leaf `exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq`.
+
+THE PROOF, and note that the SURJECTIVITY of the tame character is NOT
+needed — only that its image is cyclic, which is free:
+
+1. Pick a uniformizer `π` of the discrete valuation ring `𝒪ᵥ` and an
+   `n`-th root `x` of it in `Kᵥᵃˡᵍ`; `x` is integral (it is a root of the
+   monic `Xⁿ − π`), so it lies in `Oᵥ`, and `x ≠ 0`.
+2. `θ_n(τ) := τ(x)/x` lands in `μ_n(Kᵥᵃˡᵍ)`, because
+   `τ(x)ⁿ = τ(xⁿ) = τ(π) = π = xⁿ`.
+3. `θ_n` is a HOMOMORPHISM on `I_v`: this is exactly
+   `smul_eq_self_of_pow_eq_one_algebraicClosure` — inertia fixes `μ_n`
+   pointwise because `n` is prime to the residue characteristic.
+4. `μ_n(Kᵥᵃˡᵍ)` is a FINITE CYCLIC group (`rootsOfUnity.isCyclic`), so
+   the image of `θ_n` is finite cyclic; take `σ` with `θ_n(σ)` a
+   generator, and non-negative exponents are then available
+   (`mem_powers_iff_mem_zpowers`).
+5. For any `τ`, `θ_n(σ^{-k} τ) = 1` for the appropriate `k`, i.e.
+   `σ^{-k} τ` fixes `x`; the leaf turns that into `ρⁿ · w`, and
+   `τ = σ^k ρⁿ w`. -/
+theorem exists_localInertia_generator_mod_pow_wildInertiaGroup_of_notMem
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal) :
+    ∃ σ : localInertiaGroup v, ∀ τ : localInertiaGroup v,
+      ∃ (k : ℕ) (ρ w : localInertiaGroup v),
+        (w : Γᵥ) ∈ wildInertiaGroup v ∧ τ = σ ^ k * ρ ^ n * w := by
+  classical
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact hn (by simp)
+  haveI : NeZero n := ⟨hn0⟩
+  obtain ⟨π, hπ⟩ := IsDiscreteValuationRing.exists_irreducible 𝒪ᵥ
+  obtain ⟨X, hX⟩ : ∃ X : Kᵥᵃˡᵍ, X ^ n = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π :=
+    IsAlgClosed.exists_pow_nat_eq _ (Nat.pos_of_ne_zero hn0)
+  have hXint : X ∈ integralClosure 𝒪ᵥ Kᵥᵃˡᵍ := by
+    refine ⟨Polynomial.X ^ n - Polynomial.C π, Polynomial.monic_X_pow_sub_C π hn0, ?_⟩
+    simp [hX]
+  have hX0 : X ≠ 0 := by
+    intro h
+    rw [h, zero_pow hn0] at hX
+    have hinj : Function.Injective (algebraMap 𝒪ᵥ Kᵥᵃˡᵍ) := by
+      rw [IsScalarTower.algebraMap_eq 𝒪ᵥ Kᵥ Kᵥᵃˡᵍ]
+      exact (algebraMap Kᵥ Kᵥᵃˡᵍ).injective.comp (FaithfulSMul.algebraMap_injective 𝒪ᵥ Kᵥ)
+    exact hπ.ne_zero (hinj (by simpa using hX.symm))
+  set x : Oᵥ := ⟨X, hXint⟩
+  have hx : x ^ n = algebraMap 𝒪ᵥ Oᵥ π := by
+    apply Subtype.ext
+    show X ^ n = algebraMap 𝒪ᵥ Kᵥᵃˡᵍ π
+    exact hX
+  -- the tame character `θ_n(τ) = τ(x)/x`
+  set c : localInertiaGroup v → Kᵥᵃˡᵍ := fun τ => ((τ : Γᵥ) • X) / X with hc
+  have hcn : ∀ τ : localInertiaGroup v, (c τ) ^ n = 1 := by
+    intro τ
+    have h1 : ((τ : Γᵥ) • X) ^ n = X ^ n := by
+      rw [← smul_pow_algebraicClosure, hX, smul_algebraMap_algebraicClosure_eq]
+    rw [hc]
+    simp only
+    rw [div_pow, h1, div_self (pow_ne_zero n hX0)]
+  have hc0 : ∀ τ : localInertiaGroup v, c τ ≠ 0 := by
+    intro τ h
+    have hone := hcn τ
+    rw [h, zero_pow hn0] at hone
+    exact zero_ne_one hone
+  have hcX : ∀ τ : localInertiaGroup v, (τ : Γᵥ) • X = c τ * X := by
+    intro τ
+    rw [hc]
+    field_simp
+  have hcmul : ∀ a b : localInertiaGroup v, c (a * b) = c a * c b := by
+    intro a b
+    have h1 : ((a * b : localInertiaGroup v) : Γᵥ) • X = (c a * c b) * X := by
+      show ((a : Γᵥ) * b) • X = _
+      rw [mul_smul, hcX b, smul_mul',
+        smul_eq_self_of_pow_eq_one_algebraicClosure v a.2 hn (hcn b), hcX a]
+      ring
+    have h2 : ((a * b : localInertiaGroup v) : Γᵥ) • X = c (a * b) * X := hcX (a * b)
+    exact mul_right_cancel₀ hX0 (h2.symm.trans h1)
+  set f : localInertiaGroup v →* rootsOfUnity n Kᵥᵃˡᵍ :=
+    MonoidHom.mk' (fun τ => ⟨Units.mk0 (c τ) (hc0 τ),
+      (mem_rootsOfUnity' n _).mpr (by simpa using hcn τ)⟩)
+      (fun a b => by ext; simpa using hcmul a b)
+  have hfval : ∀ τ : localInertiaGroup v, ((f τ : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ) = c τ := fun τ => rfl
+  haveI : Finite (f.range) := inferInstance
+  haveI : IsCyclic (f.range) := inferInstance
+  obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := f.range)
+  obtain ⟨σ, hσ⟩ := g.2
+  refine ⟨σ, fun τ => ?_⟩
+  obtain ⟨k, hk⟩ := (Submonoid.mem_powers_iff _ _).mp
+    (mem_powers_iff_mem_zpowers.mpr (hg ⟨f τ, ⟨τ, rfl⟩⟩))
+  have hfk : f (σ ^ k) = f τ := by
+    have hgk : (g : f.range) ^ k = ⟨f τ, ⟨τ, rfl⟩⟩ := hk
+    have h2 := congrArg (Subtype.val) hgk
+    rw [map_pow, hσ]
+    exact h2
+  have hker : f ((σ ^ k)⁻¹ * τ) = 1 := by
+    rw [map_mul, map_inv, hfk, inv_mul_cancel]
+  have hfix : (((σ ^ k)⁻¹ * τ : localInertiaGroup v) : Γᵥ) • x = x := by
+    apply Subtype.ext
+    show ((((σ ^ k)⁻¹ * τ : localInertiaGroup v) : Γᵥ)) • X = X
+    have hc1 := congrArg (fun u : rootsOfUnity n Kᵥᵃˡᵍ => ((u : Kᵥᵃˡᵍˣ) : Kᵥᵃˡᵍ)) hker
+    rw [hfval] at hc1
+    simp only [Units.val_one, OneMemClass.coe_one] at hc1
+    rw [hcX, hc1, one_mul]
+  obtain ⟨ρ, w, hw, hρ⟩ :=
+    exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq v hn hπ hx hfix
+  refine ⟨k, ρ, w, hw, ?_⟩
+  have hcancel : σ ^ k * ((σ ^ k)⁻¹ * τ) = τ := by group
+  rw [← hcancel, hρ, mul_assoc]
+
+/-- The generator statement, transported to the TAME QUOTIENT
+`Q := I_v / P_v` (a group by `wildInertiaGroup_subgroupOf_normal`), where
+the `ℓ`-part of `n` can be peeled off by pure group theory. -/
+theorem procyclic_iff_quotient (n : ℕ) :
+    (∃ σ : localInertiaGroup v, ∀ τ : localInertiaGroup v,
+        ∃ (k : ℕ) (ρ w : localInertiaGroup v),
+          (w : Γᵥ) ∈ wildInertiaGroup v ∧ τ = σ ^ k * ρ ^ n * w) ↔
+    (∃ s : Qᵥ, ∀ t : Qᵥ, ∃ (k : ℕ) (r : Qᵥ), t = s ^ k * r ^ n) := by
+  constructor
+  · rintro ⟨σ, hσ⟩
+    refine ⟨QuotientGroup.mk σ, fun t => ?_⟩
+    obtain ⟨τ, rfl⟩ := QuotientGroup.mk_surjective t
+    obtain ⟨k, ρ, w, hw, hτ⟩ := hσ τ
+    refine ⟨k, QuotientGroup.mk ρ, ?_⟩
+    have hw1 : (QuotientGroup.mk w : Qᵥ) = 1 :=
+      (QuotientGroup.eq_one_iff _).mpr (Subgroup.mem_subgroupOf.mpr hw)
+    rw [hτ]
+    simp [QuotientGroup.mk_mul, QuotientGroup.mk_pow, hw1]
+  · rintro ⟨s, hs⟩
+    obtain ⟨σ, rfl⟩ := QuotientGroup.mk_surjective s
+    refine ⟨σ, fun τ => ?_⟩
+    obtain ⟨k, r, hr⟩ := hs (QuotientGroup.mk τ)
+    obtain ⟨ρ, rfl⟩ := QuotientGroup.mk_surjective r
+    refine ⟨k, ρ, (σ ^ k * ρ ^ n)⁻¹ * τ, ?_, by group⟩
+    refine Subgroup.mem_subgroupOf.mp (QuotientGroup.eq.mp ?_)
+    rw [← QuotientGroup.mk_pow, ← QuotientGroup.mk_pow, ← QuotientGroup.mk_mul] at hr
+    exact hr.symm
+
+/-- The divisibility statement, transported to the tame quotient. -/
+theorem divisible_iff_quotient (q : ℕ) :
+    (∀ τ : localInertiaGroup v, ∃ ρ w : localInertiaGroup v,
+        (w : Γᵥ) ∈ wildInertiaGroup v ∧ τ = ρ ^ q * w) ↔
+    (∀ t : Qᵥ, ∃ r : Qᵥ, t = r ^ q) := by
+  constructor
+  · intro h t
+    obtain ⟨τ, rfl⟩ := QuotientGroup.mk_surjective t
+    obtain ⟨ρ, w, hw, hτ⟩ := h τ
+    have hw1 : (QuotientGroup.mk w : Qᵥ) = 1 :=
+      (QuotientGroup.eq_one_iff _).mpr (Subgroup.mem_subgroupOf.mpr hw)
+    exact ⟨QuotientGroup.mk ρ, by rw [hτ]; simp [QuotientGroup.mk_mul, QuotientGroup.mk_pow, hw1]⟩
+  · intro h τ
+    obtain ⟨r, hr⟩ := h (QuotientGroup.mk τ)
+    obtain ⟨ρ, rfl⟩ := QuotientGroup.mk_surjective r
+    refine ⟨ρ, (ρ ^ q)⁻¹ * τ, ?_, by group⟩
+    refine Subgroup.mem_subgroupOf.mp (QuotientGroup.eq.mp ?_)
+    rw [← QuotientGroup.mk_pow] at hr
+    exact hr.symm
+
+omit [NumberField K] in
+/-- A natural number lying in `v` has a PRIME factor lying in `v` — the
+elementary fact that lets the main theorem peel the residue
+characteristic off `n` without ever naming it. Strong induction on `n`
+through `Nat.minFac`, using only that `v.asIdeal` is prime and proper. -/
+theorem exists_prime_factor_mem_asIdeal : ∀ n : ℕ, n ≠ 0 → (n : 𝓞 K) ∈ v.asIdeal →
+    ∃ q : ℕ, q.Prime ∧ q ∣ n ∧ (q : 𝓞 K) ∈ v.asIdeal := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro hn h
+    rcases eq_or_lt_of_le (Nat.one_le_iff_ne_zero.mpr hn) with h1 | h1
+    · exfalso
+      rw [← h1] at h
+      simp only [Nat.cast_one] at h
+      exact v.isPrime.ne_top ((Ideal.eq_top_iff_one _).mpr h)
+    · obtain ⟨m, hm⟩ : n.minFac ∣ n := Nat.minFac_dvd n
+      have hq : (n.minFac).Prime := Nat.minFac_prime (by omega)
+      have hmul : ((n.minFac : 𝓞 K) * (m : 𝓞 K)) ∈ v.asIdeal := by
+        rw [← Nat.cast_mul, ← hm]; exact h
+      rcases v.isPrime.mem_or_mem hmul with hq' | hm'
+      · exact ⟨n.minFac, hq, ⟨m, hm⟩, hq'⟩
+      · have hm0 : m ≠ 0 := by rintro rfl; simp at hm; omega
+        have hmlt : m < n := by
+          rw [hm]
+          exact (Nat.lt_mul_iff_one_lt_left (Nat.pos_of_ne_zero hm0)).mpr hq.one_lt
+        obtain ⟨q', hq'p, hq'd, hq'm⟩ := ih m hmlt hm0 hm'
+        exact ⟨q', hq'p, hq'd.trans (Dvd.intro_left _ hm.symm), hq'm⟩
+
+/-- **THE TAME QUOTIENT IS PROCYCLIC, for EVERY `n ≠ 0`** — the `∀`-form
+that the strong induction on `n` needs; see
+`exists_localInertia_generator_mod_pow_wildInertiaGroup` just below for
+the statement in the shape consumers use, and for the mathematical
+discussion.
+
+THE PROOF is strong induction on `n`. If `n` is prime to the residue
+characteristic, `exists_localInertia_generator_mod_pow_wildInertiaGroup_of_notMem`
+does it. Otherwise `exists_prime_factor_mem_asIdeal` produces a prime
+`q = ℓ` dividing `n`, say `n = q · m`; the induction hypothesis gives the
+statement at `m < n`, and `exists_pow_prime_mul_mem_wildInertiaGroup`
+upgrades it: in the tame quotient `Q` every `r` is some `r'^q`, so
+`r^m = (r'^q)^m = r'^{q·m} = r'^n`. Working in `Q` — legitimate because
+`P_v` is normal in `I_v` — is what makes this step three lines: no
+commutativity of `I_v` and no rearrangement of wild factors is needed,
+since the wild factor is simply `1` there. -/
+theorem forall_exists_localInertia_generator_mod_pow_wildInertiaGroup :
+    ∀ n : ℕ, n ≠ 0 →
+      ∃ σ : localInertiaGroup v, ∀ τ : localInertiaGroup v,
+        ∃ (k : ℕ) (ρ w : localInertiaGroup v),
+          (w : Γᵥ) ∈ wildInertiaGroup v ∧ τ = σ ^ k * ρ ^ n * w := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro hn
+    by_cases hv : (n : 𝓞 K) ∈ v.asIdeal
+    · obtain ⟨q, hq, ⟨m, hm⟩, hqv⟩ := exists_prime_factor_mem_asIdeal v n hn hv
+      have hm0 : m ≠ 0 := by rintro rfl; simp at hm; omega
+      have hmlt : m < n := by
+        rw [hm]
+        exact (Nat.lt_mul_iff_one_lt_left (Nat.pos_of_ne_zero hm0)).mpr hq.one_lt
+      obtain ⟨s, hs⟩ := (procyclic_iff_quotient v m).mp (ih m hmlt hm0)
+      refine (procyclic_iff_quotient v n).mpr ⟨s, fun t => ?_⟩
+      obtain ⟨k, r, hr⟩ := hs t
+      obtain ⟨r', hr'⟩ := (divisible_iff_quotient v q).mp
+        (fun τ => exists_pow_prime_mul_mem_wildInertiaGroup v hq hqv τ) r
+      exact ⟨k, r', by rw [hr, hr', ← pow_mul, ← hm]⟩
+    · exact exists_localInertia_generator_mod_pow_wildInertiaGroup_of_notMem v hv
+
+end TameProcyclic
 
 /-- **THE TAME QUOTIENT IS PROCYCLIC, in the form an abstract finite
 quotient needs it: modulo `n`-th powers and wild inertia, local inertia
-is generated by ONE element** (SORRY LEAF, cut 2026-07-27 out of
+is generated by ONE element** (PROVEN 2026-07-27 over the two leaves
+`exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq` and
+`exists_pow_prime_mul_mem_wildInertiaGroup` of the `TameProcyclic`
+section above; cut 2026-07-27 out of
 `exists_localInertia_pow_eq_of_wildInertiaGroup_le_ker` just below,
 which is PROVEN over it, and through that out of
 `exists_localInertia_generator_of_wildInertia_trivial` in
@@ -277,26 +884,37 @@ homomorphism, which matters because the actions that consume this (on
 the geometric points of a finite flat group scheme, say) arrive as bare
 families of maps with no topology in sight.
 
-MATHEMATICAL CONTENT AND ROUTE FOR A PROVER.
+MATHEMATICAL CONTENT AND HOW IT IS NOW PROVED.
 `Q ≅ lim_{(m, ℓ) = 1} μ_m(k̄_v) ≅ ∏_{ℓ' ≠ ℓ} ℤ_{ℓ'}` (Serre, *Corps
-Locaux* IV §2; Neukirch, *Algebraic Number Theory* II.7.11). Modulo `n`:
+Locaux* IV §2; Neukirch, *Algebraic Number Theory* II.7.11). Modulo `n`
+the argument splits in exactly two, and the 2026-07-27 decomposition put
+each half in its own leaf:
 
-* it is enough to treat `n` PRIME TO `ℓ`, because `Q` is uniquely
+* it is enough to treat `n` PRIME TO `ℓ`, because `Q` is
   `ℓ`-divisible — the `ℓ`-part of the ramification is exactly what `P_v`
-  absorbs — so `Qⁿ = Q^{n'}` for `n'` the prime-to-`ℓ` part of `n`;
+  absorbs. That divisibility is the leaf
+  `exists_pow_prime_mul_mem_wildInertiaGroup`; the reduction itself
+  (strong induction on `n`, peeling a prime factor lying in `v` off with
+  `exists_prime_factor_mem_asIdeal` and pushing the computation into the
+  quotient group `Q`) is PROVEN in
+  `forall_exists_localInertia_generator_mod_pow_wildInertiaGroup`.
 * for `n` prime to `ℓ` the TAME CHARACTER
   `θ_n : I_v → μ_n(Kᵥᵃˡᵍ)`, `θ_n(τ) = τ(π^{1/n}) / π^{1/n}`, is a
   homomorphism (inertia fixes `μ_n` pointwise, `n` being prime to the
-  residue characteristic, so the usual cocycle collapses), it is
-  surjective, and its kernel is exactly `P_v · I_vⁿ`. Any `σ` with
-  `θ_n(σ)` a generator of `μ_n` then works.
+  residue characteristic, so the usual cocycle collapses) — that is
+  PROVEN, as `smul_eq_self_of_pow_eq_one_algebraicClosure`. Its image is
+  then a subgroup of the finite cyclic `μ_n`, hence cyclic, and ANY `σ`
+  generating the image works: **surjectivity of `θ_n` is not needed and
+  is not assumed anywhere.** What remains is the KERNEL computation,
+  `ker θ_n ⊆ P_v · I_vⁿ`, which is the leaf
+  `exists_pow_mul_mem_wildInertiaGroup_of_smul_root_eq`.
 
-The one genuinely missing input is that kernel computation —
+So the one genuinely missing input is that kernel computation —
 equivalently, that a finite tamely ramified extension of `Kᵥⁿʳ` is
-`Kᵥⁿʳ(π^{1/e})` (Serre IV §2 Prop. 8; Neukirch II.7.7) — and it has to
-be proved against THIS file's `tameFixingSubgroup`, which is spelled
-through GENERATORS precisely so that no theory of `Kᵥᵗᵃᵐᵉ` is
-presupposed.
+`Kᵥⁿʳ(π^{1/e})` (Serre IV §2 Prop. 8; Neukirch II.7.7) — plus the
+`ℓ`-divisibility above; and both have to be proved against THIS file's
+`tameFixingSubgroup`, which is spelled through GENERATORS precisely so
+that no theory of `Kᵥᵗᵃᵐᵉ` is presupposed.
 
 VERIFIED ABSENT 2026-07-27, with the check that would refute it:
 `grep -rn "tame\|Tame" ~/cs/FLT/FLT` returns only
@@ -328,7 +946,7 @@ theorem exists_localInertia_generator_mod_pow_wildInertiaGroup
       ∃ (k : ℕ) (ρ w : localInertiaGroup v),
         (w : Field.absoluteGaloisGroup (v.adicCompletion K)) ∈ wildInertiaGroup v ∧
           τ = σ ^ k * ρ ^ n * w :=
-  sorry
+  forall_exists_localInertia_generator_mod_pow_wildInertiaGroup v n hn
 
 /-- **EVERY FINITE QUOTIENT OF LOCAL INERTIA THAT KILLS WILD INERTIA IS
 CYCLIC** (PROVEN 2026-07-27 over the single leaf
@@ -1085,6 +1703,79 @@ theorem exists_pow_eq_of_mem_wildInertiaGroup
   exact exists_pow_mem_of_coprime_card_quotient
     (coprime_card_quotient_wildInertiaGroup v hn U hUo) hσ
 
+/-!
+### The higher ramification filtration in the UPPER numbering, as DATA
+
+`swanExponentAux` used to be `opaque`, which made every equation about it
+unprovable BY CONSTRUCTION and left at least one true citation
+(`hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`,
+`Fermat/FLT/Modularity/Interface.lean`) independent of the theory rather
+than merely open. The structure below is what replaces the opacity: the
+filtration `G^u` is named, its defining properties are written down, and
+the Swan conductor is then DEFINED from it by Serre's formula
+(`GaloisRep.IsSwanExponentAt`).
+-/
+
+/-- **AN UPPER-NUMBERING HIGHER RAMIFICATION FILTRATION AT `v`**, as
+DATA: the decreasing family `G^u ≤ Γ Kᵥ` of Serre, *Corps Locaux* IV §3
+(lower numbering) and IV §3 / VI §2 (upper numbering, via Herbrand's
+`ψ`); Neukirch, *Algebraic Number Theory* II.10.
+
+Nothing here CONSTRUCTS the filtration — mathlib has neither numbering
+(`Mathlib/RingTheory/Valuation/RamificationGroup.lean` stops at
+`decompositionSubgroup`/`inertiaSubgroup` with an explicit TODO), and the
+lower numbering cannot be substituted over `Kᵥᵃˡᵍ`, whose value group is
+divisible (see the module docstring). What this structure does is make
+the filtration a NAMED MATHEMATICAL OBJECT with stated axioms, so that
+the Swan conductor can be defined from it and facts about it become
+ordinary theorems rather than unstatable assertions about an `opaque`
+symbol.
+
+THE AXIOMS, and why each is here:
+
+* `gp_le_gp` — the filtration DECREASES. Definitional.
+* `gp_zero` — `G⁰ = I_v`. This is what ties the filtration to the inertia
+  this file already has; in the upper numbering `G⁰ = G_0 = I_v`
+  (`ψ(0) = 0`).
+* `gp_eq_wild` — NORMALISATION: `G^u = P_v` for `0 < u ≤ 1`. True because
+  `ψ(u) = u` on `[0, 1]`, so `G^u = G_{⌈u⌉} = G_1 = P_v` there. This is
+  the axiom that fixes the SCALE: without it every rescaling
+  `u ↦ G^{cu}` would be admissible and the break sum below would be
+  scaled by `1/c`. It also forces every break to be `≥ 1`, hence
+  `Sw_v(V) ≥ dim V − dim V^{P_v}`, which is the classical bound.
+* `gp_of_forall_lt` — LEFT CONTINUITY, `G^u = ⋂_{0 < w < u} G^w`. This
+  fixes the CONVENTION at a break: `G^λ` is the LARGER group, so
+  `dim V − dim V^{G^u} = #{breaks ≥ u}` with a non-strict inequality,
+  which is the convention `IsSwanExponentAt` below is written in.
+* `eq_one_of_forall_mem` — SEPARATEDNESS, `⋂_{u > 0} G^u = 1`. Excludes
+  the junk filtration that is constantly `P_v` on `(0, ∞)` (for which no
+  break sum exists at all whenever `P_v ≠ 1` acts nontrivially).
+
+FAITHFULNESS NOTE. These axioms are NOT known here to determine `gp`
+uniquely — that is Serre VI §3 and is not formalised. They do not have
+to: `IsSwanExponentAt` quantifies universally over filtrations, so the
+true one alone already pins the Swan conductor, and any residual
+under-determination shows up as the leaf `exists_isSwanExponentAt` being
+hard, never as a silently weakened invariant. See the module docstring,
+section "## 2026-07-27". -/
+structure RamificationFiltration (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) where
+  /-- `G^u`, the `u`-th ramification subgroup of `Γ Kᵥ` in the upper numbering. -/
+  gp : ℚ → Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))
+  /-- The filtration is DECREASING. -/
+  gp_le_gp : ∀ u w : ℚ, u ≤ w → gp w ≤ gp u
+  /-- `G⁰` is the inertia group. -/
+  gp_zero : gp 0 = localInertiaGroup v
+  /-- `G^u` is the WILD inertia for `0 < u ≤ 1` — the normalisation that
+  fixes the scale of the upper numbering. -/
+  gp_eq_wild : ∀ u : ℚ, 0 < u → u ≤ 1 → gp u = wildInertiaGroup v
+  /-- LEFT CONTINUITY: `G^u = ⋂_{0 < w < u} G^w`. -/
+  gp_of_forall_lt : ∀ u : ℚ, 0 < u →
+    ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
+      (∀ w : ℚ, 0 < w → w < u → σ ∈ gp w) → σ ∈ gp u
+  /-- SEPARATEDNESS: `⋂_{u > 0} G^u = 1`. -/
+  eq_one_of_forall_mem : ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
+    (∀ u : ℚ, 0 < u → σ ∈ gp u) → σ = 1
+
 namespace GaloisRep
 
 /-- **The inertia invariants of a Galois representation at a finite
@@ -1113,6 +1804,31 @@ lemma mem_inertiaInvariants {ρ : GaloisRep K A M} {v : HeightOneSpectrum (𝓞 
     x ∈ ρ.inertiaInvariants v ↔
       ∀ σ ∈ localInertiaGroup v, ρ.toLocal v σ x = x :=
   Iff.rfl
+
+/-- **The `H`-fixed submodule of `ρ` at `v`**, `V^H`, for an arbitrary
+subgroup `H ≤ Γ Kᵥ` acting through the localization `ρ.toLocal v`.
+
+This is `inertiaInvariants` with the group made a parameter — needed
+because the Swan conductor is read off the codimensions of `V^{G^u}` as
+`u` runs over the higher ramification filtration, and
+`ρ.inertiaInvariants v` is the single instance `H = localInertiaGroup v`
+(the two are equal by `rfl`). -/
+def fixedSubmodule (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
+    (H : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))) :
+    Submodule A M where
+  carrier := {x | ∀ σ ∈ H, ρ.toLocal v σ x = x}
+  add_mem' {x y} hx hy := by
+    intro σ hσ
+    show ρ.toLocal v σ (x + y) = x + y
+    rw [map_add, hx σ hσ, hy σ hσ]
+  zero_mem' := by
+    intro σ _
+    show ρ.toLocal v σ 0 = 0
+    rw [map_zero]
+  smul_mem' c x hx := by
+    intro σ hσ
+    show ρ.toLocal v σ (c • x) = c • x
+    rw [map_smul, hx σ hσ]
 
 /-- **The tame part of the Artin conductor exponent** at `v`:
 `dim V − dim V^{I_v}`, the codimension of the inertia invariants. For a
@@ -1218,41 +1934,181 @@ lemma isTamelyRamifiedAt_of_isUnramifiedAt (ρ : GaloisRep K A M)
   rw [h1]
   rfl
 
-/-- **The Swan conductor, as an UNINTERPRETED constant.**
+/-- **The codimension of the WILD-inertia invariants**, `dim V − dim V^{P_v}`.
 
-`swanExponentAux ρ v` stands for `Sw_v(V)`, the wild part of the Artin
-conductor exponent. It is declared `opaque`: the kernel will not unfold
-it, so **nothing about its value is provable**, and — unlike an
-`axiom` — it contributes nothing to `#print axioms` (the `:= 0` is only
-the inhabitation witness Lean's `opaque` command requires; `= 0` is NOT
-derivable from it).
+This is the number of ramification BREAKS of `ρ` at `v`, counted with
+multiplicity: the break decomposition of `V|_{I_v}` has `V(0) = V^{P_v}`
+as its tame summand, so the positive breaks account for exactly this
+many dimensions. It is the length of the break list summed by
+`IsSwanExponentAt` below, and it vanishes exactly when `ρ` is tamely
+ramified at `v` (in which case `V^{P_v} = V`). -/
+noncomputable def wildCodim (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) : ℕ :=
+  Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (wildInertiaGroup v))
 
-This is deliberate, and it is the only honest option at this pin: the
-Swan conductor needs the higher ramification filtration in the UPPER
-numbering, which mathlib does not have and which the lower numbering
-cannot substitute for over `Kᵥᵃˡᵍ` (divisible value group — see the
-module docstring). Rather than pretend to define it, or existentially
-quantify it away (which cost this development a FALSE leaf — again see
-the module docstring), we name it and say nothing about it.
+open scoped Classical in
+/-- **SERRE'S DEFINING FORMULA FOR THE SWAN CONDUCTOR**: `s` is the Swan
+exponent of `ρ` at `v` when, relative to EVERY upper-numbering
+ramification filtration `G^•` at `v`, the representation has a list of
+breaks `μ 0, …, μ (d−1)` (`d = ρ.wildCodim v`) whose "layer cake"
+reproduces the codimension function and whose sum is `s`:
 
-Do not state or prove any equation about `swanExponentAux` itself.
-Facts about the Swan conductor belong on `swanExponent` below, and any
-such fact that is not a theorem is a citation leaf whose soundness is
-checked against the intended interpretation `swanExponentAux ρ v :=
-Sw_v(V)`. -/
-opaque swanExponentAux {K : Type uK} [Field K] [NumberField K]
-    {A : Type*} [CommRing A] [TopologicalSpace A]
-    {M : Type*} [AddCommGroup M] [Module A M]
-    (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K)) : ℕ := 0
+  `dim V − dim V^{G^u} = #{k < d : u ≤ μ k}` for every `u > 0`,   and
+  `s = μ 0 + ⋯ + μ (d−1)`.
+
+This is exactly `Sw_v(V) = ∫₀^∞ (dim V − dim V^{G^u}) du` (Serre, *Local
+Fields* VI §2; Katz, *Gauss Sums, Kloosterman Sums and Monodromy* 1.1),
+written as a finite sum instead of an integral: the integrand is the
+non-increasing `ℕ`-valued step function `u ↦ #{k : μ k ≥ u}`, whose
+integral over `(0, ∞)` is `∑ₖ μ k` by the layer-cake identity. No
+measure theory is imported for it and none is needed.
+
+WHAT EACH CLAUSE CARRIES.
+
+* The counting clause forces `μ k ≥ 1` for every `k < d`: on `(0, 1]` the
+  filtration is constantly `P_v` (`RamificationFiltration.gp_eq_wild`),
+  so the left side is `d` there and every `μ k` must be `≥ u` for every
+  `u ≤ 1`. So the breaks are `≥ 1`, as they must be in the upper
+  numbering, and `s ≥ ρ.wildCodim v`.
+* The sum clause is an equation in `ℚ` with `s : ℕ` on the left. Its
+  content is therefore also the INTEGRALITY of the Swan conductor —
+  Hasse–Arf. That is deliberate: integrality is part of what makes
+  `swanExponent` a natural number and it should not be smuggled in by
+  the type.
+* `d = ρ.wildCodim v = 0` when `ρ` is tamely ramified at `v`, and then
+  both clauses read `dim V − dim V^{G^u} = 0` (true, since `G^u ≤ P_v`
+  acts trivially) and `s = 0`. So the specification AGREES with the
+  vanishing criterion already built into `swanExponent`, rather than
+  competing with it.
+
+NON-VACUITY, VERIFIED BY COMPILER 2026-07-27 (three checks, run in a
+scratch module against this file and then deleted; each is a few lines
+and any owner can reproduce them):
+
+1. `ρ.IsTamelyRamifiedAt v → ρ.wildCodim v = 0`, from
+   `fixedSubmodule v (wildInertiaGroup v) = ⊤`;
+2. `(F : RamificationFiltration v) → ρ.IsTamelyRamifiedAt v →
+   ρ.swanExponentAux v = 0` — the empty break sum, obtained WITHOUT the
+   `if` in `swanExponent`;
+3. `(F : RamificationFiltration v) → ρ.wildCodim v ≤ ρ.swanExponentAux v`
+   — pick `u := max ((μ k + 1)/2) (1/2) ∈ (0,1]`, so `gp u = P_v` and
+   the counting clause forces every `μ k ≥ 1`.
+
+Check 3 is the decisive one: it PROVES A NONZERO LOWER BOUND on
+`swanExponentAux` at a wildly ramified place. Under the `opaque`
+packaging no such statement was even expressible, which is precisely why
+the `of_two_le` citation was independent of the theory. It is not
+recorded as a lemma here only because nothing consumes it yet and this
+project does not admit free-floating declarations.
+
+WHY `∀ F` AND NOT `∃ F`. Universal quantification is what PINS the
+value: the genuine upper-numbering filtration is one of the `F`'s, so
+every `s` satisfying this is the true `Sw_v(V)`. With `∃ F` a junk
+filtration would license a junk value and every `HasConductorExponentAt`
+citation downstream would silently become false. The price is that
+satisfiability (`exists_isSwanExponentAt`) is a real leaf; that price is
+the correct one to pay. -/
+def IsSwanExponentAt (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
+    (s : ℕ) : Prop :=
+  ∀ F : RamificationFiltration v, ∃ μ : ℕ → ℚ,
+    (∀ u : ℚ, 0 < u →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) ∧
+      (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k
+
+/-- **THE SWAN CONDUCTOR EXISTS** (SORRY LEAF, cut 2026-07-27 when
+`swanExponentAux` stopped being `opaque`): the specification
+`IsSwanExponentAt` is SATISFIABLE.
+
+This single leaf is what the whole `opaque` packaging used to hide, and
+it is the honest statement of what is missing. Two things have to be
+true for it:
+
+1. **The upper-numbering filtration is essentially unique** (Serre,
+   *Corps Locaux* IV §3 and VI §3 — Herbrand's `ψ` is determined by the
+   lower numbering, which is determined by `i_{L/K}(σ) = v_L(σπ_L − π_L)`
+   at each finite level, and the upper numbering is the unique
+   renumbering compatible with quotients). Without this, two admissible
+   `F`'s could disagree and no single `s` would work for all of them.
+2. **The break decomposition and Hasse–Arf integrality** (Serre VI §2,
+   Katz 1.1): `V|_{I_v}` splits into break subspaces with breaks in
+   `ℚ≥1`, the codimension function is their layer cake, and the sum of
+   the breaks is an INTEGER.
+
+Neither is in mathlib, in `~/cs/FLT`, or in this project — verified
+2026-07-27, and the check that would refute it is
+`grep -rn "ramificationGroup\|Herbrand\|Swan\|hasseArf" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/`, which finds only
+`decompositionSubgroup`/`inertiaSubgroup` and a TODO.
+
+NOTE ON THE FAILURE MODE. If the axioms of `RamificationFiltration` turn
+out too weak — i.e. if some junk `F` satisfies them and has a different
+break sum — then this leaf is FALSE and the repair is to strengthen
+those axioms, not to weaken this statement to `∃ F`. Weakening it to
+`∃ F` would make `swanExponentAux` a junk value and every downstream
+`HasConductorExponentAt` citation unsound; see the module docstring. -/
+theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) :
+    ∃ s : ℕ, ρ.IsSwanExponentAt v s :=
+  sorry
+
+/-- **The Swan conductor `Sw_v(V)`**, the wild part of the Artin
+conductor exponent — a REAL DEFINITION since 2026-07-27, no longer an
+`opaque` constant.
+
+It is the least natural number satisfying Serre's formula
+`IsSwanExponentAt`. Once `exists_isSwanExponentAt` is discharged the
+`sInf` is a member of that set (`isSwanExponentAt_swanExponentAux`
+below), and since the set is a singleton — the true filtration pins it,
+see `IsSwanExponentAt` — this IS the Swan conductor, not merely a symbol
+admitting it as an interpretation.
+
+`sInf` rather than `Classical.choose` so that the definition is total
+and transparent: the junk case `sInf ∅ = 0` can only be reached by
+someone who has PROVED the specification unsatisfiable, which would
+itself be a refutation of `exists_isSwanExponentAt` and a defect report
+against `RamificationFiltration`.
+
+Facts about the Swan conductor belong on `swanExponent` below and are
+derived from `isSwanExponentAt_swanExponentAux`. Do not add fresh
+axioms about `swanExponentAux` — the point of the 2026-07-27 change is
+that none are needed. -/
+noncomputable def swanExponentAux (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) : ℕ :=
+  sInf {s : ℕ | ρ.IsSwanExponentAt v s}
+
+/-- **The Swan conductor satisfies Serre's formula** — the characterising
+equation of `swanExponentAux`, and the single handle through which every
+fact about the wild part of the conductor exponent is to be proved.
+
+PROVEN over `exists_isSwanExponentAt`, by `Nat.sInf_mem`. Under the
+`opaque` packaging this statement was not merely unproven but
+UNSTATABLE, which is what made
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
+independent of the theory rather than open. -/
+theorem isSwanExponentAt_swanExponentAux (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) :
+    ρ.IsSwanExponentAt v (ρ.swanExponentAux v) :=
+  Nat.sInf_mem (ρ.exists_isSwanExponentAt v)
 
 open scoped Classical in
 /-- **The wild part of the Artin conductor exponent** at `v`, i.e. the
 Swan conductor `Sw_v(V)`.
 
-It is `swanExponentAux` — an opaque constant — with the ONE property
-this development needs BUILT IN rather than assumed: **the Swan
+It is `swanExponentAux` — since 2026-07-27 a REAL definition by Serre's
+formula, no longer an opaque constant — with the ONE property this
+development needs most often BUILT IN rather than derived: **the Swan
 conductor is supported on the wild inertia, so it vanishes exactly when
 the wild inertia acts trivially**, i.e. when `ρ.IsTamelyRamifiedAt v`.
+
+The `if` is now a CONVENIENCE, not a necessity: with `swanExponentAux`
+defined, `ρ.IsTamelyRamifiedAt v → swanExponentAux ρ v = 0` is ordinary
+mathematics over `isSwanExponentAt_swanExponentAux` (tameness gives
+`ρ.wildCodim v = 0`, so the break sum is empty). It is kept because it
+makes `swanExponent_eq_zero_of_isTamelyRamifiedAt` a `rfl`-level fact
+that costs no leaf, and because removing it would change the statement
+of every consumer. A later owner who proves the tame case directly may
+delete the branch; nothing downstream depends on its presence.
 
 STRENGTHENED 2026-07-26. Until then the branch condition was
 `ρ.IsUnramifiedAt v`, which made `swanExponent` opaque at every ramified
