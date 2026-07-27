@@ -102,10 +102,14 @@ the kernel:
 
 ## The remaining leaves — one per level, and the SAME statement shape
 
-`X18.abd_eq_zero_of_sq_eq` — for coprime `a, b : ℤ`, if
-`t² = C̃(a, b)² + 8·B̃(a, b)²` then `ab(a − b) = 0`, where
+`X18.sq_ne_of_zero_lt_lt` — for coprime `0 < a < b` the integer
+`C̃(a, b)² + 8·B̃(a, b)²` is never a perfect square, where
 `C̃ = a³ − 2a²b − ab² + b³` and `B̃ = ab(a − b)`.  A statement about integers
-only: no rationals, no denominators, no `redPt`, no `Classical.choose`.
+only: no rationals, no denominators, no `redPt`, no `Classical.choose`.  Its
+consumer `X18.abd_eq_zero_of_sq_eq` — same equation, no sign hypotheses,
+conclusion `ab(a − b) = 0` — is PROVEN from it by the σ-normalisation
+(2026-07-27), so the frontier at level `18` is now a single non-existence
+statement over a fundamental domain of the order-`3` automorphism.
 
 `X13.abd_eq_zero_of_sq_eq` — for coprime `a, b : ℤ`, if
 `t² = C̃(a, b)² + 4·B̃(a, b)²` then `ab(a + b) = 0`, where
@@ -134,6 +138,12 @@ Every replacement is an EQUIVALENCE, so no statement was weakened at any step:
   the whole `ℚ`-to-`ℤ` passage once for an arbitrary sextic; level `18` still
   open-codes it and can be rewritten over the bridge without changing either its
   statement or its leaf.
+* `abd_eq_zero_of_sq_eq ↔ sq_ne_of_zero_lt_lt` (level `18`, 2026-07-27) by the
+  σ-normalisation: `σ` permutes the three intervals `(−∞, 0)`, `(0, 1)`,
+  `(1, ∞)` cyclically, so every non-degenerate orbit has exactly one
+  representative with `0 < a < b`, and the degenerate ones are exactly those
+  with none.  Written out in both directions in `sq_ne_of_snd_pos` and
+  `abd_eq_zero_of_sq_eq`.
 
 What each step removed is a layer of Lean-specific interface: first the
 obligation to exhibit a *structure*, then the obligation to reason about a
@@ -143,11 +153,18 @@ at level `18` and over `ℚ` at level `13`.  **No step is progress on abelian
 varieties**, and no step changed the sorry COUNT: one leaf closed, one opened,
 at each level, throughout.
 
-**What the 2026-07-27 step DID add, beyond bookkeeping**, is two axiom-clean
-identities and one NEGATIVE result: the `ℤ[√−2]` descent that the identity
-invites is provably reversible and so cannot reduce the leaf.  That audit, with
-the check that would refute it, is on `abd_eq_zero_of_sq_eq`.  Reading it before
-attacking either level is worth the two minutes.
+**What the 2026-07-27 steps DID add, beyond bookkeeping**, is three axiom-clean
+identities, one NEGATIVE result and one POSITIVE route.  The negative result:
+the imaginary-quadratic descent that the identities invite is provably
+reversible at BOTH levels and so cannot reduce either leaf.  The positive route:
+over the imaginary quadratic field the sextic splits into conjugate cubics, and
+each branch is an ELLIPTIC CURVE of rank `1` over that field carrying the
+condition `x ∈ ℚ` — i.e. elliptic Chabauty applies, with `1 < 2 = [K : ℚ]`, and
+the object needed is an elliptic curve over a quadratic field rather than `Pic⁰`
+of a genus-`2` curve.  Both audits, with the checks that would refute them, are
+on `X18.sq_ne_of_zero_lt_lt` and `X18.abd_eq_zero_of_sq_eq`.  Reading them
+before attacking either level is worth the five minutes; the second also
+records a claim about level `13` that was asserted here and later REFUTED.
 
 The value of the whole chain is that the surviving obligations mention neither
 `redPt` nor `Classical.choose` nor weighted-projective coordinates, and that the
@@ -563,9 +580,10 @@ does satisfy every field — and **not** as an independent statement of the
 four-part Jacobian project.  The project is the content of the injectivity,
 which at both levels is itself PROVEN from the Diophantine determination of
 `X(ℚ)` (level `18` on 2026-07-26, level `13` on 2026-07-27); the sorries now
-live further down, at `X18.abd_eq_zero_of_sq_eq` and `X13.abd_eq_zero_of_sq_eq`
-— the integral forms of that determination, one step beyond
-`affine_rational_points` at each level since 2026-07-27.
+live further down, at `X18.sq_ne_of_zero_lt_lt` — the σ-normalised integral form
+of that determination, two steps beyond `X18.affine_rational_points` since
+2026-07-27 — and at `X13.abd_eq_zero_of_sq_eq`, the integral form at level `13`,
+one step beyond `X13.affine_rational_points` since the same day.
 
 This matters for anyone auditing the leaf count: closing `exists_jacobianPackage`
 below is *not* progress on abelian varieties.  It is the removal of an interface
@@ -661,8 +679,158 @@ theorem hsext18_eq_sq_add_eight_sq (a b : ℤ) :
   simp only [hsext]
   ring
 
+/-- **THE LEAF, σ-NORMALISED: no coprime `0 < a < b` makes `C̃² + 8B̃²` a square.**
+
+`abd_eq_zero_of_sq_eq` below is PROVEN from this, and the two are EQUIVALENT.
+
+**HONEST ACCOUNTING: this is a NORMALISATION, not a reduction in difficulty.**
+It is equivalent for a reason that costs nothing.  The order-`3` automorphism
+`σ(x) = 1/(1 − x)` acts on homogeneous coordinates by `M : (a, b) ↦ (b, b − a)`,
+and both semi-invariants change sign under it:
+
+    C̃(b, b − a) = −C̃(a, b),      B̃(b, b − a) = −B̃(a, b)
+    C̃(−a, −b)  = −C̃(a, b),      B̃(−a, −b)  = −B̃(a, b)
+
+(four `ring` identities, all four used in the proof of `abd_eq_zero_of_sq_eq`).
+So both the hypothesis and the conclusion are invariant under the order-`6`
+group `⟨M⟩`, which satisfies `M³ = −I`.  On the `x`-line `σ` permutes the three
+intervals `(−∞, 0) → (0, 1) → (1, ∞) → (−∞, 0)` cyclically, so a NON-degenerate
+orbit meets `(0, 1)` exactly once — that representative is `0 < a < b`.  The
+three cases the proof below distinguishes are exactly
+
+    a < 0 < b   ↦   (b, b − a),   giving `0 < b < b − a`;
+    0 < b < a   ↦   (a − b, a),   giving `0 < a − b < a`;
+    0 < a < b   ↦   itself.
+
+The degenerate `(a, b)` — those with `ab(a − b) = 0` — are precisely the ones
+with NO representative in that range, which is why nothing is weakened.  What
+this buys is shape, not mathematics: any later attack may now assume `a`, `b`
+and `b − a` all POSITIVE and pairwise coprime, hence `B̃ < 0`, and needs no sign
+analysis at all.
+
+**Numerical sanity (PARI/GP, untrusted searcher, 2026-07-27).**  No coprime
+`0 < a < b ≤ 400` makes `C̃² + 8B̃²` a square.  Over `|a|, |b| ≤ 80` it was also
+checked that `C̃` is ODD and `gcd(C̃, B̃) = 1` for every coprime `(a, b)` — the
+two facts the descent below starts from.
+
+**ROUTE AUDIT — A NEW AXIS (2026-07-27): ELLIPTIC CHABAUTY OVER `ℚ(√−2)`, and
+it is a strictly smaller object than `Pic⁰` of a genus-`2` curve.**
+
+The audit on `abd_eq_zero_of_sq_eq` searched three axes and correctly closed all
+three: DESCENT (the `√−2` descent is reversible), FACTORISATION (the sextic is
+irreducible) and QUOTIENT (every quotient by a subgroup of `⟨σ, ι⟩` has genus
+`0`).  The axis it did not search is the one where the `√−2` structure is used
+not to descend but to CHANGE THE BASE FIELD.  Over `K := ℚ(√−2)` the sextic
+factors into two conjugate CUBICS,
+
+    f = g·ḡ,   g(x) = C(x) + 2√−2·B(x) = x³ + (2√−2 − 2)x² − (2√−2 + 1)x + 1,
+
+so `y² = N_{K/ℚ}(g(x))`, and the descent recorded below says exactly that
+`g(x) = δ·w²` with `w ∈ K` and `δ ∈ {1, −1}`.  Each branch is an ELLIPTIC CURVE
+over `K` carrying the extra condition `x ∈ ℚ` — which is Bruin's elliptic
+Chabauty.  Magma (untrusted searcher; every number here is a claim to be
+re-derived) reports:
+
+* `δ = +1`:  `E : w² = g(x)` over `K`.  `E(K) ≅ ℤ`, TORSION TRIVIAL, generated by
+  `P = (1 − √−2, −1)`, with `Norm(𝔣_E) = 1296` and `j(E) = −256 − 512√−2`.  Since
+  `rank E(K) = 1 < 2 = [K : ℚ]`, elliptic Chabauty APPLIES.  Enumerating `nP` for
+  `|n| ≤ 12`, the only rational `x`-coordinates are `n = 0` (`x = ∞`) and
+  `n = ±2` (`x = 0`).  Note `x(P) = 1 − √−2` is itself irrational, so the
+  rational points are NOT the small multiples.
+* `δ = −1`:  `E_d : w² = −g(−x)`, i.e. `w² = x³ + (2 − 2√−2)x² − (2√−2 + 1)x − 1`.
+  `E_d(K) ≅ ℤ/3` and `rank E_d(K) = 0`, so this branch needs NO Chabauty at
+  all — three points, whose two affine `x`-coordinates are both `−1`, i.e.
+  `x = 1` after the substitution `x ↦ −x`.
+
+Together these give `x ∈ {0, 1, ∞}`, which is this leaf.
+
+**Why it matters for the FORMALISATION plan.**  The module docstring's four-part
+project asks for `Pic⁰` of a genus-`2` curve with the Mumford representation and
+Cantor's group law, Abel–Jacobi, good reduction at `5`, and `rank J(ℚ) = 0`.
+The route above asks instead for elliptic curves over a QUADRATIC field — for
+which mathlib already has Weierstrass models and the group law — plus (i) the
+descent `g(x) = ±w²`, which is elementary (see below), (ii) rank computations
+over `K`, and (iii) elliptic Chabauty for the `δ = +1` branch ONLY.  That is not
+easy, but it is a different and smaller project, and half of it is a finite
+check.
+
+**Correction to the descent as recorded below: it needs NO `ℤ[√−2]` arithmetic.**
+`gcd(t − C̃, t + C̃) = 2` (both are even since `C̃` and `t` are odd; a common odd
+prime would divide `2t` and `2C̃`, hence `C̃` and `8B̃²`, contradicting
+`gcd(C̃, B̃) = 1`), and `((t − C̃)/2)·((t + C̃)/2) = 2B̃²` with the two factors
+coprime.  Coprime factorisation in `ℤ` alone therefore gives
+`C̃ = ±(v² − 2u²)`, `B̃ = ±uv`, `t = ±(v² + 2u²)` with `gcd(u, v) = 1` — the sign
+being exactly the `δ` above.  So `Zsqrtd (-2)`, which this pin does not equip
+with a Euclidean-domain instance, is not needed anywhere on this route.
+
+**The checks that would refute this audit**, in increasing cost:
+
+1. `δ ∈ {1, −1}` is not enough — refuted by a coprime `(a, b)` whose `g(a/b)` is
+   neither `w²` nor `−w²` in `K`.  It IS enough by the coprime factorisation in
+   the previous paragraph, together with `h(K) = 1` and `ℤ[√−2]ˣ = {±1}`.
+2. `rank E(K) ≠ 1` — refuted by a point of infinite order independent of `P`, or
+   by a `2`-descent upper bound below `1`.  Magma returns the sharp `1 ≤ r ≤ 1`.
+3. `rank E_d(K) ≠ 0` — refuted by any point of infinite order on `E_d(K)`.
+4. Elliptic Chabauty does not close the `δ = +1` branch.  **This is the one item
+   NOT verified here**: only `|n| ≤ 12` was enumerated, which is a search, not a
+   Chabauty computation.
+
+**What was NOT searched**, so the next auditor knows the boundary: the
+`(1 − ζ₃)`-descent on `J` that the previous audit named as the way forward, and
+any `3`-descent along the cyclic degree-`3` map `X → X/⟨σ⟩ ≅ ℙ¹`.  That map is
+the modular map `X_1(18) → X_1(9)` (and `X_1(9)` has genus `0`), whose fibre over
+`t` is the Shanks simplest cubic `X³ − tX² + (t − 3)X + 1`; a rational point of
+the fibre is exactly a rational `2`-torsion point on the `X_1(9)`-family curve.
+That reading is recorded because it explains why the fibration is cyclic, not
+because it was found to lead anywhere. -/
+theorem sq_ne_of_zero_lt_lt (a b t : ℤ) (hab : Int.gcd a b = 1) (ha : 0 < a) (hb : a < b) :
+    t ^ 2 ≠ (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) ^ 2
+              + 8 * (a * b * (a - b)) ^ 2 := sorry
+
+/-- The `0 < b` half of the σ-normalisation (PROVEN from `sq_ne_of_zero_lt_lt`).
+
+With `b > 0` fixed, the sign of `a` and its comparison with `b` decide which
+element of the `⟨M⟩`-orbit lands in the fundamental domain `0 < a < b`:
+`a < 0` needs one application of `M`, `a > b` needs `−M²`, and `0 < a < b` is
+already normalised.  The coprimality of each new pair is the one-line
+divisibility argument `d ∣ b` and `d ∣ b − a` imply `d ∣ a`. -/
+theorem sq_ne_of_snd_pos (a b t : ℤ) (hab : Int.gcd a b = 1) (hb : 0 < b)
+    (ha0 : a ≠ 0) (hne : a ≠ b) :
+    t ^ 2 ≠ (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) ^ 2
+              + 8 * (a * b * (a - b)) ^ 2 := by
+  intro ht
+  rcases lt_trichotomy a 0 with hlt | h0 | hgt
+  · -- `a < 0 < b`: the orbit representative is `M(a, b) = (b, b − a)`.
+    have hg : Int.gcd b (b - a) = 1 := by
+      have h1 : ((Int.gcd b (b - a) : ℤ)) ∣ b := Int.gcd_dvd_left ..
+      have h2 : ((Int.gcd b (b - a) : ℤ)) ∣ (b - a) := Int.gcd_dvd_right ..
+      have h3 : ((Int.gcd b (b - a) : ℤ)) ∣ a := by
+        have := dvd_sub h1 h2
+        simpa using this
+      have h4 : Int.gcd b (b - a) ∣ Int.gcd a b := Int.dvd_gcd h3 h1
+      rw [hab] at h4
+      exact Nat.dvd_one.mp h4
+    exact sq_ne_of_zero_lt_lt b (b - a) t hg hb (by omega) (by linear_combination ht)
+  · exact ha0 h0
+  · rcases lt_trichotomy a b with h | h | h
+    · exact sq_ne_of_zero_lt_lt a b t hab hgt h ht
+    · exact hne h
+    · -- `0 < b < a`: the orbit representative is `−M²(a, b) = (a − b, a)`.
+      have hg : Int.gcd (a - b) a = 1 := by
+        have h1 : ((Int.gcd (a - b) a : ℤ)) ∣ (a - b) := Int.gcd_dvd_left ..
+        have h2 : ((Int.gcd (a - b) a : ℤ)) ∣ a := Int.gcd_dvd_right ..
+        have h3 : ((Int.gcd (a - b) a : ℤ)) ∣ b := by
+          have := dvd_sub h2 h1
+          simpa using this
+        have h4 : Int.gcd (a - b) a ∣ Int.gcd a b := Int.dvd_gcd h2 h3
+        rw [hab] at h4
+        exact Nat.dvd_one.mp h4
+      exact sq_ne_of_zero_lt_lt (a - b) a t hg (by omega) (by omega) (by linear_combination ht)
+
 /-- **THE LEAF, in integral homogeneous form: a coprime integral point of
-`X_1(18)` is degenerate.**
+`X_1(18)` is degenerate.**  **PROVEN since 2026-07-27** from the σ-normalised
+form `sq_ne_of_zero_lt_lt` above, whose docstring carries the current route
+audit; read that one first.
 
 `t² = C̃(a, b)² + 8·B̃(a, b)²` with `gcd(a, b) = 1` forces `ab(a − b) = 0`, i.e.
 `x = a/b ∈ {0, 1, ∞}`.  Its consumer `affine_rational_points` is PROVEN over it
@@ -723,17 +891,66 @@ along a factorisation of the sextic, and quotienting to a rank-`0` elliptic
 curve — are both closed: the sextic is irreducible, and every quotient by a
 subgroup of `⟨σ, ι⟩` has genus `0`.
 
-**NOT ANALOGOUS AT LEVEL 13** (checked 2026-07-27, for `X13.redPt_injective_three`
-and any future restatement of it).  For `sext 1 4 6 2 1 2 = x⁶ + 2x⁵ + x⁴ + 2x³ +
-6x² + 4x + 1` the polynomial square root is forced to be `x³ + x² + 1`, and the
-remainder is `4x² + 4x = 4x(x + 1)`, which is not a constant times a square.  So
-level `13` has NO identity of the shape `C² + kB²` with `B` quadratic, and the
-`√−2` structure here is specific to level `18`.  Whatever is generic across the
-two levels is the `σ`-semi-invariant construction, not this identity. -/
+**REFUTED 2026-07-27: "NOT ANALOGOUS AT LEVEL 13" WAS FALSE.**  This docstring
+previously asserted that `sext 1 4 6 2 1 2 = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`
+admits no identity of shape `C² + kB²` with `B` quadratic, on the ground that
+the polynomial square root is forced to be `x³ + x² + 1` with remainder
+`4x(x + 1)`.  **It does admit one:**
+
+    x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1 = (x³ + x² − 2x − 1)² + 4(x² + x)²
+
+The error is exactly locatable: `kB²` has DEGREE `4`, so it contributes to the
+`x⁴` coefficient, which the forcing argument treated as pinned.  Only the top
+TWO coefficients of `C` are forced; taking the linear coefficient to be `−2`
+rather than `0` gives the identity.  The refuting check is one expansion, and it
+is `ring`-checkable.  (Found by the owner of the level-`13` chain; re-derived
+here independently in PARI/GP before this correction was written.)
+
+**So the two levels are PARALLEL, and in more detail than the refutation
+claims.**  With `A₁₃ = x³ + 3x² − 1` and `B₁₃ = x² + x` one has
+`f₁₃ = A₁₃² − 4A₁₃B₁₃ + 8B₁₃²`, of discriminant `−16`, with
+`C₁₃ = A₁₃ − 2B₁₃` — the same completion of the square as here.  Verified in
+PARI/GP: `disc C₁₃ = 49` and `disc A₁₃ = 81`, *identical* to the level-`18`
+values, and `f₁₃` is irreducible with Galois group `F₁₈(6) = 3 ≀ 2`, again the
+same.  The quadratic form is principal at both levels (`h(−16) = 1`,
+`h(−32) = 2` but `A² − 4AB + 12B²` is the principal class).  Consequently the
+`ℤ[i]` descent at level `13` is reversible for the same reason the `ℤ[√−2]`
+descent is here — `(u² + v²)² = (v² − u²)² + 4(uv)²` recovers the point — so it
+gains nothing at either level.
+
+**And the ELLIPTIC-CHABAUTY route of the audit on `sq_ne_of_zero_lt_lt` transfers
+to level 13, with one simplification** (Magma, untrusted searcher, 2026-07-27):
+over `K₁₃ := ℚ(i)`, `f₁₃ = g₁₃·ḡ₁₃` with
+`g₁₃ = x³ + (1 + 2i)x² + (2i − 2)x − 1`, and because `−1 = i²` IS a square in
+`ℚ(i)` the two twists COINCIDE — level `13` has ONE elliptic curve where level
+`18` has two.  `E₁₃ : w² = g₁₃(x)` has `Norm(𝔣) = 1352`, `E₁₃(K₁₃) ≅ ℤ` with
+trivial torsion, generated by `(−1 − i, 1)`; `rank = 1 < 2 = [K₁₃ : ℚ]`, so
+elliptic Chabauty applies.  Among `nP` with `|n| ≤ 12` the rational
+`x`-coordinates are exactly `n = 0` (`x = ∞`), `n = ±2` (`x = 0`) and `n = ±4`
+(`x = −1`) — precisely the three abscissae of `X_1(13)(ℚ)`.  (`RankBound(J₁₃) = 0`
+and `J₁₃(ℚ)_tors ≅ ℤ/19`, matching `#J₁(13)(ℚ) = 19`.)
+
+**What is therefore generic across the two levels is the WHOLE construction** —
+the `σ`-semi-invariants, the principal binary quadratic form, the Shanks
+simplest-cubic fibration of discriminant `(t² − 3t + 9)²`, the reversibility of
+the imaginary-quadratic descent, AND the rank-`1` elliptic curve over the
+imaginary quadratic field.  Anything built for one level should be built for a
+variable level. -/
 theorem abd_eq_zero_of_sq_eq (a b t : ℤ) (hab : Int.gcd a b = 1)
     (ht : t ^ 2 = (a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3) ^ 2
               + 8 * (a * b * (a - b)) ^ 2) :
-    a * b * (a - b) = 0 := sorry
+    a * b * (a - b) = 0 := by
+  by_contra hne
+  have ha0 : a ≠ 0 := by rintro rfl; exact hne (by ring)
+  have hb0 : b ≠ 0 := by rintro rfl; exact hne (by ring)
+  have hab0 : a ≠ b := by rintro rfl; exact hne (by ring)
+  rcases lt_trichotomy b 0 with hlt | h0 | hgt
+  · -- `b < 0`: replace `(a, b)` by `−(a, b)`, which flips both `C̃` and `B̃`.
+    have hg : Int.gcd (-a) (-b) = 1 := by simpa [Int.gcd] using hab
+    exact sq_ne_of_snd_pos (-a) (-b) t hg (by omega) (by omega) (by omega)
+      (by linear_combination ht)
+  · exact hb0 h0
+  · exact sq_ne_of_snd_pos a b t hab hgt ha0 hab0 ht
 
 /-- **THE REMAINING LEAF, now in purely Diophantine form: the affine rational
 points of `X_1(18)` are its four finite cusps.**
