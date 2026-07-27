@@ -50103,10 +50103,12 @@ computed in the next block (`j = n − s`, top break `j + 1/(p−1)`):
 * `s = 1` — **the whole Lubin–Tate family is excluded, every `p`,
   every `n`.** In particular at `n = 2` it is excluded outright, since
   `0 < s < n` leaves only `s = 1`.
-* `s ≥ 2` (so `n ≥ 3`) — NOT excluded by upper numbering. That, not
-  `n = 2`, is where a next counterexample search should go; the
-  smallest case is `p = 3`, `n = 3`, `s = 2`, i.e. `v₃(q) = 9m` with
-  `3 ∤ m` inside `ℚ_3(F[27])`.
+* `s ≥ 2` (so `n ≥ 3`) — NOT excluded by upper numbering. **This
+  bullet used to name `p = 3`, `n = 3`, `s = 2` inside `ℚ_3(F[27])` as
+  the place a next counterexample search should go. DO NOT RUN IT:**
+  the ABELIAN-DESCENT block two paragraphs below kills the whole
+  Lubin–Tate family at every `s`, by an argument that never mentions
+  ramification. Upper numbering is simply not the sharpest tool here.
 
 THE CHECK THAT WOULD REFUTE THE ABOVE: exhibit a subfield of
 `L = ℚ_9(F[π²])` with an upper ramification break exceeding 1; or show
@@ -50116,6 +50118,111 @@ identification `L = ℚ_9(x)` and with it the different check `d = 135`.
 Any one of the three reopens `n = 2`. Note that NONE of them is a
 statement about `ℚ_3(F[9])` itself: the argument deliberately never
 computes that field, only the Galois `L` above it.
+
+**THE WHOLE LUBIN–TATE FAMILY DIES AT EVERY `s`, NOT ONLY `s = 1`, AND
+RAMIFICATION THEORY IS NOT NEEDED FOR ANY OF IT** (thirteenth owner,
+2026-07-27). Everything above this point in the Lubin–Tate discussion —
+the different computations, the Herbrand transforms, the `d = 135`
+cross-check, the `s ≥ 1 + 1/(p−1)` inequality — is subsumed by the
+following lemma, which is five lines of cocycle arithmetic and uses no
+ramification group, no Herbrand `φ`, and no local class field theory.
+It is recorded in full because it is the cheapest tool in this audit and
+the one a next owner should reach for first.
+
+  **ABELIAN-DESCENT LEMMA.** Let `E` be a field of characteristic `≠ p`
+  with `μ_p ⊄ E`, let `L/E` be a finite ABELIAN Galois extension, and
+  let `q ∈ Eˣ` have a `pⁿ`-th root `r ∈ L`. Then `r = ζ y` with
+  `ζ ∈ μ_{pⁿ}(L)` and `y ∈ Eˣ`; in particular `q = y^{pⁿ} ∈ (Eˣ)^{pⁿ}`.
+
+  *Proof.* For `σ ∈ Γ := Gal(L/E)`, `σ(r)^{pⁿ} = σ(q) = q = r^{pⁿ}`, so
+  `ζ_σ := σ(r)/r` lies in `μ_{pⁿ} ∩ L`, a cyclic group `μ_{p^c}` with
+  `c ≤ n`. If `c = 0` then `r ∈ E` and we are done. Otherwise fix a
+  generator `ζ` of `μ_{p^c}` and write `σ(ζ) = ζ^{χ(σ)}`,
+  `ζ_σ = ζ^{a(σ)}` with `χ : Γ → (ℤ/p^c)ˣ` and `a : Γ → ℤ/p^c`. The
+  cocycle identity `ζ_{στ} = σ(ζ_τ) ζ_σ` together with `ζ_{στ} = ζ_{τσ}`
+  — this is the ONLY place abelianness is used — gives
+
+      a(τ)·(χ(σ) − 1) = a(σ)·(χ(τ) − 1)   in ℤ/p^c, for all σ, τ.
+
+  Since `μ_p ⊆ L` but `μ_p ⊄ E`, some `σ₁ ∈ Γ` moves `μ_p`, i.e.
+  `χ(σ₁) ≢ 1 mod p`, so `χ(σ₁) − 1` is a UNIT of `ℤ/p^c`. Put
+  `c₀ := a(σ₁)·(χ(σ₁) − 1)⁻¹`; the displayed identity then reads
+  `a(τ) = c₀·(χ(τ) − 1)`, i.e. `ζ_τ = τ(ζ^{c₀})/ζ^{c₀}`, for EVERY `τ`.
+  Hence `r/ζ^{c₀}` is `Γ`-fixed, so equals some `y ∈ Eˣ`, and
+  `q = r^{pⁿ} = y^{pⁿ}·ζ^{c₀ pⁿ} = y^{pⁿ}` because `ζ^{p^c} = 1` and
+  `c ≤ n`. ∎
+
+  The hypothesis `μ_p ⊄ E` is necessary and not cosmetic: over
+  `E = ℚ_p(μ_p)` the extension `L = E(p^{1/p})` IS abelian and `q = p`
+  is not a `p`-th power in `E`.
+
+**COROLLARY 1 (the Lubin–Tate family, every `p`, every `n`, every `s`).**
+Let `E/ℚ_p` be unramified — so `μ_p ⊄ E`, `p` being odd — and let `F` be
+a Lubin–Tate module for `(𝒪_E, π)`. Then `L := E(F[π^k])` is ABELIAN
+over `E` (Lubin–Tate theory; this is the same fact the `[L:ℚ_9] = 72`
+computation above used, but now it is the WHOLE argument), and
+`F[pⁿ] = F[πⁿ]` since `π` and `p` differ by a unit of `𝒪_E`. So if
+`q ∈ ℚ_pˣ` has `q^{1/pⁿ} ∈ ℚ_p(F[pⁿ]) ⊆ L`, the lemma gives `q = y^{pⁿ}`
+with `y ∈ Eˣ`, whence `v_p(q) = v_E(q) = pⁿ · v_E(y) ∈ pⁿ ℤ`. **So
+`pⁿ ∣ v_p(q)` outright: the Lubin–Tate family produces no counterexample
+at ANY `s`, and the `s ≥ 2` search this docstring recommended an hour
+earlier is dead before it starts.** Note what this costs: nothing. No
+Eisenstein polynomial, no different, no `φ`, no PARI, no Magma.
+
+**COROLLARY 2 (the shape any surviving counterexample must have).** The
+lemma applies verbatim to any finite flat `G` with `ℚ_p(G) ⊆ E^{ab}`
+for SOME unramified `E/ℚ_p`. By local class field theory
+`E^{ab} = E^{nr}·⋃_k E(F_{LT}[π^k])`, so "abelian over an unramified
+base" is exactly the world Lubin–Tate describes — and it is now entirely
+excluded. The Tate family already lay outside it (its field
+`ℚ_p(μ_{pⁿ}, q₀^{1/pⁿ})` is nonabelian over every unramified base) and
+was excluded separately by the Kummer Proposition at the top of this
+docstring. **What is left is the genuinely nonabelian CONNECTED case,
+and nothing else.**
+
+**WHERE THE SEARCH ACTUALLY GOES NOW, WITH A FREE NARROWING.** Take the
+smallest live shape, `p = 3`, `n = 2`, `s = 1`, `t = 1`: `v₃(q) = 3m`
+with `3 ∤ m`, so the radical to be placed is `3^{1/3}`. Suppose
+`3^{1/3} ∈ ℚ_3(G)` for `G` finite flat over `ℤ_3` killed by `9`. That
+field is Galois over `ℚ_3`, so it contains every conjugate of `3^{1/3}`,
+hence `μ_3`, hence all of `ℚ_3(μ_3, 3^{1/3})` — i.e. there is a
+surjection `Gal(ℚ_3(G)/ℚ_3) ↠ S₃` whose `A₃` carries upper break `3/2`.
+Write `G = E[9]` for a good-reduction elliptic curve to be concrete and
+put `N := Gal(ℚ_3(E[9])/ℚ_3(E[3]))`, a subgroup of the congruence kernel
+`1 + 3M₂(𝔽₃) ≅ (ℤ/3)⁴`. If `N` mapped TRIVIALLY to `S₃`, then `S₃` would
+be a quotient of `Gal(ℚ_3(E[3])/ℚ_3)` and so `ℚ_3(μ_3, 3^{1/3})` would
+sit inside `ℚ_3(E[3])` — impossible, since Fontaine at `n = 1` caps that
+field's upper breaks at `1/(p−1) = 1/2 < 3/2`. `N` is normal, so its
+image is a nontrivial normal subgroup of `S₃` and therefore contains
+`A₃`. **Conclusion: the très ramifiée cubic must be cut out INSIDE the
+`E[9]/E[3]` congruence layer, never at level 3.** That is the first
+constraint in this whole audit that is not a ramification estimate, and
+it tells a searcher exactly which layer to compute.
+
+CM must be excluded from that search, because a CM curve supersingular
+at `3` has `3` INERT in its CM field, which puts its formal group back
+in the Lubin–Tate family Corollary 1 just killed. The smallest-conductor
+non-CM curve over `ℚ` with good supersingular reduction at `3`, found by
+a bounded PARI/GP sweep over `y² = x³ + Ax + B`, `|A|,|B| ≤ 20`, is
+
+    17.a :  y² = x³ − 11x + 6,   N = 17,  j = 35937/17,
+            a₃ = 0,  v₃(Δ) = 0.
+
+The question to put to Magma is whether `Y³ − 3` has a root in
+`ℚ_3(E[9])` for this `E`. The level-3 layer is cheap (`a₃ = 0` makes
+`[3](X)/X` have all slopes `1/8`, so `ℚ_3(E[3])` is TAMELY ramified of
+degree 8 over its unramified part, break 0), and the narrowing above
+says only the second layer can carry the break — so the computation to
+do is the degree-81 congruence layer, not the full degree-3888 division
+field. That is what made the earlier `SplittingField` run hopeless.
+
+THE CHECK THAT WOULD REFUTE THIS BLOCK: exhibit a field `E` with
+`μ_p ⊄ E`, a finite abelian `L/E`, and `q ∈ Eˣ` having a `pⁿ`-th root in
+`L` with `q ∉ (Eˣ)^{pⁿ}`. Equivalently, find the error in the five-line
+cocycle computation — everything else here follows from that lemma plus
+the standard fact that `E(F[π^k])/E` is abelian. Nothing in this block
+depends on the different computations above it, so a mistake there does
+not propagate here, and vice versa.
 
 WHY NO SHARPENING OF FONTAINE'S CONSTANT CAN CLOSE THE `s ≥ 1` CASE
 (third owner, 2026-07-26 — the structural form of the numerical gap the
@@ -50173,7 +50280,44 @@ which together with the integral-closure/valuation-subring machinery of
 `Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`
 is the realistic route to the different form of Fontaine's bound.
 `~/cs/FLT` has nothing here: its only hit for Fontaine/Raynaud/fppf is a
-bibliography line in `FLT/Assumptions/Odlyzko.lean`. -/
+bibliography line in `FLT/Assumptions/Odlyzko.lean`.
+
+CUT-AXIS VERDICT (thirteenth owner, 2026-07-27) — stated with the axis
+named, so that a later owner can refute it cheaply rather than redo the
+survey. **Axes searched: (a) the ARITHMETIC axis, (b) the LEVEL axis,
+(c) the RAMIFICATION axis.** On none of them is there a cut into
+strictly smaller sorried leaves.
+
+(a) *Arithmetic.* Already cut, and by a previous owner: the whole
+peu-ramifiée ⇄ divisibility translation is factored out into the PROVEN
+`isPeuRamifiee_iff_dvd_log_valuation` and consumed by the sibling
+`isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`
+directly below. What remains in THIS declaration is exactly the flat
+input and nothing else; there is no arithmetic left in it to peel off.
+
+(b) *Level.* Induction on `n` does not close: from `pⁿ ∣ v_p(q)` at
+level `n` one wants to descend to `q^{1/p}`, which is not in `ℚ_p`, and
+adjoining it raises `e` past Fontaine's `e = 1 < p − 1` range. The
+`n = 0` case IS trivially true (`1 ∣ _`), so a base case exists, but it
+buys a named leaf for nothing since the step is the whole problem.
+
+(c) *Ramification.* Provably cannot close it — that is the content of
+the two blocks above, in both the different and the upper-numbering
+form, and the deficit is LINEAR in `n − s`, so no sharpening of
+Fontaine's constant helps.
+
+The axis NOT searched, and therefore the one to try next, is the
+**STRUCTURE axis: the connected–étale dévissage of `G` itself.** Over
+the henselian `ℤ_p` every finite flat `G` sits in
+`0 → G⁰ → G → G^ét → 0`; the étale quotient contributes only an
+UNRAMIFIED field, which the ABELIAN-DESCENT LEMMA above disposes of in
+one line, so all the content is in `G⁰` plus the torsor class. That is a
+genuine cut into strictly smaller pieces — but it needs the
+connected–étale sequence for finite flat Hopf algebras, which exists
+neither in the pin nor in `~/cs/FLT` nor in this project, and it needs
+only to be STATED, not proven, for the cut to be made. Estimating it as
+the cheapest of the three missing theories (against fppf cohomology and
+Raynaud's `F`-module classification) is this owner's recommendation. -/
 theorem pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
