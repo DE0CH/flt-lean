@@ -31662,22 +31662,6 @@ theorem heckeRep_zero_mul_heckeRepInf_coe {q : ℕ} (hq0 : (q : ℝ) ≠ 0) :
   fin_cases i <;> fin_cases k <;>
     simp [heckeRep_coe hq0, heckeRepInf_coe hq0, Matrix.mul_apply, Fin.sum_univ_two]
 
-/-- At weight `2` the extra Hecke representative undoes the finite one. -/
-theorem slash_heckeRepInf_heckeRep_zero (F : ℍ → ℂ) {q : ℕ} (hq : q.Prime) :
-    (F ∣[(2 : ℤ)] heckeRepInf q) ∣[(2 : ℤ)] heckeRep q 0 = F := by
-  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
-  have hqpos : (0 : ℝ) < q := lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm hq0)
-  rw [← SlashAction.slash_mul]
-  exact slash_two_of_coe_eq_smul_one F hqpos (heckeRepInf_mul_heckeRep_zero_coe hq0)
-
-/-- At weight `2` the finite Hecke representative undoes the extra one. -/
-theorem slash_heckeRep_zero_heckeRepInf (F : ℍ → ℂ) {q : ℕ} (hq : q.Prime) :
-    (F ∣[(2 : ℤ)] heckeRep q 0) ∣[(2 : ℤ)] heckeRepInf q = F := by
-  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
-  have hqpos : (0 : ℝ) < q := lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm hq0)
-  rw [← SlashAction.slash_mul]
-  exact slash_two_of_coe_eq_smul_one F hqpos (heckeRep_zero_mul_heckeRepInf_coe hq0)
-
 /-- **PEELING A `Γ₀(M)`-ELEMENT OFF THE SECOND SLOT MOVES THE DOMAIN**
 (PROVEN 2026-07-27): `∫_D petersson 2 g (f∣(δγ)) = ∫_{γ•D} petersson 2 g (f∣δ)`
 for `γ ∈ Γ₀(M)`, since `g∣γ = g` and `petersson_slash_two` has determinant `1`. -/
