@@ -3504,7 +3504,9 @@ scheme, no `Mult` and no `TatePt` in sight.
   longer accurate in either direction, and the stale label was a
   phantom-dispatch source. It is not "the single" geometric leaf of this
   FILE — `card_torsion_of_isMaximal`, `locallyQuasiFinite_mulByNat` and
-  `det_eq_cyclotomicCharacter_of_tateFrame` are geometric leaves too; the
+  `det_globalFrob_eq_absNorm_of_tateFrame` (the 2026-07-27 residue of the
+  determinant clause, `det_eq_cyclotomicCharacter_of_tateFrame` itself
+  being PROVEN) are geometric leaves too; the
   claim was only ever scoped to what
   `exists_mem_torsion_act_uniformizer_eq` rests on. And it is no longer a
   LEAF at all: it is PROVEN in `Modularity/AbelianSchemeIsogeny.lean`,
@@ -4851,10 +4853,18 @@ ONE is open and it is the only deep one:
   character, as a character of the whole of `Γ_F`; no exceptional set and
   nothing local appears in ITS statement). Its geometric content was cut
   out on 2026-07-27 along the CHEBOTAREV axis into
-  `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` (SORRY NODE — the
+  `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` (PROVEN — the
   same identity at the global Frobenius elements away from a finite set
   of places, which is where the bad places really live), the propagation
   being `det_eq_cyclotomicCharacter_of_globalFrob` (PROVEN, density).
+* `det_globalFrob_eq_absNorm_of_tateFrame` (SORRY NODE — the residue of
+  the above after the ARITHMETIC half was stripped off on 2026-07-27:
+  `det (τ (Frob_v)) = N v` away from a finite set of places, with the
+  cyclotomic character no longer mentioned). The arithmetic half is the
+  already-proven `cyclotomicCharacter_adicArithFrob_absNorm` of this
+  file; what remains is exactly the abelian-variety geometry, and it
+  needs an INTEGRAL MODEL for `f : A ⟶ S` — see its docstring for the
+  route audit and for what a successor must NOT do.
 * `exists_weilPairing_of_tateFrame` (PROVEN 2026-07-26 over the leaf
   above): the frame carries an alternating `O`-bilinear form with unit
   discriminant on which `Γ_F` acts through the cyclotomic character.
@@ -5248,8 +5258,15 @@ sides are continuous class functions and the Frobenius conjugacy classes
 are DENSE (`GaloisRepresentation.dense_conjClasses_globalFrob`).
 
 This is a genuine weakening, not a repackaging: the remaining leaf
-`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` constrains `τ` only
-at Frobenius elements, and everything below it here is PROVEN. -/
+constrains `τ` only at Frobenius elements, and everything below it here
+is PROVEN.
+
+A second narrowing was made on the same day, along the ARITHMETIC axis:
+at a Frobenius BOTH sides equal the absolute norm `N v`, and the right
+side is already proven to (`cyclotomicCharacter_adicArithFrob_absNorm`,
+above).  So the cyclotomic character is discharged entirely and the only
+sorry of the section is `det_globalFrob_eq_absNorm_of_tateFrame`,
+`det (τ (Frob_v)) = N v`. -/
 
 /-- **A free module carrying the module topology over a `T2Space` ring is
 a `T2Space`** (PROVEN; vendored in argument from the reference project
@@ -5401,22 +5418,51 @@ theorem det_eq_cyclotomicCharacter_of_globalFrob
           (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).continuous_toFun))).congr
       fun _ => rfl
 
-/-- **The determinant of a Tate frame at the global Frobenius elements**
-(SORRY NODE, cut 2026-07-27 out of
-`det_eq_cyclotomicCharacter_of_tateFrame` along the CHEBOTAREV axis —
-THE geometric input of the determinant clause; Silverman *AEC* III.8 for
-the elliptic case, Mumford *Abelian Varieties* §16/§20 for the polarized
-case in general, Taylor 2002 §2 and Carayol for the Hilbert–Blumenthal
-normalization used here).
+/-- **Only finitely many places of `F` contain a given nonzero integer**
+(PROVEN — `c ∈ w` says exactly that `w` divides the principal ideal
+`(c)`, and a nonzero ideal of a Dedekind domain has finitely many prime
+divisors, `Ideal.finite_factors`).
+
+Used by `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` below to
+enlarge the geometric leaf's exceptional set by the fibre over `q`,
+which is where the cyclotomic character is ramified and where the
+identification of `χ_cyc(Frob_v)` with `N v` fails. -/
+theorem finite_places_natCast_mem_asIdeal (F : Type u) [Field F] [NumberField F]
+    (c : NumberField.RingOfIntegers F) (hc : c ≠ 0) :
+    {w : HeightOneSpectrum (NumberField.RingOfIntegers F) | c ∈ w.asIdeal}.Finite := by
+  have hspan : (Ideal.span {c} : Ideal (NumberField.RingOfIntegers F)) ≠ 0 := by
+    simpa [Ideal.span_singleton_eq_bot] using hc
+  refine (Ideal.finite_factors hspan).subset fun w hw => ?_
+  simpa [Ideal.dvd_span_singleton] using hw
+
+/-- **The determinant of a Tate frame at the global Frobenius elements is
+the ABSOLUTE NORM** (SORRY NODE, cut 2026-07-27 out of
+`det_eq_cyclotomicCharacter_of_tateFrame` along the CHEBOTAREV axis and
+narrowed the same day along the ARITHMETIC axis — THE geometric input of
+the determinant clause, and now ALL that remains of it; Silverman *AEC*
+III.8 for the elliptic case, Mumford *Abelian Varieties* §16/§20 for the
+polarized case in general, Taylor 2002 §2 and Carayol for the
+Hilbert–Blumenthal normalization used here).
 
 For a Tate frame `φ`/`τ` as in `exists_tateFrame_of_adicCoefficientRing`,
 there is a FINITE set of finite places of `F` outside which
 
-  `det (τ (Frob_v)) = χ_cyc(Frob_v)`.
+  `det (τ (Frob_v)) = N v`,   `N v = #(𝒪_F / v)`.
 
-The general identity at every `σ ∈ Γ_F` follows from this by
-`det_eq_cyclotomicCharacter_of_globalFrob` (Chebotarev density), which is
-PROVEN; so this leaf is all that remains of the determinant clause.
+WHY THE CYCLOTOMIC CHARACTER NO LONGER APPEARS HERE.  The leaf as first
+cut asked for `det (τ Frob_v) = χ_cyc(Frob_v)`.  That form bundled two
+independent theories: the ARITHMETIC identification of `χ_cyc` at a
+Frobenius of a general number field with the residue cardinality, and
+the GEOMETRIC computation of the determinant.  The first was already
+PROVEN IN THIS FILE, ~400 lines above, as
+`cyclotomicCharacter_adicArithFrob_absNorm` (over
+`adicArithFrob_rootsOfUnity_pow_absNorm`), and is consumed by the
+assembly in `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` below.
+So nothing about roots of unity, unramifiedness of `ℚ(μ_{q^∞})/ℚ` away
+from `q`, or the tower `Γ F_v → Γ F → Γ ℚ` is any part of this leaf's
+burden; a successor sees the pure statement `det Frob_v = N v`.
+REFUTING CHECK: `grep -n 'theorem cyclotomicCharacter_adicArithFrob_absNorm'`
+on this file.
 
 WHY THIS AXIS, AND NOT THE POLARIZATION AXIS.  The classical char-0 route
 — choose an `𝒪_D`-linear polarization, transport the canonical Weil
@@ -5449,29 +5495,134 @@ is refutable by one grep:
   `traceForm_nondegenerate`) but is used NOWHERE in this project or in
   `~/cs/FLT` except as an ideal-theoretic black box.
 
+So the polarization route is blocked on exactly THREE nameable things,
+and none of them is a proof this leaf could contain: an existence
+theorem for `DualStruct` (the dual abelian scheme), a nondegeneracy
+clause added to `PolarizationStruct` (a CUT-LEVEL change to
+`AbelianScheme.lean`, not a repair to be made from here), and an
+existence theorem for the polarization itself.
+
 The Chebotarev axis relocates the burden to characteristic `q` instead,
 which is where the elliptic proof in this tree actually went
 (`det_frobeniusTorsionEnd` computes `det Frob = q` from the
-divisor-theoretic pairing ON THE REDUCTION).  What it needs, and what a
-successor must build, is an INTEGRAL MODEL for `f : A ⟶ S`: a
-good-reduction hypothesis at almost all `v`, the reduction `A_v`, and the
-comparison of `A[I^n]` with the torsion of that reduction.  Néron models
-are in neither mathlib nor `~/cs/FLT` nor this project — but note that a
+divisor-theoretic pairing ON THE REDUCTION, and
+`exists_frobenius_reduction_model` supplies the good-reduction datum
+that transports it).  What it needs, and what a successor must build, is
+an INTEGRAL MODEL for `f : A ⟶ S`: a good-reduction hypothesis at almost
+all `v`, the reduction `A_v` over the residue field, and the comparison
+of `A[I^n]` with the torsion of that reduction.  Néron models are in
+neither mathlib nor `~/cs/FLT` nor this project — but note that a
 statement, not a proof, of the model may be all a further cut needs (see
 `exists_x0Sieve`'s history for the same pattern).
 
-FAITHFULNESS.  The exceptional set is genuinely necessary here and is NOT
-an artifact: `χ_cyc` is ramified at `q`, so the identity at `Frob_v` is
-false for `v ∣ q`, exactly as in
-`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`, whose `Sp` inserts
-the place of `p` for this reason.  No exceptional set survives into the
-consumer, because density removes it.
+WHAT A SUCCESSOR SHOULD NOT DO.  Do not cut this leaf by positing an
+alternating `O`-bilinear form on `O²` scaled by `N v` at `τ (Frob_v)`.
+On a FRAMED module that is not a cut at all: by
+`bilin_alternating_apply_det_apply` such a form with unit discriminant
+exists if and only if the determinant identity holds, so the "pairing"
+sub-leaf would be literally equivalent to this one.  That is the same
+trap recorded in the FORMAL-CONTENT AUDIT of
+`exists_weilPairing_of_tateFrame` below, which is how the previous cut
+of this node collapsed to three lines.  A cut here has to name the
+REDUCTION, not the pairing.
+
+FAITHFULNESS — WHY AN EXCEPTIONAL SET, AND WHY IT IS HARMLESS.  Two
+independent reasons force one, and neither is an artifact.  At a place
+of BAD REDUCTION the `I`-adic Tate module is ramified at `v`, so
+`τ (Frob_v)` is not even well defined up to inertia and no value can be
+asserted.  At `v ∣ q` the Tate module is ramified for the second,
+unavoidable reason that its own residue characteristic is `q`; this is
+the same place at which `χ_cyc` is ramified, so the assembly below has
+to exclude that fibre anyway.  No exceptional set survives into the
+consumer, because Chebotarev density removes it — that is precisely
+what `det_eq_cyclotomicCharacter_of_globalFrob` above does.
+
+FAITHFULNESS — WHERE `IsTotallyReal D` IS USED, which is easy to lose in
+a restatement.  The classical proof reads the determinant off
+`∧²_{𝒪_{D,I}} T_I A`, and that exterior square is the right object only
+because the Rosati involution attached to an `𝒪_D`-linear polarization
+is TRIVIAL on `𝒪_D`, which is exactly total reality of `D`.  Without it
+the `𝒪_D`-linear Weil pairing is hermitian rather than alternating for
+the `𝒪_D`-structure, `∧²` is not a rank-one `𝒪_{D,I}`-module with
+trivial Galois action, and the determinant is a twist of `χ_cyc` rather
+than `χ_cyc`.  So `[NumberField.IsTotallyReal D]` is load-bearing here
+and must not be dropped as decoration.
 
 The pinning hypotheses `j`, `hφj`, `hcplt`, `hdense`, `hker` are carried
 verbatim from the consumer and are load-bearing there for the reason
 recorded below it: without them the `O`-structure transported to `T` is
 an arbitrary embedding `O ↪ End_{ℤ_q[Γ_F]}(T)` and the determinant
 becomes `χ₁ · ψ⁻¹(χ₂)` rather than `χ_cyc`.  Do not weaken them. -/
+theorem det_globalFrob_eq_absNorm_of_tateFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hφj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n)) :
+    ∃ Sbad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ v ∉ Sbad,
+        LinearMap.det (τ (GaloisRepresentation.globalFrob v)) =
+          (Ideal.absNorm v.asIdeal : O) :=
+  sorry
+
+/-- **The determinant of a Tate frame at the global Frobenius elements**
+(PROVEN 2026-07-27 over `det_globalFrob_eq_absNorm_of_tateFrame` and the
+already-proven `cyclotomicCharacter_adicArithFrob_absNorm` — the
+ARITHMETIC half of what used to be a single sorried leaf).
+
+For a Tate frame `φ`/`τ` as in `exists_tateFrame_of_adicCoefficientRing`,
+there is a FINITE set of finite places of `F` outside which
+
+  `det (τ (Frob_v)) = χ_cyc(Frob_v)`.
+
+The general identity at every `σ ∈ Γ_F` follows from this by
+`det_eq_cyclotomicCharacter_of_globalFrob` (Chebotarev density), which is
+PROVEN.
+
+THE SPLIT.  Both sides are evaluated at `Frob_v`, and there both are
+`N v = #(𝒪_F / v)`:
+
+* the RIGHT side by `cyclotomicCharacter_adicArithFrob_absNorm`, proven
+  ~400 lines above this one out of `adicArithFrob_rootsOfUnity_pow_absNorm`
+  — pure algebraic number theory, valid over any number field `F`, and
+  needing only `v ∤ q`;
+* the LEFT side by `det_globalFrob_eq_absNorm_of_tateFrame`, which is
+  where ALL the abelian-variety geometry now lives and is the section's
+  only remaining sorry.
+
+`GaloisRepresentation.globalFrob v` is by definition the image of
+`Field.AbsoluteGaloisGroup.adicArithFrob v` under
+`Field.absoluteGaloisGroup.map (algebraMap F (v.adicCompletion F))`, so the
+two statements meet on the nose (`rfl`) with no transport lemma needed.
+
+The exceptional set is the geometric leaf's `Sbad` enlarged by the whole
+fibre over `q`, which is finite by `finite_places_natCast_mem_asIdeal`
+above: `χ_cyc` is RAMIFIED at `q`, so `χ_cyc(Frob_v) = N v` is false for
+`v ∣ q` — exactly as in
+`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`, whose `Sp` inserts
+the place of `p` for the same reason.  Nothing of this survives into the
+consumer, because density removes the exceptional set. -/
 theorem det_globalFrob_eq_cyclotomicCharacter_of_tateFrame
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -5505,8 +5656,26 @@ theorem det_globalFrob_eq_cyclotomicCharacter_of_tateFrame
           algebraMap ℤ_[q] O
             ((cyclotomicCharacter (AlgebraicClosure ℚ) q
               ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
-                (GaloisRepresentation.globalFrob v)).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q]) :=
-  sorry
+                (GaloisRepresentation.globalFrob v)).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q]) := by
+  classical
+  -- The geometry: the determinant is the absolute norm away from a finite set.
+  obtain ⟨Sbad, hS⟩ := det_globalFrob_eq_absNorm_of_tateFrame m x hdim q I hI hqI π hπ hπ2
+    O j hcplt hdense hker τ φ hφadd hφbij hφequiv hφj
+  have hq0 : ((q : ℕ) : NumberField.RingOfIntegers F) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (Fact.out : q.Prime).ne_zero
+  -- Enlarge the exceptional set by the fibre over `q`, where `χ_cyc` is ramified.
+  refine ⟨Sbad ∪ (finite_places_natCast_mem_asIdeal F _ hq0).toFinset, fun v hv => ?_⟩
+  rw [Finset.mem_union, not_or] at hv
+  obtain ⟨hv1, hv2⟩ := hv
+  have hvq : ((q : ℕ) : NumberField.RingOfIntegers F) ∉ v.asIdeal := by
+    simpa using hv2
+  -- `globalFrob` is definitionally the image of the local arithmetic Frobenius.
+  have hgf : GaloisRepresentation.globalFrob v =
+      Field.absoluteGaloisGroup.map
+        (algebraMap F (HeightOneSpectrum.adicCompletion F v))
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) := rfl
+  -- The arithmetic: `χ_cyc (Frob_v) = N v` for `v ∤ q`.
+  rw [hS v hv1, hgf, cyclotomicCharacter_adicArithFrob_absNorm F v hvq, map_natCast]
 
 /-- **The determinant of a Tate frame is the cyclotomic character**
 (PROVEN 2026-07-27 over `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame`
