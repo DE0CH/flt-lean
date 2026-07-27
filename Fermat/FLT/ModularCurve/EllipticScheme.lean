@@ -41,16 +41,16 @@ under "Why this is not in `X0.lean`" below.
   `exists_ellipticScheme_of_weierstrass`.
 
 `isProper_projToSpec` is PROVEN, and so now is `smoothOfRelativeDimension_projToSpec`
-apart from three leaves that are all missing pieces of MATHLIB rather than of
+apart from two leaves that are both missing pieces of MATHLIB rather than of
 this development.  `locally_isStandardSmooth_awayCoord` — the last direct sorry of
 item 7a — is now PROVEN from them, and they are, in the "Dehomogenisation"
 section: `exists_projChartRingEquiv` (the dehomogenisation isomorphism
 `(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0` ≃ `ℚ[u, v] ⧸ (wᵢ)`),
-`projChart_jacobian_span_eq_top` (the chart Jacobian criterion, where `hjac` and
-hence `Δ` is consumed), and
+and `projChart_jacobian_span_eq_top` (the chart Jacobian criterion, where `hjac`
+and hence `Δ` is consumed).  The third,
 `isStandardSmoothOfRelativeDimension_projChartAway` (a plane curve is standard
-smooth of relative dimension `1` where a partial derivative is invertible).
-The remaining open leaves of the file are those three plus
+smooth of relative dimension `1` where a partial derivative is invertible), is
+PROVEN.  The remaining open leaves of the file are those two plus
 `nonempty_projGroupLaw`, `exists_projGeomFibreAddEquiv`, and the interior of
 `geometricallyConnected_projToSpec`, which still carries three named sorried
 steps `hbc`/`hne`/`hpre`.  Each declaration carries its own docstring saying what
@@ -551,11 +551,11 @@ theorem projChart_jacobian_span_eq_top (E : WeierstrassCurve ℚ) [E.IsElliptic]
           (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i)) = ⊤ :=
   sorry
 
-/-- **LEAF C — A PLANE CURVE IS STANDARD SMOOTH OF RELATIVE DIMENSION `1` WHERE A PARTIAL
-DERIVATIVE IS INVERTIBLE** (sorry node; also a missing piece of MATHLIB rather than of this
-development).
+/-- **A PLANE CURVE IS STANDARD SMOOTH OF RELATIVE DIMENSION `1` WHERE A PARTIAL DERIVATIVE
+IS INVERTIBLE** (PROVEN; it was LEAF C of the residual item-7a leaf, and it is a piece of
+MATHLIB rather than of this development).
 
-## Proof plan
+## The construction
 
 `Algebra.PreSubmersivePresentation.naive` (`Mathlib/RingTheory/Extension/Presentation/
 Submersive.lean`) builds a pre-submersive presentation of `R[Xₛ] ⧸ (vᵣ)` from an INJECTIVE
@@ -580,15 +580,213 @@ obtained from `MvPolynomial.optionEquivLeft` (or `sumAlgEquiv`) to split off `t`
 `Ideal.polynomialQuotientEquivQuotientPolynomial` to push the quotient by `wᵢ` inside, then
 `Localization.awayEquivAdjoin` — which is precisely
 `Localization.Away r ≃ₐ[R] AdjoinRoot (C r * X - 1)` — to recognise the remaining quotient.
-Finally `SubmersivePresentation.ofAlgEquiv` transports the presentation onto `T`, and
-`IsLocalization.algEquiv` moves between `T` and `Localization.Away`. -/
+The one piece of plumbing is the identification of the presented ring with `T`,
+
+  `ℚ[u, v, t] ⧸ (wᵢ, t·∂wᵢ/∂uⱼ - 1)`  ≃  `(ℚ[u, v] ⧸ (wᵢ))_{∂wᵢ/∂uⱼ}`.
+
+It is built here by hand as a pair of mutually inverse maps rather than by chaining
+mathlib's quotient/localisation equivalences: `Ideal.Quotient.liftₐ` in one direction and
+`IsLocalization.lift` in the other, compared on generators with `MvPolynomial.ringHom_ext`
+and `IsLocalization.ringHom_ext`.  That turned out to be markedly shorter than assembling
+`MvPolynomial.optionEquivLeft`, `Ideal.polynomialQuotientEquivQuotientPolynomial` and
+`Localization.awayEquivAdjoin`, and it avoids the `Algebra ℚ (MvPolynomial V ℚ ⧸ I)` SMul
+diamond — `Submodule.Quotient.instSMul'` versus `Algebra.toSMul` — which defeats
+`IsScalarTower.of_algebraMap_eq` on the nose and is why the maps below are compared as
+RING homs wherever the chart ring is involved.
+
+Then `SubmersivePresentation.ofAlgEquiv` transports the presentation onto `T`, and the
+dimension count is `Nat.card (Option (ProjChartVar i)) - Nat.card (Fin 2) = 3 - 2 = 1`.
+
+Axiom audit: `[propext, Classical.choice, Quot.sound]`. -/
 theorem isStandardSmoothOfRelativeDimension_projChartAway (E : WeierstrassCurve ℚ) (i : Fin 3)
     (j : ProjChartVar i) (T : Type) [CommRing T] [Algebra (ProjChartRing E i) T]
     [IsLocalization.Away (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
       (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i) T] :
     RingHom.IsStandardSmoothOfRelativeDimension 1
-      ((algebraMap (ProjChartRing E i) T).comp (algebraMap ℚ (ProjChartRing E i))) :=
-  sorry
+      ((algebraMap (ProjChartRing E i) T).comp (algebraMap ℚ (ProjChartRing E i))) := by
+  classical
+  algebraize [(algebraMap (ProjChartRing E i) T).comp (algebraMap ℚ (ProjChartRing E i))]
+  -- the two relations of the presentation, in the variables `(u, v, t)`
+  set v : Fin 2 → MvPolynomial (Option (ProjChartVar i)) ℚ :=
+    ![MvPolynomial.rename Option.some (projChartPolynomial E i),
+      MvPolynomial.X none * MvPolynomial.rename Option.some
+        (MvPolynomial.pderiv j (projChartPolynomial E i)) - 1] with hv
+  set P := MvPolynomial (Option (ProjChartVar i)) ℚ ⧸ (Ideal.span <| Set.range v) with hP
+  -- `t` inverts `∂w/∂u` in `P`
+  have hunit : IsUnit (Ideal.Quotient.mk (Ideal.span <| Set.range v)
+      (MvPolynomial.rename Option.some
+        (MvPolynomial.pderiv j (projChartPolynomial E i)))) := by
+    have key : Ideal.Quotient.mk (Ideal.span <| Set.range v)
+        (MvPolynomial.rename Option.some
+          (MvPolynomial.pderiv j (projChartPolynomial E i)))
+        * Ideal.Quotient.mk _ (MvPolynomial.X none) = 1 := by
+      rw [← map_mul, ← sub_eq_zero, ← map_one (Ideal.Quotient.mk (Ideal.span <| Set.range v)),
+        ← map_sub, Ideal.Quotient.eq_zero_iff_mem]
+      exact Ideal.subset_span ⟨1, by simp [hv, mul_comm]⟩
+    exact ⟨⟨_, _, key, by rw [mul_comm]; exact key⟩, rfl⟩
+  set dbar : ProjChartRing E i := Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
+    (MvPolynomial.pderiv j (projChartPolynomial E i)) with hdbar
+  -- the ring map `C → P`
+  have hkillw : ∀ a ∈ Ideal.span {projChartPolynomial E i},
+      (Ideal.Quotient.mk (Ideal.span <| Set.range v))
+        (MvPolynomial.rename Option.some a) = 0 := by
+    intro a ha
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp ha
+    have hz : (Ideal.Quotient.mk (Ideal.span <| Set.range v))
+        (MvPolynomial.rename Option.some (projChartPolynomial E i)) = 0 := by
+      rw [Ideal.Quotient.eq_zero_iff_mem]
+      exact Ideal.subset_span ⟨0, by simp [hv]⟩
+    rw [map_mul, map_mul, hz, mul_zero]
+  set CtoP : ProjChartRing E i →ₐ[ℚ] P :=
+    Ideal.Quotient.liftₐ _ ((Ideal.Quotient.mkₐ ℚ (Ideal.span <| Set.range v)).comp
+      (MvPolynomial.rename Option.some)) hkillw with hCtoP
+  have hCtoP_mk : ∀ p, CtoP (Ideal.Quotient.mk _ p)
+      = Ideal.Quotient.mk (Ideal.span <| Set.range v) (MvPolynomial.rename Option.some p) :=
+    fun p => rfl
+  -- the ring map `P → T`
+  set g : Option (ProjChartVar i) → T := fun o => match o with
+    | none => IsLocalization.mk' T (1 : ProjChartRing E i) ⟨dbar, Submonoid.mem_powers _⟩
+    | some x => algebraMap (ProjChartRing E i) T
+        (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i}) (MvPolynomial.X x)) with hg
+  have hrename : ∀ p : MvPolynomial (ProjChartVar i) ℚ,
+      MvPolynomial.aeval g (MvPolynomial.rename Option.some p)
+        = algebraMap (ProjChartRing E i) T
+          (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i}) p) := by
+    have : ((MvPolynomial.aeval g : MvPolynomial (Option (ProjChartVar i)) ℚ →ₐ[ℚ] T) :
+          MvPolynomial (Option (ProjChartVar i)) ℚ →+* T).comp
+          ((MvPolynomial.rename Option.some :
+            MvPolynomial (ProjChartVar i) ℚ →ₐ[ℚ] MvPolynomial (Option (ProjChartVar i)) ℚ) :
+            MvPolynomial (ProjChartVar i) ℚ →+* _)
+        = (algebraMap (ProjChartRing E i) T).comp
+          (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})) := by
+      refine MvPolynomial.ringHom_ext (fun r => ?_) (fun n => ?_)
+      · simp only [RingHom.coe_comp, Function.comp_apply, AlgHom.coe_toRingHom,
+          MvPolynomial.rename_C, MvPolynomial.aeval_C]
+        exact IsScalarTower.algebraMap_apply ℚ (ProjChartRing E i) T r
+      · simp [hg]
+    exact fun p => congrArg (fun f : MvPolynomial (ProjChartVar i) ℚ →+* T => f p) this
+  have hginv : g none * algebraMap (ProjChartRing E i) T dbar = 1 := by
+    show IsLocalization.mk' T (1 : ProjChartRing E i) ⟨dbar, Submonoid.mem_powers _⟩
+      * algebraMap (ProjChartRing E i) T dbar = 1
+    rw [IsLocalization.mk'_spec, map_one]
+  have hkillv : ∀ a ∈ Ideal.span (Set.range v), MvPolynomial.aeval g a = 0 := by
+    intro a ha
+    refine Submodule.span_induction ?_ (by simp) (by intro x y _ _ hx hy; simp [hx, hy])
+      (by intro c x _ hx; simp [hx]) ha
+    rintro _ ⟨k, rfl⟩
+    fin_cases k
+    · show MvPolynomial.aeval g
+        (MvPolynomial.rename Option.some (projChartPolynomial E i)) = 0
+      rw [hrename, Ideal.Quotient.eq_zero_iff_mem.mpr
+        (Ideal.mem_span_singleton_self _), map_zero]
+    · show MvPolynomial.aeval g (MvPolynomial.X none * MvPolynomial.rename Option.some
+        (MvPolynomial.pderiv j (projChartPolynomial E i)) - 1) = 0
+      rw [map_sub, map_mul, MvPolynomial.aeval_X, hrename, map_one, ← hdbar, hginv, sub_self]
+  set PtoT : P →ₐ[ℚ] T := Ideal.Quotient.liftₐ _ (MvPolynomial.aeval g) hkillv with hPtoT
+  have hPtoT_mk : ∀ q, PtoT (Ideal.Quotient.mk (Ideal.span <| Set.range v) q)
+      = MvPolynomial.aeval g q := fun q => rfl
+  -- the ring map `T → P`
+  have hCtoP_dbar : CtoP dbar = Ideal.Quotient.mk (Ideal.span <| Set.range v)
+      (MvPolynomial.rename Option.some
+        (MvPolynomial.pderiv j (projChartPolynomial E i))) := rfl
+  have hunits : ∀ y : Submonoid.powers dbar, IsUnit ((CtoP : ProjChartRing E i →+* P) y) := by
+    rintro ⟨_, n, rfl⟩
+    rw [show ((CtoP : ProjChartRing E i →+* P) (dbar ^ n)) = (CtoP dbar) ^ n from map_pow _ _ _,
+      hCtoP_dbar]
+    exact hunit.pow n
+  set TtoP : T →+* P := IsLocalization.lift hunits with hTtoP
+  have hTtoP_alg : ∀ c, TtoP (algebraMap (ProjChartRing E i) T c) = CtoP c :=
+    fun c => IsLocalization.lift_eq hunits c
+  have hcomp : ∀ c : ProjChartRing E i, PtoT (CtoP c) = algebraMap (ProjChartRing E i) T c := by
+    intro c
+    obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective c
+    rw [hCtoP_mk, hPtoT_mk, hrename]
+  -- the two composites are the identity
+  have hTP : ∀ x : T, PtoT (TtoP x) = x := by
+    have := IsLocalization.ringHom_ext (M := Submonoid.powers dbar) (S := T)
+      (j := (PtoT : P →+* T).comp TtoP) (k := RingHom.id T)
+      (RingHom.ext fun c => by
+        simp only [RingHom.coe_comp, Function.comp_apply, RingHom.id_apply,
+          AlgHom.coe_toRingHom]
+        rw [hTtoP_alg, hcomp])
+    exact fun x => congrArg (fun f : T →+* T => f x) this
+  have hPT : ∀ x : P, TtoP (PtoT x) = x := by
+    have : (TtoP.comp (PtoT : P →+* T)).comp
+        (Ideal.Quotient.mk (Ideal.span <| Set.range v))
+        = (RingHom.id P).comp (Ideal.Quotient.mk (Ideal.span <| Set.range v)) := by
+      refine MvPolynomial.ringHom_ext (fun r => ?_) (fun n => ?_)
+      · simp only [RingHom.coe_comp, Function.comp_apply, RingHom.id_apply,
+            AlgHom.coe_toRingHom]
+        rw [hPtoT_mk]
+        simp only [MvPolynomial.aeval_C]
+        rw [IsScalarTower.algebraMap_apply ℚ (ProjChartRing E i) T r, hTtoP_alg]
+        exact (CtoP.commutes r).trans (by rfl)
+      · cases n with
+        | none =>
+          simp only [RingHom.coe_comp, Function.comp_apply, RingHom.id_apply,
+            AlgHom.coe_toRingHom]
+          rw [hPtoT_mk]
+          simp only [MvPolynomial.aeval_X]
+          show TtoP (IsLocalization.mk' T (1 : ProjChartRing E i)
+            ⟨dbar, Submonoid.mem_powers _⟩) = _
+          rw [IsLocalization.lift_mk'_spec]
+          rw [map_one]
+          change (1 : P) = CtoP dbar *
+            Ideal.Quotient.mk (Ideal.span <| Set.range v) (MvPolynomial.X none)
+          rw [hCtoP_dbar, ← map_mul, eq_comm, ← sub_eq_zero,
+            ← map_one (Ideal.Quotient.mk (Ideal.span <| Set.range v)), ← map_sub,
+            Ideal.Quotient.eq_zero_iff_mem]
+          exact Ideal.subset_span ⟨1, by simp [hv, mul_comm]⟩
+        | some x =>
+          simp only [RingHom.coe_comp, Function.comp_apply, RingHom.id_apply,
+            AlgHom.coe_toRingHom]
+          rw [hPtoT_mk]
+          simp only [MvPolynomial.aeval_X]
+          show TtoP (algebraMap (ProjChartRing E i) T
+            (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i}) (MvPolynomial.X x))) = _
+          rw [hTtoP_alg, hCtoP_mk, MvPolynomial.rename_X]
+    intro x
+    obtain ⟨q, rfl⟩ := Ideal.Quotient.mk_surjective x
+    exact congrArg (fun f : MvPolynomial (Option (ProjChartVar i)) ℚ →+* P => f q) this
+  -- the isomorphism `P ≃ₐ[ℚ] T`
+  set eA : P ≃ₐ[ℚ] T := AlgEquiv.ofRingEquiv
+    (f := { (PtoT : P →+* T) with invFun := TtoP, left_inv := hPT, right_inv := hTP })
+    (fun x => PtoT.commutes x) with heA
+  -- `∂/∂t` kills everything pulled back from the chart variables
+  have hpd0 : ∀ p : MvPolynomial (ProjChartVar i) ℚ,
+      MvPolynomial.pderiv (none : Option (ProjChartVar i))
+        (MvPolynomial.rename Option.some p) = 0 := by
+    intro p
+    induction p using MvPolynomial.induction_on with
+    | C a => simp
+    | add p q hp hq => simp [hp, hq]
+    | mul_X p n hp => simp [hp]
+  have ha : Function.Injective (![some j, none] : Fin 2 → Option (ProjChartVar i)) := by
+    intro a b hab
+    fin_cases a <;> fin_cases b <;> simp_all
+  have hdet : (Algebra.PreSubmersivePresentation.naive (R := ℚ) (v := v)
+      ![some j, none] ha).jacobiMatrix.det
+      = (MvPolynomial.rename Option.some
+          (MvPolynomial.pderiv j (projChartPolynomial E i))) ^ 2 := by
+    rw [Matrix.det_fin_two, Algebra.PreSubmersivePresentation.jacobiMatrix_naive,
+      Algebra.PreSubmersivePresentation.jacobiMatrix_naive,
+      Algebra.PreSubmersivePresentation.jacobiMatrix_naive,
+      Algebra.PreSubmersivePresentation.jacobiMatrix_naive]
+    simp only [hv, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+      map_sub, map_one, MvPolynomial.pderiv_X, Derivation.leibniz,
+      MvPolynomial.pderiv_rename (Option.some_injective (ProjChartVar i)), hpd0]
+    simp [sq]
+  refine (Algebra.SubmersivePresentation.ofAlgEquiv
+    ⟨Algebra.PreSubmersivePresentation.naive (R := ℚ) (v := v) ![some j, none] ha, ?_⟩
+    eA).isStandardSmoothOfRelativeDimension ?_
+  · rw [Algebra.PreSubmersivePresentation.jacobian_eq_jacobiMatrix_det, hdet, map_pow]
+    refine IsUnit.pow 2 ?_
+    show IsUnit (Ideal.Quotient.mk (Ideal.span <| Set.range v)
+      (MvPolynomial.rename Option.some
+        (MvPolynomial.pderiv j (projChartPolynomial E i))))
+    exact hunit
+  · show Nat.card (Option (ProjChartVar i)) - Nat.card (Fin 2) = 1
+    simp
 
 /-- **THE RESIDUAL LEAF OF ITEM 7a** — the degree-zero part of the localisation of the
 homogeneous coordinate ring at a coordinate is locally standard smooth of relative
@@ -613,12 +811,12 @@ any further elliptic-curve mathematics:
   for `dehomogeni` over the pin returns nothing, and neither does one over `~/cs/FLT`.
 * `projChart_jacobian_span_eq_top` (LEAF B) — the two chart partials generate the unit
   ideal.  This is where `hjac`, and hence `Δ`, is consumed.
-* `isStandardSmoothOfRelativeDimension_projChartAway` (LEAF C) — on each of the two
+* `isStandardSmoothOfRelativeDimension_projChartAway` (**PROVEN**) — on each of the two
   localisations the `2 × 2` Jacobian of the relations `(wᵢ, t·∂wᵢ/∂u - 1)` in the generators
   `(u, v, t)` is triangular with determinant `(∂wᵢ/∂u)²`, a unit there, so the presentation
   is submersive of dimension `3 - 2 = 1`.
 
-Each carries its own proof plan; see their docstrings.  A Gröbner computation confirms the
+Leaves A and B each carry their own proof plan; see their docstrings.  A Gröbner computation confirms the
 Jacobian ideal of each of the three charts is the unit ideal over `ℚ(a₁, …, a₆)` and is
 PROPER over `ℚ[a₁, …, a₆]`, so no chart is exceptional and none of this is vacuous. -/
 theorem locally_isStandardSmooth_awayCoord (E : WeierstrassCurve ℚ) [E.IsElliptic] (i : Fin 3)
