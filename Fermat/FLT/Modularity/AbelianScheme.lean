@@ -69,6 +69,17 @@ the cone can see them, and simultaneously makes the moduli statement
 speak about a genuine `Γ_F`-module and a genuine `𝒪_D`-submodule rather
 than about a hand-rolled list of equations.
 
+## Producing one: `AbelianSchemeStruct.ofMorphisms`
+
+The Yoneda presentation is what the moduli argument consumes, but it is
+not what a producer can hand over — see the section "Building an
+`AbelianSchemeStruct` from MORPHISMS" below.  `ofMorphisms` takes the
+group law as equations of morphisms (`m : A ×_S A ⟶ A`, `e : S ⟶ A`,
+`i : A ⟶ A`) and derives the whole functor-of-points structure, with the
+two naturality fields coming out for free.  It is the interface through
+which every producer of an abelian scheme in this development is meant to
+go.
+
 Everything in this module is PROVEN; it contains no `sorry`.
 -/
 module
@@ -170,6 +181,289 @@ of the functor of points at one base point. -/
   letI grp : AddGroup (RelPoint f g) :=
     AddGroup.ofLeftAxioms ab.add_assoc ab.zero_add ab.neg_add
   { grp with add_comm := ab.add_comm }
+
+end AbelianSchemeStruct
+
+/-! ### Building an `AbelianSchemeStruct` from MORPHISMS
+
+The functor-of-points presentation above is what the moduli argument
+consumes, but it is *not* what a producer can hand over: `ab.add` is an
+operation on `RelPoint f g` for an ARBITRARY test scheme `T`, and for a
+scheme built as a `Proj` there is no functor-of-points description of
+`Hom(T, Proj 𝒜)` at this pin — `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/
+Functor.lean` supplies only functoriality `Proj ℬ ⟶ Proj 𝒜` in the graded
+ring.  So `add` cannot be written down by hand on `T`-points, and every
+attempt to do so degenerates into a chain of existentials.
+
+`ofMorphisms` closes that gap in the only direction that is writable: it
+takes the group law as EQUATIONS OF MORPHISMS — a multiplication
+`m : A ×_S A ⟶ A`, a unit section `e : S ⟶ A`, an inversion `i : A ⟶ A`,
+compatible with `f`, with associativity, commutativity, the unit law and
+the inverse law stated as equalities of morphisms out of `A ×_S A` and
+`A ×_S A ×_S A` — and produces the functor-of-points structure.
+
+Nothing is weakened by going through morphisms: by Yoneda the two
+presentations are equivalent, and the converse direction is carried out
+in `Fermat/FLT/ModularCurve/X0.lean` (`addHom`, `negHom`,
+`add_eq_addHom`, `neg_eq_negHom`), which recovers `m` and `i` from an
+`AbelianSchemeStruct`.
+
+**The two naturality fields are FREE.**  `pre_add` and `pre_zero` are the
+only fields of `AbelianSchemeStruct` that quantify over a change of test
+object, and they are exactly the compatibility of `pullback.lift` with
+precomposition (`comp_relPair` below) and the associativity of
+composition.  A producer therefore never has to think about naturality at
+all — which is the whole reason this bridge exists. -/
+
+namespace AbelianSchemeStruct
+
+open _root_.CategoryTheory.Limits
+
+variable {A S : Scheme.{u}}
+
+/-- **Two relative points over the same base point, paired into a
+`T`-point of the fibre square `A ×_S A`.**  This is the universal
+property of the pullback read on points, and it is the only construction
+the whole bridge below rests on. -/
+noncomputable def relPair {f : A ⟶ S} {T : Scheme.{u}} {g : T ⟶ S}
+    (x y : RelPoint f g) : T ⟶ pullback f f :=
+  pullback.lift x.1 y.1 (by rw [x.2, y.2])
+
+@[simp] theorem relPair_fst {f : A ⟶ S} {T : Scheme.{u}} {g : T ⟶ S}
+    (x y : RelPoint f g) : relPair x y ≫ pullback.fst f f = x.1 :=
+  pullback.lift_fst _ _ _
+
+@[simp] theorem relPair_snd {f : A ⟶ S} {T : Scheme.{u}} {g : T ⟶ S}
+    (x y : RelPoint f g) : relPair x y ≫ pullback.snd f f = y.1 :=
+  pullback.lift_snd _ _ _
+
+/-- **`relPair` is natural in the test object.**  This one equation is
+what makes the `pre_add` field of `ofMorphisms` automatic. -/
+theorem comp_relPair {f : A ⟶ S} {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S}
+    {g' : T' ⟶ S} (hg : h ≫ g = g') (x y : RelPoint f g) :
+    h ≫ relPair x y = relPair (RelPoint.pre h hg x) (RelPoint.pre h hg y) := by
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, relPair_fst, relPair_fst]
+    rfl
+  · rw [Category.assoc, relPair_snd, relPair_snd]
+    rfl
+
+/-! #### The operations induced on relative points -/
+
+/-- **Addition of relative points induced by a morphism
+`m : A ×_S A ⟶ A`**: pair the two points and compose. -/
+noncomputable def addOfMor (f : A ⟶ S) (m : pullback f f ⟶ A)
+    (hm : m ≫ f = pullback.fst f f ≫ f) {T : Scheme.{u}} {g : T ⟶ S}
+    (x y : RelPoint f g) : RelPoint f g :=
+  ⟨relPair x y ≫ m, by rw [Category.assoc, hm, ← Category.assoc, relPair_fst, x.2]⟩
+
+@[simp] theorem addOfMor_val (f : A ⟶ S) (m : pullback f f ⟶ A)
+    (hm : m ≫ f = pullback.fst f f ≫ f) {T : Scheme.{u}} {g : T ⟶ S}
+    (x y : RelPoint f g) : (addOfMor f m hm x y).1 = relPair x y ≫ m := rfl
+
+/-- **The zero relative point induced by a unit section `e : S ⟶ A`**:
+the base point composed with `e`. -/
+noncomputable def zeroOfMor (f : A ⟶ S) (e : S ⟶ A) (he : e ≫ f = 𝟙 S)
+    {T : Scheme.{u}} (g : T ⟶ S) : RelPoint f g :=
+  ⟨g ≫ e, by rw [Category.assoc, he, Category.comp_id]⟩
+
+@[simp] theorem zeroOfMor_val (f : A ⟶ S) (e : S ⟶ A) (he : e ≫ f = 𝟙 S)
+    {T : Scheme.{u}} (g : T ⟶ S) : (zeroOfMor f e he g).1 = g ≫ e := rfl
+
+/-- **Negation of relative points induced by a morphism `i : A ⟶ A`.** -/
+noncomputable def negOfMor (f : A ⟶ S) (i : A ⟶ A) (hi : i ≫ f = f)
+    {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g) : RelPoint f g :=
+  ⟨x.1 ≫ i, by rw [Category.assoc, hi, x.2]⟩
+
+@[simp] theorem negOfMor_val (f : A ⟶ S) (i : A ⟶ A) (hi : i ≫ f = f)
+    {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g) :
+    (negOfMor f i hi x).1 = x.1 ≫ i := rfl
+
+/-! #### The triple fibre product, where associativity lives
+
+Associativity is the one group axiom that cannot be stated on `A ×_S A`:
+it is an equation between two morphisms `A ×_S A ×_S A ⟶ A`.  The triple
+product is formed as `(A ×_S A) ×_S A` over the structure morphism
+`pullback.fst f f ≫ f` of the square; `triFst`, `triSnd`, `triThd` are its
+three projections to `A`. -/
+
+/-- **The threefold fibre product `A ×_S A ×_S A`**, formed as
+`(A ×_S A) ×_S A`. -/
+noncomputable abbrev triProd (f : A ⟶ S) : Scheme.{u} :=
+  pullback (pullback.fst f f ≫ f) f
+
+/-- The first projection of `triProd f`. -/
+noncomputable def triFst (f : A ⟶ S) : triProd f ⟶ A :=
+  pullback.fst (pullback.fst f f ≫ f) f ≫ pullback.fst f f
+
+/-- The second projection of `triProd f`. -/
+noncomputable def triSnd (f : A ⟶ S) : triProd f ⟶ A :=
+  pullback.fst (pullback.fst f f ≫ f) f ≫ pullback.snd f f
+
+/-- The third projection of `triProd f`. -/
+noncomputable def triThd (f : A ⟶ S) : triProd f ⟶ A :=
+  pullback.snd (pullback.fst f f ≫ f) f
+
+/-- All three projections of `triProd f` lie over the same base point:
+first versus third. -/
+theorem triFst_comp (f : A ⟶ S) : triFst f ≫ f = triThd f ≫ f := by
+  rw [triFst, triThd, Category.assoc]
+  exact pullback.condition
+
+/-- All three projections of `triProd f` lie over the same base point:
+second versus third. -/
+theorem triSnd_comp (f : A ⟶ S) : triSnd f ≫ f = triThd f ≫ f := by
+  rw [triSnd, triThd, Category.assoc, ← pullback.condition (f := f) (g := f)]
+  exact pullback.condition
+
+/-- All three projections of `triProd f` lie over the same base point:
+first versus second. -/
+theorem triFst_comp_snd (f : A ⟶ S) : triFst f ≫ f = triSnd f ≫ f :=
+  (triFst_comp f).trans (triSnd_comp f).symm
+
+/-- **`(x + y) + z` as a morphism `A ×_S A ×_S A ⟶ A`.** -/
+noncomputable def triAddLeft (f : A ⟶ S) (m : pullback f f ⟶ A)
+    (hm : m ≫ f = pullback.fst f f ≫ f) : triProd f ⟶ A :=
+  pullback.lift
+      (pullback.lift (triFst f) (triSnd f) (triFst_comp_snd f) ≫ m) (triThd f)
+      (by rw [Category.assoc, hm, ← Category.assoc, pullback.lift_fst]
+          exact triFst_comp f) ≫
+    m
+
+/-- **`x + (y + z)` as a morphism `A ×_S A ×_S A ⟶ A`.** -/
+noncomputable def triAddRight (f : A ⟶ S) (m : pullback f f ⟶ A)
+    (hm : m ≫ f = pullback.fst f f ≫ f) : triProd f ⟶ A :=
+  pullback.lift (triFst f)
+      (pullback.lift (triSnd f) (triThd f) (triSnd_comp f) ≫ m)
+      (by rw [Category.assoc, hm, ← Category.assoc, pullback.lift_fst]
+          exact triFst_comp_snd f) ≫
+    m
+
+/-! #### The bridge -/
+
+/-- **An `AbelianSchemeStruct` from morphism-level group-law data**
+(PROVEN).
+
+The data is the classical one: a multiplication `m : A ×_S A ⟶ A`, a unit
+section `e : S ⟶ A` and an inversion `i : A ⟶ A`, each compatible with the
+structure morphism `f` (`hm`, `he`, `hi`), together with the four group
+axioms as EQUATIONS OF MORPHISMS:
+
+* `hassoc` — `triAddLeft = triAddRight` on `A ×_S A ×_S A`;
+* `hcomm` — `m` is invariant under the swap of the two factors;
+* `hunit` — `m ∘ (e ∘ f, id) = id` on `A`;
+* `hinv` — `m ∘ (i, id) = e ∘ f` on `A`.
+
+Everything the functor-of-points presentation demands is then derived.
+In particular the two NATURALITY fields, `pre_add` and `pre_zero`, cost
+the caller nothing: they are `comp_relPair` and the associativity of
+composition, because `add` is by construction a composite with the fixed
+morphism `m`.  That is precisely why the morphism-level route is writable
+where the point-level one is not.
+
+Faithfulness note: this is a genuine bridge, not a weakening.  The
+hypotheses are strictly stronger than the conclusion's group axioms
+(Yoneda embeds `A ×_S A ⟶ A` into the natural transformations, and the
+functor of points of `A ×_S A ×_S A` is the triple product of that of
+`A`), so a consumer of the resulting `AbelianSchemeStruct` gets exactly
+the structure it would have got from a hand-built one. -/
+noncomputable def ofMorphisms (f : A ⟶ S) (m : pullback f f ⟶ A) (e : S ⟶ A)
+    (i : A ⟶ A)
+    (hm : m ≫ f = pullback.fst f f ≫ f)
+    (he : e ≫ f = 𝟙 S)
+    (hi : i ≫ f = f)
+    (hassoc : triAddLeft f m hm = triAddRight f m hm)
+    (hcomm : pullback.lift (pullback.snd f f) (pullback.fst f f)
+      pullback.condition.symm ≫ m = m)
+    (hunit : pullback.lift (f ≫ e) (𝟙 A)
+      (by rw [Category.assoc, he, Category.comp_id, Category.id_comp]) ≫ m = 𝟙 A)
+    (hinv : pullback.lift i (𝟙 A) (by rw [hi, Category.id_comp]) ≫ m = f ≫ e)
+    (hproper : IsProper f) (hsmooth : Smooth f)
+    (hconn : GeometricallyConnected f) :
+    AbelianSchemeStruct f where
+  add := addOfMor f m hm
+  zero := zeroOfMor f e he
+  neg := negOfMor f i hi
+  add_assoc x y z := by
+    apply Subtype.ext
+    simp only [addOfMor_val]
+    have hw : relPair x y ≫ pullback.fst f f ≫ f = z.1 ≫ f := by
+      rw [← Category.assoc, relPair_fst, x.2, z.2]
+    set w : _ ⟶ triProd f := pullback.lift (relPair x y) z.1 hw with hwdef
+    have hw1 : w ≫ triFst f = x.1 := by
+      rw [triFst, ← Category.assoc, hwdef, pullback.lift_fst, relPair_fst]
+    have hw2 : w ≫ triSnd f = y.1 := by
+      rw [triSnd, ← Category.assoc, hwdef, pullback.lift_fst, relPair_snd]
+    have hw3 : w ≫ triThd f = z.1 := by
+      rw [triThd, hwdef, pullback.lift_snd]
+    have hL : w ≫ triAddLeft f m hm
+        = relPair (addOfMor f m hm x y) z ≫ m := by
+      rw [triAddLeft, ← Category.assoc]
+      congr 1
+      refine pullback.hom_ext ?_ ?_
+      · rw [Category.assoc, pullback.lift_fst, relPair_fst, addOfMor_val,
+          ← Category.assoc]
+        congr 1
+        refine pullback.hom_ext ?_ ?_
+        · rw [Category.assoc, pullback.lift_fst, relPair_fst]; exact hw1
+        · rw [Category.assoc, pullback.lift_snd, relPair_snd]; exact hw2
+      · rw [Category.assoc, pullback.lift_snd, relPair_snd]; exact hw3
+    have hR : w ≫ triAddRight f m hm
+        = relPair x (addOfMor f m hm y z) ≫ m := by
+      rw [triAddRight, ← Category.assoc]
+      congr 1
+      refine pullback.hom_ext ?_ ?_
+      · rw [Category.assoc, pullback.lift_fst, relPair_fst]; exact hw1
+      · rw [Category.assoc, pullback.lift_snd, relPair_snd, addOfMor_val,
+          ← Category.assoc]
+        congr 1
+        refine pullback.hom_ext ?_ ?_
+        · rw [Category.assoc, pullback.lift_fst, relPair_fst]; exact hw2
+        · rw [Category.assoc, pullback.lift_snd, relPair_snd]; exact hw3
+    rw [← hL, ← hR, hassoc]
+  add_comm x y := by
+    apply Subtype.ext
+    simp only [addOfMor_val]
+    have hswap : relPair x y ≫ pullback.lift (pullback.snd f f)
+        (pullback.fst f f) pullback.condition.symm = relPair y x := by
+      refine pullback.hom_ext ?_ ?_
+      · rw [Category.assoc, pullback.lift_fst, relPair_snd, relPair_fst]
+      · rw [Category.assoc, pullback.lift_snd, relPair_fst, relPair_snd]
+    rw [← hswap, Category.assoc, hcomm]
+  zero_add x := by
+    apply Subtype.ext
+    simp only [addOfMor_val]
+    have hz : x.1 ≫ pullback.lift (f ≫ e) (𝟙 A)
+        (by rw [Category.assoc, he, Category.comp_id, Category.id_comp])
+        = relPair (zeroOfMor f e he _) x := by
+      refine pullback.hom_ext ?_ ?_
+      · rw [Category.assoc, pullback.lift_fst, relPair_fst, zeroOfMor_val,
+          ← Category.assoc, x.2]
+      · rw [Category.assoc, pullback.lift_snd, relPair_snd, Category.comp_id]
+    rw [← hz, Category.assoc, hunit, Category.comp_id]
+  neg_add x := by
+    apply Subtype.ext
+    simp only [addOfMor_val, zeroOfMor_val]
+    have hn : x.1 ≫ pullback.lift i (𝟙 A) (by rw [hi, Category.id_comp])
+        = relPair (negOfMor f i hi x) x := by
+      refine pullback.hom_ext ?_ ?_
+      · rw [Category.assoc, pullback.lift_fst, relPair_fst, negOfMor_val]
+      · rw [Category.assoc, pullback.lift_snd, relPair_snd, Category.comp_id]
+    rw [← hn, Category.assoc, hinv, ← Category.assoc, x.2]
+  pre_add := by
+    intro T' T h g g' hg x y
+    apply Subtype.ext
+    show h ≫ relPair x y ≫ m
+        = relPair (RelPoint.pre h hg x) (RelPoint.pre h hg y) ≫ m
+    rw [← Category.assoc, comp_relPair h hg x y]
+  pre_zero := by
+    intro T' T h g g' hg
+    apply Subtype.ext
+    show h ≫ g ≫ e = g' ≫ e
+    rw [← Category.assoc, hg]
+  proper := hproper
+  smooth := hsmooth
+  connected := hconn
 
 end AbelianSchemeStruct
 
