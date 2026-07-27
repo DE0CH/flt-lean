@@ -5878,8 +5878,9 @@ into the two leaves consumed below:
   at `N = 32` over `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`, itself
   proven by a cusp count on `X_0(32)` against the four rational points that
   `QuarticDescent.rational_point_x0ThirtyTwo` allows. What is left open is
-  ONE leaf, `MazurLevel32.exists_planeModel_x0ThirtyTwo`, which is neither
-  vacuous nor refutable. **The same cut should be tried at levels `49`, `81`,
+  ONE leaf, `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` (2026-07-27;
+  until then it was `exists_planeModel_x0ThirtyTwo`, now PROVEN over it),
+  which is neither vacuous nor refutable. **The same cut should be tried at levels `49`, `81`,
   `125` and `169`, whose docstrings all cite this node's old shape as their
   own.** Details in the RESOLUTION section of `exists_x0ThirtyTwo_point`.
 
@@ -6852,8 +6853,108 @@ rational points and four rational cusps means every rational point of
 `X_0(32)` is a cusp, i.e. `Y_0(32)(ℚ) = ∅`. -/
 theorem numRationalCusps_thirtyTwo : numRationalCusps 32 = 4 := by decide
 
-/-- **The plane model of `X_0(32)` is `y² = x³ + 4x`** (sorry node,
-introduced 2026-07-26 as the replacement cut for
+/-- **The elliptic curve `32a1 : y² = x³ + 4x`**, the classical plane model of
+`X_0(32)` (Magma `SmallModularCurve(32)`; Cremona's tables).
+
+Recorded as a `WeierstrassCurve ℚ` rather than as an equation so that the
+model comparison below can be stated in the standard elliptic-curve language
+of this development, where `W.toAffine.Point` is already the ℚ-points functor.
+
+Arithmetic of this curve, PARI/GP as an untrusted searcher and used here only
+to check that the STATEMENT is the intended one: conductor `32`, discriminant
+`-4096`, `j = 1728`, `rank = 0`, torsion `ℤ/4`, `a_3 = 0`. So `#32a1(ℚ) = 4`,
+matching `numRationalCusps_thirtyTwo` exactly — which is the coincidence the
+whole level turns on. None of that is used in any proof below; only the
+Weierstrass equation is, and that is checked by the kernel. -/
+def x0ThirtyTwoModel : WeierstrassCurve ℚ := ⟨0, 0, 0, 4, 0⟩
+
+@[simp] lemma x0ThirtyTwoModel_a₁ : x0ThirtyTwoModel.a₁ = 0 := rfl
+@[simp] lemma x0ThirtyTwoModel_a₂ : x0ThirtyTwoModel.a₂ = 0 := rfl
+@[simp] lemma x0ThirtyTwoModel_a₃ : x0ThirtyTwoModel.a₃ = 0 := rfl
+@[simp] lemma x0ThirtyTwoModel_a₄ : x0ThirtyTwoModel.a₄ = 4 := rfl
+@[simp] lemma x0ThirtyTwoModel_a₆ : x0ThirtyTwoModel.a₆ = 0 := rfl
+
+/-- **Affine coordinates of a point of `32a1`**, the point at infinity going
+to `none`.  This is the tautological description of `WeierstrassCurve.Affine.Point`
+as `{∞} ⊔ {(x, y) : nonsingular solutions}`. -/
+def planeCoords : x0ThirtyTwoModel.toAffine.Point → Option (ℚ × ℚ)
+  | .zero => none
+  | .some x y _ => some (x, y)
+
+/-- **`planeCoords` is injective** (PROVEN 2026-07-27): a point of a Weierstrass
+curve in affine coordinates is determined by its coordinates, the nonsingularity
+witness being a `Prop`. -/
+lemma planeCoords_injective : Function.Injective planeCoords := by
+  rintro (_ | ⟨x₁, y₁, h₁⟩) (_ | ⟨x₂, y₂, h₂⟩) h
+  · rfl
+  · simp [planeCoords] at h
+  · simp [planeCoords] at h
+  · simp only [planeCoords, Option.some.injEq, Prod.mk.injEq] at h
+    obtain ⟨hx, hy⟩ := h
+    subst hx; subst hy; rfl
+
+/-- **Every affine point of `32a1` satisfies `y² = x³ + 4x`** (PROVEN
+2026-07-27): unfolding `WeierstrassCurve.Affine.Equation` at
+`(a₁, a₂, a₃, a₄, a₆) = (0, 0, 0, 4, 0)`. -/
+lemma planeCoords_eq_some {P : x0ThirtyTwoModel.toAffine.Point} {p : ℚ × ℚ}
+    (hp : planeCoords P = some p) : p.2 ^ 2 = p.1 ^ 3 + 4 * p.1 := by
+  cases P with
+  | zero => simp only [planeCoords] at hp; exact absurd hp (by simp)
+  | some x y h =>
+    simp only [planeCoords, Option.some.injEq] at hp
+    subst hp
+    have heq : x0ThirtyTwoModel.toAffine.Equation x y := h.1
+    rw [WeierstrassCurve.Affine.equation_iff] at heq
+    simp only [x0ThirtyTwoModel_a₁, x0ThirtyTwoModel_a₂, x0ThirtyTwoModel_a₃,
+      x0ThirtyTwoModel_a₄, x0ThirtyTwoModel_a₆] at heq
+    linear_combination heq
+
+/-- **`X_0(32)(ℚ)` injects into `32a1(ℚ)`** (sorry node, introduced 2026-07-27
+as the arithmetic-free residue of `exists_planeModel_x0ThirtyTwo`).
+
+This is the whole modular content of level `32`, and nothing else: the
+comparison between the ABSTRACT compactified coarse moduli space pinned by
+`hX` and the EXPLICIT curve `32a1`.  Classically it is an isomorphism of
+curves `X_0(32) ≅ 32a1` over `ℚ`; only injectivity on `ℚ`-points is asked
+for, because only a cardinality bound is consumed downstream.
+
+**Why it is true.** `X_0(32)` is a smooth proper geometrically connected
+curve over `ℚ` of genus `1` carrying a rational cusp, hence an elliptic
+curve over `ℚ`; the newform of level `32` identifies it with `32a1`, whose
+Weierstrass model is `y² = x³ + 4x` (Magma `SmallModularCurve(32)`, Cremona).
+
+**Why it is neither vacuous nor refutable.** The hypothesis `hX` is
+satisfiable — `exists_x0Compactification 32` supplies an instance — so the
+statement is not vacuous; and its conclusion is the classical model, so it
+is not refutable.  Note `hX` is load-bearing for TRUTH and must not be
+dropped or underscored: without it `X` is an arbitrary `ℚ`-scheme, whose
+`ℚ`-points need not inject into a four-element set, and the statement is
+then FALSE.
+
+**What a successor must build**, in the order the mathematics forces it:
+
+1. a genus for `strX`, and the computation `genus X_0(32) = 1`;
+2. Riemann–Roch far enough to give a smooth proper geometrically connected
+   genus-`1` curve with a rational point a Weierstrass model — absent from
+   `Mathlib`, from `~/cs/FLT`, and from this development;
+3. the identification of that model's isomorphism class with `32a1`, which
+   is the modular input proper.
+
+Step 2 is the only genuinely large one and it is a general theorem, not a
+level-`32` fact — so it is worth stating as its own interface before any of
+this is attempted.  There is at present NO construction anywhere in the tree
+that produces a `Scheme` from a `WeierstrassCurve`, nor any declaration
+relating `RelPoint` to `WeierstrassCurve.Affine.Point`; that gap, and not
+anything specific to level `32`, is what keeps this leaf open. -/
+theorem exists_weierstrassModel_x0ThirtyTwo {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jm : Y ⟶ X} (hX : IsX0Compactification 32 strX strY jm) :
+    ∃ f : RelPoint strX (𝟙 SpecQ) → x0ThirtyTwoModel.toAffine.Point,
+      Function.Injective f :=
+  sorry
+
+/-- **The plane model of `X_0(32)` is `y² = x³ + 4x`** (PROVEN 2026-07-27 over
+the single leaf `exists_weierstrassModel_x0ThirtyTwo`; introduced 2026-07-26 as
+the replacement cut for
 `WeierstrassCurve.exists_x0ThirtyTwo_point`): the rational points of
 `X_0(32)` embed into `{∞} ⊔ {(x, y) ∈ ℚ² : y² = x³ + 4x}`, the point at
 infinity being encoded by `none`.
@@ -6886,15 +6987,27 @@ The four rational points are `∞`, `(0, 0)`, `(2, 4)`, `(2, −4)`.
 **What a successor must build**: an integral/Weierstrass model of `X_0(32)`
 over `ℚ` and the identification of `X_0(32)(ℚ)` with its rational solutions.
 That is the "comparison between the abstract coarse space and the explicit
-plane model" identified as missing in the audit below — now isolated as this
-single leaf, and nothing else in the level depends on it. -/
+plane model" identified as missing in the audit below — and as of 2026-07-27
+it is isolated in `exists_weierstrassModel_x0ThirtyTwo` alone, this node
+having been split into that leaf and the tautological coordinate dictionary
+`planeCoords` / `planeCoords_injective` / `planeCoords_eq_some`, which are
+PROVEN.  Nothing else in the level depends on either half.
+
+**Note on what the split does and does not buy.** It removes no modular
+mathematics — step 2 of the successor list on
+`exists_weierstrassModel_x0ThirtyTwo` is untouched — but it does discharge
+the part that was mechanically provable, and it restates the residue in the
+standard form "`X_0(32)(ℚ) ↪ 32a1(ℚ)`", which is the shape the literature
+states and the shape a moduli dictionary would produce. -/
 theorem exists_planeModel_x0ThirtyTwo {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jm : Y ⟶ X} (hX : IsX0Compactification 32 strX strY jm) :
     ∃ f : RelPoint strX (𝟙 SpecQ) → Option (ℚ × ℚ),
       Function.Injective f ∧
         ∀ (P : RelPoint strX (𝟙 SpecQ)) (p : ℚ × ℚ), f P = some p →
-          p.2 ^ 2 = p.1 ^ 3 + 4 * p.1 :=
-  sorry
+          p.2 ^ 2 = p.1 ^ 3 + 4 * p.1 := by
+  obtain ⟨f, hf⟩ := exists_weierstrassModel_x0ThirtyTwo hX
+  exact ⟨fun P => planeCoords (f P), planeCoords_injective.comp hf,
+    fun _ _ hp => planeCoords_eq_some hp⟩
 
 /-- **`Y_0(32)(ℚ) = ∅`** (PROVEN 2026-07-26 over the single leaf
 `exists_planeModel_x0ThirtyTwo`, consuming the already-proven arithmetic
@@ -6946,7 +7059,9 @@ end MazurLevel32
 
 /-- **`X_0(32) → X_0(16)`: an `X_0(16)`-parameter of a curve with a rational
 cyclic `32`-subgroup lifts to `y² = x³ + 4x`** (PROVEN 2026-07-26 over the
-single leaf `MazurLevel32.exists_planeModel_x0ThirtyTwo`; see the RESOLUTION
+single leaf `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` (2026-07-27;
+`exists_planeModel_x0ThirtyTwo`, which stood here before, is now PROVEN over
+it); see the RESOLUTION
 section at the end of this docstring, which supersedes the "do not dispatch"
 verdicts of the audits below): if `E` carries a `Gal(ℚ̄/ℚ)`-stable
 cyclic subgroup of order `32`, and `s` is a rational number lying over `j(E)`
@@ -7163,7 +7278,10 @@ together with this conclusion is CONTRADICTORY and so `hs` could never have
 been a usable input.
 
 `y0HasNoRationalPoint_thirtyTwo` is in turn PROVEN, over the single new leaf
-`MazurLevel32.exists_planeModel_x0ThirtyTwo`. Three things are gained, and
+`MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` — as of 2026-07-27; the
+intermediate `exists_planeModel_x0ThirtyTwo` is now PROVEN over that leaf,
+the split having discharged the coordinate dictionary and left the modular
+comparison `X_0(32)(ℚ) ↪ 32a1(ℚ)` as the only open half. Three things are gained, and
 they are precisely the three defects the audits above identify:
 
 1. *The vacuity is gone.* The new leaf's hypothesis is "`strX` is the
