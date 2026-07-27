@@ -176,6 +176,12 @@ import Mathlib.Tactic.NoncommRing
 -- (`IsLocalRing.isOpen_iff_finite_quotient`, openness ⇒ finite
 -- congruence quotient). Both are Family-free.
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- the Raynaud quotient-closure brick in its NEUTRAL HOME (2026-07-25):
+-- `GaloisRep.HasFlatProlongationAt.of_surjective`, re-homed below the
+-- `Interface.lean` ↔ this-module import cycle so that
+-- `hasFlatProlongationAt_of_surjective` below can consume it. See that
+-- module's header for the duplication/unification audit.
+import Fermat.FLT.Deformations.RepresentationTheory.RaynaudQuotient
 import Mathlib.Topology.Algebra.Ring.Compact
 -- ingredients of the Artin-induction proof of the group-theoretic
 -- Brauer leaf (`brauer_induction_trivial_character`): linear duality
@@ -7280,10 +7286,20 @@ theorem threeadicRealization_isUnramified_of_witness
   · -- `p` is prime to the conductor and to `3`
     exact hunr p hp hp3 hdvd
 
-/-- **Raynaud quotient closure, in prolongation form** (sorry node, cut
-2026-07-25 for the Fontaine–Laffaille level reduction below): a
-`G_ℚ`-equivariant QUOTIENT of a Galois representation which has a flat
-prolongation at `v` again has a flat prolongation at `v`.
+/-- **Raynaud quotient closure, in prolongation form** (PROVEN
+2026-07-25, by RE-HOMING rather than by a third proof — see the HOME
+AUDIT below, which is now discharged): a `G_ℚ`-equivariant QUOTIENT of a
+Galois representation which has a flat prolongation at `v` again has a
+flat prolongation at `v`.
+
+Proof: `GaloisRep.HasFlatProlongationAt.of_surjective` of the new module
+`Deformations/RepresentationTheory/RaynaudQuotient.lean`, which is the
+architecturally neutral home the HOME AUDIT below asks for. The
+mathematics is the (α)–(δ) route sketched below, already PROVEN in the
+tree as `Interface.lean`'s `IsFlatPointsGroupAt.of_surjective` over the
+two sorry-free bricks `exists_etale_subBialgebra_of_points_surjective`
+and `exists_hopfOrder_of_subBialgebra`; the only thing that was missing
+here was IMPORT REACHABILITY, and that is what the new module supplies.
 Scheme-theoretically this is the closure of finite flat group schemes
 over the DVR `𝒪ᵥ` under quotients by flat closed subgroup schemes
 (Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
@@ -7325,7 +7341,10 @@ hypothesis package (for `e` bijective this is already
 target `GaloisRep.hasFlatProlongationAt_of_subsingleton`).
 
 HOME AUDIT (2026-07-25, load-bearing — read before "deduplicating"
-this brick). The same Raynaud content exists in the tree ONCE more, as
+this brick). RESOLVED THE SAME DAY, and the resolution is recorded at
+the end of this audit; the analysis below is kept because it is what
+dictated the shape of the fix. The same Raynaud content exists in the
+tree ONCE more, as
 the carrier-level `IsFlatPointsGroupAt.of_surjective` of
 `Modularity/Interface.lean` (there over an abstract `G_ℚᵥ`-module
 rather than a representation). That one is IMPORT-UNREACHABLE from
@@ -7341,7 +7360,35 @@ carrier leaf is separately owned, and `FlatProlongation.lean` sits
 under the 30k-line `ModThree.lean` cone, so touching it forces a
 full-cone rebuild in every worktree of the fleet, while this module
 already had to be rebuilt for the decomposition below. Whoever
-performs the unification should move BOTH, not restate a third copy. -/
+performs the unification should move BOTH, not restate a third copy.
+
+RESOLUTION (2026-07-25). Both objections are dodged by a NEW SIBLING of
+`FlatProlongation.lean` rather than an edit to it:
+`Deformations/RepresentationTheory/RaynaudQuotient.lean`, imported only
+by THIS module. Nothing under the `ModThree.lean` cone is disturbed
+(the new module is not in it), and `Interface.lean` is not touched at
+all (its copies stay, so its separate owner is undisturbed). The new
+module carries the WHOLE `IsFlatPointsGroupAt` development inside
+`namespace RaynaudQuotient` — the carrier and its repackaging iff, the
+tensor/base-change point glue, the closure properties `of_addEquiv`,
+`of_subsingleton`, `prod`, `of_injective`, `pi`, the Hopf-order
+helpers, and the two quotient bricks with `of_surjective` — so the two
+copies cannot clash when `Interface.lean` transitively imports it; and
+it exports the prolongation-level
+`GaloisRep.HasFlatProlongationAt.of_surjective` consumed just below.
+NO THIRD COPY of the mathematics was written: the declarations were
+re-homed character-for-character, which is checkable mechanically.
+
+The scope is the whole development rather than the quotient half alone
+because TWO further leaves want the other halves and are blocked by the
+same cycle one level lower: `hasFlatProlongationAt_of_prod_injection`
+and `hasFlatProlongationAt_of_pi_surjection`, both in
+`GaloisRepresentation/HardlyRamified/Deformation.lean`, which cannot
+import `Modularity/*` at all. `RaynaudQuotient.lean` is outside that
+file's import cone, so both become three-line assemblies over it; they
+are left to their own owners. What remains of the unification is a pure
+DELETION in `Interface.lean` (replace its copied declarations by
+`export RaynaudQuotient (…)`), left to that file's owner. -/
 theorem hasFlatProlongationAt_of_surjective
     {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
@@ -7353,7 +7400,7 @@ theorem hasFlatProlongationAt_of_surjective
     (e : M₁ →+ M₂) (hsurj : Function.Surjective e)
     (he : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : M₁), e (ρ₁ σ x) = ρ₂ σ (e x)) :
     ρ₂.HasFlatProlongationAt v :=
-  sorry
+  GaloisRep.HasFlatProlongationAt.of_surjective h e hsurj he
 
 /-- **The Fontaine–Laffaille local shape at `3`, on the `3`-power
 levels of the stable lattice** (sorry node — the LITERATURE JOINT of
