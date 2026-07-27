@@ -42034,6 +42034,219 @@ theorem exists_artinAuxiliaryField_ray_class
     intro σ hσH hσFix
     exact (hAker σ).mp (hii σ hσH ((hBker σ).mpr hσFix))
 
+set_option maxHeartbeats 1000000 in
+/-- **THE AUXILIARY NUMBER FIELD: an open subgroup of `Γ F` IS the absolute
+Galois group of a number field** (**PROVEN 2026-07-27**; created the same day
+as the export that `exists_artinAuxiliaryField_ray_class` just above stops
+short of).
+
+Artin's Lemma hands its consumer an open subgroup `H ≤ Γ F`. Childress's proof
+of Prop. 5.2.2 then works over the FIELD `E = (F̄)^H` — it base-changes the
+character to `E`, applies the cyclotomic base case there, and descends by the
+ideal norm. Every one of those steps needs `E` as a bona fide object: a type in
+`Type u` carrying `[Field E]`, `[NumberField E]`, an `F`-algebra structure, and
+an identification of `Γ E` with `H`. **That construction is what this leaf
+supplies, and it was the recorded gate on both two-prime leaves**
+(`divisorRatio_mem_sup_ray_class` and `divisorRatio_mem_sup_ramified_ray_class`
+below): their MISSING MACHINERY notes single it out as the one thing absent
+from mathlib, from `~/cs/FLT` and from this project.
+
+**What is delivered, clause by clause.**
+
+* `E := ↥(IntermediateField.fixedField H)`, which lives in `Type u` because
+  `AlgebraicClosure F` does. `H` is open, hence closed, so
+  `InfiniteGalois.fixingSubgroup_fixedField` recovers it as `E.fixingSubgroup`
+  and `InfiniteGalois.isOpen_iff_finite` makes `E/F` FINITE — whence
+  `Module.Finite F E` and, by `NumberField.of_module_finite`,
+  `[NumberField E]`. **`H` need NOT be normal**; `E/F` need not be Galois. That
+  matters, because Artin's `H` is a subgroup of an abelian quotient only after
+  the fact, and nothing in the construction below uses it.
+* `ι : Γ E →* Γ F` is the composite
+  `Γ E ≃* (F̄ ≃ₐ[E] F̄) ≃* E.fixingSubgroup = H ↪ Γ F`. The first isomorphism is
+  `AlgEquiv.autCongr e` for `e : AlgebraicClosure E ≃ₐ[E] AlgebraicClosure F`,
+  the (arbitrary) identification of the two algebraic closures of `E` supplied
+  by `IsAlgClosure.equiv`; the second is `IntermediateField.fixingSubgroupEquiv`,
+  which needs no finiteness. So `ι` is INJECTIVE with image exactly `H` — the
+  two clauses `∀ σ, ι σ ∈ H` and `∀ τ ∈ H, ∃ σ, ι σ = τ` say precisely that
+  `Γ E` *is* `H`, in the only form a consumer can use.
+* The last clause is the one that makes the export usable at
+  `hcycl`: `σ ∈ Γ E` fixes every `m`-th root of unity of `AlgebraicClosure E`
+  **iff** `ι σ` fixes every `m`-th root of unity of `AlgebraicClosure F`. It is
+  an `↔` rather than an implication because both directions are one line
+  through `e` (a ring isomorphism carries `μ_m` onto `μ_m`), and because the
+  `←` direction is what a consumer needs when it has clause (ii) of Artin's
+  Lemma in hand over `F`.
+
+**Why `Field.absoluteGaloisGroup.map` is NOT used**, although it exists
+(`AbsoluteGaloisGroup.lean`) and would give a map `Γ E →* Γ F` for free. That
+map is built from `IsAlgClosed.lift : F̄ →ₐ[F] E̅`, an embedding chosen with no
+reference to the concrete inclusion `E ⊆ F̄`, so relating `Γ E` to
+`E.fixingSubgroup` through it means comparing two independent arbitrary
+choices — and the membership clause `ι σ ∈ H` becomes a statement about that
+comparison rather than a definitional fact. Conjugating by
+`IsAlgClosure.equiv` instead keeps the concrete `F̄` on the `F`-side
+throughout, and every clause below is then either `rfl` or a two-line
+computation. (`Field.absoluteGaloisGroup.map` remains the right tool for
+`Γ F_w → Γ F`, where there is no ambient inclusion to respect.)
+
+**FAITHFULNESS: `hHopen` is load-bearing and the statement is non-vacuous.**
+Drop openness and the conclusion is FALSE: for `H = ⊥` the fixed field is all
+of `F̄`, which is not a number field (it is not finite-dimensional over `ℚ`),
+and no `E` with `[NumberField E]` can have `Γ E` isomorphic to the trivial
+group by an injection onto `⊥` unless `E` is separably closed — which a number
+field is not. Non-vacuous in the strong sense: the surjectivity clause forbids
+the junk witness `ι = 1` unless `H = ⊥`, and the injectivity clause forbids
+collapsing `Γ E`. -/
+theorem exists_auxiliaryNumberField_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (H : Subgroup (Γ F)) (hHopen : IsOpen (H : Set (Γ F))) :
+    ∃ (E : Type u) (_ : Field E) (_ : NumberField E) (_ : Algebra F E)
+      (ι : Γ E →* Γ F),
+      Module.Finite F E ∧
+      Function.Injective ι ∧
+      (∀ σ : Γ E, ι σ ∈ H) ∧
+      (∀ τ ∈ H, ∃ σ : Γ E, ι σ = τ) ∧
+      (∀ (m : ℕ) (σ : Γ E),
+        ((∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) ↔
+          ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (ι σ) ζ = ζ)) := by
+  classical
+  haveI halgF : Algebra.IsAlgebraic F (AlgebraicClosure F) := AlgebraicClosure.isAlgebraic F
+  haveI hacF : IsAlgClosure F (AlgebraicClosure F) := ⟨inferInstance, halgF⟩
+  haveI hnormF : Normal F (AlgebraicClosure F) := IsAlgClosure.normal F (AlgebraicClosure F)
+  haveI hsepF : Algebra.IsSeparable F (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalF : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  -- the fixed field of `H`; `H` is NOT assumed normal, so `L/F` need not be Galois
+  set L : IntermediateField F (AlgebraicClosure F) := IntermediateField.fixedField H with hLdef
+  have hclosed : IsClosed (H : Set (Γ F)) := Subgroup.isClosed_of_isOpen H hHopen
+  have hfix : L.fixingSubgroup = H :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨H, hclosed⟩
+  haveI hfd : FiniteDimensional F L :=
+    (InfiniteGalois.isOpen_iff_finite L).mp (by rw [hfix]; exact hHopen)
+  haveI hnf : NumberField L := NumberField.of_module_finite F L
+  -- `AlgebraicClosure F` is also an algebraic closure of `L`
+  haveI halgL : Algebra.IsAlgebraic L (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.tower_top (K := F) (L := L) (A := AlgebraicClosure F)
+  haveI hacL : IsAlgClosure L (AlgebraicClosure F) := ⟨inferInstance, halgL⟩
+  -- the arbitrary identification of the two algebraic closures of `L`
+  set e : AlgebraicClosure L ≃ₐ[L] AlgebraicClosure F :=
+    IsAlgClosure.equiv L (AlgebraicClosure L) (AlgebraicClosure F) with hedef
+  set ι : Γ L →* Γ F :=
+    (L.fixingSubgroup.subtype).comp
+      ((IntermediateField.fixingSubgroupEquiv L).symm.toMonoidHom.comp
+        (AlgEquiv.autCongr e).toMonoidHom) with hιdef
+  have hιapp : ∀ (σ : Γ L) (x : AlgebraicClosure F), ι σ x = e (σ (e.symm x)) :=
+    fun _ _ => rfl
+  refine ⟨L, inferInstance, hnf, inferInstance, ι, inferInstance, ?_, ?_, ?_, ?_⟩
+  · -- injectivity: a composite of two isomorphisms and a subgroup inclusion
+    intro σ₁ σ₂ h
+    have h' : (AlgEquiv.autCongr e) σ₁ = (AlgEquiv.autCongr e) σ₂ := by
+      apply (IntermediateField.fixingSubgroupEquiv L).symm.injective
+      exact Subtype.ext h
+    exact (AlgEquiv.autCongr e).injective h'
+  · -- the image lands in `H`, because it lands in `L.fixingSubgroup` by construction
+    intro σ
+    have hmem : ι σ ∈ L.fixingSubgroup :=
+      ((IntermediateField.fixingSubgroupEquiv L).symm (AlgEquiv.autCongr e σ)).2
+    rwa [hfix] at hmem
+  · -- the image is ALL of `H`
+    intro τ hτ
+    have hτ' : τ ∈ L.fixingSubgroup := by rwa [hfix]
+    refine ⟨(AlgEquiv.autCongr e).symm ((IntermediateField.fixingSubgroupEquiv L)
+      ⟨τ, hτ'⟩), ?_⟩
+    show ((IntermediateField.fixingSubgroupEquiv L).symm ((AlgEquiv.autCongr e)
+      ((AlgEquiv.autCongr e).symm ((IntermediateField.fixingSubgroupEquiv L)
+        ⟨τ, hτ'⟩))) : Γ F) = τ
+    rw [MulEquiv.apply_symm_apply, MulEquiv.symm_apply_apply]
+  · -- the `μ_m`-fixing clause transports in BOTH directions along `e`
+    intro m σ
+    constructor
+    · intro hσ ζ hζ
+      have h1 : (e.symm ζ) ^ m = 1 := by rw [← map_pow, hζ, map_one]
+      rw [hιapp, hσ _ h1, e.apply_symm_apply]
+    · intro h ξ hξ
+      have h1 : (e ξ) ^ m = 1 := by rw [← map_pow, hξ, map_one]
+      have h2 := h (e ξ) h1
+      rw [hιapp, e.symm_apply_apply] at h2
+      exact e.injective h2
+
+set_option maxHeartbeats 1000000 in
+/-- **ARTIN'S LEMMA WITH THE AUXILIARY FIELD REALISED** (**PROVEN
+2026-07-27** as glue over `exists_artinAuxiliaryField_ray_class` and
+`exists_auxiliaryNumberField_ray_class` just above): the modulus `m`, the open
+subgroup `H ≤ Γ F`, AND a number field `E : Type u` whose absolute Galois group
+is `H`, together with the base-change clause that puts `χ ∘ ι` in the scope of
+the cyclotomic base case `hcycl` at `E`.
+
+**This is the form the two-prime leaves want.** `hartin` as stated below hands
+out only `H`; a consumer must then produce `E` itself before it can so much as
+write `hcycl`'s hypotheses down. The clause
+
+    ∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ (ι σ) = 1
+
+is exactly `hcycl`'s third hypothesis for the base-changed character
+`χ' := χ ∘ ι` (whose multiplicativity is `hmul` composed with `ι.map_mul`), and
+it is obtained from clause (ii) of Artin's Lemma — `∀ σ ∈ H` fixing `μ_m` over
+`F`, `χ σ = 1` — by transporting the root-of-unity condition across the
+identification `Γ E ≃ H`. **Nothing else in Artin's Lemma is consumed to get
+it**, which is why the two facts compose in four lines.
+
+**WHAT REMAINS between here and the two-prime leaves.** The gate this leaf
+removes is the FIELD; the ideal-theoretic half of Childress pp. 121–123 is
+untouched and is the next thing to cut. Specifically a consumer still needs:
+(a) the character `c'` on ideals of `𝓞 E` matching `χ' (globalFrob v)`, i.e.
+the base change of `c`; (b) `Ideal.relNorm` (which IS in the pin, already used
+in `Fermat/FLT/EllipticCurve/WeilPairing.lean`) and the compatibility
+`c (N_{E/F} 𝔄) = c' 𝔄`; and (c) the realisation of `v · v₀^{-e}` as a norm from
+`E` using `globalFrob v ∈ H`, i.e. that `v` splits completely in `E/F` so every
+residue degree above it is `1`. None of those needs a new theory — (b) and (c)
+are ideal arithmetic over machinery that exists.
+
+**ROUTE CAVEAT INHERITED FROM THE CONSUMERS.** Childress picks his second
+prime as a norm BY CONSTRUCTION; both two-prime leaves receive `v₀` as a
+hypothesis instead, so this lemma is to be applied at BOTH primes and the
+common auxiliary field is the compositum. Applying it twice is exactly what
+its statement supports — it is a `∀ p, ∀ S, ∃ …`, with no shared data between
+calls.
+
+**FAITHFULNESS: TRUE as stated and non-vacuous.** Every clause is either a
+clause of `exists_artinAuxiliaryField_ray_class` (verbatim) or a clause of
+`exists_auxiliaryNumberField_ray_class` (verbatim), except the base-change
+clause, which is derived. Non-vacuity is inherited from both: `hi` forbids
+`H = ⊥` unless `χ` is trivial, and the injectivity/surjectivity pair pins `ι`
+onto `H` exactly. -/
+theorem exists_artinAuxiliaryNumberField_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (S : Finset ℕ) :
+    ∃ (m : ℕ) (H : Subgroup (Γ F)) (E : Type u) (_ : Field E) (_ : NumberField E)
+      (_ : Algebra F E) (ι : Γ E →* Γ F),
+      0 < m ∧
+      (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+      (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+      IsOpen (H : Set (Γ F)) ∧
+      Module.Finite F E ∧
+      Function.Injective ι ∧
+      (∀ σ : Γ E, ι σ ∈ H) ∧
+      (∀ τ ∈ H, ∃ σ : Γ E, ι σ = τ) ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
+      (∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ (ι σ) = 1) ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+      globalFrob p ∈ H := by
+  obtain ⟨m, H, hm0, hmS, hmp, hHopen, hi, hii, hiii, hfrob⟩ :=
+    exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S
+  obtain ⟨E, fE, nE, aE, ι, hfin, hinj, hmemH, hsurj, hmu⟩ :=
+    exists_auxiliaryNumberField_ray_class F H hHopen
+  refine ⟨m, H, E, fE, nE, aE, ι, hm0, hmS, hmp, hHopen, hfin, hinj, hmemH, hsurj,
+    hi, ?_, hiii, hfrob⟩
+  intro σ hσ
+  exact hii (ι σ) (hmemH σ) ((hmu m σ).mp hσ)
+
 /-- **A homomorphism out of the free abelian group `Multiplicative (ι →₀ ℤ)` may
 be prescribed arbitrarily on the basis** (PROVEN 2026-07-27), by
 `Finsupp.liftAddHom` over `zmultiplesHom` transported across
