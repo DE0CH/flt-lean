@@ -31608,7 +31608,493 @@ theorem peterssonIntegrableOn_slash {M : ℕ} (hM : 0 < M) {D : Set ℍ}
       (mul_nonneg (norm_nonneg _) (δ₂ • τ).im_pos.le)
       (le_trans (mul_nonneg (norm_nonneg _) (δ₁ • τ).im_pos.le) (hCg (δ₁ • τ)))
 
-/-- **THE UNFOLDING IDENTITY** (sorry leaf — cut 2026-07-27 out of
+/-- **SLASHING BY A POSITIVE SCALAR IS TRIVIAL AT WEIGHT `2`** (PROVEN 2026-07-27).
+`(cI) • τ = τ`, `det (cI) = c²` and `denom (cI) τ = c`, so mathlib's
+`f ∣[k] g = σ g (f (g • τ)) · |det g|^{k-1} · denom g τ^{-k}` collapses to
+`f τ · c² · c^{-2} = f τ` at `k = 2`.  This is the ONE place the weight-2
+hypothesis is used to identify `α⁻¹` with the INTEGRAL adjugate
+`α' = det(α)·α⁻¹`, which is what makes the whole unfolding run over integral
+matrices. -/
+theorem slash_two_of_coe_eq_smul_one (F : ℍ → ℂ) {c : ℝ} (hc : 0 < c)
+    {g : GL (Fin 2) ℝ} (hg : (g : Matrix (Fin 2) (Fin 2) ℝ) = c • 1) :
+    F ∣[(2 : ℤ)] g = F := by
+  have hdet : g.det.val = c ^ 2 := by
+    rw [Matrix.GeneralLinearGroup.val_det_apply, hg]
+    simp [pow_two]
+  have h00 : (g : Matrix (Fin 2) (Fin 2) ℝ) 0 0 = c := by rw [hg]; simp
+  have h01 : (g : Matrix (Fin 2) (Fin 2) ℝ) 0 1 = 0 := by rw [hg]; simp
+  have hdenom : ∀ z : ℂ, UpperHalfPlane.denom g z = (c : ℂ) := by
+    intro z
+    simp [UpperHalfPlane.denom, hg]
+  have hsmul : ∀ τ : ℍ, g • τ = τ := by
+    intro τ
+    have hgpos : 0 < g.det.val := by rw [hdet]; positivity
+    apply UpperHalfPlane.ext
+    rw [UpperHalfPlane.coe_smul_of_det_pos hgpos]
+    rw [UpperHalfPlane.num, hdenom, h00, h01]
+    have hcne : (c : ℂ) ≠ 0 := by exact_mod_cast hc.ne'
+    field_simp
+    norm_num
+  funext τ
+  rw [ModularForm.slash_apply, hsmul, hdenom, hdet, σ, if_pos (by rw [hdet]; positivity)]
+  simp only [ContinuousAlgEquiv.refl_apply]
+  rw [abs_of_pos (by positivity)]
+  have hcne : (c : ℂ) ≠ 0 := by exact_mod_cast hc.ne'
+  push_cast
+  rw [zpow_neg]
+  norm_num
+  field_simp
+
+/-- `α'·α = q·I`, so at weight `2` the two Hecke representatives are mutually
+inverse under the slash action. -/
+theorem heckeRepInf_mul_heckeRep_zero_coe {q : ℕ} (hq0 : (q : ℝ) ≠ 0) :
+    ((heckeRepInf q * heckeRep q 0 : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ)
+      = (q : ℝ) • 1 := by
+  ext i k
+  fin_cases i <;> fin_cases k <;>
+    simp [heckeRep_coe hq0, heckeRepInf_coe hq0, Matrix.mul_apply, Fin.sum_univ_two]
+
+/-- `α·α' = q·I`. -/
+theorem heckeRep_zero_mul_heckeRepInf_coe {q : ℕ} (hq0 : (q : ℝ) ≠ 0) :
+    ((heckeRep q 0 * heckeRepInf q : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ)
+      = (q : ℝ) • 1 := by
+  ext i k
+  fin_cases i <;> fin_cases k <;>
+    simp [heckeRep_coe hq0, heckeRepInf_coe hq0, Matrix.mul_apply, Fin.sum_univ_two]
+
+/-- At weight `2` the extra Hecke representative undoes the finite one. -/
+theorem slash_heckeRepInf_heckeRep_zero (F : ℍ → ℂ) {q : ℕ} (hq : q.Prime) :
+    (F ∣[(2 : ℤ)] heckeRepInf q) ∣[(2 : ℤ)] heckeRep q 0 = F := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hqpos : (0 : ℝ) < q := lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm hq0)
+  rw [← SlashAction.slash_mul]
+  exact slash_two_of_coe_eq_smul_one F hqpos (heckeRepInf_mul_heckeRep_zero_coe hq0)
+
+/-- At weight `2` the finite Hecke representative undoes the extra one. -/
+theorem slash_heckeRep_zero_heckeRepInf (F : ℍ → ℂ) {q : ℕ} (hq : q.Prime) :
+    (F ∣[(2 : ℤ)] heckeRep q 0) ∣[(2 : ℤ)] heckeRepInf q = F := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hqpos : (0 : ℝ) < q := lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm hq0)
+  rw [← SlashAction.slash_mul]
+  exact slash_two_of_coe_eq_smul_one F hqpos (heckeRep_zero_mul_heckeRepInf_coe hq0)
+
+/-- **PEELING A `Γ₀(M)`-ELEMENT OFF THE SECOND SLOT MOVES THE DOMAIN**
+(PROVEN 2026-07-27): `∫_D petersson 2 g (f∣(δγ)) = ∫_{γ•D} petersson 2 g (f∣δ)`
+for `γ ∈ Γ₀(M)`, since `g∣γ = g` and `petersson_slash_two` has determinant `1`. -/
+theorem setIntegral_petersson_slash_mul_right {M : ℕ} (f g : CuspForm (Gamma0GL M) 2)
+    (δ : GL (Fin 2) ℝ) {γ : GL (Fin 2) ℝ} (hγ : γ ∈ Gamma0GL M) (D : Set ℍ) :
+    (∫ τ in D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (δ * γ)) τ)
+      = ∫ τ in γ • D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] δ) τ := by
+  have hpos : 0 < γ.det.val := by
+    rw [Subgroup.HasDetOne.det_eq hγ]; norm_num
+  have hg : ⇑g ∣[(2 : ℤ)] γ = ⇑g := SlashInvariantFormClass.slash_action_eq g γ hγ
+  have hfun : (fun τ : ℍ => petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (δ * γ)) τ)
+      = fun τ : ℍ => petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] δ) (γ • τ) := by
+    funext τ
+    rw [SlashAction.slash_mul, ← petersson_slash_two ⇑g (⇑f ∣[(2 : ℤ)] δ) hpos τ, hg]
+  rw [hfun, setIntegral_smul_set_upperHalfPlane]
+
+/-- **PEELING A `Γ₀(M)`-ELEMENT OFF THE FIRST SLOT MOVES THE DOMAIN**
+(PROVEN 2026-07-27), the mirror image of the previous lemma. -/
+theorem setIntegral_petersson_slash_mul_left {M : ℕ} (f g : CuspForm (Gamma0GL M) 2)
+    (δ : GL (Fin 2) ℝ) {γ : GL (Fin 2) ℝ} (hγ : γ ∈ Gamma0GL M) (D : Set ℍ) :
+    (∫ τ in D, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] (δ * γ)) ⇑f τ)
+      = ∫ τ in γ • D, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] δ) ⇑f τ := by
+  have hpos : 0 < γ.det.val := by
+    rw [Subgroup.HasDetOne.det_eq hγ]; norm_num
+  have hf : ⇑f ∣[(2 : ℤ)] γ = ⇑f := SlashInvariantFormClass.slash_action_eq f γ hγ
+  have hfun : (fun τ : ℍ => petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] (δ * γ)) ⇑f τ)
+      = fun τ : ℍ => petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] δ) ⇑f (γ • τ) := by
+    funext τ
+    rw [SlashAction.slash_mul, ← petersson_slash_two (⇑g ∣[(2 : ℤ)] δ) ⇑f hpos τ, hf]
+  rw [hfun, setIntegral_smul_set_upperHalfPlane]
+
+
+/-- **`F ∣ α⁻¹ = F ∣ α'` AT WEIGHT `2`** — the textbook's `α' = det(α)·α⁻¹`,
+which is how an INTEGRAL matrix replaces the rational inverse. -/
+theorem slash_heckeRep_zero_inv (F : ℍ → ℂ) {q : ℕ} (hq : q.Prime) :
+    F ∣[(2 : ℤ)] (heckeRep q 0)⁻¹ = F ∣[(2 : ℤ)] heckeRepInf q := by
+  conv_rhs => rw [show heckeRepInf q
+      = (heckeRep q 0)⁻¹ * (heckeRep q 0 * heckeRepInf q) by group]
+  rw [SlashAction.slash_mul]
+  exact (slash_two_of_coe_eq_smul_one _
+    (lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm (Nat.cast_ne_zero.mpr hq.ne_zero)))
+    (heckeRep_zero_mul_heckeRepInf_coe (Nat.cast_ne_zero.mpr hq.ne_zero))).symm
+
+/-- `F ∣ α'⁻¹ = F ∣ α` at weight `2`. -/
+theorem slash_heckeRepInf_inv (F : ℍ → ℂ) {q : ℕ} (hq : q.Prime) :
+    F ∣[(2 : ℤ)] (heckeRepInf q)⁻¹ = F ∣[(2 : ℤ)] heckeRep q 0 := by
+  conv_rhs => rw [show heckeRep q 0
+      = (heckeRepInf q)⁻¹ * (heckeRepInf q * heckeRep q 0) by group]
+  rw [SlashAction.slash_mul]
+  exact (slash_two_of_coe_eq_smul_one _
+    (lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm (Nat.cast_ne_zero.mpr hq.ne_zero)))
+    (heckeRepInf_mul_heckeRep_zero_coe (Nat.cast_ne_zero.mpr hq.ne_zero))).symm
+
+/-- **TWO `G`-DOMAINS CARRY THE SAME INTEGRAL OF A `G`-INVARIANT FUNCTION**
+(PROVEN 2026-07-27; the measure-theoretic core of the Hecke unfolding).
+
+`U` and `V` are "domains" for `G` in the hand-rolled sense used throughout this
+section: each MEETS every `G`-orbit (`hUcov`/`hVcov`) and is a.e. disjoint from
+each of its `G`-translates other than the two that act trivially
+(`hUdisj`/`hVdisj`).  That is weaker than `MeasureTheory.IsFundamentalDomain`,
+which is UNSATISFIABLE here: `-1` acts trivially on `ℍ`, so `(-1) • U = U`
+always has full measure.  The `±1` exclusions are exactly the price.
+
+PROOF, and why the `±1` degeneracy costs nothing.  Index the pieces by the
+QUOTIENT SET `G/±`, i.e. by `Quotient rel` for `rel a b ↔ a = b ∨ a = -b` — an
+equivalence relation on `G` whose classes are precisely the fibres of
+`γ ↦ γ • S`.  Then
+* `U = ⋃_{[γ]} (U ∩ γ • V)` (covering by translates of `V`), the pieces being
+  pairwise a.e. disjoint because distinct classes give `δ⁻¹γ ≠ ±1`;
+* `V = ⋃_{[γ]} (γ⁻¹ • U ∩ V)` symmetrically;
+* the two families match term by term: `γ⁻¹ • U ∩ V = γ⁻¹ • (U ∩ γ • V)`, and
+  the change of variables `setIntegral_smul_set_upperHalfPlane` together with
+  `hHinv` at `γ⁻¹` identifies the integrals.
+`integral_iUnion_ae` then gives both sides as the SAME `tsum`.
+
+Passing to `G/±` (rather than choosing coset representatives) is what removes
+every appeal to `V` being non-null: well-definedness of `[γ] ↦ γ • V` is the
+relation itself, not a stabilizer computation.
+
+MEASURABILITY IS LOAD-BEARING (`hUm`, `hVm`).  See the counterexample recorded
+on `setIntegral_heckeRep_unfold` below: for a non-measurable `U` the hypothesis
+`hUdisj` is not an invariant of `volume.restrict U`, and the conclusion of this
+lemma is FALSE — a Vitali-style rearrangement of the standard domain satisfies
+every other hypothesis and doubles the integral. -/
+theorem setIntegral_eq_of_smulDomain_of_invariant
+    {G : Subgroup (GL (Fin 2) ℝ)} (hGc : Countable G)
+    {U V : Set ℍ} (hUm : MeasurableSet U) (hVm : MeasurableSet V)
+    (hUcov : ∀ τ : ℍ, ∃ γ ∈ G, γ • τ ∈ U)
+    (hUdisj : ∀ γ ∈ G, γ ≠ 1 → γ ≠ -1 → volume ((γ • U) ∩ U) = 0)
+    (hVcov : ∀ τ : ℍ, ∃ γ ∈ G, γ • τ ∈ V)
+    (hVdisj : ∀ γ ∈ G, γ ≠ 1 → γ ≠ -1 → volume ((γ • V) ∩ V) = 0)
+    {H : ℍ → ℂ} (hHU : IntegrableOn H U volume) (hHV : IntegrableOn H V volume)
+    (hHinv : ∀ γ ∈ G, ∀ τ : ℍ, H (γ • τ) = H τ) :
+    (∫ τ in U, H τ) = ∫ τ in V, H τ := by
+  classical
+  -- `-1` acts trivially on `ℍ`, hence on subsets of `ℍ`.
+  have hnegset : ∀ (g : GL (Fin 2) ℝ) (S : Set ℍ), (-g) • S = g • S := by
+    intro g S
+    ext x
+    simp only [Set.mem_smul_set]
+    constructor
+    · rintro ⟨y, hy, rfl⟩; exact ⟨y, hy, (UpperHalfPlane.neg_smul g y).symm⟩
+    · rintro ⟨y, hy, rfl⟩; exact ⟨y, hy, UpperHalfPlane.neg_smul g y⟩
+  have hneginv : ∀ g : GL (Fin 2) ℝ, (-g)⁻¹ = -g⁻¹ := by
+    intro g
+    refine inv_eq_of_mul_eq_one_right ?_
+    rw [neg_mul_neg, mul_inv_cancel]
+  have hsm : ∀ (g : GL (Fin 2) ℝ) (S : Set ℍ), MeasurableSet S → MeasurableSet (g • S) := by
+    intro g S hS
+    rw [← Set.image_smul]
+    exact (measurableEmbedding_const_smul g).measurableSet_image.mpr hS
+  -- The `±`-identification on `G`: two elements give the same translate of any set.
+  let rel : Setoid ↥G :=
+    { r := fun a b => (a : GL (Fin 2) ℝ) = b ∨ (a : GL (Fin 2) ℝ) = -b
+      iseqv := by
+        refine ⟨fun a => Or.inl rfl, ?_, ?_⟩
+        · rintro a b (h | h)
+          · exact Or.inl h.symm
+          · exact Or.inr (by rw [h, neg_neg])
+        · rintro a b c (h1 | h1) (h2 | h2)
+          · exact Or.inl (h1.trans h2)
+          · exact Or.inr (h1.trans h2)
+          · exact Or.inr (by rw [h1, h2])
+          · exact Or.inl (by rw [h1, h2, neg_neg]) }
+  -- The two families of pieces, indexed by `G/±`.
+  let sU : Quotient rel → Set ℍ := fun c =>
+    Quotient.liftOn c (fun γ : ↥G => U ∩ ((γ : GL (Fin 2) ℝ) • V)) (by
+      rintro a b (h | h)
+      · rw [h]
+      · rw [h, hnegset])
+  let sV : Quotient rel → Set ℍ := fun c =>
+    Quotient.liftOn c (fun γ : ↥G => (((γ : GL (Fin 2) ℝ))⁻¹ • U) ∩ V) (by
+      rintro a b (h | h)
+      · rw [h]
+      · rw [h, hneginv, hnegset])
+  have hsUmk : ∀ γ : ↥G, sU (Quotient.mk rel γ) = U ∩ ((γ : GL (Fin 2) ℝ) • V) :=
+    fun _ => rfl
+  have hsVmk : ∀ γ : ↥G, sV (Quotient.mk rel γ)
+      = (((γ : GL (Fin 2) ℝ))⁻¹ • U) ∩ V := fun _ => rfl
+  -- Distinct classes are `≠ 1` and `≠ -1` apart.
+  have hne : ∀ a b : ↥G, Quotient.mk rel a ≠ Quotient.mk rel b →
+      (a : GL (Fin 2) ℝ) ≠ b ∧ (a : GL (Fin 2) ℝ) ≠ -b := fun a b hab =>
+    ⟨fun h => hab (Quotient.sound (Or.inl h)),
+      fun h => hab (Quotient.sound (Or.inr h))⟩
+  -- The `U`-side tiling.
+  have hUunion : U = ⋃ c : Quotient rel, sU c := by
+    ext x
+    simp only [Set.mem_iUnion]
+    constructor
+    · intro hx
+      obtain ⟨γ, hγ, hmem⟩ := hVcov x
+      refine ⟨Quotient.mk rel ⟨γ⁻¹, inv_mem hγ⟩, ?_⟩
+      rw [hsUmk]
+      exact ⟨hx, Set.mem_smul_set_iff_inv_smul_mem.mpr (by simpa using hmem)⟩
+    · rintro ⟨c, hc⟩
+      induction c using Quotient.inductionOn with
+      | h γ => exact (hsUmk γ ▸ hc).1
+  have hVunion : V = ⋃ c : Quotient rel, sV c := by
+    ext x
+    simp only [Set.mem_iUnion]
+    constructor
+    · intro hx
+      obtain ⟨γ, hγ, hmem⟩ := hUcov x
+      refine ⟨Quotient.mk rel ⟨γ, hγ⟩, ?_⟩
+      rw [hsVmk]
+      exact ⟨Set.mem_smul_set_iff_inv_smul_mem.mpr (by simpa using hmem), hx⟩
+    · rintro ⟨c, hc⟩
+      induction c using Quotient.inductionOn with
+      | h γ => exact (hsVmk γ ▸ hc).2
+  -- Measurability of the pieces.
+  have hsUm : ∀ c, MeasurableSet (sU c) := by
+    intro c
+    induction c using Quotient.inductionOn with
+    | h γ => exact (hsUmk γ ▸ hUm.inter (hsm _ _ hVm))
+  have hsVm : ∀ c, MeasurableSet (sV c) := by
+    intro c
+    induction c using Quotient.inductionOn with
+    | h γ => exact (hsVmk γ ▸ (hsm _ _ hUm).inter hVm)
+  -- Pairwise a.e. disjointness of the pieces.
+  have hsUd : Pairwise (Function.onFun (AEDisjoint volume) sU) := by
+    intro c d hcd
+    revert hcd
+    refine Quotient.inductionOn₂ c d ?_
+    intro a b hcd
+    obtain ⟨h1, h2⟩ := hne a b hcd
+    have k1 : ((b : GL (Fin 2) ℝ))⁻¹ * (a : GL (Fin 2) ℝ) ≠ 1 := fun h => h1 (by
+      have := congrArg (fun x => (b : GL (Fin 2) ℝ) * x) h
+      simpa [← mul_assoc] using this)
+    have k2 : ((b : GL (Fin 2) ℝ))⁻¹ * (a : GL (Fin 2) ℝ) ≠ -1 := fun h => h2 (by
+      have := congrArg (fun x => (b : GL (Fin 2) ℝ) * x) h
+      simpa [← mul_assoc] using this)
+    have hkey : ((a : GL (Fin 2) ℝ) • V) ∩ ((b : GL (Fin 2) ℝ) • V)
+        = (b : GL (Fin 2) ℝ) •
+            ((((b : GL (Fin 2) ℝ))⁻¹ * (a : GL (Fin 2) ℝ)) • V ∩ V) := by
+      rw [Set.smul_set_inter, smul_smul, ← mul_assoc, mul_inv_cancel, one_mul]
+    have hz : volume (((a : GL (Fin 2) ℝ) • V) ∩ ((b : GL (Fin 2) ℝ) • V)) = 0 := by
+      rw [hkey, measure_smul]
+      exact hVdisj _ (mul_mem (inv_mem b.2) a.2) k1 k2
+    exact measure_mono_null
+      (Set.inter_subset_inter Set.inter_subset_right Set.inter_subset_right) hz
+  have hsVd : Pairwise (Function.onFun (AEDisjoint volume) sV) := by
+    intro c d hcd
+    revert hcd
+    refine Quotient.inductionOn₂ c d ?_
+    intro a b hcd
+    obtain ⟨h1, h2⟩ := hne a b hcd
+    have k1 : (a : GL (Fin 2) ℝ) * ((b : GL (Fin 2) ℝ))⁻¹ ≠ 1 := fun h => h1 (by
+      have := congrArg (fun x => x * (b : GL (Fin 2) ℝ)) h
+      simpa [mul_assoc] using this)
+    have k2 : (a : GL (Fin 2) ℝ) * ((b : GL (Fin 2) ℝ))⁻¹ ≠ -1 := fun h => h2 (by
+      have := congrArg (fun x => x * (b : GL (Fin 2) ℝ)) h
+      simpa [mul_assoc] using this)
+    have hkey : (((a : GL (Fin 2) ℝ))⁻¹ • U) ∩ (((b : GL (Fin 2) ℝ))⁻¹ • U)
+        = ((a : GL (Fin 2) ℝ))⁻¹ •
+            (U ∩ ((a : GL (Fin 2) ℝ) * ((b : GL (Fin 2) ℝ))⁻¹) • U) := by
+      rw [Set.smul_set_inter, smul_smul, ← mul_assoc, inv_mul_cancel, one_mul]
+    have hz : volume ((((a : GL (Fin 2) ℝ))⁻¹ • U) ∩ (((b : GL (Fin 2) ℝ))⁻¹ • U)) = 0 := by
+      rw [hkey, measure_smul, Set.inter_comm]
+      exact hUdisj _ (mul_mem a.2 (inv_mem b.2)) k1 k2
+    exact measure_mono_null
+      (Set.inter_subset_inter Set.inter_subset_left Set.inter_subset_left) hz
+  -- Matching the two families term by term.
+  have hterm : ∀ c, (∫ τ in sU c, H τ) = ∫ τ in sV c, H τ := by
+    intro c
+    induction c using Quotient.inductionOn with
+    | h γ =>
+      rw [hsUmk, hsVmk]
+      have hset : (((γ : GL (Fin 2) ℝ))⁻¹ • U) ∩ V
+          = ((γ : GL (Fin 2) ℝ))⁻¹ • (U ∩ ((γ : GL (Fin 2) ℝ) • V)) := by
+        rw [Set.smul_set_inter, smul_smul, inv_mul_cancel, one_smul]
+      rw [hset, setIntegral_smul_set_upperHalfPlane]
+      exact setIntegral_congr_fun (hUm.inter (hsm _ _ hVm))
+        (fun τ _ => (hHinv _ (inv_mem γ.2) τ).symm)
+  rw [hUunion, hVunion,
+    integral_iUnion_ae (fun c => (hsUm c).nullMeasurableSet) hsUd (by rwa [← hUunion]),
+    integral_iUnion_ae (fun c => (hsVm c).nullMeasurableSet) hsVd (by rwa [← hVunion])]
+  exact tsum_congr hterm
+
+/-- **THE Γ'-COSET TILING OF THE HECKE DOUBLE COSET** (sorry leaf — cut
+2026-07-27 out of `setIntegral_heckeRep_unfold` below, which is PROVEN over it
+and over `setIntegral_eq_of_smulDomain_of_invariant` above): the two families
+of `q + 1` translates of `D` occurring in the unfolding identity are both
+tilings of a fundamental domain for `Γ' = Γ₀(M) ∩ α⁻¹Γ₀(M)α`, over which the
+integrand `petersson 2 g (f∣α)` is invariant.
+
+This leaf carries ALL the remaining group theory and ALL the remaining
+finite-additivity bookkeeping.  Nothing analytic is left in it: the weight-2
+degeneration, the change of variables, the adjoint identity and the
+two-domain comparison are all proven around it.
+
+**THE WITNESSES**, in full, so that this is a construction task and not a
+search.  Write `α = heckeRep q 0 = [1,0;0,q]`, `α' = heckeRepInf q = [q,0;0,1]`,
+`T^j = mapGL (heckeTMat j) = [1,j;0,1]`.
+
+* `G = Γ' = Γ₀(M) ∩ α⁻¹Γ₀(M)α`.  By `heckeRep_conj_mem_iff` (§HeckeStability
+  above) this is `{ρ ∈ Γ₀(M) : q ∣ ρ₀₁}`, i.e. `Γ₀(M) ∩ Γ⁰(q)`; the second
+  conjunct of this statement is exactly its membership predicate, spelled out
+  so that no new subgroup definition is needed.  `-1 ∈ Γ'`, which is why the
+  `±1` exclusions in `hdisj` cost nothing.
+* `qu − Mv = 1` (solvable EXACTLY because `q ∤ M` — THIS is where `hqM` enters),
+  `W = mapGL [uq, v; M, 1] ∈ Γ₀(M)`, `D₀ = mapGL [u, v; M, q] ∈ Γ₀(M)`, with
+  `α · W = D₀ · α'`.  These three are already constructed inside the proof of
+  `exists_cuspForm_heckeTransform` (§HeckeStability) as `W`/`D`/`hkey`.
+* `U = (⋃_{j<q} T^j • D) ∪ W • D`, and `V = η • U` for `η = W · α`.
+
+**WHY `U` IS A Γ'-DOMAIN**, with the two facts to hoist rather than redo.
+`Γ₀(M) = ⊔_{o : Option (Fin q)} γ_o Γ'` with `γ_j = T^{-j}` and `γ_∞ = W⁻¹`, so
+`U = ⊔_o γ_o⁻¹ • D`.
+* COVERING: given `τ`, `hcov` supplies `γ ∈ Γ₀(M)` with `γ • τ ∈ D`; writing
+  `γ = γ_o γ'` gives `γ' • τ ∈ γ_o⁻¹ • D ⊆ U`.  The case split is the one in
+  `hfind`/`hsurj` of `exists_cuspForm_heckeTransform`: if `q ∤ γ₁₁` then
+  `T^j γ ∈ Γ'` for `j ≡ −γ₀₁γ₁₁⁻¹ (mod q)`; if `q ∣ γ₁₁` then `W γ ∈ Γ'`
+  because `(Wγ)₀₁ = uq·γ₀₁ + v·γ₁₁`.
+* DISJOINTNESS: `γ' • U ∩ U` decomposes into the `γ_p γ' γ_o⁻¹ • D ∩ D`, and
+  `γ_p γ' γ_o⁻¹ = ±1` forces `o = p` and `γ' = ±1` — the `hEinj`/`hmix`
+  computations of `exists_cuspForm_heckeTransform` (`q ∤ (j − k)` for
+  `0 ≤ j, k < q`; and `q ∤ v` because `qu − Mv = 1`).
+
+**WHY `V = η • U` IS A Γ'-DOMAIN**: `η = Wα` NORMALIZES `Γ'`.  Explicitly, for
+`ρ = [a,b;c,d] ∈ Γ'` (so `q ∣ b`, `M ∣ c`), `η ρ η⁻¹` is the INTEGRAL matrix
+
+  `[ qua + qvc − Mub − Mvd ,  q(u²b + uvd − uva − v²c) ;
+     Ma + qc − M²(b/q) − Md ,  uMb + uqd − vMa − vqc ]`,
+
+whose lower-left is divisible by `M` and whose upper-right is divisible by `q`,
+so it lies in `Γ'` again.  Verify it in the equivalent inverse-free form
+`η · mapGL ρ = mapGL ρ' · η`.  Covering and disjointness for `V` then transport
+from `U` along `η` in three lines each.
+
+**WHY THE TWO INTEGRAL IDENTITIES HOLD** (the last two conjuncts).  Write
+`H = petersson 2 g (f∣α)` and `L = petersson 2 g (f∣α')`.
+* `L = H ∘ W`: `H (W • τ) = petersson 2 (g∣W) ((f∣α)∣W) τ = petersson 2 g
+  (f∣(αW)) τ = petersson 2 g (f∣(D₀α')) τ = L τ`, using `g∣W = g`, `f∣D₀ = f`
+  and `αW = D₀α'`.  Hence `∫_{W • D} H = ∫_D L`, which is the `∞`-tile of the
+  first identity; the finite tiles are literal.
+* `η • (T^j • D) = (W α T^j) • D` and `∫_{(WαT^j) • D} H = ∫_{(αT^j) • D} L`
+  by the same substitution; and `η • (W • D) = (W D₀) • (α' • D)` with
+  `W D₀ ∈ Γ'` (lower-left `M(u+1)`, upper-right `vq(u+1)`), so Γ'-invariance of
+  `H` turns that tile into `∫_{α' • D} H`.  Those are the two tiles of the
+  second identity.
+* Both identities are then finite additivity over the a.e.-disjoint tiles,
+  which is where `hDmeas` is consumed.
+
+`volume U ≠ ⊤` and `volume V ≠ ⊤` are `hDvol` plus `measure_smul`; `Countable G`
+holds because `Γ' ≤ Gamma0GL M`, the injective `mapGL`-image of a subgroup of
+the countable group `SL(2, ℤ)`.
+
+FAITHFULNESS.  Every hypothesis of the consumer is present, and `hqM` is
+LOAD-BEARING: without `qu − Mv = 1` there is no `W`, `α' ∉ Γ₀(M)αΓ₀(M)`, and
+the unfolding identity is FALSE (at `q ∣ M` the operator `U_q` is genuinely
+non-self-adjoint). -/
+theorem exists_gammaPrimeTiling {M : ℕ} (hM : 0 < M)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤) (hDmeas : MeasurableSet D)
+    (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
+    (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
+    ∃ (G : Subgroup (GL (Fin 2) ℝ)) (U V : Set ℍ),
+      Countable G ∧
+      (∀ γ ∈ G, γ ∈ Gamma0GL M ∧
+        heckeRep q 0 * γ * (heckeRep q 0)⁻¹ ∈ Gamma0GL M) ∧
+      MeasurableSet U ∧ volume U ≠ ⊤ ∧
+      (∀ τ : ℍ, ∃ γ ∈ G, γ • τ ∈ U) ∧
+      (∀ γ ∈ G, γ ≠ 1 → γ ≠ -1 → volume ((γ • U) ∩ U) = 0) ∧
+      MeasurableSet V ∧ volume V ≠ ⊤ ∧
+      (∀ τ : ℍ, ∃ γ ∈ G, γ • τ ∈ V) ∧
+      (∀ γ ∈ G, γ ≠ 1 → γ ≠ -1 → volume ((γ • V) ∩ V) = 0) ∧
+      (∫ τ in U, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+        = (∑ j ∈ Finset.range q, ∫ τ in (Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat j)) • D,
+              petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+          + ∫ τ in D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ ∧
+      (∫ τ in V, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+        = (∑ j ∈ Finset.range q,
+              ∫ τ in (heckeRep q 0 * Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat j)) • D,
+              petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ)
+          + ∫ τ in (heckeRepInf q) • D,
+              petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ :=
+  sorry
+
+/-- **THE α-TILING IDENTITY** (PROVEN 2026-07-27 over
+`setIntegral_eq_of_smulDomain_of_invariant` and `exists_gammaPrimeTiling`
+above): the unfolding identity after every slash has been normalised onto the
+single pair `α = heckeRep q 0`, `α' = heckeRepInf q`, so that the only
+remaining content is the tiling of a `Γ'`-fundamental domain by the `q + 1`
+translates `T^j • D` and `D`.
+
+Both sides are `∫` of `petersson 2 g (f∣α)` over a `Γ'`-domain: the left over
+`U = ⊔_j T^j • D ⊔ W • D`, the right over `η • U` with `η = Wα` — the two
+domains are genuinely DIFFERENT, which is why the comparison lemma above, and
+not mere additivity, is the crux. -/
+theorem setIntegral_alphaTiling {M : ℕ} (hM : 0 < M)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤) (hDmeas : MeasurableSet D)
+    (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
+    (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
+    ((∑ j ∈ Finset.range q, ∫ τ in (Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat j)) • D,
+        petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+        + ∫ τ in D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ)
+      = (∑ j ∈ Finset.range q, ∫ τ in (Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat j)) • D,
+            petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRep q 0) ⇑f τ)
+        + ∫ τ in D, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRepInf q) ⇑f τ := by
+  classical
+  obtain ⟨G, U, V, hGc, hGmem, hUm, hUvol, hUcov, hUdisj, hVm, hVvol, hVcov, hVdisj,
+    hUval, hVval⟩ := exists_gammaPrimeTiling hM hDvol hDmeas hcov hdisj hq hqM f g
+  -- Move the `α`-slash across the pairing on the right-hand side.
+  have hswapR : ∀ (E : Set ℍ),
+      (∫ τ in E, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRep q 0) ⇑f τ)
+        = ∫ τ in (heckeRep q 0) • E,
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ := by
+    intro E
+    rw [setIntegral_petersson_slash_adjoint ⇑g ⇑f (det_heckeRep_pos hq 0) E,
+      slash_heckeRep_zero_inv ⇑f hq]
+  have hswapRinf : ∀ (E : Set ℍ),
+      (∫ τ in E, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRepInf q) ⇑f τ)
+        = ∫ τ in (heckeRepInf q) • E,
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ := by
+    intro E
+    rw [setIntegral_petersson_slash_adjoint ⇑g ⇑f (det_heckeRepInf_pos hq) E,
+      slash_heckeRepInf_inv ⇑f hq]
+  have hVrw : ∀ j : ℕ,
+      (∫ τ in (Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat (j : ℤ))) • D,
+          petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRep q 0) ⇑f τ)
+        = ∫ τ in (heckeRep q 0 * Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat (j : ℤ))) • D,
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ := by
+    intro j
+    rw [hswapR, mul_smul]
+  rw [Finset.sum_congr rfl (fun j _ => hVrw j), hswapRinf, ← hUval, ← hVval]
+  -- Integrability of the common integrand on both tilings.
+  have hint : ∀ E : Set ℍ, volume E ≠ ⊤ →
+      IntegrableOn (petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0)) E volume := by
+    intro E hE
+    have h := peterssonIntegrableOn_slash hM hE f g
+      (by simp : (0 : ℝ) < (1 : GL (Fin 2) ℝ).det.val) (det_heckeRep_pos hq 0)
+    rwa [SlashAction.slash_one (2 : ℤ) ⇑g] at h
+  -- `Γ'`-invariance of the integrand.
+  have hHinv : ∀ γ ∈ G, ∀ τ : ℍ,
+      petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) (γ • τ)
+        = petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ := by
+    intro γ hγ τ
+    obtain ⟨hγΓ, hconj⟩ := hGmem γ hγ
+    have hpos : 0 < γ.det.val := by
+      rw [Subgroup.HasDetOne.det_eq hγΓ]; norm_num
+    have hgs : ⇑g ∣[(2 : ℤ)] γ = ⇑g := SlashInvariantFormClass.slash_action_eq g γ hγΓ
+    have hfs : (⇑f ∣[(2 : ℤ)] heckeRep q 0) ∣[(2 : ℤ)] γ
+        = ⇑f ∣[(2 : ℤ)] heckeRep q 0 := by
+      rw [← SlashAction.slash_mul]
+      conv_lhs => rw [show heckeRep q 0 * γ
+        = (heckeRep q 0 * γ * (heckeRep q 0)⁻¹) * heckeRep q 0 by group]
+      rw [SlashAction.slash_mul,
+        SlashInvariantFormClass.slash_action_eq f _ hconj]
+    rw [← petersson_slash_two ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) hpos τ, hgs, hfs]
+  exact setIntegral_eq_of_smulDomain_of_invariant hGc hUm hVm hUcov hUdisj hVcov hVdisj
+    (hint U hUvol) (hint V hVvol) hHinv
+
+
+/-- **THE UNFOLDING IDENTITY** (PROVEN 2026-07-27 over `setIntegral_alphaTiling`
+above, itself proven over `setIntegral_eq_of_smulDomain_of_invariant` and the
+single surviving leaf `exists_gammaPrimeTiling`; cut 2026-07-27 out of
 `peterssonSelfAdjoint_of_gamma0FundamentalDomain` below, which is PROVEN over
 it and over `peterssonIntegrableOn_slash`): ALL of the remaining content of
 Diamond–Shurman Theorem 5.5.3, and the only place the fundamental-domain
@@ -31685,34 +32171,44 @@ at least `NullMeasurableSet`) is unavailable, and the pathological `D` above is
 a live counterexample to the natural reduction.  It costs the consumer nothing:
 `measurableSet_gamma0Domain` above discharges it for the only witness ever used.
 
-**ROUTE AUDIT (2026-07-27), stated so that each claim is refutable by one
-check.**  With `hDmeas` in hand the classical proof factors into four steps,
-of which the first and the third are ALREADY PROVEN here:
+**ROUTE AUDIT (2026-07-27, SUPERSEDED AND CORRECTED — the leaf is now PROVEN;
+kept because its step 4 UNDERSTATED the crux and the correction is what a
+prover at `exists_gammaPrimeTiling` needs).**
 
-1. (PROVEN) Each right-hand term folds back onto `D`:
-   `setIntegral_petersson_slash_adjoint` read backwards gives
-   `∫_{δ • D} petersson 2 g (f∣δ⁻¹) = ∫_D petersson 2 (g∣δ) f`.  So the leaf is
-   equivalent to `Σ_i ∫_D petersson 2 g (f∣δ_i) = Σ_i ∫_D petersson 2 (g∣δ_i) f`
-   — no translated domains occur in the real content.
-2. (OPEN, group theory) `Γ = ⊔_{i} Γ' γ_i` with `Γ' = Γ ∩ α⁻¹Γα`,
-   `α = heckeRep q 0`, the index set `Option (Fin q)` and `Γ α γ_i = Γ δ_i`.
-   **This is hoistable, not new**: `heckeRep_conj_mem_iff`,
-   `heckeConj_isFiniteRelIndex` and the `have`s `hcrit`/`hEval`/`hEinj`/`hfind`
-   inside `exists_cuspForm_heckeTransform` (§HeckeStability) already carry out
-   exactly this enumeration, over exactly this index type.  Check that refutes
-   this claim: grep those names and confirm the index type is `Option (Fin q)`.
-3. (PROVEN) The `α`-move `∫_{D'} petersson 2 g (f∣α) = ∫_{α • D'} petersson 2
-   (g∣α⁻¹) f` is `setIntegral_petersson_slash_adjoint` plus `petersson_symm`;
-   and at weight `2` scalars act trivially, so `α⁻¹` may be replaced by the
-   INTEGRAL adjugate `α' = det(α)·α⁻¹ = heckeRepInf q`.
-4. (OPEN, measure theory) `⊔_i γ_i • D` is a `Γ'`-domain and the integral of a
-   `Γ'`-invariant function over it is `Σ_i ∫_{γ_i • D}`.  Pairwise
-   a.e.-disjointness of the `γ_i • D` reduces to `hdisj` at `γ_i⁻¹γ_j`, which
-   is `≠ ±1` because `−1 ∈ Γ'` so distinct `Γ'`-cosets cannot differ by `±1`.
-   This is the step that consumes `hDmeas`.
+The earlier version of this audit listed four steps and called step 4
+"`⊔_i γ_i • D` is a `Γ'`-domain and the integral of a `Γ'`-invariant function
+over it is `Σ_i ∫_{γ_i • D}`", i.e. FINITE ADDITIVITY.  That is true and easy,
+and it is NOT what was missing.  Carrying the reduction out shows that after
+steps 1–3 the identity reads
 
-The last arithmetic input, `α' ∈ ΓαΓ`, is `qu − Mv = 1`, solvable exactly at
-`q ∤ M` — which is where `hqM` enters and why the identity fails at `q ∣ M`. -/
+  `∫_U H = ∫_{η • U} H`,  `H = petersson 2 g (f∣α)`,  `η = W·α`,
+
+where `U = ⊔_{j<q} T^j • D ⊔ W • D` is a `Γ'`-domain, `η` NORMALIZES `Γ'`, and
+`η • U` is therefore a SECOND, genuinely different `Γ'`-domain.  So the crux is
+the comparison of TWO `Γ'`-domains — the general lemma
+`setIntegral_eq_of_smulDomain_of_invariant` above, now proven — and not
+additivity.  An agent who had implemented only step 4 as written would have
+found the goal unchanged.
+
+The four steps, as actually realised in the proof below:
+
+1. (PROVEN, `setIntegral_petersson_slash_adjoint` backwards) each right-hand
+   term folds onto `D`: `∫_{δ•D} petersson 2 g (f∣δ⁻¹) = ∫_D petersson 2 (g∣δ) f`.
+2. (PROVEN, `setIntegral_petersson_slash_mul_right`/`_left`) `δ_j = α·T^j` with
+   `T^j ∈ Γ₀(M)`, so every slash normalises onto the single pair `α`, `α'` and
+   the `T^j` move onto the domain.  This is `setIntegral_alphaTiling`'s
+   statement.
+3. (PROVEN, `slash_two_of_coe_eq_smul_one`) at weight `2` scalars act trivially,
+   so `α⁻¹` is the INTEGRAL adjugate `α' = det(α)·α⁻¹ = heckeRepInf q`
+   (`slash_heckeRep_zero_inv`, `slash_heckeRepInf_inv`).
+4. (LEAF, `exists_gammaPrimeTiling`) the group theory and the finite
+   additivity: `U` and `η • U` are `Γ'`-domains and the two tilings compute the
+   two sides.  See that leaf's docstring for the explicit witnesses — `Γ'`, the
+   Bézout matrices `W`, `D₀`, the normalising `η = Wα` and its conjugation
+   formula — all of which are recorded there in full.
+
+The arithmetic input `α' ∈ ΓαΓ` is `qu − Mv = 1`, solvable exactly at `q ∤ M`
+— which is where `hqM` enters and why the identity fails at `q ∣ M`. -/
 theorem setIntegral_heckeRep_unfold {M : ℕ} (hM : 0 < M)
     {D : Set ℍ} (hDvol : volume D ≠ ⊤) (hDmeas : MeasurableSet D)
     (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
@@ -31724,8 +32220,34 @@ theorem setIntegral_heckeRep_unfold {M : ℕ} (hM : 0 < M)
       = (∑ j ∈ Finset.range q, ∫ τ in (heckeRep q j) • D,
             petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (heckeRep q j)⁻¹) τ)
         + ∫ τ in (heckeRepInf q) • D,
-            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (heckeRepInf q)⁻¹) τ :=
-  sorry
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (heckeRepInf q)⁻¹) τ := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hTmem : ∀ j : ℕ, Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat (j : ℤ)) ∈ Gamma0GL M := fun j =>
+    mem_Gamma0GL_iff.mpr ⟨heckeTMat (j : ℤ), heckeTMat_mem_Gamma0 M _, rfl⟩
+  -- Fold the right-hand terms back onto `D` (D–S 5.5.2, run backwards).
+  have hR : ∀ δ : GL (Fin 2) ℝ, 0 < δ.det.val →
+      (∫ τ in δ • D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] δ⁻¹) τ)
+        = ∫ τ in D, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] δ) ⇑f τ :=
+    fun δ hδ => (setIntegral_petersson_slash_adjoint ⇑g ⇑f hδ D).symm
+  rw [hR _ (det_heckeRepInf_pos hq),
+    Finset.sum_congr rfl (fun j _ => hR _ (det_heckeRep_pos hq j))]
+  -- Split each finite representative as `α · T^j` and move `T^j` onto the domain.
+  have hLj : ∀ j ∈ Finset.range q,
+      (∫ τ in D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q j) τ)
+        = ∫ τ in (Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat (j : ℤ))) • D,
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ := by
+    intro j _
+    rw [← heckeRep_zero_mul_heckeTMat hq0 j,
+      setIntegral_petersson_slash_mul_right f g (heckeRep q 0) (hTmem j) D]
+  have hRj : ∀ j ∈ Finset.range q,
+      (∫ τ in D, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRep q j) ⇑f τ)
+        = ∫ τ in (Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat (j : ℤ))) • D,
+            petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRep q 0) ⇑f τ := by
+    intro j _
+    rw [← heckeRep_zero_mul_heckeTMat hq0 j,
+      setIntegral_petersson_slash_mul_left f g (heckeRep q 0) (hTmem j) D]
+  rw [Finset.sum_congr rfl hLj, Finset.sum_congr rfl hRj]
+  exact setIntegral_alphaTiling hM hDvol hDmeas hcov hdisj hq hqM f g
 
 /-- **SELF-ADJOINTNESS OF THE GOOD HECKE OPERATORS OVER A `Γ₀(M)` FUNDAMENTAL
 DOMAIN** (PROVEN 2026-07-27 over the two leaves `peterssonIntegrableOn_slash`
@@ -31880,14 +32402,21 @@ property `exists_mem_gamma0Domain` and the a.e.-disjointness
 `volume_smul_inter_gamma0Domain_eq_zero` (PROVEN 2026-07-27).
 
 CURRENT LEAF INVENTORY BELOW THIS NODE (2026-07-27, updated).  The whole
-subtree is now proven except for the SINGLE leaf
-`setIntegral_heckeRep_unfold` (the coset tiling, which is where `hcov`,
-`hdisj` and `q ∤ M` are consumed).  Its sibling
+subtree is now proven except for the SINGLE leaf `exists_gammaPrimeTiling`
+(the coset tiling, which is where `hcov`, `hdisj` and `q ∤ M` are consumed).
+`setIntegral_heckeRep_unfold` itself is now PROVEN, over that leaf and over
+the general two-domain comparison
+`setIntegral_eq_of_smulDomain_of_invariant` (also PROVEN — the
+measure-theoretic core, which sidesteps
+`MeasureTheory.IsFundamentalDomain`'s unsatisfiability at `−1` by indexing the
+pieces over `Γ'/±` rather than over `Γ'`).  Its sibling
 `peterssonIntegrableOn_slash` is PROVEN (the boundedness statement — `|g∣δ|·y`
 equals `|g|·y` at another point, so the constant from
 `CuspFormClass.petersson_bounded_left` is reused verbatim).  The geometry,
 the measurability of the domain (`measurableSet_gamma0Domain`) and ALL of the
-weight-2 analysis are done.
+weight-2 analysis are done.  What remains at `exists_gammaPrimeTiling` is
+pure group theory (`Γ' = Γ₀(M) ∩ Γ⁰(q)`, the Bézout matrices, and that
+`η = Wα` normalizes `Γ'`) plus finite additivity over the tiles.
 
 Everything ELSE that the Petersson product needs — integrability, additivity,
 homogeneity, conjugate symmetry and DEFINITENESS — is proven below from the
