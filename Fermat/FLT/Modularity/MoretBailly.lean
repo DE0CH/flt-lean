@@ -15664,9 +15664,17 @@ theorem isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve
 below records that the pin supplies `dim C ≤ dim X̄` and NOT the direction Moret–Bailly's
 §3 actually consumes — `dim X̄ ≤ dim C` for a DENSE OPEN `C ⊆ X̄` — and leaves that
 transfer as an obligation on whoever proves the leaf. This block discharges the
-SCHEME-THEORETIC half of it outright and isolates the residue as ONE named
+SCHEME-THEORETIC half of it outright and isolated the residue as ONE named
 commutative-algebra leaf, `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`,
-which needs no knowledge of Moret–Bailly and is separately ownable.
+which needs no knowledge of Moret–Bailly and was separately ownable.
+
+**STATUS 2026-07-27: THAT LEAF IS NOW PROVEN, AND THIS WHOLE BLOCK IS `sorry`-FREE.**
+So the transfer `dim X̄ ≤ dim C` is available unconditionally, and the CUT AUDIT's budgeted
+obligation is discharged. The two greps below still return empty and the costing they
+support is still an accurate description of the PIN — what changed is that the route
+finally taken needed neither `dim = trdeg` nor Cohen–Seidenberg in full (see step 4 of
+`exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`'s docstring). Do not read
+the survey below as a live obstruction.
 
 THE AUDIT'S SURVEY OF THE PIN IS RE-VERIFIED AND STILL CORRECT, and here are the two
 greps that would REFUTE it — a hit from either one kills the costing below:
@@ -16107,11 +16115,11 @@ end Assembly
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Every point of an irreducible finite-type `ℚ`-scheme is dominated in coheight by a
-point of any nonempty open** (PROVEN modulo ONE scheme-theoretic PLUMBING `have`, described
-after step 5 below, which asks only for a finitely generated `ℚ`-algebra structure on the
-affine chart together with irreducibility of its spectrum; **the commutative-algebra content
-— what this docstring used to call "THE MISSING STEP" — is now fully proven**, in the block
-immediately above).
+point of any nonempty open** (**FULLY PROVEN 2026-07-27** — no `sorry`, and `#print axioms`
+reports only `propext, Classical.choice, Quot.sound`). The commutative-algebra content — what
+this docstring used to call "THE MISSING STEP" — is proven in the block immediately above, and
+the last scheme-theoretic PLUMBING `have` (a finitely generated `ℚ`-algebra structure on the
+affine chart together with irreducibility of its spectrum) is proven inline below.
 
 Equivalently, via `ringKrullDim_stalk_eq_coheight`: for every `x ∈ X̄` there is a `y` in
 the open subscheme `C` with `dim 𝒪_{X̄,x} ≤ dim 𝒪_{X̄,y}`.
@@ -16168,25 +16176,30 @@ THE PROOF, and exactly where the pin runs out:
 5. Then `s ≤ q.height` and `height 𝔭ₓ ≤ s`, so `q` — which lies in `D(f) ⊆ C` — has
    `coheight ≥ coheight x`. ∎
 
-WHAT IS STILL OPEN HERE is a SINGLE sorried `have` inside the proof below, and it is pure
-bookkeeping, not mathematics:
+6. **THE LAST PLUMBING STEP — NOW PROVEN INLINE** (2026-07-27). It was the one sorried `have`
+   left in the proof below, and it was bookkeeping, not mathematics:
 
     ∃ _ : Algebra (ULift ℚ) R, Algebra.FiniteType (ULift ℚ) R ∧
       IrreducibleSpace (PrimeSpectrum R)
 
-for the affine chart `f : Spec R ⟶ X̄` produced by
-`Scheme.exists_affine_mem_range_and_range_subset`. Both halves have their tools at the pin
-and the next owner should not need to search:
+   for the affine chart `f : Spec R ⟶ X̄` produced by
+   `Scheme.exists_affine_mem_range_and_range_subset`. Both halves are three lines each:
 
-* IRREDUCIBILITY is `Topology.IsOpenEmbedding.irreducibleSpace` applied to
-  `f.isOpenEmbedding` — it wants `[IrreducibleSpace ↥X̄]` (which is `hirr`) and
-  `[Nonempty ↥(Spec R)]` (which `x₀` supplies), and nothing else.
-* FINITE TYPE is `HasRingHomProperty.appTop` applied to `f ≫ fX`, which is
-  `LocallyOfFiniteType` because `hft` is and open immersions are
-  (`locallyOfFiniteType_of_isOpenImmersion`, `locallyOfFiniteType_comp`). That yields
-  `RingHom.FiniteType (f ≫ fX).appTop.hom`; the only remaining work is transporting it
-  across the two `Scheme.ΓSpecIso` isomorphisms to a `ULift ℚ →+* R`, and
-  `RingHom.FiniteType` is by definition `Algebra.FiniteType` for `toAlgebra`.
+   * IRREDUCIBILITY is `Topology.IsOpenEmbedding.irreducibleSpace` applied to
+     `f.isOpenEmbedding` — it wants `[IrreducibleSpace ↥X̄]` (which is `hirr`) and
+     `[Nonempty ↥(Spec R)]` (which `x₀` supplies), and nothing else. `↥(Spec R)` and
+     `PrimeSpectrum R` are definitionally the same type with the same topology, so the
+     instance lands on the stated form with no transport.
+   * FINITE TYPE does **not** need `HasRingHomProperty.appTop` — an earlier version of this
+     docstring proposed that route and it costs two `Scheme.ΓSpecIso` transports. Use `Spec`'s
+     FULL FAITHFULNESS instead: `Spec.homEquiv.symm.surjective` writes the affine morphism
+     `f ≫ fX` as `Spec.map φ` for `φ : CommRingCat.of (ULift ℚ) ⟶ R`, and
+     `HasRingHomProperty.Spec_iff` converts `LocallyOfFiniteType (Spec.map φ)` — which holds by
+     `locallyOfFiniteType_of_isOpenImmersion` on `f` plus `locallyOfFiniteType_comp` with `hft`
+     — straight into `RingHom.FiniteType φ.hom`, the transports already absorbed.
+
+   `RingHom.FiniteType φ.hom` is BY DEFINITION `@Algebra.FiniteType _ _ _ _ φ.hom.toAlgebra`,
+   so `φ.hom.toAlgebra` is the algebra datum and the SAME proof term is the property.
 
 The `∃ _ : Algebra …` shape is deliberate: the chart carries no `ℚ`-algebra structure until
 `fX` supplies one, so the datum and its property have to be produced together.
@@ -16222,13 +16235,38 @@ theorem exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType
   haveI := hfimm
   obtain ⟨x₀, rfl⟩ := hxmem
   haveI hx₀p : x₀.asIdeal.IsPrime := x₀.isPrime
-  /- PLUMBING LEAF 1 (`hft` descends to the chart). The chart `Spec R` sits inside `X̄` as an
-  open, so `R` is a finitely generated `ℚ`-algebra by `LocallyOfFiniteType`'s
+  /- PLUMBING (`hft` descends to the chart) — **PROVEN 2026-07-27**. The chart `Spec R` sits
+  inside `X̄` as an open, so `R` is a finitely generated `ℚ`-algebra by `LocallyOfFiniteType`'s
   `HasRingHomProperty`, and `Spec R` is irreducible as a nonempty open of the irreducible
-  `X̄`. No missing mathematics; pure `HasRingHomProperty` bookkeeping. -/
+  `X̄`. No missing mathematics; pure `HasRingHomProperty` bookkeeping.
+
+  IRREDUCIBILITY is `Topology.IsOpenEmbedding.irreducibleSpace` against `f.isOpenEmbedding`,
+  with `[IrreducibleSpace ↥X̄] = hirr` and `[Nonempty ↥(Spec R)]` supplied by `x₀`; Lean
+  identifies `↥(Spec R)` with `PrimeSpectrum R` definitionally, so no transport is needed.
+
+  FINITE TYPE goes through `Spec`'s full faithfulness rather than through `appTop`: `Spec` is
+  fully faithful (`Spec.homEquiv`), so the affine morphism `f ≫ fX : Spec R ⟶ Spec (ULift ℚ)`
+  is `Spec.map φ` for a unique `φ : CommRingCat.of (ULift ℚ) ⟶ R`, and
+  `HasRingHomProperty.Spec_iff` turns `LocallyOfFiniteType (Spec.map φ)` — which holds because
+  `f` is an open immersion (`locallyOfFiniteType_of_isOpenImmersion`) and `fX` is `hft`
+  (`locallyOfFiniteType_comp`) — directly into `RingHom.FiniteType φ.hom`. That route avoids the
+  two `Scheme.ΓSpecIso` transports the `appTop` route would need, because `Spec_iff` has already
+  absorbed them. Finally `RingHom.FiniteType φ.hom` is BY DEFINITION
+  `@Algebra.FiniteType _ _ _ _ φ.hom.toAlgebra`, so `φ.hom.toAlgebra` is the algebra datum the
+  existential asks for and the property component is the very same proof term. -/
   obtain ⟨algR, hRfin, hRirr⟩ :
       ∃ _ : Algebra (ULift.{u} ℚ) R, Algebra.FiniteType (ULift.{u} ℚ) R ∧
-        IrreducibleSpace (PrimeSpectrum R) := sorry
+        IrreducibleSpace (PrimeSpectrum R) := by
+    haveI := hft
+    haveI : Nonempty ↥(AlgebraicGeometry.Spec R) := ⟨x₀⟩
+    haveI hRirr : IrreducibleSpace (PrimeSpectrum R) := f.isOpenEmbedding.irreducibleSpace
+    obtain ⟨φ, hφ⟩ := AlgebraicGeometry.Spec.homEquiv.symm.surjective (f ≫ fX)
+    have hφ' : AlgebraicGeometry.Spec.map φ = f ≫ fX := hφ
+    have hLFT : AlgebraicGeometry.LocallyOfFiniteType (AlgebraicGeometry.Spec.map φ) := by
+      rw [hφ']; infer_instance
+    have hφft : RingHom.FiniteType φ.hom :=
+      AlgebraicGeometry.HasRingHomProperty.Spec_iff.mp hLFT
+    exact ⟨φ.hom.toAlgebra, hφft, hRirr⟩
   /- `C` meets the chart in a basic open (PROVEN). `Set.range j.base` and `Set.range f.base`
   are nonempty opens of the irreducible `X̄`, so they meet; the preimage under `f.base` is
   then a nonempty open of `Spec R`, and basic opens are a basis. Non-nilpotence of `r` is
@@ -16337,9 +16375,10 @@ relocation recorded at the end of this docstring), as
 
     topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType
 
-(PROVEN, over the single leaf `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`,
-via `topologicalKrullDim_eq_iSup_coheight` and `schemeIrreducibleClosedsOrderIso`,
-also PROVEN here). Its conclusion is literally `dim X̄ ≤ dim C` for an open
+(PROVEN, via `topologicalKrullDim_eq_iSup_coheight` and `schemeIrreducibleClosedsOrderIso`,
+also PROVEN here, over `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` —
+which was the single open leaf of that block and is itself **PROVEN as of 2026-07-27**, so
+the transfer is now unconditional). Its conclusion is literally `dim X̄ ≤ dim C` for an open
 immersion `j : C ⟶ X̄` into an irreducible `ℚ`-scheme of finite type. Instantiated
 at `j = g.toNormalization` it discharges this leaf outright, because that map is
 an OPEN IMMERSION under exactly this statement's four hypotheses — the instance
@@ -16531,11 +16570,12 @@ first entry is no longer one of them:
   open of an irreducible finite-type scheme has the same dimension" — is
   `topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType`, which is
   proven in the transfer block now sitting immediately above this cluster, over
-  the single open commutative-algebra leaf
-  `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`. So this node's
-  residual dependency on the dimension side is that ONE leaf, not a dimension
-  theory. It took one new hypothesis, `hgi`, which this proof already had and now
-  passes through.
+  the commutative-algebra leaf
+  `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` — which was that
+  block's single open leaf and is itself **PROVEN as of 2026-07-27**. So this
+  node has NO residual dependency on the dimension side at all, and in particular
+  no dimension theory is owed. It took one new hypothesis, `hgi`, which this proof
+  already had and now passes through.
 * ~~`isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve`~~ —
   **PROVEN 2026-07-27**, once `hdim` was threaded through to it from here. In
   dimension `≤ 1` "regular ⟹ integrally closed" is field-or-DVR
@@ -17626,9 +17666,12 @@ elsewhere. `Order.krullDim_eq_iSup_coheight`,
 `AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` together reduce the whole
 transfer to ONE statement about localisations of finitely generated algebras
 over a field, which is the named leaf
-`exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`. Everything
-else in the transfer is proven. See the section docstring "The dense-open
-dimension transfer" above for the two greps that would refute what remains.
+`exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`. That leaf is
+itself **PROVEN as of 2026-07-27**, so the whole transfer — and with it this
+node's dimension side — is now unconditional; nothing remains. See the section
+docstring "The dense-open dimension transfer" above, whose two greps still
+return empty and describe the pin accurately, but no longer describe a live
+obstruction.
 
 PROVENANCE. This repair CLOSES the "SCOPE NOTE — the statement is strictly
 more general than the route documented above" audit of 2026-07-26, which
