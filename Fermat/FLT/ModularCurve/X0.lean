@@ -20977,10 +20977,26 @@ classical fact rather than a bundle:
    Katz–Mazur's *construction* over `𝔽_ℓ` rather than a universal
    property;
 2. `finite_compl_pullbackSpecial` — the cusp locus of the special fibre
-   is still finite;
+   is still finite.  **PROVEN 2026-07-27**: `jsp` is the base change of
+   `jZ`, so the cusp locus upstairs is the PREIMAGE of the one
+   downstairs, and `SpecLoc.special toF` is a closed immersion (`toF` is
+   surjective) hence its base change is injective.  Neither properness
+   nor finiteness of any morphism is consumed, and `ℓ` need not even be
+   prime;
 3. `exists_inverse_of_isX0Compactification` — a smooth proper
    geometrically connected curve over a FIELD is determined by a dense
-   open, by closure of the graph in `X₁ ×_k X₂`.
+   open.  **PROVEN 2026-07-27** over three sharper leaves, and NOT by the
+   closure of the graph in `X₁ ×_k X₂`: the one-sided extension theorem
+   `exists_extension_of_isX0Compactification` applied twice, glued by
+   `eq_of_isX0Compactification` (itself proven from
+   `isReduced_of_isX0Compactification`,
+   `isDominant_of_isX0Compactification` and `Mathlib`'s
+   `ext_of_isDominant_of_isSeparated`).
+
+So the geometry left open in this section is four leaves: one modular
+(`nonempty_isCoarseModuliY0_pullbackSpecial`) and three of pure curve
+theory over a field — reducedness, density, and the valuative-criterion
+extension — none of the latter mentioning modular curves at all.
 
 Everything else in the base change — properness, smoothness of relative
 dimension `1`, geometric connectedness, openness of the immersion — is
@@ -21505,35 +21521,79 @@ theorem nonempty_isCoarseModuliY0_pullbackSpecial {N ℓ : ℕ} (hℓ : ℓ.Prim
       (fun {_T' _T} p {_g _g'} hg {_d' _d} hb =>
         hcoarse.classifyPullback_natural (SpecLoc.special toF) p hg hb))
 
-/-- **The cusp locus of the special fibre is finite** (sorry node).
+/-- **The cusp locus of the special fibre is finite** (PROVEN 2026-07-27).
 
 TRUE, and it is the one clause of `IsX0Compactification` that `Mathlib`'s
 base-change instances do not supply, because the underlying space of a
 fibre product of schemes is not the fibre product of the underlying
-spaces.  The honest argument: the complement of `Y ⊆ 𝒳` is a closed
-subscheme finite over `Spec ℤ_(ℓ)` (finite as a set and proper over the
-base, hence finite), its base change to `𝔽_ℓ` is finite over `Spec 𝔽_ℓ`,
-and the complement of the base-changed open is exactly that base change
-because forming an open subscheme commutes with base change.
+spaces.
+
+**The proof that works is not the one this docstring used to predict.**
+The predicted argument — the complement of `Y ⊆ 𝒳` is a closed subscheme
+finite over `Spec ℤ_(ℓ)`, its base change to `𝔽_ℓ` is finite over
+`Spec 𝔽_ℓ`, and the complement of the base-changed open is exactly that
+base change — needs finiteness of a morphism and a comparison of two
+closed subschemes, and NONE of that is required.  Two facts do the whole
+job and both are cheap:
+
+* `jsp` **is** the base change of `jZ` along
+  `pullback.fst xstr (SpecLoc.special toF)`.  That is a pasting of
+  pullback squares (`IsPullback.of_bot`), where `hsnd` and `hmodel.comm`
+  are exactly what identify the outer rectangle with the defining square
+  of `pullback ystr (SpecLoc.special toF)`.  Hence
+  `Set.range jsp = (pullback.fst xstr _) ⁻¹' Set.range jZ` by
+  `AlgebraicGeometry.range_base_of_isPullback`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`), and
+  the cusp locus upstairs is the PREIMAGE of the cusp locus of `𝒳`.
+* `SpecLoc.special toF` is a **closed immersion**, because `toF` is
+  surjective (`hbase.surjective` — the only use `IsReductionBase` gets
+  here), and closed immersions are stable under base change, so
+  `pullback.fst xstr (SpecLoc.special toF)` is one too and in particular
+  INJECTIVE.  `Set.Finite.preimage` then finishes.
+
+So the finite set is never pushed forward — which is the same reason
+`IsX0Compactification.ofInverse` above formulates its cusp clause as a
+preimage — and no properness, finiteness or dimension input is consumed
+anywhere.
+
+**`_hℓ` and `_hℓN` are not used**, and are kept only because the consumer
+already has them and dropping them would change the signature of a
+released statement.  Primality of `ℓ` plays no part: `ZMod ℓ` need not be
+a field, only `toF` need be surjective.  The statement proved here is
+therefore strictly stronger than the one advertised.
 
 `jsp` is characterised by its two components rather than taken to be
 `pullback.map` on the nose, so that the statement does not carry a
-`pullback.map` proof obligation inside its own type; `_hfst` and `_hsnd`
-pin it uniquely by `pullback.hom_ext`.
-
-The hypotheses carry underscores only because the body is `sorry`. -/
+`pullback.map` proof obligation inside its own type; `hfst` and `hsnd`
+pin it uniquely by `pullback.hom_ext`. -/
 theorem finite_compl_pullbackSpecial {N ℓ : ℕ} (_hℓ : ℓ.Prime)
     (_hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
-    (_hbase : IsReductionBase ℓ R toF)
+    (hbase : IsReductionBase ℓ R toF)
     {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (hmodel : IsX0Compactification N xstr ystr jZ)
     (jsp : pullback ystr (SpecLoc.special toF) ⟶ pullback xstr (SpecLoc.special toF))
-    (_hfst : jsp ≫ pullback.fst xstr (SpecLoc.special toF)
+    (hfst : jsp ≫ pullback.fst xstr (SpecLoc.special toF)
       = pullback.fst ystr (SpecLoc.special toF) ≫ jZ)
-    (_hsnd : jsp ≫ pullback.snd xstr (SpecLoc.special toF)
+    (hsnd : jsp ≫ pullback.snd xstr (SpecLoc.special toF)
       = pullback.snd ystr (SpecLoc.special toF)) :
-    (Set.range jsp.base)ᶜ.Finite :=
-  sorry
+    (Set.range jsp.base)ᶜ.Finite := by
+  haveI hci : IsClosedImmersion (SpecLoc.special toF) :=
+    IsClosedImmersion.spec_of_surjective (CommRingCat.ofHom toF) hbase.surjective
+  haveI hcif : IsClosedImmersion (pullback.fst xstr (SpecLoc.special toF)) :=
+    MorphismProperty.pullback_fst (P := @IsClosedImmersion) _ _ hci
+  have hpb : IsPullback (pullback.fst ystr (SpecLoc.special toF)) jsp jZ
+      (pullback.fst xstr (SpecLoc.special toF)) := by
+    refine IsPullback.of_bot ?_ hfst.symm (IsPullback.of_hasPullback _ _)
+    rw [hsnd, hmodel.comm]
+    exact IsPullback.of_hasPullback _ _
+  have hrange : Set.range jsp.base
+      = (pullback.fst xstr (SpecLoc.special toF)).base ⁻¹' Set.range jZ.base :=
+    _root_.AlgebraicGeometry.range_base_of_isPullback hpb.flip
+  rw [hrange, ← Set.preimage_compl]
+  exact Set.Finite.preimage
+    (Set.injOn_of_injective
+      (Scheme.Hom.isClosedEmbedding (pullback.fst xstr (SpecLoc.special toF))).injective)
+    hmodel.finite_compl
 
 /-- **The base change of the smooth model to `𝔽_ℓ` is `X_0(N)` over
 `𝔽_ℓ`** (PROVEN from the two leaves above).
@@ -21637,29 +21697,202 @@ theorem exists_isX0Compactification_specialFibre {N ℓ : ℕ} (hℓ : ℓ.Prime
   obtain ⟨w, w', hw, hw', hww', hw'w⟩ := exists_inverse_pullbackSpecial d
   exact ⟨Y'', strY'', j'' ≫ w', ⟨hP.ofInverse hw' hw hw'w hww'⟩⟩
 
+/-- **The compactification of a smooth proper curve is a reduced scheme**
+(sorry leaf — smoothness over a field descends reducedness).
+
+TRUE and elementary: `strX₁` is `SmoothOfRelativeDimension 1` over
+`Spec 𝔽_ℓ`, a smooth morphism is (Zariski-locally on the source) standard
+smooth, and a standard smooth algebra over a field is regular, hence
+reduced.  Reducedness is local, so nothing global is involved.
+
+**Why this is a leaf and not a citation.**  `Mathlib` at this pin has no
+implication from any smoothness class to `IsReduced`: a grep over
+`Mathlib/RingTheory/Smooth/` returns no occurrence of `IsReduced`,
+`IsRegularLocalRing` or `IsRegular`, and `Mathlib/AlgebraicGeometry/
+Morphisms/Smooth.lean` mentions `IsReduced` only as a HYPOTHESIS (of
+`Scheme.Hom.dense_smoothLocus_of_perfectField`).  So the fact travels in
+the wrong direction there and has to be supplied.
+
+`_hℓ` is what makes `ZMod ℓ` a field, and is load-bearing: over a
+non-reduced base a smooth scheme is not reduced.  The `N`-dependence and
+`strY₁`, `jY₁` are carried only because the hypothesis is packaged as
+`IsX0Compactification`; only `h₁.smooth` is consumed.
+
+**Worth stating generally when proved**: the mathlib-shaped statement is
+`[SmoothOfRelativeDimension n f] [IsReduced Y] → IsReduced X`, and it
+belongs in `Fermat/FLT/Mathlib/AlgebraicGeometry/` beside
+`CurveCompactification.lean` rather than here.  Whoever proves it should
+hoist it and leave this declaration as the one-line specialisation. -/
+theorem isReduced_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+    {X₁ Y₁ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ} {jY₁ : Y₁ ⟶ X₁}
+    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁) :
+    IsReduced X₁ :=
+  sorry
+
+/-- **The open part of a compactification is dense in it** (sorry leaf —
+a nonempty open of an irreducible curve is dense).
+
+TRUE, and this is the density that `IsX0Compactification`'s own docstring
+appeals to when it says "a nonempty open of a connected curve is dense"
+and that `finite_compl` "is what makes `X` the unique smooth
+compactification".  It is stated separately because
+`IsX0Compactification` — unlike
+`AlgebraicGeometry.IsSmoothCompactification` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, which
+carries `isDominant` as a FIELD — does not record it, so every consumer
+that needs it has to derive it.
+
+**Two steps, and the second is the one with content.**
+
+1. `X₁` is IRREDUCIBLE: it is geometrically connected, hence connected,
+   and smooth over a field, hence normal, and a connected normal
+   noetherian scheme is irreducible.  Then any nonempty open is dense.
+2. `Set.range jY₁.base` is NONEMPTY.  This is not free and it is where
+   the degenerate level hides: if `Y₁` were empty then `finite_compl`
+   would say the whole space of `X₁` is finite, and a smooth proper curve
+   over a field has infinitely many points unless it is empty — while
+   `GeometricallyConnected strX₁` forbids `X₁` from being empty
+   (`ConnectedSpace` carries `Nonempty`).  So the hypotheses are
+   unsatisfiable in that case, which is the same observation the "Not
+   vacuous" paragraph of `nonempty_relPointEquiv_of_isX0Compactification`
+   records at `N = 0`.
+
+So the leaf is TRUE at every `N`, vacuously at `N = 0` and by
+irreducibility elsewhere; it is not vacuous overall, since
+`exists_x0Compactification_mod_prime` inhabits the hypothesis at the
+levels that matter.
+
+`_hℓ` is load-bearing exactly as in `isReduced_of_isX0Compactification`:
+step 1 needs `ZMod ℓ` to be a field. -/
+theorem isDominant_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+    {X₁ Y₁ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ} {jY₁ : Y₁ ⟶ X₁}
+    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁) :
+    IsDominant jY₁ :=
+  sorry
+
+/-- **A morphism from the open part into a proper curve extends over the
+cusps** (sorry leaf — the valuative criterion at the cusps, and the ONLY
+geometric content left in the uniqueness of `X_0(N)_{𝔽_ℓ}`).
+
+TRUE and classical (Hartshorne I.6.8 / II Ex. 4.5, Stacks `0BXA`): a
+morphism to a PROPER scheme, defined on a dense open of a REGULAR curve,
+extends to the whole curve.  Here `X₁` is smooth of relative dimension
+`1` over the field `𝔽_ℓ`, so the local ring at each of the finitely many
+points of `(Set.range jY₁.base)ᶜ` is a discrete valuation ring, and
+`strX₂` is proper.
+
+**The route at this pin**, which is what retires the earlier
+"IRREDUCIBLE" verdict on the consumer.  The verdict searched for a
+compactification theorem; the axis it did not search is the BIRATIONAL
+one, and `Mathlib` has that subtree:
+
+1. `f` together with the open immersion `jY₁` is a
+   `Scheme.PartialMap X₁ X₂` with domain `jY₁.opensRange`, dense by
+   `isDominant_of_isX0Compactification`; pass to the rational map
+   `Scheme.RationalMap` and its MAXIMAL domain `RationalMap.domain`.
+2. For `x` outside that domain, `𝒪_{X₁,x}` is a DVR and the generic
+   point lies in `Y₁`, so `Spec K(X₁) ⟶ X₂` together with
+   `Spec 𝒪_{X₁,x} ⟶ Spec 𝔽_ℓ` is a `ValuativeCommSq` for `strX₂`;
+   `IsProper.eq_valuativeCriterion` gives
+   `ValuativeCriterion.Existence strX₂`, hence a lift
+   `Spec 𝒪_{X₁,x} ⟶ X₂`.
+3. `Scheme.PartialMap.ofFromSpecStalk` SPREADS that lift out to a partial
+   map defined on an open neighbourhood of `x` — this is the step the
+   textbook proof hand-waves — so `x` lies in the maximal domain after
+   all, and the domain is `⊤`.
+4. `RationalMap.toPartialMap` (which wants `[IsReduced X₁]`, supplied by
+   `isReduced_of_isX0Compactification`, and a separated target, supplied
+   by `h₂.isProper`) then returns the morphism `w`, and
+   `jY₁ ≫ w = f` because the two agree on the dense domain.
+
+Step 2's DVR input is the piece with no `Mathlib` citation: there is no
+`IsRegular` for schemes at this pin, so "smooth of relative dimension `1`
+over a field ⟹ the local rings at non-generic points are DVRs" has to be
+built.  That is the honest residue of this leaf, and it is shared with
+`smoothOfRelativeDimension_one_fromNormalization` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` — the
+two should be proven by one owner.
+
+**`f` is deliberately arbitrary**, not specialised to `u ≫ jY₂`: the
+classical theorem does not care, the consumer needs both `u ≫ jY₂` and
+`v ≫ jY₁`, and a statement about an isomorphism of open parts would
+hide the fact that no property of `f` beyond being a morphism over the
+base is used.  `_h₂` is passed whole although only `h₂.isProper` is
+consumed.
+
+The hypotheses carry underscores only because the body is `sorry`. -/
+theorem exists_extension_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+    {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
+    {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
+    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
+    (_h₂ : IsX0Compactification N strX₂ strY₂ jY₂)
+    {f : Y₁ ⟶ X₂} (_hf : f ≫ strX₂ = strY₁) :
+    ∃ w : X₁ ⟶ X₂, w ≫ strX₂ = strX₁ ∧ jY₁ ≫ w = f :=
+  sorry
+
+/-- **An extension over the cusps is unique** (PROVEN 2026-07-27 — one
+citation, once density and reducedness are available).
+
+Two morphisms `X₁ ⟶ X₂` over `Spec 𝔽_ℓ` that agree on the open part are
+equal.  This is `Mathlib`'s
+`AlgebraicGeometry.ext_of_isDominant_of_isSeparated` verbatim: it needs a
+REDUCED source (`isReduced_of_isX0Compactification`), a SEPARATED target
+morphism (`h₂.isProper`, since `IsProper` extends `IsSeparated`), and a
+DOMINANT morphism along which the two agree
+(`isDominant_of_isX0Compactification`).
+
+Recording it as its own declaration rather than inlining it is what makes
+the inverse-pair assembly below pure category theory: the two composites
+`w ≫ w'` and `w' ≫ w` are compared with the identities by this lemma
+alone, with no further geometry. -/
+theorem eq_of_isX0Compactification {N ℓ : ℕ} (hℓ : ℓ.Prime)
+    {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
+    {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
+    (h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
+    (h₂ : IsX0Compactification N strX₂ strY₂ jY₂)
+    {a b : X₁ ⟶ X₂} (ha : a ≫ strX₂ = strX₁) (hb : b ≫ strX₂ = strX₁)
+    (hab : jY₁ ≫ a = jY₁ ≫ b) : a = b := by
+  haveI := isReduced_of_isX0Compactification hℓ h₁
+  haveI := isDominant_of_isX0Compactification hℓ h₁
+  haveI := h₂.isProper
+  exact ext_of_isDominant_of_isSeparated strX₂ (ha.trans hb.symm) jY₁ hab
+
 /-- **A smooth proper curve over a field is determined by a dense open**
-(sorry node — the closure-of-the-graph argument).
+(PROVEN 2026-07-27 over three sharper leaves — was the
+closure-of-the-graph argument).
 
 TRUE over a FIELD, and this is the second of the two steps of the
 uniqueness statement below; the first, initiality of the coarse moduli
 space, is `IsCoarseModuliY0.exists_inverse` and is PROVEN.
 
-The argument: `Y₁ ≅ Y₂` over `k` by hypothesis, and both `X_i` are smooth
-proper geometrically connected curves containing `Y_i` as a dense open —
-dense because a nonempty open of an irreducible curve is dense, which is
-where `finite_compl` is consumed.  Take the closure `Γ` of the graph of
-`u` inside `X₁ ×_k X₂`.  Both projections `Γ ⟶ X_i` are proper (closed
-subscheme of a proper `k`-scheme) and birational (isomorphisms over the
-dense open), hence isomorphisms, because a proper birational morphism to
-a smooth — hence normal — curve is an isomorphism (Zariski's main
-theorem in dimension one).  Composing gives `w : X₁ ⟶ X₂` extending `u`,
-and the same construction run backwards gives its inverse.
+**How it is proven, and why the graph closure is not needed.**  The
+argument recorded here previously was: take the closure `Γ` of the graph
+of `u` inside `X₁ ×_k X₂`, observe both projections `Γ ⟶ X_i` are proper
+and birational, and invoke Zariski's main theorem in dimension one.  That
+is a correct classical proof and it is NOT the cheapest one at this pin,
+because it needs a scheme-theoretic image, an irreducibility argument for
+`Γ`, and normality — none of which `Mathlib` states for schemes.
+
+What is used instead is the one-sided EXTENSION theorem, applied twice
+and glued by uniqueness:
+
+* `exists_extension_of_isX0Compactification` extends `u ≫ jY₂` to
+  `w : X₁ ⟶ X₂` and `v ≫ jY₁` to `w' : X₂ ⟶ X₁`, each over the base;
+* `eq_of_isX0Compactification` — density plus separatedness — then forces
+  `w ≫ w' = 𝟙` and `w' ≫ w = 𝟙`, because both composites and the
+  identities restrict to the same map on the open part, `u ≫ v = 𝟙` and
+  `v ≫ u = 𝟙` being exactly what makes that true.
+
+So the inverse pair is bookkeeping over a SINGLE geometric input, and
+`jY₁ ≫ w = u ≫ jY₂` comes out of the extension property directly rather
+than having to be read off a graph.
 
 **Why the base is `Spec 𝔽_ℓ` and not a general scheme.**  Over a general
-base the graph closure argument fails — a non-reduced or non-normal base
-breaks both the density step and the normality step — and the leaf would
-be FALSE for a generality nothing here consumes.  `_hℓ` is what makes
-`ZMod ℓ` a field, and it is load-bearing for exactly that.
+base the extension fails — a non-reduced or non-normal base breaks both
+the density step and the DVR step — and the leaf would be FALSE for a
+generality nothing here consumes.  `_hℓ` is what makes `ZMod ℓ` a field,
+and it is load-bearing for exactly that; it is passed on to all three
+children for the same reason.
 
 **Not vacuous.**  At `N = 0` the hypotheses are unsatisfiable
 (`isEmpty_of_gamma0Datum_zero` forces `Y` initial, hence empty, and
@@ -21674,22 +21907,53 @@ the inverse pair.  Without it the statement would be strictly weaker than
 the theorem it names, and a later consumer wanting compatibility on cusps
 would have to reopen it.
 
-The hypotheses carry underscores only because the body is `sorry`.
+**The earlier verdict "IRREDUCIBLE at this pin: no smooth-compactification
+theorem for curves exists in `Mathlib`" is RETIRED (2026-07-27), and it
+was mis-scoped rather than merely stale.**  Nothing here has to *build* a
+compactification — both compactifications are HYPOTHESES.  What is needed
+is an EXTENSION theorem, and the machinery for that is present at this
+pin, in a subtree the earlier survey never looked at:
 
-IRREDUCIBLE at this pin: no smooth-compactification theorem for curves
-exists in `Mathlib`, which is the same obstruction recorded at
-`exists_x0Compactification`. -/
-theorem exists_inverse_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+* `Mathlib.AlgebraicGeometry.Birational.RationalMap` — `Scheme.PartialMap`,
+  `Scheme.RationalMap`, the maximal domain `RationalMap.domain`, and
+  crucially `PartialMap.ofFromSpecStalk`, which SPREADS OUT a morphism
+  `Spec 𝒪_{X,x} ⟶ X₂` to a partial map defined near `x` (this is the step
+  the classical proof hand-waves as "spread out and glue");
+* `Mathlib.AlgebraicGeometry.ValuativeCriterion` — the full valuative
+  criterion in both directions, and `IsProper.eq_valuativeCriterion`
+  extracts `ValuativeCriterion.Existence` from properness of `strX₂`;
+* `AlgebraicGeometry.ext_of_isDominant_of_isSeparated`
+  (`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`) — two morphisms
+  out of a REDUCED scheme into a SEPARATED target that agree along a
+  DOMINANT morphism are equal.
+
+So the node is cut here into three genuinely separate classical inputs,
+with the whole inverse-pair assembly proven.  What is left open is
+recorded at each of the three; none of them mentions modular curves and
+all three are dispatchable in isolation. -/
+theorem exists_inverse_of_isX0Compactification {N ℓ : ℕ} (hℓ : ℓ.Prime)
     {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
     {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
-    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
-    (_h₂ : IsX0Compactification N strX₂ strY₂ jY₂)
-    {u : Y₁ ⟶ Y₂} {v : Y₂ ⟶ Y₁} (_hu : u ≫ strY₂ = strY₁) (_hv : v ≫ strY₁ = strY₂)
-    (_huv : u ≫ v = 𝟙 Y₁) (_hvu : v ≫ u = 𝟙 Y₂) :
+    (h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
+    (h₂ : IsX0Compactification N strX₂ strY₂ jY₂)
+    {u : Y₁ ⟶ Y₂} {v : Y₂ ⟶ Y₁} (hu : u ≫ strY₂ = strY₁) (hv : v ≫ strY₁ = strY₂)
+    (huv : u ≫ v = 𝟙 Y₁) (hvu : v ≫ u = 𝟙 Y₂) :
     ∃ (w : X₁ ⟶ X₂) (w' : X₂ ⟶ X₁),
       w ≫ strX₂ = strX₁ ∧ w' ≫ strX₁ = strX₂ ∧
-      w ≫ w' = 𝟙 X₁ ∧ w' ≫ w = 𝟙 X₂ ∧ jY₁ ≫ w = u ≫ jY₂ :=
-  sorry
+      w ≫ w' = 𝟙 X₁ ∧ w' ≫ w = 𝟙 X₂ ∧ jY₁ ≫ w = u ≫ jY₂ := by
+  obtain ⟨w, hw, hjw⟩ := exists_extension_of_isX0Compactification hℓ h₁ h₂
+    (f := u ≫ jY₂) (by rw [Category.assoc, h₂.comm, hu])
+  obtain ⟨w', hw', hjw'⟩ := exists_extension_of_isX0Compactification hℓ h₂ h₁
+    (f := v ≫ jY₁) (by rw [Category.assoc, h₁.comm, hv])
+  refine ⟨w, w', hw, hw', ?_, ?_, hjw⟩
+  · refine eq_of_isX0Compactification hℓ h₁ h₁ ?_ (Category.id_comp _) ?_
+    · rw [Category.assoc, hw', hw]
+    · rw [← Category.assoc, hjw, Category.assoc, hjw', ← Category.assoc, huv,
+        Category.id_comp, Category.comp_id]
+  · refine eq_of_isX0Compactification hℓ h₂ h₂ ?_ (Category.id_comp _) ?_
+    · rw [Category.assoc, hw, hw']
+    · rw [← Category.assoc, hjw', Category.assoc, hjw, ← Category.assoc, hvu,
+        Category.id_comp, Category.comp_id]
 
 /-- **`X_0(N)` over `𝔽_ℓ` is unique up to isomorphism, hence its rational
 points up to bijection** (PROVEN 2026-07-27).
