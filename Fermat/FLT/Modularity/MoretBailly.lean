@@ -9194,6 +9194,51 @@ cost:
   check `Mathlib/RingTheory/Flat/` and `Mathlib/RingTheory/Spectrum/` before
   building one, and record what is found here.
 
+**THAT CHECK IS NOW DONE — HERE IS WHAT IS FOUND (2026-07-27).** Each claim below
+is stated with the grep that refutes it; re-run those rather than re-reading this.
+
+* **Grothendieck generic freeness / generic flatness for a finitely generated
+  ALGEBRA (EGA IV 6.9.1) is ABSENT from all three trees.**
+  `grep -rniE 'genericFree|generic_free|genericFlat|generic_flat|genericallyFree|genericallyFlat' --include=*.lean Fermat/ .lake/packages/mathlib/Mathlib/ ~/cs/FLT/`
+  returns nothing but docstrings recording the absence (two in
+  `Modularity/AbelianSchemeIsogeny.lean`, and this one). That theorem is what
+  this leaf needs and it has to be built.
+* **What IS present, and the survey above does not credit it: the FREE LOCUS is
+  fully developed at this pin.** `Mathlib/RingTheory/Spectrum/Prime/FreeLocus.lean`
+  defines `Module.freeLocus R M` — the primes `p` with `Mₚ` free over `Rₚ` — and
+  proves `Module.isOpen_freeLocus` (OPEN, under `[Module.FinitePresentation R M]`)
+  together with
+  `Module.basicOpen_subset_freeLocus_iff : D(f) ⊆ freeLocus ↔ Module.Projective R_f M_f`.
+  Over `R = ℤ` those two ARE generic freeness for a finitely presented MODULE: the
+  generic point lies in the free locus because `M ⊗ ℚ` is a `ℚ`-vector space,
+  openness puts a basic open `D(N)` inside it, and a finitely generated projective
+  module over the PID `ℤ[1/N]` is free.
+* **The gap is exactly "module" versus "algebra", and it is a dévissage, not
+  geometry.** `IntegralSystemModel f ℤ` is a finitely generated ℤ-ALGEBRA and not a
+  finite ℤ-module, so `Module.FinitePresentation ℤ` fails as a hypothesis and
+  `freeLocus` does not apply to it directly. Grothendieck's proof filters the
+  algebra by a finite chain whose graded pieces ARE finite modules; that filtration
+  is the missing step, and the free-locus geometry it would then invoke is already
+  here.
+* Chevalley (`PrimeSpectrum.isConstructible_comap_image`) is present, as recorded
+  above.
+
+**THE CUT THIS LEAF SHOULD BE GIVEN, in dependency order.** (a) *generic freeness
+for a finitely generated ℤ-algebra* — no polynomial system in its statement, the
+only genuinely missing theorem, and reusable far beyond this file; (b) *the
+spreading of the diagram over* `Λ := ℤ[1/N]` — finitely many rational
+coefficients and finitely many relations among them, no geometry at all, but it
+consumes (a) at exactly one point: `ker φ ≤ nilradical` survives reduction only
+because flatness makes base change exact, so that
+`ker (φ ⊗ 𝔽̄_p) = (ker φ) ⊗ 𝔽̄_p` is still killed by the SAME exponent `s`;
+(c) *base change* `Λ → 𝔽̄_p` for `p ∤ N`, which is mechanical given this file's
+PROVEN `integralSystemModelBaseChange`. Before (b) and (c) can even be STATED the
+intermediate objects have to be written: `IntegralSystemModel f (Localization.Away (N : ℤ))`
+and the algebra map `Localization.Away (N : ℤ) → AlgebraicClosure (ZMod p)`, which
+exists exactly when `p ∤ N` (`IsLocalization.lift` of `Int.castRingHom` at the unit
+`N`). Writing those two is the first hour of work here, and nothing mathematical
+stands in its way.
+
 WHY CHEVALLEY APPLIES HERE THOUGH IT DID NOT APPLY TO THE PARENT. The parent's
 route 2 (recorded on the consumer below) failed because a factorisation of the
 system's radical has UNBOUNDED degrees. Here nothing is being factored: the
@@ -20880,6 +20925,20 @@ corrections and one extension, because the survey as written says less than it s
   sole `Cohomology` hit is `Sites/ElladicCohomology.lean`). **So §3.6's Riemann–Roch is not
   merely unproven — the sheaves it is about cannot be written**, and that, not the Picard
   scheme, is the largest single missing chapter.
+
+**SURVEY RE-RUN A THIRD TIME AND UNCHANGED (2026-07-27, at `13e9f21d`).** All five
+absence greps above plus the ten measured absences in the EXTENSION bullet were
+re-executed against `Fermat/`, the pin and `~/cs/FLT`. Every one still returns
+nothing outside this docstring — `CartierDivisor`, `WeilDivisor`, `InvertibleSheaf`,
+`LineBundle`, `IsAmple` and `SerreDuality` each match **zero files** under
+`Mathlib/AlgebraicGeometry/` and `Mathlib/Geometry/`, `SymmetricPower` matches zero
+files under `Mathlib/AlgebraicGeometry/`, and the Picard-scheme,
+generalised-Jacobian and strong-approximation greps are empty in all three trees.
+So this leaf's blocker is not a stale audit, and no prover dispatched at it today
+can write anything; the datestamp is the whole point of this paragraph. What DID
+move on this pass is a neighbouring leaf, not this one:
+`exists_birationalNormalForm_integralSystemModel_rat` was decomposed and its
+assembly proven, which does not touch §3.
 
 **THE ONE PIECE THAT IS BUILDABLE TODAY — NOW BUILT (2026-07-27).** §3.8's engine is
 strong approximation, and it is the only input of §3 that needs NEITHER a Picard scheme
