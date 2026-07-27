@@ -15354,7 +15354,7 @@ theorem exists_finiteType_algHom_injection_of_isProper {R : Type} [CommRing R] [
       intro a b hab
       refine Subtype.ext ?_
       have h1 := congrArg (fun t => t ≫ Limits.pullback.fst f g) hab
-      simpa using h1
+      simpa only [Limits.pullback.lift_fst] using h1
     exact exists_finiteType_algHom_injection_of_finite _
 
 /-- **A scheme proper over `S` has finitely many points valued in a
