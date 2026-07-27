@@ -303,6 +303,124 @@ theorem exists_ellipticScheme_of_projModel (E : WeierstrassCurve ℚ) [E.IsEllip
     _root_.WeierstrassCurve.Projective.projToSpec E, gl.toAbelianSchemeStruct,
     smoothOfRelativeDimension_projToSpec E, exists_projGeomFibreAddEquiv E gl⟩
 
+/-! ### The affine chart, and the COORDINATE pinning of the model
+
+The conjunct `exists_ellipticScheme_of_projModel` remembers about `E` is
+a Galois-equivariant `≃+` on geometric points, and — as the docstring of
+`Fermat.IsJMapOn.classify_jm` records — that relation is **not** known to
+determine `E.j`.  `Fermat.IsWeierstrassModel` (`X0.lean`) is the stronger,
+coordinate-level pinning that does determine it, and this subsection is
+what supplies it: the projective model minus its point at infinity is
+literally `Spec` of mathlib's affine coordinate ring.
+
+**Why the statements below spell out `Spec (CommRingCat.of E.toAffine.`
+`CoordinateRing)` instead of using `Fermat.weierstrassAffine`.**  That
+abbreviation, and `IsWeierstrassModel` itself, live in `X0.lean`, which
+*imports this module* — so naming them here would be circular.  They are
+definitionally these terms, so `X0.lean` consumes the conclusion below by
+`exact`, with no transport lemma and no duplication of content; only the
+spelling is duplicated.  Moving them into a shared module was rejected
+because `IsWeierstrassModel` occurs in the SIGNATURE of
+`Fermat.IsJSection.jt_model`, which would force `X0.lean` to take a
+`public import` of whatever module held it — and if that module were this
+one, the reserved atom `over` would propagate through the whole
+`MazurTorsion` cone, which is exactly what the module docstring above
+explains this file exists to prevent. -/
+
+/-- **The affine chart `Z ≠ 0` of the projective Weierstrass model is
+`Spec` of the affine coordinate ring, and its complement is the unit
+section** (sorry node — the coordinate half of item 8).
+
+TRUE and classical, and it is the *definition* of the projective closure
+read backwards: `Proj (R[X,Y,Z]/(F))` is covered by the three basic opens
+`D₊(X)`, `D₊(Y)`, `D₊(Z)`, the last of which is
+`Spec ((R[X,Y,Z]/(F))_(Z))`, the degree-zero part of the localization at
+`Z`.  Substituting `x = X/Z`, `y = Y/Z` identifies that ring with
+`R[x,y]/(y² + a₁xy + a₃y - x³ - a₂x² - a₄x - a₆)`, which is mathlib's
+`WeierstrassCurve.Affine.CoordinateRing`.  The complement of `D₊(Z)` is
+`V₊(Z)`, which for the Weierstrass cubic is the single point `[0 : 1 : 0]`
+— substituting `Z = 0` into `F` leaves `-X³`, so `X = 0` too — and that
+point is the unit `gl.e` of the group law.
+
+WHAT IT NEEDS, as three separately checkable pieces:
+
+* `Proj.awayIso` / the basic-open cover of `Proj` at this pin — the
+  identification of `D₊(Z) ⊆ Proj 𝒜` with `Spec (𝒜_(Z))`, and that its
+  inclusion is an open immersion over `Spec 𝒜₀`.
+* The RING isomorphism `(R[X,Y,Z]/(F))_(Z) ≅ R[x,y]/(f)` — pure
+  commutative algebra, the dehomogenisation map, and the only place where
+  the shape of the Weierstrass polynomial is used.
+* `V₊(Z) = {[0 : 1 : 0]}` as a set, and that this point is the range of
+  `gl.e`.  The second half is the only place `gl` is consumed, and it is
+  what makes the statement about the group law rather than about the bare
+  scheme: `IsWeierstrassModel` pins the removed point to BE the origin,
+  which is what lets `WeierstrassCurve.variableChange_j` be applied
+  without a translation argument downstream.
+
+THE CHECK THAT WOULD REFUTE THE "MISSING" HALF: a declaration in
+`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/` giving `D₊(f) ≅ Spec` of
+the degree-zero localization together with the open immersion into
+`Proj`, and one identifying the degree-zero part of a localization of a
+graded quotient ring.
+
+NOT VACUOUS: `IsOpenImmersion` alone would be satisfiable by the empty
+scheme were the coordinate ring trivial, but `range_eq` forces the range
+to be the *whole* complement of a point of an irreducible curve, so the
+chart is genuinely dense. -/
+theorem exists_affineChart_projModel (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (gl : ProjGroupLaw E) :
+    ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
+        _root_.WeierstrassCurve.Projective.proj E,
+      IsOpenImmersion ι ∧
+        ι ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
+          Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+        Set.range ι.base =
+          (Set.range (gl.toAbelianSchemeStruct.zero
+            (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ :=
+  sorry
+
+/-- **The projective Weierstrass model as an elliptic scheme, remembering
+the COORDINATES as well as the geometric fibre** (PROVEN from the six
+leaves above).
+
+This is `exists_ellipticScheme_of_projModel` with one extra conjunct: the
+affine Weierstrass curve of `E` sits inside the total space as the
+complement of the zero section.  That conjunct is `Fermat.`
+`IsWeierstrassModel` with its two definitions unfolded — see the
+subsection docstring for why it is spelled out rather than named — and it
+is what `Fermat.exists_weierstrassModel_gamma0Datum` in `X0.lean`
+consumes to pin `d.ab` to `E` by coordinates rather than by the
+Galois-equivariant `≃+`.
+
+The equivariant conjunct is KEPT even though the model conjunct is
+strictly more informative about which curve this is: the assembly in
+`X0.lean` transports the ORDER and the STABILITY of the generator `g`
+along that `≃+` in order to feed
+`exists_cyclicSubgroupOfOrder_of_galoisStable`, and the coordinate
+pinning says nothing about geometric points. So both are load-bearing,
+for different halves of the datum. -/
+theorem exists_ellipticScheme_isWeierstrassModel_of_projModel
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ (A : Scheme.{0}) (f : A ⟶ Spec (CommRingCat.of ℚ)) (ab : AbelianSchemeStruct f),
+      SmoothOfRelativeDimension 1 f ∧
+        (∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+          IsOpenImmersion ι ∧
+            ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+            Set.range ι.base =
+              (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) ∧
+        (letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+         ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+
+             GeomFibrePt f (𝟙 (Spec (CommRingCat.of ℚ))),
+           ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+             e (WeierstrassCurve.Affine.Point.map
+                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+               = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (e x)) := by
+  obtain ⟨gl⟩ := nonempty_projGroupLaw E
+  exact ⟨_root_.WeierstrassCurve.Projective.proj E,
+    _root_.WeierstrassCurve.Projective.projToSpec E, gl.toAbelianSchemeStruct,
+    smoothOfRelativeDimension_projToSpec E, exists_affineChart_projModel E gl,
+    exists_projGeomFibreAddEquiv E gl⟩
+
 end Fermat
 
 end
