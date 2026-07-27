@@ -4877,8 +4877,211 @@ Both satisfy `rank < genus`, so Chabauty–Coleman applies; no rank-`0`
 counting argument does. -/
 def chabautySemiprimeLevels : List ℕ := [65, 91]
 
-/-- **The `56` levels with an isolated prime** (sorry node, introduced
-2026-07-27): for `p ∈ isolatedIsogenyPrimes` and any prime `q ≠ p`,
+/-- **The `j`-invariants of the non-cuspidal rational points of `X_0(p)`,
+for the seven `p ∈ isolatedIsogenyPrimes`** — Mazur, *Rational isogenies
+of prime degree*, Invent. Math. **44** (1978), Theorem 1 and its table.
+
+| `p` | non-cuspidal `j` | CM |
+|-----|------------------|----|
+| `11`  | `−2¹⁵ = −32768`; `−11² = −121`; `−11·131³ = −24729001` | first only, disc `−11` |
+| `17`  | `−17·373³/2¹⁷`; `−17²·101³/2` | no |
+| `19`  | `−2¹⁵·3³ = −884736` | disc `−19` |
+| `37`  | `−7·11³ = −9317`; `−7·137³·2083³` | no |
+| `43`  | `−2¹⁸·3³·5³ = −884736000` | disc `−43` |
+| `67`  | `−2¹⁵·3³·5³·11³ = −147197952000` | disc `−67` |
+| `163` | `−2¹⁸·3³·5³·23³·29³ = −262537412640768000` | disc `−163` |
+
+The two fractional and the two large entries were recomputed with
+PARI/GP 2.17.4 on 2026-07-27 from the factorisations in the middle
+column: `−17·373³ = −882216989` over `2¹⁷ = 131072`;
+`−17²·101³ = −297756989` over `2`; `−7·137³·2083³ =
+−162677523113838677`; `−2¹⁸·3³·5³ = −884736000`.  Only the last four CM
+values are the classical singular moduli of discriminants
+`−19, −43, −67, −163`.
+
+**The one property of this table that the argument actually uses** is
+that **no entry is `0` or `1728`** — every entry is negative.  That is
+what makes `y0HasNoRationalPoint_of_no_stable_isolated` true: at
+`j ∉ {0, 1728}` the geometric automorphism group of a pair `(E, C)` is
+`{±1}`, which fixes every subgroup, so a `ℚ`-rational point of the
+coarse space descends to a pair over `ℚ` up to quadratic twist.
+
+Levels outside `isolatedIsogenyPrimes` get `∅`, which is *false* as a
+statement about `X_0(p)(ℚ)` for `p ∈ {2, 3, 5, 7, 13}` (there the curve
+is `ℙ¹` and there are infinitely many `j`); every consumer below carries
+`p ∈ isolatedIsogenyPrimes`, so the junk branch is never reached. -/
+def isolatedJInvariants (p : ℕ) : Finset ℚ :=
+  if p = 11 then {-32768, -121, -24729001}
+  else if p = 17 then {-882216989 / 131072, -297756989 / 2}
+  else if p = 19 then {-884736}
+  else if p = 37 then {-9317, -162677523113838677}
+  else if p = 43 then {-884736000}
+  else if p = 67 then {-147197952000}
+  else if p = 163 then {-262537412640768000}
+  else ∅
+
+/-- **Galois stability passes from `⟨g⟩` to `⟨n • g⟩`** (PROVEN).
+
+This is the elementary step that turns a Galois-stable cyclic subgroup
+of order `p * q` into one of order `p` and one of order `q`: the
+subgroups of a cyclic group are its `⟨n • g⟩`, and stability is
+inherited because `σ` is additive and sends `g` into `⟨g⟩`.
+
+Concretely, if `σ · g = m • g` then
+`σ · (k • n • g) = k • n • m • g = (k m) • n • g`, so the image stays in
+`⟨n • g⟩`.  Nothing about elliptic curves enters — only that
+`WeierstrassCurve.Affine.Point.map` is an `AddMonoidHom`. -/
+theorem stable_zmultiples_nsmul {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    {g : (E⁄(AlgebraicClosure ℚ)).Point} (n : ℕ)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples (n • g),
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples (n • g) := by
+  intro σ x hx
+  obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+  obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp
+    (hstable σ g (AddSubgroup.mem_zmultiples g))
+  refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k * m, ?_⟩
+  rw [map_zsmul, map_nsmul, ← hm, smul_comm n m g, smul_smul]
+
+/-- **The coarse-to-fine descent at a level divisible by an isolated
+Mazur prime** (sorry node, introduced 2026-07-27): to prove
+`Y_0(N)(ℚ) = ∅` it is enough to refute the existence of a Weierstrass
+curve over `ℚ` with a Galois-stable cyclic subgroup of order `N`.
+
+This is the exact CONVERSE of `false_of_stable_of_y0HasNoRationalPoint`,
+and it is the only place where the coarse-space subtlety enters the
+`56`-level family.  Stated in contrapositive form — "no curve ⟹ no
+point" rather than "point ⟹ curve" — so that the hypothesis is literally
+the hypothesis shape of the two arithmetic leaves below, with no
+existential repackaging of `[E.IsElliptic]`.
+
+**TRUE, and here is the proof.**  A `ℚ`-rational point of the coarse
+space is a `Γ_ℚ`-stable `ℚ̄`-isomorphism class of pairs `(E, C)` with `C`
+cyclic of order `N`.  Push it down the degeneracy map to level `p`
+(`Gamma0Datum.ofDvd`, `hpN`); by Mazur's Theorem 1 its `j`-invariant is
+one of the entries of `isolatedJInvariants p`, **none of which is `0` or
+`1728`**.  So `Aut_ℚ̄(E) = {±1}`.  Choose any `E₀/ℚ` with that
+`j`-invariant (an explicit Weierstrass equation) and transport `C` to
+`C₀ ⊆ E₀(ℚ̄)`; for each `σ` the comparison isomorphism differs from its
+conjugate by an element of `{±1}`, which fixes every subgroup, so
+`σ(C₀) = C₀`.  Hence `C₀` is Galois-stable and `(E₀, C₀)` is the curve
+`hno` refutes.
+
+**Why `hp`/`hpN` are load-bearing, i.e. why this is NOT stated for all
+`N`.**  The `{±1}` step needs `j ∉ {0, 1728}`, and at `j = 0` (`Aut = μ₆`)
+or `j = 1728` (`Aut = μ₄`) an automorphism of order `3` or `4` can MOVE
+`C`, so the pair need not descend.  A version of this statement
+quantified over all `N` with no isolated-prime hypothesis would therefore
+be an unsupported — quite possibly false — leaf, and `isolatedJInvariants`
+is precisely the certificate that rules those two `j`-values out.
+
+**NOT VACUOUS**, and this is worth checking because the leaf feeds a
+theorem asserting the emptiness of the very set it quantifies over.  Take
+`N = p`: `Y_0(11)(ℚ)` has three non-cuspidal points, `Y_0(17)(ℚ)` and
+`Y_0(37)(ℚ)` two each, and the remaining four one each, so at `N = p` the
+statement has genuine content and its proof is exactly the descent above.
+It is the SAME argument at `N = p q`, which is why the leaf is stated for
+`p ∣ N` rather than for `N = p q`: the general form is the honest one and
+the divisible form is what the assembly needs.
+
+IRREDUCIBLE at this pin: the descent needs the identification of the
+`ℚ`-points of the coarse space with `Γ_ℚ`-stable `ℚ̄`-classes, which is
+the content of `IsCoarseModuliY0.universal` in the direction initiality
+does not provide, plus `Aut(E) = {±1}` for `j ∉ {0, 1728}` — neither is
+in `Mathlib` or in `~/cs/FLT`. -/
+theorem y0HasNoRationalPoint_of_no_stable_isolated {p N : ℕ}
+    (_hp : p ∈ isolatedIsogenyPrimes) (_hN : N ≠ 0) (_hpN : p ∣ N)
+    (_hno : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g = N →
+      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) → False) :
+    Y0HasNoRationalPoint N :=
+  sorry
+
+/-- **Mazur's Theorem 1, in the form the descent needs** (sorry node,
+introduced 2026-07-27): a curve over `ℚ` with a rational `p`-isogeny, for
+`p` one of the seven isolated Mazur primes, has one of the tabulated
+`j`-invariants.
+
+TRUE: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), Theorem 1.  For `p ∈ {11, 17, 19, 37, 43, 67, 163}` the curve
+`X_0(p)` has positive genus and `X_0(p)(ℚ)` is finite and completely
+tabulated; the non-cuspidal points are the `j`-invariants collected in
+`isolatedJInvariants`.
+
+**No scheme theory appears in this statement.**  That is deliberate and
+is the point of the cut: `mem_isolatedJInvariants_of_stable` and
+`not_stable_of_mem_isolatedJInvariants` are pure statements about
+Weierstrass curves over `ℚ` and their `ℚ̄`-torsion, so they can be owned
+and attacked by someone with no modular-curve machinery, while all the
+moduli theory sits in `y0HasNoRationalPoint_of_no_stable_isolated`.
+
+IRREDUCIBLE at this pin: Mazur's theorem is not in `Mathlib`, not in
+`~/cs/FLT`, and not in this project.  Its proof is the Eisenstein-ideal
+argument — the deepest input to the whole `X_0` subtree. -/
+theorem mem_isolatedJInvariants_of_stable {p : ℕ} (_hp : p ∈ isolatedIsogenyPrimes)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg : addOrderOf g = p)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    E.j ∈ isolatedJInvariants p :=
+  sorry
+
+/-- **None of the seven isolated `j`-invariant families admits a second
+isogeny** (sorry node, introduced 2026-07-27): if `E.j` is one of the
+`j`-invariants of `X_0(p)(ℚ)` for `p` isolated, then `E` has no rational
+`q`-isogeny for any prime `q ≠ p`.
+
+TRUE, and it is the arithmetic heart of the `56`-level family.
+
+**For the five CM rows** — `j = −32768` (disc `−11`), `−884736`
+(`−19`), `−884736000` (`−43`), `−147197952000` (`−67`),
+`−262537412640768000` (`−163`) — the argument is uniform and clean.  The
+mod-`ℓ` image of `Γ_ℚ` lies in the normalizer of a Cartan subgroup
+attached to `K = ℚ(√−p)`, and a `Γ_ℚ`-stable line in `E[ℓ]` exists only
+when `ℓ` ramifies in `K`, i.e. only for `ℓ = p`.
+
+**For the four non-CM values** — `−121` and `−24729001` at `p = 11`, and
+`−9317`, `−162677523113838677` at `p = 37`, plus the two `p = 17` values
+— it is a finite explicit check.  Confirmed against LMFDB at `p = 11`:
+the three `j`-invariants give isogeny classes `121.a`, `121.b`, `121.c`,
+each of size `2`, each with the single isogeny degree `11`.
+
+**CIRCULARITY WARNING — READ THIS BEFORE ATTEMPTING A PROOF.**  Do NOT
+discharge this by citing Kenku's list of possible cyclic isogeny degrees
+over `ℚ` (J. Number Theory **15** (1982) 199–202).  That list is
+precisely what this subtree is proving: "a curve with an `11`-isogeny has
+no `2`-isogeny" IS the assertion that `22` is not an isogeny degree.  The
+proof must go through the explicit `j`-invariants above and the CM /
+explicit-check split.
+
+IRREDUCIBLE at this pin: it needs the CM theory of the mod-`ℓ` image
+(Deuring; Serre 1972 §4) for the five CM rows, and an explicit
+`ℓ`-division-polynomial computation for the four non-CM ones.  Neither
+the Cartan-normalizer classification nor `E[ℓ]` as a Galois module in the
+required form exists here. -/
+theorem not_stable_of_mem_isolatedJInvariants {p q : ℕ} (_hp : p ∈ isolatedIsogenyPrimes)
+    (_hq : q.Prime) (_hpq : p ≠ q) (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (_hj : E.j ∈ isolatedJInvariants p) (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg : addOrderOf g = q)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **The `56` levels with an isolated prime** (PROVEN 2026-07-27 by
+decomposition): for `p ∈ isolatedIsogenyPrimes` and any prime `q ≠ p`,
 `Y_0(pq)(ℚ) = ∅`.
 
 TRUE, and it needs NO geometry of `X_0(pq)` — which is why it is one
@@ -4921,7 +5124,9 @@ citing Kenku's list of possible cyclic isogeny degrees over `ℚ`
 (J. Number Theory **15** (1982) 199–202).  That list is precisely what
 this whole subtree is proving: "a curve with an `11`-isogeny has no
 `2`-isogeny" is the assertion `22` is not an isogeny degree.  The proof
-must go through the explicit `j`-invariants above.
+must go through the explicit `j`-invariants above.  The warning is now
+carried by `not_stable_of_mem_isolatedJInvariants`, which is where a
+prover will meet it.
 
 **Stated uniformly in `q`, which is stronger than needed and easier to
 prove.**  Only the `56` cases with `q ∈ mazurIsogenyPrimes` are consumed
@@ -4933,14 +5138,51 @@ restricting the statement would buy nothing.  It is TRUE as stated: every
 Mazur–Kenku list that large are `25, 27, 37, 43, 67, 163`, none of which
 is a product of two distinct primes.
 
-IRREDUCIBLE at this pin: it needs Mazur's determination of `X_0(p)(ℚ)`
-for the seven isolated primes — strictly more than `cuspidal_x0_prime`,
-which only covers `p ∉ mazurIsogenyPrimes` — plus the CM theory of the
-mod-`ℓ` image. -/
+## THE CUT (2026-07-27) — this node is NO LONGER A LEAF
+
+The previous version of this docstring recorded the node as IRREDUCIBLE
+"because it needs Mazur's determination of `X_0(p)(ℚ)` plus the CM
+theory of the mod-`ℓ` image".  Both halves of that are true and neither
+of them has become available — but the verdict conflated *needing* a
+theory with *needing it proven before the node can be cut*.  Three
+declarations above carry the three ingredients separately:
+
+* `y0HasNoRationalPoint_of_no_stable_isolated` — the coarse-to-fine
+  descent, and the ONLY piece that touches moduli theory;
+* `mem_isolatedJInvariants_of_stable` — Mazur's Theorem 1;
+* `not_stable_of_mem_isolatedJInvariants` — no second isogeny.
+
+The last two are statements about Weierstrass curves over `ℚ` and their
+`ℚ̄`-torsion, with **no scheme theory in sight**, so they are ownable by
+someone who never opens this module's first four thousand lines.  That
+separation is most of the value of the cut.
+
+**The assembly, which is what this proof is.**  A Galois-stable cyclic
+subgroup of order `p q` contains one of order `p` (namely `⟨q • g⟩`) and
+one of order `q` (namely `⟨p • g⟩`), both still Galois-stable by
+`stable_zmultiples_nsmul`; the orders are `addOrderOf_nsmul'` plus
+`Nat.gcd (p q) q = q`.  Mazur's table applied to the first pins `E.j`,
+and the second-isogeny leaf applied to the second gives `False`.  Note
+that the SAME `E` carries both, which is exactly what a push-forward to
+level `p` and to level `q` separately would NOT give — and is why the
+descent leaf is stated at level `p q` rather than at level `p`. -/
 theorem y0HasNoRationalPoint_of_isolatedSemiprime {p q : ℕ}
-    (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime) (_hpq : p ≠ q) :
-    Y0HasNoRationalPoint (p * q) :=
-  sorry
+    (hp : p ∈ isolatedIsogenyPrimes) (hq : q.Prime) (hpq : p ≠ q) :
+    Y0HasNoRationalPoint (p * q) := by
+  have hp0 : p ≠ 0 := by fin_cases hp <;> decide
+  refine y0HasNoRationalPoint_of_no_stable_isolated hp
+    (Nat.mul_ne_zero hp0 hq.ne_zero) (dvd_mul_right p q) ?_
+  intro E _ g hg hstable
+  have hordp : addOrderOf (q • g) = p := by
+    rw [addOrderOf_nsmul' _ hq.ne_zero, hg, Nat.gcd_eq_right (dvd_mul_left q p),
+      Nat.mul_div_cancel _ hq.pos]
+  have hordq : addOrderOf (p • g) = q := by
+    rw [addOrderOf_nsmul' _ hp0, hg, Nat.gcd_eq_right (dvd_mul_right p q),
+      Nat.mul_div_cancel_left _ (Nat.pos_of_ne_zero hp0)]
+  exact not_stable_of_mem_isolatedJInvariants hp hq hpq E
+    (mem_isolatedJInvariants_of_stable hp E (q • g) hordp
+      (stable_zmultiples_nsmul q hstable))
+    (p • g) hordq (stable_zmultiples_nsmul p hstable)
 
 /-- **`Y_0(35)(ℚ) = Y_0(39)(ℚ) = ∅`** (sorry node, introduced
 2026-07-27).
@@ -4997,7 +5239,66 @@ the `6` points of `X_0(26)(𝔽_3)` down to the `4` cusps, using
 the mistake the table above exists to prevent.
 
 Attribution: not a Kenku paper title; genus `2` and rank `0` place it
-inside Ogg's classical method — see the section docstring. -/
+inside Ogg's classical method — see the section docstring.
+
+## THE CUT IS BLOCKED BY DECLARATION ORDER, NOT BY MATHEMATICS
+## (audited and MEASURED 2026-07-27 — read this before dispatching)
+
+The right decomposition is known, it is three lines long, and it
+**compiles**.  What blocks taking it *here* is that every declaration it
+needs is defined **about 900 lines BELOW this point** in this same file.
+The two halves are:
+
+* a criterion, provable from `exists_x0Compactification`,
+  `exists_rationalCusps` and `y0HasNoRationalPoint_of_isEmpty`, identical
+  in shape to `y0HasNoRationalPoint_of_sieveLevel`:
+
+      theorem y0HasNoRationalPoint_of_cardLeCusps (N : ℕ) (hN : 0 < N)
+          (hbound : ∀ {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
+              {jm : Y ⟶ X}, IsX0Compactification N strX strY jm →
+              ∀ t : Finset (RelPoint strX (𝟙 SpecQ)), t.card ≤ numRationalCusps N) :
+          Y0HasNoRationalPoint N
+
+* and the single residual leaf it consumes, which is where the sieve
+  goes:
+
+      theorem card_le_x0TwentySix {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+          {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
+          (hX : IsX0Compactification 26 strX strY jm)
+          (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps 26
+
+  after which this node is `y0HasNoRationalPoint_of_cardLeCusps 26
+  (by norm_num) (fun hX t => card_le_x0TwentySix hX t)`.
+
+Both were written out and verified green in a scratch module importing
+`Fermat.FLT.ModularCurve.X0` on 2026-07-27; the only reason they are not
+in the file is that `IsX0Compactification`, `numRationalCusps`,
+`sectionAlong`, `exists_x0Compactification` and `exists_rationalCusps`
+all come after this line.  **A CLEAN SCRATCH MODULE PROVES NOTHING ABOUT
+DECLARATION ORDER** — that is the trap this note exists to record, and it
+is the reason the cut was designed, verified, and then not taken.
+
+**So the task at this node is a RELOCATION, not a proof.**  Moving
+`y0HasNoRationalPoint_x0TwentySix` below `exists_rationalCusps` drags
+`y0HasNoRationalPoint_of_smallSemiprimeLevel`,
+`cuspidal_x0_semiprime_of_mazurPrimes` and
+`y0HasNoRationalPoint_semiprime_of_mazurPrimes` with it, and on
+2026-07-27 that whole block was under concurrent edit by another owner
+(`y0HasNoRationalPoint_of_witnessSemiprimeLevel`, immediately above).
+Whoever takes it should first check `~/.flt-inflight.jsonl` for owners in
+this block and do the move in one commit.
+
+**Then, and only then, the deeper cut becomes available.**  Once
+`card_le_x0TwentySix` sits beside the sieve machinery it should NOT stay
+a single leaf: `exists_x0Sieve`'s proof is five lines, and `26` needs
+only its own two inputs — `hasRankZeroJacobian_x0TwentySix` (rank `0` at
+`26`, Kolyvagin–Logachev, the same statement as
+`hasRankZeroJacobian_of_kenkuLevel`) and `exists_sharpSievePrime_twentySix`
+(the arithmetic residue) — because `exists_x0NeronDatum` and
+`neronReduction_injective` are already universal in `ℓ` and in `N`.
+Adding `26` to `x0SieveLevels` and `kenkuLevels` instead would be
+simpler still, and is the right move whenever those two lists are not
+under concurrent edit; on 2026-07-27 both were. -/
 theorem y0HasNoRationalPoint_x0TwentySix : Y0HasNoRationalPoint 26 :=
   sorry
 
@@ -5036,7 +5337,43 @@ at both (`1 < 5` and `2 < 7`).  IRREDUCIBLE at this pin, and strictly
 harder than every other leaf in this block: Chabauty–Coleman exists in
 this development in no form at all — it needs `p`-adic integration of
 differentials on the curve and the Coleman integral, on top of the
-Jacobian and its Mordell–Weil group. -/
+Jacobian and its Mordell–Weil group.
+
+## WHICH AXIS THE IRREDUCIBILITY VERDICT WAS SEARCHED ON (2026-07-27)
+
+The verdict above is about the **theory** axis: no route to a BOUND on
+`#X_0(N)(ℚ)` exists here for positive rank, and that was re-checked —
+`card_le_of_rankZeroJacobian` and `card_le_of_sieve` both consume
+`HasRankZeroJacobian`, which is FALSE at `65` and `91`, so neither can be
+weakened into service by any amount of interface work.  Nothing was found
+on the `~/cs/FLT` or `Mathlib` axes either: neither has a Coleman
+integral, a `p`-adic differential, or a Jacobian of a curve.
+
+What the verdict does **not** cover, and what a successor should take, is
+the **placement** axis.  The node still decomposes into one criterion and
+one leaf, exactly as `26` does above, and the criterion is shared:
+
+    theorem card_le_of_chabautySemiprimeLevel {N : ℕ}
+        (hN : N ∈ chabautySemiprimeLevels) {X Y : Scheme.{0}}
+        {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
+        (hX : IsX0Compactification N strX strY jm)
+        (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N
+
+    theorem y0HasNoRationalPoint_of_chabautySemiprimeLevel (N : ℕ)
+        (hN : N ∈ chabautySemiprimeLevels) : Y0HasNoRationalPoint N := by
+      have hpos : 0 < N := by fin_cases hN <;> norm_num
+      exact y0HasNoRationalPoint_of_cardLeCusps N hpos
+        (fun hX t => card_le_of_chabautySemiprimeLevel hN hX t)
+
+Verified green in a scratch module on 2026-07-27, and blocked in place by
+the same declaration-order obstruction recorded under
+`y0HasNoRationalPoint_x0TwentySix` — `IsX0Compactification`,
+`numRationalCusps` and `exists_rationalCusps` are all defined below this
+line.  **The gain from taking it is real but modest**: it moves the leaf
+off the coarse moduli space and onto a point count for `X_0(N)`, which is
+the only form in which Chabauty–Coleman can ever be applied, and it makes
+`exists_rationalCusps` — already proven here — carry the cusp half.  It
+does not make the leaf any less deep. -/
 theorem y0HasNoRationalPoint_of_chabautySemiprimeLevel (N : ℕ)
     (_hN : N ∈ chabautySemiprimeLevels) : Y0HasNoRationalPoint N :=
   sorry
