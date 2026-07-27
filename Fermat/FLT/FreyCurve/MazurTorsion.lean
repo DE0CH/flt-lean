@@ -3183,25 +3183,162 @@ theorem cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne
   rw [← hid, ← hone]
   rfl
 
-/-- **`B₀` — the potentially GOOD half of leaf `B`** (sorry leaf;
+/-! ##### The two-leaf cut of `B₀` (CARRIED OUT 2026-07-27)
+
+`B₀` — Néron–Ogg–Shafarevich at `q ≠ N` — is PROVEN below from two leaves
+plus six lines of arithmetic glue.  The two carry genuinely different
+mathematics, and neither implies `B₀` on its own:
+
+* `B₀¹` = `isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg`
+  — the NÉRON–OGG–SHAFAREVICH half.  `λ|_{I_q}` factors through the
+  semistability defect `Φ`, whose order divides `24`; hence `λ²⁴ = 1` on
+  `I_q`.  Nothing here distinguishes the residue characteristics.
+* `B₀²` = `not_eight_dvd_orderOf_isogenyCharacter_of_padicValRat_j_nonneg`
+  — the CLASSIFICATION half.  No element of `λ(I_q)` has order divisible
+  by `8`.  This is where Kraus's list of the possible `Φ` is consumed, and
+  it is the only place the wild primes `q = 2, 3` cost anything.
+
+The glue is the arithmetic fact that a divisor of `24` not divisible by
+`8` divides `12`.  Neither `24` nor `8` is negotiable: at `q = 2` the
+defect really can have order `8` (`Q₈`) or `24` (`SL₂(𝔽₃)`), so `B₀¹`
+alone does NOT give `λ¹² = 1`; and `B₀²` alone bounds nothing.
+-/
+
+/-- **`B₀¹` — Néron–Ogg–Shafarevich: the isogeny character has order
+dividing `24` on inertia at `q`** (sorry leaf; Serre–Tate, *Ann. of Math.*
+88 (1968), Cor. 2 and 3; Silverman *AEC* VII.7; Kraus, *Manuscripta Math.*
+69 (1990), for the two wild primes): at a prime `q ≠ N` with `v_q(j) ≥ 0`,
+the twenty-fourth power of the isogeny character kills the inertia group
+at `q`.
+
+Proof (not formalised).  `v_q(j) ≥ 0` is potentially good reduction
+(Silverman *AEC* VII.5.5), so `E` acquires good reduction over a finite
+extension `K/ℚ_q`.  Since `N ≠ q`, the criterion of
+Néron–Ogg–Shafarevich makes `I_K` act trivially on `E[N]`, so the action of
+`I_q` on `E[N]` — and with it `λ|_{I_q}`, which is that action read on the
+stable line `⟨g⟩` — factors through the semistability defect
+`Φ = Gal(K^{nr}/ℚ_q^{nr})`.  Every `|Φ|` in the classification divides
+`24`: `|Φ| ∈ {1,2,3,4,6}` at residue characteristic `≥ 5` (Serre–Tate),
+with the extra possibilities `Q₈` (order `8`) and `SL₂(𝔽₃)` (order `24`)
+at `q = 2` and the dicyclic group of order `12` at `q = 3` (Kraus).  So
+`orderOf (λ σ) ∣ |Φ| ∣ 24` for every `σ ∈ I_q`.
+
+`hlam` IS LOAD-BEARING, not decoration: without it `lam` is an arbitrary
+character of `Γ ℚ` and the statement is FALSE.  Everything the proof knows
+about `lam` at `q` comes from its being the Galois action on the
+`N`-torsion point `g`.  `hN19` is not needed for this leaf (only `q ≠ N`
+is), and is carried so that the two halves of the cut have one signature.
+
+WHERE THE MACHINERY ALREADY IS, AND THE DECLARATION-ORDER OBSTRUCTION.
+`WeierstrassCurve.PotentiallyGoodModel` — below IN THIS FILE, ~700 lines
+down — is precisely the "acquires good reduction over a number field, with
+residue degree one at `q`" datum this proof wants, and
+`WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral` produces it
+from this leaf's own hypothesis `0 ≤ v_q(j)` (for `q ≠ 2`; the `q = 2` case
+of that producer is not stated there).  Lean has no forward references, so
+none of it is usable at this point of the file as it stands.  The
+precedent for the repair is the Minkowski block and
+`Fermat.FLT.GaloisRepresentation.MinkowskiUnramified`: hoist the
+`PotentiallyGoodModel` block VERBATIM into an upstream module and
+`public import` it.  Whoever closes this leaf should do that rather than
+reprove the reduction theory. -/
+theorem WeierstrassCurve.isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) (hj : 0 ≤ padicValRat q E.j) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 24 = 1 :=
+  sorry
+
+/-- **`B₀²` — no element of order `8` in the inertia image** (sorry leaf;
+Kraus, *Manuscripta Math.* 69 (1990), the classification of the
+semistability defect; Serre, *Invent. Math.* 15 (1972), §5.6): at a prime
+`q ≠ N` with `v_q(j) ≥ 0`, no `σ` in the inertia group at `q` has
+`orderOf (λ σ)` divisible by `8`.
+
+This is the exact residue that `B₀¹` leaves: `orderOf (λ σ) ∣ 24`, and the
+divisors of `24` that `B₀` must exclude are `8` and `24`, i.e. the ones
+divisible by `8`.
+
+Proof (not formalised), and it factors through the SAME `Φ` that `B₀¹`
+produces.  `λ|_{I_q}` factors through `Φ`, and `(ZMod N)ˣ` is ABELIAN, so
+it factors further through `Φ^{ab}`.  Kraus's list of the possible `Φ` at
+potentially good reduction, with abelianizations:
+
+| `Φ`             | occurs at | `Φ^{ab}`   | exponent |
+|-----------------|-----------|------------|----------|
+| cyclic, order `1,2,3,4,6` | every `q` | itself | `1,2,3,4,6` |
+| `Q₈`            | `q = 2`   | `(ℤ/2)²`   | `2` |
+| `SL₂(𝔽₃)`       | `q = 2`   | `ℤ/3`      | `3` |
+| dicyclic, order `12` | `q = 3` | `ℤ/4`   | `4` |
+
+Every entry has exponent dividing `12`, and in particular none is
+divisible by `8` — which is the statement.
+
+FRAMING CORRECTION to the pre-2026-07-27 prose of `B` (and to the
+FAITHFULNESS NOTE below, which is amended accordingly).  That note is
+right that `e ∈ {1,2,3,4,6}` is FALSE at `q = 2, 3` and that a proof
+deriving `λ¹² = 1` from the ramification index `e` ALONE is wrong.  Its
+final sentence went one step too far: it claimed that a proof not using
+the rational `N`-isogeny is therefore wrong.  The `Φ^{ab}` argument above
+uses no Borel and no line, only Kraus's list — because `λ` is a character,
+so what bounds it is the exponent of `Φ^{ab}`, not `|Φ|`.  The two
+available routes to this leaf are therefore:
+
+* *abelianization* — the table above; needs Kraus's list, nothing else;
+* *Borel/torus* — the isogeny puts the image of `I_q` in `GL₂(𝔽_N)` inside
+  a Borel `T ⋉ U` with `|U| = N`, and `N > 19` prime does not divide
+  `|Φ| ∣ 24`, so `Φ ∩ U = 1` and `Φ ↪ T` is abelian, excluding `Q₈` and
+  `SL₂(𝔽₃)` outright.  This is the route the old prose took, and it is
+  where `hN19` earns its keep.
+
+Note that BOTH routes still need Kraus's list: abelianness alone does not
+exclude a cyclic `Φ` of order `8` or `24` — it is the classification that
+says no such `Φ` occurs.  So the isogeny is a convenience here, not a
+necessity.  It remains a necessity where the conclusion is about `Φ`
+itself rather than about a character of it, e.g. `A₀`'s
+`e ∈ {1,2,3,4,6}` at `N`.
+
+The stable line is of course still present in the hypotheses either way:
+`hlam` is what makes `lam` the action on `⟨g⟩`, and without it the
+statement is false for the same reason as in `B₀¹`. -/
+theorem WeierstrassCurve.not_eight_dvd_orderOf_isogenyCharacter_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) (hj : 0 ≤ padicValRat q E.j) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      ¬ (8 ∣ orderOf (lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ))) :=
+  sorry
+
+/-- **`B₀` — the potentially GOOD half of leaf `B`** (DECOMPOSED and PROVEN
+2026-07-27 from `B₀¹` and `B₀²` above;
 Néron–Ogg–Shafarevich, Serre–Tate *Ann. of Math.* 88 (1968) Cor. 2 and 3;
 Silverman *AEC* VII.7): for a prime `q ≠ N` at which `v_q(j) ≥ 0`, the
 twelfth power of the isogeny character kills the inertia group at `q`.
 
 This is `B` with its Tate-curve half removed (that half is leaf `T`
-above), so all that is left is Néron–Ogg–Shafarevich at `q ≠ N`.
-`exists_frobenius_reduction_model` (`WeilPairing.lean`, axiom-clean and
-already imported here) is the natural input.
-
-Proof (not formalised).  `E` acquires good reduction over an extension of
-`ℚ_q` of ramification index `e`, and Néron–Ogg–Shafarevich makes `I_q` act
-on `E[N]` through the resulting finite quotient `Φ` of order `e`.  Since
-`⟨g⟩` is stable, the image of `I_q` in `Aut(E[N]) ≅ GL₂(𝔽_N)` lies in a
-Borel `B = T ⋉ U` with `|U| = N`; `N > 19` is prime so `N ∤ |Φ|` (which
-divides `24`), hence `Φ ∩ U = 1` and `Φ` embeds in the diagonal torus `T`.
-So **`Φ` is abelian**, hence cyclic of order `e ∈ {1,2,3,4,6}` at `q ≥ 5`
-and of order dividing `12` at `q = 2, 3`; `λ|_{I_q}` has order dividing
-`e`, so `λ¹²|_{I_q} = 1`.
+above), so all that is left is Néron–Ogg–Shafarevich at `q ≠ N` — and that
+is now split again, into `B₀¹` (the `24` bound) and `B₀²` (no order-`8`
+element).  What is left HERE is the arithmetic that joins them: a divisor
+of `24` not divisible by `8` divides `12`.
 
 FAITHFULNESS NOTE — this corrects the prose of the pre-2026-07-27 version
 of `B`, which asserted `e ∈ {1,2,3,4,6}` outright.  That is the
@@ -3209,10 +3346,21 @@ Serre–Tate statement for residue characteristic `≥ 5` ONLY.  At `q = 2`
 the semistability defect `Φ` can be `Q₈` (`e = 8`) or `SL₂(𝔽₃)`
 (`e = 24`), and at `q = 3` it can be dicyclic of order `12` — and for
 `e = 8` or `e = 24` the conclusion `λ¹² = 1` would NOT follow from `e`
-alone.  The rational `N`-isogeny is what rules those out, through the
-abelianness argument above: `Q₈` and `SL₂(𝔽₃)` are non-abelian and so
-cannot embed in a torus.  A proof of this leaf that does not use the
-stable line somewhere is therefore wrong. -/
+alone.  That is exactly why the cut above bounds the order by `24` and
+then removes `8 ∣ ·` separately, rather than claiming `e ∣ 12`.
+
+AMENDED 2026-07-27, and the amendment is the reason `B₀²` is stated the
+way it is.  The note used to end "a proof of this leaf that does not use
+the stable line somewhere is therefore wrong".  That is too strong.  The
+rational `N`-isogeny does rule out `Q₈` and `SL₂(𝔽₃)` — they are
+non-abelian and cannot embed in the torus of a Borel — but so does a
+cheaper observation that needs no Borel at all: `λ` is a CHARACTER, so
+`λ|_{I_q}` factors through `Φ^{ab}`, and every `Φ` on Kraus's list has
+abelianization of exponent dividing `12` (`Q₈ ↦ (ℤ/2)²`,
+`SL₂(𝔽₃) ↦ ℤ/3`, dicyclic-`12` `↦ ℤ/4`).  See `B₀²`'s docstring for the
+table and for what each route does and does not need.  The stable line is
+present in the hypotheses regardless — `hlam` is what makes `lam` the
+action on `⟨g⟩`, and without it every leaf in this cluster is false. -/
 theorem WeierstrassCurve.isogenyCharacter_pow_twelve_eq_one_of_padicValRat_j_nonneg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
@@ -3227,8 +3375,21 @@ theorem WeierstrassCurve.isogenyCharacter_pow_twelve_eq_one_of_padicValRat_j_non
     ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
       lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 12 = 1 :=
-  sorry
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 12 = 1 := by
+  -- the arithmetic step: the divisors of `24` that are not divisible by `8`
+  -- are exactly the divisors of `12`
+  have key : ∀ d : ℕ, d ∣ 24 → ¬ (8 ∣ d) → d ∣ 12 := by
+    intro d h1 h2
+    have hle : d ≤ 24 := Nat.le_of_dvd (by norm_num) h1
+    interval_cases d <;> revert h1 h2 <;> decide
+  intro σ hσ
+  -- `B₀¹`: Néron–Ogg–Shafarevich bounds the order by `|Φ| ∣ 24`
+  have h24 := E.isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg
+    g hN hN19 hg lam hlam hq hqN hj σ hσ
+  -- `B₀²`: the classification of `Φ` removes the two divisors `8` and `24`
+  have h8 := E.not_eight_dvd_orderOf_isogenyCharacter_of_padicValRat_j_nonneg
+    g hN hN19 hg lam hlam hq hqN hj σ hσ
+  exact orderOf_dvd_iff_pow_eq_one.mp (key _ (orderOf_dvd_of_pow_eq_one h24) h8)
 
 /-- **`B` — the isogeny character has unramified twelfth power away from
 `N`** (DECOMPOSED and PROVEN 2026-07-27 from `T`, `B₀` and `D` above): for
