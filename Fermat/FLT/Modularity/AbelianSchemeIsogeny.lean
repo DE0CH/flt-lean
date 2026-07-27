@@ -737,8 +737,131 @@ theorem flat_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
       rw [ab.mulByNat_mul]
       infer_instance
 
-/-- **The fibres of `[n]` on an abelian VARIETY are FINITE** (sorry leaf —
-abelian varieties; same references as `flat_mulByNat`).
+/-- **Finite point-fibres COMPOSE**: if every point-fibre of `g` and every
+point-fibre of `h` is finite, then so is every point-fibre of `g ≫ h`.
+
+Pure set theory over `Scheme.Hom.comp_apply`: `(g ≫ h) ⁻¹' {c}` is contained
+in `⋃ b ∈ h ⁻¹' {c}, g ⁻¹' {b}`, a finite union of finite sets.  Stated for
+arbitrary schemes because it is used to split `[n]` along a factorization
+`n = p · c` (`mulByNat_mul`), which is what reduces the abelian-variety leaf
+below to its two genuinely different cases. -/
+theorem finite_preimage_comp {X Y Z : Scheme.{u}} (g : X ⟶ Y) (h : Y ⟶ Z)
+    (hg : ∀ b : Y, (⇑g ⁻¹' {b}).Finite) (hh : ∀ c : Z, (⇑h ⁻¹' {c}).Finite)
+    (c : Z) : (⇑(g ≫ h) ⁻¹' {c}).Finite := by
+  refine ((hh c).biUnion (fun b _ => hg b)).subset ?_
+  intro x hx
+  refine Set.mem_biUnion (show g x ∈ ⇑h ⁻¹' {c} from ?_) (show x ∈ ⇑g ⁻¹' {g x} from rfl)
+  show h (g x) = c
+  rw [← Scheme.Hom.comp_apply]
+  exact hx
+
+/-- **`[n]` has finite fibres when `n` is invertible in the base field**
+(sorry leaf — the Lie algebra of a smooth group scheme).
+
+One half of the old `finite_preimage_mulByNat_of_field`, split out
+2026-07-27.  Since `K` is a field, `(n : K) ≠ 0` says exactly that `n` is
+prime to the characteristic.
+
+**THE ROUTE, AND IT DOES NOT GO THROUGH THE THEOREM OF THE CUBE.**  `[n]`
+is FORMALLY UNRAMIFIED, and formally unramified plus locally of finite type
+is quasi-finite.  Unramifiedness is immediate from the functor of points,
+with no line bundles anywhere: let `T ↪ T'` be a square-zero thickening and
+`h₁ h₂ : T' ⟶ A` two lifts with `h₁ ≫ [n] = h₂ ≫ [n]` that agree on `T`.
+By `nsmul_val` that says `n • h₁ = n • h₂` in the group `RelPoint f (T' ⟶ S)`,
+i.e. `n • (h₁ - h₂) = 0`, and `h₁ - h₂` lies in the kernel of
+`RelPoint f (T' ⟶ S) → RelPoint f (T ⟶ S)`.  For a SMOOTH group scheme that
+kernel is a module over `Γ(T, 𝒪_T)`, which is a `K`-algebra; so `n` acts
+invertibly on it as soon as `(n : K) ≠ 0`, forcing `h₁ = h₂`.  This is the
+classical "`d[n] = n · id` on the Lie algebra", and it is exactly why the
+prime-to-characteristic case is cheap while the characteristic case
+(`finite_preimage_mulByNat_of_field_char`) is not: there `d[p] = 0`.
+
+**What IS present at this pin** (each claim refutable by one grep).
+`AlgebraicGeometry.FormallyUnramified`
+(`Mathlib/AlgebraicGeometry/Morphisms/FormallyUnramified.lean:54`),
+`LocallyQuasiFinite` (`Morphisms/QuasiFinite.lean:71`) with
+`locallyQuasiFinite_iff_finite_preimage_singleton`, and — for spreading
+quasi-finiteness at the origin over all of `A` — `Scheme.Hom.quasiFiniteLocus`
+and `Scheme.Hom.isOpen_quasiFiniteAt`
+(`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean:314`, `:290`), which say
+the quasi-finite locus is OPEN.  Mathlib has also STARTED abelian varieties:
+`Mathlib/AlgebraicGeometry/Group/{Abelian,Smooth}.lean` exist and carry
+`isCommMonObj_of_isProper_of_isIntegral_tensorObj_of_isAlgClosed` and
+`smooth_of_grpObj`.  Re-check that directory at every pin bump.
+
+**What is MISSING — these are the two obligations, and neither is the cube.**
+1. The `Γ(T, 𝒪_T)`-module structure on the kernel above, i.e. the Lie algebra
+   / tangent space of a smooth group scheme.  Mathlib has NO scheme tangent
+   space at all: `grep -rni "tangentSpace\|DualNumber"
+   Mathlib/AlgebraicGeometry/` returns NOTHING.
+2. `FormallyUnramified f → LocallyOfFiniteType f → LocallyQuasiFinite f`.
+   Absent: `grep -rn "Unramified"
+   Mathlib/AlgebraicGeometry/Morphisms/QuasiFinite.lean` returns NOTHING.
+   The pieces are present (`FormallyUnramified.stalkMap` and the
+   residue-field separability instance at `Morphisms/FormallyUnramified.lean:149`
+   and `:156`), so this is ordinary scheme theory, not missing theory.
+
+References: Mumford *Abelian Varieties* §6; Milne *Abelian Varieties* I.7. -/
+theorem finite_preimage_mulByNat_of_field_prime_to_char {X : Scheme.{u}}
+    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (n : ℕ) (hn : (n : K) ≠ 0) (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
+  sorry
+
+/-- **`[p]` has finite fibres in characteristic `p`** (sorry leaf — the
+theorem of the cube; this is the irreducible residue).
+
+The other half of the old `finite_preimage_mulByNat_of_field`, split out
+2026-07-27, and the ONLY place in this file where ample line bundles are
+genuinely needed.
+
+**Why the cheap route dies here.**  The Lie-algebra argument that proves
+`finite_preimage_mulByNat_of_field_prime_to_char` computes `d[n] = n · id`;
+at `n = p = ringChar K` that is ZERO, so `[p]` is not unramified and the
+argument says nothing.  `[p]` really is inseparable — its kernel contains
+`ker F` for the relative Frobenius `F`, an infinitesimal group scheme — so
+this is a limitation of the mathematics, not of the write-up.
+
+**What a prover has to supply.**  Fibrewise this is "`ker[p]` is a finite
+group scheme", classically "`[p]` is an isogeny", of degree `p^{2g}`.  Two
+classical proofs, both blocked at this pin:
+
+* Mumford *Abelian Varieties* §6, Application 2 of the theorem of the cube:
+  take a symmetric ample `L`, use `[p]^* L ≅ L^{p²}`, again ample for
+  `p ≠ 0`, and conclude that a morphism pulling an ample bundle back to an
+  ample bundle is quasi-finite.
+* `[p] = V ∘ F`, with `F` the relative Frobenius (finite, and a
+  homeomorphism on underlying spaces) and `V` the Verschiebung.  `V` is
+  constructed by duality, so this route needs `Pic⁰` and the dual abelian
+  variety.
+
+**MISSING MACHINERY at this pin, each claim refutable by one grep.**
+`grep -rl Ample Mathlib/AlgebraicGeometry/` returns NOTHING: there are no
+ample line bundles (the only `Ample` in mathlib is
+`Analysis/Convex/AmpleSet.lean`), no Picard scheme or functor
+(`grep -rli picard Mathlib/AlgebraicGeometry/` is empty — the only `Picard`
+in mathlib is `RingTheory/PicardGroup.lean`, which is about modules), and no
+theorem of the cube.  There is also no Cohen–Macaulay theory
+(`grep -rl CohenMacaulay Mathlib/` is empty), which is what blocks the
+miracle-flatness route used by the sibling `flat_mulByNat`.  The claim that
+mathlib has "no notion of the dimension of a scheme" is STALE in one
+respect: `topologicalKrullDim` applies to a scheme's space and
+`Mathlib/AlgebraicGeometry/Artinian.lean` carries
+`IsLocallyArtinian.of_topologicalKrullDim_le_zero`, so "`ker[p]` is
+zero-dimensional" IS expressible; what is missing is any way to PROVE it.
+
+**`hchar` is deliberately carried even though the statement is true without
+it** — `[p]` has finite fibres for every `p` — because without it this leaf
+would silently duplicate `finite_preimage_mulByNat_of_field_prime_to_char`.
+Carrying it records that this leaf is exactly the residue the Lie-algebra
+route cannot reach, and makes the leaf VACUOUS in characteristic zero. -/
+theorem finite_preimage_mulByNat_of_field_char {X : Scheme.{u}}
+    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) (a : X) :
+    (⇑(ab.mulByNat p) ⁻¹' {a}).Finite :=
+  sorry
+
+/-- **The fibres of `[n]` on an abelian VARIETY are FINITE** (PROVEN
+2026-07-27 over the two leaves just above).
 
 This is the SECOND cube input, and it is the one the torsion CARDINALITY
 arguments need.  It says exactly that `ker[n]` is a finite group scheme:
@@ -770,34 +893,61 @@ point, so it is a statement about an abelian VARIETY over `K` — the setting
 of every textbook treatment — rather than about an abelian scheme over an
 arbitrary base.  Nothing else was removed: the reduction below is formal.
 
-**What a prover has to supply.**  Fibrewise this is "`ker[n]` is a finite
-group scheme", classically the statement that `[n]` is an isogeny, of degree
-`n^{2g}`.  The standard proof (Mumford *Abelian Varieties* §6, Application 2
-of the theorem of the cube; Milne *Abelian Varieties* I.7) takes a symmetric
-ample `L` on `A`, uses `[n]^* L ≅ L^{n²}` — which is again ample for
-`n ≠ 0` — and concludes that `[n]` has finite fibres because a morphism
-pulling an ample bundle back to an ample bundle is quasi-finite.
+**THE SPLIT (2026-07-27), replacing the previous "atomic at this pin"
+verdict.**  This is no longer a leaf.  It is proven by strong induction on
+`n` over the two leaves above, which are genuinely different mathematical
+problems and want different provers.  Writing `p = ringChar K`, the step is:
 
-**MISSING MACHINERY at this pin, checked 2026-07-26 rather than inherited.**
-`grep -rl Ample Mathlib/AlgebraicGeometry/` returns NOTHING: there are no
-ample line bundles (the only `Ample` in mathlib is
-`Analysis/Convex/AmpleSet.lean`), no `Proj`, no Picard scheme or functor,
-and no theorem of the cube.  There is also no Cohen–Macaulay theory
-(`grep -rl CohenMacaulay Mathlib/` is empty), which is what blocks the
-miracle-flatness route used by the sibling `flat_mulByNat`.  The claim
-that mathlib has "no notion of the dimension of a scheme" is however now
-STALE in one respect: `topologicalKrullDim` applies to a scheme's space and
-`Mathlib/AlgebraicGeometry/Artinian.lean` carries
-`IsLocallyArtinian.of_topologicalKrullDim_le_zero`, so "`ker[n]` is
-zero-dimensional" IS expressible; what is missing is any way to PROVE it.
-Each of these is refuted by a one-line grep if it goes stale.
+* `(n : K) ≠ 0` — pass to `finite_preimage_mulByNat_of_field_prime_to_char`;
+* `(n : K) = 0` — then `p ≠ 0` (else `K` has characteristic zero and `n = 0`),
+  so `p` is prime and `p ∣ n`, say `n = p · c` with `c ≠ 0` and `c < n`.
+  `mulByNat_mul` gives `[p · c] = [c] ≫ [p]`, and `finite_preimage_comp`
+  combines the induction hypothesis at `c` with
+  `finite_preimage_mulByNat_of_field_char` at `p`.
 
-So this leaf is atomic at this pin: closing it means building ample line
-bundles and the theorem of the cube, not finding a lemma. -/
+The old docstring said "closing it means building ample line bundles and the
+theorem of the cube".  That is now known to be true of ONLY ONE of the two
+halves.  The prime-to-characteristic half has a completely different and much
+cheaper classical proof (the Lie algebra — see its docstring), needing no line
+bundles, no `Pic` and no cube; the ample/cube machinery is confined to
+`finite_preimage_mulByNat_of_field_char`.
+
+**A caution about the characteristic-zero reading.**
+`finite_preimage_mulByNat_of_field_char` is VACUOUS over a field of
+characteristic zero, since `ringChar K = p` with `p` prime is then
+unsatisfiable — so over such a base this statement rests on the first leaf
+alone.  That does NOT retire the second leaf for this development: the
+consumer `finite_preimage_mulByNat` applies this theorem to
+`S.residueField (f a)`, whose characteristic is positive at the finite
+places, which is precisely where the Frey curve's torsion is studied. -/
 theorem finite_preimage_mulByNat_of_field {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
     {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : n ≠ 0)
-    (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
-  sorry
+    (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite := by
+  haveI : CharP K (ringChar K) := ringChar.charP K
+  suffices h : ∀ (m : ℕ), m ≠ 0 → ∀ (b : X), (⇑(ab.mulByNat m) ⁻¹' {b}).Finite from h n hn a
+  clear hn a
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    intro hm b
+    by_cases hmK : ((m : ℕ) : K) = 0
+    · have hp0 : ringChar K ≠ 0 := by
+        intro h0
+        haveI : CharP K 0 := h0 ▸ (inferInstance : CharP K (ringChar K))
+        haveI : CharZero K := CharP.charP_to_charZero K
+        exact hm (Nat.cast_eq_zero.mp hmK)
+      have hp : (ringChar K).Prime :=
+        (CharP.char_is_prime_or_zero K (ringChar K)).resolve_right hp0
+      obtain ⟨c, rfl⟩ : ringChar K ∣ m := (CharP.cast_eq_zero_iff K _ m).mp hmK
+      have hc0 : c ≠ 0 := by rintro rfl; exact hm (Nat.mul_zero _)
+      have hclt : c < ringChar K * c := by
+        have h1 : 1 * c < ringChar K * c :=
+          (Nat.mul_lt_mul_right (Nat.pos_of_ne_zero hc0)).mpr hp.one_lt
+        rwa [one_mul] at h1
+      rw [ab.mulByNat_mul]
+      exact finite_preimage_comp _ _ (ih c hclt hc0)
+        (finite_preimage_mulByNat_of_field_char K ab _ hp rfl) b
+    · exact finite_preimage_mulByNat_of_field_prime_to_char K ab _ hmK b
 
 open _root_.CategoryTheory.Limits in
 /-- **The fibres of `[n]` are FINITE** (PROVEN 2026-07-26 over the
