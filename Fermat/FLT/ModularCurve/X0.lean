@@ -13053,8 +13053,12 @@ theorem exists_x0CurveModel_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬
 
 /-! ### The Jacobian half: three base-independent statements
 
-`isSmoothProperCurve_of_fibreIdent` is now PROVEN, so two of the three
-are still open leaves; both are Grothendieck's relative Picard scheme.
+`isSmoothProperCurve_of_fibreIdent` and `exists_jacobianFibreIdent` are
+now both PROVEN, so ONE of the three is still an open leaf here
+(`exists_relativeJacobian`); it is Grothendieck's relative Picard scheme.
+The proof of `exists_jacobianFibreIdent` introduced two new open leaves
+of its own, `universal_jacobianBaseChangeAj` and
+`post_add_of_post_zero`, stated with it below.
 
 None of the three mentions `X_0(N)`, `ℚ` or `ℤ_(ℓ)`.  That is the point:
 the Jacobian half of a Néron datum is a statement about smooth proper
@@ -13165,8 +13169,9 @@ strips the `φ`.
 
 Note what this does NOT close: the identification is transported, not
 constructed.  `exists_jacobianFibreIdent` — which produces an
-`IsFibreIdent` for the Jacobian — remains a genuine base-change theorem
-for `Pic⁰` and is untouched by this. -/
+`IsFibreIdent` for the Jacobian — is now PROVEN by the same style of
+argument (2026-07-27), but over two genuine base-change leaves for
+`Pic⁰`: `universal_jacobianBaseChangeAj` and `post_add_of_post_zero`. -/
 theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
     {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f')
     (hf : IsSmoothProperCurve f) : IsSmoothProperCurve f' := by
@@ -13221,7 +13226,305 @@ theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S
   · exact (MorphismProperty.cancel_left_of_respectsIso (P := @GeometricallyConnected) φ
       (Limits.pullback.snd f s)).mpr inferInstance
 
-/-- **Formation of the Jacobian commutes with base change** (sorry node).
+/-! #### The canonical comparison: post-composition on relative points
+
+The five declarations below are the glue that turns
+`exists_jacobianFibreIdent` from a POSITED identification into a
+CONSTRUCTED one.  None of them mentions a Jacobian, a modular curve or a
+base ring; they belong upstream with `AbelianSchemeStruct` and are placed
+here only because that is where they are consumed. -/
+
+namespace RelPoint
+
+/-- **Post-composition of a relative point along a morphism over the
+base** (PROVEN).  This is the map induced on functors of points by
+`v : A ⟶ B` over `S`, and it is the only shape in which "is a
+homomorphism" can be said about `v` in this presentation. -/
+def post {A B S : Scheme.{u}} {f : A ⟶ S} {f' : B ⟶ S} (v : A ⟶ B)
+    (hv : v ≫ f' = f) {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g) : RelPoint f' g :=
+  ⟨x.1 ≫ v, by rw [Category.assoc, hv, x.2]⟩
+
+/-- **Post-composition commutes with precomposition** (PROVEN) — both
+sides are `h ≫ x.1 ≫ v`, associated differently.  This is naturality of
+`post` in the test scheme, and it is the whole `nat` field of the fibre
+identification built below. -/
+theorem post_pre {A B S : Scheme.{u}} {f : A ⟶ S} {f' : B ⟶ S} (v : A ⟶ B)
+    (hv : v ≫ f' = f) {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint f g) :
+    post v hv (RelPoint.pre h hg x) = RelPoint.pre h hg (post v hv x) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- **Precomposition along an identity is a bijection between the
+relative points over two EQUAL base points** (PROVEN).
+
+This exists to avoid transporting along an equality of morphisms.  The
+`toEquiv` of an `IsFibreIdent` takes the identification `g ≫ s = g₀` as
+an argument, so two different choices of `g₀` give two different — but
+canonically bijective — targets, and `RelPoint.pre (𝟙 T)` is that
+bijection. -/
+def preIdEquiv {A S T : Scheme.{u}} {f : A ⟶ S} {g g' : T ⟶ S} (hg : 𝟙 T ≫ g = g') :
+    RelPoint f g ≃ RelPoint f g' where
+  toFun := RelPoint.pre (𝟙 T) hg
+  invFun := RelPoint.pre (𝟙 T) (by rw [Category.id_comp, ← hg, Category.id_comp])
+  left_inv := fun x => Subtype.ext (by
+    show 𝟙 T ≫ 𝟙 T ≫ x.1 = x.1
+    rw [Category.id_comp, Category.id_comp])
+  right_inv := fun x => Subtype.ext (by
+    show 𝟙 T ≫ 𝟙 T ≫ x.1 = x.1
+    rw [Category.id_comp, Category.id_comp])
+
+/-- **Precomposition along an identity is injective** (PROVEN). -/
+theorem pre_id_injective {A S T : Scheme.{u}} {f : A ⟶ S} {g g' : T ⟶ S}
+    (hg : 𝟙 T ≫ g = g') : Function.Injective (RelPoint.pre (f := f) (𝟙 T) hg) :=
+  (preIdEquiv hg).injective
+
+end RelPoint
+
+/-- **The identification does not depend on WHICH factorisation of the
+base point is supplied** (PROVEN).
+
+`IsFibreIdent.toEquiv` takes `g₀` together with a proof of `g ≫ s = g₀`;
+two such choices differ by the canonical `RelPoint.pre (𝟙 T)`.  This is
+`nat` at `h = 𝟙 T`, and it is what lets a construction fix the canonical
+choice `g₀ := g ≫ s` once and for all and still meet a caller who
+supplies a different `g₀`. -/
+theorem IsFibreIdent.toEquiv_base_congr {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
+    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f') {T : Scheme.{0}} (g : T ⟶ S')
+    {g₀ g₀' : T ⟶ S} (h : g ≫ s = g₀) (h' : g ≫ s = g₀') (x : RelPoint f' g) :
+    e.toEquiv g g₀' h' x
+      = RelPoint.pre (𝟙 T) (by rw [Category.id_comp, ← h, h']) (e.toEquiv g g₀ h x) := by
+  have hnat := e.nat (𝟙 T) (Category.id_comp g) h h' x
+  rwa [show RelPoint.pre (𝟙 T) (Category.id_comp g) x = x from
+    Subtype.ext (Category.id_comp x.1)] at hnat
+
+/-- **`fibreIdentPullback` IS `RelPoint.baseChangeDown`** (PROVEN), up to
+the canonical move of the base point.  Both are "compose with
+`pullback.fst`". -/
+theorem fibreIdentPullback_toEquiv_eq {S S' A : Scheme.{0}} (s : S' ⟶ S) (f : A ⟶ S)
+    {T : Scheme.{0}} (g : T ⟶ S') {g₀ : T ⟶ S} (h : g ≫ s = g₀)
+    (x : RelPoint (Limits.pullback.snd f s) g) :
+    (fibreIdentPullback s f).toEquiv g g₀ h x
+      = RelPoint.pre (𝟙 T) (by rw [Category.id_comp, h]) (RelPoint.baseChangeDown s x) :=
+  Subtype.ext (Category.id_comp _).symm
+
+/-- **`fibreIdentPullback` is ADDITIVE for the base-changed group law**
+(PROVEN).
+
+This is the half of the additivity clause of `exists_jacobianFibreIdent`
+that is FREE: `AbelianSchemeStruct.baseChange` transports the group law
+along exactly this bijection, so additivity here is `pre_add` and nothing
+else.  What is not free is additivity of the comparison morphism, which
+is rigidity. -/
+theorem fibreIdentPullback_toEquiv_add {S S' A : Scheme.{0}} (s : S' ⟶ S) {jf : A ⟶ S}
+    (ab : AbelianSchemeStruct jf) {T : Scheme.{0}} {g : T ⟶ S'} {g₀ : T ⟶ S}
+    (h : g ≫ s = g₀) (x y : RelPoint (Limits.pullback.snd jf s) g) :
+    (fibreIdentPullback s jf).toEquiv g g₀ h ((ab.baseChange s).add x y)
+      = ab.add ((fibreIdentPullback s jf).toEquiv g g₀ h x)
+          ((fibreIdentPullback s jf).toEquiv g g₀ h y) := by
+  rw [fibreIdentPullback_toEquiv_eq, fibreIdentPullback_toEquiv_eq,
+    fibreIdentPullback_toEquiv_eq, AbelianSchemeStruct.baseChange_add,
+    RelPoint.baseChangeDown_baseChangeUp, ab.pre_add]
+
+/-- **RIGIDITY FOR ABELIAN SCHEMES: a morphism of abelian schemes over
+`S` that carries the origin to the origin is a HOMOMORPHISM** (sorry
+node — Mumford, *Abelian Varieties* §4 / GIT 6.1; BLR *Néron Models*
+8.4 in the relative case).
+
+TRUE, and it is one of the two things the classical theory of abelian
+schemes is built on.  Stated here on functors of points, which by Yoneda
+is the same as saying that `v` commutes with the two multiplication
+morphisms: `post v hv` is additive on `RelPoint f g` for every test
+scheme, given only that it is additive on the ZERO section over `𝟙 S`.
+
+Note how little is assumed: `v` is an arbitrary `S`-morphism, not a
+group-scheme morphism — that is the entire content.  Note also that
+`ab'` need only be a group scheme; `AbelianSchemeStruct` is used for it
+merely because that is the shape available here.
+
+THE PROOF, and hence THE CHECK THAT WOULD REFUTE the irreducibility
+claim below.  Consider `φ : A ×_S A ⟶ B` sending `(x, y)` to
+`v(x + y) − v(x) − v(y)`.  It is trivial on `{0} ×_S A` and on
+`A ×_S {0}`.  The RIGIDITY LEMMA — if `p : X ⟶ S` is proper and flat
+with `p_*𝒪_X = 𝒪_S`, `Y ⟶ S` is separated, and `ψ : X ×_S Z ⟶ Y`
+contracts one fibre `X ×_S {z₀}` to a section, then `ψ` factors through
+the projection to `Z` — applied with `X := A`, `Z := A`, `Y := B` then
+forces `φ` to factor through the second projection, and triviality on
+`A ×_S {0}` forces it to be zero.
+
+**IRREDUCIBLE at this pin, ALONG THE AXIS SEARCHED: the coherent-sheaf
+axis.**  The rigidity lemma needs `p_*𝒪_X = 𝒪_S`, i.e. exactly the
+higher-direct-image / cohomology-and-base-change machinery that
+`universal_jacobianBaseChangeAj` below is also gated on; a survey on
+2026-07-27 found `CohomologyAndBaseChange`, `higherDirectImage`, derived
+pushforward and `IsCohomologicallyFlat` absent from this project, from
+mathlib at our pin and from `~/cs/FLT`.  So the honest statement of the
+frontier here is: **the two open leaves of the Jacobian half are not
+independent — both reduce to coherent pushforward.**
+
+What was NOT searched, and is the obvious next axis: the ETALE /
+INFINITESIMAL route, which proves rigidity by comparing the two
+morphisms on infinitesimal neighbourhoods of the zero section rather
+than by a cohomological contraction.  This file already contains
+`section_eq_of_formallyUnramified`, a rigidity statement of exactly that
+flavour for SECTIONS of an unramified morphism, proven outright with no
+cohomology; whether that machine can be made to bite on `φ` (whose
+source is not unramified over `S`) is open and is the first thing a
+successor should try. -/
+theorem post_add_of_post_zero {A B S : Scheme.{u}} {f : A ⟶ S} {f' : B ⟶ S}
+    (ab : AbelianSchemeStruct f) (ab' : AbelianSchemeStruct f') (v : A ⟶ B)
+    (hv : v ≫ f' = f)
+    (h0 : RelPoint.post v hv (ab.zero (𝟙 S)) = ab'.zero (𝟙 S))
+    {T : Scheme.{u}} {g : T ⟶ S} (x y : RelPoint f g) :
+    RelPoint.post v hv (ab.add x y)
+      = ab'.add (RelPoint.post v hv x) (RelPoint.post v hv y) :=
+  sorry
+
+/-! #### The base change of a Jacobian, as a Jacobian
+
+`J ×_S S'` carries the base-changed group law for free
+(`AbelianSchemeStruct.baseChange`), and the Abel–Jacobi map of `C'/S'`
+into it is likewise written down for free — it is `jac.aj`, read through
+the curve's fibre identification.  Everything except the UNIVERSAL
+PROPERTY of the result is therefore proven below; the universal property
+is what "formation of the Jacobian commutes with base change" actually
+asserts, and it is the single remaining leaf of this route. -/
+
+section JacobianBaseChange
+
+variable {S S' C C' J : Scheme.{0}}
+
+/-- **The Abel–Jacobi map of the base-changed curve** (PROVEN — a
+definition).
+
+A `T`-point of `C'` over `g : T ⟶ S'` is a `T`-point of `C` over `g ≫ s`
+by `eX`; apply `jac.aj`; read the result back as a `T`-point of
+`J ×_S S'` by the universal property of the pullback.  No choice is
+made anywhere, which is the point: the comparison below is CANONICAL. -/
+noncomputable def jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (eX : IsFibreIdent s f f')
+    {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g) :
+    RelPoint (Limits.pullback.snd jf s) g :=
+  RelPoint.baseChangeUp s (jac.aj (g ≫ s) (eX.toEquiv g (g ≫ s) rfl x))
+
+/-- **The base-changed Abel–Jacobi map is natural** (PROVEN), by
+`eX.nat` then `jac.aj_pre`. -/
+theorem jacobianBaseChangeAj_pre (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (eX : IsFibreIdent s f f')
+    {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S'} {g' : T' ⟶ S'} (hg : h ≫ g = g')
+    (x : RelPoint f' g) :
+    jacobianBaseChangeAj s jac eX g' (RelPoint.pre h hg x)
+      = RelPoint.pre h hg (jacobianBaseChangeAj s jac eX g x) := by
+  apply RelPoint.baseChangeDown_injective s
+  rw [RelPoint.baseChangeDown_pre]
+  simp only [jacobianBaseChangeAj, RelPoint.baseChangeDown_baseChangeUp]
+  rw [eX.nat h hg (rfl : g ≫ s = g ≫ s) (rfl : g' ≫ s = g' ≫ s) x, jac.aj_pre]
+
+/-- **The base-changed Abel–Jacobi map sends the base point to the
+origin** (PROVEN).
+
+**This is where `ho` is consumed, and it is the only place.**  If `o'`
+were not the fibre of `o`, the value here would be `[o'] − [o|_{S'}]`
+rather than `0`, the comparison morphism below would differ by a
+translation, and the `aj`-compatibility clause of
+`exists_jacobianFibreIdent` would be FALSE — which is exactly what the
+`_ho` hypothesis of that theorem was introduced to rule out. -/
+theorem jacobianBaseChangeAj_base (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (eX : IsFibreIdent s f f') {o' : RelPoint f' (𝟙 S')}
+    (ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+      = RelPoint.pre s (Category.comp_id s) o) :
+    jacobianBaseChangeAj s jac eX (𝟙 S') o' = (ab.baseChange s).zero (𝟙 S') := by
+  apply RelPoint.baseChangeDown_injective s
+  rw [AbelianSchemeStruct.baseChange_zero]
+  simp only [jacobianBaseChangeAj, RelPoint.baseChangeDown_baseChangeUp]
+  have hh : 𝟙 S' ≫ (𝟙 S' ≫ s) = s := by rw [Category.id_comp, Category.id_comp]
+  apply RelPoint.pre_id_injective hh
+  rw [← jac.aj_pre (𝟙 S') hh, ab.pre_zero]
+  rw [show RelPoint.pre (𝟙 S') hh (eX.toEquiv (𝟙 S') (𝟙 S' ≫ s) rfl o')
+      = eX.toEquiv (𝟙 S') s (Category.id_comp s) o' from
+    (eX.toEquiv_base_congr (𝟙 S') rfl (Category.id_comp s) o').symm]
+  rw [ho, jac.aj_pre, jac.aj_base, ab.pre_zero]
+
+/-- **FORMATION OF THE JACOBIAN COMMUTES WITH BASE CHANGE, in Albanese
+form: `(J ×_S S', jacobianBaseChangeAj)` is INITIAL among abelian
+schemes under `C'`** (sorry node — FGA exposé 232; BLR *Néron Models*
+8.1/8.4, 9.4).
+
+TRUE.  This is the honest content of "cohomology and base change" for
+`Pic⁰`: the relative Picard functor is compatible with base change
+because `R¹f_*𝒪` is, and the Albanese property transports with it.
+
+**This statement is strictly weaker and more canonical than the leaf it
+replaces.**  It does not mention a second Jacobian, an `IsFibreIdent`
+of Jacobians, or an additivity clause; it is a statement about ONE
+smooth proper curve, ONE base change, and the object `J ×_S S'` that is
+CONSTRUCTED rather than posited.  Everything else that
+`exists_jacobianFibreIdent` used to assert is now derived from it:
+
+* the comparison `u : J' ⟶ J ×_S S'` and its inverse both come from
+  initiality, so **`IsIso u` is FREE** — it is uniqueness of an
+  endomorphism of an initial object, not a second geometric input.  The
+  previous audit of `exists_jacobianFibreIdent` listed `IsIso u` as a
+  residual obligation; that was wrong, and this is the correction;
+* additivity of `u` is `post_add_of_post_zero` (rigidity);
+* the additivity of the pullback identification itself is
+  `fibreIdentPullback_toEquiv_add`, which is free.
+
+IRREDUCIBLE at this pin ALONG THE COHERENT-SHEAF AXIS, with the same
+refuting check as `exists_relativeJacobian` and the same survey behind
+it: no Picard scheme, no higher direct image, no
+cohomology-and-base-change in this project, in mathlib at our pin, or in
+`~/cs/FLT`.  Note honestly that this leaf and `post_add_of_post_zero`
+are NOT independent — both reduce to coherent pushforward — so the
+number of leaves went from one to two while the amount of missing
+mathematics did not change.  What did change is that the ~150 lines of
+glue between them are now written and compiler-checked, and that both
+residual statements are textbook statements reusable outside this
+file. -/
+theorem universal_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (_hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
+    {o' : RelPoint f' (𝟙 S')}
+    (_ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+      = RelPoint.pre s (Category.comp_id s) o)
+    {A : Scheme.{0}} {astr : A ⟶ S'} (ab₂ : AbelianSchemeStruct astr)
+    (d : ∀ {T : Scheme.{0}} (g : T ⟶ S'), RelPoint f' g → RelPoint astr g)
+    (_hd : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S'} {g' : T' ⟶ S'}
+      (hg : h ≫ g = g') (x : RelPoint f' g),
+      d g' (RelPoint.pre h hg x) = RelPoint.pre h hg (d g x))
+    (_hd0 : d (𝟙 S') o' = ab₂.zero (𝟙 S')) :
+    ∃! w : Limits.pullback jf s ⟶ A, w ≫ astr = Limits.pullback.snd jf s ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
+        (d g x).1 = (jacobianBaseChangeAj s jac eX g x).1 ≫ w :=
+  sorry
+
+/-- **The base change of the Jacobian IS a Jacobian of the base-changed
+curve** (PROVEN, over `universal_jacobianBaseChangeAj`).
+
+Three of the four fields are the proven statements above; the fourth is
+the leaf.  Packaging them as an `IsJacobianOf` is what lets the assembly
+below use initiality on BOTH sides — which is where `IsIso` of the
+comparison comes from at no cost. -/
+noncomputable def isJacobianOf_baseChange (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
+    {o' : RelPoint f' (𝟙 S')}
+    (ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+      = RelPoint.pre s (Category.comp_id s) o) :
+    IsJacobianOf f' (ab.baseChange s) o' where
+  aj := jacobianBaseChangeAj s jac eX
+  aj_pre := jacobianBaseChangeAj_pre s jac eX
+  aj_base := jacobianBaseChangeAj_base s jac eX ho
+  universal := fun ab₂ d hd hd0 =>
+    universal_jacobianBaseChangeAj s jac hf eX ho ab₂ d hd hd0
+
+end JacobianBaseChange
+
+/-- **Formation of the Jacobian commutes with base change** (PROVEN
+2026-07-27, by the canonical-comparison cut, over the two leaves
+`universal_jacobianBaseChangeAj` and `post_add_of_post_zero`).
 
 TRUE: if `jac` presents `J/S` as the Jacobian of `C/S` and `jac'`
 presents `J'/S'` as the Jacobian of the fibre `C'/S'`, based at the point
@@ -13243,58 +13546,57 @@ uniqueness of the Jacobian as a separate obligation: the given `J/ℚ` of
 `exists_x0JacobianModel_of_curveModel` is used directly rather than
 compared with a freshly constructed one.
 
-IRREDUCIBLE at this pin ALONG THE PICARD AXIS, for the same reason as
-`exists_relativeJacobian`, and with the same refuting check.  A second
-survey on 2026-07-27 adds a sharper obstruction, which is worth stating
-because it is NOT the same as the missing Picard scheme: the proof
-technique this leaf names — "cohomology and base change" — is itself
-absent from ALL THREE trees.  `CohomologyAndBaseChange`,
-`higherDirectImage`, a derived pushforward and `IsCohomologicallyFlat`
-have zero hits in this project, in mathlib at our pin, and in
-`~/cs/FLT`.  So this leaf is gated on two independent missing theories,
-not one, and mathlib is the blocker for the second.
+**THE CUT THAT WAS PREVIOUSLY SEARCHED AND REJECTED HAS NOW BEEN MADE,
+AND THE REJECTION IS REFUTED IN TWO OF ITS THREE LOAD-BEARING CLAIMS**
+(2026-07-27).  The old audit here proposed exactly the construction
+below — transport the group law to `J ×_S S'`, push Abel–Jacobi across
+`eX`, feed it to a universal property — and then rejected it on three
+grounds.  Two of them were false:
 
-**A DECOMPOSITION ALONG THE CANONICAL-COMPARISON AXIS WAS SEARCHED AND
-REJECTED (2026-07-27).  Stating the axis, since an irreducibility
-verdict is only as wide as what its author looked at.**  The cut that
-suggests itself is to CONSTRUCT the comparison map rather than posit the
-identification, exactly as `fibreIdentPullback` did for the curve:
+1. *"transporting `ab` costs all thirteen fields"* — **false**: the
+   transport already existed upstream as
+   `AbelianSchemeStruct.baseChange`, in
+   `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, which this module
+   already `public import`s.  Zero lines.
+2. *"what is left is `IsIso u` PLUS additivity of `u`, i.e. one blocked
+   obligation becomes two"* — **`IsIso u` is not an obligation at all**.
+   Stating the base-change theorem as the UNIVERSAL PROPERTY of
+   `J ×_S S'` (`universal_jacobianBaseChangeAj`) makes both `J'` and
+   `J ×_S S'` initial among abelian schemes under `C'`, so `u` and its
+   inverse are both produced by initiality and `u ≫ v = 𝟙`, `v ≫ u = 𝟙`
+   are uniqueness of an endomorphism of an initial object.  No geometry.
+3. *"~250 lines of new glue"* — the glue is ~150 lines and is now
+   written, compiler-checked, and axiom-clean
+   (`propext, Classical.choice, Quot.sound` on every proven piece).
 
-1. transport `ab` along `fibreIdentPullback s jf` to an
-   `AbelianSchemeStruct (Limits.pullback.snd jf s)` — all thirteen
-   fields go through, the group data by the equivalence, `pre_add` /
-   `pre_zero` by `e.nat`, and `proper` / `smooth` / `connected` by the
-   same base-change-plus-iso argument now used in
-   `isSmoothProperCurve_of_fibreIdent`;
-2. push Abel–Jacobi across `eX` to a natural `c` from `C'` into it,
-   whose value at `o'` is the origin — this is precisely where `_ho` is
-   consumed;
-3. feed `c` to `jac'.universal`, obtaining a CANONICAL
-   `u : J' ⟶ J ×_S S'` over `S'`, unique with the `aj` equation.
+**What the old audit got RIGHT, and it is the honest bottom line:** the
+two residual leaves are NOT independent.  `post_add_of_post_zero`
+(rigidity) needs the rigidity lemma, which needs `p_*𝒪 = 𝒪`; and
+`universal_jacobianBaseChangeAj` needs cohomology and base change.  Both
+reduce to coherent pushforward, which is absent from this project, from
+mathlib at our pin and from `~/cs/FLT`.  So the count of open leaves in
+this subtree went 1 → 2 while the amount of missing mathematics did not
+move.  The gain is structural, not numerical: the glue never has to be
+written again, `IsIso` is off the table, and both remaining statements
+are textbook statements about arbitrary smooth proper curves that are
+reusable outside this file.
 
-What is left after that is `IsIso u` plus additivity of `u`, and the
-conclusions of this leaf follow formally from those two.  **The reason
-this is not a reduction: it replaces ONE blocked obligation with TWO
-blocked obligations** — `IsIso u` is still base change for `Pic⁰`, and
-additivity of `u` is the rigidity theorem, which is likewise absent
-everywhere (see the FAITHFULNESS NOTE on `exists_relativeJacobian`) —
-**at a cost of roughly 250 lines of new glue.**  Splitting is worth it
-when the halves have disjoint literature AND at least one half becomes
-attackable; here neither does.
-
-THE CHECK THAT WOULD REFUTE THIS: formalize the relative rigidity lemma
-(a morphism of abelian schemes carrying the origin to the origin is a
-homomorphism).  If rigidity lands, additivity of `u` stops being a leaf,
-the cut becomes one blocked obligation plus proven glue, and it should
-then be made. -/
+THE CHECK THAT WOULD REFUTE THE REMAINING VERDICT is unchanged in
+shape: produce coherent pushforward (`higherDirectImage` /
+`IsCohomologicallyFlat`) at this pin, or find an étale/infinitesimal
+proof of rigidity that avoids it — see the note on
+`post_add_of_post_zero`, which records that this file's own
+`section_eq_of_formallyUnramified` is a cohomology-free rigidity
+statement of that flavour and is the first thing a successor should try
+to push. -/
 theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
     {C C' J J' : Scheme.{0}} {f : C ⟶ S} {f' : C' ⟶ S'}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
-    (jac : IsJacobianOf f ab o)
+    (jac : IsJacobianOf f ab o) (hf : IsSmoothProperCurve f)
     {jf' : J' ⟶ S'} {ab' : AbelianSchemeStruct jf'} {o' : RelPoint f' (𝟙 S')}
     (jac' : IsJacobianOf f' ab' o')
     (eX : IsFibreIdent s f f')
-    (_ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+    (ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
       = RelPoint.pre s (Category.comp_id s) o) :
     ∃ eJ : IsFibreIdent s jf jf',
       (∀ {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
@@ -13303,14 +13605,78 @@ theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
           = ab.add (eJ.toEquiv g g₀ h x) (eJ.toEquiv g g₀ h y)) ∧
       (∀ {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
           (x : RelPoint f' g),
-        eJ.toEquiv g g₀ h (jac'.aj g x) = jac.aj g₀ (eX.toEquiv g g₀ h x)) :=
-  sorry
+        eJ.toEquiv g g₀ h (jac'.aj g x) = jac.aj g₀ (eX.toEquiv g g₀ h x)) := by
+  -- the comparison morphism `u : J' ⟶ J ×_S S'`, from initiality of `J'`
+  obtain ⟨u, ⟨hu, huaj⟩, -⟩ :=
+    jac'.universal (ab.baseChange s) (jacobianBaseChangeAj s jac eX)
+      (jacobianBaseChangeAj_pre s jac eX) (jacobianBaseChangeAj_base s jac eX ho)
+  -- and back, from initiality of `J ×_S S'` — this is where the base-change leaf enters
+  obtain ⟨v, ⟨hv, hvaj⟩, -⟩ :=
+    (isJacobianOf_baseChange s jac hf eX ho).universal ab' jac'.aj jac'.aj_pre jac'.aj_base
+  have hvaj' : ∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
+      (jac'.aj g x).1 = (jacobianBaseChangeAj s jac eX g x).1 ≫ v := fun g x => hvaj g x
+  -- mutually inverse, by uniqueness of the endomorphism of an initial object
+  have huv : u ≫ v = 𝟙 J' := by
+    obtain ⟨w₀, -, huniq⟩ := jac'.universal ab' jac'.aj jac'.aj_pre jac'.aj_base
+    exact (huniq (u ≫ v) ⟨by rw [Category.assoc, hv, hu], fun g x => by
+        rw [← Category.assoc, ← huaj g x, ← hvaj' g x]⟩).trans
+      (huniq (𝟙 J') ⟨Category.id_comp _, fun g x => (Category.comp_id _).symm⟩).symm
+  have hvu : v ≫ u = 𝟙 (Limits.pullback jf s) := by
+    obtain ⟨w₀, -, huniq⟩ := (isJacobianOf_baseChange s jac hf eX ho).universal
+      (ab.baseChange s) (jacobianBaseChangeAj s jac eX)
+      (jacobianBaseChangeAj_pre s jac eX) (jacobianBaseChangeAj_base s jac eX ho)
+    exact (huniq (v ≫ u) ⟨by rw [Category.assoc, hu, hv], fun g x => by
+        show (jacobianBaseChangeAj s jac eX g x).1
+          = (jacobianBaseChangeAj s jac eX g x).1 ≫ (v ≫ u)
+        rw [← Category.assoc, ← hvaj' g x, ← huaj g x]⟩).trans
+      (huniq (𝟙 _) ⟨Category.id_comp _, fun g x => (Category.comp_id _).symm⟩).symm
+  have hpostuv : ∀ {T : Scheme.{0}} {g : T ⟶ S'} (x : RelPoint jf' g),
+      RelPoint.post v hv (RelPoint.post u hu x) = x := fun x => Subtype.ext (by
+    show (x.1 ≫ u) ≫ v = x.1
+    rw [Category.assoc, huv, Category.comp_id])
+  have hpostvu : ∀ {T : Scheme.{0}} {g : T ⟶ S'}
+      (x : RelPoint (Limits.pullback.snd jf s) g),
+      RelPoint.post u hu (RelPoint.post v hv x) = x := fun x => Subtype.ext (by
+    show (x.1 ≫ v) ≫ u = x.1
+    rw [Category.assoc, hvu, Category.comp_id])
+  -- the origin goes to the origin: this is the hypothesis of rigidity, and `ho` is what supplies it
+  have hu0 : RelPoint.post u hu (ab'.zero (𝟙 S')) = (ab.baseChange s).zero (𝟙 S') := by
+    have h1 := huaj (𝟙 S') o'
+    rw [jac'.aj_base, jacobianBaseChangeAj_base s jac eX ho] at h1
+    exact Subtype.ext h1.symm
+  refine ⟨⟨fun g g₀ h =>
+      Equiv.trans
+        (Equiv.mk (fun x => RelPoint.post u hu x) (fun x => RelPoint.post v hv x)
+          (fun x => hpostuv x) (fun x => hpostvu x))
+        ((fibreIdentPullback s jf).toEquiv g g₀ h), ?_⟩, ?_, ?_⟩
+  · intro T' T h g g' hg g₀ g₀' h₀ h₀' x
+    show (fibreIdentPullback s jf).toEquiv g' g₀' h₀'
+        (RelPoint.post u hu (RelPoint.pre h hg x)) = _
+    rw [RelPoint.post_pre, (fibreIdentPullback s jf).nat h hg h₀ h₀']
+    rfl
+  · intro T g g₀ h x y
+    show (fibreIdentPullback s jf).toEquiv g g₀ h (RelPoint.post u hu (ab'.add x y))
+      = ab.add ((fibreIdentPullback s jf).toEquiv g g₀ h (RelPoint.post u hu x))
+          ((fibreIdentPullback s jf).toEquiv g g₀ h (RelPoint.post u hu y))
+    rw [post_add_of_post_zero ab' (ab.baseChange s) u hu hu0 x y]
+    exact fibreIdentPullback_toEquiv_add s ab h _ _
+  · intro T g g₀ h x
+    show (fibreIdentPullback s jf).toEquiv g g₀ h (RelPoint.post u hu (jac'.aj g x))
+      = jac.aj g₀ (eX.toEquiv g g₀ h x)
+    rw [show RelPoint.post u hu (jac'.aj g x) = jacobianBaseChangeAj s jac eX g x from
+      Subtype.ext (huaj g x).symm, fibreIdentPullback_toEquiv_eq,
+      show RelPoint.baseChangeDown s (jacobianBaseChangeAj s jac eX g x)
+          = jac.aj (g ≫ s) (eX.toEquiv g (g ≫ s) rfl x) from
+        RelPoint.baseChangeDown_baseChangeUp s _,
+      ← jac.aj_pre (𝟙 T) (show 𝟙 T ≫ (g ≫ s) = g₀ by rw [Category.id_comp, h])]
+    exact congrArg _ (eX.toEquiv_base_congr g rfl h x).symm
 
 /-- **The relative JACOBIAN of a given integral curve model exists**
-(PROVEN, over the three base-independent statements above — of which
-`isSmoothProperCurve_of_fibreIdent` is itself PROVEN, leaving
-`exists_relativeJacobian` and `exists_jacobianFibreIdent` as the only
-open inputs).
+(PROVEN, over the base-independent statements above — of which
+`isSmoothProperCurve_of_fibreIdent` and, since 2026-07-27,
+`exists_jacobianFibreIdent` are themselves PROVEN, leaving
+`exists_relativeJacobian`, `universal_jacobianBaseChangeAj` and
+`post_add_of_post_zero` as the only open inputs).
 
 The ten fields of `IsX0JacobianModel` come from exactly three inputs,
 none of which mentions a modular curve:
@@ -13363,9 +13729,9 @@ theorem exists_x0JacobianModel_of_curveModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
   obtain ⟨J', jstr', ab', ⟨jac'⟩⟩ :=
     exists_relativeJacobian strX' (isSmoothProperCurve_of_fibreIdent cm.spIdent hcurve) o'
   obtain ⟨eGen, eGen_add, eGen_aj⟩ :=
-    exists_jacobianFibreIdent (SpecLoc.generic R) jacZ jac cm.genIdent hoZ
+    exists_jacobianFibreIdent (SpecLoc.generic R) jacZ hcurve jac cm.genIdent hoZ
   obtain ⟨eSp, eSp_add, eSp_aj⟩ :=
-    exists_jacobianFibreIdent (SpecLoc.special toF) jacZ jac' cm.spIdent ho'
+    exists_jacobianFibreIdent (SpecLoc.special toF) jacZ hcurve jac' cm.spIdent ho'
   exact ⟨J', JZ, jstr', ab', o', jac', jstrZ, abZ, oZ, jacZ,
     ⟨{ genJ := eGen.toEquiv
        spJ := eSp.toEquiv
