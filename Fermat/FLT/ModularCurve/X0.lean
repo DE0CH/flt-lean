@@ -1979,7 +1979,34 @@ theorem toRelPoint_nsmul (bc : IsBaseChangeOf p d' d) {U : Scheme.{u}} {u : U �
   | zero => rw [zero_nsmul, zero_nsmul]; exact bc.toRelPoint_zero u
   | succ k ih => rw [succ_nsmul, succ_nsmul, bc.toRelPoint_add, ih]
 
+/-- **`n`-torsion descends across a cartesian square.**  `toRelPoint` is an
+injective additive map, so a relative point upstairs is `n`-torsion as soon
+as its image downstairs is.  Consumed by
+`nonempty_rigidifiedModuli_of_iso` to transport `lvlM_nsmul`. -/
+theorem nsmul_eq_zero_of_toRelPoint {n : ℕ} (bc : IsBaseChangeOf p d' d)
+    {U : Scheme.{u}} {u : U ⟶ T'} (X : RelPoint d'.f u)
+    (h : letI := d.ab.addCommGroup (u ≫ p); n • bc.toRelPoint X = 0) :
+    letI := d'.ab.addCommGroup u
+    n • X = 0 := by
+  letI := d'.ab.addCommGroup u
+  letI := d.ab.addCommGroup (u ≫ p)
+  refine bc.toRelPoint_injective ?_
+  rw [bc.toRelPoint_nsmul, h, bc.toRelPoint_zero]
+
 end IsBaseChangeOf
+
+/-- **`n`-torsion is preserved by precomposition of relative points** —
+`pre_nsmul` and `pre_zero`, read at a torsion point. -/
+theorem RelPoint.nsmul_pre_eq_zero {n : ℕ} {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U' U : Scheme.{u}} (k : U' ⟶ U) {g : U ⟶ S}
+    {g' : U' ⟶ S} (hg : k ≫ g = g') {Y : RelPoint f g}
+    (h : letI := ab.addCommGroup g; n • Y = 0) :
+    letI := ab.addCommGroup g'
+    n • RelPoint.pre k hg Y = 0 := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  rw [← ab.pre_nsmul k hg, h]
+  exact ab.pre_zero k hg
 
 /-! #### The level-`n` torsor, split into its fibre input and its descent
 
@@ -2353,7 +2380,55 @@ is automatic and stating it would be redundant — the same reason
 
 `hn : 3 ≤ n` is load-bearing for TRUTH of the existence statement below:
 at `n ≤ 2` the rigidified problem still has the automorphism `-1` (and
-more at `n = 1`), so it is not representable and no inhabitant exists. -/
+more at `n = 1`), so it is not representable and no inhabitant exists.
+
+## UNDER-SPECIFICATION AUDIT: why `lvlM_nsmul` is a FIELD (2026-07-27)
+
+`FullLevelStructure.geom_basis` is stated **fibrewise**, at geometric
+points only, and its docstring's claim that "`n • P = 0` and `n • Q = 0`
+are consequences, not fields" is true **only at geometric points**.  Over
+the base it is FALSE, and here is the counterexample that was found while
+proving `exists_deckAction`:
+
+> Let `T = Spec ℚ(ζ_n)[ε]`, `ε² = 0`, and let `d` be the constant datum
+> `E₀ ×_{ℚ(ζ_n)} T` for an elliptic curve `E₀/ℚ(ζ_n)` carrying a full
+> level-`n` structure `(P₀, Q₀)`.  Every geometric point `Spec K ⟶ T`
+> kills `ε` (a nilpotent in a field), so every one of them factors through
+> `Spec ℚ(ζ_n)`.  Hence `(P₀ + εv, Q₀)` satisfies `geom_basis` verbatim,
+> for **every** `v` in the one-dimensional kernel
+> `ker(E₀(ℚ(ζ_n)[ε]) ↠ E₀(ℚ(ζ_n))) ≅ Lie(E₀)`.  But multiplication by `n`
+> is injective on that kernel in characteristic `0`, so
+> `n • (P₀ + εv) = nεv ≠ 0` whenever `v ≠ 0`.
+
+**Why this is fatal to the deck action, and hence why the field is here.**
+`GL₂(ℤ/n)` acts on level structures by `(P, Q) ↦ (aP + bQ, cP + dQ)`, and
+the coefficients are only defined **modulo `n`**.  So
+`σ • (τ • L) = (στ) • L` holds if and only if the discrepancy
+`(kn) • P + (ln) • Q` vanishes — i.e. exactly when `P` and `Q` are
+`n`-torsion **over the base**.  Without it `GL₂(ℤ/n)` does not act at all,
+`σ ↦ mσ` is not a monoid homomorphism, and no `MulSemiringAction` can be
+built from `universal`.  Everything downstream of
+`exists_deckAction` therefore rests on this field.
+
+*The check that would refute this paragraph*: exhibit
+`σ, τ : GL₂(ℤ/n)` and a `FullLevelStructure` for which
+`FullLevelStructure.twist_mul` holds without its `n`-torsion hypotheses.
+
+**The deeper repair is NOT made here, deliberately.**  The honest fix is
+to put `n • P = 0` and `n • Q = 0` into `FullLevelStructure` itself, which
+is the scheme-theoretic definition (`P`, `Q` are sections of `E[n]`, not
+merely sections that are fibrewise `n`-torsion).  That would also fix the
+*representability* of the rigidified problem: as the counterexample shows,
+the functor `T ↦ {(d, L)}` currently has strictly more `ℚ(ζ_n)[ε]`-points
+than any scheme's tangent space can account for, so
+`exists_rigidifiedModuliScheme` is very likely FALSE as stated.  But
+`FullLevelStructure` is the shared interface of
+`exists_torsionBasis_cover_of_geomPoint` and
+`nonempty_fullLevelStructure_of_geomBasis`, which have their own owner, and
+strengthening it changes their statements.  So the minimal repair is made
+at this structure, where it is enough for the deck action, and the wider
+one is left to the owner of the torsor pair — where it is cheap, since the
+`Isom`-scheme construction produces genuinely `n`-torsion sections. -/
 structure RigidifiedModuli (N n : ℕ) where
   /-- the coordinate ring of the rigidified moduli scheme -/
   A : Type
@@ -2364,6 +2439,10 @@ structure RigidifiedModuli (N n : ℕ) where
   dM : Gamma0Datum N (Spec (CommRingCat.of A))
   /-- the universal full level-`n` structure on it -/
   lvlM : FullLevelStructure n dM
+  /-- **the universal level structure is genuinely `n`-torsion over its
+  base** — see the UNDER-SPECIFICATION AUDIT above -/
+  lvlM_nsmul : letI := dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of A)))
+    n • lvlM.P = 0 ∧ n • lvlM.Q = 0
   /-- **fine moduli**: a datum-with-level-structure over a `ℚ`-scheme is
   a base change of `(dM, lvlM)` along a UNIQUE morphism -/
   universal : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T)
@@ -2458,6 +2537,11 @@ structure RigidifiedModuliScheme (N n : ℕ) where
   dM : Gamma0Datum N M
   /-- the universal full level-`n` structure on it -/
   lvlM : FullLevelStructure n dM
+  /-- **the universal level structure is genuinely `n`-torsion over its
+  base** — see the UNDER-SPECIFICATION AUDIT below for why this is a field
+  rather than a consequence of `FullLevelStructure.geom_basis` -/
+  lvlM_nsmul : letI := dM.ab.addCommGroup (𝟙 M)
+    n • lvlM.P = 0 ∧ n • lvlM.Q = 0
   /-- **fine moduli**: a datum-with-level-structure over a `ℚ`-scheme is
   a base change of `(dM, lvlM)` along a UNIQUE morphism -/
   universal : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T)
@@ -2771,7 +2855,15 @@ theorem nonempty_rigidifiedModuli_of_iso {N n : ℕ} (R : RigidifiedModuliScheme
         rw [← hpre t P' R.lvlM.P hP', ← hpre t Q' R.lvlM.Q hQ',
           ← map_nsmul (dbc.alongEquiv t), ← map_nsmul (dbc.alongEquiv t),
           ← (dbc.alongEquiv t).map_add, (dbc.alongEquiv t).injective.eq_iff] }
-  refine ⟨{ A := A, strM := φ.hom ≫ R.strM, dM := dM', lvlM := lvl, universal := ?_ }⟩
+  refine ⟨{ A := A, strM := φ.hom ≫ R.strM, dM := dM', lvlM := lvl,
+            lvlM_nsmul := ?_, universal := ?_ }⟩
+  · -- the `n`-torsion of the level structure crosses the cartesian square of `dbc`
+    have hgφ : φ.hom ≫ 𝟙 R.M = 𝟙 (Spec (CommRingCat.of A)) ≫ φ.hom := by simp
+    refine ⟨dbc.nsmul_eq_zero_of_toRelPoint P' ?_, dbc.nsmul_eq_zero_of_toRelPoint Q' ?_⟩
+    · rw [show dbc.toRelPoint P' = RelPoint.pre φ.hom hgφ R.lvlM.P from Subtype.ext hP']
+      exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM_nsmul.1
+    · rw [show dbc.toRelPoint Q' = RelPoint.pre φ.hom hgφ R.lvlM.Q from Subtype.ext hQ']
+      exact RelPoint.nsmul_pre_eq_zero R.dM.ab φ.hom hgφ R.lvlM_nsmul.2
   intro T g d L
   obtain ⟨m₀, ⟨bc₀, e₁, e₂⟩, huniq⟩ := R.universal g d L
   refine ⟨m₀ ≫ φ.inv, ?_, ?_⟩
@@ -3061,29 +3153,435 @@ noncomputable abbrev specInvariantsQuotient (G A : Type) [Monoid G] [CommRing A]
     Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of ↥(FixedPoints.subring A G)) :=
   Spec.map (CommRingCat.ofHom (Subring.subtype (FixedPoints.subring A G)))
 
-/-- **The deck group acts on the rigidified coordinate ring, and its
-quotient map coequalises rigidifications** (sorry leaf, opened 2026-07-27)
-— the first of the two halves of
-`exists_gamma0GITPresentation_of_rigidified`, and the one that is pure
-moduli theory.
+/-! #### The matrix twist of a full level structure
+
+`GL₂(ℤ/n)` acts on full level structures by `(P, Q) ↦ (aP + bQ, cP + dQ)`.
+Writing that down needs the matrix entries — which live in `ZMod n` — to be
+turned into `ℕ`-coefficients, and `ZMod.val` is the only canonical way to do
+it.  It is **not** multiplicative, so the composite of two twists differs
+from the twist by the product by a multiple of `n` applied to `P` and `Q`.
+
+**That is exactly why `RigidifiedModuli.lvlM_nsmul` exists** (see its
+UNDER-SPECIFICATION AUDIT): the discrepancy vanishes precisely when `P` and
+`Q` are `n`-torsion *over the base*, and `FullLevelStructure.geom_basis`
+gives that only at geometric points.  So `twist_mul` below carries the
+torsion hypotheses explicitly, and everything downstream inherits them.
+-/
+
+/-- **The `(a, b)`-combination of two relative points**, with coefficients
+read out of `ZMod n` through `ZMod.val`.  This is one entry of the matrix
+twist. -/
+noncomputable def RelPoint.comb {n : ℕ} {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U : Scheme.{u}} {g : U ⟶ S} (a b : ZMod n)
+    (P Q : RelPoint f g) : RelPoint f g :=
+  letI := ab.addCommGroup g
+  a.val • P + b.val • Q
+
+/-- **Congruent natural multiples of an `n`-torsion point agree.** -/
+theorem nsmul_eq_nsmul_of_mod {M : Type*} [AddCommGroup M] {n : ℕ} {x : M}
+    (hx : n • x = 0) {a b : ℕ} (h : a % n = b % n) : a • x = b • x := by
+  have key : ∀ c : ℕ, c • x = (c % n) • x := by
+    intro c
+    conv_lhs => rw [← Nat.div_add_mod c n]
+    rw [add_nsmul, mul_comm, mul_nsmul', hx, smul_zero, zero_add]
+  rw [key a, key b, h]
+
+/-- Two naturals with the same image in `ZMod n` are congruent mod `n`. -/
+theorem mod_eq_of_zmod_eq {n a b : ℕ} (h : (a : ZMod n) = (b : ZMod n)) : a % n = b % n :=
+  (ZMod.natCast_eq_natCast_iff' a b n).mp h
+
+/-- **Bilinearity of `comb` against `n`-torsion points.**  This is the one
+place the `n`-torsion hypothesis is consumed, and it is what makes the matrix
+twist an ACTION rather than merely a family of maps: the `ZMod n`-arithmetic
+of the matrix product is matched by `ℕ`-arithmetic only modulo `n`. -/
+theorem RelPoint.comb_comb {n : ℕ} [NeZero n] {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U : Scheme.{u}} {g : U ⟶ S} {P Q : RelPoint f g}
+    (hP : letI := ab.addCommGroup g; n • P = 0)
+    (hQ : letI := ab.addCommGroup g; n • Q = 0) (a b c e x y : ZMod n) :
+    RelPoint.comb ab a b (RelPoint.comb ab c e P Q) (RelPoint.comb ab x y P Q)
+      = RelPoint.comb ab (a * c + b * x) (a * e + b * y) P Q := by
+  letI := ab.addCommGroup g
+  show a.val • (c.val • P + e.val • Q) + b.val • (x.val • P + y.val • Q)
+      = (a * c + b * x).val • P + (a * e + b * y).val • Q
+  have h1 : (a * c + b * x).val • P = (a.val * c.val + b.val * x.val) • P := by
+    refine nsmul_eq_nsmul_of_mod hP (mod_eq_of_zmod_eq ?_)
+    push_cast [ZMod.natCast_val, ZMod.cast_id]
+    ring
+  have h2 : (a * e + b * y).val • Q = (a.val * e.val + b.val * y.val) • Q := by
+    refine nsmul_eq_nsmul_of_mod hQ (mod_eq_of_zmod_eq ?_)
+    push_cast [ZMod.natCast_val, ZMod.cast_id]
+    ring
+  rw [h1, h2, add_nsmul, add_nsmul, mul_nsmul', mul_nsmul', mul_nsmul', mul_nsmul',
+    smul_add, smul_add]
+  abel
+
+/-- `RelPoint.pre` is additive, hence commutes with `comb`. -/
+theorem RelPoint.pre_comb {n : ℕ} {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U' U : Scheme.{u}} (k : U' ⟶ U) {g : U ⟶ S}
+    {g' : U' ⟶ S} (hg : k ≫ g = g') (a b : ZMod n) (P Q : RelPoint f g) :
+    RelPoint.pre k hg (RelPoint.comb ab a b P Q)
+      = RelPoint.comb ab a b (RelPoint.pre k hg P) (RelPoint.pre k hg Q) := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  show RelPoint.pre k hg (a.val • P + b.val • Q)
+      = a.val • RelPoint.pre k hg P + b.val • RelPoint.pre k hg Q
+  rw [show (a.val • P + b.val • Q) = ab.add (a.val • P) (b.val • Q) from rfl,
+    ab.pre_add k hg, ab.pre_nsmul k hg, ab.pre_nsmul k hg]
+  rfl
+
+namespace IsBaseChangeOf
+
+/-- `toRelPoint` is additive, hence commutes with `comb`. -/
+theorem toRelPoint_comb {N n : ℕ} {T' T : Scheme.{u}} {p : T' ⟶ T}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T} (bc : IsBaseChangeOf p d' d)
+    {U : Scheme.{u}} {u : U ⟶ T'} (a b : ZMod n) (X Y : RelPoint d'.f u) :
+    bc.toRelPoint (RelPoint.comb d'.ab a b X Y)
+      = RelPoint.comb d.ab a b (bc.toRelPoint X) (bc.toRelPoint Y) := by
+  letI := d'.ab.addCommGroup u
+  letI := d.ab.addCommGroup (u ≫ p)
+  show bc.toRelPoint (a.val • X + b.val • Y)
+      = a.val • bc.toRelPoint X + b.val • bc.toRelPoint Y
+  rw [bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul]
+
+end IsBaseChangeOf
+
+namespace FullLevelStructure
+
+variable {N n : ℕ} {T : Scheme.{u}} {d : Gamma0Datum N T}
+
+/-- The first section of the `σ`-twist of a full level structure. -/
+noncomputable def twistP (σ : GL (Fin 2) (ZMod n)) (L : FullLevelStructure n d) :
+    RelPoint d.f (𝟙 T) :=
+  RelPoint.comb d.ab (σ.val 0 0) (σ.val 0 1) L.P L.Q
+
+/-- The second section of the `σ`-twist of a full level structure. -/
+noncomputable def twistQ (σ : GL (Fin 2) (ZMod n)) (L : FullLevelStructure n d) :
+    RelPoint d.f (𝟙 T) :=
+  RelPoint.comb d.ab (σ.val 1 0) (σ.val 1 1) L.P L.Q
+
+theorem twistP_one (h1 : 1 < n) (L : FullLevelStructure n d) :
+    letI := d.ab.addCommGroup (𝟙 T)
+    twistP 1 L = L.P := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show (((1 : GL (Fin 2) (ZMod n)).val 0 0).val • L.P
+      + ((1 : GL (Fin 2) (ZMod n)).val 0 1).val • L.Q) = L.P
+  rw [Units.val_one]
+  rw [Matrix.one_apply_eq, Matrix.one_apply_ne (by decide)]
+  rw [ZMod.val_zero, ZMod.val_one_eq_one_mod, Nat.mod_eq_of_lt h1]
+  simp
+
+theorem twistQ_one (h1 : 1 < n) (L : FullLevelStructure n d) :
+    letI := d.ab.addCommGroup (𝟙 T)
+    twistQ 1 L = L.Q := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show (((1 : GL (Fin 2) (ZMod n)).val 1 0).val • L.P
+      + ((1 : GL (Fin 2) (ZMod n)).val 1 1).val • L.Q) = L.Q
+  rw [Units.val_one]
+  rw [Matrix.one_apply_eq, Matrix.one_apply_ne (by decide)]
+  rw [ZMod.val_zero, ZMod.val_one_eq_one_mod, Nat.mod_eq_of_lt h1]
+  simp
+
+/-- **The twisted pair is again a fibrewise basis of the `n`-torsion**
+(sorry leaf, opened 2026-07-27) — the `geom_basis` field of the matrix
+twist, and the only part of the twist that is not bookkeeping.
 
 ## What the prover of this node owes
 
-**(a) The action.**  For `σ : GL₂(ℤ/n)` the pair `(R.dM, σ · R.lvlM)` is
-again a rigidified datum over `Spec R.A`: a matrix acts on a full level
-structure by `(P, Q) ↦ (aP + bQ, cP + dQ)`, and `FullLevelStructure`'s
-`geom_basis` is preserved exactly because the matrix is invertible mod `n`
-— the twisted pair is again a basis of the `n`-torsion at every geometric
-point, with the unique coordinate pair of a point transformed by `σ⁻¹`.
-`R.universal` then classifies it by a UNIQUE endomorphism of
-`Spec (CommRingCat.of R.A)`, which is an automorphism because `σ⁻¹` supplies
-the inverse (uniqueness in `R.universal` makes `σ ↦ mσ` a monoid
-antihomomorphism into endomorphisms, hence into automorphisms), and `Spec`
-is fully faithful on affines (`Spec.preimage`, `Spec.map_injective`), so
-this is a `MulSemiringAction (GL₂(ℤ/n)) R.A`.  The first clause of the
-conclusion is then `Gamma0GITPresentation.dM_equivariant` verbatim, with
-`d₁ := R.dM` and the base change along `Spec σ` supplied by `R.universal`'s
-witness.
+Work at ONE geometric point `t : Spec K ⟶ T` and write `M` for
+`RelPoint d.f t` with `d.ab.addCommGroup t`, `P₀ := pre t _ L.P`,
+`Q₀ := pre t _ L.Q`.  `L.geom_basis` at `x = 0` says the map
+`φ : Fin n × Fin n → M`, `(a, b) ↦ a • P₀ + b • Q₀`, is INJECTIVE (both
+`(0, 0)` and any other representation of `0` satisfy the `∃!`), and the
+two directions of the `↔` then say that its image is exactly the
+`n`-torsion `M[n]`.  In particular `P₀ = φ (1, 0)` and `Q₀ = φ (0, 1)` are
+`n`-torsion, so `M[n]` is a `ZMod n`-module (`AddCommGroup.zmodModule`)
+and `φ` is a `ZMod n`-linear isomorphism `(ZMod n)² ≃ M[n]`.
+
+The twisted pair is `φ` composed with the `ZMod n`-linear automorphism of
+`(ZMod n)²` given by `σ`, which is bijective because `σ` is a UNIT of
+`Matrix (Fin 2) (Fin 2) (ZMod n)`.  So the twisted `φ_σ` is again a
+bijection `(ZMod n)² ≃ M[n]`, which is the `∃!` in both directions.
+
+The only friction is that the statement is phrased with `Fin n`
+representatives and `ℕ`-scalar multiplication, so each step needs
+`nsmul_eq_nsmul_of_mod` (above) to move between `ZMod n`-coefficients and
+their `ZMod.val` lifts.
+
+## Faithfulness
+
+`hn` is load-bearing exactly as on `FullLevelStructure`: at `n = 0` the
+`∃!` is unsatisfiable (`Fin 0` is empty) while `0 • x = 0` always, so the
+statement is FALSE, and at `n = 1, 2` it is true but `Matrix.one_apply_ne`
+arguments in the callers want `1 < n` anyway.
+
+Nothing here mentions `Γ₀(N)`, moduli, or the deck group; it is a
+statement about one abelian scheme and one matrix. -/
+theorem geomBasis_twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (σ : GL (Fin 2) (ZMod n)) :
+    ∀ (K : Type u) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+      letI := d.ab.addCommGroup t
+      ∀ x : RelPoint d.f t, n • x = 0 ↔
+        ∃! ab : Fin n × Fin n,
+          x = (ab.1 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistP σ L)
+              + (ab.2 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistQ σ L) :=
+  sorry
+
+/-- **The `GL₂(ℤ/n)`-twist of a full level structure.** -/
+noncomputable def twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (σ : GL (Fin 2) (ZMod n)) : FullLevelStructure n d where
+  P := twistP σ L
+  Q := twistQ σ L
+  geom_basis := geomBasis_twist hn L σ
+
+/-- `geom_basis` is a `Prop`, so a full level structure is determined by
+its two sections. -/
+theorem ext' {L₁ L₂ : FullLevelStructure n d} (hP : L₁.P = L₂.P) (hQ : L₁.Q = L₂.Q) :
+    L₁ = L₂ := by
+  cases L₁; cases L₂; congr
+
+theorem twist_one (hn : 3 ≤ n) (L : FullLevelStructure n d) : twist hn L 1 = L :=
+  ext' (twistP_one (by omega) L) (twistQ_one (by omega) L)
+
+/-- **The twist is an action** — and this is FALSE without the `n`-torsion
+hypotheses, since `ZMod.val` is not multiplicative. -/
+theorem twist_mul (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0)
+    (σ τ : GL (Fin 2) (ZMod n)) :
+    twist hn (twist hn L τ) σ = twist hn L (σ * τ) := by
+  haveI : NeZero n := ⟨by omega⟩
+  refine ext' ?_ ?_
+  · show RelPoint.comb d.ab (σ.val 0 0) (σ.val 0 1)
+        (RelPoint.comb d.ab (τ.val 0 0) (τ.val 0 1) L.P L.Q)
+        (RelPoint.comb d.ab (τ.val 1 0) (τ.val 1 1) L.P L.Q)
+      = RelPoint.comb d.ab ((σ * τ).val 0 0) ((σ * τ).val 0 1) L.P L.Q
+    rw [RelPoint.comb_comb d.ab hP hQ]
+    congr 1 <;> simp [Units.val_mul, Matrix.mul_apply, Fin.sum_univ_two]
+  · show RelPoint.comb d.ab (σ.val 1 0) (σ.val 1 1)
+        (RelPoint.comb d.ab (τ.val 0 0) (τ.val 0 1) L.P L.Q)
+        (RelPoint.comb d.ab (τ.val 1 0) (τ.val 1 1) L.P L.Q)
+      = RelPoint.comb d.ab ((σ * τ).val 1 0) ((σ * τ).val 1 1) L.P L.Q
+    rw [RelPoint.comb_comb d.ab hP hQ]
+    congr 1 <;> simp [Units.val_mul, Matrix.mul_apply, Fin.sum_univ_two]
+
+/-- The twisted sections are again `n`-torsion, so the twist stays inside
+the part of the moduli problem the deck group acts on. -/
+theorem nsmul_twistP_eq_zero [NeZero n] (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) (σ : GL (Fin 2) (ZMod n)) :
+    letI := d.ab.addCommGroup (𝟙 T); n • twistP σ L = 0 := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show n • ((σ.val 0 0).val • L.P + (σ.val 0 1).val • L.Q) = 0
+  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+
+theorem nsmul_twistQ_eq_zero [NeZero n] (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) (σ : GL (Fin 2) (ZMod n)) :
+    letI := d.ab.addCommGroup (𝟙 T); n • twistQ σ L = 0 := by
+  letI := d.ab.addCommGroup (𝟙 T)
+  show n • ((σ.val 1 0).val • L.P + (σ.val 1 1).val • L.Q) = 0
+  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+
+end FullLevelStructure
+
+/-- **The deck action, from the `n`-torsion of the universal level
+structure** (2026-07-27) — the working form of `exists_deckAction` below,
+which is this at `R.lvlM_nsmul`.
+
+Everything except the coequalising clause is PROVEN here:
+
+* the twisted level structure `twist hn R.lvlM σ` and its classifying map
+  `mm σ`, from `R.universal`;
+* `mm 1 = 𝟙` and `mm (σ * τ) = mm τ ≫ mm σ`, from `twist_one` /
+  `twist_mul` and the UNIQUENESS half of `R.universal` — the composite
+  `mm τ ≫ mm σ` classifies `σ • (τ • R.lvlM)` because `toRelPoint` and
+  `pre` are both additive, which is `toRelPoint_comb` and `pre_comb`;
+* the ring action, by transporting along the full faithfulness of `Spec`
+  on affines (`Spec.preimage`, `Spec.map_preimage`, `Spec.map_injective`).
+  Note `σ ↦ mm σ` is an ANTIhomomorphism into `End (Spec A)`, so the
+  monoid homomorphism into `RingAut A` is `σ ↦ Spec.preimage (mm σ⁻¹)`;
+* the equivariance clause, which is then immediate: take `d₁ := R.dM`,
+  `IsBaseChangeOf.refl` on the `𝟙` side, and the base change produced by
+  `R.universal` at `σ⁻¹` on the other, using
+  `Spec.map (ofHom (toRingHom σ)) = mm σ⁻¹`.
+
+The **coequalising clause is the one open step**, and it is left as a
+sorried `have` INSIDE this proof rather than as a separate leaf, because a
+leaf quantifying over an arbitrary `MulSemiringAction` would be false —
+`σ ↦ id` satisfies the equivariance clause alone, and under it `A^G = A`,
+`π = 𝟙` and the coequalising clause fails.  See `exists_deckAction`'s
+docstring for the piecewise argument the `have` owes. -/
+theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n)
+    (hP : letI := R.commRing_A
+          letI := R.dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of R.A)))
+          n • R.lvlM.P = 0)
+    (hQ : letI := R.commRing_A
+          letI := R.dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of R.A)))
+          n • R.lvlM.Q = 0) :
+    letI := R.commRing_A
+    ∃ act : MulSemiringAction (gamma0DeckGroup n) R.A,
+      letI := act
+      (∀ σ : gamma0DeckGroup n, ∃ d₁ : Gamma0Datum N (Spec (CommRingCat.of R.A)),
+          Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of R.A))) d₁ R.dM) ∧
+          Nonempty (IsBaseChangeOf
+            (Spec.map (CommRingCat.ofHom
+              (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ))) d₁ R.dM)) ∧
+      ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A)) (d₁ : Gamma0Datum N Z),
+        IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
+        a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
+          = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A := by
+  classical
+  letI := R.commRing_A
+  haveI : NeZero n := ⟨by omega⟩
+  -- the classifying map of the `σ`-twisted universal level structure
+  have huniv : ∀ σ : gamma0DeckGroup n,
+      ∃! m : Spec (CommRingCat.of R.A) ⟶ Spec (CommRingCat.of R.A),
+        ∃ bc : IsBaseChangeOf m R.dM R.dM,
+          (FullLevelStructure.twist hn R.lvlM σ).P.1 ≫ bc.map = m ≫ R.lvlM.P.1 ∧
+          (FullLevelStructure.twist hn R.lvlM σ).Q.1 ≫ bc.map = m ≫ R.lvlM.Q.1 :=
+    fun σ => R.universal R.strM R.dM (FullLevelStructure.twist hn R.lvlM σ)
+  choose mm hmm hmmu using huniv
+  choose bcm e1 e2 using hmm
+  -- `σ ↦ mm σ` is an antihomomorphism into the automorphisms of `Spec A`
+  have hone : mm 1 = 𝟙 (Spec (CommRingCat.of R.A)) := by
+    refine (hmmu 1 _ ⟨IsBaseChangeOf.refl R.dM, ?_, ?_⟩).symm <;>
+      · rw [FullLevelStructure.twist_one]
+        simp [IsBaseChangeOf.refl]
+  have hmul : ∀ σ τ : gamma0DeckGroup n, mm (σ * τ) = mm τ ≫ mm σ := by
+    intro σ τ
+    have hTP : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM τ).P)
+        = RelPoint.pre (mm τ) (by simp) R.lvlM.P := Subtype.ext (e1 τ)
+    have hTQ : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp) R.lvlM.Q := Subtype.ext (e2 τ)
+    have hstepP : (FullLevelStructure.twist hn R.lvlM (σ * τ)).P.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM σ).P.1 := by
+      refine congrArg Subtype.val (?_ :
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM (σ * τ)).P)
+          = RelPoint.pre (mm τ) (by simp)
+              ((FullLevelStructure.twist hn R.lvlM σ).P))
+      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ]
+      show (bcm τ).toRelPoint (RelPoint.comb R.dM.ab (σ.val 0 0) (σ.val 0 1)
+          (FullLevelStructure.twist hn R.lvlM τ).P
+          (FullLevelStructure.twist hn R.lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp)
+            (RelPoint.comb R.dM.ab (σ.val 0 0) (σ.val 0 1) R.lvlM.P R.lvlM.Q)
+      rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
+    have hstepQ : (FullLevelStructure.twist hn R.lvlM (σ * τ)).Q.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM σ).Q.1 := by
+      refine congrArg Subtype.val (?_ :
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM (σ * τ)).Q)
+          = RelPoint.pre (mm τ) (by simp)
+              ((FullLevelStructure.twist hn R.lvlM σ).Q))
+      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ]
+      show (bcm τ).toRelPoint (RelPoint.comb R.dM.ab (σ.val 1 0) (σ.val 1 1)
+          (FullLevelStructure.twist hn R.lvlM τ).P
+          (FullLevelStructure.twist hn R.lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp)
+            (RelPoint.comb R.dM.ab (σ.val 1 0) (σ.val 1 1) R.lvlM.P R.lvlM.Q)
+      rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
+    refine (hmmu (σ * τ) (mm τ ≫ mm σ) ⟨(bcm τ).comp (bcm σ), ?_, ?_⟩).symm
+    · show (FullLevelStructure.twist hn R.lvlM (σ * τ)).P.1 ≫ (bcm τ).map ≫ (bcm σ).map
+          = (mm τ ≫ mm σ) ≫ R.lvlM.P.1
+      rw [← Category.assoc, hstepP, Category.assoc, e1 σ, Category.assoc]
+    · show (FullLevelStructure.twist hn R.lvlM (σ * τ)).Q.1 ≫ (bcm τ).map ≫ (bcm σ).map
+          = (mm τ ≫ mm σ) ≫ R.lvlM.Q.1
+      rw [← Category.assoc, hstepQ, Category.assoc, e2 σ, Category.assoc]
+  -- transport to ring homomorphisms through full faithfulness of `Spec` on affines
+  have hw : ∀ (σ τ : gamma0DeckGroup n) (x : R.A),
+      (Spec.preimage (mm τ)).hom ((Spec.preimage (mm σ)).hom x)
+        = (Spec.preimage (mm (σ * τ))).hom x := by
+    intro σ τ x
+    have h : Spec.preimage (mm (σ * τ)) = Spec.preimage (mm σ) ≫ Spec.preimage (mm τ) := by
+      refine Spec.map_injective ?_
+      rw [Spec.map_preimage, Spec.map_comp, Spec.map_preimage, Spec.map_preimage, hmul]
+    rw [h]; rfl
+  have hw1 : ∀ x : R.A, (Spec.preimage (mm (1 : gamma0DeckGroup n))).hom x = x := by
+    intro x
+    have h : Spec.preimage (mm (1 : gamma0DeckGroup n)) = 𝟙 (CommRingCat.of R.A) := by
+      refine Spec.map_injective ?_
+      rw [Spec.map_preimage, Spec.map_id, hone]
+    rw [h]; rfl
+  -- the deck action itself
+  let ρ : gamma0DeckGroup n →* RingAut R.A :=
+    { toFun := fun σ =>
+        { toFun := (Spec.preimage (mm σ⁻¹)).hom
+          invFun := (Spec.preimage (mm σ)).hom
+          left_inv := fun x => by rw [hw σ⁻¹ σ x, inv_mul_cancel, hw1]
+          right_inv := fun x => by rw [hw σ σ⁻¹ x, mul_inv_cancel, hw1]
+          map_mul' := map_mul _
+          map_add' := map_add _ }
+      map_one' := by
+        ext x
+        show (Spec.preimage (mm (1 : gamma0DeckGroup n)⁻¹)).hom x = x
+        rw [inv_one, hw1]
+      map_mul' := fun σ τ => by
+        ext x
+        show (Spec.preimage (mm (σ * τ)⁻¹)).hom x
+            = (Spec.preimage (mm σ⁻¹)).hom ((Spec.preimage (mm τ⁻¹)).hom x)
+        rw [hw τ⁻¹ σ⁻¹ x, ← mul_inv_rev] }
+  letI act : MulSemiringAction (gamma0DeckGroup n) R.A := MulSemiringAction.compHom R.A ρ
+  have hmap : ∀ σ : gamma0DeckGroup n, Spec.map (CommRingCat.ofHom
+      (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ)) = mm σ⁻¹ := by
+    intro σ
+    have h : CommRingCat.ofHom (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ)
+        = Spec.preimage (mm σ⁻¹) := by
+      ext x; rfl
+    rw [h, Spec.map_preimage]
+  -- **the coequalising clause** — the one open step; see the docstring of
+  -- `exists_deckAction` below for the piecewise argument it owes.
+  have hcoeq : ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A))
+      (d₁ : Gamma0Datum N Z), IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
+      a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
+        = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A := sorry
+  refine ⟨act, fun σ => ⟨R.dM, ⟨IsBaseChangeOf.refl R.dM⟩, ⟨?_⟩⟩, fun {Z} a b d₁ ha hb =>
+    hcoeq a b d₁ ha hb⟩
+  rw [hmap σ]
+  exact bcm σ⁻¹
+
+/-- **The deck group acts on the rigidified coordinate ring, and its
+quotient map coequalises rigidifications** (opened 2026-07-27; **PROVEN
+later the same day from `exists_deckAction_of_torsion`**, whose only open
+step is the coequalising clause) — the first of the two halves of
+`exists_gamma0GITPresentation_of_rigidified`, and the one that is pure
+moduli theory.
+
+## STATUS 2026-07-27: clause (a) is PROVEN; only clause (b) is open
+
+The proof is `exists_deckAction_of_torsion` immediately above, applied at
+`R.lvlM_nsmul`.  What follows records what that discharged and what it did
+not.
+
+**(a) The action — PROVEN.**  For `σ : GL₂(ℤ/n)` the pair
+`(R.dM, σ · R.lvlM)` is again a rigidified datum over `Spec R.A`: a matrix
+acts on a full level structure by `(P, Q) ↦ (aP + bQ, cP + dQ)`
+(`FullLevelStructure.twist`), and `FullLevelStructure`'s `geom_basis` is
+preserved exactly because the matrix is invertible mod `n` — the twisted
+pair is again a basis of the `n`-torsion at every geometric point, with the
+unique coordinate pair of a point transformed by `σ⁻¹`.  That last step is
+the one remaining sub-leaf of the construction,
+`FullLevelStructure.geomBasis_twist`.  `R.universal` then classifies the
+twist by a UNIQUE endomorphism of `Spec (CommRingCat.of R.A)`, which is an
+automorphism because `σ⁻¹` supplies the inverse (uniqueness in
+`R.universal` makes `σ ↦ mσ` a monoid antihomomorphism into endomorphisms,
+hence into automorphisms), and `Spec` is fully faithful on affines
+(`Spec.preimage`, `Spec.map_injective`), so this is a
+`MulSemiringAction (GL₂(ℤ/n)) R.A`.  The first clause of the conclusion is
+then `Gamma0GITPresentation.dM_equivariant` verbatim, with `d₁ := R.dM` and
+the base change along `Spec σ` supplied by `R.universal`'s witness.
+
+**A CORRECTION to the paragraph above, and it is load-bearing** (found
+while proving this node).  "A matrix acts on a full level structure" is
+NOT free: the matrix entries live in `ZMod n` and the group law of
+`RelPoint` takes `ℕ`-coefficients, and `ZMod.val` is not multiplicative,
+so `σ • (τ • L) = (στ) • L` holds **only when `P` and `Q` are `n`-torsion
+over the base**.  `FullLevelStructure.geom_basis` gives that only at
+GEOMETRIC points, and over a non-reduced base it genuinely fails — see the
+UNDER-SPECIFICATION AUDIT on `RigidifiedModuli`, which carries the
+`ℚ(ζ_n)[ε]` counterexample.  Without the torsion the twist is not an
+action, `σ ↦ mσ` is not an antihomomorphism, and **no** `MulSemiringAction`
+can be produced.  That is why `RigidifiedModuli` now carries the field
+`lvlM_nsmul`, and why this leaf could not be closed against the interface
+as it stood.
 
 **(b) The coequalising clause, which is where the content is.**  Two
 rigidifications `a, b : Z ⟶ Spec R.A` of ONE datum `d₁` differ by a section
@@ -3125,7 +3623,7 @@ theorem exists_deckAction (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n) 
         IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
         a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
           = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A :=
-  sorry
+  exists_deckAction_of_torsion N n hn R R.lvlM_nsmul.1 R.lvlM_nsmul.2
 
 /-- **fppf descent of the classifying map** (sorry leaf, opened 2026-07-27)
 — the second of the two halves of
