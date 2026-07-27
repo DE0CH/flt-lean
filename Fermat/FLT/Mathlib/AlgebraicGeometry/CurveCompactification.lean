@@ -117,7 +117,7 @@ list on 2026-07-27, both PROVEN):
 | `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
 | `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
-| `infinite_of_smoothOfRelativeDimension_one` (in `CurveExtension.lean`) | a nonempty smooth curve over a field has infinitely many points — the only input to the density subsection at the end of this file; stated upstream, see the note there |
+| ~~`infinite_of_smoothOfRelativeDimension_one`~~ (in `CurveExtension.lean`) | a nonempty smooth curve over a field has infinitely many points — the only input to the density subsection at the end of this file. **NO LONGER A LEAF: PROVEN 2026-07-27** in `CurveExtension.lean`, over Krull's height theorem and the Nullstellensatz; do not dispatch at it |
 | `isDiscreteValuationRing_stalk_normalization` | the relative normalization is NORMAL, hence its local rings in dimension one are DVRs |
 
 ## Third decomposition pass, 2026-07-27: the DVR node is shared with `X0.lean`
