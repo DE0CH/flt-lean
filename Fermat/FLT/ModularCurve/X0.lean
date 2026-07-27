@@ -383,6 +383,10 @@ public import Mathlib.AlgebraicGeometry.Sites.Fpqc
 -- of `specInvariants_universal`, the pure geometric-invariant-theory leaf that
 -- `exists_gamma0Atlas` is split along.
 public import Mathlib.RingTheory.Invariant.Basic
+-- `AddCommGroup.finite_of_fg_torsion`, which turns Mordell–Weil (finite
+-- generation) plus rank `0` (torsion) into finiteness of `J_0(N)(ℚ)`; it is the
+-- whole proof of `finite_jacobian_of_kenkuLevel` from its two leaves.
+public import Mathlib.GroupTheory.FiniteAbelian.Basic
 
 @[expose] public section
 
@@ -5676,7 +5680,10 @@ fully computable function of `N` — it is evaluated by `decide` in
 in the order of `kenkuLevels`.  It is NOT defined as the genus of the
 scheme `X`: no genus of a scheme, and no Riemann–Roch, exists at this
 pin.  The bridge from this number to the geometry of `X` is
-`injective_aj_of_one_le_x0Genus`, and that is a sorry node. -/
+`not_isIso_jacobian_of_one_le_x0Genus` — "the Jacobian is
+positive-dimensional" — and that is the sorry node.  (Before 2026-07-27
+the bridge was `injective_aj_of_one_le_x0Genus`; that is now a PROVEN
+assembly over the bridge and the Riemann–Roch leaf.) -/
 def x0Genus (N : ℕ) : ℤ :=
   (12 + (gammaZeroIndex N : ℤ) - 3 * numEllipticTwo N - 4 * numEllipticThree N
     - 6 * numCusps N) / 12
@@ -5723,8 +5730,50 @@ exactly `IsJacobianOf`.
 abelian Albanese, and without geometric connectedness `Pic⁰` is not
 connected.
 
-IRREDUCIBLE at this pin: neither `Pic⁰` of a relative curve, nor the
-Albanese, nor Riemann–Roch exists in `Mathlib`. -/
+**FAITHFULNESS AUDIT (2026-07-27), two checks, both passed.**
+
+*Not vacuous.*  The obvious junk witness is the trivial abelian scheme
+`J = Spec ℚ`, `jstr = 𝟙`, for which `RelPoint jstr g` is a singleton.
+It does **not** discharge the leaf: `universal` would then force every
+natural pointed `c : X(−) ⟶ A(−)` to be constant, which fails for the
+genuine `X_0(N)` at every level of positive genus.  So the existential
+really does demand the Albanese, and cannot be met cheaply.
+
+*The `∃!` is not too strong.*  `u` is asked to be a bare morphism of
+`ℚ`-schemes, **not** a homomorphism, so uniqueness looks suspicious: for
+`g ≥ 2` the image of `X` in `J` is a curve inside a `g`-dimensional
+variety and is nowhere dense, and two morphisms agreeing on a nowhere
+dense subscheme are not usually equal.  Uniqueness nevertheless holds,
+by **rigidity**: any morphism `v : J ⟶ A` of abelian varieties over a
+field is a homomorphism followed by a translation.  If `u, u'` both
+satisfy the displayed condition then `v = u − u'` vanishes on `aj(X)`,
+so its homomorphism part is constant on `aj(X)`, hence kills the
+subgroup `aj(X)` generates — which is all of `J` — and the translation
+part is `0` as well.  So `v = 0`.  The statement is therefore correct as
+written, and a prover must not weaken `∃!` to `∃`.
+
+IRREDUCIBLE at this pin, and here is the axis that was searched, so the
+next reader need not redo it.  *Cuts along the universal property* were
+tried and all fail:
+
+* "existence of `(J, aj)` natural and pointed" + "that `aj` is initial"
+  is **not** a cut — the first half is discharged by the trivial `J`
+  above, so all the content stays in the second half, which can no
+  longer be stated once the witness is chosen.
+* "`aj` generates `J`" + "a generating pointed `aj` is initial" is
+  UNSOUND: points of `J` are sums of differences of points of `X` only
+  fppf-locally, not on the nose as a functor, so the second half would
+  be a false leaf.
+* the honest cut is *representability of `Pic⁰`* + *autoduality of the
+  Jacobian*, and stating it needs a relative Picard functor — line
+  bundles on `X ×_S T` modulo pullbacks from `T` — which does not exist
+  in `Mathlib`, in `~/cs/FLT`, or here.  The check that would refute
+  this: `grep -rn "PicardFunctor\|Pic⁰\|Albanese" Fermat/
+  .lake/packages/mathlib/ ~/cs/FLT/`.
+
+So this leaf is gated on writing a relative Picard functor first; that
+is real, statable infrastructure and is the correct next step, not
+another direct proof attempt. -/
 theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j)
     (o : RelPoint strX (𝟙 SpecQ)) :
@@ -5732,60 +5781,185 @@ theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
       Nonempty (IsJacobianOf strX ab o) :=
   sorry
 
+/-- **Mordell–Weil: `A(ℚ)` is finitely generated, for EVERY abelian
+scheme `A` over `ℚ`** (sorry node) — LEVEL-FREE, CURVE-FREE, and not
+about Jacobians at all.
+
+TRUE: this is the Mordell–Weil theorem in its abelian-variety form
+(Weil, 1929) — for an abelian variety `A` over a number field `K` the
+group `A(K)` is finitely generated.  The classical proof is in two
+halves: *weak* Mordell–Weil (`A(K)/nA(K)` is finite, via the Kummer
+sequence, finiteness of the class group and Dirichlet's unit theorem),
+and the theory of canonical heights together with the descent lemma
+(a group with a height function and finite `A(K)/nA(K)` is finitely
+generated).
+
+Stated only over the base `Spec ℚ`, which is all this development
+consumes.  Note what is NOT a hypothesis: no curve, no `IsJacobianOf`,
+no level.  That is the point of splitting it out — every consumer of
+`AbelianSchemeStruct` over `ℚ` in this development can use it, and it
+carries none of the modular content.
+
+IRREDUCIBLE at this pin, along the axis searched: neither heights on
+abelian varieties, nor the weak Mordell–Weil theorem, nor the descent
+lemma exists in `Mathlib`, in `~/cs/FLT`, or in this project.  The check
+that would refute this: `grep -rn "MordellWeil\|NeronTateHeight" ` over
+the three trees.  (`Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
+counterexample — despite the name it contains no Mordell–Weil theorem and
+no descent machinery; it is an explicit `2`-descent computation for the
+two named curves `11a3` and `14a4`, done by hand over `ℤ`.) -/
+theorem fg_relPoint_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    AddGroup.FG (RelPoint jstr (𝟙 SpecQ)) :=
+  sorry
+
 /-- **`rank J_0(N)(ℚ) = 0` at the eleven Kenku levels** (sorry node) —
-the DEEP half of `hasRankZeroJacobian_of_kenkuLevel`.
+the DEEP half of `hasRankZeroJacobian_of_kenkuLevel`, and now stated as
+what it actually is: `J_0(N)(ℚ)` is a TORSION group.
 
 TRUE, by the reconnaissance recorded below: decomposing the cuspidal
 subspace `S_2(Γ_0(N))` into newform factors and evaluating `L(A, 1)` on
 each, EVERY factor at EVERY one of the eleven levels has `L(A, 1) ≠ 0`;
 so `J_0(N)` has analytic rank `0`, hence Mordell–Weil rank `0` by
-Kolyvagin–Logachev, hence `J_0(N)(ℚ)` is finite.
+Kolyvagin–Logachev, hence `J_0(N)(ℚ)` is torsion.
+
+**Why torsion and not finiteness.**  Rank `0` and finiteness are the
+same statement only *given* Mordell–Weil, and Mordell–Weil is a
+general theorem about abelian varieties that has nothing to do with
+modular curves.  Keeping them together made one leaf carrying two
+unrelated theories; separated, `fg_relPoint_of_abelianScheme` above holds
+the general half and this leaf holds exactly the Kolyvagin–Logachev
+half — which is literally the rank statement, since for a finitely
+generated abelian group `rank = 0` ⟺ torsion.  The two are recombined by
+`AddCommGroup.finite_of_fg_torsion` in `finite_jacobian_of_kenkuLevel`
+below, which is now PROVEN.
 
 `jac` is load-bearing and may not be dropped: the conclusion is FALSE
 for an arbitrary abelian scheme over `ℚ` receiving `X` — it is true only
 because `jac` pins `J` as the Jacobian of this particular curve, whose
-`L`-function is the one being evaluated.
+`L`-function is the one being evaluated.  `hN` is likewise load-bearing:
+`J_0(N)(ℚ)` has positive rank for many `N` (the first is `N = 37`).
 
 IRREDUCIBLE at this pin, and this is where the depth of the original
 leaf now lives, alone: it needs `S_2(Γ_0(N))`, the Hecke algebra,
 `L`-functions of modular abelian varieties, and Gross–Zagier/Kolyvagin.
 Nothing else in the decomposition below depends on any of that. -/
+theorem isTorsion_jacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
+  sorry
+
+/-- **`J_0(N)(ℚ)` is finite at the eleven Kenku levels** (PROVEN, from
+the two leaves above).
+
+Mordell–Weil (`fg_relPoint_of_abelianScheme`) makes `J_0(N)(ℚ)` finitely
+generated; Kolyvagin–Logachev (`isTorsion_jacobian_of_kenkuLevel`) makes
+it torsion; `AddCommGroup.finite_of_fg_torsion` — the structure theorem
+for finitely generated abelian groups — makes it finite.  The group
+structure used throughout is `ab.addCommGroup (𝟙 SpecQ)`, the functor of
+points of the abelian scheme evaluated at the base. -/
 theorem finite_jacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (jac : IsJacobianOf strX ab o) : Finite (RelPoint jstr (𝟙 SpecQ)) :=
+    (jac : IsJacobianOf strX ab o) : Finite (RelPoint jstr (𝟙 SpecQ)) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  haveI := fg_relPoint_of_abelianScheme ab
+  exact AddCommGroup.finite_of_fg_torsion _
+    (isTorsion_jacobian_of_kenkuLevel N hN h jac)
+
+/-- **A curve with a NONTRIVIAL Jacobian has injective Abel–Jacobi**
+(sorry node) — LEVEL-FREE: this is the Riemann–Roch half of
+`injective_aj_of_one_le_x0Genus`, and it mentions neither `N` nor
+`x0Genus` nor `IsX0Compactification`.
+
+TRUE and classical.  `hJ : ¬ IsIso jstr` says `J ≠ Spec ℚ`, i.e. the
+Jacobian is positive-dimensional, which for the Jacobian of a curve is
+exactly `genus ≥ 1`.  Then: if `aj x = aj y` with `x ≠ y` then
+`[x] − [o] = [y] − [o]`, so `x − y` is a principal divisor, so some
+rational function has a single simple pole, giving a degree `1` map
+`X → ℙ¹`, i.e. `X ≅ ℙ¹` and `genus = 0` — whose Jacobian *is* trivial,
+contradicting `hJ`.
+
+**Why `¬ IsIso jstr` rather than a genus.**  There is no genus of a
+scheme at this pin, but `dim J = genus X` for the Jacobian, and
+`dim J = 0` ⟺ `J ≅ Spec ℚ` ⟺ `IsIso jstr` for an abelian scheme over a
+field.  So `¬ IsIso jstr` is a faithful, pin-available rendering of
+`genus ≥ 1`, and it needs no dimension theory.
+
+**The three geometric hypotheses may NOT be dropped**, and the leaf is
+FALSE without them — `X` must be a *curve*.  Counterexample with `X`
+smooth, proper and geometrically connected but of dimension `2`: take
+`X = ℙ¹ × E` for an elliptic curve `E`, `o = (0, 0)`.  Its Albanese is
+`E`, so `jstr` is not an iso and `hJ` holds, while
+`aj (t, e) = e` collapses every `ℙ¹`-fibre and is very far from
+injective.  This is why `h.isProper`, `h.smooth` (relative dimension
+`1` — the curve condition) and `h.connected` are all passed through.
+
+IRREDUCIBLE at this pin, along the axis searched (divisors and linear
+systems): Riemann–Roch for curves does not exist in `Mathlib`.  What
+mathlib *does* have, and what a prover should start from, is
+`Mathlib/AlgebraicGeometry/AlgebraicCycle`, `.../OrderOfVanishing.lean`,
+`.../FunctionField.lean` and `.../RationalMap.lean` — divisors, orders
+of vanishing and the function field are all present; the sheaf
+cohomology that computes `h⁰(D)` is what is missing. -/
+theorem injective_aj_of_not_isIso_jacobian {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (hJ : ¬ IsIso jstr) :
+    Function.Injective (jac.aj (𝟙 SpecQ)) :=
+  sorry
+
+/-- **The genus formula, in its geometric form: `genus X_0(N) ≥ 1` makes
+the Jacobian nontrivial** (sorry node) — the arithmetic half of
+`injective_aj_of_one_le_x0Genus`, and the ONLY place where the computed
+number `x0Genus N` meets the scheme `X`.
+
+TRUE: `x0Genus N` is the genus of `X` by the classical formula
+(Diamond–Shurman, Theorem 3.1.1), and `dim J = genus X` for the
+Jacobian, so `1 ≤ x0Genus N` gives `dim J ≥ 1`, i.e. `J ≇ Spec ℚ`.
+
+`hg` is load-bearing and is exactly what makes the already-proven
+arithmetic of `one_le_x0Genus_of_kenkuLevel` consumed rather than
+floating: at genus `0` the conclusion is FALSE, `X_0(1) = ℙ¹` having
+trivial Jacobian.  `jac` is load-bearing too — without it `J` is an
+arbitrary abelian scheme, and `Spec ℚ` itself is one.  `N` enters only
+through `hg` and `h`.
+
+IRREDUCIBLE at this pin: this is the identification of the arithmetic
+`x0Genus` with a geometric invariant of `X`, and no such invariant
+exists in `Mathlib` (no genus, no `h¹(𝒪_X)`, no Riemann–Hurwitz for the
+degree-`μ(N)` map to the `j`-line). -/
+theorem not_isIso_jacobian_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) : ¬ IsIso jstr :=
   sorry
 
 /-- **Positive genus makes Abel–Jacobi injective on rational points**
-(sorry node) — the bridge from the arithmetic `x0Genus` to the geometry.
+(PROVEN, from the two leaves above) — the bridge from the arithmetic
+`x0Genus` to the geometry.
 
-TRUE and classical, and it is the ONLY thing standing between
-`one_le_x0Genus_of_kenkuLevel` (proven above, by computation) and the
-`Injective` conjunct of `HasRankZeroJacobian`.  Two steps, deliberately
-bundled here because neither can be stated separately at this pin:
-
-* `x0Genus N` is the genus of `X` — the classical formula
-  (Diamond–Shurman, Theorem 3.1.1).  This cannot be stated as an
-  equation because there is no genus of a scheme in `Mathlib`; it is
-  therefore absorbed into this leaf rather than left as a phantom.
-* a smooth proper geometrically connected curve of genus `≥ 1` has
-  injective Abel–Jacobi: if `aj x = aj y` with `x ≠ y` then `x − y` is
-  principal, so some function has a single simple pole, giving a degree
-  `1` map `X → ℙ¹`, i.e. genus `0`.  This is Riemann–Roch.
-
-`hg` is load-bearing: at genus `0` the statement is FALSE, `X_0(1) = ℙ¹`
-having trivial Jacobian and infinitely many rational points.  `N` enters
-only through `hg` and `h`.
-
-IRREDUCIBLE at this pin: Riemann–Roch for curves does not exist in
-`Mathlib`. -/
+The seam is `¬ IsIso jstr`, "the Jacobian is positive-dimensional".  It
+splits the old single leaf into the two theories it was carrying:
+`not_isIso_jacobian_of_one_le_x0Genus` is the genus formula and is the
+only half that mentions `N`, while `injective_aj_of_not_isIso_jacobian`
+is Riemann–Roch and holds for every smooth proper geometrically
+connected curve over `ℚ`. -/
 theorem injective_aj_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) : Function.Injective (jac.aj (𝟙 SpecQ)) :=
-  sorry
+  injective_aj_of_not_isIso_jacobian h.isProper h.smooth h.connected jac
+    (not_isIso_jacobian_of_one_le_x0Genus N hg h jac)
 
 /-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the eleven Kenku
 levels** (PROVEN, from four leaves — two of them closed here).
@@ -5801,13 +5975,27 @@ separated:
   supplies the base point.  No sorry, no table lookup: the index,
   elliptic points and cusps are computed from `N`.
 * **The rank half is Kolyvagin–Logachev** and stays open, alone, in
-  `finite_jacobian_of_kenkuLevel`.
+  `isTorsion_jacobian_of_kenkuLevel`.
 
-The two remaining geometric leaves — `exists_jacobianOf_x0` and
-`injective_aj_of_one_le_x0Genus` — carry the objects `Mathlib` does not
-have (Albanese/`Pic⁰`, Riemann–Roch).  Neither is level-specific: they
-hold for every smooth proper geometrically connected curve, which is why
-splitting them out is worth doing even though they are still open. -/
+**Second round of splitting (2026-07-27).**  Both remaining halves were
+each still carrying two unrelated theories, and both have been split
+along the seam their own statements expose; `finite_jacobian_of_kenkuLevel`
+and `injective_aj_of_one_le_x0Genus` are now PROVEN assemblies rather
+than leaves.  The five open leaves under this node, and the single
+theory each one needs, are:
+
+| leaf | theory | level-specific? |
+|---|---|---|
+| `exists_jacobianOf_x0` | Albanese / `Pic⁰` | no |
+| `fg_relPoint_of_abelianScheme` | Mordell–Weil | no |
+| `isTorsion_jacobian_of_kenkuLevel` | Kolyvagin–Logachev | **yes** |
+| `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no |
+| `not_isIso_jacobian_of_one_le_x0Genus` | genus formula | **yes** |
+
+Only two of the five mention `N` at all, and each of the other three is
+a named classical theorem stated for an arbitrary object — which is what
+makes them dispatchable independently, and reusable by the rest of the
+modular-curve subtree. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) : HasRankZeroJacobian strX := by
