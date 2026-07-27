@@ -12245,12 +12245,193 @@ lemma param_ne_zero (u J : ℚ)
   rintro rfl
   norm_num at h
 
+/-- **The Fricke-conjugate `X_0(7)` `j`-map of a Vélu quotient** (PROVEN
+2026-07-27): if the quotient's SHORT model `y² = x³ + A'x + B'` satisfies the two
+weight-`12` and weight-`22` relations attached to the hauptmodul value `u`, then
+its `j`-invariant satisfies the Fricke conjugate of the `X_0(7)` `j`-map,
+
+  `j' · u = (u² + 13u + 49)(u² + 5u + 1)³`.
+
+This is the "genuinely new obligation" recorded on `exists_x0Seven_veluParam`
+below, and it is now discharged: what is left there is the GEOMETRY (producing
+`A'`, `B'`, `u` from the kernel), not this algebra.
+
+**THE PROOF, and it is one polynomial identity.**  Write
+`F = u² + 13u + 49`, `G = u² + 5u + 1` and
+`X = u⁴ + 14u³ + 63u² + 70u − 7`.  Cubing `h1'` and squaring `h2'` give
+
+  `27A'³F³ = −117649 s₁⁶G³`,   `729B'²F⁴ = 470596 s₁⁶X²`,
+
+and the whole statement then collapses onto the two-variable identity
+
+  `X² = G³F − 1728u`      (`(P,Q)`-homogeneous form: `X² = G³F − 1728PQ⁷`),
+
+which is exactly the statement that `j − 1728` is a square on `X_0(7)`.  The
+constants match because `4·49³ = 470596` and `6912·49³ = 470596·1728`.  No
+hypothesis on `s₁` is needed, and `F ≠ 0` is unconditional over `ℚ`: its
+discriminant is `169 − 196 = −27 < 0`, so `4F = (2u + 13)² + 27 ≥ 27`.
+
+**WHERE `h1'` AND `h2'` COME FROM** (Magma-verified 2026-07-27 on the universal
+family, and recorded here so the geometric leaf below can be discharged without
+re-deriving them).  With `A' = −29A − 30s₁² + 60s₂` and
+`B' = −83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁` — Vélu's coefficients for the short
+model, see `exists_x0Seven_veluFrickeData` — and `P = 49(s₁² − 3s₂)`,
+`Q = 6A − 4s₁² + 18s₂`, `u = P/Q`, both are consequences of the kernel relations:
+
+* `h1'` is a ONE-TERM certificate over `E1`:
+  `3A'F + 49s₁²G = (−12789A − 13083s₁² + 26460s₂) · E1`
+  (compare the direct relation `147AF + s₁²H = (21609A + 7203s₁²) · E1`);
+* `h2'` needs `E2` as well, and `s₃` must first be cleared through the weight-`8`
+  relation `E3` recorded on the leaf below; after multiplying by `84s₁` the
+  result lies in the ideal `(E1, E2)`.
+
+Both were checked to vanish identically on the universal `X_1(7)` family
+(Tate normal form `b = d³ − d²`, `c = d² − d`), which dominates `X_0(7)`; since
+every relation here is weighted-homogeneous (`A:4, B:6, s₁:2, s₂:4, s₃:6`) and
+twisting scales the tuple by those weights, validity on that family is validity
+on the whole `X_0(7)` moduli. -/
+theorem quot_fricke_jmap (j' A' B' s₁ u : ℚ)
+    (hΔ' : 4 * A' ^ 3 + 27 * B' ^ 2 ≠ 0)
+    (hj' : j' * (4 * A' ^ 3 + 27 * B' ^ 2) = 6912 * A' ^ 3)
+    (h1' : 3 * A' * (u ^ 2 + 13 * u + 49) + 49 * s₁ ^ 2 * (u ^ 2 + 5 * u + 1) = 0)
+    (h2' : 27 * B' * (u ^ 2 + 13 * u + 49) ^ 2
+      + 686 * s₁ ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) = 0) :
+    j' * u = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3 := by
+  have hFpos : (0 : ℚ) < u ^ 2 + 13 * u + 49 := by nlinarith [sq_nonneg (2 * u + 13)]
+  have hF : u ^ 2 + 13 * u + 49 ≠ 0 := ne_of_gt hFpos
+  have hA3 : 27 * A' ^ 3 * (u ^ 2 + 13 * u + 49) ^ 3
+      = -117649 * s₁ ^ 6 * (u ^ 2 + 5 * u + 1) ^ 3 := by
+    linear_combination ((3 * A' * (u ^ 2 + 13 * u + 49)) ^ 2
+      - (3 * A' * (u ^ 2 + 13 * u + 49)) * (49 * s₁ ^ 2 * (u ^ 2 + 5 * u + 1))
+      + (49 * s₁ ^ 2 * (u ^ 2 + 5 * u + 1)) ^ 2) * h1'
+  have hB2 : 729 * B' ^ 2 * (u ^ 2 + 13 * u + 49) ^ 4
+      = 470596 * s₁ ^ 6 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) ^ 2 := by
+    linear_combination (27 * B' * (u ^ 2 + 13 * u + 49) ^ 2
+      - 686 * s₁ ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7)) * h2'
+  have key : (6912 * A' ^ 3 * u
+      - ((u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3) * (4 * A' ^ 3 + 27 * B' ^ 2))
+      * (27 * (u ^ 2 + 13 * u + 49) ^ 4) = 0 := by
+    linear_combination (6912 * u * (u ^ 2 + 13 * u + 49)
+        - 4 * (u ^ 2 + 5 * u + 1) ^ 3 * (u ^ 2 + 13 * u + 49) ^ 2) * hA3
+      - ((u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3) * hB2
+  have key2 : 6912 * A' ^ 3 * u
+      = ((u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3) * (4 * A' ^ 3 + 27 * B' ^ 2) :=
+    eq_of_sub_eq_zero ((mul_eq_zero.mp key).resolve_right
+      (mul_ne_zero (by norm_num) (pow_ne_zero 4 hF)))
+  refine mul_right_cancel₀ hΔ' ?_
+  calc j' * u * (4 * A' ^ 3 + 27 * B' ^ 2)
+      = (j' * (4 * A' ^ 3 + 27 * B' ^ 2)) * u := by ring
+    _ = 6912 * A' ^ 3 * u := by rw [hj']
+    _ = ((u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3)
+          * (4 * A' ^ 3 + 27 * B' ^ 2) := key2
+
 end X0Seven
 
-/-- **The `X_0(7)` `j`-map pair of a Vélu quotient** (SORRY LEAF, cut
+/-- **The `X_0(7)` kernel data of a Vélu quotient, in Fricke-relation form**
+(SORRY LEAF, cut 2026-07-27 out of `exists_x0Seven_veluParam` below, which is now
+PROVEN over it together with the PROVEN `X0Seven.quot_fricke_jmap`).
+
+This is the GEOMETRIC residue of `exists_x0Seven_veluParam`: all the `j`-map
+algebra has been discharged, and what remains is to produce the short-model data.
+It asks for four rationals `u, A', B', s₁` such that
+
+* `u` is the `X_0(7)` hauptmodul value of `(E, ⟨P⟩)` — this conjunct is
+  *literally* the conclusion of the PROVEN
+  `WeierstrassCurve.exists_x0Seven_hauptmodul`;
+* `y² = x³ + A'x + B'` is a short model of the Vélu quotient `E.veluModel t w`,
+  recorded denominator-free through the `j`-formula;
+* `A'`, `B'`, `s₁` satisfy the two Fricke relations at `u`.
+
+**WHY THIS IS STILL OPEN, AND IT IS NOT A MATHEMATICAL OBSTRUCTION — IT IS
+DECLARATION ORDER.**  Every ingredient is already PROVEN *below this line in this
+same file*, and Lean is strictly sequential:
+
+* `WeierstrassCurve.exists_x0Seven_kernelCoords` — the `ℤ/3`-descent producing
+  `A, B, s₁, s₂, s₃` and the three abscissae on a short model `C • E`;
+* `WeierstrassCurve.exists_x0Seven_kernelInvariants`, `exists_x0Seven_hauptmodul`,
+  `MazurLevelSeven.kernelRelations`, `sOne_ne_zero`,
+  `kernelInvariants_of_relations`, `hauptmodul_of_kernelRelations`.
+
+At the time of writing that block is the CONTIGUOUS range from
+`MazurLevelSeven.hauptmodul_of_kernelRelations` through
+`WeierstrassCurve.exists_x0Seven_kernelInvariants` (about a thousand lines),
+while this leaf and the whole level-`49` cluster that consumes it sit roughly ten
+thousand lines ABOVE it.  **Hoisting that block above the level-`49` cluster is
+the mechanical fix**, and it is the recommended next step; it was not done here
+because a move of that size in this file conflicts with every other owner
+currently editing it.  Locate the endpoints by NAME, never by line number.
+
+**WHAT IS GENUINELY NEW AND MUST BE WRITTEN** (the two plumbing obligations
+inherited from the old statement of `exists_x0Seven_veluParam`):
+
+1. *`±`-pairing of the half-sums.*  `veluT`/`veluW` are half-sums over the whole
+   kernel `C`; since `|C| = 7` is odd, `veluPointX` has fibres of size exactly
+   `2` over each of the three abscissae (`Velu.velu_fiber`,
+   `Velu.velu_fiber_card`), so with `N(x) = 6x² + b₂x + b₄` and
+   `D(x) = 4x³ + b₂x² + 2b₄x + b₆`,
+   `veluT C = Σᵢ N(xᵢ)` and `veluW C = Σᵢ (D(xᵢ) + xᵢN(xᵢ))`
+   — use `Finset.sum_fiberwise_of_maps_to` exactly as `Velu.veluH_pow_eq` uses
+   its product analogue.  On a short model (`b₂ = 0`, `b₄ = 2A`, `b₆ = 4B`) this
+   is `t = 6(s₁² − 2s₂) + 6A` and `w = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`.
+2. *Transport along the variable change.*  `exists_x0Seven_kernelCoords` works on
+   `C • E` while `veluT`/`veluW` are sums over the kernel of `E`.  Vélu's `t` has
+   weight `4` and `w` weight `6`, so `t_{C•E} = t/u⁴`, `w_{C•E} = w/u⁶`, and
+   `(C • E).veluModel t_{C•E} w_{C•E} = C • (E.veluModel t w)`; `j` is a
+   variable-change invariant (`WeierstrassCurve.variableChange_j`), which is all
+   the conclusion needs.
+
+**THE ALGEBRA IS ALREADY DONE — DO NOT REDERIVE IT.**  With
+`A' = −29A − 30s₁² + 60s₂`, `B' = −83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁`,
+`P = 49(s₁² − 3s₂)`, `Q = 6A − 4s₁² + 18s₂`, `u = P/Q`, the two Fricke relations
+follow from the kernel relations (Magma-verified 2026-07-27; see
+`X0Seven.quot_fricke_jmap` for the certificates and for the weight-`8` relation
+
+  `E3 :  84s₁s₃ − s₁⁴ + 84Bs₁ + 36As₂ + 10As₁² − 9A² = 0`
+
+which pins `s₃` and which is NOT currently recorded anywhere else in this tree —
+`exists_x0Seven_kernelInvariants` exposes only `s₁, s₂`, so a discharger of this
+leaf must carry `s₃` out of `exists_x0Seven_kernelCoords` and prove `E3`
+alongside `E1`, `E2` in `MazurLevelSeven.kernelRelations`). -/
+theorem WeierstrassCurve.exists_x0Seven_veluFrickeData
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples P,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples P)
+    (hCfin : ((AddSubgroup.zmultiples P :
+        AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
+        Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (t w : ℚ) (hE' : (E.veluModel t w).IsElliptic)
+    (ht : algebraMap ℚ (AlgebraicClosure ℚ) t =
+      veluT (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset)
+    (hw : algebraMap ℚ (AlgebraicClosure ℚ) w =
+      veluW (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset) :
+    ∃ u A' B' s₁ : ℚ,
+      E.j * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 ∧
+      4 * A' ^ 3 + 27 * B' ^ 2 ≠ 0 ∧
+      (E.veluModel t w).j * (4 * A' ^ 3 + 27 * B' ^ 2) = 6912 * A' ^ 3 ∧
+      3 * A' * (u ^ 2 + 13 * u + 49) + 49 * s₁ ^ 2 * (u ^ 2 + 5 * u + 1) = 0 ∧
+      27 * B' * (u ^ 2 + 13 * u + 49) ^ 2
+        + 686 * s₁ ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) = 0 :=
+  sorry
+
+/-- **The `X_0(7)` `j`-map pair of a Vélu quotient** (PROVEN 2026-07-27 over the
+single geometric leaf `exists_x0Seven_veluFrickeData` just above together with the
+PROVEN `X0Seven.quot_fricke_jmap`; cut
 2026-07-27 out of `exists_x0Seven_param_of_stableSevenSubgroup` below, which is
-now PROVEN over it together with `exists_velu_quotient_isogeny_model` and
+PROVEN over it together with `exists_velu_quotient_isogeny_model` and
 `X0Seven.param_ne_zero`).
+
+**WHAT CHANGED (2026-07-27).**  The node used to be a bare `sorry` carrying both
+the geometry and the `j`-map algebra.  The algebra — the Fricke-conjugate
+relation, which the previous version of this docstring correctly identified as
+"the genuinely new obligation" — is now PROVEN as `X0Seven.quot_fricke_jmap`,
+resting on the identity `X² = G³F − 1728PQ⁷`.  What remains is purely geometric
+and is stated as `exists_x0Seven_veluFrickeData`; see its docstring for the two
+plumbing obligations and for the declaration-order obstruction that is the only
+reason it is not already closed.
 
 If `⟨P⟩` is a `Gal(ℚ̄/ℚ)`-stable subgroup of order `7` and `(t, w)` are ITS Vélu
 coefficients — pinned by `algebraMap ℚ ℚ̄ t = veluT …`,
@@ -12319,8 +12500,10 @@ theorem WeierstrassCurve.exists_x0Seven_veluParam
     ∃ u : ℚ,
       E.j * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 ∧
       (E.veluModel t w).j * u
-        = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3 :=
-  sorry
+        = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3 := by
+  obtain ⟨u, A', B', s₁, hju, hΔ', hj', h1', h2'⟩ :=
+    E.exists_x0Seven_veluFrickeData P hP hstable hCfin t w hE' ht hw
+  exact ⟨u, hju, X0Seven.quot_fricke_jmap _ A' B' s₁ u hΔ' hj' h1' h2'⟩
 
 /-- **`X_0(7)`: the hauptmodul parameter of a rational `7`-isogeny, TOGETHER
 WITH the quotient curve and the isogeny** (PROVEN 2026-07-27 over the single
@@ -12541,7 +12724,63 @@ curves, and the normalizer-of-Cartan description of the mod-`p` image for a CM
 curve over `ℚ` at a split `p`.  Neither is in the mathlib pin, in `~/cs/FLT`, or
 in `Fermat/FLT/` — that claim is refutable in one grep for `Cartan` and for
 `End`/`ringOfIntegers` over `WeierstrassCurve`, and should be re-run before
-building anything, since docstrings of this kind go stale. -/
+building anything, since docstrings of this kind go stale.
+
+**ROUTE AUDIT, 2026-07-27: STEP 1 ABOVE IS NOT AVAILABLE FROM THESE HYPOTHESES,
+AND THE GAP IS EXACTLY FALTINGS.  Do not start on steps 2–5 until it is closed.**
+
+`Φ` is hypothesised only as an `AddMonoidHom` of point groups together with
+Galois-equivariance.  Nothing makes it a morphism of curves.  So the sentence
+"`Φ` becomes a degree-`49` self-isogeny of `E_ℚ̄` with cyclic kernel" is not a
+consequence of `hj` and `hΦker`: transporting `Φ` along a `ℚ̄`-isomorphism
+`E'' ≅ E` yields a Galois-equivariant endomorphism of the ABSTRACT group
+`E(ℚ̄)`, and upgrading that to an element of `End(E_ℚ̄)` is precisely
+`Hom(E, E) ⊗ Ẑ ≅ Hom_Gal(TE, TE)` — **Faltings' isogeny theorem**.  Steps 2–5
+all speak about `End(E_ℚ̄)` and so are downstream of that upgrade.
+
+This is checkable in one place, and it is checked:
+`Fermat/FLT/EllipticCurve/Isogeny.lean` defines `IsIsogeny` with
+`isRationalMap : IsRationalMap φ` as a FIELD, and its own docstring gives the
+reason — surjectivity and finiteness of the kernel "are genuinely geometric ...
+and it is false for a general group homomorphism with divisible image".  `E(ℚ̄)`
+is divisible, so the abstract hypothesis here is strictly weaker than an isogeny
+hypothesis, by exactly the amount Faltings supplies.
+
+Note this contradicts nothing in the mathematics and everything in the plan: the
+SIBLING leaf `exists_x0Seven_veluParam` above is stated with its quotient NAMED
+as `E.veluModel t w` precisely to avoid Faltings (see its "WHY THE VÉLU PINNING
+IS PART OF THE STATEMENT" section, and the same argument at
+`exists_x0Three_param_model_of_stableThreeSubgroup`).  The two docstrings were
+written the same day and are inconsistent; this one is the wrong half.
+
+**CONSEQUENCE FOR THE CIRCULARITY CLAIM ABOVE.**  The "not circular" argument
+rests on this leaf being closable by CM theory alone.  With step 1 unavailable,
+the only remaining route to `False` from these hypotheses is Kenku's theorem —
+no elliptic curve over `ℚ` admits a rational cyclic `49`-isogeny, which is why
+the hypothesis set is empty and the statement is TRUE — and that is
+`not_cyclicIsogeny_fortyNine` itself.  So AS CURRENTLY STATED this leaf does not
+break the circularity; it relocates it.
+
+**THE REPAIR, and it is a cut-level change that needs an owner for the whole
+chain rather than for this leaf.**  Carry an isogeny certificate across the seam:
+give `Φ` an `IsIsogeny` hypothesis, which makes step 1 immediate and puts
+`End(E_ℚ̄)` (already defined as `WeierstrassCurve.endSubring` / `End` in
+`Isogeny.lean`, with `End.intCast_apply` a `rfl`) genuinely in reach.  The cost
+is that the consumer `x0Seven_param_mul_ne_49` must then supply certificates for
+`φ` and `ψ`, and it obtains them from
+`exists_x0Seven_param_of_stableSevenSubgroup` ←
+`exists_velu_quotient_isogeny_model`, which currently returns a bare
+`AddMonoidHom`.  `IsIsogeny.comp` already exists, so the single missing piece is
+the bridge lemma "the Vélu quotient map is an `IsRationalMap`" — whose
+polynomials (`veluXNum`, `veluPhiNum`, `veluTheta`, `veluPsi`) are all already
+defined in `Velu.lean`.  That is one lemma, not a theory, and it is the same
+bridge already recommended at
+`exists_x0Three_param_model_of_stableThreeSubgroup`.  It was not done here
+because it changes statements owned by other agents.
+
+*The refuting check for this audit:* exhibit an elementary derivation of
+`IsRationalMap Φ` from `hΦgal` and `hΦker` alone.  If one exists, the audit is
+wrong and steps 2–5 are back on. -/
 theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
     (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
     (Φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
