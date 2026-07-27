@@ -7787,7 +7787,8 @@ theorem exists_halvingParams_of_twoTorsionChain (a b : ℚ)
   sorry
 
 /-- **The quadratic twist by `β`, carrying the `16`-chain onto `chainModel μ β`**
-(SORRY LEAF, cut 2026-07-27 out of `exists_chainModel_of_ratTwoTorsion`).
+(PROVEN 2026-07-27; was a sorry leaf cut out of
+`exists_chainModel_of_ratTwoTorsion` the same day).
 
 Given the two halving conditions of the previous leaf, the twist of
 `twoTorsionModel a β²` by `β` is LITERALLY `chainModel μ β`, and the chain
@@ -7801,31 +7802,58 @@ travels with it, with the tie `HasXCoord ((4 : ℕ) • h) β²` — note `β²`
 `Weierstrass` half of this leaf is `rfl` after one `linear_combination` on
 `hμ`; all the work is transporting the points.
 
-**THE POINT TRANSPORT ALREADY EXISTS**, in
-`Fermat/FLT/KnownIn1980s/EllipticCurves/QuadraticTwists/QuadraticTwists.lean`:
-`WeierstrassCurve.quadraticTwistPointEquiv : (Eᴸ⁄M).Point ≃+ (E⁄M).Point`
-together with
+**THE `QuadraticTwists` MACHINERY IS NOT NEEDED, AND NEITHER IS THE
+`IsSquare β` SPLIT** (2026-07-27, correcting the two paragraphs that used to
+stand here).  The old note routed the transport through
+`QuadraticTwists.quadraticTwistPointEquiv(_galois)`, flagged its import as
+possibly non-`public`, and prescribed a case split on `IsSquare β` for the
+degenerate case `ℚ(√β) = ℚ`.  All three concerns dissolve if one works
+directly over `ℚ̄` instead of over `ℚ(√β)`: pick ANY `s ∈ ℚ̄` with `s² = β`
+(`IsAlgClosed.exists_pow_nat_eq`), which exists whether or not `β` is a
+rational square, and take the honest change of variables
 
-  `quadraticTwistPointEquiv_galois : Φ (σ • P) = χ(σ) • (σ • Φ P)`,
+  `C̄ = ⟨(Units.mk0 s _)⁻¹, 0, 0, 0⟩ : VariableChange ℚ̄`.
 
-`χ` the quadratic character of `L/K`.  Since `χ(σ) = ±1` and negation
-preserves both `AddSubgroup.zmultiples` and every `x`-coordinate, stability and
-the `HasXCoord` tie transfer unchanged.  Concretely `L = ℚ(√β)`; over `ℚ̄` the
-change of variables is `⟨u, 0, 0, 0⟩` with `u² = 1/β`, and `σ(u) = ±u` is the
-whole source of the sign.
+Then `C̄ • (twoTorsionModel a β² ⁄ ℚ̄) = chainModel μ β ⁄ ℚ̄` on the nose
+(`a₂ ↦ s²·a = βa = μ² − 2β²` by `hμ`, `a₄ ↦ s⁴β² = β⁴`), so the ordinary
+`Affine.Point.equivVariableChange` transports the chain and nothing about
+quadratic extensions is ever mentioned.
 
-**TWO THINGS TO CHECK BEFORE STARTING.**  (i) Whether
-`QuadraticTwists.QuadraticTwists` reaches this file through a PUBLIC import —
-it currently arrives only via `QuadraticTwists.SplitMultiplicativeReduction`,
-and a private import upstream makes names unavailable even in proof BODIES
-(see the doctrine's two shapes of that trap).  (ii) The DEGENERATE CASE
-`β ∈ ℚ*²`: then `ℚ(√β) = ℚ` is not a quadratic extension and
-`quadraticTwist` does not apply — but nothing is needed there, since the twist
-by a square is isomorphic to the curve itself over `ℚ` (take
-`C = ⟨Units.mk0 √β _, 0, 0, 0⟩` over `ℚ`, and `equivVariableChangeBaseChange`
-with no sign at all).  Split on `IsSquare β` first. -/
+**WHERE THE SIGN COMES FROM, CONCRETELY.**  `C̄` is defined over `ℚ̄`, not
+over `ℚ`, so `equivVariableChangeBaseChange_galois` does NOT apply.  Instead
+`σ(s)² = σ(s²) = σ(β) = β = s²` forces `σ(s) = ±s`, hence `σ(u²) = u²` and
+`σ(u³) = ±u³`; since `a₁ = a₃ = 0` on this model, negation is `(x,y) ↦ (x,−y)`
+and the transport satisfies `Ψ(σP) = ±σ(ΨP)`.  Both `AddSubgroup.zmultiples`
+and every `x`-coordinate are invariant under negation, so stability and the
+`HasXCoord` tie transfer regardless of the sign — the sign is genuinely there
+and genuinely harmless.
+
+**ADDED HYPOTHESIS `[(twoTorsionModel a (β ^ 2)).IsElliptic]`, AND WHY**
+(2026-07-27).  The leaf as first cut carried no ellipticity assumption, and it
+is NOT provable without one *with the machinery in this pin*:
+`Affine.Point.equivVariableChange` — the only transport of affine points along
+a change of variables that exists anywhere in mathlib, in `~/cs/FLT`, or in
+this project — is stated under `[W.IsElliptic]`, because it is built out of
+`Affine.equation_iff_nonsingular`, which is FALSE on a singular Weierstrass
+curve.  And the hypotheses given here really do admit singular instances:
+`Δ(twoTorsionModel a β²) = 16β⁴(a² − 4β²)` vanishes exactly at `a = ±2β`, where
+the model is `y² = x(x ± β)²`, whose smooth locus is a form of `𝔾ₘ` and
+therefore does contain points of order `16` over `ℚ̄`.  So `hh`, `hstable` and
+`hx` do not exclude the singular case.
+
+The statement is not thereby weakened where it is used: the sole consumer
+`exists_chainModel_of_ratTwoTorsion` discharges the instance in one line from
+`hCeq : C • (E⁄ℚ) = twoTorsionModel a (β ^ 2)` together with `E.IsElliptic`,
+which is exactly the shape `exists_twoTorsionModel_of_order_two` already uses
+internally.  THE CHECK THAT WOULD REFUTE THIS ADDITION: exhibit a transport of
+`Affine.Point` along a `VariableChange` that does not go through
+`equation_iff_nonsingular` — e.g. prove a general
+`(C • W).Nonsingular x y ↔ W.Nonsingular (u²x + r) (u³y + u²sx + t)`, which the
+pin does not have (mathlib has only `nonsingular_iff_variableChange`, the
+special translation-to-the-origin form). -/
 theorem exists_chainModel_chain_of_halvingParams (a β μ : ℚ) (hβ : β ≠ 0)
     (hμ : μ ^ 2 = β * (a + 2 * β))
+    [(twoTorsionModel a (β ^ 2)).IsElliptic]
     (h₀ : ((twoTorsionModel a (β ^ 2))⁄(AlgebraicClosure ℚ)).Point)
     (hh : addOrderOf h₀ = 16)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -7841,8 +7869,151 @@ theorem exists_chainModel_chain_of_halvingParams (a β μ : ℚ) (hβ : β ≠ 0
           Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
             AddSubgroup.zmultiples h) ∧
-      HasXCoord ((4 : ℕ) • h) (algebraMap ℚ (AlgebraicClosure ℚ) (β ^ 2)) :=
-  sorry
+      HasXCoord ((4 : ℕ) • h) (algebraMap ℚ (AlgebraicClosure ℚ) (β ^ 2)) := by
+  obtain ⟨s, hs⟩ := IsAlgClosed.exists_pow_nat_eq
+    (algebraMap ℚ (AlgebraicClosure ℚ) β) (n := 2) two_pos
+  have hβ' : algebraMap ℚ (AlgebraicClosure ℚ) β ≠ 0 := by simp [hβ]
+  have hs0 : s ≠ 0 := by
+    intro h; apply hβ'; rw [← hs, h]; ring
+  have hμ' : (algebraMap ℚ (AlgebraicClosure ℚ) μ) ^ 2
+      = algebraMap ℚ (AlgebraicClosure ℚ) β *
+        (algebraMap ℚ (AlgebraicClosure ℚ) a + 2 * algebraMap ℚ (AlgebraicClosure ℚ) β) := by
+    have := congrArg (algebraMap ℚ (AlgebraicClosure ℚ)) hμ
+    simpa using this
+  set Cbar : VariableChange (AlgebraicClosure ℚ) := ⟨(Units.mk0 s hs0)⁻¹, 0, 0, 0⟩ with hCbar
+  have hCu : (Cbar.u : AlgebraicClosure ℚ) = s⁻¹ := by simp [hCbar]
+  have hmodel : Cbar • ((twoTorsionModel a (β ^ 2))⁄(AlgebraicClosure ℚ))
+      = (chainModel μ β)⁄(AlgebraicClosure ℚ) := by
+    ext <;>
+      simp only [hCbar, WeierstrassCurve.variableChange_a₁, WeierstrassCurve.variableChange_a₂,
+        WeierstrassCurve.variableChange_a₃, WeierstrassCurve.variableChange_a₄,
+        WeierstrassCurve.variableChange_a₆, WeierstrassCurve.baseChange, WeierstrassCurve.map_a₁,
+        WeierstrassCurve.map_a₂, WeierstrassCurve.map_a₃, WeierstrassCurve.map_a₄,
+        WeierstrassCurve.map_a₆, twoTorsionModel, chainModel,
+        inv_inv, Units.val_mk0, map_zero, map_pow, map_mul, map_ofNat, map_sub] <;>
+      try ring1
+    case a₂ => linear_combination (algebraMap ℚ (AlgebraicClosure ℚ) a) * hs - hμ'
+    case a₄ =>
+      linear_combination ((algebraMap ℚ (AlgebraicClosure ℚ) β) ^ 2 *
+        (s ^ 2 + algebraMap ℚ (AlgebraicClosure ℚ) β)) * hs
+  set Ψ : ((chainModel μ β)⁄(AlgebraicClosure ℚ)).Point ≃+
+      ((twoTorsionModel a (β ^ 2))⁄(AlgebraicClosure ℚ)).Point :=
+    (Affine.Point.equivOfEq hmodel.symm).trans
+      (Affine.Point.equivVariableChange
+        ((twoTorsionModel a (β ^ 2))⁄(AlgebraicClosure ℚ)) Cbar) with hΨdef
+  -- `Ψ` never sends an affine point to the point at infinity
+  have hΨne : ∀ (x y : AlgebraicClosure ℚ)
+      (hns : ((chainModel μ β)⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular x y),
+      ∃ (X Y : AlgebraicClosure ℚ)
+        (H : ((twoTorsionModel a (β ^ 2))⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular X Y),
+        Ψ (Affine.Point.some x y hns) = Affine.Point.some X Y H := by
+    intro x y hns
+    rcases hP : Ψ (Affine.Point.some x y hns) with _ | ⟨X, Y, H⟩
+    · exfalso
+      have h1 := congrArg Ψ.symm hP
+      rw [Ψ.symm_apply_apply, ← Affine.Point.zero_def, map_zero] at h1
+      simp [Affine.Point.zero_def] at h1
+    · exact ⟨X, Y, H, rfl⟩
+  -- `Ψ` in coordinates: it scales `x` by `s⁻²` and `y` by `s⁻³`
+  have hΨcoord : ∀ (x y X Y : AlgebraicClosure ℚ)
+      (hns : ((chainModel μ β)⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular x y)
+      (H : ((twoTorsionModel a (β ^ 2))⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular X Y),
+      Ψ (Affine.Point.some x y hns) = Affine.Point.some X Y H →
+        X = (Cbar.u : AlgebraicClosure ℚ) ^ 2 * x + Cbar.r ∧
+          Y = (Cbar.u : AlgebraicClosure ℚ) ^ 3 * y
+                + (Cbar.u : AlgebraicClosure ℚ) ^ 2 * Cbar.s * x + Cbar.t := by
+    intro x y X Y hns H heq
+    rw [hΨdef] at heq
+    simp only [AddEquiv.trans_apply, Affine.Point.equivOfEq_some,
+      Affine.Point.equivVariableChange_some] at heq
+    obtain ⟨hX, hY⟩ := (Affine.Point.some.injEq _ _ _ _ _ _).mp heq
+    exact ⟨hX.symm, hY.symm⟩
+  -- the Galois action multiplies `s` by `±1`
+  have hσs : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, σ s = s ∨ σ s = -s := by
+    intro σ
+    have h1 : (σ s) ^ 2 = s ^ 2 := by
+      rw [← map_pow, hs, AlgEquiv.commutes]
+    have h2 : (σ s - s) * (σ s + s) = 0 := by linear_combination h1
+    rcases mul_eq_zero.mp h2 with h | h
+    · exact Or.inl (by linear_combination h)
+    · exact Or.inr (by linear_combination h)
+  -- hence `Ψ` is Galois-equivariant up to sign
+  have hΨgal : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (P : ((chainModel μ β)⁄(AlgebraicClosure ℚ)).Point),
+      Ψ (Affine.Point.map σ.toAlgHom P) = Affine.Point.map σ.toAlgHom (Ψ P) ∨
+        Ψ (Affine.Point.map σ.toAlgHom P) = -(Affine.Point.map σ.toAlgHom (Ψ P)) := by
+    intro σ P
+    rcases P with _ | ⟨x, y, hns⟩
+    · left
+      simp [← Affine.Point.zero_def]
+    · obtain ⟨X, Y, H, hH⟩ := hΨne x y hns
+      obtain ⟨hX, hY⟩ := hΨcoord x y X Y hns H hH
+      rw [Affine.Point.map_some]
+      obtain ⟨X', Y', H', hH'⟩ := hΨne _ _ _
+      obtain ⟨hX', hY'⟩ := hΨcoord _ _ X' Y' _ H' hH'
+      rw [hH', hH, Affine.Point.map_some]
+      rcases hσs σ with hσ | hσ
+      · left
+        refine Affine.Point.some_eq_some _ ?_ ?_
+        · rw [hX, hX']
+          simp [hCbar, hσ, map_inv₀]
+        · rw [hY, hY']
+          simp [hCbar, hσ, map_inv₀]
+      · right
+        rw [Affine.Point.neg_some]
+        refine Affine.Point.some_eq_some _ ?_ ?_
+        · rw [hX, hX']
+          simp [hCbar, hσ, map_inv₀]
+        · rw [hY, hY']
+          simp [Affine.negY, hX, hCbar, hσ, map_inv₀, twoTorsionModel,
+            WeierstrassCurve.baseChange]
+          ring
+  refine ⟨Ψ.symm h₀, ?_, ?_, ?_⟩
+  · have h := Ψ.addOrderOf_eq (Ψ.symm h₀)
+    rw [Ψ.apply_symm_apply, hh] at h
+    exact h.symm
+  · intro σ z hz
+    obtain ⟨n, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hz
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ h₀ (AddSubgroup.mem_zmultiples_iff.mpr ⟨1, one_zsmul _⟩))
+    have hmapσ : Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Ψ.symm h₀)
+        ∈ AddSubgroup.zmultiples (Ψ.symm h₀) := by
+      rcases hΨgal σ (Ψ.symm h₀) with hcase | hcase
+      · refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, Ψ.injective ?_⟩
+        calc Ψ (k • Ψ.symm h₀) = k • h₀ := by rw [map_zsmul, Ψ.apply_symm_apply]
+          _ = Affine.Point.map
+                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom h₀ := hk
+          _ = Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+                (Ψ (Ψ.symm h₀)) := by rw [Ψ.apply_symm_apply]
+          _ = Ψ (Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+                (Ψ.symm h₀)) := hcase.symm
+      · refine AddSubgroup.mem_zmultiples_iff.mpr ⟨-k, Ψ.injective ?_⟩
+        calc Ψ ((-k) • Ψ.symm h₀) = (-k) • h₀ := by rw [map_zsmul, Ψ.apply_symm_apply]
+          _ = -(k • h₀) := by rw [neg_zsmul]
+          _ = -(Affine.Point.map
+                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom h₀) := by rw [hk]
+          _ = -(Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+                (Ψ (Ψ.symm h₀))) := by rw [Ψ.apply_symm_apply]
+          _ = Ψ (Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+                (Ψ.symm h₀)) := hcase.symm
+    rw [map_zsmul]
+    exact AddSubgroup.zsmul_mem _ hmapσ n
+  · intro x y hxy hEq
+    have hkey : Ψ ((4 : ℕ) • Ψ.symm h₀) = Ψ (Affine.Point.some x y hxy) := congrArg Ψ hEq
+    rw [map_nsmul, Ψ.apply_symm_apply] at hkey
+    obtain ⟨X, Y, H, hH⟩ := hΨne x y hxy
+    obtain ⟨hX, -⟩ := hΨcoord x y X Y hxy H hH
+    rw [hH] at hkey
+    have hxβ := hx _ _ H hkey
+    have hCr : Cbar.r = 0 := by simp [hCbar]
+    rw [hX, hCu, hCr, add_zero] at hxβ
+    have hxval : x = algebraMap ℚ (AlgebraicClosure ℚ) β * s ^ 2 := by
+      field_simp at hxβ
+      linear_combination hxβ
+    rw [hxval, hs, map_pow]
+    ring
+
 
 /-- **Steps 2–3 of the `X_0(16)` route: the `X_0(8)` normal form** (PROVEN
 2026-07-27 over the three leaves `exists_twoTorsionChain_of_variableChange`,
@@ -7919,6 +8090,16 @@ theorem exists_chainModel_of_ratTwoTorsion (E : WeierstrassCurve ℚ)
     exists_twoTorsionModel_of_order_two (K := ℚ) two_ne_zero (E⁄ℚ) Q hQ2
   have hjE : (E⁄ℚ).j = E.j := by simp [WeierstrassCurve.baseChange]
   rw [hjE] at hj
+  -- The normal form is elliptic because `E` is.  Introduced HERE, before the
+  -- halving step, so that it survives the `rfl` substitution `b := β ^ 2` and
+  -- is in scope for every leaf below.  It is what
+  -- `exists_chainModel_chain_of_halvingParams` asks for (see its docstring:
+  -- this pin has no transport of affine points along a change of variables for
+  -- SINGULAR models), and `exists_halvingParams_of_twoTorsionChain` will need
+  -- the same instance when it is proved, since `exists_isogenyCharacter` is
+  -- also stated under `[E.IsElliptic]`.
+  haveI : (twoTorsionModel a b).IsElliptic :=
+    hCeq ▸ (inferInstance : (C • (E⁄ℚ)).IsElliptic)
   obtain ⟨h₀, hh₀16, hh₀st, hh₀8⟩ :=
     exists_twoTorsionChain_of_variableChange E a b C hCeq h00 Q hQ0 g hg hstable hQg
   obtain ⟨β, μ, hβ, rfl, hμ, hx⟩ :=
