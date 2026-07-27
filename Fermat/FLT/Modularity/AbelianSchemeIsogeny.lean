@@ -4584,8 +4584,99 @@ theorem topologicalKrullDim_lt_top_of_isProper {X : Scheme.{u}} {K : Type u} [Fi
     topologicalKrullDim X < ⊤ :=
   sorry
 
+/-- **THE CLOSURE OF THE IMAGE OF A SET WITH A GENERIC POINT** (**PROVEN
+2026-07-27**, pure point-set topology, no schemes).
+
+If `closure {x} = S` then `closure (f '' S) = closure {f x}` for `f` continuous:
+one inclusion is `image_closure_subset_closure_image`, the other is monotonicity
+of `closure` along `{f x} ⊆ f '' S`.  Extracted as a standalone step of
+`height_map_le_of_isFinite` below because rewriting `↑W` inside
+`W.isIrreducible.genericPoint` is not motive-correct — the generic point has to
+be abstracted BEFORE the underlying set is rewritten. -/
+theorem closure_image_of_closure_singleton_eq {X Y : Type*} [TopologicalSpace X]
+    [TopologicalSpace Y] {f : X → Y} (hf : Continuous f) {S : Set X} {x : X}
+    (hx : closure ({x} : Set X) = S) :
+    closure (f '' S) = closure {f x} := by
+  subst hx
+  refine le_antisymm (closure_minimal ?_ isClosed_closure) (closure_mono ?_)
+  · refine (image_closure_subset_closure_image hf).trans ?_
+    simp
+  · exact Set.singleton_subset_iff.mpr ⟨x, subset_closure rfl, rfl⟩
+
+/-- **A QUASI-FINITE MORPHISM SEPARATES SPECIALIZATIONS INSIDE A FIBRE**
+(**PROVEN 2026-07-27**, the incomparability half of Cohen–Seidenberg in its
+topological form — `@[stacks 00OY]`).
+
+If `x ⤳ y` and `f x = f y` then `x = y`.  Both points lie in the fibre
+`f ⁻¹' {f x}`, which is DISCRETE for a quasi-finite morphism
+(`Scheme.Hom.isDiscrete_preimage_singleton`, mathlib); `Subtype.val` is inducing,
+so the specialization transports into the fibre, and a discrete space is `T1`,
+where specialization is equality.
+
+Note this needs only `LocallyQuasiFinite`, not `IsFinite`. -/
+theorem eq_of_specializes_of_base_eq {X Y : Scheme.{u}} (f : X ⟶ Y) [LocallyQuasiFinite f]
+    {x y : X} (h : x ⤳ y) (he : f.base x = f.base y) : x = y := by
+  have hd : _root_.IsDiscrete (⇑f ⁻¹' {f.base x}) := f.isDiscrete_preimage_singleton _
+  haveI : DiscreteTopology ↥(⇑f ⁻¹' {f.base x}) := hd.to_subtype
+  have hx : x ∈ (⇑f ⁻¹' {f.base x}) := rfl
+  have hy : y ∈ (⇑f ⁻¹' {f.base x}) := he.symm
+  have hs : (⟨x, hx⟩ : ↥(⇑f ⁻¹' {f.base x})) ⤳ ⟨y, hy⟩ :=
+    (_root_.Topology.IsInducing.subtypeVal).specializes_iff.mp h
+  simpa using specializes_iff_eq.mp hs
+
+/-- **`IrreducibleCloseds.map` ALONG A QUASI-FINITE MORPHISM IS STRICTLY
+MONOTONE** (**PROVEN 2026-07-27**; this is the whole mathematical content of
+`height_map_le_of_isFinite` below, and it holds GLOBALLY, not merely below a
+fixed `Z`).
+
+Given `A < B` irreducible closed, monotonicity gives `map A ≤ map B`; the
+inclusion is strict.  Schemes are sober, so `A = closure {ξA}` and
+`B = closure {ξB}`; by `closure_image_of_closure_singleton_eq` the images are
+`closure {f ξA}` and `closure {f ξB}`, so equality of the images gives
+`f ξA ⤳ f ξB` and `f ξB ⤳ f ξA`, hence `f ξA = f ξB` because a scheme is `T0`.
+And `A ≤ B` puts `ξA ∈ B = closure {ξB}`, i.e. `ξB ⤳ ξA`.  The two points are
+therefore a specialization pair inside one fibre, so they are EQUAL
+(`eq_of_specializes_of_base_eq`), whence `A = B` — contradicting `A < B`.
+
+**INJECTIVITY IS FALSE AND IS NOT USED**: `Spec (k × k) ⟶ Spec k` sends the two
+points to the one point, so `map` is not injective, and the standard
+`Monotone.strictMono_of_injective` route is unavailable.  Strict monotonicity
+survives precisely because the two points there are INCOMPARABLE. -/
+theorem strictMono_irreducibleCloseds_map {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [LocallyQuasiFinite f] :
+    StrictMono (TopologicalSpace.IrreducibleCloseds.map (⇑f.base) f.base.hom.continuous) := by
+  have hcont : Continuous (⇑f.base) := f.base.hom.continuous
+  intro A B hAB
+  refine lt_of_le_of_ne (TopologicalSpace.IrreducibleCloseds.map_mono hcont hAB.le) ?_
+  intro heq
+  obtain ⟨ξA, hA⟩ : ∃ x, closure ({x} : Set X) = (A : Set X) :=
+    ⟨A.isIrreducible.genericPoint, A.isIrreducible.closure_genericPoint A.isClosed⟩
+  obtain ⟨ξB, hB⟩ : ∃ x, closure ({x} : Set X) = (B : Set X) :=
+    ⟨B.isIrreducible.genericPoint, B.isIrreducible.closure_genericPoint B.isClosed⟩
+  have hco : closure (⇑f.base '' (A : Set X)) = closure (⇑f.base '' (B : Set X)) := by
+    have h := congrArg (fun W : TopologicalSpace.IrreducibleCloseds Y => (W : Set Y)) heq
+    simpa using h
+  have hcl : closure ({f.base ξA} : Set Y) = closure {f.base ξB} := by
+    rw [← closure_image_of_closure_singleton_eq hcont hA,
+      ← closure_image_of_closure_singleton_eq hcont hB]
+    exact hco
+  have h1 : f.base ξA ⤳ f.base ξB := by
+    rw [specializes_iff_mem_closure, hcl]; exact subset_closure rfl
+  have h2 : f.base ξB ⤳ f.base ξA := by
+    rw [specializes_iff_mem_closure, ← hcl]; exact subset_closure rfl
+  have hfe : f.base ξA = f.base ξB := (h1.antisymm h2).eq
+  have hmemA : ξA ∈ (A : Set X) := by
+    have hmem : ξA ∈ closure ({ξA} : Set X) := subset_closure rfl
+    rwa [hA] at hmem
+  have hspec : ξB ⤳ ξA := by
+    rw [specializes_iff_mem_closure, hB]
+    exact hAB.le hmemA
+  have hξ : ξB = ξA := eq_of_specializes_of_base_eq f hspec hfe.symm
+  exact absurd (TopologicalSpace.IrreducibleCloseds.ext (by rw [← hA, ← hB, hξ])) hAB.ne
+
 /-- **A FINITE MORPHISM DOES NOT DROP THE HEIGHT OF AN IRREDUCIBLE CLOSED SET**
-(sorry leaf, created 2026-07-27 — the SECOND sub-leaf of
+(**PROVEN 2026-07-27** over the three general lemmas immediately above; created
+as a sorry leaf earlier the same day as the SECOND sub-leaf of
 `isDominant_of_isFinite_endo` below.  General scheme theory: no field, no
 smoothness, no properness, and `X`, `Y` arbitrary.)
 
@@ -4609,14 +4700,25 @@ no nontrivial specialization and `ξ₀ = ξ₁`, contradicting `Z₀ < Z₁`.  
 height inequality.
 
 *Refute with:* a finite morphism, an irreducible closed `Z`, and a chain below it
-whose image chain collapses — by the argument above there is none.  Note that
-`IsFinite` may be weakened to `QuasiFinite` throughout; it is stated with
-`IsFinite` because that is what the consumer has. -/
+whose image chain collapses — by the argument above there is none.
+
+**THE WEAKENING PREDICTED HERE IS CONFIRMED, AND FOR FREE.**  The note that
+stood here said `IsFinite` "may be weakened to `QuasiFinite`"; it is, and by more
+than expected.  Nothing in the proof uses finiteness or quasi-compactness — only
+`LocallyQuasiFinite`, through the DISCRETENESS of the fibres — so the real
+theorem is `strictMono_irreducibleCloseds_map` above, stated with
+`[LocallyQuasiFinite f]`, and it is strictly monotone GLOBALLY rather than merely
+below `Z`.  This statement keeps `[IsFinite f]` because that is what the consumer
+`isDominant_of_isFinite_endo` has in hand, and mathlib's
+`IsFinite f → LocallyQuasiFinite f` instance bridges the two silently.  A
+consumer wanting the weaker hypothesis should call
+`strictMono_irreducibleCloseds_map` and
+`Order.height_le_height_apply_of_strictMono` directly. -/
 theorem height_map_le_of_isFinite {X Y : Scheme.{u}} (f : X ⟶ Y) [IsFinite f]
     (Z : TopologicalSpace.IrreducibleCloseds X) :
     Order.height Z ≤ Order.height
       (TopologicalSpace.IrreducibleCloseds.map (⇑f.base) f.base.hom.continuous Z) :=
-  sorry
+  Order.height_le_height_apply_of_strictMono _ (strictMono_irreducibleCloseds_map f) Z
 
 /-- **A FINITE ENDOMORPHISM OF A PROPER GEOMETRICALLY CONNECTED SMOOTH SCHEME
 OVER A FIELD IS DOMINANT** (**PROVEN 2026-07-27** over the two leaves
