@@ -1571,7 +1571,9 @@ other — so that neither of the four leaves below carries both:
   the same day, from two further leaves — `exists_deckAction` (the
   `GL₂(ℤ/n)`-action on `A`, together with the coequalising clause that
   pins it) and `exists_descendClassify` (the fppf descent, stated over an
-  abstract finite group acting on an abstract ring).  Everything else the
+  abstract finite group acting on an abstract ring), **of which the second
+  is itself now PROVEN**, leaving `exists_deckAction` as the only open leaf
+  of the GIT half.  Everything else the
   assembly owed — the invariant subring, `str`, `cover`, `classify_natural`
   and `classify_dM` — is discharged there.
 
@@ -3020,6 +3022,99 @@ def IsBaseChangeOf.refl {N : ℕ} {T : Scheme.{u}} (d : Gamma0Datum N T) :
     exact RelPoint.liesIn_congr _ (by
       simp only [RelPoint.along_val, Category.comp_id])
 
+/-- The morphism induced by cancelling a base change: `e.E ⟶ d'.E`, from
+the universal property of `d'.E` as a fibre product. -/
+noncomputable def IsBaseChangeOf.cancelMap {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    e.E ⟶ d'.E :=
+  hb₂.isPullback.lift (e.f ≫ h₁) hb.map (by rw [Category.assoc]; exact hb.isPullback.w)
+
+@[reassoc] theorem IsBaseChangeOf.cancelMap_fst {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    hb.cancelMap hb₂ ≫ d'.f = e.f ≫ h₁ :=
+  hb₂.isPullback.lift_fst _ _ _
+
+@[reassoc] theorem IsBaseChangeOf.cancelMap_snd {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    hb.cancelMap hb₂ ≫ hb₂.map = hb.map :=
+  hb₂.isPullback.lift_snd _ _ _
+
+/-- **Base changes CANCEL** (PROVEN) — the exact converse of
+`IsBaseChangeOf.comp`.
+
+Both `e` and `d'` are pullbacks of `d`, so `e.E` maps to `d'.E` by the
+universal property, and the resulting square is cartesian by the converse
+of pullback pasting (`IsPullback.of_bot`, used the same way as in
+`Gamma0BaseChange.isPullback_iota` earlier in this file).  The three
+functor-of-points axioms transport because `IsPullback.hom_ext` lets a
+morphism into `d'.E` be checked against `d'.f` and `hb₂.map` separately,
+and `cancelMap_fst` / `cancelMap_snd` say what those two composites are.
+
+**HOISTED here 2026-07-27** from ~7500 lines below, where it was stated
+alongside the `j`-line descent material.  Its first consumer in file order
+is now `exists_descendClassify` immediately below, which uses it at
+`h₁ := g₂`, `h₂ := p` to recognise that a base change of the rigidified
+cover along `g₁` is *also* one along any `g₂` with `g₁ ≫ p = g₂ ≫ p`.
+
+**Three nodes consume this, in three specialisations.**  In the form
+stated it is `exists_isBaseChangeOf_cancel` below, which
+`exists_jValueOnAffine_of_localModels` needs.  At `h₁ = 𝟙` it says that two
+base changes of one datum along the SAME morphism differ by an
+`IsBaseChangeOf 𝟙`, which is verbatim the step the docstring of
+`exists_jTransformation_of_affine` recorded as missing ("the transport of
+`map_zero`, `map_add` and `liesIn_iff` across that isomorphism has to be
+written"); that specialisation is `jt_eq_of_isBaseChangeOf` below. -/
+noncomputable def IsBaseChangeOf.cancel {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    IsBaseChangeOf h₁ e d' where
+  map := hb.cancelMap hb₂
+  isPullback := by
+    refine IsPullback.of_bot ?_ (hb.cancelMap_fst hb₂).symm hb₂.isPullback
+    rw [hb.cancelMap_snd hb₂]
+    exact hb.isPullback
+  map_zero g := by
+    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
+    · simp only [RelPoint.along]
+      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.zero g).2,
+        (d'.ab.zero (g ≫ h₁)).2]
+    · have e1 : (e.ab.zero g).1 ≫ hb.map = (d.ab.zero (g ≫ h₁ ≫ h₂)).1 :=
+        congrArg Subtype.val (hb.map_zero g)
+      have e2 : (d'.ab.zero (g ≫ h₁)).1 ≫ hb₂.map = (d.ab.zero ((g ≫ h₁) ≫ h₂)).1 :=
+        congrArg Subtype.val (hb₂.map_zero (g ≫ h₁))
+      simp only [RelPoint.along]
+      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2, Category.assoc]
+  map_add := fun {_} {g} x y => by
+    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
+    · simp only [RelPoint.along]
+      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.add x y).2,
+        (d'.ab.add _ _).2]
+    · have e1 : (e.ab.add x y).1 ≫ hb.map
+          = (d.ab.add (RelPoint.along hb.map hb.isPullback.w x)
+              (RelPoint.along hb.map hb.isPullback.w y)).1 :=
+        congrArg Subtype.val (hb.map_add x y)
+      have e2 : ∀ a b : RelPoint d'.f (g ≫ h₁), (d'.ab.add a b).1 ≫ hb₂.map
+          = (d.ab.add (RelPoint.along hb₂.map hb₂.isPullback.w a)
+              (RelPoint.along hb₂.map hb₂.isPullback.w b)).1 :=
+        fun a b => congrArg Subtype.val (hb₂.map_add a b)
+      simp only [RelPoint.along]
+      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2]
+      refine d.ab.add_val_congr (Category.assoc g h₁ h₂) _ _ _ _ ?_ ?_ <;>
+        · simp only [RelPoint.along]
+          rw [Category.assoc, hb.cancelMap_snd hb₂]
+  liesIn_iff x := by
+    refine (hb.liesIn_iff x).trans
+      (Iff.trans (RelPoint.liesIn_congr d.cyc.ι ?_) (hb₂.liesIn_iff _).symm)
+    show x.1 ≫ hb.map = (x.1 ≫ hb.cancelMap hb₂) ≫ hb₂.map
+    rw [Category.assoc, hb.cancelMap_snd hb₂]
+
 /-! #### The deck group, the invariant quotient, and the two leaves the
 assembly rests on
 
@@ -3028,7 +3123,9 @@ two open leaves, and everything else it owed — the invariant subring and
 its algebra structure, the structure morphism of the coarse space, the
 `cover` field, `classify_natural`, `classify_dM` — is discharged here.
 The two leaves are `exists_deckAction` (the deck group acting on `A`) and
-`exists_descendClassify` (the fppf descent of the classifying map).
+`exists_descendClassify` (the fppf descent of the classifying map); the
+second of them is **PROVEN** (2026-07-27), so `exists_deckAction` is the
+only leaf the assembly still rests on.
 
 **Why the split is safe.**  The junk-witness objection the section comment
 above raises against quantifying over an under-determined structure applies
@@ -3127,50 +3224,61 @@ theorem exists_deckAction (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n) 
           = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A :=
   sorry
 
-/-- **fppf descent of the classifying map** (sorry leaf, opened 2026-07-27)
-— the second of the two halves of
+/-- **fppf descent of the classifying map** (opened and **PROVEN**
+2026-07-27, sorry-free and axiom-clean) — the second of the two halves of
 `exists_gamma0GITPresentation_of_rigidified`, and the one that mentions no
 level structure, no deck group construction and no `RigidifiedModuli`.
 
 It is stated over an abstract finite group `G` acting on an abstract
 commutative ring `A`, with the rigidified cover and the coequalising
-property as hypotheses, so that it is dispatchable by someone who has read
+property as hypotheses, so that it is readable by someone who has read
 only `Gamma0Datum` and `IsBaseChangeOf`.
 
-## What the prover of this node owes
+## How it is proven
 
 Given `d` over a `ℚ`-scheme `T`, `hcov` produces a flat surjective
 quasi-compact `p : T' ⟶ T`, a datum `d'` on `T'` which is a base change of
-`d`, and a rigidification `m : T' ⟶ Spec A` of `d'`.  The claim is that
-`m ≫ π` descends along `p`, and that the descended `c` then satisfies the
-same equation against EVERY rigidification of EVERY base change of `d`.
+`d`, and a rigidification `m₀ : T' ⟶ Spec A` of `d'`.  `m₀ ≫ π` descends
+along `p`, and the descended `c` then satisfies the same equation against
+EVERY rigidification of EVERY base change of `d`.
 
-* **The descent datum.**  On `W = T' ×_T T'` with projections `q₁, q₂`,
-  base-change `d'` along each (that construction is available as
-  `exists_gamma0Datum_baseChange` above — a producer, not merely a
-  relation).  Both results are base changes of `d` along the SAME morphism
-  `q₁ ≫ p = q₂ ≫ p`, hence canonically isomorphic; transporting one
-  rigidification across that isomorphism (`IsBaseChangeOf.comp` above
-  composes, and two base changes along one morphism are related by an
-  `IsBaseChangeOf (𝟙 W)` obtained from `IsPullback.hom_ext`) puts `q₁ ≫ m`
-  and `q₂ ≫ m` in the shape `hcoeq` wants.  So
-  `q₁ ≫ (m ≫ π) = q₂ ≫ (m ≫ π)`.
+* **The descent datum, and it costs no fibre product.**  An earlier version
+  of this docstring prescribed working on `W = T' ×_T T'` with its two
+  projections.  That is unnecessary: mathlib's `EffectiveEpiStruct` is
+  stated against *every* pair `g₁, g₂ : Z ⟶ T'` with `g₁ ≫ p = g₂ ≫ p`, so
+  the kernel pair never has to be named.  Base-change `d'` along `g₁`
+  (`exists_gamma0Datum_baseChange` above — a producer, not merely a
+  relation) to get `d₁` over `Z`.  Composing with `bp` makes `d₁` a base
+  change of `d` along `g₁ ≫ p = g₂ ≫ p`, and `IsBaseChangeOf.cancel` — the
+  converse of `IsBaseChangeOf.comp`, hoisted above this leaf for exactly
+  this use — turns that into `IsBaseChangeOf g₂ d₁ d'`.  So `g₁ ≫ m₀` and
+  `g₂ ≫ m₀` are two rigidifications of ONE datum `d₁`, which is the shape
+  `hcoeq` wants, and `g₁ ≫ (m₀ ≫ π) = g₂ ≫ (m₀ ≫ π)`.
 * **The descent.**  `AlgebraicGeometry.fpqcTopology` is `Subcanonical` and
-  `p` is an `EffectiveEpi` — the two facts `Gamma0Atlas.toIsCoarseModuliY0`
-  already runs on — so the equalised morphism factors through `p`.
-* **Independence of the cover**, which is the `∀ Z k dZ m` clause: pull back
-  to `Z ×_T T'`, where both `k ≫ c` and `m ≫ π` are computed by the same
-  argument, and cancel the epimorphism `Z ×_T T' ⟶ Z` (a base change of `p`,
-  so again flat, surjective and quasi-compact).
+  hence a flat surjective quasi-compact `p` is an `EffectiveEpi` (a mathlib
+  instance, found by `inferInstance`) — the two facts
+  `Gamma0Atlas.toIsCoarseModuliY0` already runs on — so `EffectiveEpi.desc`
+  factors the equalised morphism through `p`, and `EffectiveEpi.fac` says
+  `p ≫ c = m₀ ≫ π`.
+* **Independence of the cover**, the `∀ Z k dZ m` clause: pull the cover
+  back to `W = Z ×_T T'`.  Its first projection `q` is a base change of
+  `p`, so flat, surjective and quasi-compact (mathlib instances), hence an
+  epimorphism.  After `q` the left side is `r ≫ (m₀ ≫ π)` by `fac`, the
+  right side is `(q ≫ m) ≫ π`, and the two agree by `hcoeq` applied to the
+  base change of `dZ` along `q` — a base change of `d` along
+  `q ≫ k = r ≫ p`, so `cancel` again presents it as one of `d'` along `r`.
 
 ## Faithfulness
 
 `hcoeq` is a hypothesis, so a degenerate `G`-action does not make this leaf
 false — it makes `hcoeq` unsatisfiable, and the leaf vacuously true at that
-action.  The clause `_g : T ⟶ SpecQ` is load-bearing for the PROOF (it is
-what lets `hcov` be applied at `T`, and at the auxiliary bases built from
-`T`), not for the statement; it is underscored only because the sorried body
-does not mention it. -/
+action.  `_g : T ⟶ SpecQ` is what lets `hcov` be applied at `T`; it is
+consumed by the proof under that name (the underscore is retained because
+the binder was introduced as a hypothesis on `T` rather than as data, and
+renaming it would churn the call site in
+`exists_gamma0GITPresentation_of_rigidified`).  Note the proof needs `hcov`
+only at `T` itself: the auxiliary bases `Z` and `Z ×_T T'` are handled by
+base-changing the ONE cover, never by covering them afresh. -/
 theorem exists_descendClassify (N : ℕ) (G : Type) [Group G] [Finite G]
     {A : Type} [CommRing A] [MulSemiringAction G A]
     (dM : Gamma0Datum N (Spec (CommRingCat.of A)))
@@ -3186,8 +3294,52 @@ theorem exists_descendClassify (N : ℕ) (G : Type) [Group G] [Finite G]
     ∃ c : T ⟶ Spec (CommRingCat.of ↥(FixedPoints.subring A G)),
       ∀ (Z : Scheme.{0}) (k : Z ⟶ T) (dZ : Gamma0Datum N Z), IsBaseChangeOf k dZ d →
         ∀ m : Z ⟶ Spec (CommRingCat.of A), IsBaseChangeOf m dZ dM →
-          k ≫ c = m ≫ specInvariantsQuotient G A :=
-  sorry
+          k ≫ c = m ≫ specInvariantsQuotient G A := by
+  classical
+  -- the rigidifying cover of `d`, and the rigidification `m₀` it carries
+  obtain ⟨T', p, d', m₀, hf, hs, hq, ⟨bp⟩, ⟨bm⟩⟩ := hcov _g d
+  haveI := hf; haveI := hs; haveI := hq
+  -- **The descent datum.**  `m₀ ≫ π` coequalises every pair that `p` coequalises.
+  -- No fibre product is needed: mathlib's `EffectiveEpiStruct` is stated against
+  -- *all* pairs `g₁, g₂ : Z ⟶ T'` with `g₁ ≫ p = g₂ ≫ p`, which is exactly the
+  -- shape `hcoeq` wants once a common datum over `Z` is produced.  That datum is
+  -- the base change of `d'` along `g₁`; it is a base change of `d` along
+  -- `g₁ ≫ p = g₂ ≫ p`, so `IsBaseChangeOf.cancel` recognises it as a base change
+  -- of `d'` along `g₂` as well.
+  have key : ∀ {Z : Scheme.{0}} (g₁ g₂ : Z ⟶ T'), g₁ ≫ p = g₂ ≫ p →
+      g₁ ≫ (m₀ ≫ specInvariantsQuotient G A)
+        = g₂ ≫ (m₀ ≫ specInvariantsQuotient G A) := by
+    intro Z g₁ g₂ he
+    obtain ⟨d₁, ⟨b₁⟩⟩ := exists_gamma0Datum_baseChange g₁ d'
+    have hb : IsBaseChangeOf (g₂ ≫ p) d₁ d := by rw [← he]; exact b₁.comp bp
+    rw [← Category.assoc, ← Category.assoc]
+    exact hcoeq (g₁ ≫ m₀) (g₂ ≫ m₀) d₁ (b₁.comp bm) ((hb.cancel bp).comp bm)
+  -- **The descent.**  `p` is flat, surjective and quasi-compact, hence an
+  -- `EffectiveEpi` (mathlib: the fpqc topology is subcanonical), so `m₀ ≫ π`
+  -- factors through it, uniquely.
+  refine ⟨EffectiveEpi.desc p (m₀ ≫ specInvariantsQuotient G A) key, ?_⟩
+  -- **Independence of the cover.**  Pull the cover back along `k` to
+  -- `W = Z ×_T T'`; both sides are computed there by the same argument, and the
+  -- first projection is a base change of `p`, hence again an epimorphism.
+  intro Z k dZ bk m bmZ
+  have hcond : Limits.pullback.fst k p ≫ k = Limits.pullback.snd k p ≫ p :=
+    Limits.pullback.condition
+  obtain ⟨dW, ⟨bq⟩⟩ := exists_gamma0Datum_baseChange (Limits.pullback.fst k p) dZ
+  have hb : IsBaseChangeOf (Limits.pullback.snd k p ≫ p) dW d := by
+    rw [← hcond]; exact bq.comp bk
+  have h1 : (Limits.pullback.fst k p ≫ m) ≫ specInvariantsQuotient G A
+      = (Limits.pullback.snd k p ≫ m₀) ≫ specInvariantsQuotient G A :=
+    hcoeq _ _ dW (bq.comp bmZ) ((hb.cancel bp).comp bm)
+  refine (cancel_epi (Limits.pullback.fst k p)).mp ?_
+  calc Limits.pullback.fst k p
+        ≫ k ≫ EffectiveEpi.desc p (m₀ ≫ specInvariantsQuotient G A) key
+      = (Limits.pullback.snd k p ≫ p)
+          ≫ EffectiveEpi.desc p (m₀ ≫ specInvariantsQuotient G A) key := by
+        rw [← Category.assoc, hcond]
+    _ = Limits.pullback.snd k p ≫ (m₀ ≫ specInvariantsQuotient G A) := by
+        rw [Category.assoc, EffectiveEpi.fac]
+    _ = Limits.pullback.fst k p ≫ m ≫ specInvariantsQuotient G A := by
+        rw [← Category.assoc, ← Category.assoc]; exact h1.symm
 
 /-- **The GIT presentation, assembled from the fine moduli scheme and the
 level torsor** (PROVEN 2026-07-27 from the two leaves
@@ -3209,10 +3361,10 @@ Owed, and every step of it is available in principle from `R` alone:
   globally.  Both are STILL OPEN, and are `exists_deckAction` above; its
   docstring carries the argument in full, including why the two clauses
   must stay in one leaf.
-* **`classify`, by fppf descent along the torsor** — STILL OPEN, as
-  `exists_descendClassify` above, stated abstractly over a finite group
-  acting on a commutative ring, with the coequalising clause as a
-  hypothesis.
+* **`classify`, by fppf descent along the torsor** — **PROVEN**
+  (2026-07-27), as `exists_descendClassify` above, stated abstractly over a
+  finite group acting on a commutative ring, with the coequalising clause
+  as a hypothesis.
 * **`B` and `Algebra.IsInvariant`** — PROVEN here: `B` is
   `FixedPoints.subring R.A G`, `algebra_BA` is `RingHom.toAlgebra` of the
   subring inclusion (so `algebraMap B A` is definitionally that inclusion,
@@ -10812,8 +10964,11 @@ integration 2026-07-27; use the general version above. -/
 calculus at all: no identity, no composition, and no comparison of two
 base changes along the same morphism.  The descent argument needs all
 three, and the previous docstring of `exists_jTransformation_of_affine`
-named the third of them as its missing step.  All three are PROVEN below,
-so what is left of that leaf is the Zariski gluing and nothing else. -/
+named the third of them as its missing step.  All three are PROVEN in this
+file, so what is left of that leaf is the Zariski gluing and nothing else.
+(`comp` and, since 2026-07-27, `cancel` sit far above, in the
+`IsBaseChangeOf` calculus section that `exists_descendClassify` consumes;
+only `id` is still stated here.) -/
 
 /-- **Morphisms out of a scheme are determined on affines** (PROVEN).
 
@@ -10852,92 +11007,12 @@ noncomputable def IsBaseChangeOf.id {N : ℕ} {T : Scheme.{u}} (d : Gamma0Datum 
       rw [Category.comp_id] at hy
       exact ⟨y, hy⟩
 
-/-- The morphism induced by cancelling a base change: `e.E ⟶ d'.E`, from
-the universal property of `d'.E` as a fibre product. -/
-noncomputable def IsBaseChangeOf.cancelMap {N : ℕ} {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
-    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
-    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
-    e.E ⟶ d'.E :=
-  hb₂.isPullback.lift (e.f ≫ h₁) hb.map (by rw [Category.assoc]; exact hb.isPullback.w)
-
-@[reassoc] theorem IsBaseChangeOf.cancelMap_fst {N : ℕ} {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
-    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
-    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
-    hb.cancelMap hb₂ ≫ d'.f = e.f ≫ h₁ :=
-  hb₂.isPullback.lift_fst _ _ _
-
-@[reassoc] theorem IsBaseChangeOf.cancelMap_snd {N : ℕ} {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
-    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
-    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
-    hb.cancelMap hb₂ ≫ hb₂.map = hb.map :=
-  hb₂.isPullback.lift_snd _ _ _
-
-/-- **Base changes CANCEL** (PROVEN) — the exact converse of
-`IsBaseChangeOf.comp`.
-
-Both `e` and `d'` are pullbacks of `d`, so `e.E` maps to `d'.E` by the
-universal property, and the resulting square is cartesian by the converse
-of pullback pasting (`IsPullback.of_bot`, used the same way as in
-`Gamma0BaseChange.isPullback_iota` earlier in this file).  The three
-functor-of-points axioms transport because `IsPullback.hom_ext` lets a
-morphism into `d'.E` be checked against `d'.f` and `hb₂.map` separately,
-and `cancelMap_fst` / `cancelMap_snd` say what those two composites are.
-
-**Two nodes consume this, in two different specialisations.**  In the
-form stated it is `exists_isBaseChangeOf_cancel` below, which
-`exists_jValueOnAffine_of_localModels` needs.  At `h₁ = 𝟙` it says that two
-base changes of one datum along the SAME morphism differ by an
-`IsBaseChangeOf 𝟙`, which is verbatim the step the docstring of
-`exists_jTransformation_of_affine` recorded as missing ("the transport of
-`map_zero`, `map_add` and `liesIn_iff` across that isomorphism has to be
-written"); that specialisation is `jt_eq_of_isBaseChangeOf` below. -/
-noncomputable def IsBaseChangeOf.cancel {N : ℕ} {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
-    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
-    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
-    IsBaseChangeOf h₁ e d' where
-  map := hb.cancelMap hb₂
-  isPullback := by
-    refine IsPullback.of_bot ?_ (hb.cancelMap_fst hb₂).symm hb₂.isPullback
-    rw [hb.cancelMap_snd hb₂]
-    exact hb.isPullback
-  map_zero g := by
-    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
-    · simp only [RelPoint.along]
-      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.zero g).2,
-        (d'.ab.zero (g ≫ h₁)).2]
-    · have e1 : (e.ab.zero g).1 ≫ hb.map = (d.ab.zero (g ≫ h₁ ≫ h₂)).1 :=
-        congrArg Subtype.val (hb.map_zero g)
-      have e2 : (d'.ab.zero (g ≫ h₁)).1 ≫ hb₂.map = (d.ab.zero ((g ≫ h₁) ≫ h₂)).1 :=
-        congrArg Subtype.val (hb₂.map_zero (g ≫ h₁))
-      simp only [RelPoint.along]
-      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2, Category.assoc]
-  map_add := fun {_} {g} x y => by
-    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
-    · simp only [RelPoint.along]
-      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.add x y).2,
-        (d'.ab.add _ _).2]
-    · have e1 : (e.ab.add x y).1 ≫ hb.map
-          = (d.ab.add (RelPoint.along hb.map hb.isPullback.w x)
-              (RelPoint.along hb.map hb.isPullback.w y)).1 :=
-        congrArg Subtype.val (hb.map_add x y)
-      have e2 : ∀ a b : RelPoint d'.f (g ≫ h₁), (d'.ab.add a b).1 ≫ hb₂.map
-          = (d.ab.add (RelPoint.along hb₂.map hb₂.isPullback.w a)
-              (RelPoint.along hb₂.map hb₂.isPullback.w b)).1 :=
-        fun a b => congrArg Subtype.val (hb₂.map_add a b)
-      simp only [RelPoint.along]
-      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2]
-      refine d.ab.add_val_congr (Category.assoc g h₁ h₂) _ _ _ _ ?_ ?_ <;>
-        · simp only [RelPoint.along]
-          rw [Category.assoc, hb.cancelMap_snd hb₂]
-  liesIn_iff x := by
-    refine (hb.liesIn_iff x).trans
-      (Iff.trans (RelPoint.liesIn_congr d.cyc.ι ?_) (hb₂.liesIn_iff _).symm)
-    show x.1 ≫ hb.map = (x.1 ≫ hb.cancelMap hb₂) ≫ hb₂.map
-    rw [Category.assoc, hb.cancelMap_snd hb₂]
+/- `IsBaseChangeOf.cancelMap`, `cancelMap_fst`, `cancelMap_snd` and
+`IsBaseChangeOf.cancel` used to be stated HERE.  They were HOISTED (2026-07-27) to
+the `IsBaseChangeOf` calculus section just after `IsBaseChangeOf.refl`, because
+`exists_descendClassify` — which sits ~7500 lines above this point — needs
+`cancel` to compare two base changes of one datum along `p`-equalised morphisms.
+Nothing about them changed; only their position did. -/
 
 /-- **A relative point of the `j`-line that is LOCALLY GIVEN by an affine
 `j`-theory**: on every affine base mapping to `T`, it restricts to the
