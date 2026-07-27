@@ -46118,6 +46118,26 @@ exists and is used in `Fermat/FLT/Deformations/RepresentationTheory/LocalInertia
 but no instance making a fixed field of `Γ F` a `NumberField` was found
 on 2026-07-27. **That, not the Herbrand quotient and not the idele class
 group, is the gate on this leaf**, and it is the thing to dispatch first.
+
+**GATE RECON, 2026-07-27 (verified against the pin, not asserted): both
+halves of that construction are assembled from EXISTING mathlib, so the
+gate is narrow.** The `NumberField` half is eight lines and was compiled
+green in a scratch: for `H : Subgroup (Γ F)` with `hH : IsOpen ↑H`,
+`Subgroup.isClosed_of_isOpen H hH` makes `H` a `ClosedSubgroup`,
+`InfiniteGalois.fixingSubgroup_fixedField` gives
+`(fixedField H).fixingSubgroup = H`, rewriting that into
+`InfiniteGalois.isOpen_iff_finite` gives
+`FiniteDimensional F (fixedField H)`, and `NumberField.of_module_finite F _`
+concludes `NumberField ↥(fixedField H)` — note `NumberField.of_intermediateField`
+does NOT apply, since the ambient `AlgebraicClosure F` is not a number
+field. For the `Γ E ≅ H` half the pieces are
+`IntermediateField.fixingSubgroupEquiv : fixingSubgroup K ≃* Gal(E/K)`
+(no finiteness hypothesis — the `FiniteDimensional` in the neighbouring
+`subgroupEquivAlgEquiv` comes from the FINITE `fixingSubgroup_fixedField`,
+which the `InfiniteGalois` one replaces) composed with
+`IsAlgClosure.equiv` to move `Gal(AlgebraicClosure F / fixedField H)` to
+`Γ (fixedField H)`. This half was NOT compiled and is the owner's to
+build.
 AXIS SEARCHED: the descent axis as Childress runs it, plus a grep of all
 three trees for the norm and fixed-field machinery; NOT a cohomological
 reproof of 5.2.2.
