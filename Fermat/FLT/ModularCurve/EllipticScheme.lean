@@ -42,7 +42,7 @@ under "Why this is not in `X0.lean`" below.
   which `X0.lean` transports verbatim onto
   `exists_ellipticScheme_of_weierstrass`.
 
-`isProper_projToSpec` and `nonempty_projGroupLaw` are both PROVEN, and so is
+`isProper_projToSpec` is PROVEN, and so is
 `smoothOfRelativeDimension_projToSpec` apart from ONE named leaf: its `hchart`
 step is now fully reduced, and the Jacobian criterion it rests on
 (`jacobianSpan_eq_top`, over an arbitrary commutative ring) is proven here.
@@ -70,8 +70,11 @@ as a PROVEN consequence, stated about the concrete `projGroupLaw E`.  The
 old form quantified over an ARBITRARY `ProjGroupLaw`, which pins nothing
 about `m`, and was therefore provable only through the rigidity theorem;
 the audit is on `exists_projGroupLaw_geomFibreAddEquiv`.  That leaf also
-subsumes `exists_projAdd`, and the two cuts should eventually be merged
-— see the "Relation to `exists_projAdd`" section of its docstring.
+subsumes `exists_projAdd`.
+
+**The two cuts are NOT yet merged** (reconciliation attempted 2026-07-27; see
+the "Relation to `exists_projAdd`" section of that leaf's docstring for the
+obstruction that was found and why `_gl₀` therefore stays).
 
 `geometricallyConnected_projToSpec` itself has **no direct sorry** any more.  Of its
 three former steps `hbc`/`hne`/`hpre`:
@@ -87,7 +90,10 @@ three former steps `hbc`/`hne`/`hpre`:
 * `hbc` remains open as `nonempty_projPullbackIso`; it is base change for `Proj`,
   which exists nowhere at this pin, and its docstring records the intended route.
 
-`nonempty_projGroupLaw` is PROVEN: two of the three data fields of a
+`nonempty_projGroupLaw` has no `sorry` of its own — but it is **REDUCED, NOT
+CLOSED**: its proof runs through `exists_projAdd` and so through the still-open
+`exists_projMul` and `projMul_assoc`, and it is therefore transitively sorried.
+Do not read it as a finished result.  Two of the three data fields of a
 `ProjGroupLaw` are constructed outright in `ProjectiveModel.lean`
 (`projNeg`, the Weierstrass involution through `Proj.map`; `projInfty`,
 the point at infinity through `Proj.fromOfGlobalSections`), and all three
@@ -443,9 +449,14 @@ theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
   exact ⟨m, projMul_assoc E m hcomm hunit hinv, hcomm, hunit, hinv⟩
 
 /-- **The chord–tangent law on the projective Weierstrass model, as
-morphisms of schemes** (PROVEN from `exists_projAdd`) — items 5+6 of
-the routable specification in `exists_ellipticScheme_of_weierstrass`'s
+morphisms of schemes** (REDUCED to `exists_projAdd`, not closed) — items 5+6
+of the routable specification in `exists_ellipticScheme_of_weierstrass`'s
 docstring.
+
+**This declaration carries no `sorry` of its own but is transitively
+sorried**, because `exists_projAdd` is proven from the still-open
+`exists_projMul` and `projMul_assoc`.  It is a reduction, not a result; the
+remaining work is on those two leaves.
 
 The three data fields are supplied as follows.  `m` comes from
 `exists_projAdd`, which is where all the remaining gluing work lives.
@@ -1810,6 +1821,63 @@ the moment this restatement lands.  It costs consumers nothing
 (`nonempty_projGroupLaw` discharges it) and weakens the leaf only by a
 hypothesis that is itself available.  **Delete the argument** once
 `exists_projAdd` is reconciled as above.
+
+### RECONCILIATION ATTEMPTED 2026-07-27 — BLOCKED, and `_gl₀` therefore STAYS
+
+The two cuts were merged into one tree on this date and the end state above
+was attempted.  **It does not compose**, for a structural reason that is
+worth recording because it is not visible from either cut alone.
+
+Meanwhile `exists_projAdd` was itself decomposed (branch `flt-lean-141`) into
+`exists_projMul` — the gluing, which CONSTRUCTS `m` from
+`WeierstrassCurve.Projective.addXYZ` and yields `hcomm`/`hunit`/`hinv` — and
+`projMul_assoc`, which supplies `hassoc` for an ARBITRARY `m` carrying those
+three axioms.  `exists_projAdd` is now PROVEN from the two.  So for
+`exists_projAdd` to *gain* a chord–tangent clause, one of those two leaves
+must supply it, and neither can:
+
+* **`exists_projMul` cannot STATE the clause.**  The clause's `≃+` is an
+  additive equivalence onto `GeomFibrePt`, whose `AddCommGroup` comes from
+  `AbelianSchemeStruct.addCommGroup`, which reads the `add_assoc` field —
+  and `ProjGroupLaw.toAbelianSchemeStruct` feeds that field from `gl.hassoc`.
+  `exists_projMul` deliberately does not have `hassoc`.  So the clause is not
+  even expressible there in `≃+` form.
+* **`projMul_assoc` cannot PROVE the clause.**  It quantifies over an
+  arbitrary `m`, and an arbitrary `m` is exactly what the FALSITY-OF-CUT
+  AUDIT above shows requires the rigidity theorem.  Putting the clause there
+  reintroduces the very trap this leaf was restated to escape.
+
+So the clause needs BOTH the concrete glued `m` (only in `exists_projMul`)
+and `hassoc` (only after `projMul_assoc`), and 141's cut runs transverse to
+exactly that pairing.  The two cuts are individually correct and jointly
+non-composing; that is why this reconciliation is a cut-level decision rather
+than a merge, and it was left to the owners rather than made unilaterally.
+
+**The route that would work**, for whoever takes it: state the clause in a
+`hassoc`-FREE form on `exists_projMul`, replacing the `≃+` by a bare
+equivalence plus the raw morphism identity
+
+    ∃ eqv : (E⁄(AlgebraicClosure ℚ)).Point ≃ GeomFibrePt (projToSpec E) (𝟙 _),
+      (∀ x y, (eqv (x + y)).1 = AbelianSchemeStruct.relPair (eqv x) (eqv y) ≫ m) ∧ …
+
+`relPair` needs only the structure morphism, and `m` is the bare morphism, so
+this is expressible without any `AbelianSchemeStruct`.  `exists_projAdd` can
+then bundle it, and THIS leaf follows: `toAbelianSchemeStruct_add_val` is
+`rfl`, so the `≃+` assembles from the bare `≃` plus that identity once
+`hassoc` is in hand.  *Refuting check for the obstruction as stated*: find an
+`AddCommGroup` on `GeomFibrePt` that does not route through
+`AbelianSchemeStruct.addCommGroup`, or a `toAbelianSchemeStruct` that does not
+consume `gl.hassoc`.
+
+**Consequence for `_gl₀`: it must NOT be deleted yet.**  Checked directly —
+the only term-level consumers of `nonempty_projGroupLaw` in the whole tree are
+`projGroupLaw` and `exists_projGeomFibreAddEquiv` below, and BOTH reach it
+solely by passing it as this `_gl₀`; and the only consumer of
+`exists_projAdd` is `nonempty_projGroupLaw`.  Deleting the argument today
+therefore detaches `nonempty_projGroupLaw`, `exists_projAdd`, `exists_projMul`
+and `projMul_assoc` from the root cone all at once, making four declarations —
+two of them live, owned work — free-floating.  The anchor comes out at the
+same commit that lands the clause, not before.
 
 It is stated OUTSIDE the `open WeierstrassCurve.Projective` section
 above: that namespace carries its own scoped `⁄` notation for
