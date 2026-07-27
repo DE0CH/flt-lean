@@ -10033,15 +10033,319 @@ theorem isReduced_of_smooth_over_rat {C : AlgebraicGeometry.Scheme.{u}}
     (hsmooth : AlgebraicGeometry.Smooth fC) : IsReduced C :=
   sorry
 
-open CategoryTheory AlgebraicGeometry in
+/-- **LEAF B-ii-α — the relative algebraic closure of an essentially-finite-type
+field extension is finite** (SORRY LEAF, new 2026-07-27).
+
+After the decomposition below, this is the **ONLY** open leaf left in LEAF B-ii
+(E. Noether's finiteness theorem): everything else — the reduction to a domain
+via minimal primes, the reduction to the image subalgebra, Noether
+normalization, and the application of `IsIntegralClosure.finite` — is PROVEN
+underneath it in this file.
+
+`Algebra.EssFiniteType K F` is mathlib's "essentially of finite type", and for a
+field extension it is exactly "`F` is a finitely generated field extension of
+`K`" (`IntermediateField.fg_top` / `IntermediateField.essFiniteType_iff`).
+`algebraicClosure K F : IntermediateField K F` is mathlib's RELATIVE algebraic
+closure — the subfield of elements of `F` algebraic over `K`, with
+`algebraicClosure_toSubalgebra : (algebraicClosure K F).toSubalgebra =
+integralClosure K F`.
+
+**Why this is not in mathlib and what the proof is.** Grepping
+`Mathlib/FieldTheory/AlgebraicClosure.lean` (the file defining
+`algebraicClosure`) shows no finiteness statement of any kind, and
+`Algebra.finite_of_essFiniteType_of_isAlgebraic`
+(`Mathlib/FieldTheory/IntermediateField/Adjoin/Algebra.lean:188`) — the closest
+thing — concludes `Module.Finite F E` from `EssFiniteType F E` **for the whole
+extension**, which is not applicable: the content here is precisely that the
+intermediate field `algebraicClosure K F` inherits essential finite type, and an
+intermediate field of a finitely generated extension need NOT be finitely
+generated in general (Nagata). It is the algebraicity that saves it.
+
+The classical argument, with the pieces this pin already provides:
+
+1. Pick a transcendence basis `t : ι → F` of `F` over `K`
+   (`exists_isTranscendenceBasis`); `ι` is finite because
+   `trdeg K F < ℵ₀` (`trdeg_lt_aleph0`, after passing through the finite-type
+   subalgebra that `EssFiniteType` localises).
+2. `L := algebraicClosure K F` is algebraic over `K`, so `t` stays
+   ALGEBRAICALLY INDEPENDENT over `L` — this is exactly
+   `AlgebraicIndependent.extendScalars`
+   (`Mathlib/RingTheory/AlgebraicIndependent/AlgebraicClosure.lean:39`), which
+   takes `[Algebra.IsAlgebraic R S]` and is the load-bearing input.
+3. `F` is algebraic over `K(t)` (`IsTranscendenceBasis.isAlgebraic_field`) and
+   essentially of finite type over it, so `Module.Finite K(t) F` by
+   `Algebra.finite_of_essFiniteType_of_isAlgebraic`. Hence
+   `[L(t) : K(t)] ≤ [F : K(t)] < ∞`.
+4. `[L : K] = [L(t) : K(t)]`: a `K`-linearly independent family in `L` stays
+   `K(t)`-linearly independent, because by step 2 the monomials in `t` are
+   `L`-linearly independent in `F`, so a relation `Σᵢ fᵢ(t) vᵢ = 0` with
+   `fᵢ ∈ K[t]` forces every coefficient of every `fᵢ` to vanish. (This is the
+   linear disjointness of an algebraic extension and a purely transcendental
+   one; `Mathlib/FieldTheory/LinearDisjoint.lean` exists at this pin and is the
+   first place a successor should look for a ready-made form.)
+
+**CHECK THAT WOULD REFUTE THIS "absent from the pin" claim:**
+`grep -n 'theorem\|lemma\|instance\|def ' Mathlib/FieldTheory/AlgebraicClosure.lean`
+lists 26 declarations, none mentioning `Module.Finite`, `FiniteDimensional` or
+`finrank`; and `grep -rn "EssFiniteType" Mathlib/FieldTheory/` returns only
+`SeparablyGenerated.lean`, `IntermediateField/Adjoin/Algebra.lean`,
+`SeparableClosure.lean` and `IntermediateField/Adjoin/Defs.lean`, none of which
+bounds an intermediate field.
+
+Stated over an arbitrary pair of fields rather than at `ℚ`: nothing here is
+special to the base, and stating it generically avoids the concrete-instance
+mismatches that a `ℚ`-specific statement invites. -/
+theorem finiteDimensional_algebraicClosure_of_essFiniteType
+    (K F : Type u) [Field K] [Field F] [Algebra K F]
+    [Algebra.EssFiniteType K F] :
+    FiniteDimensional K (algebraicClosure K F) :=
+  sorry
+
+/-- Transfer of finite generation of a submodule between two base rings whose
+images in the ambient ring `X` are nested: if every element of `X` in the image
+of `S` is already in the image of `R`, then an `S`-submodule and an
+`R`-submodule with the SAME CARRIER are finitely generated together.
+
+This is the workhorse that lets the reductions below change the base ring of an
+integral closure without ever building a linear equivalence between the two
+subtypes `↥(integralClosure R X)` and `↥(integralClosure S X)`, which are
+different types carrying the same set. -/
+theorem fg_of_algebraMap_range_le {R S X : Type u} [CommRing R] [CommRing S] [CommRing X]
+    [Algebra R X] [Algebra S X]
+    (hle : (algebraMap S X).range ≤ (algebraMap R X).range)
+    {N : Submodule S X} {M : Submodule R X}
+    (hcar : (N : Set X) = (M : Set X)) (hN : N.FG) : M.FG := by
+  obtain ⟨T, hT⟩ := hN
+  refine ⟨T, le_antisymm ?_ ?_⟩
+  · rw [Submodule.span_le]
+    intro t ht
+    have h1 : t ∈ N := hT ▸ Submodule.subset_span ht
+    have h2 : t ∈ (N : Set X) := h1
+    rw [hcar] at h2
+    exact h2
+  · have key : ∀ x ∈ N, x ∈ Submodule.span R (T : Set X) := by
+      intro x hxN
+      rw [← hT] at hxN
+      induction hxN using Submodule.span_induction with
+      | mem y hy => exact Submodule.subset_span hy
+      | zero => exact zero_mem _
+      | add a b _ _ ha hb => exact add_mem ha hb
+      | smul c a _ ha =>
+          obtain ⟨r, hr⟩ := hle ⟨c, rfl⟩
+          have hcr : c • a = r • a := by
+            rw [Algebra.smul_def, Algebra.smul_def, hr]
+          rw [hcr]
+          exact Submodule.smul_mem _ _ ha
+    intro x hx
+    refine key x ?_
+    have h2 : x ∈ (M : Set X) := hx
+    rw [← hcar] at h2
+    exact h2
+
+/-- The subalgebra form of `fg_of_algebraMap_range_le`: two subalgebras of `X`
+over different base rings, with the same carrier, are module-finite together as
+soon as the image of the smaller base ring is contained in that of the larger. -/
+theorem module_finite_of_algebraMap_range_le {R S X : Type u} [CommRing R] [CommRing S]
+    [CommRing X] [Algebra R X] [Algebra S X]
+    (hle : (algebraMap S X).range ≤ (algebraMap R X).range)
+    (N : Subalgebra S X) (M : Subalgebra R X)
+    (hcar : (N : Set X) = (M : Set X)) (hN : Module.Finite S N) : Module.Finite R M := by
+  have h1 : (Subalgebra.toSubmodule N).FG := Module.Finite.iff_fg.mp (by exact hN)
+  have h2 : (Subalgebra.toSubmodule M).FG := fg_of_algebraMap_range_le hle (by simpa using hcar) h1
+  exact Module.Finite.iff_fg.mpr h2
+
+/-- **LEAF B-ii, step 4 — Noether's theorem over an integrally closed Noetherian
+base** (PROVEN 2026-07-27, modulo `finiteDimensional_algebraicClosure_of_essFiniteType`).
+
+`A` is a Noetherian, integrally closed domain of characteristic zero and `B` is
+a finite-type `A`-algebra which is a domain containing `A`. Then the integral
+closure of `A` in `B` is a finite `A`-module.
+
+This is where `IsIntegralClosure.finite`
+(`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean:174`) is actually
+applied, and the whole point of the reductions below is to arrive here. The
+proof: pass to `K = Frac A ↪ F = Frac B` (the lift exists because `A ↪ B ↪ F`),
+observe `Algebra.EssFiniteType K F` (a localisation of a finite-type algebra),
+take `L₀ = algebraicClosure K F`, get `FiniteDimensional K L₀` from the leaf
+above, get `Module.Finite A (integralClosure A L₀)` from
+`IsIntegralClosure.finite` (separability is free in characteristic zero via
+`PerfectField.ofCharZero` and `Algebra.IsAlgebraic.isSeparable_of_perfectField`),
+and finally embed `integralClosure A B` into it along `B ↪ F` — every element of
+`B` integral over `A` is integral over `K`, hence lands in `L₀`. -/
+theorem module_finite_integralClosure_of_isIntegrallyClosed
+    (A B : Type u) [CommRing A] [IsDomain A] [IsNoetherianRing A]
+    [IsIntegrallyClosed A] [CharZero A]
+    [CommRing B] [IsDomain B] [Algebra A B] [FaithfulSMul A B]
+    [Algebra.FiniteType A B] :
+    Module.Finite A (integralClosure A B) := by
+  have hAB : Function.Injective (algebraMap A B) := FaithfulSMul.algebraMap_injective A B
+  have hBF : Function.Injective (algebraMap B (FractionRing B)) :=
+    IsFractionRing.injective B (FractionRing B)
+  have hAF : Function.Injective (algebraMap A (FractionRing B)) := by
+    rw [IsScalarTower.algebraMap_eq A B (FractionRing B)]
+    exact hBF.comp hAB
+  letI : Algebra (FractionRing A) (FractionRing B) :=
+    (IsFractionRing.lift (A := A) (K := FractionRing A) hAF).toAlgebra
+  haveI : IsScalarTower A (FractionRing A) (FractionRing B) :=
+    IsScalarTower.of_algebraMap_eq fun x => (IsFractionRing.lift_algebraMap hAF x).symm
+  haveI : Algebra.EssFiniteType B (FractionRing B) :=
+    Algebra.EssFiniteType.of_isLocalization _ (nonZeroDivisors B)
+  haveI : Algebra.EssFiniteType A (FractionRing B) := Algebra.EssFiniteType.comp A B _
+  haveI : Algebra.EssFiniteType (FractionRing A) (FractionRing B) :=
+    Algebra.EssFiniteType.of_comp A _ _
+  haveI : FiniteDimensional (FractionRing A)
+      (algebraicClosure (FractionRing A) (FractionRing B)) :=
+    finiteDimensional_algebraicClosure_of_essFiniteType _ _
+  haveI hCl : Module.Finite A
+      (integralClosure A (algebraicClosure (FractionRing A) (FractionRing B))) :=
+    IsIntegralClosure.finite A (FractionRing A)
+      (algebraicClosure (FractionRing A) (FractionRing B)) _
+  haveI : IsScalarTower A (algebraicClosure (FractionRing A) (FractionRing B))
+      (FractionRing B) :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      simp [IsScalarTower.algebraMap_apply A (FractionRing A) (FractionRing B),
+        IsScalarTower.algebraMap_apply A (FractionRing A)
+          (algebraicClosure (FractionRing A) (FractionRing B))]
+  have hmem1 : ∀ x : (integralClosure A B),
+      algebraMap B (FractionRing B) (x : B) ∈
+        algebraicClosure (FractionRing A) (FractionRing B) := by
+    intro x
+    have h1 : IsIntegral A (algebraMap B (FractionRing B) (x : B)) :=
+      IsIntegral.map (IsScalarTower.toAlgHom A B (FractionRing B)) x.2
+    exact h1.tower_top
+  have hmem2 : ∀ x : (integralClosure A B),
+      (⟨algebraMap B (FractionRing B) (x : B), hmem1 x⟩ :
+        algebraicClosure (FractionRing A) (FractionRing B)) ∈
+      integralClosure A (algebraicClosure (FractionRing A) (FractionRing B)) := by
+    intro x
+    show IsIntegral A _
+    rw [← isIntegral_algebraMap_iff
+      (Subtype.val_injective
+        (p := fun y => y ∈ algebraicClosure (FractionRing A) (FractionRing B)))]
+    exact IsIntegral.map (IsScalarTower.toAlgHom A B (FractionRing B)) x.2
+  refine Module.Finite.of_injective
+    ({ toFun := fun x => ⟨⟨algebraMap B (FractionRing B) (x : B), hmem1 x⟩, hmem2 x⟩
+       map_add' := by intro x y; exact Subtype.ext (Subtype.ext (by push_cast; simp))
+       map_smul' := by
+         intro a x
+         refine Subtype.ext (Subtype.ext ?_)
+         have h1 : (algebraMap A (FractionRing B)) a
+             = ((algebraMap A (algebraicClosure (FractionRing A) (FractionRing B)) a :
+                 algebraicClosure (FractionRing A) (FractionRing B)) : FractionRing B) :=
+           IsScalarTower.algebraMap_apply A _ (FractionRing B) a
+         have h2 : (algebraMap B (FractionRing B)) ((algebraMap A B) a)
+             = (algebraMap A (FractionRing B)) a :=
+           (IsScalarTower.algebraMap_apply A B (FractionRing B) a).symm
+         simp [Algebra.smul_def, h2, h1] } :
+      (integralClosure A B) →ₗ[A]
+        (integralClosure A (algebraicClosure (FractionRing A) (FractionRing B)))) ?_
+  intro x y hxy
+  exact Subtype.ext (hBF (Subtype.ext_iff.mp (Subtype.ext_iff.mp hxy)))
+
+/-- **LEAF B-ii, step 3 — Noether normalization reduces to an integrally closed
+base** (PROVEN 2026-07-27).
+
+`B` is a domain of finite type over `A`, and `A ↪ B`. Noether normalization
+(`exists_finite_inj_algHom_of_fg`, `Mathlib/RingTheory/NoetherNormalization.lean:289`)
+puts `A₀ = MvPolynomial (Fin s) k` under `A` with `A` finite over `A₀`; `A₀` is a
+UFD, hence `IsIntegrallyClosed`, and Noetherian, so
+`module_finite_integralClosure_of_isIntegrallyClosed` applies to it. Since `A` is
+integral over `A₀`, the two integral closures have the SAME CARRIER in `B`
+(`IsIntegral.tower_top` one way, `isIntegral_trans` the other), and
+`module_finite_of_algebraMap_range_le` moves module-finiteness from `A₀` to `A`. -/
+theorem module_finite_integralClosure_of_isDomain_of_faithfulSMul
+    (k A B : Type u) [Field k] [CharZero k] [CommRing A] [CommRing B] [IsDomain B]
+    [Algebra k A] [Algebra k B] [Algebra A B] [IsScalarTower k A B]
+    [Algebra.FiniteType k A] [Algebra.FiniteType A B] [FaithfulSMul A B] :
+    Module.Finite A (integralClosure A B) := by
+  have hAB : Function.Injective (algebraMap A B) := FaithfulSMul.algebraMap_injective A B
+  haveI : Nontrivial A := (algebraMap A B).domain_nontrivial
+  haveI : IsDomain A := Function.Injective.isDomain (algebraMap A B) hAB
+  obtain ⟨s, g, hginj, hgfin⟩ := exists_finite_inj_algHom_of_fg k A
+  letI : Algebra (MvPolynomial (Fin s) k) A := g.toRingHom.toAlgebra
+  haveI : IsScalarTower k (MvPolynomial (Fin s) k) A :=
+    IsScalarTower.of_algebraMap_eq fun x => (g.commutes x).symm
+  haveI hfinA : Module.Finite (MvPolynomial (Fin s) k) A := hgfin
+  letI : Algebra (MvPolynomial (Fin s) k) B :=
+    ((algebraMap A B).comp g.toRingHom).toAlgebra
+  haveI : IsScalarTower (MvPolynomial (Fin s) k) A B :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : FaithfulSMul (MvPolynomial (Fin s) k) B :=
+    (faithfulSMul_iff_algebraMap_injective _ _).2 (hAB.comp hginj)
+  haveI : Algebra.FiniteType (MvPolynomial (Fin s) k) A := Module.Finite.finiteType A
+  haveI : Algebra.FiniteType (MvPolynomial (Fin s) k) B :=
+    Algebra.FiniteType.trans ‹Algebra.FiniteType (MvPolynomial (Fin s) k) A›
+      ‹Algebra.FiniteType A B›
+  refine module_finite_of_algebraMap_range_le (R := A) (S := MvPolynomial (Fin s) k)
+    (X := B) ?_ _ _ ?_
+    (module_finite_integralClosure_of_isIntegrallyClosed (MvPolynomial (Fin s) k) B)
+  · rintro _ ⟨c, rfl⟩
+    exact ⟨g c, rfl⟩
+  · ext x
+    simp only [SetLike.mem_coe, mem_integralClosure_iff]
+    constructor
+    · intro h; exact h.tower_top
+    · intro h
+      exact isIntegral_trans _ h
+
+/-- **LEAF B-ii, step 1' — the case of a domain target, with no injectivity
+assumption on `A → B`** (PROVEN 2026-07-27).
+
+Replace `A` by its image `A'` in `B`. `A'` is a finite-type `k`-subalgebra of the
+domain `B`, so `A' ↪ B` and the previous step applies to it; `A` surjects onto
+`A'`, so `A` and `A'` have the same image in `B` and the same integral closure
+carrier (`A'` is integral over `A` because the map is surjective), and
+`module_finite_of_algebraMap_range_le` transfers the conclusion back to `A`.
+
+Dropping injectivity here is what makes the minimal-primes reduction below work
+at all: `A → B ⧸ 𝔭` is essentially never injective. -/
+theorem module_finite_integralClosure_of_isDomain
+    (k A B : Type u) [Field k] [CharZero k] [CommRing A] [CommRing B] [IsDomain B]
+    [Algebra k A] [Algebra k B] [Algebra A B] [IsScalarTower k A B]
+    [Algebra.FiniteType k A] [Algebra.FiniteType A B] :
+    Module.Finite A (integralClosure A B) := by
+  set f : A →ₐ[k] B := IsScalarTower.toAlgHom k A B
+  set A' : Subalgebra k B := f.range
+  haveI : Algebra.FiniteType k A' :=
+    Algebra.FiniteType.of_surjective f.rangeRestrict f.rangeRestrict_surjective
+  letI : Algebra A A' := f.rangeRestrict.toRingHom.toAlgebra
+  haveI : IsScalarTower A A' B := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower k A' B := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : FaithfulSMul A' B :=
+    (faithfulSMul_iff_algebraMap_injective _ _).2 Subtype.val_injective
+  haveI : Algebra.FiniteType A' B := Algebra.FiniteType.of_restrictScalars_finiteType A A' B
+  haveI : Algebra.IsIntegral A A' :=
+    Algebra.isIntegral_of_surjective f.rangeRestrict_surjective
+  refine module_finite_of_algebraMap_range_le (R := A) (S := A') (X := B) ?_ _ _ ?_
+    (module_finite_integralClosure_of_isDomain_of_faithfulSMul k A' B)
+  · rintro _ ⟨c, rfl⟩
+    exact ⟨(f.rangeRestrict_surjective c).choose,
+      congrArg Subtype.val (f.rangeRestrict_surjective c).choose_spec⟩
+  · ext x
+    simp only [SetLike.mem_coe, mem_integralClosure_iff]
+    exact ⟨fun h => isIntegral_trans _ h, fun h => h.tower_top⟩
+
 /-- **LEAF B-ii — E. Noether's finiteness theorem for the integral closure**
-(SORRY LEAF, new 2026-07-27). This is the mathematical content of LEAF B,
-reduced to pure commutative algebra with every scheme gone.
+(PROVEN 2026-07-27 modulo the single leaf
+`finiteDimensional_algebraicClosure_of_essFiniteType` above). This is the
+mathematical content of LEAF B, reduced to pure commutative algebra with every
+scheme gone.
 
 `A` is a finite-type algebra over a field `k` of characteristic `0`, `B` is a
 REDUCED finite-type `A`-algebra. Then the integral closure of `A` in `B` is a
 finite `A`-module. Equivalently (Stacks 0335, specialised): a finite-type
 algebra over a field is NAGATA.
+
+**STATUS 2026-07-27: this theorem is PROVEN here.** Its proof is the assembly of
+the three steps stated and proven immediately above, and the ONLY remaining
+mathematical input is the single leaf
+`finiteDimensional_algebraicClosure_of_essFiniteType` (LEAF B-ii-α), which is
+consumed by `module_finite_integralClosure_of_isIntegrallyClosed`. A successor
+should go there and nowhere else in this cluster.
+
+The proof recorded below is the one that was carried out, so the plan and the
+code agree; step 1 (the minimal-primes reduction) is the body of THIS theorem,
+steps 2–4 are the three lemmas above, and step 2's field theory is the leaf.
 
 **CORRECTION TO THE 2026-07-27 CUT-OBSTRUCTION AUDIT BELOW.** That audit
 records that `IsIntegralClosure.finite` "does not apply", and it is right that
@@ -10086,8 +10390,43 @@ theorem module_finite_integralClosure_of_finiteType
     (k A B : Type u) [Field k] [CharZero k] [CommRing A] [CommRing B]
     [Algebra k A] [Algebra k B] [Algebra A B] [IsScalarTower k A B]
     [Algebra.FiniteType k A] [Algebra.FiniteType A B] [IsReduced B] :
-    Module.Finite A (integralClosure A B) :=
-  sorry
+    Module.Finite A (integralClosure A B) := by
+  haveI : Algebra.FiniteType k B := Algebra.FiniteType.trans ‹Algebra.FiniteType k A› ‹_›
+  haveI : IsNoetherianRing A := Algebra.FiniteType.isNoetherianRing k A
+  haveI : IsNoetherianRing B := Algebra.FiniteType.isNoetherianRing k B
+  haveI : Fintype (minimalPrimes B) := (minimalPrimes.finite_of_isNoetherianRing B).fintype
+  have hp : ∀ p : minimalPrimes B, ((p : Ideal B)).IsPrime := fun p => p.2.1.1
+  have key : ∀ p : minimalPrimes B,
+      Module.Finite A (integralClosure A (B ⧸ (p : Ideal B))) := by
+    intro p
+    haveI := hp p
+    haveI : IsDomain (B ⧸ (p : Ideal B)) := Ideal.Quotient.isDomain _
+    haveI : Algebra.FiniteType A (B ⧸ (p : Ideal B)) :=
+      Algebra.FiniteType.of_surjective
+        (Ideal.Quotient.mkₐ A (p : Ideal B)) Ideal.Quotient.mk_surjective
+    exact module_finite_integralClosure_of_isDomain k A (B ⧸ (p : Ideal B))
+  haveI := key
+  refine Module.Finite.of_injective
+    (LinearMap.pi (fun p : minimalPrimes B =>
+      (AlgHom.codRestrict
+        ((Ideal.Quotient.mkₐ A (p : Ideal B)).comp (integralClosure A B).val)
+        (integralClosure A (B ⧸ (p : Ideal B)))
+        (fun x => by
+          show IsIntegral A _
+          exact IsIntegral.map (Ideal.Quotient.mkₐ A (p : Ideal B)) x.2)).toLinearMap)) ?_
+  intro x y hxy
+  have h : ∀ p : minimalPrimes B,
+      Ideal.Quotient.mk (p : Ideal B) (x : B) = Ideal.Quotient.mk (p : Ideal B) (y : B) := by
+    intro p
+    exact congrArg Subtype.val (congrFun hxy p)
+  have hmem : (x : B) - (y : B) ∈ sInf (minimalPrimes B) := by
+    rw [Submodule.mem_sInf]
+    rintro q hq
+    have := h ⟨q, hq⟩
+    rwa [← sub_eq_zero, ← map_sub, Ideal.Quotient.eq_zero_iff_mem] at this
+  rw [Ideal.sInf_minimalPrimes] at hmem
+  rw [show (⊥ : Ideal B).radical = nilradical B from rfl, nilradical_eq_zero] at hmem
+  exact Subtype.ext (sub_eq_zero.mp (by simpa using hmem))
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF B-iii — globalising Noether's theorem over one affine open of the
