@@ -23922,9 +23922,241 @@ theorem natCard_mem_pow_decompCard (CF : Type) [Field CF] [NumberField CF]
           Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card + 1) :=
   sorry
 
-/-- **STICKELBERGER FOR GAUSS SUMS — THE LOWER BOUND ONLY** (SORRY LEAF,
-cut 2026-07-27 out of `exists_gaussSumPow_of_jacobiSum` below, which is
-now PROVEN over it and `natCard_mem_pow_decompCard`).
+/-- **A FINITE FIELD HAS A PRIMITIVE ADDITIVE CHARACTER INTO ANY
+ALGEBRAICALLY CLOSED FIELD OF CHARACTERISTIC ZERO** (PROVEN 2026-07-27;
+pure mathlib repackaging, no arithmetic input).
+
+Mathlib's `AddChar.FiniteField.primitiveChar F K h` lands not in `K` but
+in `CyclotomicField n K` — that is what the `PrimitiveAddChar` structure
+records. When `K` is ALGEBRAICALLY CLOSED that intermediate extension is
+superfluous: `CyclotomicField n K` is the splitting field of
+`cyclotomic n K`, hence finite-dimensional and therefore algebraic over
+`K`, so `IsAlgClosed.lift` retracts it into `K`; and a primitive
+character stays primitive under composition with an INJECTIVE monoid hom
+(`AddChar.IsPrimitive.compMulHom_of_isPrimitive`), which a field
+homomorphism is.
+
+This is step 1 of the Gauss-sum roadmap on
+`exists_gaussSumPow_lowerBound_of_jacobiSum` below, in the only form the
+rest of the development needs: it removes the compositum from the
+INTERFACE, so every statement below can name a single ambient field
+`AlgebraicClosure CF` instead of quantifying over an unspecified
+extension. (Mathematically `L = CF(ζ_ℓ)` is still where the Gauss sum
+lives; it is now merely a subfield of `AlgebraicClosure CF` that no
+statement has to mention.)
+
+The `CharZero K` hypothesis is used only to get `ringChar K ≠ ringChar F`
+and the `IsCyclotomicExtension` instance; it holds for every ambient
+field arising here, `F` being a residue field of a number ring. -/
+theorem exists_isPrimitive_addChar_of_isAlgClosed (F : Type*) [Field F] [Finite F]
+    (K : Type*) [Field K] [IsAlgClosed K] [CharZero K] :
+    ∃ ψ : AddChar F K, ψ.IsPrimitive := by
+  haveI : Fact (Nat.Prime (ringChar F)) := ⟨CharP.char_is_prime F _⟩
+  have h : ringChar K ≠ ringChar F := by
+    rw [ringChar.eq_zero]
+    exact fun hc => (Fact.out (p := Nat.Prime (ringChar F))).ne_zero hc.symm
+  let pc := AddChar.FiniteField.primitiveChar F K h
+  haveI : FiniteDimensional K (CyclotomicField pc.n K) :=
+    (inferInstance : FiniteDimensional K (Polynomial.cyclotomic (pc.n : ℕ) K).SplittingField)
+  haveI : Algebra.IsAlgebraic K (CyclotomicField pc.n K) := Algebra.IsAlgebraic.of_finite _ _
+  let g : CyclotomicField pc.n K →ₐ[K] K := IsAlgClosed.lift
+  refine ⟨((g : CyclotomicField pc.n K →+* K) : CyclotomicField pc.n K →* K).compAddChar pc.char,
+    pc.prim.compMulHom_of_isPrimitive ?_⟩
+  exact (g : CyclotomicField pc.n K →+* K).injective
+
+/-- **THE AMBIENT FIELD FOR THE GAUSS SUMS: `𝓞 CF ↪ AlgebraicClosure CF`**
+(2026-07-27).
+
+The Gauss sum `g(χᵃ)` does not live in `𝓞 CF` — it lives in the
+compositum `CF(ζ_ℓ)`. Rather than build that compositum into every
+statement (a prime above `q`, its ramification index, the Teichmüller
+character…), the cut below fixes ONE ambient field, `AlgebraicClosure CF`,
+into which every finite extension of `CF` embeds, and states the descent
+`g(χᵃ)^p ∈ 𝓞 CF` as an equation along THIS map.
+
+This is a `def` rather than an `abbrev` so that the two leaves below and
+their consumer all mention the same term; `RingHom.comp` of the two
+canonical inclusions is injective because both are
+(`IsFractionRing.injective` and "a hom out of a field is injective"). -/
+noncomputable def ringOfIntegersToAlgebraicClosure (CF : Type) [Field CF] [NumberField CF] :
+    𝓞 CF →+* AlgebraicClosure CF :=
+  (algebraMap CF (AlgebraicClosure CF)).comp (algebraMap (𝓞 CF) CF)
+
+/-- `ringOfIntegersToAlgebraicClosure` is injective (PROVEN 2026-07-27):
+the composite of `𝓞 CF ↪ CF` (`IsFractionRing.injective`) and the
+algebra map of a field into its algebraic closure. This is what lets the
+consumer below cancel the map from both sides of an identity in
+`AlgebraicClosure CF` and land back in `𝓞 CF`. -/
+theorem ringOfIntegersToAlgebraicClosure_injective (CF : Type) [Field CF] [NumberField CF] :
+    Function.Injective (ringOfIntegersToAlgebraicClosure CF) :=
+  (algebraMap CF (AlgebraicClosure CF)).injective.comp
+    (IsFractionRing.injective (𝓞 CF) CF)
+
+/-- **DESCENT OF `g(χᵃ)^p` TO `𝓞 CF`** (SORRY LEAF, cut 2026-07-27 out of
+`exists_gaussSumPow_lowerBound_of_jacobiSum` below; steps 1–2 of that
+leaf's roadmap, with NO valuation content whatever).
+
+For a primitive additive character `ψ` of `F = 𝓞 CF ⧸ q` with values in
+`AlgebraicClosure CF`, the `p`-th power of the Gauss sum
+`g(χᵃ) = ∑_{x} χᵃ(x)·ψ(x)` lies in the image of `𝓞 CF`.
+
+**Why it is true, and what a prover has to do.** Two facts, and nothing
+about valuations:
+
+* *Integrality.* `g(χᵃ)` is a `ℤ`-linear combination of roots of unity —
+  the values of `χ` are `p`-th roots of unity in `𝓞 CF` and the values
+  of `ψ` are `ℓ`-th roots of unity — so it is integral over `ℤ`.
+* *Galois invariance.* For `σ ∈ Aut(AlgebraicClosure CF / CF)`, `σ`
+  permutes `μ_ℓ` by `z ↦ z^j` for some `j` prime to `ℓ`, so `σ ∘ ψ` is
+  the shifted character `AddChar.mulShift ψ (j : F)`; hence
+  `σ(g(χᵃ)) = χᵃ(j)⁻¹ · g(χᵃ)` by mathlib's `gaussSum_mulShift`, and
+  `χᵃ(j)^p = 1` because `χ` is `p`-torsion (`hχp`). So `g(χᵃ)^p` is
+  FIXED by every `σ`, hence lies in `CF`; being also integral, it lies
+  in `𝓞 CF`.
+
+That is the whole of the classical "the Gauss sum's `p`-th power
+descends", and it is the reason the parent statement can be written
+entirely inside `𝓞 CF`. Note `hχcong` and `hpq` are NOT needed for this
+leaf — they are carried only so that the signature matches its sibling
+and its consumer.
+
+**FAITHFULNESS.** The conclusion is an EXISTENCE of a function `G`, and
+existence is exactly the right strength: the element is unique (the map
+is injective), but pinning it by a formula would drag the compositum
+back into the statement, which is what this cut exists to avoid. -/
+theorem exists_gaussSumPow_descent (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
+    (ψ : AddChar (𝓞 CF ⧸ q) (AlgebraicClosure CF)) (hψ : ψ.IsPrimitive) :
+    ∃ G : ℕ → 𝓞 CF, ∀ a : ℕ,
+      ringOfIntegersToAlgebraicClosure CF (G a)
+        = gaussSum ((χ ^ a).ringHomComp (ringOfIntegersToAlgebraicClosure CF)) ψ ^ p :=
+  sorry
+
+/-- **STICKELBERGER'S CONGRUENCE, AS A ONE-SIDED VALUATION BOUND** (SORRY
+LEAF, cut 2026-07-27 out of `exists_gaussSumPow_lowerBound_of_jacobiSum`
+below — **this is the one genuinely deep node of the whole Gauss-sum
+route**, step 3–4 of that leaf's roadmap).
+
+Given `y ∈ 𝓞 CF` with `y = g(χᵃ)^p` (the descent supplied by
+`exists_gaussSumPow_descent` above),
+
+  `v_q(y) ≥ N a := ∑_{u ∈ D} ⟨−a·u⁻¹⟩_p`,
+
+`D` the decomposition group of `q` inside `Gal(CF/ℚ) ≅ (ℤ/p)ˣ` and
+`⟨x⟩ := (x : ZMod p).val`.
+
+**The mathematics.** With `ℓ` the rational prime under `q`,
+`f := #D` the residue degree, `d := (ℓ^f − 1)/p`, `ω` the Teichmüller
+character of `F` and `π := ζ_ℓ − 1` (a uniformiser at a prime `𝒬 ∣ q` of
+`CF(ζ_ℓ)`, with `e(𝒬/q) = ℓ − 1`), Stickelberger's congruence
+`g(ω^{−k}) ≡ −π^{s_ℓ(k)}/γ(k) (mod 𝒬^{s_ℓ(k)+1})` gives
+`v_𝒬(g(ω^{−k})) = s_ℓ(k)`, the base-`ℓ` digit sum. Since `χ = ω^d`, the
+classical digit identity `s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f} ⟨mℓ^i⟩_p`
+and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF` give, after multiplying by `p`,
+
+  `v_q(g(χᵃ)^p) = ∑_{i<f} ⟨−a·ℓ^i⟩_p = ∑_{u ∈ D} ⟨−a·u⟩_p`,
+
+the last step because `D` is generated by the Frobenius `ℓ` and has
+order `f`. Summing `⟨−a·u⟩` and `⟨−a·u⁻¹⟩` over the GROUP `D` gives the
+same number, so the `u⁻¹` written below (matching the parent's carry
+predicate) is not a different normalisation.
+
+**ONLY THE LOWER BOUND IS ASKED FOR, AND THAT IS THE POINT.** The
+matching `∉ q^{N a + 1}` is derived for free downstream, in
+`exists_gaussSumPow_of_jacobiSum`, from the reflection identity together
+with `natCard_mem_pow_decompCard` — see that theorem's docstring. A
+formalisation of the congruence therefore never has to track the unit
+`γ(k)`, which is where the upper bound would otherwise cost a full
+Gauss-sum-of-the-Teichmüller-character theory.
+
+**REFERENCES**: Ireland–Rosen, *A Classical Introduction to Modern
+Number Theory*, ch. 14 §3; Washington, *Cyclotomic Fields* §6.1–6.2;
+Lang, *Cyclotomic Fields* ch. 1. None of this is in mathlib on this pin
+(`Mathlib/NumberTheory/GaussSum.lean` has only `gaussSum_mulShift`,
+`gaussSum_mul_gaussSum_eq_card`, `gaussSum_sq`, `gaussSum_frob`) nor in
+`~/cs/FLT` (surveyed 2026-07-26, re-checked 2026-07-27); there is no
+Teichmüller character anywhere in the pin. A theory build is expected
+here.
+
+**INDEPENDENCE OF `ψ`.** The statement quantifies over EVERY primitive
+`ψ`, which is not a strengthening: a different primitive character is
+`AddChar.mulShift ψ c` for a unit `c`, which multiplies `g(χᵃ)` by
+`χᵃ(c)⁻¹` — a `p`-th root of unity, invisible after raising to the `p`-th
+power. So the hypothesis `hy` determines `y` regardless of `ψ`.
+
+**THREE EXPLICIT VERIFICATIONS OF THE NORMALISATION** (2026-07-27,
+closed form, not sampled — a wrong sign would make this leaf FALSE
+rather than merely hard):
+
+* `p = 3`, `ℓ = 2`, `f = 2`, `F = 𝔽₄`, `d = 1`: `g(χ) = 1 − ζ₃ − ζ₃² = 2`,
+  so `G 1 = 8` and `v_q(8) = 3` (`2` is inert in `ℤ[ζ₃]`); the formula
+  gives `N 1 = ⟨−1⟩ + ⟨−2⟩ = 2 + 1 = 3`. ✓
+* `p = 3`, `ℓ = 7`, `f = 1`, `d = 2`: `g(χ)³ = 7·J(χ,χ)` with
+  `v_q(7) = v_q(J) = 1`, so `v_q(G 1) = 2 = ⟨−1⟩_3`. ✓ This is the case
+  that pins the `e = ℓ − 1` factor.
+* `p = 5`, `ℓ = 11`, `f = 1`, `d = 2`: `N a = 5 − a`, and
+  `v_q(G a) = 5·s_11(2⟨−a⟩)/10 = 5 − a`. ✓ -/
+theorem gaussSumPow_mem_pow_decompVal (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
+    (ψ : AddChar (𝓞 CF ⧸ q) (AlgebraicClosure CF)) (hψ : ψ.IsPrimitive)
+    (a : ℕ) (ha : ¬ (p ∣ a)) (y : 𝓞 CF)
+    (hy : ringOfIntegersToAlgebraicClosure CF y
+      = gaussSum ((χ ^ a).ringHomComp (ringOfIntegersToAlgebraicClosure CF)) ψ ^ p) :
+    y ∈ q ^ (∑ u ∈ Finset.univ.filter (fun u : (ZMod p)ˣ =>
+        Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q),
+        ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) :=
+  sorry
+
+/-- **STICKELBERGER FOR GAUSS SUMS — THE LOWER BOUND ONLY** (**PROVEN**
+2026-07-27 over `exists_gaussSumPow_descent`,
+`gaussSumPow_mem_pow_decompVal` and
+`exists_isPrimitive_addChar_of_isAlgClosed` above; cut 2026-07-27 out of
+`exists_gaussSumPow_of_jacobiSum` below, which is in turn PROVEN over it
+and `natCard_mem_pow_decompCard`).
+
+**WHAT IS PROVEN HERE AND WHAT MOVED OUT (recut 2026-07-27).** The three
+clauses below are no longer one leaf. The ambient field is now fixed
+once and for all as `AlgebraicClosure CF` — every finite extension of
+`CF`, `L = CF(ζ_ℓ)` included, embeds in it, so the compositum need never
+be NAMED by a statement — and against that ambient field:
+
+* the primitive additive character `ψ` is supplied by
+  `exists_isPrimitive_addChar_of_isAlgClosed` (PROVEN, mathlib
+  repackaging);
+* the descent `g(χᵃ)^p ∈ 𝓞 CF` is the leaf `exists_gaussSumPow_descent`
+  (steps 1–2 of the roadmap below: integrality plus Galois invariance;
+  **no valuations**);
+* clauses **(i)** and **(ii)** — multiplicativity and reflection — are
+  PROVEN HERE, directly from mathlib's `jacobiSum_mul_nontrivial` and
+  `gaussSum_mul_gaussSum_eq_card` raised to the `p`-th power, the
+  character values `χᵃ(±1)` being killed by that power since `χ` is
+  `p`-torsion;
+* clause **(iii)** — the valuation lower bound — is the leaf
+  `gaussSumPow_mem_pow_decompVal` (steps 3–4: Stickelberger's
+  congruence). **That is the only genuinely deep node left on this
+  route.**
+
+One elaboration trap is worth recording, since it cost a cycle and will
+recur for anyone else applying a FIELD lemma inside this statement: `q`
+is only known maximal *inside* the proof, so the statement's
+`MulChar (𝓞 CF ⧸ q) (𝓞 CF)` carries the `CommRing`-derived
+`CommMonoidWithZero` instance while mathlib's Gauss/Jacobi lemmas want
+the `Field`-derived one. `haveI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q`
+leaves the two unrelated and every application fails with an "application
+type mismatch" on `ψ`; **`letI` works**, because the instance stays
+unfolded and the defeq check can see through it.
 
 `G a` is `g(χᵃ)^p`, the `p`-th power of the Gauss sum of `χᵃ` against a
 primitive additive character of `F = 𝓞 CF ⧸ q`. The Gauss sum itself
@@ -23976,25 +24208,31 @@ now carries only
   so the `u⁻¹` written below (matching the parent's carry predicate) is
   not a different normalisation.
 
-**FOUR SUB-STEPS FOR WHOEVER TAKES THIS LEAF**, in dependency order —
-none of them exists in mathlib or in `~/cs/FLT` (surveyed 2026-07-26,
-re-checked 2026-07-27: `Mathlib/NumberTheory/GaussSum.lean` has only
+**THE FOUR-STEP ROADMAP, AND WHERE EACH STEP NOW LIVES** — none of these
+exists in mathlib or in `~/cs/FLT` (surveyed 2026-07-26, re-checked
+2026-07-27: `Mathlib/NumberTheory/GaussSum.lean` has only
 `gaussSum_mulShift`, `gaussSum_mul_gaussSum_eq_card`, `gaussSum_sq`,
 `gaussSum_frob`, and there is no Teichmüller character anywhere in the
-pin). Only step 3 is needed for clause (iii); steps 1–2 are shared
-scaffolding that clauses (i) and (ii) also need:
+pin):
 
 1. the compositum `L = CF(ζ_ℓ)`, a prime `𝒬 ∣ q` of `𝓞 L` with
    `e(𝒬/q) = ℓ − 1`, and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF`; plus the DESCENT
    `g(χᵃ)^p ∈ 𝓞 CF`, which is `gaussSum_mulShift` (`σ_t(g) =
-   χᵃ(t)⁻¹ g`) together with `Gal(L/CF)`-invariance;
+   χᵃ(t)⁻¹ g`) together with `Gal(L/CF)`-invariance
+   — **now the leaf `exists_gaussSumPow_descent`**, with the compositum
+   no longer required to be named (it is a subfield of the fixed ambient
+   `AlgebraicClosure CF`), so only the descent itself is owed;
 2. the Teichmüller character `ω : Fˣ → 𝓞 L` with `ω(x) ≡ x (mod 𝒬)`,
-   and the identification `χ = ω^d`;
+   and the identification `χ = ω^d`
+   — **needed only by step 3**, hence absorbed into
+   `gaussSumPow_mem_pow_decompVal`;
 3. **Stickelberger's congruence** `v_𝒬(g(ω^{−k})) = s_ℓ(k)` — the deep
    step (Ireland–Rosen ch. 14 §3; Washington §6.1–6.2; Lang,
-   *Cyclotomic Fields* ch. 1);
+   *Cyclotomic Fields* ch. 1)
+   — **the leaf `gaussSumPow_mem_pow_decompVal`**;
 4. the digit identity `s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f}⟨mℓ^i⟩_p`
-   and `D = ⟨ℓ⟩` (decomposition group generated by Frobenius).
+   and `D = ⟨ℓ⟩` (decomposition group generated by Frobenius)
+   — also inside `gaussSumPow_mem_pow_decompVal`.
 
 **CONSISTENCY CHECK ON THE NORMALISATION** (this is what fixes the sign
 and rules out an off-by-`⟨a⟩` error): `g(χᵃ)·g(χ^{−a}) = χᵃ(−1)·#F`, so
@@ -24051,8 +24289,73 @@ theorem exists_gaussSumPow_lowerBound_of_jacobiSum (CF : Type) [Field CF] [Numbe
       (∀ a : ℕ, ¬ (p ∣ a) →
           G a ∈ q ^ (∑ u ∈ Finset.univ.filter (fun u : (ZMod p)ˣ =>
               Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q),
-              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)) :=
-  sorry
+              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)) := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI hmax : q.IsMaximal := hq.isMaximal hq0
+  -- `letI`, not `haveI`: the field structure has to stay unfolded, or the `CommRing`-derived
+  -- instances in the STATEMENT (which was elaborated before `q` was known maximal) will not
+  -- unify with the `Field`-derived ones that mathlib's Gauss/Jacobi-sum lemmas require.
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  obtain ⟨ψ, hψ⟩ :=
+    exists_isPrimitive_addChar_of_isAlgClosed (𝓞 CF ⧸ q) (AlgebraicClosure CF)
+  obtain ⟨G, hG⟩ :=
+    exists_gaussSumPow_descent CF hq hq0 hpq χ hχ1 hχp hχcong ψ hψ
+  set f := ringOfIntegersToAlgebraicClosure CF with hf
+  have hfinj : Function.Injective f := ringOfIntegersToAlgebraicClosure_injective CF
+  -- `χ` has order exactly `p`, so `χ ^ m ≠ 1` whenever `p ∤ m`.
+  have hχpow : χ ^ p = 1 := by
+    refine MulChar.eq_one_iff.mpr fun a => ?_
+    rw [MulChar.pow_apply_coe]
+    exact hχp _ a.ne_zero
+  have hpow_ne_one : ∀ m : ℕ, ¬ (p ∣ m) → χ ^ m ≠ 1 := by
+    intro m hm hcon
+    have hord : orderOf χ ∣ p := orderOf_dvd_of_pow_eq_one hχpow
+    have hordp : orderOf χ = p := by
+      rcases (Nat.Prime.eq_one_or_self_of_dvd hp.out _ hord) with h | h
+      · exact absurd (orderOf_eq_one_iff.mp h) hχ1
+      · exact h
+    exact hm (hordp ▸ orderOf_dvd_of_pow_eq_one hcon)
+  have hneg : ((-1 : 𝓞 CF ⧸ q)) ≠ 0 := neg_ne_zero.mpr one_ne_zero
+  refine ⟨G, ?_, ?_, ?_⟩
+  · -- clause (i): multiplicativity, `jacobiSum_mul_nontrivial` raised to the `p`-th power
+    intro a c ha hc hac
+    have hne : ((χ ^ a).ringHomComp f) * ((χ ^ c).ringHomComp f) ≠ 1 := by
+      rw [← MulChar.ringHomComp_mul, MulChar.ringHomComp_ne_one_iff hfinj, ← pow_add]
+      exact hpow_ne_one _ hac
+    have hkey := jacobiSum_mul_nontrivial hne ψ
+    rw [← MulChar.ringHomComp_mul, ← pow_add, jacobiSum_ringHomComp] at hkey
+    apply hfinj
+    simp only [map_mul, map_pow, hG]
+    rw [← mul_pow, ← mul_pow, ← hkey]
+    ring
+  · -- clause (ii): reflection, `gaussSum_mul_gaussSum_eq_card` raised to the `p`-th power
+    intro a b ha hab
+    have hb0 : b ≠ 0 := by rintro rfl; exact ha (by simpa using hab)
+    have hab1 : χ ^ a * χ ^ b = 1 := by
+      rw [← pow_add]
+      obtain ⟨k, hk⟩ := hab
+      rw [hk, pow_mul, hχpow, one_pow]
+    have hbinv : ((χ ^ a))⁻¹ = χ ^ b := inv_eq_of_mul_eq_one_right hab1
+    have hχa : (χ ^ a).ringHomComp f ≠ 1 := by
+      rw [MulChar.ringHomComp_ne_one_iff hfinj]; exact hpow_ne_one a ha
+    have h1 := gaussSum_mul_gaussSum_eq_card hχa hψ
+    have h2 := mul_gaussSum_inv_eq_gaussSum ((χ ^ a).ringHomComp f)⁻¹ ψ
+    have hinv : ((χ ^ a).ringHomComp f)⁻¹ = (χ ^ b).ringHomComp f := by
+      rw [MulChar.ringHomComp_inv, hbinv]
+    -- the character value `χᵃ(−1)` is killed by the `p`-th power, `χ` being `p`-torsion
+    have hunit : (((χ ^ a).ringHomComp f)⁻¹ (-1)) ^ p = 1 := by
+      rw [hinv, MulChar.ringHomComp_apply, ← map_pow, MulChar.pow_apply' _ hb0, ← pow_mul,
+        mul_comm b p, pow_mul, hχp _ hneg, one_pow, map_one]
+    have hmain : gaussSum ((χ ^ a).ringHomComp f) ψ * gaussSum ((χ ^ b).ringHomComp f) ψ
+        = ((χ ^ a).ringHomComp f)⁻¹ (-1) * (Fintype.card (𝓞 CF ⧸ q) : AlgebraicClosure CF) := by
+      rw [← hinv, ← h2, mul_left_comm, h1]
+    apply hfinj
+    simp only [map_mul, map_pow, hG, map_natCast]
+    rw [← mul_pow, hmain, mul_pow, hunit, one_mul, Nat.card_eq_fintype_card]
+  · -- clause (iii): Stickelberger's lower bound, the one deep leaf
+    intro a ha
+    exact gaussSumPow_mem_pow_decompVal CF hq hq0 hpq χ hχ1 hχp hχcong ψ hψ a ha (G a) (hG a)
 
 /-- **STICKELBERGER FOR GAUSS SUMS, PACKAGED INSIDE `𝓞 CF`** (PROVEN
 2026-07-27 over `exists_gaussSumPow_lowerBound_of_jacobiSum` and
