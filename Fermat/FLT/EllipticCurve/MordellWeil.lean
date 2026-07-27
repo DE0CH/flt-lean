@@ -407,22 +407,21 @@ and `c` of the halving carry no arithmetic, and `halving_norm_relation`,
     e²·(p'⁴ − 128p'e'⁶ + 256e'⁸)  =  4·p·e'²·n'² ,
 
 i.e. `p/e² = F(p', e'²)/(4e'²·G(p', e'²))` for the binary forms
-`F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`. So the THREE
+`F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`. So the TWO
 open statements at level `11` are now:
 
 * `exists_halving_witness` — the `2`-descent over `ℤ[s]` (PID + units + the
   local conditions killing the nontrivial classes);
-* `forms_archimedean` — the ONE analytic ingredient of the height bound:
-  `max(|X|, Y)⁴ ≤ 4·max(|F(X, Y)|, |4Y·G(X, Y)|)` for `Y > 0`. Two integer
-  variables, two explicit quartics, nothing else. `height_drop_or_small` is
-  PROVEN over it, the resultant divisibility (`forms_common_dvd`) and the
-  coprimality bookkeeping (`reduced_fraction`) both being PROVEN;
 * `smallPoints` — the finite check `|p| ≤ 512`, `1 ≤ e ≤ 22` that
   `height_drop_or_small` leaves behind.
 
-The last two are the two genuinely different inputs — an inequality about two
-explicit binary quartics, and a bounded search — and are attackable
-independently. -/
+`height_drop_or_small` itself is PROVEN, over three proven ingredients: the
+coprimality bookkeeping (`reduced_fraction`), the resultant divisibility
+(`forms_common_dvd`, two integral Bezout identities) and the archimedean bound
+(`forms_archimedean`, an exact factorisation tight at `X = 4Y`). So the ENTIRE
+height half of level `11` is closed except for the finite search, and the two
+remaining statements are as different as they could be: a `2`-descent over a
+cubic field, and a bounded integer search. -/
 
 namespace MazurLevel11
 
@@ -611,50 +610,122 @@ theorem reduced_fraction {p e A B : ℤ} (he : 0 < e) (hcop : IsCoprime p e) (hB
   · refine mul_left_cancel₀ (ne_of_gt he2) ?_
     rw [hrel, hk]; ring
 
-/-- **THE ARCHIMEDEAN LEAF at level `11`** (sorry leaf, 2026-07-27): the two
-binary quartics `F` and `4Y·G` are not both small,
+/-- **THE ARCHIMEDEAN INGREDIENT** (PROVEN 2026-07-27): the two binary quartics
+`F` and `4Y·G` are never both small,
 
     max(|X|, Y)⁴  ≤  4·max(|F(X, Y)|, |4Y·G(X, Y)|)     for `Y > 0`,
 
 with `F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`.
 
-**THIS IS NOW THE WHOLE ANALYTIC CONTENT OF THE LEVEL-`11` HEIGHT BOUND.**
-Everything else in `height_drop_or_small` — the coprimality bookkeeping and the
-resultant divisibility — is PROVEN above. It is a statement about two explicit
-polynomials in two integer variables and nothing else: no elliptic curves, no
-coprimality, no heights.
+This was the last analytic content of the level-`11` height bound, and it is a
+statement about two explicit polynomials in two integer variables: no elliptic
+curves, no coprimality, no heights.
 
-**IT IS TIGHT, AND THAT IS THE ONLY DIFFICULTY.** Equality holds at
-`(X, Y) = (4, 1)`: there `F = 256 − 512 + 256 = 0` and `4Y·G = 4·16 = 64`, so
-both sides are `256`. So no slack whatsoever is available at `t := X/Y = 4`, and
-a proof that rounds anywhere near there will fail. (This is why
-`height_drop_or_small` is stated at `512` rather than `398`: replacing the `max`
-by a sum costs exactly the factor `2` that this equality forbids recovering.)
+**IT IS TIGHT.** Equality holds at `(X, Y) = (4, 1)`: there `F = 256 − 512 +
+256 = 0` and `4Y·G = 4·16 = 64`, so both sides are `256`. So nothing may be
+rounded near `t := X/Y = 4`. (This is also why `height_drop_or_small` is stated
+at `512` rather than `398`: replacing the `max` by a sum costs exactly the
+factor `2` that this equality forbids recovering.)
 
-HOW TO PROVE IT — a four-way split on `t = X/Y`, with every crossover computed.
-Write `f(t) = t⁴ − 128t + 256` and `g(t) = t³ − 4t² + 16`, so that
-`F = Y⁴f(t)` and `4YG = 4Y⁴g(t)`.
+THE PROOF, and the two identities that make it exact rather than estimated.
+Write `f(t) = t⁴ − 128t + 256`, `g(t) = t³ − 4t² + 16`, so `F = Y⁴f(t)` and
+`4YG = 4Y⁴g(t)`. **`4|f(t)| ≥ t⁴` fails on TWO intervals**, not one — around
+each of `f`'s two real roots, `(2.118, 2.251)` and `(3.549, 4.5815)` — so a
+split that treats `t ≤ 3.5` as safe is WRONG. What is true is that
+`16|g(t)| ≥ t⁴` covers both gaps: it holds exactly on `[4 − 4√2, 4 + 4√2] =
+[−1.657…, 9.657…]`, and both failure intervals lie inside `(2, 9)`. Hence the
+three-way split below, plus the `|X| ≤ Y` branch:
 
-* `|X| ≤ Y` (so `max = Y`): then `F ≥ 128Y⁴` outright, since `X⁴ ≥ 0` and
+* `|X| ≤ Y` (height `Y`): `F ≥ 128Y⁴` outright, since `X⁴ ≥ 0` and
   `−128XY³ ≥ −128Y⁴`. So `4|F| ≥ 512Y⁴ ≥ Y⁴`, with enormous room.
-* `2X ≤ 7Y` (i.e. `t ≤ 7/2`), `Y < |X|`: use `4|F| ≥ X⁴`. The inequality
-  `4|f(t)| ≥ t⁴` holds for ALL `t ≤ 3.5486…` — including every negative `t`,
-  where `f` is large and positive — and `7/2` is safely below that root.
-* `3X ≥ 14Y` (i.e. `t ≥ 14/3 ≈ 4.667`): use `4|F| ≥ X⁴` again. The upper root
-  of `4|f(t)| = t⁴` is `4.5815…`, safely below `14/3`.
-* `7Y < 2X` and `3X < 14Y` (i.e. `7/2 < t < 14/3`): use `16Y·|G| ≥ X⁴`. The
-  inequality `16|g(t)| ≥ t⁴` holds on `[−1.6…, 9.656…]` ⊇ `[7/2, 14/3]`, with
-  EQUALITY at `t = 4` — this is the tight case, and it is the one that must be
-  proved exactly rather than estimated.
+* `X ≤ 2Y`: use `4F ≥ X⁴`, from the positive-combination certificate, with
+  `u = 2Y − X ≥ 0`,
 
-The two failure intervals never overlap: `4|f|` fails only on `(3.5486, 4.5815)`
-and `16|g|` fails only outside `(−1.68, 9.657)`, so the four cases above cover
-`ℝ` with margin everywhere except at `t = 4`. Cut points `7/2` and `14/3` were
-chosen inside the overlap on both sides; any nearby rationals work. -/
+      4F − X⁴  =  48Y⁴ + 416Y³u + 3u²((u − 4Y)² + 8Y²).
+
+  Every summand is manifestly `≥ 0`. This covers every negative `X` too.
+* `2Y < X ≤ 9Y`: use `4·(4YG) ≥ X⁴`, from the EXACT factorisation
+
+      4·(4Y·G) − X⁴  =  −(X − 4Y)²·(X² − 8XY − 16Y²),
+
+  whose second factor is `≤ 0` precisely on `4 − 4√2 ≤ t ≤ 4 + 4√2`; on
+  `2Y < X ≤ 9Y` it is `≤ −7Y²`, because `X² ≤ 9XY` gives
+  `X² − 8XY − 16Y² ≤ Y(X − 16Y) ≤ −7Y²`. The `(X − 4Y)²` is where the equality
+  at `t = 4` lives, and the factorisation reproduces it exactly.
+* `X > 9Y`: use `4F ≥ X⁴` again. `X³ > 729Y³` (factor `X³ − 729Y³ =
+  (X − 9Y)(X² + 9XY + 81Y²)`), so `3X⁴ > 2187XY³ > 512XY³`, with `1024Y⁴ > 0`
+  to spare. -/
 theorem forms_archimedean {X Y : ℤ} (hY : 0 < Y) :
     max X.natAbs Y.natAbs ^ 4 ≤
       4 * max (X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4).natAbs
-        (4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)).natAbs := sorry
+        (4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)).natAbs := by
+  have hY3 : (0 : ℤ) < Y ^ 3 := pow_pos hY 3
+  have hY4 : (0 : ℤ) < Y ^ 4 := pow_pos hY 4
+  have hmain : max |X| Y ^ 4 ≤
+      4 * max |X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4|
+        |4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)| := by
+    have hFle : |X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4| ≤
+        max |X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4|
+          |4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)| := le_max_left _ _
+    have hGle : |4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)| ≤
+        max |X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4|
+          |4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)| := le_max_right _ _
+    rcases le_or_gt |X| Y with hle | hgt
+    · -- `|X| ≤ Y`, so the height is `Y` and `F ≥ 128 Y⁴` outright.
+      rw [max_eq_right hle]
+      have hXY : X ≤ Y := (abs_le.mp hle).2
+      have hx : X * Y ^ 3 ≤ Y * Y ^ 3 := mul_le_mul_of_nonneg_right hXY hY3.le
+      have hX4 : (0 : ℤ) ≤ X ^ 4 := by positivity
+      have hFge : 128 * Y ^ 4 ≤ X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4 := by nlinarith
+      have hFabs : 128 * Y ^ 4 ≤ |X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4| :=
+        le_trans hFge (le_abs_self _)
+      linarith
+    · -- `Y < |X|`, so the height is `|X|` and `max |X| Y ^ 4 = X ^ 4`.
+      rw [max_eq_left hgt.le]
+      have habs4 : |X| ^ 4 = X ^ 4 := by
+        rw [← abs_pow]; exact abs_of_nonneg (by positivity)
+      rw [habs4]
+      rcases le_or_gt X (2 * Y) with h1 | h1
+      · -- `t ≤ 2`: use `4F ≥ X⁴`, by an explicit positive-combination certificate.
+        have hu : (0 : ℤ) ≤ 2 * Y - X := by linarith
+        have hid : 4 * (X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4) - X ^ 4 =
+            48 * Y ^ 4 + 416 * Y ^ 3 * (2 * Y - X)
+              + 3 * (2 * Y - X) ^ 2 * (((2 * Y - X) - 4 * Y) ^ 2 + 8 * Y ^ 2) := by ring
+        have t2 : (0 : ℤ) ≤ 416 * Y ^ 3 * (2 * Y - X) := mul_nonneg (by linarith) hu
+        have t3 : (0 : ℤ) ≤
+            3 * (2 * Y - X) ^ 2 * (((2 * Y - X) - 4 * Y) ^ 2 + 8 * Y ^ 2) := by positivity
+        have h4F : X ^ 4 ≤ 4 * (X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4) := by linarith
+        have hFabs : X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4 ≤
+            |X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4| := le_abs_self _
+        linarith
+      · rcases le_or_gt X (9 * Y) with h9 | h9
+        · -- `2 < t ≤ 9`: use `4·(4YG) ≥ X⁴`, an EXACT factorisation, tight at `t = 4`.
+          have hXpos : (0 : ℤ) < X := by linarith
+          have hsq : X * X ≤ X * (9 * Y) := mul_le_mul_of_nonneg_left h9 hXpos.le
+          have hq : X ^ 2 - 8 * X * Y - 16 * Y ^ 2 ≤ 0 := by nlinarith
+          have hid2 : 4 * (4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)) - X ^ 4 =
+              -((X - 4 * Y) ^ 2 * (X ^ 2 - 8 * X * Y - 16 * Y ^ 2)) := by ring
+          have h4G : X ^ 4 ≤ 4 * (4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)) := by
+            nlinarith [sq_nonneg (X - 4 * Y)]
+          have hGabs : 4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3) ≤
+              |4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)| := le_abs_self _
+          linarith
+        · -- `t > 9`: `3X⁴ ≥ 2187·X·Y³ ≥ 512·X·Y³`, so `4F ≥ X⁴` with room.
+          have hXpos : (0 : ℤ) < X := by linarith
+          have hpos1 : (0 : ℤ) < X - 9 * Y := by linarith
+          have hpos2 : (0 : ℤ) < X ^ 2 + 9 * X * Y + 81 * Y ^ 2 := by
+            nlinarith [mul_pos hXpos hXpos, mul_pos hXpos hY, mul_pos hY hY]
+          have hcube : 729 * Y ^ 3 ≤ X ^ 3 := by nlinarith [mul_pos hpos1 hpos2]
+          have h4F : X ^ 4 ≤ 4 * (X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4) := by
+            nlinarith [mul_le_mul_of_nonneg_left hcube hXpos.le, mul_pos hXpos hY3, hY4]
+          have hFabs : X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4 ≤
+              |X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4| := le_abs_self _
+          linarith
+  -- Transport back to `ℕ`.
+  rw [← Nat.cast_le (α := ℤ)]
+  push_cast [Int.natCast_natAbs]
+  rw [abs_of_pos hY]
+  exact hmain
 
 /-- **THE RESULTANT / HEIGHT NODE at level `11`** (PROVEN 2026-07-27 over
 `forms_archimedean`): the halving either strictly drops the height, or the point
@@ -683,10 +754,10 @@ HOW IT IS PROVED, with every constant computed. Put `H = max(|p|, e²)` and
 `H = max(|A|, B)/k` exactly, for the single `k` produced by
 `reduced_fraction` — that is the coprimality bookkeeping. `k` divides both `A`
 and `B`, so `forms_common_dvd` gives `k ∣ 2¹⁰·11² = 123904`; and
-`forms_archimedean` gives `max(|A|, B) ≥ H'⁴/4`, which is the ONE remaining
-open ingredient. See those three declarations for the full detail: the two
-Bezout identities, the sharper `11264` and `704` gcd bounds, and the four-way
-case split on `t = X/Y` with its computed crossovers.
+`forms_archimedean` gives `max(|A|, B) ≥ H'⁴/4`. All three are PROVEN. See
+those declarations for the detail: the two Bezout identities, the sharper
+`11264` and `704` gcd bounds, and the exact factorisation
+`4·(4YG) − X⁴ = −(X − 4Y)²(X² − 8XY − 16Y²)` behind the archimedean bound.
 
 Combining: `H ≥ H'⁴/(4k) ≥ H'⁴/495616`. If the height does NOT drop then
 `|p'| + E ≥ |p| + e²`, so `2H' ≥ H` and `H ≥ (H/2)⁴/495616 = H⁴/7929856`,
@@ -998,14 +1069,15 @@ DECOMPOSED 2026-07-27, twice. It is no longer a leaf: it is the infinite descent
 `integral_leaf_aux` over `exists_halving_witness` and `halving_descends`, and
 `halving_descends` is in turn PROVEN over `height_drop_or_small` and
 `smallPoints` once `halving_relation` eliminates the halving coordinates `m`
-and `c`. So the three open statements are `exists_halving_witness` (the
-`2`-descent over `ℤ[s]`: PID, units, and the local conditions),
-`height_drop_or_small` (the resultant/archimedean height bound, where the
-finite-generation content actually lives — itself now PROVEN over the single
-polynomial inequality `forms_archimedean`) and `smallPoints` (the finite base
-case it leaves behind, `|p| ≤ 512` and `1 ≤ e ≤ 22`). See the section docstring
-for the computed evidence behind that split, including why the earlier routing
-note — which called the cubic field's class group the obstruction — was wrong.
+and `c`. `height_drop_or_small` — the resultant/archimedean height bound, where
+the finite-generation content lives — is PROVEN too, over `reduced_fraction`,
+`forms_common_dvd` and `forms_archimedean`. So exactly TWO open statements
+remain, and they are as different from each other as they could be:
+`exists_halving_witness` (the `2`-descent over `ℤ[s]`: PID, units, and the local
+conditions) and `smallPoints` (the finite base case the height bound leaves
+behind, `|p| ≤ 512` and `1 ≤ e ≤ 22`). See the section docstring for the
+computed evidence behind that split, including why the earlier routing note —
+which called the cubic field's class group the obstruction — was wrong.
 
 Verified by exhaustive search (`|p| < 6000`, `1 ≤ e < 260`, coprime): `(0, 1)`
 and `(4, 1)` are the only solutions, so the statement is true as written.
@@ -1100,10 +1172,9 @@ infinite descent (`MazurLevel11.integral_leaf_aux`) over
 `halving_descends` is now PROVEN in turn, over
 `MazurLevel11.height_drop_or_small` (the resultant/archimedean height bound)
 and `MazurLevel11.smallPoints` (the finite base case `|p| ≤ 512`, `e ≤ 22`);
-and `height_drop_or_small` is PROVEN in turn over the single polynomial
-inequality `MazurLevel11.forms_archimedean`. So level `11` stands on exactly
-three open statements: `exists_halving_witness`, `forms_archimedean` and
-`smallPoints`. See the
+and `height_drop_or_small` is itself PROVEN, over `reduced_fraction`,
+`forms_common_dvd` and `forms_archimedean`. So level `11` stands on exactly
+TWO open statements: `exists_halving_witness` and `smallPoints`. See the
 `MazurLevel11` section docstring.
 
 Note the sentence above — "finite generation alone never yields rank `0`, so it
@@ -1111,8 +1182,9 @@ was never the hard half" — is true but was read the wrong way round when
 `mordellWeil` was deleted. Finite generation is not SUFFICIENT, and it is also
 not OPTIONAL: a complete `2`-descent here gives only `E(ℚ)/2E(ℚ) = 0`, which
 without a height theory is satisfied by infinite groups. The height content is
-now explicit, named and quantitative, and isolated all the way down to a
-statement about two integer variables: `MazurLevel11.forms_archimedean`. -/
+now explicit, named, quantitative and PROVEN: see
+`MazurLevel11.height_drop_or_small` and the three ingredients below it. What
+survives of it is only the finite search `MazurLevel11.smallPoints`. -/
 theorem curve11a3_rational_points (x y : ℚ)
     (h : curve11a3.toAffine.Nonsingular x y) :
     (x, y) = ((0 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
