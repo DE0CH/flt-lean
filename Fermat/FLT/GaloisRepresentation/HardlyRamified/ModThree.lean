@@ -11072,16 +11072,350 @@ theorem mem_adjoin_of_sub_mem_of_forall_not_mem
   rw [hfix] at h2
   exact h2.symm
 
+open IsDiscreteValuationRing in
+/-- Membership in `𝔪^n` is exactly `n ≤ addVal`. -/
+theorem mem_maximalIdeal_pow_iff_le_addVal (R : Type*) [CommRing R] [IsDomain R]
+    [IsDiscreteValuationRing R] (x : R) (n : ℕ) :
+    x ∈ IsLocalRing.maximalIdeal R ^ n ↔ (n : ℕ∞) ≤ addVal R x := by
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible R
+  have hspan : IsLocalRing.maximalIdeal R = Ideal.span {ϖ} :=
+    (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
+  rw [hspan, Ideal.span_singleton_pow, Ideal.mem_span_singleton,
+    ← IsDiscreteValuationRing.addVal_le_iff_dvd, hϖ.addVal_pow]
+
+open IsDiscreteValuationRing in
+/-- `addVal x = c` is exactly `span {x} = 𝔪^c`. -/
+theorem addVal_eq_natCast_iff_span_eq (R : Type*) [CommRing R] [IsDomain R]
+    [IsDiscreteValuationRing R] (x : R) (c : ℕ) :
+    addVal R x = (c : ℕ∞) ↔ Ideal.span {x} = IsLocalRing.maximalIdeal R ^ c := by
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible R
+  have hspan : IsLocalRing.maximalIdeal R = Ideal.span {ϖ} :=
+    (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
+  have hpow : IsLocalRing.maximalIdeal R ^ c = Ideal.span {ϖ ^ c} := by
+    rw [hspan, Ideal.span_singleton_pow]
+  constructor
+  · intro h
+    rw [hpow]
+    apply le_antisymm
+    · rw [Ideal.span_singleton_le_iff_mem, Ideal.mem_span_singleton,
+        ← IsDiscreteValuationRing.addVal_le_iff_dvd, hϖ.addVal_pow, h]
+    · rw [Ideal.span_singleton_le_iff_mem, Ideal.mem_span_singleton,
+        ← IsDiscreteValuationRing.addVal_le_iff_dvd, hϖ.addVal_pow, h]
+  · intro h
+    have h1 : (c : ℕ∞) ≤ addVal R x := by
+      rw [← mem_maximalIdeal_pow_iff_le_addVal, ← h]
+      exact Ideal.subset_span rfl
+    have h2 : ¬ ((c : ℕ) + 1 : ℕ∞) ≤ addVal R x := by
+      rw [← Nat.cast_one, ← Nat.cast_add, ← mem_maximalIdeal_pow_iff_le_addVal]
+      intro hmem
+      have hle : IsLocalRing.maximalIdeal R ^ c ≤ IsLocalRing.maximalIdeal R ^ (c + 1) := by
+        rw [← h, Ideal.span_singleton_le_iff_mem]; exact hmem
+      have := (maximalIdeal_pow_le_pow_iff R c (c + 1)).mp hle
+      omega
+    rcases eq_or_lt_of_le h1 with h3 | h3
+    · exact h3.symm
+    · exact absurd (Order.add_one_le_of_lt h3) (by simpa using h2)
+
+open IsDiscreteValuationRing in
+/-- `addVal` of a finite product is the sum of the `addVal`s. -/
+theorem addVal_prod {R : Type*} [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    {κ : Type*} (s : Finset κ) (f : κ → R) :
+    addVal R (∏ i ∈ s, f i) = ∑ i ∈ s, addVal R (f i) := by
+  classical
+  induction s using Finset.induction with
+  | empty => simp
+  | insert a s ha ih =>
+      rw [Finset.prod_insert ha, Finset.sum_insert ha,
+        IsDiscreteValuationRing.addVal_mul, ih]
+
+/-- The image of `integralClosureLE` in `ℚ₃ᵥᵃˡᵍ` is the image of the source. -/
+theorem integralClosureLE_val (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    (x : IntegralClosure 𝒪₃ᵥ M) :
+    L.val (algebraMap (IntegralClosure 𝒪₃ᵥ L) L (integralClosureLE M L hML x)) =
+      M.val (algebraMap (IntegralClosure 𝒪₃ᵥ M) M x) := rfl
+
+theorem integralClosureLE_injective (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    [FiniteDimensional ℚ₃ᵥ M] :
+    Function.Injective (integralClosureLE M L hML) := by
+  haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ M) M :=
+    IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ M (IntegralClosure 𝒪₃ᵥ M)
+  intro a b hab
+  apply IsFractionRing.injective (IntegralClosure 𝒪₃ᵥ M) (M : Type _)
+  have h : M.val (algebraMap (IntegralClosure 𝒪₃ᵥ M) M a) =
+      M.val (algebraMap (IntegralClosure 𝒪₃ᵥ M) M b) := by
+    rw [← integralClosureLE_val M L hML a, ← integralClosureLE_val M L hML b, hab]
+  exact Subtype.ext h
+
+open IsDiscreteValuationRing in
+/-- **RAMIFICATION TRANSPORT ALONG `integralClosureLE`, IN EXACT-DEPTH FORM.** -/
+theorem exists_addVal_integralClosureLE
+    (L M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hLM : L ≤ M)
+    [FiniteDimensional ℚ₃ᵥ L] [FiniteDimensional ℚ₃ᵥ M]
+    (eL eM : ℕ)
+    (hL : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ eL)
+    (hM : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ eM)
+    (heM : 0 < eM) :
+    ∃ a : ℕ, 0 < a ∧ a * eL = eM ∧
+      ∀ x : IntegralClosure 𝒪₃ᵥ L,
+        addVal (IntegralClosure 𝒪₃ᵥ M) (integralClosureLE L M hLM x) =
+          (a : ℕ∞) * addVal (IntegralClosure 𝒪₃ᵥ L) x := by
+  classical
+  set φ := integralClosureLE L M hLM with hφ
+  have hinj : Function.Injective φ := integralClosureLE_injective L M hLM
+  have hJbot : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).map φ ≠ ⊥ := by
+    rw [Ne, Ideal.map_eq_bot_iff_of_injective hinj]
+    exact IsDiscreteValuationRing.not_a_field (IntegralClosure 𝒪₃ᵥ L)
+  obtain ⟨a, ha⟩ := exists_maximalIdeal_pow_eq_of_principal (IntegralClosure 𝒪₃ᵥ M)
+    (IsPrincipalIdealRing.principal _) _ hJbot
+  have hmap3 : (Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)}).map φ =
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} := by
+    rw [Ideal.map_span, Set.image_singleton, map_ofNat]
+  have hmappow : ∀ i : ℕ, (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i).map φ =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (i * a) := by
+    intro i
+    rw [Ideal.map_pow, ha, ← pow_mul, mul_comm a i]
+  have hpin : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (eL * a) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ eM := by
+    rw [← hM, ← hmap3, hL, hmappow]
+  have haeL : a * eL = eM := by
+    have h1 := (maximalIdeal_pow_le_pow_iff (IntegralClosure 𝒪₃ᵥ M) (eL * a) eM).mp hpin.le
+    have h2 := (maximalIdeal_pow_le_pow_iff (IntegralClosure 𝒪₃ᵥ M) eM (eL * a)).mp hpin.ge
+    rw [mul_comm]; omega
+  have hapos : 0 < a := by
+    rcases Nat.eq_zero_or_pos a with h | h
+    · rw [h, zero_mul] at haeL; omega
+    · exact h
+  refine ⟨a, hapos, haeL, ?_⟩
+  intro x
+  by_cases hx0 : x = 0
+  · subst hx0
+    rw [map_zero, IsDiscreteValuationRing.addVal_zero,
+      IsDiscreteValuationRing.addVal_zero]
+    simp [hapos.ne']
+  · -- `x ≠ 0`: read off the exact depth `c` on both sides
+    have hne : addVal (IntegralClosure 𝒪₃ᵥ L) x ≠ ⊤ := by
+      rw [Ne, IsDiscreteValuationRing.addVal_eq_top_iff]; exact hx0
+    obtain ⟨c, hc⟩ : ∃ c : ℕ, addVal (IntegralClosure 𝒪₃ᵥ L) x = (c : ℕ∞) := by
+      cases hv : addVal (IntegralClosure 𝒪₃ᵥ L) x with
+      | top => exact absurd hv hne
+      | coe c => exact ⟨c, rfl⟩
+    have hspanL : Ideal.span ({x} : Set (IntegralClosure 𝒪₃ᵥ L)) =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ c :=
+      (addVal_eq_natCast_iff_span_eq _ x c).mp hc
+    have hspanM : Ideal.span ({φ x} : Set (IntegralClosure 𝒪₃ᵥ M)) =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (c * a) := by
+      rw [← Set.image_singleton (f := φ), ← Ideal.map_span, hspanL, hmappow]
+    rw [(addVal_eq_natCast_iff_span_eq _ (φ x) (c * a)).mpr hspanM, hc]
+    push_cast
+    ring
+
+/-! ### ℕ∞ bookkeeping -/
+
+theorem enat_le_of_not_succ_natCast_le {v : ℕ∞} {n : ℕ}
+    (h : ¬ (((n + 1 : ℕ)) : ℕ∞) ≤ v) : v ≤ (n : ℕ∞) := by
+  cases v with
+  | top => exact absurd le_top h
+  | coe m =>
+      rw [Nat.cast_le] at h ⊢
+      omega
+
+theorem enat_eq_of_forall_natCast_le_iff {u v : ℕ∞}
+    (h : ∀ n : ℕ, (n : ℕ∞) ≤ u ↔ (n : ℕ∞) ≤ v) : u = v := by
+  refine le_antisymm ?_ ?_
+  · cases u with
+    | top =>
+        cases v with
+        | top => exact le_rfl
+        | coe m =>
+            have := (h (m + 1)).mp le_top
+            rw [Nat.cast_le] at this
+            omega
+    | coe m => exact (h m).mp le_rfl
+  · cases v with
+    | top =>
+        cases u with
+        | top => exact le_rfl
+        | coe m =>
+            have := (h (m + 1)).mpr le_top
+            rw [Nat.cast_le] at this
+            omega
+    | coe m => exact (h m).mpr le_rfl
+
+open IsDiscreteValuationRing in
+/-- A `ℚ₃ᵥ`-automorphism of `L` preserves the depth of an integer of `L`. -/
+theorem addVal_smul_eq (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    (σ : L ≃ₐ[ℚ₃ᵥ] L) (x : IntegralClosure 𝒪₃ᵥ L) :
+    addVal (IntegralClosure 𝒪₃ᵥ L) (σ • x) = addVal (IntegralClosure 𝒪₃ᵥ L) x := by
+  refine enat_eq_of_forall_natCast_le_iff fun n => ?_
+  rw [← mem_maximalIdeal_pow_iff_le_addVal, ← mem_maximalIdeal_pow_iff_le_addVal]
+  refine ⟨fun hmem => ?_, fun hmem => smul_mem_maximalIdeal_pow_of_mem σ n hmem⟩
+  have := smul_mem_maximalIdeal_pow_of_mem σ⁻¹ n hmem
+  rwa [inv_smul_smul] at this
+
+/-! ### The three plumbing leaves -/
+
+/-- **THE MINIMAL POLYNOMIAL OF A MONOGENIC GENERATOR OF `𝒪_F` SPLITS OVER
+ANY OVERFIELD `M ⊇ F`** (sorry node).  `F/ℚ₃ᵥ` is Galois and `θF` generates
+it, so `minpoly 𝒪₃ᵥ θF = ∏_{σ ∈ Gal(F/ℚ₃ᵥ)} (X − σ•θF)` already in `𝒪_F[X]`;
+mapping that identity along `integralClosureLE` and evaluating gives the
+statement below.  The `𝒪_F`-level identity is the `hnodal` step inside the
+proof of `aeval_derivative_minpoly_eq_prod_sub_smul_local` (which currently
+only exports the value of the DERIVATIVE at `θF`); this leaf asks for the
+undifferentiated identity, evaluated at an arbitrary point of `𝒪_M`. -/
+theorem aeval_minpoly_eq_prod_sub_integralClosureLE
+    (F M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hFM : F ≤ M)
+    [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F] [FiniteDimensional ℚ₃ᵥ M]
+    (θF : IntegralClosure 𝒪₃ᵥ F)
+    (hθ : Algebra.adjoin ℚ₃ᵥ ({algebraMap (IntegralClosure 𝒪₃ᵥ F) F θF} : Set F) = ⊤)
+    (x : IntegralClosure 𝒪₃ᵥ M) :
+    Polynomial.aeval x (minpoly 𝒪₃ᵥ θF) =
+      ∏ σ : F ≃ₐ[ℚ₃ᵥ] F, (x - integralClosureLE F M hFM (σ • θF)) := by
+  sorry
+
+/-- **`integralClosureLE` IS EQUIVARIANT FOR `restrictToLEHom`** (sorry node).
+Pure plumbing: `restrictToLEHom F M hFM σ` is `σ` restricted to `F`, so it acts
+on `𝒪_F` compatibly with the inclusion `𝒪_F ↪ 𝒪_M`.  The proof is the
+`AlgEquiv.restrictNormal_commutes` computation already carried out for the
+reified subextension inside `exists_relative_depth_witness` (`hstep`/`hkey`
+there), transported through `reifyEquiv`. -/
+theorem smul_integralClosureLE
+    (F M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hFM : F ≤ M)
+    [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F] [FiniteDimensional ℚ₃ᵥ M]
+    (σ : M ≃ₐ[ℚ₃ᵥ] M) (y : IntegralClosure 𝒪₃ᵥ F) :
+    σ • integralClosureLE F M hFM y =
+      integralClosureLE F M hFM (restrictToLEHom F M hFM σ • y) := by
+  sorry
+
+/-- **A CONJUGATE OF A MONOGENIC GENERATOR OF `F` STILL GENERATES `F` INSIDE
+`ℚ₃ᵥᵃˡᵍ`** (sorry node).  `σ₀` is a `ℚ₃ᵥ`-automorphism of `F`, so it carries
+`Algebra.adjoin ℚ₃ᵥ {θF} = ⊤` to `Algebra.adjoin ℚ₃ᵥ {σ₀•θF} = ⊤`; pushing
+that along `F.val` (`IntermediateField.adjoin_map`, as in the consumer
+`nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot`) identifies
+`F` with `ℚ₃ᵥ(σ₀•θF)` inside `ℚ₃ᵥᵃˡᵍ`. -/
+theorem le_adjoin_val_smul_of_adjoin_eq_top
+    (F M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hFM : F ≤ M)
+    [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F] [FiniteDimensional ℚ₃ᵥ M]
+    (θF : IntegralClosure 𝒪₃ᵥ F)
+    (hθ : Algebra.adjoin ℚ₃ᵥ ({algebraMap (IntegralClosure 𝒪₃ᵥ F) F θF} : Set F) = ⊤)
+    (σ₀ : F ≃ₐ[ℚ₃ᵥ] F) :
+    F ≤ IntermediateField.adjoin ℚ₃ᵥ
+      ({M.val (algebraMap (IntegralClosure 𝒪₃ᵥ M) M
+        (integralClosureLE F M hFM (σ₀ • θF)))} : Set ℚ₃ᵥᵃˡᵍ) := by
+  sorry
+
+open scoped Classical in
+/-- **TAME CONJUGATE SPACING, SUMMED** (sorry node).  Tameness says every
+nontrivial conjugate sits at depth at most `1`, and only the `e_F − 1`
+nontrivial INERTIA elements sit at depth `≥ 1` at all, so the total is at
+most `e_F − 1`.  Termwise this is `addVal_sub_smul_le_one_of_tame` below
+(PROVEN); what remains is the counting step, i.e. that the summands outside
+the inertia subgroup vanish and that the inertia subgroup contributes
+`#G_0 − 1` terms. -/
+theorem sum_addVal_sub_smul_erase_le
+    (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
+    (htame : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ 2).inertia
+      (F ≃ₐ[ℚ₃ᵥ] F) = ⊥)
+    (θF : IntegralClosure 𝒪₃ᵥ F)
+    (hcrit : ∀ (σ : F ≃ₐ[ℚ₃ᵥ] F) (i : ℕ),
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ i).inertia (F ≃ₐ[ℚ₃ᵥ] F)
+        ↔ σ • θF - θF ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ i)
+    (σ₀ : F ≃ₐ[ℚ₃ᵥ] F) :
+    ∑ σ ∈ Finset.univ.erase σ₀,
+        IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F) (σ₀ • θF - σ • θF) ≤
+      ((Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
+        (F ≃ₐ[ℚ₃ᵥ] F)) - 1 : ℕ) : ℕ∞) := by
+  sorry
+
+open IsDiscreteValuationRing in
+/-- **TAMENESS, TERMWISE**: distinct conjugates of a monogenic generator are
+at depth at most `1` from each other. -/
+theorem addVal_sub_smul_le_one_of_tame
+    (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
+    (htame : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ 2).inertia
+      (F ≃ₐ[ℚ₃ᵥ] F) = ⊥)
+    (θF : IntegralClosure 𝒪₃ᵥ F)
+    (hcrit : ∀ (σ : F ≃ₐ[ℚ₃ᵥ] F) (i : ℕ),
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ i).inertia (F ≃ₐ[ℚ₃ᵥ] F)
+        ↔ σ • θF - θF ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ i)
+    (σ₀ σ : F ≃ₐ[ℚ₃ᵥ] F) (hne : σ ≠ σ₀) :
+    addVal (IntegralClosure 𝒪₃ᵥ F) (σ₀ • θF - σ • θF) ≤ (1 : ℕ∞) := by
+  have hτ1 : σ₀⁻¹ * σ ≠ 1 := by
+    intro h
+    apply hne
+    have h2 : σ₀ * (σ₀⁻¹ * σ) = σ₀ * 1 := by rw [h]
+    simpa [mul_inv_cancel_left] using h2
+  have hrew : σ₀ • θF - σ • θF = σ₀ • (θF - (σ₀⁻¹ * σ) • θF) := by
+    rw [smul_sub, ← mul_smul, mul_inv_cancel_left]
+  rw [hrew, addVal_smul_eq]
+  have hnot : σ₀⁻¹ * σ ∉ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ 2).inertia
+      (F ≃ₐ[ℚ₃ᵥ] F) := by
+    rw [htame, Subgroup.mem_bot]
+    exact hτ1
+  have hmem : (σ₀⁻¹ * σ) • θF - θF ∉
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ 2 :=
+    fun h => hnot ((hcrit _ 2).mpr h)
+  have hmem' : θF - (σ₀⁻¹ * σ) • θF ∉
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ 2 := by
+    intro h
+    exact hmem (by rw [← neg_sub]; exact Ideal.neg_mem_iff _ |>.mpr h)
+  rw [mem_maximalIdeal_pow_iff_le_addVal] at hmem'
+  exact enat_le_of_not_succ_natCast_le (n := 1) (by simpa using hmem')
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **THE ARITHMETIC HALF OF FONTAINE'S PROP. 1.5 (i): A LIFT OF `η(θ)`
-IS CLOSER TO `θ` THAN THE CONJUGATES OF `θ` ARE TO EACH OTHER** (sorry
-node, created 2026-07-27 — leaf (Y-2-a), the residue left after
+IS CLOSER TO `θ` THAN THE CONJUGATES OF `θ` ARE TO EACH OTHER**
+(**PROVEN 2026-07-27** over four plumbing leaves — see DECOMPOSED below;
+leaf (Y-2-a), the residue left after
 `mem_adjoin_of_sub_mem_of_forall_not_mem` above absorbs the Krasner
 half).  Everything analytic in the tame case of Fontaine's Prop. 1.5 (i)
 is concentrated here, and nothing else remains: the consumer below is
 pure glue.
+
+DECOMPOSED AND MOSTLY CLOSED, 2026-07-27 (sixth owner).  The body below
+is now a COMPLETE proof of the whole arithmetic argument — the
+compositum, the three-ring depth transport, the nearest-root choice and
+the sharp `e < k` estimate are all written out and verified.  What
+remains open is four pieces of PURE PLUMBING, all stated and PROVEN-
+free-of-mathematics, each above:
+
+* `aeval_minpoly_eq_prod_sub_integralClosureLE` — `P` splits as
+  `∏_σ (X − σ•θ)` over `𝒪_M`.  The `𝒪_F`-level identity is already
+  computed as `hnodal` inside
+  `aeval_derivative_minpoly_eq_prod_sub_smul_local`, which exports only
+  the DERIVATIVE at `θ`; this asks for the undifferentiated form at an
+  arbitrary point of `𝒪_M`.
+* `smul_integralClosureLE` — `𝒪_F ↪ 𝒪_M` is equivariant for
+  `restrictToLEHom`.  The `AlgEquiv.restrictNormal_commutes` computation
+  is already carried out (for the reified subextension) as
+  `hstep`/`hkey` inside `exists_relative_depth_witness`.
+* `le_adjoin_val_smul_of_adjoin_eq_top` — a conjugate `σ₀•θ` of a
+  monogenic generator still generates `F` inside `ℚ₃ᵥᵃˡᵍ`.
+* `sum_addVal_sub_smul_erase_le` — the COUNTING half of tame conjugate
+  spacing.  The termwise half (`v_F(σ₀•θ − σ•θ) ≤ 1` for `σ ≠ σ₀`) is
+  PROVEN as `addVal_sub_smul_le_one_of_tame`; what is left is that the
+  summands outside `G_0` vanish and that `G_0 ∖ {1}` has `e_F − 1`
+  elements.
+
+THE BOOKKEEPING THIS LEAF USED TO OWE IS NOW DISCHARGED.  The
+three-ring comparison is `exists_addVal_integralClosureLE` above
+(PROVEN): for `L ≤ M` with `(3) = 𝔪_L^{e_L}` and `(3) = 𝔪_M^{e_M}` there
+is an `a > 0` with `a·e_L = e_M` and
+`addVal_M(ι x) = a · addVal_L(x)` for every `x ∈ 𝒪_L`.  It needs no
+reification, no `ramificationIdx` and no different: the extended ideal
+`𝔪_L·𝒪_M` is a power `𝔪_M^a` because `𝒪_M` is a DVR, and raising to the
+`e_L`-th power against `(3)` pins `a`.
+
+THE ESTIMATE, NOW IN INTEGERS (this replaces the `v_K`-fraction version
+recorded below, which is the same computation cleared of denominators).
+With `a_F·e_F = e_M`, `a_E·e = e_M`, `t := addVal_M(β − σ₀•θ)`:
+`k·a_E ≤ Σ_σ addVal_M(β − σ•θ) ≤ t + a_F·(e_F − 1) = t + e_M − a_F`,
+while `k ≥ e+1` gives `k·a_E ≥ e_M + a_E`; hence `t ≥ a_F + a_E ≥
+a_F + 1`.  So `j := a_F + 1` works, and **`hk : e < k` is consumed at
+exactly this step and nowhere else**.
 
 WHAT MUST BE PRODUCED.  A finite Galois `M/ℚ₃ᵥ` containing (a copy of)
 both `F` and `E`, a monogenic generator `θ ∈ 𝒪_M` of `F` and a lift
@@ -11144,7 +11478,176 @@ theorem exists_sub_mem_forall_not_mem_of_algHom_quotient
       θ - β ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ j ∧
       (∀ σ : ↥M ≃ₐ[ℚ₃ᵥ] ↥M, σ • θ ≠ θ →
         θ - σ • θ ∉ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ j) := by
-  sorry
+  classical
+  haveI : CharZero ℚ₃ᵥ := charZero_of_injective_algebraMap (algebraMap ℚ ℚ₃ᵥ).injective
+  haveI : Algebra.IsSeparable ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ := Algebra.IsAlgebraic.isSeparable_of_perfectField
+  -- STEP 1: the compositum `M = F ⊔ Ẽ`, finite Galois over `ℚ₃ᵥ`
+  obtain ⟨M, hMdef⟩ : ∃ M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ,
+      M = F ⊔ IntermediateField.normalClosure ℚ₃ᵥ ↥E ℚ₃ᵥᵃˡᵍ := ⟨_, rfl⟩
+  have hFM : F ≤ M := by rw [hMdef]; exact le_sup_left
+  have hEM : E ≤ M := by
+    rw [hMdef]
+    exact le_trans (IntermediateField.le_normalClosure E) le_sup_right
+  haveI : FiniteDimensional ℚ₃ᵥ M := by
+    rw [hMdef]; exact IntermediateField.finiteDimensional_sup _ _
+  haveI : Normal ℚ₃ᵥ M := by rw [hMdef]; infer_instance
+  haveI : Algebra.IsSeparable ℚ₃ᵥ M :=
+    Algebra.isSeparable_tower_bot_of_isSeparable ℚ₃ᵥ M ℚ₃ᵥᵃˡᵍ
+  haveI : IsGalois ℚ₃ᵥ M := ⟨⟩
+  -- STEP 2: ramification indices
+  have heF3 := span_three_eq_maximalIdeal_pow_card_inertia F
+  have heM3 := span_three_eq_maximalIdeal_pow_card_inertia M
+  have heMpos : 0 < Nat.card ((IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) := Nat.card_pos
+  have heFpos : 0 < Nat.card ((IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ F)).inertia (F ≃ₐ[ℚ₃ᵥ] F)) := Nat.card_pos
+  obtain ⟨aF, haFpos, haFmul, haF⟩ :=
+    exists_addVal_integralClosureLE F M hFM _ _ heF3 heM3 heMpos
+  obtain ⟨aE, haEpos, haEmul, haE⟩ :=
+    exists_addVal_integralClosureLE E M hEM e _ he heM3 heMpos
+  -- STEP 3: a monogenic generator of `𝒪_F`
+  obtain ⟨θF, hθtop, -, hθcrit⟩ := exists_inertia_generator F
+  have hθadj := adjoin_eq_top_of_local_adjoin_eq_top F θF hθtop
+  -- STEP 4: a lift `βE ∈ 𝒪_E` of `η θF`; then `P(βE) ∈ 𝔪_E^k`
+  obtain ⟨βE, hβElift⟩ := Ideal.Quotient.mk_surjective (η θF)
+  have hPβE : Polynomial.aeval βE (minpoly 𝒪₃ᵥ θF) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem]
+    have h1 := Polynomial.aeval_algHom_apply
+      (Ideal.Quotient.mkₐ 𝒪₃ᵥ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k))
+      βE (minpoly 𝒪₃ᵥ θF)
+    have h2 := Polynomial.aeval_algHom_apply η θF (minpoly 𝒪₃ᵥ θF)
+    have h3 : (Ideal.Quotient.mkₐ 𝒪₃ᵥ
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) βE = η θF := hβElift
+    have hkey : (Ideal.Quotient.mkₐ 𝒪₃ᵥ
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k))
+        (Polynomial.aeval βE (minpoly 𝒪₃ᵥ θF)) = 0 := by
+      rw [← h1, h3, h2, minpoly.aeval, map_zero]
+    exact hkey
+  -- STEP 5: transport to `𝒪_M`
+  set β : IntegralClosure 𝒪₃ᵥ M := integralClosureLE E M hEM βE with hβdef
+  set g : (F ≃ₐ[ℚ₃ᵥ] F) → IntegralClosure 𝒪₃ᵥ M :=
+    fun σ => β - integralClosureLE F M hFM (σ • θF) with hgdef
+  have hprod : Polynomial.aeval β (minpoly 𝒪₃ᵥ θF) = ∏ σ : F ≃ₐ[ℚ₃ᵥ] F, g σ :=
+    aeval_minpoly_eq_prod_sub_integralClosureLE F M hFM θF hθadj β
+  have hPβ : IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M)
+        (Polynomial.aeval β (minpoly 𝒪₃ᵥ θF)) =
+      (aE : ℕ∞) * IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ E)
+        (Polynomial.aeval βE (minpoly 𝒪₃ᵥ θF)) := by
+    rw [hβdef,
+      Polynomial.aeval_algHom_apply (integralClosureLE E M hEM) βE (minpoly 𝒪₃ᵥ θF), haE]
+  have hsum : ((k * aE : ℕ) : ℕ∞) ≤ ∑ σ : F ≃ₐ[ℚ₃ᵥ] F,
+      IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ) := by
+    rw [← addVal_prod, ← hprod, hPβ]
+    have hkle : ((k : ℕ) : ℕ∞) ≤ IsDiscreteValuationRing.addVal
+        (IntegralClosure 𝒪₃ᵥ E) (Polynomial.aeval βE (minpoly 𝒪₃ᵥ θF)) :=
+      (mem_maximalIdeal_pow_iff_le_addVal _ _ k).mp hPβE
+    calc ((k * aE : ℕ) : ℕ∞) = (aE : ℕ∞) * ((k : ℕ) : ℕ∞) := by push_cast; ring
+      _ ≤ (aE : ℕ∞) * IsDiscreteValuationRing.addVal
+            (IntegralClosure 𝒪₃ᵥ E) (Polynomial.aeval βE (minpoly 𝒪₃ᵥ θF)) := by gcongr
+  -- STEP 6: the nearest conjugate
+  obtain ⟨σ₀, -, hmax⟩ := Finset.exists_max_image (Finset.univ : Finset (F ≃ₐ[ℚ₃ᵥ] F))
+      (fun σ => IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ))
+      ⟨1, Finset.mem_univ 1⟩
+  have hterm : ∀ σ : F ≃ₐ[ℚ₃ᵥ] F, σ ≠ σ₀ →
+      IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ) ≤
+        (aF : ℕ∞) * IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F)
+          (σ₀ • θF - σ • θF) := by
+    intro σ _
+    have hdiff : integralClosureLE F M hFM (σ₀ • θF - σ • θF) = g σ - g σ₀ := by
+      simp only [hgdef, map_sub]
+      ring
+    have h1 := AddValuation.map_sub
+      (IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M)) (g σ) (g σ₀)
+    rw [← hdiff, haF] at h1
+    exact le_trans (le_min le_rfl (hmax σ (Finset.mem_univ σ))) h1
+  have hrest : ∑ σ ∈ Finset.univ.erase σ₀,
+      IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ) ≤
+      (aF : ℕ∞) * (((Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ F)).inertia (F ≃ₐ[ℚ₃ᵥ] F)) - 1 : ℕ)) : ℕ∞) := by
+    calc ∑ σ ∈ Finset.univ.erase σ₀,
+          IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ)
+        ≤ ∑ σ ∈ Finset.univ.erase σ₀, (aF : ℕ∞) *
+            IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F) (σ₀ • θF - σ • θF) :=
+          Finset.sum_le_sum (fun σ hσ => hterm σ (Finset.ne_of_mem_erase hσ))
+      _ = (aF : ℕ∞) * ∑ σ ∈ Finset.univ.erase σ₀,
+            IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F) (σ₀ • θF - σ • θF) :=
+          (Finset.mul_sum _ _ _).symm
+      _ ≤ (aF : ℕ∞) * (((Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ F)).inertia (F ≃ₐ[ℚ₃ᵥ] F)) - 1 : ℕ)) : ℕ∞) := by
+          gcongr
+          exact sum_addVal_sub_smul_erase_le F htame θF hθcrit σ₀
+  have hteq : ∑ σ : F ≃ₐ[ℚ₃ᵥ] F,
+        IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ)
+      = IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ₀) +
+        ∑ σ ∈ Finset.univ.erase σ₀,
+          IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ) :=
+    (Finset.add_sum_erase _ _ (Finset.mem_univ σ₀)).symm
+  -- STEP 7: the sharp estimate `t ≥ aF + 1`, where `hk : e < k` is consumed
+  have hbig : ((aF + 1 : ℕ) : ℕ∞) ≤
+      IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ₀) := by
+    by_contra hcon
+    have ht : IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M) (g σ₀) ≤ (aF : ℕ∞) :=
+      enat_le_of_not_succ_natCast_le hcon
+    have hall : ((k * aE : ℕ) : ℕ∞) ≤
+        ((aF + aF * (Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ F)).inertia (F ≃ₐ[ℚ₃ᵥ] F)) - 1) : ℕ) : ℕ∞) := by
+      refine le_trans hsum ?_
+      rw [hteq]
+      push_cast
+      exact add_le_add ht hrest
+    rw [Nat.cast_le] at hall
+    obtain ⟨m, hm⟩ : ∃ m, Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ F)).inertia (F ≃ₐ[ℚ₃ᵥ] F)) = m + 1 :=
+      ⟨_, (Nat.succ_pred_eq_of_pos heFpos).symm⟩
+    rw [hm] at hall haFmul
+    simp only [Nat.add_sub_cancel] at hall
+    have hFeq : aF + aF * m = Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) := by
+      rw [← haFmul]; ring
+    have hstep : (e + 1) * aE ≤ k * aE := Nat.mul_le_mul_right aE (by omega)
+    have h5 : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) + aE ≤ k * aE := by
+      calc Nat.card ((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) + aE
+          = aE * e + aE := by rw [haEmul]
+        _ = (e + 1) * aE := by ring
+        _ ≤ k * aE := hstep
+    omega
+  -- STEP 8: assemble
+  refine ⟨M, inferInstance, inferInstance,
+    integralClosureLE F M hFM (σ₀ • θF), β, aF + 1, ?_, ?_, ?_, ?_⟩
+  · rw [hβdef, integralClosureLE_val E M hEM βE]
+    exact (algebraMap (IntegralClosure 𝒪₃ᵥ E) E βE).2
+  · exact le_adjoin_val_smul_of_adjoin_eq_top F M hFM θF hθadj σ₀
+  · rw [mem_maximalIdeal_pow_iff_le_addVal]
+    have hneg : integralClosureLE F M hFM (σ₀ • θF) - β = -(g σ₀) := by
+      simp only [hgdef]; ring
+    rw [hneg, AddValuation.map_neg]
+    exact hbig
+  · intro σ hσ
+    rw [mem_maximalIdeal_pow_iff_le_addVal]
+    intro hle
+    have hsm : σ • integralClosureLE F M hFM (σ₀ • θF) =
+        integralClosureLE F M hFM ((restrictToLEHom F M hFM σ * σ₀) • θF) := by
+      rw [smul_integralClosureLE F M hFM σ (σ₀ • θF), mul_smul]
+    have hne : restrictToLEHom F M hFM σ * σ₀ ≠ σ₀ := by
+      intro h
+      apply hσ
+      rw [hsm, h]
+    have hval : IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M)
+        (integralClosureLE F M hFM (σ₀ • θF) -
+          σ • integralClosureLE F M hFM (σ₀ • θF)) ≤ (aF : ℕ∞) := by
+      rw [hsm, ← map_sub, haF]
+      calc (aF : ℕ∞) * IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F)
+            (σ₀ • θF - (restrictToLEHom F M hFM σ * σ₀) • θF)
+          ≤ (aF : ℕ∞) * 1 := by
+            gcongr
+            exact addVal_sub_smul_le_one_of_tame F htame θF hθcrit σ₀ _ hne
+        _ = (aF : ℕ∞) := mul_one _
+    have hcontra := le_trans hle hval
+    rw [Nat.cast_le] at hcontra
+    omega
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
