@@ -10235,6 +10235,120 @@ def IsSharpSieve (N : ℕ) {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ
         (∃ a : RelPoint jstr (𝟙 SpecQ), d.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') → x' ∈ s) ∧
       s.card = numRationalCusps N
 
+/-- **`IsReductionBase` forces `ℓ ≠ 0`** (PROVEN).
+
+`IsReductionBase`'s own docstring derives PRIMALITY of `ℓ` from its two
+axioms; this is the weakest consequence of that derivation, and the only
+one the finiteness leaf below needs — `ZMod 0 = ℤ` is infinite, and the
+whole point of reducing at `ℓ` is that the residue field is FINITE.
+
+The proof deliberately avoids the local-ring route
+(`IsReductionBase.isLocalRing`, `IsReductionBase.nontrivialResidue`),
+which is declared far below in the `j`-map subsection and so is not in
+scope here; and `nontrivialResidue` would not suffice anyway, since
+`ZMod 0 = ℤ` is perfectly nontrivial.  Instead: at `ℓ = 0` surjectivity
+produces `r` with `toF r = 2`; `ker_eq_nonunits` makes `r` a unit
+because `2 ≠ 0`; so `2 = toF r` is a unit of `ℤ`, and it is not. -/
+theorem IsReductionBase.ne_zero {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) : ℓ ≠ 0 := by
+  rintro rfl
+  obtain ⟨r, hr⟩ := h.surjective (2 : ZMod 0)
+  have h2 : (2 : ZMod 0) ≠ 0 := by decide
+  have hu : IsUnit r := by
+    by_contra hnu
+    exact h2 (hr ▸ (h.ker_eq_nonunits r).mpr hnu)
+  have hz : IsUnit (2 : ℤ) := hr ▸ hu.map toF
+  rcases Int.isUnit_iff.mp hz with h1 | h1 <;> omega
+
+/-- **A proper morphism has finitely many `𝔽_ℓ`-points over ANY base
+point** (sorry node — general scheme theory, no modular curves anywhere
+in it).
+
+TRUE: `f` proper is in particular quasi-compact and locally of finite
+type, so `Z` is covered by finitely many affine opens `Spec A_i`, each
+`A_i` of finite type over the coordinate ring of an affine open of `S`.
+A morphism `Spec 𝔽_ℓ ⟶ Z` has a ONE-POINT image, hence factors through
+one of them; and once the base point `g` is fixed, the restriction of
+the induced ring map `A_i →+* 𝔽_ℓ` to that coordinate ring is fixed too,
+so the map is determined by the images of finitely many generators in a
+FINITE ring.  Finitely many opens, finitely many maps each.
+
+`hℓ` is `ℓ ≠ 0` rather than `ℓ.Prime` deliberately — that is the honest
+minimal hypothesis, since all that is used is that `ZMod ℓ` is finite,
+and `ZMod 0 = ℤ` is the only excluded case.
+
+**Why the generality is load-bearing, and not a gratuitous rewrite of
+`finite_relPoint_of_x0Compactification_finiteField`.**  That leaf fixes
+the base to `Spec 𝔽_ℓ` and the base point to `𝟙`.  The Néron-datum
+consumer below has base `Spec ℤ_(ℓ)` and base point the CLOSED POINT
+`SpecLoc.special toF`, so the identity-base-point form does not apply to
+it at all — there is no `IsX0Compactification` over `𝔽_ℓ` anywhere in
+`IsX0NeronDatum`, only one over `Spec ℤ_(ℓ)`.  Generalising the base
+POINT, rather than manufacturing a special-fibre compactification, is
+what keeps this question elementary: the alternative route would have
+made an elementary finiteness fact depend on Deligne–Rapoport.
+
+**A merge is AVAILABLE and should be taken by whoever holds both.**  This
+statement subsumes `finite_relPoint_of_x0Compactification_finiteField`
+exactly — that leaf is the case `S = Spec 𝔽_ℓ`, `g = 𝟙`,
+`hf = h.isProper`, and its own docstring records that `isProper` is the
+only field of `IsX0Compactification` it consumes.  It is not merged here
+only because that declaration is another owner's and was in flight when
+this was written.
+
+IRREDUCIBLE at this pin, and the axis searched is the SCHEME-THEORETIC
+one: `IsProper` is this development's own predicate, and neither the pin,
+nor `~/cs/FLT`, nor this tree has a "finite type over a finite ring
+implies finitely many sections" lemma.  NOT searched: an affine-local
+reduction written directly against `IsAffineOpen.isoSpec`,
+`IsOpenImmersion.lift` and the `ΓSpec` adjunction, which is how the
+sketch above would actually be mechanised and is the route a successor
+should try first. **The check that would refute this verdict**: such a
+lemma appearing in `Mathlib` under any name, or the affine-local
+reduction going through. -/
+theorem finite_relPoint_of_isProper_finiteField {ℓ : ℕ} (_hℓ : ℓ ≠ 0)
+    {Z S : Scheme.{0}} {f : Z ⟶ S} (_hf : IsProper f) (g : SpecF ℓ ⟶ S) :
+    Finite (RelPoint f g) :=
+  sorry
+
+/-- **Abel–Jacobi is injective on relative points at every Kenku level,
+over every base and at every test object** (sorry node — Riemann–Roch).
+
+TRUE: at `N ∈ kenkuLevels` the fibres of `X_0(N)` have genus `≥ 1` — the
+values, in the order of `kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5,
+5`, and the four sieve levels have genus `3, 4, 5, 5` (Magma,
+2026-07-27).  For a smooth proper geometrically connected curve of
+positive genus carrying a section, `x ↦ [x] − [o]` is a CLOSED IMMERSION
+into the Jacobian, hence a monomorphism, hence injective on `T`-points
+for every `T`.  Contrapositively: `aj g x = aj g y` with `x ≠ y` makes
+`x − y` principal, so some function has a single simple pole and the
+curve admits a degree-`1` map to `ℙ¹` — genus `0`.
+
+**Both generalisations are load-bearing**, and neither is available from
+the `Spec ℚ`-shaped statements already in this file.  The base `S` is
+arbitrary because the consumer below applies this over `Spec ℤ_(ℓ)`; the
+test object `T` is arbitrary because the point that matters there is the
+CLOSED point `Spec 𝔽_ℓ ⟶ Spec ℤ_(ℓ)`, not `𝟙 S`.  `HasRankZeroJacobian`
+carries the `Spec ℚ`, `T = S` case and cannot be specialised to either.
+
+IRREDUCIBLE at this pin, and the axis searched is the GEOMETRIC one:
+Riemann–Roch, the genus of a scheme and `Pic⁰` are absent from the pin,
+from `~/cs/FLT` and from this development.  NOT searched: an ARITHMETIC
+axis, in which `1 ≤ genus` is replaced by a computable invariant of `N`
+so that positivity is a `decide` rather than a theorem about the curve.
+That is the shape a successor should prefer, and `hN` is written as
+`N ∈ kenkuLevels` for exactly that reason: `kenkuLevels` is consumed
+ONLY to supply positivity of the genus, so the hypothesis should become
+`1 ≤ x0Genus N` the moment such an invariant lands, without touching
+anything else here. -/
+theorem injective_aj_of_x0Compactification {N : ℕ} (_hN : N ∈ kenkuLevels)
+    {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
+    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (jacZ : IsJacobianOf xstr abZ oZ) {T : Scheme.{0}} (g : T ⟶ S) :
+    Function.Injective (jacZ.aj g) :=
+  sorry
+
 section SharpSieve
 
 variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
@@ -10249,36 +10363,41 @@ variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
     {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
 
 /-- **The special fibre of a Néron-pinned datum has finitely many
-rational points** (sorry node — geometry, UNIVERSAL in `ℓ`).
+rational points** (PROVEN 2026-07-27, over
+`finite_relPoint_of_isProper_finiteField`).
 
-TRUE, and it carries no sharpness claim whatever, which is why it is
-separated out: `d.spX` identifies `X_0(N)(𝔽_ℓ)` with the `𝔽_ℓ`-points of
-the integral model `xstr`, and `d.model.isProper` makes that model
-proper over `Spec ℤ_(ℓ)`; so the special fibre is a proper scheme over
-the finite field `𝔽_ℓ` and has finitely many rational points.  `ℓ ≠ 0`
-is not a hypothesis because `d.base` already forces `ℓ` prime — see
-`IsReductionBase`, whose docstring derives primality from the two
-conditions.
+The whole of the proof is bookkeeping, and that is the point: `d.spX`
+identifies `X_0(N)(𝔽_ℓ)` with the `𝔽_ℓ`-points of the integral model
+`xstr` taken over the CLOSED POINT `SpecLoc.special toF`, and
+`d.model.isProper` makes that model proper over `Spec ℤ_(ℓ)`.  So the
+remaining content is entirely the general fact that a proper morphism
+has finitely many points valued in a finite field — with no modular
+curve, no `N`, and no Néron datum in it — which is exactly what
+`finite_relPoint_of_isProper_finiteField` states.
 
-This is the SAME mathematics as
-`finite_relPoint_of_x0Compactification_finiteField`, reached from a
-Néron datum instead of from a compactification over `𝔽_ℓ`; the two
-cannot be shared as stated because a Néron datum does not carry an
-`IsX0Compactification` over `𝔽_ℓ`, only over `Spec ℤ_(ℓ)`.  **The check
-that would refute that**: a lemma deducing
-`IsX0Compactification N strX' strY' j'` from `d` — i.e. that the special
-fibre of the model is again a compactification of the `Γ₀(N)`-problem —
-would let this leaf be discharged from the other one, and it is the
-natural thing for an owner of the integral model to produce.
+`ℓ ≠ 0` is not a hypothesis because `d.base` supplies it
+(`IsReductionBase.ne_zero`, proven above); `IsReductionBase`'s docstring
+derives full primality, but only nonvanishing is needed.
 
-`_d` carries an underscore only because the body is `sorry`; it is
-entirely load-bearing, since without it `strX'` is an arbitrary scheme
-over `𝔽_ℓ` and the statement is false. -/
+**The route deliberately NOT taken.**  An earlier note here proposed
+discharging this leaf from
+`finite_relPoint_of_x0Compactification_finiteField` by first deducing
+`IsX0Compactification N strX' strY' j'` from `d` — that the special
+fibre of the model is again a compactification of the `Γ₀(N)`-problem.
+That is true and is the natural thing for the integral-model owner to
+produce, but it is the WRONG dependency for this leaf: it would make an
+elementary finiteness fact rest on Deligne–Rapoport.  Generalising the
+base POINT instead keeps the residue elementary, and is what the proof
+below does. -/
 theorem finite_specialFibre_of_x0NeronDatum
-    (_d : IsX0NeronDatum N ℓ R toF jac jac'
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
       (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
     Finite (RelPoint strX' (𝟙 (SpecF ℓ))) :=
-  sorry
+  haveI : Finite (RelPoint xstr (SpecLoc.special toF)) :=
+    finite_relPoint_of_isProper_finiteField d.base.ne_zero d.model.isProper
+      (SpecLoc.special toF)
+  Finite.of_equiv _
+    (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
 
 /-- **Abel–Jacobi is injective on the special fibre** (sorry node —
 geometry, UNIVERSAL in `ℓ`).
@@ -10305,13 +10424,35 @@ it is special to the sieve: the seven single-prime levels have positive
 genus too, and a successor proving `card_le_of_rankZeroJacobian` will
 want it there.
 
-IRREDUCIBLE at this pin: the genus of a curve does not exist in this
-development in any form. -/
-theorem aj_injective_of_x0NeronDatum (_hlevel : N ∈ kenkuLevels)
-    (_d : IsX0NeronDatum N ℓ R toF jac jac'
+**PROVEN 2026-07-27, over `injective_aj_of_x0Compactification`.**  The
+earlier verdict — "IRREDUCIBLE: the genus of a curve does not exist in
+this development in any form" — was right about the mathematics and
+wrong about the cut.  What the Néron datum contributes is not genus but
+a TRANSPORT: `d.spX_aj` says Abel–Jacobi on the special fibre is
+Abel–Jacobi on the integral model read through the equivalences `spX`
+and `spJ`, so injectivity here is equivalent to injectivity of
+`jacZ.aj` at the closed point `SpecLoc.special toF`.  The genus content
+is then a statement about `d.model` alone, with no `𝔽_ℓ` and no datum in
+it, and that is where it now lives.
+
+The residue that this factoring exposes, and which is worth saying: the
+missing theorem is needed at an ARBITRARY base and an ARBITRARY test
+object, not over `Spec ℚ` at the identity.  `HasRankZeroJacobian`
+carries only the latter, which is why nothing already in this file could
+be specialised to close this leaf. -/
+theorem aj_injective_of_x0NeronDatum (hlevel : N ∈ kenkuLevels)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
       (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
-    Function.Injective (jac'.aj (𝟙 (SpecF ℓ))) :=
-  sorry
+    Function.Injective (jac'.aj (𝟙 (SpecF ℓ))) := by
+  intro x y hxy
+  have hz : jacZ.aj (SpecLoc.special toF)
+        (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) x)
+      = jacZ.aj (SpecLoc.special toF)
+        (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) y) := by
+    rw [← d.spX_aj (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) x,
+      ← d.spX_aj (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) y, hxy]
+  exact (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).injective
+    (injective_aj_of_x0Compactification hlevel d.model jacZ (SpecLoc.special toF) hz)
 
 end SharpSieve
 
@@ -10365,7 +10506,37 @@ prime cuts anything.
 
 IRREDUCIBLE at this pin: it needs `#J_0(N)(𝔽_ℓ)` from Eichler–Shimura
 and the Abel–Jacobi image inside it as an explicitly computable finite
-object. -/
+object.
+
+**Which axes that verdict covers** (2026-07-27, recorded because an
+irreducibility verdict is only as wide as the axis its author searched):
+
+* *The geometric axis is EXHAUSTED.*  It is what produced this leaf:
+  `finite_specialFibre_of_x0NeronDatum` and
+  `aj_injective_of_x0NeronDatum` were split off, and both are now
+  PROVEN by reduction to base-general statements.  Nothing geometric
+  remains mixed in here.
+* *Splitting the two conjuncts into two existentials is BLOCKED* and
+  always will be — they have to hold at the SAME `ℓ`, which is the
+  whole reason the padding bound is carried here.
+* *NOT searched to exhaustion, and the most promising direction: making
+  the padding conjunct UNIVERSAL in `ℓ` and lifting it out.*  Sketch:
+  `red_aj` plus injectivity of `redJ` (`neronReduction_injective`, which
+  needs exactly the `hfin` and `ℓ ≠ 2` already present) plus injectivity
+  of the GENERIC Abel–Jacobi makes `redX` injective, so
+  `#X_0(N)(ℚ) ≤ #X_0(N)(𝔽_ℓ)`; and the rational cusps give
+  `numRationalCusps N ≤ #X_0(N)(ℚ)`.  That would prove
+  `numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)` for EVERY good odd `ℓ`, leaving
+  this leaf with the intersection bound alone.  It is blocked here only
+  because this statement's context carries no `Spec ℚ`-side modular
+  structure at all — `IsX0NeronDatum` has an `IsX0Compactification` over
+  `Spec ℤ_(ℓ)` and none over `Spec ℚ` — while `exists_rationalCusps` and
+  `HasRankZeroJacobian` are both `Spec ℚ`-hardwired.  **The check that
+  would refute the blockage**: a general-base form of
+  `exists_rationalCusps` (cusps of `IsX0Compactification N xstr ystr jZ`
+  over an arbitrary base), together with injectivity of specialisation
+  on cusps.  Both are natural products of the integral-model owner, and
+  neither needs Eichler–Shimura. -/
 theorem exists_sharpSievePrime_classCount (N : ℕ) (_hlevel : N ∈ x0SieveLevels) :
     ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧
       ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ}
@@ -10427,6 +10598,20 @@ geometry mixed in with it, which are now separate leaves:
 * `aj_injective_of_x0NeronDatum` — Abel–Jacobi is injective there
   (positive genus, universal in `ℓ`);
 * `exists_sharpSievePrime_classCount` — the arithmetic residue proper.
+
+**Both geometric pieces are now PROVEN** (2026-07-27), and what closing
+them showed is that neither was about the Néron datum at all.  Each
+reduced, by pure transport along the datum's `spX`/`spJ` equivalences, to
+a statement about the INTEGRAL MODEL over `Spec ℤ_(ℓ)` at its closed
+point — `finite_relPoint_of_isProper_finiteField` and
+`injective_aj_of_x0Compactification` respectively.  The lesson for the
+rest of this subsection is that the datum's role is to TRANSPORT
+questions from the special fibre to the model, and that the honest
+residue of a special-fibre leaf is almost always a base-general
+statement with no `𝔽_ℓ` in it.  Note in particular that both residues
+need an arbitrary base POINT: the identity-base-point forms already in
+this file (`finite_relPoint_of_x0Compactification_finiteField`,
+`HasRankZeroJacobian`) cannot be specialised to either.
 
 Injectivity is what converts the count of surviving POINTS of
 `X_0(N)(𝔽_ℓ)` into a count of surviving CLASSES in `J_0(N)(𝔽_ℓ)`, and
