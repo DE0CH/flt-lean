@@ -457,6 +457,9 @@ public import Mathlib.Analysis.Normed.Module.FiniteDimension
 public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
 public import Mathlib.RingTheory.Extension.Presentation.Submersive
 public import Mathlib.RingTheory.Localization.Away.Basic
+-- `IsLocalization.Away.tensorProductEquivTMulRight` (base change of a localization
+-- is a localization), used in `smooth_quotient_of_smooth_localizationAway`.
+public import Mathlib.RingTheory.Localization.BaseChange
 -- proof-only: `X_pow_sub_C_irreducible_of_prime`, used to build the quadratic
 -- extension `F(sqrt d)` inside `exists_quadraticExtension_trivial_of_isTotallyReal`.
 -- Nothing from it occurs in a SIGNATURE, so a plain (non-`public`) import suffices.
@@ -2324,24 +2327,6 @@ been removed here. What is left is Sard's theorem in its algebraic form
 a general-purpose statement about arbitrary morphisms out of a smooth variety
 and is reusable far beyond this development.
 
-THE CLASSICAL PROOF, in the shape that would formalize here.
-* `R := k[X₀,…,X_{m−1}]` is a noetherian DOMAIN and `B` is a finite-type
-  `R`-algebra (it is finite type over `k`, being smooth, hence a fortiori
-  over `R`).
-* GENERIC FREENESS (Grothendieck; `EGA IV 6.9.1`, Stacks 051R): there is
-  `0 ≠ f₁ ∈ R` with `B_{f₁}` FREE, hence flat, over `R_{f₁}`.
-* THE GENERIC FIBRE IS SMOOTH: `B ⊗_R Frac R` is a LOCALIZATION of `B`, so it
-  is regular (a smooth algebra over a field is regular), it is of finite type
-  over `Frac R`, and `Frac R` has characteristic zero hence is PERFECT — so
-  regular = smooth. This is the only step that uses `CharZero`, and it is
-  exactly where the theorem fails in characteristic `p` (Frobenius
-  `𝔸¹ → 𝔸¹` satisfies every other hypothesis and has no smooth fibre).
-* SPREADING OUT: smooth at the generic fibre + flat + finitely presented ⟹
-  smooth over a nonempty open `D(f₂)` of `Spec R`. Take `F = f₁ f₂`.
-* Finally the fibre over a `k`-RATIONAL `v ∈ D(F)` is the base change of a
-  smooth `R_F`-algebra along `R_F → k`, so it is smooth over `k`
-  (`Algebra.Smooth.baseChange`, already in mathlib).
-
 DEGENERATE CASES ARE COVERED AND ARE NOT EXCEPTIONS. If `m = 0` the only
 nonzero `F` are the nonzero constants, every `v` qualifies, and the assertion
 is `Algebra.Smooth k (B ⧸ ⊥)`, i.e. `B` itself. If `π` is not dominant — for
@@ -2349,23 +2334,294 @@ instance whenever `dim B < m` — the generic fibre is the ZERO ring, whose
 `Spec` is empty and which is smooth over `k`; the theorem is then true with
 `F` cutting out the complement of the closure of the image.
 
-ABSENCE AUDIT 2026-07-27, measured on this pin (and the check that would
-refute it: `grep -rn "genericFreeness\|generic_freeness" .lake/packages/mathlib`,
-which returns nothing, and `ls Mathlib/RingTheory/Flat/`, which has no
-`Generic.lean`). Mathlib has `Algebra.smoothLocus` and
-`Algebra.isOpen_smoothLocus` — openness of the locus in the SOURCE for one
-FIXED algebra — and `Algebra.Smooth.baseChange`, but it has neither generic
-freeness nor any statement about the locus in the BASE over which the fibres
-of a family are smooth. `~/cs/FLT` has nothing either. So generic freeness is
-the single largest missing prerequisite, and it is worth building on its own
-account. -/
+**PROVEN 2026-07-27 over ONE leaf, AND THE GENERIC-FREENESS PREREQUISITE IS
+GONE.** The previous version of this docstring carried an ABSENCE AUDIT
+concluding that "generic freeness is the single largest missing prerequisite,
+and it is worth building on its own account", and prescribed the classical
+route generic freeness → generic flatness → spreading out. That audit's
+*absence* claims were all correct and still are (`grep -rn
+"genericFreeness\|generic_freeness" .lake/packages/mathlib` returns nothing;
+`ls Mathlib/RingTheory/Flat/` has no `Generic.lean`; `~/cs/FLT` has nothing).
+**Its conclusion was wrong**: generic freeness is not on the critical path at
+all, and the theorem has been assembled without it.
+
+WHY FLATNESS DROPS OUT. The classical route needs flatness only to run a
+spreading-out argument by hand. Mathlib already contains that argument, in
+the SOURCE rather than the base: `Algebra.isOpen_smoothLocus` (the smooth
+locus `{q ∈ Spec B : FormallySmooth R B_q}` is open, for `B` of finite
+presentation over `R`) together with
+`Algebra.basicOpen_subset_smoothLocus_iff_smooth`. All flatness hypotheses
+are discharged INSIDE those mathlib proofs. What is left to supply is purely
+topological and takes three lines of ideal theory:
+
+* the complement of the smooth locus is `zeroLocus J` for an ideal `J ≤ B`;
+* if every prime of `B` lying over `⊥` is a smooth point, then `J` MEETS the
+  image of `R ∖ {0}` — otherwise `Ideal.exists_le_prime_disjoint` produces a
+  prime `q ⊇ J` disjoint from that image, i.e. lying over `⊥`, which is both
+  smooth and non-smooth;
+* so some `0 ≠ F ∈ R` has `algebraMap R B F ∈ J`, hence `D(F) ⊆ zeroLocus J`ᶜ
+  `=` the smooth locus, and `B_F` is smooth over `R`.
+
+That is `exists_ne_zero_smooth_localizationAway_of_smoothAt_generic` below —
+fully general (any domain `R`, any finitely presented `B`), characteristic-free,
+and reusable well beyond this file.
+
+THE FIBRE STEP is `smooth_quotient_of_smooth_localizationAway`, also proven:
+`k` is `R ⧸ ker φ` for the evaluation `φ : R →ₐ[k] k`, so
+`Algebra.Smooth.baseChange`, `IsLocalization.Away.tensorProductEquivTMulRight`
+(base change of a localization is a localization), `IsLocalization.atUnits`
+(`φ F ≠ 0` makes `F` a unit downstairs, so that localization is trivial) and
+`Algebra.TensorProduct.quotIdealMapEquivQuotTensor` compose to
+`B ⧸ (ker φ)B ≃ₐ[R ⧸ ker φ] (R ⧸ ker φ) ⊗[R] B`, and `Algebra.Smooth.comp`
+lands the result over `k`.
+
+THE ONE REMAINING LEAF is
+`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` — the
+generic fibre is smooth — which is where and where alone `CharZero` is used,
+and which is exactly the classical statement "a regular local ring
+essentially of finite type over a PERFECT field is formally smooth over it"
+(Stacks 07EC / EGA IV 22.5.8), applied to `B_q` (regular, being a
+localization of the regular ring `B`) over `Frac R` (characteristic zero,
+hence perfect). It is genuinely absent from the pin — the check that would
+refute that: `grep -rln "IsRegularLocalRing" .lake/packages/mathlib/Mathlib`
+returns only `RegularLocalRing/{Defs,Polynomial}.lean`, neither of which
+mentions smoothness. -/
+theorem exists_ne_zero_smooth_localizationAway_of_smoothAt_generic
+    {R B : Type u} [CommRing R] [IsDomain R] [CommRing B] [Algebra R B]
+    [Algebra.FinitePresentation R B]
+    (H : ∀ (q : Ideal B) (_ : q.IsPrime),
+        Ideal.comap (algebraMap R B) q = ⊥ →
+        Algebra.FormallySmooth R (Localization.AtPrime q)) :
+    ∃ F : R, F ≠ 0 ∧ Algebra.Smooth R (Localization.Away (algebraMap R B F)) := by
+  classical
+  have hopen : IsOpen (Algebra.smoothLocus R B) := Algebra.isOpen_smoothLocus
+  obtain ⟨J, hJ⟩ := (PrimeSpectrum.isClosed_iff_zeroLocus_ideal _).mp hopen.isClosed_compl
+  set S : Submonoid B := Submonoid.map (algebraMap R B) (nonZeroDivisors R) with hSdef
+  have hnd : ¬ Disjoint (J : Set B) (S : Set B) := by
+    intro hdisj
+    obtain ⟨q, hq, hJq, hdq⟩ := J.exists_le_prime_disjoint S hdisj
+    have hcomap : Ideal.comap (algebraMap R B) q = ⊥ := by
+      refine le_antisymm (fun r hr => ?_) bot_le
+      by_contra hr0
+      refine Set.disjoint_left.mp hdq (Ideal.mem_comap.mp hr) ?_
+      exact ⟨r, mem_nonZeroDivisors_of_ne_zero hr0, rfl⟩
+    have hmem : (⟨q, hq⟩ : PrimeSpectrum B) ∈ Algebra.smoothLocus R B := H q hq hcomap
+    have hmem' : (⟨q, hq⟩ : PrimeSpectrum B) ∈ (Algebra.smoothLocus R B)ᶜ := by
+      rw [hJ]; exact hJq
+    exact hmem' hmem
+  obtain ⟨x, hxJ, hxS⟩ := Set.not_disjoint_iff.mp hnd
+  obtain ⟨F, hF, rfl⟩ := hxS
+  refine ⟨F, nonZeroDivisors.ne_zero hF, ?_⟩
+  rw [← Algebra.basicOpen_subset_smoothLocus_iff_smooth]
+  intro p hp
+  by_contra hcon
+  rw [← Set.mem_compl_iff, hJ] at hcon
+  exact hp (hcon hxJ)
+
+/-- The kernel of multivariate evaluation at `v` is generated by the `Xᵢ - vᵢ`
+(**PROVEN 2026-07-27**; mathlib has only the univariate
+`Polynomial.quotientSpanXSubCAlgEquiv`). -/
+theorem ker_mvPolynomialAeval_eq_span_X_sub_C {k : Type u} [CommRing k] {m : ℕ}
+    (v : Fin m → k) :
+    RingHom.ker (MvPolynomial.aeval (R := k) v).toRingHom =
+      Ideal.span (Set.range fun i : Fin m =>
+        MvPolynomial.X i - MvPolynomial.C (v i)) := by
+  classical
+  set I : Ideal (MvPolynomial (Fin m) k) :=
+    Ideal.span (Set.range fun i : Fin m => MvPolynomial.X i - MvPolynomial.C (v i)) with hI
+  have hgen : ∀ i : Fin m, MvPolynomial.X i - MvPolynomial.C (v i) ∈ I := by
+    intro i; exact Ideal.subset_span ⟨i, rfl⟩
+  have key : ∀ p : MvPolynomial (Fin m) k,
+      p - MvPolynomial.C (MvPolynomial.aeval v p) ∈ I := by
+    intro p
+    induction p using MvPolynomial.induction_on with
+    | C a => simp
+    | add p q hp hq =>
+        have : p + q - MvPolynomial.C (MvPolynomial.aeval v (p + q)) =
+            (p - MvPolynomial.C (MvPolynomial.aeval v p)) +
+            (q - MvPolynomial.C (MvPolynomial.aeval v q)) := by
+          simp only [map_add]; ring
+        rw [this]; exact Ideal.add_mem _ hp hq
+    | mul_X p i hp =>
+        have : p * MvPolynomial.X i -
+            MvPolynomial.C (MvPolynomial.aeval v (p * MvPolynomial.X i)) =
+            p * (MvPolynomial.X i - MvPolynomial.C (v i)) +
+            (p - MvPolynomial.C (MvPolynomial.aeval v p)) * MvPolynomial.C (v i) := by
+          simp only [map_mul, MvPolynomial.aeval_X, map_mul]
+          ring
+        rw [this]
+        exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ (hgen i)) (Ideal.mul_mem_right _ _ hp)
+  refine le_antisymm (fun p hp => ?_) ?_
+  · have hp0 : MvPolynomial.aeval v p = 0 := hp
+    have := key p
+    rwa [hp0, map_zero, sub_zero] at this
+  · rw [hI, Ideal.span_le]
+    rintro _ ⟨i, rfl⟩
+    simp [RingHom.mem_ker]
+
+-- `⊗[R]` / `⊗ₜ[R]` are only brought into scope further down this file
+-- (`open _root_.TensorProduct`, ~line 6067), so this declaration opens them itself.
+-- `_root_.` is mandatory here: a bare `open TensorProduct` inside
+-- `namespace GaloisRepresentation.Modularity` can bind to a nested namespace.
+open _root_.TensorProduct in
+/-- **THE FIBRE STEP** (**PROVEN 2026-07-27**). If the basic open `D(F)` of the
+base has smooth total space `B_F` over `R`, then every `k`-rational point of
+`D(F)` — i.e. every `k`-algebra map `φ : R →ₐ[k] k` with `φ F ≠ 0` — has smooth
+fibre `B ⧸ (ker φ)B` over `k`. Base change of a smooth algebra is smooth, base
+change of a localization is a localization, and localizing at a unit does
+nothing. -/
+theorem smooth_quotient_of_smooth_localizationAway
+    {k R B : Type u} [Field k] [CommRing R] [Algebra k R] [CommRing B] [Algebra k B]
+    [Algebra R B] [IsScalarTower k R B] (F : R)
+    [Algebra.Smooth R (Localization.Away (algebraMap R B F))]
+    (φ : R →ₐ[k] k) (hφ : φ F ≠ 0) :
+    Algebra.Smooth k (B ⧸ Ideal.map (algebraMap R B) (RingHom.ker φ.toRingHom)) := by
+  classical
+  set J : Ideal R := RingHom.ker φ.toRingHom with hJdef
+  have hmem : ∀ r : R, r - algebraMap k R (φ r) ∈ J := by
+    intro r
+    simp [hJdef, RingHom.mem_ker, φ.commutes]
+  have hJtop : J ≠ ⊤ := by
+    intro h
+    have : (1 : R) ∈ J := h ▸ Submodule.mem_top
+    rw [hJdef, RingHom.mem_ker] at this
+    simp at this
+  haveI : Nontrivial (R ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJtop
+  let ψ : k →ₐ[k] R ⧸ J := (Ideal.Quotient.mkₐ k J).comp (Algebra.ofId k R)
+  have hψsurj : Function.Surjective ψ := by
+    intro x
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    exact ⟨φ r, ((Ideal.Quotient.eq).2 (hmem r)).symm⟩
+  have hψinj : Function.Injective ψ := ψ.toRingHom.injective
+  let ε : k ≃ₐ[k] R ⧸ J := AlgEquiv.ofBijective ψ ⟨hψinj, hψsurj⟩
+  haveI : Algebra.Smooth k k := ⟨inferInstance, inferInstance⟩
+  haveI : Algebra.Smooth k (R ⧸ J) := Algebra.Smooth.of_equiv ε
+  haveI : Algebra.Smooth (R ⧸ J)
+      ((R ⧸ J) ⊗[R] Localization.Away (algebraMap R B F)) := inferInstance
+  let e1 : (R ⧸ J) ⊗[R] Localization.Away (algebraMap R B F) ≃ₐ[R ⧸ J]
+      Localization.Away ((1 : R ⧸ J) ⊗ₜ[R] (algebraMap R B F)) :=
+    IsLocalization.Away.tensorProductEquivTMulRight R (R ⧸ J) (algebraMap R B F) _
+  haveI : Algebra.Smooth (R ⧸ J)
+      (Localization.Away ((1 : R ⧸ J) ⊗ₜ[R] (algebraMap R B F))) :=
+    Algebra.Smooth.of_equiv e1
+  have hFJ : IsUnit (Ideal.Quotient.mk J F) := by
+    have h1 : Ideal.Quotient.mk J F = ψ (φ F) := (Ideal.Quotient.eq).2 (hmem F)
+    rw [h1]
+    exact ((isUnit_iff_ne_zero).2 hφ).map ψ
+  have htmul : ((1 : R ⧸ J) ⊗ₜ[R] (algebraMap R B F))
+      = algebraMap (R ⧸ J) ((R ⧸ J) ⊗[R] B) (Ideal.Quotient.mk J F) := by
+    have hb : (algebraMap R B F) = F • (1 : B) := by simp [Algebra.smul_def]
+    rw [hb, TensorProduct.tmul_smul, TensorProduct.smul_tmul',
+      Algebra.TensorProduct.algebraMap_apply]
+    congr 1
+    simp [Algebra.smul_def, Ideal.Quotient.algebraMap_eq]
+  have hunit : IsUnit ((1 : R ⧸ J) ⊗ₜ[R] (algebraMap R B F)) := by
+    rw [htmul]; exact hFJ.map _
+  let e2 : ((R ⧸ J) ⊗[R] B) ≃ₐ[(R ⧸ J) ⊗[R] B]
+      Localization.Away ((1 : R ⧸ J) ⊗ₜ[R] (algebraMap R B F)) :=
+    IsLocalization.atUnits _ (Submonoid.powers ((1 : R ⧸ J) ⊗ₜ[R] (algebraMap R B F)))
+      (by rintro x ⟨n, rfl⟩; exact hunit.pow n)
+  haveI : Algebra.Smooth (R ⧸ J) ((R ⧸ J) ⊗[R] B) :=
+    Algebra.Smooth.of_equiv (e2.restrictScalars (R ⧸ J)).symm
+  haveI : Algebra.Smooth (R ⧸ J) (B ⧸ Ideal.map (algebraMap R B) J) :=
+    Algebra.Smooth.of_equiv (Algebra.TensorProduct.quotIdealMapEquivQuotTensor B J).symm
+  haveI : IsScalarTower k (R ⧸ J) (B ⧸ Ideal.map (algebraMap R B) J) :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      have h2 : algebraMap k B x = algebraMap R B (algebraMap k R x) :=
+        IsScalarTower.algebraMap_apply k R B x
+      show Ideal.Quotient.mk _ (algebraMap k B x) = _
+      rw [h2]
+      rfl
+  exact Algebra.Smooth.comp k (R ⧸ J) _
+
+/-- **THE GENERIC FIBRE IS SMOOTH** (sorry node, 2026-07-27; the ONLY remaining
+leaf under `exists_genericSmoothFibre_of_smooth_of_charZero`, and the only
+place where `CharZero` is used).
+
+If `B` is smooth over a characteristic-zero field `k` and finite type over a
+`k`-subalgebra `R` which is a domain, then every prime `q` of `B` lying over
+`⊥ ≤ R` is a smooth point of `B` over `R`.
+
+THE PROOF, and why it is exactly one classical theorem. Put `K := Frac R`.
+Since `q` lies over `⊥`, every nonzero element of `R` maps outside `q`, so
+`B_q` is a `K`-algebra, and it is essentially of finite type over `K` because
+`B` is of finite type over `R`. `B` is a REGULAR ring, being smooth over a
+field, and `B_q` is a localization of `B`, hence regular. `K` contains `k`, so
+`K` has characteristic zero, hence is PERFECT. The classical theorem
+(Stacks 07EC; EGA IV 22.5.8; Matsumura, *CRT* 28.7) says a noetherian local
+ring essentially of finite type over a perfect field is FORMALLY SMOOTH over
+that field exactly when it is regular. Finally `K` is a localization of `R`,
+so `Algebra.FormallySmooth.of_isLocalization` gives
+`FormallySmooth R K`, and `Algebra.FormallySmooth.comp` composes the two.
+
+WHERE CHARACTERISTIC ZERO IS LOAD-BEARING, i.e. how the statement fails
+without it: over `𝔽_p`, take `B = 𝔽_p[y]` (smooth), `m = 1`, `t₀ = yᵖ`. Then
+`R = 𝔽_p[X] → B` is the Frobenius-like map `X ↦ yᵖ`, `K = 𝔽_p(X)`, and
+`B ⊗_R K = K[y]/(yᵖ - X)` is a FIELD which is purely inseparable over `K` —
+regular, but NOT formally smooth, because `K` is not perfect. Every fibre of
+that family is non-reduced, so no `F` can work: this is not a defect of the
+proof route but the reason the theorem carries `CharZero`.
+
+MISSING FROM THE PIN, with the checks that would refute it:
+`grep -rln "IsRegularLocalRing" .lake/packages/mathlib/Mathlib` returns only
+`Mathlib/RingTheory/RegularLocalRing/{Defs,Polynomial}.lean`, and
+`grep -rn "IsRegularRing\|IsRegularLocalRing" Mathlib/RingTheory/Smooth/
+Mathlib/RingTheory/Etale/` returns NOTHING — so mathlib relates smoothness to
+regularity in neither direction. What it DOES have, and what a prover here
+should start from, is `Algebra.FormallySmooth.of_perfectField`
+(`Mathlib/RingTheory/Smooth/Field.lean`), which settles the case where `B_q`
+is a FIELD essentially of finite type over `K`; the general case needs the
+step from the residue field to the local ring, i.e. the Cohen structure
+theorem or the Jacobian criterion. -/
+theorem formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero
+    {k R B : Type u} [Field k] [CharZero k] [CommRing R] [IsDomain R] [Algebra k R]
+    [CommRing B] [Algebra k B] [Algebra R B] [IsScalarTower k R B]
+    [Algebra.Smooth k B] [Algebra.FiniteType R B]
+    (q : Ideal B) [q.IsPrime] (_hq : Ideal.comap (algebraMap R B) q = ⊥) :
+    Algebra.FormallySmooth R (Localization.AtPrime q) :=
+  sorry
+
+/-- **GENERIC SMOOTHNESS ON THE TARGET — THE ALGEBRAIC SARD THEOREM**
+(**PROVEN 2026-07-27** over the single leaf
+`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero`; see the
+long docstring above `exists_ne_zero_smooth_localizationAway_of_smoothAt_generic`
+for the route and for the retraction of the generic-freeness audit). -/
 theorem exists_genericSmoothFibre_of_smooth_of_charZero {k : Type u} [Field k] [CharZero k]
     {B : Type u} [CommRing B] [Algebra k B] [Algebra.Smooth k B] {m : ℕ} (t : Fin m → B) :
     ∃ F : MvPolynomial (Fin m) k, F ≠ 0 ∧
       ∀ v : Fin m → k, MvPolynomial.eval v F ≠ 0 →
         Algebra.Smooth k (B ⧸ Ideal.span (Set.range fun i : Fin m =>
-          t i - algebraMap k B (v i))) :=
-  sorry
+          t i - algebraMap k B (v i))) := by
+  classical
+  letI : Algebra (MvPolynomial (Fin m) k) B := (MvPolynomial.aeval t).toRingHom.toAlgebra
+  have halg : ∀ p : MvPolynomial (Fin m) k,
+      algebraMap (MvPolynomial (Fin m) k) B p = MvPolynomial.aeval t p := fun p => rfl
+  haveI : IsScalarTower k (MvPolynomial (Fin m) k) B :=
+    IsScalarTower.of_algebraMap_eq fun x => by
+      rw [halg]; simp [MvPolynomial.algebraMap_eq]
+  haveI : Algebra.FinitePresentation (MvPolynomial (Fin m) k) B :=
+    Algebra.FinitePresentation.of_restrict_scalars_finitePresentation k _ B
+  haveI : Algebra.FiniteType (MvPolynomial (Fin m) k) B := inferInstance
+  obtain ⟨F, hF0, hFs⟩ :=
+    exists_ne_zero_smooth_localizationAway_of_smoothAt_generic (R := MvPolynomial (Fin m) k)
+      (B := B) fun q hq h =>
+        haveI := hq
+        formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero
+          (k := k) (R := MvPolynomial (Fin m) k) (B := B) q h
+  refine ⟨F, hF0, fun v hv => ?_⟩
+  haveI := hFs
+  have hker : Ideal.map (algebraMap (MvPolynomial (Fin m) k) B)
+      (RingHom.ker (MvPolynomial.aeval (R := k) v).toRingHom) =
+      Ideal.span (Set.range fun i : Fin m => t i - algebraMap k B (v i)) := by
+    rw [ker_mvPolynomialAeval_eq_span_X_sub_C, Ideal.map_span]
+    congr 1
+    rw [← Set.range_comp]
+    refine congrArg _ (funext fun i => ?_)
+    simp [Function.comp, halg]
+  have hφ : (MvPolynomial.aeval (R := k) v) F ≠ 0 := hv
+  have := smooth_quotient_of_smooth_localizationAway (k := k) (R := MvPolynomial (Fin m) k)
+    (B := B) F (MvPolynomial.aeval v) hφ
+  rwa [hker] at this
 
 /-- **BERTINI SMOOTHNESS, IN PURE COMMUTATIVE ALGEBRA** (**PROVEN 2026-07-27**
 over `exists_genericSmoothFibre_of_smooth_of_charZero`).
