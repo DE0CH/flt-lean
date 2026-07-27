@@ -60,10 +60,16 @@ step is now fully reduced, and the Jacobian criterion it rests on
 
 `projMul_assoc` is PROVEN too, by the density route: mathlib's
 `ext_of_fromSpecResidueField_eq` reduces it to associativity at residue fields,
-and the ONE thing left is `projMul_assoc_pt_algClosed` (associativity of the
-induced operation on `K`-points for an ALGEBRAICALLY CLOSED `K`, which is where
-the Milne I.2.5 content sits).  `projMul_assoc_pt` — the same statement over an
-arbitrary field — is now PROVEN from it, by descent along `Spec K̄ ⟶ Spec K`.
+and the ONE thing left is now `exists_projPtAddEquiv_algClosed` — the ALGEBRAIC
+`K`-point dictionary (an abelian-group structure on `K`-points with `projInfty`
+as zero and `projNeg` as negation, 2-divisible, and with every scheme morphism
+acting affinely).  `projMul_assoc_pt_algClosed` was that leaf until 2026-07-27
+and is now PROVEN from the dictionary together with the pure group-theoretic
+`commLoop_eq_add_of_addHom`; the old Milne I.2.5 / rigidity plan was CIRCULAR
+(it needs the group law on the target as a morphism) and the route taken
+replaces it by Silverman *AEC* III.4.7, which needs only the SET-level group
+`E(K)` that mathlib already has.  `projMul_assoc_pt` — the same statement over
+an arbitrary field — is PROVEN by descent along `Spec K̄ ⟶ Spec K`.
 `geometricallyReduced_projToSpec` is PROVEN as well: the general
 `Smooth → GeometricallyReduced` gap it named was a MATHLIB gap and not
 elliptic-curve mathematics, and it has been filled in
@@ -96,10 +102,11 @@ own branch and wrong once the others landed:
 * `exists_projMul` — the half of the old `exists_projAdd` where all the
   remaining gluing work for the group law lives (`exists_projAdd` itself is
   PROVEN from it and from `projMul_assoc`, see below);
-* `projMul_assoc_pt_algClosed` — the one leaf `projMul_assoc` still rests on
-  (`projMul_assoc_pt` was a second one until 2026-07-27 and is now PROVEN from
-  the algebraically-closed form, and `geometricallyReduced_projToSpec` was a
-  third and is now PROVEN outright);
+* `exists_projPtAddEquiv_algClosed` — the one leaf `projMul_assoc` still rests
+  on, the algebraic `K`-point dictionary (`projMul_assoc_pt_algClosed` was this
+  leaf until 2026-07-27 and is now PROVEN from it, `projMul_assoc_pt` was a
+  second one and is PROVEN by descent, and `geometricallyReduced_projToSpec`
+  was a third and is PROVEN outright);
 * `exists_projGroupLaw_geomFibreEquivVal` — item 8, see below
   (`exists_projGroupLaw_geomFibreAddEquiv` was the leaf here until
   2026-07-27 and is now PROVEN from it);
@@ -689,9 +696,15 @@ theorem comp_triAddRight_proj (E : WeierstrassCurve ℚ)
     comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _), projMulPt, projMulPt, ← Category.assoc,
     comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _)]
 
-/-- **Associativity of the operation `m` induces on `K`-points, `K` a
-field** (sorry node — this is where ALL the remaining mathematical content
-of `projMul_assoc` now sits).
+/-- **`Spec` of a field extension is an epimorphism of schemes** (PROVEN,
+formal).
+
+*Docstring repair, 2026-07-27*: this header previously read "Associativity
+of the operation `m` induces on `K`-points, `K` a field (sorry node …)",
+which belongs to `projMul_assoc_pt` below and had been left attached to
+this lemma by an earlier edit.  It is a stale `(sorry node)` LABEL of
+exactly the kind that generates phantom dispatches — this declaration is
+proven and always was.
 
 If `φ : K ⟶ L` is a homomorphism of FIELDS then `Spec φ` may be cancelled
 on the left: two morphisms `Spec K ⟶ X` that agree after restriction to
@@ -803,10 +816,198 @@ theorem projMulPt_neg_left (E : WeierstrassCurve ℚ)
   rw [projMulPt]
   simpa using h
 
+/-- **A commutative loop operation on a 2-divisible abelian group that is
+AFFINE in each variable IS the group addition** (PROVEN — pure group
+theory, no geometry, no `sorry` anywhere in its cone).
+
+This is the combinatorial half of `projMul_assoc_pt_algClosed`, isolated
+here so that the geometric half can be one clean interface
+(`exists_projPtAddEquiv_algClosed` below).  `F` is the operation
+transported to an abelian group `G`; `halg` is the ALGEBRAICITY input —
+for each fixed `y` the map `x ↦ F x y` is a group homomorphism plus a
+constant.  For a morphism of a smooth projective genus-`1` curve to
+itself that is Silverman *AEC* III.4.7 ("every morphism is a translation
+composed with an isogeny"); a CONSTANT morphism is covered too, as the
+zero homomorphism plus a constant, so `halg` needs no non-degeneracy
+hypothesis and the interface below needs no case split.
+
+## Why the three loop identities alone are NOT enough, and what closes the gap
+
+`hsymm`/`hzero`/`hneg` say exactly that `F` is a commutative loop with
+two-sided unit and inverses, and the smallest non-associative commutative
+loop has order `5` — so those three are consistent with
+non-associativity, which is the refutation recorded at
+`projMul_assoc_pt_algClosed`.  `halg` plus `hdiv` is what breaks it, and
+the argument is short enough to record in full:
+
+* write `F x y = α y x + y` with `α y : G →+ G` (the constant is pinned to
+  `y` by `hzero`, evaluating `halg` at `x = 0`);
+* `B x y := α y x - x` is additive in `x` (a difference of two additive
+  maps) and SYMMETRIC — `hsymm` rearranged is exactly
+  `α y x - x = α x y - y` — hence additive in `y` as well: `B` is a
+  symmetric biadditive form;
+* `hneg` gives `α x (-x) + x = 0`, i.e. `α x x = x`, i.e. `B` vanishes on
+  the diagonal;
+* expanding `B (x + y) (x + y) = 0` biadditively therefore leaves
+  `B x y + B y x = 0`, i.e. `2 • B x y = 0`;
+* `hdiv` kills that residue: `B x y = B (z + z) y = 2 • B z y = 0`.
+
+So `α y = id` for every `y`, and `F x y = x + y`.
+
+**`hdiv` is not decorative.** Without it `B` may be a nonzero symmetric
+biadditive form with values in `G[2]`, and `G[2] ≅ (ℤ/2)²` for an
+elliptic curve, so the conclusion genuinely fails for a non-divisible
+`G`.  Divisibility is the ONE place algebraic closedness of the base
+field enters this half of the argument: `E(K̄)` is a divisible group. -/
+theorem commLoop_eq_add_of_addHom {G : Type*} [AddCommGroup G] (F : G → G → G)
+    (hsymm : ∀ x y, F x y = F y x)
+    (hzero : ∀ y, F 0 y = y)
+    (hneg : ∀ x, F (-x) x = 0)
+    (hdiv : ∀ x : G, ∃ z, x = z + z)
+    (halg : ∀ y : G, ∃ (α : G →+ G) (c : G), ∀ x, F x y = α x + c) :
+    ∀ x y, F x y = x + y := by
+  choose α c hαc using halg
+  -- The constant is `y` itself, by `hzero` at `x = 0`.
+  have hc : ∀ y, c y = y := by
+    intro y
+    have h := hαc y 0
+    rw [hzero, map_zero, zero_add] at h
+    exact h.symm
+  have hF : ∀ x y, F x y = α y x + y := by
+    intro x y; rw [hαc y x, hc y]
+  -- `B` is symmetric, biadditive, and vanishes on the diagonal.
+  set B : G → G → G := fun x y => α y x - x with hB
+  have hBsymm : ∀ x y, B x y = B y x := by
+    intro x y
+    have h := hsymm x y
+    rw [hF x y, hF y x] at h
+    simp only [hB]
+    linear_combination (norm := abel) h
+  have hBadd : ∀ x x' y, B (x + x') y = B x y + B x' y := by
+    intro x x' y
+    simp only [hB, map_add]
+    abel
+  have hBself : ∀ x, B x x = 0 := by
+    intro x
+    have h := hneg x
+    rw [hF (-x) x, map_neg] at h
+    simp only [hB]
+    linear_combination (norm := abel) -h
+  -- Expanding `B (x + y) (x + y) = 0` leaves `2 • B x y = 0`.
+  have htwo : ∀ x y, B x y + B x y = 0 := by
+    intro x y
+    have h := hBself (x + y)
+    rw [hBadd x y (x + y), hBsymm x (x + y), hBsymm y (x + y), hBadd x y x, hBadd x y y,
+      hBself x, hBself y] at h
+    rw [hBsymm x y] at h ⊢
+    linear_combination (norm := abel) h
+  -- Divisibility kills it.
+  have hBzero : ∀ x y, B x y = 0 := by
+    intro x y
+    obtain ⟨z, rfl⟩ := hdiv x
+    rw [hBadd z z y]
+    exact htwo z y
+  intro x y
+  have hxy := hBzero x y
+  simp only [hB, sub_eq_zero] at hxy
+  rw [hF x y, hxy]
+
+/-- **The `K`-points of the projective Weierstrass model carry an abelian
+group structure with `projInfty` as zero and `projNeg` as negation, which
+is divisible and on which EVERY scheme morphism acts affinely** (sorry
+node — this is the geometric content that `projMul_assoc_pt_algClosed`
+now rests on, and it is the classical half: a point dictionary plus
+Silverman *AEC* III.4.7).
+
+Read clause by clause, for `K` algebraically closed and admitting at
+least one `K`-point of `proj E` (see the CHARACTERISTIC GUARD below):
+
+* `e` is a bijection from `K`-points of the projective Weierstrass model
+  to an abelian group `G` — concretely `G = (E⁄K).Point`, mathlib's
+  `WeierstrassCurve.Affine.Point`, whose `AddCommGroup` instance is
+  proven in mathlib from the ideal class group of the coordinate ring and
+  therefore does **not** depend on anything this cluster is constructing.
+  That is what makes this cut NON-CIRCULAR, and it is the reason the
+  rigidity route recorded below cannot be used instead;
+* `e` sends the unit section `P ≫ projToSpec E ≫ projInfty E` (the point
+  `[0 : 1 : 0]`) to `0`, and postcomposition with `projNeg E` (the
+  substitution `Y ↦ -Y - a₁X - a₃Z`) to negation — both are the standard
+  Weierstrass identifications;
+* `G` is **2-divisible**.  For `K` algebraically closed `[2] : E(K) → E(K)`
+  is surjective, since the `2`-division polynomial has a root in `K`.
+  This is the only clause where `IsAlgClosed K` is genuinely used, and
+  `commLoop_eq_add_of_addHom` shows it cannot be dropped;
+* the last clause is **ALGEBRAICITY**, and it is what distinguishes this
+  interface from the bare dictionary that the audit on
+  `projMul_assoc_pt_algClosed` correctly refutes.  It quantifies over
+  EVERY morphism of schemes `n : A ×_ℚ A ⟶ A`, saying that the induced map
+  `P ↦ n(P, Q)` on `K`-points is a group homomorphism plus a constant.
+  A bijection alone satisfies nothing of the sort — the loop
+  counterexample transported along an arbitrary bijection violates it —
+  so this clause is exactly the "the dictionary has to carry
+  algebraicity" requirement, discharged.
+
+## WHY THE LAST CLAUSE IS TRUE (and why it needs no non-degeneracy case)
+
+`P ↦ projMulPt E n P Q` is induced by an honest `K`-morphism: base-change
+`n` along `Spec K ⟶ Spec ℚ` and precompose with `(id, Q)`, giving
+`A_K ⟶ A_K` where `A_K = proj E ×_ℚ Spec K` is a smooth projective
+geometrically integral genus-`1` curve over `K` with the rational point
+`projInfty`.  Silverman *AEC* III.4.7 says every NON-constant morphism of
+such a curve to itself is a translation composed with an isogeny, i.e.
+`x ↦ α x + c` with `α` a group homomorphism; a CONSTANT morphism is
+`x ↦ 0 + c`, also of that shape.  So the clause holds for every `n`, with
+no hypothesis on `n` at all.
+
+## CHARACTERISTIC GUARD — `hne` is a FAITHFULNESS fix, not a convenience
+
+Without `hne` the statement is **FALSE**.  `proj E` lives over `Spec ℚ`,
+so a morphism `Spec K ⟶ proj E` yields `Spec K ⟶ Spec (CommRingCat.of ℚ)`
+and hence a ring map `ℚ → K`; when `char K = p > 0` there is none, so the
+`K`-point set is EMPTY, while every `AddCommGroup` is inhabited by `0` —
+no equivalence can exist.  `hne` makes the char-`p` instances vacuous and
+costs the consumer nothing: `projMul_assoc_pt_algClosed` is handed three
+`K`-points and supplies `hne` from one of them.
+
+## COORDINATE WITH `exists_projGroupLaw_geomFibreEquivVal`
+
+That leaf is the same dictionary at the SPECIFIC base field
+`AlgebraicClosure ℚ`, phrased against `GeomFibrePt` and carrying Galois
+equivariance instead of algebraicity.  Neither implies the other as
+stated — this one is general in `K` and quantifies over all `n`, that one
+is Galois-equivariant at one `K` — but they are one piece of mathematics,
+and an owner who builds the coordinate description of `Spec K ⟶ Proj 𝒜`
+should expect to discharge both.  Do not build two dictionaries.
+
+## WHAT THIS CUT REPLACES
+
+The previous plan recorded at `projMul_assoc_pt_algClosed` was Milne
+I.2.5 / rigidity, and it is CIRCULAR: forming `h(v,w) - f(v) - g(w)`
+needs the group law on the target as a MORPHISM, which is the `GrpObj`
+this cluster is constructing, and every result in mathlib's
+`AlgebraicGeometry/Group/Abelian.lean` assumes `[GrpObj G]`.  The route
+taken here needs only the group law on `K`-POINTS as a SET-level group,
+which mathlib already has, so it breaks the circle. -/
+theorem exists_projPtAddEquiv_algClosed (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (K : Type) [Field K] [IsAlgClosed K]
+    (hne : Nonempty (Spec (CommRingCat.of K) ⟶ proj E)) :
+    ∃ (G : Type) (_ : AddCommGroup G)
+      (e : (Spec (CommRingCat.of K) ⟶ proj E) ≃ G),
+      (∀ P : Spec (CommRingCat.of K) ⟶ proj E,
+          e (P ≫ projToSpec E ≫ projInfty E) = 0) ∧
+        (∀ P : Spec (CommRingCat.of K) ⟶ proj E, e (P ≫ projNeg E) = -e P) ∧
+          (∀ x : G, ∃ z : G, x = z + z) ∧
+            ∀ (n : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+              (Q : Spec (CommRingCat.of K) ⟶ proj E),
+              ∃ (α : G →+ G) (c : G), ∀ P : Spec (CommRingCat.of K) ⟶ proj E,
+                e (projMulPt E n P Q) = α (e P) + c :=
+  sorry
+
 /-- **Associativity of the operation `m` induces on `K`-points, `K` an
-ALGEBRAICALLY CLOSED field** (sorry node — this is where ALL the remaining
-mathematical content of `projMul_assoc` now sits; it is the whole of the
-old `projMul_assoc_pt`, which is PROVEN from it below).
+ALGEBRAICALLY CLOSED field** (PROVEN 2026-07-27 from
+`exists_projPtAddEquiv_algClosed` and `commLoop_eq_add_of_addHom`; it was
+the one leaf `projMul_assoc` rested on, and the residue now sits in the
+DICTIONARY leaf rather than here).
 
 The restriction to `Spec` of a FIELD is essential rather than cosmetic:
 the same statement for an arbitrary test scheme `T` is `projMul_assoc`
@@ -818,133 +1019,116 @@ mathlib's `WeierstrassCurve.Affine.Point` supplies a real `AddCommGroup`.
 Algebraic closedness on top of that is FREE — see `projMul_assoc_pt` —
 and it is what every classical statement of the rigidity argument assumes.
 
-## THE THREE POINT-LEVEL HYPOTHESES ARE CONVENIENCES, NOT A ROUTE
+## THE THREE POINT-LEVEL HYPOTHESES ARE NOT A ROUTE ON THEIR OWN
 
 `hcommPt`/`hunitPt`/`hinvPt` are DERIVED from `hcomm`/`hunit`/`hinv` by
 `projMulPt_comm`, `projMulPt_unit_left` and `projMulPt_neg_left` above,
-and are passed in only so that the next owner does not have to redo the
-`pullback.lift` gymnastics.  **They are nowhere near sufficient on their
-own.**  Together they say exactly that `projMulPt E m` is a commutative
-LOOP with two-sided unit and inverses on the set of `K`-points, and a
-commutative loop need not be associative: the smallest non-associative
-commutative loop has order `5`, so the set-level statement is false
-already for a five-element carrier.  *Refuting check for anyone tempted
-to close this leaf from `hcommPt`/`hunitPt`/`hinvPt` alone*: those three
-mention `m` only through `projMulPt E m`, i.e. only through its values on
-`K`-points, so any proof from them alone would prove the false set-level
-statement.  **The scheme-level `hcomm`/`hunit`/`hinv` and the fact that
-`m` is a MORPHISM are what must carry the argument.**
+and are passed in only so that the assembly does not have to redo the
+`pullback.lift` gymnastics.  **They are not sufficient on their own**, and
+that warning stands unchanged: together they say exactly that
+`projMulPt E m` is a commutative LOOP with two-sided unit and inverses on
+the set of `K`-points, and a commutative loop need not be associative —
+the smallest non-associative commutative loop has order `5`, so the
+set-level statement is false already for a five-element carrier.
+*Refuting check for anyone tempted to close this from
+`hcommPt`/`hunitPt`/`hinvPt` alone*: those three mention `m` only through
+`projMulPt E m`, i.e. only through its values on `K`-points, so any proof
+from them alone would prove the false set-level statement.
 
-## WHAT IT NEEDS: MILNE I.2.5
+The proof below therefore does **not** use them alone: it uses them
+together with `exists_projPtAddEquiv_algClosed`, whose last clause
+quantifies over EVERY morphism of schemes and is exactly the algebraicity
+input that a set-level hypothesis cannot supply.
 
-The input that converts algebraicity into associativity is Milne,
-*Abelian Varieties* I.2.5: every morphism `E × E → E` of complete
-varieties into an abelian variety is `(P, Q) ↦ φ(P) + ψ(Q) + c`.  `hunit`
-then forces `ψ = id` and `φ(O) + c = 0`, and `hcomm` forces `φ = id` and
-`c = 0`, so `m` *is* the classical group law and associativity is
-`add_assoc`.
+**FORMAL-CONTENT NOTE — `_hcomm`/`_hunit`/`_hinv` are UNUSED**, and are
+underscored so that this is mechanically visible rather than merely
+asserted.  This is *not* vacuity: the algebraicity the proof needs comes
+from the dictionary leaf, which quantifies over all morphisms `n` and so
+covers `m` whatever `m` is, while the three properties of `m` that the
+argument does consume are already supplied in point-level form by
+`hcommPt`/`hunitPt`/`hinvPt`.  Those three are in turn DERIVED from the
+scheme-level ones by `projMulPt_comm`, `projMulPt_unit_left` and
+`projMulPt_neg_left`, so no hypothesis has been silently dropped from the
+node — the caller `projMul_assoc_pt` still has to produce all six.  The
+scheme-level triple is retained in the signature because it is fixed by
+the cut and every caller has it; an owner who wanted a minimal statement
+could delete it, at the cost of touching `projMul_assoc_pt`.
 
-Equivalently one may run the argument through Silverman *AEC* III.4.7
-(every morphism of elliptic curves is a translation composed with an
-isogeny) applied to `P ↦ projMulPt E m P Q` for fixed `Q`, and then pin
-the resulting isogeny to `id` by connectedness of the family in `Q`.
+## THE PROOF, IN FIVE LINES OF MATHEMATICS
 
-## ROUTE AUDIT (2026-07-27, third correction): the rigidity ENGINE **is** in the pin
+Transport `projMulPt E m` along the dictionary `e` of
+`exists_projPtAddEquiv_algClosed` to an operation `F` on the abelian
+group `G`.  The three loop identities become `hsymm`, `F 0 y = y` and
+`F (-x) x = 0` (the unit and negation clauses of `e` are what turn
+`hunitPt`/`hinvPt` into those); the algebraicity clause instantiated at
+`n := m` becomes "`x ↦ F x y` is a group homomorphism plus a constant";
+and `G` is 2-divisible.  `commLoop_eq_add_of_addHom` then gives
+`F x y = x + y` outright, so `e (projMulPt E m P Q) = e P + e Q` and
+associativity is `add_assoc` pulled back through the injectivity of `e`.
 
-The previous audit said "Neither `Pic⁰` for curves nor the rigidity lemma
-is in the pin or in `~/cs/FLT`".  That is right about the *named
-statements* and **wrong about the machinery**, and the difference matters
-because the machinery is the expensive part.  Found by grep on
-2026-07-27:
+The combinatorial step is the one that was missing from every earlier
+plan and it is worth stating separately: from `F x y = α y x + y` the
+form `B x y := α y x - x` is symmetric and biadditive with `B x x = 0`,
+hence `2 • B = 0`, hence `B = 0` by divisibility.  See
+`commLoop_eq_add_of_addHom`.
 
-* **`Mathlib/AlgebraicGeometry/Group/Abelian.lean`** (`@[stacks 0BFD]`,
-  `isCommMonObj_of_isProper_of_geometricallyIntegral`: a proper
-  geometrically integral group scheme over a field is commutative) is a
-  COMPLETE worked rigidity-style argument at this pin, including the
-  reduction to `IsAlgClosed` along `AlgebraicClosure` that
-  `projMul_assoc_pt` performs below.  It is the template to copy.
-* **`Mathlib/Topology/JacobsonSpace.lean`**'s
-  `subsingleton_image_closure_of_finite_of_isPreirreducible` is the
-  topological heart of the rigidity lemma: a continuous closed map with
-  finite image on a locally closed preirreducible set is constant on its
-  closure.
-* **`Mathlib/AlgebraicGeometry/AlgClosed/Basic.lean`**'s
-  `ext_of_apply_eq` is a POINT-level ext lemma over an algebraically
-  closed field (agreement on closed points of a dense locally closed
-  subset suffices), and `ext_of_apply_closedPoint_eq` is its `Spec K`
-  case.  These are the natural successors to
-  `ext_of_fromSpecResidueField_eq` once one is at `K = K̄`.
-* **`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean`**'s
-  `exists_finite_imageι_comp_morphismRestrict_of_finite_image_preimage`
-  supplies the Zariski-Main-Theorem step that `Group/Abelian.lean` uses to
-  turn "finite image over one point" into "finite over an open".
-* The abstract framework is `GrpObj`/`IsCommMonObj` in
-  `Over (Spec (.of K))` (`Mathlib.CategoryTheory.Monoidal.Cartesian.Grp`).
+## WHY THE OLD PLAN (MILNE I.2.5 / RIGIDITY) WAS NOT TAKEN — it is CIRCULAR
 
-*Refuting check for this correction*: open `Group/Abelian.lean` and look
-for the four names above; if they have moved, the claim needs re-checking,
-not the conclusion.
+Recorded because the rigidity machinery really is in the pin and the next
+reader will find it and be tempted.  Milne, *Abelian Varieties* I.2.5
+("every morphism `E × E → E` of complete varieties into an abelian
+variety is `(P, Q) ↦ φ(P) + ψ(Q) + c`") forms the DIFFERENCE
+`h(v, w) − f(v) − g(w)`, so it needs the group law on the TARGET as a
+morphism — i.e. exactly the `GrpObj` this cluster is constructing.
+Mathlib's `WeierstrassCurve.Affine.Point` addition is set-level only, so
+it does not supply it, and every result in
+`Mathlib/AlgebraicGeometry/Group/Abelian.lean` (`@[stacks 0BFD]`, a
+complete worked rigidity argument at this pin, together with
+`subsingleton_image_closure_of_finite_of_isPreirreducible` in
+`Mathlib/Topology/JacobsonSpace.lean`, `ext_of_apply_eq` /
+`ext_of_apply_closedPoint_eq` in
+`Mathlib/AlgebraicGeometry/AlgClosed/Basic.lean`, and
+`exists_finite_imageι_comp_morphismRestrict_of_finite_image_preimage` in
+`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean`) ASSUMES `[GrpObj G]`.
+So rigidity can only compare an arbitrary `m` with an ALREADY-ASSOCIATIVE
+reference law; it cannot bootstrap associativity out of unitality.
 
-## THE CIRCULARITY, AND THE CUT-LEVEL REPAIR THAT REMOVES IT
+The route actually taken sidesteps this because it never needs a group
+law on the target as a morphism — only Silverman *AEC* III.4.7, which is
+a statement about morphisms of curves and the SET-level group `E(K)`.
+That is the whole reason the cut is non-circular.
 
-Milne I.2.5 forms the DIFFERENCE `h(v,w) − f(v) − g(w)`, so it needs the
-group law on the target **as a morphism**, i.e. exactly the `GrpObj` this
-cluster is constructing.  Mathlib's `WeierstrassCurve.Affine.Point`
-addition is set-level only, so it does not supply it.  Nothing in
-`Group/Abelian.lean` helps here either: every result there ASSUMES
-`[GrpObj G]`.
+## THE CUT-LEVEL OBSERVATION ABOUT `exists_projMul` STILL STANDS
 
-So rigidity cannot bootstrap associativity out of unitality — it can only
-compare an arbitrary `m` with an ALREADY-ASSOCIATIVE reference law.  The
-non-circular plan is therefore two-stage:
+`projMul_assoc`'s only consumer is `exists_projAdd`, which applies it to
+`exists_projMul`'s witness and to nothing else, so the universal
+quantification over `m` buys the tree nothing; and
+`exists_projGroupLaw_geomFibreAddEquiv`'s docstring asks for the same
+repair — give `exists_projMul` a `hassoc`-free chord–tangent clause
+pinning its witness in coordinates.  That repair is no longer needed
+HERE (this leaf is proven for an arbitrary `m`), but it remains the thing
+that would let `exists_projPtAddEquiv_algClosed` and the `geomFibre`
+dictionary be discharged from explicit polynomials.  Reported, not made.
 
-1. prove associativity for the SPECIFIC chord–tangent witness `m₀` of
-   `exists_projMul`, by the chart-wise polynomial certificate (this is the
-   route the audit on `projMul_assoc` correctly rules out for an arbitrary
-   `m`, and it is available for `m₀` because `m₀` comes with charts);
-2. use rigidity to show every `m` satisfying `hcomm`/`hunit`/`hinv`
-   equals `m₀`.
+## A DICTIONARY ALONE IS STILL NOT A SAFE CUT — and this one is not one
 
-**And stage 2 is not needed at all**, which is the cut-level observation
-worth acting on: `projMul_assoc`'s ONLY consumer is `exists_projAdd`, and
-`exists_projAdd` applies it to `exists_projMul`'s witness and to nothing
-else.  The universal quantification over `m` buys the tree nothing.  What
-blocks specialising today is that `exists_projMul` publishes only
-`∃ m, hcomm ∧ hunit ∧ hinv` and exposes no chart description of its
-witness — so specialising the leaf to `m₀` still hands the owner no
-polynomials.
-
-**This is the same repair that
-`exists_projGroupLaw_geomFibreAddEquiv`'s docstring already asks for**
-under "The route that would work": give `exists_projMul` a
-`hassoc`-free chord–tangent clause pinning its witness in coordinates.
-One repair unblocks BOTH leaves.  That is a cut-level decision spanning
-three owners and is reported rather than made here.
-
-## COORDINATE WITH `exists_projGroupLaw_geomFibreAddEquiv`
-
-That sibling leaf (its own owner) is the `ℚ̄`-point dictionary between
-`GeomFibrePt (projToSpec E)` and `WeierstrassCurve.Affine.Point`, and the
-coordinate description of `Spec K ⟶ Proj 𝒜` it has to supply is exactly
-the interface this leaf wants for its last step.  It is existentially
-stated, so it cannot be consumed as an API; an owner taking this leaf
-should coordinate rather than build a second dictionary.
-
-**A dictionary alone is NOT a safe cut of this leaf.**  "Given a
-bijection `(Spec K ⟶ proj E) ≃ E(K)` carrying `projInfty` to `0` and
-`projNeg` to negation, `m` corresponds to `+`" is **FALSE** for an
+"Given a bijection `(Spec K ⟶ proj E) ≃ E(K)` carrying `projInfty` to `0`
+and `projNeg` to negation, `m` corresponds to `+`" is **FALSE** for an
 arbitrary such bijection, by the loop counterexample above transported
-along it.  The dictionary has to carry algebraicity — naturality in `K`,
-which by Yoneda is the same as being a morphism of schemes — for the cut
-to be sound.  Recorded because that cut is the obvious one to try. -/
+along it.  `exists_projPtAddEquiv_algClosed` is not that statement: it
+adds 2-divisibility and, crucially, a clause quantified over every
+SCHEME MORPHISM `n`, which is where algebraicity — naturality in `K`,
+equivalently being a morphism, by Yoneda — enters.  Dropping either of
+those two clauses makes it satisfiable by junk and the proof below
+unsound. -/
 theorem projMul_assoc_pt_algClosed (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+    (_hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
       (Limits.pullback.fst (projToSpec E) (projToSpec E))
       Limits.pullback.condition.symm ≫ m = m)
-    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+    (_hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
       (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
-    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+    (_hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
       (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
     (K : Type) [Field K] [IsAlgClosed K]
     (hcommPt : ∀ P Q : Spec (CommRingCat.of K) ⟶ proj E,
@@ -954,8 +1138,38 @@ theorem projMul_assoc_pt_algClosed (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (hinvPt : ∀ P : Spec (CommRingCat.of K) ⟶ proj E,
       projMulPt E m (P ≫ projNeg E) P = P ≫ projToSpec E ≫ projInfty E)
     (P Q R : Spec (CommRingCat.of K) ⟶ proj E) :
-    projMulPt E m (projMulPt E m P Q) R = projMulPt E m P (projMulPt E m Q R) :=
-  sorry
+    projMulPt E m (projMulPt E m P Q) R = projMulPt E m P (projMulPt E m Q R) := by
+  -- The dictionary.  `⟨P⟩` discharges the characteristic guard: we are handed a
+  -- `K`-point, so `K` really is a `ℚ`-algebra and the point set really is nonempty.
+  obtain ⟨G, _, e, hO, hN, hdiv, halg⟩ := exists_projPtAddEquiv_algClosed E K ⟨P⟩
+  -- Transport `projMulPt E m` to `G` and check the four hypotheses of
+  -- `commLoop_eq_add_of_addHom` one by one.
+  have hsymm : ∀ x y : G, e (projMulPt E m (e.symm x) (e.symm y))
+      = e (projMulPt E m (e.symm y) (e.symm x)) := fun x y => by rw [hcommPt]
+  have hzero : ∀ y : G, e (projMulPt E m (e.symm 0) (e.symm y)) = y := by
+    intro y
+    have h0 : e.symm (0 : G) = (e.symm y) ≫ projToSpec E ≫ projInfty E :=
+      e.symm_apply_eq.mpr (hO (e.symm y)).symm
+    rw [h0, hunitPt, Equiv.apply_symm_apply]
+  have hnegPt : ∀ x : G, e (projMulPt E m (e.symm (-x)) (e.symm x)) = 0 := by
+    intro x
+    have h0 : e.symm (-x) = (e.symm x) ≫ projNeg E := by
+      refine e.symm_apply_eq.mpr ?_
+      rw [hN (e.symm x), Equiv.apply_symm_apply]
+    rw [h0, hinvPt, hO]
+  have halg' : ∀ y : G, ∃ (α : G →+ G) (c : G),
+      ∀ x : G, e (projMulPt E m (e.symm x) (e.symm y)) = α x + c := by
+    intro y
+    obtain ⟨α, c, hα⟩ := halg m (e.symm y)
+    exact ⟨α, c, fun x => by rw [hα (e.symm x), Equiv.apply_symm_apply]⟩
+  have key := commLoop_eq_add_of_addHom (fun x y => e (projMulPt E m (e.symm x) (e.symm y)))
+    hsymm hzero hnegPt hdiv halg'
+  -- `m` IS the group law on `K`-points; associativity is `add_assoc`.
+  have key' : ∀ A B : Spec (CommRingCat.of K) ⟶ proj E,
+      e (projMulPt E m A B) = e A + e B := by
+    intro A B
+    simpa only [Equiv.symm_apply_apply] using key (e A) (e B)
+  exact e.injective (by rw [key', key', key', key', add_assoc])
 
 /-- **Associativity of the operation `m` induces on `K`-points, `K` any
 field** (PROVEN from `projMul_assoc_pt_algClosed` — the descent to an
@@ -2424,8 +2638,9 @@ theorem isReduced_triProd_proj (E : WeierstrassCurve ℚ) [E.IsElliptic] :
 
 /-- **Associativity of any commutative unital multiplication with
 `projNeg`-inverses on the projective Weierstrass model** (PROVEN from
-`geometricallyReduced_projToSpec` and `projMul_assoc_pt` — the ABSTRACT
-half of the old `exists_projAdd`).
+`geometricallyReduced_projToSpec` and `projMul_assoc_pt`, whose own
+residue is now `exists_projPtAddEquiv_algClosed` — the ABSTRACT half of
+the old `exists_projAdd`).
 
 ## FAITHFULNESS AUDIT: why this is TRUE for an arbitrary such `m`
 
@@ -2538,9 +2753,12 @@ be taken to be `Set.univ`.  Its three side conditions all discharge here:
 * `H'` — free, by `hom_ext_spec_rat`, the target being `Spec ℚ`;
 * `IsReduced` of the threefold product — `isReduced_triProd_proj` below.
 
-What is left is therefore exactly ONE thing (2026-07-27):
-`projMul_assoc_pt`, the genuine Milne content, now stated as plain
-associativity of the operation `m` induces on `K`-points.  The other item
+What is left is therefore exactly ONE thing (2026-07-27, updated the same
+day): `exists_projPtAddEquiv_algClosed`, the ALGEBRAIC `K`-point
+dictionary.  `projMul_assoc_pt` and `projMul_assoc_pt_algClosed` — the
+"genuine Milne content", stated as plain associativity of the operation
+`m` induces on `K`-points — are now both PROVEN from it, the second by
+`commLoop_eq_add_of_addHom` and the first by descent.  The other item
 this list used to name, `geometricallyReduced_projToSpec`, is PROVEN — it
 was a general `Smooth → GeometricallyReduced` gap in mathlib, and it has
 been filled in
@@ -2597,7 +2815,8 @@ docstring.
 
 **This declaration carries no `sorry` of its own but is transitively
 sorried**, because `exists_projAdd` is proven from `projMul_assoc` (itself
-now reduced to `projMul_assoc_pt` alone, `geometricallyReduced_projToSpec`
+now reduced to `exists_projPtAddEquiv_algClosed` alone,
+`geometricallyReduced_projToSpec` and both `projMul_assoc_pt*` leaves
 having been closed) and from the still-open `exists_projMul`.  It is a reduction, not a result; the
 remaining work is on those leaves.
 
