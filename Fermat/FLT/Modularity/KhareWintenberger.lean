@@ -11424,21 +11424,91 @@ AXES SEARCHED, and why each is closed:
    reducing it. Refuting check: read the field list of
    `PotentialModularityWitness` (`MoretBailly.lean`).
 4. *Ingredient axis* — the classical ingredients of the Brauer trick.
-   **CORRECTION to the inherited PIN AUDIT: it is THREE missing
-   ingredients, not four.** That audit records "no Brauer–Nesbitt", and
-   that is true of `Mathlib/` but FALSE of `Fermat/`: rank-`2`
-   Brauer–Nesbitt is present and sorry-free in
-   `GaloisRepresentation/BrauerNesbittConjugacy.lean`
-   (`exists_linearEquiv_of_charpoly_eq_of_two_ne_zero`,
-   `exists_conj_of_charFrob_eq_away`, and the characteristic-zero
-   `exists_conj_of_charFrob_eq_away_of_charZero`), and THIS module
-   already consumes it (search `Chebotarev + Brauer–Nesbitt` about
-   nine thousand lines above). The three that really are absent —
-   Brauer induction, induced-character traces, and the stable lattice —
-   are each enough on their own to keep the leaf a citation, so the
-   correction changes the accounting and not the verdict. Refuting
-   check: `grep -n exists_conj_of_charFrob_eq_away_of_charZero
-   Fermat/FLT/GaloisRepresentation/BrauerNesbittConjugacy.lean`.
+   **CORRECTED AGAIN 2026-07-27 (second pass): the ingredient axis is
+   EMPTY. It is ZERO missing ingredients, not three and not four, and
+   the verdict must therefore rest on obstruction (a), never on
+   ingredient absence.** The inherited PIN AUDIT listed four; the
+   previous pass corrected it to three; every one of the three is in
+   fact present in THIS FILE, and two of them are PROVEN and already
+   consumed:
+
+   * *Brauer induction* — `brauer_induction_trivial_character`
+     (PROVEN, this module; Artin induction with `ℚ` coefficients over
+     `cyclicIndicator` / `indTrivCyclic` / `sum_indTrivCyclic_mul` /
+     `sum_eq_zero_of_cyclic_sums`), and it is already applied to
+     `Gal(F/ℚ)` inside `exists_heckeField_system_of_witness`;
+   * *induced-character traces* — `exists_inducedTrace_expansion_of_
+     brauer` (PROVEN, this module), which IS the Mackey/Frobenius
+     expansion of the trace coefficient over degree-one places, over
+     `exists_degreeOnePlace_of_brauer` (PROVEN);
+   * *the stable lattice* (Serre I §1) — `exists_stableLattice_galois
+     Rep_of_finiteDimensional_padic`, STATED in this module with a
+     six-step in-tree work plan and ALREADY CONSUMED by
+     `carayol_threeadic_of_totallyDefinite_heckeCharacter`. It is an
+     open leaf with its own owner, not an absent theory, and per the
+     standing rule that *stating* a theory is what a cut needs, its
+     openness cannot support an atomicity verdict.
+
+   Refuting checks: `grep -n "theorem brauer_induction_trivial_
+   character\|theorem exists_inducedTrace_expansion_of_brauer\|theorem
+   exists_stableLattice_galoisRep_of_finiteDimensional_padic"` on this
+   file; and `grep -n exists_conj_of_charFrob_eq_away_of_charZero
+   Fermat/FLT/GaloisRepresentation/BrauerNesbittConjugacy.lean` for the
+   Brauer–Nesbitt half of the earlier correction.
+
+   **Why the verdict nevertheless survives, stated so that it is
+   checkable rather than inherited.** The whole Brauer apparatus above
+   is already run, in-tree and to completion, on the `ℓ`-adic side: it
+   is exactly what `exists_heckeField_system_of_witness` does, and its
+   output `(S₀, Pv)` is a HYPOTHESIS of this node. What the apparatus
+   transports is TRACE data — `coeff 1` of a Frobenius characteristic
+   polynomial at good places — so re-running it `3`-adically could at
+   best produce clause (1), and clause (1) is precisely what
+   obstruction (a) shows to be blind to clauses (2), (3'), (4') and
+   (5'). So the ingredient axis does not merely fail to shorten the
+   citation; it cannot touch the four clauses that make it one.
+5. *Integrality / field-level-split axis* (NEW 2026-07-27; this is the
+   cut that WAS taken one level up in this very file, so it is the
+   first thing a reader should expect to work here). One level up,
+   `carayol_threeadic_of_totallyDefinite_heckeCharacter` was split into
+   a FIELD-level citation
+   (`exists_threeadicField_realization_of_totallyDefinite_heckeCharacter`,
+   over a finite extension `L/ℚ_3`, which is what Carayol's Théorème
+   (A) literally produces) plus the elementary integral descent
+   (`exists_stableLattice_galoisRep_of_finiteDimensional_padic`). The
+   same split does NOT transfer to this node, and the obstruction is
+   clause (2) alone: `GaloisRep.HasFlatProlongationAt`
+   (`Deformations/RepresentationTheory/GaloisRep.lean`) quantifies over
+   finite flat Hopf algebras over `𝒪ᵥ` matching the geometric points of
+   the LOCAL module, and so is only meaningful for a coefficient ring
+   with finite quotients — it has no field-level shadow whatsoever.
+   Clauses (1), (3'), (4') and (5') would all descend along a lattice
+   (`charFrob` is conjugation-invariant; a stable line intersects a
+   lattice in a saturated stable line), but (2) has to be asserted
+   integrally, so the citation must still produce `A` and the split
+   buys nothing. Refuting check: try to STATE clause (2) for a
+   `ℚ_[3]`-algebra coefficient ring — read the definition of
+   `GaloisRep.HasFlatProlongationAt` and note that it is applied to
+   `τ.baseChange (A ⧸ Ideal.span {(3 : A) ^ m})`, a finite quotient
+   that does not exist on the field side.
+6. *Collapse-discharge axis* (NEW 2026-07-27). The hypothesis set of
+   this node is classically UNSATISFIABLE — an irreducible hardly
+   ramified `ρbar` with `ℓ ≥ 5` does not exist, which is the headline
+   `not_isIrreducible_of_isHardlyRamified_of_five_le` at the end of
+   this module — so one might hope to discharge the node, or at least
+   clause (5'), from `False`. CLOSED BY CIRCULARITY, twice over: the
+   headline is DOWNSTREAM of this leaf (its proof runs through
+   `exists_threeadic_member_of_witness`, which is an assembly over
+   `exists_threeadicBrauerSum_of_witness`, which is an assembly over
+   THIS node), so using it here would close a cycle; and the
+   clause-(5')-only version — `ρ` hardly ramified, unramified at `2`,
+   with `ρbar` irreducible, is empty by Fontaine/Abrashkin — is not
+   available either, since Fontaine/Abrashkin appears nowhere in the
+   tree as mathematics. Refuting checks: `grep -n
+   not_isIrreducible_of_isHardlyRamified_of_five_le` on this file and
+   confirm its line number EXCEEDS this one; and `grep -rn Abrashkin
+   Fermat/ --include=*.lean`, which returns only two prose mentions,
+   one of them this docstring's own.
 
 FAITHFULNESS RE-CHECK (same pass, since a leaf that resists is a leaf
 to suspect). The statement is TRUE as stated. The only clause worth
@@ -11452,6 +11522,10 @@ NOT vacuous-by-construction: `ρ.IsUnramifiedAt 2` is consistent with
 `IsHardlyRamified`, and its classical emptiness (Fontaine/Abrashkin —
 no irreducible flat `ρbar` unramified outside `ℓ`) is exactly the
 headline collapse argument of this module, not an in-tree proof.
+Sharpened 2026-07-27: the module's headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le` IS in-tree and
+proven, but it is downstream of this leaf, so it is unusable here —
+see axis 6 of the ATOMICITY AUDIT above for the two-way check.
 
 CIRCULARITY GUARD (inherited, load-bearing): no discharge through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. Note in
