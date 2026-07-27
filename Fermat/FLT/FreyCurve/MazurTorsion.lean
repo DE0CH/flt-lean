@@ -5053,6 +5053,18 @@ Miller–Rabin, no sieve cap, no reuse of the earlier PARI run): over
 `2 ≤ m ≤ 5·10⁵` the hypothesis `hgen` holds for exactly
 `m ∈ {2, 3, 5, 11, 17, 41}`. So the conclusion `m ≤ 41` is true and SHARP.
 
+SIXTH PASS (2026-07-27, flt-lean-175). Nothing new to report, and that is
+itself the finding worth recording so the next reader does not re-run this:
+the faithfulness sweep was repeated once more, independently, to `2 ≤ m ≤
+2·10⁶` (PARI/GP `isprime`, four times the previous range), returning exactly
+`{2, 3, 5, 11, 17, 41}` again. The fifth pass's verdict stands unchanged and
+no new axis was opened: the leaf is Baker–Heegner–Stark, and the two axes it
+recorded as unsearched (Heegner–Stark/CM, Baker's linear forms in logarithms)
+still have NO representative in mathlib, in `~/cs/FLT` or in this project, so
+neither is a near-term route. Do not dispatch another prover here without
+first committing to BUILDING one of those two theories; a search pass will
+only reproduce this paragraph.
+
 AXIS SEARCHED, stated so the next reader knows what this pass did NOT look
 at: mathlib at this pin, `~/cs/FLT` (zero hits for each of `jInvariant`,
 `Weber`, `classNumber`, `BinaryQuadratic`, `Heegner`, `Rabinowitsch`), this
@@ -7713,6 +7725,73 @@ lemma zsmul_reduce {A : Type*} [AddCommGroup A] (Q : A) (h3 : (3 : ℤ) • Q = 
 
 end X0Three
 
+/-- **PROVEN 2026-07-27: the Vélu quotient datum over `ℚ` carries an `IsIsogeny`
+certificate.**  This is the seam lemma that lets a `Gal(ℚ̄/ℚ)`-equivariant
+`AddMonoidHom` produced by `exists_velu_quotient_isogeny_model` be used as a
+genuine MORPHISM OF CURVES rather than as a homomorphism of abstract groups.
+
+It exists because of a specific and expensive gap: a bare `AddMonoidHom` between
+point groups carries no geometry, so upgrading one to an element of `End(E_ℚ̄)`
+is Faltings' isogeny theorem.  Every consumer that wants to argue with
+endomorphisms — the level-`49` CM leaf `not_stableCyclicFortyNine_of_j_eq` below
+is one — must therefore be handed the certificate at the point where the
+map is CONSTRUCTED, which is here.
+
+**Nothing new is proven.**  All the mathematics is already in
+`Fermat/FLT/EllipticCurve/Isogeny.lean`: `isRationalMap_of_veluMap` builds the
+`IsRationalMap` certificate out of Vélu's own polynomials (`veluXNum`, `veluH`,
+`veluXi`), and `IsRationalMap.isIsogeny` — PROVEN and axiom-clean as of
+2026-07-27 — supplies the `surjective` and `finite_ker` fields over an
+algebraically closed base.  This lemma only converts between the two spellings of
+the kernel: `exists_velu_quotient_isogeny_model` states it as membership in an
+`AddSubgroup C`, while the bridge wants a `Finset`, and `hCfin.toFinset` is the
+translation.  The `Odd` hypothesis is inherited verbatim from Vélu.
+
+**MOVED HERE 2026-07-27** from just below `exists_x0Seven_param_of_stableSevenSubgroup`
+(~13 000 lines further down), because the `X_0(3)`/`X_0(9)` cluster needs it too —
+`exists_tateInvariants_of_stableThreeSubgroup` immediately below is its first
+consumer — and Lean's declaration order forbade the reference.  Statement and
+proof are byte-identical to what stood there; only the position changed.
+
+(Docstrings elsewhere in the tree record this bridge as MISSING — see the audit
+under `not_stableCyclicFortyNine_of_j_eq` below, corrected in place.  They were
+written before `isRationalMap_of_veluMap` and before the coordinate
+identification became part of `exists_velu_quotient_isogeny_model`'s conclusion
+on 2026-07-27, which is the conjunct `hcoord` consumed here.) -/
+theorem WeierstrassCurve.isIsogeny_of_veluQuotient
+    (E E' : WeierstrassCurve ℚ) [E.IsElliptic]
+    (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
+    (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (hCodd : Odd (Nat.card C))
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C)
+    (hcoord : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Pt ∉ C →
+      veluPointX (φ Pt) =
+          veluCoordX (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt ∧
+        veluPointY (φ Pt) =
+          veluCoordY (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt) :
+    WeierstrassCurve.IsIsogeny φ := by
+  classical
+  haveI : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ))).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  set S : Finset ((E⁄(AlgebraicClosure ℚ)).Point) := hCfin.toFinset with hSdef
+  have hmem : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, P ∈ S ↔ P ∈ C := fun P => by
+    rw [hSdef]; exact hCfin.mem_toFinset
+  have hS : IsPointSubgroup S :=
+    { zero_mem := (hmem _).mpr (zero_mem C)
+      add_mem := fun P hP Q hQ =>
+        (hmem _).mpr (add_mem ((hmem P).mp hP) ((hmem Q).mp hQ))
+      neg_mem := fun P hP => (hmem _).mpr (neg_mem ((hmem P).mp hP)) }
+  have hcard : S.card = Nat.card C := by
+    rw [hSdef, ← Set.ncard_eq_toFinset_card _ hCfin, ← Nat.card_coe_set_eq]
+    rfl
+  have hodd : Odd S.card := hcard ▸ hCodd
+  refine (WeierstrassCurve.isRationalMap_of_veluMap hS hodd (fun P => ?_)
+    (fun P hP => ?_) (fun P hP => ?_)).isIsogeny
+  · rw [hker P]; exact (hmem P).symm
+  · exact (hcoord P fun hc => hP ((hmem P).mpr hc)).1
+  · exact (hcoord P fun hc => hP ((hmem P).mpr hc)).2
+
 open X0Three in
 /-- **`X_0(3)`: the Tate invariants of a rational `3`-isogeny** (PROVEN
 2026-07-26; cut 2026-07-26 out of `exists_x0Three_chainParameters`). For an
@@ -7792,6 +7871,7 @@ theorem WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
       (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
         φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples P) ∧
+      WeierstrassCurve.IsIsogeny φ ∧
       a₃ ≠ 0 ∧ a₁ ^ 3 - 27 * a₃ ≠ 0 ∧
       E.j * (a₃ ^ 3 * (a₁ ^ 3 - 27 * a₃)) = a₁ ^ 3 * (a₁ ^ 3 - 24 * a₃) ^ 3 ∧
       (E.veluModel t w).j * (a₃ * (a₁ ^ 3 - 27 * a₃) ^ 3)
@@ -7955,9 +8035,13 @@ theorem WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup
       Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite :=
     Set.finite_coe_iff.mp inferInstance
   have hCodd : Odd (Nat.card (AddSubgroup.zmultiples P)) := by rw [hCcard]; decide
-  obtain ⟨t, w, hell', φ, ht', hw', hgal, hker, -⟩ :=
+  obtain ⟨t, w, hell', φ, ht', hw', hgal, hker, hcoord⟩ :=
     WeierstrassCurve.exists_velu_quotient_isogeny_model E
       (AddSubgroup.zmultiples P) hCfin hCodd hstable
+  -- the isogeny certificate, read off Vélu's own coordinates (2026-07-27)
+  have hiso : WeierstrassCurve.IsIsogeny φ :=
+    WeierstrassCurve.isIsogeny_of_veluQuotient E (E.veluModel t w)
+      (AddSubgroup.zmultiples P) hCfin hCodd φ hker hcoord
   obtain ⟨ht, hw⟩ := hSum hCfin t w ht' hw'
   haveI := hell'
   -- the algebra
@@ -7969,7 +8053,7 @@ theorem WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup
   have hjΔ : E.j * E.Δ = E.c₄ ^ 3 := MazurLevel9.cFour_cube_eq E
   have hjΔ' : (E.veluModel t w).j * (E.veluModel t w).Δ = (E.veluModel t w).c₄ ^ 3 :=
     MazurLevel9.cFour_cube_eq _
-  refine ⟨tateN E x₀, tateD E x₀ ^ 2, t, w, hell', φ, fun _ => ⟨ht', hw'⟩, hgal, hker,
+  refine ⟨tateN E x₀, tateD E x₀ ^ 2, t, w, hell', φ, fun _ => ⟨ht', hw'⟩, hgal, hker, hiso,
     pow_ne_zero 2 hD0, by rw [← hΔ]; exact hΔne, ?_, ?_⟩
   · linear_combination (-(E.j * tateD E x₀ ^ 6)) * hΔ + (tateD E x₀ ^ 6) * hjΔ
       + ((E.c₄ * tateD E x₀ ^ 2) ^ 2
@@ -7981,6 +8065,112 @@ theorem WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup
          + ((E.veluModel t w).c₄ * tateD E x₀ ^ 2)
              * (tateN E x₀ * (tateN E x₀ ^ 3 + 216 * tateD E x₀ ^ 2))
          + (tateN E x₀ * (tateN E x₀ ^ 3 + 216 * tateD E x₀ ^ 2)) ^ 2) * hc₄'
+
+/-- **An admissible change of variables is a rational map on points** (PROVEN
+2026-07-27).
+
+`(x, y) ↦ (u²x + r, u³y + u²sx + t)` is visibly given by polynomials in the
+coordinates, so the witnesses of `IsRationalMap` are read off:
+`A = u²X + r`, `B = 1`, `C = u³`, `D = u²sX + t`, `E = 1`. Combined with the
+PROVEN `IsRationalMap.isIsogeny` over an algebraically closed field, this is what
+makes a `ℚ̄`-isomorphism of Weierstrass curves an ISOGENY.
+
+**MOVED HERE 2026-07-27** from `MazurLevelFortyNine` (~13 000 lines below), and
+promoted to the ROOT namespace, because the `X_0(9)` cluster needs it too:
+`MazurLevel9.jQuotient_eq_veluCurve_of_tateParam` transports an isogeny along the
+`VariableChange` that `IsTateParam` carries, which is exactly this map.  Statement
+and proof are unchanged; only the position and the namespace are. -/
+theorem isRationalMap_variableChangeEquiv {F : Type*} [Field F] [DecidableEq F]
+    (W V : WeierstrassCurve F) [W.IsElliptic] (C : VariableChange F) (hC : V = C • W) :
+    WeierstrassCurve.IsRationalMap
+      (((Point.equivOfEq hC).trans (Point.equivVariableChange W C)).toAddMonoidHom) := by
+  refine ⟨Polynomial.C ((C.u : F) ^ 2) * Polynomial.X + Polynomial.C C.r, 1,
+    Polynomial.C ((C.u : F) ^ 3),
+    Polynomial.C ((C.u : F) ^ 2 * C.s) * Polynomial.X + Polynomial.C C.t, 1,
+    one_ne_zero, one_ne_zero, ?_⟩
+  rintro (_ | ⟨x, y, hns⟩) hP
+  · exact absurd (map_zero _) hP
+  · refine ⟨?_, ?_⟩ <;>
+    · simp only [AddEquiv.toAddMonoidHom_eq_coe, AddMonoidHom.coe_coe, AddEquiv.trans_apply,
+        Point.equivOfEq_some, Point.equivVariableChange_some, veluPointX_some, veluPointY_some,
+        Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X,
+        Polynomial.eval_one, mul_one]
+      try ring
+
+/-- **UNIQUENESS OF THE QUOTIENT: an isogeny is determined, up to the
+`j`-invariant of its target, by its KERNEL** (SORRY LEAF, cut 2026-07-27 out of
+`MazurLevel9.jQuotient_eq_veluCurve_of_tateParam`, which is PROVEN over it).
+
+Over an algebraically closed field of characteristic zero, if `φ : W → W'` is an
+isogeny whose kernel is exactly the finite subgroup `S ⊆ W(F)` of ODD order, then
+
+  `j(W') · Δ(W/S) = c₄(W/S)³`,   i.e.   `j(W') = j(W.veluCurve S)`,
+
+written denominator-free so that no `IsElliptic` instance for the quotient has to
+be threaded.  `W.veluCurve S` is Vélu's explicit model of `W/S`.
+
+**WHY THIS IS THE RIGHT PLACE TO CUT, and what it buys.**  Every `X_0(N)` leaf in
+this file that wants the `j`-invariant of a quotient curve has, until now, been
+handed the quotient map only as a `Gal(ℚ̄/ℚ)`-equivariant `AddMonoidHom`.  That
+pins `j` of the target only through an isomorphism of `ℓ`-adic Tate modules for
+every `ℓ` — i.e. only through **Faltings' isogeny theorem**, which is available at
+no pin in this development.  Carrying an `IsIsogeny` certificate instead (which
+`isIsogeny_of_veluQuotient` above supplies for free at the point of construction)
+replaces that unattackable obligation by THIS statement, which is elementary.
+
+**THE ROUTE, in three steps, all of them inside this tree's existing machinery
+except the last.**
+
+1. *Factorisation.*  Vélu's own map `ν : W → W.veluCurve S` is an isogeny with
+   kernel exactly `S` (`isRationalMap_veluMap` + `IsRationalMap.isIsogeny`, both
+   PROVEN in `Fermat/FLT/EllipticCurve/Isogeny.lean`).  `φ` is surjective
+   (`IsIsogeny.surjective`, `F` algebraically closed) and `ker φ = ker ν`, so
+   there is a unique group homomorphism `θ : W' → W.veluCurve S` with `θ ∘ φ = ν`,
+   and `θ` is BIJECTIVE.
+2. *Rationality of `θ`.*  This is `IsRationalMap.descend` (PROVEN, and its
+   `[CharZero F]` hypothesis is load-bearing — the statement is FALSE in
+   characteristic `2`, where Frobenius is a bijective rational map that is not an
+   isomorphism; see `Isogeny.NotIsRationalMapDualHom`).
+3. *THE ONE MISSING STEP, and it is what this leaf really is:* **a bijective
+   rational map of Weierstrass curves preserves the `j`-invariant.**  Concretely:
+   `θ` is injective on points, so its `x`-map `A/B` is injective on
+   `x`-coordinates, hence a Möbius function; `θ(0) = 0` sends the point at infinity
+   to itself, so `B` is constant and `x ↦ ax + b`; substituting into the two
+   Weierstrass equations (after `exists_variableChange_isShortNF` puts both in the
+   form `y² = x³ + Ax + B`, legitimate over `F` algebraically closed of
+   characteristic `0`) forces `b = 0`, `A' = a²A`, `B' = a³B`, and then
+   `j = 1728·4A³/(4A³ + 27B²)` is invariant by `ring`.  In other words: `θ` is an
+   admissible change of variables, the converse of the PROVEN
+   `isRationalMap_variableChangeEquiv` just above.
+
+**THE CHECK THAT WOULD REFUTE THE OBSTRUCTION** (per doctrine): exhibit, anywhere
+under `Fermat/` or in the pin, a theorem taking a bijective (equivalently,
+trivial-kernel) `IsRationalMap` / `IsIsogeny` to an `∃ C : VariableChange F` or
+directly to equality of `j`.  `grep -rn 'exists_variableChange' Fermat/` returns
+only the OTHER direction (`exists_variableChange_of_j_eq`, `..._isShortNF`,
+`..._tateCurve`, `..._lang`), and `Isogeny.degree` has no `degree_eq_one_iff`
+companion.  If one turns up, this leaf is a corollary and should be closed at once.
+
+**AXIS SEARCHED**: mathlib at this pin, `~/cs/FLT`, and this project, for
+degree-one/isomorphism statements about isogenies.  NOT searched: a route through
+`Isogeny.dual` and `degree_comp` (`θ̂ ∘ θ = [deg θ] = [1] = id` is immediate, but
+it still leaves "`θ` is an isomorphism of point groups by rational maps ⟹ equal
+`j`", which is the same step).
+
+**NOT VACUOUS.**  `W.veluCurve S` is a genuine curve — for `W = tateCurve d` and
+`S` the order-`9` kernel `⟨(0,0)⟩`, `tateCurve_veluModel_c₄` and
+`tateCurve_veluModel_Δ` (both PROVEN below) evaluate it to
+`c₄' = (d³+3d²−6d+1)·P₉(d)` and `Δ' = d(d−1)(d²−d+1)³q⁹`, nonzero at every
+nondegenerate `d`, so the conclusion pins `j(W')` uniquely rather than holding
+`0 = 0`. -/
+theorem jRelation_veluCurve_of_isogeny_ker_eq {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F]
+    (W W' : Affine F) [W.IsElliptic] [W'.IsElliptic]
+    (S : Finset W.Point) (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    (φ : W.Point →+ W'.Point) (hφiso : WeierstrassCurve.IsIsogeny φ)
+    (hker : ∀ P : W.Point, φ P = 0 ↔ P ∈ S) :
+    W'.j * (W.veluCurve S).Δ = (W.veluCurve S).c₄ ^ 3 :=
+  sorry
 
 /-- **`X_0(3)`: the hauptmodul parameter of a rational `3`-isogeny, in
 MODEL-NAMING form** (PROVEN 2026-07-27 over
@@ -8009,7 +8199,15 @@ is universally quantified rather than fixed (`∀ hfin, …`). `Set.Finite` is a
 instantiate it at whatever finiteness proof it happens to hold; this avoids
 making the statement depend on a particular `Set.Finite.toFinset`.
 
-**WHAT THIS DOES *NOT* YET BUY, and the check that would refute it.** It does
+**RESOLVED 2026-07-27 — but NOT by this node, and the distinction matters.** The
+level-`9` cluster did drop its abstract `π`, through
+`exists_x0Three_param_isogeny_of_stableThreeSubgroup` just below and
+`IsIsogeny.comp`, which needs NO `veluModel`-of-`veluModel` composition theorem:
+an `IsIsogeny` certificate composes where a Vélu *model* identification does not.
+The paragraph below records the route that was NOT taken, and its obstruction is
+still real for anyone who wants the composite named as a single Vélu model.
+
+**WHAT THIS DOES *NOT* BUY, and the check that would refute it.** It does
 NOT by itself let the level-`9` leaf `MazurLevel9.jQuotient_of_tateParam` drop
 its abstract `π`. That leaf's kernel `⟨h⟩` has order `9`, while a chain built
 from this node supplies the TWO-STEP composite
@@ -8052,8 +8250,16 @@ that really had to be written is the `ℚ`-level repackaging between the
 wants; that is `WeierstrassCurve.isIsogeny_of_veluQuotient` below, and the
 level-`7` cluster (`exists_x0Seven_param_of_stableSevenSubgroup` →
 `x0Seven_param_mul_ne_49` → `not_stableCyclicFortyNine_of_j_eq`) is the worked
-example of threading it. Strengthening the `X_0(9)` cluster the same way is
-now a transcription rather than a cut. -/
+example of threading it.
+
+**AND THE `X_0(9)` CLUSTER WAS STRENGTHENED THE SAME WAY ON 2026-07-27**, exactly
+as predicted here — as a transcription, not a cut. The certificate enters at
+`exists_x0Three_param_isogeny_of_stableThreeSubgroup` just below and is threaded
+through `x0Three_param_mul_ne_729`, `exists_x0Nine_param_of_cyclicNineChain`,
+`exists_x0Nine_frickePair_of_cyclicNineChain`, `MazurLevel9.jQuotient_of_tateParam`
+and `MazurLevel9.veluQuotient_jRelation_of_tateParam`, ending at
+`MazurLevel9.jQuotient_eq_veluCurve_of_tateParam`, which is now PROVEN over the
+single elementary leaf `jRelation_veluCurve_of_isogeny_ker_eq`. -/
 theorem WeierstrassCurve.exists_x0Three_param_model_of_stableThreeSubgroup
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 3)
@@ -8080,15 +8286,16 @@ theorem WeierstrassCurve.exists_x0Three_param_model_of_stableThreeSubgroup
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
       (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
         φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples P) ∧
+      WeierstrassCurve.IsIsogeny φ ∧
       u ≠ 0 ∧
       E.j * u ^ 3 = (u + 27) * (u + 243) ^ 3 ∧
       (E.veluModel t w).j * u = (u + 27) * (u + 3) ^ 3 := by
-  obtain ⟨a₁, a₃, t, w, hE', φ, hvelu, hgal, hker, ha3, hDne, hJ, hJ'⟩ :=
+  obtain ⟨a₁, a₃, t, w, hE', φ, hvelu, hgal, hker, hiso, ha3, hDne, hJ, hJ'⟩ :=
     E.exists_tateInvariants_of_stableThreeSubgroup P hP hstable
   haveI := hE'
   obtain ⟨u, hu0, h1, h2⟩ :=
     X0Three.param_of_tateInvariants E.j (E.veluModel t w).j a₁ a₃ ha3 hDne hJ hJ'
-  exact ⟨u, t, w, hE', φ, hvelu, hgal, hker, hu0, h1, h2⟩
+  exact ⟨u, t, w, hE', φ, hvelu, hgal, hker, hiso, hu0, h1, h2⟩
 
 /-- **`X_0(3)`: the hauptmodul parameter of a rational `3`-isogeny** (PROVEN
 2026-07-26 over the single leaf
@@ -8133,9 +8340,69 @@ theorem WeierstrassCurve.exists_x0Three_param_of_stableThreeSubgroup
       u ≠ 0 ∧
       E.j * u ^ 3 = (u + 27) * (u + 243) ^ 3 ∧
       E'.j * u = (u + 27) * (u + 3) ^ 3 := by
-  obtain ⟨u, t, w, hE', φ, -, hgal, hker, hu0, h1, h2⟩ :=
+  obtain ⟨u, t, w, hE', φ, -, hgal, hker, -, hu0, h1, h2⟩ :=
     E.exists_x0Three_param_model_of_stableThreeSubgroup P hP hstable
   exact ⟨u, E.veluModel t w, hE', φ, hgal, hker, hu0, h1, h2⟩
+
+/-- **`X_0(3)`: the hauptmodul parameter of a rational `3`-isogeny, WITH the
+`IsIsogeny` certificate** (PROVEN 2026-07-27; introduced the same day).
+
+This is `exists_x0Three_param_of_stableThreeSubgroup` above with one extra
+conjunct, `WeierstrassCurve.IsIsogeny φ` — a certificate that `φ` is a MORPHISM OF
+CURVES and not merely a `Gal(ℚ̄/ℚ)`-equivariant homomorphism of point groups.
+
+**WHY IT IS A SEPARATE DECLARATION RATHER THAN A STRENGTHENING IN PLACE.**  The
+forgetful form has six call sites, only three of which (the chain built in
+`exists_x0Three_chainParameters`) need the certificate; adding a conjunct there
+would have forced an edit at every other one for no gain.  This is the exact
+level-`3` analogue of `exists_x0Seven_param_of_stableSevenSubgroup`, which
+carries the same conjunct.
+
+**WHY THE CERTIFICATE IS LOAD-BEARING, and it is the whole reason this exists.**  An
+abstract Galois-equivariant `AddMonoidHom` with kernel `C` pins the `j`-invariant of
+its TARGET only through an isomorphism of `ℓ`-adic Tate modules for every `ℓ`, i.e.
+only through **Faltings' isogeny theorem**, which is not available at this pin.  So
+every consumer downstream that needs `j(E/C)` — the whole `X_0(9)` cluster, through
+`MazurLevel9.jQuotient_eq_veluCurve_of_tateParam` — inherited a hypothesis it could
+not discharge.  The certificate is free HERE (`isIsogeny_of_veluQuotient` reads it
+straight off Vélu's coordinates) and is not obtainable anywhere downstream.
+
+**WHERE IT ACTUALLY COMES FROM, and a trap worth recording.**  The certificate is
+produced inside `exists_tateInvariants_of_stableThreeSubgroup`, out of the `hcoord`
+conjunct of `exists_velu_quotient_isogeny_model` that that proof previously
+discarded, and is carried through the model-naming form to here.  The first attempt
+instead re-invoked `exists_velu_quotient_isogeny_model` here and identified the two
+quotient models through their pinned Vélu coefficients.  That FAILS, and instructively:
+the two `algebraMap ℚ ℚ̄` in `algebraMap t₀ = veluT …` and `algebraMap t = veluT …`
+elaborate through different instance paths, so `rw` reports "did not find an occurrence
+of the pattern `(algebraMap ℚ (AlgebraicClosure ℚ)) t`" against a goal that
+pretty-prints as containing exactly that.  The fix is not a `rw` incantation: it is to
+keep ONE `φ` throughout, which is what this version does. -/
+theorem WeierstrassCurve.exists_x0Three_param_isogeny_of_stableThreeSubgroup
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 3)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples P,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples P) :
+    ∃ (u : ℚ) (E' : WeierstrassCurve ℚ) (_hE' : E'.IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+        φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples P) ∧
+      WeierstrassCurve.IsIsogeny φ ∧
+      u ≠ 0 ∧
+      E.j * u ^ 3 = (u + 27) * (u + 243) ^ 3 ∧
+      E'.j * u = (u + 27) * (u + 3) ^ 3 := by
+  obtain ⟨u, t, w, hE', φ, -, hgal, hker, hiso, hu0, h1, h2⟩ :=
+    E.exists_x0Three_param_model_of_stableThreeSubgroup P hP hstable
+  exact ⟨u, E.veluModel t w, hE', φ, hgal, hker, hiso, hu0, h1, h2⟩
 
 namespace X0Nine
 
@@ -8671,32 +8938,44 @@ PROVEN above; `j9_fricke_of_tateParam` converts the parent into the `X_0(9)` rel
 What is left here is exactly one thing, and it is a HYPOTHESIS DEFECT, not a gap in the
 mathematics.
 
-**THE OBSTRUCTION.**  `π` is hypothesised only as an abstract `Gal`-equivariant
+**HOW IT WAS CLOSED (2026-07-27), and what the repair actually was.**  The
+obstruction recorded below was a HYPOTHESIS DEFECT, exactly as diagnosed, and it has
+been repaired at its source rather than worked around: `π` now carries `hπiso`, a
+`WeierstrassCurve.IsIsogeny` certificate, threaded down from
+`exists_x0Three_param_isogeny_of_stableThreeSubgroup` (where
+`isIsogeny_of_veluQuotient` supplies it for free out of Vélu's coordinates) through
+`x0Three_param_mul_ne_729`, `exists_x0Nine_param_of_cyclicNineChain`,
+`exists_x0Nine_frickePair_of_cyclicNineChain`, `jQuotient_of_tateParam` and
+`veluQuotient_jRelation_of_tateParam`.  With it, the proof below is a transport:
+
+1. `IsTateParam` carries a `C : VariableChange ℚ̄` with `C • (E⁄ℚ̄) = tateCurve d` and
+   `h = (C.r, C.t)`.  The induced `ι : (tateCurve d)(ℚ̄) ≃+ E(ℚ̄)` is an isogeny by
+   `isRationalMap_variableChangeEquiv` (PROVEN), and it sends `(0,0) ↦ h`.
+2. So `π ∘ ι` is an isogeny out of the Kubert model (`IsIsogeny.comp`) with kernel
+   exactly `S = ⟨(0,0)⟩`, of order `9` because `ι` is injective and `addOrderOf h = 9`.
+3. `jRelation_veluCurve_of_isogeny_ker_eq` — UNIQUENESS OF THE QUOTIENT, the single
+   new leaf, stated far above — reads off `j(E'') = j((tateCurve d)/S)`.
+
+**WHAT THE ONE REMAINING LEAF IS, AND WHY IT IS BETTER THAN WHAT IT REPLACES.**  It is
+elementary and Faltings-free: over `ℚ̄`, `θ := ν ∘ φ⁻¹` is a bijective rational map
+(`IsRationalMap.descend`, PROVEN), and a bijective rational map of Weierstrass curves
+is an admissible change of variables, hence preserves `j`.  See that leaf for the
+route, the refuting check and the axis searched.  What it replaces was **Faltings'
+isogeny theorem**, available at no pin in this development.
+
+**THE OBSTRUCTION AS IT STOOD** (kept because it is the reason the hypothesis exists,
+and because the same defect recurs elsewhere in this file).  `π` used to be
+hypothesised only as an abstract `Gal`-equivariant
 `AddMonoidHom` with kernel `⟨h⟩`, not as a morphism of curves.  Such a `π` is
 automatically surjective on torsion (its image is divisible of corank `2` in
 `E''_tors ≅ (ℚ/ℤ)²`, hence everything), so it induces `E''_tors ≅ E_tors/⟨h⟩` as
 `Gal`-modules and therefore `T_ℓ(E'') ≅ T_ℓ(E/⟨h⟩)` for EVERY `ℓ`.  By Faltings that
 forces `E'' ≅ E/⟨h⟩` over `ℚ` — an isomorphism, not merely an isogeny, because
 `Hom(E'', E/⟨h⟩) ⊗ ℤ_ℓ` containing a `T_ℓ`-isomorphism makes the minimal isogeny degree
-prime to every `ℓ`.  So the statement is TRUE, and its hypotheses are strictly weaker
-than anything provable at this pin.
-
-**THE CHECK THAT WOULD REFUTE THIS OBSTRUCTION.**  Exhibit a route from `hπker` +
-`hπgal` alone to `j(E'') = j((tateCurve d)/⟨(0,0)⟩)` that does not pass through an
-isomorphism of `T_ℓ` for all `ℓ`.  Concretely it is refuted the moment `π` is
-strengthened to a Vélu quotient: `WeierstrassCurve.exists_velu_quotient_isogeny_model`
-already returns `E' = E.veluModel t w` with `t`, `w` pinned as Vélu's sums, and with
-`E''` identified as such a model this leaf becomes the variable-change transport of
-Vélu's data along the `C : VariableChange ℚ̄` that `IsTateParam` carries
-(`C • (E⁄ℚ̄) = tateCurve d`), under which `t ↦ u⁴t'` and `w ↦ u⁶w' + ru⁴t'`, so that
-`C • (E.veluModel t w) = (tateCurve d).veluModel t' w'` and `j` is invariant.  **That
-strengthening was authorised independently on `exists_x0Three_chainParameters` and was
-NOT yet on `main` as of 2026-07-27**; a successor should re-read the hypotheses of the
-parent BEFORE attempting Faltings, since every call site already supplies a Vélu
-quotient and the abstractness here is a design artefact.
-
-**Two residual pieces, once `π` is a Vélu quotient**, both routine and neither needing
-Faltings: (i) the transport above, and (ii) `Odd (Nat.card ⟨h⟩)`, which is `9`.
+prime to every `ℓ`.  So the statement was TRUE, and its hypotheses were strictly weaker
+than anything provable at this pin.  Adding `hπiso` is not a weakening of the theorem:
+every call site constructs `π` as a composite of Vélu quotient maps and therefore has
+the certificate in hand.
 
 **NUMERICAL ANCHOR** (PARI/GP, untrusted searcher; `d = 2` gives the class `27a`):
 `tateCurve 2` has `j = −1167051/512` and `(0,0)` of order `9`; its Vélu quotient by
@@ -8720,14 +8999,80 @@ theorem jQuotient_eq_veluCurve_of_tateParam
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (π Pt))
     (hπker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       π Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (hπiso : WeierstrassCurve.IsIsogeny π)
     (d : AlgebraicClosure ℚ) (hd : IsTateParam E h d)
     (hΔ : (tateCurve d).Δ ≠ 0)
     (S : Finset (tateCurve d).toAffine.Point)
     (hSmem : ∀ Q, Q ∈ S ↔ Q ∈ AddSubgroup.zmultiples
       (Affine.Point.some 0 0 (tateCurve_ns1 hΔ))) :
     algebraMap ℚ (AlgebraicClosure ℚ) E''.j * ((tateCurve d).veluCurve S).Δ
-      = ((tateCurve d).veluCurve S).c₄ ^ 3 :=
-  sorry
+      = ((tateCurve d).veluCurve S).c₄ ^ 3 := by
+  classical
+  haveI hEell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  haveI hE''ell : ((E''⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E''.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  haveI hTell : (tateCurve d).IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
+  obtain ⟨C, hC, hns, hh⟩ := hd
+  set P₀ : (tateCurve d).toAffine.Point := Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+    with hP₀def
+  -- STEP 1 : the Kubert variable change, as an isogeny `(tateCurve d) → E` over `ℚ̄`
+  set ι : (tateCurve d).toAffine.Point ≃+
+      ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point :=
+    (Point.equivOfEq hC.symm).trans
+      (Point.equivVariableChange (E⁄(AlgebraicClosure ℚ)) C) with hιdef
+  have hιiso : WeierstrassCurve.IsIsogeny ι.toAddMonoidHom := by
+    rw [hιdef]
+    exact (isRationalMap_variableChangeEquiv _ _ C hC.symm).isIsogeny
+  have hι0 : ι P₀ = h := by
+    rw [hh, hP₀def, hιdef]
+    simp only [AddEquiv.trans_apply, Point.equivOfEq_some, Point.equivVariableChange_some,
+      mul_zero, zero_add, add_zero]
+  -- STEP 2 : the composite is an isogeny of the Kubert model with kernel `S`
+  have hzm : ∀ Q : (tateCurve d).toAffine.Point,
+      ι Q ∈ AddSubgroup.zmultiples h ↔ Q ∈ AddSubgroup.zmultiples P₀ := by
+    intro Q
+    constructor
+    · intro hQ
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hQ
+      refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ι.injective ?_⟩
+      rw [map_zsmul, hι0, hk]
+    · intro hQ
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hQ
+      refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+      rw [← hι0, ← map_zsmul, hk]
+  have hΦker : ∀ Q : (tateCurve d).toAffine.Point,
+      (π.comp ι.toAddMonoidHom) Q = 0 ↔ Q ∈ S := by
+    intro Q
+    show π (ι Q) = 0 ↔ Q ∈ S
+    rw [hπker, hzm Q]
+    exact (hSmem Q).symm
+  -- STEP 3 : `S` is a subgroup of odd order `9`
+  have hSgrp : IsPointSubgroup S :=
+    { zero_mem := (hSmem _).mpr (zero_mem _)
+      add_mem := fun P hP Q hQ =>
+        (hSmem _).mpr (add_mem ((hSmem P).mp hP) ((hSmem Q).mp hQ))
+      neg_mem := fun P hP => (hSmem _).mpr (neg_mem ((hSmem P).mp hP)) }
+  have hord0 : addOrderOf P₀ = 9 := by
+    rw [← hord, ← hι0]
+    exact (ι.addOrderOf_eq P₀).symm
+  have hcard : S.card = 9 := by
+    have hz := Nat.card_zmultiples P₀
+    rw [hord0] at hz
+    rw [← Nat.subtype_card S hSmem]
+    exact hz
+  -- STEP 4 : uniqueness of the quotient
+  have key := jRelation_veluCurve_of_isogeny_ker_eq
+    ((tateCurve d) : Affine (AlgebraicClosure ℚ))
+    ((E''⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ))
+    S hSgrp (by rw [hcard]; decide) (π.comp ι.toAddMonoidHom)
+    (WeierstrassCurve.IsIsogeny.comp hιiso hπiso) hΦker
+  have hjmap : ((E''⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).j
+      = algebraMap ℚ (AlgebraicClosure ℚ) E''.j := by
+    show (E''.map (algebraMap ℚ (AlgebraicClosure ℚ))).j = _
+    rw [WeierstrassCurve.map_j]
+  rw [← hjmap]
+  exact key
 
 /-- **The `j`-invariant of the quotient, denominator-free on the Kubert line**
 (PROVEN 2026-07-27 over the single new leaf `jQuotient_eq_veluCurve_of_tateParam`
@@ -8775,7 +9120,7 @@ shape of work as the PROVEN order-`3` precedent
 (1,1,3,9)` exponent swap in `Δ'` is the independent check that this is the
 Fricke dual and not some other quotient.
 
-**STEP 2 — THE OBSTRUCTION, WHICH IS REAL AND IS NOT MINE TO PATCH.**  `π` is
+**STEP 2 — THE OBSTRUCTION, REPAIRED 2026-07-27 AT ITS SOURCE.**  `π` used to be
 hypothesised only as an abstract `Gal`-equivariant `AddMonoidHom` with kernel
 `⟨h⟩`, not as a morphism of curves.  Such a `π` is automatically surjective on
 torsion (its image is divisible of corank `2` in `E''_tors ≅ (ℚ/ℤ)²`, hence
@@ -8783,20 +9128,21 @@ everything), so it induces `E''_tors ≅ E_tors/⟨h⟩ ≅ (E/⟨h⟩)_tors` as
 `Gal`-modules and therefore `T_ℓ(E'') ≅ T_ℓ(E/⟨h⟩)` for EVERY `ℓ`.  By
 Faltings that forces `E'' ≅ E/⟨h⟩` over `ℚ` — an isomorphism, not merely an
 isogeny, because `Hom(E'', E/⟨h⟩) ⊗ ℤ_ℓ` containing a `T_ℓ`-isomorphism makes
-the minimal isogeny degree prime to every `ℓ`.  So the statement is TRUE, and
-its hypotheses are strictly weaker than anything provable at this pin.
+the minimal isogeny degree prime to every `ℓ`.  So the statement was TRUE, and
+its hypotheses were strictly weaker than anything provable at this pin.
 
-**THE CHECK THAT WOULD REFUTE THIS OBSTRUCTION** (per doctrine, stated so the
-next agent need not redo the survey): exhibit a route from `hπker` + `hπgal`
-alone to `j(E'') = j((tateCurve d)/⟨(0,0)⟩)` that does not pass through an
-isomorphism of `T_ℓ` for all `ℓ`.  Concretely, it is refuted the moment
-`π` is strengthened to a Vélu quotient — then `E''` IS `E.veluModel t w` and
-Step 1 closes the leaf outright.  **That repair is in flight elsewhere**
-(the same strengthening was authorised on `exists_x0Three_chainParameters`,
-whose `φ`, `ψ` feed this `π` through `X0Nine.ker_comp_eq`), so a successor
-should re-read the hypotheses BEFORE attempting Faltings: every call site
-already supplies a Vélu quotient, and the abstractness here is a design
-artefact, not a mathematical weakening anybody wanted.
+**THE REPAIR THAT WAS CARRIED OUT** (and it is exactly the refuting check the
+previous version of this paragraph named).  `π` now carries `hπiso :
+WeierstrassCurve.IsIsogeny π`, threaded from
+`exists_x0Three_param_isogeny_of_stableThreeSubgroup` — where
+`isIsogeny_of_veluQuotient` reads the certificate straight off Vélu's coordinates
+— through `x0Three_param_mul_ne_729`, `exists_x0Nine_param_of_cyclicNineChain`
+and `exists_x0Nine_frickePair_of_cyclicNineChain`, which compose the two level-`3`
+certificates with `IsIsogeny.comp`.  Nothing is weakened: every call site builds
+`π` as a composite of Vélu quotient maps and therefore has the certificate in
+hand; the abstractness was a design artefact, not a mathematical weakening
+anybody wanted.  Faltings is not used, and the residue is the single elementary
+leaf `jRelation_veluCurve_of_isogeny_ker_eq` (uniqueness of the quotient).
 
 **NUMERICAL ANCHOR** (PARI/GP, untrusted searcher; `d = 2` gives the class
 `27a`): `tateCurve 2` has `j = −1167051/512`, `(0,0)` of order `9`, Hauptmodul
@@ -8821,6 +9167,7 @@ theorem veluQuotient_jRelation_of_tateParam
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (π Pt))
     (hπker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       π Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (hπiso : WeierstrassCurve.IsIsogeny π)
     (d : AlgebraicClosure ℚ) (hd : IsTateParam E h d) :
     algebraMap ℚ (AlgebraicClosure ℚ) E''.j
         * (d * (d - 1) * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 9)
@@ -8833,8 +9180,8 @@ theorem veluQuotient_jRelation_of_tateParam
   -- Vélu's data on the explicit order-`9` kernel `⟨(0,0)⟩` of the Kubert model.
   obtain ⟨S, hSmem, hST, hSW⟩ := tateCurve_velu_kernel two_ne_zero hΔ
   -- the one remaining hypothesis: `j(E'')` is the `j` of that quotient.
-  have key := jQuotient_eq_veluCurve_of_tateParam E E'' h hord hhstable π hπgal hπker d hd hΔ
-    S hSmem
+  have key := jQuotient_eq_veluCurve_of_tateParam E E'' h hord hhstable π hπgal hπker hπiso
+    d hd hΔ S hSmem
   rwa [veluCurve_eq, hST, hSW, tateCurve_veluModel_Δ, tateCurve_veluModel_c₄] at key
 
 /-- **The Fricke involution computes the `j`-invariant of the quotient**
@@ -8908,23 +9255,21 @@ recorded in `veluQuotient_jRelation_of_tateParam`'s docstring, together with
 the `(9,9,3,1) ↦ (1,1,3,9)` cusp-exponent swap that identifies the quotient
 as the Fricke dual.
 
-**THE ONE PLACE WHERE THIS IS STILL MORE THAN A COMPUTATION, and it is a
-statement-level issue a reviewer should weigh** — it has moved WHOLESALE into
-the new leaf, and is restated there with the check that would refute it.  `π`
-is hypothesised only as an abstract `Gal`-equivariant `AddMonoidHom` with
-kernel `⟨h⟩`, not as a morphism of curves.  Such a `π` restricts to an
+**THE ONE PLACE WHERE THIS WAS MORE THAN A COMPUTATION — REPAIRED 2026-07-27.**
+`π` used to be hypothesised only as an abstract `Gal`-equivariant `AddMonoidHom`
+with kernel `⟨h⟩`, not as a morphism of curves.  Such a `π` restricts to an
 isomorphism of torsion `Gal`-modules `E(ℚ̄)_tors/⟨h⟩ ≅ E''(ℚ̄)_tors` (the image
 is divisible, hence a direct summand, hence everything), so
 `T_ℓ(E'') ≅ T_ℓ(E/⟨h⟩)` for every `ℓ` — which does force
 `j(E'') = j(E/⟨h⟩)`, but through Faltings' isogeny theorem, not through
-anything available here.  The statement is therefore TRUE and its hypotheses
-are, strictly, weaker than any proof in this development can use.  The honest
-repair is to strengthen `π` to a Vélu quotient — which is what every call
-site actually supplies, since the consumer's chain is built by
-`exists_x0Three_param_of_stableThreeSubgroup` — rather than to import
-Faltings.  This affects `exists_x0Three_chainParameters`'s whole design, not
-just this leaf, so it is reported rather than silently patched; the same
-strengthening was authorised there independently on 2026-07-27.
+anything available here.  The honest repair, carried out rather than merely
+reported, was to give `π` a `WeierstrassCurve.IsIsogeny` certificate, which is
+what every call site actually has: the chain is built by
+`exists_x0Three_param_isogeny_of_stableThreeSubgroup`, whose `φ` is a Vélu
+quotient map and therefore carries the certificate for free
+(`isIsogeny_of_veluQuotient`), and `IsIsogeny.comp` threads it along the chain.
+Faltings is no longer anywhere in this cone; what remains is the elementary leaf
+`jRelation_veluCurve_of_isogeny_ker_eq` (uniqueness of the quotient).
 
 **NUMERICAL ANCHOR** (class `27a`, PARI/GP `ellisomat`, untrusted searcher):
 `E = 27a1`, `j = −12288000`, `s = −3`.  Then `(s+3)³ = 0` and
@@ -8949,6 +9294,7 @@ theorem jQuotient_of_tateParam
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (π Pt))
     (hπker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       π Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (hπiso : WeierstrassCurve.IsIsogeny π)
     (d : AlgebraicClosure ℚ) (hd : IsTateParam E h d)
     (s : ℚ) (hs : algebraMap ℚ (AlgebraicClosure ℚ) s * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
       = 27 * d * (d - 1)) :
@@ -8965,7 +9311,7 @@ theorem jQuotient_of_tateParam
   -- of the Kubert curve, denominator-free.
   have key := j9_fricke_of_tateParam d (algebraMap ℚ (AlgebraicClosure ℚ) E''.j)
     (algebraMap ℚ (AlgebraicClosure ℚ) s) hq
-    (veluQuotient_jRelation_of_tateParam E E'' h hord hhstable π hπgal hπker d hd) hs
+    (veluQuotient_jRelation_of_tateParam E E'' h hord hhstable π hπgal hπker hπiso d hd) hs
   -- and it descends to `ℚ`, because `s` and `j(E'')` are rational.
   refine (algebraMap ℚ (AlgebraicClosure ℚ)).injective ?_
   simpa only [map_mul, map_pow, map_add, map_ofNat] using key
@@ -9069,7 +9415,8 @@ theorem WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain
     (hφker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • h))
     (hψker : ∀ Pt : (E'⁄(AlgebraicClosure ℚ)).Point,
-      ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h)) :
+      ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h))
+    (hφiso : WeierstrassCurve.IsIsogeny φ) (hψiso : WeierstrassCurve.IsIsogeny ψ) :
     ∃ s : ℚ,
       E.j * (s ^ 9 * (s ^ 2 + 9 * s + 27)) =
         (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 ∧
@@ -9103,7 +9450,7 @@ theorem WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain
     simpa only [map_mul, map_pow, map_add, map_ofNat] using key
   -- 4. conjunct 2 : the Fricke image, from the single remaining leaf
   have h2 := MazurLevel9.jQuotient_of_tateParam E E'' h hord hhstable (ψ.comp φ)
-    hπgal hπker d hd s hs
+    hπgal hπker (WeierstrassCurve.IsIsogeny.comp hφiso hψiso) d hd s hs
   exact ⟨s, h1, X0Nine.fricke_clear_inv s E''.j (X0Nine.param_ne_zero s E.j h1) h2⟩
 
 
@@ -9202,7 +9549,8 @@ theorem WeierstrassCurve.exists_x0Nine_param_of_cyclicNineChain
     (hφker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • h))
     (hψker : ∀ Pt : (E'⁄(AlgebraicClosure ℚ)).Point,
-      ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h)) :
+      ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h))
+    (hφiso : WeierstrassCurve.IsIsogeny φ) (hψiso : WeierstrassCurve.IsIsogeny ψ) :
     ∃ s : ℚ,
       E.j * (s ^ 9 * (s ^ 2 + 9 * s + 27)) =
         (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 ∧
@@ -9210,7 +9558,7 @@ theorem WeierstrassCurve.exists_x0Nine_param_of_cyclicNineChain
         (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3 := by
   obtain ⟨s, h1, h2⟩ :=
     WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain E E' E'' φ ψ hφgal hψgal
-      h h9 h3 hhstable hφker hψker
+      h h9 h3 hhstable hφker hψker hφiso hψiso
   exact ⟨s, h1, X0Nine.fricke_clear s E''.j (X0Nine.param_ne_zero s E.j h1) h2⟩
 
 /-- **Non-backtracking along a cyclic `9`-isogeny** (PROVEN 2026-07-26 over
@@ -9307,6 +9655,7 @@ theorem WeierstrassCurve.x0Three_param_mul_ne_729
       φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • h))
     (hψker : ∀ Pt : (E'⁄(AlgebraicClosure ℚ)).Point,
       ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h))
+    (hφiso : WeierstrassCurve.IsIsogeny φ) (hψiso : WeierstrassCurve.IsIsogeny ψ)
     (u v : ℚ) (hu0 : u ≠ 0) (_hv0 : v ≠ 0)
     (hju : E.j * u ^ 3 = (u + 27) * (u + 243) ^ 3)
     (_hju' : E'.j * u = (u + 27) * (u + 3) ^ 3)
@@ -9332,7 +9681,7 @@ theorem WeierstrassCurve.x0Three_param_mul_ne_729
   -- `j(E'') = j(E)` puts it on the self-duality locus, which is empty over `ℚ`.
   obtain ⟨s, hs1, hs2⟩ :=
     WeierstrassCurve.exists_x0Nine_param_of_cyclicNineChain E E' E'' φ ψ hφgal hψgal
-      h h9 h3 hhstable hφker hψker
+      h h9 h3 hhstable hφker hψker hφiso hψiso
   refine X0Nine.selfDual_ne s ?_
   linear_combination (-1 : ℚ) * hs1 + s ^ 8 * hs2 - s ^ 9 * (s ^ 2 + 9 * s + 27) * hjj
 
@@ -9416,8 +9765,8 @@ theorem WeierstrassCurve.exists_x0Three_chainParameters
     intro hc
     simp [hc] at hord9
   -- STEP 1 : the isogeny with kernel `⟨9g⟩`
-  obtain ⟨u₁, E₁, hE₁, φ₁, hφ₁gal, hφ₁ker, hu₁0, hj1, hj1'⟩ :=
-    E.exists_x0Three_param_of_stableThreeSubgroup ((9 : ℕ) • g) hord9 hst9
+  obtain ⟨u₁, E₁, hE₁, φ₁, hφ₁gal, hφ₁ker, hφ₁iso, hu₁0, hj1, hj1'⟩ :=
+    E.exists_x0Three_param_isogeny_of_stableThreeSubgroup ((9 : ℕ) • g) hord9 hst9
   haveI := hE₁
   have hg₁ne : φ₁ ((3 : ℕ) • g) ≠ 0 := X0Three.map_three_ne_zero φ₁ g hg hφ₁ker
   have hg₁3 : (3 : ℕ) • φ₁ ((3 : ℕ) • g) = 0 := by
@@ -9432,8 +9781,8 @@ theorem WeierstrassCurve.exists_x0Three_chainParameters
       Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
     φ₁ hφ₁gal ((3 : ℕ) • g) hst3
   -- STEP 2 : the isogeny with kernel `⟨φ₁(3g)⟩`
-  obtain ⟨u₂, E₂, hE₂, φ₂, hφ₂gal, hφ₂ker, hu₂0, hj2, hj2'⟩ :=
-    E₁.exists_x0Three_param_of_stableThreeSubgroup (φ₁ ((3 : ℕ) • g)) hord₁ hst₁
+  obtain ⟨u₂, E₂, hE₂, φ₂, hφ₂gal, hφ₂ker, hφ₂iso, hu₂0, hj2, hj2'⟩ :=
+    E₁.exists_x0Three_param_isogeny_of_stableThreeSubgroup (φ₁ ((3 : ℕ) • g)) hord₁ hst₁
   haveI := hE₂
   have hg₂ne : φ₂ (φ₁ g) ≠ 0 := X0Three.map_map_ne_zero φ₁ φ₂ g hg hφ₁ker hφ₂ker
   have hg₂3 : (3 : ℕ) • φ₂ (φ₁ g) = 0 := by
@@ -9454,8 +9803,8 @@ theorem WeierstrassCurve.exists_x0Three_chainParameters
       Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
     φ₂ hφ₂gal (φ₁ g) hstg1
   -- STEP 3 : the isogeny with kernel `⟨φ₂(φ₁ g)⟩`
-  obtain ⟨u₃, E₃, hE₃, φ₃, hφ₃gal, hφ₃ker, hu₃0, hj3, hj3'⟩ :=
-    E₂.exists_x0Three_param_of_stableThreeSubgroup (φ₂ (φ₁ g)) hord₂ hst₂
+  obtain ⟨u₃, E₃, hE₃, φ₃, hφ₃gal, hφ₃ker, hφ₃iso, hu₃0, hj3, hj3'⟩ :=
+    E₂.exists_x0Three_param_isogeny_of_stableThreeSubgroup (φ₂ (φ₁ g)) hord₂ hst₂
   haveI := hE₃
   -- non-backtracking of the first consecutive pair, over `⟨3g⟩`
   have hA9 : (9 : ℕ) • ((3 : ℕ) • g) = 0 := by
@@ -9466,7 +9815,8 @@ theorem WeierstrassCurve.exists_x0Three_chainParameters
     intro Pt; rw [h33]; exact hφ₁ker Pt
   have hnb1 : u₁ * u₂ ≠ 729 :=
     WeierstrassCurve.x0Three_param_mul_ne_729 E E₁ E₂ φ₁ φ₂ hφ₁gal hφ₂gal
-      ((3 : ℕ) • g) hA9 hA3 hst3 hAker hφ₂ker u₁ u₂ hu₁0 hu₂0 hj1 hj1' hj2 hj2'
+      ((3 : ℕ) • g) hA9 hA3 hst3 hAker hφ₂ker hφ₁iso hφ₂iso
+      u₁ u₂ hu₁0 hu₂0 hj1 hj1' hj2 hj2'
   -- non-backtracking of the second consecutive pair, over `⟨φ₁ g⟩`
   have hB9 : (9 : ℕ) • φ₁ g = 0 := by
     rw [← map_nsmul]; exact (hφ₁ker _).mpr (AddSubgroup.mem_zmultiples _)
@@ -9476,7 +9826,8 @@ theorem WeierstrassCurve.exists_x0Three_chainParameters
     intro Pt; rw [← map_nsmul]; exact hφ₂ker Pt
   have hnb2 : u₂ * u₃ ≠ 729 :=
     WeierstrassCurve.x0Three_param_mul_ne_729 E₁ E₂ E₃ φ₂ φ₃ hφ₂gal hφ₃gal
-      (φ₁ g) hB9 hB3 hstg1 hBker hφ₃ker u₂ u₃ hu₂0 hu₃0 hj2 hj2' hj3 hj3'
+      (φ₁ g) hB9 hB3 hstg1 hBker hφ₃ker hφ₂iso hφ₃iso
+      u₂ u₃ hu₂0 hu₃0 hj2 hj2' hj3 hj3'
   exact ⟨u₁, u₂, u₃, hj1,
     X0Three.residual_of_matching E₁.j u₁ u₂ hj1' hj2 hnb1,
     X0Three.residual_of_matching E₂.j u₂ u₃ hj2' hj3 hnb2, hnb1, hnb2⟩
@@ -21293,66 +21644,10 @@ theorem WeierstrassCurve.exists_x0Seven_veluParam
     E.exists_x0Seven_veluFrickeData P hP hstable hCfin t w hE' ht hw
   exact ⟨u, hju, X0Seven.quot_fricke_jmap _ A' B' s₁ u hΔ' hj' h1' h2'⟩
 
-/-- **PROVEN 2026-07-27: the Vélu quotient datum over `ℚ` carries an `IsIsogeny`
-certificate.**  This is the seam lemma that lets a `Gal(ℚ̄/ℚ)`-equivariant
-`AddMonoidHom` produced by `exists_velu_quotient_isogeny_model` be used as a
-genuine MORPHISM OF CURVES rather than as a homomorphism of abstract groups.
-
-It exists because of a specific and expensive gap: a bare `AddMonoidHom` between
-point groups carries no geometry, so upgrading one to an element of `End(E_ℚ̄)`
-is Faltings' isogeny theorem.  Every consumer that wants to argue with
-endomorphisms — the level-`49` CM leaf `not_stableCyclicFortyNine_of_j_eq` below
-is the first — must therefore be handed the certificate at the point where the
-map is CONSTRUCTED, which is here.
-
-**Nothing new is proven.**  All the mathematics is already in
-`Fermat/FLT/EllipticCurve/Isogeny.lean`: `isRationalMap_of_veluMap` builds the
-`IsRationalMap` certificate out of Vélu's own polynomials (`veluXNum`, `veluH`,
-`veluXi`), and `IsRationalMap.isIsogeny` — PROVEN and axiom-clean as of
-2026-07-27 — supplies the `surjective` and `finite_ker` fields over an
-algebraically closed base.  This lemma only converts between the two spellings of
-the kernel: `exists_velu_quotient_isogeny_model` states it as membership in an
-`AddSubgroup C`, while the bridge wants a `Finset`, and `hCfin.toFinset` is the
-translation.  The `Odd` hypothesis is inherited verbatim from Vélu.
-
-(Docstrings elsewhere in the tree record this bridge as MISSING — see the audit
-under `not_stableCyclicFortyNine_of_j_eq` below, corrected in place.  They were
-written before `isRationalMap_of_veluMap` and before the coordinate
-identification became part of `exists_velu_quotient_isogeny_model`'s conclusion
-on 2026-07-27, which is the conjunct `hcoord` consumed here.) -/
-theorem WeierstrassCurve.isIsogeny_of_veluQuotient
-    (E E' : WeierstrassCurve ℚ) [E.IsElliptic]
-    (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
-    (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
-    (hCodd : Odd (Nat.card C))
-    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
-    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C)
-    (hcoord : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Pt ∉ C →
-      veluPointX (φ Pt) =
-          veluCoordX (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt ∧
-        veluPointY (φ Pt) =
-          veluCoordY (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset Pt) :
-    WeierstrassCurve.IsIsogeny φ := by
-  classical
-  haveI : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ))).IsElliptic :=
-    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
-  set S : Finset ((E⁄(AlgebraicClosure ℚ)).Point) := hCfin.toFinset with hSdef
-  have hmem : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, P ∈ S ↔ P ∈ C := fun P => by
-    rw [hSdef]; exact hCfin.mem_toFinset
-  have hS : IsPointSubgroup S :=
-    { zero_mem := (hmem _).mpr (zero_mem C)
-      add_mem := fun P hP Q hQ =>
-        (hmem _).mpr (add_mem ((hmem P).mp hP) ((hmem Q).mp hQ))
-      neg_mem := fun P hP => (hmem _).mpr (neg_mem ((hmem P).mp hP)) }
-  have hcard : S.card = Nat.card C := by
-    rw [hSdef, ← Set.ncard_eq_toFinset_card _ hCfin, ← Nat.card_coe_set_eq]
-    rfl
-  have hodd : Odd S.card := hcard ▸ hCodd
-  refine (WeierstrassCurve.isRationalMap_of_veluMap hS hodd (fun P => ?_)
-    (fun P hP => ?_) (fun P hP => ?_)).isIsogeny
-  · rw [hker P]; exact (hmem P).symm
-  · exact (hcoord P fun hc => hP ((hmem P).mpr hc)).1
-  · exact (hcoord P fun hc => hP ((hmem P).mpr hc)).2
+-- (`WeierstrassCurve.isIsogeny_of_veluQuotient` was MOVED 2026-07-27 to just after
+-- `exists_tateInvariants_of_stableThreeSubgroup`, so that the `X_0(3)`/`X_0(9)`
+-- cluster — thousands of lines ABOVE this point — can consume it.  Nothing about
+-- it changed; only its position did.)
 
 /-- **`X_0(7)`: the hauptmodul parameter of a rational `7`-isogeny, TOGETHER
 WITH the quotient curve and the isogeny** (PROVEN 2026-07-27 over the single
@@ -21549,31 +21844,10 @@ because it applies to the CM case as well and it is what pins the trace. What th
 outright below as `not_intMul_of_cyclic_ker`, from the torsion count
 `TorsionCard.card_torsionBy` alone, with no endomorphism theory at all. -/
 
-/-- **An admissible change of variables is a rational map on points** (PROVEN
-2026-07-27).
-
-`(x, y) ↦ (u²x + r, u³y + u²sx + t)` is visibly given by polynomials in the
-coordinates, so the witnesses of `IsRationalMap` are read off:
-`A = u²X + r`, `B = 1`, `C = u³`, `D = u²sX + t`, `E = 1`. Combined with the
-PROVEN `IsRationalMap.isIsogeny` over an algebraically closed field, this is what
-makes a `ℚ̄`-isomorphism of Weierstrass curves an ISOGENY, and it is the one piece
-of geometry that `exists_selfIsogeny_of_j_eq` below needs. -/
-theorem isRationalMap_variableChangeEquiv {F : Type*} [Field F] [DecidableEq F]
-    (W V : WeierstrassCurve F) [W.IsElliptic] (C : VariableChange F) (hC : V = C • W) :
-    WeierstrassCurve.IsRationalMap
-      (((Point.equivOfEq hC).trans (Point.equivVariableChange W C)).toAddMonoidHom) := by
-  refine ⟨Polynomial.C ((C.u : F) ^ 2) * Polynomial.X + Polynomial.C C.r, 1,
-    Polynomial.C ((C.u : F) ^ 3),
-    Polynomial.C ((C.u : F) ^ 2 * C.s) * Polynomial.X + Polynomial.C C.t, 1,
-    one_ne_zero, one_ne_zero, ?_⟩
-  rintro (_ | ⟨x, y, hns⟩) hP
-  · exact absurd (map_zero _) hP
-  · refine ⟨?_, ?_⟩ <;>
-    · simp only [AddEquiv.toAddMonoidHom_eq_coe, AddMonoidHom.coe_coe, AddEquiv.trans_apply,
-        Point.equivOfEq_some, Point.equivVariableChange_some, veluPointX_some, veluPointY_some,
-        Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X,
-        Polynomial.eval_one, mul_one]
-      try ring
+-- (`isRationalMap_variableChangeEquiv` was MOVED 2026-07-27 to just after
+-- `WeierstrassCurve.isIsogeny_of_veluQuotient`, far above, so that the `X_0(9)`
+-- cluster can consume it as well.  It now lives in the ROOT namespace rather than
+-- in `MazurLevelFortyNine`, so the bare references below still resolve.)
 
 /-- **Step 1 of the level-`49` argument: `j(E'') = j(E)` turns an isogeny
 `E → E''` into a SELF-isogeny of `E` over `ℚ̄`** (PROVEN 2026-07-27).
