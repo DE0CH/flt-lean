@@ -9276,10 +9276,420 @@ theorem stepanov_natDegree_norm_le (d p M : ℕ) (hd : 2 ≤ d) (hMd : d ∣ M)
   simp only [Nat.add_sub_cancel]
   exact le_of_eq (by ring)
 
-/-- **SCHMIDT LEMMA 4A, TOGETHER WITH THE REMARK AT THE END OF HIS §4** (SORRY
-LEAF, cut 2026-07-27 out of `exists_stepanovNormPolynomial`) — for the SECOND of
-his two algebraic functions, `λ = 2`, `ε₂ = d − 1`. **This is the dimension
-count, and it is the genuinely hard half of Schmidt's item 2c.**
+/-! #### Schmidt Lemma 4A: the ansatz, the jets, and the cut (2026-07-27)
+
+`exists_stepanovAuxiliaryFunction` below — Schmidt's Lemma 4A together with the
+Remark ending his Chapter III §4 — is the dimension count, and it is not a
+one-task leaf. It is cut here into THREE sub-leaves along Schmidt's own seams,
+with the degree bookkeeping and the point/branch bridge PROVEN as glue:
+
+* `exists_stepanovJetSolution` — §4, pp. 110–113: the LINEAR SYSTEM. `B < A`
+  gives a nonzero Frobenius-shaped `a` all of whose jets `a^{(ν)}`, `ν < M`,
+  vanish at every irrational point of the curve over `𝔽_p`.
+* `stepanov_not_dvd_stepanovAnsatz` — §2, pp. 100–105: **Lemma 2D** (through
+  Corollary 2C). A nonzero polynomial of the restricted shape does not vanish
+  at the generic point of the curve, i.e. `F ∤ a`. This is the clause Schmidt
+  discharges in one sentence — "By Lemma 2D, if not all `a_{ijk}` are zero, then
+  `a(X, η) ≠ 0`" — and it is a self-contained classical theorem, INDEPENDENT of
+  the other two, so it takes its own owner.
+* `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` — §3: the DERIVATION CALCULUS.
+  Vanishing of `a^{(ν)}(x, y)` for `ν < M` at a SIMPLE root `y` says exactly
+  that `a` vanishes to order `M` along the branch through `(x, y)`, which in
+  this file's rendering is divisibility by `(X − x)^M`.
+
+`stepanovAnsatz_coeff_natDegree_add_le` (PROVEN below) discharges Lemma 4A(iii),
+the weighted degree bound, from the shape data alone, so no sub-leaf carries it.
+
+**A SIMPLIFICATION WORTH RECORDING: the `F_Y^{2M}` of Schmidt's Remark is NOT
+needed in this rendering.** Schmidt sets `c := f_Y^{2M} a` because his
+`D^ν a(X, 𝔶)` is a RATIONAL function — `D^ν a = f_Y^{−2ν} a^{(ν)}` — and his §5
+needs a polynomial to take the norm of. This file states Lemma 4A(ii) as the
+DIVISIBILITY `(X − x)^M ∣ a(X, η)`, and at `x ∈ 𝔄` the root is simple, so
+`f_Y(x, y)` is a unit in `𝔽̄_p[[X − x]]` and multiplying by it changes nothing.
+Two consequences:
+
+* the `+2Md` the Remark costs in the degree bound never arises, so the
+  hypothesis it is absorbed by — `hp : 250 d⁵ < p`, via `2Md ≤ 2d√q ≤ ½q` — is
+  not load-bearing here. It is still handed to `exists_stepanovJetSolution`,
+  which wants `d < p` and has no reason to refuse room;
+* the conclusion's bound `(d−1)p(M/d) + p(d−1)` is Schmidt's POST-Remark (iii),
+  and is weaker than the pre-Remark `(d−1)pM/d + p(d − 3/2)` that the ansatz
+  actually satisfies, so it holds a fortiori.
+
+**WHAT IS MISSING AT THIS PIN** (grepped 2026-07-27 across `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT/`): no `[Ss]tepanov`, and no
+hyperderivative theory beyond `Polynomial.hasseDeriv` itself. Lemma 3A (the
+`(2d−3)ν` degree growth of the jets) and Lemma 2D have to be formalised here;
+**Lemma 3B does NOT**, and neither does any function-field norm — see
+`stepanov_natDegree_norm_le`. -/
+
+section StepanovAuxiliaryFunction
+
+variable {R : Type*} [CommRing R]
+
+/-- Partial derivative with respect to the INNER variable of `R[X][Y]`, i.e.
+Schmidt's `∂/∂X`. `Polynomial.derivative` differentiates in `Y`; mathlib has no
+ring hom for the inner one (differentiation is not multiplicative), so it is
+written out as a `Polynomial.sum`. -/
+noncomputable def stepanovDerivX (a : Polynomial (Polynomial R)) : Polynomial (Polynomial R) :=
+  a.sum fun n c => Polynomial.C (Polynomial.derivative c) * Polynomial.X ^ n
+
+/-- **SCHMIDT'S JETS `a^{(ν)}`** (Chapter III §3, the recursion inside the proof
+of Lemma 3A, p. 105).
+
+Let `D` be the unique extension to `𝔽_p(X, 𝔶)` of `d/dX`, so that
+`D𝔶 = −F_X/F_Y` by his (3.1). Schmidt's `a^{(ν)}` is defined by
+
+  `D^ν (F_Y^{2M} · a(X, 𝔶)) = F_Y^{2M−2ν}(X, 𝔶) · a^{(ν)}(X, 𝔶)`,
+
+and differentiating the right-hand side once gives the recursion implemented
+here:
+
+  `a^{(0)} = a`,
+  `a^{(ν+1)} = (2M − 2ν)·(F_{YX}F_Y − F_{YY}F_X)·a^{(ν)}
+                 + F_Y²·∂_X a^{(ν)} − F_Y F_X·∂_Y a^{(ν)}`.
+
+The point of the `F_Y^{2M}` bookkeeping is that every `a^{(ν)}` is a POLYNOMIAL
+even though `D^ν a` is not, and Lemma 3A is the resulting degree bound
+`deg a^{(ν)} ≤ deg a + (2d − 3)ν` — visible termwise in the recursion, since
+`deg (F_{YX}F_Y) ≤ (d−2) + (d−1)`.
+
+`2 * M - 2 * ℓ` is truncated subtraction; it is only ever used at `ℓ < M`, where
+it agrees with the integer difference. -/
+noncomputable def stepanovJet (F : Polynomial (Polynomial R)) (M : ℕ) :
+    ℕ → Polynomial (Polynomial R) → Polynomial (Polynomial R)
+  | 0, a => a
+  | ℓ + 1, a =>
+      Polynomial.C (Polynomial.C ((2 * M - 2 * ℓ : ℕ) : R)) *
+          (stepanovDerivX (Polynomial.derivative F) * Polynomial.derivative F -
+            Polynomial.derivative (Polynomial.derivative F) * stepanovDerivX F) *
+          stepanovJet F M ℓ a
+        + Polynomial.derivative F ^ 2 * stepanovDerivX (stepanovJet F M ℓ a)
+        - Polynomial.derivative F * stepanovDerivX F *
+            Polynomial.derivative (stepanovJet F M ℓ a)
+
+/-- Evaluation of `g ∈ R[X][Y]` at a point `(x, y)` with `x ∈ R` and `y` in an
+`R`-algebra `S` — Schmidt writes this `g(x, y)`. Used for the points of the curve
+over `𝔽_p` with irrational `y`, i.e. `y ∈ 𝔐₂(x)`. -/
+noncomputable def stepanovEvalPoint {S : Type*} [CommRing S] (φ : R →+* S)
+    (g : Polynomial (Polynomial R)) (x : R) (y : S) : S :=
+  Polynomial.eval y (g.map (φ.comp (Polynomial.evalRingHom x)))
+
+/-- **SCHMIDT'S FROBENIUS-RESTRICTED ANSATZ** (Chapter III §4, p. 110):
+
+  `a(X, Y) = ∑_{j + k ≤ K, k < d} b_{jk}(X, Y) X^{pj} Y^{pk}`,
+  `b_{jk}(X, Y) = ∑_{i < d} A_{ijk}(X) Y^i`,
+
+written here as one triple sum of monomials. The restriction is what makes the
+whole method work: `X^p` and `Y^p` have zero derivative, so the jets of `a` are
+computed from those of the `b_{jk}` alone (`a^{(ν)} = ∑ b_{jk}^{(ν)} X^{pj}Y^{pk}`),
+while `X` occurs only in the exponents `pj + v` with `v ≤ p/d − d` — "roughly
+only one `d`-th of all possible exponents in `X`", which is Schmidt's own
+heuristic for why Lemma 2D has a chance of being true.
+
+The support conditions `i < d` and `k < d` are exactly Lemma 2D's hypotheses
+(ii) and (iii), `deg_Y ≤ d − 1` and `deg_W ≤ d − 1`; `j` is unconstrained by 2D
+and is bounded only by the dimension count. -/
+noncomputable def stepanovAnsatz (d p K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial R) :
+    Polynomial (Polynomial R) :=
+  ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+    Polynomial.monomial (p * k + i) (A i j k * Polynomial.X ^ (p * j))
+
+end StepanovAuxiliaryFunction
+
+/-- **LEMMA 4A(iii), THE DEGREE BOUND** (PROVEN 2026-07-27) — mechanical, and
+proven here so that no sub-leaf has to carry it.
+
+The bound is the WEIGHTED one that `stepanov_natDegree_resultant_le` consumes:
+`deg_X (a_n) + n ≤ B` for every `Y`-coefficient `a_n`. For the ansatz it comes
+straight out of the shape data. A monomial `A_{ijk}·X^{pj}·Y^{pk+i}` sits at
+`Y`-index `n = pk + i` and has `X`-degree at most `deg A_{ijk} + pj`, so
+
+  `deg A_{ijk} + pj + n = deg A_{ijk} + p(j + k) + i ≤ (p − d) + pK + (d − 1)
+     = pK + p − 1 < p(K + 1) = B`,
+
+using `deg A_{ijk} + d ≤ p/d ≤ p`, `j + k ≤ K` and `i < d`. Note the count needs
+Schmidt's degree constraint only in the WEAK form `deg A_{ijk} + d ≤ p/d`; his
+sharper `deg A_{ijk} ≤ p/d − d − i − j − k` is what buys the UNKNOWNS in the
+dimension count, and is `exists_stepanovJetSolution`'s internal business.
+
+`d ≤ p` is not assumed: it falls out of the degree hypothesis at any index where
+`A_{ijk} ≠ 0`, and where every `A_{ijk}` in range vanishes the coefficient is `0`
+and the left disjunct fires. -/
+theorem stepanovAnsatz_coeff_natDegree_add_le (d p K B : ℕ) (hB : B = p * (K + 1))
+    (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d ≤ p / d)
+    (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
+    (n : ℕ) :
+    (stepanovAnsatz d p K A).coeff n = 0 ∨
+      ((stepanovAnsatz d p K A).coeff n).natDegree + n ≤ B := by
+  have hcoeff : (stepanovAnsatz d p K A).coeff n =
+      ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+        (if p * k + i = n then A i j k * Polynomial.X ^ (p * j) else 0) := by
+    simp only [stepanovAnsatz, Polynomial.finsetSum_coeff, Polynomial.coeff_monomial]
+  by_cases hzero : ∀ i ∈ Finset.range d, ∀ k ∈ Finset.range d, ∀ j ∈ Finset.range (K + 1),
+      (if p * k + i = n then A i j k * Polynomial.X ^ (p * j) else 0) = 0
+  · left
+    rw [hcoeff]
+    exact Finset.sum_eq_zero fun i hi => Finset.sum_eq_zero fun k hk =>
+      Finset.sum_eq_zero fun j hj => hzero i hi k hk j hj
+  right
+  -- one surviving term pins `n = pk + i` and forces `d ≤ p`
+  push Not at hzero
+  obtain ⟨i₀, hi₀, k₀, hk₀, j₀, hj₀, hterm⟩ := hzero
+  have hif₀ : p * k₀ + i₀ = n := by
+    by_contra hcon
+    exact hterm (by rw [if_neg hcon])
+  have hA₀ : A i₀ j₀ k₀ ≠ 0 := by
+    intro h
+    exact hterm (by rw [if_pos hif₀, h, zero_mul])
+  have hdeg₀ : (A i₀ j₀ k₀).natDegree + d ≤ p / d := (hAdeg i₀ j₀ k₀).resolve_left hA₀
+  have hdp : d ≤ p := le_trans (by omega) (le_trans hdeg₀ (Nat.div_le_self _ _))
+  have hjk₀ : j₀ + k₀ ≤ K := by
+    by_contra hcon
+    exact hA₀ (hAsupp i₀ j₀ k₀ (Or.inr (Or.inr (by omega))))
+  have hnB : n ≤ B := by
+    have h1 : p * k₀ ≤ p * K := Nat.mul_le_mul_left p (by omega)
+    have h2 : p * (K + 1) = p * K + p := by ring
+    have h3 : i₀ < d := Finset.mem_range.mp hi₀
+    omega
+  rw [← Nat.le_sub_iff_add_le hnB, hcoeff]
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun i hi => ?_
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun k hk => ?_
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun j hj => ?_
+  by_cases hif : p * k + i = n
+  · rw [if_pos hif]
+    rcases hAdeg i j k with h | h
+    · simp [h]
+    by_cases hjk : j + k ≤ K
+    · have hi' : i < d := Finset.mem_range.mp hi
+      have h1 : p * j + p * k = p * (j + k) := by ring
+      have h2 : p * (j + k) ≤ p * K := Nat.mul_le_mul_left p hjk
+      have h3 : p * (K + 1) = p * K + p := by ring
+      have h4 : p / d ≤ p := Nat.div_le_self _ _
+      refine le_trans Polynomial.natDegree_mul_le ?_
+      refine le_trans (Nat.add_le_add_left (Polynomial.natDegree_X_pow_le (p * j)) _) ?_
+      omega
+    · rw [hAsupp i j k (Or.inr (Or.inr (by omega)))]
+      simp
+  · rw [if_neg hif]
+    simp
+
+/-- **SCHMIDT LEMMA 4A, THE DIMENSION COUNT ITSELF** (SORRY LEAF, cut
+2026-07-27 out of `exists_stepanovAuxiliaryFunction`) — Chapter III §4,
+pp. 110–113, at `λ = 2`, `ε₂ = d − 1`. **This is the genuinely hard sub-leaf, and
+it is where the `√q` of Schmidt's theorem comes from.**
+
+WHAT IT SAYS. There are coefficient polynomials `A_{ijk} ∈ 𝔽_p[X]`, not all
+zero, supported in `i < d`, `k < d`, `j + k ≤ K` with `K = (d−1)M/d + d − 2`,
+with `deg A_{ijk} + d ≤ p/d`, such that the ansatz `stepanovAnsatz d p K A` has
+all of its jets `a^{(ν)}`, `ν < M`, vanishing at every point `(x, y)` with
+`x ∈ 𝔽_p`, `F(x, y) = 0` and `y ∉ 𝔽_p` — Schmidt's `y ∈ 𝔐₂(x)`.
+
+Note there is NO `Δ` and no separability hypothesis on the conclusion: the
+implication `y ∈ 𝔐₂(x) ⟹ e₂(x, y, y^p) = 0` that the proof runs on needs only
+`F(x, y) = 0`, `x ∈ 𝔽_p` and `y ≠ y^p`, because `F(x, y^p) = F(x, y)^p = 0` and
+`F(X, Y) − F(X, Y′) = (Y − Y′)·e₂(X, Y, Y′)`. Simplicity of the root is needed
+only by `stepanov_pow_X_sub_C_dvd_of_jet_vanishing`, and it is supplied there.
+
+HOW IT IS PROVED (Schmidt III §4, pp. 110–113). Because `X^p` and `Y^p` have
+zero derivative, `a^{(ν)} = ∑_{j+k≤K} b_{jk}^{(ν)} X^{pj} Y^{pk}`, and Lemma 3A
+bounds `deg b_{jk}^{(ν)} ≤ deg b_{jk} + (2d−3)ν`. On the locus in question
+`x^p = x`, so `X^{pj}` may be replaced by `X^j`; and `e₂(x, y, y^p) = 0`
+expresses `y^{p(d−1)}` through `1, y^p, …, y^{p(d−2)}` with coefficients
+polynomial in `x, y` of degree `≤ d − 1`. Reducing further modulo
+`Y^d = −g₁Y^{d−1} − ⋯ − g_d` (using `deg g_i^{(t)} ≤ t + i − 1`, his (2.3))
+turns "`a^{(ν)}` vanishes on all of `𝔄 × 𝔐₂`" into the IDENTITY
+`d^{(ν)}(X, Y, Y′) ≡ 0`, where
+
+  `deg_X d^{(ν)} ≤ p/d + (2d−3)ν − 2`,  `deg_Y d^{(ν)} ≤ d − 1`,
+  `deg_{Y′} d^{(ν)} ≤ ε₂ − 1 = d − 2`.
+
+That identity, for `0 ≤ ν < M`, is a homogeneous linear system over `𝔽_p` in the
+coefficients of the `A_{ijk}`, with
+
+  `B < ε₂ p M + ε₂ M²(2d² − 3d)` equations and
+  `A > ε₂ p M + p(d² − ⅓d) − ½ε₂²M² − 6ε₂Md − 2ε₂Md²` unknowns,
+
+the latter obtained by summing `p/d − d − i − j − k` over `0 ≤ j ≤ K − k`, then
+`0 ≤ k ≤ d − 1`, then `0 ≤ i ≤ d − 1`. Schmidt's standing conditions `d ∣ M`,
+`M ≥ d²`, `2(d−1)(M+8)² ≤ p` — here `hMd`, `hMsq`, `hMq` — are exactly what
+reduces `B < A` to `¼M²(d−1)(2d² − 2d − 1) + 8Md²(d−1) < ½pd(d−1)`, hence to
+`M(d−1) + 8Md < ½p`, which is the hypothesis. `B < A` then gives a nonzero
+solution.
+
+THE LEAN ROUTE, and the three places to budget for.
+
+1. `Polynomial.hasseDeriv` is NOT what `stepanovJet` is; the jets are the
+   `F_Y`-cleared iterates of the derivation, and `stepanovJet`'s recursion is
+   their definition. Lemma 3A — `deg a^{(ν)} ≤ deg a + (2d−3)ν` in BOTH
+   variables — has to be proven by induction directly off that recursion.
+2. The reduction to `d^{(ν)}` is division with remainder twice: modulo `F`,
+   monic of degree `d` in `Y` (`Polynomial.modByMonic`), and modulo
+   `e₂(X, Y, Y′)`, which as a polynomial in `Y′` is monic of degree `d − 1`
+   because `g₀ = 1`. The target is the free `𝔽_p[X]`-module on `Y^i Y′^k`,
+   `i < d`, `k < d − 1`.
+3. "More unknowns than equations ⟹ nonzero kernel vector" is mathlib
+   (`Module.exists_ne_zero_of_finrank_lt_finrank` and neighbours on
+   `LinearMap.ker`); what has to be built is the `𝔽_p`-linear map from the
+   coefficient space of the `A_{ijk}` to the `M` copies of the reduced module,
+   whose kernel is the system, together with the two `Finset.card` computations
+   `A` and `B`.
+
+Recovering `∃ i j k, A i j k ≠ 0` from a nonzero kernel vector is immediate;
+recovering `stepanovAnsatz ≠ 0` from it is NOT needed here — that is
+`stepanov_not_dvd_stepanovAnsatz`'s job, and it only ever uses "not all
+`A_{ijk}` zero".
+
+`hp : 250 * d ^ 5 < p` is not used by Schmidt's count (it exists for the §4
+Remark, which this cut does not need — see the section note above); it is passed
+in because a large `p` is free and `d < p` is convenient.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovJetSolution (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (hp : 250 * d ^ 5 < p) (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M) (hMq : 2 * (d - 1) * (M + 8) ^ 2 ≤ p) :
+    ∃ A : ℕ → ℕ → ℕ → Polynomial (ZMod p),
+      (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d ≤ p / d) ∧
+      (∀ i j k, d ≤ i ∨ d ≤ k ∨ (d - 1) * M / d + d - 2 < j + k → A i j k = 0) ∧
+      (∃ i j k, A i j k ≠ 0) ∧
+      (∀ (x : ZMod p) (y : AlgebraicClosure (ZMod p)),
+        stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
+        (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
+        ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+          (stepanovJet F M ℓ (stepanovAnsatz d p ((d - 1) * M / d + d - 2) A)) x y = 0) :=
+  sorry
+
+/-- **SCHMIDT LEMMA 2D** (SORRY LEAF, cut 2026-07-27 out of
+`exists_stepanovAuxiliaryFunction`) — Chapter III §2, pp. 100–105. This is
+Lemma 4A(i), the clause Schmidt discharges in one sentence, and it is a
+self-contained classical theorem INDEPENDENT of the other two sub-leaves.
+
+WHAT IT SAYS. Write `a(X, Y, Z, W) = ∑ A_{ijk}(X) Y^i Z^j W^k`. If `a ≠ 0` with
+`deg_X a ≤ p/d − d`, `deg_Y a ≤ d − 1` and `deg_W a ≤ d − 1` — no condition on
+`deg_Z` — then `a(X, 𝔶, X^p, 𝔶^p) ≠ 0`, i.e. `F ∤ stepanovAnsatz d p K A`. `F` is
+monic, so divisibility in `𝔽_p[X][Y]` and in `𝔽_p(X)[Y]` agree, and `F ∤ a` is
+exactly `a(X, 𝔶) ≠ 0` in `𝔽_p(X)[Y]/(F) = 𝔽_p(X, 𝔶)`.
+
+WHY IT IS NOT TRIVIAL, in Schmidt's own words: `1, 𝔶, …, 𝔶^{d−1}` ARE linearly
+independent over `𝔽_p(X)` since `F` is irreducible, but the `d²` elements
+`𝔶^i(𝔶^p)^k` are NOT — being `d²` of them, they are dependent over `𝔽_p(X)`.
+What saves the lemma is that the powers of `X` occurring in `a(X, Y, X^p, Y^p)`
+are restricted to `pj + v` with `v ≤ p/d − d`, "roughly only one `d`-th of all
+possible exponents".
+
+HOW IT IS PROVED (pp. 101–105). Take the product over the conjugates,
+`â(X,Y,Z; W₁,…,W_d) = ∏_i a(X,Y,Z,W_i)`; it is symmetric in the `W`'s, so by the
+fundamental theorem of symmetric functions (his Chapter I Lemma 5A) it is
+`b(X,Y,Z; s₁,…,s_d)` with total degree `≤ d − 1` in the `s`'s. Using
+`𝔶^{d−1+t} = g₁^{(t)}𝔶^{d−1} + ⋯ + g_d^{(t)}` with `deg g_i^{(t)} ≤ t + i − 1`
+(his (2.3)), reduce `deg_Y b ≤ d(d−1)` down to `deg_Y c ≤ d − 1`, at the cost
+`deg_X c ≤ d·deg_X a + d(d−1) ≤ p − d² + d(d−1) < p`. Assume
+`a(X,𝔶,X^p,𝔶^p) = 0`; then `b(X, 𝔶, X^p; g_1^{[p]}(X^p), …) = 0`, hence
+`c(X, Y, X^p; …) ≡ 0` as an identity in two variables since `𝔶` has degree `d`.
+Substituting `X = X₁ + X₂` and using `deg_X c < p` to kill the `X₂^p`-terms shows
+that `X, Y, X^p` may be replaced by INDEPENDENT variables `X, Y, Z`; so
+`b(X, 𝔶, Z; g^{[p]}(Z)) = 0`, so `a(X, 𝔶, Z, U_i) = 0` for some root `U_i` of
+`F^{[p]}(Z, ·)`. Corollary 2C — which is where absolute irreducibility `hirrF`
+enters, through his Lemmas 2A/2B — gives `[𝔽_p(X, Z, 𝔶, U) : 𝔽_p(X, Z)] = d²`, so
+the `d²` elements `𝔶^j U^k`, `0 ≤ j, k ≤ d − 1`, are linearly independent over
+`𝔽_p(X, Z)`, forcing `a ≡ 0`, a contradiction.
+
+MISSING AT THIS PIN: the symmetric-function step is `MvPolynomial.esymm` /
+`symmetricSubalgebra` material and exists; **Corollary 2C does not**, and it is
+the piece to budget for — "`f` absolutely irreducible of degree `d` in `Y`,
+`f^{[p]}(Z, U) = 0` ⟹ `[K(X,Z,𝔶,U) : K(X,Z)] = d²`", i.e. that `f` stays
+irreducible over `K(X, Z, U)`. Note `f^{[p]} = f` here, since the coefficients of
+`F` lie in `𝔽_p`, which removes Schmidt's `[q]`-twisting bookkeeping entirely.
+
+`hAsupp` is load-bearing in all three of its clauses: without the `K < j + k`
+half, a witness of `hAne` could sit outside the ansatz's `j`-range and the ansatz
+itself could be `0`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_not_dvd_stepanovAnsatz (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))))
+    (K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d ≤ p / d)
+    (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
+    (hAne : ∃ i j k, A i j k ≠ 0) :
+    ¬ (F ∣ stepanovAnsatz d p K A) :=
+  sorry
+
+/-- **THE JET/BRANCH BRIDGE** (SORRY LEAF, cut 2026-07-27 out of
+`exists_stepanovAuxiliaryFunction`) — Schmidt Chapter III §3 (3.1), read in the
+divisibility rendering this file uses.
+
+WHAT IT SAYS. If Schmidt's jets `a^{(ν)}(x, y)` all vanish for `ν < M` at the
+point `y = η(x)` of a fibre `F(x, ·)` that is SEPARABLE, and `η` is a polynomial
+approximate root of `F` to order `M` at `x`, then `(X − x)^M ∣ a(X, η)`.
+
+WHY IT IS TRUE. `D` is the extension of `d/dX` to `𝔽̄_p(X, 𝔶)` with
+`D𝔶 = −F_X/F_Y`, and `D^ν(F_Y^{2M} a) = F_Y^{2M−2ν} a^{(ν)}` is the defining
+property of `stepanovJet`. Separability of `F(x, ·)` makes `y` a SIMPLE root, so
+`F_Y(x, y) ≠ 0` and the vanishing of `a^{(ν)}(x, y)` for `ν < M` is equivalent to
+the vanishing of `D^ν a` there — i.e. to the vanishing of the first `M` Taylor
+coefficients of `X ↦ a(X, η̃(X))` at `x`, where `η̃ ∈ 𝔽̄_p[[X − x]]` is the branch
+through `(x, y)`. That is `(X − x)^M ∣ a(X, η̃)`, and `η ≡ η̃ mod (X − x)^M` by
+Newton (`hη` together with `F_Y(x, y)` a unit), so `a(X, η) ≡ a(X, η̃)` modulo
+`(X − x)^M`.
+
+THE LEAN ROUTE.
+
+1. Work in `𝔽̄_p[[T]]` with `T = X − x` (Taylor-shift, coefficient extension,
+   `Polynomial.toPowerSeries`); `T^M ∣ image` iff `(X − x)^M ∣ ·`.
+2. `F` is monic and `F(x, ·)` is separable with `y` a root, so `F_Y(x, y) ≠ 0`
+   (a common root of `g` and `g'` contradicts `IsCoprime g g'`). Hensel /
+   `IsAdicComplete` lifts `y` to the unique branch `η̃` with `F(X, η̃) = 0`, and
+   pins `η ≡ η̃ mod T^M`.
+3. Identify the `ν`-th Taylor coefficient of `a(X, η̃)` with
+   `F_Y(x,y)^{−2ν}·a^{(ν)}(x, y)` by induction on `ν` off `stepanovJet`'s
+   recursion — this is the only genuinely new computation, and it is the same
+   Leibniz bookkeeping as Lemma 3A.
+4. `pow_X_sub_C_dvd_iff_hasseDeriv` (item 1 of the route note below, already
+   PROVEN) converts "the first `M` Taylor coefficients vanish" into the
+   divisibility, in every characteristic.
+
+`hMp : M < p` is what makes step 3's `ν!` invertible for `ν < M`, so that the
+ordinary iterated derivative and the Hasse derivative differ by a unit; it is
+derived at the call site from `2(d−1)(M+8)² ≤ p`.
+
+MISSING AT THIS PIN: mathlib has `HenselianLocalRing`, `IsAdicComplete` for
+`PowerSeries` and `Polynomial.hasseDeriv`, but no "monic with separable reduction
+⟹ splits / lifts a simple root over a complete local ring" packaged as one
+lemma — the same gap `stepanov_pow_sub_dvd_resultant` records for its step 2, so
+whoever builds it should expect to serve both.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_pow_X_sub_C_dvd_of_jet_vanishing (d p M : ℕ) [Fact p.Prime]
+    (hd : 2 ≤ d) (hMp : M < p)
+    (F a : Polynomial (Polynomial (ZMod p))) (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (x : ZMod p) (hsep : (F.map (Polynomial.evalRingHom x)).Separable)
+    (η : Polynomial (AlgebraicClosure (ZMod p)))
+    (hη : (Polynomial.X -
+        Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
+      Polynomial.eval₂ (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η F)
+    (hjet : ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+      (stepanovJet F M ℓ a) x
+      (η.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) = 0) :
+    (Polynomial.X -
+        Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
+      Polynomial.eval₂ (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η a :=
+  sorry
+
+/-- **SCHMIDT LEMMA 4A, TOGETHER WITH THE REMARK AT THE END OF HIS §4** (PROVEN
+2026-07-27 over the three sub-leaves above; cut 2026-07-27 out of
+`exists_stepanovNormPolynomial`) — for the SECOND of his two algebraic
+functions, `λ = 2`, `ε₂ = d − 1`. **This is the dimension count, and it is the
+genuinely hard half of Schmidt's item 2c.**
 
 WHAT IT SAYS. There is a polynomial `c(X, Y)` over `𝔽_p` which
 
@@ -9331,12 +9741,22 @@ are exactly what gives `B < A`, hence a nonzero solution; Lemma 2D then gives
 hyperderivatives of `a` into those of `c` and costs `2Md` in the degree bound —
 absorbed by `2Md ≤ ½p` once `p > 250 d⁵`, which is `hp`.
 
-**WHAT IS MISSING AT THIS PIN** (grepped 2026-07-27 across `Fermat/`,
-`.lake/packages/mathlib/` and `~/cs/FLT/`): no `[Ss]tepanov`, and no
-hyperderivative theory beyond `Polynomial.hasseDeriv` itself. Lemma 3A (the
-`(2d−3)ν` degree growth of the jets) and Lemma 2D (linear independence of
-`η^j X^{pk}`) have to be formalised here; **Lemma 3B does NOT**, and neither
-does any function-field norm — see `stepanov_natDegree_norm_le`.
+**STATUS 2026-07-27: PROVEN over three sub-leaves**, cut along the seams of the
+argument just described and documented in the section note above this block.
+`exists_stepanovJetSolution` supplies the coefficient family `A_{ijk}` and the
+jet vanishing; `stepanov_not_dvd_stepanovAnsatz` is Lemma 2D, giving `F ∤ c`;
+`stepanov_pow_X_sub_C_dvd_of_jet_vanishing` turns the jet vanishing at the point
+`(x, η(x))` into the divisibility this statement asks for.
+`stepanovAnsatz_coeff_natDegree_add_le` is PROVEN glue and discharges the degree
+clause. Do NOT dispatch a prover at this node; dispatch at those three.
+
+The `c` produced is `stepanovAnsatz d p K A` with `K = (d−1)M/d + d − 2` — i.e.
+Schmidt's `a`, WITHOUT the Remark's `F_Y^{2M}` factor, which the divisibility
+rendering makes unnecessary (see the section note; this is also why the `2Md`
+absorption `hp` exists for is never used, and why `hΔ0` is not needed and is
+underscored). The only glue this proof does beyond citing the three sub-leaves
+is `M ≥ 1`, `M < p`, and evaluating `hFη` at `X = x` to see that `η(x)` is a
+root of `F(x, ·)`.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_stepanovAuxiliaryFunction (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
@@ -9346,7 +9766,7 @@ theorem exists_stepanovAuxiliaryFunction (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fac
     (hirrF : Irreducible (F.map (Polynomial.mapRingHom
       (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))))
     (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M) (hMq : 2 * (d - 1) * (M + 8) ^ 2 ≤ p)
-    (Δ : Polynomial (ZMod p)) (hΔ0 : Δ ≠ 0)
+    (Δ : Polynomial (ZMod p)) (_hΔ0 : Δ ≠ 0)
     (hΔsep : ∀ x : ZMod p, Δ.eval x ≠ 0 →
       (F.map (Polynomial.evalRingHom x)).Separable ∧
       (F.map (Polynomial.evalRingHom x)).natDegree = d) :
@@ -9365,8 +9785,58 @@ theorem exists_stepanovAuxiliaryFunction (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fac
           (Polynomial.X -
               Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
             Polynomial.eval₂ (Polynomial.mapRingHom
-              (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η c) :=
-  sorry
+              (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η c) := by
+  obtain ⟨A, hAdeg, hAsupp, hAne, hjet⟩ :=
+    exists_stepanovJetSolution d hd p hp F hmon hdegY hcoeff M hMd hMsq hMq
+  -- Schmidt's degree bound (iii), from the shape data: `B = p·(K + 1)`.
+  have hB : (d - 1) * p * (M / d) + p * (d - 1)
+      = p * (((d - 1) * M / d + d - 2) + 1) := by
+    obtain ⟨e, rfl⟩ : ∃ e, d = e + 2 := ⟨d - 2, by omega⟩
+    obtain ⟨M', rfl⟩ := hMd
+    have he0 : 0 < e + 2 := by omega
+    have hMdiv : (e + 2) * M' / (e + 2) = M' := Nat.mul_div_cancel_left M' he0
+    have hprod : (e + 2 - 1) * ((e + 2) * M') = (e + 2) * ((e + 1) * M') := by
+      show (e + 1) * ((e + 2) * M') = (e + 2) * ((e + 1) * M'); ring
+    rw [hMdiv, hprod, Nat.mul_div_cancel_left _ he0]
+    show (e + 1) * p * M' + p * (e + 1) = p * ((e + 1) * M' + (e + 2) - 2 + 1)
+    have hstep : (e + 1) * M' + (e + 2) - 2 + 1 = (e + 1) * M' + (e + 1) := by omega
+    rw [hstep]; ring
+  refine ⟨stepanovAnsatz d p ((d - 1) * M / d + d - 2) A,
+    stepanov_not_dvd_stepanovAnsatz d hd p F hmon hdegY hcoeff hirrF _ A hAdeg hAsupp hAne,
+    stepanovAnsatz_coeff_natDegree_add_le d p _ _ hB A hAdeg hAsupp, ?_⟩
+  intro x hx η hFη hirr
+  -- `1 ≤ M` and `M < p`, both from Schmidt's standing conditions
+  have hd2 : 4 ≤ d ^ 2 := by nlinarith
+  have hM1 : 1 ≤ M := by omega
+  have hMp : M < p := by
+    have h2 : M + 8 ≤ (M + 8) ^ 2 := Nat.le_self_pow (by norm_num) _
+    calc M < 2 * 1 * (M + 8) := by omega
+      _ ≤ 2 * (d - 1) * (M + 8) ^ 2 := Nat.mul_le_mul (by omega) h2
+      _ ≤ p := hMq
+  -- the branch value `η(x)` is a root of `F(x, ·)`
+  have hcomp : (Polynomial.evalRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)).comp
+      (Polynomial.mapRingHom (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))
+      = (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).comp
+          (Polynomial.evalRingHom x) := by
+    refine Polynomial.ringHom_ext (fun a => ?_) ?_ <;> simp
+  have hroot : stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x
+      (η.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) = 0 := by
+    have hdvd1 : (Polynomial.X -
+        Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ∣
+        Polynomial.eval₂ (Polynomial.mapRingHom
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η F :=
+      dvd_trans (dvd_pow_self _ (by omega)) hFη
+    have h0 := (Polynomial.dvd_iff_isRoot).mp hdvd1
+    rw [Polynomial.IsRoot.def] at h0
+    rw [stepanovEvalPoint, Polynomial.eval_map, ← hcomp,
+      show Polynomial.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x) η =
+        (Polynomial.evalRingHom
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) η from rfl,
+      ← Polynomial.hom_eval₂]
+    exact h0
+  exact stepanov_pow_X_sub_C_dvd_of_jet_vanishing d p M hd hMp F _ hmon hdegY x
+    (hΔsep x hx).1 η hFη (fun ℓ hℓ => hjet x _ hroot hirr ℓ hℓ)
 
 /-- **SCHMIDT LEMMA 5A(i): THE LEIBNIZ EXPANSION (5.1)** (SORRY LEAF, cut
 2026-07-27 out of `exists_stepanovNormPolynomial`).
@@ -11104,6 +11574,16 @@ five-item route is realised in the file rather than merely described):
   Lean route is Hensel-splitting `F` over `𝔽̄_p[[X − x]]` and then
   `Polynomial.resultant_eq_prod_eval`). They are INDEPENDENT of each other — the
   interface between them is fixed and compiles — so they take separate owners.
+  **`exists_stepanovAuxiliaryFunction` is itself now PROVEN (2026-07-27)** over
+  THREE sub-leaves cut along Schmidt III §§2–4 — `exists_stepanovJetSolution`
+  (the §4 linear system), `stepanov_not_dvd_stepanovAnsatz` (Lemma 2D, §2, which
+  is independent of the other two) and
+  `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the §3 derivation calculus, i.e.
+  jets at a simple root ⟹ order-`M` vanishing along the branch); the degree
+  clause is proven glue, `stepanovAnsatz_coeff_natDegree_add_le`. So do not
+  dispatch at it either. That cut also established that Schmidt's Remark factor
+  `F_Y^{2M}` is UNNECESSARY in this file's divisibility rendering, so the `2Md`
+  absorption `hp : 250 d⁵ < p` exists for is not load-bearing anywhere below it.
   Proven glue landed with the earlier cut:
   `stepanov_M_le`/`stepanov_M_spec` (Schmidt's `M` may be taken to be `11d²`),
   `stepanov_card_rationalRoots_le`, `stepanov_card_nonvanishing_ge` ((4.5)) and
@@ -11142,7 +11622,9 @@ five-item route is realised in the file rather than merely described):
   lets the counting leaf be stated with no algebraic closure in its signature.
 
 So after the 2026-07-27 work the remaining open leaves under this node are
-`exists_stepanovAuxiliaryFunction`,
+`exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz`,
+`stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the three children of the
+now-proven `exists_stepanovAuxiliaryFunction`),
 `stepanov_pow_sub_dvd_resultant`, `exists_bertiniNoetherWitness`,
 `exists_spreadOutHypersurfaceModel` and `exists_bound_badLocusCount`; all the
 glue between them is written and compiles, and this leaf itself has nothing left to
@@ -11150,7 +11632,9 @@ prove.  (This list is stated from the file's ACTUAL sorry set as merged,
 2026-07-27.  `exists_stepanovDiscriminant` and `exists_stepanovNormalisation` were
 on it and are now PROVEN, and so is
 `exists_stepanovNormPolynomial`, over the two sub-leaves
-`exists_stepanovAuxiliaryFunction` and `stepanov_pow_sub_dvd_resultant`; so is
+`exists_stepanovAuxiliaryFunction` and `stepanov_pow_sub_dvd_resultant` — and
+`exists_stepanovAuxiliaryFunction` is now PROVEN in turn, over the three named
+above; so is
 `exists_bertiniGoodPlaneCount`, over `exists_bertiniNoetherWitness`; so is
 `exists_birationalHypersurfaceModel`, over `exists_spreadOutHypersurfaceModel` and
 `exists_bound_badLocusCount`; items 4 and
