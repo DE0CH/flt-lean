@@ -971,7 +971,51 @@ construction either (rechecked 2026-07-26).  Nor does any declaration
 anywhere in this project yet CONSTRUCT an `AbelianSchemeStruct`: every
 occurrence in `X0.lean`, `KhareWintenberger.lean` and `TateModule.lean`
 is a hypothesis binder or an existential, so this node is the first
-producer and item 4 is the interface it will go through. -/
+producer and item 4 is the interface it will go through.
+
+**RE-VERIFIED 2026-07-27, against a SEEDED `.lake`, by a fourth owner who
+was sent to ASSEMBLE rather than to cut.**  An audit is a dated claim
+about a moving tree, so each load-bearing claim above was re-run rather
+than believed.  All four still hold; the refuting check is given for each,
+so the next reader can re-run them in seconds instead of re-surveying:
+
+* THE OBSTRUCTION ITSELF.  `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/`
+  `Functor.lean` contains exactly `comap`, `comapStructureSheafFun`,
+  `comapStructureSheaf`, `germ_map_sectionInBasicOpen`, `map`,
+  `ι_comp_map`, `map_comp`, `map_id` — functoriality `Proj ℬ ⟶ Proj 𝒜` in
+  the graded ring and nothing else.  There is still NO description of
+  `Hom(T, Proj 𝒜)`.  Refuting check: a declaration in that directory
+  computing `Hom(T, Proj 𝒜)` for general `T`.
+* ITEM 1.  `grep` for `GradedRing`/`GradedAlgebra` on a line containing
+  `⧸` over ALL of `Mathlib/` returns EMPTY.  `Homogeneous/Maps.lean`
+  carries only `HomogeneousIdeal.map`/`comap` and their Galois
+  connection — transport of homogeneous ideals along a graded ring hom,
+  not a grading on a quotient.  Refuting check: any `GradedRing` instance
+  whose carrier is a quotient ring.
+* `~/cs/FLT`.  Its ONLY match for `AbelianScheme`/`GroupScheme`/
+  `ProjectiveSpectrum` is a COMMENT in
+  `KnownIn1980s/EllipticCurves/Flat.lean` saying `FLT.GroupScheme.`
+  `FiniteFlat` "plans a definition" — i.e. it is unwritten there too.
+* No project declaration constructs an `AbelianSchemeStruct` yet.
+
+CORRECTION to item 7, and it is a real sharpening rather than a
+restatement: the Jacobian criterion is NOT absent from the pin.
+`Mathlib/RingTheory/Smooth/Local.lean` states it for LOCAL ALGEBRAS, and
+`Smooth/StandardSmoothOfFree.lean` carries
+`isUnit_jacobian_of_cotangentRestrict_bijective`.  What is missing is a
+`Proj`-level formulation, so item 7 is "descend the LOCAL criterion along
+an affine cover of `Proj`", not "build a Jacobian criterion from
+nothing".  That is a materially smaller and better-posed task.
+
+OWNERSHIP AT THIS DATE, recorded so no fifth owner manufactures a rival
+API — a second independent version of an in-flight interface is the most
+expensive object this fleet produces.  Item 1 and items 3+4 are both IN
+FLIGHT and unreleased; items 2, 5, 6, 7, 8 are all downstream of item 1,
+because without it the scheme `A` cannot be FORMED.  So there is at this
+date NO independent sub-item at this node to dispatch a prover at: the
+correct action is to WAIT for items 1 and 4 to land and then assemble.
+Confirming that, and confirming the audit is not stale, is the whole
+deliverable of a visit here until then. -/
 theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ (A : Scheme.{0}) (f : A ⟶ SpecQ) (ab : AbelianSchemeStruct f),
       SmoothOfRelativeDimension 1 f ∧
