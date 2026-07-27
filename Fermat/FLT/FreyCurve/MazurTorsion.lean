@@ -20867,9 +20867,449 @@ harvested from this note.**
 
 namespace MazurLevel21
 
+/-- **The eight square classes of `21a1`'s `2`-isogeny descent** (PROVEN
+2026-07-27): if `p·Q` is a square and `gcd(p, Q) ∣ 63` then `p = d S²` for a
+squarefree `d ∣ 63` up to sign, i.e. `d ∈ {±1, ±3, ±7, ±21}`.
+
+The level-`21` analogue of `MazurLevel15.sq_or_two_sq` (which has `16` in
+place of `63`). The two non-squarefree divisors `9` and `63` of `63` are
+absorbed into the square: `g = 9` gives `p = ±(3s)²` and `g = 63` gives
+`p = ±7(3s)²`. -/
+theorem sq_or_63 {p Q W : ℤ} (hp : p ≠ 0) (h : p * Q = W ^ 2)
+    (hg : (Int.gcd p Q : ℤ) ∣ 63) :
+    ∃ S : ℤ, p = S ^ 2 ∨ p = -S ^ 2 ∨ p = 3 * S ^ 2 ∨ p = -(3 * S ^ 2)
+      ∨ p = 7 * S ^ 2 ∨ p = -(7 * S ^ 2) ∨ p = 21 * S ^ 2 ∨ p = -(21 * S ^ 2) := by
+  obtain ⟨g, hgdef⟩ : ∃ g : ℕ, g = Int.gcd p Q := ⟨_, rfl⟩
+  have hgpos : 0 < g := by rw [hgdef]; exact Int.gcd_pos_iff.mpr (Or.inl hp)
+  obtain ⟨p₁, hp₁⟩ : (g : ℤ) ∣ p := by rw [hgdef]; exact Int.gcd_dvd_left p Q
+  obtain ⟨Q₁, hQ₁⟩ : (g : ℤ) ∣ Q := by rw [hgdef]; exact Int.gcd_dvd_right p Q
+  have hgz : (g : ℤ) ≠ 0 := by exact_mod_cast hgpos.ne'
+  have hcop1 : IsCoprime p₁ Q₁ := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    have h0 := Int.gcd_div_gcd_div_gcd (i := p) (j := Q) (by rw [← hgdef]; exact hgpos)
+    rw [← hgdef] at h0
+    rwa [hp₁, hQ₁, Int.mul_ediv_cancel_left _ hgz, Int.mul_ediv_cancel_left _ hgz] at h0
+  have hgW : (g : ℤ) ∣ W := by
+    have h2 : ((g : ℤ)) ^ 2 ∣ W ^ 2 := ⟨p₁ * Q₁, by rw [← h, hp₁, hQ₁]; ring⟩
+    exact (Int.pow_dvd_pow_iff two_ne_zero).mp h2
+  obtain ⟨W₁, hW₁⟩ := hgW
+  have hpq : p₁ * Q₁ = W₁ ^ 2 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 hgz) ?_
+    have h' : ((g : ℤ) * p₁) * ((g : ℤ) * Q₁) = ((g : ℤ) * W₁) ^ 2 := by
+      rw [← hp₁, ← hQ₁, ← hW₁]; exact h
+    linear_combination h'
+  obtain ⟨s, hs⟩ := Int.sq_of_isCoprime hcop1 hpq
+  have hgdvd : g ∣ 63 := by rw [hgdef]; exact_mod_cast hg
+  have hgcases : g = 1 ∨ g = 3 ∨ g = 7 ∨ g = 9 ∨ g = 21 ∨ g = 63 := by
+    have hgle : g ≤ 63 := Nat.le_of_dvd (by norm_num) hgdvd
+    interval_cases g <;> revert hgdvd <;> decide
+  rcases hs with hs | hs <;> rcases hgcases with rfl | rfl | rfl | rfl | rfl | rfl
+  · exact ⟨s, Or.inl (by rw [hp₁, hs]; push_cast; ring)⟩
+  · exact ⟨s, Or.inr (Or.inr (Or.inl (by rw [hp₁, hs]; push_cast; ring)))⟩
+  · exact ⟨s, Or.inr (Or.inr (Or.inr (Or.inr (Or.inl (by rw [hp₁, hs]; push_cast; ring)))))⟩
+  · exact ⟨3 * s, Or.inl (by rw [hp₁, hs]; push_cast; ring)⟩
+  · exact ⟨s, Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl
+      (by rw [hp₁, hs]; push_cast; ring)))))))⟩
+  · exact ⟨3 * s, Or.inr (Or.inr (Or.inr (Or.inr (Or.inl
+      (by rw [hp₁, hs]; push_cast; ring)))))⟩
+  · exact ⟨s, Or.inr (Or.inl (by rw [hp₁, hs]; push_cast; ring))⟩
+  · exact ⟨s, Or.inr (Or.inr (Or.inr (Or.inl (by rw [hp₁, hs]; push_cast; ring))))⟩
+  · exact ⟨s, Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl
+      (by rw [hp₁, hs]; push_cast; ring))))))⟩
+  · exact ⟨3 * s, Or.inr (Or.inl (by rw [hp₁, hs]; push_cast; ring))⟩
+  · exact ⟨s, Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (by rw [hp₁, hs]; push_cast; ring)))))))⟩
+  · exact ⟨3 * s, Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl
+      (by rw [hp₁, hs]; push_cast; ring))))))⟩
+
+/-- **Every affine rational point of `W² = V(V−9)(V+7)` lies in one of eight
+square classes** (PROVEN 2026-07-27): `V = d r²` with `d ∈ {±1, ±3, ±7, ±21}`.
+
+This is the integral bookkeeping of the descent by the `2`-isogeny with kernel
+`{O, (0,0)}`. Writing `V = p/q` in lowest terms, `q` is prime to
+`p(p − 9q)(p + 7q)` and `q · p(p−9q)(p+7q) = (Wq²)²`, so `q = e²`; then
+`gcd(p, (p − 9e²)(p + 7e²)) ∣ 63` because that gcd divides `63e⁴` and is prime
+to `e`, and `sq_or_63` splits off the square. -/
+theorem exists_sqClass (V W : ℚ) (hV0 : V ≠ 0) (h : W ^ 2 = V * (V - 9) * (V + 7)) :
+    ∃ r : ℚ, r ≠ 0 ∧ (V = r ^ 2 ∨ V = -r ^ 2 ∨ V = 3 * r ^ 2 ∨ V = -(3 * r ^ 2)
+      ∨ V = 7 * r ^ 2 ∨ V = -(7 * r ^ 2) ∨ V = 21 * r ^ 2 ∨ V = -(21 * r ^ 2)) := by
+  obtain ⟨p, hp⟩ : ∃ p : ℤ, p = V.num := ⟨_, rfl⟩
+  obtain ⟨q, hq⟩ : ∃ q : ℤ, q = (V.den : ℤ) := ⟨_, rfl⟩
+  have hqpos : 0 < q := by rw [hq]; exact_mod_cast V.den_pos
+  have hqne : (q : ℚ) ≠ 0 := by exact_mod_cast hqpos.ne'
+  have hcop : IsCoprime p q := by
+    rw [Int.isCoprime_iff_gcd_eq_one, hp, hq]
+    simpa [Int.gcd] using V.reduced
+  have hxq : V = (p : ℚ) / (q : ℚ) := by rw [hp, hq]; push_cast; exact (Rat.num_div_den V).symm
+  have hp0 : p ≠ 0 := by rw [hp]; exact Rat.num_ne_zero.mpr hV0
+  have hsq : IsSquare (q * (p * ((p - 9 * q) * (p + 7 * q)))) := by
+    rw [← Rat.isSquare_intCast_iff]
+    refine ⟨W * (q : ℚ) ^ 2, ?_⟩
+    have hV : W ^ 2 * (q : ℚ) ^ 4
+        = (q : ℚ) * ((p : ℚ) * (((p : ℚ) - 9 * q) * ((p : ℚ) + 7 * q))) := by
+      rw [h, hxq]; field_simp
+    push_cast
+    linear_combination -hV
+  obtain ⟨W₀, hW₀⟩ := hsq
+  have hWsq : q * (p * ((p - 9 * q) * (p + 7 * q))) = W₀ ^ 2 := by rw [sq]; linear_combination hW₀
+  have hcopq : IsCoprime q (p * ((p - 9 * q) * (p + 7 * q))) := by
+    refine (hcop.symm).mul_right (IsCoprime.mul_right ?_ ?_)
+    · have h1 := hcop.symm.add_mul_left_right (-9)
+      rwa [show p + q * (-9) = p - 9 * q by ring] at h1
+    · have h1 := hcop.symm.add_mul_left_right 7
+      rwa [show p + q * 7 = p + 7 * q by ring] at h1
+  obtain ⟨e, he⟩ := Int.sq_of_isCoprime hcopq hWsq
+  have hqe : q = e ^ 2 := by
+    rcases he with h1 | h1
+    · exact h1
+    · exfalso; nlinarith [sq_nonneg e]
+  have he0 : e ≠ 0 := by rintro rfl; simp at hqe; omega
+  have he0' : (e : ℚ) ≠ 0 := by exact_mod_cast he0
+  have hpe : IsCoprime p e :=
+    hcop.of_isCoprime_of_dvd_right (by rw [hqe]; exact dvd_pow_self e two_ne_zero)
+  have hWe : e ∣ W₀ := by
+    refine (Int.pow_dvd_pow_iff two_ne_zero).mp ⟨p * ((p - 9 * e ^ 2) * (p + 7 * e ^ 2)), ?_⟩
+    rw [← hWsq, hqe]
+  obtain ⟨W₁, hW₁⟩ := hWe
+  have hW1 : p * ((p - 9 * e ^ 2) * (p + 7 * e ^ 2)) = W₁ ^ 2 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 he0) ?_
+    have h2 : e ^ 2 * (p * ((p - 9 * e ^ 2) * (p + 7 * e ^ 2))) = W₀ ^ 2 := by
+      rw [← hqe]; exact hWsq
+    rw [h2, hW₁]; ring
+  have hgcd63 : ((Int.gcd p ((p - 9 * e ^ 2) * (p + 7 * e ^ 2)) : ℤ)) ∣ 63 := by
+    have hgp : ((Int.gcd p ((p - 9 * e ^ 2) * (p + 7 * e ^ 2)) : ℤ)) ∣ p := Int.gcd_dvd_left _ _
+    have hgQ : ((Int.gcd p ((p - 9 * e ^ 2) * (p + 7 * e ^ 2)) : ℤ))
+        ∣ ((p - 9 * e ^ 2) * (p + 7 * e ^ 2)) := Int.gcd_dvd_right _ _
+    have hd := dvd_sub (dvd_add (hgp.mul_left p) (hgp.mul_right (-2 * e ^ 2))) hgQ
+    have heq : p * p + p * (-2 * e ^ 2) - (p - 9 * e ^ 2) * (p + 7 * e ^ 2) = 63 * e ^ 4 := by
+      ring
+    rw [heq] at hd
+    exact ((hpe.of_isCoprime_of_dvd_left hgp).pow_right).dvd_of_dvd_mul_right hd
+  obtain ⟨S, hS⟩ := sq_or_63 hp0 hW1 hgcd63
+  have hS0 : S ≠ 0 := by
+    rintro rfl
+    exact hp0 (by rcases hS with h1|h1|h1|h1|h1|h1|h1|h1 <;> rw [h1] <;> norm_num)
+  have hSq : (S : ℚ) ≠ 0 := by exact_mod_cast hS0
+  have hVal : V = (p : ℚ) / ((e : ℚ) ^ 2) := by rw [hxq, hqe]; push_cast; ring
+  refine ⟨(S : ℚ) / (e : ℚ), div_ne_zero hSq he0', ?_⟩
+  rcases hS with h1|h1|h1|h1|h1|h1|h1|h1
+  · exact Or.inl (by rw [hVal, h1]; push_cast; field_simp)
+  · exact Or.inr (Or.inl (by rw [hVal, h1]; push_cast; field_simp))
+  · exact Or.inr (Or.inr (Or.inl (by rw [hVal, h1]; push_cast; field_simp)))
+  · exact Or.inr (Or.inr (Or.inr (Or.inl (by rw [hVal, h1]; push_cast; field_simp))))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl (by rw [hVal, h1]; push_cast; field_simp)))))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl
+      (by rw [hVal, h1]; push_cast; field_simp))))))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl
+      (by rw [hVal, h1]; push_cast; field_simp)))))))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+      (by rw [hVal, h1]; push_cast; field_simp)))))))
+
+/-- **From a square class to its integral homogeneous space** (PROVEN
+2026-07-27): if `V = d r²` is a rational point of `W² = V(V−9)(V+7)` then,
+writing `r = S/e` in lowest terms, `d S² (dS² − 9e²)(dS² + 7e²)` is a square
+of an integer — namely of `W e³`.
+
+Integrality is not assumed: `W e³` is a rational whose square is an integer,
+and `Rat.isSquare_intCast_iff` transports the square from `ℚ` to `ℤ`. -/
+theorem quartic_of_class (d : ℤ) (V W r : ℚ) (hr : r ≠ 0) (hV : V = (d : ℚ) * r ^ 2)
+    (h : W ^ 2 = V * (V - 9) * (V + 7)) :
+    ∃ S e t : ℤ, IsCoprime S e ∧ S ≠ 0 ∧ 0 < e ∧ r = (S : ℚ) / (e : ℚ) ∧
+      t ^ 2 = d * S ^ 2 * ((d * S ^ 2 - 9 * e ^ 2) * (d * S ^ 2 + 7 * e ^ 2)) := by
+  obtain ⟨S, hS⟩ : ∃ S : ℤ, S = r.num := ⟨_, rfl⟩
+  obtain ⟨e, he⟩ : ∃ e : ℤ, e = (r.den : ℤ) := ⟨_, rfl⟩
+  have hepos : 0 < e := by rw [he]; exact_mod_cast r.den_pos
+  have hene : (e : ℚ) ≠ 0 := by exact_mod_cast hepos.ne'
+  have hcop : IsCoprime S e := by
+    rw [Int.isCoprime_iff_gcd_eq_one, hS, he]
+    simpa [Int.gcd] using r.reduced
+  have hre : r = (S : ℚ) / (e : ℚ) := by rw [hS, he]; push_cast; exact (Rat.num_div_den r).symm
+  have hS0 : S ≠ 0 := by rw [hS]; exact Rat.num_ne_zero.mpr hr
+  have hsq : IsSquare ((d : ℤ) * S ^ 2 * ((d * S ^ 2 - 9 * e ^ 2) * (d * S ^ 2 + 7 * e ^ 2))) := by
+    rw [← Rat.isSquare_intCast_iff]
+    refine ⟨W * (e : ℚ) ^ 3, ?_⟩
+    have hVq : V = (d : ℚ) * (S : ℚ) ^ 2 / (e : ℚ) ^ 2 := by rw [hV, hre]; field_simp
+    have hkey : W ^ 2 * (e : ℚ) ^ 6
+        = (d : ℚ) * (S : ℚ) ^ 2 * (((d : ℚ) * (S : ℚ) ^ 2 - 9 * (e : ℚ) ^ 2)
+            * ((d : ℚ) * (S : ℚ) ^ 2 + 7 * (e : ℚ) ^ 2)) := by
+      rw [h, hVq]; field_simp
+    push_cast
+    linear_combination -hkey
+  obtain ⟨t, ht⟩ := hsq
+  exact ⟨S, e, t, hcop, hS0, hepos, hre, by rw [sq]; exact ht.symm⟩
+
+/-- **`d = 1`: the principal homogeneous space of `21a1`** (sorry leaf, cut
+2026-07-27 out of `rank_zero_x0TwentyOne`). For coprime `S`, `e` the quartic
+
+    `S⁴ − 2S²e² − 63e⁴ = (S² − 9e²)(S² + 7e²)`
+
+is a square only in the trivial-or-torsion cases `S = 0`, `e = 0` and
+`S² = 9e²` (which is `V = 9`, the `2`-torsion point `(9,0)`).
+
+**THIS CANNOT BE KILLED BY A CONGRUENCE, and that is a claim with a check.**
+`(S, e, c) = (3, 1, 0)` and `(1, 0, 1)` are integral points, so the space is
+everywhere locally soluble; any proposed congruence obstruction is refuted by
+evaluating it at `(3,1,0)`. This is a genuine infinite descent, exactly as
+`MazurLevel15.quartic_pos` is, and that is the template.
+
+**THE REDUCTION, ALREADY DONE — only the two concordant systems remain.**
+Put `A = S² − 9e²`, `B = S² + 7e²`, so `AB = c²`, `B − A = 16e²` and
+`7A + 9B = 16S²`; hence `gcd(A, B) ∣ 16`. Since `B > 0`, wherever `A`, `B` are
+coprime both are squares.
+
+* `S` even, `e` odd: `A`, `B` are odd and coprime, so `A = a²`; but
+  `A ≡ 3` or `7 (mod 8)`. Impossible.
+* `S` odd, `e` even: `A`, `B` odd coprime, so `A = a²`, `B = b²`; `A ≡ 1 (mod 8)`
+  forces `4 ∣ e`, and then `S² = a² + 9e²`, `b² = a² + 16e²` — **SYSTEM I**.
+* `S`, `e` both odd: `8 ∣ A` and `8 ∣ B`, so `gcd(A,B) ∈ {8, 16}`.
+  - `gcd = 8`: `A = 8α²`, `B = 8β²` with `α`, `β` odd, and `β² − α² = 2e²`;
+    but `β² − α² ≡ 0 (mod 8)` while `2e² ≡ 2 (mod 8)`. Impossible.
+  - `gcd = 16`: `A = 16α²`, `B = 16β²`, `β² − α² = e²`, `7α² + 9β² = S²`, i.e.
+    `α² + e² = β²` and `16α² + 9e² = S²` — **SYSTEM II**.
+
+So this leaf follows from:
+
+* **SYSTEM I** — for coprime `x`, `y`, if `x² + 9y²` and `x² + 16y²` are both
+  squares then `xy = 0`. (The `2`-covering of `X(X+9)(X+16) = Y²` — the
+  `V ↦ V − 9` model of `21a1` — in the trivial class.) Applied at `(x, y) =
+  (a, e)` with `e ≠ 0` it gives `a = 0`, i.e. `S² = 9e²`, which is impossible
+  for `S` odd and `e` even; so SYSTEM I makes that whole parity class vanish.
+* **SYSTEM II** — for coprime `x`, `y`, if `x² + y²` and `16x² + 9y²` are both
+  squares then `xy = 0`. (The covering in the class of `(−9,0)` in that model.)
+  Applied at `(x, y) = (α, e)` with `e ≠ 0` it gives `α = 0`, i.e. `A = 0`,
+  i.e. `S² = 9e²` — the conclusion of this leaf.
+
+Both are the level-`21` counterparts of `MazurLevel15.concordant_one`
+(`x² + y²` and `x² + 16y²` both squares). **AXIS SEARCHED**: congruence
+obstructions modulo `2^k`, `3^k`, `7^k` on the quartic and on the split
+factors — all fail, necessarily so, by local solubility. The axis NOT searched
+is a descent producing a smaller solution of {I, II}; that is where the proof
+is, and the level-`15` warning applies — check first whether I and II are
+**mutually recursive**, in which case they must be carried by one strong
+induction (`MazurLevel15.concordant_both_aux` is the pattern). -/
+theorem quartic_one (S e c : ℤ) (hcop : IsCoprime S e)
+    (h : c ^ 2 = S ^ 4 - 2 * S ^ 2 * e ^ 2 - 63 * e ^ 4) :
+    S = 0 ∨ e = 0 ∨ S ^ 2 = 9 * e ^ 2 :=
+  sorry
+
+/-- **`d = −3`: the homogeneous space of the order-`4` point `(−3, 12)`**
+(sorry leaf, cut 2026-07-27 out of `rank_zero_x0TwentyOne`). For coprime `S`,
+`e` the quartic
+
+    `−3S⁴ − 2S²e² + 21e⁴ = (S² + 3e²)(7e² − 3S²)`
+
+is a square only for `S = 0`, `e = 0` and `S² = e²` (which is `V = −3`, the
+order-`4` point itself, with `c = 4` and `W = ±12`).
+
+**NOT KILLABLE BY A CONGRUENCE, with the check**: `(S, e, c) = (1, 1, 4)` is an
+integral point, so the space is everywhere locally soluble; evaluate any
+proposed obstruction there.
+
+**THE REDUCTION, ALREADY DONE — one system remains.** Put `A = S² + 3e² > 0`
+and `B = 7e² − 3S²`, so `AB = c²`, `3A + B = 16e²` and `7A − 3B = 16S²`, hence
+`gcd(A, B) ∣ 16`, and `B > 0` (`B = 0` would give `3S² = 7e²`, impossible for
+coprime `S`, `e` since then `S² ∣ 7`).
+
+* `S` even, `e` odd and `S` odd, `e` even both die **modulo `16` on the quartic
+  itself**: `c² ≡ 5` or `13 (mod 16)`, and the squares mod `16` are
+  `{0, 1, 4, 9}`. (Equivalently: `A`, `B` are then odd and coprime, so both are
+  squares, but exactly one of them is `≡ 5 (mod 8)`.)
+* `S`, `e` both odd: `A ≡ B ≡ 4 (mod 8)`, so `gcd(A,B) = 4`, `A = 4α²`,
+  `B = 4β²` with `α`, `β` odd and coprime, and the goal `S² = e²` becomes
+  `α² = β²` for
+
+    `3α² + β² = 4e²`,   `7α² − 3β² = 4S²`   — **SYSTEM III**.
+
+**AXIS SEARCHED**: congruences mod `2^k` (`16` suffices for two of the three
+parity classes and provably cannot touch the third), mod `3` and mod `7` on
+`A`, `B` and on `α`, `β`. The axis NOT searched is descent. The Eisenstein
+route is worth recording since it is the natural next step: `3 ∤ S` (else
+`3 ∣ e`), so in `ℤ[ω]` the element `(S + e√−3)/2` has square norm and is prime
+to its conjugate, giving `S = ±(m² − 3n²)/2`, `e = ±mn` with `m`, `n` odd, and
+`SYSTEM III` becomes the single quartic
+
+    `−3m⁴ + 46m²n² − 27n⁴ = 16β²`.
+
+**CARRY THE SIDE CONDITION `3 ∤ m`, OR THIS REFORMULATION IS FALSE** (checked
+2026-07-27, and it is the obvious way to get this step wrong): `(m, n) = (3, 1)`
+gives `−243 + 414 − 27 = 144 = 16·3²`, a perfectly good solution of that quartic
+with `m² ≠ n²`. It is not a counterexample to the leaf, because it corresponds
+to `S = 3`, `e = 3`, which are not coprime — and `3 ∤ S` is exactly what the
+descent has already established, so `3 ∤ m` is available and must be imposed.
+With it, a search over odd coprime `m`, `n ≤ 13` finds only `m² = n² = 1`. -/
+theorem quartic_negThree (S e c : ℤ) (hcop : IsCoprime S e)
+    (h : c ^ 2 = -3 * S ^ 4 - 2 * S ^ 2 * e ^ 2 + 21 * e ^ 4) :
+    S = 0 ∨ e = 0 ∨ S ^ 2 = e ^ 2 :=
+  sorry
+
+/-- **The class `−1` is empty** (PROVEN 2026-07-27 by a single congruence mod
+`16`): no rational point of `W² = V(V−9)(V+7)` has `V = −r²`.
+
+The quartic is `c² = 63e⁴ − S⁴ − 2S²e²`, and for coprime `S`, `e` it is
+`≡ 12`, `15` or `7 (mod 16)` according to the parity pattern — never a square. The `(even, even)` pattern is excluded by coprimality. -/
+theorem sqClass_negOne (V W r : ℚ) (hr : r ≠ 0) (hV : V = -r ^ 2)
+    (h : W ^ 2 = V * (V - 9) * (V + 7)) : False := by
+  obtain ⟨S, e, t, hcop, hS0, hepos, hre, ht⟩ :=
+    quartic_of_class (-1) V W r hr (by rw [hV]; push_cast; ring) h
+  obtain ⟨c, hc⟩ := (Int.pow_dvd_pow_iff two_ne_zero).mp
+    (⟨63 * e ^ 4 - S ^ 4 - 2 * S ^ 2 * e ^ 2, by rw [ht]; ring⟩ : S ^ 2 ∣ t ^ 2)
+  have hc2 : c ^ 2 = 63 * e ^ 4 - S ^ 4 - 2 * S ^ 2 * e ^ 2 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 hS0) ?_
+    have h2 : (S * c) ^ 2 = (-1 : ℤ) * S ^ 2
+        * (((-1 : ℤ) * S ^ 2 - 9 * e ^ 2) * ((-1 : ℤ) * S ^ 2 + 7 * e ^ 2)) := by
+      rw [← ht, hc]
+    linear_combination h2
+  have hpar : ¬ ((2 : ℤ) ∣ S ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have hu := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at hu
+    omega
+  obtain ⟨a, ha | ha⟩ := Int.even_or_odd' S <;> obtain ⟨b, hb | hb⟩ := Int.even_or_odd' e
+  · exact hpar ⟨⟨a, ha⟩, ⟨b, hb⟩⟩
+  · subst ha; subst hb
+    have key : ∀ A B C : ZMod 16, C ^ 2 ≠ 63 * (2 * B + 1) ^ 4 - (2 * A) ^ 4
+        - 2 * (2 * A) ^ 2 * (2 * B + 1) ^ 2 := by decide
+    refine key (a : ZMod 16) (b : ZMod 16) (c : ZMod 16) ?_
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 16)) hc2
+    push_cast at hcast
+    linear_combination hcast
+  · subst ha; subst hb
+    have key : ∀ A B C : ZMod 16, C ^ 2 ≠ 63 * (2 * B) ^ 4 - (2 * A + 1) ^ 4
+        - 2 * (2 * A + 1) ^ 2 * (2 * B) ^ 2 := by decide
+    refine key (a : ZMod 16) (b : ZMod 16) (c : ZMod 16) ?_
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 16)) hc2
+    push_cast at hcast
+    linear_combination hcast
+  · subst ha; subst hb
+    have key : ∀ A B C : ZMod 16, C ^ 2 ≠ 63 * (2 * B + 1) ^ 4 - (2 * A + 1) ^ 4
+        - 2 * (2 * A + 1) ^ 2 * (2 * B + 1) ^ 2 := by decide
+    refine key (a : ZMod 16) (b : ZMod 16) (c : ZMod 16) ?_
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 16)) hc2
+    push_cast at hcast
+    linear_combination hcast
+
+/-- **The class `3` is empty** (PROVEN 2026-07-27 by a single congruence mod
+`16`): no rational point of `W² = V(V−9)(V+7)` has `V = 3r²`.
+
+The quartic is `c² = 3S⁴ − 2S²e² − 21e⁴` (after dividing out the forced factor
+`9`), which for coprime `S`, `e` is `≡ 12`, `3` or `11 (mod 16)` — never a square. -/
+theorem sqClass_three (V W r : ℚ) (hr : r ≠ 0) (hV : V = 3 * r ^ 2)
+    (h : W ^ 2 = V * (V - 9) * (V + 7)) : False := by
+  obtain ⟨S, e, t, hcop, hS0, hepos, hre, ht⟩ :=
+    quartic_of_class 3 V W r hr (by rw [hV]; push_cast; ring) h
+  have h3S0 : (3 * S : ℤ) ≠ 0 := by simpa using hS0
+  obtain ⟨c, hc⟩ := (Int.pow_dvd_pow_iff two_ne_zero).mp
+    (⟨3 * S ^ 4 - 2 * S ^ 2 * e ^ 2 - 21 * e ^ 4, by rw [ht]; ring⟩ : (3 * S) ^ 2 ∣ t ^ 2)
+  have hc2 : c ^ 2 = 3 * S ^ 4 - 2 * S ^ 2 * e ^ 2 - 21 * e ^ 4 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 h3S0) ?_
+    have h2 : (3 * S * c) ^ 2 = (3 : ℤ) * S ^ 2
+        * (((3 : ℤ) * S ^ 2 - 9 * e ^ 2) * ((3 : ℤ) * S ^ 2 + 7 * e ^ 2)) := by
+      rw [← ht, hc]
+    linear_combination h2
+  have hpar : ¬ ((2 : ℤ) ∣ S ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have hu := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at hu
+    omega
+  obtain ⟨a, ha | ha⟩ := Int.even_or_odd' S <;> obtain ⟨b, hb | hb⟩ := Int.even_or_odd' e
+  · exact hpar ⟨⟨a, ha⟩, ⟨b, hb⟩⟩
+  · subst ha; subst hb
+    have key : ∀ A B C : ZMod 16, C ^ 2 ≠ 3 * (2 * A) ^ 4
+        - 2 * (2 * A) ^ 2 * (2 * B + 1) ^ 2 - 21 * (2 * B + 1) ^ 4 := by decide
+    refine key (a : ZMod 16) (b : ZMod 16) (c : ZMod 16) ?_
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 16)) hc2
+    push_cast at hcast
+    linear_combination hcast
+  · subst ha; subst hb
+    have key : ∀ A B C : ZMod 16, C ^ 2 ≠ 3 * (2 * A + 1) ^ 4
+        - 2 * (2 * A + 1) ^ 2 * (2 * B) ^ 2 - 21 * (2 * B) ^ 4 := by decide
+    refine key (a : ZMod 16) (b : ZMod 16) (c : ZMod 16) ?_
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 16)) hc2
+    push_cast at hcast
+    linear_combination hcast
+  · subst ha; subst hb
+    have key : ∀ A B C : ZMod 16, C ^ 2 ≠ 3 * (2 * A + 1) ^ 4
+        - 2 * (2 * A + 1) ^ 2 * (2 * B + 1) ^ 2 - 21 * (2 * B + 1) ^ 4 := by decide
+    refine key (a : ZMod 16) (b : ZMod 16) (c : ZMod 16) ?_
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 16)) hc2
+    push_cast at hcast
+    linear_combination hcast
+
+/-- **The class `1` pins `V = 9`** (PROVEN 2026-07-27 over `quartic_one`). -/
+theorem sqClass_one (V W r : ℚ) (hr : r ≠ 0) (hV : V = r ^ 2)
+    (h : W ^ 2 = V * (V - 9) * (V + 7)) : V = 9 := by
+  obtain ⟨S, e, t, hcop, hS0, hepos, hre, ht⟩ :=
+    quartic_of_class 1 V W r hr (by rw [hV]; push_cast; ring) h
+  obtain ⟨c, hc⟩ := (Int.pow_dvd_pow_iff two_ne_zero).mp
+    (⟨S ^ 4 - 2 * S ^ 2 * e ^ 2 - 63 * e ^ 4, by rw [ht]; ring⟩ : S ^ 2 ∣ t ^ 2)
+  have hc2 : c ^ 2 = S ^ 4 - 2 * S ^ 2 * e ^ 2 - 63 * e ^ 4 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 hS0) ?_
+    have h2 : (S * c) ^ 2 = (1 : ℤ) * S ^ 2
+        * (((1 : ℤ) * S ^ 2 - 9 * e ^ 2) * ((1 : ℤ) * S ^ 2 + 7 * e ^ 2)) := by
+      rw [← ht, hc]
+    linear_combination h2
+  rcases quartic_one S e c hcop hc2 with h1 | h1 | h1
+  · exact absurd h1 hS0
+  · omega
+  · have hedvd : e ∣ S ^ 2 := ⟨9 * e, by linear_combination h1⟩
+    have hu := (hcop.pow_left (m := 2)).isUnit_of_dvd' hedvd dvd_rfl
+    rw [Int.isUnit_iff] at hu
+    have he1 : e = 1 := by omega
+    subst he1
+    have hSsq : S ^ 2 = 9 := by linear_combination h1
+    rw [hV, hre]
+    push_cast
+    rw [show ((S : ℚ) / (1 : ℚ)) = (S : ℚ) by norm_num]
+    have hq : ((S : ℚ)) ^ 2 = 9 := by exact_mod_cast congrArg (fun z : ℤ => (z : ℚ)) hSsq
+    linarith [hq]
+
+/-- **The class `−3` pins `V = −3`** (PROVEN 2026-07-27 over
+`quartic_negThree`). -/
+theorem sqClass_negThree (V W r : ℚ) (hr : r ≠ 0) (hV : V = -(3 * r ^ 2))
+    (h : W ^ 2 = V * (V - 9) * (V + 7)) : V = -3 := by
+  obtain ⟨S, e, t, hcop, hS0, hepos, hre, ht⟩ :=
+    quartic_of_class (-3) V W r hr (by rw [hV]; push_cast; ring) h
+  have h3S0 : (3 * S : ℤ) ≠ 0 := by simpa using hS0
+  obtain ⟨c, hc⟩ := (Int.pow_dvd_pow_iff two_ne_zero).mp
+    (⟨-3 * S ^ 4 - 2 * S ^ 2 * e ^ 2 + 21 * e ^ 4, by rw [ht]; ring⟩ : (3 * S) ^ 2 ∣ t ^ 2)
+  have hc2 : c ^ 2 = -3 * S ^ 4 - 2 * S ^ 2 * e ^ 2 + 21 * e ^ 4 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 h3S0) ?_
+    have h2 : (3 * S * c) ^ 2 = (-3 : ℤ) * S ^ 2
+        * (((-3 : ℤ) * S ^ 2 - 9 * e ^ 2) * ((-3 : ℤ) * S ^ 2 + 7 * e ^ 2)) := by
+      rw [← ht, hc]
+    linear_combination h2
+  rcases quartic_negThree S e c hcop hc2 with h1 | h1 | h1
+  · exact absurd h1 hS0
+  · omega
+  · have hedvd : e ∣ S ^ 2 := ⟨e, by linear_combination h1⟩
+    have hu := (hcop.pow_left (m := 2)).isUnit_of_dvd' hedvd dvd_rfl
+    rw [Int.isUnit_iff] at hu
+    have he1 : e = 1 := by omega
+    subst he1
+    have hSsq : S ^ 2 = 1 := by linear_combination h1
+    rw [hV, hre]
+    push_cast
+    rw [show ((S : ℚ) / (1 : ℚ)) = (S : ℚ) by norm_num]
+    have hq : ((S : ℚ)) ^ 2 = 1 := by exact_mod_cast congrArg (fun z : ℤ => (z : ℚ)) hSsq
+    linarith [hq]
+
+/-- **The Fricke-type involution `V ↦ −63/V`** (PROVEN 2026-07-27):
+translation by the `2`-torsion point `(0,0)` on `W² = V(V−9)(V+7)`, in
+coordinates. It multiplies the descent class by `−63 ∼ −7`, so it exchanges
+the square classes in the pairs `{1, −7}`, `{−3, 21}`, `{−1, 7}`, `{3, −21}` —
+which is what halves the eight-branch case analysis to four lemmas.
+
+On the five rational values it acts by `9 ↦ −7`, `−3 ↦ 21` and `0 ↦ ∞`. -/
+theorem sol_neg_sixtyThree_div (V W : ℚ) (hV0 : V ≠ 0)
+    (h : W ^ 2 = V * (V - 9) * (V + 7)) :
+    (63 * W / V ^ 2) ^ 2 = (-63 / V) * ((-63 / V) - 9) * ((-63 / V) + 7) := by
+  field_simp
+  linear_combination (63 : ℚ) * h
+
 /-- **Rank `0` for the elliptic curve `21a1`, in its full-`2`-torsion model**
-(sorry leaf, cut 2026-07-27 out of `rational_point_x0TwentyOne`): the only
-rational points of
+(PROVEN 2026-07-27 over the two descent leaves `quartic_one` and
+`quartic_negThree`; cut 2026-07-27 out of `rational_point_x0TwentyOne`): the
+only rational points of
 
     `W² = V (V − 9) (V + 7)`
 
@@ -20906,21 +21346,66 @@ whose chain `sq_or_two_sq` → `quartic_pos`/`quartic_neg`/`quartic_two`/
 integer bookkeeping from beginning to end. That is the template to copy, and
 the two curves even share the Mordell–Weil group `ℤ/2 × ℤ/4`.
 
-HOW TO ATTACK IT. Write `V = p/q` in lowest terms; `q` is coprime to
+**HOW IT IS PROVEN, and the plan recorded here was right in outline and wrong
+about the amount of work.** Write `V = p/q` in lowest terms; `q` is coprime to
 `p(p − 9q)(p + 7q)`, so `q = e²`, and `gcd(p, (p − 9e²)(p + 7e²))` divides
-`63`, so `p = dS²` with `d` a squarefree divisor of `63`, i.e.
-`d ∈ {±1, ±3, ±7, ±21}`. Unlike level `15` the cubic `V(V − 9)(V + 7)` has
-three real roots, so positivity alone does not kill the negative `d`; the
-sign condition it does give is `V ∈ [−7, 0] ∪ [9, ∞)`, which already bounds
-the `d < 0` branches (`−7 ≤ dS²/e² < 0`). The homogeneous spaces are the
-classical complete `2`-descent pair
-`d₁u² − d₂v² = 9`, `d₁u² − d₃w² = −7` with `d₁d₂d₃ ∈ (ℚ*)²`, and since the
-Selmer group must come out equal to the image of the torsion (order `4`),
-every space outside that image is everywhere-locally insoluble and dies by a
-congruence. -/
+`63`, so `p = dS²` with `d` a squarefree divisor of `63` up to sign, i.e.
+`d ∈ {±1, ±3, ±7, ±21}` (`exists_sqClass`, over `sq_or_63`). That much stood.
+
+Two corrections to what used to be written here, both of which cut the work in
+half and then in half again:
+
+1. **The eight branches are only FOUR lemmas**, because translation by the
+   `2`-torsion point `(0,0)` — the involution `V ↦ −63/V`, with
+   `W ↦ 63W/V²`, verified as the identity `sol_neg_sixtyThree_div` — multiplies
+   the descent class by `−63 ∼ −7` and so pairs the classes as `{1, −7}`,
+   `{−3, 21}`, `{−1, 7}` and `{3, −21}`. One lemma per pair suffices: a class
+   `−7` point is carried to a class `1` point and back, and likewise for the
+   others. Only `sqClass_one`, `sqClass_negThree`, `sqClass_negOne` and
+   `sqClass_three` are ever proven.
+2. **The four insoluble classes die to ONE congruence each, modulo `16`, on
+   the quartic itself** — no factor splitting, no sign analysis, and in
+   particular the remark about three real roots and `V ∈ [−7,0] ∪ [9,∞)` is not
+   needed anywhere. For `d = −1` the quartic is `c² = 63e⁴ − S⁴ − 2S²e²` and for
+   `d = 3` (after dividing out the forced `9`) it is `c² = 3S⁴ − 2S²e² − 21e⁴`;
+   with `S`, `e` coprime the first is `≡ 7, 12` or `15 (mod 16)` and the second
+   is `≡ 3, 11` or `12 (mod 16)` — never a square. `d = 7` and `d = −21` are then free by the involution.
+
+What remains is exactly what the level-`15` precedent predicted: the two
+classes that DO carry rational points cannot be settled by any congruence,
+because their spaces are everywhere locally soluble, and each needs a genuine
+infinite descent. Those are the leaves `quartic_one` (class `1`, pinning
+`V = 9` and, through the involution, `V = −7`) and `quartic_negThree` (class
+`−3`, pinning `V = −3` and `V = 21`); their docstrings carry the reduction to
+the concordant systems and the checks that refute the "kill it by a congruence"
+route. `V = 0` is the remaining case and is immediate. -/
 theorem rank_zero_x0TwentyOne (V W : ℚ) (h : W ^ 2 = V * (V - 9) * (V + 7)) :
-    V = 0 ∨ V = 9 ∨ V = -7 ∨ V = -3 ∨ V = 21 :=
-  sorry
+    V = 0 ∨ V = 9 ∨ V = -7 ∨ V = -3 ∨ V = 21 := by
+  by_cases hV0 : V = 0
+  · exact Or.inl hV0
+  obtain ⟨r, hr, hcl⟩ := exists_sqClass V W hV0 h
+  have hinv := sol_neg_sixtyThree_div V W hV0 h
+  have h3r : (3 / r : ℚ) ≠ 0 := div_ne_zero (by norm_num) hr
+  have h1r : (1 / r : ℚ) ≠ 0 := div_ne_zero (by norm_num) hr
+  rcases hcl with hc | hc | hc | hc | hc | hc | hc | hc
+  · exact Or.inr (Or.inl (sqClass_one V W r hr hc h))
+  · exact absurd (sqClass_negOne V W r hr hc h) id
+  · exact absurd (sqClass_three V W r hr hc h) id
+  · exact Or.inr (Or.inr (Or.inr (Or.inl (sqClass_negThree V W r hr hc h))))
+  · exact absurd (sqClass_negOne (-63 / V) (63 * W / V ^ 2) (3 / r) h3r
+      (by rw [hc]; field_simp; ring) hinv) id
+  · have h9 : -63 / V = 9 := sqClass_one (-63 / V) (63 * W / V ^ 2) (3 / r) h3r
+      (by rw [hc]; field_simp; ring) hinv
+    refine Or.inr (Or.inr (Or.inl ?_))
+    field_simp at h9
+    linarith
+  · have h3 : -63 / V = -3 := sqClass_negThree (-63 / V) (63 * W / V ^ 2) (1 / r) h1r
+      (by rw [hc]; field_simp; ring) hinv
+    refine Or.inr (Or.inr (Or.inr (Or.inr ?_)))
+    field_simp at h3
+    linarith
+  · exact absurd (sqClass_three (-63 / V) (63 * W / V ^ 2) (1 / r) h1r
+      (by rw [hc]; field_simp; ring) hinv) id
 
 /-- **The modular parametrisation of the `X_0(21)` plane model by `21a1`**
 (sorry leaf, cut 2026-07-27 out of `rational_point_x0TwentyOne`): every
