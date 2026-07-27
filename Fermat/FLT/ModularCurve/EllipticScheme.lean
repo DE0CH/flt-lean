@@ -114,8 +114,10 @@ correct on its own branch and wrong once the others landed:
   node and is listed here only so that this count matches the compiler's:
   `exists_affineComplement_zeroSection`,
   `exists_weierstrassRingEquiv_of_affineComplement`,
-  `isElliptic_of_isOpenImmersion_coordinateRing`, `relPointPost_add` and
-  `exists_isIso_of_affineChart`.  Both
+  `isElliptic_of_isOpenImmersion_coordinateRing`, `relPointPost_add`,
+  `exists_hom_of_affineChart` and `exists_hom_symm_of_affineChart` (the last
+  two replaced `exists_isIso_of_affineChart` on 2026-07-27, which is now
+  PROVEN from them).  Both
   `exists_weierstrassModel_of_ellipticScheme` and
   `exists_geomFibreAddEquiv_of_weierstrassModel` were leaves here until
   2026-07-27 and are now PROVEN — the first from the affineness /
@@ -5106,7 +5108,9 @@ means a prover at either one need not carry the other.
 **The second is itself now DECOMPOSED and PROVEN** (2026-07-27), along the
 axis its own audit named as untried — prove the identification for the
 concrete projective model and TRANSPORT it — leaving
-`exists_isIso_of_affineChart` (curve geometry: two charts glue) and
+`exists_hom_of_affineChart` and `exists_hom_symm_of_affineChart` (curve
+geometry: each chart extends across the one removed point; the gluing of
+the two into an isomorphism, `exists_isIso_of_affineChart`, is PROVEN) and
 `relPointPost_add` (rigidity proper, for arbitrary abelian schemes over
 `Spec ℚ`).  See the "Transport along an isomorphism of models" subsection
 below. -/
@@ -5400,8 +5404,11 @@ and `galSMul` IS `RelPoint.pre` (`AbelianSchemeStruct.galSMul_def` is
 this is the same observation that discharged the generator's Galois
 stability in `X0.lean`.  What is genuinely open is
 
-* `exists_isIso_of_affineChart` — that the two charts glue to an
-  isomorphism of the proper models, and
+* the two EXTENSION leaves `exists_hom_of_affineChart` and
+  `exists_hom_symm_of_affineChart` — that each chart extends across the one
+  removed point (valuative criterion; `exists_isIso_of_affineChart`, which
+  glues them into an isomorphism, is PROVEN from them as of 2026-07-27),
+  and
 * `relPointPost_add` — that an isomorphism carrying zero to zero is a
   homomorphism, i.e. the RIGIDITY theorem.
 
@@ -5573,54 +5580,186 @@ theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ
       = abB.add (relPointPost u hu x) (relPointPost u hu y) :=
   sorry
 
-/-- **Two Weierstrass charts of the same affine curve glue to an
-isomorphism of the proper models** (sorry node, introduced 2026-07-27).
+/-! #### Gluing the two charts
 
-TRUE, and it is the classical fact that a smooth proper curve is
-determined by any dense open of it.  `ι₀` and `ι` are open immersions of
-the SAME affine scheme `Spec ℚ[E]` into `proj E` and into `A`, both over
-`Spec ℚ`, and each range is the complement of the range of a section — a
-single rational point.  So `ι₀` and `ι` identify dense opens of two proper
-smooth geometrically connected `ℚ`-curves (`proj E` by
-`smoothOfRelativeDimension_projToSpec`, `isProper_projToSpec` and
-`geometricallyConnected_projToSpec`; `A` by three fields of `ab`), and the
-resulting birational map extends.
+`exists_isIso_of_affineChart` is PROVEN below, and the cut taken is the
+classical division of that argument into its two halves:
 
-**The intended proof, and it is two applications of one criterion.**  The
-local ring of `proj E` at the removed point is a DVR — the curve is
-regular of dimension one — so `ValuativeCriterion.Existence` for the proper
-`f : A ⟶ Spec ℚ` extends `ι₀⁻¹ ≫ ι` across that point to `u : proj E ⟶ A`;
-symmetrically the inverse extends to `v : A ⟶ proj E`; and `u ≫ v` and
-`v ≫ u` agree with the identity on a dense open of a reduced separated
-scheme, hence are the identity.  The pin's entry points are
-`AlgebraicGeometry.ValuativeCriterion`, `IsProper.eq_valuativeCriterion`
-and `IsSeparated.valuativeCriterion` in
-`Mathlib/AlgebraicGeometry/ValuativeCriterion.lean`, together with
-`Mathlib/AlgebraicGeometry/Birational/` and
-`Mathlib/AlgebraicGeometry/RationalMap.lean`.
+* EXISTENCE of the two extensions `u : proj E ⟶ A` and `v : A ⟶ proj E` —
+  the valuative criterion at the one removed point, and the only place
+  properness is used.  These are the two leaves
+  `exists_hom_of_affineChart` and `exists_hom_symm_of_affineChart`;
+* UNIQUENESS, i.e. that `u` and `v` are mutually inverse — PROVEN here as
+  `isIso_of_isDominant_of_inverse`, from mathlib's
+  `ext_of_isDominant_of_isSeparated`: two morphisms over a separated base
+  out of a REDUCED scheme that agree after a DOMINANT morphism are equal.
 
-**`ab` IS LOAD-BEARING** even though it appears only inside `_hrange`: it
-is what makes `A` proper and separated, and without properness there is no
-extension and without separatedness no uniqueness.  A prover must not
-weaken it to a bare scheme.
+The three small lemmas before it are what feed that theorem its instance
+hypotheses, and between them they are where the two `ᶜ`-shaped range
+hypotheses of `exists_isIso_of_affineChart` are consumed: the missing
+locus is the range of a SECTION, hence one point, and in a connected
+scheme the complement of one point is dense as soon as it is open — which
+it is, being the range of an OPEN immersion. -/
 
-**Both range hypotheses are LOAD-BEARING.**  Without them `ι₀` and `ι`
-would be arbitrary open immersions — possibly of a proper subset of the
-complement of a point — and the extension would not exist.  It is the two
-`ᶜ`s that make the complements single points, which is what puts the
-extension problem at a DVR.
+/-- **In a connected space the complement of a point is dense as soon as it
+is open** (PROVEN).
 
-WHAT WOULD REFUTE THE "OPEN" DIAGNOSIS: a declaration anywhere producing
-an isomorphism of proper schemes from an isomorphism of dense opens, or
-identifying a smooth proper curve with the proper model of its function
-field.  Searched 2026-07-27 over `Fermat/`, `.lake/packages/mathlib` and
-`~/cs/FLT`: mathlib has the valuative criterion and a birational-geometry
-subtree but no proper-model theorem for curves.
+If `{z}ᶜ` were not dense, its closure would be a closed set lying strictly
+between `{z}ᶜ` and the whole space — and there is no room for one, since
+the only sets containing `{z}ᶜ` are `{z}ᶜ` and the whole space.  So `{z}ᶜ`
+would be closed, hence clopen, nonempty and proper, which a connected space
+forbids.
 
-NOT VACUOUS: the conclusion pins `u` to restrict to the given
-identification of charts (`ι₀ ≫ u = ι`), so it cannot be discharged by
-some unrelated automorphism of the model. -/
-theorem exists_isIso_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
+`hopen` is LOAD-BEARING and is NOT free here: a scheme is only `T0`, so
+`{z}` need not be closed and `{z}ᶜ` need not be open.  In the application it
+comes from the chart being an OPEN immersion whose range IS `{z}ᶜ`. -/
+theorem dense_compl_singleton_of_isOpen {X : Type*} [TopologicalSpace X] [ConnectedSpace X]
+    {z : X} (hopen : IsOpen ({z}ᶜ : Set X)) (hne : ({z}ᶜ : Set X).Nonempty) :
+    Dense ({z}ᶜ : Set X) := by
+  by_contra hd
+  have hcl : IsClosed ({z}ᶜ : Set X) := by
+    rw [← closure_eq_iff_isClosed]
+    refine Set.Subset.antisymm (fun x hx => ?_) subset_closure
+    rcases eq_or_ne x z with rfl | hxz
+    · refine absurd (dense_iff_closure_eq.mpr (Set.eq_univ_of_forall fun y => ?_)) hd
+      rcases eq_or_ne y x with rfl | hy
+      · exact hx
+      · exact subset_closure hy
+    · exact hxz
+  rcases isClopen_iff.mp ⟨hcl, hopen⟩ with h | h
+  · exact hne.ne_empty h
+  · have hz : z ∈ ({z}ᶜ : Set X) := Set.eq_univ_iff_forall.mp h z
+    simp at hz
+
+/-- **The range of a `ℚ`-point of a scheme is a single point** (PROVEN):
+`Spec ℚ` is a one-point space, so the range of any `Spec ℚ ⟶ X` is the
+singleton on the image of the closed point.  This is what turns the
+`ᶜ`-shaped range hypotheses — stated against the range of a SECTION —
+into complements of an honest point. -/
+theorem range_hom_specRat_eq_singleton {X : Scheme.{0}} (s : Spec (CommRingCat.of ℚ) ⟶ X) :
+    ∃ z : X, Set.range s.base = {z} := by
+  refine ⟨s.base (IsLocalRing.closedPoint ℚ), ?_⟩
+  ext y
+  simp only [Set.mem_range, Set.mem_singleton_iff]
+  constructor
+  · rintro ⟨w, rfl⟩
+    exact congrArg _ (Subsingleton.elim w _)
+  · rintro rfl
+    exact ⟨_, rfl⟩
+
+/-- **A chart whose range is the complement of a `ℚ`-point of a connected
+scheme is dominant** (PROVEN, from the two lemmas above).
+
+This is what supplies the `[IsDominant]` instances that
+`isIso_of_isDominant_of_inverse` — and through it mathlib's
+`ext_of_isDominant_of_isSeparated` — consumes, and it is applied twice in
+`exists_isIso_of_affineChart`, once to each chart. -/
+theorem isDominant_of_range_eq_compl {X C : Scheme.{0}} [ConnectedSpace X] [Nonempty C]
+    (j : C ⟶ X) [IsOpenImmersion j] (s : Spec (CommRingCat.of ℚ) ⟶ X)
+    (hj : Set.range j.base = (Set.range s.base)ᶜ) : IsDominant j := by
+  obtain ⟨z, hz⟩ := range_hom_specRat_eq_singleton s
+  rw [hz] at hj
+  have hopen : IsOpen (Set.range j.base) := by
+    rw [← Scheme.Hom.coe_opensRange]; exact j.opensRange.2
+  have hne : (Set.range j.base).Nonempty := Set.range_nonempty _
+  rw [hj] at hopen hne
+  refine ⟨?_⟩
+  show Dense (Set.range j.base)
+  rw [hj]
+  exact dense_compl_singleton_of_isOpen hopen hne
+
+/-- **Two morphisms over a base that are mutually inverse on a dense open
+are mutually inverse** (PROVEN) — the whole UNIQUENESS half of the gluing
+argument, and it is formal.
+
+`u ≫ v` and `𝟙 P` are two morphisms `P ⟶ P` over the separated `p`; they
+agree after the dominant `ι₀`; and `P` is reduced.  Mathlib's
+`ext_of_isDominant_of_isSeparated` therefore identifies them, and
+symmetrically for `v ≫ u`.
+
+**No properness is used here.**  Separatedness is what makes an extension
+UNIQUE; properness is what makes it EXIST, and that is the entire content
+of the two leaves below.  Both `IsReduced` hypotheses and both
+`IsSeparated` hypotheses are load-bearing: over a non-reduced source two
+morphisms can differ by a nilpotent deformation supported on a nowhere
+dense closed subscheme, and over a non-separated target the line with a
+doubled origin carries two distinct extensions of one morphism on a dense
+open. -/
+theorem isIso_of_isDominant_of_inverse {S P B C : Scheme.{u}}
+    {p : P ⟶ S} {f : B ⟶ S} [IsSeparated p] [IsSeparated f]
+    [IsReduced P] [IsReduced B]
+    {ι₀ : C ⟶ P} {ι : C ⟶ B} [IsDominant ι₀] [IsDominant ι]
+    (u : P ⟶ B) (v : B ⟶ P) (hu : u ≫ f = p) (hv : v ≫ p = f)
+    (hu' : ι₀ ≫ u = ι) (hv' : ι ≫ v = ι₀) : IsIso u := by
+  have h1 : u ≫ v = 𝟙 P :=
+    ext_of_isDominant_of_isSeparated p (by rw [Category.assoc, hv, hu, Category.id_comp]) ι₀
+      (by rw [← Category.assoc, hu', hv', Category.comp_id])
+  have h2 : v ≫ u = 𝟙 B :=
+    ext_of_isDominant_of_isSeparated f (by rw [Category.assoc, hu, hv, Category.id_comp]) ι
+      (by rw [← Category.assoc, hv', hu', Category.comp_id])
+  exact ⟨v, h1, h2⟩
+
+/-- **The chart of the projective model extends to a morphism
+`proj E ⟶ A`** (sorry node, introduced 2026-07-27 as the forward half of
+`exists_isIso_of_affineChart`).
+
+TRUE, and it is the classical statement that a rational map from a SMOOTH
+CURVE to a proper scheme is a morphism.  `_hrange₀` says `ι₀` identifies
+`Spec ℚ[E]` with the complement of a single rational point `O` of
+`proj E`, so `ι₀⁻¹ ≫ ι` is a morphism defined on all of `proj E` except
+`O`; `f` is proper (`ab.proper`), and the local ring of `proj E` at `O` is
+a discrete valuation ring, so the valuative criterion extends it across
+`O`.
+
+## THE INTENDED PROOF, AND THE ONE THING THIS PIN DOES NOT HAVE
+
+1. `proj E` is INTEGRAL — irreducible by `irreducibleSpace_projectiveSpectrum`
+   applied to `isDomain_projCoordinateRing`, reduced by
+   `geometricallyReduced_projToSpec` descended along the reduced noetherian
+   base.  Both are PROVEN above and both are already used in
+   `exists_isIso_of_affineChart`'s own proof, so they cost nothing here.
+   `Mathlib/AlgebraicGeometry/FunctionField.lean` then supplies, for free,
+   `IsDomain ((proj E).presheaf.stalk O)`, the algebra structure on the
+   function field, and `IsFractionRing (stalk O) (proj E).functionField`.
+2. `ValuationRing ((proj E).presheaf.stalk O)` — **THIS IS THE GAP**, and it
+   is the ONLY input the valuative criterion is missing.  Searched
+   2026-07-27: `Mathlib/AlgebraicGeometry/Morphisms/` contains no regularity
+   file at all, and there is no `Smooth → IsRegularLocalRing` bridge anywhere
+   — `IsRegularLocalRing` occurs only in
+   `RingTheory/RegularLocalRing/{Defs,Polynomial}.lean`, connected to nothing.
+   So "smooth of relative dimension one over a field ⟹ regular local of
+   dimension one ⟹ DVR" has to be built; the cheaper alternative, and the one
+   a prover should price first, is to compute the stalk directly in the chart
+   at `Z`, which the `AffineChart` section above already produces.
+3. With 2 in hand, `IsProper.eq_valuativeCriterion`
+   (`Mathlib/AlgebraicGeometry/ValuativeCriterion.lean`) turns `ab.proper`
+   into `ValuativeCriterion.Existence f`, which lifts the function-field
+   point `Spec (proj E).functionField ⟶ A` to `φ : Spec (stalk O) ⟶ A` over
+   `Spec ℚ`.
+4. `AlgebraicGeometry.PartialMap.ofFromSpecStalk`
+   (`Mathlib/AlgebraicGeometry/Birational/RationalMap.lean`) spreads `φ` out
+   to a morphism on an open NEIGHBOURHOOD of `O`; its side conditions
+   `IrreducibleSpace`, `IsGermInjectiveAt O` and `LocallyOfFiniteType f` are
+   all free from 1 and from `ab.proper`.  Gluing that with `ι₀⁻¹ ≫ ι` over
+   the dense overlap — where the two agree by
+   `fromSpecStalkOfMem_ofFromSpecStalk` together with the same
+   `ext_of_isDominant_of_isSeparated` used in
+   `isIso_of_isDominant_of_inverse` — covers `proj E` and produces `u`.
+
+WHAT WOULD REFUTE THE "OPEN" DIAGNOSIS: any declaration extending a
+morphism from a dense open of a curve to a proper target, or exhibiting a
+scheme stalk as a valuation ring from smoothness.  Searched 2026-07-27 over
+`Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: the valuative criterion
+has exactly ONE consumer in the whole of mathlib
+(`ProjectiveSpectrum/Proper.lean`) and it is not this.
+
+`ab` IS LOAD-BEARING, through `ab.proper`: properness of `f` is exactly what
+the valuative criterion consumes, and it is the hypothesis without which a
+rational map from a curve need not extend at all.
+
+NOT VACUOUS: the conclusion pins `ι₀ ≫ u = ι`, so it cannot be discharged
+by an unrelated morphism `proj E ⟶ A`. -/
+theorem exists_hom_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
     (ι₀ : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
       _root_.WeierstrassCurve.Projective.proj E)
@@ -5634,8 +5773,166 @@ theorem exists_isIso_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (_hrange : Set.range ι.base =
       (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
     ∃ u : _root_.WeierstrassCurve.Projective.proj E ⟶ A,
-      IsIso u ∧ u ≫ f = _root_.WeierstrassCurve.Projective.projToSpec E ∧ ι₀ ≫ u = ι :=
+      u ≫ f = _root_.WeierstrassCurve.Projective.projToSpec E ∧ ι₀ ≫ u = ι :=
   sorry
+
+/-- **The chart of the abelian scheme extends to a morphism
+`A ⟶ proj E`** (sorry node, introduced 2026-07-27 as the backward half of
+`exists_isIso_of_affineChart`) — the mirror image of
+`exists_hom_of_affineChart`, with the roles of the two models exchanged.
+
+TRUE for the same classical reason, and the four-step route in that
+declaration's docstring transposes verbatim: `_hrange` makes `ι` identify
+`Spec ℚ[E]` with the complement of the single point `ab.zero`, and
+`isProper_projToSpec` (PROVEN above) supplies the properness of the target
+that the valuative criterion consumes.
+
+**Where the two halves genuinely DIFFER, and this is what a prover should
+price first.**  Step 2 of the forward route needs a discrete valuation ring
+at the removed point of `proj E`, and there the curve is explicit — its
+charts are constructed in the `AffineChart` section above.  Here the removed
+point lies on `A`, about which the hypotheses say only that `f` is proper,
+smooth and geometrically connected (`ab`); the RELATIVE DIMENSION of `f` is
+NOT among them.  So the stalk cannot be seen to be one-dimensional from `ab`
+alone, and the dimension has to come from the chart: `ι` is an open
+immersion of the one-dimensional `Spec ℚ[E]` onto a dense open of `A`, and
+smoothness of `f` propagates the relative dimension from that open to all of
+`A`.  (Note the outer consumer
+`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` does carry
+`SmoothOfRelativeDimension 1 f` — but this leaf's own consumer,
+`exists_geomFibreAddEquiv_of_weierstrassModel`, does not, so it may not be
+assumed here.  If a prover finds the propagation step to be the real cost,
+the honest repair is to thread `hdim` down from that outer statement, not to
+weaken this one.)
+
+`ab` IS LOAD-BEARING here too, and now on BOTH sides: `ab.proper` and
+`ab.smooth` are what make `A` a curve at all, and `ab.zero` is what
+`_hrange` removes.
+
+NOT VACUOUS: the conclusion pins `ι ≫ v = ι₀`. -/
+theorem exists_hom_symm_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+    (ι₀ : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
+      _root_.WeierstrassCurve.Projective.proj E)
+    (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
+    (_h₀ : IsOpenImmersion ι₀) (_h₁ : IsOpenImmersion ι)
+    (_hstr₀ : ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
+      Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (_hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (_hrange₀ : Set.range ι₀.base = (Set.range ((projGroupLaw E).toAbelianSchemeStruct.zero
+      (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ)
+    (_hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
+    ∃ v : A ⟶ _root_.WeierstrassCurve.Projective.proj E,
+      v ≫ _root_.WeierstrassCurve.Projective.projToSpec E = f ∧ ι ≫ v = ι₀ :=
+  sorry
+
+/-- **Two Weierstrass charts of the same affine curve glue to an
+isomorphism of the proper models** (**PROVEN 2026-07-27** from
+`exists_hom_of_affineChart`, `exists_hom_symm_of_affineChart` and
+`isIso_of_isDominant_of_inverse`; formerly a sorry node).
+
+TRUE, and it is the classical fact that a smooth proper curve is
+determined by any dense open of it.  `ι₀` and `ι` are open immersions of
+the SAME affine scheme `Spec ℚ[E]` into `proj E` and into `A`, both over
+`Spec ℚ`, and each range is the complement of the range of a section — a
+single rational point.  So `ι₀` and `ι` identify dense opens of two proper
+smooth geometrically connected `ℚ`-curves (`proj E` by
+`smoothOfRelativeDimension_projToSpec`, `isProper_projToSpec` and
+`geometricallyConnected_projToSpec`; `A` by three fields of `ab`), and the
+resulting birational map extends.
+
+## THE CUT (2026-07-27) — EXISTENCE separated from UNIQUENESS
+
+The previous docstring described the intended proof as "two applications
+of one criterion", and that is exactly the seam the cut follows.  The two
+criteria are used for different things and need different hypotheses:
+
+* the local ring of `proj E` at the removed point is a DVR, so
+  `ValuativeCriterion.Existence` for the proper `f` extends `ι₀⁻¹ ≫ ι`
+  across that point to `u : proj E ⟶ A`, and symmetrically to
+  `v : A ⟶ proj E`.  That is `exists_hom_of_affineChart` and
+  `exists_hom_symm_of_affineChart`, and it is where PROPERNESS is
+  consumed.  Both remain OPEN; the forward one's docstring carries the
+  four-step route and names the single missing input, which is
+  `ValuationRing` of the stalk at the removed point;
+* `u ≫ v` and `v ≫ u` agree with the identity on a dense open of a
+  reduced SEPARATED scheme, hence are the identity.  That is
+  `isIso_of_isDominant_of_inverse`, and it is PROVEN above from mathlib's
+  `ext_of_isDominant_of_isSeparated`.  Properness plays no part in it.
+
+What the assembly below adds beyond invoking those three is the instance
+bookkeeping, and it is not nothing: `proj E` and `A` must both be shown
+REDUCED (`geometricallyReduced_projToSpec` and
+`GeometricallyReduced.of_smooth` descended along the reduced noetherian
+base `Spec ℚ`) and CONNECTED (`preconnectedSpace_proj` with
+`nonempty_proj`; `GeometricallyConnected.connectedSpace_of_subsingleton`
+from `ab.connected`), and both charts DOMINANT — which is
+`isDominant_of_range_eq_compl`, and is the only place the two range
+hypotheses are used in this proof.
+
+**`ab` IS LOAD-BEARING** even though it appears only inside `_hrange`: it
+is what makes `A` proper and separated, and without properness there is no
+extension and without separatedness no uniqueness.  A prover must not
+weaken it to a bare scheme.
+
+**Both range hypotheses are LOAD-BEARING.**  Without them `ι₀` and `ι`
+would be arbitrary open immersions — possibly of a proper subset of the
+complement of a point — and the extension would not exist.  It is the two
+`ᶜ`s that make the complements single points, which is what puts the
+extension problem at a DVR; and it is also what makes the two charts
+dominant, which the uniqueness half needs.
+
+NOT VACUOUS: the conclusion pins `u` to restrict to the given
+identification of charts (`ι₀ ≫ u = ι`), so it cannot be discharged by
+some unrelated automorphism of the model. -/
+theorem exists_isIso_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+    (ι₀ : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
+      _root_.WeierstrassCurve.Projective.proj E)
+    (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
+    (h₀ : IsOpenImmersion ι₀) (h₁ : IsOpenImmersion ι)
+    (hstr₀ : ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
+      Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (hrange₀ : Set.range ι₀.base = (Set.range ((projGroupLaw E).toAbelianSchemeStruct.zero
+      (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ)
+    (hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
+    ∃ u : _root_.WeierstrassCurve.Projective.proj E ⟶ A,
+      IsIso u ∧ u ≫ f = _root_.WeierstrassCurve.Projective.projToSpec E ∧ ι₀ ≫ u = ι := by
+  haveI := h₀
+  haveI := h₁
+  haveI := isProper_projToSpec E
+  haveI := ab.proper
+  haveI := ab.smooth
+  haveI := ab.connected
+  -- `proj E` is reduced: geometrically reduced over the reduced noetherian base `Spec ℚ`.
+  haveI := geometricallyReduced_projToSpec E
+  haveI : IsLocallyNoetherian (_root_.WeierstrassCurve.Projective.proj E) :=
+    LocallyOfFiniteType.isLocallyNoetherian
+      (_root_.WeierstrassCurve.Projective.projToSpec E)
+  haveI : IsReduced (_root_.WeierstrassCurve.Projective.proj E) :=
+    GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian
+      (_root_.WeierstrassCurve.Projective.projToSpec E)
+  -- `A` is reduced, by the same descent from `ab.smooth`.
+  haveI : GeometricallyReduced f := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth f
+  haveI : IsLocallyNoetherian A := LocallyOfFiniteType.isLocallyNoetherian f
+  haveI : IsReduced A := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian f
+  -- both models are connected
+  haveI : PreconnectedSpace (_root_.WeierstrassCurve.Projective.proj E) :=
+    preconnectedSpace_proj E
+  haveI : Nonempty (_root_.WeierstrassCurve.Projective.proj E) := nonempty_proj E
+  haveI : ConnectedSpace (_root_.WeierstrassCurve.Projective.proj E) := ⟨inferInstance⟩
+  haveI : ConnectedSpace A := GeometricallyConnected.connectedSpace_of_subsingleton (f := f)
+  -- both charts are dominant: their ranges are complements of single points
+  haveI : IsDominant ι₀ := isDominant_of_range_eq_compl ι₀ _ hrange₀
+  haveI : IsDominant ι := isDominant_of_range_eq_compl ι _ hrange
+  obtain ⟨u, huf, huι⟩ :=
+    exists_hom_of_affineChart E ab ι₀ ι h₀ h₁ hstr₀ hstr hrange₀ hrange
+  obtain ⟨v, hvf, hvι⟩ :=
+    exists_hom_symm_of_affineChart E ab ι₀ ι h₀ h₁ hstr₀ hstr hrange₀ hrange
+  exact ⟨u, isIso_of_isDominant_of_inverse u v huf hvf huι hvι, huf, huι⟩
 
 end Transport
 
@@ -5682,8 +5979,11 @@ first and transporting along the chart isomorphism.  That is the route
 taken here, and it decomposes the leaf into three:
 
 * `exists_isIso_of_affineChart` — the two affine charts glue to an
-  isomorphism `proj E ≅ A` over `Spec ℚ` (valuative criterion at the one
-  removed point; OPEN);
+  isomorphism `proj E ≅ A` over `Spec ℚ` (PROVEN 2026-07-27, itself cut into
+  the two extension leaves `exists_hom_of_affineChart` and
+  `exists_hom_symm_of_affineChart` — the valuative criterion at the one
+  removed point, which is what is still OPEN — plus the formal gluing step
+  `isIso_of_isDominant_of_inverse`);
 * `hom_specRat_eq_of_range_eq` — a `ℚ`-point is determined by its image, so
   matching charts force matching zero SECTIONS (PROVEN here);
 * `relPointPost_add` — rigidity: a base-point-preserving morphism of
