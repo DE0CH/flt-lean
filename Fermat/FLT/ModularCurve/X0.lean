@@ -6944,10 +6944,238 @@ would delete the `ex falso` laundering and let that module's genuine work (the
 quotient) discharge them instead.  That re-basing is a cut-level repair across
 two modules and two owners' regions; it is recorded here rather than performed. -/
 
+/-- **The half of the coarse-moduli definition that `IsCoarseModuliY0`
+deliberately omits**: bijectivity of `classify` on GEOMETRIC points.
+
+`IsCoarseModuliY0` records only initiality, which pins `(Y, classify)` up to
+unique isomorphism and says nothing about *which* points of `Y` are hit.  A
+coarse moduli space satisfies, in addition,
+
+`Y(ℚ̄) ↔ {Γ₀(N)-data over ℚ̄}/≅`,
+
+and that is what this structure states: `surjective` is `↞` and `injective` is
+`↣`.  "Isomorphism of `Γ₀(N)`-data over a fixed base" is spelled, as everywhere
+in this file, as `IsBaseChangeOf (𝟙 _)` — see the docstring of `IsBaseChangeOf`,
+which records that taking `h = 𝟙` is exactly isomorphism of data.
+
+It is a *property* of `M` and not extra data — both fields are `Prop`s — and by
+`IsGeometricallyBijectiveY0.transport` it is inherited by every coarse space
+from any one of them, so it never matters on which model it is established. -/
+structure IsGeometricallyBijectiveY0 {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ SpecQ}
+    (M : IsCoarseModuliY0 N str) : Prop where
+  /-- every `ℚ̄`-point of the coarse space is classified by a `Γ₀(N)`-datum
+  over `ℚ̄` -/
+  surjective : ∀ x : RelPoint str (specAlgClos ℚ),
+    ∃ d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+      M.classify (specAlgClos ℚ) d = x
+  /-- two `Γ₀(N)`-data over `ℚ̄` with the same class are isomorphic -/
+  injective : ∀ d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+    M.classify (specAlgClos ℚ) d₁ = M.classify (specAlgClos ℚ) d₂ →
+      Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂)
+
+/-- **Geometric bijectivity holds for SOME coarse moduli space of the
+`Γ₀(N)`-problem** (sorry node, introduced 2026-07-27).
+
+TRUE, and it is nothing more than the second half of the standard definition of
+a coarse moduli space, which `IsCoarseModuliY0` omits by design (see its
+docstring): over an algebraically closed field the points of the coarse space
+are exactly the isomorphism classes of objects.
+
+**Why it is stated existentially, and why that is not a dodge.**  Exactly the
+split already used for the five curve properties at
+`exists_isCoarseModuliY0_isSmoothCurve`: nothing can be extracted from a
+universal property alone, so the same statement about an ARBITRARY
+`IsCoarseModuliY0` would be irreducible — it would have to be proven from
+initiality, which cannot see the fibres of `classify`.  Stated existentially it
+is discharged by exhibiting the Katz–Mazur model and reading the property off
+the construction, and `IsGeometricallyBijectiveY0.transport` — PROVEN below —
+carries it to every other coarse space.
+
+**The route.**  `Gamma0Atlas` / `Gamma0GITPresentation`, both already in this
+file, present `Y_0(N)` as the GIT quotient `M/GL₂(ℤ/n)` with `M` the rigidified
+moduli scheme `𝔐([Γ₀(N)], [Γ(n)])`.  Over `ℚ̄` the fibres of `M ⟶ Y` are the
+`GL₂(ℤ/n)`-orbits of level-`n` structures on one datum, which gives both halves
+at once: `surjective` because `M(ℚ̄) ⟶ Y(ℚ̄)` is surjective over an
+algebraically closed field, `injective` because two data with the same image
+differ by a deck transformation, which is an isomorphism of the underlying
+`Γ₀(N)`-data.  `exists_gamma0Atlas` supplies the atlas for `0 < N`.
+
+**The one input the atlas fields do not already contain**, and the place a
+successor should expect to do work: `Gamma0Atlas.cover` supplies the
+rigidification only after a faithfully flat quasi-compact base change
+`p : T' ⟶ T`.  At `T = Spec ℚ̄` such a `p` has a section — an fppf cover of the
+spectrum of an algebraically closed field is split — and that section is where
+algebraic closedness enters.  **The check that would refute this route**: exhibit
+a faithfully flat quasi-compact `T' ⟶ Spec ℚ̄` with `T'` nonempty admitting no
+section; there is none, since `T'` has a closed point whose residue field is a
+finite extension of `ℚ̄`, hence `ℚ̄` itself.
+
+`hN : N ≠ 0` is genuinely needed by the route (`exists_gamma0Atlas` requires
+`0 < N`), though the statement is also true at `N = 0` for the degenerate
+reason that `isEmpty_of_isCoarseModuliY0_zero` makes both clauses vacuous. -/
+theorem exists_isGeometricallyBijectiveY0 (N : ℕ) (hN : N ≠ 0) :
+    ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ) (M : IsCoarseModuliY0 N str),
+      IsGeometricallyBijectiveY0 M :=
+  sorry
+
+/-- **Geometric bijectivity transports to every coarse moduli space** (PROVEN
+2026-07-27) — pure initiality, no modular-curve input.
+
+This records what `exists_isIso_of_isCoarseModuliY0` does not.  That lemma
+produces an isomorphism `u : Y₀ ⟶ Y` over `ℚ` and stops there; but the `u`
+coming out of `M₀.universal` additionally INTERTWINES the two classifying maps,
+
+`(M.classify g d).1 = (M₀.classify g d).1 ≫ u`,
+
+and the intertwining, not the bare isomorphism, is what moves a statement about
+the *fibres* of `classify` from one model to another.  Both directions of
+bijectivity then transport formally: a `ℚ̄`-point `x` of `Y` is pushed to
+`x ≫ v` on `Y₀`, and injectivity is `v`-composition applied to the two classes.
+
+The inverse `v` is obtained, and `v ≫ u = 𝟙 Y` proven, by the same argument as
+in `exists_isIso_of_isCoarseModuliY0`: both `v ≫ u` and `𝟙 Y` solve the
+initiality problem of `M` against itself, so the uniqueness half of `∃!`
+identifies them.
+
+**Consequence for the leaf above**: the existential form is not weaker than the
+universal one.  Together they say geometric bijectivity holds for EVERY coarse
+moduli space, which is what `Y0HasNoRationalPoint` — quantified over all of
+them — needs. -/
+theorem IsGeometricallyBijectiveY0.transport {N : ℕ} {Y₀ : Scheme.{0}} {str₀ : Y₀ ⟶ SpecQ}
+    {M₀ : IsCoarseModuliY0 N str₀} (h₀ : IsGeometricallyBijectiveY0 M₀)
+    {Y : Scheme.{0}} {str : Y ⟶ SpecQ} (M : IsCoarseModuliY0 N str) :
+    IsGeometricallyBijectiveY0 M := by
+  obtain ⟨u, ⟨hus, huc⟩, -⟩ := M₀.universal str M.classify M.classify_natural
+  obtain ⟨v, ⟨hvs, hvc⟩, -⟩ := M.universal str₀ M₀.classify M₀.classify_natural
+  obtain ⟨w, -, huniq⟩ := M.universal str M.classify M.classify_natural
+  -- `v ≫ u` and `𝟙 Y` both solve the initiality problem of `M` against itself.
+  have hvu : v ≫ u = 𝟙 Y :=
+    (huniq (v ≫ u) ⟨by rw [Category.assoc, hus, hvs],
+        fun {_T} g d => by rw [← Category.assoc, ← hvc g d, ← huc g d]⟩).trans
+      (huniq (𝟙 Y) ⟨Category.id_comp _, fun {_T} _g _d => (Category.comp_id _).symm⟩).symm
+  constructor
+  · intro x
+    obtain ⟨d, hd⟩ := h₀.surjective ⟨x.1 ≫ v, by rw [Category.assoc, hvs]; exact x.2⟩
+    refine ⟨d, Subtype.ext ?_⟩
+    rw [huc (specAlgClos ℚ) d, congrArg Subtype.val hd]
+    show (x.1 ≫ v) ≫ u = x.1
+    rw [Category.assoc, hvu, Category.comp_id]
+  · intro d₁ d₂ hcl
+    refine h₀.injective d₁ d₂ (Subtype.ext ?_)
+    rw [hvc (specAlgClos ℚ) d₁, hvc (specAlgClos ℚ) d₂, congrArg Subtype.val hcl]
+
+/-- **Galois descent of a `Γ₀(N)`-datum whose field of moduli is `ℚ`, WITH A
+TWIST ALLOWED** (sorry node, introduced 2026-07-27) — the arithmetic half of the
+bridge, and the place where the `j = 0, 1728` caveat is confronted and defused.
+
+`hmod` is the field-of-moduli condition, stated in the vocabulary this file
+already has: every base change of `d` along `specGal σ` — i.e. every Galois
+conjugate `d^σ` — is ISOMORPHIC to `d`, isomorphism of data over a fixed base
+being `IsBaseChangeOf (𝟙 _)`.  The conclusion asks only for SOME `Γ₀(N)`-datum
+over `Spec ℚ`; it does NOT assert that `d` itself descends, and that distinction
+is the whole content of the audit below.
+
+#### FAITHFULNESS AUDIT — TRUE unconditionally, twist included
+
+* FALSE, and NOT what is stated: *the pair `(E, C)` itself descends to `ℚ`*.  A
+  `ℚ`-point of `Y_0(N)` carries only a `ℚ̄`-pair whose field of moduli is `ℚ`,
+  and demanding that this particular pair be `ℚ`-rational is Weil descent with a
+  possibly non-trivial obstruction — genuinely non-trivial at `j = 0, 1728`.
+* TRUE, and what is stated: *some `Γ₀(N)`-datum over `ℚ` exists*.  A
+  quadratic/quartic/sextic TWIST is permitted, and that is exactly what makes
+  the obstruction vanish.
+
+The computation, which is also the check that would refute this if it were
+wrong.  `j(E) ∈ ℚ`, so `E` already has a model over `ℚ` and we may take
+`E^σ = E`.  Then for each `σ` there is `α_σ ∈ Aut_ℚ̄(E)` with `α_σ(σ C) = C`,
+well defined modulo `A := Aut(E, C)`, and `σ ↦ ᾱ_σ` is a cocycle in
+`Z¹(G_ℚ, Aut(E)/A)`.  Now `Aut(E) ≅ μ_n` as a `G_ℚ`-module with `n ∈ {2, 4, 6}`,
+and `−1 ∈ A` always, since `−C = C`; so `A ∈ {μ₂, μ_n}` and the quotient is `1`
+or `μ_{n/2}`, the isomorphism being induced by `x ↦ x²`.  Under Kummer theory
+that map on cohomology is
+
+`H¹(G_ℚ, μ_n) = ℚˣ/(ℚˣ)ⁿ ⟶ H¹(G_ℚ, μ_{n/2}) = ℚˣ/(ℚˣ)^{n/2}`, `a ↦ a`,
+
+because `δ_n(a)(σ)² = (σ(a^{1/n})/a^{1/n})² = σ(a^{1/(n/2)})/a^{1/(n/2)}`.  That
+map is SURJECTIVE, so the cocycle is realised by a twist `E^{(d)}` of `E` by some
+`d ∈ ℚˣ`, and the accompanying `ψ : E ≅ E^{(d)}` carries `C` to a `G_ℚ`-stable
+subgroup — `μ₂` acting trivially on subgroups is what makes the quotient by `A`
+harmless.  `E^{(d)}` is defined over `ℚ`.  ∎
+
+Note the argument needs **no case split on `j`**: at `n = 2` the quotient is
+already trivial, and the only inputs at `n = 4, 6` are surjectivity of
+`ℚˣ/(ℚˣ)⁴ ↠ ℚˣ/(ℚˣ)²` and `ℚˣ/(ℚˣ)⁶ ↠ ℚˣ/(ℚˣ)³`.  **The check that refutes
+this**: exhibit `n ∈ {4, 6}` and a class in `ℚˣ/(ℚˣ)^{n/2}` not in the image of
+`ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being induced by the identity on
+representatives.
+
+**`hmod` is not vacuous, and here is why that matters.**  This development
+STATES base change of `Γ₀(N)`-data rather than constructing it (see the section
+comment above `subsingleton_hom_specQ`), so no lemma here produces `d^σ`.  A
+reader might therefore fear `hmod` quantifies over an empty family and the leaf
+is vacuously satisfiable by junk.  It is not: base change along the isomorphism
+`specGal σ` exists mathematically for every `σ`, so `hmod` really is the
+field-of-moduli condition and the leaf really does carry the descent.  What the
+missing construction costs is only that a PROVER of this leaf must build `d^σ`
+itself in order to *use* `hmod`; it costs the leaf no strength. -/
+theorem nonempty_gamma0Datum_specQ_of_fieldOfModuli {N : ℕ} (hN : N ≠ 0)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hmod : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        IsBaseChangeOf (specGal σ) dσ d →
+          Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
+    Nonempty (Gamma0Datum N SpecQ) :=
+  sorry
+
+/-- **A `Γ₀(N)`-datum over `Spec ℚ` IS an elliptic curve over `ℚ` with a
+Galois-stable cyclic subgroup of order `N`** (sorry node, introduced
+2026-07-27): the exact CONVERSE of `nonempty_gamma0Datum_of_stable`, which
+proves the forward direction.
+
+TRUE.  An `AbelianSchemeStruct` of relative dimension `1` over `Spec ℚ` is an
+elliptic curve over `ℚ`, hence has a Weierstrass model with `E.IsElliptic`;
+`cyc.geom_cyclic` at `K = ℚ̄` supplies a geometric point `y` of order `N` whose
+`zmultiples` are exactly the geometric points of `cyc.C`, and that subgroup is
+`Γ_ℚ`-stable because `cyc.C` is defined over `ℚ` and the Galois action on the
+geometric fibre is precomposition with `specGal σ`, which preserves the fibre of
+`cyc.C`.  Transporting `y` back along the additive equivalence
+`(E⁄ℚ̄).Point ≃+ GeomFibrePt f (𝟙 SpecQ)` of
+`exists_ellipticScheme_of_weierstrass` gives `g`.
+
+**What has to be built, and where the work is.**  The forward bridge is assembled
+from `exists_ellipticScheme_of_weierstrass` (Weierstrass model ⟹ elliptic
+scheme) and `exists_cyclicSubgroupOfOrder_of_galoisStable` (Galois descent for
+the level structure).  This leaf needs the two converses:
+
+1. *elliptic scheme ⟹ Weierstrass model*.  An abelian scheme of relative
+   dimension `1` over a field is a genus-one curve with a rational point, so
+   Riemann–Roch on `𝒪(3·0)` gives the Weierstrass equation.  This is the larger
+   half, and it is a statement about `AbelianSchemeStruct` rather than about
+   modular curves — a successor may prefer to state it separately, in the
+   `Modularity/AbelianScheme.lean` vocabulary, and consume it here.
+2. *level structure ⟹ stable generator*, which is `cyc.geom_cyclic` read
+   backwards through the same equivalence the forward bridge uses; that half is
+   bookkeeping, and `nonempty_gamma0Datum_of_stable` shows the shape of it.
+
+`hN : N ≠ 0` is REQUIRED: at `N = 0` the hypothesis is inhabited by nothing —
+`isEmpty_of_gamma0Datum_zero` forbids a `Gamma0Datum 0 SpecQ` over the nonempty
+base `Spec ℚ` — so keeping `hN` merely records which level range is meant rather
+than relying on the reader to rediscover the degeneracy. -/
+theorem exists_stableCyclic_of_gamma0Datum {N : ℕ} (hN : N ≠ 0)
+    (d : Gamma0Datum N SpecQ) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic)
+      (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = N ∧
+        ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g :=
+  sorry
+
 /-- **A rational point of `Y_0(N)` comes from an elliptic curve over `ℚ`**
-(sorry node, introduced 2026-07-27), in the contrapositive form that its
-consumers want: if no elliptic curve over `ℚ` carries a Galois-stable cyclic
-subgroup of order `N`, then `Y_0(N)` has no rational point.
+(introduced as a sorry node 2026-07-27; **PROVEN the same day** over the three
+leaves above), in the contrapositive form that its consumers want: if no
+elliptic curve over `ℚ` carries a Galois-stable cyclic subgroup of order `N`,
+then `Y_0(N)` has no rational point.
 
 The hypothesis is *verbatim* the hypothesis list of
 `false_of_stable_of_y0HasNoRationalPoint`, so the two together say that the
@@ -6971,41 +7199,39 @@ The distinction is exactly which object is required to be defined over `ℚ`:
   cyclic subgroup of order `N`*.  A quadratic/quartic/sextic TWIST is allowed,
   and that is what makes the obstruction vanish.
 
-The computation, which is the check that would refute this if it were wrong.
-Let `y ∈ Y_0(N)(ℚ)`.  Coarse moduli gives a `ℚ̄`-pair `(E, C)` with
-`(E^σ, C^σ) ≅ (E, C)` for every `σ ∈ G_ℚ`; in particular `j(E) ∈ ℚ`, so `E`
-already has a model over `ℚ` and we may take `E^σ = E`.  Then for each `σ`
-there is `α_σ ∈ Aut_ℚ̄(E)` with `α_σ(σ C) = C`, well defined modulo
-`A := Aut(E, C)`, and `σ ↦ ᾱ_σ` is a cocycle in `Z¹(G_ℚ, Aut(E)/A)`.  Now
-`Aut(E) ≅ μ_n` as a `G_ℚ`-module with `n ∈ {2, 4, 6}`, and `−1 ∈ A` always,
-since `−C = C`; so `A ∈ {μ₂, μ_n}` and the quotient is `1` or `μ_{n/2}`, the
-isomorphism being induced by `x ↦ x²`.  Under Kummer theory that map on
-cohomology is
+The cocycle computation that establishes this — `Aut(E) ≅ μ_n`, `−1 ∈ Aut(E,C)`,
+and the Kummer map `ℚˣ/(ℚˣ)ⁿ ↠ ℚˣ/(ℚˣ)^{n/2}` being surjective with no case
+split on `j` — now lives on the leaf that carries it,
+`nonempty_gamma0Datum_specQ_of_fieldOfModuli`, together with the check that
+would refute it.
 
-`H¹(G_ℚ, μ_n) = ℚˣ/(ℚˣ)ⁿ ⟶ H¹(G_ℚ, μ_{n/2}) = ℚˣ/(ℚˣ)^{n/2}`, `a ↦ a`,
+#### How it is proven, and what is left open
 
-because `δ_n(a)(σ)² = (σ(a^{1/n})/a^{1/n})² = σ(a^{1/(n/2)})/a^{1/(n/2)}`.
-That map is SURJECTIVE, so the cocycle is realised by a twist `E^{(d)}` of `E`
-by some `d ∈ ℚˣ`, and the accompanying `ψ : E ≅ E^{(d)}` carries `C` to a
-`G_ℚ`-stable subgroup — `μ₂` acting trivially on subgroups is what makes the
-quotient by `A` harmless.  `E^{(d)}` is defined over `ℚ`.  ∎
+The three leaves above, plus the two steps that are genuinely about this
+statement and are carried out here:
 
-Note the argument needs no case split on `j`: at `n = 2` the quotient is
-already trivial, and the only inputs at `n = 4, 6` are surjectivity of
-`ℚˣ/(ℚˣ)⁴ ↠ ℚˣ/(ℚˣ)²` and `ℚˣ/(ℚˣ)⁶ ↠ ℚˣ/(ℚˣ)³`.  **The check that refutes
-this**: exhibit `n ∈ {4, 6}` and a class in `ℚˣ/(ℚˣ)^{n/2}` not in the image
-of `ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being induced by the identity on
-representatives.
-
-#### What proving it needs
-
-Precisely the half of the coarse-moduli definition that `IsCoarseModuliY0`
-deliberately omits — bijectivity of `classify` on geometric points, i.e.
-`Y(ℚ̄) ↔ {(E, C)/ℚ̄}/≅`, `G_ℚ`-equivariantly — together with the descent
-computation above.  The first is reachable from `Gamma0Atlas` /
-`Gamma0GITPresentation`, which present `Y_0(N)` concretely and are already in
-this file; initiality alone can never supply it, since it determines `Y` only
-up to isomorphism and says nothing about which points of `Y` are hit.
+1. `exists_isGeometricallyBijectiveY0` (LEAF) gives geometric bijectivity for
+   one coarse space, and `IsGeometricallyBijectiveY0.transport` (PROVEN) carries
+   it to the arbitrary `M` that `Y0HasNoRationalPoint` hands us.  This is
+   precisely the half of the coarse-moduli definition that `IsCoarseModuliY0`
+   deliberately omits; **initiality alone can never supply it**, since it
+   determines `Y` only up to isomorphism and says nothing about which points of
+   `Y` are hit.
+2. *The field-of-moduli step, PROVEN here.*  Base-changing the rational point
+   `y` to `ℚ̄` gives `x` with `x.1 = specAlgClos ℚ ≫ y.1`, which is Galois-fixed
+   on the nose by `specGal_comp_base`.  So for every `σ` and every conjugate
+   `dσ` of the classifying datum `d`, naturality of `classify` gives
+   `classify dσ = RelPoint.pre (specGal σ) x = x = classify d`, and the
+   *injective* half of geometric bijectivity turns that equality of classes into
+   an ISOMORPHISM `dσ ≅ d`.  That is exactly the hypothesis `hmod` of the
+   descent leaf, and it is where the rationality of `y` is consumed.
+3. `nonempty_gamma0Datum_specQ_of_fieldOfModuli` (LEAF) performs the twist and
+   returns a datum over `Spec ℚ`; `exists_stableCyclic_of_gamma0Datum` (LEAF)
+   converts that datum back into a Weierstrass curve with a stable cyclic
+   subgroup, contradicting `h`.
+4. *The degenerate level, PROVEN here.*  At `N = 0` no descent happens at all:
+   `isEmpty_of_isCoarseModuliY0_zero` makes the coarse space empty, and a
+   section of `str` would give a map out of the nonempty `Spec ℚ` into it.
 
 Cusps are not an obstacle and need no hypothesis: `Y_0(N)` is the coarse space
 of the moduli problem `[Γ₀(N)]`, whose objects are genuine elliptic schemes, so
@@ -7019,8 +7245,39 @@ theorem y0HasNoRationalPoint_of_not_stableCyclic {N : ℕ}
             WeierstrassCurve.Affine.Point.map
               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
               AddSubgroup.zmultiples g) → False) :
-    Y0HasNoRationalPoint N :=
-  sorry
+    Y0HasNoRationalPoint N := by
+  rcases eq_or_ne N 0 with rfl | hN
+  · -- The degenerate level: the coarse space is empty, and `Spec ℚ` is not.
+    intro Y str M
+    haveI : IsEmpty Y := isEmpty_of_isCoarseModuliY0_zero M
+    exact ⟨fun z => (Function.isEmpty (α := ↥SpecQ) z.1.base).elim (Classical.arbitrary _)⟩
+  · obtain ⟨Y₀, str₀, M₀, h₀⟩ := exists_isGeometricallyBijectiveY0 N hN
+    intro Y str M
+    refine ⟨fun y => ?_⟩
+    have hbij := h₀.transport M
+    -- Base-change the rational point to `ℚ̄`; it is Galois-fixed on the nose.
+    set x : RelPoint str (specAlgClos ℚ) :=
+      RelPoint.pre (specAlgClos ℚ) (Category.comp_id _) y with hx
+    obtain ⟨d, hd⟩ := hbij.surjective x
+    -- Every Galois conjugate of `d` is classified by the same point, hence — by
+    -- the injective half of geometric bijectivity — isomorphic to `d`.
+    have hmod : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        IsBaseChangeOf (specGal σ) dσ d →
+          Nonempty (IsBaseChangeOf (𝟙 _) dσ d) := by
+      intro σ dσ hbc
+      refine hbij.injective dσ d ?_
+      have hnat := M.classify_natural (specGal σ) (specGal_comp_specAlgClos (F := ℚ) σ) hbc
+      rw [hnat, hd]
+      apply Subtype.ext
+      show specGal σ ≫ x.1 = x.1
+      rw [hx]
+      show specGal σ ≫ (specAlgClos ℚ ≫ y.1) = specAlgClos ℚ ≫ y.1
+      exact specGal_comp_base y.1 σ
+    -- So the field of moduli of `d` is `ℚ`: descend it, twisting as needed.
+    obtain ⟨d₀⟩ := nonempty_gamma0Datum_specQ_of_fieldOfModuli hN d hmod
+    obtain ⟨E, hE, g, hg, hst⟩ := exists_stableCyclic_of_gamma0Datum hN d₀
+    exact h E g hg hst
 
 /-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
 `p²`, for the seven isogeny primes with `genus X_0(p) ≥ 1`** (DECOMPOSED
