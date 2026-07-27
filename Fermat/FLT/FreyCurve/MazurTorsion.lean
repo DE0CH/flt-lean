@@ -20424,6 +20424,449 @@ theorem WeierstrassCurve.exists_x0Seven_hauptmodul (E : WeierstrassCurve ℚ)
     E.exists_x0Seven_kernelInvariants g hg hstable
   exact MazurLevelSeven.hauptmodul_of_kernelRelations E.j A B s₁ _ _ hQ hΔ hj h1 h2
 
+/-! #### Vélu's half-sums as sums over the abscissae (obligation 1, PROVEN 2026-07-27)
+
+`veluT`/`veluW` are HALF-sums over the whole kernel `S`.  For `|S|` odd the map
+`veluPointX` has fibres of size exactly `2` on `S ∖ {0}` (`Velu.velu_fiber_card`), and both
+`veluTTerm` and `veluWTerm` factor through `veluPointX` — the `y`-dependence of the `w`-term
+is removed by the Weierstrass equation, `(2y + a₁x + a₃)² = 4x³ + b₂x² + 2b₄x + b₆`.  So each
+half-sum is an ORDINARY sum over the distinct abscissae.  This is exactly obligation 1 of
+`exists_x0Seven_veluFrickeData`, and it is now proven for an arbitrary Weierstrass model, not
+just a short one; specialised to `b₂ = 0`, `b₄ = 2A`, `b₆ = 4B` it reads
+`t = 6(s₁² − 2s₂) + 6A` and `w = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`. -/
+
+section VeluHalfSums
+
+variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] {W : Affine F}
+
+omit [DecidableEq F] [CharZero F] in
+/-- Vélu's `t`-term at a nonzero point depends only on its abscissa. -/
+lemma MazurLevelSeven.veluTTerm_eq_of_ne_zero {Q : W.Point} (hQ : Q ≠ 0) :
+    veluTTerm W Q = 6 * veluPointX Q ^ 2 + W.b₂ * veluPointX Q + W.b₄ := by
+  cases Q with
+  | zero => exact absurd rfl hQ
+  | some x y h => rfl
+
+omit [DecidableEq F] [CharZero F] in
+/-- Vélu's `w`-term at a nonzero point depends only on its abscissa: the `y`-dependence is
+removed by the Weierstrass equation, `(2y + a₁x + a₃)² = 4x³ + b₂x² + 2b₄x + b₆`. -/
+lemma MazurLevelSeven.veluWTerm_eq_of_ne_zero {Q : W.Point} (hQ : Q ≠ 0) :
+    veluWTerm W Q =
+      (4 * veluPointX Q ^ 3 + W.b₂ * veluPointX Q ^ 2 + 2 * W.b₄ * veluPointX Q + W.b₆)
+        + veluPointX Q * (6 * veluPointX Q ^ 2 + W.b₂ * veluPointX Q + W.b₄) := by
+  cases Q with
+  | zero => exact absurd rfl hQ
+  | some x y h =>
+    have heq : y ^ 2 + W.a₁ * x * y + W.a₃ * y - (x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆) = 0 :=
+      (Affine.equation_iff' x y).mp h.left
+    simp only [veluWTerm_some, veluPointX_some, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆]
+    linear_combination 4 * heq
+
+omit [CharZero F] in
+/-- The fibrewise-halving step: a term that factors through `veluPointX` sums over `S ∖ {0}`
+to TWICE its sum over the distinct abscissae, because every fibre has exactly two points. -/
+lemma MazurLevelSeven.veluSum_erase_eq_two_mul {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) (f : W.Point → F) (g : F → F)
+    (hf : ∀ Q ∈ S.erase 0, f Q = g (veluPointX Q)) :
+    ∑ Q ∈ S.erase 0, f Q = 2 * ∑ a ∈ (S.erase 0).image veluPointX, g a := by
+  rw [← Finset.sum_fiberwise_of_maps_to (g := veluPointX)
+      (fun i hi => Finset.mem_image_of_mem veluPointX hi) f, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun a ha => ?_
+  have hcard : ({Q' ∈ S.erase 0 | veluPointX Q' = a}).card = 2 := by
+    obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp ha
+    exact velu_fiber_card hS hodd hQ
+  have hin : ∑ Q' ∈ {Q' ∈ S.erase 0 | veluPointX Q' = a}, f Q'
+      = ∑ _Q' ∈ {Q' ∈ S.erase 0 | veluPointX Q' = a}, g a := by
+    refine Finset.sum_congr rfl fun Q' hQ' => ?_
+    obtain ⟨hQ'mem, hQ'x⟩ := Finset.mem_filter.mp hQ'
+    rw [hf Q' hQ'mem, hQ'x]
+  rw [hin, Finset.sum_const, hcard]
+  simp only [nsmul_eq_mul, Nat.cast_ofNat]
+
+/-- **Obligation 1 for `t` (PROVEN).**  Vélu's `t` is the sum of `N(x) = 6x² + b₂x + b₄` over
+the DISTINCT abscissae of the nonzero points of an odd-order kernel. -/
+lemma MazurLevelSeven.veluT_eq_sum_image {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) :
+    W.veluT S = ∑ a ∈ (S.erase 0).image veluPointX, (6 * a ^ 2 + W.b₂ * a + W.b₄) := by
+  have h2 : (2 : F) ≠ 0 := two_ne_zero
+  rw [veluT, ← Finset.sum_erase S (veluTTerm_zero (W := W)),
+    MazurLevelSeven.veluSum_erase_eq_two_mul hS hodd _ (fun a => 6 * a ^ 2 + W.b₂ * a + W.b₄)
+      (fun Q hQ => MazurLevelSeven.veluTTerm_eq_of_ne_zero (Finset.ne_of_mem_erase hQ)),
+    inv_mul_cancel_left₀ h2]
+
+/-- **Obligation 1 for `w` (PROVEN).**  Vélu's `w` is the sum of `D(x) + x·N(x)` over the
+DISTINCT abscissae of the nonzero points of an odd-order kernel, with
+`D(x) = 4x³ + b₂x² + 2b₄x + b₆`. -/
+lemma MazurLevelSeven.veluW_eq_sum_image {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) :
+    W.veluW S = ∑ a ∈ (S.erase 0).image veluPointX,
+      ((4 * a ^ 3 + W.b₂ * a ^ 2 + 2 * W.b₄ * a + W.b₆) + a * (6 * a ^ 2 + W.b₂ * a + W.b₄)) := by
+  have h2 : (2 : F) ≠ 0 := two_ne_zero
+  rw [veluW, ← Finset.sum_erase S (veluWTerm_zero (W := W)),
+    MazurLevelSeven.veluSum_erase_eq_two_mul hS hodd _
+      (fun a => (4 * a ^ 3 + W.b₂ * a ^ 2 + 2 * W.b₄ * a + W.b₆)
+        + a * (6 * a ^ 2 + W.b₂ * a + W.b₄))
+      (fun Q hQ => MazurLevelSeven.veluWTerm_eq_of_ne_zero (Finset.ne_of_mem_erase hQ)),
+    inv_mul_cancel_left₀ h2]
+
+end VeluHalfSums
+
+/-- **The third `X_0(7)` kernel relation `E3`** (PROVEN 2026-07-27; it existed NOWHERE in this
+tree before, and its absence was recorded as obligation 3 of
+`exists_x0Seven_veluFrickeData`).  In the notation of `MazurLevelSeven.kernelRelations`,
+
+  `E3 :  84s₁s₃ − s₁⁴ + 84Bs₁ + 36As₂ + 10As₁² − 9A² = 0`.
+
+**It is a SIBLING of `kernelRelations`, deliberately not an extra conjunct of it**: four
+callers already consume `kernelRelations`, and the elimination is the same either way.
+
+**HOW IT IS PROVEN, and it is much cheaper than it looks.**  `E3` is NOT a new
+`ψ₇`-certificate.  With `E1` the first relation of `kernelRelations`,
+
+  `E3 = E1 + 21·(4s₁s₃ + 4Bs₁ + 2As₂ − A² − s₂²)`,
+
+and the bracket vanishes IDENTICALLY — from the duplication/triplication formulas `hx2`,
+`hx3` and the definitions `hs1`, `hs2`, `hs3` alone, with **no use of `hpsi`**.  Clearing the
+common denominator `u = 4e·f₃²` (the same `u` as in `kernelRelations`, with
+`e = x₁³ + Ax₁ + B` and `f₃ = 3x₁⁴ + 6Ax₁² + 12Bx₁ − A²`) and using
+
+  `s₁u = f₃²(8ex₁ + X₂) − 8e²f₄`,  `s₂u = …`,  `s₃u = x₁·X₂·(x₁f₃² − 2ef₄)`,
+  `X₂ = x₁⁴ − 2Ax₁² − 8Bx₁ + A²`,
+
+the `u²`-multiple of the bracket is the zero polynomial in `ℚ[A, B, x₁]`, so it closes by
+`ring`.  That the two `ψ₇`-cofactors of `E1` and of `E3` came out IDENTICAL (a `61`-term
+degree-`24` polynomial, computed with Singular as an untrusted searcher) is exactly this
+fact.  Consequently `E3` costs one extra symmetric-function identity and nothing else. -/
+theorem MazurLevelSeven.kernelRelationThree {L : Type*} [Field L] (φ : ℚ →+* L)
+    (A B s₁ s₂ s₃ : ℚ) (a b x₁ x₂ x₃ : L)
+    (ha : a = φ A) (hb : b = φ B)
+    (hE : (x₁ ^ 3 + a * x₁ + b) ≠ 0)
+    (hne : x₂ ≠ x₁)
+    (hx2 : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2))
+    (hx3 : x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
+      x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+        - 2 * (x₁ ^ 3 + a * x₁ + b) *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)))
+    (hpsi : (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+        - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
+      - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+        (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0)
+    (hs1 : φ s₁ = x₁ + x₂ + x₃)
+    (hs2 : φ s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
+    (hs3 : φ s₃ = x₁ * x₂ * x₃) :
+    84 * s₁ * s₃ - s₁ ^ 4 + 84 * B * s₁ + 36 * A * s₂ + 10 * A * s₁ ^ 2 - 9 * A ^ 2 = 0 := by
+  have hinj : Function.Injective φ := φ.injective
+  have h4 : (4 : L) ≠ 0 := fun h => by
+    have h0 : (4 : ℚ) = 0 := hinj (by rw [map_ofNat, map_zero, h])
+    norm_num at h0
+  have hF3 : (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ≠ 0 := by
+    intro h
+    refine hne (sub_eq_zero.mp ?_)
+    have hzz : (x₂ - x₁) * (4 * (x₁ ^ 3 + a * x₁ + b)) = 0 := by
+      linear_combination hx2 - h
+    rcases mul_eq_zero.mp hzz with h' | h'
+    · exact h'
+    · rcases mul_eq_zero.mp h' with h'' | h''
+      · exact absurd h'' h4
+      · exact absurd h'' hE
+  obtain ⟨u, hu, hune⟩ : ∃ u : L, u = 4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 ∧ u ≠ 0 :=
+    ⟨_, rfl, mul_ne_zero (mul_ne_zero h4 hE) (pow_ne_zero 2 hF3)⟩
+  have hN1 : φ s₁ * u =
+      (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 * (8 * (x₁ ^ 3 + a * x₁ + b) * x₁
+        + (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) - 8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 * (4 *
+        (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3
+        - 8 * b ^ 2)) := by
+    rw [hu]
+    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs1
+      + (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 * hx2
+      + (4 * (x₁ ^ 3 + a * x₁ + b)) * hx3
+  have hN2 : φ s₂ * u =
+      2 * x₁ * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 +
+        12 * b * x₁ - a ^ 2) ^ 2 + 4 * (x₁ ^ 3 + a * x₁ + b) * x₁ ^ 2 * (3 * x₁ ^ 4 + 6 * a * x₁
+        ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 - 8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 * x₁ * (4 * (x₁ ^ 6 + 5 *
+        a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+        - 2 * (x₁ ^ 3 + a * x₁ + b) * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) * (4 * (x₁
+        ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8
+        * b ^ 2)) := by
+    rw [hu]
+    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs2
+      + (x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 + x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hx2
+      + (4 * (x₁ ^ 3 + a * x₁ + b) * x₁ + (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) * hx3
+  have hN3 : φ s₃ * u =
+      x₁ * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) *
+        (x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+          - 2 * (x₁ ^ 3 + a * x₁ + b) *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))) := by
+    rw [hu]
+    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs3
+      + (x₁ * x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hx2
+      + (x₁ * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) * hx3
+  -- The weight-`8` identity `4s₁s₃ + 4Bs₁ + 2As₂ − A² − s₂² = 0`, which needs NO `ψ₇`.
+  have hAuxL : 4 * (φ s₁) * (φ s₃) + 4 * b * (φ s₁) + 2 * a * (φ s₂) - a ^ 2 - (φ s₂) ^ 2 = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 2 hune)
+    have expand : u ^ 2 * (4 * (φ s₁) * (φ s₃) + 4 * b * (φ s₁) + 2 * a * (φ s₂) - a ^ 2
+        - (φ s₂) ^ 2)
+        = 4 * (φ s₁ * u) * (φ s₃ * u) + 4 * b * (φ s₁ * u) * u + 2 * a * (φ s₂ * u) * u
+          - a ^ 2 * u ^ 2 - (φ s₂ * u) ^ 2 := by ring
+    rw [expand, hN1, hN2, hN3, hu]
+    ring
+  have hAux : 4 * s₁ * s₃ + 4 * B * s₁ + 2 * A * s₂ - A ^ 2 - s₂ ^ 2 = 0 := by
+    refine hinj ?_
+    rw [map_zero]
+    simp only [map_add, map_sub, map_mul, map_pow, map_ofNat, ← ha, ← hb]
+    linear_combination hAuxL
+  obtain ⟨hE1, -⟩ := MazurLevelSeven.kernelRelations φ A B s₁ s₂ a b x₁ x₂ x₃ ha hb hE hne
+    hx2 hx3 hpsi hs1 hs2
+  linear_combination hE1 + 21 * hAux
+
+/-- **The hauptmodul value, PINNED to `P/Q`** (PROVEN 2026-07-27).  This is
+`MazurLevelSeven.hauptmodul_of_kernelRelations` with the existential opened: that lemma
+returns `∃ t, j·t⁷ = …` and so FORGETS which root of the degree-`8` `j`-map it produced,
+which is useless as soon as a second relation has to hold at the SAME `t` — exactly the
+situation in `exists_x0Seven_veluFrickeData`, whose two Fricke conjuncts are conditions on
+the hauptmodul value itself.  The proof is the original one with the opening
+`obtain ⟨t, rfl⟩ : ∃ t, P = t·Q` deleted and `P` supplied as `u·Q`. -/
+theorem MazurLevelSeven.hauptmodul_eq_of_kernelRelations (j A B s₁ u Q : ℚ)
+    (hQ : Q ≠ 0)
+    (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
+    (hj : j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3)
+    (h1 : 147 * A * ((u * Q) ^ 2 + 13 * (u * Q) * Q + 49 * Q ^ 2)
+            + s₁ ^ 2 * ((u * Q) ^ 2 + 245 * (u * Q) * Q + 2401 * Q ^ 2) = 0)
+    (h2 : 9261 * B * ((u * Q) ^ 2 + 13 * (u * Q) * Q + 49 * Q ^ 2) ^ 2
+            + 2 * s₁ ^ 3 * ((u * Q) ^ 4 - 490 * (u * Q) ^ 3 * Q - 21609 * (u * Q) ^ 2 * Q ^ 2
+              - 235298 * (u * Q) * Q ^ 3 - 823543 * Q ^ 4) = 0) :
+    j * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 := by
+  have hwpos : (0 : ℚ) < u ^ 2 + 13 * u + 49 := by nlinarith [sq_nonneg (2 * u + 13)]
+  have hw : u ^ 2 + 13 * u + 49 ≠ 0 := ne_of_gt hwpos
+  have H1 : 147 * A * (u ^ 2 + 13 * u + 49)
+      + s₁ ^ 2 * (u ^ 2 + 245 * u + 2401) = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 2 hQ)
+    linear_combination h1
+  have H2 : 9261 * B * (u ^ 2 + 13 * u + 49) ^ 2
+      + 2 * s₁ ^ 3 * (u ^ 4 - 490 * u ^ 3 - 21609 * u ^ 2 - 235298 * u - 823543) = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 4 hQ)
+    linear_combination h2
+  have hne : (147 : ℚ) ^ 3 * (u ^ 2 + 13 * u + 49) ^ 4 ≠ 0 :=
+    mul_ne_zero (by norm_num) (pow_ne_zero _ hw)
+  have key : 6912 * A ^ 3 * u ^ 7
+      = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 * (4 * A ^ 3 + 27 * B ^ 2) := by
+    apply mul_left_cancel₀ hne
+    linear_combination
+      ((6912 * u ^ 7 * (u ^ 2 + 13 * u + 49)
+          - 4 * (u ^ 2 + 245 * u + 2401) ^ 3 * (u ^ 2 + 13 * u + 49) ^ 2)
+        * ((147 * A * (u ^ 2 + 13 * u + 49)) ^ 2
+            - s₁ ^ 2 * (u ^ 2 + 245 * u + 2401) * (147 * A * (u ^ 2 + 13 * u + 49))
+            + s₁ ^ 4 * (u ^ 2 + 245 * u + 2401) ^ 2)) * H1
+      + (-((u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3
+            * (9261 * B * (u ^ 2 + 13 * u + 49) ^ 2
+               - 2 * s₁ ^ 3
+                 * (u ^ 4 - 490 * u ^ 3 - 21609 * u ^ 2 - 235298 * u - 823543)))) * H2
+  apply mul_right_cancel₀ hΔ
+  linear_combination u ^ 7 * hj + key
+
+set_option maxHeartbeats 2000000 in
+/-- **The whole `X_0(7)` Fricke algebra of a Vélu quotient** (PROVEN 2026-07-27).  Given the
+kernel data `(A, B, s₁, s₂, s₃)` of a short model together with the three weight-`8`
+relations `E1`, `E2`, `E3`, and given the short-model coefficients
+
+  `A' = −29A − 30s₁² + 60s₂`,   `B' = −83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁`
+
+of the Vélu quotient with their nondegeneracy and `j`-relation, this produces the ENTIRE
+conclusion of `exists_x0Seven_veluFrickeData` at the hauptmodul value `u = P/Q`.  Nothing
+geometric is left in it: `A'`, `B'` and `u` are inputs.
+
+**The certificates** (found with Singular as an untrusted searcher, verified here by `ring`).
+Writing `F = P² + 13PQ + 49Q²` and `G = P² + 5PQ + Q²`, the weight-`4` Fricke relation is a
+ONE-TERM consequence of `E1`,
+
+  `3A'F + 49s₁²G = (−12789A − 13083s₁² + 26460s₂)·E1`,
+
+and the weight-`6` one needs all three, with `21`–`25`-term integral cofactors written out
+below.  `E3` is what makes the second one closable at all: `B'` involves `s₃`, and `E1`, `E2`
+say nothing about `s₃`.  That is the whole reason obligation 3 existed. -/
+theorem MazurLevelSeven.veluFricke_of_relations (jE jQ A B s₁ s₂ s₃ A' B' P Q : ℚ)
+    (hP : P = 49 * (s₁ ^ 2 - 3 * s₂))
+    (hQd : Q = 6 * A - 4 * s₁ ^ 2 + 18 * s₂)
+    (hQne : Q ≠ 0)
+    (hA' : A' = -29 * A - 30 * s₁ ^ 2 + 60 * s₂)
+    (hB' : B' = -83 * B - 70 * s₁ ^ 3 + 210 * s₁ * s₂ - 210 * s₃ - 42 * A * s₁)
+    (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
+    (hj : jE * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3)
+    (hE1 : 12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0)
+    (hE2 : 144 * B * s₁ + 46 * A * s₁ ^ 2 + 6 * A * s₂ - 7 * s₁ ^ 4 + 24 * s₁ ^ 2 * s₂
+      + 39 * s₂ ^ 2 = 0)
+    (hE3 : 84 * s₁ * s₃ - s₁ ^ 4 + 84 * B * s₁ + 36 * A * s₂ + 10 * A * s₁ ^ 2 - 9 * A ^ 2 = 0)
+    (hΔ' : 4 * A' ^ 3 + 27 * B' ^ 2 ≠ 0)
+    (hjq : jQ * (4 * A' ^ 3 + 27 * B' ^ 2) = 6912 * A' ^ 3)
+    (h1 : 147 * A * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2)
+      + s₁ ^ 2 * (P ^ 2 + 245 * P * Q + 2401 * Q ^ 2) = 0)
+    (h2 : 9261 * B * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2) ^ 2
+      + 2 * s₁ ^ 3 * (P ^ 4 - 490 * P ^ 3 * Q - 21609 * P ^ 2 * Q ^ 2
+        - 235298 * P * Q ^ 3 - 823543 * Q ^ 4) = 0) :
+    ∃ u A'' B'' s : ℚ,
+      jE * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 ∧
+      4 * A'' ^ 3 + 27 * B'' ^ 2 ≠ 0 ∧
+      jQ * (4 * A'' ^ 3 + 27 * B'' ^ 2) = 6912 * A'' ^ 3 ∧
+      3 * A'' * (u ^ 2 + 13 * u + 49) + 49 * s ^ 2 * (u ^ 2 + 5 * u + 1) = 0 ∧
+      27 * B'' * (u ^ 2 + 13 * u + 49) ^ 2
+        + 686 * s ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) = 0 := by
+  obtain ⟨u, rfl⟩ : ∃ u : ℚ, P = u * Q := ⟨P / Q, by field_simp⟩
+  refine ⟨u, A', B', s₁,
+    MazurLevelSeven.hauptmodul_eq_of_kernelRelations jE A B s₁ u Q hQne hΔ hj h1 h2,
+    hΔ', hjq, ?_, ?_⟩
+  · -- The weight-`4` Fricke relation, cleared of denominators over `Q²`.
+    have G1 : 3 * A' * ((u * Q) ^ 2 + 13 * (u * Q) * Q + 49 * Q ^ 2)
+        + 49 * s₁ ^ 2 * ((u * Q) ^ 2 + 5 * (u * Q) * Q + Q ^ 2) = 0 := by
+      rw [hP, hQd, hA']
+      linear_combination (-12789 * A - 13083 * s₁ ^ 2 + 26460 * s₂) * hE1
+    apply mul_left_cancel₀ (pow_ne_zero 2 hQne)
+    linear_combination G1
+  · -- The weight-`6` Fricke relation, cleared of denominators over `Q⁴`.
+    have G2 : 27 * B' * ((u * Q) ^ 2 + 13 * (u * Q) * Q + 49 * Q ^ 2) ^ 2
+        + 686 * s₁ ^ 3 * ((u * Q) ^ 4 + 14 * (u * Q) ^ 3 * Q + 63 * (u * Q) ^ 2 * Q ^ 2
+          + 70 * (u * Q) * Q ^ 3 - 7 * Q ^ 4) = 0 := by
+      rw [hP, hQd, hB']
+      linear_combination
+        (-325888416 * s₁ ^ 7 - 8429226372 * A ^ 2 * s₁ ^ 3 - 16301245128 * A * s₁ ^ 3 * s₂
+          + 34608805644 * s₁ ^ 3 * s₂ ^ 2 + 6913910682 * A ^ 3 * s₁
+          - 1217049939336 * A * B * s₁ ^ 2 + 37914552522 * A ^ 2 * s₁ * s₂
+          + 532112932008 * B * s₁ ^ 2 * s₂ - 256810684914 * A * s₁ * s₂ ^ 2
+          + 60470779950 * s₁ * s₂ ^ 3 - 1307252573256 * A * s₁ ^ 2 * s₃
+          + 320707565640 * s₁ ^ 2 * s₂ * s₃ + 2626747059699 * A ^ 2 * B
+          - 18952701759180 * B ^ 2 * s₁ - 10276979295366 * A * B * s₂
+          + 1507261426083 * B * s₂ ^ 2 + 2714502915810 * A ^ 2 * s₃
+          - 44301784886100 * B * s₁ * s₃ - 10631114804772 * A * s₂ * s₃
+          + 1505705383602 * s₂ ^ 2 * s₃ - 25349083126920 * s₁ * s₃ ^ 2) * hE1
+        + (2312566368 * A * s₁ ^ 3 * s₂ - 1200192672 * s₁ ^ 3 * s₂ ^ 2
+          + 72597020160 * A * B * s₁ ^ 2 - 27750796416 * A ^ 2 * s₁ * s₂
+          + 117326151936 * B * s₁ ^ 2 * s₂ + 60507274464 * A * s₁ * s₂ ^ 2
+          - 31175736480 * s₁ * s₂ ^ 3 + 72597020160 * A * s₁ ^ 2 * s₃
+          + 117326151936 * s₁ ^ 2 * s₂ * s₃ - 871164241920 * A ^ 2 * B
+          + 3799400177664 * B ^ 2 * s₁ + 1860357187584 * A * B * s₂
+          - 812149890048 * B * s₂ ^ 2 - 871164241920 * A ^ 2 * s₃
+          + 7598800355328 * B * s₁ * s₃ + 1860357187584 * A * s₂ * s₃
+          - 812149890048 * s₂ ^ 2 * s₃ + 3799400177664 * s₁ * s₃ ^ 2) * hE2
+        + (149299668 * s₁ ^ 7 - 249843258 * A * s₁ ^ 5 + 874256922 * s₁ ^ 5 * s₂
+          + 8429226372 * A ^ 2 * s₁ ^ 3 + 13450500441 * B * s₁ ^ 4
+          + 3924330228 * A * s₁ ^ 3 * s₂ - 29471107428 * s₁ ^ 3 * s₂ ^ 2
+          + 14841882342 * s₁ ^ 4 * s₃ + 9610621272 * A ^ 3 * s₁
+          + 826585868934 * A * B * s₁ ^ 2 + 82033505820 * A ^ 2 * s₁ * s₂
+          - 1286673454080 * B * s₁ ^ 2 * s₂ - 38494019466 * A * s₁ * s₂ ^ 2
+          + 98373262302 * s₁ * s₂ ^ 3 + 937124084484 * A * s₁ ^ 2 * s₃
+          - 1085542907904 * s₁ ^ 2 * s₂ * s₃ + 3503104225236 * A ^ 2 * B
+          - 6513257447424 * B ^ 2 * s₁ - 2022937839594 * A * B * s₂
+          + 4366425168819 * B * s₂ ^ 2 + 3621297589560 * A ^ 2 * s₃
+          - 6513257447424 * B * s₁ * s₃ - 2082034521756 * A * s₂ * s₃
+          + 4573263556386 * s₂ ^ 2 * s₃) * hE3
+    apply mul_left_cancel₀ (pow_ne_zero 4 hQne)
+    linear_combination G2
+
+/-- **The short-model kernel and quotient data of a stable order-`7` subgroup**
+(SORRY LEAF, cut 2026-07-27 out of `exists_x0Seven_veluFrickeData` just below, which is now
+PROVEN over it together with `MazurLevelSeven.kernelInvariants_of_relations` and
+`MazurLevelSeven.veluFricke_of_relations`).
+
+**THIS IS THE WHOLE REMAINING GEOMETRY OF THE `X_0(7)` VÉLU NODE, AND NOTHING ELSE.**  Six of
+the eight conjuncts are already discharged elsewhere and are here only so that a single
+existential carries them all to the consumer:
+
+* `4A³ + 27B² ≠ 0`, `E.j·(4A³ + 27B²) = 6912A³`, and the coordinates producing `s₁, s₂, s₃`
+  come from the PROVEN `WeierstrassCurve.exists_x0Seven_kernelCoords`;
+* `s₁ ≠ 0` from the PROVEN `MazurLevelSeven.sOne_ne_zero`;
+* `E1`, `E2` from the PROVEN `MazurLevelSeven.kernelRelations`;
+* `E3` from `MazurLevelSeven.kernelRelationThree`, PROVEN just above.
+
+**WHAT IS ACTUALLY MISSING is obligation 2 of `exists_x0Seven_veluFrickeData`, plus the
+abscissa identification that obligation 2 silently presupposed.**  The proof below performs
+the reduction that obligation 1 makes available — `MazurLevelSeven.veluT_eq_sum_image` and
+`veluW_eq_sum_image`, PROVEN just above, rewrite `t` and `w` from HALF-sums over the whole
+kernel into ordinary sums over the three distinct abscissae of `⟨P⟩` — and what remains is:
+
+1. *The abscissa identification.*  `MazurLevelSeven.exists_kernelCoords_of_isShortNF` returns
+   `x₁, x₂, x₃` pinned only by the algebraic relations `hx2`, `hx3`, `hpsi` (a root of `ψ₇`
+   and its duplication/triplication images).  It does **not** state that `x₁, x₂, x₃` are the
+   abscissae of the points of `⟨P⟩`, i.e. that
+   `(hCfin.toFinset.erase 0).image veluPointX = {x₁, x₂, x₃}`.  Without that conjunct the
+   Vélu sums cannot be connected to `s₁, s₂, s₃` at all — `ψ₇` has `24` roots, three for each
+   of the up to eight order-`7` subgroups, and a curve with two independent `7`-isogenies has
+   two DIFFERENT rational triples `(s₁, s₂, s₃)`.  **So the honest repair is to strengthen
+   `exists_kernelCoords_of_isShortNF` with that conjunct**, which its proof already knows (it
+   builds `x₁ = x(P)`, `x₂ = x(2P)`, `x₃ = x(3P)` from actual points); nothing here can
+   recover it after the fact.  Do NOT attempt to close this leaf by sorrying an intermediate
+   `have` in a context where the abscissae are not pinned — such a `have` is unprovable, not
+   merely unproven.
+2. *Transport along the variable change* (obligation 2 proper).  `exists_kernelCoords_of_isShortNF`
+   works on a short model `C • E` while `veluT`/`veluW` are sums over the kernel of `E`
+   itself.  Two ingredients, both absent from the tree and both pure `VariableChange`
+   algebra:
+   * *curve level*: `C • (W.veluModel t w) = (C • W).veluModel (u⁻⁴ t) (u⁻⁶ (w − r t))` for
+     `C = ⟨u, r, s, τ⟩` — check it field by field against mathlib's `variableChange`, using
+     `(C • W).b₂ = u⁻²(b₂ + 12r)`; the `−rt` in the `w`-slot is exactly the `12r` there.
+     Then `WeierstrassCurve.variableChange_j` transports the `j`-conjunct for free.
+   * *point level*: `veluPointX (Affine.Point.equivVariableChange W C P) = u²·veluPointX P + r`
+     (immediate from `Affine.Point.equivVariableChange_some`), whence the abscissa sets
+     correspond and, term by term,
+     `6(u²a' + r)² + b₂(u²a' + r) + b₄ = u⁴(6a'² + b₂'a' + b₄')` — a `ring` identity once the
+     `b`-transformation lemmas are unfolded.  This is what turns `u⁻⁴t` into the short-model
+     `t' = 6(s₁² − 2s₂) + 6A`, and `u⁻⁶(w − rt)` into `w' = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`.
+
+With those, `A' = A − 5t' = −29A − 30s₁² + 60s₂` and `B' = B − 7w' =
+−83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁`, which is exactly the last conjunct; the
+nondegeneracy `4A'³ + 27B'² ≠ 0` is `hE'` transported the same way. -/
+theorem WeierstrassCurve.exists_x0Seven_veluShortQuotient
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples P,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples P)
+    (hCfin : ((AddSubgroup.zmultiples P :
+        AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
+        Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (t w : ℚ) (hE' : (E.veluModel t w).IsElliptic)
+    (ht : algebraMap ℚ (AlgebraicClosure ℚ) t =
+      veluT (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset)
+    (hw : algebraMap ℚ (AlgebraicClosure ℚ) w =
+      veluW (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset) :
+    ∃ A B s₁ s₂ s₃ : ℚ,
+      4 * A ^ 3 + 27 * B ^ 2 ≠ 0 ∧
+      E.j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3 ∧
+      s₁ ≠ 0 ∧
+      12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0 ∧
+      144 * B * s₁ + 46 * A * s₁ ^ 2 + 6 * A * s₂ - 7 * s₁ ^ 4 + 24 * s₁ ^ 2 * s₂
+        + 39 * s₂ ^ 2 = 0 ∧
+      84 * s₁ * s₃ - s₁ ^ 4 + 84 * B * s₁ + 36 * A * s₂ + 10 * A * s₁ ^ 2 - 9 * A ^ 2 = 0 ∧
+      4 * (-29 * A - 30 * s₁ ^ 2 + 60 * s₂) ^ 3
+          + 27 * (-83 * B - 70 * s₁ ^ 3 + 210 * s₁ * s₂ - 210 * s₃ - 42 * A * s₁) ^ 2 ≠ 0 ∧
+      (E.veluModel t w).j * (4 * (-29 * A - 30 * s₁ ^ 2 + 60 * s₂) ^ 3
+            + 27 * (-83 * B - 70 * s₁ ^ 3 + 210 * s₁ * s₂ - 210 * s₃ - 42 * A * s₁) ^ 2)
+        = 6912 * (-29 * A - 30 * s₁ ^ 2 + 60 * s₂) ^ 3 := by
+  classical
+  -- `⟨P⟩` is a point subgroup of odd order `7`, so obligation 1 applies to it.
+  have hS : IsPointSubgroup hCfin.toFinset :=
+    { zero_mem := by simp [Set.Finite.mem_toFinset]
+      add_mem := by
+        intro p hp q hq
+        simp only [Set.Finite.mem_toFinset, SetLike.mem_coe] at hp hq ⊢
+        exact AddSubgroup.add_mem _ hp hq
+      neg_mem := by
+        intro p hp
+        simp only [Set.Finite.mem_toFinset, SetLike.mem_coe] at hp ⊢
+        exact AddSubgroup.neg_mem _ hp }
+  have hodd : Odd hCfin.toFinset.card := by
+    have hcard : hCfin.toFinset.card = 7 := by
+      rw [← Set.ncard_eq_toFinset_card _ hCfin, ← Nat.card_coe_set_eq, SetLike.coe_sort_coe,
+        Nat.card_zmultiples, hP]
+    rw [hcard]
+    exact ⟨3, by norm_num⟩
+  -- Obligation 1: the half-sums become ordinary sums over the three distinct abscissae.
+  rw [MazurLevelSeven.veluT_eq_sum_image hS hodd] at ht
+  rw [MazurLevelSeven.veluW_eq_sum_image hS hodd] at hw
+  sorry
+
 /-- **The `X_0(7)` kernel data of a Vélu quotient, in Fricke-relation form**
 (SORRY LEAF, cut 2026-07-27 out of `exists_x0Seven_veluParam` below, which is now
 PROVEN over it together with the PROVEN `X0Seven.quot_fricke_jmap`).
@@ -20506,9 +20949,28 @@ It also said `E3` should be proven "alongside `E1`, `E2` in
 already consume, for no gain — the elimination is the same computation either
 way, and a sibling costs the integrator nothing.
 
-**THE THREE REMAINING OBLIGATIONS, and they are all mathematics** — obligations 1
-and 2 above, plus `E3`.  Each is independently dispatchable now that the
-ordering is fixed; none of them is blocked on the others. -/
+**STATUS 2026-07-27: THIS NODE IS NOW PROVEN, AND TWO OF THE THREE OBLIGATIONS ARE
+CLOSED.**  Do not re-dispatch a prover here; the open work has moved one level down.
+
+* *Obligation 1 (`±`-pairing) is PROVEN*, and for an ARBITRARY Weierstrass model rather
+  than only a short one: `MazurLevelSeven.veluT_eq_sum_image` and
+  `MazurLevelSeven.veluW_eq_sum_image`, over `MazurLevelSeven.veluSum_erase_eq_two_mul`
+  and the two term lemmas `veluTTerm_eq_of_ne_zero`, `veluWTerm_eq_of_ne_zero`.
+* *Obligation 3 (`E3`) is PROVEN* as `MazurLevelSeven.kernelRelationThree`, and it turned
+  out to be far cheaper than advertised: `E3 = E1 + 21·(4s₁s₃ + 4Bs₁ + 2As₂ − A² − s₂²)`
+  with the bracket an IDENTITY needing no `ψ₇` at all.  So no second degree-`48`
+  certificate was required.
+* *The `j`-map and Fricke algebra is PROVEN* as `MazurLevelSeven.veluFricke_of_relations`
+  (over the new `MazurLevelSeven.hauptmodul_eq_of_kernelRelations`, which is
+  `hauptmodul_of_kernelRelations` with the existential opened so that the SAME `u = P/Q`
+  carries all three conjuncts).  The weight-`4` Fricke relation really is the one-term
+  `3A'F + 49s₁²G = (−12789A − 13083s₁² + 26460s₂)·E1`; the weight-`6` one consumes all of
+  `E1`, `E2`, `E3`.
+* *Obligation 2 (transport along the variable change) is the one thing left*, and it has
+  been isolated in the single new leaf `WeierstrassCurve.exists_x0Seven_veluShortQuotient`
+  below-this-docstring's-consumer — see ITS docstring, which also records a gap obligation 2
+  presupposed: `exists_kernelCoords_of_isShortNF` never states that its `x₁, x₂, x₃` ARE the
+  abscissae of `⟨P⟩`, and it must be strengthened to say so. -/
 theorem WeierstrassCurve.exists_x0Seven_veluFrickeData
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
@@ -20531,8 +20993,13 @@ theorem WeierstrassCurve.exists_x0Seven_veluFrickeData
       (E.veluModel t w).j * (4 * A' ^ 3 + 27 * B' ^ 2) = 6912 * A' ^ 3 ∧
       3 * A' * (u ^ 2 + 13 * u + 49) + 49 * s₁ ^ 2 * (u ^ 2 + 5 * u + 1) = 0 ∧
       27 * B' * (u ^ 2 + 13 * u + 49) ^ 2
-        + 686 * s₁ ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) = 0 :=
-  sorry
+        + 686 * s₁ ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) = 0 := by
+  obtain ⟨A, B, s₁, s₂, s₃, hΔ, hj, hs1ne, hE1, hE2, hE3, hΔ', hjq⟩ :=
+    E.exists_x0Seven_veluShortQuotient P hP hstable hCfin t w hE' ht hw
+  obtain ⟨hQne, h1, h2⟩ :=
+    MazurLevelSeven.kernelInvariants_of_relations A B s₁ s₂ hs1ne hΔ hE1 hE2
+  exact MazurLevelSeven.veluFricke_of_relations E.j (E.veluModel t w).j A B s₁ s₂ s₃ _ _ _ _
+    rfl rfl hQne rfl rfl hΔ hj hE1 hE2 hE3 hΔ' hjq h1 h2
 
 /-- **The `X_0(7)` `j`-map pair of a Vélu quotient** (PROVEN 2026-07-27 over the
 single geometric leaf `exists_x0Seven_veluFrickeData` just above together with the
