@@ -12703,6 +12703,278 @@ theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
     exact IntermediateField.adjoin_le_iff.mpr (by rintro x rfl; exact hmapped)
   exact ⟨IntermediateField.inclusion hFE⟩
 
+/-! ### The unramified twist: trace machinery for a cyclic unramified extension
+
+The four declarations below are the decomposition of the geometric half of
+Fontaine's Prop. 1.5 (ii) (leaf (Y-3-a), `exists_not_le_sub_mem_of_ne_one_of_mem_inertia`
+further down), created 2026-07-27 by its second owner.  Two of them are PROVEN,
+two are open, and the open ones are exactly the two pieces of ORDINARY LOCAL
+FIELD THEORY that this file does not have: the unramified extensions of `ℚ₃ᵥ`
+inside `ℚ₃ᵥᵃˡᵍ` with their Frobenius, and surjectivity of the trace of an
+unramified extension of local rings.  Nothing Fontaine-specific remains in
+either. -/
+
+/-- **A FULL ORBIT SUM UNDER A CYCLIC GROUP IS INVARIANT** (PROVEN 2026-07-27).
+Purely group-theoretic, stated for an arbitrary `ρ` of exponent dividing `n`
+acting on an additive group, so that no instance of the `ℚ₃ᵥ`-development leaks
+into it: `ρ • Σ_{i<n} ρ^i • y = Σ_{i<n} ρ^{i+1} • y` and the shifted sum differs
+from the original only by exchanging the `i = 0` term for the `i = n` term, which
+`ρ^n = 1` identifies.  This is what makes `Tr(y) := Σ_{i<n} ρ^i • y` land in the
+fixed ring, used twice below. -/
+theorem smul_sum_range_pow_smul_eq {G A : Type*} [Group G] [AddCommGroup A]
+    [DistribMulAction G A] (ρ : G) (n : ℕ) (hρn : ρ ^ n = 1) (y : A) :
+    ρ • (∑ i ∈ Finset.range n, (ρ ^ i) • y) = ∑ i ∈ Finset.range n, (ρ ^ i) • y := by
+  rw [Finset.smul_sum]
+  simp_rw [smul_smul, ← pow_succ']
+  have h1 : (∑ i ∈ Finset.range n, (ρ ^ (i + 1)) • y) + (ρ ^ 0) • y
+      = (∑ i ∈ Finset.range n, (ρ ^ i) • y) + (ρ ^ n) • y := by
+    rw [← Finset.sum_range_succ' (fun i => (ρ ^ i) • y) n,
+      ← Finset.sum_range_succ (fun i => (ρ ^ i) • y) n]
+  rw [hρn, pow_zero, one_smul] at h1
+  exact add_right_cancel h1
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **DEPTH IS PRESERVED BY AN EXTENSION THAT CREATES NO RAMIFICATION**
+(PROVEN 2026-07-27).  If `v_L(3) = v_M(3) = g > 0` then `M/L` is unramified, and
+`integralClosureLE L M hLM` carries `𝔪_L^i` into `𝔪_M^i` for EVERY `i` — on the
+nose, with no loss and no factor.
+PROOF: `exists_addVal_integralClosureLE` produces the comparison factor `a` with
+`a·g = g`; cancelling the positive `g` gives `a = 1`, so the two `addVal`s agree,
+and `mem_maximalIdeal_pow_iff_le_addVal` converts membership on both sides.
+This is the ONLY place the "no ramification is created" hypotheses `hM3`/`hE3` of
+the unramified twist are consumed on the way to the depth statement. -/
+theorem integralClosureLE_mem_maximalIdeal_pow_of_span_three_eq
+    (L M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hLM : L ≤ M)
+    [FiniteDimensional ℚ₃ᵥ L] [FiniteDimensional ℚ₃ᵥ M]
+    (g : ℕ) (hg : 0 < g)
+    (hL : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ g)
+    (hM : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ g)
+    (i : ℕ) (y : IntegralClosure 𝒪₃ᵥ L)
+    (hy : y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i) :
+    integralClosureLE L M hLM y ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ i := by
+  obtain ⟨a, _, haeq, hval⟩ := exists_addVal_integralClosureLE L M hLM g g hL hM hg
+  have ha1 : a = 1 := Nat.eq_of_mul_eq_mul_right hg (by rw [haeq, one_mul])
+  rw [mem_maximalIdeal_pow_iff_le_addVal] at hy ⊢
+  rw [hval y, ha1, Nat.cast_one, one_mul]
+  exact hy
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **THE TRACE OF A CYCLIC UNRAMIFIED EXTENSION IS NONZERO ON THE RESIDUE
+FIELD** (sorry node, created 2026-07-27 — leaf (Y-3-a-ii), the residue-level
+core of trace surjectivity, and the ONLY arithmetic input to
+`exists_sum_range_smul_eq_one_of_span_three_eq` below).
+
+WHAT IT ASSERTS.  `E ≤ M` are finite subextensions of `ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ` with the SAME
+`v(3) = g > 0` — i.e. `M/E` creates no ramification — and `ρ ∈ Gal(M/ℚ₃ᵥ)` has
+order `n` with fixed ring exactly `𝒪_E` inside `𝒪_M` (`hfix`).  Then some
+`c ∈ 𝒪_M` has `Tr(c) := Σ_{i<n} ρ^i•c` a UNIT of `𝒪_M`.
+
+THE INTENDED PROOF, which is standard local field theory and touches nothing in
+this file.
+1. `hfix` says the fixed RING of `⟨ρ⟩` in `𝒪_M` is `𝒪_E`; passing to fraction
+   fields (`IsIntegralClosure.isFractionRing_of_finite_extension`, which this
+   file already uses in `integralClosureLE_injective`) gives `M^{⟨ρ⟩} = E`, so
+   Artin's theorem gives `[M : E] = n` with `Gal(M/E) = ⟨ρ⟩` cyclic.
+2. `e(M/E)·e(E/ℚ₃ᵥ) = e(M/ℚ₃ᵥ)` together with `hE`/`hM` and `hg` forces
+   `e(M/E) = 1`: `M/E` is UNRAMIFIED of degree `n`.  Hence the residue extension
+   `k_M/k_E` has degree `n` and `⟨ρ̄⟩ = Gal(k_M/k_E)`, the reduction map
+   `⟨ρ⟩ → Aut(k_M)` being injective because the inertia group of `M/E` is
+   trivial (`#I = e`, which this file has at the absolute level as
+   `card_inertia_finite_level` / `span_three_eq_maximalIdeal_pow_card_inertia`).
+3. `k_M/k_E` is an extension of FINITE fields, hence separable, so
+   `Tr_{k_M/k_E} = Σ_{i<n} ρ̄^i` is surjective — equivalently nonzero, by Artin's
+   linear independence of characters.  Lift any `c̄` with `Tr(c̄) ≠ 0`.
+
+WHAT IS ACTUALLY MISSING, and it is nothing Fontaine-specific: the relative
+ramification bookkeeping for `E ≤ M` as intermediate fields of `ℚ₃ᵥᵃˡᵍ`.  The
+file has the pieces only in REIFIED form, for `M' : IntermediateField ℚ₃ᵥ ↥L`
+(`card_inertia_inf_fixingSubgroup_eq_card_inertia_base`,
+`map_maximalIdeal_eq_maximalIdeal_pow_card_inertia_inf`), so the work is the
+`reifySubextension`/`reifyEquiv` plumbing that `restrictToLEHom` already
+performs for automorphisms, plus the residue-field trace.
+
+NOT VACUOUS: `E = ℚ₃ᵥ`, `M` the unramified extension of degree `n`, `g = 1`
+satisfies every hypothesis, and the conclusion there is the classical
+surjectivity of `Tr_{𝔽_{3^n}/𝔽_3}`. -/
+theorem exists_sum_range_smul_notMem_maximalIdeal
+    (E M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hEM : E ≤ M)
+    [FiniteDimensional ℚ₃ᵥ E] [FiniteDimensional ℚ₃ᵥ M]
+    (g : ℕ) (hg : 0 < g)
+    (hE : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ g)
+    (hM : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ g)
+    (ρ : M ≃ₐ[ℚ₃ᵥ] M) (n : ℕ) (hn : 0 < n) (hord : orderOf ρ = n)
+    (hfix : ∀ y : IntegralClosure 𝒪₃ᵥ M,
+      ρ • y = y ↔ ∃ z : IntegralClosure 𝒪₃ᵥ E, integralClosureLE E M hEM z = y) :
+    ∃ c : IntegralClosure 𝒪₃ᵥ M,
+      (∑ i ∈ Finset.range n, (ρ ^ i) • c) ∉
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **SURJECTIVITY OF THE TRACE OF A CYCLIC UNRAMIFIED EXTENSION OF LOCAL
+RINGS** (PROVEN 2026-07-27 over the residue-level statement above): under the
+same hypotheses there is `c ∈ 𝒪_M` with `Tr(c) = Σ_{i<n} ρ^i•c = 1` EXACTLY.
+
+PROOF, and this is the whole of the Nakayama step written out — no completeness
+and no successive approximation is needed, because `Tr(𝒪_M)` is an IDEAL of the
+LOCAL ring `𝒪_E` and an ideal meeting the units is everything:
+
+* `Tr(c₀)` is `ρ`-fixed (`smul_sum_range_pow_smul_eq`), hence `= φ z` for a
+  unique `z ∈ 𝒪_E` by `hfix`;
+* `z ∉ 𝔪_E`, since `φ` carries `𝔪_E` into `𝔪_M`
+  (`integralClosureLE_mem_maximalIdeal_pow_of_span_three_eq` at `i = 1`, which is
+  where `hE`/`hM`/`hg` are consumed here) while `Tr(c₀) ∉ 𝔪_M` by hypothesis;
+  so `z` is a UNIT (`IsLocalRing.notMem_maximalIdeal`);
+* `Tr` is `𝒪_E`-linear because every power of `ρ` fixes `φ w` pointwise, so
+  `c := φ(z⁻¹)·c₀` has `Tr(c) = φ(z⁻¹)·φ(z) = φ(1) = 1`. -/
+theorem exists_sum_range_smul_eq_one_of_span_three_eq
+    (E M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hEM : E ≤ M)
+    [FiniteDimensional ℚ₃ᵥ E] [FiniteDimensional ℚ₃ᵥ M]
+    (g : ℕ) (hg : 0 < g)
+    (hE : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ g)
+    (hM : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ g)
+    (ρ : M ≃ₐ[ℚ₃ᵥ] M) (n : ℕ) (hn : 0 < n) (hord : orderOf ρ = n)
+    (hfix : ∀ y : IntegralClosure 𝒪₃ᵥ M,
+      ρ • y = y ↔ ∃ z : IntegralClosure 𝒪₃ᵥ E, integralClosureLE E M hEM z = y) :
+    ∃ c : IntegralClosure 𝒪₃ᵥ M, ∑ i ∈ Finset.range n, (ρ ^ i) • c = 1 := by
+  classical
+  have hρn : ρ ^ n = 1 := hord ▸ pow_orderOf_eq_one ρ
+  -- every element of `𝒪_E` is fixed by every power of `ρ`
+  have hfixpow : ∀ (w : IntegralClosure 𝒪₃ᵥ E) (i : ℕ),
+      (ρ ^ i) • integralClosureLE E M hEM w = integralClosureLE E M hEM w := by
+    intro w i
+    induction i with
+    | zero => rw [pow_zero, one_smul]
+    | succ k ih => rw [pow_succ', mul_smul, ih, (hfix _).mpr ⟨w, rfl⟩]
+  obtain ⟨c₀, hc₀⟩ := exists_sum_range_smul_notMem_maximalIdeal E M hEM g hg hE hM
+    ρ n hn hord hfix
+  -- `Tr(c₀)` is `ρ`-fixed, hence comes from `𝒪_E`
+  obtain ⟨z, hz⟩ := (hfix _).mp (smul_sum_range_pow_smul_eq ρ n hρn c₀)
+  -- and it is a UNIT of `𝒪_E`, since its image avoids `𝔪_M`
+  have hzE : z ∉ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) := by
+    intro hmem
+    refine hc₀ ?_
+    rw [← hz]
+    have h1 := integralClosureLE_mem_maximalIdeal_pow_of_span_three_eq E M hEM g hg hE hM
+      1 z (by rwa [pow_one])
+    rwa [pow_one] at h1
+  obtain ⟨u, hu⟩ := IsLocalRing.notMem_maximalIdeal.mp hzE
+  refine ⟨integralClosureLE E M hEM
+    ((u⁻¹ : (IntegralClosure 𝒪₃ᵥ E)ˣ) : IntegralClosure 𝒪₃ᵥ E) * c₀, ?_⟩
+  have hstep : ∀ i ∈ Finset.range n,
+      (ρ ^ i) • (integralClosureLE E M hEM ((u⁻¹ : (IntegralClosure 𝒪₃ᵥ E)ˣ) :
+          IntegralClosure 𝒪₃ᵥ E) * c₀) =
+        integralClosureLE E M hEM ((u⁻¹ : (IntegralClosure 𝒪₃ᵥ E)ˣ) :
+          IntegralClosure 𝒪₃ᵥ E) * ((ρ ^ i) • c₀) := by
+    intro i _
+    rw [smul_mul', hfixpow]
+  rw [Finset.sum_congr rfl hstep, ← Finset.mul_sum, ← hz, ← map_mul]
+  rw [show ((u⁻¹ : (IntegralClosure 𝒪₃ᵥ E)ˣ) : IntegralClosure 𝒪₃ᵥ E) * z = 1 by
+    rw [← hu]; exact u.inv_mul]
+  exact map_one _
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **THE UNRAMIFIED TWIST OF `τ`: A FINITE `M ⊇ L` AND A `ρ ∈ Gal(M/ℚ₃ᵥ)`
+RESTRICTING TO `τ`, WHOSE FIXED FIELD `E` CONTAINS NO RAMIFICATION AND NO `L`**
+(sorry node, created 2026-07-27 — leaf (Y-3-a-i), the pure field theory of
+Fontaine's Prop. 1.5 (ii), and the ONLY place where unramified extensions of
+`ℚ₃ᵥ` are needed).
+
+THE CONSTRUCTION, which is elementary and uses no analysis whatsoever.  Let
+`n := ord(τ)` (a power of `3`), let `f_L` be the residue degree of `L/ℚ₃ᵥ`, let
+`U/ℚ₃ᵥ` be the UNRAMIFIED extension of degree `f_L·n` inside `ℚ₃ᵥᵃˡᵍ`, and put
+`M := L·U`.
+
+* `L ∩ U` is the maximal unramified subextension `ℚ₃ᵥ_{f_L}` of `L` (it is
+  contained in `U` because `f_L ∣ f_L·n`).  `τ` is trivial there because `τ` lies
+  in INERTIA — this is the ONLY use of `hτ` — and `Frob_U^{f_L}` is trivial there
+  because `Frob` has order `f_L` on `ℚ₃ᵥ_{f_L}`.  `L` and `U` being Galois over
+  `ℚ₃ᵥ`, `Gal(M/ℚ₃ᵥ)` is the fibre product of `Gal(L/ℚ₃ᵥ)` and `Gal(U/ℚ₃ᵥ)` over
+  `Gal(L ∩ U/ℚ₃ᵥ)`, so the pair patches to `ρ` with `ρ|_L = τ`,
+  `ρ|_U = Frob^{f_L}`.
+* `ord(ρ) = lcm(ord τ, ord Frob^{f_L}) = lcm(n, n) = n`, since `Gal(U/ℚ₃ᵥ)` is
+  cyclic of order `f_L·n` generated by `Frob`.
+* `ρ^i` lies in the inertia group of `M/ℚ₃ᵥ` iff `ρ^i|_U = 1` (`U` is inside the
+  maximal unramified subextension of `M`), i.e. iff `f_L·n ∣ f_L·i`, i.e. iff
+  `n ∣ i`, i.e. iff `ρ^i = 1`.  So `⟨ρ⟩` meets inertia TRIVIALLY, which is the
+  whole point of taking `U` unramified rather than tame.
+
+The four conclusions then read off, with `E := M^{⟨ρ⟩}`:
+
+* `¬(L ≤ E)`: otherwise `ρ` fixes `L` pointwise, so `τ = ρ|_L = 1`, against
+  `hτ1` — the ONLY use of `hτ1`;
+* `v_M(3) = g₀`: `U/ℚ₃ᵥ` unramified makes `M/L` unramified, so
+  `e_M = e_L = g₀` (`span_three_eq_maximalIdeal_pow_card_inertia` at `L`);
+* `v_E(3) = g₀`: `Gal(M/E) = ⟨ρ⟩` meets inertia trivially, so `M/E` is
+  unramified and `e_E = e_M`;
+* `hfix`: `𝒪_E` is the integral closure of `𝒪₃ᵥ` in `E = M^{⟨ρ⟩}`, hence exactly
+  the `ρ`-fixed subring of `𝒪_M`.
+
+WHAT IS MISSING, and it is ordinary local field theory with nothing
+Fontaine-specific in it: (a) the unramified extension of `ℚ₃ᵥ` of a prescribed
+degree inside `ℚ₃ᵥᵃˡᵍ`, together with the fact that its Galois group is cyclic
+generated by Frobenius — concretely one may take `U = ℚ₃ᵥ(ζ_{3^d − 1})`, so this
+is Kummer/cyclotomic theory over a complete discretely valued field, NOT in the
+pin (`grep IsUnramified` in mathlib returns only the formally-unramified
+`Algebra` API, and `~/cs/FLT` has nothing for local base fields); (b) the
+maximal-unramified-subextension bookkeeping that identifies `L ∩ U`, `ord(ρ)`
+and the inertia intersection; (c) the transfer of the relative ramification
+statements to intermediate fields of `ℚ₃ᵥᵃˡᵍ` — this file has them only in
+REIFIED form for `M' : IntermediateField ℚ₃ᵥ ↥L`, so the
+`reifySubextension`/`reifyEquiv` plumbing that `restrictToLEHom` already
+performs for automorphisms is what is wanted.  Neukirch, *Algebraic Number
+Theory*, II §7 and II §9 is the standard reference.
+
+RECOMMENDED NEXT CUT, if this is still too large: split off the pure
+Galois-theoretic tail, i.e. state `∃ M ρ`, `L ≤ M`, `restrictToLEHom L M _ ρ = τ`,
+`v_M(3) = g₀` and `⟨ρ⟩ ∩ I(M/ℚ₃ᵥ) = ⊥`, and DERIVE `E` from it as the fixed
+field.  The derivation is bookkeeping, but it is bookkeeping over the reified
+inertia lemmas above rather than over unramified extensions, so it separates the
+two missing theories cleanly.
+
+FAITHFULNESS.  Not vacuous: `¬(L ≤ E)` fails for every `E ⊇ L`, and the
+conjunction of `v_E(3) = v_M(3) = v_L(3)` with `restrictToLEHom L M _ ρ = τ` and
+`orderOf ρ = n` pins a genuine unramified twist — for `E = ℚ₃ᵥ` and `L = ℚ₃(ζ₉)`
+the `v_E(3) = g₀ = 6` clause already fails. -/
+theorem exists_orderOf_restrictToLEHom_eq_of_mem_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
+    (τ : L ≃ₐ[ℚ₃ᵥ] L) (hτ1 : τ ≠ 1)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) :
+    ∃ (M E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ M)
+      (_ : FiniteDimensional ℚ₃ᵥ E) (hLM : L ≤ M) (hEM : E ≤ M)
+      (ρ : M ≃ₐ[ℚ₃ᵥ] M) (n : ℕ),
+      ¬ (L ≤ E) ∧
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ∧
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ∧
+      restrictToLEHom L M hLM ρ = τ ∧
+      0 < n ∧ orderOf ρ = n ∧
+      (∀ y : IntegralClosure 𝒪₃ᵥ M,
+        ρ • y = y ↔ ∃ z : IntegralClosure 𝒪₃ᵥ E,
+          integralClosureLE E M hEM z = y) := by
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
@@ -12745,7 +13017,32 @@ there too, so the pair patches to a `ρ ∈ Gal(M/ℚ₃ᵥ)` with `ρ|_L = τ` 
 FAITHFULNESS.  `hτ1` is used only for `¬(L ≤ E)`, `hτ` and `hcrit` only for
 the depth statement; the leaf is not vacuous, since `¬(L ≤ E)` fails for
 every `E ⊇ L` and the depth statement fails for `E = ℚ₃ᵥ` already at
-`L = ℚ₃(ζ₉)` (see the numerical checks recorded on the consumer). -/
+`L = ℚ₃(ζ₉)` (see the numerical checks recorded on the consumer).
+
+**DECOMPOSED 2026-07-27 (second owner).  THIS IS NO LONGER A LEAF**: the body
+below is complete glue over the four declarations of the "unramified twist"
+block above, of which TWO ARE PROVEN and two remain open.  The route recorded
+above was implemented verbatim; nothing about it needed correcting.
+
+* `exists_orderOf_restrictToLEHom_eq_of_mem_inertia` (SORRY) — the pure field
+  theory: `M`, `E`, `ρ` and `n = ord(τ)`.  All the unramified-extension theory
+  the route needs lives there and nowhere else.
+* `exists_sum_range_smul_eq_one_of_span_three_eq` (PROVEN) — trace surjectivity,
+  over the single residue-level statement
+  `exists_sum_range_smul_notMem_maximalIdeal` (SORRY).  The Nakayama half is
+  done: `Tr(𝒪_M)` is an ideal of the LOCAL ring `𝒪_E`, so a trace avoiding
+  `𝔪_E` can be scaled to `1` outright, with no completeness argument.
+* `integralClosureLE_mem_maximalIdeal_pow_of_span_three_eq` (PROVEN) — the
+  "unramifiedness of `M/L` turns `𝔪_L^{j+2}` into `𝔪_M^{j+2}`" step, on the
+  nose, from `exists_addVal_integralClosureLE`'s comparison factor being `1`.
+* `smul_sum_range_pow_smul_eq` (PROVEN) — the cyclic-shift invariance that puts
+  `Tr(c·θ)` in the fixed ring, hence in `𝒪_E`.
+
+The assembly's own content is STEP 5: `Tr(c·θ) − θ = Σ_i ρ^i(c)·(ρ^i θ − θ)`
+after subtracting `θ = Tr(c)·θ`, each factor `ρ^i θ − θ` being
+`integralClosureLE` of `τ^i•θ − θ` (`smul_integralClosureLE` plus
+`restrictToLEHom` being a MONOID hom, which is what turns `ρ|_L = τ` into
+`ρ^i|_L = τ^i`), and `τ^i ∈ G_{j+1}` because `G_{j+1}` is a SUBGROUP. -/
 theorem exists_not_le_sub_mem_of_ne_one_of_mem_inertia
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
     (θ : IntegralClosure 𝒪₃ᵥ L) (j : ℕ) (τ : L ≃ₐ[ℚ₃ᵥ] L) (hτ1 : τ ≠ 1)
@@ -12768,7 +13065,63 @@ theorem exists_not_le_sub_mem_of_ne_one_of_mem_inertia
             (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ∧
       integralClosureLE E M hEM x - integralClosureLE L M hLM θ ∈
         IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (j + 2) := by
-  sorry
+  classical
+  have hg : 0 < Nat.card ((IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) := Nat.card_pos
+  have hL3 := span_three_eq_maximalIdeal_pow_card_inertia L
+  -- STEP 1: `τ` lies in the FULL inertia group, since `G_{j+1} ≤ G_0`
+  have hτ0 : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L) := by
+    have h1 : τ • θ - θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ 1 :=
+      Ideal.pow_le_pow_right (by omega) ((hcrit τ (j + 2)).mp hτ)
+    have h2 := (hcrit τ 1).mpr h1
+    rwa [pow_one] at h2
+  -- STEP 2: the unramified twist
+  obtain ⟨M, E, hMfd, hEfd, hLM, hEM, ρ, n, hnle, hM3, hE3, hρτ, hnpos, hord, hfix⟩ :=
+    exists_orderOf_restrictToLEHom_eq_of_mem_inertia L τ hτ1 hτ0
+  haveI := hMfd
+  haveI := hEfd
+  -- STEP 3: a trace-one element `c` of `𝒪_M`
+  obtain ⟨c, hc1⟩ := exists_sum_range_smul_eq_one_of_span_three_eq E M hEM _ hg hE3 hM3
+    ρ n hnpos hord hfix
+  obtain ⟨θM, hθMdef⟩ : ∃ y : IntegralClosure 𝒪₃ᵥ M,
+      y = integralClosureLE L M hLM θ := ⟨_, rfl⟩
+  obtain ⟨T, hTdef⟩ : ∃ y : IntegralClosure 𝒪₃ᵥ M,
+      y = ∑ i ∈ Finset.range n, (ρ ^ i) • (c * θM) := ⟨_, rfl⟩
+  -- STEP 4: `T = Tr(c·θ)` is `ρ`-fixed, hence comes from `𝒪_E`
+  have hρn : ρ ^ n = 1 := hord ▸ pow_orderOf_eq_one ρ
+  have hρT : ρ • T = T := by
+    rw [hTdef]; exact smul_sum_range_pow_smul_eq ρ n hρn (c * θM)
+  obtain ⟨x, hx⟩ := (hfix T).mp hρT
+  -- STEP 5: `T − θ` has depth `j + 2` in `𝒪_M`
+  have hdepth : T - θM ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (j + 2) := by
+    have hterm : ∀ i ∈ Finset.range n,
+        ((ρ ^ i) • c) * ((ρ ^ i) • θM - θM) ∈
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (j + 2) := by
+      intro i _
+      refine Ideal.mul_mem_left _ _ ?_
+      have hsm : (ρ ^ i) • θM = integralClosureLE L M hLM ((τ ^ i) • θ) := by
+        rw [hθMdef, smul_integralClosureLE L M hLM (ρ ^ i) θ, map_pow, hρτ]
+      rw [hsm, hθMdef, ← map_sub]
+      refine integralClosureLE_mem_maximalIdeal_pow_of_span_three_eq L M hLM _ hg hL3 hM3
+        _ _ ?_
+      exact (hcrit (τ ^ i) (j + 2)).mp (pow_mem hτ i)
+    have hsplit : T - θM = ∑ i ∈ Finset.range n, ((ρ ^ i) • c) * ((ρ ^ i) • θM - θM) := by
+      have h1 : T = ∑ i ∈ Finset.range n, ((ρ ^ i) • c) * ((ρ ^ i) • θM) := by
+        rw [hTdef]; exact Finset.sum_congr rfl fun i _ => smul_mul' _ _ _
+      calc T - θM
+          = (∑ i ∈ Finset.range n, ((ρ ^ i) • c) * ((ρ ^ i) • θM)) -
+              (∑ i ∈ Finset.range n, (ρ ^ i) • c) * θM := by
+            rw [← h1, hc1, one_mul]
+        _ = ∑ i ∈ Finset.range n, ((ρ ^ i) • c) * ((ρ ^ i) • θM - θM) := by
+            rw [Finset.sum_mul, ← Finset.sum_sub_distrib]
+            exact Finset.sum_congr rfl fun i _ => (mul_sub _ _ _).symm
+    rw [hsplit]
+    exact Ideal.sum_mem _ hterm
+  -- STEP 6: assemble
+  refine ⟨M, E, hMfd, hEfd, hLM, hEM, x, hnle, hM3, hE3, ?_⟩
+  rw [hx, ← hθMdef]
+  exact hdepth
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
