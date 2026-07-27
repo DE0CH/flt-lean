@@ -394,7 +394,16 @@ public import Mathlib.RingTheory.Artinian.Module
 -- Hensel's lemma and the finite-index quotient lemma are used only inside
 -- proofs.
 public import Mathlib.RingTheory.AdicCompletion.Noetherian
-import Mathlib.RingTheory.Henselian
+-- `Henselian` became PUBLIC on 2026-07-27: `schmidt_splits_of_henselian` (Schmidt
+-- Lemma 5A(i)'s Hensel splitting step, below) takes `[HenselianRing A I]` in its
+-- SIGNATURE, and `schmidt_leibniz_core` needs the instance
+-- `IsAdicComplete.henselianRing` to fire for `K⟦X⟧` inside an `@[expose] public`
+-- declaration — synthesis there ranges over the PUBLIC import closure only, so a
+-- bare `import` gave `failed to synthesize HenselianRing (PowerSeries K) …` while
+-- an identical scratch module compiled green. `AdicCompletion.Completeness`
+-- carries the `IsAdicComplete (span {X}) (PowerSeries R)` instance that feeds it.
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.RingTheory.AdicCompletion.Completeness
 import Mathlib.RingTheory.Ideal.Quotient.Index
 -- proof-only (2026-07-25, `exists_degreeOnePlace_of_brauer`): the arithmetic
 -- Frobenius `arithFrobAt` of a prime of a Dedekind domain acted on by a finite
@@ -9838,8 +9847,287 @@ theorem exists_stepanovAuxiliaryFunction (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fac
   exact stepanov_pow_X_sub_C_dvd_of_jet_vanishing d p M hd hMp F _ hmon hdegY x
     (hΔsep x hx).1 η hFη (fun ℓ hℓ => hjet x _ hroot hirr ℓ hℓ)
 
-/-- **SCHMIDT LEMMA 5A(i): THE LEIBNIZ EXPANSION (5.1)** (SORRY LEAF, cut
-2026-07-27 out of `exists_stepanovNormPolynomial`).
+/-! #### Hensel splitting and the Taylor-shift transfer (PROVEN 2026-07-27)
+
+Infrastructure for `stepanov_pow_sub_dvd_resultant` (Schmidt Lemma 5A(i)). The
+docstring of that theorem recorded "no *monic + separable reduction ⟹ splits
+over a complete local ring* packaged as one lemma" as the piece to budget for;
+`schmidt_splits_of_henselian` below IS that lemma, and it is short. -/
+
+/-- **MONIC WITH SEPARABLE REDUCTION ⟹ SPLITS, over a Henselian ring.** If `A`
+is Henselian at `I`, `φ : A →+* k` is a surjection onto an algebraically closed
+field with kernel exactly `I`, and `f` is monic with `f.map φ` separable, then
+`f` is a product of monic linear factors over `A`.
+
+The proof is the textbook one: induct on `natDegree f`; the reduction has a root
+`a₀` in `k` because `k` is algebraically closed, that root is simple because the
+reduction is separable (a common root of `f.map φ` and its derivative
+contradicts the Bézout identity witnessing `IsCoprime`), Hensel lifts it to a
+root `a` of `f` in `A`, and `f = (X - C a) * (f /ₘ (X - C a))` with the quotient
+again monic and with separable reduction.
+
+The only place algebraic closedness is used is to produce the root; the only
+place separability is used is to make it simple. -/
+theorem schmidt_splits_of_henselian
+    {A : Type*} [CommRing A] (I : Ideal A) [HenselianRing A I]
+    {k : Type*} [Field k] [IsAlgClosed k] (φ : A →+* k)
+    (hker : ∀ a : A, a ∈ I ↔ φ a = 0) (hsur : Function.Surjective φ)
+    {f : Polynomial A} (hf : f.Monic) (hsep : (f.map φ).Separable) : f.Splits := by
+  classical
+  have hnt : Nontrivial A := by
+    refine ⟨0, 1, fun h => ?_⟩
+    have : (0 : k) = 1 := by rw [← map_zero φ, ← map_one φ, h]
+    exact zero_ne_one this
+  have hunit : ∀ r : A, φ r ≠ 0 → IsUnit ((Ideal.Quotient.mk I) r) := by
+    intro r hr
+    obtain ⟨s, hs⟩ := hsur (φ r)⁻¹
+    refine isUnit_iff_exists_inv.mpr ⟨(Ideal.Quotient.mk I) s, ?_⟩
+    rw [← map_mul, ← (Ideal.Quotient.mk I).map_one, Ideal.Quotient.eq, hker]
+    simp [hs, mul_inv_cancel₀ hr]
+  suffices H : ∀ n : ℕ, ∀ g : Polynomial A, g.natDegree = n → g.Monic →
+      (g.map φ).Separable → g.Splits by
+    exact H _ f rfl hf hsep
+  intro n
+  induction n with
+  | zero => intro g hn _ _; exact Polynomial.Splits.of_natDegree_eq_zero hn
+  | succ m ih =>
+    intro g hn hgm hgs
+    have hdeg : (g.map φ).natDegree = m + 1 := by rw [hgm.natDegree_map, hn]
+    obtain ⟨a₀, ha₀'⟩ := IsAlgClosed.exists_root (g.map φ) (by
+      rw [Polynomial.degree_eq_natDegree (fun h => by simp [h] at hdeg), hdeg]
+      exact_mod_cast Nat.succ_ne_zero m)
+    have ha₀ : (g.map φ).eval a₀ = 0 := ha₀'
+    have hd0 : (Polynomial.derivative (g.map φ)).eval a₀ ≠ 0 := by
+      intro hd
+      obtain ⟨u, v, huv⟩ := hgs
+      have := congrArg (Polynomial.eval a₀) huv
+      simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one, ha₀, hd,
+        mul_zero, add_zero] at this
+      exact zero_ne_one this
+    obtain ⟨alift, hal⟩ := hsur a₀
+    have hev : ∀ q : Polynomial A, φ (q.eval alift) = (q.map φ).eval a₀ := by
+      intro q; rw [← hal, ← Polynomial.eval₂_at_apply, Polynomial.eval_map]
+    obtain ⟨a, hroot, -⟩ := HenselianRing.is_henselian (I := I) g hgm alift
+      (by rw [hker, hev, ha₀]) (hunit _ (by rw [hev, ← Polynomial.derivative_map]; exact hd0))
+    obtain ⟨q, hq⟩ := (Polynomial.dvd_iff_isRoot.mpr hroot :
+      Polynomial.X - Polynomial.C a ∣ g)
+    have hqm : q.Monic := (Polynomial.monic_X_sub_C a).of_mul_monic_left (hq ▸ hgm)
+    have hqn : q.natDegree = m := by
+      have := (Polynomial.monic_X_sub_C a).natDegree_mul hqm
+      rw [← hq, hn, Polynomial.natDegree_X_sub_C] at this
+      omega
+    have hmapq : g.map φ = (Polynomial.X - Polynomial.C (φ a)) * q.map φ := by
+      rw [hq]; simp
+    have hqs : (q.map φ).Separable := (hmapq ▸ hgs).of_mul_right
+    have hlin : Polynomial.Splits (Polynomial.X - Polynomial.C a : Polynomial A) := by
+      have hrw : (Polynomial.X - Polynomial.C a : Polynomial A)
+          = Polynomial.X + Polynomial.C (-a) := by rw [map_neg, ← sub_eq_add_neg]
+      rw [hrw]; exact Polynomial.Splits.X_add_C _
+    rw [hq]
+    exact hlin.mul (ih q hqn hqm hqs)
+
+/-- The Taylor shift `p(X) ↦ p(X + x)`, as a ring endomorphism of `k[X]`. -/
+noncomputable def schmidtShift {k : Type*} [CommRing k] (x : k) :
+    Polynomial k →+* Polynomial k :=
+  Polynomial.eval₂RingHom Polynomial.C (Polynomial.X + Polynomial.C x)
+
+lemma schmidtShift_apply {k : Type*} [CommRing k] (x : k) (p : Polynomial k) :
+    schmidtShift x p = p.comp (Polynomial.X + Polynomial.C x) := rfl
+
+lemma schmidtShift_shift {k : Type*} [CommRing k] (x y : k) (p : Polynomial k) :
+    schmidtShift y (schmidtShift x p) = schmidtShift (x + y) p := by
+  simp only [schmidtShift_apply, Polynomial.comp_assoc]
+  congr 1
+  simp only [Polynomial.add_comp, Polynomial.X_comp, Polynomial.C_comp, Polynomial.C_add]
+  ring
+
+@[simp] lemma schmidtShift_zero {k : Type*} [CommRing k] (p : Polynomial k) :
+    schmidtShift (0 : k) p = p := by
+  simp [schmidtShift_apply]
+
+lemma schmidtShift_X_sub_C {k : Type*} [CommRing k] (x : k) :
+    schmidtShift x (Polynomial.X - Polynomial.C x) = Polynomial.X := by
+  simp [schmidtShift_apply, Polynomial.sub_comp]
+
+lemma schmidtShift_X {k : Type*} [CommRing k] (x : k) :
+    schmidtShift (-x) (Polynomial.X : Polynomial k) = Polynomial.X - Polynomial.C x := by
+  simp [schmidtShift_apply, sub_eq_add_neg]
+
+lemma schmidt_shift_dvd_iff {k : Type*} [CommRing k] (x : k) (N : ℕ) (r : Polynomial k) :
+    (Polynomial.X - Polynomial.C x) ^ N ∣ r ↔ Polynomial.X ^ N ∣ schmidtShift x r := by
+  constructor
+  · rintro ⟨s, rfl⟩
+    exact ⟨schmidtShift x s, by rw [map_mul, map_pow, schmidtShift_X_sub_C]⟩
+  · rintro ⟨s, hs⟩
+    refine ⟨schmidtShift (-x) s, ?_⟩
+    have := congrArg (schmidtShift (-x)) hs
+    rwa [schmidtShift_shift, add_neg_cancel, schmidtShift_zero, map_mul, map_pow,
+      schmidtShift_X] at this
+
+/-- Completion at `x`: the Taylor shift followed by the inclusion `k[X] ↪ k⟦X⟧`.
+This is step 1 of the route recorded in `stepanov_pow_sub_dvd_resultant`. -/
+noncomputable def schmidtShiftHom {k : Type*} [CommRing k] (x : k) :
+    Polynomial k →+* PowerSeries k :=
+  (Polynomial.coeToPowerSeries.ringHom).comp (schmidtShift x)
+
+/-- `(X − x)^N ∣ r` may be tested after completing at `x`: the transfer is an
+iff, so nothing is lost by proving the divisibility in `k⟦X − x⟧`. -/
+lemma schmidt_dvd_iff {k : Type*} [CommRing k] (x : k) (N : ℕ) (r : Polynomial k) :
+    (Polynomial.X - Polynomial.C x) ^ N ∣ r ↔ PowerSeries.X ^ N ∣ schmidtShiftHom x r := by
+  rw [schmidt_shift_dvd_iff, Polynomial.X_pow_dvd_iff, PowerSeries.X_pow_dvd_iff]
+  simp [schmidtShiftHom]
+
+/-- **SCHMIDT LEMMA 5A(i), CORE** — the whole content of the Leibniz expansion,
+stated over an arbitrary algebraically closed field `K` with an arbitrary
+"rationality" subfield map `ι : k →+* K` out of a finite field.
+
+`T` is any finite set of `k` containing every `y` whose image `ι y` is a root of
+the reduction `G(x̄, Y)`; the conclusion is strongest when `T` is exactly that
+set, which is how `stepanov_pow_sub_dvd_resultant` instantiates it.
+
+Route (as recorded in the consumer's docstring): complete at `x̄` into `K⟦X−x̄⟧`
+(`schmidtShiftHom`, `schmidt_dvd_iff`); Hensel-split `G` there
+(`schmidt_splits_of_henselian`, whose hypotheses hold because `K⟦X⟧` is
+`(X)`-adically complete and `PowerSeries.constantCoeff` is a surjection onto `K`
+with kernel `(X)`); turn the resultant into `∏_j e(X, η_j)`
+(`Polynomial.resultant_eq_prod_eval`); truncate each irrational branch `η_j`
+modulo `(X−x̄)^M` to a POLYNOMIAL and feed it to `hvan`.
+
+The counting step is where `T` enters: the reductions of the `d` branches are
+the roots of the separable reduction, hence PAIRWISE DISTINCT, so the branches
+with rational reduction inject into `T` and at least `d − |T|` branches remain
+irrational. Each of those contributes a factor `X^M`. -/
+theorem schmidt_leibniz_core {k K : Type*} [Field k] [Fintype k] [DecidableEq k]
+    [Field K] [IsAlgClosed K] (ι : k →+* K) (d n M : ℕ)
+    (G e : Polynomial (Polynomial K)) (xb : K) (T : Finset k)
+    (hG : G.Monic) (hGd : G.natDegree = d) (hen : e.natDegree ≤ n)
+    (hsep : (G.map (Polynomial.evalRingHom xb)).Separable)
+    (hT : ∀ y : k, (G.map (Polynomial.evalRingHom xb)).eval (ι y) = 0 → y ∈ T)
+    (hvan : ∀ η : Polynomial K,
+      (Polynomial.X - Polynomial.C xb) ^ M ∣ G.eval η →
+      (∀ z : k, η.eval xb ≠ ι z) →
+      (Polynomial.X - Polynomial.C xb) ^ M ∣ e.eval η) :
+    (Polynomial.X - Polynomial.C xb) ^ (M * (d - T.card)) ∣ G.resultant e d n := by
+  classical
+  rcases Nat.eq_zero_or_pos M with rfl | hM
+  · simp
+  set Ψ : Polynomial K →+* PowerSeries K := schmidtShiftHom xb with hΨdef
+  set ρ : PowerSeries K →+* K := PowerSeries.constantCoeff with hρdef
+  have hρΨ : ∀ q : Polynomial K, ρ (Ψ q) = q.eval xb := by
+    intro q
+    rw [hρdef, hΨdef, schmidtShiftHom, RingHom.comp_apply,
+      ← PowerSeries.coeff_zero_eq_constantCoeff_apply]
+    simp [Polynomial.coeff_coe, schmidtShift_apply, Polynomial.coeff_zero_eq_eval_zero,
+      Polynomial.eval_comp]
+  set Gh := G.map Ψ with hGh
+  set eh := e.map Ψ with heh
+  have hGhm : Gh.Monic := hG.map Ψ
+  have hGhd : Gh.natDegree = d := by rw [hGh, hG.natDegree_map, hGd]
+  have hehn : eh.natDegree ≤ n := le_trans Polynomial.natDegree_map_le hen
+  have hred : Gh.map ρ = G.map (Polynomial.evalRingHom xb) := by
+    rw [hGh, Polynomial.map_map]
+    congr 1
+    exact RingHom.ext hρΨ
+  have hsplit : Gh.Splits := by
+    refine schmidt_splits_of_henselian (Ideal.span {(PowerSeries.X : PowerSeries K)}) ρ
+      (fun a => by rw [Ideal.mem_span_singleton, PowerSeries.X_dvd_iff])
+      (fun b => ⟨PowerSeries.C b, by simp [hρdef]⟩) hGhm ?_
+    rw [hred]; exact hsep
+  -- move the whole problem into the power series ring
+  rw [schmidt_dvd_iff xb, ← Polynomial.resultant_map_map G e d n Ψ, ← hGh, ← heh, ← hGhd,
+    Polynomial.resultant_eq_prod_eval _ _ _ hehn hsplit, hGhm.leadingCoeff, one_pow, one_mul,
+    hGhd]
+  set Rt := Gh.roots with hRt
+  have hcard : Rt.card = d := by rw [hRt, ← hsplit.natDegree_eq_card_roots, hGhd]
+  have hrootsred : (Gh.map ρ).roots = Rt.map ρ := by
+    have hprod : Gh.map ρ
+        = ((Rt.map ρ).map (fun a => Polynomial.X - Polynomial.C a)).prod := by
+      conv_lhs => rw [hsplit.eq_prod_roots_of_monic hGhm]
+      rw [show Polynomial.map ρ (Multiset.map (fun a => Polynomial.X - Polynomial.C a) Rt).prod
+            = Polynomial.mapRingHom ρ
+                (Multiset.map (fun a => Polynomial.X - Polynomial.C a) Rt).prod
+          from rfl, map_multiset_prod]
+      simp [Multiset.map_map]
+    rw [hprod, Polynomial.roots_multiset_prod_X_sub_C]
+  have hnodup : (Rt.map ρ).Nodup := by
+    rw [← hrootsred, hred]; exact Polynomial.nodup_roots hsep
+  set Rrat := Rt.filter (fun η => ∃ z : k, ρ η = ι z) with hRrat
+  set Rirr := Rt.filter (fun η => ¬ ∃ z : k, ρ η = ι z) with hRirr
+  have hsum : Rrat.card + Rirr.card = Rt.card := by
+    rw [hRrat, hRirr, ← Multiset.card_add, Multiset.filter_add_not]
+  -- the rational branches are at most as many as the rational roots of the reduction
+  have hratle : Rrat.card ≤ T.card := by
+    have hsub : Rrat.map ρ ≤ Rt.map ρ := by
+      rw [hRrat]; exact Multiset.map_le_map (Multiset.filter_le _ _)
+    have hnd : (Rrat.map ρ).Nodup := Multiset.nodup_of_le hsub hnodup
+    have hmem : ∀ w ∈ Rrat.map ρ, w ∈ T.image ι := by
+      intro w hw
+      obtain ⟨η, hη, rfl⟩ := Multiset.mem_map.mp hw
+      rw [hRrat, Multiset.mem_filter] at hη
+      obtain ⟨hηR, z, hz⟩ := hη
+      have hmemroots : ρ η ∈ (Gh.map ρ).roots := by
+        rw [hrootsred]; exact Multiset.mem_map_of_mem _ hηR
+      have hz0 : (G.map (Polynomial.evalRingHom xb)).eval (ι z) = 0 := by
+        rw [← hz, ← hred]; exact Polynomial.isRoot_of_mem_roots hmemroots
+      exact Finset.mem_image.mpr ⟨z, hT z hz0, hz.symm⟩
+    calc Rrat.card = (Rrat.map ρ).card := (Multiset.card_map _ _).symm
+      _ = (Rrat.map ρ).toFinset.card := (Multiset.toFinset_card_of_nodup hnd).symm
+      _ ≤ (T.image ι).card :=
+          Finset.card_le_card (fun w hw => hmem w (Multiset.mem_toFinset.mp hw))
+      _ = T.card := Finset.card_image_of_injective _ ι.injective
+  have hirrge : d - T.card ≤ Rirr.card := by omega
+  -- each irrational branch contributes a factor `X ^ M`
+  have hkey : ∀ η ∈ Rirr, (PowerSeries.X : PowerSeries K) ^ M ∣ eh.eval η := by
+    intro η hη
+    rw [hRirr, Multiset.mem_filter] at hη
+    obtain ⟨hηR, hirr⟩ := hη
+    have hroot : Gh.eval η = 0 := Polynomial.isRoot_of_mem_roots (hRt ▸ hηR)
+    set θ : Polynomial K := schmidtShift (-xb) (PowerSeries.trunc M η) with hθ
+    have hΨθ : Ψ θ = ((PowerSeries.trunc M η : Polynomial K) : PowerSeries K) := by
+      rw [hΨdef, schmidtShiftHom, RingHom.comp_apply, hθ, schmidtShift_shift, neg_add_cancel,
+        schmidtShift_zero]
+      rfl
+    have hdiff : (PowerSeries.X : PowerSeries K) ^ M ∣ (Ψ θ - η) := by
+      rw [PowerSeries.X_pow_dvd_iff]
+      intro m hm
+      simp [hΨθ, Polynomial.coeff_coe, PowerSeries.coeff_trunc, hm]
+    have hGθ : (Polynomial.X - Polynomial.C xb) ^ M ∣ G.eval θ := by
+      rw [schmidt_dvd_iff]
+      have h1 : Gh.eval (Ψ θ) = Ψ (G.eval θ) := by
+        rw [hGh, Polynomial.eval_map]; exact Polynomial.eval₂_at_apply Ψ θ
+      have h2 : (PowerSeries.X : PowerSeries K) ^ M ∣ Gh.eval (Ψ θ) - Gh.eval η :=
+        dvd_trans hdiff (Polynomial.sub_dvd_eval_sub _ _ _)
+      rw [hroot, sub_zero, h1] at h2
+      exact h2
+    have hval : ∀ z : k, θ.eval xb ≠ ι z := by
+      intro z hz
+      refine hirr ⟨z, ?_⟩
+      rw [← hz, hθ, schmidtShift_apply, Polynomial.eval_comp]
+      simp only [Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C, add_neg_cancel]
+      rw [← Polynomial.coeff_zero_eq_eval_zero, PowerSeries.coeff_trunc, if_pos hM]
+      rw [hρdef, ← PowerSeries.coeff_zero_eq_constantCoeff_apply]
+    have hcθ := hvan θ hGθ hval
+    rw [schmidt_dvd_iff] at hcθ
+    have h3 : eh.eval (Ψ θ) = Ψ (e.eval θ) := by
+      rw [heh, Polynomial.eval_map]; exact Polynomial.eval₂_at_apply Ψ θ
+    have h4 : (PowerSeries.X : PowerSeries K) ^ M ∣ eh.eval (Ψ θ) - eh.eval η :=
+      dvd_trans hdiff (Polynomial.sub_dvd_eval_sub _ _ _)
+    have h5 : (PowerSeries.X : PowerSeries K) ^ M ∣ eh.eval (Ψ θ) := by rw [h3]; exact hcθ
+    simpa using h5.sub h4
+  -- assemble
+  refine dvd_trans (pow_dvd_pow _ (Nat.mul_le_mul_left M hirrge)) ?_
+  refine dvd_trans ?_ (Multiset.prod_dvd_prod_of_le
+    (Multiset.map_le_map (by rw [hRirr]; exact Multiset.filter_le _ _) :
+      Rirr.map (fun η => eh.eval η) ≤ _))
+  have hrep : (Rirr.map (fun _ => (PowerSeries.X : PowerSeries K) ^ M)).prod
+      = (PowerSeries.X : PowerSeries K) ^ (M * Rirr.card) := by
+    rw [Multiset.map_const', Multiset.prod_replicate, ← pow_mul, mul_comm]
+  rw [← hrep]
+  exact Multiset.prod_dvd_prod_of_dvd _ _ hkey
+
+/-- **SCHMIDT LEMMA 5A(i): THE LEIBNIZ EXPANSION (5.1)** (PROVEN 2026-07-27,
+over `schmidt_leibniz_core`; cut the same day out of
+`exists_stepanovNormPolynomial`).
 
 WHAT IT SAYS. `r(X) := Res_Y(F, c)` — which by `resultant_eq_prod_eval` IS
 Schmidt's norm `𝔑(c(X, η)) = ∏_j c(X, η_j)`, see `stepanov_natDegree_norm_le` —
@@ -9887,9 +10175,32 @@ exceed anything. The `p`-dependence of Schmidt's argument is entirely in Lemma
 4A (the dimension count) and in §6 (`M|𝔐₂(x)| ≤ dM < p`, needed to READ the
 multiplicity off Theorem 1G); step (i) of Lemma 5A is characteristic-free.
 
-MISSING AT THIS PIN: mathlib has `HenselianLocalRing` and the completeness of
-`PowerSeries`, but no "monic + separable reduction ⟹ splits over a complete
-local ring" packaged as one lemma; step 2 is the part to budget for.
+THE PIECE THAT WAS MISSING (now written): mathlib has `HenselianRing`,
+`IsAdicComplete (span {X}) (PowerSeries R)` and hence `HenselianRing` for
+`K⟦X⟧`, but no "monic + separable reduction ⟹ splits over a complete local
+ring" packaged as one lemma. That is `schmidt_splits_of_henselian` above, proved
+exactly as step 2 describes; `schmidtShift`/`schmidtShiftHom`/`schmidt_dvd_iff`
+are step 1 and `schmidt_leibniz_core` runs steps 3–4.
+
+Two deviations from the route as written above, both simplifications:
+
+* Step 1 does not need injectivity of the completion map — `schmidt_dvd_iff` is
+  an IFF proved coefficientwise, because the Taylor shift is a ring
+  ISOMORPHISM of `k[X]` (inverse: shift by `−x`) and `X^N ∣ q` is a statement
+  about the coefficients `q.coeff i`, `i < N`, which `Polynomial.coeff_coe`
+  transports verbatim to `k⟦X⟧`.
+* `resultant_add_right_deg` is not needed at all: `resultant_eq_prod_eval`
+  already takes the second size `n ≥ c.natDegree` as a parameter.
+
+**FORMAL-CONTENT AUDIT.** The proof uses `hmon`, `hdegY`, `hcn`, `hsep` and
+`hvan`. It does NOT use `hd : 2 ≤ d`, and it does NOT use
+`hdegx : (F.map (evalRingHom x)).natDegree = d` — separability of the reduction
+already forces its roots to be simple, and the branch count comes from
+`F.natDegree = d` (i.e. `hdegY`) rather than from the degree of the reduction.
+The two hypotheses are kept in the signature only because the consumer
+`exists_stepanovNormPolynomial` passes them positionally; nothing downstream
+should read their presence as content. This is the characteristic-freeness
+noted above, made mechanical.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem stepanov_pow_sub_dvd_resultant (d p M n : ℕ) [Fact p.Prime] (hd : 2 ≤ d)
@@ -9911,8 +10222,36 @@ theorem stepanov_pow_sub_dvd_resultant (d p M n : ℕ) [Fact p.Prime] (hd : 2 �
           (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η c) :
     (Polynomial.X - Polynomial.C x) ^ (M * (d - (Finset.univ.filter
         (fun y : ZMod p => (F.map (Polynomial.evalRingHom x)).eval y = 0)).card))
-      ∣ F.resultant c d n :=
-  sorry
+      ∣ F.resultant c d n := by
+  classical
+  set ι : ZMod p →+* AlgebraicClosure (ZMod p) :=
+    algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) with hι
+  have hιinj : Function.Injective ι := ι.injective
+  set Φ : Polynomial (ZMod p) →+* Polynomial (AlgebraicClosure (ZMod p)) :=
+    Polynomial.mapRingHom ι with hΦ
+  -- the reduction of `F.map Φ` at `ι x` is the base change of `F.map (evalRingHom x)`
+  have hcomp : (Polynomial.evalRingHom (ι x)).comp Φ = ι.comp (Polynomial.evalRingHom x) := by
+    ext q
+    · simp [hΦ]
+    · simp [hΦ]
+  have hredF : (F.map Φ).map (Polynomial.evalRingHom (ι x))
+      = (F.map (Polynomial.evalRingHom x)).map ι := by
+    rw [Polynomial.map_map, Polynomial.map_map, hcomp]
+  rw [← Polynomial.map_dvd_map ι hιinj ((Polynomial.monic_X_sub_C x).pow _),
+    Polynomial.map_pow, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+    show Polynomial.map ι (F.resultant c d n) = Φ (F.resultant c d n) from rfl,
+    ← Polynomial.resultant_map_map F c d n Φ]
+  refine schmidt_leibniz_core ι d n M (F.map Φ) (c.map Φ) (ι x) _ (hmon.map Φ)
+    (by rw [hmon.natDegree_map, hdegY]) (le_trans Polynomial.natDegree_map_le hcn)
+    (by rw [hredF]; exact hsep.map) (fun y hy => ?_) (fun η h1 h2 => ?_)
+  · rw [hredF] at hy
+    have hzero : ι ((F.map (Polynomial.evalRingHom x)).eval y) = 0 := by
+      rw [← hy]
+      conv_rhs => rw [Polynomial.eval_map, Polynomial.eval₂_at_apply]
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    exact hιinj (by rw [hzero, map_zero])
+  · rw [Polynomial.eval_map] at h1 ⊢
+    exact hvan η h1 h2
 
 /-- **ITEM 2c: THE AUXILIARY FUNCTION AND ITS NORM** (PROVEN 2026-07-27 over the
 two sub-leaves `exists_stepanovAuxiliaryFunction` and
@@ -9942,9 +10281,11 @@ norm `∏_j c(X, η_j)`. The three conjuncts then come from:
   vanish".
 
 That removes Lemma 3B, `Algebra.norm`, and every symmetric function argument
-from the remaining work. **Exactly two things are left open, and they are the
-two sub-leaves above:** Lemma 4A's dimension count, and Lemma 5A(i)'s Leibniz
-expansion.
+from the remaining work. Of the two sub-leaves above, Lemma 5A(i)'s Leibniz
+expansion — `stepanov_pow_sub_dvd_resultant` — was PROVEN on 2026-07-27 (via
+`schmidt_leibniz_core`, over the new `schmidt_splits_of_henselian`), so
+**exactly ONE thing is left open here: Lemma 4A's dimension count,
+`exists_stepanovAuxiliaryFunction`.**
 
 Let `η` satisfy `F(X, η) = 0`, so `𝔽_p(X, η)/𝔽_p(X)` has degree `d`.
 
@@ -11567,13 +11908,15 @@ five-item route is realised in the file rather than merely described):
   sub-leaves, and its `r ≠ 0` clause is proven glue too — `¬(F ∣ c)` transported
   to `𝔽̄_p(X)[Y]` by `Polynomial.map_dvd_map`, where irreducibility plus
   non-divisibility is coprimality and `Polynomial.resultant_ne_zero` applies. So
-  do not dispatch at it; dispatch at its two children instead:
-  `exists_stepanovAuxiliaryFunction` (Lemma 4A's dimension count together with
-  the §4 Remark — the genuinely hard one, and the place the `√q` comes from) and
-  `stepanov_pow_sub_dvd_resultant` (Lemma 5A(i)'s Leibniz expansion (5.1), whose
-  Lean route is Hensel-splitting `F` over `𝔽̄_p[[X − x]]` and then
-  `Polynomial.resultant_eq_prod_eval`). They are INDEPENDENT of each other — the
-  interface between them is fixed and compiles — so they take separate owners.
+  do not dispatch at it. Of its two children,
+  `stepanov_pow_sub_dvd_resultant` (Lemma 5A(i)'s Leibniz expansion (5.1)) is
+  **PROVEN** (2026-07-27) — Hensel-splitting `F` over `𝔽̄_p[[X − x]]` and then
+  `Polynomial.resultant_eq_prod_eval`, exactly the recorded route; the one piece
+  its docstring said was missing from the pin, "monic + separable reduction ⟹
+  splits over a complete local ring", is now `schmidt_splits_of_henselian`.
+  So only `exists_stepanovAuxiliaryFunction` (Lemma 4A's dimension count together
+  with the §4 Remark — the genuinely hard one, and the place the `√q` comes from)
+  is still open under this node.
   **`exists_stepanovAuxiliaryFunction` is itself now PROVEN (2026-07-27)** over
   THREE sub-leaves cut along Schmidt III §§2–4 — `exists_stepanovJetSolution`
   (the §4 linear system), `stepanov_not_dvd_stepanovAnsatz` (Lemma 2D, §2, which

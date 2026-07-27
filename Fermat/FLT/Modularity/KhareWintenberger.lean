@@ -461,7 +461,16 @@ public import Mathlib.RingTheory.Artinian.Module
 -- Hensel's lemma and the finite-index quotient lemma are used only inside
 -- proofs.
 public import Mathlib.RingTheory.AdicCompletion.Noetherian
-import Mathlib.RingTheory.Henselian
+-- `Henselian` became PUBLIC on 2026-07-27: `schmidt_splits_of_henselian` (Schmidt
+-- Lemma 5A(i)'s Hensel splitting step, below) takes `[HenselianRing A I]` in its
+-- SIGNATURE, and `schmidt_leibniz_core` needs the instance
+-- `IsAdicComplete.henselianRing` to fire for `K⟦X⟧` inside an `@[expose] public`
+-- declaration — synthesis there ranges over the PUBLIC import closure only, so a
+-- bare `import` gave `failed to synthesize HenselianRing (PowerSeries K) …` while
+-- an identical scratch module compiled green. `AdicCompletion.Completeness`
+-- carries the `IsAdicComplete (span {X}) (PowerSeries R)` instance that feeds it.
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.RingTheory.AdicCompletion.Completeness
 import Mathlib.RingTheory.Ideal.Quotient.Index
 -- proof-only (2026-07-25, `exists_degreeOnePlace_of_brauer`): the arithmetic
 -- Frobenius `arithFrobAt` of a prime of a Dedekind domain acted on by a finite
