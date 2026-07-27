@@ -22,6 +22,13 @@ public import Mathlib.Algebra.Field.ZMod
 -- and `Isogeny.isRationalMap_dualHom`.
 public import Mathlib.Algebra.Module.ZMod
 public import Mathlib.LinearAlgebra.Basis.VectorSpace
+-- For `exists_homogSubst_of_fibreInvariant`: the two-variable resultant
+-- `Res_T (A − c·B, A₁ − w·B₁)` and its `resultant_eq_prod_eval` factorisation over the
+-- roots, the `CharZero → Infinite` instance that promotes a cofinite identity to a
+-- polynomial identity, and `gcd`/`gcdA`/`gcdB` for the reduction to `IsCoprime A B`.
+public import Mathlib.RingTheory.Polynomial.Resultant.Basic
+public import Mathlib.Algebra.CharZero.Infinite
+public import Mathlib.RingTheory.EuclideanDomain
 
 /-!
 # Isogenies of elliptic curves as morphisms
@@ -2937,9 +2944,327 @@ theorem eq_zero_of_constY [IsAlgClosed F] [CharZero F] [W.IsElliptic]
   rw [← hP]
   exact hzP
 
-/-- **LEAF — and it is PURE ONE-VARIABLE ALGEBRA over `F[X]`.** No curve, no group,
-no `Isogeny`, no `End`: this is the only thing `Isogeny.isRationalMap_dualHom` still
-rests on, and an `#print axioms` audit of it is therefore meaningful.
+/-! #### The fibre-invariance descent: a function constant on the fibres of `A/B`
+
+The last input of `Isogeny.isRationalMap_dualHom`, and pure `F[X]` algebra. See the
+docstring of `exists_homogSubst_of_fibreInvariant` below for the whole argument; the
+declarations here are its three ingredients — the two-variable resultant
+`Res_T (A − c·B, A₁ − w·B₁)` viewed in `(F[c])[w]`, the coefficient extraction that reads
+the common fibre value off its top two `w`-coefficients, and the degenerate and coprime
+branches of the induction on `gcd A B`. -/
+
+/-- The embedding `F ↪ (F[c])[w]` of constants. -/
+noncomputable def fibreC (F : Type*) [Field F] : F →+* (F[X])[X] :=
+  (Polynomial.C : F[X] →+* (F[X])[X]).comp (Polynomial.C : F →+* F[X])
+
+/-- Specialisation `c ↦ γ`, `w ↦ ω`. -/
+noncomputable def fibreEval (γ ω : F) : (F[X])[X] →+* F :=
+  (Polynomial.evalRingHom ω).comp (Polynomial.mapRingHom (Polynomial.evalRingHom γ))
+
+omit [DecidableEq F] in
+theorem fibreEval_comp_fibreC (γ ω : F) :
+    (fibreEval γ ω).comp (fibreC F) = RingHom.id F :=
+  RingHom.ext fun a => by simp [fibreEval, fibreC]
+
+omit [DecidableEq F] in
+theorem fibreEval_apply (γ ω : F) (p : (F[X])[X]) :
+    fibreEval γ ω p = (p.map (Polynomial.evalRingHom γ)).eval ω := rfl
+
+/-- `Res_T (A - c·B, A₁ - w·B₁)`, an element of `(F[c])[w]`. -/
+noncomputable def fibreRes (A B A₁ B₁ : F[X]) (d d₁ : ℕ) : (F[X])[X] :=
+  Polynomial.resultant
+    (A.map (fibreC F) -
+      Polynomial.C (Polynomial.C (Polynomial.X : F[X])) * B.map (fibreC F))
+    (A₁.map (fibreC F) - Polynomial.C (Polynomial.X : (F[X])[X]) * B₁.map (fibreC F))
+    d d₁
+
+omit [DecidableEq F] in
+theorem fibreEval_fibreRes (A B A₁ B₁ : F[X]) (d d₁ : ℕ) (γ ω : F) :
+    fibreEval γ ω (fibreRes A B A₁ B₁ d d₁)
+      = Polynomial.resultant (A - Polynomial.C γ * B) (A₁ - Polynomial.C ω * B₁) d d₁ := by
+  have hmap : ∀ P : F[X], (P.map (fibreC F)).map (fibreEval γ ω) = P := by
+    intro P
+    rw [Polynomial.map_map, fibreEval_comp_fibreC, Polynomial.map_id]
+  rw [fibreRes, ← Polynomial.resultant_map_map (φ := fibreEval γ ω)]
+  congr 1
+  · rw [Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_C, hmap, hmap]
+    congr 2
+    simp [fibreEval]
+  · rw [Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_C, hmap, hmap]
+    congr 2
+    simp [fibreEval]
+
+omit [DecidableEq F] in
+theorem fibreEval_fibreRes_eq [IsAlgClosed F] {A B A₁ B₁ : F[X]} {d d₁ : ℕ}
+    (hA₁ : A₁.natDegree ≤ d₁) (hB₁ : B₁.natDegree ≤ d₁) {γ : F}
+    (hdeg : (A - Polynomial.C γ * B).natDegree = d) {v : F}
+    (hv : ∀ t : F, (A - Polynomial.C γ * B).eval t = 0 → A₁.eval t = v * B₁.eval t) (ω : F) :
+    fibreEval γ ω (fibreRes A B A₁ B₁ d d₁)
+      = ((A - Polynomial.C γ * B).leadingCoeff ^ d₁
+          * ((A - Polynomial.C γ * B).roots.map B₁.eval).prod) * (v - ω) ^ d := by
+  classical
+  have hsp : (A - Polynomial.C γ * B).Splits := IsAlgClosed.splits _
+  have hgle : (A₁ - Polynomial.C ω * B₁).natDegree ≤ d₁ :=
+    le_trans (Polynomial.natDegree_sub_le _ _)
+      (max_le hA₁ (le_trans (Polynomial.natDegree_C_mul_le _ _) hB₁))
+  have key := Polynomial.resultant_eq_prod_eval (A - Polynomial.C γ * B)
+    (A₁ - Polynomial.C ω * B₁) d₁ hgle hsp
+  rw [hdeg] at key
+  have hmap : (A - Polynomial.C γ * B).roots.map (A₁ - Polynomial.C ω * B₁).eval
+      = (A - Polynomial.C γ * B).roots.map (fun t => B₁.eval t * (v - ω)) := by
+    refine Multiset.map_congr rfl fun t ht => ?_
+    have hr : (A - Polynomial.C γ * B).eval t = 0 := (Polynomial.mem_roots'.1 ht).2
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+    rw [hv t hr]; ring
+  have hcard : ((A - Polynomial.C γ * B).roots.map (fun _ : F => v - ω)).prod = (v - ω) ^ d := by
+    rw [Multiset.map_const', Multiset.prod_replicate, ← hsp.natDegree_eq_card_roots, hdeg]
+  rw [fibreEval_fibreRes, key, hmap, Multiset.prod_map_mul, hcard, mul_assoc]
+
+/-- If a polynomial evaluates like `K·(v − ω)^d` everywhere, its top two coefficients
+pin down `v`. -/
+theorem coeff_of_eval_eq_pow {F : Type*} [Field F] [Infinite F] {P : F[X]} {K v : F} {d : ℕ}
+    (hK : K ≠ 0) (hd : d ≠ 0) (hP : ∀ ω : F, P.eval ω = K * (v - ω) ^ d) :
+    P.coeff d ≠ 0 ∧ P.coeff (d - 1) = -((d : F) * v) * P.coeff d := by
+  have hstruct : P = Polynomial.C (K * (-1) ^ d) * (Polynomial.X - Polynomial.C v) ^ d := by
+    refine Polynomial.funext fun ω => ?_
+    rw [hP ω]
+    simp only [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_pow,
+      Polynomial.eval_sub, Polynomial.eval_X]
+    rw [mul_assoc, ← mul_pow]
+    congr 2
+    ring
+  have hMm : ((Polynomial.X - Polynomial.C v : F[X]) ^ d).Monic :=
+    (Polynomial.monic_X_sub_C v).pow d
+  have hMdeg : ((Polynomial.X - Polynomial.C v : F[X]) ^ d).natDegree = d := by
+    rw [Polynomial.natDegree_pow, Polynomial.natDegree_X_sub_C, mul_one]
+  have hKne : K * (-1 : F) ^ d ≠ 0 := mul_ne_zero hK (pow_ne_zero _ (by norm_num))
+  have hPdeg : P.natDegree = d := by
+    rw [hstruct, Polynomial.natDegree_C_mul hKne, hMdeg]
+  have hMcoeff : ((Polynomial.X - Polynomial.C v : F[X]) ^ d).coeff d = 1 := by
+    have h := hMm.coeff_natDegree
+    rwa [hMdeg] at h
+  have hcd : P.coeff d = K * (-1 : F) ^ d := by
+    rw [hstruct, Polynomial.coeff_C_mul, hMcoeff, mul_one]
+  have hnextM : ((Polynomial.X - Polynomial.C v : F[X]) ^ d).nextCoeff = -((d : F) * v) := by
+    rw [(Polynomial.monic_X_sub_C v).nextCoeff_pow d, Polynomial.nextCoeff_X_sub_C,
+      nsmul_eq_mul]
+    ring
+  have hnext : P.nextCoeff = (K * (-1 : F) ^ d) * -((d : F) * v) := by
+    rw [hstruct, Polynomial.nextCoeff_C_mul, hnextM]
+  have hnext' : P.nextCoeff = P.coeff (d - 1) := by
+    rw [Polynomial.nextCoeff_of_natDegree_pos (by omega : 0 < P.natDegree), hPdeg]
+  refine ⟨by rw [hcd]; exact hKne, ?_⟩
+  rw [← hnext', hnext, hcd]; ring
+
+/-! ### The degenerate branch: `A₁/B₁` constant off a finite set -/
+
+omit [DecidableEq F] in
+theorem exists_homogSubst_of_fibreConst [CharZero F]
+    {A B A₁ B₁ : F[X]} (hB₁ : B₁ ≠ 0) {S : Set F} (hS : S.Finite)
+    (hinv : ∀ s t : F, s ∉ S → t ∉ S →
+      A₁.eval s * B₁.eval t = A₁.eval t * B₁.eval s) :
+    ∃ (A' B' : F[X]) (d : ℕ), B' ≠ 0 ∧ A'.natDegree ≤ d ∧ B'.natDegree ≤ d ∧
+      A₁ * homogSubst A B d B' = B₁ * homogSubst A B d A' := by
+  classical
+  obtain ⟨t₀, ht₀S, ht₀B⟩ : ∃ t₀ : F, t₀ ∉ S ∧ B₁.eval t₀ ≠ 0 := by
+    have hfin : (S ∪ {t : F | B₁.eval t = 0}).Finite :=
+      hS.union (Polynomial.finite_setOf_isRoot hB₁)
+    obtain ⟨t₀, ht₀⟩ := hfin.infinite_compl.nonempty
+    exact ⟨t₀, fun h => ht₀ (Or.inl h), fun h => ht₀ (Or.inr h)⟩
+  have hkey : A₁ * Polynomial.C (B₁.eval t₀) = B₁ * Polynomial.C (A₁.eval t₀) := by
+    refine sub_eq_zero.1 (Polynomial.eq_zero_of_infinite_isRoot _ ?_)
+    refine hS.infinite_compl.mono fun s hs => ?_
+    have h := hinv s t₀ hs ht₀S
+    simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C]
+    linear_combination h
+  have hA₁ : A₁ = B₁ * Polynomial.C (A₁.eval t₀ / B₁.eval t₀) := by
+    calc A₁ = A₁ * Polynomial.C (B₁.eval t₀) * Polynomial.C (B₁.eval t₀)⁻¹ := by
+              rw [mul_assoc, ← Polynomial.C_mul, mul_inv_cancel₀ ht₀B,
+                Polynomial.C_1, mul_one]
+      _ = B₁ * Polynomial.C (A₁.eval t₀) * Polynomial.C (B₁.eval t₀)⁻¹ := by rw [hkey]
+      _ = B₁ * Polynomial.C (A₁.eval t₀ / B₁.eval t₀) := by
+              rw [mul_assoc, ← Polynomial.C_mul, div_eq_mul_inv]
+  refine ⟨Polynomial.C (A₁.eval t₀ / B₁.eval t₀), 1, 0, one_ne_zero, by simp, by simp, ?_⟩
+  have h1 : homogSubst A B 0 (1 : F[X]) = 1 := by simp [homogSubst]
+  have h2 : homogSubst A B 0 (Polynomial.C (A₁.eval t₀ / B₁.eval t₀))
+      = Polynomial.C (A₁.eval t₀ / B₁.eval t₀) := by simp [homogSubst]
+  rw [h1, h2, mul_one]
+  exact hA₁
+
+/-! ### The coprime case -/
+
+omit [DecidableEq F] in
+theorem exists_homogSubst_of_fibreInvariant_coprime [IsAlgClosed F] [CharZero F]
+    {A B A₁ B₁ : F[X]} (hcop : IsCoprime A B) (hB : B ≠ 0) (hB₁ : B₁ ≠ 0)
+    {S : Set F} (hS : S.Finite)
+    (hinv : ∀ s t : F, s ∉ S → t ∉ S →
+      A.eval s * B.eval t = A.eval t * B.eval s →
+      A₁.eval s * B₁.eval t = A₁.eval t * B₁.eval s) :
+    ∃ (A' B' : F[X]) (d : ℕ), B' ≠ 0 ∧ A'.natDegree ≤ d ∧ B'.natDegree ≤ d ∧
+      A₁ * homogSubst A B d B' = B₁ * homogSubst A B d A' := by
+  classical
+  by_cases hd0 : max A.natDegree B.natDegree = 0
+  · refine exists_homogSubst_of_fibreConst hB₁ hS fun s t hs ht => hinv s t hs ht ?_
+    have hA : A = Polynomial.C (A.coeff 0) :=
+      Polynomial.eq_C_of_natDegree_eq_zero (Nat.le_zero.1 (hd0 ▸ le_max_left _ _))
+    have hBc : B = Polynomial.C (B.coeff 0) :=
+      Polynomial.eq_C_of_natDegree_eq_zero (Nat.le_zero.1 (hd0 ▸ le_max_right _ _))
+    rw [hA, hBc]; simp
+  set d : ℕ := max A.natDegree B.natDegree with hdd
+  set d₁ : ℕ := max A₁.natDegree B₁.natDegree with hdd₁
+  have hdpos : 0 < d := Nat.pos_of_ne_zero hd0
+  have hnocom : ∀ t : F, A.eval t = 0 → B.eval t = 0 → False := by
+    intro t hAt hBt
+    obtain ⟨u, v, huv⟩ := hcop
+    have h := congrArg (Polynomial.eval t) huv
+    simp [hAt, hBt] at h
+  have hfne : ∀ γ : F, A - Polynomial.C γ * B ≠ 0 := by
+    intro γ h
+    have hAeq : A = Polynomial.C γ * B := sub_eq_zero.1 h
+    have hunit : IsUnit B := by
+      obtain ⟨u, v, huv⟩ := hcop
+      refine isUnit_of_dvd_one ⟨u * Polynomial.C γ + v, ?_⟩
+      rw [hAeq] at huv; linear_combination -huv
+    have hBdeg : B.natDegree = 0 := Polynomial.natDegree_eq_zero_of_isUnit hunit
+    have hAdeg : A.natDegree = 0 := by
+      rw [hAeq]
+      exact Nat.le_zero.1 (le_trans (Polynomial.natDegree_C_mul_le _ _) (le_of_eq hBdeg))
+    exact hd0 (by rw [hdd, hAdeg, hBdeg]; simp)
+  have hdegle : ∀ γ : F, (A - Polynomial.C γ * B).natDegree ≤ d :=
+    fun γ => le_trans (Polynomial.natDegree_sub_le _ _)
+      (max_le (le_max_left _ _)
+        (le_trans (Polynomial.natDegree_C_mul_le _ _) (le_max_right _ _)))
+  set T : Set F := S ∪ {t : F | B₁.eval t = 0} with hTdef
+  have hTfin : T.Finite := hS.union (Polynomial.finite_setOf_isRoot hB₁)
+  set Γbad : Set F :=
+    {γ : F | (A - Polynomial.C γ * B).coeff d = 0} ∪
+      {γ : F | ∃ t ∈ T, (A - Polynomial.C γ * B).eval t = 0}
+    with hΓdef
+  have hone : A.coeff d ≠ 0 ∨ B.coeff d ≠ 0 := by
+    rcases max_choice A.natDegree B.natDegree with h | h
+    · left
+      have hda : d = A.natDegree := hdd.trans h
+      have hA0 : A ≠ 0 := by
+        intro hz
+        exact hd0 (by rw [hda, hz, Polynomial.natDegree_zero])
+      rw [hda]
+      exact Polynomial.leadingCoeff_ne_zero.2 hA0
+    · right
+      have hdb : d = B.natDegree := hdd.trans h
+      rw [hdb]
+      exact Polynomial.leadingCoeff_ne_zero.2 hB
+  have hΓ1 : {γ : F | (A - Polynomial.C γ * B).coeff d = 0}.Finite := by
+    have hq : (Polynomial.C (A.coeff d) - Polynomial.C (B.coeff d) * Polynomial.X : F[X]) ≠ 0 := by
+      intro hz
+      rcases hone with h | h
+      · exact h (by simpa using congrArg (fun p : F[X] => p.coeff 0) hz)
+      · exact h (by simpa using congrArg (fun p : F[X] => p.coeff 1) hz)
+    refine (Polynomial.finite_setOf_isRoot hq).subset fun γ hγ => ?_
+    simp only [Set.mem_setOf_eq, Polynomial.coeff_sub, Polynomial.coeff_C_mul] at hγ
+    simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X]
+    linear_combination hγ
+  have hΓ2 : {γ : F | ∃ t ∈ T, (A - Polynomial.C γ * B).eval t = 0}.Finite := by
+    refine (hTfin.image fun t => A.eval t / B.eval t).subset ?_
+    rintro γ ⟨t, htT, ht⟩
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C] at ht
+    have h1 : A.eval t = γ * B.eval t := by linear_combination ht
+    have h2 : B.eval t ≠ 0 := fun h => hnocom t (by rw [h1, h, mul_zero]) h
+    exact ⟨t, htT, by simp only [h1]; field_simp⟩
+  have hΓfin : Γbad.Finite := hΓ1.union hΓ2
+  set 𝓡 : (F[X])[X] := fibreRes A B A₁ B₁ d d₁ with h𝓡
+  set A' : F[X] := -(𝓡.coeff (d - 1)) with hA'def
+  set B' : F[X] := Polynomial.C (d : F) * 𝓡.coeff d with hB'def
+  have hdF : (d : F) ≠ 0 := Nat.cast_ne_zero.2 hd0
+  have hgood : ∀ γ : F, γ ∉ Γbad → B'.eval γ ≠ 0 ∧ ∃ v : F,
+      A'.eval γ = v * B'.eval γ ∧
+      ∀ t : F, (A - Polynomial.C γ * B).eval t = 0 → A₁.eval t = v * B₁.eval t := by
+    intro γ hγ
+    have hcoeff : (A - Polynomial.C γ * B).coeff d ≠ 0 := fun h => hγ (Or.inl h)
+    have hrootT : ∀ t : F, (A - Polynomial.C γ * B).eval t = 0 → t ∉ T :=
+      fun t ht hmem => hγ (Or.inr ⟨t, hmem, ht⟩)
+    have hdeg : (A - Polynomial.C γ * B).natDegree = d :=
+      le_antisymm (hdegle γ) (Polynomial.le_natDegree_of_ne_zero hcoeff)
+    obtain ⟨t₀, ht₀⟩ : ∃ t₀ : F, (A - Polynomial.C γ * B).eval t₀ = 0 :=
+      (IsAlgClosed.splits (A - Polynomial.C γ * B)).exists_eval_eq_zero
+        (Polynomial.degree_ne_of_natDegree_ne (by rw [hdeg]; exact hd0))
+    have ht₀T := hrootT t₀ ht₀
+    have hB₁t₀ : B₁.eval t₀ ≠ 0 := fun h => ht₀T (Or.inr h)
+    have ht₀S : t₀ ∉ S := fun h => ht₀T (Or.inl h)
+    have hvall : ∀ t : F, (A - Polynomial.C γ * B).eval t = 0 →
+        A₁.eval t = (A₁.eval t₀ / B₁.eval t₀) * B₁.eval t := by
+      intro t ht
+      have htT := hrootT t ht
+      have hB₁t : B₁.eval t ≠ 0 := fun h => htT (Or.inr h)
+      have htS : t ∉ S := fun h => htT (Or.inl h)
+      have e0 : A.eval t₀ = γ * B.eval t₀ := by
+        simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C] at ht₀
+        linear_combination ht₀
+      have e1 : A.eval t = γ * B.eval t := by
+        simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C] at ht
+        linear_combination ht
+      have h2 := hinv t₀ t ht₀S htS (by rw [e0, e1]; ring)
+      field_simp
+      linear_combination -h2
+    have hKne : (A - Polynomial.C γ * B).leadingCoeff ^ d₁
+        * ((A - Polynomial.C γ * B).roots.map B₁.eval).prod ≠ 0 := by
+      refine mul_ne_zero (pow_ne_zero _ (Polynomial.leadingCoeff_ne_zero.2 (hfne γ))) ?_
+      refine Multiset.prod_ne_zero ?_
+      intro hmem
+      obtain ⟨t, ht, hte⟩ := Multiset.mem_map.1 hmem
+      have hr : (A - Polynomial.C γ * B).eval t = 0 := (Polynomial.mem_roots'.1 ht).2
+      exact hrootT t hr (Or.inr hte)
+    have hPeval : ∀ ω : F, (𝓡.map (Polynomial.evalRingHom γ)).eval ω
+        = ((A - Polynomial.C γ * B).leadingCoeff ^ d₁
+            * ((A - Polynomial.C γ * B).roots.map B₁.eval).prod)
+          * ((A₁.eval t₀ / B₁.eval t₀) - ω) ^ d := by
+      intro ω
+      rw [← fibreEval_apply, h𝓡]
+      exact fibreEval_fibreRes_eq (le_max_left _ _) (le_max_right _ _) hdeg hvall ω
+    obtain ⟨hc1, hc2⟩ := coeff_of_eval_eq_pow hKne hd0 hPeval
+    simp only [Polynomial.coeff_map, Polynomial.coe_evalRingHom] at hc1 hc2
+    have hB'γ : B'.eval γ = (d : F) * (𝓡.coeff d).eval γ := by
+      rw [hB'def]; simp
+    refine ⟨by rw [hB'γ]; exact mul_ne_zero hdF hc1, A₁.eval t₀ / B₁.eval t₀, ?_, hvall⟩
+    rw [hA'def, hB'γ, Polynomial.eval_neg, hc2]
+    ring
+  obtain ⟨γ₀, hγ₀⟩ : ∃ γ : F, γ ∉ Γbad := hΓfin.infinite_compl.nonempty
+  have hB'ne : B' ≠ 0 := fun h => (hgood γ₀ hγ₀).1 (by rw [h]; simp)
+  refine ⟨A', B', max A'.natDegree B'.natDegree, hB'ne, le_max_left _ _, le_max_right _ _, ?_⟩
+  set d' : ℕ := max A'.natDegree B'.natDegree with hd'def
+  have hSbadfin : (S ∪ {s : F | B.eval s = 0} ∪ {s : F | B₁.eval s = 0} ∪
+      {s : F | ∃ γ ∈ Γbad, (A - Polynomial.C γ * B).eval s = 0}).Finite := by
+    refine ((hS.union (Polynomial.finite_setOf_isRoot hB)).union
+      (Polynomial.finite_setOf_isRoot hB₁)).union ?_
+    have hrw : {s : F | ∃ γ ∈ Γbad, (A - Polynomial.C γ * B).eval s = 0}
+        = ⋃ γ ∈ Γbad, {s : F | (A - Polynomial.C γ * B).eval s = 0} := by ext s; simp
+    rw [hrw]
+    exact hΓfin.biUnion fun γ _ => Polynomial.finite_setOf_isRoot (hfne γ)
+  refine sub_eq_zero.1 (Polynomial.eq_zero_of_infinite_isRoot _ ?_)
+  refine hSbadfin.infinite_compl.mono fun s hs => ?_
+  have hsS : s ∉ S := fun h => hs (Or.inl (Or.inl (Or.inl h)))
+  have hBs : B.eval s ≠ 0 := fun h => hs (Or.inl (Or.inl (Or.inr h)))
+  have hB₁s : B₁.eval s ≠ 0 := fun h => hs (Or.inl (Or.inr h))
+  have hu : (A.eval s / B.eval s) * B.eval s = A.eval s := by field_simp
+  have hroot : (A - Polynomial.C (A.eval s / B.eval s) * B).eval s = 0 := by
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+    linear_combination -hu
+  have hγbad : (A.eval s / B.eval s) ∉ Γbad := fun h => hs (Or.inr ⟨_, h, hroot⟩)
+  obtain ⟨hB'γ, v, hA'γ, hvall⟩ := hgood _ hγbad
+  have hA₁s : A₁.eval s = v * B₁.eval s := hvall s hroot
+  show (A₁ * homogSubst A B d' B' - B₁ * homogSubst A B d' A').eval s = 0
+  rw [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_mul,
+    eval_homogSubst (le_max_right _ _) hu, eval_homogSubst (le_max_left _ _) hu,
+    hA₁s, hA'γ]
+  ring
+
+/-! ### The general case, by dividing out `gcd A B` -/
+
+/-- **PROVEN (2026-07-27), and it is PURE ONE-VARIABLE ALGEBRA over `F[X]`.** No
+curve, no group, no `Isogeny`, no `End`: this is the only thing
+`Isogeny.isRationalMap_dualHom` rested on, and the `#print axioms` audit of it is
+therefore meaningful — it returns exactly `[propext, Classical.choice, Quot.sound]`.
 
 **What it says.** `A/B` is a rational function of degree `d = max (deg A) (deg B)`;
 its generic fibre is the `d`-element root set of `A - c·B`. The hypothesis `hinv`
@@ -2953,38 +3278,97 @@ statement is a polynomial identity: `homogSubst A B d Q` is `B ^ d · Q (A / B)`
 `u = A(s)/B(s)`. The degree bounds `A'.natDegree ≤ d`, `B'.natDegree ≤ d` are
 exactly what `eval_homogSubst` consumes.
 
-**The intended proof (Lüroth/trace), stated so the leaf can be attacked without
-re-deriving it.** Over `K = F(c)` put `p_c(T) = A(T) - c·B(T)`, of degree `d`, with
-root set the generic fibre. `hinv` says `A₁/B₁` takes ONE value `v(c)` on all `d`
-roots. Then
+**The proof as carried out — one resultant, and NO divisor theory.** Three steps.
 
-  `v(c) = (1/d) · Tr_{K[T]/(p_c) / K} (A₁/B₁)`,
+1. *Reduction to `IsCoprime A B`* (this theorem). Divide out `g = EuclideanDomain.gcd A B`;
+   `homogSubst_mul_left` transports the conclusion back through `g ^ d`, and the fibre
+   hypothesis transports forward just by multiplying by `g(s)·g(t)`, so `S` need not be
+   enlarged. Coprimality is exactly what removes the BASE POINT of the pencil: a common
+   root of `A` and `B` is a root of `A - γ·B` for *every* `γ`, and would make every
+   parameter bad.
 
-and a trace is a symmetric function of the roots, hence a rational function of the
-coefficients of `p_c`, hence of `c` — which is the required `A'/B'`. Equivalently
-and more constructively, `Res_T (p_c(T), A₁(T) - w·B₁(T))` equals
-`const(c) · (w - v(c)) ^ d` as a polynomial in `w`, so `v(c)` is
-`-(coeff of w ^ (d-1)) / (d · coeff of w ^ d)`. **Division by `d` is where
-`[CharZero F]` is consumed** — and it must be consumed somewhere, since the whole
-statement is false in characteristic `p` (an inseparable `A/B = X ^ p` has every
-fibre a single point, so `hinv` is vacuous while `A₁/B₁ = X` is not a rational
-function of `X ^ p`).
+2. *The degenerate branch* (`exists_homogSubst_of_fibreConst`). If
+   `max (deg A) (deg B) = 0` then `A` and `B` are constants, `hinv`'s hypothesis is
+   automatic, so `A₁/B₁` is constant off `S`, and `(A', B', d) := (C e, 1, 0)` works.
 
-`[IsAlgClosed F]` is what makes `hinv`, a hypothesis about `F`-POINTS, say anything
-about the generic fibre; over a small field it would be vacuous and the statement
-false.
+3. *The main branch* (`exists_homogSubst_of_fibreInvariant_coprime`). `fibreRes A B A₁ B₁ d d₁`
+   is `Res_T (A(T) − c·B(T), A₁(T) − w·B₁(T))`, formed ONCE in the two-variable ring
+   `(F[c])[w]` and specialised by the ring hom `fibreEval γ ω`. Outside a finite set `Γbad`
+   — the at most one `γ` that kills the leading coefficient, plus the finitely many values
+   `A(t)/B(t)` for `t ∈ S ∪ B₁⁻¹(0)` — the polynomial `A − γ·B` has degree exactly `d`, and
+   every one of its roots lies off `S` with `B₁ ≠ 0` there; `hinv` applied to two such roots
+   gives `A₁(t) = v·B₁(t)` for ONE value `v = v(γ)`. Since `F` is algebraically closed,
+   `Polynomial.resultant_eq_prod_eval` turns the specialised resultant into
+   `K(γ)·(v(γ) − ω) ^ d` with `K(γ) ≠ 0`, so by `Polynomial.funext` the `w`-polynomial IS
+   `C K · (C v − X) ^ d`, and its top two coefficients read `v` off:
+   `coeff (d−1) = −(d·v) · coeff d` (`coeff_of_eval_eq_pow`). Hence
+   `A' := −𝓡.coeff (d−1)` and `B' := C (d : F) · 𝓡.coeff d`, polynomials in `c`, satisfy
+   `A'(γ) = v(γ)·B'(γ)` and `B'(γ) ≠ 0` at every good `γ`. The target identity then holds at
+   every `s` outside a finite set (take `γ = A(s)/B(s)`, of which `s` is a root of `A − γ·B`),
+   and an identity valid off a finite subset of an infinite field is an identity
+   (`Polynomial.eq_zero_of_infinite_isRoot`).
 
-**Degenerate cases are already covered by the statement** and are worth checking
-first when attacking it: if `A = C c₀ * B` then `hinv` forces `A₁ = C e * B₁` off
-`S`, hence everywhere, and `(A', B', d) := (Polynomial.C e, 1, 0)` works. -/
+Note that SEPARABILITY of `A − γ·B` is never needed: the roots are counted WITH
+multiplicity throughout, and the factorisation `∏ (A₁(t) − ω·B₁(t)) = ∏ B₁(t) · (v − ω) ^ d`
+does not care. That is what removes the discriminant/Wronskian genericity argument the
+trace formulation would have required.
+
+**Where the two type-class hypotheses are consumed.** `[CharZero F]` twice: `(d : F) ≠ 0`
+is what makes `B' = C (d : F) · 𝓡.coeff d` nonzero — this is the "division by `d`" of the
+trace formula — and `Infinite F` (which `CharZero` supplies) is what promotes a cofinite
+identity to a polynomial identity. It is genuinely needed: in characteristic `p` an
+inseparable `A/B = X ^ p` has every fibre a single point, so `hinv` is vacuous while
+`A₁/B₁ = X` is not a rational function of `X ^ p`. `[IsAlgClosed F]` is what makes `hinv`,
+a hypothesis about `F`-POINTS, say anything about the generic fibre: it supplies the roots
+of `A − γ·B` as elements of `F` and the `Splits` hypothesis without which the resultant
+does not factor. Over a small field `hinv` would be vacuous and the statement false.
+
+**ROUTE CORRECTION, recorded because an earlier version of this docstring said the
+opposite.** That version said `homogSubst` "will not help directly" and pointed at `Pic⁰`
+and divisor theory. Its premise — that this is not a composition — is right; its conclusion
+was wrong. What has to be produced is a rational function **of** `x ∘ φ`, not a substitution
+**into** one, and `homogSubst A B d Q = B ^ d · Q (A / B)` is exactly that. **No divisor
+theory appears anywhere in the proof.** -/
 theorem exists_homogSubst_of_fibreInvariant [IsAlgClosed F] [CharZero F]
     {A B A₁ B₁ : F[X]} (hB : B ≠ 0) (hB₁ : B₁ ≠ 0) {S : Set F} (hS : S.Finite)
     (hinv : ∀ s t : F, s ∉ S → t ∉ S →
       A.eval s * B.eval t = A.eval t * B.eval s →
       A₁.eval s * B₁.eval t = A₁.eval t * B₁.eval s) :
     ∃ (A' B' : F[X]) (d : ℕ), B' ≠ 0 ∧ A'.natDegree ≤ d ∧ B'.natDegree ≤ d ∧
-      A₁ * homogSubst A B d B' = B₁ * homogSubst A B d A' :=
-  sorry
+      A₁ * homogSubst A B d B' = B₁ * homogSubst A B d A' := by
+  classical
+  set g : F[X] := EuclideanDomain.gcd A B with hgdef
+  have hgne : g ≠ 0 := fun h => hB (EuclideanDomain.gcd_eq_zero_iff.1 h).2
+  set Aa : F[X] := A / g with hAadef
+  set Bb : F[X] := B / g with hBbdef
+  have hAeq : A = g * Aa :=
+    (EuclideanDomain.mul_div_cancel' hgne (EuclideanDomain.gcd_dvd_left A B)).symm
+  have hBeq : B = g * Bb :=
+    (EuclideanDomain.mul_div_cancel' hgne (EuclideanDomain.gcd_dvd_right A B)).symm
+  have hbez : g = A * EuclideanDomain.gcdA A B + B * EuclideanDomain.gcdB A B :=
+    EuclideanDomain.gcd_eq_gcd_ab A B
+  have hcop : IsCoprime Aa Bb := by
+    refine ⟨EuclideanDomain.gcdA A B, EuclideanDomain.gcdB A B, mul_left_cancel₀ hgne ?_⟩
+    rw [mul_one]
+    calc g * (EuclideanDomain.gcdA A B * Aa + EuclideanDomain.gcdB A B * Bb)
+        = (g * Aa) * EuclideanDomain.gcdA A B + (g * Bb) * EuclideanDomain.gcdB A B := by ring
+      _ = A * EuclideanDomain.gcdA A B + B * EuclideanDomain.gcdB A B := by
+            rw [← hAeq, ← hBeq]
+      _ = g := hbez.symm
+  have hBbne : Bb ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hBeq
+    exact hB hBeq
+  obtain ⟨A', B', d', hB'ne, hA'd, hB'd, hkey⟩ :=
+    exists_homogSubst_of_fibreInvariant_coprime hcop hBbne hB₁ hS
+      (fun s t hs ht hst => hinv s t hs ht (by
+        rw [hAeq, hBeq]
+        simp only [Polynomial.eval_mul]
+        linear_combination (g.eval s * g.eval t) * hst))
+  refine ⟨A', B', d', hB'ne, hA'd, hB'd, ?_⟩
+  rw [hAeq, hBeq, homogSubst_mul_left, homogSubst_mul_left]
+  linear_combination (g ^ d') * hkey
+
 
 /-- **PROVEN: descent of a rational map along a rational surjection.**
 
@@ -3702,10 +4086,12 @@ end Isogeny
 /-! ### The Vélu quotient map is a rational map
 
 **The bridge from `Velu.lean` to `IsIsogeny`, PROVEN 2026-07-27.** Everything in
-this section is closed; nothing here rests on the three open leaves of this file
-(`IsRationalMap.add`, `IsRationalMap.isIsogeny`, `Isogeny.isRationalMap_dualHom`)
-except the last declaration, `isIsogeny_of_veluMap`, which consumes
-`IsRationalMap.isIsogeny` deliberately and is marked as such.
+this section is closed. An earlier version of this header listed
+`IsRationalMap.add`, `IsRationalMap.isIsogeny` and `Isogeny.isRationalMap_dualHom`
+as "the three open leaves of this file"; **all three are now PROVEN**, the last of
+them via `IsRationalMap.descend` and `exists_homogSubst_of_fibreInvariant`. So the
+old caveat about `isIsogeny_of_veluMap` consuming an open leaf no longer applies —
+it consumes `IsRationalMap.isIsogeny`, which is closed.
 
 **Why this is the missing link.** `Velu.lean` builds the quotient of a curve by a
 finite subgroup and proves its map on points is an additive, Galois-equivariant
