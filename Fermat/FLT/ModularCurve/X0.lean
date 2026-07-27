@@ -15102,7 +15102,16 @@ the three that remain in this subsection are strictly smaller:
 * `smoothOfRelativeDimension_finite_compl_of_compactificationY0` — the
   relative dimension and the finite cusp locus of `X_0(N)/ℚ`.  Geometric
   connectedness, the third of the old three facts, is now derived from
-  these two through `geometricallyConnected_of_isSmoothCompactification`;
+  these two through `geometricallyConnected_of_isSmoothCompactification`.
+  **PROVEN as of 2026-07-27**, and with it this subsection carries no
+  modular content beyond the two bullets below: what replaced it is two
+  leaves of general curve theory in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` —
+  `smoothOfRelativeDimension_of_isDominant` (local constancy of the
+  relative dimension of a smooth morphism) and
+  `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` (a smooth
+  curve over a field is one-dimensional).  Neither mentions modular
+  curves, so neither belongs to an owner of this file;
 * `isX0CoarseModuli_specialOpen_of_curveModel` — good reduction of the
   `Γ₀(N)`-problem at `q ∤ N`, i.e. the special fibre of the integral open
   part is `Y_0(N)/𝔽_q` with finite cusp locus;
@@ -15624,58 +15633,83 @@ three — is now demanded once for the whole file instead of once per
 consumer. -/
 
 /-- **The relative dimension and the finite cusp locus of `X_0(N)/ℚ`**
-(sorry node — the two of the three facts below that do not follow from
-the others).
+(PROVEN over two general curve-theory leaves; was a sorry node until
+2026-07-27).
 
 TRUE for `N ≠ 0`, and both are consequences of `X` being IRREDUCIBLE of
 dimension `1`, which it is because `hc` makes `Y` integral
 (`isSmoothCurve_of_isCoarseModuliY0`) and `hX.isDominant` makes `Y` dense
-in `X`:
+in `X`.
 
-* relative dimension `1`.  `hX.smooth` already gives `Smooth strX`; what
-  is missing is only the DIMENSION.  The relative dimension of a smooth
-  morphism is locally constant on the source, and `X` is connected
-  because it contains a dense irreducible open, so the value `1` taken on
-  `Y` propagates to all of `X`;
-* finiteness of the cusp locus.  `(Set.range hX.j.base)ᶜ` is closed
-  (`hX.isOpenImmersion` makes the range open) and is not everything
-  (`Y` is nonempty, being integral), so on an irreducible noetherian
-  sober space of Krull dimension `≤ 1` it is finite — which is exactly
-  `AlgebraicGeometry.finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one`,
-  PROVEN in `CurveCompactification.lean`.
+**Both checks recorded on the previous version of this docstring have now
+been RUN, and this declaration is the assembly over their outcome.**
+Nothing modular is left in it: after `isSmoothCurve_of_isCoarseModuliY0`
+turns `hN`/`hc` into `IsIntegral Y` and
+`SmoothOfRelativeDimension 1 strY`, every remaining step is general
+algebraic geometry, and all of it now lives in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
 
-IRREDUCIBLE at this pin ALONG THE DIMENSION-THEORY AXIS, and the TWO
-CHECKS THAT WOULD REFUTE THAT, each of which closes one bullet:
+* *relative dimension `1`* is
+  `AlgebraicGeometry.smoothOfRelativeDimension_of_isDominant` — check 1,
+  local constancy of the relative dimension of a smooth morphism, stated
+  as a leaf there.  Its verdict is UNCHANGED: `Mathlib` has no
+  `relativeDimension`-style invariant, and not one lemma relating
+  `SmoothOfRelativeDimension n` at two different `n`.  Two things about
+  the statement were sharpened when it was cut out: **density alone
+  suffices, connectedness of `X` is not needed** (local constancy already
+  makes every level set open, so the complement of the `n`-level set is
+  an open set disjoint from a dense one), and the hypothesis is stated
+  over an arbitrary base `S` rather than over `Spec ℚ`;
+* *finiteness of the cusp locus* is
+  `AlgebraicGeometry.finite_compl_range_of_topologicalKrullDim_le_one`,
+  **now a THEOREM** — check 2 collapsed exactly as predicted.  The
+  `NoetherianSpace X` half is free (finite type over `ℚ` plus
+  quasi-compact over the compact `Spec ℚ`, both supplied by
+  `hX.proper`), `QuasiSober` and `T0Space` are scheme instances, and
+  `IrreducibleSpace X` is the new `irreducibleSpace_of_denseRange`
+  applied to `IsIntegral Y` — the exact analogue of
+  `connectedSpace_of_denseRange`.  So the whole of the second bullet
+  reduces to `topologicalKrullDim X ≤ 1`, isolated as the leaf
+  `AlgebraicGeometry.topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`.
 
-1. *local constancy of the relative dimension of a smooth morphism.*
-   Mathlib's `SmoothOfRelativeDimension n` is a pointwise
-   standard-smoothness condition with no comparison between the values at
-   two points, and a survey on 2026-07-27 found no
-   `relativeDimension`-style invariant anywhere in
-   `Mathlib.AlgebraicGeometry`.  Producing "smooth, plus relative
-   dimension `n` on a dense open of a connected source, implies relative
-   dimension `n`" closes the first bullet;
-2. *`topologicalKrullDim X ≤ 1` together with `NoetherianSpace X`* for a
-   proper smooth curve over a field.  With those two the second bullet is
-   three lines over the already-proven finiteness lemma cited above:
-   `QuasiSober` and `T0Space` are instances for schemes, and
-   `IrreducibleSpace X` follows from `IsIntegral Y` and `IsDominant hX.j`
-   exactly as `connectedSpace_of_denseRange` handles connectedness.
+**The dependency between the two bullets recorded before is real and
+survives**: the dimension leaf takes `SmoothOfRelativeDimension 1 strX`
+as its hypothesis, so it is stated about `X` rather than about `Y`, and
+it is therefore consumed *after* check 1's leaf here.  A successor may
+still take the two leaves in either order — they are independent
+statements — but the assembly below fixes this order.
 
-Note the second bullet is the ONLY consumer of the first outside this
-statement, so a successor may take them in either order.
+**Correction to the earlier irreducibility note on the dimension bound.**
+The claim "`Mathlib` has no dimension theory" is too strong and would
+have sent an owner off to build one.  `MvPolynomial.ringKrullDim_of_isNoetherianRing`
+(`dim K[x₁ … xₛ] = s`) and Noether normalization
+(`NoetherNormalization.exists_finite_inj_algHom_of_fg`) are both PRESENT
+at this pin — note in particular that the `proof_wanted`
+`MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing` in
+`Mathlib/RingTheory/KrullDimension/Basic.lean` is STALE and must not be
+read as evidence of absence.  What is genuinely missing is only
+(1) invariance of `ringKrullDim` under an injective integral extension
+and (2) any link at all between a standard-smooth presentation and a
+dimension.  The full check is written out on that leaf.
 
-Every hypothesis is underscored only because the proof is a `sorry`.
-`_hN` is load-bearing for the same reason as in
-`isX0Compactification_data_of_compactificationY0` below: at `N = 0` the
-coarse space is EMPTY, `isDominant` forces `X` empty, and an empty scheme
-has no dimension to speak of — the first conjunct then holds vacuously
-but the argument above does not apply. -/
-theorem smoothOfRelativeDimension_finite_compl_of_compactificationY0 (N : ℕ) (_hN : N ≠ 0)
+`hN` and `hc` are both load-bearing and are now CONSUMED rather than
+underscored: at `N = 0` the coarse space is EMPTY, `isDominant` forces
+`X` empty, and the argument above does not apply (the first conjunct
+would hold vacuously); without `hc`, `X` is merely some smooth proper
+scheme with a dense open and has no reason to be a curve. -/
+theorem smoothOfRelativeDimension_finite_compl_of_compactificationY0 (N : ℕ) (hN : N ≠ 0)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :
-    SmoothOfRelativeDimension 1 strX ∧ (Set.range hX.j.base)ᶜ.Finite :=
-  sorry
+    (hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :
+    SmoothOfRelativeDimension 1 strX ∧ (Set.range hX.j.base)ᶜ.Finite := by
+  obtain ⟨hint, -, -, hsmY, -⟩ := isSmoothCurve_of_isCoarseModuliY0 (Nat.pos_of_ne_zero hN) hc
+  haveI := hint
+  haveI := hX.isOpenImmersion
+  haveI := hX.isDominant
+  haveI := hX.proper
+  have hsm : SmoothOfRelativeDimension 1 strX :=
+    AlgebraicGeometry.smoothOfRelativeDimension_of_isDominant hX.«over» hX.smooth hsmY
+  exact ⟨hsm, AlgebraicGeometry.finite_compl_range_of_topologicalKrullDim_le_one strX hX.j
+    (AlgebraicGeometry.topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one strX hsm)⟩
 
 /-- **The three facts about `X_0(N)/ℚ` that `IsCompactificationY0` does
 not carry** (PROVEN over one smaller leaf, was a sorry node until
@@ -15707,8 +15741,10 @@ in a sorry node would overstate what is open.
 
 **Cut (2026-07-27): the geometric-connectedness third is now PROVEN, and
 this statement is an assembly over the other two.**  See
-`smoothOfRelativeDimension_finite_compl_of_compactificationY0` below, and
-the note there for why that one is not further divisible at this pin. -/
+`smoothOfRelativeDimension_finite_compl_of_compactificationY0` below,
+which is itself now PROVEN (2026-07-27) over two leaves of general curve
+theory in `CurveCompactification.lean`; the earlier note there claiming
+it was not further divisible at this pin is retired. -/
 theorem isX0Compactification_data_of_compactificationY0 (N : ℕ) (hN : N ≠ 0)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     (hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :

@@ -650,4 +650,171 @@ theorem geometricallyConnected_of_isSmoothCompactification {Y X : Scheme.{u}}
     (Scheme.Hom.continuous (pullback.lift (pullback.fst strY y ≫ j) (pullback.snd strY y) hcond))
     (denseRange_of_isPullback h.comm hW hV _ (pullback.lift_fst _ _ _) (pullback.lift_snd _ _ _))
 
+/-! ### Relative dimension and the finiteness of the complement, for a GIVEN compactification
+
+The theorem above *constructs* a smooth compactification, so the consumer that quantifies
+over an arbitrary one — `Fermat.IsCompactificationY0`, which carries only `Smooth strX` and
+`IsProper strX` — cannot read the relative dimension or the finite complement off it.  This
+subsection supplies exactly those two, for an arbitrary `(X, j)`, and reduces them to two
+named inputs.
+
+Kept in one block at the end of the file rather than interleaved with the material above so
+that the two leaves already dispatched here (`locallyOfFiniteType_fromNormalization`,
+`topologicalKrullDim_normalization_le_one`) keep their region untouched.  The module
+docstring's leaf table above therefore does NOT list the two leaves added here; see the two
+declarations themselves.
+
+Note `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` is a genuinely different
+statement from the file's existing `topologicalKrullDim_normalization_le_one`: that one bounds
+the dimension of a relative *normalization*, about which no smoothness is known, from the
+smoothness of a dense open inside it; this one bounds the dimension of a scheme that is itself
+smooth of relative dimension one.  Neither implies the other at this pin, though a future
+dimension theory would prove both at once. -/
+
+/-- **A space with a dense irreducible image is irreducible.**
+
+The image of an irreducible space under a continuous map is irreducible, the closure of an
+irreducible set is irreducible, and a dense range has closure everything.  This is the exact
+analogue of `connectedSpace_of_denseRange` at the top of this file, and it is what supplies
+`IrreducibleSpace X` to `finite_compl_range_of_topologicalKrullDim_le_one` below from
+`IsIntegral Y` alone. -/
+theorem irreducibleSpace_of_denseRange {α β : Type*} [TopologicalSpace α] [TopologicalSpace β]
+    [IrreducibleSpace β] {f : β → α} (hf : Continuous f) (hd : DenseRange f) :
+    IrreducibleSpace α := by
+  have h : IsIrreducible (Set.range f) := by
+    rw [← Set.image_univ]
+    exact (IrreducibleSpace.isIrreducible_univ β).image f hf.continuousOn
+  rw [irreducibleSpace_def, Set.top_eq_univ, ← hd.closure_eq]
+  exact h.closure
+
+/-- **The relative dimension of a smooth morphism propagates from a dense open** (sorry leaf
+— local constancy of the relative dimension, and the whole content of the first half of
+`Fermat.smoothOfRelativeDimension_finite_compl_of_compactificationY0`).
+
+TRUE and classical.  For a smooth morphism `strX : X ⟶ S` the function sending `x : X` to
+the dimension of the fibre `X_{strX x}` at `x` is **locally constant** on `X` (EGA IV
+17.10.2; Stacks tag `02NM`, "the relative dimension of a smooth morphism is locally
+constant on the source").  So `{x | relative dimension at x = n}` and its complement are
+both open; `j` is an open immersion so its range carries relative dimension `n` from
+`strY = j ≫ strX`, and `j` is dominant so its range meets every nonempty open.  The
+complement is therefore an open set disjoint from a dense set, hence empty.
+
+**Density alone suffices; connectedness of `X` is NOT needed** and is deliberately not a
+hypothesis.  (The justification recorded on the consumer in `X0.lean` routed through
+"`X` is connected because it contains a dense irreducible open"; that is a strictly weaker
+argument, since local constancy already makes every level set open.)
+
+IRREDUCIBLE at this pin, and here is the check that would refute it.  `Mathlib`'s
+`SmoothOfRelativeDimension n f` (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:135`) is a
+*pointwise* condition — for every `x` there exist affine opens on which `f.appLE` is
+`IsStandardSmoothOfRelativeDimension n` — and the entire API around it consists of
+`.smooth`, the `HasRingHomProperty` instance, stability under base change, the instance
+`SmoothOfRelativeDimension 0` for open immersions, and additivity under composition.
+**Not one lemma in `Mathlib` relates the property at two different values of `n`, and there
+is no `relativeDimension`/fibre-dimension function anywhere in
+`Mathlib.AlgebraicGeometry`** (`Mathlib/AlgebraicGeometry/Morphisms/SmoothFiber.lean` is
+about smoothness of fibres, not their dimension).  Producing the local constancy — most
+cheaply as "the set of `x` at which `SmoothOfRelativeDimension n` holds locally is open" —
+closes this leaf, and refutes the irreducibility verdict.
+
+The axis searched is the RELATIVE-dimension one.  A route through absolute dimension (`X` is
+one-dimensional, the base is a point, hence the relative dimension is one) is a *different*
+axis and was not searched; it would need the same missing dimension theory as
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` below **plus** a converse
+linking dimension back to the standard-smooth presentation, so it looks strictly harder, but
+it has not been ruled out.
+
+`_hsm : Smooth strX` is load-bearing and the statement is FALSE without it: a morphism can
+restrict to something smooth of relative dimension `n` over a dense open and be arbitrarily
+bad elsewhere.  `IsOpenImmersion j` is what makes `strY` the restriction of `strX` rather
+than an unrelated morphism. -/
+theorem smoothOfRelativeDimension_of_isDominant {S Y X : Scheme.{u}} {n : ℕ}
+    {strY : Y ⟶ S} {strX : X ⟶ S} {j : Y ⟶ X} [IsOpenImmersion j] [IsDominant j]
+    (_hcomm : j ≫ strX = strY) (_hsm : Smooth strX)
+    (_hY : SmoothOfRelativeDimension n strY) :
+    SmoothOfRelativeDimension n strX :=
+  sorry
+
+/-- **A smooth curve over a field is one-dimensional** (sorry leaf — the dimension-theoretic
+input behind the second half of
+`Fermat.smoothOfRelativeDimension_finite_compl_of_compactificationY0`).
+
+TRUE and classical: a scheme of finite type over a field `K` which is smooth of relative
+dimension `1` has all of its local rings of dimension `≤ 1`, so its topological Krull
+dimension is `≤ 1`.  Stacks tags `0A21` (dimension = transcendence degree) and `02JS`
+(relative dimension of a smooth morphism).  Only `≤ 1` is needed; the matching lower bound is
+never used, and is anyway false for the empty scheme.
+
+`QuasiCompact` and `LocallyOfFiniteType` are exactly the two instances `IsProper` supplies at
+the call site, and no more: properness itself plays no part in the dimension count.
+
+IRREDUCIBLE at this pin, and here is the state of the ingredients — this is the check to
+re-run before accepting the verdict, because two of the three pieces DO exist:
+
+* **present**: `MvPolynomial.ringKrullDim_of_isNoetherianRing`
+  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean:119`) gives
+  `ringKrullDim K[x₁ … xₛ] = s` — note this makes the `proof_wanted`
+  `MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing` at
+  `Mathlib/RingTheory/KrullDimension/Basic.lean:94` **stale**, so do not conclude from that
+  `proof_wanted` that the polynomial dimension is unavailable;
+* **present**: Noether normalization,
+  `NoetherNormalization.exists_finite_inj_algHom_of_fg`
+  (`Mathlib/RingTheory/NoetherNormalization.lean:289`) — every f.g. `K`-algebra is finite over
+  some `K[x₁ … xₛ]`;
+* **present**: `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim` and
+  `topologicalKrullDim_subspace_le`, which is how an affine-open-local bound is assembled into
+  a bound on `X` (`IsLocallyArtinian.of_topologicalKrullDim_le_zero` in
+  `Mathlib/AlgebraicGeometry/Artinian.lean` is the worked precedent for exactly this pattern
+  one dimension down);
+* **MISSING (1)**: invariance of `ringKrullDim` under an *injective integral* ring extension
+  (lying over + going up + incomparability).  A grep for `ringKrullDim` across
+  `Mathlib/RingTheory/` turns up transport along `RingEquiv` and the surjective bound
+  `ringKrullDim_le_of_surjective`, and nothing for integral extensions;
+* **MISSING (2)**: the link from `IsStandardSmoothOfRelativeDimension 1` to `s = 1` in the
+  Noether normalization — i.e. relative dimension equals transcendence degree.  There is **no
+  occurrence of `ringKrullDim` or `krullDim` anywhere under `Mathlib/RingTheory/Smooth/`,
+  `Mathlib/RingTheory/Extension/` or in `Mathlib/RingTheory/Presentation.lean`**, so nothing
+  at this pin connects a smooth presentation to any dimension.
+
+So the leaf is two named ring-theoretic statements away, not a whole dimension theory. Either
+of the two MISSING items being found in the pin refutes this verdict. -/
+theorem topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one {X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType strX] [QuasiCompact strX]
+    (_hX : SmoothOfRelativeDimension 1 strX) :
+    topologicalKrullDim X ≤ 1 :=
+  sorry
+
+/-- **The complement of a dense open in a one-dimensional proper curve is finite** (PROVEN
+over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`).
+
+The same three-line assembly as `finite_compl_range_toNormalization` above, but for an
+ARBITRARY dominant open immersion `j : Y ⟶ X` rather than for `i.toNormalization`, and taking
+the dimension bound as a hypothesis rather than producing it.  All four typeclass hypotheses
+of `finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one` are discharged here:
+
+* `NoetherianSpace X` from `IsLocallyNoetherian X` (finite type over the noetherian `K`) and
+  `CompactSpace X` (quasi-compact over the compact `Spec K`);
+* `QuasiSober X` and `T0Space X` are instances for every scheme;
+* `IrreducibleSpace X` from `IsIntegral Y` and the density of `j`, via
+  `irreducibleSpace_of_denseRange` above.
+
+The complement is closed because `j` is an open immersion, and is not everything because
+`IsIntegral Y` makes `Y` nonempty. -/
+theorem finite_compl_range_of_topologicalKrullDim_le_one {Y X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType strX] [QuasiCompact strX]
+    (j : Y ⟶ X) [IsOpenImmersion j] [IsDominant j] [IsIntegral Y]
+    (hdim : topologicalKrullDim X ≤ 1) :
+    (Set.range j.base)ᶜ.Finite := by
+  haveI : IsNoetherianRing (CommRingCat.of K) := inferInstanceAs (IsNoetherianRing K)
+  haveI : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian strX
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace strX
+  haveI : IsNoetherian X := ⟨⟩
+  haveI : IrreducibleSpace X :=
+    irreducibleSpace_of_denseRange j.continuous (Scheme.Hom.denseRange j)
+  refine finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one hdim
+    (isClosed_compl_iff.mpr j.isOpenEmbedding.isOpen_range) ?_
+  obtain ⟨y⟩ : Nonempty Y := inferInstance
+  intro h
+  exact (h ▸ Set.mem_univ (j.base y) : j.base y ∈ (Set.range j.base)ᶜ) (Set.mem_range_self y)
+
 end AlgebraicGeometry
