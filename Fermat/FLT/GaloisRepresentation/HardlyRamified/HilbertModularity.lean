@@ -12405,6 +12405,217 @@ structure PotentialHeckeDatum (ℓ : ℕ) [Fact ℓ.Prime]
 
 attribute [instance] PotentialHeckeDatum.fieldF PotentialHeckeDatum.numberFieldF
 
+/-! ### The WITNESS-CARRYING field/Hecke cut (TAKEN 2026-07-27)
+
+`nonempty_potentialHeckeDatum_of_five_le` below is no longer a leaf: it is
+the assembly of the two theorems in this section. The cut is axis 2 of that
+declaration's own ATOMICITY AUDIT, whose refuting check —
+
+    grep -rn 'heckePackage\|PotentialModularityWitness' Fermat/
+
+— now answers `Fermat/FLT/Modularity/MoretBailly.lean` rather than
+`Modularity/KhareWintenberger.lean`, because the Break-D hoist landed. The
+audit's own instruction in that case was "take this cut immediately"; this is
+that cut.
+
+**WHY IT IS SAFE, and why the NAIVE field/Hecke cut is not.** Splitting the
+leaf into "there is a totally real Galois `F` with `irreducibleF` and
+`residueCardTwo`" and "for EVERY such `F` a `HilbertHeckeAlgebra` exists"
+replaces an existential over `F` by a universal one, i.e. asserts mod-`ℓ`
+modularity of `ρbar|_{G_F}` over every totally real Galois `F` — Serre's
+conjecture over totally real fields, which is open, and which the leaf's own
+CIRCULARITY GUARD bars in any case. That cut is axis 1 of the audit and is
+UNSAFE.
+
+What makes the cut below safe is that the first half carries an AUTOMORPHIC
+WITNESS: `Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))`, the
+already-existing interface recording one modular lift over `F` through its
+Hecke eigensystem, together with the residual congruence `residual₀`. The
+second half is therefore Carayol plus level lowering applied to a GIVEN
+eigensystem, not to a bare field, and asserts nothing about fields for which
+no eigensystem was produced. That structure is upstream (`MoretBailly.lean`,
+imported publicly here), so the cut introduces NO new interface — which is
+exactly the condition the audit attached to it.
+
+**WHAT IS NOT CLAIMED.** See the STALE-CLAIM CORRECTION in the docstring of
+`nonempty_potentialHeckeDatum_of_five_le`: `exists_moretBailly_seed_of_five_le`
+is importable here but is NOT applicable from this leaf's hypotheses, so
+`exists_moretBaillySeed_residueCardTwo_of_five_le` below is a genuine open
+leaf and not a wrapper. -/
+
+/-- **Taylor's Theorem B in residual form, with `2` prescribed to split
+completely** (LEAF — the (T) half of `nonempty_potentialHeckeDatum_of_five_le`,
+cut off 2026-07-27).
+
+Taylor, *Remarks on a conjecture of Fontaine and Mazur*, J. Inst. Math.
+Jussieu **1** (2002), Theorem B, proof in §§2–3. For `ℓ ≥ 5` and an
+irreducible odd `ρbar : G_ℚ → GL₂(k)`, Moret–Bailly's theorem on rational
+points with prescribed local conditions (*Groupes de Picard et problèmes de
+Skolem II*, Ann. Sci. É.N.S. **22** (1989), Thm 1.3), applied to a twisted
+Hilbert–Blumenthal moduli variety, produces a totally real `F`, Galois over
+`ℚ` and linearly disjoint from the splitting field of `ρbar`, carrying an
+abelian variety whose `ℓ`-torsion realises `ρbar|_{G_F}` and whose torsion at
+an auxiliary prime is residually dihedral, hence modular (theta series /
+Jacquet–Langlands); modularity lifting over totally real fields at that
+auxiliary prime (Fujiwara; Skinner–Wiles) transfers modularity to
+`ρbar|_{G_F}`. The resulting Hilbert newform of parallel weight `2` over `F`,
+with its `λ`-adic representation on a Carayol-normalised stable lattice and
+its residual congruence, is exactly a `Modularity.MoretBaillySeed`.
+
+**The `residueCardTwo` conjunct is part of the SAME citation, not an extra
+assumption.** Moret–Bailly constrains its set `S` of places only by
+finiteness, and under `hbar` the ramification of `ρbar` is confined to
+`{2, ℓ}`, so `2` is in `S` in any version of the argument that pins the local
+behaviour at every ramified prime. A place that splits completely has
+`e = f = 1`, hence `N(w) = 2` at every `w ∣ 2`. What it genuinely costs the
+citation is one nonemptiness, `Ω_2 ≠ ∅` — a `ℚ_2`-point of the twisted
+Hilbert–Blumenthal variety that survives the Bertini cut to a curve — which is
+BREAK B in the audit below. See "WHERE `residueCardTwo` WOULD HAVE TO COME
+FROM" in the docstring of `nonempty_potentialHeckeDatum_of_five_le` for the
+break-by-break status, and `natCard_residue_eq_of_nonempty_ringHom_padic` in
+`Modularity/MoretBailly.lean` for the adapter that converts a `ℚ_[2]`-embedding
+into this conjunct.
+
+**RELATION TO `exists_moretBailly_seed_of_five_le`, which is PROVEN and
+imported here.** This statement is that theorem with the `ℚ`-level
+characteristic-zero lift package REMOVED and the `residueCardTwo` conjunct
+ADDED. That theorem carries
+
+    {O} [CommRing O] [IsDomain O] … (hZinj : Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)} (hrank) (hρ : IsHardlyRamified … ρ)
+    (π : O →+* k) (hπsurj) (hπ : …)
+
+i.e. it presupposes a hardly ramified characteristic-zero lift of `ρbar` OVER
+`ℚ`. That is precisely the object potential modularity exists to route around
+— it is what pillar α proves, over this leaf — so the hypothesis package is
+not available here and never will be. Note the degenerate instantiation
+`O := k` is blocked by `hZinj`, since `algebraMap ℤ_[ℓ] k` kills `ℓ`.
+
+Mathematically the package is SUPERFLUOUS: Taylor's twisted
+Hilbert–Blumenthal moduli variety is built from the mod-`ℓ` twist datum
+`ρbar` alone, and no step of §§2–3 mentions a `ℚ`-rational lift. So there is
+a concrete, sized repair upstream that would collapse this leaf into
+Break B alone — DELETE that package from the seven declarations of the chain
+in `Modularity/MoretBailly.lean` that thread it
+(`exists_twistedHilbertBlumenthalModuliScheme_of_five_le`,
+`exists_twistedHilbertBlumenthalModuli_of_five_le`,
+`exists_hilbertBlumenthalPoint_of_five_le`,
+`exists_residualModularity_of_hilbertBlumenthalPoint`,
+`exists_heckeSystem_of_residualModularity`,
+`exists_heckeEigensystem_of_hilbertBlumenthalPoint`,
+`exists_moretBailly_seed_of_five_le`). It is a cut-level repair in a 30k-line
+file with concurrent owners and it is NOT attempted from here.
+  REFUTING CHECK for the applicability claim, and it must keep FAILING while
+  this leaf is open: read the binders of `exists_moretBailly_seed_of_five_le`
+  and look for `ρ`/`hρ`/`π`. If they are gone, this leaf is provable from it
+  together with the `residueCardTwo` supply, and should be closed rather than
+  proven.
+
+CIRCULARITY GUARD, inherited: this leaf may only ever be discharged by the
+independent Moret–Bailly/Taylor construction — never through `Family.lean`,
+`Lift.lean`, `Modularity/Interface.lean`, or the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd`, under whose hypotheses it is
+vacuously true and which is itself proven over pillar α, which is proven over
+this leaf. -/
+theorem exists_moretBaillySeed_residueCardTwo_of_five_le
+    (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {hdim : Module.rank k V = 2} {ρbar : GaloisRep ℚ k V}
+    (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
+      (∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+          Nat.card (𝓞 F ⧸ w.asIdeal) = 2) ∧
+      Nonempty (Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :=
+  sorry
+
+/-- **Carayol/Taylor plus level lowering, applied to a GIVEN modular seed**
+(LEAF — the (C) + (LL) half of `nonempty_potentialHeckeDatum_of_five_le`, cut
+off 2026-07-27).
+
+Given a Hilbert newform over `F` whose `λ`-adic representation is residually
+`ρbar|_{G_F}` — that is, given a `Modularity.MoretBaillySeed` — this produces
+the localized Hecke algebra `T_F` of the MINIMAL such newform, with every
+clause `HilbertHeckeAlgebra` demands.
+
+**(C) Carayol**, *Sur les représentations `ℓ`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. É.N.S. **19** (1986), 409–468, with
+**Taylor**, *On Galois representations associated to Hilbert modular forms*,
+Invent. Math. **98** (1989), 265–280 — existence and local–global
+compatibility of the attached Galois representation; and **Carayol**, *Formes
+modulaires et représentations galoisiennes à valeurs dans un anneau local
+complet*, Contemp. Math. **165** (1994), 213–237 — the upgrade from a
+pseudo-representation to a genuine `GL₂(𝕋_𝔪)`-valued `ρT`. That upgrade needs
+`ρbar|_{G_F}` ABSOLUTELY irreducible, which `hbar` and `hirr` already supply
+and which costs no extra hypothesis: an ODD `ρbar` cannot be `k`-irreducible
+without being `k̄`-irreducible, since a `k̄`-reducible `k`-irreducible `ρbar`
+has image in a nonsplit torus `k'ˣ`, forcing `det (ρbar c) = N_{k'/k}(±1) = 1`
+against `hbar`'s `det = χ̄_ℓ` and `χ̄_ℓ(c) = −1 ≠ 1` for odd `ℓ`. The argument
+is written out under "`hbar` + `hirr` ALREADY GIVE ABSOLUTE IRREDUCIBILITY" in
+the docstring of `nonempty_potentialHeckeDatum_of_five_le`.
+
+**(LL) Level lowering over totally real fields** — Fujiwara, *Deformation
+rings and Hecke algebras in the totally real case*; Jarvis, *Mazur's principle
+for totally real fields of odd degree*, Compositio **116** (1999), 39–79, and
+*Level lowering for modular mod `ℓ` representations over totally real fields*,
+Math. Ann. **313** (1999), 141–160; Rajaei, *On the levels of mod `ℓ` Hilbert
+modular forms*, J. Reine Angew. Math. **537** (2001), 33–65. The seed's
+newform has SOME level; `HilbertHeckeAlgebra.isHilbertHardlyRamified` demands
+the MINIMAL one, and (LL) is what closes that gap. This is the ONLY place the
+level lowering of the cluster lives — `HilbertHeckeAlgebra` pins the minimal
+level by fiat, so `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` has no
+non-minimal Hecke algebra left to lower; see the FORMAL-CONTENT AUDIT there.
+
+**The commutative algebra is NOT part of this leaf.** Since the 2026-07-27
+`ℤ`-form repair, `HilbertHeckeAlgebra` asks for a `ℤ`-form `T₀` module-finite
+and free over `ℤ`, a maximal ideal `𝔪` of `W(k) ⊗_{ℤ_[ℓ]} (ℤ_[ℓ] ⊗_ℤ T₀)`,
+and an identification of `T` with the local factor there; `IsLocalRing`,
+`Module.Finite ℤ_[ℓ]`, `Module.Free ℤ_[ℓ]` and `IsAdicComplete` are then
+THEOREMS (`HilbertHeckeAlgebra.isLocalRing` and friends). Classically the
+`ℤ`-form is what Taylor–Wiles–Kisin actually build — `𝕋` is by definition the
+subring of `End(M)` generated by the Hecke operators on a lattice of cusp
+forms — so this leaf supplies strictly less than the old formulation asked
+for.
+
+**WHY THIS IS NOT SERRE'S CONJECTURE.** The hypothesis `seed` is what keeps
+the statement honest. Without it — quantifying only over `F` totally real,
+Galois, with `irreducibleF` and `residueCardTwo` — the statement would assert
+mod-`ℓ` modularity of `ρbar|_{G_F}` over every such `F`, which is Serre's
+conjecture over totally real fields and is open; that is axis 1 of the
+ATOMICITY AUDIT and is the cut this development must NOT make.
+  REFUTING CHECK: if a proof of this statement is ever offered that does not
+  use `seed`, it is proving the universally quantified form and is wrong.
+
+`hbar`, `hℓ5`, `hℓOdd` and `hres2` are all load-bearing: `hbar` is the local
+condition whose minimal level `isHilbertHardlyRamified` asserts of `ρT`;
+`hℓOdd` gives absolute irreducibility and the unique square root `ε^{1/2}` of
+the nebentypus that restores `det ρT = χ_ℓ` on the nose; and `hℓ5` together
+with `hres2` (`N(w) = 2`) is `ℓ ∤ N(w)² − 1 = 3`, the tame-at-`2` gluing
+condition that `ℚ(√5)` — totally real, Galois, `2` inert, `N(w) = 4`,
+`5 ∣ 15` — refutes without it.
+
+CIRCULARITY GUARD, inherited: as for the sibling leaf above. -/
+theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
+    (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {hdim : Module.rank k V = 2} {ρbar : GaloisRep ℚ k V}
+    (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (hres2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      Nat.card (𝓞 F ⧸ w.asIdeal) = 2)
+    (seed : Modularity.MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :
+    Nonempty (HilbertHeckeAlgebra ℓ F ρbar) :=
+  sorry
+
 /-- **Potential modularity together with finiteness of the Hilbert Hecke
 algebra** (LEAF — items 5 and 3 of the audit's missing-machinery list,
 merged because the production of `F` and the production of the newform
@@ -12904,6 +13115,16 @@ check that would refute the finding.
      REFUTING CHECK: `grep -rn 'heckePackage\|PotentialModularityWitness'
      Fermat/` — if those have been hoisted out of `KhareWintenberger.lean`
      into a KW-free module, take this cut immediately.
+     **THE CHECK NOW SUCCEEDS AND THE CUT HAS BEEN TAKEN (2026-07-27).**
+     `PotentialModularityWitness` and `MoretBaillySeed` are in
+     `Modularity/MoretBailly.lean`, upstream of here. The witness used is
+     `MoretBaillySeed` rather than `PotentialModularityWitness`, because the
+     latter is indexed on a characteristic-zero `ρ : GaloisRep ℚ O (Fin 2 → O)`
+     while the former is indexed on a RESIDUAL `ρbarF : GaloisRep F k W`, which
+     is what this leaf has. The two replacement leaves are
+     `exists_moretBaillySeed_residueCardTwo_of_five_le` and
+     `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`, stated above
+     `PotentialHeckeDatum`; no new interface was introduced.
 3. **TAYLOR'S OWN PROOF (MB seed → abelian variety → residual dihedral
    modularity → lifting) — blocked by layering, not by mathematics.** Every
    step is stated in the twisted-Hilbert–Blumenthal vocabulary of
@@ -13043,23 +13264,72 @@ to a curve — which is stated in `MoretBailly.lean` vocabulary and can be worke
 there independently. Note the chain still contains open leaves of its own; the
 hoist changed WHERE it lives, not how much of it is proven.
 
+**STALE-CLAIM CORRECTION (2026-07-27, by the agent that took the cut).** The
+paragraph immediately above is WRONG in its operative word, and it was wrong
+when written: `exists_moretBailly_seed_of_five_le` is now IMPORTABLE here but
+it is not APPLICABLE, so it supplies NONE of the six obligations, not five.
+Its hypothesis package includes
+
+    {O} [CommRing O] [IsDomain O] … (hZinj : Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)} (hrank) (hρ : IsHardlyRamified … ρ)
+    (π : O →+* k) (hπsurj) (hπ : …)
+
+— a hardly ramified characteristic-zero lift of `ρbar` OVER `ℚ`, together with
+a surjective reduction congruent to `ρbar`. That is exactly the object this
+leaf exists to route around: it is what pillar α proves, and pillar α is
+proven over this leaf. The degenerate escape `O := k` is blocked by `hZinj`,
+since `algebraMap ℤ_[ℓ] k` kills `ℓ`. The whole chain threads the package down
+to `exists_twistedHilbertBlumenthalModuliScheme_of_five_le`, so there is no
+intermediate node free of it either.
+
+The Break-D hoist is therefore necessary and NOT sufficient. What it did buy
+is the interface: `Modularity.MoretBaillySeed` and
+`Modularity.PotentialModularityWitness` are now upstream, so the
+witness-carrying cut of ATOMICITY AUDIT axis 2 can be taken WITHOUT creating a
+rival copy of an in-flight interface — and it has been taken. See the section
+"The WITNESS-CARRYING field/Hecke cut" above `PotentialHeckeDatum`.
+
+The sized upstream repair that would make the paragraph above TRUE is written
+out in the docstring of `exists_moretBaillySeed_residueCardTwo_of_five_le`:
+delete the lift package from the seven declarations of the chain that thread
+it. Taylor's twisted Hilbert–Blumenthal moduli variety is built from the
+mod-`ℓ` twist datum alone, so the package is mathematically superfluous; it is
+a cut-level repair in a file with concurrent owners and belongs to that file's
+owner, not to this leaf.
+  REFUTING CHECK: read the binders of `exists_moretBailly_seed_of_five_le` for
+  `ρ`/`hρ`/`π`. While they are present, the paragraph above must not be acted
+  on.
+
 CONFIRMED 2026-07-27 by an agent dispatched at this leaf, which is the second
 such report: Break B is now REPAIRED (see the status block above, and the
 refuting checks were re-run, not merely read), Break E is the residual
 geometric obstruction, and Break D is unchanged and still the gate. The three
 cut axes that were searched, and why each was declined, are written out under
 ATOMICITY AUDIT above; the hoist was measured there and is a pure relocation.
-**Do not dispatch a prover here again until either the hoist has landed or
+
+**RETIRED 2026-07-27.** This paragraph used to end "Do not dispatch a prover
+here again until either the hoist has landed or
 `heckePackage`/`PotentialModularityWitness` have been hoisted out of
-`KhareWintenberger.lean`** — the leaf's remaining content is (T) and (C)+(LL)
-verbatim and there is nothing in this module to attack.
+`KhareWintenberger.lean`". Both conditions are now met — `MoretBaillySeed` and
+`PotentialModularityWitness` live in `Modularity/MoretBailly.lean`, which this
+module `public import`s — so the gate is lifted, and the cut it was gating has
+been taken. **This declaration is no longer a leaf**: it is the assembly of
+`exists_moretBaillySeed_residueCardTwo_of_five_le` (T, with `residueCardTwo`)
+and `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` ((C) + (LL)), which are
+the two leaves that replace it. Dispatch at those, not here. Everything below
+about the six obligations and the four breaks now describes the FIRST of them.
 
 Of this leaf's six obligations, five (`totallyReal`, `galoisF`,
-`irreducibleF`, and the two coefficient data) are already produced by the
-PROVEN geometric chain in `Modularity/MoretBailly.lean`, whose
-output node is `exists_moretBailly_seed_of_five_le`. The sixth,
-`residueCardTwo`, is NOT, and this section records exactly why, so that
-the next reader does not re-derive it. Each break below is stated with
+`irreducibleF`, and the two coefficient data) are produced by the geometric
+chain in `Modularity/MoretBailly.lean`, whose output node is
+`exists_moretBailly_seed_of_five_le` — **but only from that theorem's own
+hypotheses, which include a `ℚ`-level characteristic-zero lift this leaf does
+not have; see the STALE-CLAIM CORRECTION above.** After the cut of 2026-07-27
+those five obligations are the content of
+`exists_moretBaillySeed_residueCardTwo_of_five_le`, and this section's breaks
+describe what that leaf must still supply. The sixth, `residueCardTwo`, is a
+conjunct of the same leaf, and this section records exactly why it is not free,
+so that the next reader does not re-derive it. Each break below is stated with
 the check that would REFUTE it.
 
 THE SUPPLY CHAIN, bottom to top, all PROVEN and all in that file:
@@ -13163,8 +13433,21 @@ theorem nonempty_potentialHeckeDatum_of_five_le
     [Module.Free k V]
     {hdim : Module.rank k V = 2} {ρbar : GaloisRep ℚ k V}
     (hbar : IsHardlyRamified hℓOdd hdim ρbar) (hirr : ρbar.IsIrreducible) :
-    Nonempty (PotentialHeckeDatum ℓ ρbar) :=
-  sorry
+    Nonempty (PotentialHeckeDatum ℓ ρbar) := by
+  -- (T): Moret–Bailly/Taylor produce the totally real Galois base `F`, with
+  -- `2` split completely and with an automorphic witness over it.
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, hres2, ⟨seed⟩⟩ :=
+    exists_moretBaillySeed_residueCardTwo_of_five_le (hℓOdd := hℓOdd)
+      (hdim := hdim) ℓ hℓ5 hbar hirr
+  letI := hF
+  letI := hNF
+  -- (C) + (LL): Carayol's representation and level lowering turn that witness
+  -- into the Hecke algebra of the MINIMAL level over `F`.
+  obtain ⟨H⟩ := nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
+    (hℓOdd := hℓOdd) (hdim := hdim) ℓ hℓ5 hbar hirr F hFtr hFgal hirrF hres2 seed
+  exact ⟨{ F := F, fieldF := hF, numberFieldF := hNF, totallyReal := hFtr,
+           galoisF := hFgal, irreducibleF := hirrF, residueCardTwo := hres2,
+           hecke := H }⟩
 
 /-! ### Item 4 — `R_F = T_F`
 
