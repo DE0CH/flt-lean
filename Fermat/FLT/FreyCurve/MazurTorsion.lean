@@ -25179,14 +25179,44 @@ cut 2026-07-27 out of `dual_quartic`).
 
 Here `M`, `e` are both odd and dividing out gives `a² − b² = e²`,
 `49a² − b² = M²`: so `b` is a common **leg** of two Pythagorean triples,
-`b² + e² = a²` and `b² + M² = (7a)²`. **This is the same shape as the `7 ∣ M`
-sub-branch of `caseI_one`**, and it closes the same way: when
-`gcd(b, M) = 1` the two primitive parametrisations give `mn = pq` with
-`7(m² + n²) = p² + q²`, whose four-way split lands on `dual_seven` — PROVEN
-insoluble above. **What is left** is the residual sub-branch `7 ∣ b` and
-`7 ∣ M`, where writing `b = 7b₁`, `M = 7M₁` gives `M₁² = e² + 48b₁²` with
-`M₁² + b₁² = a²` and `e² + 49b₁² = a²` (two triples with the common
-hypotenuse `a`). -/
+`b² + e² = a²` and `b² + M² = (7a)²`.
+
+**THE BRANCH IS FULLY MAPPED (2026-07-27); the only gap is the induction
+measure.** The split is on `7 ∣ b` (and `7 ∣ b ↔ 7 ∣ M` here, since
+`b² + M² = 49a²`):
+
+* `7 ∤ b`. Then `gcd(b, M) = 1`, both triples are primitive, and — exactly
+  as in the `7 ∣ M` sub-branch of `caseI_one` — one gets `mn = pq` with
+  `p² + q² = 7(m² + n²)`, whose four-way split (`split_four`,
+  `common_factor`) lands on **`dual_seven`**, PROVEN insoluble above. Closes
+  outright.
+* `7 ∣ b`. Write `b = 7b₁`, `M = 7M₁`. Then `a² − b₁² = M₁²` and
+  `a² − 49b₁² = e²`, so `(a² − b₁²)(a² − 49b₁²) = (M₁e)²` — this is
+  **`dual_quartic` at `(a, b₁)`**, and in fact its `g = 1` branch, since
+  `gcd(M₁², e²) = 1`. All four conclusions there give a contradiction:
+  `a = 0` is impossible (`a² = b² + e² > 0`), `b₁ = 0` forces `M² = 49e²`
+  against `M > 7e`, `a² = b₁²` forces `M₁ = 0`, and `a² = 49b₁²` forces
+  `e = 0`.
+
+**WHY IT IS STILL OPEN: `|b₁|` IS NOT SMALLER THAN `|e|`.** `48b² = M² − 49e²`
+so `b ≈ M/√48` and `b₁ ≈ M/48.5`, which is far LARGER than `e` (bounded by
+`M/7`). The `|e|` measure that carries `dual_quartic_aux` therefore does not
+justify the recursive call, even though the mathematics is complete. Do not
+attempt to patch this with a bound on `b₁`; there isn't one.
+
+**THE FIX THAT LOOKS RIGHT, and the check that would refute it.** Measure by
+`|M|` instead, restructuring so that every descent target is normalised into
+CASE I *before* the recursive call (the egg reduction of `dual_quartic_step`
+applied inline rather than as a separate branch). Then:
+
+* here, `a < M/√48 < M` — a strict decrease outright;
+* in `caseI_one`, the target `(k, f)` has `max(|f|,|k|) ≤ max(|p|,|q|) ≤ √M`,
+  so the normalised CASE I point has `|M''| ≤ 7√M`, which beats `M` **only
+  for `M > 49`**. The residual `M ≤ 49` (hence `e ≤ 7`) is a finite check.
+
+The refuting check is the second bullet: if the normalisation can push
+`|M''|` above `7√M`, the measure fails and the two branches need separate
+inductions. -/
 theorem caseI_fortyEight (n : ℕ)
     (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
       N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
