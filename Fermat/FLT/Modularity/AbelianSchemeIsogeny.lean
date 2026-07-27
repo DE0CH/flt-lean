@@ -3112,16 +3112,18 @@ theorem finite_preimage_comp {X Y Z : Scheme.{u}} (g : X ⟶ Y) (h : Y ⟶ Z)
 /-! ### `[n]` is UNRAMIFIED when `n` is prime to the characteristic
 
 The declarations below carry the whole of
-`finite_preimage_mulByNat_of_field_prime_to_char` except one leaf.  All
-but one of them are general scheme theory or bookkeeping with no
-abelian-variety content at all; the exception,
-`nonempty_module_infKernel_of_squareZero`, is the single genuinely
-missing input — the Lie algebra of a smooth group scheme, in the form
-"the infinitesimal kernel is a `K`-vector space".
+`finite_preimage_mulByNat_of_field_prime_to_char`, and since 2026-07-27
+they are ALL PROVEN.  Most of them are general scheme theory or
+bookkeeping with no abelian-variety content at all; the one piece of real
+geometry, `nonempty_module_infKernel_of_squareZero` — the Lie algebra of
+a smooth group scheme, in the form "the infinitesimal kernel is a
+`K`-vector space" — was the last leaf of this section and is now closed
+by the affine-local argument recorded in its docstring.
 
 Note `eq_zero_of_nsmul_eq_zero_of_squareZero`, which was the leaf when
-this section was written on 2026-07-27, is now PROVEN over it: the split
-moved the arithmetic into a proof and left the geometry as the leaf. -/
+this section was written on 2026-07-27, was then proven over it: the
+split moved the arithmetic into a proof and left the geometry as the
+leaf, and the geometry has since been proven too. -/
 
 namespace AbelianSchemeStruct
 
@@ -3254,252 +3256,677 @@ theorem locallyQuasiFinite_of_formallyUnramified {X Y : Scheme.{u}} (u : X ⟶ Y
     ((HasRingHomProperty.iff_appLE (P := @FormallyUnramified) (f := u)).mp ‹_› U V e)
     ((HasRingHomProperty.iff_appLE (P := @LocallyOfFiniteType) (f := u)).mp ‹_› U V e)
 
-/-- **THE LIE ALGEBRA OF A SMOOTH GROUP SCHEME** (sorry leaf, created
-2026-07-27 as `eq_zero_of_nsmul_eq_zero_of_squareZero` and RESTATED
-2026-07-27 in its present module-theoretic form — the ONE remaining input
-of `finite_preimage_mulByNat_of_field_prime_to_char`, and the only thing
-in that half of the old cube leaf that mathlib does not already have).
+/-! ### The Lie algebra of a smooth group scheme, as a `K`-vector space
 
-**FALSITY AUDIT (2026-07-27) — REPAIRED THE SAME DAY; THIS SECTION IS NOW A
-RECORD, NOT A WARNING.**  The audit read: *this leaf is FALSE as stated, and so
-is its consumer `eq_zero_of_nsmul_eq_zero_of_squareZero`; do not attempt a
-proof before the statement is repaired.*  That was correct, and the repair
-described at its end HAS BEEN APPLIED — the binder is now
-`(K : Type u) [Field K]` with base `Spec (CommRingCat.of K)`, converted across
-the whole `_of_field` family in one commit.  **So this leaf is now OPEN, not
-false, and the counterexample below no longer applies**: the `[Field K]`
-instance is the very one the geometry uses.  The section is kept in full
-because the same defect has been introduced into this file three times, and
-because the counterexample is the cheapest way to recognise it again.
+The declarations from here to `nonempty_module_infKernel_of_squareZero` are
+the ingredients of that theorem's proof and nothing else.  The shape of the
+argument is the one recorded in the theorem's docstring: over a field the base
+`Spec K` is a single point, so every infinitesimal-kernel point has CONSTANT
+image and they all factor through ONE affine open; the leaf then becomes a
+statement about ring homomorphisms `Γ(X, U) ⟶ R`, and Milnor patching for
+*schemes* is never needed — only the universal property of a fibre product of
+RINGS, which is `sqZeroTriple` below. -/
 
-Keep it that way: **a new declaration in this family must use the unbundled
-shape.**  A file that mixes the two conventions is worse than one with the bug
+/-- **Pulling a module structure back along an injective additive map.**
+
+If `Δ : M →+ N` is injective into a `K`-module `N` and the image of `Δ` is
+closed under the `K`-action — stated in the existential form
+`∀ c m, ∃ m', Δ m' = c • Δ m`, which is all the geometric construction can
+produce — then `M` carries a `K`-module structure.  All eight module axioms
+are transported by `Function.Injective.module`. -/
+theorem nonempty_module_of_injective_addMonoidHom {K M N : Type*} [Semiring K]
+    [AddCommGroup M] [AddCommGroup N] [Module K N] (Δ : M →+ N)
+    (hinj : Function.Injective Δ) (hs : ∀ (c : K) (m : M), ∃ m' : M, Δ m' = c • Δ m) :
+    Nonempty (Module K M) := by
+  choose σ hσ using hs
+  letI : SMul K M := ⟨σ⟩
+  exact ⟨Function.Injective.module K Δ hinj (fun c x => hσ c x)⟩
+
+/-- The unbundled form of `nonempty_module_of_injective_addMonoidHom`: the
+additivity of `Δ` is supplied as a hypothesis rather than by bundling. -/
+theorem nonempty_module_of_injective_map {K M N : Type*} [Semiring K] [AddCommGroup M]
+    [AddCommGroup N] [Module K N] (Δ : M → N) (hadd : ∀ m m', Δ (m + m') = Δ m + Δ m')
+    (hinj : Function.Injective Δ)
+    (hs : ∀ (c : K) (m : M), ∃ m' : M, Δ m' = c • Δ m) : Nonempty (Module K M) :=
+  nonempty_module_of_injective_addMonoidHom (AddMonoidHom.mk' Δ hadd) hinj hs
+
+section SqZeroTriple
+
+variable {R R₀ B : Type u} [CommRing R] [CommRing R₀] [CommRing B]
+
+/-- **The triple fibre product `R ×_{R₀} R ×_{R₀} R`**, as a subring of
+`R × R × R`.  Its `Spec` is the test object on which the group-law crux of
+`nonempty_module_infKernel_of_squareZero` is carried out. -/
+def sqZeroTriple (φ : R →+* R₀) : Subring (R × R × R) where
+  carrier := {x | φ x.1 = φ x.2.1 ∧ φ x.1 = φ x.2.2}
+  mul_mem' := by
+    rintro ⟨a, b, c⟩ ⟨a', b', c'⟩ ⟨h1, h2⟩ ⟨h1', h2'⟩
+    exact ⟨by simp only [Prod.fst_mul, Prod.snd_mul, map_mul]; rw [h1, h1'],
+      by simp only [Prod.fst_mul, Prod.snd_mul, map_mul]; rw [h2, h2']⟩
+  one_mem' := ⟨rfl, rfl⟩
+  add_mem' := by
+    rintro ⟨a, b, c⟩ ⟨a', b', c'⟩ ⟨h1, h2⟩ ⟨h1', h2'⟩
+    exact ⟨by simp only [Prod.fst_add, Prod.snd_add, map_add]; rw [h1, h1'],
+      by simp only [Prod.fst_add, Prod.snd_add, map_add]; rw [h2, h2']⟩
+  zero_mem' := ⟨rfl, rfl⟩
+  neg_mem' := by
+    rintro ⟨a, b, c⟩ ⟨h1, h2⟩
+    exact ⟨by simp only [Prod.fst_neg, Prod.snd_neg, map_neg]; rw [h1],
+      by simp only [Prod.fst_neg, Prod.snd_neg, map_neg]; rw [h2]⟩
+
+namespace sqZeroTriple
+
+variable (φ : R →+* R₀)
+
+/-- First projection of the triple fibre product. -/
+def pr₁ : ↥(sqZeroTriple φ) →+* R where
+  toFun x := x.1.1
+  map_one' := rfl
+  map_mul' _ _ := rfl
+  map_zero' := rfl
+  map_add' _ _ := rfl
+
+/-- Second projection of the triple fibre product. -/
+def pr₂ : ↥(sqZeroTriple φ) →+* R where
+  toFun x := x.1.2.1
+  map_one' := rfl
+  map_mul' _ _ := rfl
+  map_zero' := rfl
+  map_add' _ _ := rfl
+
+/-- Third projection of the triple fibre product. -/
+def pr₃ : ↥(sqZeroTriple φ) →+* R where
+  toFun x := x.1.2.2
+  map_one' := rfl
+  map_mul' _ _ := rfl
+  map_zero' := rfl
+  map_add' _ _ := rfl
+
+/-- **`σ(a, b, c) = b + c − a`, and it IS a ring homomorphism** when the kernel
+of `φ` squares to zero.
+
+This is the whole reason the group-law crux needs no differentials and no
+Taylor expansion.  Multiplicativity reduces to `(b − a)(b' − a') = 0`, which
+holds because both factors lie in `ker φ`. -/
+def sigma (hsq : ∀ a b : R, a ∈ RingHom.ker φ → b ∈ RingHom.ker φ → a * b = 0) :
+    ↥(sqZeroTriple φ) →+* R where
+  toFun x := x.1.2.1 + x.1.2.2 - x.1.1
+  map_one' := by show (1 : R) + 1 - 1 = 1; ring
+  map_zero' := by show (0 : R) + 0 - 0 = 0; ring
+  map_add' _ _ := by
+    show _ + _ - _ = (_ + _ - _) + (_ + _ - _)
+    simp only [Prod.fst_add, Prod.snd_add, Subring.coe_add]
+    ring
+  map_mul' x y := by
+    have hx1 : x.1.2.1 - x.1.1 ∈ RingHom.ker φ := by
+      rw [RingHom.mem_ker, map_sub, ← x.2.1, sub_self]
+    have hx2 : x.1.2.2 - x.1.1 ∈ RingHom.ker φ := by
+      rw [RingHom.mem_ker, map_sub, ← x.2.2, sub_self]
+    have hy1 : y.1.2.1 - y.1.1 ∈ RingHom.ker φ := by
+      rw [RingHom.mem_ker, map_sub, ← y.2.1, sub_self]
+    have hy2 : y.1.2.2 - y.1.1 ∈ RingHom.ker φ := by
+      rw [RingHom.mem_ker, map_sub, ← y.2.2, sub_self]
+    have e12 := hsq _ _ hx1 hy2
+    have e21 := hsq _ _ hx2 hy1
+    show _ + _ - _ = (_ + _ - _) * (_ + _ - _)
+    simp only [Prod.fst_mul, Prod.snd_mul, Subring.coe_mul]
+    linear_combination -e12 - e21
+
+/-- **The universal property of the triple fibre product**, in the only
+direction the patching argument needs: three ring maps agreeing after `φ`
+patch to one map into `R ×_{R₀} R ×_{R₀} R`. -/
+def lift (f g h : B →+* R) (hg : ∀ b, φ (f b) = φ (g b)) (hh : ∀ b, φ (f b) = φ (h b)) :
+    B →+* ↥(sqZeroTriple φ) where
+  toFun b := ⟨(f b, g b, h b), hg b, hh b⟩
+  map_one' := Subtype.ext (by simp)
+  map_zero' := Subtype.ext (by simp)
+  map_add' _ _ := Subtype.ext (by simp)
+  map_mul' _ _ := Subtype.ext (by simp)
+
+@[simp] theorem pr₁_lift (f g h : B →+* R) (hg hh) (b : B) :
+    pr₁ φ (lift φ f g h hg hh b) = f b := rfl
+
+@[simp] theorem pr₂_lift (f g h : B →+* R) (hg hh) (b : B) :
+    pr₂ φ (lift φ f g h hg hh b) = g b := rfl
+
+@[simp] theorem pr₃_lift (f g h : B →+* R) (hg hh) (b : B) :
+    pr₃ φ (lift φ f g h hg hh b) = h b := rfl
+
+@[simp] theorem sigma_lift (hsq) (f g h : B →+* R) (hg hh) (b : B) :
+    sigma φ hsq (lift φ f g h hg hh b) = g b + h b - f b := rfl
+
+/-- **Patching is INJECTIVE on restrictions**: a map into the triple fibre
+product is determined by its three coordinates. -/
+theorem hom_ext {ψ ψ' : B →+* ↥(sqZeroTriple φ)}
+    (h₁ : ∀ b, pr₁ φ (ψ b) = pr₁ φ (ψ' b)) (h₂ : ∀ b, pr₂ φ (ψ b) = pr₂ φ (ψ' b))
+    (h₃ : ∀ b, pr₃ φ (ψ b) = pr₃ φ (ψ' b)) : ψ = ψ' := by
+  refine RingHom.ext fun b => Subtype.ext ?_
+  refine Prod.ext (h₁ b) (Prod.ext (h₂ b) (h₃ b))
+
+end sqZeroTriple
+
+end SqZeroTriple
+
+namespace AbelianSchemeStruct
+
+/-- **Membership in the infinitesimal kernel, spelled as an equation of
+morphisms.**  Membership is definitionally `RelPoint.pre h hg x = 0`; this
+unwinds it to `h ≫ x.1 = g' ≫ ab.zeroSection`, which is the form every step of
+`nonempty_module_infKernel_of_squareZero` consumes. -/
+theorem mem_infKernel_iff (ab : AbelianSchemeStruct f) {T' T : Scheme.{u}} (h : T' ⟶ T)
+    {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g') (x : RelPoint f g) :
+    letI := ab.addCommGroup g
+    (x ∈ ab.infKernel h hg ↔ h ≫ x.1 = g' ≫ ab.zeroSection) := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  constructor
+  · intro hx
+    have hx' : RelPoint.pre h hg x = ab.zero g' := hx
+    have h2 : h ≫ x.1 = (ab.zero g').1 := congrArg Subtype.val hx'
+    rw [h2]
+    exact ab.zero_val g'
+  · intro hx
+    show RelPoint.pre h hg x = ab.zero g'
+    apply Subtype.ext
+    rw [show (RelPoint.pre h hg x).1 = h ≫ x.1 from rfl, hx]
+    exact (ab.zero_val g').symm
+
+end AbelianSchemeStruct
+
+/-- **`Spec` of a surjective ring map with square-zero kernel is SURJECTIVE on
+points.**  `ker φ ^ 2 = ⊥` puts `ker φ` inside every prime, so the closed image
+`V(ker φ)` of `Spec φ` is all of `Spec R`. -/
+theorem surjective_specMap_of_sq_ker_eq_bot {R R₀ : CommRingCat.{u}} (φ : R ⟶ R₀)
+    (hφ : Function.Surjective φ) (hker : RingHom.ker φ.hom ^ 2 = ⊥) :
+    Function.Surjective (Spec.map φ).base := by
+  have key : ∀ x : PrimeSpectrum R, x ∈ Set.range (PrimeSpectrum.comap φ.hom) := by
+    intro x
+    rw [range_comap_of_surjective _ _ hφ, PrimeSpectrum.mem_zeroLocus]
+    intro a ha
+    refine x.isPrime.mem_of_pow_mem 2 ?_
+    have h2 : a ^ 2 ∈ RingHom.ker φ.hom ^ 2 := Ideal.pow_mem_pow ha 2
+    rw [hker] at h2
+    have h3 : a ^ 2 = 0 := by simpa using h2
+    rw [h3]
+    exact x.asIdeal.zero_mem
+  intro p
+  obtain ⟨p', hp'⟩ := key p
+  exact ⟨p', hp'⟩
+
+section InfKernelChart
+
+variable {X : Scheme.{u}} {K : Type u} [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
+
+/-- **The base map of an infinitesimal-kernel point is CONSTANT**, at the image
+of the zero section.
+
+This is the step that the bundled-`K` defect blocked and that the unbundled
+binder makes free: `Spec (CommRingCat.of K)` is a ONE-POINT space, so the zero
+section has a single point in its image, and `Spec ψ` being surjective forces
+the whole of `⇑w.1` to that point. -/
+theorem base_eq_zeroSection_of_infKernel (ab : AbelianSchemeStruct fK)
+    {C C₀ : CommRingCat.{u}} (ψ : C ⟶ C₀)
+    (hsurj : Function.Surjective (Spec.map ψ).base)
+    {gC : Spec C ⟶ Spec (CommRingCat.of K)} (w : RelPoint fK gC)
+    (hw : Spec.map ψ ≫ w.1 = (Spec.map ψ ≫ gC) ≫ ab.zeroSection)
+    (p : ↥(Spec C)) :
+    w.1.base p = ab.zeroSection.base default := by
+  obtain ⟨p', hp'⟩ := hsurj p
+  have h1 : w.1.base ((Spec.map ψ).base p') =
+      ((Spec.map ψ ≫ gC) ≫ ab.zeroSection).base p' := by
+    rw [← hw]; rfl
+  rw [← hp', h1]
+  show ab.zeroSection.base ((Spec.map ψ ≫ gC).base p') = _
+  congr 1
+  exact Subsingleton.elim _ _
+
+variable {U : X.Opens} (hU : IsAffineOpen U)
+
+/-- **The affine chart morphism attached to an affine open**, `Spec Γ(X, U) ⟶ X`.
+Composing with it is how a ring homomorphism `Γ(X, U) ⟶ C` becomes a morphism
+`Spec C ⟶ X`. -/
+noncomputable def affineOpenChart : Spec Γ(X, U) ⟶ X := hU.isoSpec.inv ≫ U.ι
+
+theorem affineOpenChart_mono : Mono (affineOpenChart hU) := by
+  rw [affineOpenChart]; infer_instance
+
+/-- **Ring homomorphisms inject into morphisms through the chart.**  This is the
+`Δ`-injectivity of `nonempty_module_infKernel_of_squareZero`, and it is also
+what makes patching injective on restrictions. -/
+theorem affineOpenChart_injective (C : CommRingCat.{u}) :
+    Function.Injective (fun θ : Γ(X, U) ⟶ C => Spec.map θ ≫ affineOpenChart hU) := by
+  intro θ θ' h
+  have := affineOpenChart_mono hU
+  exact Spec.map_injective ((cancel_mono (affineOpenChart hU)).mp h)
+
+/-- **Every morphism from an affine scheme whose image lies in `U` factors
+through the chart.**  This is `IsOpenImmersion.lift` followed by
+`IsAffineOpen.isoSpec`. -/
+theorem exists_affineOpenChart_factor {C : CommRingCat.{u}} (w : Spec C ⟶ X)
+    (hw : Set.range w.base ⊆ (U : Set X)) :
+    ∃ θ : Γ(X, U) ⟶ C, Spec.map θ ≫ affineOpenChart hU = w := by
+  have hrange : Set.range w.base ⊆ Set.range U.ι.base := by
+    rw [Scheme.Opens.range_ι]; exact hw
+  refine ⟨Spec.preimage (IsOpenImmersion.lift U.ι w hrange ≫ hU.isoSpec.hom), ?_⟩
+  rw [affineOpenChart, Spec.map_preimage, Category.assoc, Iso.hom_inv_id_assoc]
+  exact IsOpenImmersion.lift_fac U.ι w hrange
+
+end InfKernelChart
+
+/-- **THE LIE ALGEBRA OF A SMOOTH GROUP SCHEME** — *the infinitesimal kernel of
+an abelian scheme is a `K`-VECTOR SPACE* (**PROVEN 2026-07-27**; created the
+same day as `eq_zero_of_nsmul_eq_zero_of_squareZero`, restated in this
+module-theoretic form, and closed here).
+
+`Spec R₀ ⟶ Spec R` is a square-zero thickening (`φ` surjective,
+`ker φ ^ 2 = ⊥`), and `ab.infKernel (Spec.map φ) rfl` is the subgroup of
+`R`-points of `A` over `q` that restrict to the identity element on `Spec R₀`.
+That abelian group carries a `K`-module structure — necessarily compatible with
+its own addition, since `Module K ↥(…)` is stated over the subgroup's own
+`AddCommGroup`.
+
+Consumed by `eq_zero_of_nsmul_eq_zero_of_squareZero` below, which is the
+`d[n] = n · id` statement and closes the prime-to-characteristic half of
+`finite_preimage_mulByNat_of_field`.  It says nothing about the other half: at
+`n = p = ringChar K` the scalar `(n : K)` is zero and the argument gives no
+information, which is why `finite_preimage_mulByNat_of_field_char` really does
+need the theorem of the cube.
+
+## How it is proven
+
+Everything from `nonempty_module_of_injective_addMonoidHom` down to
+`exists_affineOpenChart_factor` above exists for this proof and nothing else.
+
+1. *Affine-local reduction.*  `Spec (CommRingCat.of K)` is a ONE-POINT space, so
+   the zero section `ab.zeroSection` has a single point `x₀` in its image.  Every
+   kernel point `d` satisfies `Spec.map φ ≫ d.1 = (Spec.map φ ≫ q) ≫ zeroSection`
+   (`mem_infKernel_iff`), and `Spec.map φ` is SURJECTIVE on points because
+   `ker φ ^ 2 = ⊥` puts `ker φ` inside every prime
+   (`surjective_specMap_of_sq_ker_eq_bot`).  Hence `⇑d.1` is constant at `x₀` for
+   *every* `d` at once (`base_eq_zeroSection_of_infKernel`), so all kernel points
+   factor through one affine open `U ∋ x₀` (`exists_affineOpenChart_factor`), and
+   with `B := Γ(X, U)` the whole leaf becomes a statement about ring
+   homomorphisms `θ d : B ⟶ R`.  **Milnor patching for SCHEMES is never needed.**
+2. *The coordinate map.*  `Δ d := θ d − θ 0` takes values in `ker φ`, and
+   `affineOpenChart_injective` makes it INJECTIVE.
+3. *Additivity of `Δ` — the group-law crux, and it uses no differentials, no
+   Taylor expansion and no morphism `m`.*  Put `J := R ×_{R₀} R ×_{R₀} R`
+   (`sqZeroTriple`); `σ(a, b, c) = b + c − a` is a ring homomorphism `J ⟶ R`
+   because `ker φ ^ 2 = ⊥` (`sqZeroTriple.sigma`).  Patch the points
+   `P(0, x, 0)` and `P(0, 0, y)` over `Spec J`; their sum restricts to
+   `(0, x, y)` along the three projections by `ab.pre_add` alone, and it lies in
+   the infinitesimal kernel over `Spec J` (whose thickening `J ⟶ R₀` again has
+   square-zero kernel), so it too factors through the chart and is therefore
+   DETERMINED by those three restrictions (`sqZeroTriple.hom_ext`).  Applying
+   `σ` and `ab.pre_add` once more gives `Δ(x + y) = Δ x + Δ y`.
+4. *Scaling.*  For `c : K` the map `b ↦ θ 0 b + q♯(c) · Δ d b` is a ring
+   homomorphism (again by `ker φ ^ 2 = ⊥`), lands over `q`, lies in the kernel,
+   and has `Δ` equal to `c • Δ d`.
+5. *Transport.*  `nonempty_module_of_injective_map` pulls the `K`-module
+   structure of `B → R` back along `Δ`; all eight axioms come from
+   `Function.Injective.module`.
+
+## RECORD: the bundled-`K` instance defect that made this leaf FALSE
+
+**REPAIRED 2026-07-27; this section is a record, not a warning.**  The binder
+used to be `(K : CommRingCat.{u}) [Field K]` with base `Spec K`, and then the
+conclusion's scalars came from the `[Field ↑K]` BINDER while `Spec K` and all
+the geometry used `K`'s own `CommRing` structure.  Nothing forced the two to
+agree.  Taking `↑K = 𝔽_p[t]` with a `[Field ↑K]` instance transported from `ℚ`
+along a bijection of underlying sets, and `X = E₀ ×_{𝔽_p} 𝔽_p[t]`,
+`R = 𝔽_p[t][ε]/(ε²)`, gave `ab.infKernel (Spec.map φ) rfl ≅ 𝔽_p[t] ≠ 0`, killed
+by `p`, while the conclusion demanded a `ℚ`-vector space — torsion free.  FALSE.
+The same counterexample refuted the consumer.
+
+The repair was to take the base field UNBUNDLED, as in the present statement,
+and it was threaded through the whole `_of_field` family in one commit.
+
+**Keep it that way: a new declaration in this family must use the unbundled
+shape.**  A file mixing the two conventions is worse than one with the bug
 throughout, since instance search for `CommRing ↥K` is then ambiguous at every
-boundary between the styles.
+boundary between the styles.  The one-line test for the defect class: under a
+bundled `K` with `[Field K]`, `Subsingleton ↥(Spec K)` and `Unique ↥(Spec K)`
+FAIL to synthesise while `Nonempty` succeeds; all three succeed for
+`Spec (CommRingCat.of F)` with `F` unbundled.  A pin written
+`CommRingCat.of ↑K = K` is VACUOUS — it is `rfl`.  Step 1 of the proof above is
+exactly what the bundled binder blocked.
 
-What the audit found:  The defect is an INSTANCE DIAMOND in
-the binder `(K : CommRingCat.{u}) [Field K]`, and it is invisible to every
-reader because the two halves of the statement never meet in any of the
-already-proven declarations of this cluster — this leaf is the first place
-that needs to bridge them.
+## A GENERALISATION THAT IS ALSO TRUE
 
-*The two structures.*  `set_option pp.explicit` on this very declaration
-shows the conclusion's scalars are
-
-    @Module ↑K _ (DivisionSemiring.toSemiring (Semifield.toDivisionSemiring
-                    (Field.toSemifield ↑K inst)))
-
-i.e. they come from the `[Field ↑K]` BINDER, while `Spec K` — and hence
-`fK`, `ab`, `q`, and all the geometry — uses `K`'s OWN ring structure
-`K.commRing`.  Nothing in the statement forces `Field.toCommRing` and
-`K.commRing` to agree, and Lean cannot bridge them: mathlib's
-`instance {K} [Field K] : Unique (Spec (.of K))` fails to apply to
-`Spec K` here for exactly this reason (checked: `Subsingleton ↥(Spec K)`
-is not synthesizable, and `Subsingleton (PrimeSpectrum ↑K)` is not even
-kernel-defeq to it, the mismatch being
-`Field.toSemifield.toCommSemiring` against `CommRing.toCommSemiring`).
-Note `CommRingCat.of ↑K = K` is `rfl` and therefore pins NOTHING — the
-`CommRing` search picks `K.commRing`, the `Semiring`/`CommSemiring` search
-picks the `Field` path.  A pin written that way is vacuous.
-
-*The counterexample.*  Let `↑K = 𝔽_p[t]` (`p > 3`) with `K.commRing` its
-usual ring structure, and let the `[Field ↑K]` instance be a field
-structure TRANSPORTED FROM `ℚ` along any bijection of the two countably
-infinite underlying sets.  Take `X = E₀ ×_{𝔽_p} 𝔽_p[t]` for `E₀` an
-elliptic curve over `𝔽_p` with good reduction, so `fK` is a genuine
-abelian scheme (proper, smooth, geometrically connected fibres).  Take
-`R = 𝔽_p[t][ε]/(ε²)`, `R₀ = 𝔽_p[t]`, `φ` the reduction; `φ` is surjective
-and `ker φ = (ε)` satisfies `ker φ ^ 2 = ⊥`.  Then
-
-    ab.infKernel (Spec.map φ) rfl  ≅  Lie(E₀) ⊗ (ε)  ≅  𝔽_p[t] ≠ 0,
-
-which is killed by `p`.  But the conclusion demands a module over the
-`[Field ↑K]` structure, which is `ℚ` — and a `ℚ`-vector space is
-torsion-free, so a nonzero `p`-torsion group admits no `ℚ`-module
-structure.  Conclusion FALSE.
-
-*The same counterexample refutes the consumer.*  In it,
-`eq_zero_of_nsmul_eq_zero_of_squareZero` at `n = p` has
-`(p : ↑K) = (p : ℚ) ≠ 0` and `p • d = 0` for every `d`, yet `d ≠ 0` for
-`d` a nonzero element of the kernel.  That declaration is marked PROVEN
-only because it rests on this false leaf; the six-line module argument in
-it is correct, and it is the LEAF that is wrong.
-
-*The repair — APPLIED 2026-07-27, and it was a CUT-LEVEL repair, not a
-leaf-level one.*  Pin the field structure by taking the base field UNBUNDLED,
-exactly as
-`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field`
-(`Fermat/FLT/Modularity/KhareWintenberger.lean:4113`) already does in this
-project for the same reason:
-
-    {K : Type u} [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
-
-Then `Spec (.of K)`'s ring structure IS `Field.toCommRing`, mathlib's
-`Unique (Spec (.of K))` applies, and the scalars of the conclusion are the
-scalars of the geometry.  The change must be threaded through the five
-statements of this cluster — this leaf,
-`eq_zero_of_nsmul_eq_zero_of_squareZero`, `formallyUnramified_mulByNat`,
-`finite_preimage_mulByNat_of_field_prime_to_char` and
-`finite_preimage_mulByNat_of_field` — and it TERMINATES: the top consumer
-`finite_preimage_mulByNat` instantiates `K := S.residueField (f a)`, and
-`Scheme.residueField` is *defined* as
-`CommRingCat.of (IsLocalRing.ResidueField _)`
-(`Mathlib/AlgebraicGeometry/ResidueField.lean:45`), so the new form is
-discharged there by `rfl`.  No proof body needs to change; only the five
-binders.  `finite_preimage_mulByNat_of_field_char` is NOT in the chain and
-needs no edit.
-
-*The check that would refute this audit*: `pp.explicit` on this
-declaration showing the `Module` instance built from `K.commRing` rather
-than from `Field.toSemifield`, or `Subsingleton ↥(Spec K)` becoming
-synthesizable from `[Field ↑K]` alone.
-
-*The infinitesimal kernel of an abelian scheme is a `K`-VECTOR SPACE.*
-Concretely: `Spec R₀ ⟶ Spec R` is a square-zero thickening (`φ`
-surjective, `ker φ ^ 2 = ⊥`), and `ab.infKernel (Spec.map φ) rfl` is the
-subgroup of `R`-points of `A` over `q` that restrict to the identity
-element on `Spec R₀`.  The claim is that this abelian group carries a
-`K`-module structure — necessarily compatible with its own addition,
-since `Module K ↥(…)` is stated over the subgroup's own `AddCommGroup`.
-
-**WHY THIS IS THE RIGHT RESIDUE.**  The arithmetic that used to sit on
-top of this — "`n • d = 0` and `(n : K) ≠ 0` force `d = 0`" — is now
-PROVEN in `eq_zero_of_nsmul_eq_zero_of_squareZero` below, in six lines:
-a `K`-module has no `n`-torsion for `(n : K) ≠ 0` because `(n : K)⁻¹`
-exists, and `Nat.cast_smul_eq_nsmul` identifies the group's `ℕ`-action
-with the module's.  So none of the difficulty was ever arithmetic, and
-what remains here is exactly the geometric input and nothing else.
-
-**WHY IT IS TRUE, and why it needs no line bundles.**  Write `I = ker φ`, so
-`I ^ 2 = 0` and `I` is a module over `R₀ = R ⧸ I`.  For any `S`-group scheme
-`G` and any square-zero thickening there is a natural isomorphism
-
-    ker (G(R) ⟶ G(R₀))  ≅  Hom_{R₀} (e^* Ω_{G/S} ⊗ R₀, I)
-
-(SGA 3, Exp. II; Mumford *Abelian Varieties* §11; Milne *Abelian Varieties*
-I.7) — the "Lie algebra" of `G`, tensored with the ideal.  The right-hand
-side is an `R₀`-MODULE, and `R₀` is a `K`-algebra because `q : Spec R ⟶
-Spec K` makes `R` one.  Under that isomorphism the group's `ℕ`-action is the
-module action of `(n : R₀)`, which is a unit as soon as `(n : K) ≠ 0`.
-Hence `n • d = 0` forces `d = 0`.  Nothing in this argument mentions ample
-line bundles, `Pic`, or the theorem of the cube.
-
-**IT IS EXACTLY THE `d[n] = n · id` STATEMENT.**  That is why this leaf
-closes the prime-to-characteristic half and says nothing about the other
-half: at `n = p = ringChar K` the scalar `(n : R₀)` is zero, the argument
-gives no information, and `finite_preimage_mulByNat_of_field_char` really
-does need the cube.
-
-**WHAT IS MISSING AT THIS PIN** (each claim refutable by one grep, all
-re-run 2026-07-27 on this worktree's `.lake/packages/mathlib`).
-
-* A scheme-level tangent space or Lie algebra:
-  `grep -rni "tangentSpace\|DualNumber" Mathlib/AlgebraicGeometry/` returns
-  NOTHING.  A hit means this leaf may now be cheap and should be re-attacked.
-* Consequently there is no `e^* Ω_{G/S}` for a group scheme and no
-  identification of the infinitesimal kernel with it.  `Ω` itself exists at
-  ring level (`KaehlerDifferential`) and as a sheaf, so what is missing is
-  the group-scheme half, not differentials.
-
-**THE TWO-STEP ROUTE A SUCCESSOR SHOULD COST OUT FIRST**, since neither
-step exists at this pin and the second is the expensive one.  Write
-`P = R ×_{R₀} R`.  For `c : R₀` with any lift `c̃ : R`, the map
-
-    α_c : P ⟶ R,   (a, b) ↦ a + c̃ · (b - a)
-
-is a RING HOMOMORPHISM — the only thing to check is multiplicativity, and
-it reduces to `(b - a)(b' - a') = 0`, which holds because both factors lie
-in `I` and `I ^ 2 = 0`; independence of the lift `c̃` is the same
-computation.  Note `α_0 = pr₁` and `α_1 = pr₂`.  Scaling is then
-`c • d := Spec.map (α_c) ≫ w`, where `w : Spec P ⟶ A` is the point
-patched together from the compatible pair `(0, d)`.  So the missing input
-is **Milnor patching for schemes**: that `Spec (R ×_{R₀} R)` is the
-pushout of `Spec R ← Spec R₀ → Spec R`, equivalently that
-`A(R ×_{R₀} R) ≅ A(R) ×_{A(R₀)} A(R)`.
-
-That is genuinely absent: `grep -rlin "ferrand\|milnor" Mathlib/` is EMPTY
-and `grep -rln "pushout" Mathlib/AlgebraicGeometry/` returns only files
-about *pullbacks* (re-run 2026-07-27).  A hit on either means this route
-has become cheap.  Be warned that the module AXIOMS are not free once
-patching exists — additivity in `c` and `(c c') • d = c • (c' • d)` each
-need a further patching diagram and the group law — so "prove Milnor
-patching" is a necessary but not sufficient plan.
-
-**ROUTE CORRECTION (2026-07-27).  BOTH HALVES OF THE PARAGRAPH ABOVE ARE
-WRONG, AND THE ROUTE IS MUCH CHEAPER THAN IT RECORDS.  This assumed the
-FALSITY AUDIT's repair had been applied, since step 1 is exactly what the
-unpinned `[Field K]` blocked — AND IT NOW HAS BEEN, so this is the live route
-and the paragraph above it is the dead one.**  Concretely, `Subsingleton ↥(Spec
-(CommRingCat.of K))` and `Unique ↥(Spec (CommRingCat.of K))` both synthesize
-under the repaired binder (one-line `example`, verified 2026-07-27), which is
-exactly the input step 1 needs and could not previously get.
-
-*1. Milnor patching FOR SCHEMES is not needed — the problem is
-AFFINE-LOCAL.*  Once the field structure is pinned, `Spec K` is a ONE-POINT
-space, so the unit section `e := (ab.zero (𝟙 (Spec K))).1` has a single
-point `x₀` in its image.  Every `d` in the infinitesimal kernel satisfies
-`Spec.map φ ≫ d.1 = (Spec.map φ ≫ q) ≫ e` (that is `pre_zero` plus
-`d ∈ ker`), and `Spec.map φ` is SURJECTIVE on points because `ker φ ^ 2 = ⊥`
-puts `ker φ` inside every prime.  Hence the underlying map of `d.1` is
-CONSTANT at `x₀` — for *every* `d` at once.  Choosing an affine open
-`U ∋ x₀` (`exists_isAffineOpen_mem_and_subset`), every kernel point factors
-through `U` (`IsOpenImmersion.lift`), so with `B := Γ(X, U)` the whole leaf
-becomes a statement about RING HOMOMORPHISMS `B ⟶ R`.  Patching is then the
-universal property of a fibre product of RINGS — `Hom(B, R ×_{R₀} R) =
-Hom(B,R) ×_{Hom(B,R₀)} Hom(B,R)` — and needs no Ferrand pushout, no
-scheme-level Milnor patching, and nothing absent from the pin.
-
-These five steps are Lean-verified (worktree `flt-lean-164`, 2026-07-27,
-against this pin; they compile with `Subsingleton ↥(Spec K)` supplied as an
-argument, which is precisely what the repair makes free):
-`(ab.zero g).1 = g ≫ (ab.zero (𝟙 S)).1` from `pre_zero` and
-`Category.comp_id`; `ker φ ≤ p.asIdeal` from `Ideal.pow_mem_pow` and
-`p.isPrime.mem_of_pow_mem`; surjectivity of `(Spec.map φ).base` from
-`range_comap_of_surjective` (ROOT namespace, not `PrimeSpectrum`);
-constancy of `⇑d.1`; and the affine open.
-
-*2. The group-law crux DISSOLVES — patching plus naturality is
-sufficient, and no differentials are needed.*  Write `Δ(x) := ψ_x − ψ_e`
-for the ring hom attached to `x`.  The one hard-looking point is that the
-ABELIAN SCHEME's group law agrees with addition of the `Δ`'s, which is
-classically proven from `m : A ×_S A ⟶ A` by a Taylor expansion.  It is not
-needed.  Put `J := R ×_{R₀} R ×_{R₀} R` with projections `pr₁ pr₂ pr₃`, and
-note `σ (a,b,c) := b + c − a` is a RING HOM `J ⟶ R` (multiplicativity is
-`(b−a)(b'−a') = 0` from `I ^ 2 = ⊥`, the same computation as for `α_c`).
-Affine patching gives points `patch(0,x,0)`, `patch(0,0,y)`,
-`patch(0,x,y)` of `A` over `Spec J`, and patching is INJECTIVE on
-restrictions.  Now `ab.pre_add` along each `pr_i` gives
-
-    pr₁*(patch(0,x,0) + patch(0,0,y)) = 0 + 0 = 0
-    pr₂*(…) = x + 0 = x        pr₃*(…) = 0 + y = y
-
-so by injectivity `patch(0,x,0) + patch(0,0,y) = patch(0,x,y)`.  Applying
-`σ*` and `ab.pre_add` once more, and using `σ*(patch(0,x,0)) = x`,
-`σ*(patch(0,0,y)) = y`, `σ*(patch(0,x,y)) = ψ_x + ψ_y − ψ_e`, yields
-`Δ(x + y) = Δ(x) + Δ(y)` — from the structure's own naturality axioms
-alone.  With `Δ` injective (affineness) the remaining module axioms are
-then bookkeeping on functions `B → I`: `add_smul` is
-`Δ((c + c') • d) = (c + c')Δ(d) = Δ(c • d) + Δ(c' • d)`, and `mul_smul`,
-`one_smul`, `zero_smul`, `smul_zero`, `smul_add` likewise.  So the
-"necessary but not sufficient" warning above is retired: for THIS leaf
-patching is sufficient, and the missing theory is not Milnor patching but
-only the affine bookkeeping.
-
-**A GENERALISATION THAT IS ALSO TRUE**, recorded so a prover is not misled
-into thinking the field is essential: the kernel is a module over `R₀`
-itself (restrict along `K ⟶ R₀` to recover the statement below), over an
-arbitrary base, and without `ab.smooth` — the displayed isomorphism is
-valid for every group scheme.  It is stated over a field here because
-that is exactly what the consumer needs and it is the weakest form that
-suffices; a prover may freely prove the stronger form and specialise. -/
+The kernel is a module over `R₀` itself (restrict along `K ⟶ R₀` to recover the
+statement below), over an arbitrary base, and without `ab.smooth` — the
+classical isomorphism `ker(G(R) ⟶ G(R₀)) ≅ Hom_{R₀}(e^* Ω_{G/S} ⊗ R₀, ker φ)`
+(SGA 3 Exp. II; Mumford *Abelian Varieties* §11; Milne *Abelian Varieties* I.7)
+is valid for every group scheme.  It is stated over a field here because that is
+exactly what the consumer needs and it is the weakest form that suffices.  Note
+the proof below never constructs `Ω`: it works directly with the ring
+homomorphisms `θ d`, which is why nothing about Kähler differentials for group
+schemes — genuinely absent from this pin — was required. -/
 theorem nonempty_module_infKernel_of_squareZero {X : Scheme.{u}} (K : Type u) [Field K]
     {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
     {R R₀ : CommRingCat.{u}} (φ : R ⟶ R₀) (hφ : Function.Surjective φ)
     (hker : RingHom.ker φ.hom ^ 2 = ⊥)
     {q : Spec R ⟶ Spec (CommRingCat.of K)} :
     letI := ab.addCommGroup q
-    Nonempty (Module K (ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q))) :=
-  sorry
+    Nonempty (Module K (ab.infKernel (Spec.map φ)
+      (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q))) := by
+  letI := ab.addCommGroup q
+  set D := ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q) with hD
+  -- the unit section and the point it hits
+  obtain ⟨U, hU, hx₀, -⟩ := exists_isAffineOpen_mem_and_subset
+    (X := X) (x := ab.zeroSection.base default)
+    (U := ⊤) (by trivial)
+  have hsurj : Function.Surjective (Spec.map φ).base := surjective_specMap_of_sq_ker_eq_bot φ hφ hker
+  -- every kernel point factors through the chart
+  have hfac : ∀ d : ↥D, ∃ θ : Γ(X, U) ⟶ R, Spec.map θ ≫ affineOpenChart hU = d.1.1 := by
+    intro d
+    refine exists_affineOpenChart_factor hU _ ?_
+    rintro _ ⟨p, rfl⟩
+    rw [base_eq_zeroSection_of_infKernel ab φ hsurj d.1 ((ab.mem_infKernel_iff _ rfl d.1).mp d.2) p]
+    exact hx₀
+  choose θ hθ using hfac
+  -- the reference ring homomorphisms
+  obtain ⟨qR, hqR⟩ : ∃ r : CommRingCat.of K ⟶ R, Spec.map r = q :=
+    ⟨Spec.preimage q, Spec.map_preimage q⟩
+  obtain ⟨κ, hκ⟩ : ∃ r : CommRingCat.of K ⟶ Γ(X, U), Spec.map r = affineOpenChart hU ≫ fK :=
+    ⟨Spec.preimage _, Spec.map_preimage _⟩
+  letI : Algebra K ↥R := qR.hom.toAlgebra
+  -- the difference function
+  set t : ↥D → ↥Γ(X, U) → ↥R := fun d b => (θ d).hom b - (θ 0).hom b with ht
+  -- all chart coordinates agree after `φ`
+  have hφeq : ∀ d : ↥D, θ d ≫ φ = θ 0 ≫ φ := by
+    intro d
+    refine affineOpenChart_injective hU R₀ ?_
+    show Spec.map (θ d ≫ φ) ≫ affineOpenChart hU = Spec.map (θ 0 ≫ φ) ≫ affineOpenChart hU
+    rw [Spec.map_comp, Spec.map_comp, Category.assoc, Category.assoc, hθ, hθ]
+    rw [(ab.mem_infKernel_iff _ rfl d.1).mp d.2,
+      (ab.mem_infKernel_iff _ rfl (0 : ↥D).1).mp (0 : ↥D).2]
+  -- each `t d b` lies in the square-zero ideal
+  have hker_mem : ∀ (d : ↥D) (b : ↥Γ(X, U)), t d b ∈ RingHom.ker φ.hom := by
+    intro d b
+    have := congrArg (fun (f : Γ(X, U) ⟶ R₀) => f.hom b) (hφeq d)
+    simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at this
+    show (θ d).hom b - (θ 0).hom b ∈ RingHom.ker φ.hom
+    rw [RingHom.mem_ker, map_sub, this, sub_self]
+  -- products of two such vanish
+  have hsq : ∀ (a b : ↥R), a ∈ RingHom.ker φ.hom → b ∈ RingHom.ker φ.hom → a * b = 0 := by
+    intro a b ha hb
+    have : a * b ∈ RingHom.ker φ.hom ^ 2 := by
+      rw [pow_two]; exact Ideal.mul_mem_mul ha hb
+    rw [hker] at this
+    simpa using this
+  -- the Leibniz rule for `t`
+  have hleib : ∀ (d : ↥D) (b b' : ↥Γ(X, U)),
+      t d (b * b') = (θ 0).hom b * t d b' + t d b * (θ 0).hom b' := by
+    intro d b b'
+    have h0 : t d b * t d b' = 0 := hsq _ _ (hker_mem d b) (hker_mem d b')
+    have e1 : (θ d).hom b = (θ 0).hom b + t d b := by simp [ht]
+    have e2 : (θ d).hom b' = (θ 0).hom b' + t d b' := by simp [ht]
+    show (θ d).hom (b * b') - (θ 0).hom (b * b') = _
+    rw [map_mul, map_mul, e1, e2]
+    linear_combination h0
+  -- `t` is additive in `b`
+  have hadd_b : ∀ (d : ↥D) (b b' : ↥Γ(X, U)), t d (b + b') = t d b + t d b' := by
+    intro d b b'
+    show (θ d).hom (b + b') - (θ 0).hom (b + b') = _
+    rw [map_add, map_add]; ring
+  have hone : ∀ d : ↥D, t d 1 = 0 := by
+    intro d; show (θ d).hom 1 - (θ 0).hom 1 = 0; rw [map_one, map_one, sub_self]
+  -- every chart coordinate restricts to the structure map on the base field
+  have hκθ : ∀ d' : ↥D, κ ≫ θ d' = qR := by
+    intro d'
+    apply Spec.map_injective
+    rw [Spec.map_comp, hκ, hqR, ← Category.assoc, hθ]
+    exact d'.1.2
+  -- `t d` vanishes on the base field
+  have hbase : ∀ (d : ↥D) (k : K), t d (κ.hom k) = 0 := by
+    intro d k
+    have hd := congrArg (fun (f : CommRingCat.of K ⟶ R) => f.hom k) (hκθ d)
+    have h0 := congrArg (fun (f : CommRingCat.of K ⟶ R) => f.hom k) (hκθ 0)
+    simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at hd h0
+    show (θ d).hom (κ.hom k) - (θ 0).hom (κ.hom k) = 0
+    rw [hd, h0, sub_self]
+  have hκθa : ∀ (a : ↥D) (k : K), (θ a).hom (κ.hom k) = qR.hom k := by
+    intro a k
+    have := congrArg (fun (f : CommRingCat.of K ⟶ R) => f.hom k) (hκθ a)
+    simpa only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] using this
+  -- THE CRUX: additivity of `t` in the point
+  have hadd : ∀ d d' : ↥D, ∀ b, t (d + d') b = t d b + t d' b := by
+    intro d d'
+    -- the triple fibre product `R ×_{R₀} R ×_{R₀} R` and its structure maps
+    set JC : CommRingCat.{u} := CommRingCat.of ↥(sqZeroTriple φ.hom) with hJC
+    set p₁ : JC ⟶ R := CommRingCat.ofHom (sqZeroTriple.pr₁ φ.hom) with hp₁
+    set p₂ : JC ⟶ R := CommRingCat.ofHom (sqZeroTriple.pr₂ φ.hom) with hp₂
+    set p₃ : JC ⟶ R := CommRingCat.ofHom (sqZeroTriple.pr₃ φ.hom) with hp₃
+    set sg : JC ⟶ R := CommRingCat.ofHom (sqZeroTriple.sigma φ.hom hsq) with hsg
+    have hagree : ∀ (a : ↥D) (b : ↥Γ(X, U)), φ.hom ((θ 0).hom b) = φ.hom ((θ a).hom b) := by
+      intro a b
+      have h := congrArg (fun (f : Γ(X, U) ⟶ R₀) => f.hom b) (hφeq a)
+      simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at h
+      exact h.symm
+    set mk : ↥D → ↥D → (Γ(X, U) ⟶ JC) := fun a c =>
+      CommRingCat.ofHom (sqZeroTriple.lift φ.hom (θ 0).hom (θ a).hom (θ c).hom
+        (hagree a) (hagree c)) with hmk
+    have hmk₁ : ∀ a c : ↥D, mk a c ≫ p₁ = θ 0 :=
+      fun a c => CommRingCat.hom_ext (RingHom.ext fun b => rfl)
+    have hmk₂ : ∀ a c : ↥D, mk a c ≫ p₂ = θ a :=
+      fun a c => CommRingCat.hom_ext (RingHom.ext fun b => rfl)
+    have hmk₃ : ∀ a c : ↥D, mk a c ≫ p₃ = θ c :=
+      fun a c => CommRingCat.hom_ext (RingHom.ext fun b => rfl)
+    have hmkσ : ∀ (a c : ↥D) (b : ↥Γ(X, U)),
+        (mk a c ≫ sg).hom b = (θ a).hom b + (θ c).hom b - (θ 0).hom b := fun a c b => rfl
+    -- all patches share one base point on `Spec JC`
+    have hκmk : ∀ a c : ↥D, κ ≫ mk a c = κ ≫ mk 0 0 := by
+      intro a c
+      apply CommRingCat.hom_ext
+      refine sqZeroTriple.hom_ext φ.hom (fun k => rfl) (fun k => ?_) (fun k => ?_)
+      · show (θ a).hom (κ.hom k) = (θ 0).hom (κ.hom k)
+        rw [hκθa a k, hκθa 0 k]
+      · show (θ c).hom (κ.hom k) = (θ 0).hom (κ.hom k)
+        rw [hκθa c k, hκθa 0 k]
+    set qJ : Spec JC ⟶ Spec (CommRingCat.of K) := Spec.map (κ ≫ mk 0 0) with hqJ
+    letI := ab.addCommGroup qJ
+    -- the restriction maps to `Spec R`
+    have hres : ∀ ρ : JC ⟶ R, mk 0 0 ≫ ρ = θ 0 → Spec.map ρ ≫ qJ = q := by
+      intro ρ hρ
+      rw [hqJ, ← Spec.map_comp, Category.assoc, hρ, hκθ 0, hqR]
+    have hsg00 : mk 0 0 ≫ sg = θ 0 :=
+      CommRingCat.hom_ext (RingHom.ext fun b => by rw [hmkσ]; ring)
+    have h₁ : Spec.map p₁ ≫ qJ = q := hres p₁ (hmk₁ 0 0)
+    have h₂ : Spec.map p₂ ≫ qJ = q := hres p₂ (hmk₂ 0 0)
+    have h₃ : Spec.map p₃ ≫ qJ = q := hres p₃ (hmk₃ 0 0)
+    have hσ : Spec.map sg ≫ qJ = q := hres sg hsg00
+    -- the patch points
+    have hPt : ∀ a c : ↥D, (Spec.map (mk a c) ≫ affineOpenChart hU) ≫ fK = qJ := by
+      intro a c
+      rw [Category.assoc, ← hκ, ← Spec.map_comp, hκmk a c, hqJ]
+    set Pt : ↥D → ↥D → RelPoint fK qJ := fun a c => ⟨Spec.map (mk a c) ≫ affineOpenChart hU, hPt a c⟩
+      with hPtdef
+    -- restriction of a patch point along a structure map
+    have key : ∀ (a c : ↥D) (ρ : JC ⟶ R) (f : Γ(X, U) ⟶ R) (_ : mk a c ≫ ρ = f)
+        (hf : (Spec.map f ≫ affineOpenChart hU) ≫ fK = q) (hs : Spec.map ρ ≫ qJ = q),
+        RelPoint.pre (Spec.map ρ) hs (Pt a c) = ⟨Spec.map f ≫ affineOpenChart hU, hf⟩ := by
+      intro a c ρ f hρ hf hs
+      apply Subtype.ext
+      show Spec.map ρ ≫ Spec.map (mk a c) ≫ affineOpenChart hU = Spec.map f ≫ affineOpenChart hU
+      rw [← Category.assoc, ← Spec.map_comp, hρ]
+    have hval : ∀ a : ↥D, (Spec.map (θ a) ≫ affineOpenChart hU) ≫ fK = q := by
+      intro a; rw [hθ a]; exact a.1.2
+    have hDpt : ∀ a : ↥D, (⟨Spec.map (θ a) ≫ affineOpenChart hU, hval a⟩ : RelPoint fK q) = a.1 :=
+      fun a => Subtype.ext (hθ a)
+    have hzeroval : Spec.map (θ 0) ≫ affineOpenChart hU = (ab.zero q).1 := hθ 0
+    -- the three restrictions of the two patch points
+    have hA₁ : RelPoint.pre (Spec.map p₁) h₁ (Pt d 0) = 0 := by
+      rw [key d 0 p₁ (θ 0) (hmk₁ d 0) (hval 0) h₁]; exact Subtype.ext hzeroval
+    have hA₂ : RelPoint.pre (Spec.map p₂) h₂ (Pt d 0) = d.1 := by
+      rw [key d 0 p₂ (θ d) (hmk₂ d 0) (hval d) h₂]; exact hDpt d
+    have hA₃ : RelPoint.pre (Spec.map p₃) h₃ (Pt d 0) = 0 := by
+      rw [key d 0 p₃ (θ 0) (hmk₃ d 0) (hval 0) h₃]; exact Subtype.ext hzeroval
+    have hB₁ : RelPoint.pre (Spec.map p₁) h₁ (Pt 0 d') = 0 := by
+      rw [key 0 d' p₁ (θ 0) (hmk₁ 0 d') (hval 0) h₁]; exact Subtype.ext hzeroval
+    have hB₂ : RelPoint.pre (Spec.map p₂) h₂ (Pt 0 d') = 0 := by
+      rw [key 0 d' p₂ (θ 0) (hmk₂ 0 d') (hval 0) h₂]; exact Subtype.ext hzeroval
+    have hB₃ : RelPoint.pre (Spec.map p₃) h₃ (Pt 0 d') = d'.1 := by
+      rw [key 0 d' p₃ (θ d') (hmk₃ 0 d') (hval d') h₃]; exact hDpt d'
+    -- naturality of the group law along each structure map
+    have hsum : ∀ (ρ : JC ⟶ R) (hs : Spec.map ρ ≫ qJ = q),
+        RelPoint.pre (Spec.map ρ) hs (Pt d 0 + Pt 0 d') =
+          RelPoint.pre (Spec.map ρ) hs (Pt d 0) + RelPoint.pre (Spec.map ρ) hs (Pt 0 d') :=
+      fun ρ hs => ab.pre_add (Spec.map ρ) hs _ _
+    -- `Spec (p₁ ≫ φ)` is surjective, so the sum has constant image too
+    have hδsurj : Function.Surjective (Spec.map (p₁ ≫ φ)).base := by
+      refine surjective_specMap_of_sq_ker_eq_bot _ ?_ ?_
+      · intro y
+        obtain ⟨x, hx⟩ := hφ y
+        exact ⟨⟨(x, x, x), rfl, rfl⟩, hx⟩
+      · rw [eq_bot_iff, pow_two]
+        refine Ideal.mul_le.mpr fun a ha b hb => ?_
+        have ha1 : (a : ↥R × ↥R × ↥R).1 ∈ RingHom.ker φ.hom := RingHom.mem_ker.mpr ha
+        have hb1 : (b : ↥R × ↥R × ↥R).1 ∈ RingHom.ker φ.hom := RingHom.mem_ker.mpr hb
+        have ha2 : (a : ↥R × ↥R × ↥R).2.1 ∈ RingHom.ker φ.hom := by
+          rw [RingHom.mem_ker, ← a.2.1]; exact RingHom.mem_ker.mp ha1
+        have ha3 : (a : ↥R × ↥R × ↥R).2.2 ∈ RingHom.ker φ.hom := by
+          rw [RingHom.mem_ker, ← a.2.2]; exact RingHom.mem_ker.mp ha1
+        have hb2 : (b : ↥R × ↥R × ↥R).2.1 ∈ RingHom.ker φ.hom := by
+          rw [RingHom.mem_ker, ← b.2.1]; exact RingHom.mem_ker.mp hb1
+        have hb3 : (b : ↥R × ↥R × ↥R).2.2 ∈ RingHom.ker φ.hom := by
+          rw [RingHom.mem_ker, ← b.2.2]; exact RingHom.mem_ker.mp hb1
+        refine Ideal.mem_bot.mpr (Subtype.ext (Prod.ext ?_ (Prod.ext ?_ ?_)))
+        · exact hsq _ _ ha1 hb1
+        · exact hsq _ _ ha2 hb2
+        · exact hsq _ _ ha3 hb3
+    have hker0 : Spec.map p₁ ≫ (Pt d 0 + Pt 0 d').1 = q ≫ ab.zeroSection := by
+      have hs := hsum p₁ h₁
+      rw [hA₁, hB₁, add_zero] at hs
+      have hv : Spec.map p₁ ≫ (Pt d 0 + Pt 0 d').1 = (ab.zero q).1 := congrArg Subtype.val hs
+      rw [hv]; exact ab.zero_val q
+    have hfacsum : ∃ ζ : Γ(X, U) ⟶ JC, Spec.map ζ ≫ affineOpenChart hU = (Pt d 0 + Pt 0 d').1 := by
+      refine exists_affineOpenChart_factor hU _ ?_
+      rintro _ ⟨p, rfl⟩
+      have hcond : Spec.map (p₁ ≫ φ) ≫ (Pt d 0 + Pt 0 d').1
+          = (Spec.map (p₁ ≫ φ) ≫ qJ) ≫ ab.zeroSection := by
+        rw [Spec.map_comp, Category.assoc (Spec.map φ) (Spec.map p₁) qJ, h₁, Category.assoc,
+          hker0, Category.assoc]
+      rw [base_eq_zeroSection_of_infKernel ab (p₁ ≫ φ) hδsurj (Pt d 0 + Pt 0 d') hcond p]
+      exact hx₀
+    obtain ⟨ζ, hζ⟩ := hfacsum
+    -- identify the three coordinates of `ζ`
+    have hcoord : ∀ (ρ : JC ⟶ R) (f : Γ(X, U) ⟶ R) (hs : Spec.map ρ ≫ qJ = q)
+        (hf : (Spec.map f ≫ affineOpenChart hU) ≫ fK = q),
+        RelPoint.pre (Spec.map ρ) hs (Pt d 0 + Pt 0 d') = ⟨Spec.map f ≫ affineOpenChart hU, hf⟩ →
+        ζ ≫ ρ = f := by
+      intro ρ f hs hf hEq
+      refine affineOpenChart_injective hU R ?_
+      show Spec.map (ζ ≫ ρ) ≫ affineOpenChart hU = Spec.map f ≫ affineOpenChart hU
+      rw [Spec.map_comp, Category.assoc, hζ]
+      exact congrArg Subtype.val hEq
+    have hζ₁ : ζ ≫ p₁ = θ 0 := by
+      refine hcoord p₁ (θ 0) h₁ (hval 0) ?_
+      rw [hsum p₁ h₁, hA₁, hB₁, add_zero]
+      exact (Subtype.ext hzeroval).symm
+    have hζ₂ : ζ ≫ p₂ = θ d := by
+      refine hcoord p₂ (θ d) h₂ (hval d) ?_
+      rw [hsum p₂ h₂, hA₂, hB₂, add_zero]
+      exact (hDpt d).symm
+    have hζ₃ : ζ ≫ p₃ = θ d' := by
+      refine hcoord p₃ (θ d') h₃ (hval d') ?_
+      rw [hsum p₃ h₃, hA₃, hB₃, zero_add]
+      exact (hDpt d').symm
+    -- apply `σ` and read off additivity
+    have hζσ : ∀ b : ↥Γ(X, U),
+        (ζ ≫ sg).hom b = (θ d).hom b + (θ d').hom b - (θ 0).hom b := by
+      intro b
+      have e₁ := congrArg (fun (f : Γ(X, U) ⟶ R) => f.hom b) hζ₁
+      have e₂ := congrArg (fun (f : Γ(X, U) ⟶ R) => f.hom b) hζ₂
+      have e₃ := congrArg (fun (f : Γ(X, U) ⟶ R) => f.hom b) hζ₃
+      simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply] at e₁ e₂ e₃
+      show (ζ.hom b).1.2.1 + (ζ.hom b).1.2.2 - (ζ.hom b).1.1 = _
+      rw [← e₁, ← e₂, ← e₃]
+      rfl
+    have hsgA : mk d 0 ≫ sg = θ d :=
+      CommRingCat.hom_ext (RingHom.ext fun b => by rw [hmkσ]; ring)
+    have hsgB : mk 0 d' ≫ sg = θ d' :=
+      CommRingCat.hom_ext (RingHom.ext fun b => by rw [hmkσ]; ring)
+    have hσsum : (d + d').1 = RelPoint.pre (Spec.map sg) hσ (Pt d 0 + Pt 0 d') := by
+      rw [hsum sg hσ, key d 0 sg (θ d) hsgA (hval d) hσ, key 0 d' sg (θ d') hsgB (hval d') hσ,
+        hDpt d, hDpt d']
+      rfl
+    have hθsum : θ (d + d') = ζ ≫ sg := by
+      refine affineOpenChart_injective hU R ?_
+      show Spec.map (θ (d + d')) ≫ affineOpenChart hU = Spec.map (ζ ≫ sg) ≫ affineOpenChart hU
+      rw [hθ (d + d'), Spec.map_comp, Category.assoc, hζ]
+      exact congrArg Subtype.val hσsum
+    intro b
+    show (θ (d + d')).hom b - (θ 0).hom b = _
+    rw [hθsum, hζσ b]
+    show _ = ((θ d).hom b - (θ 0).hom b) + ((θ d').hom b - (θ 0).hom b)
+    ring
+  refine nonempty_module_of_injective_map (K := K) (fun d => t d) ?_ ?_ ?_
+  · intro d d'; funext b; exact hadd d d' b
+  · -- injectivity
+    intro d d' h
+    have hb : ∀ b, (θ d).hom b = (θ d').hom b := by
+      intro b
+      have := congrFun h b
+      simpa [ht, sub_left_inj] using this
+    have hcomp : θ d = θ d' := by
+      apply CommRingCat.hom_ext
+      exact RingHom.ext hb
+    have : d.1.1 = d'.1.1 := by rw [← hθ d, ← hθ d', hcomp]
+    exact Subtype.ext (Subtype.ext this)
+  · -- closure under scaling
+    intro c d
+    have hzero : t d 0 = 0 := by
+      show (θ d).hom 0 - (θ 0).hom 0 = 0
+      rw [map_zero, map_zero, sub_self]
+    -- the twisted ring homomorphism `θ₀ + c · t d`
+    let μ : ↥Γ(X, U) →+* ↥R :=
+      { toFun := fun b => (θ 0).hom b + qR.hom c * t d b
+        map_one' := by rw [map_one, hone d]; ring
+        map_mul' := fun b b' => by
+          have h0 : t d b * t d b' = 0 := hsq _ _ (hker_mem d b) (hker_mem d b')
+          show (θ 0).hom (b * b') + qR.hom c * t d (b * b') = _
+          rw [map_mul, hleib d b b']
+          linear_combination (-(qR.hom c ^ 2)) * h0
+        map_zero' := by rw [map_zero, hzero]; ring
+        map_add' := fun b b' => by
+          show (θ 0).hom (b + b') + qR.hom c * t d (b + b') = _
+          rw [map_add, hadd_b d b b']; ring }
+    let μC : Γ(X, U) ⟶ R := CommRingCat.ofHom μ
+    have hμval : ∀ b, μC.hom b = (θ 0).hom b + qR.hom c * t d b := fun _ => rfl
+    -- it agrees with `θ 0` after `φ`
+    have hμφ : μC ≫ φ = θ 0 ≫ φ := by
+      apply CommRingCat.hom_ext
+      refine RingHom.ext fun b => ?_
+      show φ.hom (μC.hom b) = φ.hom ((θ 0).hom b)
+      rw [hμval, map_add, map_mul, RingHom.mem_ker.mp (hker_mem d b), mul_zero, add_zero]
+    -- it agrees with the structure map on the base field
+    have hμκ : κ ≫ μC = qR := by
+      apply CommRingCat.hom_ext
+      refine RingHom.ext fun k => ?_
+      show μC.hom (κ.hom k) = qR.hom k
+      rw [hμval, hbase d k, mul_zero, add_zero]
+      exact congrArg (fun (f : CommRingCat.of K ⟶ R) => f.hom k) (hκθ 0)
+    -- the resulting relative point
+    have hover : (Spec.map μC ≫ affineOpenChart hU) ≫ fK = q := by
+      rw [Category.assoc, ← hκ, ← Spec.map_comp, hμκ, hqR]
+    have hmem : (⟨Spec.map μC ≫ affineOpenChart hU, hover⟩ : RelPoint fK q) ∈ D := by
+      rw [ab.mem_infKernel_iff _ rfl]
+      show Spec.map φ ≫ Spec.map μC ≫ affineOpenChart hU = _
+      rw [← Category.assoc, ← Spec.map_comp, hμφ, Spec.map_comp, Category.assoc, hθ]
+      exact (ab.mem_infKernel_iff _ rfl (0 : ↥D).1).mp (0 : ↥D).2
+    refine ⟨⟨⟨Spec.map μC ≫ affineOpenChart hU, hover⟩, hmem⟩, ?_⟩
+    have hθμ : θ ⟨⟨Spec.map μC ≫ affineOpenChart hU, hover⟩, hmem⟩ = μC := by
+      refine affineOpenChart_injective hU R ?_
+      show Spec.map (θ ⟨⟨Spec.map μC ≫ affineOpenChart hU, hover⟩, hmem⟩) ≫ affineOpenChart hU = _
+      rw [hθ]
+    funext b
+    show (θ _).hom b - (θ 0).hom b = _
+    rw [hθμ, hμval]
+    show (θ 0).hom b + qR.hom c * t d b - (θ 0).hom b = c • t d b
+    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra]
+    ring
+
 
 /-- **THE INFINITESIMAL KERNEL IS TORSION FREE AT `n` PRIME TO THE
 CHARACTERISTIC** (PROVEN 2026-07-27 over the single leaf
