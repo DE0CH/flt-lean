@@ -2626,7 +2626,48 @@ first, `q`-integrality; the second pins `jm'` as the genuine `j`-map of
 the special fibre rather than an arbitrary function, and is stated as
 `jm' y' * den = num` in `ZMod q` rather than with an inverse precisely so
 that it needs no side condition — `q`-integrality, the first conjunct,
-already makes `den` invertible mod `q`. -/
+already makes `den` invertible mod `q`.
+
+## FORMAL-CONTENT AUDIT (2026-07-27) — READ THIS BEFORE STATING THE
+## FORMAL-IMMERSION LEAF OVER THIS STRUCTURE
+
+**`redX` is NOT pinned to be the genuine reduction, and there is an
+explicit junk witness.**  Take `redX` to send *every* rational point to a
+point of `X'` outside the image of `sectionAlong jY' hX'.comm` — a cusp
+of the special fibre.  Then the hypothesis of `red_jm` is never
+satisfiable, so `red_jm` holds vacuously for any `jm` and any `jm'`, and
+the structure is inhabited with no arithmetic content whatever.
+
+Two consequences, and the second is the one that costs a task if missed.
+
+*The dictionary is unaffected.*  `isCusp_redX_of_padicValRat_neg` is a
+true implication for every datum, junk included — under the junk witness
+its conclusion is simply true for trivial reasons.  Nothing downstream of
+it is weakened by the junk witness alone.
+
+*The formal-immersion leaf MUST NOT be universally quantified over this
+structure.*  That leaf is "a rational point whose reduction is a cusp is
+itself a cusp", i.e. `hX'.IsCusp (redX x) → hX.IsCusp x`.  Under the junk
+witness above its hypothesis holds for EVERY `x` while its conclusion
+fails for every `x` coming from `Y`, so the universally quantified form
+is **FALSE**, not merely unsupported.  This is the same defect the
+`WHY THIS LEAF DOES NOT DECOMPOSE` note under `exists_x0Sieve` records
+for `IsX0ReductionAt` and `redJ`, in a new place; it is recorded here so
+that it is found before, not after, someone writes the leaf.
+
+**The check that would refute this audit**, and it is one grep: a field
+on this structure pinning `redX` as the map induced by a morphism of
+integral models.  There is none today because no integral model of
+`X_0(N)` exists at this pin.  **The remedy is already in flight**: the
+`IsX0NeronDatum` layer being built on branch `flt-lean-12` carries the
+integral models with both fibres identified as equivalences of functors
+of points, which is exactly the object that turns `redX` from an
+arbitrary function into an induced map — the same repair that made
+`red_aj` and `redJ_add` theorems rather than assumptions there.  When it
+lands, `IsX0JReductionAt` should be re-founded on it and `red_jm` should
+become a theorem; until then the formal-immersion leaf must be stated
+against a datum produced by `exists_x0JReductionAt`, never against an
+arbitrary one. -/
 structure IsX0JReductionAt (N q : ℕ)
     {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
