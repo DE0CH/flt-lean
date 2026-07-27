@@ -9998,12 +9998,46 @@ declaration another worker is cutting is the one thing this development
 has paid for repeatedly, so the consolidation is done here, inside this
 file's own region, and stops at this file's four levels.
 
-**The merge is therefore a strictly local one, and it is REVERSIBLE
-UPWARDS**: when `X0.lean`'s two leaves settle, `levels` and `countTable`
-below are exactly the extra rows to append there, and these two leaves
-become one-line corollaries in turn.  That is the intended successor step
-and it is why the statements are written in verbatim the same shape as
-their `X0.lean` analogues rather than in a shape convenient here.
+**THE OWNERS HAVE LANDED, AND THE PROPOSED SUCCESSOR STEP IS NOT FAITHFUL**
+(checked 2026-07-27, after this section was written).  The paragraph that
+stood here said that once `X0.lean`'s two leaves settled, `levels` and
+`countTable` were "exactly the extra rows to append there".  Both leaves
+have since settled — `Fermat.hasRankZeroJacobian_of_kenkuLevel` and
+`Fermat.exists_x0Compactification_mod_prime` are now PROVEN over sub-leaves,
+and `~/.flt-inflight.jsonl` records no owner on either — so the step was
+attempted, and **appending is wrong in both halves**:
+
+* **`Fermat.kenkuLevels` cannot absorb `11, 17, 19`.**  It is not "the levels
+  where something happens to be provable"; it names Kenku's non-prime-power
+  determination, i.e. the levels at which every rational point of `X_0(N)` is
+  a CUSP.  At `11, 17, 19` that is precisely FALSE, and this file is where it
+  is false: `genusOneJTable` tabulates their `3 + 2 + 1` NON-cuspidal points.
+  Adding them would make the definition's own name and docstring untrue.
+* **`Fermat.x0WitnessTable` cannot absorb the three prime rows either.**  Its
+  documented and consumed invariant is that in every row the count EQUALS
+  `Fermat.numRationalCusps N` — that equality is exactly what
+  `Fermat.y0HasNoRationalPoint_of_witnessPrime` converts into emptiness of
+  `Y_0(N)(ℚ)`.  It holds at `N = 32` (`4 = 4`) and fails at `11, 17, 19`,
+  where the counts `5, 4, 3` sit against `numRationalCusps = 2, 2, 2`.
+  Note this does not make that theorem FALSE — it pins `m` to
+  `numRationalCusps N` in its own hypothesis, so a row like `(11, 3, 5)`
+  could never be applied there — but it does break the table's stated
+  invariant, which is worse than an open leaf because the next prover reads
+  the invariant, not the proof.
+
+**What IS available, in increasing order of cost.**  Level `32` alone is
+appendable to BOTH — genus `1`, rank `0`, and `4 = numRationalCusps 32` — so
+the fourth row of `countTable` is genuinely a row of `x0WitnessTable`.  The
+full consolidation needs a NEW upstream level set (the levels where `J_0(N)`
+has rank `0` and `X_0(N)` has genus `≥ 1`, which is a superset of
+`kenkuLevels` and a different notion from it) together with a restatement of
+`one_le_x0Genus_of_kenkuLevel`, `numRationalCusps_pos_of_kenkuLevel`,
+`finite_jacobian_of_kenkuLevel` and `hasRankZeroJacobian_of_kenkuLevel` over
+it — four declarations, not an append.  That is worth doing and it is worth
+doing ONCE: the `X0.lean` `kenkuLevels`/Jacobian cluster currently carries
+seven queued tasks, one of them an explicit consolidation task, so whoever
+takes it should take it whole rather than widening one hypothesis in
+passing.
 
 **The coherent mathematical class**, which is what makes one statement
 honest rather than an ad-hoc union: at `N ∈ {11, 17, 19, 32}` the modular
@@ -16521,9 +16555,202 @@ theorem exists_x0GenusOne_mod_prime (p ℓ m : ℕ) (h : (p, ℓ, m) ∈ x0Genus
         Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
   X0GenusOne.exists_mod_prime p ℓ m (by fin_cases h <;> decide)
 
+/-- **Every row of `x0GenusOneTable` has `p ≠ 0`** (PROVEN, `decide` over the
+three rows).
+
+The side condition `Fermat.exists_jMap` needs in order to produce the `j`-map:
+`IsJMapOn 0 hc` is unsatisfiable (`Fermat.isEmpty_of_gamma0Datum_zero`), so that
+hypothesis is load-bearing rather than decoration. -/
+theorem x0GenusOneTable_pos {p ℓ m : ℕ} (h : (p, ℓ, m) ∈ x0GenusOneTable) : p ≠ 0 := by
+  fin_cases h <;> decide
+
+/-- **LEAF — every tabulated `j`-value is REALISED by a curve carrying a
+rational `p`-isogeny** (sorry leaf, introduced 2026-07-27 by the cut of
+`exists_x0GenusOnePoints`, which is PROVEN over it).
+
+Asserts, for each of the six pairs of `genusOneJTable`: there is an elliptic
+curve `E/ℚ` with `j(E) = j₀` carrying a point `g` of `E(ℚ̄)` of exact order `p`
+whose `ℤ`-span is stable under `Gal(ℚ̄/ℚ)` — i.e. `E` admits a rational cyclic
+`p`-isogeny.
+
+**This is the EXISTENCE direction and it is NOT circular.**  Its eventual
+consumer `jInvariant_mem_of_isogenyPrime_genusOne` runs the other way: *every*
+curve with a rational `p`-isogeny has tabulated `j`.  This leaf says *every
+tabulated value is attained*, an existence statement provable by exhibiting
+curves, which uses none of the classification.  The two read alike, which is
+why the distinction is worth stating.
+
+**TRUE, and already certified inside this file** — this leaf is exactly the
+"NOT vacuous" claim recorded on `genusOneJTable` and re-recorded in the
+INDEPENDENT RE-VERIFICATION block of `jInvariant_mem_of_isogenyPrime_genusOne`:
+PARI/GP `ellisomat(ellfromj(j))` returns the degree matrix `[1, p; p, 1]` for
+each of the six.  Re-run 2026-07-27 as part of this cut — all six confirmed —
+together with the minimal quadratic twist of each, which is the model a prover
+should work with:
+
+| `p` | `j₀` | minimal model `[a₁, a₂, a₃, a₄, a₆]` | conductor |
+|-----|------|--------------------------------------|-----------|
+| 11 | `−24729001` | `[1, 1, 1, −30, −76]` | `121` |
+| 11 | `−32768` | `[0, −1, 1, −7, 10]` | `121` |
+| 11 | `−121` | `[1, 1, 0, −2, −7]` | `121` |
+| 17 | `−297756989/2` | `[1, 0, 1, −3041, 64278]` | `14450` |
+| 17 | `−882216989/131072` | `[1, 1, 0, −660, −7600]` | `14450` |
+| 19 | `−884736` | `[0, 0, 1, −38, 90]` | `361` |
+
+**The model may be chosen freely, and that is what makes this cheap.**  Only
+`j(E) = j₀` is demanded, and a rational cyclic `p`-isogeny is invariant under
+quadratic twisting — the kernel of `E^d` is `C ⊗ χ_d`, still cyclic of order
+`p` and still Galois-stable — so a prover may take ANY curve of the right `j`,
+e.g. mathlib's `WeierstrassCurve.ofJ j₀` with `WeierstrassCurve.ofJ_j`, and
+owes only the subgroup.  All six values are `≠ 0, 1728`, so `ofJ` is in its
+generic case at each.
+
+**WHY THIS IS THE CUT, and what it removes.**  Before it,
+`exists_x0GenusOnePoints` had to produce a `j`-map, the two cusps, the
+non-cuspidal points and a counting identity at once, and its own audit priced
+that at the explicit `j`-function of `X_0(p)` as a ratio of bivariate
+polynomials of total degree `8/8`, `12/12`, `13/13` with coefficients running
+to twenty-one decimal digits.  **None of that survives here**: the `j`-map
+comes from `Fermat.exists_jMap` (PROVEN), the two cusps from
+`Fermat.exists_rationalCusps` (PROVEN), the counting is proven below, and what
+is left is six elliptic curves.  AXIS SEARCHED: the moduli/elliptic-curve
+boundary.  NOT searched: the arithmetic axis — producing the `p`-isogeny
+itself — which is where all the remaining content now sits.
+
+**Not vacuous and not weakenable.**  Dropping `hstable` would make the
+statement trivial (every `E` has points of order `p` over `ℚ̄`); dropping
+`E.j = j₀` would make it useless to the consumer.  With both, it is the
+existence half of Mazur's isogeny theorem at `p ∈ {11, 17, 19}`.
+
+IRREDUCIBLE at this mathlib pin only in that arithmetic half — mathlib already
+supplies `WeierstrassCurve.ofJ` and its `j`.  The CHECK that would refute the
+residual irreducibility: a construction of the order-`p` kernel, e.g. a
+rational factor of degree `(p − 1)/2` of the `p`-division polynomial of one of
+the six models above, which the Vélu and division-polynomial material already
+in this file's import cone (`Fermat.FLT.EllipticCurve.Velu`,
+`Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree`) can
+consume. -/
+theorem exists_isogenyCurve_of_genusOneJTable (p : ℕ) (j₀ : ℚ)
+    (_h : (p, j₀) ∈ genusOneJTable) :
+    ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g = p ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) ∧
+      E.j = j₀ :=
+  sorry
+
+/-- **Each tabulated `j`-value is attained at a rational point of `Y_0(p)`**
+(PROVEN over the leaf above, via `IsJMapOn.classify_jm`).
+
+Three lines, and the mirror of `jInvariant_mem_of_exists_jMap`: the leaf's
+curve and its `p`-isogeny are verbatim the input `classify_jm` asks for, so the
+curve becomes a rational moduli point `hc.classify (𝟙 SpecQ) d` at which `jm`
+takes the value `j(E) = j₀`.
+
+**Universal in `hj`, and that is sound** despite the subsection note's warning
+that `IsJMapOn` under-determines `jm`.  The warning bites on conclusions
+UNIVERSAL in the moduli point — `∀ y, (p, jm y) ∈ T`, which a witness taking
+junk values off the image of `classify` refutes.  The conclusion here is
+EXISTENTIAL in `y` and lands on a point in that image, where `classify_jm`
+pins the value for every witness alike. -/
+theorem exists_relPoint_jm_eq_of_genusOneJTable (p : ℕ) (j₀ : ℚ)
+    (h : (p, j₀) ∈ genusOneJTable) {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 p strY) (hj : IsJMapOn p hc) :
+    ∃ y : RelPoint strY (𝟙 SpecQ), hj.jm y = j₀ := by
+  obtain ⟨E, hE, g, hord, hstable, hjE⟩ := exists_isogenyCurve_of_genusOneJTable p j₀ h
+  haveI := hE
+  obtain ⟨d, hd⟩ := hj.classify_jm E g hord hstable
+  exact ⟨hc.classify (𝟙 SpecQ) d, hd.trans hjE⟩
+
+/-- **The non-cuspidal rational points of `Y_0(p)`, with their `j`-values**
+(PROVEN over `exists_relPoint_jm_eq_of_genusOneJTable`).
+
+Row by row: three points at `p = 11`, two at `p = 17`, one at `p = 19`,
+obtained by attaining each tabulated value in turn.
+
+**Their DISTINCTNESS is free, and it is what makes the count come out**: the
+tabulated values at a given level are pairwise different rationals and `jm` is
+a function, so points carrying different values are different points.  No
+geometry is needed for it, which is the whole reason the constructive half
+splits off this cheaply.
+
+Nothing here knows or needs to know that these points are non-cuspidal — they
+live on `Y_0(p)`, and the cusps are supplied separately by
+`Fermat.exists_rationalCusps`.
+
+The count is stated against `Fermat.numRationalCusps p` rather than the literal
+`2` so that it composes with that theorem without an arithmetic side condition;
+`decide` evaluates it to `2` at all three levels (divisors `1, p`, both with
+`gcd(d, p/d) = 1`). -/
+theorem exists_genusOneNoncuspidalPoints (p ℓ m : ℕ) (h : (p, ℓ, m) ∈ x0GenusOneTable)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
+    (hj : IsJMapOn p hc) :
+    ∃ pts : Finset (RelPoint strY (𝟙 SpecQ)),
+      (∀ y ∈ pts, (p, hj.jm y) ∈ genusOneJTable) ∧
+      numRationalCusps p + pts.card = m := by
+  classical
+  fin_cases h
+  · -- `p = 11`, `m = 5`: two cusps and the three points of `j`-invariant
+    -- `−24729001`, `−32768`, `−121`.
+    obtain ⟨y₁, hy₁⟩ := exists_relPoint_jm_eq_of_genusOneJTable 11 (-24729001) (by decide) hc hj
+    obtain ⟨y₂, hy₂⟩ := exists_relPoint_jm_eq_of_genusOneJTable 11 (-32768) (by decide) hc hj
+    obtain ⟨y₃, hy₃⟩ := exists_relPoint_jm_eq_of_genusOneJTable 11 (-121) (by decide) hc hj
+    have h12 : y₁ ≠ y₂ := by
+      intro hh
+      have : (-24729001 : ℚ) = -32768 := by rw [← hy₁, hh]; exact hy₂
+      norm_num at this
+    have h13 : y₁ ≠ y₃ := by
+      intro hh
+      have : (-24729001 : ℚ) = -121 := by rw [← hy₁, hh]; exact hy₃
+      norm_num at this
+    have h23 : y₂ ≠ y₃ := by
+      intro hh
+      have : (-32768 : ℚ) = -121 := by rw [← hy₂, hh]; exact hy₃
+      norm_num at this
+    refine ⟨{y₁, y₂, y₃}, ?_, ?_⟩
+    · intro y hy
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hy
+      rcases hy with rfl | rfl | rfl
+      · rw [hy₁]; decide
+      · rw [hy₂]; decide
+      · rw [hy₃]; decide
+    · rw [Finset.card_insert_of_notMem (by simp [h12, h13]),
+        Finset.card_insert_of_notMem (by simp [h23]), Finset.card_singleton]
+      decide
+  · -- `p = 17`, `m = 4`: two cusps and two points.  The `j`-values are not
+    -- integers, so `decide` cannot see them — `norm_num` does the membership.
+    obtain ⟨y₁, hy₁⟩ := exists_relPoint_jm_eq_of_genusOneJTable 17 (-297756989 / 2)
+      (by norm_num [genusOneJTable]) hc hj
+    obtain ⟨y₂, hy₂⟩ := exists_relPoint_jm_eq_of_genusOneJTable 17 (-882216989 / 131072)
+      (by norm_num [genusOneJTable]) hc hj
+    have h12 : y₁ ≠ y₂ := by
+      intro hh
+      have : (-297756989 / 2 : ℚ) = -882216989 / 131072 := by rw [← hy₁, hh]; exact hy₂
+      norm_num at this
+    refine ⟨{y₁, y₂}, ?_, ?_⟩
+    · intro y hy
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hy
+      rcases hy with rfl | rfl
+      · rw [hy₁]; norm_num [genusOneJTable]
+      · rw [hy₂]; norm_num [genusOneJTable]
+    · rw [Finset.card_insert_of_notMem (by simp [h12]), Finset.card_singleton]
+      decide
+  · -- `p = 19`, `m = 3`: two cusps and the single CM point of discriminant `−19`.
+    obtain ⟨y₁, hy₁⟩ := exists_relPoint_jm_eq_of_genusOneJTable 19 (-884736) (by decide) hc hj
+    refine ⟨{y₁}, ?_, ?_⟩
+    · intro y hy
+      simp only [Finset.mem_singleton] at hy
+      subst hy
+      rw [hy₁]; decide
+    · rw [Finset.card_singleton]
+      decide
+
 /-- **The rational points of `X_0(p)` at the genus-one isogeny primes, with
-their `j`-invariants** (sorry leaf, introduced 2026-07-27; the CONSTRUCTIVE
-half of the genus-one decomposition).
+their `j`-invariants** (PROVEN 2026-07-27 over
+`exists_isogenyCurve_of_genusOneJTable`; was a sorry leaf, introduced the same
+day.  The CONSTRUCTIVE half of the genus-one decomposition).
 
 Asserts: there is a `j`-map on `Y_0(p)`, a `Finset` of rational points of
 `X_0(p)` none of which comes from `Y_0(p)` (the cusps), and a `Finset` of
@@ -16537,16 +16764,34 @@ and the non-cuspidal `j`-values are the six of `genusOneJTable` (Magma
 RE-VERIFICATION block of `jInvariant_mem_of_isogenyPrime_genusOne` below,
 down to which affine point is the second cusp).
 
-**THIS IS NOW THE ONLY OPEN LEAF OF THE GENUS-ONE DECOMPOSITION AT THIS
-FILE'S LEVEL** (2026-07-27).  Its two siblings —
-`hasRankZeroJacobian_of_genusOnePrime` and `exists_x0GenusOne_mod_prime`,
-the BOUNDING half — were the same two statements the level-`32` cluster
-also carried, and are now proven from the consolidated
-`X0GenusOne.hasRankZeroJacobian` and `X0GenusOne.exists_mod_prime`.  This
-leaf is NOT of that kind and was deliberately not folded in: it is the
-CONSTRUCTIVE half, and it needs the explicit `j`-function of `X_0(p)` as a
-rational function rather than a rank or a point count.  So a successor
-should not expect the consolidation above to reach it.
+**THE "IRREDUCIBLE" VERDICT THIS DOCSTRING CARRIED WAS WRONG, AND THE AXIS
+IT MISSED WAS THE MODULI/ELLIPTIC-CURVE BOUNDARY** (corrected 2026-07-27,
+same day).  The previous version said this leaf "needs the explicit
+`j`-function of `X_0(p)` as a rational function rather than a rank or a
+point count", priced that at bivariate polynomials of total degree `8/8`,
+`12/12`, `13/13`, and told successors not to expect the `X0GenusOne`
+consolidation to reach it.  The first half was a correct statement about
+the axis it searched — the COARSE-SPACE side — and the conclusion drawn
+from it was false: **no `j`-function is needed at all.**
+
+What the leaf actually decomposes into, all of it already present:
+
+* the `j`-map is `Fermat.exists_jMap`, PROVEN — it need not be built, only
+  obtained, and `x0GenusOneTable_pos` discharges its `p ≠ 0`;
+* the two cusps, with the property that no point of `Y_0(p)` hits them, are
+  `Fermat.exists_rationalCusps`, PROVEN, whose `Finset` has cardinality
+  `Fermat.numRationalCusps p = 2` at each of the three levels;
+* the `m − 2` remaining points are `exists_genusOneNoncuspidalPoints`,
+  proven above by attaining each tabulated `j`-value once and reading their
+  distinctness off the values;
+* which leaves ONLY `exists_isogenyCurve_of_genusOneJTable` — six elliptic
+  curves over `ℚ`, each with a rational cyclic `p`-isogeny and a prescribed
+  `j`-invariant — as the single open leaf.
+
+So the consolidation note was right that the `X0GenusOne` section would not
+reach this leaf, and wrong about why it mattered: this half was never
+blocked on the `j`-function, and its residue is arithmetic (a `p`-isogeny),
+not geometric (a modular parametrisation).
 
 **Why the `j`-map is PRODUCED here rather than assumed.**  See the
 subsection note: `IsJMapOn` under-determines `jm` away from the image of
@@ -16568,16 +16813,10 @@ it cannot be met cheaply.
 split — this half exhibits points, the other half proves there are no
 others.
 
-IRREDUCIBLE at this mathlib pin: it needs the `j`-function of `X_0(p)` as
-an explicit rational function and the identification of the coarse space
-with the elliptic curve `p a 1`.  The CHECK that would refute it: an
-explicit Weierstrass model of `X_0(p)` for `p ∈ {11, 17, 19}` in this
-project — `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` is exactly
-that object at level `32`, so this leaf is its prime-level analogue and a
-successor should copy that shape.  AXIS SEARCHED: the coarse-space side.
-The `j`-function's explicit form (a ratio of bivariate polynomials of total
-degree `8/8`, `12/12`, `13/13` — MEASURED, see the leaf below) is the cost
-that axis carries. -/
+**The statement is UNCHANGED** by the proof: it is still existential in the
+`j`-map for the reason the subsection note gives, and its consumer
+`exists_jMap_genusOne` is untouched.  Only the body moved from `sorry` to an
+assembly of the four items above. -/
 theorem exists_x0GenusOnePoints (p ℓ m : ℕ) (_h : (p, ℓ, m) ∈ x0GenusOneTable)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification p strX strY jY) :
@@ -16585,8 +16824,12 @@ theorem exists_x0GenusOnePoints (p ℓ m : ℕ) (_h : (p, ℓ, m) ∈ x0GenusOne
       (pts : Finset (RelPoint strY (𝟙 SpecQ))),
       (∀ c ∈ cusps, ∀ y : RelPoint strY (𝟙 SpecQ), sectionAlong jY hX.comm y ≠ c) ∧
       (∀ y ∈ pts, (p, hj.jm y) ∈ genusOneJTable) ∧
-      cusps.card + pts.card = m :=
-  sorry
+      cusps.card + pts.card = m := by
+  classical
+  obtain ⟨hj⟩ := exists_jMap p (x0GenusOneTable_pos _h) hX.coarse
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps p hX
+  obtain ⟨pts, hjmem, hcard⟩ := exists_genusOneNoncuspidalPoints p ℓ m _h hX.coarse hj
+  exact ⟨hj, s, pts, hsnot, hjmem, by rw [hscard]; exact hcard⟩
 
 /-- **The `j`-values of `Y_0(p)(ℚ)` at the genus-one isogeny primes**
 (PROVEN 2026-07-27 over `hasRankZeroJacobian_of_genusOnePrime`,
