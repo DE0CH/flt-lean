@@ -345,6 +345,10 @@ public import Mathlib.RingTheory.Int.Basic
 -- DERIVE the initiality clause of `IsCoarseModuliY0` instead of citing it;
 -- see the atlas section before `exists_coarseModuliY0_of_pos`.
 public import Mathlib.AlgebraicGeometry.Sites.Fpqc
+-- `Algebra.IsInvariant`, the ring-theoretic half of GIT: it is the hypothesis
+-- of `specInvariants_universal`, the pure geometric-invariant-theory leaf that
+-- `exists_gamma0Atlas` is split along.
+public import Mathlib.RingTheory.Invariant.Basic
 
 @[expose] public section
 
@@ -948,16 +952,231 @@ def Gamma0Atlas.toIsCoarseModuliY0 {N : ℕ} (A : Gamma0Atlas N) :
       rintro u₁ ⟨-, h₁⟩
       exact huniq u₁ (h₁ A.strM A.dM).symm
 
-/-- **Existence of the Katz–Mazur atlas for `N ≥ 1`** (sorry node — the
-CITATION, now carrying only what Katz–Mazur construct).
+/-! ### Splitting the atlas: the modular-curve half and the GIT half
 
-This replaces the citation formerly attached to
-`exists_coarseModuliY0_of_pos`, from which it differs by exactly the
-initiality clause: that clause is now PROVEN, in
-`Gamma0Atlas.toIsCoarseModuliY0`.  The full citation, the matching of
-hypotheses, and the faithfulness audit are recorded on
-`exists_coarseModuliY0_of_pos` below and are unchanged; only the shape of
-what is assumed has moved.
+`exists_gamma0Atlas` is DERIVED (2026-07-27) from two leaves that share
+no subject matter, and its own docstring is what made the split
+mechanical.  Of the three items it listed as "what closing this needs",
+item 3 — the categorical quotient of an affine scheme by a finite group —
+mentions no modular curve at all.  It is now a separate leaf,
+`specInvariants_universal`, statable and closable by someone who has
+never read this file.  Items 1 and 2 stay together in
+`exists_gamma0GITPresentation`, because they are one construction: the
+rigidified moduli scheme and the torsor that rigidifies it.
+
+**Why the presentation is affine-with-a-finite-group, and why that is not
+an extra assumption.**  (8.1.1) does not merely assert that a quotient
+exists; it *constructs* `M(𝒫)` as `𝔐(𝒫, [Γ(n)])/G` and notes that the
+quotient "exists because `𝔐(𝒫, [Γ(n)])` is itself affine".  So `M`
+affine, `G = GL₂(ℤ/n)` finite, and `Y = Spec` of the invariants is
+exactly what Katz–Mazur build; the `quotient` field of `Gamma0Atlas` is a
+*consequence* of that construction.  Stating the consequence instead of
+the construction is what kept a pure GIT statement locked inside a
+modular-curve leaf.
+
+**How the two halves meet.**  `Gamma0Atlas.quotient` asks that a morphism
+`φ` out of `M` which cannot separate two rigidifications of one datum
+factor uniquely through the classifying map of `dM`.  GIT asks instead
+that `φ` be `G`-invariant.  The bridge is `dM_equivariant`: `σ^*dM ≅ dM`
+exhibits `𝟙` and `Spec σ` as two rigidifications of ONE datum, so `φ`'s
+inability to separate them *is* `Spec σ ≫ φ = φ`.  That is the entire
+content of `Gamma0GITPresentation.toGamma0Atlas`, and it is why the
+presentation carries `dM_equivariant` in place of `quotient`.
+
+**THE SPLIT CANNOT WEAKEN THE TREE, AND THAT IS MECHANICAL.**
+`Gamma0GITPresentation.toGamma0Atlas` is a function *from* the new leaf
+*to* the old one, so `exists_gamma0GITPresentation` is at least as strong
+as `exists_gamma0Atlas`, hence as `exists_coarseModuliY0_of_pos`.  The
+junk witness refuted above transports along it: a presentation with
+`A = B = ℚ`, `G = 1` and `classify g d = g` would produce precisely the
+atlas that was shown to fail `quotient`, so it does not satisfy the new
+leaf either. -/
+
+/-- **GIT: `Spec` of a ring of invariants is a categorical quotient in the
+category of ALL schemes** (sorry node — entirely mathlib-facing).
+
+Let a finite group `G` act on a commutative ring `A` by ring
+automorphisms and let `B` be its invariant ring: `Algebra.IsInvariant B A
+G` says every `G`-fixed element of `A` comes from `B`, and
+`SMulCommClass G B A` says conversely that everything from `B` is
+`G`-fixed (mathlib's own `smul_algebraMap`, since `σ • (b • 1) = b • (σ •
+1) = b • 1`).  Then every `G`-invariant morphism `φ : Spec A ⟶ Y'`, to an
+ARBITRARY scheme `Y'`, factors uniquely through `π = Spec (B → A)`.
+
+This is Mumford, *Geometric Invariant Theory*, Ch. 0 §2 (and its
+Amplification 1.3), and Katz–Mazur Chapter 7 *Quotients by finite
+groups*.  It is the ONLY thing `exists_gamma0Atlas` needed from geometric
+invariant theory, and it names no modular curve, no moduli problem and
+no elliptic scheme.
+
+## State of the pin, rechecked 2026-07-27
+
+Mathlib has the **ring-theoretic half** and not the scheme-level
+statement:
+
+* `Algebra.IsInvariant` (`Mathlib/RingTheory/Invariant/Defs.lean`), with
+  `Algebra.IsInvariant.isIntegral`, `.exists_smul_of_under_eq` and
+  `.orbit_eq_primesOver` (`Mathlib/RingTheory/Invariant/Basic.lean`):
+  `π` is integral, and `G` acts transitively on the primes over a given
+  prime, i.e. the fibres of `π` are exactly the `G`-orbits.
+* `Spec` is fully faithful (`Spec.preimage`, `Spec.map_injective`), and
+  `Scheme.Cover.glueMorphisms` glues morphisms along an open cover.
+
+*The refuting check*:
+`grep -rni "categorical quotient" .lake/packages/mathlib/Mathlib/`
+returns nothing today, and `grep -rn "IsInvariant" ~/cs/FLT/FLT/` finds
+only the number-theoretic uses (`Galois/Infinite.lean`,
+`Deformations/.../IntegralClosure.lean`), never a scheme-level quotient.
+
+## The shape of the proof, for whoever closes it
+
+**`Y'` affine is immediate**: `Hom(Spec A, Spec R) ≃ Hom(R, A)` by full
+faithfulness of `Spec`, and `G`-invariance of the morphism is
+`G`-invariance of the ring map, which therefore lands in `B` by
+`Algebra.IsInvariant`.
+
+**The reduction to that case is the work.**  `π` is integral hence
+closed, and surjective, and its fibres are `G`-orbits, so a `G`-stable
+open of `Spec A` is `π ⁻¹` of an open of `Spec B`; refine to basic opens
+`D b` for `b : B`, where `π ⁻¹ (D b) = Spec (A_b)` and `(A_b)^G = B_b`;
+apply the affine case on each and glue, the overlaps being discharged by
+the uniqueness half on `D (b * b')`.  Global uniqueness is `π` epi, which
+follows from `π` surjective together with `B ↪ A`.
+
+*Refuting check for "the reduction is unavoidable"*: an `EffectiveEpi`
+or descent-shaped route would refute it — but `π` is not flat, so the
+fpqc machinery that `Gamma0Atlas.toIsCoarseModuliY0` uses does not apply
+here, and `grep -rn "EffectiveEpi" .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`
+finds instances only for open covers and for fpqc covers. -/
+theorem specInvariants_universal {B A : Type} [CommRing B] [CommRing A] [Algebra B A]
+    (G : Type) [Group G] [Finite G] [MulSemiringAction G A] [SMulCommClass G B A]
+    [Algebra.IsInvariant B A G]
+    (hinj : Function.Injective (algebraMap B A))
+    {Y' : Scheme.{0}} (φ : Spec (CommRingCat.of A) ⟶ Y')
+    (hinv : ∀ σ : G,
+      Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ)) ≫ φ = φ) :
+    ∃! ψ : Spec (CommRingCat.of B) ⟶ Y',
+      Spec.map (CommRingCat.ofHom (algebraMap B A)) ≫ ψ = φ :=
+  sorry
+
+/-- **A Katz–Mazur atlas presented the way (8.1.1) actually builds it**:
+the rigidified moduli scheme as `Spec A` with a finite group `G` acting,
+and the coarse space as `Spec` of the invariants.
+
+This is `Gamma0Atlas` with its `quotient` field replaced by the data that
+*produces* it — see the section comment above.  The fields it shares with
+`Gamma0Atlas` (`classify`, `classify_natural`, `cover`) are unchanged and
+documented there; the ones that differ are:
+
+* `A`, `B`, `G` with `Algebra.IsInvariant B A G`: the rigidified moduli
+  scheme is `M = Spec A`, affine, the deck group `G = GL₂(ℤ/n)` is
+  finite, and the coarse space is `Y = Spec B` with `B = A^G`.
+* `classify_dM`: the classifying map of the universal family IS the
+  quotient map `π`.  This is what makes `Y` the quotient of `M` rather
+  than an unrelated scheme receiving a map.
+* `dM_equivariant`: `σ^*dM ≅ dM` for every `σ : G`, stated as "there is a
+  datum over `M` which is a base change of `dM` both along `𝟙` and along
+  `Spec σ`".  It is phrased that way rather than as an isomorphism
+  because `IsBaseChangeOf` is the only comparison of `Γ₀(N)`-data this
+  development has, and taking `h = 𝟙` in it is exactly isomorphism of
+  data over a fixed base (see `IsBaseChangeOf`'s docstring). -/
+structure Gamma0GITPresentation (N : ℕ) where
+  /-- the coordinate ring of the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- the ring of invariants, whose spectrum is the coarse space -/
+  B : Type
+  [commRing_B : CommRing B]
+  [algebra_BA : Algebra B A]
+  /-- the deck group `GL₂(ℤ/n)` of the rigidification -/
+  G : Type
+  [group_G : Group G]
+  [finite_G : Finite G]
+  [action_GA : MulSemiringAction G A]
+  [smulComm_GBA : SMulCommClass G B A]
+  [isInvariant_BAG : Algebra.IsInvariant B A G]
+  /-- `B` is a subring of `A`, not merely an algebra over it -/
+  injective_algebraMap : Function.Injective (algebraMap B A)
+  /-- the structure morphism of the coarse space -/
+  str : Spec (CommRingCat.of B) ⟶ SpecQ
+  /-- the structure morphism of the rigidified moduli scheme -/
+  strM : Spec (CommRingCat.of A) ⟶ SpecQ
+  /-- the classifying map of the moduli problem, Katz–Mazur (8.1.3) -/
+  classify : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum N T → RelPoint str g
+  /-- the classifying map is natural in the base -/
+  classify_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+    IsBaseChangeOf h d' d → classify g' d' = RelPoint.pre h hg (classify g d)
+  /-- the universal family carried by the rigidified moduli scheme -/
+  dM : Gamma0Datum N (Spec (CommRingCat.of A))
+  /-- the classifying map of the universal family is the quotient map -/
+  classify_dM : (classify strM dM).1 = Spec.map (CommRingCat.ofHom (algebraMap B A))
+  /-- **rigidification**: every datum is, after a faithfully flat
+  quasi-compact base change, a base change of `dM` -/
+  cover : ∀ {T : Scheme.{0}} (d : Gamma0Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T')
+      (m : T' ⟶ Spec (CommRingCat.of A)),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (IsBaseChangeOf m d' dM)
+  /-- **`G`-equivariance of the universal family**: `σ^*dM ≅ dM` -/
+  dM_equivariant : ∀ σ : G, ∃ d₁ : Gamma0Datum N (Spec (CommRingCat.of A)),
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
+    Nonempty (IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+
+/-- **A GIT presentation IS an atlas** (PROVEN 2026-07-27): the
+`quotient` field of `Gamma0Atlas` derived from the affine presentation
+and `specInvariants_universal`.
+
+The only step with content is turning `Gamma0Atlas.quotient`'s
+separation hypothesis into `G`-invariance, which `dM_equivariant`
+does — see the section comment above. -/
+noncomputable def Gamma0GITPresentation.toGamma0Atlas {N : ℕ}
+    (P : Gamma0GITPresentation N) : Gamma0Atlas N :=
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  letI := P.isInvariant_BAG
+  { Y := Spec (CommRingCat.of P.B)
+    str := P.str
+    classify := P.classify
+    classify_natural := P.classify_natural
+    M := Spec (CommRingCat.of P.A)
+    strM := P.strM
+    dM := P.dM
+    cover := P.cover
+    quotient := by
+      intro Y' φ hsep
+      rw [P.classify_dM]
+      refine specInvariants_universal P.G P.injective_algebraMap φ ?_
+      intro σ
+      -- `𝟙` and `Spec σ` are two rigidifications of the SAME datum `d₁`,
+      -- so the separation hypothesis says `φ` cannot tell them apart.
+      obtain ⟨d₁, ⟨h1⟩, ⟨h2⟩⟩ := P.dM_equivariant σ
+      have h := hsep (𝟙 _) _ d₁ h1 h2
+      rw [Category.id_comp] at h
+      exact h.symm }
+
+/-- **Existence of the Katz–Mazur GIT presentation for `N ≥ 1`** (sorry
+node — the CITATION, now carrying only the MODULAR-CURVE half of what
+Katz–Mazur construct).
+
+This is the citation formerly attached to
+`exists_coarseModuliY0_of_pos`, twice reduced:
+
+* the **initiality** clause of `IsCoarseModuliY0` was never covered by it
+  and is now PROVEN, in `Gamma0Atlas.toIsCoarseModuliY0` (2026-07-27);
+* the **categorical quotient** — item 3 of the itemisation below, the one
+  item that names no modular curve — is now the separate, entirely
+  mathlib-facing leaf `specInvariants_universal` (2026-07-27).
+
+The full citation, the matching of hypotheses, and the faithfulness audit
+are recorded on `exists_coarseModuliY0_of_pos` below and are unchanged;
+only the shape of what is assumed has moved.
 
 ## What closing this needs, as separable items
 
@@ -975,19 +1194,16 @@ carries the check that would refute its being open.
    `cover` field, and it is where `exists_torsionSubscheme` below would be
    consumed.  *Refuting check*: `grep -rn "IsTorsor\|Torsor" Fermat/` and
    the same over `.lake/packages/mathlib` for a finite étale torsor API.
-3. **The categorical quotient of an affine scheme by a finite group**:
-   `Spec (A^G)` receives every `G`-invariant morphism out of `Spec A`
-   uniquely.  This is the `quotient` field, and it is the one item that is
-   **entirely mathlib-facing** — it mentions no modular curve and could be
-   proven by someone who has never read this file.  *State of the pin,
-   rechecked 2026-07-27*: mathlib has the ring-theoretic half —
-   `Algebra.IsInvariant` (`Mathlib/RingTheory/Invariant/Basic.lean`), with
-   `Algebra.IsInvariant.isIntegral`, `exists_smul_of_under_eq` and
-   `orbit_eq_primesOver`, which say exactly that `Spec A ⟶ Spec (A^G)` is
-   integral with the `G`-orbits as its fibres — and does **not** have the
-   scheme-level statement.  *Refuting check*:
-   `grep -rn "categorical quotient\|CategoricalQuotient" .lake/packages/mathlib/Mathlib/`
-   returns nothing today.
+3. **The categorical quotient of an affine scheme by a finite group** —
+   **NO LONGER PART OF THIS LEAF.**  It was split off on 2026-07-27 as
+   `specInvariants_universal`, where its citation, its state-of-the-pin
+   survey and its proof sketch now live.  What remains here in its place
+   is only the *presentation* — `A`, `B`, `G`, `classify_dM` and
+   `dM_equivariant` — i.e. the assertion that Katz–Mazur's `𝔐(𝒫, [Γ(n)])`
+   is affine with a finite deck group acting and that the classifying map
+   of the universal family is the quotient map.  That is a statement about
+   the modular curve, and it belongs here; the quotient property of
+   `Spec (A^G)` is a statement about rings and schemes, and it does not.
 
 ## What is NO LONGER needed, and was wrongly recorded as needed
 
@@ -1000,8 +1216,19 @@ present** and is what `Gamma0Atlas.toIsCoarseModuliY0` runs on:
 `CategoryTheory.epi_of_effectiveEpi`.  *The check that refutes the old
 claim*: those two names resolve, which this file now demonstrates by
 using them. -/
-theorem exists_gamma0Atlas (N : ℕ) (hN : 0 < N) : Nonempty (Gamma0Atlas N) :=
+theorem exists_gamma0GITPresentation (N : ℕ) (hN : 0 < N) :
+    Nonempty (Gamma0GITPresentation N) :=
   sorry
+
+/-- **Existence of the Katz–Mazur atlas for `N ≥ 1`** (PROVEN 2026-07-27
+from the two halves it was split into).
+
+The citation now lives on `exists_gamma0GITPresentation` (the
+modular-curve half) and on `specInvariants_universal` (the GIT half); the
+section comment above `specInvariants_universal` explains the split and
+why it cannot weaken the tree. -/
+theorem exists_gamma0Atlas (N : ℕ) (hN : 0 < N) : Nonempty (Gamma0Atlas N) :=
+  (exists_gamma0GITPresentation N hN).map Gamma0GITPresentation.toGamma0Atlas
 
 /-- **Existence of the coarse moduli space `Y_0(N)` for `N ≥ 1`**
 (PROVEN 2026-07-27 from `exists_gamma0Atlas`, which now carries the
