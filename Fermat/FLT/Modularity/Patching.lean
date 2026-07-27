@@ -4596,23 +4596,29 @@ underscore-prefixed.  `hpodd`, `hW` and `hrankT` keep their names only
 because the types of `_hres` and `_hρT` mention them; they are equally
 unconsumed.
 
-## 4.  THE REPAIR STILL OWED, and it is one line
+## 4.  THE REPAIR — DONE 2026-07-27, and it was one line
 
-The pin protects the sibling only where it is visible to it, and it is
-NOT yet: `exists_taylorWilesBottomLevel` below re-existentially-quantifies
-`M0` WITHOUT the clause, so `exists_taylorWilesTower` hands
+The pin protects the sibling only where it is visible to it, and it was
+not: `exists_taylorWilesBottomLevel` below re-existentially-quantified
+`M0` WITHOUT the clause, so `exists_taylorWilesTower` handed
 `exists_taylorWilesAuxLevelData` an unpinned `M0` characterized only by
-`hbot`.  The propagation was deliberately not made here because
-`exists_taylorWilesAuxLevelData` has a separate owner.  What the owner of
-the level-wise cut should do, in order:
+`hbot`.  All three steps of that propagation are now made:
 
-1. add `Nonempty (M0 ≃ₗ[T] (Fin 2 → T))` to the conclusion of
-   `exists_taylorWilesBottomLevel` (its proof already has the term — it is
-   the component dropped by `-` in its `obtain`);
-2. add `(hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))` as a hypothesis of
-   `exists_taylorWilesAuxLevelData`, which WEAKENS that leaf and is what
-   makes it true rather than merely open;
-3. thread it in `exists_taylorWilesTower`, which currently drops it.
+1. `Nonempty (M0 ≃ₗ[T] (Fin 2 → T))` is a conjunct of the conclusion of
+   `exists_taylorWilesBottomLevel` (its proof already had the term — it
+   was the component dropped by `-` in its `obtain`, now bound `hM0T`);
+2. `(hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))` is a hypothesis of
+   `exists_taylorWilesAuxLevelData` — and, since that statement is now a
+   PROVEN assembly over `exists_taylorWilesAuxLevelPresentedDatum`, of
+   that leaf too, which is where the weakening actually has to land if it
+   is to reach a prover.  This WEAKENS both, and is what makes them true
+   rather than merely open;
+3. `exists_taylorWilesLevelRaw` carries it as a hypothesis and
+   `exists_taylorWilesTower` threads it, instead of dropping it.
+
+So an owner of A2/A2′ may now assume `M₀ ≅ T²` — which, combined with
+the ROUTE NOTE recorded at A2′ (`hbot` forces `M₀ ≅ ℤ_p^d`), pins
+`d = rank_{ℤ_p} T²` and identifies the bottom module completely.
 
 CIRCULARITY GUARD: inherited unchanged from
 `exists_taylorWilesBottomLevel`; see the guard recorded there.  It is
@@ -4909,6 +4915,26 @@ reduction only because the quotient-of-a-product-of-quotients transport
 is a substantial `Submodule` exercise; it is a clean, self-contained
 next step, and it consumes nothing that is not already proven.)
 
+**And `M0` is pinned a second, independent way: `hM0T` (added 2026-07-27).**
+`hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T))` is Eichler–Shimura plus Mazur's
+multiplicity one, propagated down from
+`exists_taylorWilesBottomHeckeModule` through
+`exists_taylorWilesBottomLevel`, `exists_taylorWilesTower`,
+`exists_taylorWilesLevelRaw` and `exists_taylorWilesAuxLevelData` (see §4
+of that leaf's VACUITY AUDIT).  It is a WEAKENING of this leaf, and a
+load-bearing one: without it a discharge of the bottom leaf was free to
+hand over `T`, `T³`, or a module on which `T` acts through an unrelated
+quotient, and for such an `M₀` no tower of `Λ/𝔟_n`-free modules with
+`𝔫`-quotient `M₀` exists — i.e. this leaf was FALSE for those witnesses,
+with no signal a compiler or an axiom audit could emit.
+
+Combined with the `hbot` route note above (`M0 ≅ ℤ_p^d`) it also fixes
+the rank: `ℤ_p^d ≅ M₀ ≅ T²` forces `d = 2 · rank_{ℤ_p} T`, so `d` is not
+a free parameter of this leaf either.  Both pins constrain only `M₀`;
+the ring side — a `q`-generator quotient of `Λ_𝒪` with the control
+identification — remains the genuine arithmetic, and the INTERFACE
+DEFECT above remains the operative blocker.
+
 # MISSING MACHINERY (the reason this is a leaf and not a proof)
 
 Confirmed absent from `Fermat/`, from our mathlib pin and from
@@ -4988,6 +5014,7 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
     (M0 : Type) [AddCommGroup M0] [Module T M0]
     (hM0 : Nontrivial M0)
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
+    (hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))
     (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
     (hQ : IsTaylorWilesPrimeSet ρbar p n Q) :
     ∃ (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
@@ -5089,7 +5116,20 @@ which contains only LOCAL conditions at each `q ∈ Q` and no dual-Selmer
 vanishing clause, so the classical Taylor–Wiles route does not apply to
 an arbitrary `Q` satisfying `hQ`, and the leaf has no `hTWq` with which
 to re-choose one.  That is a cut-level repair to
-`IsTaylorWilesPrimeSet`, not work for a prover. -/
+`IsTaylorWilesPrimeSet`, not work for a prover.
+
+**MULTIPLICITY-ONE PIN THREADED 2026-07-27.**  The hypothesis
+`hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T))` — Eichler–Shimura plus Mazur
+multiplicity one, `hirr` supplying non-Eisensteinness — now arrives here
+from `exists_taylorWilesBottomHeckeModule` via
+`exists_taylorWilesBottomLevel`, `exists_taylorWilesTower` and
+`exists_taylorWilesLevelRaw`, and is passed on to the leaf above.  It is
+a WEAKENING, and it is what makes this statement true rather than merely
+open: without it `M0` was quantified over every `T`-module admitting a
+level-`0` raw datum, including `T`, `T³` and modules with an unrelated
+`T`-action, and for those no tower of `Λ/𝔟_n`-free modules with
+`𝔫`-quotient `M0` exists.  See §4 of the VACUITY AUDIT on
+`exists_taylorWilesBottomHeckeModule`. -/
 theorem exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -5140,6 +5180,7 @@ theorem exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR}
     (M0 : Type) [AddCommGroup M0] [Module T M0]
     (hM0 : Nontrivial M0)
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
+    (hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))
     (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
     (hQ : IsTaylorWilesPrimeSet ρbar p n Q) :
     ∃ e : Fin q → ℕ, (∀ i, n ≤ e i) ∧
@@ -5169,7 +5210,7 @@ theorem exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR}
       hctrl⟩ :=
     exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR} hpodd hW hres
       hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ
-      hred ψ hψalg hψπ hψ q d coeff M0 hM0 hbot n Q hQcard hQ
+      hred ψ hψalg hψπ hψ q d coeff M0 hM0 hbot hM0T n Q hQcard hQ
   -- The exponent vector is the constant one; `pres` is the quotient map and
   -- `coordM` is the identity, both free at the presented shape.
   exact ⟨fun _ => n, fun _ => le_rfl,
@@ -5188,8 +5229,11 @@ datum.
 
 What is asserted: a Taylor–Wiles number `q`, a freeness rank `d`, and
 a NONTRIVIAL bottom Hecke module `M₀` carrying an action of the
-abstract Hecke ring `T` of the pillar, such that the level-`0` raw
-datum exists over them.  Classically `M₀ = H¹(X₀(N), ℤ_p)_𝔪` is the
+abstract Hecke ring `T` of the pillar, such that `M₀ ≃ₗ[T] T²` (the
+MULTIPLICITY-ONE PIN, propagated 2026-07-27 from
+`exists_taylorWilesBottomHeckeModule`, whose §4 explains why it must be
+carried here rather than dropped) and the level-`0` raw datum exists
+over them.  Classically `M₀ = H¹(X₀(N), ℤ_p)_𝔪` is the
 `𝔪`-localized cohomology of the modular curve at the level of the
 residual representation, `d` its `ℤ_p`-rank, and the level-`0` datum
 is the `Q = ∅` instance of the auxiliary picture: `R = R_univ` with
@@ -5562,6 +5606,7 @@ theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
     ∃ (q d : ℕ) (coeff : TaylorWilesCoefficients) (M0 : Type)
       (_ : AddCommGroup M0) (_ : Module T M0) (_ : Nontrivial M0),
+      Nonempty (M0 ≃ₗ[T] (Fin 2 → T)) ∧
       Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0) := by
   classical
   -- LEAF B1 (`exists_taylorWilesBottomPresentation`): the coefficient
@@ -5573,9 +5618,10 @@ theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
   -- LEAF B2 (`exists_taylorWilesBottomHeckeModule`): the bottom Hecke
   -- module `M₀ = H¹(X₀(N), ℤ_p)_𝔪`, `Λ`-free of rank `d` through the
   -- augmentation.
-  -- (the dropped component is the multiplicity-one pin `M₀ ≃ₗ[T] T²`; see
-  -- §4 of that leaf's VACUITY AUDIT for the propagation still owed)
-  obtain ⟨d, M0, instM0add, instM0T, instM0nt, instM0L, haug, -, ⟨coord⟩⟩ :=
+  -- (the multiplicity-one pin `M₀ ≃ₗ[T] T²` is `hM0T`; it is PROPAGATED
+  -- into this leaf's own conclusion and threaded down the tower, which is
+  -- step 1 of the repair §4 of that leaf's VACUITY AUDIT records)
+  obtain ⟨d, M0, instM0add, instM0T, instM0nt, instM0L, haug, hM0T, ⟨coord⟩⟩ :=
     exists_taylorWilesBottomHeckeModule.{s, uK, uW} hpodd hW hres hirr hrankT
       hρT hπ hred q
   -- The level-`0` deformation ring is `Runiv` itself, acting on `M₀`
@@ -5583,7 +5629,7 @@ theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
   -- is trivial), so it is `Λ ↠ ℤ_p → Runiv`.
   letI : Module R M0 := Module.compHom M0 (ψ.comp eR.toRingHom)
   have hRsmul : ∀ (x : R) (m : M0), x • m = ψ (eR x) • m := fun _ _ => rfl
-  refine ⟨q, d, coeff, M0, instM0add, instM0T, instM0nt, ⟨?_⟩⟩
+  refine ⟨q, d, coeff, M0, instM0add, instM0T, instM0nt, hM0T, ⟨?_⟩⟩
   refine { R := R
            commRingR := instR
            pres := pres
@@ -5882,6 +5928,7 @@ theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
     (M0 : Type) [AddCommGroup M0] [Module T M0]
     (hM0 : Nontrivial M0)
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
+    (hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))
     (n : ℕ) :
     Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d n coeff M0) := by
   classical
@@ -5897,7 +5944,7 @@ theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
     hprojzero⟩ :=
     exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR} hpodd hW hres hirr hadic
       hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred ψ hψalg
-      hψπ hψ q d coeff M0 hM0 hbot n Q hQcard hQ
+      hψπ hψ q d coeff M0 hM0 hbot hM0T n Q hQcard hQ
   -- The two level-ideal bounds are discharged off the arithmetic leaf,
   -- from the explicit shape of `𝔟_n`.
   exact ⟨{ R := R
@@ -6098,7 +6145,7 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
   -- not the full hardly ramified package (see their RE-OPENING sections)
   have hres : IsTaylorWilesResidual hpodd hW ρbar :=
     ⟨hρbar.det, fun q hq h2 hpne => hρbar.isUnramified q hq ⟨h2, hpne⟩⟩
-  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hbot⟩ :=
+  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hM0T, hbot⟩ :=
     exists_taylorWilesBottomLevel.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred
       ψ hψalg hψπ hψ hTWq
@@ -6116,7 +6163,7 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
                (exists_taylorWilesLevelRaw.{s, t, uK, uW, uR} hpodd hW hres
                  hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact
                  hrankT hρT hπ hred ψ hψalg hψπ hψ hTWq q d coeff M0 iNt
-                 hbot n).some).some }⟩
+                 hbot hM0T n).some).some }⟩
 
 /-- **Existence of the Taylor–Wiles system** (patching leaf 2a;
 ASSEMBLED 2026-07-24 as bookkeeping over the tower leaf): under the
