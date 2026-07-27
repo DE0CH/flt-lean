@@ -10510,36 +10510,203 @@ theorem eq_bot_of_isPGroup_of_not_dvd_card
   · exact Subgroup.eq_bot_of_card_eq _ h1
   · exact absurd (hdvd.trans (Subgroup.card_dvd_of_le hHK)) hp
 
+/-- **THE `σ`-DERIVATION ESTIMATE ON THE INERTIA FILTRATION** (PROVEN
+2026-07-27 — the one genuinely arithmetic ingredient of leaf (Y-1-a),
+and stated for an ARBITRARY ideal of an arbitrary commutative ring so
+that no `ℚ₃ᵥ`-specific instance leaks into it).  If `σ` acts trivially
+mod `I^k` with `k ≥ 1`, then it moves `I^(j+1)` only inside `I^(k+j)`:
+deeper elements are moved less.
+PROOF: induction on `j`.  The base case `j = 0` is the definition of
+`inertia`.  For the step, `I^(j+2) = I^(j+1) * I`, and on a product
+`x·y` with `x ∈ I^(j+1)`, `y ∈ I` the map `D_σ : z ↦ σ•z − z` obeys
+Leibniz, `D_σ(xy) = (σ•x)·D_σ(y) + D_σ(x)·y`; the first term lies in
+`I^(j+1)·I^k` because `σ•x = x + D_σ(x) ∈ I^(j+1)` (here `k ≥ 1` is
+consumed, via `I^(k+j) ≤ I^(j+1)`), the second in `I^(k+j)·I` by the
+induction hypothesis, and `Submodule.mul_induction_on` extends this
+from products to the whole ideal.
+NOTE this replaces the uniformizer computation of Serre, *Corps
+Locaux* IV §1: no `π` and no valuation is needed, only the Leibniz
+rule, so the lemma holds verbatim for an ideal that is not principal. -/
+theorem smul_sub_mem_pow_add_of_mem_inertia_pow {R : Type*} [CommRing R]
+    (I : Ideal R) {Grp : Type*} [Group Grp] [MulSemiringAction Grp R]
+    {k : ℕ} (hk : 1 ≤ k) {σ : Grp} (hσ : σ ∈ (I ^ k).inertia Grp) :
+    ∀ (j : ℕ), ∀ b ∈ I ^ (j + 1), σ • b - b ∈ I ^ (k + j) := by
+  have hbase : ∀ y : R, σ • y - y ∈ I ^ k := by
+    intro y
+    have h := AddSubgroup.mem_inertia.mp hσ y
+    rwa [Submodule.mem_toAddSubgroup] at h
+  intro j
+  induction j with
+  | zero =>
+      intro b _
+      simpa using hbase b
+  | succ j ih =>
+      intro b hb
+      rw [pow_succ] at hb
+      refine Submodule.mul_induction_on hb ?_ ?_
+      · intro x hx y hy
+        have hxk : σ • x - x ∈ I ^ (k + j) := ih x hx
+        have hxle : I ^ (k + j) ≤ I ^ (j + 1) := Ideal.pow_le_pow_right (by omega)
+        have hsx : σ • x ∈ I ^ (j + 1) := by
+          have hsplit : σ • x = (σ • x - x) + x := by ring
+          rw [hsplit]
+          exact Submodule.add_mem _ (hxle hxk) hx
+        have hleib : σ • (x * y) - x * y
+            = (σ • x) * (σ • y - y) + (σ • x - x) * y := by
+          rw [smul_mul']; ring
+        rw [hleib]
+        refine Submodule.add_mem _ ?_ ?_
+        · have h1 : (σ • x) * (σ • y - y) ∈ I ^ (j + 1) * I ^ k :=
+            Ideal.mul_mem_mul hsx (hbase y)
+          rw [← pow_add] at h1
+          exact Ideal.pow_le_pow_right (by omega) h1
+        · have h2 : (σ • x - x) * y ∈ I ^ (k + j) * I := Ideal.mul_mem_mul hxk hy
+          rw [← pow_succ] at h2
+          exact Ideal.pow_le_pow_right (by omega) h2
+      · intro x y hx hy
+        have hadd : σ • (x + y) - (x + y) = (σ • x - x) + (σ • y - y) := by
+          rw [smul_add]; ring
+        rw [hadd]
+        exact Submodule.add_mem _ hx hy
+
+/-- **CUBING PUSHES THE FILTRATION ONE STEP DEEPER**, for `k ≥ 2`
+(PROVEN 2026-07-27): if `3 ∈ I` and `σ ∈ inertia(I^k)` then
+`σ^3 ∈ inertia(I^(k+1))`.
+PROOF, and note it needs NO monogenic generator — it is checked at
+EVERY `x` directly.  Put `a := σ•x − x ∈ I^k`.  Then `σ•x = x + a`,
+`σ²•x = x + a + σ•a` and `σ³•x = x + a + σ•a + σ²•a`, so
+`σ³•x − x = 3a + (σ•a − a) + (σ²•a − a)`.
+The first term lies in `I·I^k = I^(k+1)` because `3 ∈ I`; the other two
+lie in `I^(k+(k−1)) = I^(2k−1) ⊆ I^(k+1)` by
+`smul_sub_mem_pow_add_of_mem_inertia_pow` applied to `a ∈ I^k`, using
+`σ² ∈ inertia(I^k)` for the third.  **`k ≥ 2` is consumed exactly at
+`2k − 1 ≥ k + 1`** — this is why the statement is false at `k = 1`, and
+it is the formal shadow of the classical fact that `G_0/G_1` is cyclic
+of order prime to the residue characteristic while `G_i/G_{i+1}` is
+elementary abelian for `i ≥ 1`. -/
+theorem pow_three_mem_inertia_pow_succ {R : Type*} [CommRing R]
+    (I : Ideal R) {Grp : Type*} [Group Grp] [MulSemiringAction Grp R]
+    {k : ℕ} (hk : 2 ≤ k) (h3 : (3 : R) ∈ I) {σ : Grp}
+    (hσ : σ ∈ (I ^ k).inertia Grp) :
+    σ ^ 3 ∈ (I ^ (k + 1)).inertia Grp := by
+  have hbase : ∀ y : R, σ • y - y ∈ I ^ k := by
+    intro y
+    have h := AddSubgroup.mem_inertia.mp hσ y
+    rwa [Submodule.mem_toAddSubgroup] at h
+  have hσ2 : σ ^ 2 ∈ (I ^ k).inertia Grp := pow_mem hσ 2
+  rw [AddSubgroup.mem_inertia]
+  intro x
+  rw [Submodule.mem_toAddSubgroup]
+  set a : R := σ • x - x with ha
+  have hax : a ∈ I ^ k := hbase x
+  have e1 : σ • x = x + a := by rw [ha]; ring
+  have e2 : (σ ^ 2) • x = x + a + σ • a := by
+    rw [pow_two, mul_smul, e1, smul_add, e1]
+  have e3 : (σ ^ 3) • x - x = a + σ • a + (σ ^ 2) • a := by
+    have hcube : (σ ^ 3) • x = (σ ^ 2) • (σ • x) := by
+      rw [show (3 : ℕ) = 2 + 1 from rfl, pow_succ, mul_smul]
+    rw [hcube, e1, smul_add, e2]; ring
+  have hrw : a + σ • a + (σ ^ 2) • a
+      = 3 * a + (σ • a - a) + ((σ ^ 2) • a - a) := by ring
+  rw [e3, hrw]
+  have hak : a ∈ I ^ ((k - 1) + 1) := by
+    have hkk : (k - 1) + 1 = k := by omega
+    rw [hkk]; exact hax
+  have hd1 : σ • a - a ∈ I ^ (k + (k - 1)) :=
+    smul_sub_mem_pow_add_of_mem_inertia_pow I (by omega) hσ (k - 1) a hak
+  have hd2 : (σ ^ 2) • a - a ∈ I ^ (k + (k - 1)) :=
+    smul_sub_mem_pow_add_of_mem_inertia_pow I (by omega) hσ2 (k - 1) a hak
+  have hle : I ^ (k + (k - 1)) ≤ I ^ (k + 1) := Ideal.pow_le_pow_right (by omega)
+  refine Submodule.add_mem _ (Submodule.add_mem _ ?_ (hle hd1)) (hle hd2)
+  have h3a : (3 : R) * a ∈ I * I ^ k := Ideal.mul_mem_mul h3 hax
+  rwa [← pow_succ'] at h3a
+
+/-- **ITERATING THE CUBING STEP** (PROVEN 2026-07-27): from
+`σ ∈ inertia(I^2)` one gets `σ^(3^m) ∈ inertia(I^(m+2))` for every `m`,
+by induction on `m` over `pow_three_mem_inertia_pow_succ` (whose
+hypothesis `k ≥ 2` holds throughout, since `k = m + 2`). -/
+theorem pow_three_pow_mem_inertia_pow {R : Type*} [CommRing R]
+    (I : Ideal R) {Grp : Type*} [Group Grp] [MulSemiringAction Grp R]
+    (h3 : (3 : R) ∈ I) {σ : Grp} (hσ : σ ∈ (I ^ 2).inertia Grp) (m : ℕ) :
+    σ ^ (3 ^ m) ∈ (I ^ (m + 2)).inertia Grp := by
+  induction m with
+  | zero => simpa using hσ
+  | succ m ih =>
+      have hstep := pow_three_mem_inertia_pow_succ I (k := m + 2) (by omega) h3 ih
+      rw [← pow_mul] at hstep
+      have hexp : 3 ^ m * 3 = 3 ^ (m + 1) := (pow_succ 3 m).symm
+      rw [hexp] at hstep
+      have hidx : m + 2 + 1 = m + 1 + 2 := by omega
+      rwa [hidx] at hstep
+
+/-- **`inertia(I^2)` IS A `3`-GROUP ONCE THE FILTRATION TERMINATES**
+(PROVEN 2026-07-27 — the abstract packaging of leaf (Y-1-a)).  Given
+`3 ∈ I` and a level `N` with `inertia(I^(N+2)) = ⊥`, every element of
+`inertia(I^2)` is killed by `3^N`: `pow_three_pow_mem_inertia_pow`
+places `σ^(3^N)` in `inertia(I^(N+2))`, which is trivial.  Note the
+SAME `N` works for every element, so this even bounds the exponent. -/
+theorem isPGroup_three_inertia_sq {R : Type*} [CommRing R]
+    (I : Ideal R) {Grp : Type*} [Group Grp] [MulSemiringAction Grp R]
+    (h3 : (3 : R) ∈ I) {N : ℕ} (hN : (I ^ (N + 2)).inertia Grp = ⊥) :
+    IsPGroup 3 ((I ^ 2).inertia Grp) := by
+  intro g
+  refine ⟨N, ?_⟩
+  have hmem := pow_three_pow_mem_inertia_pow I h3 g.2 N
+  rw [hN, Subgroup.mem_bot] at hmem
+  exact Subtype.ext (by simpa using hmem)
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **THE WILD INERTIA GROUP `G_1` IS A `3`-GROUP** (sorry node, created
-2026-07-26 — leaf (Y-1-a), the group-structure half of the tameness
-criterion; Serre, *Corps Locaux*, IV §2, Prop. 7 and its Cor. 3).
+/-- **THE WILD INERTIA GROUP `G_1` IS A `3`-GROUP** (PROVEN 2026-07-27
+— leaf (Y-1-a), the group-structure half of the tameness criterion;
+Serre, *Corps Locaux*, IV §2, Prop. 7 and its Cor. 3).
 For every finite Galois `L/ℚ₃ᵥ` the first higher ramification group
 `G_1 = inertia(𝔪_L^2)` is a `3`-group.
-INTENDED PROOF, and note it needs NO valuation theory — the file's own
-`exists_inertia_generator` supplies everything.  Let `θ` generate
-`𝒪_L` over `𝒪₃ᵥ`, so that `σ ∈ inertia(𝔪_L^k) ↔ σ•θ − θ ∈ 𝔪_L^k`.  For
-`i ≥ 1` the assignment `σ ↦ (σ•θ − θ) mod 𝔪_L^{i+2}` is an injective
-homomorphism `G_i/G_{i+1} ↪ 𝔪_L^{i+1}/𝔪_L^{i+2}`, whose target is an
-`𝔽₃`-vector space (the residue field of `𝒪_L` has characteristic `3`
-because `3 ∈ 𝔪_L`), hence killed by `3`.  Multiplicativity is the
-computation `(στ)•θ − θ = (σ•(τ•θ) − σ•θ) + (σ•θ − θ)` together with
-`σ•x − x ∈ 𝔪_L^{i+1}` for `x := τ•θ − θ ∈ 𝔪_L^{i+1}` and `σ ∈ G_i`,
-which places the cross term in `𝔪_L^{2i+2} ⊆ 𝔪_L^{i+2}` for `i ≥ 1` —
-this is exactly where `i ≥ 1` (as opposed to `i = 0`) is consumed, and
-it is why `G_0/G_1` is instead cyclic of order prime to `3`.
-The filtration terminates (`exists_local_pow_inertia_eq_bot`), so
-induction down the chain `G_1 ⊇ G_2 ⊇ … ⊇ ⊥` with each quotient an
-elementary abelian `3`-group gives `IsPGroup 3 G_1`.
+PROOF AS CARRIED OUT, which is SIMPLER than the route recorded when
+this leaf was created and is worth reading before reusing the docstring
+above.  The whole argument is general commutative algebra and has been
+factored out into the four preceding declarations, stated for an
+arbitrary ideal `I` of an arbitrary commutative ring carrying a
+`MulSemiringAction`:
+* `smul_sub_mem_pow_add_of_mem_inertia_pow` — the Leibniz estimate
+  `σ ∈ inertia(I^k)`, `b ∈ I^(j+1)` ⟹ `σ•b − b ∈ I^(k+j)`;
+* `pow_three_mem_inertia_pow_succ` — cubing, for `k ≥ 2`;
+* `pow_three_pow_mem_inertia_pow` — its iterate;
+* `isPGroup_three_inertia_sq` — the packaging.
+TWO SIMPLIFICATIONS against the originally intended route.  (1) **No
+monogenic generator is needed.**  `exists_inertia_generator` was
+expected to be the engine, but the identity
+`σ³•x − x = 3a + (σ•a − a) + (σ²•a − a)`, `a := σ•x − x`, holds at
+EVERY `x ∈ 𝒪_L`, so the inertia condition is verified pointwise and `θ`
+never appears.  (2) **No quotient `G_i/G_{i+1}` and no `𝔽₃`-vector
+space structure is constructed.**  Exhibiting `σ^(3^m)` deeper and
+deeper in the filtration is all that `IsPGroup` asks for, and it avoids
+building the injection into `𝔪^{i+1}/𝔪^{i+2}` entirely.
+The two `ℚ₃ᵥ`-specific inputs are therefore just: `3 ∈ 𝔪_L`, which
+follows from the PROVEN `span_three_eq_maximalIdeal_pow_card_inertia`
+(`(3) = 𝔪_L^(#G_0)` with `#G_0 ≥ 1` since `Gal(L/ℚ₃ᵥ)` is finite), and
+the termination of the filtration `exists_local_pow_inertia_eq_bot`.
 NOT VACUOUS: `G_1 = ⊥` is a special case, but the statement has real
 content at the peu-ramifié `L = ℚ₃(ζ₃, u^{1/3})`, where `#G_1 = 3`. -/
 theorem isPGroup_three_inertia_pow_two
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L] :
     IsPGroup 3 ((IsLocalRing.maximalIdeal
       (IntegralClosure 𝒪₃ᵥ L) ^ 2).inertia (L ≃ₐ[ℚ₃ᵥ] L)) := by
-  sorry
+  obtain ⟨N, hN⟩ := exists_local_pow_inertia_eq_bot L
+  refine isPGroup_three_inertia_sq
+    (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)) ?_ hN
+  have hmem : (3 : IntegralClosure 𝒪₃ᵥ L) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) := by
+    rw [← span_three_eq_maximalIdeal_pow_card_inertia L]
+    exact Ideal.mem_span_singleton_self _
+  have hpos : 0 < Nat.card ((IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) := Nat.card_pos
+  have hle := Ideal.pow_le_pow_right
+    (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)) hpos hmem
+  rwa [pow_one] at hle
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
