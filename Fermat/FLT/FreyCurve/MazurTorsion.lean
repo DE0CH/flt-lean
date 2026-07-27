@@ -8743,7 +8743,78 @@ complex multiplication.
 Missing machinery for THIS leaf is items (1)-(4) of the parent's list; item (5),
 CM theory, is no longer needed here and is replaced by the single leaf
 `WeierstrassCurve.End.exists_charPoly` (the characteristic polynomial and Hasse
-bound for an endomorphism), which is shared with level `169`. -/
+bound for an endomorphism), which is shared with level `169`.
+
+**AUDIT RE-RUN 2026-07-27 — THREE OF THE PARENT'S FIVE "ABSENT" CLAIMS ARE NOW
+STALE, AND THE REMAINING GAP IS SHARPER THAN RECORDED.** The parent's X0 note
+(under `classPoly500_of_stable_cyclic_subgroup_order_125`) says `X0.lean`
+"deliberately builds only the AFFINE coarse moduli space `Y_0(N)`: it has no
+compactification, no cusps, no divisors, no Jacobian and no Atkin-Lehner
+involution, so it cannot express the descent `[(P) - (w_125 P)] in ker(1 + w_125)`
+even in principle". Checked declaration by declaration against `X0.lean` as of
+today, that is **false on three of the five counts**, and so is the "even in
+principle" conclusion:
+
+* *compactification* — `IsCompactificationY0` and `IsX0Compactification` EXIST;
+* *cusps* — `IsCompactificationY0.IsCusp`, `numRationalCusps`,
+  `exists_rationalCusps` EXIST;
+* *Jacobian* — `IsJacobianOf` EXISTS, stated by the Albanese universal property
+  and carrying the Abel-Jacobi map `aj` on relative points; `HasRankZeroJacobian`
+  EXISTS.
+
+Since `aj` is present, the class `[(P) - (w P)]` IS expressible — it is
+`ab.add (aj P) (ab.neg (aj (w P)))` — so the descent is no longer inexpressible
+in principle. Only *divisors* and the *Atkin-Lehner involution* remain genuinely
+absent. Refuting check for this paragraph: grep `X0.lean` for the five names
+above; if they are gone, the old note is right again.
+
+**THE COUNTING ROUTE THAT CLOSED LEVEL `32` CANNOT REACH `125` OR `169`, AND THE
+REASON IS A FALSE HYPOTHESIS RATHER THAN DIFFICULTY.** `X0.lean`'s
+`y0HasNoRationalPoint_of_witnessPrime` / `card_le_of_rankZeroJacobian` chain —
+the route behind `MazurLevel32.y0HasNoRationalPoint_thirtyTwo` — takes
+`HasRankZeroJacobian strX` as a hypothesis, and that predicate asserts
+`Finite (RelPoint jstr (𝟙 SpecQ))`, i.e. `rank J_0(N)(ℚ) = 0`. But this file's own
+Magma reconnaissance records `rank J_0(125)(ℚ) = 2` and `rank J_0(169)(ℚ) = 3`
+(see the section notes above; `125` is where the `w_125 = +1` factor has
+`L(A_f, 1) = 0`). So `HasRankZeroJacobian` is **FALSE** at both `X_0(125)` and
+`X_0(169)`, and no instantiation of that chain exists to be found. Neither level
+is in `kenkuLevels` either. Refuting check: exhibit `rank J_0(125)(ℚ) = 0` —
+i.e. show the middle newform factor has `L(A_f, 1) ≠ 0` — and the route reopens.
+
+Consequently the descent here needs a **minus-part** rank predicate, `rank
+J_0(N)^-(ℚ) = 0`, which is a strictly different statement from
+`HasRankZeroJacobian` and exists nowhere in the tree. That is the precise
+missing arithmetic input, and it is shared verbatim with level `169` and with
+`not_isogenyCharacter_of_prime_ge_twentyThree`.
+
+**WHY THE NATURAL SCHEME-LEVEL CUT WAS CONSIDERED AND NOT TAKEN** (2026-07-27).
+With the vocabulary above one can *state* `w_N` without constructing quotients,
+by pinning it against a stated relation `IsQuotientDatum N d d'` on
+`Gamma0Datum`s (no scheme-level quotient of an abelian scheme by a finite flat
+subgroup scheme exists here — `Velu.lean` is over a FIELD only — but the
+relation needs none). That yields four new leaves: existence of `w_N`, existence
+of the quotient datum, the minus-part descent, and injectivity of the coarse
+moduli map on geometric points. The last is the blocker for the *assembly*, not
+just for the leaves: `IsCoarseModuliY0` deliberately OMITS bijectivity on
+geometric points (see its docstring), and that omitted field is exactly what
+turns `w_N P = P` into `(E, C) ≅ (E/C, E[N]/C)` and hence into the `ψ` this leaf
+must produce. Worse, the assembly also has to cross from `Gamma0Datum` back to
+`(E⁄(AlgebraicClosure ℚ))`, which is `X0.lean`'s own open leaf
+`exists_ellipticScheme_of_weierstrass`. So the cut would add four leaves, none
+closer to provable than this one, and still leave the assembly unwritable —
+precisely the "relocates the work without reducing it" decomposition that the
+parent node refused along `X_0(25)`. Refuting check: if `IsCoarseModuliY0` grows
+a geometric-injectivity field AND `exists_ellipticScheme_of_weierstrass` closes,
+the assembly becomes writable and this cut should be taken.
+
+**THE AUDIT'S COUNTEREXAMPLE RE-VERIFIED BY HAND** (2026-07-27), since it is what
+forces the second conjunct to be carried: `α = 11 + 2i` has `N(α) = 121 + 4 = 125`;
+`(2 - i)³ = 2 - 11i` and `i(2 - 11i) = 11 + 2i = α`, so `α = i(2 - i)³` with
+`(2 - i)` above the split prime `5`, whence `ℤ[i]/(α) ≅ ℤ/125` is cyclic; and
+`α² = 121 + 44i - 4 = 117 + 44i ≠ -125`. So `ker α` is a cyclic subgroup of order
+`125` with `E/ker α ≅ E` and yet `α² ≠ [-125]`: the first conjunct does NOT imply
+the second, and a proof of this leaf that establishes only `hker` proves something
+strictly weaker than what `End.sq_eq_neg_natCast_of_atkinLehner` consumes. -/
 theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
@@ -11889,7 +11960,25 @@ strictly stronger than `E ≅ E/C` and is what makes `ψ² = [-169]` follow.
 **Vacuously true**, like its parent: no elliptic curve over `ℚ` has a rational
 cyclic `169`-isogeny. The cut is a reduction rather than a renaming for the same
 reason as at `125`: the CM/trace algebra is now discharged elsewhere, so this
-leaf carries only the modular content. -/
+leaf carries only the modular content.
+
+**AUDIT RE-RUN 2026-07-27 — see the level-`125` leaf for the full re-run; every
+finding there applies here verbatim.** In summary: `X0.lean` HAS grown a
+compactification (`IsX0Compactification`), cusps (`numRationalCusps`,
+`exists_rationalCusps`) and a Jacobian (`IsJacobianOf`, carrying the Abel-Jacobi
+map), so the parent's "cannot express the descent even in principle" is stale;
+what remains genuinely absent is divisors and the Atkin-Lehner involution
+itself.
+
+The one figure that differs is the rank, and it blocks the same route: `X0.lean`'s
+`HasRankZeroJacobian` asserts `rank J_0(N)(ℚ) = 0`, whereas
+`rank J_0(169)(ℚ) = 3` (section note above), so the counting chain
+`y0HasNoRationalPoint_of_witnessPrime` / `card_le_of_rankZeroJacobian` that
+closed level `32` has a FALSE hypothesis here and cannot be instantiated —
+`169` is not in `kenkuLevels` either. What this leaf needs is the **minus-part**
+input `rank J_0(169)^-(ℚ) = 0`, a different predicate that exists nowhere in the
+tree. Refuting check: exhibit `rank J_0(169)(ℚ) = 0` and the counting route
+reopens. -/
 theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_169
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 169)
