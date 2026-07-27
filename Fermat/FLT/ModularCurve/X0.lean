@@ -17458,7 +17458,63 @@ distinction that makes `hℓ2` load-bearing here and absent there.  So the
 two halves really do share no argument, as the cut's docstring claims,
 and the rigidity machinery
 (`section_eq_of_formallyUnramified`, proven above) buys nothing at this
-leaf. -/
+leaf.
+
+**NOR DOES THE SQUARE-ZERO DEFORMATION CLUSTER, AND THE REASON IS ONE
+LINE** (2026-07-27, third owner, recorded because the natural next
+suspicion after the two retirements above is that
+`exists_smul_kerPre_of_squareZero` and the ~30 `sqz*` lemmas it is built
+from close this leaf too).  They do not, and not for a subtle reason:
+the reduction here is along `R ↠ R ⧸ ℓ`, whose kernel `ℓR` has
+`(ℓR) ^ 2 = ℓ ^ 2 R ≠ 0`.  `hsq : RingHom.ker φ.hom ^ 2 = ⊥` is simply
+false for it.  So the "treat a deformation-theory blocker with
+suspicion" heuristic that correctly retired the ÉTALE audit above does
+NOT retire the formal-group audit; the two situations differ at the
+hypothesis, not at the argument.
+
+WHAT THE `sqz*` CLUSTER *DOES* SUGGEST, with the check for each claim.
+The `ℓ`-adic tower `R ⧸ ℓ ^ (k+1) ↠ R ⧸ ℓ ^ k` IS square-zero for every
+`k ≥ 1` — its kernel is `(ℓ ^ k) ⧸ (ℓ ^ (k+1))`, whose square lands in
+`(ℓ ^ (2k)) ⊆ (ℓ ^ (k+1))` — so the cluster applies to each STEP of the
+tower even though it does not apply to the leaf.  Filtering
+`K = ker (𝒥(R) → 𝒥(𝔽_ℓ))` by `K_k = ker (𝒥(R) → 𝒥(R ⧸ ℓ ^ k))` then
+leaves exactly three obligations, and only the third is the mathematics:
+
+(a) THE TOWER ITSELF, in this file's language.  `SpecLoc` is built only
+    for SUBRINGS OF `ℚ`, and `R ⧸ ℓ ^ k` is not one; the only reduction
+    map in scope is `RelPoint.pre (SpecLoc.special toF)`, which is the
+    `k = 1` step.  This is bookkeeping, not mathematics, but it is not
+    free.  The refuting check: any construction in this file that takes
+    a QUOTIENT of the base `R` and produces a `Scheme` over it.
+
+(b) SEPARATEDNESS OF THE FILTRATION, `⋂ k, K_k = 0`.  This is NOT a
+    blocker and should not be recorded as one: a section
+    `Spec R ⟶ 𝒥` out of a LOCAL scheme factors through an affine open,
+    because the only open subset of `Spec ℤ_(ℓ)` containing the closed
+    point is the whole space, so the question reduces to Krull's
+    intersection theorem in the Noetherian local domain `R`.
+
+(c) THE `ℓ`-SHIFT: for `x ∈ K_k \ K_(k+1)`, that `ℓ • x ∉ K_(k+2)`.
+    THIS is where `e < ℓ − 1` enters and where the formal group law is
+    genuinely irreplaceable — one needs `v(ℓ) + k < ℓ k`, i.e.
+    `e < (ℓ − 1) k`, for every `k ≥ 1`, which is exactly the comparison
+    between the `ℓ T` term and the `T ^ ℓ` term of `[ℓ](T)`.
+
+CAUTION for anyone attempting (c) through the module structure alone:
+`exists_smul_kerPre_of_squareZero` yields an action of `R` that factors
+through `R ⧸ I` — for `r ∈ I` the endomorphism `sqzScal φ hsq r` equals
+`sqzScal φ hsq 0` outright, since `r (a₂ − a₁) ∈ I ^ 2 = 0` — so at the
+`k`-th step of the tower the graded piece is visibly an
+`R ⧸ ℓ ^ k`-module and is NOT visibly killed by `ℓ` once `k ≥ 2`.  Being
+killed by `ℓ` is a consequence of the identification with
+`Hom(ω, (ℓ ^ k) ⧸ (ℓ ^ (k+1)))`, which is precisely the theorem the
+survey above records as absent.
+
+NET EFFECT ON THE VERDICT: unchanged, but the missing object is sharper
+than "formal groups".  It is (c) alone.  A successor should consider
+STATING (c) as an interface over the tower — which is a legitimate cut,
+since a cut needs its theory stated and not proven — rather than
+building `FormalGroup.Point` for an abelian scheme first. -/
 theorem neronKernel_torsionFree_residue (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
     (_hbase : IsReductionBase ℓ R toF) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
