@@ -18277,11 +18277,14 @@ theories they require drops from seven to two, and those two are now the
 ONLY things standing between this section and closure.
 
 **STATUS 2026-07-27, LATER STILL: `card_relPoint_finiteField` is PROVEN**
-from the explicit plane models of the four curves, and the leaf it leaves
-behind is `nonempty_relPoint_equiv_modelPoint` — the identification of
-`X_0(N)_{𝔽_ℓ}` with the reduced Weierstrass model of `N a 1`.  The count
-itself is now a `decide` (`card_modelPoint`), so Eichler–Shimura is no
-longer among this section's missing theories at all; see the
+from the explicit plane models of the four curves, and so — a step later
+the same day — is `nonempty_relPoint_equiv_modelPoint`.  The leaf left
+behind is `exists_x0Compactification_relPoint_equiv_point`: the
+identification of `X_0(N)_{𝔽_ℓ}` with the reduced Weierstrass model of
+`N a 1`, at ONE compactification rather than at every one, and stated in
+mathlib's `WeierstrassCurve.Affine.Point`.  The count itself is now a
+`decide` (`card_modelPoint`), so Eichler–Shimura is no longer among this
+section's missing theories at all; see the
 `#### The explicit plane models` subsection note.
 
 **SECOND DECOMPOSITION STEP, 2026-07-27 (same day): `finite_jacobian` is
@@ -19557,7 +19560,12 @@ So the leaf splits into
 
 * `nonempty_relPoint_equiv_modelPoint` — **the model identification**:
   the `𝔽_ℓ`-points of `X_0(N)_{𝔽_ℓ}` are the points of the reduced
-  Weierstrass model of `N a 1`.  Geometry, level-specific, still open;
+  Weierstrass model of `N a 1`.  Geometry, level-specific; PROVEN in turn
+  (2026-07-27) over `exists_x0Compactification_relPoint_equiv_point`,
+  which is the same identification at ONE compactification, plus
+  `Fermat.nonempty_relPointEquiv_of_isX0Compactification` for the passage
+  to all of them and `modelPointEquivPoint` for the change of
+  presentation;
 * `card_modelPoint` — **the count**, PROVEN by `decide`.
 
 Net effect: the theories this statement needs drop from three
@@ -19683,66 +19691,205 @@ theorem mem_modelTable_of_mem_countTable {N ℓ m : ℕ} (h : (N, ℓ, m) ∈ co
   · exact ⟨0, 1, 1, -9, -15, by decide⟩
   · exact ⟨0, 0, 0, 4, 0, by decide⟩
 
-/-- **`X_0(N)_{𝔽_ℓ}` IS the reduced Weierstrass model of `N a 1`** (sorry
-leaf, introduced 2026-07-27) — the model identification, and after the
-`card_modelPoint` split the ONLY open content of the point count at these
-four levels.
+/-- **The `modelTable` row as a `WeierstrassCurve (ZMod ℓ)`** — the five
+coefficients of `N a 1` reduced mod the row's witness prime.
+
+`ModelPoint` presents the same curve's `𝔽_ℓ`-points as an `Option` of a
+subtype, which is the shape `decide` can enumerate and is why
+`card_modelPoint` is a kernel computation.  This definition presents the
+same data in mathlib's `WeierstrassCurve` structure, which is the shape
+every elliptic-curve lemma at this pin is stated against.
+`modelPointEquivPoint` below is the bijection between the two and is
+PROVEN, so neither presentation is load-bearing: a successor may work in
+whichever it prefers, and the `Option`-subtype bookkeeping is discharged
+once and for all rather than being re-done at each use. -/
+def modelCurve (ℓ : ℕ) (a₁ a₂ a₃ a₄ a₆ : ℤ) : WeierstrassCurve (ZMod ℓ) :=
+  ⟨(a₁ : ZMod ℓ), (a₂ : ZMod ℓ), (a₃ : ZMod ℓ), (a₄ : ZMod ℓ), (a₆ : ZMod ℓ)⟩
+
+/-- **Every row of `modelTable` has `N ∈ levels`, `ℓ` prime, `ℓ ∤ N` and a
+nonvanishing discriminant mod `ℓ`** (PROVEN 2026-07-27, `fin_cases` +
+`decide`) — the `modelTable` analogue of `countTable_spec`, and the place
+where the "`ℓ` is a prime of GOOD reduction for this model" column of
+`modelTable`'s table is turned from a docstring claim into a kernel
+computation.
+
+`(modelCurve ℓ …).Δ ≠ 0` is exactly `ℓ ∤ disc`, computed rather than read
+off `−11⁵, −17⁴, −19³, −2¹²`: a wrong coefficient or a wrong witness prime
+fails HERE, and it is what makes the reduced plane cubic nonsingular,
+hence what makes `modelPointEquivPoint` — and with it the identification
+of affine solutions with points of the curve — available at all. -/
+theorem modelTable_spec {N ℓ m : ℕ} {a₁ a₂ a₃ a₄ a₆ : ℤ}
+    (h : (N, ℓ, a₁, a₂, a₃, a₄, a₆, m) ∈ modelTable) :
+    N ∈ levels ∧ ℓ.Prime ∧ ¬ ℓ ∣ N ∧ (modelCurve ℓ a₁ a₂ a₃ a₄ a₆).Δ ≠ 0 := by
+  fin_cases h <;> exact ⟨by decide, by decide, by decide, by decide⟩
+
+/-- **The defining equation of `modelCurve` is the one `ModelPoint` uses**
+(PROVEN, `WeierstrassCurve.Affine.equation_iff`) — pure bookkeeping,
+isolated so that `modelPointEquivPoint` reads as the mathematics it is. -/
+theorem equation_modelCurve {ℓ : ℕ} {a₁ a₂ a₃ a₄ a₆ : ℤ} (x y : ZMod ℓ) :
+    (modelCurve ℓ a₁ a₂ a₃ a₄ a₆).toAffine.Equation x y ↔
+      y ^ 2 + (a₁ : ZMod ℓ) * x * y + (a₃ : ZMod ℓ) * y
+        = x ^ 3 + (a₂ : ZMod ℓ) * x ^ 2 + (a₄ : ZMod ℓ) * x + (a₆ : ZMod ℓ) :=
+  (modelCurve ℓ a₁ a₂ a₃ a₄ a₆).toAffine.equation_iff x y
+
+/-- **`ModelPoint` IS `WeierstrassCurve.Affine.Point` of `modelCurve`**
+(PROVEN 2026-07-27) — the bridge from this file's `decide`-friendly
+presentation of the plane model to mathlib's.
+
+Both sides are "the affine solutions, plus one point at infinity"; the
+only mathematical input is that on a curve of nonvanishing discriminant
+every affine solution is NONSINGULAR, which is
+`WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero` and is
+supplied by `modelTable_spec`'s fourth conjunct.  Note that lemma needs
+`Δ ≠ 0` only — neither `Nontrivial` nor a `W.IsElliptic` instance — so no
+primality of `ℓ` is consumed here.
+
+**Why it earns its place rather than being an alias.**  It is what lets
+the open leaf below be stated in mathlib's language while
+`card_modelPoint` keeps computing on the `Option`-subtype: the count and
+the geometry no longer have to agree on a presentation. -/
+def modelPointEquivPoint {ℓ : ℕ} {a₁ a₂ a₃ a₄ a₆ : ℤ}
+    (hΔ : (modelCurve ℓ a₁ a₂ a₃ a₄ a₆).Δ ≠ 0) :
+    ModelPoint ℓ a₁ a₂ a₃ a₄ a₆ ≃ (modelCurve ℓ a₁ a₂ a₃ a₄ a₆).toAffine.Point where
+  toFun p :=
+    match p with
+    | none => .zero
+    | some ⟨⟨x, y⟩, h⟩ =>
+        .some x y (((modelCurve ℓ a₁ a₂ a₃ a₄ a₆).toAffine.equation_iff_nonsingular_of_Δ_ne_zero
+          hΔ).mp ((equation_modelCurve x y).mpr h))
+  invFun P :=
+    match P with
+    | .zero => none
+    | .some x y h =>
+        some ⟨⟨x, y⟩, (equation_modelCurve x y).mp
+          (((modelCurve ℓ a₁ a₂ a₃ a₄ a₆).toAffine.equation_iff_nonsingular_of_Δ_ne_zero
+            hΔ).mpr h)⟩
+  left_inv := by rintro (_ | ⟨⟨x, y⟩, h⟩) <;> rfl
+  right_inv := by rintro (_ | ⟨x, y, h⟩) <;> rfl
+
+/-- **SOME `X_0(N)`-compactification over `𝔽_ℓ` has the points of the
+row's Weierstrass curve** (sorry leaf, introduced 2026-07-27) — the model
+identification, and the ONLY open content of the point count at these four
+levels.
 
 **TRUE.**  At `N ∈ {11, 17, 19, 32}` the modular curve `X_0(N)` has genus
 exactly `1` (PROVEN in `levels_spec`) and a rational cusp (likewise), so
 it is an elliptic curve over `ℚ` with origin the cusp `∞`, of conductor
 `N`; the tables identify it as `11a1, 17a1, 19a1, 32a1`, whose minimal
 models are the `modelTable` rows.  Each row's `ℓ` is prime to that row's
-discriminant (`−11⁵, −17⁴, −19³, −2¹²`; see `modelTable`), so the model
-reduces to an elliptic curve over `𝔽_ℓ` and the reduction is the good
-reduction `X_0(N)_{𝔽_ℓ}` that `IsX0Compactification` presents here.  A
-smooth projective Weierstrass cubic has `𝔽_ℓ`-points exactly the affine
-solutions plus `[0 : 1 : 0]`, which is `ModelPoint`.
+discriminant — computed, in `modelTable_spec` — so the model reduces to an
+elliptic curve over `𝔽_ℓ` and the reduction is the good reduction
+`X_0(N)_{𝔽_ℓ}` that `IsX0Compactification` presents here.  A smooth
+projective Weierstrass cubic has `𝔽_ℓ`-points exactly the affine solutions
+plus `[0 : 1 : 0]`, which is `WeierstrassCurve.Affine.Point`.
 
-**Quantified over every compactification rather than over a chosen one**,
-exactly as `Fermat.card_relPoint_x0_finiteField` is, and safe for the same
-reason: `IsX0Compactification` pins `(X, Y, jY)` up to isomorphism and
-`RelPoint strX (𝟙 (SpecF ℓ))` is an isomorphism invariant.  **Not
-vacuous**: `Fermat.exists_x0Compactification_finiteField` supplies the
-model at each row, so this is not a statement about an empty class.
+**EXISTENTIAL, not universal — and that is the point of this restatement**
+(2026-07-27).  The leaf this replaces,
+`nonempty_relPoint_equiv_modelPoint`, quantified over EVERY
+compactification, so a prover had to identify an arbitrary one.  A
+construction — build the plane model over `𝔽_ℓ`, check
+`IsX0Compactification` for it — produces exactly the existential form and
+nothing more, and the passage from one model to all of them is
+`Fermat.nonempty_relPointEquiv_of_isX0Compactification`, which is
+level-generic, already PROVEN in `X0.lean` (over its own leaf
+`exists_inverse_of_isX0Compactification`), and shared with every other
+consumer of the special fibre.  So the universal quantifier is no longer
+this section's obligation to discharge; that is a strict reduction, not a
+reshuffle.
+
+**Not vacuous**: `Fermat.exists_x0Compactification_finiteField` supplies a
+compactification at every row (`modelTable_spec` gives it its three
+hypotheses), so the existential's first six components are already known
+to be inhabitable and the only content asserted is the bijection.
 
 **EQUIVALENT to the old `card_relPoint_finiteField`, not stronger.**  Both
 sides are finite — the left by
 `Fermat.finite_relPoint_of_x0Compactification_finiteField`, the right by
-inspection — and for finite types a bijection exists exactly when the
-cardinalities agree.  So replacing the count by the bijection introduces
-no new way to be false; it only relocates the content from "which number"
-to "which curve".
+`card_modelPoint` through `modelPointEquivPoint` — and for finite types a
+bijection exists exactly when the cardinalities agree.  So replacing the
+count by the bijection introduces no new way to be false; it only
+relocates the content from "which number" to "which curve".
 
-The good-prime side conditions are not repeated as hypotheses; `ℓ ∤ N`
-and `ℓ.Prime` are consequences of the row through `countTable_spec`, and
-`ℓ ∤ disc` is visible in `modelTable`.
+The good-prime side conditions are not repeated as hypotheses; `ℓ.Prime`,
+`ℓ ∤ N` and `Δ ≢ 0 (mod ℓ)` are all consequences of the row through
+`modelTable_spec`.
 
 **WHAT IT NEEDS, and it is ONE thing**: an explicit plane model of
 `X_0(N)`, i.e. the classical identification of the genus-one modular
 curves with the elliptic curves `N a 1`.  Classically this is the
 `q`-expansion computation `x = ∑ …`, `y = ∑ …` on `S_2(Γ_0(N))`, or
 equivalently a Riemann–Roch basis of `L(2·∞)` and `L(3·∞)` on `X_0(N)`.
-Neither exists at this pin, and neither does the `Scheme` ↔
-`WeierstrassCurve` bridge that would let the conclusion be stated as an
-isomorphism of schemes rather than a bijection of points.
+Neither exists at this pin.  The `Scheme` ↔ `WeierstrassCurve` bridge is
+NOT among the missing pieces on the point-set level any more —
+`Fermat.exists_ellipticScheme_of_weierstrass` builds the projective
+Weierstrass model as a scheme, though only over `Spec ℚ`; what is missing
+over `𝔽_ℓ` is that construction's base-field generality.
 
 AXES SEARCHED, and this leaf is what is left of all of them: the
 Eichler–Shimura/Hecke axis (blocked by the module cycle recorded in the
 subsection note above, and by `Interface.lean` being downstream of this
 file — NOT by missing mathematics); the level-consolidation axis (refused,
-see the section note: `11, 17, 19, 32` are not Kenku levels); and the
+see the section note: `11, 17, 19, 32` are not Kenku levels); the
 explicit-model axis, which is this cut and which discharged the
-arithmetic.  NOT searched: whether the genus-one identification can be
-obtained from `IsCoarseModuliY0` by a direct count of Frobenius-stable
+arithmetic; the PRESENTATION axis, which is `modelPointEquivPoint` and is
+now closed; and the QUANTIFIER axis, which is this restatement.  NOT
+searched: whether the genus-one identification can be obtained from
+`IsCoarseModuliY0` by a direct count of Frobenius-stable
 `Γ₀(N)`-structures over `𝔽̄_ℓ` (a Deuring/Eichler mass-formula argument),
 which would avoid the plane model as well. -/
-theorem nonempty_relPoint_equiv_modelPoint {N ℓ m : ℕ} {a₁ a₂ a₃ a₄ a₆ : ℤ}
-    (_h : (N, ℓ, a₁, a₂, a₃, a₄, a₆, m) ∈ modelTable)
-    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification N strX strY jY) :
-    Nonempty (RelPoint strX (𝟙 (SpecF ℓ)) ≃ ModelPoint ℓ a₁ a₂ a₃ a₄ a₆) :=
+theorem exists_x0Compactification_relPoint_equiv_point {N ℓ m : ℕ} {a₁ a₂ a₃ a₄ a₆ : ℤ}
+    (_h : (N, ℓ, a₁, a₂, a₃, a₄, a₆, m) ∈ modelTable) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (jY : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY jY) ∧
+        Nonempty (RelPoint strX (𝟙 (SpecF ℓ)) ≃
+          (modelCurve ℓ a₁ a₂ a₃ a₄ a₆).toAffine.Point) :=
   sorry
+
+/-- **`X_0(N)_{𝔽_ℓ}` IS the reduced Weierstrass model of `N a 1`** (PROVEN
+2026-07-27 by decomposition; was the sorry leaf carrying the whole model
+identification, introduced the same day).
+
+Assembled from three inputs, none of which is level-specific except the
+first:
+
+* `exists_x0Compactification_relPoint_equiv_point` — the identification at
+  ONE compactification, which is what an explicit construction produces;
+* `Fermat.nonempty_relPointEquiv_of_isX0Compactification` — uniqueness of
+  `X_0(N)_{𝔽_ℓ}` up to bijection on points, level-generic and proven in
+  `X0.lean`, which is what carries the identification from that one model
+  to the arbitrary `hX` this statement is quantified over;
+* `modelPointEquivPoint` — the change of presentation from mathlib's
+  `WeierstrassCurve.Affine.Point` back to the `decide`-friendly
+  `ModelPoint` that `card_modelPoint` counts.
+
+`hℓ` and `hΔ` both come from the row through `modelTable_spec`; nothing
+else is consumed.
+
+**The STATEMENT is unchanged** — same name, same signature, same
+hypotheses in the same order — so `card_relPoint_finiteField` below and
+everything downstream of it are untouched by this decomposition.  What
+changed is that the two hypotheses are now USED rather than
+underscore-prefixed placeholders.
+
+**Quantified over every compactification rather than over a chosen one**,
+exactly as `Fermat.card_relPoint_x0_finiteField` is, and safe for the same
+reason: `IsX0Compactification` pins `(X, Y, jY)` up to isomorphism and
+`RelPoint strX (𝟙 (SpecF ℓ))` is an isomorphism invariant — which is no
+longer merely asserted here, since
+`Fermat.nonempty_relPointEquiv_of_isX0Compactification` is exactly that
+sentence and is what the proof below invokes.  **Not vacuous**:
+`Fermat.exists_x0Compactification_finiteField` supplies the model at each
+row, so this is not a statement about an empty class. -/
+theorem nonempty_relPoint_equiv_modelPoint {N ℓ m : ℕ} {a₁ a₂ a₃ a₄ a₆ : ℤ}
+    (h : (N, ℓ, a₁, a₂, a₃, a₄, a₆, m) ∈ modelTable)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) :
+    Nonempty (RelPoint strX (𝟙 (SpecF ℓ)) ≃ ModelPoint ℓ a₁ a₂ a₃ a₄ a₆) := by
+  obtain ⟨-, hℓ, -, hΔ⟩ := modelTable_spec h
+  obtain ⟨X', Y', strX', strY', jY', ⟨hX'⟩, ⟨e⟩⟩ :=
+    exists_x0Compactification_relPoint_equiv_point h
+  obtain ⟨t⟩ := nonempty_relPointEquiv_of_isX0Compactification hℓ hX hX'
+  exact ⟨(t.trans e).trans (modelPointEquivPoint hΔ).symm⟩
 
 /-- **Eichler–Shimura: the special fibre has exactly `m` rational points,
 at the four genus-one witness rows** (PROVEN 2026-07-27 by decomposition;
@@ -19800,9 +19947,10 @@ all: `X_0(N)` is here an elliptic curve, the witness primes are primes of
 good reduction, and the point count of the reduced plane model is a
 `9`- or `25`-case kernel computation.  See the subsection note above.
 
-The remaining obligation is `nonempty_relPoint_equiv_modelPoint` — the
-identification of `X_0(N)_{𝔽_ℓ}` with the reduced model — and it carries
-no arithmetic. -/
+The remaining obligation is
+`exists_x0Compactification_relPoint_equiv_point` — the identification of
+`X_0(N)_{𝔽_ℓ}` with the reduced model, at one compactification — and it
+carries no arithmetic. -/
 theorem card_relPoint_finiteField (N ℓ m : ℕ) (h : (N, ℓ, m) ∈ countTable)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY) :
