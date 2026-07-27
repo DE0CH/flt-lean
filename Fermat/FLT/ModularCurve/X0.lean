@@ -383,6 +383,24 @@ public import Mathlib.AlgebraicGeometry.Sites.Fpqc
 -- of `specInvariants_universal`, the pure geometric-invariant-theory leaf that
 -- `exists_gamma0Atlas` is split along.
 public import Mathlib.RingTheory.Invariant.Basic
+-- The affine/ring input to leaf (iii-b-1) — see the `GeomSquareRing` section.
+-- `AlgebraicGeometry.pullbackSpecIso`: the square of two affines over an affine
+-- base is `Spec` of the tensor product.  This is what makes leaf (iii-b-1) a
+-- question of commutative algebra rather than of scheme theory.
+public import Mathlib.AlgebraicGeometry.Pullbacks
+-- `Algebra.IsGeometricallyReduced` and `Algebra.IsGeometricallyReduced.of_forall_fg`:
+-- reducedness of `ℚ̄ ⊗_ℚ ℚ̄` by reduction to finitely generated subalgebras.
+public import Mathlib.RingTheory.Nilpotent.GeometricallyReduced
+-- `Algebra.FormallyUnramified.of_isSeparable` / `.isReduced_of_field`: a finite
+-- separable extension stays reduced after base change to `ℚ̄`.
+public import Mathlib.RingTheory.Unramified.Field
+-- `Algebra.FormallyEtale` and the `EssFiniteType` instances it carries.
+public import Mathlib.RingTheory.Etale.Field
+-- `Algebra.TensorProduct.piRight`: the tensor product commutes with FINITE
+-- products, which is what splits `(J → ℚ̄) ⊗_ℚ (J → ℚ̄)` into copies of `ℚ̄ ⊗_ℚ ℚ̄`.
+public import Mathlib.RingTheory.TensorProduct.Pi
+-- `PerfectField.ofCharZero`: `ℚ` is perfect, which is why `ℚ̄/ℚ` is separable.
+public import Mathlib.FieldTheory.Perfect
 
 @[expose] public section
 
@@ -2763,9 +2781,523 @@ theorem ker_sqCover_spanScheme {A : Scheme.{0}} {f : A ⟶ SpecQ} {J : Type} [Fi
     exact ⟨ker_toImage_of_quasiCompact (geomPtDesc p)⟩
   exact ker_sqCover_of_dominant q hq
 
+/-! ### `ℚ̄`-points of the geometric square, and the Galois action
+
+**Added 2026-07-27**, and it is what turns leaf (iii-b) from "the addition
+law on `∐ Spec (ℚ̄ ⊗_ℚ ℚ̄)`" into a single statement with no arithmetic in
+it.  The two lemmas below say that a `ℚ̄`-point of `∐_J Spec ℚ̄` is nothing
+but a member of the family translated by an element of `Γ_ℚ`. -/
+
+/-- **A `ℚ̄`-point of a coproduct of copies of `Spec ℚ̄` factors through one
+of the components** (PROVEN).
+
+`Spec ℚ̄` is a ONE-POINT space, so its image meets exactly one summand of
+the coproduct, whose underlying space is the disjoint union
+(`AlgebraicGeometry.sigmaMk`); `Sigma.ι` is an open immersion (it is the
+`j`-th map of `AlgebraicGeometry.sigmaOpenCover`), so
+`IsOpenImmersion.lift` produces the factorisation from the containment of
+ranges alone. -/
+theorem exists_sigmaι_factor_geomPt {J : Type}
+    (u : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ geomPtSigma J) :
+    ∃ (j : J) (v : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶
+        Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+      v ≫ Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j = u := by
+  have hsub : Subsingleton (Spec (CommRingCat.of (AlgebraicClosure ℚ))) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum (AlgebraicClosure ℚ)))
+  obtain ⟨pt⟩ : Nonempty (Spec (CommRingCat.of (AlgebraicClosure ℚ))) :=
+    inferInstanceAs (Nonempty (PrimeSpectrum (AlgebraicClosure ℚ)))
+  obtain ⟨⟨j, x⟩, hjx⟩ := (AlgebraicGeometry.sigmaMk
+    (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ)))).surjective (u.base pt)
+  haveI : IsOpenImmersion
+      (Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j) :=
+    (AlgebraicGeometry.sigmaOpenCover
+      (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ)))).map_prop j
+  refine ⟨j, IsOpenImmersion.lift
+    (Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j) u ?_,
+    IsOpenImmersion.lift_fac _ _ _⟩
+  rintro _ ⟨z, rfl⟩
+  rw [Subsingleton.elim z pt]
+  exact ⟨x, by simpa [AlgebraicGeometry.sigmaMk_mk] using hjx⟩
+
+/-- **A ring endomorphism of `F̄` fixing `F` is an element of `Γ_F`**
+(PROVEN): `F̄/F` is algebraic, so an `F`-algebra endomorphism is bijective
+(`Algebra.IsAlgebraic.algHom_bijective`) and `AlgEquiv.ofBijective` names
+the automorphism.
+
+STATED OVER A VARIABLE BASE FIELD ON PURPOSE — this is CLAUDE.md's
+`ULift ℚ`/`AlgebraicClosure ℚ` remedy in a fresh spot, and it is
+load-bearing rather than stylistic.  At the concrete base `ℚ` the two
+`Algebra ℚ (AlgebraicClosure ℚ)` instances (`DivisionRing.toRatAlgebra`
+and `AlgebraicClosure.instAlgebra`) form a DIAMOND, elaboration of
+`_ →ₐ[ℚ] _` picks the former, and `Algebra.IsAlgebraic ℚ ℚ̄` — an
+`instance`, stated for the latter — then fails to synthesise.  With `F` a
+variable there is only one instance and the proof is three lines.  Compare
+`isIntegralHom_specAlgClos'`, which is stated the same way for the same
+reason. -/
+theorem exists_absoluteGaloisGroup_ringHom {F : Type} [Field F]
+    (φ : AlgebraicClosure F →+* AlgebraicClosure F)
+    (hφ : ∀ r : F, φ (algebraMap F (AlgebraicClosure F) r)
+      = algebraMap F (AlgebraicClosure F) r) :
+    ∃ σ : Field.absoluteGaloisGroup F,
+      (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom = φ :=
+  ⟨AlgEquiv.ofBijective
+    ({ φ with commutes' := hφ } : AlgebraicClosure F →ₐ[F] AlgebraicClosure F)
+    (Algebra.IsAlgebraic.algHom_bijective _), rfl⟩
+
+/-- **Every endomorphism of `Spec ℚ̄` is `Spec` of an element of `Γ_ℚ`**
+(PROVEN).
+
+`Spec` is fully faithful (`AlgebraicGeometry.Spec.preimage` /
+`Spec.map_preimage`), so `v` is `Spec` of a ring endomorphism of `ℚ̄`; that
+endomorphism fixes `ℚ` for free, `ℚ` being initial in `CommRing`
+(`Subsingleton (ℚ →+* ℚ̄)`, the same fact behind `subsingleton_hom_specQ`);
+and `exists_absoluteGaloisGroup_ringHom` upgrades it to an element of
+`Γ_ℚ`.  Note there is no continuity condition to check: `Γ_ℚ` here is the
+bare automorphism group. -/
+theorem exists_specGal_eq (v : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶
+    Spec (CommRingCat.of (AlgebraicClosure ℚ))) :
+    ∃ σ : Field.absoluteGaloisGroup ℚ, specGal σ = v := by
+  obtain ⟨σ, hσ⟩ := exists_absoluteGaloisGroup_ringHom (F := ℚ) (Spec.preimage v).hom
+    (fun r => congrArg (fun m => m r)
+      (Subsingleton.elim ((Spec.preimage v).hom.comp (algebraMap ℚ (AlgebraicClosure ℚ)))
+        (algebraMap ℚ (AlgebraicClosure ℚ))))
+  refine ⟨σ, ?_⟩
+  have hofHom : CommRingCat.ofHom
+      ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.toRingHom)
+      = Spec.preimage v := by
+    rw [hσ]
+    rfl
+  rw [specGal, hofHom, Spec.map_preimage]
+
+/-! ### The affine/ring input to leaf (iii-b-1)
+
+**Added 2026-07-27**, and it is the whole content of leaf (iii-b-1): the
+square `Σ ×_ℚ Σ` is AFFINE, so the question is the commutative-algebra one
+of whether `(J → ℚ̄) ⊗_ℚ (J → ℚ̄)` is separated by its `ℚ`-algebra maps to
+`ℚ̄`.  It is, because that ring is REDUCED (`ℚ` is perfect, so `ℚ̄/ℚ` is
+separable) and INTEGRAL over `ℚ` (so every residue field is algebraic over
+`ℚ`, hence embeds in `ℚ̄`).
+
+Everything in this section is stated over a VARIABLE base field `F` — see
+`isIntegralHom_specAlgClos'` for the same discipline and the same reason:
+at the literal `ℚ` the two `Algebra ℚ (AlgebraicClosure ℚ)` instances form
+a diamond and `Algebra.IsAlgebraic ℚ ℚ̄` stops synthesising. -/
+
+section GeomSquareRing
+
+open scoped TensorProduct
+
+/-- **Every finitely generated subalgebra of `F̄` is geometrically reduced
+over a perfect field `F`** (PROVEN).
+
+Such a `B` is a field (`Subalgebra.isField_of_algebraic`), algebraic over
+`F` and essentially of finite type, so `PerfectField F` makes it separable
+and hence formally unramified; base change carries that to `F̄ ⊗_F B`,
+which `Algebra.FormallyUnramified.isReduced_of_field` then shows is
+reduced.  That is exactly `Algebra.isGeometricallyReduced_field_iff`. -/
+theorem isGeometricallyReduced_fg_subalgebra {F : Type} [Field F] [PerfectField F]
+    (B : Subalgebra F (AlgebraicClosure F)) (hB : B.FG) :
+    Algebra.IsGeometricallyReduced F B := by
+  haveI : Algebra.IsAlgebraic F B := Algebra.IsAlgebraic.tower_bot_of_injective
+    (A := AlgebraicClosure F) (Subtype.val_injective)
+  haveI : Algebra.FiniteType F B := (Subalgebra.fg_iff_finiteType B).mp hB
+  haveI : Algebra.EssFiniteType F B := inferInstance
+  letI : Field B := (Subalgebra.isField_of_algebraic (K := F) (L := AlgebraicClosure F)
+    (A := B)).toField
+  haveI : Algebra.FormallyUnramified F B := Algebra.FormallyUnramified.of_isSeparable F B
+  rw [Algebra.isGeometricallyReduced_field_iff]
+  exact Algebra.FormallyUnramified.isReduced_of_field (AlgebraicClosure F)
+    (AlgebraicClosure F ⊗[F] B)
+
+/-- **`F̄` is geometrically reduced over a perfect field `F`** (PROVEN):
+`Algebra.IsGeometricallyReduced.of_forall_fg` reduces it to the finitely
+generated subalgebras, which is the previous lemma.
+
+Deliberately NOT an `instance`: this file is large and shared, and the
+class is needed at exactly one place below. -/
+theorem isGeometricallyReduced_algebraicClosure {F : Type} [Field F] [PerfectField F] :
+    Algebra.IsGeometricallyReduced F (AlgebraicClosure F) :=
+  Algebra.IsGeometricallyReduced.of_forall_fg (isGeometricallyReduced_fg_subalgebra (F := F))
+
+/-- **`F̄ ⊗_F F̄` is integral over `F`** (PROVEN): the elementary tensors are
+products `includeLeft a * includeRight b` of images of integral elements
+under `F`-algebra maps, and integral elements are closed under `+` and `*`. -/
+theorem isIntegral_tensor_algebraicClosure {F : Type} [Field F] :
+    Algebra.IsIntegral F (AlgebraicClosure F ⊗[F] AlgebraicClosure F) := by
+  constructor
+  intro x
+  induction x using TensorProduct.induction_on with
+  | zero => exact isIntegral_zero
+  | tmul a b =>
+      have ha : IsIntegral F ((Algebra.TensorProduct.includeLeft (R := F) (S := F)
+        (A := AlgebraicClosure F) (B := AlgebraicClosure F)) a) :=
+        IsIntegral.map _ (Algebra.IsIntegral.isIntegral a)
+      have hb : IsIntegral F ((Algebra.TensorProduct.includeRight (R := F)
+        (A := AlgebraicClosure F) (B := AlgebraicClosure F)) b) :=
+        IsIntegral.map _ (Algebra.IsIntegral.isIntegral b)
+      have htm : a ⊗ₜ[F] b = (Algebra.TensorProduct.includeLeft (R := F) (S := F)
+          (A := AlgebraicClosure F) (B := AlgebraicClosure F)) a *
+        (Algebra.TensorProduct.includeRight (R := F)
+          (A := AlgebraicClosure F) (B := AlgebraicClosure F)) b := by
+        simp [Algebra.TensorProduct.tmul_mul_tmul]
+      rw [htm]
+      exact ha.mul hb
+  | add x y hx hy => exact hx.add hy
+
+/-- **`R` is separated by its `F`-algebra maps to `F̄`.**
+
+This is the property that a family of `F̄`-points of `Spec R` needs in
+order to be schematically dominant, written on the ring side where it is
+provable. -/
+def SeparatedByAlgHom (F R : Type) [Field F] [CommRing R] [Algebra F R] : Prop :=
+  ∀ x : R, (∀ ψ : R →ₐ[F] AlgebraicClosure F, ψ x = 0) → x = 0
+
+/-- **A reduced `F`-algebra integral over `F` is separated by its maps to
+`F̄`** (PROVEN) — the arithmetic heart of leaf (iii-b-1).
+
+If `x ≠ 0` then `x` is not nilpotent (reducedness), so `x` avoids some
+prime `p`; `R ⧸ p` is a domain integral over the field `F`, hence itself a
+field (`Algebra.IsIntegral.isField_iff_isField`) and algebraic over `F`,
+so `IsAlgClosed.lift` embeds it in `F̄`.  The resulting `ψ` does not kill
+`x`. -/
+theorem separatedByAlgHom_of_isIntegral {F : Type} [Field F] (R : Type) [CommRing R]
+    [Algebra F R] [IsReduced R] [Algebra.IsIntegral F R] : SeparatedByAlgHom F R := by
+  intro x hx
+  by_contra hne
+  have hnil : ¬ IsNilpotent x := fun h => hne (IsReduced.eq_zero x h)
+  rw [nilpotent_iff_mem_prime] at hnil
+  push_neg at hnil
+  obtain ⟨p, hp, hxp⟩ := hnil
+  haveI : p.IsPrime := hp
+  haveI : Algebra.IsIntegral F (R ⧸ p) := inferInstance
+  haveI : Algebra.IsAlgebraic F (R ⧸ p) := Algebra.IsIntegral.isAlgebraic
+  have hfield : IsField (R ⧸ p) := by
+    refine (Algebra.IsIntegral.isField_iff_isField (R := F) (S := R ⧸ p) ?_).mp
+      (Semifield.toIsField F)
+    exact (algebraMap F (R ⧸ p)).injective
+  letI : Field (R ⧸ p) := hfield.toField
+  let ψ₀ : (R ⧸ p) →ₐ[F] AlgebraicClosure F := IsAlgClosed.lift
+  let ψ : R →ₐ[F] AlgebraicClosure F := ψ₀.comp (Ideal.Quotient.mkₐ F p)
+  have hψ : ψ x = 0 := hx ψ
+  have hmk : (Ideal.Quotient.mk p) x ≠ 0 := by
+    simpa [Ideal.Quotient.eq_zero_iff_mem] using hxp
+  exact hmk ((map_eq_zero_iff _ (RingHom.injective ψ₀.toRingHom)).mp hψ)
+
+/-- **Separation transports along an `F`-algebra equivalence** (PROVEN). -/
+theorem separatedByAlgHom_of_algEquiv {F : Type} [Field F] {R S : Type} [CommRing R]
+    [CommRing S] [Algebra F R] [Algebra F S] (e : R ≃ₐ[F] S)
+    (h : SeparatedByAlgHom F S) : SeparatedByAlgHom F R := by
+  intro x hx
+  have he : e x = 0 := h (e x) fun ψ => by
+    simpa using hx (ψ.comp (e : R →ₐ[F] S))
+  simpa using congrArg e.symm he
+
+/-- **Separation passes to products** (PROVEN): project with
+`Pi.evalAlgHom`. -/
+theorem separatedByAlgHom_pi {F : Type} [Field F] {ι : Type} (R : ι → Type)
+    [∀ i, CommRing (R i)] [∀ i, Algebra F (R i)] (h : ∀ i, SeparatedByAlgHom F (R i)) :
+    SeparatedByAlgHom F (∀ i, R i) := by
+  intro x hx
+  funext i
+  exact h i (x i) fun ψ => hx (ψ.comp (Pi.evalAlgHom F R i))
+
+/-- **`F̄ ⊗_F F̄` is separated by its `F`-algebra maps to `F̄`** (PROVEN):
+reduced, by `isGeometricallyReduced_algebraicClosure`, and integral, by
+`isIntegral_tensor_algebraicClosure`. -/
+theorem separatedByAlgHom_tensor_algebraicClosure {F : Type} [Field F] [PerfectField F] :
+    SeparatedByAlgHom F (AlgebraicClosure F ⊗[F] AlgebraicClosure F) := by
+  haveI := isGeometricallyReduced_algebraicClosure (F := F)
+  haveI : IsReduced (AlgebraicClosure F ⊗[F] AlgebraicClosure F) := inferInstance
+  haveI := isIntegral_tensor_algebraicClosure (F := F)
+  exact separatedByAlgHom_of_isIntegral _
+
+/-- **`(J → F̄) ⊗_F (J → F̄)` is separated by its `F`-algebra maps to `F̄`**
+(PROVEN), for finite `J`.
+
+`Algebra.TensorProduct.piRight` splits the tensor product over a finite
+product of algebras, twice — once on each side, with
+`Algebra.TensorProduct.comm` in between — leaving a `J × J`-indexed
+product of copies of `F̄ ⊗_F F̄`. -/
+theorem separatedByAlgHom_piTensorPi {F : Type} [Field F] [PerfectField F] (J : Type)
+    [Finite J] :
+    SeparatedByAlgHom F ((J → AlgebraicClosure F) ⊗[F] (J → AlgebraicClosure F)) := by
+  classical
+  letI : Fintype J := Fintype.ofFinite J
+  refine separatedByAlgHom_of_algEquiv
+    (Algebra.TensorProduct.piRight F F (J → AlgebraicClosure F)
+      (fun _ : J => AlgebraicClosure F)) ?_
+  refine separatedByAlgHom_pi _ fun _ => ?_
+  refine separatedByAlgHom_of_algEquiv
+    ((Algebra.TensorProduct.comm F (J → AlgebraicClosure F) (AlgebraicClosure F)).trans
+      (Algebra.TensorProduct.piRight F F (AlgebraicClosure F)
+        (fun _ : J => AlgebraicClosure F))) ?_
+  exact separatedByAlgHom_pi _ fun _ => separatedByAlgHom_tensor_algebraicClosure
+
+/-- **A separated `ℚ`-algebra `R` has `Spec R` schematically dominated by
+its `ℚ̄`-points** (PROVEN) — the bridge from the ring statement to the ideal
+sheaf one.
+
+`Spec R` is affine, so `Scheme.ker_of_isAffine` reduces `ker = ⊥` to
+injectivity of the map on global sections; that map is beaten below by
+every `Sigma.ι ψ`, and `Scheme.ΓSpecIso_naturality` identifies the
+resulting condition with `ψ r = 0` for every `ψ`.  NOTE the index type is
+the FULL set of `ℚ`-algebra maps `R → ℚ̄`, which is not finite — see the
+trap recorded in `exists_geomPts_ker_eq_bot_sigmaSq`. -/
+theorem exists_ker_eq_bot_Spec (R : Type) [CommRing R] [Algebra ℚ R]
+    (hsep : SeparatedByAlgHom ℚ R) :
+    ∃ (I : Type) (w : I → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶
+        Spec (CommRingCat.of R))), (geomPtDesc w).ker = ⊥ := by
+  classical
+  refine ⟨R →ₐ[ℚ] AlgebraicClosure ℚ,
+    fun ψ => Spec.map (CommRingCat.ofHom ψ.toRingHom), ?_⟩
+  set f : (∐ fun _ : (R →ₐ[ℚ] AlgebraicClosure ℚ) =>
+      Spec (CommRingCat.of (AlgebraicClosure ℚ))) ⟶ Spec (CommRingCat.of R) :=
+    Limits.Sigma.desc (fun ψ => Spec.map (CommRingCat.ofHom ψ.toRingHom)) with hf
+  have hker : RingHom.ker f.appTop.hom = ⊥ := by
+    rw [eq_bot_iff]
+    intro x hx
+    rw [RingHom.mem_ker] at hx
+    have key : ∀ ψ : R →ₐ[ℚ] AlgebraicClosure ℚ,
+        (Spec.map (CommRingCat.ofHom ψ.toRingHom)).appTop.hom x = 0 := by
+      intro ψ
+      have hcomp : Limits.Sigma.ι
+          (fun _ : (R →ₐ[ℚ] AlgebraicClosure ℚ) =>
+            Spec (CommRingCat.of (AlgebraicClosure ℚ))) ψ ≫ f
+          = Spec.map (CommRingCat.ofHom ψ.toRingHom) := by
+        rw [hf]; exact Limits.Sigma.ι_desc _ ψ
+      rw [← hcomp, Scheme.Hom.comp_appTop]
+      simp [hx]
+    have hr : (Scheme.ΓSpecIso (CommRingCat.of R)).hom.hom x = 0 := by
+      apply hsep
+      intro ψ
+      have h1 := Scheme.ΓSpecIso_naturality (CommRingCat.ofHom ψ.toRingHom)
+      have h2 : ((Spec.map (CommRingCat.ofHom ψ.toRingHom)).appTop ≫
+          (Scheme.ΓSpecIso (CommRingCat.of (AlgebraicClosure ℚ))).hom).hom x
+          = ((Scheme.ΓSpecIso (CommRingCat.of R)).hom ≫
+              CommRingCat.ofHom ψ.toRingHom).hom x :=
+        congrArg (fun g => CommRingCat.Hom.hom g x) h1
+      simp only [CommRingCat.hom_comp, RingHom.comp_apply, key ψ, map_zero] at h2
+      simpa using h2.symm
+    have hinj : Function.Injective (Scheme.ΓSpecIso (CommRingCat.of R)).hom.hom :=
+      (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (CommRingCat.of R)).hom).1
+    simpa using hinj (by simpa using hr)
+  rw [geomPtDesc, ← hf, AlgebraicGeometry.Scheme.ker_of_isAffine, hker]
+  apply AlgebraicGeometry.Scheme.IdealSheafData.ext_of_isAffine
+  simp
+
+/-- **The square of the tautological `ℚ̄`-point cover is schematically
+dominated by its `ℚ̄`-points** (leaf (iii-b-1), split out 2026-07-27 and
+**PROVEN 2026-07-27** by exactly the affine/ring route recorded below).
+
+`Σ = ∐_J Spec ℚ̄`, so `Σ ×_ℚ Σ = ∐_{j,k} Spec (ℚ̄ ⊗_ℚ ℚ̄)`.  What is asked
+is a family of `ℚ̄`-points of that square whose descent
+`∐_I Spec ℚ̄ ⟶ Σ ×_ℚ Σ` has trivial kernel ideal sheaf — i.e. a
+schematically dominant cover of the square by copies of `Spec ℚ̄`.
+
+**NOTHING ARITHMETIC IS IN THIS LEAF**: no group law, no `y`, no `N`, no
+Galois stability, not even an ambient scheme `A`.  It is a statement about
+`(∐_J Spec ℚ̄) ×_{Spec ℚ} (∐_J Spec ℚ̄)` alone, and it is the ONLY thing
+between the pin and leaf (iii-b).
+
+THE ROUTE, with the pin API located:
+
+* `J` is finite, so `AlgebraicGeometry.sigmaSpec` is an ISO
+  (`instance [Finite ι] (R : ι → CommRingCat) : IsIso (sigmaSpec R)`,
+  `AlgebraicGeometry/Limits.lean`), giving `Σ ≅ Spec (J → ℚ̄)`.  `s` is
+  then `Spec` of the structure map, `Spec ℚ` being terminal
+  (`subsingleton_hom_specQ`), so the fibre square is `Spec R` with
+  `R = (J → ℚ̄) ⊗_ℚ (J → ℚ̄)` — AFFINE, which is what makes the whole
+  question commutative algebra.
+* Take `I := (R →ₐ[ℚ̄] ℚ̄)`, equivalently the maximal ideals of `R`, and
+  `w` the corresponding `ℚ̄`-points.  Trivial kernel is then exactly
+  injectivity of `R → ∏_I ℚ̄`, i.e. `⨅ maximal ideals = 0`.  That holds
+  because (a) `R` is REDUCED — `ℚ` is perfect, so `ℚ̄/ℚ` is separable and
+  `ℚ̄ ⊗_ℚ ℚ̄` is reduced — and (b) `R` is INTEGRAL over each tensor factor,
+  so every prime is maximal with residue field algebraic over `ℚ̄`, hence
+  equal to `ℚ̄`.  Reducedness turns `⨅ primes = nilradical` into `0`.
+* For (a), `Mathlib/AlgebraicGeometry/Geometrically/Reduced.lean` carries
+  `GeometricallyReduced` with `IsStableUnderBaseChange` and the instances
+  `[GeometricallyReduced g] → GeometricallyReduced (pullback.fst f g)`.
+
+CHECK THAT WOULD REFUTE THE "just take a FINITE cover" READING — this is
+why the leaf quantifies over an arbitrary index type `I` rather than a
+finite one, and it is worth stating because the shortcut looks available.
+`isSchemeTheoreticallyDominant_iff_isDominant` reduces trivial kernel to
+DENSE RANGE over a reduced target, but only for a QUASI-COMPACT morphism,
+and `∐_I Spec ℚ̄` is quasi-compact only for finite `I`.  A finite family
+cannot work: the points of `Spec (ℚ̄ ⊗_ℚ ℚ̄)` form a profinite space
+homeomorphic to `Γ_ℚ`, which is infinite and Hausdorff, so no finite
+subset is dense.  So the quasi-compact shortcut is unavailable *by a
+proof*, not by an oversight, and the affine/ring route above is the one to
+take.
+
+**PROVEN 2026-07-27 along exactly that route**, with two corrections to
+the sketch above that are worth recording because both looked harmless:
+
+* The index type is `I := (R →ₐ[ℚ] ℚ̄)`, the `ℚ`-algebra maps — **not**
+  `R →ₐ[ℚ̄] ℚ̄` as written above.  `R` carries no canonical `ℚ̄`-algebra
+  structure in the statement (which of the two tensor factors would
+  supply it?), and none is needed: the residue fields are algebraic over
+  `ℚ` already, so `IsAlgClosed.lift` embeds them over `ℚ`.
+* Reducedness does NOT go through `GeometricallyReduced` of the *scheme*
+  morphism (item (a) above).  That class quantifies over ALL field
+  extensions `K/ℚ`, and `IsReduced (A ⊗_ℚ K)` for arbitrary `K` is an
+  explicit TODO in mathlib (`Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean`).
+  What is available, and all that is needed, is the *algebra* class
+  `Algebra.IsGeometricallyReduced`, whose consumer instance requires the
+  extension to be ALGEBRAIC — which `ℚ̄/ℚ` is.  An agent that reached for
+  the scheme-level class would have hit mathlib's TODO and concluded the
+  leaf was blocked.
+
+The chain actually used, all of it stated over a variable base field: `ℚ`
+is perfect, so every f.g. subalgebra of `ℚ̄` is a finite separable
+extension and hence formally unramified; base change and
+`Algebra.FormallyUnramified.isReduced_of_field` make `ℚ̄ ⊗_ℚ B` reduced;
+`Algebra.IsGeometricallyReduced.of_forall_fg` passes to `ℚ̄` itself; and
+`Algebra.TensorProduct.piRight` (twice, with `comm` between) reduces
+`(J → ℚ̄) ⊗_ℚ (J → ℚ̄)` to a `J × J`-indexed product of copies of
+`ℚ̄ ⊗_ℚ ℚ̄`.  Integrality is the one-line tensor induction
+`isIntegral_tensor_algebraicClosure`.  See `separatedByAlgHom_piTensorPi`
+and `exists_ker_eq_bot_Spec` in the `GeomSquareRing` section above. -/
+theorem exists_geomPts_ker_eq_bot_sigmaSq (J : Type) [Finite J]
+    (s : geomPtSigma J ⟶ SpecQ) :
+    ∃ (I : Type) (w : I → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶
+        Limits.pullback s s)), (geomPtDesc w).ker = ⊥ := by
+  classical
+  -- `Σ = ∐_J Spec ℚ̄` is `Spec (J → ℚ̄)`, because `J` is finite.
+  haveI : IsIso (AlgebraicGeometry.sigmaSpec
+      (fun _ : J => CommRingCat.of (AlgebraicClosure ℚ))) := inferInstance
+  set eJ : geomPtSigma J ≅ Spec (CommRingCat.of (J → AlgebraicClosure ℚ)) :=
+    asIso (AlgebraicGeometry.sigmaSpec (fun _ : J => CommRingCat.of (AlgebraicClosure ℚ)))
+      with heJ
+  set t : Spec (CommRingCat.of (J → AlgebraicClosure ℚ)) ⟶ SpecQ :=
+    Spec.map (CommRingCat.ofHom (algebraMap ℚ (J → AlgebraicClosure ℚ))) with ht
+  -- `Spec ℚ` receives at most one morphism from anything, so `s` factors as `eJ.hom ≫ t`.
+  have hst : s = eJ.hom ≫ t := (subsingleton_hom_specQ _).elim _ _
+  have heq : t ≫ 𝟙 SpecQ = eJ.inv ≫ s := by
+    rw [hst, Category.comp_id, Iso.inv_hom_id_assoc]
+  set c : Limits.pullback t t ⟶ Limits.pullback s s :=
+    Limits.pullback.map t t s s eJ.inv eJ.inv (𝟙 _) heq heq with hc
+  haveI : IsIso c := by rw [hc]; infer_instance
+  -- and the square of `Spec (J → ℚ̄)` over `Spec ℚ` is `Spec` of the tensor square.
+  set e : Spec (CommRingCat.of ((J → AlgebraicClosure ℚ) ⊗[ℚ] (J → AlgebraicClosure ℚ))) ⟶
+      Limits.pullback s s :=
+    (AlgebraicGeometry.pullbackSpecIso ℚ (J → AlgebraicClosure ℚ)
+      (J → AlgebraicClosure ℚ)).inv ≫ c with he
+  haveI : IsIso e := by rw [he]; infer_instance
+  obtain ⟨I, w₀, hw₀⟩ := exists_ker_eq_bot_Spec
+    ((J → AlgebraicClosure ℚ) ⊗[ℚ] (J → AlgebraicClosure ℚ))
+    (separatedByAlgHom_piTensorPi J)
+  refine ⟨I, fun i => w₀ i ≫ e, ?_⟩
+  have hdesc : geomPtDesc (fun i => w₀ i ≫ e) = geomPtDesc w₀ ≫ e := by
+    rw [geomPtDesc, geomPtDesc]
+    apply Limits.Sigma.hom_ext
+    intro i
+    rw [Limits.Sigma.ι_desc]
+    conv_rhs => rw [← Category.assoc, Limits.Sigma.ι_desc]
+  rw [hdesc]
+  haveI : IsSchemeTheoreticallyDominant (geomPtDesc w₀) := ⟨hw₀⟩
+  exact IsSchemeTheoreticallyDominant.ker_eq_bot _
+
+end GeomSquareRing
+
+/-- **Every `ℚ̄`-point of `Σ ×_ℚ Σ` is carried by the group law into the
+family `zmulPts`** (PROVEN 2026-07-27) — the arithmetic half of leaf
+(iii-b), and the ONLY place `hstable` is consumed on the addition route.
+
+A `ℚ̄`-point `u` of the square is a pair of `ℚ̄`-points of
+`Σ = ∐_{Fin N} Spec ℚ̄`; each factors through a component
+(`exists_sigmaι_factor_geomPt`) by an endomorphism of `Spec ℚ̄`, which is
+`Spec σ` for a `σ ∈ Γ_ℚ` (`exists_specGal_eq`).  So
+`u ≫ sqMap d ≫ addHom ab` is `σ₁ · (j • y) + σ₂ · (k • y)`, and since
+`galSMul σ` is an ADDITIVE map (`pre_zero`, `pre_add`) this is
+`j • (σ₁ · y) + k • (σ₂ · y)`, which lies in `⟨y⟩` by `hstable`.
+`exists_fin_zsmul` then names the resulting index in `Fin N`.
+
+Note what is NOT needed: no continuity of `σ ↦ m_σ`, no decomposition of
+`ℚ̄ ⊗_ℚ ℚ̄`, and no identification of `Spec (ℚ̄ ⊗_ℚ ℚ̄)` with `Γ_ℚ` — the
+statement is *pointwise* in `u`, so each `ℚ̄`-point supplies its own pair
+of automorphisms and the profinite structure never enters.  That is the
+whole reason the cut of leaf (iii-b) is made here. -/
+theorem geomPt_geomSq_addHom_mem {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
+    (u : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶
+      Limits.pullback (geomPtDesc (zmulPts ab N y) ≫ f)
+        (geomPtDesc (zmulPts ab N y) ≫ f)) :
+    ∃ n : Fin N, u ≫ sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab
+      = zmulPts ab N y n := by
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  have hd : ∀ m : Fin N, Limits.Sigma.ι
+      (fun _ : Fin N => Spec (CommRingCat.of (AlgebraicClosure ℚ))) m
+        ≫ geomPtDesc (zmulPts ab N y) = zmulPts ab N y m :=
+    fun m => Limits.Sigma.ι_desc _ m
+  obtain ⟨j, v₁, hv₁⟩ := exists_sigmaι_factor_geomPt (J := Fin N)
+    (u ≫ Limits.pullback.fst (geomPtDesc (zmulPts ab N y) ≫ f)
+      (geomPtDesc (zmulPts ab N y) ≫ f))
+  obtain ⟨k, v₂, hv₂⟩ := exists_sigmaι_factor_geomPt (J := Fin N)
+    (u ≫ Limits.pullback.snd (geomPtDesc (zmulPts ab N y) ≫ f)
+      (geomPtDesc (zmulPts ab N y) ≫ f))
+  obtain ⟨σ₁, hσ₁⟩ := exists_specGal_eq v₁
+  obtain ⟨σ₂, hσ₂⟩ := exists_specGal_eq v₂
+  -- the two legs of `u`, computed as Galois translates of members of the family
+  have hx : u ≫ Limits.pullback.fst (geomPtDesc (zmulPts ab N y) ≫ f)
+        (geomPtDesc (zmulPts ab N y) ≫ f) ≫ geomPtDesc (zmulPts ab N y)
+      = (ab.galSMul (𝟙 SpecQ) σ₁ (((j : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))).1 := by
+    rw [← Category.assoc, ← hv₁, Category.assoc, hd, ← hσ₁]
+    rfl
+  have hz : u ≫ Limits.pullback.snd (geomPtDesc (zmulPts ab N y) ≫ f)
+        (geomPtDesc (zmulPts ab N y) ≫ f) ≫ geomPtDesc (zmulPts ab N y)
+      = (ab.galSMul (𝟙 SpecQ) σ₂ (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))).1 := by
+    rw [← Category.assoc, ← hv₂, Category.assoc, hd, ← hσ₂]
+    rfl
+  -- `u ≫ sqMap d ≫ addHom ab` is the SUM of the two legs (`add_eq_addHom`)
+  have hsum : u ≫ sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab
+      = ((ab.galSMul (𝟙 SpecQ) σ₁ (((j : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))
+          + ab.galSMul (𝟙 SpecQ) σ₂ (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))
+          : GeomFibrePt f (𝟙 SpecQ))).1 := by
+    rw [show ((ab.galSMul (𝟙 SpecQ) σ₁ (((j : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))
+          + ab.galSMul (𝟙 SpecQ) σ₂ (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))
+          : GeomFibrePt f (𝟙 SpecQ)))
+        = ab.add (ab.galSMul (𝟙 SpecQ) σ₁ (((j : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))))
+            (ab.galSMul (𝟙 SpecQ) σ₂ (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))) from rfl,
+      add_eq_addHom ab _ _, ← Category.assoc]
+    congr 1
+    refine Limits.pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, sqMap_fst, Limits.pullback.lift_fst]
+      exact hx
+    · rw [Category.assoc, sqMap_snd, Limits.pullback.lift_snd]
+      exact hz
+  -- the sum is an integer multiple of `y` — THIS is where `hstable` enters
+  have hsm : ∀ (σ : Field.absoluteGaloisGroup ℚ) (m : ℕ),
+      ab.galSMul (𝟙 SpecQ) σ ((m • y : GeomFibrePt f (𝟙 SpecQ)))
+        ∈ AddSubgroup.zmultiples y := by
+    intro σ m
+    let Ψ : GeomFibrePt f (𝟙 SpecQ) →+ GeomFibrePt f (𝟙 SpecQ) :=
+      { toFun := fun w => ab.galSMul (𝟙 SpecQ) σ w
+        map_zero' := ab.pre_zero (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ)
+        map_add' := fun a b => ab.pre_add (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ) a b }
+    have hΨ : ab.galSMul (𝟙 SpecQ) σ ((m • y : GeomFibrePt f (𝟙 SpecQ)))
+        = m • ab.galSMul (𝟙 SpecQ) σ y := map_nsmul Ψ m y
+    rw [hΨ]
+    exact AddSubgroup.nsmul_mem _ (hstable σ) m
+  have hmem : (ab.galSMul (𝟙 SpecQ) σ₁ (((j : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))
+      + ab.galSMul (𝟙 SpecQ) σ₂ (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)))
+      : GeomFibrePt f (𝟙 SpecQ)) ∈ AddSubgroup.zmultiples y :=
+    AddSubgroup.add_mem _ (hsm σ₁ j) (hsm σ₂ k)
+  obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp hmem
+  obtain ⟨n, hn⟩ := exists_fin_zsmul hN hy m
+  refine ⟨n, ?_⟩
+  rw [hsum, ← hm, hn]
+  rfl
+
 /-- **The group law carries the square of the geometric-point family into
-the span** (sorry leaf (iii-b), split out 2026-07-27 — this is the half
-of leaf (iii) that carries the arithmetic).
+the span** (formerly sorry leaf (iii-b), split out 2026-07-27 — this is
+the half of leaf (iii) that carries the arithmetic).
 
 `Σ ×_ℚ Σ = ∐_{j,k} Spec (ℚ̄ ⊗_ℚ ℚ̄)`, and the composite into `A` is
 `ab.add` of the two points `p j`, `p k` pulled back along the two
@@ -2788,7 +3320,14 @@ a factorisation of `Spec (ℚ̄ ⊗_ℚ ℚ̄) ⟶ Spec ℚ̄ ×_ℚ Spec ℚ̄`
 leaves `⟨y⟩`; then `C` is bigger than `⟨y⟩` and the sum of two of its
 geometric points need not lie in it).
 
-## ROUTE AUDIT, 2026-07-27 (by the agent that proved leaf (iii-a))
+## ROUTE AUDIT, 2026-07-27 — **SUPERSEDED** (see the PROVEN note below)
+
+Kept rather than deleted because its TRAP paragraph states exactly the
+fact that the residual leaf `exists_geomPts_ker_eq_bot_sigmaSq` isolates.
+Its two proposed routes, and their shared quasi-compactness obligation,
+were all avoided — see the PROVEN note that follows it.
+
+(by the agent that proved leaf (iii-a))
 
 AXIS SEARCHED: *morphism-class* routes — schematic dominance, flat base
 change, rigidity out of a reduced scheme — and *coproduct-decomposition*
@@ -2869,7 +3408,32 @@ residue field of `ℚ̄ ⊗_ℚ ℚ̄` is `ℚ̄` — it is a field algebraic ov
 algebraically closed image of the first factor — so each POINT carries a
 `ℚ`-embedding `ℚ̄ → ℚ̄`, hence an element of `Field.absoluteGaloisGroup ℚ`
 (`IsAlgClosed`/normality upgrades the embedding to an automorphism).
-That is the only place `hstable` is consumed. -/
+That is the only place `hstable` is consumed.
+
+**PROVEN 2026-07-27 over the single leaf `exists_geomPts_ker_eq_bot_sigmaSq`
+(iii-b-1), and the two routes predicted for it were both avoided.**  The
+task prompt offered `sigmaOpenCover` + `Hom.iInf_ker_openCover_map_comp`,
+and reducedness + `PullbackCarrier`; neither is used, and the shared
+obligation `QuasiCompact (sqMap d ≫ addHom ab)` never arises.  What
+replaces them is the observation that the arithmetic is entirely POINTWISE:
+
+* `geomPt_geomSq_addHom_mem` (PROVEN, axiom-clean) shows that EVERY
+  `ℚ̄`-point `u` of `Σ ×_ℚ Σ` satisfies `u ≫ sqMap d ≫ addHom ab = p n`
+  for some `n : Fin N`.  Each `ℚ̄`-point carries its own pair of
+  automorphisms `σ₁, σ₂ ∈ Γ_ℚ`, so the profinite structure of
+  `Spec (ℚ̄ ⊗_ℚ ℚ̄)` — the trap this leaf's docstring and the task prompt
+  both warned about — is never touched.  `hstable` is consumed exactly
+  here and nowhere else.
+* Leaf (iii-b-1) supplies a family of `ℚ̄`-points of `Σ ×_ℚ Σ` whose
+  descent has trivial kernel.  The two combine by the SAME ideal-sheaf
+  bookkeeping as `exists_addHom_factor_zmulPts`: trivial kernel gives
+  `(geomPtDesc w ≫ g).ker = g.ker` through `map_ker`/`map_bot`, and the
+  pointwise statement factors `geomPtDesc w ≫ g` through `ι` via a
+  reindexing `Sigma.desc` of the cover, so `Hom.le_ker_comp` and
+  `IsClosedImmersion.lift` finish.
+
+So the residue of leaf (iii-b) is a statement with NO group law, NO Galois
+stability and no abelian scheme in it at all. -/
 theorem exists_addHom_factor_geomSq {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -2880,8 +3444,46 @@ theorem exists_addHom_factor_geomSq {A : Scheme.{0}} {f : A ⟶ SpecQ}
     ∃ κ : Limits.pullback (geomPtDesc (zmulPts ab N y) ≫ f)
             (geomPtDesc (zmulPts ab N y) ≫ f) ⟶ spanScheme (zmulPts ab N y),
       κ ≫ spanSchemeι (zmulPts ab N y)
-        = sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab :=
-  sorry
+        = sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab := by
+  obtain ⟨I, w, hw⟩ := exists_geomPts_ker_eq_bot_sigmaSq (Fin N)
+    (geomPtDesc (zmulPts ab N y) ≫ f)
+  choose nidx hnidx using geomPt_geomSq_addHom_mem ab N hN y hy hstable
+  have hd : ∀ m : Fin N, Limits.Sigma.ι
+      (fun _ : Fin N => Spec (CommRingCat.of (AlgebraicClosure ℚ))) m
+        ≫ geomPtDesc (zmulPts ab N y) = zmulPts ab N y m :=
+    fun m => Limits.Sigma.ι_desc _ m
+  have hwi : ∀ i : I, Limits.Sigma.ι
+      (fun _ : I => Spec (CommRingCat.of (AlgebraicClosure ℚ))) i
+        ≫ geomPtDesc w = w i := fun i => Limits.Sigma.ι_desc _ i
+  have hstep : (geomPtDesc w ≫ (sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab)).ker
+      = (sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab).ker := by
+    rw [← Scheme.IdealSheafData.map_ker, hw, Scheme.IdealSheafData.map_bot]
+  have hfac : geomPtDesc w ≫ (sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab)
+      = (Limits.Sigma.desc (fun i => Limits.Sigma.ι
+            (fun _ : Fin N => Spec (CommRingCat.of (AlgebraicClosure ℚ))) (nidx (w i)))
+          ≫ (geomPtDesc (zmulPts ab N y)).toImage) ≫ spanSchemeι (zmulPts ab N y) := by
+    rw [Category.assoc,
+      show (geomPtDesc (zmulPts ab N y)).toImage ≫ spanSchemeι (zmulPts ab N y)
+        = geomPtDesc (zmulPts ab N y) from (geomPtDesc (zmulPts ab N y)).toImage_imageι]
+    refine Limits.Sigma.hom_ext _ _ (fun i => ?_)
+    have hL : Limits.Sigma.ι (fun _ : I => Spec (CommRingCat.of (AlgebraicClosure ℚ))) i ≫
+        (geomPtDesc w ≫ (sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab))
+        = zmulPts ab N y (nidx (w i)) := by
+      rw [← Category.assoc, hwi]
+      exact hnidx (w i)
+    have hR : Limits.Sigma.ι (fun _ : I => Spec (CommRingCat.of (AlgebraicClosure ℚ))) i ≫
+        (Limits.Sigma.desc (fun i' => Limits.Sigma.ι
+            (fun _ : Fin N => Spec (CommRingCat.of (AlgebraicClosure ℚ))) (nidx (w i')))
+          ≫ geomPtDesc (zmulPts ab N y))
+        = zmulPts ab N y (nidx (w i)) := by
+      rw [← Category.assoc, Limits.Sigma.ι_desc]
+      exact hd _
+    rw [hL, hR]
+  have hle : (spanSchemeι (zmulPts ab N y)).ker
+      ≤ (sqMap (geomPtDesc (zmulPts ab N y)) ≫ addHom ab).ker := by
+    rw [← hstep, hfac]
+    exact Scheme.Hom.le_ker_comp _ _
+  exact ⟨IsClosedImmersion.lift _ _ hle, IsClosedImmersion.lift_fac _ _ _⟩
 
 /-- **The group law of `A` restricts to the span: the factorisation at
 `C ×_ℚ C`** (sorry leaf (iii) of the descent decomposition).
@@ -3679,7 +4281,8 @@ and (v) are proven over four smaller leaves.  The state of the five is:
 | (iv) `exists_negHom_factor_zmulPts` | **PROVEN** — no leaf |
 | (v) `geom_cyclic_zmulPts` | PROVEN over (v-a), (v-b) |
 | (iii-a) `ker_sqCover_spanScheme` | **PROVEN** 2026-07-27 — flat base change of `IsSchemeTheoreticallyDominant`; needed one added hypothesis `[Finite J]` |
-| (iii-b) `exists_addHom_factor_geomSq` | open — the addition law on `∐ Spec (ℚ̄ ⊗_ℚ ℚ̄)`; the only consumer of `hstable`; see its ROUTE AUDIT of 2026-07-27 |
+| (iii-b) `exists_addHom_factor_geomSq` | **PROVEN 2026-07-27** over (iii-b-1) |
+| (iii-b-1) `exists_geomPts_ker_eq_bot_sigmaSq` | **PROVEN** 2026-07-27 — no leaf; the affine/ring route, over `separatedByAlgHom_piTensorPi` |
 | (v-a) `exists_injective_pre_geomBase` | **PROVEN** — no leaf; `he` is `subsingleton_hom_specQ`, injectivity is `epi_specMap_of_fieldHom` |
 | (v-b) `mem_zmultiples_of_liesIn_span` | PROVEN over (v-b-i), (v-b-ii) |
 | (v-b-i) `exists_geomPt_factor_span` | **PROVEN** — no leaf; consumes leaf (i) `isFinite_spanSchemeι` |
