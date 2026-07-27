@@ -13182,14 +13182,28 @@ theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
 
 /-! ### The unramified twist: trace machinery for a cyclic unramified extension
 
-The four declarations below are the decomposition of the geometric half of
+The declarations below are the decomposition of the geometric half of
 Fontaine's Prop. 1.5 (ii) (leaf (Y-3-a), `exists_not_le_sub_mem_of_ne_one_of_mem_inertia`
-further down), created 2026-07-27 by its second owner.  Two of them are PROVEN,
-two are open, and the open ones are exactly the two pieces of ORDINARY LOCAL
-FIELD THEORY that this file does not have: the unramified extensions of `ℚ₃ᵥ`
-inside `ℚ₃ᵥᵃˡᵍ` with their Frobenius, and surjectivity of the trace of an
-unramified extension of local rings.  Nothing Fontaine-specific remains in
-either. -/
+further down), created 2026-07-27 by its second owner and CUT FURTHER the same
+day by its third.  All that is open in the block is now exactly THREE pieces of
+ORDINARY LOCAL FIELD THEORY that this file does not have; nothing
+Fontaine-specific remains anywhere in it:
+
+* `exists_restrictToLEHom_eq_of_zpowers_inf_inertia_eq_bot` — the UNRAMIFIED
+  EXTENSIONS of `ℚ₃ᵥ` inside `ℚ₃ᵥᵃˡᵍ` with their Frobenius, and the compositum
+  `M = L·U` carrying `ρ = (τ, Frob^{f_L})`;
+* `span_three_unramifiedTwistFixedField_eq` — the RELATIVE RAMIFICATION
+  bookkeeping `e(M/M^{⟨ρ⟩}) = 1`, transported from the file's REIFIED form
+  (`M' : IntermediateField ℚ₃ᵥ ↥M`) to a subextension of `ℚ₃ᵥᵃˡᵍ`;
+* `exists_sum_range_smul_notMem_maximalIdeal` — surjectivity of the trace of an
+  unramified extension of local rings, at the residue level.
+
+Everything else in the block is proven: the two trace lemmas, the depth
+comparison, and — since the third owner's cut — the whole passage from `ρ` to
+its fixed field, including the identification of `𝒪_{M^{⟨ρ⟩}}` with the
+`ρ`-invariants of `𝒪_M`
+(`smul_eq_iff_exists_integralClosureLE_unramifiedTwistFixedField`) and the
+`¬(L ≤ E)` clause. -/
 
 /-- **A FULL ORBIT SUM UNDER A CYCLIC GROUP IS INVARIANT** (PROVEN 2026-07-27).
 Purely group-theoretic, stated for an arbitrary `ρ` of exponent dividing `n`
@@ -13366,6 +13380,258 @@ theorem exists_sum_range_smul_eq_one_of_span_three_eq
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 1000000 in
+/-- **AN AUTOMORPHISM FIXING THE INTEGRAL CLOSURE POINTWISE IS THE IDENTITY**
+(PROVEN 2026-07-27).  `L = Frac(𝒪_L)` for a finite subextension of `ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ`
+(`IsIntegralClosure.isFractionRing_of_finite_extension`), so a `ℚ₃ᵥ`-automorphism
+of `L` that fixes every integral point is the identity: the two ring maps
+`τ` and `id` agree after composition with `𝒪_L → L`, and
+`IsLocalization.ringHom_ext` at `nonZeroDivisors 𝒪_L` promotes that to equality
+on `L`.
+This is the CONTRAPOSITIVE FORM of `τ ≠ 1` that the unramified twist actually
+consumes: `¬(L ≤ E)` is proven by producing an integral point that `τ` moves. -/
+theorem eq_one_of_forall_smul_eq
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    (τ : L ≃ₐ[ℚ₃ᵥ] L)
+    (h : ∀ y : IntegralClosure 𝒪₃ᵥ L, τ • y = y) : τ = 1 := by
+  haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ L) L :=
+    IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ L (IntegralClosure 𝒪₃ᵥ L)
+  have hcomp : (τ : ↥L →+* ↥L).comp (algebraMap (IntegralClosure 𝒪₃ᵥ L) ↥L)
+      = (RingHom.id ↥L).comp (algebraMap (IntegralClosure 𝒪₃ᵥ L) ↥L) := by
+    refine RingHom.ext fun y => ?_
+    have h1 := congrArg Subtype.val (h y)
+    rw [IntegralClosure.coe_smul] at h1
+    show τ (algebraMap (IntegralClosure 𝒪₃ᵥ L) ↥L y) = algebraMap (IntegralClosure 𝒪₃ᵥ L) ↥L y
+    exact h1
+  have hid := IsLocalization.ringHom_ext (nonZeroDivisors (IntegralClosure 𝒪₃ᵥ L)) hcomp
+  refine AlgEquiv.ext fun x => ?_
+  have := DFunLike.congr_fun hid x
+  simpa using this
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **THE UNRAMIFIED TWIST, EXISTENCE HALF: A FINITE GALOIS `M ⊇ L` AND A
+`ρ ∈ Gal(M/ℚ₃ᵥ)` RESTRICTING TO `τ`, CREATING NO RAMIFICATION AND MEETING
+INERTIA TRIVIALLY** (sorry node, created 2026-07-27 — leaf (Y-3-a-i-1), and the
+ONLY place in this development where unramified extensions of `ℚ₃ᵥ` are needed).
+
+This is the cut RECOMMENDED by the previous owner of
+`exists_orderOf_restrictToLEHom_eq_of_mem_inertia`, taken verbatim: it states
+the `M`/`ρ` half of the twist and leaves the fixed field `E` to be DERIVED, so
+that "unramified extensions exist" and "relative-inertia bookkeeping" stop being
+entangled in one leaf.
+
+THE CONSTRUCTION, elementary and using no analysis whatsoever.  Let
+`n := ord(τ)` (a power of `3`), let `f_L` be the residue degree of `L/ℚ₃ᵥ`, let
+`U/ℚ₃ᵥ` be the UNRAMIFIED extension of degree `f_L·n` inside `ℚ₃ᵥᵃˡᵍ`, and put
+`M := L·U`.
+
+* `L ∩ U` is the maximal unramified subextension `ℚ₃ᵥ_{f_L}` of `L` (it is
+  contained in `U` because `f_L ∣ f_L·n`).  `τ` is trivial there because `τ` lies
+  in INERTIA — this is the ONLY use of `hτ` — and `Frob_U^{f_L}` is trivial there
+  because `Frob` has order `f_L` on `ℚ₃ᵥ_{f_L}`.  `L` and `U` being Galois over
+  `ℚ₃ᵥ`, `Gal(M/ℚ₃ᵥ)` is the fibre product of `Gal(L/ℚ₃ᵥ)` and `Gal(U/ℚ₃ᵥ)` over
+  `Gal(L ∩ U/ℚ₃ᵥ)`, so the pair patches to `ρ` with `ρ|_L = τ`,
+  `ρ|_U = Frob^{f_L}`.
+* `U/ℚ₃ᵥ` unramified makes `M/L` unramified, so `#G_0(M) = #G_0(L)`, which is the
+  second conclusion (`span_three_eq_maximalIdeal_pow_card_inertia` then turns it
+  into `v_M(3) = v_L(3) = g₀` at the consumer).
+* `ρ^i` lies in the inertia group of `M/ℚ₃ᵥ` iff `ρ^i|_U = 1` (`U` is inside the
+  maximal unramified subextension of `M`), i.e. iff `f_L·n ∣ f_L·i`, i.e. iff
+  `n ∣ i`, i.e. iff `ρ^i = 1`.  So `⟨ρ⟩` meets inertia TRIVIALLY, which is the
+  whole point of taking `U` unramified rather than tame, and is the third
+  conclusion.
+
+WHAT IS MISSING, and it is ordinary local field theory: (a) the unramified
+extension of `ℚ₃ᵥ` of a prescribed degree inside `ℚ₃ᵥᵃˡᵍ`, together with the
+fact that its Galois group is cyclic generated by Frobenius — concretely one may
+take `U = ℚ₃ᵥ(ζ_{3^d − 1})`, so this is Kummer/cyclotomic theory over a complete
+discretely valued field, NOT in the pin (`grep IsUnramified` in mathlib returns
+only the formally-unramified `Algebra` API, and `~/cs/FLT` has nothing for local
+base fields); (b) the maximal-unramified-subextension bookkeeping that identifies
+`L ∩ U`, `ord(ρ)` and the inertia intersection.  Neukirch, *Algebraic Number
+Theory*, II §7 and II §9 is the standard reference.  NOTE that (c) of the old
+combined docstring — the transfer of relative ramification statements to
+intermediate fields of `ℚ₃ᵥᵃˡᵍ` — is NO LONGER PART OF THIS LEAF; it is
+`span_three_unramifiedTwistFixedField_eq` below.
+
+FAITHFULNESS.  Not vacuous, and none of the three conclusions is free: `ρ = 1`
+satisfies the last two but fails the first whenever `τ ≠ 1`, while `M = L`,
+`ρ = τ` satisfies the first two but fails the third whenever `τ ≠ 1` lies in
+inertia — which is exactly the situation the consumer is in.  `hτ` is genuinely
+needed: for `τ` a Frobenius lift it is false that `τ` is trivial on `L ∩ U`. -/
+theorem exists_restrictToLEHom_eq_of_zpowers_inf_inertia_eq_bot
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
+    (τ : L ≃ₐ[ℚ₃ᵥ] L)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) :
+    ∃ (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ M)
+      (_ : IsGalois ℚ₃ᵥ M) (hLM : L ≤ M) (ρ : M ≃ₐ[ℚ₃ᵥ] M),
+      restrictToLEHom L M hLM ρ = τ ∧
+      Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) =
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ∧
+      Subgroup.zpowers ρ ⊓ (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M) = ⊥ := by
+  sorry
+
+/-- **THE FIXED FIELD `M^{⟨ρ⟩}`, AS A SUBEXTENSION OF `ℚ₃ᵥᵃˡᵍ`** (created
+2026-07-27).  `IntermediateField.fixedField` produces an intermediate field of
+`ℚ₃ᵥᵃˡᵍ/↥M`; pushing it forward along `M.val` puts it where the rest of this
+development lives, namely among the subextensions of `ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ`.  Naming it
+is what lets the two remaining halves of the twist — the ramification statement
+and the invariant-ring statement — be stated and attacked SEPARATELY instead of
+under one existential. -/
+noncomputable def unramifiedTwistFixedField
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (ρ : M ≃ₐ[ℚ₃ᵥ] M) :
+    IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ :=
+  (IntermediateField.fixedField (Subgroup.zpowers ρ)).map M.val
+
+/-- **`M^{⟨ρ⟩} ≤ M`** (PROVEN 2026-07-27): every element of the pushforward is
+`M.val w` for some `w : ↥M`, hence lies in `M` by `w.2`. -/
+theorem unramifiedTwistFixedField_le
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (ρ : M ≃ₐ[ℚ₃ᵥ] M) :
+    unramifiedTwistFixedField M ρ ≤ M := by
+  rintro x ⟨y, -, rfl⟩
+  exact y.2
+
+/-- **`M^{⟨ρ⟩}` IS FINITE OVER `ℚ₃ᵥ`** (PROVEN 2026-07-27): it is
+`IntermediateField.equivMap`-isomorphic to the fixed field inside `↥M`, which is
+finite over `ℚ₃ᵥ` because `↥M` is. -/
+instance finiteDimensional_unramifiedTwistFixedField
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M] (ρ : M ≃ₐ[ℚ₃ᵥ] M) :
+    FiniteDimensional ℚ₃ᵥ (unramifiedTwistFixedField M ρ) :=
+  ((IntermediateField.fixedField (Subgroup.zpowers ρ)).equivMap
+    M.val).toLinearEquiv.finiteDimensional
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`M/M^{⟨ρ⟩}` CREATES NO RAMIFICATION** (sorry node, created 2026-07-27 —
+leaf (Y-3-a-i-2), the REIFIED RELATIVE-INERTIA BOOKKEEPING half of the
+unramified twist, and the ONLY thing left in that half).
+
+WHAT IT ASSERTS.  If `⟨ρ⟩` meets the inertia group of `M/ℚ₃ᵥ` trivially then
+`E := M^{⟨ρ⟩}` has the SAME `v(3)` as `M`, namely `#G_0(M)`.
+
+THE INTENDED PROOF, which is pure bookkeeping over lemmas already in this file.
+Write `M' := IntermediateField.fixedField (Subgroup.zpowers ρ)`, an intermediate
+field of `ℚ₃ᵥᵃˡᵍ/↥M`, so that `E = M'.map M.val` BY DEFINITION.
+1. `IntermediateField.fixingSubgroup_fixedField` (which needs
+   `FiniteDimensional ℚ₃ᵥ ↥M`, available) gives
+   `M'.fixingSubgroup = Subgroup.zpowers ρ`, so the hypothesis `hρ` says exactly
+   `G_0(M) ⊓ M'.fixingSubgroup = ⊥`, whose cardinality is `1`.
+2. `map_maximalIdeal_eq_maximalIdeal_pow_card_inertia_inf M M'` therefore reads
+   `𝔪_{M'}·𝒪_M = 𝔪_M^1 = 𝔪_M`: the extension `M/M'` is unramified.
+3. `span_three_eq_maximalIdeal_pow_card_inertia M` gives
+   `(3)·𝒪_M = 𝔪_M^{#G_0(M)}`.  The ideal `(3)` of the DVR `𝒪_{M'}` is
+   `𝔪_{M'}^c` for a unique `c` (`exists_maximalIdeal_pow_eq_of_principal`), and
+   extending it to `𝒪_M` gives `𝔪_M^c` by step 2, so `c = #G_0(M)` by
+   `maximalIdeal_pow_le_pow_iff` in both directions.
+4. Finally transport along `reifyEquiv`: `reifySubextension E M` is `M'`
+   (`IntermediateField.comap M.val (M'.map M.val) = M'`, because `M.val` is
+   injective), so `reifyEquiv` is an `ℚ₃ᵥ`-isomorphism `↥M' ≃ₐ ↥E` and carries
+   `𝒪_{M'}` to `𝒪_E`, `3` to `3` and `𝔪_{M'}` to `𝔪_E`.
+
+WHAT IS MISSING is step 4 only, as an API: this file states its relative
+ramification results exclusively in the REIFIED form
+(`M' : IntermediateField ℚ₃ᵥ ↥M`), and has no lemma transporting an ideal
+statement about `IntegralClosure 𝒪₃ᵥ ↥M'` along an `ℚ₃ᵥ`-algebra equivalence to
+`IntegralClosure 𝒪₃ᵥ ↥E`.  Writing that transport (the ring equivalence of
+integral closures induced by an `AlgEquiv` of the ambient fields, and its
+compatibility with `IsLocalRing.maximalIdeal`) is the whole job; steps 1–3 are
+one-liners over existing lemmas.  It is the exact analogue, for IDEALS, of what
+`restrictToLEHom` and `autCongr_mem_inertia` already do for AUTOMORPHISMS.
+
+FAITHFULNESS.  Not vacuous and `hρ` is essential: for `ρ = 1` the fixed field is
+`M` itself and the statement is `span_three_eq_maximalIdeal_pow_card_inertia`,
+while for `ρ` a nontrivial element OF inertia (which `hρ` excludes) the
+conclusion is FALSE — `E` is then a proper subfield with
+`e(E/ℚ₃ᵥ) = #G_0(M)/ord(ρ) < #G_0(M)`, e.g. `M = ℚ₃(ζ₉)`, `ρ` of order `3` in
+`G_0`, where `#G_0(M) = 6` but `v_E(3) = 2`. -/
+theorem span_three_unramifiedTwistFixedField_eq
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ M]
+    (ρ : M ≃ₐ[ℚ₃ᵥ] M)
+    (hρ : Subgroup.zpowers ρ ⊓ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M) = ⊥) :
+    Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ (unramifiedTwistFixedField M ρ))} =
+      IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ (unramifiedTwistFixedField M ρ)) ^
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`𝒪_{M^{⟨ρ⟩}}` IS EXACTLY THE `ρ`-INVARIANT SUBRING OF `𝒪_M`** (PROVEN
+2026-07-27 — the second half of the fixed-field derivation, and the one that
+turned out to need NO ramification theory at all once the fixed field was named
+rather than existentially quantified).
+
+PROOF, both directions elementary once `E` is spelled out as
+`(fixedField ⟨ρ⟩).map M.val`.
+* (⟸) An element of `𝒪_E` has ambient value `M.val w` for a `w : ↥M` fixed by
+  every element of `⟨ρ⟩`; its image in `𝒪_M` IS `w` (same value in `ℚ₃ᵥᵃˡᵍ`,
+  `integralClosureLE_val` being a `rfl`), and `ρ` fixes it because
+  `ρ ∈ Subgroup.zpowers ρ`.
+* (⟹) If `ρ • y = y` then `y.1 : ↥M` is `ρ`-fixed, so `Subgroup.zpowers ρ` sits
+  inside `MulAction.stabilizer _ y.1` (`Subgroup.zpowers_le`) and hence every
+  element of `⟨ρ⟩` fixes it: `y.1 ∈ fixedField ⟨ρ⟩`, so its ambient value lies
+  in `E`.  Integrality over `𝒪₃ᵥ` descends along the injection `↥E ↪ ↥M`
+  (`isIntegral_algHom_iff`), which produces the required `z : 𝒪_E`, and
+  `integralClosureLE E M _ z = y` because the two agree on ambient values.
+
+NOTE FOR THE DERIVATION AT LARGE: this is where the old combined leaf's `hfix`
+clause came from, and it consumes NEITHER `hρ` NOR any hypothesis about
+ramification — the invariants of `𝒪_M` are the integral closure in the fixed
+field for *every* `ρ`. -/
+theorem smul_eq_iff_exists_integralClosureLE_unramifiedTwistFixedField
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ M]
+    (ρ : M ≃ₐ[ℚ₃ᵥ] M) (y : IntegralClosure 𝒪₃ᵥ M) :
+    ρ • y = y ↔ ∃ z : IntegralClosure 𝒪₃ᵥ (unramifiedTwistFixedField M ρ),
+      integralClosureLE _ M (unramifiedTwistFixedField_le M ρ) z = y := by
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ ↥M := IsScalarTower.of_algebraMap_eq' rfl
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ ↥(unramifiedTwistFixedField M ρ) :=
+    IsScalarTower.of_algebraMap_eq' rfl
+  set hEM := unramifiedTwistFixedField_le M ρ with hEMdef
+  constructor
+  · intro hy
+    have hstab : (y.1 : ↥M) ∈ IntermediateField.fixedField (Subgroup.zpowers ρ) := by
+      have h1 : ρ • (y.1 : ↥M) = (y.1 : ↥M) := by
+        have h2 := congrArg Subtype.val hy
+        rwa [IntegralClosure.coe_smul] at h2
+      have hle : Subgroup.zpowers ρ ≤
+          MulAction.stabilizer (M ≃ₐ[ℚ₃ᵥ] M) (y.1 : ↥M) :=
+        Subgroup.zpowers_le.mpr h1
+      refine (IntermediateField.mem_fixedField_iff _ _).mpr fun f hf => ?_
+      have hfs := hle hf
+      rw [MulAction.mem_stabilizer_iff] at hfs
+      exact hfs
+    have hmemE : ((y.1 : ↥M) : ℚ₃ᵥᵃˡᵍ) ∈ unramifiedTwistFixedField M ρ :=
+      ⟨(y.1 : ↥M), hstab, rfl⟩
+    have hincl : ((IntermediateField.inclusion hEM).restrictScalars 𝒪₃ᵥ)
+        (⟨((y.1 : ↥M) : ℚ₃ᵥᵃˡᵍ), hmemE⟩ :
+          ↥(unramifiedTwistFixedField M ρ)) = (y.1 : ↥M) := rfl
+    have hint : IsIntegral 𝒪₃ᵥ (⟨((y.1 : ↥M) : ℚ₃ᵥᵃˡᵍ), hmemE⟩ :
+        ↥(unramifiedTwistFixedField M ρ)) := by
+      refine (isIntegral_algHom_iff ((IntermediateField.inclusion hEM).restrictScalars 𝒪₃ᵥ)
+        (IntermediateField.inclusion hEM).injective).mp ?_
+      rw [hincl]
+      exact y.2
+    exact ⟨⟨⟨((y.1 : ↥M) : ℚ₃ᵥᵃˡᵍ), hmemE⟩, hint⟩, Subtype.ext (Subtype.ext rfl)⟩
+  · rintro ⟨z, rfl⟩
+    obtain ⟨w, hw, hwval⟩ := (z.1).2
+    refine Subtype.ext ?_
+    rw [IntegralClosure.coe_smul]
+    have hval : (integralClosureLE _ M hEM z).1 = w := Subtype.ext hwval.symm
+    rw [hval]
+    exact (IntermediateField.mem_fixedField_iff _ _).mp hw ρ (Subgroup.mem_zpowers ρ)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
 /-- **THE UNRAMIFIED TWIST OF `τ`: A FINITE `M ⊇ L` AND A `ρ ∈ Gal(M/ℚ₃ᵥ)`
 RESTRICTING TO `τ`, WHOSE FIXED FIELD `E` CONTAINS NO RAMIFICATION AND NO `L`**
 (sorry node, created 2026-07-27 — leaf (Y-3-a-i), the pure field theory of
@@ -13402,32 +13668,46 @@ The four conclusions then read off, with `E := M^{⟨ρ⟩}`:
 * `hfix`: `𝒪_E` is the integral closure of `𝒪₃ᵥ` in `E = M^{⟨ρ⟩}`, hence exactly
   the `ρ`-fixed subring of `𝒪_M`.
 
-WHAT IS MISSING, and it is ordinary local field theory with nothing
-Fontaine-specific in it: (a) the unramified extension of `ℚ₃ᵥ` of a prescribed
-degree inside `ℚ₃ᵥᵃˡᵍ`, together with the fact that its Galois group is cyclic
-generated by Frobenius — concretely one may take `U = ℚ₃ᵥ(ζ_{3^d − 1})`, so this
-is Kummer/cyclotomic theory over a complete discretely valued field, NOT in the
-pin (`grep IsUnramified` in mathlib returns only the formally-unramified
-`Algebra` API, and `~/cs/FLT` has nothing for local base fields); (b) the
-maximal-unramified-subextension bookkeeping that identifies `L ∩ U`, `ord(ρ)`
-and the inertia intersection; (c) the transfer of the relative ramification
-statements to intermediate fields of `ℚ₃ᵥᵃˡᵍ` — this file has them only in
-REIFIED form for `M' : IntermediateField ℚ₃ᵥ ↥L`, so the
-`reifySubextension`/`reifyEquiv` plumbing that `restrictToLEHom` already
-performs for automorphisms is what is wanted.  Neukirch, *Algebraic Number
-Theory*, II §7 and II §9 is the standard reference.
-
-RECOMMENDED NEXT CUT, if this is still too large: split off the pure
-Galois-theoretic tail, i.e. state `∃ M ρ`, `L ≤ M`, `restrictToLEHom L M _ ρ = τ`,
-`v_M(3) = g₀` and `⟨ρ⟩ ∩ I(M/ℚ₃ᵥ) = ⊥`, and DERIVE `E` from it as the fixed
-field.  The derivation is bookkeeping, but it is bookkeeping over the reified
-inertia lemmas above rather than over unramified extensions, so it separates the
-two missing theories cleanly.
-
 FAITHFULNESS.  Not vacuous: `¬(L ≤ E)` fails for every `E ⊇ L`, and the
 conjunction of `v_E(3) = v_M(3) = v_L(3)` with `restrictToLEHom L M _ ρ = τ` and
 `orderOf ρ = n` pins a genuine unramified twist — for `E = ℚ₃ᵥ` and `L = ℚ₃(ζ₉)`
-the `v_E(3) = g₀ = 6` clause already fails. -/
+the `v_E(3) = g₀ = 6` clause already fails.
+
+**DECOMPOSED 2026-07-27 (third owner).  THIS IS NO LONGER A LEAF**: the body
+below is complete glue, and the RECOMMENDED NEXT CUT recorded here by the second
+owner was taken verbatim — state `∃ M ρ` with `restrictToLEHom L M _ ρ = τ`,
+`v_M(3) = g₀` and `⟨ρ⟩ ∩ I(M/ℚ₃ᵥ) = ⊥`, then DERIVE `E` as the fixed field.
+Nothing about it needed correcting.  Two things did improve on it:
+
+* the `v_M(3) = g₀` clause is carried as the CARDINALITY identity
+  `#G_0(M) = #G_0(L)` rather than as the span equation, so that
+  `span_three_eq_maximalIdeal_pow_card_inertia` produces both span clauses in
+  the glue and neither leaf has to restate them;
+* the fixed field is NAMED (`unramifiedTwistFixedField`) instead of being
+  existentially quantified, which splits the "derive `E`" half further into a
+  ramification statement and an invariant-ring statement — and the second of
+  those then turned out to be provable outright, needing no ramification theory.
+
+So what is left of this node is exactly two open declarations, each carrying one
+of the two theories that used to be entangled here:
+
+* `exists_restrictToLEHom_eq_of_zpowers_inf_inertia_eq_bot` (SORRY) —
+  UNRAMIFIED EXTENSIONS EXIST: `U/ℚ₃ᵥ` unramified of degree `f_L·n`, `M = L·U`,
+  `ρ = (τ, Frob^{f_L})`.
+* `span_three_unramifiedTwistFixedField_eq` (SORRY) — REIFIED RELATIVE-INERTIA
+  BOOKKEEPING: `⟨ρ⟩ ∩ I = ⊥` makes `M/M^{⟨ρ⟩}` unramified, transported from the
+  file's reified form to a subextension of `ℚ₃ᵥᵃˡᵍ`.
+
+and three proven ones: `eq_one_of_forall_smul_eq`,
+`smul_eq_iff_exists_integralClosureLE_unramifiedTwistFixedField`, and the
+`unramifiedTwistFixedField` package itself.
+
+The glue's own content is the `¬(L ≤ E)` clause, which is where `hτ1` is
+consumed and which needs neither leaf: if `L ≤ E` then every `y : 𝒪_L` maps into
+`𝒪_E` (`integralClosureLE` composes definitionally), so `hfix` makes its image
+in `𝒪_M` `ρ`-fixed; `smul_integralClosureLE` turns that into
+`ι(τ • y) = ι(y)`, injectivity of `ι` into `τ • y = y` for every `y`, and
+`eq_one_of_forall_smul_eq` into `τ = 1`. -/
 theorem exists_orderOf_restrictToLEHom_eq_of_mem_inertia
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
     (τ : L ≃ₐ[ℚ₃ᵥ] L) (hτ1 : τ ≠ 1)
@@ -13450,7 +13730,30 @@ theorem exists_orderOf_restrictToLEHom_eq_of_mem_inertia
       (∀ y : IntegralClosure 𝒪₃ᵥ M,
         ρ • y = y ↔ ∃ z : IntegralClosure 𝒪₃ᵥ E,
           integralClosureLE E M hEM z = y) := by
-  sorry
+  classical
+  -- STEP 1: the unramified twist itself
+  obtain ⟨M, hMfd, hMgal, hLM, ρ, hρτ, hcard, hρbot⟩ :=
+    exists_restrictToLEHom_eq_of_zpowers_inf_inertia_eq_bot L τ hτ
+  haveI := hMfd
+  haveI := hMgal
+  -- STEP 2: `E` is the fixed field of `⟨ρ⟩`
+  set E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ := unramifiedTwistFixedField M ρ with hEdef
+  have hEM : E ≤ M := unramifiedTwistFixedField_le M ρ
+  have hE3 := span_three_unramifiedTwistFixedField_eq M ρ hρbot
+  have hfix := smul_eq_iff_exists_integralClosureLE_unramifiedTwistFixedField M ρ
+  refine ⟨M, E, hMfd, inferInstance, hLM, hEM, ρ, orderOf ρ, ?_, ?_, ?_, hρτ, ?_, rfl, hfix⟩
+  · -- STEP 3: `L ≤ E` would make `τ` fix every integral point of `L`
+    intro hLE
+    refine hτ1 (eq_one_of_forall_smul_eq L τ fun y => ?_)
+    have hz : integralClosureLE E M hEM (integralClosureLE L E hLE y)
+        = integralClosureLE L M hLM y := rfl
+    have h1 : ρ • integralClosureLE L M hLM y = integralClosureLE L M hLM y :=
+      (hfix _).mpr ⟨integralClosureLE L E hLE y, hz⟩
+    rw [smul_integralClosureLE L M hLM ρ y, hρτ] at h1
+    exact integralClosureLE_injective L M hLM h1
+  · rw [span_three_eq_maximalIdeal_pow_card_inertia M, hcard]
+  · rw [hE3, hcard]
+  · exact orderOf_pos ρ
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -13501,9 +13804,14 @@ below is complete glue over the four declarations of the "unramified twist"
 block above, of which TWO ARE PROVEN and two remain open.  The route recorded
 above was implemented verbatim; nothing about it needed correcting.
 
-* `exists_orderOf_restrictToLEHom_eq_of_mem_inertia` (SORRY) — the pure field
-  theory: `M`, `E`, `ρ` and `n = ord(τ)`.  All the unramified-extension theory
-  the route needs lives there and nowhere else.
+* `exists_orderOf_restrictToLEHom_eq_of_mem_inertia` (**PROVEN 2026-07-27**, one
+  cycle after it was cut) — the pure field theory: `M`, `E`, `ρ` and
+  `n = ord(τ)`.  It was itself decomposed along the cut its own docstring
+  recommended, into `exists_restrictToLEHom_eq_of_zpowers_inf_inertia_eq_bot`
+  (SORRY — unramified extensions exist) and
+  `span_three_unramifiedTwistFixedField_eq` (SORRY — `M/M^{⟨ρ⟩}` creates no
+  ramification), with the fixed field named and its invariant-ring clause
+  proven outright.
 * `exists_sum_range_smul_eq_one_of_span_three_eq` (PROVEN) — trace surjectivity,
   over the single residue-level statement
   `exists_sum_range_smul_notMem_maximalIdeal` (SORRY).  The Nakayama half is
