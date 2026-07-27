@@ -34844,20 +34844,248 @@ theorem exists_characters_of_reducible_charFrob {M : ℕ} (hM : 0 < M)
               = (q : AlgebraicClosure ℚ_[p]) :=
   sorry
 
-/-- **No pair of continuous characters of `Γℚ` carries a newform's
-Frobenius invariants** (sorry leaf, ELEVENTH decomposition 2026-07-27,
-cut out of `irred_eigenspace_modularTateSpace` below): there are no
-continuous nowhere-vanishing multiplicative `δ₁, δ₂ : Γℚ → ℚ̄_p` with
-`δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q` for
-every prime `q ∉ S`, given the Weil bound `|a_q| ≤ 2√q`.
+/-- **Serre type A₀ for the two Frobenius characters** (sorry leaf,
+TWELFTH decomposition 2026-07-27, cut out of
+`not_exists_characters_charFrob_weilBound` below): the classification
+step, and **the only genuinely missing content of that leaf**. From a
+pair of continuous nowhere-vanishing multiplicative `δ₁, δ₂ : Γℚ → ℚ̄_p`
+with `δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q`
+off `S`, produce ONE prime `q ≥ 6` at which the Frobenius value is a
+root of unity times an integral power of `q`.
 
-**THIS IS THE GENUINELY MISSING HALF** — step 6 of the Ribet argument,
-and the NINTH/TENTH decomposition's own docstring below says a
-successor should attack it there rather than at the whole statement.
-Nothing in this statement mentions a module, a Hecke algebra or a
-modular curve: it is a statement about characters of `Γℚ`, and `g`/`κ`
-appear only to name the number field `heckeField M g` in which the
-traces live and to carry the archimedean bound.
+THE NORMALISATION IN THE CONCLUSION, and why it is the convenient one.
+Serre's classification delivers `δ₁(Frob_q) = ζ₁ q^n`,
+`δ₂(Frob_q) = ζ₂ q^(1−n)` with `n : ℤ` and `ζᵢ` roots of unity (and
+`ζ₁ζ₂ = 1`, forced by `δ₁δ₂(Frob_q) = q`). Both `n` and `1 − n` cannot
+be `≤ 0`, so after swapping `δ₁ ↔ δ₂` we may assume the larger exponent
+is `n = j + 1` with `j : ℕ`; multiplying by `q^j` clears the negative
+power and gives the shape below, with **no `zpow` and no `ℕ`-subtraction**:
+`κ(a_q)·q^j = ζ₁·q^(2j+1) + ζ₂`. That is a purely cosmetic packaging of
+`a_q = ζ₁q^n + ζ₂q^(1−n)`, chosen so the two consumers below are
+elementary.
+
+THE ROUTE. By Chebotarev density (`dense_conjClasses_globalFrob`, PROVEN
+in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) and continuity,
+`δ₁δ₂` IS the `p`-adic cyclotomic character, since the two agree at
+every `Frob_q` with `q ∉ S`. The classification of each `δᵢ` then needs
+Serre, *Abelian ℓ-adic Representations and Elliptic Curves*, Ch. III
+§§1–3 (type `A₀`): continuity alone does NOT suffice — `⟨χ_cyc⟩^s` for
+`s ∈ ℤ_p ∖ ℤ` is continuous, unramified outside `{p}`, and neither
+finite-order nor an integral power. The extra input is ALGEBRAICITY of
+the Frobenius values: `δ₁(Frob_q)`, `δ₂(Frob_q)` are the two roots of
+`X² − κ(a_q)X + q`, whose coefficients come from the number field
+`heckeField M g`. Hodge–Tate-ness, Ribet's own route, is deliberately
+NOT available here.
+
+**THE RAMIFICATION OBSTRUCTION RECORDED ON THE CONSUMER IS RESOLVED —
+FINITENESS IS AUTOMATIC, AND NOTHING NEED BE ADDED ONE LEVEL UP**
+(2026-07-27). The consumer's docstring asked whether Serre's
+classification is even applicable, since neither it nor
+`irred_eigenspace_modularTateSpace` supplies any unramifiedness
+hypothesis on `τJ`, and Serre is normally quoted for characters
+unramified outside a finite set. It IS applicable: **every continuous
+homomorphism `δ : Γℚ → ℚ̄_pˣ` is unramified outside a finite set of
+primes.** The usual no-small-subgroups argument is indeed unavailable —
+`ℚ̄_pˣ` really does have arbitrarily small subgroups, `1 + 𝔪_{>c}` for
+every `c > 0` — but a refinement of it works, because those small
+subgroups are TORSION-FREE:
+
+1. Put `V := {x : ‖x − 1‖ < p^(−1/(p−1))}`. Ultrametrically `V` is an
+   open subgroup of `ℚ̄_pˣ`, and it is **torsion-free**: a root of unity
+   of order prime to `p` has `‖ζ − 1‖ = 1`, and one of order `p^k` has
+   `‖ζ − 1‖ = p^(−1/(p^(k−1)(p−1))) ≥ p^(−1/(p−1))`, so neither lies in `V`.
+2. `δ⁻¹(V)` is then an open subgroup of `Γℚ`, hence `Gal(ℚ̄/L)` for a
+   FINITE extension `L/ℚ`. For every `ℓ` unramified in `L`, inertia
+   `I_ℓ ⊆ Gal(ℚ̄/L)`, so `δ(I_ℓ) ⊆ V`.
+3. Wild inertia `P_ℓ` is pro-`ℓ`; and for `ℓ ≠ p`, `x ∈ V` gives
+   `‖x^ℓ − 1‖ = ‖x − 1‖` exactly (the binomial's `k = 1` term has
+   `‖ℓ‖ = 1` and dominates), so `x^(ℓ^n) ↛ 1` unless `x = 1`. Hence
+   `δ(P_ℓ) = 1`.
+4. On TAME inertia the Frobenius relation `Frob·t·Frob⁻¹ = t^ℓ` plus
+   commutativity of the target gives `δ(t)^ℓ = δ(t)`, i.e.
+   `δ(t)^(ℓ−1) = 1`; `V` is torsion-free, so `δ(t) = 1`.
+5. So `δ` is unramified outside the finite set (primes ramified in `L`)
+   `∪ {p}`. ∎
+
+Note step 4 uses only that a character kills commutators — **no local
+class field theory is needed**, which is why the argument is available
+on this pin. **The check that would refute this**: exhibit a continuous
+`δ : Γℚ → ℚ̄_pˣ` and infinitely many `ℓ` with `δ(I_ℓ) ≠ 1`; by the above
+this forces a nontrivial torsion element of `V`, i.e. a root of unity
+`ζ ≠ 1` with `‖ζ − 1‖ < p^(−1/(p−1))`, contradicting the standard
+valuations of `ζ_{p^k} − 1`. Consequently **the repair contemplated on
+the consumer — pushing a ramification hypothesis up onto `τJ` — is
+unnecessary, and should not be done**: it would add a hypothesis that
+is automatically satisfied, at the cost of a wider cut. -/
+theorem exists_frobValue_eq_rootOfUnity_mul_pow {M : ℕ} (hM : 0 < M)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (δ₁ δ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hδ₁cont : Continuous δ₁) (hδ₂cont : Continuous δ₂)
+    (hδ₁ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ ≠ 0)
+    (hδ₂ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₂ γ ≠ 0)
+    (hδ₁mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₁ (γ * γ') = δ₁ γ * δ₁ γ')
+    (hδ₂mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₂ (γ * γ') = δ₂ γ * δ₂ γ')
+    (hfrob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = κ (heckeCoeff M g q) ∧
+        δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = (q : AlgebraicClosure ℚ_[p])) :
+    ∃ (q : ℕ) (_ : q.Prime), 6 ≤ q ∧
+      ∃ (j m : ℕ) (ζ₁ ζ₂ : AlgebraicClosure ℚ_[p]), 0 < m ∧ ζ₁ ^ m = 1 ∧ ζ₂ ^ m = 1 ∧
+        κ (heckeCoeff M g q) * (q : AlgebraicClosure ℚ_[p]) ^ j
+          = ζ₁ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) + ζ₂ :=
+  sorry
+
+/-- **Transfer of an algebraic Frobenius identity from `ℚ̄_p` to `ℂ`**
+(PROVEN 2026-07-27, TWELFTH decomposition): if a Hecke coefficient `a`
+satisfies `κ(a)·c^j = ζ₁c^(2j+1) + ζ₂` in `ℚ̄_p` with `ζᵢ` roots of
+unity, then the SAME identity holds in `ℂ` between `a`'s own complex
+value and two complex numbers of modulus one.
+
+WHY THIS IS NOT AUTOMATIC, and the one subtlety in the proof. The Weil
+bound is archimedean and lives at the tautological inclusion
+`heckeField M g ⊆ ℂ`, whereas the identity is produced `p`-adically
+through `κ`. A bare embedding of the coefficient field into `ℂ` would
+send `κ(a)` to SOME conjugate of `a`, which is not what the bound
+constrains; that is precisely the gap the `∀ g'` shape of the ambient
+Weil hypothesis exists to paper over. Here it is closed exactly
+instead: `ζ₁, ζ₂` are integral over `heckeField M g` (roots of
+`X^m − 1`), so the whole identity already lives in the integral closure
+`A` of `heckeField M g` inside `ℚ̄_p`, which is ALGEBRAIC over it. Since
+`ℂ` is algebraically closed, `IsAlgClosed.lift` supplies a
+`heckeField M g`-ALGEBRA map `σ : A →ₐ ℂ` — and being an algebra map
+over the coefficient field, `σ` fixes `a`, i.e. `σ(κ a) = (a : ℂ)` on
+the nose rather than up to conjugacy. The `ζᵢ` go to roots of unity,
+hence to complex numbers of modulus one. Note this uses NOTHING about
+`heckeField M g` being finite over `ℚ`, so it does not consume the
+still-open `heckeField_finiteDimensional`. -/
+theorem exists_complex_of_heckeCoeff_eq_rootOfUnity_mul_pow
+    {M : ℕ} (g : CuspForm (Gamma0GL M) 2)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (a : heckeField M g) (c j m : ℕ) (hm : 0 < m)
+    (ζ₁ ζ₂ : AlgebraicClosure ℚ_[p]) (hζ₁ : ζ₁ ^ m = 1) (hζ₂ : ζ₂ ^ m = 1)
+    (h : κ a * (c : AlgebraicClosure ℚ_[p]) ^ j
+        = ζ₁ * (c : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) + ζ₂) :
+    ∃ w₁ w₂ : ℂ, ‖w₁‖ = 1 ∧ ‖w₂‖ = 1 ∧
+      (a : ℂ) * (c : ℂ) ^ j = w₁ * (c : ℂ) ^ (2 * j + 1) + w₂ := by
+  classical
+  letI : Algebra (heckeField M g) (AlgebraicClosure ℚ_[p]) := κ.toAlgebra
+  have hIntOfPow : ∀ z : AlgebraicClosure ℚ_[p], z ^ m = 1 →
+      IsIntegral (heckeField M g) z := by
+    intro z hz
+    exact ⟨Polynomial.X ^ m - Polynomial.C 1, Polynomial.monic_X_pow_sub_C 1 hm.ne',
+      by simp [hz]⟩
+  set A := integralClosure (heckeField M g) (AlgebraicClosure ℚ_[p])
+  have hmem₁ : ζ₁ ∈ A := hIntOfPow ζ₁ hζ₁
+  have hmem₂ : ζ₂ ∈ A := hIntOfPow ζ₂ hζ₂
+  haveI : Algebra.IsAlgebraic (heckeField M g) A := inferInstance
+  let σ : A →ₐ[heckeField M g] ℂ := IsAlgClosed.lift
+  refine ⟨σ ⟨ζ₁, hmem₁⟩, σ ⟨ζ₂, hmem₂⟩, ?_, ?_, ?_⟩
+  · refine Complex.norm_eq_one_of_pow_eq_one (n := m) ?_ hm.ne'
+    rw [← map_pow]
+    have : (⟨ζ₁, hmem₁⟩ : A) ^ m = 1 := Subtype.ext (by simpa using hζ₁)
+    rw [this, map_one]
+  · refine Complex.norm_eq_one_of_pow_eq_one (n := m) ?_ hm.ne'
+    rw [← map_pow]
+    have : (⟨ζ₂, hmem₂⟩ : A) ^ m = 1 := Subtype.ext (by simpa using hζ₂)
+    rw [this, map_one]
+  · have hAeq : (algebraMap (heckeField M g) A) a * (c : A) ^ j
+        = (⟨ζ₁, hmem₁⟩ : A) * (c : A) ^ (2 * j + 1) + ⟨ζ₂, hmem₂⟩ := by
+      apply Subtype.ext
+      push_cast
+      simpa [RingHom.algebraMap_toAlgebra] using h
+    have := congrArg σ hAeq
+    simpa [map_mul, map_add, map_pow, AlgHom.commutes] using this
+
+/-- **The archimedean contradiction** (PROVEN 2026-07-27, TWELFTH
+decomposition): a complex number `z` satisfying
+`z·q^j = w₁q^(2j+1) + w₂` with `‖w₁‖ = ‖w₂‖ = 1` and `q ≥ 6` violates
+the Weil bound `‖z‖ ≤ 2√q`.
+
+This is where the Weil bound actually bites, and it is elementary:
+`‖z‖·q^j = ‖w₁q^(2j+1) + w₂‖ ≥ q^(2j+1) − 1 ≥ q^j·q − q^j`, so
+`‖z‖ ≥ q − 1`, while `q − 1 > 2√q` exactly when `q² − 6q + 1 > 0`, i.e.
+`q > 3 + 2√2 ≈ 5.83`. **The threshold `6` is sharp** and is why the
+producing leaf must deliver a prime `q ≥ 6`: at `q = 5` the inequality
+reverses (`4 < 2√5 ≈ 4.47`). Since `q` is prime the effective case is
+`q ≥ 7`, with room to spare.
+
+Note what this rules out, and it is the reason the Weil bound is a
+hypothesis of the whole cluster rather than decoration: the EISENSTEIN
+shape `a_q = 1 + q` is exactly `δ₁ = 1`, `δ₂ = χ_cyc`, satisfies every
+Frobenius identity of the surrounding leaf, and is killed here and only
+here. -/
+theorem not_norm_le_two_mul_sqrt_of_eq_rootOfUnity_mul_pow
+    {q : ℕ} (hq6 : 6 ≤ q) (j : ℕ) (w₁ w₂ : ℂ) (hw₁ : ‖w₁‖ = 1) (hw₂ : ‖w₂‖ = 1)
+    (z : ℂ) (h : z * (q : ℂ) ^ j = w₁ * (q : ℂ) ^ (2 * j + 1) + w₂) :
+    ¬ ‖z‖ ≤ 2 * Real.sqrt q := by
+  intro hle
+  have hqR : (6 : ℝ) ≤ (q : ℝ) := by exact_mod_cast hq6
+  have hq0 : (0 : ℝ) < (q : ℝ) := by linarith
+  have hqj : (0 : ℝ) < (q : ℝ) ^ j := by positivity
+  have hnorm : ‖z‖ * (q : ℝ) ^ j = ‖w₁ * (q : ℂ) ^ (2 * j + 1) + w₂‖ := by
+    rw [← h, norm_mul, norm_pow, Complex.norm_natCast]
+  have hbig : ‖w₁ * (q : ℂ) ^ (2 * j + 1)‖ = (q : ℝ) ^ (2 * j + 1) := by
+    rw [norm_mul, hw₁, one_mul, norm_pow, Complex.norm_natCast]
+  have htri : ‖w₁ * (q : ℂ) ^ (2 * j + 1)‖
+      ≤ ‖w₁ * (q : ℂ) ^ (2 * j + 1) + w₂‖ + ‖w₂‖ := by
+    calc ‖w₁ * (q : ℂ) ^ (2 * j + 1)‖
+        = ‖(w₁ * (q : ℂ) ^ (2 * j + 1) + w₂) - w₂‖ := by rw [add_sub_cancel_right]
+      _ ≤ ‖w₁ * (q : ℂ) ^ (2 * j + 1) + w₂‖ + ‖w₂‖ := norm_sub_le _ _
+  have key : (q : ℝ) ^ (2 * j + 1) - 1 ≤ ‖z‖ * (q : ℝ) ^ j := by
+    rw [hnorm]; rw [hbig, hw₂] at htri; linarith
+  have hsplit : (q : ℝ) ^ (2 * j + 1) = (q : ℝ) ^ j * (q : ℝ) ^ (j + 1) := by
+    rw [← pow_add]; congr 1; ring
+  have hge : (q : ℝ) ≤ (q : ℝ) ^ (j + 1) := by
+    calc (q : ℝ) = (q : ℝ) ^ 1 := (pow_one _).symm
+      _ ≤ (q : ℝ) ^ (j + 1) := pow_le_pow_right₀ (by linarith) (by omega)
+  have hone : (1 : ℝ) ≤ (q : ℝ) ^ j := one_le_pow₀ (by linarith)
+  have hz1 : (q : ℝ) - 1 ≤ ‖z‖ := by nlinarith [key, hsplit, hge, hone, hqj]
+  have hs0 : 0 ≤ Real.sqrt (q : ℝ) := Real.sqrt_nonneg _
+  have hs2 : Real.sqrt (q : ℝ) ^ 2 = (q : ℝ) := Real.sq_sqrt hq0.le
+  nlinarith [hle, hz1, hs0, hs2, sq_nonneg (Real.sqrt (q : ℝ) - 5 / 2)]
+
+/-- **No pair of continuous characters of `Γℚ` carries a newform's
+Frobenius invariants** (PROVEN 2026-07-27 as glue over the TWELFTH
+decomposition's three leaves; was a sorry leaf of the ELEVENTH
+decomposition, cut out of `irred_eigenspace_modularTateSpace` below):
+there are no continuous nowhere-vanishing multiplicative
+`δ₁, δ₂ : Γℚ → ℚ̄_p` with `δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and
+`δ₁(Frob_q)·δ₂(Frob_q) = q` for every prime `q ∉ S`, given the Weil
+bound `|a_q| ≤ 2√q`.
+
+This was step 6 of the Ribet argument and the cluster's genuinely
+missing half. Nothing in the statement mentions a module, a Hecke
+algebra or a modular curve: it is a statement about characters of `Γℚ`,
+and `g`/`κ` appear only to name the number field `heckeField M g` in
+which the traces live and to carry the archimedean bound.
+
+**THE TWELFTH DECOMPOSITION (2026-07-27) — where the missing content now
+lives.** The leaf is proven here as three-line glue over three siblings
+declared immediately above, and the genuinely missing mathematics has
+been isolated into exactly ONE of them:
+
+* `exists_frobValue_eq_rootOfUnity_mul_pow` — **SORRIED, and the only
+  open content**: Serre type `A₀`, producing a prime `q ≥ 6` at which
+  `κ(a_q)·q^j = ζ₁q^(2j+1) + ζ₂` with `ζᵢ` roots of unity;
+* `exists_complex_of_heckeCoeff_eq_rootOfUnity_mul_pow` — **PROVEN**:
+  transfers that identity from `ℚ̄_p` to `ℂ` *at the tautological
+  embedding*, via the integral closure and `IsAlgClosed.lift`;
+* `not_norm_le_two_mul_sqrt_of_eq_rootOfUnity_mul_pow` — **PROVEN**: the
+  archimedean contradiction, `‖a_q‖ ≥ q − 1 > 2√q` for `q ≥ 6`.
+
+Two facts worth carrying forward, both established while cutting this.
+**(a)** The `∀ g'` quantifier in `hweil` is NOT needed — it exists to
+reach all archimedean conjugates of `a_q`, but the transfer leaf gets
+the tautological embedding exactly, so the bound for `g` itself
+suffices. **(b)** `heckeField_finiteDimensional` is NOT needed either:
+the transfer only needs `ζ₁, ζ₂` algebraic over the coefficient field,
+never the coefficient field algebraic over `ℚ`.
 
 THE ROUTE, and the trap the tenth decomposition already documented. By
 Chebotarev density (`dense_conjClasses_globalFrob`, PROVEN in
@@ -34880,32 +35108,34 @@ applies. Hodge–Tate-ness, the route Ribet himself takes, is NOT
 available — the surrounding cut deliberately hypothesizes no `p`-adic
 Hodge theory.
 
-**AN OBSTRUCTION TO CHECK FIRST, WITH THE CHECK THAT WOULD REFUTE IT**
-(2026-07-27, and it is why this leaf is stated with continuity but
-without any unramifiedness hypothesis). Serre's classification is
-normally quoted for a character unramified outside a FINITE set, and
-the surrounding leaf `irred_eigenspace_modularTateSpace` supplies **no
-unramifiedness hypothesis at all** — `τJ` is only assumed continuous,
-so no ramification bound propagates to `δ₁, δ₂`, not even outside `S`.
-Two possibilities, and a successor must settle which:
+**THE RAMIFICATION OBSTRUCTION IS SETTLED: THE FIRST HORN HOLDS, THE
+LEAF IS TRUE AS STATED, AND NO REPAIR IS OWED ONE LEVEL UP**
+(2026-07-27). The previous version of this docstring recorded that
+Serre's classification is normally quoted for characters unramified
+outside a FINITE set, that `irred_eigenspace_modularTateSpace` supplies
+**no unramifiedness hypothesis at all** on `τJ`, and that a successor
+must decide whether finiteness is automatic or whether this leaf is
+FALSE as stated. It is automatic:
 
-* finiteness of the ramification set is AUTOMATIC from continuity plus
-  compactness of `Γℚ`, in which case nothing is missing and this leaf
-  stands as stated. The check: does a continuous homomorphism
-  `Γℚ → ℚ̄_pˣ` necessarily have finite image on inertia at all but
-  finitely many `ℓ`? Note `ℚ̄_pˣ` DOES have arbitrarily small
-  subgroups (`1 + {v > c}` is one for every `c > 0`), so the usual
-  no-small-subgroups argument is NOT available and the question is a
-  real one;
-* or it is not automatic, in which case this leaf is FALSE as stated
-  and the repair belongs one level up: the consumer must be given a
-  ramification hypothesis on `τJ` (the classical inhabitant, the Tate
-  module of `J₀(M)`, is unramified outside `Mp`, so such a hypothesis
-  costs nothing and the surrounding cut survives).
+> **every continuous homomorphism `δ : Γℚ → ℚ̄_pˣ` is unramified
+> outside a finite set of primes.**
 
-Reporting a refutation with an explicit counterexample is a fully
-successful outcome for this leaf, and is worth strictly more than a
-proof of a repaired restatement made silently. -/
+The warning attached to the question was well founded — `ℚ̄_pˣ` really
+does have arbitrarily small subgroups, `1 + 𝔪_{>c}` for every `c > 0`,
+so the no-small-subgroups argument is genuinely unavailable — but the
+conclusion survives it, because those small subgroups are TORSION-FREE
+and that is enough. The proof is recorded in full on
+`exists_frobValue_eq_rootOfUnity_mul_pow` above; in one line: `δ⁻¹(V)`
+for `V := {‖x − 1‖ < p^(−1/(p−1))}` is open, hence cuts out a finite
+`L/ℚ`; wild inertia is pro-`ℓ` and dies because `‖x^ℓ − 1‖ = ‖x − 1‖`
+for `ℓ ≠ p`; tame inertia dies because `Frob·t·Frob⁻¹ = t^ℓ` forces
+`δ(t)^(ℓ−1) = 1` into a torsion-free group.
+
+**So do NOT add a ramification hypothesis to `τJ`.** The repair the
+previous note contemplated — pushing "unramified outside `Mp`" up onto
+the consumer, on the grounds that the classical inhabitant satisfies it
+anyway — would widen the cut to buy a hypothesis that is already a
+theorem. -/
 theorem not_exists_characters_charFrob_weilBound {M : ℕ} (hM : 0 < M)
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
@@ -34926,8 +35156,15 @@ theorem not_exists_characters_charFrob_weilBound {M : ℕ} (hM : 0 < M)
         δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
           * δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
             = (q : AlgebraicClosure ℚ_[p])) :
-    False :=
-  sorry
+    False := by
+  obtain ⟨q, hq, hq6, j, m, ζ₁, ζ₂, hm, hζ₁, hζ₂, heq⟩ :=
+    exists_frobValue_eq_rootOfUnity_mul_pow hM S g hg κ δ₁ δ₂ hδ₁cont hδ₂cont
+      hδ₁ne hδ₂ne hδ₁mul hδ₂mul hfrob
+  obtain ⟨w₁, w₂, hw₁, hw₂, hC⟩ :=
+    exists_complex_of_heckeCoeff_eq_rootOfUnity_mul_pow g κ (heckeCoeff M g q) q j m hm
+      ζ₁ ζ₂ hζ₁ hζ₂ heq
+  exact not_norm_le_two_mul_sqrt_of_eq_rootOfUnity_mul_pow hq6 j w₁ w₂ hw₁ hw₂ _ hC
+    (hweil g hg q hq)
 
 /-- **Ribet irreducibility, as a theorem about the frame** (PROVEN
 2026-07-27 as glue over four leaves — the ELEVENTH decomposition, see
