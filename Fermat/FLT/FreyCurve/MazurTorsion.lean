@@ -10162,8 +10162,85 @@ theorem exists_twoTorsionChain_of_variableChange (E : WeierstrassCurve ℚ) [E.I
     · exact absurd ((pow_eq_zero_iff (n := 2) (by norm_num)).mp h) hu
     · exact h
 
-/-- **Step 3 of the `X_0(16)` route: the two halving conditions** (SORRY LEAF,
-cut 2026-07-27 out of `exists_chainModel_of_ratTwoTorsion`).  This is the whole
+/-- **The duplication formula on `y² = x(x² + a₂ x + a₄)`** (PROVEN 2026-07-27),
+in the denominator-free form `x(2P) · (2y)² = (x² − a₄)²`.
+
+Stated for an ARBITRARY `V` with `a₁ = a₃ = a₆ = 0` rather than for
+`twoTorsionModel A B` itself, because the consumer works with
+`(twoTorsionModel a b)⁄ℚ̄`, whose coefficients are `algebraMap`-images and which
+is therefore not syntactically of the form `twoTorsionModel _ _`.  Three
+coefficient hypotheses cost nothing and remove a transport step entirely.
+
+The polynomial content is the identity
+`(3x² + 2a₂x + a₄)² − 4(a₂ + 2x)·x(x² + a₂x + a₄) = (x² − a₄)²`,
+which is what makes `x(2P) = ((x² − a₄)/(2y))²`. -/
+lemma xCoord_add_self_of_twoTorsionShape {F : Type*} [Field F] [DecidableEq F]
+    (h2 : (2 : F) ≠ 0)
+    {V : WeierstrassCurve F} (ha1 : V.a₁ = 0) (ha3 : V.a₃ = 0) (ha6 : V.a₆ = 0)
+    {x y : F} (h : V.toAffine.Nonsingular x y) (hy : y ≠ 0)
+    {X Y : F} (hXY : V.toAffine.Nonsingular X Y)
+    (hadd : Affine.Point.some x y h + Affine.Point.some x y h = Affine.Point.some X Y hXY) :
+    X * (2 * y) ^ 2 = (x ^ 2 - V.a₄) ^ 2 := by
+  have hneg : V.toAffine.negY x y = -y := by
+    rw [Affine.negY, ha1, ha3]; ring
+  have h2y : (2 : F) * y ≠ 0 := mul_ne_zero h2 hy
+  have hyne : y ≠ V.toAffine.negY x y := by
+    rw [hneg]
+    intro hcon
+    exact h2y (by linear_combination hcon)
+  rw [Affine.Point.add_self_of_Y_ne hyne] at hadd
+  have hX : V.toAffine.addX x x (V.toAffine.slope x x y y) = X :=
+    ((Affine.Point.some.injEq _ _ _ _ _ _).mp hadd).1
+  have hL : V.toAffine.slope x x y y * (2 * y) = 3 * x ^ 2 + 2 * V.a₂ * x + V.a₄ := by
+    rw [Affine.slope_of_Y_ne rfl hyne, hneg, ha1, show y - -y = 2 * y by ring]
+    field_simp
+    ring
+  have heq : y ^ 2 = x ^ 3 + V.a₂ * x ^ 2 + V.a₄ * x := by
+    have he := h.1
+    rw [Affine.equation_iff, ha1, ha3, ha6] at he
+    linear_combination he
+  have hXeq : X = V.toAffine.slope x x y y ^ 2 - V.a₂ - 2 * x := by
+    rw [← hX, Affine.addX, ha1]; ring
+  rw [hXeq]
+  linear_combination (V.toAffine.slope x x y y * (2 * y) + (3 * x ^ 2 + 2 * V.a₂ * x + V.a₄)) * hL
+    + (-4 * (V.a₂ + 2 * x)) * heq
+
+/-- **Adding the `2`-torsion origin on `y² = x(x² + a₂ x + a₄)`** (PROVEN
+2026-07-27): `x(P + (0,0)) · x(P) = a₄`, i.e. translation by `(0,0)` acts on
+`x`-coordinates as the involution `x ↦ a₄/x`.
+
+Same shape-by-coefficients convention as `xCoord_add_self_of_twoTorsionShape`
+above, and for the same reason.  The computation is that the secant through
+`(x, y)` and `(0, 0)` has slope `y/x`, so
+`x(P + (0,0)) = y²/x² − a₂ − x = a₄/x` on the curve. -/
+lemma xCoord_add_origin_of_twoTorsionShape {F : Type*} [Field F] [DecidableEq F]
+    {V : WeierstrassCurve F} (ha1 : V.a₁ = 0) (ha3 : V.a₃ = 0) (ha6 : V.a₆ = 0)
+    {x y : F} (h : V.toAffine.Nonsingular x y) (hx : x ≠ 0)
+    (h00 : V.toAffine.Nonsingular 0 0)
+    {X Y : F} (hXY : V.toAffine.Nonsingular X Y)
+    (hadd : Affine.Point.some x y h + Affine.Point.some (0 : F) 0 h00
+      = Affine.Point.some X Y hXY) :
+    X * x = V.a₄ := by
+  rw [Affine.Point.add_of_X_ne hx] at hadd
+  have hX : V.toAffine.addX x 0 (V.toAffine.slope x 0 y 0) = X :=
+    ((Affine.Point.some.injEq _ _ _ _ _ _).mp hadd).1
+  have hL : V.toAffine.slope x 0 y 0 * x = y := by
+    rw [Affine.slope_of_X_ne hx]
+    field_simp
+    ring
+  have heq : y ^ 2 = x ^ 3 + V.a₂ * x ^ 2 + V.a₄ * x := by
+    have he := h.1
+    rw [Affine.equation_iff, ha1, ha3, ha6] at he
+    linear_combination he
+  have hXeq : X = V.toAffine.slope x 0 y 0 ^ 2 - V.a₂ - x := by
+    rw [← hX, Affine.addX, ha1]; ring
+  apply mul_left_cancel₀ hx
+  rw [hXeq]
+  linear_combination (V.toAffine.slope x 0 y 0 * x + y) * hL + heq
+
+/-- **Step 3 of the `X_0(16)` route: the two halving conditions** (PROVEN
+2026-07-27; was a sorry leaf cut out of `exists_chainModel_of_ratTwoTorsion`
+the same day).  This is the whole
 Galois content of steps 2–3, and it is where `X_0(4)` and `X_0(8)` are used.
 
 On `twoTorsionModel a b` carrying a Galois-stable cyclic `16`-subgroup `⟨h₀⟩`
@@ -10196,8 +10273,49 @@ so no change of variables can make it a square, and the passage to
 `chainModel` is a quadratic TWIST, handled by
 `exists_chainModel_chain_of_halvingParams` below.  An earlier version of the
 route asserted `β = δ²` here; that assertion is not provable, and building on
-it would have produced a false intermediate. -/
+it would have produced a false intermediate.
+
+**HOW `μ` IS ACTUALLY BUILT, and why it needs neither the quartic's
+factorisation nor the second root** (2026-07-27, and this is the whole reason
+the leaf turned out cheap).  The section note derives `μ` by factoring the
+halving quartic `(x² − b)² − 4βx(x² + ax + b)` as `(x² − px + b)(x² − qx + b)`
+with `p, q = 2β ± 2μ`.  That factorisation is never needed.  Write
+`u = x(2 • h₀)`, `v = x(6 • h₀)`, `s = u + v`.  Then:
+
+* `uv = b`, from `10 • h₀ = 2 • h₀ + (0,0)` and `x(10 • h₀) = x(6 • h₀)`
+  (`10 • h₀ = −(6 • h₀)`), the first step being
+  `xCoord_add_origin_of_twoTorsionShape`;
+* `u` is a halving of `β`, i.e. `4βu(u² + au + b) = (u² − b)²`, from
+  `2 • (2 • h₀) = 4 • h₀` and `xCoord_add_self_of_twoTorsionShape`;
+* dividing that by `u²` after substituting `b = uv` — legitimate since
+  `u ≠ 0`, because `x = 0` on this model forces `y = 0`, hence a `2`-torsion
+  point, and `2 • h₀` has order `8` — collapses it to
+  `(u − v)² = 4β(s + a)`, i.e. `(s − 2β)² = 4β(a + 2β)` using
+  `(u − v)² = s² − 4uv` and `b = β²`.
+
+So `μ = (s − 2β)/2`, and only ONE root of the quartic is ever used.
+
+**THE GALOIS ARGUMENT NEEDS ONLY `σ(u) ∈ {u, v}`, NOT the full permutation
+action.**  `exists_isogenyCharacter` gives `σ(h₀) = λ(σ) • h₀` with `λ(σ)` a
+unit of `ZMod 16`, so `2λ ∈ {2, 6, 10, 14}` (a `decide` over the eight units)
+and `σ(2 • h₀) ∈ {±2 • h₀, ±6 • h₀}`; negation fixes `x`-coordinates on this
+model (`a₁ = a₃ = 0`), so `σ(u) ∈ {u, v}`.  `σ(v)` is then FORCED rather than
+tracked separately: `σ(u)σ(v) = σ(uv) = σ(b) = uv`, so `σ(u) = u` gives
+`σ(v) = v` and `σ(u) = v` gives `σ(v) = u`.  Either way `σ(s) = s`, and
+`exists_rat_of_galois_fixed` descends `s`.  The same `decide`, at `4λ ∈ {4, 12}`,
+descends `β = x(4 • h₀)`.
+
+**ADDED HYPOTHESIS `[(twoTorsionModel a b).IsElliptic]`, AND WHY.**
+`exists_isogenyCharacter` is stated under `[E.IsElliptic]`, and the leaf's
+hypotheses do not otherwise exclude a singular model (`Δ = 16b²(a² − 4b)`
+vanishes at `a = ±2√b`, where the smooth locus is a form of `𝔾ₘ` and does
+carry points of order `16` over `ℚ̄`).  It is also what gives `b ≠ 0`.  This is
+the SAME binder `exists_chainModel_chain_of_halvingParams` carries, and the
+sole consumer `exists_chainModel_of_ratTwoTorsion` discharges both with one
+`haveI` placed BEFORE the halving step, so that it survives the substitution
+`b := β ^ 2`; nothing at the consumer had to change. -/
 theorem exists_halvingParams_of_twoTorsionChain (a b : ℚ)
+    [(twoTorsionModel a b).IsElliptic]
     (h₀ : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).Point)
     (hh : addOrderOf h₀ = 16)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -10207,8 +10325,251 @@ theorem exists_halvingParams_of_twoTorsionChain (a b : ℚ)
           AddSubgroup.zmultiples h₀)
     (h8 : HasXCoord ((8 : ℕ) • h₀) 0) :
     ∃ β μ : ℚ, β ≠ 0 ∧ b = β ^ 2 ∧ μ ^ 2 = β * (a + 2 * β) ∧
-      HasXCoord ((4 : ℕ) • h₀) (algebraMap ℚ (AlgebraicClosure ℚ) β) :=
-  sorry
+      HasXCoord ((4 : ℕ) • h₀) (algebraMap ℚ (AlgebraicClosure ℚ) β) := by
+  classical
+  have h2K : (2 : AlgebraicClosure ℚ) ≠ 0 := by norm_num
+  have hnat2 : (2 : ℕ) ≠ 0 := by norm_num
+  -- the coefficients of the base-changed model
+  have hVa1 : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₁ = 0 := by
+    simp [WeierstrassCurve.baseChange, twoTorsionModel]
+  have hVa2 : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₂
+      = algebraMap ℚ (AlgebraicClosure ℚ) a := by
+    simp [WeierstrassCurve.baseChange, twoTorsionModel]
+  have hVa3 : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₃ = 0 := by
+    simp [WeierstrassCurve.baseChange, twoTorsionModel]
+  have hVa4 : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₄
+      = algebraMap ℚ (AlgebraicClosure ℚ) b := by
+    simp [WeierstrassCurve.baseChange, twoTorsionModel]
+  have hVa6 : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₆ = 0 := by
+    simp [WeierstrassCurve.baseChange, twoTorsionModel]
+  -- `b ≠ 0`, from nonsingularity through `Δ = 16b²(a² − 4b)`
+  have hΔ : (twoTorsionModel a b).Δ ≠ 0 :=
+    (WeierstrassCurve.isUnit_Δ (W := twoTorsionModel a b)).ne_zero
+  have hb0 : b ≠ 0 := by
+    intro hz; apply hΔ; rw [twoTorsionModel_Δ, hz]; ring
+  -- order bookkeeping in `⟨h₀⟩ ≅ ℤ/16`
+  have h16 : ((16 : ℕ)) • h₀ = 0 := by rw [← hh]; exact addOrderOf_nsmul_eq_zero h₀
+  have hne : ∀ n : ℕ, ¬ (16 ∣ n) → (n • h₀ ≠ 0) := by
+    intro n hn hc
+    exact hn (hh ▸ addOrderOf_dvd_of_nsmul_eq_zero hc)
+  have h2ne : ((2 : ℕ) • h₀) ≠ 0 := hne 2 (by norm_num)
+  have h4ne : ((4 : ℕ) • h₀) ≠ 0 := hne 4 (by norm_num)
+  have h6ne : ((6 : ℕ) • h₀) ≠ 0 := hne 6 (by norm_num)
+  have h8ne : ((8 : ℕ) • h₀) ≠ 0 := hne 8 (by norm_num)
+  have hsome : ∀ P : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).Point, P ≠ 0 →
+      ∃ (x y : AlgebraicClosure ℚ)
+        (h : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).Nonsingular x y),
+        P = Affine.Point.some x y h := by
+    rintro (_ | ⟨x, y, h⟩) hP
+    · exact absurd rfl hP
+    · exact ⟨x, y, h, rfl⟩
+  obtain ⟨x2, y2, hns2, hP2⟩ := hsome _ h2ne
+  obtain ⟨x4, y4, hns4, hP4⟩ := hsome _ h4ne
+  obtain ⟨x6, y6, hns6, hP6⟩ := hsome _ h6ne
+  obtain ⟨x8, y8, hns8, hP8⟩ := hsome _ h8ne
+  -- `8 • h₀` is the origin: the fibre over `x = 0` is `y² = 0`
+  have hx8 : x8 = 0 := h8 x8 y8 hns8 hP8
+  subst hx8
+  have hy8 : y8 = 0 := by
+    have he := hns8.1
+    rw [Affine.equation_iff, hVa1, hVa3, hVa6] at he
+    have hz : y8 ^ 2 = 0 := by linear_combination he
+    exact (pow_eq_zero_iff hnat2).mp hz
+  subst hy8
+  -- the additions of multiples that the two coordinate lemmas consume
+  have hadd44 : ((4 : ℕ) • h₀) + ((4 : ℕ) • h₀) = (8 : ℕ) • h₀ := by rw [← add_nsmul]
+  have hadd22 : ((2 : ℕ) • h₀) + ((2 : ℕ) • h₀) = (4 : ℕ) • h₀ := by rw [← add_nsmul]
+  have hadd28 : ((2 : ℕ) • h₀) + ((8 : ℕ) • h₀) = (10 : ℕ) • h₀ := by rw [← add_nsmul]
+  have h10 : (10 : ℕ) • h₀ = -((6 : ℕ) • h₀) := by
+    rw [eq_neg_iff_add_eq_zero, ← add_nsmul, show (10 : ℕ) + 6 = 16 by norm_num, h16]
+  have h12 : (12 : ℕ) • h₀ = -((4 : ℕ) • h₀) := by
+    rw [eq_neg_iff_add_eq_zero, ← add_nsmul, show (12 : ℕ) + 4 = 16 by norm_num, h16]
+  have h14 : (14 : ℕ) • h₀ = -((2 : ℕ) • h₀) := by
+    rw [eq_neg_iff_add_eq_zero, ← add_nsmul, show (14 : ℕ) + 2 = 16 by norm_num, h16]
+  -- `x(4 • h₀)² = b`, by doubling `4 • h₀` onto the origin
+  have hy4 : y4 ≠ 0 := by
+    intro hz
+    apply h8ne
+    rw [← hadd44, hP4]
+    refine Affine.Point.add_self_of_Y_eq ?_
+    rw [Affine.negY, hVa1, hVa3, hz]; ring
+  have hdbl4 : Affine.Point.some x4 y4 hns4 + Affine.Point.some x4 y4 hns4
+      = Affine.Point.some (0 : AlgebraicClosure ℚ) 0 hns8 := by
+    rw [← hP4, ← hP8]; exact hadd44
+  have hx4sq : x4 ^ 2 = ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₄ := by
+    have hd := xCoord_add_self_of_twoTorsionShape h2K hVa1 hVa3 hVa6 hns4 hy4 hns8 hdbl4
+    have hz : (x4 ^ 2 - ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₄) ^ 2 = 0 := by
+      linear_combination -hd
+    exact sub_eq_zero.mp ((pow_eq_zero_iff hnat2).mp hz)
+  -- the isogeny character `λ : Γ_ℚ → (ℤ/16)ˣ`
+  obtain ⟨lam, hlam⟩ :=
+    (twoTorsionModel a b).exists_isogenyCharacter h₀ (by norm_num) hh hstable
+  have hpow : ∀ n : ℕ, ((n : ZMod 16)).val • h₀ = n • h₀ := by
+    intro n
+    rw [ZMod.val_natCast, ← hh]
+    exact mod_addOrderOf_nsmul h₀ n
+  have hval : ∀ (n : ℕ) (c : ZMod 16), ((n : ZMod 16)) = c → n • h₀ = (c.val) • h₀ := by
+    intro n c hc
+    rw [← hpow n, hc]
+  have hcast4 : ∀ u : (ZMod 16)ˣ,
+      ((4 * (u : ZMod 16).val : ℕ) : ZMod 16) = 4 * (u : ZMod 16) := by
+    intro u; push_cast [ZMod.natCast_val, ZMod.cast_id]; ring
+  have hcast2 : ∀ u : (ZMod 16)ˣ,
+      ((2 * (u : ZMod 16).val : ℕ) : ZMod 16) = 2 * (u : ZMod 16) := by
+    intro u; push_cast [ZMod.natCast_val, ZMod.cast_id]; ring
+  have hmapmul : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (k : ℕ),
+      Affine.Point.map σ.toAlgHom (k • h₀) = (k * (lam σ : ZMod 16).val : ℕ) • h₀ := by
+    intro σ k
+    have hσ : Affine.Point.map σ.toAlgHom h₀ = ((lam σ : ZMod 16).val) • h₀ := hlam σ
+    rw [map_nsmul, hσ, smul_smul]
+  -- `β := x(4 • h₀)` is Galois-fixed, because `4λ ∈ {4, 12} (mod 16)`
+  have hfix4 : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, σ x4 = x4 := by
+    intro σ
+    have hu : ∀ u : (ZMod 16)ˣ,
+        (4 : ZMod 16) * (u : ZMod 16) = 4 ∨ (4 : ZMod 16) * (u : ZMod 16) = 12 := by decide
+    have hx : Affine.Point.map σ.toAlgHom ((4 : ℕ) • h₀) = (4 : ℕ) • h₀ ∨
+        Affine.Point.map σ.toAlgHom ((4 : ℕ) • h₀) = -((4 : ℕ) • h₀) := by
+      rw [hmapmul σ 4]
+      rcases hu (lam σ) with hc | hc
+      · left
+        rw [hval _ (4 : ZMod 16) (by rw [hcast4]; exact hc),
+          show ((4 : ZMod 16)).val = 4 from rfl]
+      · right
+        rw [hval _ (12 : ZMod 16) (by rw [hcast4]; exact hc),
+          show ((12 : ZMod 16)).val = 12 from rfl]
+        exact h12
+    rw [hP4, Affine.Point.map_some] at hx
+    rcases hx with hc | hc
+    · exact ((Affine.Point.some.injEq _ _ _ _ _ _).mp hc).1
+    · rw [Affine.Point.neg_some] at hc
+      exact ((Affine.Point.some.injEq _ _ _ _ _ _).mp hc).1
+  obtain ⟨β, hβ⟩ := MazurLevel9.exists_rat_of_galois_fixed x4 hfix4
+  have hbβ : b = β ^ 2 := by
+    have hq : algebraMap ℚ (AlgebraicClosure ℚ) (β ^ 2)
+        = algebraMap ℚ (AlgebraicClosure ℚ) b := by
+      rw [map_pow, hβ, hx4sq, hVa4]
+    exact ((algebraMap ℚ (AlgebraicClosure ℚ)).injective hq).symm
+  have hβ0 : β ≠ 0 := by
+    intro hz; apply hb0; rw [hbβ, hz]; ring
+  -- `2 • h₀` is not `2`-torsion, so neither coordinate vanishes
+  have hy2 : y2 ≠ 0 := by
+    intro hz
+    apply h4ne
+    rw [← hadd22, hP2]
+    refine Affine.Point.add_self_of_Y_eq ?_
+    rw [Affine.negY, hVa1, hVa3, hz]; ring
+  have hy2sq : y2 ^ 2 = x2 ^ 3
+      + ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₂ * x2 ^ 2
+      + ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₄ * x2 := by
+    have he := hns2.1
+    rw [Affine.equation_iff, hVa1, hVa3, hVa6] at he
+    linear_combination he
+  have hx2ne : x2 ≠ 0 := by
+    intro hz
+    apply hy2
+    have hz2 : y2 ^ 2 = 0 := by rw [hy2sq, hz]; ring
+    exact (pow_eq_zero_iff hnat2).mp hz2
+  -- `u = x(2 • h₀)` is a halving of `β`
+  have hdbl2 : Affine.Point.some x2 y2 hns2 + Affine.Point.some x2 y2 hns2
+      = Affine.Point.some x4 y4 hns4 := by
+    rw [← hP2, ← hP4]; exact hadd22
+  have hQ : x4 * (2 * y2) ^ 2
+      = (x2 ^ 2 - ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₄) ^ 2 :=
+    xCoord_add_self_of_twoTorsionShape h2K hVa1 hVa3 hVa6 hns2 hy2 hns4 hdbl2
+  -- `u · v = b`, from `10 • h₀ = 2 • h₀ + (0,0) = −(6 • h₀)`
+  have hP10 : Affine.Point.some x2 y2 hns2
+      + Affine.Point.some (0 : AlgebraicClosure ℚ) 0 hns8
+      = -(Affine.Point.some x6 y6 hns6) := by
+    rw [← hP2, ← hP8, ← hP6, hadd28]; exact h10
+  rw [Affine.Point.neg_some] at hP10
+  have hprod : x6 * x2 = ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₄ :=
+    xCoord_add_origin_of_twoTorsionShape hVa1 hVa3 hVa6 hns2 hx2ne hns8 _ hP10
+  have hx6ne : x6 ≠ 0 := by
+    intro hz
+    apply hb0
+    have hq := hprod
+    rw [hz, hVa4] at hq
+    have h0 : algebraMap ℚ (AlgebraicClosure ℚ) b = algebraMap ℚ (AlgebraicClosure ℚ) 0 := by
+      rw [map_zero, ← hq]; ring
+    exact (algebraMap ℚ (AlgebraicClosure ℚ)).injective h0
+  -- `s = u + v` is Galois-fixed, because `2λ ∈ {2, 6, 10, 14} (mod 16)`
+  have hfixs : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, σ (x2 + x6) = x2 + x6 := by
+    intro σ
+    have hu : ∀ u : (ZMod 16)ˣ,
+        (2 : ZMod 16) * (u : ZMod 16) = 2 ∨ (2 : ZMod 16) * (u : ZMod 16) = 6 ∨
+        (2 : ZMod 16) * (u : ZMod 16) = 10 ∨ (2 : ZMod 16) * (u : ZMod 16) = 14 := by decide
+    have hx : Affine.Point.map σ.toAlgHom ((2 : ℕ) • h₀) = (2 : ℕ) • h₀ ∨
+        Affine.Point.map σ.toAlgHom ((2 : ℕ) • h₀) = (6 : ℕ) • h₀ ∨
+        Affine.Point.map σ.toAlgHom ((2 : ℕ) • h₀) = -((6 : ℕ) • h₀) ∨
+        Affine.Point.map σ.toAlgHom ((2 : ℕ) • h₀) = -((2 : ℕ) • h₀) := by
+      rw [hmapmul σ 2]
+      rcases hu (lam σ) with hc | hc | hc | hc
+      · left
+        rw [hval _ (2 : ZMod 16) (by rw [hcast2]; exact hc),
+          show ((2 : ZMod 16)).val = 2 from rfl]
+      · right; left
+        rw [hval _ (6 : ZMod 16) (by rw [hcast2]; exact hc),
+          show ((6 : ZMod 16)).val = 6 from rfl]
+      · right; right; left
+        rw [hval _ (10 : ZMod 16) (by rw [hcast2]; exact hc),
+          show ((10 : ZMod 16)).val = 10 from rfl]
+        exact h10
+      · right; right; right
+        rw [hval _ (14 : ZMod 16) (by rw [hcast2]; exact hc),
+          show ((14 : ZMod 16)).val = 14 from rfl]
+        exact h14
+    have hσx2 : σ x2 = x2 ∨ σ x2 = x6 := by
+      rw [hP2, Affine.Point.map_some] at hx
+      rcases hx with hc | hc | hc | hc
+      · exact Or.inl ((Affine.Point.some.injEq _ _ _ _ _ _).mp hc).1
+      · rw [hP6] at hc
+        exact Or.inr ((Affine.Point.some.injEq _ _ _ _ _ _).mp hc).1
+      · rw [hP6, Affine.Point.neg_some] at hc
+        exact Or.inr ((Affine.Point.some.injEq _ _ _ _ _ _).mp hc).1
+      · rw [Affine.Point.neg_some] at hc
+        exact Or.inl ((Affine.Point.some.injEq _ _ _ _ _ _).mp hc).1
+    have hmul : σ x2 * σ x6 = x2 * x6 := by
+      rw [← map_mul, show x2 * x6 = ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₄ by
+        rw [← hprod]; ring, hVa4]
+      exact σ.commutes b
+    rw [map_add]
+    rcases hσx2 with hc | hc
+    · have hy : σ x6 = x6 := by
+        apply mul_left_cancel₀ hx2ne
+        rw [hc] at hmul
+        exact hmul
+      rw [hc, hy]
+    · have hy : σ x6 = x2 := by
+        apply mul_left_cancel₀ hx6ne
+        rw [hc] at hmul
+        linear_combination hmul
+      rw [hc, hy]; ring
+  obtain ⟨S, hS⟩ := MazurLevel9.exists_rat_of_galois_fixed (x2 + x6) hfixs
+  -- the halving identity `(s − 2β)² = 4β(a + 2β)` over `ℚ̄`
+  have hE1 : 4 * x4 * x2 * (x2 ^ 2
+      + ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₂ * x2 + x4 ^ 2)
+      = (x2 ^ 2 - x4 ^ 2) ^ 2 := by
+    linear_combination hQ - 4 * x4 * hy2sq
+      - (4 * x4 * x2 + 2 * x2 ^ 2 - ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₄ - x4 ^ 2)
+        * hx4sq.symm
+  have hv : x6 * x2 = x4 ^ 2 := by rw [hprod, hx4sq]
+  have hkey : (x2 + x6 - 2 * x4) ^ 2
+      = 4 * x4 * (((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).a₂ + 2 * x4) := by
+    apply mul_left_cancel₀ (pow_ne_zero 2 hx2ne)
+    linear_combination (-1 : AlgebraicClosure ℚ) * hE1
+      + (2 * x2 ^ 2 + x6 * x2 + x4 ^ 2 - 4 * x4 * x2) * hv
+  -- descend to `ℚ` and assemble
+  have hQrat : (S - 2 * β) ^ 2 = 4 * β * (a + 2 * β) := by
+    apply (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+    simp only [map_sub, map_mul, map_pow, map_add, map_ofNat]
+    rw [hS, hβ, hkey, hVa2]
+  refine ⟨β, (S - 2 * β) / 2, hβ0, hbβ, ?_, ?_⟩
+  · field_simp
+    linear_combination hQrat
+  · intro x y hxy hE
+    have hc := hP4.symm.trans hE
+    have hx := ((Affine.Point.some.injEq _ _ _ _ _ _).mp hc).1
+    rw [← hx, hβ]
 
 /-- **The quadratic twist by `β`, carrying the `16`-chain onto `chainModel μ β`**
 (PROVEN 2026-07-27; was a sorry leaf cut out of
