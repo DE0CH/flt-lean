@@ -167,6 +167,7 @@ public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- the potential-modularity carrier's fields (totally real base field,
 -- Galois enabling hypothesis for Brauer induction) live in these:
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
+public import Mathlib.Algebra.QuaternionBasis
 public import Mathlib.NumberTheory.NumberField.Cyclotomic.Ideal
 public import Mathlib.FieldTheory.Finite.GaloisField
 -- `CommGroup.exists_apply_ne_one_of_hasEnoughRootsOfUnity`, the finite-abelian
@@ -3024,16 +3025,49 @@ theorem exists_domain_coefficientRing_of_ringHom {p : ℕ} [Fact p.Prime]
   rw [hτ', Polynomial.map_map]
   congr 1
 
-/-- **STEP 1a of the Carayol node — ALBERT–BRAUER–HASSE–NOETHER: a totally
-real field of EVEN degree carries a totally definite quaternion algebra that
-is split at every finite place** (sorry leaf; CUT 2026-07-27 out of STEP 1,
-`exists_totallyDefinite_heckeCharacter_of_heckePackage`, which is now a
-PROVEN assembly over this leaf and its sibling
-`exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra`).
+/-! ### STEP 1a — the ABHN existence half, cut into a symbol-algebra core
+plus four ordinary-algebra bricks and one adelic brick
 
-Content. `hFeven` says `[F : ℚ]` is even, and `hFtr` says every infinite
-place of `F` is real, so the set of infinite places has EVEN cardinality
-`[F : ℚ]`. The Albert–Brauer–Hasse–Noether exact sequence for the Brauer
+`exists_totallyDefinite_rigidified_quaternionAlgebra_of_even` (below) is now
+a PROVEN assembly over the six declarations of this section — FOUR of which
+are open leaves, while `nonempty_algEquiv_quaternion_of_neg` (STEP 1a-iv) and
+`isUnit_of_ne_zero_quaternionAlgebra_of_neg_embedding` (STEP 1a-v) are PROVEN
+here. The cut replaces an
+abstract Brauer-group existence statement by a CONCRETE one: produce a pair
+`a b : F` of totally negative elements whose symbol algebra `(a, b)_F` splits
+at every finite place, then check by hand that `ℍ[F,a,0,b]` is a totally
+definite quaternion division algebra split at every finite place, and finally
+patch the local splittings into a rigidification. Everything except the first
+and last leaf is char-`≠ 2` linear algebra with no arithmetic in it.
+
+Why a symbol algebra rather than an abstract `D`: over a field of
+characteristic `≠ 2` EVERY quaternion algebra is `ℍ[F,a,0,b]` for some
+`a, b ∈ Fˣ`, and the three properties the consumer wants become visible
+conditions on `a` and `b` — definite at a real place `v` iff `σ_v a < 0` and
+`σ_v b < 0`, split at a finite place `w` iff the Hilbert symbol `(a,b)_w`
+is trivial. That is what makes the parity bit legible: totally negative
+`a, b` are nonsplit at ALL `[F : ℚ]` infinite places, and Hilbert's product
+formula then forces `[F : ℚ]` to be even once all finite symbols are
+trivial. -/
+
+/-- **STEP 1a-i — THE ARITHMETIC CORE: a totally real field of EVEN degree
+carries a totally negative Hilbert symbol that is split at every finite
+place** (sorry leaf; CUT 2026-07-27 out of
+`exists_totallyDefinite_rigidified_quaternionAlgebra_of_even`, which is now
+a PROVEN assembly over this leaf and the five below).
+
+This is the whole class-field-theoretic content of ABHN in this development,
+and it is the ONLY leaf of the six that has any arithmetic in it.
+
+Content. Produce `a b : F` such that
+
+* `σ a < 0` and `σ b < 0` for every real embedding `σ` of `F` — with `hFtr`
+  that is every infinite place, so `ℍ[F,a,0,b]` is nonsplit (indeed `≃ ℍ`)
+  at every archimedean place, i.e. TOTALLY DEFINITE;
+* `ℍ[F_w, a, 0, b] ≃ M₂(F_w)` for every finite place `w`, i.e. the Hilbert
+  symbol `(a,b)_w` is trivial at every finite place.
+
+Route (ABHN). The Albert–Brauer–Hasse–Noether exact sequence for the Brauer
 group of a number field,
 
     0 → Br(F) → ⨁_v Br(F_v) --Σ inv--> ℚ/ℤ → 0,
@@ -3041,62 +3075,364 @@ group of a number field,
 says a class in `Br(F)` may be prescribed by arbitrary local invariants,
 almost all zero, summing to `0` in `ℚ/ℤ`. Prescribing invariant `1/2` at
 each infinite place and `0` at each finite place is admissible exactly
-because the number of infinite places is even, and the resulting class has
-order `2`, hence is represented by a quaternion algebra `D/F` (index equals
-exponent for a number field, so the class of order `2` is the class of a
-division algebra of degree `2`). That `D` is:
+because the number of infinite places is `[F : ℚ]`, which `hFeven` says is
+EVEN. The resulting class has order `2`, hence (index = exponent over a
+number field) is represented by a quaternion division algebra `D/F`; and
+since `char F = 0 ≠ 2`, `D ≃ ℍ[F,a,0,b]` for some `a, b ∈ Fˣ`. Reading off
+the local conditions gives exactly the two bullets above: `ℍ[ℝ,x,0,y]` is
+nonsplit iff `x < 0 AND y < 0`, so definiteness at every real place is
+precisely total negativity of `a` and of `b`.
 
-* a DIVISION ring, because its class is nonzero (it has a nonzero local
-  invariant), so it is not `M₂(F)`;
-* TOTALLY DEFINITE (`IsQuaternionAlgebra.IsTotallyDefinite F D`), because
-  invariant `1/2` at a real place `v` means `ℝ ⊗_{F,v} D` is the nonsplit
-  quaternion algebra over `ℝ`, i.e. Hamilton's `ℍ`; `hFtr` is what makes
-  "at every real place" say "at every infinite place";
-* SPLIT AT EVERY FINITE PLACE, so a maximal order `𝒪_D ⊂ D` is isomorphic
-  to `M₂(𝒪_v)` at almost every finite `v` and to `M₂(F_v)` at the rest,
-  which assembles to the `𝔸_F^∞`-algebra isomorphism
-  `D ⊗_F 𝔸_F^∞ ≃ M₂(𝔸_F^∞)` — exactly the datum
-  `IsQuaternionAlgebra.NumberField.WithRigidification F D`, whose `incl`
-  field lands in the RESTRICTED product and so needs precisely that
-  almost-everywhere integrality.
+The pin does NOT have this — mathlib carries only
+`Mathlib/Algebra/BrauerGroup/Defs.lean` (definitions of the Brauer group, no
+local invariants and no exact sequence), the reference project `~/cs/FLT`
+has none of it either, and nothing in this tree computes a local invariant.
+So this leaf is a genuine theory build, but a SELF-CONTAINED one: it
+mentions no Galois representation, no Hecke algebra and no automorphic form.
 
-WHY THIS IS A PLAUSIBLE IN-TREE TARGET, unlike its sibling. It is class
-field theory, not automorphic theory: the input is the Brauer group of a
-number field with its local invariants, which is the Hasse–Brauer–Noether
-theorem plus local class field theory. The pin does NOT have it — mathlib
-carries only `Mathlib/Algebra/BrauerGroup/Defs.lean` (definitions of the
-Brauer group, no local invariants and no exact sequence), the reference
-project `~/cs/FLT` has none of it either, and nothing in this tree
-computes a local invariant. So this leaf is a genuine theory build, but a
-SELF-CONTAINED one: it mentions no Galois representation, no Hecke algebra
-and no automorphic form, and it can be attacked by anyone who builds the
-invariant map.
-
-A CHEAPER CONCRETE ROUTE IS AVAILABLE IF THE FULL SEQUENCE IS TOO MUCH,
-and it is worth recording because it needs only the ℚ-case plus base
-change. Over `ℚ` the quaternion algebra ramified at `{∞, q}` is the
-explicit symbol algebra `(-1, -q)` for `q ≡ 3 (mod 4)`. If `F/ℚ` is Galois
-of even degree, `Gal(F/ℚ)` has an element `σ` of order `2` by Cauchy, and
-Chebotarev supplies infinitely many primes `q` with `Frob_q = σ`, hence
+A CHEAPER CONCRETE ROUTE, worth recording because it needs only the ℚ-case
+plus base change. Over `ℚ` the quaternion algebra ramified at `{∞, q}` is
+the explicit symbol algebra `(-1, -q)` for `q ≡ 3 (mod 4)`. If `F/ℚ` is
+Galois of even degree, `Gal(F/ℚ)` has an element `σ` of order `2` by Cauchy,
+and Chebotarev supplies infinitely many primes `q` with `Frob_q = σ`, hence
 with local degree `[F_w : ℚ_q] = 2` at every `w ∣ q`. Base-changing
-invariants multiplies by the local degree, so `D := D₀ ⊗_ℚ F` has
-invariant `2 · (1/2) = 0` at every `w ∣ q` (split) and `1 · (1/2) = 1/2` at
-every real place (definite) — the algebra wanted. NOTE this route needs
-`IsGalois ℚ F`, which the consumer HAS (`hFgal`) but which this leaf
-deliberately does NOT take: ABHN needs only even degree and total reality,
-and a successor who takes the concrete route should add `hFgal` to the
-statement rather than leave it implicit.
+invariants multiplies by the local degree, so `a := -1`, `b := -q` (pushed
+into `F`) has invariant `2 · (1/2) = 0` at every `w ∣ q` and `1 · (1/2)`
+at every real place. NOTE this route needs `IsGalois ℚ F`, which the
+ultimate consumer HAS (`hFgal`) but which this leaf deliberately does NOT
+take — ABHN needs only even degree and total reality. A successor taking the
+concrete route must ADD `hFgal` to this statement (a cut-level change: report
+it, do not make it silently), and then also add it to the assembly below.
+
+FAITHFULNESS — `hFeven` is NECESSARY, not merely sufficient. Hilbert's
+product formula `∏_v (a,b)_v = 1` runs over ALL places. Totally negative
+`a, b` give `(a,b)_v = -1` at every one of the `[F : ℚ]` infinite places
+(`hFtr`), so if every finite symbol is `+1` the number of `-1`s is
+`[F : ℚ]`, which must therefore be even. For totally real `F` of ODD degree
+the statement is FALSE, not merely unproven. This is where the node's parity
+bit is spent.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_totallyNegative_split_quaternionSymbol_of_even
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F)
+    (hFeven : Even (Module.finrank ℚ F)) :
+    ∃ a b : F,
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        NumberField.InfinitePlace.embedding_of_isReal hv a < 0 ∧
+        NumberField.InfinitePlace.embedding_of_isReal hv b < 0) ∧
+      (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        Nonempty (_root_.QuaternionAlgebra (w.adicCompletion F)
+            (algebraMap F (w.adicCompletion F) a) 0 (algebraMap F (w.adicCompletion F) b)
+          ≃ₐ[w.adicCompletion F] Matrix (Fin 2) (Fin 2) (w.adicCompletion F))) := by
+  sorry
+
+/-- **STEP 1a-ii — a symbol algebra with invertible parameters is a
+quaternion algebra: central, simple, of dimension `4`** (sorry leaf; CUT
+2026-07-27, ordinary algebra with no arithmetic in it).
+
+`IsQuaternionAlgebra F D` bundles `IsSimpleRing D`, `Algebra.IsCentral F D`
+and `Module.rank F D = 4`. For `D = ℍ[F,a,0,b]` the rank is
+`QuaternionAlgebra.rank_eq_four`, already in the pin. What is missing from
+the pin — checked: `grep -rn "IsCentral.*Quaternion" .lake/packages/mathlib`
+returns nothing, and `Mathlib/Algebra/BrauerGroup/Defs.lean` has no symbol
+algebras — is CENTRALITY and SIMPLICITY.
+
+Both are the standard computation with the basis `1, i, j, k`, `i² = a`,
+`j² = b`, `ij = k = -ji`, and both need `2 ≠ 0` (in characteristic `2` the
+generalised `ℍ[F,c₁,c₂,c₃]` with `c₂ = 0` degenerates and this is false):
+
+* CENTRE. `x = x₀ + x₁ i + x₂ j + x₃ k` commutes with `i` iff
+  `2 a x₂ = 2 a x₃ = 0`, hence (using `a ≠ 0`, `2 ≠ 0`) `x₂ = x₃ = 0`;
+  commuting with `j` then forces `x₁ = 0`. So the centre is `F`.
+* SIMPLICITY. A nonzero two-sided ideal `I` contains some `x ≠ 0`; the
+  conjugation trick `x ↦ x + i x i⁻¹ + j x j⁻¹ + k x k⁻¹ = 4 x₀` (this is
+  where `2 ≠ 0` is used twice) either produces a nonzero element of `F ∩ I`,
+  giving `I = ⊤`, or kills the real part, and iterating on `i x`, `j x`,
+  `k x` shows every coordinate of `x` vanishes.
+
+Alternatively, an in-tree route that avoids the hand computation: a
+four-dimensional algebra with an anisotropic-or-hyperbolic norm form is
+central simple by Wedderburn plus a rank count, and
+`IsQuaternionAlgebra.nomepty_algEquiv_matrix_or_forall_isUnit` shows the
+converse direction is already usable once this is in place.
+
+Stated over an arbitrary field with `2 ≠ 0` rather than over a number field
+on purpose: the consumer needs it only over `F`, but the general statement is
+what would go to mathlib. -/
+theorem isQuaternionAlgebra_quaternionAlgebra_of_ne_zero {F : Type*} [Field F]
+    (h2 : (2 : F) ≠ 0) {a b : F} (ha : a ≠ 0) (hb : b ≠ 0) :
+    _root_.IsQuaternionAlgebra F (_root_.QuaternionAlgebra F a 0 b) := by
+  sorry
+
+/-- **STEP 1a-iii — BASE CHANGE of a symbol algebra:
+`K ⊗_F ℍ[F,a,0,b] ≃ ℍ[K,a,0,b]`** (sorry leaf; CUT 2026-07-27, ordinary
+algebra with no arithmetic in it).
+
+This is the brick that turns the local conditions of STEP 1a-i into
+statements about `ℝ ⊗_F D` and `F_w ⊗_F D`, which is the shape both
+`IsQuaternionAlgebra.IsTotallyDefinite` and the rigidification leaf want.
+
+Checked absent from the pin: `grep -rn "baseChange" Mathlib/Algebra/Quaternion*`
+returns nothing. It is a one-page construction from the universal property
+`QuaternionAlgebra.lift : Basis A c₁ c₂ c₃ ≃ (ℍ[R,c₁,c₂,c₃] →ₐ[R] A)`
+(`Mathlib/Algebra/QuaternionBasis.lean`):
+
+* FORWARD: `Algebra.TensorProduct.lift` of `Algebra.ofId K ℍ[K,a,0,b]` and
+  the `F`-algebra map `ℍ[F,a,0,b] →ₐ[F] ℍ[K,a,0,b]` obtained from
+  `Basis.liftHom` applied to `⟨i, j, k⟩` of `ℍ[K,a,0,b]` — the defining
+  relations transport along `algebraMap F K` by `IsScalarTower`.
+* BACKWARD: `Basis.liftHom` applied to `⟨1 ⊗ₜ i, 1 ⊗ₜ j, 1 ⊗ₜ k⟩`.
+* The two composites are the identity by `QuaternionAlgebra.hom_ext`
+  (agreement on `i` and `j` suffices) and by `TensorProduct.induction_on`.
+
+Only `CommRing` is asked of `K`, because that is all the construction uses;
+the consumer instantiates it at the field `ℝ` (through
+`(embedding_of_isReal hv).toAlgebra`) and at the completions `F_w`. -/
+theorem nonempty_algEquiv_quaternionAlgebra_baseChange
+    (F : Type*) [CommRing F] (K : Type*) [CommRing K] [Algebra F K] (a b : F) :
+    Nonempty (_root_.TensorProduct F K (_root_.QuaternionAlgebra F a 0 b) ≃ₐ[K]
+      _root_.QuaternionAlgebra K (algebraMap F K a) 0 (algebraMap F K b)) := by
+  sorry
+
+open scoped Quaternion in
+/-- **STEP 1a-iv — CLASSIFICATION OVER `ℝ`: a symbol algebra with both
+parameters NEGATIVE is Hamilton's `ℍ`** (PROVEN 2026-07-27; CUT 2026-07-27,
+ordinary algebra with no arithmetic in it).
+
+`ℍ` is `Quaternion ℝ = ℍ[ℝ,-1,0,-1]`, so this is the rescaling
+`i ↦ √(-x) · i`, `j ↦ √(-y) · j`, `k ↦ √(-x)·√(-y) · k`, which is legitimate
+exactly because `-x > 0` and `-y > 0` have real square roots. Verify the
+defining relations: `(√(-x) i)² = (-x)(i²) = (-x)(-1) = x`, likewise for `j`,
+and the product `(√(-x) i)(√(-y) j) = √(-x)√(-y) k` is the `k` demanded.
+Build it with `QuaternionAlgebra.lift` in both directions and close with
+`QuaternionAlgebra.hom_ext`.
+
+This is the leaf that makes `IsQuaternionAlgebra.IsTotallyDefinite` provable:
+that class asks literally for `Nonempty (ℝ ⊗[F] D ≃ₐ[ℝ] ℍ)` at each real
+place, and STEP 1a-iii reduces it to this statement at
+`x = σ a`, `y = σ b`.
+
+CONVERSE (not needed here, but it is what makes STEP 1a-i's total negativity
+the RIGHT hypothesis rather than a convenient one): if `x > 0` or `y > 0`
+then `ℍ[ℝ,x,0,y] ≃ M₂(ℝ)`. So over `ℝ` the symbol is nonsplit precisely on
+the totally negative pairs.
+
+PROVEN 2026-07-27, exactly as described: `Bf` is the rescaled basis of `ℍ`
+with parameters `(x, 0, y)`, `Bg` the inversely rescaled basis of
+`ℍ[ℝ,x,0,y]` with parameters `(-1, 0, -1)`, and the two `liftHom`s are
+mutually inverse by `hom_ext`. The `(-1 : ℝ)` ascriptions on `Bg` are
+load-bearing: without them the numerals default to `ℤ` and the resulting
+`liftHom` is a `ℤ`-algebra map out of `ℍ[ℤ,-1,0,-1]`. -/
+theorem nonempty_algEquiv_quaternion_of_neg {x y : ℝ} (hx : x < 0) (hy : y < 0) :
+    Nonempty (_root_.QuaternionAlgebra ℝ x 0 y ≃ₐ[ℝ] _root_.Quaternion ℝ) := by
+  obtain ⟨p, hp0, hp⟩ : ∃ p : ℝ, p ≠ 0 ∧ p ^ 2 = -x :=
+    ⟨Real.sqrt (-x), Real.sqrt_ne_zero'.mpr (by linarith), Real.sq_sqrt (by linarith)⟩
+  obtain ⟨q, hq0, hq⟩ : ∃ q : ℝ, q ≠ 0 ∧ q ^ 2 = -y :=
+    ⟨Real.sqrt (-y), Real.sqrt_ne_zero'.mpr (by linarith), Real.sq_sqrt (by linarith)⟩
+  let Bf : _root_.QuaternionAlgebra.Basis (_root_.Quaternion ℝ) x 0 y :=
+    { i := ⟨0, p, 0, 0⟩
+      j := ⟨0, 0, q, 0⟩
+      k := ⟨0, 0, 0, p * q⟩
+      i_mul_i := by (ext <;> simp); linarith [hp]
+      j_mul_j := by (ext <;> simp); linarith [hq]
+      i_mul_j := by ext <;> simp
+      j_mul_i := by (ext <;> simp); ring1 }
+  let Bg : _root_.QuaternionAlgebra.Basis
+      (_root_.QuaternionAlgebra ℝ x 0 y) (-1 : ℝ) 0 (-1 : ℝ) :=
+    { i := ⟨0, p⁻¹, 0, 0⟩
+      j := ⟨0, 0, q⁻¹, 0⟩
+      k := ⟨0, 0, 0, (p * q)⁻¹⟩
+      i_mul_i := by (ext <;> simp); field_simp; linarith [hp]
+      j_mul_j := by (ext <;> simp); field_simp; linarith [hq]
+      i_mul_j := by (ext <;> simp); field_simp
+      j_mul_i := by ext <;> simp }
+  let f : _root_.QuaternionAlgebra ℝ x 0 y →ₐ[ℝ] _root_.Quaternion ℝ := Bf.liftHom
+  let g : _root_.Quaternion ℝ →ₐ[ℝ] _root_.QuaternionAlgebra ℝ x 0 y := Bg.liftHom
+  have hfz : ∀ z : _root_.QuaternionAlgebra ℝ x 0 y,
+      f z = algebraMap ℝ (_root_.Quaternion ℝ) z.re + z.imI • Bf.i + z.imJ • Bf.j +
+        z.imK • Bf.k := fun _ => rfl
+  have hgz : ∀ z : _root_.Quaternion ℝ,
+      g z = algebraMap ℝ (_root_.QuaternionAlgebra ℝ x 0 y) z.re + z.imI • Bg.i +
+        z.imJ • Bg.j + z.imK • Bg.k := fun _ => rfl
+  refine ⟨AlgEquiv.ofAlgHom f g ?_ ?_⟩
+  · apply _root_.Quaternion.hom_ext <;>
+      simp [hfz, hgz, Bf, Bg] <;> (try ext) <;>
+      (try simp [_root_.Quaternion.re_smul, _root_.Quaternion.imI_smul,
+        _root_.Quaternion.imJ_smul, _root_.Quaternion.imK_smul]) <;> (try field_simp)
+  · apply _root_.QuaternionAlgebra.hom_ext <;>
+      simp [hfz, hgz, Bf, Bg] <;> (try field_simp)
+
+/-- **STEP 1a-v — ANISOTROPY: a symbol algebra with both parameters negative
+under SOME real embedding is a division ring** (PROVEN 2026-07-27; CUT
+2026-07-27, ordinary algebra with no arithmetic in it).
+
+The reduced norm of `x = x₀ + x₁ i + x₂ j + x₃ k` in `ℍ[F,a,0,b]` is
+`N(x) = x * star x = x₀² - a x₁² - b x₂² + a b x₃²`, an element of `F`, and
+`x` is a unit as soon as `N(x) ≠ 0` (with inverse `N(x)⁻¹ · star x`; note
+`star` is already in the pin for the general `ℍ[R,c₁,c₂,c₃]`,
+`QuaternionAlgebra.instStarRing`, while `normSq` in the pin is only defined
+for `ℍ[R]` and so has to be written out here).
+
+Applying the ring map `σ` with `σ a < 0` and `σ b < 0` turns `σ (N x)` into
+`x₀² + (-σa) x₁² + (-σb) x₂² + (σa · σb) x₃²` with all four coefficients
+STRICTLY POSITIVE — a positive definite real quadratic form. So `x ≠ 0`
+forces `σ (N x) > 0`, hence `N x ≠ 0`, hence `x` is a unit.
+
+This is what supplies the `DivisionRing D` component of the consumer's
+conclusion, via `DivisionRing.ofIsUnitOrEqZero`, WITHOUT disturbing the
+underlying `Ring` structure — which matters, because the consumer must hand
+back an `Algebra F D` and an `IsQuaternionAlgebra F D` for the SAME ring.
+
+Note only ONE real embedding is required, not total negativity: definiteness
+at a single archimedean place already kills every zero divisor. -/
+theorem isUnit_of_ne_zero_quaternionAlgebra_of_neg_embedding
+    {F : Type*} [Field F] (σ : F →+* ℝ) {a b : F} (ha : σ a < 0) (hb : σ b < 0)
+    (x : _root_.QuaternionAlgebra F a 0 b) (hx : x ≠ 0) : IsUnit x := by
+  obtain ⟨x0, x1, x2, x3⟩ := x
+  -- `n` is the reduced norm `x * star x`, written out because the pin's `normSq`
+  -- exists only for `ℍ[R]`, not for the general symbol algebra.
+  set n : F := x0 ^ 2 - a * x1 ^ 2 - b * x2 ^ 2 + a * b * x3 ^ 2 with hn
+  have hn0 : n ≠ 0 := by
+    intro h
+    have hnσ : σ x0 ^ 2 + (-σ a) * σ x1 ^ 2 + (-σ b) * σ x2 ^ 2
+        + (σ a * σ b) * σ x3 ^ 2 = 0 := by
+      have : σ n = 0 := by rw [h, map_zero]
+      rw [hn] at this
+      simp only [map_add, map_sub, map_mul, map_pow] at this
+      linarith [this]
+    -- all four coefficients are strictly positive under `σ`, so the form is definite
+    have hab : 0 < σ a * σ b := mul_pos_of_neg_of_neg ha hb
+    have t1 : 0 ≤ (-σ a) * σ x1 ^ 2 := mul_nonneg (by linarith) (sq_nonneg _)
+    have t2 : 0 ≤ (-σ b) * σ x2 ^ 2 := mul_nonneg (by linarith) (sq_nonneg _)
+    have t3 : 0 ≤ (σ a * σ b) * σ x3 ^ 2 := mul_nonneg (le_of_lt hab) (sq_nonneg _)
+    have t0 : 0 ≤ σ x0 ^ 2 := sq_nonneg _
+    have e0 : σ x0 = 0 := sq_eq_zero_iff.mp (by linarith)
+    have e1 : σ x1 = 0 := by
+      have h1 : (-σ a) * σ x1 ^ 2 = 0 := by linarith
+      rcases mul_eq_zero.mp h1 with h' | h'
+      · linarith
+      · exact sq_eq_zero_iff.mp h'
+    have e2 : σ x2 = 0 := by
+      have h1 : (-σ b) * σ x2 ^ 2 = 0 := by linarith
+      rcases mul_eq_zero.mp h1 with h' | h'
+      · linarith
+      · exact sq_eq_zero_iff.mp h'
+    have e3 : σ x3 = 0 := by
+      have h1 : (σ a * σ b) * σ x3 ^ 2 = 0 := by linarith
+      rcases mul_eq_zero.mp h1 with h' | h'
+      · linarith
+      · exact sq_eq_zero_iff.mp h'
+    have hx0 : x0 = 0 := σ.injective (by simpa using e0)
+    have hx1 : x1 = 0 := σ.injective (by simpa using e1)
+    have hx2 : x2 = 0 := σ.injective (by simpa using e2)
+    have hx3 : x3 = 0 := σ.injective (by simpa using e3)
+    exact hx (by ext <;> simp [hx0, hx1, hx2, hx3])
+  have hkey : x0 ^ 2 - a * x1 ^ 2 + a * b * x3 ^ 2 - b * x2 ^ 2 ≠ 0 := by
+    intro h
+    exact hn0 (by rw [hn]; linear_combination h)
+  have hmul : (x0 ^ 2 - a * x1 ^ 2 + a * b * x3 ^ 2 - b * x2 ^ 2) *
+      (x0 ^ 2 - a * x1 ^ 2 + a * b * x3 ^ 2 - b * x2 ^ 2)⁻¹ = 1 := mul_inv_cancel₀ hkey
+  refine ⟨⟨⟨x0, x1, x2, x3⟩, n⁻¹ • star (⟨x0, x1, x2, x3⟩ : _root_.QuaternionAlgebra F a 0 b),
+    ?_, ?_⟩, rfl⟩
+  · ext <;> simp [hn] <;> first | ring1 | linear_combination hmul
+  · ext <;> simp [hn] <;> first | ring1 | linear_combination hmul
+
+/-- **STEP 1a-vi — ADELIC PATCHING: local splittings at every finite place
+assemble into a RIGIDIFICATION** (sorry leaf; CUT 2026-07-27; the one leaf of
+the six besides STEP 1a-i that is not elementary).
+
+`IsQuaternionAlgebra.NumberField.WithRigidification F D`
+(`Fermat/FLT/QuaternionAlgebra/NumberField.lean`) is an `F`-algebra map
+`incl : D →ₐ[F] M₂(𝔸_F^∞)` whose `𝔸_F^∞`-linear extension
+`D ⊗_F 𝔸_F^∞ → M₂(𝔸_F^∞)` is BIJECTIVE. The finite adeles are a RESTRICTED
+product, so a family of local splittings `F_w ⊗_F D ≃ M₂(F_w)` is not by
+itself enough: the isomorphisms must be compatible with the integral
+structures at ALL BUT FINITELY MANY `w`.
+
+Content of the leaf, and why it is true. Fix a maximal `𝒪_F`-order
+`𝒪_D ⊂ D` (`D` is module-finite over `F`, so orders exist and a maximal one
+exists by Zorn on the finitely many candidates between a given order and its
+dual). Then:
+
+* `D ⊗_F 𝔸_F^∞` is the restricted product of the `D ⊗_F F_w` with respect
+  to the `𝒪_D ⊗ 𝒪_w`, because `D` is a finite free `F`-module and the finite
+  adeles are the restricted product of the `F_w` with respect to the `𝒪_w`;
+* `𝒪_D ⊗_{𝒪_F} 𝒪_w ≃ M₂(𝒪_w)` for almost all `w` — the finitely many
+  exceptions are the `w` dividing the (reduced) discriminant of `𝒪_D`, and
+  at those `w` the hypothesis `hsplit` still gives `D ⊗ F_w ≃ M₂(F_w)`, so
+  a lattice may be moved to make the splitting integral;
+* assembling the local splittings componentwise over the restricted product
+  gives `incl` and its bijectivity.
+
+The hypothesis is exactly "`D` is split at every finite place"; that
+`hsplit` is what the docstring of `WithRigidification` refers to when it says
+a rigidification "exists if and only if `D` is unramified at all finite
+places".
+
+Stated for an arbitrary quaternion algebra `D` over an arbitrary number
+field, with no reference to `F` being totally real and none to the
+archimedean behaviour of `D` — this leaf is about the finite adeles only, and
+keeping it that way is what makes it independent of STEP 1a-i. -/
+theorem nonempty_withRigidification_of_forall_split
+    (F : Type*) [Field F] [NumberField F] (D : Type*) [Ring D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    (hsplit : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      Nonempty (_root_.TensorProduct F (w.adicCompletion F) D ≃ₐ[w.adicCompletion F]
+        Matrix (Fin 2) (Fin 2) (w.adicCompletion F))) :
+    Nonempty (_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D) := by
+  sorry
+
+/-- **STEP 1a of the Carayol node — ALBERT–BRAUER–HASSE–NOETHER: a totally
+real field of EVEN degree carries a totally definite quaternion algebra that
+is split at every finite place** (PROVEN 2026-07-27 as an assembly over the
+six leaves of the section above; CUT 2026-07-27 out of STEP 1,
+`exists_totallyDefinite_heckeCharacter_of_heckePackage`, which is now a
+PROVEN assembly over this leaf and its sibling
+`exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra`).
+
+THE WITNESS IS A SYMBOL ALGEBRA. `exists_totallyNegative_split_quaternionSymbol_of_even`
+supplies `a b : F` totally negative with every finite Hilbert symbol
+`(a,b)_w` trivial, and the `D` handed back here is literally
+`D := ℍ[F,a,0,b] = QuaternionAlgebra F a 0 b`. Each of the five components
+of the conclusion is then discharged by a named brick:
+
+* `IsQuaternionAlgebra F D` — `isQuaternionAlgebra_quaternionAlgebra_of_ne_zero`
+  (central simple of dimension `4`; `a ≠ 0` and `b ≠ 0` are read off from
+  total negativity at any one real place, and `(2 : F) ≠ 0` from `CharZero`);
+* `DivisionRing D` — `isUnit_of_ne_zero_quaternionAlgebra_of_neg_embedding`
+  at the chosen real place, fed to `DivisionRing.ofIsUnitOrEqZero`. Building
+  it this way is deliberate: the resulting `DivisionRing` sits on the SAME
+  `Ring` structure, so the `Algebra F D` and `IsQuaternionAlgebra F D`
+  returned alongside it are the ones already in scope;
+* `IsTotallyDefinite F D` — `nonempty_algEquiv_quaternionAlgebra_baseChange`
+  at `K = ℝ` (with `Algebra F ℝ` the one induced by `embedding_of_isReal`,
+  for which `algebraMap F ℝ` is that embedding by `rfl`) composed with
+  `nonempty_algEquiv_quaternion_of_neg`;
+* `Nonempty (WithRigidification F D)` —
+  `nonempty_withRigidification_of_forall_split`, whose hypothesis is the
+  base change at `K = F_w` composed with the finite-place splittings.
+
+`hFtr` is used TWICE and both uses are essential: to know some infinite
+place is real (so `D` is a division ring at all, and `a, b ≠ 0`), and to
+turn "definite at every REAL place" into "definite at every INFINITE place",
+which is what `IsTotallyDefinite` demands.
 
 FAITHFULNESS. The conclusion is an EXISTENCE statement about `F` alone; it
 is true for every totally real `F` of even degree and FALSE for every
 totally real `F` of odd degree (the invariants of a quaternion algebra
 split at all finite places would then be an odd number of copies of `1/2`,
 summing to `1/2 ≠ 0`). So `hFeven` is not merely sufficient here, it is
-necessary — which is the precise sense in which this leaf is where the
-node's parity bit is spent.
+necessary. After this cut the parity bit is spent entirely inside
+`exists_totallyNegative_split_quaternionSymbol_of_even`: `hFeven` is passed
+straight through by the assembly below and used nowhere else, which is the
+honest bookkeeping — none of the five bricks knows about parity.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. The six
+leaves respect it: five are pure algebra and the sixth is class field
+theory. -/
 theorem exists_totallyDefinite_rigidified_quaternionAlgebra_of_even
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F)
@@ -3105,7 +3441,37 @@ theorem exists_totallyDefinite_rigidified_quaternionAlgebra_of_even
       (_ : _root_.IsQuaternionAlgebra F D)
       (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D),
       Nonempty (_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D) := by
-  sorry
+  classical
+  obtain ⟨a, b, hneg, hsplitloc⟩ :=
+    exists_totallyNegative_split_quaternionSymbol_of_even F hFtr hFeven
+  -- `hFtr` gives a real place; total negativity there gives `a ≠ 0` and `b ≠ 0`.
+  obtain ⟨v₀⟩ : Nonempty (NumberField.InfinitePlace F) := inferInstance
+  have hv₀ : v₀.IsReal := hFtr.isReal v₀
+  have ha : a ≠ 0 := fun h => by simpa [h] using (hneg v₀ hv₀).1
+  have hb : b ≠ 0 := fun h => by simpa [h] using (hneg v₀ hv₀).2
+  haveI hQ : _root_.IsQuaternionAlgebra F (_root_.QuaternionAlgebra F a 0 b) :=
+    isQuaternionAlgebra_quaternionAlgebra_of_ne_zero (by norm_num) ha hb
+  have hunit : ∀ x : _root_.QuaternionAlgebra F a 0 b, IsUnit x ∨ x = 0 := by
+    intro x
+    rcases eq_or_ne x 0 with rfl | hx
+    · exact Or.inr rfl
+    · exact Or.inl (isUnit_of_ne_zero_quaternionAlgebra_of_neg_embedding
+        (NumberField.InfinitePlace.embedding_of_isReal hv₀)
+        (hneg v₀ hv₀).1 (hneg v₀ hv₀).2 x hx)
+  letI dr : DivisionRing (_root_.QuaternionAlgebra F a 0 b) :=
+    DivisionRing.ofIsUnitOrEqZero hunit
+  refine ⟨_root_.QuaternionAlgebra F a 0 b, dr, inferInstance, hQ, ⟨fun v hv => ?_⟩, ?_⟩
+  · letI : Algebra F ℝ := (NumberField.InfinitePlace.embedding_of_isReal hv).toAlgebra
+    obtain ⟨e⟩ := nonempty_algEquiv_quaternionAlgebra_baseChange F ℝ a b
+    obtain ⟨f⟩ := nonempty_algEquiv_quaternion_of_neg (hneg v hv).1 (hneg v hv).2
+    exact ⟨e.trans f⟩
+  · refine nonempty_withRigidification_of_forall_split F
+      (_root_.QuaternionAlgebra F a 0 b) ?_
+    intro w
+    obtain ⟨e⟩ :=
+      nonempty_algEquiv_quaternionAlgebra_baseChange F (w.adicCompletion F) a b
+    obtain ⟨f⟩ := hsplitloc w
+    exact ⟨e.trans f⟩
 
 /-- **STEP 1b of the Carayol node — JACQUET–LANGLANDS proper: the Hilbert
 eigensystem `(E, heckeF)` transfers to a GIVEN totally definite rigidified
