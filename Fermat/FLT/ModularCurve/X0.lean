@@ -7302,10 +7302,99 @@ theorem nonempty_gamma0Datum_specQ_of_fieldOfModuli {N : ℕ} (hN : N ≠ 0)
     Nonempty (Gamma0Datum N SpecQ) :=
   sorry
 
+/-- **The Galois action preserves the property of lying in a subscheme**
+(PROVEN 2026-07-27, no leaf).
+
+`ab.galSMul x σ` is *precomposition* with `specGal σ` (`galSMul_def`), and
+factoring through `ι` is stable under precomposition, so this is one line.
+It carries no hypothesis on `ι` at all — in particular `C` need not be
+defined over the base in any sense beyond being a scheme over it, because
+the Galois twisting happens entirely on the *source* `Spec ℚ̄` of the
+relative point.
+
+This is the mechanism behind "`cyc.C` is defined over `ℚ`, hence its group
+of geometric points is `Γ_ℚ`-stable", and it is the whole content of the
+level-structure half of `exists_stableCyclic_of_gamma0Datum` below. -/
+theorem liesIn_galSMul {A S C : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) {F : Type u} [Field F]
+    {x : Spec (CommRingCat.of F) ⟶ S} (ι : C ⟶ A)
+    (σ : Field.absoluteGaloisGroup F) {y : GeomFibrePt f x}
+    (hy : RelPoint.LiesIn ι y) :
+    RelPoint.LiesIn ι (ab.galSMul x σ y) := by
+  obtain ⟨w, hw⟩ := hy
+  exact ⟨specGal σ ≫ w, by rw [Category.assoc, hw]; rfl⟩
+
+/-- **An abelian scheme of relative dimension `1` over `ℚ` has a
+Weierstrass model** (sorry node, introduced 2026-07-27): the exact CONVERSE
+of `exists_ellipticScheme_of_weierstrass`, and the larger half of
+`exists_stableCyclic_of_gamma0Datum` below.
+
+TRUE.  `f : A ⟶ Spec ℚ` proper, smooth, geometrically connected of relative
+dimension `1` with a section (`ab.zero`) is a genus-one curve over `ℚ` with
+a rational point.  Riemann–Roch on the divisor `3·O` gives a basis
+`1, x, y` of `L(3·O)` (`dim L(nO) = n` for `n ≥ 1` on a genus-one curve),
+and the seven monomials `1, x, y, x², xy, x³, y²` of `L(6·O)`, a
+`6`-dimensional space, satisfy one linear relation, which after scaling is
+a Weierstrass equation.  Smoothness makes the discriminant a unit, i.e.
+`E.IsElliptic`.  The resulting isomorphism of curves carries `O` to the
+point at infinity, and an isomorphism of genus-one curves matching the
+origins is automatically a group isomorphism (rigidity), whence the
+additive equivalence on `ℚ̄`-points; it is defined over `ℚ`, so it commutes
+with the Galois action, which is `hgal`.
+
+**Reference**: Silverman, *AEC* III.3.1 together with III.3.4 (the
+Riemann–Roch construction of the Weierstrass form and the fact that a
+curve-isomorphism preserving the base point is a group isomorphism).  Over
+a base field rather than an algebraically closed field the construction is
+unchanged, `O` being rational by hypothesis.
+
+**`hdim` is REQUIRED, and here is the check that refutes the statement
+without it.**  Take `A = Spec ℚ`, `f = 𝟙`, with the unique (trivial) group
+law: it is proper, smooth, geometrically connected and has a zero section,
+so it carries an `AbelianSchemeStruct`, and it has relative dimension `0`.
+Its geometric fibre has exactly ONE relative point, while
+`(E⁄ℚ̄).Point` is infinite for every `E` (it already contains the four
+points of `E[2]`).  No additive equivalence exists, so the conclusion fails
+and `hdim` is what excludes the witness.
+
+**What this does NOT give you, and the trap is the same one recorded at
+`exists_weierstrassModel_gamma0Datum`.**  The conclusion remembers `E` only
+through a Galois-equivariant `≃+` on geometric points, which — see
+`IsJMapOn.classify_jm` — is **not** known to determine `E.j`.  So a datum
+produced from this cannot be shown to satisfy `IsWeierstrassModel`, exactly
+as `nonempty_gamma0Datum_of_stable`'s cannot.  A consumer that needs the
+coordinate must go through
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` instead.  That is
+not a defect of this statement: `exists_stableCyclic_of_gamma0Datum`'s
+conclusion mentions no coordinate either, so nothing downstream of it wants
+one.
+
+**WHERE THIS BELONGS.**  Nothing in this statement is about modular curves:
+it is a fact about `AbelianSchemeStruct` and `SmoothOfRelativeDimension`,
+and its natural home is `Fermat/FLT/Modularity/AbelianScheme.lean`, whose
+vocabulary it is written in.  It is stated *here* only because that module
+had a live owner in the merge batch (`flt-lean-121`, carrying the
+polarization module as data) when this leaf was cut, and a concurrent edit
+there would have cost the integrator a conflict for no mathematical gain.
+**A successor should hoist it**, unchanged, once that batch has landed; the
+only consumer is `exists_stableCyclic_of_gamma0Datum` immediately below, so
+the hoist is a move plus one import that already exists. -/
+theorem exists_weierstrassCurve_of_abelianSchemeStruct {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (hdim : SmoothOfRelativeDimension 1 f) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic),
+      letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+      ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+ GeomFibrePt f (𝟙 SpecQ),
+        ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+          e (WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+            = ab.galSMul (𝟙 SpecQ) σ (e x) :=
+  sorry
+
 /-- **A `Γ₀(N)`-datum over `Spec ℚ` IS an elliptic curve over `ℚ` with a
-Galois-stable cyclic subgroup of order `N`** (sorry node, introduced
-2026-07-27): the exact CONVERSE of `nonempty_gamma0Datum_of_stable`, which
-proves the forward direction.
+Galois-stable cyclic subgroup of order `N`** (introduced as a sorry node
+2026-07-27; **PROVEN the same day** over the single leaf
+`exists_weierstrassCurve_of_abelianSchemeStruct` above): the exact CONVERSE
+of `nonempty_gamma0Datum_of_stable`, which proves the forward direction.
 
 TRUE.  An `AbelianSchemeStruct` of relative dimension `1` over `Spec ℚ` is an
 elliptic curve over `ℚ`, hence has a Weierstrass model with `E.IsElliptic`;
@@ -7317,38 +7406,77 @@ geometric fibre is precomposition with `specGal σ`, which preserves the fibre o
 `(E⁄ℚ̄).Point ≃+ GeomFibrePt f (𝟙 SpecQ)` of
 `exists_ellipticScheme_of_weierstrass` gives `g`.
 
-**What has to be built, and where the work is.**  The forward bridge is assembled
+**How it is proven, and where the work went.**  The forward bridge is assembled
 from `exists_ellipticScheme_of_weierstrass` (Weierstrass model ⟹ elliptic
 scheme) and `exists_cyclicSubgroupOfOrder_of_galoisStable` (Galois descent for
-the level structure).  This leaf needs the two converses:
+the level structure).  This node needs the two converses, and they turned out to
+be of very unequal size:
 
-1. *elliptic scheme ⟹ Weierstrass model*.  An abelian scheme of relative
-   dimension `1` over a field is a genus-one curve with a rational point, so
-   Riemann–Roch on `𝒪(3·0)` gives the Weierstrass equation.  This is the larger
-   half, and it is a statement about `AbelianSchemeStruct` rather than about
-   modular curves — a successor may prefer to state it separately, in the
-   `Modularity/AbelianScheme.lean` vocabulary, and consume it here.
-2. *level structure ⟹ stable generator*, which is `cyc.geom_cyclic` read
-   backwards through the same equivalence the forward bridge uses; that half is
-   bookkeeping, and `nonempty_gamma0Datum_of_stable` shows the shape of it.
+1. *elliptic scheme ⟹ Weierstrass model* is the LEAF
+   `exists_weierstrassCurve_of_abelianSchemeStruct` above — Riemann–Roch on
+   `𝒪(3·O)`, stated in `AbelianSchemeStruct` vocabulary and carrying its own
+   route, reference and refuting check.  It is where all the geometry is.
+2. *level structure ⟹ stable generator* is PROVEN here, and is three steps:
+   `cyc.geom_cyclic` at `K = ℚ̄` and `t = specAlgClos ℚ ≫ 𝟙` supplies `y` of
+   order `N` whose `zmultiples` are EXACTLY the relative points lying in
+   `cyc.C`; `liesIn_galSMul` turns that characterisation into `Γ_ℚ`-stability
+   of `AddSubgroup.zmultiples y` with no further input; and the additive
+   equivalence `e` transports both statements back to `E(ℚ̄)`.
 
-`hN : N ≠ 0` is REQUIRED: at `N = 0` the hypothesis is inhabited by nothing —
-`isEmpty_of_gamma0Datum_zero` forbids a `Gamma0Datum 0 SpecQ` over the nonempty
-base `Spec ℚ` — so keeping `hN` merely records which level range is meant rather
-than relying on the reader to rediscover the degeneracy. -/
-theorem exists_stableCyclic_of_gamma0Datum {N : ℕ} (hN : N ≠ 0)
+**The stability argument does not use additivity of `galSMul`**, and that is
+worth recording because the forward direction does.  Rather than push `σ`
+through a `zsmul`, it goes around the loop
+`x ∈ ⟨g⟩ → e x ∈ ⟨y⟩ → LiesIn ι (e x) → LiesIn ι (σ • e x) → σ • e x ∈ ⟨y⟩`,
+using the `↔` of `geom_cyclic` in both directions.  Only `e`'s additivity is
+needed, twice, and only to move `zmultiples` across it.
+
+`hN : N ≠ 0` is NOT consumed, and is underscore-prefixed so that this is
+mechanically visible rather than merely asserted.  It is retained in the
+signature — `isEmpty_of_gamma0Datum_zero` forbids a `Gamma0Datum 0 SpecQ` over
+the nonempty base `Spec ℚ`, so at `N = 0` the statement is *vacuously* true and
+the hypothesis records which level range is meant rather than doing work.  The
+one call site, `y0HasNoRationalPoint_of_not_stableCyclic`, passes it
+positionally and is unaffected. -/
+theorem exists_stableCyclic_of_gamma0Datum {N : ℕ} (_hN : N ≠ 0)
     (d : Gamma0Datum N SpecQ) :
     ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic)
       (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = N ∧
         ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
           WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-            AddSubgroup.zmultiples g :=
-  sorry
+            AddSubgroup.zmultiples g := by
+  classical
+  obtain ⟨E, hE, e, he⟩ :=
+    exists_weierstrassCurve_of_abelianSchemeStruct d.ab d.relativeDimensionOne
+  letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- The generator of the geometric fibre of the level structure, together with
+  -- the characterisation of `⟨y⟩` as EXACTLY the points lying in `cyc.C`.
+  obtain ⟨y, -, hyord, hychar⟩ :=
+    d.cyc.geom_cyclic (AlgebraicClosure ℚ) (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  refine ⟨E, hE, e.symm y, ?_, ?_⟩
+  · rw [← AddEquiv.addOrderOf_eq e, AddEquiv.apply_symm_apply]
+    exact hyord
+  · intro σ x hx
+    -- `e` carries `⟨e.symm y⟩` into `⟨y⟩` …
+    have hxy : e x ∈ AddSubgroup.zmultiples y := by
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+      refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+      rw [← hk, map_zsmul, AddEquiv.apply_symm_apply]
+    -- … `⟨y⟩` is Galois-stable because it is a `LiesIn` locus …
+    have hgal : e (WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+          ∈ AddSubgroup.zmultiples y := by
+      rw [he σ x]
+      exact (hychar _).mp (liesIn_galSMul d.ab d.cyc.ι σ ((hychar (e x)).mpr hxy))
+    -- … and `e.symm` carries it back.
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hgal
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+    have hsym := congrArg e.symm hk
+    rwa [AddEquiv.symm_apply_apply, map_zsmul] at hsym
 
 /-- **A rational point of `Y_0(N)` comes from an elliptic curve over `ℚ`**
-(introduced as a sorry node 2026-07-27; **PROVEN the same day** over the three
-leaves above), in the contrapositive form that its consumers want: if no
+(introduced as a sorry node 2026-07-27; **PROVEN the same day** over the leaves
+above), in the contrapositive form that its consumers want: if no
 elliptic curve over `ℚ` carries a Galois-stable cyclic subgroup of order `N`,
 then `Y_0(N)` has no rational point.
 
@@ -7382,8 +7510,12 @@ would refute it.
 
 #### How it is proven, and what is left open
 
-The three leaves above, plus the two steps that are genuinely about this
-statement and are carried out here:
+The leaves above, plus the two steps that are genuinely about this statement and
+are carried out here.  **Two of the three nodes cited below are still LEAVES;
+the third, `exists_stableCyclic_of_gamma0Datum`, is now PROVEN** over the single
+leaf `exists_weierstrassCurve_of_abelianSchemeStruct`, so the open frontier of
+this assembly is `exists_isGeometricallyBijectiveY0`,
+`nonempty_gamma0Datum_specQ_of_fieldOfModuli` and that Weierstrass-model leaf:
 
 1. `exists_isGeometricallyBijectiveY0` (LEAF) gives geometric bijectivity for
    one coarse space, and `IsGeometricallyBijectiveY0.transport` (PROVEN) carries
@@ -7401,9 +7533,9 @@ statement and are carried out here:
    an ISOMORPHISM `dσ ≅ d`.  That is exactly the hypothesis `hmod` of the
    descent leaf, and it is where the rationality of `y` is consumed.
 3. `nonempty_gamma0Datum_specQ_of_fieldOfModuli` (LEAF) performs the twist and
-   returns a datum over `Spec ℚ`; `exists_stableCyclic_of_gamma0Datum` (LEAF)
-   converts that datum back into a Weierstrass curve with a stable cyclic
-   subgroup, contradicting `h`.
+   returns a datum over `Spec ℚ`; `exists_stableCyclic_of_gamma0Datum` (PROVEN,
+   over the Weierstrass-model leaf) converts that datum back into a Weierstrass
+   curve with a stable cyclic subgroup, contradicting `h`.
 4. *The degenerate level, PROVEN here.*  At `N = 0` no descent happens at all:
    `isEmpty_of_isCoarseModuliY0_zero` makes the coarse space empty, and a
    section of `str` would give a map out of the nonempty `Spec ℚ` into it.
