@@ -6,6 +6,13 @@ Authors: Kevin Buzzard
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+public import Fermat.FLT.Deformations.RepresentationTheory.ArtinConductor
+-- `wildInertiaGroup` (and `tameFixingSubgroup` behind it), which appear in
+-- the STATEMENTS of the two Raynaud/tameness leaves
+-- `exists_localInertia_generator_of_wildInertia_trivial` and
+-- `wildInertia_fixes_connected_threeTorsion_of_hopf_package` below. The
+-- module imports only `GaloisRep`, which is already in this cone, so the
+-- import adds exactly one module to it.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
 -- `mod_three` (the mod-3 classification), consumed by the derivation of
 -- `exists_frobenius_triangular` below
@@ -2627,12 +2634,222 @@ theorem connected_vector_threePow_torsion_of_hopf_package
   have h2 := congrArg g hX
   rwa [g.apply_symm_apply, show g 0 = fG 0 from rfl, map_zero fG] at h2
 
+/-- **The TAME QUOTIENT is PROCYCLIC: every finite quotient of local
+inertia that kills wild inertia is CYCLIC** (SORRY LEAF, cut 2026-07-27
+out of
+`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
+below, which is PROVEN over it together with the Raynaud tameness leaf
+`wildInertia_fixes_connected_threeTorsion_of_hopf_package` just after
+it).
+
+Content, in the shape a consumer needs it: whenever local inertia at a
+finite place `v` acts on a FINITE type `X` (the action given as a bare
+family of maps `act` with `act 1 = id` and `act (a * b) = act a ∘ act
+b`) and WILD inertia acts trivially, there is ONE `σ ∈ I_v` whose
+action GENERATES: every `τ ∈ I_v` acts as an iterate of `act σ`.
+
+This is pure local Galois theory: there is no Galois representation, no
+group scheme, no Hopf package, nothing `3`-adic and nothing about the
+number field `K` beyond `v` being a finite place. It is stated
+generically in `K` and `v` and is reusable anywhere the development
+needs "the tame quotient is procyclic" in usable form.
+
+MATHEMATICAL CONTENT. `hwild` says the action factors through
+`I_v / P_v`, the TAME quotient, and Serre, *Corps Locaux* IV §2 /
+Neukirch II.7.11 identify that quotient with
+`lim_{(n, ℓ) = 1} μ_n(k̄_v) ≅ ∏_{ℓ ≠ ℓ_v} ℤ_ℓ`, which is PROCYCLIC.
+Since `X` is finite, the image of `I_v` in the permutation group of `X`
+is a FINITE group, and a finite quotient of `∏_ℓ ℤ_ℓ` is cyclic; taking
+`σ` above a generator of that image gives the conclusion, because in a
+finite cyclic group every element is a non-negative power of a
+generator and `act (σ ^ n) = (act σ)^[n]` by `hone`/`hmul`.
+
+ROUTE FOR A PROVER — AND ONE OBLIGATION YOU DO **NOT** HAVE.
+Continuity is not needed anywhere, and chasing it is the obvious way to
+lose a day here. The reason is that **every ABSTRACT finite quotient of
+`∏_ℓ ℤ_ℓ` is already cyclic**: such a quotient `H` is abelian and
+killed by `n := |H|`, so the surjection factors through
+`(∏_ℓ ℤ_ℓ) / n · (∏_ℓ ℤ_ℓ) = ∏_ℓ (ℤ_ℓ / n ℤ_ℓ) = ∏_{ℓ ∣ n} ℤ / ℓ^{v_ℓ n}
+≅ ℤ / n`, using that multiplication by `n` on a product is
+coordinatewise and that `ℤ_ℓ` is uniquely `q`-divisible for `q ≠ ℓ`.
+So `H` is a quotient of a cyclic group. No topology, no profinite
+completion, no open-subgroup argument.
+
+What genuinely has to be built is the identification of the tame
+quotient itself, against **this file's own `wildInertiaGroup`**, which
+is `localInertiaGroup v ⊓ tameFixingSubgroup v` with
+`tameFixingSubgroup` spelled through GENERATORS (`σ` fixes every `x`
+integral over `𝒪ᵥ` with `x ^ n ∈ 𝒪ᵥ` for `n` prime to the residue
+characteristic) precisely so that no theory of the maximal tame
+extension is presupposed — see its docstring in
+`Deformations/RepresentationTheory/ArtinConductor.lean`. The route is
+Kummer theory over `Kᵥⁿʳ`: a finite quotient of `I_v` killing `P_v`
+corresponds to a finite subextension of `Kᵥᵗᵃᵐᵉ / Kᵥⁿʳ`, which is
+`Kᵥⁿʳ(π^{1/e})` for some `e` prime to the residue characteristic, with
+Galois group `≅ μ_e(k̄_v)` — cyclic. `~/cs/FLT` is worth grepping for
+tame-quotient material before building this from scratch.
+
+FAITHFULNESS. The conclusion quantifies over `localInertiaGroup v`
+only, never over `Γ Kᵥ`, so it is on the true side of the
+development's inertia-vs-`Γ` rule; widening `σ, τ` to the whole
+decomposition group would make it FALSE, since the decomposition
+quotient `I_v` extends by the (also procyclic) unramified quotient but
+the extension need not be cyclic. The `Finite X` hypothesis is
+ESSENTIAL and not cosmetic: `I_v / P_v` is procyclic but not cyclic, so
+without finiteness of the image no single `σ` can have every `τ` as an
+integer power of it — `1 ∈ ẑ` does not generate `ẑ` as an abstract
+group.
+
+CHECK THAT WOULD REFUTE THIS: exhibit a finite `X`, an action of `I_v`
+trivial on `P_v`, and two elements of `I_v` whose actions generate a
+non-cyclic subgroup of `Equiv.Perm X` — e.g. an `S₃` or a Klein
+four-group image. The `S₃` configuration recorded on the consumer below
+is exactly such an attempt, and it fails because its unipotent generator
+has order `3 = p`, so it is wildly ramified.
+
+Serre, *Corps Locaux* IV §2 and *Propriétés galoisiennes…*, Invent.
+Math. 15 (1972), §1.3 (the tame quotient and the fundamental
+characters); Neukirch, *Algebraic Number Theory*, II.7.11. -/
+theorem exists_localInertia_generator_of_wildInertia_trivial
+    {K : Type*} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
+    {X : Type*} [Finite X]
+    (act : (localInertiaGroup v) → X → X)
+    (hone : ∀ x : X, act 1 x = x)
+    (hmul : ∀ (a b : localInertiaGroup v) (x : X), act (a * b) x = act a (act b x))
+    (hwild : ∀ π : localInertiaGroup v,
+      (π : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) ∈ wildInertiaGroup v →
+      ∀ x : X, act π x = x) :
+    ∃ σ : localInertiaGroup v, ∀ τ : localInertiaGroup v, ∃ n : ℕ,
+      ∀ x : X, act τ x = (act σ)^[n] x := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Raynaud at `e = 1 < p − 1`: the CONNECTED `3`-torsion is TAMELY
+ramified** (SORRY LEAF, cut 2026-07-27 out of
+`exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package`
+below, which is PROVEN over it together with the procyclicity leaf
+`exists_localInertia_generator_of_wildInertia_trivial` just above).
+
+Content: WILD inertia at `3` acts TRIVIALLY on every CONNECTED vector
+killed by `3` — every `w` with `3 • w = 0` whose point takes the value
+`1` at the connected counit idempotent `e₀`.
+
+THIS IS THE ENTIRE FINITE-FLAT INPUT OF THE CONSUMER, and it is the
+declaration that spends `e = 1 < p − 1 = 2`. Everything else the
+consumer needs is either formal (finiteness of the point set,
+inertia-stability of the connected locus, the iterate argument) or is
+the pure local-field statement of the procyclicity leaf above.
+
+MATHEMATICAL CONTENT. The connected `3`-torsion socle is the geometric
+point group of the schematic closure, inside `Spec (e₀ G)`, of the
+`3`-torsion of the generic fibre: a finite flat `𝒪ᵥ`-group scheme
+KILLED BY `3` over a base with `e = 1 < p − 1 = 2`. Raynaud (Bull. SMF
+102 (1974), 3.3.2–3.3.5 and 3.4.3) classifies these: the action of
+inertia is through products of fundamental characters `∏ ψᵢ ^ nᵢ` with
+`nᵢ ≤ e = 1`, and fundamental characters are TAME, so the whole action
+factors through `I₃ / P₃`. That is exactly this statement.
+
+**CONNECTEDNESS IS ESSENTIAL AND THE UNRESTRICTED FORM IS FALSE — do
+not "simplify" this leaf by dropping `e₀`.** The tempting stronger
+statement is "wild inertia acts trivially on ALL of `M[3]`", which
+would drop `e₀`, `he₀`, `hε₀`, `hprim₀` and `hcomul₀` at a stroke and
+looks like a cleaner leaf. It is refuted by GOOD ORDINARY REDUCTION at
+`3`: for `E / ℚ₃` with good ordinary reduction, `E[3]` IS finite flat
+over `ℤ₃` (so every hypothesis of the dropped form holds, with
+`e = 1 < p − 1`), yet `ρ_{E,3} |_{I₃}` is `[[ω, *], [0, 1]]` with the
+extension class `*` a Kummer class of a `3`-adic UNIT, and
+`ℚ₃(ζ₃, u^{1/3})` is wildly ramified for `u` a unit that is not a cube
+modulo `λ^3` (`λ = ζ₃ − 1`, `v_λ(3) = 2`). What Raynaud bounds in that
+situation is only the SEMISIMPLIFICATION; Fontaine's ramification
+bound for `n = 1, e = 1, p = 3` is `u > e (n + 1/(p − 1)) = 3/2`, which
+permits a wild break in `(0, 3/2]` and the ordinary curve realises one.
+The connected part `E[3]⁰ = Ê[3] ≅ μ₃ ⊗ ψ` is rank one and tame — the
+wildness lives entirely in the EXTENSION, which the connectedness
+hypothesis removes.
+
+THE REFUTATION IS COMPUTED, NOT ASSERTED (PARI/GP, 2026-07-27). `E =
+11a1 = [0,−1,1,−10,−20]` has conductor `11` (so good reduction at `3`)
+and `a₃ = −1 ≢ 0 (mod 3)` (so ORDINARY at `3`), hence `E[3]` is a
+finite flat `ℤ₃`-group scheme killed by `3` with `e = 1 < p − 1`. Its
+`3`-division field ramifies at `3` with `e = 6`, and `3 ∣ 6`, i.e.
+WILDLY. Re-runnable in seconds:
+
+    E = ellinit([0,-1,1,-10,-20]);  P = elldivpol(E,3);
+    K = nfinit(nfsplitting(P));     idealprimedec(K,3)
+    \\ degree 24, four primes above 3, each with e = 6, f = 1
+
+(The `x`-coordinate field suffices: `ℚ(E[3])` is at most a quadratic
+extension of it, so it cannot introduce or remove a factor of `3` in
+`e`.) Anyone tempted to restate this leaf without `e₀` should run that
+first.
+
+WHY THE CONNECTED CASE IS NEVERTHELESS TAME. The graded pieces of a
+connected `G⁰` killed by `3` over `ℤ₃` are the connected SIMPLE objects
+— `μ₃` up to unramified twist, and the higher Raynaud
+`𝔽_{3^r}`-vector-space schemes whose inertia action is by level-`r`
+fundamental characters — all of them tame. The extensions do not
+reintroduce wildness: for an iterated extension of `μ₃`-types the
+Cartier dual is an extension of étale by étale, hence étale, hence
+UNRAMIFIED, and `G⁰(K̄) ≅ (G⁰)^∨(K̄)^∨ ⊗ μ₃` is then `ω ⊗ unramified`.
+(That duality argument is currently unavailable in Lean:
+`grep -rn 'CartierDual\|cartierDual' Fermat/` was re-run 2026-07-27 and
+still returns nothing outside docstrings. A Cartier-duality build has
+its OWN owner — re-run the grep before assuming it is unavailable, since
+if it lands this leaf becomes much easier.)
+
+WHAT DEFEATS THE `S₃` CONFIGURATION, MECHANICALLY. For `A = 𝔽₃²` with
+`I` acting through a copy of `S₃` by `σ ↦ [[1,1],[0,1]]` and
+`τ ↦ diag(−1,1)` one has `A^I = 0` while EVERY single element fixes a
+nonzero vector, so no derivation of the consumer from `(M⁰)^{I₃} = 0`
+alone can exist. This leaf is what rules the configuration out:
+`[[1,1],[0,1]]` has order `3 = p`, so that image is wildly ramified,
+which is exactly what is forbidden here. Any proof of this leaf must
+therefore spend `e < p − 1`; a proof that does not is wrong.
+
+FAITHFULNESS. The conclusion is a VALUE-level statement about vectors;
+the quantifier `π ∈ wildInertiaGroup 𝔭₃` is over (wild) INERTIA and is
+not widened to `Γ`, and no element of `G`, no coordinate and no normal
+form appears. So the leaf is on the true side of the development's
+`𝒪ᵥ`-descent rule and blind to the `p − 1` unramified twists `μ₃ ⊗ ψ`
+that killed `exists_muType_closure`: a twist changes WHICH vectors are
+connected, not whether wild inertia moves them.
+
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 3.3.2–3.3.5 and 3.4.3; Fontaine, *Il n'y a pas de variété
+abélienne sur `ℤ`*, §1 (the ramification bound); Serre, *Propriétés
+galoisiennes…*, Invent. Math. 15 (1972), §1.11; Tate, *Finite flat
+group schemes*, §4, in Cornell–Silverman–Stevens. -/
+theorem wildInertia_fixes_connected_threeTorsion_of_hopf_package
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (ρ' : GaloisRep ℚ A N)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
+    [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      ((ρ'.toLocal 𝔭₃).Space))
+    (hfG : Function.Bijective fG) :
+    ∀ π ∈ wildInertiaGroup 𝔭₃, ∀ w : N, (3 : ℕ) • w = 0 →
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm w))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
+      (ρ'.toLocal 𝔭₃) π w = w := by
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **Raynaud TAMENESS at `e = 1 < p − 1`: local inertia acts on the
-connected `3`-torsion through a CYCLIC quotient** (SORRY LEAF, cut
-2026-07-27 out of
+connected `3`-torsion through a CYCLIC quotient** (PROVEN 2026-07-27
+over the two leaves `exists_localInertia_generator_of_wildInertia_trivial`
+and `wildInertia_fixes_connected_threeTorsion_of_hopf_package` just
+above, into which it was decomposed on that date; it was itself a SORRY
+LEAF, cut 2026-07-27 out of
 `exists_localInertia_no_fixed_connected_vector_of_hopf_package` below,
 which is PROVEN over it together with the order leaf
 `connected_vector_threePow_torsion_of_hopf_package` just above).
@@ -2650,18 +2867,42 @@ Nakayama descent from `3 ^ k`-torsion to the socle, and the passage
 from "fixed by all of `I₃`" to `0` — is discharged below over the
 PROVEN `inertiaFixed_connected_vector_eq_zero_of_hopf_package`.
 
-ROUTE FOR A PROVER. The socle is the geometric point group of a finite
-flat `𝒪ᵥ`-group scheme KILLED BY `3` — the schematic closure inside
-`Spec (e₀ G)` of the `3`-torsion of the generic fibre — so Raynaud's
-hypothesis is met at `e = 1 < p − 1 = 2`. Raynaud (Bull. SMF 102
-(1974), 3.3.2–3.3.5 and 3.4.3) then gives: WILD inertia acts TRIVIALLY,
-and tame inertia acts through products of fundamental characters
-`∏ ψᵢ ^ nᵢ` with `nᵢ ≤ e = 1`. So the action factors through the TAME
-quotient `I₃ ↠ I₃^t ≅ ∏_{ℓ ≠ 3} ℤ_ℓ`, which is PROCYCLIC; its image in
-the (finite) automorphism group of the socle is therefore CYCLIC, and
-any `σ` mapping to a generator satisfies the conclusion, because
-`x` fixed by a generator is fixed by every power of it and hence by the
-whole image.
+THE DECOMPOSITION OF 2026-07-27, and why it is along the right seam.
+The recorded route below has exactly two inputs, and they come from
+completely different subjects and fail for different reasons, so they
+are now two leaves with independent owners:
+
+* the FINITE-FLAT input, "wild inertia acts trivially on the connected
+  `3`-torsion", is `wildInertia_fixes_connected_threeTorsion_of_hopf_package`
+  — this is the declaration that spends `e = 1 < p − 1 = 2`, and it is
+  Raynaud and nothing else. Its docstring records the refutation of the
+  tempting `e₀`-free generalisation (good ORDINARY reduction at `3`
+  realises a wild break), so the connectedness hypothesis is now known
+  to be load-bearing rather than merely inherited;
+* the LOCAL-FIELD input, "the tame quotient is procyclic, so its finite
+  quotients are cyclic", is
+  `exists_localInertia_generator_of_wildInertia_trivial` — stated
+  generically in `K` and `v`, with no representation, no group scheme
+  and nothing `3`-adic in it, and therefore reusable across the whole
+  development. Its docstring also discharges the continuity obligation a
+  prover would otherwise chase: every ABSTRACT finite quotient of
+  `∏_ℓ ℤ_ℓ` is already cyclic.
+
+PROOF (what is discharged HERE, and it is all of the non-classification,
+non-local-field content). The connected locus `C` is closed under `0`
+and `+` (counit-one and comultiplication absorption, through
+`convMul_apply_one_of_comul_absorbs`) and every inertia displacement
+lies in it (`inertia_displacement_apply_connected_idempotent_eq_one`),
+so `C` is INERTIA-STABLE — `ρ'(τ) x = (ρ'(τ) x − x) + x`. The geometric
+point set is FINITE (`Module.Finite 𝒪ᵥ G` base-changes to
+`Module.Finite ℚ₃ᵥ (ℚ₃ᵥ ⊗ G)` and mathlib's instance `Finite (S →ₐ[R] K)`
+applies; `fG` transports it to the space), so the socle
+`S = {x | 3 • x = 0 ∧ x ∈ C}` is a FINITE inertia-stable set. That makes
+`S` a legitimate `X` for the procyclicity leaf, whose `hwild` hypothesis
+is exactly the Raynaud leaf. It returns `σ` with every `τ` acting as an
+ITERATE of `act σ`, and `Function.iterate_fixed` turns `σ`-fixedness
+into fixedness by that iterate, hence by `τ`. No Raynaud input and no
+tame-quotient theory enter here.
 
 WHY TAMENESS AND NOT ω-ISOTYPY. An earlier framing of the parent
 attributed the defeat of the `S₃` counterexample below to "Raynaud's
@@ -2684,27 +2925,42 @@ configuration too, and correctly so: `S₃` is NOT cyclic. What rules the
 configuration out over `ℤ₃` is exactly what this leaf asserts —
 `[[1,1],[0,1]]` has order `3`, so that image is wildly ramified, which
 `e = 1 < p − 1` forbids. Any proof of this leaf must therefore spend
-`e < p − 1`; a proof that does not is wrong.
+`e < p − 1`; a proof that does not is wrong. That obligation now lands
+squarely on `wildInertia_fixes_connected_threeTorsion_of_hopf_package`,
+which is where the assembly below draws its only finite-flat input;
+the assembly itself spends none of it and is correspondingly unable to
+manufacture it.
 
-CHECKS THAT WOULD REFUTE THIS OBSTRUCTION RECORD (state them, do not
-just believe them): (i) exhibit a derivation of the conclusion from
-`(M⁰)^{I₃} = 0` alone — it must contend with the `S₃` configuration;
-(ii) find a Cartier-duality development in the tree transporting the
-proven "no unramified sub" half to this one —
-`grep -rn 'CartierDual\|cartierDual' Fermat/` returns nothing as of
-2026-07-27, which is why that route was not taken; a Cartier-duality
-build has its own owner, so re-run the grep before assuming it is
-unavailable.
+CHECKS THAT WOULD REFUTE THE OBSTRUCTION RECORD, BOTH RE-RUN 2026-07-27
+(state them, do not just believe them): (i) exhibit a derivation of the
+conclusion from `(M⁰)^{I₃} = 0` alone — it must contend with the `S₃`
+configuration, and the decomposition below does NOT attempt one: it
+takes tameness as an explicit leaf; (ii) find a Cartier-duality
+development in the tree transporting the proven "no unramified sub"
+half to this one — `grep -rn 'CartierDual\|cartierDual' Fermat/` was
+re-run on 2026-07-27 and still matches only docstrings, which is why
+that route was not taken. A Cartier-duality build has its own owner, so
+re-run the grep before assuming it is unavailable: if it lands it would
+most likely close
+`wildInertia_fixes_connected_threeTorsion_of_hopf_package` directly,
+since the duality argument for the connected case is written out there.
 
-`hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
-idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
-"connected locus" all of `M`; for the CONSTANT group scheme `G = ℤ/3`
-over `𝒪ᵥ` the module `M` is unramified, so every `σ ∈ I₃` fixes every
-vector — the conclusion then holds vacuously for that `G`, but the
-parent's use of it does not, which is where the falsity surfaces.
-Primitivity of `e₀` — supplied by consumers as minimality, through
-`mul_eq_zero_or_mul_eq_of_minimal` — is what pins `e₀ G` as the
-connected component of the identity. Do not drop or underscore it.
+`hprim₀`: KEEP IT, BUT THE INHERITED JUSTIFICATION WAS WRONG (corrected
+2026-07-27 while proving this leaf). The previous version of this
+paragraph read "`hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS
+FALSE" and offered the constant group scheme `G = ℤ/3` with `e₀ = 1` as
+the witness — but it then conceded in the same sentence that "the
+conclusion holds vacuously for that `G`", which is precisely NOT a
+refutation. The witness refutes the PARENT
+(`exists_localInertia_no_fixed_connected_vector_of_hopf_package`, where
+`M` unramified makes fixed-point-freeness impossible), and it was
+copied down to this leaf where fixed-locus CONTAINMENT survives it
+untouched. Nothing in the cut is affected — `hprim₀` is genuinely
+consumed here, since it is passed straight through to the Raynaud leaf
+`wildInertia_fixes_connected_threeTorsion_of_hopf_package`, whose OWN
+docstring carries the real reason connectedness cannot be dropped (good
+ORDINARY reduction at `3`). So: do not drop or underscore `hprim₀`, and
+do not reinstate the refuted justification for it.
 
 FAITHFULNESS. The conclusion is a VALUE-level statement about vectors,
 both quantifiers `σ, τ ∈ localInertiaGroup 𝔭₃` are over INERTIA and
@@ -2738,7 +2994,98 @@ theorem exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm w))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
       (ρ'.toLocal 𝔭₃) σ w = w → (ρ'.toLocal 𝔭₃) τ w = w := by
-  sorry
+  classical
+  set g := Equiv.ofBijective fG hfG with hg
+  have hfs : ∀ x : N, fG (g.symm x) = x := fun x => g.apply_symm_apply x
+  have hgs_add : ∀ x y : N, g.symm (x + y) = g.symm x + g.symm y := by
+    intro x y
+    apply g.injective
+    show fG (g.symm (x + y)) = fG (g.symm x + g.symm y)
+    rw [map_add fG, hfs, hfs, hfs]
+  have hgs_zero : g.symm (0 : N) = 0 := by
+    apply g.injective
+    show fG (g.symm (0 : N)) = fG 0
+    rw [map_zero fG, hfs]
+  -- the connected locus
+  set C : Set N := {x : N |
+    (Additive.toMul (g.symm x)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1} with hC
+  have hCzero : (0 : N) ∈ C := by
+    show (Additive.toMul (g.symm (0 : N))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1
+    rw [hgs_zero, toMul_zero, ← AlgHom.liftEquiv_symm_apply,
+      vendored_one_eq_convOne, liftEquiv_symm_convOne]
+    show algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) e₀) = 1
+    rw [hε₀, map_one]
+  have hCadd : ∀ x y : N, x ∈ C → y ∈ C → x + y ∈ C := by
+    intro x y hx hy
+    have hx' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (g.symm x)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hx
+    have hy' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (g.symm y)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hy
+    show (Additive.toMul (g.symm (x + y))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1
+    rw [hgs_add, toMul_add, ← AlgHom.liftEquiv_symm_apply,
+      vendored_mul_eq_convMul, liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hx' hy'
+  -- every inertia displacement is connected …
+  have hCdisp : ∀ τ ∈ localInertiaGroup 𝔭₃, ∀ y : N,
+      (ρ'.toLocal 𝔭₃) τ y - y ∈ C := fun τ hτ y =>
+    inertia_displacement_apply_connected_idempotent_eq_one ρ' G e₀ he₀ hε₀ fG hfG
+      τ hτ y
+  -- … hence the connected locus is INERTIA-STABLE, since
+  -- `ρ'(τ) x = (ρ'(τ) x − x) + x`
+  have hCstab : ∀ τ ∈ localInertiaGroup 𝔭₃, ∀ x : N, x ∈ C →
+      (ρ'.toLocal 𝔭₃) τ x ∈ C := by
+    intro τ hτ x hx
+    have h := hCadd _ _ (hCdisp τ hτ x) hx
+    rwa [sub_add_cancel] at h
+  -- the geometric point set is finite, hence so is the space
+  haveI : Finite (Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) :=
+    inferInstanceAs (Finite (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ))
+  haveI : Finite N := Finite.of_equiv _ g
+  -- the connected `3`-torsion socle: a FINITE, inertia-stable set, on which
+  -- the wild inertia acts trivially by the Raynaud leaf
+  set S : Set N := {x : N | (3 : ℕ) • x = 0 ∧ x ∈ C} with hS
+  have hSstab : ∀ (τ : localInertiaGroup 𝔭₃) (x : N), x ∈ S →
+      (ρ'.toLocal 𝔭₃) (τ : Γ ℚ₃ᵥ) x ∈ S := by
+    intro τ x hx
+    refine ⟨?_, hCstab _ τ.2 x hx.2⟩
+    rw [← map_nsmul, hx.1, map_zero]
+  set act : (localInertiaGroup 𝔭₃) → S → S :=
+    fun τ x => ⟨(ρ'.toLocal 𝔭₃) (τ : Γ ℚ₃ᵥ) x.1, hSstab τ x.1 x.2⟩ with hact
+  have hone : ∀ x : S, act 1 x = x := by
+    intro x
+    apply Subtype.ext
+    show (ρ'.toLocal 𝔭₃) ((1 : localInertiaGroup 𝔭₃) : Γ ℚ₃ᵥ) x.1 = x.1
+    rw [OneMemClass.coe_one, map_one]
+    rfl
+  have hmul : ∀ (a b : localInertiaGroup 𝔭₃) (x : S),
+      act (a * b) x = act a (act b x) := by
+    intro a b x
+    apply Subtype.ext
+    show (ρ'.toLocal 𝔭₃) ((a * b : localInertiaGroup 𝔭₃) : Γ ℚ₃ᵥ) x.1
+        = (ρ'.toLocal 𝔭₃) (a : Γ ℚ₃ᵥ) ((ρ'.toLocal 𝔭₃) (b : Γ ℚ₃ᵥ) x.1)
+    rw [Subgroup.coe_mul, map_mul]
+    rfl
+  have hwild : ∀ π : localInertiaGroup 𝔭₃,
+      (π : Γ ℚ₃ᵥ) ∈ wildInertiaGroup 𝔭₃ → ∀ x : S, act π x = x := by
+    intro π hπ x
+    apply Subtype.ext
+    exact wildInertia_fixes_connected_threeTorsion_of_hopf_package ρ' G e₀ he₀ hε₀
+      hprim₀ hcomul₀ fG hfG _ hπ x.1 x.2.1 x.2.2
+  -- procyclicity of the tame quotient hands over the generator
+  obtain ⟨σ, hgen⟩ :=
+    exists_localInertia_generator_of_wildInertia_trivial 𝔭₃ act hone hmul hwild
+  refine ⟨(σ : Γ ℚ₃ᵥ), σ.2, ?_⟩
+  intro τ hτ w hw3 hwc hwfix
+  have hwS : w ∈ S := ⟨hw3, hwc⟩
+  obtain ⟨n, hn⟩ := hgen ⟨τ, hτ⟩
+  have hfixS : act σ ⟨w, hwS⟩ = ⟨w, hwS⟩ := Subtype.ext hwfix
+  have hiter : (act σ)^[n] ⟨w, hwS⟩ = ⟨w, hwS⟩ :=
+    Function.iterate_fixed hfixS n
+  have hfin := hn ⟨w, hwS⟩
+  rw [hiter] at hfin
+  exact congrArg Subtype.val hfin
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
