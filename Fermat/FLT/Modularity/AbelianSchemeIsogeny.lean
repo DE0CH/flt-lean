@@ -102,6 +102,12 @@ public import Mathlib.RingTheory.EssentialFiniteness
 public import Mathlib.RingTheory.FinitePresentation
 public import Mathlib.RingTheory.RingHom.Flat
 public import Mathlib.RingTheory.Ideal.Quotient.Operations
+-- `isRegularLocalRing_stalk_of_smooth` below is a one-line corollary of
+-- `isRegularLocalRing_stalk_of_smooth_over_field`, which was PROVEN in
+-- `Modularity/KhareWintenberger.lean` — a module strictly DOWNSTREAM of this
+-- one — and was HOISTED into `Modularity/RegularStalks.lean` on 2026-07-27
+-- precisely so that it could be consumed here.
+public import Fermat.FLT.Modularity.RegularStalks
 
 @[expose] public section
 
@@ -966,45 +972,86 @@ therefore stated with `[IsFinite u]`, which is far more usable than "proper
 with finite fibres", and no leaf has to redo that step. -/
 
 /-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS**
-(sorry leaf — but see the next paragraph: **DO NOT PROVE THIS, HOIST IT**).
+(**PROVEN 2026-07-27**, in one line, from the hoisted
+`isRegularLocalRing_stalk_of_smooth_over_field` — after the signature repair
+recorded below.  This was a sorry leaf, and before the repair it was a FALSE
+one.)
 
-**THIS IS ALREADY PROVEN IN THIS REPOSITORY, AND ITS SUBTREE IS SORRY-FREE.**
-It stands sorried here for one reason only: DECLARATION ORDER.  The proof is
+**THE HOIST THIS LEAF ASKED FOR IS DONE (2026-07-27).**  The earlier version
+of this docstring said the proof —
 `GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
-in `Fermat/FLT/Modularity/KhareWintenberger.lean`, and that module is strictly
-DOWNSTREAM of this one — it `public import`s `Modularity/TateModule.lean`,
-which `public import`s this file — so the proof cannot be imported here.
+— was unreachable because it lived in `Modularity/KhareWintenberger.lean`,
+strictly DOWNSTREAM of this module.  It has been HOISTED, with its entire
+nine-declaration dependency cone, into `Fermat/FLT/Modularity/RegularStalks.lean`,
+which this file now `public import`s (see the import block) and which
+`KhareWintenberger.lean` imports in turn.  Nothing was restated or reproved:
+the declarations moved byte-identically, in the same namespace, and all nine
+are sorry-free.  So there is NO open mathematics under this leaf anywhere in
+the tree, and the `public import` above is what this proof consumes.
 
-Verified 2026-07-27, and here is the check that would refute it:
+**FALSITY AUDIT (2026-07-27) — the defect this signature USED TO HAVE, kept
+because the same trap is one keystroke away in any file that handles a
+`CommRingCat` and a field together.**  The statement used to bind
+`{K : CommRingCat.{u}} [Field K]` with `(g : X ⟶ Spec K)`.  That hypothesis
+does not say what
+it looks like it says.  `K : CommRingCat` is a BUNDLED object, carrying its own
+ring structure `K.str`; `Spec K` is built from `K.str`.  But `[Field K]`
+elaborates to `Field ↥K` — a class on the CARRIER TYPE — and its `CommRing`
+is `Field.toCommRing`, which is a DIFFERENT instance.  Lean says so itself:
+attempting to close this leaf from the hoisted theorem produces
 
-    grep -n 'theorem isRegularLocalRing_stalk_of_smooth_over_field' \
-         Fermat/FLT/Modularity/KhareWintenberger.lean
-    grep -n '^public import Fermat' Fermat/FLT/Modularity/KhareWintenberger.lean
+    X ⟶ Spec (@CommRingCat.of ↑K CommRingCat.instCommRingObjForgetRingHomCarrier)
+    X ⟶ Spec (@CommRingCat.of ↑K Field.toCommRing)
 
-The first must find the declaration; the second must show `TateModule` among
-its imports.  Its own two dependencies were checked the same day and BOTH have
-sorry-free bodies:
-`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` and
-`isRegularLocalRing_quotient_span_list_aux` (which is a general "a quotient of
-a regular local ring by part of a regular system of parameters is regular
-local", a genuine mathlib gap), resting in turn on
-`isDomain_of_isRegularLocalRing`.  So there is NO open mathematics under this
-leaf anywhere in the tree.
+as two non-unifiable types.  They are not a defeq nuisance; they are two
+genuinely different schemes, because nothing ties the two ring structures
+together.  `[Field K]` therefore asserts only that the carrier TYPE of `K`
+happens to admit SOME field structure, which constrains `K.str` not at all.
 
-**THE CORRECT REPAIR IS A HOIST, NOT A PROOF.**  Move
-`isRegularLocalRing_stalk_of_smooth_over_field` together with those
-dependencies into a module upstream of `Modularity/AbelianScheme.lean`, then
-this leaf closes in one line (the only difference in the statements is
-cosmetic: the downstream one takes `{K : Type u} [Field K]` and
-`Spec (CommRingCat.of K)`, this one takes the `K : CommRingCat` that the
-consumer already has).  Re-proving it here would be the single most expensive
-mistake available at this leaf: it would duplicate a large, finished
-development.  Whoever performs the hoist owns the import-cone audit that comes
-with it — that is the real work, and it is bookkeeping, not mathematics. -/
-theorem isRegularLocalRing_stalk_of_smooth {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
-    (g : X ⟶ Spec K) [Smooth g] (x : X) :
+THE COUNTEREXAMPLE.  Take `K := CommRingCat.of (ZMod 4)`, so `↥K = ZMod 4`, a
+four-element type.  A `Field ↥K` instance exists — transport the field
+structure of `GaloisField 2 2` along any bijection `ZMod 4 ≃ GaloisField 2 2`
+— so the hypothesis `[Field K]` is satisfied while `K.str` is the ordinary
+`ZMod 4`.  Take `X := Spec K` and `g := 𝟙`, which is smooth.  `ZMod 4` is
+local with maximal ideal `(2)`, so the stalk at the unique point is `ZMod 4`
+itself, which is not even a domain — and a regular local ring IS a domain
+(`GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing`, PROVEN in
+`KhareWintenberger.lean`).  So the conclusion fails.  The same counterexample
+refutes the sibling `ringKrullDim_stalk_eq_of_isFinite_endo` below.
+
+**THE REPAIR, MADE 2026-07-27.**  `{K : CommRingCat.{u}} [Field K]` became
+`{K : Type u} [Field K]`, and `Spec K` became `Spec (CommRingCat.of K)` — the
+idiom `Modularity/AbelianScheme.lean` uses everywhere, the one mathlib uses
+(`AlgebraicGeometry.Scheme.descResidueField`), and the one under which the
+hoisted theorem is stated.  Now `↥(CommRingCat.of K) = K` by `rfl` **and** the
+bundled ring structure IS `Field.toCommRing`, so there is exactly one ring
+structure in play and the leaf closes in ONE LINE below.
+
+**IT WAS A CLUSTER REPAIR, and the cluster was larger than the audit said.**
+The audit named seven declarations in this file sharing the bad signature; a
+full sweep for `[Field K]` on a bundled `K` found **eleven**, the four extra
+ones being `eq_zero_of_nsmul_eq_zero_of_squareZero`,
+`formallyUnramified_mulByNat`, `finite_ker_mulByNat_of_field_char` and
+`isFinite_ker_mulByNat_of_field_char`.  All eleven were converted together, and
+they had to be: a partial conversion is WORSE than none, because a bundled `K`
+with a local `[Field ↥K]` in scope makes instance search for
+`CommRing ↥K` ambiguous at every boundary between the two conventions, which
+is the very ambiguity this repair exists to remove.  Nothing outside this file
+consumed any of the eleven (`grep` for each name over `Fermat/` returns only
+docstring mentions), so the repair was contained.
+
+The single crossing back into the bundled world is
+`flat_fiberMap_mulByNat` below, which applies `flat_mulByNat_of_field` at
+`K := S.residueField s`.  That is exactly the case where the two ring
+structures do coincide — `Scheme.residueField` is *defined* as
+`CommRingCat.of (IsLocalRing.ResidueField _)` and its `Field` instance is
+`inferInstanceAs` of that same type's — so structure eta discharges it and the
+call needs no bridge. -/
+theorem isRegularLocalRing_stalk_of_smooth {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] (x : X) :
     IsRegularLocalRing (X.presheaf.stalk x) :=
-  sorry
+  _root_.GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field
+    g ‹Smooth g› x
 
 /-- **THE FIBRE RING OF A FINITE MORPHISM AT A POINT IS ZERO-DIMENSIONAL**
 (sorry leaf — general scheme theory, NO abelian varieties, no smoothness, no
@@ -1054,6 +1101,17 @@ theorem ringKrullDim_quotient_map_maximalIdeal_stalkMap {X Y : Scheme.{u}}
 group law, no `[n]`.  This is the deepest of the three geometric leaves and
 the one that genuinely needs a dimension theory of schemes.)
 
+**SIGNATURE REPAIRED 2026-07-27 — this leaf was FALSE AS STATED until then.**
+It used to bind `{K : CommRingCat.{u}} [Field K]` with `(g : X ⟶ Spec K)`,
+which constrains the ring structure `Spec K` is built from **not at all**; the
+`ZMod 4` counterexample in the FALSITY AUDIT of
+`isRegularLocalRing_stalk_of_smooth` above refutes it verbatim, since with
+`X = Spec K` and `u = 𝟙` step 1 of the route below already fails (the stalk
+`ZMod 4` is not a domain, so `X` is not irreducible).  The statement now binds
+`{K : Type u} [Field K]` with `Spec (CommRingCat.of K)`, so `g` really is a
+morphism to the spectrum of a FIELD and the route below is sound.  Everything
+that follows describes the repaired statement.
+
 For `X` smooth, proper and geometrically connected over a field and `u` a
 FINITE endomorphism of `X`, `dim 𝒪_{X,x} = dim 𝒪_{X,u x}` for every `x`.
 
@@ -1087,8 +1145,8 @@ step 3.  Step 3 is the classical `dim 𝒪_{X,x} + dim closure{x} = dim X`
 (Matsumura 5.6 / EGA IV 5.2.3) and it, not steps 1–2, is the real content of
 this leaf.  A hit on a scheme-dimension file means this note has gone stale
 and the leaf is far cheaper than it looks. -/
-theorem ringKrullDim_stalk_eq_of_isFinite_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
-    (g : X ⟶ Spec K) [Smooth g] [IsProper g] [GeometricallyConnected g]
+theorem ringKrullDim_stalk_eq_of_isFinite_endo {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [IsProper g] [GeometricallyConnected g]
     (u : X ⟶ X) [IsFinite u] (x : X) :
     ringKrullDim (X.presheaf.stalk x) = ringKrullDim (X.presheaf.stalk (u x)) :=
   sorry
@@ -1311,8 +1369,8 @@ bundles, absent as above; the *homogeneity/translation* route needs
 openness of the flat locus AND generic flatness, both absent, and its
 translation layer would have been free-floating since nothing could
 consume it. -/
-theorem flat_of_finite_fibres_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
-    (g : X ⟶ Spec K) [Smooth g] [IsProper g] [GeometricallyConnected g]
+theorem flat_of_finite_fibres_endo {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [IsProper g] [GeometricallyConnected g]
     (u : X ⟶ X) [IsProper u] (hu : ∀ a : X, (⇑u ⁻¹' {a}).Finite) : Flat u := by
   -- Zariski's main theorem: proper with finite fibres ⟹ FINITE.
   haveI : LocallyQuasiFinite u := LocallyQuasiFinite.of_finite_preimage_singleton u hu
@@ -1599,11 +1657,11 @@ arbitrary base with `n` invertible in `Γ(T, 𝒪_T)`, and does not need
 scheme).  It is stated over a field here because that is the shape the
 consumer needs, and a prover may freely prove the stronger form and
 specialise. -/
-theorem eq_zero_of_nsmul_eq_zero_of_squareZero {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
-    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : (n : K) ≠ 0)
+theorem eq_zero_of_nsmul_eq_zero_of_squareZero {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : (n : K) ≠ 0)
     {R R₀ : CommRingCat.{u}} (φ : R ⟶ R₀) (hφ : Function.Surjective φ)
     (hker : RingHom.ker φ.hom ^ 2 = ⊥)
-    {q : Spec R ⟶ Spec K} (d : RelPoint fK q)
+    {q : Spec R ⟶ Spec (CommRingCat.of K)} (d : RelPoint fK q)
     (hres : letI := ab.addCommGroup (Spec.map φ ≫ q)
       RelPoint.pre (Spec.map φ) rfl d = 0)
     (hnd : letI := ab.addCommGroup q; n • d = 0) :
@@ -1635,8 +1693,9 @@ The proof:
 
 No line bundles, no `Pic`, no theorem of the cube, and no smoothness is used
 HERE — smoothness is consumed inside the leaf. -/
-theorem formallyUnramified_mulByNat {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
-    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : (n : K) ≠ 0) :
+theorem formallyUnramified_mulByNat {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) (n : ℕ)
+    (hn : (n : K) ≠ 0) :
     FormallyUnramified (ab.mulByNat n) := by
   refine FormallyUnramified.of_hom_ext _ ?_
   intro R R₀ φ hφ hker g₁ g₂ hres hcomp
@@ -1722,7 +1781,7 @@ just an open locus.)
 References: Mumford *Abelian Varieties* §6, §11; Milne *Abelian Varieties*
 I.7; SGA 3, Exp. II. -/
 theorem finite_preimage_mulByNat_of_field_prime_to_char {X : Scheme.{u}}
-    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (K : Type u) [Field K] {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
     (n : ℕ) (hn : (n : K) ≠ 0) (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite := by
   haveI : LocallyOfFiniteType (ab.mulByNat n) := ab.locallyOfFiniteType_mulByNat n
   haveI : IsProper (ab.mulByNat n) := ab.isProper_mulByNat n
@@ -2063,9 +2122,10 @@ For the mathematics — why `d[p] = 0` kills the cheap route, the two classical
 cube proofs, and the verified survey of what is missing from the pin — see
 `isFinite_ker_mulByNat_of_field_char` just below, which is the consumer. -/
 theorem finite_ker_mulByNat_of_field_char {X : Scheme.{u}}
-    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (K : Type u) [Field K] {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
     (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
-    ∀ s : Spec K, (⇑(pullback.snd (ab.mulByNat p) ab.zeroSection) ⁻¹' {s}).Finite :=
+    ∀ s : Spec (CommRingCat.of K),
+      (⇑(pullback.snd (ab.mulByNat p) ab.zeroSection) ⁻¹' {s}).Finite :=
   sorry
 
 /-- **`ker[p]` is a finite group scheme in characteristic `p`** — equivalently,
@@ -2130,7 +2190,7 @@ this leaf would silently duplicate the content the sibling needs.  Carrying
 them records that this is exactly the residue the Lie-algebra route cannot
 reach, and makes the leaf VACUOUS in characteristic zero. -/
 theorem isFinite_ker_mulByNat_of_field_char {X : Scheme.{u}}
-    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (K : Type u) [Field K] {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
     (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
     IsFinite (pullback.snd (ab.mulByNat p) ab.zeroSection) :=
   ab.isFinite_ker_mulByNat_of_finite_preimage p
@@ -2158,7 +2218,7 @@ cube proofs, and the verified survey of what is missing from the pin — see
 `isFinite_ker_mulByNat_of_field_char` above.  It is not repeated here, so that
 there is exactly one place to update when mathlib grows ample bundles. -/
 theorem finite_preimage_mulByNat_of_field_char {X : Scheme.{u}}
-    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (K : Type u) [Field K] {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
     (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) (a : X) :
     (⇑(ab.mulByNat p) ⁻¹' {a}).Finite :=
   ab.finite_preimage_mulByNat_of_isFinite_ker p
@@ -2234,8 +2294,8 @@ alone.  That does NOT retire the second leaf for this development: the
 consumer `finite_preimage_mulByNat` applies this theorem to
 `S.residueField (f a)`, whose characteristic is positive at the finite
 places, which is precisely where the Frey curve's torsion is studied. -/
-theorem finite_preimage_mulByNat_of_field {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
-    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : n ≠ 0)
+theorem finite_preimage_mulByNat_of_field {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : n ≠ 0)
     (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite := by
   haveI : CharP K (ringChar K) := ringChar.charP K
   suffices h : ∀ (m : ℕ), m ≠ 0 → ∀ (b : X), (⇑(ab.mulByNat m) ⁻¹' {b}).Finite from h n hn a
@@ -2338,8 +2398,8 @@ arguments.
 
 `hn : n ≠ 0` is load-bearing downstream rather than here; see the
 discussion in `flat_mulByNat` below. -/
-theorem flat_mulByNat_of_field {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
-    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : n ≠ 0) :
+theorem flat_mulByNat_of_field {X : Scheme.{u}} (K : Type u) [Field K]
+    {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : n ≠ 0) :
     Flat (ab.mulByNat n) :=
   haveI := ab.smooth
   haveI := ab.proper
@@ -2416,7 +2476,13 @@ theorem flat_fiberMap_mulByNat (ab : AbelianSchemeStruct f) (p : ℕ) (hp : p.Pr
               ≫ Limits.pullback.snd f (S.fromSpecResidueField s) :=
             ((ab.baseChange (S.fromSpecResidueField s)).mulByNat_comp p).symm
   rw [hkey]
-  exact flat_mulByNat_of_field (S.residueField s) (ab.baseChange _) p hp.pos.ne'
+  -- `K := ↥(S.residueField s)`, left to unification: `Scheme.residueField` is
+  -- *defined* as `CommRingCat.of (IsLocalRing.ResidueField _)`, so structure eta
+  -- identifies `Spec (CommRingCat.of ↥(S.residueField s))` with
+  -- `Spec (S.residueField s)` on the nose.  Writing the argument out by hand
+  -- instead would re-run instance search for its `CommRing` slot, which is
+  -- exactly the ambiguity the signature repair above removed.
+  exact flat_mulByNat_of_field _ (ab.baseChange _) p hp.pos.ne'
 
 /-- **Multiplication by a nonzero `n` on an abelian scheme is FLAT**
 (abelian varieties; Mumford *Abelian Varieties* §6 (Application 2 of the
