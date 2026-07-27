@@ -14,6 +14,12 @@ public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.MvPolynomial.Ideal
 public import Mathlib.Algebra.MvPolynomial.Division
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.Algebra.Polynomial.SpecificDegree
+public import Mathlib.Algebra.Prime.Lemmas
+public import Mathlib.RingTheory.Prime
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import Mathlib.Tactic.ComputeDegree
 public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Scheme
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
@@ -94,12 +100,22 @@ three former steps `hbc`/`hne`/`hpre`:
   infinity `[0 : 1 : 0]` is the homogeneous prime `(X̄, Z̄)`; the missing mathlib piece
   was primality of the span of a SUBSET of the variables, which is supplied here by
   `span_X_Z_eq_ker_killXZ` exhibiting `(X, Z)` as a kernel.
-* `hpre` is **PROVEN** as `preconnectedSpace_proj` modulo the single leaf
-  `prime_projPolynomial`.  The general statement that `Proj` of a graded domain is
-  irreducible — also absent from mathlib — is proven here as
-  `irreducibleSpace_projectiveSpectrum`.
-* `hbc` remains open as `nonempty_projPullbackIso`; it is base change for `Proj`,
-  which exists nowhere at this pin, and its docstring records the intended route.
+* `hpre` is **PROVEN OUTRIGHT** as `preconnectedSpace_proj`, over an arbitrary base
+  field, with no remaining leaf.  Two statements absent from mathlib were needed and
+  are proven here: that `Proj` of a graded domain is irreducible
+  (`irreducibleSpace_projectiveSpectrum`), and that the projective Weierstrass cubic
+  is prime (`prime_projPolynomial`).  The latter avoids the graded machinery entirely
+  by reading `W` as a MONIC cubic in the single variable `X` over `K[Y, Z]`; see its
+  docstring.
+* `hbc` is the only remaining leaf of this cluster, and it is now CUT.
+  `nonempty_projPullbackIso` is proven from a single geometric leaf,
+  `isIso_projBaseChangeHom`.  Base change for `Proj` exists nowhere at this pin, so the
+  comparison morphism had to be built: `projBaseChangeGradedHom` (the graded hom),
+  `irrelevant_le_map_projBaseChangeGradedHom` (the hypothesis `Proj.map` demands) and
+  `projBaseChangeHom` (the pullback lift — free here, because the commuting square lands
+  in `Spec ℚ` and `hom_ext_spec_rat` applies) are all PROVEN.  What is left is that that
+  morphism is an isomorphism, whose residue is one ring statement:
+  `Away 𝒜 s ⊗_ℚ K ≅ Away ℬ (φ s)`.  See its docstring for the checked route.
 
 `nonempty_projGroupLaw` has no `sorry` of its own — but it is **REDUCED, NOT
 CLOSED**: its proof runs through `exists_projAdd` and so through the still-open
@@ -2154,37 +2170,129 @@ section Leaves
 
 variable {K : Type u} [Field K] (W : WeierstrassCurve K)
 
-/-- **The projective Weierstrass cubic is prime in `K[X, Y, Z]`** (sorry leaf).
+/-- **A monic cubic over a domain with no root in the ring is irreducible.**
 
-This is all that is left of the `hpre` step: given it, the homogeneous coordinate ring is a
+`Polynomial.Monic.irreducible_iff_roots_eq_zero_of_degree_le_three` already holds over an
+arbitrary `[CommRing R] [IsDomain R]` — it is NOT a field-only statement — so no Gauss
+lemma, no fraction field and no integral-closedness argument is needed here.  This wrapper
+just packages it with the degree computation. -/
+theorem irreducible_monicCubic_of_no_root {A : Type*} [CommRing A] [IsDomain A]
+    (c₂ c₁ c₀ : A) (h : ∀ r : A, r ^ 3 + c₂ * r ^ 2 + c₁ * r + c₀ ≠ 0) :
+    Irreducible (Polynomial.X ^ 3 + Polynomial.C c₂ * Polynomial.X ^ 2
+      + Polynomial.C c₁ * Polynomial.X + Polynomial.C c₀) := by
+  set p : Polynomial A := Polynomial.X ^ 3 + Polynomial.C c₂ * Polynomial.X ^ 2
+      + Polynomial.C c₁ * Polynomial.X + Polynomial.C c₀ with hp
+  have hmonic : p.Monic := by rw [hp]; monicity!
+  have hdeg : p.natDegree = 3 := by rw [hp]; compute_degree!
+  rw [hmonic.irreducible_iff_roots_eq_zero_of_degree_le_three (by omega) (by omega)]
+  refine Multiset.eq_zero_of_forall_notMem fun r hr => ?_
+  rw [Polynomial.mem_roots hmonic.ne_zero, Polynomial.IsRoot.def] at hr
+  exact h r (by simpa [hp] using hr)
+
+/-- **`Z` is prime in `K[Y, Z]`.**  Mathlib has `Polynomial.prime_X` but no `MvPolynomial`
+analogue; transporting along `finSuccEquiv` supplies it for the variable of index `0`, and
+`renameEquiv` along `Equiv.swap 0 1` moves it to the variable of index `1`. -/
+theorem prime_X_one_fin_two : Prime (X (1 : Fin 2) : MvPolynomial (Fin 2) K) := by
+  have hswap : (X (1 : Fin 2) : MvPolynomial (Fin 2) K)
+      = MvPolynomial.renameEquiv K (Equiv.swap (0 : Fin 2) 1) (X 0) := by
+    simp
+  rw [hswap, MulEquiv.prime_iff]
+  refine (MulEquiv.prime_iff (MvPolynomial.finSuccEquiv K 1)).mp ?_
+  rw [MvPolynomial.finSuccEquiv_X_zero]
+  exact Polynomial.prime_X
+
+/-- **`Z ∤ Y` in `K[Y, Z]`** — seen by evaluating at `(Y, Z) = (1, 0)`. -/
+theorem X_one_not_dvd_X_zero_fin_two :
+    ¬ ((X (1 : Fin 2) : MvPolynomial (Fin 2) K) ∣ X 0) := by
+  rintro ⟨c, hc⟩
+  have h := congrArg (MvPolynomial.aeval (S₁ := K) ![(1 : K), 0]) hc
+  simp at h
+
+/-- **The projective Weierstrass cubic, read as a cubic in `X` over `K[Y, Z]`.**
+
+`MvPolynomial.finSuccEquiv` splits off the variable of index `0`, which for
+`WeierstrassCurve.Projective.polynomial` is exactly `X`; the cubic is then MONIC up to the
+global sign, with leading coefficient `-1`.  That is the whole point of choosing this
+splitting: no Gauss lemma and no primitivity argument is needed for a monic polynomial. -/
+theorem finSuccEquiv_projPolynomial :
+    MvPolynomial.finSuccEquiv K 2 (polynomial W)
+      = -(Polynomial.X ^ 3
+          + Polynomial.C (C W.a₂ * X 1) * Polynomial.X ^ 2
+          + Polynomial.C (C W.a₄ * X 1 ^ 2 - C W.a₁ * X 0 * X 1) * Polynomial.X
+          + Polynomial.C (C W.a₆ * X 1 ^ 3 - X 0 ^ 2 * X 1
+              - C W.a₃ * X 0 * X 1 ^ 2)) := by
+  have e0 : (MvPolynomial.finSuccEquiv K 2) (X 0 : MvPolynomial (Fin 3) K) = Polynomial.X :=
+    MvPolynomial.finSuccEquiv_X_zero
+  have e1 : (MvPolynomial.finSuccEquiv K 2) (X 1 : MvPolynomial (Fin 3) K)
+      = Polynomial.C (X 0) := by
+    rw [show (1 : Fin 3) = (0 : Fin 2).succ from rfl]
+    exact MvPolynomial.finSuccEquiv_X_succ
+  have e2 : (MvPolynomial.finSuccEquiv K 2) (X 2 : MvPolynomial (Fin 3) K)
+      = Polynomial.C (X 1) := by
+    rw [show (2 : Fin 3) = (1 : Fin 2).succ from rfl]
+    exact MvPolynomial.finSuccEquiv_X_succ
+  have eC : ∀ a : K, (MvPolynomial.finSuccEquiv K 2) (C a) = Polynomial.C (C a) := by
+    intro a; simp [MvPolynomial.finSuccEquiv_apply]
+  rw [WeierstrassCurve.Projective.polynomial]
+  simp only [map_sub, map_add, map_mul, map_pow, e0, e1, e2, eC]
+  ring
+
+/-- **The projective Weierstrass cubic is prime in `K[X, Y, Z]`** (PROVEN).
+
+This is all that was left of the `hpre` step: given it, the homogeneous coordinate ring is a
 domain and `irreducibleSpace_projectiveSpectrum` finishes the job.  It carries NO
-ellipticity hypothesis, and should not: mathlib's affine
-`WeierstrassCurve.Affine.irreducible_polynomial` holds over any `[IsDomain R]`, singular
-Weierstrass equations included.
+ellipticity hypothesis, and should not: the Weierstrass cubic is irreducible over EVERY
+field, singular ones included.
 
-## Why this is not already available, and the route
+## The route actually taken, and why it is short
 
-Mathlib has the AFFINE statement, `WeierstrassCurve.Affine.irreducible_polynomial
-[IsDomain R] : Irreducible W.polynomial`, for `W.polynomial : R[X][Y]`.  What is missing is
-the bridge to the HOMOGENEOUS trivariate polynomial:
+An earlier docstring here recorded this leaf as needing two pieces of missing mathlib —
+homogenisation of a bivariate polynomial into a trivariate one, and the fact that a factor
+of a homogeneous element of a graded domain is homogeneous — and proposed to descend from
+mathlib's AFFINE `WeierstrassCurve.Affine.irreducible_polynomial` by dehomogenising at
+`Z = 1`.  **Neither piece is needed, and neither is the affine statement.**  The graded
+machinery only ever enters if one insists on factoring a HOMOGENEOUS polynomial as such;
+reading `W` as an ordinary cubic in ONE distinguished variable avoids all of it:
 
-* `Mathlib/Algebra/Polynomial/Homogenize.lean` homogenises univariate `R[X]` into
-  `MvPolynomial (Fin 2) R` only.  It does not cover bivariate → trivariate, and it contains
-  **zero** irreducibility lemmas.
-* There is no lemma anywhere that a factor of a homogeneous element of a graded domain is
-  itself homogeneous, which is the other half of the classical argument.
+1. `MvPolynomial.finSuccEquiv K 2` presents `K[X, Y, Z]` as `(K[Y, Z])[X]`, and under it
+   `W` becomes `-q` with `q` MONIC of degree `3` (`finSuccEquiv_projPolynomial`).  The
+   index-`0` variable of `WeierstrassCurve.Projective.polynomial` is `X`, and `W` contains
+   `-X ^ 3`, so this splitting — and only this one — makes the leading coefficient a unit.
+2. Monic + degree `3` reduces irreducibility to the absence of a ROOT in `K[Y, Z]`, by
+   `Polynomial.Monic.irreducible_iff_roots_eq_zero_of_degree_le_three`, which holds over any
+   `[IsDomain A]` and not merely over a field.  So there is no Gauss lemma, no fraction
+   field, and no integral-closedness step anywhere in this proof.
+3. There is no root: if `q(r) = 0` then reducing mod `Z` gives `r ³ ≡ 0`, so `Z ∣ r` since
+   `Z` is prime (`prime_X_one_fin_two`); writing `r = Z s` and cancelling one `Z` leaves
+   `Y ² = Z · (…)`, so `Z ∣ Y ²`, so `Z ∣ Y` — and `Z ∤ Y`
+   (`X_one_not_dvd_X_zero_fin_two`).
+4. `MvPolynomial (Fin 3) K` is a UFD, so irreducible gives prime. -/
+theorem prime_projPolynomial : Prime (polynomial W) := by
+  refine (MulEquiv.prime_iff (MvPolynomial.finSuccEquiv K 2)).mp ?_
+  rw [finSuccEquiv_projPolynomial W]
+  refine Prime.neg ?_
+  rw [← UniqueFactorizationMonoid.irreducible_iff_prime]
+  refine irreducible_monicCubic_of_no_root _ _ _ ?_
+  intro r hr
+  have hz : Prime (X (1 : Fin 2) : MvPolynomial (Fin 2) K) := prime_X_one_fin_two
+  have h1 : (X (1 : Fin 2) : MvPolynomial (Fin 2) K) ∣ r ^ 3 := by
+    refine ⟨-(C W.a₂ * r ^ 2 + (C W.a₄ * X 1 - C W.a₁ * X 0) * r
+      + (C W.a₆ * X 1 ^ 2 - X 0 ^ 2 - C W.a₃ * X 0 * X 1)), ?_⟩
+    linear_combination hr
+  obtain ⟨s, rfl⟩ := hz.dvd_of_dvd_pow h1
+  have hA : (X (1 : Fin 2) : MvPolynomial (Fin 2) K) *
+      (X 1 ^ 2 * s ^ 3 + C W.a₂ * X 1 ^ 2 * s ^ 2 + C W.a₄ * X 1 ^ 2 * s
+        - C W.a₁ * X 0 * X 1 * s + C W.a₆ * X 1 ^ 2 - X 0 ^ 2 - C W.a₃ * X 0 * X 1)
+      = X 1 * 0 := by
+    linear_combination hr
+  have hA0 := mul_left_cancel₀ (MvPolynomial.X_ne_zero (R := K) (1 : Fin 2)) hA
+  have h2 : (X (1 : Fin 2) : MvPolynomial (Fin 2) K) ∣ X 0 ^ 2 :=
+    ⟨X 1 * s ^ 3 + C W.a₂ * X 1 * s ^ 2 + C W.a₄ * X 1 * s - C W.a₁ * X 0 * s
+      + C W.a₆ * X 1 - C W.a₃ * X 0, by linear_combination -hA0⟩
+  exact X_one_not_dvd_X_zero_fin_two (hz.dvd_of_dvd_pow h2)
 
-The classical argument, for the successor: suppose `W = f * g` in `K[X, Y, Z]`.  Both
-factors are homogeneous (the missing graded-domain lemma), say of degrees `d` and `3 - d`.
-Dehomogenise at `Z = 1`: the affine cubic is irreducible, so one dehomogenised factor is a
-nonzero constant, say `f(X, Y, 1) = c`.  A homogeneous `f` of degree `d` with constant
-dehomogenisation is `c * Z ^ d`; but `Z ∤ W`, since `W` contains the term `-X ^ 3`.  Hence
-`d = 0` and `f` is a unit.  So `W` is irreducible, and `K[X, Y, Z]` is a UFD, so `W` is
-prime. -/
-theorem prime_projPolynomial : Prime (polynomial W) := sorry
-
-/-- The homogeneous coordinate ring of the projective model is a domain — the content of
-`hpre`, modulo the general `Proj`-of-a-graded-domain statement. -/
+/-- The homogeneous coordinate ring of the projective model is a domain (PROVEN) — the
+content of `hpre`, modulo the general `Proj`-of-a-graded-domain statement. -/
 theorem isDomain_projCoordinateRing :
     IsDomain (MvPolynomial (Fin 3) K ⧸ (polynomialHomogeneousIdeal W).toIdeal) := by
   haveI : ((polynomialHomogeneousIdeal W).toIdeal).IsPrime := by
@@ -2193,9 +2301,9 @@ theorem isDomain_projCoordinateRing :
     exact prime_projPolynomial W
   exact Ideal.Quotient.isDomain _
 
-/-- **The projective Weierstrass model is preconnected** — the `hpre` step of
-`geometricallyConnected_projToSpec`, over an arbitrary base field.  Everything here is
-proven except `prime_projPolynomial`. -/
+/-- **The projective Weierstrass model is preconnected** (PROVEN) — the `hpre` step of
+`geometricallyConnected_projToSpec`, over an arbitrary base field, with no remaining
+leaf.  `prime_projPolynomial`, which was the last one, is proven above. -/
 theorem preconnectedSpace_proj : PreconnectedSpace (proj W) := by
   haveI := isDomain_projCoordinateRing W
   haveI := irreducibleSpace_projectiveSpectrum (projGrading W) (pointAtInfinity W)
@@ -2204,47 +2312,176 @@ theorem preconnectedSpace_proj : PreconnectedSpace (proj W) := by
 
 end Leaves
 
-/-- **`Proj` commutes with base change of the base field** (sorry leaf) — the `hbc` step of
-`geometricallyConnected_projToSpec`.
+/-! ### `hbc`: base change for `Proj`
 
-## Why there is nothing to reuse
+Everything in this block except `isIso_projBaseChangeHom` is PROVEN.  The block replaces
+what used to be a single opaque leaf `nonempty_projPullbackIso` by: the graded base-change
+hom, the irrelevant-ideal hypothesis `Proj.map` demands, the assembled comparison morphism,
+and the reduction of the leaf to that morphism being an isomorphism.
 
-There is **no base change for `Proj` at this pin, in any form**.  A search over
+**There is no base change for `Proj` at this pin, in any form.**  A search over
 `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/` for `Proj` together with `pullback`,
 `baseChange`, `IsPullback` or `TensorProduct` returns nothing; so does the same search over
 `~/cs/FLT`.  The only functoriality that exists is contravariant in the graded ring,
-`AlgebraicGeometry.Proj.map` (`ProjectiveSpectrum/Functor.lean:144`), and there is no
-functor-of-points description of `Proj` to fall back on.  Building this IS the task.
+`AlgebraicGeometry.Proj.map` (`ProjectiveSpectrum/Functor.lean:144`).  One correction to the
+earlier route note here: `Proj.pullbackAwayιIso` (`ProjectiveSpectrum/Basic.lean:256`) is
+NOT the glue for this — it compares two charts of ONE `Proj`, not two `Proj`s over
+different bases, and nothing in that file crosses a base change. -/
 
-## The route, and the two pieces it needs
+section BaseChange
 
-`Proj.map` has signature `map (f : 𝒜 →+*ᵍ ℬ) (hf : ℬ₊ ≤ 𝒜₊.map f) : Proj ℬ ⟶ Proj 𝒜`,
-where `𝒜 →+*ᵍ ℬ` is `GradedRingHom` from
-`Mathlib/RingTheory/GradedAlgebra/Homogeneous/Maps.lean`.  So the successor should:
+variable (E : WeierstrassCurve ℚ) (K : Type) [Field K] [Algebra ℚ K]
 
-1. **Build the graded ring hom.**  `MvPolynomial.map (algebraMap ℚ K)` sends `(W)` into
-   `(W_K)` — that is exactly `WeierstrassCurve.Projective.baseChange_polynomial`, i.e.
-   `(W⁄K).polynomial = MvPolynomial.map f W.polynomial`, which is already in mathlib
-   (`EllipticCurve/Projective/Basic.lean:536`) — so it descends to the quotients, and it
-   preserves `projGrading` degrees because it preserves `homogeneousSubmodule`.  The
-   hypothesis `hf` holds because the target's irrelevant ideal is generated by `X̄, Ȳ, Z̄`,
-   all of which are images.  This yields a canonical morphism
-   `proj (W.baseChange K) ⟶ proj W`, and with `projToSpec (W.baseChange K)` a canonical
-   morphism `proj (W.baseChange K) ⟶ pullback (projToSpec W) (Spec.map (algebraMap ℚ K))`.
+/-- Base change of the projective Weierstrass polynomial, `W_K = map (algebraMap ℚ K) W`. -/
+theorem polynomial_baseChange :
+    polynomial (E.baseChange K) = MvPolynomial.map (algebraMap ℚ K) (polynomial E) :=
+  WeierstrassCurve.Projective.map_polynomial (W' := E) (f := algebraMap ℚ K)
 
-2. **Prove that morphism is an isomorphism.**  This is the real content and it is local on
-   the standard affine cover `Proj.affineOpenCoverOfIrrelevantLESpan` (already used, in
-   this file, by `smoothOfRelativeDimension_projToSpec`): on the chart `D₊(f)` it becomes
-   the ring statement `(A_(f)) ⊗_ℚ K ≅ (A_K)_(f_K)`, i.e. that the degree-zero part of a
-   homogeneous localisation commutes with base change.  `Proj.pullbackAwayιIso`
-   (`ProjectiveSpectrum/Basic.lean:256`) is the mathlib lemma that says the charts of `Proj`
-   pull back to the charts, and is the intended glue.
+/-- Base change carries the ideal `(W)` into `(W_K)`, so it descends to the quotients. -/
+theorem map_mem_polynomialHomogeneousIdeal_baseChange
+    {a : MvPolynomial (Fin 3) ℚ} (ha : a ∈ (polynomialHomogeneousIdeal E).toIdeal) :
+    MvPolynomial.map (algebraMap ℚ K) a
+      ∈ (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal := by
+  have h : (polynomialHomogeneousIdeal E).toIdeal = Ideal.span {polynomial E} := rfl
+  have h' : (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal
+      = Ideal.span {polynomial (E.baseChange K)} := rfl
+  rw [h, Ideal.mem_span_singleton] at ha
+  rw [h', Ideal.mem_span_singleton]
+  obtain ⟨c, rfl⟩ := ha
+  exact ⟨MvPolynomial.map (algebraMap ℚ K) c, by
+    rw [map_mul, polynomial_baseChange, mul_comm]⟩
 
-Note this statement carries no ellipticity: it is pure base change of a graded quotient of
-a polynomial ring, true for every Weierstrass curve over every field extension. -/
-theorem nonempty_projPullbackIso (E : WeierstrassCurve ℚ) (K : Type) [Field K] [Algebra ℚ K] :
+/-- **Base change on the homogeneous coordinate rings**, `ℚ[X, Y, Z] ⧸ (W) → K[X, Y, Z] ⧸ (W_K)`. -/
+noncomputable def projBaseChangeQuot :
+    (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) →+*
+      (MvPolynomial (Fin 3) K ⧸ (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal) :=
+  Ideal.Quotient.lift _
+    ((Ideal.Quotient.mk _).comp (MvPolynomial.map (algebraMap ℚ K)))
+    fun _ ha => Ideal.Quotient.eq_zero_iff_mem.2
+      (map_mem_polynomialHomogeneousIdeal_baseChange E K ha)
+
+@[simp] theorem projBaseChangeQuot_mk (p : MvPolynomial (Fin 3) ℚ) :
+    projBaseChangeQuot E K (Ideal.Quotient.mk _ p)
+      = Ideal.Quotient.mk _ (MvPolynomial.map (algebraMap ℚ K) p) := rfl
+
+/-- **Base change as a GRADED ring hom** of homogeneous coordinate rings — the input
+`Proj.map` consumes.  Degrees are preserved because `MvPolynomial.map` preserves
+homogeneity (`MvPolynomial.IsHomogeneous.map`). -/
+noncomputable def projBaseChangeGradedHom :
+    projGrading E →+*ᵍ projGrading (E.baseChange K) where
+  __ := projBaseChangeQuot E K
+  map_mem := by
+    intro i x hx
+    obtain ⟨a, ha, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx
+    exact HomogeneousIdeal.mem_quotientGrading.mpr
+      ⟨MvPolynomial.map (algebraMap ℚ K) a,
+        mem_homogeneousSubmodule _ _ |>.mpr
+          ((mem_homogeneousSubmodule _ _ |>.mp ha).map _), rfl⟩
+
+@[simp] theorem projBaseChangeGradedHom_apply
+    (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) :
+    projBaseChangeGradedHom E K a = projBaseChangeQuot E K a := rfl
+
+/-- **The hypothesis `Proj.map` demands**: the irrelevant ideal downstairs is contained in
+the ideal generated by the image of the irrelevant ideal upstairs.
+
+A positive-degree homogeneous polynomial over `K` has every monomial of positive total
+degree, hence lies in the ideal of the variables (`MvPolynomial.mem_pow_idealOfVars_iff'`
+at exponent `1`), and each variable is the image of the corresponding variable over `ℚ`. -/
+theorem irrelevant_le_map_projBaseChangeGradedHom :
+    HomogeneousIdeal.irrelevant (projGrading (E.baseChange K)) ≤
+      (HomogeneousIdeal.irrelevant (projGrading E)).map (projBaseChangeGradedHom E K) := by
+  rw [HomogeneousIdeal.irrelevant_le]
+  intro i hi a ha
+  obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp ha
+  have hp' : p.IsHomogeneous i := mem_homogeneousSubmodule _ _ |>.mp hp
+  have hspan : p ∈ MvPolynomial.idealOfVars (Fin 3) K := by
+    rw [show MvPolynomial.idealOfVars (Fin 3) K = MvPolynomial.idealOfVars (Fin 3) K ^ 1 from
+      (pow_one _).symm, MvPolynomial.mem_pow_idealOfVars_iff']
+    intro x hx
+    exact hp'.coeff_eq_zero (by omega)
+  have hle : MvPolynomial.idealOfVars (Fin 3) K ≤
+      Ideal.comap (Ideal.Quotient.mk (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal)
+        ((HomogeneousIdeal.irrelevant (projGrading E)).map
+          (projBaseChangeGradedHom E K)).toIdeal := by
+    rw [MvPolynomial.idealOfVars, Ideal.span_le]
+    rintro _ ⟨j, rfl⟩
+    have hXmem : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (X j))
+        ∈ HomogeneousIdeal.irrelevant (projGrading E) :=
+      HomogeneousIdeal.mem_irrelevant_of_mem _ Nat.one_pos
+        (HomogeneousIdeal.mk_mem_quotientGrading
+          (mem_homogeneousSubmodule _ _ |>.mpr (isHomogeneous_X _ _)))
+    have h2 := Ideal.mem_map_of_mem (projBaseChangeGradedHom E K) hXmem
+    simpa using h2
+  exact hle hspan
+
+/-- **The base-change morphism of projective models** `proj (E_K) ⟶ proj E`, namely `Proj`
+applied to the graded base-change hom. -/
+noncomputable def projBaseChangeMap : proj (E.baseChange K) ⟶ proj E :=
+  Proj.map (projBaseChangeGradedHom E K) (irrelevant_le_map_projBaseChangeGradedHom E K)
+
+/-- **The canonical comparison morphism** from the projective model of the base-changed
+curve to the base change of the projective model.
+
+The commuting square this needs is FREE over this base: both composites are morphisms into
+`Spec ℚ`, and `hom_ext_spec_rat` says any two such are equal.  Over a general base it would
+be a real obligation. -/
+noncomputable def projBaseChangeHom :
+    proj (E.baseChange K) ⟶ Limits.pullback (projToSpec E)
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) :=
+  Limits.pullback.lift (projBaseChangeMap E K) (projToSpec (E.baseChange K))
+    (hom_ext_spec_rat _ _)
+
+/-- **The comparison morphism is an isomorphism** (sorry leaf) — all that is left of the
+`hbc` step of `geometricallyConnected_projToSpec`.
+
+This is the whole geometric content of base change for `Proj`, and it is the ONLY thing
+still missing: the graded hom, the irrelevant-ideal hypothesis and the pullback lift above
+are all proven, so a successor gets a concrete morphism and has only to show it is an
+isomorphism.  It carries no ellipticity: it is pure base change of a graded quotient of a
+polynomial ring, true for every Weierstrass curve over every field extension.
+
+## The route, with every named ingredient checked to exist at this pin
+
+Being an isomorphism is local on the target, so work on the standard affine cover.
+
+1. `Proj.affineOpenCoverOfIrrelevantLESpan (projGrading E) f` — already used in this file by
+   `smoothOfRelativeDimension_projToSpec`, with `f = X̄, Ȳ, Z̄` — covers `proj E` by the
+   charts `D₊(s) ≅ Spec (Away (projGrading E) s)`.  Pulling that cover back along
+   `Limits.pullback.fst` covers the pullback, and `Proj.map_preimage_basicOpen`
+   (`ProjectiveSpectrum/Functor.lean`) says `projBaseChangeMap ⁻¹ᵁ D₊(s) = D₊(φ s)`
+   ON THE NOSE, so the same three elements cover the source compatibly.
+2. On the chart over `D₊(s)` the statement becomes the RING statement
+   `Away (projGrading E) s ⊗[ℚ] K ≅ Away (projGrading (E_K)) (φ s)`: the degree-zero part
+   of a homogeneous localisation commutes with base change.  The comparison map already
+   exists — `HomogeneousLocalization.Away.map (g : 𝒜 →+*ᵍ ℬ) (s) : Away 𝒜 s →+* Away ℬ (g s)`
+   (`RingTheory/GradedAlgebra/HomogeneousLocalization.lean:724`) — and
+   `AlgebraicGeometry.pullbackSpecIso` (`AlgebraicGeometry/Pullbacks.lean:719`) turns the
+   scheme-level pullback of affines into `Spec` of a tensor product.  The compatibility of
+   `Away.map` with the chart embeddings is `Proj.awayToSection_comp_appLE` and the
+   `Spec.map (Away.map …) ≫ awayι` identity at `Functor.lean:188`.
+3. So the mathematical residue is exactly: **`Away 𝒜 s ⊗_ℚ K → Away ℬ (φ s)` is bijective**,
+   for `𝒜 = projGrading E`, `ℬ = projGrading (E_K)`, `s ∈ {X̄, Ȳ, Z̄}`.  This is elementary
+   — degree-zero fractions `a / s ^ n` with `a` homogeneous of degree `n · deg s`, and both
+   the numerator space and the relation module base-change freely because `ℚ → K` is flat
+   (indeed free) — but it is not in mathlib in any form, so it is a genuine small theory
+   build.  `MorphismProperty.isomorphisms Scheme` is the property to feed to the
+   affine/local machinery (`HasAffineProperty.iff_of_isAffine` is used this way in
+   `ValuativeCriterion.lean:292`).
+
+**What NOT to reuse**: `Proj.pullbackAwayιIso` looks relevant and is not — it compares two
+charts of one `Proj`. -/
+theorem isIso_projBaseChangeHom : IsIso (projBaseChangeHom E K) := sorry
+
+/-- **`Proj` commutes with base change of the base field** — the `hbc` step of
+`geometricallyConnected_projToSpec`.  Reduced to `isIso_projBaseChangeHom`; everything else
+is proven above. -/
+theorem nonempty_projPullbackIso :
     Nonempty (Limits.pullback (projToSpec E)
-      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) ≅ proj (E.baseChange K)) := sorry
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) ≅ proj (E.baseChange K)) :=
+  ⟨letI := isIso_projBaseChangeHom E K; (asIso (projBaseChangeHom E K)).symm⟩
+
+end BaseChange
 
 end GeometricConnectedness
 
