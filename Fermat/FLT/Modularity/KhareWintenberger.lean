@@ -115,9 +115,12 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- The VENDORED quaternionic automorphic-forms development (weight-2 forms on a
 -- totally definite quaternion algebra over a totally real field, with their
 -- Hecke algebras).  It is imported HERE, and only here, because
--- `carayol_threeadic_realization_of_heckePackage` below is its FIRST and
--- currently ONLY consumer inside the cone of `fermat_last_theorem`; before this
--- import the whole 109-module subtree was free-floating.  See that leaf's
+-- the `carayol_threeadic_realization_of_heckePackage` node below is its FIRST
+-- and currently ONLY consumer inside the cone of `fermat_last_theorem`; before
+-- this import the whole 109-module subtree was free-floating.  Since 2026-07-27
+-- the names actually mentioning the vendored API are that node's two hoisted
+-- steps, `exists_totallyDefinite_heckeCharacter_of_heckePackage` and
+-- `carayol_threeadic_of_totallyDefinite_heckeCharacter`.  See the node's
 -- "JACQUET–LANGLANDS CONSUMER" docstring block for what is consumed and why the
 -- parity hypothesis `hFeven` is what makes the consumption sound.
 public import Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete
@@ -25725,10 +25728,244 @@ theorem exists_domain_coefficientRing_of_ringHom {p : ℕ} [Fact p.Prime]
   rw [hτ', Polynomial.map_map]
   congr 1
 
+/-- **STEP 1 of the Carayol node — JACQUET–LANGLANDS: the Hilbert
+eigensystem `(E, heckeF)` is seen by a TOTALLY DEFINITE quaternion
+algebra over `F`** (sorry leaf; HOISTED 2026-07-27 out of the body of
+`carayol_threeadic_realization_of_heckePackage`, where it lived as the
+internal `have hJL` — an internal `have` cannot be owned or dispatched at,
+so the two steps of that node now have names of their own and the node
+itself is a PROVEN assembly).
+
+Content. `[F : ℚ]` is EVEN (`hFeven`), so by Albert–Brauer–Hasse–Noether
+there is a quaternion division algebra `D/F` ramified at exactly the
+infinite places — the ramification set of a quaternion algebra over a
+number field is any set of even cardinality, and here it is the set of
+infinite places, of cardinality `[F : ℚ]` since `F` is totally real. Such
+a `D` is totally definite and SPLIT AT EVERY FINITE PLACE, hence carries a
+rigidification `D ⊗_F 𝔸_F^∞ ≅ M₂(𝔸_F^∞)`, which is exactly the datum
+`IsQuaternionAlgebra.NumberField.WithRigidification` that the vendored
+automorphic development runs on. Jacquet–Langlands then transfers the
+Hilbert-newform eigensystem underlying `(E, heckeF)` to a weight-`2`
+automorphic form on `Dˣ`, i.e. to an `E`-algebra CHARACTER `θ` of the
+Hecke algebra `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮`, whose
+`T_w`-eigenvalue is the trace `a_w = -(heckeF w).coeff 1` of the Hecke
+polynomial at every good `w`. Automorphy of `(E, heckeF)` itself is
+supplied by `hmod` together with the cuspidality proxy `hirrF`; the
+RESIDUAL FAITHFULNESS GAP that leaves is stated in the consumer's
+docstring and is unchanged by this hoist.
+
+`hFeven` IS CONSUMED HERE AND NOWHERE ELSE in the node. The sibling
+`carayol_threeadic_of_totallyDefinite_heckeCharacter` deliberately does not
+take it, which makes that division of labour mechanically visible rather
+than merely asserted in a comment.
+
+DEFINITENESS IS NOW PINNED — a RETRACTION of the consumer's own docstring
+(2026-07-27). That docstring's "JACQUET–LANGLANDS CONSUMER" block, item
+(3), recorded that "the vendored development has NO `IsTotallyDefinite`
+predicate — definiteness is a source COMMENT there ... so any clause
+asserting something about an ARBITRARY rigidified `D` would be false", and
+concluded that "nothing in the formal statement PINS the witnessing `D` to
+be totally definite, so a future owner discharging STEP 1 must supply
+definiteness from outside the formalism (or add the predicate)". That was
+true of the REFERENCE project's `AutomorphicForm/` sources and it is FALSE
+of this tree: the vendored
+`Fermat/FLT/Mathlib/Algebra/IsQuaternionAlgebra.lean` defines the class
+`IsQuaternionAlgebra.IsTotallyDefinite F D` (`ℝ ⊗_{F,v} D ≃ₐ[ℝ] ℍ` at every
+REAL place `v`, and a totally real `F` has only real places), and
+`AutomorphicForm/QuaternionAlgebra/Basic.lean` and
+`.../HeckeOperators/Concrete.lean` already consume it as an instance
+hypothesis. So the existential below CARRIES it, the witnessing `D` is
+genuinely pinned totally definite, and the successor task the consumer
+recorded is discharged rather than deferred. Refuting check, one line:
+`grep -rn 'class IsTotallyDefinite' Fermat/`.
+
+WHAT REMAINS TO BE PROVEN HERE, in two halves, neither of which the pin
+has:
+
+* the EXISTENCE half — a quaternion division algebra over `F` ramified
+  exactly at the infinite places. This is the Albert–Brauer–Hasse–Noether
+  exact sequence for the Brauer group of a number field (the local
+  invariants may be prescribed arbitrarily subject to summing to zero), and
+  `hFeven` is the whole of what it needs. It is a plausible in-tree target:
+  it is class field theory, not automorphic theory;
+* the TRANSFER half — the Jacquet–Langlands correspondence for `GL₂/F`
+  against `Dˣ`, in the direction "cuspidal Hilbert eigensystem of the right
+  weight ⟹ automorphic form on the definite `Dˣ` with the same Hecke
+  eigenvalues at the good places". That is a genuine literature citation:
+  Jacquet–Langlands, *Automorphic forms on GL(2)*, Lecture Notes in Math.
+  **114** (1970), §14–16; see also Carayol 1986 §0.9, which is where the
+  even-degree quaternionic form of Théorème (A) comes from in the first
+  place.
+
+Splitting those two halves apart is the obvious next cut and is NOT done
+here, for the reason the consumer's docstring already gives in another
+guise: the transfer half quantified over an ARBITRARY rigidified `D` is
+false, so the two halves can only be separated by keeping the definiteness
+datum on the boundary between them — which is now possible, since
+`IsTotallyDefinite` exists. A successor is free to take it.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_totallyDefinite_heckeCharacter_of_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hFeven : Even (Module.finrank ℚ F))
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+    ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
+      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
+      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
+  sorry
+
+/-- **STEP 2 of the Carayol node — CARAYOL's Théorème (A): the `3`-adic
+Galois realization of the quaternionic Hecke character** (sorry leaf;
+HOISTED 2026-07-27 out of the body of
+`carayol_threeadic_realization_of_heckePackage`, where it lived as the
+internal `have hcar`).
+
+Given the Jacquet–Langlands package produced by
+`exists_totallyDefinite_heckeCharacter_of_heckePackage` — a totally definite
+rigidified quaternion algebra `D/F`, a level datum `𝒮` and an `E`-algebra
+character `θ` of `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮` seeing
+the traces of `heckeF` — attach to it the `3`-adic member of its compatible
+system, with the local–global compatibility that identifies Frobenius
+characteristic polynomials with Hecke polynomials at the places outside
+`badF`. This is the genuine literature joint of the whole node: Carayol,
+*Sur les représentations `ℓ`-adiques associées aux formes modulaires de
+Hilbert*, Ann. Sci. ÉNS (4) **19** (1986) 409–468, Théorème (A) (§0.7) and
+its even-degree quaternionic predecessor Théorème (B) (§0.9); Taylor,
+*On Galois representations associated to Hilbert modular forms*, Invent.
+Math. **98** (1989), for the remaining cases. Carayol builds the compatible
+system by decomposing the `ℓ`-adic cohomology `H¹(M_K ⊗_F F̄, ℱ_λ)` of the
+Shimura curves attached to the quaternion algebra under the Hecke action
+(op. cit. §0.10–0.11), using his earlier analysis of their bad reduction;
+no pin material reaches that.
+
+The hypothesis is the EXISTENTIAL package verbatim, not `D`/`𝒮`/`θ` as
+binders. That is deliberate: the conclusion does not mention `D`, so the
+two forms are equivalent, and the existential form keeps the interface
+byte-identical to the internal `have` this replaces, which is what makes
+the consumer a one-line `exact`.
+
+`hbad2`, `hbad3`, `hbadℓ` are what entitle the conclusion to a matching
+clause exactly outside `badF` — the `3`-adic member ramifies at the places
+over `2`, `3` and `ℓ`, and at a ramified place `charFrob` is not even
+choice-independent. `hirrF` is the cuspidality/non-Eisenstein condition
+without which Théorème (A) is not a theorem about this eigensystem at all.
+See the consumer's docstring for the full round-2/3/4/5 hypothesis audits.
+
+`hFeven` is deliberately ABSENT from this statement: the parity bit is
+consumed entirely by STEP 1, where the quaternion algebra is produced. See
+that leaf's docstring.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem carayol_threeadic_of_totallyDefinite_heckeCharacter
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
+      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
+      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) :
+    ∃ (B : Type u) (_ : CommRing B)
+      (_ : Algebra ℤ_[3] B) (_ : Module.Finite ℤ_[3] B),
+      letI : TopologicalSpace B := moduleTopology ℤ_[3] B
+      letI : IsTopologicalRing B :=
+        isTopologicalRing_moduleTopology_of_finite 3 B
+      ∃ (τF : GaloisRep F B (Fin 2 → B))
+        (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+        (ιB : B →+* AlgebraicClosure ℚ_[3]),
+        ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
+  sorry
+
 /-- **The Hilbert-modular `3`-adic realization, geometric core**
-(sorry node — Carayol 1986, Théorème (A)/(B) / Taylor 1989; THE
-citation leaf of the `3`-adic realization node, in its narrowest form
-to date): a Hilbert-modular Hecke eigensystem `(E, heckeF)` over the
+(PROVEN assembly since 2026-07-27, over the two hoisted citation leaves
+`exists_totallyDefinite_heckeCharacter_of_heckePackage` (Jacquet–Langlands)
+and `carayol_threeadic_of_totallyDefinite_heckeCharacter` (Carayol 1986,
+Théorème (A)/(B) / Taylor 1989); until then a sorry node whose two `have`s
+carried the same two statements without names): a Hilbert-modular Hecke
+eigensystem `(E, heckeF)` over the
 totally real field `F` — witnessed as modular by the `ℓ`-adic matching
 clause `hmod` for the lift `ρ` — has a `3`-adic Galois realization: a
 representation `τF` of `G_F` on a rank-`2` lattice over a local DOMAIN
@@ -26384,26 +26621,47 @@ and by Albert–Brauer–Hasse–Noether a totally definite such `D` exists
 exactly when `[F : ℚ]` is even, which is the sole use of `hFeven` in the
 whole node. It then asserts an `E`-algebra character `θ` of
 `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮` matching the traces
-of `heckeF`. **`D`, `𝒮` and `θ` are all existentially quantified.** That
-is load-bearing, not stylistic: the vendored development has NO
+of `heckeF`. **`D`, `𝒮` and `θ` are all existentially quantified**, which
+is what keeps the statement true: asserting anything about an ARBITRARY
+rigidified `D` would be false, whereas asserting the existence of a good
+one is exactly Jacquet–Langlands.
+
+**RETRACTED 2026-07-27 — the rest of this item, as originally written, was
+WRONG, and it is worth stating loudly because it recorded a successor task
+that did not exist.** It read: "the vendored development has NO
 `IsTotallyDefinite` predicate — definiteness is a source COMMENT there
-("if `D` isn't totally definite all the definitions below are garbage
-mathematically but they typecheck"), not a hypothesis — so any clause
-asserting something about an ARBITRARY rigidified `D` would be false.
-Quantifying existentially says only "a good `D` exists and its Hecke
-character sees this eigensystem", which is Jacquet–Langlands and is true.
-The residual faithfulness gap that this does NOT close is therefore
-narrow and named: nothing in the formal statement PINS the witnessing `D`
-to be totally definite, so a future owner discharging STEP 1 must supply
-definiteness from outside the formalism (or add the predicate). That is
-the honest successor task, and it is much smaller than the gap this block
-used to record.
+('if `D` isn't totally definite all the definitions below are garbage
+mathematically but they typecheck'), not a hypothesis", and concluded that
+"nothing in the formal statement PINS the witnessing `D` to be totally
+definite, so a future owner discharging STEP 1 must supply definiteness
+from outside the formalism (or add the predicate)". That is true of the
+REFERENCE project's `AutomorphicForm/` sources and FALSE of this tree:
+`Fermat/FLT/Mathlib/Algebra/IsQuaternionAlgebra.lean` defines the class
+`IsQuaternionAlgebra.IsTotallyDefinite F D`, and
+`AutomorphicForm/QuaternionAlgebra/Basic.lean` and
+`.../HeckeOperators/Concrete.lean` already consume it. STEP 1's existential
+now CARRIES `IsTotallyDefinite F D`, so the witnessing `D` is pinned and
+the "supply definiteness from outside the formalism" task is discharged
+rather than deferred. Refuting check, one line:
+`grep -rn 'class IsTotallyDefinite' Fermat/`.
 
 STEP 2 is Carayol's Théorème (A) proper, stated as an IMPLICATION from
 STEP 1's package to this node's conclusion, so that `hJL` is consumed and
 `D`/`𝒮`/`θ` genuinely appear in the proof term — which is what puts the
 109-module vendored subtree into the used-constant cone of
 `fermat_last_theorem`. Before this, that subtree was free-floating.
+
+*(4) BOTH STEPS ARE NOW TOP-LEVEL LEAVES (2026-07-27).* They were internal
+sorried `have`s, which no frontier scan can name and no dispatcher can own
+— the node reported as a single leaf carrying two unrelated citations. They
+are now `exists_totallyDefinite_heckeCharacter_of_heckePackage` (STEP 1)
+and `carayol_threeadic_of_totallyDefinite_heckeCharacter` (STEP 2),
+declared immediately above this docstring, and THIS node is a proven
+assembly: one `exact`, no tactic block. Nothing about the mathematics
+moved; the audits in this docstring apply verbatim, and each step's own
+docstring records what is left to prove in it. `hFeven` is threaded to
+STEP 1 only, so the parity bit's single use is now mechanically visible
+rather than asserted in a comment.
 
 ROUTE AUDIT (dichotomy, 2026-07-24; unchanged — do not re-litigate
 without new evidence). Two routes to the `3`-adic member of the
@@ -26506,63 +26764,25 @@ theorem carayol_threeadic_realization_of_heckePackage
       ∃ (τF : GaloisRep F B (Fin 2 → B))
         (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
         (ιB : B →+* AlgebraicClosure ℚ_[3]),
-        ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
-  classical
-  -- STEP 1 — JACQUET–LANGLANDS, and the ONLY step that uses `hFeven`.
-  -- `[F : ℚ]` even ⟹ there is a quaternion algebra `D/F` ramified exactly at
-  -- the infinite places: totally definite, and SPLIT AT EVERY FINITE PLACE, so
-  -- it admits a rigidification `D ⊗_F 𝔸_F^∞ ≅ M₂(𝔸_F^∞)` — which is exactly the
-  -- datum `IsQuaternionAlgebra.NumberField.WithRigidification` the vendored
-  -- development runs on.  Jacquet–Langlands then transfers the Hilbert-newform
-  -- eigensystem underlying `(E, heckeF)` to a weight-`2` automorphic form on
-  -- `Dˣ`, i.e. to an `E`-algebra CHARACTER `θ` of the Hecke algebra, whose
-  -- `T_w`-eigenvalue is the trace `a_w = -(heckeF w).coeff 1` of the Hecke
-  -- polynomial at every good `w`.
-  --
-  -- Note the shape: `D`, its definiteness and the level datum `𝒮` are all
-  -- EXISTENTIALLY quantified here.  That is deliberate and it is what keeps the
-  -- statement true — the vendored development has no `IsTotallyDefinite`
-  -- predicate (definiteness is a comment in its source, not a hypothesis), so
-  -- asserting anything about an ARBITRARY `D` would be false.  Asserting the
-  -- existence of a good one is exactly Jacquet–Langlands.
-  have hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
-      (_ : _root_.IsQuaternionAlgebra F D)
-      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
-      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
-      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
-      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
-        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
-        (heckeF w).coeff 1 =
-          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
-    sorry
-  -- STEP 2 — CARAYOL, Théorème (A) (Carayol 1986; Taylor 1989 §1): attach to the
-  -- Hecke character `θ` of STEP 1 its `3`-adic Galois realization, with the
-  -- local–global compatibility that identifies Frobenius characteristic
-  -- polynomials with Hecke polynomials at the places outside `badF`.  This is
-  -- the genuine literature joint of the node; `hbad2`, `hbad3` and `hbadℓ` are
-  -- what entitle it to a matching clause exactly outside `badF`, and `hirrF` is
-  -- the cuspidality/non-Eisenstein condition without which (A) is not a theorem
-  -- about this eigensystem at all.
-  have hcar : (∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
-      (_ : _root_.IsQuaternionAlgebra F D)
-      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
-      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
-      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
-      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
-        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
-        (heckeF w).coeff 1 =
-          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) →
-      ∃ (B : Type u) (_ : CommRing B)
-        (_ : Algebra ℤ_[3] B) (_ : Module.Finite ℤ_[3] B),
-        letI : TopologicalSpace B := moduleTopology ℤ_[3] B
-        letI : IsTopologicalRing B :=
-          isTopologicalRing_moduleTopology_of_finite 3 B
-        ∃ (τF : GaloisRep F B (Fin 2 → B))
-          (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
-          (ιB : B →+* AlgebraicClosure ℚ_[3]),
-          ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
-    sorry
-  exact hcar hJL
+        ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ :=
+  -- STEP 1 — JACQUET–LANGLANDS (`exists_totallyDefinite_heckeCharacter_of_heckePackage`),
+  -- the ONLY step that consumes `hFeven`: `[F : ℚ]` even ⟹ a totally definite
+  -- quaternion algebra `D/F` split at every finite place exists, and the Hilbert
+  -- eigensystem `(E, heckeF)` transfers to an `E`-algebra character `θ` of its
+  -- Hecke algebra.  STEP 2 — CARAYOL's Théorème (A)
+  -- (`carayol_threeadic_of_totallyDefinite_heckeCharacter`): attach to `θ` its
+  -- `3`-adic Galois realization with local–global compatibility outside `badF`.
+  -- Both were internal `have`s until 2026-07-27; hoisting them gave each an
+  -- ownable name and made this node a proven assembly.  See their docstrings —
+  -- in particular STEP 1's, which RETRACTS the "no `IsTotallyDefinite`
+  -- predicate" claim in the JACQUET–LANGLANDS CONSUMER block above and pins the
+  -- witnessing `D` totally definite.
+  carayol_threeadic_of_totallyDefinite_heckeCharacter hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2
+      hbad3 hbadℓ
+    (exists_totallyDefinite_heckeCharacter_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO hmod
+      hbad2 hbad3 hbadℓ)
 
 /-- **The Hilbert-modular `3`-adic realization, integral-domain form**
 (PROVEN assembly, 2026-07-25 — Carayol 1986 / Taylor 1989 at one
