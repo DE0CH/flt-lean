@@ -793,6 +793,16 @@ axioms, one in each structure, and NEITHER implies the other.
   induced `pairing` was permitted to be identically `1`. Every theorem
   that "used" it was using nothing.
 
+  Its FIRST form overshot in the other direction and had to be repaired
+  again the same day: quantified over all ideals, it forced `hom` to be an
+  isomorphism, i.e. a PRINCIPAL `𝒪_D`-polarization, which a
+  Hilbert–Blumenthal abelian variety need not admit — so
+  `∃ d, Nonempty (PolarizationStruct d)` was FALSE whenever `h⁺(D) > 1`.
+  `PolarizationStruct` is now indexed by a SET `𝒩` of levels and asserts
+  nondegeneracy only there. See its docstring for the argument in both
+  directions and for why the set, rather than a single ideal, is the right
+  index.
+
 `weil_nondegenerate` does NOT rescue that: it is nondegeneracy of the
 canonical `A × A^∨` pairing, and says nothing about the composite
 `A[I] × A[I] ⟶ μ_n` obtained by pushing the second variable through a
@@ -993,9 +1003,50 @@ what `weil_hom_nondegenerate` says. Surjectivity of `A[I] → A^∨[I]` is a
 strictly further claim — over an algebraically closed field it follows
 from injectivity only via `#A[I] = #A^∨[I]`, which nothing in this
 development audits — so it is not asserted here rather than asserted on
-faith. -/
+faith.
+
+**THE LEVEL SET `𝒩`, AND WHY IT IS A PARAMETER (faithfulness repair,
+2026-07-27, same day as the repair above).** In its first form
+`weil_hom_nondegenerate` quantified over ALL ideals of `R`. That is
+OVER-STRENGTH and it made this structure nearly uninhabitable, for the
+reason recorded on `exists_tateWeilPairing_of_mult`
+(`Modularity/TateModule.lean`): by nondegeneracy of the canonical
+`A[I] × A^∨[I]` pairing, the axiom AT `I` says exactly
+`ker hom ∩ A[I] = 0`; imposing it at EVERY `I` says `ker hom` has no
+torsion geometric point at all, and in characteristic zero `ker hom` is
+finite étale, so `hom` is forced to be an ISOMORPHISM. A
+`PolarizationStruct` was therefore a PRINCIPAL `𝒪_D`-polarization —
+and a Hilbert–Blumenthal abelian variety NEED NOT ADMIT ONE. The
+`𝒪_D`-polarizations of an HBAV are classified by a polarization module
+`𝔠`, an invertible `𝒪_D`-module, and a principal one exists exactly when
+`𝔠` is trivial in `Cl⁺(D)`. So `∃ d, Nonempty (PolarizationStruct d)` in
+the old form was a FALSE statement for every `D` with `h⁺(D) > 1`.
+
+The repair makes the axiom LOCAL, and the correct locality is a SET of
+levels rather than a single one, because the consumers need one and the
+same polarization to be nondegenerate at the two level ideals `λ` and
+`𝔭` (see `IsSplitLevelStructure` / `HasSplitHilbertBlumenthalModuli` in
+`Modularity/KhareWintenberger.lean`, where `pol₀` is used at both).
+Indexing by a single ideal would have forced those consumers to carry two
+unrelated polarizations, which is a DIFFERENT and non-classical moduli
+problem.
+
+WHY `PolarizationStruct d 𝒩` IS INHABITED FOR FINITE `𝒩`, so that this
+is a genuine weakening and not merely a smaller one: `𝔠` is invertible,
+so for a finite set `𝒩` of maximal ideals one may choose `c ∈ 𝔠` with
+`c 𝒪_{D,I} = 𝔠_I` for every `I ∈ 𝒩`; the polarization `λ_c` then has
+degree prime to every `I ∈ 𝒩`, i.e. `ker λ_c ∩ A[I] = 0` there. This is
+the global shadow of the local statement `exists_tateWeilPairing_of_mult`
+already relies on — `∧²_{𝒪_D} T_I A ≅ 𝔡_D⁻¹ 𝔠 (1)` is free of rank one
+over the LOCAL ring `𝒪_{D,I}` whatever the class of `𝔠`.
+
+`𝒩 = ∅` is legal and contentless, exactly as `𝒩 = ⊤` is legal and
+over-strong; that is deliberate. The set is a PARAMETER rather than a
+field so that the choice is visible in every consumer's TYPE and cannot
+drift silently — a consumer that wants content must name its levels. -/
 structure PolarizationStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
-    {R : Type u} [CommRing R] {m : Mult ab R} (d : DualStruct ab m) where
+    {R : Type u} [CommRing R] {m : Mult ab R} (d : DualStruct ab m)
+    (𝒩 : Set (Ideal R)) where
   /-- the polarization on relative points -/
   hom : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint d.dualMap g
   /-- the polarization is additive -/
@@ -1016,20 +1067,27 @@ structure PolarizationStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchem
   weil_self : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
     (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
     y ∈ (m.torsion x I).1 → d.weil x I n hn y (hom y) = 1
-  /-- **the induced pairing `A[I] × A[I] ⟶ μ_n` is NONDEGENERATE** — the
-  axiom that carries the content of this structure, and without which the
-  constant ZERO MAP satisfies every other field over every datum (see the
-  refutation test in the structure docstring).
+  /-- **the induced pairing `A[I] × A[I] ⟶ μ_n` is NONDEGENERATE AT EVERY
+  LEVEL `I ∈ 𝒩`** — the axiom that carries the content of this structure,
+  and without which (for nonempty `𝒩`) the constant ZERO MAP satisfies
+  every other field over every datum (see the refutation test in the
+  structure docstring).
 
-  Classically this holds exactly when `ker hom ∩ A[I] = 0`, i.e. when the
-  degree of the polarization is prime to `I` — part of the
+  Classically the clause at `I` holds exactly when `ker hom ∩ A[I] = 0`,
+  i.e. when the degree of the polarization is prime to `I` — part of the
   Hilbert–Blumenthal moduli datum, and consistent with `weil_self`, since
   the `λ`-Weil pairing on `A[I]` is alternating and nondegenerate under
   exactly that hypothesis. Note this is NOT implied by
   `DualStruct.weil_nondegenerate`, which is about the canonical
-  `A × A^∨` pairing and is blind to a degenerate `hom`. -/
+  `A × A^∨` pairing and is blind to a degenerate `hom`.
+
+  **THE `I ∈ 𝒩` GUARD IS LOAD-BEARING, NOT BOOKKEEPING.** Dropping it —
+  i.e. quantifying over all ideals — forces `ker hom = 0`, hence a
+  PRINCIPAL polarization, which not every HBAV admits. See the structure
+  docstring for the full argument and for why `PolarizationStruct d 𝒩` is
+  nevertheless inhabited whenever `𝒩` is finite. -/
   weil_hom_nondegenerate : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
-    (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
+    (I : Ideal R), I ∈ 𝒩 → ∀ (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
     y ∈ (m.torsion x I).1 →
     (∀ z : GeomFibrePt f x, z ∈ (m.torsion x I).1 →
       d.weil x I n hn y (hom z) = 1) →
@@ -1039,7 +1097,8 @@ namespace PolarizationStruct
 
 variable {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
 variable {R : Type u} [CommRing R] {m : Mult ab R} {d : DualStruct ab m}
-variable (p : PolarizationStruct d)
+variable {𝒩 : Set (Ideal R)}
+variable (p : PolarizationStruct d 𝒩)
 variable {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
 variable (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I)
 
@@ -1111,16 +1170,22 @@ theorem pairing_act (a : R) (y z : GeomFibrePt f x)
   rw [pairing_def, pairing_def, p.hom_act]
   exact d.weil_act x I n hn a y (p.hom z) hy (p.hom_torsion x I z hz)
 
-/-- **The pairing is NONDEGENERATE**: `weil_hom_nondegenerate` read
-through `pairing`. This is the axiom that gives `PolarizationStruct` its
-content — see the refutation test in the structure's docstring — and it
-is what the classical arguments mean when they call the polarized Weil
-pairing *perfect*. -/
-theorem pairing_nondegenerate (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1)
+/-- **The pairing is NONDEGENERATE AT A LEVEL `I ∈ 𝒩`**:
+`weil_hom_nondegenerate` read through `pairing`. This is the axiom that
+gives `PolarizationStruct` its content — see the refutation test in the
+structure's docstring — and it is what the classical arguments mean when
+they call the polarized Weil pairing *perfect*.
+
+`hI` is not decoration: at a level outside `𝒩` the pairing may be
+genuinely degenerate, because a polarization whose module is nonprincipal
+has nontrivial kernel somewhere. Demanding this at every `I` is exactly
+the over-strength that made the structure uninhabitable. -/
+theorem pairing_nondegenerate (hI : I ∈ 𝒩) (y : GeomFibrePt f x)
+    (hy : y ∈ (m.torsion x I).1)
     (h : ∀ z : GeomFibrePt f x, z ∈ (m.torsion x I).1 →
       p.pairing x I n hn y z = 1) :
     y = ab.zero (specAlgClos F ≫ x) :=
-  p.weil_hom_nondegenerate x I n hn y hy h
+  p.weil_hom_nondegenerate x I hI n hn y hy h
 
 /-- **The pairing is NON-TRIVIAL on every nonzero torsion point**: the
 contrapositive of `pairing_nondegenerate`, and the form the level
@@ -1128,11 +1193,12 @@ structure of the Hilbert–Blumenthal moduli problem consumes. In
 particular `pairing` is not identically `1` as soon as `A[I] ≠ 0`, which
 is precisely what the pre-repair `PolarizationStruct` failed to
 guarantee. -/
-theorem exists_pairing_ne_one (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1)
+theorem exists_pairing_ne_one (hI : I ∈ 𝒩) (y : GeomFibrePt f x)
+    (hy : y ∈ (m.torsion x I).1)
     (hy0 : y ≠ ab.zero (specAlgClos F ≫ x)) :
     ∃ z : GeomFibrePt f x, z ∈ (m.torsion x I).1 ∧ p.pairing x I n hn y z ≠ 1 := by
   by_contra hcon
-  refine hy0 (p.pairing_nondegenerate x I n hn y hy ?_)
+  refine hy0 (p.pairing_nondegenerate x I n hn hI y hy ?_)
   intro z hz
   by_contra hne
   exact hcon ⟨z, hz, hne⟩
@@ -1145,18 +1211,27 @@ Until 2026-07-27 `PolarizationStruct` was satisfied by
 `hom := fun _ => d.dualAb.zero g` over EVERY datum, so it carried no
 content at all and its `pairing` could be identically `1`. This theorem
 is the mechanical check that the repair took: if `hom` is the zero map,
-then every `I`-torsion point of every geometric fibre is zero. So the
-zero map satisfies the repaired structure only over data with NO torsion
-whatsoever — never over a datum the moduli problem cares about.
+then every `I`-torsion point of every geometric fibre is zero, for every
+LEVEL `I ∈ 𝒩`. So the zero map satisfies the repaired structure only over
+data with no `𝒩`-torsion whatsoever — never over a datum the moduli
+problem cares about, provided `𝒩` names the levels that problem uses.
+
+This survived the SECOND repair of the same day, which restricted
+`weil_hom_nondegenerate` from all ideals to `𝒩`: the only change is the
+hypothesis `hI`, which every consumer already has, since a consumer that
+cares about level `I` is one that put `I` into `𝒩`. What the guard does
+cost is content at `𝒩 = ∅`, where this theorem is vacuous and the zero
+map is again a `PolarizationStruct` — which is honest, because at `𝒩 = ∅`
+nothing is being asserted.
 
 Re-run this theorem after any weakening of `PolarizationStruct`; a
 structure whose only proof of content is prose will drift back. -/
-theorem torsion_eq_zero_of_hom_eq_zero
+theorem torsion_eq_zero_of_hom_eq_zero (hI : I ∈ 𝒩)
     (hhom : ∀ {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g),
       p.hom y = d.dualAb.zero g)
     (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1) :
     y = ab.zero (specAlgClos F ≫ x) := by
-  refine p.weil_hom_nondegenerate x I n hn y hy ?_
+  refine p.weil_hom_nondegenerate x I hI n hn y hy ?_
   intro z _
   rw [hhom z]
   exact d.weil_zero_right x I n hn y hy
