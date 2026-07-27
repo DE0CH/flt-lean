@@ -8781,10 +8781,18 @@ them.  Three leaves replace them:
   frame that remembers the real multiplication; the DETERMINANT CLAUSE
   audit of `exists_tateFrame_of_levelStructure` states precisely that
   `j`/`hj` is what makes such a given-frame statement faithful, and this
-  leaf has them.
+  leaf has them.  **PROVEN 2026-07-27** over
+  `exists_adicPackage_of_tateFrame_mult` and the pre-Chebotarev
+  geometric leaf `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame`;
+  no new mathematics, and in particular no Weil pairing was proven here
+  — the geometry stayed where it was.
 * `exists_finset_charFrob_coeff_one_mem_range_of_tateFrame_mult` — the
   linear coefficient lies in `j(𝒪_D)`.  Weil integrality of the trace,
-  and nothing else.
+  and nothing else.  **PROVEN 2026-07-27** over the same transport and
+  the package-carrying restatement
+  `exists_finset_charFrob_coeff_one_mem_range_of_adicTateFrame`, which
+  is now the leaf: same content, but stated over a coefficient ring
+  known to be `𝒪_{D,I}` instead of an arbitrary `CommRing`.
 * `exists_finset_weilCoeffs_fst_eq_of_mult` — two frames give the same
   TRACE family off a finite set.
 
@@ -8937,9 +8945,313 @@ theorem injective_of_tateFrame_mult
     rw [← hcomp, ← hcomp, hEq]
   exact FaithfulSMul.algebraMap_injective (NumberField.RingOfIntegers D) D (ψ.injective hψ)
 
+/-! ### Upgrading a GIVEN frame to one that carries the adic package
+
+The two leaves of the next subsection are stated over a frame whose
+coefficient ring `O` carries nothing but `CommRing`, `TopologicalSpace`
+and `IsTopologicalRing`.  Everything the file already proves about
+frames — the determinant identity, the geometric Frobenius input —
+is stated over a frame carrying the ADIC PACKAGE
+(`IsLocalRing O`, `Algebra ℤ_[q] O`, `hcplt`/`hdense`/`hker`).  The
+transport below closes that gap once and for all, and both leaves are
+then corollaries.
+
+`exists_adicPackage_of_tateFrame_mult` is PROVEN over
+`exists_ringEquiv_of_frameComparison` of the subsection above: that
+comparison already identifies `O ≃+* 𝒪_{D,I}` over `𝒪_D`, and the whole
+package is transported back along the resulting `e` — the `ℤ_q`-algebra
+structure as `e.symm ∘ algebraMap`, locality by
+`IsLocalRing.of_surjective'`, and `hcplt`/`hdense`/`hker` because `e`
+matches the two `π`-adic filtrations (`e (j π) = j₁ π`, so
+`y ∈ (j π)ⁿ ↔ e y ∈ (j₁ π)ⁿ` by `Ideal.mem_span_singleton` in both
+directions).
+
+WHAT THE PACKAGE CANNOT CONTAIN, AND WHY IT DOES NOT MATTER.  It
+deliberately omits `IsModuleTopology ℤ_[q] O`, and that omission is
+forced rather than lazy: the frame's `TopologicalSpace O` is a
+HYPOTHESIS, so it may be the INDISCRETE topology — `IsTopologicalRing`
+holds, `τ` is continuous vacuously, every hypothesis of the two leaves
+is satisfied, and `IsModuleTopology ℤ_[q] O` is then FALSE, since
+`𝒪_{D,I}` with its module topology is not indiscrete.  No theorem can
+produce that instance for a given frame.
+
+The consequence would be fatal for a route through
+`det_eq_cyclotomicCharacter_of_tateFrame`, which needs
+`IsModuleTopology` for its CHEBOTAREV step
+(`det_eq_cyclotomicCharacter_of_globalFrob` uses it twice, for
+`t2Space_of_free_isModuleTopology` and for continuity of
+`γ ↦ det (τ γ)`).  But the Chebotarev step is not needed here at all:
+`GaloisRep.charFrob` is *defined* at the local Frobenius, and
+`GaloisRepresentation.GaloisRep.charFrob_eq_charpoly_globalFrob` says —
+by `rfl` — that `τ.charFrob w = (τ (globalFrob w)).charpoly`.  So the
+determinant leaf only ever asks for the identity AT a Frobenius element,
+which is exactly what the geometric leaf
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` supplies, and that
+leaf's hypotheses are precisely the package minus the topology.
+Chebotarev is what propagates the identity from the Frobenius elements
+to all of `Γ_F`; a statement about `charFrob` never leaves them. -/
+
+/-- **An ideal of `R`, viewed as a submodule of `R`, is its own
+`⊤`-multiple** (PROVEN — `K • ⊤ = K` in `Submodule R R`).
+
+This is the shape in which `IsHausdorff` and `IsPrecomplete` state
+membership (`I ^ n • ⊤`), and it is what lets those two conditions be
+transported along a ring isomorphism, where only the IDEALS correspond.
+Mathlib has `Submodule.set_smul_top_eq_span` and
+`Ideal.smul_top_eq_map` but not this specialization. -/
+theorem ideal_smul_top_eq_self {R : Type*} [CommRing R] (K : Ideal R) :
+    (K • (⊤ : Submodule R R)) = (K : Submodule R R) := by
+  refine le_antisymm ?_ ?_
+  · rw [Submodule.smul_le]
+    intro r hr y _
+    exact K.mul_mem_right y hr
+  · intro y hy
+    have := Submodule.smul_mem_smul hy (Submodule.mem_top (x := (1 : R)))
+    simpa using this
+
+open _root_.NumberField in
+/-- **A frame that remembers the real multiplication carries the adic
+package** (PROVEN 2026-07-27 over `exists_ringEquiv_of_frameComparison`,
+i.e. over the two commutative-algebra leaves
+`exists_padicAlgebra_ringHom_of_frameComparison` and
+`surjective_of_finrank_eq_of_isIntegrallyClosed`).
+
+Given a frame `(O, τ, φ, j)` of `TatePt m x I π` with the pinning `hj`,
+the coefficient ring `O` is a local `ℤ_q`-algebra in which `j (𝒪_D)` is
+`π`-adically dense and detects the `I`-adic filtration, and `O` is
+complete for that filtration.  In other words `O` satisfies every
+hypothesis of `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` and
+of `exists_finset_charFrob_coeff_one_mem_range_of_adicTateFrame` below.
+
+The proof is the same three moves as the sibling
+`exists_algebraicClosureEmbedding_of_tateFrame_mult`: build the honest
+frame `φ₁` over `O₁ := 𝒪_{D,I}` at the same `(q, I, π)` by
+`exists_tateFrame_of_adicCoefficientRing`, form the additive bijection
+`g := φ⁻¹ ∘ φ₁` intertwining the two `𝒪_D`-actions, and feed it to
+`exists_ringEquiv_of_frameComparison` to get `e : O ≃+* O₁` with
+`e ∘ j = j₁`.  Everything is then transported back along `e`.
+
+`hφequiv` and the topology on `O` are carried but unused — they are
+underscore-prefixed so that this is mechanically visible — exactly as in
+that sibling: the conclusion is about the RING `O`.  They are kept so
+that the hypothesis block is literally the frame a consumer holds.  `τ`
+is used only through the type of `φ`.  See the
+subsection note above for why `IsModuleTopology ℤ_[q] O` is absent and
+why nothing needs it. -/
+theorem exists_adicPackage_of_tateFrame_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) (hq : Fact q.Prime)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) (iCR : CommRing O) (_iTS : TopologicalSpace O) (_iTR : IsTopologicalRing O)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (_hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n)) :
+    ∃ _ : Algebra ℤ_[q] O, IsLocalRing O ∧
+      IsAdicComplete (Ideal.span {j π}) O ∧
+      (∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+        z - j a ∈ Ideal.span {j π} ^ n) ∧
+      (∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+        j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) := by
+  haveI := hq
+  classical
+  -- `I` is nonzero: it contains the rational prime `q`.
+  have hI0 : I ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot, Nat.cast_eq_zero] at hqI
+    exact (Fact.out : q.Prime).ne_zero hqI
+  let v : HeightOneSpectrum (𝓞 D) := ⟨I, hI.isPrime, hI0⟩
+  -- The HONEST coefficient ring `𝒪_{D,I}` and its `ℤ_q`-structure.
+  letI iAlg₁ : Algebra ℤ_[q] (v.adicCompletionIntegers D) := padicIntAlgebra v q hqI
+  obtain ⟨iFin₁, iFree₁, iMT₁⟩ := module_finite_free_moduleTopology_padicIntAlgebra v q hqI
+  haveI := iFin₁; haveI := iFree₁; haveI := iMT₁
+  have hcplt₁ : IsAdicComplete
+      (Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π})
+      (v.adicCompletionIntegers D) :=
+    isAdicComplete_span_uniformizer v π hπ hπ2
+  have hdense₁ : ∀ (n : ℕ) (z : v.adicCompletionIntegers D),
+      ∃ a : 𝓞 D, z - algebraMap (𝓞 D) (v.adicCompletionIntegers D) a ∈
+        Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π} ^ n :=
+    fun n z => exists_sub_mem_span_uniformizer_pow v π hπ hπ2 n z
+  have hker₁ : ∀ (n : ℕ) (a : 𝓞 D),
+      algebraMap (𝓞 D) (v.adicCompletionIntegers D) a ∈
+        Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π} ^ n ↔ a ∈ I ^ n :=
+    fun n a => mem_span_uniformizer_pow_iff v π hπ hπ2 n a
+  -- The HONEST frame at the same `(q, I, π)`, and the comparison `g = φ⁻¹ ∘ φ₁`.
+  obtain ⟨τ₁, φ₁, hφadd₁, hφbij₁, hφequiv₁, hφj₁⟩ :=
+    exists_tateFrame_of_adicCoefficientRing m x hdim q I hI hqI π hπ hπ2
+      (v.adicCompletionIntegers D) (algebraMap (𝓞 D) (v.adicCompletionIntegers D))
+      hcplt₁ hdense₁ hker₁
+  obtain ⟨g, hgdef⟩ :
+      ∃ g : (Fin 2 → v.adicCompletionIntegers D) → (Fin 2 → O), ∀ u, φ (g u) = φ₁ u := by
+    refine ⟨fun u => (Equiv.ofBijective φ hφbij).symm (φ₁ u), fun u => ?_⟩
+    exact (Equiv.ofBijective φ hφbij).apply_symm_apply (φ₁ u)
+  have hgadd : ∀ u u' : Fin 2 → v.adicCompletionIntegers D, g (u + u') = g u + g u' := by
+    intro u u'
+    refine hφbij.1 (Subtype.ext (funext fun n => ?_))
+    rw [hgdef, hφadd, hgdef, hgdef, hφadd₁]
+  have hgbij : Function.Bijective g := by
+    constructor
+    · intro u u' huu
+      exact hφbij₁.1 (by rw [← hgdef, ← hgdef, huu])
+    · intro w
+      obtain ⟨u, hu⟩ := hφbij₁.2 (φ w)
+      exact ⟨u, hφbij.1 (by rw [hgdef, hu])⟩
+  have hgj : ∀ (a : 𝓞 D) (u : Fin 2 → v.adicCompletionIntegers D),
+      g (algebraMap (𝓞 D) (v.adicCompletionIntegers D) a • u) = j a • g u := by
+    intro a u
+    refine hφbij.1 (Subtype.ext (funext fun n => ?_))
+    rw [hgdef, hj, hgdef, hφj₁]
+  -- The pinning: the frame's coefficient ring IS `𝒪_{D,I}`.
+  obtain ⟨e, he⟩ :=
+    exists_ringEquiv_of_frameComparison q I hI hqI π hπ hπ2 (v.adicCompletionIntegers D)
+      (algebraMap (𝓞 D) (v.adicCompletionIntegers D)) hdense₁ hker₁ O j g hgadd hgbij hgj
+  -- The `ℤ_q`-structure transported along `e`.
+  letI iAlg : Algebra ℤ_[q] O :=
+    RingHom.toAlgebra (e.symm.toRingHom.comp (algebraMap ℤ_[q] (v.adicCompletionIntegers D)))
+  -- `e` matches the two `π`-adic filtrations.
+  have heπ : e.symm (algebraMap (𝓞 D) (v.adicCompletionIntegers D) π) = j π := by
+    rw [← he π, e.symm_apply_apply]
+  have hmem : ∀ (n : ℕ) (y : O), y ∈ Ideal.span {j π} ^ n ↔
+      e y ∈ Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π} ^ n := by
+    intro n y
+    rw [Ideal.span_singleton_pow, Ideal.span_singleton_pow,
+      Ideal.mem_span_singleton, Ideal.mem_span_singleton]
+    constructor
+    · rintro ⟨c, rfl⟩
+      exact ⟨e c, by rw [map_mul, map_pow, he]⟩
+    · rintro ⟨c, hc⟩
+      refine ⟨e.symm c, ?_⟩
+      have h2 := congrArg e.symm hc
+      rwa [e.symm_apply_apply, map_mul, map_pow, heπ] at h2
+  haveI : Nontrivial O := e.toEquiv.nontrivial
+  have hloc : IsLocalRing O := IsLocalRing.of_surjective' e.symm.toRingHom e.symm.surjective
+  refine ⟨iAlg, hloc, ?_, ?_, ?_⟩
+  · -- `IsAdicComplete` transported along `e`, one half at a time.
+    haveI hhaus : IsHausdorff (Ideal.span {j π}) O := by
+      constructor
+      intro y hy
+      have hy' : ∀ n : ℕ, e y ∈
+          Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π} ^ n := by
+        intro n
+        rw [← hmem n y]
+        have := hy n
+        rw [SModEq.sub_mem, sub_zero, ideal_smul_top_eq_self] at this
+        exact this
+      have hey := hcplt₁.haus (e y) (fun n => by
+        rw [SModEq.sub_mem, sub_zero, ideal_smul_top_eq_self]
+        exact hy' n)
+      -- `simp` is avoided here: the project simp set contains sorried lemmas.
+      have h0 := congrArg e.symm hey
+      rwa [e.symm_apply_apply, map_zero] at h0
+    haveI hprec : IsPrecomplete (Ideal.span {j π}) O := by
+      constructor
+      intro F0 hF0
+      obtain ⟨L, hL⟩ := hcplt₁.prec (f := fun n => e (F0 n)) (by
+        intro a b hab
+        rw [SModEq.sub_mem, ideal_smul_top_eq_self, ← map_sub, ← hmem]
+        have := hF0 hab
+        rw [SModEq.sub_mem, ideal_smul_top_eq_self] at this
+        exact this)
+      refine ⟨e.symm L, fun n => ?_⟩
+      rw [SModEq.sub_mem, ideal_smul_top_eq_self, hmem, map_sub, e.apply_symm_apply]
+      have := hL n
+      rw [SModEq.sub_mem, ideal_smul_top_eq_self] at this
+      exact this
+    exact ⟨⟩
+  · intro n z
+    obtain ⟨a, ha⟩ := hdense₁ n (e z)
+    refine ⟨a, ?_⟩
+    rw [hmem, map_sub, he]
+    exact ha
+  · intro n a
+    rw [hmem, he]
+    exact hker₁ n a
+
+open _root_.NumberField in
+/-- **TRACE, over a frame carrying the adic package: the linear
+coefficient of the Frobenius characteristic polynomial lies in
+`j(𝒪_D)`** (sorry leaf — Weil integrality of the trace, and the ONLY
+remaining content of the rationality chain).
+
+This is the package-carrying form of
+`exists_finset_charFrob_coeff_one_mem_range_of_tateFrame_mult` below,
+which is PROVEN over it by `exists_adicPackage_of_tateFrame_mult`.  Its
+hypothesis block is *verbatim* that of the geometric determinant leaf
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame`, deliberately: the
+two are the determinant and trace halves of one classical statement and
+should be attacked with the same vocabulary.
+
+WHAT THE PACKAGE BUYS A PROVER, and why the given-frame form was the
+wrong place to start.  Over a bare `CommRing O` the assertion
+"`coeff 1 ∈ Set.range j`" is a statement about a ring nothing is known
+about.  Here `hcplt`/`hdense`/`hker` say exactly that `O` is the
+`I`-adic completion `𝒪_{D,I}` with `j` the canonical `𝒪_D → 𝒪_{D,I}`
+(this is what `exists_ringEquiv_of_frameComparison` proves from them),
+so the statement is the honest one: the trace of Frobenius on
+`T_I A`, a priori only an `I`-adic integer, is a GLOBAL algebraic
+integer of `D`.
+
+Note what is NOT asserted: `b_w = N w` is the determinant leaf, now
+PROVEN, and the archimedean bound `|a_w| ≤ 2√(N w)` is true but needed
+by no consumer in this tree and is deliberately not stated.  A prover of
+this leaf owes integrality only.
+
+ROUTE NOTE.  The `det`-side analogue of this leaf is proven from a
+pairing identity; there is no pairing route to a TRACE.  The route
+audit in the subsection note above (`#### The arithmetic half`) applies
+verbatim: the structurally right proof is through the reduction at a
+place of good reduction, where `Frob_w ∈ End(A_w)` commutes with `𝒪_D`
+and `a_w` is a coefficient of its characteristic polynomial over `D`;
+that package (Néron models, special fibres, the Frobenius
+endomorphism, `End(A) ↪ End(T_I A)`) does not exist anywhere in this
+tree, and building it is a subtree rather than a step. -/
+theorem exists_finset_charFrob_coeff_one_mem_range_of_adicTateFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hφj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n)) :
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad, (τ.charFrob w).coeff 1 ∈ Set.range j :=
+  sorry
+
 /-- **DETERMINANT: the constant coefficient of the Frobenius
-characteristic polynomial of a frame is the absolute norm** (sorry leaf
-— the WEIL PAIRING for a GIVEN frame that remembers the real
+characteristic polynomial of a frame is the absolute norm** (PROVEN
+2026-07-27 — the WEIL PAIRING for a GIVEN frame that remembers the real
 multiplication).
 
 For all but finitely many `w`,
@@ -8968,14 +9280,36 @@ than `𝒪_{D,I}`, and the determinant becomes `χ₁ · ψ⁻¹(χ₂)` instead
 nothing".  This leaf has the tie — `j` and `hj` — so it sits on the
 true side of that line.
 
-The intended proof is the same three-step one, once the given frame's
-`O` has been recognised as `𝒪_{D,I}`: that recognition is the sibling
-`exists_algebraicClosureEmbedding_of_tateFrame_mult`, whose docstring
-gives the four-step argument, strengthened to produce the adic package
-rather than merely an embedding.  The exceptional set is the (finite)
-set of places over `q`, by `exists_finset_forall_natCast_notMem`; the
-places of bad reduction do NOT have to be excluded, since `det τ = χ_cyc`
-is an identity of characters and is insensitive to ramification of `τ`. -/
+HOW IT IS PROVEN (2026-07-27), in three moves and no new mathematics.
+
+1. `exists_adicPackage_of_tateFrame_mult` above recognises the given
+   frame's `O` as `𝒪_{D,I}` and hands back the adic package for `j`.
+2. `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` — the geometric
+   leaf, whose hypothesis block is exactly that package — gives
+   `det (τ (globalFrob w)) = χ_cyc(globalFrob w)` off a finite `Sbad`,
+   and `cyclotomicCharacter_adicArithFrob_absNorm` evaluates the right
+   side as `N w` off the (finite, by
+   `exists_finset_forall_natCast_notMem`) set of places over `q`.
+3. `charFrob` is the charpoly at `globalFrob w`
+   (`GaloisRepresentation.GaloisRep.charFrob_eq_charpoly_globalFrob`, a
+   `rfl`), and `LinearMap.det_eq_sign_charpoly_coeff` at
+   `finrank O (Fin 2 → O) = 2` turns `coeff 0` into `det` with sign
+   `(-1)² = 1`.
+
+WHY NO CHEBOTAREV, WHICH IS WHAT MAKES THIS PROVABLE AT ALL.  The
+obvious route is through `det_eq_cyclotomicCharacter_of_tateFrame`, the
+identity on the whole of `Γ_F`.  That route is CLOSED for a given
+frame: its Chebotarev step needs `IsModuleTopology ℤ_[q] O`, and a
+given frame's topology is a hypothesis that may be the indiscrete one,
+under which every hypothesis of this leaf holds and that instance is
+false.  The escape is that `charFrob` never leaves the Frobenius
+elements, so the pre-Chebotarev leaf suffices — see the subsection note
+above `exists_adicPackage_of_tateFrame_mult` for the full argument.
+
+The exceptional set is the union of the (finite) set of places over `q`
+with the geometric leaf's own `Sbad`; the places of bad reduction do NOT
+have to be excluded, since `det τ = χ_cyc` is an identity of characters
+and is insensitive to ramification of `τ`. -/
 theorem exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -8998,13 +9332,46 @@ theorem exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult
     (hj : ∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
       (φ (j c • u)).1 n = m.act c ((φ u).1 n)) :
     ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
-      ∀ w ∉ bad, (τ.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : O) :=
-  sorry
+      ∀ w ∉ bad, (τ.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : O) := by
+  haveI := hq
+  classical
+  -- 1. the given frame carries the adic package
+  obtain ⟨iAlg, hloc, hcplt, hdense, hker⟩ :=
+    exists_adicPackage_of_tateFrame_mult m x hdim q hq I hI hqI π hπ hπ2 O iCR iTS iTR τ φ j
+      hφadd hφbij hφequiv hj
+  letI := iAlg
+  haveI := hloc
+  -- 2. the two finite exceptional sets
+  obtain ⟨bad0, hbad0⟩ :=
+    exists_finset_forall_natCast_notMem (F := F) q (Fact.out : q.Prime).ne_zero
+  obtain ⟨Sbad, hSbad⟩ :=
+    det_globalFrob_eq_cyclotomicCharacter_of_tateFrame m x hdim q I hI hqI π hπ hπ2 O j
+      hcplt hdense hker τ φ hφadd hφbij hφequiv hj
+  refine ⟨bad0 ∪ Sbad, fun w hw => ?_⟩
+  have hw0 : w ∉ bad0 := fun h => hw (Finset.mem_union_left _ h)
+  have hwS : w ∉ Sbad := fun h => hw (Finset.mem_union_right _ h)
+  -- the cyclotomic character at the global Frobenius is the absolute norm
+  have hchi : ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (GaloisRepresentation.globalFrob w)).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+      = (Ideal.absNorm w.asIdeal : ℤ_[q]) :=
+    cyclotomicCharacter_adicArithFrob_absNorm F w (hbad0 w hw0)
+  -- 3. `charFrob` is the charpoly at `globalFrob`, whose `coeff 0` is the determinant
+  have hcp : τ.charFrob w = (τ (GaloisRepresentation.globalFrob w)).charpoly :=
+    _root_.GaloisRepresentation.GaloisRep.charFrob_eq_charpoly_globalFrob τ w
+  -- `simp` is deliberately avoided in this closing step: the project simp set
+  -- contains sorried lemmas, and a `simpa` here would import `sorryAx`.
+  have hdet : (τ (GaloisRepresentation.globalFrob w)).charpoly.coeff 0 =
+      LinearMap.det (τ (GaloisRepresentation.globalFrob w)) := by
+    rw [LinearMap.det_eq_sign_charpoly_coeff, Module.finrank_fin_fun, neg_one_sq, one_mul]
+  rw [hcp, hdet, hSbad w hwS, hchi, map_natCast]
 
 /-- **TRACE: the linear coefficient of the Frobenius characteristic
-polynomial of a frame lies in `j(𝒪_D)`** (sorry leaf — this is the
-arithmetic core of rationality, and after the determinant leaf above it
-is ALL that is left of it).
+polynomial of a frame lies in `j(𝒪_D)`** (PROVEN 2026-07-27 over
+`exists_adicPackage_of_tateFrame_mult` and the package-carrying leaf
+`exists_finset_charFrob_coeff_one_mem_range_of_adicTateFrame` above —
+this is the arithmetic core of rationality, and after the determinant
+leaf above it is ALL that is left of it).
 
 For all but finitely many `w`,
 
@@ -9015,11 +9382,22 @@ i.e. `- a_w`, the trace of Frobenius, is a GLOBAL algebraic integer of
 the Frobenius endomorphism of the reduction `A_w`, and its integrality
 is Weil's.
 
+WHAT MOVED, AND WHAT DID NOT.  The mathematical content is untouched and
+still open; what this reduction removes is the *arbitrary coefficient
+ring*.  The given frame's `O` carries nothing but `CommRing`, so the
+statement here quantifies over a ring about which nothing is known;
+`exists_adicPackage_of_tateFrame_mult` recognises it as `𝒪_{D,I}` with
+`j` the canonical embedding of `𝒪_D`, and hands the prover of the
+remaining leaf the pin `hcplt`/`hdense`/`hker` and the `ℤ_q`-algebra
+structure.  That leaf's hypothesis block is then *verbatim* that of the
+geometric determinant leaf
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame`, which is where its
+sibling half was discharged.
+
 Note what is NOT asserted: `b_w = N w` is the separate determinant leaf
-above, and the archimedean bound `|a_w| ≤ 2√(N w)` — the Riemann
-hypothesis half — is true but is needed by no consumer in this tree and
-is deliberately not stated.  A prover of this leaf owes integrality
-only.
+above, now PROVEN, and the archimedean bound `|a_w| ≤ 2√(N w)` — the
+Riemann hypothesis half — is true but is needed by no consumer in this
+tree and is deliberately not stated.  A prover owes integrality only.
 
 `hdim` is what makes the rank two rather than `2d`; `hπ`, `hπ2` pin `π`
 as a uniformizer so that `TatePt` is the `I`-adic Tate module; `hj` is
@@ -9047,8 +9425,15 @@ theorem exists_finset_charFrob_coeff_one_mem_range_of_tateFrame_mult
     (hj : ∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
       (φ (j c • u)).1 n = m.act c ((φ u).1 n)) :
     ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
-      ∀ w ∉ bad, (τ.charFrob w).coeff 1 ∈ Set.range j :=
-  sorry
+      ∀ w ∉ bad, (τ.charFrob w).coeff 1 ∈ Set.range j := by
+  haveI := hq
+  obtain ⟨iAlg, hloc, hcplt, hdense, hker⟩ :=
+    exists_adicPackage_of_tateFrame_mult m x hdim q hq I hI hqI π hπ hπ2 O iCR iTS iTR τ φ j
+      hφadd hφbij hφequiv hj
+  letI := iAlg
+  haveI := hloc
+  exact exists_finset_charFrob_coeff_one_mem_range_of_adicTateFrame m x hdim q I hI hqI π hπ hπ2
+    O j hcplt hdense hker τ φ hφadd hφbij hφequiv hj
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **RATIONALITY: the Frobenius characteristic polynomial of ONE frame
