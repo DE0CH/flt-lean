@@ -106,15 +106,16 @@ own branch and wrong once the others landed:
 * `isIso_projBaseChangeHom` — all that is left of `hbc`, base change for `Proj`;
 * `exists_coordinateRingEquiv_projChartRing` and `compl_basicOpen_projCoord_two`
   — the two halves of `exists_affineChart_projModel` described above;
-* `exists_affineComplement_zeroSection`,
-  `exists_weierstrassRingEquiv_of_affineComplement`,
-  `isElliptic_of_isOpenImmersion_coordinateRing` and
-  `exists_geomFibreAddEquiv_of_weierstrassModel` — the Weierstrass-comparison
-  cluster further down, which belongs to a different node and is listed here
-  only so that this count matches the compiler's.
-  (`exists_weierstrassModel_of_ellipticScheme` was a leaf here until
-  2026-07-27 and is now PROVEN from the first three, which are its
-  affineness / Riemann–Roch / discriminant thirds.)
+* the Weierstrass-comparison cluster further down, which belongs to a different
+  node and is listed here only so that this count matches the compiler's.  Both
+  `exists_weierstrassModel_of_ellipticScheme` and
+  `exists_geomFibreAddEquiv_of_weierstrassModel` were leaves here until
+  2026-07-27 and are now PROVEN — the first from
+  `exists_affineComplement_zeroSection`,
+  `exists_weierstrassRingEquiv_of_affineComplement` and
+  `isElliptic_of_isOpenImmersion_coordinateRing` (its affineness / Riemann–Roch
+  / discriminant thirds), the second from `exists_isIso_of_affineChart`,
+  `relPointPost_add` and `hom_specRat_eq_of_range_eq`.
 
 The whole "Dehomogenisation" section is now PROVEN — `exists_projChartRingEquiv`,
 `projChart_jacobian_span_eq_top` and
@@ -4131,7 +4132,15 @@ The two are separated because the difficulties are unrelated and neither is
 available at this pin: the first is a linear-systems argument, the second is
 the rigidity theorem that `exists_projGroupLaw_geomFibreAddEquiv`'s audit
 already names as absent from mathlib and from `~/cs/FLT`.  Splitting them
-means a prover at either one need not carry the other. -/
+means a prover at either one need not carry the other.
+
+**The second is itself now DECOMPOSED and PROVEN** (2026-07-27), along the
+axis its own audit named as untried — prove the identification for the
+concrete projective model and TRANSPORT it — leaving
+`exists_isIso_of_affineChart` (curve geometry: two charts glue) and
+`relPointPost_add` (rigidity proper, for arbitrary abelian schemes over
+`Spec ℚ`).  See the "Transport along an isomorphism of models" subsection
+below. -/
 
 /-! #### The three leaves of `exists_weierstrassModel_of_ellipticScheme`
 
@@ -4406,9 +4415,266 @@ theorem exists_weierstrassModel_of_ellipticScheme {A : Scheme.{0}}
     Scheme.Hom.coe_opensRange]
   exact hrange
 
+/-! #### Transport along an isomorphism of models
+
+`exists_geomFibreAddEquiv_of_weierstrassModel` below is PROVEN from the
+material in this subsection, along the route its own audit named as the one
+never tried: prove the identification for the CONCRETE projective model —
+where it is `exists_projGeomFibreAddEquiv`, already available — and
+transport it along an isomorphism `proj E ≅ A`.
+
+**The transport is formal; only two things are not.**  Postcomposition with
+a morphism over the base is a map of relative points (`relPointPost`), it
+commutes with `RelPoint.pre` by associativity alone (`relPointPost_pre`),
+and `galSMul` IS `RelPoint.pre` (`AbelianSchemeStruct.galSMul_def` is
+`rfl`) — so Galois equivariance costs one lemma with a one-line proof, and
+this is the same observation that discharged the generator's Galois
+stability in `X0.lean`.  What is genuinely open is
+
+* `exists_isIso_of_affineChart` — that the two charts glue to an
+  isomorphism of the proper models, and
+* `relPointPost_add` — that an isomorphism carrying zero to zero is a
+  homomorphism, i.e. the RIGIDITY theorem.
+
+The third input, `hom_specRat_eq_of_range_eq`, is PROVEN here: it is what
+turns "the isomorphism matches the two charts" into "it matches the two
+zero SECTIONS", which is the hypothesis rigidity consumes. -/
+
+section Transport
+
+universe u
+
+/-- **Postcomposition of a relative point with a morphism over the base**
+(PROVEN — a definition).
+
+If `u : A ⟶ B` satisfies `u ≫ fB = fA` then `x ↦ x ≫ u` carries
+`T`-points of `A` over `g` to `T`-points of `B` over `g`.  This is the map
+along which the whole reverse bridge is transported. -/
+def relPointPost {A B S : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ fB = fA) {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint fA g) : RelPoint fB g :=
+  ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩
+
+/-- The underlying morphism of `relPointPost` (PROVEN, definitional). -/
+@[simp] theorem relPointPost_val {A B S : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ fB = fA) {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint fA g) :
+    (relPointPost u hu x).1 = x.1 ≫ u := rfl
+
+/-- **Postcomposition commutes with precomposition** (PROVEN — associativity
+of composition and nothing else).
+
+This is the entire content of the Galois-equivariance half of the reverse
+bridge: `AbelianSchemeStruct.galSMul` is `RelPoint.pre (specGal σ)` by
+definition, so a transported equivalence is automatically equivariant. -/
+theorem relPointPost_pre {A B S : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ fB = fA) {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint fA g) :
+    relPointPost u hu (RelPoint.pre h hg x) = RelPoint.pre h hg (relPointPost u hu x) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- **Postcomposition with an ISOMORPHISM over the base is a bijection of
+relative points** (PROVEN — the inverse is postcomposition with `inv u`). -/
+noncomputable def relPointPostEquiv {A B S : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S} (u : A ⟶ B)
+    [IsIso u] (hu : u ≫ fB = fA) {T : Scheme.{u}} {g : T ⟶ S} :
+    RelPoint fA g ≃ RelPoint fB g where
+  toFun := relPointPost u hu
+  invFun := relPointPost (inv u) (by rw [← hu, IsIso.inv_hom_id_assoc])
+  left_inv _ := Subtype.ext (by simp [relPointPost])
+  right_inv _ := Subtype.ext (by simp [relPointPost])
+
+/-- **A field has at most one ring homomorphism to `ℚ`** (PROVEN).
+
+`ℚ` is the prime field of characteristic zero, so a ring map `φ : k → ℚ`
+out of a field is injective, forces `CharZero k`, and is inverse to
+`algebraMap ℚ k`: `φ ∘ algebraMap ℚ k` is a ring endomorphism of `ℚ`,
+hence the identity (`Subsingleton (ℚ →+* ℚ)`), and injectivity of `φ`
+upgrades that to `algebraMap ℚ k ∘ φ = id`.  Two such `φ`, `ψ` are then
+both the inverse of the same map, hence equal.
+
+Note that no hypothesis relating `φ` to `ψ` is needed — existence of ONE
+such map already pins `k ≅ ℚ`. -/
+theorem subsingleton_ringHom_rat {k : Type*} [Field k] : Subsingleton (k →+* ℚ) := by
+  refine ⟨fun φ ψ => ?_⟩
+  haveI : CharZero k := RingHom.charZero φ
+  have hψ : ψ.comp (algebraMap ℚ k) = RingHom.id ℚ := Subsingleton.elim _ _
+  have hφ : φ.comp (algebraMap ℚ k) = RingHom.id ℚ := Subsingleton.elim _ _
+  refine RingHom.ext fun a => ?_
+  have hround : algebraMap ℚ k (φ a) = a :=
+    φ.injective (congrArg (fun g : ℚ →+* ℚ => g (φ a)) hφ)
+  calc φ a = ψ (algebraMap ℚ k (φ a)) :=
+        (congrArg (fun g : ℚ →+* ℚ => g (φ a)) hψ).symm
+    _ = ψ a := by rw [hround]
+
+/-- **A `ℚ`-point of a scheme is determined by its image point** (PROVEN).
+
+Two morphisms `Spec ℚ ⟶ A` with the same set-theoretic range are equal.
+By `Scheme.SpecToEquivOfField` such a morphism is a pair (a point `x` of
+`A`, a ring map `κ(x) ⟶ ℚ`); `Spec ℚ` is a one-point space, so equal
+ranges give equal points, and `subsingleton_ringHom_rat` gives equal ring
+maps for free — `κ(x)` is a field, so it admits at most one map to `ℚ`.
+
+**No section hypothesis is needed**, which is worth noticing: the naive
+statement of this lemma carries `s ≫ f = 𝟙` and `t ≫ f = 𝟙` and proves
+`κ(x) ≅ ℚ` from them, but the isomorphism is already forced by the mere
+existence of `κ(x) ⟶ ℚ`.
+
+NOT VACUOUS, and it is the load-bearing step of the transport: the
+extension lemma below matches the two affine CHARTS, and what rigidity
+consumes is that the two ZERO SECTIONS match.  The range chase in
+`exists_geomFibreAddEquiv_of_weierstrassModel` turns the first into an
+equality of ranges of the removed points, and this lemma is what upgrades
+that to an equality of morphisms. -/
+theorem hom_specRat_eq_of_range_eq {A : Scheme.{0}}
+    (s t : Spec (CommRingCat.of ℚ) ⟶ A)
+    (h : Set.range s.base = Set.range t.base) : s = t := by
+  have hpt : s.base (IsLocalRing.closedPoint ℚ) = t.base (IsLocalRing.closedPoint ℚ) := by
+    obtain ⟨y, hy⟩ : s.base (IsLocalRing.closedPoint ℚ) ∈ Set.range t.base := by
+      rw [← h]; exact Set.mem_range_self _
+    rw [← hy, Subsingleton.elim y (IsLocalRing.closedPoint ℚ)]
+  apply (Scheme.SpecToEquivOfField ℚ A).injective
+  rw [Scheme.SpecToEquivOfField_eq_iff]
+  exact ⟨hpt, CommRingCat.hom_ext (@Subsingleton.elim _ subsingleton_ringHom_rat _ _)⟩
+
+/-- **RIGIDITY: a morphism of abelian schemes over `Spec ℚ` carrying zero
+to zero is a homomorphism** (sorry node, introduced 2026-07-27).
+
+TRUE — this is Mumford, *Abelian Varieties* §4, Cor. 1 (the corollary of
+the rigidity lemma), and it is the ONLY genuinely deep input of the
+reverse bridge that is not curve geometry.  `abA` and `abB` make `fA` and
+`fB` proper, smooth and geometrically connected, `hu` makes `u` a morphism
+over the base and `hzero` makes it carry the zero section to the zero
+section; the conclusion is additivity of the induced map on `T`-points for
+EVERY test scheme `T`, which by Yoneda is exactly "u is a homomorphism of
+group schemes".
+
+**Only the zero section over the base itself is hypothesised**, and that
+is not a weakening: `AbelianSchemeStruct.pre_zero` gives
+`(ab.zero g).1 = g ≫ (ab.zero (𝟙 S)).1` for every base point `g`, so
+`hzero` at `𝟙 (Spec ℚ)` already determines the zero section everywhere.
+
+## WHAT IS AVAILABLE AT THIS PIN — the previous verdict was too pessimistic
+
+The audit on `exists_projGroupLaw_geomFibreAddEquiv` records "the rigidity
+theorem is in neither mathlib nor `~/cs/FLT`".  That is true of the theorem
+and FALSE of the argument, which matters more.  `Mathlib/AlgebraicGeometry/`
+`Group/Abelian.lean` (Andrew Yang, Christian Merten) proves
+`isCommMonObj_of_isProper_of_geometricallyIntegral` — *a proper
+geometrically integral group scheme over a field is commutative*, Stacks
+tag `0BFD` — and its proof IS the rigidity argument, run on the commutator
+map `γ : (x, y) ↦ xyx⁻¹y⁻¹` instead of on the defect map.  The reusable
+pieces it exercises, all at our pin, are
+
+* `subsingleton_image_closure_of_finite_of_isPreirreducible` — the step
+  "the image of an irreducible fibre is finite, hence a point";
+* `exists_finite_imageι_comp_morphismRestrict_of_finite_image_preimage` —
+  Zariski's main theorem in the form the argument needs;
+* `ext_of_apply_eq`, `ext_of_apply_closedPoint_eq`, `pointEquivClosedPoint`
+  and `pointOfClosedPoint` — the reduction to closed points.
+
+So the shape of the intended proof is: apply the same template to
+`δ : (x, y) ↦ u(x + y) - u(x) - u(y) : A ×_S A ⟶ B`, which by `hzero` is
+zero on `{0} × A` and on `A × {0}`, and conclude `δ = 0`.
+
+**The one real obstruction is presentational, not mathematical**: mathlib
+states this for `GrpObj (G : Over (Spec K))` in a cartesian monoidal
+category, while `AbelianSchemeStruct` is the functor-of-points
+presentation.  `AbelianSchemeStruct.ofMorphisms` above already goes one way
+between morphism-level and point-level data, so the bridge to build is
+`AbelianSchemeStruct f → GrpObj (Over.mk f)`; that, and adding
+`public import Mathlib.AlgebraicGeometry.Group.Abelian`, is what a prover
+at this leaf should cost.
+
+WHAT WOULD REFUTE THE "OPEN" DIAGNOSIS: a declaration anywhere stating
+that a base-point-preserving morphism of abelian schemes (or of proper
+geometrically integral group schemes) is a group homomorphism.  Searched
+2026-07-27 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: the
+`0BFD` proof above is the closest, and it concludes commutativity of ONE
+group scheme, not functoriality between two.
+
+NOT VACUOUS: dropping `hzero` makes the statement FALSE — translation by a
+nonzero rational point of `A` is an isomorphism over `Spec ℚ` and is not
+additive — and it is exactly `hzero` that the range chase in the consumer
+works to establish. -/
+theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ)}
+    {fB : B ⟶ Spec (CommRingCat.of ℚ)} (abA : AbelianSchemeStruct fA)
+    (abB : AbelianSchemeStruct fB) (u : A ⟶ B) (hu : u ≫ fB = fA)
+    (hzero : (abA.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1 ≫ u
+      = (abB.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1)
+    {T : Scheme.{0}} {g : T ⟶ Spec (CommRingCat.of ℚ)} (x y : RelPoint fA g) :
+    relPointPost u hu (abA.add x y)
+      = abB.add (relPointPost u hu x) (relPointPost u hu y) :=
+  sorry
+
+/-- **Two Weierstrass charts of the same affine curve glue to an
+isomorphism of the proper models** (sorry node, introduced 2026-07-27).
+
+TRUE, and it is the classical fact that a smooth proper curve is
+determined by any dense open of it.  `ι₀` and `ι` are open immersions of
+the SAME affine scheme `Spec ℚ[E]` into `proj E` and into `A`, both over
+`Spec ℚ`, and each range is the complement of the range of a section — a
+single rational point.  So `ι₀` and `ι` identify dense opens of two proper
+smooth geometrically connected `ℚ`-curves (`proj E` by
+`smoothOfRelativeDimension_projToSpec`, `isProper_projToSpec` and
+`geometricallyConnected_projToSpec`; `A` by three fields of `ab`), and the
+resulting birational map extends.
+
+**The intended proof, and it is two applications of one criterion.**  The
+local ring of `proj E` at the removed point is a DVR — the curve is
+regular of dimension one — so `ValuativeCriterion.Existence` for the proper
+`f : A ⟶ Spec ℚ` extends `ι₀⁻¹ ≫ ι` across that point to `u : proj E ⟶ A`;
+symmetrically the inverse extends to `v : A ⟶ proj E`; and `u ≫ v` and
+`v ≫ u` agree with the identity on a dense open of a reduced separated
+scheme, hence are the identity.  The pin's entry points are
+`AlgebraicGeometry.ValuativeCriterion`, `IsProper.eq_valuativeCriterion`
+and `IsSeparated.valuativeCriterion` in
+`Mathlib/AlgebraicGeometry/ValuativeCriterion.lean`, together with
+`Mathlib/AlgebraicGeometry/Birational/` and
+`Mathlib/AlgebraicGeometry/RationalMap.lean`.
+
+**`ab` IS LOAD-BEARING** even though it appears only inside `_hrange`: it
+is what makes `A` proper and separated, and without properness there is no
+extension and without separatedness no uniqueness.  A prover must not
+weaken it to a bare scheme.
+
+**Both range hypotheses are LOAD-BEARING.**  Without them `ι₀` and `ι`
+would be arbitrary open immersions — possibly of a proper subset of the
+complement of a point — and the extension would not exist.  It is the two
+`ᶜ`s that make the complements single points, which is what puts the
+extension problem at a DVR.
+
+WHAT WOULD REFUTE THE "OPEN" DIAGNOSIS: a declaration anywhere producing
+an isomorphism of proper schemes from an isomorphism of dense opens, or
+identifying a smooth proper curve with the proper model of its function
+field.  Searched 2026-07-27 over `Fermat/`, `.lake/packages/mathlib` and
+`~/cs/FLT`: mathlib has the valuative criterion and a birational-geometry
+subtree but no proper-model theorem for curves.
+
+NOT VACUOUS: the conclusion pins `u` to restrict to the given
+identification of charts (`ι₀ ≫ u = ι`), so it cannot be discharged by
+some unrelated automorphism of the model. -/
+theorem exists_isIso_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+    (ι₀ : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶
+      _root_.WeierstrassCurve.Projective.proj E)
+    (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
+    (_h₀ : IsOpenImmersion ι₀) (_h₁ : IsOpenImmersion ι)
+    (_hstr₀ : ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E =
+      Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (_hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (_hrange₀ : Set.range ι₀.base = (Set.range ((projGroupLaw E).toAbelianSchemeStruct.zero
+      (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ)
+    (_hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
+    ∃ u : _root_.WeierstrassCurve.Projective.proj E ⟶ A,
+      IsIso u ∧ u ≫ f = _root_.WeierstrassCurve.Projective.projToSpec E ∧ ι₀ ≫ u = ι :=
+  sorry
+
+end Transport
+
 /-- **A Weierstrass model of an elliptic scheme identifies the geometric
-fibre with `E(ℚ̄)`, Galois-equivariantly** (sorry node, introduced
-2026-07-27): the rigidity half of the reverse bridge.
+fibre with `E(ℚ̄)`, Galois-equivariantly** (PROVEN 2026-07-27 from
+`exists_isIso_of_affineChart`, `relPointPost_add` and
+`hom_specRat_eq_of_range_eq`; formerly a sorry node): the rigidity half of
+the reverse bridge.
 
 TRUE, and it is the **rigidity theorem** — a group law on a genus-one curve
 is determined by its identity section.  The model hypothesis gives an open
@@ -4423,31 +4689,50 @@ equal.  Galois equivariance is free — `galSMul` is precomposition with
 coordinate description of `ℚ̄`-points that is the coordinatewise action of
 `σ`, which is `WeierstrassCurve.Affine.Point.map`.
 
-**`_hmodel` IS LOAD-BEARING and the leaf is FALSE without it.**  It is
-underscore-prefixed only because the body is `sorry`.  Dropped, the
+**`hmodel` IS LOAD-BEARING and the leaf is FALSE without it.**  Dropped, the
 statement would assert a Galois-equivariant `≃+` between `E(ℚ̄)` and the
 geometric fibre of an *arbitrary* elliptic scheme for an *arbitrary* `E` —
 take `A` the projective model of a curve of rank `0` and `E` one of rank
-`1` and there is no such isomorphism at all.
+`1` and there is no such isomorphism at all.  (It is no longer
+underscore-prefixed: the proof below consumes all three of its conjuncts.)
 
-**The `range_eq` conjunct of `_hmodel` is the load-bearing part of it**, and
+**The `range_eq` conjunct of `hmodel` is the load-bearing part of it**, and
 an auditor should check that a weakening does not quietly drop it: it is
 what forces the point removed by the chart to BE the identity of `ab`, and
 that is the hypothesis rigidity consumes.  With only "some open immersion"
 the two group laws would differ by a translation and the conclusion would be
 false as stated (it would hold only after composing with one).
 
-IRREDUCIBLE at this pin in the sense that matters: the rigidity theorem is
-in neither mathlib nor `~/cs/FLT` — the same verdict recorded at
-`exists_projGroupLaw_geomFibreAddEquiv` above, which is why that leaf was
-restated to bind its group law existentially rather than prove rigidity.
-**The axis that verdict ranges over**: theorems about morphisms of abelian
-schemes.  It does NOT cover the possibility of proving this leaf for the
-CONCRETE projective model first and transporting along the chart
-isomorphism, which is where an attack should start. -/
+## THE CUT (2026-07-27) — the untried axis, taken
+
+The previous verdict here was IRREDUCIBLE, on the grounds that the rigidity
+theorem is in neither mathlib nor `~/cs/FLT`, and it named its own escape:
+the axis it ranged over was *theorems about morphisms of abelian schemes*,
+and it did NOT cover proving the leaf for the CONCRETE projective model
+first and transporting along the chart isomorphism.  That is the route
+taken here, and it decomposes the leaf into three:
+
+* `exists_isIso_of_affineChart` — the two affine charts glue to an
+  isomorphism `proj E ≅ A` over `Spec ℚ` (valuative criterion at the one
+  removed point; OPEN);
+* `hom_specRat_eq_of_range_eq` — a `ℚ`-point is determined by its image, so
+  matching charts force matching zero SECTIONS (PROVEN here);
+* `relPointPost_add` — rigidity: a base-point-preserving morphism of
+  abelian schemes is a homomorphism (OPEN, but see its docstring: mathlib's
+  `0BFD` proof is the same argument and is reusable).
+
+The Galois clause survives the cut for free, for the structural reason the
+consumer in `X0.lean` already exploits: `galSMul` IS precomposition, so it
+commutes with the postcomposition the transport is made of
+(`relPointPost_pre`, whose proof is `Category.assoc`).
+
+Note what the cut BUYS beyond decomposition: the rigidity obligation is now
+stated for arbitrary abelian schemes over `Spec ℚ`, with no elliptic curve,
+no `Proj` and no chart in sight, so it can be attacked — and reused —
+independently of everything else in this module. -/
 theorem exists_geomFibreAddEquiv_of_weierstrassModel (E : WeierstrassCurve ℚ) [E.IsElliptic]
     {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
-    (_hmodel : ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+    (hmodel : ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
       IsOpenImmersion ι ∧
         ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
         Set.range ι.base =
@@ -4458,12 +4743,48 @@ theorem exists_geomFibreAddEquiv_of_weierstrassModel (E : WeierstrassCurve ℚ) 
       ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
         e (WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
-          = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (e x) :=
-  sorry
+          = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (e x) := by
+  classical
+  obtain ⟨ι, hopen, hstr, hrange⟩ := hmodel
+  obtain ⟨ι₀, hopen₀, hstr₀, hrange₀⟩ := exists_affineChart_projModel E (projGroupLaw E)
+  obtain ⟨u, huiso, huf, huι⟩ :=
+    exists_isIso_of_affineChart E ab ι₀ ι hopen₀ hopen hstr₀ hstr hrange₀ hrange
+  haveI := huiso
+  -- `u` is a homeomorphism, so it carries the complement of the projective model's
+  -- zero section onto the complement of `ab`'s — hence one removed point onto the other.
+  have hbij : Function.Bijective
+      (u.base : _root_.WeierstrassCurve.Projective.proj E → A) :=
+    (Scheme.homeoOfIso (asIso u)).bijective
+  have hzrange : Set.range ((((projGroupLaw E).toAbelianSchemeStruct.zero
+        (𝟙 (Spec (CommRingCat.of ℚ)))).1 ≫ u).base)
+      = Set.range ((ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base) := by
+    have h1 : Set.range ((ι₀ ≫ u).base) = Set.range ι.base := by rw [huι]
+    simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp] at h1 ⊢
+    rw [hrange₀, hrange, Set.image_compl_eq hbij] at h1
+    exact compl_injective h1
+  have hzsec : (((projGroupLaw E).toAbelianSchemeStruct.zero
+      (𝟙 (Spec (CommRingCat.of ℚ)))).1 ≫ u) = (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1 :=
+    hom_specRat_eq_of_range_eq _ _ hzrange
+  letI := (projGroupLaw E).toAbelianSchemeStruct.addCommGroup
+    (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+  obtain ⟨e₀, he₀⟩ := exists_projGeomFibreAddEquiv E
+  refine ⟨e₀.trans { relPointPostEquiv u huf with
+      map_add' := fun x y =>
+        relPointPost_add (projGroupLaw E).toAbelianSchemeStruct ab u huf hzsec x y }, ?_⟩
+  intro σ x
+  show relPointPost u huf (e₀ (WeierstrassCurve.Affine.Point.map
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x))
+    = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (relPointPost u huf (e₀ x))
+  rw [he₀ σ x]
+  exact relPointPost_pre u huf (specGal σ)
+    (specGal_comp_base (𝟙 (Spec (CommRingCat.of ℚ))) σ) (e₀ x)
 
 /-- **THE REVERSE WEIERSTRASS BRIDGE: every elliptic scheme over `Spec ℚ` is
 the Weierstrass model of a curve, compatibly on geometric points** (PROVEN
-2026-07-27 from the two leaves above).
+2026-07-27 from the two declarations above — `exists_weierstrassModel_of_`
+`ellipticScheme`, still a leaf, and `exists_geomFibreAddEquiv_of_`
+`weierstrassModel`, itself now proven from the transport subsection).
 
 This is the exact converse of
 `exists_ellipticScheme_isWeierstrassModel_of_projModel`: there the curve is
