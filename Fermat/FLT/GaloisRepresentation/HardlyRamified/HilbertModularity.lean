@@ -14959,6 +14959,87 @@ this leaf is FALSE and the honest repair is to thread the quadratic enlargement
 of `k` through `IsTaylorWilesPrimeSet`, as the `ℚ`-level SHAPE AUDIT already
 recommends.
 
+**FALSITY AUDIT (2026-07-27) — THIS LEAF IS FALSE AS STATED, AND `isTameAtTwo`
+DOES NOT SAVE IT.** This CORRECTS the paragraph immediately above, which
+concluded that `isTameAtTwo` is the load-bearing hypothesis and told a prover to
+attack it there. It is not, and the reason is that the nearest-miss curve chosen
+above (CM, conductor `32`) is a bad witness: CM forces potentially good
+reduction, but the tame-at-`2` clause is satisfied by MULTIPLICATIVE reduction,
+which no CM curve has and plenty of non-CM curves do.
+
+THE COUNTEREXAMPLE. Take `ℓ = 7` (so `ℓ ≥ 5` and `#k = 7 ≡ 3 mod 4`),
+`k = 𝔽₇` discrete, `R = ℤ_[7]`, and let `E/ℚ` be the curve
+
+    E = 54b1 :  [a₁,a₂,a₃,a₄,a₆] = [1, −1, 1, 1, −1],  N = 54 = 2·3³,
+    j(E) = 9261/8 = 3³·7³/2³.
+
+Its relevant invariants (Magma, Cremona database): non-CM; `v₂(j) = −3 < 0` with
+reduction type `I₃` **SPLIT MULTIPLICATIVE** at `2`; GOOD reduction (`I₀`) at
+`7`; `v_q(j) ≥ 0` for every odd `q`, so potentially good reduction at every odd
+prime. Its mod-`7` representation `ρ̄ = ρ̄_{E,7} : Γ ℚ → GL₂(𝔽₇)` is SURJECTIVE:
+the `7`-division polynomial has no degree-`3` factor (no rational `7`-isogeny,
+hence irreducible), and the invariant `a_p²/p mod 7` attains all of `𝔽₇` over
+`p < 400`. By Dickson's classification the maximal subgroups of `GL₂(𝔽₇)` with
+full determinant have `a²/det` sets `{0,1,3,4}` (Borel and `N(C_s)`) and
+`{0,2,4,5,6}` (`N(C_ns)`), while an exceptional image forces
+`a²/det ∈ {0,1,2,4}`; observing both `3` and `5` excludes all of them at once.
+
+Now put `H = N(T_ns) ∩ SL₂(𝔽₇)`, the order-`16` group of the paragraph above,
+and let `F₀ ⊆ ℚ(E[7])` be the fixed field of `ρ̄⁻¹(H)`, of degree
+`|GL₂(𝔽₇)|/|H| = 2016/16 = 126` over `ℚ`, so that `ρ̄(Γ F₀) = H` exactly. Let
+`F = F₀·M`, where `M` is any number field, linearly disjoint from `ℚ(E[7])`,
+whose completions at the places over `3` are large enough for `E` to acquire
+good reduction there (`E` has potentially good reduction at `3`, so such an `M`
+exists, ramified only at `3`). Take `ρbar := ρ̄_{E,7}` — a representation of
+`Γ ℚ`, as the statement demands — and `𝒟₀` the datum with `R = ℤ_[7]`,
+`𝒟₀.ρ = T₇(E)|_{Γ F}` framed, `π : ℤ_[7] ↠ 𝔽₇`.
+
+EVERY HYPOTHESIS HOLDS:
+
+* `det`: the Weil pairing gives `det T₇(E) = χ_7` ✓;
+* `isUnramified` away from `2` and `7`: `E/F` has good reduction at every place
+  over `3` by construction and at every other place already over `ℚ`, so
+  Néron–Ogg–Shafarevich applies ✓;
+* `isFlat` at `w ∣ 7`: `E` has good reduction at `7` over `ℚ`, hence over `F` ✓;
+* **`isTameAtTwo` ✓ — and this is the point.** `E` is SPLIT multiplicative at
+  `2` over `ℚ`, and multiplicative reduction is preserved by every base change,
+  so at each `w ∣ 2` the Tate curve gives `0 → ℤ_[7](1) → T₇(E) → ℤ_[7] → 0`.
+  The quotient supplies `p` with `δ = 1`: trivial, hence unramified, hence
+  killed by `localInertiaGroup w`, and `δ·δ = 1` ✓. (For a non-split place `δ`
+  is the unramified quadratic character, which satisfies the clause just as
+  well — so the clause never needed splitness.)
+* `resid` ✓ by construction, and `hirrF` ✓: `ρbar(Γ F)` is a subgroup of `H` of
+  order at least `4`, and **every** subgroup of `H` of order `≥ 4` is
+  irreducible (enumerated; only the orders `1` and `2` are reducible).
+
+THE CONCLUSION FAILS, at `n = 0` and hence at every `n`. Every element of `H`
+has `tr² − 4·det ∈ {0, 3, 5}` (enumerated over all `16`), and `3` and `5` are
+NON-SQUARES mod `7`, while `0` forces `δ = 0`. So for **no** `σ : Γ F`
+whatsoever — a fortiori for none fixing `μ_{7ⁿ}` — is the discriminant a nonzero
+square in `k`. The `μ_{ℓⁿ}`-fixing clause is not even used.
+
+WHY THE LEAF LOOKS TRUE, AND WHERE THE REAL CONTENT WENT. Over `F = ℚ` this
+counterexample cannot be built: a hardly ramified representation over `ℚ` needs
+multiplicative reduction at `2` and good reduction at `ℓ`, i.e. an elliptic
+curve of conductor `2`, and there is none — that is Fermat, and it is exactly
+what the CIRCULARITY GUARD forbids invoking. The falsity is created by `F`
+ranging over ARBITRARY number fields, where no such obstruction exists. So the
+defect is not in `isTameAtTwo`; it is that the leaf universally quantifies over
+`F` while asking for eigenvalues in a FIXED `k`.
+
+THE HONEST REPAIR (a cut-level change, not a proof obligation): the classical
+lemma is applied only after a quadratic ENLARGEMENT of `k`, exactly as the
+SHAPE AUDIT on the consumer already says. Either thread that enlargement through
+`IsTaylorWilesPrimeSet`, or add the hypothesis that `ρbar|_{Γ F(ζ_ℓ)}` already
+contains an element with two distinct `k`-rational eigenvalues.
+
+CHECKS THAT WOULD REFUTE THIS AUDIT, in increasing cost: exhibit an element of
+`N(T_ns) ∩ SL₂(𝔽₇)` whose `tr² − 4` is a nonzero square mod `7`; or show `54b1`
+has a rational `7`-isogeny or non-surjective mod-`7` image; or show that no `M`
+as above exists, i.e. that `E` cannot acquire good reduction over `3` in a field
+linearly disjoint from `ℚ(E[7])`; or exhibit a clause of
+`IsHilbertHardlyRamified` that `T₇(E)|_{Γ F}` violates.
+
 CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 `Modularity/*` or `Deformation.lean`; in particular the `ℚ`-level `exfalso`
 through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
