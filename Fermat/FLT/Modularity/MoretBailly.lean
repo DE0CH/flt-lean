@@ -9798,7 +9798,9 @@ with the degree bookkeeping and the point/branch bridge PROVEN as glue:
 * `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` — §3: the DERIVATION CALCULUS.
   Vanishing of `a^{(ν)}(x, y)` for `ν < M` at a SIMPLE root `y` says exactly
   that `a` vanishes to order `M` along the branch through `(x, y)`, which in
-  this file's rendering is divisibility by `(X − x)^M`.
+  this file's rendering is divisibility by `(X − x)^M`. **PROVEN 2026-07-27**,
+  over `stepanov_jet_dvd_core`; and the branch turned out not to be needed at
+  all — see the FOOTNOTE on that theorem.
 
 `stepanovAnsatz_coeff_natDegree_add_le` (PROVEN below) discharges Lemma 4A(iii),
 the weighted degree bound, from the shape data alone, so no sub-leaf carries it.
@@ -10125,9 +10127,257 @@ theorem stepanov_not_dvd_stepanovAnsatz (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact
     ¬ (F ∣ stepanovAnsatz d p K A) :=
   sorry
 
-/-- **THE JET/BRANCH BRIDGE** (SORRY LEAF, cut 2026-07-27 out of
-`exists_stepanovAuxiliaryFunction`) — Schmidt Chapter III §3 (3.1), read in the
-divisibility rendering this file uses.
+/-! #### The derivation calculus behind Schmidt §3 (PROVEN 2026-07-27)
+
+Six small lemmas, all of them about `stepanovDerivX`/`stepanovJet` and none of
+them about the curve, which together reduce `stepanov_pow_X_sub_C_dvd_of_jet_vanishing`
+to a single induction. The route they implement is NOT the one the leaf's
+docstring anticipated: **no power series, no Hensel lift and no branch are
+needed.** See the FOOTNOTE on that theorem. -/
+
+/-- `stepanovDerivX` differentiates the coefficient polynomials one by one. -/
+theorem stepanovDerivX_monomial {R : Type*} [CommRing R] (n : ℕ) (c : Polynomial R) :
+    stepanovDerivX (Polynomial.monomial n c) = Polynomial.monomial n (Polynomial.derivative c) := by
+  rw [stepanovDerivX, Polynomial.sum_monomial_index _ _ (by simp),
+    Polynomial.C_mul_X_pow_eq_monomial]
+
+theorem stepanovDerivX_add {R : Type*} [CommRing R] (b₁ b₂ : Polynomial (Polynomial R)) :
+    stepanovDerivX (b₁ + b₂) = stepanovDerivX b₁ + stepanovDerivX b₂ := by
+  rw [stepanovDerivX, stepanovDerivX, stepanovDerivX]
+  refine Polynomial.sum_add_index _ _ _ (by simp) ?_
+  intro i c₁ c₂
+  rw [Polynomial.derivative_add, map_add, add_mul]
+
+/-- **THE CHAIN RULE** `d/dX [b(X, η(X))] = b_X(X, η) + b_Y(X, η)·η′`, for a
+POLYNOMIAL section `η` of the `Y`-coordinate. Everything stays inside `S[X]`;
+this is what makes the whole of Schmidt §3 available without leaving polynomials. -/
+theorem stepanov_derivative_eval₂ {R S : Type*} [CommRing R] [CommRing S]
+    (ι : R →+* S) (η : Polynomial S) (b : Polynomial (Polynomial R)) :
+    Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b)
+      = Polynomial.eval₂ (Polynomial.mapRingHom ι) η (stepanovDerivX b)
+        + Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+            * Polynomial.derivative η := by
+  induction b using Polynomial.induction_on' with
+  | add p q hp hq =>
+      rw [stepanovDerivX_add, Polynomial.derivative_add, Polynomial.eval₂_add,
+        Polynomial.eval₂_add, Polynomial.eval₂_add, Polynomial.derivative_add, hp, hq]
+      ring
+  | monomial n c =>
+      rw [stepanovDerivX_monomial, Polynomial.derivative_monomial, Polynomial.eval₂_monomial,
+        Polynomial.eval₂_monomial, Polynomial.eval₂_monomial, Polynomial.derivative_mul,
+        Polynomial.derivative_pow]
+      simp only [Polynomial.coe_mapRingHom, Polynomial.derivative_map, Polynomial.map_mul,
+        Polynomial.map_natCast, Polynomial.C_eq_natCast]
+      ring
+
+/-- **THE CLEARED DERIVATION.** Multiplying the chain rule by `F_Y(X, η)` removes
+`η′` in favour of `d/dX [F(X, η)]`: writing `𝒟b := F_Y ∂_X b − F_X ∂_Y b` for the
+polynomial derivation Schmidt's `D` is built from,
+
+  `F_Y(X,η) · (b(X,η))′ = (𝒟b)(X, η) + (∂_Y b)(X, η) · (F(X,η))′`.
+
+When `η` is an exact root the last term drops and this is `D`; in general it is
+the exact error term, and it is the ONLY place the hypothesis
+`(X − x)^M ∣ F(X, η)` is ever used. -/
+theorem stepanov_key_congr {R K : Type*} [CommRing R] [CommRing K]
+    (ι : R →+* K) (η : Polynomial K) (F b : Polynomial (Polynomial R)) :
+    Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative F)
+        * Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b)
+      = Polynomial.eval₂ (Polynomial.mapRingHom ι) η
+          (Polynomial.derivative F * stepanovDerivX b - stepanovDerivX F * Polynomial.derivative b)
+        + Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+            * Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η F) := by
+  rw [stepanov_derivative_eval₂ ι η b, stepanov_derivative_eval₂ ι η F,
+    Polynomial.eval₂_sub, Polynomial.eval₂_mul, Polynomial.eval₂_mul]
+  ring
+
+/-- Differentiating drops the order of vanishing by at most one. -/
+theorem stepanov_pow_dvd_derivative {K : Type*} [CommRing K] (t h : Polynomial K) (N : ℕ)
+    (hdvd : t ^ (N + 1) ∣ h) : t ^ N ∣ Polynomial.derivative h := by
+  obtain ⟨s, rfl⟩ := hdvd
+  rw [Polynomial.derivative_mul, Polynomial.derivative_pow_succ]
+  exact dvd_add ⟨Polynomial.C ((N : K) + 1) * Polynomial.derivative t * s, by ring⟩
+    ⟨t * Polynomial.derivative s, by ring⟩
+
+/-- `stepanovEvalPoint`, which evaluates `(x, y)` coordinatewise, is the value at
+`x` of the one-variable polynomial `b(X, η(X))` whenever `y = η(x)`. -/
+theorem stepanovEvalPoint_eq_eval_eval₂ {R K : Type*} [CommRing R] [CommRing K]
+    (ι : R →+* K) (b : Polynomial (Polynomial R)) (x : R) (η : Polynomial K) :
+    (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b).eval (ι x)
+      = stepanovEvalPoint ι b x (η.eval (ι x)) := by
+  rw [show (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b).eval (ι x)
+      = Polynomial.evalRingHom (ι x) (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b) from rfl,
+    Polynomial.hom_eval₂, stepanovEvalPoint, Polynomial.eval_map]
+  congr 1
+  refine RingHom.ext fun q => ?_
+  simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.coe_evalRingHom,
+    Polynomial.eval_map, Polynomial.eval₂_at_apply]
+
+/-- **SCHMIDT §3, THE WHOLE CONTENT**, over an arbitrary field and with no
+hypothesis whatever on `F` beyond the two that are used: that `F_Y(x, η(x)) ≠ 0`
+(`hunit` — simplicity of the root) and that `η` is an approximate root to order
+`M` (`hη`).
+
+The proof is one induction. Put `t = X − ι x`, `Φ b = b(X, η(X))`,
+`e = Φ(F_Y)`, `u = Φ F`, and `c_ν = e^{2(M−ν)}·Φ(a^{(ν)})`. Then
+
+* `t^{M−1} ∣ u′`, because `t^M ∣ u`;
+* `e·(c_ν′ − c_{ν+1}) = u′ · (…)` — a pure polynomial identity in the values of
+  `Φ` on the six atoms occurring in `stepanovJet`'s recursion, obtained by
+  applying `stepanov_key_congr` at `b = F_Y` and at `b = a^{(ν)}`. Since `t` is
+  prime and `t ∤ e`, this gives `t^{M−1} ∣ c_ν′ − c_{ν+1}`;
+* hence, by induction, `t^{M−ν} ∣ (d/dX)^ν(e^{2M}·Φ a) − c_ν` for `ν ≤ M`.
+
+At `ν < M` the right-hand side vanishes at `ι x` because `hjet` kills
+`Φ(a^{(ν)})` there, so all `M` first Taylor coefficients of `e^{2M}·Φ a` vanish
+— `hfact` is what converts the ordinary iterated derivative into the Hasse
+derivative that `pow_X_sub_C_dvd_iff_hasseDeriv` wants — and `t ∤ e` strips the
+`e^{2M}`.
+
+`hfact` is `∀ j < M, j ! ≠ 0 in K`; at the call site it is `M < p`. -/
+theorem stepanov_jet_dvd_core {R : Type*} [CommRing R] {K : Type*} [Field K]
+    (ι : R →+* K) (M : ℕ) (hfact : ∀ j < M, ((Nat.factorial j : ℕ) : K) ≠ 0)
+    (F a : Polynomial (Polynomial R)) (x : R) (η : Polynomial K)
+    (hunit : (Polynomial.eval₂ (Polynomial.mapRingHom ι) η
+      (Polynomial.derivative F)).eval (ι x) ≠ 0)
+    (hη : (Polynomial.X - Polynomial.C (ι x)) ^ M ∣
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η F)
+    (hjet : ∀ ℓ < M,
+      (Polynomial.eval₂ (Polynomial.mapRingHom ι) η (stepanovJet F M ℓ a)).eval (ι x) = 0) :
+    (Polynomial.X - Polynomial.C (ι x)) ^ M ∣
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η a := by
+  classical
+  rcases Nat.eq_zero_or_pos M with rfl | hM
+  · simp
+  have hΦeq : ∀ b : Polynomial (Polynomial R),
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η b
+        = Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η b := fun _ => rfl
+  have hkey0 : ∀ b : Polynomial (Polynomial R),
+      Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η (Polynomial.derivative F)
+          * Polynomial.derivative
+              (Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η b)
+        = Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η
+            (Polynomial.derivative F * stepanovDerivX b
+              - stepanovDerivX F * Polynomial.derivative b)
+          + Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+              * Polynomial.derivative
+                  (Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η F) := by
+    intro b
+    simpa only [hΦeq] using stepanov_key_congr ι η F b
+  simp only [hΦeq] at hunit hη hjet ⊢
+  set Φ : Polynomial (Polynomial R) →+* Polynomial K :=
+    Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η with hΦdef
+  set t : Polynomial K := Polynomial.X - Polynomial.C (ι x) with htdef
+  set e : Polynomial K := Φ (Polynomial.derivative F) with hedef
+  set u : Polynomial K := Φ F with hudef
+  have htprime : Prime t := Polynomial.prime_X_sub_C (ι x)
+  have hte : ¬ t ∣ e := by
+    intro h
+    rw [htdef] at h
+    exact hunit (Polynomial.dvd_iff_isRoot.mp h)
+  have hu' : t ^ (M - 1) ∣ Polynomial.derivative u := by
+    refine stepanov_pow_dvd_derivative t u (M - 1) ?_
+    rw [show M - 1 + 1 = M by omega]
+    exact hη
+  have hmain : ∀ ν, ν ≤ M →
+      t ^ (M - ν) ∣ (Polynomial.derivative^[ν]) (e ^ (2 * M) * Φ a)
+        - e ^ (2 * (M - ν)) * Φ (stepanovJet F M ν a) := by
+    intro ν
+    induction ν with
+    | zero => intro _; simp [stepanovJet]
+    | succ ν ih =>
+        intro hν
+        have hν' : ν ≤ M := by omega
+        obtain ⟨s', hs'⟩ : ∃ s', M - ν = s' + 1 := ⟨M - ν - 1, by omega⟩
+        have hs'' : M - (ν + 1) = s' := by omega
+        have h1 : t ^ s' ∣ Polynomial.derivative
+            ((Polynomial.derivative^[ν]) (e ^ (2 * M) * Φ a))
+              - Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a)) := by
+          have hih := ih hν'
+          rw [hs'] at hih
+          have h1' := stepanov_pow_dvd_derivative t _ s' hih
+          rwa [Polynomial.derivative_sub] at h1'
+        have h2 : t ^ s' ∣ Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+            - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a) := by
+          have hjrec : stepanovJet F M (ν + 1) a
+              = Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)) *
+                  (stepanovDerivX (Polynomial.derivative F) * Polynomial.derivative F -
+                    Polynomial.derivative (Polynomial.derivative F) * stepanovDerivX F) *
+                  stepanovJet F M ν a
+                + Polynomial.derivative F ^ 2 * stepanovDerivX (stepanovJet F M ν a)
+                - Polynomial.derivative F * stepanovDerivX F *
+                    Polynomial.derivative (stepanovJet F M ν a) := rfl
+          have hnat : (2 * M - 2 * ν : ℕ) = 2 * s' + 2 := by omega
+          have hcast : Φ (Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)))
+              = Polynomial.C ((2 * s' + 2 : ℕ) : K) := by
+            rw [hnat, hΦdef]
+            simp [map_ofNat]
+          have hderiv : Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+              = Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                  * Polynomial.derivative e * Φ (stepanovJet F M ν a)
+                + e ^ (2 * s' + 2) * Polynomial.derivative (Φ (stepanovJet F M ν a)) := by
+            rw [show 2 * (s' + 1) = 2 * s' + 1 + 1 from by ring, Polynomial.derivative_mul,
+              Polynomial.derivative_pow_succ]
+            have hCC : Polynomial.C (((2 * s' + 1 : ℕ) : K) + 1)
+                = Polynomial.C ((2 * s' + 2 : ℕ) : K) := by
+              congr 1
+              push_cast
+              ring
+            rw [hCC]
+          have hmul : e * (Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+                - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a))
+              = Polynomial.derivative u *
+                  (Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                      * Φ (Polynomial.derivative (Polynomial.derivative F))
+                      * Φ (stepanovJet F M ν a)
+                    + e ^ (2 * s' + 2)
+                      * Φ (Polynomial.derivative (stepanovJet F M ν a))) := by
+            rw [hderiv, hjrec]
+            simp only [map_add, map_sub, map_mul, map_pow, hcast]
+            have k1 := hkey0 (Polynomial.derivative F)
+            have k2 := hkey0 (stepanovJet F M ν a)
+            simp only [map_sub, map_mul, ← hedef] at k1 k2
+            linear_combination (Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                * Φ (stepanovJet F M ν a)) * k1 + (e ^ (2 * s' + 2)) * k2
+          have hdvdM : t ^ (M - 1) ∣ e * (Polynomial.derivative
+              (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+                - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a)) := by
+            rw [hmul]
+            exact Dvd.dvd.mul_right hu' _
+          have hcancel := htprime.pow_dvd_of_dvd_mul_left (M - 1) hte hdvdM
+          exact dvd_trans (pow_dvd_pow t (by omega)) hcancel
+        rw [Function.iterate_succ_apply', hs'']
+        have h3 := dvd_add h1 h2
+        convert h3 using 1
+        ring
+  have hvanish : ∀ j < M, ((Polynomial.derivative^[j]) (e ^ (2 * M) * Φ a)).eval (ι x) = 0 := by
+    intro j hj
+    have h := hmain j (le_of_lt hj)
+    have hdvd1 : t ∣ (Polynomial.derivative^[j]) (e ^ (2 * M) * Φ a)
+        - e ^ (2 * (M - j)) * Φ (stepanovJet F M j a) :=
+      dvd_trans (by simpa using pow_dvd_pow t (show 1 ≤ M - j by omega)) h
+    rw [htdef] at hdvd1
+    have hroot := Polynomial.dvd_iff_isRoot.mp hdvd1
+    rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+      hjet j hj, mul_zero, sub_zero] at hroot
+    exact hroot
+  have hfinal : t ^ M ∣ e ^ (2 * M) * Φ a := by
+    rw [htdef, pow_X_sub_C_dvd_iff_hasseDeriv]
+    intro j hj
+    have hcf := congrFun (Polynomial.factorial_smul_hasseDeriv (R := K) (k := j))
+      (e ^ (2 * M) * Φ a)
+    rw [LinearMap.smul_apply, nsmul_eq_mul] at hcf
+    have h1 : ((Nat.factorial j : ℕ) : K)
+        * (Polynomial.hasseDeriv j (e ^ (2 * M) * Φ a)).eval (ι x) = 0 := by
+      have h2 := congrArg (Polynomial.eval (ι x)) hcf
+      rw [Polynomial.eval_mul, Polynomial.eval_natCast, hvanish j hj] at h2
+      exact h2
+    exact (mul_eq_zero.mp h1).resolve_left (hfact j hj)
+  exact htprime.pow_dvd_of_dvd_mul_left M (fun h => hte (htprime.dvd_of_dvd_pow h)) hfinal
+
+/-- **THE JET/BRANCH BRIDGE** (PROVEN 2026-07-27 over `stepanov_jet_dvd_core`;
+cut 2026-07-27 out of `exists_stepanovAuxiliaryFunction`) — Schmidt Chapter III §3
+(3.1), read in the divisibility rendering this file uses.
 
 WHAT IT SAYS. If Schmidt's jets `a^{(ν)}(x, y)` all vanish for `ν < M` at the
 point `y = η(x)` of a fibre `F(x, ·)` that is SEPARABLE, and `η` is a polynomial
@@ -10163,16 +10413,32 @@ THE LEAN ROUTE.
 ordinary iterated derivative and the Hasse derivative differ by a unit; it is
 derived at the call site from `2(d−1)(M+8)² ≤ p`.
 
-MISSING AT THIS PIN: mathlib has `HenselianLocalRing`, `IsAdicComplete` for
-`PowerSeries` and `Polynomial.hasseDeriv`, but no "monic with separable reduction
-⟹ splits / lifts a simple root over a complete local ring" packaged as one
-lemma — the same gap `stepanov_pow_sub_dvd_resultant` records for its step 2, so
-whoever builds it should expect to serve both.
+**FOOTNOTE (2026-07-27): THE BRANCH IS NOT NEEDED, AND NEITHER IS HENSEL.** The
+route above — and the "MISSING AT THIS PIN" note that used to stand here, which
+said this leaf shared `stepanov_pow_sub_dvd_resultant`'s need for a "monic with
+separable reduction ⟹ splits over a complete local ring" lemma — is not what the
+proof does, and the shared gap was not real. `η` is a POLYNOMIAL, so
+`X ↦ a(X, η(X))` is a polynomial and its Taylor coefficients at `x` are the
+ordinary ones; the branch `η̃` never has to be produced. Steps 1 and 2 of the
+route (complete at `x`, Hensel-lift `y` to `η̃`, pin `η ≡ η̃`) are therefore
+skipped entirely, and `schmidt_splits_of_henselian` is not used here. What
+survives is step 3 in a cleared form: `stepanov_key_congr` multiplies the chain
+rule by `F_Y(X, η)` and turns Schmidt's rational derivation `D` into a
+polynomial one, at the cost of an explicit error term proportional to
+`(F(X, η))′` — which `hη` makes divisible by `(X − x)^{M−1}`. Separability
+enters ONLY through `F_Y(x, η(x)) ≠ 0`, i.e. through `X − x ∤ F_Y(X, η)`, which
+is what lets the `e^{2M}` bookkeeping factor be cancelled at the end.
+
+Two by-products worth recording, both visible in the signature: the argument
+uses neither `hmon`, nor `hdegY`, nor `hd` (hence the `_` prefixes — they are
+kept only so the call site's positional application still typechecks), and it is
+characteristic-free apart from `hMp`. `stepanov_jet_dvd_core` above states it in
+that generality, over an arbitrary field with `F_Y(x, η(x))` a unit.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem stepanov_pow_X_sub_C_dvd_of_jet_vanishing (d p M : ℕ) [Fact p.Prime]
-    (hd : 2 ≤ d) (hMp : M < p)
-    (F a : Polynomial (Polynomial (ZMod p))) (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (_hd : 2 ≤ d) (hMp : M < p)
+    (F a : Polynomial (Polynomial (ZMod p))) (_hmon : F.Monic) (_hdegY : F.natDegree = d)
     (x : ZMod p) (hsep : (F.map (Polynomial.evalRingHom x)).Separable)
     (η : Polynomial (AlgebraicClosure (ZMod p)))
     (hη : (Polynomial.X -
@@ -10185,8 +10451,49 @@ theorem stepanov_pow_X_sub_C_dvd_of_jet_vanishing (d p M : ℕ) [Fact p.Prime]
     (Polynomial.X -
         Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
       Polynomial.eval₂ (Polynomial.mapRingHom
-        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η a :=
-  sorry
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η a := by
+  classical
+  rcases Nat.eq_zero_or_pos M with rfl | hM
+  · simp
+  have hp : Nat.Prime p := Fact.out
+  have hinj : Function.Injective (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) :=
+    (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+  have hchar : CharP (AlgebraicClosure (ZMod p)) p := charP_of_injective_algebraMap hinj p
+  have hfact : ∀ j < M, ((Nat.factorial j : ℕ) : AlgebraicClosure (ZMod p)) ≠ 0 := by
+    intro j hj hcon
+    rw [(CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod p)) p _)] at hcon
+    exact absurd ((Nat.Prime.dvd_factorial hp).mp hcon) (by omega)
+  -- the reduced fibre `F(x, ·)` over `𝔽̄_p`, and simplicity of the root `η(x)`
+  set G : Polynomial (AlgebraicClosure (ZMod p)) :=
+    F.map (((algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))).comp
+      (Polynomial.evalRingHom x)) with hG
+  have hGsep : G.Separable := by
+    rw [hG, ← Polynomial.map_map]
+    exact hsep.map
+  have hGroot : G.eval (η.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) = 0 := by
+    have h0 : (Polynomial.eval₂ (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η F).eval
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x) = 0 := by
+      exact Polynomial.dvd_iff_isRoot.mp (dvd_trans (dvd_pow_self _ (show M ≠ 0 by omega)) hη)
+    rw [stepanovEvalPoint_eq_eval_eval₂, stepanovEvalPoint] at h0
+    exact h0
+  have hunit : (Polynomial.eval₂ (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η
+        (Polynomial.derivative F)).eval
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x) ≠ 0 := by
+    rw [stepanovEvalPoint_eq_eval_eval₂, stepanovEvalPoint, ← Polynomial.derivative_map, ← hG]
+    intro hcon
+    obtain ⟨v, w, hvw⟩ := hGsep
+    have hone := congrArg (Polynomial.eval
+      (η.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x))) hvw
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one, hGroot, hcon,
+      mul_zero, add_zero] at hone
+    exact zero_ne_one hone
+  refine stepanov_jet_dvd_core (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) M hfact
+    F a x η hunit hη ?_
+  intro ℓ hℓ
+  rw [stepanovEvalPoint_eq_eval_eval₂]
+  exact hjet ℓ hℓ
 
 /-- **SCHMIDT LEMMA 4A, TOGETHER WITH THE REMARK AT THE END OF HIS §4** (PROVEN
 2026-07-27 over the three sub-leaves above; cut 2026-07-27 out of
@@ -13912,7 +14219,8 @@ five-item route is realised in the file rather than merely described):
   (the §4 linear system), `stepanov_not_dvd_stepanovAnsatz` (Lemma 2D, §2, which
   is independent of the other two) and
   `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the §3 derivation calculus, i.e.
-  jets at a simple root ⟹ order-`M` vanishing along the branch); the degree
+  jets at a simple root ⟹ order-`M` vanishing along the branch; **PROVEN
+  2026-07-27**, and with no Hensel lift and no branch — see its FOOTNOTE); the degree
   clause is proven glue, `stepanovAnsatz_coeff_natDegree_add_le`. So do not
   dispatch at it either. That cut also established that Schmidt's Remark factor
   `F_Y^{2M}` is UNNECESSARY in this file's divisibility rendering, so the `2Md`
@@ -13955,10 +14263,10 @@ five-item route is realised in the file rather than merely described):
   The base-change bridge `irreducible_of_irreducible_map` is PROVEN, which is what
   lets the counting leaf be stated with no algebraic closure in its signature.
 
-So after the 2026-07-27 work the remaining open leaves under this node are FIVE:
-`exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz` and
-`stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the three children of the
-now-proven `exists_stepanovAuxiliaryFunction`),
+So after the 2026-07-27 work the remaining open leaves under this node are FOUR:
+`exists_stepanovJetSolution` and `stepanov_not_dvd_stepanovAnsatz` (two of the
+three children of the now-proven `exists_stepanovAuxiliaryFunction`; the third,
+`stepanov_pow_X_sub_C_dvd_of_jet_vanishing`, was PROVEN later the same day),
 `exists_bertiniNoetherWitness_of_three_le`, and
 `exists_integralHypersurfaceCertificate`.  All the glue between them is written
 and compiles, and this leaf itself has nothing left to prove.
