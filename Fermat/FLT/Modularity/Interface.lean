@@ -49423,15 +49423,313 @@ theorem cyclotomicFixed_of_localLevelTrivial
     (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) ζ = ζ :=
   sorry
 
+omit [IsDomain R] [Module.Finite ℤ_[p] R] [TopologicalSpace R]
+  [IsTopologicalRing R] [IsModuleTopology ℤ_[p] R] in
+/-- **A `ℤ_p`-scalar whose image lies in `𝔪 ^ k` is divisible by `p ^ n`,
+when `p ^ n` is the EXACT characteristic of `R ⧸ 𝔪 ^ k`** (PROVEN
+2026-07-27 — the arithmetic half of the KUMMER-COCYCLE CUT below, and
+the ONLY place in that cut where the `CharP` hypothesis is used).
+
+THE MATHEMATICS, in three lines. `ℤ_p` is a DVR, so a nonzero `x` is
+`u · p ^ j` with `u` a unit (`PadicInt.unitCoeff_spec`). Units map to
+units, so `algebraMap x ∈ 𝔪 ^ k` forces `(p : R) ^ j ∈ 𝔪 ^ k`, i.e.
+`(p ^ j : ℕ) = 0` in `R ⧸ 𝔪 ^ k`. Now `CharP (R ⧸ 𝔪 ^ k) (p ^ n)` says
+precisely that the naturals killed there are the multiples of `p ^ n`,
+so `p ^ n ∣ p ^ j`, i.e. `n ≤ j`, i.e. `(p : ℤ_p) ^ n ∣ x`.
+
+WHY THIS IS WORTH ITS OWN NAME. It is the exact point at which the
+consumer's tower — indexed by the IDEALS `𝔪 ^ k` — is converted into
+the EXPONENT `p ^ n` that Kummer theory speaks in, and it is the only
+step of the bridge that needs `CharP` rather than "killed by `p ^ n`".
+The docstring of the leaf below explains why those two are not
+interchangeable when `R ≠ ℤ_p`; this lemma is where the difference
+does its work. -/
+theorem padicPow_dvd_of_algebraMap_mem_maximalIdeal_pow
+    {k n : ℕ} (hchar : CharP (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) (p ^ n))
+    {x : ℤ_[p]} (hx : algebraMap ℤ_[p] R x ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) :
+    (p : ℤ_[p]) ^ n ∣ x := by
+  classical
+  by_cases hx0 : x = 0
+  · exact hx0 ▸ dvd_zero _
+  set j := x.valuation with hj
+  have hspec : x = (PadicInt.unitCoeff hx0 : ℤ_[p]) * (p : ℤ_[p]) ^ j :=
+    PadicInt.unitCoeff_spec hx0
+  -- the unit factor maps to a unit of `R`
+  have hunit : IsUnit (algebraMap ℤ_[p] R (PadicInt.unitCoeff hx0 : ℤ_[p])) :=
+    (PadicInt.unitCoeff hx0).isUnit.map (algebraMap ℤ_[p] R)
+  have hpj : ((p : R)) ^ j ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R) := by
+    have hmap : algebraMap ℤ_[p] R x =
+        algebraMap ℤ_[p] R (PadicInt.unitCoeff hx0 : ℤ_[p]) * (p : R) ^ j := by
+      conv_lhs => rw [hspec]
+      rw [map_mul, map_pow, map_natCast]
+    rw [hmap] at hx
+    obtain ⟨w, hw⟩ := hunit
+    have hfac : (p : R) ^ j = (↑w⁻¹ : R) *
+        (algebraMap ℤ_[p] R (PadicInt.unitCoeff hx0 : ℤ_[p]) * (p : R) ^ j) := by
+      rw [← hw, ← mul_assoc, ← Units.val_mul, inv_mul_cancel, Units.val_one, one_mul]
+    rw [hfac]
+    exact Ideal.mul_mem_left _ _ hx
+  -- so `p ^ j = 0` in `R ⧸ 𝔪 ^ k`, and `CharP` turns that into `p ^ n ∣ p ^ j`
+  have hzero : ((p ^ j : ℕ) : R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) = 0 := by
+    have hcast : ((p ^ j : ℕ) : R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) =
+        Ideal.Quotient.mk _ ((p ^ j : ℕ) : R) := by
+      rw [map_natCast]
+    rw [hcast, Ideal.Quotient.eq_zero_iff_mem, Nat.cast_pow]
+    exact hpj
+  have hdvd : p ^ n ∣ p ^ j := (CharP.cast_eq_zero_iff _ (p ^ n) _).mp hzero
+  have hle : n ≤ j := (Nat.pow_dvd_pow_iff_le_right hp.out.one_lt).mp hdvd
+  have hsplit : (p : ℤ_[p]) ^ j = (p : ℤ_[p]) ^ n * (p : ℤ_[p]) ^ (j - n) := by
+    rw [← pow_add, Nat.add_sub_cancel' hle]
+  refine ⟨(PadicInt.unitCoeff hx0 : ℤ_[p]) * (p : ℤ_[p]) ^ (j - n), ?_⟩
+  conv_lhs => rw [hspec]
+  rw [hsplit]; ring
+
+omit [Algebra ℤ_[p] R] [IsDomain R] [Module.Finite ℤ_[p] R]
+  [IsModuleTopology ℤ_[p] R] in
+/-- **The level-`k` kernel drives the off-diagonal entry into `𝔪 ^ k`**
+(PROVEN 2026-07-27 — the linear-algebra half of the KUMMER-COCYCLE CUT
+below).
+
+WHAT IT SAYS. Suppose `ρ` restricted to the decomposition group at `p`
+moves the second basis vector by `b 1 ↦ b 1 + c · b 0` — the shape a
+purely TORIC reduction gives, the off-diagonal entry `c` being the
+extension class. If `σ` acts trivially on the level-`k` reduction
+`ρ ⊗ R ⧸ 𝔪 ^ k`, then `c ∈ 𝔪 ^ k`.
+
+THE PROOF, and why it is not a triviality. `GaloisRep.baseChange`
+acts on `(R ⧸ 𝔪 ^ k) ⊗[R] V` by `r ⊗ₜ x ↦ r ⊗ₜ ρ σ x`
+(`GaloisRep.baseChange_tmul`, a `rfl`-lemma), so triviality applied at
+`1 ⊗ₜ b 1` gives `1 ⊗ₜ (c • b 0) = 0`, i.e. `(c mod 𝔪 ^ k) ⊗ₜ b 0 = 0`.
+The step that needs the basis is the last one: `b 0` is a member of an
+`R`-basis of `V`, so `Algebra.TensorProduct.basis` carries it to a
+member of an `R ⧸ 𝔪 ^ k`-basis of the base-changed module, whose
+`repr` at that index reads off `c mod 𝔪 ^ k`. Without freeness the
+conclusion would fail: in a non-free module a nonzero scalar can kill a
+vector.
+
+WHY IT IS SEPARATED OUT. It is exactly the passage from the
+representation-theoretic hypothesis the consumer supplies
+(`(ρ.baseChange (R ⧸ 𝔪 ^ k)).toLocal 𝔭ᵥ σ = 1`) to a statement about a
+SCALAR, and it contains no `p`-adic geometry, no automorphic input and
+no `CharP`. -/
+theorem mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one
+    {b : Module.Basis (Fin 2) R V} {c : R} {σ : Field.absoluteGaloisGroup ℚᵖᵥ}
+    (hσc : ρ.toLocal 𝔭ᵥ σ (b 1) = b 1 + c • b 0)
+    {k : ℕ}
+    (hσ : (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))).toLocal 𝔭ᵥ σ = 1) :
+    c ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R) := by
+  classical
+  -- the trivial base-changed action, applied to `1 ⊗ₜ b 1`
+  have happ : (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))).toLocal 𝔭ᵥ σ
+      ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) ⊗ₜ[R] b 1) =
+      (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) ⊗ₜ[R] b 1 := by
+    rw [hσ]; rfl
+  rw [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul] at happ
+  rw [GaloisRep.toLocal_apply] at hσc
+  rw [hσc] at happ
+  -- so the class of `c` kills the first basis vector after base change
+  have hz : (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ k : Ideal R) c) ⊗ₜ[R] (b 0) =
+      (0 : (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) ⊗[R] V) := by
+    have h1 : (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) ⊗ₜ[R] (b 1 + c • b 0) =
+        (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) ⊗ₜ[R] (b 1) +
+        (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ k : Ideal R) c) ⊗ₜ[R] (b 0) := by
+      rw [TensorProduct.tmul_add]
+      congr 1
+      rw [TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+      congr 1
+      rw [Algebra.smul_def, mul_one]
+      rfl
+    rw [h1] at happ
+    rwa [add_eq_left] at happ
+  -- freeness: a basis of `(R ⧸ 𝔪 ^ k) ⊗ V` separates the class of `c`
+  have hzero : (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ k : Ideal R) c) = 0 := by
+    rw [← Algebra.TensorProduct.basis_repr_symm_apply'] at hz
+    have hrep := congrArg
+      (fun y => (Algebra.TensorProduct.basis
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) b).repr y 0) hz
+    simpa using hrep
+  rwa [Ideal.Quotient.eq_zero_iff_mem] at hzero
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem, AS A TORIC
+BASIS TOGETHER WITH ITS KUMMER COCYCLE** (sorry leaf — THE residual
+AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-27 KUMMER-COCYCLE CUT;
+Tilouine, *Hecke algebras and the Gorenstein property*, in
+Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
+local–global compatibility at `p` in general; Deligne–Rapoport for the
+models of `X₀(Mp)`).
+
+WHAT IT ASSERTS, and it is the shape the missing geometry actually
+delivers. There are a Tate parameter `q` with `v(q) < 1`, a `ℤ_p`-valued
+function `c` on `G_{ℚ_p}`, and an `R`-basis `b` of `V`, such that
+
+1. `ρ|_{G_p}` moves the second basis vector by
+   `b 1 ↦ b 1 + c(σ) · b 0` — the TORIC shape: `R · b 0` is the
+   multiplicative (character-group) line, the quotient is étale, and
+   `c` is the extension class; and
+2. `c` IS the Kummer cocycle of `q`: whenever `p ^ n ∣ c(σ)`, some
+   `p ^ n`-th root of `q` is fixed by `σ`.
+
+WHY THE TWO CLAUSES MUST STAY IN ONE LEAF (a vacuity check that was
+run, not assumed). Clause 2 alone is satisfiable by junk — take
+`c ≡ 1`, and only `n = 0` triggers it, where `r = q` is fixed because
+`q ∈ ℚᵖᵥ`. Clause 1 alone is satisfiable by `c ≡ 0` for a `ρ` trivial
+on `G_p`. It is their CONJUNCTION that carries the arithmetic, and it
+is not vacuous: `c ≡ 0` would force every `σ` to fix a `p ^ n`-th root
+of `q` for every `n`, hence `q ∈ (ℚᵖᵥˣ) ^ (p ^ n)` for all `n`, hence
+`v(q) = 1` — contradicting `v(q) < 1`.
+
+WHY `Valued.v q < 1` AND NOT `≠ 1` (preserved verbatim from the
+predecessor; this records a real strength difference, not a typo).
+Unchanged from the predecessor: `< 1` is the standard normalisation of
+the Tate parameter (Silverman, *ATAEC* V.3.1 — `E_q` is defined for
+`|q| < 1`, and `v(q) = -v(j) > 0` for a curve with multiplicative
+reduction) and is what the Tate-curve framework consumes. It IS
+formally stronger than the `≠ 1` the eventual consumer needs, which is
+recovered by `ne_of_lt`, and recording that is the honest accounting.
+
+WHAT THE KUMMER-COCYCLE CUT REMOVED FROM THIS LEAF. Its predecessor
+(`exists_tateParameter_kummerRoot_…`, now PROVEN below) carried three
+things that are not geometry, and all three are now proof terms:
+
+* the conversion of the consumer's IDEAL-indexed tower `𝔪 ^ k` into the
+  EXPONENT `p ^ n` that Kummer theory speaks in — now
+  `padicPow_dvd_of_algebraMap_mem_maximalIdeal_pow` above, the only
+  step that uses `CharP`;
+* the passage from "`σ` acts trivially on `ρ ⊗ R ⧸ 𝔪 ^ k`" to a
+  statement about a SCALAR — now
+  `mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one` above, pure
+  linear algebra over a free module;
+* the `q ^ b` slack in the conclusion, which is illusory: `σ r / r` is
+  a `p ^ n`-th root of unity, of valuation `1`, while `v(q ^ b) ≠ 1`
+  for `b ≠ 0` because `v(q) < 1`. The assembly below therefore takes
+  `b = 0`.
+
+WHAT IS STILL MISSING, AND WHAT CANNOT SUPPLY IT. The geometry:
+Deligne–Rapoport models of `X₀(Mp)` and the toric-reduction computation
+at the `p`-new part of `J₀(Mp)`, absent from this pin and from
+`~/cs/FLT`. `nonempty_modularTateGaloisData` above does NOT supply it,
+and this was checked rather than assumed: that leaf is about `J₀(M)` at
+GOOD primes — its `congruence` field is the Eichler–Shimura relation OFF
+the level — whereas what is needed here is the fibre at `p` itself, where
+the reduction is toric.
+
+THE GREP THAT WOULD REFUTE THIS OBSTRUCTION:
+`grep -rn 'DeligneRapoport\|deligneRapoport\|toricReduction\|IsToricAt'
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — re-run 2026-07-27 by the
+owner of this cut, and the only hits are this docstring, the predecessor
+docstrings below and the identical note in `ModularCurve/X0.lean`, i.e.
+still zero in signature position.
+
+WHERE THE `CharP` DISCUSSION WENT. It no longer appears in this
+statement, because the exact-exponent hypothesis is consumed one level
+up. The point it makes is unchanged and is recorded at
+`padicPow_dvd_of_algebraMap_mem_maximalIdeal_pow` above and at the
+consumer below: the consumer's tower is indexed by the IDEALS `𝔪 ^ k`
+while Serre's criterion is indexed by the EXPONENT `p ^ n`, and the two
+are NOT interchangeable when `R ≠ ℤ_p`.
+
+WHERE THE RANK-2 CLAIM COMES FROM. This leaf asserts a
+`Module.Basis (Fin 2) R V`, which is not a hypothesis of the consumer.
+It is not a strengthening: `e` is an `AlgebraicClosure ℚ_[p]`-linear
+equivalence from `Fin 2 → AlgebraicClosure ℚ_[p]` onto
+`AlgebraicClosure ℚ_[p] ⊗[R] V`, and `hlat` embeds `R` in
+`AlgebraicClosure ℚ_[p]`, so `V` is free of rank exactly `2` over `R`
+already.
+
+SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
+weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
+`v_p(q) = 1 ≠ 0`, so the `p ^ n`-th roots of `q` generate a genuinely
+ramified extension and the statement is not vacuous.
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged: they are exactly what the cited automorphic
+theory assumes about its coefficient ring. -/
+theorem exists_toricKummerCocycle_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ (q : (ℚᵖᵥ)ˣ) (c : Field.absoluteGaloisGroup ℚᵖᵥ → ℤ_[p])
+        (b : Module.Basis (Fin 2) R V),
+      (Valued.v (q : ℚᵖᵥ) : WithZero (Multiplicative ℤ)) < 1 ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+        ρ.toLocal 𝔭ᵥ σ (b 1) = b 1 + algebraMap ℤ_[p] R (c σ) • b 0) ∧
+      (∀ (n : ℕ) (σ : Field.absoluteGaloisGroup ℚᵖᵥ), (p : ℤ_[p]) ^ n ∣ c σ →
+        ∃ r : AlgebraicClosure ℚᵖᵥ,
+          r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
+          (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) r = r) :=
+  sorry
+
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
-OF THE TOWER, IN ONE-ROOT KUMMER FORM** (sorry leaf — THE residual
+OF THE TOWER, IN ONE-ROOT KUMMER FORM** (PROVEN 2026-07-27 by the
+KUMMER-COCYCLE CUT — an assembly over the geometric leaf
+`exists_toricKummerCocycle_of_weightTwoEigenform_pNew` just above and the
+two proven lemmas beside it. Formerly THE residual
 AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-27 ELEVENTH cut;
 Tilouine, *Hecke algebras and the Gorenstein property*, in
 Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
 forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
 local–global compatibility at `p` in general; Deligne–Rapoport for the
 models of `X₀(Mp)`).
+
+THE KUMMER-COCYCLE CUT (2026-07-27 — what this node now IS). The node
+is PROVEN, as a three-step assembly:
+
+1. `exists_toricKummerCocycle_of_weightTwoEigenform_pNew` (sorry leaf,
+   just above) — THE GEOMETRY, and now nothing but the geometry: a Tate
+   parameter `q` with `v(q) < 1`, an `R`-basis in which `ρ|_{G_p}` has
+   the TORIC shape `b 1 ↦ b 1 + c(σ) · b 0`, and the statement that the
+   off-diagonal `c` is the `ℤ_p`-valued Kummer cocycle of `q`.
+2. `mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one` (PROVEN, above)
+   — the level-`k` kernel drives `c(σ)` into `𝔪 ^ k`. Pure linear
+   algebra over a free module; no geometry, no `CharP`.
+3. `padicPow_dvd_of_algebraMap_mem_maximalIdeal_pow` (PROVEN, above) —
+   `𝔪 ^ k` to `p ^ n`, the ONLY step that uses the exact-exponent
+   hypothesis, over the DVR structure of `ℤ_p`.
+
+The assembly then takes `b = 0` in the conclusion: the `q ^ b` slack is
+illusory, since `σ r / r` is a `p ^ n`-th root of unity (valuation `1`)
+while `v(q ^ b) ≠ 1` for `b ≠ 0` because `v(q) < 1`.
+
+WHAT THE CUT BUYS, stated so a reader can judge it. The residual leaf
+is no longer phrased in the consumer's `𝔪`-adic tower at all: it speaks
+about ONE basis and ONE `ℤ_p`-valued cocycle, which is the language
+Deligne–Rapoport and Tilouine speak. Two obligations that were fused
+into the citation — the ideal-to-exponent conversion, and the passage
+from a representation-theoretic triviality to a scalar — are now
+theorems. WHAT IT DOES NOT BUY: the geometry itself is untouched, and
+no part of it is proven here.
 
 WHAT THE ELEVENTH CUT REMOVED FROM THIS LEAF. Its predecessor
 (`…_torsionFixed_…`, now PROVEN below) asked for the whole `p ^ n`-torsion
@@ -49455,24 +49753,24 @@ consumes. It IS formally stronger than the `≠ 1` the eventual consumer
 needs, which is recovered by `ne_of_lt`, and recording that is the honest
 accounting.
 
-WHAT IS STILL MISSING, AND WHAT CANNOT SUPPLY IT. The geometry:
+WHAT IS STILL MISSING, AND WHERE IT NOW LIVES. The geometry —
 Deligne–Rapoport models of `X₀(Mp)` and the toric-reduction computation
 at the `p`-new part of `J₀(Mp)`, absent from this pin and from
-`~/cs/FLT`. `nonempty_modularTateGaloisData` above does NOT supply it,
+`~/cs/FLT` — is now confined to
+`exists_toricKummerCocycle_of_weightTwoEigenform_pNew` above, where the
+refuting grep is recorded and was re-run on 2026-07-27.
+`nonempty_modularTateGaloisData` above does NOT supply it,
 and this was checked rather than assumed: that leaf is about `J₀(M)` at
 GOOD primes — its `congruence` field is the Eichler–Shimura relation OFF
 the level — whereas what is needed here is the fibre at `p` itself, where
 the reduction is toric.
 
-THE GREP THAT WOULD REFUTE THIS OBSTRUCTION:
-`grep -rn 'DeligneRapoport\|deligneRapoport\|toricReduction\|IsToricAt'
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — re-run 2026-07-27 by the
-eleventh owner, and the only hits are this docstring and the identical
-note in `ModularCurve/X0.lean`, i.e. still zero in signature position.
-
 WHY THE HYPOTHESIS IS `CharP … (p ^ n)` AND NOT `(p ^ n) = 0`
 (unchanged, and the point that makes this leaf FAITHFUL rather than
-convenient). The consumer's tower is indexed by the IDEALS `𝔪 ^ k`, but
+convenient; it is discharged by
+`padicPow_dvd_of_algebraMap_mem_maximalIdeal_pow` above, which is the
+only consumer of it in the assembly). The consumer's tower is indexed
+by the IDEALS `𝔪 ^ k`, but
 Serre's criterion is indexed by the EXPONENT `p ^ n` of the module, and
 the two are NOT interchangeable when `R ≠ ℤ_p`: demanding both
 `p ^ n ∈ 𝔪 ^ k` and `𝔪 ^ k ⊆ p ^ n R` would force `𝔪 ^ k = p ^ n R`,
@@ -49530,8 +49828,20 @@ theorem exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew
             ∃ (r : AlgebraicClosure ℚᵖᵥ) (b : ℤ),
               r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
               (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) r =
-                r * algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ^ b :=
-  sorry
+                r * algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ^ b := by
+  -- the GEOMETRY: a Tate parameter, a toric basis, and its Kummer cocycle
+  obtain ⟨q, c, bas, hq, hbas, hkum⟩ :=
+    exists_toricKummerCocycle_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ
+      hτ hirr e he hdet hpne hpmem hkfin hlat
+  refine ⟨q, hq, fun k n hchar σ hσ => ?_⟩
+  -- the level-`k` kernel drives the cocycle value into `𝔪 ^ k` …
+  have hc : algebraMap ℤ_[p] R (c σ) ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R) :=
+    mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one (hbas σ) hσ
+  -- … and the exact-exponent hypothesis turns that into `p ^ n ∣ c σ`
+  obtain ⟨r, hrpow, hrfix⟩ :=
+    hkum n σ (padicPow_dvd_of_algebraMap_mem_maximalIdeal_pow hchar hc)
+  -- the `q ^ b` slack is illusory: `b = 0` works
+  exact ⟨r, 0, hrpow, by rw [zpow_zero, mul_one]; exact hrfix⟩
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
@@ -49561,9 +49871,11 @@ node now assembles rather than cites:
    This is `det ρ = χ_cyc` plus the exact-exponent hypothesis, and it
    contains NO modular curve, NO Deligne–Rapoport model and NO toric
    reduction. It was previously invisible, fused into the citation.
-2. `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew` (sorry
-   leaf, above) — the KUMMER half, for ONE `p ^ n`-th root of `q`. This
-   is where the missing `p`-adic geometry now lives, alone.
+2. `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew` (PROVEN
+   above, 2026-07-27, by the KUMMER-COCYCLE CUT) — the KUMMER half, for
+   ONE `p ^ n`-th root of `q`. The missing `p`-adic geometry now lives
+   one step further down, alone, in that node's own geometric leaf
+   `exists_toricKummerCocycle_of_weightTwoEigenform_pNew`.
 3. `tateTorsion_fixed_of_cyclotomicFixed_of_exists_zpow` (PROVEN, above)
    — the assembly, over Tate's uniformisation
    `WeierstrassCurve.exists_tateCurveEquivSepClosure`.
@@ -49607,7 +49919,9 @@ WHAT IS STILL MISSING, AND WHERE IT NOW LIVES. The geometry itself —
 Deligne–Rapoport models of `X₀(Mp)` and the toric-reduction computation
 at the `p`-new part of `J₀(Mp)`, absent from this pin and from
 `~/cs/FLT` — is now confined to
-`exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew` above,
+`exists_toricKummerCocycle_of_weightTwoEigenform_pNew` above (reached
+through `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew`,
+PROVEN since the 2026-07-27 KUMMER-COCYCLE CUT),
 where the refuting grep is recorded and was re-run on 2026-07-27. The
 cyclotomic half needs none of it. `nonempty_modularTateGaloisData` above
 still does NOT supply the geometry, and this was checked rather than
@@ -49718,8 +50032,10 @@ The node is PROVEN, as a two-step assembly:
 1. `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew`
    (itself PROVEN, just above, by the ELEVENTH cut of 2026-07-27, which
    split it into the cyclotomic leaf `cyclotomicFixed_of_localLevelTrivial`
-   and the geometric leaf
-   `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew`): the
+   and the Kummer node
+   `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew` — itself
+   PROVEN since the KUMMER-COCYCLE CUT of 2026-07-27, over the geometric
+   leaf `exists_toricKummerCocycle_of_weightTwoEigenform_pNew`): the
    automorphic-to-Galois bridge in the form the
    `p`-adic geometry actually proves it — an assertion about the TORSION
    OF THE TORIC CURVE `E_q`. Under the consumer's hypotheses the
@@ -49960,8 +50276,10 @@ The node is PROVEN, as a two-step assembly:
    `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew`, which
    the ELEVENTH cut of the same day then PROVED in turn, over the
    cyclotomic leaf `cyclotomicFixed_of_localLevelTrivial` and the
-   geometric leaf
-   `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew`;
+   Kummer node
+   `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew` — PROVEN
+   in turn by the KUMMER-COCYCLE CUT of the same day, over the geometric
+   leaf `exists_toricKummerCocycle_of_weightTwoEigenform_pNew`;
    it was a sorry leaf when this docstring was first written, and the
    label is corrected rather than left to mislead the next dispatch):
    the automorphic-to-Galois bridge in the form Tate's
