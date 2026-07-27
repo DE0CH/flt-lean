@@ -7,6 +7,7 @@ module
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
 public import Mathlib.RingTheory.RingHom.FaithfullyFlat
 public import Mathlib.RingTheory.Etale.Basic
+public import Mathlib.RingTheory.Smooth.Fiber
 public import Mathlib.RingTheory.HopfAlgebra.Convolution
 public import Mathlib.RingTheory.Finiteness.ModuleFinitePresentation
 
@@ -92,7 +93,7 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   its augmentation ideal is idempotent. **PROVEN**, over an arbitrary base.
 * `HopfAlgebra.IsShortExact.augmentationIdeal_sq_eq` — idempotence of the augmentation ideal is
   extension-closed. **PROVEN**.
-* `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN**, modulo the leaf below.
+* `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN**, unconditionally.
 * `Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified` and
   `HopfAlgebra.formallyUnramified_of_augmentationIdeal_sq_eq` — a group scheme is unramified iff
   its augmentation ideal is idempotent. **PROVEN**, over an arbitrary base.
@@ -111,15 +112,16 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 * `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` — OPEN; the deepest field, classically
   `Ext¹(G'', 𝔾ₘ) = 0`.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN** (2026-07-27),
-  over the non-Hopf leaf listed below and nothing else.
+  with no non-Hopf leaf left under it.
 * `HopfAlgebra.isMultiplicativeType_of_isShortExact` — `(R3)`: an extension of multiplicative type
   by multiplicative type is of multiplicative type. **PROVEN** from the two above.
 
-The one non-Hopf leaf this file assumes:
-
-* `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation` — flat + unramified
-  + finitely presented is étale (Stacks 00UU). OPEN; absent from the pin, see its docstring for a
-  survey of what mathlib does and does not carry towards it.
+This file assumes **no** non-Hopf leaf. It used to carry a sorried shim
+`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation` (flat + unramified +
+finitely presented is étale, Stacks 00UU); that statement **is in the pin**, as
+`Algebra.Etale.of_formallyUnramified_of_flat` in `Mathlib/RingTheory/Smooth/Fiber.lean`, so the
+shim was deleted on 2026-07-27 and the mathlib lemma is used directly. See the note above
+`namespace CartierDual` for why the earlier "absent from the pin" survey missed it.
 
 ## References
 
@@ -203,44 +205,24 @@ end Bialgebra
 
 This is not about Hopf algebras at all; it is the standard equivalence between the "formally
 étale + finitely presented" definition of étaleness used by mathlib and the "flat + unramified"
-definition used by the Stacks project. It is the only thing this file still assumes. -/
+definition used by the Stacks project. It used to be the one thing this file assumed, as a sorried
+shim `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`.
 
-section FlatUnramified
+**It is in the pin after all, and the shim has been deleted** (2026-07-27). The statement is
+`Algebra.Etale.of_formallyUnramified_of_flat` in `Mathlib/RingTheory/Smooth/Fiber.lean`, tagged
+`@[stacks 08WD "(3) => (1)"]`, with exactly the hypotheses
+`[Algebra.FinitePresentation R S] [Module.Flat R S] [FormallyUnramified R S]`; mathlib proves it
+through the fibrewise criterion (`Algebra.Smooth.of_formallySmooth_fiber` and
+`Algebra.FormallySmooth.of_formallySmooth_residueField_tensor`), not through the local structure
+theorem for unramified algebras. The stale survey that this file used to carry — "mathlib has no
+lemma deriving `FormallySmooth`/`FormallyEtale`/`Etale` from a flatness hypothesis" — was reading
+only `Mathlib/RingTheory/Etale/` and `Mathlib/RingTheory/Smooth/Flat.lean`; the relevant file is
+`Mathlib/RingTheory/Smooth/Fiber.lean`, whose module docstring advertises the result by name.
+`Mathlib/RingTheory/Etale/Weakly.lean`'s TODO is a *different*, genuinely open statement (weakly
+étale of finite presentation is étale, Olivier's theorem).
 
-variable {R : Type u} {A : Type v} [CommRing R] [CommRing A] [Algebra R A]
-
-/-- **A flat, finitely presented, formally unramified algebra is formally étale**
-(Stacks [00UU](https://stacks.math.columbia.edu/tag/00UU), and the direction of
-[02GH](https://stacks.math.columbia.edu/tag/02GH) that mathlib does not carry).
-
-OPEN, and this is the only remaining gap under `HopfAlgebra.etale_of_isShortExact`. Note the whole
-of its content is `Subsingleton (Algebra.H1Cotangent R A)`: the other half of `FormallyEtale`,
-`Subsingleton Ω[A⁄R]`, is the `FormallyUnramified` hypothesis verbatim.
-
-**Status of the pin**, checked 2026-07-27, so that nobody re-surveys it: mathlib has no lemma
-deriving `FormallySmooth`/`FormallyEtale`/`Etale` from a flatness hypothesis — the only
-flat-hypothesis smoothness lemmas are `Algebra.FormallySmooth.of_surjective_of_ker_eq_map_of_flat`
-(a square-zero deformation statement, not this) and `Algebra.FormallySmooth.flat_of_algHom_of_isNoetherianRing`
-(the converse direction). `Mathlib/RingTheory/Etale/Weakly.lean` records the neighbouring statement
-"a weakly étale algebra of finite presentation is étale" as an explicit TODO.
-
-**The intended route**, which is available in the pin: mathlib carries the local structure theorem
-for unramified algebras, `Algebra.IsUnramifiedAt.exists_hasStandardEtaleSurjectionOn`
-(`Mathlib/RingTheory/Unramified/LocalStructure.lean`) — an unramified finite-type algebra is, after
-localisation, a quotient of a standard étale algebra. Flatness then forces the surjection to be an
-isomorphism, and étaleness is local on the source (`Mathlib/RingTheory/Etale/Locus.lean`).
-
-Alternatively, for the special case actually used here one may go through separability: `I = I²`
-with `I` finitely generated makes the diagonal ideal of `A ⊗[R] A` generated by an idempotent, i.e.
-`A` is a separable `R`-algebra, and the separability idempotent averages the Hochschild obstruction
-to lifting along a square-zero extension. That route needs no localisation but does need the
-averaging computation written out. -/
-theorem Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation
-    [Module.Flat R A] [Algebra.FinitePresentation R A] [Algebra.FormallyUnramified R A] :
-    Algebra.FormallyEtale R A :=
-  sorry
-
-end FlatUnramified
+So there is nothing to restate here: `Algebra.Etale.of_formallyUnramified_of_flat` is used
+directly at the one place this file needed it, `HopfAlgebra.etale_of_augmentationIdeal_sq_eq`. -/
 
 namespace CartierDual
 
@@ -879,25 +861,25 @@ def IsMultiplicativeType (R : Type u) (A : Type v) [CommRing R] [CommRing A] [Ho
 `Module.Finite` and `Module.Free` supply the finite presentation (a finite projective module is
 finitely presented, and a module-finitely-presented algebra is algebra-finitely-presented) and the
 flatness; `formallyUnramified_of_augmentationIdeal_sq_eq` supplies `Ω[A⁄R] = 0`; the remaining
-`H¹` vanishing is the commutative-algebra leaf
-`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`. -/
+`H¹` vanishing is mathlib's `Algebra.Etale.of_formallyUnramified_of_flat` (Stacks
+[08WD](https://stacks.math.columbia.edu/tag/08WD) `(3) => (1)`, equivalently
+[00UU](https://stacks.math.columbia.edu/tag/00UU)). -/
 theorem etale_of_augmentationIdeal_sq_eq [Module.Finite R A] [Module.Free R A]
     (h : Bialgebra.augmentationIdeal R A ^ 2 = Bialgebra.augmentationIdeal R A) :
     Algebra.Etale R A := by
   have := formallyUnramified_of_augmentationIdeal_sq_eq (A := A) h
   have : Module.FinitePresentation R A := Module.finitePresentation_of_projective R A
-  have hfp : Algebra.FinitePresentation R A := inferInstance
-  exact ⟨Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation, hfp⟩
+  exact Algebra.Etale.of_formallyUnramified_of_flat
 
 /-- **The étale half of `(R3)`: an extension of étale by étale is étale.**
 
 If `1 → Spec A' → Spec A → Spec A'' → 1` is short exact and both `Spec A'` and `Spec A''` are
 étale over the base, then so is `Spec A`.
 
-PROVEN over an **arbitrary** base, modulo the single commutative-algebra leaf
-`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation` ("flat + unramified +
-finitely presented is étale", Stacks 00UU). The route is *not* the torsor argument this docstring
-used to advertise, and no descent statement is needed:
+PROVEN over an **arbitrary** base, and now unconditionally: the single commutative-algebra input
+("flat + unramified + finitely presented is étale", Stacks 00UU) is mathlib's
+`Algebra.Etale.of_formallyUnramified_of_flat`, not a leaf of this development. The route is *not*
+the torsor argument this docstring used to advertise, and no descent statement is needed:
 
 * étale forces the augmentation ideals of `A''` and `A'` to be idempotent
   (`Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified`);
@@ -906,8 +888,8 @@ used to advertise, and no descent statement is needed:
   through `surjective` and `ker_eq` only;
 * an idempotent augmentation ideal makes every derivation of `A` vanish, by translating it back to
   the identity with the antipode (`derivation_eq_zero`), so `A` is formally unramified;
-* finite free gives flatness and finite presentation, and the leaf above converts that into
-  étaleness.
+* finite free gives flatness and finite presentation, and the mathlib lemma above converts that
+  into étaleness.
 
 Note the faithful flatness field of `IsShortExact` is *not* used: the argument only needs that
 `Spec A'` is the scheme-theoretic kernel of a surjection. The **henselian local** route recorded

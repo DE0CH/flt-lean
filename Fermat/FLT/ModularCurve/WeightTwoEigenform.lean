@@ -178,14 +178,32 @@ series converges absolutely for a weight-two cusp form.
 (2026-07-27): two entire functions agreeing on the nonempty open half
 plane `Re s > 2` agree on all of `ℂ` by the identity theorem, so `L 1`
 is determined by `a` and `IsLFunctionOf` is not a junk-satisfiable
-recognition predicate.  The proof below compiled green at this pin and
-is recorded here rather than as a declaration for one reason only: it
-has no consumer until `isTorsion_jacobian_of_lFunction_ne_zero` is
-proven, and a proven-but-unconsumed declaration is free-floating.
-**Whoever proves that leaf should paste this back in**, at which point
-it acquires its consumer:
+recognition predicate.  That argument used to be recorded HERE, as a
+docstring rather than a declaration, because it had no consumer and a
+proven-but-unconsumed declaration is free-floating.  **It has a consumer
+now** — `isTorsion_jacobian_of_lFunction_ne_zero` in
+`ModularCurve/X0.lean` was decomposed on 2026-07-27 and its assembly uses
+uniqueness to turn the `∃`-form of the analytic hypothesis (an
+`L`-function it CHOSE) into the `∀`-form its leaves take ("*the*
+`L`-function does not vanish at `1`") — so it is pasted back as
+`isLFunctionOf_apply_eq` immediately below. -/
+structure IsLFunctionOf (a : ℕ → ℂ) (L : ℂ → ℂ) : Prop where
+  /-- `L` is entire. -/
+  entire : AnalyticOnNhd ℂ L Set.univ
+  /-- `L` agrees with the Dirichlet series on `Re s > 2`. -/
+  eq_lseries : ∀ s : ℂ, 2 < s.re → L s = LSeries a s
 
-```
+/-- **The `L`-function of a coefficient sequence is UNIQUE** (PROVEN; the
+identity theorem).
+
+`IsLFunctionOf a L` pins `L` on the half plane `Re s > 2` and asks it to
+be entire; two entire functions agreeing on a nonempty open subset of the
+connected set `ℂ` agree everywhere.  Hence `L 1` is a function of `a`
+alone, and `IsLFunctionOf` is a definition of `L(f, s)` rather than a
+recognition predicate that several witnesses could satisfy differently.
+
+Consumed by `isTorsion_jacobian_of_lFunction_ne_zero`; see the docstring
+of `IsLFunctionOf` above for why it lived as a comment until then. -/
 theorem isLFunctionOf_apply_eq {a : ℕ → ℂ} {L L' : ℂ → ℂ}
     (h : IsLFunctionOf a L) (h' : IsLFunctionOf a L') (s : ℂ) : L s = L' s := by
   have hopen : IsOpen {z : ℂ | 2 < z.re} := isOpen_lt continuous_const Complex.continuous_re
@@ -196,15 +214,6 @@ theorem isLFunctionOf_apply_eq {a : ℕ → ℂ} {L L' : ℂ → ℂ}
     filter_upwards [hopen.mem_nhds hmem] with z hz
     rw [h.eq_lseries z hz, h'.eq_lseries z hz]
   exact key (Set.mem_univ s)
-```
-
-`#print axioms` on it returned `[propext, Classical.choice, Quot.sound]`
-— no `sorryAx`. -/
-structure IsLFunctionOf (a : ℕ → ℂ) (L : ℂ → ℂ) : Prop where
-  /-- `L` is entire. -/
-  entire : AnalyticOnNhd ℂ L Set.univ
-  /-- `L` agrees with the Dirichlet series on `Re s > 2`. -/
-  eq_lseries : ∀ s : ℂ, 2 < s.re → L s = LSeries a s
 
 /-!
 ### Hecke's argument, decomposed
