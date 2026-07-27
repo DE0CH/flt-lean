@@ -14,6 +14,8 @@ import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
 import Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure
 import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
+import Fermat.FLT.Mathlib.RingTheory.GradedAlgebra.Quotient
+import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
 import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
