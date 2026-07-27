@@ -11427,14 +11427,120 @@ theorem addVal_smul_eq (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [Fini
 
 /-! ### The three plumbing leaves -/
 
+open scoped Classical in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE MINIMAL POLYNOMIAL OF A MONOGENIC INTEGRAL GENERATOR OF A GALOIS
+SUBEXTENSION SPLITS ALREADY IN `𝒪_F[X]`** (PROVEN 2026-07-27 — the local
+analogue of `CompletionInvariance.map_minpoly_eq_prod_X_sub_C`, which is
+stated over `ℤ ⊆ ℚ` for a number field and therefore does not apply at the
+`3`-adic completion).  This is the `hnodal` step of
+`aeval_derivative_minpoly_eq_prod_sub_smul_local` in UNDIFFERENTIATED form:
+that declaration computes the same nodal factorisation and then exports only
+the value of the DERIVATIVE at `θ`, whereas the consumer
+`aeval_minpoly_eq_prod_sub_integralClosureLE` below needs the factorisation
+itself, so that it can be mapped along `integralClosureLE` and evaluated at
+an arbitrary point of `𝒪_M`.
+PROOF.  Write `θK` for `θ` viewed in `F` and `P := (minpoly ℚ₃ᵥ θK).map`.
+`P` is monic, splits (`F/ℚ₃ᵥ` is normal) and has degree `#Gal(F/ℚ₃ᵥ)`
+(`IsGalois.card_aut_eq_finrank`, since `hθ` makes `θK` primitive); the
+conjugate map `σ ↦ σ θK` is injective by the rigidity lemma
+`algEquiv_eq_one_of_algebraMap_fixed_local`, so the `#Gal` conjugates are
+distinct roots of a degree-`#Gal` polynomial and therefore ARE its root
+multiset.  Monic + split + known roots gives `P = ∏_σ (X − σ θK)`, and
+`minpoly.isIntegrallyClosed_eq_field_fractions` identifies `P` with the
+image of `minpoly 𝒪₃ᵥ θ` — the coefficients are integral, which is what
+lets the identity be read in `𝒪_F[X]` rather than only in `F[X]`. -/
+theorem map_minpoly_eq_prod_X_sub_C_smul_local
+    (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
+    (θ : IntegralClosure 𝒪₃ᵥ F)
+    (hθ : Algebra.adjoin ℚ₃ᵥ
+      ({algebraMap (IntegralClosure 𝒪₃ᵥ F) F θ} : Set F) = ⊤) :
+    (minpoly 𝒪₃ᵥ θ).map (algebraMap 𝒪₃ᵥ ↥F) =
+      ∏ σ : F ≃ₐ[ℚ₃ᵥ] F, (Polynomial.X -
+        Polynomial.C (σ (algebraMap (IntegralClosure 𝒪₃ᵥ F) F θ))) := by
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ ↥F := IsScalarTower.of_algebraMap_eq' rfl
+  have hint : IsIntegral 𝒪₃ᵥ θ := Algebra.IsIntegral.isIntegral θ
+  have hintK : IsIntegral ℚ₃ᵥ (algebraMap (IntegralClosure 𝒪₃ᵥ F) F θ) :=
+    IsIntegral.of_finite ℚ₃ᵥ _
+  set θK : F := algebraMap (IntegralClosure 𝒪₃ᵥ F) F θ with hθKdef
+  set v : (F ≃ₐ[ℚ₃ᵥ] F) → F := fun σ => σ θK with hvdef
+  have hvinj : Function.Injective v := by
+    intro σ τ hστ
+    have h1 : (τ⁻¹ * σ) θK = θK := by
+      have h2 : τ⁻¹ (σ θK) = τ⁻¹ (τ θK) := congrArg _ hστ
+      rwa [← AlgEquiv.mul_apply, ← AlgEquiv.mul_apply, inv_mul_cancel,
+        AlgEquiv.one_apply] at h2
+    have h3 : τ⁻¹ * σ = 1 := algEquiv_eq_one_of_algebraMap_fixed_local F hθ h1
+    rw [← one_mul σ, ← mul_inv_cancel τ, mul_assoc, h3, mul_one]
+  set P : Polynomial F := (minpoly ℚ₃ᵥ θK).map (algebraMap ℚ₃ᵥ F) with hPdef
+  have hPmonic : P.Monic := (minpoly.monic hintK).map _
+  have hPsplits : P.Splits := by
+    rw [hPdef]
+    exact Normal.splits inferInstance θK
+  have hPdeg : P.natDegree = Fintype.card (F ≃ₐ[ℚ₃ᵥ] F) := by
+    have hadj : IntermediateField.adjoin ℚ₃ᵥ {θK} = ⊤ := by
+      refine IntermediateField.toSubalgebra_injective ?_
+      rw [IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic
+        hintK.isAlgebraic, IntermediateField.top_toSubalgebra]
+      exact hθ
+    have hdeg : (minpoly ℚ₃ᵥ θK).natDegree = Module.finrank ℚ₃ᵥ F := by
+      rw [← IntermediateField.adjoin.finrank hintK, hadj]
+      exact IntermediateField.finrank_top'
+    have h2 : P.natDegree = (minpoly ℚ₃ᵥ θK).natDegree := by
+      rw [hPdef]
+      exact Polynomial.natDegree_map_eq_of_injective (algebraMap ℚ₃ᵥ F).injective _
+    rw [h2, hdeg, ← Nat.card_eq_fintype_card]
+    exact (IsGalois.card_aut_eq_finrank ℚ₃ᵥ F).symm
+  have hroots : P.roots = Finset.univ.val.map v := by
+    symm
+    refine Multiset.eq_of_le_of_card_le ?_ ?_
+    · rw [Multiset.le_iff_count]
+      intro a
+      by_cases ha : a ∈ Finset.univ.val.map v
+      · rw [Multiset.count_eq_one_of_mem (Finset.univ.nodup.map hvinj) ha]
+        rw [Nat.one_le_iff_ne_zero, Ne, Multiset.count_eq_zero, not_not]
+        obtain ⟨σ, -, rfl⟩ := Multiset.mem_map.mp ha
+        rw [Polynomial.mem_roots (hPmonic.ne_zero)]
+        rw [Polynomial.IsRoot, hPdef, Polynomial.eval_map,
+          ← Polynomial.aeval_def, hvdef]
+        have h2 : Polynomial.aeval (σ θK) (minpoly ℚ₃ᵥ θK) =
+            σ (Polynomial.aeval θK (minpoly ℚ₃ᵥ θK)) :=
+          Polynomial.aeval_algHom_apply σ.toAlgHom θK (minpoly ℚ₃ᵥ θK)
+        rw [h2, minpoly.aeval, map_zero]
+      · rw [Multiset.count_eq_zero_of_notMem ha]
+        exact Nat.zero_le _
+    · rw [Multiset.card_map, ← Finset.card_def, Finset.card_univ,
+        Polynomial.splits_iff_card_roots.mp hPsplits, hPdeg]
+  have hnodal : P = ∏ σ : F ≃ₐ[ℚ₃ᵥ] F, (Polynomial.X - Polynomial.C (σ θK)) := by
+    rw [hPsplits.eq_prod_roots_of_monic hPmonic, hroots,
+      Finset.prod_eq_multiset_prod, Multiset.map_map]
+    rfl
+  have hPmap : P = (minpoly 𝒪₃ᵥ θ).map (algebraMap 𝒪₃ᵥ ↥F) := by
+    rw [hPdef, hθKdef, minpoly.isIntegrallyClosed_eq_field_fractions ℚ₃ᵥ F hint,
+      Polynomial.map_map]
+    congr 1
+  rw [← hPmap, hnodal]
+
+open scoped Classical in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **THE MINIMAL POLYNOMIAL OF A MONOGENIC GENERATOR OF `𝒪_F` SPLITS OVER
-ANY OVERFIELD `M ⊇ F`** (sorry node).  `F/ℚ₃ᵥ` is Galois and `θF` generates
-it, so `minpoly 𝒪₃ᵥ θF = ∏_{σ ∈ Gal(F/ℚ₃ᵥ)} (X − σ•θF)` already in `𝒪_F[X]`;
-mapping that identity along `integralClosureLE` and evaluating gives the
-statement below.  The `𝒪_F`-level identity is the `hnodal` step inside the
-proof of `aeval_derivative_minpoly_eq_prod_sub_smul_local` (which currently
-only exports the value of the DERIVATIVE at `θF`); this leaf asks for the
-undifferentiated identity, evaluated at an arbitrary point of `𝒪_M`. -/
+ANY OVERFIELD `M ⊇ F`** (PROVEN 2026-07-27).  `F/ℚ₃ᵥ` is Galois and `θF`
+generates it, so `minpoly 𝒪₃ᵥ θF = ∏_{σ ∈ Gal(F/ℚ₃ᵥ)} (X − σ•θF)` already in
+`𝒪_F[X]` — that is `map_minpoly_eq_prod_X_sub_C_smul_local` just above.
+PROOF.  Both sides live in `𝒪_M`, which embeds in the field `↥M` by
+`Subtype.val`, so it suffices to check the identity there.  On the left,
+`Polynomial.aeval_algebraMap_apply` turns `aeval x (minpoly 𝒪₃ᵥ θF)` into the
+evaluation of the polynomial mapped to `↥M`; that map factors as
+`𝒪₃ᵥ → ↥F → ↥M` through `IntermediateField.inclusion hFM`, so the split
+identity above pushes forward to `∏_σ (X − ι(σ θF))` in `↥M[X]`, and
+`Polynomial.eval_prod` evaluates it termwise.  On the right, the image of
+`integralClosureLE F M hFM (σ • θF)` in `↥M` IS `ι(σ θF)` — that is
+`integralClosureLE_val`, a `rfl` — so the two products agree factor by
+factor. -/
 theorem aeval_minpoly_eq_prod_sub_integralClosureLE
     (F M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hFM : F ≤ M)
     [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F] [FiniteDimensional ℚ₃ᵥ M]
@@ -11443,28 +11549,123 @@ theorem aeval_minpoly_eq_prod_sub_integralClosureLE
     (x : IntegralClosure 𝒪₃ᵥ M) :
     Polynomial.aeval x (minpoly 𝒪₃ᵥ θF) =
       ∏ σ : F ≃ₐ[ℚ₃ᵥ] F, (x - integralClosureLE F M hFM (σ • θF)) := by
-  sorry
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ ↥F := IsScalarTower.of_algebraMap_eq' rfl
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ ↥M := IsScalarTower.of_algebraMap_eq' rfl
+  have hsplit := map_minpoly_eq_prod_X_sub_C_smul_local F θF hθ
+  -- pass to `↥M`, where `𝒪_M` embeds injectively
+  have hinj : Function.Injective (algebraMap (IntegralClosure 𝒪₃ᵥ M) ↥M) :=
+    fun a b hab => Subtype.ext hab
+  apply hinj
+  rw [map_prod]
+  have hLHS : algebraMap (IntegralClosure 𝒪₃ᵥ M) ↥M
+      (Polynomial.aeval x (minpoly 𝒪₃ᵥ θF)) =
+      Polynomial.eval (algebraMap (IntegralClosure 𝒪₃ᵥ M) ↥M x)
+        ((minpoly 𝒪₃ᵥ θF).map (algebraMap 𝒪₃ᵥ ↥M)) := by
+    rw [Polynomial.eval_map, ← Polynomial.aeval_def]
+    exact (Polynomial.aeval_algebraMap_apply (↥M : Type _) x _).symm
+  rw [hLHS]
+  have hmapM : (minpoly 𝒪₃ᵥ θF).map (algebraMap 𝒪₃ᵥ ↥M) =
+      ((minpoly 𝒪₃ᵥ θF).map (algebraMap 𝒪₃ᵥ ↥F)).map
+        (IntermediateField.inclusion hFM : ↥F →ₐ[ℚ₃ᵥ] ↥M).toRingHom := by
+    rw [Polynomial.map_map]
+    congr 1
+  rw [hmapM, hsplit, Polynomial.map_prod, Polynomial.eval_prod]
+  refine Finset.prod_congr rfl fun σ _ => ?_
+  rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+    Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, map_sub]
+  congr 1
 
-/-- **`integralClosureLE` IS EQUIVARIANT FOR `restrictToLEHom`** (sorry node).
-Pure plumbing: `restrictToLEHom F M hFM σ` is `σ` restricted to `F`, so it acts
-on `𝒪_F` compatibly with the inclusion `𝒪_F ↪ 𝒪_M`.  The proof is the
-`AlgEquiv.restrictNormal_commutes` computation already carried out for the
-reified subextension inside `exists_relative_depth_witness` (`hstep`/`hkey`
-there), transported through `reifyEquiv`. -/
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`integralClosureLE` IS EQUIVARIANT FOR `restrictToLEHom`** (PROVEN
+2026-07-27).  Pure plumbing: `restrictToLEHom F M hFM σ` is `σ` restricted to
+`F`, so it acts on `𝒪_F` compatibly with the inclusion `𝒪_F ↪ 𝒪_M`.
+PROOF.  The image of `y : 𝒪_F` inside `↥M` lies in the reification
+`F' = IntermediateField.comap M.val F` of `F` as an intermediate field of
+`↥M` (that is literally `y.1.2`), so it is `w := ⟨ι y, _⟩ : ↥F'`, and
+`reifyEquiv` sends `w` back to `y.1` — hence `reifyEquiv.symm y.1 = w`.
+Unfolding `restrictToLEHom = autCongr reifyEquiv ∘ restrictNormalHom F'`
+therefore turns `(restrictToLEHom σ) y.1` into
+`reifyEquiv ((restrictNormalHom F' σ) w)`, whose ambient value in `↥M` is
+`((restrictNormalHom F' σ) w).1`.  `AlgEquiv.restrictNormal_commutes` says
+exactly that this equals `σ (w.1) = σ (ι y)`, which is the left-hand side.
+This is the `hstep`/`hkey` computation of `exists_relative_depth_witness`,
+isolated and stated for an arbitrary integral point instead of for the one
+monogenic generator used there. -/
 theorem smul_integralClosureLE
     (F M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hFM : F ≤ M)
     [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F] [FiniteDimensional ℚ₃ᵥ M]
     (σ : M ≃ₐ[ℚ₃ᵥ] M) (y : IntegralClosure 𝒪₃ᵥ F) :
     σ • integralClosureLE F M hFM y =
       integralClosureLE F M hFM (restrictToLEHom F M hFM σ • y) := by
-  sorry
+  letI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M hFM
+  -- `y`, viewed inside `↥M`, lies in the reification of `F` inside `↥M`
+  have hmem : (integralClosureLE F M hFM y).1 ∈
+      reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M := y.1.2
+  -- `reifyEquiv` carries that reified point back to `y`
+  have hjw : reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M hFM
+      ⟨(integralClosureLE F M hFM y).1, hmem⟩ = y.1 := Subtype.ext rfl
+  have hsymm : (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+      F M hFM).symm y.1 = ⟨(integralClosureLE F M hFM y).1, hmem⟩ := by
+    rw [← hjw, AlgEquiv.symm_apply_apply]
+  -- the restricted automorphism computes the same value inside `↥M`
+  have hrc := AlgEquiv.restrictNormal_commutes σ
+    ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M)
+    (⟨(integralClosureLE F M hFM y).1, hmem⟩ :
+      ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M))
+  refine Subtype.ext ?_
+  rw [IntegralClosure.coe_smul, AlgEquiv.smul_def]
+  have hrhs : (integralClosureLE F M hFM (restrictToLEHom F M hFM σ • y)).1 =
+      ((AlgEquiv.restrictNormalHom
+        (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) σ)
+          ⟨(integralClosureLE F M hFM y).1, hmem⟩).1 := by
+    refine Subtype.ext ?_
+    have hstep : (restrictToLEHom F M hFM σ) y.1 =
+        reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M hFM
+          ((AlgEquiv.restrictNormalHom
+            (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) σ)
+              ⟨(integralClosureLE F M hFM y).1, hmem⟩) := by
+      show reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M hFM
+          ((AlgEquiv.restrictNormalHom
+            (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) σ)
+              ((reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+                F M hFM).symm y.1)) = _
+      rw [hsymm]
+    show (((restrictToLEHom F M hFM σ) y.1 : ↥F) : ℚ₃ᵥᵃˡᵍ) = _
+    rw [hstep]
+    rfl
+  rw [hrhs]
+  rw [show σ.restrictNormal
+      ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) =
+      AlgEquiv.restrictNormalHom (F := ℚ₃ᵥ)
+        ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat F M) σ
+      from rfl] at hrc
+  exact hrc.symm
 
 /-- **A CONJUGATE OF A MONOGENIC GENERATOR OF `F` STILL GENERATES `F` INSIDE
-`ℚ₃ᵥᵃˡᵍ`** (sorry node).  `σ₀` is a `ℚ₃ᵥ`-automorphism of `F`, so it carries
-`Algebra.adjoin ℚ₃ᵥ {θF} = ⊤` to `Algebra.adjoin ℚ₃ᵥ {σ₀•θF} = ⊤`; pushing
-that along `F.val` (`IntermediateField.adjoin_map`, as in the consumer
-`nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot`) identifies
-`F` with `ℚ₃ᵥ(σ₀•θF)` inside `ℚ₃ᵥᵃˡᵍ`. -/
+`ℚ₃ᵥᵃˡᵍ`** (**PROVEN 2026-07-27**).  `σ₀` is a `ℚ₃ᵥ`-automorphism of `F`, so it
+carries `Algebra.adjoin ℚ₃ᵥ {θF} = ⊤` to `Algebra.adjoin ℚ₃ᵥ {σ₀•θF} = ⊤`;
+pushing that along `F.val` identifies `F` with `ℚ₃ᵥ(σ₀•θF)` inside `ℚ₃ᵥᵃˡᵍ`.
+
+PROOF, in three moves, all at the level of SUBALGEBRAS (no
+`IntermediateField.adjoin_map` and no primitive-element theory is needed;
+the last move is the one inclusion `Algebra.adjoin ≤ IntermediateField.adjoin`):
+
+* the element named in the conclusion IS `F.val (σ₀ a)`, where
+  `a = algebraMap 𝒪_F F θF` — this is `integralClosureLE_val` (definitional),
+  together with the definitional identity
+  `algebraMap 𝒪_F F (σ₀ • θF) = σ₀ (algebraMap 𝒪_F F θF)`;
+* `Algebra.adjoin ℚ₃ᵥ {σ₀ a} = (Algebra.adjoin ℚ₃ᵥ {a}).map σ₀ = ⊤.map σ₀ = ⊤`
+  by `AlgHom.map_adjoin_singleton`, `Algebra.map_top` and surjectivity of `σ₀`;
+* the same two lemmas along `F.val` turn that `⊤` into
+  `Algebra.adjoin ℚ₃ᵥ {F.val (σ₀ a)} = F.val.range = F.toSubalgebra`
+  (`IntermediateField.range_val`), so every `x ∈ F` already lies in the
+  SUBALGEBRA generated by the conjugate, hence a fortiori in the intermediate
+  field (`IntermediateField.algebra_adjoin_le_adjoin`). -/
 theorem le_adjoin_val_smul_of_adjoin_eq_top
     (F M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hFM : F ≤ M)
     [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F] [FiniteDimensional ℚ₃ᵥ M]
@@ -11474,30 +11675,30 @@ theorem le_adjoin_val_smul_of_adjoin_eq_top
     F ≤ IntermediateField.adjoin ℚ₃ᵥ
       ({M.val (algebraMap (IntegralClosure 𝒪₃ᵥ M) M
         (integralClosureLE F M hFM (σ₀ • θF)))} : Set ℚ₃ᵥᵃˡᵍ) := by
-  sorry
-
-open scoped Classical in
-/-- **TAME CONJUGATE SPACING, SUMMED** (sorry node).  Tameness says every
-nontrivial conjugate sits at depth at most `1`, and only the `e_F − 1`
-nontrivial INERTIA elements sit at depth `≥ 1` at all, so the total is at
-most `e_F − 1`.  Termwise this is `addVal_sub_smul_le_one_of_tame` below
-(PROVEN); what remains is the counting step, i.e. that the summands outside
-the inertia subgroup vanish and that the inertia subgroup contributes
-`#G_0 − 1` terms. -/
-theorem sum_addVal_sub_smul_erase_le
-    (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
-    (htame : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ 2).inertia
-      (F ≃ₐ[ℚ₃ᵥ] F) = ⊥)
-    (θF : IntegralClosure 𝒪₃ᵥ F)
-    (hcrit : ∀ (σ : F ≃ₐ[ℚ₃ᵥ] F) (i : ℕ),
-      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ i).inertia (F ≃ₐ[ℚ₃ᵥ] F)
-        ↔ σ • θF - θF ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ i)
-    (σ₀ : F ≃ₐ[ℚ₃ᵥ] F) :
-    ∑ σ ∈ Finset.univ.erase σ₀,
-        IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F) (σ₀ • θF - σ • θF) ≤
-      ((Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
-        (F ≃ₐ[ℚ₃ᵥ] F)) - 1 : ℕ) : ℕ∞) := by
-  sorry
+  -- the displayed element is `F.val (σ₀ a)` for `a` the image of `θF` in `F`
+  have hsmul : algebraMap (IntegralClosure 𝒪₃ᵥ F) F (σ₀ • θF) =
+      σ₀ (algebraMap (IntegralClosure 𝒪₃ᵥ F) F θF) := rfl
+  have hval := integralClosureLE_val F M hFM (σ₀ • θF)
+  rw [hsmul] at hval
+  rw [hval]
+  set a : F := algebraMap (IntegralClosure 𝒪₃ᵥ F) F θF with ha
+  -- the conjugate still generates `F` as a `ℚ₃ᵥ`-algebra
+  have htop : Algebra.adjoin ℚ₃ᵥ ({σ₀ a} : Set F) = ⊤ := by
+    have h : (Algebra.adjoin ℚ₃ᵥ ({a} : Set F)).map σ₀.toAlgHom
+        = Algebra.adjoin ℚ₃ᵥ ({σ₀ a} : Set F) :=
+      AlgHom.map_adjoin_singleton σ₀.toAlgHom a
+    rw [← h, hθ, Algebra.map_top]
+    exact (AlgHom.range_eq_top σ₀.toAlgHom).mpr σ₀.surjective
+  -- push that along `F.val`: the subalgebra generated inside `ℚ₃ᵥᵃˡᵍ` is `F`
+  have hmap : Algebra.adjoin ℚ₃ᵥ ({F.val (σ₀ a)} : Set ℚ₃ᵥᵃˡᵍ) = F.toSubalgebra := by
+    rw [← AlgHom.map_adjoin_singleton F.val (σ₀ a), htop, Algebra.map_top,
+      IntermediateField.range_val]
+  intro x hx
+  have hx2 : x ∈ Algebra.adjoin ℚ₃ᵥ ({F.val (σ₀ a)} : Set ℚ₃ᵥᵃˡᵍ) := by
+    rw [hmap]; exact hx
+  have hx3 := IntermediateField.algebra_adjoin_le_adjoin ℚ₃ᵥ
+    ({F.val (σ₀ a)} : Set ℚ₃ᵥᵃˡᵍ) hx2
+  rwa [IntermediateField.mem_toSubalgebra] at hx3
 
 open IsDiscreteValuationRing in
 /-- **TAMENESS, TERMWISE**: distinct conjugates of a monogenic generator are
@@ -11534,6 +11735,127 @@ theorem addVal_sub_smul_le_one_of_tame
   rw [mem_maximalIdeal_pow_iff_le_addVal] at hmem'
   exact enat_le_of_not_succ_natCast_le (n := 1) (by simpa using hmem')
 
+open scoped Classical in
+/-- **TAME CONJUGATE SPACING, SUMMED** (**PROVEN 2026-07-27**).  Tameness says
+every nontrivial conjugate sits at depth at most `1`, and only the `e_F − 1`
+nontrivial INERTIA elements sit at depth `≥ 1` at all, so the total is at
+most `e_F − 1`.  Termwise this is `addVal_sub_smul_le_one_of_tame` above
+(PROVEN); the counting step is what is carried out here.
+
+PROOF, in three steps.
+
+* REINDEX.  `τ ↦ σ₀ * τ` is a bijection `univ.erase 1 → univ.erase σ₀`, and
+  `σ₀•θ − (σ₀τ)•θ = σ₀•(θ − τ•θ)`, so `addVal_smul_eq` (depth is preserved by
+  a `ℚ₃ᵥ`-automorphism) turns the sum into `Σ_{τ ≠ 1} addVal(θ − τ•θ)`.  This
+  is the step that makes the count a count over the GROUP rather than over a
+  coset, and it is why `σ₀` disappears from the bound.
+* TERMWISE DICHOTOMY.  For `τ ≠ 1` the summand is bounded by
+  `if τ ∈ G_0 then 1 else 0`.  Inside `G_0` that is
+  `addVal_sub_smul_le_one_of_tame` at `σ₀ := 1` (tameness).  Outside `G_0` the
+  summand is `0`, and this is the ONLY place the `i = 1` instance of the
+  inertia criterion `hcrit` is used: `τ ∉ inertia(𝔪) ↔ τ•θ − θ ∉ 𝔪`, i.e.
+  `¬ (1 ≤ addVal(θ − τ•θ))`, i.e. `addVal = 0`.  Note the dichotomy is what
+  makes the bound `#G_0 − 1` rather than `#Gal(F/ℚ₃ᵥ) − 1`: the summands
+  outside inertia are not merely small, they VANISH.
+* COUNT.  `Finset.sum_boole` evaluates the majorant as
+  `#{τ ∈ univ.erase 1 | τ ∈ G_0} = #(G_0 ∖ {1}) = #G_0 − 1`, the last step by
+  `Finset.card_erase_of_mem` (using `1 ∈ G_0`) and
+  `Fintype.card_of_subtype`.
+
+Combined with `span_three_eq_maximalIdeal_pow_card_inertia` (`e_F = #G_0`)
+this is exactly the `Σ_{σ≠σ₀} v_F(σ₀•θ − σ•θ) ≤ e_F − 1` that the consumer's
+sharp estimate needs. -/
+theorem sum_addVal_sub_smul_erase_le
+    (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
+    (htame : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ 2).inertia
+      (F ≃ₐ[ℚ₃ᵥ] F) = ⊥)
+    (θF : IntegralClosure 𝒪₃ᵥ F)
+    (hcrit : ∀ (σ : F ≃ₐ[ℚ₃ᵥ] F) (i : ℕ),
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ i).inertia (F ≃ₐ[ℚ₃ᵥ] F)
+        ↔ σ • θF - θF ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ i)
+    (σ₀ : F ≃ₐ[ℚ₃ᵥ] F) :
+    ∑ σ ∈ Finset.univ.erase σ₀,
+        IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F) (σ₀ • θF - σ • θF) ≤
+      ((Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
+        (F ≃ₐ[ℚ₃ᵥ] F)) - 1 : ℕ) : ℕ∞) := by
+  classical
+  -- STEP 1: `τ ↦ σ₀ * τ` reindexes `univ.erase 1` onto `univ.erase σ₀`
+  have hset : (Finset.univ.erase (1 : F ≃ₐ[ℚ₃ᵥ] F)).map
+      (Equiv.mulLeft σ₀).toEmbedding = Finset.univ.erase σ₀ := by
+    ext σ
+    simp only [Finset.mem_map, Finset.mem_erase, Finset.mem_univ, and_true,
+      Equiv.coe_toEmbedding, Equiv.coe_mulLeft]
+    constructor
+    · rintro ⟨τ, hτ, rfl⟩
+      intro h
+      exact hτ (by simpa using h)
+    · intro hσ
+      refine ⟨σ₀⁻¹ * σ, ?_, by group⟩
+      intro h
+      apply hσ
+      have h2 : σ₀ * (σ₀⁻¹ * σ) = σ₀ * 1 := by rw [h]
+      simpa [mul_inv_cancel_left] using h2
+  have hreindex : ∑ σ ∈ Finset.univ.erase σ₀,
+        IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F) (σ₀ • θF - σ • θF)
+      = ∑ τ ∈ Finset.univ.erase (1 : F ≃ₐ[ℚ₃ᵥ] F),
+          IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F) (θF - τ • θF) := by
+    rw [← hset, Finset.sum_map]
+    refine Finset.sum_congr rfl fun τ _ => ?_
+    simp only [Equiv.coe_toEmbedding, Equiv.coe_mulLeft]
+    rw [show σ₀ • θF - (σ₀ * τ) • θF = σ₀ • (θF - τ • θF) by rw [smul_sub, mul_smul]]
+    exact addVal_smul_eq F σ₀ (θF - τ • θF)
+  rw [hreindex]
+  -- STEP 2: each term is `≤ 1` inside `G_0` and `= 0` outside it
+  have hterm : ∀ τ ∈ Finset.univ.erase (1 : F ≃ₐ[ℚ₃ᵥ] F),
+      IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ F) (θF - τ • θF) ≤
+        (if τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
+          (F ≃ₐ[ℚ₃ᵥ] F) then (1 : ℕ∞) else 0) := by
+    intro τ hτ
+    have hτ1 : τ ≠ 1 := Finset.ne_of_mem_erase hτ
+    have hcrit1 : τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
+        (F ≃ₐ[ℚ₃ᵥ] F) ↔ τ • θF - θF ∈
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) := by
+      have h := hcrit τ 1
+      rwa [pow_one] at h
+    by_cases hmem : τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
+        (F ≃ₐ[ℚ₃ᵥ] F)
+    · rw [if_pos hmem]
+      have h := addVal_sub_smul_le_one_of_tame F htame θF hcrit 1 τ hτ1
+      rwa [one_smul] at h
+    · rw [if_neg hmem]
+      have hnot : θF - τ • θF ∉
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F) ^ 1 := by
+        rw [pow_one]
+        intro h
+        refine hmem (hcrit1.mpr ?_)
+        rw [← neg_sub]
+        exact Ideal.neg_mem_iff _ |>.mpr h
+      rw [mem_maximalIdeal_pow_iff_le_addVal] at hnot
+      have hz := enat_le_of_not_succ_natCast_le (n := 0) (by simpa using hnot)
+      simpa using hz
+  refine le_trans (Finset.sum_le_sum hterm) ?_
+  -- STEP 3: the count `#(G_0 ∖ {1}) = #G_0 − 1`
+  rw [Finset.sum_boole]
+  have hfilter : {τ ∈ Finset.univ.erase (1 : F ≃ₐ[ℚ₃ᵥ] F) |
+        τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia (F ≃ₐ[ℚ₃ᵥ] F)}
+      = {τ ∈ (Finset.univ : Finset (F ≃ₐ[ℚ₃ᵥ] F)) |
+        τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
+          (F ≃ₐ[ℚ₃ᵥ] F)}.erase 1 := by
+    ext τ
+    simp only [Finset.mem_filter, Finset.mem_erase, Finset.mem_univ, and_true]
+    tauto
+  have hone : (1 : F ≃ₐ[ℚ₃ᵥ] F) ∈ {τ ∈ (Finset.univ : Finset (F ≃ₐ[ℚ₃ᵥ] F)) |
+      τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia (F ≃ₐ[ℚ₃ᵥ] F)} := by
+    simp
+  have hNat : ({τ ∈ (Finset.univ : Finset (F ≃ₐ[ℚ₃ᵥ] F)) |
+        τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
+          (F ≃ₐ[ℚ₃ᵥ] F)}).card
+      = Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ F)).inertia
+          (F ≃ₐ[ℚ₃ᵥ] F)) := by
+    rw [Nat.card_eq_fintype_card]
+    exact (Fintype.card_of_subtype _ (fun x => by simp)).symm
+  rw [hfilter, Finset.card_erase_of_mem hone, hNat]
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
@@ -11550,26 +11872,34 @@ DECOMPOSED AND MOSTLY CLOSED, 2026-07-27 (sixth owner).  The body below
 is now a COMPLETE proof of the whole arithmetic argument — the
 compositum, the three-ring depth transport, the nearest-root choice and
 the sharp `e < k` estimate are all written out and verified.  What
-remains open is four pieces of PURE PLUMBING, all stated and PROVEN-
-free-of-mathematics, each above:
+remained open was four pieces of PURE PLUMBING, all stated above; **ALL
+FOUR ARE NOW PROVEN (2026-07-27, seventh and eighth owners)**, so nothing
+under this leaf is open any more:
 
-* `aeval_minpoly_eq_prod_sub_integralClosureLE` — `P` splits as
-  `∏_σ (X − σ•θ)` over `𝒪_M`.  The `𝒪_F`-level identity is already
-  computed as `hnodal` inside
+* `aeval_minpoly_eq_prod_sub_integralClosureLE` — **PROVEN 2026-07-27.**
+  `P` splits as `∏_σ (X − σ•θ)` over `𝒪_M`.  The `𝒪_F`-level identity is
+  now exported in its own right as
+  `map_minpoly_eq_prod_X_sub_C_smul_local` above (the undifferentiated
+  form of the `hnodal` step of
   `aeval_derivative_minpoly_eq_prod_sub_smul_local`, which exports only
-  the DERIVATIVE at `θ`; this asks for the undifferentiated form at an
-  arbitrary point of `𝒪_M`.
-* `smul_integralClosureLE` — `𝒪_F ↪ 𝒪_M` is equivariant for
-  `restrictToLEHom`.  The `AlgEquiv.restrictNormal_commutes` computation
-  is already carried out (for the reified subextension) as
-  `hstep`/`hkey` inside `exists_relative_depth_witness`.
-* `le_adjoin_val_smul_of_adjoin_eq_top` — a conjugate `σ₀•θ` of a
-  monogenic generator still generates `F` inside `ℚ₃ᵥᵃˡᵍ`.
-* `sum_addVal_sub_smul_erase_le` — the COUNTING half of tame conjugate
-  spacing.  The termwise half (`v_F(σ₀•θ − σ•θ) ≤ 1` for `σ ≠ σ₀`) is
-  PROVEN as `addVal_sub_smul_le_one_of_tame`; what is left is that the
-  summands outside `G_0` vanish and that `G_0 ∖ {1}` has `e_F − 1`
-  elements.
+  the DERIVATIVE at `θ`), and this leaf maps it along
+  `integralClosureLE` and evaluates at an arbitrary point of `𝒪_M`.
+* `smul_integralClosureLE` — **PROVEN 2026-07-27.**  `𝒪_F ↪ 𝒪_M` is
+  equivariant for `restrictToLEHom`, by the same
+  `AlgEquiv.restrictNormal_commutes` computation as the `hstep`/`hkey`
+  steps of `exists_relative_depth_witness`, applied at an arbitrary
+  integral point rather than at the one monogenic generator used there.
+* `le_adjoin_val_smul_of_adjoin_eq_top` — **PROVEN 2026-07-27**: a
+  conjugate `σ₀•θ` of a monogenic generator still generates `F` inside
+  `ℚ₃ᵥᵃˡᵍ`.  It came out as pure subalgebra bookkeeping
+  (`AlgHom.map_adjoin_singleton` twice, `Algebra.map_top`,
+  `IntermediateField.range_val`) with no primitive-element theory.
+* `sum_addVal_sub_smul_erase_le` — **PROVEN 2026-07-27**: the COUNTING
+  half of tame conjugate spacing.  The termwise half
+  (`v_F(σ₀•θ − σ•θ) ≤ 1` for `σ ≠ σ₀`) was already
+  `addVal_sub_smul_le_one_of_tame`; the counting step reindexes by
+  `τ ↦ σ₀ * τ`, observes that the summands OUTSIDE `G_0` vanish (the
+  `i = 1` case of the inertia criterion) and counts `#(G_0 ∖ {1})`.
 
 THE BOOKKEEPING THIS LEAF USED TO OWE IS NOW DISCHARGED.  The
 three-ring comparison is `exists_addVal_integralClosureLE` above
@@ -11976,6 +12306,142 @@ theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **THE UNRAMIFIED TWIST: `τ` is an obstruction to descent that survives
+into an UNRAMIFIED fixed field, and the point `x` sits at the maximal
+admissible distance from `θ`** (sorry node, created 2026-07-27 — leaf
+(Y-3-a), the geometric half of Fontaine's Prop. 1.5 (ii); see the ROUTE
+FOUND section of `exists_isEmpty_algHom_of_ne_one_of_mem_inertia` below,
+which this leaf and its sibling decompose).
+
+WHAT IT ASSERTS.  Given a monogenic generator `θ` of `𝒪_L` satisfying the
+inertia criterion `hcrit`, and a `τ ≠ 1` in `G_{j+1} = inertia(𝔪_L^{j+2})`,
+there are a finite `M/ℚ₃ᵥ` containing `L`, a finite `E/ℚ₃ᵥ` inside `M`
+NOT containing `L`, and an integer `x ∈ 𝒪_E` with
+
+* `v_E(3) = v_M(3) = g₀ = v_L(3)` — `M/L` and `M/E` are UNRAMIFIED, so no
+  ramification is created anywhere, and the leaf's `e` below is `g₀`; and
+* `x ≡ θ` to depth `j + 2` IN `𝒪_M`, i.e. exactly the depth at which `τ`
+  stops acting.
+
+THE INTENDED PROOF, which is elementary and uses no analysis whatsoever.
+Let `n := ord(τ)`, a power of `3`, and let `U/ℚ₃ᵥ` be the UNRAMIFIED
+extension of degree `f_L · n`.  Put `M := L·U`.  Because `τ` lies in
+inertia it is trivial on `L ∩ U = ℚ₃ᵥ_{f_L}`, and `Frob^{f_L}` is trivial
+there too, so the pair patches to a `ρ ∈ Gal(M/ℚ₃ᵥ)` with `ρ|_L = τ` and
+`ρ|_U = Frob^{f_L}`.  Then `ord(ρ) = n`, and `ρ^i` lies in the inertia of
+`M/ℚ₃ᵥ` only when `n ∣ i`, i.e. only when `ρ^i = 1`: so with
+`E := M^{⟨ρ⟩}` the extension `M/E` is UNRAMIFIED of degree `n`.  Hence:
+
+* `¬(L ≤ E)`, since `L ≤ E` would force `τ = ρ|_L = 1`;
+* `e_E = e_M = e_L = g₀`, since `M/L` and `M/E` are unramified;
+* `M/E` unramified makes `Tr_{M/E} : 𝒪_M → 𝒪_E` SURJECTIVE (the residue
+  extension is separable, so `Tr` is surjective mod `𝔪_E`, and Nakayama
+  upgrades that to the ideal `Tr(𝒪_M) = 𝒪_E`).  Choose `c ∈ 𝒪_M` with
+  `Tr(c) = 1` and set `x := Tr(c·θ) = Σ_{i<n} ρ^i(c·θ) ∈ 𝒪_E`.  Then
+  `x − θ = Σ_i ρ^i(c)·(ρ^i θ − θ)`, and every `ρ^i θ − θ = τ^i•θ − θ` lies
+  in `𝔪_L^{j+2}` because `G_{j+1}` is a GROUP containing `τ`; unramifiedness
+  of `M/L` turns `𝔪_L^{j+2}·𝒪_M` into `𝔪_M^{j+2}`.
+
+FAITHFULNESS.  `hτ1` is used only for `¬(L ≤ E)`, `hτ` and `hcrit` only for
+the depth statement; the leaf is not vacuous, since `¬(L ≤ E)` fails for
+every `E ⊇ L` and the depth statement fails for `E = ℚ₃ᵥ` already at
+`L = ℚ₃(ζ₉)` (see the numerical checks recorded on the consumer). -/
+theorem exists_not_le_sub_mem_of_ne_one_of_mem_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
+    (θ : IntegralClosure 𝒪₃ᵥ L) (j : ℕ) (τ : L ≃ₐ[ℚ₃ᵥ] L) (hτ1 : τ ≠ 1)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ (j + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))
+    (hcrit : ∀ (σ : L ≃ₐ[ℚ₃ᵥ] L) (i : ℕ),
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i).inertia (L ≃ₐ[ℚ₃ᵥ] L)
+        ↔ σ • θ - θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i) :
+    ∃ (M E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ M)
+      (_ : FiniteDimensional ℚ₃ᵥ E) (hLM : L ≤ M) (hEM : E ≤ M)
+      (x : IntegralClosure 𝒪₃ᵥ E),
+      ¬ (L ≤ E) ∧
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ∧
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ∧
+      integralClosureLE E M hEM x - integralClosureLE L M hLM θ ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (j + 2) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE COUNTING HALF OF FONTAINE'S PROP. 1.5 (ii): a point at depth
+`j + 2` from a monogenic generator is a root of its minimal polynomial to
+depth `Σ_{i=0}^{j+1} #G_i`** (sorry node, created 2026-07-27 — leaf
+(Y-3-b), the arithmetic half; the geometric half is
+`exists_not_le_sub_mem_of_ne_one_of_mem_inertia` above).
+
+Nothing about `τ`, about `E ⊉ L`, or about ramification-creating fields
+enters here: the hypotheses are just that `M` contains `L` and `E`, that
+NO ramification is created (all three `v(3)` exponents are the same `g₀`),
+and that `x ∈ 𝒪_E` is within `𝔪_M^{j+2}` of `θ`.
+
+THE INTENDED PROOF, which is three steps and no analysis.
+1. `P := minpoly 𝒪₃ᵥ θ` splits over `𝒪_M` as `∏_{σ ∈ Gal(L/ℚ₃ᵥ)} (X − σ•θ)`
+   — that is `aeval_minpoly_eq_prod_sub_integralClosureLE` above (whose
+   `hθ` is the `ℚ₃ᵥ`-adjoin form of `hθtop`; `L = Frac(𝒪_L)` converts).
+   So `P(x) = ∏_σ (x − σ•θ)` already in `𝒪_M`.
+2. `addVal_prod` turns that into a SUM, and the ultrametric bound
+   `addVal_M(x − σ•θ) ≥ min(j + 2, addVal_M(θ − σ•θ))` is `Ideal.sub_mem`
+   applied to `hclose`.  Since `M/L` creates no ramification, the
+   comparison map of `exists_addVal_integralClosureLE` has factor `a = 1`
+   (from `a·g₀ = g₀` and `0 < g₀`), so depths in `𝒪_L` and `𝒪_M` agree on
+   the nose and `addVal_M(θ − σ•θ) = addVal_L(θ − σ•θ) = i_L(σ)`.
+3. THE COUNTING IDENTITY, which is the only real content:
+   `Σ_{σ ∈ Gal(L/ℚ₃ᵥ)} min(j + 2, i_L(σ)) = Σ_{i=0}^{j+1} #G_i`, because
+   `min(j+2, i_L(σ)) = Σ_{i=0}^{j+1} [i_L(σ) ≥ i+1]` and, by `hcrit`,
+   `#{σ : i_L(σ) ≥ i+1} = #(𝔪_L^{i+1}).inertia = #G_i`.  Swapping the two
+   sums is `Finset.sum_comm`.  The right-hand side is exactly
+   `g₀ + Σ_{i<j+1} #(𝔪_L^{i+2}).inertia`, i.e. the `k` in the conclusion.
+4. Finally `a_E = 1` for `E ↪ M` by the same argument, so `addVal_E(P(x))`
+   is that same `k`, and `𝒪_L = 𝒪₃ᵥ[θ] ≅ 𝒪₃ᵥ[X]/(P)` sends `θ ↦ x̄` to
+   give the algebra map.
+
+FAITHFULNESS.  Every hypothesis is used: `hθtop` and `hcrit` in steps 1
+and 3, `hM3`/`hE3` in steps 2 and 4, `hclose` in step 2.  The statement is
+FALSE without `hM3`/`hE3` (a ramified `E` rescales `k`), which is why they
+are hypotheses rather than derived. -/
+theorem nonempty_algHom_quotient_of_sub_mem_of_span_three_eq
+    (L M E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
+    [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ E]
+    (hLM : L ≤ M) (hEM : E ≤ M) (j : ℕ)
+    (θ : IntegralClosure 𝒪₃ᵥ L)
+    (hθtop : Algebra.adjoin 𝒪₃ᵥ ({θ} : Set (IntegralClosure 𝒪₃ᵥ L)) = ⊤)
+    (hcrit : ∀ (σ : L ≃ₐ[ℚ₃ᵥ] L) (i : ℕ),
+      σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i).inertia (L ≃ₐ[ℚ₃ᵥ] L)
+        ↔ σ • θ - θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ i)
+    (hM3 : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (hE3 : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (x : IntegralClosure 𝒪₃ᵥ E)
+    (hclose : integralClosureLE E M hEM x - integralClosureLE L M hLM θ ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (j + 2)) :
+    Nonempty (IntegralClosure 𝒪₃ᵥ L →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^
+        (Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) +
+          ∑ i ∈ Finset.range (j + 1),
+            Nat.card ((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))))) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **FONTAINE'S PROP. 1.5 (ii) IN `φ`-FREE INTEGER FORM: a NONTRIVIAL
 element of a deep ramification group MANUFACTURES A COUNTEREXAMPLE to
 `(P_m)`** (sorry node, created 2026-07-26 — leaf (Y-3), the genuine
@@ -12020,9 +12486,92 @@ Prop. 1.5 (ii) to the compositum `L·K'` OVER `K`, not over `K'`.  So the
 whole argument fits the present `ℚ₃ᵥ`-hard-wired encoding, and no
 generalisation to a variable local base field is required.
 
-MACHINERY AUDIT (2026-07-26, fourth owner).  This is the HARDEST of the
-four Fontaine-cluster leaves, because unlike its sibling (Y-2) it must
-CONSTRUCT the affinoid point `x` rather than merely recognise one.
+**ROUTE FOUND AND DECOMPOSED, 2026-07-27 (fifth owner).  THE AFFINOID IS
+NOT NEEDED: the counterexample field is the fixed field of `τ × Frobenius`
+in `L·(an UNRAMIFIED extension)`.**  No Newton polygon, no Krasner, no
+norms, no analysis of any kind.  The `INTENDED PROOF (Fontaine's)`
+paragraph above and the machinery audit that used to stand here are
+SUPERSEDED by this; they are retained only as the historical record of
+what four owners were sent to build.  The assembly below is written and
+compiles over the two leaves
+`exists_not_le_sub_mem_of_ne_one_of_mem_inertia` (geometric half) and
+`nonempty_algHom_quotient_of_sub_mem_of_span_three_eq` (arithmetic half),
+both directly above.
+
+THE CONSTRUCTION.  Let `n := ord(τ)` (a power of `3`), let `U/ℚ₃ᵥ` be the
+UNRAMIFIED extension of degree `f_L·n`, and put `M := L·U`.  Since `τ` is
+in inertia it is trivial on `L ∩ U = ℚ₃ᵥ_{f_L}`, and so is `Frob^{f_L}`,
+so there is `ρ ∈ Gal(M/ℚ₃ᵥ)` with `ρ|_L = τ` and `ρ|_U = Frob^{f_L}`.
+Then `ord(ρ) = n` and `ρ^i` is in the inertia of `M/ℚ₃ᵥ` only for
+`n ∣ i`, i.e. only for `ρ^i = 1` — so with `E := M^{⟨ρ⟩}` the extension
+`M/E` is UNRAMIFIED of degree `n`.  Consequently:
+
+* `IsEmpty (L →ₐ[ℚ₃ᵥ] E)`, because an embedding gives `L ≤ E`
+  (`le_of_nonempty_algHom_of_normal`, `L` normal) and hence `τ = ρ|_L = 1`;
+* `e := v_E(3) = v_M(3) = v_L(3) = g₀`, both extensions being unramified;
+* `Tr_{M/E} : 𝒪_M → 𝒪_E` is SURJECTIVE for an unramified `M/E`, so pick
+  `c` with `Tr(c) = 1` and put `x := Tr(c·θ) ∈ 𝒪_E` for `θ` a monogenic
+  generator of `𝒪_L`.  Then `x − θ = Σ_i ρ^i(c)·(τ^i•θ − θ)` lies in
+  `𝔪_M^{j+2}`, because `G_{j+1}` is a GROUP containing `τ` and `M/L` is
+  unramified.  So `x` sits at the MAXIMAL admissible distance from `θ`
+  with no analytic input at all;
+* `P(x) = ∏_σ (x − σ•θ)` then has depth `Σ_σ min(j+2, i_L(σ))
+  = Σ_{i=0}^{j+1} #G_i = g₀ + S`, and `v_E = v_M`, so `k := g₀ + S` works.
+
+WHY THE INEQUALITY IS SATISFIED WITH ROOM.  With `e = g₀` and
+`k = g₀ + S` the required `e·(g₀+S) ≤ g₀·k + e` reads
+`g₀·(g₀+S) ≤ g₀·(g₀+S) + g₀`, i.e. `Nat.le_add_right`.  **So this route
+achieves `m = k/e = 1 + S/g₀ = u^{(F)}` EXACTLY, not `u^{(F)} − 1/e`** —
+the leaf could be strengthened to `e·(g₀+S) ≤ g₀·k`, which would make the
+`THE −1/e IS REAL` paragraph above obsolete.  It was left un-strengthened
+because the consumer does not need it and a strengthened statement would
+be a gratuitous conflict for the integrator; but a future owner should
+know that the `−1/e` is an artifact of Fontaine's affinoid proof, not of
+the theorem.
+
+**WHY THE PREVIOUS AUDIT SENT OWNERS THE WRONG WAY, and this is the part
+worth keeping.**  It prescribed: exhibit `x` EQUIDISTANT from `α` and
+`τα`, "so that Krasner cannot be applied and `ℚ₃ᵥ(x)` contains no root of
+`P`".  That last step is a NON SEQUITUR — Krasner's hypothesis failing is
+not its conclusion failing, and equidistance never by itself certifies
+`L ⊄ ℚ₃ᵥ(x)`.  In fact equidistance is a CONSEQUENCE of the goal, not a
+route to it: if `L ⊄ E` then, putting `M := L·E`, there is
+`ρ ∈ Gal(M/E)` with `ρ|_L ≠ 1`, and `ρx = x` forces
+`v(x − θ) = v(x − ρ_Lθ)` and hence `v(x − θ) ≤ v(θ − ρ_Lθ)`.  So the real
+content is always "put `x` in the fixed field of a lift of `τ`", which is
+what the construction above does directly.
+
+**THREE NAIVE CHOICES OF `E` ARE PROVABLY TOO SMALL** — each was computed
+before the route above was found; record them so nobody re-tries them.
+Take `L = ℚ₃(ζ₉)`, `τ` generating `Gal(L/ℚ₃(ζ₃))`, `j = 1`, where the
+requirement is `v_{ℚ₃}(x − ζ₉) ≥ 4/9` and the ceiling is `1/2`.
+* `E := L^{⟨τ⟩} = ℚ₃(ζ₃)`: the image of `𝒪_{ℚ₃(ζ₃)}` in `𝒪_L/𝔪_L^3` is
+  just `𝔽₃`, while `ζ₉ = 1 + π`, so the best distance is `1/6`.
+* `E/ℚ₃ᵥ` UNRAMIFIED with `e = 1` and `k` small: value groups forbid it,
+  since `v_M` on `E` lands in `e_{M/E}·ℤ` and `v_M(ζ₉ − 1) = 1` does not.
+* `E := (L·K')^{⟨τ⊗1⟩}` for a TAME `K'/ℚ₃ᵥ` of degree `N` — the shape the
+  consumer's own tame enlargement suggests.  Solving `(ρ−1)y = θ − τθ`
+  with no loss of depth needs the tame character order `t` of a lift `ρ`
+  to NOT divide `v_M(θ − τθ) = e_{M/L}·i_L(τ)`; but for a tame `M/L` one
+  always has `t ∣ e_{M/L}`, so there is always a loss, and the loss is at
+  least `e_{M/L}` — far more than the `1/g₀` of slack available.
+  **That is the precise reason the auxiliary extension must be
+  UNRAMIFIED and not merely tame**, and it is invisible without doing the
+  computation.  A wild lift is no better: `ord(ρ) = 3` with `i_M(ρ) = 1`
+  is impossible, because `G_0/G_1` has order prime to `3`.
+
+WHAT REMAINS AFTER THIS DECOMPOSITION.  Leaf (Y-3-a) needs unramified
+extensions of `ℚ₃ᵥ` inside `ℚ₃ᵥᵃˡᵍ` with their Frobenius, and the
+surjectivity of the trace for an unramified extension of local rings —
+neither is in this file yet, and both are ordinary local-field theory
+rather than anything Fontaine-specific.  Leaf (Y-3-b) needs only the
+counting identity plus `aeval_minpoly_eq_prod_sub_integralClosureLE`
+(sorried, owned) and `addVal_prod`/`exists_addVal_integralClosureLE`
+(PROVEN).
+
+OLDER MACHINERY AUDIT (2026-07-26, fourth owner), retained because its
+`mem_adjoin_of_sub_mem_of_forall_not_mem` half is genuinely useful and
+PROVEN; its Krasner-negative prescription is the one refuted above.
 * The sibling `nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot`
   now carries a full machinery audit for the shared half — Krasner is in
   the pin (`Mathlib/Analysis/Normed/Field/Krasner.lean`), the missing
@@ -12079,7 +12628,29 @@ theorem exists_isEmpty_algHom_of_ne_one_of_mem_inertia
         Nonempty (IntegralClosure 𝒪₃ᵥ L →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
           IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) ∧
         IsEmpty (L →ₐ[ℚ₃ᵥ] E) := by
-  sorry
+  classical
+  -- STEP 1: a monogenic generator of `𝒪_L` with the inertia criterion
+  obtain ⟨θ, hθtop, _, hcrit⟩ := exists_inertia_generator L
+  -- STEP 2: the unramified twist — a counterexample field `E ⊉ L` carrying a
+  -- point `x` at depth `j + 2` from `θ`, with no ramification created
+  obtain ⟨M, E, hMfd, hEfd, hLM, hEM, x, hnle, hM3, hE3, hclose⟩ :=
+    exists_not_le_sub_mem_of_ne_one_of_mem_inertia L θ j τ hτ1 hτ hcrit
+  haveI := hEfd
+  haveI := hMfd
+  -- STEP 3: `e := g₀` and `k := g₀ + S`; the counting half supplies the
+  -- truncated algebra map, and normality of `L` turns `¬(L ≤ E)` into `IsEmpty`
+  refine ⟨E, hEfd,
+    Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)),
+    Nat.card ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) +
+      ∑ i ∈ Finset.range (j + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)),
+    hE3, Nat.card_pos, ?_,
+    nonempty_algHom_quotient_of_sub_mem_of_span_three_eq L M E hLM hEM j θ hθtop hcrit
+      hM3 hE3 x hclose,
+    ⟨fun f => hnle (le_of_nonempty_algHom_of_normal L E ⟨f⟩)⟩⟩
+  -- the level `m = k/e = 1 + S/g₀` clears Fontaine's threshold `1 + (S−1)/g₀`
+  exact Nat.le_add_right _ _
 
 /-- **THE ARITHMETIC OF YOSHIDA'S LIMIT `e' → ∞`, as a statement about
 five natural numbers** (PROVEN 2026-07-26).  Read `g₀N = #G_0(N/ℚ₃ᵥ)`,
@@ -44007,16 +44578,219 @@ theorem exists_globalFrob_generator_ray_class
   rw [← hUval (globalFrob v), ← hUval (globalFrob v₀), ← he, Units.val_zpow_eq_zpow_val]
 
 set_option maxHeartbeats 1000000 in
+/-- **THE COMMON NORM BASE AND THE TWO AUXILIARY NORM SUBGROUPS OF
+CHILDRESS pp. 121–123** (sorry node, created 2026-07-27 as the sole
+sub-leaf (A3b-2-b-i) of `divisorRatio_mem_sup_ray_class` just below,
+which is now glue over it): there is a divisor `β` whose Artin symbol is
+`χ (globalFrob v₀)`, and two subgroups `𝒜`, `𝒜₀` of the divisor group —
+the divisors that are NORMS from the auxiliary field attached by Artin's
+Lemma to `v` resp. to `v₀` — each containing `β` and its own prime, and
+each meeting `ker φ` inside `P ⊔ N`.
+
+**WHY A COMMON BASE `β` IS FORCED, and this is the mathematical content
+of the cut.** Childress runs his argument one prime at a time: Artin's
+Lemma is applied at `p₁, …, p_r` SEPARATELY, producing a different
+auxiliary field `Eᵢ` for each, and the relation actually proved is
+`pᵢ^{γᵢ} b_F^{-dᵢ} ∈ P⁺ N` — a relation between `pᵢ` and a FIXED divisor
+`b_F`, never between two primes. That is not a stylistic choice. Artin's
+Lemma at `v` gives an `E` in which `v` splits completely and says
+NOTHING about `v₀`, so `v · v₀^{-e}` is in general **not** a norm from
+either prime's auxiliary field, and the two-prime relation cannot be
+attacked with a single `E`. Childress's `b_F = N_{E/F} B_E` is built
+from the COMPOSITUM `E = E_v E_{v₀}`, hence is a norm from each factor,
+which is exactly what lets the two primes be handled independently and
+then subtracted. `β` here is that `b_F`, and `𝒜`, `𝒜₀` are the norm
+groups of `E_v`, `E_{v₀}`.
+
+Everything else in this leaf's parent is then divisor bookkeeping:
+`v · v₀^{-e} = (v · β^{-e}) · (v₀ · β^{-1})^{-e}`, and each bracket lies
+in its own `𝒜 ⊓ ker φ` — the left one because `φ (single v 1) =
+φ β ^ e` by `he`, the right one because `φ β = φ (single v₀ 1)` by
+construction. That is the whole glue below.
+
+**Route for a prover — Childress pp. 121–123, in the order the objects
+must be built.**
+
+1. *The auxiliary fields.* `hartin` at `v` gives `(m₁, H₁)`, and at `v₀`
+   with `S` containing the primes of `m₁` gives `(m₂, H₂)` with `m₂`
+   prime to `m₁`. `H₁`, `H₂` are OPEN, hence closed in the compact
+   `Γ F`, so `Eᵢ := IntermediateField.fixedField Hᵢ` satisfies
+   `Hᵢ = Eᵢ.fixingSubgroup` (`InfiniteGalois.fixingSubgroup_fixedField`)
+   and `FiniteDimensional F Eᵢ`
+   (`InfiniteGalois.isOpen_iff_finite`), so `Eᵢ` is a NUMBER FIELD in
+   `Type u` — which is what makes `hcycl`'s quantifier over every
+   `E : Type u` usable. `E := E₁E₂` corresponds to `H₁ ⊓ H₂`.
+2. *The base `β`.* Choose `B_E ∈ I_E(m₁m₂mm)` with `c_E (B_E) =
+   χ (globalFrob v₀)` — surjectivity of the Artin map over `E`, i.e.
+   Chebotarev at `E` — and set `β := N_{E/F} B_E`. Its symbol is
+   `χ (globalFrob v₀)` by the Consistency Property, and `β` is a norm
+   from `E₁` and from `E₂` because `E ⊇ Eᵢ`.
+3. *The norm groups.* `𝒜 := N_{E₁/F} (I_{E₁}(m₁ mm)) ⊓ Im`, likewise
+   `𝒜₀`. Clause (iv) of `hartin` (`globalFrob v ∈ H₁`) says `v` splits
+   completely in `E₁`, so `v = N_{E₁/F} 𝔓` for any `𝔓 ∣ v`: that is
+   `single v 1 ∈ 𝒜`.
+4. *The descent* `𝒜 ⊓ ker φ ≤ P ⊔ N`. For `𝔞 = N_{E₁/F} 𝔄` with
+   `φ 𝔞 = 1`, the Consistency Property plus `K ∩ E₁ = F` (clause (i))
+   give `c_{E₁} 𝔄 = 1`; Artin Reciprocity for `K E₁ / E₁`, which is a
+   subextension of the CYCLOTOMIC `E₁(ζ_{m₁})/E₁` by clause (ii), writes
+   `𝔄 = (α) · N_{K E₁ / E₁} 𝔅` with `α ≫ 0`, `α ≡ 1 (mod m₁ mm)`;
+   applying `N_{E₁/F}` sends `(α)` into `P` (`N (α) ≫ 0` and
+   `≡ 1 (mod mm)`) and the norm part into `N`.
+
+**ROUTE AUDIT — THE ONE INPUT THAT IS NOT IN THIS BINDER LIST, stated so
+the next owner does not rediscover it at the end of a task.** Step 4
+consumes Artin Reciprocity at `E₁` in the direction
+`ker ⊆ ray · norms`. `hcycl` supplies only the OTHER direction — it
+concludes `c' (span {δ}) = 1`, i.e. `ray ⊆ ker`, for a cyclotomic `χ'`
+(and it is PROVEN, as `artinSymbol_span_eq_one_of_cyclotomic_ray_class`).
+`norms ⊆ ker` is free, by the very definition of `N`. So `hcycl` gives
+`P_E ⊔ N_E ≤ ker c_E`, hence `[I_E : P_E ⊔ N_E] ≥ n`; turning that into
+`ker c_E ≤ P_E ⊔ N_E` needs `[I_E : P_E ⊔ N_E] ≤ n`, which is the
+**Universal/Global Norm Index Inequality at `E₁`** (Childress p. 112,
+the displayed step before Theorem 2.1's proof). At `F` this cluster HAS
+that input — it is `exists_artinDivisorNormIndex_le_ray_class`, arriving
+here as `hidx₂` — but it is stated at `F` only, and `hidx₂` is in any
+case the *opposite* inequality (`[Im : A] ≤ [Im : P ⊔ N]`), used one
+level up by `le_of_le_of_relIndex_le_ray_class` to convert this cluster's
+conclusion `A ≤ P ⊔ N` back into `P ⊔ N ≤ A`.
+
+*The repair is a CUT-LEVEL one and is not made here*, because it changes
+the binder list of five theorems and of the package leaf that discharges
+them. Either shape works:
+
+* strengthen `hcycl` from "`c' (span {δ}) = 1`" to the full cyclotomic
+  reciprocity "`ker c' ⊓ Im_E ≤ P_E ⊔ N_E`" — this is the honest
+  statement of "Artin Reciprocity is true for `E(ζ_m)/E`", the sentence
+  Childress actually cites on p. 123; or
+* add a hypothesis quantified over every number field `E : Type u` that
+  is the analogue of `exists_artinDivisorNormIndex_le_ray_class` at `E`,
+  namely `(P_E ⊔ N_E).relIndex Im_E ≤ (ker c_E ⊓ Im_E).relIndex Im_E`.
+
+*Check that would refute this audit*: exhibit a derivation of
+`ker c_E ⊓ Im_E ≤ P_E ⊔ N_E` for a cyclotomic `χ'` from `hcycl` alone —
+equivalently, a proof that a character of the ray class group of `E`
+mod `m·mm` that kills the norms of `K E` is determined by its values on
+a cyclic quotient of the right order, with no index input.
+
+**FAITHFULNESS (audited 2026-07-27): TRUE as stated, and NOT vacuous.**
+True because the objects of steps 1–4 exist (this is Childress's own
+construction). Not vacuous: the minimal admissible choice
+`𝒜 = 𝒜₀ = Subgroup.closure {single v 1, β}` already forces
+`𝒜 ⊓ ker φ ≤ P ⊔ N` to contain the parent's conclusion, so no junk
+witness discharges it; and `𝒜 = ⊤` is not admissible either, since
+`⊤ ⊓ ker φ ≤ P ⊔ N` is strictly stronger than the crux one level up
+(it drops `⊓ Im`, and a divisor supported at a prime dividing `mm` has
+no reason to lie in `P ⊔ N`). `hv` and `hv₀` are load-bearing at step 3:
+a prime dividing `mm` is outside `Im`, so it is not in the norm group as
+defined. -/
+theorem exists_artinNormSubgroups_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (hartin : ∀ (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (S : Finset ℕ),
+      ∃ (m : ℕ) (H : Subgroup (Γ F)), 0 < m ∧
+        (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+        (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+        IsOpen (H : Set (Γ F)) ∧
+        (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
+        (∀ σ ∈ H, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ) → χ σ = 1) ∧
+        (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+          (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+        globalFrob p ∈ H)
+    (hcycl : ∀ (E : Type u) [Field E] [NumberField E]
+      (χ' : Γ E → Dickson.K 3), (∀ a b : Γ E, χ' (a * b) = χ' a * χ' b) →
+      ∀ m : ℕ, 0 < m →
+      (∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ' σ = 1) →
+      ∀ c' : Ideal (NumberField.RingOfIntegers E) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers E), I ≠ ⊥ → J ≠ ⊥ →
+        c' (I * J) = c' I * c' J) →
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        c' v.asIdeal = χ' (globalFrob v)) →
+      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+        (∀ φ : E →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
+        δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
+        c' (Ideal.span {δ}) = 1)
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+        χ (a * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
+          ≠ 1) → w.asIdeal ∣ mm)
+    (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (Im A P N : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v))
+    (hA : A = φ.ker ⊓ Im)
+    (hφv : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+        = χ (globalFrob v))
+    (hφd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ}))
+    (hIm : ∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), v.asIdeal ∣ mm → Multiplicative.toAdd x v = 0)
+    (hP : P = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) ∧
+      δ - 1 ∈ mm ∧ y = d δ})
+    (hN : N = Subgroup.closure {y | ∃ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
+      y = Multiplicative.ofAdd (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))})
+    (hidx₁ : A.relIndex Im ≠ 0) (hidx₂ : A.relIndex Im ≤ (P ⊔ N).relIndex Im)
+    (v₀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hv₀ : ¬ v₀.asIdeal ∣ mm) (hv : ¬ v.asIdeal ∣ mm) :
+    ∃ (β : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)
+      (𝒜 𝒜₀ : Subgroup (Multiplicative
+        (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))),
+      ((φ (Multiplicative.ofAdd β) : Dickson.K 3)) = χ (globalFrob v₀) ∧
+      Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)) ∈ 𝒜 ∧
+      Multiplicative.ofAdd β ∈ 𝒜 ∧
+      Multiplicative.ofAdd (Finsupp.single v₀ (1 : ℤ)) ∈ 𝒜₀ ∧
+      Multiplicative.ofAdd β ∈ 𝒜₀ ∧
+      𝒜 ⊓ φ.ker ≤ P ⊔ N ∧ 𝒜₀ ⊓ φ.ker ≤ P ⊔ N :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **CHILDRESS 5.2.2 AT A SINGLE PAIR OF PRIMES: a Frobenius-matched
-divisor ratio lies in the narrow ray times the norms** (sorry node,
-created 2026-07-27 as sub-leaf (A3b-2-b) of
+divisor ratio lies in the narrow ray times the norms** (**PROVEN
+2026-07-27** as glue over its sole sub-leaf (A3b-2-b-i)
+`exists_artinNormSubgroups_ray_class` just above; created 2026-07-27 as
+sub-leaf (A3b-2-b) of
 `artinDivisorKernel_le_sup_ray_class` just below, which is now PROVEN as
 glue over this leaf and (A3b-2-a) `exists_globalFrob_generator_ray_class`
 just above): if `v` and `v₀` both avoid `mm` and the Artin symbol at `v`
 is the `e`-th power of the one at `v₀`, then the divisor `v · v₀^{-e}`
 lies in `P ⊔ N`.
 
-**THIS IS THE WHOLE REMAINING MATHEMATICAL CONTENT OF THE CRUX**, and the
+**DECOMPOSED 2026-07-27.** All of the class field theory now sits in
+(A3b-2-b-i) above; what remains here is the two-line subtraction
+`v · v₀^{-e} = (v · β^{-e}) · (v₀ · β^{-1})^{-e}` around Childress's
+common norm base `β = b_F`. The reason that base cannot be eliminated —
+Artin's Lemma at `v` says nothing about `v₀`, so a single auxiliary
+field never sees both primes — is recorded in the sub-leaf's docstring,
+together with a ROUTE AUDIT naming the one input the binder list does
+not carry (cyclotomic reciprocity at the auxiliary field `E` in the
+`ker ⊆ ray · norms` direction; `hcycl` gives only the converse).
+
+**THIS WAS THE WHOLE REMAINING MATHEMATICAL CONTENT OF THE CRUX**, and the
 cut is a genuine equivalence rather than a repackaging: the crux implies
 this leaf (the displayed divisor lies in `φ.ker ⊓ Im`, by `hφv` for the
 kernel and by `hv`/`hv₀` for `Im`), and this leaf plus (A3b-2-a) implies
@@ -44147,8 +44921,43 @@ theorem divisorRatio_mem_sup_ray_class
     (hv₀ : ¬ v₀.asIdeal ∣ mm) (hv : ¬ v.asIdeal ∣ mm)
     (e : ℤ) (he : χ (globalFrob v) = χ (globalFrob v₀) ^ e) :
     Multiplicative.ofAdd
-        (Finsupp.single v (1 : ℤ) - e • Finsupp.single v₀ (1 : ℤ)) ∈ P ⊔ N :=
-  sorry
+        (Finsupp.single v (1 : ℤ) - e • Finsupp.single v₀ (1 : ℤ)) ∈ P ⊔ N := by
+  -- (A3b-2-b-i): the common norm base `β` and the two auxiliary norm subgroups.
+  obtain ⟨β, 𝒜, 𝒜₀, hβφ, hv𝒜, hβ𝒜, hv₀𝒜₀, hβ𝒜₀, h𝒜ker, h𝒜₀ker⟩ :=
+    exists_artinNormSubgroups_ray_class F χ hmul V hVopen hVker hunr ℓ hℓ hℓ3 k hord c
+      hcmul hcfrob hartin hcycl mm hmm hmmram φ d Im A P N hd hA hφv hφd hIm hP hN
+      hidx₁ hidx₂ v₀ v hv₀ hv
+  -- The two Artin symbols, read through the common base `β`.
+  have hUv : φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))
+      = φ (Multiplicative.ofAdd β) ^ e := by
+    ext
+    rw [hφv v, Units.val_zpow_eq_zpow_val, hβφ]
+    exact he
+  have hUv₀ : φ (Multiplicative.ofAdd (Finsupp.single v₀ (1 : ℤ)))
+      = φ (Multiplicative.ofAdd β) := by
+    ext
+    rw [hφv v₀, hβφ]
+  -- `v · β^{-e}` is a norm from the auxiliary field at `v`, and lies in `ker φ`.
+  have hx : Multiplicative.ofAdd (Finsupp.single v (1 : ℤ) - e • β) ∈ P ⊔ N := by
+    rw [ofAdd_sub, ofAdd_zsmul]
+    refine h𝒜ker (Subgroup.mem_inf.mpr
+      ⟨Subgroup.div_mem _ hv𝒜 (Subgroup.zpow_mem _ hβ𝒜 e), ?_⟩)
+    rw [MonoidHom.mem_ker, map_div, map_zpow, hUv]
+    exact div_self' _
+  -- `v₀ · β^{-1}` is a norm from the auxiliary field at `v₀`, and lies in `ker φ`.
+  have hy : Multiplicative.ofAdd (Finsupp.single v₀ (1 : ℤ) - β) ∈ P ⊔ N := by
+    rw [ofAdd_sub]
+    refine h𝒜₀ker (Subgroup.mem_inf.mpr ⟨Subgroup.div_mem _ hv₀𝒜₀ hβ𝒜₀, ?_⟩)
+    rw [MonoidHom.mem_ker, map_div, hUv₀]
+    exact div_self' _
+  -- Subtracting the two relations, the common base cancels.
+  have key : Finsupp.single v (1 : ℤ) - e • Finsupp.single v₀ (1 : ℤ)
+      = (Finsupp.single v (1 : ℤ) - e • β)
+        - e • (Finsupp.single v₀ (1 : ℤ) - β) := by
+    rw [smul_sub]
+    abel
+  rw [key, ofAdd_sub, ofAdd_zsmul]
+  exact Subgroup.div_mem _ hx (Subgroup.zpow_mem _ hy e)
 
 set_option maxHeartbeats 1000000 in
 /-- **CHILDRESS PROPOSITION 5.2.2 — the crux: the Artin kernel is
