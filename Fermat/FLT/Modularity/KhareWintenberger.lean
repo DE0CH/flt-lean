@@ -14932,8 +14932,371 @@ theorem mem_multTorsion_iff {A S : AlgebraicGeometry.Scheme.{u}} {f : A ⟶ S}
     intro a
     exact h a a.2
 
+/-! ### `D / 𝒪_D` IS `𝒪_D ⊗_ℤ (ℚ/ℤ)`, and that is the shape the geometry produces
+
+The divisible level structure below is indexed by `(D / 𝒪_D)²`, because that is
+what the residue-level consumer wants: `exists_residueTorsionParam_of_isMaximal`
+parametrizes the `I`-torsion of `D / 𝒪_D` by `𝒪_D / I`, and it is stated about
+that quotient.  But it is NOT what the geometric construction hands over.  There
+`B = E ⊗_ℤ 𝒪_D` and the full torsion of `B(ℂ)` is
+`E(ℂ)_tors ⊗_ℤ 𝒪_D = (ℚ/ℤ)² ⊗_ℤ 𝒪_D`, one tensor factor per copy of `𝒪_D`,
+with `𝒪_D` acting on ITSELF and not on anything of `D`.
+
+The two are the same `𝒪_D`-module, and this section proves it
+(`divisibleTensorEquiv`).  That identification is item 3 of the node's MISSING
+MACHINERY list — "the identification of `E(ℂ)_tors ⊗_ℤ 𝒪_D` with `(D/𝒪_D)²`" —
+and it is the whole part of that item which is not geometry, so it is discharged
+here once and for all.
+
+THE MAP is `a ⊗ [q] ↦ [q · a]`, from `𝒪_D ⊗_ℤ (ℚ/ℤ)` to `D / 𝒪_D`; it is
+manifestly `𝒪_D`-linear for the action on the LEFT tensor factor, which is
+exactly the real-multiplication action of the geometric side.  Bijectivity is
+`NumberField.integralBasis`: a `ℤ`-basis `b` of `𝒪_D` is simultaneously a
+`ℚ`-basis of `D`, so `∑ bᵢ ⊗ [qᵢ] ↦ [∑ qᵢ bᵢ]` in coordinates, and
+`[∑ qᵢ bᵢ] = 0` says the `qᵢ` are integers (`integralBasis_repr_apply`),
+i.e. each `[qᵢ] = 0`.  No flatness, no exactness of `⊗`, and no localisation
+theory is needed — only the two basis lemmas. -/
+
+section ArchimedeanDivisibleModule
+
+open scoped TensorProduct
+
+variable (D : Type u) [Field D] [NumberField D]
+
+/-- For `a : 𝒪_D`, the `ℤ`-linear map `ℚ → D / 𝒪_D`, `q ↦ [q · a]`. -/
+noncomputable def divisibleRaw (a : NumberField.RingOfIntegers D) :
+    ℚ →ₗ[ℤ] (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)) :=
+  ((Submodule.mkQ (1 : Submodule (NumberField.RingOfIntegers D) D)).toAddMonoidHom.comp
+    (((LinearMap.mulRight ℚ (algebraMap (NumberField.RingOfIntegers D) D a)).comp
+      (Algebra.linearMap ℚ D)).toAddMonoidHom)).toIntLinearMap
+
+theorem divisibleRaw_apply (a : NumberField.RingOfIntegers D) (q : ℚ) :
+    divisibleRaw D a q = Submodule.Quotient.mk
+      (algebraMap ℚ D q * algebraMap (NumberField.RingOfIntegers D) D a) := rfl
+
+/-- `q ↦ [q · a]` kills the integers, because `n · a ∈ 𝒪_D`. -/
+theorem divisibleRaw_ker (a : NumberField.RingOfIntegers D) :
+    (1 : Submodule ℤ ℚ) ≤ LinearMap.ker (divisibleRaw D a) := by
+  intro q hq
+  obtain ⟨n, rfl⟩ := Submodule.mem_one.mp hq
+  rw [LinearMap.mem_ker, divisibleRaw_apply, Submodule.Quotient.mk_eq_zero]
+  refine Submodule.mem_one.mpr ⟨(n : NumberField.RingOfIntegers D) * a, ?_⟩
+  rw [map_mul]
+  congr 1
+  simp
+
+/-- For `a : 𝒪_D`, the `ℤ`-linear map `ℚ/ℤ → D / 𝒪_D`, `[q] ↦ [q · a]`. -/
+noncomputable def divisibleRawQ (a : NumberField.RingOfIntegers D) :
+    (ℚ ⧸ (1 : Submodule ℤ ℚ)) →ₗ[ℤ]
+      (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)) :=
+  Submodule.liftQ _ (divisibleRaw D a) (divisibleRaw_ker D a)
+
+@[simp] theorem divisibleRawQ_mk (a : NumberField.RingOfIntegers D) (q : ℚ) :
+    divisibleRawQ D a (Submodule.Quotient.mk q) = Submodule.Quotient.mk
+      (algebraMap ℚ D q * algebraMap (NumberField.RingOfIntegers D) D a) := rfl
+
+/-- The `ℤ`-bilinear map `(a, [q]) ↦ [q · a]`.  It is packaged through
+`AddMonoidHom.toIntLinearMap` rather than as a `LinearMap` structure literal
+because `ℚ/ℤ` carries two `Module ℤ` instances — `Submodule.Quotient.module`
+and `AddCommGroup.toIntModule` — which are defeq but never syntactically
+equal, and the `map_smul'` obligation is then unprovable by `rw`. -/
+noncomputable def divisibleBil :
+    NumberField.RingOfIntegers D →ₗ[ℤ]
+      (ℚ ⧸ (1 : Submodule ℤ ℚ)) →ₗ[ℤ]
+      (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)) :=
+  (AddMonoidHom.mk' (fun a => divisibleRawQ D a) (by
+    intro a b
+    refine LinearMap.ext fun n => ?_
+    induction n using Submodule.Quotient.induction_on with
+    | H q =>
+      rw [LinearMap.add_apply, divisibleRawQ_mk, divisibleRawQ_mk, divisibleRawQ_mk,
+        ← Submodule.Quotient.mk_add]
+      congr 1
+      rw [map_add, mul_add])).toIntLinearMap
+
+/-- The `ℤ`-linear map `𝒪_D ⊗_ℤ (ℚ/ℤ) → D / 𝒪_D`, `a ⊗ [q] ↦ [q · a]`. -/
+noncomputable def divisibleTensorHom :
+    (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))) →ₗ[ℤ]
+      (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)) :=
+  TensorProduct.lift (divisibleBil D)
+
+@[simp] theorem divisibleTensorHom_tmul (a : NumberField.RingOfIntegers D) (q : ℚ) :
+    divisibleTensorHom D (a ⊗ₜ Submodule.Quotient.mk q) = Submodule.Quotient.mk
+      (algebraMap ℚ D q * algebraMap (NumberField.RingOfIntegers D) D a) := rfl
+
+/-- The map is `𝒪_D`-linear for the action on the LEFT tensor factor. -/
+theorem divisibleTensorHom_smul (c : NumberField.RingOfIntegers D)
+    (t : NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))) :
+    divisibleTensorHom D (c • t) = c • divisibleTensorHom D t := by
+  induction t with
+  | zero => simp
+  | tmul a n =>
+    induction n using Submodule.Quotient.induction_on with
+    | H q =>
+      rw [TensorProduct.smul_tmul', divisibleTensorHom_tmul, divisibleTensorHom_tmul,
+        ← Submodule.Quotient.mk_smul]
+      congr 1
+      rw [smul_eq_mul, map_mul, Algebra.smul_def]
+      ring
+  | add x y hx hy => rw [smul_add, map_add, map_add, hx, hy, smul_add]
+
+/-- The `𝒪_D`-linear map `𝒪_D ⊗_ℤ (ℚ/ℤ) → D / 𝒪_D`. -/
+noncomputable def divisibleTensorLinear :
+    (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))
+      →ₗ[NumberField.RingOfIntegers D]
+      (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)) where
+  toFun := divisibleTensorHom D
+  map_add' := (divisibleTensorHom D).map_add
+  map_smul' := divisibleTensorHom_smul D
+
+/-- From `ℤ`-basis coordinates back to the tensor product: `f ↦ ∑ bᵢ ⊗ fᵢ`. -/
+noncomputable def divisibleTheta :
+    (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → (ℚ ⧸ (1 : Submodule ℤ ℚ)))
+      →ₗ[ℤ] (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))) :=
+  ∑ i, (TensorProduct.mk ℤ _ _ (NumberField.RingOfIntegers.basis D i)).comp
+    (LinearMap.proj i)
+
+theorem divisibleTheta_apply
+    (f : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) →
+      (ℚ ⧸ (1 : Submodule ℤ ℚ))) :
+    divisibleTheta D f = ∑ i, (NumberField.RingOfIntegers.basis D i) ⊗ₜ[ℤ] f i := by
+  simp [divisibleTheta]
+
+/-- The coordinate map on the tensor product, `a ⊗ n ↦ (i ↦ bᵢ*(a) • n)`. -/
+noncomputable def divisibleCoord :
+    (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))) →ₗ[ℤ]
+      (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) →
+        (ℚ ⧸ (1 : Submodule ℤ ℚ))) :=
+  LinearMap.pi fun j => TensorProduct.lift
+    ((LinearMap.lsmul ℤ (ℚ ⧸ (1 : Submodule ℤ ℚ))).comp
+      ((NumberField.RingOfIntegers.basis D).coord j))
+
+@[simp] theorem divisibleCoord_tmul (a : NumberField.RingOfIntegers D)
+    (n : ℚ ⧸ (1 : Submodule ℤ ℚ))
+    (j : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    divisibleCoord D (a ⊗ₜ n) j = (NumberField.RingOfIntegers.basis D).repr a j • n := rfl
+
+theorem divisibleCoord_theta
+    (f : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) →
+      (ℚ ⧸ (1 : Submodule ℤ ℚ))) : divisibleCoord D (divisibleTheta D f) = f := by
+  funext j
+  rw [divisibleTheta_apply, map_sum, Finset.sum_apply, Finset.sum_eq_single j]
+  · simp
+  · intro i _ hij
+    rw [divisibleCoord_tmul]
+    simp [Module.Basis.repr_self, hij]
+  · intro h; exact absurd (Finset.mem_univ j) h
+
+/-- **Every element of `𝒪_D ⊗_ℤ N` is `∑ bᵢ ⊗ nᵢ`** — the only place freeness
+of `𝒪_D` over `ℤ` is used, and it is used as a retraction rather than through
+flatness. -/
+theorem divisibleTheta_coord
+    (t : NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))) :
+    divisibleTheta D (divisibleCoord D t) = t := by
+  induction t with
+  | zero => simp
+  | tmul a n =>
+    have hc : divisibleCoord D (a ⊗ₜ n)
+        = fun j => (NumberField.RingOfIntegers.basis D).repr a j • n := by
+      funext j; rw [divisibleCoord_tmul]
+    rw [hc, divisibleTheta_apply]
+    have hsm : ∀ i, (NumberField.RingOfIntegers.basis D i) ⊗ₜ[ℤ]
+        ((NumberField.RingOfIntegers.basis D).repr a i • n)
+        = ((NumberField.RingOfIntegers.basis D).repr a i •
+            (NumberField.RingOfIntegers.basis D i)) ⊗ₜ[ℤ] n := by
+      intro i
+      have h := TensorProduct.smul_tmul_smul (R := ℤ) 1
+        ((NumberField.RingOfIntegers.basis D).repr a i)
+        (NumberField.RingOfIntegers.basis D i) n
+      rw [one_smul, one_mul] at h
+      rw [h, TensorProduct.smul_tmul']
+    simp_rw [hsm]
+    rw [← TensorProduct.sum_tmul]
+    congr 1
+    exact (NumberField.RingOfIntegers.basis D).sum_repr a
+  | add x y hx hy => rw [map_add, map_add, hx, hy]
+
+omit [NumberField D] in
+theorem divisibleQuotient_mk_sum {ι : Type*} (s : Finset ι) (g : ι → D) :
+    (Submodule.Quotient.mk (∑ i ∈ s, g i) :
+      D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D))
+      = ∑ i ∈ s, Submodule.Quotient.mk (g i) :=
+  map_sum (Submodule.mkQ _) g s
+
+/-- The value of the map on the `i`-th basis tensor, read through
+`NumberField.integralBasis_apply` — this is where the `ℤ`-basis of `𝒪_D` and
+the `ℚ`-basis of `D` are identified. -/
+theorem divisibleTensorHom_tmul_basis (z : D)
+    (i : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    divisibleTensorHom D ((NumberField.RingOfIntegers.basis D i) ⊗ₜ
+        Submodule.Quotient.mk ((NumberField.integralBasis D).repr z i))
+      = Submodule.Quotient.mk
+        ((NumberField.integralBasis D).repr z i • (NumberField.integralBasis D i)) := by
+  rw [divisibleTensorHom_tmul, NumberField.integralBasis_apply, Algebra.smul_def]
+
+theorem divisibleTensorHom_surjective : Function.Surjective (divisibleTensorHom D) := by
+  intro y
+  induction y using Submodule.Quotient.induction_on with
+  | H z =>
+    refine ⟨divisibleTheta D
+      (fun i => Submodule.Quotient.mk ((NumberField.integralBasis D).repr z i)), ?_⟩
+    rw [divisibleTheta_apply, map_sum,
+      Finset.sum_congr rfl (fun i _ => divisibleTensorHom_tmul_basis D z i),
+      ← divisibleQuotient_mk_sum]
+    congr 1
+    exact (NumberField.integralBasis D).sum_repr z
+
+theorem divisibleTensorHom_injective : Function.Injective (divisibleTensorHom D) := by
+  rw [← LinearMap.ker_eq_bot]
+  rw [Submodule.eq_bot_iff]
+  intro t ht
+  rw [LinearMap.mem_ker] at ht
+  set f := divisibleCoord D t with hf
+  have htf : t = divisibleTheta D f := (divisibleTheta_coord D t).symm
+  choose q hq using fun i => Submodule.Quotient.mk_surjective (1 : Submodule ℤ ℚ) (f i)
+  have hsum : Submodule.Quotient.mk
+      (∑ i, q i • (NumberField.integralBasis D i)) =
+      (0 : D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)) := by
+    rw [← ht, htf, divisibleTheta_apply, map_sum, divisibleQuotient_mk_sum]
+    refine Finset.sum_congr rfl ?_
+    intro i _
+    rw [← hq i, divisibleTensorHom_tmul, NumberField.integralBasis_apply, Algebra.smul_def]
+  rw [Submodule.Quotient.mk_eq_zero] at hsum
+  obtain ⟨x, hx⟩ := Submodule.mem_one.mp hsum
+  have hqi : ∀ i, q i = (algebraMap ℤ ℚ) ((NumberField.RingOfIntegers.basis D).repr x i) := by
+    intro i
+    have h1 : (NumberField.integralBasis D).repr
+        (algebraMap (NumberField.RingOfIntegers D) D x) i
+        = (NumberField.integralBasis D).repr (∑ j, q j • (NumberField.integralBasis D j)) i := by
+      rw [hx]
+    rw [NumberField.integralBasis_repr_apply] at h1
+    rw [h1, map_sum]
+    simp only [Finsupp.coe_finsetSum, Finset.sum_apply, map_smul, Module.Basis.repr_self]
+    rw [Finset.sum_eq_single i]
+    · simp
+    · intro j _ hji; simp [hji]
+    · intro h; exact absurd (Finset.mem_univ i) h
+  have hfzero : f = 0 := by
+    funext i
+    rw [← hq i, hqi i]
+    exact (Submodule.Quotient.mk_eq_zero _).mpr (Submodule.mem_one.mpr ⟨_, rfl⟩)
+  rw [htf, hfzero, map_zero]
+
+/-- **`𝒪_D ⊗_ℤ (ℚ/ℤ) ≅ D / 𝒪_D` as `𝒪_D`-modules** (PROVEN 2026-07-27):
+the algebraic half of item 3 of the archimedean node's MISSING MACHINERY list.
+It is what lets the geometric leaf be stated over the module the construction
+`B = E ⊗_ℤ 𝒪_D` actually produces, namely `𝒪_D ⊗_ℤ E(ℂ)_tors`, instead of
+over `D / 𝒪_D`. -/
+noncomputable def divisibleTensorEquiv :
+    (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))
+      ≃ₗ[NumberField.RingOfIntegers D]
+      (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)) :=
+  LinearEquiv.ofBijective (divisibleTensorLinear D)
+    ⟨divisibleTensorHom_injective D, divisibleTensorHom_surjective D⟩
+
+end ArchimedeanDivisibleModule
+
+open scoped TensorProduct in
 open CategoryTheory in
-/-- **THE GEOMETRIC LEAF of the archimedean node** (sorry leaf, cut 2026-07-26
+/-- **THE GEOMETRIC LEAF of the archimedean node, in TENSOR form** (sorry leaf,
+cut 2026-07-27 out of `exists_realAbelianSchemeWithDivisibleLevelStructure`):
+one real abelian scheme with real multiplication by `𝒪_D`, carrying ONE level
+structure over the divisible `𝒪_D`-module `(𝒪_D ⊗_ℤ ℚ/ℤ)²`.
+
+WHY THE TENSOR AND NOT `D / 𝒪_D`. The two modules are isomorphic
+(`divisibleTensorEquiv`, PROVEN above), so this is a restatement and not a
+weakening — the consumer
+`exists_realAbelianSchemeWithDivisibleLevelStructure` is proved from it in
+five lines by transport. What the restatement buys is that the module is now
+written in the form the intended construction PRODUCES it: `B = E ⊗_ℤ 𝒪_D`
+has `B(ℂ) = E(ℂ) ⊗_ℤ 𝒪_D`, whose torsion is `(ℚ/ℤ)² ⊗_ℤ 𝒪_D`, with `𝒪_D`
+acting on ITS OWN tensor factor by multiplication and on nothing of `D`. So
+the level structure asked for here is literally `t ⊗ id` for a full torsion
+level structure `t : (ℚ/ℤ)² ≅ E(ℂ)_tors` of the elliptic curve, and the
+`𝒪_D`-equivariance clause becomes a tautology of the construction rather than
+a computation with fractional ideals.
+
+CLASSICALLY `E` is a real elliptic curve whose discriminant has the sign
+prescribed by `ε`; complex conjugation acts on `H₁(E(ℂ), ℤ) = ℤ²` by an
+involution `C ∈ GL₂(ℤ)` of determinant `-1`, there are exactly two conjugacy
+classes of such `C` over `ℤ` — `diag(1,-1)` realized by `Δ(E) > 0` and
+`[[1,1],[0,-1]]` realized by `Δ(E) < 0` — and `realConjAdd ε` is the action on
+`H₁ ⊗ ℚ/ℤ = E(ℂ)_tors`. Note both signs are realized ALREADY OVER `ℚ`:
+`y² = x³ - x` has `Δ = 64 > 0` and `y² = x³ + x` has `Δ = -64 < 0`, so a
+base change of a rational curve suffices and no real-analytic construction of
+`E` is required.
+
+WHY ONE `E` SERVES EVERY MAXIMAL IDEAL AT ONCE, which is the strength this
+node exists to record: the class of `C` is a property of `E` ALONE, so the
+uniformity of `ε` across all `I` is a statement about the elliptic curve and
+is discharged here, once, rather than re-established for each `I`.
+
+MISSING MACHINERY, in dependency order. Item 3 of the previous list is now
+half done — its algebraic half is `divisibleTensorEquiv`, PROVEN above — so
+what remains is:
+1. Elliptic curves as `Fermat.AbelianSchemeStruct`. Mathlib has
+   `WeierstrassCurve` and the group law on its point SETS, and `Proj` of a
+   graded ring, but no functorial group structure on `Hom_S(T, E)`, no
+   properness and no geometric connectedness. **This is in flight, at
+   `exists_ellipticScheme_of_weierstrass` (`Fermat/FLT/ModularCurve/X0.lean`),
+   which is the `ℚ`-analogue of what is needed here; it is itself OPEN and has
+   an owner. Do NOT build a rival — grep `~/.flt-inflight.jsonl` and
+   `git log --all` first.** Note that leaf is stated over `SpecQ` in
+   `Scheme.{0}`, so a base change `ℚ → ℝ` and a universe lift are still needed
+   on top of it, and `AbelianSchemeStruct.ofMorphisms`
+   (`Modularity/AbelianScheme.lean`) is the bridge that makes both statable.
+2. The `g`-fold fibre power `B = E^g`, `g = [D:ℚ]`, with `𝒪_D` acting through
+   its regular representation `𝒪_D → M_g(ℤ)` on a `ℤ`-basis. On points this is
+   easy — `RelPoint f g` is a Hom-set, so `RelPoint` of a fibre power is the
+   power of `RelPoint` by the universal property of the limit, and the `Mult`
+   structure is then the matrix action. What is NOT free is the geometry:
+   stability of `IsProper`, `Smooth` and `GeometricallyConnected` under fibre
+   product over the base, and ADDITIVITY of `SmoothOfRelativeDimension`.
+3. The GEOMETRIC half of item 3: the action of complex conjugation on
+   `E(ℂ)_tors` in a basis adapted to `C`. The algebraic half — identifying
+   `E(ℂ)_tors ⊗_ℤ 𝒪_D` with `(D/𝒪_D)²` — is `divisibleTensorEquiv`, done.
+
+NOT NEEDED, and recorded here because an earlier plan said otherwise: complex
+multiplication, Shimura theory, and the moduli space `X_Dih` play no part; and
+NO DUAL ABELIAN SCHEME, NO POLARIZATION and NO WEIL PAIRING are required — this
+node asks only for torsion with a prescribed Galois action, never for a pairing
+on it. That distinguishes it from the sibling
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum`, which is blocked on
+exactly that missing duality layer.
+
+FAITHFULNESS: `[D:ℚ] ≥ 1`, so the conclusion cannot be met by a point — `e` is
+injective on a divisible module of infinite cardinality, so `B` must be a
+genuine abelian variety.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be discharged
+by the independent construction — never through `Family.lean`, `Lift.lean`,
+or `Modularity/Interface.lean`. -/
+theorem exists_realAbelianSchemeWithTensorLevelStructure
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D] (ε : Bool) :
+    ∃ (B : AlgebraicGeometry.Scheme.{u})
+      (fB : B ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))
+      (abB : Fermat.AbelianSchemeStruct fB)
+      (m : Fermat.Mult abB (NumberField.RingOfIntegers D))
+      (e : (Fin 2 → (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ)))) →
+        Fermat.GeomFibrePt fB (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB ∧
+      (∀ v w, e (v + w) = abB.add (e v) (e w)) ∧
+      (∀ (a : NumberField.RingOfIntegers D) v, e (a • v) = m.act a (e v)) ∧
+      Function.Injective e ∧
+      (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) v, σ ≠ 1 →
+        e (realConjAdd _ ε v) =
+          abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e v)) ∧
+      (∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+        ∀ y ∈ (Fermat.Mult.torsion m
+            (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) I).1,
+          ∃ v, e v = y) :=
+  sorry
+
+open scoped TensorProduct in
+open CategoryTheory in
+/-- **THE DIVISIBLE-LEVEL node of the archimedean subtree** (PROVEN 2026-07-27
+over `exists_realAbelianSchemeWithTensorLevelStructure` and
+`divisibleTensorEquiv`; formerly the sorry leaf cut 2026-07-26
 out of `exists_realAbelianSchemeWithRealMultiplication`): one real abelian
 scheme with real multiplication by `𝒪_D`, carrying ONE level structure over the
 divisible module `(D / 𝒪_D)²` rather than a family of them over the residue
@@ -14959,25 +15322,39 @@ The final clause asks only that the image of `e` CONTAIN each `I`-torsion, not
 that it be the whole torsion subgroup; that is all the assembly uses, and it is
 the weaker and hence more easily discharged requirement.
 
-MISSING MACHINERY, in dependency order (all archimedean and elementary, and
-none of it present at this pin — a 2026-07-25 survey of
-`.lake/packages/mathlib` found no `AbelianVariety`, no `AbelianScheme` and no
-scheme model of an elliptic curve, and `~/cs/FLT` has none either; re-checked
-2026-07-26 against `Fermat/` itself, which has `Fermat.AbelianSchemeStruct` but
-no example of one):
-1. Elliptic curves as abelian schemes in the `Fermat.AbelianSchemeStruct`
-   presentation — mathlib has `WeierstrassCurve` and the group law on its
-   point SETS, and `Proj` of a graded ring, but no functorial group structure
-   on `Hom_S(T, E)`, no properness and no geometric connectedness. This is
-   the bulk of the work.
-2. The tensor construction `E ⊗_ℤ 𝒪_D` with its `Fermat.Mult` by `𝒪_D`.
-   Concretely `B = E^g` for `g = [D:ℚ]` with `𝒪_D` acting through its regular
-   representation `𝒪_D → M_g(ℤ)` on a `ℤ`-basis, so this needs the `g`-fold
-   fibre product, `RelPoint` of a product as a product of `RelPoint`s, and
-   stability of `IsProper` / `Smooth` / `GeometricallyConnected` and additivity
-   of `SmoothOfRelativeDimension` under it.
-3. The action of complex conjugation on `E(ℂ)_tors`, and the identification of
-   `E(ℂ)_tors ⊗_ℤ 𝒪_D` with `(D / 𝒪_D)²`.
+PROOF (2026-07-27 — the TENSOR cut; this node is no longer a sorry node). All
+of the geometry, and none of the module algebra, is now on the single leaf
+`exists_realAbelianSchemeWithTensorLevelStructure`, which is this statement with
+the divisible module `D / 𝒪_D` replaced by `𝒪_D ⊗_ℤ (ℚ/ℤ)`. The two are the
+same `𝒪_D`-module (`divisibleTensorEquiv`, PROVEN above), and this proof is the
+transport along that isomorphism:
+
+* additivity and `𝒪_D`-linearity of `e` transport because the isomorphism is
+  `𝒪_D`-linear;
+* injectivity because it is injective;
+* the complex-conjugation clause is `realConjAdd_map` — the involution has
+  integral matrix entries, so ANY additive map intertwines it, and no linearity
+  over any ring is needed;
+* the torsion-covering clause because the isomorphism is surjective, so a `w`
+  covering `y` on the tensor side gives the coordinates `φ w` on this side.
+
+WHY THE CUT IS WORTH MAKING rather than proving the statement directly in this
+form: the geometric construction produces `B = E ⊗_ℤ 𝒪_D`, whose torsion is
+`E(ℂ)_tors ⊗_ℤ 𝒪_D` with `𝒪_D` acting on its OWN tensor factor. Stating the
+leaf that way makes its `𝒪_D`-equivariance clause a tautology of the
+construction; stating it over `D / 𝒪_D`, as here, makes it a computation with
+fractional ideals that would have to be redone inside the geometry. So the
+whole non-geometric residue of the old MISSING MACHINERY item 3 — "the
+identification of `E(ℂ)_tors ⊗_ℤ 𝒪_D` with `(D/𝒪_D)²`" — is discharged here,
+against `NumberField.integralBasis` alone, and never re-enters the geometry.
+
+MISSING MACHINERY: all of it moved onto
+`exists_realAbelianSchemeWithTensorLevelStructure`, where the list is given in
+full — elliptic curves as `Fermat.AbelianSchemeStruct` (in flight at
+`exists_ellipticScheme_of_weierstrass`, `Fermat/FLT/ModularCurve/X0.lean`), the
+`g`-fold fibre power with its `Mult` by `𝒪_D`, and the action of complex
+conjugation on `E(ℂ)_tors`. Nothing about individual ideals, and nothing about
+the module `D / 𝒪_D`, remains anywhere below this node.
 
 NOT NEEDED, and recorded here because an earlier plan said otherwise: complex
 multiplication, Shimura theory, and the moduli space `X_Dih` play no part; and
@@ -15012,8 +15389,61 @@ theorem exists_realAbelianSchemeWithDivisibleLevelStructure
       (∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
         ∀ y ∈ (Fermat.Mult.torsion m
             (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) I).1,
-          ∃ v, e v = y) :=
-  sorry
+          ∃ v, e v = y) := by
+  classical
+  obtain ⟨B, fB, abB, m, e, hsm, hadd, hact, hinj, hgal, htors⟩ :=
+    exists_realAbelianSchemeWithTensorLevelStructure D ε
+  -- `φ` is the inverse of `𝒪_D ⊗_ℤ (ℚ/ℤ) ≅ D / 𝒪_D`, read as a bare function
+  set φ : (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)) →
+      (NumberField.RingOfIntegers D ⊗[ℤ] (ℚ ⧸ (1 : Submodule ℤ ℚ))) :=
+    ⇑(divisibleTensorEquiv D).symm with hφ
+  refine ⟨B, fB, abB, m, fun v => e (fun i => φ (v i)), hsm, ?_, ?_, ?_, ?_, ?_⟩
+  · -- additivity: `φ` is additive
+    intro v w
+    have hfun : (fun i => φ ((v + w) i))
+        = (fun i => φ (v i)) + (fun i => φ (w i)) := by
+      funext i
+      show φ (v i + w i) = φ (v i) + φ (w i)
+      exact map_add (divisibleTensorEquiv D).symm (v i) (w i)
+    have h : e (fun i => φ ((v + w) i))
+        = abB.add (e fun i => φ (v i)) (e fun i => φ (w i)) := by
+      rw [hfun]; exact hadd _ _
+    exact h
+  · -- `𝒪_D`-linearity: `φ` is `𝒪_D`-linear
+    intro a v
+    have hfun : (fun i => φ ((a • v) i)) = a • (fun i => φ (v i)) := by
+      funext i
+      show φ (a • v i) = a • φ (v i)
+      exact map_smul (divisibleTensorEquiv D).symm a (v i)
+    have h : e (fun i => φ ((a • v) i)) = m.act a (e fun i => φ (v i)) := by
+      rw [hfun]; exact hact a _
+    exact h
+  · -- injectivity: `φ` is injective
+    intro v w hvw
+    have h : (fun i => φ (v i)) = (fun i => φ (w i)) := hinj hvw
+    funext i
+    exact (divisibleTensorEquiv D).symm.injective (congrFun h i)
+  · -- complex conjugation: `realConjAdd` has integral entries, so `φ` intertwines
+    -- it by additivity alone (`realConjAdd_map`)
+    intro σ v hσ
+    have hfun : (fun i => φ (realConjAdd _ ε v i))
+        = realConjAdd _ ε (fun i => φ (v i)) :=
+      realConjAdd_map φ (fun x y => map_add (divisibleTensorEquiv D).symm x y) ε v
+    have h : e (fun i => φ (realConjAdd _ ε v i))
+        = abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ
+          (e fun i => φ (v i)) := by
+      rw [hfun]; exact hgal σ _ hσ
+    exact h
+  · -- torsion coverage: `φ` is surjective, with `divisibleTensorEquiv D` as section
+    intro I hI y hy
+    obtain ⟨w, hw⟩ := htors I hI y hy
+    refine ⟨fun i => divisibleTensorEquiv D (w i), ?_⟩
+    have hfun : (fun i => φ (divisibleTensorEquiv D (w i))) = w := by
+      funext i
+      exact (divisibleTensorEquiv D).symm_apply_apply (w i)
+    have h : e (fun i => φ (divisibleTensorEquiv D (w i))) = y := by
+      rw [hfun]; exact hw
+    exact h
 
 open scoped nonZeroDivisors in
 /-- **`I⁻¹ = 𝒪_D + α 𝒪_D` for some `α ∉ 𝒪_D`** (PROVEN 2026-07-26): the whole
@@ -15264,8 +15694,13 @@ reason its consumer needs no compatibility hypothesis between its two primes —
 is recorded once, in a statement about `E` alone, instead of being reproved for
 each `I`. Leaf 2 knew nothing about schemes and was discharged against mathlib's
 Dedekind-domain library alone. So exactly ONE open leaf remains under this
-node — `exists_realAbelianSchemeWithDivisibleLevelStructure` — and it is pure
-geometry.
+node, and it is pure geometry. UPDATED 2026-07-27: leaf 1 is itself now PROVEN,
+over `exists_realAbelianSchemeWithTensorLevelStructure` — the same statement
+with `D / 𝒪_D` replaced by the isomorphic `𝒪_D ⊗_ℤ (ℚ/ℤ)`, which is the shape
+the construction `B = E ⊗_ℤ 𝒪_D` actually produces — plus the module
+identification `divisibleTensorEquiv`. So the single open leaf under this node
+is now `exists_realAbelianSchemeWithTensorLevelStructure`, and it contains no
+module algebra at all.
 
 MISSING MACHINERY: all of it moved onto the geometric leaf
 `exists_realAbelianSchemeWithDivisibleLevelStructure` — elliptic curves as
