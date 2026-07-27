@@ -7958,7 +7958,19 @@ discriminant literally `1`. Its `Γ_F`-equivariance is then, by
 `bilin_alternating_apply_det_apply`, precisely
 `det (τ σ) = χ_cyc(σ)` — no more and no less. Nothing about abelian
 varieties is used below; the geometry has been relocated, in full, to
-the determinant leaf, where it now sits as the section's only sorry.
+the determinant leaf.
+
+WHERE THE GEOMETRY IS NOW (2026-07-27 — the sentence above used to end
+"…the determinant leaf, where it now sits as the section's only sorry",
+and that is stale).  The determinant leaf itself is PROVEN:
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` and
+`det_globalFrob_eq_absNorm_of_tateFrame` are both closed, over
+`exists_tateWeilPairing_of_mult` (also closed) and
+`det_eq_cyclotomicCharacter_of_tateWeilPairing`.  The geometry has
+descended one further level and now sits, alone, in
+`exists_tateWeilSystem_of_mult` — the compatible family of level-`I^n`
+pairings, before the inverse limit.  That is the declaration the
+"genuine geometric work" paragraph below now refers to.
 
 Consequence for successors: do NOT dispatch a "construct the Weil
 pairing" task at a FRAMED module. Any pairing statement over a frame
