@@ -188,11 +188,7 @@ theorem isHomogeneous_negAlgHom {p : MvPolynomial (Fin 3) R} {n : ℕ}
 theorem negAlgHom_comp_negAlgHom :
     (negAlgHom W).comp (negAlgHom W) = AlgHom.id R (MvPolynomial (Fin 3) R) := by
   refine MvPolynomial.algHom_ext fun i => ?_
-  fin_cases i
-  · simp [negAlgHom, negVars]
-  · simp [negAlgHom, negVars]
-    ring
-  · simp [negAlgHom, negVars]
+  fin_cases i <;> (simp [negAlgHom, negVars]; ring)
 
 @[simp] theorem negAlgHom_negAlgHom (p : MvPolynomial (Fin 3) R) :
     negAlgHom W (negAlgHom W p) = p := by
