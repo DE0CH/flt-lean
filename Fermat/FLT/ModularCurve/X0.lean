@@ -13051,31 +13051,244 @@ theorem exists_x0CurveModel_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬
        spX_nat := (fibreIdentPullback (SpecLoc.special toF) xstr).nat
        properX := bijective_pre_generic_of_isProper ℓ R toF hbase xstr hmodel.isProper }⟩⟩
 
-/-! ### The Jacobian half: three base-independent statements
+/-! ### The Jacobian half: base-independent statements
 
-`isSmoothProperCurve_of_fibreIdent` and `exists_jacobianFibreIdent` are
-now both PROVEN, so ONE of the three is still an open leaf here
-(`exists_relativeJacobian`); it is Grothendieck's relative Picard scheme.
-The proof of `exists_jacobianFibreIdent` introduced two new open leaves
-of its own, `universal_jacobianBaseChangeAj` and
-`post_add_of_post_zero`, stated with it below.
+All three of `isSmoothProperCurve_of_fibreIdent`,
+`exists_relativeJacobian` and `exists_jacobianFibreIdent` are PROVEN as
+of 2026-07-27, each over leaves cut out of it:
 
-None of the three mentions `X_0(N)`, `ℚ` or `ℤ_(ℓ)`.  That is the point:
+* `exists_relativeJacobian` over `exists_albaneseOfCurve` (the
+  construction) and `isAdditiveOn_of_post_zero` (relative RIGIDITY),
+  with the assembly `IsAlbaneseOf.isJacobianOf` proven between them;
+* `exists_jacobianFibreIdent` over `universal_jacobianBaseChangeAj`
+  (formation of the Jacobian commutes with base change, in Albanese
+  form) and the SAME rigidity leaf `isAdditiveOn_of_post_zero`.
+
+So this block has exactly three open leaves — `exists_albaneseOfCurve`,
+`isAdditiveOn_of_post_zero`, `universal_jacobianBaseChangeAj` — and they
+are not independent: all three are gated on coherent pushforward
+(`f_*𝒪 = 𝒪` for a proper flat morphism with geometrically connected
+fibres), which has zero hits in this project, in mathlib at our pin and
+in `~/cs/FLT`.  That single missing input is the whole remaining
+obstruction of the Jacobian half.
+
+None of them mentions `X_0(N)`, `ℚ` or `ℤ_(ℓ)`.  That is the point:
 the Jacobian half of a Néron datum is a statement about smooth proper
 curves over an arbitrary base, and everything specific to this file
 happens in the assembly `exists_x0JacobianModel_of_curveModel`, which
 instantiates them at the generic and the closed point. -/
 
-/-- **The relative Jacobian of a smooth proper curve with a section
-exists** (sorry node — Grothendieck's relative Picard scheme).
+/-- **Postcomposition of a relative point along an `S`-morphism**
+(PROVEN — the dual of `RelPoint.pre`, which precomposes in the TEST
+scheme; this one postcomposes in the TARGET).
+
+Together with `RelPoint.pre` it is everything needed to say that a
+morphism of abelian schemes is a homomorphism, which is what
+`IsAdditiveOn` below does.  The development had no such notion before
+2026-07-27 — `grep` for `RelPoint.post` and `IsAdditiveOn` returned
+nothing in this project, in mathlib and in `~/cs/FLT`. -/
+def RelPoint.post {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ bf = af) {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
+    RelPoint bf g :=
+  ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩
+
+/-- **`u : A ⟶ B` is a HOMOMORPHISM of abelian schemes**, read on the
+functor of points: postcomposition by `u` carries sums to sums, at every
+test scheme and every base point.
+
+By Yoneda this is exactly the classical condition that `u` commute with
+the two group laws, and it is stated on points rather than as an
+equation of morphisms `A ×_S A ⟶ B` for the same reason
+`AbelianSchemeStruct` itself is: the group law of an abelian scheme in
+this development is primitively a functor-of-points datum, and
+`addHom` — the morphism-level multiplication — is currently available
+only over the base `SpecQ`. -/
+def IsAdditiveOn {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
+    (u : A ⟶ B) (hu : u ≫ bf = af) : Prop :=
+  ∀ {T : Scheme.{0}} {g : T ⟶ S} (x y : RelPoint af g),
+    RelPoint.post u hu (abA.add x y)
+      = abB.add (RelPoint.post u hu x) (RelPoint.post u hu y)
+
+/-- **RELATIVE RIGIDITY: an `S`-morphism of abelian schemes carrying the
+origin to the origin is a homomorphism** (sorry node — Mumford,
+*Abelian Varieties* §4 Cor. 1; BLR *Néron Models* 8.4 in the relative
+case).
+
+TRUE over an ARBITRARY base, and this is the classical statement, not a
+weakening of it: no connectedness of `S`, no field, no noetherian
+hypothesis is needed.  The hypotheses that do the work are already
+fields of `AbelianSchemeStruct` — `abA.proper`, `abA.smooth`,
+`abA.connected` for the source, which together give
+`p_*𝒪_A = 𝒪_S`, and `abB.proper` (hence separatedness) for the target.
+
+**WHY THIS LEAF EXISTS, AND WHO IS WAITING FOR IT.**  It is the rigidity
+step that the FAITHFULNESS NOTE on `IsJacobianOf.universal` (see
+`exists_albaneseOfCurve` below) describes in prose, extracted so that it
+can be proven ONCE and consumed more than once:
+
+* `IsAlbaneseOf.isJacobianOf` immediately below consumes it to upgrade
+  Albanese initiality among HOMOMORPHISMS to `IsJacobianOf`'s `∃!` over
+  arbitrary `S`-morphisms.  That is what makes `exists_relativeJacobian`
+  a theorem rather than a leaf.
+* `exists_jacobianFibreIdent`'s CUT-OBSTRUCTION AUDIT names formalizing
+  exactly this lemma as **the check that would refute its own verdict**:
+  its canonical-comparison cut was rejected because it left `IsIso u`
+  AND additivity of `u`, and additivity of `u` is this leaf.  With this
+  stated, that cut leaves one blocked obligation plus proven glue.  The
+  audit is not repaired here — that leaf has its own owner — but the
+  input it asked for now exists by name.
+
+**AXIS SEARCHED AND REJECTED (2026-07-27), stated because an
+irreducibility verdict is only as wide as the axis its author
+searched.**  The natural finer cut is the RIGIDITY LEMMA itself: state
+that a natural `φ : RelPoint af g → RelPoint af g → RelPoint bf g`
+vanishing on both axes (`φ x 0 = 0` and `φ 0 y = 0`) vanishes
+identically, then obtain this leaf by feeding it the three-term
+expression `φ x y := u(x+y) − u(x) − u(y)`.  That glue is writable here
+— roughly 100 lines of functor-of-points group algebra, needing only
+`pre_add`, `pre_zero` and a derived `pre_neg` — and it was REJECTED
+because NEITHER half becomes attackable: the rigidity lemma is blocked
+on `p_*𝒪_A = 𝒪_S`, i.e. on coherent cohomology of schemes and
+cohomology-and-base-change, which have zero hits in this project, in
+mathlib at our pin and in `~/cs/FLT` (the same second blocker recorded
+on `exists_jacobianFibreIdent`).  THE CHECK THAT WOULD REFUTE THIS: land
+`f_*𝒪_X = 𝒪_S` for a proper flat morphism with geometrically connected
+fibres.  Then the rigidity lemma becomes attackable and the split should
+be made.
+
+WHAT IS *NOT* BLOCKING IT: this leaf does not need the Picard scheme, and
+it does not need any modular curve.  It is independent of
+`exists_albaneseOfCurve` and can be proven first. -/
+theorem isAdditiveOn_of_post_zero {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
+    {u : A ⟶ B} (hu : u ≫ bf = af)
+    (h0 : RelPoint.post u hu (abA.zero (𝟙 S)) = abB.zero (𝟙 S)) :
+    IsAdditiveOn abA abB u hu :=
+  sorry
+
+/-- **`ab` is the ALBANESE of the pointed curve `(strX, o)`** — the same
+datum as `IsJacobianOf`, with initiality split into the two halves it is
+actually built from.
+
+`aj`, `aj_pre` and `aj_base` are copied verbatim from `IsJacobianOf`.
+The single `∃!` field `universal` is replaced by:
+
+* `albanese` — EXISTENCE only, over arbitrary `S`-morphisms;
+* `generates` — UNIQUENESS, but only among HOMOMORPHISMS: two
+  `S`-morphisms `J ⟶ A` that are additive on relative points and agree
+  after composition with `aj` are equal.  This is the statement that the
+  image of the curve generates `J` as a group scheme.
+
+**THE TWO HALVES ARE BOTH NECESSARY — `generates` is not decoration, and
+here is the counterexample that shows it.**  Take a genuine Jacobian
+`(J, aj)` and any nonzero abelian scheme `E/S`, and put `J₁ := J ×_S E`
+with `aj₁ := (aj, 0)`.  Every pointed natural `c : X ⟶ A` still
+factors — through `u₀ ≫ pr₁` where `u₀` is the factorisation through
+`J` — so `J₁` satisfies `albanese` in full.  It is not the Jacobian, and
+what detects that is exactly `generates`: `pr₂` and the zero morphism
+`J₁ ⟶ E` are two homomorphisms agreeing on the image of `aj₁` and
+differing.  So a leaf asserting only `albanese` would be satisfiable by
+junk, and dropping `generates` is the false cut here.
+
+**AND `generates` IS NOT TOO STRONG**, which is the other half of the
+audit: `IsJacobianOf strX ab o` IMPLIES it.  Given additive `u, v` over
+`S` agreeing on the image of `aj`, set `c g x := RelPoint.post u (aj g x)`;
+`c` is natural because `post` commutes with `pre`, and `c (𝟙 S) o` is the
+origin because an additive map kills `0` (`u 0 = u (0+0) = u 0 + u 0`).
+Then `universal` supplies a unique factorisation which both `u` and `v`
+satisfy, so `u = v`.  Hence `IsAlbaneseOf` and `IsJacobianOf` are
+satisfied by exactly the same objects — the split is a re-presentation
+of the SAME condition, not a weakening — and the only thing standing
+between them is rigidity, which is why
+`IsAlbaneseOf.isJacobianOf` needs `isAdditiveOn_of_post_zero` and
+nothing else. -/
+structure IsAlbaneseOf {X J S : Scheme.{0}} (strX : X ⟶ S) {jstr : J ⟶ S}
+    (ab : AbelianSchemeStruct jstr) (o : RelPoint strX (𝟙 S)) where
+  /-- the Abel–Jacobi map `x ↦ [x] − [o]` on relative points -/
+  aj : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint strX g → RelPoint jstr g
+  /-- the Abel–Jacobi map is natural -/
+  aj_pre : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint strX g),
+    aj g' (RelPoint.pre h hg x) = RelPoint.pre h hg (aj g x)
+  /-- the base point is sent to the origin -/
+  aj_base : aj (𝟙 S) o = ab.zero (𝟙 S)
+  /-- **EXISTENCE half of the Albanese property**: every pointed natural
+  map from the curve to an abelian scheme factors through `aj` -/
+  albanese : ∀ {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint strX g → RelPoint astr g),
+    (∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint strX g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x)) →
+    c (𝟙 S) o = ab'.zero (𝟙 S) →
+    ∃ u : J ⟶ A, u ≫ astr = jstr ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S) (x : RelPoint strX g),
+        (c g x).1 = (aj g x).1 ≫ u
+  /-- **GENERATION**: the image of the curve generates `J` as a group
+  scheme, i.e. two homomorphisms agreeing on it are equal -/
+  generates : ∀ {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    {u v : J ⟶ A} (hu : u ≫ astr = jstr) (hv : v ≫ astr = jstr),
+    IsAdditiveOn ab ab' u hu → IsAdditiveOn ab ab' v hv →
+    (∀ {T : Scheme.{0}} (g : T ⟶ S) (y : RelPoint strX g),
+      (aj g y).1 ≫ u = (aj g y).1 ≫ v) → u = v
+
+/-- **An Albanese datum IS a Jacobian datum** (PROVEN, over relative
+rigidity and nothing else).
+
+This is the glue of the cut, and it is exactly the argument the
+FAITHFULNESS NOTE describes.  Given a competing factorisation `v` of the
+same pointed natural `c`:
+
+* both `u` and `v` carry the origin to the origin — `aj_base` rewrites
+  `aj (𝟙 S) o` to `ab.zero`, the factorisation equation rewrites
+  `(ab.zero).1 ≫ w` to `(c (𝟙 S) o).1`, and the pointedness hypothesis
+  `c (𝟙 S) o = ab'.zero` closes it;
+* `isAdditiveOn_of_post_zero` upgrades that to additivity — this is the
+  ONLY sorried input;
+* `generates` then equates them, because both satisfy the same
+  factorisation equation against `aj`.
+
+So the `∃!` of `IsJacobianOf.universal` is recovered in full, over
+arbitrary `S`-morphisms; nothing is weakened. -/
+def IsAlbaneseOf.isJacobianOf {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (alb : IsAlbaneseOf strX ab o) : IsJacobianOf strX ab o where
+  aj := alb.aj
+  aj_pre := alb.aj_pre
+  aj_base := alb.aj_base
+  universal := by
+    intro A astr ab' c hc hc0
+    obtain ⟨u, hu1, hu2⟩ := alb.albanese ab' c hc hc0
+    -- any factorisation of `c` through `aj` carries the origin to the origin
+    have hzero : ∀ (w : J ⟶ A) (hw : w ≫ astr = jstr),
+        (∀ {T : Scheme.{0}} (g : T ⟶ S) (x : RelPoint strX g),
+          (c g x).1 = (alb.aj g x).1 ≫ w) →
+        RelPoint.post w hw (ab.zero (𝟙 S)) = ab'.zero (𝟙 S) := by
+      intro w hw hw2
+      refine Subtype.ext ?_
+      show (ab.zero (𝟙 S)).1 ≫ w = (ab'.zero (𝟙 S)).1
+      rw [← alb.aj_base, ← hw2 (𝟙 S) o, hc0]
+    refine ⟨u, ⟨hu1, hu2⟩, ?_⟩
+    rintro v ⟨hv1, hv2⟩
+    refine alb.generates ab' hv1 hu1
+      (isAdditiveOn_of_post_zero ab ab' hv1 (hzero v hv1 hv2))
+      (isAdditiveOn_of_post_zero ab ab' hu1 (hzero u hu1 hu2))
+      (fun g y => ?_)
+    rw [← hv2 g y]
+    exact hu2 g y
+
+/-- **The Albanese of a smooth proper curve with a section exists**
+(sorry node — Grothendieck's relative Picard scheme; this is the
+CONSTRUCTION half of the old `exists_relativeJacobian`).
 
 TRUE: for `f : C ⟶ S` smooth and proper with geometrically connected
 fibres of dimension `1` and a section `o`, the relative Picard functor
 `Pic⁰_{C/S}` is representable by an abelian scheme over `S`, and
-Abel–Jacobi `x ↦ [x] − [o]` is the universal map to an abelian scheme —
-which is exactly `IsJacobianOf`.  (FGA, exposé 232; BLR *Néron Models*
-ch. 8–9; the section is what makes `Pic` representable rather than only
-its fppf sheafification.)
+Abel–Jacobi `x ↦ [x] − [o]` is the universal map to an abelian scheme.
+(FGA, exposé 232; BLR *Néron Models* ch. 8–9; the section is what makes
+`Pic` representable rather than only its fppf sheafification.)  The
+image of `C` generates `Pic⁰` — the `generates` field — because
+`Sym^g C ⟶ Pic⁰` is surjective for `g` the genus.
 
 Note the base is ARBITRARY: this is the level-free, curve-only content
 of the Jacobian half, so it benefits the whole reduction-theory subtree
@@ -13091,36 +13304,77 @@ relative Jacobian in mathlib, `~/cs/FLT` or this project — mathlib's
 not constructions.  Producing a representing scheme for the relative
 `Pic⁰` functor refutes the claim.
 
-That survey was re-run independently on 2026-07-27 over all three trees
-and CONFIRMED: `PicardScheme`, `RelativePicard`, `PicardFunctor`, `Pic⁰`
-and `relativeJacobian` have zero declaration hits in mathlib and in
-`~/cs/FLT`, and in this project only ever occur inside docstrings or on
-the axiomatized interfaces named above.
+**A SHARPER, MECHANICALLY CHECKABLE FORM of that obstruction, added
+2026-07-27, because "no Picard scheme" is not itself actionable.**  What
+is missing upstream is not the scheme but the GROUP whose functor it
+would represent.  At our pin mathlib has sheaves of modules on a scheme
+(`AlgebraicGeometry/Modules/Sheaf.lean`) and even
+`SheafOfModules.IsLocallyFree`
+(`Algebra/Category/ModuleCat/Sheaf/LocallyFree.lean`) — but **no
+monoidal structure on `SheafOfModules`**, hence no tensor product of
+invertible sheaves, hence no `Pic` of a SCHEME at all; and **no Cartier
+divisors** (`grep CartierDivisor` over all of `Mathlib` is empty), which
+is the other classical route to the same group.  So the honest gate is:
+*tensor products of sheaves of modules, or relative effective Cartier
+divisors.*  Either one refutes this note, and either one is the right
+first thing to build.
 
-**FAITHFULNESS NOTE on `IsJacobianOf.universal`, recorded because a
-future prover is likely to suspect it of being TOO STRONG and to
-"repair" it.**  Do not weaken it: the `∃!` is correct as stated, even
-though `u` is quantified over ARBITRARY `S`-morphisms `J ⟶ A` rather
-than over homomorphisms.  Existence is the Albanese property.  For
-uniqueness, note first that the point equation at the base point forces
-`u` to send the origin to the origin — `c (𝟙 S) o = ab'.zero` and
-`aj (𝟙 S) o = ab.zero` are the two hypotheses of `universal`, and they
-say exactly `0_A = 0_J ≫ u`.  A morphism of abelian schemes sending the
-origin to the origin is a HOMOMORPHISM — the rigidity theorem (Mumford,
-*Abelian Varieties* §4; BLR *Néron Models* 8.4 in the relative case) —
-so any two competitors are homomorphisms agreeing on the image of `aj`,
-i.e. on the curve, which generates `J` as a group scheme.  Hence they
-are equal.
+**AXIS SEARCHED AND REJECTED: dropping `generates`.**  Stating only the
+`albanese` half would be a FALSE cut — see the counterexample
+`J ×_S E` recorded on `IsAlbaneseOf`, which satisfies `albanese` in full
+and is not the Jacobian.  Dropping `albanese` instead is equally false:
+the TRIVIAL abelian scheme `J = S`, `jstr = 𝟙 S`, `aj g y := ab.zero g`
+satisfies `generates` — two sections agreeing at the zero point are
+equal, by testing at `T = S`, `g = 𝟙 S` — and has no Albanese property
+at all.  So neither half may be dropped, and the cut that WAS made —
+splitting off rigidity — is the only one that leaves both halves
+faithful.
 
-So rigidity is already built INTO this interface, which is worth knowing
-before proving anything against it: the interface is not weaker than the
-classical Jacobian, and a construction discharging this leaf must supply
-the full Albanese property, not merely a representing object. -/
-theorem exists_relativeJacobian {C S : Scheme.{0}} (f : C ⟶ S)
+**FAITHFULNESS NOTE, inherited from `exists_relativeJacobian` and still
+in force, because a future prover is likely to suspect
+`IsJacobianOf.universal` of being TOO STRONG and to "repair" it.**  Do
+not weaken it: the `∃!` there is correct as stated, even though `u` is
+quantified over ARBITRARY `S`-morphisms `J ⟶ A` rather than over
+homomorphisms.  Existence is the Albanese property.  For uniqueness, the
+point equation at the base point forces `u` to send the origin to the
+origin — `c (𝟙 S) o = ab'.zero` and `aj (𝟙 S) o = ab.zero` say exactly
+`0_A = 0_J ≫ u`.  A morphism of abelian schemes sending the origin to
+the origin is a HOMOMORPHISM (rigidity), so any two competitors are
+homomorphisms agreeing on the image of `aj`, i.e. on the curve, which
+generates `J`.  Hence they are equal.  That prose argument is now
+MECHANISED — it is `IsAlbaneseOf.isJacobianOf` above — so the only thing
+a construction has to supply is this leaf.
+
+So rigidity is still built INTO the interface: a construction
+discharging this leaf must supply the full Albanese property plus
+generation, not merely a representing object. -/
+theorem exists_albaneseOfCurve {C S : Scheme.{0}} (f : C ⟶ S)
     (_hf : IsSmoothProperCurve f) (o : RelPoint f (𝟙 S)) :
     ∃ (J : Scheme.{0}) (jf : J ⟶ S) (ab : AbelianSchemeStruct jf),
-      Nonempty (IsJacobianOf f ab o) :=
+      Nonempty (IsAlbaneseOf f ab o) :=
   sorry
+
+/-- **The relative Jacobian of a smooth proper curve with a section
+exists** (PROVEN 2026-07-27, over `exists_albaneseOfCurve` and relative
+rigidity; formerly a sorry node).
+
+The statement is UNCHANGED — same signature, same `IsJacobianOf`, same
+`∃!` over arbitrary `S`-morphisms — so every consumer below is
+unaffected.  What changed is that the single leaf was cut into a
+construction (`exists_albaneseOfCurve`) and a classical lemma with
+disjoint literature (`isAdditiveOn_of_post_zero`, Mumford/BLR rigidity),
+with the bridge `IsAlbaneseOf.isJacobianOf` proven between them.
+
+Why that cut and not another: the rigidity half is separately WANTED —
+`exists_jacobianFibreIdent`'s own audit names it as the check that makes
+its rejected canonical-comparison cut worth taking — so it is one leaf
+with two consumers rather than a repartition of one obligation. -/
+theorem exists_relativeJacobian {C S : Scheme.{0}} (f : C ⟶ S)
+    (hf : IsSmoothProperCurve f) (o : RelPoint f (𝟙 S)) :
+    ∃ (J : Scheme.{0}) (jf : J ⟶ S) (ab : AbelianSchemeStruct jf),
+      Nonempty (IsJacobianOf f ab o) := by
+  obtain ⟨J, jf, ab, ⟨alb⟩⟩ := exists_albaneseOfCurve f hf o
+  exact ⟨J, jf, ab, ⟨alb.isJacobianOf⟩⟩
 
 /-- **A fibre of a smooth proper curve is a smooth proper curve**
 (PROVEN — Yoneda for the over-category presentation, then base change).
@@ -13171,7 +13425,8 @@ Note what this does NOT close: the identification is transported, not
 constructed.  `exists_jacobianFibreIdent` — which produces an
 `IsFibreIdent` for the Jacobian — is now PROVEN by the same style of
 argument (2026-07-27), but over two genuine base-change leaves for
-`Pic⁰`: `universal_jacobianBaseChangeAj` and `post_add_of_post_zero`. -/
+`Pic⁰`: `universal_jacobianBaseChangeAj` and the rigidity leaf
+`isAdditiveOn_of_post_zero`. -/
 theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
     {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f')
     (hf : IsSmoothProperCurve f) : IsSmoothProperCurve f' := by
@@ -13228,28 +13483,25 @@ theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S
 
 /-! #### The canonical comparison: post-composition on relative points
 
-The five declarations below are the glue that turns
+The declarations below are the glue that turns
 `exists_jacobianFibreIdent` from a POSITED identification into a
 CONSTRUCTED one.  None of them mentions a Jacobian, a modular curve or a
 base ring; they belong upstream with `AbelianSchemeStruct` and are placed
-here only because that is where they are consumed. -/
+here only because that is where they are consumed.
+
+`RelPoint.post` itself — postcomposition along an `S`-morphism — and
+`IsAdditiveOn` / `isAdditiveOn_of_post_zero` are NOT redefined here: they
+are the API introduced above for `exists_relativeJacobian`, and this
+route consumes them unchanged. -/
 
 namespace RelPoint
 
-/-- **Post-composition of a relative point along a morphism over the
-base** (PROVEN).  This is the map induced on functors of points by
-`v : A ⟶ B` over `S`, and it is the only shape in which "is a
-homomorphism" can be said about `v` in this presentation. -/
-def post {A B S : Scheme.{u}} {f : A ⟶ S} {f' : B ⟶ S} (v : A ⟶ B)
-    (hv : v ≫ f' = f) {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g) : RelPoint f' g :=
-  ⟨x.1 ≫ v, by rw [Category.assoc, hv, x.2]⟩
-
 /-- **Post-composition commutes with precomposition** (PROVEN) — both
 sides are `h ≫ x.1 ≫ v`, associated differently.  This is naturality of
-`post` in the test scheme, and it is the whole `nat` field of the fibre
-identification built below. -/
-theorem post_pre {A B S : Scheme.{u}} {f : A ⟶ S} {f' : B ⟶ S} (v : A ⟶ B)
-    (hv : v ≫ f' = f) {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+`RelPoint.post` in the test scheme, and it is the whole `nat` field of
+the fibre identification built below. -/
+theorem post_pre {A B S : Scheme.{0}} {f : A ⟶ S} {f' : B ⟶ S} (v : A ⟶ B)
+    (hv : v ≫ f' = f) {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
     (hg : h ≫ g = g') (x : RelPoint f g) :
     post v hv (RelPoint.pre h hg x) = RelPoint.pre h hg (post v hv x) :=
   Subtype.ext (Category.assoc _ _ _)
@@ -13325,59 +13577,32 @@ theorem fibreIdentPullback_toEquiv_add {S S' A : Scheme.{0}} (s : S' ⟶ S) {jf 
     fibreIdentPullback_toEquiv_eq, AbelianSchemeStruct.baseChange_add,
     RelPoint.baseChangeDown_baseChangeUp, ab.pre_add]
 
-/-- **RIGIDITY FOR ABELIAN SCHEMES: a morphism of abelian schemes over
-`S` that carries the origin to the origin is a HOMOMORPHISM** (sorry
-node — Mumford, *Abelian Varieties* §4 / GIT 6.1; BLR *Néron Models*
-8.4 in the relative case).
+/-! #### Rigidity is NOT restated here
 
-TRUE, and it is one of the two things the classical theory of abelian
-schemes is built on.  Stated here on functors of points, which by Yoneda
-is the same as saying that `v` commutes with the two multiplication
-morphisms: `post v hv` is additive on `RelPoint f g` for every test
-scheme, given only that it is additive on the ZERO section over `𝟙 S`.
+An independent development of this route (2026-07-27) wrote its own
+rigidity leaf, `post_add_of_post_zero`, before
+`isAdditiveOn_of_post_zero` landed above.  It has been DELETED rather
+than kept: a rival rigidity API is exactly the duplicate this file must
+not carry, and the two statements are the same theorem.  This route
+consumes `isAdditiveOn_of_post_zero` unchanged.
 
-Note how little is assumed: `v` is an arbitrary `S`-morphism, not a
-group-scheme morphism — that is the entire content.  Note also that
-`ab'` need only be a group scheme; `AbelianSchemeStruct` is used for it
-merely because that is the shape available here.
-
-THE PROOF, and hence THE CHECK THAT WOULD REFUTE the irreducibility
-claim below.  Consider `φ : A ×_S A ⟶ B` sending `(x, y)` to
-`v(x + y) − v(x) − v(y)`.  It is trivial on `{0} ×_S A` and on
-`A ×_S {0}`.  The RIGIDITY LEMMA — if `p : X ⟶ S` is proper and flat
-with `p_*𝒪_X = 𝒪_S`, `Y ⟶ S` is separated, and `ψ : X ×_S Z ⟶ Y`
-contracts one fibre `X ×_S {z₀}` to a section, then `ψ` factors through
-the projection to `Z` — applied with `X := A`, `Z := A`, `Y := B` then
-forces `φ` to factor through the second projection, and triviality on
-`A ×_S {0}` forces it to be zero.
-
-**IRREDUCIBLE at this pin, ALONG THE AXIS SEARCHED: the coherent-sheaf
-axis.**  The rigidity lemma needs `p_*𝒪_X = 𝒪_S`, i.e. exactly the
-higher-direct-image / cohomology-and-base-change machinery that
-`universal_jacobianBaseChangeAj` below is also gated on; a survey on
-2026-07-27 found `CohomologyAndBaseChange`, `higherDirectImage`, derived
-pushforward and `IsCohomologicallyFlat` absent from this project, from
-mathlib at our pin and from `~/cs/FLT`.  So the honest statement of the
-frontier here is: **the two open leaves of the Jacobian half are not
-independent — both reduce to coherent pushforward.**
-
-What was NOT searched, and is the obvious next axis: the ETALE /
-INFINITESIMAL route, which proves rigidity by comparing the two
-morphisms on infinitesimal neighbourhoods of the zero section rather
-than by a cohomological contraction.  This file already contains
-`section_eq_of_formallyUnramified`, a rigidity statement of exactly that
-flavour for SECTIONS of an unramified morphism, proven outright with no
-cohomology; whether that machine can be made to bite on `φ` (whose
-source is not unramified over `S`) is open and is the first thing a
-successor should try. -/
-theorem post_add_of_post_zero {A B S : Scheme.{u}} {f : A ⟶ S} {f' : B ⟶ S}
-    (ab : AbelianSchemeStruct f) (ab' : AbelianSchemeStruct f') (v : A ⟶ B)
-    (hv : v ≫ f' = f)
-    (h0 : RelPoint.post v hv (ab.zero (𝟙 S)) = ab'.zero (𝟙 S))
-    {T : Scheme.{u}} {g : T ⟶ S} (x y : RelPoint f g) :
-    RelPoint.post v hv (ab.add x y)
-      = ab'.add (RelPoint.post v hv x) (RelPoint.post v hv y) :=
-  sorry
+One observation from that development is worth keeping, because it names
+an axis the surviving leaf's own audit did not search.  That audit
+rejects the finer cut (the rigidity LEMMA) on the COHERENT-SHEAF axis —
+`p_*𝒪_A = 𝒪_S` is missing everywhere — and that is correct.  The axis
+NOT searched is the ETALE / INFINITESIMAL one: prove rigidity by
+comparing the two morphisms on infinitesimal neighbourhoods of the zero
+section instead of by a cohomological contraction.  This file already
+contains `section_eq_of_formallyUnramified` — a rigidity statement of
+exactly that flavour, for SECTIONS of a separated formally unramified
+morphism over a connected base, PROVEN outright with no cohomology at
+all.  Whether it can be made to bite here is open: its hypothesis is
+unramifiedness of the target morphism, and `A ⟶ S` is smooth of
+positive relative dimension, so it does not apply directly — but the
+difference `u(x+y) − u(x) − u(y)` is a map into `B`, and it is the
+SOURCE, not the target, whose properness is used in the classical proof.
+That is the first thing to try before accepting the coherent-sheaf
+verdict as final. -/
 
 /-! #### The base change of a Jacobian, as a Jacobian
 
@@ -13468,7 +13693,9 @@ CONSTRUCTED rather than posited.  Everything else that
   endomorphism of an initial object, not a second geometric input.  The
   previous audit of `exists_jacobianFibreIdent` listed `IsIso u` as a
   residual obligation; that was wrong, and this is the correction;
-* additivity of `u` is `post_add_of_post_zero` (rigidity);
+* additivity of `u` is `isAdditiveOn_of_post_zero` (rigidity), the same
+  leaf `exists_relativeJacobian` consumes — this route adds no rigidity
+  statement of its own;
 * the additivity of the pullback identification itself is
   `fibreIdentPullback_toEquiv_add`, which is free.
 
@@ -13476,7 +13703,7 @@ IRREDUCIBLE at this pin ALONG THE COHERENT-SHEAF AXIS, with the same
 refuting check as `exists_relativeJacobian` and the same survey behind
 it: no Picard scheme, no higher direct image, no
 cohomology-and-base-change in this project, in mathlib at our pin, or in
-`~/cs/FLT`.  Note honestly that this leaf and `post_add_of_post_zero`
+`~/cs/FLT`.  Note honestly that this leaf and `isAdditiveOn_of_post_zero`
 are NOT independent — both reduce to coherent pushforward — so the
 number of leaves went from one to two while the amount of missing
 mathematics did not change.  What did change is that the ~150 lines of
@@ -13523,8 +13750,9 @@ noncomputable def isJacobianOf_baseChange (s : S' ⟶ S) {f : C ⟶ S} {f' : C' 
 end JacobianBaseChange
 
 /-- **Formation of the Jacobian commutes with base change** (PROVEN
-2026-07-27, by the canonical-comparison cut, over the two leaves
-`universal_jacobianBaseChangeAj` and `post_add_of_post_zero`).
+2026-07-27, by the canonical-comparison cut, over the one NEW leaf
+`universal_jacobianBaseChangeAj` together with the ALREADY-EXISTING
+rigidity leaf `isAdditiveOn_of_post_zero`).
 
 TRUE: if `jac` presents `J/S` as the Jacobian of `C/S` and `jac'`
 presents `J'/S'` as the Jacobian of the fibre `C'/S'`, based at the point
@@ -13570,7 +13798,7 @@ grounds.  Two of them were false:
    (`propext, Classical.choice, Quot.sound` on every proven piece).
 
 **What the old audit got RIGHT, and it is the honest bottom line:** the
-two residual leaves are NOT independent.  `post_add_of_post_zero`
+two residual leaves are NOT independent.  `isAdditiveOn_of_post_zero`
 (rigidity) needs the rigidity lemma, which needs `p_*𝒪 = 𝒪`; and
 `universal_jacobianBaseChangeAj` needs cohomology and base change.  Both
 reduce to coherent pushforward, which is absent from this project, from
@@ -13584,8 +13812,8 @@ reusable outside this file.
 THE CHECK THAT WOULD REFUTE THE REMAINING VERDICT is unchanged in
 shape: produce coherent pushforward (`higherDirectImage` /
 `IsCohomologicallyFlat`) at this pin, or find an étale/infinitesimal
-proof of rigidity that avoids it — see the note on
-`post_add_of_post_zero`, which records that this file's own
+proof of rigidity that avoids it — see the note "Rigidity is NOT
+restated here" above, which records that this file's own
 `section_eq_of_formallyUnramified` is a cohomology-free rigidity
 statement of that flavour and is the first thing a successor should try
 to push. -/
@@ -13658,7 +13886,7 @@ theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
     show (fibreIdentPullback s jf).toEquiv g g₀ h (RelPoint.post u hu (ab'.add x y))
       = ab.add ((fibreIdentPullback s jf).toEquiv g g₀ h (RelPoint.post u hu x))
           ((fibreIdentPullback s jf).toEquiv g g₀ h (RelPoint.post u hu y))
-    rw [post_add_of_post_zero ab' (ab.baseChange s) u hu hu0 x y]
+    rw [isAdditiveOn_of_post_zero ab' (ab.baseChange s) hu hu0 x y]
     exact fibreIdentPullback_toEquiv_add s ab h _ _
   · intro T g g₀ h x
     show (fibreIdentPullback s jf).toEquiv g g₀ h (RelPoint.post u hu (jac'.aj g x))
@@ -13672,11 +13900,10 @@ theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
     exact congrArg _ (eX.toEquiv_base_congr g rfl h x).symm
 
 /-- **The relative JACOBIAN of a given integral curve model exists**
-(PROVEN, over the base-independent statements above — of which
-`isSmoothProperCurve_of_fibreIdent` and, since 2026-07-27,
-`exists_jacobianFibreIdent` are themselves PROVEN, leaving
-`exists_relativeJacobian`, `universal_jacobianBaseChangeAj` and
-`post_add_of_post_zero` as the only open inputs).
+(PROVEN, over the three base-independent statements above — all three of
+which are now themselves PROVEN as of 2026-07-27, so that the open
+inputs reached from here are exactly `exists_albaneseOfCurve`,
+`isAdditiveOn_of_post_zero` and `universal_jacobianBaseChangeAj`).
 
 The ten fields of `IsX0JacobianModel` come from exactly three inputs,
 none of which mentions a modular curve:
