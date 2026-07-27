@@ -73,6 +73,9 @@ them without a human. Do not re-wrap it.
 - `exists_framedGaloisRep_baseChange_traceSubring`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 - `exists_obstructionCocycle_smallExtension_section`
+- `finiteDimensional_h1_adZeroTwistRestricted`
+- `exists_injective_sha2_dual_sha1Twist`
+- `rank_sha1Twist_le_cotangentFinrank`
 
 Both former strata above them were narrowed on 2026-07-25 into those
 leaves, and every statement they replace is now PROVEN here — including
@@ -18137,24 +18140,66 @@ noncomputable def Sha1Twist (ρbar : GaloisRep ℚ k V)
     Submodule k (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S)) :=
   ⨅ v ∈ S, LinearMap.ker (locResTwist1 ℓ ρbar S v).hom.toLinearMap
 
-/-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (sorry leaf, cut
-out 2026-07-27 as the DUALITY half of `rank_sha2_le_of_tangent_span` below).
+/-- **`H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional over `k`** (sorry leaf, cut
+out 2026-07-27 as the FINITENESS half of `rank_sha2_le_rank_sha1_twist` below;
+it is also the FINITENESS half of `rank_sha1_twist_le_of_tangent_span` further
+below, and the two leaves SHARE it — see the cut note there).
+
+This is NSW VIII.3: for a FINITE set `S` of places and a FINITE `G_{ℚ,S}`-module
+`M`, every `Hⁱ(G_{ℚ,S}, M)` is finite. Here `S = hardlyRamifiedPlaces ℓ` has two
+elements and `ad⁰(1)` is finite (`k` is `Finite` and `dim_k ad⁰ = 3`), so the
+hypotheses are met. It is stated for the AMBIENT `H¹` rather than for `Ш¹`
+because that is the form the reference proves and because both consumers below
+obtain their `Ш` statement from it by `Submodule.finiteDimensional`.
+
+**Why it must be cut out rather than folded into either consumer.** Over the
+full `Γ ℚ` this statement is FALSE — that is exactly the computation recorded on
+`rank_sha2_le_rank_sha1_twist` below, where `dim_k H¹(Γ ℚ, ad⁰(1)) = ℵ₀`. So
+finiteness is not a technicality that a proof of the duality could quietly
+assume: it is the precise place where the choice of `G_{ℚ,S}` over `Γ ℚ` does
+its work, and isolating it makes that visible to the compiler. Note also that
+the passage `Ш² ≅ (Ш¹)^∨ ⟹ dim Ш² ≤ dim Ш¹` genuinely NEEDS it —
+`dim W = dim W^∨` fails for infinite `W` by Erdős–Kaplansky, and
+`rank_le_rank_dual` above only gives the OTHER direction.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM** from
+`rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
+and for what `hℓ5` is doing.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.3
+(finiteness of `Hⁱ(G_S, M)`); Darmon–Diamond–Taylor, §2.6. -/
+theorem finiteDimensional_h1_adZeroTwistRestricted
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar) :
+    FiniteDimensional k
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+  sorry
+
+/-- **Poitou–Tate duality: `Ш²_S(ad⁰)` embeds `k`-linearly into the DUAL of
+`Ш¹_S(ad⁰(1))`** (sorry leaf, cut out 2026-07-27 as the DUALITY half of
+`rank_sha2_le_rank_sha1_twist` below).
 
 The nine-term Poitou–Tate sequence gives a PERFECT pairing
 `Ш¹_S(M) × Ш²_S(M*) → ℚ/ℤ` for a finite `G_S`-module `M`, where
-`M* = Hom(M, μ)`; taking `M = ad⁰` this is `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`.
+`M* = Hom(M, μ)`; taking `M = ad⁰` this is `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`. Only
+the INJECTION is asked for here, since that is all the rank comparison consumes
+— a perfect pairing gives it, and so would any nondegenerate one, so the leaf is
+strictly weaker than the theorem and correspondingly easier.
 
 Two identifications are folded in and both are cheap ONLY because `ℓ` is odd:
 
 * `ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)`, using that the trace form
   `(X, Y) ↦ tr(XY)` on `sl₂` is nondegenerate, which holds exactly when
   `char k ≠ 2`. `hℓOdd` is what supplies that, and it is why this leaf may not
-  be restated for `ℓ = 2`.
-* the passage from `≅ (−)^∨` to `≤` needs `Ш¹` to be FINITE-dimensional
-  (`dim W = dim W^∨` fails for infinite `W` by Erdős–Kaplansky, and note
-  `rank_le_rank_dual` above only gives the OTHER direction). Finiteness of
-  `H¹(G_{ℚ,S}, M)` for finite `M` is standard and is itself missing from this
-  tree; it is part of this leaf.
+  be restated for `ℓ = 2`;
+* the passage to a `k`-linear map (rather than a pairing of finite abelian
+  groups into `ℚ/ℤ`): `ad⁰` and `ad⁰(1)` are `k`-vector spaces and the pairing
+  is `k`-bilinear after the trace-form identification, so the induced map into
+  `Module.Dual k` is `k`-linear.
+
+Note this leaf does NOT carry finiteness: that is
+`finiteDimensional_h1_adZeroTwistRestricted` above, deliberately separate, and
+the consumer combines the two.
 
 **PORTING AUDIT for the local Tate pairing, which is what this leaf really
 needs** (2026-07-27; the earlier audit said only "`~/cs/FLT`'s
@@ -18198,7 +18243,58 @@ and one of its re-checking worries was unfounded:
 And the cup product is only the FIRST half: the pairing also needs the local
 invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory), of which this tree
 and mathlib have nothing. `grep -rniE "invariantMap|localClassField|brauer" Mathlib/`
-is the check that would refute that.
+is the check that would refute that; re-run 2026-07-27, still nothing.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM** from
+`rank_sha2_le_rank_sha1_twist` below; see there for the BANNED INPUTS clause
+and for what `hℓ5` is doing.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence) and VII.2 (local duality); Darmon–Diamond–Taylor,
+§2.6–2.7. -/
+theorem exists_injective_sha2_dual_sha1Twist
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ f : ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) →ₗ[k]
+        Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)),
+      Function.Injective f :=
+  sorry
+
+/-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (**PROVEN
+2026-07-27** over the two leaves `finiteDimensional_h1_adZeroTwistRestricted`
+and `exists_injective_sha2_dual_sha1Twist` immediately above — NOT a sorry node
+any more, see STATUS below; cut out 2026-07-27 as the DUALITY half of
+`rank_sha2_le_of_tangent_span` below).
+
+**STATUS 2026-07-27 (LATER THE SAME DAY): THIS NODE IS NO LONGER A LEAF.** It is
+now the two-line linear-algebra assembly
+
+  `dim Ш² ≤ dim (Ш¹)^∨ = dim Ш¹`,
+
+the first step being the injection supplied by
+`exists_injective_sha2_dual_sha1Twist` and the second being
+`Subspace.dual_finrank_eq` under the finite-dimensionality supplied by
+`finiteDimensional_h1_adZeroTwistRestricted`. Everything below this STATUS
+paragraph is the record of what the two leaves cost and why the group must stay
+`G_{ℚ,S}`; the PORTING AUDIT that used to live here has moved onto
+`exists_injective_sha2_dual_sha1Twist`, which is the leaf that actually owes it.
+
+**Why the split is two leaves and not one.** Finiteness and duality are
+independent classical inputs with different proofs (NSW VIII.3 versus VIII.6.7),
+and the finiteness half is SHARED with
+`rank_sha1_twist_le_of_tangent_span` below — so cutting it out turns one input
+that both nodes silently needed into one leaf that both explicitly consume.
+Neither half is redundant: without finiteness the `(−)^∨` step is FALSE by
+Erdős–Kaplansky, and without duality there is no map at all.
+
+**Where the mathematics now lives.** The nine-term Poitou–Tate sequence, the
+`ad⁰* ≅ ad⁰(1)` trace-form identification and the full PORTING AUDIT for the
+cup product and the local invariant map are on
+`exists_injective_sha2_dual_sha1Twist` above. The Erdős–Kaplansky obstruction to
+`dim W = dim W^∨`, and the reason the source group must be `G_{ℚ,S}` and not
+`Γ ℚ` for finiteness to hold at all, are on
+`finiteDimensional_h1_adZeroTwistRestricted` above. Do not re-derive either here.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM from
 `rank_sha2_le_of_tangent_span` below, and it binds this leaf.** Neither
@@ -18325,43 +18421,218 @@ theorem rank_sha2_le_rank_sha1_twist
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) :
     Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤
-      Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
-  sorry
+      Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := by
+  obtain ⟨f, hf⟩ := exists_injective_sha2_dual_sha1Twist hℓOdd hdim hℓ5 h hirr
+  haveI : FiniteDimensional k
+      (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar (hardlyRamifiedPlaces ℓ))) :=
+    finiteDimensional_h1_adZeroTwistRestricted hℓOdd hdim hℓ5 h
+  haveI : FiniteDimensional k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) := inferInstance
+  haveI : FiniteDimensional k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) :=
+    FiniteDimensional.of_injective f hf
+  have hle : Module.finrank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤
+      Module.finrank k (Module.Dual k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ))) := by
+    have hlift := f.lift_rank_le_of_injective hf
+    rw [← Module.finrank_eq_rank, ← Module.finrank_eq_rank] at hlift
+    simpa only [Cardinal.lift_natCast, Nat.cast_le] using hlift
+  rw [Subspace.dual_finrank_eq] at hle
+  rw [← Module.finrank_eq_rank, ← Module.finrank_eq_rank]
+  exact_mod_cast hle
 
-/-- **Greenberg–Wiles: `dim_k Ш¹_S(ad⁰(1)) ≤ g`** (sorry leaf, cut out
-2026-07-27 as the EULER-CHARACTERISTIC half of
-`rank_sha2_le_of_tangent_span` below).
+/-! ### The mod-`ℓ` cotangent space of a local ring
 
-Given that `𝔪_{D.R}` is spanned by `g` of its own elements together with `ℓ` —
-i.e. that the mod-`ℓ` cotangent space `𝔪/(𝔪² + ℓ)` of the weakly universal,
-trace-generated hardly ramified deformation ring is spanned by `g` elements —
-the degree-`1` Tate–Šafarevič group of the TWIST has dimension at most `g`.
+Added 2026-07-27 as the cut point of `rank_sha1_twist_le_of_tangent_span`
+below. That node bundled two independent things: the ARITHMETIC statement that
+`Ш¹_S(ad⁰(1))` is bounded by the mod-`ℓ` tangent dimension of the deformation
+ring (Greenberg–Wiles, plus the universality identification of that tangent
+space with `H¹_L`), and the pure COMMUTATIVE ALGEBRA that a spanning family
+`ts : Fin g → 𝔪` bounds that tangent dimension by `g` (Nakayama). Naming the
+tangent dimension is what lets the second half be PROVEN — it is, immediately
+below — leaving the first as a leaf that mentions no `Ideal.span` at all.
 
-The argument, in the order the pieces are needed:
+Everything here is stated for an arbitrary local ring and an arbitrary natural
+number `ℓ`; nothing about Galois representations, deformations or primality
+enters, which is why it sits in its own section with its own `R`. -/
+
+section CotangentModL
+
+variable {R : Type w} [CommRing R] [IsLocalRing R]
+
+variable (R) in
+/-- `(𝔪² + (ℓ)) ∩ 𝔪`, viewed as a submodule of `𝔪` — the subobject one divides
+by to form the mod-`ℓ` cotangent space. Written as a `comap` along `𝔪.subtype`
+rather than as a sum of submodules of `↥𝔪`, so that membership is decided by
+the ambient statement `(x : R) ∈ 𝔪² ⊔ (ℓ)` and no intersection has to be
+carried. -/
+noncomputable def cotSub (ℓ : ℕ) : Submodule R ↥(IsLocalRing.maximalIdeal R) :=
+  Submodule.comap (IsLocalRing.maximalIdeal R).subtype
+    (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)})
+
+variable (R) in
+/-- **The mod-`ℓ` cotangent space `𝔪 / (𝔪² + (ℓ))` of a local ring.**
+
+This — not the ordinary `𝔪/𝔪²` — is the object whose `k`-dual is the tangent
+space of a deformation functor over `ℤ_ℓ` with residue field `k` of
+characteristic `ℓ`: a `ℤ_ℓ`-algebra map `R → k[ε]` kills `ℓ` because `ℓ = 0` in
+`k`, so it factors through `𝔪/(𝔪² + (ℓ))` and not merely through `𝔪/𝔪²`.
+Mathlib's `IsLocalRing.CotangentSpace` is the `𝔪/𝔪²` version and is NOT
+interchangeable with this one, since `(ℓ) ⊆ 𝔪²` is false in general. -/
+abbrev CotangentModL (ℓ : ℕ) : Type w :=
+  ↥(IsLocalRing.maximalIdeal R) ⧸ cotSub R ℓ
+
+/-- The mod-`ℓ` cotangent space is killed by `𝔪`: for `a ∈ 𝔪` and `y ∈ 𝔪` the
+product `a * y` lies in `𝔪²`. This is what makes it a module over the residue
+field. -/
+lemma cotangentModL_isTorsionBySet (ℓ : ℕ) :
+    Module.IsTorsionBySet R (CotangentModL R ℓ)
+      (IsLocalRing.maximalIdeal R : Set R) := by
+  rintro x ⟨a, (ha : a ∈ IsLocalRing.maximalIdeal R)⟩
+  induction x using Quotient.inductionOn' with
+  | h y =>
+    refine (Submodule.Quotient.mk_eq_zero _).mpr ?_
+    refine Submodule.mem_comap.mpr (Submodule.mem_sup_left ?_)
+    show a * (y : R) ∈ IsLocalRing.maximalIdeal R ^ 2
+    rw [pow_two]
+    exact Ideal.mul_mem_mul ha y.2
+
+/-- The residue-field module structure on the mod-`ℓ` cotangent space. Kept as a
+`def` rather than an `instance` because `Module.IsTorsionBySet.module` cannot be
+inferred; consumers introduce it with `letI`. The scalar action is the `R`-action
+DEFINITIONALLY (`Module.IsTorsionBySet.mk_smul` is `rfl`), which is what makes
+the spanning computation below go through without transfer lemmas. -/
+@[implicit_reducible] noncomputable def cotangentModLModule (ℓ : ℕ) :
+    Module (R ⧸ IsLocalRing.maximalIdeal R) (CotangentModL R ℓ) :=
+  (cotangentModL_isTorsionBySet ℓ).module
+
+variable (R) in
+/-- **The mod-`ℓ` tangent dimension of a local ring** — `dim_{R/𝔪} 𝔪/(𝔪²+(ℓ))`.
+
+Valued in `ℕ` rather than `Cardinal` deliberately: the consumers compare it with
+a `Module.rank` taken over the coefficient field `k`, which lives in a different
+universe, and a natural number crosses that boundary for free. It is also the
+honest shape, since for a Noetherian `R` the space is finite-dimensional. -/
+noncomputable def cotangentFinrankModL (ℓ : ℕ) : ℕ :=
+  letI := cotangentModLModule (R := R) ℓ
+  Module.finrank (R ⧸ IsLocalRing.maximalIdeal R) (CotangentModL R ℓ)
+
+/-- **Nakayama for the mod-`ℓ` cotangent space** (PROVEN): if `𝔪` is contained in
+the ideal generated by `g` of its own elements together with `ℓ`, then the mod-`ℓ`
+cotangent space has dimension at most `g`.
+
+No Noetherian or completeness hypothesis is needed, because the span hypothesis is
+taken in its strong form — `𝔪 ≤ (ts) + (ℓ)` rather than the mod-`𝔪²` version — so
+the images of `ts` generate the quotient outright and no lifting step is required.
+That is exactly the form `rank_sha1_twist_le_of_tangent_span` below receives from
+`exists_tangent_family_of_mvPowerSeries_presentation`. -/
+theorem cotangentFinrankModL_le (ℓ : ℕ) (g : ℕ) (ts : Fin g → R)
+    (hts : ∀ i, ts i ∈ IsLocalRing.maximalIdeal R)
+    (hspan : IsLocalRing.maximalIdeal R ≤
+      Ideal.span (Set.range ts) ⊔ Ideal.span {(ℓ : R)}) :
+    cotangentFinrankModL R ℓ ≤ g := by
+  letI := cotangentModLModule (R := R) ℓ
+  set 𝔪 := IsLocalRing.maximalIdeal R with h𝔪
+  set κ := R ⧸ 𝔪 with hκ
+  set w : Fin g → CotangentModL R ℓ :=
+    fun i => Submodule.Quotient.mk ⟨ts i, hts i⟩ with hw
+  -- The `κ`-action on the quotient is the `R`-action, definitionally.
+  have hsmul : ∀ (a : R) (t : ↥𝔪),
+      (Ideal.Quotient.mk 𝔪 a) • (Submodule.Quotient.mk t : CotangentModL R ℓ)
+        = Submodule.Quotient.mk (a • t) := fun _ _ => rfl
+  have hgen : ∀ (t : R) (htr : t ∈ Set.range ts) (htm : t ∈ 𝔪),
+      (Submodule.Quotient.mk ⟨t, htm⟩ : CotangentModL R ℓ)
+        ∈ Submodule.span κ (Set.range w) := by
+    rintro t ⟨j, rfl⟩ htm
+    exact Submodule.subset_span ⟨j, rfl⟩
+  have hspanmem : ∀ (x : R) (_ : x ∈ Ideal.span (Set.range ts)) (hxm : x ∈ 𝔪),
+      (Submodule.Quotient.mk ⟨x, hxm⟩ : CotangentModL R ℓ)
+        ∈ Submodule.span κ (Set.range w) := by
+    intro x hx hxm
+    obtain ⟨n, f, gg, hsum⟩ := Submodule.mem_span_set'.mp hx
+    have hmem : ∀ i, ((gg i : R)) ∈ 𝔪 := by
+      intro i
+      obtain ⟨j, hj⟩ := (gg i).2
+      rw [← hj]; exact hts j
+    have hx' : (⟨x, hxm⟩ : ↥𝔪) = ∑ i, f i • (⟨(gg i : R), hmem i⟩ : ↥𝔪) := by
+      refine Subtype.ext ?_
+      show x = ((∑ i, f i • (⟨(gg i : R), hmem i⟩ : ↥𝔪) : ↥𝔪) : R)
+      rw [← hsum]
+      push_cast
+      rfl
+    rw [hx', show (Submodule.Quotient.mk (∑ i, f i • (⟨(gg i : R), hmem i⟩ : ↥𝔪))
+          : CotangentModL R ℓ)
+        = ∑ i, (Ideal.Quotient.mk 𝔪 (f i)) •
+            (Submodule.Quotient.mk (⟨(gg i : R), hmem i⟩ : ↥𝔪) : CotangentModL R ℓ) from ?_]
+    · exact Submodule.sum_mem _ fun i _ =>
+        Submodule.smul_mem _ _ (hgen _ (gg i).2 (hmem i))
+    · simp only [hsmul]
+      exact map_sum (cotSub R ℓ).mkQ _ _
+  have htop : Submodule.span κ (Set.range w) = ⊤ := by
+    refine Submodule.eq_top_iff'.mpr fun x => ?_
+    obtain ⟨y, rfl⟩ := Submodule.Quotient.mk_surjective (cotSub R ℓ) x
+    obtain ⟨u, hu, z, hz, huz⟩ := Submodule.mem_sup.mp (hspan y.2)
+    have hum : u ∈ 𝔪 := Ideal.span_le.mpr (Set.range_subset_iff.mpr hts) hu
+    have hy : (Submodule.Quotient.mk y : CotangentModL R ℓ)
+        = Submodule.Quotient.mk (⟨u, hum⟩ : ↥𝔪) := by
+      refine ((Submodule.Quotient.eq _).mpr ?_).symm
+      refine Submodule.mem_comap.mpr ?_
+      have hval : (((⟨u, hum⟩ : ↥𝔪) - y : ↥𝔪) : R) = -z := by
+        push_cast
+        rw [← huz]; ring
+      simpa only [Submodule.coe_subtype, hval] using
+        Submodule.mem_sup_right (Submodule.neg_mem _ hz)
+    rw [hy]
+    exact hspanmem u hu hum
+  have hcard := finrank_range_le_card (R := κ) w
+  rw [Set.finrank, htop, finrank_top] at hcard
+  simpa [cotangentFinrankModL] using hcard
+
+end CotangentModL
+
+/-- **Greenberg–Wiles: `dim_k Ш¹_S(ad⁰(1)) ≤ (mod-`ℓ` tangent dimension of
+`D.R`)`** (sorry leaf, cut out 2026-07-27 as the ARITHMETIC half of
+`rank_sha1_twist_le_of_tangent_span` below; the other half is
+`cotangentFinrankModL_le` immediately above, which is PROVEN).
+
+The whole classical content of `rank_sha1_twist_le_of_tangent_span` is here, and
+nothing else is: no `Ideal.span`, no generating family, no `g`. In the order the
+pieces are needed:
 
 * `Ш¹_S(ad⁰(1)) ⊆ H¹_{L^⊥}(ad⁰(1))`. This is where the dual Selmer group
   enters, and it enters ONLY here, inside the proof — `Ш¹` imposes the ZERO
   local condition at each `v ∈ S`, and `0 ⊆ L_v^⊥` for any `L_v`, so the
   containment is immediate ONCE `L^⊥` exists. That is the whole reason the
-  statement above mentions no Selmer group: see the section header for why
-  this is the affordable place to stop.
+  statement mentions no Selmer group: see the section header above
+  `adZeroCycloChar` for why this is the affordable place to stop.
 * the Greenberg–Wiles Euler characteristic formula
 
-  `dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1)) + Σ_{v ∈ S} (dim L_v − h⁰(ℚ_v, ad⁰))`
+  `dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1)) + Σ_{v} (dim L_v − h⁰(ℚ_v, ad⁰))`
 
-  with the local computations `0` at `2`, `+1` at `ℓ` and `−1` at `∞`, giving
-  `dim H¹_{L^⊥} ≤ dim H¹_L`. Absolute irreducibility (`hirr`) is what kills
-  `h⁰(ℚ, ad⁰)`; oddness (`hℓOdd`, and `ρbar` odd) is what makes the
-  archimedean term `−1`. Note `hardlyRamifiedPlaces ℓ` deliberately omits `∞`
-  — `#ad⁰` is a power of the odd prime `ℓ` and `Gal(ℂ/ℝ)` has order `2`, so
+  with the local computations `0` at `2`, `+1` at `ℓ` and `−1` at `∞`, so the
+  bracket vanishes and `dim H¹_{L^⊥} = dim H¹_L + h⁰(ℚ, ad⁰(1))`. Absolute
+  irreducibility (`hirr`) with `hℓ5` is what kills BOTH `h⁰(ℚ, ad⁰)` and
+  `h⁰(ℚ, ad⁰(1))` — the second is load-bearing and easy to overlook, since
+  without it the formula runs the WRONG WAY and gives
+  `dim H¹_{L^⊥} ≥ dim H¹_L`. Oddness (`hℓOdd`, and `ρbar` odd) is what makes
+  the archimedean term `−1`. Note `hardlyRamifiedPlaces ℓ` deliberately omits
+  `∞` — `#ad⁰` is a power of the odd prime `ℓ` and `Gal(ℂ/ℝ)` has order `2`, so
   the archimedean place contributes to the FORMULA but imposes no condition on
   `Ш`; see the docstring of `hardlyRamifiedPlaces` above.
-* the tangent identification `dim_k H¹_L = (mod-`ℓ` tangent dimension of D.R)`.
-  This is where `hw` and `ht` are consumed:
+* the tangent identification `dim_k H¹_L = cotangentFinrankModL D.R ℓ`. This is
+  where `hw` and `ht` are consumed:
   `isUniversal_of_isWeaklyUniversal_isTraceGenerated` above upgrades `D` to
-  UNIVERSAL, so `D.R` pro-represents the hardly ramified functor and its
-  mod-`ℓ` tangent space IS `H¹_L`. The hypothesis `hspan` then reads
-  `dim_k H¹_L ≤ g` by Nakayama.
+  UNIVERSAL, so `D.R` pro-represents the hardly ramified functor and its mod-`ℓ`
+  tangent space `Hom_k(𝔪/(𝔪²+(ℓ)), k)` IS `H¹_L`. `CotangentModL` above is
+  built with `(ℓ)` in the denominator for exactly this reason — a `ℤ_ℓ`-algebra
+  map into `k[ε]` kills `ℓ`, so `𝔪/𝔪²` would be the wrong object.
+
+**FINITENESS IS NOT PART OF THIS LEAF, AND THAT IS DELIBERATE.** The conclusion
+compares a `Module.rank` (a `Cardinal`) with a `Module.finrank` (a `ℕ`), so it
+does assert that `Ш¹` is finite-dimensional. That assertion is supplied by
+`finiteDimensional_h1_adZeroTwistRestricted` above — the SAME leaf
+`rank_sha2_le_rank_sha1_twist` consumes — and an owner of this leaf should reach
+for it rather than reprove it. Symmetrically, `cotangentFinrankModL D.R ℓ` is a
+genuine dimension and not a junk `0`, because `HardlyRamifiedDeformation` carries
+`isNoetherianRing`, so `𝔪` is finitely generated and the cotangent space is
+finite-dimensional.
 
 **WHAT IS MISSING, RE-CHECKED 2026-07-27 rather than inherited.** The six
 greps recorded on `rank_sha2_le_of_tangent_span` below were re-run against
@@ -18384,8 +18655,73 @@ lines and stops at `H⁰`** (`zeroIso : continuousCohomology 0 A ≅ TopModuleCa
 There is NO `oneCocycles`, NO `oneCoboundaries`, and no cocycle description of
 `H¹` anywhere — so the very first step of any Greenberg–Wiles argument, writing
 a class in `H¹` as a cocycle, is itself missing. `grep -rn "oneCocycles" Mathlib/RepresentationTheory/Homological/ContCohomology/`
-is the check that would refute this. (The DISCRETE `groupCohomology` does have
-`oneCocycles`; it is the continuous theory that stops at `H⁰`.)
+is the check that would refute this; re-run 2026-07-27 on our pin, still empty.
+(The DISCRETE `groupCohomology` does have `oneCocycles`; it is the continuous
+theory that stops at `H⁰`.)
+
+**CIRCULARITY GUARD — INHERITED VERBATIM, and it binds this leaf** exactly as
+it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
+clause and for what `hℓ5` is doing. In particular the falsity audit on
+`rank_sha1_twist_le_of_tangent_span` below records why "the span hypothesis is
+probably unsatisfiable, so the statement is vacuously true" is NOT available as
+a defence — and that reasoning transfers here unchanged, since
+`cotangentFinrankModL D.R ℓ` is a finite number for the same reason
+(`isNoetherianRing`).
+
+References: Washington's article in Cornell–Silverman–Stevens (the
+Greenberg–Wiles formula, and the local computations at `2`, `ℓ` and `∞`);
+Darmon–Diamond–Taylor, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII. -/
+theorem rank_sha1Twist_le_cotangentFinrank
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.isLocalRing
+    Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤
+      (cotangentFinrankModL D.R ℓ : Cardinal) :=
+  sorry
+
+/-- **Greenberg–Wiles: `dim_k Ш¹_S(ad⁰(1)) ≤ g`** (**PROVEN 2026-07-27** over the
+leaf `rank_sha1Twist_le_cotangentFinrank` and the PROVEN
+`cotangentFinrankModL_le` immediately above — NOT a sorry node any more, see
+STATUS below; cut out 2026-07-27 as the EULER-CHARACTERISTIC half of
+`rank_sha2_le_of_tangent_span` below).
+
+Given that `𝔪_{D.R}` is spanned by `g` of its own elements together with `ℓ` —
+i.e. that the mod-`ℓ` cotangent space `𝔪/(𝔪² + ℓ)` of the weakly universal,
+trace-generated hardly ramified deformation ring is spanned by `g` elements —
+the degree-`1` Tate–Šafarevič group of the TWIST has dimension at most `g`.
+
+**STATUS 2026-07-27 (LATER THE SAME DAY): THIS NODE IS NO LONGER A LEAF.** It is
+the two-line assembly
+
+  `dim Ш¹_S(ad⁰(1)) ≤ cotangentFinrankModL D.R ℓ ≤ g`,
+
+the first step being `rank_sha1Twist_le_cotangentFinrank` (Greenberg–Wiles plus
+the universality tangent identification — still open) and the second being
+`cotangentFinrankModL_le` (Nakayama — PROVEN).
+
+**Why the split, and what it bought.** The node bundled two inputs with nothing
+in common: an arithmetic theorem about `G_{ℚ,S}`-cohomology, and the elementary
+fact that a family spanning `𝔪` together with `ℓ` spans the mod-`ℓ` cotangent
+space. Naming that cotangent space (`CotangentModL` above) made the second half
+PROVABLE and removed `Ideal.span`, `ts` and `g` from the statement of the first —
+so the remaining leaf mentions no commutative algebra at all. The bundling also
+hid a real risk: an owner of the old node had to keep the Nakayama bookkeeping
+and the Euler characteristic straight simultaneously, and the two use `𝔪` in
+completely different senses.
+
+The mathematics, the missing-machinery audit (`oneCocycles`, the Euler
+characteristic formula, the Selmer structure) and the six refuting greps now live
+on `rank_sha1Twist_le_cotangentFinrank` above — including one CORRECTION to the
+version that stood here, which recorded the Euler characteristic as giving
+`dim H¹_{L^⊥} ≤ dim H¹_L` from `h⁰(ℚ, ad⁰) = 0` alone. It does not: the formula
+gives `dim H¹_{L^⊥} = dim H¹_L + h⁰(ℚ, ad⁰(1))`, so `h⁰(ℚ, ad⁰(1)) = 0` is
+ALSO needed and runs the inequality the right way. That vanishing is standard for
+`ρbar` absolutely irreducible with `ℓ ≥ 5` — which is what `hℓ5` buys beyond its
+circularity-guard role — but it was not recorded, and an owner following the old
+bullet would have found the formula pointing the wrong way.
 
 **CIRCULARITY GUARD — INHERITED VERBATIM, and it binds this leaf** exactly as
 it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
@@ -18477,8 +18813,12 @@ theorem rank_sha1_twist_le_of_tangent_span
       (∀ i, ts i ∈ IsLocalRing.maximalIdeal D.R) →
       IsLocalRing.maximalIdeal D.R ≤
         Ideal.span (Set.range ts) ⊔ Ideal.span {(ℓ : D.R)} →
-      Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) :=
-  sorry
+      Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) := by
+  letI := D.commRing
+  letI := D.isLocalRing
+  intro g ts hts hspan
+  refine le_trans (rank_sha1Twist_le_cotangentFinrank hℓOdd hdim hℓ5 h hirr D hw ht) ?_
+  exact_mod_cast cotangentFinrankModL_le ℓ g ts hts hspan
 
 /-- **`dim_k Ш²_S(ad⁰) ≤ (mod-`ℓ` tangent dimension of `D.R`)`**
 (**PROVEN 2026-07-27** over the two leaves `rank_sha2_le_rank_sha1_twist`
