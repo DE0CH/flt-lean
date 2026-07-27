@@ -22466,7 +22466,67 @@ witnesses that refute each alternative cut, and which axis was NOT
 searched: see the CUT-OBSTRUCTION AUDIT on the leaf itself. It also
 carries an OPEN FAITHFULNESS QUESTION about `Cl⁺(D)` versus geometric
 connectedness, together with the check that settles it; that question is
-inherited from `HasSplitHilbertBlumenthalModuli` and is not created here. -/
+inherited from `HasSplitHilbertBlumenthalModuli` and is not created here.
+
+**FAITHFULNESS AUDIT — POLARIZATION MODULE vs GEOMETRIC IRREDUCIBILITY
+(settled 2026-07-27). The leaf is TRUE, but NOT for the reason recorded
+in the section docstring, and its truth is CONTINGENT on a field of
+`Fermat.PolarizationStruct` that a queued repair may weaken.**
+
+THE TENSION. Classically the Hilbert–Blumenthal moduli space has one
+geometric component per class of `Cl⁺(D)` — the narrow class of the
+polarization module — so `GeometricallyIrreducible fX₀` can hold of at
+most ONE class, while the fineness clause quantifies over *every*
+polarized object `(B, mB, dB, polB)` over every `F`. Concrete witness
+that the two classes exist: `D = ℚ(√3)` has `h(D) = 1` but `h⁺(D) = 2`
+(PARI/GP `bnrinit` at the infinite modulus; likewise `√6, √7, √11, √14,
+√19, √21, √22, √23`, and `h⁺(ℚ(√15)) = 4`).
+
+THE RECORDED DEFUSAL IS WRONG. It says the comparison `φ` is only an
+isomorphism of `𝒪_D`-`Γ_F`-modules of GEOMETRIC points and never mentions
+`polB`, hence is blind to the polarization module. That is true over an
+ALGEBRAICALLY CLOSED `F` and false in general, and the clause quantifies
+over every `ℚ`-algebra field. Over a number field `F`, a bijection
+`φ : B(F̄) ≃ A(F̄)` that is additive, `𝒪_D`-equivariant and
+`Γ_F`-equivariant restricts to torsion, hence gives `T_ℓB ≅ T_ℓA` as
+`𝒪_D ⊗ ℤ_ℓ[Γ_F]`-modules for EVERY `ℓ`; by Faltings that forces an
+`𝒪_D`-linear isogeny `B → A`, whose kernel is an `𝒪_D`- and
+`Γ_F`-stable finite subgroup. The polarization module can then move only
+by the Steinitz class of that kernel — e.g. `A = B ⊗_{𝒪_D} 𝔟` gives
+`P(A) ≅ P(B) ⊗ 𝔟^{-2}`, changing the class only by a SQUARE. So for `B`
+with `End_{F̄} B = 𝒪_D` and residually irreducible `B[𝔮]` for all `𝔮`
+(the generic member of the family), and `[𝔞] ∉ (Cl⁺ D)²` — which holds
+for the nontrivial class of `Cl⁺(ℚ(√3)) ≅ ℤ/2` — NO object over the
+principal component is `Γ_F`-module-isomorphic to `B`. Answer to the
+question "is a nonprincipal-module HBAV Galois-module-isomorphic to a
+fibre over the principal component": **NO.**
+
+WHY THE LEAF NEVERTHELESS STANDS. A nonprincipal-module HBAV cannot
+instantiate the fineness hypothesis at all, because that hypothesis
+demands `polB : Fermat.PolarizationStruct dB`, and
+`PolarizationStruct.weil_hom_nondegenerate` is quantified over EVERY
+ideal `I`. Taking `I = (N)` for each `N`, and using that the canonical
+`weil` is perfect on `A[N] × A^∨[N]`, the radical of `(y, z) ↦
+weil y (hom z)` on `A[N]` is `ker hom ∩ A[N]`; demanding it vanish for
+all `N` forces `ker hom = 0` in characteristic zero, i.e. `hom` is a
+PRINCIPAL `𝒪_D`-polarization. So `PolarizationStruct` already pins the
+narrow class to the trivial one, on both sides of the clause (`pol₀`
+does the same to the universal family), and fineness and
+`GeometricallyIrreducible` are about the SAME single component. This is
+the same fact reported independently from `Modularity/TateModule.lean`,
+where it appears as "`∃ d, Nonempty (PolarizationStruct d)` is FALSE in
+general".
+
+THE CONTINGENCY, WHICH IS THE POINT OF THIS NOTE. If
+`weil_hom_nondegenerate` is repaired towards its classical form —
+nondegeneracy only at ideals `I` prime to the degree of the polarization
+— then nonprincipal-module HBAVs become admissible instances of the
+fineness hypothesis and, by the paragraph above,
+`HasSplitHilbertBlumenthalModuli` becomes **FALSE**. The repair that
+keeps it true is to carry the polarization module as DATA (Rapoport's
+`𝔞`, fixed alongside `D`, `λ`, `𝔭`), which is what the classical
+statement does and is the only reason its `X₀` is connected. Anyone
+touching `PolarizationStruct` must re-read this paragraph. -/
 theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
     {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]

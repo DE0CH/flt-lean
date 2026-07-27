@@ -399,6 +399,15 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
 -- this development is phrased against — lives here.
 public import Fermat.FLT.EllipticCurve.Torsion
+-- `Gamma0GL`, giving `S₂(Γ₀(N)) = CuspForm (Gamma0GL N) 2`, and the bundled
+-- Hecke operator `heckeOp N ℓ`, for the Eichler–Shimura point count
+-- `#X₀(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ)` at `card_relPoint_x0_finiteField`.  These
+-- lived in `Modularity/Interface.lean`, which is DOWNSTREAM of this module
+-- through `MazurTorsion → ModThree`; they were hoisted into their own
+-- upstream module on 2026-07-27 precisely to break that cycle.  PUBLIC:
+-- `Gamma0GL` and `heckeOp` occur in the STATEMENTS of the two leaves below,
+-- not merely in proof bodies.
+public import Fermat.FLT.Modularity.HeckeOperator
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
 -- `emptyIsInitial`, `isInitialOfIsEmpty`: the empty scheme as the initial
@@ -15415,9 +15424,10 @@ theorem finite_relPoint_of_x0Compactification_finiteField (N ℓ : ℕ) (hℓ : 
   haveI := h.isProper
   exact finite_relPoint_of_isProper (R := ZMod ℓ) strX (𝟙 (SpecF ℓ))
 
-/-- **Eichler–Shimura: the special fibre has exactly `m` rational
-points, at the seven witness rows** (sorry node — the arithmetic half of
-the point count).
+/-- **Eichler–Shimura / Lefschetz: the point count of the special fibre
+is `ℓ + 1 − Tr(T_ℓ ∣ S₂(Γ₀(N)))`** (sorry node — the GEOMETRIC half of
+the point count, split off 2026-07-27; this docstring is the cluster's
+route audit and is kept here in full).
 
 TRUE.  `#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`, and the seven `m`
 of `x0WitnessTable` are that formula evaluated.  **Recomputed
@@ -15500,12 +15510,88 @@ module axis (where they live).  NOT searched: a route that counts
 `X_0(N)(𝔽_ℓ)` directly from the seven levels' explicit plane models,
 avoiding modular forms entirely — at genus `1`–`5` and `ℓ ≤ 17` that is a
 finite computation, and it is the one direction that would make this leaf
-independent of `Interface.lean`. -/
-theorem card_relPoint_x0_finiteField (N ℓ m : ℕ) (_htable : (N, ℓ, m) ∈ x0WitnessTable)
+independent of `Interface.lean`.
+
+**THE CYCLE IS BROKEN (2026-07-27), AND THIS LEAF IS NOW AN ASSEMBLY.**
+`Gamma0GL` and `heckeOp` were hoisted VERBATIM out of `Interface.lean`
+into `Fermat/FLT/Modularity/HeckeOperator.lean`, which depends only on
+`Mathlib.NumberTheory.ModularForms` and is therefore importable here.
+The reference scan that justified the move: the hoisted block refers to
+NOTHING defined in `Interface.lean` outside itself, and 612 non-blank
+lines left that file with zero of them unreproduced.  So the two items
+this audit named are now two real leaves, stated in the honest objects
+`CuspForm (Gamma0GL N) 2` and `heckeOp N ℓ` — no `opaque` constant, and
+in particular NOT the definition-free `traceHeckeT` this audit warns
+against.
+
+The two leaves are `card_relPoint_x0_eichlerShimura` (the geometry: the
+Lefschetz trace formula for Frobenius on `X₀(N)_{𝔽_ℓ}` together with the
+Eichler–Shimura relation identifying `Frob_ℓ + Frob_ℓ^∨` with `T_ℓ` on
+`H¹`) and `traceHeckeOp_of_x0WitnessTable` (the arithmetic: the seven
+banked trace values).  Neither is stated in `ℤ`: the trace of `heckeOp`
+is a COMPLEX number by construction, and casting the count into `ℂ`
+avoids importing the integrality of the Hecke action as a silent side
+condition of the cut.  Integrality is a real theorem and belongs to
+whoever proves the first leaf, not to the seam between them. -/
+theorem card_relPoint_x0_eichlerShimura (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X}
     (_h : IsX0Compactification N strX strY j) :
-    Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
+    ((Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) : ℕ) : ℂ) = (ℓ : ℂ) + 1 -
+      LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) :=
   sorry
+
+/-- **The seven banked Hecke traces** (sorry node — the arithmetic half of
+the point count, split off 2026-07-27).
+
+`Tr(T_ℓ ∣ S₂(Γ₀(N)))` at the rows of `x0WitnessTable`, read off the table
+in the docstring of `card_relPoint_x0_finiteField`: the value is
+`ℓ + 1 − m`, since `m` is by construction `ℓ + 1 − Tr T_ℓ`.  Computed
+independently with Magma (`CuspForms(Gamma0(N), 2)`,
+`Trace(HeckeOperator(S, ℓ))`) and, for the two rows added on 2026-07-27,
+with PARI/GP from the trace form of the cuspidal space.
+
+WHAT MAKES THIS PROVABLE AT ALL, rather than an equation in an opaque
+constant: `heckeOp N ℓ` is pinned to the Hecke slash-sum by
+`heckeOp_coe`, and `S₂(Γ₀(N))` is finite-dimensional
+(`exists_cuspForm_sturm_bound` / `cuspForm_finiteDimensional`, in
+`Interface.lean`), so its trace is the trace of a matrix in an explicit
+basis.  The route is Eichler–Selberg, or a `q`-expansion basis at each of
+the seven levels — a FINITE computation at genus `1`–`5`, which is why
+this half is arithmetic rather than geometric.
+
+NOTE the finite-dimensionality lemmas named above live DOWNSTREAM of this
+module (they stayed in `Interface.lean`, only `Gamma0GL`/`heckeOp` were
+hoisted).  Whoever proves this leaf will most likely have to hoist the
+Sturm-bound block as well, by the same verbatim-move recipe; that is a
+known, bounded cost and not a new obstruction. -/
+theorem traceHeckeOp_of_x0WitnessTable {N ℓ m : ℕ}
+    (_htable : (N, ℓ, m) ∈ x0WitnessTable) :
+    LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+      = (ℓ : ℂ) + 1 - (m : ℂ) :=
+  sorry
+
+/-- **Eichler–Shimura: the special fibre has exactly `m` rational
+points, at the seven witness rows** (PROVEN 2026-07-27 by decomposition,
+once the module cycle below was broken).
+
+The assembly is pure bookkeeping: the geometric leaf gives the count as
+`ℓ + 1 − Tr T_ℓ` in `ℂ`, the arithmetic leaf evaluates the trace, and
+`ℕ → ℂ` is injective. -/
+theorem card_relPoint_x0_finiteField (N ℓ m : ℕ) (htable : (N, ℓ, m) ∈ x0WitnessTable)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) :
+    Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m := by
+  obtain ⟨hN, hℓ, hℓN⟩ := x0WitnessTable_spec htable
+  have h1 := card_relPoint_x0_eichlerShimura N ℓ hN hℓ hℓN h
+  rw [traceHeckeOp_of_x0WitnessTable htable] at h1
+  have h2 : ((Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) : ℕ) : ℂ) = (m : ℂ) := by
+    rw [h1]; ring
+  exact_mod_cast h2
 
 /-- **The reduction `X_0(N)_{𝔽_ℓ}` and its Eichler–Shimura point count,
 at the nine witness primes** (PROVEN, by decomposition — 2026-07-27).
