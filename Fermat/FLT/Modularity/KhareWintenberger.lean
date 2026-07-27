@@ -5435,6 +5435,230 @@ theorem exists_realApproximationBall_of_affine_geometricallyIrreducible
     (CommRingCat.hom_ext (ringHom_uliftRat_ext _ _)) _ ?_
   simp [hzero]
 
+/-- **CHINESE REMAINDER OVER A FINITE SET OF PRIMES** (PROVEN 2026-07-27) — the
+integral half of the Break-B reconciliation below. Given prime-power moduli
+`p ^ N p` for `p` ranging over a `Finset` of primes, and an arbitrary family `b`
+of integer targets, there is ONE integer congruent to `b p` modulo `p ^ N p` for
+every `p` simultaneously.
+
+Proved by induction on the finset rather than through
+`Nat.chineseRemainderOfFinset`, which is not in this module's import cone (and
+adding it would grow the cone of a 40k-line file for one lemma). At the induction
+step, `IsCoprime ((p : ℤ) ^ N p) (∏ q ∈ S, (q : ℤ) ^ N q)` — from
+`Nat.coprime_primes` and `IsCoprime.prod_right` — yields a Bézout pair
+`u * p ^ N p + w * Q = 1`, and `T := T₀ * (u * p ^ N p) + b p * (w * Q)` works by
+the two identities
+
+* `T - b p = p ^ N p * (u * (T₀ - b p))`, and
+* `T - T₀ = Q * (w * (b p - T₀))`,
+
+each of which is a one-line `linear_combination` of the Bézout relation. -/
+theorem exists_int_congr_of_finset_primes (S : Finset ℕ) (hSp : ∀ p ∈ S, p.Prime)
+    (b : ℕ → ℤ) (N : ℕ → ℕ) :
+    ∃ T : ℤ, ∀ p ∈ S, ((p : ℤ) ^ N p) ∣ (T - b p) := by
+  classical
+  induction S using Finset.induction_on with
+  | empty => exact ⟨0, by simp⟩
+  | insert p S hpS ih =>
+      obtain ⟨T₀, hT₀⟩ := ih (fun q hq => hSp q (Finset.mem_insert_of_mem hq))
+      have hp : p.Prime := hSp p (Finset.mem_insert_self p S)
+      set Q : ℤ := ∏ q ∈ S, (q : ℤ) ^ N q with hQdef
+      have hcop : IsCoprime ((p : ℤ) ^ N p) Q := by
+        refine IsCoprime.prod_right ?_
+        intro q hq
+        have hq' : q.Prime := hSp q (Finset.mem_insert_of_mem hq)
+        have hne : p ≠ q := fun h => hpS (h ▸ hq)
+        exact (((Nat.coprime_primes hp hq').mpr hne).isCoprime).pow
+      obtain ⟨u, w, hbez⟩ := hcop
+      refine ⟨T₀ * (u * (p : ℤ) ^ N p) + b p * (w * Q), ?_⟩
+      intro q hq
+      rcases Finset.mem_insert.mp hq with rfl | hqS
+      · exact ⟨u * (T₀ - b q), by linear_combination (b q) * hbez⟩
+      · have hdvdQ : ((q : ℤ) ^ N q) ∣ Q := Finset.dvd_prod_of_mem _ hqS
+        have h1 : ((q : ℤ) ^ N q) ∣ (T₀ * (u * (p : ℤ) ^ N p) + b p * (w * Q) - T₀) := by
+          refine Dvd.dvd.trans hdvdQ ⟨w * (b p - T₀), ?_⟩
+          linear_combination T₀ * hbez
+        have h2 := hT₀ q hqS
+        have := dvd_add h1 h2
+        simpa using this
+
+/-- **A COSET `a + M · ℤ[1/q]` OF `ℚ` IS DENSE IN `ℝ`** (PROVEN 2026-07-27) — the
+archimedean half of the Break-B reconciliation. For `M ≥ 1` and `q ≥ 2` and any
+real interval `(α, β)`, some `a + M * k / q ^ j` lies strictly inside it.
+
+This is what lets the `p`-adic congruence conditions coexist with the real box:
+the rationals congruent to a fixed integer modulo `M` at every prime of `S₀` still
+form a set that meets EVERY real interval, because their denominators are allowed
+to be powers of a base `q` coprime to `M`. Spacing `M / q ^ j` is pushed below
+`β - α` by `pow_unbounded_of_one_lt`, and `k := ⌊(α - a) / r⌋ + 1` then lands in
+the interval by `Int.lt_floor_add_one` and `Int.floor_le`. -/
+theorem exists_rat_mem_coset_mem_Ioo (a : ℤ) (Mq qq : ℕ) (hMq : 0 < Mq) (hqq : 2 ≤ qq)
+    (α β : ℝ) (hαβ : α < β) :
+    ∃ t : ℚ, (∃ (k : ℤ) (j : ℕ), t = (a : ℚ) + (Mq : ℚ) * (k : ℚ) / (qq : ℚ) ^ j) ∧
+      α < (t : ℝ) ∧ (t : ℝ) < β := by
+  have hq1 : (1 : ℝ) < (qq : ℝ) := by
+    have : (2 : ℝ) ≤ (qq : ℝ) := by exact_mod_cast hqq
+    linarith
+  obtain ⟨j, hj⟩ := pow_unbounded_of_one_lt ((Mq : ℝ) / (β - α)) hq1
+  have hqj : (0 : ℝ) < (qq : ℝ) ^ j := by positivity
+  have hMq0 : (0 : ℝ) < (Mq : ℝ) := by exact_mod_cast hMq
+  set r : ℝ := (Mq : ℝ) / (qq : ℝ) ^ j with hrdef
+  have hr0 : 0 < r := by rw [hrdef]; positivity
+  have hrlt : r < β - α := by
+    rw [hrdef, div_lt_iff₀ hqj]
+    have h := (div_lt_iff₀ (show (0:ℝ) < β - α by linarith)).mp hj
+    linarith
+  set k : ℤ := ⌊(α - (a : ℝ)) / r⌋ + 1 with hkdef
+  have hlow : α - (a : ℝ) < (k : ℝ) * r := by
+    have h := Int.lt_floor_add_one ((α - (a : ℝ)) / r)
+    have hk : ((k : ℝ)) = (⌊(α - (a : ℝ)) / r⌋ : ℝ) + 1 := by rw [hkdef]; push_cast; ring
+    rw [hk]
+    calc α - (a : ℝ) = ((α - (a : ℝ)) / r) * r := by field_simp
+      _ < ((⌊(α - (a : ℝ)) / r⌋ : ℝ) + 1) * r := mul_lt_mul_of_pos_right h hr0
+  have hhigh : (k : ℝ) * r < β - (a : ℝ) := by
+    have h := Int.floor_le ((α - (a : ℝ)) / r)
+    have hk : ((k : ℝ)) = (⌊(α - (a : ℝ)) / r⌋ : ℝ) + 1 := by rw [hkdef]; push_cast; ring
+    rw [hk]
+    have h2 : ((⌊(α - (a : ℝ)) / r⌋ : ℝ) + 1) * r ≤ ((α - (a : ℝ)) / r) * r + r := by
+      have := mul_le_mul_of_nonneg_right h hr0.le
+      linarith
+    have h3 : ((α - (a : ℝ)) / r) * r = α - (a : ℝ) := by field_simp
+    linarith
+  have hcast : (((a : ℚ) + (Mq : ℚ) * (k : ℚ) / (qq : ℚ) ^ j : ℚ) : ℝ)
+      = (a : ℝ) + (k : ℝ) * r := by rw [hrdef]; push_cast; ring
+  exact ⟨(a : ℚ) + (Mq : ℚ) * (k : ℚ) / (qq : ℚ) ^ j, ⟨k, j, rfl⟩,
+    by rw [hcast]; linarith, by rw [hcast]; linarith⟩
+
+/-- **ZARISKI-GENERIC MEETS A REAL BOX INSIDE PRESCRIBED DENSE SETS** (PROVEN
+2026-07-27) — the exact generalisation of `exists_rat_mem_box_eval_ne_zero` that
+Break B needs. If each coordinate is constrained to a set `s i ⊆ ℚ` that meets
+every real interval, then a nonzero polynomial still has a non-root inside the
+real box with all coordinates in their `s i`.
+
+The one new ingredient over `exists_rat_mem_box_eval_ne_zero` is that
+`s i ∩ box` is INFINITE, which no longer follows from `Set.Ioo_infinite`: if it
+were finite it would have a least element `t₁` (`Set.exists_min_image`), and
+density in the interval `(v₀ i − ε, t₁)` produces a smaller member. With that,
+`MvPolynomial.funext_set` applies verbatim. -/
+theorem exists_rat_mem_box_mem_eval_ne_zero {m : ℕ} {F : MvPolynomial (Fin m) ℚ}
+    (hF : F ≠ 0) (v₀ : Fin m → ℝ) {ε : ℝ} (hε : 0 < ε) (s : Fin m → Set ℚ)
+    (hdense : ∀ (i : Fin m) (α β : ℝ), α < β → ∃ t ∈ s i, α < (t : ℝ) ∧ (t : ℝ) < β) :
+    ∃ v : Fin m → ℚ, (∀ i, |(v i : ℝ) - v₀ i| < ε) ∧ (∀ i, v i ∈ s i) ∧
+      MvPolynomial.eval v F ≠ 0 := by
+  classical
+  set T : Fin m → Set ℚ := fun i => {t : ℚ | t ∈ s i ∧ |(t : ℝ) - v₀ i| < ε} with hTdef
+  have hTinf : ∀ i, (T i).Infinite := by
+    intro i
+    by_contra hfin
+    rw [Set.not_infinite] at hfin
+    obtain ⟨t₀, ht₀s, ht₀1, ht₀2⟩ := hdense i (v₀ i - ε) (v₀ i + ε) (by linarith)
+    have hne : (T i).Nonempty := ⟨t₀, ht₀s, by rw [abs_lt]; constructor <;> linarith⟩
+    obtain ⟨t₁, ht₁, hmin⟩ := Set.exists_min_image (T i) (fun t => (t : ℝ)) hfin hne
+    have ht₁' : |((t₁ : ℚ) : ℝ) - v₀ i| < ε := ht₁.2
+    rw [abs_lt] at ht₁'
+    obtain ⟨t, hts, hta, htb⟩ := hdense i (v₀ i - ε) ((t₁ : ℚ) : ℝ) (by linarith [ht₁'.1])
+    have htT : t ∈ T i := by
+      refine ⟨hts, ?_⟩
+      rw [abs_lt]; constructor <;> linarith [ht₁'.2]
+    have hmm : ((t₁ : ℚ) : ℝ) ≤ ((t : ℚ) : ℝ) := hmin t htT
+    linarith
+  by_contra hcon
+  push Not at hcon
+  refine hF (MvPolynomial.funext_set T hTinf ?_)
+  intro y hy
+  rw [map_zero]
+  have hy' : ∀ i, y i ∈ T i := fun i => hy i (Set.mem_univ i)
+  exact hcon y (fun i => (hy' i).2) (fun i => (hy' i).1)
+
+/-- **THE BREAK-B RECONCILIATION, PROVEN** (2026-07-27): a rational parameter that
+is simultaneously inside a prescribed REAL box, off a prescribed HYPERSURFACE, and
+`p`-adically close to a prescribed INTEGER centre at every prime of a finite set.
+
+This is step 2 of `exists_rat_mem_box_padicPoints_eval_ne_zero`'s docstring, and it
+carries no geometry at all — it is pure arithmetic of `ℚ`, so it is stated and
+proven separately from the leaf and consumed by it. The construction:
+
+* `exists_int_congr_of_finset_primes` merges the per-prime integer centres `c p i`
+  into ONE integer centre `T i` (CRT);
+* the good set in coordinate `i` is then the coset
+  `T i + Mq · ℤ[1/qq]` with `Mq := ∏_{p ∈ S₀} p ^ N p` and
+  `qq := 1 + ∏_{p ∈ S₀} p` — the `+1` is what makes `qq` coprime to every
+  `p ∈ S₀`, so that denominators which are powers of `qq` are invisible to every
+  `padicNorm p` in play;
+* `exists_rat_mem_coset_mem_Ioo` says that coset is dense in `ℝ`, and
+  `exists_rat_mem_box_mem_eval_ne_zero` then supplies a member of it in the box
+  and off `F = 0`;
+* the `p`-adic estimate is the ultrametric inequality applied to the splitting
+  `v i − c p i = (T i − c p i) + Mq · k / qq ^ j`, whose two terms are bounded by
+  `p ^ (−N p)` through `padicNorm.dvd_iff_norm_le` (using `p ^ N p ∣ Mq`) and
+  `padicNorm.nat_eq_one_iff` (using `¬ p ∣ qq ^ j`).
+
+Note `S₀ = ∅` is allowed: `Mq = 1`, `qq = 2`, and the conclusion degenerates to
+`exists_rat_mem_box_eval_ne_zero`. -/
+theorem exists_rat_mem_box_padicClose_eval_ne_zero {m : ℕ} {F : MvPolynomial (Fin m) ℚ}
+    (hF : F ≠ 0) (v₀ : Fin m → ℝ) {ε : ℝ} (hε : 0 < ε)
+    (S₀ : Finset ℕ) (hS₀prime : ∀ p ∈ S₀, p.Prime)
+    (c : ℕ → Fin m → ℤ) (N : ℕ → ℕ) :
+    ∃ v : Fin m → ℚ, (∀ i, |(v i : ℝ) - v₀ i| < ε) ∧ MvPolynomial.eval v F ≠ 0 ∧
+      ∀ p ∈ S₀, ∀ i, padicNorm p (v i - (c p i : ℚ)) ≤ (p : ℚ) ^ (-(N p : ℤ)) := by
+  classical
+  -- one common INTEGER centre, by CRT
+  have hcrt : ∀ i : Fin m, ∃ Ti : ℤ, ∀ p ∈ S₀, ((p : ℤ) ^ N p) ∣ (Ti - c p i) :=
+    fun i => exists_int_congr_of_finset_primes S₀ hS₀prime (fun p => c p i) N
+  choose T hT using hcrt
+  -- the modulus, and an auxiliary base coprime to every `p ∈ S₀`
+  set Mq : ℕ := ∏ p ∈ S₀, p ^ N p with hMqdef
+  set qq : ℕ := 1 + ∏ p ∈ S₀, p with hqqdef
+  have hMq0 : 0 < Mq := by
+    rw [hMqdef]
+    exact Finset.prod_pos fun p hp => pow_pos (hS₀prime p hp).pos _
+  have hqq2 : 2 ≤ qq := by
+    rw [hqqdef]
+    have : 1 ≤ ∏ p ∈ S₀, p :=
+      Finset.one_le_prod' fun p hp => (hS₀prime p hp).one_lt.le
+    omega
+  have hpq : ∀ p ∈ S₀, ¬ p ∣ qq := by
+    intro p hp hdvd
+    have h1 : p ∣ ∏ q ∈ S₀, q := Finset.dvd_prod_of_mem _ hp
+    have hA : (p : ℤ) ∣ ((qq : ℕ) : ℤ) := Int.natCast_dvd_natCast.mpr hdvd
+    have hB : (p : ℤ) ∣ ((∏ q ∈ S₀, q : ℕ) : ℤ) := Int.natCast_dvd_natCast.mpr h1
+    have hone : ((qq : ℕ) : ℤ) - ((∏ q ∈ S₀, q : ℕ) : ℤ) = 1 := by
+      rw [hqqdef]; push_cast; ring
+    have h3 : (p : ℤ) ∣ 1 := by rw [← hone]; exact dvd_sub hA hB
+    have h4 : p ∣ 1 := by exact_mod_cast h3
+    exact absurd (Nat.dvd_one.mp h4) (hS₀prime p hp).one_lt.ne'
+  -- the dense coset in each coordinate
+  set s : Fin m → Set ℚ := fun i =>
+    {t : ℚ | ∃ (k : ℤ) (j : ℕ), t = (T i : ℚ) + (Mq : ℚ) * (k : ℚ) / (qq : ℚ) ^ j} with hsdef
+  obtain ⟨v, hbox, hmem, hval⟩ :=
+    exists_rat_mem_box_mem_eval_ne_zero hF v₀ hε s
+      (fun i α β hαβ => exists_rat_mem_coset_mem_Ioo (T i) Mq qq hMq0 hqq2 α β hαβ)
+  refine ⟨v, hbox, hval, ?_⟩
+  intro p hp i
+  haveI : Fact p.Prime := ⟨hS₀prime p hp⟩
+  obtain ⟨k, j, hkj⟩ := hmem i
+  have hsplit : v i - (c p i : ℚ)
+      = ((T i - c p i : ℤ) : ℚ) + (((Mq : ℤ) * k : ℤ) : ℚ) / (((qq ^ j : ℕ) : ℤ) : ℚ) := by
+    rw [hkj]; push_cast; ring
+  have hterm1 : padicNorm p (((T i - c p i : ℤ) : ℚ)) ≤ (p : ℚ) ^ (-(N p : ℤ)) := by
+    refine padicNorm.dvd_iff_norm_le.mp ?_
+    have := hT i p hp
+    push_cast
+    exact_mod_cast this
+  have hqqj : padicNorm p ((((qq ^ j : ℕ) : ℤ) : ℚ)) = 1 := by
+    have hnd : ¬ p ∣ qq ^ j := fun h => hpq p hp ((hS₀prime p hp).dvd_of_dvd_pow h)
+    have := (padicNorm.nat_eq_one_iff (p := p) (qq ^ j)).mpr hnd
+    simpa using this
+  have hterm2 : padicNorm p ((((Mq : ℤ) * k : ℤ) : ℚ) / (((qq ^ j : ℕ) : ℤ) : ℚ))
+      ≤ (p : ℚ) ^ (-(N p : ℤ)) := by
+    rw [padicNorm.div, hqqj, div_one]
+    refine padicNorm.dvd_iff_norm_le.mp ?_
+    have h1 : (p ^ N p) ∣ Mq := Finset.dvd_prod_of_mem _ hp
+    have h2 : ((p ^ N p : ℕ) : ℤ) ∣ ((Mq : ℤ)) := Int.natCast_dvd_natCast.mpr h1
+    exact h2.mul_right k
+  rw [hsplit]
+  exact le_trans padicNorm.nonarchimedean (max_le hterm1 hterm2)
+
 open CategoryTheory AlgebraicGeometry in
 /-- **BREAK B — A HYPERPLANE PARAMETER THAT KEEPS THE PRESCRIBED `ℚ_[p]`-POINTS,
 IN THE REAL BOX, AND OFF A HYPERSURFACE** (LEAF, stated 2026-07-27).
@@ -5510,7 +5734,53 @@ neighbourhood, for contrast, are `exists_rat_mem_box_eval_ne_zero`,
 `exists_realApproximationBall_*`, `exists_affineCoordinates_*` and
 `exists_nonZeroDivisorLocus_*`, all `[propext, Classical.choice, Quot.sound]`.
 Anyone tempted to revert the thread-through on cone-growth grounds should re-run
-that check first. -/
+that check first.
+
+**STATUS 2026-07-27: STEP 2 IS PROVEN; THE WHOLE OF WHAT IS LEFT IS STEP 1.**
+The proof below is now a complete skeleton and the ONE surviving `sorry` is the
+interior `have hballs` — Hensel-openness of the `ℚ_[p]`-points, per prime.
+Everything else is discharged:
+
+* the `S₀ = ∅` case, from `exists_rat_mem_box_eval_ne_zero` (as before);
+* the CRT merge of the per-prime centres into one integer centre
+  (`exists_int_congr_of_finset_primes`, PROVEN above);
+* the archimedean reconciliation — a rational simultaneously in the real box, off
+  `F = 0`, and `p`-adically inside every prescribed ball
+  (`exists_rat_mem_box_padicClose_eval_ne_zero`, PROVEN above, over
+  `exists_rat_mem_coset_mem_Ioo` and `exists_rat_mem_box_mem_eval_ne_zero`);
+* the final assembly.
+
+`hsmooth`, `hft`, `hgi`, `hdim`, `hx` and `hS₀pt` are consumed EXACTLY at
+`hballs` and nowhere else — that is the honest statement of where the remaining
+mathematics sits, and a prover taking it up needs nothing from this file beyond
+the `hballs` statement itself.
+
+**WHY `hballs` MAY ASK FOR INTEGER CENTRES, AND WHY THAT COSTS NOTHING.** The
+good parameter set `G_p := {v | Spec (A ⧸ (ℓ_v)) has a ℚ_[p]-point}` is a CONE:
+for `λ ∈ ℚˣ` one has `ℓ_{λ·v} = φ(λ) · ℓ_v` (the form is `ℚ`-linear in `v`), and
+`φ(λ)` is a UNIT of `A` because `A` is a `ℚ`-algebra, so
+`Ideal.span {ℓ_{λ·v}} = Ideal.span {ℓ_v}` and the cut scheme is unchanged. Hence
+`G_p` is stable under multiplying `v` by any nonzero rational, so any rational
+centre of a `p`-adic ball inside `G_p` may be cleared of denominators. Asking for
+`c p : Fin (n+1) → ℤ` is therefore free, and it is what turns the reconciliation
+into a plain congruence in `ℤ` with no denominator bookkeeping — the sole reason
+the CRT step above is six lines rather than a valuation audit. (A prover who
+finds it more convenient to produce a rational centre should clear denominators
+by this scaling rather than weaken the statement.)
+
+WHAT `hballs` STILL NEEDS, and it is a genuinely missing theory rather than a
+missing lemma: that the `ℚ_[p]`-points of a SMOOTH `ℚ_[p]`-variety vary
+`p`-adically continuously with the equation — i.e. the `p`-adic implicit function
+theorem for a smooth morphism, of which mathlib has the commutative-algebra
+kernel (`Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete` with
+`IsAdicComplete (maximalIdeal ℤ_[p]) ℤ_[p]`) but not the scheme-level statement
+"a smooth morphism is open on `ℚ_[p]`-points". Do NOT redevelop multivariate
+Hensel; what is missing is the passage from `AlgebraicGeometry.Smooth g` to that
+lifting situation at the given point. This mirrors exactly the real sibling
+`exists_realApproximationBall_of_affine_geometricallyIrreducible`, whose
+`ℝ`-topology gap was reduced to the single arc leaf
+`exists_realArc_of_affine_geometricallyIrreducible`; the `p`-adic side needs no
+arc, but it does need that one scheme-to-analysis crossing. -/
 theorem exists_rat_mem_box_padicPoints_eval_ne_zero
     (hsmooth : AlgebraicGeometry.Smooth g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
@@ -5537,14 +5807,26 @@ theorem exists_rat_mem_box_padicPoints_eval_ne_zero
     subst hS
     obtain ⟨v, hv, hvF⟩ := exists_rat_mem_box_eval_ne_zero hF v₀ hε
     exact ⟨v, hv, hvF, fun p _ hp => absurd hp (Finset.notMem_empty p)⟩
-  · -- THE CONTENT: a prescribed NONEMPTY set of primes, Hensel-openness plus CRT
-    have key : ∃ v : Fin (n + 1) → ℚ, (∀ i, |(v i : ℝ) - v₀ i| < ε) ∧
-        MvPolynomial.eval v F ≠ 0 ∧
-        (∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+  · -- THE CONTENT: a prescribed NONEMPTY set of primes, Hensel-openness plus CRT.
+    -- STEP 1 (the sole remaining leaf): the `ℚ_[p]`-points of the CUT scheme
+    -- survive on a whole `p`-adic ball of hyperplane parameters, centred at an
+    -- INTEGER parameter (legitimate because the good set is a cone — see the
+    -- docstring). This is where `hsmooth`, `hft`, `hgi`, `hdim`, `hx` and
+    -- `hS₀pt` are consumed, and it is the only thing this leaf still owes.
+    have hballs : ∃ (c : ℕ → Fin (n + 1) → ℤ) (N : ℕ → ℕ),
+        ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ → ∀ v : Fin (n + 1) → ℚ,
+          (∀ i, padicNorm p (v i - (c p i : ℚ)) ≤ (p : ℚ) ^ (-(N p : ℤ))) →
           HasRationalPoint (specQuotSpanSingleton
             (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g)
-            (ULift.{u} ℚ_[p])) := sorry
-    exact key
+            (ULift.{u} ℚ_[p]) := sorry
+    obtain ⟨c, N, hgood⟩ := hballs
+    -- STEP 2 (PROVEN): the reconciliation — one rational parameter in the real
+    -- box, off `F = 0`, and inside every one of those `p`-adic balls.
+    obtain ⟨v, hbox, hval, hclose⟩ :=
+      exists_rat_mem_box_padicClose_eval_ne_zero hF v₀ hε S₀ hS₀prime c N
+    refine ⟨v, hbox, hval, ?_⟩
+    intro p hfp hp
+    exact hgood p hp v (fun i => hclose p hp i)
 
 end BertiniLeaves
 
@@ -16162,7 +16444,13 @@ local solvability being an open condition. It is isolated in the single
 new leaf `exists_rat_mem_box_padicPoints_eval_ne_zero`, whose `S₀ = ∅`
 case is PROVEN from `exists_rat_mem_box_eval_ne_zero` and whose content
 case is Hensel-openness (multivariate Hensel is ALREADY IN MATHLIB — do
-not redevelop it) plus CRT; see that docstring.
+not redevelop it) plus CRT; see that docstring. **UPDATED 2026-07-27: the
+CRT/reconciliation half is now PROVEN** — over
+`exists_int_congr_of_finset_primes`, `exists_rat_mem_coset_mem_Ioo` and
+`exists_rat_mem_box_mem_eval_ne_zero`, assembled in
+`exists_rat_mem_box_padicClose_eval_ne_zero` — so the leaf's only
+remaining obligation is the interior `have hballs`, i.e. `p`-adic
+openness of the local points of the CUT scheme.
 
 THE RESIDUAL OBSTRUCTION IS NOW SOMEWHERE ELSE, and it is a different one
 (identified 2026-07-27, and it is what stops `S₀` reaching
