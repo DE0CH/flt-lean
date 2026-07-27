@@ -431,6 +431,11 @@ public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 -- geometric point above an arbitrary point of the base.
 public import Mathlib.AlgebraicGeometry.ResidueField
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+-- `InfiniteGalois.mem_range_algebraMap_iff_fixed`: an element of `K̄` fixed by the
+-- whole absolute Galois group lies in `K`.  This is the last step of the
+-- field-of-moduli descent `exists_rationalJ_of_galoisInvariant`, and the only
+-- reason `Galois/Infinite` is in this cone.
+public import Mathlib.FieldTheory.Galois.Infinite
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 -- `Affine.Point.mapVariableChange` / `equivOfEq`: the isomorphism of Mordell–Weil
 -- groups induced by an admissible change of variables.  This is what turns an
@@ -10592,6 +10597,265 @@ theorem IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq {N : ℕ} (hN : 
     _ = (h₁.classify (specAlgClos ℚ) d₂).1 := by
         rw [Category.assoc, huv, Category.comp_id]
 
+/-! ### The `j`-line, Weierstrass models and the `j`-section, hoisted
+
+The seven declarations below — `jLine`, `jLineStr`, `jLineVal`,
+`weierstrassAffine`, `weierstrassAffineStr`, `IsWeierstrassModel` and the
+structure `IsJSection` — were declared five thousand lines below, in the
+`j`-map subsection, until 2026-07-27.  They are HOISTED here, unchanged, and
+the reason is `exists_rationalJ_of_galoisInvariant` at the end of this
+subsection: the *field-of-moduli* half of the descent bridge — "all Galois
+conjugates of `d` are isomorphic to `d`, hence `j(d) ∈ ℚ`" — is proven from
+the naturality of the `j`-section alone, and it is consumed by
+`exists_weierstrassQ_autStable_of_galoisInvariant` in the subsection
+immediately below.  Lean's declaration order leaves no other placement: the
+consumer is above, so the vocabulary has to come with it.
+
+Nothing was renamed, restated or reproved; the sites they came from carry a
+pointer comment.  `exists_jSection` — the PROOF that an `IsJSection` exists —
+stays where it was, because it is not needed here: the leaf
+`exists_jSection_algClosModel` below asks for a `j`-section with one extra
+property, and a leaf needs no producer. -/
+
+/-- **The `j`-line `𝔸¹_ℚ = Spec ℚ[X]`**, the target of the `j`-map.
+
+Presented as `Spec` of the polynomial ring rather than as an abstract
+scheme so that the cut below is not a tautology: were the target left as
+a *field* of `IsJLine`, the structure would be satisfiable by taking it
+to be `Y` itself with `jt := hc.classify`, and `exists_jLine` would be a
+restatement of `exists_jMap` rather than a reduction of it.  Fixing the
+target to the honest `j`-line, with the honest coordinate `jLineVal`, is
+what makes `IsJLine` STRICTLY STRONGER: it asks for the `j`-invariant
+over every base `T`, not only over `Spec ℚ`. -/
+noncomputable abbrev jLine : Scheme.{0} := Spec (CommRingCat.of (Polynomial ℚ))
+
+/-- **The structure morphism `𝔸¹_ℚ ⟶ Spec ℚ`**, `Spec` of `ℚ ↪ ℚ[X]`. -/
+noncomputable def jLineStr : jLine ⟶ SpecQ :=
+  Spec.map (CommRingCat.ofHom (algebraMap ℚ (Polynomial ℚ)))
+
+/-- **The rational number carried by a rational point of the `j`-line.**
+
+A `ℚ`-point of `Spec ℚ[X]` is `Spec` of a ring map `ℚ[X] → ℚ`
+(`Spec.homEquiv`, which is available because `Scheme.Spec` is fully
+faithful), and its coordinate is the image of `X`.
+
+**Checked to be the genuine coordinate, not a degenerate reading.**  For
+every `a : ℚ` the point `Spec.map (CommRingCat.ofHom (aeval a))` — whose
+section condition is `Spec.map_comp` plus `aeval a ∘ algebraMap = id` —
+satisfies `jLineVal … = a`, by `simp [jLineVal, Spec.homEquiv]`.  So
+`jLineVal` is ONTO `ℚ`.  This matters for faithfulness in the direction
+that is easy to miss: a junk `jLineVal` (say the constant `0`) would not
+make `exists_jLine` vacuous, it would make it **FALSE**, since
+`jt_weierstrass` demands the value `E.j`.  The check is not kept as a
+declaration because nothing consumes it and it would be free-floating. -/
+noncomputable def jLineVal (x : RelPoint jLineStr (𝟙 SpecQ)) : ℚ :=
+  (Spec.homEquiv x.1).hom Polynomial.X
+
+/-- **The affine Weierstrass curve `Spec R[W]` as a scheme.**
+
+`WeierstrassCurve.Affine.CoordinateRing` is mathlib's `R[X,Y]/(W)`; its
+spectrum is the affine Weierstrass curve, which is the projective one
+with the point at infinity removed.  That last sentence is the whole
+content of `IsWeierstrassModel` below. -/
+noncomputable def weierstrassAffine {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    Scheme.{0} :=
+  Spec (CommRingCat.of W.toAffine.CoordinateRing)
+
+/-- **The structure morphism of the affine Weierstrass curve**, `Spec` of
+`R → R[W]`. -/
+noncomputable def weierstrassAffineStr {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    weierstrassAffine W ⟶ Spec (CommRingCat.of R) :=
+  Spec.map (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing))
+
+/-- **`W` is a Weierstrass model of the elliptic scheme carrying `ab`**:
+the complement of the zero section is the affine Weierstrass curve of
+`W`, as a scheme over the base.
+
+This is the coordinate-level pinning that the moduli-level `≃+` of
+`exists_ellipticScheme_of_weierstrass` cannot provide, and it is stated
+in the only form available at this pin — an OPEN IMMERSION of
+`Spec R[W]` whose set-theoretic range is the complement of the range of
+the zero section — because `Proj` of a graded quotient ring, and hence
+the projective Weierstrass scheme itself, cannot yet be formed.
+
+**Why this determines `j`, which is what keeps `IsJSection.jt_model`
+from being false.**  Over a field the smooth projective completion of an
+integral affine curve is unique, and it adds exactly the missing points.
+So if `W` and `W'` are both models of one `ab`, the two open immersions
+identify `Spec K[W] ≅ A ∖ {O} ≅ Spec K[W']`, hence identify the
+completions carrying the single point at infinity of each to the other,
+i.e. give an isomorphism of the two Weierstrass curves matching their
+origins.  Such an isomorphism is a `VariableChange`, and
+`WeierstrassCurve.variableChange_j` then gives `W.j = W'.j`.  Note the
+`range_eq` field is what forces the removed point to BE the origin; the
+weaker "some open immersion" would still determine `j` (by translation)
+but only after an argument, so the stronger form is stated.
+
+**`W` is not required to be elliptic here.**  It cannot be: `Δ` is
+invertible automatically, since a singular `Spec R[W]` cannot be an open
+subscheme of the smooth `A`.  Consumers that need `W.j` supply
+`[W.IsElliptic]` themselves. -/
+def IsWeierstrassModel {R : Type} [CommRing R] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
+    (W : WeierstrassCurve R) : Prop :=
+  ∃ ι : weierstrassAffine W ⟶ A, IsOpenImmersion ι ∧
+    ι ≫ f = weierstrassAffineStr W ∧
+    Set.range ι.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ
+
+/-- **The `j`-invariant of an elliptic scheme, pinned by Weierstrass
+models rather than by a chosen datum.**
+
+The first two fields are those of `IsJLine` verbatim — the natural
+transformation and its naturality.  The third replaces `IsJLine`'s
+existential `jt_weierstrass` by the statement that actually says "`jt`
+IS the `j`-invariant": wherever the elliptic scheme has a Weierstrass
+model `W`, the value is `W.j`.
+
+**Why the universal form is safe here where it was not at
+`jt_weierstrass`.**  The subsection docstring at `IsJMapOn.classify_jm`
+warns against quantifying over every datum "modelling `E`", because the
+only modelling relation available there is a Galois-equivariant `≃+`
+that is not known to determine `E.j` — so the `∀` form risks being
+false.  `IsWeierstrassModel` is a different relation: it pins the scheme
+by coordinates and DOES determine `j` (see its docstring).  So here the
+`∀` form is the correct one, and it is what makes this field usable
+without knowing which datum a producer will hand over.
+
+**This is strictly weaker than `IsJLine` in the direction that matters
+for cutting**: it says nothing about which elliptic schemes over `ℚ`
+exist.  That half is `exists_weierstrassModel_gamma0Datum`. -/
+structure IsJSection where
+  /-- the `j`-invariant of an elliptic scheme, as a point of the `j`-line -/
+  jt : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum 1 T → RelPoint jLineStr g
+  /-- `j` is natural: a base change of data is sent to the precomposed point -/
+  jt_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+    IsBaseChangeOf h d' d → jt g' d' = RelPoint.pre h hg (jt g d)
+  /-- `j` agrees with `WeierstrassCurve.j` on every Weierstrass model -/
+  jt_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
+    IsWeierstrassModel d.ab W → jLineVal (jt (𝟙 SpecQ) d) = W.j
+
+/-! #### The field of moduli, and why `j` descends
+
+`jLineVal` reads the coordinate of a `ℚ`-point of the `j`-line.  The descent
+below happens one level up, at `ℚ̄`-points, so it needs the same reading there
+— `jLineValAlgClos` — together with the one fact that makes the whole
+field-of-moduli argument work: precomposition with `Spec σ` is `σ` on
+coordinates.  From those two, plus the naturality field of `IsJSection` and
+nothing else, "every Galois conjugate of `d` is isomorphic to `d`" gives
+`σ (j d) = j d` for every `σ`, hence `j d ∈ ℚ` because `ℚ̄/ℚ` is Galois.
+
+**`jt_model` is NOT used here, and that is deliberate**: it pins the
+`j`-section only over `Spec ℚ`, so it says nothing about the value at the
+`ℚ̄`-point this subsection evaluates.  Anything that needs the value to BE the
+`j`-invariant of a `ℚ̄`-model must ask for it, and that is exactly the leaf
+`exists_jSection_algClosModel` below. -/
+
+/-- **The `ℚ̄`-value of a `ℚ̄`-point of the `j`-line** — `jLineVal` one level
+up (PROVEN 2026-07-27, no leaf).
+
+A `ℚ̄`-point of `Spec ℚ[X]` over `ℚ` is `Spec` of a `ℚ`-algebra map
+`ℚ[X] → ℚ̄`, and its coordinate is the image of `X`, exactly as for
+`jLineVal`.  The two agree under `algebraMap ℚ ℚ̄` on points that come from
+`ℚ`; nothing below needs that comparison, so it is not stated. -/
+noncomputable def jLineValAlgClos (x : RelPoint jLineStr (specAlgClos ℚ)) :
+    AlgebraicClosure ℚ :=
+  (Spec.homEquiv x.1).hom Polynomial.X
+
+/-- **The Galois action on `ℚ̄`-points of the `j`-line is `σ` on coordinates**
+(PROVEN 2026-07-27, no leaf).
+
+`RelPoint.pre (specGal σ)` is precomposition with `Spec σ`, and `Spec` is
+fully faithful, so on the ring side it is postcomposition with `σ`.  Reading
+off the coordinate at `X` gives `σ` applied to the coordinate.
+
+This is the only place where `specGal` meets the `j`-line, and it is what
+converts the scheme-theoretic invariance produced by `IsJSection.jt_natural`
+into the field-theoretic invariance that `InfiniteGalois` consumes. -/
+theorem jLineValAlgClos_pre (σ : Field.absoluteGaloisGroup ℚ)
+    (x : RelPoint jLineStr (specAlgClos ℚ)) :
+    jLineValAlgClos (RelPoint.pre (specGal σ) (specGal_comp_specAlgClos σ) x)
+      = σ (jLineValAlgClos x) := by
+  show (Spec.homEquiv (specGal σ ≫ x.1)).hom Polynomial.X = _
+  rw [specGal]
+  simp [jLineValAlgClos, Spec.homEquiv]
+
+/-- **An element of `K̄` fixed by the whole absolute Galois group lies in `K`**
+(PROVEN 2026-07-27, no leaf) — `InfiniteGalois.mem_range_algebraMap_iff_fixed`
+at `K̄/K`, which is Galois because `K` is perfect and `K̄` is normal over it.
+
+**Stated over a VARIABLE base field on purpose, and this is load-bearing.**
+At the literal `ℚ` the instance `Algebra ℚ (AlgebraicClosure ℚ)` is found as
+`DivisionRing.toRatAlgebra` rather than as `AlgebraicClosure.instAlgebra`, and
+`Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)`, `Normal ℚ (AlgebraicClosure ℚ)`
+and hence `IsGalois ℚ (AlgebraicClosure ℚ)` then all fail to synthesise inside
+this file — while succeeding in a scratch module that imports mathlib alone.
+Over a variable `K` that instance path does not arise, and the ℚ-instance of
+the finished lemma elaborates without complaint. -/
+theorem mem_range_algebraMap_of_galoisFixed {K : Type} [Field K] [PerfectField K]
+    (a : AlgebraicClosure K) (h : ∀ σ : Field.absoluteGaloisGroup K, σ a = a) :
+    a ∈ Set.range (algebraMap K (AlgebraicClosure K)) :=
+  (InfiniteGalois.mem_range_algebraMap_iff_fixed a).mpr h
+
+/-- **THE FIELD-OF-MODULI STEP: a `Γ₀(N)`-datum over `ℚ̄` isomorphic to all of
+its Galois conjugates has a RATIONAL `j`-invariant** (PROVEN 2026-07-27, no
+leaf).
+
+This is step 2 of the route recorded on
+`exists_weierstrassQ_autStable_of_galoisInvariant` below, and it is the half
+of that leaf which is pure descent — no Weierstrass model, no level structure,
+no twist.
+
+THE PROOF, in three lines.  For `σ ∈ Γ_ℚ`, `exists_gamma0Datum_baseChange`
+produces `dσ` with `IsBaseChangeOf (specGal σ) dσ d`, so `jt_natural` gives
+`jt dσ = RelPoint.pre (specGal σ) (jt d)`; `hinv` upgrades that base change to
+an ISOMORPHISM `IsBaseChangeOf (𝟙 _) dσ d`, and `jt_natural` at `𝟙` gives
+`jt dσ = jt d`.  Comparing, `RelPoint.pre (specGal σ) (jt d) = jt d`, which
+`jLineValAlgClos_pre` reads as `σ (j d) = j d`.  Since that holds for every
+`σ` and `ℚ̄/ℚ` is Galois, `j d ∈ ℚ`.
+
+**Only `jt_natural` is used.**  `jt_model` — the field that says `jt` IS the
+`j`-invariant — is not consumed, and cannot be: it pins the section over
+`Spec ℚ` only.  So this lemma is true for EVERY `IsJSection`, junk included,
+which is why it is a theorem and not a leaf.  The price is that it says
+nothing about which rational number `j₀` is; tying `j₀` to a Weierstrass model
+over `ℚ̄` is the separate leaf `exists_jSection_algClosModel`.
+
+`hN : N ≠ 0` is consumed by `Gamma0Datum.ofDvd`, which is how the level
+structure is forgotten to reach `Gamma0Datum 1`.  The `Etale` instance the
+`ofDvd`s need is `CyclicSubgroupOfOrder.etale_of_specQBase` at the structure
+morphism `specAlgClos ℚ`; `Etale` is `Prop`-valued, so the copies produced for
+`d` and for `dσ` agree with the ones in the statement by proof irrelevance. -/
+theorem exists_rationalJ_of_galoisInvariant {N : ℕ} (hN : N ≠ 0) (ja : IsJSection)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
+    letI := d.cyc.etale_of_specQBase (specAlgClos ℚ)
+    ∃ j₀ : ℚ,
+      jLineValAlgClos (ja.jt (specAlgClos ℚ) (d.ofDvd hN (one_dvd N)))
+        = algebraMap ℚ (AlgebraicClosure ℚ) j₀ := by
+  letI := d.cyc.etale_of_specQBase (specAlgClos ℚ)
+  set u := ja.jt (specAlgClos ℚ) (d.ofDvd hN (one_dvd N))
+  have key : ∀ σ : Field.absoluteGaloisGroup ℚ, σ (jLineValAlgClos u) = jLineValAlgClos u := by
+    intro σ
+    obtain ⟨dσ, ⟨hbc⟩⟩ := exists_gamma0Datum_baseChange (specGal σ) d
+    obtain ⟨hiso⟩ := hinv σ dσ hbc
+    letI := dσ.cyc.etale_of_specQBase (specAlgClos ℚ)
+    have h1 : ja.jt (specAlgClos ℚ) (dσ.ofDvd hN (one_dvd N))
+        = RelPoint.pre (specGal σ) (specGal_comp_specAlgClos σ) u :=
+      ja.jt_natural (specGal σ) (specGal_comp_specAlgClos σ) (hbc.ofDvd hN (one_dvd N))
+    have h2 : ja.jt (specAlgClos ℚ) (dσ.ofDvd hN (one_dvd N))
+        = RelPoint.pre (𝟙 _) (Category.id_comp _) u :=
+      ja.jt_natural (𝟙 _) (Category.id_comp _) (hiso.ofDvd hN (one_dvd N))
+    have h3 : RelPoint.pre (specGal σ) (specGal_comp_specAlgClos σ) u = u := by
+      rw [← h1, h2]
+      exact Subtype.ext (Category.id_comp _)
+    rw [← jLineValAlgClos_pre σ u, h3]
+  obtain ⟨q, hq⟩ := mem_range_algebraMap_of_galoisFixed _ key
+  exact ⟨q, hq.symm⟩
+
 /-! ### Weil descent of a `Γ₀(N)`-datum with a twist
 
 `exists_stableCyclic_of_gamma0Datum_algClos` below is the one genuinely
@@ -10606,10 +10870,17 @@ declarations are
   the descent hypothesis vacuous;
 * `autPoint_eq_self_or_neg` (PROVEN) — at `j ∉ {0, 1728}` such an automorphism
   acts on points as `±1`;
-* `exists_weierstrassQ_autStable_of_galoisInvariant` (LEAF) — the dictionary: a
-  `Γ₀(N)`-datum over `ℚ̄` all of whose Galois conjugates are isomorphic to it
-  comes from a Weierstrass curve over `ℚ` carrying a cyclic subgroup of order
-  `N` that is Galois-stable *up to an automorphism of the curve*;
+* `exists_weierstrassQ_autStable_of_galoisInvariant` (**PROVEN** 2026-07-27 by
+  the decomposition recorded on it) — the dictionary: a `Γ₀(N)`-datum over `ℚ̄`
+  all of whose Galois conjugates are isomorphic to it comes from a Weierstrass
+  curve over `ℚ` carrying a cyclic subgroup of order `N` that is Galois-stable
+  *up to an automorphism of the curve*.  Its three leaves — declared
+  immediately above it, and disjoint in subject matter — are
+  `exists_jSection_algClosModel` (the `j`-section computes `j` on `ℚ̄`-models),
+  `exists_weierstrassAlgClos_of_abelianSchemeStruct` (Riemann–Roch over `ℚ̄`)
+  and `exists_weierstrassQ_autStable_of_weierstrassAlgClos` (the transport);
+  the field-of-moduli half is PROVEN as `exists_rationalJ_of_galoisInvariant`
+  in the hoisted subsection above;
 * `exists_stableCyclic_twist_of_autStable_of_j_special` (LEAF) — the arithmetic
   heart, at `j ∈ {0, 1728}`: the cocycle in `Aut(E)/Aut(E, C)` is trivialised by
   a quartic or sextic twist;
@@ -10726,8 +10997,153 @@ theorem autPoint_eq_self_or_neg {F : Type*} [Field F] [DecidableEq F] {W : Weier
         simp [WeierstrassCurve.negVariableChange, WeierstrassCurve.Affine.negY]
       ring
 
+/-- **A `j`-section that also computes `j` on `ℚ̄`-models** (sorry leaf, opened
+2026-07-27).
+
+`IsJSection.jt_model` pins the `j`-section over `Spec ℚ` and NOWHERE else: it
+quantifies over `W : WeierstrassCurve ℚ` and `d : Gamma0Datum 1 SpecQ`.  That
+is enough for everything below this file's `j`-map subsection, and it is NOT
+enough here, where the value has to be read at the `ℚ̄`-point `specAlgClos ℚ`.
+
+**Why the extra clause cannot be a theorem about an arbitrary `IsJSection`.**
+The value of `jt` at `Spec ℚ̄` is constrained by the structure's axioms only
+through `jt_natural`, and the only anchor `jt_model` provides sits over
+`Spec ℚ`.  Naturality transports that anchor to the `ℚ`-RATIONAL points of a
+base, and `Spec ℚ̄` has none — a ring map `ℚ̄ → ℚ` does not exist.  So a witness
+of `IsJSection` may in principle be junk at `ℚ̄`, and a lemma
+`∀ ja : IsJSection, jLineValAlgClos (ja.jt (specAlgClos ℚ) d) = W.j` would be
+asserting more than the structure grants.  Making the section EXISTENTIAL is
+what keeps the statement honest.
+
+TRUE, and it is a strengthening of `exists_jSection` rather than a new theory:
+the genuine `j`-invariant of an elliptic scheme agrees with `W.j` on a
+Weierstrass model over ANY base ring, `ℚ̄` included.
+
+**How to prove it, and it is a one-line change to work that already exists.**
+`exists_jSection` builds its witness from `exists_jSectionOnAffine` (a leaf) by
+Zariski descent; `IsJSectionOnAffine.jt_model` is likewise stated only at
+`R = ℚ`.  Generalise THAT field to a variable base ring —
+`∀ {R : Type} [CommRing R] (W : WeierstrassCurve R) [W.IsElliptic]
+(d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (g : Spec (CommRingCat.of R) ⟶ SpecQ),
+IsWeierstrassModel d.ab W → jLineCoord (jt g d) = W.j` — and the present
+statement falls out at `R = ℚ̄`, `g = specAlgClos ℚ`.  The leaf that has to
+absorb the strengthening is `exists_jSectionOnAffine`, which is open anyway.
+**Do NOT build a second `j`-theory over `ℚ̄`.**
+
+`W.IsElliptic` is an instance binder here for the same reason as in
+`jt_model`: `WeierstrassCurve.j` is only defined for an elliptic curve. -/
+theorem exists_jSection_algClosModel :
+    ∃ ja : IsJSection, ∀ (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+      (d : Gamma0Datum 1 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsWeierstrassModel d.ab W →
+        jLineValAlgClos (ja.jt (specAlgClos ℚ) d) = W.j :=
+  sorry
+
+/-- **THE REVERSE WEIERSTRASS BRIDGE OVER `ℚ̄`** (sorry leaf, opened
+2026-07-27): an abelian scheme of relative dimension one over `Spec ℚ̄` has a
+Weierstrass model.
+
+**This is `exists_weierstrassCurve_of_abelianSchemeStruct` with its base
+generalised from `ℚ` to `ℚ̄`, and it MUST be proven by generalising that one —
+not by opening a second copy of Riemann–Roch.**  The `ℚ`-statement is PROVEN,
+over `EllipticScheme.lean`'s `exists_weierstrassModel_geomFibreAddEquiv_of_`
+`ellipticScheme`, whose own coordinate half `exists_weierstrassModel_of_`
+`ellipticScheme` is proven over three leaves there
+(`exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement`,
+`isElliptic_of_isOpenImmersion_coordinateRing`).  Every one of those is stated
+over `Spec (CommRingCat.of ℚ)` and NONE of their statements uses anything
+about `ℚ` beyond its being a field — so the generalisation is a base
+substitution in three leaf statements plus their assembly.
+
+**The one genuinely ℚ-specific step in that assembly**, and a successor should
+expect to pay for it: `exists_weierstrassModel_of_ellipticScheme` discharges
+the conjunct `ι ≫ f = weierstrassAffineStr E` with `hom_ext_spec_rat`, i.e.
+with the uniqueness of a morphism to `Spec ℚ` — `ℚ` being initial in
+`CommRing`.  Over `ℚ̄` there is no such uniqueness and the structure-morphism
+compatibility has to be carried by the construction instead of being read off.
+
+TRUE: `f` proper, smooth, geometrically connected of relative dimension `1`
+with a section is a genus-one curve over `ℚ̄` with a rational point;
+Riemann–Roch on `3·O` gives the Weierstrass equation (Silverman *AEC* III.3.1),
+and smoothness makes `Δ` invertible, i.e. `Ē.IsElliptic`.  Algebraic closedness
+is not used — the statement is true over any field, and is written at `ℚ̄` only
+because that is the base the consumer evaluates.
+
+The conclusion is the COORDINATE pinning `IsWeierstrassModel`, not the
+geometric-points `≃+` of `exists_weierstrassCurve_of_abelianSchemeStruct`.
+That is deliberate: the `≃+` is not known to determine `j` (see
+`IsWeierstrassModel`'s docstring and the warning at `IsJMapOn.classify_jm`),
+and determining `j` is the whole reason this leaf is consumed here. -/
+theorem exists_weierstrassAlgClos_of_abelianSchemeStruct {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))}
+    (ab : AbelianSchemeStruct f) (hdim : SmoothOfRelativeDimension 1 f) :
+    ∃ (Ē : WeierstrassCurve (AlgebraicClosure ℚ)) (_ : Ē.IsElliptic),
+      IsWeierstrassModel ab Ē :=
+  sorry
+
+/-- **THE TRANSPORT: a `ℚ̄`-model with rational `j` descends the level
+structure to a curve over `ℚ`, up to an automorphism** (sorry leaf, opened
+2026-07-27) — step 3 of the route of
+`exists_weierstrassQ_autStable_of_galoisInvariant` below, with steps 1 and 2
+already discharged and handed in as `Ē`, `hmodel` and `hj`.
+
+TRUE, and it is the classical bookkeeping.  `WeierstrassCurve.ofJ j₀` is an
+elliptic curve over `ℚ` with `j`-invariant `j₀` (mathlib,
+`WeierstrassCurve.ofJ_j`, in characteristic `0`), so `E := ofJ j₀` satisfies
+`(E⁄ℚ̄).j = Ē.j` by `WeierstrassCurve.map_j` and `hj`.  Over the separably
+closed `ℚ̄`, `WeierstrassCurve.exists_variableChange_of_j_eq` turns that into a
+change of variables `ψ` with `ψ • Ē = E⁄ℚ̄`, hence an additive isomorphism
+`Ē.Point ≃+ (E⁄ℚ̄).Point` (`Affine.Point.mapVariableChange`).  `hmodel`
+identifies `Ē`'s points with the geometric fibre of `d.f`, and
+`d.cyc.geom_cyclic` supplies there a generator `ȳ` of the level structure of
+order `N` whose `zmultiples` is EXACTLY the `LiesIn`-locus of `d.cyc.ι`; let
+`g` be its image.
+
+The residual automorphism is where `hinv` is consumed and it cannot be
+avoided: for `σ ∈ Γ_ℚ` the conjugate `σ^*d` is isomorphic to `d`, and
+transporting that isomorphism through `ψ` gives an automorphism of `E⁄ℚ̄` —
+`E` being defined over `ℚ` is what makes `(E⁄ℚ̄)^σ = E⁄ℚ̄` — carrying
+`σ ⟨g⟩` into `⟨g⟩`.  Removing it is the job of
+`exists_stableCyclic_twist_of_autStable` below, not of this leaf.
+
+**What is missing for it**, checked 2026-07-27: nothing about twists, and
+nothing about `Aut`.  What is missing is the dictionary between `hmodel` and
+points — "an open immersion of `Spec ℚ̄[Ē]` onto the complement of the zero
+section identifies `Ē(ℚ̄)` with the geometric fibre, additively" — which is
+`EllipticScheme.lean`'s `exists_geomFibreAddEquiv_of_weierstrassModel` with
+its base generalised to `ℚ̄`, and the compatibility of that identification
+with base change along `specGal σ`, which is `relPointPost_pre` there
+(`Category.assoc`).  A successor should generalise those two rather than
+rebuild them, exactly as with the leaf above.
+
+`hN : N ≠ 0` is consumed through `d.cyc.geom_cyclic`, whose generator has
+`addOrderOf = N`; at `N = 0` the hypothesis `d` is already contradictory by
+`isEmpty_of_gamma0Datum_zero`. -/
+theorem exists_weierstrassQ_autStable_of_weierstrassAlgClos {N : ℕ} (hN : N ≠ 0)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d))
+    (Ē : WeierstrassCurve (AlgebraicClosure ℚ)) (_hĒ : Ē.IsElliptic)
+    (hmodel : IsWeierstrassModel d.ab Ē)
+    (j₀ : ℚ) (hj : Ē.j = algebraMap ℚ (AlgebraicClosure ℚ) j₀) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+          (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
+          ∀ x ∈ AddSubgroup.zmultiples g,
+            autPoint h (WeierstrassCurve.Affine.Point.map
+                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
+              AddSubgroup.zmultiples g :=
+  sorry
+
 /-- **The moduli-to-Weierstrass dictionary for a datum with field of moduli `ℚ`**
-(sorry leaf, opened 2026-07-27; restated over `hinv` at release 8): a
+(sorry leaf, opened 2026-07-27; restated over `hinv` at release 8;
+**DECOMPOSED and PROVEN 2026-07-27** over the three leaves immediately above
+plus `exists_rationalJ_of_galoisInvariant`): a
 `Γ₀(N)`-datum over `ℚ̄` all of whose Galois conjugates are isomorphic to it
 comes from an elliptic curve over `ℚ` carrying a cyclic subgroup of order `N`
 that is Galois-stable UP TO AN AUTOMORPHISM of the curve.
@@ -10751,23 +11167,36 @@ TRUE.  The route, in three steps, is the classical one.
 1. *The datum becomes a Weierstrass curve.*  `d.ab` is an abelian scheme of
    relative dimension `1` over `Spec ℚ̄`, i.e. a genus-one curve with a rational
    point, so Riemann–Roch on `𝒪(3·0)` gives `Ē : WeierstrassCurve ℚ̄` with
-   `Ē.IsElliptic`, and `d.cyc.geom_cyclic ℚ̄ (𝟙 _)` supplies a generator `ḡ` of
-   the level structure with `addOrderOf ḡ = N`.  **This step is already
-   available over a variable base as
-   `exists_weierstrassCurve_of_abelianSchemeStruct`** — it is stated over
-   `Spec ℚ` there, and a successor who needs it here should generalise that
-   leaf's base rather than open a second copy.
-2. *The curve descends, because `j` does.*  `hinv` gives `φ_σ : Ē^σ ≅ Ē` for
-   every `σ`, so `σ (j Ē) = j Ē` for every `σ` and hence `j Ē ∈ ℚ`; take any
-   `E` over `ℚ` with that `j` (`WeierstrassCurve.ofJ`) and use
-   `WeierstrassCurve.exists_variableChange_of_j_eq` — available since `ℚ̄` is
-   separably closed — to get `ψ : Ē ≅ E⁄ℚ̄` over `ℚ̄`.
+   `Ē.IsElliptic`.  This is now the LEAF
+   `exists_weierstrassAlgClos_of_abelianSchemeStruct` above, whose docstring
+   records that it is `exists_weierstrassCurve_of_abelianSchemeStruct` with its
+   base generalised from `ℚ` to `ℚ̄` and MUST be proven that way rather than by
+   opening a second copy of Riemann–Roch.
+2. *The curve descends, because `j` does.*  This step is **PROVEN**, as
+   `exists_rationalJ_of_galoisInvariant` in the hoisted subsection above: `hinv`
+   plus the naturality of the `j`-section gives `σ (j d) = j d` for every `σ`,
+   and `ℚ̄/ℚ` being Galois puts `j d` in `ℚ`.  Tying that value to `Ē.j` — which
+   the `j`-section's axioms do not do over `ℚ̄` — is the separate leaf
+   `exists_jSection_algClosModel` above.
 3. *The level structure transports, with an automorphism left over.*  With
-   `g := ψ ḡ`, the composite `α_σ := ψ ∘ φ_σ ∘ (ψ^σ)⁻¹` is an automorphism of
-   `E⁄ℚ̄` — here `E` being defined over `ℚ` is what makes `(E⁄ℚ̄)^σ = E⁄ℚ̄` — and
-   it carries `σ ⟨g⟩` to `⟨g⟩`, which is the conclusion.  It cannot in general
-   be removed at this stage: that is precisely the descent obstruction, and
-   removing it is the job of the next leaf.
+   `E := ofJ j₀` and `ψ : Ē ≅ E⁄ℚ̄` from
+   `WeierstrassCurve.exists_variableChange_of_j_eq` and `g := ψ ḡ`, the
+   composite `α_σ := ψ ∘ φ_σ ∘ (ψ^σ)⁻¹` is an automorphism of `E⁄ℚ̄` — here `E`
+   being defined over `ℚ` is what makes `(E⁄ℚ̄)^σ = E⁄ℚ̄` — and it carries
+   `σ ⟨g⟩` to `⟨g⟩`, which is the conclusion.  It cannot in general be removed
+   at this stage: that is precisely the descent obstruction, and removing it is
+   the job of the next leaf.  This step is the LEAF
+   `exists_weierstrassQ_autStable_of_weierstrassAlgClos` above.
+
+**So this declaration is now PROVEN**, in five lines, over one proven lemma and
+three leaves; the frontier under it went from one leaf to three, which is the
+usual arithmetic of a decomposition and not a regression.  The three are
+pairwise disjoint in subject matter: `exists_jSection_algClosModel` is about
+the `j`-section and mentions no curve;
+`exists_weierstrassAlgClos_of_abelianSchemeStruct` is Riemann–Roch and mentions
+no modular curve, no Galois group and no level structure;
+`exists_weierstrassQ_autStable_of_weierstrassAlgClos` is the transport and
+mentions no Riemann–Roch.
 
 **What the conclusion deliberately does NOT say.**  It does not relate `E` to `d`
 — no isomorphism, no equality of `j`.  That is not a weakening in context, since
@@ -10803,8 +11232,16 @@ theorem exists_weierstrassQ_autStable_of_galoisInvariant {N : ℕ} (hN : N ≠ 0
           ∀ x ∈ AddSubgroup.zmultiples g,
             autPoint h (WeierstrassCurve.Affine.Point.map
                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
-              AddSubgroup.zmultiples g :=
-  sorry
+              AddSubgroup.zmultiples g := by
+  letI := d.cyc.etale_of_specQBase (specAlgClos ℚ)
+  obtain ⟨ja, hja⟩ := exists_jSection_algClosModel
+  obtain ⟨j₀, hj₀⟩ := exists_rationalJ_of_galoisInvariant hN ja d hinv
+  obtain ⟨Ē, hĒ, hmodel⟩ :=
+    exists_weierstrassAlgClos_of_abelianSchemeStruct d.ab d.relativeDimensionOne
+  haveI := hĒ
+  refine exists_weierstrassQ_autStable_of_weierstrassAlgClos hN d hinv Ē hĒ hmodel j₀ ?_
+  rw [← hj₀]
+  exact (hja Ē (d.ofDvd hN (one_dvd N)) hmodel).symm
 
 /-- **THE ARITHMETIC HEART: the descent obstruction is killed by a twist, at
 `j ∈ {0, 1728}`** (sorry leaf, opened 2026-07-27).
@@ -14137,39 +14574,13 @@ at each `N` through `ofDvd`.  That is the gain over cutting at level `N`,
 where the natural transformation would have to be produced again for each
 level. -/
 
-/-- **The `j`-line `𝔸¹_ℚ = Spec ℚ[X]`**, the target of the `j`-map.
-
-Presented as `Spec` of the polynomial ring rather than as an abstract
-scheme so that the cut below is not a tautology: were the target left as
-a *field* of `IsJLine`, the structure would be satisfiable by taking it
-to be `Y` itself with `jt := hc.classify`, and `exists_jLine` would be a
-restatement of `exists_jMap` rather than a reduction of it.  Fixing the
-target to the honest `j`-line, with the honest coordinate `jLineVal`, is
-what makes `IsJLine` STRICTLY STRONGER: it asks for the `j`-invariant
-over every base `T`, not only over `Spec ℚ`. -/
-noncomputable abbrev jLine : Scheme.{0} := Spec (CommRingCat.of (Polynomial ℚ))
-
-/-- **The structure morphism `𝔸¹_ℚ ⟶ Spec ℚ`**, `Spec` of `ℚ ↪ ℚ[X]`. -/
-noncomputable def jLineStr : jLine ⟶ SpecQ :=
-  Spec.map (CommRingCat.ofHom (algebraMap ℚ (Polynomial ℚ)))
-
-/-- **The rational number carried by a rational point of the `j`-line.**
-
-A `ℚ`-point of `Spec ℚ[X]` is `Spec` of a ring map `ℚ[X] → ℚ`
-(`Spec.homEquiv`, which is available because `Scheme.Spec` is fully
-faithful), and its coordinate is the image of `X`.
-
-**Checked to be the genuine coordinate, not a degenerate reading.**  For
-every `a : ℚ` the point `Spec.map (CommRingCat.ofHom (aeval a))` — whose
-section condition is `Spec.map_comp` plus `aeval a ∘ algebraMap = id` —
-satisfies `jLineVal … = a`, by `simp [jLineVal, Spec.homEquiv]`.  So
-`jLineVal` is ONTO `ℚ`.  This matters for faithfulness in the direction
-that is easy to miss: a junk `jLineVal` (say the constant `0`) would not
-make `exists_jLine` vacuous, it would make it **FALSE**, since
-`jt_weierstrass` demands the value `E.j`.  The check is not kept as a
-declaration because nothing consumes it and it would be free-floating. -/
-noncomputable def jLineVal (x : RelPoint jLineStr (𝟙 SpecQ)) : ℚ :=
-  (Spec.homEquiv x.1).hom Polynomial.X
+/- `jLine`, `jLineStr` and `jLineVal` used to be declared HERE.  They were
+HOISTED (2026-07-27) to the subsection "The `j`-line, Weierstrass models and
+the `j`-section, hoisted" above the `FieldOfModuli` subsection, because the
+field-of-moduli descent `exists_rationalJ_of_galoisInvariant` — which is five
+thousand lines above this point — consumes them.  Nothing about them changed;
+their docstrings, including the faithfulness check on `jLineVal`, travelled
+with them. -/
 
 /-- **The `j`-invariant as a natural transformation out of the
 `[Γ₀(1)]`-moduli problem, valued in the `j`-line.**
@@ -14284,89 +14695,17 @@ ingredients for the middle step are already in the pin —
 of one elliptic scheme differ by a variable change", not the invariance
 itself. -/
 
-/-- **The affine Weierstrass curve `Spec R[W]` as a scheme.**
-
-`WeierstrassCurve.Affine.CoordinateRing` is mathlib's `R[X,Y]/(W)`; its
-spectrum is the affine Weierstrass curve, which is the projective one
-with the point at infinity removed.  That last sentence is the whole
-content of `IsWeierstrassModel` below. -/
-noncomputable def weierstrassAffine {R : Type} [CommRing R] (W : WeierstrassCurve R) :
-    Scheme.{0} :=
-  Spec (CommRingCat.of W.toAffine.CoordinateRing)
-
-/-- **The structure morphism of the affine Weierstrass curve**, `Spec` of
-`R → R[W]`. -/
-noncomputable def weierstrassAffineStr {R : Type} [CommRing R] (W : WeierstrassCurve R) :
-    weierstrassAffine W ⟶ Spec (CommRingCat.of R) :=
-  Spec.map (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing))
-
-/-- **`W` is a Weierstrass model of the elliptic scheme carrying `ab`**:
-the complement of the zero section is the affine Weierstrass curve of
-`W`, as a scheme over the base.
-
-This is the coordinate-level pinning that the moduli-level `≃+` of
-`exists_ellipticScheme_of_weierstrass` cannot provide, and it is stated
-in the only form available at this pin — an OPEN IMMERSION of
-`Spec R[W]` whose set-theoretic range is the complement of the range of
-the zero section — because `Proj` of a graded quotient ring, and hence
-the projective Weierstrass scheme itself, cannot yet be formed.
-
-**Why this determines `j`, which is what keeps `IsJSection.jt_model`
-from being false.**  Over a field the smooth projective completion of an
-integral affine curve is unique, and it adds exactly the missing points.
-So if `W` and `W'` are both models of one `ab`, the two open immersions
-identify `Spec K[W] ≅ A ∖ {O} ≅ Spec K[W']`, hence identify the
-completions carrying the single point at infinity of each to the other,
-i.e. give an isomorphism of the two Weierstrass curves matching their
-origins.  Such an isomorphism is a `VariableChange`, and
-`WeierstrassCurve.variableChange_j` then gives `W.j = W'.j`.  Note the
-`range_eq` field is what forces the removed point to BE the origin; the
-weaker "some open immersion" would still determine `j` (by translation)
-but only after an argument, so the stronger form is stated.
-
-**`W` is not required to be elliptic here.**  It cannot be: `Δ` is
-invertible automatically, since a singular `Spec R[W]` cannot be an open
-subscheme of the smooth `A`.  Consumers that need `W.j` supply
-`[W.IsElliptic]` themselves. -/
-def IsWeierstrassModel {R : Type} [CommRing R] {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
-    (W : WeierstrassCurve R) : Prop :=
-  ∃ ι : weierstrassAffine W ⟶ A, IsOpenImmersion ι ∧
-    ι ≫ f = weierstrassAffineStr W ∧
-    Set.range ι.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ
-
-/-- **The `j`-invariant of an elliptic scheme, pinned by Weierstrass
-models rather than by a chosen datum.**
-
-The first two fields are those of `IsJLine` verbatim — the natural
-transformation and its naturality.  The third replaces `IsJLine`'s
-existential `jt_weierstrass` by the statement that actually says "`jt`
-IS the `j`-invariant": wherever the elliptic scheme has a Weierstrass
-model `W`, the value is `W.j`.
-
-**Why the universal form is safe here where it was not at
-`jt_weierstrass`.**  The subsection docstring at `IsJMapOn.classify_jm`
-warns against quantifying over every datum "modelling `E`", because the
-only modelling relation available there is a Galois-equivariant `≃+`
-that is not known to determine `E.j` — so the `∀` form risks being
-false.  `IsWeierstrassModel` is a different relation: it pins the scheme
-by coordinates and DOES determine `j` (see its docstring).  So here the
-`∀` form is the correct one, and it is what makes this field usable
-without knowing which datum a producer will hand over.
-
-**This is strictly weaker than `IsJLine` in the direction that matters
-for cutting**: it says nothing about which elliptic schemes over `ℚ`
-exist.  That half is `exists_weierstrassModel_gamma0Datum`. -/
-structure IsJSection where
-  /-- the `j`-invariant of an elliptic scheme, as a point of the `j`-line -/
-  jt : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum 1 T → RelPoint jLineStr g
-  /-- `j` is natural: a base change of data is sent to the precomposed point -/
-  jt_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
-    (hg : h ≫ g = g') {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
-    IsBaseChangeOf h d' d → jt g' d' = RelPoint.pre h hg (jt g d)
-  /-- `j` agrees with `WeierstrassCurve.j` on every Weierstrass model -/
-  jt_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
-    IsWeierstrassModel d.ab W → jLineVal (jt (𝟙 SpecQ) d) = W.j
+/- `weierstrassAffine`, `weierstrassAffineStr`, `IsWeierstrassModel` and the
+structure `IsJSection` used to be declared HERE.  They were HOISTED
+(2026-07-27) to the subsection "The `j`-line, Weierstrass models and the
+`j`-section, hoisted" above the `FieldOfModuli` subsection, for the reason
+recorded there: `exists_rationalJ_of_galoisInvariant`, which is what turns the
+field-of-moduli hypothesis of `exists_weierstrassQ_autStable_of_galoisInvariant`
+into rationality of `j`, needs all four and is declared five thousand lines
+above this point.  The declarations and their docstrings are UNCHANGED — in
+particular the faithfulness discussion of `IsWeierstrassModel` (why it
+determines `j`, which is what keeps `IsJSection.jt_model` from being false)
+travelled with them. -/
 
 /-! #### The cut of `exists_jSection`: affine bases, and Zariski descent
 
