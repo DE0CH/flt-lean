@@ -38760,10 +38760,214 @@ theorem exists_cyclicGenerator_ray_class
     have h2 : χ' (x ^ Nat.card (Γ F ⧸ χ'.ker)) = 1 := hmem
     rw [← hcoe, h2, Units.val_one]
 
+/-- **THE ACTION ON `μ_m` IS ABELIAN, FOR EVERY `m > 0`** (**PROVEN
+2026-07-27** as sub-leaf (A3a-1-1-b-0) of
+`exists_artinModulus_of_generator_ray_class` just below).
+
+**This clause is not a constraint on `m` at all — it is a theorem about
+every `m`.** That is worth stating loudly, because the docstrings of the
+whole cluster list it among the things "a witness must supply", which
+invited the reading that the choice of modulus has to be arranged to make
+it true. It does not: `Γ F` acts on the `m`-th roots of unity of `Fᵃˡᵍ`
+through `Aut(μ_m) ≅ (ℤ/mℤ)ˣ`, which is commutative for every `m`.
+
+**Route.** `F` is a number field, hence of characteristic zero, so
+`NeZero ((m : ℕ) : F)` holds for `m > 0` and mathlib's
+`AlgebraicClosure.hasEnoughRootsOfUnity` supplies a PRIMITIVE `m`-th root
+`μ` of `Fᵃˡᵍ`. Two facts then finish it:
+
+* `IsPrimitiveRoot.eq_pow_of_pow_eq_one` writes an arbitrary `ζ` with
+  `ζ ^ m = 1` as `μ ^ i`, so it suffices to commute on `μ`;
+* `IsPrimitiveRoot.autToPow F hμ : (Fᵃˡᵍ ≃ₐ[F] Fᵃˡᵍ) →* (ZMod m)ˣ` is a
+  MONOID HOM into a COMMUTATIVE group with
+  `autToPow_spec : μ ^ (autToPow F hμ f).val = f μ`. So
+  `autToPow (x * y) = autToPow x * autToPow y = autToPow (y * x)`, and
+  the two sides act on `μ` by the same power.
+
+**FAITHFULNESS.** `0 < m` is load-bearing and not cosmetic: at `m = 0`
+the hypothesis `ζ ^ 0 = 1` is satisfied by EVERY `ζ : Fᵃˡᵍ`, so the
+conclusion would assert that `Γ F` is commutative, which is false. It is
+also what supplies `NeZero m`, without which no primitive root exists. -/
+theorem commute_muAction_ray_class (F : Type u) [Field F] [NumberField F]
+    (m : ℕ) (hm : 0 < m) (x y : Γ F) (ζ : AlgebraicClosure F) (hζ : ζ ^ m = 1) :
+    (x * y) ζ = (y * x) ζ := by
+  haveI : NeZero m := ⟨hm.ne'⟩
+  haveI : NeZero ((m : ℕ) : F) := ⟨Nat.cast_ne_zero.mpr hm.ne'⟩
+  obtain ⟨μ, hμ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure F) m
+  obtain ⟨i, -, rfl⟩ := hμ.eq_pow_of_pow_eq_one hζ
+  have hxy : (x * y) μ = (y * x) μ := by
+    have h1 := hμ.autToPow_spec F (x * y)
+    have h2 := hμ.autToPow_spec F (y * x)
+    have h3 : hμ.autToPow F (x * y) = hμ.autToPow F (y * x) := by
+      rw [map_mul, map_mul, mul_comm]
+    rw [← h1, ← h2, h3]
+  show (x * y) (μ ^ i) = (y * x) (μ ^ i)
+  rw [map_pow, map_pow, hxy]
+
+/-- **`ker χ ⊓ Γ_{F(ζ_m)}` IS OPEN, FOR EVERY `m > 0`** (**PROVEN
+2026-07-27** as sub-leaf (A3a-1-1-b-1) of
+`exists_artinModulus_of_generator_ray_class` just below).
+
+Like its neighbour above, this is a theorem about EVERY `m`, not a
+constraint the choice of modulus has to satisfy — the two open subgroups
+have nothing to do with each other and each is open for its own reason.
+Stated as a raw set because that is the only form the packaging
+downstream consumes; it is definitionally
+`↑(charKernelRayClass χ hmul h1 ⊓ muFixerRayClass F m)`, and the `rfl`
+in the proof is exactly that observation.
+
+**Route, one open subgroup at a time.**
+
+* `ker χ` is open because `hVker` puts the OPEN subgroup `V` inside it
+  and a subgroup containing an open subgroup is open
+  (`Subgroup.isOpen_mono`) — the same idiom as
+  `exists_cyclicGenerator_ray_class` above.
+* `Γ_{F(ζ_m)}` is open because it is the STABILIZER of a single
+  algebraic element. Taking `μ` primitive, `x` fixes every `m`-th root of
+  unity if and only if it fixes `μ` (every such root is a power of `μ`,
+  by `IsPrimitiveRoot.eq_pow_of_pow_eq_one`), so `muFixerRayClass F m`
+  is literally `MulAction.stabilizer (Γ F) μ`, and mathlib's
+  `stabilizer_isOpen_of_isIntegral` — the stabilizer of an element of an
+  algebraic extension is open for the Krull topology — applies. This
+  avoids having to build `F(ζ_m)` as an `IntermediateField` and prove it
+  finite-dimensional, which is the route the docstrings anticipated.
+
+**FAITHFULNESS.** Non-vacuous, and both `hVopen` and `hVker` are
+load-bearing: with `V = ⊥` (open only when `Γ F` is discrete, which it is
+not) the kernel half fails, and `hVker` is what places `V` inside the
+kernel. `0 < m` is needed for the primitive root, exactly as above. The
+statement is deliberately generic in the target monoid `M` rather than
+specialised to `Dickson.K 3`, since nothing about the target is used
+beyond `charKernelRayClass`'s own hypotheses. -/
+theorem isOpen_charKernel_inter_muFixer_ray_class (F : Type u) [Field F] [NumberField F]
+    {M : Type*} [CommMonoid M] (χ : Γ F → M)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1) (m : ℕ) (hm : 0 < m) :
+    IsOpen {x : Γ F | χ x = 1 ∧ ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → x ζ = ζ} := by
+  haveI : NeZero m := ⟨hm.ne'⟩
+  haveI : NeZero ((m : ℕ) : F) := ⟨Nat.cast_ne_zero.mpr hm.ne'⟩
+  obtain ⟨μ, hμ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure F) m
+  have h1 : χ 1 = 1 := hVker 1 V.one_mem
+  have hker : IsOpen ((charKernelRayClass χ hmul h1 : Subgroup (Γ F)) : Set (Γ F)) :=
+    Subgroup.isOpen_mono (H₁ := V) (fun a ha => hVker a ha) hVopen
+  have hfix : IsOpen ((muFixerRayClass F m : Subgroup (Γ F)) : Set (Γ F)) := by
+    have hset : ((muFixerRayClass F m : Subgroup (Γ F)) : Set (Γ F))
+        = (MulAction.stabilizer (Γ F) μ : Set (Γ F)) := by
+      ext z
+      constructor
+      · intro hz
+        show z • μ = μ
+        exact hz μ hμ.pow_eq_one
+      · intro hz ζ hζ
+        obtain ⟨i, -, rfl⟩ := hμ.eq_pow_of_pow_eq_one hζ
+        have hzμ : z μ = μ := hz
+        show z (μ ^ i) = μ ^ i
+        rw [map_pow, hzμ]
+    rw [hset]
+    exact stabilizer_isOpen_of_isIntegral μ
+  have hsplit : {x : Γ F | χ x = 1 ∧ ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → x ζ = ζ}
+      = ((charKernelRayClass χ hmul h1 : Subgroup (Γ F)) : Set (Γ F))
+        ∩ ((muFixerRayClass F m : Subgroup (Γ F)) : Set (Γ F)) := rfl
+  rw [hsplit]
+  exact hker.inter hfix
+
+set_option maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC CHOICE OF THE MODULUS: CHILDRESS 2.3–2.7 AND
+MINKOWSKI, AND NOTHING ELSE** (sorry node, created 2026-07-27 as sub-leaf
+(A3a-1-1-b-2) of `exists_artinModulus_of_generator_ray_class` just below,
+which is now glue over this leaf and the two universally-quantified
+lemmas (A3a-1-1-b-0) `commute_muAction_ray_class` and (A3a-1-1-b-1)
+`isOpen_charKernel_inter_muFixer_ray_class` just above, both PROVEN
+2026-07-27).
+
+**Everything left in the Artin-Lemma cluster is here.** Against its
+parent this leaf has SHED exactly the two clauses that are true for every
+`m > 0` — the abelian action on `μ_m` and the openness of
+`ker χ ⊓ Γ_{F(ζ_m)}` — so every clause below is a genuine CONSTRAINT ON
+THE CHOICE of `m`, and none of them can be discharged by general
+nonsense. Concretely a witness must supply:
+
+* `m` avoiding the primes of `S` and the residue characteristic of `p`
+  (Childress 2.6 over 2.3–2.5: elementary number theory in `ℕ`, whose own
+  input is Dirichlet on primes in arithmetic progressions, which IS in
+  the pin as `Nat.forall_exists_prime_gt_and_eq_mod`);
+* clause (iii) `ker χ · Γ_{F(ζ_m)} = Γ F`, i.e. `K ∩ F(ζ_m) = F`;
+* the divisibility and INDEPENDENCE conditions of Childress 2.7(ii),(iii)
+  relating the given `w` and `globalFrob p` inside `Gal(F(ζ_m)/F)`.
+
+**The Minkowski step is the one genuinely global input.** Because `m` is
+prime to every prime ramifying in `F/ℚ`, the field `F ∩ ℚ(ζ_m)` is
+everywhere unramified over `ℚ`, hence equals `ℚ`; therefore
+`Gal(F(ζ_m)/F) ≅ (ℤ/mℤ)ˣ` and the cyclotomic character of `F` is
+SURJECTIVE for this particular `m`. **That is why this cluster's standing
+warning — "do not build the character `ψ` of `(ℤ/mℤ)ˣ`, because the
+cyclotomic character need not be surjective when `F` already contains
+`m`-th roots of unity" — does not apply here**, and a next owner may
+legitimately take the `μ_m`-side group to be `(ZMod m)ˣ`. The choice of
+`m` is exactly what rules out the bad case.
+
+**The shape of the classical construction, for the next owner.** Childress
+takes `m` a product of TWO distinct auxiliary primes `ℓ₁ ℓ₂`, each chosen
+`≡ 1 (mod n)` by Dirichlet, each avoiding `S`, the residue characteristic
+of `p`, the discriminant of `F/ℚ` and the primes ramifying in the fixed
+field of `ker χ`. Then `Gal(ℚ(ζ_m)/ℚ) ≅ (ℤ/ℓ₁)ˣ × (ℤ/ℓ₂)ˣ` with both
+factors cyclic of order divisible by `n`, the two factors give the
+INDEPENDENCE clause, and unramifiedness plus Minkowski gives clause (iii).
+**This paragraph is a sketch and has NOT been checked against the book in
+this worktree** — treat it as a starting point, not as an audit.
+
+**FAITHFULNESS.** Non-vacuous: the independence clause together with the
+given exponent clause is what forces clause (ii) of the ultimate
+consumer, and the `q.Prime` guard on the `S`-avoidance clause is required
+— see the FALSITY AUDIT on `exists_artinAuxiliaryField_ray_class` below,
+where the unguarded form was refuted by `S = {1}`. `hn`, `hgen` and
+`hexp` are the interface to the sibling leaf
+`exists_cyclicGenerator_ray_class` and are all consumed by Childress 2.7;
+`hVopen` remains load-bearing here even though the openness CLAUSE has
+moved out, because it is what makes `ker χ` open, hence of finite index,
+hence its fixed field `K` a FINITE extension of `F` — without which
+"the primes ramifying in `K/F`" is not a finite set and the choice of
+`ℓ₁, ℓ₂` above cannot avoid them.
+
+**REFUTING CHECK for the claim that this cut is forced.** The cut
+direction follows the dependence order of the data: if a future owner
+believes the modulus can be chosen before the exponent, the check is
+whether Childress 2.6's choice of `m` can be made without reference to
+`n` — it cannot, since `ℓᵢ ≡ 1 (mod n)` is the defining condition. -/
+theorem exists_artinModulusCore_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (S : Finset ℕ)
+    (n : ℕ) (w : Γ F) (hn : 0 < n)
+    (hgen : ∀ x : Γ F, ∃ i : ℤ, χ (x * w ^ (-i)) = 1)
+    (hexp : ∀ x : Γ F, χ (x ^ n) = 1) :
+    ∃ m : ℕ, 0 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+      (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+      (∀ i : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) → (n : ℤ) ∣ i) ∧
+      (∀ j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ) →
+        (n : ℤ) ∣ j) ∧
+      (∀ i j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
+          (w ^ i * (globalFrob p) ^ j) ζ = ζ) →
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, GIVEN THE GENERATOR AND
-THE EXPONENT** (sorry node, created 2026-07-26 as sub-leaf (A3a-1-1-b) of
-`exists_artinModulus_ray_class` just below, which is now PROVEN as glue
+THE EXPONENT** (**PROVEN 2026-07-27** as glue over its three sub-leaves
+(A3a-1-1-b-0) `commute_muAction_ray_class`, (A3a-1-1-b-1)
+`isOpen_charKernel_inter_muFixer_ray_class` — both PROVEN the same day —
+and (A3a-1-1-b-2) `exists_artinModulusCore_ray_class`, which carries all
+the remaining arithmetic; see the DECOMPOSED note at the end of this
+docstring. Created 2026-07-26 as sub-leaf (A3a-1-1-b) of
+`exists_artinModulus_ray_class` just below, which is PROVEN as glue
 over this leaf and (A3a-1-1-a) `exists_cyclicGenerator_ray_class` just
 above).
 
@@ -38786,10 +38990,19 @@ A witness must supply:
 * **that the action on `μ_m` is ABELIAN** — `(x y) ζ = (y x) ζ` for every
   `m`-th root of unity `ζ`. This is the one clause the group-theoretic
   packaging downstream cannot manufacture, and it is exactly the
-  statement that the `μ_m`-action factors through `(ℤ/mℤ)ˣ`;
+  statement that the `μ_m`-action factors through `(ℤ/mℤ)ˣ`.
+  **DISCHARGED 2026-07-27 by `commute_muAction_ray_class` above, for
+  EVERY `m > 0`** — it is a theorem, not a constraint on the modulus;
 * **openness of `ker χ ⊓ Γ_{F(ζ_m)}`**. `ker χ` is open by `hVopen`, and
   `Γ_{F(ζ_m)}` is open because `F(ζ_m)/F` is finite; it is asked for as a
-  single clause because that is the only form the packaging consumes;
+  single clause because that is the only form the packaging consumes.
+  **DISCHARGED 2026-07-27 by `isOpen_charKernel_inter_muFixer_ray_class`
+  above, for EVERY `m > 0`.** Note the route recorded in this bullet is
+  not the one that worked: rather than building `F(ζ_m)` as an
+  `IntermediateField` and proving it finite-dimensional, the fixer is
+  identified with the STABILIZER of a single primitive `m`-th root and
+  closed by mathlib's `stabilizer_isOpen_of_isIntegral`, which is
+  materially shorter;
 * the divisibility and INDEPENDENCE conditions of Childress 2.7(ii),(iii)
   relating the given `w` and `globalFrob p` inside `Gal(F(ζ_m)/F)`.
 
@@ -38813,7 +39026,37 @@ clause is not decoration either: without it `Gal(F(ζ_m)/F)` cannot be
 given a `CommGroup` structure, and `Subgroup.mem_closure_pair` — the
 whole engine of Childress 2.8 — is a commutative-group lemma. `hn`,
 `hgen` and `hexp` are the interface to the sibling leaf and are all
-consumed by Childress 2.7. -/
+consumed by Childress 2.7.
+
+**DECOMPOSED AND PROVEN 2026-07-27.** The seam is the distinction between
+clauses that CONSTRAIN the modulus and clauses that hold for EVERY
+modulus. Two of the eight are of the second kind and were simply
+theorems waiting to be proved:
+
+* (A3a-1-1-b-0) `commute_muAction_ray_class` — the `μ_m`-action is
+  abelian for every `m > 0`, because `Γ F` acts through
+  `IsPrimitiveRoot.autToPow` into the commutative `(ZMod m)ˣ`;
+* (A3a-1-1-b-1) `isOpen_charKernel_inter_muFixer_ray_class` — the
+  intersection is open for every `m > 0`, `ker χ` by `Subgroup.isOpen_mono`
+  off `hVopen` and the `μ_m`-fixer as a stabilizer in an algebraic
+  extension;
+* (A3a-1-1-b-2) `exists_artinModulusCore_ray_class` — the residue: the
+  same statement with those two clauses REMOVED. It is Childress 2.3–2.7
+  plus Minkowski, and every one of its remaining clauses is a genuine
+  constraint on the choice of `m`.
+
+The glue below is the obvious re-association and nothing else is proved
+here. **The cut is forced in this direction** because the two lemmas are
+universally quantified over `m` and so must be available BEFORE a modulus
+has been chosen; a cut that made them depend on the core's `m` would be
+strictly weaker for no gain.
+
+**Note for the next owner: this did NOT close the hard part.** The
+arithmetic — Dirichlet, the two auxiliary primes, Minkowski, and the
+independence of `w` and `globalFrob p` in `Gal(F(ζ_m)/F)` — is untouched
+and lives entirely in `exists_artinModulusCore_ray_class`. What changed
+is that it is no longer entangled with two clauses that never needed the
+arithmetic at all. -/
 theorem exists_artinModulus_of_generator_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -38837,8 +39080,15 @@ theorem exists_artinModulus_of_generator_ray_class
       (∀ i j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
           (w ^ i * (globalFrob p) ^ j) ζ = ζ) →
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) ∧
-        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) :=
-  sorry
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) := by
+  -- (A3a-1-1-b-2): the arithmetic choice of `m` — Childress 2.3–2.7 plus Minkowski
+  obtain ⟨m, hm0, hmS, hmp, hiii, hwB, hfB, hind⟩ :=
+    exists_artinModulusCore_ray_class F χ hmul V hVopen hVker p S n w hn hgen hexp
+  -- (A3a-1-1-b-0) and (A3a-1-1-b-1): the two clauses that hold for EVERY `m > 0`
+  exact ⟨m, hm0, hmS, hmp, hiii,
+    fun x y ζ hζ => commute_muAction_ray_class F m hm0 x y ζ hζ,
+    isOpen_charKernel_inter_muFixer_ray_class F χ hmul V hVopen hVker m hm0,
+    hwB, hfB, hind⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, WITH NO GROUP-THEORETIC
