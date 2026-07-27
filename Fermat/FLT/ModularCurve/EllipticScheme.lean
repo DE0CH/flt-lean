@@ -43,15 +43,27 @@ under "Why this is not in `X0.lean`" below.
 step is now fully reduced, and the Jacobian criterion it rests on
 (`jacobianSpan_eq_top`, over an arbitrary commutative ring) is proven here.
 
-The open leaves are therefore `exists_projMul` and `projMul_assoc` — the two
-halves into which `exists_projAdd`'s remaining gluing work was split —
-`exists_projGeomFibreAddEquiv`,
+The open leaves are `exists_projMul` and `projMul_assoc` — the two halves into
+which `exists_projAdd`'s remaining gluing work was split, and `exists_projAdd`
+itself is PROVEN from them — `exists_projGroupLaw_geomFibreAddEquiv`,
 `locally_isStandardSmooth_awayCoord` (all that is left of item 7a — and what it
 wants is a missing piece of MATHLIB, the dehomogenisation isomorphism for a chart
 of `Proj` of a polynomial quotient), and the interior of
 `geometricallyConnected_projToSpec`, which still carries three named sorried
 steps `hbc`/`hne`/`hpre`.  Each declaration carries its own docstring saying what
 is missing and where the classical argument is.
+
+**Item 8 was restated on 2026-07-27** and its leaf is now
+`exists_projGroupLaw_geomFibreAddEquiv`, which binds the group law
+EXISTENTIALLY.  `exists_projGeomFibreAddEquiv` survives under its own name
+as a PROVEN consequence, stated about the concrete `projGroupLaw E`.  The
+old form quantified over an ARBITRARY `ProjGroupLaw`, which pins nothing
+about `m`, and was therefore provable only through the rigidity theorem;
+the audit is on `exists_projGroupLaw_geomFibreAddEquiv`.
+
+**The two cuts are NOT yet merged** (reconciliation attempted 2026-07-27; see
+the "Relation to `exists_projAdd`" section of that leaf's docstring for the
+obstruction that was found and why `_gl₀` therefore stays).
 
 `nonempty_projGroupLaw` is PROVEN: two of the three data fields of a
 `ProjGroupLaw` are constructed outright in `ProjectiveModel.lean`
@@ -952,16 +964,60 @@ theorem ProjGroupLaw.addCommGroup_neg_val (x : RelPoint (projToSpec E) g) :
 
 end EllipticScheme
 
-/-- **The geometric fibre of the projective Weierstrass model IS `E(ℚ̄)`,
-equivariantly** (sorry node — item 8).
+/-- **The projective Weierstrass model carries a group law whose geometric
+fibre IS `E(ℚ̄)`, equivariantly** (sorry node — item 8, RESTATED
+2026-07-27; see the FALSITY-OF-CUT AUDIT below for what it replaces).
 
 This is the conjunct that pins the scheme as *this* curve rather than
 some elliptic curve: without it the node would be satisfiable by any
 elliptic curve over `ℚ` whatsoever, and the bridge in `X0.lean` would
 then manufacture a `Γ₀(N)`-datum out of the wrong curve.
 
-Two halves, and only the first is missing.  The FIELD-level half is
-already at this pin: `WeierstrassCurve.Projective.toAffineAddEquiv` gives
+## FALSITY-OF-CUT AUDIT (2026-07-27) — why the `gl` is now BOUND HERE
+
+The previous statement of item 8 was
+
+    theorem exists_projGeomFibreAddEquiv (E) [E.IsElliptic]
+        (gl : ProjGroupLaw E) : … the same conclusion …
+
+i.e. it quantified over an **arbitrary** `gl : ProjGroupLaw E`, and its
+docstring justified the additivity clause by saying that intertwining
+`gl.m` with the chord–tangent law "on `ℚ̄`-points is the defining property
+of the addition formulas".  **That justification does not hold**, and this
+is a cut-level defect rather than a hard sub-problem:
+
+* `ProjGroupLaw` (above) pins **nothing** about `m` beyond the four
+  abelian-group axioms `hassoc`/`hcomm`/`hunit`/`hinv`.  `m`, `e` and `i`
+  are free data.  So there is **no chord–tangent formula anywhere in the
+  hypotheses to intertwine with** — the phrase "the defining property of
+  the addition formulas" refers to something the statement never assumed.
+* Proving the old statement for an arbitrary `gl` is therefore exactly the
+  **rigidity theorem**: a group-scheme structure on a genus-`1` curve is
+  determined by its identity section, so any second group law satisfies
+  `x ⊕ y = x + y - e`.  That is in neither mathlib nor `~/cs/FLT`, and it
+  is far heavier than the fibre comparison item 8 was cut as.
+
+**The old statement was TRUE, not false** — `e` is `ℚ`-rational, so
+translation by `-e` is a Galois-equivariant group isomorphism and the
+equivalence exists for every `gl`.  It was true and *hard*, which is the
+worst shape for a leaf: nothing about it announces that a major absent
+theorem sits inside it.  So it is restated, not refuted.
+
+**The repair**: bind `gl` **existentially** here.  A witness now
+constructs `m` and the coordinate identification *together*, which is how
+the classical argument actually goes and which needs no rigidity: `m` is
+glued from `WeierstrassCurve.Projective.addXYZ`, the identification is the
+coordinate description of `Spec ℚ̄`-points, and additivity is then a direct
+computation with those same formulas rather than a comparison of two
+unrelated group laws.  `projGroupLaw` below names the witness, and
+`exists_projGeomFibreAddEquiv` — item 8 under its original name — is
+PROVEN from this leaf and states the conclusion about that concrete
+group law.
+
+## What a witness has to supply
+
+The FIELD-level half is already at this pin:
+`WeierstrassCurve.Projective.toAffineAddEquiv` gives
 `W.Point ≃+ W.toAffine.Point` over a field.  What has to be supplied is
 the identification of `Spec ℚ̄`-points of `proj E` with the projective
 points `(E⁄ℚ̄).Point` — that a morphism `Spec ℚ̄ ⟶ Proj 𝒜` over `Spec ℚ` is
@@ -972,24 +1028,82 @@ which is precisely why item 8 is a leaf rather than another instance of
 the structural obstruction.
 
 Galois equivariance is then automatic: `galSMul` is precomposition with
-`Spec σ` (`AbelianSchemeStruct.galSMul_def`), and under the coordinate
-description that is the coordinatewise action of `σ` on `[x : y : z]`,
-which is `WeierstrassCurve.Affine.Point.map`.
+`Spec σ` (`AbelianSchemeStruct.galSMul_def`, which is `rfl` and in
+particular does **not** depend on the `AbelianSchemeStruct`), and under
+the coordinate description that is the coordinatewise action of `σ` on
+`[x : y : z]`, which is `WeierstrassCurve.Affine.Point.map`.
 
-Additivity is where the group law re-enters: the `≃+` must intertwine
-`gl.m` with the chord–tangent law on `(E⁄ℚ̄).Point`, which on `ℚ̄`-points
-is the defining property of the addition formulas.  So this leaf consumes
-`ProjGroupLaw`'s DATA — hence the `gl` argument — but nothing of its
-axioms beyond what `toAbelianSchemeStruct` already packages.
+## Relation to `exists_projAdd`, and the `_gl₀` argument
+
+This leaf **subsumes `exists_projAdd`**: a witness supplies `m` together
+with `hassoc`, and `hassoc` is the expensive half of that leaf (the
+`ProjGroupLaw` axioms transport along the identification from the group
+axioms of `E(ℚ̄)`, which is the density route `exists_projAdd`'s own
+docstring names as cheapest).  The intended end state is therefore that
+`exists_projAdd` gains a chord–tangent clause and **this** leaf is proven
+from it, at which point the two cuts become one.
+
+Until that reconciliation, `_gl₀` is a deliberate **CONE ANCHOR** and
+nothing else: it is underscore-prefixed because the intended proof does
+not use it, and it exists so that `nonempty_projGroupLaw` — and through
+it `exists_projAdd`, live work at the time of writing — stays inside the
+used-constant cone of the root theorem instead of becoming free-floating
+the moment this restatement lands.  It costs consumers nothing
+(`nonempty_projGroupLaw` discharges it) and weakens the leaf only by a
+hypothesis that is itself available.  **Delete the argument** once
+`exists_projAdd` is reconciled as above.
 
 It is stated OUTSIDE the `open WeierstrassCurve.Projective` section
 above: that namespace carries its own scoped `⁄` notation for
 `baseChange`, which would make `E⁄(AlgebraicClosure ℚ)` ambiguous against
 the `WeierstrassCurve.Affine` one this file opens at the top.  Hence the
 qualified `projToSpec`. -/
-theorem exists_projGeomFibreAddEquiv (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (gl : ProjGroupLaw E) :
-    letI := gl.toAbelianSchemeStruct.addCommGroup
+theorem exists_projGroupLaw_geomFibreAddEquiv (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (_gl₀ : ProjGroupLaw E) :
+    ∃ gl : ProjGroupLaw E,
+      (letI := gl.toAbelianSchemeStruct.addCommGroup
+        (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+       ∃ eqv : (E⁄(AlgebraicClosure ℚ)).Point ≃+
+           GeomFibrePt (_root_.WeierstrassCurve.Projective.projToSpec E)
+             (𝟙 (Spec (CommRingCat.of ℚ))),
+         ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+           eqv (WeierstrassCurve.Affine.Point.map
+               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+             = gl.toAbelianSchemeStruct.galSMul
+                 (𝟙 (Spec (CommRingCat.of ℚ))) σ (eqv x)) :=
+  sorry
+
+/-- **The chord–tangent group law on the projective Weierstrass model, as
+a NAMED morphism-level datum** (PROVEN — a definition).
+
+This is the concrete group law that item 8 is stated about.  It exists
+because a statement of item 8 over an *arbitrary* `ProjGroupLaw` is
+provable only through the rigidity theorem — see the audit on
+`exists_projGroupLaw_geomFibreAddEquiv`.
+
+`Classical.choose` is the right constructor here and not a dodge: the
+witness is pinned by the accompanying specification
+`exists_projGeomFibreAddEquiv` below, which is a *theorem* about
+`projGroupLaw E` and not a second `sorry`, so every consumer meets the
+chord–tangent content rather than an opaque choice.  Consumers should use
+`exists_projGeomFibreAddEquiv`; the underlying `Exists.choose` is not
+intended to be unfolded. -/
+noncomputable def projGroupLaw (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ProjGroupLaw E :=
+  (exists_projGroupLaw_geomFibreAddEquiv E (nonempty_projGroupLaw E).some).choose
+
+/-- **The geometric fibre of the projective Weierstrass model IS `E(ℚ̄)`,
+equivariantly** — item 8, now PROVEN, and stated about the CONCRETE group
+law `projGroupLaw E`.
+
+The statement is the original one with the universally quantified
+`gl : ProjGroupLaw E` replaced by `projGroupLaw E`; that replacement is
+the whole content of the 2026-07-27 repair, and the reason for it is the
+FALSITY-OF-CUT AUDIT on `exists_projGroupLaw_geomFibreAddEquiv`.  It is
+the defining specification of `projGroupLaw`, so it is the form every
+consumer should quote. -/
+theorem exists_projGeomFibreAddEquiv (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    letI := (projGroupLaw E).toAbelianSchemeStruct.addCommGroup
       (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
     ∃ eqv : (E⁄(AlgebraicClosure ℚ)).Point ≃+
         GeomFibrePt (_root_.WeierstrassCurve.Projective.projToSpec E)
@@ -997,8 +1111,9 @@ theorem exists_projGeomFibreAddEquiv (E : WeierstrassCurve ℚ) [E.IsElliptic]
       ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
         eqv (WeierstrassCurve.Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
-          = gl.toAbelianSchemeStruct.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (eqv x) :=
-  sorry
+          = (projGroupLaw E).toAbelianSchemeStruct.galSMul
+              (𝟙 (Spec (CommRingCat.of ℚ))) σ (eqv x) :=
+  (exists_projGroupLaw_geomFibreAddEquiv E (nonempty_projGroupLaw E).some).choose_spec
 
 /-- **The projective Weierstrass model of `E/ℚ` as an elliptic scheme
 over `Spec ℚ`** (PROVEN from the five leaves above).
@@ -1018,11 +1133,11 @@ theorem exists_ellipticScheme_of_projModel (E : WeierstrassCurve ℚ) [E.IsEllip
            ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
              e (WeierstrassCurve.Affine.Point.map
                  (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
-               = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (e x)) := by
-  obtain ⟨gl⟩ := nonempty_projGroupLaw E
-  exact ⟨_root_.WeierstrassCurve.Projective.proj E,
-    _root_.WeierstrassCurve.Projective.projToSpec E, gl.toAbelianSchemeStruct,
-    smoothOfRelativeDimension_projToSpec E, exists_projGeomFibreAddEquiv E gl⟩
+               = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (e x)) :=
+  ⟨_root_.WeierstrassCurve.Projective.proj E,
+    _root_.WeierstrassCurve.Projective.projToSpec E,
+    (projGroupLaw E).toAbelianSchemeStruct,
+    smoothOfRelativeDimension_projToSpec E, exists_projGeomFibreAddEquiv E⟩
 
 end Fermat
 
