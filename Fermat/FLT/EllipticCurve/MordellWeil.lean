@@ -412,10 +412,13 @@ open statements at level `11` are now:
 
 * `exists_halving_witness` — the `2`-descent over `ℤ[s]` (PID + units + the
   local conditions killing the nontrivial classes);
-* `height_drop_or_small` — the resultant/archimedean bound: either the height
-  drops or `|p| + e² ≤ 512`. Its docstring carries every constant, both integral
-  Bezout identities, and the coprimality bookkeeping, all verified externally;
-* `smallPoints` — the resulting finite check on `|p| ≤ 512`, `1 ≤ e ≤ 22`.
+* `forms_archimedean` — the ONE analytic ingredient of the height bound:
+  `max(|X|, Y)⁴ ≤ 4·max(|F(X, Y)|, |4Y·G(X, Y)|)` for `Y > 0`. Two integer
+  variables, two explicit quartics, nothing else. `height_drop_or_small` is
+  PROVEN over it, the resultant divisibility (`forms_common_dvd`) and the
+  coprimality bookkeeping (`reduced_fraction`) both being PROVEN;
+* `smallPoints` — the finite check `|p| ≤ 512`, `1 ≤ e ≤ 22` that
+  `height_drop_or_small` leaves behind.
 
 The last two are the two genuinely different inputs — an inequality about two
 explicit binary quartics, and a bounded search — and are attackable
@@ -538,16 +541,133 @@ theorem halving_relation {p e m c p' e' n' : ℤ} (hc : c ≠ 0) (he' : e' ≠ 0
   refine mul_left_cancel₀ h16 ?_
   linear_combination (-(p' ^ 4 - 128 * p' * e' ^ 6 + 256 * e' ^ 8)) * hI + n' ^ 2 * hII
 
-/-- **THE RESULTANT / HEIGHT LEAF at level `11`** (sorry leaf, 2026-07-27):
-the halving either strictly drops the height, or the point was small all along.
+/-- **THE NON-ARCHIMEDEAN HALF OF THE HEIGHT BOUND** (PROVEN 2026-07-27): any
+common divisor of the two binary forms
+
+    F(X, Y) = X⁴ − 128XY³ + 256Y⁴     and     4Y·G(X, Y) = 4Y(X³ − 4X²Y + 16Y³)
+
+at a COPRIME pair `(X, Y)` divides `2¹⁰·11² = 123904`.
+
+The proof is two integral Bezout identities — one clearing `Y`, one clearing
+`X` — both checked by `linear_combination`:
+
+    (4Y(3X² − 8XY − 16Y²))·F + (−3X³ − 4X²Y + 432Y³)·(4YG) = 11264·Y⁷,
+    (11X³ − 80X²Y + 64XY² + 384Y³)·F
+      + (20X³ + 64X²Y + 512XY² − 1536Y³)·(4YG) = 11·X⁷,
+
+so `k ∣ 11264·Y⁷` and `k ∣ 11·X⁷`; then `IsCoprime X Y` gives
+`IsCoprime (X⁷) (Y⁷)`, and with `u·X⁷ + v·Y⁷ = 1` one writes
+`123904 = 11264u·(11X⁷) + 11v·(11264Y⁷)`. No factorisation theory is used
+anywhere — this is the crude combination, and it is what fixes the constant
+`512` in `height_drop_or_small`.
+
+Note the useful constant is NOT the bare resultant
+`Res(X⁴−128X+256, X³−4X²+16) = 2¹⁶·11² = 7929856`: the Bezout cofactors clear
+only `2¹⁰·11` on the `Y`-side and `11` on the `X`-side. A per-prime reading of
+the SAME two identities sharpens this to `k ∣ 2¹⁰·11 = 11264` (for a prime power
+`qʲ ∥ k`, coprimality puts `q` outside `X` or outside `Y`, whence `qʲ ∣ 11` or
+`qʲ ∣ 11264`), and a `2`-adic analysis of the two values sharpens it again to
+`k ∣ 2⁶·11 = 704`, which is ATTAINED — at `(X, Y) = (−2960, 1)`. -/
+theorem forms_common_dvd {X Y k : ℤ} (hcop : IsCoprime X Y)
+    (h1 : k ∣ X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4)
+    (h2 : k ∣ 4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)) :
+    k ∣ 123904 := by
+  obtain ⟨a, ha⟩ := h1
+  obtain ⟨b, hb⟩ := h2
+  have hY : k ∣ 11264 * Y ^ 7 :=
+    ⟨4 * Y * (3 * X ^ 2 - 8 * X * Y - 16 * Y ^ 2) * a
+        + (-3 * X ^ 3 - 4 * X ^ 2 * Y + 432 * Y ^ 3) * b, by
+      linear_combination (4 * Y * (3 * X ^ 2 - 8 * X * Y - 16 * Y ^ 2)) * ha
+        + (-3 * X ^ 3 - 4 * X ^ 2 * Y + 432 * Y ^ 3) * hb⟩
+  have hX : k ∣ 11 * X ^ 7 :=
+    ⟨(11 * X ^ 3 - 80 * X ^ 2 * Y + 64 * X * Y ^ 2 + 384 * Y ^ 3) * a
+        + (20 * X ^ 3 + 64 * X ^ 2 * Y + 512 * X * Y ^ 2 - 1536 * Y ^ 3) * b, by
+      linear_combination (11 * X ^ 3 - 80 * X ^ 2 * Y + 64 * X * Y ^ 2 + 384 * Y ^ 3) * ha
+        + (20 * X ^ 3 + 64 * X ^ 2 * Y + 512 * X * Y ^ 2 - 1536 * Y ^ 3) * hb⟩
+  obtain ⟨u, v, huv⟩ := hcop.pow (m := 7) (n := 7)
+  obtain ⟨cX, hcX⟩ := hX
+  obtain ⟨cY, hcY⟩ := hY
+  exact ⟨11264 * u * cX + 11 * v * cY, by
+    linear_combination (11264 * u) * hcX + (11 * v) * hcY - 123904 * huv⟩
+
+/-- **THE COPRIMALITY BOOKKEEPING** (PROVEN 2026-07-27): if `p/e²` is in lowest
+terms and `e²·A = p·B` with `B > 0`, then `A` and `B` are the SAME multiple of
+`p` and `e²` — i.e. `(p, e²)` really is the reduced form of `A/B`.
+
+Concretely `e² ∣ B`, and writing `B = e²·k` cancels `e²` to `A = p·k`. That
+single `k` is then simultaneously a common divisor of `A` and `B` (which is what
+`forms_common_dvd` bounds) and the exact factor by which the height
+`max(|p|, e²) = max(|A|, B)/k` is deflated. Note `k = gcd(A, B)` on the nose,
+since `gcd(p·k, e²·k) = k·gcd(p, e²) = k` — but the proof below never needs
+that, only that `k` divides both. -/
+theorem reduced_fraction {p e A B : ℤ} (he : 0 < e) (hcop : IsCoprime p e) (hB : 0 < B)
+    (hrel : e ^ 2 * A = p * B) : ∃ k : ℤ, 0 < k ∧ B = e ^ 2 * k ∧ A = p * k := by
+  have hcop2 : IsCoprime (e ^ 2) p := (hcop.symm).pow_left
+  have hdvd : e ^ 2 ∣ B := hcop2.dvd_of_dvd_mul_left ⟨A, hrel.symm⟩
+  obtain ⟨k, hk⟩ := hdvd
+  have he2 : (0 : ℤ) < e ^ 2 := pow_pos he 2
+  refine ⟨k, ?_, hk, ?_⟩
+  · nlinarith [hB, he2, hk]
+  · refine mul_left_cancel₀ (ne_of_gt he2) ?_
+    rw [hrel, hk]; ring
+
+/-- **THE ARCHIMEDEAN LEAF at level `11`** (sorry leaf, 2026-07-27): the two
+binary quartics `F` and `4Y·G` are not both small,
+
+    max(|X|, Y)⁴  ≤  4·max(|F(X, Y)|, |4Y·G(X, Y)|)     for `Y > 0`,
+
+with `F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`.
+
+**THIS IS NOW THE WHOLE ANALYTIC CONTENT OF THE LEVEL-`11` HEIGHT BOUND.**
+Everything else in `height_drop_or_small` — the coprimality bookkeeping and the
+resultant divisibility — is PROVEN above. It is a statement about two explicit
+polynomials in two integer variables and nothing else: no elliptic curves, no
+coprimality, no heights.
+
+**IT IS TIGHT, AND THAT IS THE ONLY DIFFICULTY.** Equality holds at
+`(X, Y) = (4, 1)`: there `F = 256 − 512 + 256 = 0` and `4Y·G = 4·16 = 64`, so
+both sides are `256`. So no slack whatsoever is available at `t := X/Y = 4`, and
+a proof that rounds anywhere near there will fail. (This is why
+`height_drop_or_small` is stated at `512` rather than `398`: replacing the `max`
+by a sum costs exactly the factor `2` that this equality forbids recovering.)
+
+HOW TO PROVE IT — a four-way split on `t = X/Y`, with every crossover computed.
+Write `f(t) = t⁴ − 128t + 256` and `g(t) = t³ − 4t² + 16`, so that
+`F = Y⁴f(t)` and `4YG = 4Y⁴g(t)`.
+
+* `|X| ≤ Y` (so `max = Y`): then `F ≥ 128Y⁴` outright, since `X⁴ ≥ 0` and
+  `−128XY³ ≥ −128Y⁴`. So `4|F| ≥ 512Y⁴ ≥ Y⁴`, with enormous room.
+* `2X ≤ 7Y` (i.e. `t ≤ 7/2`), `Y < |X|`: use `4|F| ≥ X⁴`. The inequality
+  `4|f(t)| ≥ t⁴` holds for ALL `t ≤ 3.5486…` — including every negative `t`,
+  where `f` is large and positive — and `7/2` is safely below that root.
+* `3X ≥ 14Y` (i.e. `t ≥ 14/3 ≈ 4.667`): use `4|F| ≥ X⁴` again. The upper root
+  of `4|f(t)| = t⁴` is `4.5815…`, safely below `14/3`.
+* `7Y < 2X` and `3X < 14Y` (i.e. `7/2 < t < 14/3`): use `16Y·|G| ≥ X⁴`. The
+  inequality `16|g(t)| ≥ t⁴` holds on `[−1.6…, 9.656…]` ⊇ `[7/2, 14/3]`, with
+  EQUALITY at `t = 4` — this is the tight case, and it is the one that must be
+  proved exactly rather than estimated.
+
+The two failure intervals never overlap: `4|f|` fails only on `(3.5486, 4.5815)`
+and `16|g|` fails only outside `(−1.68, 9.657)`, so the four cases above cover
+`ℝ` with margin everywhere except at `t = 4`. Cut points `7/2` and `14/3` were
+chosen inside the overlap on both sides; any nearby rationals work. -/
+theorem forms_archimedean {X Y : ℤ} (hY : 0 < Y) :
+    max X.natAbs Y.natAbs ^ 4 ≤
+      4 * max (X ^ 4 - 128 * X * Y ^ 3 + 256 * Y ^ 4).natAbs
+        (4 * Y * (X ^ 3 - 4 * X ^ 2 * Y + 16 * Y ^ 3)).natAbs := sorry
+
+/-- **THE RESULTANT / HEIGHT NODE at level `11`** (PROVEN 2026-07-27 over
+`forms_archimedean`): the halving either strictly drops the height, or the point
+was small all along.
 
 **THIS IS THE FINITE-GENERATION CONTENT OF LEVEL `11`**, and it is the only
 place it appears. Everything else in this section is either the `2`-descent
 (`exists_halving_witness`), proven algebra, or the finite check `smallPoints`.
 A `2`-descent alone gives `E(ℚ)/2E(ℚ) = 0`, i.e. unique `2`-divisibility, which
 is satisfied by infinite groups too; it is exactly this height inequality that
-converts that into finiteness. So do not expect to remove this leaf by
-strengthening the descent.
+converts that into finiteness. So do not expect to remove this content by
+strengthening the descent — but note it has now been isolated one level further
+down, into the single polynomial inequality `forms_archimedean`.
 
 STATEMENT. `hrel` is `halving_relation`, i.e. `p/e² = F(p', E)/(4E·G(p', E))`
 with `E = e'²` and
@@ -558,34 +678,17 @@ with `E = e'²` and
 caller from `halving_norm_relation`, since `c²n'² = 16e²e'⁶ > 0`). Both models
 are coprime, so `(p, e²)` is the reduced form of that fraction.
 
-HOW TO PROVE IT, with every constant computed. Put `H = max(|p|, e²)` and
-`H' = max(|p'|, E)`, `A = F(p', E)`, `B = 4E·G(p', E) = 4e'²n'² > 0`, and
-`g = gcd(A, B)`. Then `H = max(|A|, B)/g` exactly — that is the coprimality
-bookkeeping, and it is three lines: `hrel` reads `e²·A = p·B`, and `hcop` gives
-`IsCoprime p (e²)`, so `e² ∣ B`; writing `B = e²·k` with `k > 0` cancels `e²`
-to `A = p·k`, whence `gcd(A, B) = gcd(p·k, e²·k) = k·gcd(p, e²) = k`, i.e.
-`e² = B/g` and `|p| = |A|/g`. With that, the two real ingredients are:
+HOW IT IS PROVED, with every constant computed. Put `H = max(|p|, e²)` and
+`H' = max(|p'|, E)`, `A = F(p', E)`, `B = 4E·G(p', E) = 4e'²n'² > 0`. Then
+`H = max(|A|, B)/k` exactly, for the single `k` produced by
+`reduced_fraction` — that is the coprimality bookkeeping. `k` divides both `A`
+and `B`, so `forms_common_dvd` gives `k ∣ 2¹⁰·11² = 123904`; and
+`forms_archimedean` gives `max(|A|, B) ≥ H'⁴/4`, which is the ONE remaining
+open ingredient. See those three declarations for the full detail: the two
+Bezout identities, the sharper `11264` and `704` gcd bounds, and the four-way
+case split on `t = X/Y` with its computed crossovers.
 
-* **Archimedean.** `max(|f(t)|, 4|g(t)|)/max(|t|, 1)⁴ ≥ 1/4` for all real `t`,
-  for `f = X⁴ − 128X + 256`, `g = X³ − 4X² + 16`. The minimum `1/4` is ATTAINED,
-  at `t = 4`, where `f(4) = 0` and `g(4) = 16`; homogenising with `t = p'/E`
-  gives `max(|A|, B) ≥ H'⁴/4`. (Numerically checked on a fine grid; the ratio
-  tends to `1` at `t → ±∞`.)
-* **Non-archimedean.** `g ∣ 2¹⁰·11² = 123904`, from two integral Bezout
-  identities for the pair `(F, 4YG)` — one killing `Y`, one killing `X`. BOTH
-  ARE VERIFIED IDENTITIES; expand and check with `ring`:
-
-      (4Y(3X² − 8XY − 16Y²))·F + (−3X³ − 4X²Y + 432Y³)·(4YG) = 11264·Y⁷,
-      (11X³ − 80X²Y + 64XY² + 384Y³)·F
-        + (20X³ + 64X²Y + 512XY² − 1536Y³)·(4YG) = 11·X⁷.
-
-  So `g ∣ 11264·Y⁷` and `g ∣ 11·X⁷` at `(X, Y) = (p', E)`. Since `hcop'` gives
-  `IsCoprime p' E`, hence `IsCoprime (p'⁷) (E⁷)`, pick `u·p'⁷ + v·E⁷ = 1` and
-  write `11·11264 = 11264·u·(11p'⁷) + 11·v·(11264E⁷)`; both summands are
-  divisible by `g`, so `g ∣ 123904`. That is the crude combination and it needs
-  no factorisation theory at all.
-
-Combining: `H ≥ H'⁴/(4g) ≥ H'⁴/495616`. If the height does NOT drop then
+Combining: `H ≥ H'⁴/(4k) ≥ H'⁴/495616`. If the height does NOT drop then
 `|p'| + E ≥ |p| + e²`, so `2H' ≥ H` and `H ≥ (H/2)⁴/495616 = H⁴/7929856`,
 giving `H³ ≤ 7929856 = 2¹⁶·11²`, `H ≤ 199`, and `|p| + e² ≤ 2H ≤ 398`. (The
 `2¹⁶·11²` is the resultant `Res(X⁴−128X+256, X³−4X²+16)`; it reappears here as
@@ -600,17 +703,11 @@ shortcut is perfectly correct and lands at `H ≤ 251`, `|p| + e² ≤ 502`. Sta
 `512` means BOTH routes close this leaf and nobody is forced to keep the `max`.
 The cost is only that `smallPoints` searches `e ≤ 22` instead of `e ≤ 19`.
 
-**Beyond that the slack is enormous, and deliberate.** Two sharpenings exist if
-a smaller box is wanted in `smallPoints`, and they are worth quoting because
-they are the whole distance between `512` and the truth:
-
-* A per-prime reading of the same two Bezout identities gives `g ∣ 2¹⁰·11 =
-  11264` (for a prime power `qʲ ∥ g`: `hcop'` puts `q` outside `p'` or outside
-  `E`, whence `qʲ ∣ 11` or `qʲ ∣ 11264`), hence `H ≤ 89` and `|p| + e² ≤ 178`.
-* A `2`-adic analysis of `A` and `B` on top of that gives `g ∣ 2⁶·11 = 704`
-  — attained, at `(p', e') = (−2960, 1)` — hence `|p| + e² ≤ 70`, i.e. `e ≤ 8`.
-
-And the truth is far smaller still: a brute-force scan over ALL coprime
+**Beyond that the slack is enormous, and deliberate.** The two sharpenings of
+`forms_common_dvd` recorded in ITS docstring give `k ∣ 11264` (hence `H ≤ 89`
+and `|p| + e² ≤ 178`) and then `k ∣ 704` (hence `|p| + e² ≤ 70`, i.e. `e ≤ 8`),
+if a smaller box is wanted in `smallPoints`. And the truth is far smaller
+still: a brute-force scan over ALL coprime
 `(p', e')` with `|p'| ≤ 3000`, `e' ≤ 60` finds that the largest `|p| + e²` for
 which the height fails to drop is `1`, at `(p', e') = (4, 1)` — the `5`-torsion
 point. So every constant above is enormously lossy, and `smallPoints` may be
@@ -626,7 +723,72 @@ theorem height_drop_or_small {p e p' e' n' : ℤ} (he : 0 < e) (hcop : IsCoprime
     (hn' : n' ^ 2 = p' ^ 3 - 4 * p' ^ 2 * e' ^ 2 + 16 * e' ^ 6)
     (hrel : e ^ 2 * (p' ^ 4 - 128 * p' * e' ^ 6 + 256 * e' ^ 8) = 4 * p * e' ^ 2 * n' ^ 2) :
     p'.natAbs + (e' ^ 2).natAbs < p.natAbs + (e ^ 2).natAbs ∨
-      p.natAbs + (e ^ 2).natAbs ≤ 512 := sorry
+      p.natAbs + (e ^ 2).natAbs ≤ 512 := by
+  -- The two forms at `(X, Y) = (p', e'²)`.
+  set A : ℤ := p' ^ 4 - 128 * p' * e' ^ 6 + 256 * e' ^ 8 with hA
+  set B : ℤ := 4 * e' ^ 2 * n' ^ 2 with hBdef
+  have hBpos : 0 < B := by
+    have h1 : (0 : ℤ) < e' ^ 2 := pow_pos he' 2
+    have h2 : (0 : ℤ) < n' ^ 2 := by positivity
+    rw [hBdef]; positivity
+  have hrel' : e ^ 2 * A = p * B := by rw [hA, hBdef]; linear_combination hrel
+  obtain ⟨k, hk0, hkB, hkA⟩ := reduced_fraction he hcop hBpos hrel'
+  -- `k` is a common divisor of the two forms, hence divides `123904`.
+  have hAform : A = p' ^ 4 - 128 * p' * (e' ^ 2) ^ 3 + 256 * (e' ^ 2) ^ 4 := by rw [hA]; ring
+  have hBform : B = 4 * e' ^ 2 * (p' ^ 3 - 4 * p' ^ 2 * (e' ^ 2) + 16 * (e' ^ 2) ^ 3) := by
+    rw [hBdef, hn']; ring
+  have hkdvd : k ∣ 123904 :=
+    forms_common_dvd (X := p') (Y := e' ^ 2) hcop'.pow_right
+      (by rw [← hAform, hkA]; exact Dvd.intro_left p rfl)
+      (by rw [← hBform, hkB]; exact Dvd.intro_left (e ^ 2) rfl)
+  have hkle : k.natAbs ≤ 123904 := by
+    have hd : k.natAbs ∣ 123904 := by
+      have hdd := Int.natAbs_dvd_natAbs.mpr hkdvd
+      simpa using hdd
+    exact Nat.le_of_dvd (by norm_num) hd
+  -- Heights.
+  set H : ℕ := max p.natAbs (e ^ 2).natAbs with hH
+  set H' : ℕ := max p'.natAbs (e' ^ 2).natAbs with hH'
+  have harch : H' ^ 4 ≤ 4 * max A.natAbs B.natAbs := by
+    rw [hH', hAform, hBform]
+    exact forms_archimedean (X := p') (Y := e' ^ 2) (pow_pos he' 2)
+  have hmaxmul : ∀ a b c : ℕ, max (a * c) (b * c) = max a b * c := by
+    intro a b c
+    rcases Nat.le_total a b with hab | hab
+    · rw [Nat.max_eq_right hab, Nat.max_eq_right (Nat.mul_le_mul hab (le_refl c))]
+    · rw [Nat.max_eq_left hab, Nat.max_eq_left (Nat.mul_le_mul hab (le_refl c))]
+  have hAB : max A.natAbs B.natAbs = H * k.natAbs := by
+    rw [hkA, hkB, hH, Int.natAbs_mul, Int.natAbs_mul, hmaxmul]
+  have hmain : H' ^ 4 ≤ 495616 * H := by
+    calc H' ^ 4 ≤ 4 * max A.natAbs B.natAbs := harch
+      _ = 4 * (H * k.natAbs) := by rw [hAB]
+      _ ≤ 4 * (H * 123904) := Nat.mul_le_mul_left 4 (Nat.mul_le_mul_left H hkle)
+      _ = 495616 * H := by ring
+  -- Either the height drops, or `H ≤ 199` and so `|p| + e² ≤ 398 ≤ 512`.
+  by_cases hdrop : p'.natAbs + (e' ^ 2).natAbs < p.natAbs + (e ^ 2).natAbs
+  · exact Or.inl hdrop
+  · refine Or.inr ?_
+    replace hdrop : p.natAbs + (e ^ 2).natAbs ≤ p'.natAbs + (e' ^ 2).natAbs :=
+      Nat.not_lt.mp hdrop
+    have hHs : H ≤ p.natAbs + (e ^ 2).natAbs := by rw [hH]; omega
+    have hs'H' : p'.natAbs + (e' ^ 2).natAbs ≤ 2 * H' := by rw [hH']; omega
+    have hH2 : H ≤ 2 * H' := le_trans hHs (le_trans hdrop hs'H')
+    have hcube : H ^ 4 ≤ 7929856 * H := by
+      calc H ^ 4 ≤ (2 * H') ^ 4 := Nat.pow_le_pow_left hH2 4
+        _ = 16 * H' ^ 4 := by ring
+        _ ≤ 16 * (495616 * H) := Nat.mul_le_mul_left 16 hmain
+        _ = 7929856 * H := by ring
+    have hH199 : H ≤ 199 := by
+      by_contra hcon
+      have h200 : 200 ≤ H := Nat.lt_of_not_le hcon
+      have hp3 : (200 : ℕ) ^ 3 ≤ H ^ 3 := Nat.pow_le_pow_left h200 3
+      have hbig : 8000000 * H ≤ H ^ 4 := by
+        calc 8000000 * H = 200 ^ 3 * H := by norm_num
+          _ ≤ H ^ 3 * H := Nat.mul_le_mul hp3 (le_refl H)
+          _ = H ^ 4 := by ring
+      omega
+    have hle2H : p.natAbs + (e ^ 2).natAbs ≤ 2 * H := by rw [hH]; omega
+    omega
 
 /-- **THE FINITE BASE CASE at level `11`** (sorry leaf, 2026-07-27): the only
 SMALL coprime integral points of `W² = U³ − 4U² + 16` are the two real ones.
@@ -839,7 +1001,8 @@ DECOMPOSED 2026-07-27, twice. It is no longer a leaf: it is the infinite descent
 and `c`. So the three open statements are `exists_halving_witness` (the
 `2`-descent over `ℤ[s]`: PID, units, and the local conditions),
 `height_drop_or_small` (the resultant/archimedean height bound, where the
-finite-generation content actually lives) and `smallPoints` (the finite base
+finite-generation content actually lives — itself now PROVEN over the single
+polynomial inequality `forms_archimedean`) and `smallPoints` (the finite base
 case it leaves behind, `|p| ≤ 512` and `1 ≤ e ≤ 22`). See the section docstring
 for the computed evidence behind that split, including why the earlier routing
 note — which called the cubic field's class group the obstruction — was wrong.
@@ -936,8 +1099,11 @@ infinite descent (`MazurLevel11.integral_leaf_aux`) over
 `MazurLevel11.exists_halving_witness` and `MazurLevel11.halving_descends`; and
 `halving_descends` is now PROVEN in turn, over
 `MazurLevel11.height_drop_or_small` (the resultant/archimedean height bound)
-and `MazurLevel11.smallPoints` (the finite base case `|p| ≤ 512`, `e ≤ 22`).
-So level `11` stands on exactly three open statements. See the
+and `MazurLevel11.smallPoints` (the finite base case `|p| ≤ 512`, `e ≤ 22`);
+and `height_drop_or_small` is PROVEN in turn over the single polynomial
+inequality `MazurLevel11.forms_archimedean`. So level `11` stands on exactly
+three open statements: `exists_halving_witness`, `forms_archimedean` and
+`smallPoints`. See the
 `MazurLevel11` section docstring.
 
 Note the sentence above — "finite generation alone never yields rank `0`, so it
@@ -945,7 +1111,8 @@ was never the hard half" — is true but was read the wrong way round when
 `mordellWeil` was deleted. Finite generation is not SUFFICIENT, and it is also
 not OPTIONAL: a complete `2`-descent here gives only `E(ℚ)/2E(ℚ) = 0`, which
 without a height theory is satisfied by infinite groups. The height content is
-now explicit, named and quantitative, in `MazurLevel11.height_drop_or_small`. -/
+now explicit, named and quantitative, and isolated all the way down to a
+statement about two integer variables: `MazurLevel11.forms_archimedean`. -/
 theorem curve11a3_rational_points (x y : ℚ)
     (h : curve11a3.toAffine.Nonsingular x y) :
     (x, y) = ((0 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
