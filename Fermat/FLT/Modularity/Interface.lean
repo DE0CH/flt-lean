@@ -52652,6 +52652,109 @@ theorem isPeuRamifiee_iff_dvd_log_valuation
 end PeuRamifiee
 
 include hpodd in
+/-- **THE ABELIAN-DESCENT LEMMA, in the only form this development needs**
+(LEAF — new 2026-07-27, the FIRST of the two pieces of the
+INERTIA-COMMUTATIVITY CUT's abelian branch
+`pow_dvd_log_valuation_of_forall_commute_localInertia` below, which is now
+PROVEN GLUE over this leaf and its valuation-transport sibling).
+
+`r` is a `pⁿ`-th radical whose Kummer cocycle over local inertia is
+**abelian** — that is what `hcomm` says, in the weakest form the argument
+uses: every COMMUTATOR of two inertia elements fixes `r`. The conclusion is
+that the cocycle is a COBOUNDARY inside `μ_{pⁿ}`: there is a `pⁿ`-th root
+of unity `z` with `r / z` fixed by all of `localInertiaGroup 𝔭ᵥ`.
+
+WHY THE HYPOTHESES ARE EXACTLY THESE. Nothing about a group scheme, a
+representation or a flat prolongation survives into this statement — the
+representation `σ₀` of the parent leaf enters only through `hcomm`, and
+`hcomm` is derived there from `habel` and `hfix` in five lines (a
+commutator of two inertia elements is killed by `σ₀.toLocal 𝔭ᵥ` when its
+values commute, and `hfix` then says it fixes `r`). So this leaf is a
+statement about a field, a subgroup of its absolute Galois group, and a
+radical, and it is the piece the fifteenth owner's docstring identifies as
+"the genuinely new Lean content".
+
+THE PROOF, which is the thirteenth owner's ABELIAN-DESCENT LEMMA written
+out in full under that heading in
+`pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`
+below. Fix a primitive `pⁿ`-th root of unity `ζ` in `(ℚᵖᵥ)ᵃˡᵍ` and write,
+for `σ ∈ I := localInertiaGroup 𝔭ᵥ`,
+
+    ζ_σ := σ(r)/r = ζ ^ a(σ) ,      σ(ζ) = ζ ^ χ(σ) ,
+
+with `a : I → ℤ/pⁿ` and `χ : I → (ℤ/pⁿ)ˣ` the cyclotomic character mod
+`pⁿ`. `hroot` is what makes `a` well defined. The cocycle identity
+`ζ_{στ} = σ(ζ_τ)·ζ_σ` reads `a(στ) = χ(σ)a(τ) + a(σ)`, and `hcomm` — the
+ONLY place abelianness is used — gives `a(στ) = a(τσ)`, hence
+
+    a(τ)·(χ(σ) − 1) = a(σ)·(χ(τ) − 1)   in ℤ/pⁿ, for all σ, τ ∈ I.
+
+Now `μ_p ⊄ (ℚᵖᵥ)^{I}`: the fixed field of `I` is the maximal UNRAMIFIED
+subextension, while `ℚᵖᵥ(μ_p)/ℚᵖᵥ` is totally ramified of degree
+`p − 1 ≥ 2`. **This is the only use of `hpodd`, and it is not decoration:
+at `p = 2` one has `μ_2 = {±1} ⊆ ℚ_2`, `χ ≡ 1`, the displayed identity is
+vacuous and the lemma is FALSE.** So some `σ₁ ∈ I` has `χ(σ₁) ≢ 1 mod p`,
+i.e. `χ(σ₁) − 1 ∈ (ℤ/pⁿ)ˣ`; put `c₀ := a(σ₁)·(χ(σ₁) − 1)⁻¹` and the
+identity becomes `a(τ) = c₀·(χ(τ) − 1)` for every `τ ∈ I`, i.e.
+`ζ_τ = τ(ζ^{c₀})/ζ^{c₀}`. Take `z := ζ ^ c₀`.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a field `E` with
+`μ_p ⊄ E`, a finite abelian extension `L/E` and `q ∈ Eˣ` with a `pⁿ`-th
+root in `L` but `q ∉ (Eˣ)^{pⁿ}` — equivalently, find the error in the
+five-line cocycle computation above. Note the necessity witness recorded
+with the lemma: over `E = ℚ_p(μ_p)` the extension `E(p^{1/p})` IS abelian
+and `p` is not a `p`-th power, so `μ_p ⊄ E` cannot be dropped. -/
+theorem exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed
+    {n : ℕ} {r : AlgebraicClosure ℚᵖᵥ} (hr0 : r ≠ 0)
+    (hroot : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ, (σ r / r) ^ p ^ n = 1)
+    (hcomm : ∀ σ ∈ localInertiaGroup 𝔭ᵥ, ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
+      (σ * τ * σ⁻¹ * τ⁻¹) r = r) :
+    ∃ z : AlgebraicClosure ℚᵖᵥ, z ≠ 0 ∧ z ^ p ^ n = 1 ∧
+      ∀ σ ∈ localInertiaGroup 𝔭ᵥ, σ (r / z) = r / z :=
+  sorry
+
+/-- **A radical fixed by local inertia has `pⁿ`-divisible valuation**
+(LEAF — new 2026-07-27, the SECOND of the two pieces of the
+INERTIA-COMMUTATIVITY CUT's abelian branch, and the one with no
+representation theory and no cocycle in it).
+
+If `y ∈ (ℚᵖᵥ)ᵃˡᵍ` is fixed by `localInertiaGroup 𝔭ᵥ` and `y ^ pⁿ = q` for a
+unit `q` of `ℚᵖᵥ`, then `pⁿ ∣ v_p(q)`.
+
+THE PROOF, and the machinery for it is ALREADY PROVEN in
+`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`,
+which this file `public import`s — do not rebuild it. Let
+`M := ℚᵖᵥ⟮y⟯ ⊆ (ℚᵖᵥ)ᵃˡᵍ`. It is finite over `ℚᵖᵥ` (`y` is algebraic, being
+a root of `X ^ pⁿ − q`) and `hy` puts it inside
+`IntermediateField.fixedField (localInertiaGroup 𝔭ᵥ)`, so
+
+    maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
+
+gives `(𝔪 𝒪ᵖᵥ).map (algebraMap 𝒪ᵖᵥ (IntegralClosure 𝒪ᵖᵥ M)) = 𝔪 …`, i.e.
+`e(M/ℚᵖᵥ) = 1`. So the unique extension of `v_p` to `M` is again
+`ℤ`-valued and restricts to `v_p` on `ℚᵖᵥ` WITHOUT a denominator, and
+`v_p(q) = v_M(y ^ pⁿ) = pⁿ · v_M(y) ∈ pⁿ ℤ`.
+
+WHAT IS GENUINELY NEW HERE, and it is the reason this is a separate leaf
+rather than three lines of the assembly: the transport from the IDEAL
+equality that `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+produces to the ADDITIVE statement about `WithZero.log ∘ Valued.v`. The
+`e = 1` fact is stated in `Ideal.map`/`IsLocalRing.maximalIdeal` language
+in the DVR `IntegralClosure 𝒪ᵖᵥ M`, and the conclusion is stated in the
+`WithZero (Multiplicative ℤ)`-valued `Valued.v` of `ℚᵖᵥ`; bridging the two
+is the work.
+
+NOTE WHAT THIS LEAF DOES NOT NEED: `hpodd` is absent, and so is every
+hypothesis about `σ₀`. Oddness of `p` is consumed entirely by the
+abelian-descent leaf above. -/
+theorem pow_dvd_log_valuation_of_forall_mem_localInertiaGroup_fixed
+    {n : ℕ} (q : (ℚᵖᵥ)ˣ) (y : AlgebraicClosure ℚᵖᵥ)
+    (hy : ∀ σ ∈ localInertiaGroup 𝔭ᵥ, σ y = y)
+    (hyq : y ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ)) :
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
+  sorry
+
+include hpodd in
 /-- **The ABELIAN half of Serre's local criterion: if local inertia acts
 through a COMMUTATIVE image then the radical descends, and
 `pⁿ ∣ v_p(q)`** (sorried leaf, opened 2026-07-27 by the fifteenth owner
@@ -52737,7 +52840,38 @@ cutting.
 THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a field `E` with
 `μ_p ⊄ E`, a finite abelian extension `L/E`, and `q ∈ Eˣ` having a
 `pⁿ`-th root in `L` but with `q ∉ (Eˣ)^{pⁿ}`; equivalently, find the
-error in the five-line cocycle computation recorded below. -/
+error in the five-line cocycle computation recorded below.
+
+# REDUCED 2026-07-27 (sixteenth owner) — THIS IS NOW PROVEN GLUE
+
+The body below is complete, over the two leaves stated immediately above
+this docstring:
+
+* `exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed` — the
+  ABELIAN-DESCENT LEMMA, the cocycle argument, and the only consumer of
+  `hpodd` in the whole branch;
+* `pow_dvd_log_valuation_of_forall_mem_localInertiaGroup_fixed` — `e = 1`
+  above the inertia fixed field, over the PROVEN
+  `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`.
+
+What the assembly proves, so that neither leaf has to, is exactly the
+REPRESENTATION-THEORETIC content of this statement — and it is all of it:
+
+1. `r ≠ 0`, since `r ^ pⁿ = q` and `q` is a unit;
+2. `(σ r / r) ^ pⁿ = 1` for EVERY `σ ∈ Γ ℚᵖᵥ`, because `σ` fixes
+   `algebraMap ℚᵖᵥ _ q` — the Kummer cocycle takes values in `μ_{pⁿ}`;
+3. **`hcomm`, which is where `habel` and `hfix` are consumed and is the
+   whole point of the cut.** `σ₀.toLocal 𝔭ᵥ` is a monoid homomorphism into
+   `Module.End A W`, so `Commute (σ₀.toLocal 𝔭ᵥ σ) (σ₀.toLocal 𝔭ᵥ τ)`
+   collapses `σ₀.toLocal 𝔭ᵥ (σ τ σ⁻¹ τ⁻¹)` to `1` (note
+   `σ₀.toLocal 𝔭ᵥ σ` is a UNIT of that monoid, with inverse
+   `σ₀.toLocal 𝔭ᵥ σ⁻¹`, even though `Module.End A W` is not a group), and
+   `hfix` then says the commutator fixes `r`.
+
+After step 3 nothing of `A`, `W` or `σ₀` remains: the two leaves are
+statements about `(ℚᵖᵥ)ᵃˡᵍ`, `localInertiaGroup 𝔭ᵥ` and a radical. That
+separation is the reason the cut is worth making, and it is why neither
+leaf carries `hflat` or `hkill` — they were never used. -/
 theorem pow_dvd_log_valuation_of_forall_commute_localInertia
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
@@ -52749,8 +52883,39 @@ theorem pow_dvd_log_valuation_of_forall_commute_localInertia
       σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r)
     (habel : ∀ σ ∈ localInertiaGroup 𝔭ᵥ, ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
       Commute (σ₀.toLocal 𝔭ᵥ σ) (σ₀.toLocal 𝔭ᵥ τ)) :
-    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
-  sorry
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) := by
+  classical
+  -- (1) the radical is nonzero, since its `pⁿ`-th power is a unit
+  have hqa : algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ≠ 0 := by simp
+  have hpn : p ^ n ≠ 0 := pow_ne_zero n hp.out.ne_zero
+  have hr0 : r ≠ 0 := by
+    intro h
+    exact hqa (by rw [← hr, h, zero_pow hpn])
+  -- (2) the Kummer cocycle takes values in `μ_{pⁿ}`
+  have hroot : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ, (σ r / r) ^ p ^ n = 1 := by
+    intro σ
+    have hσ : σ (r ^ p ^ n) = r ^ p ^ n := by
+      rw [hr]; exact AlgEquiv.commutes σ _
+    rw [div_pow, ← map_pow, hσ, div_self (pow_ne_zero _ hr0)]
+  -- (3) commutators of inertia elements fix `r`: this is where `habel` and
+  -- `hfix` are consumed, and it is the whole representation-theoretic content
+  have hcomm : ∀ σ ∈ localInertiaGroup 𝔭ᵥ, ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
+      (σ * τ * σ⁻¹ * τ⁻¹) r = r := by
+    intro σ hσ τ hτ
+    refine hfix _ ?_
+    have h := (habel σ hσ τ hτ).eq
+    have hσσ : σ₀.toLocal 𝔭ᵥ σ * σ₀.toLocal 𝔭ᵥ σ⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel, map_one]
+    have hττ : σ₀.toLocal 𝔭ᵥ τ * σ₀.toLocal 𝔭ᵥ τ⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel, map_one]
+    simp only [map_mul]
+    rw [h, mul_assoc (σ₀.toLocal 𝔭ᵥ τ), hσσ, mul_one, hττ]
+  -- (4) abelian descent, then the unramified valuation transport
+  obtain ⟨z, hz0, hzp, hzfix⟩ :=
+    exists_pow_eq_one_forall_mem_localInertiaGroup_div_fixed hpodd hr0 hroot hcomm
+  refine pow_dvd_log_valuation_of_forall_mem_localInertiaGroup_fixed q (r / z)
+    hzfix ?_
+  rw [div_pow, hr, hzp, div_one]
 
 include hpodd in
 /-- **The NONABELIAN half of Serre's local criterion: the residual
