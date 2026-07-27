@@ -146,8 +146,15 @@ a sum such as `ψ * ψ + [n]`. Like its siblings it is `rfl`.
 
 Deliberately **not** `@[simp]`, unlike `End.mul_apply` and friends: it is used
 only through an explicit `simp only` below, so marking it would perturb the
-ambient simp set of every downstream file for no gain. -/
-theorem End.coe_add_apply [IsAlgClosed F] (f g : End W) (P : W.Point) :
+ambient simp set of every downstream file for no gain.
+
+`[W.IsElliptic]` is required because `End W` itself is (integrator, 2026-07-27):
+`Isogeny.lean`'s `abbrev End [IsAlgClosed F] (W : Affine F) [W.IsElliptic]`
+acquired that binder in the falsity repair that refuted the three `Isogeny.lean`
+leaves over `𝔽̄₂`. This declaration was written against the older signature and
+was the only one in this file missing the binder; every sibling here already
+carries `[IsAlgClosed F] [W.IsElliptic]`. -/
+theorem End.coe_add_apply [IsAlgClosed F] [W.IsElliptic] (f g : End W) (P : W.Point) :
     ((f + g : End W) : AddMonoid.End W.Point) P
       = (f : AddMonoid.End W.Point) P + (g : AddMonoid.End W.Point) P := rfl
 
