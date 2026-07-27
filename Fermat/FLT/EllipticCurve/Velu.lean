@@ -5137,7 +5137,12 @@ nothing here is a statement weakened to make it provable.
 The `PolePoly` re-derivation predicted above was carried out; it lives in the two sections
 `PolePolyAllOrders` / `PolePolyAllOrdersChar` immediately below this note. **Two of the
 three leaves are now PROVEN**, and the parity dependence of the entire development has been
-localised to `velu_thetaAll_local_dvd` and `velu_thetaAll_degree_lt`.
+localised to `velu_thetaAll_key_over` and `velu_thetaAll_degree_lt`.
+
+`velu_thetaAll_local_dvd` — the local half, and the step this note called "a re-derivation,
+not an edit" — is itself PROVEN, over the single remaining mechanical mirror
+`velu_thetaAll_key_over`. The `2`-torsion obstruction it was blocked on is resolved by
+`velu_genN_eq_genD_mul`.
 
 * `velu_equation_of_subgroup` — **PROVEN**, over `velu_equation_pole_of_subgroup` ←
   `velu_pole_identity_of_subgroup` ← `velu_thetaAll_eq_zero` ← the two polynomial leaves.
@@ -5406,8 +5411,160 @@ lemma veluPhiNumAll_eval {S : Finset W.Point} (hS : IsPointSubgroup S)
   rw [veluXNumAll_eval hS hP]
   ring
 
-/-- **LEAF: no poles, in local form, at EVERY kernel order** — the parity-free
-`velu_theta_local_dvd`.
+/-- **PROVEN, parity-free.** The value of `veluThetaAll` at the `x`-coordinate of a point
+outside the kernel is `veluH⁴` times the quotient-curve defect of the Vélu image — the
+parity-free `velu_theta_eval`. Together with `velu_thetaAll_translate` this is one of the
+two inputs of the still-open `velu_thetaAll_key_over`. -/
+lemma velu_thetaAll_eval {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluThetaAll S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 4
+        * ((2 * W.veluCoordY S P + W.a₁ * W.veluCoordX S P + W.a₃) ^ 2
+            - (4 * (W.veluCoordX S P) ^ 3 + W.b₂ * (W.veluCoordX S P) ^ 2
+              + (2 * W.b₄ - 20 * W.veluT S) * W.veluCoordX S P
+              + (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S))) := by
+  have hP0 : P ≠ 0 := fun h => hP (by rw [h]; exact hS.zero_mem)
+  have hV := velu_pole_V hS hP
+  rw [veluThetaAll, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_mul,
+    Polynomial.eval_pow, velu_psi_eval hP0, veluXiAll_eval hS hP,
+    veluPhiNumAll_eval hS hP, velu_coordX_eq hS hP, velu_coordY_eq hS hP]
+  linear_combination (-(((veluH S).eval (veluPointX P)) ^ 4
+    * ((2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)
+        * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q)
+      + (2 * (veluPointY P
+              + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W (veluPointX P) (veluPointY P) Q)
+          + W.a₁ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q)
+          + W.a₃)))) * hV
+
+/-- **PROVEN, parity-free.** Translation invariance of the Vélu image transported to
+`veluThetaAll` — the parity-free `velu_theta_translate`. This is where the SUBGROUP
+hypothesis enters the local half, through `veluCoordX_add_mem` / `veluCoordY_add_mem`. -/
+lemma velu_thetaAll_translate {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P R : W.Point} (hR : R ∈ S) (hP : P ∉ S) :
+    (veluThetaAll S).eval (veluPointX (P + R)) * ((veluH S).eval (veluPointX P)) ^ 4
+      = (veluThetaAll S).eval (veluPointX P) * ((veluH S).eval (veluPointX (P + R))) ^ 4 := by
+  have hPR : P + R ∉ S := by
+    intro hc
+    exact hP (by simpa using hS.add_mem _ hc _ (hS.neg_mem R hR))
+  rw [velu_thetaAll_eval hS hP, velu_thetaAll_eval hS hPR,
+    veluCoordX_add_mem hS P hR, veluCoordY_add_mem hS P hR]
+  ring
+
+/-! ### The `2`-torsion repair: `veluGenD` DIVIDES `veluGenN`
+
+This is the new mathematical content that makes the local half work at even order, and the
+reason the audit's "re-derives with the changed degree count" understates it. -/
+
+/-- The cofactor `M` with `veluGenN = veluGenD · M` at a `2`-TORSION point, so that
+`veluGenD · M` — rather than `veluGenD² · (…)` — is the cleared `x`-coordinate of the
+translate of the generic point.
+
+Remarkably `M` is LINEAR: `M = x₀·X + (2x₀² + 2a₂x₀ + a₄ − a₁y₀)`. Its value at the point
+itself is `3x₀² + 2a₂x₀ + a₄ − a₁y₀ = g^x`, which is `½·veluTTerm` there and hence
+NONZERO. -/
+noncomputable def veluGenM (W : Affine F) (x₀ y₀ : F) : W.CoordinateRing :=
+  algebraMap F W.CoordinateRing x₀ * veluGenX W
+    + algebraMap F W.CoordinateRing (2 * x₀ ^ 2 + 2 * W.a₂ * x₀ + W.a₄ - W.a₁ * y₀)
+
+omit [DecidableEq F] [CharZero F] in
+/-- **PROVEN — the coordinate-ring identity that unblocks the `2`-torsion case of the local
+divisibility.** At a `2`-torsion point `(x₀, y₀)` of `W`, `veluGenD = X − x₀` divides the
+cleared translate `veluGenN`.
+
+Why it is needed. The odd-order argument evaluates `veluGenN` at the point and gets
+`u_Q ≠ 0`; at a `2`-torsion point `u_Q = 0` (`veluUTerm_eq_zero_of_neg_eq`), so that
+evaluation degenerates to `0` and the contradiction collapses. Geometrically `x − x_T` has a
+DOUBLE zero at a `2`-torsion `T`, so `x(𝐏 + T)` has only a simple pole in `x − x_T`, and the
+clearing factor must be `d` rather than `d²`.
+
+The content is `(Y − y₀)² = (X − x₀)·(X² + (x₀ + a₂)X + (x₀² + a₂x₀ + a₄) − a₁Y)`: the
+Weierstrass relation turns `(Y − y₀)²` into `X³ + a₂X² + a₄X + a₆ + y₀² − Y·(a₁X + a₃ + 2y₀)`,
+the bracket is `a₁(X − x₀)` because `a₃ + 2y₀ = −a₁x₀`, and the cubic vanishes at `x₀`
+because `x₀³ + a₂x₀² + a₄x₀ + a₆ + y₀² = y₀·(2y₀ + a₁x₀ + a₃) = 0`. The other two summands
+of `veluGenN` already carry `(X − x₀)` and `(X − x₀)²`, and the `a₁Y` terms cancel — which
+is why `M` comes out linear. -/
+lemma velu_genN_eq_genD_mul {x₀ y₀ : F} (hEq : W.Equation x₀ y₀)
+    (h2 : 2 * y₀ + W.a₁ * x₀ + W.a₃ = 0) :
+    veluGenN W x₀ y₀ = veluGenD W x₀ * veluGenM W x₀ y₀ := by
+  have hgen := velu_gen_equation (W := W)
+  have hnegY : W.negY x₀ y₀ = y₀ := by
+    simp only [Affine.negY]; linear_combination -h2
+  rw [Affine.equation_iff] at hEq
+  rw [Affine.equation_iff] at hgen
+  simp only [velu_ma₁, velu_ma₂, velu_ma₃, velu_ma₄, velu_ma₆] at hgen
+  have hEqR : (algebraMap F W.CoordinateRing) (y₀ ^ 2 + W.a₁ * x₀ * y₀ + W.a₃ * y₀)
+      = (algebraMap F W.CoordinateRing) (x₀ ^ 3 + W.a₂ * x₀ ^ 2 + W.a₄ * x₀ + W.a₆) := by
+    rw [hEq]
+  have h2R : (algebraMap F W.CoordinateRing) (2 * y₀ + W.a₁ * x₀ + W.a₃)
+      = (algebraMap F W.CoordinateRing) 0 := by rw [h2]
+  simp only [map_add, map_mul, map_pow, map_sub, map_ofNat, map_zero] at hEqR h2R
+  simp only [veluGenN, veluGenD, veluGenM, hnegY]
+  simp only [map_add, map_mul, map_pow, map_sub, map_ofNat]
+  linear_combination hgen - hEqR
+    + (algebraMap F W.CoordinateRing y₀ - veluGenY W) * h2R
+
+omit [DecidableEq F] [CharZero F] in
+/-- **PROVEN.** `veluGenM` evaluates at the point itself to `g^x = 3x₀² + 2a₂x₀ + a₄ − a₁y₀`,
+which at a `2`-torsion point is `½·veluTTerm` and hence nonzero. -/
+lemma veluEvalAt_genM {x₀ y₀ : F} (hEq : W.Equation x₀ y₀) :
+    veluEvalAt hEq (veluGenM W x₀ y₀)
+      = 3 * x₀ ^ 2 + 2 * W.a₂ * x₀ + W.a₄ - W.a₁ * y₀ := by
+  simp only [veluGenM, map_add, map_mul, veluEvalAt_genX, veluEvalAt_algebraMap]
+  ring
+
+/-- The cleared `x`-coordinate of the translate of the generic point by `−Q`, normalised by
+the CORRECT power `veluGenD ^ (1 + ε_Q)`: `veluGenN` at an ordinary `±`-pair, and its
+cofactor `veluGenM` at a `2`-torsion point. Its evaluation at the point is `u_Q` in the
+first case and `g^x_Q` in the second, and is NONZERO in both — which is exactly what the
+local-divisibility contradiction needs. -/
+noncomputable def veluGenNq (W : Affine F) (x₀ y₀ : F) (Q : W.Point) : W.CoordinateRing :=
+  if -Q = Q then veluGenM W x₀ y₀ else veluGenN W x₀ y₀
+
+/-- **LEAF: the parity-free key identity in the affine coordinate ring** — the last
+genuinely open step of the local half, and a UNIFORM generalisation of the already-PROVEN
+`velu_theta_key_over` (which is the case `ε_Q = 1`, `veluGenNq = veluGenN`).
+
+**This is a mechanical mirror, not new mathematics.** Copy the proof of
+`velu_theta_key_over` and make exactly these substitutions:
+
+* `veluTheta → veluThetaAll`, `veluPX/veluPV → veluPXAll/veluPVAll`;
+* `veluH_factor hSL hoddL hQL → veluH_factor_all hSL hQL`, so `veluH` evaluated at the
+  generic point is `d ^ (1 + ε) · G` rather than `d² · G`;
+* every exponent `(d²)^k` becomes `(d ^ (1 + ε))^k`, and the final `d ^ 8` becomes
+  `d ^ (4·(1 + ε))`;
+* `velu_theta_translate hSL hoddL → velu_thetaAll_translate hSL` (PROVEN above);
+* the one step needing a case split is `hx'val`, the assertion that the translate's
+  `x`-coordinate times `d ^ (1 + ε)` is `veluGenNq`. For `ε = 1` it is the existing
+  computation verbatim; for `ε = 0` it is that computation followed by
+  `velu_genN_eq_genD_mul` (PROVEN above) and one cancellation of `d ≠ 0`.
+
+Note `ε` is computed on the point of `W`, while the identity is taken over the base-changed
+kernel; `veluEps` is invariant under `veluBaseChangePoint` because that map is an injective
+group homomorphism, so `−Q = Q` transfers both ways. -/
+theorem velu_thetaAll_key_over (L : Type*) [Field L] [DecidableEq L] [CharZero L]
+    [Algebra F L] [Algebra W.CoordinateRing L]
+    (htower : algebraMap F L
+      = (algebraMap W.CoordinateRing L).comp (algebraMap F W.CoordinateRing))
+    (hinj : Function.Injective (algebraMap W.CoordinateRing L))
+    {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hdeg : (veluThetaAll S).natDegree ≤ 4 * (S.card - 1))
+    {x₀ y₀ : F} (hQns : W.Nonsingular x₀ y₀)
+    (hQ : Affine.Point.some x₀ y₀ hQns ∈ S.erase 0) :
+    AdjoinRoot.of W.polynomial (veluThetaAll S)
+        * (∏ Q' ∈ S.erase 0, (veluGenNq W x₀ y₀ (Affine.Point.some x₀ y₀ hQns)
+            - algebraMap F W.CoordinateRing (veluPointX Q')
+              * veluGenD W x₀ ^ (1 + veluEps (Affine.Point.some x₀ y₀ hQns)))) ^ 4
+      = (∑ j ∈ Finset.range (4 * (S.card - 1) + 1),
+            algebraMap F W.CoordinateRing ((veluThetaAll S).coeff j)
+              * veluGenNq W x₀ y₀ (Affine.Point.some x₀ y₀ hQns) ^ j
+              * (veluGenD W x₀ ^ (1 + veluEps (Affine.Point.some x₀ y₀ hQns)))
+                  ^ (4 * (S.card - 1) - j))
+          * veluGenD W x₀ ^ (4 * (1 + veluEps (Affine.Point.some x₀ y₀ hQns)))
+          * AdjoinRoot.of W.polynomial (veluHq S (Affine.Point.some x₀ y₀ hQns)) ^ 4 :=
+  sorry
+
+/-- **PROVEN 2026-07-27 over `velu_thetaAll_key_over`: no poles, in local form, at EVERY
+kernel order** — the parity-free `velu_theta_local_dvd`.
 
 At a nonzero `Q` of the kernel, `(T − x_Q)` divides `veluThetaAll S` to the order
 `4·(1 + ε_Q)`: EIGHT times at an ordinary `±`-pair (as in the odd case) and only FOUR times
@@ -5440,12 +5597,130 @@ gives `Θ(X)·𝓗⁴ = 𝓣·d⁴·G⁴` with `𝓗 = ∏_{Q'}(M − x_{Q'}d)`.
 evaluating at `T` sends the right side to `0` while the left side is
 `Θ₁(x₀)·(g^x_T)^{4n} ≠ 0` — the same contradiction, with `4` in place of `8`.
 
+That whole route is now CARRIED OUT: the identity is `velu_genN_eq_genD_mul`, the
+evaluation is `veluEvalAt_genM`, the uniform normalisation is `veluGenNq`, and the argument
+below is parity-UNIFORM — the only case split is inside `hNne`, the nonvanishing of the
+evaluated translate. What remains open is the single mechanical mirror
+`velu_thetaAll_key_over`.
+
 `hdeg` is deliberately WEAKER than `velu_thetaAll_degree_lt`: `≤ 4n` rather than `< 4n`. -/
 theorem velu_thetaAll_local_dvd {S : Finset W.Point} (hS : IsPointSubgroup S)
     (hdeg : (veluThetaAll S).degree ≤ ((4 * (S.card - 1) : ℕ) : WithBot ℕ))
     {Q : W.Point} (hQ : Q ∈ S.erase 0) :
-    (Polynomial.X - Polynomial.C (veluPointX Q)) ^ (4 * (1 + veluEps Q)) ∣ veluThetaAll S :=
-  sorry
+    (Polynomial.X - Polynomial.C (veluPointX Q)) ^ (4 * (1 + veluEps Q)) ∣ veluThetaAll S := by
+  classical
+  rcases eq_or_ne (veluThetaAll S) 0 with hT0 | hT0
+  · rw [hT0]; exact dvd_zero _
+  suffices h : 4 * (1 + veluEps Q)
+      ≤ Polynomial.rootMultiplicity (veluPointX Q) (veluThetaAll S) from
+    dvd_trans (pow_dvd_pow _ h) (Polynomial.pow_rootMultiplicity_dvd _ _)
+  by_contra hlt
+  rw [Nat.not_le] at hlt
+  have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+  obtain _ | ⟨x₀, y₀, hQns⟩ := Q
+  · exact absurd rfl hQ0
+  simp only [veluPointX_some] at hlt
+  have hEqQ : W.Equation x₀ y₀ := hQns.1
+  set T : W.Point := Affine.Point.some x₀ y₀ hQns with hTdef
+  set e : ℕ := 1 + veluEps T with hedef
+  set 𝒩 : W.CoordinateRing := veluGenNq W x₀ y₀ T with hNdef
+  -- The evaluation of the cleared translate at the point itself is NONZERO. This is the
+  -- only case split in the argument: `u_Q ≠ 0` at an ordinary pair, `g^x_Q ≠ 0` at
+  -- `2`-torsion.
+  have hNne : veluEvalAt hEqQ 𝒩 ≠ 0 := by
+    rcases eq_or_ne (-T) T with h2 | h2
+    · rw [hNdef, veluGenNq, if_pos h2, veluEvalAt_genM]
+      have hy : W.negY x₀ y₀ = y₀ := by
+        have hc := congrArg veluPointY h2
+        rw [hTdef, Affine.Point.neg_some] at hc
+        exact hc
+      have hv : 2 * y₀ + W.a₁ * x₀ + W.a₃ = 0 := by
+        simp only [Affine.negY] at hy; linear_combination -hy
+      intro hc
+      refine veluTTerm_ne_zero_of_neg_eq (W := W) (Q := T) hQ0 h2 ?_
+      rw [hTdef, veluTTerm_some]
+      simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+      linear_combination 2 * hc + W.a₁ * hv
+    · rw [hNdef, veluGenNq, if_neg h2]
+      have hne2 : W.negY x₀ y₀ ≠ y₀ := fun hc =>
+        h2 (by rw [hTdef, Affine.Point.neg_some]; exact velu_point_some_eq rfl hc)
+      have hevN : veluEvalAt hEqQ (veluGenN W x₀ y₀) = (y₀ - W.negY x₀ y₀) ^ 2 := by
+        have hevd : veluEvalAt hEqQ (veluGenD W x₀) = 0 := by
+          rw [veluGenD, map_sub, veluEvalAt_genX, veluEvalAt_algebraMap, sub_self]
+        simp only [veluGenN, map_sub, map_add, map_mul, map_pow, veluEvalAt_genX,
+          veluEvalAt_genY, veluEvalAt_algebraMap, hevd]
+        ring
+      rw [hevN]
+      exact pow_ne_zero 2 (sub_ne_zero.mpr fun hc => hne2 hc.symm)
+  -- The root-multiplicity data.
+  set k := Polynomial.rootMultiplicity x₀ (veluThetaAll S) with hkdef
+  set Θ₁ := (veluThetaAll S) /ₘ ((Polynomial.X - Polynomial.C x₀) ^ k) with hΘ₁def
+  have hΘsplit : (Polynomial.X - Polynomial.C x₀) ^ k * Θ₁ = veluThetaAll S :=
+    Polynomial.pow_mul_divByMonic_rootMultiplicity_eq _ _
+  have hΘ₁ne : Θ₁.eval x₀ ≠ 0 :=
+    Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero _ hT0
+  -- The affine coordinate ring and its fraction field.
+  haveI : IsDomain W.CoordinateRing := inferInstance
+  letI : Algebra F (FractionRing W.CoordinateRing) :=
+    ((algebraMap W.CoordinateRing (FractionRing W.CoordinateRing)).comp
+      (algebraMap F W.CoordinateRing)).toAlgebra
+  have htower : (algebraMap F (FractionRing W.CoordinateRing))
+      = (algebraMap W.CoordinateRing (FractionRing W.CoordinateRing)).comp
+          (algebraMap F W.CoordinateRing) := rfl
+  haveI : CharZero (FractionRing W.CoordinateRing) :=
+    charZero_of_injective_algebraMap
+      (RingHom.injective (algebraMap F (FractionRing W.CoordinateRing)))
+  have hALinj : Function.Injective
+      (algebraMap W.CoordinateRing (FractionRing W.CoordinateRing)) :=
+    IsFractionRing.injective _ _
+  set d : W.CoordinateRing := veluGenD W x₀ with hddef
+  set n : ℕ := S.card - 1 with hndef
+  set 𝓗 : W.CoordinateRing :=
+    ∏ Q' ∈ S.erase 0, (𝒩 - algebraMap F W.CoordinateRing (veluPointX Q') * d ^ e) with h𝓗def
+  set 𝓣 : W.CoordinateRing := ∑ j ∈ Finset.range (4 * n + 1),
+    algebraMap F W.CoordinateRing ((veluThetaAll S).coeff j) * 𝒩 ^ j * (d ^ e) ^ (4 * n - j)
+      with h𝓣def
+  set G : W.CoordinateRing := AdjoinRoot.of W.polynomial (veluHq S T) with hGdef
+  have key : AdjoinRoot.of W.polynomial (veluThetaAll S) * 𝓗 ^ 4 = 𝓣 * d ^ (4 * e) * G ^ 4 :=
+    velu_thetaAll_key_over (FractionRing W.CoordinateRing) htower hALinj hS
+      (Polynomial.natDegree_le_iff_degree_le.mpr hdeg) hQns hQ
+  have hd : d ≠ 0 := velu_gen_ne x₀
+  have hdvd : (d : W.CoordinateRing) ^ k *
+      (AdjoinRoot.of W.polynomial Θ₁ * 𝓗 ^ 4)
+        = d ^ k * (𝓣 * d ^ (4 * e - k) * G ^ 4) := by
+    have hofd : AdjoinRoot.of W.polynomial (Polynomial.X - Polynomial.C x₀) = d := by
+      rw [hddef, veluGenD, map_sub, velu_of_C]
+      rfl
+    have hdk : AdjoinRoot.of W.polynomial (veluThetaAll S)
+        = d ^ k * AdjoinRoot.of W.polynomial Θ₁ := by
+      rw [← hΘsplit, map_mul, map_pow, hofd]
+    calc d ^ k * (AdjoinRoot.of W.polynomial Θ₁ * 𝓗 ^ 4)
+        = AdjoinRoot.of W.polynomial (veluThetaAll S) * 𝓗 ^ 4 := by rw [hdk]; ring
+      _ = 𝓣 * d ^ (4 * e) * G ^ 4 := key
+      _ = d ^ k * (𝓣 * d ^ (4 * e - k) * G ^ 4) := by
+          have hsp : (d : W.CoordinateRing) ^ (4 * e) = d ^ k * d ^ (4 * e - k) := by
+            rw [← pow_add, Nat.add_sub_cancel' hlt.le]
+          rw [hsp]; ring
+  have hcancel : AdjoinRoot.of W.polynomial Θ₁ * 𝓗 ^ 4 = 𝓣 * d ^ (4 * e - k) * G ^ 4 :=
+    mul_left_cancel₀ (pow_ne_zero k hd) hdvd
+  -- Evaluate at the point.
+  have hev := congrArg (veluEvalAt hEqQ) hcancel
+  simp only [map_mul, map_pow, veluEvalAt_of] at hev
+  have hevd : veluEvalAt hEqQ d = 0 := by
+    rw [hddef, veluGenD, map_sub, veluEvalAt_genX, veluEvalAt_algebraMap, sub_self]
+  have hev𝓗 : veluEvalAt hEqQ 𝓗 = (veluEvalAt hEqQ 𝒩) ^ (S.erase 0).card := by
+    calc veluEvalAt hEqQ 𝓗
+        = ∏ Q' ∈ S.erase 0, veluEvalAt hEqQ
+            (𝒩 - algebraMap F W.CoordinateRing (veluPointX Q') * d ^ e) := by
+          rw [h𝓗def, map_prod]
+      _ = ∏ _Q' ∈ S.erase 0, veluEvalAt hEqQ 𝒩 := by
+          refine Finset.prod_congr rfl fun Q' _ => ?_
+          rw [map_sub, map_mul, map_pow, hevd, veluEvalAt_algebraMap,
+            zero_pow (by omega : e ≠ 0)]
+          ring
+      _ = _ := by rw [Finset.prod_const]
+  rw [hev𝓗, hevd, zero_pow (Nat.sub_ne_zero_of_lt hlt), mul_zero, zero_mul] at hev
+  exact (mul_ne_zero hΘ₁ne (pow_ne_zero 4 (pow_ne_zero _ hNne))) hev
 
 /-- **LEAF: vanishing at infinity, at EVERY kernel order** — the parity-free
 `velu_theta_degree_lt`, `deg (veluThetaAll S) < 4(|S| − 1)`.
