@@ -132,7 +132,11 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- this import the whole 109-module subtree was free-floating.  Since 2026-07-27
 -- the names actually mentioning the vendored API are that node's two hoisted
 -- steps, `exists_totallyDefinite_heckeCharacter_of_heckePackage` and
--- `carayol_threeadic_of_totallyDefinite_heckeCharacter`.  See the node's
+-- `carayol_threeadic_of_totallyDefinite_heckeCharacter`, together with the two
+-- leaves the FIRST of those was later split into,
+-- `exists_totallyDefinite_rigidified_quaternionAlgebra_of_even` (ABHN) and
+-- `exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra` (Jacquet–Langlands
+-- proper).  See the node's
 -- "JACQUET–LANGLANDS CONSUMER" docstring block for what is consumed and why the
 -- parity hypothesis `hFeven` is what makes the consumption sound.
 public import Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete
@@ -3020,13 +3024,200 @@ theorem exists_domain_coefficientRing_of_ringHom {p : ℕ} [Fact p.Prime]
   rw [hτ', Polynomial.map_map]
   congr 1
 
+/-- **STEP 1a of the Carayol node — ALBERT–BRAUER–HASSE–NOETHER: a totally
+real field of EVEN degree carries a totally definite quaternion algebra that
+is split at every finite place** (sorry leaf; CUT 2026-07-27 out of STEP 1,
+`exists_totallyDefinite_heckeCharacter_of_heckePackage`, which is now a
+PROVEN assembly over this leaf and its sibling
+`exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra`).
+
+Content. `hFeven` says `[F : ℚ]` is even, and `hFtr` says every infinite
+place of `F` is real, so the set of infinite places has EVEN cardinality
+`[F : ℚ]`. The Albert–Brauer–Hasse–Noether exact sequence for the Brauer
+group of a number field,
+
+    0 → Br(F) → ⨁_v Br(F_v) --Σ inv--> ℚ/ℤ → 0,
+
+says a class in `Br(F)` may be prescribed by arbitrary local invariants,
+almost all zero, summing to `0` in `ℚ/ℤ`. Prescribing invariant `1/2` at
+each infinite place and `0` at each finite place is admissible exactly
+because the number of infinite places is even, and the resulting class has
+order `2`, hence is represented by a quaternion algebra `D/F` (index equals
+exponent for a number field, so the class of order `2` is the class of a
+division algebra of degree `2`). That `D` is:
+
+* a DIVISION ring, because its class is nonzero (it has a nonzero local
+  invariant), so it is not `M₂(F)`;
+* TOTALLY DEFINITE (`IsQuaternionAlgebra.IsTotallyDefinite F D`), because
+  invariant `1/2` at a real place `v` means `ℝ ⊗_{F,v} D` is the nonsplit
+  quaternion algebra over `ℝ`, i.e. Hamilton's `ℍ`; `hFtr` is what makes
+  "at every real place" say "at every infinite place";
+* SPLIT AT EVERY FINITE PLACE, so a maximal order `𝒪_D ⊂ D` is isomorphic
+  to `M₂(𝒪_v)` at almost every finite `v` and to `M₂(F_v)` at the rest,
+  which assembles to the `𝔸_F^∞`-algebra isomorphism
+  `D ⊗_F 𝔸_F^∞ ≃ M₂(𝔸_F^∞)` — exactly the datum
+  `IsQuaternionAlgebra.NumberField.WithRigidification F D`, whose `incl`
+  field lands in the RESTRICTED product and so needs precisely that
+  almost-everywhere integrality.
+
+WHY THIS IS A PLAUSIBLE IN-TREE TARGET, unlike its sibling. It is class
+field theory, not automorphic theory: the input is the Brauer group of a
+number field with its local invariants, which is the Hasse–Brauer–Noether
+theorem plus local class field theory. The pin does NOT have it — mathlib
+carries only `Mathlib/Algebra/BrauerGroup/Defs.lean` (definitions of the
+Brauer group, no local invariants and no exact sequence), the reference
+project `~/cs/FLT` has none of it either, and nothing in this tree
+computes a local invariant. So this leaf is a genuine theory build, but a
+SELF-CONTAINED one: it mentions no Galois representation, no Hecke algebra
+and no automorphic form, and it can be attacked by anyone who builds the
+invariant map.
+
+A CHEAPER CONCRETE ROUTE IS AVAILABLE IF THE FULL SEQUENCE IS TOO MUCH,
+and it is worth recording because it needs only the ℚ-case plus base
+change. Over `ℚ` the quaternion algebra ramified at `{∞, q}` is the
+explicit symbol algebra `(-1, -q)` for `q ≡ 3 (mod 4)`. If `F/ℚ` is Galois
+of even degree, `Gal(F/ℚ)` has an element `σ` of order `2` by Cauchy, and
+Chebotarev supplies infinitely many primes `q` with `Frob_q = σ`, hence
+with local degree `[F_w : ℚ_q] = 2` at every `w ∣ q`. Base-changing
+invariants multiplies by the local degree, so `D := D₀ ⊗_ℚ F` has
+invariant `2 · (1/2) = 0` at every `w ∣ q` (split) and `1 · (1/2) = 1/2` at
+every real place (definite) — the algebra wanted. NOTE this route needs
+`IsGalois ℚ F`, which the consumer HAS (`hFgal`) but which this leaf
+deliberately does NOT take: ABHN needs only even degree and total reality,
+and a successor who takes the concrete route should add `hFgal` to the
+statement rather than leave it implicit.
+
+FAITHFULNESS. The conclusion is an EXISTENCE statement about `F` alone; it
+is true for every totally real `F` of even degree and FALSE for every
+totally real `F` of odd degree (the invariants of a quaternion algebra
+split at all finite places would then be an odd number of copies of `1/2`,
+summing to `1/2 ≠ 0`). So `hFeven` is not merely sufficient here, it is
+necessary — which is the precise sense in which this leaf is where the
+node's parity bit is spent.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_totallyDefinite_rigidified_quaternionAlgebra_of_even
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F)
+    (hFeven : Even (Module.finrank ℚ F)) :
+    ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D),
+      Nonempty (_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D) := by
+  sorry
+
+/-- **STEP 1b of the Carayol node — JACQUET–LANGLANDS proper: the Hilbert
+eigensystem `(E, heckeF)` transfers to a GIVEN totally definite rigidified
+quaternion algebra** (sorry leaf; CUT 2026-07-27 out of STEP 1,
+`exists_totallyDefinite_heckeCharacter_of_heckePackage`, which is now a
+PROVEN assembly over this leaf and its sibling
+`exists_totallyDefinite_rigidified_quaternionAlgebra_of_even`).
+
+Content. `D` is handed in, no longer produced: a division algebra over `F`
+which is a quaternion algebra, TOTALLY DEFINITE, and carries a
+rigidification `D ⊗_F 𝔸_F^∞ ≃ M₂(𝔸_F^∞)`. Jacquet–Langlands transfers the
+Hilbert-newform eigensystem underlying `(E, heckeF)` to a weight-`2`
+automorphic form on `Dˣ`, i.e. to an `E`-algebra CHARACTER `θ` of the Hecke
+algebra `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮` for a suitable
+level datum `𝒮`, whose `T_w`-eigenvalue is the trace
+`a_w = -(heckeF w).coeff 1` of the Hecke polynomial at every good `w`.
+Automorphy of `(E, heckeF)` itself is supplied by `hmod` together with the
+cuspidality proxy `hirrF`; the RESIDUAL FAITHFULNESS GAP that leaves is
+stated in `carayol_threeadic_realization_of_heckePackage`'s docstring and
+is unchanged by this cut.
+
+This is a genuine literature citation and is not expected to be proven
+in-tree: Jacquet–Langlands, *Automorphic forms on GL(2)*, Lecture Notes in
+Math. **114** (1970), §14–16; see also Carayol 1986 §0.9, which is where
+the even-degree quaternionic form of Théorème (A) comes from in the first
+place.
+
+WHY THE DEFINITENESS HYPOTHESIS IS LOAD-BEARING — this statement is FALSE
+without it. Quantified over an ARBITRARY rigidified `D`, the conclusion is
+false: `D := M₂(F)` is a rigidified quaternion algebra over every `F` (take
+`incl` the base change of the identity), and the split algebra has no
+compact-mod-centre unit group, so the finite-dimensional space of weight-`2`
+forms on `Dˣ` that the vendored `HeckeAlgebra` is built from is not the one
+Jacquet–Langlands transfers into. `IsTotallyDefinite F D` together with
+`WithRigidification F D` pins `D` completely: definiteness ramifies it at
+every real place, the rigidification splits it at every finite place, and
+`hFtr` makes those two conditions exhaust the places — so by ABHN's
+uniqueness `D` is THE algebra ramified exactly at the infinite places, the
+one the correspondence is stated for. It is exactly this that made the cut
+possible; the earlier docstring recorded the two halves as inseparable
+because it believed no `IsTotallyDefinite` predicate existed in this tree.
+
+`hFeven` IS DELIBERATELY ABSENT and its absence is not a weakening: the
+hypotheses here already IMPLY it. A totally definite `D` split at every
+finite place has local invariant `1/2` at each of the `[F : ℚ]` infinite
+places and `0` elsewhere, and those must sum to `0` in `ℚ/ℤ`, so `[F : ℚ]`
+is even. The parity bit is spent entirely in the sibling leaf, where the
+algebra is PRODUCED; here it comes back for free from the datum.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D] :
+    ∃ (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
+  sorry
+
 /-- **STEP 1 of the Carayol node — JACQUET–LANGLANDS: the Hilbert
 eigensystem `(E, heckeF)` is seen by a TOTALLY DEFINITE quaternion
-algebra over `F`** (sorry leaf; HOISTED 2026-07-27 out of the body of
-`carayol_threeadic_realization_of_heckePackage`, where it lived as the
-internal `have hJL` — an internal `have` cannot be owned or dispatched at,
-so the two steps of that node now have names of their own and the node
-itself is a PROVEN assembly).
+algebra over `F`** (PROVEN assembly since 2026-07-27 over the two leaves
+`exists_totallyDefinite_rigidified_quaternionAlgebra_of_even` (STEP 1a,
+Albert–Brauer–Hasse–Noether) and
+`exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra` (STEP 1b,
+Jacquet–Langlands proper), declared immediately above; HOISTED 2026-07-27
+out of the body of `carayol_threeadic_realization_of_heckePackage`, where
+it lived as the internal `have hJL` — an internal `have` cannot be owned or
+dispatched at, so the two steps of that node now have names of their own
+and the node itself is a PROVEN assembly).
 
 Content. `[F : ℚ]` is EVEN (`hFeven`), so by Albert–Brauer–Hasse–Noether
 there is a quaternion division algebra `D/F` ramified at exactly the
@@ -3071,30 +3262,33 @@ genuinely pinned totally definite, and the successor task the consumer
 recorded is discharged rather than deferred. Refuting check, one line:
 `grep -rn 'class IsTotallyDefinite' Fermat/`.
 
-WHAT REMAINS TO BE PROVEN HERE, in two halves, neither of which the pin
-has:
+THE TWO HALVES ARE NOW SPLIT (2026-07-27), and this node proves nothing
+itself — it is `obtain`, `obtain`, `exact`:
 
-* the EXISTENCE half — a quaternion division algebra over `F` ramified
-  exactly at the infinite places. This is the Albert–Brauer–Hasse–Noether
-  exact sequence for the Brauer group of a number field (the local
-  invariants may be prescribed arbitrarily subject to summing to zero), and
-  `hFeven` is the whole of what it needs. It is a plausible in-tree target:
-  it is class field theory, not automorphic theory;
-* the TRANSFER half — the Jacquet–Langlands correspondence for `GL₂/F`
-  against `Dˣ`, in the direction "cuspidal Hilbert eigensystem of the right
-  weight ⟹ automorphic form on the definite `Dˣ` with the same Hecke
-  eigenvalues at the good places". That is a genuine literature citation:
-  Jacquet–Langlands, *Automorphic forms on GL(2)*, Lecture Notes in Math.
-  **114** (1970), §14–16; see also Carayol 1986 §0.9, which is where the
-  even-degree quaternionic form of Théorème (A) comes from in the first
-  place.
+* the EXISTENCE half is `exists_totallyDefinite_rigidified_quaternionAlgebra_of_even`
+  — a quaternion division algebra over `F` ramified exactly at the infinite
+  places, by the Albert–Brauer–Hasse–Noether exact sequence for the Brauer
+  group of a number field (the local invariants may be prescribed
+  arbitrarily subject to summing to zero). `hFeven` is the whole of what it
+  needs, and it is the ONLY consumer of `hFeven` in the node. A plausible
+  in-tree target: class field theory, not automorphic theory;
+* the TRANSFER half is `exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra`
+  — the Jacquet–Langlands correspondence for `GL₂/F` against `Dˣ`, in the
+  direction "cuspidal Hilbert eigensystem of the right weight ⟹ automorphic
+  form on the definite `Dˣ` with the same Hecke eigenvalues at the good
+  places". A genuine literature citation: Jacquet–Langlands, *Automorphic
+  forms on GL(2)*, Lecture Notes in Math. **114** (1970), §14–16; see also
+  Carayol 1986 §0.9, which is where the even-degree quaternionic form of
+  Théorème (A) comes from in the first place.
 
-Splitting those two halves apart is the obvious next cut and is NOT done
-here, for the reason the consumer's docstring already gives in another
-guise: the transfer half quantified over an ARBITRARY rigidified `D` is
-false, so the two halves can only be separated by keeping the definiteness
-datum on the boundary between them — which is now possible, since
-`IsTotallyDefinite` exists. A successor is free to take it.
+The split was impossible while `IsTotallyDefinite` was believed absent,
+for the reason the consumer's docstring gives in another guise: the
+transfer half quantified over an ARBITRARY rigidified `D` is FALSE
+(`M₂(F)` is a rigidified quaternion algebra over every `F`), so the two
+halves can only be separated by keeping the definiteness datum on the
+BOUNDARY between them. That is exactly what is done: the existence half
+produces `IsTotallyDefinite F D` and the transfer half consumes it as an
+instance hypothesis, so neither half is false and the join is an `exact`.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -3147,7 +3341,18 @@ theorem exists_totallyDefinite_heckeCharacter_of_heckePackage
         (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
         (heckeF w).coeff 1 =
           -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
-  sorry
+  -- STEP 1a — ALBERT–BRAUER–HASSE–NOETHER, the ONLY consumer of `hFeven`:
+  -- a totally definite quaternion division algebra over `F`, split at every
+  -- finite place, hence carrying a rigidification.
+  obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, ⟨hDrig⟩⟩ :=
+    exists_totallyDefinite_rigidified_quaternionAlgebra_of_even F hFtr hFeven
+  -- STEP 1b — JACQUET–LANGLANDS proper, against that `D`. The definiteness
+  -- datum `hDdef` produced above is what keeps this half from being false.
+  obtain ⟨p, 𝒮, θ, hθ⟩ :=
+    exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra hℓodd hℓ5 hZinj hrank hρ
+      hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
+      hbad2 hbad3 hbadℓ D
+  exact ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hθ⟩
 
 /-- **STEP 2 of the Carayol node — CARAYOL's Théorème (A): the `3`-adic
 Galois realization of the quaternionic Hecke character** (sorry leaf;
