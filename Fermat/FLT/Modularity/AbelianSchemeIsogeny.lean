@@ -127,6 +127,22 @@ public import Mathlib.RingTheory.QuotSMulTop
 -- `flat_of_isWeaklyRegular_span_eq_maximalIdeal_aux` re-enter itself at
 -- `R ⧸ (t) → T ⧸ (φ t)`.  Nothing else in the file needs it.
 public import Mathlib.RingTheory.Ideal.Quotient.Noetherian
+-- The unmixedness cluster (`isWeaklyRegular_of_ringKrullDim_quotient_eq_zero`
+-- and the three declarations above it).  `KrullDimension.Regular` supplies the
+-- dimension drop `ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim`,
+-- `KrullsHeightTheorem` the bound `ringKrullDim_le_ringKrullDim_quotient_add_encard`,
+-- `AssociatedPrime.Basic` + `Regular.IsSMulRegular` the identification of the
+-- zerodivisors with the union of the associated primes, and `Depth.Rees` the
+-- REES THEOREM, which is what makes the depth descent along a nonzerodivisor a
+-- theorem here rather than a leaf.  (See the correction in
+-- `isWeaklyRegular_of_ringKrullDim_quotient_eq_zero`'s docstring: mathlib's
+-- `RingTheory/Regular/Depth.lean` is a deprecated shim, NOT an empty file, and
+-- the depth layer it used to hold now lives in `RingTheory/Depth/Rees.lean`.)
+public import Mathlib.RingTheory.KrullDimension.Regular
+public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+public import Mathlib.RingTheory.Ideal.AssociatedPrime.Basic
+public import Mathlib.RingTheory.Regular.IsSMulRegular
+public import Mathlib.RingTheory.Depth.Rees
 -- `isRegularLocalRing_stalk_of_smooth` below is a one-line corollary of
 -- `isRegularLocalRing_stalk_of_smooth_over_field`, which was PROVEN in
 -- `Modularity/KhareWintenberger.lean` — a module strictly DOWNSTREAM of this
@@ -2172,50 +2188,376 @@ theorem exists_isWeaklyRegular_span_eq_maximalIdeal (R : Type u) [CommRing R]
   obtain ⟨rs, hspan, hlen, hreg⟩ := exists_isWeaklyRegular_span_eq_maximalIdeal_aux _ R rfl
   exact ⟨rs, hspan, by rw [hlen, IsRegularLocalRing.spanFinrank_maximalIdeal], hreg⟩
 
+/-- **ISCHEBECK: IN A COHEN–MACAULAY LOCAL RING EVERY ASSOCIATED PRIME HAS A
+FULL-DIMENSIONAL QUOTIENT** (sorry leaf — pure commutative algebra; Matsumura
+*Commutative Ring Theory* 17.2 (Ischebeck) together with 17.3, Bruns–Herzog
+1.2.13 / 2.1.2, Stacks 00N6.  **This is now the ONLY open statement under the
+unmixedness node**, and everything else below is proven over it.)
+
+Read `depth T ≥ dim T` for the hypothesis: `hCM` says some weakly regular
+sequence of length `dim T` lies in `𝔪_T`.  The conclusion says every associated
+prime of `T` is as large-dimensional as `T` itself — equivalently (with the
+trivial `dim T ⧸ p ≤ dim T`) that `T` has no embedded and no low-dimensional
+associated primes, which is UNMIXEDNESS in its primary-decomposition form.
+
+**THE CLASSICAL PROOF, and it is an induction on `depth`, not on `dim`.**
+Ischebeck's inequality is `depth T ≤ dim (T ⧸ p)` for every `p ∈ Ass T`.  With
+`t = depth T`: for `t = 0` there is nothing to prove.  For `t > 0` pick a
+`T`-regular `x ∈ 𝔪`; since `p ∈ Ass T` consists of zerodivisors, `x ∉ p`, so
+`dim T ⧸ (p + (x)) = dim T ⧸ p - 1`; choose `q ∈ Ass (T ⧸ xT)` containing
+`p + (x)`, and apply the induction hypothesis to `T ⧸ xT`, whose depth is
+`t - 1`.
+
+**THE MATHLIB PIECES ARE PRESENT — this is not a from-scratch depth theory.**
+The corrected inventory (checked 2026-07-27, and it CONTRADICTS what the
+previous version of this block asserted, see the correction in
+`isWeaklyRegular_of_ringKrullDim_quotient_eq_zero` below):
+
+* `Mathlib/RingTheory/Depth/Rees.lean` (184 lines) — **the Rees theorem**,
+  `ModuleCat.exists_isRegular_tfae`, plus the two halves
+  `ModuleCat.subsingleton_ext_of_exists_isRegular` and
+  `ModuleCat.exists_isRegular_of_exists_subsingleton_ext`.  That is exactly the
+  `Ext`-vs-regular-sequence dictionary this induction needs, and it is what
+  `exists_isWeaklyRegular_quotSMulTop_of_isSMulRegular` below is proven from.
+* `Mathlib/RingTheory/Ideal/AssociatedPrime/{Basic,Finiteness}.lean` —
+  `associatedPrimes`, `IsAssociatedPrime`, finiteness, nonemptiness, and
+  `biUnion_associatedPrimes_eq_compl_regular` (the union of the associated
+  primes is the set of zerodivisors).
+* `Mathlib/RingTheory/KrullDimension/Regular.lean` — the dimension bookkeeping,
+  including `ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim` and
+  `ringKrullDim_add_length_eq_ringKrullDim_of_isRegular`.
+
+What is genuinely missing is only the step "`Ass (T ⧸ xT)` meets
+`V(p + (x))`" together with the induction itself. -/
+theorem ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime {T : Type u} [CommRing T]
+    [IsLocalRing T] [IsNoetherianRing T]
+    (hCM : ∃ zs : List T, (∀ z ∈ zs, z ∈ IsLocalRing.maximalIdeal T) ∧
+      (zs.length : WithBot ℕ∞) = ringKrullDim T ∧ RingTheory.Sequence.IsWeaklyRegular T zs)
+    {p : Ideal T} (hp : IsAssociatedPrime p T) :
+    ringKrullDim T ≤ ringKrullDim (T ⧸ p) :=
+  sorry
+
+/-- **THE HEAD OF A SYSTEM OF PARAMETERS OF A COHEN–MACAULAY LOCAL RING IS A
+NONZERODIVISOR** (**PROVEN 2026-07-27** over
+`ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime` above).
+
+The zerodivisors of `T` are the union of the associated primes
+(`biUnion_associatedPrimes_eq_compl_regular`), so it suffices to rule out
+`y ∈ p` for `p ∈ Ass T`.  If `y ∈ p` then `p ⊔ (ys)` contains `(y :: ys)`, so
+`T ⧸ (p ⊔ (ys))` is a quotient of the zero-dimensional `T ⧸ (y :: ys)`; Krull's
+height theorem in `T ⧸ p` (`ringKrullDim_le_ringKrullDim_quotient_add_encard`,
+with the `n` remaining generators) then gives `dim T ⧸ p ≤ n`, while
+unmixedness gives `dim T ⧸ p ≥ dim T = n + 1`. -/
+theorem isSMulRegular_head_of_ringKrullDim_quotient_eq_zero {T : Type u} [CommRing T]
+    [IsLocalRing T] [IsNoetherianRing T] (n : ℕ) (y : T) (ys : List T)
+    (hCM : ∃ zs : List T, (∀ z ∈ zs, z ∈ IsLocalRing.maximalIdeal T) ∧ zs.length = n + 1 ∧
+      RingTheory.Sequence.IsWeaklyRegular T zs)
+    (hdim : ((n + 1 : ℕ) : WithBot ℕ∞) = ringKrullDim T)
+    (hlen : ys.length = n)
+    (hfib : ringKrullDim (T ⧸ Ideal.span {z | z ∈ y :: ys}) = 0) :
+    IsSMulRegular T y := by
+  classical
+  by_contra hcon
+  have hmem : y ∈ ⋃ q ∈ associatedPrimes T T, (q : Set T) := by
+    rw [biUnion_associatedPrimes_eq_compl_regular T T]
+    exact hcon
+  obtain ⟨p, hp, hyp⟩ := Set.mem_iUnion₂.mp hmem
+  haveI hpp : p.IsPrime := hp.isPrime
+  -- the system of parameters generates a proper ideal, so all its entries lie in `𝔪`
+  have hInt : Ideal.span {z | z ∈ y :: ys} ≠ ⊤ := by
+    intro h
+    rw [h] at hfib
+    haveI : Subsingleton (T ⧸ (⊤ : Ideal T)) := Ideal.Quotient.subsingleton_iff.mpr rfl
+    rw [ringKrullDim_eq_bot_of_subsingleton] at hfib
+    simp at hfib
+  have hmemm : ∀ z ∈ y :: ys, z ∈ IsLocalRing.maximalIdeal T := fun z hz =>
+    IsLocalRing.le_maximalIdeal hInt (Ideal.subset_span hz)
+  haveI : Nontrivial (T ⧸ p) := Ideal.Quotient.nontrivial_iff.mpr hpp.ne_top
+  haveI : IsLocalRing (T ⧸ p) := IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+  set s : Set (T ⧸ p) := {z | z ∈ ys.map (Ideal.Quotient.mk p)} with hs
+  have hsj : s ⊆ Ring.jacobson (T ⧸ p) := by
+    rw [IsLocalRing.ringJacobson_eq_maximalIdeal]
+    intro z hz
+    obtain ⟨w, hw, rfl⟩ := List.mem_map.mp hz
+    rw [← IsLocalRing.map_maximalIdeal_of_surjective (Ideal.Quotient.mk p)
+      Ideal.Quotient.mk_surjective]
+    exact Ideal.mem_map_of_mem _ (hmemm w (List.mem_cons_of_mem _ hw))
+  have hmap : Ideal.span s = Ideal.map (Ideal.Quotient.mk p) (Ideal.span {z | z ∈ ys}) := by
+    show Ideal.ofList (ys.map (Ideal.Quotient.mk p)) = _
+    rw [← Ideal.map_ofList]
+  have hle2 : Ideal.span {z | z ∈ y :: ys} ≤ p ⊔ Ideal.span {z | z ∈ ys} := by
+    show Ideal.ofList (y :: ys) ≤ _
+    rw [Ideal.ofList_cons]
+    exact sup_le_sup (Ideal.span_le.mpr (by simpa using hyp)) le_rfl
+  have hq0 : ringKrullDim ((T ⧸ p) ⧸ Ideal.span s) ≤ 0 := by
+    rw [hmap, ringKrullDim_eq_of_ringEquiv
+      (DoubleQuot.quotQuotEquivQuotSup p (Ideal.span {z | z ∈ ys}))]
+    calc ringKrullDim (T ⧸ (p ⊔ Ideal.span {z | z ∈ ys}))
+        ≤ ringKrullDim (T ⧸ Ideal.span {z | z ∈ y :: ys}) :=
+          ringKrullDim_le_of_surjective _ (Ideal.Quotient.factor_surjective hle2)
+      _ = 0 := hfib
+  have hsfin : s = ((ys.map (Ideal.Quotient.mk p)).toFinset : Set (T ⧸ p)) := by
+    rw [hs, List.coe_toFinset]
+  have hsc : s.encard ≤ (n : ℕ∞) := by
+    rw [hsfin, Set.encard_coe_eq_coe_finsetCard]
+    exact_mod_cast (List.toFinset_card_le _).trans (by simp [hlen])
+  have hfinal : ringKrullDim (T ⧸ p) ≤ ((n : ℕ) : WithBot ℕ∞) := by
+    refine (ringKrullDim_le_ringKrullDim_quotient_add_encard s hsj).trans ?_
+    have h1 : ((s.encard : ℕ∞) : WithBot ℕ∞) ≤ (((n : ℕ) : ℕ∞) : WithBot ℕ∞) :=
+      WithBot.coe_le_coe.mpr (by exact_mod_cast hsc)
+    calc ringKrullDim ((T ⧸ p) ⧸ Ideal.span s) + (s.encard : WithBot ℕ∞)
+        ≤ 0 + (((n : ℕ) : ℕ∞) : WithBot ℕ∞) := add_le_add hq0 h1
+      _ = ((n : ℕ) : WithBot ℕ∞) := by simp
+  obtain ⟨zs, hzm, hzlen, hzreg⟩ := hCM
+  have hcontra : ((n + 1 : ℕ) : WithBot ℕ∞) ≤ ((n : ℕ) : WithBot ℕ∞) := by
+    refine hdim.le.trans
+      ((ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime ⟨zs, hzm, ?_, hzreg⟩ hp).trans
+        hfinal)
+    rw [hzlen, ← hdim]
+  have : (n + 1 : ℕ) ≤ n := by exact_mod_cast hcontra
+  omega
+
+/-- **COHEN–MACAULAYNESS DESCENDS ALONG A NONZERODIVISOR: `depth (T ⧸ yT) =
+depth T - 1`** (**PROVEN 2026-07-27**, from mathlib's Rees theorem).
+
+Given a weakly regular sequence of length `n + 1` inside `𝔪_T` and a
+`T`-regular `y ∈ 𝔪_T`, this produces a weakly regular sequence of length `n`
+inside `𝔪_T` acting on `T ⧸ yT` (written `QuotSMulTop y T`, which is the shape
+`RingTheory.Sequence.isWeaklyRegular_cons_iff` consumes).
+
+**THIS IS WHAT MAKES THE INDUCTION OF
+`isWeaklyRegular_of_ringKrullDim_quotient_eq_zero_aux` DESCEND**, and it is the
+step for which a depth predicate is normally introduced.  The proof is three
+applications of material already in the pin:
+
+1. `RingTheory.Sequence.IsRegular.of_isWeaklyRegular_of_mem_maximalIdeal` turns
+   `hzreg` into an `IsRegular` sequence, and
+   `ModuleCat.subsingleton_ext_of_exists_isRegular` (Rees, `(4) → (1)`) converts
+   it into `Ext^i (T ⧸ 𝔪) T = 0` for `i < n + 1`.
+2. The covariant long exact sequence of `0 → T →ʸ T → T ⧸ yT → 0`
+   (`IsSMulRegular.smulShortComplex_shortExact` and
+   `CategoryTheory.Abelian.Ext.covariant_sequence_exact₃'`) drops that to
+   `Ext^i (T ⧸ 𝔪) (T ⧸ yT) = 0` for `i < n`.
+3. `ModuleCat.exists_isRegular_of_exists_subsingleton_ext` (Rees, `(3) → (4)`)
+   converts it back into a regular sequence of length `n` in `𝔪` on `T ⧸ yT`.
+
+Nakayama supplies the two `𝔪 • ⊤ < ⊤` side conditions
+(`Submodule.top_ne_ideal_smul_of_le_jacobson_annihilator`), and
+`nontrivial_quotSMulTop_of_mem_maximalIdeal` the nontriviality of `T ⧸ yT`. -/
+theorem exists_isWeaklyRegular_quotSMulTop_of_isSMulRegular {T : Type u} [CommRing T]
+    [IsLocalRing T] [IsNoetherianRing T]
+    {y : T} (hy : y ∈ IsLocalRing.maximalIdeal T) (hyreg : IsSMulRegular T y)
+    (n : ℕ) (zs : List T) (hzm : ∀ z ∈ zs, z ∈ IsLocalRing.maximalIdeal T)
+    (hzlen : zs.length = n + 1) (hzreg : RingTheory.Sequence.IsWeaklyRegular T zs) :
+    ∃ ws : List T, (∀ w ∈ ws, w ∈ IsLocalRing.maximalIdeal T) ∧ ws.length = n ∧
+      RingTheory.Sequence.IsWeaklyRegular (QuotSMulTop y T) ws := by
+  classical
+  let N : ModuleCat.{u} T := ModuleCat.of T (T ⧸ IsLocalRing.maximalIdeal T)
+  have hNsupp : Module.support T N
+      = PrimeSpectrum.zeroLocus (IsLocalRing.maximalIdeal T : Set T) := by
+    show Module.support T (T ⧸ IsLocalRing.maximalIdeal T) = _
+    rw [Module.support_eq_zeroLocus, Ideal.annihilator_quotient]
+  have hsmulT : IsLocalRing.maximalIdeal T • (⊤ : Submodule T (ModuleCat.of T T)) < ⊤ :=
+    lt_top_iff_ne_top.mpr
+      (Ne.symm (Submodule.top_ne_ideal_smul_of_le_jacobson_annihilator
+        (IsLocalRing.maximalIdeal_le_jacobson _)))
+  have hzregT : RingTheory.Sequence.IsRegular (ModuleCat.of T T) zs :=
+    RingTheory.Sequence.IsRegular.of_isWeaklyRegular_of_mem_maximalIdeal _ hzm hzreg
+  have h_ext : ∀ i < n + 1,
+      Subsingleton (_root_.CategoryTheory.Abelian.Ext N (ModuleCat.of T T) i) := by
+    intro i hi
+    refine ModuleCat.subsingleton_ext_of_exists_isRegular (IsLocalRing.maximalIdeal T) N
+      hNsupp.le (ModuleCat.of T T) hsmulT zs hzm hzregT i ?_
+    omega
+  have h_ext' : ∀ i < n,
+      Subsingleton (_root_.CategoryTheory.Abelian.Ext N
+        (ModuleCat.of T (QuotSMulTop y T)) i) := by
+    intro i hi
+    have zero1 := AddCommGrpCat.isZero_of_iff_subsingleton.mpr (h_ext i (by omega))
+    have zero2 := AddCommGrpCat.isZero_of_iff_subsingleton.mpr (h_ext (i + 1) (by omega))
+    exact AddCommGrpCat.subsingleton_of_isZero <| ShortComplex.Exact.isZero_of_both_zeros
+      ((_root_.CategoryTheory.Abelian.Ext.covariant_sequence_exact₃' N
+        (IsSMulRegular.smulShortComplex_shortExact (M := ModuleCat.of T T) hyreg)) i (i + 1) rfl)
+      (zero1.eq_zero_of_src _) (zero2.eq_zero_of_tgt _)
+  have hntQ : Nontrivial (QuotSMulTop y T) :=
+    nontrivial_quotSMulTop_of_mem_maximalIdeal T hy
+  have hsmulQ : IsLocalRing.maximalIdeal T •
+      (⊤ : Submodule T (ModuleCat.of T (QuotSMulTop y T))) < ⊤ :=
+    lt_top_iff_ne_top.mpr
+      (Ne.symm (Submodule.top_ne_ideal_smul_of_le_jacobson_annihilator
+        (IsLocalRing.maximalIdeal_le_jacobson _)))
+  obtain ⟨ws, hwlen, hwm, hwreg⟩ := ModuleCat.exists_isRegular_of_exists_subsingleton_ext
+    (IsLocalRing.maximalIdeal T) n (ModuleCat.of T (QuotSMulTop y T)) hsmulQ N hNsupp h_ext'
+  exact ⟨ws, hwm, hwlen, hwreg.toIsWeaklyRegular⟩
+
+/-- **THE INDUCTION CARRIER OF THE UNMIXEDNESS LEAF** (**PROVEN 2026-07-27**) —
+the same statement with `dim T` replaced by a natural number `n`, so that the
+induction on `n` can be stated at all, and with Cohen–Macaulayness in its
+HONEST form (`∀ z ∈ zs, z ∈ 𝔪_T`) rather than the form `span zs = 𝔪_T` which
+`isWeaklyRegular_of_ringKrullDim_quotient_eq_zero` below carries.
+
+**THAT WEAKENING IS THE WHOLE POINT AND IT IS NOT COSMETIC** — see the
+correction in the docstring below.  `span zs = 𝔪_T` does not survive a
+quotient; `∀ z ∈ zs, z ∈ 𝔪_T` does, and it is what the two steps of the
+induction hand back and forth:
+
+* `isSMulRegular_head_of_ringKrullDim_quotient_eq_zero` makes the head `y` a
+  nonzerodivisor (this is where unmixedness is consumed);
+* `ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim` drops the
+  dimension by exactly one;
+* `exists_isWeaklyRegular_quotSMulTop_of_isSMulRegular` drops the depth witness
+  by exactly one, so the induction hypothesis applies to `T ⧸ (y)`;
+* `DoubleQuot.quotQuotEquivQuotSup` identifies `(T ⧸ (y)) ⧸ (ys')` with
+  `T ⧸ (y :: ys')`, so the zero-dimensionality hypothesis transports;
+* `RingTheory.Sequence.isWeaklyRegular_cons_iff` reassembles, across the
+  identification `T ⧸ (y) ≃ₗ[T] QuotSMulTop y T`. -/
+theorem isWeaklyRegular_of_ringKrullDim_quotient_eq_zero_aux (n : ℕ) :
+    ∀ (T : Type u) [CommRing T] [IsLocalRing T] [IsNoetherianRing T] (ys : List T),
+      ((n : ℕ) : WithBot ℕ∞) = ringKrullDim T →
+      ys.length = n →
+      (∃ zs : List T, (∀ z ∈ zs, z ∈ IsLocalRing.maximalIdeal T) ∧ zs.length = n ∧
+        RingTheory.Sequence.IsWeaklyRegular T zs) →
+      ringKrullDim (T ⧸ Ideal.span {z | z ∈ ys}) = 0 →
+      RingTheory.Sequence.IsWeaklyRegular T ys := by
+  induction n with
+  | zero =>
+    intro T _ _ _ ys _ hlen _ _
+    rw [List.length_eq_zero_iff] at hlen
+    subst hlen
+    exact RingTheory.Sequence.IsWeaklyRegular.nil T T
+  | succ m ih =>
+    intro T _ _ _ ys hdim hlen hCM hfib
+    obtain _ | ⟨y, ys'⟩ := ys
+    · simp at hlen
+    · have hlen' : ys'.length = m := by simpa using hlen
+      obtain ⟨zs, hzm, hzlen, hzreg⟩ := hCM
+      set J : Ideal T := Ideal.span {y} with hJ
+      have hIeq : Ideal.span {z | z ∈ y :: ys'} = J ⊔ Ideal.span {z | z ∈ ys'} := by
+        show Ideal.ofList (y :: ys') = _
+        rw [Ideal.ofList_cons]
+      have hInt : Ideal.span {z | z ∈ y :: ys'} ≠ ⊤ := by
+        intro h
+        rw [h] at hfib
+        haveI : Subsingleton (T ⧸ (⊤ : Ideal T)) := Ideal.Quotient.subsingleton_iff.mpr rfl
+        rw [ringKrullDim_eq_bot_of_subsingleton] at hfib
+        simp at hfib
+      have hy : y ∈ IsLocalRing.maximalIdeal T :=
+        IsLocalRing.le_maximalIdeal hInt (Ideal.subset_span (by simp))
+      have hyreg : IsSMulRegular T y :=
+        isSMulRegular_head_of_ringKrullDim_quotient_eq_zero m y ys'
+          ⟨zs, hzm, hzlen, hzreg⟩ hdim hlen' hfib
+      have hJle : J ≤ Ideal.span {z | z ∈ y :: ys'} := by rw [hIeq]; exact le_sup_left
+      have hJnt : J ≠ ⊤ := fun h => hInt (top_le_iff.mp (h ▸ hJle))
+      haveI : Nontrivial (T ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJnt
+      haveI : IsLocalRing (T ⧸ J) := IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+      -- `dim (T ⧸ (y)) = m`
+      have hdimJ : ((m : ℕ) : WithBot ℕ∞) = ringKrullDim (T ⧸ J) := by
+        have h := ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim hyreg hy
+        rw [← hdim] at h
+        have h1 : ringKrullDim (T ⧸ J) + 1 = ((m : ℕ) : WithBot ℕ∞) + 1 := by
+          rw [h]; push_cast; ring
+        exact le_antisymm (ENat.WithBot.add_le_add_one_right_iff.mp h1.ge)
+          (ENat.WithBot.add_le_add_one_right_iff.mp h1.le)
+      -- the identification of `T ⧸ (y)` with `QuotSMulTop y T`
+      have hequiv : (T ⧸ J) ≃ₗ[T] QuotSMulTop y T :=
+        Submodule.quotEquivOfEq _ _ (by
+          rw [hJ, ← Submodule.ideal_span_singleton_smul, Ideal.smul_eq_mul, Ideal.mul_top])
+      have transfer : ∀ l : List T, RingTheory.Sequence.IsWeaklyRegular (QuotSMulTop y T) l ↔
+          RingTheory.Sequence.IsWeaklyRegular (T ⧸ J) (l.map (Ideal.Quotient.mk J)) := by
+        intro l
+        rw [show (l.map (Ideal.Quotient.mk J)) = l.map (algebraMap T (T ⧸ J)) from rfl,
+          RingTheory.Sequence.isWeaklyRegular_map_algebraMap_iff (R := T) (S := T ⧸ J)
+            (M := T ⧸ J) l]
+        exact (hequiv.isWeaklyRegular_congr l).symm
+      obtain ⟨ws, hwm, hwlen, hwreg⟩ :=
+        exists_isWeaklyRegular_quotSMulTop_of_isSMulRegular hy hyreg m zs hzm hzlen hzreg
+      have hfib' : ringKrullDim
+          ((T ⧸ J) ⧸ Ideal.span {z | z ∈ ys'.map (Ideal.Quotient.mk J)}) = 0 := by
+        have hmap : Ideal.span {z | z ∈ ys'.map (Ideal.Quotient.mk J)}
+            = Ideal.map (Ideal.Quotient.mk J) (Ideal.span {z | z ∈ ys'}) := by
+          show Ideal.ofList (ys'.map (Ideal.Quotient.mk J)) = _
+          rw [← Ideal.map_ofList]
+        rw [hmap, ringKrullDim_eq_of_ringEquiv
+          (DoubleQuot.quotQuotEquivQuotSup J (Ideal.span {z | z ∈ ys'}))]
+        exact hIeq ▸ hfib
+      have hihres := ih (T ⧸ J) (ys'.map (Ideal.Quotient.mk J)) hdimJ (by simpa using hlen')
+        ⟨ws.map (Ideal.Quotient.mk J), ?_, by simpa using hwlen, (transfer ws).mp hwreg⟩ hfib'
+      · exact (RingTheory.Sequence.isWeaklyRegular_cons_iff T y ys').2
+          ⟨hyreg, (transfer ys').mpr hihres⟩
+      · intro w hw
+        obtain ⟨w0, hw0, rfl⟩ := List.mem_map.mp hw
+        rw [← IsLocalRing.map_maximalIdeal_of_surjective (Ideal.Quotient.mk J)
+          Ideal.Quotient.mk_surjective]
+        exact Ideal.mem_map_of_mem _ (hwm w0 hw0)
+
 /-- **UNMIXEDNESS: IN A COHEN–MACAULAY LOCAL RING EVERY SYSTEM OF PARAMETERS IS
-A REGULAR SEQUENCE** (sorry leaf — pure commutative algebra, Matsumura
-*Commutative Ring Theory* 17.4 / Stacks 00N7.  **This is the single genuinely
-missing statement under this node**, and it is the ONLY thing
-`isWeaklyRegular_map_of_ringKrullDim_eq` below now rests on.)
+A REGULAR SEQUENCE** (**PROVEN 2026-07-27** over the single remaining leaf
+`ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime` above — Matsumura
+*Commutative Ring Theory* 17.4 / Stacks 00N7).
 
-**COHEN–MACAULAYNESS IS SPELLED OUT, DELIBERATELY, RATHER THAN NAMED.**  `hCM`
-says verbatim: some weakly regular sequence of length `dim T` generates `𝔪_T`.
-That is `depth T = dim T` written without a `depth` predicate, and writing it
-this way is what makes the leaf stateable at all — **there is no depth or
-Cohen–Macaulay layer anywhere in this repository**, and mathlib's
-`RingTheory/Regular/Depth.lean` is a 10-line file with zero declarations.  A
-prover who would rather have the predicate should vendor
-`~/cs/FLT/FLT/Patching/Utils/Depth.lean` (259 lines, UNVENDORED — see the
-correction in the docstring below) and restate this in terms of `Module.depth`;
-the mathematics is unaffected.
+`φ` and `R` have disappeared entirely: this is a statement about ONE local ring.
 
-**WHY THIS SHAPE AND NOT `[IsRegularLocalRing T]`.**  The previous cut demanded
-the conclusion for a regular local `T`, which conflates two different facts:
-that `T` is Cohen–Macaulay, and that a Cohen–Macaulay ring has this unmixedness
-property.  The FIRST is no longer open — `exists_isWeaklyRegular_span_eq_maximalIdeal`
-above (**PROVEN 2026-07-27**) produces exactly the sequence `hCM` asks for — so
-carrying `IsRegularLocalRing T` here would make a prover re-derive something
-already available.  Note also that `φ` and `R` have disappeared entirely: this
-is a statement about ONE local ring.
+**CORRECTION (2026-07-27) — `hCM` AS WRITTEN IS NOT `depth T = dim T`; IT IS
+`IsRegularLocalRing T`, AND THE PREVIOUS VERSION OF THIS DOCSTRING SAID
+OTHERWISE.**  It claimed "`hCM` says verbatim: some weakly regular sequence of
+length `dim T` generates `𝔪_T`.  That is `depth T = dim T` written without a
+`depth` predicate", and then explained at length why the shape was chosen over
+`[IsRegularLocalRing T]` because `hCM` "SURVIVES the quotient" while regularity
+does not.  Both halves are wrong, and they are wrong for the same one-line
+reason.  The refuting computation:
 
-**WHY THE OBVIOUS INDUCTION FAILS, and it is the trap to avoid.**  The first
-step is easy and needs only that `T` is a domain: `ys` being a system of
-parameters forces `dim T ⧸ (ys.head) = dim T - 1`, so the head lies in no
-minimal prime.  What breaks is the INDUCTION, because `T ⧸ (t)` is in general
-**not regular** — take `T = k⟦x⟧` and `t = x²`, a system of parameters whose
-quotient is not even reduced.  So the induction hypothesis must be
-Cohen–Macaulayness, which is precisely why this leaf is stated with `hCM`
-rather than with regularity: `hCM` is a hypothesis that SURVIVES the quotient,
-and `IsRegularLocalRing` is not.  A prover must not plan an induction that keeps
-`IsRegularLocalRing` on the quotient. -/
+    span zs = 𝔪_T  and  zs.length = dim T
+      ⟹ (𝔪_T).spanFinrank ≤ dim T
+      ⟹ IsRegularLocalRing T          (`IsRegularLocalRing.of_spanFinrank_maximalIdeal_le`)
+
+Cohen–Macaulayness asks for a regular sequence of length `dim T` *inside* `𝔪`;
+asking it to GENERATE `𝔪` is regularity, since `dim T ≤ (𝔪_T).spanFinrank`
+always (Krull).  So the cut did not in fact move off `[IsRegularLocalRing T]`,
+and the induction its own docstring prescribed cannot be run on `hCM`: the
+hypothesis it names as the one that survives the quotient is exactly the one
+that does not.  (`T = k⟦x⟧`, `t = x²` remains a correct illustration — of why
+regularity fails to survive, hence of why `hCM` fails to survive.)
+
+The statement is nevertheless TRUE and is left EXACTLY AS IT STANDS, because it
+is what `isWeaklyRegular_map_of_ringKrullDim_eq` below consumes.  The proof
+simply weakens `hCM` to the honest Cohen–Macaulay form in its first step and
+hands it to `isWeaklyRegular_of_ringKrullDim_quotient_eq_zero_aux` above, where
+the induction really does descend.
+
+**CORRECTION (2026-07-27) — THERE IS A DEPTH LAYER, AND IT IS IN MATHLIB.**
+The previous version of this docstring said "there is no depth or
+Cohen–Macaulay layer anywhere in this repository, and mathlib's
+`RingTheory/Regular/Depth.lean` is a 10-line file with zero declarations", and
+directed a prover to vendor `~/cs/FLT/FLT/Patching/Utils/Depth.lean`.  The
+first clause is true of THIS repository and false of the pin.  The refuting
+greps, both run on 2026-07-27:
+
+    ls  .lake/packages/mathlib/Mathlib/RingTheory/Depth/          # Rees.lean, 184 lines
+    cat .lake/packages/mathlib/Mathlib/RingTheory/Regular/Depth.lean
+
+`Regular/Depth.lean` looks empty because it is a `deprecated_module` shim
+(since 2026-04-28); the content moved to `Mathlib/RingTheory/Depth/Rees.lean`,
+which proves **the Rees theorem** `ModuleCat.exists_isRegular_tfae` —
+the equivalence between vanishing of `Ext^i (R ⧸ I) M` and the existence of an
+`M`-regular sequence of length `i` in `I`.  That is precisely the well-definedness
+of depth, and it is what makes `exists_isWeaklyRegular_quotSMulTop_of_isSMulRegular`
+above provable rather than a leaf.  **Do not vendor a depth layer for this
+node.**  (`~/cs/FLT`'s file is still unvendored, and is still the wrong tool: it
+proves `depth ≤ dim`, and what is wanted here is `dim ≤ depth`.) -/
 theorem isWeaklyRegular_of_ringKrullDim_quotient_eq_zero {T : Type u} [CommRing T]
     [IsLocalRing T] [IsNoetherianRing T] (ys : List T)
     (hCM : ∃ zs : List T, Ideal.span {z | z ∈ zs} = IsLocalRing.maximalIdeal T ∧
       (zs.length : WithBot ℕ∞) = ringKrullDim T ∧ RingTheory.Sequence.IsWeaklyRegular T zs)
     (hlen : (ys.length : WithBot ℕ∞) = ringKrullDim T)
     (hfib : ringKrullDim (T ⧸ Ideal.span {y | y ∈ ys}) = 0) :
-    RingTheory.Sequence.IsWeaklyRegular T ys :=
-  sorry
+    RingTheory.Sequence.IsWeaklyRegular T ys := by
+  obtain ⟨zs, hspan, hzlen, hzreg⟩ := hCM
+  refine isWeaklyRegular_of_ringKrullDim_quotient_eq_zero_aux ys.length T ys hlen rfl
+    ⟨zs, ?_, ?_, hzreg⟩ hfib
+  · intro z hz
+    rw [← hspan]
+    exact Ideal.subset_span hz
+  · exact_mod_cast hzlen.trans hlen.symm
 
 /-- **A SYSTEM OF PARAMETERS OF A REGULAR LOCAL RING IS A REGULAR SEQUENCE**
 (**PROVEN 2026-07-27** over the unmixedness leaf
