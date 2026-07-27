@@ -384,6 +384,19 @@ public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 public import Mathlib.AlgebraicGeometry.ResidueField
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+-- `Affine.Point.mapVariableChange` / `equivOfEq`: the isomorphism of Mordell–Weil
+-- groups induced by an admissible change of variables.  This is what turns an
+-- AUTOMORPHISM of `E⁄ℚ̄` (a `VariableChange` fixing the curve) into a map on
+-- points, which is the vocabulary the field-of-moduli descent below is stated in
+-- (`autPoint`).  Adds one module to the cone; it imports only
+-- `Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point`, already present.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+-- `WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq`: `Aut(E) = {±1}`
+-- for `j ∉ {0, 1728}`.  This is what makes the generic half of
+-- `exists_stableCyclic_twist_of_autStable` a theorem rather than a leaf, leaving
+-- only `j ∈ {0, 1728}` open.  Adds three small modules to the cone (`Aut`,
+-- `VariableChange`, `Weierstrass` under `Fermat/FLT/Mathlib/`).
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Aut
 -- The group law on `(E⁄K).Point` needs `DecidableEq K`, and the classical
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
 -- this development is phrased against — lives here.
@@ -7239,9 +7252,325 @@ theorem IsGeometricallyBijectiveY0.transport {N : ℕ} {Y₀ : Scheme.{0}} {str�
     refine h₀.injective d₁ d₂ (Subtype.ext ?_)
     rw [hvc (specAlgClos ℚ) d₁, hvc (specAlgClos ℚ) d₂, congrArg Subtype.val hcl]
 
+/-! ### Weil descent of a `Γ₀(N)`-datum with a twist
+
+`nonempty_gamma0Datum_specQ_of_fieldOfModuli` below was a single sorry leaf until
+2026-07-27; this subsection carries its decomposition, which cuts it into a
+*dictionary* half and an *arithmetic* half and then discharges the generic case
+of the arithmetic half outright.  The three declarations are
+
+* `exists_weierstrassQ_autStable_of_fieldOfModuli` (LEAF) — the dictionary: a
+  `Γ₀(N)`-datum over `ℚ̄` whose field of moduli is `ℚ` comes from a Weierstrass
+  curve over `ℚ` carrying a cyclic subgroup of order `N` that is Galois-stable
+  *up to an automorphism of the curve*;
+* `exists_stableCyclic_twist_of_autStable_of_j_special` (LEAF) — the arithmetic
+  heart, at `j ∈ {0, 1728}`: the cocycle in `Aut(E)/Aut(E, C)` is trivialised by
+  a quartic or sextic twist;
+* `exists_stableCyclic_twist_of_autStable` (PROVEN) — the same statement without
+  the `j` restriction, by splitting on `j` and using `Aut(E) = {±1}` at
+  `j ∉ {0, 1728}`, where `±1` acts on subgroups trivially and NO twist is needed.
+
+**Why a case split on `j` appears here although the classical argument needs
+none.**  The computation recorded on `nonempty_gamma0Datum_specQ_of_fieldOfModuli`
+is uniform in `j`, and remains the argument of record; the split is an
+implementation convenience, not a mathematical necessity and not a sign that the
+statement is delicate at `j = 0, 1728`.  What it buys is that at `j ∉ {0, 1728}`
+the whole cocycle apparatus collapses: `Aut(E⁄ℚ̄) = {1, [-1]}` is already known in
+this tree (`WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq`, proven),
+`[-1]` acts on points as negation, and `AddSubgroup.zmultiples g` is closed under
+negation — so the level structure is Galois-stable on the nose.  The residual leaf
+is therefore strictly smaller than the node it came from: it needs `Aut(E⁄ℚ̄) ≅ μ₄`
+(at `j = 1728`) and `≅ μ₆` (at `j = 0`), neither of which is in the pin, plus the
+twist realisation of a class in `H¹(G_ℚ, μₙ)`. -/
+
+section FieldOfModuli
+
+/-- **Base change of an elliptic curve to a field extension is elliptic.**
+
+`WeierstrassCurve.baseChange` is `map` along `algebraMap`, and mathlib registers
+`(W.map f).IsElliptic`; but instance search does not see through `baseChange`, so
+the bridge has to be supplied by hand.  It is `local` deliberately: nothing
+outside this subsection needs it, and a global instance on `(E⁄Ω)` would fire
+inside every statement in this file that mentions a base-changed curve. -/
+local instance isElliptic_baseChange {K : Type*} [Field K] {E : WeierstrassCurve K}
+    [E.IsElliptic] {Ω : Type*} [Field Ω] [Algebra K Ω] : (E⁄Ω).IsElliptic :=
+  inferInstanceAs (E.map (algebraMap K Ω)).IsElliptic
+
+/-- **The automorphism of the Mordell–Weil group induced by an automorphism of the
+curve.**
+
+Over a field, an isomorphism of Weierstrass curves *is* an admissible change of
+variables, so an automorphism of `W` is a `C : VariableChange F` with `C • W = W`,
+and `Affine.Point.mapVariableChange` turns it into a group isomorphism
+`(C • W).Point ≃+ W.Point`, which `h` transports to an endomorphism of `W.Point`.
+
+**Why this bundling matters for faithfulness.**  The hypothesis of the two leaves
+below is that some `φ` carries `σ · ⟨g⟩` into `⟨g⟩`.  If `φ` were allowed to be an
+arbitrary additive automorphism of `W.Point`, the hypothesis would be VACUOUS —
+any two cyclic subgroups of the same order are carried to one another by *some*
+group automorphism of `W.Point`, so it would constrain `σ` not at all and the
+conclusion (which fails at `N = 121`) would be unprovable.  It is essential that
+`φ` come from an automorphism of the CURVE, and that is what `autPoint` records. -/
+noncomputable def autPoint {F : Type*} [Field F] [DecidableEq F] {W : WeierstrassCurve F}
+    [W.IsElliptic] {C : WeierstrassCurve.VariableChange F} (h : C • W = W) :
+    W.toAffine.Point →+ W.toAffine.Point :=
+  (WeierstrassCurve.Affine.Point.mapVariableChange W C).comp
+    (WeierstrassCurve.Affine.Point.equivOfEq h.symm).toAddMonoidHom
+
+/-- **At `j ∉ {0, 1728}` an automorphism of the curve acts on points as `±1`**
+(PROVEN 2026-07-27).
+
+`WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq` (already in this
+tree, in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean`, and
+uniform in the characteristic) says `C = 1` or `C = negVariableChange W`; what is
+added here is the effect on points.  `1` acts as the identity, and
+`negVariableChange W = ⟨-1, 0, -a₁, -a₃⟩` sends `(x, y)` to
+`(x, -y - a₁x - a₃) = (x, negY x y)`, which is exactly `-P`.
+
+The consequence used below is that such an automorphism preserves every subgroup
+of `W.Point`, because `AddSubgroup` is closed under negation. -/
+theorem autPoint_eq_self_or_neg {F : Type*} [Field F] [DecidableEq F] {W : WeierstrassCurve F}
+    [W.IsElliptic] (hj₀ : W.j ≠ 0) (hj₁ : W.j ≠ 1728)
+    {C : WeierstrassCurve.VariableChange F} (h : C • W = W) (P : W.toAffine.Point) :
+    autPoint h P = P ∨ autPoint h P = -P := by
+  rcases WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq W hj₀ hj₁ h with rfl | rfl
+  · left
+    rcases P with _ | ⟨x, y, hns⟩
+    · exact map_zero _
+    · show WeierstrassCurve.Affine.Point.mapVariableChangeFun W 1
+        (WeierstrassCurve.Affine.Point.equivOfEq h.symm _) = _
+      rw [WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.mapVariableChangeFun_some]
+      refine WeierstrassCurve.Affine.Point.some_eq_some W ?_ ?_ <;>
+        simp [WeierstrassCurve.VariableChange.one_def]
+  · right
+    rcases P with _ | ⟨x, y, hns⟩
+    · exact (map_zero (autPoint h)).trans neg_zero.symm
+    · show WeierstrassCurve.Affine.Point.mapVariableChangeFun W W.negVariableChange
+        (WeierstrassCurve.Affine.Point.equivOfEq h.symm _) = _
+      rw [WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.mapVariableChangeFun_some,
+        WeierstrassCurve.Affine.Point.neg_some]
+      refine WeierstrassCurve.Affine.Point.some_eq_some W ?_ ?_ <;>
+        simp [WeierstrassCurve.negVariableChange, WeierstrassCurve.Affine.negY]
+      ring
+
+/-- **The moduli-to-Weierstrass dictionary for a datum with field of moduli `ℚ`**
+(sorry node, introduced 2026-07-27): a `Γ₀(N)`-datum over `ℚ̄` all of whose Galois
+conjugates are isomorphic to it comes from an elliptic curve over `ℚ` carrying a
+cyclic subgroup of order `N` that is Galois-stable UP TO AN AUTOMORPHISM of the
+curve.
+
+This is the geometric half of `nonempty_gamma0Datum_specQ_of_fieldOfModuli`; the
+arithmetic half — removing the automorphism by twisting — is
+`exists_stableCyclic_twist_of_autStable` below.
+
+TRUE.  The route, in three steps, is the classical one.
+
+1. *The datum becomes a Weierstrass curve.*  `d.ab` is an abelian scheme of
+   relative dimension `1` over `Spec ℚ̄`, i.e. a genus-one curve with a rational
+   point, so Riemann–Roch on `𝒪(3·0)` gives `Ē : WeierstrassCurve ℚ̄` with
+   `Ē.IsElliptic`, and `d.cyc.geom_cyclic ℚ̄ (𝟙 _)` supplies a generator `ḡ` of
+   the level structure with `addOrderOf ḡ = N`.  **This step is shared with
+   `exists_stableCyclic_of_gamma0Datum`** (which needs it over `ℚ` rather than
+   over `ℚ̄`, and is owned separately); a successor who builds the
+   `AbelianSchemeStruct`-to-`WeierstrassCurve` converse should state it over a
+   variable base field and consume it at both places rather than twice.
+2. *The curve descends, because `j` does.*  `hmod` is used here, and using it is
+   what forces a prover to BUILD the conjugate datum: `exists_gamma0Datum_baseChange`
+   at `h := specGal σ` produces `d^σ` together with its `IsBaseChangeOf`, and
+   feeding that pair to `hmod` returns an isomorphism `d^σ ≅ d` over `ℚ̄`.  In
+   particular `σ (j Ē) = j Ē` for every `σ`, so `j Ē ∈ ℚ`; take any `E`
+   over `ℚ` with that `j` (`WeierstrassCurve.ofJ`) and use
+   `WeierstrassCurve.exists_variableChange_of_j_eq` — available since `ℚ̄` is
+   separably closed — to get `ψ : Ē ≅ E⁄ℚ̄` over `ℚ̄`.
+3. *The level structure transports, with an automorphism left over.*  Write
+   `φ_σ : Ē^σ ≅ Ē` for the isomorphism from step 2 and `g := ψ ḡ`.  Then
+   `α_σ := ψ ∘ φ_σ ∘ (ψ^σ)⁻¹` is an automorphism of `E⁄ℚ̄` — here `E` being
+   defined over `ℚ` is what makes `(E⁄ℚ̄)^σ = E⁄ℚ̄` — and it carries `σ ⟨g⟩` to
+   `⟨g⟩`, which is the conclusion.  It cannot in general be removed at this
+   stage: that is precisely the descent obstruction, and removing it is the job
+   of the next leaf.
+
+**What the conclusion deliberately does NOT say.**  It does not relate `E` to `d`
+— no isomorphism, no equality of `j`.  That is not a weakening in context, since
+every consumer only needs *some* curve over `ℚ`; but a successor should not read
+a relation out of the statement that is not there.
+
+**Non-vacuity.**  The conclusion is not satisfiable by junk: composed with the
+next leaf and with `nonempty_gamma0Datum_of_stable` it yields a rational point of
+`Y_0(N)`, and at e.g. `N = 121` Kenku's theorem says there is none.  So `d` and
+`hmod` are genuinely consumed.
+
+**The check that would refute this leaf**: exhibit a `Γ₀(N)`-datum over `ℚ̄` all
+of whose Galois conjugates are isomorphic to it, and for which no elliptic curve
+over `ℚ` carries a cyclic subgroup of order `N` stable up to automorphism.  There
+is none, since step 2 only needs `j Ē` to be Galois-invariant and step 3 is a
+bookkeeping identity.
+
+`hN : N ≠ 0` is not needed by the argument — at `N = 0` the hypothesis is empty
+by `isEmpty_of_gamma0Datum_zero`, `Spec ℚ̄` being nonempty — and is carried only
+so that the leaf reads uniformly with its siblings and so that a prover may use
+it freely. -/
+theorem exists_weierstrassQ_autStable_of_fieldOfModuli {N : ℕ} (hN : N ≠ 0)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hmod : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        IsBaseChangeOf (specGal σ) dσ d →
+          Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+          (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
+          ∀ x ∈ AddSubgroup.zmultiples g,
+            autPoint h (WeierstrassCurve.Affine.Point.map
+                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
+              AddSubgroup.zmultiples g :=
+  sorry
+
+/-- **THE ARITHMETIC HEART: the descent obstruction is killed by a twist, at
+`j ∈ {0, 1728}`** (sorry node, introduced 2026-07-27).
+
+A cyclic subgroup of order `N` of `E(ℚ̄)` that is Galois-stable only up to an
+automorphism of `E` becomes genuinely Galois-stable on a TWIST of `E`.  The case
+`j ∉ {0, 1728}` is PROVEN in `exists_stableCyclic_twist_of_autStable` below, where
+`Aut(E⁄ℚ̄) = {±1}` and no twist is needed; this leaf is what is left.
+
+TRUE, and the argument is uniform in `j` — see the note on the subsection header
+above for why the split exists anyway.
+
+#### The cocycle/Kummer computation
+
+`j(E) ∈ ℚ`, so `E` already has a model over `ℚ` and we may take `E^σ = E`.  Then
+for each `σ` there is `α_σ ∈ Aut_ℚ̄(E)` with `α_σ(σ C) = C`, well defined modulo
+`A := Aut(E, C)`, and `σ ↦ ᾱ_σ` is a cocycle in `Z¹(G_ℚ, Aut(E)/A)`: from
+`α_σ(σC) = C` and `α_τ(τC) = C` one gets `(α_σ · σ(α_τ))(στ C) = C`, and
+uniqueness modulo `A` gives `ᾱ_{στ} = ᾱ_σ · σ(ᾱ_τ)`.
+
+Now `Aut(E) ≅ μ_n` as a `G_ℚ`-module with `n ∈ {2, 4, 6}`, and `−1 ∈ A` always,
+since `−C = C`; so `A ∈ {μ₂, μ_n}` — in particular `A` is `G_ℚ`-stable, every
+subgroup of the cyclic module `μ_n` being so — and the quotient is `1` or
+`μ_{n/2}`, the isomorphism being induced by `x ↦ x²`.  Under Kummer theory that
+map on cohomology is
+
+`H¹(G_ℚ, μ_n) = ℚˣ/(ℚˣ)ⁿ ⟶ H¹(G_ℚ, μ_{n/2}) = ℚˣ/(ℚˣ)^{n/2}`, `a ↦ a`,
+
+because `δ_n(a)(σ)² = (σ(a^{1/n})/a^{1/n})² = σ(a^{1/(n/2)})/a^{1/(n/2)}`.  That
+map is SURJECTIVE, so `ᾱ` lifts: after replacing `C` by `γ(C)` for a suitable
+`γ ∈ Aut(E)` (which changes neither the order nor the shape of the conclusion,
+the conclusion being existential in the subgroup) there is a genuine cocycle
+`β ∈ Z¹(G_ℚ, Aut(E))` with `α_σ β_σ⁻¹ ∈ A` for all `σ`.  The twist `E^{(d)}`
+attached to `β` and the accompanying `ψ : E ≅ E^{(d)}` over `ℚ̄` then satisfy
+`β_σ(σ C) = α_σ(σ C) = C`, so `ψ(C)` is `G_ℚ`-stable, and `E^{(d)}` is defined
+over `ℚ`.  ∎
+
+**The check that would refute this**: exhibit `n ∈ {4, 6}` and a class in
+`ℚˣ/(ℚˣ)^{n/2}` not in the image of `ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being
+induced by the identity on representatives.
+
+#### MISSING MACHINERY, and it is the whole cost of this leaf
+
+Neither piece is in the pin, in `~/cs/FLT`, or in this project (checked
+2026-07-27; `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean` covers
+only `j ∉ {0, 1728}`, and `.../GaloisDescent.lean` is a stub with no
+declarations):
+
+1. `Aut(E⁄ℚ̄) ≅ μ₄` at `j = 1728` and `≅ μ₆` at `j = 0`, in characteristic `0`.
+   The `Aut.lean` proof already computes `u⁴ = u⁶ = 1` from the transformation
+   laws of `c₄`, `c₆`; at `c₄ = 0` (resp. `c₆ = 0`) one of the two constraints
+   drops out and the surviving one is exactly `u⁶ = 1` (resp. `u⁴ = 1`).  So this
+   is a genuine extension of an argument already present, not a new theory.
+2. The twist attached to a cocycle: given `β : G_ℚ → Aut(E⁄ℚ̄)` satisfying the
+   cocycle identity, an `E' : WeierstrassCurve ℚ` and `ψ : E⁄ℚ̄ ≅ E'⁄ℚ̄` with
+   `ψ^σ ∘ β_σ = ψ`.  For `n = 2` this is the familiar `d`-quadratic twist and
+   could be written down explicitly; for `n = 4, 6` it is `y² = x³ + a d x` and
+   `y² = x³ + b d`, so the *construction* is explicit in every case that arises
+   here and only the verification is work.  Concretely: at `j = 1728` take
+   `E : y² = x³ + ax` and `E^{(d)} : y² = x³ + a d x` with
+   `ψ(x, y) = (d^{1/2} x, d^{3/4} y)`; at `j = 0` take `E : y² = x³ + b` and
+   `E^{(d)} : y² = x³ + b d` with `ψ(x, y) = (d^{1/3} x, d^{1/2} y)`.
+
+`hN : N ≠ 0` is REQUIRED: at `N = 0` the conclusion would produce a
+`Gamma0Datum 0 SpecQ` through `nonempty_gamma0Datum_of_stable`, which
+`isEmpty_of_gamma0Datum_zero` forbids, while the hypotheses are met by a rational
+point of infinite order on a positive-rank curve with `j = 0` or `1728`. -/
+theorem exists_stableCyclic_twist_of_autStable_of_j_special {N : ℕ} (hN : N ≠ 0)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj : E.j = 0 ∨ E.j = 1728)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (haut : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+        (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
+        ∀ x ∈ AddSubgroup.zmultiples g,
+          autPoint h (WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
+            AddSubgroup.zmultiples g) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g' = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
+        WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g' :=
+  sorry
+
+/-- **The descent obstruction is killed by a twist** (PROVEN 2026-07-27 at
+`j ∉ {0, 1728}`, over `exists_stableCyclic_twist_of_autStable_of_j_special` at
+`j ∈ {0, 1728}`).
+
+At `j ∉ {0, 1728}` there is nothing to twist: `Aut(E⁄ℚ̄) = {1, [-1]}` by
+`WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq`, `[-1]` acts on
+points as negation (`autPoint_eq_self_or_neg`), and `AddSubgroup.zmultiples g` is
+closed under negation — so `haut` already says that `⟨g⟩` is Galois-stable, and
+`E' := E`, `g' := g` works.
+
+Note the `j`-invariant is compared over `ℚ̄` rather than over `ℚ`: the hypothesis
+of the `Aut` theorem is about the curve `E⁄ℚ̄` whose automorphisms `haut` speaks
+of, and `WeierstrassCurve.map_j` transports the two nonvanishing conditions
+across the (injective) `algebraMap ℚ ℚ̄`. -/
+theorem exists_stableCyclic_twist_of_autStable {N : ℕ} (hN : N ≠ 0)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (haut : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ))
+        (h : C • (E⁄(AlgebraicClosure ℚ)) = (E⁄(AlgebraicClosure ℚ))),
+        ∀ x ∈ AddSubgroup.zmultiples g,
+          autPoint h (WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) ∈
+            AddSubgroup.zmultiples g) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic) (g' : (E'⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g' = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g',
+        WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g' := by
+  by_cases hj : E.j = 0 ∨ E.j = 1728
+  · exact exists_stableCyclic_twist_of_autStable_of_j_special hN E hj g hg haut
+  rw [not_or] at hj
+  obtain ⟨hj₀, hj₁⟩ := hj
+  have hjb₀ : (E⁄(AlgebraicClosure ℚ)).j ≠ 0 := by
+    rw [show (E⁄(AlgebraicClosure ℚ)).j = algebraMap ℚ (AlgebraicClosure ℚ) E.j from
+      WeierstrassCurve.map_j E _]
+    simpa using hj₀
+  have hjb₁ : (E⁄(AlgebraicClosure ℚ)).j ≠ 1728 := by
+    rw [show (E⁄(AlgebraicClosure ℚ)).j = algebraMap ℚ (AlgebraicClosure ℚ) E.j from
+      WeierstrassCurve.map_j E _]
+    intro hcon
+    exact hj₁ ((algebraMap ℚ (AlgebraicClosure ℚ)).injective (by rw [hcon]; norm_num))
+  refine ⟨E, inferInstance, g, hg, fun σ x hx => ?_⟩
+  obtain ⟨C, h, hC⟩ := haut σ
+  have hmem := hC x hx
+  rcases autPoint_eq_self_or_neg hjb₀ hjb₁ h
+      (WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x) with he | he
+  · rwa [he] at hmem
+  · rw [he] at hmem
+    simpa using neg_mem hmem
+
 /-- **Galois descent of a `Γ₀(N)`-datum whose field of moduli is `ℚ`, WITH A
-TWIST ALLOWED** (sorry node, introduced 2026-07-27) — the arithmetic half of the
-bridge, and the place where the `j = 0, 1728` caveat is confronted and defused.
+TWIST ALLOWED** (introduced as a sorry node 2026-07-27; **DECOMPOSED the same
+day** into the two leaves above, under a compiling assembly) — the arithmetic
+half of the bridge, and the place where the `j = 0, 1728` caveat is confronted
+and defused.
 
 `hmod` is the field-of-moduli condition, stated in the vocabulary this file
 already has: every base change of `d` along `specGal σ` — i.e. every Galois
@@ -7292,15 +7621,42 @@ is vacuously satisfiable by junk.  It is not: base change along the isomorphism
 `specGal σ` exists mathematically for every `σ`, so `hmod` really is the
 field-of-moduli condition and the leaf really does carry the descent.  What the
 missing construction costs is only that a PROVER of this leaf must build `d^σ`
-itself in order to *use* `hmod`; it costs the leaf no strength. -/
+itself in order to *use* `hmod`; it costs the leaf no strength.  That obligation
+now lives on `exists_weierstrassQ_autStable_of_fieldOfModuli`, whose step 2 is
+where `hmod` is consumed and where `exists_gamma0Datum_baseChange` at
+`h := specGal σ` supplies `d^σ`.
+
+#### How it is now proven, and what is left open
+
+Three lines over the subsection above:
+
+1. `exists_weierstrassQ_autStable_of_fieldOfModuli` (LEAF) turns the datum into
+   an elliptic curve over `ℚ` with a cyclic subgroup of order `N` that is
+   Galois-stable up to an automorphism of the curve;
+2. `exists_stableCyclic_twist_of_autStable` (PROVEN at `j ∉ {0, 1728}`, over the
+   LEAF `exists_stableCyclic_twist_of_autStable_of_j_special` at `j ∈ {0, 1728}`)
+   removes the automorphism by twisting;
+3. `nonempty_gamma0Datum_of_stable` (PROVEN) converts the result back into a
+   `Γ₀(N)`-datum over `Spec ℚ`.
+
+So the cocycle/Kummer computation recorded above is *needed only at
+`j ∈ {0, 1728}`*, which is where it was always expected to be needed; the
+uniformity of the classical argument in `j` is what makes the statement true, and
+the case split is only how the tree is cut. -/
 theorem nonempty_gamma0Datum_specQ_of_fieldOfModuli {N : ℕ} (hN : N ≠ 0)
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (hmod : ∀ (σ : Field.absoluteGaloisGroup ℚ)
         (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
         IsBaseChangeOf (specGal σ) dσ d →
           Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
-    Nonempty (Gamma0Datum N SpecQ) :=
-  sorry
+    Nonempty (Gamma0Datum N SpecQ) := by
+  obtain ⟨E, hE, g, hg, haut⟩ := exists_weierstrassQ_autStable_of_fieldOfModuli hN d hmod
+  haveI := hE
+  obtain ⟨E', hE', g', hg', hst⟩ := exists_stableCyclic_twist_of_autStable hN E g hg haut
+  haveI := hE'
+  exact nonempty_gamma0Datum_of_stable E' hN g' hg' hst
+
+end FieldOfModuli
 
 /-- **A `Γ₀(N)`-datum over `Spec ℚ` IS an elliptic curve over `ℚ` with a
 Galois-stable cyclic subgroup of order `N`** (sorry node, introduced
