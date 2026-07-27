@@ -28,6 +28,16 @@ public import Mathlib.RingTheory.KrullDimension.Field
 public import Mathlib.RingTheory.MvPolynomial.Basic
 public import Mathlib.Algebra.MvPolynomial.Funext
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+-- E. Noether's finiteness theorem below (`module_finite_integralClosure_of_isFractionRing` and
+-- the three statements it is proven over) needs the separable/purely-inseparable factorisation
+-- of a finite field extension and the integral-closure finiteness engine over an integrally
+-- closed Noetherian base.
+public import Mathlib.RingTheory.DedekindDomain.IntegralClosure
+public import Mathlib.RingTheory.IntegralClosure.IntegrallyClosed
+public import Mathlib.RingTheory.Localization.Integral
+public import Mathlib.FieldTheory.SeparableClosure
+public import Mathlib.FieldTheory.PurelyInseparable.Basic
+public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 -- The shared "smooth curve over a field ⟺ DVR local rings" node, and the extension theorem
 -- built on it.  `smoothOfRelativeDimension_one_fromNormalization` below consumes the
 -- backward direction; `Fermat/FLT/ModularCurve/X0.lean` consumes the forward one.
@@ -70,8 +80,10 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
 3. `i.fromNormalization : X ⟶ P` is integral, and it is *finite* because normalization is of
    finite type for schemes of finite type over a field
    (`locallyOfFiniteType_fromNormalization`, PROVEN over the affine-local ring statement
-   `finiteType_integralClosure_sections`, itself PROVEN 2026-07-27 over the single classical
-   leaf `module_finite_integralClosure_of_isFractionRing` — E. Noether's finiteness theorem);
+   `finiteType_integralClosure_sections`, itself PROVEN 2026-07-27 over E. Noether's finiteness
+   theorem `module_finite_integralClosure_of_isFractionRing`, which is in turn PROVEN the same
+   day over the single classical leaf
+   `module_finite_integralClosure_of_isPurelyInseparable` — the inseparable residue);
    finite ⟹ proper, so `X` is proper over `K`;
 4. `X` is normal of dimension one over a perfect field, hence smooth
    (`smoothOfRelativeDimension_one_fromNormalization`, PROVEN over the normality statement
@@ -101,7 +113,7 @@ list on 2026-07-27, both PROVEN):
 | `exists_isOpenImmersion_isProper` | Nagata compactification (unchanged — a single citation, no cut available) |
 | `finiteType_integralClosure_sections` | Nagata/Japanese rings: the integral closure of a finite-type `K`-algebra in the sections of `Y` over an affine chart is of finite type |
 | `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one` | a locally standard smooth `K`-algebra of relative dimension one has Krull dimension `≤ 1` (all that is left of "a smooth curve over a field is one-dimensional", 2026-07-27) |
-| `module_finite_integralClosure_of_isFractionRing` | E. Noether: the normalization of a finite-type domain over a field is a finite module (Stacks `0335`); only the INSEPARABLE case is genuinely missing from the pin |
+| `module_finite_integralClosure_of_isPurelyInseparable` | the INSEPARABLE residue of E. Noether's finiteness theorem: `B` integrally closed of finite type over `k`, `L / Frac B` finite purely inseparable ⟹ the integral closure of `B` in `L` is `B`-finite (Stacks `0335`).  All that is left of `module_finite_integralClosure_of_isFractionRing`, which is PROVEN over it (2026-07-27): Noether normalization plus the factorisation through `separableClosure` spend the separable half, which is exactly what `Mathlib`'s `IsIntegralClosure.finite` supplies |
 | `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
 | `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
@@ -839,63 +851,292 @@ really about; they are kept inside `AlgebraicGeometry` for the same reason as th
 topological preliminaries above — so that this module adds no root-level names to the cone
 of everything that `public import`s it. -/
 
+/-- Transfer of finite generation of a submodule between two base rings whose images in the
+ambient ring `X` are nested: if every element of `X` in the image of `S` is already in the
+image of `R`, then an `S`-submodule and an `R`-submodule with the SAME CARRIER are finitely
+generated together.
+
+This is the workhorse that lets the reductions below change the base ring of an integral
+closure without ever building a linear equivalence between the two subtypes
+`↥(integralClosure R X)` and `↥(integralClosure S X)`, which are different types carrying the
+same set.
+
+HOISTED 2026-07-27 from `Fermat/FLT/Modularity/MoretBailly.lean` (which carries the
+characteristic-zero twin of Noether's theorem and proves the same lemma for it): it is pure
+module theory, characteristic-free, and it belongs in the shim tree.  The only change is that
+the three carriers here live in independent universes rather than a common `Type u`. -/
+theorem fg_of_algebraMap_range_le {R S X : Type*} [CommRing R] [CommRing S] [CommRing X]
+    [Algebra R X] [Algebra S X]
+    (hle : (algebraMap S X).range ≤ (algebraMap R X).range)
+    {N : Submodule S X} {M : Submodule R X}
+    (hcar : (N : Set X) = (M : Set X)) (hN : N.FG) : M.FG := by
+  obtain ⟨T, hT⟩ := hN
+  refine ⟨T, le_antisymm ?_ ?_⟩
+  · rw [Submodule.span_le]
+    intro t ht
+    have h1 : t ∈ N := hT ▸ Submodule.subset_span ht
+    have h2 : t ∈ (N : Set X) := h1
+    rw [hcar] at h2
+    exact h2
+  · have key : ∀ x ∈ N, x ∈ Submodule.span R (T : Set X) := by
+      intro x hxN
+      rw [← hT] at hxN
+      induction hxN using Submodule.span_induction with
+      | mem y hy => exact Submodule.subset_span hy
+      | zero => exact zero_mem _
+      | add a b _ _ ha hb => exact add_mem ha hb
+      | smul c a _ ha =>
+          obtain ⟨r, hr⟩ := hle ⟨c, rfl⟩
+          have hcr : c • a = r • a := by
+            rw [Algebra.smul_def, Algebra.smul_def, hr]
+          rw [hcr]
+          exact Submodule.smul_mem _ _ ha
+    intro x hx
+    refine key x ?_
+    have h2 : x ∈ (M : Set X) := hx
+    rw [← hcar] at h2
+    exact h2
+
+/-- The subalgebra form of `fg_of_algebraMap_range_le`: two subalgebras of `X` over different
+base rings, with the same carrier, are module-finite together as soon as the image of the
+smaller base ring is contained in that of the larger.  HOISTED with the lemma above. -/
+theorem module_finite_of_algebraMap_range_le {R S X : Type*} [CommRing R] [CommRing S]
+    [CommRing X] [Algebra R X] [Algebra S X]
+    (hle : (algebraMap S X).range ≤ (algebraMap R X).range)
+    (N : Subalgebra S X) (M : Subalgebra R X)
+    (hcar : (N : Set X) = (M : Set X)) (hN : Module.Finite S N) : Module.Finite R M := by
+  have h1 : (Subalgebra.toSubmodule N).FG := Module.Finite.iff_fg.mp (by exact hN)
+  have h2 : (Subalgebra.toSubmodule M).FG := fg_of_algebraMap_range_le hle (by simpa using hcar) h1
+  exact Module.Finite.iff_fg.mpr h2
+
+/-- **LEAF — the purely inseparable residue of E. Noether's finiteness theorem**
+(cut 2026-07-27; it is ALL that is left of
+`module_finite_integralClosure_of_isFractionRing` below, which is now PROVEN over it).
+
+`B` is an integrally closed domain of finite type over a field `k`, `S = Frac B`, and `L / S`
+is a finite PURELY INSEPARABLE extension.  Then the integral closure of `B` in `L` is a finite
+`B`-module.  TRUE: Stacks `0335` (a finite-type algebra over a field is Nagata) / `032E`, of
+which this is the single case the pin cannot reach.
+
+**Why this is the residue, and not more.**  `Mathlib` has `IsIntegralClosure.finite`
+(`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean:174`) under
+`[IsIntegrallyClosed A] [IsNoetherianRing A]` *and* `[Algebra.IsSeparable K L]`; there is no
+Nagata/Japanese theory anywhere at this pin (`grep -rn "Japanese\|IsNagata" Mathlib/` returns
+only the analytic "Japanese bracket" and a citation of Nagata's Euclidean-algorithm paper).
+So the separable half is free and the inseparable half is not, and the three theorems below
+spend exactly the free half: Noether normalization reduces the general statement to an
+integrally closed base, and the factorisation `K ⊆ separableClosure K L ⊆ L` reduces THAT to
+this leaf, with `B` the integral closure of the polynomial ring in the separable part (which
+is why `B` here is a general normal finite-type `k`-algebra and not a polynomial ring — the
+separable step moves the base).
+
+**The classical proof of this leaf** (Stacks `0335` ⟸ `0334` ⟸ `032L`).  Let `p` be the
+exponential characteristic and `q = pᵉ` the exponent of `L / S`
+(`IsPurelyInseparable.exponent`, with `HasExponent` free from `FiniteDimensional S L`).  For
+`c` in the integral closure, `c ^ q ∈ S` and is integral over `B`, so `c ^ q ∈ B` because `B`
+is integrally closed — i.e. the integral closure sits inside `{x ∈ L | x ^ q ∈ B}`.  That set
+is a `B`-submodule (Frobenius is additive), so the whole content is that it is FINITE, and
+that is where a genuinely new object is needed: with `B₀ = k[x₁,…,x_d]` a Noether
+normalization of `B`, one shows `L ⊆ k'(x₁^{1/q},…,x_d^{1/q})` for a FINITE purely inseparable
+`k'/k`, whose integral closure over `B₀` is the polynomial ring `k'[x₁^{1/q},…,x_d^{1/q}]`,
+finite over `B₀`; a submodule of a finite module over a Noetherian ring is finite.
+
+Two things a prover should know before starting.  (i) The finiteness of `k'` is CHEAP here and
+should not be mistaken for the gap: `k' = {a ∈ L | a ^ q ∈ k}` is algebraic over `k` and sits
+inside the finitely generated extension `L / k`, so
+`Algebra.finite_of_essFiniteType_of_isAlgebraic` (`Mathlib`, via `Algebra.EssFiniteType`)
+already gives `[k' : k] < ∞`.  What is missing is the passage from that to a finite
+`B₀`-module containing every `q`-th root of `B₀` that lies in `L`, which needs the
+`q`-th-root polynomial ring as an actual object.  (ii) **A `PerfectField k` hypothesis would
+NOT let you skip the construction** — it only makes `k' = k`; the counterexample often quoted
+for it, `k = 𝔽_p`, `A = k[x,y]/(yᵖ - x)` finite over `A₀ = k[x]` with `Frac A / Frac A₀`
+purely inseparable, shows the inseparable case is live over a perfect field too.
+
+**A REFORMULATION THAT LOOKS LIKE THE CHEAPER ROUTE** (worked out 2026-07-27 while cutting
+this leaf, not carried out).  In characteristic `p > 0` the map `φ : L → S`, `x ↦ x ^ q`, is
+an INJECTIVE RING HOMOMORPHISM — Frobenius is additive — semilinear over its own restriction
+`B → Bᵍ`.  So `Module.Finite B C` is equivalent to `φ C` being a finitely generated
+`Bᵍ`-module, and `φ C ⊆ φ L ∩ B`, where `φ L` is a subfield of `S` with `Sᵍ ⊆ φ L ⊆ S` and
+`[φ L : Sᵍ] = [L : S] < ∞`.  The leaf is therefore equivalent to
+
+  `Sᵍ ⊆ F ⊆ S` with `[F : Sᵍ] < ∞`  ⟹  `F ∩ B` is a finite `Bᵍ`-module,
+
+which mentions no extension of `S` at all: every object lives inside `S` and `B`, and no
+`q`-th root is ever constructed.  For `B = k[x₁,…,x_d]` that statement is elementary — `F` is
+generated over `Sᵍ` by finitely many rational functions; the subfield `k₁ ⊆ k` generated by
+`kᵍ` together with their finitely many coefficients is finite over `kᵍ`; `F ⊆ k₁(x)`; and
+`k₁(x) ∩ k[x] = k₁[x]` is free over `kᵍ[xᵍ]` on `{x^α : αᵢ < q}` times a `kᵍ`-basis of `k₁`.
+That `k₁` is the classical `k'`, transported through Frobenius.
+
+**If that route is taken, RESTATE the leaf over a polynomial base**, since the elementary
+argument is available only there while `B` here is a general normal finite-type `k`-algebra.
+The restatement is legitimate and costs only one change upstream: in
+`module_finite_integralClosure_of_isSeparable_of_isPurelyInseparable` below, replace the split
+at `separableClosure K L` by a passage to a NORMAL closure `N / K` of `L / K`
+(`integralClosure A₀ L` sits inside `integralClosure A₀ N` and `A₀` is Noetherian, so
+finiteness for `N` suffices).  Inside a normal extension the purely inseparable part comes
+FIRST — `K ⊆ K_i :=` the fixed field of `Aut (N / K)`, with `N / K_i` separable — so the
+inseparable step is taken over `A₀ = MvPolynomial (Fin d) k` itself and the separable step
+over the integral closure of `A₀` in `K_i`.  The price is `normalClosure` plus the fixed-field
+decomposition; the gain is that the residue becomes the concrete statement displayed above.
+
+**A PROVEN CHARACTERISTIC-ZERO TWIN EXISTS IN THIS TREE — do not redevelop it.**
+`Fermat/FLT/Modularity/MoretBailly.lean` carries `module_finite_integralClosure_of_finiteType`
+over `[Field k] [CharZero k]`, three supporting lemmas, and a globalisation
+`module_finite_integralClosure_sections_of_isReduced` (Stacks `03GR`, a finite affine cover
+plus the sheaf axiom rather than the function field).  Its `CharZero` enters at exactly one
+place — to make the residue extension separable so that `IsIntegralClosure.finite` applies —
+i.e. precisely at THIS leaf, so closing this leaf is what would let that cluster drop its
+characteristic hypothesis.  Its two `…_range_le` lemmas are pure module theory and have been
+hoisted above; the rest of it cannot be consumed from here, since it lives in the `Modularity`
+cone, strictly downstream of this shim module. -/
+theorem module_finite_integralClosure_of_isPurelyInseparable
+    (k B S L : Type*) [Field k] [CommRing B] [IsDomain B] [Algebra k B]
+    [Algebra.FiniteType k B] [IsIntegrallyClosed B]
+    [Field S] [Algebra B S] [IsFractionRing B S]
+    [Field L] [Algebra B L] [Algebra S L] [IsScalarTower B S L]
+    [FiniteDimensional S L] [IsPurelyInseparable S L] :
+    Module.Finite B (integralClosure B L) :=
+  sorry
+
+/-- **Noether's finiteness theorem over an integrally closed base, split at an intermediate
+field** (PROVEN 2026-07-27 over the leaf above).
+
+`A` is an integrally closed domain of finite type over `k` with fraction field `K`, and
+`K ⊆ S ⊆ L` is a tower with `S / K` finite separable and `L / S` finite purely inseparable.
+
+The proof is the standard two-step: `B := integralClosure A S` is `A`-finite by
+`IsIntegralClosure.finite` (this is where separability is spent), it is again an integrally
+closed domain of finite type over `k` with fraction field `S`
+(`integralClosure.isIntegrallyClosedOfFiniteExtension`,
+`integralClosure.isFractionRing_of_finite_extension`), the leaf applies to it, and
+`integralClosure A L` embeds `A`-linearly into `integralClosure B L` — the two carriers are in
+fact equal, but only the inclusion is needed, and `A` is Noetherian. -/
+theorem module_finite_integralClosure_of_isSeparable_of_isPurelyInseparable
+    (k A K S L : Type*) [Field k] [CommRing A] [IsDomain A] [Algebra k A]
+    [Algebra.FiniteType k A] [IsIntegrallyClosed A]
+    [Field K] [Algebra A K] [IsFractionRing A K]
+    [Field S] [Algebra K S] [Algebra A S] [IsScalarTower A K S] [FiniteDimensional K S]
+    [Algebra.IsSeparable K S]
+    [Field L] [Algebra S L] [Algebra K L] [Algebra A L]
+    [IsScalarTower A K L] [IsScalarTower K S L] [IsScalarTower A S L]
+    [FiniteDimensional S L] [IsPurelyInseparable S L] :
+    Module.Finite A (integralClosure A L) := by
+  haveI : IsNoetherianRing A := Algebra.FiniteType.isNoetherianRing k A
+  haveI hBfin : Module.Finite A ↥(integralClosure A S) :=
+    IsIntegralClosure.finite A K S ↥(integralClosure A S)
+  haveI : IsFractionRing ↥(integralClosure A S) S :=
+    integralClosure.isFractionRing_of_finite_extension K S
+  haveI : IsIntegrallyClosed ↥(integralClosure A S) :=
+    integralClosure.isIntegrallyClosedOfFiniteExtension K
+  letI : Algebra k ↥(integralClosure A S) :=
+    ((algebraMap A ↥(integralClosure A S)).comp (algebraMap k A)).toAlgebra
+  haveI : IsScalarTower k A ↥(integralClosure A S) :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : Algebra.FiniteType A ↥(integralClosure A S) := Module.Finite.finiteType _
+  haveI : Algebra.FiniteType k ↥(integralClosure A S) :=
+    Algebra.FiniteType.trans ‹Algebra.FiniteType k A› ‹_›
+  haveI : Module.Finite ↥(integralClosure A S) ↥(integralClosure ↥(integralClosure A S) L) :=
+    module_finite_integralClosure_of_isPurelyInseparable k ↥(integralClosure A S) S L
+  haveI : Module.Finite A ↥(integralClosure ↥(integralClosure A S) L) :=
+    Module.Finite.trans ↥(integralClosure A S) _
+  haveI : Algebra.IsIntegral A ↥(integralClosure A S) :=
+    Algebra.IsIntegral.of_finite A ↥(integralClosure A S)
+  refine Module.Finite.of_injective
+    ({ toFun := fun x => ⟨(x : L), x.2.tower_top⟩
+       map_add' := fun _ _ => rfl
+       map_smul' := fun _ _ => rfl } :
+      ↥(integralClosure A L) →ₗ[A] ↥(integralClosure ↥(integralClosure A S) L)) ?_
+  intro x y h
+  apply Subtype.ext
+  have h2 := congrArg (fun z : ↥(integralClosure ↥(integralClosure A S) L) => (z : L)) h
+  simpa using h2
+
+/-- **Noether's finiteness theorem over an integrally closed Noetherian base of finite type
+over a field** (PROVEN 2026-07-27 over the leaf above).
+
+`A` is an integrally closed domain of finite type over `k` with fraction field `K`, and `L` is
+any FINITE extension of `K`.  Instantiating the previous theorem at
+`S := separableClosure K L` — which is separable over `K` by `separableClosure.isSeparable`
+and under which `L` is purely inseparable by `separableClosure.isPurelyInseparable` (`L / K` is
+algebraic, being finite) — reduces this to the leaf. -/
+theorem module_finite_integralClosure_of_isIntegrallyClosed
+    (k A K L : Type*) [Field k] [CommRing A] [IsDomain A] [Algebra k A]
+    [Algebra.FiniteType k A] [IsIntegrallyClosed A]
+    [Field K] [Algebra A K] [IsFractionRing A K]
+    [Field L] [Algebra K L] [Algebra A L] [IsScalarTower A K L] [FiniteDimensional K L] :
+    Module.Finite A (integralClosure A L) := by
+  haveI : Algebra.IsAlgebraic K L := Algebra.IsAlgebraic.of_finite K L
+  haveI : IsPurelyInseparable ↥(separableClosure K L) L := separableClosure.isPurelyInseparable K L
+  haveI : IsScalarTower A ↥(separableClosure K L) L :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  exact module_finite_integralClosure_of_isSeparable_of_isPurelyInseparable k A K
+    ↥(separableClosure K L) L
+
 /-- **E. Noether's finiteness theorem for the normalization of a finite-type domain over a
-field** (sorry leaf — the ONE genuinely classical input of
-`finiteType_integralClosure_sections` below, and, after the 2026-07-27 cut, all that is left
-of it).
+field** (**PROVEN 2026-07-27** over the single leaf
+`module_finite_integralClosure_of_isPurelyInseparable` above — it used to be the leaf itself).
 
 `A` is a domain of finite type over a field `k` and `L = Frac A`.  Then the integral closure
-of `A` in `L` — the normalization of `A` — is a FINITE `A`-module.  Stacks `0335` (a
-finite-type algebra over a field is Nagata) / `032E`.
+of `A` in `L` — the normalization of `A` — is a FINITE `A`-module.  Stacks `0335` / `032E`.
+This is the ONE classical input of `finiteType_integralClosure_sections` below.
 
-**Why the pin does not supply it.**  `Mathlib` has `IsIntegralClosure.finite`
-(`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean:174`), but only under
-`[IsIntegrallyClosed A] [IsNoetherianRing A]` *and* `[Algebra.IsSeparable K L]`.  There is no
-Nagata/Japanese theory anywhere at this pin: `grep -rn "Japanese\|IsNagata" Mathlib/` returns
-only the analytic "Japanese bracket" and a citation of Nagata's Euclidean-algorithm paper.
-
-**The classical route, and where the residue is** (Stacks `0335` ⟸ `0334` ⟸ `032L`):
-
-1. Noether normalization — `exists_finite_inj_algHom_of_fg`
-   (`Mathlib/RingTheory/NoetherNormalization.lean`), PRESENT at the pin — gives
-   `A₀ = MvPolynomial (Fin s) k ↪ A` with `A` finite over `A₀`.  Then
-   `integralClosure A L = integralClosure A₀ L`, so it is enough to be `A₀`-finite.
-2. `A₀` is a UFD, hence `IsIntegrallyClosed`, and Noetherian; `L` is a finite extension of
-   `Frac A₀`.
-3. If `L / Frac A₀` is SEPARABLE, `IsIntegralClosure.finite` closes it verbatim.
-4. The residue is the INSEPARABLE case: with `q = pᵉ` killing the purely inseparable part,
-   `L` embeds in `k'(x₁^{1/q}, …, x_s^{1/q})` for a finite purely inseparable `k'/k`, whose
-   integral closure over `A₀` is the polynomial ring `k'[x₁^{1/q}, …, x_s^{1/q}]` — finite
-   over `A₀` — and a submodule of a finite module over a Noetherian ring is finite.
-
-So step 4 is the whole gap.  **A `PerfectField k` hypothesis would NOT remove it**: over
-`k = 𝔽_p` the domain `A = k[x,y]/(yᵖ - x)` is finite over `A₀ = k[x]` with `Frac A / Frac A₀`
-purely inseparable, and `k` is perfect.
-
-**A PROVEN CHARACTERISTIC-ZERO TWIN ALREADY EXISTS IN THIS TREE — do not redevelop it**
-(found 2026-07-27).  `Fermat/FLT/Modularity/MoretBailly.lean` carries
-`module_finite_integralClosure_of_finiteType`, PROVEN over `[Field k] [CharZero k]`, together
-with `module_finite_integralClosure_of_isIntegrallyClosed`,
-`module_finite_integralClosure_of_isDomain_of_faithfulSMul`,
-`module_finite_integralClosure_of_isDomain`, and even a globalisation over one affine open of
-the target, `module_finite_integralClosure_sections_of_isReduced`, which is the `ULift ℚ`
-analogue of `finiteType_integralClosure_sections` below (its route is different: a finite
-affine cover of `g ⁻¹ᵁ U` plus the sheaf axiom, Stacks `03GR`, rather than the function
-field).  Its steps 1–3 are characteristic-free and `CharZero` enters at exactly one place —
-to make the residue extension separable so that `IsIntegralClosure.finite` applies, i.e.
-precisely step 4 above.
-
-That cluster cannot be consumed from here as it stands: it lives in the `Modularity` cone,
-strictly downstream of this shim module, and it is written over `ULift ℚ`.  The right repair,
-for that file's owner, is to HOIST its pure-commutative-algebra half into the shim tree and
-generalise `ULift ℚ` to a field; this leaf and that theorem then become one declaration and
-the tree stops carrying three copies of Noether's theorem (`Modularity/KhareWintenberger.lean`
-has a third).  Whoever closes step 4 should close it there, not here. -/
+**How it is proven.**  Noether normalization (`exists_finite_inj_algHom_of_fg`,
+`Mathlib/RingTheory/NoetherNormalization.lean`, PRESENT at the pin) gives
+`A₀ = MvPolynomial (Fin s) k ↪ A` with `A` module-finite over `A₀`.  `A₀` is a UFD, hence
+`IsIntegrallyClosed`, and Noetherian, so `module_finite_integralClosure_of_isIntegrallyClosed`
+applies to it once `L` is known to be FINITE over `K = Frac A₀`; and it is, because `L` is
+algebraic over `K` (`IsFractionRing.isAlgebraic_iff'` then
+`IsFractionRing.comap_isAlgebraic_iff`) and essentially of finite type over it
+(`Algebra.EssFiniteType.of_comp`), which is exactly the hypothesis of
+`Algebra.finite_of_essFiniteType_of_isAlgebraic`.  Finally `A` is integral over `A₀`, so
+`integralClosure A₀ L` and `integralClosure A L` have the SAME CARRIER and
+`module_finite_of_algebraMap_range_le` moves module-finiteness from `A₀` up to `A`. -/
 theorem module_finite_integralClosure_of_isFractionRing
     {k A L : Type*} [Field k] [CommRing A] [IsDomain A] [Algebra k A]
     [Algebra.FiniteType k A] [Field L] [Algebra A L] [IsFractionRing A L] :
-    Module.Finite A (integralClosure A L) :=
-  sorry
+    Module.Finite A (integralClosure A L) := by
+  classical
+  obtain ⟨s, g, hginj, hgfin⟩ := exists_finite_inj_algHom_of_fg k A
+  letI : Algebra (MvPolynomial (Fin s) k) A := g.toRingHom.toAlgebra
+  haveI : IsScalarTower k (MvPolynomial (Fin s) k) A :=
+    IsScalarTower.of_algebraMap_eq fun x => (g.commutes x).symm
+  haveI hfinA : Module.Finite (MvPolynomial (Fin s) k) A := hgfin
+  letI : Algebra (MvPolynomial (Fin s) k) L := ((algebraMap A L).comp g.toRingHom).toAlgebra
+  haveI : IsScalarTower (MvPolynomial (Fin s) k) A L := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  have hAL : Function.Injective (algebraMap A L) := IsFractionRing.injective A L
+  have hinj : Function.Injective (algebraMap (MvPolynomial (Fin s) k) L) := hAL.comp hginj
+  letI : Algebra (FractionRing (MvPolynomial (Fin s) k)) L := (IsFractionRing.lift hinj).toAlgebra
+  haveI : IsScalarTower (MvPolynomial (Fin s) k) (FractionRing (MvPolynomial (Fin s) k)) L :=
+    IsScalarTower.of_algebraMap_eq fun x => (IsFractionRing.lift_algebraMap hinj x).symm
+  haveI : Algebra.IsIntegral (MvPolynomial (Fin s) k) A :=
+    Algebra.IsIntegral.of_finite (MvPolynomial (Fin s) k) A
+  haveI : FaithfulSMul (MvPolynomial (Fin s) k) L :=
+    (faithfulSMul_iff_algebraMap_injective _ _).2 hinj
+  haveI halgA : Algebra.IsAlgebraic (MvPolynomial (Fin s) k) A := inferInstance
+  haveI halgL : Algebra.IsAlgebraic (MvPolynomial (Fin s) k) L :=
+    (IsFractionRing.isAlgebraic_iff' (MvPolynomial (Fin s) k) A L).mp halgA
+  haveI : Algebra.IsAlgebraic (FractionRing (MvPolynomial (Fin s) k)) L :=
+    (IsFractionRing.comap_isAlgebraic_iff
+      (A := MvPolynomial (Fin s) k) (K := FractionRing (MvPolynomial (Fin s) k))
+      (C := L)).mp halgL
+  haveI : Algebra.EssFiniteType A L := Algebra.EssFiniteType.of_isLocalization _ (nonZeroDivisors A)
+  haveI : Algebra.EssFiniteType (MvPolynomial (Fin s) k) L :=
+    Algebra.EssFiniteType.comp (MvPolynomial (Fin s) k) A L
+  haveI : Algebra.EssFiniteType (FractionRing (MvPolynomial (Fin s) k)) L :=
+    Algebra.EssFiniteType.of_comp (MvPolynomial (Fin s) k) _ L
+  haveI : FiniteDimensional (FractionRing (MvPolynomial (Fin s) k)) L :=
+    Algebra.finite_of_essFiniteType_of_isAlgebraic
+  haveI : Module.Finite (MvPolynomial (Fin s) k) ↥(integralClosure (MvPolynomial (Fin s) k) L) :=
+    module_finite_integralClosure_of_isIntegrallyClosed k (MvPolynomial (Fin s) k)
+      (FractionRing (MvPolynomial (Fin s) k)) L
+  refine module_finite_of_algebraMap_range_le (R := A) (S := MvPolynomial (Fin s) k) (X := L)
+    ?_ _ _ ?_ ‹_›
+  · rintro _ ⟨c, rfl⟩
+    exact ⟨g c, rfl⟩
+  · ext x
+    simp only [SetLike.mem_coe, mem_integralClosure_iff]
+    exact ⟨fun h => h.tower_top, fun h => isIntegral_trans _ h⟩
 
 /-- **Noether's finiteness theorem at a prime** (PROVEN over
 `module_finite_integralClosure_of_isFractionRing`).
@@ -980,8 +1221,9 @@ theorem module_finite_integralClosure_of_isLocalizationAtPrime
 
 /-- **The integral closure of an affine chart of `P` in the sections of `Y` over its preimage is
 a finite-type algebra** (**PROVEN 2026-07-27** over
-`module_finite_integralClosure_of_isFractionRing`, the single classical leaf above — this was
-the Nagata/Japanese input, and, after the 2026-07-27 cut below, all that was left of the old
+`module_finite_integralClosure_of_isFractionRing`, itself now PROVEN over the single classical
+leaf `module_finite_integralClosure_of_isPurelyInseparable` above — this was the
+Nagata/Japanese input, and, after the 2026-07-27 cut below, all that was left of the old
 `isFinite_fromNormalization`).
 
 TRUE and classical.  Write `A := Γ(P, U)` and `B := Γ(Y, i ⁻¹ᵁ U)`.  A domain of finite type
@@ -1006,7 +1248,8 @@ this one over every affine `U`.  That descent is now PROVEN — see
 `locallyOfFiniteType_fromNormalization` immediately below — so no scheme theory is owed here.
 
 **HOW IT IS PROVEN (2026-07-27), and what is left.**  Everything below is now written out; the
-only thing still owed is `module_finite_integralClosure_of_isFractionRing` above.
+only thing still owed is `module_finite_integralClosure_of_isPurelyInseparable` above, the
+purely inseparable residue of Noether's theorem.
 
 * When `i ⁻¹ᵁ U` is EMPTY the open is `⊥`, so `B` is the trivial ring —
   `instance {X : Scheme.{u}} : Subsingleton Γ(X, ⊥)` in `Mathlib/AlgebraicGeometry/Scheme.lean`
