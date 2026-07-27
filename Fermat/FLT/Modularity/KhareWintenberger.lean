@@ -386,6 +386,22 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 -- `Deformation.lean` already `public import`s `HilbertModularity`, so the
 -- module was in this file's import closure before this line was written.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity
+-- the Raynaud closure cut on the representation-free point-group carrier
+-- (`IsFlatPointsGroupAt`, `GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`,
+-- `IsFlatPointsGroupAt.of_surjective`), over which
+-- `hasFlatProlongationAt_of_surjective` below is PROVEN (2026-07-27).  MOVED to
+-- this home 2026-07-26 out of `Modularity/Interface.lean` precisely so that
+-- modules at or below this one could consume it; the HOME AUDIT in that
+-- theorem's docstring is updated accordingly.  This adds NO module to any cone:
+-- `HilbertModularity.lean`, already `public import`ed on the line above,
+-- imports `FlatPointsGroup.lean`, so the module was in this file's import
+-- closure before this line was written.  It reaches this file only through a
+-- BARE import there, however, which is not re-exported — hence the explicit
+-- line.  The circularity guard of pillar β is respected: the cone of
+-- `FlatPointsGroup.lean` is `FlatProlongation.lean` +
+-- `KnownIn1980s/EllipticCurves/Flat.lean`, disjoint from `Family.lean`,
+-- `Lift.lean` and `Modularity/*`.
+public import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 -- the `charFrob` transport API (`GaloisRep.charFrob_map_algEquiv`,
 -- `GaloisRep.exists_finset_isUnramifiedAt_map`), which discharges the base
 -- of the solvable-descent chain (`heckeSystemDescendsTo_bot`)
@@ -13800,8 +13816,10 @@ theorem threeadicRealization_isUnramified_of_witness
   · -- `p` is prime to the conductor and to `3`
     exact hunr p hp hp3 hdvd
 
-/-- **Raynaud quotient closure, in prolongation form** (sorry node, cut
-2026-07-25 for the Fontaine–Laffaille level reduction below): a
+/-- **Raynaud quotient closure, in prolongation form** (PROVEN
+2026-07-27 as a two-line redirect onto
+`IsFlatPointsGroupAt.of_surjective`; cut 2026-07-25 for the
+Fontaine–Laffaille level reduction below): a
 `G_ℚ`-equivariant QUOTIENT of a Galois representation which has a flat
 prolongation at `v` again has a flat prolongation at `v`.
 Scheme-theoretically this is the closure of finite flat group schemes
@@ -13814,8 +13832,22 @@ stated for the GLOBAL action, as in
 `GaloisRep.HasFlatProlongationAt.of_addEquiv`; it implies the local one
 because `toLocal` is precomposition with `G_ℚᵥ → G_ℚ`.
 
-Intended proof (dual to a subobject closure, and easier — SUB-algebras
-of the witness where a subobject closure would quotient it):
+Proof (2026-07-27): pass to the representation-free point-group carrier
+by the exact repackaging
+`GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`, apply
+`IsFlatPointsGroupAt.of_surjective`
+(`Deformations/RepresentationTheory/FlatPointsGroup.lean`, sorry-free),
+and repackage back. The GLOBAL equivariance hypothesis `he` supplies the
+LOCAL one the carrier asks for through the exposed `rfl`-lemma
+`GaloisRep.toLocal_apply` (`g • x` on `(ρ.toLocal v).Space` is
+`ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ Kᵥ) g) x`); it must be
+routed through that lemma rather than by `exact he _ x`, because the
+unexposed `IsAlgClosed.lift` inside `Field.absoluteGaloisGroup.map`
+blocks the direct defeq check.
+
+The mathematics is the carrier lemma's, and is (dual to a subobject
+closure, and easier — SUB-algebras of the witness where a subobject
+closure would quotient it):
 * (α) *finiteness*: the source point group is finite (the generic fibre
   `Q := Kᵥ ⊗[𝒪ᵥ] G` of the witness is finite étale over `Kᵥ`), hence so
   is the target through the surjection `e`.
@@ -13844,24 +13876,35 @@ hypothesis package (for `e` bijective this is already
 `GaloisRep.HasFlatProlongationAt.of_addEquiv`, and for a subsingleton
 target `GaloisRep.hasFlatProlongationAt_of_subsingleton`).
 
-HOME AUDIT (2026-07-25, load-bearing — read before "deduplicating"
-this brick). The same Raynaud content exists in the tree ONCE more, as
-the carrier-level `IsFlatPointsGroupAt.of_surjective` of
-`Modularity/Interface.lean` (there over an abstract `G_ℚᵥ`-module
-rather than a representation). That one is IMPORT-UNREACHABLE from
-here: `Interface.lean` imports THIS module, so consuming it would be a
-literal import cycle — the very thing the pillar-β circularity guard
-forbids. The architecturally neutral home for both would be
-`Deformations/RepresentationTheory/FlatProlongation.lean` (below
-`Interface.lean` and below this module, and already the home of the
-`of_addEquiv` transport), and the intended unification is to move this
-brick there and re-prove `Interface.lean`'s carrier version from it.
-That was deliberately NOT done in this pass for two reasons: the
-carrier leaf is separately owned, and `FlatProlongation.lean` sits
-under the 30k-line `ModThree.lean` cone, so touching it forces a
-full-cone rebuild in every worktree of the fleet, while this module
-already had to be rebuilt for the decomposition below. Whoever
-performs the unification should move BOTH, not restate a third copy. -/
+HOME AUDIT — RESOLVED 2026-07-27; the 2026-07-25 text below it is kept
+only as history, and MUST NOT be acted on. It said that the carrier-level
+`IsFlatPointsGroupAt.of_surjective` lived in `Modularity/Interface.lean`
+and was therefore IMPORT-UNREACHABLE from here (`Interface.lean` imports
+this module), so this brick had to be sorried separately. That was true
+when written and became false on 2026-07-26, when the whole Raynaud cut
+— the carrier `IsFlatPointsGroupAt`, the repackaging
+`GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`, and both the
+quotient half `of_surjective` and the subobject half `of_injective` —
+was MOVED VERBATIM out of `Interface.lean` into
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`, a sibling of
+the `FlatProlongation.lean` home this audit itself nominated (sibling
+rather than that file, because the cut needs
+`KnownIn1980s/EllipticCurves/Flat.lean` in its cone and
+`FlatProlongation.lean`'s other consumers should not pay for it). That
+file is strictly BELOW this module and already in its import closure, so
+no cycle and no cone growth: see the import comment at the head of this
+file. `Deformation.lean`'s `hasFlatProlongationAt_of_pi_surjection` — the
+`n`-fold-power form of the same statement, PROVEN over the same carrier
+lemma — records the same resolution and asks this brick's owner to
+redirect it here. That redirection is what the proof below now is.
+
+Historical (2026-07-25): "The same Raynaud content exists in the tree
+ONCE more, as the carrier-level `IsFlatPointsGroupAt.of_surjective` of
+`Modularity/Interface.lean` … IMPORT-UNREACHABLE from here … the
+architecturally neutral home for both would be
+`Deformations/RepresentationTheory/FlatProlongation.lean` … Whoever
+performs the unification should move BOTH, not restate a third copy."
+The move happened; nothing is restated here. -/
 theorem hasFlatProlongationAt_of_surjective
     {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
@@ -13872,8 +13915,19 @@ theorem hasFlatProlongationAt_of_surjective
     (h : ρ₁.HasFlatProlongationAt v)
     (e : M₁ →+ M₂) (hsurj : Function.Surjective e)
     (he : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : M₁), e (ρ₁ σ x) = ρ₂ σ (e x)) :
-    ρ₂.HasFlatProlongationAt v :=
-  sorry
+    ρ₂.HasFlatProlongationAt v := by
+  -- pass to the representation-free point-group carrier
+  have h₁ : IsFlatPointsGroupAt v (ρ₁.toLocal v).Space :=
+    (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mp h
+  -- Raynaud's schematic closure over the DVR, along the equivariant surjection
+  refine (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mpr
+    (h₁.of_surjective (Y := (ρ₂.toLocal v).Space) e hsurj ?_)
+  -- the GLOBAL equivariance hypothesis gives the LOCAL one, `toLocal` being
+  -- precomposition with `G_ℚᵥ → G_ℚ`
+  intro g x
+  show e ((ρ₁.toLocal v) g x) = (ρ₂.toLocal v) g (e x)
+  rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+  exact he _ x
 
 set_option linter.unusedVariables false in
 /-- **The Fontaine–Laffaille local shape at `3`, on the `3`-power
@@ -14003,10 +14057,17 @@ for every package.
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`; in particular the Raynaud quotient brick
-consumed here is `hasFlatProlongationAt_of_surjective` of THIS module,
-NOT the carrier-level `IsFlatPointsGroupAt.of_surjective` of
-`Modularity/Interface.lean`, which is import-unreachable from here —
-see that brick's HOME AUDIT. -/
+consumed here is `hasFlatProlongationAt_of_surjective` of THIS module.
+
+STATUS CORRECTION 2026-07-27 (the previous sentence of this guard is
+withdrawn): that brick used to be a `sorry` because the carrier-level
+`IsFlatPointsGroupAt.of_surjective` lived in `Modularity/Interface.lean`
+and so was import-unreachable from here. The carrier cut was MOVED on
+2026-07-26 to `Deformations/RepresentationTheory/FlatPointsGroup.lean`,
+which is BELOW this module and already in its import closure, and the
+brick is now PROVEN over it. The guard is unaffected: that file's cone is
+`FlatProlongation.lean` + `KnownIn1980s/EllipticCurves/Flat.lean`, which
+meets neither `Family.lean`, nor `Lift.lean`, nor `Modularity/*`. -/
 theorem threeadicRealization_hasFlatProlongationAt_of_finite_quotient
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
