@@ -7023,8 +7023,9 @@ theorem y0HasNoRationalPoint_of_not_stableCyclic {N : ℕ}
   sorry
 
 /-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
-`p²`, for the seven isogeny primes with `genus X_0(p) ≥ 1`** (sorry node,
-introduced 2026-07-27): `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
+`p²`, for the seven isogeny primes with `genus X_0(p) ≥ 1`** (DECOMPOSED
+2026-07-27 into three sorried steps under a compiling assembly; introduced as a
+bare sorry node earlier the same day): `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
 
 TRUE, and it is the elementary half of Kenku's prime-square theorem: the
 Mazur–Kenku list of `N` admitting a rational cyclic `N`-isogeny is
@@ -7060,20 +7061,187 @@ reused here, and that module imports this one in any case.  See the section
 note above `y0HasNoRationalPoint_of_not_stableCyclic` for the re-basing that
 removes the duplication.
 
+#### THE CUT (2026-07-27) — three sorried steps, assembly compiling
+
+The route above is now written out.  The proof body contains exactly three
+`sorry`s, each a self-contained statement with its own hypotheses, and the
+assembly that consumes all three is written and compiles.  None of the three
+is stated in a vocabulary this file does not already have: everything is
+`WeierstrassCurve ℚ`, `(·⁄AlgebraicClosure ℚ).Point`, `addOrderOf` and
+`AddSubgroup.zmultiples`, so no new import and no new top-level name was
+needed.  (Deliberately no new top-level names: `FreyCurve/MazurTorsion.lean`
+is the sole `public import`er of this module, and a new top-level declaration
+here can collide with one of its 37k lines without this module's own build
+noticing.)
+
+* **`hvelu` — the two-independent-lines reduction.**  Uniform in `p`, and the
+  only step that is about elliptic curves rather than about `ℚ`-points of
+  `X_0(p)`.  From `⟨g⟩` stable cyclic of order `p²` on `E`, produce `E'/ℚ` and
+  two Galois-stable subgroups of order `p` with `⟨g₁⟩ ≠ ⟨g₂⟩`.
+* **`hgenus1` — the family `p = 11, 17, 19`**, where `X_0(p)` is elliptic of
+  rank `0` and `Y_0(p)(ℚ)` is `3, 2, 1` points, settled by enumeration.
+* **`hgenus2` — the family `p = 37, 43, 67, 163`**, where `genus X_0(p) ≥ 2`,
+  finiteness is Faltings, and at `43, 67, 163` the CM argument replaces the
+  enumeration outright.
+
+The two Mazur steps are stated with their own bound level `q` rather than
+against the ambient `p`, so each is readable and attackable without the
+surrounding context; the split is the one the docstring of
+`y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel` already advertised.
+
+**What `hvelu` needs, and it is less than it looks** (surveyed 2026-07-27).
+`Fermat/FLT/EllipticCurve/Velu.lean` already carries the Vélu construction
+over a field: `IsPointSubgroup`, `veluT`, `veluW`, `veluCurve`, `veluCoordX`,
+`veluCoordY`, together with `veluCoordX_add_mem` / `veluCoordY_add_mem` and
+the kernel computation `velu_sum_kernel`.  What is *not* there is the descent:
+`veluCurve S` is built over `ℚ̄`, and one must see that for a `G_ℚ`-stable `S`
+its coefficients `veluT S`, `veluW S` — sums over `S` of `G_ℚ`-equivariant
+terms — are `G_ℚ`-invariant, hence lie in `ℚ`, so the quotient descends to a
+curve over `ℚ`.  That is the whole extra content, and it is one invariance
+argument rather than a theory.
+
+This module does not currently import `Velu.lean`.  The cost of adding it was
+MEASURED rather than guessed: `Velu.lean`'s project-module cone is itself, so
+`public import Fermat.FLT.EllipticCurve.Velu` adds **exactly one** project
+module to this file's 47-module cone, and `FreyCurve/MazurTorsion.lean`, the
+only importer of this module, already reaches it.  **The check that refutes
+this** if it is wrong: recompute the two cones and diff them.  The import is
+not added here because nothing in this file uses it yet; adding it is the
+successor's first line.
+
+**Distinctness of the two lines is where `p ≥ 2` is used**, and it is worth
+recording because it is the one step of `hvelu` that can silently be got
+wrong.  Write `φ : E → E' = E/⟨p·g⟩`.  Then `φ(g) ≠ 0`, since `g ∈ ⟨p·g⟩`
+would give `(1 - kp)·g = 0` for some `k`, hence `p² ∣ 1 - kp` and so `p ∣ 1`.
+And `ker φ̂ = φ(E[p])`, because `φ̂ ∘ φ = [p]` kills `E[p]` and both sides have
+order `p`; so `φ(g) ∈ ker φ̂` would force `g ∈ E[p] + ker φ = E[p]`,
+contradicting `addOrderOf g = p²`.  Neither half needs `p` prime — only
+`p ≥ 2` — so `hvelu` is stated without a primality hypothesis even though `p`
+is prime here.
+
+**Numerical sanity check of the statement** (`gp`, 2026-07-27; an untrusted
+searcher, so this is a check on the STATEMENT and not a step of any proof).
+The genus of `X_0(p)` at `p = 11, 13, 17, 19, 37, 43, 67, 163` is
+`1, 0, 1, 1, 2, 3, 5, 13`.  That is exactly the split the two Mazur steps are
+cut along, and it confirms that `13` — genus `0`, hence `Y_0(13)(ℚ)` infinite —
+is correctly excluded from this node and handled by
+`not_stableCyclic_oneHundredSixtyNine` instead.
+
 Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
 (1978), Theorem 1 and Table 1; Kenku, *On the modular curves `X_0(125)`,
 `X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981). -/
 theorem not_stableCyclic_sq_of_isogenyClassPrime {p : ℕ}
-    (_hp : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ))
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = p ^ 2)
-    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p ^ 2)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
       ∀ x ∈ AddSubgroup.zmultiples g,
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  -- STEP 1 (sorry node, 2026-07-27) — **Mazur's point listing, genus-`1`
+  -- family**: `q ∈ {11, 17, 19}`.  No elliptic curve over `ℚ` carries two
+  -- DISTINCT Galois-stable subgroups of order `q`.
+  --
+  -- TRUE.  At these three primes `X_0(q)` is an elliptic curve of rank `0`
+  -- (`11a`, `17a`, `19a`, of torsion `ℤ/5`, `ℤ/4`, `ℤ/3`), so `X_0(q)(ℚ)` has
+  -- `5, 4, 3` points, of which `2` are cusps at each level, leaving `3, 2, 1`
+  -- non-cuspidal points — Mazur, *Rational isogenies of prime degree*,
+  -- Theorem 1 and Table 1.  Two distinct stable lines on one `E'` would give
+  -- two distinct points of `Y_0(q)(ℚ)` over the same `j`, and the listed
+  -- `j`-invariants are pairwise distinct: `-2¹⁵`, `-121`, `-24729001` at
+  -- `q = 11`; `-17·373³/2¹⁷`, `-17²·101³/2` at `q = 17`; `-2¹⁵·3³` at
+  -- `q = 19`, where there is only one point to begin with.
+  --
+  -- Equivalently and with no enumeration: two independent `q`-isogenies from
+  -- `E'` produce an isogeny of degree `q²` between `E'/⟨g₁⟩` and `E'/⟨g₂⟩`,
+  -- and `121, 289, 361` are absent from Mazur's list of isogeny degrees.
+  -- That phrasing is circular *here* (it is the theorem being proven) but is
+  -- the right sanity check on the statement.
+  have hgenus1 : ∀ q : ℕ, q ∈ ({11, 17, 19} : Finset ℕ) →
+      ∀ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+        (g₁ g₂ : (E'⁄(AlgebraicClosure ℚ)).Point),
+        addOrderOf g₁ = q → addOrderOf g₂ = q →
+        AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂ →
+        (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g₁) →
+        (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g₂) → False := by
+    sorry
+  -- STEP 2 (sorry node, 2026-07-27) — **Mazur's point listing, genus-`≥ 2`
+  -- family**: `q ∈ {37, 43, 67, 163}`.  Same conclusion, different mechanism.
+  --
+  -- TRUE.  `genus X_0(q) = 2, 3, 5, 13` respectively (checked with `gp`,
+  -- 2026-07-27), so `X_0(q)(ℚ)` is finite by Faltings.  At `q = 43, 67, 163`
+  -- there is exactly ONE non-cuspidal point and it needs no enumeration at
+  -- all: the curve has CM by the class-number-one imaginary quadratic order
+  -- of discriminant `-q`, in which `q` RAMIFIES, so `q𝒪 = 𝔭²` and the only
+  -- `𝒪`-submodules of `E'[q]` are `0`, `E'[𝔭]` and `E'[q]` — a unique line,
+  -- hence never two.  At `q = 37` there are two non-cuspidal points, with the
+  -- non-CM `j`-invariants `-7·11³` and `-7·137³·2083³`, again distinct, so
+  -- again no single `E'` carries both lines.
+  have hgenus2 : ∀ q : ℕ, q ∈ ({37, 43, 67, 163} : Finset ℕ) →
+      ∀ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+        (g₁ g₂ : (E'⁄(AlgebraicClosure ℚ)).Point),
+        addOrderOf g₁ = q → addOrderOf g₂ = q →
+        AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂ →
+        (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g₁) →
+        (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g₂) → False := by
+    sorry
+  -- STEP 3 (sorry node, 2026-07-27) — **the Vélu reduction**: a stable cyclic
+  -- subgroup of order `p²` produces a curve with two distinct stable lines.
+  --
+  -- TRUE, and uniform in `p` (only `p ≥ 2` is used; see the docstring).  Put
+  -- `C := ⟨p·g₀⟩`, a Galois-stable subgroup of order `p` because `⟨g₀⟩` is
+  -- stable of order `p²`.  `Velu.lean` builds the quotient `E'` over `ℚ̄` as
+  -- `veluCurve C` with coefficients `veluT C`, `veluW C`; those are sums over
+  -- `C` of terms carried by `G_ℚ` along the action, so stability of `C` makes
+  -- them `G_ℚ`-invariant and hence rational, which is what descends `E'` to
+  -- `ℚ`.  Take `g₁ := φ(g₀)` and `g₂` a generator of `ker φ̂ = φ(E₀[p])`.
+  -- Both have order `p`, both are stable (`φ` is defined over `ℚ`), and they
+  -- are distinct by the computation recorded in the docstring.
+  --
+  -- The successor's first line is `public import
+  -- Fermat.FLT.EllipticCurve.Velu`, measured at +1 project module on this
+  -- file's cone.
+  have hvelu : ∀ (E₀ : WeierstrassCurve ℚ) (_ : E₀.IsElliptic)
+      (g₀ : (E₀⁄(AlgebraicClosure ℚ)).Point), addOrderOf g₀ = p ^ 2 →
+      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₀,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g₀) →
+      ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+        (g₁ g₂ : (E'⁄(AlgebraicClosure ℚ)).Point),
+        addOrderOf g₁ = p ∧ addOrderOf g₂ = p ∧
+        AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂ ∧
+        (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g₁) ∧
+        (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g₂) := by
+    sorry
+  -- ASSEMBLY: run the reduction on `(E, g)`, then split the seven primes into
+  -- the two families and apply the matching point listing.
+  obtain ⟨E', hE', g₁, g₂, hg₁, hg₂, hne, hs₁, hs₂⟩ :=
+    hvelu E ‹E.IsElliptic› g hg hstable
+  rcases (show p ∈ ({11, 17, 19} : Finset ℕ) ∨ p ∈ ({37, 43, 67, 163} : Finset ℕ) from by
+      fin_cases hp <;> simp) with h | h
+  · exact hgenus1 p h E' hE' g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+  · exact hgenus2 p h E' hE' g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
 
 /-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
 `169`** (sorry node, introduced 2026-07-27).
