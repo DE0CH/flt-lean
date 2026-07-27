@@ -134,6 +134,7 @@ public import Mathlib.RingTheory.NoetherNormalization
 -- item 4's Bertini step (`exists_bertiniGoodPlaneCount`), used in the statement-facing
 -- form `schwartzZippel_card_zeros_mul_le` below.
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 -- proof-only: `RingHom.injective` (a ring hom out of a field is
 -- injective), the descent step of the automorphic joint's transport
 import Mathlib.RingTheory.SimpleRing.Basic
@@ -9503,10 +9504,546 @@ theorem schwartzZippel_card_zeros_planeParam_mul_le {N p : ℕ} [Fact p.Prime]
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
   rfl
 
-/-- **BERTINI OVER FINITE FIELDS, AS A HYPERSURFACE WITNESS** (SORRY LEAF, cut
-2026-07-27) — Schmidt Chapter V, Theorem 4C together with E. Noether's Theorem
-2A. After the cut below this carries ALL of the genuinely missing content of
-item 4: everything else in the Bertini step is now proven.
+/-! ### Generic `MvPolynomial` helpers -/
+
+/-- **PROVEN**: an injective coefficient map preserves the support of a
+multivariate polynomial, hence its total degree. Used to move degree
+computations between `𝔽_p` and `𝔽̄_p`. -/
+theorem totalDegree_map_eq_of_injective {σ R S : Type*} [CommSemiring R] [CommSemiring S]
+    (p : MvPolynomial σ R) {f : R →+* S} (hf : Function.Injective f) :
+    (MvPolynomial.map f p).totalDegree = p.totalDegree := by
+  simp only [MvPolynomial.totalDegree, MvPolynomial.support_map_of_injective _ hf]
+
+/-- **PROVEN**: substituting polynomials of total degree at most one for the
+variables cannot raise the total degree. This is the degree half of the
+statement that a plane section of a degree-`d` hypersurface has degree at
+most `d`. -/
+theorem totalDegree_bind₁_le_of_le_one {σ τ R : Type*} [CommSemiring R]
+    (f : σ → MvPolynomial τ R) (hf : ∀ i, (f i).totalDegree ≤ 1) (p : MvPolynomial σ R) :
+    (MvPolynomial.bind₁ f p).totalDegree ≤ p.totalDegree := by
+  classical
+  have hEq : MvPolynomial.bind₁ f p
+      = ∑ d ∈ p.support, MvPolynomial.C (MvPolynomial.coeff d p)
+          * ∏ i ∈ d.support, f i ^ d i := by
+    simp only [MvPolynomial.bind₁, MvPolynomial.aeval_def, MvPolynomial.eval₂_eq,
+      MvPolynomial.algebraMap_eq]
+  rw [hEq]
+  refine MvPolynomial.totalDegree_finsetSum_le ?_
+  intro d hd
+  refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+  rw [MvPolynomial.totalDegree_C, zero_add]
+  have hstep : ∀ i ∈ d.support, ((f i) ^ (d i)).totalDegree ≤ d i := by
+    intro i _
+    calc ((f i) ^ (d i)).totalDegree ≤ d i * (f i).totalDegree :=
+          MvPolynomial.totalDegree_pow _ _
+      _ ≤ d i * 1 := Nat.mul_le_mul le_rfl (hf i)
+      _ = d i := mul_one _
+  calc (∏ i ∈ d.support, f i ^ d i).totalDegree
+      ≤ ∑ i ∈ d.support, ((f i) ^ (d i)).totalDegree :=
+        MvPolynomial.totalDegree_finsetProd _ _
+    _ ≤ ∑ i ∈ d.support, d i := Finset.sum_le_sum hstep
+    _ ≤ p.totalDegree := by simpa [Finsupp.sum] using MvPolynomial.le_totalDegree hd
+
+/-- **PROVEN**: a variable has total degree at most one (over any commutative
+semiring -- no `Nontrivial` hypothesis, so it also covers the zero ring). -/
+theorem totalDegree_X_le_one {σ R : Type*} [CommSemiring R] (i : σ) :
+    (MvPolynomial.X i : MvPolynomial σ R).totalDegree ≤ 1 := by
+  classical
+  rw [MvPolynomial.X]
+  simpa using MvPolynomial.totalDegree_monomial_le (Finsupp.single i 1) (1 : R)
+
+/-- **PROVEN**: an affine form `a + b*s + c*t` in two variables has total degree
+at most one. This is the hypothesis of `totalDegree_bind₁_le_of_le_one` for the
+substitution defining `planeSection`. -/
+theorem totalDegree_affineForm_le_one {R : Type*} [CommSemiring R] (a b c : R) :
+    (MvPolynomial.C a + MvPolynomial.C b * MvPolynomial.X 0
+      + MvPolynomial.C c * MvPolynomial.X 1 : MvPolynomial (Fin 2) R).totalDegree ≤ 1 := by
+  refine le_trans (MvPolynomial.totalDegree_add _ _) (max_le ?_ ?_)
+  · refine le_trans (MvPolynomial.totalDegree_add _ _) (max_le ?_ ?_)
+    · simp [MvPolynomial.totalDegree_C]
+    · refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+      simpa [MvPolynomial.totalDegree_C] using totalDegree_X_le_one (R := R) (0 : Fin 2)
+  · refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+    simpa [MvPolynomial.totalDegree_C] using totalDegree_X_le_one (R := R) (1 : Fin 2)
+
+/-- **PROVEN**: over a field an affine form `a + b*s + c*t` with `b ≠ 0` has
+total degree exactly one. -/
+theorem totalDegree_affineForm_eq_one {K : Type*} [Field K] (a b c : K) (hb : b ≠ 0) :
+    (MvPolynomial.C a + MvPolynomial.C b * MvPolynomial.X 0
+      + MvPolynomial.C c * MvPolynomial.X 1 : MvPolynomial (Fin 2) K).totalDegree = 1 := by
+  classical
+  refine le_antisymm (totalDegree_affineForm_le_one a b c) ?_
+  have hcoeff : MvPolynomial.coeff (Finsupp.single (0 : Fin 2) 1)
+      (MvPolynomial.C a + MvPolynomial.C b * MvPolynomial.X 0
+        + MvPolynomial.C c * MvPolynomial.X 1 : MvPolynomial (Fin 2) K) = b := by
+    have hne : (0 : Fin 2 →₀ ℕ) ≠ Finsupp.single (0 : Fin 2) 1 := by
+      intro hc
+      have h0 := congrArg (fun m : Fin 2 →₀ ℕ => m 0) hc
+      simp at h0
+    simp [MvPolynomial.coeff_C, MvPolynomial.coeff_C_mul, MvPolynomial.coeff_X,
+      Finsupp.single_eq_single_iff, hne]
+  have hmem : (Finsupp.single (0 : Fin 2) 1)
+      ∈ (MvPolynomial.C a + MvPolynomial.C b * MvPolynomial.X 0
+        + MvPolynomial.C c * MvPolynomial.X 1 : MvPolynomial (Fin 2) K).support :=
+    MvPolynomial.mem_support_iff.mpr (by rw [hcoeff]; exact hb)
+  simpa using MvPolynomial.le_totalDegree hmem
+
+/-- **PROVEN**: over a FIELD, every polynomial of total degree one is
+irreducible. `mathlib`'s `MvPolynomial.irreducible_of_totalDegree_eq_one` asks
+in addition that every common divisor of the coefficients be a unit; over a
+field that is automatic, since a polynomial of total degree one is nonzero. -/
+theorem irreducible_of_totalDegree_eq_one_field {σ K : Type*} [Field K]
+    {P : MvPolynomial σ K} (hP : P.totalDegree = 1) : Irreducible P := by
+  refine MvPolynomial.irreducible_of_totalDegree_eq_one hP ?_
+  intro x hx
+  by_cases hx0 : x = 0
+  · exfalso
+    have hP0 : P = 0 := by
+      ext m
+      have hm := hx m
+      rw [hx0] at hm
+      simpa using zero_dvd_iff.mp hm
+    rw [hP0] at hP
+    simp at hP
+  · exact isUnit_iff_ne_zero.mpr hx0
+
+/-! ### `planeSection` as a substitution -/
+
+/-- **PROVEN**: composing two plane parametrisations is again a plane
+parametrisation, with the affine data composed. In affine-map language
+`planeSection · v u₁ u₂` is precomposition with
+`A_{v,u} : (s,t) ↦ v + s*u₁ + t*u₂`, and this lemma is
+`(h ∘ A_{v,u}) ∘ A_{v',w} = h ∘ (A_{v,u} ∘ A_{v',w})`. Stated for a general `N`,
+so an inductive hyperplane-section argument can use it. -/
+theorem planeSection_comp {N : ℕ} {R : Type*} [CommRing R]
+    (h : MvPolynomial (Fin N) R) (v u₁ u₂ : Fin N → R) (v' w₁ w₂ : Fin 2 → R) :
+    planeSection (planeSection h v u₁ u₂) v' w₁ w₂
+      = planeSection h (fun i => v i + u₁ i * v' 0 + u₂ i * v' 1)
+          (fun i => u₁ i * w₁ 0 + u₂ i * w₁ 1)
+          (fun i => u₁ i * w₂ 0 + u₂ i * w₂ 1) := by
+  have key : (fun i : Fin N => MvPolynomial.bind₁
+        (fun j : Fin 2 => (MvPolynomial.C (v' j) : MvPolynomial (Fin 2) R)
+          + MvPolynomial.C (w₁ j) * MvPolynomial.X 0
+          + MvPolynomial.C (w₂ j) * MvPolynomial.X 1)
+        ((MvPolynomial.C (v i) : MvPolynomial (Fin 2) R)
+          + MvPolynomial.C (u₁ i) * MvPolynomial.X 0
+          + MvPolynomial.C (u₂ i) * MvPolynomial.X 1))
+      = fun i : Fin N => (MvPolynomial.C (v i + u₁ i * v' 0 + u₂ i * v' 1) : MvPolynomial (Fin 2) R)
+          + MvPolynomial.C (u₁ i * w₁ 0 + u₂ i * w₁ 1) * MvPolynomial.X 0
+          + MvPolynomial.C (u₁ i * w₂ 0 + u₂ i * w₂ 1) * MvPolynomial.X 1 := by
+    funext i
+    simp only [map_add, map_mul, MvPolynomial.bind₁_C_right, MvPolynomial.bind₁_X_right]
+    ring
+  simp only [planeSection, MvPolynomial.bind₁_bind₁]
+  exact congrArg (fun G : Fin N → MvPolynomial (Fin 2) R => (MvPolynomial.bind₁ G) h) key
+
+/-- **PROVEN**: the plane parametrisation with data `(0, e₀, e₁)` is the identity
+substitution. -/
+theorem planeSection_id {R : Type*} [CommRing R] (h : MvPolynomial (Fin 2) R) :
+    planeSection h ![0, 0] ![1, 0] ![0, 1] = h := by
+  have key : (fun i : Fin 2 => MvPolynomial.C ((![0, 0] : Fin 2 → R) i)
+      + MvPolynomial.C ((![1, 0] : Fin 2 → R) i) * MvPolynomial.X 0
+      + MvPolynomial.C ((![0, 1] : Fin 2 → R) i) * MvPolynomial.X 1)
+      = (MvPolynomial.X : Fin 2 → MvPolynomial (Fin 2) R) := by
+    funext i
+    fin_cases i <;> simp
+  simp only [planeSection, key, MvPolynomial.bind₁_X_left]
+  rfl
+
+/-- **PROVEN**: if the composed affine data of `planeSection · v u₁ u₂` followed
+by `planeSection · v' w₁ w₂` is the identity of `𝔸²`, then the two substitutions
+are mutually inverse. The six hypotheses are the six scalar entries of
+`A_{v,u} ∘ A_{v',w} = id`. -/
+theorem planeSection_planeSection_of_eq {R : Type*} [CommRing R] (h : MvPolynomial (Fin 2) R)
+    (v u₁ u₂ v' w₁ w₂ : Fin 2 → R)
+    (hv0 : v 0 + u₁ 0 * v' 0 + u₂ 0 * v' 1 = 0)
+    (hv1 : v 1 + u₁ 1 * v' 0 + u₂ 1 * v' 1 = 0)
+    (ha0 : u₁ 0 * w₁ 0 + u₂ 0 * w₁ 1 = 1)
+    (ha1 : u₁ 1 * w₁ 0 + u₂ 1 * w₁ 1 = 0)
+    (hb0 : u₁ 0 * w₂ 0 + u₂ 0 * w₂ 1 = 0)
+    (hb1 : u₁ 1 * w₂ 0 + u₂ 1 * w₂ 1 = 1) :
+    planeSection (planeSection h v u₁ u₂) v' w₁ w₂ = h := by
+  rw [planeSection_comp]
+  have e0 : (fun i => v i + u₁ i * v' 0 + u₂ i * v' 1) = (![0, 0] : Fin 2 → R) := by
+    funext i; fin_cases i <;> simpa using ‹_›
+  have e1 : (fun i => u₁ i * w₁ 0 + u₂ i * w₁ 1) = (![1, 0] : Fin 2 → R) := by
+    funext i; fin_cases i <;> simpa using ‹_›
+  have e2 : (fun i => u₁ i * w₂ 0 + u₂ i * w₂ 1) = (![0, 1] : Fin 2 → R) := by
+    funext i; fin_cases i <;> simpa using ‹_›
+  rw [e0, e1, e2, planeSection_id]
+
+/-- **PROVEN**: for `N = 2` a plane parametrisation with invertible linear part
+is an affine automorphism of `𝔸²`, so the substitution it induces on `K[s, t]`
+has a two-sided inverse, itself a plane substitution. The witness is the inverse
+matrix written out by Cramer's rule. -/
+theorem exists_planeSection_inverse {K : Type*} [Field K] (v u₁ u₂ : Fin 2 → K)
+    (hD : u₁ 0 * u₂ 1 - u₂ 0 * u₁ 1 ≠ 0) :
+    ∃ v' w₁ w₂ : Fin 2 → K,
+      (∀ h : MvPolynomial (Fin 2) K, planeSection (planeSection h v u₁ u₂) v' w₁ w₂ = h) ∧
+      (∀ g : MvPolynomial (Fin 2) K, planeSection (planeSection g v' w₁ w₂) v u₁ u₂ = g) := by
+  obtain ⟨D, hDdef, hDne⟩ : ∃ D : K, D = u₁ 0 * u₂ 1 - u₂ 0 * u₁ 1 ∧ D ≠ 0 := ⟨_, rfl, hD⟩
+  refine ⟨![(u₂ 0 * v 1 - u₂ 1 * v 0) / D, (u₁ 1 * v 0 - u₁ 0 * v 1) / D],
+          ![u₂ 1 / D, -u₁ 1 / D],
+          ![-u₂ 0 / D, u₁ 0 / D], ?_, ?_⟩
+  · intro h
+    refine planeSection_planeSection_of_eq h v u₁ u₂ _ _ _ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      · simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+        field_simp
+        rw [hDdef]
+        ring
+  · intro g
+    refine planeSection_planeSection_of_eq g _ _ _ v u₁ u₂ ?_ ?_ ?_ ?_ ?_ ?_ <;>
+      · simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+        field_simp
+        rw [hDdef]
+        ring
+
+/-- **PROVEN**: a plane section never has larger total degree than the
+hypersurface it is cut from. -/
+theorem totalDegree_planeSection_le {N : ℕ} {R : Type*} [CommRing R]
+    (h : MvPolynomial (Fin N) R) (v u₁ u₂ : Fin N → R) :
+    (planeSection h v u₁ u₂).totalDegree ≤ h.totalDegree :=
+  totalDegree_bind₁_le_of_le_one _ (fun _ => totalDegree_affineForm_le_one _ _ _) h
+
+/-- **PROVEN**: for `N = 2` and `det [u₁ u₂] ≠ 0` the plane section has EXACTLY
+the total degree of `h`, because the substitution is invertible and neither
+direction can raise the degree. -/
+theorem totalDegree_planeSection_of_det_ne_zero {K : Type*} [Field K]
+    (h : MvPolynomial (Fin 2) K) (v u₁ u₂ : Fin 2 → K)
+    (hD : u₁ 0 * u₂ 1 - u₂ 0 * u₁ 1 ≠ 0) :
+    (planeSection h v u₁ u₂).totalDegree = h.totalDegree := by
+  obtain ⟨v', w₁, w₂, hinv, -⟩ := exists_planeSection_inverse v u₁ u₂ hD
+  refine le_antisymm (totalDegree_planeSection_le h v u₁ u₂) ?_
+  calc h.totalDegree = (planeSection (planeSection h v u₁ u₂) v' w₁ w₂).totalDegree := by
+        rw [hinv]
+    _ ≤ (planeSection h v u₁ u₂).totalDegree := totalDegree_planeSection_le _ _ _ _
+
+/-- **PROVEN**: for `N = 2` and `det [u₁ u₂] ≠ 0` the plane substitution is a
+`K`-algebra AUTOMORPHISM of `K[s, t]`, so it preserves irreducibility. This is
+the whole `N = 2` case of Bertini: the "plane sections" of a plane curve are its
+images under the affine group. -/
+theorem irreducible_planeSection_of_det_ne_zero {K : Type*} [Field K]
+    (h : MvPolynomial (Fin 2) K) (v u₁ u₂ : Fin 2 → K)
+    (hD : u₁ 0 * u₂ 1 - u₂ 0 * u₁ 1 ≠ 0) (hirr : Irreducible h) :
+    Irreducible (planeSection h v u₁ u₂) := by
+  obtain ⟨v', w₁, w₂, hinv₁, hinv₂⟩ := exists_planeSection_inverse v u₁ u₂ hD
+  set F : Fin 2 → MvPolynomial (Fin 2) K := fun i =>
+    MvPolynomial.C (v i) + MvPolynomial.C (u₁ i) * MvPolynomial.X 0
+      + MvPolynomial.C (u₂ i) * MvPolynomial.X 1 with hF
+  set F' : Fin 2 → MvPolynomial (Fin 2) K := fun j =>
+    MvPolynomial.C (v' j) + MvPolynomial.C (w₁ j) * MvPolynomial.X 0
+      + MvPolynomial.C (w₂ j) * MvPolynomial.X 1 with hF'
+  have hcomp₁ : (MvPolynomial.bind₁ F).comp (MvPolynomial.bind₁ F') = AlgHom.id K _ :=
+    AlgHom.ext fun x => hinv₂ x
+  have hcomp₂ : (MvPolynomial.bind₁ F').comp (MvPolynomial.bind₁ F) = AlgHom.id K _ :=
+    AlgHom.ext fun x => hinv₁ x
+  exact hirr.map (AlgEquiv.ofAlgHom (MvPolynomial.bind₁ F) (MvPolynomial.bind₁ F') hcomp₁ hcomp₂)
+
+/-- **PROVEN**: `planeSection` commutes with a coefficient ring map. This is what
+transports the `𝔽_p`-statement to `𝔽̄_p`, where absolute irreducibility
+lives. -/
+theorem planeSection_map {N : ℕ} {R S : Type*} [CommRing R] [CommRing S] (φ : R →+* S)
+    (h : MvPolynomial (Fin N) R) (v u₁ u₂ : Fin N → R) :
+    MvPolynomial.map φ (planeSection h v u₁ u₂)
+      = planeSection (MvPolynomial.map φ h) (fun i => φ (v i)) (fun i => φ (u₁ i))
+          (fun i => φ (u₂ i)) := by
+  induction h using MvPolynomial.induction_on with
+  | C a => simp [planeSection]
+  | add p q hp hq => simp only [planeSection, map_add] at hp hq ⊢; rw [hp, hq]
+  | mul_X p i hp => simp only [planeSection, map_mul] at hp ⊢; rw [hp]; simp
+
+/-! ### One variable: absolute irreducibility forces a linear form -/
+
+/-- **PROVEN**: over an algebraically closed field a polynomial in ONE variable
+is irreducible exactly when it is linear. Stated for an arbitrary `Unique`
+variable type so that it applies verbatim at `Fin 1`; the proof transports along
+`MvPolynomial.uniqueAlgEquiv` to `K[X]` and uses
+`IsAlgClosed.degree_eq_one_of_irreducible`. -/
+theorem exists_eq_linear_of_irreducible_of_unique {K : Type*} [Field K] [IsAlgClosed K]
+    {σ : Type*} [Unique σ] {P : MvPolynomial σ K} (hP : Irreducible P) :
+    ∃ a b : K, a ≠ 0 ∧ P = MvPolynomial.C b + MvPolynomial.C a * MvPolynomial.X default := by
+  set e := MvPolynomial.uniqueAlgEquiv K σ with he
+  have hQ : Irreducible (e P) := hP.map e
+  have hdeg : (e P).degree = 1 := IsAlgClosed.degree_eq_one_of_irreducible K hQ
+  have hform := Polynomial.eq_X_add_C_of_degree_le_one (le_of_eq hdeg)
+  have hne : e P ≠ 0 := fun hc => by simp [hc] at hdeg
+  have hnat : (e P).natDegree = 1 := Polynomial.natDegree_eq_of_degree_eq_some hdeg
+  have ha : (e P).coeff 1 ≠ 0 := by
+    rw [← hnat]
+    exact Polynomial.leadingCoeff_ne_zero.mpr hne
+  have hX : e.symm (Polynomial.X : Polynomial K) = (MvPolynomial.X default : MvPolynomial σ K) := by
+    simp [he]
+  have hC : ∀ c : K, e.symm (Polynomial.C c) = (MvPolynomial.C c : MvPolynomial σ K) := by
+    intro c
+    have hc := e.symm.commutes c
+    simpa [Polynomial.algebraMap_eq, MvPolynomial.algebraMap_eq] using hc
+  obtain ⟨a, b, ha0, hab⟩ : ∃ a b : K, a ≠ 0 ∧
+      e P = Polynomial.C a * Polynomial.X + Polynomial.C b :=
+    ⟨(e P).coeff 1, (e P).coeff 0, ha, hform⟩
+  refine ⟨a, b, ha0, ?_⟩
+  have hPe : P = e.symm (Polynomial.C a * Polynomial.X + Polynomial.C b) := by
+    rw [← hab, e.symm_apply_apply]
+  rw [hPe]
+  simp only [map_add, map_mul, hX, hC]
+  ring
+
+/-- **PROVEN**: over a field, `b + a*Xᵢ` with `a ≠ 0` has total degree one. -/
+theorem totalDegree_C_add_C_mul_X {σ K : Type*} [Field K] (b a : K) (i : σ) (ha : a ≠ 0) :
+    (MvPolynomial.C b + MvPolynomial.C a * MvPolynomial.X i : MvPolynomial σ K).totalDegree = 1 := by
+  classical
+  refine le_antisymm ?_ ?_
+  · refine le_trans (MvPolynomial.totalDegree_add _ _) (max_le ?_ ?_)
+    · simp [MvPolynomial.totalDegree_C]
+    · refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+      simp [MvPolynomial.totalDegree_C]
+  · have hne : (0 : σ →₀ ℕ) ≠ Finsupp.single i 1 := by
+      intro hc
+      have h0 := congrArg (fun m : σ →₀ ℕ => m i) hc
+      simp at h0
+    have hcoeff : MvPolynomial.coeff (Finsupp.single i 1)
+        (MvPolynomial.C b + MvPolynomial.C a * MvPolynomial.X i : MvPolynomial σ K) = a := by
+      simp [MvPolynomial.coeff_C, MvPolynomial.coeff_C_mul, MvPolynomial.coeff_X, hne]
+    have hmem : (Finsupp.single i 1)
+        ∈ (MvPolynomial.C b + MvPolynomial.C a * MvPolynomial.X i : MvPolynomial σ K).support :=
+      MvPolynomial.mem_support_iff.mpr (by rw [hcoeff]; exact ha)
+    simpa using MvPolynomial.le_totalDegree hmem
+
+/-- **PROVEN**: a product of two variables has total degree at most two. -/
+theorem totalDegree_X_mul_X_le_two {σ R : Type*} [CommSemiring R] (i j : σ) :
+    ((MvPolynomial.X i * MvPolynomial.X j : MvPolynomial σ R)).totalDegree ≤ 2 := by
+  refine le_trans (MvPolynomial.totalDegree_mul _ _) ?_
+  have h1 := totalDegree_X_le_one (R := R) i
+  have h2 := totalDegree_X_le_one (R := R) j
+  omega
+
+/-! ### The small-`N` witnesses -/
+
+/-- **`N = 0` OF BERTINI-NOETHER, PROVEN (2026-07-27) -- VACUOUS.**
+
+Every polynomial in no variables is constant, so `h` has total degree `0`, and
+`not_irreducible_map_of_totalDegree_zero` says a constant is never absolutely
+irreducible. The hypotheses are therefore contradictory and any `D` works; `0`
+is taken. -/
+theorem exists_bertiniNoetherWitness_zero (d : ℕ) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ∀ h : MvPolynomial (Fin 0) (ZMod p), h.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
+        ∃ F : MvPolynomial (Fin 0 ⊕ Fin 0 ⊕ Fin 0) (ZMod p),
+          F ≠ 0 ∧ F.totalDegree ≤ D ∧
+          ∀ w : (Fin 0 → ZMod p) × (Fin 0 → ZMod p) × (Fin 0 → ZMod p),
+            MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F ≠ 0 →
+              (planeSection h w.1 w.2.1 w.2.2).totalDegree = d ∧
+              Irreducible (MvPolynomial.map
+                (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+                (planeSection h w.1 w.2.1 w.2.2)) := by
+  refine ⟨0, ?_⟩
+  intro p _ _ h _ hirr
+  exfalso
+  have hx := (MvPolynomial.isEmptyRingEquiv (ZMod p) (Fin 0)).symm_apply_apply h
+  rw [MvPolynomial.isEmptyRingEquiv_eq_coeff_zero,
+    MvPolynomial.isEmptyRingEquiv_symm_apply] at hx
+  have h0 : h.totalDegree = 0 := by rw [← hx, MvPolynomial.totalDegree_C]
+  exact absurd hirr (not_irreducible_map_of_totalDegree_zero h h0)
+
+/-- **`N = 1` OF BERTINI-NOETHER, PROVEN (2026-07-27), WITNESS `F = u₁` OF
+DEGREE `1`.**
+
+Absolute irreducibility of a one-variable polynomial over `𝔽̄_p` forces
+`h = C b + C a * X` with `a ≠ 0` (`exists_eq_linear_of_irreducible_of_unique`),
+hence `d = 1`. Its section along `(s, t) ↦ v + s*u₁ + t*u₂` is
+
+  `(b + a*v₀) + (a*u₁₀)*s + (a*u₂₀)*t`,
+
+an affine form whose `s`-coefficient is nonzero exactly when `u₁₀ ≠ 0`. So the
+witness is the single coordinate function `F = u₁₀`, of total degree `1`, and
+both conclusions follow from `totalDegree_affineForm_eq_one` together with
+`irreducible_of_totalDegree_eq_one_field` -- no Bertini content is used. -/
+theorem exists_bertiniNoetherWitness_one (d : ℕ) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ∀ h : MvPolynomial (Fin 1) (ZMod p), h.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
+        ∃ F : MvPolynomial (Fin 1 ⊕ Fin 1 ⊕ Fin 1) (ZMod p),
+          F ≠ 0 ∧ F.totalDegree ≤ D ∧
+          ∀ w : (Fin 1 → ZMod p) × (Fin 1 → ZMod p) × (Fin 1 → ZMod p),
+            MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F ≠ 0 →
+              (planeSection h w.1 w.2.1 w.2.2).totalDegree = d ∧
+              Irreducible (MvPolynomial.map
+                (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+                (planeSection h w.1 w.2.1 w.2.2)) := by
+  refine ⟨1, ?_⟩
+  intro p _ _ h hdeg hirr
+  have hφ : Function.Injective (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) :=
+    (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+  obtain ⟨a', b', ha', hab'⟩ := exists_eq_linear_of_irreducible_of_unique hirr
+  have hd1 : d = 1 := by
+    rw [← hdeg, ← totalDegree_map_eq_of_injective h hφ, hab']
+    exact totalDegree_C_add_C_mul_X _ _ _ ha'
+  refine ⟨MvPolynomial.X (Sum.inr (Sum.inl 0)), MvPolynomial.X_ne_zero _,
+    totalDegree_X_le_one _, ?_⟩
+  intro w hw
+  have hu : w.2.1 0 ≠ 0 := by simp only [MvPolynomial.eval_X, Sum.elim_inr] at hw; exact hw
+  have huK : algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.1 0) ≠ 0 := by
+    intro hc
+    exact hu (hφ (by simpa using hc))
+  have hsec : MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+      (planeSection h w.1 w.2.1 w.2.2)
+      = MvPolynomial.C (b' + a' * algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.1 0))
+        + MvPolynomial.C (a' * algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.1 0))
+            * MvPolynomial.X 0
+        + MvPolynomial.C (a' * algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.2 0))
+            * MvPolynomial.X 1 := by
+    rw [planeSection_map, hab']
+    simp only [planeSection, map_add, map_mul, MvPolynomial.bind₁_C_right,
+      MvPolynomial.bind₁_X_right, Fin.default_eq_zero]
+    ring
+  have hdeg1 : (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+      (planeSection h w.1 w.2.1 w.2.2)).totalDegree = 1 := by
+    rw [hsec]
+    exact totalDegree_affineForm_eq_one _ _ _ (mul_ne_zero ha' huK)
+  refine ⟨?_, irreducible_of_totalDegree_eq_one_field hdeg1⟩
+  rw [hd1, ← totalDegree_map_eq_of_injective (planeSection h w.1 w.2.1 w.2.2) hφ]
+  exact hdeg1
+
+/-- **`N = 2` OF BERTINI-NOETHER, PROVEN (2026-07-27), WITNESS
+`F = det [u₁ u₂]` OF DEGREE `2`.**
+
+When `u₁, u₂` are independent the parametrisation `(s, t) ↦ v + s*u₁ + t*u₂` is
+an affine AUTOMORPHISM of `𝔸²`, so the induced substitution is a `K`-algebra
+automorphism of `K[s, t]`: it preserves total degree
+(`totalDegree_planeSection_of_det_ne_zero`) and irreducibility
+(`irreducible_planeSection_of_det_ne_zero`). Independence is the non-vanishing
+of the determinant `u₁₀*u₂₁ - u₂₀*u₁₁`, which is a polynomial of total degree
+`2` in the parameters, nonzero because it takes the value `1` at
+`(v, u₁, u₂) = (0, e₀, e₁)`. Again no Bertini content is used: the "plane
+sections" of a plane curve are just its affine-group translates. -/
+theorem exists_bertiniNoetherWitness_two (d : ℕ) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ∀ h : MvPolynomial (Fin 2) (ZMod p), h.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
+        ∃ F : MvPolynomial (Fin 2 ⊕ Fin 2 ⊕ Fin 2) (ZMod p),
+          F ≠ 0 ∧ F.totalDegree ≤ D ∧
+          ∀ w : (Fin 2 → ZMod p) × (Fin 2 → ZMod p) × (Fin 2 → ZMod p),
+            MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F ≠ 0 →
+              (planeSection h w.1 w.2.1 w.2.2).totalDegree = d ∧
+              Irreducible (MvPolynomial.map
+                (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+                (planeSection h w.1 w.2.1 w.2.2)) := by
+  refine ⟨2, ?_⟩
+  intro p _ _ h hdeg hirr
+  refine ⟨MvPolynomial.X (Sum.inr (Sum.inl 0)) * MvPolynomial.X (Sum.inr (Sum.inr 1))
+      - MvPolynomial.X (Sum.inr (Sum.inr 0)) * MvPolynomial.X (Sum.inr (Sum.inl 1)), ?_, ?_, ?_⟩
+  · intro hc
+    have hev := congrArg (MvPolynomial.eval (Sum.elim (0 : Fin 2 → ZMod p)
+      (Sum.elim ![1, 0] ![0, 1]))) hc
+    simp at hev
+  · rw [sub_eq_add_neg]
+    refine le_trans (MvPolynomial.totalDegree_add _ _)
+      (max_le (totalDegree_X_mul_X_le_two _ _) ?_)
+    rw [MvPolynomial.totalDegree_neg]
+    exact totalDegree_X_mul_X_le_two _ _
+  · intro w hw
+    have hdet : w.2.1 0 * w.2.2 1 - w.2.2 0 * w.2.1 1 ≠ 0 := by simpa using hw
+    have hdetK : algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.1 0)
+        * algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.2 1)
+        - algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.2 0)
+          * algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.1 1) ≠ 0 := by
+      intro hc
+      refine hdet ((algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective ?_)
+      simpa [map_sub, map_mul] using hc
+    refine ⟨?_, ?_⟩
+    · rw [totalDegree_planeSection_of_det_ne_zero h w.1 w.2.1 w.2.2 hdet]
+      exact hdeg
+    · rw [planeSection_map]
+      exact irreducible_planeSection_of_det_ne_zero _ _ _ _ hdetK hirr
+
+/-! ### The genuine content: `N ≥ 3` -/
+
+/-- **BERTINI-NOETHER AT `N ≥ 3` (SORRY LEAF, cut 2026-07-27) -- THE WHOLE
+GEOMETRIC CONTENT OF ITEM 4.**
+
+This is `exists_bertiniNoetherWitness` restricted to `N = n + 3`; the cases
+`N = 0, 1, 2` are PROVEN above and use no Bertini content at all (they are
+respectively vacuous, the linear-form computation, and the affine group acting
+on `𝔸²`). So the genuinely missing mathematics is confined here, and it is
+exactly Schmidt Chapter V, Theorem 4C together with E. Noether's Theorem 2A.
+
+THE PROOF, IN TWO HALVES.
+
+* **Noether's Theorem 2A** (Schmidt Chapter V §2). In the coefficient space of
+  plane polynomials of total degree `≤ d`, the locus of those that FAIL to be
+  absolutely irreducible of total degree exactly `d` is Zariski CLOSED, cut out
+  by finitely many forms whose degrees are bounded in terms of `d` ALONE --
+  independently of `p`, which is the crucial point and is what Noether's theorem
+  supplies. Closedness is elimination theory, not schemes: "degree drops below
+  `d`" is the vanishing of the degree-`d` part, and "factors nontrivially" is
+  the image of the multiplication maps `(g₁, g₂) ↦ g₁*g₂` over the finitely many
+  splittings `d₁ + d₂ = d` with `d₁, d₂ ≥ 1`, each image closed because the
+  projectivised factor spaces are complete.
+* **Bertini's irreducibility theorem** (Schmidt Chapter V §1, again by
+  elimination theory -- no schemes and no generic smoothness). Over `𝔽̄_p` SOME
+  plane section of an absolutely irreducible `h` of degree `d` is absolutely
+  irreducible of degree `d`. Note this is the IRREDUCIBILITY Bertini, which
+  holds in every characteristic; the classical characteristic-`p` failure of
+  Bertini concerns SMOOTHNESS and is irrelevant here.
+
+ASSEMBLING THE TWO. The coefficients of `planeSection h v u₁ u₂` are polynomials
+in `(v, u₁, u₂)` of total degree `≤ d`, so pulling the Noether forms back along
+`w ↦ coefficients of planeSection h w` gives forms in `(v, u₁, u₂)` of total
+degree `≤ d * (Noether degree)` -- a bound in `N` and `d` only, which is `D`.
+The bad locus is the COMMON zero set of the pulled-back forms, so the
+non-vanishing of ANY ONE of them certifies a good plane, which is why a single
+`F` suffices. Bertini says the pullbacks do not ALL vanish identically over
+`𝔽̄_p`, hence not over `𝔽_p` either since the coefficient extension of
+polynomial rings is injective; take `F` to be one that does not vanish
+identically.
+
+INFRASTRUCTURE ALREADY IN PLACE, so that a proof of this leaf need not rebuild
+it: `planeSection_comp` (composition of parametrisations, stated for a general
+`N` precisely so that an inductive hyperplane-section argument can use it),
+`planeSection_map` (compatibility with `𝔽_p → 𝔽̄_p`),
+`totalDegree_planeSection_le`, `totalDegree_map_eq_of_injective`,
+`exists_eq_linear_of_irreducible_of_unique` and
+`irreducible_of_totalDegree_eq_one_field`.
+
+DEGENERATE TRIPLES ARE NOT EXCLUDED and need not be: for `d ≥ 2` a section along
+a parametrisation with `u₁, u₂` dependent is a univariate polynomial in a linear
+form, hence reducible over `𝔽̄_p`, so such triples automatically satisfy
+`F(w) = 0` for any `F` with the stated property.
+
+THE `D < p` HYPOTHESIS is not needed for the mathematics -- Bertini
+irreducibility and Noether's forms are characteristic-free -- but it costs the
+consumer nothing (`exists_bertiniGoodPlaneCount` already assumes `2 * D < p`)
+and is left as slack for a proof that prefers to avoid small-characteristic
+bookkeeping.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_bertiniNoetherWitness_of_three_le (n d : ℕ) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ∀ h : MvPolynomial (Fin (n + 3)) (ZMod p), h.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
+        ∃ F : MvPolynomial (Fin (n + 3) ⊕ Fin (n + 3) ⊕ Fin (n + 3)) (ZMod p),
+          F ≠ 0 ∧ F.totalDegree ≤ D ∧
+          ∀ w : (Fin (n + 3) → ZMod p) × (Fin (n + 3) → ZMod p) × (Fin (n + 3) → ZMod p),
+            MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F ≠ 0 →
+              (planeSection h w.1 w.2.1 w.2.2).totalDegree = d ∧
+              Irreducible (MvPolynomial.map
+                (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+                (planeSection h w.1 w.2.1 w.2.2)) :=
+  sorry
+
+/-- **BERTINI OVER FINITE FIELDS, AS A HYPERSURFACE WITNESS** (PROVEN 2026-07-27
+at `N = 0, 1, 2` over `exists_bertiniNoetherWitness_of_three_le`) — Schmidt
+Chapter V, Theorem 4C together with E. Noether's Theorem 2A.
+
+WHAT IS OPEN AFTER THIS CUT: only `exists_bertiniNoetherWitness_of_three_le`,
+i.e. the case `N ≥ 3`. The three small cases below are now PROVEN in full and
+carry no Bertini content whatever — see `exists_bertiniNoetherWitness_zero`,
+`exists_bertiniNoetherWitness_one`, `exists_bertiniNoetherWitness_two` — so the
+genuinely missing geometry is exactly `N ≥ 3` and lives in one named leaf.
 
 WHAT IT SAYS. For each `(N, d)` there is a degree bound `D`, DEPENDING ONLY ON
 `N` AND `d` AND NOT ON `p`, such that for every absolutely irreducible `h` of
@@ -9560,20 +10097,23 @@ form, hence reducible over `𝔽̄_p`, so such triples automatically satisfy
 condition is what makes the averaging identity `sum_zeroCount_planeSection` a
 single translation bijection.
 
-SMALL `N` — the statement is TRUE and elementary there, so the Bertini content is
-genuinely a statement about `N ≥ 3`:
+SMALL `N` — PROVEN 2026-07-27, so the Bertini content is genuinely and
+mechanically a statement about `N ≥ 3` only:
 
-* `N = 0`: vacuous. Every polynomial in no variables is constant, and
+* `N = 0` (`exists_bertiniNoetherWitness_zero`, `D = 0`): vacuous. Every
+  polynomial in no variables is constant, and
   `not_irreducible_map_of_totalDegree_zero` says a constant is never absolutely
   irreducible, so the hypotheses are contradictory.
-* `N = 1`: absolute irreducibility over `𝔽̄_p[X]` forces `d = 1`, say
-  `h = a·X + b` with `a ≠ 0`. Then
+* `N = 1` (`exists_bertiniNoetherWitness_one`, `D = 1`): absolute irreducibility
+  over `𝔽̄_p[X]` forces `d = 1`, say `h = a·X + b` with `a ≠ 0`. Then
   `planeSection h v u₁ u₂ = (a·v + b) + a·u₁·s + a·u₂·t`, which has total degree
-  `1` and is irreducible exactly when `(u₁, u₂) ≠ (0, 0)`. Witness: `F = u₁`,
+  `1` and is therefore irreducible, as soon as `a·u₁ ≠ 0`. Witness: `F = u₁`,
   of degree `1`.
-* `N = 2`: when `u₁, u₂` are independent the parametrisation is an affine
-  automorphism of `𝔸²`, which preserves both total degree and absolute
-  irreducibility. Witness: `F = det [u₁ u₂]`, of degree `2`.
+* `N = 2` (`exists_bertiniNoetherWitness_two`, `D = 2`): when `u₁, u₂` are
+  independent the parametrisation is an affine automorphism of `𝔸²`, so the
+  substitution it induces is a `K`-algebra automorphism of `K[s, t]` and
+  preserves both total degree and absolute irreducibility. Witness:
+  `F = det [u₁ u₂]`, of degree `2`.
 
 THE `D < p` HYPOTHESIS is not needed for the mathematics — Bertini
 irreducibility and Noether's forms are characteristic-free — but it costs the
@@ -9594,8 +10134,12 @@ theorem exists_bertiniNoetherWitness (N d : ℕ) :
               (planeSection h w.1 w.2.1 w.2.2).totalDegree = d ∧
               Irreducible (MvPolynomial.map
                 (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-                (planeSection h w.1 w.2.1 w.2.2)) :=
-  sorry
+                (planeSection h w.1 w.2.1 w.2.2)) := by
+  match N with
+  | 0 => exact exists_bertiniNoetherWitness_zero d
+  | 1 => exact exists_bertiniNoetherWitness_one d
+  | 2 => exact exists_bertiniNoetherWitness_two d
+  | (n + 3) => exact exists_bertiniNoetherWitness_of_three_le n d
 
 /-- **BERTINI OVER FINITE FIELDS, IN COUNTING FORM** (PROVEN 2026-07-27 over
 `exists_bertiniNoetherWitness`) — Schmidt Chapter V, Theorem 4C together with E.
@@ -9639,10 +10183,12 @@ the `p^{3N}/2` slack for `N ≥ 2`; for `N ≤ 1` the conclusion is reached in t
 consumer without this leaf (`N = 0` forces `d = 0`, and `N = 1` forces `d ≤ 1`
 by absolute irreducibility, both handled by the degenerate branches).
 
-WHAT IS ACTUALLY MISSING, after this proof: ONLY `exists_bertiniNoetherWitness` —
-Bertini's irreducibility theorem proved by ELIMINATION THEORY (Schmidt Chapter V
-§1 — no schemes, no generic smoothness), and E. Noether's Theorem 2A on the forms
-cutting out the absolutely-irreducible locus. The Lang–Weil-free counting that
+WHAT IS ACTUALLY MISSING, after this proof: ONLY
+`exists_bertiniNoetherWitness_of_three_le` (the cases `N = 0, 1, 2` of
+`exists_bertiniNoetherWitness` were PROVEN on 2026-07-27 and carry no Bertini
+content) — Bertini's irreducibility theorem proved by ELIMINATION THEORY (Schmidt
+Chapter V §1 — no schemes, no generic smoothness), and E. Noether's Theorem 2A on
+the forms cutting out the absolutely-irreducible locus. The Lang–Weil-free counting that
 Schmidt's Chapter IV §3 supplies is no longer needed: `mathlib`'s Schwartz–Zippel
 lemma does that job, and the reduction to it is proven above.
 
@@ -9712,8 +10258,9 @@ WHAT IS PROVEN HERE, and what was cut off. The averaging is carried out in full
 is `ℕ`-arithmetic with `c = 4`. The `d = 1` branch, which the plane-curve
 hypothesis cannot reach because it needs `d ≥ 2`, is
 `card_zeros_of_totalDegree_one` and is PROVEN. Exactly ONE sub-leaf is left open:
-`exists_bertiniNoetherWitness`, which carries all of the Bertini/Noether
-content. (`exists_bertiniGoodPlaneCount` was itself cut and PROVEN on
+`exists_bertiniNoetherWitness_of_three_le`, which carries all of the
+Bertini/Noether content (`exists_bertiniNoetherWitness` itself is PROVEN over it,
+its `N = 0, 1, 2` cases having been discharged on 2026-07-27). (`exists_bertiniGoodPlaneCount` was itself cut and PROVEN on
 2026-07-27: its counting half is `mathlib`'s Schwartz–Zippel lemma, wrapped as
 `schwartzZippel_card_zeros_planeParam_mul_le`.)
 
@@ -9745,8 +10292,8 @@ existential here because `ψ(d)` is Schmidt's `2d^κ` and pinning it buys nothin
 — every consumer only needs SOME constant.
 
 WHAT IS ACTUALLY MISSING, after this proof: ONLY
-`exists_bertiniNoetherWitness` — Bertini's irreducibility theorem (proved by
-ELIMINATION THEORY in Schmidt's Chapter V §1 — no schemes, no generic
+`exists_bertiniNoetherWitness_of_three_le` — Bertini's irreducibility theorem
+(proved by ELIMINATION THEORY in Schmidt's Chapter V §1 — no schemes, no generic
 smoothness) together with E. Noether's Theorem 2A on the forms cutting out the
 absolutely-irreducible locus, which is what makes "bad plane" a hypersurface
 condition of `p`-independent degree. The counting form of Schmidt's Theorem 4C,
@@ -10338,7 +10885,8 @@ five-item route is realised in the file rather than merely described):
   `exists_stepanovAuxiliary` data gives the count once `2d² ≤ M` is used.
 * item 4 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`:
   **PROVEN** (2026-07-27) over the single sub-leaf
-  `exists_bertiniNoetherWitness`; the counting form
+  `exists_bertiniNoetherWitness_of_three_le` (`exists_bertiniNoetherWitness` is
+  PROVEN over it, small `N` being elementary); the counting form
   `exists_bertiniGoodPlaneCount` is itself now **PROVEN** (2026-07-27) from that
   witness by Schwartz–Zippel; its `d = 1` branch,
   `card_zeros_of_totalDegree_one`, is proven too. The averaging over 2-dimensional linear
@@ -10364,7 +10912,7 @@ five-item route is realised in the file rather than merely described):
 
 So after the 2026-07-27 work the remaining open leaves under this node are
 `exists_stepanovAuxiliaryFunction`,
-`stepanov_pow_sub_dvd_resultant`, `exists_bertiniNoetherWitness`,
+`stepanov_pow_sub_dvd_resultant`, `exists_bertiniNoetherWitness_of_three_le`,
 `exists_spreadOutHypersurfaceModel` and `exists_bound_badLocusCount`; all the
 glue between them is written and compiles, and this leaf itself has nothing left to
 prove.  (This list is stated from the file's ACTUAL sorry set as merged,
@@ -10372,7 +10920,8 @@ prove.  (This list is stated from the file's ACTUAL sorry set as merged,
 on it and are now PROVEN, and so is
 `exists_stepanovNormPolynomial`, over the two sub-leaves
 `exists_stepanovAuxiliaryFunction` and `stepanov_pow_sub_dvd_resultant`; so is
-`exists_bertiniGoodPlaneCount`, over `exists_bertiniNoetherWitness`; so is
+`exists_bertiniGoodPlaneCount`, over `exists_bertiniNoetherWitness`, which is
+itself PROVEN over `exists_bertiniNoetherWitness_of_three_le`; so is
 `exists_birationalHypersurfaceModel`, over `exists_spreadOutHypersurfaceModel` and
 `exists_bound_badLocusCount`; items 4 and
 5 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount` and
