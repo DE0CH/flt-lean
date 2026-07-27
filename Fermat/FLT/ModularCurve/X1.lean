@@ -71,14 +71,21 @@ so `rank J_1(25)(ℚ) = 0` by Kolyvagin–Logachev (or Kato).
   theorems reused verbatim** — Mordell–Weil
   (`fg_relPoint_of_abelianScheme`) and Riemann–Roch
   (`injective_aj_of_not_isIso_jacobian`), both stated level-freely there
-  — **three are stated here in a form that SUBSUMES the corresponding
-  `X0.lean` statement** (`exists_jacobianOf_curve`, and the two
-  shape-free leaves of the Kolyvagin-Logachev subsection), and only TWO
-  are specific to this level: the genus bound and the computation of the
-  twelve `L`-values of `S_2(Γ_1(25))` at `s = 1`.  **No second
-  Kolyvagin-Logachev was written**, which was the main risk this layer
-  carried.  The Albanese row is itself now PROVEN, over `X0.lean`'s two
-  relative-Picard leaves, so that weight has moved rather than vanished.
+  — **three more are stated here in a form that CONSUMES the
+  corresponding `X0.lean` statement**, all three now PROVEN wrappers:
+  `exists_jacobianOf_curve` (over `X0.lean`'s two relative-Picard
+  theorems) and the two shape-free statements of the Kolyvagin-Logachev
+  subsection, whose `.gamma0` branches cite the `Γ₀` theorems and whose
+  `.gamma1` branches are the two leaves this layer genuinely owes.  Only
+  TWO leaves are specific to this level: the genus bound and the
+  computation of the twelve `L`-values of `S_2(Γ_1(25))` at `s = 1`.
+  **No second Kolyvagin-Logachev was written**, which was the main risk
+  this layer carried.
+
+  (Corrected 2026-07-27: this list previously said the three rows SUBSUME
+  the `X0.lean` statements and that the Kolyvagin rows were leaves.  The
+  `Γ₀` statements are PROVEN over finer cuts, so the arrow points the
+  other way; see the Kolyvagin–Logachev subsection docstring.)
 * **`exists_x1Compactification_mod_prime` at `(25, 3, 10)` is SHALLOW**,
   and this corrects the impression left by the level-`25` docstring that
   `#X_1(25)(𝔽_3) = 10` is an Eichler–Shimura computation.  It is not.
@@ -374,8 +381,8 @@ open in them has been split along the theories it needed:
 | `exists_inverse_of_smoothCompactification` | the inverse of the compactification comparison | `ℚ` |
 | `exists_x1ReductionAt` | the integral model and its reduction map | `ℚ → 𝔽_ℓ` |
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
-| `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` | Eichler-Shimura + Kolyvagin-Logachev, shape-free | `ℚ` |
-| `exists_isLFunctionOf_of_isWeightTwoEigenformOn` | Hecke continuation, shape-free | `ℚ` |
+| `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` | Eichler-Shimura + Kolyvagin-Logachev, `Γ₁` half only | `ℚ` |
+| `exists_isLFunctionOf_of_isWeightTwoEigenformOn_gamma1` | Hecke continuation, `Γ₁` half only | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
 | `hasNonconstantAbelianMap_of_one_le_x1Genus` | genus formula | `ℚ` |
 
@@ -3010,46 +3017,62 @@ admits: only the trivial one for `Γ₀`, all of them for `Γ₁`.  That last
 clause is what keeps the `.gamma0` instance no STRONGER than `X0.lean`'s
 leaf, so the subsumption below is real and not an aspiration.
 
-**Why this is stated HERE, and `X0.lean` is not edited.**  `X0.lean` is
-upstream of this module, `ModularLevelShape.IsCompactification` mentions
-`IsX1Compactification`, which is declared here, and `X0.lean` has several
-concurrent owners.  This is the arrangement `exists_jacobianOf_curve`
-above already records for the Albanese leaf, with the same disposal:
-whoever next has `X0.lean` to themselves should move this subsection into
-it — `IsX1Compactification` moving up with it, or the `gamma1` branch of
-`IsCompactification` becoming a parameter — and then replace
-`isTorsion_jacobian_of_lFunction_ne_zero`'s body by
+**THE SUBSUMPTION RUNS THE OTHER WAY — REVERSED 2026-07-27, and the
+reversal is the whole content of this note.**
 
-    isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape .gamma0 N ⟨h⟩ jac
-      fun χ hχ f a hf => hL f a ((isWeightTwoEigenformOn_gamma0_iff N f a).1 (hχ ▸ hf))
+An earlier version of this docstring recorded the two shape-free
+statements below as SUBSUMING `X0.lean`'s
+`isTorsion_jacobian_of_lFunction_ne_zero` and
+`WeightTwoEigenform.lean`'s
+`exists_isLFunctionOf_of_isWeightTwoEigenform`, and prescribed the
+disposal: relocate this subsection into `X0.lean` and replace those two
+bodies by an application of the shape-free leaf.  **Carrying that out
+would have been a REGRESSION**, and the compiler is what says so.
 
-and `exists_isLFunctionOf_of_isWeightTwoEigenform`'s by
+Both of those `Γ₀` statements are **PROVEN**, and were already proven
+when this subsection was written — 22 and 9 minutes earlier respectively,
+on branches this one did not have.  `exists_isLFunctionOf_of_isWeightTwoEigenform`
+is an assembly over four analytic leaves (`cuspFEPair`,
+`isStrongFEPair_cuspFEPair`, `mellin_axisRestrict`, and the summability
+input); `isTorsion_jacobian_of_lFunction_ne_zero` is an assembly over
+`exists_heckeIsotypicDecomposition` (Eichler–Shimura),
+`isTorsion_factor_of_heckeIsotypic` (Kolyvagin–Logachev) and the PROVEN
+`isTorsion_of_finite_jointKer` (isogeny invariance).  Replacing either
+body by an application of a still-open shape-free `sorry` would have
+thrown away a finer decomposition and re-opened a closed node — the sorry
+count would not even have improved, since the shape-free statements were
+themselves the sorries.
 
-    fun N f a hf => exists_isLFunctionOf_of_isWeightTwoEigenformOn .gamma0 N 1 f a
-      ((isWeightTwoEigenformOn_gamma0_iff N f a).2 hf)
+So the direction is inverted: **the shape-free statements CONSUME the
+`Γ₀` theorems** rather than subsuming them.  Each is proven at `.gamma0`
+by citation and left open only at `.gamma1`, so what the development
+carries is the `Γ₀` theorems (proven, finely cut) plus exactly one
+genuinely `Γ₁` Hecke leaf and one genuinely `Γ₁` Kolyvagin leaf.  That is
+the same "no duplicated theory" outcome the original cut wanted, obtained
+without touching `X0.lean` at all — which also disposes of the
+relocation: nothing needs to move, because `X1.lean` `public import`s
+`X0.lean` and citation runs downstream.
 
-The bridge those two lines use is **PROVEN** — one `MulChar.one_apply`
-rewrite in each direction, the hypothesis `¬ p ∣ N` on a prime `p` being
-exactly what makes `p` a unit mod `N` — and it is recorded here rather
-than declared because it has no consumer until that relocation happens,
-and a proven-but-unconsumed declaration is free-floating.  It compiled
-green at this pin, with `#print axioms` returning
-`[propext, Classical.choice, Quot.sound]`:
+Two hypotheses had to be added to make the `.gamma0` citation possible,
+and both are genuine faithfulness repairs rather than bookkeeping:
 
-```
-theorem isWeightTwoEigenformOn_gamma0_iff (N : ℕ) (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) :
-    IsWeightTwoEigenformOn (Gamma0GL N) N 1 f a ↔ IsWeightTwoEigenform N f a := by
-  have key : ∀ p : ℕ, p.Prime → ¬ p ∣ N → (1 : DirichletCharacter ℂ N) (p : ZMod N) = 1 :=
-    fun p hp hpN => MulChar.one_apply ((ZMod.isUnit_prime_iff_not_dvd hp).2 hpN)
-  constructor
-  · intro h
-    exact ⟨h.qExpansion, h.zero, h.one, fun p hp hpN n hn => by
-      have := h.hecke p hp hpN n hn; rwa [key p hp hpN, one_mul] at this, h.atkin⟩
-  · intro h
-    exact ⟨h.qExpansion, h.zero, h.one, fun p hp hpN n hn => by
-      rw [key p hp hpN, one_mul]; exact h.hecke p hp hpN n hn, h.atkin⟩
-```
--/
+* **`hN : N ≠ 0` on the Hecke node.**  Without it the statement is FALSE,
+  by the counterexample in the FALSITY AUDIT of
+  `exists_isLFunctionOf_of_isWeightTwoEigenform`, which applies verbatim
+  at `.gamma0`: at `N = 0` the `hecke` field is vacuous (`p ∣ 0` for
+  every `p`), `atkin` says exactly that `a` is completely multiplicative,
+  so `a ≡ 1` on `n ≥ 1` with `f τ = ∑_{n≥1} qⁿ` satisfies every field;
+  but `LSeries a = riemannZeta` has a pole at `s = 1`, and no entire `L`
+  can agree with it on `Re s > 2`.
+* **`hχ : S.IsNebentypus N χ` on the Hecke node**, matching the side
+  condition the Kolyvagin node already carried.  It costs consumers
+  nothing (`trivial` at `.gamma1`) and is what lets the `.gamma0` branch
+  rewrite `χ` to `1` and hand the form to the `Γ₀` theorem.
+
+The bridge both branches use is `isWeightTwoEigenformOn_gamma0_iff`,
+declared below rather than recorded as a comment: it has a consumer now,
+which is exactly the condition its previous docstring set for declaring
+it. -/
 
 section KolyvaginLogachev
 
@@ -3090,15 +3113,46 @@ an interface on bare sequences `a : ℕ → ℂ` is junk-satisfiable (take
 universally quantified leaf false and a hypothesis vacuous.  `qExpansion`
 is what rules that out and may not be dropped.
 
+**SOUNDNESS AUDIT (2026-07-27, second pass): `qExpansion` alone was NOT
+enough, and the missing field is `qExpansionSummable`.**  This structure
+was written as a copy of `IsWeightTwoEigenform` a few minutes *before*
+that structure was itself repaired, and inherited the defect the repair
+removed.  `tsum` of a non-summable family is `0`, so `qExpansion` was
+satisfied by
+
+> `f := 0`, and `a` obtained by choosing `a_p := 2^{p²}` at every prime
+> and extending by the `hecke`/`atkin` recursions, which constrain
+> nothing about the SIZE of `a_p`,
+
+because at every `τ ∈ ℍ` the terms blow up, the family is not summable,
+both sides are `0`, and `a 1 = 1` holds.  Such an `a` is the
+`q`-expansion of no modular form on any `G`, and it made
+`lFunction_apply_one_ne_zero_x1TwentyFive` **FALSE as stated**: for that
+`a` the Dirichlet series diverges everywhere, so `LSeries a = 0`, so
+`L := 0` satisfies `IsLFunctionOf a L` and `L 1 = 0`.  Note the witness
+is shape-free — nothing in it is special to `Γ₀` — so it refutes the
+`Γ₁(25)` leaf just as it refuted the `Γ₀` one.  See the SOUNDNESS AUDIT
+in `WeightTwoEigenform.lean`'s module docstring, which is where this
+witness was first found.
+
+Adding a field only STRENGTHENS the predicate, so every consumer that
+takes `IsWeightTwoEigenformOn` as a HYPOTHESIS — which is all of them —
+is unaffected except that it becomes easier to prove.
+
 At `G = Gamma0GL N` and `χ = 1` this is `IsWeightTwoEigenform N f a` on
-the nose; the machine-checked bridge is recorded in the subsection
-docstring. -/
+the nose, field for field; the bridge is
+`isWeightTwoEigenformOn_gamma0_iff` below. -/
 structure IsWeightTwoEigenformOn (G : Subgroup (GL (Fin 2) ℝ)) (N : ℕ)
     (χ : DirichletCharacter ℂ N) (f : CuspForm G 2) (a : ℕ → ℂ) : Prop where
   /-- `a` is the Fourier expansion of `f`; the constant term is `0`
   because `f` is a cusp form, so the sum starts at `n = 1`. -/
   qExpansion : ∀ τ : UpperHalfPlane,
     f τ = ∑' n : ℕ, a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))
+  /-- The `q`-expansion CONVERGES.  Without this field the previous one is
+  junk-satisfiable and the interface is unsound — see the SOUNDNESS AUDIT
+  in the docstring above. -/
+  qExpansionSummable : ∀ τ : UpperHalfPlane,
+    Summable fun n : ℕ => a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ))
   /-- The `0`-th coefficient is `0`; `f` is a cusp form. -/
   zero : a 0 = 0
   /-- `f` is normalized. -/
@@ -3167,14 +3221,83 @@ def ModularLevelShape.IsNebentypus : (S : ModularLevelShape) → (N : ℕ) →
   | .gamma0 => fun _ χ => χ = 1
   | .gamma1 => fun _ _ => True
 
-/-- **Hecke: the `L`-function of a weight-two eigenform exists** (sorry
-node) — LEVEL-FREE and SHAPE-FREE.
+/-- **At `Γ₀(N)` with trivial nebentypus this is exactly
+`IsWeightTwoEigenform`** (PROVEN; one `MulChar.one_apply` rewrite in each
+direction).
 
-This is `X0.lean`'s `exists_isLFunctionOf_of_isWeightTwoEigenform` with
-the congruence subgroup made a parameter, and it SUBSUMES that leaf: the
-`.gamma0` instance is it, through the bridge recorded in the subsection
-docstring.  Stating it here rather than restating Hecke for `Γ₁` is the
-whole reason this file adds no second copy of the analytic theory.
+The hypothesis `¬ p ∣ N` on a prime `p` is exactly what makes `p` a unit
+mod `N`, so the nebentypus factor `χ(p)` in this module's `hecke` field
+is `1` and the recursion collapses to `X0.lean`'s.  Every other field is
+shared verbatim, `qExpansionSummable` included — that field was added to
+`IsWeightTwoEigenformOn` precisely so that this really is an `Iff` and
+not merely an implication.
+
+This is the bridge that makes both shape-free statements below provable
+at `.gamma0` by citing the `Γ₀` theorems, which is what keeps the
+development free of a second copy of Hecke's continuation and of
+Kolyvagin–Logachev. -/
+theorem isWeightTwoEigenformOn_gamma0_iff (N : ℕ) (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) :
+    IsWeightTwoEigenformOn (Gamma0GL N) N 1 f a ↔ IsWeightTwoEigenform N f a := by
+  have key : ∀ p : ℕ, p.Prime → ¬ p ∣ N → (1 : DirichletCharacter ℂ N) (p : ZMod N) = 1 :=
+    fun p hp hpN => MulChar.one_apply ((ZMod.isUnit_prime_iff_not_dvd hp).2 hpN)
+  constructor
+  · intro h
+    exact ⟨h.qExpansion, h.qExpansionSummable, h.zero, h.one, fun p hp hpN n hn => by
+      have := h.hecke p hp hpN n hn; rwa [key p hp hpN, one_mul] at this, h.atkin⟩
+  · intro h
+    exact ⟨h.qExpansion, h.qExpansionSummable, h.zero, h.one, fun p hp hpN n hn => by
+      rw [key p hp hpN, one_mul]; exact h.hecke p hp hpN n hn, h.atkin⟩
+
+/-- **Hecke: the `L`-function of a weight-two eigenform on `Γ₁(N)`
+exists** (sorry node) — the genuinely `Γ₁` half of Hecke's continuation,
+and the ONLY half this development still owes.
+
+The `Γ₀` half is `exists_isLFunctionOf_of_isWeightTwoEigenform`, which is
+PROVEN in `WeightTwoEigenform.lean` over four analytic leaves; the
+shape-free wrapper below cites that at `.gamma0` and this at `.gamma1`.
+
+TRUE and classical (Hecke, 1936).  The proof recorded on the `Γ₀` leaf
+transfers with exactly one change, and it is worth naming because it is
+the only point at which a reader should check that the generalization is
+honest.  The Mellin transform `Λ(s) = ∫₀^∞ f(iy) y^{s-1} dy` converges
+for `Re s` large because a cusp form decays exponentially at `i∞`, equals
+`(2π)^{-s} Γ(s) L(f, s)` there by termwise integration of the
+`q`-expansion, and continues to an entire function by splitting the
+integral at `y = 1/√N` and applying the Fricke involution to the piece
+near `0`.  On `Γ₁(N)` the involution `W_N` sends `S_2(N, χ)` to
+`S_2(N, χ̄)` rather than back to the same space, which changes which form
+appears on the other side of the functional equation and changes NOTHING
+about the convergence argument that yields entirety.  So the abstract
+packaging `Mathlib/NumberTheory/LSeries/AbstractFuncEq.lean`
+(`WeakFEPair`, `IsStrongFEPair.differentiable_Λ`, `Λ_eq`) that closed the
+`Γ₀` half applies here too, with a `cuspFEPair` built from the pair
+`(f, W_N f)` rather than from `f` alone.
+
+`hN : N ≠ 0` is NOT decoration; see the subsection docstring and the
+FALSITY AUDIT of the `Γ₀` leaf.  `Γ₁(0)` has infinite index in
+`SL(2, ℤ)`, `hecke` is vacuous there, and `a ≡ 1` gives `ζ`, which has a
+pole at `s = 1`.
+
+`hf` is load-bearing in only one direction — `f` must be a genuine cusp
+form and `a` its CONVERGENT expansion.  The eigenform conditions are not
+used by Hecke's argument at all and a prover may `omit` them. -/
+theorem exists_isLFunctionOf_of_isWeightTwoEigenformOn_gamma1 (N : ℕ) (hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a) :
+    ∃ L : ℂ → ℂ, IsLFunctionOf a L :=
+  sorry
+
+/-- **Hecke: the `L`-function of a weight-two eigenform exists** (PROVEN
+2026-07-27) — LEVEL-FREE and SHAPE-FREE.
+
+**This is an ASSEMBLY, not a leaf.**  At `.gamma0` it is
+`exists_isLFunctionOf_of_isWeightTwoEigenform` (PROVEN in
+`WeightTwoEigenform.lean`) through `isWeightTwoEigenformOn_gamma0_iff`;
+at `.gamma1` it is
+`exists_isLFunctionOf_of_isWeightTwoEigenformOn_gamma1`.  The earlier
+version of this declaration was a `sorry` asserting the `Γ₀` case as
+well, which was already proven — see the subsection docstring for why
+that direction was inverted.
 
 TRUE and classical (Hecke, 1936), and the argument is insensitive to
 which of `Γ₀(N)`, `Γ₁(N)` the form lives on — the proof recorded on the
@@ -3197,28 +3320,57 @@ for a weight-two cusp form; Deligne is not needed.
 form.  The eigenform conditions are not used by Hecke's argument at all
 and a prover may `omit` them.
 
-WHY IT IS STILL A LEAF: the check `X0.lean` records still returns
-nothing.  mathlib has `mellin`, `Complex.Gamma` and the Hurwitz-zeta
-continuation, but nothing that continues the `L`-series of a cusp form,
-and the Fricke involution `W_N` does not exist either;
-`grep -rn "mellin\|Fricke\|AtkinLehner" Fermat/ .lake/packages/mathlib/
-~/cs/FLT/` is what would refute this. -/
+WHY THE `Γ₀` HALF IS NO LONGER A LEAF: the check this docstring used to
+record — "mathlib continues no cusp-form `L`-series" — was true and was
+scoped to the wrong axis.  `Mathlib/NumberTheory/LSeries/AbstractFuncEq.lean`
+packages Hecke's argument in group-free form and
+`MellinEqDirichlet.lean`'s `hasSum_mellin` is the termwise integration;
+between them the analysis is done, and that is what closed the `Γ₀`
+half.  What remains at `.gamma1` is modular input, isolated in
+`exists_isLFunctionOf_of_isWeightTwoEigenformOn_gamma1` above. -/
 theorem exists_isLFunctionOf_of_isWeightTwoEigenformOn (S : ModularLevelShape) (N : ℕ)
-    (χ : DirichletCharacter ℂ N) (f : CuspForm (S.group N) 2) (a : ℕ → ℂ)
+    (hN : N ≠ 0) (χ : DirichletCharacter ℂ N) (hχ : S.IsNebentypus N χ)
+    (f : CuspForm (S.group N) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (S.group N) N χ f a) :
-    ∃ L : ℂ → ℂ, IsLFunctionOf a L :=
-  sorry
+    ∃ L : ℂ → ℂ, IsLFunctionOf a L := by
+  cases S with
+  | gamma0 =>
+    exact exists_isLFunctionOf_of_isWeightTwoEigenform N hN f a
+      ((isWeightTwoEigenformOn_gamma0_iff N f a).1 (hχ ▸ hf))
+  | gamma1 => exact exists_isLFunctionOf_of_isWeightTwoEigenformOn_gamma1 N hN χ f a hf
 
-/-- **Kolyvagin–Logachev: analytic rank `0` forces the Jacobian of a
-modular curve to have torsion Mordell–Weil group** (sorry node) — stated
-ONCE for `Γ₀` and `Γ₁`, LEVEL-FREE and SHAPE-FREE.
+/-- **Kolyvagin–Logachev for `Γ₁(N)`: analytic rank `0` forces the
+Jacobian of `X_1(N)` to have torsion Mordell–Weil group** (sorry node) —
+the genuinely `Γ₁` half, and the ONLY half this development still owes.
 
-This is the single deepest statement under either layer, and after this
-cut it is the ONLY Kolyvagin–Logachev in the development.  It subsumes
-`X0.lean`'s `isTorsion_jacobian_of_lFunction_ne_zero` — see the
-subsection docstring for the two-line disposal — and it is what
-`isTorsion_jacobian_x1TwentyFive` below consumes, so that leaf keeps only
-the level-`25` `L`-value input.
+The `Γ₀` half is `X0.lean`'s `isTorsion_jacobian_of_lFunction_ne_zero`,
+which is PROVEN there over `exists_heckeIsotypicDecomposition`
+(Eichler–Shimura), `isTorsion_factor_of_heckeIsotypic`
+(Kolyvagin–Logachev) and the elementary `isTorsion_of_finite_jointKer`;
+the shape-free wrapper below cites that at `.gamma0` and this at
+`.gamma1`.
+
+TRUE, by the same three classical theorems that the `Γ₀` half is
+assembled from, and none of the three cares which congruence subgroup is
+in play — for `Γ₁(N)` the Eichler–Shimura product runs over newforms of
+every nebentypus, which is precisely why `hL` here quantifies over `χ`
+with no side condition.
+
+**THE CORRECT FURTHER DECOMPOSITION IS ALREADY WRITTEN, in `X0.lean`.**
+A successor should NOT attack this directly: the `Γ₀` half was closed by
+stating `IsHeckeIsotypicDecomposition` — an interface for the isotypic
+decomposition of a Jacobian under an arbitrary family of Hecke
+endomorphisms — and cutting along it.  That interface mentions no
+congruence subgroup anywhere in its statement, so the same cut applies
+here verbatim: the two sub-leaves would be `Γ₁` instances of
+`exists_heckeIsotypicDecomposition` and `isTorsion_factor_of_heckeIsotypic`,
+with `isTorsion_of_finite_jointKer` reused as the proven third step.  If
+`exists_heckeIsotypicDecomposition` can be restated over
+`ModularLevelShape.IsCompactification` rather than over
+`IsX0Compactification` — it consumes `h` only to know that `X` is the
+modular curve of level `N` — then this leaf disposes of itself and the
+Eichler–Shimura seam becomes shape-free too.  **That is the next cut, and
+it is a restatement rather than a proof.**
 
 TRUE.  The proof is the composite of three classical theorems, and none
 of the three cares which of `Γ₀(N)`, `Γ₁(N)` is in play:
@@ -3266,23 +3418,54 @@ elliptic curve of rank `1`; without `h`, `X` is an arbitrary curve and
 the `L`-functions in `hL` have nothing to do with it.  `N` and `S` enter
 the conclusion only through `h` and `hL`.
 
-IRREDUCIBLE at this pin, along the axis `X0.lean` searched — cuts along
-the arithmetic.  "Isogeny decomposition of `J`" plus "each factor is
-torsion" is not a cut, since the degenerate empty product makes the first
-half assert the conclusion; the seam has to be ANALYTIC, which is why it
-is `L(f, 1)`, and that seam is already taken here.  The correct FURTHER
-decomposition is "`A_g(ℚ)` is torsion when `L(g, 1) ≠ 0`" as a leaf about
-a modular abelian variety, and it needs the Hecke algebra acting on
-`J_0(M)` and its quotients to be STATED — not proven — none of which
-exists in `Mathlib`, in `~/cs/FLT` or here.  Refuting check:
-`grep -rn "heckeAlgebra\|HeckeAlgebra\|AbelianVarietyAttachedTo" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/`, which returned nothing but
-`mazurIsogenyPrimes` noise on 2026-07-27.
+**THE OLD `IRREDUCIBLE` VERDICT IS RETIRED (2026-07-27).**  It said the
+correct further decomposition is "`A_g(ℚ)` is torsion when `L(g, 1) ≠ 0`"
+as a leaf about a modular abelian variety, needing a Hecke-algebra
+interface to be STATED, and that no such interface exists in `Mathlib`,
+in `~/cs/FLT` or here.  The first half was exactly right; the second half
+was wrong within nine minutes of being written.  `X0.lean` now carries
+`IsHeckeIsotypicDecomposition` and cut its `Γ₀` sibling along it — see
+the paragraph above, which is where a successor should start.
 
 The *axis not searched*: a `p`-adic / Iwasawa route (Kato's Euler system,
 which also gives rank `0` from `L(f, 1) ≠ 0` and applies verbatim to
 `Γ₁`), and Mazur's Eisenstein-ideal argument, which is `Γ₀`-specific and
 so could not have been shared even if it applied. -/
+theorem isTorsion_jacobian_of_lFunction_ne_zero_gamma1 (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (hL : ∀ χ : DirichletCharacter ℂ N,
+      ∀ (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ),
+        IsWeightTwoEigenformOn (Gamma1GL N) N χ f a →
+        ∃ L : ℂ → ℂ, IsLFunctionOf a L ∧ L 1 ≠ 0) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
+  sorry
+
+/-- **Kolyvagin–Logachev: analytic rank `0` forces the Jacobian of a
+modular curve to have torsion Mordell–Weil group** (PROVEN 2026-07-27) —
+stated ONCE for `Γ₀` and `Γ₁`, LEVEL-FREE and SHAPE-FREE.
+
+**This is an ASSEMBLY, not a leaf.**  At `.gamma0` it is `X0.lean`'s
+`isTorsion_jacobian_of_lFunction_ne_zero` — PROVEN there over
+Eichler–Shimura, Kolyvagin–Logachev and isogeny invariance — reached
+through `isWeightTwoEigenformOn_gamma0_iff` and the `IsNebentypus` side
+condition, which is what restricts `χ` to `1` and so makes the `hL` this
+wrapper demands exactly the one `X0.lean` demands, neither stronger nor
+weaker.  At `.gamma1` it is
+`isTorsion_jacobian_of_lFunction_ne_zero_gamma1` above.
+
+The earlier version of this declaration was a `sorry` asserting the `Γ₀`
+case as well, which was already proven over a finer cut; see the
+subsection docstring for why that direction was inverted.
+
+`h.some` at `.gamma0` is where the `Nonempty` wrapper on
+`IsCompactification` is paid back: `X0.lean`'s theorem wants the
+classifying DATUM, this statement carries only its `Prop`-truncation, and
+`Nonempty.some` bridges them.  Nothing downstream inspects the datum, so
+no information is lost. -/
 theorem isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape
     (S : ModularLevelShape) (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
@@ -3294,8 +3477,14 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape
         IsWeightTwoEigenformOn (S.group N) N χ f a →
         ∃ L : ℂ → ℂ, IsLFunctionOf a L ∧ L 1 ≠ 0) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
-  sorry
+    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) := by
+  cases S with
+  | gamma0 =>
+    exact isTorsion_jacobian_of_lFunction_ne_zero N h.some jac fun f a hf =>
+      hL 1 rfl f a ((isWeightTwoEigenformOn_gamma0_iff N f a).2 hf)
+  | gamma1 =>
+    exact isTorsion_jacobian_of_lFunction_ne_zero_gamma1 N h jac
+      fun χ f a hf => hL χ trivial f a hf
 
 /-- **`L(f, 1) ≠ 0` for every weight-two eigenform on `Γ_1(25)`** (sorry
 node) — the ONLY genuinely level-specific input left under
@@ -3374,9 +3563,10 @@ theorem lFunction_apply_one_ne_zero_x1TwentyFive (χ : DirichletCharacter ℂ 25
 end KolyvaginLogachev
 
 /-- **`rank J_1(25)(ℚ) = 0`, i.e. `J_1(25)(ℚ)` is a TORSION group**
-(PROVEN 2026-07-27, from the three leaves of the subsection above, of
-which exactly ONE — the `L`-value computation — is specific to this
-level; the other two are shared with the `Γ₀` layer).
+(PROVEN 2026-07-27, over the subsection above, of which exactly ONE open
+leaf — the `L`-value computation — is specific to this level; the other
+two open leaves are the `Γ₁` halves of theories whose `Γ₀` halves are
+proven in `X0.lean` / `WeightTwoEigenform.lean`).
 
 The assembly is the shape of the classical argument:
 `exists_isLFunctionOf_of_isWeightTwoEigenformOn` (Hecke) produces the
@@ -3386,8 +3576,14 @@ vanish at `s = 1`; and
 `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` (Eichler–Shimura
 plus Kolyvagin–Logachev) converts that analytic input into the arithmetic
 conclusion.  It is the exact mirror of `X0.lean`'s
-`isTorsion_jacobian_of_kenkuLevel`, and the two now share their first and
-third steps rather than merely resembling each other.
+`isTorsion_jacobian_of_kenkuLevel`, and the first and third steps are now
+literally the same declarations that file's assembly uses, reached
+through their `.gamma0`/`.gamma1` branches rather than duplicated.
+
+`N ≠ 0` is discharged by `norm_num` at `N = 25`, and the nebentypus side
+condition by `trivial`, `.gamma1` admitting every `χ` — which is exactly
+the decomposition `S_2(Γ_1(25)) = ⊕_χ S_2(25, χ)` the reconnaissance on
+`lFunction_apply_one_ne_zero_x1TwentyFive` enumerates.
 
 TRUE.  `X_1(25)` has genus `12` (`x1Genus_twentyFive`), and `J_1(25)` is
 `ℚ`-isogenous to `A₄ × A₈` — the two newform factors of `S_2(Γ_1(25))`,
@@ -3449,7 +3645,8 @@ theorem isTorsion_jacobian_x1TwentyFive {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ
     AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
   isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape .gamma1 25 ⟨h⟩ jac
     fun χ _ f a hf =>
-      let ⟨L, hLf⟩ := exists_isLFunctionOf_of_isWeightTwoEigenformOn .gamma1 25 χ f a hf
+      let ⟨L, hLf⟩ :=
+        exists_isLFunctionOf_of_isWeightTwoEigenformOn .gamma1 25 (by norm_num) χ trivial f a hf
       ⟨L, hLf, lFunction_apply_one_ne_zero_x1TwentyFive χ f a hf L hLf⟩
 
 /-- **The genus formula, in its geometric form: `genus X_1(N) ≥ 1` gives
@@ -3605,7 +3802,7 @@ costs, and each of those was itself carrying two unrelated theories.
   point, so no separate existence leaf for a rational point on `X_1(25)`
   is needed.
 * **The rank half is PROVEN** (2026-07-27) in
-  `isTorsion_jacobian_x1TwentyFive`, over the three leaves of this
+  `isTorsion_jacobian_x1TwentyFive`, over the three open leaves of this
   module's Kolyvagin–Logachev subsection, of which only the `L`-value
   computation is specific to level `25`.
 
@@ -3619,31 +3816,35 @@ disappearing:
 |---|---|---|---|
 | `exists_jacobianOf_curve` | Albanese / `Pic⁰` | no | here, **PROVEN** |
 | `fg_relPoint_of_abelianScheme` | Mordell–Weil | no | `X0.lean`, REUSED |
-| `exists_isLFunctionOf_of_isWeightTwoEigenformOn` | Hecke continuation | no | here, SHAPE-FREE |
-| `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` | Eichler–Shimura + Kolyvagin | no | here, SHAPE-FREE |
+| `exists_isLFunctionOf_of_isWeightTwoEigenformOn_gamma1` | Hecke continuation, `Γ₁` half | no | here |
+| `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` | Eichler–Shimura + Kolyvagin, `Γ₁` half | no | here |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
 | `hasNonconstantAbelianMap_of_one_le_x1Genus` | genus formula | **yes** | here |
 
 **Only TWO of the six open rows are level-specific**, and neither of them
-is Kolyvagin-Logachev: the deep arithmetic sits in a leaf shared with the
-`Γ₀` layer, and what is left at level `25` is a computation of twelve
-`L`-values.  Two of the rows are `X0.lean` theorems used verbatim with
-no edit to that file — the concrete cash value of the module docstring's
-claim that `HasRankZeroJacobian` is shared between the layers — and two
-more are stated here in a form that SUBSUMES the corresponding `X0.lean`
-statement (the two shape-free leaves, over
-`isTorsion_jacobian_of_lFunction_ne_zero` and
-`exists_isLFunctionOf_of_isWeightTwoEigenform`; see their docstrings for
-the disposal).  The Albanese row is a third such reuse, one level deeper
-and now PROVEN: its proof is two more `X0.lean` theorems consumed
-verbatim.
+is Kolyvagin-Logachev.  Two of the rows are `X0.lean` theorems used
+verbatim with no edit to that file — the concrete cash value of the
+module docstring's claim that `HasRankZeroJacobian` is shared between the
+layers.  The Albanese row is a third such reuse, one level deeper and now
+PROVEN: its proof is two more `X0.lean` theorems consumed verbatim.
+
+**REVISED 2026-07-27.**  This paragraph used to say that the Hecke and
+Kolyvagin rows were "stated here in a form that SUBSUMES the
+corresponding `X0.lean` statement".  They are not, and the direction is
+now inverted: both `Γ₀` statements are PROVEN in `X0.lean` /
+`WeightTwoEigenform.lean` over finer cuts, and the shape-free wrappers
+here CONSUME them, so what is open in this file is the `Γ₁` half of each.
+See the Kolyvagin–Logachev subsection docstring for the reversal, and for
+why executing the recorded "disposal" would have re-opened two closed
+nodes.
 
 So the `Γ₀` and `Γ₁` layers between them have exactly **four** distinct
 open general theories (Albanese — split into representability and
-autoduality — Mordell-Weil, Riemann-Roch, Hecke continuation +
-Eichler-Shimura/Kolyvagin) and **four** level-specific leaves (two
-`L`-value computations, two genus formulas), not ten independent ones.
+autoduality — Mordell-Weil, Riemann-Roch, and the `Γ₁` halves of Hecke
+continuation and Eichler-Shimura/Kolyvagin) and **four** level-specific
+leaves (two `L`-value computations, two genus formulas), not ten
+independent ones.
 
 WHY THE BUDGET SITS IN THE RANK HALF AND NOT IN THE POINT COUNT.  The
 level-`25` docstring in `MazurTorsion.lean` presents `#X_1(25)(𝔽_3) = 10`
