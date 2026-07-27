@@ -43,6 +43,24 @@ public import Mathlib.RingTheory.Flat.Domain
 -- `hasFlatProlongationAt_trivialQuotChar_of_base` is proved in this module and
 -- consumes it, so the import is public.
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
+-- CARTIER DUALITY, and specifically `(R3)` — "an extension of multiplicative
+-- type by multiplicative type is of multiplicative type" — which is the
+-- requirement `exists_unramified_grouplike_family_generating_corner` below
+-- consumes, and which `ShortExact.lean` states and assembles as
+-- `HopfAlgebra.isMultiplicativeType_of_isShortExact` over `IsMultiplicativeType`
+-- ("the Cartier dual is étale"). The assembly is written and compiles; it rests
+-- on two open leaves in that module, `HopfAlgebra.IsShortExact.cartierDual`
+-- (exactness of duality) and `HopfAlgebra.etale_of_isShortExact` (an extension
+-- of étale by étale is étale — the elementary half, whose henselian route this
+-- file's survey below records). `CartierDualExamples` supplies the dictionary
+-- between the two descriptions of the corner: `dualGroupAlgebraBialgEquiv`
+-- identifies `CartierDual R (MonoidAlgebra R G)` with `GroupFunctions R G`,
+-- which is exactly what turns the étaleness of `GroupFunctions` proved in this
+-- file (`hasFlatProlongationAt_trivialQuotChar_of_base`) into
+-- `IsMultiplicativeType` for the diagonalizable corner. Both imports are public
+-- because the consuming statements are the ones named above.
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.ShortExact
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDualExamples
 -- the `μ`-typed factor of the Eisenstein member: the group-algebra Hopf
 -- structure `MonoidAlgebra.instHopfAlgebra` (the diagonalizable group scheme
 -- `Spec 𝒪ᵥ[D]`), its base change `MonoidAlgebra.scalarTensorEquiv`, and
@@ -3708,11 +3726,14 @@ that would unblock it. Nothing here changes the statement.
      Refuting checks: a proof of the `p ^ k` form consuming only the `p`
      form plus group theory (ruled out by the witness above), or a
      classification of finite flat group schemes over `ℤ_p` killed by
-     `p ^ k` anywhere in the pin. As of 2026-07-27,
-     `grep -rn 'fppf\|CartierDual\|cartierDual'` over `Fermat/`,
-     `.lake/packages/mathlib` and `~/cs/FLT` returns only docstring PROSE
-     plus mathlib's fpqc/flat-descent SITE definitions — no cohomology of
-     group schemes and no duality.
+     `p ^ k` anywhere in the pin. THE DUALITY HALF OF THAT RECORD IS NOW
+     STALE (corrected 2026-07-27): it read "`grep -rn 'fppf\|CartierDual\|
+     cartierDual'` over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`
+     returns only docstring PROSE plus mathlib's fpqc/flat-descent SITE
+     definitions — no cohomology of group schemes and no duality." Cartier
+     duality has since been built in this tree and is imported above; the
+     COHOMOLOGY half of the record stands, and it is the half this
+     particular check needs.
 
      DECISION (the dispatch asked for one): BUILD THE RAYNAUD INPUT. Closing
      the exponent gap is not the cheaper half of the choice; it is the same
@@ -3729,11 +3750,47 @@ that would unblock it. Nothing here changes the statement.
      idempotent, and the henselian splitting of a finite algebra recorded in
      the SUPPLY SURVEY above. What (R3) actually costs is the passage from
      that étale statement to the MULTIPLICATIVE one, i.e. CARTIER DUALITY
-     for finite flat commutative group schemes, which the same grep shows is
-     absent from all three trees. So the dispatchable next target is Cartier
-     duality — a self-contained classical construction — and NOT "Raynaud"
-     as an undifferentiated whole. Refuting check: a proof of (R3) on the
-     multiplicative side that never dualizes. -/
+     for finite flat commutative group schemes.
+
+     THAT TARGET HAS BEEN BUILT (2026-07-27), so the dispatch recorded here
+     — "the dispatchable next target is Cartier duality, a self-contained
+     classical construction, and NOT Raynaud as an undifferentiated whole"
+     — is DISCHARGED, and the sentence that it "is absent from all three
+     trees" is stale. `.../HopfAlgebra/CartierDual.lean` builds the duality
+     sorry-free (including biduality as a bialgebra equivalence), the three
+     standard examples are proven in `.../CartierDualExamples.lean` and
+     `.../AlphaPSelfDual.lean`, and `.../ShortExact.lean` carries the
+     functoriality and `(R3)` itself as
+     `HopfAlgebra.isMultiplicativeType_of_isShortExact`. All four are
+     imported above.
+
+     SO WHERE THE NEXT WORKER SHOULD ACTUALLY GO. `(R3)` is now assembled
+     and compiles; it rests on exactly TWO open leaves, both in
+     `.../HopfAlgebra/ShortExact.lean`, and they are the dispatchable
+     targets:
+
+     * `HopfAlgebra.IsShortExact.cartierDual` — exactness of Cartier
+       duality. Three sorried steps, one per field of `IsShortExact`; the
+       middle one (surjectivity of the transposed inclusion) is where
+       freeness of `A` over the sub-Hopf-algebra `A''` is spent.
+     * `HopfAlgebra.etale_of_isShortExact` — an extension of étale by étale
+       is étale. This is the ÉTALE side described just above, and the
+       henselian route named there is the cheap proof; specialising the
+       statement by adding `[IsLocalRing R] [HenselianLocalRing R]` is a
+       legitimate weakening for `(R3)`'s purposes.
+
+     COUNT CAVEAT, and do not trust the "exactly TWO" above. As this was
+     written a decomposition of `IsShortExact.cartierDual` was in flight on
+     an unreleased branch, splitting it into a linear-retraction leaf, a
+     kernel-containment leaf and a faithful-flatness leaf — and the
+     kernel-containment one is reportedly gated on fppf descent, which this
+     mathlib pin does not carry. The check that settles the current count is
+     one line and costs nothing: `grep -n 'sorry'` over
+     `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`. Run it
+     rather than believing this paragraph.
+
+     Refuting check, unchanged: a proof of (R3) on the multiplicative side
+     that never dualizes. -/
 theorem exists_unramified_grouplike_family_generating_corner
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]

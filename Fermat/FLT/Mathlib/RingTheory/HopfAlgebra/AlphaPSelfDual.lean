@@ -2,7 +2,9 @@
 Copyright (c) 2026 Deyao Chen. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.AlphaP
+module
+
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.AlphaP
 
 /-!
 # `α_p` is Cartier self-dual
@@ -61,6 +63,8 @@ finite computation.
 * Waterhouse, *Introduction to Affine Group Schemes*, ch. 11.
 * Demazure–Gabriel, *Groupes algébriques*, II §7.
 -/
+
+@[expose] public section
 
 open TensorProduct Coalgebra Polynomial CartierDual
 

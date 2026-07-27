@@ -2794,11 +2794,17 @@ fundamental characters — all of them tame. The extensions do not
 reintroduce wildness: for an iterated extension of `μ₃`-types the
 Cartier dual is an extension of étale by étale, hence étale, hence
 UNRAMIFIED, and `G⁰(K̄) ≅ (G⁰)^∨(K̄)^∨ ⊗ μ₃` is then `ω ⊗ unramified`.
-(That duality argument is currently unavailable in Lean:
-`grep -rn 'CartierDual\|cartierDual' Fermat/` was re-run 2026-07-27 and
-still returns nothing outside docstrings. A Cartier-duality build has
-its OWN owner — re-run the grep before assuming it is unavailable, since
-if it lands this leaf becomes much easier.)
+(THAT PARAGRAPH IS NOW STALE AND IS CORRECTED HERE, 2026-07-27: it read
+"currently unavailable in Lean: `grep -rn 'CartierDual\|cartierDual'
+Fermat/` still returns nothing outside docstrings". It landed. Cartier
+duality is built, sorry-free, in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean`, with
+functoriality `CartierDual.map` and the short-exactness definition
+`HopfAlgebra.IsShortExact` in `.../HopfAlgebra/ShortExact.lean`. The
+duality route for the connected case is therefore AVAILABLE in
+principle, and blocked on ONE named open leaf,
+`HopfAlgebra.IsShortExact.cartierDual` — a much smaller obstruction than
+"no duality at all". See the corrected CHECK (ii) below.)
 
 WHAT DEFEATS THE `S₃` CONFIGURATION, MECHANICALLY. For `A = 𝔽₃²` with
 `I` acting through a copy of `S₃` by `σ ↦ [[1,1],[0,1]]` and
