@@ -767,7 +767,7 @@ theorem nonempty_tameBase (ℓ : ℕ) [Fact ℓ.Prime] : Nonempty (TameBase ℓ)
   sorry
 
 /-- **`v_ℓ(j) ≥ 0` bounds the coefficient valuations against the discriminant's**
-(sorry leaf, opened 2026-07-27 by decomposing
+(PROVEN 2026-07-27, the same day it was opened by decomposing
 `exists_tameGoodModel_of_jIntegral`). This is the whole arithmetic content of the
 hypothesis `¬ ℓ ∣ E.j.den`, isolated from every curve-theoretic concern: it is a
 statement about three rational numbers.
@@ -797,12 +797,115 @@ THE CHECK THAT WOULD REFUTE THE "second is free" CLAIM: exhibit rationals with
 `3a ≥ d` and `2b < d`. By the trichotomy above that needs `d > min(3a,2b) = 2b`
 with the minimum attained uniquely, contradicting ultrametric equality — so any
 such witness would instead be a bug in `padicValRat`'s treatment of the
-characteristic-`0` cancellations, which `hℓ5` is there to exclude. -/
+characteristic-`0` cancellations, which `hℓ5` is there to exclude.
+
+**HOW IT WAS PROVED** (2026-07-27, and it needed no new machinery at all —
+everything came out of mathlib, which is worth recording because the analysis
+above reads as if it might need a valuation theory built by hand).
+
+* `WeierstrassCurve.Δ_of_isShortNF : W.Δ = -16 * (4·a₄³ + 27·a₆²)` and
+  `WeierstrassCurve.j_of_isShortNF : W.j = 6912·a₄³ / (4·a₄³ + 27·a₆²)` are
+  both already in `Mathlib/AlgebraicGeometry/EllipticCurve/NormalForms.lean`.
+  So neither `b₂…b₈` nor `c₄` ever has to be unfolded.
+* `padicValRat.mul` / `.div` / `.pow` / `.neg` reduce every valuation to `a`,
+  `b` and `d`, and `padicValRat.add_eq_min` supplies the ultrametric EQUALITY
+  (not merely `min_le_padicValRat_add`) that the `2b < 3a` branch needs.
+* `hℓ5` is used in exactly one way: `ℓ ≥ 5` prime divides no power of `2` and
+  no power of `3`, hence kills the valuations of `4`, `16`, `27` and
+  `6912 = 2⁸·3³`. That is the entire role of the hypothesis.
+* `hj` becomes `0 ≤ padicValRat ℓ W.j` by `padicValRat_def` plus
+  `padicValNat.eq_zero_of_not_dvd`, since `padicValInt` is `ℕ`-valued.
+
+The case split is on `a₄ = 0` rather than on the trichotomy: at `a₄ = 0` the
+discriminant IS `−16·27·a₆²` and the second conclusion holds with equality,
+and otherwise the two branches are `3a ≤ 2b` (chain through the first half) and
+`2b < 3a` (distinct valuations, so `d = min = 2b`). `#print axioms` gives
+`[propext, Classical.choice, Quot.sound]`. -/
 theorem padicValRat_Δ_le_of_jIntegral (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
     {ℓ : ℕ} [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (hj : ¬ (ℓ ∣ W.j.den)) :
     (W.a₄ ≠ 0 → padicValRat ℓ W.Δ ≤ 3 * padicValRat ℓ W.a₄) ∧
-      (W.a₆ ≠ 0 → padicValRat ℓ W.Δ ≤ 2 * padicValRat ℓ W.a₆) :=
-  sorry
+      (W.a₆ ≠ 0 → padicValRat ℓ W.Δ ≤ 2 * padicValRat ℓ W.a₆) := by
+  have hℓp : ℓ.Prime := Fact.out
+  -- `ℓ ≥ 5` divides no power of `2` and no power of `3`, which is the only use of `hℓ5`.
+  have hnot2 : ∀ n : ℕ, ¬ (ℓ ∣ 2 ^ n) := by
+    intro n h
+    have := (Nat.prime_dvd_prime_iff_eq hℓp Nat.prime_two).mp (hℓp.dvd_of_dvd_pow h)
+    omega
+  have hnot3 : ∀ n : ℕ, ¬ (ℓ ∣ 3 ^ n) := by
+    intro n h
+    have := (Nat.prime_dvd_prime_iff_eq hℓp Nat.prime_three).mp (hℓp.dvd_of_dvd_pow h)
+    omega
+  -- the valuation of a natural number that `ℓ` does not divide is `0`
+  have key : ∀ n : ℕ, ¬ (ℓ ∣ n) → padicValRat ℓ (n : ℚ) = 0 := by
+    intro n hn
+    rw [padicValRat.of_nat, padicValNat.eq_zero_of_not_dvd hn]
+    simp
+  have hv4 : padicValRat ℓ (4 : ℚ) = 0 := by
+    have := key 4 (by simpa using hnot2 2)
+    simpa using this
+  have hv27 : padicValRat ℓ (27 : ℚ) = 0 := by
+    have := key 27 (by simpa using hnot3 3)
+    simpa using this
+  have hv16 : padicValRat ℓ (-16 : ℚ) = 0 := by
+    have := key 16 (by simpa using hnot2 4)
+    rw [show (-16 : ℚ) = -((16 : ℕ) : ℚ) by norm_num, padicValRat.neg]
+    exact this
+  have hv6912 : padicValRat ℓ (6912 : ℚ) = 0 := by
+    have h : ¬ (ℓ ∣ 6912) := by
+      intro h
+      rw [show (6912 : ℕ) = 2 ^ 8 * 3 ^ 3 by norm_num] at h
+      rcases (Nat.Prime.dvd_mul hℓp).mp h with h | h
+      · exact hnot2 8 h
+      · exact hnot3 3 h
+    have := key 6912 h
+    simpa using this
+  -- `ℓ ∤ j.den` is exactly `ℓ`-integrality of `j`
+  have hjnn : 0 ≤ padicValRat ℓ W.j := by
+    rw [padicValRat_def, padicValNat.eq_zero_of_not_dvd hj]
+    simp
+  -- the discriminant and the `j`-invariant in short normal form
+  have hΔ : W.Δ = -16 * (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := W.Δ_of_isShortNF
+  have hΔ0 : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
+  have hS0 : (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2 : ℚ) ≠ 0 := by
+    intro h
+    rw [hΔ, h, mul_zero] at hΔ0
+    exact hΔ0 rfl
+  have hvΔ : padicValRat ℓ W.Δ = padicValRat ℓ (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := by
+    rw [hΔ, padicValRat.mul (by norm_num) hS0, hv16, zero_add]
+  -- **the first half**: `v(j) = 3·v(A) − v(Δ)`, so `v(j) ≥ 0` IS `3·v(A) ≥ v(Δ)`
+  have h1 : W.a₄ ≠ 0 → padicValRat ℓ W.Δ ≤ 3 * padicValRat ℓ W.a₄ := by
+    intro hA
+    have hnum : (6912 * W.a₄ ^ 3 : ℚ) ≠ 0 := mul_ne_zero (by norm_num) (pow_ne_zero 3 hA)
+    have hvj : padicValRat ℓ W.j
+        = 3 * padicValRat ℓ W.a₄ - padicValRat ℓ (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := by
+      rw [W.j_of_isShortNF, padicValRat.div hnum hS0,
+        padicValRat.mul (by norm_num) (pow_ne_zero 3 hA), hv6912, zero_add, padicValRat.pow]
+      push_cast
+      ring
+    omega
+  refine ⟨h1, fun hB => ?_⟩
+  -- **the second half is free**, by ultrametricity
+  have hvY : padicValRat ℓ (27 * W.a₆ ^ 2 : ℚ) = 2 * padicValRat ℓ W.a₆ := by
+    rw [padicValRat.mul (by norm_num) (pow_ne_zero 2 hB), hv27, zero_add, padicValRat.pow]
+    push_cast
+    ring
+  have hY0 : (27 * W.a₆ ^ 2 : ℚ) ≠ 0 := mul_ne_zero (by norm_num) (pow_ne_zero 2 hB)
+  by_cases hA : W.a₄ = 0
+  · -- `A = 0`: the discriminant IS `−16·27·B²`, so the two sides agree on the nose
+    rw [hvΔ, show (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2 : ℚ) = 27 * W.a₆ ^ 2 by rw [hA]; ring, hvY]
+  · have hX0 : (4 * W.a₄ ^ 3 : ℚ) ≠ 0 := mul_ne_zero (by norm_num) (pow_ne_zero 3 hA)
+    have hvX : padicValRat ℓ (4 * W.a₄ ^ 3 : ℚ) = 3 * padicValRat ℓ W.a₄ := by
+      rw [padicValRat.mul (by norm_num) (pow_ne_zero 3 hA), hv4, zero_add, padicValRat.pow]
+      push_cast
+      ring
+    rcases le_or_gt (3 * padicValRat ℓ W.a₄) (2 * padicValRat ℓ W.a₆) with h | h
+    · -- `3a ≤ 2b`: chain through the first half
+      have := h1 hA
+      omega
+    · -- `2b < 3a`: the two summands have DISTINCT valuations, so `v(Δ) = min = 2b`
+      have hmin := padicValRat.add_eq_min (p := ℓ) hS0 hX0 hY0 (by rw [hvX, hvY]; omega)
+      rw [hvΔ, hmin, hvX, hvY]
+      exact min_le_right _ _
 
 /-- **The tame good model, for a curve already in short Weierstrass form**
 (PROVEN 2026-07-27 over `nonempty_tameBase` and `padicValRat_Δ_le_of_jIntegral`).
