@@ -2835,10 +2835,23 @@ forms. (It was added 2026-07-27 because without it the whole structure
 was satisfied by the CONSTANT ZERO MAP and so carried no content at all
 over `DualStruct`; the standing refutation test is the proven
 `PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`. Note the axiom is
-LEVEL-GUARDED — `PolarizationStruct d 𝒩` asserts it only at `I ∈ 𝒩` —
-after a second repair the same day; an unguarded version forces a
-PRINCIPAL polarization, see the docstring of
-`exists_tateWeilPairing_of_mult` below.) The gap that
+LEVEL-GUARDED — `PolarizationStruct d 𝒩 𝔞 𝔞pos` asserts it only at
+`I ∈ 𝒩` — after a second repair the same day; an unguarded version forces
+a PRINCIPAL polarization, see the docstring of
+`exists_tateWeilPairing_of_mult` below.
+
+A THIRD repair the same day added POSITIVITY, which is why the structure
+now takes four parameters: the level-guard released it onto every
+polarization class, which made `HasSplitHilbertBlumenthalModuli`
+(`Modularity/MoretBailly.lean`) false, so the structure also carries the
+polarization module `𝔞`, a positivity cone `𝔞pos`, an isomorphism
+`𝔞 ≅ Hom^sym_{𝒪_D}(A, A^∨)` (`lam`, `lam_injective`, `lam_surjective`,
+valued in the new `Fermat.SymHomStruct`) and the datum that `hom = λ_a`
+for a POSITIVE `a`. A consumer that does not care may take
+`𝔞 := ⊤`, `𝔞pos := Set.univ`; a consumer that needs the narrow class
+`[𝔞] ∈ Cl⁺(D)` pinned must hold both fixed. The standing test that the
+positivity datum is not junk is `PolarizationStruct.posElt_ne_zero`.) The
+gap that
 REMAINS is EXISTENCE: nothing asserts that a
 `DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`. That
 remaining gap is the second bullet above, and it is now the content of

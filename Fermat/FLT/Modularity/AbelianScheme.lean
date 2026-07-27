@@ -639,6 +639,18 @@ by cancellation. -/
       exact add_right_cancel (b := m.act (0 : R) y)
         (h.symm.trans (zero_add _).symm) }
 
+/-- **Multiplication by `0` kills every relative point.** This is
+`zero_smul` of `Mult.module`, restated in the raw `act` vocabulary so
+that it can be used without introducing the `letI`-bound module instance
+at the call site. It is what makes `PolarizationStruct.lam_zero` — and
+hence the positivity refutation test `PolarizationStruct.posElt_ne_zero`
+— available. -/
+theorem act_zero {T : Scheme.{u}} (g : T ⟶ S) (y : RelPoint f g) :
+    m.act (0 : R) y = ab.zero g := by
+  letI := ab.addCommGroup g
+  letI := m.module g
+  exact zero_smul R y
+
 /-- **The multiplication commutes with the Galois action** on the
 geometric points of a fibre: naturality read at the Galois automorphisms
 of `Spec F̄`. -/
@@ -803,6 +815,23 @@ axioms, one in each structure, and NEITHER implies the other.
   directions and for why the set, rather than a single ideal, is the right
   index.
 
+* THIRD REPAIR, SAME DAY — **POSITIVITY**, and it is a different kind of
+  content from the two above. The `𝒩`-repair released the structure onto
+  every polarization class, and that made
+  `HasSplitHilbertBlumenthalModuli` (`Modularity/MoretBailly.lean`)
+  FALSE, since its fineness clause then ranged over all classes while
+  `GeometricallyIrreducible` allows one component. `PolarizationStruct`
+  now also carries the POLARIZATION MODULE `𝔞` with a positivity cone
+  `𝔞pos`, an isomorphism `𝔞 ≅ Hom^sym_R(A, A^∨)` (`lam`, `lam_injective`,
+  `lam_surjective` — the new `SymHomStruct` exists only to let that be
+  said), and the datum that `hom` is `λ_a` for a POSITIVE `a`. Wide class
+  comes from the isomorphism, narrow class from positivity; the moduli
+  statement is then indexed by `(𝔞, 𝔞⁺) ∈ Cl⁺(D)` and is true again.
+  `PolarizationStruct.posElt_ne_zero` is the mechanical test that the
+  positivity datum is not junk, and the structure's docstring records the
+  refutation (`D = ℚ(√3)`, `h = 1`, `h⁺ = 2`) together with three repairs
+  that do NOT work.
+
 `weil_nondegenerate` does NOT rescue that: it is nondegeneracy of the
 canonical `A × A^∨` pairing, and says nothing about the composite
 `A[I] × A[I] ⟶ μ_n` obtained by pushing the second variable through a
@@ -849,11 +878,12 @@ of `fermat_last_theorem` as of commit `3a3e74cc`, which cut
 `exists_twistedHilbertBlumenthalModuliTwist_of_datum`
 (`Modularity/KhareWintenberger.lean`) into leaves that take them as
 hypotheses and in existentials. What is NOT in the cone is the PROVEN
-material of this section — `DualStruct.weil_zero_right`, and
-`PolarizationStruct.pairing_def`, `pairing_add_left`, `pairing_add_right`,
-`pairing_self`, `galSMul_hom`, `pairing_gal`, `pairing_act`,
-`pairing_nondegenerate`, `exists_pairing_ne_one` and
-`torsion_eq_zero_of_hom_eq_zero` — which is consumed only by proofs that
+material of this section — `DualStruct.weil_zero_right`, `Mult.act_zero`,
+and `PolarizationStruct.pairing_def`, `pairing_add_left`,
+`pairing_add_right`, `pairing_self`, `galSMul_hom`, `pairing_gal`,
+`pairing_act`, `pairing_nondegenerate`, `exists_pairing_ne_one`,
+`torsion_eq_zero_of_hom_eq_zero`, `lam_zero` and `posElt_ne_zero` —
+which is consumed only by proofs that
 are still `sorry` (the two leaves of that cut,
 `exists_realAbelianSchemeWithRealMultiplication`, and
 `det_eq_cyclotomicCharacter_of_tateFrame`). That material must NOT be
@@ -954,7 +984,52 @@ theorem weil_zero_right (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1) :
 
 end DualStruct
 
-/-- **A polarization**: an `R`-linear symmetric isogeny `A ⟶ A^∨`.
+/-- **A symmetric `R`-linear homomorphism `A ⟶ A^∨`** — the underlying
+datum of a polarization with its POSITIVITY and its nondegeneracy
+forgotten.
+
+By Yoneda this is a natural additive `R`-equivariant transformation of
+functors of points `A ⟶ A^∨` whose induced pairing on `I`-torsion is
+alternating; "alternating" is the classical reading of SYMMETRY of a
+homomorphism to the dual. Classically these form an invertible
+`R`-module `Hom^sym_R(A, A^∨)`, and it is exactly that module which
+`PolarizationStruct.lam` identifies with its parameter `𝔞`.
+
+WHY THIS TYPE EXISTS AT ALL. It is introduced ONLY so that
+`PolarizationStruct.lam_surjective` can be written. Without a type of
+symmetric homomorphisms there is no way to say that `𝔞` EXHAUSTS them —
+and without that, `𝔞` is pinned by nothing: one could always take
+`𝔞 = R` and `λ_a := hom ∘ act a`, so the parameter would carry no
+information and could not index anything. See the POSITIVITY section of
+`PolarizationStruct`'s docstring, where that is the second of three
+refuted repairs. -/
+structure SymHomStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {R : Type u} [CommRing R] {m : Mult ab R} (d : DualStruct ab m) where
+  /-- the homomorphism, on relative points -/
+  hom : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint d.dualMap g
+  /-- it is additive -/
+  hom_add : ∀ {T : Scheme.{u}} {g : T ⟶ S} (y y' : RelPoint f g),
+    hom (ab.add y y') = d.dualAb.add (hom y) (hom y')
+  /-- naturality in the test object -/
+  pre_hom : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (y : RelPoint f g),
+    RelPoint.pre h hg (hom y) = hom (RelPoint.pre h hg y)
+  /-- it is `R`-linear -/
+  hom_act : ∀ {T : Scheme.{u}} {g : T ⟶ S} (a : R) (y : RelPoint f g),
+    hom (m.act a y) = d.dualMult.act a (hom y)
+  /-- it carries `I`-torsion to `I`-torsion -/
+  hom_torsion : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal R) (y : GeomFibrePt f x),
+    y ∈ (m.torsion x I).1 → hom y ∈ (d.dualMult.torsion x I).1
+  /-- SYMMETRY, read through the Weil pairing: the induced pairing on
+  `I`-torsion is alternating -/
+  weil_self : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
+    y ∈ (m.torsion x I).1 → d.weil x I n hn y (hom y) = 1
+
+/-- **A polarization**: an `R`-linear symmetric isogeny `A ⟶ A^∨`,
+together with its POLARIZATION MODULE `𝔞` and the POSITIVITY of the
+element of that module which it is.
 
 By Yoneda a homomorphism of abelian schemes is exactly a natural additive
 transformation of functors of points, which is what `hom`, `hom_add` and
@@ -1043,10 +1118,118 @@ over the LOCAL ring `𝒪_{D,I}` whatever the class of `𝔠`.
 `𝒩 = ∅` is legal and contentless, exactly as `𝒩 = ⊤` is legal and
 over-strong; that is deliberate. The set is a PARAMETER rather than a
 field so that the choice is visible in every consumer's TYPE and cannot
-drift silently — a consumer that wants content must name its levels. -/
+drift silently — a consumer that wants content must name its levels.
+
+**POSITIVITY, AND THE POLARIZATION MODULE `(𝔞, 𝔞⁺)` (third repair of
+this structure, 2026-07-27; it is what makes
+`HasSplitHilbertBlumenthalModuli` TRUE again).**
+
+The `𝒩`-repair above had a consequence its own note recorded as a
+*contingency* and which duly FIRED. Once nondegeneracy is asserted only
+at `𝒩`, a `PolarizationStruct` no longer forces `ker hom = 0`, so
+HBAVs with a NONPRINCIPAL polarization module became admissible — and
+the split Hilbert–Blumenthal moduli statement in
+`Modularity/MoretBailly.lean`, which asserts `GeometricallyIrreducible`
+of a space whose fineness clause then quantified over every polarization
+class, became FALSE. The refutation is explicit: at `D = ℚ(√3)`
+(PARI/GP: `h = 1`, `h⁺ = 2`, fundamental unit `2 + √3` of norm `+1`) a
+`Γ_F`-equivariant `𝒪_D`-linear bijection on geometric points restricts
+to torsion, gives `T_ℓB ≅ T_ℓA` for every `ℓ`, and by Faltings forces an
+`𝒪_D`-linear isogeny — under which the narrow class moves only by
+SQUARES. `Cl⁺(ℚ(√3)) ≅ ℤ/2` has no nontrivial squares, so nothing over
+the principal component is comparable to a nonprincipal-class object.
+
+THE CUT-LEVEL CALL, and why the alternative is not merely less elegant
+but UNAVAILABLE. One could instead demand `h⁺(D) = 1` upstream. But `D`
+is produced by `exists_totallyRealCoefficientDatum_of_residueField`,
+which must hit a PRESCRIBED residue field `𝔽_{ℓ^r}`, and the
+Khare–Wintenberger route quantifies over ALL `ℓ`; so the hypothesis
+would read *"for every `ℓ` and every `r` there is a totally real `D`
+with a degree-`r` prime above `ℓ` and `h⁺(D) = 1"`, whose real-quadratic
+special case is Gauss's class-number-one problem — OPEN. Trading a false
+leaf for an open problem is not progress. Indexing by `(𝔞, 𝔞⁺)` is what
+the literature does: Rapoport, *Compactifications de l'espace de modules
+de Hilbert–Blumenthal* (Compositio 36, 1978), §1, and Deligne–Pappas,
+*Singularités des espaces de modules de Hilbert*, fix the polarization
+module TOGETHER WITH ITS POSITIVITY CONE, and that cone is precisely
+what indexes the components. Goren's *Lectures on Hilbert Modular
+Varieties and Modular Forms* is the readable survey of the `Cl⁺`
+indexing.
+
+**THREE REPAIRS THAT DO NOT WORK, each refuted; do not re-propose them.**
+
+1. *Reverting the `𝒩` guard.* It fixes nothing, because this structure
+   carries no positivity: `hom` and `−hom` satisfy every field alike.
+   So `ker hom = 0` yields only a symmetric `R`-linear ISOMORPHISM
+   `A ≃ A^∨`, which exists exactly when the polarization module is
+   trivial in the WIDE class group `Cl(D)`. `ℚ(√3)` has `h = 1` and
+   `h⁺ = 2`, so its nontrivial-narrow-class HBAVs carry a
+   `PolarizationStruct d 𝒩` for EVERY `𝒩`, `⊤` included. The earlier
+   defusal conflated `Cl⁺` with `Cl`, and the `𝒩` guard is innocent.
+2. *Carrying `𝔞` as data, with a module isomorphism
+   `𝔞 ≃ Hom^sym_R(A, A^∨)` and nothing else.* That also sees only
+   `Cl(D)` — which is TRIVIAL for the witness — so it does not separate
+   the two components of `ℚ(√3)`. Necessary, not sufficient.
+3. *A `Prop`-valued positivity field*, e.g. `isPol h := ∃ a ∈ 𝔞⁺,
+   h = λ_a`. Junk-satisfiable: it constrains nothing, because `λ` and
+   `𝔞⁺` are then free. **Positivity must be DATA.**
+
+**WHAT IS ACTUALLY ADDED, AND WHY IT IS NOT JUNK-SATISFIABLE.** Two
+parameters, `𝔞 : Ideal R` and `𝔞pos : Set R` (the positivity cone —
+`Set R` rather than a totally-positive predicate because this structure
+is stated over an arbitrary `CommRing R`; the moduli consumer
+instantiates it with the totally positive elements of `𝒪_D`), and four
+pieces of data:
+
+* `lam : 𝔞 → SymHomStruct d`, additive and `R`-linear in the module
+  variable (`lam_add`, `lam_smul`);
+* `lam_injective` and **`lam_surjective`** — so `lam` is an isomorphism
+  of `R`-modules `𝔞 ≅ Hom^sym_R(A, A^∨)`. This is the clause that pins
+  the WIDE class `[𝔞] ∈ Cl(D)`, and it is why repair 2's shape is
+  necessary here;
+* `posElt : 𝔞` with `posElt_pos : (posElt : R) ∈ 𝔞pos` and
+  `hom_eq_lam : hom = lam posElt` — the polarization corresponds to a
+  POSITIVE element of the module. This is the clause that upgrades the
+  pin from `Cl` to `Cl⁺`: two identifications `𝔞 ≅ Hom^sym` differ by
+  multiplication by some `u ∈ D^×` with `u𝔞 = 𝔞`, and requiring both
+  to carry the SAME `hom` to a positive element forces `u` totally
+  positive. That is exactly the definition of the narrow class.
+
+So `(𝔞, 𝔞pos)` is not decoration: `PolarizationStruct d 𝒩 𝔞 𝔞pos` is
+INHABITED precisely when `[𝔞]` is the narrow class of the polarization
+module of `(ab, m, d)`, and UNINHABITED for every other narrow class.
+That is what lets a moduli statement index its component by `𝔞` and be
+true. The junk instance that killed repair 2 — `𝔞 := R`,
+`λ_a := hom ∘ act a` — fails `lam_surjective` over any datum whose
+polarization module is nonprincipal, which is the whole point.
+
+WHY POSITIVITY HAD TO ENTER AS DATA RATHER THAN BE DERIVED. The
+classical definition is Mumford's: `hom = φ_L` for a RELATIVELY AMPLE
+line bundle `L` on `A/S`. That is unavailable — checked 2026-07-27 over
+`.lake/packages/mathlib`, this project's own shim tree
+`Fermat/FLT/Mathlib/`, and `~/cs/FLT`: there is NO ampleness of any kind
+for line bundles on schemes at this pin, no relative Picard functor, and
+no identification of `d.dualScheme` with `Pic⁰` — so `φ_L` cannot even
+be written here. (`Mathlib.RingTheory.PicardGroup` is the Picard group
+of a commutative RING and is unrelated.) But the deeper reason is not
+the pin: **positivity is invisible to torsion.** `λ` and `−λ` have the
+same kernel and induce the same pairing up to inversion, so NO axiom
+phrased in the torsion/Galois vocabulary of this module can distinguish
+them. Positivity therefore MUST arrive as a datum, and the honest form
+of that datum is "which element of the polarization module this is,
+inside a cone supplied by the consumer" — which is precisely the
+Rapoport/Deligne–Pappas formulation. The surrogate is deliberate and
+its choice is recorded here rather than hidden.
+
+`𝔞pos` is unconstrained at this level of generality, and that is
+correct: a positivity cone is a piece of the ARITHMETIC of `R`, not of
+the geometry of `A`, and pretending otherwise would put a fake axiom on
+a structure that cannot check it. What makes the moduli statement true
+is that the consumer instantiates `𝔞pos` with a genuine cone and holds
+it FIXED across the universal family and the fineness clause. -/
 structure PolarizationStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {R : Type u} [CommRing R] {m : Mult ab R} (d : DualStruct ab m)
-    (𝒩 : Set (Ideal R)) where
+    (𝒩 : Set (Ideal R)) (𝔞 : Ideal R) (𝔞pos : Set R) where
   /-- the polarization on relative points -/
   hom : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint d.dualMap g
   /-- the polarization is additive -/
@@ -1092,13 +1275,47 @@ structure PolarizationStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchem
     (∀ z : GeomFibrePt f x, z ∈ (m.torsion x I).1 →
       d.weil x I n hn y (hom z) = 1) →
     y = ab.zero (specAlgClos F ≫ x)
+  /-- **THE POLARIZATION MODULE, REALIZED**: a symmetric `R`-linear
+  homomorphism `λ_a : A ⟶ A^∨` for each `a` in `𝔞`. Together with
+  `lam_injective` and `lam_surjective` this is an isomorphism of
+  `R`-modules `𝔞 ≅ Hom^sym_R(A, A^∨)` — Rapoport's polarization module,
+  presented as an identification rather than constructed. -/
+  lam : ↥𝔞 → SymHomStruct d
+  /-- `λ` is additive in the module variable -/
+  lam_add : ∀ (a b : ↥𝔞) {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g),
+    (lam (a + b)).hom y = d.dualAb.add ((lam a).hom y) ((lam b).hom y)
+  /-- `λ` is `R`-linear in the module variable -/
+  lam_smul : ∀ (c : R) (a : ↥𝔞) {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g),
+    (lam (c • a)).hom y = d.dualMult.act c ((lam a).hom y)
+  /-- `λ` is INJECTIVE -/
+  lam_injective : ∀ a : ↥𝔞,
+    (∀ {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g),
+      (lam a).hom y = d.dualAb.zero g) → a = 0
+  /-- **`λ` is SURJECTIVE onto ALL symmetric `R`-linear homomorphisms** —
+  the clause that PINS the wide class `[𝔞] ∈ Cl(R)`. Without it `𝔞` may
+  always be taken principal (`λ_a := hom ∘ act a`) and the parameter
+  carries no information at all; see refuted repair 2 in the structure
+  docstring. -/
+  lam_surjective : ∀ s : SymHomStruct d, ∃ a : ↥𝔞,
+    ∀ {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g), (lam a).hom y = s.hom y
+  /-- **POSITIVITY, AS DATA (i)**: the element of the polarization module
+  that `hom` IS. -/
+  posElt : ↥𝔞
+  /-- **POSITIVITY, AS DATA (ii)**: that element lies in the positivity
+  cone. This is what upgrades the pin from the wide class `Cl(R)` to the
+  NARROW class `Cl⁺(R)`: it rigidifies `lam` up to multiplication by
+  positive units, which is exactly the equivalence defining `Cl⁺`. -/
+  posElt_pos : (posElt : R) ∈ 𝔞pos
+  /-- **POSITIVITY, AS DATA (iii)**: `hom = λ_{posElt}`. -/
+  hom_eq_lam : ∀ {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g),
+    hom y = (lam posElt).hom y
 
 namespace PolarizationStruct
 
 variable {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
 variable {R : Type u} [CommRing R] {m : Mult ab R} {d : DualStruct ab m}
-variable {𝒩 : Set (Ideal R)}
-variable (p : PolarizationStruct d 𝒩)
+variable {𝒩 : Set (Ideal R)} {𝔞 : Ideal R} {𝔞pos : Set R}
+variable (p : PolarizationStruct d 𝒩 𝔞 𝔞pos)
 variable {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
 variable (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I)
 
@@ -1235,6 +1452,40 @@ theorem torsion_eq_zero_of_hom_eq_zero (hI : I ∈ 𝒩)
   intro z _
   rw [hhom z]
   exact d.weil_zero_right x I n hn y hy
+
+/-- **`λ` kills the zero of the polarization module**, by `R`-linearity
+in the module variable at the scalar `0`. Glue for the positivity
+refutation test below. -/
+theorem lam_zero {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
+    (p.lam 0).hom y = d.dualAb.zero g := by
+  have h := p.lam_smul (0 : R) (0 : ↥𝔞) y
+  rw [smul_zero] at h
+  rw [h, d.dualMult.act_zero]
+
+include hn in
+/-- **THE STANDING REFUTATION TEST FOR POSITIVITY: the polarization is a
+NONZERO element of its module.**
+
+The positivity datum `(posElt, posElt_pos, hom_eq_lam)` would be junk if
+`posElt` could be `0` — a zero module element lies in whatever cone one
+hands over as `𝔞pos` if that cone happens to contain `0`, and `λ_0` is
+the constant zero map, which is precisely the degenerate configuration
+`torsion_eq_zero_of_hom_eq_zero` was written to exclude one level down.
+This theorem shows the two tests interlock: over any datum with a
+nonzero `𝒩`-torsion point, `posElt ≠ 0`, so the polarization really is a
+nonzero — and, by `posElt_pos`, positive — element of `𝔞`.
+
+Together with `lam_surjective` this is what makes `[𝔞] ∈ Cl⁺(R)` an
+INVARIANT of `(ab, m, d, p)` rather than a free parameter, which is the
+whole purpose of the third repair. Re-run it after any weakening of the
+positivity fields. -/
+theorem posElt_ne_zero (hI : I ∈ 𝒩) (y : GeomFibrePt f x)
+    (hy : y ∈ (m.torsion x I).1) (hy0 : y ≠ ab.zero (specAlgClos F ≫ x)) :
+    p.posElt ≠ 0 := by
+  intro h0
+  refine hy0 (p.torsion_eq_zero_of_hom_eq_zero x I n hn hI ?_ y hy)
+  intro T g z
+  rw [p.hom_eq_lam, h0, p.lam_zero]
 
 end PolarizationStruct
 
