@@ -55659,24 +55659,177 @@ theorem pow_dvd_log_valuation_of_forall_commute_localInertia
     ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
   sorry
 
+/-- **A `pⁿ`-th radical already lies in the base field as soon as the
+field it is fixed by contains no nontrivial `pⁿ`-th root of unity**
+(**PROVEN 2026-07-27**, sixteenth owner). This is the `c = 0` case of
+the ABELIAN-DESCENT LEMMA recorded in the leaf below, isolated here
+because it is the ONE case of that cocycle computation which never uses
+abelianness — so, unlike the lemma itself, it survives into the
+NONABELIAN branch and closes a case of it.
+
+`f` stands for a Galois representation: any multiplicative map out of
+`Gal(F̄/F)`. Only `f 1 = 1` and `f (a b) = f a · f b` are used, which
+is why the hypotheses are spelled out rather than bundled — at the call
+site they are `map_one` and `map_mul` of a `GaloisRep`. Write `L` for
+the field cut out by `ker f`. Then `hfix` says exactly `r ∈ L`, and
+`hnoroot` says exactly `μ_N ∩ L = 1`.
+
+*Proof.* Fix `σ ∈ Gal(F̄/F)`. Since `x` lies in the base field,
+`(σ r)^N = σ(r^N) = σ(x) = x = r^N`, so `ζ_σ := σ(r)/r ∈ μ_N`. And
+`ζ_σ` is fixed by `ker f`: that subgroup is NORMAL, being the kernel of
+a multiplicative map, so for `τ` with `f τ = 1` the element `σ⁻¹ τ σ`
+is again killed by `f`, hence fixes `r`, hence `τ (σ r) = σ r`; and `τ`
+fixes `r` itself. So `ζ_σ ∈ μ_N ∩ L = 1`, i.e. `σ r = r`, for EVERY
+`σ` — whence `r` is in the image of `F`, because `F̄/F` is Galois
+(`Algebra.IsInvariant`, whose instance for `L ≃ₐ[K] L` is supplied by
+`Fermat/FLT/Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`).
+∎
+
+Note what is NOT used: no flat prolongation, no commutativity anywhere,
+no ramification theory, and no hypothesis on `N` beyond `0 < N`. -/
+theorem exists_pow_eq_of_forall_fixed_rootOfUnity_eq_one
+    {F : Type*} [Field F] [CharZero F]
+    {G : Type*} [Monoid G] (f : (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) → G)
+    (hf1 : f 1 = 1) (hfmul : ∀ a b, f (a * b) = f a * f b)
+    {N : ℕ} (hN : 0 < N) {x : F} (hx : x ≠ 0) (r : AlgebraicClosure F)
+    (hr : r ^ N = algebraMap F (AlgebraicClosure F) x)
+    (hfix : ∀ σ, f σ = 1 → σ r = r)
+    (hnoroot : ∀ ζ : AlgebraicClosure F, ζ ^ N = 1 →
+      (∀ σ, f σ = 1 → σ ζ = ζ) → ζ = 1) :
+    ∃ y : F, y ^ N = x := by
+  have hx0 : algebraMap F (AlgebraicClosure F) x ≠ 0 := by simpa using hx
+  have hr0 : r ≠ 0 := by
+    intro h
+    rw [h, zero_pow hN.ne'] at hr
+    exact hx0 hr.symm
+  have key : ∀ σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F, σ r = r := by
+    intro σ
+    have hσr : (σ r) ^ N = r ^ N := by
+      rw [← map_pow, hr, AlgEquiv.commutes]
+    have hpow : (σ r / r) ^ N = 1 := by
+      rw [div_pow, hσr, div_self (pow_ne_zero _ hr0)]
+    have hfixζ : ∀ τ, f τ = 1 → τ (σ r / r) = σ r / r := by
+      intro τ hτ
+      have h1 : f (σ⁻¹ * τ * σ) = 1 := by
+        rw [hfmul, hfmul, hτ, mul_one, ← hfmul, inv_mul_cancel, hf1]
+      have h2 : σ⁻¹ (τ (σ r)) = r := by
+        simpa [AlgEquiv.mul_apply] using hfix _ h1
+      have h3 : τ (σ r) = σ r := by
+        have := congrArg (fun z => σ z) h2
+        simpa using this
+      rw [map_div₀, h3, hfix τ hτ]
+    have := hnoroot _ hpow hfixζ
+    field_simp at this
+    exact this
+  obtain ⟨y, hy⟩ := Algebra.IsInvariant.isInvariant (A := F)
+    (G := AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) r (fun g => key g)
+  refine ⟨y, ?_⟩
+  apply (algebraMap F (AlgebraicClosure F)).injective
+  rw [map_pow, hy, hr]
+
+/-- **Serre's local criterion in the case `μ_{pⁿ} ⊄ ℚ_p(σ₀)`**
+(**PROVEN 2026-07-27**, sixteenth owner — the ROOT-OF-UNITY CUT
+described in the leaf below, and the first case of the residual
+NONABELIAN branch to be closed).
+
+`hnoroot` says that the only `pⁿ`-th root of unity fixed by
+`ker (σ₀.toLocal 𝔭ᵥ)` is `1`, i.e. `μ_{pⁿ} ∩ ℚ_p(σ₀) = 1`. Under it
+`r` is fixed by the WHOLE of `Γ ℚ_p` — the general
+`exists_pow_eq_of_forall_fixed_rootOfUnity_eq_one` above — so `q` is a
+`pⁿ`-th power in `ℚ_p` outright, hence peu ramifiée with trivial unit
+part, and `dvd_log_valuation_of_isPeuRamifiee` finishes.
+
+What this case costs, and why it is worth naming: NOTHING from the
+Raynaud side. Neither `hflat` nor `hkill` nor `hpodd` appears in the
+statement, and no ramification estimate is used. It is pure Kummer
+theory, and it is exactly the piece of the ABELIAN-DESCENT LEMMA that
+does not need `L/E` abelian.
+
+WHERE THIS LEAVES THE RESIDUAL, stated so that the next owner does not
+have to re-derive it. Let `L = ℚ_p(σ₀)`, `Γ = Gal(L/ℚ_p)`, and let
+`μ_{p^c} = μ_{pⁿ} ∩ L` with `c ≥ 1` (the case `c = 0` is this
+declaration). Then `ζ_σ := σ(r)/r` is a cocycle in
+`H¹(Γ, μ_{p^c})`, and the conclusion follows exactly when its class
+vanishes. Let `χ : Γ → (ℤ/p^c)ˣ` be the cyclotomic character of the
+action on `μ_{p^c}` and `Γ₀ := ker χ`. Two standard steps then locate
+ALL of the content:
+
+* `Γ/Γ₀ ↪ (ℤ/p^c)ˣ` is CYCLIC (`p` odd) and contains an element `g`
+  with `g − 1` a unit, because `μ_p ⊄ ℚ_p` for `p` odd; so
+  `σ ↦ (g − 1)` is already surjective on `μ_{p^c}` and
+  `H¹(Γ/Γ₀, μ_{p^c}) = 0`.
+* Inflation–restriction therefore injects the class into
+  `Hom(Γ₀^{ab}, ℤ/p^c)^{χ}`, the `χ`-isotypic part for the conjugation
+  action of `Γ/Γ₀`.
+
+So: **the leaf below is exactly the assertion that this `χ`-isotypic
+Hom-group carries no class of `r`**, and the two known cases are the
+two ways of killing it. If `Γ` is ABELIAN, conjugation is trivial and
+the `χ`-isotypic part vanishes because `χ ≢ 1 mod p` — that is the
+sibling `pow_dvd_log_valuation_of_forall_commute_localInertia`. If
+`c = 0`, the coefficient group is trivial — that is this declaration.
+The très ramifiée example is the smallest instance where NEITHER
+applies: `p = 3`, `L = ℚ_3(μ_3, 3^{1/3})`, `Γ = S₃`, `Γ₀ = A₃`, and
+conjugation by the order-`2` element is inversion, which IS `χ`, so
+`Hom(A₃, μ_3)^{χ} ≅ ℤ/3 ≠ 0`.
+
+THE CHECK THAT WOULD REFUTE THIS BLOCK: find a `Γ` and a class in
+`H¹(Γ, μ_{p^c})` whose restriction to `Γ₀` is zero yet which is not
+inflated from `Γ/Γ₀` — i.e. an error in the inflation–restriction step
+— or exhibit `g ∈ (ℤ/p^c)ˣ` in the image of `χ` with `g ≡ 1 mod p`
+being the ONLY option, which would need `μ_p ⊆ ℚ_p`. -/
+theorem pow_dvd_log_valuation_of_forall_fixed_rootOfUnity_eq_one
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W]
+    (σ₀ : GaloisRep ℚ A W) {n : ℕ}
+    (q : (ℚᵖᵥ)ˣ) (r : AlgebraicClosure ℚᵖᵥ)
+    (hr : r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+      σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r)
+    (hnoroot : ∀ ζ : AlgebraicClosure ℚᵖᵥ, ζ ^ p ^ n = 1 →
+      (∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ, σ₀.toLocal 𝔭ᵥ σ = 1 → σ ζ = ζ) →
+      ζ = 1) :
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) := by
+  have hN : 0 < p ^ n := pow_pos hp.out.pos n
+  obtain ⟨y, hy⟩ := exists_pow_eq_of_forall_fixed_rootOfUnity_eq_one
+    (fun σ => σ₀.toLocal 𝔭ᵥ σ) (map_one _) (fun a b => map_mul _ a b) hN
+    q.ne_zero r hr hfix hnoroot
+  have hy0 : y ≠ 0 := by
+    intro h
+    rw [h, zero_pow hN.ne'] at hy
+    exact q.ne_zero hy.symm
+  refine dvd_log_valuation_of_isPeuRamifiee ⟨1, Units.mk0 y hy0, by simp, Units.ext ?_⟩
+  simpa using hy.symm
+
 include hpodd in
-/-- **The NONABELIAN half of Serre's local criterion: the residual
-Raynaud/fppf case** (sorried leaf, opened 2026-07-27 as the other branch
-of the INERTIA-COMMUTATIVITY CUT; this is where all the remaining
-content of
+/-- **The residual case of Serre's local criterion: NONABELIAN local
+inertia AND `μ_{pⁿ} ⊆ ℚ_p(σ₀)`** (sorried leaf — the nonabelian branch
+of the 2026-07-27 INERTIA-COMMUTATIVITY CUT, narrowed the same day by
+the ROOT-OF-UNITY CUT of the sixteenth owner. This is where all the
+remaining content of
 `pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`
 now lives, and it is the leaf a next owner should be dispatched at).
 
-Same statement as the leaf below, with the extra hypothesis `hnab` that
-the image of `localInertiaGroup 𝔭ᵥ` under `σ₀.toLocal 𝔭ᵥ` is NOT
-commutative. Everything the abelian world could contribute has been
-peeled off into
+Same statement as the leaves below, with TWO extra hypotheses: `hnab`,
+that the image of `localInertiaGroup 𝔭ᵥ` under `σ₀.toLocal 𝔭ᵥ` is NOT
+commutative, and `hroot`, that `ℚ_p(σ₀)` DOES contain a nontrivial
+`pⁿ`-th root of unity. Everything the abelian world could contribute
+has been peeled off into
 `pow_dvd_log_valuation_of_forall_commute_localInertia` above, which is
 paper-complete; in particular the whole Lubin–Tate family, and every
 `σ₀` with `ℚᵖᵥ(σ₀) ⊆ E^{ab}` for `E/ℚᵖᵥ` unramified, is already gone by
-the time this leaf is reached. The docstring of the leaf below records
-that this is exactly the shape every audit there points at: **the
-genuinely nonabelian CONNECTED case, and nothing else**.
+the time this leaf is reached. And the `μ_{pⁿ} ∩ ℚ_p(σ₀) = 1` case is
+gone too, into the PROVEN
+`pow_dvd_log_valuation_of_forall_fixed_rootOfUnity_eq_one` above, whose
+docstring records the cohomological reading that makes the two cuts one
+statement: the cocycle `σ ↦ σ(r)/r` is a class in `H¹(Γ, μ_{p^c})` for
+`Γ = Gal(ℚ_p(σ₀)/ℚ_p)` and `μ_{p^c} = μ_{pⁿ} ∩ ℚ_p(σ₀)`; the abelian
+branch kills it by triviality of the `χ`-isotypic part of
+`Hom(Γ₀^{ab}, ℤ/p^c)`, and the root-of-unity branch kills it by
+triviality of the COEFFICIENTS. What survives is exactly the shape
+every audit here points at: **the genuinely nonabelian CONNECTED case
+with `c ≥ 1`, and nothing else**.
 
 WHERE THE PROOF MUST COME FROM, AND THE TWO STEPS IT REDUCES TO. The
 route is the STRUCTURE axis — the connected–étale dévissage of the
@@ -55725,7 +55878,81 @@ LITERATURE IT CITES.
 THE CHECK THAT WOULD REFUTE THIS BLOCK: find a declaration in this tree
 that already produces the equivariant injection named above, or exhibit
 a Hopf order in `B` for some `q` with `v_p(q) ≠ 0`. Either one changes
-the ordering. -/
+the ordering.
+
+WHY THAT ORDERING WAS NOT EXECUTED BY THE SIXTEENTH OWNER EITHER
+(2026-07-27, and the reason is the same one, re-checked rather than
+assumed). Steps (i) and (ii) still have NO CONSUMER. Constructing `B`
+and proving that the naive order is a Hopf order iff `v_p(q) = 0`
+produces declarations that nothing in the cone of `fermat_last_theorem`
+uses, because the bridge from this leaf's SUBFIELD hypothesis to the
+MODULE hypothesis those steps would consume does not exist — and it is
+not merely unproven, it is FALSE as a general implication: `hfix` says
+only that `ℚ_p(r) ⊆ ℚ_p(σ₀)`, and a field containment does not make
+`M_q` a `Γ ℚ_p`-subquotient of `W` (take `W = M ⊕ W'` with the radical
+cut out by `W'`). Serre's argument consumes the subquotient datum, not
+the containment, which is the precise sense in which this leaf is
+STRICTLY STRONGER THAN THE LITERATURE IT CITES — see THE RECOMMENDED
+STRENGTHENING IS NOT FREE AT THE CONSUMER in the leaf below. So a
+reduction from this leaf to steps 1 and 2 does not exist to be written,
+and writing the steps first would be free-floating, which this
+development forbids.
+
+What DOES have a consumer, and is therefore what that owner did
+instead, is the ROOT-OF-UNITY CUT recorded above: it closes the
+`μ_{pⁿ} ∩ ℚ_p(σ₀) = 1` case of this very leaf with four lines of Kummer
+theory and no new theory at all. The ordering above remains correct
+for whoever takes the CUT-LEVEL decision to strengthen the hypothesis;
+it is not actionable by a leaf owner. -/
+theorem pow_dvd_log_valuation_of_exists_fixed_rootOfUnity_of_not_forall_commute_localInertia
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W]
+    (σ₀ : GaloisRep ℚ A W) {n : ℕ} (hkill : ((p ^ n : ℕ) : A) = 0)
+    (hflat : σ₀.HasFlatProlongationAt 𝔭ᵥ)
+    (q : (ℚᵖᵥ)ˣ) (r : AlgebraicClosure ℚᵖᵥ)
+    (hr : r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+      σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r)
+    (hroot : ∃ ζ : AlgebraicClosure ℚᵖᵥ, ζ ^ p ^ n = 1 ∧ ζ ≠ 1 ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ, σ₀.toLocal 𝔭ᵥ σ = 1 → σ ζ = ζ)
+    (hnab : ¬ ∀ σ ∈ localInertiaGroup 𝔭ᵥ, ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
+      Commute (σ₀.toLocal 𝔭ᵥ σ) (σ₀.toLocal 𝔭ᵥ τ)) :
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
+  sorry
+
+include hpodd in
+/-- **The NONABELIAN half of Serre's local criterion** (**now a THEOREM
+over the 2026-07-27 ROOT-OF-UNITY CUT stated immediately above**; it was
+a bare sorry leaf from the morning of that day, when the
+INERTIA-COMMUTATIVITY CUT opened it, until the afternoon).
+
+The split is on whether `ℚ_p(σ₀)` contains a nontrivial `pⁿ`-th root of
+unity — equivalently on whether the group `μ_{p^c} = μ_{pⁿ} ∩ ℚ_p(σ₀)`
+in which the Kummer cocycle `σ ↦ σ(r)/r` takes its values is trivial.
+The assembly is `by_cases`, so it costs one line and no mathematics.
+
+* **`c = 0`**: `pow_dvd_log_valuation_of_forall_fixed_rootOfUnity_eq_one`
+  above. PROVEN, and it needs NEITHER `hflat` NOR `hkill` NOR `hpodd`
+  NOR `hnab`: the cocycle takes values in the trivial group, so `r` is
+  fixed by all of `Γ ℚ_p` and `q` is a `pⁿ`-th power outright.
+* **`c ≥ 1`**:
+  `pow_dvd_log_valuation_of_exists_fixed_rootOfUnity_of_not_forall_commute_localInertia`
+  above, which carries the whole residual.
+
+Why this is a real cut and not bookkeeping: the `c = 0` branch is
+strictly weaker in hypotheses (no group scheme, no commutativity, no
+odd `p`) and is proven outright; the surviving branch is strictly
+narrower, and its extra hypothesis is exactly the one every audit in
+its docstring silently assumes when it writes `μ_p ⊆ E`. Neither the
+consumer below nor any other owner's assembly moves — this
+declaration's statement is byte-identical to what it was.
+
+THE CHECK THAT WOULD REFUTE THIS BLOCK: exhibit `σ₀`, `q`, `r`
+satisfying `hr` and `hfix` with `μ_{pⁿ} ∩ ℚ_p(σ₀) = 1` and
+`pⁿ ∤ v_p(q)` — i.e. an error in the four-line argument of
+`exists_pow_eq_of_forall_fixed_rootOfUnity_eq_one`, whose only
+non-formal step is the normality of `ker (σ₀.toLocal 𝔭ᵥ)`. -/
 theorem pow_dvd_log_valuation_of_hasFlatProlongationAt_of_not_forall_commute_localInertia
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
@@ -55738,8 +55965,16 @@ theorem pow_dvd_log_valuation_of_hasFlatProlongationAt_of_not_forall_commute_loc
       σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r)
     (hnab : ¬ ∀ σ ∈ localInertiaGroup 𝔭ᵥ, ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
       Commute (σ₀.toLocal 𝔭ᵥ σ) (σ₀.toLocal 𝔭ᵥ τ)) :
-    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
-  sorry
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) := by
+  by_cases hnoroot : ∀ ζ : AlgebraicClosure ℚᵖᵥ, ζ ^ p ^ n = 1 →
+      (∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ, σ₀.toLocal 𝔭ᵥ σ = 1 → σ ζ = ζ) →
+      ζ = 1
+  · exact pow_dvd_log_valuation_of_forall_fixed_rootOfUnity_eq_one σ₀ q r hr hfix hnoroot
+  · refine pow_dvd_log_valuation_of_exists_fixed_rootOfUnity_of_not_forall_commute_localInertia
+      hpodd σ₀ hkill hflat q r hr hfix ?_ hnab
+    push Not at hnoroot
+    obtain ⟨ζ, h1, h2, h3⟩ := hnoroot
+    exact ⟨ζ, h1, h3, h2⟩
 
 include hpodd in
 /-- **Serre's local criterion in VALUATION form: a `pⁿ`-th radical cut
@@ -56394,11 +56629,34 @@ one line and no mathematics.
   images, `e = 1` for unramified `E`) remains.
 * **Nonabelian branch**:
   `pow_dvd_log_valuation_of_hasFlatProlongationAt_of_not_forall_commute_localInertia`.
-  Carries the whole residual, and is exactly the shape every audit above
+  Carried the whole residual, and is exactly the shape every audit above
   converges on: COROLLARY 2 of the abelian-descent block says what
   survives is "the genuinely nonabelian CONNECTED case, and nothing
   else", and this is now that case as a named declaration rather than as
-  a sentence.
+  a sentence. **It is itself no longer a leaf** — see the next block.
+
+**THE ROOT-OF-UNITY CUT (sixteenth owner, 2026-07-27, the same day).**
+The nonabelian branch splits again, on whether `ℚ_p(σ₀)` contains a
+nontrivial `pⁿ`-th root of unity, and the `c = 0` side is PROVEN:
+`pow_dvd_log_valuation_of_forall_fixed_rootOfUnity_eq_one`. The point
+is that the ABELIAN-DESCENT LEMMA's own proof opens with "*If `c = 0`
+then `r ∈ E` and we are done*" — and THAT step never uses abelianness,
+so it was available in the nonabelian branch all along. Reading both
+cuts cohomologically makes them one statement: `ζ_σ := σ(r)/r` is a
+class in `H¹(Γ, μ_{p^c})` with `Γ = Gal(ℚ_p(σ₀)/ℚ_p)` and
+`μ_{p^c} = μ_{pⁿ} ∩ ℚ_p(σ₀)`; writing `χ` for the cyclotomic character
+of `Γ` on `μ_{p^c}` and `Γ₀ := ker χ`, inflation–restriction plus
+`H¹(Γ/Γ₀, μ_{p^c}) = 0` (which holds because `Γ/Γ₀ ↪ (ℤ/p^c)ˣ` is
+cyclic and, `μ_p ⊄ ℚ_p` for odd `p`, contains a `g` with `g − 1` a
+unit) injects the class into `Hom(Γ₀^{ab}, ℤ/p^c)^{χ}`. The abelian
+branch kills that group because conjugation is trivial and `χ ≢ 1`;
+the root-of-unity branch kills it because the coefficients are trivial.
+**The residual leaf is exactly the assertion that this `χ`-isotypic
+Hom-group carries no class of `r`**, and the très ramifiée `S₃`
+example is the smallest place where neither kill applies
+(`Γ₀ = A₃`, conjugation by the order-`2` element is inversion `= χ`,
+so `Hom(A₃, μ_3)^{χ} ≅ ℤ/3 ≠ 0`). That is a sharper description of
+the residual than "nonabelian connected", and it is checkable.
 
 Why this is a real cut and not bookkeeping: the abelian branch is
 strictly weaker in hypotheses (no group scheme at all) and strictly
