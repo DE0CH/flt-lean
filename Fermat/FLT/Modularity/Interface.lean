@@ -28455,6 +28455,18 @@ coefficients generate a common subfield `E₀` of `ℂ` contained in both
 Hecke fields; `K_g` is a number field (`heckeField_finiteDimensional`),
 hence algebraic over `E₀`, so the restriction of `ι` to `E₀` extends
 to `K_g` because `ℚ̄_p` is algebraically closed (`IsAlgClosed.lift`). -/
+-- INTEGRATION-COST BUMP (merger, 2026-07-27), and it is NOT masking a semantic
+-- defect: this declaration is BYTE-IDENTICAL to its version on `main`, where it
+-- compiles under the default limit.  What changed is the ambient instance set —
+-- this release merges 71 branches, several adding instances to this cone — so
+-- `IsAlgClosed.lift`'s side goal `Module.IsTorsionFree ↥E₀ (AlgebraicClosure ℚ_[p])`
+-- now exhausts 20000 synthInstance heartbeats while SEARCHING, rather than failing.
+-- Scoped to this one declaration deliberately.
+-- PROPER FIX, for an owner of this file rather than the integrator: supply that
+-- instance explicitly just before `let κa` (E₀ is a field and the target is a
+-- field, so it is immediate) and delete this line.  A bump left in place widens
+-- the space where a real failure can hide.
+set_option synthInstance.maxHeartbeats 400000 in
 theorem exists_ringHom_heckeField_of_qCoeff_eq {N M : ℕ} (hM : 0 < M)
     {f : CuspForm (Gamma0GL N) 2} {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
