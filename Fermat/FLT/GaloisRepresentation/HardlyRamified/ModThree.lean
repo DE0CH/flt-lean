@@ -343,6 +343,13 @@ public import Mathlib.LinearAlgebra.Matrix.Nondegenerate
 -- `Module.free_of_flat_of_isLocalRing`: a finite flat module over the local ring
 -- `𝒪₃ᵥ` is free, which is the `Module.Free 𝒪₃ᵥ G` input of that reduction.
 public import Mathlib.RingTheory.LocalRing.Module
+-- `TensorProduct.quotTensorEquivQuotSMul` (`𝓀 ⊗[𝒪] S ≅ S ⧸ 𝔪S`) and
+-- `LinearMap.surjective_of_surjective_comp_mkQ` (Nakayama for a map onto a
+-- finite module): the two ingredients of the generator-lifting half of
+-- `exists_generators_quotient_linearEquiv_of_residue`, which reduces the
+-- complete-intersection leaf below to its SPECIAL FIBRE.
+public import Mathlib.LinearAlgebra.TensorProduct.Quotient
+public import Mathlib.RingTheory.Nakayama
 
 /-!
 # Mod-3 hardly ramified representations
@@ -15083,12 +15090,256 @@ theorem free_cotangent_of_span_range_eq_ker
   rw [← algebraMap_smul S]
   exact hx
 
+/-- **`n` RELATIONS INSIDE THE KERNEL WHOSE QUOTIENT IS `R`-LINEARLY ISOMORPHIC TO
+`S` ALREADY EXHAUST THE KERNEL** (PROVEN 2026-07-27).
+
+Let `P : R[x₁,…,x_n] ↠ S` be a presentation of a module-FINITE `R`-algebra `S`, and
+let `f₁,…,f_n` lie in `I = P.ker`.  If the quotient `R[x]/(f₁,…,f_n)` happens to be
+isomorphic to `S` merely as an `R`-MODULE, then `(f₁,…,f_n) = I` on the nose.
+
+The point is that the isomorphism does not have to be the canonical map, and does not
+have to be a ring map: the canonical surjection `q : R[x]/(f) ↠ S` composed with any
+`R`-linear `e⁻¹ : S ≃ R[x]/(f)` is a surjective endomorphism of a finite `R`-module,
+hence injective (`OrzechProperty`, available for every commutative ring), hence `q` is
+injective and `ker q = I/(f)` vanishes.
+
+WHY THIS IS THE USEFUL FORM.  A construction of a complete-intersection presentation
+never produces the ideal equality directly; what it produces is a RANK count — a
+triangular system of relations, each monic in its own variable, whose quotient is
+`R`-free of rank `∏ dᵢ`, matched against the rank of `S`.  This lemma is exactly the
+bridge from that count to the ideal statement, and it is what the residue-field
+reduction below hands its remaining obligation in. -/
+theorem span_range_eq_ker_of_quotient_linearEquiv
+    {R : Type*} [CommRing R] {S : Type*} [CommRing S] [Algebra R S] [Module.Finite R S]
+    {n : ℕ} {P : Algebra.Generators R S (Fin n)} {f : Fin n → P.Ring}
+    (hle : Ideal.span (Set.range f) ≤ P.ker)
+    (e : (P.Ring ⧸ Ideal.span (Set.range f)) ≃ₗ[R] S) :
+    Ideal.span (Set.range f) = P.ker := by
+  classical
+  set J : Ideal P.Ring := Ideal.span (Set.range f) with hJ
+  set q : (P.Ring ⧸ J) →ₐ[R] S :=
+    Ideal.Quotient.liftₐ J (IsScalarTower.toAlgHom R P.Ring S) (fun a ha => hle ha) with hq
+  have hqapp : ∀ x : P.Ring, q (Ideal.Quotient.mk J x) = algebraMap P.Ring S x := fun x => rfl
+  have hqsurj : Function.Surjective q := by
+    intro s
+    obtain ⟨p, hp⟩ := P.algebraMap_surjective s
+    exact ⟨Ideal.Quotient.mk J p, by rw [hqapp]; exact hp⟩
+  have hqinj : Function.Injective q :=
+    OrzechProperty.injective_of_surjective_of_injective
+      (e.toLinearMap) (q.toLinearMap) e.injective hqsurj
+  refine le_antisymm hle ?_
+  intro x hx
+  have hx0 : q (Ideal.Quotient.mk J x) = q 0 := by
+    rw [hqapp, map_zero]
+    exact hx
+  exact (Ideal.Quotient.eq_zero_iff_mem).mp (hqinj hx0)
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE GROUP-SCHEME CORE, ON THE SPECIAL FIBRE: the reduction `𝔽₃ ⊗ G` of a finite
+flat Hopf order is a COMPLETE INTERSECTION over `𝔽₃`** (SORRY LEAF, cut 2026-07-27 out
+of `exists_generators_span_range_eq_ker_of_hopf_package`, which is now PROVEN over this
+leaf and the base-generic lifting leaf
+`exists_generators_quotient_linearEquiv_of_residue`).
+
+There are `n`, a presentation `𝓀[x₁,…,x_n] ↠ 𝓀 ⊗ G` over the residue field
+`𝓀 = ResidueField 𝒪₃ᵥ = 𝔽₃`, and `n` elements of `𝓀[x₁,…,x_n]` spanning its kernel.
+The group structure is carried in through the `HopfAlgebra 𝒪₃ᵥ G` instance; `𝓀 ⊗ G`
+is again a finite commutative Hopf algebra, over a PERFECT field of characteristic
+`3`, which is the case the structure theory covers.
+
+**WHY THE CUT IS HERE.**  The parent leaf asked for a complete-intersection
+presentation over `𝒪₃ᵥ`, which mixes two contents: the group-scheme structure theory,
+which lives entirely over the residue field, and a deformation-theoretic lift along a
+flat family, which is pure commutative algebra with no group structure whatsoever.
+The second half is now a separate, base-generic leaf; this one is the first half, and
+it is where Demazure–Gabriel/Borel has to be built.
+
+WHY IT IS TRUE.  Over a perfect field the connected–étale sequence splits, so
+`𝓀 ⊗ G ≅ A₀ ⊗_𝓀 A_et` with `A₀` the (local) connected part and `A_et` étale.
+Demazure–Gabriel III §3 5.6 gives `A₀ ≅ 𝓀[y₁,…,y_r]/(y₁^{3^{e₁}},…,y_r^{3^{e_r}})`,
+a complete intersection with the relations DIAGONAL — in particular triangular and
+monic in their own variables, which is exactly the shape the lifting leaf wants.
+`A_et` is a finite separable `𝓀`-algebra, i.e. a finite product of finite extensions
+of `𝔽₃`.  A tensor product of complete intersections is a complete intersection
+(disjoint variables, concatenated relations: `n + m` relations on `n + m` variables),
+so the two halves compose.
+
+**THE ONE SUB-OBSTRUCTION A SUCCESSOR SHOULD PRICE FIRST** (2026-07-27): the étale
+factor is a GLOBAL complete-intersection question over a FINITE field, and that is
+strictly stronger than "each local ring is regular".  `𝔽₃^m` is monogenic only for
+`m ≤ 3` (a monic split polynomial needs `m` distinct residues), so for larger `m` one
+must exhibit `m` points of `𝔽₃ⁿ` cut out by `n` equations.  It can always be done by
+a staircase: e.g. `𝔽₃⁵ ≅ 𝔽₃[x,y]/(x²-x, (1-x)(y³-y) + x(y²-y))`, since
+`𝔽₃[x,y]/(x²-x) ≅ 𝔽₃[y] × 𝔽₃[y]` and the second relation cuts `3` points on one sheet
+and `2` on the other.  That construction is elementary but it is not in mathlib, and
+it is the concrete missing lemma, not the deep part.
+
+**THE `μ₃` WITNESS.**  `μ₃` satisfies this leaf on the nose: `𝓀 ⊗ μ₃ = 𝔽₃[y]/(y³)`,
+`n = 1`, `f₁ = y³`.  Note that `μ₃` is ALSO the counterexample showing why the
+`H¹`-vanishing half could never have been obtained from the special fibre —
+`H¹(L_{𝔽₃[y]/(y³) ⁄ 𝔽₃}) ≅ 𝔽₃[y]/(y³) ≠ 0`, because `d(y³) = 3y²dy = 0` in
+characteristic `3`.  That is why the cut had to separate the two: LCI DOES descend to
+the closed fibre, `H¹ = 0` does not, and the latter is now discharged downstream by
+`free_cotangent_of_span_range_eq_ker` out of the ÉTALE GENERIC fibre instead.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a finite commutative Hopf
+`𝔽₃`-algebra whose minimal presentation needs strictly more relations than
+generators.  **The Hopf hypothesis is genuinely load-bearing and a refutation must
+respect it**: without it the statement is FALSE, and the witness is
+`𝔽₃[e,f]/(e², f², ef)` — the reduction of the order `𝒪₃ᵥ + 3·𝒪₃ᵥ³` inside the étale
+algebra `𝒪₃ᵥ³` — which has embedding dimension `2` and length `3`, whereas a complete
+intersection of embedding dimension `2` has length at least `4` (both relations lie in
+`𝔪²`).  So three relations are needed on two generators, and no argument for this leaf
+can avoid using the comultiplication.
+
+AXIS SEARCHED, and what is missing at this pin (2026-07-27, greps over
+`Mathlib/RingTheory/{Extension,Kaehler,Smooth,Etale,Regular}/` and over `~/cs/FLT`):
+there is no `IsCompleteIntersection` predicate, no group-scheme quotient, no Borel /
+Demazure–Gabriel structure theory, and no interaction whatsoever between
+`HopfAlgebra` and `Kaehler`/`Cotangent`/`Smooth`/`Etale`; `~/cs/FLT` has zero
+occurrences of `H1Cotangent`, `Extension.Cotangent`, `IsStandardSmooth` or
+`CompleteIntersection`.  The Koszul absence recorded by the earlier audits is NO
+LONGER on the critical path — see `free_cotangent_of_span_range_eq_ker_of_torsion`.
+The usable building blocks that remain relevant are the connected–étale package of
+`Fermat/FLT/GroupScheme/ConnectedEtale.lean` (`exists_minimal_counit_idempotent`,
+`Bialgebra.exists_connected_counit_idempotent`), which is the splitting half, and
+this file's own PROVEN `exists_kaehler_linearEquiv_baseChange_of_hopf_package`
+(`Ω[G⁄𝒪₃ᵥ] ≅ G ⊗ ω_G`), which pins `r` above as the rank of the cotangent space.
+
+RAYNAUD'S ROUTE, for contrast: a finite flat commutative group scheme over ANY base
+is a local complete intersection — embed `G` in the smooth affine `GL(G)` by the
+regular representation, the fppf quotient `GL(G)/G` is smooth of the same dimension,
+and `G` is the fibre of `GL(G) → GL(G)/G` over the identity section, whose ideal is
+generated by a regular sequence (Raynaud, *Schémas en groupes de type (p,…,p)*, Bull.
+SMF 102 (1974), §1; Avramov, *Complete intersections and symmetric algebras*, J.
+Algebra 73 (1981); Mazur–Roberts; Fontaine §1.7 cites it as standard).  Nothing about
+group-scheme QUOTIENTS exists at this pin, which is why the closed-fibre route is the
+recommended attack instead. -/
+theorem exists_generators_span_range_eq_ker_residue_of_hopf_package
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
+    [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G] :
+    ∃ (n : ℕ) (P : Algebra.Generators (IsLocalRing.ResidueField 𝒪₃ᵥ)
+        (IsLocalRing.ResidueField 𝒪₃ᵥ ⊗[𝒪₃ᵥ] G) (Fin n)) (f : Fin n → P.Ring),
+      Ideal.span (Set.range f) = P.ker :=
+  sorry
+
+open _root_.IsLocalRing _root_.MvPolynomial in
+/-- **A COMPLETE INTERSECTION ON THE SPECIAL FIBRE LIFTS TO ONE UPSTAIRS**, for a
+finite flat algebra over a complete Noetherian local ring (PARTIALLY PROVEN
+2026-07-27: the GENERATOR-lifting half is proven, the RELATION-lifting half is the
+remaining sorried `have`).  No group structure is used anywhere; this is the
+deformation-theoretic half of `exists_generators_span_range_eq_ker_of_hopf_package`,
+stated base-generically so it can be reused.
+
+WHAT IS PROVEN HERE.  Given a presentation `P̄ : 𝓀[x₁,…,x_n] ↠ 𝓀 ⊗ S` of the special
+fibre, the reduction `S → 𝓀 ⊗ S` is surjective (`quotTensorEquivQuotSMul` identifies
+`𝓀 ⊗ S` with `S ⧸ 𝔪S`), so `P̄.val` lifts to `y : Fin n → S`; and NAKAYAMA then makes
+`R[x₁,…,x_n] → S`, `xᵢ ↦ yᵢ`, SURJECTIVE — `S` is `R`-finite and `𝔪 ≤ jacobson ⊥`, so
+`LinearMap.surjective_of_surjective_comp_mkQ` applies to the composite through
+`S ⧸ 𝔪S`.  The presentation `P` is therefore pinned: it is the lift of `P̄`, variable
+by variable, and the remaining obligation is only to produce its `n` RELATIONS.
+
+**THE TRAP, WITH AN EXPLICIT COUNTEREXAMPLE — DO NOT LIFT THE RELATIONS NAIVELY**
+(2026-07-27).  It is tempting to lift `f̄₁,…,f̄_n` to arbitrary `f₁,…,f_n ∈ I` (possible:
+`S` is `R`-flat, so `I ⊗ 𝓀 ≅ Ī`) and to finish by Nakayama.  **That is false**, because
+`R[x]` is not local and `𝔪` is not in its Jacobson radical.  Witness: `R = ℤ₃`, `S = ℤ₃`,
+`n = 1`, `I = (x) ⊆ ℤ₃[x]`, `f = x(1 + 3x) ∈ I`.  Then `f̄ = x` generates `Ī = (x)`, and
+`I = (f) + 𝔪I`, yet `(f) ≠ I`: `1 + 3x` is not a unit of `ℤ₃[x]`, and in fact
+`ℤ₃[x]/(x(1+3x)) ≅ ℤ₃ × ℚ₃` — not even FINITE over `ℤ₃`, let alone `≅ S`.  A relation
+lift can therefore fail while satisfying every congruence one would think to check.
+
+**THE ROUTE THAT WORKS: MONIC RELATIONS, THEN A RANK COUNT.**  Do not aim for the ideal
+equality; aim for the hypothesis of `span_range_eq_ker_of_quotient_linearEquiv` above.
+Suppose the special-fibre relations are triangular and monic, `f̄ᵢ` monic in `xᵢ` of
+degree `dᵢ` with `∏ dᵢ = dim_𝓀 (𝓀 ⊗ S)` — which is exactly what the Demazure–Gabriel
+normal form on the sibling leaf delivers.  Lift each `f̄ᵢ` to a `gᵢ ∈ R[x]` monic in `xᵢ`
+of the SAME degree by lifting coefficients; `gᵢ` need not lie in `I`, but its image in
+`S` lies in `𝔪S`, and the `∏ dᵢ` monomials `x^α` with `αᵢ < dᵢ` are an `R`-BASIS of the
+free module `S` (they reduce to a basis mod `𝔪`, and `S` is finite flat over the local
+ring `R`, hence free), so that image is `R`-spanned by monomials of degree `< dᵢ` in
+`xᵢ` with coefficients in `𝔪`.  Subtracting that correction gives `fᵢ ∈ I`, still monic
+in `xᵢ` of degree `dᵢ`.  A triangular monic system makes `R[x]/(f)` free of rank
+`∏ dᵢ = rank_R S`, which is the `≃ₗ[R] S` that the glue lemma consumes.
+
+WHY THE COMPLETENESS HYPOTHESIS IS KEPT even though the route above does not visibly
+use it: it is what makes `R` henselian, hence what lets a finite `R`-algebra be split
+into local factors and what the classical proofs of this statement (power series plus
+Weierstrass preparation) run on.  A successor who closes the leaf without it should
+delete it rather than leave it decorative. -/
+theorem exists_generators_quotient_linearEquiv_of_residue
+    {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    (S : Type) [CommRing S] [Algebra R S] [Module.Flat R S] [Module.Finite R S]
+    (h : ∃ (n : ℕ) (P : Algebra.Generators (IsLocalRing.ResidueField R)
+          (IsLocalRing.ResidueField R ⊗[R] S) (Fin n)) (f : Fin n → P.Ring),
+        Ideal.span (Set.range f) = P.ker) :
+    ∃ (n : ℕ) (P : Algebra.Generators R S (Fin n)) (f : Fin n → P.Ring),
+      Ideal.span (Set.range f) ≤ P.ker ∧
+        Nonempty ((P.Ring ⧸ Ideal.span (Set.range f)) ≃ₗ[R] S) := by
+  classical
+  obtain ⟨n, Pbar, fbar, hfbar⟩ := h
+  set e := TensorProduct.quotTensorEquivQuotSMul S (maximalIdeal R) with he
+  -- the reduction `S → 𝓀 ⊗ S` is surjective, because `𝓀 ⊗ S ≅ S ⧸ 𝔪S`
+  have hincl : Function.Surjective
+      (Algebra.TensorProduct.includeRight : S →ₐ[R] (ResidueField R) ⊗[R] S) := by
+    intro z
+    obtain ⟨s, hs⟩ := Submodule.Quotient.mk_surjective _ (e z)
+    refine ⟨s, e.injective ?_⟩
+    rw [← hs, he, Algebra.TensorProduct.includeRight_apply]
+    exact TensorProduct.quotTensorEquivQuotSMul_mk_one_tmul _ _
+  choose y hy using fun i => hincl (Pbar.val i)
+  have hjac : maximalIdeal R ≤ (⊥ : Ideal R).jacobson := by
+    rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+  -- NAKAYAMA: lifts of a generating set of the special fibre generate `S`
+  have hsurj : Function.Surjective (aeval y : MvPolynomial (Fin n) R →ₐ[R] S) := by
+    have hcomp : Function.Surjective
+        ((Algebra.TensorProduct.includeRight : S →ₐ[R] (ResidueField R) ⊗[R] S).toRingHom.comp
+          (aeval y : MvPolynomial (Fin n) R →ₐ[R] S).toRingHom) := by
+      have hkey : (Algebra.TensorProduct.includeRight :
+            S →ₐ[R] (ResidueField R) ⊗[R] S).toRingHom.comp
+            (aeval y : MvPolynomial (Fin n) R →ₐ[R] S).toRingHom =
+          (aeval Pbar.val : MvPolynomial (Fin n) (ResidueField R) →ₐ[ResidueField R]
+              (ResidueField R) ⊗[R] S).toRingHom.comp
+            (MvPolynomial.map (algebraMap R (ResidueField R))) := by
+        apply MvPolynomial.ringHom_ext
+        · intro r
+          have hk : (r • (1 : ResidueField R)) = residue R r := by
+            simp [Algebra.smul_def]
+          simp [Algebra.TensorProduct.includeRight, Algebra.algebraMap_eq_smul_one,
+            Algebra.TensorProduct.one_def, TensorProduct.smul_tmul', smul_eq_mul, mul_one, hk]
+        · intro i
+          simp [hy i]
+      rw [hkey]
+      exact (Pbar.aeval_val_surjective).comp
+        (MvPolynomial.map_surjective _ Ideal.Quotient.mk_surjective)
+    apply LinearMap.surjective_of_surjective_comp_mkQ
+      (aeval y : MvPolynomial (Fin n) R →ₐ[R] S).toLinearMap (maximalIdeal R) hjac
+    intro z
+    obtain ⟨w, hw⟩ := hcomp (e.symm z)
+    refine ⟨w, ?_⟩
+    have hez : e (Algebra.TensorProduct.includeRight (aeval y w)) = z := by
+      rw [show Algebra.TensorProduct.includeRight (aeval y w) = e.symm z from hw]
+      simp
+    simpa [he] using hez
+  set P : Algebra.Generators R S (Fin n) := Algebra.Generators.ofSurjective y hsurj with hP
+  /- THE REMAINING OBLIGATION: lift the `n` relations of the special fibre to `n`
+  relations of `P`, in the rank form that `span_range_eq_ker_of_quotient_linearEquiv`
+  consumes.  See "THE ROUTE THAT WORKS" in the docstring above, and note the explicit
+  counterexample there to the naive Nakayama lift. -/
+  have hcrux : Ideal.span (Set.range fbar) = Pbar.ker →
+      ∃ f : Fin n → P.Ring, Ideal.span (Set.range f) ≤ P.ker ∧
+        Nonempty ((P.Ring ⧸ Ideal.span (Set.range f)) ≃ₗ[R] S) := sorry
+  obtain ⟨f, hf1, hf2⟩ := hcrux hfbar
+  exact ⟨n, P, f, hf1, hf2⟩
+
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **THE GROUP-SCHEME CORE: a finite flat Hopf order is a COMPLETE INTERSECTION,
-i.e. it admits a presentation with as many relations as variables** (SORRY LEAF, cut
-2026-07-27 out of `exists_generators_projective_cotangent_of_hopf_package`, which is
-now PROVEN over this leaf alone).
+i.e. it admits a presentation with as many relations as variables** (PROVEN
+2026-07-27 over the two leaves `exists_generators_span_range_eq_ker_residue_of_hopf_package`
+and `exists_generators_quotient_linearEquiv_of_residue`; itself cut 2026-07-27 out of
+`exists_generators_projective_cotangent_of_hopf_package`).
 
 There are `n`, a presentation `𝒪₃ᵥ[x₁,…,x_n] ↠ G`, and `n` elements `f₁,…,f_n` of
 `𝒪₃ᵥ[x₁,…,x_n]` spanning its kernel.  Equivalently `G ≅ 𝒪₃ᵥ[x₁,…,x_n]/(f₁,…,f_n)`
@@ -15106,67 +15357,44 @@ which is what the earlier audits identified as the blocking absence at this pin
 sequences").  The determinant argument replaces Koszul regularity entirely: an
 endomorphism of a finite free module over a domain with torsion cokernel is
 injective, and `#relations = #variables` is exactly what makes the map an
-ENDOMORPHISM.  So the whole remaining obligation is the combinatorial one, stated
-here.
+ENDOMORPHISM.  So the whole remaining obligation is the combinatorial one, and it is
+now cut in two by the second axis — SPECIAL FIBRE versus LIFT — described next.
 
-WHY IT IS TRUE.  A finite flat commutative group scheme over any base is a local
-complete intersection: embed `G` in the smooth affine `GL(G)` by the regular
-representation; the fppf quotient `GL(G)/G` is smooth of the same dimension, and `G`
-is the fibre of the flat surjection `GL(G) → GL(G)/G` over the identity section,
-whose ideal is generated by a regular sequence.  References: Raynaud, *Schémas en
-groupes de type (p,…,p)*, Bull. SMF 102 (1974), §1; Avramov, *Complete intersections
-and symmetric algebras*, J. Algebra 73 (1981); Mazur–Roberts; Fontaine §1.7 cites it
-as standard.  Nothing about group-scheme QUOTIENTS exists at this pin, which is what
-makes this the substantial half.
+**THE SECOND CUT (2026-07-27): GROUP THEORY OVER `𝔽₃`, THEN A FLAT LIFT.**  The
+combinatorial statement itself factors, and the two factors share no machinery:
 
-**THE CLOSED-FIBRE ROUTE IS LIVE, and is the recommended attack** (2026-07-27).  An
-earlier audit refuted the special-fibre route — but it refuted it as a route to the
-`H¹` VANISHING, not as a route to a complete-intersection presentation, and the
-difference matters here.  What it shows is that `μ₃ ⊗ 𝔽₃ = 𝔽₃[y]/(y³)` has
-`H¹(L) ≅ 𝔽₃[y]/(y³) ≠ 0`, because `d(y³) = 3y² dy = 0` in characteristic `3`; the
-same computation over `𝒪₃ᵥ` gives `x³-1 ↦ 3x² dx`, injective because `3` is a
-nonzerodivisor on the `𝒪₃ᵥ`-free module `G`.  So `H¹ = 0` is a mixed-characteristic
-phenomenon coming from the ÉTALE GENERIC FIBRE — which is precisely how
-`free_cotangent_of_span_range_eq_ker` obtains it, and why
-`[Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]` is load-bearing there rather than decorative.
-But `μ₃` SATISFIES the present leaf on the nose: `n = 1`, `f₁ = x³-1`.  So the
-closed-fibre route — a Demazure–Gabriel/Borel structure theorem for finite
-commutative Hopf algebras over `𝔽₃` (connected part `k[y₁,…,y_r]/(y_i^{p^{e_i}})`,
-étale part split off, each factor visibly a complete intersection), then Nakayama plus
-`𝒪₃ᵥ`-flatness to lift the presentation — is a live candidate and should not be
-skipped.  Note that only the PRESENTATION has to be lifted now, not any statement
-about `I/I²`: the conormal half is already discharged downstream.  Borel's structure
-theorem is absent from the pin, so this is not cheap.
+* `exists_generators_span_range_eq_ker_residue_of_hopf_package` — the SAME statement
+  for the reduction `𝓀 ⊗ G` over the residue field `𝓀 = 𝔽₃`.  This is where the
+  comultiplication is used, and where Demazure–Gabriel/Borel has to be built.  The
+  `μ₃` witness, the non-Hopf counterexample `𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)`, the
+  refutation check and the pin survey have MOVED to that docstring, because they all
+  bear on the group-theoretic half.
+* `exists_generators_quotient_linearEquiv_of_residue` — lifting a complete-intersection
+  presentation along a finite FLAT algebra over a complete local ring.  Base-generic,
+  no group structure, no `𝒪₃ᵥ`.  Its generator-lifting half (Nakayama) is PROVEN;
+  what remains sorried inside it is the relation-lifting half, together with an
+  explicit counterexample to the naive version of it.
 
-THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a finite flat commutative Hopf
-`𝒪₃ᵥ`-algebra with étale generic fibre whose minimal presentation needs strictly more
-relations than generators.  The Hopf hypothesis is genuinely load-bearing and a
-refutation must respect it: dropping it makes the statement FALSE, and the witness is
-the order `S = 𝒪₃ᵥ + 3·𝒪₃ᵥ³ = 𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)` inside the étale algebra
-`𝒪₃ᵥ³` — finite flat over `𝒪₃ᵥ` with étale generic fibre, embedding dimension `3`
-against Krull dimension `1`, hence needing three relations on two generators and not a
-complete intersection.  So no argument for this leaf can avoid using the
-comultiplication.
+The bridge between the two is `span_range_eq_ker_of_quotient_linearEquiv` above,
+proven: relations inside the kernel whose quotient is merely `R`-LINEARLY isomorphic
+to `G` already exhaust the kernel.  That is what lets the lifting leaf discharge its
+obligation by a RANK count rather than an ideal computation.
 
-AXIS SEARCHED, and what is missing at this pin (2026-07-27, greps over
-`Mathlib/RingTheory/{Extension,Kaehler,Smooth,Etale,Regular}/` and over `~/cs/FLT`):
-there is no `IsCompleteIntersection` predicate, no group-scheme quotient, no Borel /
-Demazure–Gabriel structure theory, and no interaction whatsoever between
-`HopfAlgebra` and `Kaehler`/`Cotangent`/`Smooth`/`Etale`; `~/cs/FLT` has zero
-occurrences of `H1Cotangent`, `Extension.Cotangent`, `IsStandardSmooth` or
-`CompleteIntersection`.  Note the Koszul absence is NO LONGER on the critical path —
-see the cut note above.  The usable building blocks that remain relevant are
-`Extension.cotangentEquiv`, `Extension.Cotangent.span_eq_top_of_span_eq_ker`,
-`Cotangent.mk_eq_zero_iff`, and this file's own PROVEN Hopf inputs
-`exists_kaehler_linearEquiv_baseChange_of_hopf_package` (`Ω[G⁄𝒪₃ᵥ] ≅ G ⊗ ω_G`) and the
-connected–étale package of `Fermat/FLT/GroupScheme/ConnectedEtale.lean`. -/
+Note in particular that only the PRESENTATION has to be lifted, not any statement
+about `I/I²`: the conormal half is discharged downstream by
+`free_cotangent_of_span_range_eq_ker`, out of the ÉTALE GENERIC fibre, which is why
+`[Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]` is load-bearing there and appears here only to
+be passed along. -/
 theorem exists_generators_span_range_eq_ker_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
     ∃ (n : ℕ) (P : Algebra.Generators 𝒪₃ᵥ G (Fin n)) (f : Fin n → P.Ring),
-      Ideal.span (Set.range f) = P.ker :=
-  sorry
+      Ideal.span (Set.range f) = P.ker := by
+  obtain ⟨n, P, f, hle, ⟨e⟩⟩ :=
+    exists_generators_quotient_linearEquiv_of_residue G
+      (exists_generators_span_range_eq_ker_residue_of_hopf_package G)
+  exact ⟨n, P, f, span_range_eq_ker_of_quotient_linearEquiv hle e⟩
 
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
@@ -15179,10 +15407,12 @@ the canonical presentation to an existential over finite presentations — see
 RESTATEMENT below, which was the substantive change).
 
 **STATUS 2026-07-27 — PROVEN, and the remaining obligation is purely
-COMBINATORIAL.**  The leaf below it asks only that `G` admit a presentation with
-as many relations as variables (`exists_generators_span_range_eq_ker_of_hopf_package`);
-everything else — the passage from that presentation to PROJECTIVITY of `I/I²` —
-is discharged by `free_cotangent_of_span_range_eq_ker` above, plus
+COMBINATORIAL.**  Its input `exists_generators_span_range_eq_ker_of_hopf_package`
+asks only that `G` admit a presentation with as many relations as variables, and
+is itself now PROVEN over two smaller leaves — the same statement over the
+residue field `𝔽₃` and a group-free flat LIFT; see its docstring.  Everything
+else — the passage from such a presentation to PROJECTIVITY of `I/I²` — is
+discharged by `free_cotangent_of_span_range_eq_ker` above, plus
 `Module.free_of_flat_of_isLocalRing` for `Module.Free 𝒪₃ᵥ G`.  In particular the
 conormal module of the presentation produced there is not merely projective but
 FREE of rank `n`.
@@ -15285,23 +15515,33 @@ is a complete intersection, the presentation lifts to `𝒪₃ᵥ[x] ↠ 𝒪₃
 and `I/I²` is `G`-FREE of rank 1.  So the closed-fibre route (a
 Demazure–Gabriel/Borel structure theorem for finite commutative Hopf algebras
 over `𝔽₃`, then Nakayama plus `𝒪₃ᵥ`-flatness to lift the presentation) is a LIVE
-candidate and should not be skipped on the strength of the note above — it is now
-the recommended attack on
-`exists_generators_span_range_eq_ker_of_hopf_package`, where the full version of
-this paragraph lives.  It is not thereby cheap: Borel's structure theorem is
-absent from the pin.  (The clause "then Koszul regularity to make `I/I²` free"
-that stood here has been DELETED: that step is proven and needs no Koszul theory,
-see THE KOSZUL ABSENCE IS OFF THE CRITICAL PATH above.)
+candidate and should not be skipped on the strength of the note above — it has
+since become the actual CUT, not merely the recommended attack: see
+`exists_generators_span_range_eq_ker_residue_of_hopf_package`, where the full
+version of this paragraph lives.  It is not thereby cheap: Borel's structure theorem
+is absent from the pin.  (The clause "then Koszul regularity to make
+`I/I²` free" that stood here has been DELETED: that step is proven and needs no
+Koszul theory, see THE KOSZUL ABSENCE IS OFF THE CRITICAL PATH above.)
 
-**WHERE THE REMAINING WORK LIVES** (2026-07-27).  The two paragraphs above are
-retained because they record what a successor must not re-derive, but the
-group-scheme content they describe is no longer this declaration's obligation: it
-has moved verbatim, and with the refutation check and the axis search, onto
-`exists_generators_span_range_eq_ker_of_hopf_package` immediately above.  That is
-where the closed-fibre route, the `μ₃` witness, the non-Hopf counterexample
-`𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)` and the pin survey now belong, because they all bear
-on the COMBINATORIAL statement (`#relations = #variables`) rather than on the
-conormal module.  Do not attack this declaration; attack that leaf. -/
+**WHERE THE REMAINING WORK LIVES** (2026-07-27, updated the same day).  The two
+paragraphs above are retained because they record what a successor must not
+re-derive, but the group-scheme content they describe is no longer this
+declaration's obligation, nor even the obligation of
+`exists_generators_span_range_eq_ker_of_hopf_package` immediately above — that
+declaration is now PROVEN too.  The open leaves are, in order of where a
+successor should look:
+
+* `exists_generators_span_range_eq_ker_residue_of_hopf_package` — the SAME
+  complete-intersection statement over the residue field `𝔽₃`.  The closed-fibre
+  route, the `μ₃` witness, the non-Hopf counterexample
+  `𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)`, the refutation check and the pin survey all live
+  in its docstring now, because they all bear on the group-theoretic half.
+* `exists_generators_quotient_linearEquiv_of_residue` — the flat LIFT of a
+  complete-intersection presentation from the special fibre, base-generic and
+  group-free, whose Nakayama half is already proven.
+
+Do not attack this declaration, and do not attack the one above it; attack those
+two. -/
 theorem exists_generators_projective_cotangent_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
