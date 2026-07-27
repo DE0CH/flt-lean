@@ -8658,11 +8658,367 @@ theorem exists_inverted_irreducible_map_algClosureZMod {k : ℕ}
     (fun h => hpdvd ((h.trans (Finset.dvd_prod_of_mem Nj (Finset.mem_univ j))).mul_left _)) x
   exact hi (hx i)
 
+section IntegralSystemBirational
+
+universe w
+
+/-- **IRREDUCIBILITY OF A MULTIVARIATE POLYNOMIAL DESCENDS ALONG ANY FIELD
+EXTENSION** (PROVEN, 2026-07-27).
+
+Needed because the birational normal form below is stated with `g` irreducible
+over `ℚ̄` — which is what the consumer wants — while the hypersurface it is a
+normal form FOR, `ℚ[x] ⧸ (g)`, is a domain only once `g` is irreducible over `ℚ`.
+The two are not the same statement and the implication runs only one way; this is
+that way.
+
+PROOF. Over a field, `IsUnit x ↔ IsUnit (coeff 0 x) ∧ totalDegree x = 0`
+(`MvPolynomial.isUnit_iff_totalDegree_of_isReduced`), and a field hom is injective,
+so `support (map φ x) = support x` and the two conditions transport verbatim. -/
+theorem irreducible_of_irreducible_map_of_field {F L : Type*} [Field F] [Field L]
+    (φ : F →+* L) {k : ℕ} {g : MvPolynomial (Fin k) F}
+    (h : Irreducible (MvPolynomial.map φ g)) : Irreducible g := by
+  have hunit : ∀ x : MvPolynomial (Fin k) F, IsUnit (MvPolynomial.map φ x) → IsUnit x := by
+    intro x hx
+    rw [MvPolynomial.isUnit_iff_totalDegree_of_isReduced] at hx ⊢
+    obtain ⟨hx1, hx2⟩ := hx
+    constructor
+    · rw [MvPolynomial.coeff_map] at hx1
+      exact isUnit_iff_ne_zero.mpr fun h0 => by simp [h0] at hx1
+    · have : (MvPolynomial.map φ x).support = x.support :=
+        MvPolynomial.support_map_of_injective x φ.injective
+      unfold MvPolynomial.totalDegree at hx2 ⊢
+      rwa [this] at hx2
+  refine ⟨fun hu => h.not_isUnit (IsUnit.map (MvPolynomial.map φ) hu), fun a b hab => ?_⟩
+  have : MvPolynomial.map φ g = MvPolynomial.map φ a * MvPolynomial.map φ b := by
+    rw [hab, map_mul]
+  rcases h.isUnit_or_isUnit this with hu | hu
+  · exact Or.inl (hunit _ hu)
+  · exact Or.inr (hunit _ hu)
+
+/-- The base-change comparison map on integral models,
+`IntegralSystemModel f R →ₐ[R] IntegralSystemModel f R'`, obtained from the PROVEN
+base-change isomorphism `integralSystemModelBaseChange` by restricting along
+`x ↦ 1 ⊗ x`. -/
+noncomputable def integralSystemModelBaseChangeHom {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (R : Type v) [CommRing R] (R' : Type w) [CommRing R'] [Algebra R R'] :
+    IntegralSystemModel f R →ₐ[R] IntegralSystemModel f R' :=
+  ((integralSystemModelBaseChangeFwd f R R').restrictScalars R).comp
+    Algebra.TensorProduct.includeRight
+
+/-- **THE BASE-CHANGE COMPARISON IS INJECTIVE OVER A FIELD** (PROVEN,
+2026-07-27): every module over a field is flat, so `x ↦ 1 ⊗ x` is injective
+(`Algebra.TensorProduct.includeRight_injective`), and the base-change comparison
+is an isomorphism. This is the faithful-flatness input to the descent below. -/
+theorem integralSystemModelBaseChangeHom_injective {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (R : Type v) [Field R] (R' : Type w) [CommRing R'] [Nontrivial R'] [Algebra R R'] :
+    Function.Injective (integralSystemModelBaseChangeHom f R R') := by
+  have h1 : Function.Injective
+      (Algebra.TensorProduct.includeRight (R := R) (A := R') (B := IntegralSystemModel f R)) :=
+    Algebra.TensorProduct.includeRight_injective (RingHom.injective (algebraMap R R'))
+  have h2 : Function.Injective (integralSystemModelBaseChangeFwd f R R') :=
+    (integralSystemModelBaseChange f R R').injective
+  exact h2.comp h1
+
+/-- **POONEN §3.2 STEP (a): THE GENERIC FIBRE IS IRREDUCIBLE OVER `ℚ` ALREADY**
+(**PROVEN 2026-07-27**, part of the decomposition of
+`exists_birationalNormalForm_integralSystemModel_rat` below).
+
+Geometric irreducibility of the generic fibre — `hQ`, a statement over `ℚ̄` — is
+transported down to `ℚ`: the reduction `S := (IntegralSystemModel f ℚ)_red` is a
+DOMAIN. That is step (a) of Poonen §3.2, and it is the only part of the
+birational normal form that needs no field theory at all.
+
+PROOF, in two halves.
+
+* *Over `ℚ̄`.* `nilradical (P_ℚ̄ ⧸ J)` contracts along the surjection
+  `P_ℚ̄ ↠ P_ℚ̄ ⧸ J` to `J.radical` (`x^k ∈ J ↔ (mk x)^k = 0`), so it EQUALS the
+  image of `J.radical` (`Ideal.map_comap_of_surjective`), and the image of a
+  prime under a surjection whose kernel it contains is prime
+  (`Ideal.map_isPrime_of_surjective`, with `J ≤ J.radical`).
+* *Descent to `ℚ`.* The base-change comparison
+  `IntegralSystemModel f ℚ → IntegralSystemModel f ℚ̄` is injective (above), and an
+  injective ring map REFLECTS nilpotency: `ι(x)^k = ι(x^k) = 0` forces `x^k = 0`.
+  So `nilradical (IntegralSystemModel f ℚ)` is the CONTRACTION of
+  `nilradical (IntegralSystemModel f ℚ̄)`, and a contraction of a prime is prime.
+
+Note what this does NOT give and what the sibling leaf below must still supply:
+GEOMETRIC integrality, i.e. that `ℚ̄ ⊗_ℚ S` is again a domain rather than merely
+that its reduction is. That is where characteristic zero enters, and it is inside
+`exists_absIrreducible_fractionRing_ringEquiv_integralSystemModel_rat`. -/
+theorem isPrime_nilradical_integralSystemModel_rat_of_algClosure {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    (nilradical (IntegralSystemModel f ℚ)).IsPrime := by
+  classical
+  set K := AlgebraicClosure ℚ
+  set J := integralSystemIdeal f K with hJ
+  have hcomap : Ideal.comap (Ideal.Quotient.mk J) (nilradical (IntegralSystemModel f K))
+      = J.radical := by
+    ext x
+    simp only [Ideal.mem_comap, mem_nilradical, Ideal.mem_radical_iff]
+    constructor
+    · rintro ⟨k, hk⟩
+      exact ⟨k, Ideal.Quotient.eq_zero_iff_mem.mp (by rw [map_pow]; exact hk)⟩
+    · rintro ⟨k, hk⟩
+      exact ⟨k, by rw [← map_pow]; exact Ideal.Quotient.eq_zero_iff_mem.mpr hk⟩
+  have hprime' : (nilradical (IntegralSystemModel f K)).IsPrime := by
+    have hmap : Ideal.map (Ideal.Quotient.mk J) J.radical
+        = nilradical (IntegralSystemModel f K) := by
+      rw [← hcomap, Ideal.map_comap_of_surjective _ Ideal.Quotient.mk_surjective]
+    haveI := hQ
+    have := Ideal.map_isPrime_of_surjective (f := Ideal.Quotient.mk J)
+      Ideal.Quotient.mk_surjective (I := J.radical)
+      (by rw [Ideal.mk_ker]; exact Ideal.le_radical)
+    rwa [hmap] at this
+  haveI := hprime'
+  have hnil : nilradical (IntegralSystemModel f ℚ)
+      = Ideal.comap (integralSystemModelBaseChangeHom f ℚ K).toRingHom
+        (nilradical (IntegralSystemModel f K)) := by
+    ext x
+    simp only [Ideal.mem_comap, mem_nilradical, AlgHom.toRingHom_eq_coe, RingHom.coe_coe]
+    constructor
+    · rintro ⟨k, hk⟩
+      exact ⟨k, by rw [← map_pow, hk, map_zero]⟩
+    · rintro ⟨k, hk⟩
+      refine ⟨k, integralSystemModelBaseChangeHom_injective f ℚ K ?_⟩
+      rw [map_pow, hk, map_zero]
+  rw [hnil]
+  exact Ideal.IsPrime.comap _
+
+/-- **REDUCTION COMMUTES WITH LOCALIZATION AT ONE ELEMENT** (**PROVEN
+2026-07-27**): `R[1/a] ⧸ nilradical ≅ (R ⧸ nilradical)[1/ā]`.
+
+This is the bookkeeping half of `exists_birationalNormalForm_integralSystemModel_rat`
+below, and it is what makes the `⧸ nilradical` in that leaf's conclusion — which is
+LOAD-BEARING, see the counterexample `f = (x²)` recorded there — cost nothing at
+the point of assembly.
+
+PROOF, by the universal property rather than by chasing the quotient. Write
+`L = R[1/a]`, `Q = L ⧸ nilradical L`, `S = R ⧸ nilradical R`, `s = ā`. Nilpotents
+of `R` map to nilpotents of `L`, so `R → Q` kills `nilradical R` and descends to
+`β : S → Q`. Then `Q` IS a localization of `S` at the powers of `s`:
+
+* *units*: `a` is a unit in `L`, hence in `Q`;
+* *surjectivity*: every element of `Q` lifts to `r/aⁿ` in `L`, and
+  `(r/aⁿ) · β(sⁿ) = β(r̄)`;
+* *equalizer*: `β(r̄₁) = β(r̄₂)` says `(r₁ - r₂)/1` is nilpotent in `L`, i.e.
+  `aⁿ (r₁-r₂)^k = 0` in `R` for some `n, k`; then `(aⁿ(r₁-r₂))^{k+1} = 0`, so
+  `aⁿ(r₁-r₂) ∈ nilradical R` and `sⁿ r̄₁ = sⁿ r̄₂`.
+
+`IsLocalization.algEquiv` then identifies `Q` with `Localization.Away s`. -/
+theorem nonempty_ringEquiv_localizationAway_quotient_nilradical
+    {R : Type u} [CommRing R] (a : R) :
+    Nonempty ((Localization.Away a ⧸ nilradical (Localization.Away a)) ≃+*
+      Localization.Away (Ideal.Quotient.mk (nilradical R) a)) := by
+  classical
+  set L := Localization.Away a with hL
+  set Q := L ⧸ nilradical L with hQdef
+  set π : R →+* R ⧸ nilradical R := Ideal.Quotient.mk (nilradical R) with hpi
+  set s : R ⧸ nilradical R := π a with hsdef
+  set ρ : R →+* Q := (Ideal.Quotient.mk (nilradical L)).comp (algebraMap R L) with hrho
+  have hker : nilradical R ≤ RingHom.ker ρ := by
+    intro x hx
+    rw [mem_nilradical] at hx
+    obtain ⟨k, hk⟩ := hx
+    have hnilL : IsNilpotent ((algebraMap R L) x) := ⟨k, by rw [← map_pow, hk, map_zero]⟩
+    rw [RingHom.mem_ker, hrho]
+    simp only [RingHom.coe_comp, Function.comp_apply]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (mem_nilradical.mpr hnilL)
+  set β : (R ⧸ nilradical R) →+* Q := Ideal.Quotient.lift (nilradical R) ρ hker with hbeta
+  have hβπ : ∀ x : R, β (π x) = ρ x := fun x => rfl
+  letI : Algebra (R ⧸ nilradical R) Q := β.toAlgebra
+  have halg : (algebraMap (R ⧸ nilradical R) Q) = β := rfl
+  haveI : IsLocalization (Submonoid.powers s) Q := by
+    refine ⟨?_, ?_, ?_⟩
+    · intro y
+      obtain ⟨n, hn⟩ := y.2
+      have hy : (y : R ⧸ nilradical R) = s ^ n := hn.symm
+      have h1 : (algebraMap (R ⧸ nilradical R) Q) (s ^ n) = ρ (a ^ n) := by
+        rw [halg, hsdef, ← map_pow, hβπ]
+      rw [hy, h1, hrho]
+      simp only [RingHom.coe_comp, Function.comp_apply]
+      refine IsUnit.map (Ideal.Quotient.mk (nilradical L)) ?_
+      rw [map_pow]
+      exact (IsLocalization.Away.algebraMap_isUnit a).pow n
+    · intro z
+      obtain ⟨w, rfl⟩ := Ideal.Quotient.mk_surjective (I := nilradical L) z
+      obtain ⟨⟨r, ⟨u, n, hn⟩⟩, hw⟩ := IsLocalization.surj (Submonoid.powers a) w
+      refine ⟨⟨π r, ⟨s ^ n, ⟨n, rfl⟩⟩⟩, ?_⟩
+      have h1 : (algebraMap (R ⧸ nilradical R) Q) (s ^ n) = ρ (a ^ n) := by
+        rw [halg, hsdef, ← map_pow, hβπ]
+      have h2 : (algebraMap (R ⧸ nilradical R) Q) (π r) = ρ r := by rw [halg, hβπ]
+      rw [h1, h2, hrho]
+      simp only [RingHom.coe_comp, Function.comp_apply]
+      rw [← map_mul]
+      congr 1
+      have hw2 : w * (algebraMap R L) (u : R) = (algebraMap R L) r := hw
+      have hun : a ^ n = (u : R) := hn
+      rw [hun]
+      exact hw2
+    · intro x y hxy
+      obtain ⟨r₁, rfl⟩ := Ideal.Quotient.mk_surjective (I := nilradical R) x
+      obtain ⟨r₂, rfl⟩ := Ideal.Quotient.mk_surjective (I := nilradical R) y
+      rw [halg, hβπ, hβπ] at hxy
+      have hsub : ρ (r₁ - r₂) = 0 := by rw [map_sub, hxy, sub_self]
+      have hnil : IsNilpotent (algebraMap R L (r₁ - r₂)) :=
+        Ideal.Quotient.eq_zero_iff_mem.mp hsub
+      obtain ⟨k, hk⟩ := hnil
+      rw [← map_pow] at hk
+      obtain ⟨⟨u, n, hn⟩, hu⟩ :=
+        (IsLocalization.map_eq_zero_iff (Submonoid.powers a) L ((r₁ - r₂) ^ k)).mp hk
+      have hu2 : (u : R) * (r₁ - r₂) ^ k = 0 := hu
+      have hun : a ^ n = (u : R) := hn
+      have hu' : a ^ n * (r₁ - r₂) ^ k = 0 := by rw [hun]; exact hu2
+      refine ⟨⟨s ^ n, ⟨n, rfl⟩⟩, ?_⟩
+      have hnilR : a ^ n * (r₁ - r₂) ∈ nilradical R := by
+        rw [mem_nilradical]
+        refine ⟨k + 1, ?_⟩
+        have hpw : (a ^ n) ^ (k + 1) = a ^ (n * k) * a ^ n := by
+          rw [← pow_mul, Nat.mul_succ, pow_add]
+        have hfac : (a ^ n * (r₁ - r₂)) ^ (k + 1)
+            = (a ^ (n * k) * (r₁ - r₂)) * (a ^ n * (r₁ - r₂) ^ k) := by
+          rw [mul_pow, hpw, pow_succ]
+          ring
+        rw [hfac, hu', mul_zero]
+      have hz : π (a ^ n * (r₁ - r₂)) = 0 := Ideal.Quotient.eq_zero_iff_mem.mpr hnilR
+      rw [map_mul, map_sub, map_pow] at hz
+      have hfin : s ^ n * π r₁ - s ^ n * π r₂ = 0 := by
+        rw [← mul_sub]; exact hz
+      show (s : R ⧸ nilradical R) ^ n * π r₁ = s ^ n * π r₂
+      linear_combination hfin
+  exact ⟨((IsLocalization.algEquiv (Submonoid.powers s)
+    (Localization.Away s) Q).symm : Q ≃ₐ[R ⧸ nilradical R] Localization.Away s).toRingEquiv⟩
+
+/-- **BIRATIONAL FINITELY GENERATED DOMAINS HAVE ISOMORPHIC LOCALIZATIONS AT ONE
+ELEMENT** (SORRY LEAF, cut 2026-07-27 out of
+`exists_birationalNormalForm_integralSystemModel_rat` below).
+
+NO POLYNOMIAL SYSTEM AND NO ARITHMETIC APPEARS IN THIS STATEMENT. It is the last
+sentence of Poonen §3.2 — "two birational domains have isomorphic localisations
+at single elements" — isolated as a self-contained, reusable piece of commutative
+algebra, and it is completely independent of everything else in this file.
+
+WHY IT IS TRUE. `A` and `B` are finitely generated `ℚ`-domains, and `e` identifies
+their fraction fields, so both may be regarded as subrings of ONE field `K`.
+Finitely many generators `b₁ … b_r` of `B` are fractions over `A`, so a single
+common denominator `d ∈ A ∖ {0}` gives `B ⊆ A[1/d]`; symmetrically `A ⊆ B[1/e]`
+for some `e ∈ B ∖ {0}`. Feeding each containment into the other and clearing the
+finitely many denominators that appear gives `a ∈ A`, `b ∈ B` with
+`A[1/a] = B[1/b]` as subrings of `K`, which is the conclusion.
+
+FAITHFULNESS. Not vacuous: `a ≠ 0` and `b ≠ 0` are asked for, and in a domain
+that makes both localizations nonzero, so the conclusion is not dischargeable by
+`a = b = 0` (which would make both sides the zero ring and the statement empty).
+The `ℚ`-algebra structure is carried only to express finite generation; no
+compatibility of `e` with it is required, because `ℚ` is the prime field of
+characteristic zero and every ring map between `ℚ`-algebras is automatically
+`ℚ`-linear. -/
+theorem exists_localizationAway_ringEquiv_of_fractionRing_ringEquiv
+    {A B : Type u}
+    [CommRing A] [IsDomain A] [Algebra ℚ A] [Algebra.FiniteType ℚ A]
+    [CommRing B] [IsDomain B] [Algebra ℚ B] [Algebra.FiniteType ℚ B]
+    (e : FractionRing A ≃+* FractionRing B) :
+    ∃ (a : A) (b : B), a ≠ 0 ∧ b ≠ 0 ∧
+      Nonempty (Localization.Away a ≃+* Localization.Away b) :=
+  sorry
+
+/-- **POONEN §3.2 STEPS (b)–(c): THE FUNCTION FIELD OF THE GENERIC FIBRE IS THE
+FUNCTION FIELD OF AN ABSOLUTELY IRREDUCIBLE HYPERSURFACE** (SORRY LEAF, cut
+2026-07-27 out of `exists_birationalNormalForm_integralSystemModel_rat` below).
+
+This is the mathematical core of that leaf, and after the cut it is ALL that is
+left of it: step (a) is PROVEN above
+(`isPrime_nilradical_integralSystemModel_rat_of_algClosure`), the passage from
+fraction fields back to localizations is the general leaf immediately above, and
+the `⧸ nilradical` bookkeeping is PROVEN above
+(`nonempty_ringEquiv_localizationAway_quotient_nilradical`).
+
+WHAT IS LEFT TO PROVE, in Poonen's order.
+
+* **(b) `ℚ` is algebraically closed in `K := Frac S`.** In characteristic zero,
+  geometric integrality of `S` is EQUIVALENT to that (separability is automatic —
+  this is the only place char 0 is used). Concretely, what `hQ` must be turned
+  into here is that `ℚ̄ ⊗_ℚ S` is a domain, not merely that its reduction is; that
+  is the one implication step (a) above deliberately does not give.
+* **(c) Noether normalisation and the primitive element.**
+  `exists_integral_inj_algHom_of_fg` / `exists_finite_inj_algHom_of_fg`
+  (`Mathlib/RingTheory/NoetherNormalization.lean`, `@[stacks 00OW]`, PRESENT at
+  this pin — refute by
+  `grep -n exists_finite_inj_algHom_of_fg .lake/packages/mathlib/Mathlib/RingTheory/NoetherNormalization.lean`)
+  give a finite injection `ℚ[t₁..t_d] ↪ S`, so `K` is finite over `ℚ(t₁..t_d)`
+  and, being separable, has a primitive element: `K ≅ ℚ(t)[y] ⧸ (h)`. Clearing
+  denominators with `exists_integralMultiple` (PROVEN ~1500 lines above) and
+  taking the primitive part gives `g ∈ ℤ[t₁..t_d, y]`, i.e. `k = d + 1`.
+* **Absolute irreducibility of `g`** is (b) again: `K ⊗_ℚ ℚ̄` is a FIELD, so `h`
+  stays irreducible over `ℚ̄(t)`, and Gauss's lemma on the primitive `g` moves that
+  back to `ℚ̄[t, y]`.
+
+ON `hsm`. Carried, and a prover who does not use it should underscore it: EGA IV
+9.7.7 does not need smoothness and dropping it strengthens the leaf. It is offered
+because (b) is cheaper under it — a smooth `ℚ`-algebra is reduced and
+geometrically reduced.
+
+FAITHFULNESS. The conclusion is an isomorphism of FRACTION FIELDS, which is
+strictly weaker than the birational datum the parent asks for and is exactly what
+the general leaf above upgrades. It is not vacuous: `Irreducible` over `ℚ̄` already
+excludes units and zero, and it is what pins `ℚ[x] ⧸ (g)` down to a domain with
+the right function field rather than to an arbitrary quotient.
+
+CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no Galois
+representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_absIrreducible_fractionRing_ringEquiv_integralSystemModel_rat {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ (k : ℕ) (g : MvPolynomial (Fin k) ℤ),
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g) ∧
+      Nonempty (FractionRing (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ))
+        ≃+* FractionRing (MvPolynomial (Fin k) ℚ ⧸
+          Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})) :=
+  sorry
+
+end IntegralSystemBirational
+
 /-- **POONEN §3.2 STEPS (a)–(c) OVER `ℚ` ALONE: A BIRATIONAL HYPERSURFACE NORMAL
-FORM FOR THE GENERIC FIBRE** (SORRY LEAF, cut 2026-07-27 out of
+FORM FOR THE GENERIC FIBRE** (**DECOMPOSED AND ASSEMBLED 2026-07-27** — it was
+cut on the same day out of
 `exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` below,
-which is now PROVEN over this leaf and its spreading-out sibling
+which is PROVEN over this leaf and its spreading-out sibling
 `exists_inverted_dominantHom_localizationAway_integralSystemModel`).
+
+**DECOMPOSITION (2026-07-27).** The `sorry` is gone: the body below is a full
+assembly over the four declarations in `section IntegralSystemBirational`
+immediately above, of which TWO ARE PROVEN and two remain open.
+
+* PROVEN — `isPrime_nilradical_integralSystemModel_rat_of_algClosure`: step (a),
+  that `hQ` already forces the reduction of the generic fibre to be a DOMAIN. The
+  descent is faithful flatness of `ℚ → ℚ̄` run through the PROVEN base-change
+  isomorphism `integralSystemModelBaseChange`, plus the fact that an injective
+  ring map reflects nilpotency.
+* PROVEN — `nonempty_ringEquiv_localizationAway_quotient_nilradical`: that
+  `R[1/a] ⧸ nilradical ≅ (R ⧸ nilradical)[1/ā]`. This is what makes the
+  `⧸ nilradical` in the conclusion — LOAD-BEARING, see the `f = (x²)`
+  counterexample below — cost nothing at assembly time.
+* OPEN — `exists_absIrreducible_fractionRing_ringEquiv_integralSystemModel_rat`:
+  steps (b) and (c), i.e. geometric integrality in characteristic zero, Noether
+  normalisation, the primitive element and Gauss's lemma. This is the
+  mathematical core and after the cut it is all that is left of it.
+* OPEN — `exists_localizationAway_ringEquiv_of_fractionRing_ringEquiv`: the last
+  sentence of §3.2, "birational domains have isomorphic localisations at single
+  elements", isolated as a statement about arbitrary finitely generated
+  `ℚ`-domains with NO polynomial system in it, hence reusable and takeable by
+  anyone.
+
+What the assembly itself discharges, and is therefore no longer on any leaf: the
+descent of `Irreducible` from `ℚ̄` to `ℚ` (needed to make `ℚ[x] ⧸ (g)` a domain,
+via the PROVEN `irreducible_of_irreducible_map_of_field`); the finite-type
+bookkeeping for all three rings; the choice of `a` lifting the `s` produced over
+the reduced ring; and the conclusion's first conjunct
+`RingHom.ker (algebraMap R R[1/a]) ≤ nilradical R`, which is the one-line
+observation that `aʲ x = 0` with `s ≠ 0` in the DOMAIN `S` forces `x` nilpotent.
 
 NO PRIME `p` APPEARS IN THIS STATEMENT. That is the whole point of the cut: this
 is characteristic-zero commutative algebra about ONE finitely generated
@@ -8735,8 +9091,63 @@ theorem exists_birationalNormalForm_integralSystemModel_rat
         RingHom.ker (algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)) ≤
           nilradical (IntegralSystemModel f ℚ) ∧
         Nonempty ((Localization.Away a ⧸ nilradical (Localization.Away a)) ≃+*
-          Localization.Away b) :=
-  sorry
+          Localization.Away b) := by
+  classical
+  set R := IntegralSystemModel f ℚ with hR
+  haveI hnp : (nilradical R).IsPrime :=
+    isPrime_nilradical_integralSystemModel_rat_of_algClosure f hQ
+  set S := R ⧸ nilradical R with hS
+  haveI : IsDomain S := Ideal.Quotient.isDomain _
+  obtain ⟨k, g, hgirr, ⟨e⟩⟩ :=
+    exists_absIrreducible_fractionRing_ringEquiv_integralSystemModel_rat f hsm hQ
+  set T := MvPolynomial (Fin k) ℚ ⧸ Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g} with hT
+  -- `g` is irreducible over `ℚ` too, so the hypersurface `T` is a domain
+  have hgQ : Irreducible (MvPolynomial.map (Int.castRingHom ℚ) g) := by
+    have hcomp : (algebraMap ℚ (AlgebraicClosure ℚ)).comp (Int.castRingHom ℚ)
+        = Int.castRingHom (AlgebraicClosure ℚ) := RingHom.ext_int _ _
+    have hmm : MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g
+        = MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+            (MvPolynomial.map (Int.castRingHom ℚ) g) := by
+      rw [MvPolynomial.map_map, hcomp]
+    rw [hmm] at hgirr
+    exact irreducible_of_irreducible_map_of_field _ hgirr
+  haveI : IsDomain T :=
+    (Ideal.Quotient.isDomain_iff_prime _).mpr
+      ((Ideal.span_singleton_prime hgQ.ne_zero).mpr hgQ.prime)
+  haveI : Algebra.FiniteType ℚ R :=
+    Algebra.FiniteType.of_surjective (A := MvPolynomial (Fin n) ℚ)
+      (Ideal.Quotient.mkₐ ℚ (integralSystemIdeal f ℚ)) Ideal.Quotient.mk_surjective
+  haveI : Algebra.FiniteType ℚ S :=
+    Algebra.FiniteType.of_surjective (A := R)
+      (Ideal.Quotient.mkₐ ℚ (nilradical R)) Ideal.Quotient.mk_surjective
+  haveI : Algebra.FiniteType ℚ T :=
+    Algebra.FiniteType.of_surjective (A := MvPolynomial (Fin k) ℚ)
+      (Ideal.Quotient.mkₐ ℚ (Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}))
+      Ideal.Quotient.mk_surjective
+  obtain ⟨s, b, hs0, hb0, ⟨eloc⟩⟩ :=
+    exists_localizationAway_ringEquiv_of_fractionRing_ringEquiv (A := S) (B := T) e
+  obtain ⟨a, ha⟩ := Ideal.Quotient.mk_surjective (I := nilradical R) s
+  refine ⟨k, g, hgirr, a, b, hb0, ?_, ?_⟩
+  · -- `a` lies outside the unique minimal prime, so `D(a)` is dense
+    intro x hx
+    rw [RingHom.mem_ker] at hx
+    obtain ⟨⟨u, j, hj⟩, hu⟩ :=
+      (IsLocalization.map_eq_zero_iff (Submonoid.powers a) (Localization.Away a) x).mp hx
+    have hax : a ^ j * x = 0 := by
+      have h1 : a ^ j = u := hj
+      rw [h1]; exact hu
+    have hprod :
+        (Ideal.Quotient.mk (nilradical R) a) ^ j * Ideal.Quotient.mk (nilradical R) x = 0 := by
+      rw [← map_pow, ← map_mul, hax, map_zero]
+    rw [ha] at hprod
+    have hx0 : Ideal.Quotient.mk (nilradical R) x = 0 := by
+      rcases mul_eq_zero.mp hprod with h | h
+      · exact absurd h (pow_ne_zero j hs0)
+      · exact h
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hx0
+  · obtain ⟨ered⟩ := nonempty_ringEquiv_localizationAway_quotient_nilradical (R := R) a
+    rw [ha] at ered
+    exact ⟨ered.trans eloc⟩
 
 /-- **THE SPREADING-OUT ITSELF: A BIRATIONAL DATUM OVER `ℚ` SURVIVES REDUCTION
 MOD ALMOST EVERY `p`** (SORRY LEAF, cut 2026-07-27 out of
