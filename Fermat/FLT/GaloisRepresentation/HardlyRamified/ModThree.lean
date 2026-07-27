@@ -332,6 +332,17 @@ public import Mathlib.RingTheory.Localization.Integral
 public import Mathlib.RingTheory.DedekindDomain.Factorization
 public import Mathlib.FieldTheory.Minpoly.IsIntegrallyClosed
 public import Mathlib.RingTheory.Algebraic.Integral
+-- The determinant/adjugate route of `injective_of_torsion_cokernel`, which is
+-- what turns "the cokernel of an endomorphism of a finite free module over a
+-- domain is torsion" into injectivity, and thence the `n`-relations-on-`n`-
+-- generators presentation of `exists_generators_span_range_eq_ker_of_hopf_package`
+-- into freeness of the conormal module.
+public import Mathlib.LinearAlgebra.Determinant
+public import Mathlib.LinearAlgebra.Matrix.ToLin
+public import Mathlib.LinearAlgebra.Matrix.Nondegenerate
+-- `Module.free_of_flat_of_isLocalRing`: a finite flat module over the local ring
+-- `𝒪₃ᵥ` is free, which is the `Module.Free 𝒪₃ᵥ G` input of that reduction.
+public import Mathlib.RingTheory.LocalRing.Module
 
 /-!
 # Mod-3 hardly ramified representations
@@ -13245,14 +13256,322 @@ theorem subsingleton_h1Cotangent_of_projective_cotangent
     Module.Flat.trans R S _
   exact subsingleton_h1Cotangent_of_flat_cotangent (T := K ⊗[R] S) P
 
+/-- **An endomorphism of a finite free module over a DOMAIN whose cokernel is
+TORSION is injective** (PROVEN 2026-07-27).
+
+Stated in the "every element is hit after clearing a denominator" form
+`∀ v, ∃ r ∈ R⁰, r • v ∈ range χ`, which is what the cotangent complex delivers
+directly and which avoids naming the cokernel.
+
+The proof is the classical determinant argument, done over `R` itself rather than
+after a base change to the fraction field (which would have required comparing the
+conormal module of a presentation with that of its base-changed presentation — the
+missing chapter recorded on `subsingleton_h1Cotangent_of_flat_cotangent`).  Pick an
+`R`-basis `bᵢ` of `M`, clear a denominator `rᵢ` on each `bᵢ`, take `ρ = ∏ rᵢ`, and
+assemble the chosen preimages into `θ` with `χ ∘ θ = ρ • id`.  Taking determinants,
+`det χ · det θ = ρ ^ finrank`, which is nonzero in the domain `R`, so `det χ ≠ 0`;
+`Matrix.eq_zero_of_mulVec_eq_zero` then turns that into injectivity in coordinates. -/
+theorem injective_of_torsion_cokernel
+    {R M : Type*} [CommRing R] [IsDomain R] [AddCommGroup M] [Module R M]
+    [Module.Free R M] [Module.Finite R M] (χ : M →ₗ[R] M)
+    (h : ∀ v : M, ∃ r ∈ nonZeroDivisors R, r • v ∈ LinearMap.range χ) :
+    Function.Injective χ := by
+  classical
+  set b := Module.Free.chooseBasis R M with hb
+  have h' : ∀ i, ∃ (r : R) (u : M), r ∈ nonZeroDivisors R ∧ χ u = r • b i := by
+    intro i
+    obtain ⟨r, hrmem, u, hu⟩ := h (b i)
+    exact ⟨r, u, hrmem, hu⟩
+  choose r u hrmem hu using h'
+  set ρ : R := ∏ i, r i with hρ
+  have hρne : ρ ≠ 0 := by
+    rw [hρ]
+    exact Finset.prod_ne_zero_iff.mpr fun i _ => nonZeroDivisors.ne_zero (hrmem i)
+  set θ : M →ₗ[R] M :=
+    b.constr ℕ (fun i => (∏ j ∈ Finset.univ.erase i, r j) • u i) with hθdef
+  have hθ : χ ∘ₗ θ = ρ • LinearMap.id := by
+    apply b.ext
+    intro i
+    simp only [LinearMap.comp_apply, hθdef, Module.Basis.constr_basis, map_smul, hu,
+      LinearMap.smul_apply, LinearMap.id_coe, id_eq, smul_smul]
+    congr 1
+    rw [hρ]
+    exact Finset.prod_erase_mul _ _ (Finset.mem_univ i)
+  have hdet : LinearMap.det χ * LinearMap.det θ = ρ ^ (Module.finrank R M) := by
+    rw [← LinearMap.det_comp, hθ, LinearMap.det_smul, LinearMap.det_id, mul_one]
+  have hdetne : LinearMap.det χ ≠ 0 := by
+    intro h0
+    rw [h0, zero_mul] at hdet
+    exact (pow_ne_zero _ hρne) hdet.symm
+  rw [injective_iff_map_eq_zero]
+  intro x hx
+  set A := LinearMap.toMatrix b b χ with hA
+  have hAdet : A.det ≠ 0 := by rw [hA, LinearMap.det_toMatrix]; exact hdetne
+  have hmv : Matrix.mulVec A (⇑(b.repr x)) = 0 := by
+    rw [hA, LinearMap.toMatrix_mulVec_repr, hx]
+    ext i
+    simp
+  have hcoord := Matrix.eq_zero_of_mulVec_eq_zero hAdet hmv
+  have hzero : b.repr x = 0 := by
+    ext i
+    exact congrFun hcoord i
+  simpa using congrArg b.repr.symm hzero
+
+/-- **Generic-fibre vanishing makes `Ω[S⁄R]` a TORSION module** (PROVEN
+2026-07-27): the Kähler analogue of `exists_smul_eq_zero_h1Cotangent_of_isLocalization`,
+with `Algebra.H1Cotangent.isLocalizedModule` replaced by
+`KaehlerDifferential.isLocalizedModule_map` — which likewise EXHIBITS `Ω[T⁄R]` as the
+localization of `Ω[S⁄R]` at `M`, so vanishing downstairs says every element dies after
+multiplication by some `m ∈ M`. -/
+theorem exists_smul_eq_zero_kaehlerDifferential_of_isLocalization
+    {R S T : Type*} [CommRing R] [CommRing S] [CommRing T]
+    [Algebra R S] [Algebra S T] [Algebra R T] [IsScalarTower R S T]
+    (M : Submonoid S) [IsLocalization M T]
+    [Subsingleton (Ω[T⁄R])]
+    (x : Ω[S⁄R]) :
+    ∃ m : M, (m : S) • x = 0 := by
+  have h : KaehlerDifferential.map R R S T x = KaehlerDifferential.map R R S T 0 :=
+    Subsingleton.elim _ _
+  obtain ⟨c, hc⟩ :=
+    IsLocalizedModule.exists_of_eq (S := M) (f := KaehlerDifferential.map R R S T) h
+  refine ⟨c, ?_⟩
+  have hc' : (c : S) • x = (c : S) • (0 : Ω[S⁄R]) := hc
+  simpa only [smul_zero] using hc'
+
+/-- **`n` RELATIONS ON `n` GENERATORS + TORSION DIFFERENTIALS ⟹ the conormal module
+is FREE** (PROVEN 2026-07-27).  This is the commutative-algebra half of the LCI leaf,
+and it uses NO group structure whatsoever.
+
+Let `P : R[x₁,…,x_n] ↠ S` and suppose its kernel `I` is spanned by `n` elements
+`f₁,…,f_n` — a *set-theoretic complete intersection* presentation, `#relations =
+#variables`.  Suppose further that `S` is free of finite rank over the domain `R` and
+that `Ω[S⁄R]` is `R`-torsion.  Then `I/I²` is a FREE `S`-module (of rank `n`).
+
+THE ARGUMENT, and note that it needs neither Koszul complexes nor a
+regular-sequence hypothesis — both absent from this pin.  The `n` relations span
+`I/I²` (`Extension.Cotangent.span_eq_top_of_span_eq_ker`), giving a surjection
+`φ : Sⁿ ↠ I/I²`.  Compose with the cotangent complex and the free basis of the
+cotangent space (`Generators.cotangentSpaceBasis`) to get an ENDOMORPHISM
+`χ : Sⁿ → Sⁿ` — this is where `#relations = #variables` is used, and it is the only
+place.  Its cokernel is `Ω[S⁄R]` (exactness of `I/I² → S ⊗ Ω[R[x]⁄R] → Ω[S⁄R] → 0`
+plus surjectivity of `φ`), hence `R`-torsion by hypothesis; and `Sⁿ` is a finite free
+`R`-module because `S` is.  So `χ` is injective by `injective_of_torsion_cokernel`,
+therefore `φ` is injective, therefore bijective.
+
+WHY THIS IS NOT CIRCULAR with the audit on
+`exists_generators_projective_cotangent_of_hopf_package`: that audit shows
+"`Cotangent_P` is `R`-flat" is equivalent to `H¹(L) = 0` *for a presentation given in
+advance*.  Here the extra input is the COMBINATORIAL one — that a presentation exists
+with as many relations as variables — which is exactly the content the Hopf structure
+has to supply and which the non-Hopf witness `𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)` fails
+(embedding dimension `2`, but three relations are needed). -/
+theorem free_cotangent_of_span_range_eq_ker_of_torsion
+    {R : Type*} [CommRing R] [IsDomain R]
+    {S : Type*} [CommRing S] [Algebra R S] [Module.Free R S] [Module.Finite R S]
+    {n : ℕ} (P : Algebra.Generators R S (Fin n)) (f : Fin n → P.Ring)
+    (hf : Ideal.span (Set.range f) = P.ker)
+    (hΩ : ∀ x : Ω[S⁄R], ∃ r ∈ nonZeroDivisors R, r • x = 0) :
+    Module.Free S P.toExtension.Cotangent := by
+  classical
+  set e : Fin n → P.toExtension.Cotangent :=
+    fun i => Algebra.Extension.Cotangent.mk ⟨f i, hf.le (Ideal.subset_span ⟨i, rfl⟩)⟩ with he
+  have hspan : Submodule.span S (Set.range e) = ⊤ := by
+    rw [he]
+    exact Algebra.Extension.Cotangent.span_eq_top_of_span_eq_ker (P := P.toExtension) f hf
+  set φ : (Fin n → S) →ₗ[S] P.toExtension.Cotangent :=
+    (Finsupp.linearCombination S e).comp
+      (Finsupp.linearEquivFunOnFinite S S (Fin n)).symm.toLinearMap with hφ
+  have hφsurj : Function.Surjective φ := by
+    have h1 : Function.Surjective (Finsupp.linearCombination S e) := by
+      rw [← LinearMap.range_eq_top, Finsupp.range_linearCombination]
+      exact hspan
+    exact h1.comp (Finsupp.linearEquivFunOnFinite S S (Fin n)).symm.surjective
+  set E : P.toExtension.CotangentSpace ≃ₗ[S] (Fin n → S) :=
+    P.cotangentSpaceBasis.repr ≪≫ₗ Finsupp.linearEquivFunOnFinite S S (Fin n) with hE
+  set χ : (Fin n → S) →ₗ[S] (Fin n → S) :=
+    (E.toLinearMap.comp P.toExtension.cotangentComplex).comp φ with hχ
+  have hcok : ∀ v : (Fin n → S),
+      ∃ r ∈ nonZeroDivisors R, r • v ∈ LinearMap.range (χ.restrictScalars R) := by
+    intro v
+    obtain ⟨r, hrmem, hr⟩ := hΩ (P.toExtension.toKaehler (E.symm v))
+    refine ⟨r, hrmem, ?_⟩
+    have hy : P.toExtension.toKaehler ((algebraMap R S r) • E.symm v) = 0 := by
+      rw [map_smul, algebraMap_smul, hr]
+    have hmem : (algebraMap R S r) • E.symm v ∈
+        LinearMap.range P.toExtension.cotangentComplex := by
+      rw [← LinearMap.exact_iff.mp Algebra.Extension.exact_cotangentComplex_toKaehler,
+        LinearMap.mem_ker]
+      exact hy
+    obtain ⟨c, hc⟩ := hmem
+    obtain ⟨w, hw⟩ := hφsurj c
+    refine ⟨w, ?_⟩
+    show χ w = r • v
+    rw [hχ]
+    simp only [LinearMap.comp_apply, hw, hc, map_smul, LinearEquiv.coe_coe,
+      LinearEquiv.apply_symm_apply]
+    rw [algebraMap_smul]
+  have hχinj : Function.Injective (χ.restrictScalars R) :=
+    injective_of_torsion_cokernel _ hcok
+  have hφinj : Function.Injective φ := by
+    intro a b hab
+    have hχab : (χ.restrictScalars R) a = (χ.restrictScalars R) b := by
+      show χ a = χ b
+      rw [hχ]
+      simp only [LinearMap.comp_apply, hab]
+    exact hχinj hχab
+  exact Module.Free.of_equiv (LinearEquiv.ofBijective φ ⟨hφinj, hφsurj⟩)
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra in
+/-- **The packaged commutative-algebra half: a complete-intersection-shaped
+presentation of a finite free algebra with étale generic fibre has FREE conormal
+module** (PROVEN 2026-07-27).
+
+Same shape as `subsingleton_h1Cotangent_of_projective_cotangent` one lemma above, and
+for the same reason: `K ⊗[R] S` is the localization of `S` at the image of `R⁰`
+(`IsLocalization.tensorRight`, stated under mathlib's LOCAL instance
+`Algebra.TensorProduct.rightAlgebra` — hence the `attribute` line), and `R → K` is
+formally étale because it is a localization, so `R → K ⊗[R] S` is formally étale by
+composition and `Ω[K⊗S ⁄ R] = 0`.  `exists_smul_eq_zero_kaehlerDifferential_of_isLocalization`
+converts that into `R`-torsionness of `Ω[S⁄R]`, which is the hypothesis of the
+previous lemma. -/
+theorem free_cotangent_of_span_range_eq_ker
+    {R : Type*} [CommRing R] [IsDomain R] {K : Type*} [Field K] [Algebra R K]
+    [IsFractionRing R K]
+    (S : Type*) [CommRing S] [Algebra R S] [Module.Free R S] [Module.Finite R S]
+    [Algebra.FormallyEtale K (K ⊗[R] S)]
+    {n : ℕ} (P : Algebra.Generators R S (Fin n)) (f : Fin n → P.Ring)
+    (hf : Ideal.span (Set.range f) = P.ker) :
+    Module.Free S P.toExtension.Cotangent := by
+  haveI : Algebra.FormallyEtale R K :=
+    Algebra.FormallyEtale.of_isLocalization (M := nonZeroDivisors R)
+  haveI : Algebra.FormallyEtale R (K ⊗[R] S) :=
+    Algebra.FormallyEtale.comp R K (K ⊗[R] S)
+  refine free_cotangent_of_span_range_eq_ker_of_torsion P f hf ?_
+  intro x
+  obtain ⟨⟨m, hm⟩, hx⟩ :=
+    exists_smul_eq_zero_kaehlerDifferential_of_isLocalization (T := K ⊗[R] S)
+      (Algebra.algebraMapSubmonoid S (nonZeroDivisors R)) x
+  obtain ⟨r, hr, rfl⟩ := hm
+  refine ⟨r, hr, ?_⟩
+  rw [← algebraMap_smul S]
+  exact hx
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE GROUP-SCHEME CORE: a finite flat Hopf order is a COMPLETE INTERSECTION,
+i.e. it admits a presentation with as many relations as variables** (SORRY LEAF, cut
+2026-07-27 out of `exists_generators_projective_cotangent_of_hopf_package`, which is
+now PROVEN over this leaf alone).
+
+There are `n`, a presentation `𝒪₃ᵥ[x₁,…,x_n] ↠ G`, and `n` elements `f₁,…,f_n` of
+`𝒪₃ᵥ[x₁,…,x_n]` spanning its kernel.  Equivalently `G ≅ 𝒪₃ᵥ[x₁,…,x_n]/(f₁,…,f_n)`
+with `#relations = #variables`, which for a ring finite over a one-dimensional base is
+exactly the local-complete-intersection condition (`codim = n`).
+
+**WHY THIS IS THE RIGHT PLACE TO CUT** (2026-07-27).  The parent leaf asked for
+PROJECTIVITY of `I/I²`, which mixes two entirely different kinds of content: a
+combinatorial statement about how many relations a Hopf order needs, and a
+homological statement about the conormal module.  The second half is now PROVEN
+outright (`free_cotangent_of_span_range_eq_ker`, via `injective_of_torsion_cokernel`),
+and — this is the point — it needs **no Koszul complex and no regular sequence**,
+which is what the earlier audits identified as the blocking absence at this pin
+(`RingTheory/Regular/RegularSequence.lean` still says "TODO: Koszul regular
+sequences").  The determinant argument replaces Koszul regularity entirely: an
+endomorphism of a finite free module over a domain with torsion cokernel is
+injective, and `#relations = #variables` is exactly what makes the map an
+ENDOMORPHISM.  So the whole remaining obligation is the combinatorial one, stated
+here.
+
+WHY IT IS TRUE.  A finite flat commutative group scheme over any base is a local
+complete intersection: embed `G` in the smooth affine `GL(G)` by the regular
+representation; the fppf quotient `GL(G)/G` is smooth of the same dimension, and `G`
+is the fibre of the flat surjection `GL(G) → GL(G)/G` over the identity section,
+whose ideal is generated by a regular sequence.  References: Raynaud, *Schémas en
+groupes de type (p,…,p)*, Bull. SMF 102 (1974), §1; Avramov, *Complete intersections
+and symmetric algebras*, J. Algebra 73 (1981); Mazur–Roberts; Fontaine §1.7 cites it
+as standard.  Nothing about group-scheme QUOTIENTS exists at this pin, which is what
+makes this the substantial half.
+
+**THE CLOSED-FIBRE ROUTE IS LIVE, and is the recommended attack** (2026-07-27).  An
+earlier audit refuted the special-fibre route — but it refuted it as a route to the
+`H¹` VANISHING, not as a route to a complete-intersection presentation, and the
+difference matters here.  What it shows is that `μ₃ ⊗ 𝔽₃ = 𝔽₃[y]/(y³)` has
+`H¹(L) ≅ 𝔽₃[y]/(y³) ≠ 0`, because `d(y³) = 3y² dy = 0` in characteristic `3`; the
+same computation over `𝒪₃ᵥ` gives `x³-1 ↦ 3x² dx`, injective because `3` is a
+nonzerodivisor on the `𝒪₃ᵥ`-free module `G`.  So `H¹ = 0` is a mixed-characteristic
+phenomenon coming from the ÉTALE GENERIC FIBRE — which is precisely how
+`free_cotangent_of_span_range_eq_ker` obtains it, and why
+`[Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]` is load-bearing there rather than decorative.
+But `μ₃` SATISFIES the present leaf on the nose: `n = 1`, `f₁ = x³-1`.  So the
+closed-fibre route — a Demazure–Gabriel/Borel structure theorem for finite
+commutative Hopf algebras over `𝔽₃` (connected part `k[y₁,…,y_r]/(y_i^{p^{e_i}})`,
+étale part split off, each factor visibly a complete intersection), then Nakayama plus
+`𝒪₃ᵥ`-flatness to lift the presentation — is a live candidate and should not be
+skipped.  Note that only the PRESENTATION has to be lifted now, not any statement
+about `I/I²`: the conormal half is already discharged downstream.  Borel's structure
+theorem is absent from the pin, so this is not cheap.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a finite flat commutative Hopf
+`𝒪₃ᵥ`-algebra with étale generic fibre whose minimal presentation needs strictly more
+relations than generators.  The Hopf hypothesis is genuinely load-bearing and a
+refutation must respect it: dropping it makes the statement FALSE, and the witness is
+the order `S = 𝒪₃ᵥ + 3·𝒪₃ᵥ³ = 𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)` inside the étale algebra
+`𝒪₃ᵥ³` — finite flat over `𝒪₃ᵥ` with étale generic fibre, embedding dimension `3`
+against Krull dimension `1`, hence needing three relations on two generators and not a
+complete intersection.  So no argument for this leaf can avoid using the
+comultiplication.
+
+AXIS SEARCHED, and what is missing at this pin (2026-07-27, greps over
+`Mathlib/RingTheory/{Extension,Kaehler,Smooth,Etale,Regular}/` and over `~/cs/FLT`):
+there is no `IsCompleteIntersection` predicate, no group-scheme quotient, no Borel /
+Demazure–Gabriel structure theory, and no interaction whatsoever between
+`HopfAlgebra` and `Kaehler`/`Cotangent`/`Smooth`/`Etale`; `~/cs/FLT` has zero
+occurrences of `H1Cotangent`, `Extension.Cotangent`, `IsStandardSmooth` or
+`CompleteIntersection`.  Note the Koszul absence is NO LONGER on the critical path —
+see the cut note above.  The usable building blocks that remain relevant are
+`Extension.cotangentEquiv`, `Extension.Cotangent.span_eq_top_of_span_eq_ker`,
+`Cotangent.mk_eq_zero_iff`, and this file's own PROVEN Hopf inputs
+`exists_kaehler_linearEquiv_baseChange_of_hopf_package` (`Ω[G⁄𝒪₃ᵥ] ≅ G ⊗ ω_G`) and the
+connected–étale package of `Fermat/FLT/GroupScheme/ConnectedEtale.lean`. -/
+theorem exists_generators_span_range_eq_ker_of_hopf_package
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
+    [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
+    ∃ (n : ℕ) (P : Algebra.Generators 𝒪₃ᵥ G (Fin n)) (f : Fin n → P.Ring),
+      Ideal.span (Set.range f) = P.ker :=
+  sorry
+
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **THE LCI CORE: a finite flat Hopf order admits a FINITE presentation whose
-conormal module is PROJECTIVE** (SORRY LEAF, cut 2026-07-27 out of
-`subsingleton_h1Cotangent_of_hopf_package`, which is PROVEN over this leaf alone
+conormal module is PROJECTIVE** (PROVEN 2026-07-27 over the single leaf
+`exists_generators_span_range_eq_ker_of_hopf_package`; cut 2026-07-27 out of
+`subsingleton_h1Cotangent_of_hopf_package`, which is PROVEN over this one alone
 via `subsingleton_h1Cotangent_of_projective_cotangent`; RESTATED 2026-07-27 from
 the canonical presentation to an existential over finite presentations — see
-RESTATEMENT below, which is the substantive change).
+RESTATEMENT below, which was the substantive change).
+
+**STATUS 2026-07-27 — PROVEN, and the remaining obligation is purely
+COMBINATORIAL.**  The leaf below it asks only that `G` admit a presentation with
+as many relations as variables (`exists_generators_span_range_eq_ker_of_hopf_package`);
+everything else — the passage from that presentation to PROJECTIVITY of `I/I²` —
+is discharged by `free_cotangent_of_span_range_eq_ker` above, plus
+`Module.free_of_flat_of_isLocalRing` for `Module.Free 𝒪₃ᵥ G`.  In particular the
+conormal module of the presentation produced there is not merely projective but
+FREE of rank `n`.
+
+**THE KOSZUL ABSENCE IS OFF THE CRITICAL PATH** (2026-07-27, and it had been
+recorded here as the blocking gap).  Every earlier audit of this leaf concluded
+that even GIVEN a complete-intersection presentation, the step to conormal
+projectivity had to be built from scratch because
+`RingTheory/Regular/RegularSequence.lean` still says "TODO: Koszul regular
+sequences".  That is now false, because the step does not need Koszul regularity
+at all: with `#relations = #variables` the composite
+`Sⁿ ↠ I/I² → S ⊗ Ω[R[x]⁄R] ≅ Sⁿ` is an ENDOMORPHISM whose cokernel is `Ω[G⁄𝒪₃ᵥ]`,
+which the étale generic fibre makes `𝒪₃ᵥ`-torsion; an endomorphism of a finite
+free module over a domain with torsion cokernel is injective by a determinant
+argument (`injective_of_torsion_cokernel`), so the surjection is bijective.  The
+regular-sequence hypothesis is never used, and neither is a Koszul complex.
 
 There are `n` and a presentation `𝒪₃ᵥ[x_1,…,x_n] ↠ G` whose conormal module
 `I/I²` is a projective `G`-module.  This IS the classical
@@ -13338,48 +13657,35 @@ Indeed `μ₃`, the very counterexample, satisfies this leaf on the nose: `𝔽�
 is a complete intersection, the presentation lifts to `𝒪₃ᵥ[x] ↠ 𝒪₃ᵥ[x]/(x³-1)`,
 and `I/I²` is `G`-FREE of rank 1.  So the closed-fibre route (a
 Demazure–Gabriel/Borel structure theorem for finite commutative Hopf algebras
-over `𝔽₃`, then Nakayama plus `𝒪₃ᵥ`-flatness to lift the presentation, then
-Koszul regularity to make `I/I²` free) is a LIVE candidate for this leaf and
-should not be skipped on the strength of the note above.  It is not thereby
-cheap: Borel's structure theorem is absent from the pin, and so is every
-regular-sequence-to-conormal-module lemma (see the axis search below).
+over `𝔽₃`, then Nakayama plus `𝒪₃ᵥ`-flatness to lift the presentation) is a LIVE
+candidate and should not be skipped on the strength of the note above — it is now
+the recommended attack on
+`exists_generators_span_range_eq_ker_of_hopf_package`, where the full version of
+this paragraph lives.  It is not thereby cheap: Borel's structure theorem is
+absent from the pin.  (The clause "then Koszul regularity to make `I/I²` free"
+that stood here has been DELETED: that step is proven and needs no Koszul theory,
+see THE KOSZUL ABSENCE IS OFF THE CRITICAL PATH above.)
 
-THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a finite flat commutative Hopf
-`𝒪₃ᵥ`-algebra with étale generic fibre such that EVERY finite presentation of it
-has non-projective conormal module — equivalently, one whose minimal presentation
-needs strictly more relations than generators.  Since `H¹` vanishes here, `I/I²`
-injects into a free module, so any refutation must produce a non-projective
-submodule of a free `G`-module, and `G` is a finite product of complete local
-rings; this is the concrete form the search should take.  Note the Hopf
-hypothesis is genuinely load-bearing and a refutation must respect it: dropping
-it makes the statement FALSE, and the witness is the order
-`S = 𝒪₃ᵥ + 3·𝒪₃ᵥ³ = 𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)` inside the étale algebra
-`𝒪₃ᵥ³` — finite flat over `𝒪₃ᵥ` with étale generic fibre, embedding dimension
-`3` against Krull dimension `1`, hence needing three relations on two generators
-and not a complete intersection.  So no argument for this leaf can avoid using
-the comultiplication.
-
-AXIS SEARCHED, and what is missing at this pin (2026-07-27, greps over
-`Mathlib/RingTheory/{Extension,Kaehler,Smooth,Etale,Regular}/` and over
-`~/cs/FLT`): (i) there is NO Koszul complex, NO `IsCompleteIntersection`
-predicate, and NO lemma taking a regular sequence to freeness of `I/I²` or to
-vanishing of `H1Cotangent` — `RingTheory/Regular/RegularSequence.lean` still
-carries "TODO: Koszul regular sequences" — so even GIVEN a complete-intersection
-presentation, the step to this leaf's conclusion has to be built; (ii) there is
-no interaction whatsoever between `HopfAlgebra` and
-`Kaehler`/`Cotangent`/`Smooth`/`Etale` in mathlib; (iii) `~/cs/FLT` has zero
-occurrences of `H1Cotangent`, `Extension.Cotangent`, `IsStandardSmooth` or
-`CompleteIntersection`.  The usable building blocks are
-`Extension.cotangentEquiv : S ⊗[P.Ring] P.ker ≃ₗ[S] P.Cotangent`,
-`Extension.Cotangent.span_eq_top_of_span_eq_ker`, `Cotangent.mk_eq_zero_iff`,
-and `Generators.exists_presentation_of_free_cotangent` (Stacks 07CF). -/
+**WHERE THE REMAINING WORK LIVES** (2026-07-27).  The two paragraphs above are
+retained because they record what a successor must not re-derive, but the
+group-scheme content they describe is no longer this declaration's obligation: it
+has moved verbatim, and with the refutation check and the axis search, onto
+`exists_generators_span_range_eq_ker_of_hopf_package` immediately above.  That is
+where the closed-fibre route, the `μ₃` witness, the non-Hopf counterexample
+`𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)` and the pin survey now belong, because they all bear
+on the COMBINATORIAL statement (`#relations = #variables`) rather than on the
+conormal module.  Do not attack this declaration; attack that leaf. -/
 theorem exists_generators_projective_cotangent_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
     ∃ (n : ℕ) (P : Algebra.Generators 𝒪₃ᵥ G (Fin n)),
-      Module.Projective G P.toExtension.Cotangent :=
-  sorry
+      Module.Projective G P.toExtension.Cotangent := by
+  obtain ⟨n, P, f, hf⟩ := exists_generators_span_range_eq_ker_of_hopf_package G
+  haveI : Module.Free 𝒪₃ᵥ G := Module.free_of_flat_of_isLocalRing
+  haveI : Module.Free G P.toExtension.Cotangent :=
+    free_cotangent_of_span_range_eq_ker (K := ℚ₃ᵥ) G P f hf
+  exact ⟨n, P, inferInstance⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
