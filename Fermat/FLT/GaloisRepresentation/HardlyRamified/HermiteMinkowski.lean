@@ -1821,10 +1821,20 @@ about number fields.
 
 If `A` is finite free over the local ring `Zb` and
 `Tr_{(A/𝔪A)/(Zb/𝔪)}` is surjective, pick `ā` of residual trace `1`.
-`Algebra.trace_quotient_mk` — which applies because the BASE is local,
-the only maximality this argument needs — says the residual trace is
-the reduction of `Tr_{A/Zb}`, so any lift `a` has `Tr_{A/Zb}(a) ∉ 𝔪`,
-i.e. `Tr_{A/Zb}(a)` is a unit of `Zb`.
+`Algebra.trace_quotient_mk` says the residual trace is the reduction of
+`Tr_{A/Zb}`, so any lift `a` has `Tr_{A/Zb}(a) ∉ 𝔪`, i.e.
+`Tr_{A/Zb}(a)` is a unit of `Zb`.
+
+**Why `trace_quotient_mk` is legitimate HERE and not one step earlier.**
+It is stated only for `p = IsLocalRing.maximalIdeal R`, and this
+statement quantifies over exactly that ideal — so at `Zb = ℤ/q^k` it
+reduces mod `𝔪 = (q)`, which is the residue-field computation wanted.
+It is NOT a route to the mod-`q^k` reduction of cut 1: locality of the
+base does not make it apply to a non-maximal ideal, and a note claiming
+otherwise was wrong.  Cut 1's passage `ℤ → ℤ/q^k` is closed instead by
+`trace_quotient_map_of_free` above, via
+`Algebra.TensorProduct.quotIdealMapEquivQuotTensor` and
+`LinearMap.trace_baseChange`, for an arbitrary ideal and with no basis.
 
 This is exactly the half of the old step 5 that is NOT about the
 construction of the unramified subring, and separating it is what
@@ -1845,51 +1855,6 @@ theorem exists_isUnit_trace_of_residualTrace_surjective
   intro hmem
   rw [Ideal.Quotient.eq_zero_iff_mem.mpr hmem] at hy
   exact zero_ne_one hy
-
-/-- **`ℤ/q^k` is a local ring** (PROVEN 2026-07-27).
-
-Needed because `Algebra.trace_quotient_mk` — the one mathlib input of
-step 5 — requires the BASE to be local, and the pin has no instance
-covering a quotient of `ℤ` by a prime power (the `IsAdicComplete` grep
-recorded below is a different gap; this one is elementary and is now
-closed).
-
-Elementary: `m` is a unit mod `q^k` as soon as `q ∤ m`, by Bézout for
-`IsCoprime (q^k) m`; and of `m`, `1 − m` at least one is prime to `q`,
-which is `IsLocalRing.of_isUnit_or_isUnit_one_sub_self`.  Nontriviality
-is `q^k ∤ 1`. -/
-theorem isLocalRing_int_quotient_prime_pow (q k : ℕ) (hq : q.Prime) (hk : k ≠ 0) :
-    IsLocalRing (ℤ ⧸ Ideal.span {(q : ℤ) ^ k}) := by
-  classical
-  have hqp : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
-  have hunit : ∀ m : ℤ, ¬ ((q : ℤ) ∣ m) →
-      IsUnit (Ideal.Quotient.mk (Ideal.span {(q : ℤ) ^ k}) m) := by
-    intro m hm
-    obtain ⟨u, w, huw⟩ : IsCoprime ((q : ℤ) ^ k) m :=
-      IsCoprime.pow_left (hqp.irreducible.coprime_iff_not_dvd.mpr hm)
-    refine isUnit_iff_exists_inv.mpr ⟨Ideal.Quotient.mk _ w, ?_⟩
-    have hz : Ideal.Quotient.mk (Ideal.span {(q : ℤ) ^ k}) ((q : ℤ) ^ k) = 0 :=
-      Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
-    have hcg := congrArg (Ideal.Quotient.mk (Ideal.span {(q : ℤ) ^ k})) huw
-    simp only [map_add, map_mul, map_one, hz, mul_zero, zero_add] at hcg
-    rw [mul_comm]
-    exact hcg
-  haveI : Nontrivial (ℤ ⧸ Ideal.span {(q : ℤ) ^ k}) := by
-    refine Ideal.Quotient.nontrivial_iff.mpr ?_
-    rw [Ne, Ideal.eq_top_iff_one, Ideal.mem_span_singleton]
-    intro h1
-    exact hqp.not_unit (isUnit_of_dvd_one (dvd_trans (dvd_pow_self _ hk) h1))
-  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self ?_
-  intro a
-  obtain ⟨n, rfl⟩ := Ideal.Quotient.mk_surjective a
-  by_cases hdvd : (q : ℤ) ∣ n
-  · right
-    rw [show (1 : ℤ ⧸ Ideal.span {(q : ℤ) ^ k}) - Ideal.Quotient.mk _ n
-        = Ideal.Quotient.mk _ (1 - n) by rw [map_sub, map_one]]
-    refine hunit _ fun hc => ?_
-    have : (q : ℤ) ∣ 1 := by simpa using dvd_add hc hdvd
-    exact hqp.not_unit (isUnit_of_dvd_one this)
-  · exact Or.inl (hunit n hdvd)
 
 attribute [local instance] Ideal.Quotient.field in
 /-- **CUT 2a of the trace witness: the unramified subalgebra
@@ -1988,11 +1953,14 @@ theorem exists_unramifiedSubalgebra_finrank_eq_isUnit_trace
       ∃ a : A, IsUnit (Algebra.trace (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
           (algebraMap ℤ (NumberField.RingOfIntegers K))) A a) := by
   classical
-  -- the base `ℤ/q^k` is local: `Algebra.trace_quotient_mk` needs exactly this
+  -- the base `ℤ/q^k` is local: `Algebra.trace_quotient_mk` needs exactly this.
+  -- `isLocalRing_int_quotient_of_eq_span` is stated over an ideal plus a proof
+  -- that it IS the span, so it installs the instance on the contraction with no
+  -- `Ideal.quotEquivOfEq` transport.
   haveI hloc : IsLocalRing (ℤ ⧸ (v.asIdeal ^ (e * k)).comap
-      (algebraMap ℤ (NumberField.RingOfIntegers K))) := by
-    rw [comap_pow_ramificationIdx_eq_span K q hq v hmem e he k]
-    exact isLocalRing_int_quotient_prime_pow q k hq hk0
+      (algebraMap ℤ (NumberField.RingOfIntegers K))) :=
+    isLocalRing_int_quotient_of_eq_span q hq k (Nat.pos_of_ne_zero hk0) _
+      (comap_pow_ramificationIdx_eq_span K q hq v hmem e he k)
   -- THE REMAINING OBLIGATION: construct the unramified subalgebra `A`,
   -- free of rank `f` over `ℤ/q^k`, with `S` free of rank `e` over it and
   -- with `A/𝔪A = κ` surjecting under the residual trace onto `𝔽_q`.
@@ -2064,10 +2032,12 @@ The rest is proven here:
    `IsScalarTower Z ↥A S` are found by instance search — that choice
    is what turns this step into a three-line rewrite, and it is why
    the cut above is phrased with `Subalgebra`.
-5'. *Unit trace from residual trace.*  `Z` is a LOCAL ring —
-   `isLocalRing_int_quotient_prime_pow` above, transported to the
-   comap form along `comap_pow_ramificationIdx_eq_span` — so
-   `Algebra.trace_quotient_mk` applies verbatim at base `Z`.  That is
+5'. *Unit trace from residual trace.*  `Z` is a LOCAL ring
+   (`isLocalRing_int_quotient_of_eq_span` above, applied directly to
+   the contraction via `comap_pow_ramificationIdx_eq_span`), and its
+   maximal ideal is `(q)`, so `Algebra.trace_quotient_mk` reduces the
+   trace MOD `q` — which is exactly the residue-field statement this
+   step wants.  That is
    `exists_isUnit_trace_of_residualTrace_surjective` above, already
    applied inside the cut.
 6. *Conclusion.*  `Tr_{S/Z}(a) = e·Tr_A(a) ≠ 0` in `Z` because
