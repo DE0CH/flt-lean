@@ -7520,19 +7520,218 @@ theorem exists_inverted_irreducible_map_algClosureZMod {k : ℕ}
       Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g) :=
   sorry
 
+/-- **POONEN §3.2 STEPS (a)–(c) OVER `ℚ` ALONE: A BIRATIONAL HYPERSURFACE NORMAL
+FORM FOR THE GENERIC FIBRE** (SORRY LEAF, cut 2026-07-27 out of
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` below,
+which is now PROVEN over this leaf and its spreading-out sibling
+`exists_inverted_dominantHom_localizationAway_integralSystemModel`).
+
+NO PRIME `p` APPEARS IN THIS STATEMENT. That is the whole point of the cut: this
+is characteristic-zero commutative algebra about ONE finitely generated
+`ℚ`-algebra, and a commutative algebraist who has never opened this file can take
+it. Everything arithmetic — spreading out, reduction mod `p` — is the sibling.
+
+WHAT IT SAYS. The generic fibre `IntegralSystemModel f ℚ` has irreducible
+spectrum (that is `hQ`, transported down from `ℚ̄`), so its reduction is a domain
+`S`, finitely generated over `ℚ`; and `hQ` says more, that `S` is GEOMETRICALLY
+integral. The leaf asks for the classical birational normal form of such an `S`:
+a HYPERSURFACE `ℚ[x₁..x_k] ⧸ (g)` with the SAME function field, cut out by a
+single `g` that has integer coefficients and is irreducible over `ℚ̄`.
+
+WHY IT IS TRUE (Poonen, *Rational Points on Varieties*, §3.2, steps (a)–(c)).
+(a) `hQ` forces `Spec (IntegralSystemModel f ℚ)` irreducible, so its nilradical
+is prime and `S := (IntegralSystemModel f ℚ)_red` is a domain; write `K` for its
+fraction field. (b) In characteristic zero geometric integrality of `S` is
+equivalent to `ℚ` being algebraically closed in `K` (separability is automatic —
+this is the only place char 0 is used, and it is why the leaf is easy compared to
+its statement's length). (c) Noether-normalise: mathlib's
+`exists_integral_inj_algHom_of_fg` / `exists_finite_inj_algHom_of_fg`
+(`Mathlib/RingTheory/NoetherNormalization.lean`, `@[stacks 00OW]`) give a finite
+injection `ℚ[t₁..t_d] ↪ S`, so `K` is finite over `ℚ(t₁..t_d)` and, being
+separable, has a primitive element: `K ≅ ℚ(t)[y] ⧸ (h)`. Clear denominators
+(`exists_integralMultiple`, PROVEN ~1000 lines above) and take the primitive
+part, giving `g ∈ ℤ[t₁..t_d, y]`, i.e. `k = d + 1`. Absolute irreducibility of
+`g` is step (b) again: `K ⊗_ℚ ℚ̄` is a FIELD, so `h` stays irreducible over
+`ℚ̄(t)`, and Gauss's lemma on the primitive `g` moves that back to `ℚ̄[t, y]`.
+Finally two birational domains have isomorphic localisations at single elements,
+which is the last conjunct — and localisation commutes with taking the reduction,
+which is why the isomorphism is stated for `Localization.Away a ⧸ nilradical`
+rather than for `Localization.Away a` itself.
+
+**THE `⧸ nilradical` IS LOAD-BEARING AND MUST NOT BE DROPPED.** Without it the
+leaf is FALSE, and the counterexample is one line: take `f = (x²)` in one
+variable. Then `IntegralSystemModel f ℚ = ℚ[x] ⧸ (x²)` is NOT reduced, its
+radical is `(x)` which is prime, so `hQ` holds — yet no localisation of it is
+ever isomorphic to a localisation of a domain `ℚ[x] ⧸ (g)`. `hQ` constrains the
+TOPOLOGY of the generic fibre and says nothing whatever about nilpotents; the
+consumer below only ever sees the fibre through its topology, so the reduced form
+is the faithful one. (An earlier draft of this cut omitted the quotient and was
+refuted by exactly that example before it was written down.)
+
+WHY `RingHom.ker (algebraMap _ (Localization.Away a)) ≤ nilradical` RATHER THAN
+`a ≠ 0`. `a` lives in the possibly-non-reduced model, where "nonzero" is the
+wrong condition; what the argument needs is that `D(a)` is DENSE, i.e. that `a`
+lies outside every minimal prime, and `a^j x = 0 → x` nilpotent is exactly that,
+written without topology. It is also exactly the hypothesis the sibling spreads
+out, and exactly what the consumer's `hker` becomes mod `p`.
+
+ON `hsm`. Carried, unused by the sketch above, and a prover who does not use it
+should underscore it: EGA IV 9.7.7 does not need smoothness, and dropping it
+strengthens the leaf. It is offered because step (b) is cheaper under it — a
+smooth `ℚ`-algebra is reduced and geometrically reduced, which makes the passage
+`hQ ⟹ S` a domain, and `S ⊗ ℚ̄` a domain, immediate instead of an argument.
+
+CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_birationalNormalForm_integralSystemModel_rat
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ (k : ℕ) (g : MvPolynomial (Fin k) ℤ),
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g) ∧
+      ∃ (a : IntegralSystemModel f ℚ)
+        (b : MvPolynomial (Fin k) ℚ ⧸
+              Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}),
+        b ≠ 0 ∧
+        RingHom.ker (algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)) ≤
+          nilradical (IntegralSystemModel f ℚ) ∧
+        Nonempty ((Localization.Away a ⧸ nilradical (Localization.Away a)) ≃+*
+          Localization.Away b) :=
+  sorry
+
+/-- **THE SPREADING-OUT ITSELF: A BIRATIONAL DATUM OVER `ℚ` SURVIVES REDUCTION
+MOD ALMOST EVERY `p`** (SORRY LEAF, cut 2026-07-27 out of
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` below,
+which is now PROVEN over this leaf and its characteristic-zero sibling
+`exists_birationalNormalForm_integralSystemModel_rat` immediately above).
+
+This is the ONLY place in the whole EGA IV 9.7.7 branch where a constructibility
+argument is actually needed, and the cut was made so that it is the only thing
+left in it: the hypothesis is verbatim the second conjunct of the sibling's
+conclusion, and the conclusion is verbatim what the consumer's assembly eats. No
+irreducibility, no Noether normalisation, no primitive element and no
+absolute-irreducibility bookkeeping appears here — those are the sibling's and
+the consumer's.
+
+WHAT IT SAYS. Over `ℚ` the fibre and the hypersurface `ℚ[x] ⧸ (g)` are
+birational, in the concrete form "isomorphic localisations, after killing
+nilpotents". Conclusion: one integer `N` such that for every `p ∤ N` there is
+still a ring map from the mod-`p` fibre into a localisation of the mod-`p`
+hypersurface whose kernel is only nilpotents — i.e. `Spec` of that localisation
+is still DOMINANT over the fibre.
+
+WHY IT IS TRUE (EGA IV 8.8.2 / 9.x, the standard spreading-out package). All the
+data — the finitely many coefficients of `a`, of `b`, of the isomorphism and of
+its inverse, and the finitely many relations they satisfy — involve finitely many
+rational numbers. Invert their denominators and one nonzero integer more, and the
+whole diagram is defined over `ℤ[1/N]`; base-changing it to `𝔽̄_p` for `p ∤ N`
+gives the map `φ`. Two further enlargements of `N` are what the two conjuncts
+cost:
+* `b ≠ 0` mod `p`: the leading data of `b` is a fixed nonzero rational, so it is
+  a unit for all but finitely many `p`;
+* `ker φ ≤ nilradical`: over `ℚ` the kernel of `R → R[1/a]` is nilpotent, and a
+  nilpotent ideal of a Noetherian ring satisfies `J^s = 0` for one `s`; that
+  identity is an identity between finitely many rational coefficients, so it too
+  holds over `ℤ[1/N]` and hence in every fibre with `p ∤ N`. The remaining part
+  of `ker φ` is the `a`-torsion, and THIS is the one genuinely constructible
+  step: generic flatness over `Spec ℤ`, or equivalently Chevalley applied via
+  `PrimeSpectrum.isConstructible_comap_image`
+  (`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`, PRESENT — refute by
+  `grep -rn "isConstructible_comap_image" .lake/packages/mathlib/`), makes the
+  locus of `p` at which the fibre acquires a component inside `V(a)` a
+  CONSTRUCTIBLE subset of `Spec ℤ` missing the generic point, hence finite. No
+  generic-flatness lemma was located in the pin under that name; a prover should
+  check `Mathlib/RingTheory/Flat/` and `Mathlib/RingTheory/Spectrum/` before
+  building one, and record what is found here.
+
+WHY CHEVALLEY APPLIES HERE THOUGH IT DID NOT APPLY TO THE PARENT. The parent's
+route 2 (recorded on the consumer below) failed because a factorisation of the
+system's radical has UNBOUNDED degrees. Here nothing is being factored: the
+objects being spread out are ONE ring map and ONE inverse, each with a FIXED
+finite list of coefficients handed over by the hypothesis. That is precisely the
+degree bound route 2 lacked, and it is what the sibling above manufactures.
+
+FAITHFULNESS. Not vacuous, and not dischargeable by a junk `φ`: the second
+conjunct `RingHom.ker φ ≤ nilradical` forbids the zero map into a
+localisation-at-`0`, because `b ≠ 0` and a nonzero `b` in the domain
+`𝔽̄_p[x] ⧸ (g mod p)` makes `Localization.Away b` NONTRIVIAL — but note that
+domain-ness of the hypersurface is NOT available inside this leaf (it needs
+`g mod p` irreducible, which is not a hypothesis here) so a prover must produce
+an honest `φ` from the spread-out isomorphism rather than argue about `b`'s
+target. Conversely the leaf is strictly weaker than a mod-`p` ISOMORPHISM: only
+dominance is asked for, which is all the consumer's assembly uses.
+
+`hsm` IS ABSENT ON PURPOSE. Smoothness plays no part in spreading out a
+diagram, so it is not carried; the consumer passes it to the sibling only.
+
+CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_inverted_dominantHom_localizationAway_integralSystemModel
+    {n m k : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (g : MvPolynomial (Fin k) ℤ)
+    (hQlink : ∃ (a : IntegralSystemModel f ℚ)
+        (b : MvPolynomial (Fin k) ℚ ⧸
+              Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}),
+        b ≠ 0 ∧
+        RingHom.ker (algebraMap (IntegralSystemModel f ℚ) (Localization.Away a)) ≤
+          nilradical (IntegralSystemModel f ℚ) ∧
+        Nonempty ((Localization.Away a ⧸ nilradical (Localization.Away a)) ≃+*
+          Localization.Away b)) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      ∃ (b : MvPolynomial (Fin k) (AlgebraicClosure (ZMod p)) ⧸
+              Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g})
+        (φ : IntegralSystemModel f (AlgebraicClosure (ZMod p)) →+* Localization.Away b),
+        b ≠ 0 ∧
+          RingHom.ker φ ≤ nilradical (IntegralSystemModel f (AlgebraicClosure (ZMod p))) :=
+  sorry
+
 /-- **EGA IV 9.7.7 OVER `Spec ℤ`, MINUS NOETHER–OSTROWSKI: REDUCTION OF A
 GEOMETRICALLY IRREDUCIBLE SYSTEM TO ONE ABSOLUTELY IRREDUCIBLE POLYNOMIAL**
-(SORRY LEAF, cut 2026-07-27 out of
-`exists_inverted_irreducibleSpace_integralSystemModel` below, which is now PROVEN
-over this leaf and `exists_inverted_irreducible_map_algClosureZMod` above.)
+(**PROVEN 2026-07-27**, having itself been cut on the same day out of
+`exists_inverted_irreducibleSpace_integralSystemModel` below. It is now proven
+over the two leaves IMMEDIATELY ABOVE, into which the geometry was split along
+the characteristic-zero / spreading-out boundary:
+`exists_birationalNormalForm_integralSystemModel_rat` — Poonen §3.2 steps
+(a)–(c) over `ℚ` alone, no prime in its statement — and
+`exists_inverted_dominantHom_localizationAway_integralSystemModel` — the
+spreading-out, the only place a constructibility argument is still needed.
+Step (d), Noether–Ostrowski, remains the separate leaf
+`exists_inverted_irreducible_map_algClosureZMod` above and is NOT part of this.)
 
-This leaf is steps (a)–(c) of the Poonen §3.2 architecture recorded below; step
+This layer is steps (a)–(c) of the Poonen §3.2 architecture recorded below; step
 (d) is the sibling above and is NOT part of it. It asks for a single integral
 polynomial `g`, irreducible over `ℚ̄`, together with an integer `N`, such that for
 `p ∤ N` irreducibility of `g mod p` over `𝔽̄_p` FORCES irreducibility of the
 geometric fibre of the system. In Poonen's proof `g` is the primitive-element
 polynomial of the function field after Noether normalisation, and `N` inverts
 everything that has to become finite, free and separable along the way.
+
+WHAT THE PROOF BELOW DISCHARGES ON ITS OWN, i.e. what is NOT on either open leaf.
+The two leaves hand over a BIRATIONAL datum — a ring map `φ` from the mod-`p`
+fibre into a localisation of the mod-`p` hypersurface `𝔽̄_p[x] ⧸ (g mod p)`,
+whose kernel is only nilpotents. Turning that into `IrreducibleSpace` is the
+whole body below and is real mathematics, none of it hidden:
+`g mod p` irreducible in the UFD `𝔽̄_p[x₁..x_k]` is PRIME
+(`UniqueFactorizationMonoid.irreducible_iff_prime`), so the hypersurface is a
+DOMAIN (`Ideal.Quotient.isDomain_iff_prime`); a localisation of a domain away
+from a nonzero element is a domain
+(`IsLocalization.isDomain_localization` with
+`powers_le_nonZeroDivisors_of_noZeroDivisors` — this is where `b ≠ 0` is spent);
+so `ker φ` is PRIME (`RingHom.ker_isPrime`); `nilradical ≤ ker φ` is automatic
+(`nilradical_le_prime`) and the leaf's `hker` is the converse, so the fibre's
+nilradical IS that prime; and primality of the nilradical is literally
+irreducibility of the spectrum
+(`PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical`).
+
+WHY THE CUT IS AT DOMINANCE RATHER THAN AT ISOMORPHISM. The spreading-out leaf is
+asked only for a dominant `φ`, not for a mod-`p` isomorphism of localisations,
+because dominance is all the paragraph above consumes. That is deliberate: a
+mod-`p` isomorphism is both harder to produce and strictly more than EGA needs,
+and asking for it would have put reducedness of the fibre — which the consumer
+explicitly does NOT want, see `WHY IrreducibleSpace AND NOT IsPrime` below — back
+into the leaf.
 
 WHY THE CUT IS SAFE, i.e. why this leaf cannot be discharged cheaply. `g` is
 required to be irreducible over `ℚ̄`, so a prover cannot make the implication
@@ -7623,10 +7822,23 @@ or model-theoretic attack is not covered by any of it.
    9.7.7. This is the trap in the present pin: the machinery all looks present,
    and it is present — for a statement exactly one degree bound away.
 3. THE ARCHITECTURE THAT DOES WORK (Poonen §3.2; EGA IV 4.5–4.6 with 9.7.7), in
-   four steps. It is recorded here as prose rather than as sorried sub-leaves
-   deliberately: steps (a)–(c) cannot be stated in this pin without first
-   building Noether normalisation over a base and a theory of function fields of
-   integral models, and a cut whose leaves cannot be stated is worse than none.
+   four steps. **THE PARENTHETICAL THAT USED TO STAND HERE IS REFUTED** (it read:
+   "recorded as prose rather than as sorried sub-leaves deliberately: steps
+   (a)–(c) cannot be stated in this pin without first building Noether
+   normalisation over a base and a theory of function fields of integral
+   models"). Steps (a)–(c) ARE stated in this pin, as
+   `exists_birationalNormalForm_integralSystemModel_rat` immediately above, and
+   the spreading-out as
+   `exists_inverted_dominantHom_localizationAway_integralSystemModel` beside it.
+   Two observations kill the objection, and both are one grep each:
+   Noether normalisation OVER A FIELD is in the pin
+   (`exists_integral_inj_algHom_of_fg`), which is all step (c) uses because it is
+   applied to the GENERIC fibre; and "the function field of the integral model"
+   never has to be named — what the argument actually produces, and all the
+   consumer needs, is a birational identification of LOCALISATIONS, which is
+   `Localization.Away` and `nilradical`, both of them in the pin. The general
+   lesson (stating a theory is not proving it) applied here in an unusually sharp
+   form: the missing theory was not needed even as a statement.
    (a) reduce to the case where the `ℤ`-model is a DOMAIN dominating `ℤ`, by
        decomposing `Spec (IntegralSystemModel f ℤ)` into its finitely many
        irreducible components. Each component is again `ℤ[x] ⧸ (g)` for a finite
@@ -7673,14 +7885,47 @@ theorem exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel
       ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
         Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g) →
         IrreducibleSpace
-          (PrimeSpectrum (IntegralSystemModel f (AlgebraicClosure (ZMod p)))) :=
-  sorry
+          (PrimeSpectrum (IntegralSystemModel f (AlgebraicClosure (ZMod p)))) := by
+  -- STEP 1 (SORRY LEAF, Poonen §3.2 steps (a)–(c) over `ℚ`): a birational
+  -- hypersurface normal form for the generic fibre.
+  obtain ⟨k, g, hgQ, hQlink⟩ := exists_birationalNormalForm_integralSystemModel_rat f hsm hQ
+  -- STEP 2 (SORRY LEAF, the spreading-out itself): the same birational datum,
+  -- reduced mod `p`, for every `p` outside one explicit `N`.
+  obtain ⟨N, hN, hlink⟩ := exists_inverted_dominantHom_localizationAway_integralSystemModel f g hQlink
+  refine ⟨N, k, g, hN, hgQ, ?_⟩
+  -- STEP 3 (PROVEN, below): irreducibility of `g mod p` turns the birational
+  -- datum into irreducibility of the whole geometric fibre.
+  intro p _ hp hgp
+  obtain ⟨b, φ, hb, hker⟩ := hlink p hp
+  -- `g mod p` is irreducible in the UFD `𝔽̄_p[x₁..x_k]`, hence PRIME, so the
+  -- hypersurface it cuts out is an integral domain.
+  haveI hpr : (Ideal.span
+      {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g}).IsPrime :=
+    Ideal.isPrime_span_singleton_of_prime
+      (UniqueFactorizationMonoid.irreducible_iff_prime.mp hgp)
+  haveI : IsDomain (MvPolynomial (Fin k) (AlgebraicClosure (ZMod p)) ⧸
+      Ideal.span {MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g}) :=
+    (Ideal.Quotient.isDomain_iff_prime _).mpr hpr
+  -- A localisation of a domain away from a NONZERO element is again a domain,
+  haveI : IsDomain (Localization.Away b) :=
+    IsLocalization.isDomain_localization (powers_le_nonZeroDivisors_of_noZeroDivisors hb)
+  -- so the kernel of any ring map into it is prime;
+  haveI : (RingHom.ker φ).IsPrime := RingHom.ker_isPrime φ
+  -- `nilradical ≤ ker φ` is automatic (a nilpotent dies in a reduced ring), and
+  -- `hker` — dominance of `Spec (Localization.Away b) → Spec (fibre)` — is the
+  -- converse, so the nilradical of the fibre IS that prime.
+  have hnil : nilradical (IntegralSystemModel f (AlgebraicClosure (ZMod p))) =
+      RingHom.ker φ :=
+    le_antisymm (nilradical_le_prime _) hker
+  rw [PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical, hnil]
+  infer_instance
 
 /-- **EGA IV 9.7.7 OVER `Spec ℤ`, IN THE SHAPE THE ARGUMENT ACTUALLY PRODUCES**
-(**PROVEN 2026-07-27** over the two leaves immediately above, into which its
+(**PROVEN 2026-07-27** over the two lemmas immediately above, into which its
 mathematics was split along the boundary the route audit already identified:
 `exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` is steps
-(a)–(c) of the Poonen §3.2 architecture — the geometry — and
+(a)–(c) of the Poonen §3.2 architecture — the geometry, and itself PROVEN as of
+2026-07-27 over a further two-way cut recorded in its own docstring — and
 `exists_inverted_irreducible_map_algClosureZMod` is step (d), Noether–Ostrowski —
 the arithmetic. The audit's own verdict, *"of the four, only (d) has its main
 tool in the pin"*, is exactly what makes that the right place to cut: step (d)
@@ -7740,13 +7985,19 @@ theorem exists_inverted_irreducibleSpace_integralSystemModel
 
 /-- **SPREADING OUT OF GEOMETRIC IRREDUCIBILITY, SCHEME-FREE AND UNIVERSE-FREE**
 (**PROVEN 2026-07-27** over `exists_inverted_irreducibleSpace_integralSystemModel`
-immediately above, which is ITSELF PROVEN as of 2026-07-27 over the two leaves
-that now carry EGA IV 9.7.7 between them:
+immediately above, which is ITSELF PROVEN as of 2026-07-27 over the two lemmas
+that carry EGA IV 9.7.7 between them:
 `exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` (the
 geometry, Poonen §3.2 steps (a)–(c)) and
 `exists_inverted_irreducible_map_algClosureZMod` (Noether–Ostrowski, step (d)).
-Those two are the open SORRIES on this branch; everything between them and the
-scheme-level consumer below is proven).
+The first of those is ALSO PROVEN as of 2026-07-27, over a further two-way cut,
+so the open SORRIES on this branch are now THREE:
+`exists_inverted_irreducible_map_algClosureZMod` (step (d), arithmetic),
+`exists_birationalNormalForm_integralSystemModel_rat` (steps (a)–(c) over `ℚ`,
+characteristic-zero commutative algebra with no prime in its statement) and
+`exists_inverted_dominantHom_localizationAway_integralSystemModel` (the
+spreading-out proper). Everything between them and the scheme-level consumer
+below is proven.)
 
 WHAT THIS LAYER DISCHARGES — packaging only, but worth naming so nobody redoes
 it: the conversion of the spreading-out argument's inverted integer `N` into the
@@ -7812,14 +8063,18 @@ the two lemmas immediately above: the scheme-and-universe transport
 scheme-free spreading-out layer
 `exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre`,
 which is **also PROVEN as of 2026-07-27**, as is
-`exists_inverted_irreducibleSpace_integralSystemModel` below it. The open SORRIES
-on this whole branch are now the TWO leaves that carry EGA IV 9.7.7 between them:
-`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel`, the
-geometry — Poonen §3.2 steps (a)–(c), whose docstring holds the missing-machinery
-inventory and the route audit — and
+`exists_inverted_irreducibleSpace_integralSystemModel` below it, and so is
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` — whose
+docstring still holds the missing-machinery inventory and the route audit, and is
+what a prover should read. The open SORRIES on this whole branch are now THREE:
 `exists_inverted_irreducible_map_algClosureZMod`, the arithmetic — step (d),
 Noether–Ostrowski, which Chevalley genuinely applies to and which is dispatchable
-to a commutative algebraist in isolation).
+to a commutative algebraist in isolation; and the two into which the geometry was
+split on 2026-07-27, `exists_birationalNormalForm_integralSystemModel_rat` —
+Poonen steps (a)–(c) over `ℚ` alone, no prime in its statement — and
+`exists_inverted_dominantHom_localizationAway_integralSystemModel`, the
+spreading-out proper, which is the only remaining place a constructibility
+argument is needed).
 
 For all but finitely many primes `p`, the geometric fibre of the integral model
 is irreducible: the ideal cut out by `f` over an algebraic closure of `𝔽_p` has
