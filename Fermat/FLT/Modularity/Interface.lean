@@ -3771,6 +3771,8 @@ GENERAL half of that route — no modular forms occur in any of them —
 and they reduce the leaf to exactly two inputs, one analytic
 (Eichler–Selberg, `exists_trace_heckeSubring_int`) and one
 number-theoretic (`exists_int_of_monic_of_forall_sum_roots_pow_int`).
+The number-theoretic one is now PROVEN (2026-07-27), so Eichler–Selberg
+is the only input of this route still open.
 
 The linear algebra in between is PROVEN here: over `ℂ` the power traces
 of an endomorphism are the power sums of the roots of its
@@ -3884,37 +3886,277 @@ theorem trace_pow_eq_sum_roots_pow {V : Type*} [AddCommGroup V] [Module ℂ V]
         rw [Polynomial.count_roots, nsmul_eq_mul]
         ring
 
+/-- **NEWTON'S IDENTITIES FOR A MULTISET** (PROVEN, 2026-07-27): for any
+multiset `s` in a commutative ring,
+`k · e_k(s) = (−1)^{k+1} · Σ_{i+j = k, i < k} (−1)^i e_i(s) p_j(s)`,
+where `e_i = Multiset.esymm` and `p_j(s) = Σ_{x ∈ s} x^j`.
+
+Mathlib has Newton's identities only for `MvPolynomial σ R` with `σ` a
+`Fintype` (`MvPolynomial.mul_esymm_eq_sum`); this transfers them to a
+multiset by enumerating it as `Fin l.length → R` through `s.toList`
+(`Fin.univ_val_map` plus `List.ofFn_get`) and applying `aeval`. -/
+theorem natCast_mul_esymm_eq_sum {R : Type*} [CommRing R] (s : Multiset R) (k : ℕ) :
+    (k : R) * s.esymm k =
+      (-1) ^ (k + 1) * ∑ a ∈ Finset.HasAntidiagonal.antidiagonal k with a.1 < k,
+        (-1) ^ a.1 * s.esymm a.1 * (s.map (· ^ a.2)).sum := by
+  obtain ⟨l, rfl⟩ : ∃ l : List R, (l : Multiset R) = s := ⟨s.toList, s.coe_toList⟩
+  have hmap : Multiset.map (fun i : Fin l.length => l.get i) Finset.univ.val
+      = (l : Multiset R) := by
+    rw [Fin.univ_val_map, List.ofFn_get]
+  have hsum : ∀ g : R → R,
+      ∑ i : Fin l.length, g (l.get i) = (Multiset.map g (l : Multiset R)).sum := by
+    intro g
+    rw [← hmap, Multiset.map_map]
+    rfl
+  have hpsum : ∀ j : ℕ, (MvPolynomial.aeval (fun i : Fin l.length => l.get i))
+      (MvPolynomial.psum (Fin l.length) R j) = (Multiset.map (· ^ j) (l : Multiset R)).sum := by
+    intro j
+    rw [MvPolynomial.psum, map_sum]
+    simp only [map_pow, MvPolynomial.aeval_X]
+    exact hsum (· ^ j)
+  have hesymm : ∀ j : ℕ, (MvPolynomial.aeval (fun i : Fin l.length => l.get i))
+      (MvPolynomial.esymm (Fin l.length) R j) = (l : Multiset R).esymm j := by
+    intro j
+    rw [MvPolynomial.aeval_esymm_eq_multiset_esymm, hmap]
+  have H := congrArg (MvPolynomial.aeval (fun i : Fin l.length => l.get i))
+    (MvPolynomial.mul_esymm_eq_sum (Fin l.length) R k)
+  simpa only [map_mul, map_natCast, map_pow, map_neg, map_one, map_sum, hpsum, hesymm] using H
+
+/-- **INTEGRAL POWER SUMS ⟹ RATIONAL ELEMENTARY SYMMETRIC FUNCTIONS**
+(PROVEN, 2026-07-27): if every power sum `Σ_{x ∈ s} xᵏ`, `k ≥ 1`, of a
+multiset `s ⊆ ℂ` is a rational integer, then every `e_k(s)` is RATIONAL.
+
+Strong induction on `k` over `natCast_mul_esymm_eq_sum`: the identity
+solves for `e_k` after dividing by `k` (harmless in characteristic `0`),
+and every term on the right involves an `e_i` with `i < k` and a power
+sum `p_j` with `j = k − i ≥ 1`. This is only rationality — integrality
+of the `e_k` is the separate and harder half, supplied by
+`forall_isIntegral_of_forall_sum_pow_int` below. -/
+theorem esymm_mem_ratRange_of_forall_sum_pow_int (s : Multiset ℂ)
+    (h : ∀ k : ℕ, 0 < k → ∃ z : ℤ, (s.map (· ^ k)).sum = (z : ℂ)) (k : ℕ) :
+    s.esymm k ∈ (Rat.castHom ℂ).range := by
+  induction k using Nat.strong_induction_on with
+  | _ k ih =>
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp [Multiset.esymm]
+    · have hkk : (k : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hk.ne'
+      have H := natCast_mul_esymm_eq_sum s k
+      have hEq : s.esymm k = (k : ℂ)⁻¹ *
+          ((-1) ^ (k + 1) * ∑ a ∈ Finset.HasAntidiagonal.antidiagonal k with a.1 < k,
+            (-1) ^ a.1 * s.esymm a.1 * (s.map (· ^ a.2)).sum) := by
+        rw [← H]; field_simp
+      rw [hEq]
+      refine Subring.mul_mem _ ⟨((k : ℚ))⁻¹, by simp⟩ (Subring.mul_mem _ ?_ ?_)
+      · exact Subring.pow_mem _ (Subring.neg_mem _ (Subring.one_mem _)) _
+      · refine Subring.sum_mem _ fun a ha => ?_
+        simp only [Finset.mem_filter, Finset.HasAntidiagonal.mem_antidiagonal] at ha
+        obtain ⟨hsum, hlt⟩ := ha
+        have h2 : 0 < a.2 := by omega
+        obtain ⟨z, hz⟩ := h a.2 h2
+        refine Subring.mul_mem _ (Subring.mul_mem _ ?_ (ih a.1 hlt)) ?_
+        · exact Subring.pow_mem _ (Subring.neg_mem _ (Subring.one_mem _)) _
+        · exact hz ▸ ⟨(z : ℚ), by simp⟩
+
+/-- **BOUNDED DENOMINATORS FROM A VANDERMONDE SYSTEM** (PROVEN,
+2026-07-27): let `v : Fin r → ℂ` be injective with every `v i ≠ 0`, let
+`c i` be positive integers, and suppose `Σ_i c i · (v i)ᵏ ∈ ℤ` for every
+`k ≥ 1`. Then every `v i` is an ALGEBRAIC INTEGER.
+
+**This is what replaces the `p`-adic / Fatou route recorded in the
+docstring of `exists_int_of_monic_of_forall_sum_roots_pow_int` below,
+and it needs neither `ℂ_p` nor formal power series.** The matrix
+`A_{j i} = (v i)^{j+1}` is `(diag v · vandermonde v)ᵀ`, hence invertible
+(`Matrix.det_vandermonde_ne_zero_iff` plus `v i ≠ 0`). Writing
+`d j = (A⁻¹)_{i₀ j}` — a FIXED finite family, independent of `K` — the
+system `A · u_K = b_K` with `u_K i = c i · (v i)^K` and
+`(b_K) j = Σ_i c i · (v i)^{K+j+1} ∈ ℤ` inverts to
+
+  `c i₀ · (v i₀)^K = Σ_j d j · (b_K) j  ∈  N := span_ℤ {d j}`
+
+for EVERY `K ≥ 0`. So `M := span_ℤ {c i₀ · (v i₀)^K : K}` sits inside a
+finitely generated `ℤ`-module, hence is finitely generated (`ℤ` is
+Noetherian), is nonzero (it contains `c i₀ ≠ 0`), and is stable under
+multiplication by `v i₀` — which is exactly mathlib's integrality
+criterion `isIntegral_of_smul_mem_submodule`.
+
+Morally this is the "bounded denominators" form of the `p`-adic
+argument: the `p`-adic proof says `|v i₀|_p ≤ 1` for every `p`, and this
+one says the denominators of the powers `(v i₀)^K` are bounded uniformly
+in `K` — but it is a single application of linear algebra over `ℂ`
+rather than an analytic statement, so it needs no completion. -/
+theorem isIntegral_of_forall_sum_pow_eq_int {r : ℕ} (v : Fin r → ℂ)
+    (hvinj : Function.Injective v) (hvne : ∀ i, v i ≠ 0) (c : Fin r → ℕ) (hc : ∀ i, c i ≠ 0)
+    (b : ℕ → ℤ) (hb : ∀ k : ℕ, 0 < k → ∑ i, (c i : ℂ) * v i ^ k = (b k : ℂ)) (i₀ : Fin r) :
+    IsIntegral ℤ (v i₀) := by
+  classical
+  set A : Matrix (Fin r) (Fin r) ℂ := Matrix.of fun j i => v i ^ ((j : ℕ) + 1) with hA
+  have hAt : A.transpose = Matrix.diagonal v * Matrix.vandermonde v := by
+    ext i j
+    rw [Matrix.transpose_apply, Matrix.diagonal_mul, Matrix.vandermonde_apply, hA]
+    simp [pow_succ, mul_comm]
+  have hdet : A.det ≠ 0 := by
+    rw [← Matrix.det_transpose, hAt, Matrix.det_mul, Matrix.det_diagonal]
+    exact mul_ne_zero (Finset.prod_ne_zero_iff.mpr fun i _ => hvne i)
+      (Matrix.det_vandermonde_ne_zero_iff.mpr hvinj)
+  have hunit : IsUnit A.det := isUnit_iff_ne_zero.mpr hdet
+  set d : Fin r → ℂ := fun j => A⁻¹ i₀ j with hd
+  have key : ∀ u : Fin r → ℂ, ∑ j, d j * (A.mulVec u) j = u i₀ := by
+    intro u
+    have h1 : A⁻¹.mulVec (A.mulVec u) = u := by
+      rw [Matrix.mulVec_mulVec, Matrix.nonsing_inv_mul A hunit, Matrix.one_mulVec]
+    calc ∑ j, d j * (A.mulVec u) j = A⁻¹.mulVec (A.mulVec u) i₀ := by
+          simp [Matrix.mulVec, dotProduct, hd]
+      _ = u i₀ := by rw [h1]
+  have hu : ∀ K : ℕ, ∑ j, d j * (b (K + (j : ℕ) + 1) : ℂ) = (c i₀ : ℂ) * v i₀ ^ K := by
+    intro K
+    have := key (fun i => (c i : ℂ) * v i ^ K)
+    rw [← this]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    congr 1
+    rw [← hb (K + (j : ℕ) + 1) (by omega)]
+    simp only [Matrix.mulVec, dotProduct, hA, Matrix.of_apply]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    ring
+  set g : ℕ → ℂ := fun K => (c i₀ : ℂ) * v i₀ ^ K with hgdef
+  have hMN : Submodule.span ℤ (Set.range g) ≤ Submodule.span ℤ (Set.range d) := by
+    rw [Submodule.span_le]
+    rintro _ ⟨K, rfl⟩
+    simp only [SetLike.mem_coe, hgdef, ← hu K]
+    refine Submodule.sum_mem _ fun j _ => ?_
+    have hz : d j * (b (K + (j : ℕ) + 1) : ℂ) = (b (K + (j : ℕ) + 1)) • d j := by
+      rw [zsmul_eq_mul]; ring
+    rw [hz]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span ⟨j, rfl⟩)
+  have hNfg : (Submodule.span ℤ (Set.range d)).FG :=
+    ⟨(Set.finite_range d).toFinset, by rw [Set.Finite.coe_toFinset]⟩
+  have hMfg : (Submodule.span ℤ (Set.range g)).FG := by
+    haveI : IsNoetherian ℤ (Submodule.span ℤ (Set.range d)) :=
+      isNoetherian_of_fg_of_noetherian _ hNfg
+    have h1 := IsNoetherian.noetherian
+      (Submodule.comap (Submodule.span ℤ (Set.range d)).subtype (Submodule.span ℤ (Set.range g)))
+    have h2 := h1.map (Submodule.span ℤ (Set.range d)).subtype
+    rwa [Submodule.map_comap_subtype, inf_of_le_right hMN] at h2
+  have hMne : Submodule.span ℤ (Set.range g) ≠ ⊥ := by
+    intro hcon
+    have hmem : g 0 ∈ Submodule.span ℤ (Set.range g) := Submodule.subset_span ⟨0, rfl⟩
+    rw [hcon, Submodule.mem_bot] at hmem
+    simp only [hgdef, pow_zero, mul_one] at hmem
+    exact (Nat.cast_ne_zero.mpr (hc i₀)) hmem
+  have hstable : ∀ n ∈ Submodule.span ℤ (Set.range g),
+      v i₀ • n ∈ Submodule.span ℤ (Set.range g) := by
+    intro n hn
+    induction hn using Submodule.span_induction with
+    | mem x hx =>
+        obtain ⟨K, rfl⟩ := hx
+        have hstep : v i₀ • g K = g (K + 1) := by
+          simp only [hgdef, smul_eq_mul]; ring
+        rw [hstep]
+        exact Submodule.subset_span ⟨K + 1, rfl⟩
+    | zero => simp
+    | add x y hx hy ihx ihy => rw [smul_add]; exact Submodule.add_mem _ ihx ihy
+    | smul a x hx ih => rw [smul_comm]; exact Submodule.smul_mem _ _ ih
+  exact isIntegral_of_smul_mem_submodule _ hMne hMfg (v i₀) hstable
+
+/-- **INTEGRAL POWER SUMS ⟹ ALL ELEMENTS ARE ALGEBRAIC INTEGERS**
+(PROVEN, 2026-07-27): if every power sum `Σ_{x ∈ s} xᵏ`, `k ≥ 1`, of a
+multiset `s ⊆ ℂ` is a rational integer, then every element of `s` is an
+algebraic integer.
+
+Zero is integral outright; the nonzero elements are enumerated by
+`(s.toFinset.erase 0).equivFin`, their multiplicities `Multiset.count`
+supply the positive integers `c`, and `Finset.sum_multiset_map_count`
+rewrites each power sum as `Σ_i c i · (v i)ᵏ` (the `0` term drops out
+because `k ≥ 1`). `isIntegral_of_forall_sum_pow_eq_int` then applies
+verbatim. -/
+theorem forall_isIntegral_of_forall_sum_pow_int (s : Multiset ℂ)
+    (h : ∀ k : ℕ, 0 < k → ∃ z : ℤ, (s.map (· ^ k)).sum = (z : ℂ)) :
+    ∀ x ∈ s, IsIntegral ℤ x := by
+  classical
+  have h' : ∀ k : ℕ, ∃ z : ℤ, 0 < k → (s.map (· ^ k)).sum = (z : ℂ) := by
+    intro k
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · exact ⟨0, by omega⟩
+    · obtain ⟨z, hz⟩ := h k hk; exact ⟨z, fun _ => hz⟩
+  choose b hb using h'
+  intro x hx
+  rcases eq_or_ne x 0 with rfl | hx0
+  · exact isIntegral_zero
+  set T : Finset ℂ := s.toFinset.erase 0 with hTdef
+  have hxT : x ∈ T := Finset.mem_erase.mpr ⟨hx0, Multiset.mem_toFinset.mpr hx⟩
+  set r : ℕ := T.card with hrdef
+  set e : ↥T ≃ Fin r := T.equivFin with hedef
+  set v : Fin r → ℂ := fun i => ((e.symm i : ↥T) : ℂ) with hvdef
+  have hvT : ∀ i, v i ∈ T := fun i => (e.symm i).2
+  have hvne : ∀ i, v i ≠ 0 := fun i => Finset.ne_of_mem_erase (hvT i)
+  have hvinj : Function.Injective v := by
+    intro i j hij
+    exact e.symm.injective (Subtype.ext hij)
+  have hvs : ∀ i, v i ∈ s := fun i => Multiset.mem_toFinset.mp (Finset.mem_of_mem_erase (hvT i))
+  have hreindex : ∀ F : ℂ → ℂ, ∑ i : Fin r, F (v i) = ∑ y ∈ T, F y := by
+    intro F
+    rw [← Finset.sum_coe_sort T F]
+    exact Equiv.sum_comp e.symm (fun t : ↥T => F (t : ℂ))
+  have hb' : ∀ k : ℕ, 0 < k →
+      ∑ i, ((Multiset.count (v i) s : ℕ) : ℂ) * v i ^ k = (b k : ℂ) := by
+    intro k hk
+    rw [← hb k hk, hreindex (fun y => ((Multiset.count y s : ℕ) : ℂ) * y ^ k),
+      Finset.sum_multiset_map_count]
+    have hEr : ∑ y ∈ s.toFinset.erase (0 : ℂ), ((Multiset.count y s : ℕ) : ℂ) * y ^ k
+        = ∑ y ∈ s.toFinset, ((Multiset.count y s : ℕ) : ℂ) * y ^ k :=
+      Finset.sum_erase _ (by simp [zero_pow hk.ne'])
+    rw [hEr]
+    exact Finset.sum_congr rfl fun y _ => (nsmul_eq_mul _ _).symm
+  have := isIntegral_of_forall_sum_pow_eq_int v hvinj hvne (fun i => Multiset.count (v i) s)
+    (fun i => Multiset.count_ne_zero.mpr (hvs i)) b hb' (e ⟨x, hxT⟩)
+  simpa [hvdef] using this
+
 /-- **ALGEBRAIC NUMBERS WITH INTEGRAL POWER SUMS ARE ALGEBRAIC INTEGERS**
-(sorry leaf, cut 2026-07-27 out of `isIntegral_heckeEndo` below): a
-monic `p ∈ ℂ[X]` all of whose root power sums `Σ_i λᵢᵏ`, `k ≥ 1`, are
-rational integers is the image of a monic `p₀ ∈ ℤ[X]`.
+(PROVEN, 2026-07-27; cut 2026-07-27 out of `isIntegral_heckeEndo`
+below): a monic `p ∈ ℂ[X]` all of whose root power sums `Σ_i λᵢᵏ`,
+`k ≥ 1`, are rational integers is the image of a monic `p₀ ∈ ℤ[X]`.
 
 This is the whole ARITHMETIC content of the trace route and it contains
 no modular forms; it is a self-contained mathlib-shaped statement.
 
-**THE ROUTE IS ELEMENTARY — no `p`-adic analysis is needed.** The
-docstring this leaf was cut from recorded the classical `p`-adic
-argument (the generating function `Σ_{k ≥ 1} p_k tᵏ = Σ_i λᵢt/(1 − λᵢt)`
-has `ℤ_p`-integral coefficients, hence converges on the open unit disc,
-hence has no pole there, hence `|λᵢ|_p ≤ 1` for every `p`). That is
-correct but would require `ℂ_p`, which the pin does not have. The same
-conclusion follows from **FATOU'S LEMMA** (1906, and it is a Gauss's-
-lemma-level content argument over `ℤ[t]`): a power series with INTEGER
-coefficients which is a rational function `A/B` with `A, B ∈ ℚ[t]`,
-`B(0) = 1`, already has `A, B ∈ ℤ[t]`. Applied here:
+**THE ROUTE IS ELEMENTARY — neither `p`-adic analysis NOR Fatou's lemma
+is needed.** Two earlier plans are recorded here because both are
+correct and both are strictly more expensive than what was used:
 
-* Newton's identities in characteristic `0` (mathlib:
-  `MvPolynomial.psum_eq_mul_esymm_sub_sum`) turn `p_k ∈ ℤ` into
-  `p ∈ ℚ[X]`, since each `e_k` is a `ℚ`-polynomial in `p_1, …, p_k`.
-* Write `p*(t) = t^deg p · p(1/t) = Π_i (1 − λᵢ t) ∈ ℚ[t]`, `p*(0) = 1`.
-  Then `Σ_{k ≥ 1} p_k tᵏ = −t (p*)'/p*`, an identity of formal power
-  series over `ℚ` (mathlib: `PowerSeries`, `Polynomial.derivative`).
-* Its lowest-terms denominator is the RADICAL `Π_{distinct λ} (1 − λt)`:
-  in characteristic `0` the partial-fraction residue at `1/λ` is
-  `m_λ · λ ≠ 0`, so no pole cancels. Fatou therefore puts that radical
-  in `ℤ[t]`, i.e. every `λᵢ` is an algebraic integer.
-* Each coefficient of `p` is then both an algebraic integer and rational
-  (previous bullet), hence in `ℤ` (`IsIntegrallyClosed ℤ`).
+* the classical `p`-adic argument (the generating function
+  `Σ_{k ≥ 1} p_k tᵏ = Σ_i λᵢt/(1 − λᵢt)` has `ℤ_p`-integral
+  coefficients, hence converges on the open unit disc, hence has no pole
+  there, hence `|λᵢ|_p ≤ 1` for every `p`) needs `ℂ_p`, absent from the
+  pin;
+* **FATOU'S LEMMA** (1906: a power series with INTEGER coefficients that
+  is a rational function `A/B` with `A, B ∈ ℚ[t]`, `B(0) = 1`, already
+  has `A, B ∈ ℤ[t]`) removes the analysis but still needs formal power
+  series, `−t(p*)'/p*`, and a partial-fraction residue computation.
+
+**What the proof actually does** is take the *linear-algebra* shadow of
+the same fact, in two independent halves:
+
+* RATIONALITY (`esymm_mem_ratRange_of_forall_sum_pow_int`): Newton's
+  identities in characteristic `0`, transferred from mathlib's
+  `MvPolynomial.mul_esymm_eq_sum` to a multiset by
+  `natCast_mul_esymm_eq_sum`, turn `p_k ∈ ℤ` into `e_k ∈ ℚ`.
+* INTEGRALITY (`forall_isIntegral_of_forall_sum_pow_int`, via
+  `isIntegral_of_forall_sum_pow_eq_int`): the `r × r` system
+  `Σ_i m_i λ_iᵏ = p_k`, `k = K+1, …, K+r`, over the DISTINCT NONZERO
+  roots `λ_i` with multiplicities `m_i`, has invertible Vandermonde-type
+  matrix `(λ_i^{j+1})`. Inverting it once gives fixed coefficients `d_j`
+  with `m_i λ_i^K = Σ_j d_j p_{K+j+1}` for all `K`, so the `ℤ`-module
+  generated by `{m_i λ_i^K : K ≥ 0}` sits inside the finitely generated
+  `span_ℤ{d_j}` and is `λ_i`-stable — mathlib's
+  `isIntegral_of_smul_mem_submodule` then gives integrality. This is the
+  "bounded denominators" content of the `p`-adic argument, obtained by
+  linear algebra over `ℂ` alone. (The residue-nonvanishing step of the
+  Fatou route reappears here as `m_i ≠ 0`, which is why the count of
+  each root, not merely its presence, is carried through.)
+
+Each coefficient of `p` is `± e_{n−i}(roots)`
+(`Polynomial.coeff_eq_esymm_roots_of_splits`), hence both an algebraic
+integer and rational, hence in `ℤ` (`IsIntegrallyClosed ℤ`); the monic
+integral lift is then `Polynomial.lifts_and_degree_eq_and_monic`.
 
 FAITHFULNESS. TRUE as stated, including the degenerate cases: `p = 1`
 has empty root multiset, all power sums `0`, and `p₀ = 1` witnesses it.
@@ -3931,8 +4173,37 @@ is precisely why the trace route survives here while it is dead for the
 sibling `heckeSubring_zRank_le` — see `isIntegral_heckeEndo` below. -/
 theorem exists_int_of_monic_of_forall_sum_roots_pow_int {p : Polynomial ℂ} (hp : p.Monic)
     (h : ∀ k : ℕ, 0 < k → ∃ z : ℤ, (p.roots.map (· ^ k)).sum = (z : ℂ)) :
-    ∃ p₀ : Polynomial ℤ, p₀.Monic ∧ p₀.map (algebraMap ℤ ℂ) = p :=
-  sorry
+    ∃ p₀ : Polynomial ℤ, p₀.Monic ∧ p₀.map (algebraMap ℤ ℂ) = p := by
+  classical
+  have hint : ∀ x ∈ p.roots, IsIntegral ℤ x := forall_isIntegral_of_forall_sum_pow_int p.roots h
+  have hesymmInt : ∀ j : ℕ, IsIntegral ℤ (p.roots.esymm j) := by
+    intro j
+    rw [← mem_integralClosure_iff, Multiset.esymm]
+    refine Subalgebra.multiset_sum_mem _ fun y hy => ?_
+    obtain ⟨t, ht, rfl⟩ := Multiset.mem_map.mp hy
+    refine Subalgebra.multiset_prod_mem _ fun z hz => ?_
+    exact (mem_integralClosure_iff ℤ ℂ).mpr
+      (hint z (Multiset.mem_of_le (Multiset.mem_powersetCard.mp ht).1 hz))
+  have hesymmZ : ∀ j : ℕ, ∃ z : ℤ, p.roots.esymm j = (z : ℂ) := by
+    intro j
+    obtain ⟨q, hq⟩ := esymm_mem_ratRange_of_forall_sum_pow_int p.roots h j
+    have hqint : IsIntegral ℤ q := by
+      refine IsIntegral.tower_bot (A := ℚ) (B := ℂ) (algebraMap ℚ ℂ).injective ?_
+      rw [show (algebraMap ℚ ℂ) q = p.roots.esymm j by rw [← hq]; simp]
+      exact hesymmInt j
+    obtain ⟨z, hz⟩ := IsIntegrallyClosed.isIntegral_iff.mp hqint
+    exact ⟨z, by rw [← hq, ← hz]; simp⟩
+  have hcoeff : ∀ i : ℕ, p.coeff i ∈ Set.range (algebraMap ℤ ℂ) := by
+    intro i
+    by_cases hi : i ≤ p.natDegree
+    · rw [Polynomial.coeff_eq_esymm_roots_of_splits (IsAlgClosed.splits p) hi, hp.leadingCoeff]
+      obtain ⟨z, hz⟩ := hesymmZ (p.natDegree - i)
+      exact ⟨(-1) ^ (p.natDegree - i) * z, by rw [hz]; push_cast [Int.cast_pow]; norm_num⟩
+    · rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega : p.natDegree < i)]
+      exact ⟨0, by simp⟩
+  obtain ⟨q, hq1, _, hq3⟩ := Polynomial.lifts_and_degree_eq_and_monic
+    ((Polynomial.lifts_iff_coeff_lifts p).mpr hcoeff) hp
+  exact ⟨q, hq3, hq1⟩
 
 /-- **INTEGRAL POWER TRACES ⟹ INTEGRAL CHARACTERISTIC POLYNOMIAL**
 (PROVEN, 2026-07-27, from `trace_pow_eq_sum_roots_pow` and
@@ -4038,18 +4309,30 @@ above** (2026-07-27):
   here; mathlib has only the case `k = 1` and no triangularization to
   iterate it with);
 * `exists_int_of_monic_of_forall_sum_roots_pow_int` — integral power
-  sums force integral roots (SORRY), the arithmetic residue.
+  sums force integral roots (**PROVEN**, 2026-07-27), the arithmetic
+  residue.
 
-A CORRECTION TO THE ROUTE AS FIRST RECORDED. This docstring used to
-justify the last step `p`-adically: the generating function
-`Σ_{k ≥ 1} Tr(T_q^k) tᵏ = Σ_i λᵢt/(1 − λᵢt)` has `ℤ_p`-integral
-coefficients, hence converges on the open unit disc, hence has no pole
-there, hence `|λᵢ|_p ≤ 1` for all `p`. That is correct mathematics but
-it would require `ℂ_p`, which the pin does not have. **FATOU'S LEMMA
-(1906) gives the same conclusion by a Gauss's-lemma content argument
-over `ℤ[t]`, with no analysis at all** — see the leaf's own docstring
-for the four-step version. Anyone attacking that leaf should start
-there and not with `p`-adic convergence.
+So `exists_trace_heckeSubring_int` (Eichler–Selberg) is now the ONLY
+open input of the trace route.
+
+A CORRECTION TO THE ROUTE AS FIRST RECORDED, AND THEN A SECOND ONE.
+This docstring used to justify the last step `p`-adically: the
+generating function `Σ_{k ≥ 1} Tr(T_q^k) tᵏ = Σ_i λᵢt/(1 − λᵢt)` has
+`ℤ_p`-integral coefficients, hence converges on the open unit disc,
+hence has no pole there, hence `|λᵢ|_p ≤ 1` for all `p`. That is
+correct mathematics but it would require `ℂ_p`, which the pin does not
+have. It was then replaced by **FATOU'S LEMMA (1906)**, a Gauss's-lemma
+content argument over `ℤ[t]` with no analysis at all.
+
+**Neither was used, and neither is needed.** The leaf was closed by the
+LINEAR-ALGEBRA shadow of the same fact: the Vandermonde system over the
+distinct nonzero roots inverts ONCE to give fixed coefficients `d_j`
+with `m_i λ_i^K = Σ_j d_j p_{K+j+1}` for every `K`, so the powers of
+each root have uniformly bounded denominators and mathlib's
+`isIntegral_of_smul_mem_submodule` applies. Rationality of the
+coefficients is the separate, easy half (Newton's identities, in
+characteristic `0`). See the leaf's own docstring; no formal power
+series, no `ℂ_p`, and no Fatou.
 
 THE ASYMMETRY WITH THE SIBLING, which is the finding this cut is built
 on. Eichler–Selberg is recorded as a DEAD axis (axis 2) in the audit of
