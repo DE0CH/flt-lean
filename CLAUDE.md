@@ -226,11 +226,19 @@ interchangeable:
 
 - *Direct*: the declaration's own body contains `sorry`. This is what
   Lean's `declaration uses 'sorry'` warning reports, and it is the set of
-  leaves that can be WORKED ON. **175** as of `0a976e16` (2026-07-27).
+  leaves that can be WORKED ON. **234 across 26 modules** as of `60313518`
+  (release 4, 2026-07-27) — up from 175 at `0a976e16` earlier the same day.
 - *Transitive*: the declaration's proof term reaches `sorryAx`, i.e. it is
   sorried **or consumes something sorried**. This is what
-  `ProgressCensus.lean`'s census reports. **175** at the same commit
-  (332 declarations are compiler-certified `sorryAx`-free).
+  `ProgressCensus.lean`'s census reports.
+
+**A RISING count is not a regression — it is usually disclosure.** The jump to
+234 is mostly the Cartier-duality island becoming visible: five `HopfAlgebra`
+modules that nothing imported, hence never compiled, hence invisible to the
+warning set *and* to the census. Wiring them in (`1492cecb`) made their sorries
+countable for the first time. Decomposition does the same thing at smaller scale
+— a node that closes over three named sub-leaves nets +2 while being real
+progress. Read the delta alongside what closed, never alone.
 
 **Do not trust a frontier number in this file — regenerate it.** The figures
 above were 85/86 for a single day and were wrong by a factor of two by the next
