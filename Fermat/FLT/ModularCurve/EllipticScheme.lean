@@ -43,8 +43,9 @@ under "Why this is not in `X0.lean`" below.
 step is now fully reduced, and the Jacobian criterion it rests on
 (`jacobianSpan_eq_top`, over an arbitrary commutative ring) is proven here.
 
-The open leaves are therefore `exists_projAdd` — where all the remaining gluing
-work for the group law now lives — `exists_projGeomFibreAddEquiv`,
+The open leaves are therefore `exists_projMul` and `projMul_assoc` — the two
+halves into which `exists_projAdd` (all the remaining gluing work for the group
+law) was decomposed — `exists_projGeomFibreAddEquiv`,
 `locally_isStandardSmooth_awayCoord` (all that is left of item 7a — and what it
 wants is a missing piece of MATHLIB, the dehomogenisation isomorphism for a chart
 of `Proj` of a polynomial quotient), and the interior of
@@ -57,8 +58,12 @@ is missing and where the classical argument is.
 (`projNeg`, the Weierstrass involution through `Proj.map`; `projInfty`,
 the point at infinity through `Proj.fromOfGlobalSections`), and all three
 "lies over the base" fields are free over this base
-(`hom_ext_spec_rat`).  What remains is `exists_projAdd`: the group law
-`m` itself, together with the four group axioms.
+(`hom_ext_spec_rat`).  `exists_projAdd` — the group law `m` itself
+together with the four group axioms — is in turn PROVEN from two leaves
+that need disjoint machinery and can be owned separately:
+`exists_projMul` (the gluing, plus the three axioms that are chart
+identities in the same polynomial forms) and `projMul_assoc`
+(associativity, the one axiom that is not a chart identity).
 
 ## Why this is not in `X0.lean`
 
@@ -182,40 +187,88 @@ structure ProjGroupLaw (E : WeierstrassCurve ℚ) where
   hinv : Limits.pullback.lift i (𝟙 (proj E)) (by rw [hi, Category.id_comp]) ≫ m =
     projToSpec E ≫ e
 
-/-- **The chord–tangent addition on the projective Weierstrass model**
-(sorry node — what is left of items 5+6 once the inversion `i`, the unit
-section `e` and the three structure-morphism compatibilities have been
-discharged; see `nonempty_projGroupLaw` for the assembly).
+/-- **The chord–tangent multiplication morphism, with the three axioms
+that are chart identities** (sorry node — the CONSTRUCTION half of the
+old `exists_projAdd`, which is now proven from this together with
+`projMul_assoc`).
 
-TRUE and classical.  The addition FORMULAS are already at this pin over
-an arbitrary `[CommRing R]` —
-`WeierstrassCurve.Projective.addXYZ`/`addX`/`addY`/`addZ` in
-`EllipticCurve/Projective/Formula.lean` — so nothing has to be invented;
-what is missing is the *gluing*.  The formulas degenerate on the locus
-where the naive chart fails, so `m` is obtained from the standard
-three-chart cover of `A ×_ℚ A` together with agreement on the overlaps.
-`hassoc` (item 6) is the one axiom that is not a chart computation: as an
-equation of morphisms out of `A ×_ℚ A ×_ℚ A` it is classically the
-rigidity lemma, or the theorem of the cube, or — since `A ×_ℚ A ×_ℚ A` is
-reduced and its generic fibre dense, `ℚ` having characteristic zero — a
-reduction to equality of the two composites on `ℚ̄`-points, where it is
-associativity of the classical group law of `E(ℚ̄)`.  That last route is
-the cheapest here, and it is why ellipticity rather than mere smoothness
-is hypothesised: `Δ ≠ 0` is what makes the generic fibre a smooth curve
-and the reducedness argument valid.
+TRUE and classical.  This leaf owns the gluing and nothing else:
+`hcomm`, `hunit` and `hinv` are demanded here because each is an
+identity between the *same* polynomial forms that define `m` on a chart,
+so whoever writes the charts gets them essentially for free, while
+`hassoc` is not a chart identity at all and is split off into
+`projMul_assoc`.
 
-`hcomm`, `hunit` and `hinv` are chart identities in the same formulas,
-and are the easy half.
+## The formulas that exist, and the one that does not
+
+`WeierstrassCurve.Projective.addX`/`addY`/`addZ`
+(`EllipticCurve/Projective/Formula.lean`) are honest polynomial forms
+over an arbitrary `[CommRing R]`, bihomogeneous of bidegree `(2, 2)`:
+`addX_smul`/`addY_smul`/`addZ_smul` all read
+`add? (u • P) (v • Q) = (u * v) ^ 2 * add? P Q`.  Instantiating
+`P = ![X 0, X 1, X 2]`, `Q = ![X 3, X 4, X 5]` in
+`MvPolynomial (Fin 6) ℚ` turns them into genuine bihomogeneous
+polynomials, which is the form the gluing needs.
+
+**But this is only ONE addition law, and it is very degenerate.**
+`addZ_eq'` reads `addZ P Q * (P z * Q z) = (P x * Q z - Q x * P z) ^ 3`
+and `addX_eq'` carries the same factor, so the whole triple vanishes
+identically on the bidegree-`(1, 1)` locus `x(P) = x(Q)` — which contains
+both the diagonal and the antidiagonal (`addXYZ_self P = ![0, 0, 0]`).
+By **Bosma–Lenstra** a complete addition law of bidegree `(2, 2)` on a
+Weierstrass curve does not exist and exactly TWO are needed to cover
+`E × E`; the second one is **absent from this pin and must be written**.
+
+*`dblXYZ` is not the second law and the next owner must not reach for
+it*: `dblXYZ_smul` reads `dblXYZ (u • P) = u ^ 4 • dblXYZ P`, i.e. it is
+a single-variable form of degree `4` along the diagonal, not a
+bihomogeneous law on a neighbourhood of it, so it does not define a
+morphism on any open subset of `A ×_ℚ A`.  *Refuting check*: look for a
+`Fin 3 → R → Fin 3 → R → R` in `Formula.lean` whose `smul` lemma has the
+shape `(u * v) ^ n` other than the `add?` family — there is none.
+
+## What the gluing needs, in the order it is needed
+
+1. An open cover of `A ×_ℚ A` by the non-degeneracy loci of the two
+   laws.  That the two loci COVER is a Nullstellensatz statement: the
+   ideal generated by the six forms contains a power of the irrelevant
+   ideal modulo `(W(P), W(Q))`.  This is exactly the class the CAS
+   doctrine is for — get the cofactor certificate out of `Singular` or
+   `Magma` and verify the concrete witness in Lean with
+   `linear_combination`.
+2. On each piece, the morphism into `proj E`.  The only `Proj`-valued
+   construction at this pin is
+   `AlgebraicGeometry.Proj.fromOfGlobalSections 𝒜 f hf`, which wants a
+   ring map `f : A →+* Γ(X, ⊤)` with the image of the irrelevant ideal
+   generating — i.e. it wants the tautological bundle TRIVIALISED on `X`.
+   That is fine chart by chart (it is why it worked for `projInfty`), and
+   it is the reason a cover is unavoidable.
+3. **The genuinely missing mathlib lemma, and it is the load-bearing
+   one**: `fromOfGlobalSections` is invariant under rescaling the
+   coordinates by a unit.  Precisely — for `u : Γ(X, ⊤)ˣ` let
+   `f_u : A →+* Γ(X, ⊤)` be `a ↦ ∑ n, u ^ n * f aₙ` (a ring hom, because
+   `A` is graded), then
+   `fromOfGlobalSections 𝒜 f_u hf' = fromOfGlobalSections 𝒜 f hf`.
+   Without it the two charts cannot be shown to agree on their overlap,
+   where the two addition laws differ by exactly such a unit.
+   *Refuting check*: grep `ProjectiveSpectrum/Basic.lean` for any
+   congruence lemma for `fromOfGlobalSections` in its `f` argument —
+   there is none; the file has only `_preimage_basicOpen`,
+   `_morphismRestrict`, `_resLE` and `_toSpecZero`.
+4. Then `Scheme.OpenCover.glueMorphisms` assembles `m`, and `hcomm`,
+   `hunit`, `hinv` are checked chart-wise against the same forms
+   (`addX`/`addY`/`addZ` are visibly symmetric under swapping `P` and
+   `Q` up to the sign that `negY` absorbs).
 
 ## What this leaf does NOT have to do any more, and why
 
 Five obligations were removed from the original single leaf, and the
 statement below is the residue.  **This is a strengthening, not a
-weakening**: `hunit` and `hinv` are now demanded against the specific,
-named `projInfty E` and `projNeg E` rather than against an existentially
+weakening**: `hunit` and `hinv` are demanded against the specific, named
+`projInfty E` and `projNeg E` rather than against an existentially
 quantified `e` and `i`, so a witness for this leaf is strictly harder to
-produce than a witness for the old one, and the old statement follows from
-it (see `nonempty_projGroupLaw`).
+produce than a witness for the old one, and the old statement follows
+from it (see `nonempty_projGroupLaw`).
 
 * `i` is now **constructed**, as
   `WeierstrassCurve.Projective.projNeg E` — the substitution
@@ -232,34 +285,115 @@ it (see `nonempty_projGroupLaw`).
 * `hm`, `he`, `hi` are **free over this base** (`hom_ext_spec_rat`): each
   is an equation between morphisms whose target is `Spec ℚ`, and a scheme
   has at most one morphism to `Spec ℚ`.
+* `hassoc` is **no longer here at all** — see `projMul_assoc`. -/
+theorem exists_projMul (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
+      Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+              (Limits.pullback.fst (projToSpec E) (projToSpec E))
+              Limits.pullback.condition.symm ≫ m = m ∧
+        Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+              (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
+          Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E :=
+  sorry
 
-## ROUTE AUDIT (2026-07-27), stating the checks that would refute it
+/-- **Associativity of any commutative unital multiplication with
+`projNeg`-inverses on the projective Weierstrass model** (sorry node —
+the ABSTRACT half of the old `exists_projAdd`).
 
-The `m`-half is gated on scheme-theoretic infrastructure that is genuinely
-absent, and the axis searched was *how to write a morphism into a `Proj`*:
+## FAITHFULNESS AUDIT: why this is TRUE for an arbitrary such `m`
 
-1. There is no functor-of-points description of `Hom(T, Proj 𝒜)` at this
-   pin — `ProjectiveSpectrum/Functor.lean` gives only functoriality
-   `Proj ℬ ⟶ Proj 𝒜` in the graded ring, which is exactly the route that
-   *did* work for `projNeg` and does **not** work for `m` (the group law
-   is not induced by a graded ring map, since its source is a product).
-   *Refuting check*: grep `ProjectiveSpectrum/` for a `Proj`-valued
-   universal property, or for `Scheme.OpenCover.glueMorphisms` applied to
-   a `Proj` target.
-2. So `m` has to be glued out of an open cover of `A ×_ℚ A`, and each
-   piece is an affine morphism written from the `addXYZ` formulas.
-   *Refuting check*: find a chart on which the naive formula is defined
-   everywhere — there is none, which is precisely why `addXYZ` has
-   branches.
-3. `hassoc` additionally needs the density statement "two morphisms out
-   of a reduced finite-type `ℚ`-scheme into `proj E` agreeing on
-   `ℚ̄`-points are equal".  *Refuting check*: grep mathlib for a scheme
-   morphism ext lemma over closed points of a Jacobson base.
+The hypotheses do not obviously pin `m` down, so the first question is
+whether the statement is false.  It is not, and the reason is Milne,
+*Abelian Varieties* I, Corollary 2.5: for complete varieties `V`, `W`
+with rational points and `A` an abelian variety, every morphism
+`h : V × W → A` with `h(v₀, w₀) = 0` is uniquely `f ∘ p + g ∘ q`.
+Applied to `V = W = A = E` over `ℚ̄` this says every morphism
+`E × E → E` has the form `(P, Q) ↦ φ(P) + ψ(Q) + c`.  The unit law
+`m(O, Q) = Q` forces `ψ = id` and `φ(O) + c = 0`; the unit law in the
+other argument — which follows here from `hcomm` — forces `φ = id` and
+`c = 0`.  So `m` *is* the classical group law on `ℚ̄`-points, hence
+associative.  `E` really is an abelian variety, so the appeal is sound.
 
-The axis NOT searched: a rigidity/theorem-of-the-cube route that would
-derive `hassoc` from `hcomm`, `hunit`, `hinv` and properness without
-touching points.  That would be a genuinely different cut and it is where
-the next owner should start if the gluing proves too expensive. -/
+**But that argument is not available inside the formalization**, because
+it presupposes the group structure this node is constructing.  It settles
+faithfulness only; it is not a proof route.
+
+## ROUTE AUDIT (2026-07-27), correcting the previous one
+
+The previous audit named "a rigidity / theorem-of-the-cube route
+deriving `hassoc` from the other three axioms plus properness, without
+touching points at all" as the promising unsearched axis.  **That axis was
+searched and it does not close as stated.**  Milne I.2.1 (Rigidity) says:
+if `V` is complete and `f : V × W → U` is constant on `V × {w₀}` and on
+`{v₀} × W`, then `f` is constant.  Every corollary that turns this into a
+statement about a multiplication — I.2.2 (a morphism is a homomorphism up
+to translation), I.2.4 (commutativity), I.2.5 above — forms the
+*difference* of two morphisms and therefore **presupposes the group law
+on the target**.  To prove `hassoc` one would apply rigidity to
+`φ(x, y, z) = m(m(x, y), z) − m(x, m(y, z))`, and that subtraction is
+precisely what is not yet available.  So rigidity does not bootstrap
+associativity out of unitality; something else must pin `m` first.
+*Refuting check*: find a statement of the rigidity lemma, or of the
+theorem of the cube, whose target is a bare proper variety rather than a
+group object — Milne I.2, Mumford *AV* §II.4 and Debarre's notes all
+require the group.
+
+That leaves two routes, and the next owner should pick one deliberately:
+
+* **The density route.**  `A ×_ℚ A ×_ℚ A` is reduced and of finite type
+  over `ℚ` (characteristic `0`, and `Δ ≠ 0` makes the fibre a smooth
+  curve), so it suffices to prove the two composites agree on
+  `ℚ̄`-points, where the statement is `add_assoc` in mathlib's
+  `WeierstrassCurve.Affine.Point` — already an `AddCommGroup`.  The
+  missing input is a scheme-morphism ext lemma: *two morphisms from a
+  reduced finite-type `ℚ`-scheme into `proj E` that agree on `ℚ̄`-points
+  are equal*.  *Refuting check*: grep mathlib for a morphism ext lemma
+  over closed points of a Jacobson base.  This route needs the
+  `ℚ̄`-point description of `m`, which is the business of the sibling
+  leaf `exists_projGeomFibreAddEquiv` — so the two are naturally worked
+  together, and a prompt sending an owner here should say so.
+* **Chart-wise associativity.**  Verify the identity directly between the
+  bihomogeneous forms on the triple product cover.  This needs no new
+  theory at all, only a large `linear_combination` certificate modulo
+  `(W(P), W(Q), W(R))` obtainable from `Singular`/`Magma`, and it is
+  independent of the density statement.  It is the brute-force route and
+  it is probably the cheaper one.
+
+Note that this leaf is stated for an ARBITRARY `m` satisfying the three
+chart axioms rather than for the witness produced by `exists_projMul`.
+That is deliberate: it keeps the two halves independently dispatchable.
+An owner who finds the abstract form intractable may legitimately propose
+folding this back into `exists_projMul`, where the charts are in scope —
+that is a cut-level change and should be reported, not made silently. -/
+theorem projMul_assoc (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E) :
+    AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+      AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) :=
+  sorry
+
+/-- **The chord–tangent addition on the projective Weierstrass model**
+(PROVEN from `exists_projMul` and `projMul_assoc`) — what is left of
+items 5+6 once the inversion `i`, the unit section `e` and the three
+structure-morphism compatibilities have been discharged; see
+`nonempty_projGroupLaw` for the assembly.
+
+The cut is between the two halves that need completely different
+machinery, and it is why they are separate leaves: `exists_projMul` is
+scheme-theoretic gluing (an open cover of `A ×_ℚ A`, the two
+Bosma–Lenstra addition laws, and a missing congruence lemma for
+`Proj.fromOfGlobalSections`), while `projMul_assoc` is the one axiom that
+is not a chart identity and needs either a density statement about
+`ℚ̄`-points or a large polynomial certificate.  Nothing is lost or
+weakened by the split: the conjunction of the two is exactly this
+statement. -/
 theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
       AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
@@ -270,8 +404,9 @@ theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
         Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
               (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
           Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E :=
-  sorry
+              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E := by
+  obtain ⟨m, hcomm, hunit, hinv⟩ := exists_projMul E
+  exact ⟨m, projMul_assoc E m hcomm hunit hinv, hcomm, hunit, hinv⟩
 
 /-- **The chord–tangent law on the projective Weierstrass model, as
 morphisms of schemes** (PROVEN from `exists_projAdd`) — items 5+6 of
