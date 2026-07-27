@@ -225,6 +225,316 @@ lemma wildInertiaGroup_le_localInertiaGroup
     (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
     wildInertiaGroup v ≤ localInertiaGroup v := inf_le_left
 
+/-!
+### `n`-th roots in the wild inertia, for `n` prime to the residue characteristic
+
+`P_v` is pro-`ℓ`, so for `n` prime to `ℓ` the `n`-th power map is a
+bijection on it. The consumer
+(`isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` in
+`Fermat/FLT/Modularity/Interface.lean`) iterates this to extract `pᵏ`-th
+roots INSIDE `P_v`, which is what turns `N σ = τσ − 1` into an
+infinitely `p`-divisible value.
+
+This block was cut out of that consumer's file on 2026-07-27 and hoisted
+here, beside `wildInertiaGroup` itself, where it belongs. The
+decomposition below splits the statement along exactly the seam its
+original docstring predicted — a PURELY PROFINITE half and a PURELY
+ARITHMETIC half — and **only the arithmetic half is still open**:
+
+* `exists_pow_eq_of_forall_openNormal` — the profinite half, PROVEN, and
+  stated for an abstract compact `T1` topological group so it is
+  reusable. Roots that exist modulo every open normal subgroup exist on
+  the nose, by Cantor's intersection theorem.
+* `exists_pow_mem_of_coprime_card_quotient` — the finite-level step,
+  PROVEN, pure group theory: `Nat.Coprime.pow_left_bijective`.
+* `exists_openNormal_subset_of_mem_nhds_one`,
+  `isClosed_wildInertiaGroup` — the topological inputs the profinite
+  half needs at `Γ Kᵥ`, both PROVEN.
+* `coprime_card_quotient_wildInertiaGroup` — **the one open leaf**: `P_v`
+  is pro-`ℓ`. This is genuine local field theory (the residue field of
+  `Kᵥᵗᵃᵐᵉ` is separably closed and its value group is `n`-divisible for
+  every `n` prime to `ℓ`, so a finite extension of `Kᵥᵗᵃᵐᵉ` has trivial
+  residue extension and ramification index an `ℓ`-power).
+-/
+
+open scoped Topology in
+/-- **Roots that exist modulo every open normal subgroup exist on the
+nose** (PROVEN 2026-07-27) — the profinite half of "the `n`-th power map
+is surjective on a pro-`ℓ` group", carrying NO arithmetic whatsoever.
+
+Stated for an abstract compact `T1` topological group `G` and a CLOSED
+subgroup `P`, so that it is reusable at any profinite group: the only
+inputs are that open normal subgroups are a neighbourhood basis of `1`
+(`hbasis`) and that `n`-th roots exist in `P` modulo each of them
+(`hlevel`).
+
+THE PROOF is Cantor's intersection theorem. The sets
+`t U := P ∩ (θ ↦ σ⁻¹θⁿ)⁻¹(U)`, indexed by the open normal subgroups, are
+closed (an open subgroup is closed, and `θ ↦ σ⁻¹θⁿ` is continuous),
+nonempty by `hlevel`, and DIRECTED downwards because `U ⊓ V` is again
+open and normal. In a compact space their intersection is therefore
+nonempty; any `θ` in it satisfies `σ⁻¹θⁿ ∈ U` for EVERY open normal `U`,
+and `T1` plus `hbasis` forces `σ⁻¹θⁿ = 1` — if it were some `g ≠ 1`
+then `{g}ᶜ` is a neighbourhood of `1`, so some open normal `U` avoids
+`g`, contradiction.
+
+Note `σ ∈ P` is NOT a hypothesis: it follows from the conclusion, and
+`hlevel` already places the approximating roots in `P`. -/
+theorem exists_pow_eq_of_forall_openNormal
+    {G : Type*} [Group G] [TopologicalSpace G] [IsTopologicalGroup G]
+    [CompactSpace G] [T1Space G]
+    (hbasis : ∀ s ∈ 𝓝 (1 : G), ∃ U : Subgroup G, U.Normal ∧ IsOpen (U : Set G) ∧
+      (U : Set G) ⊆ s)
+    {P : Subgroup G} (hP : IsClosed (P : Set G)) {n : ℕ} {σ : G}
+    (hlevel : ∀ U : Subgroup G, U.Normal → IsOpen (U : Set G) →
+      ∃ θ ∈ P, σ⁻¹ * θ ^ n ∈ U) :
+    ∃ θ ∈ P, θ ^ n = σ := by
+  classical
+  have hcont : Continuous fun θ : G => σ⁻¹ * θ ^ n := (continuous_pow n).const_mul _
+  set t : {U : Subgroup G // U.Normal ∧ IsOpen (U : Set G)} → Set G :=
+    fun U => (P : Set G) ∩ (fun θ : G => σ⁻¹ * θ ^ n) ⁻¹' (U.1 : Set G) with ht
+  have hne : Nonempty {U : Subgroup G // U.Normal ∧ IsOpen (U : Set G)} :=
+    ⟨⟨⊤, inferInstance, by simp⟩⟩
+  have hclosed : ∀ U, IsClosed (t U) := by
+    intro U
+    exact hP.inter ((Subgroup.isClosed_of_isOpen _ U.2.2).preimage hcont)
+  have hdir : Directed (· ⊇ ·) t := by
+    rintro ⟨U, hUn, hUo⟩ ⟨V, hVn, hVo⟩
+    refine ⟨⟨U ⊓ V, ?_, ?_⟩, ?_, ?_⟩
+    · exact ⟨fun a ha g => ⟨hUn.conj_mem a ha.1 g, hVn.conj_mem a ha.2 g⟩⟩
+    · simpa [Subgroup.coe_inf] using hUo.inter hVo
+    · exact Set.inter_subset_inter_right _
+        (Set.preimage_mono (by simp [Subgroup.coe_inf]))
+    · exact Set.inter_subset_inter_right _
+        (Set.preimage_mono (by simp [Subgroup.coe_inf]))
+  have hnonempty : ∀ U, (t U).Nonempty := by
+    rintro ⟨U, hUn, hUo⟩
+    obtain ⟨θ, hθP, hθU⟩ := hlevel U hUn hUo
+    exact ⟨θ, hθP, hθU⟩
+  obtain ⟨θ, hθ⟩ := IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed
+    t hdir hnonempty (fun U => (hclosed U).isCompact) hclosed
+  simp only [Set.mem_iInter, ht, Set.mem_inter_iff, Set.mem_preimage] at hθ
+  refine ⟨θ, (hθ ⟨⊤, inferInstance, by simp⟩).1, ?_⟩
+  have hone : σ⁻¹ * θ ^ n = 1 := by
+    by_contra hg
+    have hmem : ({σ⁻¹ * θ ^ n}ᶜ : Set G) ∈ 𝓝 (1 : G) :=
+      (isOpen_compl_singleton).mem_nhds (by simpa [eq_comm] using hg)
+    obtain ⟨U, hUn, hUo, hUs⟩ := hbasis _ hmem
+    exact hUs (hθ ⟨U, hUn, hUo⟩).2 rfl
+  rw [← mul_left_cancel_iff (a := σ⁻¹), hone, inv_mul_cancel]
+
+/-- **The finite level: a quotient of order coprime to `n` has `n`-th
+roots** (PROVEN 2026-07-27). Pure group theory —
+`Nat.Coprime.pow_left_bijective` says `x ↦ xⁿ` is a bijection of a group
+whose `Nat.card` is coprime to `n`, and no finiteness hypothesis is
+needed because `pow_card_eq_one'` holds vacuously when `Nat.card = 0`.
+
+This is the step that CONSUMES the pro-`ℓ` input: with
+`P ⧸ (U ∩ P)` an `ℓ`-group and `ℓ ∤ n`, the hypothesis `hcop` holds. -/
+theorem exists_pow_mem_of_coprime_card_quotient
+    {G : Type*} [Group G] {P U : Subgroup G} [hU : U.Normal] {n : ℕ}
+    (hcop : Nat.Coprime (Nat.card (P ⧸ U.subgroupOf P)) n)
+    {σ : G} (hσ : σ ∈ P) :
+    ∃ θ ∈ P, σ⁻¹ * θ ^ n ∈ U := by
+  haveI : (U.subgroupOf P).Normal := hU.subgroupOf P
+  obtain ⟨q, hq⟩ := hcop.pow_left_bijective.surjective
+    (QuotientGroup.mk (⟨σ, hσ⟩ : P))
+  obtain ⟨θ', rfl⟩ := QuotientGroup.mk_surjective q
+  refine ⟨(θ' : G), θ'.2, ?_⟩
+  have hq' : (QuotientGroup.mk (θ' ^ n) : P ⧸ U.subgroupOf P) =
+      QuotientGroup.mk (⟨σ, hσ⟩ : P) := by
+    simpa [QuotientGroup.mk_pow] using hq
+  rw [eq_comm, QuotientGroup.eq, Subgroup.mem_subgroupOf] at hq'
+  simpa using hq'
+
+open scoped Topology in
+/-- **Open NORMAL subgroups are a neighbourhood basis of `1` in `Γ Kᵥ`**
+(PROVEN 2026-07-27). Mathlib's `krullTopology_mem_nhds_one_iff_of_normal`
+supplies a finite NORMAL intermediate field `E` with
+`E.fixingSubgroup ⊆ s`; `Kᵥ` has characteristic zero, so `E/Kᵥ` is
+automatically separable and hence Galois, and
+`IsGalois.fixingSubgroup_normal_of_isGalois` then makes that fixing
+subgroup normal. Openness is `IntermediateField.fixingSubgroup_isOpen`. -/
+theorem exists_openNormal_subset_of_mem_nhds_one
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    (s : Set (Field.absoluteGaloisGroup (v.adicCompletion K)))
+    (hs : s ∈ 𝓝 (1 : Field.absoluteGaloisGroup (v.adicCompletion K))) :
+    ∃ U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)), U.Normal ∧
+      IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) ∧
+      (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) ⊆ s := by
+  obtain ⟨E, hfin, hnorm, hsub⟩ :=
+    (krullTopology_mem_nhds_one_iff_of_normal (v.adicCompletion K)
+      (AlgebraicClosure (v.adicCompletion K)) s).mp hs
+  haveI := hfin
+  haveI := hnorm
+  haveI : IsGalois (v.adicCompletion K) (AlgebraicClosure (v.adicCompletion K)) := ⟨⟩
+  haveI : IsGalois (v.adicCompletion K) E := ⟨⟩
+  exact ⟨E.fixingSubgroup, inferInstance, E.fixingSubgroup_isOpen, hsub⟩
+
+/-- The set of `σ` fixing a given integral element is CLOSED. It is the
+stabilizer, which `ContinuousSMulDiscrete` makes open, and an open
+subgroup is closed. -/
+theorem isClosed_setOf_smul_eq_self
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    (x : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K))) :
+    IsClosed {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = x} :=
+  Subgroup.isClosed_of_isOpen
+    (MulAction.stabilizer (Field.absoluteGaloisGroup (v.adicCompletion K)) x)
+    (ContinuousSMulDiscrete.isOpen_smul_eq _ x x)
+
+/-- **`tameFixingSubgroup v` is closed**: it is by definition an
+intersection of stabilizers of integral elements, each closed by
+`isClosed_setOf_smul_eq_self`. -/
+theorem isClosed_tameFixingSubgroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
+    IsClosed ((tameFixingSubgroup v :
+      Set (Field.absoluteGaloisGroup (v.adicCompletion K)))) := by
+  have hrw : (tameFixingSubgroup v :
+        Set (Field.absoluteGaloisGroup (v.adicCompletion K))) =
+      ⋂ (n : ℕ) (_ : (n : 𝓞 K) ∉ v.asIdeal)
+        (x : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (_ : ∃ a : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v,
+          x ^ n = algebraMap _ _ a),
+        {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = x} := by
+    ext σ
+    simp only [Set.mem_iInter, Set.mem_setOf_eq]
+    rfl
+  rw [hrw]
+  exact isClosed_iInter fun n => isClosed_iInter fun _ => isClosed_iInter fun x =>
+    isClosed_iInter fun _ => isClosed_setOf_smul_eq_self v x
+
+/-- **`localInertiaGroup v` is closed.** `AddSubgroup.inertia` is the set
+of `σ` with `σ • x − x ∈ 𝔪` for every `x` of the integral closure, and
+each such condition is CLOPEN: its complement is the union over the
+`y` with `y − x ∉ 𝔪` of the open sets `{σ | σ • x = y}`
+(`ContinuousSMulDiscrete`). -/
+theorem isClosed_localInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
+    IsClosed ((localInertiaGroup v :
+      Set (Field.absoluteGaloisGroup (v.adicCompletion K)))) := by
+  set R := IntegralClosure
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (AlgebraicClosure (v.adicCompletion K)) with hR
+  have key : ∀ x : R,
+      IsClosed {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
+        σ • x - x ∈ IsLocalRing.maximalIdeal R} := by
+    intro x
+    rw [← isOpen_compl_iff]
+    have hc : {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
+          σ • x - x ∈ IsLocalRing.maximalIdeal R}ᶜ =
+        ⋃ (y : R) (_ : y - x ∉ IsLocalRing.maximalIdeal R),
+          {σ : Field.absoluteGaloisGroup (v.adicCompletion K) | σ • x = y} := by
+      ext σ
+      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_iUnion]
+      exact ⟨fun h => ⟨σ • x, h, rfl⟩, by rintro ⟨y, hy, rfl⟩; exact hy⟩
+    rw [hc]
+    exact isOpen_iUnion fun y => isOpen_iUnion fun _ =>
+      ContinuousSMulDiscrete.isOpen_smul_eq _ x y
+  have hrw : (localInertiaGroup v :
+        Set (Field.absoluteGaloisGroup (v.adicCompletion K))) =
+      ⋂ x : R, {σ : Field.absoluteGaloisGroup (v.adicCompletion K) |
+        σ • x - x ∈ IsLocalRing.maximalIdeal R} := by
+    ext σ
+    simp only [Set.mem_iInter, Set.mem_setOf_eq]
+    rfl
+  rw [hrw]
+  exact isClosed_iInter key
+
+/-- **The wild inertia is closed** — a meet of two closed subgroups. -/
+theorem isClosed_wildInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) :
+    IsClosed ((wildInertiaGroup v :
+      Set (Field.absoluteGaloisGroup (v.adicCompletion K)))) := by
+  rw [wildInertiaGroup, Subgroup.coe_inf]
+  exact (isClosed_localInertiaGroup v).inter (isClosed_tameFixingSubgroup v)
+
+/-- **THE WILD INERTIA IS PRO-`ℓ`** (SORRY LEAF, cut 2026-07-27; this is
+the ONLY thing still open in the `n`-th-root block, and the only piece of
+it that carries any arithmetic).
+
+`P_v = Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)` is the (unique) Sylow pro-`ℓ` subgroup of the
+inertia, `ℓ` the residue characteristic of `v`. Being pro-`ℓ` means every
+finite continuous quotient has `ℓ`-power order, and the form in which
+that fact is CONSUMED is the coprimality below: `n` is prime to `ℓ`
+(spelled `(n : 𝓞 K) ∉ v.asIdeal`, which also forces `n ≠ 0` since
+`0 ∈ v.asIdeal`), so it is coprime to every `ℓ`-power.
+
+Quantifying over the open normal `U ≤ Γ Kᵥ` and taking `U.subgroupOf P_v`
+is exactly "every finite continuous quotient of `P_v`": `U` open makes
+`P_v ⧸ (U ∩ P_v)` finite, and open normal subgroups are cofinal
+(`exists_openNormal_subset_of_mem_nhds_one` above).
+
+WHAT IS MISSING, and it is a genuine subtree rather than a lemma. This is
+local field theory: the residue field of `Kᵥᵗᵃᵐᵉ` is separably closed and
+its value group is `n`-divisible for every `n` prime to `ℓ`, so a finite
+extension of `Kᵥᵗᵃᵐᵉ` has trivial residue extension and ramification
+index an `ℓ`-power, whence `[L : Kᵥᵗᵃᵐᵉ]` is an `ℓ`-power for every
+finite `L`.
+
+VERIFIED ABSENT 2026-07-27, and here is the check that would refute it:
+`grep -rn "IsProP\|isProP\|ProfiniteGrp" Fermat/ .lake/packages/mathlib/`
+plus `~/cs/FLT`. Mathlib's `Topology/Algebra/Category/ProfiniteGrp/` has
+only `Basic`, `Completion` and `Limits` — no Sylow theory for topological
+groups and no pro-`ℓ` predicate — and mathlib's `RamificationGroup.lean`
+defines only `decompositionSubgroup`/`inertiaSubgroup` and ends in a TODO
+for the higher ramification groups. Neither this project nor `~/cs/FLT`
+defines "pro-`ℓ`" anywhere.
+
+NOTE FOR THE NEXT OWNER: everything else on this route is already proven,
+so a proof of THIS statement closes
+`exists_pow_eq_of_mem_wildInertiaGroup` below, and with it step 3 — the
+last open step — of `isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` in
+`Fermat/FLT/Modularity/Interface.lean`. Nothing else is in the way. -/
+theorem coprime_card_quotient_wildInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    (U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))) [U.Normal]
+    (hU : IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K)))) :
+    Nat.Coprime
+      (Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))) n :=
+  sorry
+
+/-- **The wild inertia is pro-`ℓ`: an `n`-th root exists INSIDE `P_v`
+whenever `n` is prime to the residue characteristic** (PROVEN 2026-07-27
+MODULO the single leaf `coprime_card_quotient_wildInertiaGroup` above;
+hoisted here from `Fermat/FLT/Modularity/Interface.lean`, where it was
+cut on the same day as one opaque leaf).
+
+In a pro-`ℓ` group the `n`-th power map is a BIJECTION for every `n`
+prime to `ℓ`: it is bijective on each finite continuous quotient — there
+the order of any element divides an `ℓ`-power, so `n` is invertible
+modulo it — and bijectivity passes to the inverse limit by compactness.
+The hypothesis is spelled `(n : 𝓞 K) ∉ v.asIdeal`, which is exactly
+`ℓ ∤ n` (and forces `n ≠ 0`, since `0 ∈ v.asIdeal`).
+
+Note the conclusion places `θ` back in `P_v`, not merely in `I_v`: the
+consumer iterates this lemma to extract a `pᵏ`-th root, and an
+`I_v`-valued root would break the induction at the second step.
+
+THE PROOF is the three-line assembly of the block above — the profinite
+limit (`exists_pow_eq_of_forall_openNormal`) fed by the finite level
+(`exists_pow_mem_of_coprime_card_quotient`), with the topological side
+conditions supplied by `exists_openNormal_subset_of_mem_nhds_one` and
+`isClosed_wildInertiaGroup`. `hn` is consumed exactly once, inside the
+pro-`ℓ` leaf. -/
+theorem exists_pow_eq_of_mem_wildInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
+    (hσ : σ ∈ wildInertiaGroup v) :
+    ∃ θ ∈ wildInertiaGroup v, θ ^ n = σ := by
+  haveI : T2Space (Field.absoluteGaloisGroup (v.adicCompletion K)) := krullTopology_t2
+  refine exists_pow_eq_of_forall_openNormal
+    (exists_openNormal_subset_of_mem_nhds_one v) (isClosed_wildInertiaGroup v) ?_
+  intro U hUn hUo
+  haveI := hUn
+  exact exists_pow_mem_of_coprime_card_quotient
+    (coprime_card_quotient_wildInertiaGroup v hn U hUo) hσ
+
 namespace GaloisRep
 
 /-- **The inertia invariants of a Galois representation at a finite

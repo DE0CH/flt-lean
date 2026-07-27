@@ -39372,9 +39372,35 @@ theorem localInertia_two_sq_eq_zero_of_padic_inertia_sq_eq_zero
     simp only [mul_assoc]
   rw [h1, ha', mul_one, ← pow_two, hN, mul_zero, zero_mul]
 
-/-- **The wild inertia is pro-`ℓ`: an `n`-th root exists INSIDE `P_v`
-whenever `n` is prime to the residue characteristic** (SORRY LEAF, cut
-2026-07-27). This is STEP 3 of the four-step route recorded on
+/-!
+### STEP 3 lives in `ArtinConductor.lean` now
+
+**`exists_pow_eq_of_mem_wildInertiaGroup` was HOISTED out of this file on
+2026-07-27**, to `Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`,
+beside `wildInertiaGroup` itself — which is where its own docstring said
+it belonged, and the hoist was cheap while the declaration was new. This
+file `public import`s that module, so the consumer below still refers to
+it by the same unqualified name.
+
+It was also DECOMPOSED in the move, and it is **no longer a sorry leaf**:
+the profinite half (`exists_pow_eq_of_forall_openNormal`), the
+finite-level step (`exists_pow_mem_of_coprime_card_quotient`), the
+neighbourhood basis (`exists_openNormal_subset_of_mem_nhds_one`) and the
+closedness of `P_v` (`isClosed_wildInertiaGroup`) are all PROVEN there,
+and `exists_pow_eq_of_mem_wildInertiaGroup` is their assembly. Exactly
+ONE leaf remains on the route, `coprime_card_quotient_wildInertiaGroup`
+("the wild inertia is pro-`ℓ`"), which is the purely arithmetic half and
+the genuine local-field-theory subtree.
+
+The old docstring is preserved below for the mathematical content it
+records, with its status corrected.
+-/
+
+/- **The wild inertia is pro-`ℓ`: an `n`-th root exists INSIDE `P_v`
+whenever `n` is prime to the residue characteristic** (HOISTED and
+DECOMPOSED 2026-07-27 — see the note above; the statement now lives in
+`ArtinConductor.lean` and is PROVEN there modulo the pro-`ℓ` leaf). This
+is STEP 3 of the four-step route recorded on
 `isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` below, and after that cut
 it is the ONLY step still open there — steps 1, 2 and 4 are proven.
 
@@ -39391,48 +39417,47 @@ Note the conclusion must place `θ` back in `P_v`, not merely in `I_v`:
 the consumer iterates this lemma to extract a `pᵏ`-th root, and an
 `I_v`-valued root would break the induction at the second step.
 
-WHAT IS MISSING, and it is a genuine subtree rather than a lemma. The
-statement splits cleanly in two, and only the first half is arithmetic:
+HOW IT SPLIT, 2026-07-27. The statement divides cleanly in two, and only
+the first half is arithmetic — the cut in `ArtinConductor.lean` is
+exactly along this seam, and the SECOND half is now proven:
 
 * `P_v` is pro-`ℓ`, i.e. every finite continuous quotient of
   `Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)` has `ℓ`-power order. This is local field theory:
   the residue field of `Kᵥᵗᵃᵐᵉ` is separably closed and its value group
   is `n`-divisible for every `n` prime to `ℓ`, so a finite extension of
   `Kᵥᵗᵃᵐᵉ` has trivial residue extension and ramification index an
-  `ℓ`-power.
+  `ℓ`-power. STILL OPEN, as
+  `coprime_card_quotient_wildInertiaGroup` — the one remaining leaf on
+  this route, and a genuine subtree rather than a lemma.
 * In a profinite group all of whose finite quotients have `ℓ`-power
   order, `x ↦ xⁿ` is surjective for `ℓ ∤ n`. This half is pure profinite
-  group theory and carries no arithmetic at all.
+  group theory and carries no arithmetic at all. **PROVEN**, as
+  `exists_pow_eq_of_forall_openNormal` (Cantor's intersection theorem
+  over the open normal subgroups) together with
+  `exists_pow_mem_of_coprime_card_quotient` at the finite level.
 
 VERIFIED ABSENT 2026-07-27, and here is the check that would refute it:
 `grep -rn "IsProP\|pro_p\|ProfiniteGrp" Fermat/ .lake/packages/mathlib/`
 plus `~/cs/FLT`. Mathlib's `Topology/Algebra/Category/ProfiniteGrp/` has
 only `Basic`, `Completion` and `Limits` — no Sylow theory for
 topological groups, no pro-`ℓ` predicate — and mathlib's
-`RamificationGroup.lean` is 54 lines ending in a TODO with zero
-`ramificationGroup` hits library-wide. Neither this project nor
-`~/cs/FLT` defines "pro-`ℓ`" anywhere. If a later release adds a pro-`ℓ`
-predicate with the finite-quotient characterisation, this leaf reduces
-to the two bullets above and nothing else.
+`RamificationGroup.lean` defines only `decompositionSubgroup` and
+`inertiaSubgroup`, ending in a TODO for the higher ramification groups.
+Neither this project nor `~/cs/FLT` defines "pro-`ℓ`" anywhere. This
+remains true of the arithmetic half; it is no longer a reason to treat
+the whole statement as opaque.
 
-The closest EXISTING approximation in this tree is
-`exists_mem_localInertiaGroup_pow_pro_of_forall_finite_level` (above in
-this file). It delivers only a pro-statement (`∀ open H, ∃ n, … ∈ H`)
-rather than an equality of group elements, so it does not discharge this
-leaf as stated — but it is the right template for the compactness half.
-
-This is stated for a general number field and place so that it can be
-hoisted to `ArtinConductor.lean`, next to `wildInertiaGroup` itself,
-once it has an owner; it is parked here only because that is where its
-single consumer lives. -/
-theorem exists_pow_eq_of_mem_wildInertiaGroup {K : Type*} [Field K]
-    [NumberField K]
-    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
-    {n : ℕ} (hn : (n : NumberField.RingOfIntegers K) ∉ v.asIdeal)
-    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
-    (hσ : σ ∈ wildInertiaGroup v) :
-    ∃ θ ∈ wildInertiaGroup v, θ ^ n = σ :=
-  sorry
+CORRECTION to a claim this docstring used to make: the compactness half
+was said to need a template. It did not — the topological inputs were
+already in the tree and are what made it fall in one pass. `P_v` is
+closed because `ContinuousSMulDiscrete` (from
+`Fermat/FLT/Deformations/RepresentationTheory/IntegralClosure.lean`)
+makes `{σ | σ • x = y}` open for every `x, y` of the integral closure,
+so both `localInertiaGroup` and `tameFixingSubgroup` are intersections
+of CLOPEN conditions; and open normal subgroups are a neighbourhood
+basis of `1` by mathlib's `krullTopology_mem_nhds_one_iff_of_normal`,
+whose intermediate field is Galois here because `Kᵥ` has characteristic
+zero. -/
 
 /-- **STEP 4 of the at-`2` wild half: an infinitely `p`-divisible value
 of `σ ↦ τσ − 1` VANISHES** (PROVEN 2026-07-27). This is the step that
@@ -39460,8 +39485,10 @@ to `0` and `ev x = 0`. Ranging over `u` and `i` gives `x = 0`.
 Note the hypothesis does NOT constrain `θ` to the wild inertia: the
 bound is uniform over all of `Γ Kᵥ`, so the compactness argument never
 needs to know where `θ` came from. That is deliberate — it keeps this
-lemma independent of the one genuinely missing input, the pro-`2` leaf
-`exists_pow_eq_of_mem_wildInertiaGroup` above. -/
+lemma independent of the one genuinely missing input, the pro-`2`
+statement `exists_pow_eq_of_mem_wildInertiaGroup` (since 2026-07-27 in
+`ArtinConductor.lean`, and PROVEN there modulo its own pro-`ℓ` leaf
+`coprime_card_quotient_wildInertiaGroup`). -/
 theorem eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p])}
@@ -39552,14 +39579,17 @@ Fields* IV §2; this is the residual local content of the at-`2` wild
 half, and the ONLY thing that still stands between `hsq` and
 `Sw₂(τ) = 0`).
 
-STATUS after the 2026-07-27 cut. The four-step route below is now
-written out in full, and steps **1, 2 and 4 are PROVEN right here**. The
-single remaining input is step 3, cut out as the sorry leaf
-`exists_pow_eq_of_mem_wildInertiaGroup` above — the assertion that the
-wild inertia is pro-`ℓ`, which is the one piece of genuine local field
-theory this tree does not have. Nothing else in this proof is open, and
-in particular the analytic step 4, which the previous owner recorded as
-the delicate one, is discharged by
+STATUS after the 2026-07-27 cut, updated the same day. The four-step
+route below is written out in full, and steps **1, 2 and 4 are PROVEN
+right here**. Step 3 was cut out as `exists_pow_eq_of_mem_wildInertiaGroup`
+and then HOISTED to `ArtinConductor.lean` and decomposed there, so it is
+no longer a leaf either: its profinite half, its finite-level step, and
+the two topological side conditions are all proven, and the single thing
+still open on the whole route is the purely arithmetic
+`coprime_card_quotient_wildInertiaGroup` — "the wild inertia is pro-`ℓ`",
+the one piece of genuine local field theory this tree does not have.
+Nothing else in this proof is open, and in particular the analytic step
+4, which an earlier owner recorded as the delicate one, is discharged by
 `eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one` above.
 
 `GaloisRep.IsTamelyRamifiedAt τ v₂` says the WILD inertia
@@ -39585,9 +39615,11 @@ every `σ ∈ I₂` (this is `hloc`):
 3. *`P₂` is pro-`2`*, so for every `n` prime to `2` the `n`-th power map
    is a bijection on it; in particular every `σ ∈ P₂` is a `p`-th power
    in `P₂` (here `p` is ODD — this is the ONLY use of `hpodd`).
-   Iterating, `N(σ) ∈ pᵏ · N(P₂)` for every `k`. This is the sorry leaf
-   `exists_pow_eq_of_mem_wildInertiaGroup` above, and `hpodd` enters the
-   present proof only through its side condition `(p : 𝓞 ℚ) ∉ v₂`.
+   Iterating, `N(σ) ∈ pᵏ · N(P₂)` for every `k`. This is
+   `exists_pow_eq_of_mem_wildInertiaGroup` (in `ArtinConductor.lean`
+   since 2026-07-27, and proven there modulo the pro-`ℓ` leaf), and
+   `hpodd` enters the present proof only through its side condition
+   `(p : 𝓞 ℚ) ∉ v₂`.
 4. *`N(P₂)` is BOUNDED*, being the continuous image of the compact `P₂`
    in `(ℚ̄_p, +)`. Bounded and infinitely `p`-divisible forces
    `N(σ) = 0`, i.e. `τσ = 1`.
@@ -39829,27 +39861,33 @@ attempt at the Swan conductor as a NUMBER will meet them:
   Deciding whether it VANISHES does not, and that is all this cut ever
   needed.
 
-TERMINALITY RE-CONFIRMED **DEFINITIONALLY**, not by literature search
-(2026-07-26, ninth owner — this is a stronger statement than the two
-dead ends above, and it should end the mis-dispatching for good).
-`GaloisRep.swanExponent ρ v` is by definition
-`if ρ.IsUnramifiedAt v then 0 else ρ.swanExponentAux v`, and
-`swanExponentAux` is `opaque`, so the kernel will not unfold it and NO
-equation about the else-branch is derivable. Hence every proof of this
-leaf's conclusion `swanExponent τ v₂ = 0` must go through the
-then-branch, i.e. must prove `τ.IsUnramifiedAt v₂`. But `hsq` does not
-imply that, and the SOUNDNESS AUDIT below exhibits the counterexample
-itself: for `E/ℚ` of conductor `14` and `p := 5`, inertia at `2` acts by
-a nontrivial transvection, `hsq` holds, and `τ` is RAMIFIED at `2`. So
-this leaf is not merely unproven at this pin — it is UNPROVABLE at this
-pin, and no amount of searching mathlib or `~/cs/FLT` can change that.
-It becomes provable only when `swanExponentAux` is replaced by a real
-definition, which is the upper-numbering filtration named above.
+STATUS 2026-07-27: this declaration is **PROVEN**. The term-mode proof
+below is complete and the compiler emits no `declaration uses 'sorry'`
+at this line while its neighbours do.
 
-This is the intended and correct state for a citation leaf built on an
-`opaque` constant, and it is what keeps `#print axioms` clean; it is
-recorded here only so that the next owner recognises it in seconds
-instead of spending a cycle rediscovering it.
+Removed with this note (2026-07-27): a block headed "TERMINALITY
+RE-CONFIRMED **DEFINITIONALLY**" that stood here and asserted this leaf
+"is UNPROVABLE at this pin". It was written LATER than the retraction
+above and contradicted it, so it read as the newest and most
+authoritative paragraph in the file while being the only wrong one. Its
+load-bearing premise was that `GaloisRep.swanExponent ρ v` is
+`if ρ.IsUnramifiedAt v then 0 else ρ.swanExponentAux v`, whence any
+proof of `= 0` would have to establish `τ.IsUnramifiedAt v₂`, which
+`hsq` does not give. **That branch condition no longer exists.**
+`ArtinConductor.lean` now defines `swanExponent` as
+`if ρ.IsTamelyRamifiedAt v then 0 else ρ.swanExponentAux v` — precisely
+the repair the retraction above describes — and the proof below
+discharges the then-branch via
+`GaloisRep.swanExponent_eq_zero_of_isTamelyRamifiedAt`. Two separate
+owners reported the contradiction before it was removed.
+
+The reusable correction, since it is easy to make again in this file:
+the gating filter on `swanExponent` is **"not tamely ramified"**, not
+"not unramified". Tameness is strictly WEAKER than unramifiedness, so
+an argument of the form "the conclusion forces ramifiedness at `v`,
+therefore the `if` never fires" is stale wherever it appears — a
+ramified `τ` can still be tamely ramified, which is exactly the case
+this declaration is about.
 
 PROVENANCE OF THE HYPOTHESIS SHAPE: `hsq` is stated over `Γ ℚ_[2]` (via
 `Z2bar`) because that is the spelling the at-`2` consumers already use,
@@ -39865,10 +39903,11 @@ vacuously true — `τ` unramified at `2` satisfies `hsq` and has
 case is the Steinberg configuration (`τ` RAMIFIED at `2`, inertia acting
 by a nontrivial transvection, e.g. `V₅(E)` for `E/ℚ` of conductor `14`),
 where `τ` is genuinely ramified at `2` — so the vanishing is NOT read
-off the unramified branch, and `swanExponent` would reduce to the opaque
-`swanExponentAux` were the wild inertia not shown to act trivially. That
-is exactly the content the proof supplies, and it is why the statement
-is not vacuous. -/
+off unramifiedness. The `if` in `swanExponent` branches on TAMENESS, and
+in that configuration it fires only because the wild inertia is shown to
+act trivially; without that, `swanExponent` reduces to the opaque
+`swanExponentAux`. Supplying it is exactly what the proof does, and it
+is why the statement is not vacuous. -/
 theorem swanExponent_two_eq_zero_of_inertia_sq_eq_zero
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p])}
