@@ -1325,12 +1325,15 @@ theorem exists_gamma0Atlas (N : ℕ) (hN : 0 < N) : Nonempty (Gamma0Atlas N) :=
   (exists_gamma0GITPresentation N hN).map Gamma0GITPresentation.toGamma0Atlas
 
 /-- **Existence of the coarse moduli space `Y_0(N)` for `N ≥ 1`**
-(PROVEN 2026-07-27 from `exists_gamma0Atlas`, which now carries the
-citation).
+(PROVEN 2026-07-27 from `exists_gamma0Atlas`, which is itself now PROVEN
+from `exists_gamma0GITPresentation` — the modular-curve half — and
+`specInvariants_universal` — the GIT half, whose affine case is proven
+too).
 
 Everything below — the citation, the matching of hypotheses, the
-faithfulness audit — describes what `exists_gamma0Atlas` assumes, and is
-unchanged.  What is no longer assumed is the **initiality** clause of
+faithfulness audit — describes what `exists_gamma0GITPresentation`
+assumes, and is unchanged.  What is no longer assumed is the
+**initiality** clause of
 `IsCoarseModuliY0`: it is derived in `Gamma0Atlas.toIsCoarseModuliY0`
 from the rigidifying cover and the categorical-quotient property, using
 fpqc descent.  See the section comment above that theorem.
@@ -1450,8 +1453,12 @@ separate ways, and both are now demonstrated rather than argued:
   and once stated the initiality clause — the only clause the citation did
   not cover — became a short formal argument.
 
-The remaining absences (a modular curve, `[Γ(n)]`-structures, GIT) are
-what `exists_gamma0Atlas` now carries, itemised in its docstring. -/
+The remaining absences are carried by the two leaves the atlas was split
+into on 2026-07-27, and they are now separated by subject matter: a
+modular curve and `[Γ(n)]`-structures are what
+`exists_gamma0GITPresentation` asks for; GIT is what
+`specInvariants_universal` asks for, and its affine case is no longer an
+absence — it is proven in `specInvariants_universal_specTarget`. -/
 theorem exists_coarseModuliY0_of_pos (N : ℕ) (hN : 0 < N) :
     ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 N str) := by
   obtain ⟨A⟩ := exists_gamma0Atlas N hN
