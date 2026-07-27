@@ -48,11 +48,15 @@ public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 -- requirement `exists_unramified_grouplike_family_generating_corner` below
 -- consumes, and which `ShortExact.lean` states and assembles as
 -- `HopfAlgebra.isMultiplicativeType_of_isShortExact` over `IsMultiplicativeType`
--- ("the Cartier dual is étale"). The assembly is written and compiles; it rests
--- on two open leaves in that module, `HopfAlgebra.IsShortExact.cartierDual`
--- (exactness of duality) and `HopfAlgebra.etale_of_isShortExact` (an extension
--- of étale by étale is étale — the elementary half, whose henselian route this
--- file's survey below records). `CartierDualExamples` supplies the dictionary
+-- ("the Cartier dual is étale"). The assembly is written and compiles. CORRECTED
+-- 2026-07-27: this comment used to say it rests on "two open leaves in that
+-- module, `HopfAlgebra.IsShortExact.cartierDual` and
+-- `HopfAlgebra.etale_of_isShortExact`". BOTH ARE PROVEN (`ShortExact.lean:669`
+-- and `:916`); what is open there are the four leaves they consume
+-- (`IsShortExact.exists_linearRetraction`, `.ker_cartierDual_le`,
+-- `.faithfullyFlat_cartierDual`, and
+-- `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`),
+-- separately queued. `CartierDualExamples` supplies the dictionary
 -- between the two descriptions of the corner: `dualGroupAlgebraBialgEquiv`
 -- identifies `CartierDual R (MonoidAlgebra R G)` with `GroupFunctions R G`,
 -- which is exactly what turns the étaleness of `GroupFunctions` proved in this
@@ -3454,10 +3458,21 @@ leaf is (R1), the Raynaud dévissage.
      the Cartier-duality construction of
      `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` (which
      is complete and sorry-free, biduality and all three examples
-     included). What is still OPEN is not (R3) but its two inputs, which
-     are separate leaves in that same file with their own owners:
-     `HopfAlgebra.IsShortExact.cartierDual` (Cartier duality is exact)
-     and `HopfAlgebra.etale_of_isShortExact` (étale-by-étale is étale).
+     included). **CORRECTED 2026-07-27 — the sentence that used to follow
+     here named `HopfAlgebra.IsShortExact.cartierDual` and
+     `HopfAlgebra.etale_of_isShortExact` as "the two inputs still OPEN,
+     with their own owners". BOTH ARE PROVEN** (`ShortExact.lean:669` and
+     `:916`), so neither is open and neither is owned; do not dispatch
+     anyone at them. The leaves genuinely open in `ShortExact.lean` are
+     the four that `cartierDual`/`etale_of_isShortExact` consume:
+     `IsShortExact.exists_linearRetraction` (`:564`),
+     `IsShortExact.ker_cartierDual_le` (`:628`),
+     `IsShortExact.faithfullyFlat_cartierDual` (`:648`) and
+     `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
+     (`:238`) — separately queued as of 2026-07-27, so check
+     `~/.flt-inflight.jsonl` before starting on one, and re-run
+     `python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before
+     believing this list at all.
      Consuming (R3) here is still blocked on `IsShortExact` being
      established for this cluster's dévissage, i.e. on (R1).
 (R4) *multiplicative type ⟹ unramified character group*: **PROVEN
@@ -3777,24 +3792,40 @@ that would unblock it. Nothing here changes the statement.
        `HopfAlgebra.isMultiplicativeType_of_isShortExact` in
        `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, which
        is literally `etale_of_isShortExact h.cartierDual h' h''`.
-     * WHAT IS ACTUALLY OPEN, and these are the two dispatchable leaves —
-       both in `ShortExact.lean`, both already OWNED, so check
-       `~/.flt-inflight.jsonl` before touching either:
-       - `HopfAlgebra.IsShortExact.cartierDual` — Cartier duality is
-         exact. This is the half that wants faithfully flat descent /
-         Takeuchi's Hopf-ideal correspondence.
-       - `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale.
-         This is the ELEMENTARY half the previous paragraph described:
-         the connected component `H°` maps to the étale quotient by a
-         homomorphism out of a connected scheme, hence trivially, so
-         `H° ⊆ H'`, and `H'` étale gives `H'° = 0`. Both halves of the
-         machinery are already in this cone —
-         `Bialgebra.exists_connected_counit_idempotent` for the connected
-         idempotent, and the henselian splitting of a finite algebra
-         recorded in the SUPPLY SURVEY above. Note `etale_of_isShortExact`
-         is stated over an ARBITRARY base; specialising it to a henselian
-         local `R` is a legitimate weakening if the general form resists,
-         and its own docstring says so.
+     * WHAT IS ACTUALLY OPEN — **REWRITTEN AGAIN 2026-07-27; the version
+       this replaces named `HopfAlgebra.IsShortExact.cartierDual` and
+       `HopfAlgebra.etale_of_isShortExact` as "the two dispatchable
+       leaves, both already OWNED". BOTH ARE PROVEN** —
+       `IsShortExact.cartierDual` at `ShortExact.lean:669` (a four-field
+       assembly) and `etale_of_isShortExact` at `:916`. Neither is open,
+       so neither is owned, and dispatching at either wastes a worker.
+       The four leaves genuinely open in `ShortExact.lean` are the ones
+       those two consume, all separately queued as of 2026-07-27 — check
+       `~/.flt-inflight.jsonl` before touching one:
+       - `IsShortExact.exists_linearRetraction` (`:564`) — the
+         normal-basis splitting; `surjective_cartierDual_map` is proven
+         from it.
+       - `IsShortExact.ker_cartierDual_le` (`:628`) — the hard half of
+         the dual kernel condition (`le_ker_cartierDual` is proven).
+       - `IsShortExact.faithfullyFlat_cartierDual` (`:648`) — the
+         deepest; classically `Ext¹(G'', 𝔾ₘ) = 0`, and the half that
+         wants faithfully flat descent / Takeuchi's Hopf-ideal
+         correspondence.
+       - `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
+         (`:238`), which `etale_of_isShortExact` consumes.
+       Re-run `python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact`
+       before believing this list; it is a dated claim like every other
+       one here.
+       WHY THE OLD LIST WENT STALE INVISIBLY, which is the reusable part:
+       those five `HopfAlgebra` modules were an UNREACHABLE ISLAND — no
+       module in `Fermat.lean`'s import closure imported them, and
+       `lake build` builds only that closure, so they were never compiled
+       and were invisible to the `declaration uses 'sorry'` warning set
+       AND to the census. The cause was structural, not a forgotten
+       import: the files carried no `module` header, and a `module` file
+       cannot import a non-`module` one, so the import was NOT
+       EXPRESSIBLE. Repaired at `1492cecb`; the tree is now 296 modules,
+       296 reachable, 0 unreachable.
      * SO THE REMAINING WORK FOR *THIS* LEAF IS (R1), the Raynaud
        dévissage, which is what actually supplies an `IsShortExact` for
        this cluster. (R2) is formalized and sorry-free; (R3) is proven;

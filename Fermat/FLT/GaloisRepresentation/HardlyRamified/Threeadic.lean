@@ -3439,10 +3439,30 @@ cluster is now IN THE ROOT IMPORT CONE (wired in at `1492cecb` through
 compiled at all, so nothing in this paragraph had ever been checked by
 the compiler.
 
+WHY THAT STALENESS WAS INVISIBLE, AND IT WAS STRUCTURAL RATHER THAN A
+FORGOTTEN IMPORT.  Those five `HopfAlgebra` modules were an UNREACHABLE
+ISLAND: nothing in `Fermat.lean`'s import closure imported them, and
+`lake build` builds only that closure, so they were never compiled —
+hence invisible to the `declaration uses 'sorry'` warning set AND to the
+census, the two counts every dispatch is built from.  Nobody had
+forgotten an import; the import was NOT EXPRESSIBLE, because the files
+carried no `module` header and a `module` file cannot import a
+non-`module` one (`cannot import non-module … from module`).  So when a
+module here looks orphaned, check its HEADER before hunting for a
+missing consumer.  Repaired at `1492cecb` with the header treatment its
+already-wired siblings use (`module`, `public import`,
+`@[expose] public section`); the tree is now 296 modules, 296 reachable,
+0 unreachable.  Note that wiring an island in RAISES the reported
+frontier, because its leaves become countable for the first time — that
+is disclosure, not regression.
+
 RE-CHECKED 2026-07-27 AFTER THE WIRING, and the "ONE named open leaf"
 count above is STALE in two ways.  `HopfAlgebra.IsShortExact.cartierDual`
-is itself **PROVEN** (`ShortExact.lean:669`), as a four-field assembly;
-what is open is THREE sub-leaves it consumes, none of them owned:
+is itself **PROVEN** (`ShortExact.lean:669`), as a four-field assembly,
+and so is `etale_of_isShortExact` (`ShortExact.lean:916`); neither is
+owned, because neither is open.  What IS open is THREE sub-leaves
+`cartierDual` consumes — all of them separately QUEUED as of 2026-07-27,
+so check `~/.flt-inflight.jsonl` for a live owner before starting on one:
 
 * `HopfAlgebra.IsShortExact.exists_linearRetraction` (`ShortExact.lean:564`)
   — the normal-basis splitting; `surjective_cartierDual_map` is proven from it;
@@ -3452,8 +3472,10 @@ what is open is THREE sub-leaves it consumes, none of them owned:
   — the deepest, classically `Ext¹(G'', 𝔾ₘ) = 0`.
 
 Plus `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
-(`ShortExact.lean:238`), which `etale_of_isShortExact` consumes.  If they land
-it would most likely close
+(`ShortExact.lean:238`), also queued, which `etale_of_isShortExact` consumes.
+Four leaves, then — a DIFFERENT obstruction from the Raynaud one recorded
+above, but do not read it as a cheap one: `faithfullyFlat_cartierDual` is
+classically `Ext¹(G'', 𝔾ₘ) = 0`.  If all four land it would most likely close
 `wildInertia_fixes_connected_threeTorsion_of_hopf_package` directly,
 since the duality argument for the connected case is written out there.
 Re-run `python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before
@@ -3716,20 +3738,40 @@ in the ROOT IMPORT CONE, wired in through `HardlyRamified/Family.lean` — befor
 that those five modules were never compiled, so no claim made about them here
 had ever been checked by the compiler.
 
+WHY THAT STALENESS WAS INVISIBLE, AND IT WAS STRUCTURAL RATHER THAN A FORGOTTEN
+IMPORT.  Those five `HopfAlgebra` modules were an UNREACHABLE ISLAND: nothing in
+`Fermat.lean`'s import closure imported them, and `lake build` builds only that
+closure, so they were never compiled — hence invisible to the
+`declaration uses 'sorry'` warning set AND to the census, which are the two
+counts every dispatch is built from.  Nobody had forgotten an import; the import
+was NOT EXPRESSIBLE, because the files carried no `module` header and a `module`
+file cannot import a non-`module` one.  So when a module here looks orphaned,
+check its HEADER before hunting for a missing consumer.  Repaired at `1492cecb`
+with the header treatment its already-wired siblings use (`module`,
+`public import`, `@[expose] public section`); the tree is now 296 modules, 296
+reachable, 0 unreachable.  Wiring an island in RAISES the reported frontier,
+because its leaves become countable for the first time — disclosure, not
+regression.
+
 RE-CHECKED 2026-07-27 AFTER THE WIRING: the "ONE named open leaf" count this
-paragraph used to carry is STALE.  `HopfAlgebra.IsShortExact.cartierDual` is
-itself PROVEN (`ShortExact.lean:669`) as a four-field assembly; what is open
-is three unowned sub-leaves it consumes —
+paragraph used to carry is STALE, and so was its verdict.
+`HopfAlgebra.IsShortExact.cartierDual` is itself PROVEN
+(`ShortExact.lean:669`) as a four-field assembly, and so is
+`etale_of_isShortExact` (`:916`); neither is owned, because neither is open.
+What IS open is three sub-leaves `cartierDual` consumes —
 `IsShortExact.exists_linearRetraction` (`ShortExact.lean:564`),
 `IsShortExact.ker_cartierDual_le` (`:628`) and
 `IsShortExact.faithfullyFlat_cartierDual` (`:648`) — together with
 `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
-(`:238`), which `etale_of_isShortExact` consumes.  That is still a different —
-and much smaller — obstruction than the one recorded here, and the next owner
-of this leaf should weigh it afresh rather than treating the duality route as
-nonexistent.  Re-run
-`python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before believing
-the list; it is a dated claim like every other one here.
+(`:238`), which `etale_of_isShortExact` consumes.  All four are separately
+QUEUED as of 2026-07-27, so check `~/.flt-inflight.jsonl` for a live owner
+before starting on one.  That is a DIFFERENT obstruction from the one recorded
+here, and — correcting the sentence this replaces — NOT a "much smaller" one:
+`faithfullyFlat_cartierDual` is classically `Ext¹(G'', 𝔾ₘ) = 0`, the deepest
+of the four.  So the duality route is available in principle rather than cheap;
+do not treat it as nonexistent, and do not treat it as a shortcut either.
+Re-run `python3 flt-frontier.py | grep -A6 HopfAlgebra/ShortExact` before
+believing the list; it is a dated claim like every other one here.
 
 `hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
 idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
