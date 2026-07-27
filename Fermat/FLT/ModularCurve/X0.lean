@@ -13063,13 +13063,19 @@ by composing base changes (`IsBaseChangeOf.comp`, proven earlier in this file).
   elliptic scheme have the same `j`.
 * `isWeierstrassModel_map_of_isBaseChangeOf` — the productive half of
   step (ii): a base change of a model is a model of the base-changed
-  datum.  Pure scheme theory, no `j`.
+  datum.  Pure scheme theory, no `j`.  **PROVEN 2026-07-27**, over the
+  new pushout lemma `isPushout_weierstrassCoordinateRing` (the affine
+  Weierstrass curve base-changes) plus two applications of
+  `IsPullback.of_bot`; see its own docstring.
 * `exists_isBaseChangeOf_cancel` — the converse of `IsBaseChangeOf.comp`.
   Shared with `exists_jTransformation_of_affine`, whose docstring
   records its `h₁ = 𝟙` case as the step it is missing; proving it
   unblocks both.
-* `exists_jValueOnAffine_of_localModels` — step (iii), the gluing,
-  stated with the other four as HYPOTHESES.  They are hypotheses and not
+* `exists_jValueOnAffine_of_localModels` — step (iii), the gluing.
+  **PROVEN 2026-07-27**, over `Localization.existsUnique_algebraMap_eq_of_span_eq_top`
+  plus `exists_gamma0Datum_baseChange` (which the hypothesis list does not
+  contain and the argument needs; see the leaf's docstring).  Stated with
+  the other four as HYPOTHESES.  They are hypotheses and not
   calls for the same reason `exists_jTransformation_of_affine` takes
   `hbc`: a sorried body contributes no dependency edges, so a leaf that
   merely *called* them would leave them free-floating, and the five can
@@ -13271,6 +13277,218 @@ theorem weierstrassModel_j_unique {R : Type} [CommRing R] {A : Scheme.{0}}
     W.j = W'.j :=
   sorry
 
+/-! #### The affine Weierstrass curve base-changes: `S[W.map φ] = S ⊗_R R[W]`
+
+The one piece of algebra behind `isWeierstrassModel_map_of_isBaseChangeOf`
+below, and the reason that leaf is not a one-liner: the leaf needs
+`Spec S[W.map φ]` to BE the pullback of `Spec R[W] ⟶ Spec R` along
+`Spec φ`, i.e. the ring square
+
+    R  ⟶  R[W]
+    ↓        ↓
+    S  ⟶  S[W.map φ]
+
+to be a PUSHOUT in `CommRingCat`.  `Mathlib` has
+`AdjoinRoot.tensorAlgEquiv` (adjoining a root commutes with base change),
+but it is stated with the coefficient ring *literally* a tensor product
+`T ⊗[R] S`, and `W.toAffine.CoordinateRing = AdjoinRoot W.polynomial`
+has coefficient ring `R[X]` — so using it would need `S ⊗[R] R[X] ≅ S[X]`
+and a transport of the whole equivalence along it.  It is shorter, and
+much more robust, to verify the universal property directly: a ring map
+out of `AdjoinRoot q` is `AdjoinRoot.lift` of a map on coefficients
+together with the image of the root, and two such maps agreeing on `S`,
+on `X` and on `Y` are equal by `Polynomial.ringHom_ext` twice.  That is
+what the four declarations below do; nothing here is specific to
+Weierstrass equations beyond `map_polynomial`.
+-/
+
+/-- **The base-change map on affine coordinate rings**,
+`R[W] →+* S[W.map φ]`; `Mathlib`'s
+`WeierstrassCurve.Affine.CoordinateRing.map` under a shorter name. -/
+noncomputable abbrev weierstrassCoordMap {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    W.toAffine.CoordinateRing →+* (W.map φ).toAffine.CoordinateRing :=
+  WeierstrassCurve.Affine.CoordinateRing.map W.toAffine φ
+
+/-- `weierstrassCoordMap` is a map of `R`-algebras into `S[W.map φ]`
+(PROVEN). -/
+theorem weierstrassCoordMap_algebraMap {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) (r : R) :
+    weierstrassCoordMap W φ (algebraMap R W.toAffine.CoordinateRing r)
+      = algebraMap S (W.map φ).toAffine.CoordinateRing (φ r) := by
+  rw [show algebraMap R W.toAffine.CoordinateRing r
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine
+          (Polynomial.C (Polynomial.C r)) from rfl, weierstrassCoordMap,
+    WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+  rfl
+
+/-- `weierstrassCoordMap` sends the class of `Y` to the class of `Y`
+(PROVEN). -/
+theorem weierstrassCoordMap_root {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    weierstrassCoordMap W φ (AdjoinRoot.root W.toAffine.polynomial)
+      = AdjoinRoot.root (W.map φ).toAffine.polynomial := by
+  rw [show AdjoinRoot.root W.toAffine.polynomial
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine Polynomial.X from rfl,
+    weierstrassCoordMap, WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+
+/-- `weierstrassCoordMap` sends the class of `X` to the class of `X`
+(PROVEN). -/
+theorem weierstrassCoordMap_ofX {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    weierstrassCoordMap W φ (AdjoinRoot.of W.toAffine.polynomial Polynomial.X)
+      = AdjoinRoot.of (W.map φ).toAffine.polynomial Polynomial.X := by
+  rw [show AdjoinRoot.of W.toAffine.polynomial Polynomial.X
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine
+          (Polynomial.C Polynomial.X) from rfl,
+    weierstrassCoordMap, WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+
+section WeierstrassCoordDesc
+
+variable {R S U : Type} [CommRing R] [CommRing S] [CommRing U]
+  (W : WeierstrassCurve R) (φ : R →+* S)
+  (u : S →+* U) (v : W.toAffine.CoordinateRing →+* U)
+
+/-- The coefficient map `S[X] →+* U` out of which the descent map is
+built: it sends `X` to the image of the `x`-coordinate under `v` and the
+constants through `u`. -/
+noncomputable def weierstrassCoordDescAux : Polynomial S →+* U :=
+  Polynomial.eval₂RingHom u (v (AdjoinRoot.of W.toAffine.polynomial Polynomial.X))
+
+/-- The coefficient map is compatible with `φ` (PROVEN): after
+restricting along `φ` it is `v` on `R[X]`. -/
+theorem weierstrassCoordDescAux_comp
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    (weierstrassCoordDescAux W u v).comp (Polynomial.mapRingHom φ)
+      = v.comp (AdjoinRoot.of W.toAffine.polynomial) := by
+  have hw' : ∀ r : R, u (φ r)
+      = v (AdjoinRoot.of W.toAffine.polynomial (Polynomial.C r)) := hw
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · simpa [weierstrassCoordDescAux] using hw' a
+  · simp [weierstrassCoordDescAux]
+
+/-- The image of the base-changed Weierstrass polynomial vanishes
+(PROVEN) — the side condition of `AdjoinRoot.lift`. -/
+theorem weierstrassCoordDescAux_eval
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    Polynomial.eval₂ (weierstrassCoordDescAux W u v)
+      (v (AdjoinRoot.root W.toAffine.polynomial)) (W.map φ).toAffine.polynomial = 0 := by
+  have h0 : Polynomial.eval₂ (AdjoinRoot.of W.toAffine.polynomial)
+      (AdjoinRoot.root W.toAffine.polynomial) W.toAffine.polynomial = 0 := by
+    rw [← AdjoinRoot.algebraMap_eq, ← Polynomial.aeval_def, AdjoinRoot.aeval_eq,
+      AdjoinRoot.mk_self]
+  rw [show (W.map φ).toAffine.polynomial
+      = Polynomial.map (Polynomial.mapRingHom φ) W.toAffine.polynomial from
+      W.toAffine.map_polynomial φ, Polynomial.eval₂_map,
+    weierstrassCoordDescAux_comp W φ u v hw, ← Polynomial.hom_eval₂, h0, map_zero]
+
+/-- **The descent map** `S[W.map φ] →+* U` determined by `u` on `S` and
+`v` on `R[W]`. -/
+noncomputable def weierstrassCoordDesc
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    (W.map φ).toAffine.CoordinateRing →+* U :=
+  AdjoinRoot.lift (weierstrassCoordDescAux W u v)
+    (v (AdjoinRoot.root W.toAffine.polynomial)) (weierstrassCoordDescAux_eval W φ u v hw)
+
+/-- The descent map restricts to `u` on `S` (PROVEN). -/
+theorem weierstrassCoordDesc_left
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) (s : S) :
+    weierstrassCoordDesc W φ u v hw
+        (algebraMap S (W.map φ).toAffine.CoordinateRing s) = u s := by
+  rw [show algebraMap S (W.map φ).toAffine.CoordinateRing s
+      = AdjoinRoot.of (W.map φ).toAffine.polynomial (Polynomial.C s) from rfl,
+    weierstrassCoordDesc, AdjoinRoot.lift_of]
+  simp [weierstrassCoordDescAux]
+
+/-- The descent map restricts to `v` on `R[W]` (PROVEN). -/
+theorem weierstrassCoordDesc_right
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r))
+    (a : W.toAffine.CoordinateRing) :
+    weierstrassCoordDesc W φ u v hw (weierstrassCoordMap W φ a) = v a := by
+  obtain ⟨p, rfl⟩ := AdjoinRoot.mk_surjective (g := W.toAffine.polynomial) a
+  rw [show AdjoinRoot.mk W.toAffine.polynomial p
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine p from rfl, weierstrassCoordMap,
+    WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  rw [show WeierstrassCurve.Affine.CoordinateRing.mk (W.toAffine.map φ)
+      (Polynomial.map (Polynomial.mapRingHom φ) p)
+      = AdjoinRoot.mk (W.map φ).toAffine.polynomial
+          (Polynomial.map (Polynomial.mapRingHom φ) p) from rfl,
+    weierstrassCoordDesc, AdjoinRoot.lift_mk, Polynomial.eval₂_map,
+    weierstrassCoordDescAux_comp W φ u v hw, ← Polynomial.hom_eval₂,
+    ← AdjoinRoot.algebraMap_eq, ← Polynomial.aeval_def, AdjoinRoot.aeval_eq]
+
+end WeierstrassCoordDesc
+
+/-- **A ring map out of `S[W.map φ]` is determined by its restrictions to
+`S` and to `R[W]`** (PROVEN).
+
+`AdjoinRoot.mk` is surjective, so it is enough to compare on
+`S[X][Y]`; `Polynomial.ringHom_ext` reduces that to the constants and `Y`,
+and a second application reduces the constants to `S` and `X`. -/
+theorem weierstrassCoord_hom_ext {R S U : Type} [CommRing R] [CommRing S] [CommRing U]
+    (W : WeierstrassCurve R) (φ : R →+* S)
+    {m n : (W.map φ).toAffine.CoordinateRing →+* U}
+    (h1 : ∀ s : S, m (algebraMap S (W.map φ).toAffine.CoordinateRing s)
+      = n (algebraMap S (W.map φ).toAffine.CoordinateRing s))
+    (h2 : ∀ a : W.toAffine.CoordinateRing,
+      m (weierstrassCoordMap W φ a) = n (weierstrassCoordMap W φ a)) :
+    m = n := by
+  refine RingHom.ext fun b => ?_
+  obtain ⟨p, rfl⟩ := AdjoinRoot.mk_surjective (g := (W.map φ).toAffine.polynomial) b
+  have key : m.comp (AdjoinRoot.mk (W.map φ).toAffine.polynomial)
+      = n.comp (AdjoinRoot.mk (W.map φ).toAffine.polynomial) := by
+    refine Polynomial.ringHom_ext (fun a => ?_) ?_
+    · have hC : (m.comp (AdjoinRoot.of (W.map φ).toAffine.polynomial))
+          = (n.comp (AdjoinRoot.of (W.map φ).toAffine.polynomial)) := by
+        refine Polynomial.ringHom_ext (fun s => h1 s) ?_
+        have := h2 (AdjoinRoot.of W.toAffine.polynomial Polynomial.X)
+        rwa [weierstrassCoordMap_ofX] at this
+      exact congrArg (fun f => (f : Polynomial S →+* U) a) hC
+    · have := h2 (AdjoinRoot.root W.toAffine.polynomial)
+      rwa [weierstrassCoordMap_root] at this
+  exact congrArg (fun f => (f : Polynomial (Polynomial S) →+* U) p) key
+
+open _root_.CategoryTheory.Limits in
+/-- **The affine coordinate ring of a Weierstrass curve base-changes**
+(PROVEN): `S[W.map φ]` is the pushout of `R[W] ← R → S`.
+
+Proved from the universal property directly — see the subsection
+docstring for why the `AdjoinRoot.tensorAlgEquiv` route is longer here.
+`weierstrassCoordDesc` is the descent map, `weierstrassCoordDesc_left` /
+`_right` are the two factorisations, and `weierstrassCoord_hom_ext` is
+uniqueness. -/
+theorem isPushout_weierstrassCoordinateRing {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    IsPushout (CommRingCat.ofHom φ)
+      (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing))
+      (CommRingCat.ofHom (algebraMap S (W.map φ).toAffine.CoordinateRing))
+      (CommRingCat.ofHom (weierstrassCoordMap W φ)) := by
+  have w : CommRingCat.ofHom φ ≫
+      CommRingCat.ofHom (algebraMap S (W.map φ).toAffine.CoordinateRing)
+      = CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing) ≫
+        CommRingCat.ofHom (weierstrassCoordMap W φ) := by
+    ext r
+    exact (weierstrassCoordMap_algebraMap W φ r).symm
+  have hcond : ∀ s : PushoutCocone (CommRingCat.ofHom φ)
+      (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing)),
+      ∀ r : R, s.inl.hom (φ r) = s.inr.hom (algebraMap R W.toAffine.CoordinateRing r) :=
+    fun s r => congrArg (fun f => (CommRingCat.Hom.hom f) r) s.condition
+  refine IsPushout.of_isColimit (PushoutCocone.IsColimit.mk w
+    (fun s => CommRingCat.ofHom (weierstrassCoordDesc W φ s.inl.hom s.inr.hom (hcond s)))
+    (fun s => ?_) (fun s => ?_) (fun s m h₁ h₂ => ?_))
+  · exact CommRingCat.hom_ext (RingHom.ext fun x =>
+      weierstrassCoordDesc_left W φ s.inl.hom s.inr.hom (hcond s) x)
+  · exact CommRingCat.hom_ext (RingHom.ext fun x =>
+      weierstrassCoordDesc_right W φ s.inl.hom s.inr.hom (hcond s) x)
+  · refine CommRingCat.hom_ext (weierstrassCoord_hom_ext W φ (fun x => ?_) (fun a => ?_))
+    · exact (congrArg (fun f => (CommRingCat.Hom.hom f) x) h₁).trans
+        (weierstrassCoordDesc_left W φ s.inl.hom s.inr.hom (hcond s) x).symm
+    · exact (congrArg (fun f => (CommRingCat.Hom.hom f) a) h₂).trans
+        (weierstrassCoordDesc_right W φ s.inl.hom s.inr.hom (hcond s) a).symm
+
 /-- **A base change of a Weierstrass model is a Weierstrass model of the
 base-changed datum** (sorry leaf, the productive half of step (ii)).
 
@@ -13301,14 +13519,78 @@ WILL ALSO NEED" note on `exists_jValueOnAffine_of_localModels`.
 
 NOT VACUOUS: the conclusion is `IsWeierstrassModel`, which is an
 existence-of-open-immersion statement with a range condition, not an
-equation that could hold degenerately. -/
+equation that could hold degenerately.
+
+**PROVEN 2026-07-27**, and the three bullets above are exactly the three
+steps of the proof, with one correction to the plan: the first bullet's
+`AlgebraicGeometry.pullbackSpecIso` route is NOT what is used.  Rather
+than exhibit `S[W.map φ]` as a tensor product and transport, the square
+of rings is shown to be a PUSHOUT directly
+(`isPushout_weierstrassCoordinateRing`, subsection above), and
+`AlgebraicGeometry.isPullback_SpecMap_of_isPushout` turns that into the
+cartesian square
+
+    Spec S[W.map φ] ⟶ Spec R[W]
+           ↓                ↓
+       Spec S      ⟶     Spec R
+
+The model `ι'` is then `hb.isPullback.lift`, the top square
+`Spec S[W.map φ] → Spec R[W]` over `d'.E → d.E` is cartesian by
+`IsPullback.of_bot` (the outer rectangle being the square just named),
+and `IsOpenImmersion` transfers along it by
+`MorphismProperty.IsStableUnderBaseChange`.  The zero-section square is
+cartesian by the SAME pasting argument, its outer rectangle being
+cartesian because both vertical composites are `𝟙`; the two range
+identities then come from one lemma,
+`AlgebraicGeometry.range_base_of_isPullback`, applied to those two
+squares, and complements pass through `Set.preimage_compl`. -/
 theorem isWeierstrassModel_map_of_isBaseChangeOf {R S : Type} [CommRing R] [CommRing S]
     (φ : R →+* S) {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
     {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))}
     (hb : IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d)
     (W : WeierstrassCurve R) (hW : IsWeierstrassModel d.ab W) :
-    IsWeierstrassModel d'.ab (W.map φ) :=
-  sorry
+    IsWeierstrassModel d'.ab (W.map φ) := by
+  obtain ⟨ι, hoi, hcomp, hrange⟩ := hW
+  set sφ := Spec.map (CommRingCat.ofHom φ) with hsφ
+  set ψ : weierstrassAffine (W.map φ) ⟶ weierstrassAffine W :=
+    Spec.map (CommRingCat.ofHom (weierstrassCoordMap W φ)) with hψ
+  -- the coordinate-ring square is cartesian
+  have hA : IsPullback (weierstrassAffineStr (W.map φ)) ψ sφ (weierstrassAffineStr W) :=
+    _root_.AlgebraicGeometry.isPullback_SpecMap_of_isPushout _ _ _ _
+      (isPushout_weierstrassCoordinateRing W φ)
+  -- the model over `S`, as the map into the base change induced by the two projections
+  have hw : weierstrassAffineStr (W.map φ) ≫ sφ = (ψ ≫ ι) ≫ d.f := by
+    rw [Category.assoc, hcomp]; exact hA.w
+  set ι' : weierstrassAffine (W.map φ) ⟶ d'.E :=
+    hb.isPullback.lift (weierstrassAffineStr (W.map φ)) (ψ ≫ ι) hw with hι'
+  have hfst : ι' ≫ d'.f = weierstrassAffineStr (W.map φ) := hb.isPullback.lift_fst _ _ _
+  have hsnd : ι' ≫ hb.map = ψ ≫ ι := hb.isPullback.lift_snd _ _ _
+  -- the model square is cartesian
+  have hC : IsPullback ψ ι' ι hb.map := by
+    refine IsPullback.of_bot ?_ hsnd.symm hb.isPullback.flip
+    rw [hfst, hcomp]
+    exact hA.flip
+  -- the zero-section square is cartesian
+  have hz' : (d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).1 ≫ hb.map
+      = sφ ≫ (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).1 := by
+    have hzc : ∀ {g g' : Spec (CommRingCat.of S) ⟶ Spec (CommRingCat.of R)}, g = g' →
+        (d.ab.zero g).1 = (d.ab.zero g').1 := by rintro g g' rfl; rfl
+    have h1 := congrArg Subtype.val (hb.map_zero (𝟙 (Spec (CommRingCat.of S))))
+    have h2 := congrArg Subtype.val
+      (d.ab.pre_zero sφ (g := 𝟙 (Spec (CommRingCat.of R))) (Category.comp_id sφ))
+    simp only [RelPoint.along, RelPoint.pre] at h1 h2
+    rw [h1, hzc (Category.id_comp sφ)]
+    exact h2.symm
+  have hZ : IsPullback sφ (d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).1
+      (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).1 hb.map := by
+    refine IsPullback.of_bot ?_ hz'.symm hb.isPullback.flip
+    rw [(d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).2,
+      (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).2]
+    exact IsPullback.of_vert_isIso ⟨by rw [Category.comp_id, Category.id_comp]⟩
+  refine ⟨ι', ?_, hfst, ?_⟩
+  · exact MorphismProperty.IsStableUnderBaseChange.of_isPullback (P := @IsOpenImmersion) hC hoi
+  · rw [_root_.AlgebraicGeometry.range_base_of_isPullback hC.flip, hrange, Set.preimage_compl,
+      ← _root_.AlgebraicGeometry.range_base_of_isPullback hZ.flip]
 
 /-- **Base changes cancel** (PROVEN 2026-07-27; formerly a sorry leaf) —
 the exact converse of `IsBaseChangeOf.comp`.
@@ -13335,8 +13617,288 @@ theorem exists_isBaseChangeOf_cancel {N : ℕ} {T'' T' T : Scheme.{u}}
     Nonempty (IsBaseChangeOf h₁ e d') :=
   ⟨hb.cancel hb₂⟩
 
+/-! #### Preliminaries for the gluing
+
+Six small declarations, all PROVEN, out of which
+`exists_jValueOnAffine_of_localModels` is assembled.  Three of them are
+`Eq.rec` transports that exist for one reason only, and it is worth
+recording because it is invisible from the statement of the leaf:
+
+**`Mathlib`'s sheaf condition is indexed by a SET, the leaf's cover by a
+`Fin n`-FAMILY, and the two do not line up definitionally.**
+`Localization.existsUnique_algebraMap_eq_of_span_eq_top` takes
+`s : Set R` and a family `f : Π x : ↥s, Localization.Away x.1`; the leaf
+supplies `a : Fin n → R` with `Ideal.span (Set.range a) = ⊤`.  Choosing,
+for each `x : ↥(Set.range a)`, an index `ix x` with `a (ix x) = x.1`
+gives a family only after transporting along that equation, and every
+statement about it has to be moved back and forth.  `away_transport_eq`,
+`away_transport_val` and `away_transport_compat` are those moves; each is
+`subst`-then-`id`.
+
+Note the DELIBERATE asymmetry in what the rest of the proof asserts: it
+never claims `algebraMap R (Away (a i)) r = (V i).j` for an ARBITRARY
+`i : Fin n`, only for `i` of the form `ix x`.  That is not laziness — the
+stronger form does not follow, since two indices `i ≠ i'` with
+`a i = a i'` are indistinguishable to `Set.range a` while `V i` and
+`V i'` are a priori different curves.  (It is in fact true, because
+`Away (a i) → Away (a i * a i')` is then an isomorphism, but proving that
+is pure overhead.)  Every use downstream is at an index `ix x`, so the
+weaker form suffices. -/
+
+/-- **The point of the `j`-line over an affine base with a prescribed
+coordinate** (PROVEN) — the inverse of `jLineCoord`.
+
+`jLine = Spec ℚ[X]` and `Spec` is fully faithful, so a point of the
+`j`-line over `g : Spec R ⟶ Spec ℚ` is a `ℚ`-algebra map `ℚ[X] ⟶ R`; the
+one sending `X ↦ r` is `Polynomial.eval₂RingHom (Spec.preimage g).hom r`,
+and it lies over `g` because it agrees with `Spec.preimage g` on the
+constants. -/
+noncomputable def jLinePointOfCoord {R : Type} [CommRing R]
+    (g : Spec (CommRingCat.of R) ⟶ SpecQ) (r : R) : RelPoint jLineStr g :=
+  ⟨Spec.map (CommRingCat.ofHom (Polynomial.eval₂RingHom (Spec.preimage g).hom r)), by
+    have h : CommRingCat.ofHom (algebraMap ℚ (Polynomial ℚ)) ≫
+        CommRingCat.ofHom (Polynomial.eval₂RingHom (Spec.preimage g).hom r)
+        = Spec.preimage g := CommRingCat.hom_ext (RingHom.ext fun q => by simp)
+    rw [jLineStr, ← Spec.map_comp, h, Spec.map_preimage]⟩
+
+/-- `jLineCoord` really is inverse to `jLinePointOfCoord` (PROVEN). -/
+theorem jLineCoord_jLinePointOfCoord {R : Type} [CommRing R]
+    (g : Spec (CommRingCat.of R) ⟶ SpecQ) (r : R) :
+    jLineCoord (jLinePointOfCoord g r) = r := by
+  rw [jLineCoord, jLinePointOfCoord, Spec.preimage_map]
+  simp
+
+/-- Transport of an equation between `algebraMap`-images along `b = x`
+(PROVEN, by `subst`). -/
+theorem away_transport_eq {R : Type} [CommRing R] {b x : R} (h : b = x) (u v : R) :
+    algebraMap R (Localization.Away b) u = algebraMap R (Localization.Away b) v →
+      algebraMap R (Localization.Away x) u = algebraMap R (Localization.Away x) v := by
+  subst h; exact id
+
+/-- Transport of a value equation back across `b = x` (PROVEN, by
+`subst`). -/
+theorem away_transport_val {R : Type} [CommRing R] {b x : R} (h : b = x)
+    (z : Localization.Away b) (w : R) :
+    algebraMap R (Localization.Away x) w = h ▸ z →
+      algebraMap R (Localization.Away b) w = z := by
+  subst h; exact id
+
+/-- Transport of the overlap-compatibility condition (PROVEN, by
+`subst`). -/
+theorem away_transport_compat {R : Type} [CommRing R] {b c x y : R}
+    (h : b = x) (h' : c = y) (z : Localization.Away b) (z' : Localization.Away c) :
+    IsLocalization.Away.awayToAwayRight (P := Localization.Away (b * c)) b c z
+        = IsLocalization.Away.awayToAwayLeft c b z' →
+      IsLocalization.Away.awayToAwayRight (P := Localization.Away (x * y)) x y (h ▸ z)
+        = IsLocalization.Away.awayToAwayLeft y x (h' ▸ z') := by
+  subst h; subst h'; exact id
+
+/-- **The workhorse of the gluing** (PROVEN): the `j` of a local model is
+carried to the `j` of any model upstairs by any ring map that factors the
+structure map.
+
+Precisely: `Dl` is a base change of `d` along `αL : R →+* L` with model
+`Vl`; `e` is a base change of `d` along `ψ : R →+* T` with model `W'`;
+and `β : L →+* T` satisfies `β ∘ αL = ψ`.  Then `β Vl.j = W'.j`.
+
+`hcancel` makes `e` a base change of `Dl` along `Spec β` — this is the
+step for which nothing else at this pin serves, and it is why `hcancel`
+is in the hypothesis list — then `hmodel` pushes `Vl` up to a model
+`Vl.map β` of `e.ab`, `huniq` compares it with `W'`, and
+`WeierstrassCurve.map_j` reads off the value.
+
+**All four obligations of the leaf are this lemma at different
+instantiations**: the overlap step (`β` a localization map between basic
+opens), both pinning clauses, and uniqueness.  That is the whole reason
+the leaf's hypothesis list is what it is. -/
+theorem jvalue_key
+    (huniq : ∀ {R : Type} [CommRing R] {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)}
+      (ab : AbelianSchemeStruct f) (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic],
+      IsWeierstrassModel ab W → IsWeierstrassModel ab W' → W.j = W'.j)
+    (hmodel : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
+      {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+      {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))},
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d →
+      ∀ (W : WeierstrassCurve R), IsWeierstrassModel d.ab W →
+        IsWeierstrassModel d'.ab (W.map φ))
+    (hcancel : ∀ {T'' T' T : Scheme.{0}} {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T}
+      {e : Gamma0Datum 1 T''} {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+      IsBaseChangeOf (h₁ ≫ h₂) e d → IsBaseChangeOf h₂ d' d →
+      Nonempty (IsBaseChangeOf h₁ e d'))
+    {R : Type} [CommRing R] {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+    {L : Type} [CommRing L] (αL : R →+* L)
+    {Dl : Gamma0Datum 1 (Spec (CommRingCat.of L))}
+    (hbcL : IsBaseChangeOf (Spec.map (CommRingCat.ofHom αL)) Dl d)
+    (Vl : WeierstrassCurve L) [Vl.IsElliptic] (hmodL : IsWeierstrassModel Dl.ab Vl)
+    {T : Type} [CommRing T] {ψ : R →+* T}
+    {e : Gamma0Datum 1 (Spec (CommRingCat.of T))}
+    (hbe : IsBaseChangeOf (Spec.map (CommRingCat.ofHom ψ)) e d)
+    (W' : WeierstrassCurve T) [W'.IsElliptic] (hmW' : IsWeierstrassModel e.ab W')
+    (β : L →+* T) (hβ : β.comp αL = ψ) :
+    β Vl.j = W'.j := by
+  have hsq : Spec.map (CommRingCat.ofHom β) ≫ Spec.map (CommRingCat.ofHom αL)
+      = Spec.map (CommRingCat.ofHom ψ) := by
+    rw [← Spec.map_comp]
+    exact congrArg Spec.map (CommRingCat.hom_ext hβ)
+  have hbe' : IsBaseChangeOf (Spec.map (CommRingCat.ofHom β) ≫
+      Spec.map (CommRingCat.ofHom αL)) e d := by rw [hsq]; exact hbe
+  obtain ⟨bc⟩ := hcancel hbe' hbcL
+  have hm := hmodel β bc Vl hmodL
+  have hj := huniq e.ab (Vl.map β) W' hm hmW'
+  rwa [WeierstrassCurve.map_j] at hj
+
+/-- **The overlap step** (PROVEN): the two local `j`-values agree on
+`R[1/(bc)]`.
+
+`Vb.j` and `Vc.j` are pushed into `Localization.Away (b * c)` by
+`IsLocalization.Away.awayToAwayRight` / `awayToAwayLeft`, whose defining
+property `awayToAway*_eq` says exactly that they factor the structure
+map `R ⟶ R[1/(bc)]`.  A datum over `R[1/(bc)]` restricting `Db` comes
+from `exists_gamma0Datum_baseChange` — **note that the leaf's hypothesis
+list contains no producer of base changes, so this call is essential and
+was missing from the leaf's original account of the argument** — and
+`jvalue_key` at `β = awayToAwayLeft` finishes. -/
+theorem jvalue_compat_aux
+    (huniq : ∀ {R : Type} [CommRing R] {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)}
+      (ab : AbelianSchemeStruct f) (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic],
+      IsWeierstrassModel ab W → IsWeierstrassModel ab W' → W.j = W'.j)
+    (hmodel : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
+      {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+      {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))},
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d →
+      ∀ (W : WeierstrassCurve R), IsWeierstrassModel d.ab W →
+        IsWeierstrassModel d'.ab (W.map φ))
+    (hcancel : ∀ {T'' T' T : Scheme.{0}} {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T}
+      {e : Gamma0Datum 1 T''} {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+      IsBaseChangeOf (h₁ ≫ h₂) e d → IsBaseChangeOf h₂ d' d →
+      Nonempty (IsBaseChangeOf h₁ e d'))
+    {R : Type} [CommRing R] {d : Gamma0Datum 1 (Spec (CommRingCat.of R))} (b c : R)
+    {Db : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away b)))}
+    (hbcB : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away b)))) Db d)
+    (Vb : WeierstrassCurve (Localization.Away b)) [Vb.IsElliptic]
+    (hmodB : IsWeierstrassModel Db.ab Vb)
+    {Dc : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away c)))}
+    (hbcC : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away c)))) Dc d)
+    (Vc : WeierstrassCurve (Localization.Away c)) [Vc.IsElliptic]
+    (hmodC : IsWeierstrassModel Dc.ab Vc) :
+    IsLocalization.Away.awayToAwayRight (P := Localization.Away (b * c)) b c Vb.j
+      = IsLocalization.Away.awayToAwayLeft c b Vc.j := by
+  have hβR : (IsLocalization.Away.awayToAwayRight (S := Localization.Away b)
+        (P := Localization.Away (b * c)) b c).comp (algebraMap R (Localization.Away b))
+      = algebraMap R (Localization.Away (b * c)) :=
+    RingHom.ext fun u => IsLocalization.Away.awayToAwayRight_eq b c u
+  have hβL : (IsLocalization.Away.awayToAwayLeft (S := Localization.Away c)
+        (P := Localization.Away (b * c)) c b).comp (algebraMap R (Localization.Away c))
+      = algebraMap R (Localization.Away (b * c)) :=
+    RingHom.ext fun u => IsLocalization.Away.awayToAwayLeft_eq c b u
+  obtain ⟨e, ⟨bce⟩⟩ := exists_gamma0Datum_baseChange
+    (Spec.map (CommRingCat.ofHom (IsLocalization.Away.awayToAwayRight
+      (S := Localization.Away b) (P := Localization.Away (b * c)) b c))) Db
+  have hme := hmodel (IsLocalization.Away.awayToAwayRight
+    (S := Localization.Away b) (P := Localization.Away (b * c)) b c) bce Vb hmodB
+  have hbe : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (b * c))))) e d := by
+    have h0 := bce.comp hbcB
+    have hsq : Spec.map (CommRingCat.ofHom (IsLocalization.Away.awayToAwayRight
+          (S := Localization.Away b) (P := Localization.Away (b * c)) b c)) ≫
+        Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away b)))
+        = Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (b * c)))) := by
+      rw [← Spec.map_comp]
+      exact congrArg Spec.map (CommRingCat.hom_ext hβR)
+    rwa [hsq] at h0
+  have hkey := jvalue_key huniq hmodel hcancel (algebraMap R (Localization.Away c))
+    hbcC Vc hmodC hbe _ hme
+    (IsLocalization.Away.awayToAwayLeft (S := Localization.Away c)
+      (P := Localization.Away (b * c)) c b) hβL
+  rw [WeierstrassCurve.map_j] at hkey
+  exact hkey.symm
+
+/-- **The second pinning clause, checked on one basic open** (PROVEN).
+
+Given a base change `d''` of `d` along `φ : R →+* S` with a model `W'`
+over `S`, and a local model `Vb` over `R[1/b]` whose `j` is the image of
+`r`, the images of `φ r` and of `W'.j` in `S[1/φ b]` agree.
+
+Both sides are computed as `Localization.awayMap φ b` applied to `Vb.j`:
+the left because `awayMap` factors the structure maps
+(`IsLocalization.map_comp`), the right by `jvalue_key` at
+`β = awayMap φ b`, whose datum over `S[1/φ b]` again comes from
+`exists_gamma0Datum_baseChange`.  This is the step that forced `hmodel`
+and `hcancel` into the leaf's hypothesis list: it must PRODUCE a model
+over `S[1/φ b]`, which a comparison principle cannot do. -/
+theorem jvalue_clause2_aux
+    (huniq : ∀ {R : Type} [CommRing R] {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)}
+      (ab : AbelianSchemeStruct f) (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic],
+      IsWeierstrassModel ab W → IsWeierstrassModel ab W' → W.j = W'.j)
+    (hmodel : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
+      {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+      {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))},
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d →
+      ∀ (W : WeierstrassCurve R), IsWeierstrassModel d.ab W →
+        IsWeierstrassModel d'.ab (W.map φ))
+    (hcancel : ∀ {T'' T' T : Scheme.{0}} {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T}
+      {e : Gamma0Datum 1 T''} {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+      IsBaseChangeOf (h₁ ≫ h₂) e d → IsBaseChangeOf h₂ d' d →
+      Nonempty (IsBaseChangeOf h₁ e d'))
+    {R : Type} [CommRing R] {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
+    {S : Type} [CommRing S] (φ : R →+* S)
+    {d'' : Gamma0Datum 1 (Spec (CommRingCat.of S))}
+    (hbd'' : IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d'' d)
+    (W' : WeierstrassCurve S) [W'.IsElliptic] (hmW' : IsWeierstrassModel d''.ab W')
+    (b : R) {Db : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away b)))}
+    (hbcB : IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away b)))) Db d)
+    (Vb : WeierstrassCurve (Localization.Away b)) [Vb.IsElliptic]
+    (hmodB : IsWeierstrassModel Db.ab Vb)
+    (r : R) (hr : algebraMap R (Localization.Away b) r = Vb.j) :
+    algebraMap S (Localization.Away (φ b)) (φ r)
+      = algebraMap S (Localization.Away (φ b)) W'.j := by
+  have hy : Submonoid.powers b ≤ (Submonoid.powers (φ b)).comap φ := by
+    rintro _ ⟨m, rfl⟩
+    exact ⟨m, by simp⟩
+  have hβ : (Localization.awayMap φ b).comp (algebraMap R (Localization.Away b))
+      = (algebraMap S (Localization.Away (φ b))).comp φ := IsLocalization.map_comp hy
+  obtain ⟨e, ⟨bce⟩⟩ := exists_gamma0Datum_baseChange
+    (Spec.map (CommRingCat.ofHom (algebraMap S (Localization.Away (φ b))))) d''
+  have hme := hmodel (algebraMap S (Localization.Away (φ b))) bce W' hmW'
+  have hbe : IsBaseChangeOf (Spec.map (CommRingCat.ofHom
+      ((algebraMap S (Localization.Away (φ b))).comp φ))) e d := by
+    have h0 := bce.comp hbd''
+    rw [← Spec.map_comp] at h0
+    exact h0
+  have hkey := jvalue_key huniq hmodel hcancel (algebraMap R (Localization.Away b))
+    hbcB Vb hmodB hbe _ hme (Localization.awayMap φ b) hβ
+  rw [WeierstrassCurve.map_j] at hkey
+  have hlhs : algebraMap S (Localization.Away (φ b)) (φ r)
+      = Localization.awayMap φ b (algebraMap R (Localization.Away b) r) :=
+    (congrArg (fun f : R →+* Localization.Away (φ b) => f r) hβ).symm
+  rw [hlhs, hr, hkey]
+
 /-- **The local `j`-values glue to a unique `j`-value over the affine
-base** (sorry leaf, step (iii) of the cut of `exists_jSectionOnAffine`).
+base** (**PROVEN 2026-07-27**; formerly a sorry leaf, step (iii) of the cut
+of `exists_jSectionOnAffine`).
+
+**TWO CORRECTIONS TO THE ACCOUNT BELOW, both found by writing the proof.**
+
+1. *The argument needs a PRODUCER of base changes, and the hypothesis list
+   has none.*  Every use of `hmodel` needs a datum over the target ring to
+   push a model onto, and neither `hloc` nor `hmodel` supplies one.  The
+   producer is `exists_gamma0Datum_baseChange`, PROVEN far earlier in this
+   file, so the leaf is fine as stated — but the account below reads as if
+   `hmodel` alone sufficed, and it does not.  It is called twice, once in
+   `jvalue_compat_aux` and once in `jvalue_clause2_aux`.
+2. *`Mathlib`'s sheaf condition is indexed by a SET and the cover here by a
+   `Fin n`-FAMILY.*  See the preliminaries subsection above for why that
+   costs three `subst` transports, and for the one place where the
+   mismatch is not merely bureaucratic: nothing here proves
+   `algebraMap R R[1/aᵢ] r = Wᵢ.j` for an ARBITRARY `i`, only for `i` in
+   the image of the choice function, because two indices with `aᵢ = aⱼ`
+   are indistinguishable to `Set.range a`.
+
+Otherwise the argument is exactly as described, and all four obligations
+turned out to be ONE lemma at four instantiations (`jvalue_key`).
 
 TRUE, and it is commutative algebra and nothing else — no elliptic curve
 enters the argument, which is the point of cutting here.
@@ -13430,8 +13992,95 @@ theorem exists_jValueOnAffine_of_localModels
       Nonempty (IsBaseChangeOf h₁ e d'))
     {R : Type} [CommRing R] (g : Spec (CommRingCat.of R) ⟶ SpecQ)
     (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) :
-    ∃! x : RelPoint jLineStr g, IsJValueOnAffine d x :=
-  sorry
+    ∃! x : RelPoint jLineStr g, IsJValueOnAffine d x := by
+  classical
+  obtain ⟨n, a, hspan, hcov⟩ := hloc d
+  choose D V hE hbcN hmodD using hcov
+  have BC : ∀ i : Fin n, IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (a i))))) (D i) d :=
+    fun i => (hbcN i).some
+  set s : Set R := Set.range a with hs
+  have hmem : ∀ x : ↥s, ∃ i : Fin n, a i = (x : R) := fun x => x.2
+  choose ix hix using hmem
+  -- the local values are a compatible family on the basic-open cover
+  have hcompat : ∀ x y : ↥s,
+      IsLocalization.Away.awayToAwayRight (P := Localization.Away ((x : R) * (y : R)))
+          (x : R) (y : R) (hix x ▸ (V (ix x)).j)
+        = IsLocalization.Away.awayToAwayLeft (y : R) (x : R) (hix y ▸ (V (ix y)).j) := by
+    intro x y
+    haveI := hE (ix x); haveI := hE (ix y)
+    exact away_transport_compat (hix x) (hix y) _ _
+      (jvalue_compat_aux huniq hmodel hcancel (a (ix x)) (a (ix y)) (BC (ix x)) (V (ix x))
+        (hmodD (ix x)) (BC (ix y)) (V (ix y)) (hmodD (ix y)))
+  -- so they glue, by the affine sheaf condition
+  obtain ⟨r, hr, -⟩ := Localization.existsUnique_algebraMap_eq_of_span_eq_top s hspan
+    (fun x => hix x ▸ (V (ix x)).j) hcompat
+  have hrk : ∀ x : ↥s, algebraMap R (Localization.Away (a (ix x))) r = (V (ix x)).j :=
+    fun x => away_transport_val (hix x) _ r (hr x)
+  -- FIRST PINNING CLAUSE
+  have hclause1 : ∀ (W : WeierstrassCurve R) [W.IsElliptic],
+      IsWeierstrassModel d.ab W → r = W.j := by
+    intro W _ hW
+    refine Localization.algebraMap_injective_of_span_eq_top s hspan ?_
+    funext x
+    show algebraMap R (Localization.Away (x : R)) r = algebraMap R (Localization.Away (x : R)) W.j
+    refine away_transport_eq (hix x) r W.j ?_
+    haveI := hE (ix x)
+    have hid : IsBaseChangeOf (Spec.map (CommRingCat.ofHom (RingHom.id R))) d d := by
+      rw [show CommRingCat.ofHom (RingHom.id R) = 𝟙 (CommRingCat.of R) from rfl, Spec.map_id]
+      exact IsBaseChangeOf.id d
+    have hkey := jvalue_key huniq hmodel hcancel (RingHom.id R) hid W hW
+      (BC (ix x)) (V (ix x)) (hmodD (ix x))
+      (algebraMap R (Localization.Away (a (ix x)))) (RingHom.comp_id _)
+    rw [hrk x]
+    exact hkey.symm
+  -- SECOND PINNING CLAUSE
+  have hclause2 : ∀ {S : Type} [CommRing S] (φ : R →+* S)
+      (d'' : Gamma0Datum 1 (Spec (CommRingCat.of S))),
+      IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d'' d →
+      ∀ (W' : WeierstrassCurve S) [W'.IsElliptic], IsWeierstrassModel d''.ab W' →
+        φ r = W'.j := by
+    intro S _ φ d'' hbd'' W' _ hmW'
+    have hspanS : Ideal.span (Set.range fun x : ↥s => φ (x : R)) = ⊤ := by
+      rw [← Set.image_eq_range, ← Ideal.map_span, hspan]
+      exact (Ideal.eq_top_iff_one _).2
+        (by simpa using Ideal.mem_map_of_mem φ (Submodule.mem_top : (1 : R) ∈ (⊤ : Ideal R)))
+    refine Localization.algebraMap_injective_of_span_eq_top _ hspanS ?_
+    funext y
+    show algebraMap S (Localization.Away (y : S)) (φ r)
+      = algebraMap S (Localization.Away (y : S)) W'.j
+    obtain ⟨x, hx⟩ := y.2
+    have hxy : φ (a (ix x)) = (y : S) := by rw [hix x]; exact hx
+    refine away_transport_eq hxy _ _ ?_
+    haveI := hE (ix x)
+    exact jvalue_clause2_aux huniq hmodel hcancel φ hbd'' W' hmW' (a (ix x))
+      (BC (ix x)) (V (ix x)) (hmodD (ix x)) r (hrk x)
+  -- ASSEMBLY
+  refine ⟨jLinePointOfCoord g r, ⟨?_, ?_⟩, ?_⟩
+  · intro W _ hW
+    rw [jLineCoord_jLinePointOfCoord]
+    exact hclause1 W hW
+  · intro S _ h g' hg d'' hbd'' W' _ hmW'
+    rw [jLineCoord_pre, jLineCoord_jLinePointOfCoord]
+    have hh : Spec.map (CommRingCat.ofHom (Spec.preimage h).hom) = h := by
+      rw [show CommRingCat.ofHom (Spec.preimage h).hom = Spec.preimage h from rfl,
+        Spec.map_preimage]
+    exact hclause2 (Spec.preimage h).hom d'' (by rw [hh]; exact hbd'') W' hmW'
+  · intro y hy
+    refine jLineCoord_injective ?_
+    rw [jLineCoord_jLinePointOfCoord]
+    refine (Localization.algebraMap_injective_of_span_eq_top s hspan ?_).symm
+    funext x
+    show algebraMap R (Localization.Away (x : R)) r
+      = algebraMap R (Localization.Away (x : R)) (jLineCoord y)
+    refine away_transport_eq (hix x) _ _ ?_
+    haveI := hE (ix x)
+    have h1 := hy.2
+      (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (a (ix x))))))
+      rfl (D (ix x)) (BC (ix x)) (V (ix x)) (hmodD (ix x))
+    rw [jLineCoord_pre, Spec.preimage_map] at h1
+    rw [hrk x, ← h1]
+    rfl
 
 /-- **Existence of the `j`-invariant of an elliptic scheme over an affine
 base** (PROVEN 2026-07-27, over the three-leaf cut of the subsection
@@ -13453,9 +14102,12 @@ the line bundle `ω = f_* Ω¹_{E/T}` and the classical formulas for
 `exists_weierstrassModel_localization`, which carries the irreducibility
 verdict; the well-definedness and functoriality of `j` are
 `weierstrassModel_j_unique`,
-`isWeierstrassModel_map_of_isBaseChangeOf` and
-`exists_isBaseChangeOf_cancel`; the gluing of the local values is
-`exists_jValueOnAffine_of_localModels`.
+`isWeierstrassModel_map_of_isBaseChangeOf` (PROVEN 2026-07-27) and
+`exists_isBaseChangeOf_cancel` (PROVEN); the gluing of the local values
+is `exists_jValueOnAffine_of_localModels` (PROVEN 2026-07-27).  **So of
+the five leaves of the cut, exactly TWO remain open**: step (i),
+`exists_weierstrassModel_localization` (which carries the irreducibility
+verdict), and `weierstrassModel_j_unique`.
 
 HOW IT IS PROVEN, and what the assembly contributes.  The gluing leaf
 returns, for every affine base, a UNIQUE point of the `j`-line satisfying
