@@ -3819,6 +3819,59 @@ that whoever does decide to cut does not have to redo the survey.
    above: what item 4 must deliver is IRREDUCIBILITY of the general section,
    not merely connectedness, or the affine restriction step does not close.
 
+**LEDGER CORRECTION 2026-07-27 (third owner) — TWO OF THE FOUR "ABSENT"
+VERDICTS ABOVE SEARCHED ONLY TWO OF THE THREE PLACES, AND BOTH ARE WRONG ABOUT
+THIS PROJECT.** Every grep recorded above ranges over `.lake/packages/mathlib`
+and `~/cs/FLT`. It does not range over `Fermat/FLT/Mathlib/`, this
+development's own mathlib-facing shim tree — which is precisely where material
+lands *because* mathlib lacks it. Re-run on all three:
+
+* **THE PROJECTIVE CLOSURE OF AN AFFINE SCHEME EXISTS HERE, AS A STATEMENT.**
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` carries
+  `ProjChart K B b` — a graded `K`-algebra `𝒜` with `Algebra.FiniteType 𝒜₀ 𝒜`
+  and `Module.Finite K 𝒜₀`, a degree-one `f`, and an identification
+  `(𝒜_f)₀ ≅ B` — together with `nonempty_projChart`, which asserts that EVERY
+  finite-type `K`-algebra has one, and `exists_isOpenImmersion_isProper_of_proj`
+  (PROVEN outright), which turns a chart into an open immersion
+  `Spec B ↪ Proj 𝒜` with `Proj 𝒜 ⟶ Spec K` proper. That is item 4's `X̄`, and
+  `H_∞` is `V₊(f)`, the complement of the chart. `exists_isOpenImmersion_isProper`
+  is the general (non-affine, non-curve) form, stated for any quasi-compact
+  separated `Y` locally of finite type over `K` — so nothing about it is
+  restricted to curves, despite the file's name.
+  `nonempty_projChart` is glue over two open leaves
+  (`nonempty_projChart_mvPolynomial`, `nonempty_projChart_of_surjective`), so
+  this is not free — but "absent, and building it is part of this leaf" is
+  false, and a prover here should CONSUME that interface rather than write a
+  second one. The refuting check that was not run:
+  `grep -rn "ProjChart\|isOpenImmersion_isProper" Fermat/`.
+
+* **`GeometricallyConnected` HAS AUXILIARY API HERE, AND A WORKED `k̄`-STYLE
+  REDUCTION.** The claim "`GeometricallyConnected` occurs in NO mathlib file
+  other than the one that defines it, so there is no auxiliary API to lean on"
+  is true of mathlib and false of this project: nine project files consume it,
+  and `geometricallyConnected_of_isSmoothCompactification`
+  (`CurveCompactification.lean`, PROVEN) transfers it along a DOMINANT map. Its
+  proof is the front door ledger item 1 says is missing — mathlib's
+  `geometrically_iff_of_isClosedUnderIsomorphisms` reduces
+  `GeometricallyConnected f` to `ConnectedSpace` of the pullback along an
+  ARBITRARY field extension `y : Spec L ⟶ Spec K`, `L = AlgebraicClosure k`
+  included, and the supporting lemmas `connectedSpace_of_denseRange`,
+  `denseRange_of_isPullback` and `universallyOpen_of_specField` are proven
+  beside it. So item 1 is not "a missing lemma at this pin" in the sense of
+  needing new theory; it is an instantiation of an idiom already exercised in
+  this repository.
+
+  Two cautions so this correction does not become the next stale note. First,
+  `geometricallyConnected_of_isSmoothCompactification` runs from the DENSE OPEN
+  to the COMPACTIFICATION; the ROUTE above needs the opposite direction, `X̄ ∩ H`
+  irreducible ⟹ its nonempty open `X ∩ H` irreducible, which is elementary
+  topology (`irreducibleSpace_of_denseRange` is the analogous lemma in the same
+  file) and is NOT what that theorem provides. Second, ledger item 2 (dimension
+  is insensitive to base field extension) and item 4's actual Bertini content
+  are UNAFFECTED by this correction — they were checked against all three trees
+  here and really are absent. **Item 4 remains the frontier; items 1 and the
+  projective-closure half of item 4 do not.**
+
    A partial base to build on: `TensorProduct.quotientTensorEquiv`
    (`Mathlib/LinearAlgebra/TensorProduct/Quotient.lean`) supplies the
    module-level half of the "base change commutes with the hyperplane
