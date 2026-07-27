@@ -9454,7 +9454,45 @@ forces the second conjunct to be carried: `α = 11 + 2i` has `N(α) = 121 + 4 = 
 `α² = 121 + 44i - 4 = 117 + 44i ≠ -125`. So `ker α` is a cyclic subgroup of order
 `125` with `E/ker α ≅ E` and yet `α² ≠ [-125]`: the first conjunct does NOT imply
 the second, and a proof of this leaf that establishes only `hker` proves something
-strictly weaker than what `End.sq_eq_neg_natCast_of_atkinLehner` consumes. -/
+strictly weaker than what `End.sq_eq_neg_natCast_of_atkinLehner` consumes.
+
+**THE `169` SIBLING IS CLOSED AND THIS ONE IS NOT — "only the numbers change" is
+now FALSE** (2026-07-27). Every audit of this cluster, including the ones above,
+treated `125` and `169` as verbatim analogues; the sibling
+`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_169` has since been PROVEN
+without any Atkin-Lehner descent at all, because `169 = 13²` is a PRIME SQUARE
+with `13 ≥ 11` and `Fermat.y0HasNoRationalPoint_isogenyPrimeSq` (`Y_0(p²)(ℚ) = ∅`
+for every prime `p ≥ 11`, PROVEN in `ModularCurve/X0.lean` over the uniform leaf
+`cuspidal_x0_isogenyPrimeSq`) applies to it directly, adding no leaf. Read that
+declaration's docstring before planning anything here: the shared framing is gone
+and only this level still needs the descent.
+
+**WHY THAT ROUTE CANNOT REACH `125` — three checks, run rather than assumed**
+(2026-07-27), so that a successor does not re-run them:
+
+* `125 = 5³` is not a prime square, so `y0HasNoRationalPoint_isogenyPrimeSq`
+  does not apply at any `p`;
+* every proper divisor of `125` — `1`, `5`, `25` — lies in the Mazur-Kenku list
+  `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`, i.e. `Y_0(M)(ℚ) ≠ ∅` for each, so
+  `y0HasNoRationalPoint_of_dvd` has no usable divisor (contrast `81`, whose
+  route is a `j`-pin at `27`, not a divisor descent);
+* `125 ∉ kenkuLevels = [20, 24, 28, 30, 36, 42, 45, 50, 54, 63, 75]`, so
+  `hasRankZeroJacobian_of_kenkuLevel` and the level-`32` counting chain have a
+  false hypothesis here — consistent with the recorded `rank J_0(125)(ℚ) = 2`.
+
+So `125` is the ONLY prime-power level in this file with no uniform route, and
+this leaf really does still need `rank J_0(125)^-(ℚ) = 0`. Refuting check: find a
+proven `Y0HasNoRationalPoint M` in the tree with `M ∣ 125`, or a proven
+`Y0HasNoRationalPoint 125` from any source, and this leaf closes in two lines
+exactly as `169` did — at the cost the "DO NOT ROUTE THROUGH `X0.lean`" note
+under `classPoly500_of_stable_cyclic_subgroup_order_125` describes, which is a
+cost only because such a theorem would there be a NEW leaf.
+
+**Two stale cross-references elsewhere, reported not repaired** (they are in
+other declarations' docstrings): the sibling's former "only the numbers change",
+now corrected in place; and `classPoly500_of_stable_cyclic_subgroup_order_125`'s
+"Same verdict at level `169`, genus `8`, for the same reason", which is false as
+of today. -/
 theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
@@ -12581,8 +12619,9 @@ theorem classPoly676_no_rat_root (x : ℚ)
 
 end MazurLevel169
 
-/-- **Atkin-Lehner fixedness at level `169`, in isogeny vocabulary** (LEAF, cut
-2026-07-26 off `exists_endSq_neg169_of_stable_cyclic_subgroup_order_169`).
+/-- **Atkin-Lehner fixedness at level `169`, in isogeny vocabulary** (PROVEN
+2026-07-27 from `False`; formerly a LEAF cut 2026-07-26 off
+`exists_endSq_neg169_of_stable_cyclic_subgroup_order_169`).
 
 The exact analogue of
 `exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125` one level cluster
@@ -12602,23 +12641,57 @@ cyclic `169`-isogeny. The cut is a reduction rather than a renaming for the same
 reason as at `125`: the CM/trace algebra is now discharged elsewhere, so this
 leaf carries only the modular content.
 
-**AUDIT RE-RUN 2026-07-27 — see the level-`125` leaf for the full re-run; every
-finding there applies here verbatim.** In summary: `X0.lean` HAS grown a
-compactification (`IsX0Compactification`), cusps (`numRationalCusps`,
-`exists_rationalCusps`) and a Jacobian (`IsJacobianOf`, carrying the Abel-Jacobi
-map), so the parent's "cannot express the descent even in principle" is stale;
-what remains genuinely absent is divisors and the Atkin-Lehner involution
-itself.
+**PROVEN 2026-07-27, AND NOT BY THE ATKIN-LEHNER DESCENT. THIS IS THE ONE PLACE
+WHERE `125` AND `169` PART COMPANY.** The level-`125` docstring's "every finding
+there applies here verbatim; only the numbers change" was the load-bearing
+premise of every audit of this node, and it is FALSE. `169 = 13²` is a PRIME
+SQUARE with `13 ≥ 11`, and `Fermat.y0HasNoRationalPoint_isogenyPrimeSq` —
+`Y_0(p²)(ℚ) = ∅` for EVERY prime `p ≥ 11`, already PROVEN in
+`Fermat/FLT/ModularCurve/X0.lean` over the single uniform leaf
+`cuspidal_x0_isogenyPrimeSq` — therefore applies at `p = 13` directly. Composed
+with the bridge `Fermat.false_of_stable_of_y0HasNoRationalPoint`, whose
+hypothesis triple `(g, hg, hstable)` is verbatim this leaf's, it refutes these
+hypotheses outright, and the (vacuously true) conclusion follows from `False`.
 
-The one figure that differs is the rank, and it blocks the same route: `X0.lean`'s
-`HasRankZeroJacobian` asserts `rank J_0(N)(ℚ) = 0`, whereas
-`rank J_0(169)(ℚ) = 3` (section note above), so the counting chain
-`y0HasNoRationalPoint_of_witnessPrime` / `card_le_of_rankZeroJacobian` that
-closed level `32` has a FALSE hypothesis here and cannot be instantiated —
-`169` is not in `kenkuLevels` either. What this leaf needs is the **minus-part**
-input `rank J_0(169)^-(ℚ) = 0`, a different predicate that exists nowhere in the
-tree. Refuting check: exhibit `rank J_0(169)(ℚ) = 0` and the counting route
-reopens. -/
+**Accounting: this closure adds NO new leaf and relocates nothing.**
+`cuspidal_x0_isogenyPrimeSq` already existed before this proof and is already
+consumed elsewhere in this very file, by
+`not_two_stable_lines_of_jInvariant` — so the tree strictly loses one open
+leaf. That is the precise respect in which the level-`125` objection below
+("DO NOT ROUTE THIS NODE THROUGH `X0.lean`") does **not** transfer: its
+load-bearing premise is that `Y0HasNoRationalPoint 125` would be a NEW leaf
+swallowing the already-PROVEN class-number half. At `169` that premise fails,
+because `Y0HasNoRationalPoint 169` is *not* new — it is a corollary of a
+theorem that is uniform in `p` and was proven for other reasons.
+
+**WHY IT DOES NOT TRANSFER TO `125`** (checked, not assumed): `125 = 5³` is not
+a prime square, so `y0HasNoRationalPoint_isogenyPrimeSq` cannot apply; its
+proper divisors `1, 5, 25` all lie in the Mazur-Kenku list, so
+`y0HasNoRationalPoint_of_dvd` cannot apply; and `125 ∉ kenkuLevels`, so
+`hasRankZeroJacobian_of_kenkuLevel` cannot apply. Level `125` therefore remains
+a genuine atom and its audit below stands unamended.
+
+**FORMAL-CONTENT AUDIT — read before consuming this declaration.** Its proof
+derives `False` from its own hypotheses; it carries NO Atkin-Lehner content of
+its own, and the `ψ` it produces is obtained from `False.elim`, not built. The
+Atkin-Lehner/CM apparatus downstream of it (`sq_eq_neg_natCast_of_atkinLehner`,
+`not_exists_thirteen_mul_of_ker_order_169`, `classPoly676_no_rat_root`) is
+therefore no longer load-bearing at this level, even though it is still
+syntactically consumed by `classPoly676_of_stable_cyclic_subgroup_order_169`.
+The consequence worth acting on is recorded there and not here: with
+`Y0HasNoRationalPoint 169` available, `not_cyclicIsogeny_oneHundredSixtyNine`
+can be proven in one line directly from the bridge, which would additionally
+retire the remaining level-`169` leaf
+`classPoly676_of_endSq_neg169`. That is a cut-level decision about another
+owner's declarations and is deliberately NOT taken here.
+
+Refuting check for this whole paragraph block: if
+`y0HasNoRationalPoint_isogenyPrimeSq` is ever restricted away from `p = 13`, or
+`cuspidal_x0_isogenyPrimeSq` is refuted, this proof breaks and the
+Atkin-Lehner route is the only one left. The stale claim it replaced — that
+this leaf needs the minus-part input `rank J_0(169)^-(ℚ) = 0`, a predicate that
+exists nowhere in the tree — remains true of the *descent* route and of level
+`125`, and false as a statement about what THIS leaf needs. -/
 theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_169
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 169)
@@ -12634,8 +12707,17 @@ theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_1
         = AddSubgroup.zmultiples g ∧
       (fun P => (ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P) ''
           {P : (E⁄(AlgebraicClosure ℚ)).Point | (169 : ℕ) • P = 0}
-        = (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point) :=
-  sorry
+        = (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point) := by
+  -- `169 = 13²` with `13 ≥ 11` prime, so `Y_0(169)(ℚ) = ∅` by Kenku's uniform
+  -- prime-square theorem, already proven in `ModularCurve/X0.lean`.
+  have hY : Fermat.Y0HasNoRationalPoint 169 := by
+    have h169 : (169 : ℕ) = 13 ^ 2 := by norm_num
+    rw [h169]
+    exact Fermat.y0HasNoRationalPoint_isogenyPrimeSq (by norm_num) (by norm_num)
+  -- The bridge takes the Galois-stable cyclic subgroup `⟨g⟩` of order `169` to a
+  -- rational point of that empty coarse space.
+  exact (Fermat.false_of_stable_of_y0HasNoRationalPoint hY E g hg hstable
+    (by norm_num)).elim
 
 /-- **The Atkin-Lehner descent at level `169`, in isogeny vocabulary** (PROVEN
 2026-07-26 over the cut just above; formerly a LEAF, and the half of Kenku's
