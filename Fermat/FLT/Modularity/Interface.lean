@@ -27426,6 +27426,30 @@ theorem exists_ringHom_heckeField_of_qCoeff_eq {N M : ℕ} (hM : 0 < M)
     Algebra.IsAlgebraic.of_finite ℚ _
   haveI : Algebra.IsAlgebraic E₀ (heckeField M g) :=
     Algebra.IsAlgebraic.tower_top (K := ℚ) E₀
+  -- MERGE REGRESSION REPAIR (2026-07-27, twelfth owner of the `3`-adic gate
+  -- cluster; NOT a resource bump). `IsAlgClosed.lift` needs
+  -- `[IsTorsionFree E₀ (AlgebraicClosure ℚ_[p])]`. The instance is TRUE and
+  -- trivial — `E₀` is a field, so `algebraMap` out of it is injective — but the
+  -- SEARCH for it goes through the mutually recursive pair
+  -- `FaithfulSMul.to_isTorsionFree` (prio 100) / `IsTorsionFree.to_faithfulSMul`
+  -- (prio 101) with the `Algebra E₀ (AlgebraicClosure ℚ_[p])` instance supplied
+  -- locally by `.toAlgebra`, which makes unification expensive. That search fit
+  -- inside the default 20000 `synthInstance` heartbeats until this module's
+  -- import cone grew: `Interface.lean` imports `Modularity.KhareWintenberger`,
+  -- which as of the quaternionic vendoring `public import`s
+  -- `AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete` and its 109-module
+  -- closure. `Interface.lean` itself was NOT edited by that merge (its diff
+  -- across it is empty) — only its instance set changed, and this synthesis
+  -- tipped over into `(deterministic) timeout at typeclass`.
+  --
+  -- Supplying the instance by an explicit term removes the search rather than
+  -- widening its budget, so it is stable against further cone growth. Do NOT
+  -- replace this with `set_option synthInstance.maxHeartbeats`.
+  haveI : FaithfulSMul E₀ (AlgebraicClosure ℚ_[p]) :=
+    (faithfulSMul_iff_algebraMap_injective E₀ (AlgebraicClosure ℚ_[p])).2
+      (RingHom.injective _)
+  haveI : Module.IsTorsionFree E₀ (AlgebraicClosure ℚ_[p]) :=
+    FaithfulSMul.to_isTorsionFree E₀ (AlgebraicClosure ℚ_[p])
   let κa : heckeField M g →ₐ[E₀] AlgebraicClosure ℚ_[p] := IsAlgClosed.lift
   refine ⟨κa.toRingHom, fun q hq hqN => ?_⟩
   have hmem : qCoeff N f q ∈ E₀ :=
@@ -43960,14 +43984,95 @@ the `s = 1` shape the audit below shows ramification cannot exclude:
 Cross-checked in Magma: over the degree-`72` field defined by `h`,
 `Factorization(Y³ − 3)` returns one irreducible factor of degree `3`.
 
-THE CHECK THAT WOULD REFUTE THIS SECOND ITEM, stated because a bare
-"family ruled out" is not refutable: the computation above covers
-`ℚ_3(x)` for ONE primitive `9`-torsion point, not the full
-`ℚ_3(F[9])`, which is its Galois closure and has degree up to
-`|GL₂(ℤ/9)| = 3888`. A Magma `SplittingField` of `[9](X)/X` did not
-finish in 9 minutes and was abandoned; whether `3^{1/3} ∈ ℚ_3(F[9])`
-is therefore still OPEN, and a positive answer would REFUTE this leaf.
-That is the single cheapest experiment a next owner can run.
+THAT OPEN CHECK IS NOW **RESOLVED, NEGATIVELY** — AND THE WHOLE
+LUBIN–TATE FAMILY IS RULED OUT AT `s = 1`, FOR EVERY `p` AND EVERY `n`
+(twelfth owner, 2026-07-27; structural, no CAS needed, and it also
+retires the abandoned Magma `SplittingField` run). The paragraph that
+stood here recorded `3^{1/3} ∈ ℚ_3(F[9])` as OPEN, because the
+computation above covers `ℚ_3(x)` for ONE primitive `9`-torsion point
+rather than the full Galois closure `ℚ_3(F[9])`, whose degree it
+bounded by `|GL₂(ℤ/9)| = 3888`. Both halves of that are superseded.
+
+**The degree bound was far too generous.** `f(X) = 3X + X⁹` satisfies
+the Lubin–Tate conditions for the UNRAMIFIED QUADRATIC extension
+`ℚ_9 = W(𝔽_9)[1/3]`: `𝒪 = ℤ_9`, `π = 3`, `q = 9`, `f ≡ πX` mod
+`deg 2` and `f ≡ X^q` mod `π`. So `F` is the LT formal `ℤ_9`-module
+for `(ℚ_9, 3)`, of height 1 over `ℤ_9` and hence height 2 over `ℤ_3`,
+and it is defined over `ℤ_3` because `f` is. Consequently
+`L := ℚ_9(F[9]) = ℚ_9(F[π²])` is ABELIAN over `ℚ_9` with
+`Gal(L/ℚ_9) ≅ (ℤ_9/9)ˣ` of order `81 − 9 = 72`, acting simply
+transitively on the 72 primitive points; so `L = ℚ_9(x)` for the very
+`x` used above, `[L : ℚ_3] = 144`, and
+
+    ℚ_3(F[9]) ⊆ L,     [ℚ_3(F[9]) : ℚ_3] ∣ 144,
+
+not 3888. (The image of `Γ_{ℚ_3}` lands in the normaliser of the
+nonsplit Cartan `(ℤ_9/9)ˣ ⋊ Gal(ℚ_9/ℚ_3)`, which is why.)
+
+**The refutation then dies on upper numbering, in one line.** Lubin–Tate
+theory gives the upper ramification breaks of `E(F[π^n])/E` exactly:
+`G^{(u)} = U^{(i)}/U^{(n)}` for `i − 1 < u ≤ i` (Serre, *Local Fields*
+XV §2), so the breaks are `0, 1, …, n − 1` and `G^{(u)} = 1` for
+`u > n − 1`. At `n = 2`: `G^{(u)} = 1` for `u > 1`. And the upper
+filtration of `L/ℚ_3` COINCIDES with that of `L/ℚ_9`, because
+`ℚ_9/ℚ_3` is unramified: `L/ℚ_9` is totally ramified of degree
+`72 = e(L/ℚ_3)`, so `G_0(L/ℚ_3) = Gal(L/ℚ_9)`, the lower groups
+`G_i = {σ : v_L(σa − a) ≥ i + 1}` are literally the same subgroups for
+every `i ≥ 0`, hence so is `φ` and hence so is `G^{(u)}`. Therefore
+
+    max upper break of `L/ℚ_3` = 1.
+
+But `ℚ_3(μ_3, 3^{1/3})` has max upper break `φ(3) = 3/2` (the très
+ramifiée computation above: `d = 11`, `G_0 = S₃`, `G_1 = G_2 = G_3 =
+ℤ/3`, `G_4 = 1`). Upper numbering passes to QUOTIENTS (Herbrand), so
+no subfield of `L` can have a break above 1.
+
+Now run the contradiction INSIDE `L`, not inside `ℚ_3(F[9])` — that is
+what keeps the argument free of any determinant/Weil-pairing input.
+`L/ℚ_3` is Galois (`ℚ_9/ℚ_3` is, and `F[9]` is a `Γ_{ℚ_3}`-stable set
+because `f ∈ ℤ_3[[X]]`). So if `3^{1/3} ∈ ℚ_3(F[9]) ⊆ L`, then `L`
+contains every conjugate of `3^{1/3}`, hence `μ_3`, hence the whole of
+`ℚ_3(μ_3, 3^{1/3})` — a subfield of break `3/2 > 1`. Contradiction.
+**So `3^{1/3} ∉ ℚ_3(F[9])`: the height-2 Lubin–Tate family produces no
+counterexample at `n = 2`, and this leaf survives it.**
+
+INDEPENDENT NUMERICAL CONFIRMATION of the filtration used (arithmetic
+only, from the Eisenstein `h` above, so it does not reuse the LT
+theorem it checks). With `v(x) = 1`, `v(3) = 72`, `g(X) = X⁹ + 3X`:
+`v(g(x)) = 9` (matching `π⁸ = −3`), and `g'(x) = 9x⁸ + 3 = 3(3x⁸ + 1)`
+with `3x⁸ + 1` a unit, so `v(g'(x)) = 72`. From
+`h'(X) = 8·g(X)⁷·g'(X)` the different exponent is
+`d = 7·9 + 72 = 135`. That is exactly `Σ_i (|G_i| − 1)` for
+`G_0 = 72`, `G_1 = ⋯ = G_8 = 9`, `G_9 = 1` — i.e. `71 + 8·8 = 135` —
+whose Herbrand transform is `φ(8) = (9/72)·8 = 1`. Max upper break 1,
+as claimed.
+
+**GENERALISATION, and this is the part worth carrying forward.** The
+argument used nothing special about `p = 3` or `n = 2`. For any `E`
+unramified over `ℚ_p` and any LT module for `(E, p)`, the field
+`ℚ_p(F[p^n])` has max upper break `n − 1` — the SAME as `ℚ_p(μ_{p^n})`,
+and short of Fontaine's threshold `n − 1 + 1/(p−1)` by exactly the
+constant `1/(p−1)`. Combining with the level-`j` très ramifiée core
+computed in the next block (`j = n − s`, top break `j + 1/(p−1)`):
+`ℚ_p(q^{1/p^n}) ⊆ ℚ_p(F[p^n])` forces
+`n − s + 1/(p−1) ≤ n − 1`, i.e. `s ≥ 1 + 1/(p−1)`. Hence
+
+* `s = 1` — **the whole Lubin–Tate family is excluded, every `p`,
+  every `n`.** In particular at `n = 2` it is excluded outright, since
+  `0 < s < n` leaves only `s = 1`.
+* `s ≥ 2` (so `n ≥ 3`) — NOT excluded by upper numbering. That, not
+  `n = 2`, is where a next counterexample search should go; the
+  smallest case is `p = 3`, `n = 3`, `s = 2`, i.e. `v₃(q) = 9m` with
+  `3 ∤ m` inside `ℚ_3(F[27])`.
+
+THE CHECK THAT WOULD REFUTE THE ABOVE: exhibit a subfield of
+`L = ℚ_9(F[π²])` with an upper ramification break exceeding 1; or show
+`f = 3X + X⁹` fails the Lubin–Tate conditions for `(𝒪, π, q) =
+(ℤ_9, 3, 9)`; or show `[L : ℚ_9] ≠ 72`, which would break the
+identification `L = ℚ_9(x)` and with it the different check `d = 135`.
+Any one of the three reopens `n = 2`. Note that NONE of them is a
+statement about `ℚ_3(F[9])` itself: the argument deliberately never
+computes that field, only the Galois `L` above it.
 
 WHY NO SHARPENING OF FONTAINE'S CONSTANT CAN CLOSE THE `s ≥ 1` CASE
 (third owner, 2026-07-26 — the structural form of the numerical gap the
