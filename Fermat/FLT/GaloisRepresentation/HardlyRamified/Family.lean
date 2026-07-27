@@ -3454,10 +3454,14 @@ leaf is (R1), the Raynaud dévissage.
      the Cartier-duality construction of
      `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` (which
      is complete and sorry-free, biduality and all three examples
-     included). What is still OPEN is not (R3) but its two inputs, which
-     are separate leaves in that same file with their own owners:
-     `HopfAlgebra.IsShortExact.cartierDual` (Cartier duality is exact)
-     and `HopfAlgebra.etale_of_isShortExact` (étale-by-étale is étale).
+     included). Its two inputs `HopfAlgebra.IsShortExact.cartierDual`
+     and `HopfAlgebra.etale_of_isShortExact` are ALSO PROVEN as of
+     2026-07-27 — an earlier version of this sentence called them open
+     leaves "with their own owners", and both halves of that were wrong;
+     see the corrected inventory in the docstring of
+     `exists_unramified_grouplike_family_generating_corner` below for
+     what is actually open beneath them (four leaves in `ShortExact.lean`)
+     and for why ownership must never be asserted in prose here.
      Consuming (R3) here is still blocked on `IsShortExact` being
      established for this cluster's dévissage, i.e. on (R1).
 (R4) *multiplicative type ⟹ unramified character group*: **PROVEN
@@ -3777,24 +3781,61 @@ that would unblock it. Nothing here changes the statement.
        `HopfAlgebra.isMultiplicativeType_of_isShortExact` in
        `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, which
        is literally `etale_of_isShortExact h.cartierDual h' h''`.
-     * WHAT IS ACTUALLY OPEN, and these are the two dispatchable leaves —
-       both in `ShortExact.lean`, both already OWNED, so check
-       `~/.flt-inflight.jsonl` before touching either:
-       - `HopfAlgebra.IsShortExact.cartierDual` — Cartier duality is
-         exact. This is the half that wants faithfully flat descent /
-         Takeuchi's Hopf-ideal correspondence.
-       - `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale.
-         This is the ELEMENTARY half the previous paragraph described:
-         the connected component `H°` maps to the étale quotient by a
-         homomorphism out of a connected scheme, hence trivially, so
-         `H° ⊆ H'`, and `H'` étale gives `H'° = 0`. Both halves of the
-         machinery are already in this cone —
-         `Bialgebra.exists_connected_counit_idempotent` for the connected
-         idempotent, and the henselian splitting of a finite algebra
-         recorded in the SUPPLY SURVEY above. Note `etale_of_isShortExact`
-         is stated over an ARBITRARY base; specialising it to a henselian
-         local `R` is a legitimate weakening if the general form resists,
-         and its own docstring says so.
+     * THE TWO THEOREMS THIS PARAGRAPH USED TO NAME AS THE OPEN INPUTS —
+       `HopfAlgebra.IsShortExact.cartierDual` and
+       `HopfAlgebra.etale_of_isShortExact` — ARE BOTH **PROVEN**
+       (2026-07-27). `cartierDual` (`ShortExact.lean:669`) is a four-field
+       assembly `⟨faithfullyFlat_cartierDual, surjective_cartierDual_map,
+       le_antisymm ker_cartierDual_le le_ker_cartierDual⟩`;
+       `etale_of_isShortExact` (`:916`) is the elementary étale-by-étale
+       half, proved via the connected component as described above
+       (`H°` maps trivially to an étale quotient, so `H° ⊆ H'`, and `H'`
+       étale gives `H'° = 0`). It is stated over an ARBITRARY base;
+       specialising it to a henselian local `R` remains a legitimate
+       weakening, and its own docstring says so.
+
+       **The previous version of this bullet said both were "already
+       OWNED, so check `~/.flt-inflight.jsonl` before touching either".
+       That was wrong in both directions and is deleted: they are not
+       open, and the leaves that ARE open under them had NO owner while
+       this note was deterring dispatch at them.** A prose ownership
+       claim in a docstring is a phantom-*non*-dispatch generator —
+       ownership is a live `TARGET:` line in the latest record for a
+       still-`claimed` worktree, never a sentence in a source file. Do
+       not reintroduce one here; state mathematical status only. And
+       treat even the status list below as a dated snapshot: the
+       authority on what is open is a green build's
+       `declaration uses 'sorry'` warning set, which is regenerable,
+       whereas this paragraph is not.
+
+     * WHAT IS ACTUALLY OPEN — four leaves, all in `ShortExact.lean`,
+       all downstream of the two theorems above (so `cartierDual` is
+       PROVEN but transitively sorried, and may be USED freely as a
+       stated theorem by anything above it):
+       - `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
+         (`:238`) — flat + unramified + finitely presented ⇒ formally
+         étale; the only remaining gap under `etale_of_isShortExact`.
+       - `HopfAlgebra.IsShortExact.exists_linearRetraction` (`:564`) —
+         `i(A'')` is an `R`-module direct summand of `A`. Pure module
+         theory, no Hopf structure left in the statement.
+       - `HopfAlgebra.IsShortExact.ker_cartierDual_le` (`:628`) — the
+         hard half: a character trivial on `Spec A'` descends. Gated on
+         fppf descent / Takeuchi's Hopf-ideal correspondence.
+       - `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` (`:648`) —
+         the deepest field: `(Spec A)^D → (Spec A')^D` faithfully flat.
+
+       Two PIN findings that make the last two cheaper than the (C4)
+       audit priced them (that audit grepped `fppf|CartierDual|
+       cartierDual` and missed both): `Mathlib.RingTheory.HopfAlgebra.
+       Quotient` IS in the pin and supplies the `A ↠ A'` half for free —
+       `Ideal.IsHopfIdeal` (`:89`), `HopfAlgebra.ofSurjective` (`:52`),
+       and a `HopfAlgebra R (A ⧸ I)` instance (`:116`, needing
+       `[I.IsTwoSided] [I.IsHopfIdeal R]`); and
+       `Mathlib.CategoryTheory.Sites.Descent` is SIX files including
+       `IsStack` and `DescentDataAsCoalgebra`, a descent-data formalism
+       rather than the "sites only" the audit recorded. What is still
+       genuinely absent: module descent, and any `Cartier` at all in
+       mathlib (zero occurrences tree-wide).
      * SO THE REMAINING WORK FOR *THIS* LEAF IS (R1), the Raynaud
        dévissage, which is what actually supplies an `IsShortExact` for
        this cluster. (R2) is formalized and sorry-free; (R3) is proven;
