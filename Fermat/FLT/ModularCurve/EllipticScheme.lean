@@ -1246,10 +1246,166 @@ theorem exists_projChartRingEquiv (E : WeierstrassCurve ℚ) (i : Fin 3)
         = algebraMap ℚ (ProjChartRing E i) :=
   sorry
 
-/-- **LEAF B — THE CHART JACOBIAN CRITERION** (sorry node): on each of the three charts the
-two partial derivatives of the dehomogenised Weierstrass cubic generate the UNIT ideal of
-the chart ring.  This is what makes the chart ring locally a hypersurface with an invertible
-partial, and it is where `hjac` — hence `Δ` — is consumed.
+/-! #### The two ingredients of the chart Jacobian criterion
+
+Both are stated for an arbitrary base ring and are pure `MvPolynomial` bookkeeping; only
+`false_of_eval_pderiv_projPolynomial_eq_zero` below is elliptic-curve mathematics. -/
+
+/-- Dehomogenisation sends `Xₙ` to `1` when `n = i`, and to the `n`-th chart coordinate
+otherwise. -/
+theorem dehomogenizeAt_X {R : Type} [CommRing R] (i n : Fin 3) :
+    dehomogenizeAt R i (MvPolynomial.X n)
+      = if h : n = i then 1 else MvPolynomial.X ⟨n, h⟩ := by
+  simp [dehomogenizeAt]
+
+/-- `pderiv_dehomogenizeAt` on a single variable — the base case of the induction. -/
+theorem pderiv_dehomogenizeAt_X {R : Type} [CommRing R] (i : Fin 3) (j : ProjChartVar i)
+    (n : Fin 3) :
+    MvPolynomial.pderiv j (dehomogenizeAt R i (MvPolynomial.X n))
+      = dehomogenizeAt R i (MvPolynomial.pderiv (j : Fin 3) (MvPolynomial.X n)) := by
+  classical
+  rw [dehomogenizeAt_X]
+  rcases eq_or_ne n i with rfl | h
+  · rw [dif_pos rfl, MvPolynomial.pderiv_one,
+      MvPolynomial.pderiv_X_of_ne (Ne.symm j.2), map_zero]
+  · rw [dif_neg h]
+    rcases eq_or_ne n (j : Fin 3) with h2 | h2
+    · have hj : (⟨n, h⟩ : ProjChartVar i) = j := Subtype.ext h2
+      rw [hj, MvPolynomial.pderiv_X_self, h2, MvPolynomial.pderiv_X_self, map_one]
+    · rw [MvPolynomial.pderiv_X_of_ne (fun hc => h2 (congrArg Subtype.val hc)),
+        MvPolynomial.pderiv_X_of_ne h2, map_zero]
+
+/-- **INGREDIENT 1 — dehomogenisation commutes with the chart partials.**
+
+For a chart variable `j ≠ i` the substitution `Xᵢ ↦ 1` is a constant in the `j`-th variable,
+so `∂/∂uⱼ` may be taken before or after dehomogenising.  Consequently the two partials of
+the chart equation `wᵢ` are the dehomogenisations of two of mathlib's `polynomialX`,
+`polynomialY`, `polynomialZ`. -/
+theorem pderiv_dehomogenizeAt {R : Type} [CommRing R] (i : Fin 3) (j : ProjChartVar i)
+    (p : MvPolynomial (Fin 3) R) :
+    MvPolynomial.pderiv j (dehomogenizeAt R i p)
+      = dehomogenizeAt R i (MvPolynomial.pderiv (j : Fin 3) p) := by
+  classical
+  induction p using MvPolynomial.induction_on with
+  | C a => simp
+  | add p q hp hq => simp [hp, hq]
+  | mul_X p n h =>
+    simp only [map_mul, Derivation.leibniz, smul_eq_mul, map_add, map_mul, h,
+      pderiv_dehomogenizeAt_X]
+
+/-- Evaluating a base-changed polynomial at the image of the chart point `(…, 1, …)` is
+`φ` applied to its dehomogenisation.  This is the bridge between the `MvPolynomial (Fin 3)`
+world, where Euler's relation lives, and the chart ring. -/
+theorem eval_map_eq_dehomogenizeAt {k : Type} [CommRing k] [Algebra ℚ k] (i : Fin 3)
+    (φ : MvPolynomial (ProjChartVar i) ℚ →ₐ[ℚ] k) (p : MvPolynomial (Fin 3) ℚ) :
+    MvPolynomial.eval (fun n => φ (if h : n = i then 1 else MvPolynomial.X ⟨n, h⟩))
+        (MvPolynomial.map (algebraMap ℚ k) p)
+      = φ (dehomogenizeAt ℚ i p) := by
+  rw [MvPolynomial.eval_map, ← MvPolynomial.aeval_def, dehomogenizeAt,
+    MvPolynomial.comp_aeval_apply]
+
+/-- **INGREDIENT 2 — EULER.**  Euler's homogeneous function theorem
+`3W = X·W_X + Y·W_Y + Z·W_Z` (`WeierstrassCurve.Projective.polynomial_relation`) says the
+three partials are not independent along the curve.  So at a point `P` of the curve whose
+`i`-th coordinate is `1`, the vanishing of the two partials `∂/∂Xⱼ`, `j ≠ i`, forces the
+vanishing of the third — which is why the chart's own two partials already control all
+three. -/
+theorem eval_pderiv_projPolynomial_eq_zero (E : WeierstrassCurve ℚ) (k : Type) [Field k]
+    [Algebra ℚ k] (i : Fin 3) (P : Fin 3 → k) (hPi : P i = 1)
+    (hW : MvPolynomial.eval P (polynomial (E.map (algebraMap ℚ k))) = 0)
+    (hj : ∀ n : Fin 3, n ≠ i →
+      MvPolynomial.eval P (MvPolynomial.pderiv n (polynomial (E.map (algebraMap ℚ k)))) = 0)
+    (n : Fin 3) :
+    MvPolynomial.eval P (MvPolynomial.pderiv n (polynomial (E.map (algebraMap ℚ k)))) = 0 := by
+  have hE := WeierstrassCurve.Projective.polynomial_relation (W' := E.map (algebraMap ℚ k)) P
+  rw [hW, mul_zero] at hE
+  have eX : polynomialX (E.map (algebraMap ℚ k))
+      = MvPolynomial.pderiv (0 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) := rfl
+  have eY : polynomialY (E.map (algebraMap ℚ k))
+      = MvPolynomial.pderiv (1 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) := rfl
+  have eZ : polynomialZ (E.map (algebraMap ℚ k))
+      = MvPolynomial.pderiv (2 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) := rfl
+  rw [eX, eY, eZ] at hE
+  by_cases h : n = i
+  · subst h
+    have hsum : ∑ b : Fin 3,
+        P b * MvPolynomial.eval P (MvPolynomial.pderiv b (polynomial (E.map (algebraMap ℚ k))))
+        = 0 := by
+      rw [Fin.sum_univ_three]
+      linear_combination -hE
+    rw [Finset.sum_eq_single_of_mem n (Finset.mem_univ n)
+      (fun b _ hb => by rw [hj b hb, mul_zero]), hPi, one_mul] at hsum
+    exact hsum
+  · exact hj n h
+
+/-- **THE GEOMETRIC CORE — over a FIELD there is no singular point.**
+
+`hjac` (the affine Jacobian criterion, where `Δ` is consumed) forbids a point of the
+projective Weierstrass curve at which all three homogeneous partials vanish and some
+coordinate equals `1`.  The proof is a two-case check on whether the point is at infinity,
+and **neither case mentions a chart** — that is what makes
+`projChart_jacobian_span_eq_top` uniform in `i`.
+
+* `P z ≠ 0`: the point is affine, `hjac` applies at `S := k`, and the two affine partials
+  are `eval P W_X / P z ^ 2` and `eval P W_Y / P z ^ 2`, both zero — so `span {0, 0} = ⊤`
+  in a field, absurd.
+* `P z = 0`: the projective equation degenerates to `P x ^ 3 = 0`, so `P x = 0`, and then
+  `eval P W_Z = P y ^ 2`, forcing `P y = 0`.  Every coordinate vanishes, contradicting
+  `P i = 1`.  (The constant term of `W_Z` is what does the work here; this is the point at
+  infinity, and it is not a separate chart argument.) -/
+theorem false_of_eval_pderiv_projPolynomial_eq_zero (E : WeierstrassCurve ℚ) (k : Type)
+    [Field k] [Algebra ℚ k]
+    (hjac : ∀ (S : Type) [CommRing S] [Algebra ℚ S] (x y : S),
+      (E.map (algebraMap ℚ S)).toAffine.Equation x y →
+      Ideal.span {Polynomial.evalEval x y (E.map (algebraMap ℚ S)).toAffine.polynomialX,
+        Polynomial.evalEval x y (E.map (algebraMap ℚ S)).toAffine.polynomialY} = ⊤)
+    (i : Fin 3) (P : Fin 3 → k) (hPi : P i = 1)
+    (hW : MvPolynomial.eval P (polynomial (E.map (algebraMap ℚ k))) = 0)
+    (hq : ∀ n : Fin 3,
+      MvPolynomial.eval P (MvPolynomial.pderiv n (polynomial (E.map (algebraMap ℚ k)))) = 0) :
+    False := by
+  by_cases hPz : P 2 = 0
+  · -- the point lies on the line at infinity, and is then forced to be `(0 : 0 : 0)`
+    have hx : P 0 = 0 := by
+      have h3 := (WeierstrassCurve.Projective.equation_of_Z_eq_zero
+        (W' := E.map (algebraMap ℚ k)) hPz).1 hW
+      by_contra hc
+      exact pow_ne_zero 3 hc h3
+    have hy : P 1 = 0 := by
+      have h2 := hq 2
+      rw [show MvPolynomial.pderiv (2 : Fin 3) (polynomial (E.map (algebraMap ℚ k)))
+        = polynomialZ (E.map (algebraMap ℚ k)) from rfl,
+        WeierstrassCurve.Projective.eval_polynomialZ, hx, hPz] at h2
+      have hsq : P 1 ^ 2 = 0 := by linear_combination h2
+      by_contra hc
+      exact pow_ne_zero 2 hc hsq
+    have hall : ∀ n : Fin 3, P n = 0 := by intro n; fin_cases n <;> assumption
+    exact one_ne_zero (hPi.symm.trans (hall i))
+  · -- an honest affine point of the curve over the field `k`
+    have heq : (E.map (algebraMap ℚ k)).toAffine.Equation (P 0 / P 2) (P 1 / P 2) :=
+      (WeierstrassCurve.Projective.equation_of_Z_ne_zero (W := E.map (algebraMap ℚ k)) hPz).1 hW
+    have hX0 : Polynomial.evalEval (P 0 / P 2) (P 1 / P 2)
+        (E.map (algebraMap ℚ k)).toAffine.polynomialX = 0 := by
+      rw [← WeierstrassCurve.Projective.eval_polynomialX_of_Z_ne_zero
+        (W := E.map (algebraMap ℚ k)) hPz,
+        show polynomialX (E.map (algebraMap ℚ k))
+          = MvPolynomial.pderiv (0 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) from rfl,
+        hq 0, zero_div]
+    have hY0 : Polynomial.evalEval (P 0 / P 2) (P 1 / P 2)
+        (E.map (algebraMap ℚ k)).toAffine.polynomialY = 0 := by
+      rw [← WeierstrassCurve.Projective.eval_polynomialY_of_Z_ne_zero
+        (W := E.map (algebraMap ℚ k)) hPz,
+        show polynomialY (E.map (algebraMap ℚ k))
+          = MvPolynomial.pderiv (1 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) from rfl,
+        hq 1, zero_div]
+    have hspan := hjac k (P 0 / P 2) (P 1 / P 2) heq
+    rw [hX0, hY0, Ideal.eq_top_iff_one] at hspan
+    simp at hspan
+
+/-- **THE CHART JACOBIAN CRITERION** (PROVEN): on each of the three charts the two partial
+derivatives of the dehomogenised Weierstrass cubic generate the UNIT ideal of the chart
+ring.  This is what makes the chart ring locally a hypersurface with an invertible partial,
+and it is where `hjac` — hence `Δ` — is consumed.
 
 ## NOT VACUOUS, and true on all three charts
 
@@ -1258,40 +1414,36 @@ generated by `wᵢ` and its two partials is `(1)`.  So the statement holds for a
 merely for the affine chart, and `Δ` is genuinely doing the work (over `ℚ[a₁, …, a₆]` the
 ideal is proper — that is the content of `Δ_mem_jacobianSpan`).
 
-## Proof plan — the same two ingredients on every chart, then three easy cases
+## The proof, and why it is UNIFORM in `i`
 
-*Ingredient 1 — dehomogenisation commutes with `∂`.*  For `j ≠ i`,
-`pderiv j (dehomogenizeAt R i p) = dehomogenizeAt R i (pderiv j p)`, by
-`MvPolynomial.induction_on`; the substitution `Xᵢ ↦ 1` is a constant in the `j`-th variable.
-So the two chart partials are the dehomogenisations `pⱼ := dehom(W_{Xⱼ})`, `j ≠ i`, and
-these are the dehomogenisations of mathlib's `polynomialX`, `polynomialY`, `polynomialZ`.
+The plan recorded with this leaf while it was open had three cases: `hjac` applied directly
+on the affine chart `i = 2`; a unit `Z/X` on the chart `i = 0`; and, for the chart `i = 1`
+containing the point at infinity, a coprimality step `span {p₂, z} = ⊤` combined with
+`IsCoprime.pow_right` over the localisation away from `z`.  A Gröbner cofactor certificate
+was offered as the fallback for that last chart.
 
-*Ingredient 2 — Euler.*  `WeierstrassCurve.Projective.polynomial_relation` is Euler's
-theorem `3W = X·W_X + Y·W_Y + Z·W_Z`.  Dehomogenising at `i` and using `wᵢ = 0` in the chart
-ring gives `pᵢ = -∑_{j ≠ i} uⱼ pⱼ`.  Hence in the chart ring
-`span {pⱼ : j ≠ i} = span {p₀, p₁, p₂}`, and it suffices to show the LATTER is `⊤`.
+**None of that is needed, and there is no case split on `i` below.**  The move that removes
+it is to apply `hjac` not over the chart ring itself but over a RESIDUE FIELD of it.
+Suppose the span were proper.  Pull it back: the ideal
+`J := (wᵢ, ∂wᵢ/∂u, ∂wᵢ/∂v)` of `ℚ[u, v]` is then proper too, since its image in
+`ℚ[u, v] ⧸ (wᵢ)` is exactly the span in question.  So `J ⊆ M` for some maximal `M`, and
+`k := ℚ[u, v] ⧸ M` is a FIELD.  Let `P : Fin 3 → k` be the image of the chart point, so
+`P i = 1` and `P j = ūⱼ` for `j ≠ i`.  Then
 
-*Chart `i = 2` (`Z ≠ 0`).*  `w₂` IS the affine Weierstrass polynomial, so `hjac` applies
-directly at `S := ProjChartRing E 2` with `x, y` the images of the two chart coordinates:
-the affine `Equation` holds because the chart ring is the quotient by `w₂`.
+* `eval P W = 0`, because `W` dehomogenises to `wᵢ ∈ J ⊆ M` (`eval_map_eq_dehomogenizeAt`);
+* `eval P W_{Xⱼ} = 0` for `j ≠ i`, because dehomogenisation commutes with those partials
+  (`pderiv_dehomogenizeAt`) and `∂wᵢ/∂uⱼ ∈ J ⊆ M`;
+* `eval P W_{Xᵢ} = 0` as well, by Euler's relation together with `P i = 1`
+  (`eval_pderiv_projPolynomial_eq_zero`).
 
-*Chart `i = 0` (`X ≠ 0`).*  Here `z := Z/X` is already a UNIT of the chart ring: `w₀ = 0`
-reads `z · (v² + a₁v + a₃vz - a₂ - a₄z - a₆z²) = 1`.  So `x := 1/z` and `y := v/z` are
-honest elements satisfying the affine equation, `hjac` applies at `S := ProjChartRing E 0`,
-and the affine partials are `W_X(x,y) = x²·p₀` and `W_Y(x,y) = x²·p₁` (both partials are
-homogeneous of degree `2`, and `x = X/Z` is a unit), so `span {p₀, p₁} = ⊤`.
+So `P` is a singular point of the projective Weierstrass curve over a FIELD, which
+`false_of_eval_pderiv_projPolynomial_eq_zero` rules out in two chart-free cases.
 
-*Chart `i = 1` (`Y ≠ 0`).*  This is the only chart containing the point at infinity, `z` is
-NOT a unit there, and the argument needs one extra step.  Modulo `z` the chart relation
-`w₁` becomes `-u³`, and `p₂ = dehom(W_Z) = 1 + a₁u + 2a₃z - a₂u² - 2a₄uz - 3a₆z²` has
-constant term `1`, so `p₂` is a unit modulo `(z, u³)`: hence `span {p₂, z} = ⊤`.  On the
-localisation away from `z` the previous argument applies verbatim (`x = u/z`, `y = 1/z`),
-giving `zᵐ ∈ span {p₀, p₁}` for some `m`.  Since `span {p₂, z} = ⊤` implies
-`span {p₂, zᵐ} = ⊤` (`IsCoprime.pow_right`), the two together give `1 ∈ span {p₀, p₁, p₂}`.
-
-An explicit `Δᴺ = A·w₁ + B·p₀ + C·p₂` certificate from a Gröbner `lift` would also close
-chart `i = 1` outright and is the fallback if the localisation bookkeeping proves painful;
-the cofactors are large, which is why the structural argument is given first. -/
+The point at infinity is not a special case here: it is the `P z = 0` case there, and what
+disposes of it is the constant term of `W_Z` — precisely the fact the original plan had
+identified as operative for the chart `i = 1`.  Passing to a residue field is what lets that
+one observation serve all three charts at once, and it is why no localisation, no
+`IsCoprime.pow_right`, and no Gröbner cofactor certificate appear in the proof. -/
 theorem projChart_jacobian_span_eq_top (E : WeierstrassCurve ℚ) [E.IsElliptic] (i : Fin 3)
     (hjac : ∀ (S : Type) [CommRing S] [Algebra ℚ S] (x y : S),
       (E.map (algebraMap ℚ S)).toAffine.Equation x y →
@@ -1299,8 +1451,58 @@ theorem projChart_jacobian_span_eq_top (E : WeierstrassCurve ℚ) [E.IsElliptic]
         Polynomial.evalEval x y (E.map (algebraMap ℚ S)).toAffine.polynomialY} = ⊤) :
     Ideal.span (Set.range fun j : ProjChartVar i =>
         (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
-          (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i)) = ⊤ :=
-  sorry
+          (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i)) = ⊤ := by
+  classical
+  by_contra hne
+  -- the Jacobian ideal PULLED BACK to the polynomial ring is proper
+  have hJ : Ideal.span (insert (projChartPolynomial E i)
+      (Set.range fun j : ProjChartVar i =>
+        MvPolynomial.pderiv j (projChartPolynomial E i))) ≠ ⊤ := by
+    intro htop
+    refine hne ((Ideal.eq_top_iff_one _).2 ?_)
+    have hmap : Ideal.map (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i}))
+        (Ideal.span (insert (projChartPolynomial E i)
+          (Set.range fun j : ProjChartVar i =>
+            MvPolynomial.pderiv j (projChartPolynomial E i))))
+        ≤ Ideal.span (Set.range fun j : ProjChartVar i =>
+            (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
+              (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i)) := by
+      rw [Ideal.map_span, Ideal.span_le]
+      rintro x ⟨y, hy, rfl⟩
+      rcases hy with rfl | ⟨j, rfl⟩
+      · simp only [SetLike.mem_coe]
+        rw [Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_span_singleton_self _)]
+        exact Ideal.zero_mem _
+      · exact Ideal.subset_span ⟨j, rfl⟩
+    refine hmap ?_
+    rw [← map_one (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i}))]
+    exact Ideal.mem_map_of_mem _ (htop ▸ Submodule.mem_top)
+  obtain ⟨M, hM, hMle⟩ := Ideal.exists_le_maximal _ hJ
+  haveI : M.IsMaximal := hM
+  letI : Field (MvPolynomial (ProjChartVar i) ℚ ⧸ M) := Ideal.Quotient.field M
+  refine false_of_eval_pderiv_projPolynomial_eq_zero E (MvPolynomial (ProjChartVar i) ℚ ⧸ M)
+    hjac i (fun n => Ideal.Quotient.mkₐ ℚ M (if h : n = i then 1 else MvPolynomial.X ⟨n, h⟩))
+    (by simp) ?_ ?_
+  · rw [WeierstrassCurve.Projective.map_polynomial,
+      eval_map_eq_dehomogenizeAt i (Ideal.Quotient.mkₐ ℚ M)]
+    show (Ideal.Quotient.mkₐ ℚ M) (projChartPolynomial E i) = 0
+    rw [Ideal.Quotient.mkₐ_eq_mk]
+    exact Ideal.Quotient.eq_zero_iff_mem.2 (hMle (Ideal.subset_span (Set.mem_insert _ _)))
+  · refine eval_pderiv_projPolynomial_eq_zero E _ i _ (by simp) ?_ ?_
+    · rw [WeierstrassCurve.Projective.map_polynomial,
+        eval_map_eq_dehomogenizeAt i (Ideal.Quotient.mkₐ ℚ M)]
+      show (Ideal.Quotient.mkₐ ℚ M) (projChartPolynomial E i) = 0
+      rw [Ideal.Quotient.mkₐ_eq_mk]
+      exact Ideal.Quotient.eq_zero_iff_mem.2 (hMle (Ideal.subset_span (Set.mem_insert _ _)))
+    · intro n hn
+      rw [WeierstrassCurve.Projective.map_polynomial, MvPolynomial.pderiv_map,
+        eval_map_eq_dehomogenizeAt i (Ideal.Quotient.mkₐ ℚ M),
+        ← pderiv_dehomogenizeAt i (⟨n, hn⟩ : ProjChartVar i)]
+      show (Ideal.Quotient.mkₐ ℚ M)
+        (MvPolynomial.pderiv (⟨n, hn⟩ : ProjChartVar i) (projChartPolynomial E i)) = 0
+      rw [Ideal.Quotient.mkₐ_eq_mk]
+      exact Ideal.Quotient.eq_zero_iff_mem.2
+        (hMle (Ideal.subset_span (Set.mem_insert_of_mem _ ⟨⟨n, hn⟩, rfl⟩)))
 
 /-- **A PLANE CURVE IS STANDARD SMOOTH OF RELATIVE DIMENSION `1` WHERE A PARTIAL DERIVATIVE
 IS INVERTIBLE** (PROVEN; it was LEAF C of the residual item-7a leaf, and it is a piece of
