@@ -201,6 +201,9 @@ public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- the module imports only `Algebra.Module.Torsion.Basic` and
 -- `RingTheory.DedekindDomain.Ideal.Lemmas`, both already above.
 public import Mathlib.Algebra.Module.DedekindDomain
+-- the Betti input of the rank count: cardinalities of quotients of a
+-- lattice by an ideal, and the rank bridge `rank_ℤ = [D:ℚ] · rank_{𝒪_D}`.
+public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.LatticeQuotient
 -- `NumberField.IsTotallyReal`: the real-multiplication field of a
 -- Hilbert–Blumenthal family is totally real, in both leaf STATEMENTS
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
@@ -2213,10 +2216,167 @@ rational-homology input.  PARITY is such a constraint, and
 count closes the argument.  What is left is these three leaves.  Each is
 a UNIVERSAL fact about abelian schemes, reusable well beyond this file. -/
 
+/-! #### The Betti frame: one homology input for all three leaves
+
+Each of the three leaves below was recorded as needing a different deep
+theorem — the theorem of the cube for the degree of `[N]`, a
+nondegenerate polarized Weil pairing for the parity, and
+`End(A) ↪ End(T_p A)` for the nonvanishing.  The FAITHFULNESS CHECK under
+`card_torsion_ne_one_of_isMaximal` identified what they actually share:
+the single Betti input `dim_ℚ H₁(A_x, ℚ) = 2g`.  `BettiFrame` is that
+input, named, and all three leaves are now theorems over it.
+
+WHAT THE FRAME IS.  For a complex abelian variety `A_x` of dimension `g`,
+`A_x(ℂ) = (H₁ ⊗ ℝ)/H₁` with `H₁ = H₁(A_x, ℤ)` a lattice of rank `2g`, and
+the `I`-torsion is `I⁻¹H₁/H₁ ≅ H₁/IH₁` for every nonzero ideal `I` of
+`𝒪_D` (the second isomorphism uses invertibility of `I`, and is not
+canonical — which is why the clause below is stated as an equality of
+CARDINALITIES rather than of Galois modules).  Everything the three
+leaves need is downstream of that, by the commutative algebra in
+`Fermat/FLT/Mathlib/RingTheory/DedekindDomain/LatticeQuotient.lean`:
+
+* `rank_ℤ H₁ = 2g` gives `#A[N] = #(H₁/N H₁) = N^(2g)` directly;
+* the RANK BRIDGE `rank_ℤ = [D:ℚ] · rank_{𝒪_D}` turns `rank_ℤ H₁ = 2g`
+  and `g = [D:ℚ]` into `rank_{𝒪_D} H₁ = 2`, whence
+  `#A[I] = #(𝒪_D/I)^2` at every maximal `I` — which is at once the
+  PARITY and the NONVANISHING, with no polarization, no Rosati
+  positivity and no faithfulness argument anywhere.
+
+WHY IT IS STATED AS CARDINALITIES.  The three consumers are cardinality
+statements, so this is exactly what they need, and it is the weakest
+clause that supplies them — which makes the geometric leaf
+`exists_bettiFrame` as easy as it can honestly be.  A successor that
+needs the GALOIS module structure of `A[I]` (rather than only its size)
+should strengthen `card_torsion` to a `𝒪_D`-linear equivalence
+`H₁ ⧸ I H₁ ≃ₗ A[I]`; every consumer below goes through unchanged.
+
+TWO CLAUSES ARE DERIVABLE AND ARE STILL ASSERTED, deliberately.
+`Module.IsTorsionFree (𝒪_D) H` follows from `Module.Free ℤ H` by the norm
+argument (`a • h = 0` with `a ≠ 0` gives `N(a) • h = 0` with `N(a)` a
+nonzero integer), and `Module.Finite (𝒪_D) H` follows from
+`Module.Finite ℤ H`.  Both are immediate for anyone constructing `H₁`,
+and asserting them here costs the existence leaf nothing while saving two
+detours; a successor may prune them.
+
+THE RELATIVE DIMENSION MUST BE PINNED — and this is a FAITHFULNESS
+REPAIR, recorded 2026-07-27.  `AbelianSchemeStruct` requires only proper,
+smooth and geometrically connected, which the IDENTITY `f = 𝟙 S`
+satisfies: an abelian scheme of relative dimension `0`.  Its geometric
+fibres are a single point, so `#A[I] = 1` for every `I`, and
+`Mult ab (𝒪_D)` exists (the endomorphism ring of the trivial group scheme
+is the zero ring, which receives a ring map from anything).  So
+`card_torsion_ne_one_of_isMaximal` is **FALSE as previously stated**, and
+`hdim` — which its own consumer `card_torsion_of_isMaximal` already
+carries and simply did not pass on — is the repair.  It has been added to
+both maximal-ideal leaves below and passed at the single call site. -/
+
+open _root_.NumberField in
+/-- **A BETTI FRAME for a geometric fibre**: the homology lattice
+`H₁(A_x, ℤ)` with its `𝒪_D`-action, its Betti number, and the torsion
+counts it computes.  See the section note above for what each clause is
+and why it is stated this way. -/
+structure BettiFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S) where
+  /-- the homology lattice `H₁(A_x, ℤ)` -/
+  H : Type u
+  [addCommGroup : AddCommGroup H]
+  /-- the real multiplication acts on the homology -/
+  [module : Module (NumberField.RingOfIntegers D) H]
+  [finiteOD : Module.Finite (NumberField.RingOfIntegers D) H]
+  [torsionFree : Module.IsTorsionFree (NumberField.RingOfIntegers D) H]
+  /-- `H₁` is a LATTICE -/
+  [freeInt : Module.Free ℤ H]
+  [finiteInt : Module.Finite ℤ H]
+  /-- **THE BETTI INPUT**: `dim_ℚ H₁(A_x, ℚ) = 2g`, with `g = [D : ℚ]`
+  the relative dimension. -/
+  finrank_int : Module.finrank ℤ H = 2 * Module.finrank ℚ D
+  /-- **`A[I]` is `H₁/I H₁`**, in cardinality, at every nonzero ideal. -/
+  card_torsion : ∀ I : Ideal (NumberField.RingOfIntegers D), I ≠ ⊥ →
+    Nat.card (m.torsion x I).1
+      = Nat.card (H ⧸ (I • ⊤ : Submodule (NumberField.RingOfIntegers D) H))
+
+attribute [instance] BettiFrame.addCommGroup BettiFrame.module BettiFrame.finiteOD
+  BettiFrame.torsionFree BettiFrame.freeInt BettiFrame.finiteInt
+
+open _root_.NumberField in
+/-- **The homology of a geometric fibre exists** (sorry leaf — ABELIAN
+VARIETIES; Mumford *Abelian Varieties* §1 and §19, Milne *Abelian
+Varieties* I.1–I.7, Silverman *AEC* VI for the elliptic case).
+
+**This is the one geometric input of the whole rank count.**  It replaces
+three separate leaves — the theorem of the cube, the nondegenerate
+polarized Weil pairing, and `End(A) ↪ End(T_p A)` — by the single
+classical statement that an abelian variety of dimension `g` in
+characteristic zero has a homology lattice of rank `2g` computing its
+torsion.
+
+WHAT A PROVER MUST BUILD.  Over `ℂ` this is the uniformization
+`A(ℂ) = (H₁ ⊗ ℝ)/H₁`; over a general algebraically closed field of
+characteristic zero it is the same statement after a choice of embedding,
+or equivalently the étale homology `H₁^{ét}(A, ẑ)` with its
+`ẑ`-lattice structure.  Neither singular nor étale homology of a scheme
+exists at this pin, which is precisely why this is the leaf.
+
+WHY `hdim` IS PRESENT.  It is what makes the Betti number `2 · [D:ℚ]`
+rather than `2 · dim A`: `hdim` says the relative dimension IS
+`Module.finrank ℚ D`.  Without it the statement is not merely harder, it
+is false at relative dimension `0` — see the section note above. -/
+theorem exists_bettiFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    Nonempty (BettiFrame m x) :=
+  sorry
+
+open _root_.NumberField in
+/-- **A Betti frame has `𝒪_D`-rank two.**  This is the rank bridge
+`rank_ℤ = [D:ℚ] · rank_{𝒪_D}` applied to the Betti number `2 · [D:ℚ]`,
+and it is what makes the residual rank of `A[I]` both EVEN and NONZERO. -/
+theorem BettiFrame.finrank_eq_two {A S : Scheme.{u}} {f : A ⟶ S}
+    {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    {F : Type u} [Field F] [NumberField F]
+    {x : Spec (CommRingCat.of F) ⟶ S} (bf : BettiFrame m x) :
+    Module.finrank (NumberField.RingOfIntegers D) bf.H = 2 := by
+  have hb := Module.finrank_int_eq_finrank_ringOfIntegers_mul D bf.H
+  rw [bf.finrank_int, mul_comm 2 (Module.finrank ℚ D)] at hb
+  have hg : Module.finrank ℚ D ≠ 0 := Module.finrank_pos.ne'
+  exact (Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hg) hb).symm
+
+open _root_.NumberField in
+/-- **`#A[I] = #(𝒪_D/I)²` at a maximal ideal, from a Betti frame.**  This
+is the common engine of the two maximal-ideal leaves below: parity is the
+exponent `2` being even, nonvanishing is it being nonzero. -/
+theorem BettiFrame.card_torsion_isMaximal {A S : Scheme.{u}} {f : A ⟶ S}
+    {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    {m : Mult ab (NumberField.RingOfIntegers D)}
+    {F : Type u} [Field F] [NumberField F]
+    {x : Spec (CommRingCat.of F) ⟶ S} (bf : BettiFrame m x)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
+    Nat.card (m.torsion x I).1
+      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ 2 := by
+  haveI : I.IsMaximal := hI
+  have hIbot : I ≠ ⊥ :=
+    Ring.ne_bot_of_isMaximal_of_not_isField hI (NumberField.RingOfIntegers.not_isField D)
+  haveI : Finite (NumberField.RingOfIntegers D ⧸ I) :=
+    Ring.HasFiniteQuotients.finiteQuotient hIbot
+  rw [bf.card_torsion I hIbot,
+    Module.card_quotient_smul_top_of_isDedekindDomain (M := bf.H) I,
+    bf.finrank_eq_two]
+
 open _root_.NumberField in
 /-- **`#A[N] = N^(2g)`: the degree of `[N]`, in characteristic zero**
-(sorry leaf — ABELIAN VARIETIES; Mumford *Abelian Varieties* §6 (theorem
-of the cube) and §18, Milne *Abelian Varieties* I.7).
+(PROVEN 2026-07-27 over the single geometric leaf `exists_bettiFrame`;
+see STATUS below.  The references — Mumford *Abelian Varieties* §6, the
+theorem of the cube, and §18, Milne *Abelian Varieties* I.7 — describe
+the route that was NOT taken).
 
 `A_x` is an abelian variety of dimension `g = [D : ℚ]` over an
 algebraically closed field of characteristic zero — that is `hdim`
@@ -2262,7 +2422,16 @@ narrows the surface, it does not open a route.
 THE OTHER ROUTE, and it is shared with the two sibling leaves: build
 `H₁(A_x, ℤ)` and its Betti number `2g`.  See the FAITHFULNESS CHECK under
 `card_torsion_ne_one_of_isMaximal` below — one homology development
-closes all three of these leaves at once, and nothing else does. -/
+closes all three of these leaves at once, and nothing else does.
+
+STATUS 2026-07-27 — **PROVEN**, by exactly that route.  The theorem of the
+cube is NOT needed and neither is any `degree` API: over a Betti frame
+`A[N] = H₁/N H₁` and `H₁` is a lattice of rank `2g`, so the count is
+`Module.card_quotient_ideal_span_natCast_smul_top`, whose whole content is
+that `(N : 𝒪_D)·H₁` and `N·H₁` are the same subgroup.  The residual
+geometric input is `exists_bettiFrame` above.  The `∀ N`-removing cut
+recorded above is therefore also unnecessary and is left only as a record
+of what was tried. -/
 theorem card_torsion_span_natCast
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -2272,12 +2441,21 @@ theorem card_torsion_span_natCast
     (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
     (N : ℕ) (hN : N ≠ 0) :
     Nat.card (m.torsion x (Ideal.span {(N : NumberField.RingOfIntegers D)})).1
-      = N ^ (2 * Module.finrank ℚ D) :=
-  sorry
+      = N ^ (2 * Module.finrank ℚ D) := by
+  classical
+  obtain ⟨bf⟩ := exists_bettiFrame m x hdim
+  have hNbot : (Ideal.span {(N : NumberField.RingOfIntegers D)}) ≠ ⊥ := by
+    simp only [ne_eq, Ideal.span_singleton_eq_bot, Nat.cast_eq_zero]
+    exact hN
+  rw [bf.card_torsion _ hNbot,
+    Module.card_quotient_ideal_span_natCast_smul_top (Module.Free.chooseBasis ℤ bf.H) N,
+    ← Module.finrank_eq_card_chooseBasisIndex, bf.finrank_int]
 
 open _root_.NumberField in
-/-- **The residual rank is EVEN at every maximal `J`** (sorry leaf —
-POLARIZATION; Mumford *Abelian Varieties* §16, §20, §23).
+/-- **The residual rank is EVEN at every maximal `J`** (PROVEN 2026-07-27
+over the single geometric leaf `exists_bettiFrame`; see STATUS below.  The
+POLARIZATION route below — Mumford *Abelian Varieties* §16, §20, §23 — was
+NOT taken and is retained only as a record).
 
 This is the input that defeats the counterexample of the audit below:
 `M₁` there has `r_{J₁} = 1`, so parity alone excludes it, and parity is
@@ -2366,54 +2544,41 @@ NOTE the classical argument is cleanest on the RATIONAL Tate module
 prime-to-`J`-degree condition disappears; that is why this leaf is stated
 as its CONCLUSION (parity) rather than as the existence of a
 `J`-nondegenerate pairing, which would be false for a polarization whose
-degree `J` divides. -/
+degree `J` divides.
+
+STATUS 2026-07-27 — **PROVEN, AND NOT BY THE POLARIZATION.**  The route
+above is superseded: over a Betti frame `#A[I] = #(𝒪_D/I)^{rank_{𝒪_D} H₁}`
+and the rank is `2` by the rank bridge, so the exponent is even outright
+and `r = 1`.  Neither `hfin` nor `hpair` is needed, so the warning about
+`PolarizationStruct` being satisfied by the constant zero map no longer
+bites here — that repair is still worth doing, but nothing in this file
+waits on it.  `even_finrank_of_isAlt_nondegenerate` and
+`exists_card_eq_pow_two_mul_of_isAlt_nondegenerate` above are left in
+place: they are a genuine mathlib gap and are consumed by
+`LevelFrame.card_tors_eq_sq`.
+
+`hdim` IS NEW AND IS LOAD-BEARING (2026-07-27).  It is what pins the Betti
+number to `2·[D:ℚ]`; see the FAITHFULNESS REPAIR in the section note above
+`BettiFrame`, where relative dimension `0` refutes the sibling leaf. -/
 theorem even_dim_torsion_of_isMaximal
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
     (m : Mult ab (NumberField.RingOfIntegers D))
     {F : Type u} [Field F] [NumberField F]
     (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
     ∃ r, Nat.card (m.torsion x I).1
       = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ (2 * r) := by
   classical
-  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
-  letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
-    m.module (specAlgClos F ≫ x)
-  haveI : I.IsMaximal := hI
-  letI : Field (NumberField.RingOfIntegers D ⧸ I) := Ideal.Quotient.field I
-  letI : Module (NumberField.RingOfIntegers D ⧸ I)
-      (Submodule.torsionBySet (NumberField.RingOfIntegers D) (GeomFibrePt f x)
-        ((I : Ideal (NumberField.RingOfIntegers D)) :
-          Set (NumberField.RingOfIntegers D))) :=
-    (Submodule.torsionBySet_isTorsionBySet
-      ((I : Ideal (NumberField.RingOfIntegers D)) :
-        Set (NumberField.RingOfIntegers D))).module
-  -- GEOMETRIC INPUT 1 (sorry): `A[I]` is finite.  Immediate from
-  -- `card_torsion_span_natCast` once that leaf is closed, since `A[I] ⊆ A[N(I)]`.
-  haveI hfin : Finite (Submodule.torsionBySet (NumberField.RingOfIntegers D)
-      (GeomFibrePt f x) ((I : Ideal (NumberField.RingOfIntegers D)) :
-        Set (NumberField.RingOfIntegers D))) := sorry
-  -- GEOMETRIC INPUT 2 (sorry): the polarized Weil pairing makes `A[I]` a
-  -- symplectic space over the residue field `𝒪_D/I`.  See the docstring:
-  -- this must be discharged against a REPAIRED `PolarizationStruct`.
-  have hpair : ∃ B : LinearMap.BilinForm (NumberField.RingOfIntegers D ⧸ I)
-      (Submodule.torsionBySet (NumberField.RingOfIntegers D) (GeomFibrePt f x)
-        ((I : Ideal (NumberField.RingOfIntegers D)) :
-          Set (NumberField.RingOfIntegers D))),
-      B.IsAlt ∧ B.Nondegenerate := sorry
-  obtain ⟨B, halt, hnd⟩ := hpair
-  -- `(m.torsion x I).1` IS the coercion of that submodule, but instance search is
-  -- syntactic, so the goal has to be presented in the submodule form.
-  show ∃ r, Nat.card (Submodule.torsionBySet (NumberField.RingOfIntegers D)
-      (GeomFibrePt f x) ((I : Ideal (NumberField.RingOfIntegers D)) :
-        Set (NumberField.RingOfIntegers D)))
-      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ (2 * r)
-  exact exists_card_eq_pow_two_mul_of_isAlt_nondegenerate B halt hnd
+  obtain ⟨bf⟩ := exists_bettiFrame m x hdim
+  exact ⟨1, by rw [bf.card_torsion_isMaximal I hI]⟩
 
 open _root_.NumberField in
-/-- **`A[J] ≠ 0` at every maximal `J`** (sorry leaf — Mumford *Abelian
-Varieties* §19, `End(A) ↪ End(T_p A)`).
+/-- **`A[J] ≠ 0` at every maximal `J`** (PROVEN 2026-07-27 over the single
+geometric leaf `exists_bettiFrame`, and RESTATED with `hdim` — it was FALSE
+without it; see STATUS below.  Mumford *Abelian Varieties* §19,
+`End(A) ↪ End(T_p A)`, is the route that was NOT taken).
 
 Equivalently: `𝒪_D ⊗ ℤ_p` acts FAITHFULLY on `T_p A`, so no factor of
 `𝒪_D ⊗ ℤ_p = ∏_{J ∣ p} 𝒪_J` annihilates it.
@@ -2462,16 +2627,43 @@ dimension `g` with an injective `𝒪_D → End(A)`, `D` totally real of
 degree `g`, whose `H₁(A, ℤ)` has `𝒪_D`-rank other than two — i.e. show
 the `ℚ`-dimension count or the freeness-over-a-field step fails.  It does
 not: `D` is a FIELD, so `H₁(A, ℚ)` is a `D`-vector space and its
-`D`-dimension is forced. -/
+`D`-dimension is forced.
+
+STATUS 2026-07-27 — **PROVEN over `exists_bettiFrame`, exactly as this
+check predicted**, and the check's own conclusion is now the code:
+`#A[I] = #(𝒪_D/I)²`, so it is not merely `≠ 1`.
+
+FALSITY REPAIR IN THE SAME COMMIT — `hdim` IS NOW REQUIRED, AND WITHOUT
+IT THE STATEMENT WAS FALSE.  `AbelianSchemeStruct` asks only for proper,
+smooth and geometrically connected, and the IDENTITY `f = 𝟙 S` satisfies
+all three: an abelian scheme of relative dimension `0`.  Its geometric
+fibres are a single point, so `Nat.card (m.torsion x I).1 = 1` for every
+`I`, and a `Mult ab (𝒪_D)` exists because the endomorphism ring of the
+trivial group scheme is the zero ring.  That is a counterexample to the
+previous statement.  The repair is free: the only consumer,
+`card_torsion_of_isMaximal` below, already carries `hdim` and merely was
+not passing it. -/
 theorem card_torsion_ne_one_of_isMaximal
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
     (m : Mult ab (NumberField.RingOfIntegers D))
     {F : Type u} [Field F] [NumberField F]
     (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
-    Nat.card (m.torsion x I).1 ≠ 1 :=
-  sorry
+    Nat.card (m.torsion x I).1 ≠ 1 := by
+  classical
+  obtain ⟨bf⟩ := exists_bettiFrame m x hdim
+  haveI : I.IsMaximal := hI
+  letI : Field (NumberField.RingOfIntegers D ⧸ I) := Ideal.Quotient.field I
+  have hIbot : I ≠ ⊥ :=
+    Ring.ne_bot_of_isMaximal_of_not_isField hI (NumberField.RingOfIntegers.not_isField D)
+  haveI : Finite (NumberField.RingOfIntegers D ⧸ I) :=
+    Ring.HasFiniteQuotients.finiteQuotient hIbot
+  have h1 : 1 < Nat.card (NumberField.RingOfIntegers D ⧸ I) :=
+    Finite.one_lt_card_iff_nontrivial.mpr inferInstance
+  rw [bf.card_torsion_isMaximal I hI]
+  exact (Nat.one_lt_pow (by norm_num) h1).ne'
 
 /-- **The `I`-torsion of a geometric fibre has `(#𝒪_D/I)²` elements**
 (PROVEN 2026-07-27 over the three geometric leaves
@@ -2694,8 +2886,8 @@ theorem card_torsion_of_isMaximal
     (fun J hJ π hπ hπ2 k y hy =>
       exists_mem_torsion_act_uniformizer_eq m x J hJ π hπ hπ2 k y hy)
     (card_torsion_span_natCast m x hdim p hp.ne_zero)
-    (fun J hJ _ => even_dim_torsion_of_isMaximal m x J hJ)
-    (fun J hJ _ => card_torsion_ne_one_of_isMaximal m x J hJ)
+    (fun J hJ _ => even_dim_torsion_of_isMaximal m x hdim J hJ)
+    (fun J hJ _ => card_torsion_ne_one_of_isMaximal m x hdim J hJ)
 
 /-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, at each single
 level `n`** (PROVEN 2026-07-26 over the single geometric leaf
