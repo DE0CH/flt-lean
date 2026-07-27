@@ -119,6 +119,10 @@ a future de-duplication can identify the two developments.
 -/
 module
 
+-- Was reached transitively through `ModThree.lean`'s `public import` of it until
+-- 2026-07-27, when that edge was removed to take `MazurTorsion` off the critical
+-- path (see `GaloisRepresentation/SubQuotCharacter.lean`).  Named explicitly here.
+public import Fermat.FLT.FreyCurve.MazurTorsion
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 -- BUILD REPAIR (2026-07-26). This module was a HARD ERROR — 101 errors, the
 -- `maxErrors` cap — which made every consumer of `Modularity/Interface.lean`
