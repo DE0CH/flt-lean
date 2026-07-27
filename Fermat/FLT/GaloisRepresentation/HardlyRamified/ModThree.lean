@@ -16274,6 +16274,8 @@ theorem exists_span_range_le_ker_module_finite_of_span_range_le_ker
       P.ker ≤ Ideal.span (Set.range f) ⊔
         (IsLocalRing.maximalIdeal R).map (algebraMap R P.Ring) ∧
       Module.Finite R (P.Ring ⧸ Ideal.span (Set.range f)) :=
+  sorry
+
 section CompleteIntersectionPresentation
 
 open _root_.MvPolynomial
