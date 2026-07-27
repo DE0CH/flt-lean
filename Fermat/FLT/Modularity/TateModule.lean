@@ -5835,11 +5835,12 @@ ONE is open and it is the only deep one:
   transport of that pairing along the frame).  LABEL CORRECTION
   (2026-07-27, later the same day): the pairing node is no longer a
   SORRY NODE — it was cut again along the LIMIT into
-  `exists_tateWeilSystem_of_mult` (SORRY NODE — the levelwise system of
-  pairings on `A[I^k]`, i.e. dual + polarization + trace duality) and
+  `exists_tateWeilSystem_of_mult` (DECOMPOSED 2026-07-27 into five leaves
+  — the levelwise system of pairings on `A[I^k]`, i.e. dual +
+  polarization + trace duality) and
   `exists_tateWeilPairing_of_tateWeilSystem` (PROVEN — the passage to the
-  limit).  So the levelwise SYSTEM leaf is the
-  ONLY thing the determinant clause still rests on.  The INTEGRAL-MODEL route
+  limit).  So the FIVE LEAVES of the levelwise-system cut are what the
+  determinant clause still rests on.  The INTEGRAL-MODEL route
   described below is the OTHER axis and was not the one taken — see its docstring for the
   route audit and for what a successor must NOT do.
 * `exists_weilPairing_of_tateFrame` (PROVEN 2026-07-26 over the leaf
@@ -6255,11 +6256,15 @@ pure abelian-variety geometry, with no frame and no cyclotomic character
 in its own burden — carried the whole residue.
 
 FOURTH CUT, later still on 2026-07-27: that declaration is PROVEN too,
-along the LIMIT axis.  `exists_tateWeilSystem_of_mult` (SORRY NODE) is
-the levelwise system of `𝒪_D/I^k`-valued Weil pairings on the finite
-torsion `A[I^k]` — dual, polarization, trace duality — and
-`exists_tateWeilPairing_of_tateWeilSystem` (PROVEN) passes it to the
-limit.  The section's ONLY remaining sorry is the levelwise system. -/
+along the LIMIT axis.  `exists_tateWeilSystem_of_mult` (DECOMPOSED
+2026-07-27 into five leaves) is the levelwise system of `𝒪_D/I^k`-valued
+Weil pairings on the finite torsion `A[I^k]` — dual, polarization, trace
+duality — and `exists_tateWeilPairing_of_tateWeilSystem` (PROVEN) passes
+it to the limit.  The section's remaining sorries are the five leaves of
+the levelwise-system cut: `exists_qAdicWeilSystem_of_mult`,
+`exists_preimage_act_of_mult`, `exists_traceDualFunctional_of_adicPin`,
+`exists_cyclotomicLog` and
+`exists_tateWeilSystem_of_qAdicWeilSystem`. -/
 
 /-- **A free module carrying the module topology over a `T2Space` ring is
 a `T2Space`** (PROVEN; vendored in argument from the reference project
@@ -6596,11 +6601,453 @@ def IsTateWeilSystem {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct 
       e (k + 1) y z - e k (m.act π y) (m.act π z) ∈ Ideal.span {j π} ^ k) ∧
   (∃ t s : TatePt m x I π, IsUnit (e 1 (t.1 1) (s.1 1)))
 
+/-- **A compatible system of `q`-adic Weil pairings on the torsion of a
+geometric fibre** — the CLASSICAL, `μ_{q^N}`-valued datum out of which the
+`I`-adic system of `IsTateWeilSystem` is refined by trace duality.
+
+`w N y z` is the value of the `q^N`-Weil pairing attached to a fixed
+`𝒪_D`-linear polarization, written as an element of `(F̄)ˣ` rather than of
+`rootsOfUnity (q^N) F̄`: the subtype would force a coercion at every use and
+a transport across `N` in the tower clause, and the first clause below
+(`w N y z ^ q ^ N = 1`) says exactly what the subtype would.  As with
+`IsTateWeilSystem`, `w N` is a function on ALL geometric points and each
+clause is asserted only for `A[q^N]` arguments; its value off the torsion is
+unconstrained and no consumer may rely on it.
+
+The clauses, in order: `q^N`-torsion values, bi-multiplicativity in each
+variable, `𝒪_D`-ALTERNATING, `𝒪_D`-adjointness, `Γ_F`-equivariance (the raw
+action on `F̄ˣ` — the cyclotomic character enters only through
+`exists_cyclotomicLog`), LEVEL COMPATIBILITY ALONG THE INTEGER TOWER, and
+perfectness.
+
+TWO CLAUSES ARE NOT THE OBVIOUS ONES AND BOTH ARE LOAD-BEARING.
+
+*`𝒪_D`-alternating* (`w N (m.act a y) y = 1` for every `a`, not merely
+`w N y y = 1`).  The weaker form is what `PolarizationStruct.weil_self`
+gives, and it is NOT enough: from bi-multiplicativity and adjointness one
+gets only `w N (a y) y ^ 2 = 1`, so the induced `𝒪_D`-valued form would be
+alternating only up to 2-torsion and the third clause of `IsTateWeilSystem`
+would fail at `q = 2`.  Classically the stronger form is immediate, because
+the `𝒪_D`-valued form is alternating by construction and `w = ζ^{Tr(δ E)}`;
+it is stated here because it does not follow from the weaker one.
+
+*Level compatibility along the INTEGER tower*:
+
+  `w (N+1) y z ^ q = w N (q y) (q z)`   for `y, z ∈ A[q^{N+1}]`.
+
+This is Silverman *AEC* III.8.1(e) (`e_{mn}(P,Q) = e_n(mP,Q)`) read
+symmetrically, and it is the classical fact that the `e_{q^N}` are the
+reductions of ONE `ℤ_q`-bilinear form on `T_q A`.  **It is along `q`, not
+along `π`, and that is not a defect of this statement** — see the
+CORRECTION in `exists_tateWeilSystem_of_qAdicWeilSystem` for why no
+`π`-indexed compatibility can be written before the trace refinement, and
+why the earlier reading of that fact ("no compatibility field can be
+written at all") was too strong.
+
+NON-VACUITY.  The constant `1` system satisfies every clause but the last. -/
+def IsQAdicWeilSystem {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ)
+    (w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ) : Prop :=
+  (∀ (N : ℕ) (y z : GeomFibrePt f x), w N y z ^ q ^ N = 1) ∧
+  (∀ (N : ℕ) (y y' z : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      y' ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      w N (ab.add y y') z = w N y z * w N y' z) ∧
+  (∀ (N : ℕ) (y z z' : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      z' ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      w N y (ab.add z z') = w N y z * w N y z') ∧
+  (∀ (N : ℕ) (a : NumberField.RingOfIntegers D) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      w N (m.act a y) y = 1) ∧
+  (∀ (N : ℕ) (a : NumberField.RingOfIntegers D) (y z : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      w N (m.act a y) z = w N y (m.act a z)) ∧
+  (∀ (N : ℕ) (σ : Field.absoluteGaloisGroup F) (y z : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      w N (ab.galSMul x σ y) (ab.galSMul x σ z)
+        = Units.map
+            ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom)
+            (w N y z)) ∧
+  (∀ (N : ℕ) (y z : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ (N + 1)})).1 →
+      z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ (N + 1)})).1 →
+      w (N + 1) y z ^ q
+        = w N (m.act (q : NumberField.RingOfIntegers D) y)
+              (m.act (q : NumberField.RingOfIntegers D) z)) ∧
+  (∀ (N : ℕ) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 →
+      y ≠ ab.zero (specAlgClos F ≫ x) →
+      ∃ z : GeomFibrePt f x,
+        z ∈ (m.torsion x (Ideal.span {(q : NumberField.RingOfIntegers D) ^ N})).1 ∧
+        w N y z ≠ 1)
+
+/-- **A trace-duality functional for the pin `(O, j, π)`** — the
+`𝒪_D`-module-theoretic half of the refinement of the `q`-adic Weil pairing
+to an `I`-adic one, isolated as a statement of pure algebraic number theory
+with no geometry in it.
+
+Under the pin `hcplt`/`hdense`/`hker` the ring `O` is the `I`-adic
+completion `𝒪_{D,I}`, a complete discrete valuation ring, so its inverse
+different `𝔡_I⁻¹` is PRINCIPAL, say `𝔡_I⁻¹ = (δ)`.  `θ` is
+`c ↦ Tr_{D_I/ℚ_q}(δ c)`, and the two substantive clauses say that the
+induced pairing
+
+  `𝒪_D/I^k × O/(j π)^k ⟶ ℤ_q/q^k`,   `(b, c) ↦ θ (j b * c)`
+
+is PERFECT: every level-`k` additive functional on `𝒪_D` that kills `I^k`
+is represented by some `c` (third clause), and the representing `c` is
+unique modulo `(j π)^k` (fourth clause).  That is exactly the definition of
+the different, and it is what converts an `𝒪_D`-ADJOINT `ℤ`-valued pairing
+into an `𝒪_D`-BILINEAR `𝒪_D`-valued one.
+
+The first two clauses are the ambient linearity of a trace: additivity and
+`ℤ_q`-linearity.  Note the functionals `φ` of the third clause are only
+required to be additive MODULO `q^k` and to kill `I^k` MODULO `q^k` —
+which is what the applications supply, since they arise as
+`b ↦ L k (w k (b y) z)` and `L` is itself only additive modulo `q^k`.
+
+WHY BOTH DIRECTIONS ARE STATED even though the two finite groups have the
+same order: the development never has the cardinality count in hand, and
+`c` is only ever pinned modulo `(j π)^k`, so surjectivity and injectivity
+must be available separately.
+
+MATHLIB INGREDIENTS: `Submodule.traceDual`, `FractionalIdeal.dual`,
+`differentIdeal`, `Algebra.traceForm_nondegenerate`, together with the
+principality of a fractional ideal over a DVR. -/
+def IsTraceDualFunctional {D : Type u} [Field D] [NumberField D]
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (π : NumberField.RingOfIntegers D)
+    {O : Type u} [CommRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (θ : O → ℤ_[q]) : Prop :=
+  (∀ c c' : O, θ (c + c') = θ c + θ c') ∧
+  (∀ (r : ℤ_[q]) (c : O), θ (algebraMap ℤ_[q] O r * c) = r * θ c) ∧
+  (∀ (k : ℕ) (φ : NumberField.RingOfIntegers D → ℤ_[q]),
+      (∀ a b : NumberField.RingOfIntegers D,
+        φ (a + b) - (φ a + φ b) ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
+      (∀ a ∈ I ^ k, φ a ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
+      ∃ c : O, ∀ b : NumberField.RingOfIntegers D,
+        φ b - θ (j b * c) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+  (∀ (k : ℕ) (c : O),
+      (∀ b : NumberField.RingOfIntegers D, θ (j b * c) ∈ Ideal.span {(q : ℤ_[q])} ^ k) →
+      c ∈ Ideal.span {j π} ^ k)
+
+/-- **The geometric fibre of a Hilbert–Blumenthal abelian scheme carries a
+compatible system of `q`-adic Weil pairings** (SORRY LEAF — steps 1 and 2 of
+the classical route: Grothendieck representability of `Pic⁰`, an
+`𝒪_D`-linear polarization, and the Weil pairing it induces; Mumford
+*Abelian Varieties* §13, §16, §23, Silverman *AEC* III.8.1).
+
+This is the purely GEOMETRIC input to `exists_tateWeilSystem_of_mult`, and
+nothing about `I`, `π` or the pin appears in it: the datum is the classical
+`q`-adic Weil pairing attached to a polarization, level by level, together
+with the level compatibility that makes those levels the reductions of one
+form on `T_q A`.
+
+WHY IT IS STATED AS A BARE FUNCTION AND NOT AS
+`∃ d : DualStruct ab m, Nonempty (PolarizationStruct d 𝒩)`.  Two reasons,
+the second of them a refutation:
+
+1. `DualStruct` carries NO cross-level axiom, so a `d` and a `p` say
+   nothing whatever about how `p.pairing` at level `n` relates to
+   `p.pairing` at level `n'`.  A cut that hands a successor `d` and `p` and
+   asks for `IsTateWeilSystem` would be handing it hypotheses that cannot
+   contribute to the tower clause — a fake decomposition.  The level
+   compatibility has to be part of the geometric leaf's CONCLUSION, and it
+   is the seventh clause of `IsQAdicWeilSystem`.
+2. `PolarizationStruct.weil_hom_nondegenerate` demands nondegeneracy of
+   `d.weil x I n hn` for EVERY `n` with `(n : 𝒪_D) ∈ I`, and at an `I`
+   RAMIFIED over `q` the classical Weil pairing does not satisfy that at
+   `n = q` — see the RAMIFICATION OBSTRUCTION in
+   `exists_tateWeilSystem_of_qAdicWeilSystem`, which computes that the
+   `q`-Weil pairing vanishes identically on `A[I]` there.  So the classical
+   datum is not an instance of that structure at ramified levels, and a
+   leaf demanding one would be asking for something the geometry does not
+   provide.  `IsQAdicWeilSystem` indexes its perfectness by `A[q^N]`, where
+   the classical pairing really is perfect, and pays for the `I`-adic
+   information with the trace refinement instead.
+
+FAITHFULNESS.  `hdim` is what makes the geometric fibre an abelian variety
+of dimension `[D : ℚ]` with `𝒪_D` acting, hence `A[q^N]` free of rank two
+over `𝒪_D/q^N` and the induced pairing perfect;
+`[NumberField.IsTotallyReal D]` is what makes the Rosati involution trivial
+on `𝒪_D`, i.e. the fourth and fifth clauses (`𝒪_D`-alternating and
+`𝒪_D`-adjoint) — without it the pairing is hermitian and the `𝒪_D`-valued
+refinement does not exist.  Do not drop either in a restatement. -/
+theorem exists_qAdicWeilSystem_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime] :
+    ∃ w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ,
+      IsQAdicWeilSystem m x q w :=
+  sorry
+
+/-- **A nonzero element of `𝒪_D` acts surjectively on the geometric points
+of a fibre** (SORRY LEAF — an abelian variety over an algebraically closed
+field is a divisible group; equivalently a nonzero endomorphism of an
+abelian variety is an isogeny, hence surjective on geometric points;
+Mumford *Abelian Varieties* §6, Silverman *AEC* III.4.2).
+
+Small, classical, and independent of everything else in this section.  It is
+needed exactly once, and there for an unavoidable reason: the perfectness
+clause of `IsTateWeilSystem` quantifies over `TatePt m x I π`, so producing a
+witness means producing a COMPATIBLE SEQUENCE `y k ∈ A[I^k]` with
+`π · y (k+1) = y k`, which is possible only because every point of `A[I^k]`
+is `π`-divisible inside `A[I^{k+1}]`.  That is why the docstring of
+`IsTateWeilSystem` records that its last clause "also encodes surjectivity of
+the transition maps".
+
+`hdim` is what makes the geometric fibre an abelian variety at all. -/
+theorem exists_preimage_act_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (a : NumberField.RingOfIntegers D) (ha : a ≠ 0) (y : GeomFibrePt f x) :
+    ∃ z : GeomFibrePt f x, m.act a z = y :=
+  sorry
+
+/-- **The pin `(O, j, π)` admits a trace-duality functional** (SORRY LEAF —
+step 3 of the classical route, in its pure-algebra half; the inverse
+different of a complete discrete valuation ring is principal and the trace
+form against a generator is perfect).
+
+No geometry occurs here.  Under `hcplt`/`hdense`/`hker` the ring `O` is the
+`I`-adic completion of `𝒪_D`; `hI` and `hπ`/`hπ2` make `I` a maximal ideal
+with uniformizer `π`, so `O` is a complete DVR with residue characteristic
+`q` (that is `hqI`), and its inverse different over `ℤ_q` is generated by a
+single `δ`.  Take `θ = Tr(δ · )`.
+
+`[IsLocalRing O]` is carried because the argument is a local one; it is also
+already implied by the pin, and is listed rather than derived so that a
+successor does not have to re-derive it before starting.
+
+See `IsTraceDualFunctional` for what the four clauses say and for the
+mathlib ingredients. -/
+theorem exists_traceDualFunctional_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    ∃ θ : O → ℤ_[q], IsTraceDualFunctional q I π j θ :=
+  sorry
+
+/-- **A compatible system of discrete logarithms on the `q`-power roots of
+unity of `F̄`, intertwining the Galois action with the cyclotomic
+character** (SORRY LEAF — the trivialization `T_q μ ≅ ℤ_q` and the DEFINING
+property of `cyclotomicCharacter`).
+
+`L k` is "`log_{ζ_k}`" for a chosen compatible system `ζ_{k+1}^q = ζ_k` of
+primitive `q^k`-th roots of unity in `F̄`, which exists because `F̄` is
+algebraically closed of characteristic zero; the choice is non-canonical and
+that is why this is an existence statement.  Everything is written on `F̄ˣ`
+with the clauses guarded by `ζ ^ q ^ k = 1`, so that no `rootsOfUnity`
+subtype and no transport across `k` is needed.
+
+The five clauses: additivity modulo `q^k`; `Γ_F`-EQUIVARIANCE, i.e.
+`L k (σ ζ) ≡ χ_cyc(σ) · L k ζ`, which is where the cyclotomic character
+enters this development at all; compatibility along `ζ ↦ ζ^q` (this is what
+makes the family a trivialization of the Tate module of `μ`, and it is what
+the tower clause of `IsTateWeilSystem` is ultimately built from);
+injectivity modulo `q^k`; and surjectivity modulo `q^k`.
+
+WHY `χ_cyc` IS EVALUATED OVER `ℚ̄` AND NOT OVER `F̄`.  The consumer's
+statements (`IsTateWeilPairing`, `IsTateWeilSystem`,
+`det_eq_cyclotomicCharacter_of_tateFrame`) all name
+`cyclotomicCharacter (AlgebraicClosure ℚ) q` composed with
+`Field.absoluteGaloisGroup.map (algebraMap ℚ F)`, because that is the
+character the Frobenius computations are done with.  So the equivariance
+clause carries the transport across `ℚ̄ ↪ F̄` as part of its content; it is
+true because the `q^k`-th roots of unity of `F̄` all lie in the image of
+`ℚ̄`, so `σ` acts on them through its restriction.  That transport is the
+only non-formal part of this leaf.
+
+MATHLIB INGREDIENTS: `cyclotomicCharacter.spec`
+(`g t = t ^ (χ(g) mod q^n).val` for `t ^ q^n = 1`),
+`cyclotomicCharacter.toZModPow`, `IsPrimitiveRoot`, and the cyclicity of
+`rootsOfUnity` in a field. -/
+theorem exists_cyclotomicLog (F : Type u) [Field F] [NumberField F]
+    (q : ℕ) [Fact q.Prime] :
+    ∃ L : ℕ → (AlgebraicClosure F)ˣ → ℤ_[q],
+      (∀ (k : ℕ) (ζ ξ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 → ξ ^ q ^ k = 1 →
+        L k (ζ * ξ) - (L k ζ + L k ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 →
+        L k (Units.map
+              ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom) ζ)
+          - (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+                ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+            * L k ζ) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ (k + 1) = 1 →
+        L (k + 1) ζ - L k (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ k) ∧
+      (∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 →
+        (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1)) ∧
+      (∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
+        ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k) :=
+  sorry
+
+/-- **Trace duality refines the `q`-adic Weil system to the `I`-adic one**
+(SORRY LEAF — step 3 of the classical route, in its geometric half: the
+passage from `μ_{q^N}`-valued pairings on `A[q^N]` to `𝒪_D/I^k`-valued
+pairings on `A[I^k]`, along the inverse different).
+
+Every hypothesis is consumed, and the shape of the intended proof is fixed
+by two facts that took some work to establish and that a successor should
+not have to rediscover.
+
+**HOW `e` IS DEFINED.**  For `y, z ∈ A[I^k]` the map
+
+  `φ_{y,z} : 𝒪_D ⟶ ℤ_q`,   `b ↦ L k (w k (m.act b y) z)`
+
+is additive modulo `q^k` (bi-multiplicativity of `w` plus additivity of `L`)
+and kills `I^k` modulo `q^k` (because `m.act b y = 0` there, and `L k 1 ≡ 0`).
+Note `A[I^k] ⊆ A[q^k]`, since `q ∈ I` gives `q^k ∈ I^k`.  The third clause
+of `IsTraceDualFunctional` then produces `c` with
+`φ_{y,z} b ≡ θ (j b * c)` for all `b`, and `e k y z` is that `c`.  Each
+clause of `IsTateWeilSystem` is then verified by computing `φ` for the two
+sides and appealing to the FOURTH clause of `IsTraceDualFunctional`
+(uniqueness) — that single pattern discharges bi-additivity,
+`𝒪_D`-bilinearity (`φ_{a y, z} b = φ_{y,z} (b a)` by `Mult.act_mul`),
+alternating (this is where the `𝒪_D`-ALTERNATING clause of
+`IsQAdicWeilSystem` is used, and the weaker `w N y y = 1` would leave a
+2-torsion error), and `Γ_F`-equivariance (`w`'s Galois clause, then `L`'s,
+then `ℤ_q`-linearity of `θ`).
+
+**THE TOWER CLAUSE NEEDS THE TATE MODULE, AND THAT IS NOT AN ACCIDENT.**
+The naive derivation fails, and it is worth writing down why, because it is
+the trap this cut exists to mark.  Combining `L`'s compatibility
+(`L (k+1) ξ ≡ L k (ξ^q)`) with `w`'s level compatibility
+(`w (k+1) u v ^ q = w k (q u) (q v)`) gives the level-`k` functional of
+`e (k+1) y z` as `b ↦ L k (w k (q b y) (q z))`, whereas the functional of
+`e k (π y) (π z)` is `b ↦ L k (w k (π b y) (π z))`.  These differ: by
+`𝒪_D`-adjointness the first is `b q^2` and the second `b π^2` against the
+same form, and `q` and `π` generate different ideals as soon as `I` is
+ramified or has residue degree `> 1`.
+
+The classical construction is therefore not levelwise.  One recovers the
+`ℤ_q`-bilinear form `E_q` on `T_I A` as the limit over `N` of
+`L N (w N (·) (·))` evaluated at the level-`N` components of Tate points —
+this is where `TatePt` and `IsAdicComplete` (`hcplt`) are used — refines it
+by trace duality to the `𝒪_D`-bilinear `E`, and sets
+`e k y z := E ỹ z̃ mod I^k` for LIFTS `ỹ, z̃ ∈ T_I A` of `y, z` along
+`T_I A ↠ A[I^k]`.  The tower clause is then immediate, because a lift of
+`y ∈ A[I^{k+1}]` is also a lift of `π y ∈ A[I^k]`: both sides are
+`E ỹ z̃` read modulo `I^k`.  The existence of the lifts is exactly `hdiv`.
+This is also why the perfectness clause comes out in the `TatePt` form the
+statement asks for.
+
+**RAMIFICATION OBSTRUCTION — a refutation, and it corrects the route
+recorded on `exists_tateWeilSystem_of_mult`.**  That docstring's step 3 says
+to refine "the resulting `μ_{q^k}`-valued pairing" on `A[I^k]`, i.e. to
+apply trace duality to `d.weil x (I^k) (q^k)`.  **At an `I` ramified over
+`q` there is nothing there to refine: the `q^N`-Weil pairing vanishes
+identically on `A[I^k]` for every `N` that is legal.**  Take `I` with
+ramification index `e` over `q`.  For `y, z ∈ A[I^k]` the `𝒪_D`-valued form
+takes values in `I^{-2k}`, so `Tr(δ E(y,z)) ∈ q^{-⌈2k/e⌉} ℤ_q` and the
+`q^N`-Weil pairing `q^N Tr(δ E(y,z))` is nontrivial modulo `ℤ` only when
+`N < ⌈2k/e⌉`; while `A[I^k] ⊆ A[q^N]` forces `e N ≥ k`.  For `e = 2, k = 1`
+the two conditions are `N < 1` and `N ≥ 1`, so no level works and `A[I]` is
+ISOTROPIC for every integer-level Weil pairing.  Since `A[I] ≠ 0`, this also
+shows the classical datum is not a `PolarizationStruct d 𝒩` with such an `I`
+in `𝒩`, whose `weil_hom_nondegenerate` would assert the opposite at
+`n = q` — reported as a cut-level concern for
+`Modularity/AbelianScheme.lean`, not repaired here.
+
+REFUTING CHECK for the obstruction: exhibit `y ∈ A[I]` and `N` with
+`e N ≥ 1` and `w N y (·)` not identically `1`, for `I` ramified over `q`.
+
+**AND A CORRECTION IN THE OTHER DIRECTION.**  The same docstring concludes
+from the `q`-versus-`π` mismatch that "no such field can be written in that
+vocabulary" and that "a successor who adds the proposed axiom to
+`DualStruct` will be adding a false one".  The second half is right; the
+first half is too strong as usually read.  The compatibility along the
+INTEGER tower — `e_{q^{N+1}}(y,z)^q = e_{q^N}(q y, q z)`, Silverman *AEC*
+III.8.1(e) — IS writable in `μ`-vocabulary, IS true, and is exactly what is
+missing from `DualStruct`; it is the seventh clause of `IsQAdicWeilSystem`.
+What is not writable there is the `π`-indexed compatibility, and that is a
+statement about the `I`-adic tower, which only exists after the refinement.
+So the correct reading is: `DualStruct` is missing an integer-tower
+compatibility field, and the `I`-adic one is not a field of any structure
+with a `μ_n`-valued pairing. -/
+theorem exists_tateWeilSystem_of_qAdicWeilSystem
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [IsLocalRing O] [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (w : ℕ → GeomFibrePt f x → GeomFibrePt f x → (AlgebraicClosure F)ˣ)
+    (hw : IsQAdicWeilSystem m x q w)
+    (θ : O → ℤ_[q]) (hθ : IsTraceDualFunctional q I π j θ)
+    (L : ℕ → (AlgebraicClosure F)ˣ → ℤ_[q])
+    (hLadd : ∀ (k : ℕ) (ζ ξ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 → ξ ^ q ^ k = 1 →
+      L k (ζ * ξ) - (L k ζ + L k ξ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLgal : ∀ (k : ℕ) (σ : Field.absoluteGaloisGroup F) (ζ : (AlgebraicClosure F)ˣ),
+      ζ ^ q ^ k = 1 →
+      L k (Units.map
+            ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom) ζ)
+        - (((cyclotomicCharacter (AlgebraicClosure ℚ) q
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q])
+          * L k ζ) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLtower : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ (k + 1) = 1 →
+      L (k + 1) ζ - L k (ζ ^ q) ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hLinj : ∀ (k : ℕ) (ζ : (AlgebraicClosure F)ˣ), ζ ^ q ^ k = 1 →
+      (L k ζ ∈ Ideal.span {(q : ℤ_[q])} ^ k ↔ ζ = 1))
+    (hLsurj : ∀ (k : ℕ) (r : ℤ_[q]), ∃ ζ : (AlgebraicClosure F)ˣ,
+      ζ ^ q ^ k = 1 ∧ L k ζ - r ∈ Ideal.span {(q : ℤ_[q])} ^ k)
+    (hdiv : ∀ (a : NumberField.RingOfIntegers D), a ≠ 0 →
+      ∀ y : GeomFibrePt f x, ∃ z : GeomFibrePt f x, m.act a z = y) :
+    ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e :=
+  sorry
+
 /-- **The torsion of a Hilbert–Blumenthal abelian scheme carries a
-compatible system of `I`-adic Weil pairings** (SORRY NODE — the GEOMETRIC
-residue of `exists_tateWeilPairing_of_mult` after the LIMIT was split off
-on 2026-07-27; Mumford *Abelian Varieties* §16/§20, Taylor 2002 §2,
-Carayol).
+compatible system of `I`-adic Weil pairings** (DECOMPOSED 2026-07-27 into
+five leaves — the GEOMETRIC residue of `exists_tateWeilPairing_of_mult`
+after the LIMIT was split off the same day; Mumford *Abelian Varieties*
+§16/§20, Taylor 2002 §2, Carayol).
+
+PROVEN HERE from `exists_qAdicWeilSystem_of_mult` (the geometry),
+`exists_traceDualFunctional_of_adicPin` (the different),
+`exists_cyclotomicLog` (the trivialization of `T_q μ`),
+`exists_preimage_act_of_mult` (divisibility) and
+`exists_tateWeilSystem_of_qAdicWeilSystem` (the refinement).  The route
+recorded below is the classical one and is retained in full because the
+analysis it contains is still the reason each leaf says what it says — but
+**it is corrected in two places by the RAMIFICATION OBSTRUCTION and by the
+CORRECTION note in `exists_tateWeilSystem_of_qAdicWeilSystem`**, which
+between them show that step 3 cannot be applied levelwise to
+`d.weil x (I^k) (q^k)` and that the missing `DualStruct` axiom is an
+integer-tower one.  Read those before acting on the four-step list below.
 
 This is steps 1–3 of the four-step classical route recorded below; step 4
 (the passage to the limit) is `exists_tateWeilPairing_of_tateWeilSystem`
@@ -6759,8 +7206,14 @@ theorem exists_tateWeilSystem_of_mult
       z - j a ∈ Ideal.span {j π} ^ n)
     (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
       j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
-    ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e :=
-  sorry
+    ∃ e : ℕ → GeomFibrePt f x → GeomFibrePt f x → O, IsTateWeilSystem m x q I π j e := by
+  obtain ⟨w, hw⟩ := exists_qAdicWeilSystem_of_mult m x hdim q
+  obtain ⟨θ, hθ⟩ :=
+    exists_traceDualFunctional_of_adicPin q I hI hqI π hπ hπ2 O j hcplt hdense hker
+  obtain ⟨L, hLadd, hLgal, hLtower, hLinj, hLsurj⟩ := exists_cyclotomicLog F q
+  exact exists_tateWeilSystem_of_qAdicWeilSystem m x q I hI hqI π hπ hπ2 O j hcplt hker
+    w hw θ hθ L hLadd hLgal hLtower hLinj hLsurj
+    (fun a ha y => exists_preimage_act_of_mult m x hdim a ha y)
 
 /-- **A compatible system of levelwise pairings passes to the limit and
 gives an `I`-adic Weil pairing on the Tate module** (PROVEN 2026-07-27 —
@@ -6976,10 +7429,12 @@ cleanly after step 3, and the split is along the LIMIT:
 
 * steps 1–3 — dual, polarization, trace-duality refinement — produce a
   COMPATIBLE SYSTEM of levelwise pairings on the finite torsion group
-  schemes `A[I^k]`.  That is `exists_tateWeilSystem_of_mult`, and it is
-  the only thing still open.  All of the audits below apply to it
-  verbatim and are restated in its docstring, which is where a successor
-  should read them;
+  schemes `A[I^k]`.  That is `exists_tateWeilSystem_of_mult`, which since
+  2026-07-27 is PROVEN over five leaves of its own.  All of the audits
+  below apply to it verbatim and are restated in its docstring, which is
+  where a successor should read them — TOGETHER WITH the two corrections
+  those leaves added (the RAMIFICATION OBSTRUCTION and the integer-tower
+  CORRECTION, both in `exists_tateWeilSystem_of_qAdicWeilSystem`);
 * step 4 — passage to the limit — is
   `exists_tateWeilPairing_of_tateWeilSystem`, and it is PROVEN.  It is
   where `hcplt` earns its keep, and it is also where the CONTINUITY
@@ -7027,13 +7482,22 @@ steps exists in `Modularity/AbelianScheme.lean`):
    clause of `IsTateWeilPairing` comes from.
 
 Steps 1–3 are `exists_tateWeilSystem_of_mult`; step 4 is
-`exists_tateWeilPairing_of_tateWeilSystem` and is PROVEN.  TWO STANDING
+`exists_tateWeilPairing_of_tateWeilSystem` and is PROVEN.  **STEP 3 IS
+NOT APPLIED LEVELWISE AND STEPS 1–2 ARE NOT `DualStruct`/
+`PolarizationStruct`** — the RAMIFICATION OBSTRUCTION in
+`exists_tateWeilSystem_of_qAdicWeilSystem` shows the `q^N`-Weil pairing
+vanishes identically on `A[I^k]` at a ramified `I`, so there is nothing
+there to refine, and the refinement has to happen on `T_I A`.  Read that
+docstring before acting on the list above.  TWO STANDING
 REFUTATIONS govern any further work on steps 1–3 and are recorded IN
 FULL on `exists_tateWeilSystem_of_mult`, each with its refuting check:
 the level-compatibility axiom proposed for `DualStruct` in
 `Modularity/AbelianScheme.lean` **cannot be written in that vocabulary
 and would be false** (its target `μ_{q^k}` is indexed by the rational
-integer `q`, not by `π`), and an existence leaf of the shape
+integer `q`, not by `π`) — though note the CORRECTION in
+`exists_tateWeilSystem_of_qAdicWeilSystem`: the compatibility along the
+INTEGER tower IS writable and true, and is the field `DualStruct` is
+actually missing — and an existence leaf of the shape
 `∃ d : DualStruct ab m, Nonempty (PolarizationStruct d)` **would be
 false** (`weil_hom_nondegenerate` at every `I` forces `hom` to be an
 isomorphism, i.e. a PRINCIPAL `𝒪_D`-polarization, which a
