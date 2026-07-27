@@ -18,6 +18,8 @@ public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.FieldTheory.Perfect
 public import Mathlib.AlgebraicGeometry.Properties
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
+public import Mathlib.RingTheory.Smooth.StandardSmoothCotangent
+public import Mathlib.RingTheory.RingHom.Locally
 public import Mathlib.RingTheory.Ideal.Height
 public import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.RingTheory.NoetherNormalization
@@ -87,11 +89,12 @@ PROVEN here.
 
 ## The leaves, after the 2026-07-27 decompositions
 
-Every one of the original five leaves has now been cut down; the remaining leaves are:
+Every one of the original five leaves has now been cut down; the remaining leaves are
+(`nonempty_projChart_mvPolynomial` and `smoothOfRelativeDimension_of_isDominant` left this
+list on 2026-07-27, both PROVEN):
 
 | leaf | content |
 | --- | --- |
-| `nonempty_projChart_mvPolynomial` | dehomogenisation: the standard affine chart of `ℙⁿ` |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) |
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
@@ -325,8 +328,9 @@ one cannot write oneself.
 
 The three pieces:
 
-* `nonempty_projChart_mvPolynomial` (LEAF) — the standard affine chart of `ℙⁿ`:
-  dehomogenisation at `X₀`;
+* `nonempty_projChart_mvPolynomial` (PROVEN 2026-07-27) — the standard affine chart of `ℙⁿ`:
+  dehomogenisation at `X₀`, now a theorem over the single arithmetic leaf
+  `eq_zero_of_isHomogeneous_of_dehomogenisation`, which is itself proven;
 * `nonempty_projChart_of_surjective` (LEAF) — the projective closure: a chart for `B'`
   descends along a surjection `B' ↠ B`;
 * `exists_isOpenImmersion_isProper_of_affineCase` (LEAF) — Nagata's gluing induction, which
@@ -338,9 +342,12 @@ triangle out of the base field) is already used by
 `Fermat/FLT/ModularCurve/EllipticScheme.lean` for the projective Weierstrass model, whose
 `exists_projChartRingEquiv` is the Weierstrass instance of `nonempty_projChart_mvPolynomial`
 composed with `nonempty_projChart_of_surjective`.  Whoever proves one should look at the
-other; the second file's docstring carries a full proof plan for the dehomogenisation
-isomorphism (surjectivity from `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`, the
-kernel by a UFD divisibility argument). -/
+other; the second file's docstring carries a proof plan for the dehomogenisation isomorphism
+(surjectivity from `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`, the kernel by a
+UFD divisibility argument).  **That plan is now superseded on this side**: see the docstring
+of `nonempty_projChart_mvPolynomial` below, which builds the map DOWNWARD by
+`Localization.awayLift` out of `aeval (Fin.cons 1 X)` and so gets surjectivity from an explicit
+section rather than from `adjoin_mk_prod_pow_eq_top`.  The same reversal should apply there. -/
 
 /-- For an affine `Y` and an affine target, a morphism is recovered from its ring map:
 `g = Y.isoSpec.hom ≫ Spec.map (Γ g)`.  This is `Scheme.isoSpec_hom_naturality` with the
@@ -443,30 +450,233 @@ theorem exists_isOpenImmersion_isProper_of_proj {Y : Scheme.{u}} [IsAffine Y]
   exact QuasiCompact.of_comp (Y.isoSpec.hom ≫ Spec.map e.hom ≫ Proj.awayι 𝒜 f hf one_pos)
     (Proj.toSpecZero 𝒜 ≫ Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0))))
 
-/-- **The standard affine chart of `ℙⁿ`** (sorry leaf — dehomogenisation).
+section ProjChartMvPolynomial
 
-TRUE and elementary: take `A := K[X₀, …, Xₙ]` with its grading by total degree
-(`MvPolynomial.homogeneousSubmodule`) and `f := X₀`.  Then `𝒜₀ = K` (so `Module.Finite K 𝒜₀`
-is immediate), `A` is generated over `𝒜₀` by `n + 1` elements, and the degree-zero part of
-`A[X₀⁻¹]` is `K[X₁/X₀, …, Xₙ/X₀] ≅ K[Y₁, …, Yₙ]` — dehomogenisation, `Xᵢ ↦ Yᵢ`, `X₀ ↦ 1`.
-Stacks tag `01M3`.
+open _root_.MvPolynomial
 
-**Why it is not free at this pin**: a grep for `dehomogeni` over the whole of `Mathlib`
-returns NOTHING.  `HomogeneousLocalization.Away` and `Proj.awayι` exist, but no
-identification of an away-localisation's degree-zero part with a concrete polynomial ring.
-The same gap is recorded independently at `Fermat.exists_projChartRingEquiv`
-(`Fermat/FLT/ModularCurve/EllipticScheme.lean`), whose docstring carries a full proof plan —
-surjectivity from `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`, injectivity by a
-UFD divisibility argument.  Here the ideal is zero, so only the surjectivity half plus the
-triviality of the kernel is needed, which makes this the EASIER of the two; a proof here
-should be lifted to that one, and vice versa.
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+/-- **Dehomogenisation is injective on homogeneous polynomials**: if `a ∈ K[X₀, …, Xₙ]` is
+homogeneous of degree `k` and `a(1, Y₁, …, Yₙ) = 0`, then `a = 0`.
+
+This is the whole arithmetic content of `nonempty_projChart_mvPolynomial` below, and it is
+what makes the dehomogenisation map an ISOMORPHISM rather than merely a surjection.
+
+The proof goes through `MvPolynomial.finSuccEquiv`, which presents `K[X₀, …, Xₙ]` as
+`(K[Y₁, …, Yₙ])[X₀]`, and through `Mathlib`'s
+`MvPolynomial.IsHomogeneous.finSuccEquiv_coeff_isHomogeneous`: the `X₀`-coefficient of index
+`i` of a form of degree `k` is homogeneous of degree `k - i`, and vanishes for `i > k`.
+Setting `X₀ = 1` is `Polynomial.eval 1`, so the hypothesis says exactly that the sum of those
+coefficients is zero — a sum of homogeneous polynomials of PAIRWISE DISTINCT degrees `k - i`.
+Applying `MvPolynomial.homogeneousComponent (k - i)` picks off each one, so every coefficient
+vanishes and `a = 0`.
+
+Note what this replaces: the audit on the old leaf proposed injectivity "by a UFD divisibility
+argument" (copied from `Fermat.exists_projChartRingEquiv`, where the ideal is nonzero and such
+an argument really is needed).  Here the ideal is zero and the grading alone does it, with no
+divisibility and no unique factorisation. -/
+theorem eq_zero_of_isHomogeneous_of_dehomogenisation {n k : ℕ}
+    {a : MvPolynomial (Fin (n + 1)) K} (ha : a.IsHomogeneous k)
+    (h : aeval (Fin.cons 1 X : Fin (n + 1) → MvPolynomial (Fin n) K) a = 0) :
+    a = 0 := by
+  classical
+  have hdeg : ∀ (i : ℕ) (m : Fin n →₀ ℕ), (Finsupp.cons i m).degree = i + m.degree := by
+    intro i m
+    have hs := Finsupp.sum_cons n m i
+    simpa [Finsupp.degree, Finsupp.sum] using hs
+  set P := finSuccEquiv K n a with hP
+  have hzero : ∀ i, k < i → P.coeff i = 0 := by
+    intro i hi
+    ext m
+    rw [hP, finSuccEquiv_coeff_coeff]
+    refine ha.coeff_eq_zero ?_
+    rw [hdeg]
+    omega
+  have hhom : ∀ i, i ≤ k → (P.coeff i).IsHomogeneous (k - i) := fun i hi =>
+    ha.finSuccEquiv_coeff_isHomogeneous i (k - i) (by omega)
+  -- `aeval (Fin.cons 1 X)` is evaluation of `finSuccEquiv` at `1`
+  have hev : ∀ b : MvPolynomial (Fin (n + 1)) K,
+      aeval (Fin.cons 1 X : Fin (n + 1) → MvPolynomial (Fin n) K) b
+        = Polynomial.eval 1 (finSuccEquiv K n b) := by
+    have : ((Polynomial.evalRingHom (1 : MvPolynomial (Fin n) K)).comp
+        (finSuccEquiv K n : MvPolynomial (Fin (n + 1)) K →+* _))
+        = (aeval (Fin.cons 1 X : Fin (n + 1) → MvPolynomial (Fin n) K)).toRingHom := by
+      refine MvPolynomial.ringHom_ext (fun r => ?_) (fun i => ?_)
+      · simp [finSuccEquiv_apply]
+      · refine Fin.cases ?_ ?_ i
+        · simp [finSuccEquiv_X_zero]
+        · intro j; simp [finSuccEquiv_X_succ]
+    intro b
+    exact (congrArg (fun (F : MvPolynomial (Fin (n + 1)) K →+*
+      MvPolynomial (Fin n) K) => F b) this).symm
+  -- so the sum of the coefficients vanishes
+  have hnd : P.natDegree < k + 1 :=
+    Nat.lt_succ_of_le (Polynomial.natDegree_le_iff_coeff_eq_zero.mpr hzero)
+  have hsum : ∑ i ∈ Finset.range (k + 1), P.coeff i = 0 := by
+    have h1 : Polynomial.eval 1 P = 0 := by rw [hP, ← hev]; exact h
+    rw [Polynomial.eval_eq_sum_range' hnd] at h1
+    simpa using h1
+  -- picking off the homogeneous components
+  have hcoeff : ∀ i ∈ Finset.range (k + 1), P.coeff i = 0 := by
+    intro i hi
+    rw [Finset.mem_range] at hi
+    have := congrArg (homogeneousComponent (k - i)) hsum
+    rw [map_sum, map_zero] at this
+    rw [← this]
+    rw [Finset.sum_eq_single i]
+    · exact (homogeneousComponent_eq_self (hhom i (by omega))).symm
+    · intro j hj hji
+      rw [Finset.mem_range] at hj
+      refine homogeneousComponent_of_mem (hhom j (by omega)) |>.trans ?_
+      rw [if_neg]
+      omega
+    · intro hni
+      exact absurd (Finset.mem_range.mpr (by omega : i < k + 1)) hni
+  have hPzero : P = 0 := by
+    refine Polynomial.ext fun i => ?_
+    rcases le_or_gt i k with hik | hik
+    · exact (hcoeff i (Finset.mem_range.mpr (by omega))).trans (Polynomial.coeff_zero i).symm
+    · exact (hzero i hik).trans (Polynomial.coeff_zero i).symm
+  exact (map_eq_zero_iff (finSuccEquiv K n) (finSuccEquiv K n).injective).mp (hP.symm.trans hPzero)
+
+/-- **The standard affine chart of `ℙⁿ`** (PROVEN 2026-07-27, over the single arithmetic leaf
+`eq_zero_of_isHomogeneous_of_dehomogenisation` above).
+
+Take `A := K[X₀, …, Xₙ]` with its grading by total degree
+(`MvPolynomial.homogeneousSubmodule`, whose `GradedAlgebra` instance is `MvPolynomial.gradedAlgebra`
+— note it is an `abbrev`, not a global instance, so it has to be turned on locally) and `f := X₀`.
+Then `𝒜₀ = 1` as a submodule (`MvPolynomial.homogeneousSubmodule_zero`), so `Module.Finite K 𝒜₀`
+is `Submodule.fg_span_singleton`; `A` is generated over `𝒜₀` by the `n + 1` variables; and the
+degree-zero part of `A[X₀⁻¹]` is `K[X₁/X₀, …, Xₙ/X₀] ≅ K[Y₁, …, Yₙ]` — dehomogenisation,
+`Xᵢ ↦ Yᵢ`, `X₀ ↦ 1`.  Stacks tag `01M3`.
+
+**How the identification is built, since the previous audit's route was harder than necessary.**
+That audit said `Mathlib` has no identification of an away-localisation's degree-zero part with a
+concrete polynomial ring — still true — and proposed getting surjectivity from
+`HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top` and injectivity from a UFD divisibility
+argument.  Both halves are avoidable, and the map is built in the OTHER direction:
+
+* `dh := aeval (Fin.cons 1 X) : A →ₐ[K] K[Y₁, …, Yₙ]` sends `X₀ ↦ 1`, so `dh X₀` is a unit and
+  `dh` factors through `Localization.Away X₀` by `Localization.awayLift`.  Composing with
+  `HomogeneousLocalization.val` gives `θ : 𝒜_(X₀) →+* K[Y₁, …, Yₙ]`, and
+  `Localization.awayLift_mk` computes it on `Away.mk`: `θ (a / X₀ ^ j) = dh a`, with no
+  bookkeeping about degrees at all.
+* SURJECTIVITY is then free: `θ` has the explicit section `eval₂Hom` sending `Yᵢ ↦ Xᵢ₊₁ / X₀`,
+  and `θ ∘ ψ = id` is checked on `C r` and on the `Yᵢ` by `MvPolynomial.ringHom_ext`.  No
+  `adjoin_mk_prod_pow_eq_top`, and in particular none of the product-of-powers manipulation
+  that route needs.
+* INJECTIVITY is `HomogeneousLocalization.Away.mk_surjective` plus the leaf above.
+
+The same pattern should transfer to `Fermat.exists_projChartRingEquiv`
+(`Fermat/FLT/ModularCurve/EllipticScheme.lean`), whose docstring carries the older plan: build the
+map DOWN by `awayLift` rather than up by generators, and only the kernel computation is left —
+which there, unlike here, genuinely needs the Weierstrass ideal.
 
 This is `Mathlib`-ready material: stated for an arbitrary base commutative ring it is the
 standard affine cover of projective space. -/
 theorem nonempty_projChart_mvPolynomial (n : ℕ) :
     Nonempty (ProjChart K (CommRingCat.of (MvPolynomial (Fin n) K))
-      (CommRingCat.ofHom (algebraMap K (MvPolynomial (Fin n) K)))) :=
-  sorry
+      (CommRingCat.ofHom (algebraMap K (MvPolynomial (Fin n) K)))) := by
+  classical
+  haveI hfin0 : Module.Finite K ↥(homogeneousSubmodule (Fin (n + 1)) K 0) := by
+    have h0 : homogeneousSubmodule (Fin (n + 1)) K 0
+        = (1 : Submodule K (MvPolynomial (Fin (n + 1)) K)) :=
+      homogeneousSubmodule_zero (Fin (n + 1))
+    rw [h0]
+    refine Module.Finite.iff_fg.mpr ?_
+    rw [Submodule.one_eq_span]
+    exact Submodule.fg_span_singleton 1
+  haveI hft : Algebra.FiniteType ↥(homogeneousSubmodule (Fin (n + 1)) K 0)
+      (MvPolynomial (Fin (n + 1)) K) := by
+    refine ⟨⟨Finset.univ.image (X : Fin (n + 1) → MvPolynomial (Fin (n + 1)) K), ?_⟩⟩
+    rw [eq_top_iff]
+    rintro p -
+    induction p using MvPolynomial.induction_on with
+    | C a =>
+        have hmem : (C a : MvPolynomial (Fin (n + 1)) K)
+            ∈ homogeneousSubmodule (Fin (n + 1)) K 0 := isHomogeneous_C _ a
+        exact Subalgebra.algebraMap_mem _ (⟨C a, hmem⟩ :
+          ↥(homogeneousSubmodule (Fin (n + 1)) K 0))
+    | add p q hp hq => exact Subalgebra.add_mem _ hp hq
+    | mul_X p i hp =>
+        exact Subalgebra.mul_mem _ hp (Algebra.subset_adjoin (by simp))
+  -- the dehomogenisation map
+  set dh : MvPolynomial (Fin (n + 1)) K →ₐ[K] MvPolynomial (Fin n) K :=
+    aeval (Fin.cons 1 X) with hdh
+  have hdh0 : dh (X 0) = 1 := by simp [hdh]
+  have hdhs : ∀ i : Fin n, dh (X i.succ) = X i := by intro i; simp [hdh]
+  have hu : (dh : MvPolynomial (Fin (n + 1)) K →+* MvPolynomial (Fin n) K) (X 0) * 1 = 1 := by
+    simpa using hdh0
+  have hf : (X 0 : MvPolynomial (Fin (n + 1)) K) ∈ homogeneousSubmodule (Fin (n + 1)) K 1 :=
+    isHomogeneous_X K 0
+  -- the ring map out of the away-localisation
+  set θ : HomogeneousLocalization.Away (homogeneousSubmodule (Fin (n + 1)) K) (X 0) →+*
+      MvPolynomial (Fin n) K :=
+    (Localization.awayLift (dh : MvPolynomial (Fin (n + 1)) K →+* MvPolynomial (Fin n) K) (X 0)
+      (isUnit_iff_exists_inv.mpr ⟨1, hu⟩)).comp (algebraMap _ _) with hθ
+  have θ_mk : ∀ (j : ℕ) (a : MvPolynomial (Fin (n + 1)) K)
+      (haj : a ∈ homogeneousSubmodule (Fin (n + 1)) K (j • 1)),
+      θ (HomogeneousLocalization.Away.mk _ hf j a haj) = dh a := by
+    intro j a haj
+    rw [hθ]
+    show Localization.awayLift (dh : MvPolynomial (Fin (n + 1)) K →+* MvPolynomial (Fin n) K)
+      (X 0) (isUnit_iff_exists_inv.mpr ⟨1, hu⟩)
+      (HomogeneousLocalization.Away.mk _ hf j a haj).val = _
+    rw [HomogeneousLocalization.Away.val_mk, Localization.awayLift_mk _ _ _ 1 hu]
+    simp
+  -- `θ` is surjective, because it has a section on the polynomial generators
+  have hXs : ∀ i : Fin n, (X i.succ : MvPolynomial (Fin (n + 1)) K)
+      ∈ homogeneousSubmodule (Fin (n + 1)) K (1 • 1) := by
+    intro i
+    simpa using isHomogeneous_X K i.succ
+  have hC0 : ∀ r : K, (C r : MvPolynomial (Fin (n + 1)) K)
+      ∈ homogeneousSubmodule (Fin (n + 1)) K (0 • 1) := by
+    intro r
+    simp
+  set cmap : K →+* HomogeneousLocalization.Away (homogeneousSubmodule (Fin (n + 1)) K) (X 0) :=
+    (HomogeneousLocalization.fromZeroRingHom (homogeneousSubmodule (Fin (n + 1)) K) _).comp
+      (algebraMap K ↥(homogeneousSubmodule (Fin (n + 1)) K 0)) with hcmap
+  have hc : ∀ r : K, cmap r
+      = HomogeneousLocalization.Away.mk _ hf 0 (C r) (hC0 r) := by
+    intro r
+    rw [HomogeneousLocalization.ext_iff_val]
+    simp [hcmap, HomogeneousLocalization.fromZeroRingHom, HomogeneousLocalization.Away.mk,
+      algebraMap_eq]
+  set ψ : MvPolynomial (Fin n) K →+*
+      HomogeneousLocalization.Away (homogeneousSubmodule (Fin (n + 1)) K) (X 0) :=
+    eval₂Hom cmap (fun i => HomogeneousLocalization.Away.mk _ hf 1 (X i.succ) (hXs i)) with hψ
+  have hθψ : ∀ p, θ (ψ p) = p := by
+    have : θ.comp ψ = RingHom.id (MvPolynomial (Fin n) K) := by
+      refine MvPolynomial.ringHom_ext (fun r => ?_) (fun i => ?_)
+      · show θ (ψ (C r)) = C r
+        rw [hψ, eval₂Hom_C, hc, θ_mk]
+        simp [hdh]
+      · show θ (ψ (X i)) = X i
+        rw [hψ, eval₂Hom_X', θ_mk]
+        exact hdhs i
+    exact fun p => congrArg (fun (F : MvPolynomial (Fin n) K →+* MvPolynomial (Fin n) K) => F p) this
+  have hsurj : Function.Surjective θ := fun p => ⟨ψ p, hθψ p⟩
+  have hinj : Function.Injective θ := by
+    refine (injective_iff_map_eq_zero θ).mpr ?_
+    intro z hz
+    obtain ⟨j, a, haj, rfl⟩ := HomogeneousLocalization.Away.mk_surjective _ hf z
+    rw [θ_mk] at hz
+    have ha : a.IsHomogeneous j := by simpa using haj
+    have : a = 0 := eq_zero_of_isHomogeneous_of_dehomogenisation ha (by simpa [hdh] using hz)
+    subst this
+    exact HomogeneousLocalization.mk_eq_zero_of_num _ rfl
+  exact ⟨{ A := MvPolynomial (Fin (n + 1)) K
+           grading := homogeneousSubmodule (Fin (n + 1)) K
+           f := X 0
+           f_deg := hf
+           awayIso := (RingEquiv.ofBijective θ ⟨hinj, hsurj⟩).toCommRingCatIso
+           compat := by
+             refine CommRingCat.hom_ext (RingHom.ext fun r => ?_)
+             show θ (cmap r) = _
+             rw [hc, θ_mk]
+             simp [hdh] }⟩
+
+end ProjChartMvPolynomial
 
 /-- **Projective closure: a chart descends along a surjection** (sorry leaf).
 
@@ -493,7 +703,35 @@ and it only works because the chart does not demand `𝒜₀ ≅ K`.)
 
 `Mathlib` has no Nagata/Japanese-ring theory and no projective closure at this pin; it does
 have `HomogeneousIdeal`, `GradedRing`, and the quotient grading, which is what this is to be
-built from. -/
+built from.
+
+**A CHEAPER ROUTE THAN THE SATURATED IDEAL ABOVE (2026-07-27, from the author of
+`nonempty_projChart_mvPolynomial`, which closed by an analogous reversal).**  Do not construct
+`I` and prove it saturated; construct `A` as an IMAGE instead, and the saturation is what you
+get for free rather than what you have to prove.
+
+Grade `B[t]` (a one-variable polynomial ring over `B`) by `t`-degree, and define a GRADED
+`K`-algebra map `Φ : A' → B[t]` by sending `a ∈ 𝒜'_d` to `q (C.awayIso ⟦a / f'^d⟧) · t^d`.  It
+is multiplicative because `(ab)/f'^{d+e} = (a/f'^d)(b/f'^e)` in the away-localisation, and
+additive within each degree; so it is determined on the `GradedRing` decomposition of `A'`.
+Take `A := Φ.range` with the induced grading and `f := Φ f' = t` (note `f'/f' = 1`, so
+`Φ f' = q 1 · t = t`, giving `f ∈ 𝒜 1` on the nose).  Then:
+
+* `Algebra.FiniteType 𝒜₀ A` and `Module.Finite K 𝒜₀` are inherited from `A'` because `A` is a
+  quotient of `A'` and `𝒜₀` a quotient of `𝒜'₀` — no separate argument for either;
+* `(A_f)₀ = B` **by construction**: `(A_t)₀ = {a/t^d : a ∈ 𝒜_d}` is exactly the union over `d`
+  of `q (C.awayIso ⟦𝒜'_d / f'^d⟧)`, which is `q '' B' = B` since `q` is surjective and
+  `B' = (A'_{f'})₀`.  Surjectivity is where `q` is consumed and injectivity is by construction
+  of the image — the two places the saturated-ideal route needs real work;
+* the DEGENERATE case is automatic: for `B = 0`, `q 1 = 0` so `A = 0` and `𝒜₀ = 0`, which is
+  finite over `K` and not `≅ K` — exactly the reason `ProjChart` asks only for
+  `Module.Finite K 𝒜₀`.
+
+**The check that would refute this note**: that `Φ` cannot be assembled as a ring hom from its
+degreewise pieces at this pin.  It is assembled from `DirectSum.toSemiring` / the `GradedRing`
+decomposition of `A'`, and the degreewise pieces are `HomogeneousLocalization.Away.mk` composed
+with `C.awayIso.hom` and `q`; if that assembly is genuinely unavailable, the note is wrong and
+the saturated-ideal route stands. -/
 theorem nonempty_projChart_of_surjective {B B' : CommRingCat.{u}}
     {b' : CommRingCat.of K ⟶ B'} (_C : ProjChart K B' b') (q : B' ⟶ B)
     (_hq : Function.Surjective q.hom) : Nonempty (ProjChart K B (b' ≫ q)) :=
@@ -2090,8 +2328,12 @@ surviving declaration's docstring.  What the note says about
 dimension of a relative *normalization*, about which no smoothness is known, from the
 smoothness of a dense open inside it, so neither implies the other at this pin.
 
-So this subsection now adds ONE leaf, `smoothOfRelativeDimension_of_isDominant`; the dimension
-bound it also needs is the one already stated above. -/
+So this subsection added ONE leaf, `smoothOfRelativeDimension_of_isDominant`; the dimension
+bound it also needs is the one already stated above.  **That leaf is now PROVEN
+(2026-07-27)**, over the new purely ring-theoretic
+`eq_of_isStandardSmoothOfRelativeDimension_of_locally`, so this subsection adds NO leaf at
+all; see the declaration's docstring for why the irreducibility verdict recorded there was
+wrong. -/
 
 /-- **A space with a dense irreducible image is irreducible.**
 
@@ -2109,8 +2351,63 @@ theorem irreducibleSpace_of_denseRange {α β : Type*} [TopologicalSpace α] [To
   rw [irreducibleSpace_def, Set.top_eq_univ, ← hd.closure_eq]
   exact h.closure
 
-/-- **The relative dimension of a smooth morphism propagates from a dense open** (sorry leaf
-— local constancy of the relative dimension, and the whole content of the first half of
+/-- **The relative dimension is well defined**: a ring map that is standard smooth of relative
+dimension `m`, and *locally* standard smooth of relative dimension `n`, with nontrivial target,
+has `m = n`.
+
+This is the entire arithmetic content of `smoothOfRelativeDimension_of_isDominant` below, and it
+is where the audit that declared that leaf irreducible was wrong.  The audit is correct that
+**`Mathlib.AlgebraicGeometry` has no lemma relating `SmoothOfRelativeDimension` at two values of
+`n`** — but `Mathlib.RingTheory` does, and it is exactly the invariant one wants: for a nontrivial
+standard smooth algebra, `Ω[S⁄R]` is free of rank the relative dimension
+(`Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`, in
+`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`).  Two relative dimensions for one
+algebra therefore give two values for one rank.
+
+`Nontrivial A` is load-bearing and the statement is FALSE without it: over the zero ring every
+`n` works at once.  Getting a nontrivial *common* localisation is the only real step: from
+`Locally` one has a family spanning the unit ideal, and a maximal ideal of `A` must miss one
+member `t` of it; `t` is then not nilpotent, so `A_t` is nontrivial, and it inherits both
+relative dimensions — `n` from the `Locally` witness, `m` by composing with the localisation
+away map, which is standard smooth of relative dimension `0`. -/
+theorem eq_of_isStandardSmoothOfRelativeDimension_of_locally
+    {R A : Type u} [CommRing R] [CommRing A] [Nontrivial A] {φ : R →+* A} {m n : ℕ}
+    (hm : φ.IsStandardSmoothOfRelativeDimension m)
+    (hn : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension n) φ) :
+    m = n := by
+  obtain ⟨s, hs, hP⟩ := hn
+  obtain ⟨𝔪, h𝔪⟩ := Ideal.exists_maximal A
+  obtain ⟨t, hts, htm⟩ : ∃ t ∈ s, t ∉ 𝔪 := by
+    by_contra h
+    push Not at h
+    exact h𝔪.ne_top (eq_top_iff.mpr (hs ▸ Ideal.span_le.mpr h))
+  haveI : Nontrivial (Localization.Away t) := by
+    refine ⟨⟨1, 0, fun h => ?_⟩⟩
+    rw [show (1 : Localization.Away t) = algebraMap A _ 1 by simp,
+      show (0 : Localization.Away t) = algebraMap A _ 0 by simp] at h
+    obtain ⟨c, hc⟩ := (IsLocalization.eq_iff_exists (Submonoid.powers t) _).mp h
+    obtain ⟨k, hk⟩ := c.2
+    rw [mul_one, mul_zero] at hc
+    have hzero : t ^ k = 0 := by simpa using hk.trans hc
+    exact htm (h𝔪.isPrime.mem_of_pow_mem k (hzero ▸ 𝔪.zero_mem))
+  have h1 : ((algebraMap A (Localization.Away t)).comp φ).IsStandardSmoothOfRelativeDimension n :=
+    hP t hts
+  have h2 : ((algebraMap A (Localization.Away t)).comp φ).IsStandardSmoothOfRelativeDimension m := by
+    have h0 : (algebraMap A (Localization.Away t)).IsStandardSmoothOfRelativeDimension 0 :=
+      RingHom.IsStandardSmoothOfRelativeDimension.algebraMap_isLocalizationAway t
+    simpa using h0.comp hm
+  letI := ((algebraMap A (Localization.Away t)).comp φ).toAlgebra
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension n R (Localization.Away t) := h1
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension m R (Localization.Away t) := h2
+  have e1 := Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential
+    (R := R) (S := Localization.Away t) n
+  have e2 := Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential
+    (R := R) (S := Localization.Away t) m
+  exact_mod_cast e2.symm.trans e1
+
+/-- **The relative dimension of a smooth morphism propagates from a dense open** (PROVEN
+2026-07-27, over `eq_of_isStandardSmoothOfRelativeDimension_of_locally` above; it is the whole
+content of the first half of
 `Fermat.smoothOfRelativeDimension_finite_compl_of_compactificationY0`).
 
 TRUE and classical.  For a smooth morphism `strX : X ⟶ S` the function sending `x : X` to
@@ -2126,36 +2423,118 @@ hypothesis.  (The justification recorded on the consumer in `X0.lean` routed thr
 "`X` is connected because it contains a dense irreducible open"; that is a strictly weaker
 argument, since local constancy already makes every level set open.)
 
-IRREDUCIBLE at this pin, and here is the check that would refute it.  `Mathlib`'s
-`SmoothOfRelativeDimension n f` (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:135`) is a
-*pointwise* condition — for every `x` there exist affine opens on which `f.appLE` is
-`IsStandardSmoothOfRelativeDimension n` — and the entire API around it consists of
-`.smooth`, the `HasRingHomProperty` instance, stability under base change, the instance
-`SmoothOfRelativeDimension 0` for open immersions, and additivity under composition.
-**Not one lemma in `Mathlib` relates the property at two different values of `n`, and there
-is no `relativeDimension`/fibre-dimension function anywhere in
-`Mathlib.AlgebraicGeometry`** (`Mathlib/AlgebraicGeometry/Morphisms/SmoothFiber.lean` is
-about smoothness of fibres, not their dimension).  Producing the local constancy — most
-cheaply as "the set of `x` at which `SmoothOfRelativeDimension n` holds locally is open" —
-closes this leaf, and refutes the irreducibility verdict.
+**THE IRREDUCIBILITY VERDICT PREVIOUSLY RECORDED HERE WAS WRONG, and the axis it missed is
+worth stating.**  The audit said: `Mathlib`'s `SmoothOfRelativeDimension n f` is a *pointwise*
+condition, its whole API is `.smooth`, the `HasRingHomProperty` instance, base change, the
+`SmoothOfRelativeDimension 0` instance for open immersions and additivity under composition,
+and **not one lemma relates the property at two different values of `n`**.  All of that is
+true — *of `Mathlib.AlgebraicGeometry`*.  It is false of `Mathlib.RingTheory`, which the audit
+never searched: `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential` and its
+companion `iff_of_isStandardSmooth` (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`)
+say that over a NONTRIVIAL standard smooth algebra the relative dimension IS the rank of
+`Ω[S⁄R]`, hence is unique.  That is precisely the "two values of `n`" lemma, one level down.
 
-The axis searched is the RELATIVE-dimension one.  A route through absolute dimension (`X` is
-one-dimensional, the base is a point, hence the relative dimension is one) is a *different*
-axis and was not searched; it would need the same missing dimension theory as
-`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` below **plus** a converse
-linking dimension back to the standard-smooth presentation, so it looks strictly harder, but
-it has not been ruled out.
+**The proof, which needs no local-constancy theorem at all.**  Local constancy of the fibre
+dimension (EGA IV 17.10.2, Stacks `02NM`) is the classical route and is genuinely absent from
+the pin; it is also unnecessary.  Fix `x : X`.  `Smooth strX` hands us affine opens `U ⊆ S`,
+`V ∋ x` with `strX.appLE U V` standard smooth, hence standard smooth of *some* relative
+dimension `m` (read off the dimension of the submersive presentation).  It suffices to prove
+`m = n`, because the very same chart then witnesses the conclusion at `x`.  Now use density
+ONCE: `V` is a nonempty open, so it meets the range of `j`, and
+`IsAffineOpen.exists_basicOpen_le` produces a nonempty basic open `D = X.basicOpen a` with
+`D ≤ V ⊓ j.opensRange`.  Over `D` the two dimensions are visible simultaneously:
 
-`_hsm : Smooth strX` is load-bearing and the statement is FALSE without it: a morphism can
+* `m`, because `Γ(X, V) ⟶ Γ(X, D)` is a localisation away from `a`, which is standard smooth
+  of relative dimension `0`;
+* `n`, because `W := j ⁻¹ᵁ D` is an affine open of `Y` with `j ''ᵁ W = D`, so
+  `HasRingHomProperty.appLE` applied to `strY` on `(U, W)` gives
+  `Locally (IsStandardSmoothOfRelativeDimension n)` for `strY.appLE U W`, which factors as
+  `strX.appLE U D ≫ j.appLE D W` with the second map an isomorphism (`Scheme.Hom.appIso`).
+
+`Γ(X, D)` is nontrivial because `D` is nonempty (`Scheme.component_nontrivial`), so
+`eq_of_isStandardSmoothOfRelativeDimension_of_locally` above closes it.
+
+**Density is used exactly once, and connectedness of `X` is NOT needed** — nor is any
+openness-of-level-sets argument.  (The justification recorded on the consumer in `X0.lean`
+routed through "`X` is connected because it contains a dense irreducible open"; that is a
+strictly weaker argument.)
+
+The general lesson, for the next audit written in this file: *an irreducibility verdict is
+only as wide as the axis the auditor searched*, and "there is no lemma in
+`Mathlib.AlgebraicGeometry`" is not the same claim as "there is no lemma in `Mathlib`".
+
+`hsm : Smooth strX` is load-bearing and the statement is FALSE without it: a morphism can
 restrict to something smooth of relative dimension `n` over a dense open and be arbitrarily
 bad elsewhere.  `IsOpenImmersion j` is what makes `strY` the restriction of `strX` rather
 than an unrelated morphism. -/
 theorem smoothOfRelativeDimension_of_isDominant {S Y X : Scheme.{u}} {n : ℕ}
     {strY : Y ⟶ S} {strX : X ⟶ S} {j : Y ⟶ X} [IsOpenImmersion j] [IsDominant j]
-    (_hcomm : j ≫ strX = strY) (_hsm : Smooth strX)
-    (_hY : SmoothOfRelativeDimension n strY) :
-    SmoothOfRelativeDimension n strX :=
-  sorry
+    (hcomm : j ≫ strX = strY) (hsm : Smooth strX)
+    (hY : SmoothOfRelativeDimension n strY) :
+    SmoothOfRelativeDimension n strX := by
+  subst hcomm
+  haveI := hsm
+  constructor
+  intro x
+  obtain ⟨U, hU, V, hV, hxV, e, hss⟩ := Smooth.exists_isStandardSmooth strX x
+  -- the chart at `x` is standard smooth of *some* relative dimension `m`
+  obtain ⟨m, hm⟩ : ∃ m, RingHom.IsStandardSmoothOfRelativeDimension m (strX.appLE U V e).hom := by
+    letI := (strX.appLE U V e).hom.toAlgebra
+    have h : Algebra.IsStandardSmooth Γ(S, U) Γ(X, V) := hss
+    obtain ⟨ι, σ, hσ, hι, ⟨P⟩⟩ := h.out
+    exact ⟨P.dimension, P.isStandardSmoothOfRelativeDimension rfl⟩
+  refine ⟨U, hU, V, hV, hxV, e, ?_⟩
+  -- it remains to see `m = n`; pick a nonempty basic open `D ≤ V` inside the range of `j`
+  obtain ⟨z, hzV, hzj⟩ : ∃ z : X, z ∈ V ⊓ j.opensRange ∧ z ∈ V := by
+    obtain ⟨z, hz⟩ := (Scheme.Hom.denseRange j).inter_open_nonempty (V : Set X) V.isOpen ⟨x, hxV⟩
+    exact ⟨z, ⟨hz.1, hz.2⟩, hz.1⟩
+  obtain ⟨a, haD, haz⟩ := hV.exists_basicOpen_le (V := V ⊓ j.opensRange) ⟨z, hzV⟩ hzj
+  set D : X.Opens := X.basicOpen a with hDdef
+  have hDV : D ≤ V := haD.trans inf_le_left
+  have hDj : D ≤ j.opensRange := haD.trans inf_le_right
+  have hD : IsAffineOpen D := hV.basicOpen a
+  have e₁ : D ≤ strX ⁻¹ᵁ U := hDV.trans e
+  -- `W := j ⁻¹ᵁ D` is an affine open of `Y` mapping isomorphically onto `D`
+  set W : Y.Opens := j ⁻¹ᵁ D with hWdef
+  have hW : IsAffineOpen W := hD.preimage_of_isOpenImmersion j hDj
+  have hjW : j ''ᵁ W = D := by
+    rw [hWdef, Scheme.Hom.image_preimage_eq_opensRange_inf, inf_eq_right.mpr hDj]
+  have e₂ : W ≤ j ⁻¹ᵁ D := le_rfl
+  have e₀ : W ≤ (j ≫ strX) ⁻¹ᵁ U := fun w hw => e₁ hw
+  -- the relative dimension `n` of `strY`, read off on `(U, W)`
+  have hloc : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension n)
+      ((j ≫ strX).appLE U W e₀).hom :=
+    HasRingHomProperty.appLE (@SmoothOfRelativeDimension n) (j ≫ strX) hY ⟨U, hU⟩ ⟨W, hW⟩ e₀
+  have hfac : strX.appLE U D e₁ ≫ j.appLE D W e₂ = (j ≫ strX).appLE U W e₀ :=
+    Scheme.Hom.appLE_comp_appLE j strX U D W e₁ e₂
+  have hiso : IsIso (j.appLE D W e₂) := by
+    rw [Scheme.Hom.appLE_congr (f := j) e₂ hjW.symm rfl (fun g => IsIso g),
+      ← Scheme.Hom.appIso_hom']
+    infer_instance
+  have hlocD : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension n)
+      (strX.appLE U D e₁).hom := by
+    rw [← RingHom.RespectsIso.cancel_right_isIso
+      (RingHom.locally_respectsIso RingHom.isStandardSmoothOfRelativeDimension_respectsIso)
+      (strX.appLE U D e₁) (j.appLE D W e₂)]
+    rw [← CommRingCat.hom_comp, hfac]
+    exact hloc
+  -- the relative dimension `m` of `strX`, transported to the localisation `D`
+  haveI : IsLocalization.Away a Γ(X, D) := hV.isLocalization_basicOpen a
+  have hmD : RingHom.IsStandardSmoothOfRelativeDimension m (strX.appLE U D e₁).hom := by
+    have h0 : RingHom.IsStandardSmoothOfRelativeDimension 0
+        (algebraMap Γ(X, V) Γ(X, D)) :=
+      RingHom.IsStandardSmoothOfRelativeDimension.algebraMap_isLocalizationAway a
+    have h2 := h0.comp hm
+    rw [zero_add] at h2
+    have hcomp : (algebraMap Γ(X, V) Γ(X, D)).comp (strX.appLE U V e).hom
+        = (strX.appLE U D e₁).hom := by
+      have halg : algebraMap Γ(X, V) Γ(X, D)
+          = (X.presheaf.map (homOfLE (X.basicOpen_le a)).op).hom := rfl
+      rw [halg, ← CommRingCat.hom_comp, Scheme.Hom.appLE_map]
+    rwa [hcomp] at h2
+  haveI : Nonempty D := ⟨⟨z, haz⟩⟩
+  haveI : Nontrivial Γ(X, D) := Scheme.component_nontrivial X D
+  exact (eq_of_isStandardSmoothOfRelativeDimension_of_locally hmD hlocD) ▸ hm
 
 /-- **The complement of a dense open in a one-dimensional proper curve is finite** (PROVEN;
 it takes the dimension bound as the hypothesis `hdim`, which a consumer discharges from
