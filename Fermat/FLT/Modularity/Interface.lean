@@ -39625,56 +39625,80 @@ theorem heckeOp_comm_atkinLehnerOp {M : ℕ} (hM : 0 < M) {q : ℕ}
   rw [h1, h2]
   exact heckeTransform_slash_atkinLehnerRep hq hqM hA hr hrq f
 
-/-- **`U_q (W_q g) = a_q(g) · (W_q g)`** (sorry leaf, FOURTEENTH
-decomposition 2026-07-27): the `r = q` half of the spectral node below,
-and the genuinely deep one.
+/-- **`U_q (W_q g) = a_q(g) · (W_q g)`** (PROVEN 2026-07-27, FIFTEENTH
+decomposition): the `r = q` half of the spectral node below.
 
-Unlike the `r ≠ q` half this is FALSE without the newform hypothesis:
-`U_q` does NOT commute with `W_q`, which is exactly why Atkin–Lehner
-1970 restricts Lemma 17 to `p ∤ Q`.  What replaces commutation is the
-Atkin–Lehner relation on the `q`-NEW part, where at `q ‖ M` and weight
-two `U_q = −W_q`.  Granting that: `U_q (W_q g) = −W_q (W_q g) = −g` by
-involutivity (`atkinLehnerOp_atkinLehnerOp`, PROVEN), while
-`a_q(g) • W_q g = a_q · (−a_q) • g = −a_q² • g`, and the two agree
-because `a_q² = 1` there.  So this leaf and
-`qCoeff_one_atkinLehnerOp_of_newform` are two readings of the SAME
-classical relation `U_q = −W_q` on the `q`-new part, and a successor
-should expect to close them TOGETHER from that relation rather than
-separately — on a different axis from the operator-shaped cut that
-produced this leaf.
-
-**BUT DO NOT CUT TO `U_q = −W_q` AT `g` — IT IS A RESTATEMENT, NOT A
-REDUCTION** (checked 2026-07-27, so the next owner need not rediscover
-it).  The tempting move is to introduce
-`atkinLehnerOp M q g = -(heckeOp M q g)` as a single common parent.
-It does imply both leaves cheaply — this one because
-`U_q (−U_q g) = −a_q • U_q g = −a_q² • g = a_q • (−a_q • g)`, and
-`qCoeff_one_atkinLehnerOp_of_newform` because `qCoeff_heckeOp` gives
-`a₁(U_q g) = a_q(g)` at `q ∣ M` and `hg.qCoeff_one` gives `a₁(g) = 1`.
-The trouble is the other direction: `heckeOp M q g = a_q • g` is
-already PROVEN (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`), so
-`-(heckeOp M q g) = (−a_q) • g` and the proposed parent is
-DEFINITIONALLY the conclusion of
-`atkinLehnerOp_apply_eq_neg_qCoeff_smul` itself.  Cutting there would
-move the whole node into one leaf and prove nothing.
-
-Note also that the sibling `r ≠ q` leaf does NOT help here even in
-principle: the bridge `eq_qCoeff_one_smul_of_heckeOp_eigen` runs
-through `qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen`, whose induction on
-`m` descends along an ARBITRARY prime divisor of `m` — including
-divisors of `M` — so it genuinely consumes the eigenvalue at `q`.  A
+**THE PREVIOUS AUDIT OF THIS LEAF WAS WRONG ON ITS ONE LOAD-BEARING
+CLAIM, AND THE CORRECTION IS THE PROOF.**  It read: "a
 strong-multiplicity-one variant quantified only over `r ∤ M` would make
 this leaf removable, and no such variant exists in this file or in the
-pin; building one is a real alternative route, not a restatement.
+pin".  It exists, PROVEN, ~4700 lines above:
+`exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` — for a NEWFORM `g`,
+any `v ∈ S₂(Γ₀(M))` that is an honest eigenvector of every GOOD `T_r`,
+`r ∤ M`, at `g`'s eigenvalues lies on the line `ℂ·g`.  That is exactly
+Atkin–Lehner 1970 / Diamond–Shurman Thm 5.8.3, and it is where newness
+(`hg.eigensystem_minimal`) is consumed.  The audit searched only the
+OPERATOR axis — `U_q` versus `W_q` at `g` — and every route there is
+circular, which is true and is why the `U_q = −W_q` restatement is
+still correctly refused below.  The MULTIPLICITY-ONE axis was never
+searched.
+
+PROOF, in two moves and nothing else:
+
+1. `W_q g` is a good-prime eigenvector at `g`'s own eigensystem.  For
+   `r ∤ M` we have `r ≠ q` (since `q ∣ M`), so `W_q` commutes with
+   `T_r` (`heckeOp_comm_atkinLehnerOp`) and
+   `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` gives
+   `T_r (W_q g) = W_q (a_r • g) = a_r • W_q g`.  This is verbatim the
+   `r ≠ q` branch of the assembly below — no newform-specific input.
+2. Strong multiplicity one then yields `W_q g = c • g` for SOME `c`,
+   and the conclusion is immediate: `U_q (c • g) = c • (a_q • g) =
+   a_q • (c • g)`.
+
+Note what is NOT proven here and why the node does not collapse: `c`
+is left completely unpinned.  Identifying `c = −a_q` is the sibling
+`qCoeff_one_atkinLehnerOp_of_newform`, which is untouched by this
+argument — step 2 gives `a₁(W_q g) = c·a₁(g) = c`, so that leaf is
+exactly "compute `c`", and it remains the genuine Atkin–Lehner content
+of the node.  (A successor working the sibling may of course reuse
+step 1 + strong multiplicity one to replace it by the single scalar
+equation `c = −a_q`.)
+
+**THE `U_q = −W_q` RESTATEMENT IS STILL REFUSED** (checked 2026-07-27,
+and unaffected by the above).  Introducing
+`atkinLehnerOp M q g = -(heckeOp M q g)` as a common parent proves
+nothing: `heckeOp M q g = a_q • g` is already PROVEN
+(`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`), so
+`-(heckeOp M q g) = (−a_q) • g` and the proposed parent is
+DEFINITIONALLY the conclusion of
+`atkinLehnerOp_apply_eq_neg_qCoeff_smul` itself.
+
+Also still true, and still the reason the ELEMENTARY multiplicity one
+does not suffice: `eq_qCoeff_one_smul_of_heckeOp_eigen` runs through
+`qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen`, whose induction descends
+along an ARBITRARY prime divisor of `m` — including divisors of `M` —
+so it genuinely consumes the eigenvalue at `q`.  The *strong* variant
+is the one that does not, and that is the one used here.
 
 Newness enters only through `hg`; `q ‖ M` is load-bearing because
 `atkinLehnerOp M q` is junk when `q² ∣ M` (its defining clause is
-guarded by `Nat.Coprime q (M / q)`), so the leaf is not vacuous. -/
+guarded by `Nat.Coprime q (M / q)`), so the statement is not vacuous.
+`hqM2` is consumed through `heckeOp_comm_atkinLehnerOp`. -/
 theorem heckeOp_self_atkinLehnerOp_eigen_of_newform {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
-    heckeOp M q (atkinLehnerOp M q g) = qCoeff M g q • atkinLehnerOp M q g :=
-  sorry
+    heckeOp M q (atkinLehnerOp M q g) = qCoeff M g q • atkinLehnerOp M q g := by
+  have hgood : ∀ r : ℕ, r.Prime → ¬ r ∣ M →
+      heckeOp M r (atkinLehnerOp M q g) = qCoeff M g r • atkinLehnerOp M q g := by
+    intro r hr hrM
+    have hrq : r ≠ q := by rintro rfl; exact hrM hqM
+    rw [heckeOp_comm_atkinLehnerOp hM hq hqM hqM2 hr hrq g,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hr,
+      map_smul]
+  obtain ⟨c, hc⟩ := exists_smul_of_heckeOp_eq_smul_of_not_dvd_level hM hg hgood
+  rw [hc, map_smul,
+    heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hq,
+    smul_comm c (qCoeff M g q) g]
 
 /-- **THE SPECTRAL HALF of Atkin–Lehner at `q ‖ M`** (sorry node,
 THIRTEENTH decomposition 2026-07-27): the Atkin–Lehner transform of a
