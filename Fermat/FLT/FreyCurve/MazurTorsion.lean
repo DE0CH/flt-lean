@@ -4276,9 +4276,11 @@ the caller supplies the number field, the DVR, the residue identification and th
 variable change, and this turns them into the structure.
 
 **THIS IS THE ENTRY POINT FOR THE WILD CASE `q = 3`.** Whoever attacks
-`exists_potentiallyGoodModel_of_jIntegral_three` should aim at exactly these six
-hypotheses over whatever base that case needs; no part of the `HasGoodReduction` /
-`IsMinimal` bookkeeping has to be redone.
+`nonempty_translationDatum_three` should aim at exactly these six hypotheses over
+whatever base that case needs; no part of the `HasGoodReduction` / `IsMinimal`
+bookkeeping has to be redone. (For a curve already in short normal form the six
+collapse to the four fields of `TranslationDatum` below, since `s = t = 0` is no loss
+of generality — see that structure's docstring.)
 
 Note `Δ ∈ A` is NOT a hypothesis — it follows from the five coefficient memberships,
 since `Δ` is a polynomial in them — and `Δ ≠ 0` is not either, since `C • E_K` is
@@ -4482,8 +4484,195 @@ theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_five_le
           = (E.toShortNF • E).baseChange N.K := map_variableChange _ _ _
       rw [N.V_eq, mul_smul, hmv] }⟩
 
-/-- **The WILD half of the arithmetic leaf: `q = 3`** (sorry leaf, opened 2026-07-27 when
-the `5 ≤ q` half above was PROVEN). This is the genuinely missing part of
+/-- **The obligation the wild case `q = 3` owes, with every trace of reduction theory
+removed** (opened 2026-07-27, when `exists_potentiallyGoodModel_of_jIntegral_three` was
+decomposed). A `TranslationDatum W q` is: a number field `L`, a DVR valuation subring
+`A ⊆ L` with residue field `ZMod q`, and **two field elements** `u ∈ Lˣ`, `r ∈ L` such
+that the curve `y² = x³ + a₄x + a₆` becomes integral with invertible discriminant after
+the variable change `(u, r, 0, 0)`. Nothing else: no `IsMinimal`, no `HasGoodReduction`,
+no `IsIntegral`, no residue-field bookkeeping. Those all live in
+`exists_potentiallyGoodModel_of_translationDatum` below, which is PROVEN.
+
+The three membership conditions are literally the transformed coefficients
+
+    a₂' = u⁻²·(3r),   a₄' = u⁻⁴·(a₄ + 3r²),   a₆' = u⁻⁶·(a₆ + r·a₄ + r³),
+
+with `a₁' = a₃' = 0` free because `W` is in short normal form and `s = t = 0`, and
+`hΔ` is `(Δ')⁻¹ ∈ A` for `Δ' = u⁻¹²·Δ`.
+
+**WHY `s = t = 0` LOSES NOTHING — this is what makes the cut FAITHFUL, and it is not
+obvious.** One direction is the theorem below. For the converse, suppose `W` (short)
+acquires good reduction over `A` by some `C = (u, r, s, t)`, giving an integral `V` with
+unit `Δ`. Complete the square: `C' = (1, 0, -V.a₁/2, -V.a₃/2)` is an integral change
+(`2` is a unit of `A`, the residue characteristic being `3`), it preserves `Δ`, and
+`C' • V` is still integral. Reading off `(C' * C) • W`: its `a₁` is `u''⁻¹·(0 + 2s'')`
+and its `a₃` is `u''⁻³·(0 + 2t'')`, both zero, so `s'' = t'' = 0`. Hence
+`Nonempty (TranslationDatum W q)` and `Nonempty (W.PotentiallyGoodModel q)` are
+EQUIVALENT for `W` in short normal form — the structure is a faithful repackaging, not a
+strengthening. In particular it is exactly as non-vacuous as `PotentiallyGoodModel`. -/
+structure WeierstrassCurve.TranslationDatum (W : WeierstrassCurve ℚ)
+    (q : ℕ) [Fact q.Prime] where
+  /-- The number field over which `W` acquires good reduction. -/
+  L : Type
+  [instField : Field L]
+  [instDec : DecidableEq L]
+  [instAlgebra : Algebra ℚ L]
+  [instFin : FiniteDimensional ℚ L]
+  /-- The local ring at the chosen prime of `L` above `q`. -/
+  A : ValuationSubring L
+  [instDVR : IsDiscreteValuationRing A]
+  /-- **Residue degree one**, exactly as in `PotentiallyGoodModel`. -/
+  resEquiv : IsLocalRing.ResidueField A ≃+* ZMod q
+  /-- The scaling. `hΔ` forces `v(u) = v(Δ)/12`. -/
+  u : Lˣ
+  /-- The translation `x ↦ x + r`. It is what the tame case did not need and the wild
+  case cannot avoid: over `𝔽₃` a curve with `a₁ = a₂ = a₃ = 0` has `c₄ = -48a₄ ≡ 0`,
+  hence `j = 0`, so a good model of `j ≢ 0 (mod 3)` must move `a₂` off zero. -/
+  r : L
+  /-- `a₂'` is integral. -/
+  ha₂ : ((u⁻¹ : Lˣ) : L) ^ 2 * (3 * r) ∈ A
+  /-- `a₄'` is integral. -/
+  ha₄ : ((u⁻¹ : Lˣ) : L) ^ 4 * (algebraMap ℚ L W.a₄ + 3 * r ^ 2) ∈ A
+  /-- `a₆'` is integral. -/
+  ha₆ : ((u⁻¹ : Lˣ) : L) ^ 6 *
+    (algebraMap ℚ L W.a₆ + r * algebraMap ℚ L W.a₄ + r ^ 3) ∈ A
+  /-- `Δ'` is a unit. -/
+  hΔ : ((u : L)) ^ 12 * (algebraMap ℚ L W.Δ)⁻¹ ∈ A
+
+attribute [instance] WeierstrassCurve.TranslationDatum.instField
+  WeierstrassCurve.TranslationDatum.instDec
+  WeierstrassCurve.TranslationDatum.instAlgebra
+  WeierstrassCurve.TranslationDatum.instFin
+  WeierstrassCurve.TranslationDatum.instDVR
+
+/-- **A translation datum produces the good model** (PROVEN 2026-07-27). This is the
+`q`-uniform half of the wild case, and it is pure bookkeeping over
+`exists_potentiallyGoodModel_of_integral`: the variable change is `(u, r, 0, 0)`, the
+`a₁` and `a₃` obligations are discharged by `IsShortNF`, and the other four are the
+structure's own fields.
+
+Nothing here is specific to `q = 3`; the statement is uniform in `q`. What is specific
+to `q = 3` is that the datum is HARD TO BUILD — see
+`nonempty_translationDatum_three`. -/
+theorem WeierstrassCurve.exists_potentiallyGoodModel_of_translationDatum
+    {q : ℕ} [Fact q.Prime] (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    (D : W.TranslationDatum q) : Nonempty (W.PotentiallyGoodModel q) := by
+  classical
+  set C : VariableChange D.L := ⟨D.u, D.r, 0, 0⟩ with hC
+  have hb₁ : (W.baseChange D.L).a₁ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₂ : (W.baseChange D.L).a₂ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₃ : (W.baseChange D.L).a₃ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₄ : (W.baseChange D.L).a₄ = algebraMap ℚ D.L W.a₄ := rfl
+  have hb₆ : (W.baseChange D.L).a₆ = algebraMap ℚ D.L W.a₆ := rfl
+  have hbΔ : (W.baseChange D.L).Δ = algebraMap ℚ D.L W.Δ := by
+    simp [WeierstrassCurve.baseChange, map_Δ]
+  refine WeierstrassCurve.exists_potentiallyGoodModel_of_integral W D.L D.A D.resEquiv C
+    ?_ ?_ ?_ ?_ ?_ ?_
+  · rw [variableChange_a₁, hC, hb₁]; simp
+  · rw [variableChange_a₂, hC, hb₁, hb₂]
+    simpa using D.ha₂
+  · rw [variableChange_a₃, hC, hb₁, hb₃]; simp
+  · rw [variableChange_a₄, hC, hb₁, hb₂, hb₃, hb₄]
+    simpa using D.ha₄
+  · rw [variableChange_a₆, hC, hb₁, hb₂, hb₃, hb₄, hb₆]
+    simpa using D.ha₆
+  · rw [variableChange_Δ, hC, hbΔ]
+    simpa [mul_comm] using D.hΔ
+
+/-- **THE ARITHMETIC OF THE WILD CASE `q = 3`** (sorry leaf, opened 2026-07-27 by
+decomposing `exists_potentiallyGoodModel_of_jIntegral_three`; the previous, larger
+version of this leaf asked for the whole `PotentiallyGoodModel`). What is owed is now
+exactly a base `L` with a residue-degree-`1` DVR at `3`, plus **two elements** `u, r`
+of `L`. Write `A = W.a₄`, `B = W.a₆`, `f(X) = X³ + AX + B`, `d = v₃(Δ)`. Since `hΔ`
+forces `v(u) = d/12`, the three memberships are the valuation inequalities
+
+    (i)   v(3r)        ≥ d/6,
+    (ii)  v(A + 3r²)   ≥ d/3,     i.e.  v(f'(r)) ≥ d/3,
+    (iii) v(f(r))      ≥ d/2.
+
+**OBSTRUCTION 3 OF THE OLD DOCSTRING IS NOW SETTLED, AND IT IS A REFUTATION.**
+`TameBaseAux`'s base `ℚ(3^{1/12})` is NOT large enough at `q = 3`. The old text called
+this "an open question, not a counterexample" and offered `y² = x³ + 3` as evidence for
+the optimistic side. That evidence was misleading, and here is why, plus the witness
+that settles it.
+
+*Why `y² = x³ + 3` worked.* `Δ = -16·3⁵`, so `d = 5` and `v(u) = 5/12`: `u = π⁵` with
+`π¹² = 3`. Its cubic `f = X³ + 3` has the root `r = -3^{1/3} = -π⁴`, which lies in
+`ℚ(3^{1/12})` **because `f` is Eisenstein for `3` in the Kummer direction**. With
+`s = t = 0` one gets `(a₁,a₂,a₃,a₄,a₆) = (0, -√3, 0, 1, 0)` and `Δ' = -16`, reducing to
+`y² = x³ + x` over `𝔽₃`. So that curve is an instance of the recipe below, not evidence
+about the base.
+
+*The refutation: `E : y² = x³ + 4`* (`v₃(j) ≥ 0` vacuously, `j = 0`). `Δ = -6912`,
+`v₃ = 3`, so `d = 3` and `v(u) = 1/4`. By (iii), `v(r³ + 4) ≥ 3/2`. The roots of
+`X³ + 4` are `-4^{1/3}ζ₃ⁱ`, pairwise at distance `v(ρᵢ - ρⱼ) = v(ζ₃ - 1) = 1/2`, so
+`v(r³+4) = Σᵢ v(r - ρᵢ) ≥ 3/2` forces `v(r - ρ) ≥ 1/2` for some root `ρ`. Now work over
+`L̃ = ℚ̆₃(3^{1/12})`, which is the largest thing the tame base can give (residue degree
+`1` only makes it smaller): `√-1 ∈ ℚ̆₃` and `√3 ∈ L̃`, so `ζ₃ ∈ L̃`, and dividing by a
+power of `ζ₃` we may take `ρ = -4^{1/3}`. Put `4^{1/3} = 1 + y₀`; then
+`y₀³ + 3y₀² + 3y₀ - 3 = 0` is EISENSTEIN, so `v(y₀) = 1/3`, and writing
+`y₀ = 3^{1/3}(1 + δ)` the equation becomes `δ³ + 3δ² + 3δ + 3^{2/3}(1 + δ)² +
+3^{1/3}(1 + δ) = 0`, whose Newton polygon has the unique break `v(δ) = 1/9`. Hence
+
+    v(y₀ - 3^{1/3}) = 1/3 + 1/9 = 4/9.
+
+If some `y ∈ L̃` had `v(y - y₀) ≥ 1/2 > 4/9`, then `v(y - 3^{1/3}) = 4/9`; but
+`y - 3^{1/3} ∈ L̃` and `v(L̃ˣ) = (1/12)ℤ ∌ 4/9`. Contradiction. So **`y² = x³ + 4`
+acquires good reduction over no subfield of `ℚ̆₃(3^{1/12})`**, and a fortiori over no
+completion of `ℚ(3^{1/12})`. Cross-check with PARI: `elllocalred` gives conductor
+exponent `3` and Kodaira type `II` at `3`, i.e. wild part `δ = 1`, consistent with
+semistability defect `e = 12`; the minimal base is `ℚ̆₃(4^{1/3}, 3^{1/4})`, and
+`ℚ₃(4^{1/3})` has different exponent `3` against `5` for `ℚ₃(3^{1/3})`, so the two wild
+cubics are not isomorphic. **Do not attempt this leaf over `TameBaseAux`.**
+
+**THE RECIPE THAT DOES WORK, AND WHERE IT STOPS.** Take `r` to be a ROOT of `f`, i.e. an
+`x`-coordinate of a `2`-torsion point. Then:
+
+* (iii) is free, `f(r) = 0`;
+* (ii) holds for a suitable root, by max ≥ average: for a monic cubic
+  `Πᵢ f'(rᵢ) = -disc f = 4A³ + 27B² = -Δ/16`, so `Σᵢ v(f'(rᵢ)) = d` and some root has
+  `v(f'(r)) ≥ d/3`;
+* (i) is then FORCED, and this is the only place `0 ≤ v₃(j)` is used. `c₄ = -48A` and
+  `v₃(48) = 1`, so `3v(c₄) ≥ v(Δ)` reads `v(A) ≥ d/3 - 1`. With (ii),
+  `v(3r²) ≥ min(v(f'(r)), v(A)) ≥ d/3 - 1`, i.e. `1 + 2v(r) ≥ d/3 - 1`, i.e.
+  `v(3r) = 1 + v(r) ≥ d/6`.
+
+So the base to aim at is `ℚ(E[2], Δ^{1/12})` — the `2`-division field of the short model
+together with a twelfth root of the discriminant — NOT a Kummer extension of `ℚ`. (For
+`y² = x³ + 4` that is `ℚ(4^{1/3}, 3^{1/4})`, in which `3` is totally ramified of degree
+`12` with residue degree `1`, exactly as required.)
+
+**THE ONE REMAINING GAP: residue degree `1`.** The recipe above produces `u` and `r`,
+but `ℚ(r)` can have every prime above `3` of residue degree `> 1` — `f mod 3` is
+`X³ + ĀX + B̄`, which for `Ā = -1` is an Artin–Schreier polynomial and irreducible over
+`𝔽₃`. Dropping the unramified layer is a genuine theorem, and it is the whole of what
+is left: if `E/ℚ₃` has good reduction over `L` then `I_L ⊆ N := ker(I → Aut T_ℓE)`, and
+`G/N` is an extension of `Ẑ` by the finite `Φ = I/N`; a procyclic group surjecting onto
+`Ẑ` with finite kernel IS `Ẑ`, so the closure of a Frobenius lift is a complement, its
+preimage `H` has `H ∩ I = N` and index `|Φ| = e`, and the fixed field of `H` is TOTALLY
+RAMIFIED of degree `e` with good reduction. Formalising that needs local Galois theory
+we do not have; a purely Weierstrass-level substitute would be worth much more.
+
+Note the root recipe is sufficient but NOT canonical, so the gap is not always live:
+`y² = x³ - 9x + 27` has `d = 6` and its cubic's roots generate the UNRAMIFIED cubic
+field, yet `r = 0`, `u = √3` satisfies (i)–(iii) (`v(A) = 2 ≥ 2`, `v(B) = 3 ≥ 3`), and
+`ℚ(√3)` has residue degree `1` at `3`. An argument that always finds such an `r` over a
+totally ramified base would close this leaf outright.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit `E/ℚ` with `0 ≤ v₃(j(E))` acquiring
+good reduction over NO finite extension of `ℚ₃` of residue degree `1`. Silverman *AEC*
+VII.5.5 gives good reduction over some finite `L/ℚ₃`, and the group-theoretic argument
+just quoted removes the unramified layer, so such a witness would have to break that
+step. -/
+theorem WeierstrassCurve.nonempty_translationDatum_three
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {q : ℕ} [Fact q.Prime] (hq3 : q = 3) (hj : 0 ≤ padicValRat q W.j) :
+    Nonempty (W.TranslationDatum q) :=
+  sorry
+
+/-- **The WILD half of the arithmetic leaf: `q = 3`** (**PROVEN 2026-07-27** modulo
+`nonempty_translationDatum_three`, which carries all the remaining arithmetic; opened
+2026-07-27 when the `5 ≤ q` half above was PROVEN). This is the genuinely missing part of
 `exists_potentiallyGoodModel_of_jIntegral`, and the consumers of this file need it —
 they take `q ∈ {3, 5}`, so it cannot be dodged by assuming `5 ≤ q`.
 
@@ -4502,19 +4691,20 @@ obstruction rather than a difficulty of degree, and each has to be dealt with:
    `r, s, t` part of the variable change is genuinely needed — unlike the tame case,
    where `u` alone suffices. (The `u`-only scaling is not merely suboptimal here; it
    cannot produce the answer.)
-3. *`ℚ(3^{1/12})` is very likely NOT a large enough base.* At `q = 3` the semistability
-   defect can be `3`, `6` or `12`, all divisible by `p = 3`, so the extension is WILDLY
-   ramified — and wild degree-`3` extensions of `ℚ₃` are not Kummer, because `μ₃ ⊄ ℚ̆₃`
-   (`ζ₃` generates the ramified `ℚ₃(√−3)`). So the Eisenstein base `X¹² − 3` of
-   `TameBaseAux`, which handles every tame `e ∈ {1,2,3,4,6}` at `q ≥ 5`, has no reason to
-   contain the field this case needs. The classical substitute is `ℚ(E[m])` for `m ≥ 3`
-   prime to `3` (Serre–Tate), localised at a prime above `3` of residue degree `1`.
-   **The check that would refute this pessimism**: exhibit, for every `E/ℚ₃` with
-   `v₃(j) ≥ 0`, a variable change over `ℚ₃(3^{1/12})` with integral coefficients and unit
-   discriminant. It DOES exist for `y² = x³ + 3`: with `π¹² = 3`, take
-   `(u, r, s, t) = (π⁵, −π⁴, 0, π¹⁵)`, giving `(a₁,a₂,a₃,a₄,a₆) = (0, −3π⁻⁶, 2, 1, −1)`
-   and reduction `y² − y = x³ + x − 1` over `𝔽₃`, which is nonsingular. So the base may
-   yet be enough; what is missing is an argument, not a counterexample.
+3. *`ℚ(3^{1/12})` is NOT a large enough base* — **SETTLED 2026-07-27, in the negative.**
+   At `q = 3` the semistability defect can be `3`, `6` or `12`, all divisible by `p = 3`,
+   so the extension is WILDLY ramified, and the wild cubic it needs is generally not the
+   one inside `X¹² − 3`. The explicit witness is `y² = x³ + 4`, whose good models require
+   `ℚ̆₃(4^{1/3}, 3^{1/4})`; the full computation, including why the old optimistic
+   witness `y² = x³ + 3` was an instance of the recipe rather than evidence about the
+   base, is in the docstring of `nonempty_translationDatum_three` above.
+
+**THE PROOF BELOW** is now only the reduction to short normal form, exactly as in the
+`5 ≤ q` half: `E.toShortNF` puts `E` in short form (`Invertible 2` and `Invertible 3`
+are free over `ℚ`), `variableChange_j` carries `j`-integrality across, and the two
+variable changes compose by `mul_smul` and `map_variableChange`. All the arithmetic sits
+in `nonempty_translationDatum_three`, and all the reduction theory in
+`exists_potentiallyGoodModel_of_translationDatum`.
 
 **WHAT IS ALREADY BUILT AND MUST NOT BE REBUILT.** The entire non-arithmetic half of
 this leaf is proven above and is uniform in `q`:
@@ -4526,26 +4716,38 @@ bookkeeping; `residueFieldEquivZModOfLocalHom` upgrades any local hom onto `ZMod
 the required `resEquiv`; and `TameBaseAux.instIsDiscreteValuationRingTameSubring` shows
 how to get a DVR out of a valuation subring whose value group is `ℤ` (the pattern
 generalises: `exists_valuation_eq_zpow` is the only step that mentions the specific
-base). So a prover here owes exactly ONE thing: a base with residue degree `1` at `3`
-together with a variable change over it whose scaled equation is integral with unit
-discriminant.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit `E/ℚ` with `0 ≤ v₃(j(E))` acquiring
-good reduction over NO finite extension of `ℚ₃` of residue degree `1`. Silverman *AEC*
-VII.5.5 gives good reduction over some finite `L/ℚ₃`; dropping the unramified layer is
-legitimate (`I_{L'} = I_L` for `L'/L` unramified, so Néron–Ogg–Shafarevich already gives
-good reduction over `L`), so such a witness would have to break that step. -/
+base). So a prover here owes exactly ONE thing, and it is now stated as its own leaf: a
+base with residue degree `1` at `3` together with the two elements `u`, `r` of a
+`TranslationDatum`. -/
 theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_three
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {q : ℕ} [Fact q.Prime] (hq3 : q = 3)
-    (hj : 0 ≤ padicValRat q E.j) : Nonempty (E.PotentiallyGoodModel q) :=
-  sorry
+    (hj : 0 ≤ padicValRat q E.j) : Nonempty (E.PotentiallyGoodModel q) := by
+  classical
+  haveI : Invertible (2 : ℚ) := invertibleOfNonzero (by norm_num)
+  haveI : Invertible (3 : ℚ) := invertibleOfNonzero (by norm_num)
+  have hj' : 0 ≤ padicValRat q (E.toShortNF • E).j := by rwa [variableChange_j]
+  obtain ⟨D⟩ := WeierstrassCurve.nonempty_translationDatum_three
+    (E.toShortNF • E) hq3 hj'
+  obtain ⟨N⟩ := WeierstrassCurve.exists_potentiallyGoodModel_of_translationDatum
+    (E.toShortNF • E) D
+  exact ⟨{
+    K := N.K
+    R := N.R
+    resEquiv := N.resEquiv
+    V := N.V
+    C := N.C * (E.toShortNF.map (algebraMap ℚ N.K))
+    V_eq := by
+      have hmv : (E.toShortNF.map (algebraMap ℚ N.K)) • (E.baseChange N.K)
+          = (E.toShortNF • E).baseChange N.K := map_variableChange _ _ _
+      rw [N.V_eq, mul_smul, hmv] }⟩
 
 /-- **The ARITHMETIC half: integral `j`-invariant produces a good model over a
 number field with residue degree one at `q`** (opened 2026-07-27 by
 decomposing `exists_frobeniusAut_of_potentiallyGoodReduction` below;
 **DECOMPOSED 2026-07-27** into its tame and wild halves, of which
 `exists_potentiallyGoodModel_of_jIntegral_five_le` is PROVEN and
-`exists_potentiallyGoodModel_of_jIntegral_three` is the one remaining leaf). No
+`exists_potentiallyGoodModel_of_jIntegral_three` is PROVEN modulo the single
+remaining leaf `nonempty_translationDatum_three`). No
 Galois theory appears here; the whole content is reduction theory of Weierstrass
 equations.
 
