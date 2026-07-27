@@ -6271,10 +6271,409 @@ lemma j9_fricke_of_tateParam {K : Type*} [Field K] (d J t : K)
   rw [hLid, hRid, ht, hB, hC, hD]
   linear_combination (729 : K) * hj
 
+/-! ### Vélu's quotient of the Kubert curve by the order-`9` point `(0,0)`
+
+Everything in this block is PROVEN and is the "Step 1" of
+`veluQuotient_jRelation_of_tateParam` below: the four `±`-representatives of the
+kernel `⟨(0,0)⟩`, Vélu's sums `t`, `w` over it, and the resulting `c₄'`, `Δ'`.
+-/
+
+
+/-- **Vélu's `t` for the order-`9` kernel `⟨(0,0)⟩` on `tateCurve d`** (PROVEN to be
+Vélu's sum by `tateCurve_velu_kernel` below):
+`t = d(d − 1)(d⁹ − 8d⁷ + 25d⁶ − 47d⁵ + 61d⁴ − 53d³ + 28d² − 9d + 1)`. -/
+def veluT9 {K : Type*} [Field K] (d : K) : K :=
+  d * (d - 1) * (d ^ 9 - 8 * d ^ 7 + 25 * d ^ 6 - 47 * d ^ 5 + 61 * d ^ 4 - 53 * d ^ 3
+    + 28 * d ^ 2 - 9 * d + 1)
+
+/-- **Vélu's `w` for the order-`9` kernel `⟨(0,0)⟩` on `tateCurve d`** (PROVEN to be
+Vélu's sum by `tateCurve_velu_kernel` below):
+`w = d²(d − 1)²(2d¹² − 6d¹¹ + 10d¹⁰ − 19d⁹ + 56d⁸ − 141d⁷ + 241d⁶ − 285d⁵ + 245d⁴
+− 153d³ + 66d² − 17d + 2)`. -/
+def veluW9 {K : Type*} [Field K] (d : K) : K :=
+  d ^ 2 * (d - 1) ^ 2 * (2 * d ^ 12 - 6 * d ^ 11 + 10 * d ^ 10 - 19 * d ^ 9 + 56 * d ^ 8
+    - 141 * d ^ 7 + 241 * d ^ 6 - 285 * d ^ 5 + 245 * d ^ 4 - 153 * d ^ 3 + 66 * d ^ 2
+    - 17 * d + 2)
+
+/-- **`c₄` of the Vélu quotient `(tateCurve d)/⟨(0,0)⟩`** (PROVEN, a `ring` identity):
+`c₄' = (d³ + 3d² − 6d + 1)·P₉(d)`.  Together with `tateCurve_veluModel_Δ` this is the
+whole numerical content of the `X_0(9)` Fricke dual — the two factors are exactly the
+right-hand side of `veluQuotient_jRelation_of_tateParam`. -/
+lemma tateCurve_veluModel_c₄ {K : Type*} [Field K] (d : K) :
+    ((tateCurve d).veluModel (veluT9 d) (veluW9 d)).c₄
+      = (d ^ 3 + 3 * d ^ 2 - 6 * d + 1)
+        * (d ^ 9 + 225 * d ^ 8 - 855 * d ^ 7 + 1866 * d ^ 6 - 2844 * d ^ 5
+           + 3123 * d ^ 4 - 2265 * d ^ 3 + 981 * d ^ 2 - 234 * d + 1) := by
+  simp only [tateCurve, veluModel, veluT9, veluW9, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
+    WeierstrassCurve.b₄]
+  ring
+
+/-- **`Δ` of the Vélu quotient `(tateCurve d)/⟨(0,0)⟩`** (PROVEN, a `ring` identity):
+`Δ' = d(d − 1)(d² − d + 1)³q⁹`, `q = d³ − 6d² + 3d + 1`.
+
+**THE FRICKE CHECK.**  `tateCurve_Δ` carries the cusp exponents `(9,9,3,1)` on the four
+factors `d`, `d − 1`, `d² − d + 1`, `q`; this quotient carries `(1,1,3,9)`.  That is
+exactly the swap the Fricke involution `w₉` must produce, which identifies the quotient
+as the Fricke dual rather than some other `9`-isogenous curve. -/
+lemma tateCurve_veluModel_Δ {K : Type*} [Field K] (d : K) :
+    ((tateCurve d).veluModel (veluT9 d) (veluW9 d)).Δ
+      = d * (d - 1) * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 9 := by
+  simp only [tateCurve, veluModel, veluT9, veluW9, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+    WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-! ### The order-`9` kernel `⟨(0,0)⟩` on `tateCurve d` -/
+
+section Kernel
+
+variable {K : Type*} [Field K] {d : K}
+
+lemma tateCurve_factors_ne_zero (hΔ : (tateCurve d).Δ ≠ 0) :
+    d ≠ 0 ∧ d - 1 ≠ 0 ∧ d ^ 2 - d + 1 ≠ 0 ∧ d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0 := by
+  refine ⟨fun h => hΔ ?_, fun h => hΔ ?_, fun h => hΔ ?_, fun h => hΔ ?_⟩ <;> rw [tateCurve_Δ]
+  · rw [h]; ring
+  · rw [show d ^ 9 * (d - 1) ^ 9 * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
+      = (d - 1) ^ 9 * (d ^ 9 * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) from by
+      ring, h]; ring
+  · rw [show d ^ 9 * (d - 1) ^ 9 * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
+      = (d ^ 2 - d + 1) ^ 3 * (d ^ 9 * (d - 1) ^ 9 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) from by
+      ring, h]; ring
+  · rw [h, mul_zero]
+
+/-- `P = (0,0)`. -/
+lemma tateCurve_ns1 (hΔ : (tateCurve d).Δ ≠ 0) :
+    (tateCurve d).toAffine.Nonsingular 0 0 := by
+  rw [← WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ,
+    WeierstrassCurve.Affine.equation_iff]
+  simp only [tateCurve]
+  ring
+
+/-- `2P = (b, bc)`. -/
+lemma tateCurve_ns2 (hΔ : (tateCurve d).Δ ≠ 0) :
+    (tateCurve d).toAffine.Nonsingular (d ^ 2 * (d - 1) * (d ^ 2 - d + 1))
+      (d ^ 4 * (d - 1) ^ 2 * (d ^ 2 - d + 1)) := by
+  rw [← WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ,
+    WeierstrassCurve.Affine.equation_iff]
+  simp only [tateCurve]
+  ring
+
+/-- `3P = (c, b - c)`. -/
+lemma tateCurve_ns3 (hΔ : (tateCurve d).Δ ≠ 0) :
+    (tateCurve d).toAffine.Nonsingular (d ^ 2 * (d - 1)) (d ^ 3 * (d - 1) ^ 2) := by
+  rw [← WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ,
+    WeierstrassCurve.Affine.equation_iff]
+  simp only [tateCurve]
+  ring
+
+/-- `4P = (r(r-1), r²(c - r + 1))`. -/
+lemma tateCurve_ns4 (hΔ : (tateCurve d).Δ ≠ 0) :
+    (tateCurve d).toAffine.Nonsingular (d * (d - 1) * (d ^ 2 - d + 1))
+      (d * (d - 1) ^ 2 * (d ^ 2 - d + 1) ^ 2) := by
+  rw [← WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ,
+    WeierstrassCurve.Affine.equation_iff]
+  simp only [tateCurve]
+  ring
+
+variable [DecidableEq K]
+
+omit [DecidableEq K] in
+lemma tateCurve_negY_eq (x y : K) :
+    (tateCurve d).toAffine.negY x y
+      = -y - (1 - d ^ 2 * (d - 1)) * x + d ^ 2 * (d - 1) * (d ^ 2 - d + 1) := by
+  simp only [Affine.negY, tateCurve]; ring
+
+/-- `P + P = 2P`. -/
+lemma tateCurve_add_12 (hΔ : (tateCurve d).Δ ≠ 0) :
+    Affine.Point.some 0 0 (tateCurve_ns1 hΔ) + Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = Affine.Point.some _ _ (tateCurve_ns2 hΔ) := by
+  obtain ⟨hd0, hd1, hr, -⟩ := tateCurve_factors_ne_zero hΔ
+  have hb : d ^ 2 * (d - 1) * (d ^ 2 - d + 1) ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hd0) hd1) hr
+  have hy1 : (0 : K) ≠ (tateCurve d).toAffine.negY 0 0 := by
+    rw [tateCurve_negY_eq]
+    intro h; exact hb (by linear_combination -h)
+  have hslope : (tateCurve d).toAffine.slope 0 0 0 0 = 0 := by
+    rw [Affine.slope_of_Y_ne rfl hy1]
+    simp only [tateCurve, Affine.negY]
+    norm_num
+  rw [Affine.Point.add_self_of_Y_ne hy1]
+  refine velu_point_some_eq ?_ ?_
+  · simp only [Affine.addX]
+    rw [hslope]
+    simp only [tateCurve]
+    ring
+  · simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY]
+    rw [hslope]
+    simp only [tateCurve]
+    ring
+
+/-- `2P + P = 3P`. -/
+lemma tateCurve_add_23 (hΔ : (tateCurve d).Δ ≠ 0) :
+    Affine.Point.some _ _ (tateCurve_ns2 hΔ) + Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = Affine.Point.some _ _ (tateCurve_ns3 hΔ) := by
+  obtain ⟨hd0, hd1, hr, -⟩ := tateCurve_factors_ne_zero hΔ
+  have hb : d ^ 2 * (d - 1) * (d ^ 2 - d + 1) ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hd0) hd1) hr
+  have hx : d ^ 2 * (d - 1) * (d ^ 2 - d + 1) ≠ (0 : K) := hb
+  have hslope : (tateCurve d).toAffine.slope (d ^ 2 * (d - 1) * (d ^ 2 - d + 1)) 0
+      (d ^ 4 * (d - 1) ^ 2 * (d ^ 2 - d + 1)) 0 = d ^ 2 * (d - 1) := by
+    rw [Affine.slope_of_X_ne hx, sub_zero, sub_zero, div_eq_iff hb]; ring
+  rw [Affine.Point.add_of_X_ne hx]
+  refine velu_point_some_eq ?_ ?_
+  · simp only [Affine.addX]
+    rw [hslope]
+    simp only [tateCurve]
+    ring
+  · simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY]
+    rw [hslope]
+    simp only [tateCurve]
+    ring
+
+/-- `3P + P = 4P`. -/
+lemma tateCurve_add_34 (hΔ : (tateCurve d).Δ ≠ 0) :
+    Affine.Point.some _ _ (tateCurve_ns3 hΔ) + Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = Affine.Point.some _ _ (tateCurve_ns4 hΔ) := by
+  obtain ⟨hd0, hd1, hr, -⟩ := tateCurve_factors_ne_zero hΔ
+  have hc : d ^ 2 * (d - 1) ≠ (0 : K) := mul_ne_zero (pow_ne_zero 2 hd0) hd1
+  have hslope : (tateCurve d).toAffine.slope (d ^ 2 * (d - 1)) 0
+      (d ^ 3 * (d - 1) ^ 2) 0 = d * (d - 1) := by
+    rw [Affine.slope_of_X_ne hc, sub_zero, sub_zero, div_eq_iff hc]; ring
+  rw [Affine.Point.add_of_X_ne hc]
+  refine velu_point_some_eq ?_ ?_
+  · simp only [Affine.addX]
+    rw [hslope]
+    simp only [tateCurve]
+    ring
+  · simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY]
+    rw [hslope]
+    simp only [tateCurve]
+    ring
+
+/-- `4P + P = -4P`, so `9P = 0`. -/
+lemma tateCurve_add_45 (hΔ : (tateCurve d).Δ ≠ 0) :
+    Affine.Point.some _ _ (tateCurve_ns4 hΔ) + Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = -Affine.Point.some _ _ (tateCurve_ns4 hΔ) := by
+  obtain ⟨hd0, hd1, hr, -⟩ := tateCurve_factors_ne_zero hΔ
+  have hx4 : d * (d - 1) * (d ^ 2 - d + 1) ≠ (0 : K) :=
+    mul_ne_zero (mul_ne_zero hd0 hd1) hr
+  have hslope : (tateCurve d).toAffine.slope (d * (d - 1) * (d ^ 2 - d + 1)) 0
+      (d * (d - 1) ^ 2 * (d ^ 2 - d + 1) ^ 2) 0 = (d - 1) * (d ^ 2 - d + 1) := by
+    rw [Affine.slope_of_X_ne hx4, sub_zero, sub_zero, div_eq_iff hx4]; ring
+  rw [Affine.Point.add_of_X_ne hx4, Affine.Point.neg_some]
+  refine velu_point_some_eq ?_ ?_
+  · simp only [Affine.addX]
+    rw [hslope]
+    simp only [tateCurve]
+    ring
+  · simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY]
+    rw [hslope]
+    simp only [tateCurve]
+    ring
+
+omit [DecidableEq K] in
+lemma zsmul_reduce_nine {A : Type*} [AddCommGroup A] (Q : A) (h9 : (9 : ℤ) • Q = 0) (k : ℤ) :
+    k • Q = (k % 9) • Q := by
+  have hkk : k = k / 9 * 9 + k % 9 := by omega
+  conv_lhs => rw [hkk]
+  rw [add_zsmul, ← smul_smul, h9, smul_zero, zero_add]
+
+/-- **Vélu's sums over the order-`9` kernel `⟨(0,0)⟩` of `tateCurve d`** (PROVEN): the
+kernel is exhibited as an explicit `Finset` — the image of `range 9` under `i ↦ i·P` —
+and Vélu's `t`, `w` over it are the polynomials `veluT9`, `veluW9`.
+
+The four `±`-representatives are `P = (0,0)`, `2P = (b, bc)`, `3P = (c, b − c)`,
+`4P = (r(r−1), r²(c − r + 1))` with `c = d²(d − 1)`, `b = cr`, `r = d² − d + 1`; they
+are established by `tateCurve_add_12`/`_23`/`_34`/`_45` above, the last of which is
+`5P = −4P`, i.e. `9P = 0`.  `veluTTerm` and `veluWTerm` depend on `Q` only through
+`±`-invariant data, so no distinctness bookkeeping over the nine points is needed:
+the sum is taken over `range 9` and the `±` pairs contribute equal terms.
+
+`h2` is not decoration — in characteristic `2` Vélu's `2⁻¹` collapses and the statement
+is false. -/
+lemma tateCurve_velu_kernel (h2 : (2 : K) ≠ 0) (hΔ : (tateCurve d).Δ ≠ 0) :
+    ∃ S : Finset (tateCurve d).toAffine.Point,
+      (∀ Q, Q ∈ S ↔ Q ∈ AddSubgroup.zmultiples
+        (Affine.Point.some 0 0 (tateCurve_ns1 hΔ))) ∧
+      veluT (tateCurve d) S = veluT9 d ∧ veluW (tateCurve d) S = veluW9 d := by
+  classical
+  -- the multiples of `P = (0,0)`
+  have n1 : (1 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = Affine.Point.some 0 0 (tateCurve_ns1 hΔ) := one_nsmul _
+  have n2 : (2 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = Affine.Point.some _ _ (tateCurve_ns2 hΔ) := by
+    rw [two_nsmul]; exact tateCurve_add_12 hΔ
+  have n3 : (3 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = Affine.Point.some _ _ (tateCurve_ns3 hΔ) := by
+    conv_lhs => rw [show (3 : ℕ) = 2 + 1 from rfl]
+    rw [add_nsmul, n2, one_nsmul]; exact tateCurve_add_23 hΔ
+  have n4 : (4 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = Affine.Point.some _ _ (tateCurve_ns4 hΔ) := by
+    conv_lhs => rw [show (4 : ℕ) = 3 + 1 from rfl]
+    rw [add_nsmul, n3, one_nsmul]; exact tateCurve_add_34 hΔ
+  have n5 : (5 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = -Affine.Point.some _ _ (tateCurve_ns4 hΔ) := by
+    conv_lhs => rw [show (5 : ℕ) = 4 + 1 from rfl]
+    rw [add_nsmul, n4, one_nsmul]; exact tateCurve_add_45 hΔ
+  have n9 : (9 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ) = 0 := by
+    conv_lhs => rw [show (9 : ℕ) = 5 + 4 from rfl]
+    rw [add_nsmul, n5, n4, neg_add_cancel]
+  have n6 : (6 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = -Affine.Point.some _ _ (tateCurve_ns3 hΔ) := by
+    refine eq_neg_of_add_eq_zero_right ?_
+    rw [← n3, ← add_nsmul]; exact n9
+  have n7 : (7 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = -Affine.Point.some _ _ (tateCurve_ns2 hΔ) := by
+    refine eq_neg_of_add_eq_zero_right ?_
+    rw [← n2, ← add_nsmul]; exact n9
+  have n8 : (8 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+      = -Affine.Point.some 0 0 (tateCurve_ns1 hΔ) := by
+    have h8 : (8 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)
+        + Affine.Point.some 0 0 (tateCurve_ns1 hΔ) = 0 := by
+      have h := n9
+      rwa [show (9 : ℕ) = 8 + 1 from rfl, add_nsmul, one_nsmul] at h
+    exact eq_neg_of_add_eq_zero_left h8
+  -- the order of `P` is exactly `9`
+  have hPne : Affine.Point.some 0 0 (tateCurve_ns1 hΔ) ≠ 0 :=
+    Affine.Point.some_ne_zero _
+  have hord : addOrderOf (Affine.Point.some 0 0 (tateCurve_ns1 hΔ)) = 9 := by
+    have hdvd : addOrderOf (Affine.Point.some 0 0 (tateCurve_ns1 hΔ)) ∣ 3 ^ 2 := by
+      simpa using addOrderOf_dvd_of_nsmul_eq_zero n9
+    obtain ⟨m, hm, hme⟩ := (Nat.dvd_prime_pow (by norm_num : Nat.Prime 3)).mp hdvd
+    interval_cases m
+    · rw [pow_zero, AddMonoid.addOrderOf_eq_one_iff] at hme; exact absurd hme hPne
+    · exfalso
+      have h3 : (3 : ℕ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ) = 0 := by
+        rw [← show (3 : ℕ) ^ 1 = 3 from rfl, ← hme]; exact addOrderOf_nsmul_eq_zero _
+      rw [n3] at h3; exact Affine.Point.some_ne_zero _ h3
+    · simpa using hme
+  -- the kernel is the image of `range 9`
+  have hset : ∀ Q, Q ∈ (Finset.range 9).image
+      (fun i : ℕ => i • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)) ↔
+      Q ∈ AddSubgroup.zmultiples (Affine.Point.some 0 0 (tateCurve_ns1 hΔ)) := by
+    intro Q
+    simp only [Finset.mem_image, Finset.mem_range]
+    rw [Iff.comm]
+    constructor
+    · intro hQ
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hQ
+      have z9 : (9 : ℤ) • Affine.Point.some 0 0 (tateCurve_ns1 hΔ) = 0 := by
+        rw [show (9 : ℤ) = ((9 : ℕ) : ℤ) from rfl, natCast_zsmul]; exact n9
+      rw [zsmul_reduce_nine _ z9 k] at hk
+      refine ⟨(k % 9).toNat, by omega, ?_⟩
+      rw [← hk, ← natCast_zsmul]
+      congr 1
+      omega
+    · rintro ⟨i, -, rfl⟩
+      exact nsmul_mem (AddSubgroup.mem_zmultiples _) i
+  have hinj : ∀ i ∈ Finset.range 9, ∀ j ∈ Finset.range 9,
+      (fun i : ℕ => i • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)) i
+        = (fun i : ℕ => i • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)) j → i = j := by
+    intro i hi j hj hij
+    exact nsmul_injOn_Iio_addOrderOf (by rw [hord]; exact Finset.mem_range.mp hi)
+      (by rw [hord]; exact Finset.mem_range.mp hj) hij
+  refine ⟨(Finset.range 9).image
+    (fun i : ℕ => i • Affine.Point.some 0 0 (tateCurve_ns1 hΔ)), hset, ?_, ?_⟩
+  · rw [veluT, Finset.sum_image hinj]
+    simp only [Finset.sum_range_succ, Finset.sum_range_zero, zero_nsmul, n1, n2, n3, n4, n5,
+      n6, n7, n8]
+    simp only [veluTTerm_zero, veluTTerm_some, Affine.Point.neg_some, Affine.negY]
+    simp only [tateCurve, WeierstrassCurve.b₂, WeierstrassCurve.b₄, veluT9]
+    field_simp
+    ring
+  · rw [veluW, Finset.sum_image hinj]
+    simp only [Finset.sum_range_succ, Finset.sum_range_zero, zero_nsmul, n1, n2, n3, n4, n5,
+      n6, n7, n8]
+    simp only [veluWTerm_zero, veluWTerm_some, Affine.Point.neg_some, Affine.negY]
+    simp only [tateCurve, WeierstrassCurve.b₂, WeierstrassCurve.b₄, veluW9]
+    field_simp
+    ring
+
+end Kernel
+
+
+/-- **The abstract quotient has the `j`-invariant of the Vélu quotient** (SORRY LEAF,
+cut 2026-07-27 out of `veluQuotient_jRelation_of_tateParam` below, which is now PROVEN
+over it together with `tateCurve_velu_kernel`, `tateCurve_veluModel_c₄` and
+`tateCurve_veluModel_Δ`, all three PROVEN): with `(E, h, d)` as there, `S` the order-`9`
+kernel `⟨(0,0)⟩` of the Kubert model and `E''` any curve receiving a `Gal`-equivariant
+homomorphism from `E(ℚ̄)` with kernel exactly `⟨h⟩`,
+
+  `j(E'') · Δ((tateCurve d)/S) = c₄((tateCurve d)/S)³`,
+
+i.e. `j(E'') = j((tateCurve d)/⟨(0,0)⟩)`, written denominator-free in the same style as
+the parent so that no `IsElliptic` instance has to be threaded through.
+
+**ALL THE GEOMETRY AND ALL THE ALGEBRA ARE NOW DISCHARGED ELSEWHERE.**  The parent's
+"Step 1" — Vélu's sums on the explicit nine-point kernel, and the resulting `c₄'`, `Δ'`
+— is `tateCurve_velu_kernel` + `tateCurve_veluModel_c₄` + `tateCurve_veluModel_Δ`, all
+PROVEN above; `j9_fricke_of_tateParam` converts the parent into the `X_0(9)` relation.
+What is left here is exactly one thing, and it is a HYPOTHESIS DEFECT, not a gap in the
+mathematics.
+
+**THE OBSTRUCTION.**  `π` is hypothesised only as an abstract `Gal`-equivariant
+`AddMonoidHom` with kernel `⟨h⟩`, not as a morphism of curves.  Such a `π` is
+automatically surjective on torsion (its image is divisible of corank `2` in
+`E''_tors ≅ (ℚ/ℤ)²`, hence everything), so it induces `E''_tors ≅ E_tors/⟨h⟩` as
+`Gal`-modules and therefore `T_ℓ(E'') ≅ T_ℓ(E/⟨h⟩)` for EVERY `ℓ`.  By Faltings that
+forces `E'' ≅ E/⟨h⟩` over `ℚ` — an isomorphism, not merely an isogeny, because
+`Hom(E'', E/⟨h⟩) ⊗ ℤ_ℓ` containing a `T_ℓ`-isomorphism makes the minimal isogeny degree
+prime to every `ℓ`.  So the statement is TRUE, and its hypotheses are strictly weaker
+than anything provable at this pin.
+
+**THE CHECK THAT WOULD REFUTE THIS OBSTRUCTION.**  Exhibit a route from `hπker` +
+`hπgal` alone to `j(E'') = j((tateCurve d)/⟨(0,0)⟩)` that does not pass through an
+isomorphism of `T_ℓ` for all `ℓ`.  Concretely it is refuted the moment `π` is
+strengthened to a Vélu quotient: `WeierstrassCurve.exists_velu_quotient_isogeny_model`
+already returns `E' = E.veluModel t w` with `t`, `w` pinned as Vélu's sums, and with
+`E''` identified as such a model this leaf becomes the variable-change transport of
+Vélu's data along the `C : VariableChange ℚ̄` that `IsTateParam` carries
+(`C • (E⁄ℚ̄) = tateCurve d`), under which `t ↦ u⁴t'` and `w ↦ u⁶w' + ru⁴t'`, so that
+`C • (E.veluModel t w) = (tateCurve d).veluModel t' w'` and `j` is invariant.  **That
+strengthening was authorised independently on `exists_x0Three_chainParameters` and was
+NOT yet on `main` as of 2026-07-27**; a successor should re-read the hypotheses of the
+parent BEFORE attempting Faltings, since every call site already supplies a Vélu
+quotient and the abstractness here is a design artefact.
+
+**Two residual pieces, once `π` is a Vélu quotient**, both routine and neither needing
+Faltings: (i) the transport above, and (ii) `Odd (Nat.card ⟨h⟩)`, which is `9`.
+
+**NUMERICAL ANCHOR** (PARI/GP, untrusted searcher; `d = 2` gives the class `27a`):
+`tateCurve 2` has `j = −1167051/512` and `(0,0)` of order `9`; its Vélu quotient by
+`⟨(0,0)⟩` has `j = −132651/2`, and `c₄' = (d³+3d²−6d+1)P₉(d)`, `Δ' = d(d−1)(d²−d+1)³q⁹`
+were each re-verified as polynomial identities over `ℚ(d)` (ratio exactly `1`, not
+merely proportional) before being certified here by `ring`. -/
+theorem jQuotient_eq_veluCurve_of_tateParam
+    (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (hord : addOrderOf h = 9)
+    (hhstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (π : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hπgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        π (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (π Pt))
+    (hπker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      π Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (d : AlgebraicClosure ℚ) (hd : IsTateParam E h d)
+    (hΔ : (tateCurve d).Δ ≠ 0)
+    (S : Finset (tateCurve d).toAffine.Point)
+    (hSmem : ∀ Q, Q ∈ S ↔ Q ∈ AddSubgroup.zmultiples
+      (Affine.Point.some 0 0 (tateCurve_ns1 hΔ))) :
+    algebraMap ℚ (AlgebraicClosure ℚ) E''.j * ((tateCurve d).veluCurve S).Δ
+      = ((tateCurve d).veluCurve S).c₄ ^ 3 :=
+  sorry
+
 /-- **The `j`-invariant of the quotient, denominator-free on the Kubert line**
-(SORRY LEAF, cut 2026-07-27 out of `jQuotient_of_tateParam` below, which is
-now PROVEN over it together with `exists_tateParam`, `isTateParam_unique`,
-`tateCurve_Δ` and `j9_fricke_of_tateParam`, all four already PROVEN): with
+(PROVEN 2026-07-27 over the single new leaf `jQuotient_eq_veluCurve_of_tateParam`
+just above, which carries ONLY the `π`-identification; cut 2026-07-27 out of
+`jQuotient_of_tateParam` below, which is PROVEN over it together with
+`exists_tateParam`, `isTateParam_unique`, `tateCurve_Δ` and
+`j9_fricke_of_tateParam`, all four already PROVEN): with
 `(E, h, d)` as in `jQuotient_of_tateParam` and `E''` any curve receiving a
 `Gal`-equivariant homomorphism from `E(ℚ̄)` with kernel exactly `⟨h⟩`,
 
@@ -6366,8 +6765,16 @@ theorem veluQuotient_jRelation_of_tateParam
         * (d * (d - 1) * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 9)
       = ((d ^ 3 + 3 * d ^ 2 - 6 * d + 1)
           * (d ^ 9 + 225 * d ^ 8 - 855 * d ^ 7 + 1866 * d ^ 6 - 2844 * d ^ 5
-             + 3123 * d ^ 4 - 2265 * d ^ 3 + 981 * d ^ 2 - 234 * d + 1)) ^ 3 :=
-  sorry
+             + 3123 * d ^ 4 - 2265 * d ^ 3 + 981 * d ^ 2 - 234 * d + 1)) ^ 3 := by
+  -- `d` is THE Kubert parameter of `(E, h)`, so `Δ ≠ 0` is available at it.
+  obtain ⟨d₀, hd₀, hΔ, -⟩ := exists_tateParam E h hord
+  rw [isTateParam_unique hd₀ hd] at hΔ
+  -- Vélu's data on the explicit order-`9` kernel `⟨(0,0)⟩` of the Kubert model.
+  obtain ⟨S, hSmem, hST, hSW⟩ := tateCurve_velu_kernel two_ne_zero hΔ
+  -- the one remaining hypothesis: `j(E'')` is the `j` of that quotient.
+  have key := jQuotient_eq_veluCurve_of_tateParam E E'' h hord hhstable π hπgal hπker d hd hΔ
+    S hSmem
+  rwa [veluCurve_eq, hST, hSW, tateCurve_veluModel_Δ, tateCurve_veluModel_c₄] at key
 
 /-- **The Fricke involution computes the `j`-invariant of the quotient**
 (PROVEN 2026-07-27 over the single new leaf
