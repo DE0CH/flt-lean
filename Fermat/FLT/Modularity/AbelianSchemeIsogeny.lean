@@ -5139,17 +5139,160 @@ theorem isAffine_of_isQuasiAffine_of_universallyClosed {X Y : Scheme.{u}} (f : X
       (Set.image_univ ▸ X.toSpecΓ.isClosedMap _ isClosed_univ)
   exact isAffine_of_isAffineHom X.toSpecΓ
 
-/-- **`ker[p]` is a QUASI-AFFINE SCHEME in characteristic `p`** (sorry leaf —
-the theorem of the cube; cut 2026-07-27 out of
+namespace AbelianSchemeStruct
+
+/-- **The zero section base-changes to the zero section** (PROVEN 2026-07-27):
+`e_{A_T} ≫ pr_A = g ≫ e_A`.
+
+Unfolding, `(ab.baseChange g).zeroSection` is `RelPoint.baseChangeUp g (ab.zero (𝟙 T ≫ g))`,
+whose underlying morphism is `pullback.lift (ab.zero (𝟙 T ≫ g)).1 (𝟙 T) _`; composing
+with `pullback.fst` reads off the first component, and `zero_val` rewrites it as
+`(𝟙 T ≫ g) ≫ ab.zeroSection`.
+
+This is the second of the two squares — `baseChange_mulByNat` is the first — that
+identify `ker[n]` of a base change with the base change of `ker[n]`; see
+`isPullback_ker_baseChange` immediately below. -/
+theorem baseChange_zeroSection (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S) :
+    (ab.baseChange g).zeroSection ≫ pullback.fst f g = g ≫ ab.zeroSection := by
+  show ((ab.baseChange g).zero (𝟙 T)).1 ≫ pullback.fst f g = _
+  rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeUp_val, pullback.lift_fst,
+    ab.zero_val, Category.id_comp]
+
+/-- **`ker[n]` OF A BASE CHANGE IS THE BASE CHANGE OF `ker[n]`** (PROVEN
+2026-07-27) — stated as the assertion that the comparison square
+
+```
+  ker[n]_{A_T} ---φ---> ker[n]_A
+       |                    |
+       v                    v
+       T --------g--------> S
+```
+
+is CARTESIAN, where `φ` is `pullback.map` along the projection `pr_A : A_T ⟶ A`.
+
+**This is what makes "WLOG the base field is algebraically closed" available**
+(route 9 of `isQuasiAffine_ker_mulByNat_of_isAlgClosed` below): with the square
+cartesian, `Surjective` — being stable under base change
+(`Mathlib/AlgebraicGeometry/PullbackCarrier.lean`) — carries a surjection
+`T ↠ S` up to a surjection `ker[n]_{A_T} ↠ ker[n]_A`, and a finite point set
+descends along it.
+
+**The proof is two applications of the pasting lemma and nothing else.**  No new
+theory, no abelian-variety input; both inputs are the two base-change squares
+above.
+
+1. *`[n]` on `A_T` is the base change of `[n]` on `A` along `pr_A`.*  Paste the
+   candidate square on top of the defining square of `A_T = A ×_S T`: the
+   pasted square is again the defining square, because `[n]' ≫ pr_T = pr_T`
+   (`mulByNat_comp`) and `[n] ≫ f = f`.  `IsPullback.of_bot` then extracts the
+   top square.
+2. *Fold that into the kernel.*  Paste the defining square of
+   `ker[n]_{A_T} = A_T ×_{[n]', e'} T` horizontally with the square from 1;
+   after rewriting `e' ≫ pr_A = g ≫ e` (`baseChange_zeroSection`) the result is
+   the horizontal composite of the wanted square with the defining square of
+   `ker[n]_A`, so `IsPullback.of_right` extracts the wanted square. -/
+theorem isPullback_ker_baseChange (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S)
+    (n : ℕ) :
+    IsPullback
+      (pullback.map ((ab.baseChange g).mulByNat n) (ab.baseChange g).zeroSection
+        (ab.mulByNat n) ab.zeroSection (pullback.fst f g) g (pullback.fst f g)
+        (ab.baseChange_mulByNat g n) (ab.baseChange_zeroSection g))
+      (pullback.snd ((ab.baseChange g).mulByNat n) (ab.baseChange g).zeroSection)
+      (pullback.snd (ab.mulByNat n) ab.zeroSection) g := by
+  have hsqbc : IsPullback (pullback.fst f g) (pullback.snd f g) f g :=
+    IsPullback.of_hasPullback f g
+  have hsqp : IsPullback (pullback.fst f g) ((ab.baseChange g).mulByNat n)
+      (ab.mulByNat n) (pullback.fst f g) := by
+    refine IsPullback.of_bot ?_ (ab.baseChange_mulByNat g n).symm hsqbc
+    rw [(ab.baseChange g).mulByNat_comp n, ab.mulByNat_comp n]
+    exact hsqbc
+  have hker' : IsPullback
+      (pullback.fst ((ab.baseChange g).mulByNat n) (ab.baseChange g).zeroSection)
+      (pullback.snd ((ab.baseChange g).mulByNat n) (ab.baseChange g).zeroSection)
+      ((ab.baseChange g).mulByNat n) (ab.baseChange g).zeroSection :=
+    IsPullback.of_hasPullback _ _
+  have hker : IsPullback (pullback.fst (ab.mulByNat n) ab.zeroSection)
+      (pullback.snd (ab.mulByNat n) ab.zeroSection) (ab.mulByNat n) ab.zeroSection :=
+    IsPullback.of_hasPullback _ _
+  have houter := hker'.paste_horiz hsqp
+  rw [ab.baseChange_zeroSection g] at houter
+  refine IsPullback.of_right ?_ ?_ hker
+  · rw [pullback.lift_fst]
+    exact houter
+  · exact pullback.lift_snd _ _ _
+
+end AbelianSchemeStruct
+
+/-- **`ker[p]` is a QUASI-AFFINE SCHEME over an ALGEBRAICALLY CLOSED field of
+characteristic `p`** (sorry leaf — the theorem of the cube; cut 2026-07-27 out of
+`isQuasiAffine_ker_mulByNat_of_field_char` below by ROUTE 9, "WLOG `K`
+algebraically closed", which that leaf's docstring had recorded as the axis
+nobody had ranged over).
+
+**WHAT THIS CUT IS AND IS NOT.**  It is NOT another change of shape — two of
+those have already been made in this chain and a third would buy nothing (see
+the consumer's CORRECTION 3).  It is a strengthening of the HYPOTHESES: this
+leaf may assume `[IsAlgClosed K]`, and the descent from it to arbitrary `K` is
+now PROVEN below.  What that buys is that every classical proof of the residue
+is written over an algebraically closed field, and two of them become
+*expressible* only here:
+
+* Mumford *Abelian Varieties* §6, Application 2 of the theorem of the cube (the
+  symmetric ample `L`, `[n]^*L ≅ L^{n²}`, `(L|_Z)^{p²} ≅ 𝒪_Z`) — projectivity of
+  `A` via the theta divisor is an algebraically-closed-field statement;
+* refuted route 7's reduction to `B = ((ker[p])_red)⁰`, a positive-dimensional
+  abelian variety killed by `p`: `_red` and the identity component behave as the
+  classical argument expects only over a perfect — here algebraically closed —
+  field.
+
+**The residue is still the theorem of the cube, and it is still hard.**  Nobody
+should read this cut as progress on the mathematics; it removes a genuine
+obstruction (the classical arguments were not even statable) without supplying
+any of the missing machinery.  In particular the blocker recorded at the
+consumer is UNCHANGED and is the thing to attack: at this pin there is **no
+monoidal structure on `SheafOfModules`**, so `L^{⊗n}` cannot be written at all,
+and ampleness, `Pic` and invertible sheaves are all absent.  Do not re-survey
+that; do not re-cut this leaf into `IsAffine` / `Finite` / `topologicalKrullDim
+≤ 0`, all of which are interchangeable with it here.
+
+**Routes already refuted for the general-`K` form apply verbatim here**, with
+one exception worth naming: route 5 (quasi-finiteness at the origin, spread by
+translations) was refuted partly because "the translations are not `K`-morphisms
+at non-rational points", and over an algebraically closed field they ARE.  That
+does not revive it — the hard part was always quasi-finiteness AT the origin,
+where `ker F ⊆ ker[p]` is infinitesimal with `Lie(ker[p]) = Lie(A)` of full
+dimension `g` — but a successor should know the objection has changed shape.
+
+See `isQuasiAffine_ker_mulByNat_of_field_char` below for the full survey: the
+classical proof in the order that produces `IsQuasiAffine`, the re-verified
+account of what mathlib does and does not have, and nine refuted routes each
+with the check that would refute the refutation. -/
+theorem isQuasiAffine_ker_mulByNat_of_isAlgClosed {X : Scheme.{u}}
+    (K : Type u) [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (ab : AbelianSchemeStruct fK)
+    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
+    Scheme.IsQuasiAffine (pullback (ab.mulByNat p) ab.zeroSection) :=
+  sorry
+
+/-- **`ker[p]` is a QUASI-AFFINE SCHEME in characteristic `p`** (PROVEN
+2026-07-27 over `isQuasiAffine_ker_mulByNat_of_isAlgClosed` above, by ROUTE 9 —
+"WLOG the base field is algebraically closed"; it used to be the sorry itself,
+cut 2026-07-27 out of
 `isAffine_ker_mulByNat_of_field_char`, which is now PROVEN over it through the
 bridge `isAffine_of_isQuasiAffine_of_universallyClosed` immediately above).
 
-**HONESTY FIRST: this is a CHANGE OF SHAPE, NOT a reduction of content.**  For a
-scheme proper over a field, *quasi-affine*, *affine* and *finite* are all
-equivalent, and both equivalences are now PROVEN here — so a prover at this leaf
-owes neither more nor less than a prover owed at
+**THIS DECLARATION IS NO LONGER A LEAF.**  Route 9 below was taken on
+2026-07-27 and it closes this statement over an arbitrary field, reducing it to
+`isQuasiAffine_ker_mulByNat_of_isAlgClosed` above.  The survey that follows is
+kept HERE, in one place, because it is about the residue, which is unchanged:
+everything below still describes what the algebraically-closed leaf owes.
+
+**HONESTY FIRST: the two earlier cuts were a CHANGE OF SHAPE, NOT a reduction of
+content.**  For a scheme proper over a field, *quasi-affine*, *affine* and
+*finite* are all equivalent, and both equivalences are PROVEN here — so a prover
+at this leaf owes neither more nor less than a prover owed at
 `finite_preimage_mulByNat_of_field_char` two cuts ago.  Nobody should report
-this as progress on the mathematics.  What the two cuts together buy, and the
+those cuts as progress on the mathematics.  What they buy, and the
 only reason they were made:
 
 * the residue is a property of the SCHEME `ker[p]` alone — no morphism
@@ -5345,8 +5488,13 @@ then ampleness), not a task-scale one.  Refute by exhibiting a faithful
 sheaf-FREE encoding of "`L` is ample and `L^{p²} ≅ 𝒪_Z`", or by finding a tensor
 product of sheaves of modules at this pin.
 
-**ROUTE 9, searched 2026-07-27 over the axis the first two sweeps never ranged
-over — BASE CHANGE — and blocked by a defect in this leaf's own STATEMENT.**
+**ROUTE 9 — BASE CHANGE, "WLOG `K` ALGEBRAICALLY CLOSED" — WAS TAKEN ON
+2026-07-27 AND IS THE PROOF OF THIS DECLARATION.**  It was found by the sweep
+that first ranged over the base-change axis, then blocked for a day by a defect
+in this family's own signatures, then unblocked by the repair recorded below.
+Everything from here to the end of this docstring is the history of that route;
+what it leaves open is `isQuasiAffine_ker_mulByNat_of_isAlgClosed` above.
+
 Every classical route (Mumford §6, and refuted route 7's reduction to
 `((ker[p])_red)⁰`) is written over an ALGEBRAICALLY CLOSED field, so the missing
 step is "WLOG `K` algebraically closed".  That reduction is otherwise entirely
@@ -5383,14 +5531,33 @@ on `↥(Spec (CommRingCat.of K))` now synthesize, `hchar` now constrains the
 actual base, and **route 9 goes through exactly as described above**, leaving
 this leaf as "the cube over an ALGEBRAICALLY CLOSED field".
 
-**So a successor should attack route 9 FIRST**, before any of the eight refuted
-cube-free routes: it is the one axis those eight sweeps never ranged over, and
-the only thing that had ever blocked it was this signature.  Everything else it
-needs is already here — `AbelianSchemeStruct.baseChange`, `baseChange_mulByNat`,
-`Surjective` stable under base change
-(`Mathlib/AlgebraicGeometry/PullbackCarrier.lean:431`), and the descent back in
-through `isFinite_ker_mulByNat_of_finite_preimage`.  A skeleton for it was built
-and typechecked, and died only on the defect now repaired.
+**AND IT WENT THROUGH EXACTLY AS PREDICTED, IN FOUR STEPS** (2026-07-27; the
+whole descent is ~35 lines and needed exactly two new general lemmas, both
+recorded above and both free of abelian-variety content):
+
+1. `K̄ := AlgebraicClosure K` inherits the characteristic
+   (`charP_of_injective_algebraMap`), and `g : Spec K̄ ⟶ Spec K` is SURJECTIVE
+   for free — mathlib's low-priority instance `[Nonempty X] [Subsingleton Y]`
+   fires because both spectra are one-point.  *This is the step the old
+   `(K : CommRingCat.{u})` binder made impossible*, and it is the whole content
+   of the repair below.
+2. `ab.baseChange g` is an abelian scheme over `Spec K̄`, and
+   `isPullback_ker_baseChange` (proved above, by two pastings) says its `ker[p]`
+   is the base change of `ker[p]` along `g`.
+3. So `φ : ker[p]_{K̄} ⟶ ker[p]_K` is surjective
+   (`MorphismProperty.IsStableUnderBaseChange.of_isPullback` for `@Surjective`),
+   while the leaf over `K̄` makes the source AFFINE
+   (`isAffine_of_isQuasiAffine_of_universallyClosed`), hence FINITE over
+   `Spec K̄` (`IsFinite.iff_isProper_and_isAffineHom`), hence a FINITE POINT SET
+   (`Scheme.Hom.finite_preimage_singleton`, and `Spec K̄` is one point).
+4. A surjective image of a finite set is finite, so every fibre of
+   `ker[p]_K ⟶ Spec K` is finite; `isFinite_ker_mulByNat_of_finite_preimage`
+   turns that into `IsFinite`, `isAffine_of_isAffineHom` into `IsAffine`, and
+   mathlib's `[IsAffine X] : X.IsQuasiAffine` closes the goal.
+
+Note step 4 re-enters the ZMT bridge rather than the affine one: the affine
+bridge `isAffine_ker_mulByNat_of_field_char` sits BELOW this declaration and
+consumes it, so using it here would be circular.
 
 **`hp` and `hchar` are deliberately carried even though the statement is true
 without them** (`ker[n]` is quasi-affine for every `n ≠ 0`): without them this
@@ -5400,8 +5567,56 @@ route cannot reach. -/
 theorem isQuasiAffine_ker_mulByNat_of_field_char {X : Scheme.{u}}
     (K : Type u) [Field K] {fK : X ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct fK)
     (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
-    Scheme.IsQuasiAffine (pullback (ab.mulByNat p) ab.zeroSection) :=
-  sorry
+    Scheme.IsQuasiAffine (pullback (ab.mulByNat p) ab.zeroSection) := by
+  classical
+  -- 1.  the algebraic closure, its characteristic, and the surjection of spectra
+  haveI : CharP K p := hchar ▸ ringChar.charP K
+  haveI : CharP (AlgebraicClosure K) p :=
+    charP_of_injective_algebraMap (algebraMap K (AlgebraicClosure K)).injective p
+  have hchar' : ringChar (AlgebraicClosure K) = p := ringChar.eq (AlgebraicClosure K) p
+  set g : Spec (CommRingCat.of (AlgebraicClosure K)) ⟶ Spec (CommRingCat.of K) :=
+    Spec.map (CommRingCat.ofHom (algebraMap K (AlgebraicClosure K)))
+  -- 2.  the leaf over `K̄`, and the chain quasi-affine ⟹ affine ⟹ finite morphism
+  haveI := isQuasiAffine_ker_mulByNat_of_isAlgClosed (AlgebraicClosure K)
+    (ab.baseChange g) p hp hchar'
+  haveI : IsProper ((ab.baseChange g).mulByNat p) := (ab.baseChange g).isProper_mulByNat p
+  haveI : IsAffine (pullback ((ab.baseChange g).mulByNat p) (ab.baseChange g).zeroSection) :=
+    isAffine_of_isQuasiAffine_of_universallyClosed
+      (pullback.snd ((ab.baseChange g).mulByNat p) (ab.baseChange g).zeroSection)
+  haveI : IsFinite (pullback.snd ((ab.baseChange g).mulByNat p)
+      (ab.baseChange g).zeroSection) :=
+    IsFinite.iff_isProper_and_isAffineHom.mpr ⟨inferInstance, inferInstance⟩
+  -- 3.  `ker[p]` over `K̄` is the base change of `ker[p]` over `K`, along a surjection
+  set φ := pullback.map ((ab.baseChange g).mulByNat p) (ab.baseChange g).zeroSection
+      (ab.mulByNat p) ab.zeroSection (pullback.fst fK g) g (pullback.fst fK g)
+      (ab.baseChange_mulByNat g p) (ab.baseChange_zeroSection g) with hφdef
+  have hsq : IsPullback φ
+      (pullback.snd ((ab.baseChange g).mulByNat p) (ab.baseChange g).zeroSection)
+      (pullback.snd (ab.mulByNat p) ab.zeroSection) g := ab.isPullback_ker_baseChange g p
+  haveI : Surjective φ :=
+    MorphismProperty.IsStableUnderBaseChange.of_isPullback (P := @Surjective) hsq.flip
+      inferInstance
+  -- 4.  a finite point set upstairs, pushed down the surjection, and back in through ZMT
+  have huniv' : (Set.univ : Set ↥(pullback ((ab.baseChange g).mulByNat p)
+      (ab.baseChange g).zeroSection)).Finite := by
+    refine Set.Finite.subset (Scheme.Hom.finite_preimage_singleton
+      (pullback.snd ((ab.baseChange g).mulByNat p) (ab.baseChange g).zeroSection)
+      (default : ↥(Spec (CommRingCat.of (AlgebraicClosure K))))) ?_
+    intro x _
+    simp only [Set.mem_preimage, Set.mem_singleton_iff]
+    exact Subsingleton.elim _ _
+  have hfinK : ∀ s : ↥(Spec (CommRingCat.of K)),
+      (⇑(pullback.snd (ab.mulByNat p) ab.zeroSection) ⁻¹' {s}).Finite := by
+    intro s
+    refine Set.Finite.subset (huniv'.image ⇑φ) ?_
+    intro x _
+    obtain ⟨y, hy⟩ := Scheme.Hom.surjective φ x
+    exact ⟨y, Set.mem_univ y, hy⟩
+  haveI : IsFinite (pullback.snd (ab.mulByNat p) ab.zeroSection) :=
+    AbelianSchemeStruct.isFinite_ker_mulByNat_of_finite_preimage ab p hfinK
+  haveI : IsAffine (pullback (ab.mulByNat p) ab.zeroSection) :=
+    isAffine_of_isAffineHom (pullback.snd (ab.mulByNat p) ab.zeroSection)
+  infer_instance
 
 /-- **`ker[p]` is an AFFINE SCHEME in characteristic `p`** (PROVEN 2026-07-27
 over `isQuasiAffine_ker_mulByNat_of_field_char`; it used to be the sorry itself).
@@ -5480,12 +5695,16 @@ reduced to a bare POINT SET being finite, `finite_ker_mulByNat_of_field_char`
 above.  The chain from there to `finite_preimage_mulByNat_of_field_char` is
 entirely proven.
 
-**Where the leaf is now** (2026-07-27, third cut).
-`finite_ker_mulByNat_of_field_char` and `isAffine_ker_mulByNat_of_field_char`
-are both PROVEN; the sole remaining leaf on this route is
-`isQuasiAffine_ker_mulByNat_of_field_char` — "`ker[p]` is a QUASI-AFFINE
-scheme" — which for a proper `K`-scheme is EQUIVALENT to affineness and hence to
-finiteness, so both cuts changed the shape and not the content.  They were made
+**Where the leaf is now** (2026-07-27, fourth cut).
+`finite_ker_mulByNat_of_field_char`, `isAffine_ker_mulByNat_of_field_char` and
+`isQuasiAffine_ker_mulByNat_of_field_char` are all PROVEN; the sole remaining
+leaf on this route is `isQuasiAffine_ker_mulByNat_of_isAlgClosed` — "`ker[p]` is
+a QUASI-AFFINE scheme over an ALGEBRAICALLY CLOSED field of characteristic
+`p`" — reached from the previous leaf by ROUTE 9, the base-change reduction
+"WLOG `K` algebraically closed", which unlike the two cuts before it strengthens
+the HYPOTHESES rather than restating the conclusion.  Quasi-affineness itself,
+for a proper `K`-scheme, is EQUIVALENT to affineness and hence to
+finiteness, so those two cuts changed the shape and not the content.  They were made
 because `IsQuasiAffine` is literally what the ample-line-bundle argument outputs
 (EGA II 5.1.2), and the remaining step to `IsAffine` is now the proven bridge
 `isAffine_of_isQuasiAffine_of_universallyClosed` rather than an obligation.  The
