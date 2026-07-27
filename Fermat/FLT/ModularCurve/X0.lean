@@ -291,6 +291,18 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `CyclicSubgroupOfOrder` and the faithfulness audit of
 -- `exists_coarseModuliY0_of_pos`.
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
+-- `IsSchemeTheoreticallyDominant` and its stability under FLAT BASE CHANGE
+-- (`IsSchemeTheoreticallyDominant.of_isPullback`) — this is what proves
+-- `ker_sqCover_spanScheme`, since over `Spec ℚ` every structure morphism is
+-- flat, so both projections of a fibre square are flat base changes.
+public import Mathlib.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
+-- `IsPullback.of_bot`: the pasting lemma that exhibits each half of
+-- `sqCover` as a base change of the tautological cover.  (`.Defs`, imported
+-- below, has `IsPullback` but not the pasting lemmas.)
+public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Basic
+-- `RingHom.injective_iff_ker_eq_bot`, used to turn mathlib's
+-- `Hom.toImage_app_injective` into `(Hom.toImage _).ker = ⊥`.
+public import Mathlib.RingTheory.Ideal.Maps
 -- The finiteness of the `K`-points of a finite scheme over a geometric
 -- point, which is what makes `isEmpty_of_gamma0Datum_zero` reachable:
 -- `LocallyQuasiFinite` and `IsLocallyArtinian.of_locallyQuasiFinite`,
@@ -2127,38 +2139,213 @@ theorem sqCover_sqMap {A C D : Scheme.{0}} {f : A ⟶ SpecQ} {ι : C ⟶ A} {d :
   · rw [Category.assoc, sqMap_fst, ← Category.assoc, sqCover_fst, Category.assoc, hq, sqMap_fst]
   · rw [Category.assoc, sqMap_snd, ← Category.assoc, sqCover_snd, Category.assoc, hq, sqMap_snd]
 
+/-! ### Schematic dominance of the fibre square of the tautological cover
+
+Everything in this subsection is base-free scheme theory; it is the proof
+of leaf (iii-a).  The mechanism is mathlib's
+`IsSchemeTheoreticallyDominant`, whose stability under **flat** base
+change (`IsSchemeTheoreticallyDominant.of_isPullback`) does all the work
+once `sqCover` is cut into its two one-sided halves.  Over `Spec ℚ` every
+structure morphism is flat (`[Subsingleton Y] [IsIntegral Y] → Flat f`),
+so both halves qualify. -/
+
+/-- **The factorisation through the scheme-theoretic image is
+schematically dominant** (PROVEN).
+
+Mathlib has `IsDominant f.toImage` and `Hom.toImage_app_injective` for
+quasi-compact `f`, but not the ideal-sheaf form; the two are assembled
+here by testing `ker` on the affine opens `f.imageι ⁻¹ᵁ U`, which are
+affine because `imageι` is a closed immersion and cover `f.image`
+because the `U` cover `Y`. -/
+theorem ker_toImage_of_quasiCompact {X Y : Scheme.{u}} (r : X ⟶ Y) [QuasiCompact r] :
+    r.toImage.ker = ⊥ := by
+  refine Scheme.IdealSheafData.ext_of_iSup_eq_top
+    (fun V : Y.affineOpens => (⟨r.imageι ⁻¹ᵁ V.1, V.2.preimage r.imageι⟩ : (r.image).affineOpens))
+    ?_ ?_
+  · refine top_unique fun x _ => ?_
+    have hx : r.imageι.base x ∈ (⨆ V : Y.affineOpens, (V : Y.Opens)) := by
+      rw [iSup_affineOpens_eq_top]; trivial
+    obtain ⟨V, hV⟩ := TopologicalSpace.Opens.mem_iSup.mp hx
+    exact TopologicalSpace.Opens.mem_iSup.mpr ⟨V, hV⟩
+  · intro V
+    have hinj : Function.Injective (r.toImage.app (r.imageι ⁻¹ᵁ V.1)).hom :=
+      r.toImage_app_injective V
+    simp only [Scheme.Hom.ker_apply, Scheme.IdealSheafData.ideal_bot, Pi.bot_apply]
+    exact (RingHom.injective_iff_ker_eq_bot _).mp hinj
+
+instance isSchemeTheoreticallyDominant_toImage {X Y : Scheme.{u}} (r : X ⟶ Y) [QuasiCompact r] :
+    IsSchemeTheoreticallyDominant r.toImage :=
+  ⟨ker_toImage_of_quasiCompact r⟩
+
+/-- **A morphism out of a scheme with finitely many points is
+quasi-compact** (PROVEN): every subset of a finite space is compact.
+
+This is the only place `J` has to be finite on the (iii-a) route; see the
+faithfulness note on `ker_sqCover_spanScheme`. -/
+theorem quasiCompact_of_finite_carrier {X Y : Scheme.{u}} (r : X ⟶ Y) [Finite ↥X] :
+    QuasiCompact r :=
+  ⟨fun _ _ _ => (Set.toFinite _).isCompact⟩
+
+/-- **`∐_J Spec ℚ̄` has finitely many points for finite `J`** (PROVEN):
+its space is `Σ j : J, Spec ℚ̄` by `AlgebraicGeometry.sigmaMk`, and
+`Spec` of a field is a one-point space. -/
+instance finite_geomPtSigma {J : Type} [Finite J] : Finite ↥(geomPtSigma J) :=
+  Finite.of_equiv _ (AlgebraicGeometry.sigmaMk
+    (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ)))).toEquiv
+
+section SqCoverDominant
+
+variable {A C D : Scheme.{0}} {f : A ⟶ SpecQ} {ι : C ⟶ A} {d : D ⟶ A}
+
+/-- **The half-step `D ×_ℚ D ⟶ C ×_ℚ D`** of `sqCover`: `q` on the first
+factor, the identity on the second. -/
+noncomputable def sqCoverLeft (q : D ⟶ C) (hq : q ≫ ι = d) :
+    Limits.pullback (d ≫ f) (d ≫ f) ⟶ Limits.pullback (ι ≫ f) (d ≫ f) :=
+  Limits.pullback.map (d ≫ f) (d ≫ f) (ι ≫ f) (d ≫ f) q (𝟙 D) (𝟙 SpecQ)
+    (by rw [Category.comp_id, ← Category.assoc, hq]) (by simp)
+
+@[simp] theorem sqCoverLeft_fst (q : D ⟶ C) (hq : q ≫ ι = d) :
+    sqCoverLeft (f := f) q hq ≫ Limits.pullback.fst (ι ≫ f) (d ≫ f)
+      = Limits.pullback.fst (d ≫ f) (d ≫ f) ≫ q :=
+  Limits.pullback.lift_fst _ _ _
+
+@[simp] theorem sqCoverLeft_snd (q : D ⟶ C) (hq : q ≫ ι = d) :
+    sqCoverLeft (f := f) q hq ≫ Limits.pullback.snd (ι ≫ f) (d ≫ f)
+      = Limits.pullback.snd (d ≫ f) (d ≫ f) :=
+  (Limits.pullback.lift_snd _ _ _).trans (Category.comp_id _)
+
+/-- **The half-step `C ×_ℚ D ⟶ C ×_ℚ C`** of `sqCover`: the identity on
+the first factor, `q` on the second. -/
+noncomputable def sqCoverRight (q : D ⟶ C) (hq : q ≫ ι = d) :
+    Limits.pullback (ι ≫ f) (d ≫ f) ⟶ Limits.pullback (ι ≫ f) (ι ≫ f) :=
+  Limits.pullback.map (ι ≫ f) (d ≫ f) (ι ≫ f) (ι ≫ f) (𝟙 C) q (𝟙 SpecQ)
+    (by simp) (by rw [Category.comp_id, ← Category.assoc, hq])
+
+@[simp] theorem sqCoverRight_fst (q : D ⟶ C) (hq : q ≫ ι = d) :
+    sqCoverRight (f := f) q hq ≫ Limits.pullback.fst (ι ≫ f) (ι ≫ f)
+      = Limits.pullback.fst (ι ≫ f) (d ≫ f) :=
+  (Limits.pullback.lift_fst _ _ _).trans (Category.comp_id _)
+
+@[simp] theorem sqCoverRight_snd (q : D ⟶ C) (hq : q ≫ ι = d) :
+    sqCoverRight (f := f) q hq ≫ Limits.pullback.snd (ι ≫ f) (ι ≫ f)
+      = Limits.pullback.snd (ι ≫ f) (d ≫ f) ≫ q :=
+  Limits.pullback.lift_snd _ _ _
+
+theorem sqCoverLeft_sqCoverRight (q : D ⟶ C) (hq : q ≫ ι = d) :
+    sqCoverLeft (f := f) q hq ≫ sqCoverRight (f := f) q hq = sqCover (f := f) q hq := by
+  refine Limits.pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sqCoverRight_fst, sqCoverLeft_fst, sqCover_fst]
+  · rw [Category.assoc, sqCoverRight_snd, ← Category.assoc, sqCoverLeft_snd, sqCover_snd]
+
+/-- **`sqCoverLeft` is a base change of `q`** (PROVEN), along the first
+projection `C ×_ℚ D ⟶ C`.  This is the pasting lemma `IsPullback.of_bot`
+applied to the tautological square of `C ×_ℚ D`. -/
+theorem isPullback_sqCoverLeft (q : D ⟶ C) (hq : q ≫ ι = d) :
+    IsPullback (Limits.pullback.fst (d ≫ f) (d ≫ f)) (sqCoverLeft (f := f) q hq) q
+      (Limits.pullback.fst (ι ≫ f) (d ≫ f)) := by
+  refine IsPullback.of_bot (v₂₁ := Limits.pullback.snd (ι ≫ f) (d ≫ f)) (v₂₂ := ι ≫ f)
+    ?_ ?_ (IsPullback.of_hasPullback _ _)
+  · have h2 : q ≫ (ι ≫ f) = d ≫ f := by rw [← Category.assoc, hq]
+    rw [sqCoverLeft_snd, h2]
+    exact IsPullback.of_hasPullback _ _
+  · rw [sqCoverLeft_fst]
+
+/-- **`sqCoverRight` is a base change of `q`** (PROVEN), along the second
+projection `C ×_ℚ C ⟶ C`. -/
+theorem isPullback_sqCoverRight (q : D ⟶ C) (hq : q ≫ ι = d) :
+    IsPullback (Limits.pullback.snd (ι ≫ f) (d ≫ f)) (sqCoverRight (f := f) q hq) q
+      (Limits.pullback.snd (ι ≫ f) (ι ≫ f)) := by
+  refine IsPullback.of_bot (v₂₁ := Limits.pullback.fst (ι ≫ f) (ι ≫ f)) (v₂₂ := ι ≫ f)
+    ?_ ?_ ((IsPullback.of_hasPullback (ι ≫ f) (ι ≫ f)).flip)
+  · have h2 : q ≫ (ι ≫ f) = d ≫ f := by rw [← Category.assoc, hq]
+    rw [sqCoverRight_fst, h2]
+    exact (IsPullback.of_hasPullback _ _).flip
+  · rw [sqCoverRight_snd]
+
+/-- **The fibre square over `ℚ` of a quasi-compact schematically dominant
+map is schematically dominant** (PROVEN).
+
+This is leaf (iii-a) in its base-free form.  `sqCover q = sqCoverLeft q ≫
+sqCoverRight q`, each factor is a base change of `q` along a projection,
+and both projections are flat because they are base changes of structure
+morphisms to `Spec ℚ`. -/
+theorem ker_sqCover_of_dominant (q : D ⟶ C) (hq : q ≫ ι = d)
+    [IsSchemeTheoreticallyDominant q] [QuasiCompact q]
+    [AlgebraicGeometry.Flat (ι ≫ f)] [AlgebraicGeometry.Flat (d ≫ f)] :
+    (sqCover (f := f) q hq).ker = ⊥ := by
+  haveI : IsSchemeTheoreticallyDominant (sqCoverLeft (f := f) q hq) :=
+    IsSchemeTheoreticallyDominant.of_isPullback (isPullback_sqCoverLeft q hq)
+  haveI : IsSchemeTheoreticallyDominant (sqCoverRight (f := f) q hq) :=
+    IsSchemeTheoreticallyDominant.of_isPullback (isPullback_sqCoverRight q hq)
+  rw [← sqCoverLeft_sqCoverRight q hq]
+  exact IsSchemeTheoreticallyDominant.ker_eq_bot _
+
+end SqCoverDominant
+
+/-- **The factorisation of `geomPtDesc p` through the span IS
+`Hom.toImage`** (PROVEN): `spanSchemeι p` is a closed immersion, hence a
+monomorphism, so a factorisation of `geomPtDesc p` through it is
+unique. -/
+theorem eq_toImage_of_factor_spanScheme {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (q : geomPtSigma J ⟶ spanScheme p) (hq : q ≫ spanSchemeι p = geomPtDesc p) :
+    q = (geomPtDesc p).toImage := by
+  rw [← cancel_mono (spanSchemeι p), hq]
+  exact ((geomPtDesc p).toImage_imageι).symm
+
 /-- **The square of the span's tautological cover is schematically
-dominant** (sorry leaf (iii-a), split out 2026-07-27).
+dominant** (PROVEN 2026-07-27, was sorry leaf (iii-a)).
 
-`Σ = ∐_{Fin N} Spec ℚ̄ ⟶ C` is schematically dominant by construction —
-`C` *is* the scheme-theoretic image — and `⊥` is its kernel
-(`Hom.toImage_app_injective` is mathlib's form of this).  What is asked
-here is that the fibre square of that map over `Spec ℚ` is again
-schematically dominant.
+`Σ = ∐_J Spec ℚ̄ ⟶ C` is schematically dominant by construction — `C`
+*is* the scheme-theoretic image — and `⊥` is its kernel
+(`ker_toImage_of_quasiCompact` above, assembled from mathlib's
+`Hom.toImage_app_injective`).  What is asked here is that the fibre
+square of that map over `Spec ℚ` is again schematically dominant.
 
-TRUE, and it is commutative algebra, not geometry: over a field every
-module is flat, so an injection `R ↪ S` of `ℚ`-algebras stays injective
-after `- ⊗_ℚ -` with another injection, i.e. `R ⊗_ℚ R' ↪ S ⊗_ℚ S'`.
-What has to be supplied at this pin is the passage from that ring
-statement to `(sqCover q hq).ker = ⊥` for the *scheme* fibre product,
-i.e. that the kernel ideal sheaf of a fibre product of morphisms over an
-affine base is computed by the tensor product on affine charts.
+THE ROUTE ACTUALLY TAKEN is *not* the ring-theoretic one this docstring
+used to predict (`R ⊗_ℚ R' ↪ S ⊗_ℚ S'` by flatness over a field, then
+transported to ideal sheaves through affine charts).  No chart-level
+tensor computation is needed: mathlib already carries
+`IsSchemeTheoreticallyDominant` and its stability under **flat base
+change**, `IsSchemeTheoreticallyDominant.of_isPullback`.  Cutting
+`sqCover` into its two one-sided halves (`sqCoverLeft`, `sqCoverRight`)
+exhibits each as a base change of `q` along a projection of a fibre
+square over `Spec ℚ`, and over `Spec ℚ` every structure morphism is flat
+(mathlib's `[Subsingleton Y] [IsIntegral Y] → Flat f`).  The old
+docstring's "check that would refute this obstruction" was the right
+instruction and it did refute it: the missing lemma was not about
+`Limits.pullback.map` at all but about the morphism *class*.
 
-CHECK THAT WOULD REFUTE THIS OBSTRUCTION: grep
-`.lake/packages/mathlib` for a lemma bounding `Hom.ker` of
-`Limits.pullback.map`, or for `ker` of a base change — e.g. names
-containing `ker` together with `pullback`/`baseChange`. Two nearby
-candidates that do NOT suffice on their own are
-`Scheme.IdealSheafData.ker_fst_of_isClosedImmersion` (the wrong shape:
-one leg a closed immersion) and `comap_bot` (the wrong direction).
+**A HYPOTHESIS WAS ADDED: `[Finite J]`.**  Say plainly where it is used
+and where it is not.  It is used ONLY to obtain `QuasiCompact q` and
+`QuasiCompact (geomPtDesc p)` — mathlib's flat-base-change lemma, and
+`Hom.toImage_app_injective`, both require quasi-compactness — via
+`finite_geomPtSigma` (a finite coproduct of one-point schemes has a
+finite space, so every subset is compact).  For infinite `J` the source
+is an infinite discrete space and `q` is genuinely NOT quasi-compact, so
+this route is unavailable; the statement is nevertheless expected to
+remain TRUE there, since the chart-level argument recalled above never
+uses finiteness (`Γ` of a coproduct is a product, and
+`(∏_j M_j) ⊗_ℚ N ↪ ∏_j (M_j ⊗_ℚ N)` for `N` free).  CHECK THAT WOULD
+REFUTE THE NECESSITY OF `[Finite J]`: prove
+`(pullback.map … q q (𝟙 _)).ker = ⊥` directly on affine charts, or find
+a quasi-compactness-free version of
+`IsSchemeTheoreticallyDominant.pullbackSnd`.  Nothing in this
+development needs the infinite case: the only consumer,
+`exists_addHom_factor_zmulPts`, instantiates `J := Fin N`.
 
 Note this leaf mentions neither `y`, nor `N`, nor the group law: it is a
 statement about an arbitrary finite family of geometric points. -/
-theorem ker_sqCover_spanScheme {A : Scheme.{0}} {f : A ⟶ SpecQ} {J : Type}
+theorem ker_sqCover_spanScheme {A : Scheme.{0}} {f : A ⟶ SpecQ} {J : Type} [Finite J]
     (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
     (q : geomPtSigma J ⟶ spanScheme p) (hq : q ≫ spanSchemeι p = geomPtDesc p) :
-    (sqCover (f := f) q hq).ker = ⊥ :=
-  sorry
+    (sqCover (f := f) q hq).ker = ⊥ := by
+  haveI hdqc : QuasiCompact (geomPtDesc p) := quasiCompact_of_finite_carrier _
+  haveI : QuasiCompact q := quasiCompact_of_finite_carrier _
+  haveI : IsSchemeTheoreticallyDominant q := by
+    rw [eq_toImage_of_factor_spanScheme p q hq]
+    exact ⟨ker_toImage_of_quasiCompact (geomPtDesc p)⟩
+  exact ker_sqCover_of_dominant q hq
 
 /-- **The group law carries the square of the geometric-point family into
 the span** (sorry leaf (iii-b), split out 2026-07-27 — this is the half
@@ -2183,7 +2370,90 @@ a factorisation of `Spec (ℚ̄ ⊗_ℚ ℚ̄) ⟶ Spec ℚ̄ ×_ℚ Spec ℚ̄`
 `Γ_ℚ`-free description of the points — none is expected, since dropping
 `hstable` makes the statement FALSE (take `y` a point whose Galois orbit
 leaves `⟨y⟩`; then `C` is bigger than `⟨y⟩` and the sum of two of its
-geometric points need not lie in it). -/
+geometric points need not lie in it).
+
+## ROUTE AUDIT, 2026-07-27 (by the agent that proved leaf (iii-a))
+
+AXIS SEARCHED: *morphism-class* routes — schematic dominance, flat base
+change, rigidity out of a reduced scheme — and *coproduct-decomposition*
+routes.  NOT searched: an explicit Galois-descent isomorphism
+`ℚ̄ ⊗_ℚ ℚ̄ ≅ C(Γ_ℚ, ℚ̄)`, which is the classical proof and would need
+that isomorphism built from scratch.
+
+**Leaf (iii-a) is now PROVEN and it does NOT help here.**  Schematic
+dominance is preserved by flat base change, which is what closed (iii-a);
+it says nothing about a map that leaves the family, which is what
+addition does.  So the two halves of leaf (iii) really are of different
+difficulty, exactly as the sibling `exists_negHom_factor_zmulPts`
+predicted.
+
+**Rigidity is NOT the tool here either** — the same correction the
+inversion sibling recorded, for a different reason: rigidity
+(`AlgebraicGeometry.ext_of_isDominant_of_isSeparated`) compares TWO
+morphisms that agree on a dense subscheme, and here there is no second
+morphism to compare against.  What is wanted is a factorisation, i.e. an
+ideal-sheaf inequality.
+
+TARGET INEQUALITY, after `IsClosedImmersion.lift` and
+`Scheme.IdealSheafData.ker_subschemeι`: writing `d := geomPtDesc
+(zmulPts ab N y)`,
+
+    d.ker ≤ (sqMap d ≫ addHom ab).ker.
+
+Two routes reach it, and BOTH need the same quasi-compactness input.
+
+*Route 1 — cut by the components of the coproduct.*  The pieces exist in
+the pin and were located, not guessed:
+`AlgebraicGeometry.sigmaOpenCover` (the cover of `∐ g` by the `Sigma.ι`),
+`AlgebraicGeometry.Scheme.Pullback.openCoverOfLeftRight` (the induced
+cover of a fibre product, with pieces `pullback (𝒰X.f i ≫ f)
+(𝒰Y.f j ≫ g)`), and
+`AlgebraicGeometry.Scheme.Hom.iInf_ker_openCover_map_comp`,
+`⨅ i, (𝒰.f i ≫ h).ker = h.ker` for `[QuasiCompact h]`.  Together these
+reduce the target to: for each `(j, k)`, the composite
+`Spec (ℚ̄ ⊗_ℚ ℚ̄) ⟶ A` factors through `spanSchemeι`.
+
+*Route 2 — reduce to a purely TOPOLOGICAL containment.*  Both kernels
+are radical because their sources are reduced, so by
+`Scheme.Hom.support_ker` and `Scheme.IdealSheafData.vanishingIdeal`
+(antitone) the target follows from
+
+    Set.range (sqMap d ≫ addHom ab) ⊆ closure (Set.range d),
+
+and the points of the fibre product are enumerated by
+`Mathlib/AlgebraicGeometry/PullbackCarrier.lean`'s `Pullback.Triplet`.
+Reducedness of `Σ ×_ℚ Σ` looks INFERRABLE rather than missing: mathlib's
+`Mathlib/AlgebraicGeometry/Geometrically/Reduced.lean` carries
+`instance [GeometricallyReduced g] [Flat g] [IsReduced X]
+[IsLocallyNoetherian X] : IsReduced (pullback f g)`, and `Σ` is a finite
+disjoint union of `Spec ℚ̄` — reduced and locally noetherian — over the
+separable extension `ℚ̄/ℚ`.  CHECK THAT WOULD REFUTE THIS: try
+`example : IsReduced ↑(Limits.pullback (geomPtDesc p ≫ f) (geomPtDesc p ≫ f)) := by
+infer_instance` and see whether `GeometricallyReduced (geomPtDesc p ≫ f)`
+resolves.
+
+SHARED OBLIGATION, and the first thing the successor should discharge:
+`QuasiCompact (sqMap d ≫ addHom ab)`.  It is NOT free — `Spec (ℚ̄ ⊗_ℚ ℚ̄)`
+is an infinite (profinite) space, so `quasiCompact_of_finite_carrier`
+does not apply — but it should follow from "source quasi-compact, target
+quasi-separated": `CompactSpace ↑(Σ ×_ℚ Σ)` is mathlib's
+`instance [QuasiCompact f] [CompactSpace Y] : CompactSpace ↑(pullback f g)`
+fed by `finite_geomPtSigma`, and `A` is quasi-separated because
+`AbelianSchemeStruct` carries the field `proper : IsProper f` (CHECKED in
+`Fermat/FLT/Modularity/AbelianScheme.lean`) and `SpecQ` is affine.
+
+TRAP, recorded because it is the natural first guess and it is WRONG:
+`Spec (ℚ̄ ⊗_ℚ ℚ̄)` is **not** `∐_{σ ∈ Γ_ℚ} Spec ℚ̄`.  The tensor product
+is the ring of *continuous* functions `Γ_ℚ → ℚ̄`, so its spectrum is a
+profinite space, not a discrete coproduct, and `σ` varies continuously
+over it.  Any plan that writes the fibre square as a coproduct indexed by
+`Fin N × Fin N × Γ_ℚ` will not typecheck and, worse, will look like it
+should.  What IS true, and is all the arithmetic needs, is that every
+residue field of `ℚ̄ ⊗_ℚ ℚ̄` is `ℚ̄` — it is a field algebraic over the
+algebraically closed image of the first factor — so each POINT carries a
+`ℚ`-embedding `ℚ̄ → ℚ̄`, hence an element of `Field.absoluteGaloisGroup ℚ`
+(`IsAlgClosed`/normality upgrades the embedding to an automorphism).
+That is the only place `hstable` is consumed. -/
 theorem exists_addHom_factor_geomSq {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -2648,8 +2918,8 @@ and (v) are proven over four smaller leaves.  The state of the five is:
 | (iii) `exists_addHom_factor_zmulPts` | PROVEN over (iii-a), (iii-b) |
 | (iv) `exists_negHom_factor_zmulPts` | **PROVEN** — no leaf |
 | (v) `geom_cyclic_zmulPts` | PROVEN over (v-a), (v-b) |
-| (iii-a) `ker_sqCover_spanScheme` | open — a fibre square of schematically dominant maps over `ℚ` |
-| (iii-b) `exists_addHom_factor_geomSq` | open — the addition law on `∐ Spec (ℚ̄ ⊗_ℚ ℚ̄)`; the only consumer of `hstable` |
+| (iii-a) `ker_sqCover_spanScheme` | **PROVEN** 2026-07-27 — flat base change of `IsSchemeTheoreticallyDominant`; needed one added hypothesis `[Finite J]` |
+| (iii-b) `exists_addHom_factor_geomSq` | open — the addition law on `∐ Spec (ℚ̄ ⊗_ℚ ℚ̄)`; the only consumer of `hstable`; see its ROUTE AUDIT of 2026-07-27 |
 | (v-a) `exists_injective_pre_geomBase` | open — `ℚ̄ ↪ K` and injectivity of precomposition |
 | (v-b) `mem_zmultiples_of_liesIn_span` | open — `C(K) ⊆ ⟨y⟩`; the crux |
 
