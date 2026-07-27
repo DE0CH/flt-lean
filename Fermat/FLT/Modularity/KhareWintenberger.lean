@@ -10616,6 +10616,95 @@ Khare–Wintenberger, *Serre's modularity conjecture (I)*, Invent. Math.
 Ann. Sci. ÉNS 15 (1982); Serre, *Abelian ℓ-adic Representations*, I.1
 (stable lattices for continuous representations of compact groups).
 
+ATOMICITY AUDIT (2026-07-27, run by a successor dispatched specifically
+to cut this node further. **No further cut exists at this pin**; the
+axes searched are named below, each with the check that would refute
+the verdict, so the next owner starts somewhere new rather than
+re-running this survey.)
+
+THE GENERAL OBSTRUCTION, which closes the whole cut space at once:
+every clause of the conclusion is a property of the EXISTENTIALLY BOUND
+`τ`, and no in-tree predicate pins `τ` to its automorphic source. A
+split therefore has to do one of exactly two things, and both are shut:
+
+* (a) *re-quantify a clause over an abstract package* constrained only
+  by the clauses before it. Refuted, and already REVERTED once in this
+  file: `blggt_threeadicMember_flatAtThreePow` and
+  `blggt_threeadicMember_stableLineAtTwo` had precisely that shape
+  between 2026-07-25 and 2026-07-26 and were deleted INTO the citation,
+  because `compat` pins `τ` only up to semisimplification while every
+  local shape is invisible to semisimplification. Refuting check: read
+  the ABSORPTION note and its two Kummer-class counterexamples in
+  `blggt_threeadicBrauerSum_of_witness` below;
+* (b) *introduce a predicate that DOES pin `τ`* — "crystalline at `3`
+  with Hodge–Tate weights `{0,1}`", "`WD_2(τ) ≅ WD_2(ρ)`", "automorphic
+  of level `N`". Each needs a theory re-verified absent on 2026-07-27
+  from `Mathlib/`, from `~/cs/FLT/FLT` AND from `Fermat/`
+  (`B_cris`/Fontaine–Laffaille, the Weil group, the automorphy
+  predicate over a quaternionic Hecke algebra). Writing any of them as
+  an `opaque` placeholder would manufacture a leaf INDEPENDENT of the
+  theory — neither provable nor refutable — which is strictly worse
+  than the present honest citation.
+
+AXES SEARCHED, and why each is closed:
+
+1. *Clause axis* — exhausted by the 2026-07-27 cut that produced this
+   node; no bookkeeping-shaped clause is left. In particular the
+   ramification locus must **NOT** be un-fused: replacing (4') ∧ (5')
+   by "`τ` unramified at `ℓ`" ∧ "the transfer at every `p ∉ {3, ℓ}`" is
+   literally the pair (4), (5) that this node was cut to remove, and
+   the four-way equivalence audit above shows the two shapes carry the
+   same information. Refuting check: compare with the `unramifiedAtEll`
+   and `unramifiedTransfer` fields of `ThreeadicRealization`.
+2. *Coefficient-ring axis* — nothing is left to strip. The citation
+   asserts NEITHER `Module.Free ℤ_[3] A`, NOR `IsLocalRing A`, NOR
+   injectivity of `algebraMap ℤ_[3] A`, NOR injectivity of `ιA`; all
+   four are proven outside it (`module_free_padicInt_of_algebraMap_
+   injective`, `isLocalRing_of_finite_padicInt`,
+   `injective_algebraMap_of_ringHom_charZero`,
+   `injective_of_finite_padicInt_charZero`). Refuting check: read the
+   `obtain` pattern of `exists_threeadicBrauerSum_of_witness`.
+3. *`τF`-descent axis* (NOT previously recorded anywhere in this file).
+   One could ask the citation to carry `τ|_{G_F} ≅ Wit.τF` — which IS
+   statable in-tree, `GaloisRep.map` restricting `ℚ`-reps to `F` — and
+   then derive `τ`'s local shapes from `τF`'s, using that inertia at a
+   prime unramified in `F` already lies in `G_F`. Closed because
+   `PotentialModularityWitness` asserts NOTHING local about `τF`: its
+   only `3`-adic clause is `matchF₃`, a Frobenius match outside `badF`.
+   The route needs new local fields on ANOTHER owner's structure in
+   `MoretBailly.lean`, i.e. it RELOCATES the citation instead of
+   reducing it. Refuting check: read the field list of
+   `PotentialModularityWitness` (`MoretBailly.lean`).
+4. *Ingredient axis* — the classical ingredients of the Brauer trick.
+   **CORRECTION to the inherited PIN AUDIT: it is THREE missing
+   ingredients, not four.** That audit records "no Brauer–Nesbitt", and
+   that is true of `Mathlib/` but FALSE of `Fermat/`: rank-`2`
+   Brauer–Nesbitt is present and sorry-free in
+   `GaloisRepresentation/BrauerNesbittConjugacy.lean`
+   (`exists_linearEquiv_of_charpoly_eq_of_two_ne_zero`,
+   `exists_conj_of_charFrob_eq_away`, and the characteristic-zero
+   `exists_conj_of_charFrob_eq_away_of_charZero`), and THIS module
+   already consumes it (search `Chebotarev + Brauer–Nesbitt` about
+   nine thousand lines above). The three that really are absent —
+   Brauer induction, induced-character traces, and the stable lattice —
+   are each enough on their own to keep the leaf a citation, so the
+   correction changes the accounting and not the verdict. Refuting
+   check: `grep -n exists_conj_of_charFrob_eq_away_of_charZero
+   Fermat/FLT/GaloisRepresentation/BrauerNesbittConjugacy.lean`.
+
+FAITHFULNESS RE-CHECK (same pass, since a leaf that resists is a leaf
+to suspect). The statement is TRUE as stated. The only clause worth
+re-deriving is (4'): `ρ` is unramified outside `{2, ℓ}` (`hρ.isUnramified`)
+and flat at `ℓ` (`hρ.isFlat`), so the eigensystem's conductor is
+supported at `2` alone, and the `3`-adic member of the system is
+unramified at every `p ∉ {2, 3}` — including at `p = ℓ`, which is
+exactly the Fontaine–Laffaille-at-`ℓ` input kept separate from the
+strict-compatibility input elsewhere in this cluster. Clause (5') is
+NOT vacuous-by-construction: `ρ.IsUnramifiedAt 2` is consistent with
+`IsHardlyRamified`, and its classical emptiness (Fontaine/Abrashkin —
+no irreducible flat `ρbar` unramified outside `ℓ`) is exactly the
+headline collapse argument of this module, not an in-tree proof.
+
 CIRCULARITY GUARD (inherited, load-bearing): no discharge through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. Note in
 particular that `Family.lean`'s `IsInHardlyRamifiedFamily` asserts, for
