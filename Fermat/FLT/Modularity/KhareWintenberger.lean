@@ -13049,14 +13049,87 @@ theorem isReduced_of_smooth_over_rat {C : AlgebraicGeometry.Scheme.{u}}
     exact AlgebraicGeometry.isReduced_of_isAffine_isReduced (C.affineCover.X i)
   exact AlgebraicGeometry.IsReduced.of_openCover C C.affineCover
 
-/-- **LEAF B-ii-α — the relative algebraic closure of an essentially-finite-type
-field extension is finite** (SORRY LEAF, new 2026-07-27).
+open scoped IntermediateField.algebraAdjoinAdjoin in
+/-- **Linear disjointness of an algebraic extension from a purely transcendental
+one** (PROVEN 2026-07-27), in the only form `LEAF B-ii-α` below needs it.
 
-After the decomposition below, this is the **ONLY** open leaf left in LEAF B-ii
-(E. Noether's finiteness theorem): everything else — the reduction to a domain
-via minimal primes, the reduction to the image subalgebra, Noether
-normalization, and the application of `IsIntegralClosure.finite` — is PROVEN
-underneath it in this file.
+If `x : κ → F` is algebraically independent over an intermediate field `L` of
+`F / K`, then any `K`-linearly independent family `a : ι → L` stays linearly
+independent over the subfield `K(x) = IntermediateField.adjoin K (Set.range x)`
+of `F`.
+
+The proof is the classical clearing-of-denominators argument, arranged so that
+the denominators are cleared ONCE, by mathlib, rather than by hand:
+
+* `LinearIndependent.iff_fractionRing` (`Mathlib/RingTheory/Localization/
+  Module.lean:194`) reduces `K(x)`-independence to independence over the RING
+  `Algebra.adjoin K (Set.range x)`, using the scoped instance
+  `IsFractionRing (Algebra.adjoin K S) (IntermediateField.adjoin K S)` of
+  `Mathlib/FieldTheory/IntermediateField/Adjoin/Algebra.lean:58` — which is why
+  the `open scoped IntermediateField.algebraAdjoinAdjoin` above is load-bearing;
+* a relation `∑ gⱼ • aⱼ = 0` with `gⱼ = aeval x pⱼ`, `pⱼ ∈ MvPolynomial κ K`, is
+  repackaged as `aeval x q = 0` for the SINGLE polynomial
+  `q = ∑ C aⱼ * (pⱼ.map (algebraMap K L)) ∈ MvPolynomial κ L`;
+* `AlgebraicIndependent L x` is by definition injectivity of that `aeval`, so
+  `q = 0`, and reading off the coefficient of each monomial gives
+  `∑ (coeff m pⱼ) • aⱼ = 0` in `L`, whence `coeff m pⱼ = 0` by the `K`-linear
+  independence of `a`, hence `pⱼ = 0` and `gⱼ = 0`.
+
+Note what carries the content: the monomials in `x` are `L`-linearly independent
+in `F`, which is exactly what `AlgebraicIndependent L x` says and is exactly
+what fails without the algebraicity of `L / K`.
+
+`Mathlib/FieldTheory/LinearDisjoint.lean` states linear disjointness for two
+intermediate fields and derives rank identities from it, but has no criterion
+producing it from algebraic independence, so this is the missing direction and
+is proved here directly rather than through `IntermediateField.LinearDisjoint`. -/
+theorem linearIndependent_adjoin_range_of_algebraicIndependent
+    {K F : Type u} [Field K] [Field F] [Algebra K F]
+    {κ : Type*} (x : κ → F) (L : IntermediateField K F)
+    (hx : AlgebraicIndependent (↥L) x)
+    {ι : Type*} {a : ι → ↥L} (ha : LinearIndependent K a) :
+    LinearIndependent ↥(IntermediateField.adjoin K (Set.range x))
+      (fun i => ((a i : ↥L) : F)) := by
+  classical
+  rw [← LinearIndependent.iff_fractionRing
+        (↥(Algebra.adjoin K (Set.range x))) (↥(IntermediateField.adjoin K (Set.range x)))]
+  rw [linearIndependent_iff']
+  intro t g hg i hi
+  have hgmem : ∀ j : ι, ∃ p : _root_.MvPolynomial κ K,
+      (_root_.MvPolynomial.aeval x) p = ((g j : F)) := by
+    intro j
+    exact (Algebra.adjoin_range_eq_range_aeval K x).le (g j).2
+  choose p hp using hgmem
+  set q : _root_.MvPolynomial κ ↥L :=
+    ∑ j ∈ t, _root_.MvPolynomial.C (a j) * (_root_.MvPolynomial.map (algebraMap K ↥L) (p j))
+    with hqdef
+  have hq0 : (_root_.MvPolynomial.aeval x : _root_.MvPolynomial κ ↥L →ₐ[↥L] F) q = 0 := by
+    rw [hqdef, map_sum]
+    simp only [map_mul, _root_.MvPolynomial.aeval_map_algebraMap,
+      _root_.MvPolynomial.aeval_C, hp]
+    simpa [Algebra.smul_def, mul_comm] using hg
+  have hq : q = 0 := hx (by simpa using hq0)
+  have hcoeff : ∀ (m : κ →₀ ℕ), ∀ j ∈ t, _root_.MvPolynomial.coeff m (p j) = 0 := by
+    intro m
+    have h1 : ∑ j ∈ t, (_root_.MvPolynomial.coeff m (p j)) • (a j) = 0 := by
+      have h2 := congrArg (_root_.MvPolynomial.coeff m) hq
+      rw [hqdef] at h2
+      simp only [_root_.MvPolynomial.coeff_sum, _root_.MvPolynomial.coeff_C_mul,
+        _root_.MvPolynomial.coeff_map] at h2
+      simpa [Algebra.smul_def, mul_comm] using h2
+    exact linearIndependent_iff'.mp ha t (fun j => _root_.MvPolynomial.coeff m (p j)) h1
+  have hpi : p i = 0 := _root_.MvPolynomial.ext _ _ (fun m => by simpa using hcoeff m i hi)
+  have hgi : ((g i : F)) = 0 := by rw [← hp i, hpi, map_zero]
+  exact Subtype.ext (by simpa using hgi)
+
+/-- **LEAF B-ii-α — the relative algebraic closure of an essentially-finite-type
+field extension is finite** (PROVEN 2026-07-27; was a sorry leaf for part of
+that day).
+
+With this closed, LEAF B-ii (E. Noether's finiteness theorem) is CLOSED end to
+end: the reduction to a domain via minimal primes, the reduction to the image
+subalgebra, Noether normalization, the application of `IsIntegralClosure.finite`
+and this field-theoretic input are all proven in this file.
 
 `Algebra.EssFiniteType K F` is mathlib's "essentially of finite type", and for a
 field extension it is exactly "`F` is a finitely generated field extension of
@@ -13066,7 +13139,7 @@ closure — the subfield of elements of `F` algebraic over `K`, with
 `algebraicClosure_toSubalgebra : (algebraicClosure K F).toSubalgebra =
 integralClosure K F`.
 
-**Why this is not in mathlib and what the proof is.** Grepping
+**Why this is not in mathlib.** Grepping
 `Mathlib/FieldTheory/AlgebraicClosure.lean` (the file defining
 `algebraicClosure`) shows no finiteness statement of any kind, and
 `Algebra.finite_of_essFiniteType_of_isAlgebraic`
@@ -13077,28 +13150,34 @@ intermediate field `algebraicClosure K F` inherits essential finite type, and an
 intermediate field of a finitely generated extension need NOT be finitely
 generated in general (Nagata). It is the algebraicity that saves it.
 
-The classical argument, with the pieces this pin already provides:
+**THE PROOF AS CARRIED OUT** (the plan recorded here before it was proven had
+four steps; the executed proof has three, and the difference is worth keeping):
 
-1. Pick a transcendence basis `t : ι → F` of `F` over `K`
-   (`exists_isTranscendenceBasis`); `ι` is finite because
-   `trdeg K F < ℵ₀` (`trdeg_lt_aleph0`, after passing through the finite-type
-   subalgebra that `EssFiniteType` localises).
-2. `L := algebraicClosure K F` is algebraic over `K`, so `t` stays
-   ALGEBRAICALLY INDEPENDENT over `L` — this is exactly
-   `AlgebraicIndependent.extendScalars`
-   (`Mathlib/RingTheory/AlgebraicIndependent/AlgebraicClosure.lean:39`), which
-   takes `[Algebra.IsAlgebraic R S]` and is the load-bearing input.
-3. `F` is algebraic over `K(t)` (`IsTranscendenceBasis.isAlgebraic_field`) and
-   essentially of finite type over it, so `Module.Finite K(t) F` by
-   `Algebra.finite_of_essFiniteType_of_isAlgebraic`. Hence
-   `[L(t) : K(t)] ≤ [F : K(t)] < ∞`.
-4. `[L : K] = [L(t) : K(t)]`: a `K`-linearly independent family in `L` stays
-   `K(t)`-linearly independent, because by step 2 the monomials in `t` are
-   `L`-linearly independent in `F`, so a relation `Σᵢ fᵢ(t) vᵢ = 0` with
-   `fᵢ ∈ K[t]` forces every coefficient of every `fᵢ` to vanish. (This is the
-   linear disjointness of an algebraic extension and a purely transcendental
-   one; `Mathlib/FieldTheory/LinearDisjoint.lean` exists at this pin and is the
-   first place a successor should look for a ready-made form.)
+1. Pick a transcendence basis `x : ↥s → F` of `F` over `K`
+   (`exists_isTranscendenceBasis`). **Finiteness of the index set is NOT
+   needed** — the earlier plan called for `trdeg_lt_aleph0` here, and that step
+   was dropped: nothing below quantifies over the transcendence basis in a way
+   that cares how big it is. Only `[F : K(x)] < ∞` is used, and that comes from
+   step 2 directly.
+2. `F` is algebraic over `K(x)` (`IsTranscendenceBasis.isAlgebraic_field`) and
+   essentially of finite type over it (`Algebra.EssFiniteType.of_comp`, which
+   pushes `EssFiniteType K F` up the tower `K → K(x) → F`), so
+   `Module.Finite ↥K(x) F` by `Algebra.finite_of_essFiniteType_of_isAlgebraic`.
+3. `L := algebraicClosure K F` is algebraic over `K`
+   (`algebraicClosure.isAlgebraic`), so `x` stays ALGEBRAICALLY INDEPENDENT over
+   `L` — `AlgebraicIndependent.extendScalars`
+   (`Mathlib/RingTheory/AlgebraicIndependent/AlgebraicClosure.lean:39`), the
+   load-bearing input. Hence by
+   `linearIndependent_adjoin_range_of_algebraicIndependent` above, a `K`-basis
+   of `L` is a `K(x)`-linearly independent family in `F`, so its index type is
+   finite by `LinearIndependent.finite_of_isNoetherian` against step 2, and
+   `Module.Finite.of_basis` closes the goal.
+
+`Mathlib/FieldTheory/LinearDisjoint.lean` was the recorded first place to look
+for step 3's linear disjointness; it turned out to have the CONSEQUENCES of
+linear disjointness (rank identities) but no criterion producing it from
+algebraic independence, so the helper above proves the needed direction
+directly. Nothing from that file is used.
 
 **CHECK THAT WOULD REFUTE THIS "absent from the pin" claim:**
 `grep -n 'theorem\|lemma\|instance\|def ' Mathlib/FieldTheory/AlgebraicClosure.lean`
@@ -13114,8 +13193,24 @@ mismatches that a `ℚ`-specific statement invites. -/
 theorem finiteDimensional_algebraicClosure_of_essFiniteType
     (K F : Type u) [Field K] [Field F] [Algebra K F]
     [Algebra.EssFiniteType K F] :
-    FiniteDimensional K (algebraicClosure K F) :=
-  sorry
+    FiniteDimensional K (algebraicClosure K F) := by
+  classical
+  obtain ⟨s, hs⟩ := exists_isTranscendenceBasis K F
+  set x : ↥s → F := ((↑) : ↥s → F)
+  haveI : Algebra.IsAlgebraic ↥(IntermediateField.adjoin K (Set.range x)) F :=
+    hs.isAlgebraic_field
+  haveI : Algebra.EssFiniteType ↥(IntermediateField.adjoin K (Set.range x)) F :=
+    Algebra.EssFiniteType.of_comp K _ F
+  haveI : Module.Finite ↥(IntermediateField.adjoin K (Set.range x)) F :=
+    Algebra.finite_of_essFiniteType_of_isAlgebraic
+  haveI hxL : AlgebraicIndependent ↥(algebraicClosure K F) x :=
+    hs.1.extendScalars ↥(algebraicClosure K F)
+  let b := Module.Free.chooseBasis K ↥(algebraicClosure K F)
+  have hli := linearIndependent_adjoin_range_of_algebraicIndependent x
+    (algebraicClosure K F) hxL b.linearIndependent
+  haveI : Finite (Module.Free.ChooseBasisIndex K ↥(algebraicClosure K F)) :=
+    hli.finite_of_isNoetherian
+  exact Module.Finite.of_basis b
 
 /-- Transfer of finite generation of a submodule between two base rings whose
 images in the ambient ring `X` are nested: if every element of `X` in the image
@@ -13171,7 +13266,8 @@ theorem module_finite_of_algebraMap_range_le {R S X : Type u} [CommRing R] [Comm
   exact Module.Finite.iff_fg.mpr h2
 
 /-- **LEAF B-ii, step 4 — Noether's theorem over an integrally closed Noetherian
-base** (PROVEN 2026-07-27, modulo `finiteDimensional_algebraicClosure_of_essFiniteType`).
+base** (PROVEN 2026-07-27, unconditionally: the field-theoretic input
+`finiteDimensional_algebraicClosure_of_essFiniteType` was closed the same day).
 
 `A` is a Noetherian, integrally closed domain of characteristic zero and `B` is
 a finite-type `A`-algebra which is a domain containing `A`. Then the integral
@@ -13342,26 +13438,27 @@ theorem module_finite_integralClosure_of_isDomain
     exact ⟨fun h => isIntegral_trans _ h, fun h => h.tower_top⟩
 
 /-- **LEAF B-ii — E. Noether's finiteness theorem for the integral closure**
-(PROVEN 2026-07-27 modulo the single leaf
-`finiteDimensional_algebraicClosure_of_essFiniteType` above). This is the
-mathematical content of LEAF B, reduced to pure commutative algebra with every
-scheme gone.
+(PROVEN 2026-07-27, UNCONDITIONALLY — the last leaf it depended on,
+`finiteDimensional_algebraicClosure_of_essFiniteType` above, was closed the same
+day). This is the mathematical content of LEAF B, reduced to pure commutative
+algebra with every scheme gone.
 
 `A` is a finite-type algebra over a field `k` of characteristic `0`, `B` is a
 REDUCED finite-type `A`-algebra. Then the integral closure of `A` in `B` is a
 finite `A`-module. Equivalently (Stacks 0335, specialised): a finite-type
 algebra over a field is NAGATA.
 
-**STATUS 2026-07-27: this theorem is PROVEN here.** Its proof is the assembly of
-the three steps stated and proven immediately above, and the ONLY remaining
-mathematical input is the single leaf
-`finiteDimensional_algebraicClosure_of_essFiniteType` (LEAF B-ii-α), which is
-consumed by `module_finite_integralClosure_of_isIntegrallyClosed`. A successor
-should go there and nowhere else in this cluster.
+**STATUS 2026-07-27: this theorem is PROVEN here, and so is everything it
+depends on.** Its proof is the assembly of the three steps stated and proven
+immediately above. The last remaining mathematical input,
+`finiteDimensional_algebraicClosure_of_essFiniteType` (LEAF B-ii-α, consumed by
+`module_finite_integralClosure_of_isIntegrallyClosed`), was closed later the
+same day, so this cluster has NO open leaf — a successor should not be
+dispatched anywhere inside it.
 
 The proof recorded below is the one that was carried out, so the plan and the
 code agree; step 1 (the minimal-primes reduction) is the body of THIS theorem,
-steps 2–4 are the three lemmas above, and step 2's field theory is the leaf.
+steps 2–4 are the three lemmas above, and step 2's field theory is LEAF B-ii-α.
 
 **CORRECTION TO THE 2026-07-27 CUT-OBSTRUCTION AUDIT BELOW.** That audit
 records that `IsIntegralClosure.finite` "does not apply", and it is right that
