@@ -48,8 +48,13 @@ whose Lean-generated name encoded the root module `FLT`), and one
 **Axiom policy.** The reference discharges one statement in this closure —
 `isFiniteRelIndex_Δ` below — with its tactic `knownin1980s`, i.e.
 `axiom knownin1980s {P : Prop} : P`, which proves anything. That module is NOT
-vendored; the single use became an ordinary sorried leaf. It is the ONLY
-unproven statement in the closure.
+vendored; the single use became an ordinary sorried leaf.
+
+**Decomposed 2026-07-27.** `isFiniteRelIndex_Δ` is now proven from two smaller
+statements, `index_ray_ne_zero` (finiteness of a ray class group of `F` — no `D`,
+no definiteness) and `relIndex_unitsOrder_ne_zero` (Voight 17.7.13: the unit
+group of an order in a TOTALLY DEFINITE quaternion algebra is finite modulo the
+centre). Those two are the ONLY unproven statements in the closure.
 
 **This subtree is currently FREE-FLOATING.** Nothing in the transitive cone of
 `fermat_last_theorem` consumes it yet. It was vendored to close the "the pin has
@@ -510,6 +515,192 @@ lemma range_units_le_range (g : GL₂(𝔸ᶠ[F])) : 𝓕ˣ ≤ ℒ.Δ D g := by
     simp [toConjAct_inv_smul', ← Algebra.commutes, RingHom.toMonoidHom_eq_coe]
 
 /--
+Second isomorphism theorem, index form: if `Z` is central and `M ⊓ Z` has finite
+index in `Z`, then `M` has finite index in `M ⊔ Z`.
+
+Proof: `M ⊔ Z = M · Z` because `Z` is normal, so the composite
+`Z ↪ M ⊔ Z ↠ (M ⊔ Z)/M` is surjective (`m z` and `z` differ by the central `m`),
+and it kills `M ⊓ Z`; hence `(M ⊔ Z)/M` is a quotient of the finite `Z/(M ⊓ Z)`. -/
+theorem relIndex_sup_ne_zero_of_le_center {G : Type*} [Group G] {M Z : Subgroup G}
+    (hZ : Z ≤ Subgroup.center G) (h : (M ⊓ Z).relIndex Z ≠ 0) :
+    M.relIndex (M ⊔ Z) ≠ 0 := by
+  haveI : Z.Normal := Subgroup.normal_of_le_center _ hZ
+  rw [Subgroup.relIndex, Subgroup.index_ne_zero_iff_finite] at h ⊢
+  have key : ∀ a b : ↥Z, a⁻¹ * b ∈ (M ⊓ Z).subgroupOf Z →
+      (⟨(a : G), Subgroup.mem_sup_right a.2⟩ : ↥(M ⊔ Z))⁻¹ *
+        ⟨(b : G), Subgroup.mem_sup_right b.2⟩ ∈ M.subgroupOf (M ⊔ Z) := by
+    intro a b hab
+    rw [Subgroup.mem_subgroupOf] at hab ⊢
+    exact hab.1
+  refine Finite.of_surjective
+    (f := (Quotient.map' (fun z : ↥Z => (⟨(z : G), Subgroup.mem_sup_right z.2⟩ : ↥(M ⊔ Z)))
+      (fun a b hab => QuotientGroup.leftRel_apply.mpr
+        (key a b (QuotientGroup.leftRel_apply.mp hab))) :
+      ↥Z ⧸ ((M ⊓ Z).subgroupOf Z) → ↥(M ⊔ Z) ⧸ (M.subgroupOf (M ⊔ Z)))) ?_
+  refine fun q => Quotient.inductionOn' q fun x => ?_
+  have hxmem : (x : G) ∈ (M : Set G) * (Z : Set G) := by
+    rw [← Subgroup.mul_normal]; exact x.2
+  obtain ⟨m, hm, z, hz, hmz⟩ := hxmem
+  rw [SetLike.mem_coe] at hm hz
+  refine ⟨Quotient.mk'' ⟨z, hz⟩, ?_⟩
+  rw [Quotient.map'_mk'']
+  refine Quotient.sound' ?_
+  rw [QuotientGroup.leftRel_apply]
+  show (z : G)⁻¹ * (x : G) ∈ M
+  have hc : (z : G)⁻¹ * (x : G) = m := by
+    rw [← hmz]
+    show (z : G)⁻¹ * (m * z) = m
+    rw [Subgroup.mem_center_iff.mp (hZ hz) m, inv_mul_cancel_left]
+  rw [hc]
+  exact hm
+
+/--
+The purely group-theoretic half of `isFiniteRelIndex_Δ`.
+
+Let `Z` be central, `P ≤ Z ⊓ Γ`, and `W` any subgroup. Writing
+`Δ := (W ⊔ Z) ⊓ Γ`, the "central-part" map `Δ → Z/(Z ⊓ W)`, `w z ↦ z`, has kernel
+`W ⊓ Γ` and carries `P` onto the image of `P`; so `Δ` is covered by finitely many
+cosets of `P ⊔ (W ⊓ Γ)` as soon as `P ⊔ (Z ⊓ W)` has finite index in `Z`.
+
+Formally the proof avoids constructing that map: since `P` is normal (being
+central) the modular law gives `(P ⊔ W) ⊓ Δ = P ⊔ (W ⊓ Γ)`, so it suffices to
+bound `[W ⊔ Z : P ⊔ W]`, which is `relIndex_sup_ne_zero_of_le_center`.
+
+Applied with `Z = 𝔸ᶠˣ`, `W = U`, `Γ = g⁻¹ Dˣ g` and `P = Fˣ`, this reduces
+finiteness of `Δ_g/Fˣ` to the two arithmetic inputs
+`relIndex_ray_ne_zero` and `relIndex_unitsOrder_ne_zero`. -/
+theorem relIndex_sup_inf_ne_zero_of_le_center {G : Type*} [Group G]
+    {Z W Γ P : Subgroup G} (hZ : Z ≤ Subgroup.center G) (hPZ : P ≤ Z) (hPΓ : P ≤ Γ)
+    (h : (P ⊔ (Z ⊓ W)).relIndex Z ≠ 0) :
+    (P ⊔ (W ⊓ Γ)).relIndex ((W ⊔ Z) ⊓ Γ) ≠ 0 := by
+  haveI : P.Normal := Subgroup.normal_of_le_center _ (hPZ.trans hZ)
+  have hPΔ : P ≤ (W ⊔ Z) ⊓ Γ := le_inf (hPZ.trans le_sup_right) hPΓ
+  have hKΔ : P ⊔ (W ⊓ Γ) ≤ (W ⊔ Z) ⊓ Γ :=
+    sup_le hPΔ (le_inf (inf_le_left.trans le_sup_left) inf_le_right)
+  have hKM : P ⊔ (W ⊓ Γ) ≤ P ⊔ W := sup_le le_sup_left (inf_le_left.trans le_sup_right)
+  have hmod : (P ⊔ W) ⊓ ((W ⊔ Z) ⊓ Γ) = P ⊔ (W ⊓ Γ) := by
+    refine le_antisymm ?_ (le_inf hKM hKΔ)
+    intro x hx
+    rw [Subgroup.mem_inf] at hx
+    obtain ⟨hx1, hx2⟩ := hx
+    rw [Subgroup.mem_inf] at hx2
+    have hx1' : x ∈ (P : Set G) * (W : Set G) := by
+      rw [← Subgroup.normal_mul]; exact hx1
+    obtain ⟨p, hp, w, hw, rfl⟩ := hx1'
+    rw [SetLike.mem_coe] at hp hw
+    refine Subgroup.mul_mem_sup hp ⟨hw, ?_⟩
+    have hrw : w = p⁻¹ * (p * w) := by group
+    rw [hrw]
+    exact Γ.mul_mem (Γ.inv_mem (hPΓ hp)) hx2.2
+  rw [← hmod, Subgroup.inf_relIndex_right]
+  refine mt (Subgroup.relIndex_eq_zero_of_le_right
+    (show (W ⊔ Z) ⊓ Γ ≤ W ⊔ Z from inf_le_left)) ?_
+  have hWZ : W ⊔ Z = (P ⊔ W) ⊔ Z := by
+    rw [sup_assoc]
+    exact (sup_eq_right.mpr (hPZ.trans le_sup_right)).symm
+  rw [hWZ]
+  refine relIndex_sup_ne_zero_of_le_center hZ ?_
+  refine mt (Subgroup.relIndex_eq_zero_of_le_left
+    (show P ⊔ (Z ⊓ W) ≤ (P ⊔ W) ⊓ Z from
+      sup_le (le_inf le_sup_left hPZ)
+        (le_inf (inf_le_right.trans le_sup_right) inf_le_left))) h
+
+/--
+**(sorry leaf — finiteness of a ray class group.)**
+
+For every OPEN subgroup `W ≤ 𝔸ᶠ[F]ˣ`, the subgroup `Fˣ · W` has finite index in
+`𝔸ᶠ[F]ˣ`. Equivalently `Finite (Fˣ ＼ 𝔸ᶠ[F]ˣ ／ W)`: the ray class group of `F`
+of the conductor cut out by `W` is finite.
+
+**The openness hypothesis is load-bearing**: for `W = ⊥` the statement is false,
+since `Fˣ` has infinite index in `𝔸ᶠ[F]ˣ`. Why it suffices: `W ⊓ 𝒪̂ˣ` is open in
+the COMPACT group `𝒪̂ˣ`, hence of finite index there, and
+`𝔸ᶠ[F]ˣ / (Fˣ · 𝒪̂ˣ) ≅ Cl(F)` is finite; so
+`[𝔸ᶠ[F]ˣ : Fˣ · W] ≤ |Cl(F)| · [𝒪̂ˣ : W ⊓ 𝒪̂ˣ] < ∞`.
+
+**Route.** This is Fujisaki's lemma for the (one-dimensional, commutative)
+division algebra `D = F` over itself:
+`NumberField.FiniteAdeleRing.DivisionAlgebra.finiteDoubleCoset F F`, already
+proven in `Fermat/FLT/DivisionAlgebra/Finiteness.lean`. Two transports are needed:
+(i) `F ⊗[F] 𝔸ᶠ ≃ 𝔸ᶠ` (`Algebra.TensorProduct.lid`), continuous for the module
+topology, carrying `incl₁ F F` to `Units.map (algebraMap F 𝔸ᶠ)`; and (ii) in an
+ABELIAN group `DoubleCoset.Quotient H K` surjects onto `G ⧸ (H ⊔ K)` (send the
+double coset of `a` to the coset of `a`; well defined because
+`a⁻¹ (h a k) = h k ∈ H ⊔ K` by commutativity), so finiteness of the double coset
+space gives `(H ⊔ K).index ≠ 0` via `Subgroup.index_ne_zero_iff_finite`.
+Compare `TotallyDefiniteQuaternionAlgebra.finite_doubleCoset` in
+`Fermat/FLT/AutomorphicForm/QuaternionAlgebra/FiniteDimensional.lean`, which
+performs exactly transport (i) for the quaternionic `D`.
+
+Note this leaf does NOT mention `D` at all, nor total definiteness: it is a
+statement about `F` alone. -/
+theorem index_ray_ne_zero (W : Subgroup 𝔸ᶠ[F]ˣ) (hW : IsOpen (W : Set 𝔸ᶠ[F]ˣ)) :
+    (MonoidHom.range (Units.map (RingHom.toMonoidHom (algebraMap F 𝔸ᶠ[F]))) ⊔ W).index ≠ 0 :=
+  sorry
+
+/-- The form of `index_ray_ne_zero` consumed by `isFiniteRelIndex_Δ`: `Fˣ · (𝔸ᶠˣ ∩ U)`
+has finite index in `𝔸ᶠˣ`, both viewed inside `GL₂(𝔸ᶠ)` as scalar matrices.
+Transported along `Units.map (algebraMap 𝔸ᶠ M₂(𝔸ᶠ))`, whose range is `𝔸ᶠˣ` and
+which is continuous for the module topology. -/
+theorem relIndex_ray_ne_zero (ℒ : LevelStruct F R) :
+    Subgroup.relIndex (𝓕ˣ ⊔ ((𝔸ˣ F) ⊓ ℒ.U)) (𝔸ˣ F) ≠ 0 := by
+  have hrange : (⊤ : Subgroup 𝔸ᶠ[F]ˣ).map
+      (Units.map (RingHom.toMonoidHom (algebraMap (𝔸ᶠ[F]) M₂(𝔸ᶠ[F])))) = 𝔸ˣ F :=
+    (MonoidHom.range_eq_map _).symm
+  have hle : (MonoidHom.range (Units.map (RingHom.toMonoidHom (algebraMap F 𝔸ᶠ[F]))) ⊔
+      ℒ.U.comap (Units.map (RingHom.toMonoidHom (algebraMap (𝔸ᶠ[F]) M₂(𝔸ᶠ[F]))))) ≤
+      (𝓕ˣ ⊔ ((𝔸ˣ F) ⊓ ℒ.U)).comap
+        (Units.map (RingHom.toMonoidHom (algebraMap (𝔸ᶠ[F]) M₂(𝔸ᶠ[F])))) := by
+    refine sup_le ?_ ?_
+    · rintro _ ⟨x, rfl⟩
+      refine Subgroup.mem_comap.mpr (Subgroup.mem_sup_left ⟨x, ?_⟩)
+      simp [Units.ext_iff, ← IsScalarTower.algebraMap_apply, RingHom.toMonoidHom_eq_coe]
+    · intro x hx
+      exact Subgroup.mem_comap.mpr (Subgroup.mem_sup_right ⟨⟨x, rfl⟩, hx⟩)
+  rw [← hrange, ← Subgroup.relIndex_comap, Subgroup.relIndex_top_right]
+  rw [← hrange] at hle
+  intro h0
+  have hcont : Continuous (Units.map (RingHom.toMonoidHom (algebraMap (𝔸ᶠ[F]) M₂(𝔸ᶠ[F])))) :=
+    Units.continuous_map (by
+      exact IsModuleTopology.continuous_of_linearMap (Algebra.linearMap (𝔸ᶠ[F]) M₂(𝔸ᶠ[F])))
+  exact index_ray_ne_zero (F := F)
+    (ℒ.U.comap (Units.map (RingHom.toMonoidHom (algebraMap (𝔸ᶠ[F]) M₂(𝔸ᶠ[F])))))
+    (ℒ.isOpen_U.preimage hcont)
+    (Nat.eq_zero_of_zero_dvd (h0 ▸ Subgroup.index_dvd_of_le hle))
+
+/--
+**(sorry leaf — Voight, Lemma 17.7.13: the unit group of an order in a totally
+definite quaternion algebra is finite modulo the centre.)**
+
+`Fˣ` has finite index in `U ∩ g⁻¹ Dˣ g`.
+
+This is the arithmetic heart of `isFiniteRelIndex_Δ`, and the only place where
+total definiteness is used. Concretely: `g⁻¹ U g` is compact open, hence
+contained in `x⁻¹ GL₂(∏_v 𝒪_v) x` for some `x`, so
+`𝒪 := x⁻¹ M₂(∏_v 𝒪_v) x ∩ D` is an order in `D` and the group in question is
+(conjugate to) a subgroup of `𝒪ˣ` containing `𝒪_Fˣ ∩ U`. For `D` totally
+definite the reduced norm is a positive definite quadratic form on
+`D ⊗_ℚ ℝ = ∏ ℍ`, so `𝒪¹ = {x ∈ 𝒪 : nrd x = 1}` is discrete and bounded, hence
+finite; and `𝒪ˣ/(𝒪_Fˣ · 𝒪¹)` is finite because `nrd(𝒪ˣ) ⊇ (𝒪_Fˣ)²` and
+`𝒪_Fˣ/(𝒪_Fˣ)²` is finite by Dirichlet.
+
+**Statement is FALSE without total definiteness**: for split `D = M₂(F)` the
+group is commensurable with `SL₂(𝒪_F)`, which is infinite modulo `Fˣ`. The
+`[IsQuaternionAlgebra.IsTotallyDefinite F D]` hypothesis is therefore load-bearing
+and must not be dropped.
+
+Available discreteness input: `D` is discrete in `D ⊗ 𝔸_F`
+(`NumberField.AdeleRing.DivisionAlgebra.Aux.discrete_principalSubgroup` in
+`Fermat/FLT/DivisionAlgebra/Finiteness.lean`), which is how `T_finite` there
+proves the analogous "discrete ∩ compact is finite" statement. What is missing
+is the archimedean bound, i.e. compactness of `(D ⊗ ℝ)ˣ/(F ⊗ ℝ)ˣ = (∏ ℍˣ)/ℝˣ`,
+which is what `IsQuaternionAlgebra.IsTotallyDefinite` supplies. -/
+theorem relIndex_unitsOrder_ne_zero [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
+    [IsQuaternionAlgebra.IsTotallyDefinite F D] (ℒ : LevelStruct F R) (g : GL₂(𝔸ᶠ[F])) :
+    Subgroup.relIndex 𝓕ˣ (ℒ.U ⊓ toConjAct g⁻¹ • 𝓓ˣ) ≠ 0 :=
+  sorry
+
+/--
 `[Δ_g : Fˣ]` is finite.
 Since `g⁻¹ U g` is compact open, `g⁻¹ U g ⊆ x⁻¹GL₂(∏ 𝒪_{Fᵥ})x` for some `x`.
 Let `𝒪 := x⁻¹M₂(∏ 𝒪_{Fᵥ})x ∩ D`.
@@ -523,16 +714,44 @@ instance is discharged by the tactic `knownin1980s`, which is
 inconsistency-grade axiom. This project admits only `propext`, `Classical.choice`
 and `Quot.sound`, and its root gate `#assert_no_sorry fermat_last_theorem` enforces
 that. So the axiom is NOT vendored: the whole module `FLT.Assumptions.KnownIn1980s`
-is dropped, and its single use in the vendored closure — this one — becomes an
+is dropped, and its single use in the vendored closure — this one — became an
 ordinary sorried leaf with its statement written out in full.
 
-This is the ONLY unproven statement in the entire 20,688-line, 109-module vendored
-closure; everything else is proven. -/
+**DECOMPOSED 2026-07-27.** This instance is now PROVEN from the lemmas above.
+The group theory (`relIndex_sup_ne_zero_of_le_center`,
+`relIndex_sup_inf_ne_zero_of_le_center`) and the transport
+`relIndex_ray_ne_zero` are proven; exactly TWO sorried leaves remain, and they
+are the two arithmetic inputs:
+
+* `index_ray_ne_zero` — finiteness of a ray class group of `F`. Does not mention
+  `D`; available from the already-proven Fujisaki lemma at `D = F`
+  (`NumberField.FiniteAdeleRing.DivisionAlgebra.finiteDoubleCoset`), needing only
+  a tensor-product transport and the abelian double-coset identification.
+* `relIndex_unitsOrder_ne_zero` — Voight 17.7.13, the genuinely
+  definite-quaternionic input, and the only consumer of
+  `IsQuaternionAlgebra.IsTotallyDefinite` in this file.
+
+Those two are now the only unproven statements in the vendored closure;
+everything else is proven. -/
 @[nolint unusedArguments]
 instance isFiniteRelIndex_Δ [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
     [IsQuaternionAlgebra.IsTotallyDefinite F D] (ℒ : LevelStruct F R) (g : GL₂(𝔸ᶠ[F])) :
-    Subgroup.IsFiniteRelIndex 𝓕ˣ (ℒ.Δ D g) :=
-  sorry
+    Subgroup.IsFiniteRelIndex 𝓕ˣ (ℒ.Δ D g) := by
+  haveI : (𝓕ˣ : Subgroup GL₂(𝔸ᶠ[F])).Normal := Subgroup.normal_of_le_center _ (by
+    rintro _ ⟨x, rfl⟩
+    simp [Subgroup.mem_center_iff, Units.ext_iff, Algebra.commutes])
+  have hPZ : (𝓕ˣ : Subgroup GL₂(𝔸ᶠ[F])) ≤ 𝔸ˣ F := by
+    rintro _ ⟨x, rfl⟩
+    exact ⟨x.map (algebraMap _ _).toMonoidHom, by
+      simp [Units.ext_iff, ← IsScalarTower.algebraMap_apply, RingHom.toMonoidHom_eq_coe]⟩
+  have hPΓ : (𝓕ˣ : Subgroup GL₂(𝔸ᶠ[F])) ≤ toConjAct g⁻¹ • 𝓓ˣ :=
+    (ℒ.range_units_le_range (D := D) g).trans inf_le_right
+  refine Subgroup.isFiniteRelIndex_iff_relIndex_ne_zero.mpr ?_
+  refine Subgroup.relIndex_ne_zero_trans ?_
+    (relIndex_sup_inf_ne_zero_of_le_center
+      (range_unitsMap_finiteAdeleRing_le_center (F := F)) hPZ hPΓ ℒ.relIndex_ray_ne_zero)
+  rw [Subgroup.relIndex_sup_left]
+  exact ℒ.relIndex_unitsOrder_ne_zero (D := D) g
 
 /-- `Dˣ＼GL₂(𝔸 F)／U` is notation for the type of double cosets by the image of `Dˣ` in
 `GL₂(𝔸ᶠ[F])` and by `U`. -/
