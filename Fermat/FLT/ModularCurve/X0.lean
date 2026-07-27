@@ -5261,10 +5261,92 @@ theorem isSmoothCurve_transport {Y Y' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strY' 
   refine ⟨inferInstance, inferInstance, inferInstance, ?_, inferInstance⟩
   exact inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (u ≫ strY'))
 
+/-! ### The model that is exhibited: an atlas with an AFFINE coarse space
+
+`exists_isCoarseModuliY0_isSmoothCurve` asks for five properties of a
+coarse space.  Three of them are not modular at all once the model is
+known to be **affine with a domain of global functions**, which is
+exactly what Katz–Mazur (8.1.1) build — `Y = Spec (A^G)` for the affine
+rigidified moduli scheme `M = Spec A`:
+
+* `IsIntegral Y` is `isIntegral_of_isAffine_of_isDomain`;
+* `QuasiCompact str` and `IsSeparated str` hold because a morphism
+  between affine schemes is affine (`isAffineHom_of_isAffine`, and
+  `SpecQ` is affine by construction), and an affine morphism is both
+  quasi-compact and separated.
+
+So the modular input shrinks from five properties to two —
+`SmoothOfRelativeDimension 1` and `GeometricallyConnected` — plus the
+affineness and integrality of the constructed model.  That is
+`Gamma0AffineModel`, and it is the only thing left below. -/
+
+/-- **A Katz–Mazur atlas whose coarse space is an affine integral curve**:
+the atlas data of `Gamma0Atlas`, together with the geometry that the
+construction of `Y = Spec (A^G)` actually provides.
+
+Note `toGamma0Atlas`: a `Gamma0AffineModel` **is** a `Gamma0Atlas`, so
+`exists_gamma0AffineModel` is mechanically at least as strong as
+`exists_gamma0Atlas`, and cannot weaken the tree.  (The two existence
+leaves are not yet merged only because `exists_gamma0GITPresentation` —
+the branch `exists_gamma0Atlas` currently runs through — is being
+decomposed by another owner; re-deriving `exists_gamma0Atlas` from this
+structure is the follow-up, and it belongs in that region, not here.)
+
+`isDomain` is stated on `Γ(Y, ⊤)` rather than as `IsIntegral Y` because
+that is the form in which the GIT construction supplies it: `A^G` is a
+subring of the domain `A` (`Gamma0GITPresentation.injective_algebraMap`),
+so `Function.Injective.isDomain` gives it directly, with no scheme-level
+argument.
+
+`hN : 0 < N` is required for the same reason as on the consumer: at
+`N = 0` every coarse space is EMPTY (`isEmpty_of_isCoarseModuliY0_zero`),
+so `Γ(Y, ⊤)` is the trivial ring and `isDomain` is unsatisfiable.  The
+degenerate level is handled separately and vacuously below; the branches
+are deliberately not merged. -/
+structure Gamma0AffineModel (N : ℕ) extends Gamma0Atlas N where
+  /-- the coarse space is affine — Katz–Mazur (8.1.1)'s `Spec (A^G)` -/
+  isAffine : IsAffine toGamma0Atlas.Y
+  /-- its ring of global functions is a domain -/
+  isDomain : IsDomain Γ(toGamma0Atlas.Y, ⊤)
+  /-- it is smooth of relative dimension `1` over `ℚ` -/
+  smooth : SmoothOfRelativeDimension 1 toGamma0Atlas.str
+  /-- and geometrically connected -/
+  connected : GeometricallyConnected toGamma0Atlas.str
+
+/-- **Existence of the affine integral Katz–Mazur model of `Y_0(N)` for
+`N ≥ 1`** (sorry leaf — the MODULAR half of the compactification, and the
+ONLY modular input to `X_0(N)`'s existence).
+
+TRUE and classical.  Affineness and integrality are Katz–Mazur (8.1.1)'s
+construction read literally: `𝔐([Γ₀(N)], [Γ(n)]) = Spec A` is affine and
+irreducible over `ℚ`, hence `A` is a domain, and `Y = Spec (A^G)` with
+`A^G ⊆ A`.  Smoothness is normality of the coarse space of a smooth
+Deligne–Mumford stack of dimension one together with "normal curve =
+smooth curve" (Deligne–Rapoport III.1; Katz–Mazur 8.2, and 8.2.1 for the
+`ℤ[1/N]`-smoothness that specialises to this).  Geometric connectedness
+is the irreducibility of `Γ_0(N)\ℍ` together with the fact that the
+moduli problem is defined over `ℚ` (Deligne–Rapoport IV.5.5, or Shimura
+6.6).
+
+**What is still missing here, and what is NOT.**  The atlas half —
+`classify`, `classify_natural`, `M`, `dM`, `cover`, `quotient` — is
+exactly `exists_gamma0Atlas`, already reduced to
+`exists_gamma0GITPresentation` (modular) plus `specInvariants_universal`
+(pure GIT).  What this leaf adds beyond that is only the four geometric
+fields, and of those `isAffine` and `isDomain` are *already implicit in
+the GIT presentation*: `Spec (A^G)` is affine by construction, and
+`IsDomain (A^G)` follows from `IsDomain A` by
+`Function.Injective.isDomain` applied to `injective_algebraMap`.  So the
+genuinely new content is `smooth` and `connected` — Deligne–Rapoport
+III.1 and Katz–Mazur 8.2, and nothing else. -/
+theorem exists_gamma0AffineModel (N : ℕ) (hN : 0 < N) :
+    Nonempty (Gamma0AffineModel N) :=
+  sorry
+
 /-- **SOME coarse moduli space of the `Γ₀(N)`-problem is a geometrically
-connected smooth curve over `ℚ`, for `N ≥ 1`** (sorry leaf — the MODULAR
-half of the compactification, and the ONLY modular input to `X_0(N)`'s
-existence).
+connected smooth curve over `ℚ`, for `N ≥ 1`** (PROVEN 2026-07-27 over
+`exists_gamma0AffineModel`, by exhibiting the Katz–Mazur model and
+reading the five properties off it; formerly a sorry leaf itself).
 
 TRUE and classical: for `N ≥ 1` the coarse moduli space of the
 `Γ₀(N)`-problem over `ℚ` is a smooth affine geometrically connected curve.
@@ -5282,11 +5364,17 @@ that this made it irreducible at this pin: a scheme presented only by a
 universal property carries no extractable geometry.  That objection dies
 here.  Initiality (`exists_isIso_of_isCoarseModuliY0`) makes all coarse
 spaces isomorphic over `ℚ`, and the five properties transport
-(`isSmoothCurve_transport`), so it suffices to exhibit **one** model.  A
-successor may therefore take `Gamma0Atlas.Y` — or any Katz–Mazur/
-Deligne–Rapoport construction it likes — and read the properties off the
-construction rather than off the universal property.  That is exactly the
-form in which the literature states them.
+(`isSmoothCurve_transport`), so it suffices to exhibit **one** model.
+
+**The model exhibited is `Gamma0AffineModel.Y`**, and the five properties
+are read off it rather than off the universal property — exactly the form
+in which Deligne–Rapoport III.1 and Katz–Mazur 8.2 state them.  Three of
+the five are then *not* modular: the model is affine over the affine
+`SpecQ`, so `QuasiCompact` and `IsSeparated` come from
+`isAffineHom_of_isAffine`, and `IsIntegral` comes from
+`isIntegral_of_isAffine_of_isDomain`.  Only `SmoothOfRelativeDimension 1`
+and `GeometricallyConnected` survive into the leaf; see
+`exists_gamma0AffineModel` above.
 
 `hN : 0 < N` is REQUIRED and the statement is FALSE without it.  At
 `N = 0` the coarse space is EMPTY (`isEmpty_of_isCoarseModuliY0_zero`),
@@ -5310,8 +5398,22 @@ carries across to `X_0(N)`. -/
 theorem exists_isCoarseModuliY0_isSmoothCurve (N : ℕ) (hN : 0 < N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (_hc : IsCoarseModuliY0 N strY),
       IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
-        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
-  sorry
+        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
+  obtain ⟨M⟩ := exists_gamma0AffineModel N hN
+  haveI := M.isAffine
+  haveI := M.isDomain
+  haveI := M.smooth
+  haveI := M.connected
+  -- `Γ(Y, ⊤)` is a domain, hence nontrivial, so `Spec Γ(Y, ⊤) ≅ Y` is nonempty.
+  haveI : Nonempty M.toGamma0Atlas.Y :=
+    Nonempty.map M.toGamma0Atlas.Y.isoSpec.inv.base inferInstance
+  haveI : IsIntegral M.toGamma0Atlas.Y :=
+    isIntegral_of_isAffine_of_isDomain (X := M.toGamma0Atlas.Y)
+  -- affine source over the affine `SpecQ`: the structure morphism is affine,
+  -- hence quasi-compact and separated.
+  haveI : IsAffineHom M.toGamma0Atlas.str := inferInstance
+  exact ⟨_, M.toGamma0Atlas.str, M.toGamma0Atlas.toIsCoarseModuliY0,
+    inferInstance, inferInstance, IsSeparated.of_isAffineHom _, inferInstance, inferInstance⟩
 
 /-- **`Y_0(N)` is a geometrically connected smooth curve over `ℚ`, for
 `N ≥ 1`** (PROVEN 2026-07-27, over the single modular leaf
@@ -5346,7 +5448,10 @@ modular:
 
 * `isSmoothCurve_of_isCoarseModuliY0` — `Y_0(N)` is a geometrically
   connected smooth curve over `ℚ` for `N ≥ 1` (Deligne–Rapoport III.1,
-  Katz–Mazur 8.2).  Still a leaf.
+  Katz–Mazur 8.2).  Now a THEOREM (2026-07-27), over the single leaf
+  `exists_gamma0AffineModel`, which asks only for `smooth` and
+  `connected` on the Katz–Mazur model — the other three properties are
+  discharged from affineness and integrality of that model.
 * `AlgebraicGeometry.exists_isSmoothCompactification` — every smooth
   curve over a perfect field embeds as a dense open subscheme of a smooth
   proper curve with finite complement.  Now a THEOREM, proved in
