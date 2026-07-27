@@ -24843,77 +24843,123 @@ theorem exists_isX0Compactification_specialFibre {N ℓ : ℕ} (hℓ : ℓ.Prime
   exact ⟨Y'', strY'', j'' ≫ w', ⟨hP.ofInverse hw' hw hw'w hww'⟩⟩
 
 /-- **The compactification of a smooth proper curve is a reduced scheme**
-(sorry leaf — smoothness over a field descends reducedness).
+(**PROVEN 2026-07-27** — no new leaf; the general statement was already in
+this development, stated for someone else's consumer).
 
-TRUE and elementary: `strX₁` is `SmoothOfRelativeDimension 1` over
-`Spec 𝔽_ℓ`, a smooth morphism is (Zariski-locally on the source) standard
-smooth, and a standard smooth algebra over a field is regular, hence
-reduced.  Reducedness is local, so nothing global is involved.
+`strX₁` is `SmoothOfRelativeDimension 1` over `Spec 𝔽_ℓ`, hence `Smooth`,
+and a smooth morphism has geometrically reduced fibres.  `Mathlib`'s
+`GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian` then turns
+that into reducedness of the total space, because a smooth morphism is
+flat and the base `Spec 𝔽_ℓ` is reduced and (locally) noetherian.
 
-**Why this is a leaf and not a citation.**  `Mathlib` at this pin has no
-implication from any smoothness class to `IsReduced`: a grep over
-`Mathlib/RingTheory/Smooth/` returns no occurrence of `IsReduced`,
-`IsRegularLocalRing` or `IsRegular`, and `Mathlib/AlgebraicGeometry/
-Morphisms/Smooth.lean` mentions `IsReduced` only as a HYPOTHESIS (of
-`Scheme.Hom.dense_smoothLocus_of_perfectField`).  So the fact travels in
-the wrong direction there and has to be supplied.
+**THE AUDIT THAT USED TO STAND HERE IS RETRACTED IN ITS SECOND HALF.**  It
+said, correctly, that `Mathlib` has no implication from any smoothness
+class to `IsReduced` — a grep over `Mathlib/RingTheory/Smooth/` returns no
+`IsReduced`, `IsRegularLocalRing` or `IsRegular`, and
+`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` mentions `IsReduced` only
+as a HYPOTHESIS (of `Scheme.Hom.dense_smoothLocus_of_perfectField`).  From
+that it inferred that this leaf "has to be supplied" here.  **That
+inference was wrong**: `Mathlib` does have the *transfer* half —
+`Mathlib/AlgebraicGeometry/Geometrically/Reduced.lean` — and the missing
+smooth-to-geometrically-reduced half was ALREADY a stated leaf in this
+project, as `AlgebraicGeometry.geometricallyReduced_of_smooth` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`, which this
+module already `public import`s.  So this declaration is a specialisation
+of existing material and adds no leaf to the frontier.
 
-`_hℓ` is what makes `ZMod ℓ` a field, and is load-bearing: over a
+The audit's suggestion to hoist a `[SmoothOfRelativeDimension n f]
+[IsReduced Y] → IsReduced X` shim is therefore also retracted: that shim
+would be `geometricallyReduced_of_smooth` composed with a `Mathlib` lemma,
+consumed by nobody, i.e. free-floating.
+
+**Message for the owner of `geometricallyReduced_of_smooth`** (recorded
+here because the two files cannot see each other): its ring-level content
+is *already proven* elsewhere in this development.
+`Fermat/FLT/Modularity/MoretBailly.lean` carries
+`isReduced_of_smooth_field` (a smooth algebra over a field is reduced),
+PROVEN over the single sub-leaf `exists_isDomain_etale_of_isStandardSmooth`
+by the route "smooth ⟹ locally standard smooth ⟹ étale over a polynomial
+subring ⟹ reduced by a generic-fibre argument", which avoids regularity
+theory entirely; it also carries the scheme-level glue, specialised to `ℚ`,
+as `isReduced_of_smooth_over_rat`.  That is the material to lift into the
+shim tree — not a fresh proof, and certainly not the regularity chain.
+
+`hℓ` is what makes `ZMod ℓ` a field, and is load-bearing: over a
 non-reduced base a smooth scheme is not reduced.  The `N`-dependence and
 `strY₁`, `jY₁` are carried only because the hypothesis is packaged as
-`IsX0Compactification`; only `h₁.smooth` is consumed.
-
-**Worth stating generally when proved**: the mathlib-shaped statement is
-`[SmoothOfRelativeDimension n f] [IsReduced Y] → IsReduced X`, and it
-belongs in `Fermat/FLT/Mathlib/AlgebraicGeometry/` beside
-`CurveCompactification.lean` rather than here.  Whoever proves it should
-hoist it and leave this declaration as the one-line specialisation. -/
-theorem isReduced_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+`IsX0Compactification`; only `h₁.smooth` is consumed. -/
+theorem isReduced_of_isX0Compactification {N ℓ : ℕ} (hℓ : ℓ.Prime)
     {X₁ Y₁ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ} {jY₁ : Y₁ ⟶ X₁}
-    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁) :
-    IsReduced X₁ :=
-  sorry
+    (h₁ : IsX0Compactification N strX₁ strY₁ jY₁) :
+    IsReduced X₁ := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI := h₁.smooth
+  haveI : Smooth strX₁ := SmoothOfRelativeDimension.smooth 1 strX₁
+  haveI := geometricallyReduced_of_smooth strX₁
+  exact GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian strX₁
 
-/-- **The open part of a compactification is dense in it** (sorry leaf —
-a nonempty open of an irreducible curve is dense).
+/-- **The open part of a compactification is dense in it** (**PROVEN
+2026-07-27** over one general-scheme leaf, and the two-step route recorded
+here previously is retracted — both of its steps turned out to be
+avoidable).
 
-TRUE, and this is the density that `IsX0Compactification`'s own docstring
-appeals to when it says "a nonempty open of a connected curve is dense"
-and that `finite_compl` "is what makes `X` the unique smooth
-compactification".  It is stated separately because
-`IsX0Compactification` — unlike
+This is the density that `IsX0Compactification`'s own docstring appeals to
+when it says "a nonempty open of a connected curve is dense" and that
+`finite_compl` "is what makes `X` the unique smooth compactification".  It
+has to be stated separately because `IsX0Compactification` — unlike
 `AlgebraicGeometry.IsSmoothCompactification` in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, which
-carries `isDominant` as a FIELD — does not record it, so every consumer
-that needs it has to derive it.
+carries `isDominant` as a FIELD — does not record it.
 
-**Two steps, and the second is the one with content.**
+**What it is now**: the specialisation to `𝔽_ℓ` of
+`AlgebraicGeometry.isDominant_of_finite_compl_of_smoothOfRelativeDimension_one`
+in that same shim file, which is PROVEN there over the single leaf
+`infinite_of_smoothOfRelativeDimension_one` (a nonempty smooth curve over a
+field has infinitely many points).  Only `h₁.smooth`, `h₁.isOpen` and
+`h₁.finite_compl` are consumed.
 
-1. `X₁` is IRREDUCIBLE: it is geometrically connected, hence connected,
-   and smooth over a field, hence normal, and a connected normal
-   noetherian scheme is irreducible.  Then any nonempty open is dense.
-2. `Set.range jY₁.base` is NONEMPTY.  This is not free and it is where
-   the degenerate level hides: if `Y₁` were empty then `finite_compl`
-   would say the whole space of `X₁` is finite, and a smooth proper curve
-   over a field has infinitely many points unless it is empty — while
-   `GeometricallyConnected strX₁` forbids `X₁` from being empty
-   (`ConnectedSpace` carries `Nonempty`).  So the hypotheses are
-   unsatisfiable in that case, which is the same observation the "Not
-   vacuous" paragraph of `nonempty_relPointEquiv_of_isX0Compactification`
-   records at `N = 0`.
+**RETRACTION of the route recorded here before.**  It read:
 
-So the leaf is TRUE at every `N`, vacuously at `N = 0` and by
-irreducibility elsewhere; it is not vacuous overall, since
-`exists_x0Compactification_mod_prime` inhabits the hypothesis at the
-levels that matter.
+1. `X₁` is IRREDUCIBLE — geometrically connected, hence connected; smooth
+   over a field, hence normal; and a connected normal noetherian scheme is
+   irreducible.  Then any nonempty open is dense.
+2. `Set.range jY₁.base` is NONEMPTY — otherwise `finite_compl` makes the
+   whole space of `X₁` finite, while a smooth proper curve over a field is
+   infinite unless empty and `GeometricallyConnected strX₁` forbids `X₁`
+   from being empty.
 
-`_hℓ` is load-bearing exactly as in `isReduced_of_isX0Compactification`:
-step 1 needs `ZMod ℓ` to be a field. -/
-theorem isDominant_of_isX0Compactification {N ℓ : ℕ} (_hℓ : ℓ.Prime)
+Step 1 is true but needs *two* implications this pin does not have (smooth
+⟹ normal, and connected + normal ⟹ irreducible), and step 2 needs a third
+(nonemptiness of `X₁` from geometric connectedness).  **Neither step is
+necessary.**  Density of an open range is the same statement as
+`interior ((Set.range jY₁.base)ᶜ) = ∅`, and the complement here is finite,
+so the only thing that has to be ruled out is a nonempty FINITE OPEN
+subscheme — which is refuted by infinitude alone, applied to that open
+subscheme rather than to `X₁`.  In particular the empty-`Y₁` case needs no
+separate treatment: it makes `X₁` itself the offending finite open.
+
+So the leaf count went from three missing implications to one, and the
+surviving one is the infinitude statement of step 2 with the properness and
+the connectedness stripped off.
+
+The observation about `N = 0` still stands and is still worth recording:
+the hypotheses are UNSATISFIABLE there rather than the conclusion false, as
+the "Not vacuous" paragraph of
+`nonempty_relPointEquiv_of_isX0Compactification` also notes — but the proof
+below never needs to know that, since it is uniform in `N`.  The statement
+is not vacuous overall, since `exists_x0Compactification_mod_prime`
+inhabits the hypothesis at the levels that matter.
+
+`hℓ` is load-bearing exactly as in `isReduced_of_isX0Compactification`: it
+is what makes `ZMod ℓ` a field. -/
+theorem isDominant_of_isX0Compactification {N ℓ : ℕ} (hℓ : ℓ.Prime)
     {X₁ Y₁ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ} {jY₁ : Y₁ ⟶ X₁}
-    (_h₁ : IsX0Compactification N strX₁ strY₁ jY₁) :
-    IsDominant jY₁ :=
-  sorry
+    (h₁ : IsX0Compactification N strX₁ strY₁ jY₁) :
+    IsDominant jY₁ := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI := h₁.smooth
+  haveI := h₁.isOpen
+  exact isDominant_of_finite_compl_of_smoothOfRelativeDimension_one strX₁ h₁.finite_compl
 
 /-- **A morphism from the open part into a proper curve extends over the
 cusps** (sorry leaf — the valuative criterion at the cusps, and the ONLY
