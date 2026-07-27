@@ -4795,8 +4795,83 @@ noncomputable def AbelianSchemeStruct.nsmulPoint {A S : Scheme.{u}} {f : A ⟶ S
   letI := ab.addCommGroup g
   n • x
 
-/-- **The kernel of reduction on an abelian scheme over `ℤ_(ℓ)` is
-TORSION-FREE, for `ℓ` odd** (sorry node — the formal-group fact).
+/-- **A subgroup on which every element of PRIME order vanishes is
+torsion-free** (PROVEN).
+
+Pure group theory, and it is what reduces the kernel-of-reduction
+statement below from arbitrary `n` to prime order.  Strong induction on
+`n`: pick a prime `q ∣ n`, write `n = q * m`; then `m • x` has order
+dividing `q` and still lies in `ker φ` (because `φ` is additive), so the
+prime hypothesis kills it, leaving `m • x = 0` with `m < n`. -/
+theorem torsionFree_of_prime {G H : Type*} [AddCommGroup G] [AddCommGroup H]
+    (φ : G →+ H)
+    (hp : ∀ q : ℕ, q.Prime → ∀ y : G, φ y = 0 → q • y = 0 → y = 0) :
+    ∀ (n : ℕ), n ≠ 0 → ∀ x : G, φ x = 0 → n • x = 0 → x = 0 := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro hn x hx hnx
+    rcases eq_or_ne n 1 with rfl | hn1
+    · rwa [one_nsmul] at hnx
+    · obtain ⟨q, hq, m, rfl⟩ : ∃ q, q.Prime ∧ ∃ m, n = q * m := by
+        obtain ⟨q, hq, hqd⟩ := Nat.exists_prime_and_dvd hn1
+        obtain ⟨m, rfl⟩ := hqd
+        exact ⟨q, hq, m, rfl⟩
+      have hm : m ≠ 0 := by rintro rfl; simp at hn
+      have hqy : q • (m • x) = 0 := by rw [← mul_nsmul']; exact hnx
+      have hφy : φ (m • x) = 0 := by rw [map_nsmul, hx, nsmul_zero]
+      have hy : m • x = 0 := hp q hq _ hφy hqy
+      have hlt : m < q * m :=
+        calc m = 1 * m := (one_mul m).symm
+        _ < q * m := (Nat.mul_lt_mul_right (Nat.pos_of_ne_zero hm)).mpr hq.one_lt
+      exact ih m hlt hm x hx hy
+
+/-- **The kernel of reduction contains no point of PRIME order `q ≠ ℓ`**
+(sorry node — the ÉTALE RIGIDITY fact).
+
+TRUE, and note what is NOT among its hypotheses: **`ℓ ≠ 2` is absent,
+and that is the point of separating this case out.**  This half of the
+torsion-freeness statement holds at every residue characteristic,
+including `ℓ = 2`; the `e < ℓ − 1` condition belongs exclusively to the
+`q = ℓ` case in `neronKernel_torsionFree_residue`.
+
+The argument is not formal groups at all.  Since `q ≠ ℓ` and `hbase`
+makes `R` local with residue field `𝔽_ℓ`, `q` is a UNIT in `R`, so
+`𝒥[q] ⟶ Spec R` is finite étale (multiplication by `q` is étale on an
+abelian scheme once `q` is invertible on the base — it is an isomorphism
+on the Lie algebra).  An étale morphism is unramified, so the equalizer
+of the two sections `x` and `0` of `𝒥[q]` is OPEN; `𝒥 ⟶ Spec R` is
+separated (it is proper, `abZ.proper`), so that equalizer is also
+CLOSED; `Spec R` of a local ring is connected; and `hker` says the
+equalizer contains the closed point.  Hence it is everything and
+`x = 0`.
+
+MISSING MACHINERY, and this is a DIFFERENT gap from the one below: the
+`q`-torsion subscheme `𝒥[q]` as a scheme, and étaleness of `[q]` when
+`q` is invertible.  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`
+already has `zeroSection`, `mulByNat` and `zeroSection_comp_mulByNat`,
+so the kernel is expressible as a fibre product there; what is absent is
+its étaleness.
+
+IRREDUCIBLE at this pin ALONG THE ÉTALE AXIS, and the CHECK THAT WOULD
+REFUTE THAT: produce, anywhere in the pin, `IsEtale` (or even
+`UnramifiedAt`) for multiplication by an invertible integer on an
+abelian scheme — grep `AbelianSchemeIsogeny.lean` for an étaleness
+statement about `mulByNat`.  One such declaration collapses this leaf to
+the connectedness argument above, which is elementary. -/
+theorem neronKernel_torsionFree_primeToResidue (ℓ : ℕ) (R : Subring ℚ)
+    (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
+    (q : ℕ) (_hq : q.Prime) (_hqℓ : q ≠ ℓ)
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
+    (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
+    (_htors : abZ.nsmulPoint q x = abZ.zero (𝟙 (SpecLoc R)))
+    (_hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
+      = abZ.zero (SpecLoc.special toF)) :
+    x = abZ.zero (𝟙 (SpecLoc R)) :=
+  sorry
+
+/-- **The kernel of reduction contains no point of order `ℓ`, for `ℓ`
+odd** (sorry node — the FORMAL-GROUP fact).
 
 TRUE, and classical.  The kernel of `𝒥(ℤ_(ℓ)) → 𝒥(𝔽_ℓ)` embeds in the
 kernel over the completion `ℤ_ℓ`, which is the group of points of the
@@ -4805,42 +4880,88 @@ formal group of `𝒥` on the maximal ideal; and a formal group over an
 `e < ℓ − 1`.  Here `e = 1` by `hbase`, so the condition is exactly
 `ℓ > 2`.
 
-**Every hypothesis is load-bearing** — they carry an underscore only
-because the body is `sorry` and Lean's linter asks for it.  `hbase` is
-what makes the base a DVR with `e = 1` and residue characteristic `ℓ`:
-over a ramified base the formal group can have torsion.  `hℓ2` is
-exactly the `e < ℓ − 1` condition and cannot be dropped — at `ℓ = 2`,
-`e = 1 = ℓ − 1` and `2`-torsion can die under reduction.
+**This is where — and ONLY where — `hℓ2` is load-bearing.**  `hℓ2` is
+exactly the `e < ℓ − 1` condition and cannot be dropped: at `ℓ = 2`,
+`e = 1 = ℓ − 1`, and the standard counterexample is `𝔾ₘ` over
+`ℤ_p[ζ_p]`, where `ζ_p − 1` lies in the maximal ideal and is a
+`p`-torsion point of the formal group killed by reduction.  `hbase` is
+what makes the base a DVR with `e = 1` and residue characteristic `ℓ`.
 
-**This is strictly SHARPER than the `neronReduction_injective` it was
-factored out of**: rank `0` is NOT among its hypotheses.  Finiteness of
-`𝒥(ℤ_(ℓ))` was only ever used to know that every element of the kernel
-is torsion, and that step is now discharged inside
-`neronReduction_injective` itself.  What is left here is the
-formal-group statement as the literature states it (Silverman, *ATAEC*
-IV.6; Bosch–Lütkebohmert–Raynaud, *Néron Models*).
+Silverman, *ATAEC* IV.6; Bosch–Lütkebohmert–Raynaud, *Néron Models*.
 
-This is the SHARED content that `card_le_of_rankZeroJacobian` also rests
-on, isolated here so that it is proven once.
-
-IRREDUCIBLE at this pin, and the CHECK THAT WOULD REFUTE THAT: mathlib
-gained formal group LAWS since the note this docstring replaces
-(`Mathlib/RingTheory/FormalGroup/Basic.lean`: `FormalGroup`, its
-`Point`s on a complete local algebra, `𝔾ₐ`, `𝔾ₘ`, base change).  What is
-still absent everywhere — mathlib, `~/cs/FLT`, this project — is (a) the
-formal group OF an abelian scheme along its zero section, and (b) the
+IRREDUCIBLE at this pin ALONG THE FORMAL-GROUP AXIS, and the CHECK THAT
+WOULD REFUTE THAT: mathlib gained formal group LAWS
+(`Mathlib/RingTheory/FormalGroup/Basic.lean`: `FormalGroup`, `Point`,
+`𝔾ₐ`, `𝔾ₘ`, `map`), but a survey on 2026-07-27 found that file **stops
+at `AddCommMonoid` on `Point` — there is no `Neg`, no `AddGroup`, and no
+formal inverse series** — and its own docstring records the
+points-in-a-complete-local-ring construction as a TODO.  Absent
+everywhere (mathlib, `~/cs/FLT`, this project) are (a) the formal group
+OF an abelian scheme along its zero section, and (b) the
 torsion-freeness theorem for `e < p − 1`.  Producing either as a
-declaration in the pin refutes the irreducibility claim; the `Point`
-type in that file is the natural target for (a). -/
-theorem neronKernel_torsionFree (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
-    (_hbase : IsReductionBase ℓ R toF) (_hℓ2 : ℓ ≠ 2)
+declaration refutes the claim; `FormalGroup.Point` is the natural target
+for (a), and an `AddGroup` instance on it is the prerequisite for
+either. -/
+theorem neronKernel_torsionFree_residue (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
-    (n : ℕ) (_hn : n ≠ 0) (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
-    (_htors : abZ.nsmulPoint n x = abZ.zero (𝟙 (SpecLoc R)))
+    (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
+    (_htors : abZ.nsmulPoint ℓ x = abZ.zero (𝟙 (SpecLoc R)))
     (_hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
       = abZ.zero (SpecLoc.special toF)) :
     x = abZ.zero (𝟙 (SpecLoc R)) :=
   sorry
+
+/-- **The kernel of reduction on an abelian scheme over `ℤ_(ℓ)` is
+TORSION-FREE, for `ℓ` odd** (PROVEN, over the two prime-order leaves
+above).
+
+**This is strictly SHARPER than the `neronReduction_injective` it was
+factored out of**: rank `0` is NOT among its hypotheses.  Finiteness of
+`𝒥(ℤ_(ℓ))` was only ever used to know that every element of the kernel
+is torsion, and that step is discharged inside
+`neronReduction_injective` itself.
+
+**The cut, and why it is not leaf inflation.**  `torsionFree_of_prime`
+reduces arbitrary `n` to PRIME order — that is proven group theory,
+costing nothing.  Prime order then splits along the residue
+characteristic into two cases that need **entirely different theories**
+and share no argument:
+
+* `q ≠ ℓ` (`neronKernel_torsionFree_primeToResidue`) — étale rigidity:
+  `𝒥[q]` is finite étale because `q` is a unit, and two sections of a
+  separated unramified morphism agreeing at a point of a connected base
+  agree.  **Needs no hypothesis on `ℓ` whatsoever.**
+* `q = ℓ` (`neronKernel_torsionFree_residue`) — the formal group of
+  `𝒥` on the maximal ideal, torsion-free because `e = 1 < ℓ − 1`.
+
+The previous audit here recorded the node as irreducible, but it ranged
+only over the formal-group axis; along that axis it was right.  The
+ÉTALE axis was never searched, and it carries a strict majority of the
+statement (every prime but one).  Isolating it also makes visible that
+`hℓ2` is needed for a single prime, which the undivided statement hid.
+
+This is the SHARED content that `card_le_of_rankZeroJacobian` also rests
+on, isolated here so that it is proven once. -/
+theorem neronKernel_torsionFree (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF) (hℓ2 : ℓ ≠ 2)
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
+    (n : ℕ) (hn : n ≠ 0) (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
+    (htors : abZ.nsmulPoint n x = abZ.zero (𝟙 (SpecLoc R)))
+    (hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
+      = abZ.zero (SpecLoc.special toF)) :
+    x = abZ.zero (𝟙 (SpecLoc R)) := by
+  letI := abZ.addCommGroup (𝟙 (SpecLoc R))
+  letI := abZ.addCommGroup (SpecLoc.special toF)
+  refine torsionFree_of_prime
+    (AddMonoidHom.mk' (RelPoint.pre (SpecLoc.special toF)
+        (Category.comp_id (SpecLoc.special toF)))
+      (abZ.pre_add (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF))))
+    ?_ n hn x hker htors
+  intro q hq y hy hqy
+  rcases eq_or_ne q ℓ with rfl | hqℓ
+  · exact neronKernel_torsionFree_residue q R toF hbase hq hℓ2 abZ y hqy hy
+  · exact neronKernel_torsionFree_primeToResidue ℓ R toF hbase q hq hqℓ abZ y hqy hy
 
 /-- **Reduction is injective on the integral points of an abelian scheme
 over `ℤ_(ℓ)` for `ℓ` odd** (PROVEN, over `neronKernel_torsionFree`).
@@ -4880,8 +5001,183 @@ theorem neronReduction_injective (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZM
       exact addOrderOf_nsmul_eq_zero x
   exact hinj
 
+/-- **The CURVE half of a Néron datum: the integral model of `X_0(N)`
+over `ℤ_(ℓ)` together with its two fibres.**
+
+This is `IsX0NeronDatum` with every field that mentions the Jacobian
+deleted.  What is left is exactly the Deligne–Rapoport / Igusa smooth
+proper model of `X_0(N)` over `ℤ[1/N]`, restricted to `ℤ_(ℓ)` for
+`ℓ ∤ N`, plus the identification of its two fibres as functors of points
+and the valuative criterion of properness.
+
+Writing it as a structure is what makes the cut possible: nothing here
+is known to be satisfiable yet, but the *statement* is all the Jacobian
+half needs as input. -/
+structure IsX0CurveModel (N ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF ℓ}
+    (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ) where
+  /-- the integral model is the smooth model of `X_0(N)` over the base -/
+  model : IsX0Compactification N xstr ystr jZ
+  /-- the generic fibre of the curve model is `X`, functorially -/
+  genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.generic R = g₀ → RelPoint strX g ≃ RelPoint xstr g₀
+  /-- the special fibre of the curve model is `X'`, functorially -/
+  spX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.special toF = g₀ → RelPoint strX' g ≃ RelPoint xstr g₀
+  /-- naturality of the generic identification of curves -/
+  genX_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+    (x : RelPoint strX g),
+    genX g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genX g g₀ h₀ x)
+  /-- naturality of the special identification of curves -/
+  spX_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF ℓ} {g' : T' ⟶ SpecF ℓ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.special toF = g₀) (h₀' : g' ≫ SpecLoc.special toF = g₀')
+    (x : RelPoint strX' g),
+    spX g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (spX g g₀ h₀ x)
+  /-- **valuative criterion of properness**: every rational point of `X`
+  extends uniquely to an integral point of the model -/
+  properX : Function.Bijective
+    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+      RelPoint xstr (𝟙 (SpecLoc R)) → RelPoint xstr (SpecLoc.generic R))
+
+/-- **The JACOBIAN half of a Néron datum: the relative Jacobian of a
+GIVEN integral curve model, and its two fibres.**
+
+This is `IsX0NeronDatum` with every field the curve model already
+carries deleted, and the curve model itself taken as a parameter — which
+is what `genX_aj` and `spX_aj` need, since they compare Abel–Jacobi
+against `cm.genX` and `cm.spX`.
+
+The content is Grothendieck's relative Picard scheme: `Pic⁰` of a smooth
+proper curve over a base is an abelian scheme, its formation commutes
+with base change (giving `genJ`, `spJ` and their naturality), the group
+law and Abel–Jacobi are defined over the base, and it satisfies the
+Néron mapping property `𝒥(ℤ_(ℓ)) ≅ J(ℚ)`. -/
+structure IsX0JacobianModel {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X J X' J' XZ YZ JZ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (jac : IsJacobianOf strX ab o) (jac' : IsJacobianOf strX' ab' o')
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} (jacZ : IsJacobianOf xstr abZ oZ) where
+  /-- the generic fibre of the Jacobian model is `J`, functorially -/
+  genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.generic R = g₀ → RelPoint jstr g ≃ RelPoint jstrZ g₀
+  /-- the special fibre of the Jacobian model is `J'`, functorially -/
+  spJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.special toF = g₀ → RelPoint jstr' g ≃ RelPoint jstrZ g₀
+  /-- naturality of the generic identification of Jacobians -/
+  genJ_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+    (x : RelPoint jstr g),
+    genJ g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genJ g g₀ h₀ x)
+  /-- naturality of the special identification of Jacobians -/
+  spJ_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF ℓ} {g' : T' ⟶ SpecF ℓ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.special toF = g₀) (h₀' : g' ≫ SpecLoc.special toF = g₀')
+    (x : RelPoint jstr' g),
+    spJ g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (spJ g g₀ h₀ x)
+  /-- the generic identification of Jacobians is additive -/
+  genJ_add : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint jstr g),
+    genJ g g₀ h (ab.add x y) = abZ.add (genJ g g₀ h x) (genJ g g₀ h y)
+  /-- the special identification of Jacobians is additive -/
+  spJ_add : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.special toF = g₀) (x y : RelPoint jstr' g),
+    spJ g g₀ h (ab'.add x y) = abZ.add (spJ g g₀ h x) (spJ g g₀ h y)
+  /-- Abel–Jacobi is defined over the base: generic fibre -/
+  genX_aj : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (x : RelPoint strX g),
+    genJ g g₀ h (jac.aj g x) = jacZ.aj g₀ (cm.genX g g₀ h x)
+  /-- Abel–Jacobi is defined over the base: special fibre -/
+  spX_aj : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.special toF = g₀) (x : RelPoint strX' g),
+    spJ g g₀ h (jac'.aj g x) = jacZ.aj g₀ (cm.spX g g₀ h x)
+  /-- **Néron mapping property**: every rational point of `J` extends
+  uniquely to an integral point of the model -/
+  neronJ : Function.Bijective
+    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+      RelPoint jstrZ (𝟙 (SpecLoc R)) → RelPoint jstrZ (SpecLoc.generic R))
+
+/-- **The integral CURVE model of `X_0(N)` over `ℤ_(ℓ)` exists, at every
+`ℓ ∤ N`** (sorry node — Deligne–Rapoport / Igusa).
+
+TRUE: `X_0(N)` has a smooth proper model over `ℤ[1/N]`, hence over
+`ℤ_(ℓ)` for `ℓ ∤ N`, and the fibre identifications are the definition of
+a model.  `properX` is the valuative criterion of properness for it.
+
+Note there is NO sharpness claim and no hypothesis `ℓ ≠ 2`: this leaf is
+universal in `ℓ ∤ N` and says only that the model exists.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
+REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from
+mathlib entirely (zero hits), and no `DeligneRapoport` or integral model
+of a modular curve in mathlib, `~/cs/FLT` or this project — mathlib's
+`integralModel` is only the Weierstrass-coefficient model of a single
+elliptic curve (`Mathlib/AlgebraicGeometry/EllipticCurve/Reduction.lean`).
+Producing a smooth proper `ℤ[1/N]`-model of the `Γ₀(N)` moduli problem
+refutes the claim.  The nearest usable foothold in this file is
+`Gamma0Atlas` / `exists_coarseModuliY0_of_pos`, whose base was
+deliberately left general — extending that construction from `Spec ℚ` to
+`Spec ℤ_(ℓ)` is the concrete attack. -/
+theorem exists_x0CurveModel_of_base (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (_hX : IsX0Compactification N strX strY j) :
+    ∃ (X' XZ YZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R)
+      (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ) :=
+  sorry
+
+/-- **The relative JACOBIAN of a given integral curve model exists**
+(sorry node — Grothendieck's relative Picard scheme).
+
+TRUE: for a smooth proper curve with a section over a base, `Pic⁰` is
+representable by an abelian scheme, its formation commutes with base
+change, and Abel–Jacobi is defined over the base.  An abelian scheme
+with the right generic fibre IS the Néron model, which is `neronJ`.
+
+Note what this leaf does NOT need: it is stated for an arbitrary
+`IsX0CurveModel`, so it knows nothing about modular curves.  It is a
+statement about smooth proper curves in general, and proving it that way
+is the intended route.
+
+IRREDUCIBLE at this pin ALONG THE PICARD AXIS, and the CHECK THAT WOULD
+REFUTE THAT: a survey on 2026-07-27 found no Picard SCHEME and no
+relative Jacobian in mathlib, `~/cs/FLT` or this project — mathlib's
+`Pic` is the ring-theoretic Picard group of a commutative ring
+(`Mathlib/RingTheory/PicardGroup.lean`), and this project's
+`JacobianPackage` / `ModularJacobianPackage` are axiomatized interfaces,
+not constructions.  Producing a representing scheme for the relative
+`Pic⁰` functor refutes the claim. -/
+theorem exists_x0JacobianModel_of_curveModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF)
+    {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF ℓ}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    {J : Scheme.{0}} {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr}
+    {o : RelPoint strX (𝟙 SpecQ)} (jac : IsJacobianOf strX ab o) :
+    ∃ (J' JZ : Scheme.{0}) (jstr' : J' ⟶ SpecF ℓ) (ab' : AbelianSchemeStruct jstr')
+      (o' : RelPoint strX' (𝟙 (SpecF ℓ))) (jac' : IsJacobianOf strX' ab' o')
+      (jstrZ : JZ ⟶ SpecLoc R) (abZ : AbelianSchemeStruct jstrZ)
+      (oZ : RelPoint xstr (𝟙 (SpecLoc R))) (jacZ : IsJacobianOf xstr abZ oZ),
+      Nonempty (IsX0JacobianModel cm jac jac' jacZ) :=
+  sorry
+
 /-- **The good-reduction datum exists over a GIVEN `ℤ_(ℓ)`, at every odd
-`ℓ ∤ N`** (sorry node).
+`ℓ ∤ N`** (PROVEN, over the curve half and the Jacobian half).
 
 This is `exists_x0NeronDatum` with the base handed to it rather than
 constructed: `(R, toF)` and its `IsReductionBase` pinning are
@@ -4889,13 +5185,27 @@ hypotheses, supplied at the use site by `exists_isReductionBase`, which
 is PROVEN.  So the arithmetic of `ℤ_(ℓ)` is no longer part of this leaf
 and what remains is purely the geometry.
 
-TRUE, and it is the integral-model half of the sieve: `X_0(N)` has a
-smooth proper model over `ℤ[1/N]` (Deligne–Rapoport, Igusa), so over
-`ℤ_(ℓ)` for `ℓ ∤ N`; its relative Jacobian is an abelian scheme, and it
-is the Néron model of `J_0(N)` over `ℤ_(ℓ)` because an abelian scheme
-with the right generic fibre is one.  The identifications of fibres and
-the compatibility of Abel–Jacobi with base change are the standard
-properties of the relative Jacobian.
+**The cut, and the check it was made to pass.**  The previous audit here
+recorded the node as irreducible because "neither the integral model of
+`X_0(N)` nor the relative Jacobian exists".  Both halves of that are
+true — a survey on 2026-07-27 reconfirmed them against mathlib,
+`~/cs/FLT` and this project — but they are a statement about TWO
+theories, and the sentence is itself the argument for splitting rather
+than for stopping.  The eighteen fields of `IsX0NeronDatum` partition
+cleanly:
+
+* `model`, `genX`, `spX`, `genX_nat`, `spX_nat`, `properX` mention only
+  the curve, and become `IsX0CurveModel` — Deligne–Rapoport / Igusa;
+* the ten remaining fields all mention the Jacobian, and become
+  `IsX0JacobianModel` over a GIVEN curve model — Grothendieck's relative
+  Picard scheme.
+
+No field is duplicated, no argument is shared, and the Jacobian half is
+stated for an arbitrary smooth proper curve model, so it does not
+mention modular curves at all.  That is the refuting check for "this is
+merely a repartition of fields": the two halves have disjoint
+literature and can be dispatched to different specialists.  Assembling
+them back is the proof below, which is pure field-copying.
 
 Note there is NO sharpness claim here: this leaf is universal in `ℓ`
 and says only that the reduction machinery exists.  Combined with
@@ -4904,14 +5214,16 @@ and says only that the reduction machinery exists.  Combined with
 which is why factoring it out is a genuine reduction in the total work
 rather than a repackaging.
 
-IRREDUCIBLE at this pin: neither the integral model of `X_0(N)` nor the
-relative Jacobian exists here. -/
-theorem exists_x0NeronDatum_of_base (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
-    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
-    (_hbase : IsReductionBase ℓ R toF)
+`hℓ2` is now UNUSED here — oddness of `ℓ` was never needed for the
+existence of the models, only for torsion-freeness of the kernel of
+reduction (`neronKernel_torsionFree_residue`).  It is kept in the
+signature because `exists_x0NeronDatum` passes it. -/
+theorem exists_x0NeronDatum_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
+    (hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (hbase : IsReductionBase ℓ R toF)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (_hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o) :
+    (hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o) :
     ∃ (X' J' XZ YZ JZ : Scheme.{0})
       (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
       (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
@@ -4920,8 +5232,28 @@ theorem exists_x0NeronDatum_of_base (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓ2 : 
       (abZ : AbelianSchemeStruct jstrZ) (oZ : RelPoint xstr (𝟙 (SpecLoc R)))
       (jacZ : IsJacobianOf xstr abZ oZ),
       Nonempty (IsX0NeronDatum N ℓ R toF jac jac'
-        (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :=
-  sorry
+        (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) := by
+  obtain ⟨X', XZ, YZ, strX', xstr, ystr, jZ, ⟨cm⟩⟩ :=
+    exists_x0CurveModel_of_base N ℓ hℓ hℓN R toF hbase hX
+  obtain ⟨J', JZ, jstr', ab', o', jac', jstrZ, abZ, oZ, jacZ, ⟨jm⟩⟩ :=
+    exists_x0JacobianModel_of_curveModel N ℓ hℓ hℓN R toF hbase cm jac
+  exact ⟨X', J', XZ, YZ, JZ, strX', jstr', ab', o', jac', xstr, ystr, jZ, jstrZ, abZ, oZ, jacZ,
+    ⟨{ base := hbase
+       model := cm.model
+       genX := cm.genX
+       genJ := jm.genJ
+       spX := cm.spX
+       spJ := jm.spJ
+       genX_nat := cm.genX_nat
+       genJ_nat := jm.genJ_nat
+       spX_nat := cm.spX_nat
+       spJ_nat := jm.spJ_nat
+       genJ_add := jm.genJ_add
+       spJ_add := jm.spJ_add
+       genX_aj := jm.genX_aj
+       spX_aj := jm.spX_aj
+       neronJ := jm.neronJ
+       properX := cm.properX }⟩⟩
 
 /-- **The base `ℤ_(ℓ)` exists: `IsReductionBase` is SATISFIABLE at every
 prime `ℓ`** (PROVEN).
