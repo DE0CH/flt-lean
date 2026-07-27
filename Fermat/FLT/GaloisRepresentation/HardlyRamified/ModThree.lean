@@ -39668,6 +39668,128 @@ theorem relIndex_ker_ne_zero_of_range_le_ray_class {G H : Type*} [Group G] [Grou
   exact Nat.card_ne_zero.mpr ⟨inferInstance, this⟩
 
 set_option maxHeartbeats 1000000 in
+/-- **THE DIVISOR-GROUP ARTIN MAP COMPUTES THE IDEAL ARTIN SYMBOL, over a
+VARIABLE Dedekind domain and a VARIABLE field of values** (PROVEN 2026-07-27).
+
+This is (A3b-1-b) with `Γ F`, `globalFrob` and `Dickson.K 3` abstracted away —
+nothing in the argument uses them, only that the values `u v` are NONZERO. Stated
+generically on purpose: at the concrete `NumberField.RingOfIntegers F` the
+`Associates`/`Ideal` instance paths are the ones that bite (see the doctrine note
+on stating helpers over a variable base), and the generic form elaborates without
+any of that.
+
+**The proof, in four steps.**
+1. `c ⊤ = 1`. `hcmul ⊤ v₀.asIdeal` gives `u v₀ = c ⊤ * u v₀`, and `u v₀ ≠ 0`
+   cancels. **This is the step that needs `Nonempty`**, and it is also the step
+   that needs `hune`: without it `c ⊤ = 0` is consistent with `hcmul` and `hcfrob`
+   and the statement is false at every unit `δ`.
+2. `c (v ^ n) = u v ^ n`, then `c (∏ v ∈ s, v ^ e v) = ∏ v ∈ s, u v ^ e v`, both by
+   induction over `hcmul` (all factors nonzero in a Dedekind domain).
+3. `hd` pins `Multiplicative.toAdd (d δ) v` to be the `Associates`-count of `v` in
+   `(δ)`: the count itself gives `≤`, and the count `+1` gives `¬ ≤`.
+4. `(δ) = ∏ v ∈ supp, v ^ (count v)` by
+   `Ideal.finprod_heightOneSpectrum_factorization`, while
+   `φ (d δ) = ∏ v ∈ supp, u v ^ (count v)` because `d δ` is the product of its
+   `Finsupp.single`s and `hφv` evaluates each factor. Both sides agree. -/
+theorem artinDivisorMap_apply_span_generic_ray_class {R : Type*} [CommRing R]
+    [IsDedekindDomain R] [Nonempty (IsDedekindDomain.HeightOneSpectrum R)]
+    {Kf : Type*} [Field Kf]
+    (u : IsDedekindDomain.HeightOneSpectrum R → Kf) (hune : ∀ v, u v ≠ 0)
+    (c : Ideal R → Kf)
+    (hcmul : ∀ I J : Ideal R, I ≠ ⊥ → J ≠ ⊥ → c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum R, c v.asIdeal = u v)
+    (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum R →₀ ℤ) →* Kfˣ)
+    (d : R → Multiplicative (IsDedekindDomain.HeightOneSpectrum R →₀ ℤ))
+    (hφv : ∀ v : IsDedekindDomain.HeightOneSpectrum R,
+      ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Kf) = u v)
+    (hd : ∀ δ : R, δ ≠ 0 → ∀ (v : IsDedekindDomain.HeightOneSpectrum R) (n : ℕ),
+      (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) :
+    ∀ δ : R, δ ≠ 0 → ((φ (d δ) : Kf)) = c (Ideal.span {δ}) := by
+  classical
+  obtain ⟨v₀⟩ := ‹Nonempty (IsDedekindDomain.HeightOneSpectrum R)›
+  have hc1 : c ⊤ = 1 := by
+    have hmul0 : (⊤ : Ideal R) * v₀.asIdeal = v₀.asIdeal := by
+      rw [← Ideal.one_eq_top, one_mul]
+    have h := hcmul ⊤ v₀.asIdeal (by rw [← Ideal.one_eq_top]; exact one_ne_zero) v₀.ne_bot
+    rw [hmul0, hcfrob] at h
+    refine mul_right_cancel₀ (hune v₀) ?_
+    rw [one_mul, ← h]
+  have hne : ∀ (v : IsDedekindDomain.HeightOneSpectrum R) (n : ℕ), v.asIdeal ^ n ≠ ⊥ :=
+    fun v n => pow_ne_zero n v.ne_bot
+  have hcpow : ∀ (v : IsDedekindDomain.HeightOneSpectrum R) (n : ℕ),
+      c (v.asIdeal ^ n) = u v ^ n := by
+    intro v n
+    induction n with
+    | zero => simpa using hc1
+    | succ n ih =>
+      rw [pow_succ, hcmul _ _ (hne v n) v.ne_bot, ih, hcfrob, pow_succ]
+  have hcprod : ∀ (s : Finset (IsDedekindDomain.HeightOneSpectrum R))
+      (e : IsDedekindDomain.HeightOneSpectrum R → ℕ),
+      c (∏ v ∈ s, v.asIdeal ^ e v) = ∏ v ∈ s, u v ^ e v := by
+    intro s
+    induction s using Finset.induction_on with
+    | empty => intro e; simpa using hc1
+    | insert a s ha ih =>
+      intro e
+      have hprodne : (∏ v ∈ s, v.asIdeal ^ e v) ≠ ⊥ :=
+        Finset.prod_ne_zero_iff.mpr fun v _ => hne v (e v)
+      rw [Finset.prod_insert ha, Finset.prod_insert ha,
+        hcmul _ _ (hne a (e a)) hprodne, hcpow, ih]
+  intro δ hδ
+  have hspan0 : (Ideal.span {δ} : Ideal R) ≠ 0 := fun h =>
+    hδ (Ideal.span_singleton_eq_bot.mp h)
+  set n : IsDedekindDomain.HeightOneSpectrum R → ℕ := fun v =>
+    (Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {δ})).factors with hndef
+  have hdvd : ∀ (v : IsDedekindDomain.HeightOneSpectrum R) (m : ℕ),
+      (v.asIdeal ^ m ∣ Ideal.span {δ} ↔ m ≤ n v) := by
+    intro v m
+    rw [hndef, ← Associates.mk_le_mk_iff_dvd, Associates.mk_pow,
+      Associates.prime_pow_dvd_iff_le (Associates.mk_ne_zero.mpr hspan0)
+        v.associates_irreducible]
+  have hval : ∀ v : IsDedekindDomain.HeightOneSpectrum R,
+      Multiplicative.toAdd (d δ) v = (n v : ℤ) := by
+    intro v
+    have h1 : ((n v : ℕ) : ℤ) ≤ Multiplicative.toAdd (d δ) v :=
+      (hd δ hδ v (n v)).mp ((hdvd v (n v)).mpr le_rfl)
+    have h2 : ¬ (((n v + 1 : ℕ) : ℤ) ≤ Multiplicative.toAdd (d δ) v) := by
+      intro h
+      have := (hdvd v (n v + 1)).mp ((hd δ hδ v (n v + 1)).mpr h)
+      omega
+    push_cast at h1 h2
+    omega
+  set s : Finset (IsDedekindDomain.HeightOneSpectrum R) :=
+    (Multiplicative.toAdd (d δ)).support with hsdef
+  have hsupp : ∀ v ∉ s, n v = 0 := by
+    intro v hv
+    have h0 : Multiplicative.toAdd (d δ) v = 0 := Finsupp.notMem_support_iff.mp hv
+    have := hval v
+    omega
+  have hfac : Ideal.span {δ} = ∏ v ∈ s, v.asIdeal ^ n v := by
+    conv_lhs => rw [← Ideal.finprod_heightOneSpectrum_factorization hspan0]
+    refine finprod_eq_prod_of_mulSupport_subset _ ?_
+    intro v hv
+    by_contra hvs
+    apply hv
+    show IsDedekindDomain.HeightOneSpectrum.maxPowDividing v (Ideal.span {δ}) = 1
+    rw [IsDedekindDomain.HeightOneSpectrum.maxPowDividing]
+    have hz : (Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {δ})).factors = 0 :=
+      hsupp v hvs
+    rw [hz, pow_zero]
+  have hlhs : ((φ (d δ) : Kf)) = ∏ v ∈ s, u v ^ n v := by
+    have hD : d δ = ∏ v ∈ s,
+        Multiplicative.ofAdd (Finsupp.single v (Multiplicative.toAdd (d δ) v)) := by
+      rw [← _root_.ofAdd_sum]
+      exact congrArg Multiplicative.ofAdd (Finsupp.sum_single (Multiplicative.toAdd (d δ))).symm
+    rw [hD, map_prod, Units.coe_prod]
+    refine Finset.prod_congr rfl fun v _ => ?_
+    have hsingle : Finsupp.single v (Multiplicative.toAdd (d δ) v)
+        = (Multiplicative.toAdd (d δ) v) • Finsupp.single v (1 : ℤ) := by
+      rw [Finsupp.smul_single, smul_eq_mul, mul_one]
+    rw [hsingle, _root_.ofAdd_zsmul, map_zpow, Units.val_zpow_eq_zpow_val,
+      hφv v, hval v, zpow_natCast]
+  rw [hlhs, hfac, hcprod]
+
+set_option maxHeartbeats 1000000 in
 /-- **FINITENESS OF RAMIFICATION: a nonzero modulus divisible by every prime at
 which `χ` is ramified** (sorry node, created 2026-07-27 as sub-leaf (A3b-1-a) of
 `exists_artinDivisorPackage_ray_class` below, which is now PROVEN as glue over
@@ -39689,7 +39811,37 @@ trivial (no ramified `w`) is honestly admitted by `mm = ⊤`, and that is correc
 rather than a hole: there is then nothing to be divisible by.
 
 **Check that would refute it**: a `χ` satisfying `hmul`/`hVopen`/`hVker` with
-infinitely many `w` carrying a conjugate of an inertia element outside `ker χ`. -/
+infinitely many `w` carrying a conjugate of an inertia element outside `ker χ`.
+
+**DUPLICATE BY POSITION ONLY — DO NOT DISPATCH A PROVER HERE (noted
+2026-07-27).** `exists_radical_isRamifiedChar_ray_class` further down this file is
+the SAME statement with a STRONGER conclusion (an `↔` rather than a `→`, i.e. the
+radical rather than any multiple), with literally the same hypothesis list, and it
+is already **PROVEN** — over `finite_isRamifiedChar_ray_class`, which is PROVEN
+over the single open leaf `finite_localInertia_not_le_ray_class`. So the genuine
+mathematics of this leaf is open in exactly one place in the file, and it is not
+here.
+
+*Why this leaf exists at all, then:* Lean's declaration order. That cluster is
+stated in terms of the predicate `IsRamifiedCharRayClass`, whose `def` sits well
+BELOW `exists_artinDivisorPackage_ray_class`, so it cannot be applied here without
+hoisting the whole cluster (the `def`, `charConj_eq_ray_class`,
+`finite_localInertia_not_le_ray_class`, `finite_isRamifiedChar_ray_class`, the two
+`heightOneSpectrum_*_finset_prod_*` lemmas, and
+`exists_radical_isRamifiedChar_ray_class`) above this point. That is a large move
+through a region other owners are editing, which is the same consideration that
+produced the "pin the objects intrinsically" decision on the package below; it was
+therefore NOT done here, deliberately.
+
+*The repair, for whoever does it:* hoist that cluster, then this leaf becomes
+`fun F χ hmul V hVopen hVker => let ⟨rr, hrr, h⟩ := exists_radical_isRamifiedChar_ray_class …;
+⟨rr, hrr, fun w hw => (h w).mpr hw⟩` — modulo unfolding `IsRamifiedCharRayClass`
+at `w`, which is definitionally the clause below — and should then be DELETED
+rather than kept.
+
+*The check that would refute this note:* compare the two statements side by side;
+if `IsRamifiedCharRayClass F χ w` does not unfold to the bracketed clause below,
+the two leaves are genuinely different and this note is wrong. -/
 theorem exists_ramifiedModulus_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -39706,8 +39858,13 @@ theorem exists_ramifiedModulus_ray_class
 
 set_option maxHeartbeats 1000000 in
 /-- **THE DIVISOR-GROUP ARTIN MAP COMPUTES THE IDEAL ARTIN SYMBOL**
-(sorry node, created 2026-07-27 as sub-leaf (A3b-1-b) of
-`exists_artinDivisorPackage_ray_class` below).
+(created 2026-07-27 as sub-leaf (A3b-1-b) of
+`exists_artinDivisorPackage_ray_class` below, and **PROVEN 2026-07-27** the same
+day as the instantiation at `R = 𝓞 F` of the variable-base
+`artinDivisorMap_apply_span_generic_ray_class` above, whose docstring carries the
+argument. The only two things this instantiation supplies are `Nonempty
+(HeightOneSpectrum (𝓞 F))` — from `𝓞 F` not being a field — and the
+nonvanishing of `χ (globalFrob v)`, which is `hord`).
 
 This is Childress's ingredient 1., i.e. the clause `hφd` of (A3b-1), isolated
 from the construction. Both sides are pinned: `φ` by its values on the basis
@@ -39751,8 +39908,21 @@ theorem artinDivisorMap_apply_span_ray_class
       ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
         (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) :
     ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
-      ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ}) :=
-  sorry
+      ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ}) := by
+  have hℓk : ℓ ^ k ≠ 0 := pow_ne_zero k hℓ.ne_zero
+  -- `𝓞 F` is not a field, so it has a maximal ideal, hence a height-one prime.
+  haveI : Nonempty (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F)) := by
+    obtain ⟨M, hM⟩ := Ideal.exists_maximal (NumberField.RingOfIntegers F)
+    haveI : M.IsMaximal := hM
+    exact ⟨⟨M, hM.isPrime, NeZero.ne M⟩⟩
+  refine artinDivisorMap_apply_span_generic_ray_class
+    (fun v => χ (globalFrob v)) ?_ c hcmul hcfrob φ d hφv hd
+  -- `hord` is what makes the values nonzero, which is what excludes `c ⊤ = 0`.
+  intro v h
+  have h2 := hord (globalFrob v)
+  rw [h, zero_pow hℓk] at h2
+  exact zero_ne_one h2
 
 set_option maxHeartbeats 1000000 in
 /-- **THE GLOBAL CYCLIC NORM INDEX INEQUALITY** (sorry node, created 2026-07-27 as
@@ -39931,7 +40101,10 @@ three new leaves and four new PROVEN utilities:
   Chebotarev input is therefore not needed anywhere in this package;
 * `exists_ramifiedModulus_ray_class` (A3b-1-a, sorry) — finiteness of
   ramification, the only genuinely global input to `mm`;
-* `artinDivisorMap_apply_span_ray_class` (A3b-1-b, sorry) — `hφd`;
+* `artinDivisorMap_apply_span_ray_class` (A3b-1-b) — `hφd`; **PROVEN
+  2026-07-27** over the variable-base
+  `artinDivisorMap_apply_span_generic_ray_class`, so only two sub-leaves of this
+  package remain open;
 * `artinDivisorNormIndex_le_ray_class` (A3b-1-c, sorry) — `hidx₂`, the
   Global Cyclic Norm Index Inequality of Childress ch. 4, which is the
   deep remaining content.
