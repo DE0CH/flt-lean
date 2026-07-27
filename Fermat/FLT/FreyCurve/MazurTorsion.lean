@@ -13022,8 +13022,440 @@ vendor for any of the four open leaves below, and "check the reference project
 first" has been discharged for all of them.
 -/
 
+namespace MazurIsogenyPrimeJ
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat
+
+/-! ### The seven prime levels, moved onto the modular curve
+
+**What this subsection does, and why it exists** (2026-07-27).  The three
+leaves below it — `jInvariant_mem_of_isogenyPrime_genusOne`,
+`_thirtySeven` and `_classNumberOne` — were stated in ELLIPTIC-CURVE
+language: "a curve with a Galois-stable cyclic `p`-subgroup has `j` in
+this table".  In that language they are unattackable, and their
+docstrings recorded them as IRREDUCIBLE on exactly that ground.
+
+The obstruction was named precisely in all three: there was no `j`-MAP on
+`X_0(p)` anywhere in the development, so the moduli translation could not
+even be written, and `X0.lean`'s rank-`0` counting layer
+(`HasRankZeroJacobian`, `card_le_of_rankZeroJacobian`) had nothing to act
+on.  **That obstruction is gone**: `Fermat.IsJMapOn`, `Fermat.exists_jMap`
+and the dictionary `Fermat.isCusp_redX_of_padicValRat_neg` landed in
+`ModularCurve/X0.lean` on 2026-07-27.  So the three docstrings' verdicts
+are STALE, and corrections are recorded on each of them below.
+
+**The translation is PROVEN, not assumed** — `jInvariant_mem_of_exists_jMap`.
+Given a coarse space `Y_0(N)` and a `j`-map on it whose values at ALL
+rational points lie in a table `T`, every elliptic curve with the level
+structure has `(N, j(E)) ∈ T`: `IsJMapOn.classify_jm` turns the curve into
+a rational moduli point carrying `j(E)`, and the hypothesis is read off at
+that point.  Four lines, no arithmetic.  All three targets go through it.
+
+**Why the leaves are EXISTENTIAL in the `j`-map, and it is load-bearing.**
+`IsJMapOn` under-determines `jm`: its only axiom `classify_jm` constrains
+`jm` at points in the image of `classify`, and a witness may take
+arbitrary values elsewhere.  A leaf of the form
+`∀ hj : IsJMapOn p hc, ∀ y, (p, hj.jm y) ∈ T` would therefore be FALSE
+against such a witness.  Each leaf below instead *produces* its `j`-map,
+so the witness is chosen rather than quantified over — the same discipline
+`X0.lean`'s own FORMAL-CONTENT AUDIT of `IsX0JReductionAt` prescribes
+("state the leaf against a datum produced by the existence theorem, never
+against an arbitrary one").  This also makes the leaves strictly WEAKER
+obligations, which is where weakness belongs.
+
+**The genus-one level is genuinely DECOMPOSED, not merely translated.**
+At `p ∈ {11, 17, 19}` the curve `X_0(p)` is elliptic of rank `0`, and
+`X0.lean`'s counting layer applies verbatim.  `exists_jMap_genusOne` is
+PROVEN over three inputs, along the standard rank-`0` split:
+
+* the BOUNDING half — `hasRankZeroJacobian_of_genusOnePrime` (rank `0`)
+  and `exists_x0GenusOne_mod_prime` (the `𝔽_ℓ` point count), fed to the
+  existing `Fermat.card_le_of_rankZeroJacobian`;
+* the CONSTRUCTIVE half — `exists_x0GenusOnePoints`, exhibiting the two
+  cusps and the `m − 2` non-cuspidal points with their `j`-values;
+* the counting itself, which is proven here.
+
+That is the same split `X0.lean` already uses at the Kenku levels
+(`exists_rationalCusps` constructive against `card_le_of_rankZeroJacobian`
+bounding), and the same argument shape as
+`Fermat.y0HasNoRationalPoint_of_witnessPrime` — with "the count is
+exhausted by cusps" replaced by "the count is exhausted by cusps and the
+tabulated points".
+
+**Why `37, 43, 67, 163` are NOT decomposed the same way.**  Their
+Jacobians have rank `1, 1, 2, 6`, so `card_le_of_rankZeroJacobian` is
+simply inapplicable — its `HasRankZeroJacobian` hypothesis is FALSE at all
+four, not merely unavailable.  Those two leaves are therefore translated
+into modular-curve language and left there, which is where Chabauty–Coleman
+and the Eisenstein ideal will attach.  Saying "rank ≠ 0" is a checkable
+obstruction; the check that would refute it is `ellrank` on `X_0(p)`.
+
+#### Reconnaissance (PARI/GP, 2026-07-27, untrusted searcher; statement
+#### checks only, every witness re-verified in Lean or left as a leaf)
+
+`ellrank` returns the interval `[0, 0]` — rank PROVEN `0`, not merely
+bounded — for `11a1`, `17a1`, `19a1`, with `elltors` orders `5, 4, 3`.
+So `#X_0(p)(ℚ) = 5, 4, 3`, of which `2` are cusps at each level, leaving
+`3 + 2 + 1 = 6` non-cuspidal values: exactly `genusOneJTable`.
+
+The witness primes, from `#X_0(p)(𝔽_ℓ) = ℓ + 1 − a_ℓ`:
+
+| `p` | `ℓ` | `#X_0(p)(𝔽_ℓ)` | `#X_0(p)(ℚ)` |
+|-----|-----|----------------|--------------|
+| 11  | 3   | 5              | 5            |
+| 17  | 3   | 4              | 4            |
+| 19  | 5   | 3              | 3            |
+
+**`p = 19` is a trap for anyone regenerating this table**, and it is the
+exact analogue of the `N = 30` trap recorded on `Fermat.x0WitnessTable`:
+`ℓ = 3` gives `#X_0(19)(𝔽_3) = 6 > 3`, so the smallest odd prime does NOT
+work and `ℓ = 5` must be used.  At `p = 11, 17` the prime `ℓ = 3` is
+already sharp.  All three rows satisfy `ℓ ≠ 2` and `ℓ ∤ p`, both of which
+`card_le_of_rankZeroJacobian` requires. -/
+
+/-- **The six `j`-invariants at the genus-one isogeny primes**, i.e. the
+first six entries of `jInvariant_mem_of_isogenyPrime_ge_eleven`'s table.
+
+Non-vacuity of every entry is certified in the section note above that
+theorem: `ellisomat (ellfromj j)` returns the degree matrix `[1, p; p, 1]`
+for each, so each value really is realised by a curve with a rational
+`p`-isogeny. -/
+def genusOneJTable : List (ℕ × ℚ) :=
+  [(11, -24729001), (11, -32768), (11, -121),
+    (17, -297756989 / 2), (17, -882216989 / 131072),
+    (19, -884736)]
+
+/-- **The witness table `(p, ℓ, #X_0(p)(𝔽_ℓ))` at the genus-one isogeny
+primes**, the analogue of `Fermat.x0WitnessTable` for this cluster.
+
+In every row the count EQUALS `#X_0(p)(ℚ)`, which is what makes the
+single-prime bound sharp enough to pin the rational points.  See the
+subsection note for the `p = 19` trap (`ℓ = 3` gives `6`, not `3`). -/
+def x0GenusOneTable : List (ℕ × ℕ × ℕ) := [(11, 3, 5), (17, 3, 4), (19, 5, 3)]
+
+/-- **The two `j`-invariants at `p = 37`**, `−7·11³` and `−7·137³·2083³`. -/
+def thirtySevenJTable : List (ℕ × ℚ) := [(37, -9317), (37, -162677523113838677)]
+
+/-- **The three CM `j`-invariants at `p ∈ {43, 67, 163}`**, the roots of the
+LINEAR Hilbert class polynomials `polclass(−43)`, `polclass(−67)`,
+`polclass(−163)`. -/
+def classNumberOneJTable : List (ℕ × ℚ) :=
+  [(43, -884736000), (67, -147197952000), (163, -262537412640768000)]
+
+/-- **Pushing a rational point of `Y_0(N)` into `X_0(N)` is injective**
+(PROVEN).
+
+`Fermat.sectionAlong jY _ y = ⟨y.1 ≫ jY, _⟩` and `jY` is an open
+immersion, hence a monomorphism (`AlgebraicGeometry.IsOpenImmersion.mono`),
+so the composite determines `y.1`; `RelPoint` is a subtype, so that
+determines `y`.
+
+This is what lets the counting argument below convert "`X_0(p)(ℚ)` has at
+most `m` elements" into a statement about `Y_0(p)(ℚ)` without losing
+points to collisions. -/
+theorem sectionAlong_injective {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification N strX strY jY) :
+    Function.Injective (sectionAlong jY hX.comm) := by
+  haveI := hX.isOpen
+  intro a b hab
+  exact Subtype.ext ((cancel_mono jY).mp (congrArg Subtype.val hab))
+
+/-- **THE MODULI TRANSLATION** (PROVEN): a table of `j`-values valid at
+every rational point of `Y_0(N)` transfers to every elliptic curve over `ℚ`
+carrying a Galois-stable cyclic subgroup of order `N`.
+
+This is the whole bridge between the elliptic-curve statements of this file
+and the modular-curve statements of `ModularCurve/X0.lean`, and it is four
+lines: `IsJMapOn.classify_jm` turns `(E, ⟨g⟩)` into a rational moduli point
+`hc.classify (𝟙 SpecQ) d` at which the `j`-map takes the value `E.j`, and
+the hypothesis is then read off at that point.
+
+The hypotheses on `E` and `g` are verbatim those of the three leaves it
+serves and of `Fermat.nonempty_gamma0Datum_of_stable`, so nothing is
+reformulated at the boundary.
+
+Note there is no `N ≠ 0` hypothesis and none is needed: the burden sits in
+`h`, whose witness must supply an `IsJMapOn N hc`, and `IsJMapOn 0 hc` is
+unsatisfiable (`Fermat.isEmpty_of_gamma0Datum_zero`; see the `exists_jMap`
+subsection docstring in `X0.lean`).  So at `N = 0` this theorem is
+vacuously true rather than false. -/
+theorem jInvariant_mem_of_exists_jMap {N : ℕ} {T : List (ℕ × ℚ)}
+    (h : ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 N strY)
+      (hj : IsJMapOn N hc), ∀ y : RelPoint strY (𝟙 SpecQ), (N, hj.jm y) ∈ T)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    (N, E.j) ∈ T := by
+  obtain ⟨Y, strY, hc, hj, hall⟩ := h
+  obtain ⟨d, hd⟩ := hj.classify_jm E g hg hstable
+  rw [← hd]
+  exact hall _
+
+/-- **`rank J_0(p)(ℚ) = 0` and `genus X_0(p) ≥ 1` at `p ∈ {11, 17, 19}`**
+(sorry leaf, introduced 2026-07-27; the BOUNDING half of the genus-one
+decomposition, together with `exists_x0GenusOne_mod_prime`).
+
+The exact analogue of `Fermat.hasRankZeroJacobian_of_kenkuLevel`, which is
+restricted to `Fermat.kenkuLevels` and so does not reach the prime levels.
+A successor may well prefer to merge the two by widening that leaf's level
+hypothesis; it is stated separately here only because modifying another
+owner's declaration is not this task's to make.
+
+TRUE, and STRICTLY EASIER than its Kenku analogue, which is worth saying
+because the analogue is described there as "the deepest of the six leaves".
+Here `X_0(p)` is itself an ELLIPTIC CURVE — `11a1`, `17a1`, `19a1` — so:
+
+* `J_0(p) = X_0(p)` (the Jacobian of a genus-`1` curve with a rational
+  point is the curve itself), and rank `0` is a Mordell–Weil computation on
+  a single elliptic curve of conductor `11`, `17`, `19`, not a decomposition
+  of `S_2(Γ_0(N))` into newform factors with `L(A, 1) ≠ 0` at each;
+* `PARI/GP ellrank` returns the interval `[0, 0]` at all three — rank
+  PROVEN `0`, not merely bounded above — and `elltors` returns orders
+  `5, 4, 3`;
+* the genus is exactly `1`, hence positive, so the Abel–Jacobi map is
+  injective on rational points.
+
+**Both conjuncts are load-bearing and neither may be trimmed**, for the
+reasons `Fermat.HasRankZeroJacobian`'s own docstring records: without
+finiteness a positive-rank Jacobian gives infinitely many rational points
+already in genus `1`; without injectivity `X_0(1) = ℙ¹` refutes the
+criterion.
+
+IRREDUCIBLE at this mathlib pin — the CHECK that would refute this, and it
+is one grep: a Mordell–Weil theorem, or any rank computation for elliptic
+curves over `ℚ`, anywhere in `Mathlib`, in this project, or in `~/cs/FLT`.
+There is none; `~/cs/FLT` assumes Mazur's torsion theorem outright
+(`FLT/Assumptions/Mazur.lean`).  AXIS SEARCHED: the rank input itself.  A
+successor should look instead at whether an explicit Weierstrass model of
+`X_0(p)` plus descent — the route `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`
+takes at level `32`, where `QuarticDescent` replaces the rank input
+entirely — reaches these three levels; that axis is NOT searched here. -/
+theorem hasRankZeroJacobian_of_genusOnePrime (p : ℕ) (_hp : p ∈ ({11, 17, 19} : Finset ℕ))
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_hX : IsX0Compactification p strX strY jY) : HasRankZeroJacobian strX :=
+  sorry
+
+/-- **The reduction `X_0(p)_{𝔽_ℓ}` and its point count, at the three
+genus-one witness primes** (sorry leaf, introduced 2026-07-27).
+
+The exact analogue of `Fermat.exists_x0Compactification_mod_prime` against
+the new table `x0GenusOneTable`, and TRUE for the same reason: for `ℓ ∤ p`
+the modular curve has good reduction at `ℓ`, its special fibre is the
+coarse space of the same `Γ₀(p)`-problem over `𝔽_ℓ`, and being proper over
+a finite field it has finitely many rational points.  The three counts are
+`#E(𝔽_ℓ) = ℓ + 1 − a_ℓ` for `E = 11a1, 17a1, 19a1` (PARI/GP, 2026-07-27;
+see the subsection note, including why `p = 19` needs `ℓ = 5` and not
+`ℓ = 3`).
+
+Quantified over the table rather than over `p` alone so that the witness
+prime and the count travel together, exactly as in the Kenku analogue.
+
+IRREDUCIBLE at this mathlib pin: neither the integral model of `X_0(p)` nor
+its reduction exists here.  The CHECK that would refute this: an integral
+model of any modular curve in this project — `Fermat.IsX0NeronDatum` in
+`X0.lean` is the closest thing and carries models only for the SIEVE
+levels, not for prime level. -/
+theorem exists_x0GenusOne_mod_prime (p ℓ m : ℕ) (_h : (p, ℓ, m) ∈ x0GenusOneTable) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification p strX strY j) ∧
+        Finite (RelPoint strX (𝟙 (SpecF ℓ))) ∧
+        Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
+  sorry
+
+/-- **The rational points of `X_0(p)` at the genus-one isogeny primes, with
+their `j`-invariants** (sorry leaf, introduced 2026-07-27; the CONSTRUCTIVE
+half of the genus-one decomposition).
+
+Asserts: there is a `j`-map on `Y_0(p)`, a `Finset` of rational points of
+`X_0(p)` none of which comes from `Y_0(p)` (the cusps), and a `Finset` of
+rational points of `Y_0(p)` every one of which has its `j`-invariant in
+`genusOneJTable`, whose cardinalities SUM to the tabulated count `m`.
+
+TRUE, and this is the classical half: at `p = 11, 17, 19` the two cusps and
+the `3, 2, 1` non-cuspidal points account for all `5, 4, 3` rational points,
+and the non-cuspidal `j`-values are the six of `genusOneJTable` (Magma
+`SmallModularCurve(p)` with `jFunction`, recorded in the INDEPENDENT
+RE-VERIFICATION block of `jInvariant_mem_of_isogenyPrime_genusOne` below,
+down to which affine point is the second cusp).
+
+**Why the `j`-map is PRODUCED here rather than assumed.**  See the
+subsection note: `IsJMapOn` under-determines `jm` away from the image of
+`classify`, so a version taking `hj` as a hypothesis would be FALSE against
+a junk witness.  Producing it also means this leaf SUBSUMES
+`Fermat.exists_jMap` at these three levels, so a successor closing it has
+closed that too, here.
+
+**NOT vacuous, and the check is a cardinality one.**  `cusps = pts = ∅`
+gives sum `0 ≠ m`; and since a genuine `X_0(p)(ℚ)` has exactly `2` points
+outside `Y_0(p)`, reaching `m` FORCES `cusps.card = 2` and
+`pts.card = m − 2`, i.e. forces `pts` to be all of `Y_0(p)(ℚ)` with every
+`j`-value tabulated.  So the sum condition is what carries the content, and
+it cannot be met cheaply.
+
+**What this leaf does NOT assert**, deliberately: that `pts` exhausts
+`Y_0(p)(ℚ)`.  That is supplied by the counting bound in
+`exists_jMap_genusOne`, and keeping the two apart is the whole point of the
+split — this half exhibits points, the other half proves there are no
+others.
+
+IRREDUCIBLE at this mathlib pin: it needs the `j`-function of `X_0(p)` as
+an explicit rational function and the identification of the coarse space
+with the elliptic curve `p a 1`.  The CHECK that would refute it: an
+explicit Weierstrass model of `X_0(p)` for `p ∈ {11, 17, 19}` in this
+project — `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` is exactly
+that object at level `32`, so this leaf is its prime-level analogue and a
+successor should copy that shape.  AXIS SEARCHED: the coarse-space side.
+The `j`-function's explicit form (a ratio of bivariate polynomials of total
+degree `8/8`, `12/12`, `13/13` — MEASURED, see the leaf below) is the cost
+that axis carries. -/
+theorem exists_x0GenusOnePoints (p ℓ m : ℕ) (_h : (p, ℓ, m) ∈ x0GenusOneTable)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification p strX strY jY) :
+    ∃ (hj : IsJMapOn p hX.coarse) (cusps : Finset (RelPoint strX (𝟙 SpecQ)))
+      (pts : Finset (RelPoint strY (𝟙 SpecQ))),
+      (∀ c ∈ cusps, ∀ y : RelPoint strY (𝟙 SpecQ), sectionAlong jY hX.comm y ≠ c) ∧
+      (∀ y ∈ pts, (p, hj.jm y) ∈ genusOneJTable) ∧
+      cusps.card + pts.card = m :=
+  sorry
+
+/-- **The `j`-values of `Y_0(p)(ℚ)` at the genus-one isogeny primes**
+(PROVEN 2026-07-27 over `hasRankZeroJacobian_of_genusOnePrime`,
+`exists_x0GenusOne_mod_prime` and `exists_x0GenusOnePoints`, consuming the
+existing `Fermat.card_le_of_rankZeroJacobian` and
+`Fermat.exists_x0Compactification`).
+
+The argument is pure counting and is the same one
+`Fermat.y0HasNoRationalPoint_of_witnessPrime` runs, with the conclusion
+"`Y(ℚ)` is empty" replaced by "`Y(ℚ)` is exhausted by the tabulated
+points".  Take the compactification `Y ⊆ X` over `ℚ` and the reduction `X'`
+over `𝔽_ℓ` for the tabulated witness prime.  The cusps and the tabulated
+points give `m` distinct rational points of `X`: distinct from each other
+because no cusp is the image of a point of `Y`, and mutually distinct
+inside `Y` because `sectionAlong` is injective
+(`sectionAlong_injective`).  A rational point `y` of `Y` whose `j`-value is
+NOT in the table lies in neither part, so it gives an `(m+1)`-st; but
+`card_le_of_rankZeroJacobian` caps every `Finset` of `X(ℚ)` by
+`#X'(𝔽_ℓ) = m`.  Contradiction, so every `j`-value is tabulated.
+
+Note where each hypothesis of the counting bound comes from: `ℓ.Prime`,
+`ℓ ≠ 2` and `¬ ℓ ∣ p` are discharged by `decide` on the three table rows,
+and rank `0` by the leaf above.  All three rows genuinely need checking —
+see the subsection note for why `ℓ = 3` fails at `p = 19`. -/
+theorem exists_jMap_genusOne (p : ℕ) (hp : p ∈ ({11, 17, 19} : Finset ℕ)) :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 p strY)
+      (hj : IsJMapOn p hc), ∀ y : RelPoint strY (𝟙 SpecQ),
+        (p, hj.jm y) ∈ genusOneJTable := by
+  classical
+  obtain ⟨ℓ, m, hrow, hℓ, hℓ2, hℓp, hp0⟩ :
+      ∃ ℓ m, (p, ℓ, m) ∈ x0GenusOneTable ∧ Nat.Prime ℓ ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ p ∧ 0 < p := by
+    fin_cases hp
+    · exact ⟨3, 5, by decide, by decide, by decide, by decide, by norm_num⟩
+    · exact ⟨3, 4, by decide, by decide, by decide, by decide, by norm_num⟩
+    · exact ⟨5, 3, by decide, by decide, by decide, by decide, by norm_num⟩
+  obtain ⟨X, Y, strX, strY, jY, ⟨hX⟩⟩ := exists_x0Compactification p hp0
+  obtain ⟨X', Y', strX', strY', jY', ⟨hX'⟩, hfin, hcard⟩ :=
+    exists_x0GenusOne_mod_prime p ℓ m hrow
+  obtain ⟨hj, cusps, pts, hcusp, hjm, hsum⟩ := exists_x0GenusOnePoints p ℓ m hrow hX
+  refine ⟨Y, strY, hX.coarse, hj, fun y => ?_⟩
+  by_contra hnot
+  have hfinj : Function.Injective (sectionAlong jY hX.comm) := sectionAlong_injective hX
+  have hynot : y ∉ pts := fun hmem => hnot (hjm y hmem)
+  have hdisj : Disjoint cusps (pts.image (sectionAlong jY hX.comm)) := by
+    refine Finset.disjoint_left.mpr ?_
+    intro a ha ha'
+    obtain ⟨z, _, rfl⟩ := Finset.mem_image.mp ha'
+    exact hcusp _ ha z rfl
+  have hfy : sectionAlong jY hX.comm y ∉ cusps ∪ pts.image (sectionAlong jY hX.comm) := by
+    intro hmem
+    rcases Finset.mem_union.mp hmem with h1 | h2
+    · exact hcusp _ h1 y rfl
+    · obtain ⟨z, hz, hzy⟩ := Finset.mem_image.mp h2
+      have : z = y := hfinj hzy
+      subst this
+      exact hynot hz
+  have hcardS : (insert (sectionAlong jY hX.comm y)
+      (cusps ∪ pts.image (sectionAlong jY hX.comm))).card = m + 1 := by
+    rw [Finset.card_insert_of_notMem hfy, Finset.card_union_of_disjoint hdisj,
+      Finset.card_image_of_injective _ hfinj, hsum]
+  have hle := card_le_of_rankZeroJacobian hX
+    (hasRankZeroJacobian_of_genusOnePrime p hp hX) hℓ hℓ2 hℓp hX' m hfin hcard
+    (insert (sectionAlong jY hX.comm y) (cusps ∪ pts.image (sectionAlong jY hX.comm)))
+  omega
+
+/-- **The `j`-values of `Y_0(37)(ℚ)`** (sorry leaf, introduced 2026-07-27 as
+the modular-curve form of `jInvariant_mem_of_isogenyPrime_thirtySeven`).
+
+TRUE: `X_0(37)` has genus `2` and exactly two non-cuspidal rational points,
+of `j`-invariants `−7·11³` and `−7·137³·2083³` (Mazur–Swinnerton-Dyer,
+Mazur–Vélu).
+
+**Why this level is NOT decomposed along the rank-`0` axis, and the check
+that refutes the objection.**  `rank J_0(37)(ℚ) = 1`
+(`J_0(37) ~ 37a × 37b` of ranks `1` and `0`), so
+`Fermat.card_le_of_rankZeroJacobian` is not merely unavailable here — its
+hypothesis `Fermat.HasRankZeroJacobian` is FALSE at this level, and any
+attempt to route through it would produce a false sub-leaf.  The CHECK that
+would refute this: `ellrank` on the two isogeny factors of `J_0(37)`, or any
+source giving `rank J_0(37)(ℚ) = 0`.  AXIS SEARCHED: the rank-`0` counting
+layer of `X0.lean` only.  Since `1 < 2 = genus`, Chabauty–Coleman applies
+directly to the curve, and that is the axis a successor should search —
+neither it nor the Eisenstein ideal exists in this development.
+
+**NOT vacuous**: both values are realised, `ellisomat (ellfromj j)`
+returning `[1, 37; 37, 1]` for each.  `37` is the only one of the four
+higher-genus levels with `h(−p) ≠ 1` (`quaddisc(−37) = −148`,
+`qfbclassno(−148) = 2`), so it carries no CM point and its two values are a
+non-CM pair — see the leaf below for the contrast. -/
+theorem exists_jMap_thirtySeven :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 37 strY)
+      (hj : IsJMapOn 37 hc), ∀ y : RelPoint strY (𝟙 SpecQ),
+        ((37 : ℕ), hj.jm y) ∈ thirtySevenJTable :=
+  sorry
+
+/-- **The `j`-values of `Y_0(p)(ℚ)` at `p ∈ {43, 67, 163}`** (sorry leaf,
+introduced 2026-07-27 as the modular-curve form of
+`jInvariant_mem_of_isogenyPrime_classNumberOne`).
+
+TRUE: `X_0(p)` has genus `3, 5, 13` and exactly one non-cuspidal rational
+point, the CM point of the class-number-one discriminant `−p`.
+
+**Why this cluster is NOT decomposed along the rank-`0` axis.**
+`rank J_0(p)(ℚ) = 1, 2, 6` respectively, so as at `37` the hypothesis of
+`Fermat.card_le_of_rankZeroJacobian` is FALSE, not merely unavailable.
+Since `1 < 3`, `2 < 5` and `6 < 13`, Chabauty–Coleman applies to the curve
+itself; that plus Mazur's Eisenstein-ideal descent is the axis to search,
+and neither exists here.  The CHECK that would refute the obstruction:
+`ellrank`/`Magma RankBound` giving `0` for any of the three Jacobians.
+AXIS SEARCHED: the rank-`0` counting layer of `X0.lean` only.
+
+**The `classPoly` route stays refuted, and for a reason the `j`-map does
+not change.**  `h(−p) = 1` makes `H_{−p} = X − j₀` LINEAR, so "`j` is a root
+of `H_{−p}`" is this leaf's own conclusion rewritten and the "no rational
+root" half is empty.  The content is the CONVERSE — that a rational
+`p`-isogeny FORCES CM by `−p`, i.e. that the CM point is the only
+non-cuspidal rational point — and no class-number computation reaches it.
+See the fuller note on `jInvariant_mem_of_isogenyPrime_classNumberOne`
+below, which also records why the prime-power CM argument (`k ≥ 2`
+manufactures an endomorphism) does not apply at PRIME level.
+
+**NOT vacuous**: `polclass(−43) = x + 884736000`,
+`polclass(−67) = x + 147197952000`,
+`polclass(−163) = x + 262537412640768000`, each of degree `1`, and
+`ellisomat (ellfromj j)` returns `[1, p; p, 1]` at all three. -/
+theorem exists_jMap_classNumberOne (p : ℕ) (_hp : p ∈ ({43, 67, 163} : Finset ℕ)) :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 p strY)
+      (hj : IsJMapOn p hc), ∀ y : RelPoint strY (𝟙 SpecQ),
+        (p, hj.jm y) ∈ classNumberOneJTable :=
+  sorry
+
+end MazurIsogenyPrimeJ
+
 /-- **The `j`-invariants at the three isogeny primes with `X_0(p)` of genus
-`1`** (sorry leaf, introduced 2026-07-26 by the split of
+`1`** (PROVEN 2026-07-27 over `MazurIsogenyPrimeJ.exists_jMap_genusOne`;
+formerly a sorry leaf, introduced 2026-07-26 by the split of
 `jInvariant_mem_of_isogenyPrime_ge_eleven` by technique): if `E/ℚ` carries a
 Galois-stable cyclic subgroup of order `p` for `p ∈ {11, 17, 19}`, then
 `(p, j(E))` is one of the six pairs
@@ -13099,7 +13531,39 @@ one of them is findable by grepping for `axiom`.** In `~/cs/FLT`:
 
 So the isogeny theorem is assumed there as well, just not under a name an
 `axiom` grep would surface. "IRREDUCIBLE at this mathlib pin" is therefore not
-merely this development's assessment of its own reach. -/
+merely this development's assessment of its own reach.
+
+## RESOLUTION (2026-07-27) — THIS NODE IS NOW PROVEN, AND THE TWO
+## "IRREDUCIBLE" PARAGRAPHS ABOVE ARE SUPERSEDED
+
+Both verdicts above were correct WHEN WRITTEN and are now stale, for a
+reason each of them names explicitly:
+
+* "the moduli half would need the `j`-function on `X_0(p)` itself" — that
+  is exactly `Fermat.IsJMapOn`, which landed in `ModularCurve/X0.lean` on
+  2026-07-27 together with `Fermat.exists_jMap`;
+* "the three Mordell–Weil determinations have no mathlib input to lean on"
+  — they now have `X0.lean`'s rank-`0` counting layer,
+  `Fermat.HasRankZeroJacobian` and `Fermat.card_le_of_rankZeroJacobian`,
+  which applies verbatim at `p = 11, 17, 19`.
+
+So the split IS available, and the prediction that it "would produce six
+irreducible leaves in place of one" is refuted: it produces THREE, none of
+them per-prime, and the counting that joins them is PROVEN
+(`MazurIsogenyPrimeJ.exists_jMap_genusOne`).  The three are
+`hasRankZeroJacobian_of_genusOnePrime`, `exists_x0GenusOne_mod_prime` and
+`exists_x0GenusOnePoints`, split along the standard bounding/constructive
+axis; see the subsection note above them.
+
+**What the split does and does not buy.**  It removes no modular
+mathematics — the `j`-function of `X_0(p)` is still needed, and is now
+isolated in `exists_x0GenusOnePoints` — but it separates the three
+independent inputs (rank, point count mod `ℓ`, explicit points) that were
+previously fused, and it discharges the whole counting argument plus the
+entire elliptic-curve-to-moduli translation.  The MEASURED cost of the
+`j`-function recorded above (bivariate polynomials of total degree `8/8`,
+`12/12`, `13/13`) is unchanged and is now attached to the one leaf that
+genuinely carries it, rather than to this node. -/
 theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_genusOne
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
@@ -13113,9 +13577,12 @@ theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_genusOne
     (p, E.j) ∈ ([(11, -24729001), (11, -32768), (11, -121),
         (17, -297756989 / 2), (17, -882216989 / 131072),
         (19, -884736)] : List (ℕ × ℚ)) :=
-  sorry
+  MazurIsogenyPrimeJ.jInvariant_mem_of_exists_jMap
+    (MazurIsogenyPrimeJ.exists_jMap_genusOne p hp) E g hg hstable
 
-/-- **The two `j`-invariants at `p = 37`** (sorry leaf, introduced 2026-07-26 by
+/-- **The two `j`-invariants at `p = 37`** (PROVEN 2026-07-27 over
+`MazurIsogenyPrimeJ.exists_jMap_thirtySeven`, its modular-curve form;
+formerly a sorry leaf, introduced 2026-07-26 by
 the split of `jInvariant_mem_of_isogenyPrime_ge_eleven` by technique): if `E/ℚ`
 carries a Galois-stable cyclic subgroup of order `37`, then
 
@@ -13177,7 +13644,37 @@ points are exactly these", which `X0.lean` does not state and could not prove,
 since it stops at the affine coarse space and deliberately keeps `X_0(N)`'s
 compactification, its cusps and `J_0(N)` off the critical path. What remains
 absent is therefore the Jacobian, the Eisenstein ideal and Chabauty — not
-modular curves as such. -/
+modular curves as such.
+
+## RESOLUTION (2026-07-27) — THIS NODE IS PROVEN; THE MATHEMATICS MOVED,
+## IT DID NOT SHRINK
+
+Superseding the paragraph immediately above, which is now half stale.  It
+was right that `y0HasNoRationalPoint_prime` says nothing at `37`, and right
+that the complementary statement was not available.  It is available now:
+`MazurIsogenyPrimeJ.exists_jMap_thirtySeven` states exactly "the `j`-values
+of the rational points of `Y_0(37)` are the two tabulated ones", and this
+node follows from it by the PROVEN translation
+`MazurIsogenyPrimeJ.jInvariant_mem_of_exists_jMap` over the `j`-map layer
+(`Fermat.IsJMapOn`, `Fermat.exists_jMap`) that landed in `X0.lean` on
+2026-07-27.
+
+**Be clear about what this is.**  It is a TRANSLATION, not a reduction: no
+arithmetic is discharged, and the successor leaf is exactly as hard as this
+node was.  What it buys is that the residue is now stated about a MODULAR
+CURVE, which is where Chabauty–Coleman and the Eisenstein ideal attach —
+the elliptic-curve phrasing offered them no surface at all.  Contrast the
+genus-one sibling, where the same translation is followed by a genuine
+three-way decomposition because the rank-`0` layer applies there.
+
+**Why the genus-one decomposition does NOT extend here**, stated as a
+refutable claim: `rank J_0(37)(ℚ) = 1`, so
+`Fermat.card_le_of_rankZeroJacobian`'s hypothesis
+`Fermat.HasRankZeroJacobian` is FALSE at this level and routing through it
+would manufacture a false sub-leaf.  The check that would refute this is
+`ellrank` on the isogeny factors `37a`, `37b`.  The final sentence above
+stands unchanged and is the accurate statement of what is still missing:
+the Jacobian, the Eisenstein ideal and Chabauty. -/
 theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_thirtySeven
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point)
@@ -13188,9 +13685,12 @@ theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_thirtySeven
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     ((37 : ℕ), E.j) ∈ ([(37, -9317), (37, -162677523113838677)] : List (ℕ × ℚ)) :=
-  sorry
+  MazurIsogenyPrimeJ.jInvariant_mem_of_exists_jMap
+    MazurIsogenyPrimeJ.exists_jMap_thirtySeven E g hg hstable
 
-/-- **The three CM `j`-invariants at `p ∈ {43, 67, 163}`** (sorry leaf,
+/-- **The three CM `j`-invariants at `p ∈ {43, 67, 163}`** (PROVEN 2026-07-27
+over `MazurIsogenyPrimeJ.exists_jMap_classNumberOne`, its modular-curve form;
+formerly a sorry leaf,
 introduced 2026-07-26 by the split of
 `jInvariant_mem_of_isogenyPrime_ge_eleven` by technique): if `E/ℚ` carries a
 Galois-stable cyclic subgroup of order `p` for `p ∈ {43, 67, 163}`, then
@@ -13283,7 +13783,34 @@ three levels for the same reason as at `37`: `43`, `67` and `163` all lie IN
 `Y_0(p)(ℚ) = ∅` only OUTSIDE that list — says nothing about them, and the
 complementary "the rational points at the listed primes are exactly these" is
 not stated there and is out of that module's declared reach. What is still
-genuinely absent is `J_0(p)`, the Eisenstein ideal and Chabauty. -/
+genuinely absent is `J_0(p)`, the Eisenstein ideal and Chabauty.
+
+## RESOLUTION (2026-07-27) — THIS NODE IS PROVEN; THE MATHEMATICS MOVED,
+## IT DID NOT SHRINK
+
+The complementary statement the paragraph above calls missing now exists:
+`MazurIsogenyPrimeJ.exists_jMap_classNumberOne` is precisely "the `j`-values
+of the rational points of `Y_0(p)` are the tabulated CM ones" for
+`p ∈ {43, 67, 163}`, and this node follows from it by the PROVEN
+translation `MazurIsogenyPrimeJ.jInvariant_mem_of_exists_jMap`, over the
+`j`-map layer that landed in `X0.lean` on 2026-07-27.
+
+**This is a TRANSLATION, not a reduction** — the same caveat as at `37`.
+No arithmetic is discharged and the successor leaf is as hard as this node
+was; what changes is that the residue is stated about a modular curve,
+where Chabauty–Coleman and the Eisenstein-ideal descent attach.
+
+**Everything the docstring above says about the rejected routes still
+stands**, and the `j`-map does not disturb any of it: the `classPoly` cut
+remains empty at class number one (`H_{−p}` is LINEAR), and the
+prime-power CM argument still does not apply at PRIME level, where
+`p`-isogeny ⟹ CM is false in general. Nor does the genus-one sibling's
+rank-`0` decomposition extend here: `rank J_0(p)(ℚ) = 1, 2, 6`, so
+`Fermat.HasRankZeroJacobian` is FALSE at all three and routing through
+`Fermat.card_le_of_rankZeroJacobian` would manufacture a false sub-leaf.
+The check that would refute that: any source giving rank `0` for one of the
+three Jacobians. The last sentence above is unchanged and remains the
+accurate account of what is missing. -/
 theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_classNumberOne
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
@@ -13296,7 +13823,8 @@ theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_classNumberOne
           AddSubgroup.zmultiples g) :
     (p, E.j) ∈ ([(43, -884736000), (67, -147197952000),
         (163, -262537412640768000)] : List (ℕ × ℚ)) :=
-  sorry
+  MazurIsogenyPrimeJ.jInvariant_mem_of_exists_jMap
+    (MazurIsogenyPrimeJ.exists_jMap_classNumberOne p hp) E g hg hstable
 
 /-- **The eleven `j`-invariants with a rational `p`-isogeny, `p` one of the
 seven isogeny primes with `X_0(p)` of genus `≥ 1`** (PROVEN 2026-07-26 over the
