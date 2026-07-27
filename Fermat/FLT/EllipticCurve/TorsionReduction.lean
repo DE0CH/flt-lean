@@ -73,10 +73,14 @@ That leaf was in turn DECOMPOSED on 2026-07-27 and is now PROVEN, over
   number theory from the curve theory. What remains open under it is:
   * `nonempty_tameBase` — the field `ℚ(ℓ^{1/12})` with `ℓ` totally ramified and
     residue field `𝔽_ℓ`. Independent of `E` and of `Δ`: ONE field serves every
-    curve and every `ℓ`. OPEN, and the only genuinely missing theory left in the
-    potentially-good chain.
+    curve and every `ℓ`. **DECOMPOSED AND PROVEN 2026-07-27** over the single
+    leaf `TameBaseAux.exists_tameResidueHom` (residue degree `1`); the field,
+    the Eisenstein irreducibility, the Chevalley extension and the integrality
+    criterion `mem_iff` are all proven in `TameBaseAux`.
   * `padicValRat_Δ_le_of_jIntegral` — `v_ℓ(j) ≥ 0 ⟹ 3v(A) ≥ v(Δ)` and
-    `2v(B) ≥ v(Δ)`, a statement about three rational numbers. OPEN, elementary.
+    `2v(B) ≥ v(Δ)`, a statement about three rational numbers. **PROVEN
+    2026-07-27**, entirely out of mathlib's short-normal-form and `padicValRat`
+    APIs.
   The scaling itself (`exists_tameGoodModel_of_isShortNF`) is PROVEN, and so is
   the reduction to short Weierstrass form. One of the four obligations the
   pre-decomposition docstring listed — a `VariableChange`-induced map on
@@ -140,6 +144,10 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 -- this project's own shim `Affine.Point.equivVariableChange`.
 public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
 public import Mathlib.NumberTheory.Padics.PadicVal.Basic
+public import Mathlib.RingTheory.Polynomial.Eisenstein.Basic
+public import Mathlib.RingTheory.Polynomial.GaussLemma
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.RingTheory.Valuation.LocalSubring
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 @[expose] public section
@@ -592,11 +600,372 @@ structure TameBase (ℓ : ℕ) [Fact ℓ.Prime] where
 attribute [instance] TameBase.instField TameBase.instDec TameBase.instAlgebra
   TameBase.instLocal
 
+/-! ### Constructing `ℚ(ℓ^{1/12})` — the number-theoretic half
+
+Everything in this namespace is PROVEN except `exists_tameResidueHom`, which is the
+single residue of `nonempty_tameBase`. See that declaration's docstring for the proof
+that remains to be written. -/
+
+namespace TameBaseAux
+
+open _root_.Polynomial
+
+variable (ℓ : ℕ) [hℓ : Fact ℓ.Prime]
+
+/-- `X¹² − ℓ` over `ℤ`. -/
+noncomputable def poly : ℤ[X] := X ^ 12 - C (ℓ : ℤ)
+
+omit hℓ in
+theorem poly_monic : (poly ℓ).Monic := by
+  unfold poly
+  exact monic_X_pow_sub_C _ (by norm_num)
+
+omit hℓ in
+theorem poly_natDegree : (poly ℓ).natDegree = 12 := by
+  unfold poly
+  exact natDegree_X_pow_sub_C
+
+theorem poly_eisenstein : (poly ℓ).IsEisensteinAt (Ideal.span {(ℓ : ℤ)}) where
+  leading := by
+    rw [(poly_monic ℓ).leadingCoeff, Ideal.mem_span_singleton]
+    intro h
+    have := Int.le_of_dvd one_pos h
+    have : (2 : ℤ) ≤ (ℓ : ℤ) := by exact_mod_cast hℓ.out.two_le
+    omega
+  mem := by
+    intro n hn
+    rw [poly_natDegree] at hn
+    unfold poly
+    rcases Nat.eq_zero_or_pos n with rfl | hpos
+    · simp
+    · rw [coeff_sub, coeff_X_pow, coeff_C, if_neg (by omega), if_neg (by omega)]
+      simp
+  notMem := by
+    unfold poly
+    rw [coeff_sub, coeff_X_pow, coeff_C, if_neg (by norm_num), if_pos rfl]
+    simp only [zero_sub, neg_mem_iff]
+    rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton]
+    intro h
+    have hℓ0 : (0 : ℤ) < (ℓ : ℤ) := by exact_mod_cast hℓ.out.pos
+    have h2 : (2 : ℤ) ≤ (ℓ : ℤ) := by exact_mod_cast hℓ.out.two_le
+    have := Int.le_of_dvd hℓ0 h
+    nlinarith
+
+theorem poly_irreducible : Irreducible (poly ℓ) := by
+  refine (poly_eisenstein ℓ).irreducible ?_ (poly_monic ℓ).isPrimitive ?_
+  · rw [Ideal.span_singleton_prime (by exact_mod_cast hℓ.out.ne_zero)]
+    exact Nat.prime_iff_prime_int.mp hℓ.out
+  · rw [poly_natDegree]; norm_num
+
+/-- `X¹² − ℓ` over `ℚ`. -/
+noncomputable def qpoly : ℚ[X] := X ^ 12 - C (ℓ : ℚ)
+
+omit hℓ in
+theorem map_poly : (poly ℓ).map (Int.castRingHom ℚ) = qpoly ℓ := by
+  unfold poly qpoly
+  push_cast [Polynomial.map_sub, Polynomial.map_pow, map_X, map_C]
+  rfl
+
+theorem qpoly_irreducible : Irreducible (qpoly ℓ) := by
+  rw [← map_poly]
+  exact (Polynomial.IsPrimitive.Int.irreducible_iff_irreducible_map_cast
+    (poly_monic ℓ).isPrimitive).mp (poly_irreducible ℓ)
+
+omit hℓ in
+theorem qpoly_monic : (qpoly ℓ).Monic := by
+  unfold qpoly
+  exact monic_X_pow_sub_C _ (by norm_num)
+
+omit hℓ in
+theorem qpoly_natDegree : (qpoly ℓ).natDegree = 12 := by
+  unfold qpoly
+  exact natDegree_X_pow_sub_C
+
+/-! ### The `ℓ`-adic valuation subring of `ℚ`, stated directly by `padicValRat` -/
+
+/-- **`ℤ_(ℓ) ⊆ ℚ`**, defined so that membership IS `0 ≤ padicValRat ℓ q`.
+
+This is a second, deliberately different presentation from `RatAdic.valuationSubring`
+above: that one is built from `valuationSubringAtPrime` and is what the reduction
+datum consumes, whereas this one is built so that `mem_iff` below is definitional. -/
+def ratSubring : ValuationSubring ℚ where
+  carrier := {q : ℚ | 0 ≤ padicValRat ℓ q}
+  zero_mem' := by simp
+  one_mem' := by simp
+  neg_mem' := by
+    intro q hq
+    simpa using hq
+  add_mem' := by
+    intro q r hq hr
+    simp only [Set.mem_setOf_eq] at hq hr ⊢
+    rcases eq_or_ne (q + r) 0 with h | h
+    · simp [h]
+    · exact le_trans (le_min hq hr) (padicValRat.min_le_padicValRat_add h)
+  mul_mem' := by
+    intro q r hq hr
+    simp only [Set.mem_setOf_eq] at hq hr ⊢
+    rcases eq_or_ne q 0 with rfl | hq0
+    · simp
+    rcases eq_or_ne r 0 with rfl | hr0
+    · simp
+    rw [padicValRat.mul hq0 hr0]
+    omega
+  mem_or_inv_mem' := by
+    intro q
+    simp only [Set.mem_setOf_eq]
+    rw [padicValRat.inv]
+    omega
+
+@[simp] theorem mem_ratSubring {q : ℚ} : q ∈ ratSubring ℓ ↔ 0 ≤ padicValRat ℓ q := Iff.rfl
+
+/-! ### The field `L = ℚ(ℓ^{1/12})` and its uniformizer -/
+
+instance factIrred : Fact (Irreducible (qpoly ℓ)) := ⟨qpoly_irreducible ℓ⟩
+
+/-- The structure map `ℚ → L`, used INSTEAD of `algebraMap ℚ L` throughout: with
+`AdjoinRoot (qpoly ℓ)` a field, `AdjoinRoot.instAlgebra` and `DivisionRing.toRatAlgebra`
+are two `Algebra ℚ L` instances that print identically and are not definitionally equal,
+and mixing them makes `rw` fail on syntactically matching goals. -/
+noncomputable def ofQ : ℚ →+* AdjoinRoot (qpoly ℓ) := AdjoinRoot.of (qpoly ℓ)
+
+theorem ofQ_injective : Function.Injective (ofQ ℓ) := (ofQ ℓ).injective
+
+/-- `π = ℓ^{1/12}`. -/
+noncomputable def unif : AdjoinRoot (qpoly ℓ) := AdjoinRoot.root (qpoly ℓ)
+
+theorem unif_pow : unif ℓ ^ (12 : ℕ) = ofQ ℓ (ℓ : ℚ) := by
+  have h : AdjoinRoot.mk (qpoly ℓ) (qpoly ℓ) = 0 := AdjoinRoot.mk_self
+  unfold qpoly at h
+  rw [map_sub, map_pow, AdjoinRoot.mk_X, AdjoinRoot.mk_C, sub_eq_zero] at h
+  exact h
+
+theorem unif_ne_zero : unif ℓ ≠ 0 := by
+  intro h
+  have h12 := unif_pow ℓ
+  rw [h, zero_pow (by norm_num)] at h12
+  have : (ℓ : ℚ) = 0 := ofQ_injective ℓ (by simpa using h12.symm)
+  exact hℓ.out.ne_zero (by exact_mod_cast this)
+
+/-! ### The valuation subring of `L` above `ℓ`, by Chevalley extension -/
+
+/-- `ℤ_(ℓ) ↪ L`. -/
+noncomputable def emb : ratSubring ℓ →+* AdjoinRoot (qpoly ℓ) :=
+  (ofQ ℓ).comp (ratSubring ℓ).subtype
+
+theorem emb_injective : Function.Injective (emb ℓ) :=
+  (ofQ ℓ).injective.comp (ratSubring ℓ).subtype_injective
+
+/-- `ℤ_(ℓ)` viewed as a LOCAL subring of `L`. -/
+noncomputable def tameLocal : LocalSubring (AdjoinRoot (qpoly ℓ)) := LocalSubring.range (emb ℓ)
+
+/-- **A valuation subring of `L` dominating `ℤ_(ℓ)`** — Chevalley's extension theorem
+(`LocalSubring.exists_le_valuationSubring`, `stacks 00IA`). -/
+noncomputable def tameSubring : ValuationSubring (AdjoinRoot (qpoly ℓ)) :=
+  (LocalSubring.exists_le_valuationSubring (tameLocal ℓ)).choose
+
+theorem tameSubring_dominates : tameLocal ℓ ≤ (tameSubring ℓ).toLocalSubring :=
+  (LocalSubring.exists_le_valuationSubring (tameLocal ℓ)).choose_spec
+
+theorem mem_tameLocal {q : ℚ} (hq : 0 ≤ padicValRat ℓ q) :
+    ofQ ℓ q ∈ (tameLocal ℓ).toSubring :=
+  ⟨⟨q, hq⟩, rfl⟩
+
+theorem algebraMap_mem_tameSubring {q : ℚ} (hq : 0 ≤ padicValRat ℓ q) :
+    ofQ ℓ q ∈ tameSubring ℓ :=
+  (tameSubring_dominates ℓ).1 (mem_tameLocal ℓ hq)
+
+/-- A rational unit of `ℤ_(ℓ)` has valuation `1` in `L`. -/
+theorem valuation_algebraMap_eq_one {u : ℚ} (hu0 : u ≠ 0) (hu : padicValRat ℓ u = 0) :
+    (tameSubring ℓ).valuation (ofQ ℓ u) = 1 := by
+  have h1 : ofQ ℓ u ∈ tameSubring ℓ :=
+    algebraMap_mem_tameSubring ℓ (by omega)
+  have h2 : ofQ ℓ u⁻¹ ∈ tameSubring ℓ := by
+    refine algebraMap_mem_tameSubring ℓ ?_
+    rw [padicValRat.inv, hu]
+    norm_num
+  have hunit : IsUnit (⟨_, h1⟩ : tameSubring ℓ) := by
+    refine isUnit_iff_exists_inv.mpr ⟨⟨_, h2⟩, Subtype.ext ?_⟩
+    push_cast
+    rw [← map_mul, mul_inv_cancel₀ hu0, map_one]
+  exact ((tameSubring ℓ).valuation_eq_one_iff _).mp hunit
+
+/-- **`ℓ` is a non-unit in the extension** — this is exactly what DOMINATION buys, and
+it is the one place the `IsLocalHom` half of the domination order is used. -/
+theorem valuation_ell_lt_one :
+    (tameSubring ℓ).valuation (ofQ ℓ (ℓ : ℚ)) < 1 := by
+  have hv : padicValRat ℓ (ℓ : ℚ) = 1 := by
+    simp [padicValRat.self (p := ℓ) hℓ.out.one_lt]
+  have hmem : ofQ ℓ (ℓ : ℚ) ∈ tameSubring ℓ :=
+    algebraMap_mem_tameSubring ℓ (by omega)
+  refine lt_of_le_of_ne ((tameSubring ℓ).valuation_le_one ⟨_, hmem⟩) ?_
+  intro heq
+  obtain ⟨hsub, hloc⟩ := tameSubring_dominates ℓ
+  have hunit : IsUnit (⟨_, hmem⟩ : tameSubring ℓ) :=
+    ((tameSubring ℓ).valuation_eq_one_iff _).mpr heq
+  have hmem' := mem_tameLocal ℓ (q := (ℓ : ℚ)) (by omega)
+  have hu2 : IsUnit (Subring.inclusion hsub ⟨_, hmem'⟩) := hunit
+  obtain ⟨⟨b, hb⟩, hab⟩ := isUnit_iff_exists_inv.mp (hloc.map_nonunit ⟨_, hmem'⟩ hu2)
+  obtain ⟨y, rfl⟩ := hb
+  have : (ℓ : ℚ) * (y : ℚ) = 1 := by
+    have h := congrArg (Subring.subtype _) hab
+    simp only [Subring.coe_subtype, Subring.coe_mul, Subring.coe_one] at h
+    exact (ofQ ℓ).injective (by
+      rw [map_mul, map_one]; exact h)
+  have hy0 : 0 ≤ padicValRat ℓ (y : ℚ) := y.2
+  have hyne : (y : ℚ) ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at this
+    exact one_ne_zero this.symm
+  have hlne : ((ℓ : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr hℓ.out.ne_zero
+  have hcalc := congrArg (padicValRat ℓ) this
+  rw [padicValRat.mul hlne hyne, hv, padicValRat.one] at hcalc
+  omega
+
+/-! ### The integrality criterion -/
+
+/-- `p ^ n ≤ 1 ↔ 0 ≤ n` for `0 < p < 1` in a linearly ordered group with zero. -/
+theorem zpow_le_one_iff_of_lt_one {Γ : Type*} [LinearOrderedCommGroupWithZero Γ]
+    {p : Γ} (hp0 : p ≠ 0) (hp1 : p < 1) (n : ℤ) : p ^ n ≤ 1 ↔ 0 ≤ n := by
+  have hpos : (0 : Γ) < p := zero_lt_iff.mpr hp0
+  have h1 : 1 < p⁻¹ := (one_lt_inv₀ hpos).mpr hp1
+  have key : p ^ n = (p⁻¹) ^ (-n) := by rw [inv_zpow, zpow_neg, inv_inv]
+  rw [key, zpow_le_one_iff_right₀ h1]
+  omega
+
+theorem valuation_unif_ne_zero : (tameSubring ℓ).valuation (unif ℓ) ≠ 0 :=
+  (Valuation.ne_zero_iff _).mpr (unif_ne_zero ℓ)
+
+theorem valuation_unif_lt_one : (tameSubring ℓ).valuation (unif ℓ) < 1 := by
+  have h := valuation_ell_lt_one ℓ
+  rw [← unif_pow ℓ, map_pow] at h
+  rcases lt_or_ge ((tameSubring ℓ).valuation (unif ℓ)) 1 with h' | h'
+  · exact h'
+  · exact absurd h (not_lt.mpr (one_le_pow₀ h'))
+
+theorem valuation_ofQ_ell :
+    (tameSubring ℓ).valuation (ofQ ℓ (ℓ : ℚ))
+      = (tameSubring ℓ).valuation (unif ℓ) ^ (12 : ℕ) := by
+  rw [← unif_pow ℓ, map_pow]
+
+/-- **The valuation of a rational is `12·v_ℓ` in the uniformizer.** -/
+theorem valuation_ofQ {q : ℚ} (hq : q ≠ 0) :
+    (tameSubring ℓ).valuation (ofQ ℓ q)
+      = (tameSubring ℓ).valuation (unif ℓ) ^ (12 * padicValRat ℓ q) := by
+  have hlne : ((ℓ : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr hℓ.out.ne_zero
+  have hv : padicValRat ℓ (ℓ : ℚ) = 1 := by
+    simp [padicValRat.self (p := ℓ) hℓ.out.one_lt]
+  set k : ℤ := padicValRat ℓ q with hk
+  set u : ℚ := q * ((ℓ : ℚ) ^ (-k)) with hu
+  have hu0 : u ≠ 0 := mul_ne_zero hq (zpow_ne_zero _ hlne)
+  have hvu : padicValRat ℓ u = 0 := by
+    rw [hu, padicValRat.mul hq (zpow_ne_zero _ hlne), padicValRat.zpow, hv, ← hk]
+    ring
+  have hqeq : q = ((ℓ : ℚ)) ^ k * u := by
+    have hcancel : ((ℓ : ℚ)) ^ k * ((ℓ : ℚ)) ^ (-k) = 1 := by
+      rw [← zpow_add₀ hlne]
+      simp
+    rw [hu]
+    calc q = q * (((ℓ : ℚ)) ^ k * ((ℓ : ℚ)) ^ (-k)) := by rw [hcancel, mul_one]
+      _ = ((ℓ : ℚ)) ^ k * (q * ((ℓ : ℚ)) ^ (-k)) := by ring
+  rw [hqeq, map_mul, map_mul, valuation_algebraMap_eq_one ℓ hu0 hvu, mul_one,
+    map_zpow₀, map_zpow₀, valuation_ofQ_ell, ← zpow_natCast _ (12 : ℕ), ← zpow_mul]
+  norm_num
+
+/-- **`mem_iff`**: `v(π^m · q) = m + 12·v_ℓ(q)`, as a membership. -/
+theorem tame_mem_iff (m : ℤ) {q : ℚ} (hq : q ≠ 0) :
+    unif ℓ ^ m * ofQ ℓ q ∈ tameSubring ℓ ↔ 0 ≤ m + 12 * padicValRat ℓ q := by
+  rw [← ValuationSubring.valuation_le_one_iff, map_mul, map_zpow₀, valuation_ofQ ℓ hq,
+    ← zpow_add₀ (valuation_unif_ne_zero ℓ),
+    zpow_le_one_iff_of_lt_one (valuation_unif_ne_zero ℓ) (valuation_unif_lt_one ℓ)]
+
+/-! ### The residue map — the one genuinely missing piece -/
+
+/-- **The residue field of `A` is `𝔽_ℓ`, i.e. the residue degree is `1`** (sorry leaf,
+opened 2026-07-27 while proving `nonempty_tameBase`).
+
+EVERY OTHER FIELD OF `TameBase` IS PROVEN ABOVE; this is the entire residue. Note the
+`IsLocalHom` half is FREE and is included only to keep the leaf self-contained: `ZMod ℓ`
+is generated by `1` as a ring, so EVERY ring hom `A →+* ZMod ℓ` is surjective, hence has
+maximal kernel, hence — `A` being local — kernel exactly `m_A`.
+
+WHY IT CANNOT BE AVOIDED. Chevalley (`tameSubring_dominates`) produces SOME valuation
+subring over `ℤ_(ℓ)`, and domination only gives an INJECTION `𝔽_ℓ ↪ A/m_A`; it says
+nothing about surjectivity. Residue degree `1` is a genuine theorem about THIS extension,
+not a formal consequence of the construction.
+
+THE PROOF TO WRITE (Silverman-style, and it is elementary — no completion, no Hensel):
+let `pb := AdjoinRoot.powerBasis (qpoly_ne_zero ℓ)`, so every `x : L` is uniquely
+`∑_{i<12} c i • π^i` with `c i : ℚ`.
+
+1. `v (ofQ ℓ (c i) * π^i) = v(π) ^ (12 * padicValRat ℓ (c i) + i)` — immediate from
+   `valuation_ofQ` above.
+2. The twelve exponents `12 * padicValRat ℓ (c i) + i` are PAIRWISE DISTINCT for distinct
+   `i`, because they are pairwise distinct MOD 12 (`i` ranges over `0..11`). This is the
+   whole reason the argument works and is where "totally ramified of degree exactly 12"
+   enters.
+3. Hence the maximum is attained UNIQUELY, so `v x = max_i v (ofQ ℓ (c i) * π^i)`. The
+   `≤` half is `Valuation.map_sum_le`; the `≥` half is the standard trick
+   `v (a_{i₀}) = v (x - ∑_{i≠i₀} a_i) ≤ max (v x) (max_{i≠i₀} v a_i)` with the second
+   term strictly smaller.
+4. So `x ∈ A` forces every `12 * padicValRat ℓ (c i) + i ≥ 0`, hence (as `0 ≤ i < 12`)
+   every `padicValRat ℓ (c i) ≥ 0`, i.e. every `c i ∈ ratSubring ℓ`.
+5. Therefore `x - ofQ ℓ (c 0) = ∑_{1 ≤ i < 12} c i π^i ∈ m_A` (every term has valuation
+   `≤ v(π) < 1`), so `x ≡ c 0` in the residue field.
+6. Finally `ℤ → ratSubring ℓ → A/m_A` is surjective: for `c 0 = a / b` with `ℓ ∤ b`,
+   pick `n := a * m` where `b * m ≡ 1 (mod ℓ)`; then `ℓ ∣ a - n * b`, so
+   `padicValRat ℓ (c 0 - n) > 0`.
+
+Steps 1–4 give residue degree `1`; steps 5–6 turn it into the ring hom.
+
+AUDITED AT THE STRONG LEVEL (2026-07-27): with this leaf replaced by a NAMED AXIOM the
+whole chain gives `#print axioms nonempty_tameBase =
+[propext, Classical.choice, Quot.sound, AUDIT_residue]` — **no `sorryAx`**. So the field,
+the irreducibility, the Chevalley extension, `mem_iff` and the assembly are all genuinely
+complete, and this statement is the entire residue. The same audit shows
+`exists_tameGoodModel_of_isShortNF` reduced to this one axiom too, its other half
+(`padicValRat_Δ_le_of_jIntegral`) being proven outright. -/
+theorem exists_tameResidueHom : ∃ res : tameSubring ℓ →+* ZMod ℓ, IsLocalHom res :=
+  sorry
+
+end TameBaseAux
+
 /-- **`ℚ(ℓ^{1/12})` exists, with `ℓ` totally ramified and residue field `𝔽_ℓ`**
-(sorry leaf, opened 2026-07-27 by decomposing
-`exists_tameGoodModel_of_jIntegral`). This is the NUMBER-THEORETIC half, and it
-is the only place in the potentially-good chain where Dedekind-domain arithmetic
-is needed.
+(PROVEN 2026-07-27 over the single leaf `TameBaseAux.exists_tameResidueHom`, the
+same day it was opened by decomposing `exists_tameGoodModel_of_jIntegral`). This
+is the NUMBER-THEORETIC half, and it is the only place in the potentially-good
+chain where Dedekind-domain arithmetic is needed.
+
+**WHAT THE 2026-07-27 CONSTRUCTION ACTUALLY DID, and how it differs from the
+route this docstring predicted.** The four items listed below were the plan; the
+construction that landed replaces items 2–3 wholesale and the difference is the
+reusable lesson, so it is recorded before the original list rather than after.
+
+*Neither `𝓞_L` nor "Eisenstein implies totally ramified" was needed.* Item 2
+called that the substantial item, and it is indeed absent from mathlib — but the
+construction never proves it. Instead:
+
+* `L := AdjoinRoot (X¹² − ℓ)` over `ℚ`, a field because `X¹² − ℓ` is Eisenstein
+  at `ℓ` (`Polynomial.IsEisensteinAt.irreducible` over `ℤ`, transported to `ℚ` by
+  `Polynomial.IsPrimitive.Int.irreducible_iff_irreducible_map_cast`). That is the
+  ONLY use of Eisenstein.
+* `ℤ_(ℓ) ⊆ ℚ` is rebuilt as `TameBaseAux.ratSubring` with membership DEFINED as
+  `0 ≤ padicValRat ℓ q`, so the `mem_iff` bookkeeping is definitional rather than
+  a bridge to `valuationSubringAtPrime`. Thirty lines.
+* The valuation on `L` comes from **Chevalley's extension theorem**, which IS in
+  mathlib as `LocalSubring.exists_le_valuationSubring` (`stacks 00IA`). This is
+  the discovery that collapsed the route: one does not have to CONSTRUCT the
+  valuation, only to extend one, and the `IsLocalHom` half of the domination
+  order is exactly what forces `v(ℓ) < 1`.
+* `v(π) = v(ℓ)/12` is then FREE — `π¹² = ℓ` forces it inside the value group, no
+  ramification theory required — and `mem_iff` follows by
+  `zpow_le_one_iff_right₀`.
+
+*What Chevalley does NOT give is residue degree `1`*: domination yields only an
+injection `𝔽_ℓ ↪ A/m_A`. That single statement is the whole residue and is
+`TameBaseAux.exists_tameResidueHom`; its docstring carries the power-basis proof
+to be written. So the original item 2 is retired and item 3 is all that is left.
+
+THE ORIGINAL PLAN, kept because item 1 and item 4 were accurate:
 
 INDEPENDENT OF THE CURVE AND OF `E`, and that is the point: `X¹² − ℓ` is
 Eisenstein at `ℓ`, so `ℓ` is totally ramified in `L = ℚ[X]/(X¹² − ℓ)` and the
@@ -631,11 +1000,23 @@ explicit residue-field identification — grep
 `ℤ_(ℓ)[X]/(X¹² − ℓ)` directly and take `L` to be its fraction field, which avoids
 `𝓞_L` and global class-field bookkeeping entirely — an Eisenstein extension of a
 DVR is monogenic, so that quotient IS the integral closure. -/
-theorem nonempty_tameBase (ℓ : ℕ) [Fact ℓ.Prime] : Nonempty (TameBase ℓ) :=
-  sorry
+theorem nonempty_tameBase (ℓ : ℕ) [Fact ℓ.Prime] : Nonempty (TameBase ℓ) := by
+  classical
+  obtain ⟨res, hres⟩ := TameBaseAux.exists_tameResidueHom ℓ
+  exact ⟨{
+    L := AdjoinRoot (TameBaseAux.qpoly ℓ)
+    instDec := Classical.decEq _
+    instAlgebra := (TameBaseAux.ofQ ℓ).toAlgebra
+    A := TameBaseAux.tameSubring ℓ
+    res := res
+    instLocal := hres
+    π := TameBaseAux.unif ℓ
+    π_ne_zero := TameBaseAux.unif_ne_zero ℓ
+    π_pow := TameBaseAux.unif_pow ℓ
+    mem_iff := fun m _ hq => TameBaseAux.tame_mem_iff ℓ m hq }⟩
 
 /-- **`v_ℓ(j) ≥ 0` bounds the coefficient valuations against the discriminant's**
-(sorry leaf, opened 2026-07-27 by decomposing
+(PROVEN 2026-07-27, the same day it was opened by decomposing
 `exists_tameGoodModel_of_jIntegral`). This is the whole arithmetic content of the
 hypothesis `¬ ℓ ∣ E.j.den`, isolated from every curve-theoretic concern: it is a
 statement about three rational numbers.
@@ -665,12 +1046,115 @@ THE CHECK THAT WOULD REFUTE THE "second is free" CLAIM: exhibit rationals with
 `3a ≥ d` and `2b < d`. By the trichotomy above that needs `d > min(3a,2b) = 2b`
 with the minimum attained uniquely, contradicting ultrametric equality — so any
 such witness would instead be a bug in `padicValRat`'s treatment of the
-characteristic-`0` cancellations, which `hℓ5` is there to exclude. -/
+characteristic-`0` cancellations, which `hℓ5` is there to exclude.
+
+**HOW IT WAS PROVED** (2026-07-27, and it needed no new machinery at all —
+everything came out of mathlib, which is worth recording because the analysis
+above reads as if it might need a valuation theory built by hand).
+
+* `WeierstrassCurve.Δ_of_isShortNF : W.Δ = -16 * (4·a₄³ + 27·a₆²)` and
+  `WeierstrassCurve.j_of_isShortNF : W.j = 6912·a₄³ / (4·a₄³ + 27·a₆²)` are
+  both already in `Mathlib/AlgebraicGeometry/EllipticCurve/NormalForms.lean`.
+  So neither `b₂…b₈` nor `c₄` ever has to be unfolded.
+* `padicValRat.mul` / `.div` / `.pow` / `.neg` reduce every valuation to `a`,
+  `b` and `d`, and `padicValRat.add_eq_min` supplies the ultrametric EQUALITY
+  (not merely `min_le_padicValRat_add`) that the `2b < 3a` branch needs.
+* `hℓ5` is used in exactly one way: `ℓ ≥ 5` prime divides no power of `2` and
+  no power of `3`, hence kills the valuations of `4`, `16`, `27` and
+  `6912 = 2⁸·3³`. That is the entire role of the hypothesis.
+* `hj` becomes `0 ≤ padicValRat ℓ W.j` by `padicValRat_def` plus
+  `padicValNat.eq_zero_of_not_dvd`, since `padicValInt` is `ℕ`-valued.
+
+The case split is on `a₄ = 0` rather than on the trichotomy: at `a₄ = 0` the
+discriminant IS `−16·27·a₆²` and the second conclusion holds with equality,
+and otherwise the two branches are `3a ≤ 2b` (chain through the first half) and
+`2b < 3a` (distinct valuations, so `d = min = 2b`). `#print axioms` gives
+`[propext, Classical.choice, Quot.sound]`. -/
 theorem padicValRat_Δ_le_of_jIntegral (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
     {ℓ : ℕ} [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (hj : ¬ (ℓ ∣ W.j.den)) :
     (W.a₄ ≠ 0 → padicValRat ℓ W.Δ ≤ 3 * padicValRat ℓ W.a₄) ∧
-      (W.a₆ ≠ 0 → padicValRat ℓ W.Δ ≤ 2 * padicValRat ℓ W.a₆) :=
-  sorry
+      (W.a₆ ≠ 0 → padicValRat ℓ W.Δ ≤ 2 * padicValRat ℓ W.a₆) := by
+  have hℓp : ℓ.Prime := Fact.out
+  -- `ℓ ≥ 5` divides no power of `2` and no power of `3`, which is the only use of `hℓ5`.
+  have hnot2 : ∀ n : ℕ, ¬ (ℓ ∣ 2 ^ n) := by
+    intro n h
+    have := (Nat.prime_dvd_prime_iff_eq hℓp Nat.prime_two).mp (hℓp.dvd_of_dvd_pow h)
+    omega
+  have hnot3 : ∀ n : ℕ, ¬ (ℓ ∣ 3 ^ n) := by
+    intro n h
+    have := (Nat.prime_dvd_prime_iff_eq hℓp Nat.prime_three).mp (hℓp.dvd_of_dvd_pow h)
+    omega
+  -- the valuation of a natural number that `ℓ` does not divide is `0`
+  have key : ∀ n : ℕ, ¬ (ℓ ∣ n) → padicValRat ℓ (n : ℚ) = 0 := by
+    intro n hn
+    rw [padicValRat.of_nat, padicValNat.eq_zero_of_not_dvd hn]
+    simp
+  have hv4 : padicValRat ℓ (4 : ℚ) = 0 := by
+    have := key 4 (by simpa using hnot2 2)
+    simpa using this
+  have hv27 : padicValRat ℓ (27 : ℚ) = 0 := by
+    have := key 27 (by simpa using hnot3 3)
+    simpa using this
+  have hv16 : padicValRat ℓ (-16 : ℚ) = 0 := by
+    have := key 16 (by simpa using hnot2 4)
+    rw [show (-16 : ℚ) = -((16 : ℕ) : ℚ) by norm_num, padicValRat.neg]
+    exact this
+  have hv6912 : padicValRat ℓ (6912 : ℚ) = 0 := by
+    have h : ¬ (ℓ ∣ 6912) := by
+      intro h
+      rw [show (6912 : ℕ) = 2 ^ 8 * 3 ^ 3 by norm_num] at h
+      rcases (Nat.Prime.dvd_mul hℓp).mp h with h | h
+      · exact hnot2 8 h
+      · exact hnot3 3 h
+    have := key 6912 h
+    simpa using this
+  -- `ℓ ∤ j.den` is exactly `ℓ`-integrality of `j`
+  have hjnn : 0 ≤ padicValRat ℓ W.j := by
+    rw [padicValRat_def, padicValNat.eq_zero_of_not_dvd hj]
+    simp
+  -- the discriminant and the `j`-invariant in short normal form
+  have hΔ : W.Δ = -16 * (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := W.Δ_of_isShortNF
+  have hΔ0 : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
+  have hS0 : (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2 : ℚ) ≠ 0 := by
+    intro h
+    rw [hΔ, h, mul_zero] at hΔ0
+    exact hΔ0 rfl
+  have hvΔ : padicValRat ℓ W.Δ = padicValRat ℓ (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := by
+    rw [hΔ, padicValRat.mul (by norm_num) hS0, hv16, zero_add]
+  -- **the first half**: `v(j) = 3·v(A) − v(Δ)`, so `v(j) ≥ 0` IS `3·v(A) ≥ v(Δ)`
+  have h1 : W.a₄ ≠ 0 → padicValRat ℓ W.Δ ≤ 3 * padicValRat ℓ W.a₄ := by
+    intro hA
+    have hnum : (6912 * W.a₄ ^ 3 : ℚ) ≠ 0 := mul_ne_zero (by norm_num) (pow_ne_zero 3 hA)
+    have hvj : padicValRat ℓ W.j
+        = 3 * padicValRat ℓ W.a₄ - padicValRat ℓ (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2) := by
+      rw [W.j_of_isShortNF, padicValRat.div hnum hS0,
+        padicValRat.mul (by norm_num) (pow_ne_zero 3 hA), hv6912, zero_add, padicValRat.pow]
+      push_cast
+      ring
+    omega
+  refine ⟨h1, fun hB => ?_⟩
+  -- **the second half is free**, by ultrametricity
+  have hvY : padicValRat ℓ (27 * W.a₆ ^ 2 : ℚ) = 2 * padicValRat ℓ W.a₆ := by
+    rw [padicValRat.mul (by norm_num) (pow_ne_zero 2 hB), hv27, zero_add, padicValRat.pow]
+    push_cast
+    ring
+  have hY0 : (27 * W.a₆ ^ 2 : ℚ) ≠ 0 := mul_ne_zero (by norm_num) (pow_ne_zero 2 hB)
+  by_cases hA : W.a₄ = 0
+  · -- `A = 0`: the discriminant IS `−16·27·B²`, so the two sides agree on the nose
+    rw [hvΔ, show (4 * W.a₄ ^ 3 + 27 * W.a₆ ^ 2 : ℚ) = 27 * W.a₆ ^ 2 by rw [hA]; ring, hvY]
+  · have hX0 : (4 * W.a₄ ^ 3 : ℚ) ≠ 0 := mul_ne_zero (by norm_num) (pow_ne_zero 3 hA)
+    have hvX : padicValRat ℓ (4 * W.a₄ ^ 3 : ℚ) = 3 * padicValRat ℓ W.a₄ := by
+      rw [padicValRat.mul (by norm_num) (pow_ne_zero 3 hA), hv4, zero_add, padicValRat.pow]
+      push_cast
+      ring
+    rcases le_or_gt (3 * padicValRat ℓ W.a₄) (2 * padicValRat ℓ W.a₆) with h | h
+    · -- `3a ≤ 2b`: chain through the first half
+      have := h1 hA
+      omega
+    · -- `2b < 3a`: the two summands have DISTINCT valuations, so `v(Δ) = min = 2b`
+      have hmin := padicValRat.add_eq_min (p := ℓ) hS0 hX0 hY0 (by rw [hvX, hvY]; omega)
+      rw [hvΔ, hmin, hvX, hvY]
+      exact min_le_right _ _
 
 /-- **The tame good model, for a curve already in short Weierstrass form**
 (PROVEN 2026-07-27 over `nonempty_tameBase` and `padicValRat_Δ_le_of_jIntegral`).
