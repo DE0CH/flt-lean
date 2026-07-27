@@ -3775,33 +3775,6 @@ theorem exists_taylorWilesPrimeSet_card_eq.{uK, uW}
   obtain ⟨Q', hsub, hcard'⟩ := Finset.exists_subset_card_eq hcard
   exact ⟨Q', hcard', fun q hq => hQ q (hsub hq)⟩
 
-/-- **Coordinates for a finite free module over a quotient ring**
-(PROVEN): if `M` carries compatible `Λ`- and `Λ/𝔟`-actions and is
-finite free of rank `d` over `Λ/𝔟`, then `M ≅ (Λ/𝔟)^d` as a
-`Λ`-module.  (Choose a basis, reindex it by `Fin d` using
-`finrank = d`, take coordinates, and restrict scalars along
-`Λ → Λ/𝔟`.)
-
-This converts the Taylor–Wiles freeness certificate from the form in
-which it is proven (Diamond 1997, Thm. 2.1: `H_Q` is free of rank `d`
-over `ℤ_p[Δ_Q] = Λ/𝔟_Q`) to the coordinate form
-`TaylorWilesSystem.freeM` in which the patching extraction consumes
-it. -/
-theorem nonempty_linearEquiv_fin_of_free_over_quotient.{uL, uM}
-    {Λ : Type uL} [CommRing Λ] (𝔟 : Ideal Λ) [Nontrivial (Λ ⧸ 𝔟)]
-    {M : Type uM} [AddCommGroup M] [Module Λ M] [Module (Λ ⧸ 𝔟) M]
-    [IsScalarTower Λ (Λ ⧸ 𝔟) M] [Module.Free (Λ ⧸ 𝔟) M]
-    [Module.Finite (Λ ⧸ 𝔟) M] (d : ℕ)
-    (hd : Module.finrank (Λ ⧸ 𝔟) M = d) :
-    Nonempty (M ≃ₗ[Λ] (Fin d → Λ ⧸ 𝔟)) := by
-  classical
-  let b := Module.Free.chooseBasis (Λ ⧸ 𝔟) M
-  have hcard : Fintype.card (Module.Free.ChooseBasisIndex (Λ ⧸ 𝔟) M) = d := by
-    rw [← Module.finrank_eq_card_chooseBasisIndex]; exact hd
-  let b' : Module.Basis (Fin d) (Λ ⧸ 𝔟) M :=
-    b.reindex (Fintype.equivFinOfCardEq hcard)
-  exact ⟨(b'.equivFun).restrictScalars Λ⟩
-
 /-- **The residual input of Taylor–Wiles patching** (ADDED 2026-07-26
 as the cut-level repair of the circular discharge recorded at
 `exists_taylorWilesBottomLevel` below): the properties of the residual

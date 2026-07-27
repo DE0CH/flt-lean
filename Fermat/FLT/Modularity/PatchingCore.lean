@@ -3208,4 +3208,149 @@ theorem TaylorWilesSystem.exists_patchedModule.{v, w, a, b, c, s, uR}
   (S.exists_patchedModule_natural hcomplete hres).elim
     fun P => PatchedModule.nonempty_transport P
 
+/-- **Coordinates for a finite free module over a quotient ring**
+(PROVEN): if `M` carries compatible `Λ`- and `Λ/𝔟`-actions and is
+finite free of rank `d` over `Λ/𝔟`, then `M ≅ (Λ/𝔟)^d` as a
+`Λ`-module.  (Choose a basis, reindex it by `Fin d` using
+`finrank = d`, take coordinates, and restrict scalars along
+`Λ → Λ/𝔟`.)
+
+This converts the Taylor–Wiles freeness certificate from the form in
+which it is proven (Diamond 1997, Thm. 2.1: `H_Q` is free of rank `d`
+over `ℤ_p[Δ_Q] = Λ/𝔟_Q`) to the coordinate form
+`TaylorWilesSystem.freeM` in which the patching extraction consumes
+it. -/
+theorem nonempty_linearEquiv_fin_of_free_over_quotient.{uL, uM}
+    {Λ : Type uL} [CommRing Λ] (𝔟 : Ideal Λ) [Nontrivial (Λ ⧸ 𝔟)]
+    {M : Type uM} [AddCommGroup M] [Module Λ M] [Module (Λ ⧸ 𝔟) M]
+    [IsScalarTower Λ (Λ ⧸ 𝔟) M] [Module.Free (Λ ⧸ 𝔟) M]
+    [Module.Finite (Λ ⧸ 𝔟) M] (d : ℕ)
+    (hd : Module.finrank (Λ ⧸ 𝔟) M = d) :
+    Nonempty (M ≃ₗ[Λ] (Fin d → Λ ⧸ 𝔟)) := by
+  classical
+  let b := Module.Free.chooseBasis (Λ ⧸ 𝔟) M
+  have hcard : Fintype.card (Module.Free.ChooseBasisIndex (Λ ⧸ 𝔟) M) = d := by
+    rw [← Module.finrank_eq_card_chooseBasisIndex]; exact hd
+  let b' : Module.Basis (Fin d) (Λ ⧸ 𝔟) M :=
+    b.reindex (Fintype.equivFinOfCardEq hcard)
+  exact ⟨(b'.equivFun).restrictScalars Λ⟩
+
+/-- **A Taylor–Wiles TOWER yields a Taylor–Wiles SYSTEM** (PROVEN 2026-07-27):
+the transposition `∀ n, level n ↦ ℕ`-indexed families, plus the two derivations
+the system's fields need beyond the level's.
+
+This is bookkeeping, and it is deliberately BASE-FIELD-FREE — no Galois
+representation, no Hecke algebra, no number field appears — so the SAME lemma
+serves the `ℚ`-level assembly and the totally-real-field one. It was extracted
+here on 2026-07-27 for exactly that reason: `exists_hilbertPatchingSystem` in
+`HardlyRamified/HilbertModularity.lean` needs to produce a `TaylorWilesSystem`,
+and the arithmetic over a totally real field produces the auxiliary objects one
+DEPTH AT A TIME, i.e. in `TaylorWilesTower` shape. With this lemma that leaf
+cuts into "build the tower" plus proven glue, instead of being asked for the
+transposed form as well.
+
+The two derivations, neither of which the arithmetic should be asked for:
+
+* **`freeM`** — the level carries freeness as a `Λ/𝔟_n`-module structure plus
+  `Module.Free`/`Module.Finite`/`finrank = d`; the system wants the `Λ`-linear
+  coordinate equivalence `M ≃ₗ[Λ] (Fin d → Λ/𝔟_n)`.
+  `nonempty_linearEquiv_fin_of_free_over_quotient` above converts one to the
+  other by choosing a basis.
+* **`projM_eq_zero_iff`** — the level states only the hard direction
+  (`projM m = 0 → m ∈ 𝔫·M`, the control theorem). The converse is FORCED:
+  `𝔫` acts on `M` through `diamond` (`diamond_smul`), `diamond` sends `𝔫` into
+  `ker toRuniv` (`ker_toRuniv`), and `projM` is `ψ ∘ toRuniv`-equivariant
+  (`projM_smul`), so every element of `𝔫·M` dies under `projM`. That is `hzero`
+  below, proven by `Submodule.smul_induction_on`.
+
+NOTE (2026-07-27): `exists_taylorWilesSystem` in `Modularity/Patching.lean`
+still carries its own inline copy of this argument. Rewiring it to call this
+lemma would remove the duplication and is safe, but that theorem belongs to
+another owner's region and was deliberately left untouched here. -/
+theorem nonempty_taylorWilesSystem_of_tower.{a, b, c, s, uR}
+    {p : ℕ} [Fact p.Prime]
+    {Runiv : Type uR} [CommRing Runiv]
+    {T : Type s} [CommRing T] {ψ : Runiv →+* T}
+    (tw : TaylorWilesTower.{a, b, c, s, uR} p ψ) :
+    Nonempty (TaylorWilesSystem.{a, b, c, s, uR} p ψ) := by
+  classical
+  letI := tw.addCommGroupM0
+  letI := tw.moduleM0
+  letI iR : ∀ n, CommRing (tw.level n).R := fun n => (tw.level n).commRingR
+  letI iAG : ∀ n, AddCommGroup (tw.level n).M :=
+    fun n => (tw.level n).addCommGroupM
+  letI iRM : ∀ n, Module (tw.level n).R (tw.level n).M :=
+    fun n => (tw.level n).moduleRM
+  letI iCoeff : ∀ n,
+      Module (MvPowerSeries (Fin tw.q) ℤ_[p]) (tw.level n).M :=
+    fun n => (tw.level n).moduleCoeffM
+  letI iQuot : ∀ n,
+      Module (MvPowerSeries (Fin tw.q) ℤ_[p] ⧸ (tw.level n).bIdeal)
+        (tw.level n).M :=
+    fun n => (tw.level n).moduleQuotM
+  letI iTower : ∀ n, IsScalarTower (MvPowerSeries (Fin tw.q) ℤ_[p])
+      (MvPowerSeries (Fin tw.q) ℤ_[p] ⧸ (tw.level n).bIdeal)
+      (tw.level n).M :=
+    fun n => (tw.level n).isScalarTowerM
+  letI iNontriv : ∀ n,
+      Nontrivial (MvPowerSeries (Fin tw.q) ℤ_[p] ⧸ (tw.level n).bIdeal) :=
+    fun n => (tw.level n).nontrivialQuot
+  letI iFree : ∀ n,
+      Module.Free (MvPowerSeries (Fin tw.q) ℤ_[p] ⧸ (tw.level n).bIdeal)
+        (tw.level n).M :=
+    fun n => (tw.level n).freeM
+  letI iFinite : ∀ n,
+      Module.Finite (MvPowerSeries (Fin tw.q) ℤ_[p] ⧸ (tw.level n).bIdeal)
+        (tw.level n).M :=
+    fun n => (tw.level n).finiteM
+  have hcoord : ∀ n, Nonempty ((tw.level n).M ≃ₗ[MvPowerSeries (Fin tw.q) ℤ_[p]]
+      (Fin tw.d → MvPowerSeries (Fin tw.q) ℤ_[p] ⧸ (tw.level n).bIdeal)) :=
+    fun n => nonempty_linearEquiv_fin_of_free_over_quotient
+      (tw.level n).bIdeal tw.d (tw.level n).finrankM
+  -- the easy inclusion of the bottom control identification: `𝔫` acts
+  -- through `diamond`, and `diamond`'s image of `𝔫` dies in `Runiv`
+  have hzero : ∀ (n : ℕ) (m : (tw.level n).M),
+      m ∈ (taylorWilesAug p tw.q • ⊤ :
+        Submodule (MvPowerSeries (Fin tw.q) ℤ_[p]) (tw.level n).M) →
+      (tw.level n).projM m = 0 := by
+    intro n m hm
+    refine Submodule.smul_induction_on hm ?_ ?_
+    · intro r hr y _
+      have hker : (tw.level n).diamond r ∈
+          RingHom.ker (tw.level n).toRuniv := by
+        rw [(tw.level n).ker_toRuniv]; exact Ideal.mem_map_of_mem _ hr
+      rw [RingHom.mem_ker] at hker
+      rw [(tw.level n).diamond_smul, (tw.level n).projM_smul, hker,
+        map_zero, zero_smul]
+    · intro a b ha hb
+      rw [map_add, ha, hb, add_zero]
+  exact ⟨{ q := tw.q
+           d := tw.d
+           coeff := tw.coeff
+           R := fun n => (tw.level n).R
+           commRingR := fun n => (tw.level n).commRingR
+           pres := fun n => (tw.level n).pres
+           pres_surjective := fun n => (tw.level n).pres_surjective
+           diamond := fun n => (tw.level n).diamond
+           toRuniv := fun n => (tw.level n).toRuniv
+           toRuniv_surjective := fun n => (tw.level n).toRuniv_surjective
+           ker_toRuniv := fun n => (tw.level n).ker_toRuniv
+           M := fun n => (tw.level n).M
+           addCommGroupM := fun n => (tw.level n).addCommGroupM
+           moduleRM := fun n => (tw.level n).moduleRM
+           moduleCoeffM := fun n => (tw.level n).moduleCoeffM
+           diamond_smul := fun n => (tw.level n).diamond_smul
+           bIdeal := fun n => (tw.level n).bIdeal
+           bIdeal_le := fun n => (tw.level n).bIdeal_le
+           freeM := fun n => (hcoord n).some
+           M0 := tw.M0
+           addCommGroupM0 := tw.addCommGroupM0
+           moduleM0 := tw.moduleM0
+           nontrivialM0 := tw.nontrivialM0
+           projM := fun n => (tw.level n).projM
+           projM_surjective := fun n => (tw.level n).projM_surjective
+           projM_smul := fun n => (tw.level n).projM_smul
+           projM_eq_zero_iff := fun n m =>
+             ⟨(tw.level n).projM_eq_zero m, hzero n m⟩ }⟩
+
 end GaloisRepresentation.Modularity

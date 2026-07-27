@@ -15618,13 +15618,23 @@ theorem exists_surjective_ker_le_of_forall_maximalIdeal_pow
   obtain ⟨φ, hφsurj, -⟩ := h 0
   exact ⟨φ, hφsurj, ker_le_smul_of_forall_sup_maximalIdeal_pow 𝔞 φ hφsurj h⟩
 
-/-- **The Taylor–Wiles tower over `F` exists** (LEAF — new 2026-07-26; RESTATED
-2026-07-27 to produce the HOISTED `ℚ`-level interface instead of an `F`-level
-copy of it). This is the whole `F`-specific arithmetic of the patching argument,
-and the ONLY place where `htr` and `hgal` are consumed.
+/-- **The Taylor–Wiles levels over `F` exist** (LEAF — new 2026-07-26 as
+`exists_hilbertPatchingSystem`; RESTATED 2026-07-27 to produce the HOISTED
+`ℚ`-level interface instead of an `F`-level copy of it, and CUT the same day so
+that it is asked only for the RAW level data). This is the whole `F`-specific
+arithmetic of the patching argument, and the ONLY place where `htr` and `hgal`
+are consumed.
 
 Out of the `F`-level deformation and Hecke data, and the Taylor–Wiles prime
-supply `hTW`, build the level-wise tower as a `Modularity.TaylorWilesSystem`:
+supply `hTW`, produce the shared data `q`, `d`, `coeff`, `M₀` and, at every
+depth `n`, a `Modularity.TaylorWilesLevelRaw`. Assembling those into a
+`Modularity.TaylorWilesSystem` is proven glue and is NOT part of this leaf —
+see `exists_hilbertPatchingSystem` immediately below. "Raw" means the level is
+asked only for `Λ`-linear coordinate data (`coordM`), never for a
+`Λ/𝔟_n`-module structure, a scalar tower, or a `finrank` computation: those are
+bookkeeping that `Modularity.nonempty_taylorWilesLevel_of_raw` derives.
+
+The fields to supply, by the role each plays:
 
 * **Auxiliary deformation rings over `F`** (fields `R`, `pres`,
   `pres_surjective`). For each `d`, the deformation problem of `ρbar|_{G_F}`
@@ -15638,13 +15648,15 @@ supply `hTW`, build the level-wise tower as a `Modularity.TaylorWilesSystem`:
   TOTAL REALNESS is exactly what makes its archimedean local terms come out.
   **This is where `htr` is used.**
 * **Auxiliary Hecke modules of Hilbert modular forms** (fields `M`, `bIdeal`,
-  `bIdeal_le`, `freeM`). The cohomology of the Shimura variety attached to a
+  `bIdeal_le`, `bIdeal_le_aug`, `coordM`). The cohomology of the Shimura variety attached to a
   quaternion algebra over `F`, at level raised by `Q_d`, finite free over
   `𝒪[Δ_{Q_d}]` by the Taylor–Wiles freeness lemma in Fujiwara's form.
   `Δ_{Q_d}` has order divisible by `ℓ ^ d` by the congruence clause of
   `IsHilbertTaylorWilesPrimeSet`, which is what supplies `bIdeal_le` at depth
-  `d`; the freeness lemma is what supplies `freeM`, the level's `M d` free over
-  the DIAMOND quotient `Λ ⧸ 𝔟_d` of rank independent of `d`. `diamond_smul` is
+  `d`; the freeness lemma is what supplies `coordM`, the coordinates of the
+  level's `M` over the DIAMOND quotient `Λ ⧸ 𝔟_d`, of rank independent of `d`.
+  `bIdeal_le_aug` is the elementary observation that `𝔟_d` sits inside the
+  augmentation ideal `𝔫`; unlike `bIdeal_le` it has content at `d = 0`. `diamond_smul` is
   automatic: it is just the statement that the diamond action is the diamond
   action. Note these are FINITE-LEVEL statements only — no level is asked for
   the depth-`(q+1)` regular sequence, which is a property of the patched limit
@@ -15667,8 +15679,9 @@ supply `hTW`, build the level-wise tower as a `Modularity.TaylorWilesSystem`:
   LEVEL-INDEPENDENT augmentation ideal. Keeping `𝔫` level-independent, and
   keeping the diamond ring distinct from the presenting ring, is the whole
   content of the 2026-07-27 cut repair recorded below.
-* **Descent of the base change** (fields `M0`, `nontrivialM0`, `projM`,
-  `projM_surjective`, `projM_smul`, `projM_eq_zero_iff`). Identifying the
+* **Descent of the base change** (the shared `M0` with its nontriviality, and
+  the level fields `projM`, `projM_surjective`, `projM_smul`,
+  `projM_eq_zero`). Identifying the
   bottom of the tower with the given Hecke data requires descending the base
   change from `F` to `ℚ`, which is Brauer induction over the Galois `F`.
   **This is where `hgal` is used.**
@@ -15772,6 +15785,53 @@ References: Taylor–Wiles, Ann. of Math. 141 (1995); Diamond, Invent. Math. 128
 case*; Skinner–Wiles, Duke 107 (2001); Kisin, Ann. of Math. 170 (2009);
 Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and change of weight*,
 §§1–2. -/
+theorem exists_hilbertTaylorWilesLevels
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
+    (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
+    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (ψ : 𝒟.R →+* 𝒟T.R)
+    (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
+    (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
+    (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    ∃ (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
+      (_ : AddCommGroup M0) (_ : Module 𝒟T.R M0) (_ : Nontrivial M0),
+      ∀ n : ℕ, Nonempty
+        (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d n coeff M0) :=
+  sorry
+
+/-- **The Taylor–Wiles tower over `F` assembles into a system** (PROVEN
+2026-07-27 as pure glue over `exists_hilbertTaylorWilesLevels` above).
+
+Nothing arithmetic happens here. The leaf above produces the shared data
+`q, d, coeff, M₀` and a RAW level at every depth — raw in the sense of
+`Modularity.TaylorWilesLevelRaw`, which asks the arithmetic only for `Λ`-linear
+coordinate data and never for a quotient-ring module structure or a scalar
+tower. This theorem then runs the two base-field-free conversions, both already
+proven in `Modularity/PatchingCore.lean`:
+
+* `Modularity.nonempty_taylorWilesLevel_of_raw` — raw level to native level,
+  installing the `Λ/𝔟_n`-module structure, the scalar tower and the
+  `Module.Free`/`Module.Finite`/`finrank` package that the coordinates
+  determine;
+* `Modularity.nonempty_taylorWilesSystem_of_tower` — the transposition of
+  `∀ n, level n` into the `ℕ`-indexed type families of
+  `Modularity.TaylorWilesSystem`, plus the forced converse of the bottom
+  control theorem.
+
+The `Type 0` in the level universe is not a choice made here: it is what
+`nonempty_taylorWilesLevel_of_raw` produces, and it is harmless because
+`Modularity.TaylorWilesSystem.exists_patchedModule` is polymorphic in the two
+module universes of its conclusion and transports back to `Type u`. -/
 theorem exists_hilbertPatchingSystem
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
@@ -15790,8 +15850,22 @@ theorem exists_hilbertPatchingSystem
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
     (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
       r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
-    Nonempty (Modularity.TaylorWilesSystem.{u, u, u, u, u} ℓ ψ) :=
-  sorry
+    Nonempty (Modularity.TaylorWilesSystem.{u, 0, u, u, u} ℓ ψ) := by
+  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hlev⟩ :=
+    exists_hilbertTaylorWilesLevels ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
+      hψalg hψπ hψρ hTW
+  letI := iAG
+  letI := iMod
+  exact Modularity.nonempty_taylorWilesSystem_of_tower
+    { q := q
+      d := d
+      coeff := coeff
+      M0 := M0
+      addCommGroupM0 := iAG
+      moduleM0 := iMod
+      nontrivialM0 := iNt
+      level := fun n =>
+        (Modularity.nonempty_taylorWilesLevel_of_raw iNt (hlev n).some).some }
 
 /-- **The Taylor–Wiles patching construction over `F`** (PROVEN 2026-07-26;
 REPROVED 2026-07-27 over the HOISTED engine, and now glue over ONE leaf rather
