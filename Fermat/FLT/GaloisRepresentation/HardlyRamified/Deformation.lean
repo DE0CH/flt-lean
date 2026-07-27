@@ -18783,8 +18783,321 @@ theorem exists_tangent_family_of_mvPowerSeries_presentation
       rw [← Set.range_comp]
       rfl
 
-/-- **`dim_k Ш²_S(ad⁰) ≤ (mod-`ℓ` tangent dimension of `D.R`)`** (sorry node,
-items (6)+(7) of the machinery audit on
+/-! ### The Tate twist `ad⁰(1)` and `Ш¹_S(ad⁰(1))`
+
+Added 2026-07-27 to make THE NEXT CUT that the docstring of
+`rank_sha2_le_of_tangent_span` below named for whoever owned that leaf: items
+(1) and (2) of that list — the twist `ad⁰(1)` and the degree-`1` analogue of
+`Sha2`. With those two DEFINITIONS written, the leaf splits along the
+Poitou–Tate seam into `rank_sha2_le_rank_sha1_twist` and
+`rank_sha1_twist_le_of_tangent_span`, and the leaf itself becomes a `le_trans`.
+
+**Items (3) and (4) of that list — `selmerGroup`/`dualSelmerGroup` and the
+local Tate pairing — are deliberately NOT written, and this is the point of
+cutting here rather than one step further.** The dual Selmer group `H¹_{L^⊥}`
+cannot even be STATED without the local Tate pairing, which is the single most
+expensive missing object in this subtree (see the porting audit on
+`rank_sha2_le_rank_sha1_twist` below). But it is needed only INSIDE the proof
+of `rank_sha1_twist_le_of_tangent_span`: the statement `dim Ш¹(ad⁰(1)) ≤ g`
+mentions no Selmer group at all, because `Ш¹` imposes the ZERO local condition
+and so needs no `⊥`. So the pairing is deferred into a leaf rather than
+promoted into an interface — which is the cheaper of the two, and it is what
+lets this cut be made today.
+
+A cut one step further was considered and REJECTED as unsafe. Introducing
+`selmerGroup L` for an arbitrary family of local conditions `L` is cheap (no
+pairing needed), but the resulting middle statement
+`dim Ш¹(ad⁰(1)) ≤ dim H¹_L(ad⁰)` is FALSE for arbitrary `L` — take `L_v = 0`
+for every `v` — so it would have to quantify over the specific hardly ramified
+family `L_HR`, whose condition at `ℓ` is FLATNESS. Writing `L_HR` therefore
+costs the finite-flat-group-scheme condition in cohomological form, which is
+strictly more than the pairing this cut defers. Existentially quantifying
+(`∃ L, … ∧ …`) does not rescue it: an existential does not split into two
+leaves, which is the whole purpose of a cut. -/
+
+variable (ℓ k) in
+/-- **The mod-`ℓ` cyclotomic character, valued in `kˣ`** — the character `χ`
+by which `ad⁰` is twisted below.
+
+It is DELIBERATELY built as mathlib's `ℓ`-adic `cyclotomicCharacter` pushed
+into `k` along `algebraMap ℤ_[ℓ] k`, rather than from
+`GaloisRepresentation.cyclotomicCharacterModL` (`Chebotarev.lean`, valued in
+`(ZMod ℓ)ˣ`), for one reason: this is the character `IsHardlyRamified.det`
+(`Defs.lean`) is stated with, VERBATIM —
+
+`det : ∀ g, ρ.det g = algebraMap ℤ_[ℓ] R (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ g.toRingEquiv)`
+
+— so `h.det` applies to it with no bridge lemma. `k` has characteristic `ℓ`,
+so `algebraMap ℤ_[ℓ] k` kills `ℓℤ_ℓ` and this genuinely is the MOD-`ℓ`
+cyclotomic character, notwithstanding that it is spelled `ℓ`-adically.
+(`cyclotomicCharacterModL_eq_toZMod` in `WeilPairing.lean` is the bridge if a
+future consumer needs the `ZMod ℓ` form; nothing here does.)
+
+The `Γ ℚ →* (ℚᵃˡᵍ ≃+* ℚᵃˡᵍ)` step is `AlgEquiv.toRingEquiv`, which mathlib
+does not package as a `MonoidHom`; both `map_one'` and `map_mul'` are `rfl`
+because the group structures on `AlgEquiv` and `RingEquiv` are both
+`trans`-with-arguments-swapped. -/
+noncomputable def adZeroCycloChar : Field.absoluteGaloisGroup ℚ →* kˣ :=
+  (Units.map (algebraMap ℤ_[ℓ] k : ℤ_[ℓ] →+* k).toMonoidHom).comp
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ).comp
+      ({ toFun := fun g => g.toRingEquiv
+         map_one' := rfl
+         map_mul' := fun _ _ => rfl } :
+        Field.absoluteGaloisGroup ℚ →*
+          (AlgebraicClosure ℚ ≃+* AlgebraicClosure ℚ)))
+
+variable (ℓ) in
+/-- **`ad⁰(1) = ad⁰ ⊗ χ`** as a continuous representation of `Γ ℚ` — item (1)
+of the cut named on `rank_sha2_le_of_tangent_span` below.
+
+**It is built BY HAND, on the same carrier `AdZero k V`, with each `ρ σ`
+rescaled by `χ σ`. That is not laziness: `TopRep` has no monoidal structure to
+tensor with.** Surveyed 2026-07-27 against both trees, and the greps that
+would refute this are:
+
+* `grep -rniE "tensor|⊗|dual|twist" Mathlib/RepresentationTheory/Continuous/ Mathlib/RepresentationTheory/Homological/ContCohomology/`
+  — exactly ONE hit, and it is a docstring. There is no `TopRep.tensor`, no
+  `TopRep.dual`, no twist by a character, and no `MonoidalCategory (TopRep k G)`.
+* `grep -rn "def linHom\|abbrev linHom" Mathlib/` — only
+  `Representation.linHom` (`RepresentationTheory/Basic.lean:659`), the
+  DISCRETE one. The continuous analogues `Representation.tprod`,
+  `Representation.dual` and `MonoidalCategory (Rep k G)` all exist for `Rep`
+  and none is mirrored for `TopRep`.
+* There is no `Fermat/FLT/Mathlib/RepresentationTheory/` in this project, so
+  nothing is patched in locally either.
+
+Twisting a 1-dimensional character is the one case where the missing monoidal
+structure costs nothing, since the carrier does not change — which is exactly
+why this cut is affordable and a cut needing `ad⁰ ⊗ ad⁰` would not be.
+Continuity is free throughout: `AdZero k V` carries the discrete topology by
+construction (see `AdZero.instTopologicalSpace` above). -/
+noncomputable def adZeroTwistRep (ρbar : GaloisRep ℚ k V) :
+    ContRepresentation k (Field.absoluteGaloisGroup ℚ) (AdZero k V) where
+  toMonoidHom :=
+  { toFun := fun σ => ((adZeroCycloChar ℓ k σ : k)) • (AdZero.rep ρbar σ)
+    map_one' := by simp
+    map_mul' := fun σ τ => by
+      simp only [map_mul, Units.val_mul, smul_mul_smul_comm] }
+
+variable (ℓ) in
+/-- `ad⁰(1)` as an object of `TopRep k (Γ ℚ)`, so that
+`continuousCohomology n (adZeroTwist ℓ ρbar)` is its continuous cohomology.
+The exact analogue of `adZeroTopRep` above.
+
+`ℓ` is EXPLICIT here and in everything below it, unlike in `adZeroTopRep`:
+the twist depends on `ℓ` through the character, and `ℓ` does not appear in the
+type `TopRep k (Γ ℚ)`, so it is not inferable from the result. (`adZeroTopRep`
+gets away with an implicit `ℓ` precisely because the untwisted adjoint
+representation does not mention it.) -/
+noncomputable def adZeroTwist (ρbar : GaloisRep ℚ k V) :
+    TopRep k (Field.absoluteGaloisGroup ℚ) :=
+  TopRep.of (adZeroTwistRep ℓ ρbar)
+
+variable (ℓ) in
+/-- `ad⁰(1)` restricted to the decomposition group at `v` — the analogue of
+`adZeroLocal` above, along the same `decompHom v`. -/
+noncomputable def adZeroTwistLocal (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep k (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  TopRep.res (decompHom v).toMonoidHom (adZeroTwist ℓ ρbar)
+
+variable (ℓ) in
+/-- The localisation map `H¹(ℚ, ad⁰(1)) → H¹(ℚ_v, ad⁰(1))` — the analogue of
+`locRes` above with `2` replaced by `1` and `ad⁰` by its twist. -/
+noncomputable def locResTwist1 (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    continuousCohomology 1 (adZeroTwist ℓ ρbar) ⟶
+      continuousCohomology 1 (adZeroTwistLocal ℓ ρbar v) :=
+  ContinuousCohomology.map (decompHom v)
+    (CategoryTheory.CategoryStruct.id (adZeroTwistLocal ℓ ρbar v)) 1
+
+variable (ℓ) in
+/-- **`Ш¹_S(ad⁰(1))`** — item (2) of the cut named on
+`rank_sha2_le_of_tangent_span` below: the classes in `H¹(ℚ, ad⁰(1))` that die
+in `H¹(ℚ_v, ad⁰(1))` for every `v ∈ S`.
+
+Written as the INTERSECTION of the kernels rather than the kernel of the map
+into `⨁_{v ∈ S}`, verbatim as `Sha2` above, and for the same reason — same
+submodule, no product object to build.
+
+**A CONVENTION THAT THIS DEFINITION INHERITS FROM `Sha2`, AND THAT A FUTURE
+OWNER OF EITHER LEAF MUST CHECK.** Both `Sha2` and this take cohomology of the
+FULL `Γ ℚ` (`adZeroTopRep`/`adZeroTwist` are representations of
+`Field.absoluteGaloisGroup ℚ`), whereas Poitou–Tate duality — NSW VIII.6.7,
+the theorem the leaf below invokes — is stated for the restricted group
+`G_{ℚ,S} = Gal(ℚ_S/ℚ)`. For a module unramified outside `S` the two agree in
+the degrees at issue, which is why the classical statement is quoted for
+`G_S`; but that agreement is a THEOREM, not a definitional identity, and it is
+not in this tree.
+
+This is deliberately matched rather than corrected: `Sha2` is another owner's
+declaration with a proven consumer above, so the two sides of
+`rank_sha2_le_rank_sha1_twist` use ONE convention and the leaf is at least
+internally coherent. If the `Γ ℚ` convention turns out to make that leaf false,
+the defect is in `Sha2`'s definition and the repair is a cut-level restatement
+of BOTH, not a proof attempt at either. The check that settles it:
+`grep -rn "G_S\|restrictedGaloisGroup\|ramifiedOutside" Fermat/` — currently no
+hit, i.e. `G_{ℚ,S}` does not exist in this development at all. -/
+noncomputable def Sha1Twist (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Submodule k (continuousCohomology 1 (adZeroTwist ℓ ρbar)) :=
+  ⨅ v ∈ S, LinearMap.ker (locResTwist1 ℓ ρbar v).hom.toLinearMap
+
+/-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (sorry leaf, cut
+out 2026-07-27 as the DUALITY half of `rank_sha2_le_of_tangent_span` below).
+
+The nine-term Poitou–Tate sequence gives a PERFECT pairing
+`Ш¹_S(M) × Ш²_S(M*) → ℚ/ℤ` for a finite `G_S`-module `M`, where
+`M* = Hom(M, μ)`; taking `M = ad⁰` this is `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`.
+
+Two identifications are folded in and both are cheap ONLY because `ℓ` is odd:
+
+* `ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)`, using that the trace form
+  `(X, Y) ↦ tr(XY)` on `sl₂` is nondegenerate, which holds exactly when
+  `char k ≠ 2`. `hℓOdd` is what supplies that, and it is why this leaf may not
+  be restated for `ℓ = 2`.
+* the passage from `≅ (−)^∨` to `≤` needs `Ш¹` to be FINITE-dimensional
+  (`dim W = dim W^∨` fails for infinite `W` by Erdős–Kaplansky, and note
+  `rank_le_rank_dual` above only gives the OTHER direction). Finiteness of
+  `H¹(G_{ℚ,S}, M)` for finite `M` is standard and is itself missing from this
+  tree; it is part of this leaf.
+
+**PORTING AUDIT for the local Tate pairing, which is what this leaf really
+needs** (2026-07-27; the earlier audit said only "`~/cs/FLT`'s
+`CupProduct.lean` is the one auditable source", which is true and understates
+the cost by about a factor of five):
+
+`/home/chend/cs/FLT/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
+is 582 lines and **sorry-free** (`grep -c sorry` → 0), culminating in
+`cup (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp) (m n r) (hr : r = m + n) :
+continuousCohomology m (of ρ1) ⟶ TopModuleCat.linHom (continuousCohomology n (of ρ2)) (continuousCohomology r (of ρ3))`.
+It does NOT stand alone on our pin: `grep -rn "def linHom" Mathlib/` returns
+only the discrete `Representation.linHom`, and every one of its infrastructure
+dependencies is likewise absent and would have to be vendored with it —
+`ContRepresentation.linHom` and `continuous_pair_of_discrete`
+(`Continuous/Basic.lean:42,74`), `TopRep.iHom` (`Continuous/TopRep.lean:29`),
+`resolutionCLM`/`resolutionXCast`/`invariantsObjIHom`/`bdryKer`/
+`cohomologyIsoQuot` (`ContCohomology/Basic.lean`, 239 lines),
+`TopModuleCat.linHom`/`linHomMap`/`cokerDescBilinear`
+(`ModuleCat/Topology/{Basic,Homology}.lean`). It is also written against pin
+`81a5d2` and `public import Mathlib`s wholesale, so names such as
+`HomologicalComplex.cyclesIsoKer`, `TopModuleCat.isLimitKer` and
+`ContinuousMap.prodSwap` need re-checking against our `a3364fa` first.
+
+And the cup product is only the FIRST half: the pairing also needs the local
+invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory), of which this tree
+and mathlib have nothing. `grep -rniE "invariantMap|localClassField|brauer" Mathlib/`
+is the check that would refute that.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM from
+`rank_sha2_le_of_tangent_span` below, and it binds this leaf.** Neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
+may be used: their intended proofs run through modularity lifting, which is
+proven over the very bound this leaf feeds. A green build and an honest
+`#print axioms` would BOTH survive such a discharge; only a human reading
+catches it. `hℓ5 : 5 ≤ ℓ` is carried for the same reason it is carried below —
+it keeps `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to
+the prime `3`) inapplicable, so that route stays closed mathematically rather
+than merely by import scope.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence) and VII.2 (local duality); Darmon–Diamond–Taylor,
+§2.6–2.7. -/
+theorem rank_sha2_le_rank_sha1_twist
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤
+      Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
+  sorry
+
+/-- **Greenberg–Wiles: `dim_k Ш¹_S(ad⁰(1)) ≤ g`** (sorry leaf, cut out
+2026-07-27 as the EULER-CHARACTERISTIC half of
+`rank_sha2_le_of_tangent_span` below).
+
+Given that `𝔪_{D.R}` is spanned by `g` of its own elements together with `ℓ` —
+i.e. that the mod-`ℓ` cotangent space `𝔪/(𝔪² + ℓ)` of the weakly universal,
+trace-generated hardly ramified deformation ring is spanned by `g` elements —
+the degree-`1` Tate–Šafarevič group of the TWIST has dimension at most `g`.
+
+The argument, in the order the pieces are needed:
+
+* `Ш¹_S(ad⁰(1)) ⊆ H¹_{L^⊥}(ad⁰(1))`. This is where the dual Selmer group
+  enters, and it enters ONLY here, inside the proof — `Ш¹` imposes the ZERO
+  local condition at each `v ∈ S`, and `0 ⊆ L_v^⊥` for any `L_v`, so the
+  containment is immediate ONCE `L^⊥` exists. That is the whole reason the
+  statement above mentions no Selmer group: see the section header for why
+  this is the affordable place to stop.
+* the Greenberg–Wiles Euler characteristic formula
+
+  `dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1)) + Σ_{v ∈ S} (dim L_v − h⁰(ℚ_v, ad⁰))`
+
+  with the local computations `0` at `2`, `+1` at `ℓ` and `−1` at `∞`, giving
+  `dim H¹_{L^⊥} ≤ dim H¹_L`. Absolute irreducibility (`hirr`) is what kills
+  `h⁰(ℚ, ad⁰)`; oddness (`hℓOdd`, and `ρbar` odd) is what makes the
+  archimedean term `−1`. Note `hardlyRamifiedPlaces ℓ` deliberately omits `∞`
+  — `#ad⁰` is a power of the odd prime `ℓ` and `Gal(ℂ/ℝ)` has order `2`, so
+  the archimedean place contributes to the FORMULA but imposes no condition on
+  `Ш`; see the docstring of `hardlyRamifiedPlaces` above.
+* the tangent identification `dim_k H¹_L = (mod-`ℓ` tangent dimension of D.R)`.
+  This is where `hw` and `ht` are consumed:
+  `isUniversal_of_isWeaklyUniversal_isTraceGenerated` above upgrades `D` to
+  UNIVERSAL, so `D.R` pro-represents the hardly ramified functor and its
+  mod-`ℓ` tangent space IS `H¹_L`. The hypothesis `hspan` then reads
+  `dim_k H¹_L ≤ g` by Nakayama.
+
+**WHAT IS MISSING, RE-CHECKED 2026-07-27 rather than inherited.** The six
+greps recorded on `rank_sha2_le_of_tangent_span` below were re-run against
+mathlib pin `a3364fa`, and they still return nothing: no `poitou`, no
+`tate.?duality`, no `shafarevich`, no `greenberg`; the only `selmer` hit is
+`Mathlib/RingTheory/DedekindDomain/SelmerGroup.lean`, the `K(S,n)` subgroup of
+`Kˣ/(Kˣ)ⁿ`, which is a UNIT-group statement and not a Galois-cohomology Selmer
+structure with local conditions `L_v ⊆ H¹(ℚ_v, M)`; and the only `euler.?char`
+hit is `Mathlib/Algebra/Homology/EulerCharacteristic.lean`, the alternating sum
+of a complex, which is a formal property of complexes and not an arithmetic
+theorem about `Hⁱ(G_{ℚ,S}, M)`. So Greenberg–Wiles must be BUILT.
+
+What it can be built ON is real, and is more than the earlier audit credited:
+our own pin supplies `continuousCohomology n X` in EVERY degree
+(`Mathlib/RepresentationTheory/Homological/ContCohomology/{Basic,Functoriality,LowDegree}.lean`)
+together with `ContinuousCohomology.map` and its functoriality lemmas, all
+proven — already consumed by `Sha2`, `locRes` and `Sha1Twist` above. **But
+note a real gap that the earlier audit did not record: `LowDegree.lean` is 89
+lines and stops at `H⁰`** (`zeroIso : continuousCohomology 0 A ≅ TopModuleCat.of k A.ρ.invariants`).
+There is NO `oneCocycles`, NO `oneCoboundaries`, and no cocycle description of
+`H¹` anywhere — so the very first step of any Greenberg–Wiles argument, writing
+a class in `H¹` as a cocycle, is itself missing. `grep -rn "oneCocycles" Mathlib/RepresentationTheory/Homological/ContCohomology/`
+is the check that would refute this. (The DISCRETE `groupCohomology` does have
+`oneCocycles`; it is the continuous theory that stops at `H⁰`.)
+
+**CIRCULARITY GUARD — INHERITED VERBATIM, and it binds this leaf** exactly as
+it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
+clause and for what `hℓ5` is doing.
+
+References: Washington's article in Cornell–Silverman–Stevens (the
+Greenberg–Wiles formula, and the local computations at `2`, `ℓ` and `∞`);
+Darmon–Diamond–Taylor, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII. -/
+theorem rank_sha1_twist_le_of_tangent_span
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.isLocalRing
+    ∀ (g : ℕ) (ts : Fin g → D.R),
+      (∀ i, ts i ∈ IsLocalRing.maximalIdeal D.R) →
+      IsLocalRing.maximalIdeal D.R ≤
+        Ideal.span (Set.range ts) ⊔ Ideal.span {(ℓ : D.R)} →
+      Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) :=
+  sorry
+
+/-- **`dim_k Ш²_S(ad⁰) ≤ (mod-`ℓ` tangent dimension of `D.R`)`**
+(**PROVEN 2026-07-27** over the two leaves `rank_sha2_le_rank_sha1_twist`
+(Poitou–Tate) and `rank_sha1_twist_le_of_tangent_span` (Greenberg–Wiles plus
+the tangent identification) immediately above — NOT a sorry node any more, see
+STATUS below; formerly items (6)+(7) of the machinery audit on
 `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; cut out
 2026-07-27 as the ARITHMETIC half of
 `rank_sha2_le_of_minimal_mvPowerSeries_presentation` below, whose
@@ -18819,71 +19132,53 @@ archimedean term `−1`. Finally weak universality plus trace generation makes
 `D.R` pro-represents the hardly ramified functor and its mod-`ℓ` tangent
 space IS `H¹_L`; the hypothesis then reads `dim_k H¹_L ≤ g`.
 
-**MACHINERY AUDIT REFRESHED 2026-07-27 — items (6) and (7) RE-CHECKED AND
-CONFIRMED ABSENT.** The audit below records item (1) as missing, and item (1)
-turned out to be PRESENT all along (see the STATUS note on the consumer). So
-items (6)+(7) were re-run rather than believed. They are genuinely absent, and
-here are the exact checks, so that the next owner can refute this note in
-minutes rather than redoing the survey:
+**STATUS 2026-07-27 (LATER THE SAME DAY): THIS NODE IS NO LONGER A LEAF, AND
+THE CUT THAT ITS OWN DOCSTRING PROPOSED HAS BEEN MADE.** The proposal was to
+write four definitions — the Tate twist `ad⁰(1)`, `Sha1`, `selmerGroup`/
+`dualSelmerGroup`, and the local Tate pairing — and then split along
+Poitou–Tate. Items (1) and (2) are now written, immediately above
+(`adZeroCycloChar`, `adZeroTwistRep`, `adZeroTwist`, `adZeroTwistLocal`,
+`locResTwist1`, `Sha1Twist`), and the node is `le_trans` through the two leaves
+they made statable:
 
-* `grep -rniE "poitou|nine.?term" Mathlib` — **no hits.**
-* `grep -rniE "tate.?duality|localduality" Mathlib` — **no hits.**
-* `grep -rniE "tateshafarevich|shafarevich" Mathlib` — **no hits.**
-* `grep -rniE "greenberg" Mathlib` — **no hits.**
-* `grep -rniE "selmer" Mathlib` — hits `Mathlib/RingTheory/DedekindDomain/SelmerGroup.lean`
-  ONLY, which is the `K(S,n)` subgroup of `Kˣ/(Kˣ)ⁿ` unramified outside `S` —
-  a unit-group statement, NOT a Galois-cohomology Selmer structure with local
-  conditions `L_v ⊆ H¹(ℚ_v, M)`. It cannot be used here.
-* `grep -rniE "euler.?char" Mathlib` — hits `Mathlib/Algebra/Homology/EulerCharacteristic.lean`
-  ONLY, the alternating sum of a homological complex. That is not the global
-  Euler characteristic formula, which is an arithmetic theorem about
-  `Hⁱ(G_{ℚ,S}, M)`, not a formal property of complexes.
-* The same six greps over `~/cs/FLT` — **no hits** beyond a passing mention of
-  global Tate duality in a `GLzero.lean` docstring and of the number theorist
-  Poitou in `Assumptions/Odlyzko.lean`. Its `Mathlib/` subtree carries
-  `ContCohomology/{Basic,CupProduct}.lean` and nothing else relevant, so it is
-  a source for the CUP PRODUCT only, not for duality.
+* `rank_sha2_le_rank_sha1_twist` — Poitou–Tate, `dim Ш²(ad⁰) ≤ dim Ш¹(ad⁰(1))`;
+* `rank_sha1_twist_le_of_tangent_span` — Greenberg–Wiles plus the tangent
+  identification, `dim Ш¹(ad⁰(1)) ≤ g` under the span hypothesis.
 
-So, in contrast to item (1): item (6) and item (7) must be BUILT. What exists
-to build them on is the continuous cochain theory in our own pin
-(`Mathlib/RepresentationTheory/Homological/ContCohomology/{Basic,Functoriality,LowDegree}.lean`),
-which supplies `continuousCohomology n X` in every degree and
-`ContinuousCohomology.map` — verified present, and already consumed by
-`Sha2`/`locRes` above.
+**Items (3) and (4) were deliberately NOT written**, and the section header
+above `adZeroCycloChar` records why at length: `Ш¹` imposes the ZERO local
+condition, so it needs no `L^⊥` and hence no pairing to STATE — the pairing is
+needed only inside the second leaf's proof. Cutting one step further would
+have required the hardly ramified Selmer family `L_HR` itself, whose condition
+at `ℓ` is FLATNESS, which is strictly more expensive than the pairing it would
+have bought. The refreshed machinery audit for what remains missing now lives
+on the two leaves: the Poitou–Tate/cup-product porting audit on
+`rank_sha2_le_rank_sha1_twist`, and the Greenberg–Wiles grep audit on
+`rank_sha1_twist_le_of_tangent_span` — including one correction to the earlier
+survey, that `ContCohomology/LowDegree.lean` stops at `H⁰` and supplies no
+`oneCocycles`, so the continuous theory is thinner than "every degree" suggests.
 
-**THE NEXT CUT, for whoever owns this leaf.** It cannot be made without new
-DEFINITIONS, but per the "stating a theory is not proving it" rule those
-definitions are cheap next to the theorems, and each is nameable now:
+Neither leaf mentions `MvPowerSeries`, which was the point of the recut this
+node came from.
 
-1. `adZeroTwist` — the Tate twist `ad⁰(1) = ad⁰ ⊗ χ` as a `TopRep k (Γ ℚ)`,
-   where `χ` is the mod-`ℓ` cyclotomic character. (`IsHardlyRamified.det`
-   already pins `det ρ` to the cyclotomic character, so a `χ` exists in this
-   development.)
-2. `Sha1` — the degree-`1` analogue of `Sha2` above, verbatim the same
-   `⨅ v ∈ S, ker (locRes …)` with `2` replaced by `1`. Trivial to write.
-3. `selmerGroup L` / `dualSelmerGroup` — `H¹_L` for a family of local
-   conditions `L : ∀ v ∈ S, Submodule k (continuousCohomology 1 (adZeroLocal ρbar v))`,
-   and the orthogonal complement `L^⊥` under the local Tate pairing.
-4. The local Tate pairing itself, which is where `~/cs/FLT`'s
-   `ContCohomology/CupProduct.lean` is worth auditing against our pin.
-
-With (1)–(4) merely STATED, this leaf splits into `rank_sha2_le_rank_sha1_dual`
-(Poitou–Tate) and `rank_sha1_dual_le_of_tangent_span` (Greenberg–Wiles plus the
-tangent identification) — neither of which mentions `MvPowerSeries` either.
-
-**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF**, exactly as for
-`rank_relationSpace_le_of_rank_sha2_le` above: see the EXPOSURE AUDIT AND
-CIRCULARITY GUARD on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
-below, whose BANNED INPUTS clause forbids discharging this leaf from
+**CIRCULARITY GUARD — INHERITED, AND IT NOW BINDS THE TWO LEAVES ABOVE**,
+exactly as for `rank_relationSpace_le_of_rank_sha2_le` above: see the EXPOSURE
+AUDIT AND CIRCULARITY GUARD on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
+below, whose BANNED INPUTS clause forbids discharging this subtree from
 `not_isIrreducible_of_isHardlyRamified_of_five_le`,
 `not_isIrreducible_of_isHardlyRamified_of_odd`, or anything proven over them:
 their intended proofs run through modularity lifting, which is proven over the
-very bound this leaf supplies, so a discharge from them would prove this leaf
+very bound this node supplies, so a discharge from them would prove it
 from its own consequence. A green build and an honest `#print axioms` would
 BOTH survive such a discharge; only a human reading catches it. `hℓ5 : 5 ≤ ℓ`
 also keeps `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired
 to the prime `3`) inapplicable, so that route stays closed mathematically
-rather than merely by import scope.
+rather than merely by import scope. The guard is restated on BOTH leaves rather
+than only referenced from them, since the split is exactly the point at which a
+future owner might read one leaf without ever reading this node. `hℓ5` is
+likewise carried on both leaves for that reason, even though neither proof is
+written yet.
 
 References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, ch. VIII
 (Poitou–Tate); Washington's article in Cornell–Silverman–Stevens (the
@@ -18899,8 +19194,12 @@ theorem rank_sha2_le_of_tangent_span
       (∀ i, ts i ∈ IsLocalRing.maximalIdeal D.R) →
       IsLocalRing.maximalIdeal D.R ≤
         Ideal.span (Set.range ts) ⊔ Ideal.span {(ℓ : D.R)} →
-      Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) :=
-  sorry
+      Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) := by
+  letI := D.commRing
+  letI := D.isLocalRing
+  intro g ts hts hspan
+  exact le_trans (rank_sha2_le_rank_sha1_twist hℓOdd hdim hℓ5 h hirr)
+    (rank_sha1_twist_le_of_tangent_span hℓOdd hdim hℓ5 h hirr D hw ht g ts hts hspan)
 
 /-- **`dim_k Ш²_S(ad⁰) ≤ g`** (**PROVEN 2026-07-27** over the two leaves
 `exists_tangent_family_of_mvPowerSeries_presentation` (commutative algebra,
