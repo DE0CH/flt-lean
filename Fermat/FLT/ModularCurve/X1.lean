@@ -364,9 +364,9 @@ open in them has been split along the theories it needed:
 | open leaf | theory | base |
 |---|---|---|
 | `exists_gamma1GITPresentation` | Katz-Mazur (8.1.1)/(8.1.3): the rigidified moduli scheme and its deck group | any `K`, `char K ∤ N` |
-| `isDomain_of_gamma1GITPresentation` | irreducibility of `Y_1(N)` (Katz-Mazur 8.1.1's integrality half) | any `K`, `char K ∤ N` |
-| `smoothOfRelativeDimension_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2 | any `K`, `char K ∤ N` |
-| `geometricallyConnected_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]` | any `K`, `char K ∤ N` |
+| `geometricComponents_of_gamma1GITPresentation` | Katz-Mazur 8.1.1 + Deligne-Rapoport IV.5.5: `Spec A` nonempty, reduced, components permuted transitively by `G` | any `K`, `char K ∤ N` |
+| `locallyStandardSmooth_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2 | any `K`, `char K ∤ N` |
+| `connectedSpace_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `K` is algebraically closed in `Frac B` | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
 | `exists_gamma1Datum_of_relPoint` | fineness at `N ≥ 4`, `ℓ ∤ N` / Lang | `𝔽_ℓ` |
 | `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
@@ -418,9 +418,9 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `Gamma0GITPresentation.toGamma0Atlas` (PROVEN) | `Gamma1GITPresentation.toGamma1Atlas` (PROVEN) |
 | `exists_gamma0GITPresentation` (leaf) | `exists_gamma1GITPresentation` (leaf) |
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
-| `isDomain_of_gamma0Atlas` (leaf) | `isDomain_of_gamma1GITPresentation` (leaf) |
-| `smoothOfRelativeDimension_of_gamma0Atlas` (leaf) | `smoothOfRelativeDimension_of_gamma1GITPresentation` (leaf) |
-| `geometricallyConnected_of_gamma0Atlas` (leaf) | `geometricallyConnected_of_gamma1GITPresentation` (leaf) |
+| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (leaf); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
+| `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
+| `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `connectedSpace_tensorProduct_of_gamma1GITPresentation` (leaf); `geometricallyConnected_of_gamma1GITPresentation` is PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
 `specInvariants_universal` (`X0.lean`, PROVEN and sorry-free) is REUSED
@@ -461,10 +461,17 @@ leaf.  Over `ℚ` that is right.  Over a general `K` it is **FALSE**:
 `Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing, so as soon as `ζ_n ∈ K` the
 scheme is disconnected and `A` is not a domain.  What survives base
 change is `IsDomain B` for the INVARIANTS, since `G = GL₂(ℤ/n)` permutes
-those components transitively — and that is the fold that would close
-`isDomain_of_gamma1GITPresentation`.  It is deliberately not folded in here, for
-the reason `X0.lean` gives: a prover sent at `exists_gamma1GITPresentation`
-should have to build the construction and nothing else. -/
+those components transitively.
+
+**That correction is now CARRIED OUT rather than merely recorded**
+(2026-07-27): `isDomain_of_gamma1GITPresentation` is PROVEN, over
+`geometricComponents_of_gamma1GITPresentation` — which asks for exactly
+"`Spec A` is nonempty and reduced and `G` is transitive on its
+components" — and the general commutative algebra that turns that into
+`IsDomain B` is `isDomain_of_minimalPrimes_transitive`.  Nothing is
+folded into `Gamma1GITPresentation` itself, for the reason `X0.lean`
+gives: a prover sent at `exists_gamma1GITPresentation` should have to
+build the construction and nothing else. -/
 
 /-- **A Katz–Mazur atlas for the `Γ₁(N)`-problem over a base scheme `S`.**
 
@@ -761,40 +768,213 @@ coarse space is literally `Spec (CommRingCat.of P.B)`, so
 `AlgebraicGeometry.isAffine_Spec` supplies it — and it is what discharges
 `QuasiCompact` and `IsSeparated` at
 `exists_isCoarseModuliY1_isSmoothCurve`, so two of that node's five
-conclusions cost the tree nothing at all. -/
+conclusions cost the tree nothing at all.
+
+**And that affineness is what makes the whole block DESCEND TO RINGS**
+(2026-07-27).  Since the coarse space is `Spec B` and — by
+`Gamma1GITPresentation.algebraB` and
+`Gamma1GITPresentation.specMap_algebraMap` — its structure morphism is
+`Spec` of the `K`-algebra structure map of `B`, each of the three
+geometric statements is equivalent to a statement about the `K`-algebra
+`B`, and each equivalence is a THEOREM here rather than a leaf:
+
+| scheme statement (PROVEN) | the ring-level leaf it rests on | the bridge |
+|---|---|---|
+| `isDomain_of_gamma1GITPresentation` | `geometricComponents_of_gamma1GITPresentation` | `Scheme.ΓSpecIso` + `isDomain_of_minimalPrimes_transitive` |
+| `smoothOfRelativeDimension_of_gamma1GITPresentation` | `locallyStandardSmooth_of_gamma1GITPresentation` | `HasRingHomProperty.Spec_iff` |
+| `geometricallyConnected_of_gamma1GITPresentation` | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` + `pullbackSpecIso` |
+
+So a prover sent at any of the three open leaves below works in
+commutative algebra over `K` and never touches a scheme.  This is the
+same descent the `Γ₀` side performs by hand at
+`isDomain_of_gamma0GITPresentation`, carried through for all three
+properties instead of one. -/
+
+/-- **The `K`-algebra structure on `B` carried by the structure morphism**
+(PROVEN 2026-07-27).
+
+`Gamma1GITPresentation` does not carry an `Algebra K P.B` field — its
+base is an arbitrary scheme `S`, and only when `S = Spec K` does one
+exist.  It is however DETERMINED, because `Spec` is fully faithful on
+affines: `Spec.map_surjective` produces the unique `φ : K ⟶ B` with
+`Spec.map φ = P.str`, and this definition names its `toAlgebra`.
+
+All three geometric statements below are stated through it, which is
+what turns them from statements about a scheme morphism into statements
+about the `K`-algebra `B = A^G`. -/
+@[reducible] noncomputable def Gamma1GITPresentation.algebraB {N : ℕ} {K : Type} [Field K]
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_B; Algebra K P.B :=
+  letI := P.commRing_B
+  (Spec.map_surjective P.str).choose.hom.toAlgebra
+
+/-- **`P.str` IS `Spec` of the structure map of `Gamma1GITPresentation.algebraB`**
+(PROVEN 2026-07-27) — the defining property, by `choose_spec`. -/
+theorem Gamma1GITPresentation.specMap_algebraMap {N : ℕ} {K : Type} [Field K]
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_B; letI := P.algebraB;
+    Spec.map (CommRingCat.ofHom (algebraMap K P.B)) = P.str := by
+  letI := P.commRing_B
+  letI := P.algebraB
+  show Spec.map (CommRingCat.ofHom (Spec.map_surjective P.str).choose.hom) = P.str
+  rw [CommRingCat.ofHom_hom]
+  exact (Spec.map_surjective P.str).choose_spec
+
+/-- **A ring of invariants is a DOMAIN as soon as the group permutes the
+minimal primes transitively** (PROVEN 2026-07-27, pure commutative
+algebra — no moduli problem, no base field, mathlib-facing).
+
+This is the general form of "`Y_1(N)` is irreducible even though
+`𝔐([Γ₁(N)], [Γ(n)])` is not", and it is exactly what makes the `Γ₁`
+side over a general `K` different from the `Γ₀` side over `ℚ`, where
+`Function.Injective.isDomain` applied to `IsDomain A` suffices.
+
+The proof: `A` reduced means `⋂ {p | p ∈ minimalPrimes A} = 0`
+(`Ideal.sInf_minimalPrimes` at `⊥`, then `nilradical_eq_zero`).  Given
+`x y = 0` in `B` with `x ≠ 0`, pick a minimal prime `p` missing the image
+`a` of `x`; then the image `b` of `y` lies in `p`.  Images of `B` are
+`G`-fixed (`smul_algebraMap`, which is where `SMulCommClass G B A` is
+consumed), so for any minimal `q` and any `σ` with
+`comap σ p = q` we get `b ∈ q`.  Transitivity makes that every `q`, so
+`b = 0` and `y = 0` by injectivity.
+
+Note `Algebra.IsInvariant B A G` is NOT needed: only that the image of
+`B` is contained in `A^G`, which `SMulCommClass` already gives.  The
+hypothesis `Nontrivial A` is what supplies `Nontrivial B`. -/
+theorem isDomain_of_minimalPrimes_transitive
+    {B A : Type} [CommRing B] [CommRing A] [Algebra B A]
+    (G : Type) [Group G] [MulSemiringAction G A] [SMulCommClass G B A]
+    (hinj : Function.Injective (algebraMap B A)) [Nontrivial A] [IsReduced A]
+    (htrans : ∀ p ∈ minimalPrimes A, ∀ q ∈ minimalPrimes A,
+      ∃ σ : G, Ideal.comap (MulSemiringAction.toRingHom G A σ) p = q) :
+    IsDomain B := by
+  have hbot : ∀ a : A, (∀ p ∈ minimalPrimes A, a ∈ p) → a = 0 := by
+    intro a ha
+    have h1 : a ∈ sInf (minimalPrimes A) := Ideal.mem_sInf.mpr fun {p} hp => ha p hp
+    rw [show minimalPrimes A = (⊥ : Ideal A).minimalPrimes from rfl,
+      Ideal.sInf_minimalPrimes] at h1
+    have h2 : a ∈ nilradical A := h1
+    rw [nilradical_eq_zero] at h2
+    simpa using h2
+  haveI : Nontrivial B := by
+    refine ⟨0, 1, fun h => zero_ne_one (α := A) ?_⟩
+    rw [← map_zero (algebraMap B A), ← map_one (algebraMap B A), h]
+  haveI : NoZeroDivisors B := by
+    refine ⟨fun {x y} hxy => ?_⟩
+    by_cases hx : x = 0
+    · exact Or.inl hx
+    refine Or.inr ?_
+    have hab : algebraMap B A x * algebraMap B A y = 0 := by
+      rw [← map_mul, hxy, map_zero]
+    have hane : algebraMap B A x ≠ 0 := fun h => hx (hinj (by rw [h, map_zero]))
+    obtain ⟨p, hp, hap⟩ : ∃ p ∈ minimalPrimes A, algebraMap B A x ∉ p := by
+      by_contra hcon
+      exact hane (hbot _ (by simpa using hcon))
+    haveI : p.IsPrime := hp.isPrime
+    have hbp : algebraMap B A y ∈ p :=
+      ((Ideal.IsPrime.mul_mem_iff_mem_or_mem ‹_›).mp (hab ▸ Ideal.zero_mem p)).resolve_left hap
+    refine hinj ?_
+    rw [map_zero]
+    refine hbot _ fun q hq => ?_
+    obtain ⟨σ, hσ⟩ := htrans p hp q hq
+    rw [← hσ, Ideal.mem_comap]
+    have hfix : MulSemiringAction.toRingHom G A σ (algebraMap B A y) = algebraMap B A y := by
+      simp [MulSemiringAction.toRingHom]
+    rw [hfix]
+    exact hbp
+  exact NoZeroDivisors.to_isDomain B
+
+/-- **The rigidified moduli scheme is nonempty and reduced, and its deck
+group permutes its components transitively** (sorry leaf, cut
+2026-07-27 out of `isDomain_of_gamma1GITPresentation`) — Katz–Mazur
+(8.1.1) plus Deligne–Rapoport IV.5.5.
+
+TRUE and classical, and this is the form of IV.5.5 that survives base
+change to an arbitrary `K`.  `Spec A = 𝔐([Γ₁(N)], [Γ(n)])` is smooth
+over `K` (Katz–Mazur 8.2.1), hence reduced, and it is nonempty because
+`[Γ₁(N)], [Γ(n)]` is representable with nonempty coarse space when
+`char K ∤ N`.  Its geometric components are indexed by the value of the
+Weil pairing on the level-`n` structure, i.e. by the primitive `n`-th
+roots of unity in `K`, and `G = GL₂(ℤ/n)` moves that value through
+`det`, which is SURJECTIVE onto `(ℤ/n)ˣ` — so the action on components,
+equivalently on `minimalPrimes A`, is transitive.
+
+**Why this rather than `IsDomain A`.**  `isDomain_of_gamma0Atlas`'s
+docstring proposes folding `IsDomain A` into the presentation and
+finishing with `Function.Injective.isDomain`.  Over `ℚ` that is right.
+Over a general `K` it is **FALSE**: as soon as `ζ_n ∈ K` the scheme
+`𝔐([Γ₁(N)], [Γ(n)])` has `φ(n)` components and `A` is not a domain.
+What survives is precisely this leaf, and
+`isDomain_of_minimalPrimes_transitive` converts it into `IsDomain B`.
+
+The transitivity clause is phrased with `Ideal.comap` rather than a
+pointwise ideal action because that is the form the proof consumes and
+it needs no `Pointwise` scope: `q = comap σ p` says `x ∈ q ↔ σ • x ∈ p`.
+
+The hypotheses are REQUIRED: at `N = 0`, or at `char K ∣ N`, the moduli
+problem is not representable by a nonempty smooth scheme and
+`Nontrivial A` fails. -/
+theorem geometricComponents_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_A; letI := P.group_G; letI := P.action_GA;
+    Nontrivial P.A ∧ IsReduced P.A ∧
+      ∀ p ∈ minimalPrimes P.A, ∀ q ∈ minimalPrimes P.A,
+        ∃ σ : P.G, Ideal.comap (MulSemiringAction.toRingHom P.G P.A σ) p = q :=
+  sorry
+
+/-- **The ring of invariants is a DOMAIN** (PROVEN 2026-07-27 over
+`geometricComponents_of_gamma1GITPresentation` and
+`isDomain_of_minimalPrimes_transitive`).
+
+This is the `Γ₁` analogue of `isDomain_of_gamma0GITPresentation`, and
+unlike that one it is a theorem rather than a leaf, because the modular
+input has been pushed one step further down to the components of
+`Spec A`. -/
+theorem isDomain_invariants_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N) {K : Type} [Field K]
+    (hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_B; IsDomain P.B := by
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.group_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  obtain ⟨hnt, hred, htrans⟩ := geometricComponents_of_gamma1GITPresentation hN hchar P
+  haveI := hnt
+  haveI := hred
+  exact isDomain_of_minimalPrimes_transitive P.G P.injective_algebraMap htrans
 
 /-- **The ring of global functions of the coarse space is a DOMAIN**
-(sorry leaf — the integrality half of Katz–Mazur (8.1.1)).
+(PROVEN 2026-07-27 over `isDomain_invariants_of_gamma1GITPresentation`;
+formerly a sorry leaf) — the integrality half of Katz–Mazur (8.1.1).
 
 TRUE and classical: `Y_1(N)` is geometrically irreducible over any field
 in which `N` is invertible (Deligne–Rapoport IV.5.5 — the subgroup
 `{[[1, b], [0, d]]}` of `GL₂(ℤ/N)` has surjective determinant), so its
 coordinate ring `B = A^G` is a domain.
 
-**The cheapest of the three, and the fold that closes it is `IsDomain B`,
-NOT `IsDomain A`.**  `isDomain_of_gamma0Atlas`'s docstring proposes
-folding `IsDomain A` — integrality of the RIGIDIFIED moduli scheme — into
-the presentation and finishing with `Function.Injective.isDomain` on
-`injective_algebraMap`.  That is correct over `ℚ` and **FALSE over a
-general `K`**: `𝔐([Γ₁(N)], [Γ(n)])` has `φ(n)` geometric components
-permuted by `Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing, so as soon as
-`ζ_n ∈ K` it is disconnected.  What is stable under base change is
-integrality of the INVARIANTS, since `G = GL₂(ℤ/n)` permutes those
-components transitively.  So the fold to make, when the owner of
-`Gamma1GITPresentation` wants it, is `IsDomain B`; then this leaf is
-`Scheme.ΓSpecIso` alone, since the coarse space here IS `Spec B`.
-
-The hypotheses are REQUIRED: at `N = 0`, or at `char K ∣ N`, a coarse
-space of `[Γ₁(N)]` is empty and `Γ(∅, ⊤)` is the zero ring, which is not
-`Nontrivial`. -/
-theorem isDomain_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N) {K : Type} [Field K]
-    (_hchar : ¬ ringChar K ∣ N)
+The proof is `Scheme.ΓSpecIso` alone, exactly as the previous version of
+this docstring predicted: the coarse space here IS `Spec B`, so its ring
+of global sections is `B` up to a ring isomorphism.  Unlike
+`isDomain_of_gamma0Atlas` no transport along an atlas comparison is
+needed, because the statement is already at the presentation. -/
+theorem isDomain_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N) {K : Type} [Field K]
+    (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
-    IsDomain Γ(P.toGamma1Atlas.Y, ⊤) :=
-  sorry
+    IsDomain Γ(P.toGamma1Atlas.Y, ⊤) := by
+  letI := P.commRing_B
+  haveI : IsDomain P.B := isDomain_invariants_of_gamma1GITPresentation hN hchar P
+  show IsDomain Γ(Spec (CommRingCat.of P.B), ⊤)
+  exact MulEquiv.isDomain P.B
+    (Scheme.ΓSpecIso (CommRingCat.of P.B)).commRingCatIsoToRingEquiv.toMulEquiv
 
-/-- **The coarse space is smooth of relative dimension `1` over `K`**
-(sorry leaf — Deligne–Rapoport III.1, Katz–Mazur 8.2).
+/-- **`B` is locally standard smooth of relative dimension `1` over `K`**
+(sorry leaf, cut 2026-07-27 out of
+`smoothOfRelativeDimension_of_gamma1GITPresentation`) — Deligne–Rapoport
+III.1, Katz–Mazur 8.2, in the ring-level form that the pin can actually
+express.
 
 TRUE and classical, and one of the two genuinely modular geometric
 inputs.  `[Γ₁(N)]` is a smooth Deligne–Mumford stack of relative
@@ -813,26 +993,66 @@ curve over a field of characteristic `0` — is not the quotient of a
 free action, so this route to smoothness is unavailable.  Only `N = 25`
 is used.
 
-Concretely: the conclusion is `SmoothOfRelativeDimension 1 P.str` with
-`P.str : Spec (CommRingCat.of P.B) ⟶ Spec (CommRingCat.of K)`, so it is
-smoothness of the `K`-algebra `B = A^G` and nothing more abstract. -/
-theorem smoothOfRelativeDimension_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+## Why the leaf is stated here and not one step up
+
+This is the SECOND of the two routes that
+`smoothOfRelativeDimension_of_gamma0GITPresentation`'s docstring names,
+now taken: `HasRingHomProperty.Spec_iff` for the instance
+`HasRingHomProperty (@SmoothOfRelativeDimension n)
+(Locally (IsStandardSmoothOfRelativeDimension n))` turns the scheme
+statement into exactly this ring statement, and nothing about that step
+is modular.  So a prover here works purely in commutative algebra over
+`K`, with no schemes in sight.
+
+The FIRST route — "regular + finite type over a perfect field ⟹ smooth"
+— remains unbuilt, and the state-of-the-pin check on the `Γ₀` sibling
+still stands (checked again 2026-07-27):
+`grep -rn "SmoothOfRelativeDimension" .lake/packages/mathlib/Mathlib/`
+returns one file, `AlgebraicGeometry/Morphisms/Smooth.lean`, with
+nothing dimension-theoretic in it, and `Mathlib/RingTheory/Smooth/`
+carries `smooth_iff_locally_isStandardSmooth` only WITHOUT the relative
+dimension.  Building that bridge would serve this leaf, its `Γ₀`
+sibling, and `CurveCompactification.lean`. -/
+theorem locallyStandardSmooth_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
-    SmoothOfRelativeDimension 1 P.toGamma1Atlas.str :=
+    letI := P.commRing_B; letI := P.algebraB;
+    RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1) (algebraMap K P.B) :=
   sorry
 
-/-- **The coarse space is geometrically connected over `K`** (sorry leaf
-— Deligne–Rapoport IV.5.5).
+/-- **The coarse space is smooth of relative dimension `1` over `K`**
+(PROVEN 2026-07-27 over `locallyStandardSmooth_of_gamma1GITPresentation`;
+formerly a sorry leaf) — Deligne–Rapoport III.1, Katz–Mazur 8.2.
+
+The proof is `Gamma1GITPresentation.specMap_algebraMap` followed by
+`HasRingHomProperty.Spec_iff`: the coarse space is `Spec B` and its
+structure morphism is `Spec` of the `K`-algebra structure map, so
+`SmoothOfRelativeDimension 1` on it IS
+`Locally (IsStandardSmoothOfRelativeDimension 1)` on `K → B`. -/
+theorem smoothOfRelativeDimension_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    SmoothOfRelativeDimension 1 P.toGamma1Atlas.str := by
+  letI := P.commRing_B
+  letI := P.algebraB
+  show SmoothOfRelativeDimension 1 P.str
+  rw [← P.specMap_algebraMap, HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)]
+  exact locallyStandardSmooth_of_gamma1GITPresentation hN hchar P
+
+/-- **`B ⊗[K] L` has connected spectrum for every field extension `L/K`**
+(sorry leaf, cut 2026-07-27 out of
+`geometricallyConnected_of_gamma1GITPresentation`) — Deligne–Rapoport
+IV.5.5, in the function-field form.
 
 TRUE and classical, and the second genuinely modular geometric input.
 The criterion is that the subgroup of `GL₂(ℤ/N)` attached to the level
 structure surjects onto `(ℤ/N)ˣ` under `det`; for `[Γ₁(N)]` that subgroup
 is `{[[1, b], [0, d]]}`, whose determinant is `d`, so `det` IS surjective
-and the geometric fibres of `Y_1(N)` over `ℤ[1/N]` are connected.  Base
-change of a geometrically connected scheme is geometrically connected, so
-the statement holds over every `K` with `char K ∤ N` and not merely over
-the prime fields.
+and the geometric fibres of `Y_1(N)` over `ℤ[1/N]` are connected.
+Equivalently, and this is what the statement says: `K` is algebraically
+closed in `Frac B`, so `Frac B / K` is a regular field extension and
+`B ⊗[K] L` has no nontrivial idempotents for any field extension `L/K`.
+That is the q-expansion-principle content of IV.5.5.
 
 **This is where the parenthetical in `exists_x0Compactification`'s
 docstring — "unlike for `Γ₁(N)` or `Γ(N)`" — is WRONG**, and the
@@ -843,16 +1063,58 @@ where the curve itself splits, its field of constants being `ℚ(ζ_N)`.
 Note this is exactly where the rigidified moduli scheme cannot be used
 directly: `𝔐([Γ₁(N)], [Γ(n)])` is NOT geometrically connected for
 `n ≥ 3`, and connectedness is recovered only after quotienting by
-`G = GL₂(ℤ/n)`.
+`G = GL₂(ℤ/n)` — the same fact that
+`geometricComponents_of_gamma1GITPresentation` states for the minimal
+primes.
+
+## Why this is where the cut has to be made
+
+The cheap criterion — connected plus a `k`-rational point, EGA IV
+4.5.13 — is unavailable for a MATHEMATICAL reason, not a formal one:
+`Y_1(N)(ℚ)` is empty for most `N`, and stating that emptiness is the
+entire purpose of this module.  So the route must go through the
+function field, and `AlgebraicGeometry.pullbackSpecIso` is what carries
+it: the pullback of `Spec B ⟶ Spec K` along `Spec L ⟶ Spec K` is
+`Spec (B ⊗[K] L)`, whose underlying space is `PrimeSpectrum (B ⊗[K] L)`.
+Mathlib still offers no sufficient criterion for
+`GeometricallyConnected` itself — the string occurs 31 times, all in
+`Geometrically/Connected.lean`, every one a consequence or a stability
+property (re-checked 2026-07-27) — but it does offer
+`geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms`, which is
+what makes this reduction a theorem rather than a wish.
 
 The hypotheses are REQUIRED: at `N = 0` or at `char K ∣ N` the coarse
-space is empty, and `GeometricallyConnected` carries nonemptiness through
-`ConnectedSpace`. -/
-theorem geometricallyConnected_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+space is empty, and `ConnectedSpace` carries nonemptiness. -/
+theorem connectedSpace_tensorProduct_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
-    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
-    GeometricallyConnected P.toGamma1Atlas.str :=
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K)))
+    (L : Type) [Field L] [Algebra K L] :
+    letI := P.commRing_B; letI := P.algebraB;
+    ConnectedSpace (PrimeSpectrum (TensorProduct K P.B L)) :=
   sorry
+
+/-- **The coarse space is geometrically connected over `K`** (PROVEN
+2026-07-27 over `connectedSpace_tensorProduct_of_gamma1GITPresentation`;
+formerly a sorry leaf) — Deligne–Rapoport IV.5.5.
+
+The proof unfolds `GeometricallyConnected` to `geometrically
+(ConnectedSpace ·)`, uses
+`geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` to reduce
+to field extensions `L/K` of the base ring, and transports along
+`pullbackSpecIso K B L` — which identifies the geometric fibre with
+`Spec (B ⊗[K] L)` — via the homeomorphism underlying that isomorphism. -/
+theorem geometricallyConnected_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    GeometricallyConnected P.toGamma1Atlas.str := by
+  letI := P.commRing_B
+  letI := P.algebraB
+  show GeometricallyConnected P.str
+  rw [← P.specMap_algebraMap, GeometricallyConnected.eq_geometrically,
+    geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms]
+  intro L _ _
+  exact ((pullbackSpecIso K P.B L).hom.homeomorph).connectedSpace_iff.mpr
+    (connectedSpace_tensorProduct_of_gamma1GITPresentation hN hchar P L)
 
 /-- **The affine integral Katz–Mazur model of `Y_1(N)`** — an atlas
 together with the four geometric properties read off it.
@@ -958,11 +1220,20 @@ and, as of 2026-07-27, the GIT axis: the `Γ₁` analogue of
 `exists_gamma0AffineModel` is now built above, the previous "NOT
 searched" note is DISCHARGED, and what remains open below this node is
 the four leaves `exists_gamma1GITPresentation`,
-`isDomain_of_gamma1GITPresentation`,
-`smoothOfRelativeDimension_of_gamma1GITPresentation` and
-`geometricallyConnected_of_gamma1GITPresentation` — a representability
-statement plus three properties of one curve, in place of one
-statement asserting a curve with five properties exists. -/
+`geometricComponents_of_gamma1GITPresentation`,
+`locallyStandardSmooth_of_gamma1GITPresentation` and
+`connectedSpace_tensorProduct_of_gamma1GITPresentation` — a
+representability statement plus three properties of one curve, in place
+of one statement asserting a curve with five properties exists.
+
+**Updated 2026-07-27**: the three properties were first stated at the
+scheme level (`isDomain_of_gamma1GITPresentation`,
+`smoothOfRelativeDimension_of_gamma1GITPresentation`,
+`geometricallyConnected_of_gamma1GITPresentation`).  All three are now
+PROVEN, over the three purely ring-level leaves named above — so the
+open frontier below this node is now entirely commutative algebra over
+`K` plus the one representability statement, with no scheme theory left
+in it. -/
 theorem exists_isCoarseModuliY1_isSmoothCurve (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K]
     (hchar : ¬ ringChar K ∣ N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ Spec (CommRingCat.of K)) (_hc : IsCoarseModuliY1 N strY),
