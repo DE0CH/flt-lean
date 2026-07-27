@@ -142,10 +142,23 @@ kernels, all of which behave in characteristic `p`.
 
 ## Open leaves left by this file
 
-`IsRationalMap.add_of_x_ne` and `Isogeny.isRationalMap_dualHom`. Those TWO are the
-whole remaining frontier of this module; the list is stated from the file's actual
-sorry set at 2026-07-27, not inherited from either side of a merge. **They are
-independent and separately ownable.**
+`IsRationalMap.add_of_x_ne` and `exists_homogSubst_of_fibreInvariant`. Those TWO are
+the whole remaining frontier of this module; the list is stated from the file's
+actual sorry set, not inherited from either side of a merge. **They are independent
+and separately ownable.**
+
+**`Isogeny.isRationalMap_dualHom` is PROVEN** (2026-07-27), by descent — see
+`IsRationalMap.descend` and the section docstring above it. Its replacement leaf,
+`exists_homogSubst_of_fibreInvariant`, is PURE ONE-VARIABLE ALGEBRA over `F[X]`:
+"a rational function constant on the fibres of `A/B` is a rational function of
+`A/B`". Nothing about curves, groups, `Isogeny` or `End` survives into it, which
+also means `#print axioms` says something useful about it — unlike anything phrased
+through `End`, where the literal `rfl` lemma `End.coe_add_apply` already reports
+`sorryAx`. Four new lemmas were proven on the way and are reusable:
+`isRationalMap_mulByHom` (`[n]` is rational, for every `n`),
+`IsRationalMap.of_cofinite` (a certificate valid off a finite set of `x`-values is a
+certificate), `yCert_antiInvariant` (a `y`-certificate acts as a SCALAR on
+`2y + a₁x + a₃`, with no additive term) and `eq_zero_of_constY`.
 
 **`IsRationalMap.add` is PROVEN** (2026-07-27) as an assembly; so are both of its
 branches, `IsRationalMap.add_self` and `IsRationalMap.add_of_ne`; and so is the
@@ -2416,6 +2429,482 @@ def End.toIsogeny [IsAlgClosed F] [W.IsElliptic] (f : End W) : Isogeny W W :=
 @[simp] theorem End.toIsogeny_toHom [IsAlgClosed F] [W.IsElliptic] (f : End W) :
     (End.toIsogeny f).toHom = (f : AddMonoid.End W.Point) := rfl
 
+/-! ### Descent of a rational map along a rational surjection
+
+**The cut of `Isogeny.isRationalMap_dualHom`, 2026-07-27.** The dual is *defined*
+as the descent of `[deg φ]` along `φ` (`dualHom`, `dualHom_comp`), so the leaf
+"the dual is rational" is literally an instance of
+
+> if `π` is a rational surjection, `ψ` is rational, and `ψ` factors through `π` as
+> a homomorphism, then the factored map is rational
+
+with `π := φ` and `ψ := [deg φ]`. That is `IsRationalMap.descend` below, and it is
+**PROVEN** here; `[deg φ]` is rational by `isRationalMap_mulByHom`, also proven
+here. What remains open is a single statement of ONE-VARIABLE POLYNOMIAL ALGEBRA
+with no curve, no `Isogeny`, no `End` and no group in it —
+`exists_homogSubst_of_fibreInvariant` — so an `#print axioms` certificate on it is
+meaningful (recall `End.coe_add_apply`, a literal `rfl`, reports `sorryAx`, so
+anything phrased through `End` cannot be audited).
+
+**Why the cut is faithful, and where `[CharZero F]` sits.** `descend` is FALSE in
+characteristic `2` for exactly the reason `isRationalMap_dualHom` is: take
+`π := ` Frobenius on `y² + y = x³` over `𝔽̄₂` (rational, surjective, injective),
+`ψ := id`, `χ := ` inverse Frobenius. Every hypothesis of `descend` holds and the
+conclusion is refuted by `Isogeny.NotIsRationalMapDualHom.isRationalMap_dualHom_is_false`.
+So the characteristic hypothesis is not inherited decoration: it is consumed twice
+below, in `eq_zero_of_constY` (which divides by `2`) and in the algebraic leaf
+(whose proof divides by the degree of the covering).
+
+**How the proof runs**, so that the leaf can be judged in isolation. Write
+`s = x(P)`, `u = x(π P)`, and let `(Ap, Bp, Cp, Dp, Ep)`, `(A₁, B₁, C₁, D₁, E₁)` be
+certificates for `π` and `ψ`.
+
+* *The `x`-half.* `x(χ Q)` is `A₁/B₁` at any `P` above `Q`, and `x(Q)` is `Ap/Bp`
+  there, so what has to be produced is a rational function of `Ap/Bp` equal to
+  `A₁/B₁`. The hypothesis that makes that possible is FIBRE INVARIANCE: two points
+  `P`, `P'` with `Ap/Bp` equal have `π P = ±π P'` (`eq_or_eq_neg_of_veluPointX_eq`),
+  hence `ψ P = ±ψ P'`, hence the same `A₁/B₁`. That is `hinv1`, and the leaf turns
+  it into polynomials.
+* *The `y`-half* needs no second descent principle, only the same leaf applied
+  once more, because of the identity `yCert_antiInvariant`:
+  `(2y(φP) + a₁' x(φP) + a₃')·E(s) = C(s)·(2y(P) + a₁ s + a₃)`. It says the
+  `±`-anti-invariant coordinate is multiplied by the SCALAR `C(s)/E(s)`, with no
+  additive term — which is what removes the classical "and the constant term
+  matches" obligation. Descending `C₁·Ep / (E₁·Cp)` then gives the `y`-witness
+  outright. `Cp ≠ 0` is needed for that denominator and is supplied by
+  `eq_zero_of_constY`.
+* *Generic to everywhere.* Both halves are only available off a finite set of
+  `x`-values (zeros of the certificates, the two kernels, and the `2`-torsion).
+  `IsRationalMap.of_cofinite` closes that gap by multiplying every witness by
+  `∏ (X - c)` over the bad set: at a bad point both sides of both clauses become
+  `0`, and `B ≠ 0`, `E ≠ 0` survive. -/
+
+/-- **PROVEN.** Multiplication by `n` is a rational map, for every `n`.
+
+Induction on `n` off `IsRationalMap.add` and `IsRationalMap.id`; nothing else is
+involved. This is what supplies the `ψ` of `IsRationalMap.descend` at the dual. -/
+theorem isRationalMap_mulByHom [IsAlgClosed F] [W.IsElliptic] (n : ℕ) :
+    IsRationalMap (mulByHom W n) := by
+  induction n with
+  | zero =>
+    have h : mulByHom W 0 = 0 := by ext P; simp
+    rw [h]; exact IsRationalMap.zero
+  | succ n ih =>
+    have h : mulByHom W (n + 1) = mulByHom W n + AddMonoidHom.id W.Point := by
+      ext P; simp [succ_nsmul]
+    rw [h]
+    exact IsRationalMap.add ih IsRationalMap.id
+
+/-- **PROVEN.** A certificate valid away from a FINITE set of `x`-coordinates is
+already a certificate: multiply all five witnesses by `G = ∏ (X - c)` over the bad
+set. At a bad `Q` the `x`-clause reads `x(χ Q) · 0 = 0` and the `y`-clause reads
+`y(χ Q) · 0 = 0 · y Q + 0`, both true; away from it the clauses are the given ones
+scaled by `G.eval (x Q)`. The two side conditions survive because `G ≠ 0`.
+
+This is what lets a descent argument work with generic points and still deliver
+`IsRationalMap`, whose clauses are quantified over EVERY point outside the
+kernel. -/
+theorem IsRationalMap.of_cofinite {χ : W'.Point →+ W''.Point} {T : Set F} (hT : T.Finite)
+    (h : ∃ A B C D E : F[X], B ≠ 0 ∧ E ≠ 0 ∧
+      ∀ Q : W'.Point, χ Q ≠ 0 → veluPointX Q ∉ T →
+        veluPointX (χ Q) * B.eval (veluPointX Q) = A.eval (veluPointX Q) ∧
+        veluPointY (χ Q) * E.eval (veluPointX Q)
+          = C.eval (veluPointX Q) * veluPointY Q + D.eval (veluPointX Q)) :
+    IsRationalMap χ := by
+  classical
+  obtain ⟨A, B, Cy, D, E, hB, hE, hcert⟩ := h
+  set G : F[X] := ∏ t ∈ hT.toFinset, (Polynomial.X - Polynomial.C t) with hGdef
+  have hGne : G ≠ 0 := by
+    rw [hGdef]
+    exact Finset.prod_ne_zero_iff.2 fun t _ => Polynomial.X_sub_C_ne_zero t
+  have hGzero : ∀ u : F, u ∈ T → G.eval u = 0 := by
+    intro u hu
+    rw [hGdef, Polynomial.eval_prod]
+    refine Finset.prod_eq_zero ((Set.Finite.mem_toFinset hT).2 hu) ?_
+    simp
+  refine ⟨A * G, B * G, Cy * G, D * G, E * G, mul_ne_zero hB hGne, mul_ne_zero hE hGne,
+    fun Q hQ => ?_⟩
+  by_cases hmem : veluPointX Q ∈ T
+  · have h0 : G.eval (veluPointX Q) = 0 := hGzero _ hmem
+    simp [Polynomial.eval_mul, h0]
+  · obtain ⟨hx, hy⟩ := hcert Q hQ hmem
+    refine ⟨?_, ?_⟩
+    · simp only [Polynomial.eval_mul]
+      linear_combination G.eval (veluPointX Q) * hx
+    · simp only [Polynomial.eval_mul]
+      linear_combination G.eval (veluPointX Q) * hy
+
+/-- **PROVEN: the `y`-certificate of a rational map is a SCALAR on the
+anti-invariant coordinate.**
+
+Writing `Y(P) = 2 y(P) + a₁ x(P) + a₃` — the coordinate that changes sign under
+`P ↦ -P` — a `y`-certificate `(C, D, E)` satisfies `Y(φ P) · E(x P) = C(x P) · Y(P)`
+with **no additive term**: the `D` cancels between `P` and `-P`.
+
+This is the observation that makes the `y`-half of `IsRationalMap.descend` cost one
+more application of the SAME algebraic leaf rather than a separate argument. In the
+classical treatment one descends the ratio `Y(χ Q)/Y(Q)` and then has to check that
+the constant terms match; here the constant term is not there to begin with. -/
+theorem yCert_antiInvariant {φ : W.Point →+ W'.Point} {Cp Dp Ep : F[X]}
+    (hcert : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointY (φ P) * Ep.eval (veluPointX P)
+        = Cp.eval (veluPointX P) * veluPointY P + Dp.eval (veluPointX P))
+    {P : W.Point} (hP : P ≠ 0) (hφP : φ P ≠ 0) :
+    (2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃) * Ep.eval (veluPointX P)
+      = Cp.eval (veluPointX P) * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) := by
+  have h1 := hcert P hφP
+  have hnegφ : φ (-P) ≠ 0 := by rw [map_neg]; exact neg_ne_zero.2 hφP
+  have h2 := hcert (-P) hnegφ
+  rw [velu_pointX_neg, velu_pointY_neg P hP, map_neg, velu_pointY_neg (φ P) hφP] at h2
+  linear_combination h1 - h2
+
+/-- **PROVEN.** If the `y`-coordinate of the image is a function of `x P` ALONE —
+i.e. the certificate has `C = 0` — then the map is zero.
+
+Comparing the certificate at `P` and at `-P` gives `Y(φ P) = 0`, i.e.
+`φ P = -φ P`, i.e. `φ (2 • P) = 0`, at every `P` off the zeros of `E`. So
+`φ ∘ [2]` has FINITE range, hence is `0` by `eq_zero_of_finite_range`, hence `φ = 0`
+by `2`-divisibility (`nsmul_surjective`).
+
+`[CharZero F]` is used to divide by `2`, and it is genuinely needed: in
+characteristic `2` the Frobenius of `NotIsRationalMapDualHom` has
+`C = 1`, but the *cuspidal* pathology of `NotIsRationalMapAdd` shows what goes
+wrong once `W.Point` stops being divisible.
+
+Used by `IsRationalMap.descend` to get `Cp ≠ 0`, which is the denominator of the
+ratio whose descent produces the `y`-witness. -/
+theorem eq_zero_of_constY [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    {φ : W.Point →+ W'.Point} {D E : F[X]} (hE : E ≠ 0)
+    (hy : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointY (φ P) * E.eval (veluPointX P) = D.eval (veluPointX P)) :
+    φ = 0 := by
+  classical
+  have hstep : ∀ P : W.Point, E.eval (veluPointX P) ≠ 0 → φ ((2 : ℕ) • P) = 0 := by
+    intro P hEP
+    by_cases hP : φ P = 0
+    · rw [two_nsmul, map_add, hP, add_zero]
+    have hnegφ : φ (-P) ≠ 0 := by rw [map_neg]; exact neg_ne_zero.2 hP
+    have h1 := hy P hP
+    have h2 := hy (-P) hnegφ
+    rw [velu_pointX_neg, map_neg, velu_pointY_neg (φ P) hP] at h2
+    have hb : 2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃ = 0 := by
+      have hmul : (2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃)
+          * E.eval (veluPointX P) = 0 := by linear_combination h1 - h2
+      rcases mul_eq_zero.1 hmul with h | h
+      · exact h
+      · exact absurd h hEP
+    have hself : φ P = -(φ P) := by
+      refine eq_of_veluPoint_eq hP (neg_ne_zero.2 hP) (velu_pointX_neg _).symm ?_
+      rw [velu_pointY_neg (φ P) hP]
+      linear_combination hb
+    rw [two_nsmul, map_add]
+    nth_rewrite 2 [hself]
+    exact add_neg_cancel _
+  have hbad : {P : W.Point | E.eval (veluPointX P) = 0}.Finite := by
+    refine Set.Finite.subset (Set.Finite.insert (0 : W.Point)
+      (finite_veluPointX_preimage (W := W) (Polynomial.finite_setOf_isRoot hE))) ?_
+    intro P hP
+    by_cases h0 : P = 0
+    · exact Set.mem_insert_iff.2 (Or.inl h0)
+    · exact Set.mem_insert_iff.2 (Or.inr ⟨h0, hP⟩)
+  have hrange : (Set.range (φ.comp (mulByHom W 2))).Finite := by
+    refine Set.Finite.subset (Set.Finite.insert (0 : W'.Point)
+      (hbad.image (fun P => φ ((2 : ℕ) • P)))) ?_
+    rintro _ ⟨P, rfl⟩
+    refine Set.mem_insert_iff.2 ?_
+    by_cases hEP : E.eval (veluPointX P) = 0
+    · exact Or.inr ⟨P, hEP, rfl⟩
+    · exact Or.inl (hstep P hEP)
+  have hz := eq_zero_of_finite_range (W := W) hrange
+  refine AddMonoidHom.ext fun Q => ?_
+  obtain ⟨P, hP⟩ := nsmul_surjective (W := W) (n := 2) (by norm_num) Q
+  have hzP := congrArg (fun f : W.Point →+ W'.Point => f P) hz
+  simp only [AddMonoidHom.coe_comp, Function.comp_apply, mulByHom_apply,
+    AddMonoidHom.zero_apply] at hzP
+  simp only [AddMonoidHom.zero_apply]
+  rw [← hP]
+  exact hzP
+
+/-- **LEAF — and it is PURE ONE-VARIABLE ALGEBRA over `F[X]`.** No curve, no group,
+no `Isogeny`, no `End`: this is the only thing `Isogeny.isRationalMap_dualHom` still
+rests on, and an `#print axioms` audit of it is therefore meaningful.
+
+**What it says.** `A/B` is a rational function of degree `d = max (deg A) (deg B)`;
+its generic fibre is the `d`-element root set of `A - c·B`. The hypothesis `hinv`
+says the rational function `A₁/B₁` is CONSTANT ON THOSE FIBRES, away from a finite
+set `S` (which in the application collects the zeros of the certificates, the two
+kernels and the `2`-torsion). The conclusion says `A₁/B₁` is then a rational
+function OF `A/B`. Denominators are cleared with the file's own `homogSubst`, so the
+statement is a polynomial identity: `homogSubst A B d Q` is `B ^ d · Q (A / B)`, and
+`eval_homogSubst` turns the identity into
+`A₁(s) · B'(u) = B₁(s) · A'(u)` at every `s` with `B.eval s ≠ 0`, where
+`u = A(s)/B(s)`. The degree bounds `A'.natDegree ≤ d`, `B'.natDegree ≤ d` are
+exactly what `eval_homogSubst` consumes.
+
+**The intended proof (Lüroth/trace), stated so the leaf can be attacked without
+re-deriving it.** Over `K = F(c)` put `p_c(T) = A(T) - c·B(T)`, of degree `d`, with
+root set the generic fibre. `hinv` says `A₁/B₁` takes ONE value `v(c)` on all `d`
+roots. Then
+
+  `v(c) = (1/d) · Tr_{K[T]/(p_c) / K} (A₁/B₁)`,
+
+and a trace is a symmetric function of the roots, hence a rational function of the
+coefficients of `p_c`, hence of `c` — which is the required `A'/B'`. Equivalently
+and more constructively, `Res_T (p_c(T), A₁(T) - w·B₁(T))` equals
+`const(c) · (w - v(c)) ^ d` as a polynomial in `w`, so `v(c)` is
+`-(coeff of w ^ (d-1)) / (d · coeff of w ^ d)`. **Division by `d` is where
+`[CharZero F]` is consumed** — and it must be consumed somewhere, since the whole
+statement is false in characteristic `p` (an inseparable `A/B = X ^ p` has every
+fibre a single point, so `hinv` is vacuous while `A₁/B₁ = X` is not a rational
+function of `X ^ p`).
+
+`[IsAlgClosed F]` is what makes `hinv`, a hypothesis about `F`-POINTS, say anything
+about the generic fibre; over a small field it would be vacuous and the statement
+false.
+
+**Degenerate cases are already covered by the statement** and are worth checking
+first when attacking it: if `A = C c₀ * B` then `hinv` forces `A₁ = C e * B₁` off
+`S`, hence everywhere, and `(A', B', d) := (Polynomial.C e, 1, 0)` works. -/
+theorem exists_homogSubst_of_fibreInvariant [IsAlgClosed F] [CharZero F]
+    {A B A₁ B₁ : F[X]} (hB : B ≠ 0) (hB₁ : B₁ ≠ 0) {S : Set F} (hS : S.Finite)
+    (hinv : ∀ s t : F, s ∉ S → t ∉ S →
+      A.eval s * B.eval t = A.eval t * B.eval s →
+      A₁.eval s * B₁.eval t = A₁.eval t * B₁.eval s) :
+    ∃ (A' B' : F[X]) (d : ℕ), B' ≠ 0 ∧ A'.natDegree ≤ d ∧ B'.natDegree ≤ d ∧
+      A₁ * homogSubst A B d B' = B₁ * homogSubst A B d A' :=
+  sorry
+
+/-- **PROVEN: descent of a rational map along a rational surjection.**
+
+If `ψ = χ ∘ π` with `π` a rational SURJECTION and `ψ` rational, then the factored
+`χ` is rational. This is the general form of `Isogeny.isRationalMap_dualHom`, which
+is the case `π := φ`, `ψ := [deg φ]`.
+
+**`[CharZero F]` is load-bearing, not inherited.** In characteristic `2` take
+`π := ` Frobenius on `y² + y = x³` over `𝔽̄₂` (rational, surjective and injective —
+see `Isogeny.NotIsRationalMapDualHom`), `ψ := id` and `χ := π⁻¹`: every other
+hypothesis holds and `isRationalMap_dualHom_is_false` refutes the conclusion.
+
+No hypothesis is imposed on `W'` or `W''`: the proof reduces every statement about
+points of `W'` to a statement about points of `W` through the surjection, so only
+`W` needs `[W.IsElliptic]` (for `2`-divisibility, finiteness of `2`-torsion, and
+existence of a point with prescribed `x`).
+
+See the section docstring above for the shape of the proof; the only unproven input
+is `exists_homogSubst_of_fibreInvariant`, applied twice — once to `(A₁, B₁)` for the
+`x`-witness and once to `(C₁·Ep, E₁·Cp)` for the `y`-witness. -/
+theorem IsRationalMap.descend [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+    {π : W.Point →+ W'.Point} (hπ : IsRationalMap π) (hsurj : Function.Surjective π)
+    {ψ : W.Point →+ W''.Point} (hψ : IsRationalMap ψ)
+    {χ : W'.Point →+ W''.Point} (hfac : ∀ P : W.Point, χ (π P) = ψ P) :
+    IsRationalMap χ := by
+  classical
+  by_cases hψ0 : ψ = 0
+  · have hχ : χ = 0 := by
+      refine AddMonoidHom.ext fun Q => ?_
+      obtain ⟨P, rfl⟩ := hsurj Q
+      simp [hfac P, hψ0]
+    rw [hχ]; exact IsRationalMap.zero
+  have hπ0 : π ≠ 0 := by
+    intro h
+    refine hψ0 (AddMonoidHom.ext fun P => ?_)
+    rw [← hfac P, h]
+    simp
+  -- copies, because `obtain` consumes the hypothesis and the kernels are needed later
+  have hπcopy : IsRationalMap π := hπ
+  have hψcopy : IsRationalMap ψ := hψ
+  obtain ⟨Ap, Bp, Cp, Dp, Ep, hBp, hEp, hcert⟩ := hπcopy
+  obtain ⟨A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hcert₁⟩ := hψcopy
+  have hCp : Cp ≠ 0 := by
+    intro hc
+    refine hπ0 (eq_zero_of_constY (D := Dp) (E := Ep) hEp fun P hP => ?_)
+    have h := (hcert P hP).2
+    rw [hc] at h
+    simpa using h
+  have hZne : Bp * Ep * B₁ * E₁ * Cp ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (mul_ne_zero (mul_ne_zero hBp hEp) hB₁) hE₁) hCp
+  have hkerπ : {P : W.Point | π P = 0}.Finite := by
+    refine (IsRationalMap.finite_ker hπ hπ0).subset fun P hP => ?_
+    simpa using hP
+  have hkerψ : {P : W.Point | ψ P = 0}.Finite := by
+    refine (IsRationalMap.finite_ker hψ hψ0).subset fun P hP => ?_
+    simpa using hP
+  have htors : {P : W.Point | (2 : ℕ) • P = 0}.Finite :=
+    finite_nsmulKer (W := W) (n := 2) (by norm_num)
+  -- the finite set of bad `x`-coordinates, packaged so that it stays opaque below
+  obtain ⟨Sbad, hSfin, hgoodP⟩ :
+      ∃ Sbad : Set F, Sbad.Finite ∧ ∀ P : W.Point, P ≠ 0 → veluPointX P ∉ Sbad →
+        π P ≠ 0 ∧ ψ P ≠ 0 ∧ (2 : ℕ) • P ≠ 0 ∧
+        (Bp * Ep * B₁ * E₁ * Cp).eval (veluPointX P) ≠ 0 := by
+    refine ⟨{t : F | (Bp * Ep * B₁ * E₁ * Cp).eval t = 0} ∪
+      veluPointX '' ({P : W.Point | π P = 0} ∪ {P : W.Point | ψ P = 0} ∪
+        {P : W.Point | (2 : ℕ) • P = 0}), ?_, ?_⟩
+    · exact Set.Finite.union (Polynomial.finite_setOf_isRoot hZne)
+        (Set.Finite.image _ (Set.Finite.union (Set.Finite.union hkerπ hkerψ) htors))
+    · intro P _ hPS
+      exact ⟨fun hc => hPS (Or.inr ⟨P, Or.inl (Or.inl hc), rfl⟩),
+        fun hc => hPS (Or.inr ⟨P, Or.inl (Or.inr hc), rfl⟩),
+        fun hc => hPS (Or.inr ⟨P, Or.inr hc, rfl⟩),
+        fun hc => hPS (Or.inl hc)⟩
+  -- off the `2`-torsion the anti-invariant coordinate does not vanish
+  have hYne : ∀ P : W.Point, P ≠ 0 → (2 : ℕ) • P ≠ 0 →
+      2 * veluPointY P + W.a₁ * veluPointX P + W.a₃ ≠ 0 := by
+    intro P hP0 hP2 hc
+    refine hP2 ?_
+    have hself : P = -P := by
+      refine eq_of_veluPoint_eq hP0 (neg_ne_zero.2 hP0) (velu_pointX_neg P).symm ?_
+      rw [velu_pointY_neg P hP0]
+      linear_combination hc
+    rw [two_nsmul]
+    nth_rewrite 2 [hself]
+    exact add_neg_cancel P
+  -- two points in the same fibre of `Ap/Bp` have `π`-images equal up to sign
+  have hpair : ∀ P P' : W.Point, π P ≠ 0 → π P' ≠ 0 →
+      Bp.eval (veluPointX P) ≠ 0 → Bp.eval (veluPointX P') ≠ 0 →
+      Ap.eval (veluPointX P) * Bp.eval (veluPointX P')
+        = Ap.eval (veluPointX P') * Bp.eval (veluPointX P) →
+      π P = π P' ∨ π P = -(π P') := by
+    intro P P' hπP hπP' hBs hBt hfib
+    refine eq_or_eq_neg_of_veluPointX_eq hπP hπP' ?_
+    have h1 := (hcert P hπP).1
+    have h2 := (hcert P' hπP').1
+    refine mul_right_cancel₀ (mul_ne_zero hBs hBt) ?_
+    linear_combination Bp.eval (veluPointX P') * h1 - Bp.eval (veluPointX P) * h2 + hfib
+  -- fibre invariance of `A₁/B₁` (the `x`-half)
+  have hinv1 : ∀ s t : F, s ∉ Sbad → t ∉ Sbad →
+      Ap.eval s * Bp.eval t = Ap.eval t * Bp.eval s →
+      A₁.eval s * B₁.eval t = A₁.eval t * B₁.eval s := by
+    intro s t hs ht hfib
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) s
+    obtain ⟨P', hP'0, hP'x⟩ := exists_point_veluPointX_eq (W := W) t
+    subst hPx; subst hP'x
+    obtain ⟨hπP, hψP, _, hZs⟩ := hgoodP P hP0 hs
+    obtain ⟨hπP', hψP', _, hZt⟩ := hgoodP P' hP'0 ht
+    simp only [Polynomial.eval_mul, mul_ne_zero_iff] at hZs hZt
+    obtain ⟨⟨⟨⟨hBs, _⟩, _⟩, _⟩, _⟩ := hZs
+    obtain ⟨⟨⟨⟨hBt, _⟩, _⟩, _⟩, _⟩ := hZt
+    have hpm := hpair P P' hπP hπP' hBs hBt hfib
+    have hxψ : veluPointX (ψ P) = veluPointX (ψ P') := by
+      rcases hpm with h | h
+      · rw [← hfac P, ← hfac P', h]
+      · rw [← hfac P, ← hfac P', h, map_neg, velu_pointX_neg]
+    have h1 := (hcert₁ P hψP).1
+    have h2 := (hcert₁ P' hψP').1
+    rw [hxψ] at h1
+    linear_combination B₁.eval (veluPointX P) * h2 - B₁.eval (veluPointX P') * h1
+  -- fibre invariance of `C₁·Ep / (E₁·Cp)` (the `y`-half)
+  have hinv2 : ∀ s t : F, s ∉ Sbad → t ∉ Sbad →
+      Ap.eval s * Bp.eval t = Ap.eval t * Bp.eval s →
+      (C₁ * Ep).eval s * (E₁ * Cp).eval t = (C₁ * Ep).eval t * (E₁ * Cp).eval s := by
+    intro s t hs ht hfib
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) s
+    obtain ⟨P', hP'0, hP'x⟩ := exists_point_veluPointX_eq (W := W) t
+    subst hPx; subst hP'x
+    obtain ⟨hπP, hψP, hP2, hZs⟩ := hgoodP P hP0 hs
+    obtain ⟨hπP', hψP', hP'2, hZt⟩ := hgoodP P' hP'0 ht
+    simp only [Polynomial.eval_mul, mul_ne_zero_iff] at hZs hZt
+    obtain ⟨⟨⟨⟨hBs, _⟩, _⟩, _⟩, _⟩ := hZs
+    obtain ⟨⟨⟨⟨hBt, _⟩, _⟩, _⟩, _⟩ := hZt
+    have hpm := hpair P P' hπP hπP' hBs hBt hfib
+    have hYP := hYne P hP0 hP2
+    have hYP' := hYne P' hP'0 hP'2
+    have haψ := yCert_antiInvariant (fun R hR => (hcert₁ R hR).2) hP0 hψP
+    have haψ' := yCert_antiInvariant (fun R hR => (hcert₁ R hR).2) hP'0 hψP'
+    have haπ := yCert_antiInvariant (fun R hR => (hcert R hR).2) hP0 hπP
+    have haπ' := yCert_antiInvariant (fun R hR => (hcert R hR).2) hP'0 hπP'
+    -- the anti-invariant values at `P` and `P'` are proportional with the SAME sign
+    have hprop : (2 * veluPointY (ψ P) + W''.a₁ * veluPointX (ψ P) + W''.a₃)
+          * (2 * veluPointY (π P') + W'.a₁ * veluPointX (π P') + W'.a₃)
+        = (2 * veluPointY (ψ P') + W''.a₁ * veluPointX (ψ P') + W''.a₃)
+          * (2 * veluPointY (π P) + W'.a₁ * veluPointX (π P) + W'.a₃) := by
+      rcases hpm with h | h
+      · have hψeq : ψ P = ψ P' := by rw [← hfac P, ← hfac P', h]
+        rw [hψeq, h]
+      · have hψeq : ψ P = -(ψ P') := by rw [← hfac P, ← hfac P', h, map_neg]
+        rw [hψeq, h, velu_pointX_neg, velu_pointX_neg,
+          velu_pointY_neg _ hψP', velu_pointY_neg _ hπP']
+        ring
+    simp only [Polynomial.eval_mul]
+    refine mul_right_cancel₀ (mul_ne_zero hYP hYP') ?_
+    linear_combination
+      (Ep.eval (veluPointX P) * E₁.eval (veluPointX P') * Ep.eval (veluPointX P')
+        * E₁.eval (veluPointX P)) * hprop
+      - (Ep.eval (veluPointX P) * E₁.eval (veluPointX P') * Cp.eval (veluPointX P')
+        * (2 * veluPointY P' + W.a₁ * veluPointX P' + W.a₃)) * haψ
+      - (Ep.eval (veluPointX P) * E₁.eval (veluPointX P')
+        * (2 * veluPointY (ψ P) + W''.a₁ * veluPointX (ψ P) + W''.a₃)
+        * E₁.eval (veluPointX P)) * haπ'
+      + (Ep.eval (veluPointX P') * E₁.eval (veluPointX P) * Cp.eval (veluPointX P)
+        * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)) * haψ'
+      + (Ep.eval (veluPointX P') * E₁.eval (veluPointX P)
+        * (2 * veluPointY (ψ P') + W''.a₁ * veluPointX (ψ P') + W''.a₃)
+        * E₁.eval (veluPointX P')) * haπ
+  obtain ⟨A', B', d, hB'ne, hA'deg, hB'deg, hid1⟩ :=
+    exists_homogSubst_of_fibreInvariant (A := Ap) (B := Bp) (A₁ := A₁) (B₁ := B₁)
+      hBp hB₁ hSfin hinv1
+  obtain ⟨C₂, E₂, d₂, hE₂ne, hC₂deg, hE₂deg, hid2⟩ :=
+    exists_homogSubst_of_fibreInvariant (A := Ap) (B := Bp) (A₁ := C₁ * Ep) (B₁ := E₁ * Cp)
+      hBp (mul_ne_zero hE₁ hCp) hSfin hinv2
+  refine IsRationalMap.of_cofinite
+    (T := veluPointX '' (π '' (insert (0 : W.Point)
+      {R : W.Point | R ≠ 0 ∧ veluPointX R ∈ Sbad})))
+    (Set.Finite.image _ (Set.Finite.image _
+      (Set.Finite.insert _ (finite_veluPointX_preimage hSfin))))
+    ⟨A', B', Polynomial.C 2 * C₂ * B',
+      C₂ * (Polynomial.C W'.a₁ * Polynomial.X + Polynomial.C W'.a₃) * B'
+        - Polynomial.C W''.a₁ * A' * E₂ - Polynomial.C W''.a₃ * B' * E₂,
+      Polynomial.C 2 * E₂ * B', hB'ne,
+      mul_ne_zero (mul_ne_zero (Polynomial.C_ne_zero.2 (by norm_num)) hE₂ne) hB'ne, ?_⟩
+  intro Q hQ hQT
+  obtain ⟨P, rfl⟩ := hsurj Q
+  have hPnot : P ∉ insert (0 : W.Point) {R : W.Point | R ≠ 0 ∧ veluPointX R ∈ Sbad} := by
+    intro hc
+    exact hQT ⟨π P, ⟨P, hc, rfl⟩, rfl⟩
+  have hP0 : P ≠ 0 := fun hc => hPnot (Set.mem_insert_iff.2 (Or.inl hc))
+  have hPS : veluPointX P ∉ Sbad := fun hc =>
+    hPnot (Set.mem_insert_iff.2 (Or.inr ⟨hP0, hc⟩))
+  obtain ⟨hπP, hψP, _, hZs⟩ := hgoodP P hP0 hPS
+  simp only [Polynomial.eval_mul, mul_ne_zero_iff] at hZs
+  obtain ⟨⟨⟨⟨hBs, hEs⟩, hB₁s⟩, hE₁s⟩, _⟩ := hZs
+  have hu : veluPointX (π P) * Bp.eval (veluPointX P) = Ap.eval (veluPointX P) :=
+    (hcert P hπP).1
+  have hev1 := eval_homogSubst (A := Ap) (B := Bp) (Q := B') hB'deg hu
+  have hev2 := eval_homogSubst (A := Ap) (B := Bp) (Q := A') hA'deg hu
+  have hev3 := eval_homogSubst (A := Ap) (B := Bp) (Q := E₂) hE₂deg hu
+  have hev4 := eval_homogSubst (A := Ap) (B := Bp) (Q := C₂) hC₂deg hu
+  have hid1' := congrArg (Polynomial.eval (veluPointX P)) hid1
+  have hid2' := congrArg (Polynomial.eval (veluPointX P)) hid2
+  simp only [Polynomial.eval_mul, hev1, hev2] at hid1'
+  simp only [Polynomial.eval_mul, hev3, hev4] at hid2'
+  have hkey1 : A₁.eval (veluPointX P) * B'.eval (veluPointX (π P))
+      = B₁.eval (veluPointX P) * A'.eval (veluPointX (π P)) :=
+    mul_left_cancel₀ (pow_ne_zero d hBs) (by linear_combination hid1')
+  have hkey2 : C₁.eval (veluPointX P) * Ep.eval (veluPointX P)
+        * E₂.eval (veluPointX (π P))
+      = E₁.eval (veluPointX P) * Cp.eval (veluPointX P)
+        * C₂.eval (veluPointX (π P)) :=
+    mul_left_cancel₀ (pow_ne_zero d₂ hBs) (by linear_combination hid2')
+  have hx₁ := (hcert₁ P hψP).1
+  rw [hfac P]
+  have hxc : veluPointX (ψ P) * B'.eval (veluPointX (π P))
+      = A'.eval (veluPointX (π P)) :=
+    mul_right_cancel₀ hB₁s (by linear_combination B'.eval (veluPointX (π P)) * hx₁ + hkey1)
+  refine ⟨hxc, ?_⟩
+  have haψ := yCert_antiInvariant (fun R hR => (hcert₁ R hR).2) hP0 hψP
+  have haπ := yCert_antiInvariant (fun R hR => (hcert R hR).2) hP0 hπP
+  have hNM : (2 * veluPointY (ψ P) + W''.a₁ * veluPointX (ψ P) + W''.a₃)
+        * E₂.eval (veluPointX (π P))
+      = (2 * veluPointY (π P) + W'.a₁ * veluPointX (π P) + W'.a₃)
+        * C₂.eval (veluPointX (π P)) := by
+    refine mul_right_cancel₀ (mul_ne_zero hE₁s hEs) ?_
+    linear_combination (E₂.eval (veluPointX (π P)) * Ep.eval (veluPointX P)) * haψ
+      - (C₂.eval (veluPointX (π P)) * E₁.eval (veluPointX P)) * haπ
+      + (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) * hkey2
+  simp only [Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_add,
+    Polynomial.eval_sub, Polynomial.eval_X]
+  linear_combination B'.eval (veluPointX (π P)) * hNM
+    - (W''.a₁ * E₂.eval (veluPointX (π P))) * hxc
+
 /-! ### The dual isogeny -/
 
 namespace Isogeny
@@ -2683,7 +3172,18 @@ theorem isRationalMap_dualHom_is_false :
 
 end NotIsRationalMapDualHom
 
-/-- **LEAF.** The dual of an isogeny is again given by rational functions.
+/-- **PROVEN 2026-07-27**, by descent — see `IsRationalMap.descend` and the section
+docstring above it. The dual is *defined* as the descent of `[deg φ]` along `φ`
+(`dualHom`, `dualHom_comp`), so this is literally the descent principle at
+`π := φ.toHom`, `ψ := mulByHom W φ.degree`; `[deg φ]` is rational by
+`isRationalMap_mulByHom`. Everything below the `descend` line is closed except ONE
+statement of one-variable polynomial algebra,
+`exists_homogSubst_of_fibreInvariant` — no curve, no group, no `End` in it.
+
+The historical audit of this leaf follows; it is still accurate about *why* the
+hypotheses are what they are.
+
+**LEAF (historical).** The dual of an isogeny is again given by rational functions.
 
 This is the one genuinely geometric half of the dual construction: the map
 induced on the quotient is a morphism of curves.
@@ -2734,18 +3234,26 @@ had no hypothesis enforcing it anywhere. A separability hypothesis on `φ` would
 the sharper repair, but this file has no notion of separability and its `degree`
 would still be the wrong invariant without one.
 
-The mathematics is not the substitution algebra of `IsRationalMap.comp` — the dual
-is not obtained by composing given rational maps — so `homogSubst` will not help
-directly. The classical route is via divisors: `φ̂` is `Pic⁰` functoriality, i.e.
-`φ̂ = ι ∘ φ^* ∘ ι'⁻¹` through the isomorphisms `E ≅ Pic⁰(E)`, and rationality
-comes from pullback of divisors being algebraic. Nothing in the current tree
-provides `Pic⁰` of a Weierstrass curve, though `Affine.Point.toClass` into
-`ClassGroup W.CoordinateRing` (mathlib, already used to prove associativity of the
-group law) is the closest existing handle and is worth examining before building
-divisor theory from scratch. -/
+**ROUTE AUDIT, CORRECTED 2026-07-27** (the previous version of this paragraph sent
+readers at divisor theory, and that was not necessary). It said: "the mathematics is
+not the substitution algebra of `IsRationalMap.comp`, so `homogSubst` will not help
+directly; the classical route is via divisors, `φ̂ = ι ∘ φ^* ∘ ι'⁻¹` through
+`E ≅ Pic⁰(E)`, and nothing in the tree provides `Pic⁰`." The first clause is right —
+this is not a composition — but the conclusion does not follow. `homogSubst` is
+exactly the right tool, because what has to be produced is a rational function OF
+`x ∘ φ` rather than a substitution INTO one, and `homogSubst A B d Q = B ^ d · Q(A/B)`
+is precisely "a rational function of `A/B` with denominators cleared". No `Pic⁰` and
+no divisor theory appear anywhere in the proof that replaced the `sorry`.
+
+What the route does need is one honest input, isolated as
+`exists_homogSubst_of_fibreInvariant`: a rational function constant on the fibres of
+`A/B` is a rational function of `A/B` (Lüroth, or the trace/resultant formula
+recorded in that leaf's docstring). `Affine.Point.toClass` into
+`ClassGroup W.CoordinateRing` remains unused and is no longer needed here. -/
 theorem isRationalMap_dualHom [IsAlgClosed F] [CharZero F] [W.IsElliptic] (φ : Isogeny W W')
     (h0 : φ.toHom ≠ 0) : IsRationalMap (φ.dualHom h0) :=
-  sorry
+  IsRationalMap.descend φ.isIsogeny.isRationalMap (φ.isIsogeny.surjective h0)
+    (isRationalMap_mulByHom φ.degree) (fun P => dualHom_comp φ h0 P)
 
 /-- The dual isogeny, as an isogeny. -/
 noncomputable def dual [IsAlgClosed F] [CharZero F] [W.IsElliptic] (φ : Isogeny W W')
