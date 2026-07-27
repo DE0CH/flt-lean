@@ -31875,8 +31875,214 @@ def IsAtkinLehner (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y �
     RelPoint.post w hw (RelPoint.post jY hX.comm (hX.coarse.classify g d))
       = RelPoint.post jY hX.comm (hX.coarse.classify g d')
 
-/-- **The Atkin–Lehner involution `w_N` exists on `X_0(N)`** (sorry node,
-introduced 2026-07-27 in the cut of
+/-! #### The cut of `exists_atkinLehner_x0` into four leaves
+
+`exists_atkinLehner_x0` below was a single sorry node until 2026-07-27;
+this subsection is its decomposition, and the node is now PROVEN over
+four leaves.  The seam is the classical three-step construction of `w_N`,
+with each step carrying exactly one theory:
+
+| leaf | theory |
+|---|---|
+| `nonempty_atkinLehnerMorphism` | quotient of an elliptic scheme by a finite flat subgroup scheme, functorially in the base |
+| `nonempty_isBaseChangeOf_of_isNIsogenyPair` | uniqueness of the target of a cyclic `N`-isogeny with a given kernel |
+| `exists_extend_x0Compactification` | extension of a morphism from a smooth curve to a proper one across finitely many points |
+| `eq_of_comp_open_x0Compactification` | a dense open of a reduced separated scheme is a monomorphism source |
+
+**What is PROVEN here, and it is the whole reason the cut is worth
+taking.**  The two steps that look like the hard ones — the *descent* of
+the moduli action to the coarse space, and the *involutivity* of the
+resulting `w_N` — are both formal consequences of
+`IsCoarseModuliY0.universal`, and they are carried out below rather than
+left to a leaf:
+
+* `wY : Y ⟶ Y` is the unique morphism factoring the natural
+  transformation `d ↦ classify (dual d)` through `classify`.  Naturality
+  is `classify_natural` composed with the `dual_baseChange` field, so no
+  new geometry enters;
+* `wY ≫ wY = 𝟙 Y` because BOTH `wY ≫ wY` and `𝟙 Y` factor the *identity*
+  natural transformation `d ↦ classify d` — using `dual_dual`, i.e. that
+  `(E/C)/(E[N]/C) ≅ E` as `Γ₀(N)`-data — and the factorisation is unique.
+  So involutivity on the open part costs nothing beyond the moduli-level
+  involutivity, which is where it belongs.
+
+**Why the level structure of `w` is asserted as a CHOICE FUNCTION.**
+`AtkinLehnerMorphism` carries `dual` as an operation on data rather than
+as an existential, because the descent needs the assignment to be
+NATURAL: an existential "for every `d` there is an `N`-isogenous `d'`"
+supplies no compatibility with base change, and `coarse.universal` cannot
+be applied to it.  That is not a strengthening — the genuine quotient
+`E/C` is functorial in the base — but it is the form the universal
+property consumes, and stating it as data is what makes the naturality
+obligation explicit rather than hidden.
+
+**What is NOT cut here.**  `IsAtkinLehner` quantifies over EVERY
+`IsNIsogenyPair N d d'`, not merely over the chosen `dual d`, so the
+assembly needs to know that any two cyclic `N`-isogenies out of `d` with
+the same kernel have isomorphic targets.  That is
+`nonempty_isBaseChangeOf_of_isNIsogenyPair`, and it is a separate leaf
+because it is a separate theorem — the uniqueness of the quotient, not
+its existence. -/
+
+/-- **The Atkin–Lehner action on the `Γ₀(N)`-moduli problem**, as DATA:
+the assignment `(E, C) ↦ (E/C, E[N]/C)`, together with the two properties
+the descent to the coarse space needs — that it commutes with base change
+and that it is an involution up to isomorphism of data.
+
+Every field is stated through the pin-available vocabulary and nothing
+here forms a quotient: `pair` says the assignment is realised by a cyclic
+`N`-isogeny in the sense of `IsNIsogenyPair`, `dual_baseChange` is the
+naturality that `IsCoarseModuliY0.universal` consumes, and `dual_dual` is
+`(E/C)/(E[N]/C) ≅ E` written as `IsBaseChangeOf (𝟙 T)` — which is exactly
+isomorphism of `Γ₀(N)`-data over a fixed base, see `IsBaseChangeOf`.
+
+**Why `dual` is an operation and not an existential**: see the subsection
+docstring.  An existential carries no compatibility with base change, and
+the coarse-space universal property is a statement about natural
+transformations. -/
+structure AtkinLehnerMorphism (N : ℕ) where
+  /-- the moduli action `(E, C) ↦ (E/C, E[N]/C)` -/
+  dual : ∀ {T : Scheme.{0}}, Gamma0Datum N T → Gamma0Datum N T
+  /-- `d` and `dual d` are exchanged by a cyclic `N`-isogeny -/
+  pair : ∀ {T : Scheme.{0}} (d : Gamma0Datum N T), IsNIsogenyPair N d (dual d)
+  /-- the action commutes with base change -/
+  dual_baseChange : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T}, IsBaseChangeOf h d' d → IsBaseChangeOf h (dual d') (dual d)
+  /-- the action is an involution up to isomorphism of data -/
+  dual_dual : ∀ {T : Scheme.{0}} (d : Gamma0Datum N T),
+    IsBaseChangeOf (𝟙 T) (dual (dual d)) d
+
+/-- **The Atkin–Lehner action exists on the `Γ₀(N)`-moduli problem**
+(sorry leaf, 2026-07-27) — the quotient-by-a-finite-flat-subgroup-scheme
+gate, and the ONLY place in this cut where that theory is needed.
+
+TRUE.  For `N ≥ 1` the quotient `E/C` of an elliptic scheme by a finite
+flat subgroup scheme exists (Katz–Mazur (1.8.2)/(1.8.3), or SGA 3 for the
+general quotient by a finite flat equivalence relation), is again an
+elliptic scheme, the quotient map `φ : E ⟶ E/C` is finite flat surjective
+with `ker φ = C`, its dual `φ̂` satisfies `φ̂φ = [N]` and `φφ̂ = [N]`, and
+`C' := ker φ̂ = φ(E[N])` is again cyclic of order `N`.  All four are the
+fields of `IsNIsogenyPair`.  The construction is canonical, hence
+commutes with base change (`dual_baseChange`), and
+`(E/C)/(E[N]/C) ≅ E` carrying `E[N]/(E[N]/C) ≅ C` gives `dual_dual`.
+
+`N = 0` is degenerate rather than excluded: `isEmpty_of_gamma0Datum_zero`
+makes any `T` carrying a `Gamma0Datum 0 T` empty, hence initial, so
+`dual := id` satisfies every field with all four `IsNIsogenyPair`
+equations holding between morphisms out of an empty scheme.  Carrying the
+degenerate case rather than a positivity hypothesis is what lets
+`exists_atkinLehner_x0` keep its `(N : ℕ)` signature.
+
+**What proving it needs**: quotients of an elliptic scheme by a finite
+flat subgroup scheme — absent from mathlib, from `~/cs/FLT` and from this
+project.  **The check that refutes the absence claim**:
+`grep -rn "isogenyQuotient\|IsQuotientByFinite\|quotient.*subgroup scheme"
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+
+**The check that would refute the STATEMENT**: a cyclic `N`-isogeny whose
+target carries no cyclic subgroup of order `N`, or a level `N` at which
+`w_N` is not an involution on `Y_0(N)`. -/
+theorem nonempty_atkinLehnerMorphism (N : ℕ) : Nonempty (AtkinLehnerMorphism N) :=
+  sorry
+
+/-- **The target of a cyclic `N`-isogeny is determined by its kernel**
+(sorry leaf, 2026-07-27) — the uniqueness half of the quotient, and what
+makes `IsAtkinLehner`'s quantification over EVERY `IsNIsogenyPair`
+reachable from the single chosen `AtkinLehnerMorphism.dual`.
+
+TRUE.  Let `φ₁ : E ⟶ E₁` and `φ₂ : E ⟶ E₂` both witness
+`IsNIsogenyPair N d dᵢ`.  Each `φᵢ` is surjective and quasi-finite because
+`φ̂ᵢφᵢ = [N]` is, and flat by the fibrewise criterion (a surjective
+homomorphism of elliptic curves over a field is an isogeny), so each is
+finite flat surjective with scheme-theoretic kernel `d.cyc` — the
+`ker_map` field is stated on relative points at EVERY base, which by
+Yoneda is the scheme-theoretic kernel, not a weakening of it.  A finite
+flat surjection is the categorical quotient by its kernel, so `E₁` and
+`E₂` are both `E/C` and the induced `ψ : E₁ ⟶ E₂` is an isomorphism over
+`T`; `ψ` carries `ker φ̂₁` to `ker φ̂₂`, i.e. the level structures
+correspond.  An isomorphism over the base is a cartesian square over
+`𝟙 T`, which is what `IsBaseChangeOf (𝟙 T)` asks for.
+
+Stated over an arbitrary base `T` rather than over `ℚ`-schemes: the
+argument above uses no characteristic hypothesis, only that `E` and the
+`Eᵢ` are elliptic schemes, which `Gamma0Datum` supplies.  The only use
+site is over `ℚ`-schemes.
+
+**The check that refutes it**: two cyclic `N`-isogenies out of one `(E, C)`
+with non-isomorphic targets, or with targets carrying non-corresponding
+level structures. -/
+theorem nonempty_isBaseChangeOf_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
+    {d d₁ d₂ : Gamma0Datum N T} (_h₁ : IsNIsogenyPair N d d₁) (_h₂ : IsNIsogenyPair N d d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 T) d₁ d₂) :=
+  sorry
+
+/-- **A morphism of `Y_0(N)` extends across the cusps** (sorry leaf,
+2026-07-27) — the properness step of the construction of `w_N`, with no
+modular content in it at all.
+
+TRUE.  `X` is regular of dimension `1` (`hX.smooth` over a field) and
+proper over `ℚ` (`hX.isProper`), and `Y` is an open subscheme whose
+complement is FINITE (`hX.finite_compl`).  Each missing point is a
+codimension-`1` point of a regular scheme, so its local ring is a
+discrete valuation ring, and the valuative criterion of properness
+extends `v ≫ jY : Y ⟶ X` over it; the extensions glue because `X` is
+separated.  The extension is a morphism over `ℚ` because `v` and `jY`
+are.
+
+The degenerate case is real and is covered: if `Y` is empty the
+hypothesis `jY ≫ w = v ≫ jY` holds for every `w`, and `w := 𝟙 X` works.
+
+**What proving it needs**: the valuative criterion of properness against
+a DVR obtained from a codimension-`1` point of a regular scheme, plus the
+gluing of the finitely many local extensions.  Both halves are in
+mathlib in some form; the work is the reduction, not the theorems.
+
+**The check that refutes it**: a smooth proper curve, a dense open with
+finite complement, and a morphism from the open part into the curve that
+does not extend. -/
+theorem exists_extend_x0Compactification {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification N strX strY jY)
+    (v : Y ⟶ Y) (_hv : v ≫ strY = strY) :
+    ∃ (w : X ⟶ X), w ≫ strX = strX ∧ jY ≫ w = v ≫ jY :=
+  sorry
+
+/-- **The open immersion of `Y_0(N)` into its compactification is an
+EPIMORPHISM for morphisms out of `X`** (sorry leaf, 2026-07-27): two
+morphisms `X ⟶ X` agreeing on `Y` are equal.
+
+TRUE, and the two cases are genuinely different, which is why the
+statement is not simply "`jY` is dominant".
+
+* If `X` is empty it is the initial scheme and `Hom(X, X)` is a
+  singleton, so the conclusion is automatic.
+* If `X` is nonempty then it is a `1`-dimensional scheme of finite type
+  over `ℚ`, hence has infinitely many points, so `hX.finite_compl` forces
+  `Y` to be nonempty.  `X` is smooth over a field, hence regular, hence —
+  being connected — irreducible, so the nonempty open `Y` is DENSE; `X`
+  is reduced (smooth over a field) and separated (proper over `ℚ`).  Two
+  morphisms out of a reduced scheme into a separated one agreeing on a
+  dense open are equal — mathlib's
+  `AlgebraicGeometry.ext_of_isDominant_of_isSeparated`, which this file
+  already consumes at `ajMor_eq_const_of_not_injective`.
+
+Stated with target `X` rather than an arbitrary `Z` so that separatedness
+of the target is supplied by `hX.isProper` rather than assumed.
+
+**The check that refutes it**: an `IsX0Compactification` whose `Y` is
+empty and whose `X` has two distinct endomorphisms — which the dimension
+count above rules out.
+
+**What proving it needs**: the irreducibility of a connected regular
+scheme, the infinitude of the points of a `1`-dimensional finite-type
+scheme over a field, and the mathlib rigidity lemma named above. -/
+theorem eq_of_comp_open_x0Compactification {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification N strX strY jY)
+    {f g : X ⟶ X} (_h : jY ≫ f = jY ≫ g) : f = g :=
+  sorry
+
+/-- **The Atkin–Lehner involution `w_N` exists on `X_0(N)`** (PROVEN
+2026-07-27 over the four leaves immediately above; introduced as a sorry
+node earlier the same day in the cut of
 `exists_atkinLehnerPrym_x0OneSixtyNine`) — LEVEL-GENERIC.
 
 TRUE.  `w_N` is the classical Fricke/Atkin–Lehner involution: on the
@@ -31887,24 +32093,76 @@ compactification because a morphism of a smooth curve into a proper
 curve extends over a finite set of points.  It is defined over `ℚ`
 because the moduli description is.
 
-**What proving it needs**: quotients of an elliptic scheme by a finite
-flat subgroup scheme (`E/C` as a scheme, not merely as the target of an
-`IsNIsogenyPair`), the descent of the induced natural transformation
-through `IsCoarseModuliY0.universal`, and the extension of a morphism
-across the cusps.  The first is the real gate and is absent from
-mathlib, from `~/cs/FLT` and from this project — refute with
-`grep -rn "quotient.*subgroup scheme\|isogenyQuotient\|IsQuotientByFinite"
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+**The assembly, in four steps**, three of which are the leaves above and
+one of which — the descent, and with it the involutivity on the open part
+— is discharged here by the universal property of the coarse space:
+
+1. `nonempty_atkinLehnerMorphism N` supplies the moduli action
+   `d ↦ dual d` together with its base-change compatibility.  This is the
+   quotient-by-a-finite-flat-subgroup-scheme gate, and it is the only
+   place it appears.
+2. `hX.coarse.universal` descends `d ↦ classify (dual d)` to a unique
+   `wY : Y ⟶ Y` over `ℚ`; and the SAME universal property, applied to the
+   identity transformation `d ↦ classify d` and using `dual_dual`, forces
+   `wY ≫ wY = 𝟙 Y`.  Neither step needs new geometry.
+3. `exists_extend_x0Compactification` extends `wY` across the cusps to
+   `w : X ⟶ X` with `jY ≫ w = wY ≫ jY`, and
+   `eq_of_comp_open_x0Compactification` promotes `wY ≫ wY = 𝟙 Y` to
+   `w ≫ w = 𝟙 X`, since both `w ≫ w` and `𝟙 X` restrict to `𝟙 Y` on the
+   dense open.
+4. `IsAtkinLehner` quantifies over EVERY `N`-isogenous pair, not only
+   over the chosen `dual d`; `nonempty_isBaseChangeOf_of_isNIsogenyPair`
+   identifies the two targets as `Γ₀(N)`-data, and `classify_natural`
+   turns that into equality of moduli points.
 
 **Note the involution clause `w ≫ w = 𝟙 X` is separate from the pin**,
 and is NOT derivable from `IsAtkinLehner` alone at this pin: the pin
 constrains `w` only on moduli points, and two morphisms of `X` agreeing
 there agree everywhere only by a density argument that this statement
-does not carry.  Both are asserted, which is the honest form. -/
+does not carry.  Both are asserted, which is the honest form — and the
+proof below establishes them from different inputs, `dual_dual` for the
+first and the moduli action for the second, which is what makes the
+separation more than bookkeeping. -/
 theorem exists_atkinLehner_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification N strX strY jY) :
-    ∃ (w : X ⟶ X) (hw : w ≫ strX = strX), w ≫ w = 𝟙 X ∧ IsAtkinLehner N hX w hw :=
-  sorry
+    ∃ (w : X ⟶ X) (hw : w ≫ strX = strX), w ≫ w = 𝟙 X ∧ IsAtkinLehner N hX w hw := by
+  obtain ⟨al⟩ := nonempty_atkinLehnerMorphism N
+  -- the moduli action descends to a unique endomorphism of the coarse space
+  obtain ⟨wY, ⟨hwY, hwYfac⟩, -⟩ :=
+    hX.coarse.universal strY (fun {_} g d => hX.coarse.classify g (al.dual d))
+      (by
+        intro T' T h g g' hg d' d hbc
+        exact hX.coarse.classify_natural h hg (al.dual_baseChange h hbc))
+  -- `(E/C)/(E[N]/C) ≅ E`, read on moduli points
+  have hdd : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
+      hX.coarse.classify g (al.dual (al.dual d)) = hX.coarse.classify g d := by
+    intro T g d
+    rw [hX.coarse.classify_natural (𝟙 T) (Category.id_comp g) (al.dual_dual d)]
+    exact Subtype.ext (Category.id_comp _)
+  -- so `wY ≫ wY` and `𝟙 Y` factor the SAME natural transformation, hence agree
+  have hwY2 : wY ≫ wY = 𝟙 Y := by
+    refine (hX.coarse.universal strY (fun {_} g d => hX.coarse.classify g d)
+      (by
+        intro T' T h g g' hg d' d hbc
+        exact hX.coarse.classify_natural h hg hbc)).unique
+      (y₁ := wY ≫ wY) (y₂ := 𝟙 Y) ⟨by rw [Category.assoc, hwY, hwY], fun {_} g d => ?_⟩
+      ⟨Category.id_comp strY, fun {_} g d => (Category.comp_id _).symm⟩
+    rw [← Category.assoc, ← hwYfac, ← hwYfac, hdd]
+  obtain ⟨w, hw, hjw⟩ := exists_extend_x0Compactification hX wY hwY
+  refine ⟨w, hw, ?_, ?_⟩
+  · -- `w ≫ w` and `𝟙 X` both restrict to `𝟙 Y`
+    refine eq_of_comp_open_x0Compactification hX ?_
+    rw [← Category.assoc, hjw, Category.assoc, hjw, ← Category.assoc, hwY2,
+      Category.id_comp, Category.comp_id]
+  · -- an ARBITRARY `N`-isogenous partner of `d` has the moduli point of `dual d`
+    intro T g d d' hpair
+    obtain ⟨bc⟩ := nonempty_isBaseChangeOf_of_isNIsogenyPair (al.pair d) hpair
+    have hcl : hX.coarse.classify g (al.dual d) = hX.coarse.classify g d' := by
+      rw [hX.coarse.classify_natural (𝟙 T) (Category.id_comp g) bc]
+      exact Subtype.ext (Category.id_comp _)
+    refine Subtype.ext ?_
+    show ((hX.coarse.classify g d).1 ≫ jY) ≫ w = (hX.coarse.classify g d').1 ≫ jY
+    rw [Category.assoc, hjw, ← Category.assoc, ← hwYfac, hcl]
 
 /-- **`w_169` has no `ℚ`-rational fixed point on `X_0(169)`** (sorry
 node, introduced 2026-07-27) — LEVEL-SPECIFIC, and the leaf that
@@ -31947,9 +32205,136 @@ theorem noFixedRationalPoint_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
     ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x :=
   sorry
 
-/-- **The Prym of an involution of a curve** (sorry node, introduced
-2026-07-27) — LEVEL-GENERIC, and the half of the `169` node that knows
-nothing about `169`.
+/-! #### The cut of `exists_prym_of_involution` into ONE leaf
+
+`exists_prym_of_involution` below was a single sorry node until
+2026-07-27; this subsection is its decomposition, and the node is now
+PROVEN over the single new leaf `exists_abelianImage_of_isAdditiveOn`
+together with the already-proven `isAdditiveOn_of_post_zero`.
+
+**The cut is "image", not "kernel", and that is the whole idea.**  The
+node's own docstring describes the Prym as `ker(1 + w_J)⁰`, the identity
+component of a kernel — which needs the kernel of an endomorphism of an
+abelian scheme AS a group scheme, its identity component, and Poincaré
+reducibility to know that component is an abelian subvariety.  Three
+theories.  But the object the consumer actually needs is the IMAGE of
+`1 − w_J`, and over `ℚ` those two agree up to isogeny while the image is
+the far cheaper description: the image of a homomorphism of abelian
+varieties is an abelian subvariety, one theorem, and it comes with the
+factorisation `J ↠ A ↪ J` that the assembly needs in order to define `c`
+at all.  So the leaf below asks for the image factorisation and nothing
+else.
+
+**`1 − w_J` is CONSTRUCTED, not posited.**  The family
+`x ↦ aj x − ajTwist x = ([x] − [w x]) − t` (where `t := [o] − [w o]`) is
+natural and pointed, so `IsJacobianOf.universal` produces a unique
+`u : J ⟶ J` factoring it through `aj` — that `u` is `1 − w_J`.  Its
+additivity is `isAdditiveOn_of_post_zero`, already proven in this file
+over relative rigidity.
+
+**Two places where the UNIQUENESS half of the Albanese property does real
+work, and they are worth naming because they are what replace Yoneda on
+`J`:**
+
+* `wJ` a priori acts only on the image of `aj`, so the anti-invariance of
+  the image of `u` — the equation of MORPHISMS `u ≫ wJ = u ≫ negHom ab` —
+  cannot be checked at the universal point of `J` directly.  Instead both
+  `u ≫ wJ` and `u ≫ negHom ab` are exhibited as factorisations of the
+  same pointed natural family `x ↦ w_J((1 − w_J)(aj x))`, and uniqueness
+  identifies them.  The computation behind it is
+  `w_J([x] − [w x] − t) = [w x] − [x] + t`, i.e. `w_J u = −u`, which uses
+  `w² = 𝟙` on the curve and `w_J t = −t`.
+* `Epi p` then transports that equation from `u = p ≫ ι₀` to `ι₀`, which
+  is what makes the anti-invariance clause hold at EVERY point of `A`
+  rather than only on the image of `p` on `ℚ`-points.  That is the reason
+  `Epi p` is a clause of the leaf and not decoration.
+
+**The translation by `t` is PROVEN, not assumed.**  `hfac` demands
+`ι(c x) = [x] − [w x]`, which at `x = o` is `t ≠ 0`, so `ι` must be a
+TRANSLATE of the closed immersion — exactly as the node's docstring says.
+The translation morphism is obtained by Yoneda from `ab.add` at the
+universal point of `J`, in the same two lines as `negHom`, and its
+defining equation on relative points is `ab.pre_add` read along `z.1`.
+No group-scheme structure beyond `AbelianSchemeStruct` is needed. -/
+
+/-- **An additive map carries the zero section to the zero section**
+(PROVEN) — `u(0) = u(0 + 0) = u(0) + u(0)`. -/
+theorem IsAdditiveOn.postZero {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
+    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu) {T : Scheme.{0}} (g : T ⟶ S) :
+    RelPoint.post u hu (abA.zero g) = abB.zero g := by
+  letI := abB.addCommGroup g
+  have h2 : RelPoint.post u hu (abA.zero g) + RelPoint.post u hu (abA.zero g)
+      = abB.zero g + RelPoint.post u hu (abA.zero g) := by
+    show abB.add _ _ = abB.add _ _
+    rw [← h (abA.zero g) (abA.zero g), abA.zero_add, abB.zero_add]
+  exact add_right_cancel h2
+
+/-- **An additive map commutes with inversion** (PROVEN) — from
+`postZero` and `u(−x) + u(x) = u(0) = 0`. -/
+theorem IsAdditiveOn.postNeg {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
+    {abA : AbelianSchemeStruct af} {abB : AbelianSchemeStruct bf} {u : A ⟶ B}
+    {hu : u ≫ bf = af} (h : IsAdditiveOn abA abB u hu) {T : Scheme.{0}} {g : T ⟶ S}
+    (x : RelPoint af g) :
+    RelPoint.post u hu (abA.neg x) = abB.neg (RelPoint.post u hu x) := by
+  letI := abB.addCommGroup g
+  have h2 : RelPoint.post u hu (abA.neg x) + RelPoint.post u hu x = (0 : RelPoint bf g) := by
+    show abB.add _ _ = abB.zero g
+    rw [← h (abA.neg x) x, abA.neg_add, h.postZero]
+  exact add_eq_zero_iff_eq_neg.mp h2
+
+/-- **The image of a homomorphism of abelian varieties over `ℚ` is an
+abelian subvariety** (sorry leaf, 2026-07-27) — the single theory gate of
+`exists_prym_of_involution`, and the CHEAP replacement for Poincaré
+reducibility that the "image, not kernel" cut buys.
+
+TRUE, and classical: for a homomorphism `u : J ⟶ J` of abelian varieties
+over a field, `u(J)` is an abelian subvariety and `u` factors as a
+faithfully flat surjection onto it followed by a closed immersion
+(Mumford, *Abelian Varieties* §12, or Milne, *Abelian Varieties* I.8;
+this is strictly weaker than Poincaré reducibility §19, which in addition
+produces a complement).
+
+**Every clause is used, and here is where:**
+
+* `p ≫ ι₀ = u` defines the map `c := post p ∘ aj` of the assembly, and is
+  what makes `ι₀ ∘ c` computable as `u ∘ aj`;
+* `Epi p` transports an equation about `u` to an equation about `ι₀` —
+  specifically `ι₀ ≫ wJ = ι₀ ≫ negHom ab`, the anti-invariance of `A`,
+  which must hold at every point of `A` and not merely on the image of
+  `p`.  `p` is faithfully flat and quasi-compact, hence a (universal
+  effective) epimorphism of schemes (Stacks 023Q);
+* `Mono ι₀` gives the injectivity clause of the node.  `ι₀` is a closed
+  immersion, and closed immersions are monomorphisms.
+
+`_hadd` is the hypothesis that makes the statement true rather than
+merely plausible: the image of an ARBITRARY morphism of abelian varieties
+is not a subvariety, and the factorisation through it is not a
+homomorphism.  It is supplied at the use site by
+`isAdditiveOn_of_post_zero`, so nothing is pushed onto the consumer.
+
+**What proving it needs**: the image of a morphism of schemes as a
+scheme-theoretic image, flatness of the corestriction, and that a
+subgroup scheme of an abelian variety which is reduced and connected is
+an abelian variety.  **The check that refutes the absence claim**:
+`grep -rn "abelianSubvariety\|scheme-theoretic image\|PoincareReducibility"
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+
+**The check that refutes the STATEMENT**: a homomorphism of abelian
+varieties over `ℚ` whose image is not proper, or is not smooth, or is
+disconnected. -/
+theorem exists_abelianImage_of_isAdditiveOn {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) {u : J ⟶ J} (hu : u ≫ jstr = jstr)
+    (_hadd : IsAdditiveOn ab ab u hu) :
+    ∃ (A : Scheme.{0}) (astr : A ⟶ SpecQ) (_abA : AbelianSchemeStruct astr)
+      (p : J ⟶ A) (hp : p ≫ astr = jstr) (ι₀ : A ⟶ J) (_hι₀ : ι₀ ≫ jstr = astr),
+      p ≫ ι₀ = u ∧ Epi p ∧ Mono ι₀ :=
+  sorry
+
+/-- **The Prym of an involution of a curve** (PROVEN 2026-07-27 over the
+single leaf `exists_abelianImage_of_isAdditiveOn`; introduced as a sorry
+node earlier the same day) — LEVEL-GENERIC, and the half of the `169`
+node that knows nothing about `169`.
 
 TRUE, for an arbitrary involution `w` of a smooth proper geometrically
 connected curve over `ℚ`.  This is Poincaré reducibility applied to
@@ -31994,12 +32379,24 @@ embed into the anti-invariant subgroup of `J(ℚ)`.
 `jac.mapEnd w hw`, and that operator exists, so this leaf is not
 vacuous.
 
-**What proving it needs**: the kernel of an endomorphism of an abelian
-scheme as a group scheme, its identity component, and Poincaré
-reducibility (or, enough for this statement, that `ker(1 + w_J)⁰` is an
-abelian subvariety).  None of the three exists at this pin — refute
-with `grep -rn "PoincareReducibility\|abelianSubvariety\|identityComponent"
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`. -/
+**The construction ABOVE is the classical one; the construction CARRIED
+OUT below takes `A` to be the IMAGE of `1 − w_J` rather than
+`ker(1 + w_J)⁰`.**  The two agree up to isogeny — `(1 + w_J)(1 − w_J) = 0`
+puts the image inside the kernel, and connectedness of `J` puts it inside
+the identity component — but the image is what the node's own clauses
+need, and it costs one theorem instead of three.  The previous version of
+this paragraph read
+
+> **What proving it needs**: the kernel of an endomorphism of an abelian
+> scheme as a group scheme, its identity component, and Poincaré
+> reducibility.  None of the three exists at this pin.
+
+That was correct about the kernel description and WRONG as a statement
+about this leaf: the cut needs only the image factorisation, which is
+`exists_abelianImage_of_isAdditiveOn`.  The subsection docstring above
+records the two places where the uniqueness half of
+`IsJacobianOf.universal` replaces a Yoneda argument on `J`, since `wJ` is
+pinned only on the image of `aj`. -/
 theorem exists_prym_of_involution {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification N strX strY jY)
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
@@ -32018,8 +32415,172 @@ theorem exists_prym_of_involution {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ S
         RelPoint.post wJ hwJ (RelPoint.post ι hι a) = ab.neg (RelPoint.post ι hι a)) ∧
       ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint strX g),
         RelPoint.post ι hι (c T g x) =
-          ab.add (jac.aj g x) (ab.neg (jac.aj g (RelPoint.post w hw x))) :=
-  sorry
+          ab.add (jac.aj g x) (ab.neg (jac.aj g (RelPoint.post w hw x))) := by
+  classical
+  -- `post w` is an involution on relative points
+  have hwinv : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x : RelPoint strX g),
+      RelPoint.post w hw (RelPoint.post w hw x) = x := by
+    intro T g x
+    refine Subtype.ext ?_
+    show (x.1 ≫ w) ≫ w = x.1
+    rw [Category.assoc, _hw2, Category.comp_id]
+  -- the constant `t = [o] − [w o]`, and the unfolding of `ajTwist` through it
+  obtain ⟨t, htval, ht⟩ : ∃ t : RelPoint jstr (𝟙 SpecQ),
+      t = ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o)) ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+        jac.ajTwist w hw g x = ab.add (jac.aj g (RelPoint.post w hw x))
+          (RelPoint.pre g (Category.comp_id g) t) :=
+    ⟨_, rfl, fun g x => rfl⟩
+  have hnegzero : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), ab.neg (ab.zero g) = ab.zero g := by
+    intro T g
+    letI := ab.addCommGroup g
+    exact neg_zero
+  -- `wJ` is additive
+  have hwJ0 : RelPoint.post wJ hwJ (ab.zero (𝟙 SpecQ)) = ab.zero (𝟙 SpecQ) := by
+    have h1 := _hchar (𝟙 SpecQ) o
+    rw [jac.aj_base, jac.ajTwist_base] at h1
+    exact h1
+  have hwJadd : IsAdditiveOn ab ab wJ hwJ := isAdditiveOn_of_post_zero ab ab hwJ hwJ0
+  -- `w_J [w o] = t`, hence `w_J t = − t`
+  have hkey : RelPoint.post wJ hwJ (jac.aj (𝟙 SpecQ) (RelPoint.post w hw o)) = t := by
+    rw [_hchar, ht, hwinv, jac.aj_base, ab.zero_add]
+    exact Subtype.ext (Category.id_comp _)
+  have hwJt : RelPoint.post wJ hwJ t = ab.neg t := by
+    rw [htval, hwJadd.postNeg, hkey, htval]
+  -- `w_J` on the twisted Abel–Jacobi map
+  have hwJtw : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.ajTwist w hw g x) = jac.aj g x := by
+    intro T g x
+    letI := ab.addCommGroup g
+    rw [ht, hwJadd, _hchar, ht, hwinv, RelPoint.post_pre, hwJt, ab.pre_neg]
+    show (jac.aj g x + RelPoint.pre g (Category.comp_id g) t) +
+      -(RelPoint.pre g (Category.comp_id g) t) = jac.aj g x
+    rw [add_neg_cancel_right]
+  -- the pointed natural family `x ↦ [x] − [w x] − t`
+  have hcJnat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : h ≫ g = g') (x : RelPoint strX g),
+      ab.add (jac.aj g' (RelPoint.pre h hg x))
+          (ab.neg (jac.ajTwist w hw g' (RelPoint.pre h hg x)))
+        = RelPoint.pre h hg (ab.add (jac.aj g x) (ab.neg (jac.ajTwist w hw g x))) := by
+    intro T' T h g g' hg x
+    rw [jac.aj_pre, jac.ajTwist_pre, ab.pre_add, ab.pre_neg]
+  have hcJ0 : ab.add (jac.aj (𝟙 SpecQ) o) (ab.neg (jac.ajTwist w hw (𝟙 SpecQ) o))
+      = ab.zero (𝟙 SpecQ) := by
+    rw [jac.aj_base, jac.ajTwist_base, hnegzero, ab.zero_add]
+  obtain ⟨u, ⟨hu, hufac⟩, -⟩ := jac.universal ab
+    (fun g x => ab.add (jac.aj g x) (ab.neg (jac.ajTwist w hw g x))) hcJnat hcJ0
+  have hupost : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post u hu (jac.aj g x)
+        = ab.add (jac.aj g x) (ab.neg (jac.ajTwist w hw g x)) :=
+    fun g x => Subtype.ext (hufac g x).symm
+  have hu0 : RelPoint.post u hu (ab.zero (𝟙 SpecQ)) = ab.zero (𝟙 SpecQ) := by
+    have h1 := hupost (𝟙 SpecQ) o
+    rw [hcJ0, jac.aj_base] at h1
+    exact h1
+  have huadd : IsAdditiveOn ab ab u hu := isAdditiveOn_of_post_zero ab ab hu hu0
+  -- `u ≫ wJ = u ≫ negHom ab`, by uniqueness in the Albanese property
+  have hnegHom : negHom ab ≫ jstr = jstr :=
+    (ab.neg (⟨𝟙 J, Category.id_comp jstr⟩ : RelPoint jstr jstr)).2
+  have huw : u ≫ wJ = u ≫ negHom ab := by
+    obtain ⟨v, -, hvuniq⟩ := jac.universal ab
+      (fun g x => RelPoint.post wJ hwJ
+        (ab.add (jac.aj g x) (ab.neg (jac.ajTwist w hw g x))))
+      (by
+        intro T' T h g g' hg x
+        rw [hcJnat, RelPoint.post_pre])
+      (by rw [hcJ0, hwJ0])
+    refine (hvuniq (u ≫ wJ) ⟨by rw [Category.assoc, hwJ, hu], fun g x => ?_⟩).trans
+      (hvuniq (u ≫ negHom ab) ⟨by rw [Category.assoc, hnegHom, hu], fun g x => ?_⟩).symm
+    · rw [← hupost]
+      show ((jac.aj g x).1 ≫ u) ≫ wJ = (jac.aj g x).1 ≫ (u ≫ wJ)
+      rw [Category.assoc]
+    · rw [← hupost]
+      have hanti : RelPoint.post wJ hwJ (RelPoint.post u hu (jac.aj g x))
+          = ab.neg (RelPoint.post u hu (jac.aj g x)) := by
+        letI := ab.addCommGroup g
+        rw [hupost, hwJadd, hwJadd.postNeg, _hchar, hwJtw]
+        show jac.ajTwist w hw g x + -(jac.aj g x)
+          = -(jac.aj g x + -(jac.ajTwist w hw g x))
+        abel
+      rw [hanti, neg_eq_negHom]
+      show ((jac.aj g x).1 ≫ u) ≫ negHom ab = (jac.aj g x).1 ≫ (u ≫ negHom ab)
+      rw [Category.assoc]
+  -- the abelian image of `1 − w_J`
+  obtain ⟨A, astr, abA, p, hp, ι₀, hι₀, hpι, hepi, hmono⟩ :=
+    exists_abelianImage_of_isAdditiveOn ab hu huadd
+  haveI := hepi
+  haveI := hmono
+  have hι₀anti : ι₀ ≫ wJ = ι₀ ≫ negHom ab := by
+    refine (cancel_epi p).mp ?_
+    rw [← Category.assoc, ← Category.assoc, hpι, huw]
+  -- translation by the rational point `t`
+  obtain ⟨τ, hτ, hτpt⟩ : ∃ (τ : J ⟶ J) (hτ : τ ≫ jstr = jstr),
+      ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (z : RelPoint jstr g),
+        RelPoint.post τ hτ z = ab.add z (RelPoint.pre g (Category.comp_id g) t) := by
+    refine ⟨(ab.add (⟨𝟙 J, Category.id_comp jstr⟩ : RelPoint jstr jstr)
+      (RelPoint.pre jstr (Category.comp_id jstr) t)).1, (ab.add _ _).2, ?_⟩
+    intro T g z
+    have h := ab.pre_add z.1 (g := jstr) (g' := g) z.2
+      (⟨𝟙 J, Category.id_comp jstr⟩ : RelPoint jstr jstr)
+      (RelPoint.pre jstr (Category.comp_id jstr) t)
+    rw [show RelPoint.pre z.1 z.2 (⟨𝟙 J, Category.id_comp jstr⟩ : RelPoint jstr jstr) = z from
+        Subtype.ext (Category.comp_id z.1),
+      show RelPoint.pre z.1 z.2 (RelPoint.pre jstr (Category.comp_id jstr) t)
+          = RelPoint.pre g (Category.comp_id g) t from
+        Subtype.ext (by
+          show z.1 ≫ jstr ≫ t.1 = g ≫ t.1
+          rw [← Category.assoc, z.2])] at h
+    exact Subtype.ext (congrArg Subtype.val h)
+  have hιcomp : (ι₀ ≫ τ) ≫ jstr = astr := by rw [Category.assoc, hτ, hι₀]
+  have hιsplit : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (a : RelPoint astr g),
+      RelPoint.post (ι₀ ≫ τ) hιcomp a = RelPoint.post τ hτ (RelPoint.post ι₀ hι₀ a) :=
+    fun a => Subtype.ext (Category.assoc _ _ _).symm
+  refine ⟨A, astr, abA, ι₀ ≫ τ, hιcomp,
+    fun _ g x => RelPoint.post p hp (jac.aj g x), ?_, ?_, ?_, ?_⟩
+  · intro T' T h g g' hg x
+    show RelPoint.post p hp (jac.aj g' (RelPoint.pre h hg x))
+      = RelPoint.pre h hg (RelPoint.post p hp (jac.aj g x))
+    rw [jac.aj_pre, RelPoint.post_pre]
+  · intro a b hab
+    simp only [hιsplit, hτpt] at hab
+    have h2 : RelPoint.post ι₀ hι₀ a = RelPoint.post ι₀ hι₀ b := by
+      letI := ab.addCommGroup (𝟙 SpecQ)
+      have hab' : RelPoint.post ι₀ hι₀ a
+            + RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) t
+          = RelPoint.post ι₀ hι₀ b
+            + RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) t := hab
+      exact add_right_cancel hab'
+    exact Subtype.ext ((cancel_mono ι₀).mp (congrArg Subtype.val h2))
+  · intro a
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    have hA : RelPoint.post wJ hwJ (RelPoint.post ι₀ hι₀ a)
+        = ab.neg (RelPoint.post ι₀ hι₀ a) := by
+      refine Subtype.ext ?_
+      rw [neg_eq_negHom]
+      show (a.1 ≫ ι₀) ≫ wJ = (a.1 ≫ ι₀) ≫ negHom ab
+      rw [Category.assoc, Category.assoc, hι₀anti]
+    have hB : RelPoint.post wJ hwJ (RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) t)
+        = ab.neg (RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) t) := by
+      rw [RelPoint.post_pre, hwJt, ab.pre_neg]
+    rw [hιsplit, hτpt, hwJadd, hA, hB]
+    show -(RelPoint.post ι₀ hι₀ a) + -(RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) t)
+      = -(RelPoint.post ι₀ hι₀ a + RelPoint.pre (𝟙 SpecQ) (Category.comp_id (𝟙 SpecQ)) t)
+    rw [neg_add]
+  · intro T g x
+    letI := ab.addCommGroup g
+    rw [hιsplit, hτpt]
+    have h1 : RelPoint.post ι₀ hι₀ (RelPoint.post p hp (jac.aj g x))
+        = RelPoint.post u hu (jac.aj g x) :=
+      Subtype.ext (by
+        show ((jac.aj g x).1 ≫ p) ≫ ι₀ = (jac.aj g x).1 ≫ u
+        rw [Category.assoc, hpι])
+    rw [h1, hupost, ht]
+    show (jac.aj g x + -(jac.aj g (RelPoint.post w hw x)
+        + RelPoint.pre g (Category.comp_id g) t))
+        + RelPoint.pre g (Category.comp_id g) t
+      = jac.aj g x + -(jac.aj g (RelPoint.post w hw x))
+    abel
+
 
 /-- **Kolyvagin–Logachev at `169`: the `w_169`-ANTI-INVARIANT subgroup of
 `J_0(169)(ℚ)` is finite** (sorry node, introduced 2026-07-27) —
