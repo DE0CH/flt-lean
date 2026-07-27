@@ -8779,10 +8779,41 @@ THE AUDIT'S SURVEY OF THE PIN IS RE-VERIFIED AND STILL CORRECT, and here are the
 greps that would REFUTE it — a hit from either one kills the costing below:
 
 * `grep -rn "transcendenceDegree\|trdeg" --include=*.lean Mathlib/ | grep -i "krull\|dim"`
-  — EMPTY: no `dim = trdeg` for finitely generated algebras over a field.
+  — EMPTY: no `dim = trdeg` for finitely generated algebras over a field. Note this is
+  a statement about the LINK, not about the notion: `Algebra.trdeg` itself is present
+  (`Mathlib/RingTheory/AlgebraicIndependent/Basic.lean:45`, Stacks 030G), so a prover
+  does not have to define transcendence degree, only to connect it to `ringKrullDim`.
 * `grep -rn "ringKrullDim" --include=*.lean Mathlib/ | grep -i integral`
   — EMPTY: no Cohen–Seidenberg "an injective integral extension preserves Krull
   dimension".
+
+**A CORRECTION TO A SIBLING SURVEY IN THIS FILE, which is load-bearing for the costing
+here and is REPORTED rather than edited because it is another owner's region.** The
+docstring of `exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` says,
+twice, that "even `dim k[x₁..xₙ] = n` is still a `proof_wanted`
+(`MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`,
+`Mathlib/RingTheory/KrullDimension/Basic.lean:94`)", and uses that to conclude
+"dimension theory over a field is barely present at this pin — do NOT start there".
+**The premise is false.** That `proof_wanted` is a leftover duplicate stub for the
+`Fin n` special case; the general statement is PROVEN, as
+`MvPolynomial.ringKrullDim_of_isNoetherianRing :
+ringKrullDim (MvPolynomial ι R) = ringKrullDim R + Nat.card ι`
+in `Mathlib/RingTheory/KrullDimension/Polynomial.lean`, on top of a proven
+`Polynomial.ringKrullDim_of_isNoetherianRing`. The refuting grep is
+`grep -rn "ringKrullDim_of_isNoetherianRing" --include=*.lean Mathlib/RingTheory/KrullDimension/`.
+(That survey's own CONCLUSION — take the smooth-ascent route — may still be the right
+one for its own leaf; what is wrong is the reason given, and the reason is what a
+dispatcher acts on.)
+
+**AND A FOOTHOLD THE PIN DOES NOT HAVE BUT THE REFERENCE PROJECT DOES.**
+`~/cs/FLT/FLT/Slop/DimensionTheorem/` is a complete development of the LOCAL DIMENSION
+THEOREM (Stacks 00KQ) — `DimensionTheorem.ringKrullDim_eq_growthDeg`,
+`ringKrullDim_eq_minGenPrimary`, `growthDeg_eq_minGenPrimary` and the `dimension_theorem`
+assembly, over Hilbert–Samuel growth — for a Noetherian local ring. That is the standard
+engine underneath every equidimensionality statement, it is exactly what step 4 below is
+missing, and it is vendorable subject to the usual pin-drift audit (`81a5d2` there
+against `a3364fa` here). Whoever takes the leaf should read it BEFORE writing dimension
+theory from scratch.
 
 WHAT *IS* AT THE PIN, and is why the packaging turned out cheap rather than expensive —
 the audit did not look here, and this is the correction it invites:
@@ -8873,9 +8904,17 @@ THE PROOF, and exactly where the pin runs out:
      `MvPolynomial.ringKrullDim_of_isNoetherianRing` and `ringKrullDim_eq_zero_of_field`;
    * `ringKrullDim A = s` is NOT at the pin — it is Cohen–Seidenberg (lying over, going
      up, incomparability), and see the section docstring's second grep;
-   * `s = trdeg_ℚ (Frac A)` is NOT at the pin either — see the first grep. It is the
-     statement that the Noether-normalization rank is the transcendence degree, which
-     follows from `Frac A` being algebraic over `ℚ(x₁,…,x_s)`.
+   * `s = trdeg_ℚ (Frac A)` is NOT at the pin either — see the first grep — though
+     `Algebra.trdeg` itself IS. It is the statement that the Noether-normalization rank
+     is the transcendence degree, which follows from `Frac A` being algebraic over
+     `ℚ(x₁,…,x_s)`.
+
+   START FROM `~/cs/FLT/FLT/Slop/DimensionTheorem/`, NOT FROM SCRATCH: the reference
+   project already carries the local dimension theorem (Stacks 00KQ) in the form
+   `ringKrullDim R = growthDeg R = minGenPrimary R` for Noetherian local `R`, which is
+   the engine this step wants. See the section docstring above for the pin-drift caveat
+   and for a correction to a sibling survey in this file that wrongly records
+   `dim k[x₁..xₙ] = n` as unproven.
 5. Then `dim A_f = dim A ≥ height 𝔭ₓ`, and `dim A_f = ⨆_{𝔮 ∈ Spec A_f} height 𝔮`
    (`topologicalKrullDim_eq_iSup_coheight` again, or `Order.krullDim_eq_iSup_height`), so
    some `y ∈ D(f) ⊆ C` has `coheight y ≥ coheight x`. ∎
