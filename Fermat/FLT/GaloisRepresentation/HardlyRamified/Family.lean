@@ -3396,7 +3396,10 @@ VERDICT (2026-07-26, this owner): IRREDUCIBLY A CITATION at the present
 state of the tree. What remains, enumerated, with its formalization
 status. **(R4) IS NO LONGER PART OF IT — see the note under (R4) below;
 it is proven, and this leaf's restatement is exactly what discharging it
-bought.** So the live requirements are (R1)–(R3):
+bought.** So the live requirements are (R1)–(R3). **UPDATED 2026-07-27:
+(R3) IS NOW PROVEN TOO** — see its entry below and the rewritten (C4)
+closing paragraph; the only requirement still genuinely open for THIS
+leaf is (R1), the Raynaud dévissage.
 
 (R1) *Raynaud dévissage*: over `𝒪ᵖᵥ` with `e = 1 < p − 1`, a finite
      flat group scheme killed by `p` acquires, over the STRICT
@@ -3426,11 +3429,25 @@ bought.** So the live requirements are (R1)–(R3):
 (R3) *the extension step*: an iterated extension of `μ`-types over the
      henselian `𝒪ᵖᵥ` is of multiplicative type (dually: étale-by-étale
      is étale). This is where FLATNESS does its work — see (S2).
+     **(R3) ITSELF IS PROVEN (2026-07-27).** It is
+     `HopfAlgebra.isMultiplicativeType_of_isShortExact` in
+     `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, a
+     two-line assembly `etale_of_isShortExact h.cartierDual h' h''` over
+     the Cartier-duality construction of
+     `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` (which
+     is complete and sorry-free, biduality and all three examples
+     included). What is still OPEN is not (R3) but its two inputs, which
+     are separate leaves in that same file with their own owners:
+     `HopfAlgebra.IsShortExact.cartierDual` (Cartier duality is exact)
+     and `HopfAlgebra.etale_of_isShortExact` (étale-by-étale is étale).
+     Consuming (R3) here is still blocked on `IsShortExact` being
+     established for this cluster's dévissage, i.e. on (R1).
 (R4) *multiplicative type ⟹ unramified character group*: **PROVEN
      2026-07-26, and it is why this leaf now reads as it does.** It was
      expected to need `Algebra.FormallyEtale.equivPiOfIsSepClosed` over
      the strictly henselian base, plus the character group of `G°` as an
-     étale SCHEME — i.e. Cartier duality, which this tree does not have.
+     étale SCHEME — i.e. Cartier duality, which this tree did not have at
+     the time (it does now: `CartierDual.lean`, sorry-free).
      None of that was necessary. In Hopf terms "multiplicative type"
      says the corner group-likes GENERATE the corner and "unramified
      character group" says they are ALL unramified, so (R4) is the
@@ -3708,32 +3725,64 @@ that would unblock it. Nothing here changes the statement.
      Refuting checks: a proof of the `p ^ k` form consuming only the `p`
      form plus group theory (ruled out by the witness above), or a
      classification of finite flat group schemes over `ℤ_p` killed by
-     `p ^ k` anywhere in the pin. As of 2026-07-27,
-     `grep -rn 'fppf\|CartierDual\|cartierDual'` over `Fermat/`,
-     `.lake/packages/mathlib` and `~/cs/FLT` returns only docstring PROSE
+     `p ^ k` anywhere in the pin. **UPDATED 2026-07-27, LATER THE SAME
+     DAY — the duality half of this sentence is now WRONG and must not be
+     re-used.** The grep it rested on
+     (`grep -rn 'fppf\|CartierDual\|cartierDual'` over `Fermat/`,
+     `.lake/packages/mathlib` and `~/cs/FLT`) reported "docstring PROSE
      plus mathlib's fpqc/flat-descent SITE definitions — no cohomology of
-     group schemes and no duality.
+     group schemes and no duality". Cartier duality has since been BUILT
+     here: `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean`
+     (sorry-free — the dual Hopf algebra, biduality as a bundled
+     `≃ₐc`, and the three examples `μ_n^D ≅ ℤ/n`, `(ℤ/n)^D ≅ μ_n`,
+     `α_p^D ≅ α_p`). What the grep would still find missing is the
+     COHOMOLOGY — no `H¹_fl` and no classification of finite flat group
+     schemes over `ℤ_p` killed by `p ^ k` — so check 2 is still ruled out
+     and this paragraph's CONCLUSION stands; only its evidence has moved.
 
      DECISION (the dispatch asked for one): BUILD THE RAYNAUD INPUT. Closing
      the exponent gap is not the cheaper half of the choice; it is the same
      missing statement plus a second leaf.
 
-     WHERE THE NEXT WORKER SHOULD GO, sharpened. Of the live requirements
-     (R1)–(R3), it is (R3) whose cost is overstated above. Its ÉTALE side —
-     *an extension of étale by étale over a HENSELIAN local base is étale* —
-     is elementary and needs no flat cohomology at all: the connected
-     component `H°` maps to the étale quotient by a homomorphism out of a
-     connected scheme, hence trivially, so `H° ⊆ H'`, and `H'` étale gives
-     `H'° = 0`. Both halves of the machinery are already in this cone —
-     `Bialgebra.exists_connected_counit_idempotent` for the connected
-     idempotent, and the henselian splitting of a finite algebra recorded in
-     the SUPPLY SURVEY above. What (R3) actually costs is the passage from
-     that étale statement to the MULTIPLICATIVE one, i.e. CARTIER DUALITY
-     for finite flat commutative group schemes, which the same grep shows is
-     absent from all three trees. So the dispatchable next target is Cartier
-     duality — a self-contained classical construction — and NOT "Raynaud"
-     as an undifferentiated whole. Refuting check: a proof of (R3) on the
-     multiplicative side that never dualizes. -/
+     WHERE THE NEXT WORKER SHOULD GO — **REWRITTEN 2026-07-27; the
+     previous version of this paragraph named CARTIER DUALITY as the
+     dispatchable next target and that is now FINISHED WORK. Do not
+     dispatch anyone at it.** The paragraph was right that (R3)'s cost was
+     overstated and right that duality, not "Raynaud" undifferentiated,
+     was the thing to build; it has been built. Current state:
+
+     * CARTIER DUALITY — DONE, sorry-free, in
+       `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean`
+       (plus `CartierDualExamples.lean`, `AlphaP.lean`,
+       `AlphaPSelfDual.lean`, `GroupFunctions.lean`).
+     * (R3) ITSELF — PROVEN, as
+       `HopfAlgebra.isMultiplicativeType_of_isShortExact` in
+       `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, which
+       is literally `etale_of_isShortExact h.cartierDual h' h''`.
+     * WHAT IS ACTUALLY OPEN, and these are the two dispatchable leaves —
+       both in `ShortExact.lean`, both already OWNED, so check
+       `~/.flt-inflight.jsonl` before touching either:
+       - `HopfAlgebra.IsShortExact.cartierDual` — Cartier duality is
+         exact. This is the half that wants faithfully flat descent /
+         Takeuchi's Hopf-ideal correspondence.
+       - `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale.
+         This is the ELEMENTARY half the previous paragraph described:
+         the connected component `H°` maps to the étale quotient by a
+         homomorphism out of a connected scheme, hence trivially, so
+         `H° ⊆ H'`, and `H'` étale gives `H'° = 0`. Both halves of the
+         machinery are already in this cone —
+         `Bialgebra.exists_connected_counit_idempotent` for the connected
+         idempotent, and the henselian splitting of a finite algebra
+         recorded in the SUPPLY SURVEY above. Note `etale_of_isShortExact`
+         is stated over an ARBITRARY base; specialising it to a henselian
+         local `R` is a legitimate weakening if the general form resists,
+         and its own docstring says so.
+     * SO THE REMAINING WORK FOR *THIS* LEAF IS (R1), the Raynaud
+       dévissage, which is what actually supplies an `IsShortExact` for
+       this cluster. (R2) is formalized and sorry-free; (R3) is proven;
+       (R4) is proven. Refuting check on this paragraph: a route to the
+       conclusion that never needs a composition series, i.e. that gets
+       multiplicative type of `G°` without dévissage. -/
 theorem exists_unramified_grouplike_family_generating_corner
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
