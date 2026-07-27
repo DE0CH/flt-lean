@@ -779,23 +779,75 @@ axiom, `weil` is a function on ALL geometric points whose axioms are
 asserted only for torsion arguments; its value off the torsion is
 unconstrained and no consumer may rely on it.
 
-NON-VACUITY. The content of the datum is carried by
-`DualStruct.weil_nondegenerate`: without it, `weil ≡ 1` would satisfy
-every other axiom. With it, the pairing cannot be trivial on a nonzero
-torsion point, which is exactly the property the level-structure
-condition of the Hilbert–Blumenthal moduli problem needs — the condition
-that cuts the split moduli space down to ONE geometric component instead
-of one per pairing value.
+NON-VACUITY. The content of this layer is carried by TWO nondegeneracy
+axioms, one in each structure, and NEITHER implies the other.
 
-CONE STATUS. These declarations are not yet in the used-constant cone of
-`fermat_last_theorem`: they are the named prerequisite of three leaves
-that are open at the time of writing —
-`exists_twistedHilbertBlumenthalModuliTwist_of_datum` and
-`exists_realAbelianSchemeWithRealMultiplication`
-(`Modularity/KhareWintenberger.lean`) and
-`det_eq_cyclotomicCharacter_of_tateFrame` (`Modularity/TateModule.lean`) —
-and they enter the cone as soon as any of those consumes them. They must
-NOT be swept as free-floating before then. -/
+* `DualStruct.weil_nondegenerate` is the content of `DualStruct`:
+  without it, `weil ≡ 1` would satisfy every other axiom of that
+  structure.
+* `PolarizationStruct.weil_hom_nondegenerate` is the content of
+  `PolarizationStruct`, and it was MISSING until 2026-07-27. Without it
+  the entire structure was satisfied by the CONSTANT ZERO MAP over EVERY
+  datum — field by field, see the refutation test in its docstring — so
+  `PolarizationStruct` added nothing whatever over `DualStruct`, and its
+  induced `pairing` was permitted to be identically `1`. Every theorem
+  that "used" it was using nothing.
+
+`weil_nondegenerate` does NOT rescue that: it is nondegeneracy of the
+canonical `A × A^∨` pairing, and says nothing about the composite
+`A[I] × A[I] ⟶ μ_n` obtained by pushing the second variable through a
+degenerate `hom`. Nondegeneracy of the INDUCED pairing is what the
+level-structure condition of the Hilbert–Blumenthal moduli problem needs
+— the condition that cuts the split moduli space down to ONE geometric
+component instead of one per pairing value.
+
+MISSING AXIOM, DELIBERATELY NOT ADDED HERE: COMPATIBILITY ALONG THE
+`I`-ADIC TOWER. `DualStruct.weil` quantifies its ideal and its integer
+INSIDE the field, so `weil x (I ^ k) (q ^ k)` is available at every level
+with all five axioms — the whole `I ^ k` tower already exists, and any
+note claiming that this layer "is level one" is wrong about the levels.
+What is genuinely absent is any axiom relating CONSECUTIVE levels along
+the transition map `· π`, for `π` a uniformiser of `I`: something of the
+shape
+
+    weil x (I ^ (k+1)) (q ^ (k+1)) _ (m.act π y) (d.dualMult.act π z)
+      = weil x (I ^ k) (q ^ k) _ y' z'
+
+identifying the level-`k+1` pairing of `π`-multiples with the level-`k`
+pairing. That compatibility is what makes the pairings pass to the
+inverse limit and so gives a pairing on the TATE MODULE `T_I A`, which is
+what `det_eq_cyclotomicCharacter_of_tateFrame`
+(`Modularity/TateModule.lean`) ultimately consumes. The axiom belongs on
+`DualStruct`; adding it is a `DualStruct` restructuring and was out of
+scope for the 2026-07-27 `PolarizationStruct` repair. It is recorded here
+so that the next owner of `DualStruct` does not have to rediscover it.
+
+WHAT CANNOT BE SAID IN THIS VOCABULARY AT ALL. `DualStruct.weil` is
+`μ_n(F̄)`-valued, so pinning a pairing VALUE (`⟨α e₀, α e₁⟩ = ζ`) is NOT
+a ℚ-rational condition: the target has no ℚ-structure and `Γ_F` moves `ζ`
+through the cyclotomic character. Consequently a CANONICAL normalized
+level module cannot be written here — only a BUNDLED one, carrying its
+normalization as data. Do not design against the belief that a
+normalization is expressible; that belief is what "the vocabulary is
+unblocked" means, and it is true only in the bundled sense.
+
+CONE STATUS (corrected 2026-07-27; the previous version of this
+paragraph said none of these declarations were in the cone, which is now
+half wrong). `DualStruct`, `PolarizationStruct`,
+`PolarizationStruct.pairing` and `galRoot` ARE in the used-constant cone
+of `fermat_last_theorem` as of commit `3a3e74cc`, which cut
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum`
+(`Modularity/KhareWintenberger.lean`) into leaves that take them as
+hypotheses and in existentials. What is NOT in the cone is the PROVEN
+material of this section — `DualStruct.weil_zero_right`, and
+`PolarizationStruct.pairing_def`, `pairing_add_left`, `pairing_add_right`,
+`pairing_self`, `galSMul_hom`, `pairing_gal`, `pairing_act`,
+`pairing_nondegenerate`, `exists_pairing_ne_one` and
+`torsion_eq_zero_of_hom_eq_zero` — which is consumed only by proofs that
+are still `sorry` (the two leaves of that cut,
+`exists_realAbelianSchemeWithRealMultiplication`, and
+`det_eq_cyclotomicCharacter_of_tateFrame`). That material must NOT be
+swept as free-floating before its consumers are proven. -/
 
 /-- **A dual abelian scheme, presented together with its Weil pairing.**
 
@@ -864,6 +916,34 @@ structure DualStruct {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct 
         weil x I n hn y z = 1) →
       y = ab.zero (specAlgClos F ≫ x)
 
+namespace DualStruct
+
+variable {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+variable {R : Type u} [CommRing R] {m : Mult ab R} (d : DualStruct ab m)
+variable {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+variable (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I)
+
+/-- **The canonical pairing is trivial against the zero section of the
+dual.** Additivity in the second variable at `z = z' = 0` gives
+`w = w * w` in the group `μ_n(F̄)`, whence `w = 1`; the zero section is
+`I`-torsion because `Mult.torsion` is a `Submodule`.
+
+This is the load-bearing half of the zero-map refutation test recorded on
+`PolarizationStruct`: it is exactly why the constant zero map used to
+satisfy that structure's `weil_self` axiom for free. -/
+theorem weil_zero_right (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1) :
+    d.weil x I n hn y (d.dualAb.zero (specAlgClos F ≫ x)) = 1 := by
+  have hz : d.dualAb.zero (specAlgClos F ≫ x) ∈ (d.dualMult.torsion x I).1 := by
+    letI := d.dualAb.addCommGroup (specAlgClos F ≫ x)
+    letI := d.dualMult.module (specAlgClos F ≫ x)
+    exact (Submodule.torsionBySet R (GeomFibrePt d.dualMap x) (I : Set R)).zero_mem
+  have h := d.weil_add_right x I n hn y (d.dualAb.zero (specAlgClos F ≫ x))
+    (d.dualAb.zero (specAlgClos F ≫ x)) hy hz hz
+  rw [d.dualAb.zero_add] at h
+  exact left_eq_mul.mp h
+
+end DualStruct
+
 /-- **A polarization**: an `R`-linear symmetric isogeny `A ⟶ A^∨`.
 
 By Yoneda a homomorphism of abelian schemes is exactly a natural additive
@@ -876,7 +956,44 @@ polarization read through the Weil pairing.
 Classically such a polarization exists on any abelian variety over a
 field (every abelian variety is projective, and the `𝒪_D`-average of a
 polarization is `𝒪_D`-linear because `D` is totally real). Existence is
-NOT asserted here — this is the datum, not a construction. -/
+NOT asserted here — this is the datum, not a construction.
+
+**CONTENT, AND THE STANDING REFUTATION TEST (repaired 2026-07-27).**
+
+Before that date this structure carried NO CONTENT AT ALL: it was
+satisfied by the CONSTANT ZERO MAP `hom := fun _ => d.dualAb.zero g`
+over every datum whatsoever, field by field —
+
+* `hom_add` by `zero_add`;
+* `pre_hom` by `pre_zero`;
+* `hom_act` by the `act a 0 = 0` derivation inside `Mult.module`;
+* `hom_torsion` because `Mult.torsion` is a `Submodule`, so contains `0`;
+* `weil_self` by `DualStruct.weil_zero_right` — `weil_add_right` at
+  `z = z' = 0` gives `w = w * w` in a group.
+
+So `PolarizationStruct` added nothing over `DualStruct` and its induced
+`pairing` was permitted to be identically `1`.
+
+`weil_hom_nondegenerate` is the repair, and **the refutation test is a
+THEOREM, not prose**: `PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`
+proves that a `PolarizationStruct` whose `hom` is the zero map forces
+EVERY `I`-torsion point of EVERY geometric fibre to vanish. The zero map
+therefore no longer satisfies this structure over any datum possessing a
+nonzero torsion point — i.e. over any datum the moduli problem cares
+about. The one surviving case is the honest one, where `A[I]` really is
+trivial (e.g. `I = R`, since `1 ∈ R` kills every point) and a
+nondegenerate alternating pairing on `A[I]` is vacuously available.
+**Anyone who weakens this structure must re-run that theorem**; a
+structure whose only proof of content is prose drifts back.
+
+**WHAT IS DELIBERATELY NOT ASSERTED**: that `hom` is SURJECTIVE on
+geometric `I`-torsion, i.e. the full isogeny property. What the consumers
+need is that the INDUCED pairing on `A[I]` is nondegenerate, which is
+what `weil_hom_nondegenerate` says. Surjectivity of `A[I] → A^∨[I]` is a
+strictly further claim — over an algebraically closed field it follows
+from injectivity only via `#A[I] = #A^∨[I]`, which nothing in this
+development audits — so it is not asserted here rather than asserted on
+faith. -/
 structure PolarizationStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {R : Type u} [CommRing R] {m : Mult ab R} (d : DualStruct ab m) where
   /-- the polarization on relative points -/
@@ -899,6 +1016,24 @@ structure PolarizationStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchem
   weil_self : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
     (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
     y ∈ (m.torsion x I).1 → d.weil x I n hn y (hom y) = 1
+  /-- **the induced pairing `A[I] × A[I] ⟶ μ_n` is NONDEGENERATE** — the
+  axiom that carries the content of this structure, and without which the
+  constant ZERO MAP satisfies every other field over every datum (see the
+  refutation test in the structure docstring).
+
+  Classically this holds exactly when `ker hom ∩ A[I] = 0`, i.e. when the
+  degree of the polarization is prime to `I` — part of the
+  Hilbert–Blumenthal moduli datum, and consistent with `weil_self`, since
+  the `λ`-Weil pairing on `A[I]` is alternating and nondegenerate under
+  exactly that hypothesis. Note this is NOT implied by
+  `DualStruct.weil_nondegenerate`, which is about the canonical
+  `A × A^∨` pairing and is blind to a degenerate `hom`. -/
+  weil_hom_nondegenerate : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
+    y ∈ (m.torsion x I).1 →
+    (∀ z : GeomFibrePt f x, z ∈ (m.torsion x I).1 →
+      d.weil x I n hn y (hom z) = 1) →
+    y = ab.zero (specAlgClos F ≫ x)
 
 namespace PolarizationStruct
 
@@ -975,6 +1110,56 @@ theorem pairing_act (a : R) (y z : GeomFibrePt f x)
     p.pairing x I n hn (m.act a y) z = p.pairing x I n hn y (m.act a z) := by
   rw [pairing_def, pairing_def, p.hom_act]
   exact d.weil_act x I n hn a y (p.hom z) hy (p.hom_torsion x I z hz)
+
+/-- **The pairing is NONDEGENERATE**: `weil_hom_nondegenerate` read
+through `pairing`. This is the axiom that gives `PolarizationStruct` its
+content — see the refutation test in the structure's docstring — and it
+is what the classical arguments mean when they call the polarized Weil
+pairing *perfect*. -/
+theorem pairing_nondegenerate (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1)
+    (h : ∀ z : GeomFibrePt f x, z ∈ (m.torsion x I).1 →
+      p.pairing x I n hn y z = 1) :
+    y = ab.zero (specAlgClos F ≫ x) :=
+  p.weil_hom_nondegenerate x I n hn y hy h
+
+/-- **The pairing is NON-TRIVIAL on every nonzero torsion point**: the
+contrapositive of `pairing_nondegenerate`, and the form the level
+structure of the Hilbert–Blumenthal moduli problem consumes. In
+particular `pairing` is not identically `1` as soon as `A[I] ≠ 0`, which
+is precisely what the pre-repair `PolarizationStruct` failed to
+guarantee. -/
+theorem exists_pairing_ne_one (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1)
+    (hy0 : y ≠ ab.zero (specAlgClos F ≫ x)) :
+    ∃ z : GeomFibrePt f x, z ∈ (m.torsion x I).1 ∧ p.pairing x I n hn y z ≠ 1 := by
+  by_contra hcon
+  refine hy0 (p.pairing_nondegenerate x I n hn y hy ?_)
+  intro z hz
+  by_contra hne
+  exact hcon ⟨z, hz, hne⟩
+
+include hn in
+/-- **THE STANDING REFUTATION TEST: the constant zero map is not a
+polarization.**
+
+Until 2026-07-27 `PolarizationStruct` was satisfied by
+`hom := fun _ => d.dualAb.zero g` over EVERY datum, so it carried no
+content at all and its `pairing` could be identically `1`. This theorem
+is the mechanical check that the repair took: if `hom` is the zero map,
+then every `I`-torsion point of every geometric fibre is zero. So the
+zero map satisfies the repaired structure only over data with NO torsion
+whatsoever — never over a datum the moduli problem cares about.
+
+Re-run this theorem after any weakening of `PolarizationStruct`; a
+structure whose only proof of content is prose will drift back. -/
+theorem torsion_eq_zero_of_hom_eq_zero
+    (hhom : ∀ {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g),
+      p.hom y = d.dualAb.zero g)
+    (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1) :
+    y = ab.zero (specAlgClos F ≫ x) := by
+  refine p.weil_hom_nondegenerate x I n hn y hy ?_
+  intro z _
+  rw [hhom z]
+  exact d.weil_zero_right x I n hn y hy
 
 end PolarizationStruct
 
