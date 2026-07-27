@@ -21571,6 +21571,110 @@ deducing the conclusion FROM "some root of `D_p(X, Nw) − c` is
 `E`-rational", whereas here the Dickson relation is an ADDED hypothesis
 on a leaf that keeps the full arithmetic context.
 
+FIFTH-OWNER AUDIT (2026-07-27).  Three findings: a STATUS check on the
+repair proposed in (1); a SECOND, INDEPENDENT cut defect which that
+repair does not fix and which its owner must fix at the same time; and
+an explicit REFUTATION of the route (4) recommends as most promising.
+
+(5) STATUS OF THE REPAIR PROPOSED IN (1): NOT LANDED as of 2026-07-27.
+`HeckeSystemDescendsTo` above is still, verbatim,
+`∃ S P, ∀ w ∉ S, (charFrob w).map ιO = (P w).map ψℓ` — no automorphic
+clause, no newform datum.  So finding (1) stands unaltered and route (i)
+remains unavailable at every step of the induction except the base.
+
+CHECK THAT REFUTES (5): `grep -n 'def HeckeSystemDescendsTo' -A 14` in
+this module.  If the body binds a cuspidal Hilbert newform datum over
+`IntermediateField.fixedField C`, the repair has landed and (1), (5)
+and (6) should all be re-read before any further work here.
+
+(6) THE PROPOSED REPAIR IS NECESSARY BUT NOT SUFFICIENT — `Wit.E` IS
+FIXED ALONG THE TOWER WHILE THE HECKE FIELD PROVABLY GROWS DOWN IT.
+`HeckeSystemDescendsTo Wit C` types its polynomials as
+`Polynomial Wit.E`: the SAME `Wit.E` at every `C`.  But the
+DESCENT-CLOSURE note in the `PotentialModularityWitness` docstring
+records — correctly — that the Hecke field GROWS on the way down, and
+this leaf is exactly where it grows.  At its own inert `w`, with `W` the
+unique place of `L` above it, the Satake parameters satisfy
+`a_W = D_p(a_w, Nw)`, so `hPL` places `a_W` in `ψℓ(E)` and thereby forces
+only that the DESCENDED `a_w` is algebraic of degree `≤ p` over `ψℓ(E)`;
+`ℚ(α+β) ⊇ ℚ(α^p+β^p)` always, and the inclusion is PROPER in general.
+Hence even with a cuspidal `Π` over `L` in hand and Thm 4.2(d) applied,
+the `π` it returns has eigenvalues in a field that is in general a proper
+extension of `Wit.E`, while the conclusion demands `a δ : … → Wit.E`.
+
+Nothing repairs this INSIDE the leaf, because `Wit` is universally
+quantified here.  The DESCENT-CLOSURE note resolves it by saying the
+PRODUCING leaf `exists_potentialModularityWitness_of_five_le` "MUST be
+understood as" choosing `E` large enough — but that is an understanding,
+not a hypothesis: no clause of `PotentialModularityWitness` constrains
+`E` beyond `Field` and `NumberField`, as that structure's own docstring
+states outright ("no field asserts that `heckeF` GENERATES `E`").  A Lean
+proof of this leaf may not use an understanding.  So strengthening
+`HeckeSystemDescendsTo` to carry automorphy over `F^C` while KEEPING
+`Polynomial Wit.E` yields a predicate whose prime step is still
+unprovable: the automorphic datum arrives, and its eigenvalues land
+outside the field the conclusion demands.
+
+REPAIR (cut-level, and it must be made TOGETHER with (1)'s, by the same
+owner): make the descended coefficient field EXISTENTIAL instead of
+fixed —
+
+  `∃ (E' : Type u) (_ : Field E') (_ : NumberField E')`
+  `  (ψ' : E' →+* AlgebraicClosure ℚ_[ℓ]) (S) (P : … → Polynomial E'), …`
+
+The base case `heckeSystemDescendsTo_bot` takes `E' := Wit.E`,
+`ψ' := Wit.ψℓ` unchanged; each prime step is then free to enlarge.
+DOWNSTREAM TOLERATES IT — checked, not assumed: the only use the final
+consumer `threeadicRealization_det_cyclotomic_of_witness` makes of the
+coefficient field is injectivity of the embedding (automatic for a
+ring hom out of a field) and the characteristic-zero cast
+`(Pv q).coeff 0 = q`; neither mentions `Wit.E` as such.  The one genuinely
+new obligation sits at the Brauer gluing
+`exists_heckeField_system_of_witness`, which glues `n` pieces and would
+then hold `n` different `E'ᵢ`: it needs their COMPOSITUM inside `ℚ̄_ℓ`,
+which is a finitely generated algebraic extension of `ℚ` and hence still
+a number field, but that is a real formalization step and should be
+budgeted.
+
+CHECK THAT REFUTES (6): exhibit a clause of `PotentialModularityWitness`
+(the structure above) tying `E` to `heckeF` or to the descent; or exhibit
+a proof that `ℚ(a_w) = ℚ(D_p(a_w, Nw))`.  The latter is false already at
+`p = 2`, `Nw = 2`, `a_w = √2`, where `D_2(a_w, Nw) = a_w^2 − 2·Nw = −2`
+generates `ℚ` while `a_w` does not lie in it.
+
+(7) THE ROUTE (4) CALLS MOST PROMISING IS REFUTED BY AN EXPLICIT
+COUNTEREXAMPLE.  Finding (4) proposes to close the `E_λ`-versus-`ψℓ(E)`
+gap by "an a-priori bound (degree over `ψℓ(E)` together with an
+archimedean/Weil bound on the eigenvalues) pinning an element of `E_λ`
+that is algebraic of degree `≤ p` over `ψℓ(E)` into `ψℓ(E)`".  No such
+bound exists, because the statement it would have to prove is FALSE.
+
+Take `E = ℚ` (a legal `Wit.E`, by (6): nothing forces it larger), so
+`ψℓ(E) = ℚ ⊆ ℚ_ℓ ⊆ E_λ`.  Take `p = 3`, `ℓ = 11`, `Nw = 9` (the norm of a
+place of residue degree `2` over `3`), and `x = 3√3`.  Then:
+`x ∈ ℚ_11` because `3 ≡ 5^2 mod 11`, so `x ∈ E_λ`; `x` is algebraic of
+degree `2 ≤ p` over `ψℓ(E)`; the Dickson relation holds with `c = 0`,
+since `D_3(X, N) = X^3 − 3NX` gives `D_3(3√3, 9) = 3√3·(27 − 27) = 0`;
+and the Weil bound holds, `|x| = 3√3 ≈ 5.196 ≤ 2√Nw = 6`.  Yet `x ∉ ℚ`.
+Every hypothesis of the proposed pinning is met and its conclusion fails,
+and adding `E_λ`-membership does not help since the witness already lies
+in `ℚ_ℓ` itself.  (`p = 2` fails the same way: `ℓ = 7`, `Nw = 2`,
+`x = √2`, `c = −2`, `2 ≡ 3^2 mod 7`.)
+
+This is not a claim that the arithmetic context cannot be used further —
+only that the specific a-priori pinning (4) recommends cannot be proven,
+so a future owner should not spend a cycle building the `p`-th-power
+Frobenius comparison in order to reach it.  Findings (6) and (7) have the
+same root: for an arbitrary carrier the descended eigenvalue genuinely
+need NOT lie in `ψℓ(Wit.E)`, so the residual content of this leaf is not
+merely the `E_λ`-to-`ψℓ(E)` gap that (4) describes — it is that the true
+classical answer can sit outside the demanded field altogether.  Only the
+cut-level repair (1)+(6) removes that.
+
+CHECK THAT REFUTES (7): show `Wit.E` is constrained to contain the
+descended Hecke fields — which is exactly the check that refutes (6), and
+fails for the same reason.
+
 PLACEMENT: this leaf lives in this module rather than a new one because
 it quantifies over `PotentialModularityWitness`, `IsHardlyRamified` and
 `GaloisRep.charFrob`, all declared above; a separate module would have
