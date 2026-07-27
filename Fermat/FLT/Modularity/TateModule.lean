@@ -6845,8 +6845,8 @@ theorem span_range_eq_top_of_adicPin
 
 open _root_.NumberField in
 /-- **A SPANNING pinned image turns the frame comparison into a ring
-map** (sorry leaf — a conjugation argument; no topology, no completion,
-no pinning).
+map** (PROVEN 2026-07-27 — a conjugation argument; no topology, no
+completion, no pinning).
 
 Given the `ℤ_q`-linearity of `g` (supplied by
 `exists_padicAlgebra_of_additiveEquiv_sq`) and the spanning statement
@@ -6877,8 +6877,64 @@ theorem exists_ringHom_of_span_range_eq_top
     (hgj : ∀ (a : 𝓞 D) (u : Fin 2 → O₁), g (j₁ a • u) = j a • g u) :
     ∃ ρ : O₁ →+* O, Function.Injective ρ ∧
       (∀ c : ℤ_[q], ρ (algebraMap ℤ_[q] O₁ c) = algebraMap ℤ_[q] O c) ∧
-      (∀ a : 𝓞 D, ρ (j₁ a) = j a) :=
-  sorry
+      (∀ a : 𝓞 D, ρ (j₁ a) = j a) := by
+  classical
+  have hg0 : g 0 = 0 := by
+    have h := hgadd 0 0
+    simpa using h.symm
+  -- the transported scalar is unique, because `g` is onto and `Fin 2 → O` has a `1`
+  have huniq : ∀ z z' : O, (∀ u : Fin 2 → O₁, z • g u = z' • g u) → z = z' := by
+    intro z z' h
+    obtain ⟨u, hu⟩ := hgbij.2 (1 : Fin 2 → O)
+    have h1 := h u
+    rw [hu] at h1
+    have h2 := congrFun h1 0
+    simpa using h2
+  -- the `ℤ_q`-submodule of those `b` whose conjugate is again a scalar multiplication
+  set S : Submodule ℤ_[q] O₁ :=
+    { carrier := {b : O₁ | ∃ z : O, ∀ u : Fin 2 → O₁, g (b • u) = z • g u}
+      zero_mem' := ⟨0, fun u => by simpa using hg0⟩
+      add_mem' := by
+        rintro b b' ⟨z, hz⟩ ⟨z', hz'⟩
+        refine ⟨z + z', fun u => ?_⟩
+        rw [add_smul, hgadd, hz, hz', add_smul]
+      smul_mem' := by
+        rintro c b ⟨z, hz⟩
+        refine ⟨c • z, fun u => ?_⟩
+        rw [smul_assoc, hgsmul, hz, smul_assoc] }
+  have hmemS : ∀ b : O₁, ∃ z : O, ∀ u : Fin 2 → O₁, g (b • u) = z • g u := by
+    have htop : S = ⊤ := by
+      rw [← top_le_iff, ← hspan, Submodule.span_le]
+      rintro _ ⟨a, rfl⟩
+      exact ⟨j a, hgj a⟩
+    intro b
+    have hb : b ∈ S := by rw [htop]; exact Submodule.mem_top
+    exact hb
+  choose f hf using hmemS
+  refine ⟨{ toFun := f
+            map_one' := huniq _ _ fun u => by rw [← hf 1 u, one_smul, one_smul]
+            map_mul' := fun b b' => huniq _ _ fun u => by
+              rw [← hf (b * b') u, mul_smul, mul_smul, ← hf b' u, ← hf b (b' • u)]
+            map_zero' := huniq _ _ fun u => by
+              rw [← hf 0 u, zero_smul, zero_smul, hg0]
+            map_add' := fun b b' => huniq _ _ fun u => by
+              rw [← hf (b + b') u, add_smul, hgadd, hf b, hf b', add_smul] },
+    ?_, ?_, ?_⟩
+  · intro b b' hbb
+    have hbb' : f b = f b' := hbb
+    have hgg : ∀ u : Fin 2 → O₁, g (b • u) = g (b' • u) := fun u => by
+      rw [hf b u, hf b' u, hbb']
+    have hb1 : b • (1 : Fin 2 → O₁) = b' • (1 : Fin 2 → O₁) := hgbij.1 (hgg 1)
+    have h0 := congrFun hb1 0
+    simpa using h0
+  · intro c
+    refine huniq _ _ fun u => ?_
+    show f (algebraMap ℤ_[q] O₁ c) • g u = algebraMap ℤ_[q] O c • g u
+    rw [← hf (algebraMap ℤ_[q] O₁ c) u, algebraMap_smul, hgsmul, algebraMap_smul]
+  · intro a
+    refine huniq _ _ fun u => ?_
+    show f (j₁ a) • g u = j a • g u
+    rw [← hf (j₁ a) u, hgj]
 
 open _root_.NumberField in
 /-- **Transport of the coefficient-ring structure along a frame
