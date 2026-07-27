@@ -10,6 +10,8 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
+public import Mathlib.AlgebraicGeometry.GammaSpecAdjunction
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 /-!
 # Coherent pushforward along a proper morphism: `f_*𝒪_X = 𝒪_S`, and the rigidity lemma
@@ -37,16 +39,37 @@ direct images of quasi-coherent sheaves at all.
   main theorem below asserts).
 * `hasUniversallyTrivialPushforward_of_isProper_of_flat` — **THE LEAF**: the theorem
   itself, in its classical hypotheses.
-* `geometricallyReduced_of_smooth` — **LEAF**, small and separate: a smooth morphism has
-  geometrically reduced fibres (its fibres are smooth over a field, hence regular, hence
-  reduced).  `Mathlib` has `GeometricallyReduced` and has smoothness, and has no
-  implication between them at this pin.
-* `hasUniversallyTrivialPushforward_of_isProper_of_smooth` — PROVEN from those two.  This
-  is the form every consumer in this development actually applies, because an abelian
-  scheme and a smooth proper curve are both given as *smooth* rather than as *flat with
-  reduced fibres*.
+* `hasUniversallyTrivialPushforward_of_isProper_of_smooth` — PROVEN from the leaf above
+  together with `AlgebraicGeometry.GeometricallyReduced.of_smooth`.  This is the form
+  every consumer in this development actually applies, because an abelian scheme and a
+  smooth proper curve are both given as *smooth* rather than as *flat with reduced
+  fibres*.
+* `existsUnique_comp_eq_of_hasTrivialPushforward` — **PROVEN**: an `S`-morphism from `X`
+  to an AFFINE scheme factors uniquely through `S`.  This is the corollary of
+  `p_*𝒪_X = 𝒪_S` that the rigidity lemma consumes, and it is pure `Γ ⊣ Spec` formalism.
+* `existsUnique_comp_snd_eq_of_spec` — **PROVEN**: the rigidity lemma for an AFFINE
+  target, where it needs neither the contracted slice nor connectedness of `q`.
 * `exists_comp_snd_eq_of_slice_const` — **LEAF**: the RIGIDITY LEMMA (Mumford *AV* §4;
   BLR *Néron Models* 8.4 in the relative case).
+
+## `geometricallyReduced_of_smooth` WAS A DUPLICATE LEAF, and has been deleted (2026-07-27)
+
+This file used to carry its own sorried `geometricallyReduced_of_smooth`, described as
+"small and separate".  Both halves of that description were wrong, and the leaf was
+redundant:
+
+* it is **not small** — mathlib's `IsRegularLocalRing` API is two files with no
+  `IsRegularLocalRing → IsDomain` and no link to smoothness at all, so the classical
+  "smooth ⟹ regular ⟹ reduced" route has *both* implications missing at this pin;
+* it was **already decomposed elsewhere in this project**, in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`, where
+  `GeometricallyReduced.of_smooth` is PROVEN over the ring-theoretic leaf
+  `Algebra.Smooth.isReduced_of_isField` — which is where the content actually lives, and
+  which carries a full absence audit.
+
+So this file now imports that one and consumes `GeometricallyReduced.of_smooth`.  Anyone
+tempted to restate a smoothness-to-reducedness fact here should grep
+`isReduced_of_smooth_over_field` first.
 * `eq_comp_of_rigidity_axes` — PROVEN from the rigidity lemma: a morphism
   `A ×_S A ⟶ B` vanishing on both axes vanishes.  This is the form in which rigidity is
   used to prove that a pointed morphism of abelian schemes is a homomorphism.
@@ -147,34 +170,93 @@ theorem hasUniversallyTrivialPushforward_of_isProper_of_flat (f : X ⟶ S)
     HasUniversallyTrivialPushforward f :=
   sorry
 
-/-- **A SMOOTH MORPHISM HAS GEOMETRICALLY REDUCED FIBRES** (sorry node).
-
-TRUE and standard: smoothness is stable under base change, so every geometric fibre
-`X ×_S Spec K` is smooth over the field `K`; a scheme smooth over a field is regular,
-and a regular scheme is reduced.
-
-It is stated separately because it is genuinely a different fact from the pushforward
-theorem, is far smaller, and is missing from `Mathlib` at this pin in this direction
-only: `Mathlib/AlgebraicGeometry/Geometrically/Reduced.lean` defines
-`GeometricallyReduced` and `Mathlib/AlgebraicGeometry/Group/Smooth.lean` proves the
-CONVERSE for group schemes (`smooth_of_grpObj`), but there is no
-`[Smooth f] → GeometricallyReduced f`. -/
-theorem geometricallyReduced_of_smooth (f : X ⟶ S) [Smooth f] : GeometricallyReduced f :=
-  sorry
-
 /-- **`f_*𝒪_X = 𝒪_S` for a PROPER SMOOTH morphism with geometrically connected fibres**
-(PROVEN, over the two leaves above).
+(PROVEN, over the single leaf above).
 
 This is the form every consumer in this development uses, because both an abelian scheme
 (`AbelianSchemeStruct`, whose fields are `proper`, `smooth`, `connected`) and a smooth
 proper curve are handed over as smooth rather than as flat with reduced fibres.  The
 missing implications `Smooth → Flat` and `Smooth → LocallyOfFinitePresentation` are
-`Mathlib` instances. -/
+`Mathlib` instances, and geometric reducedness comes from
+`AlgebraicGeometry.GeometricallyReduced.of_smooth` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean` — see the module
+docstring for why this file no longer states that fact itself. -/
 theorem hasUniversallyTrivialPushforward_of_isProper_of_smooth (f : X ⟶ S)
     [IsProper f] [Smooth f] [GeometricallyConnected f] :
     HasUniversallyTrivialPushforward f :=
-  haveI := geometricallyReduced_of_smooth f
+  haveI := GeometricallyReduced.of_smooth f
   hasUniversallyTrivialPushforward_of_isProper_of_flat f
+
+/-! ### The corollary the rigidity lemma consumes: factoring an affine-valued morphism -/
+
+/-- **AN AFFINE-VALUED MORPHISM OUT OF `X` FACTORS UNIQUELY THROUGH `S`** (PROVEN).
+
+If `𝒪_S ⟶ p_*𝒪_X` is an isomorphism then for every ring `R` the map
+`(S ⟶ Spec R) → (X ⟶ Spec R)`, `c ↦ p ≫ c`, is a bijection.
+
+This is the promised short corollary of `p_*𝒪_X = 𝒪_S`, and it is pure `Γ ⊣ Spec`
+formalism with no geometry in it: under `ΓSpec.adjunction` the map `c ↦ p ≫ c` is
+conjugate to `g ↦ Scheme.Γ.rightOp.map p ≫ g` on hom-sets, and `Scheme.Γ.rightOp.map p`
+is `(p.appTop).op`, an isomorphism precisely because `HasTrivialPushforward p` says
+`p.app ⊤` is one.  No properness, flatness or connectedness is used — the *only* input is
+the pushforward hypothesis, which is why every geometric difficulty in the rigidity lemma
+sits in reducing to an affine target rather than in this step.
+
+Note it needs only `HasTrivialPushforward`, not the universal form; the universal form is
+what lets the CALLER apply it after a base change. -/
+theorem existsUnique_comp_eq_of_hasTrivialPushforward {p : X ⟶ S}
+    (hp : HasTrivialPushforward p) {R : CommRingCat.{u}} (m : X ⟶ Spec R) :
+    ∃! c : S ⟶ Spec R, m = p ≫ c := by
+  haveI : IsIso p.appTop := hp ⊤
+  haveI : IsIso (Scheme.Γ.rightOp.map p) := by
+    show IsIso ((p.appTop).op)
+    infer_instance
+  set eX := ΓSpec.adjunction.homEquiv X (Opposite.op R) with heX
+  set eS := ΓSpec.adjunction.homEquiv S (Opposite.op R) with heS
+  have hfun : (fun c : S ⟶ Spec R => p ≫ c)
+      = fun c => eX (Scheme.Γ.rightOp.map p ≫ eS.symm c) := by
+    funext c
+    rw [heX, heS, ΓSpec.adjunction.homEquiv_naturality_left, Equiv.apply_symm_apply]
+    rfl
+  have hcomp : Function.Bijective
+      (fun g : Scheme.Γ.rightOp.obj S ⟶ Opposite.op R => Scheme.Γ.rightOp.map p ≫ g) := by
+    constructor
+    · intro a b hab
+      simpa using congrArg (fun t => inv (Scheme.Γ.rightOp.map p) ≫ t) hab
+    · intro b
+      exact ⟨inv (Scheme.Γ.rightOp.map p) ≫ b, by simp⟩
+  have hbij : Function.Bijective (fun c : S ⟶ Spec R => p ≫ c) := by
+    rw [hfun]
+    exact eX.bijective.comp (hcomp.comp eS.symm.bijective)
+  obtain ⟨c, hc⟩ := hbij.surjective m
+  exact ⟨c, hc.symm, fun y hy => hbij.injective (by simpa using hy.symm.trans hc.symm)⟩
+
+/-- **THE RIGIDITY LEMMA FOR AN AFFINE TARGET** (PROVEN).
+
+With `Z = Spec R` the rigidity lemma needs **none** of its geometric hypotheses: no
+contracted slice `σ`, no `GeometricallyConnected q`, no separatedness of `r`, not even
+properness of `p`.  The factorization is immediate from
+`existsUnique_comp_eq_of_hasTrivialPushforward` applied to `pullback.snd p q`, which is a
+base change of `p` and therefore inherits `HasUniversallyTrivialPushforward` — this is
+exactly what the universal form of the hypothesis is for.  The factorization is moreover
+UNIQUE, which the general statement does not record.
+
+**This delimits the general leaf precisely.**  The whole content of
+`exists_comp_snd_eq_of_slice_const` is the reduction to an affine target, and that
+reduction is genuinely necessary: with `S = Spec k`, `X = Spec k`, `Y = Z = ℙ¹` and
+`m = 𝟙` every hypothesis of the general statement holds, `d = 𝟙` is the factorization,
+and `m` factors through no affine scheme at all.  So no globally-affine reduction can
+exist and the passage must be LOCAL on `Y` — which is what drags in properness (a closed
+image in `Y`), the contracted slice (a nonempty open where the image is affine) and
+connectedness of `q` (to spread that open over all of `Y`). -/
+theorem existsUnique_comp_snd_eq_of_spec {Y : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    (hpush : HasUniversallyTrivialPushforward p) {R : CommRingCat.{u}}
+    (m : pullback p q ⟶ Spec R) :
+    ∃! d : Y ⟶ Spec R, m = pullback.snd p q ≫ d := by
+  have h : hasTrivialPushforwardProperty.universally (pullback.snd p q) :=
+    MorphismProperty.pullback_snd (P := hasTrivialPushforwardProperty.universally) p q hpush
+  exact existsUnique_comp_eq_of_hasTrivialPushforward
+    (HasUniversallyTrivialPushforward.hasTrivialPushforward h) m
 
 /-! ### The rigidity lemma -/
 
@@ -219,11 +301,42 @@ change to `V`, which is why the hypothesis is the UNIVERSAL one.  So `m` factors
 **WHY `[GeometricallyConnected q]` IS NOT DECORATION**: see the FAITHFULNESS NOTE in the
 module docstring — with `Y = {y₀, y₁}` two points the statement is false.
 
-**THE CHECK THAT WOULD REFUTE ANY "THIS IS IRREDUCIBLE" VERDICT** on this leaf: land
+**THE CHECK THAT WOULD REFUTE ANY "THIS IS IRREDUCIBLE" VERDICT** on this leaf was: land
 `hasUniversallyTrivialPushforward_of_isProper_of_flat`, and add the corollary "an
-`S`-morphism from `X` to a scheme affine over `S` factors uniquely through `S`" (that
-corollary is short — it is the `Γ ⊣ Spec` adjunction plus `IsIso (f.app ⊤)`).  With those
-two in hand this leaf is the topological argument above and nothing more. -/
+`S`-morphism from `X` to an affine scheme factors uniquely through `S`" (that corollary is
+short — it is the `Γ ⊣ Spec` adjunction plus `IsIso (f.app ⊤)`).
+
+**HALF OF THAT CHECK HAS NOW BEEN RUN (2026-07-27) and it came out as predicted.**  The
+corollary is `existsUnique_comp_eq_of_hasTrivialPushforward` above — PROVEN, ~20 lines,
+no geometry — and the affine-target case of *this very statement* is
+`existsUnique_comp_snd_eq_of_spec`, also PROVEN, and stronger than this leaf's conclusion
+(it is an `∃!`, and it drops `σ`, `hconst`, `GeometricallyConnected q`, `IsSeparated r`
+and `IsProper p`).  So the pushforward hypothesis is no longer any part of the
+obstruction here, and neither is the flat pushforward leaf: **this leaf does not consume
+`hasUniversallyTrivialPushforward_of_isProper_of_flat` at all**, only the hypothesis
+`hpush` it is handed.
+
+**WHAT IS ACTUALLY LEFT, stated so it can be checked rather than believed.**  Exactly the
+reduction to an affine target, and it cannot be done globally: with `S = Spec k`,
+`X = Spec k`, `Y = Z = ℙ¹`, `q = r` the structure maps and `m = 𝟙`, every hypothesis
+holds, `d = 𝟙` is the factorization, and `m` factors through no affine scheme.  So the
+remaining work is genuinely local-to-global on `Y`, in three named pieces:
+
+1. *(local)* for `y` in a neighbourhood of `σ(S)`, the image of the slice over `y` lies in
+   an affine open `U ⊆ Z` — this is where properness of `pullback.fst p q` (closed image
+   in `Y`) and `hconst` are consumed;
+2. *(descent per piece)* over such a neighbourhood `V`, apply
+   `existsUnique_comp_snd_eq_of_spec` to the base change of `p` along `V ⟶ Y` — this step
+   is already available and needs nothing new;
+3. *(global)* glue the local factorizations with `Scheme.OpenCover.glueMorphisms` and
+   spread them over all of `Y` by `GeometricallyConnected q`.  **The gap here that is not
+   yet named anywhere**: the compatibility hypothesis of `glueMorphisms` asks for equality
+   of two morphisms into the possibly non-affine `Z`, and `existsUnique_comp_eq_of_…`
+   gives uniqueness only for affine targets.  What is wanted is that `pullback.snd p q` is
+   an EPIMORPHISM of schemes, which follows from `p_*𝒪 = 𝒪` plus separatedness of `r` via
+   the scheme-theoretic image — and scheme-theoretic image of a morphism is itself absent
+   from this project at this pin.  Whoever takes this leaf should expect that to be the
+   real new machinery, not the pushforward theorem. -/
 theorem exists_comp_snd_eq_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
     (hpush : HasUniversallyTrivialPushforward p)

@@ -18478,11 +18478,22 @@ now carries
 * `HasUniversallyTrivialPushforward` — `𝒪_S ≅ f_*𝒪_X`, universally;
 * `hasUniversallyTrivialPushforward_of_isProper_of_flat` — LEAF, the
   classical theorem (Hartshorne III.12, Mumford *AV* §5, Stacks 0E6R);
-* `geometricallyReduced_of_smooth` — LEAF, small and separate;
 * `hasUniversallyTrivialPushforward_of_isProper_of_smooth` — PROVEN over
-  those two, and it is the form an `AbelianSchemeStruct` can supply,
-  since its fields are `proper`, `smooth`, `connected`;
-* `exists_comp_snd_eq_of_slice_const` — LEAF, the RIGIDITY LEMMA;
+  that leaf, and it is the form an `AbelianSchemeStruct` can supply,
+  since its fields are `proper`, `smooth`, `connected`.  (It used to be
+  proven over a second leaf `geometricallyReduced_of_smooth` stated in
+  the same file; that leaf was a DUPLICATE of the already-decomposed
+  `GeometricallyReduced.of_smooth` in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`
+  and was deleted on 2026-07-27.)
+* `existsUnique_comp_eq_of_hasTrivialPushforward` and
+  `existsUnique_comp_snd_eq_of_spec` — PROVEN: the `Γ ⊣ Spec` corollary
+  of `p_*𝒪 = 𝒪`, and the rigidity lemma for an AFFINE target, which
+  needs neither the contracted slice nor connectedness;
+* `exists_comp_snd_eq_of_slice_const` — LEAF, the RIGIDITY LEMMA, whose
+  remaining content is exactly the LOCAL-TO-GLOBAL reduction to an
+  affine target (see its docstring for the `ℙ¹` example showing no
+  global affine reduction can exist);
 * `eq_comp_of_rigidity_axes` — PROVEN over it: a morphism
   `A ×_S A ⟶ B` vanishing on both axes vanishes.
 
