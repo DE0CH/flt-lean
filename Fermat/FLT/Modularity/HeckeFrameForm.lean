@@ -47,6 +47,13 @@ extension `k ⊆ F` and an arbitrary `k`-algebra `T`, exactly as
   `frameSymplectic_nondegenerate`, completing the equivalence
   "nondegenerate alternating self-adjoint form on `A²`" ↔ "Frobenius
   form on `A`".
+* `frameCayleyHamilton` — **Cayley–Hamilton on the frame**:
+  `g² − tr(g)·g + det(g) = 0` for `A`-linear `g`, with trace and
+  determinant read off the images of the standard frame exactly as in
+  `frameSymplectic_map_of_commuting`. This is what turns the
+  Eichler–Shimura *congruence relation* — a quadratic operator identity —
+  into the classical *trace* condition `tr (τJ Frob_q) = T_q`, and is
+  used for exactly that in `Interface.lean`.
 -/
 module
 
@@ -399,6 +406,68 @@ theorem frameSymplectic_map_of_commuting
   letI : CommRing (F ⊗[k] T) :=
     { (inferInstance : Ring (F ⊗[k] T)) with mul_comm := hcomm }
   ring
+
+/-- **Cayley–Hamilton on the Hecke frame.** For an `A`-linear
+endomorphism `g` of `A²` (`A := F ⊗ₖ T`, commutative),
+
+  `g² − (a + d)·g + (ad − bc) = 0`,   `g e₁ = (a, c)`, `g e₂ = (b, d)`,
+
+where the scalars act through `frameMul`. The trace and determinant are
+read off the images of the standard frame in exactly the same shape as in
+`frameSymplectic_map_of_commuting`, so the two lemmas compose without a
+translation step.
+
+WHAT IT IS FOR. The Eichler–Shimura clause of
+`ModularTateGaloisData.congruence` is the quadratic operator identity
+`τJ(Frob_q)² − T_q·τJ(Frob_q) + q = 0`. Given the determinant condition
+`det (τJ Frob_q) = q`, this lemma shows that identity is *equivalent* to
+the single scalar equation
+
+  `tr (τJ Frob_q) = T_q`,
+
+which is the form the classical statement and the geometry both produce
+("`ρ_f(Frob_q)` has trace `a_q` and determinant `q`"). So it is what lets
+`exists_galoisRep_modularTateFrame_det` in `Interface.lean` be glue over a
+leaf carrying the trace condition instead of the operator identity.
+
+The two directions are not quite symmetric and only one of them is proved
+here: Cayley–Hamilton gives congruence from trace-and-determinant with no
+side condition. The converse needs `τJ(Frob_q)` invertible to cancel it
+from `(tr − T_q)·τJ(Frob_q) = 0`, which holds in the application because
+`det = q` is a unit of `A`, but is not part of this statement.
+
+No commutativity instance is installed on `F ⊗ₖ T`; as everywhere in this
+file it is supplied as the hypothesis `hcomm`, so no instance diamond
+enters any type. -/
+theorem frameCayleyHamilton
+    (hcomm : ∀ x y : F ⊗[k] T, x * y = y * x)
+    (g : Module.End F (HeckeFrame k F T))
+    (hg : ∀ (r : F ⊗[k] T) (x : HeckeFrame k F T),
+      g (frameMul (k := k) (F := F) (T := T) r x) =
+        frameMul (k := k) (F := F) (T := T) r (g x)) :
+    g * g
+        - frameMul (k := k) (F := F) (T := T)
+            (g frameBasis₁ 0 + g frameBasis₂ 1) * g
+        + frameMul (k := k) (F := F) (T := T)
+            (g frameBasis₁ 0 * g frameBasis₂ 1 - g frameBasis₂ 0 * g frameBasis₁ 1) = 0 := by
+  classical
+  letI : CommRing (F ⊗[k] T) :=
+    { (inferInstance : Ring (F ⊗[k] T)) with mul_comm := hcomm }
+  have hcoord : ∀ (z : HeckeFrame k F T) (i : Fin 2),
+      g z i = z 0 * g frameBasis₁ i + z 1 * g frameBasis₂ i := by
+    intro z i
+    conv_lhs => rw [frame_span z]
+    rw [map_add, hg, hg]
+    show frameMul (k := k) (F := F) (T := T) (z 0) (g frameBasis₁) i +
+      frameMul (k := k) (F := F) (T := T) (z 1) (g frameBasis₂) i = _
+    rw [frameMul_apply_coord, frameMul_apply_coord]
+  refine LinearMap.ext fun x => ?_
+  funext i
+  simp only [LinearMap.add_apply, LinearMap.sub_apply,
+    LinearMap.zero_apply, Pi.add_apply, Pi.sub_apply, Pi.zero_apply,
+    Module.End.mul_apply, frameMul_apply_coord]
+  rw [hcoord (g x) i, hcoord x 0, hcoord x 1, hcoord x i]
+  fin_cases i <;> simp only [Fin.zero_eta, Fin.mk_one] <;> ring
 
 /-- **The converse of `frameSymplectic_nondegenerate`**: if the form
 attached to `θ` is nondegenerate then `θ` is a Frobenius form. With
