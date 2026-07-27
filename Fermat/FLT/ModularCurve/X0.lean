@@ -318,6 +318,12 @@ public import Mathlib.Data.ZMod.Basic
 -- `Scheme.Hom.image` / `imageι` / `toImage`: the scheme-theoretic image of a
 -- morphism, which is how the descent leaf's closed subscheme `C` is built.
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
+-- The fpqc topology is subcanonical, and a faithfully flat quasi-compact
+-- morphism is an `EffectiveEpi` — hence an `Epi`.  This is what lets
+-- `Gamma0Atlas.toIsCoarseModuliY0` cancel the rigidifying cover and so
+-- DERIVE the initiality clause of `IsCoarseModuliY0` instead of citing it;
+-- see the atlas section before `exists_coarseModuliY0_of_pos`.
+public import Mathlib.AlgebraicGeometry.Sites.Fpqc
 
 @[expose] public section
 
@@ -731,8 +737,261 @@ theorem exists_coarseModuliY0_zero :
           ⟨emptyIsInitial.hom_ext _ _, fun {_T} _g d => (hinit d).hom_ext _ _⟩,
           fun _u _hu => emptyIsInitial.hom_ext _ _⟩ }
 
-/-- **Existence of the coarse moduli space `Y_0(N)` for `N ≥ 1`** (sorry
-node — a CITATION, not a gap in the argument).
+/-! ### The Katz–Mazur atlas, and the initiality clause it implies
+
+`exists_coarseModuliY0_of_pos` was a single citation covering all three
+clauses of `IsCoarseModuliY0`.  It is now DERIVED (2026-07-27) from
+`exists_gamma0Atlas`, which asks only for what Katz–Mazur actually
+construct.  The clause that stops being cited is the one the citation
+never covered: **initiality**.
+
+The docstring below says as much itself — "the initiality clause is not
+part of Katz–Mazur's *definition* ... but it follows from it" — and then
+left that inference unformalised, inside the sorry.
+`Gamma0Atlas.toIsCoarseModuliY0` is that inference, written out:
+
+* an atlas carries the classifying map and its naturality — Katz–Mazur
+  (8.1.3), a *construction*, with no universal property in it;
+* it carries a **rigidifying cover**: every `Γ₀(N)`-datum is, fppf-locally
+  on its base, a base change of one family `dM` over one scheme `M`.  This
+  is (8.1.1)'s rigidification by `[Γ(n)]`-structures, which over a
+  `ℚ`-scheme form a finite étale `GL₂(ℤ/n)`-torsor, hence a faithfully
+  flat quasi-compact cover;
+* it carries the **categorical quotient** property of `classify dM`:
+  `𝔐(𝒫, [Γ(n)])` is affine, so the quotient of (8.1.1) is `Spec` of the
+  ring of invariants, and that is a categorical quotient in the category
+  of ALL schemes (Katz–Mazur Ch. 7; Mumford, *GIT*, Ch. 0 §2).
+
+Initiality then follows with **no geometry at all**.  The proof is worth
+stating because it is short and it is what the citation was hiding: a
+cocone `c` is automatically constant on isomorphism classes, since two
+rigidifications `a, b` of one datum `d₁` make `c d₁` equal to both
+`a ≫ c dM` and `b ≫ c dM` *by `c`'s own naturality*; so `c dM` factors
+uniquely through the quotient, which gives the map `u`.  That `u` computes
+`c` on an ARBITRARY datum is then checked after pulling back to the
+rigidifying cover `p`, where both sides become statements about `dM`, and
+`p` may be cancelled because a faithfully flat quasi-compact morphism is
+an epimorphism of schemes (`EffectiveEpi`, from
+`AlgebraicGeometry.Sites.Fpqc`).
+
+**THE CUT CANNOT WEAKEN THE TREE, AND HERE IS WHY THAT IS MECHANICAL.**
+`Gamma0Atlas.toIsCoarseModuliY0` is a function *from* the new leaf *to*
+the old one, so `exists_gamma0Atlas` is at least as strong as
+`exists_coarseModuliY0_of_pos`; nothing downstream can be satisfied by an
+atlas that a coarse moduli space would not also satisfy.  In particular
+the leaf is not vacuously satisfiable: the trivial candidate
+`Y = Spec ℚ` with `classify g d = g` does carry a classifying map and its
+naturality, and fails `quotient` — take `Y' = M` and `φ = 𝟙`, which would
+force `𝟙_M` to factor through `M ⟶ Spec ℚ`.
+
+**Why the cut is at THIS boundary and not at the obvious one.**  The
+natural-looking decomposition — construct `classify` by fppf descent from
+a rigidification — is NOT writable at this pin, and the obstruction is
+specific: descending `classify` requires comparing the pullbacks of a
+datum along two maps `g₁, g₂ : Z ⟶ T'`, i.e. it requires *base change of
+`Γ₀(N)`-data to be a construction*.  It is not one here — `IsBaseChangeOf`
+is deliberately a *stated relation* (see its docstring) — and it cannot
+become one until something in this project constructs an
+`AbelianSchemeStruct` on a pullback.  Nothing does: every occurrence of
+`AbelianSchemeStruct` in the tree is a binder or an existential.  **The
+check that would refute this**: `grep -rn "AbelianSchemeStruct" Fermat/`
+finding a producer rather than a consumer.  The cut taken here needs no
+base change to be constructed, only to be *exhibited by the leaf*, which
+is why it goes through. -/
+
+/-- **Morphisms to `Spec ℚ` are unique when they exist.**
+
+`Hom(X, Spec R) ≃ Hom(R, Γ(X, ⊤))` and `Subsingleton (ℚ →+* A)`
+(`Rat.subsingleton_ringHom`: a ring map out of `ℚ` is determined, since
+`ℚ` is a localisation of the initial ring `ℤ`).
+
+This is what makes the structure-morphism bookkeeping of
+`Gamma0Atlas.toIsCoarseModuliY0` disappear: a `Γ₀(N)`-datum over `T`
+carries no `ℚ`-structure of its own, so the two base points `p ≫ g` and
+`m ≫ strM` that the rigidifying cover produces must be identified, and
+over `Spec ℚ` they are equal on the nose. -/
+theorem subsingleton_hom_specQ (X : Scheme.{0}) : Subsingleton (X ⟶ SpecQ) := by
+  constructor
+  intro f g
+  apply AlgebraicGeometry.ext_to_Spec
+  exact CommRingCat.hom_ext (Subsingleton.elim _ _)
+
+/-- **A Katz–Mazur atlas for the `Γ₀(N)`-moduli problem over `ℚ`**: the
+data Katz–Mazur (8.1.1) and (8.1.3) actually construct, before any
+universal property is asserted.
+
+`Gamma0Atlas.toIsCoarseModuliY0` turns it into an `IsCoarseModuliY0`, so
+this structure is a *sufficient* presentation of the coarse space; the
+section comment above explains why it is also a faithful one.
+
+The three non-trivial fields, and what supplies each:
+
+* `cover` — the rigidification.  Over a `ℚ`-scheme the level-`n`
+  structures on an elliptic scheme form a finite étale `GL₂(ℤ/n)`-torsor,
+  so after a finite étale surjective — hence flat, surjective and
+  quasi-compact — base change `p : T' ⟶ T` the datum acquires one and is
+  classified by a map `m : T' ⟶ M`.  Note that `d'` is *supplied* by the
+  field rather than constructed: this development states base change and
+  never builds it.
+* `quotient` — the categorical quotient property of `classify dM`, in the
+  form that is actually available from GIT: a morphism out of `M` that
+  cannot distinguish two rigidifications of the same datum is invariant
+  under the deck group, and an invariant morphism out of an affine scheme
+  factors uniquely through `Spec` of the invariants.
+* `classify_natural` — Katz–Mazur (8.1.3)'s independence of the auxiliary
+  level `n`, which is what makes the classifying map natural in the base.
+
+`Y` is `M/GL₂(ℤ/n)` and `classify strM dM` is the quotient map; the
+structure does not name the group, because nothing below needs it — only
+the two properties above. -/
+structure Gamma0Atlas (N : ℕ) where
+  /-- the coarse space to be -/
+  Y : Scheme.{0}
+  /-- its structure morphism to `Spec ℚ` -/
+  str : Y ⟶ SpecQ
+  /-- the classifying map of the moduli problem, Katz–Mazur (8.1.3) -/
+  classify : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum N T → RelPoint str g
+  /-- the classifying map is natural in the base -/
+  classify_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+    IsBaseChangeOf h d' d → classify g' d' = RelPoint.pre h hg (classify g d)
+  /-- the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` -/
+  M : Scheme.{0}
+  /-- its structure morphism -/
+  strM : M ⟶ SpecQ
+  /-- the family it carries -/
+  dM : Gamma0Datum N M
+  /-- **rigidification**: every datum is, after a faithfully flat
+  quasi-compact base change, a base change of `dM` -/
+  cover : ∀ {T : Scheme.{0}} (d : Gamma0Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T') (m : T' ⟶ M),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (IsBaseChangeOf m d' dM)
+  /-- **categorical quotient**: a morphism out of `M` that does not
+  separate two rigidifications of one datum factors uniquely through the
+  classifying map of `dM` -/
+  quotient : ∀ {Y' : Scheme.{0}} (φ : M ⟶ Y'),
+    (∀ {Z : Scheme.{0}} (a b : Z ⟶ M) (d₁ : Gamma0Datum N Z),
+      IsBaseChangeOf a d₁ dM → IsBaseChangeOf b d₁ dM → a ≫ φ = b ≫ φ) →
+    ∃! ψ : Y ⟶ Y', (classify strM dM).1 ≫ ψ = φ
+
+/-- **An atlas IS a coarse moduli space** (PROVEN 2026-07-27) — the
+initiality clause of `IsCoarseModuliY0` derived from Katz–Mazur's
+construction rather than cited alongside it.
+
+See the section comment above for the argument and for why this is the
+boundary at which the node cuts. -/
+def Gamma0Atlas.toIsCoarseModuliY0 {N : ℕ} (A : Gamma0Atlas N) :
+    IsCoarseModuliY0 N A.str where
+  classify := A.classify
+  classify_natural := A.classify_natural
+  universal := by
+    intro Y' str' c hc
+    haveI : ∀ Z : Scheme.{0}, Subsingleton (Z ⟶ SpecQ) := subsingleton_hom_specQ
+    -- A cocone cannot separate two rigidifications of one datum: its own
+    -- naturality equates both composites with its value at that datum.
+    have hconst : ∀ {Z : Scheme.{0}} (a b : Z ⟶ A.M) (d₁ : Gamma0Datum N Z),
+        IsBaseChangeOf a d₁ A.dM → IsBaseChangeOf b d₁ A.dM →
+        a ≫ (c A.strM A.dM).1 = b ≫ (c A.strM A.dM).1 := by
+      intro Z a b d₁ ha hb
+      have h1 : (c (a ≫ A.strM) d₁).1 = a ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc a rfl ha)
+      have h2 : (c (b ≫ A.strM) d₁).1 = b ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc b rfl hb)
+      rw [← h1, ← h2, Subsingleton.elim (a ≫ A.strM) (b ≫ A.strM)]
+    -- so it factors through the quotient, uniquely.
+    obtain ⟨u, hu, huniq⟩ := A.quotient (c A.strM A.dM).1 hconst
+    refine ⟨u, ⟨Subsingleton.elim _ _, ?_⟩, ?_⟩
+    · -- `u` computes `c` at an arbitrary datum: pull back to the
+      -- rigidifying cover, where both sides are statements about `dM`,
+      -- and cancel the cover.
+      intro T g d
+      obtain ⟨T', p, d', m, hflat, hsurj, hqc, ⟨hbp⟩, ⟨hbm⟩⟩ := A.cover d
+      haveI := hflat
+      haveI := hsurj
+      haveI := hqc
+      have hcp : (c (p ≫ g) d').1 = p ≫ (c g d).1 :=
+        congrArg Subtype.val (hc p rfl hbp)
+      have hcm : (c (m ≫ A.strM) d').1 = m ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc m rfl hbm)
+      have hAp : (A.classify (p ≫ g) d').1 = p ≫ (A.classify g d).1 :=
+        congrArg Subtype.val (A.classify_natural p rfl hbp)
+      have hAm : (A.classify (m ≫ A.strM) d').1 = m ≫ (A.classify A.strM A.dM).1 :=
+        congrArg Subtype.val (A.classify_natural m rfl hbm)
+      have hst : (p ≫ g) = (m ≫ A.strM) := Subsingleton.elim _ _
+      rw [hst] at hcp hAp
+      have key : p ≫ (c g d).1 = p ≫ ((A.classify g d).1 ≫ u) := by
+        rw [← hcp, hcm, ← hu, ← Category.assoc, ← hAm, hAp, Category.assoc]
+      exact (cancel_epi p).mp key
+    · -- uniqueness: a rival `u₁` factors `c dM` through the quotient too.
+      rintro u₁ ⟨-, h₁⟩
+      exact huniq u₁ (h₁ A.strM A.dM).symm
+
+/-- **Existence of the Katz–Mazur atlas for `N ≥ 1`** (sorry node — the
+CITATION, now carrying only what Katz–Mazur construct).
+
+This replaces the citation formerly attached to
+`exists_coarseModuliY0_of_pos`, from which it differs by exactly the
+initiality clause: that clause is now PROVEN, in
+`Gamma0Atlas.toIsCoarseModuliY0`.  The full citation, the matching of
+hypotheses, and the faithfulness audit are recorded on
+`exists_coarseModuliY0_of_pos` below and are unchanged; only the shape of
+what is assumed has moved.
+
+## What closing this needs, as separable items
+
+Each is stated so that it can be dispatched without the others, and each
+carries the check that would refute its being open.
+
+1. **`[Γ(n)]`-structures and the representability of the rigidified
+   problem** (Katz–Mazur 4.7, 5.1.1, 6.6.1): the affine scheme `M` and
+   its family `dM`.  This is the `M`, `strM`, `dM` block.  *Refuting
+   check*: a `Gamma0Datum`-valued producer anywhere in the tree —
+   `grep -rn "Gamma0Datum" Fermat/` currently finds only binders,
+   existentials, and the two descent leaves.
+2. **The level-`n` torsor**: over a `ℚ`-scheme the level-`n` structures on
+   an elliptic scheme form a finite étale `GL₂(ℤ/n)`-torsor.  This is the
+   `cover` field, and it is where `exists_torsionSubscheme` below would be
+   consumed.  *Refuting check*: `grep -rn "IsTorsor\|Torsor" Fermat/` and
+   the same over `.lake/packages/mathlib` for a finite étale torsor API.
+3. **The categorical quotient of an affine scheme by a finite group**:
+   `Spec (A^G)` receives every `G`-invariant morphism out of `Spec A`
+   uniquely.  This is the `quotient` field, and it is the one item that is
+   **entirely mathlib-facing** — it mentions no modular curve and could be
+   proven by someone who has never read this file.  *State of the pin,
+   rechecked 2026-07-27*: mathlib has the ring-theoretic half —
+   `Algebra.IsInvariant` (`Mathlib/RingTheory/Invariant/Basic.lean`), with
+   `Algebra.IsInvariant.isIntegral`, `exists_smul_of_under_eq` and
+   `orbit_eq_primesOver`, which say exactly that `Spec A ⟶ Spec (A^G)` is
+   integral with the `G`-orbits as its fibres — and does **not** have the
+   scheme-level statement.  *Refuting check*:
+   `grep -rn "categorical quotient\|CategoricalQuotient" .lake/packages/mathlib/Mathlib/`
+   returns nothing today.
+
+## What is NO LONGER needed, and was wrongly recorded as needed
+
+The previous audit said every route "needs a theory that does not exist
+here", listing fpqc descent among the missing.  **Descent for morphisms is
+present** and is what `Gamma0Atlas.toIsCoarseModuliY0` runs on:
+`AlgebraicGeometry.fpqcTopology` is `Subcanonical`, and
+`instance : [QuasiCompact f] → [Surjective f] → [Flat f] → EffectiveEpi f`
+(`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`) gives `Epi` through
+`CategoryTheory.epi_of_effectiveEpi`.  *The check that refutes the old
+claim*: those two names resolve, which this file now demonstrates by
+using them. -/
+theorem exists_gamma0Atlas (N : ℕ) (hN : 0 < N) : Nonempty (Gamma0Atlas N) :=
+  sorry
+
+/-- **Existence of the coarse moduli space `Y_0(N)` for `N ≥ 1`**
+(PROVEN 2026-07-27 from `exists_gamma0Atlas`, which now carries the
+citation).
+
+Everything below — the citation, the matching of hypotheses, the
+faithfulness audit — describes what `exists_gamma0Atlas` assumes, and is
+unchanged.  What is no longer assumed is the **initiality** clause of
+`IsCoarseModuliY0`: it is derived in `Gamma0Atlas.toIsCoarseModuliY0`
+from the rigidifying cover and the categorical-quotient property, using
+fpqc descent.  See the section comment above that theorem.
 
 ## What is cited
 
@@ -830,19 +1089,31 @@ nothing below consumes it, and it is recorded so that a successor
 closing this node knows precisely which classical fact reconciles the
 two phrasings.
 
-## Why it is IRREDUCIBLE at this pin
+## The former "IRREDUCIBLE at this pin" audit, CORRECTED 2026-07-27
 
-Surveyed 2026-07-26: `Mathlib` has no modular curve, no modular polynomial,
+That audit read: "`Mathlib` has no modular curve, no modular polynomial,
 no moduli stack, no coarse-space existence theorem, no geometric invariant
-theory and no quotient of a scheme by a finite group; `~/cs/FLT` takes the
-weaker Mazur torsion bound as a bare `axiom`.  Every route to this
-statement — Katz–Mazur (8.1.1) via `[Γ(n)]`-rigidification and quotients,
-Deligne–Rapoport via stacks, or the classical construction of `Y_0(N)` as
-the normalisation of `Φ_N(X, Y) = 0` in `𝔸¹ × 𝔸¹` with classifying map
-`(E, C) ↦ (j(E), j(E/C))` — needs a theory that does not exist here. -/
+theory and no quotient of a scheme by a finite group ... every route needs
+a theory that does not exist here."  The list of *absent* theories is
+still accurate — each was re-checked by name against a seeded `.lake` on
+2026-07-27 — but the conclusion drawn from it was too strong, in two
+separate ways, and both are now demonstrated rather than argued:
+
+* **Descent for morphisms is PRESENT**, and it is the tool the route
+  needed: `fpqcTopology` is `Subcanonical` and a faithfully flat
+  quasi-compact morphism is an `EffectiveEpi`, hence an `Epi`
+  (`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`).  This file now uses both.
+* **Stating a theory is not proving it.**  Katz–Mazur's rigidification and
+  their quotient by `GL₂(ℤ/n)` had to be *stated* for the cut, not proven,
+  and once stated the initiality clause — the only clause the citation did
+  not cover — became a short formal argument.
+
+The remaining absences (a modular curve, `[Γ(n)]`-structures, GIT) are
+what `exists_gamma0Atlas` now carries, itemised in its docstring. -/
 theorem exists_coarseModuliY0_of_pos (N : ℕ) (hN : 0 < N) :
-    ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 N str) :=
-  sorry
+    ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 N str) := by
+  obtain ⟨A⟩ := exists_gamma0Atlas N hN
+  exact ⟨A.Y, A.str, ⟨A.toIsCoarseModuliY0⟩⟩
 
 /-! ### The two missing theories behind the bridge
 
