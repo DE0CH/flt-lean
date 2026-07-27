@@ -6587,6 +6587,22 @@ of this leaf, and a successor pursuing step 2 through
 verbatim; the paragraph is kept in full because it is the reason the
 guard exists.
 
+PRECISION NOTE (2026-07-27, from the falsity audit of
+`Modularity/KhareWintenberger.lean`'s `HasSplitHilbertBlumenthalModuli`;
+it does not change the conclusion above, only the class group it names).
+"`hom` is an ISOMORPHISM" is NOT the same as "`hom` is a PRINCIPAL
+polarization". `Fermat.PolarizationStruct` carries no POSITIVITY — `hom`
+and `-hom` satisfy every one of its fields alike — so `ker hom = 0` says
+only that `hom` is a symmetric `𝒪_D`-linear isomorphism `A ≃ A^∨`, i.e.
+that a GENERATOR of `𝔠 = Hom^{sym}_{𝒪_D}(A, A^∨)` exists, i.e. that `[𝔠]`
+is trivial in the WIDE class group `Cl(D)`. It says nothing about `[𝔠]` in
+`Cl⁺(D)`. The falsity above therefore needs `h(D) > 1` rather than
+`h⁺(D) > 1` — still true, e.g. `D = ℚ(√15)` with `h = 2`, so the guard is
+justified as recorded. But do not reuse the phrase "principal
+`𝒪_D`-polarization" for what `𝒩 = ⊤` imposes: `D = ℚ(√3)` has `h = 1`
+and `h⁺ = 2`, and its nontrivial-narrow-class HBAVs satisfy
+`PolarizationStruct d ⊤` perfectly well.
+
 `IsTateWeilPairing` avoids this by being an `I`-LOCAL statement, and that
 is not a dodge but the mathematically correct scope: the classical
 identification is `∧²_{𝒪_D} T_I A ≅ 𝔡_D⁻¹ 𝔠 (1)` for the polarization
