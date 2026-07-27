@@ -871,22 +871,76 @@ moduli point (`nonempty_gamma0Datum_of_stable`), the compactification
 audit in the docstring below for the five-input anatomy; this node is
 inputs (3) and (4) of it, fused.
 
-**WHY THIS IS AN EXISTENCE STATEMENT OVER THE DATUM, AND WHY THE
-UNIVERSALLY QUANTIFIED FORM WOULD BE FALSE.** The tempting shape is
-`∀ (hjr : IsX0JReductionAt N q hX hX' hj) y, ¬ hX'.IsCusp (hjr.redX …)`,
-taking the datum as a hypothesis like every other lemma around it. That
-statement is **FALSE**, not merely unproven, and `X0.lean`'s
-FORMAL-CONTENT AUDIT on `IsX0JReductionAt` gives the explicit junk
-witness: take `redX` to send *every* rational point outside the image of
+**WHY BOTH THE `j`-MAP AND THE REDUCTION DATUM ARE PRODUCED HERE RATHER
+THAN ASSUMED. Taking either as a hypothesis makes this node FALSE.**
+Two separate junk witnesses, and the second was missed on the first pass
+and caught in review — it is the subtler of the two, so it is recorded
+first.
+
+*The `j`-map.* `IsJMapOn` under-determines `jm` away from the image of
+`hc.classify`: its only axiom, `classify_jm`, is an EXISTENTIAL ("*some*
+datum is classified by a point carrying `E.j`"), deliberately so — see
+`X0.lean`'s subsection docstring for why the equational form would risk
+making `IsJMapOn` unsatisfiable. So `jm` may be arbitrary at a rational
+point the existential does not pin. Now suppose this node took
+`hj : IsJMapOn N hc` as a hypothesis. Its conclusion says every rational
+`y` of `Y_0(N)` has NON-cuspidal reduction, i.e.
+`hjr.redX (sectionAlong … y) = sectionAlong jY' hX'.comm y'` for some
+`y'`; feeding that to `red_jm` yields `0 ≤ padicValRat q (hj.jm y)` for
+**every** `y`. So the conclusion silently entails that `jm` is
+`q`-integral everywhere on `Y_0(N)(ℚ)` — and against a junk `hj` whose
+`jm` has a `q`-pole at any rational point, no `hjr` whatever can exist
+and the statement is unsatisfiable.
+
+Note the shape of the trap: the conclusion **does not mention `hj.jm` at
+all**. The coupling runs through `red_jm`, the axiom of the *other*
+structure, which is why reading the conclusion alone is not enough to
+clear a statement built over `IsJMapOn`. The general rule (and it is the
+one `X0.lean`'s own audits prescribe): a leaf over `IsJMapOn` must
+PRODUCE its `j`-map existentially, never quantify over it. Doing so also
+weakens the obligation — the prover gets to pick the genuine `j`-map from
+`exists_jMap` — which is the direction that makes a leaf easier, not
+harder.
+
+*The reduction datum.* Same conclusion by the junk witness that
+`X0.lean`'s FORMAL-CONTENT AUDIT on `IsX0JReductionAt` states outright:
+take `redX` to send *every* rational point outside the image of
 `sectionAlong jY' hX'.comm`. Then `red_jm`'s hypothesis is never
 satisfiable, so `red_jm` holds vacuously and the structure is inhabited
 with no arithmetic content — while `hX'.IsCusp (redX x)` holds for every
-`x`, contradicting the conclusion for every `x` coming from `Y`. So the
-datum must be PRODUCED here, not assumed; the honest reading is "the
-GENUINE reduction datum, which exists by `exists_x0JReductionAt`, has
-this property". That is the discipline `X0.lean` prescribes verbatim:
-*the formal-immersion leaf must be stated against a datum produced by
-`exists_x0JReductionAt`, never against an arbitrary one.*
+`x`, contradicting the conclusion for every `x` coming from `Y`. That
+audit says it verbatim: *the formal-immersion leaf must be stated against
+a datum produced by `exists_x0JReductionAt`, never against an arbitrary
+one.*
+
+So the honest reading of this node is "the GENUINE `j`-map and the
+GENUINE reduction datum — which exist by `exists_jMap` and
+`exists_x0JReductionAt` — have this property", and the prover discharges
+it by producing those two and then running Mazur's argument.
+
+*A consequence for the free-floating sweep, so it is not misread as a
+regression.* Because this node PRODUCES `hj` rather than taking it,
+`exists_jMap` and `exists_x0JReductionAt` are not in the used-constant
+cone of `potentiallyGoodReduction_of_isogenyCharacter` — a sorried body
+contributes no dependency edges, so they stay outside the cone until THIS
+node is proven, at which point its proof consumes both. That was already
+their state when they landed (neither had any consumer in the tree), so
+nothing was orphaned by cutting here; and the only way to put them in the
+cone today would be to take `hj` as a hypothesis, which is precisely the
+FALSE statement audited above. Faithfulness wins that trade. By
+contrast `exists_cuspidalReduction_of_padicValRat_neg` IS now in the cone
+— this leaf's consumer is the elliptic-curve-shaped entry point it was
+written for.
+
+**THE CHECK THAT WOULD REFUTE THE FIRST AUDIT** (i.e. show the `j`-map
+could safely have been a hypothesis after all): prove that for every
+`hc` and every `hj : IsJMapOn N hc`, `hc.classify` is surjective onto
+`RelPoint strY (𝟙 SpecQ)` AND every rational point is classified by a
+pair `(E, C)` defined over `ℚ`, so that `classify_jm` pins `jm`
+everywhere. Both fail in general for a COARSE space — that is exactly the
+reason `cuspidal_x0_prime` is stated over the coarse space rather than
+over pairs — so the audit is expected to stand. Recording the check
+anyway, because it is the one that decides it.
 
 **THE PROOF (Mazur, *Modular curves and the Eisenstein ideal*, IHÉS 47
 (1977), Thm 4; *Rational isogenies of prime degree*, Cor. 4.4).** Let `y`
@@ -939,9 +993,9 @@ being assumed here. -/
 theorem exists_noCuspidalReduction_of_isogenyPrime (N q : ℕ)
     (_hN : N.Prime) (_hN19 : 19 < N) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqN : q ≠ N)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    {hc : IsCoarseModuliY0 N strY} (hX : IsCompactificationY0 strY strX)
-    (hj : IsJMapOn N hc) :
-    ∃ (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q) (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
+    (hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :
+    ∃ (hj : IsJMapOn N hc) (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q)
+      (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
       (hX' : IsX0Compactification N strX' strY' jY')
       (hjr : IsX0JReductionAt N q hX hX' hj),
       ∀ y : RelPoint strY (𝟙 SpecQ),
@@ -1066,9 +1120,13 @@ equality with a named cusp:
   `padicValRat q E.j < 0`, a rational point `y` of `Y_0(N)` with
   `jm y = E.j` whose image in `X_0(N)` satisfies
   `hX'.IsCusp (hjr.redX (sectionAlong … y))`.
-* B — the Eisenstein half, the new sorry node:
+* B — the Eisenstein half, the new sorry node: it PRODUCES the `j`-map
+  `hj` and the reduction datum `hjr` (neither may be assumed — see the
+  two junk witnesses in its docstring) together with
   `∀ y, ¬ hX'.IsCusp (hjr.redX (sectionAlong … y))`, i.e. NO rational
-  point of `Y_0(N)` reduces to a cusp mod `q`.
+  point of `Y_0(N)` reduces to a cusp mod `q`. Because B supplies `hj`,
+  the glue does not call `exists_jMap` itself; A is then applied to B's
+  own `hjr`, which is what makes the two halves compose.
 * Glue: `by_contra` on `0 ≤ padicValRat q E.j`, A, then B. Three lines,
   as predicted.
 
@@ -1280,11 +1338,11 @@ theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
   -- The moduli point: `Y_0(N)`, its compactification, and the `j`-map.
   obtain ⟨Y, strY, ⟨hc⟩⟩ := Fermat.exists_coarseModuliY0 N
   obtain ⟨X, strX, ⟨hX⟩⟩ := Fermat.exists_compactificationY0 hc
-  obtain ⟨hj⟩ := Fermat.exists_jMap N hN.ne_zero hc
-  -- B: the genuine reduction datum at `q`, under which nothing in `Y_0(N)`
-  -- reduces to a cusp.
-  obtain ⟨Y', X', strY', strX', jY', hX', hjr, hB⟩ :=
-    exists_noCuspidalReduction_of_isogenyPrime N q hN hN19 hq hq2 hqN hX hj
+  -- B: the genuine `j`-map and reduction datum at `q`, under which nothing in
+  -- `Y_0(N)` reduces to a cusp.  Both are PRODUCED by B, never assumed: see
+  -- the falsity audit in its docstring.
+  obtain ⟨hj, Y', X', strY', strX', jY', hX', hjr, hB⟩ :=
+    exists_noCuspidalReduction_of_isogenyPrime N q hN hN19 hq hq2 hqN hc hX
   -- A: a pole of `j` at `q` forces exactly such a cuspidal reduction.
   obtain ⟨y, -, hcusp⟩ := Fermat.exists_cuspidalReduction_of_padicValRat_neg E g hg
     (E.stable_zmultiples_of_isogenyCharacter g lam hlam) hjr hv
