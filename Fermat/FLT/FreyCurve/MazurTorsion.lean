@@ -12012,8 +12012,102 @@ theorem x0FortyNine_point_of_residual (u v : ℚ)
 
 end MazurLevelFortyNine
 
+namespace X0Seven
+
+/-- **An `X_0(7)` parameter is never `0`** (PROVEN 2026-07-27): if
+`J · u⁷ = (u² + 13u + 49)(u² + 245u + 2401)³` then `u ≠ 0`, whatever `J` is.
+
+`u = 0` is the width-`7` cusp and the relation is self-policing there: the left
+side vanishes identically while the right side is `49 · 2401³ ≠ 0`.  This is the
+level-`7` twin of the PROVEN `X0Nine.param_ne_zero`, and it is what lets the
+`u ≠ 0` conjunct of `exists_x0Seven_param_of_stableSevenSubgroup` be *derived*
+from the `j`-map rather than carried as extra content in the leaf below it. -/
+lemma param_ne_zero (u J : ℚ)
+    (h : J * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3) :
+    u ≠ 0 := by
+  rintro rfl
+  norm_num at h
+
+end X0Seven
+
+/-- **The `X_0(7)` `j`-map pair of a Vélu quotient** (SORRY LEAF, cut
+2026-07-27 out of `exists_x0Seven_param_of_stableSevenSubgroup` below, which is
+now PROVEN over it together with `exists_velu_quotient_isogeny_model` and
+`X0Seven.param_ne_zero`).
+
+If `⟨P⟩` is a `Gal(ℚ̄/ℚ)`-stable subgroup of order `7` and `(t, w)` are ITS Vélu
+coefficients — pinned by `algebraMap ℚ ℚ̄ t = veluT …`,
+`algebraMap ℚ ℚ̄ w = veluW …` over `hCfin.toFinset`, exactly the form
+`exists_velu_quotient_isogeny_model` returns — then there is a single rational
+`u` carrying BOTH `j`-maps of `X_0(7)`: the direct one for `E` and its Fricke
+conjugate for the quotient `E.veluModel t w`.
+
+**WHY THE VÉLU PINNING IS PART OF THE STATEMENT, and must not be weakened.**
+The tempting cut is to hypothesise an abstract Galois-equivariant
+`φ : E(ℚ̄) →+ E'(ℚ̄)` with kernel `⟨P⟩` and conclude the same two relations.
+That statement is TRUE but STRICTLY HARDER than this one, and it would have been
+a bad leaf: an abstract Galois-equivariant surjection with kernel `⟨P⟩` pins `E'`
+only up to a Galois-module isomorphism of `E'(ℚ̄)`, and upgrading *that* to
+`j(E') = j(E/⟨P⟩)` is Faltings' isogeny theorem (through
+`Hom(E', E'') ⊗ Ẑ ≅ Hom_Gal(T E', T E'')`), which this tree does not have and
+does not want here.  Naming the quotient as the Vélu model instead keeps the
+leaf a COMPUTATION.  Refuting check for anyone who doubts the necessity: exhibit
+an elementary proof that a Galois-equivariant group isomorphism
+`E'(ℚ̄) ≅ E''(ℚ̄)` forces `j(E') = j(E'')`; if one exists, the abstract form is
+the better cut.
+
+**WHAT IS LEFT, and it is pure algebra over `ℚ`.**  Put `E` in short form
+`y² = x³ + Ax + B` and let `x₁, x₂, x₃` be the abscissae of the three `±`-pairs
+of `⟨P⟩ ∖ {0}`, with symmetric functions `s₁, s₂, s₃` — all rational, and all
+supplied with their defining relations by the PROVEN
+`WeierstrassCurve.exists_x0Seven_kernelCoords`.  Vélu's sums are then explicit:
+
+  `t = 6(s₁² − 2s₂) + 6A`,
+  `w = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`,
+
+so the quotient is `y² = x³ + A'x + B'` with `A' = −29A − 30s₁² + 60s₂` and
+`B' = −83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁`, and
+`j' · (4A'³ + 27B'²) = 6912A'³`.  The parameter is the one already used by the
+PROVEN `exists_x0Seven_hauptmodul`, namely `u = P/Q` with
+`P = 49(s₁² − 3s₂)`, `Q = 6A − 4s₁² + 18s₂` — that is where the first relation
+comes from, via `MazurLevelSeven.hauptmodul_of_kernelRelations`.  The genuinely
+new obligation is the SECOND relation,
+`j' · u = (u² + 13u + 49)(u² + 5u + 1)³`, which is the Fricke conjugate
+`t ↦ 49/t` of the first; see the section note at
+`MazurLevelFortyNine.residual_of_matching` for the closed form and the
+`49`-power bookkeeping that makes it exact.
+
+Two pieces of plumbing this leaf must supply and which are the reason it is not
+already closed: `exists_x0Seven_kernelCoords` produces its `A, B, x₁, x₂, x₃` on
+a SHORT model `C • E`, whereas `veluT`/`veluW` above are sums over the kernel of
+`E` itself, so Vélu's coefficients have to be transported along the variable
+change `C`; and `veluT`/`veluW` are half-sums over the whole kernel, so the
+`±`-pairing has to be used to rewrite them as sums over `x₁, x₂, x₃`. -/
+theorem WeierstrassCurve.exists_x0Seven_veluParam
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples P,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples P)
+    (hCfin : ((AddSubgroup.zmultiples P :
+        AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
+        Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (t w : ℚ) (hE' : (E.veluModel t w).IsElliptic)
+    (ht : algebraMap ℚ (AlgebraicClosure ℚ) t =
+      veluT (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset)
+    (hw : algebraMap ℚ (AlgebraicClosure ℚ) w =
+      veluW (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset) :
+    ∃ u : ℚ,
+      E.j * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 ∧
+      (E.veluModel t w).j * u
+        = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3 :=
+  sorry
+
 /-- **`X_0(7)`: the hauptmodul parameter of a rational `7`-isogeny, TOGETHER
-WITH the quotient curve and the isogeny** (sorry leaf, introduced
+WITH the quotient curve and the isogeny** (PROVEN 2026-07-27 over the single
+leaf `exists_x0Seven_veluParam` just above; introduced
 2026-07-26): a `Gal(ℚ̄/ℚ)`-stable subgroup of order `7` gives a rational
 `X_0(7)` hauptmodul value `u ≠ 0`, a rational model `E'` of the quotient, a
 Galois-equivariant isogeny `φ` with kernel exactly that subgroup, and BOTH
@@ -12033,14 +12127,23 @@ at `exists_x0Seven_hauptmodul`), so this leaf has a satisfiable hypothesis
 and is provable in isolation, unlike the level-`49` node it serves. That is
 the whole gain of cutting downwards to level `7`.
 
-**Route.** The quotient and the isogeny are `exists_velu_quotient_isogeny_model`
-— whose `Odd (Nat.card C)` hypothesis is satisfied here, `7` being odd — so
-what is genuinely open is the `j`-map bookkeeping: expressing `j(E)` and
-`j(E')` through the hauptmodul. The `ℤ/3`-descent on the symmetric functions
-of the three `±`-pairs of `C \ {0}` is the content, exactly as recorded in the
-docstring of `exists_x0Seven_kernelInvariants`; that leaf supplies the first
-of the two relations, so a proof of it plus the Vélu quotient's invariants
-should discharge this node. -/
+**Route, now carried out (2026-07-27).** The quotient and the isogeny are
+`exists_velu_quotient_isogeny_model` — whose `Odd (Nat.card C)` hypothesis is
+satisfied here, `7` being odd — so what remains open is the `j`-map bookkeeping:
+expressing `j(E)` and `j(E')` through the hauptmodul. That, and only that, is
+the leaf `exists_x0Seven_veluParam` above, where the quotient is NAMED as the
+Vélu model so that the two `j`-relations are a computation rather than a
+Galois-module comparison. The `u ≠ 0` conjunct is not part of that leaf: it is
+read off the first `j`-relation by `X0Seven.param_ne_zero`, since `u = 0` would
+make the left side vanish against `49 · 2401³` on the right.
+
+The stale note that `exists_x0Seven_kernelInvariants` is what supplies the first
+relation is corrected here: that leaf has been PROVEN since 2026-07-26, and
+`exists_x0Seven_hauptmodul` is proven over it. What is *not* available from
+those two is the pairing of a hauptmodul value with a NAMED quotient — the
+existential in `exists_x0Seven_hauptmodul` forgets which of the (up to eight)
+roots of the degree-`8` `j`-map it returned — which is exactly why the leaf
+above has to produce both relations for one and the same `u`. -/
 theorem WeierstrassCurve.exists_x0Seven_param_of_stableSevenSubgroup
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
@@ -12061,10 +12164,191 @@ theorem WeierstrassCurve.exists_x0Seven_param_of_stableSevenSubgroup
         φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples P) ∧
       u ≠ 0 ∧
       E.j * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 ∧
-      E'.j * u = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3 :=
+      E'.j * u = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3 := by
+  classical
+  have hCcard : Nat.card (AddSubgroup.zmultiples P) = 7 := by
+    rw [Nat.card_zmultiples, hP]
+  haveI : Finite (AddSubgroup.zmultiples P) :=
+    Nat.finite_of_card_ne_zero (by rw [hCcard]; norm_num)
+  have hCfin : ((AddSubgroup.zmultiples P :
+      AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
+      Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite :=
+    Set.finite_coe_iff.mp inferInstance
+  have hCodd : Odd (Nat.card (AddSubgroup.zmultiples P)) := by rw [hCcard]; decide
+  obtain ⟨t, w, hell', φ, ht, hw, hgal, hker⟩ :=
+    WeierstrassCurve.exists_velu_quotient_isogeny_model E
+      (AddSubgroup.zmultiples P) hCfin hCodd hstable
+  haveI := hell'
+  obtain ⟨u, hju, hju'⟩ :=
+    E.exists_x0Seven_veluParam P hP hstable hCfin t w hell' ht hw
+  exact ⟨u, E.veluModel t w, hell', φ, hgal, hker,
+    X0Seven.param_ne_zero u E.j hju, hju, hju'⟩
+
+namespace MazurLevelFortyNine
+
+/-- **The backtracking locus `uv = 49` forces the two ends of the chain to share
+a `j`-invariant** (PROVEN 2026-07-27): this is the whole ARITHMETIC content of
+the Fricke relation at level `7`, extracted from
+`x0Seven_param_mul_ne_49` below, and it is what turns that leaf from a
+modular-curve statement into a CM statement.
+
+The computation is exact and uses only two of the four `j`-relations of the
+chain — the direct map at `u` and the Fricke map at `v`.  With `v = 49/u`,
+
+  `u²(v² + 13v + 49) = 49(u² + 13u + 49)`,
+  `u²(v² + 5v + 1)   = u² + 245u + 2401`,
+
+so multiplying `j(E'') · v = (v² + 13v + 49)(v² + 5v + 1)³` by `u⁸` and using
+`uv = 49` on the left gives `49 · j(E'')u⁷ = 49(u² + 13u + 49)(u² + 245u +
+2401)³`, whose right side is `49 · j(E)u⁷` by the direct relation.  Cancelling
+`49` and `u⁷ ≠ 0` finishes it.
+
+Note which way the degree bookkeeping goes: the Fricke involution `w₇ : t ↦ 49/t`
+swaps the two cusps `t = 0` and `t = ∞` of `X_0(7)`, which is exactly the shift
+between the coefficient lists `(13, 49; 245, 2401)` and `(13, 49; 5, 1)`, and it
+is why the two `49`-powers cancel with no slack. -/
+lemma j_eq_of_backtrack (jE jE'' u v : ℚ) (hu : u ≠ 0) (huv : u * v = 49)
+    (hju : jE * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3)
+    (hjv' : jE'' * v = (v ^ 2 + 13 * v + 49) * (v ^ 2 + 5 * v + 1) ^ 3) :
+    jE'' = jE := by
+  have h1 : u ^ 2 * (v ^ 2 + 13 * v + 49) = 49 * (u ^ 2 + 13 * u + 49) := by
+    linear_combination (u * v + 49 + 13 * u) * huv
+  have h2 : u ^ 2 * (v ^ 2 + 5 * v + 1) = u ^ 2 + 245 * u + 2401 := by
+    linear_combination (u * v + 49 + 5 * u) * huv
+  have key : 49 * (jE'' * u ^ 7) = 49 * (jE * u ^ 7) := by
+    have e1 : 49 * (jE'' * u ^ 7) = u ^ 8 * (jE'' * v) := by
+      linear_combination (-(jE'' * u ^ 7)) * huv
+    rw [e1, hjv']
+    have e2 : u ^ 8 * ((v ^ 2 + 13 * v + 49) * (v ^ 2 + 5 * v + 1) ^ 3)
+        = (u ^ 2 * (v ^ 2 + 13 * v + 49)) * (u ^ 2 * (v ^ 2 + 5 * v + 1)) ^ 3 := by
+      ring
+    rw [e2, h1, h2]
+    linear_combination (-49 : ℚ) * hju
+  exact mul_right_cancel₀ (pow_ne_zero 7 hu)
+    (mul_left_cancel₀ (by norm_num : (49 : ℚ) ≠ 0) key)
+
+section Groups
+
+variable {G H I : Type*} [AddCommGroup G] [AddCommGroup H] [AddCommGroup I]
+
+/-- **The composite of a cyclic `49`-chain kills exactly `⟨h⟩`** (PROVEN
+2026-07-27): if `ker φ = ⟨7h⟩` and `ker ψ = ⟨φ h⟩` then `ker (ψ ∘ φ) = ⟨h⟩`.
+
+Pure group theory, and the exact level-`7` transcription of the PROVEN
+`X0Nine.ker_comp_eq`.  It is what collapses the three-curve chain
+`E --φ--> E' --ψ--> E''` into the single datum "a `Gal(ℚ̄/ℚ)`-stable cyclic
+subgroup of order `49` together with a quotient by it", which is the form the
+leaf `not_stableCyclicFortyNine_of_j_eq` below consumes.  Forward: `ψ(φP) = 0`
+gives `φP = k·φh = φ(kh)`, so `P − kh ∈ ker φ = ⟨7h⟩`, whence `P ∈ ⟨h⟩`.
+Backward: `φ` carries `⟨h⟩` into `⟨φ h⟩ = ker ψ`. -/
+lemma ker_comp_eq_seven (φ : G →+ H) (ψ : H →+ I) (h : G)
+    (hφker : ∀ P : G, φ P = 0 ↔ P ∈ AddSubgroup.zmultiples ((7 : ℕ) • h))
+    (hψker : ∀ Q : H, ψ Q = 0 ↔ Q ∈ AddSubgroup.zmultiples (φ h)) :
+    ∀ P : G, (ψ.comp φ) P = 0 ↔ P ∈ AddSubgroup.zmultiples h := by
+  have h7z : ((7 : ℕ) • h) = ((7 : ℤ) • h) := by
+    simp [← Nat.cast_smul_eq_nsmul ℤ]
+  intro P
+  simp only [AddMonoidHom.comp_apply]
+  constructor
+  · intro hP
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hψker _).mp hP)
+    have hd : φ (P - k • h) = 0 := by
+      rw [map_sub, map_zsmul, hk, sub_self]
+    obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hφker _).mp hd)
+    rw [h7z, smul_smul] at hm
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k + m * 7, ?_⟩
+    rw [add_zsmul, hm]
+    abel
+  · intro hP
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hP
+    rw [← hk, map_zsmul, map_zsmul]
+    have hz : ψ (φ h) = 0 := (hψker _).mpr (AddSubgroup.mem_zmultiples _)
+    rw [hz, smul_zero]
+
+end Groups
+
+end MazurLevelFortyNine
+
+/-- **No `Gal(ℚ̄/ℚ)`-stable cyclic `49`-isogeny returns to its own
+`j`-invariant** (SORRY LEAF, cut 2026-07-27 out of `x0Seven_param_mul_ne_49`
+below, which is now PROVEN over it together with the PROVEN
+`MazurLevelFortyNine.j_eq_of_backtrack` and
+`MazurLevelFortyNine.ker_comp_eq_seven`): there is no elliptic curve `E/ℚ`
+carrying a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup `⟨h⟩` of order `49` whose quotient
+`E''` satisfies `j(E'') = j(E)`.
+
+**THIS IS STRICTLY WEAKER THAN THE LEVEL-`49` THEOREM IT SERVES, and saying why
+is the point of the cut.**  `not_cyclicIsogeny_fortyNine` asserts that no such
+`⟨h⟩` exists AT ALL, and its proof is the rational-point computation on the
+genus-`1` curve `X_0(49) = 49a1`.  This leaf assumes the extra equation
+`j(E'') = j(E)`, which cuts `X_0(49)` down to a FINITE set of CM points and is
+then decided by the image of Galois, with no Mordell–Weil computation anywhere.
+So the chain `exists_x0Seven_chainParameters → x0FortyNine_point_of_residual →
+not_cyclicIsogeny_fortyNine` does not become circular by resting on it.
+
+**THE ARGUMENT.**
+
+1. `j(E'') = j(E)` makes `E''` isomorphic to `E` over `ℚ̄`, so `Φ` becomes a
+   degree-`49` self-isogeny of `E_ℚ̄` with CYCLIC kernel `⟨h⟩`.
+2. A curve without complex multiplication has `End(E_ℚ̄) = ℤ`, so its only
+   self-isogenies are `[n]`, with kernel `E[n] ≅ (ℤ/n)²` — never cyclic of order
+   `49`.  Hence `E` has CM by an order `O` in an imaginary quadratic field `K`,
+   and `O` contains an `α` with `N(α) = 49` and `α/7 ∉ O`; equivalently `7` is
+   split or ramified in `O`.
+3. *Ramified case is empty.*  `7` ramifies only for `K = ℚ(√−7)` with conductor
+   prime to `7`, where `π = √−7` and `π² = −7` — so `α` is `7` times a unit and
+   `ker α = E[7]`, which is not cyclic.  So no cyclic `49` self-isogeny exists
+   there at all, `j`-equality or not.
+4. *Split case dies on `Gal`-stability.*  For `E/ℚ` with CM by `O` and `7` split
+   in `O`, the mod-`7` image of `Gal(ℚ̄/ℚ)` lies in the normalizer of a split
+   Cartan and is NOT contained in the Cartan itself: complex conjugation is an
+   element of the nontrivial coset, and it SWAPS the two eigenlines of `E[7]`.
+   So `E[7]` has no `Gal(ℚ̄/ℚ)`-stable line.  But `⟨7h⟩` is such a line — it is
+   the `7`-torsion of the stable `⟨h⟩`, hence stable, of order `7` by `h7`.
+   Contradiction.
+5. Concretely, the thirteen rational CM `j`-invariants have discriminants
+   `−3, −4, −7, −8, −11, −12, −16, −19, −27, −28, −43, −67, −163`; `7` splits for
+   exactly `−3, −12, −19, −27` (the quadratic residues mod `7` are `1, 2, 4`) and
+   ramifies for `−7, −28`; every other discriminant leaves `7` inert, where
+   `E[7]` is irreducible and step 4 is immediate.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**, and it is a single object: an elliptic
+curve `E/ℚ` together with a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `49` for
+which `j(E/C) = j(E)` — equivalently a rational point of `X_0(49)` lying on the
+locus `j₁ = j₂`.  A weaker but still fatal refutation would be a non-CM `E_ℚ̄`
+admitting a cyclic degree-`49` self-isogeny, which would break step 2.
+
+**MISSING MACHINERY, so the next owner knows what is being asked for.**  Steps 2
+and 4 need a CM theory this tree does not yet have: `End(E_ℚ̄) = ℤ` for non-CM
+curves, and the normalizer-of-Cartan description of the mod-`p` image for a CM
+curve over `ℚ` at a split `p`.  Neither is in the mathlib pin, in `~/cs/FLT`, or
+in `Fermat/FLT/` — that claim is refutable in one grep for `Cartan` and for
+`End`/`ringOfIntegers` over `WeierstrassCurve`, and should be re-run before
+building anything, since docstrings of this kind go stale. -/
+theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
+    (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
+    (Φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hΦgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        Φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Φ Pt))
+    (h : (E⁄(AlgebraicClosure ℚ)).Point)
+    (h49 : (49 : ℕ) • h = 0) (h7 : (7 : ℕ) • h ≠ 0)
+    (hhstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hΦker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (hj : E''.j = E.j) :
+    False :=
   sorry
 
-/-- **Non-backtracking at level `7`** (sorry leaf, introduced 2026-07-26):
+/-- **Non-backtracking at level `7`** (PROVEN 2026-07-27 over the single leaf
+`not_stableCyclicFortyNine_of_j_eq` just above; introduced 2026-07-26):
 for a chain `E --φ--> E' --ψ--> E''` of two rational `7`-isogenies whose
 composite has CYCLIC kernel `⟨h⟩` of order `49`, the two `X_0(7)` parameters
 satisfy `uv ≠ 49`.
@@ -12085,7 +12369,26 @@ content is however available directly and unconditionally from `hφker`,
 `hψker` and `h49`/`h7` — `ψ ∘ φ = [7]` forces `⟨h⟩` to contain the full
 `7`-torsion, contradicting `addOrderOf h = 49` — so the honest route is to
 prove that the Fricke relation `uv = 49` IMPLIES `ψ` is the dual of `φ`, and
-then close it group-theoretically rather than modularly. -/
+then close it group-theoretically rather than modularly.
+
+**THE ROUTE ABOVE IS CORRECTED HERE (2026-07-27), and the correction is the
+whole of this node's proof.**  "`uv = 49` implies `ψ` is the dual of `φ`" is NOT
+derivable from these hypotheses, and aiming at it is what made the node look
+atomic.  The hypotheses constrain `u` and `v` only through `j`-relations; they do
+not say that `u` is *the* `X_0(7)`-parameter of `φ` in any moduli sense, so no
+amount of work on them can recover the isogeny from the parameter.
+
+What `uv = 49` DOES give, exactly and by pure algebra, is `j(E'') = j(E)` — that
+is `MazurLevelFortyNine.j_eq_of_backtrack`, and note it consumes only `hju` and
+`hjv'`, leaving `hju'` and `hjv` unused.  Composing the two isogenies then gives
+a single Galois-equivariant map with kernel exactly `⟨h⟩`
+(`MazurLevelFortyNine.ker_comp_eq_seven`), and the contradiction is the CM leaf
+`not_stableCyclicFortyNine_of_j_eq`: a `j`-preserving cyclic `49`-isogeny forces
+complex multiplication, and for a CM curve over `ℚ` at a split `7` complex
+conjugation swaps the two eigenlines of `E[7]`, so the stable line `⟨7h⟩` cannot
+exist.  That is "close it group-theoretically rather than modularly" carried out,
+but the group theory lives on `E[7]` and not, as the paragraph above supposed, on
+`⟨h⟩` alone. -/
 theorem WeierstrassCurve.x0Seven_param_mul_ne_49
     (E E' E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E'.IsElliptic] [E''.IsElliptic]
     (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
@@ -12118,8 +12421,24 @@ theorem WeierstrassCurve.x0Seven_param_mul_ne_49
     (hju' : E'.j * u = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 5 * u + 1) ^ 3)
     (hjv : E'.j * v ^ 7 = (v ^ 2 + 13 * v + 49) * (v ^ 2 + 245 * v + 2401) ^ 3)
     (hjv' : E''.j * v = (v ^ 2 + 13 * v + 49) * (v ^ 2 + 5 * v + 1) ^ 3) :
-    u * v ≠ 49 :=
-  sorry
+    u * v ≠ 49 := by
+  intro huv
+  -- the Fricke locus forces the two ends of the chain to share a `j`-invariant
+  have hjeq : E''.j = E.j :=
+    MazurLevelFortyNine.j_eq_of_backtrack E.j E''.j u v hu0 huv hju hjv'
+  -- the composite is Galois-equivariant with kernel exactly `⟨h⟩`
+  have hcgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+      (ψ.comp φ) (Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        ((ψ.comp φ) Pt) := by
+    intro σ Pt
+    rw [AddMonoidHom.comp_apply, AddMonoidHom.comp_apply, hφgal, hψgal]
+  have hcker := MazurLevelFortyNine.ker_comp_eq_seven φ ψ h hφker hψker
+  exact WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq E E'' (ψ.comp φ)
+    hcgal h h49 h7 hhstable hcker hjeq
 
 /-- **`X_0(7)`: the two hauptmodul parameters of the `7`-isogeny chain of a
 rational cyclic `49`-subgroup** (PROVEN 2026-07-26 over the two level-`7`
