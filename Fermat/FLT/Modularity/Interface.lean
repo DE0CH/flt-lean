@@ -24860,9 +24860,379 @@ noncomputable def localSplitSubgroup {kk' : Type u} [Field kk']
     {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
       a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure
 
+/-!
+### A COHERENT system of Frobenius primes (support for
+`exists_frobeniusIdeal_cyclotomic` below, PROVEN 2026-07-27)
+
+`GaloisRepresentation.exists_isArithFrobAt_restrictNormalHom_globalFrob`
+(`Chebotarev.lean`) produces, at each finite normal level `L/K` separately,
+SOME prime of `𝓞 L` at which `restrictNormalHom L (globalFrob v)` is an
+arithmetic Frobenius.  The leaf below needs a system of such primes that is
+COMPATIBLE across all levels at once, and the audit in its docstring records
+that gap as "the one genuinely missing sub-lemma", to be closed by proving
+that an arithmetic Frobenius restricts to an arithmetic Frobenius.
+
+**That route is not needed, and the gap is not real** — it is an artefact of
+citing the Chebotarev lemma as a black box.  Its PROOF already builds the
+prime uniformly: it contracts the maximal ideal of
+`IntegralClosure 𝒪ᵥ K̄ᵥ` along `𝓞 L → L → K̄ → K̄ᵥ`, and that construction is
+manifestly functorial in `L`.  So naming the construction — `cycFrobPrime`
+below — makes compatibility a one-line `Ideal.comap_comap`
+(`cycFrobPrime_comap`), with no restriction lemma anywhere.  The Frobenius
+property itself (`isArithFrobAt_cycFrobPrime_conj`) is the Chebotarev proof
+with the prime named rather than existentially quantified, and stated
+directly for the CONJUGATE `g · Frob_v · g⁻¹`, which costs nothing extra
+and avoids needing `IsArithFrobAt.conj` together with a pointwise-smul
+identity.
+
+These are stated for a general number field `K` and a general `K`-embedding
+`f : X →ₐ[K] K̄` of an arbitrary field `X`; the leaf below instantiates them
+at `K = ℚ` with `X` both the abstract cyclotomic model `CF` and each finite
+normal level `M`.  They belong in `Chebotarev.lean` next to the theorem they
+refine; they are here because that file has other owners.
+-/
+
+/-- The ring map `𝓞 X → IntegralClosure 𝒪ᵥ K̄ᵥ` attached to a `K`-embedding
+`f : X →ₐ[K] K̄`, post-composed with the chosen embedding `K̄ → K̄ᵥ` that
+`globalFrob` itself is defined through. -/
+noncomputable def cycFrobHom {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {X : Type*} [Field X] [Algebra K X] (f : X →ₐ[K] AlgebraicClosure K) :
+    𝓞 X →+* IntegralClosure (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K)) :=
+  RingHom.codRestrict
+    (((AlgebraicClosure.map (algebraMap K (v.adicCompletion K))).comp
+        (f : X →+* AlgebraicClosure K)).comp (algebraMap (𝓞 X) X))
+    (integralClosure (v.adicCompletionIntegers K)
+      (AlgebraicClosure (v.adicCompletion K))).toSubring
+    (fun x => IsIntegral.map_of_comp_eq
+      (algebraMap ℤ (v.adicCompletionIntegers K))
+      ((AlgebraicClosure.map (algebraMap K (v.adicCompletion K))).comp
+        (f : X →+* AlgebraicClosure K))
+      (Subsingleton.elim _ _) (x.2 : IsIntegral ℤ (x : X)))
+
+/-- The prime of `𝓞 X` cut out by the big maximal ideal along `cycFrobHom v f`.
+Because the big maximal ideal does not depend on `X`, the family `f ↦
+cycFrobPrime v f` is automatically a compatible system of primes — see
+`cycFrobPrime_comap`. -/
+noncomputable def cycFrobPrime {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {X : Type*} [Field X] [Algebra K X] (f : X →ₐ[K] AlgebraicClosure K) :
+    Ideal (𝓞 X) :=
+  (IsLocalRing.maximalIdeal (IntegralClosure (v.adicCompletionIntegers K)
+    (AlgebraicClosure (v.adicCompletion K)))).comap (cycFrobHom v f)
+
+/-- `cycFrobPrime v f` is prime: it is the contraction of a maximal ideal. -/
+lemma cycFrobPrime_isPrime {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {X : Type*} [Field X] [Algebra K X] (f : X →ₐ[K] AlgebraicClosure K) :
+    (cycFrobPrime v f).IsPrime := Ideal.IsPrime.comap _
+
+/-- Functoriality of `cycFrobHom` in the embedding. -/
+lemma cycFrobHom_comp {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {X Y : Type*} [Field X] [Algebra K X] [Field Y] [Algebra K Y]
+    (f : X →ₐ[K] AlgebraicClosure K) (g : Y →ₐ[K] AlgebraicClosure K) (h : X →+* Y)
+    (hcomp : ∀ x : X, g (h x) = f x) :
+    (cycFrobHom v g).comp (NumberField.RingOfIntegers.mapRingHom h) = cycFrobHom v f := by
+  refine RingHom.ext fun x => Subtype.ext ?_
+  show AlgebraicClosure.map (algebraMap K (v.adicCompletion K))
+      (g ((NumberField.RingOfIntegers.mapRingHom h x : 𝓞 Y) : Y)) =
+    AlgebraicClosure.map (algebraMap K (v.adicCompletion K)) (f (x : X))
+  rw [NumberField.RingOfIntegers.mapRingHom_apply, hcomp]
+
+/-- **The coherence of the system.** For any commuting triangle of
+`K`-embeddings into `K̄`, the prime chosen upstairs contracts to the prime
+chosen downstairs. This is what the leaf below needs and what a
+level-by-level existential cannot supply. -/
+lemma cycFrobPrime_comap {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {X Y : Type*} [Field X] [Algebra K X] [Field Y] [Algebra K Y]
+    (f : X →ₐ[K] AlgebraicClosure K) (g : Y →ₐ[K] AlgebraicClosure K) (h : X →+* Y)
+    (hcomp : ∀ x : X, g (h x) = f x) :
+    Ideal.comap (NumberField.RingOfIntegers.mapRingHom h) (cycFrobPrime v g) =
+      cycFrobPrime v f := by
+  rw [cycFrobPrime, cycFrobPrime, Ideal.comap_comap, cycFrobHom_comp v f g h hcomp]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- `cycFrobPrime v f` lies over `v` (the contraction computation of
+`exists_isArithFrobAt_restrictNormalHom_globalFrob`, with the prime named). -/
+lemma cycFrobPrime_under {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {X : Type*} [Field X] [Algebra K X] (f : X →ₐ[K] AlgebraicClosure K) :
+    (cycFrobPrime v f).under (𝓞 K) = v.asIdeal := by
+  have hcomm : ∀ a : 𝓞 K, cycFrobHom v f (algebraMap (𝓞 K) (𝓞 X) a) =
+      algebraMap (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a) := by
+    intro a
+    apply Subtype.ext
+    show AlgebraicClosure.map (algebraMap K (v.adicCompletion K))
+        (f (algebraMap K X (algebraMap (𝓞 K) K a))) =
+      algebraMap (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (AlgebraicClosure (v.adicCompletion K))
+        (algebraMap (v.adicCompletionIntegers K)
+          (IntegralClosure (v.adicCompletionIntegers K)
+            (AlgebraicClosure (v.adicCompletion K)))
+          (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a))
+    rw [AlgHom.commutes, AlgebraicClosure.map_algebraMap,
+      ← IsScalarTower.algebraMap_apply (v.adicCompletionIntegers K)
+        (IntegralClosure (v.adicCompletionIntegers K)
+          (AlgebraicClosure (v.adicCompletion K)))
+        (AlgebraicClosure (v.adicCompletion K)),
+      IsScalarTower.algebraMap_apply (v.adicCompletionIntegers K)
+        (v.adicCompletion K) (AlgebraicClosure (v.adicCompletion K)),
+      show algebraMap (v.adicCompletionIntegers K) (v.adicCompletion K)
+          (algebraMap (𝓞 K) (v.adicCompletionIntegers K) a) =
+        ((algebraMap (𝓞 K) (v.adicCompletionIntegers K) a :
+          v.adicCompletionIntegers K) : v.adicCompletion K) from rfl,
+      IsDedekindDomain.HeightOneSpectrum.algebraMap_completionIntegers K v a,
+      ← IsScalarTower.algebraMap_apply (𝓞 K) K (v.adicCompletion K)]
+  have hMunder : (IsLocalRing.maximalIdeal (IntegralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)))).under (v.adicCompletionIntegers K) =
+      IsLocalRing.maximalIdeal (v.adicCompletionIntegers K) :=
+    IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under _ _)
+  have hover : v.asIdeal = (v.completionIdeal K).under (𝓞 K) := Ideal.LiesOver.over
+  ext a
+  rw [Ideal.under_def, Ideal.mem_comap, cycFrobPrime, Ideal.mem_comap, hcomm a,
+    ← Ideal.mem_comap (f := algebraMap (v.adicCompletionIntegers K)
+      (IntegralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)))),
+    show (IsLocalRing.maximalIdeal (IntegralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)))).comap
+        (algebraMap (v.adicCompletionIntegers K)
+          (IntegralClosure (v.adicCompletionIntegers K)
+            (AlgebraicClosure (v.adicCompletion K)))) =
+      (IsLocalRing.maximalIdeal (IntegralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)))).under _ from rfl,
+    hMunder, hover, Ideal.under_def, Ideal.mem_comap]
+
+/-- `cycFrobPrime v f` is nonzero: it contracts to `v`, which is. -/
+lemma cycFrobPrime_ne_bot {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {X : Type*} [Field X] [Algebra K X] (f : X →ₐ[K] AlgebraicClosure K) :
+    cycFrobPrime v f ≠ ⊥ := by
+  intro h
+  have h1 : (cycFrobPrime v f).under (𝓞 K) = ⊥ := by
+    rw [h, Ideal.under_def, Ideal.comap_bot_of_injective]
+    exact FaithfulSMul.algebraMap_injective (𝓞 K) (𝓞 X)
+  rw [cycFrobPrime_under] at h1
+  exact v.ne_bot h1
+
+/-- The residue cardinality at the big maximal ideal equals the one at `v` —
+the exponent in the Frobenius congruence. -/
+lemma cycFrobPrime_card {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {X : Type*} [Field X] [Algebra K X] (f : X →ₐ[K] AlgebraicClosure K) :
+    Nat.card ((v.adicCompletionIntegers K) ⧸
+      (IsLocalRing.maximalIdeal (IntegralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)))).under (v.adicCompletionIntegers K)) =
+      Nat.card (𝓞 K ⧸ (cycFrobPrime v f).under (𝓞 K)) := by
+  have hMunder : (IsLocalRing.maximalIdeal (IntegralClosure (v.adicCompletionIntegers K)
+        (AlgebraicClosure (v.adicCompletion K)))).under (v.adicCompletionIntegers K) =
+      IsLocalRing.maximalIdeal (v.adicCompletionIntegers K) :=
+    IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under _ _)
+  rw [hMunder, cycFrobPrime_under]
+  exact (Nat.card_congr
+    (IsDedekindDomain.HeightOneSpectrum.ResidueFieldEquivCompletionResidueField
+      K v).toEquiv).symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The conjugated global Frobenius is an arithmetic Frobenius at the
+coherently chosen prime** (PROVEN 2026-07-27): for every finite normal
+`M/K` inside `K̄` and every `g`, `restrictNormalHom M (g · Frob_v · g⁻¹)` is
+an arithmetic Frobenius at `cycFrobPrime v (g⁻¹ ∘ M.val)`.
+
+This is `exists_isArithFrobAt_restrictNormalHom_globalFrob` with the prime
+NAMED — which is the whole point, since the named prime is compatible across
+levels — and with `g` carried through the intertwining computation, so no
+separate `IsArithFrobAt.conj` step is needed. -/
+theorem isArithFrobAt_cycFrobPrime_conj {K : Type u} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    (M : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K M] [Normal K M]
+    (g : Field.absoluteGaloisGroup K) :
+    IsArithFrobAt (𝓞 K)
+      (AlgEquiv.restrictNormalHom (F := K) M
+        (g * GaloisRepresentation.globalFrob v * g⁻¹))
+      (cycFrobPrime v ((g⁻¹ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K).toAlgHom.comp
+        (IsScalarTower.toAlgHom K M (AlgebraicClosure K)))) := by
+  set fg : (M : Type _) →ₐ[K] AlgebraicClosure K :=
+    (g⁻¹ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K).toAlgHom.comp
+      (IsScalarTower.toAlgHom K M (AlgebraicClosure K))
+  have harith := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v)
+  have hfrob : ∀ x : 𝓞 M,
+      MulSemiringAction.toAlgHom (v.adicCompletionIntegers K) _
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) (cycFrobHom v fg x) =
+      cycFrobHom v fg ((MulSemiringAction.toAlgHom (𝓞 K) (𝓞 M)
+        (AlgEquiv.restrictNormalHom (F := K) M
+          (g * GaloisRepresentation.globalFrob v * g⁻¹))) x) := by
+    intro x
+    apply Subtype.ext
+    show Field.AbsoluteGaloisGroup.adicArithFrob v
+        (AlgebraicClosure.map (algebraMap K (v.adicCompletion K)) (fg (x : M))) =
+      AlgebraicClosure.map (algebraMap K (v.adicCompletion K))
+        (fg ((AlgEquiv.restrictNormalHom (F := K) M
+          (g * GaloisRepresentation.globalFrob v * g⁻¹)) (x : M)))
+    have hres : algebraMap M (AlgebraicClosure K)
+        ((AlgEquiv.restrictNormalHom (F := K) M
+          (g * GaloisRepresentation.globalFrob v * g⁻¹)) (x : M)) =
+        (g * GaloisRepresentation.globalFrob v * g⁻¹)
+          (algebraMap M (AlgebraicClosure K) (x : M)) :=
+      AlgEquiv.restrictNormal_commutes
+        (g * GaloisRepresentation.globalFrob v * g⁻¹) M (x : M)
+    have hstep : fg ((AlgEquiv.restrictNormalHom (F := K) M
+          (g * GaloisRepresentation.globalFrob v * g⁻¹)) (x : M)) =
+        GaloisRepresentation.globalFrob v (fg (x : M)) := by
+      show (g⁻¹ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K)
+          (algebraMap M (AlgebraicClosure K)
+            ((AlgEquiv.restrictNormalHom (F := K) M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) (x : M))) = _
+      rw [hres]
+      show (g⁻¹ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K)
+          ((g * GaloisRepresentation.globalFrob v * g⁻¹)
+            (algebraMap M (AlgebraicClosure K) (x : M))) =
+        GaloisRepresentation.globalFrob v
+          ((g⁻¹ : AlgebraicClosure K ≃ₐ[K] AlgebraicClosure K)
+            (algebraMap M (AlgebraicClosure K) (x : M)))
+      rw [AlgEquiv.mul_apply, AlgEquiv.mul_apply, AlgEquiv.aut_inv,
+        AlgEquiv.symm_apply_apply]
+    rw [hstep]
+    exact (Field.absoluteGaloisGroup.lift_map (algebraMap K (v.adicCompletion K))
+      (Field.AbsoluteGaloisGroup.adicArithFrob v) (fg (x : M))).symm
+  intro x
+  have h1 := harith (cycFrobHom v fg x)
+  rw [hfrob x, ← map_pow, ← map_sub] at h1
+  rw [cycFrobPrime_card v fg] at h1
+  exact h1
+
+/-- Reduction of `ℤ_[p]` into a characteristic-`p` algebra factors through
+`ZMod (p^1)`; the copy of the `halg` step of
+`eq_one_of_mem_localInertia_of_algebraMap_cyclotomicCharacter_eq_one`
+above, extracted so the leaf below can use it. -/
+lemma algebraMap_padicInt_eq_castHom {k : Type*} [CommRing k] [Algebra ℤ_[p] k]
+    [CharP k p] (z : ℤ_[p]) :
+    algebraMap ℤ_[p] k z =
+      ZMod.castHom (dvd_pow_self p one_ne_zero) k (PadicInt.toZModPow 1 z) := by
+  have hpk : (p : k) = 0 := CharP.cast_eq_zero k p
+  set n := (PadicInt.toZModPow 1 z).val with hndef
+  have hker0 : z - ((n : ℕ) : ℤ_[p]) ∈
+      RingHom.ker (PadicInt.toZModPow 1 : ℤ_[p] →+* ZMod (p ^ 1)) := by
+    rw [RingHom.mem_ker, map_sub, map_natCast, hndef, ZMod.natCast_val,
+      ZMod.cast_id, sub_self]
+  rw [PadicInt.ker_toZModPow] at hker0
+  obtain ⟨t, ht⟩ := Ideal.mem_span_singleton'.mp hker0
+  have hz : z = ((n : ℕ) : ℤ_[p]) + t * (p : ℤ_[p]) ^ 1 := by linear_combination -ht
+  rw [hz]
+  simp only [map_add, map_mul, map_pow, map_natCast]
+  rw [hpk]
+  ring
+
+/-- **The `χ`-value pins the action on `p`-th roots of unity** (PROVEN
+2026-07-27): if `χ = ω` and `χ σ` is the image of `u ∈ (ℤ/p)ˣ`, then `σ`
+raises every `p`-th root of unity in `ℚ̄` to the power `u`.
+
+The `ℤ_[p]`-valued cyclotomic character is transported to level one through
+the factorization above; the two ring maps out of `ZMod (p^1)` agree because
+ring maps out of a `ZMod` are unique (`RingHom.ext_zmod`), and
+`ZMod.castHom … kk'` is injective because `ZMod p` is a field. -/
+lemma pow_eq_of_chi_eq_castHom {kk' : Type*} [Field kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (u : (ZMod p)ˣ) (σ : Field.absoluteGaloisGroup ℚ)
+    (hσ : χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p))
+    (b : AlgebraicClosure ℚ) (hb : b ^ p = 1) :
+    σ b = b ^ ((u : ZMod p)).val := by
+  haveI hne1 : NeZero (p ^ 1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
+  set w : ZMod (p ^ 1) := PadicInt.toZModPow 1
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) p σ.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) with hwdef
+  have hfact : ((ZMod.castHom (dvd_refl p) kk').comp
+      (ZMod.castHom (dvd_pow_self p one_ne_zero) (ZMod p)) :
+      ZMod (p ^ 1) →+* kk') = ZMod.castHom (dvd_pow_self p one_ne_zero) kk' :=
+    RingHom.ext_zmod _ _
+  have hcw : ZMod.castHom (dvd_pow_self p one_ne_zero) (ZMod p) w = (u : ZMod p) := by
+    have h1 : ZMod.castHom (dvd_refl p) kk'
+        (ZMod.castHom (dvd_pow_self p one_ne_zero) (ZMod p) w) =
+        ZMod.castHom (dvd_refl p) kk' (u : ZMod p) := by
+      rw [show ZMod.castHom (dvd_refl p) kk'
+          (ZMod.castHom (dvd_pow_self p one_ne_zero) (ZMod p) w) =
+          ((ZMod.castHom (dvd_refl p) kk').comp
+            (ZMod.castHom (dvd_pow_self p one_ne_zero) (ZMod p))) w from rfl,
+        hfact, ← algebraMap_padicInt_eq_castHom, ← hχcyc σ]
+      exact hσ
+    exact (ZMod.castHom (dvd_refl p) kk').injective h1
+  have hval : w.val = ((u : ZMod p)).val := by
+    rw [← hcw, ZMod.castHom_apply, ← ZMod.natCast_val w,
+      ZMod.val_natCast_of_lt (by simpa using ZMod.val_lt w)]
+  have hspec := cyclotomicCharacter.spec p σ.toRingEquiv b (by rw [pow_one]; exact hb)
+  rw [show σ.toRingEquiv b = σ b from rfl] at hspec
+  rw [hspec, ← hwdef, hval]
+
+/-- **The cyclotomic dictionary** (PROVEN 2026-07-27): under `hχcyc`, `σ`
+acts on the image of any model `CF` of `ℚ(μ_p)` exactly as the
+ring-of-integers automorphism `σ_u` does, when `χ σ` is the image of `u`.
+
+Two `ℚ`-algebra maps out of `CF` agree as soon as they agree on the `p`-th
+roots of unity, which generate `CF` (`IsCyclotomicExtension.adjoin_roots`);
+on those, one side is `pow_eq_of_chi_eq_castHom` and the other is
+`IsCyclotomicExtension.Rat.galEquivZMod_apply_of_pow_eq`. -/
+lemma sigma_apply_eq_galEquivZMod {kk' : Type*} [Field kk'] [Algebra ℤ_[p] kk']
+    [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (u : (ZMod p)ˣ) (σ : Field.absoluteGaloisGroup ℚ)
+    (hσ : χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p))
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ) (x : CF) :
+    σ (ι x) = ι (((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) x) := by
+  have htop : Algebra.adjoin ℚ {b : CF | ∃ n : ℕ, n ∈ ({p} : Set ℕ) ∧ n ≠ 0 ∧ b ^ n = 1}
+      = ⊤ :=
+    Algebra.eq_top_iff.2
+      (IsCyclotomicExtension.adjoin_roots (S := ({p} : Set ℕ)) (A := ℚ) (B := CF))
+  have hext : (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι =
+      ι.comp ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u).toAlgHom := by
+    refine AlgHom.ext_of_adjoin_eq_top htop ?_
+    rintro b ⟨n, hn, _, hbn⟩
+    rw [Set.mem_singleton_iff] at hn
+    rw [hn] at hbn
+    have hib : (ι b) ^ p = 1 := by rw [← map_pow, hbn, map_one]
+    have h1 : σ (ι b) = (ι b) ^ ((u : ZMod p)).val :=
+      pow_eq_of_chi_eq_castHom χ hχcyc u σ hσ (ι b) hib
+    have h2 : ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) b
+        = b ^ ((u : ZMod p)).val := by
+      rw [IsCyclotomicExtension.Rat.galEquivZMod_apply_of_pow_eq p CF _ hbn,
+        MulEquiv.apply_symm_apply]
+    show σ (ι b) = ι (((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) b)
+    rw [h1, h2, map_pow]
+  exact congrArg (fun F => (F : CF →ₐ[ℚ] AlgebraicClosure ℚ) x) hext
+
+/-- `(σ·g)⁻¹ ∘ σ = g⁻¹`, in the form the equivariance clause needs. -/
+lemma algEquiv_conj_inv_apply {L : Type*} [Field L] [Algebra ℚ L]
+    (σ g : L ≃ₐ[ℚ] L) (y : L) : (σ * g)⁻¹ (σ y) = g⁻¹ y := by
+  rw [mul_inv_rev, AlgEquiv.mul_apply]
+  simp only [AlgEquiv.aut_inv]
+  rw [AlgEquiv.symm_apply_apply]
+
+/-- `cycGalRingOfIntegersEquiv CF u` is, as a ring map, the restriction to
+`𝓞 CF` of `σ_u` — true by definition, stated so `Ideal.map` can consume it. -/
+lemma cycGalRingOfIntegersEquiv_coe (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (u : (ZMod p)ˣ) :
+    ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF ≃+* 𝓞 CF) : 𝓞 CF →+* 𝓞 CF) =
+      NumberField.RingOfIntegers.mapRingHom
+        (((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u :
+          CF ≃ₐ[ℚ] CF) : CF →+* CF) := rfl
+
 /-- **The Frobenius-to-ideal dictionary for `ℚ(μ_p)`, with its
-cyclotomic equivariance** (E3c support leaf (ii-a-1-i-A); SORRY NODE,
-cut 2026-07-27 out of `exists_artinMap_classGroup_frobeniusIdeal`
+cyclotomic equivariance** (E3c support leaf (ii-a-1-i-A); PROVEN
+2026-07-27, cut 2026-07-27 out of
+`exists_artinMap_classGroup_frobeniusIdeal`
 below): for `χ` the mod-`p` cyclotomic character `ω` of `Γℚ` and any
 model `CF` of `ℚ(μ_p)`, there are an embedding
 `ι : CF →ₐ[ℚ] ℚ̄` and a family `frobIdeal g v` of nonzero ideals of
@@ -24930,21 +25300,44 @@ that would refute it is below.
   and `kk'` has characteristic `p`), which is what pins `u` uniquely
   from `χ σ`.
 
-**THE ONE GENUINELY MISSING SUB-LEMMA, named so it can be attacked
-directly:** clause (A) quantifies over EVERY finite normal `M`, whereas
-`exists_isArithFrobAt_restrictNormalHom_globalFrob` chooses its prime
-independently at each `M`, and those choices need not be compatible.
-What closes the gap is *"an arithmetic Frobenius restricts to an
-arithmetic Frobenius"*: for `L ≤ M` both finite normal over `ℚ` and `Q`
-a prime of `𝓞 M`, `IsArithFrobAt (𝓞 ℚ) (restrictNormalHom M x) Q`
-implies `IsArithFrobAt (𝓞 ℚ) (restrictNormalHom L x) (Q ∩ 𝓞 L)`.
-Neither mathlib's `Frobenius.lean` nor this project states it; it is
-small, purely local-at-a-prime, and it is the natural first step for
-whoever takes this leaf. **The check that would refute this obstruction:
-`grep -rn 'IsArithFrobAt' Fermat/ .lake/packages/mathlib/Mathlib/RingTheory/`
-turning up a restriction/comap lemma — the axis searched here was
-`IsArithFrobAt`'s own API plus `Ideal.under`/`LiesOver`, and NOT the
-`Ideal.primesOver` transitivity route, which may give it more cheaply.**
+**THE OBSTRUCTION RECORDED HERE WAS NOT REAL — AUDIT CORRECTED
+2026-07-27, and the correction is the whole content of the proof.**
+
+The audit said: clause (A) quantifies over EVERY finite normal `M`,
+whereas `exists_isArithFrobAt_restrictNormalHom_globalFrob` chooses its
+prime independently at each `M`, and those choices need not be
+compatible; so the leaf needs *"an arithmetic Frobenius restricts to an
+arithmetic Frobenius"*, which nothing in mathlib or this project states.
+It then named the axis it had NOT searched (`Ideal.primesOver`
+transitivity).
+
+Both the obstruction and the suggested axis are beside the point. **The
+incompatibility is an artefact of citing the Chebotarev lemma as a black
+box, not a fact about the mathematics.** That lemma's own PROOF already
+constructs its prime uniformly in `L` — it contracts the maximal ideal
+of `IntegralClosure 𝒪ᵥ K̄ᵥ` along `𝓞 L → L → K̄ → K̄ᵥ`, and the big
+maximal ideal does not depend on `L` at all. Only the *statement*
+forgets which prime was built. So the repair is to NAME the
+construction, which is done just above as `cycFrobPrime`, whereupon:
+
+* compatibility across levels is `Ideal.comap_comap` — one line
+  (`cycFrobPrime_comap`), and no restriction lemma is used anywhere;
+* the Frobenius property at the named prime is that same Chebotarev
+  proof with the prime named rather than existentially quantified, and
+  carrying `g` through the intertwining step makes it hold for the
+  CONJUGATE directly (`isArithFrobAt_cycFrobPrime_conj`), so even
+  `IsArithFrobAt.conj` is not needed.
+
+**The reusable lesson**: when an existential lemma is cited and its
+choices fail to cohere, check whether its PROOF is already canonical
+before looking for a compatibility theorem. Here the whole audited gap
+disappeared under that check.
+
+**Clause (A) is proven WITHOUT its own hypothesis.** The proof never
+uses `χ (g · Frob_v · g⁻¹) = 1`; the conclusion holds for every `g` and
+`v`. The leaf is therefore strictly weaker than what is available, which
+is harmless for the consumer but worth knowing if a successor needs the
+unconditional form.
 
 Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
 cyclotomic field) and the conclusion holds for every inhabitant, by the
@@ -24979,8 +25372,48 @@ theorem exists_frobeniusIdeal_cyclotomic
         χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) →
         (frobIdeal (σ * g) v : Ideal (𝓞 CF)) =
           Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF))
-            (frobIdeal g v : Ideal (𝓞 CF))) :=
-  sorry
+            (frobIdeal g v : Ideal (𝓞 CF))) := by
+  classical
+  set ι : CF →ₐ[ℚ] AlgebraicClosure ℚ := IsAlgClosed.lift
+  refine ⟨ι, fun g v => ⟨cycFrobPrime v
+      ((g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι),
+    mem_nonZeroDivisors_iff_ne_zero.mpr (by
+      rw [Ideal.zero_eq_bot]; exact cycFrobPrime_ne_bot v _)⟩, ?_, ?_⟩
+  · intro g v _ M hfin hnor jj hjj
+    refine ⟨cycFrobPrime v ((g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp
+        (IsScalarTower.toAlgHom ℚ M (AlgebraicClosure ℚ))),
+      cycFrobPrime_isPrime v _, @isArithFrobAt_cycFrobPrime_conj ℚ _ _ v M hfin hnor g, ?_⟩
+    exact cycFrobPrime_comap v _ _ (jj : CF →+* M) (fun x => by
+      show (g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+          (algebraMap M (AlgebraicClosure ℚ) (jj x)) =
+        (g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (ι x)
+      rw [hjj x])
+  · intro u σ g v hσ
+    set c : CF ≃ₐ[ℚ] CF := (IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u
+    have hcomp : ∀ x : CF,
+        (((σ * g)⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι)
+            ((c : CF →+* CF) x) =
+          ((g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι) x := by
+      intro x
+      have hsi : σ (ι x) = ι (c x) := sigma_apply_eq_galEquivZMod χ hχcyc CF u σ hσ ι x
+      show ((σ * g)⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (ι (c x)) =
+        (g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (ι x)
+      rw [← hsi]
+      exact algEquiv_conj_inv_apply σ g (ι x)
+    have hcm := cycFrobPrime_comap v
+      ((g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι)
+      (((σ * g)⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι)
+      ((c : CF ≃ₐ[ℚ] CF) : CF →+* CF) hcomp
+    have hsurj : Function.Surjective
+        (NumberField.RingOfIntegers.mapRingHom ((c : CF ≃ₐ[ℚ] CF) : CF →+* CF) :
+          𝓞 CF → 𝓞 CF) :=
+      (cycGalRingOfIntegersEquiv CF u).surjective
+    show cycFrobPrime v
+        (((σ * g)⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι)
+      = Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF ≃+* 𝓞 CF) : 𝓞 CF →+* 𝓞 CF)
+          (cycFrobPrime v
+            ((g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι))
+    rw [cycGalRingOfIntegersEquiv_coe, ← hcm, Ideal.map_comap_of_surjective _ hsurj]
 
 /-- **The Hilbert class field of `ℚ(μ_p)` EXISTS: the Artin map, over a
 given Frobenius-to-ideal dictionary** (E3c support leaf (ii-a-1-i-B);
