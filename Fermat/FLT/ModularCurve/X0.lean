@@ -569,6 +569,17 @@ public import Fermat.FLT.Mathlib.GroupTheory.Descent
 -- `exists_descentHeight_of_abelianScheme` to the purely geometric leaf
 -- `exists_integralCoordinates_of_abelianScheme` below.
 public import Fermat.FLT.Mathlib.NumberTheory.IntegralHeight
+-- `Fermat.SegreCoordinates` and
+-- `Fermat.nonempty_integralCoordinates_of_segreCoordinates`: the interface between
+-- the geometry of an abelian variety over `ℚ` (a symmetric very ample bundle and
+-- the theorem of the cube, read through the Segre embedding as one family of
+-- degree-2 forms) and the elementary theory of heights.  It reduces
+-- `exists_integralCoordinates_of_abelianScheme` below to the purely geometric
+-- `exists_segreCoordinates_of_abelianScheme`.  Its module docstring also records
+-- that `Mathlib/NumberTheory/Height/` exists at this pin and carries the whole
+-- height machine, upper and lower bound — correcting a stale "absent from the
+-- pin" note that this file used to carry.
+public import Fermat.FLT.Mathlib.NumberTheory.SegreHeight
 -- The relative Picard functor: `IsRelPicZeroOf`, `RelPicEquiv`, `modTensor`,
 -- `sectionIdeal`.  This is the infrastructure the IRREDUCIBILITY audit of
 -- `exists_jacobianOf_x0` named as missing — line bundles on `X ×_S T` modulo
@@ -19278,10 +19289,10 @@ theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
   exact ⟨J, jstr, ab,
     isJacobianOf_of_isRelPicZeroOf h.isProper h.smooth h.connected P⟩
 
-/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
+/-- **A Segre coordinate system exists on `A(ℚ)`, for every abelian
 scheme `A` over `ℚ`** (sorry node) — ALL that is left of the theory of
-heights after `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`, and
-purely geometric: no finiteness statement survives in it.
+heights, and PURELY GEOMETRIC: after the cut of 2026-07-27 there is no
+height, no finiteness and no real number anywhere in it.
 
 TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
 case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
@@ -19289,63 +19300,96 @@ varieties in general).  `ab.proper` and `ab.smooth` make `A` an abelian
 variety over `ℚ`, so it is projective and carries a **symmetric** ample
 line bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀` —
 which after replacing `L` by a power is very ample.  Let
-`φ_L : A ↪ ℙ^N_ℚ` be the resulting closed immersion.  A point of
-`ℙ^N(ℚ)` has a primitive integral representative `(x_0 : … : x_N)`,
-unique up to sign, and the sign is pinned by asking that the first
-nonzero coordinate be positive; sending `P ∈ A(ℚ)` to that vector is the
-required `coords : A(ℚ) → ℤ^{N+1}`.
+`φ_L : A ↪ ℙ^{n-1}_ℚ` be the resulting closed immersion.  A point of
+`ℙ^{n-1}(ℚ)` has a primitive integral representative, unique up to sign,
+and the sign is pinned by asking that the first nonzero coordinate be
+positive; sending `P ∈ A(ℚ)` to that vector is `coords`, and `injective`
+is injectivity of `φ_L` on `ℚ`-points, a closed immersion being a
+monomorphism.
 
-The two fields are then two standard theorems:
+The remaining fields are the **theorem of the cube**,
+`m^* L ⊗ d^* L ≅ p₁^* L² ⊗ p₂^* L²` on `A × A`, read through the Segre
+embedding: it says exactly that `Segre(P,Q) ↦ Segre(P+Q, P−Q)` is given
+by forms of degree `2` in the Segre coordinates (`form`,
+`form_homogeneous`, `form_eval`), and `cert`/`cert_eval` is the
+Nullstellensatz certificate for that morphism on the Segre image — see
+`Fermat/FLT/Mathlib/NumberTheory/SegreHeight.lean` for why the
+certificate rather than "no common zero" is the right hypothesis, and
+for the proof that this yields `IntegralCoordinates`.
 
-* `injective` is injectivity of `φ_L` on `ℚ`-points, which holds because
-  a closed immersion is a monomorphism;
-* `quasiParallelogram` is the **theorem of the cube**, in the form
-  `h_L(P + Q) + h_L(P − Q) = 2 h_L(P) + 2 h_L(Q) + O(1)` for symmetric
-  `L`.  It transfers from the projective height `log max_i |x_i|` to
-  `intHeight`, which is `log (1 + ∑_i |x_i|)`, because
-  `max_i |x_i| ≤ 1 + ∑_i |x_i| ≤ (N + 2) · max_i |x_i|` for a primitive
-  vector — the two differ by at most `log (N + 2)`, and the statement is
-  only asked to hold up to a constant.
+**FAITHFULNESS AUDIT.**  *Not vacuous.*  `form_eval` demands ONE family
+of quadratic forms working uniformly in `P` and `Q`; that is the cube
+theorem and nothing weaker.  An arbitrary injection `A(ℚ) ↪ ℤ^d` does not
+supply it — for `A(ℚ) ≅ ℤ` a linear parametrisation is refuted outright,
+since the height defect `log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is
+unbounded, and by the leaf below an unbounded defect is incompatible with
+degree-2 forms.  *The conclusion is `Nonempty`* because nothing
+downstream depends on WHICH system is used.
 
-**What this leaf NO LONGER carries, and this is the point of the cut.**
-Northcott's theorem has been *proven* rather than assumed: over `ℚ` and
-in primitive integral coordinates it is the statement that an integer
-box is finite, and that is `Fermat.instNorthcottIntHeight`.  So the
-finiteness input to Mordell–Weil's geometric half is gone from the
-frontier; what remains is exactly the projective embedding and the
-theorem of the cube.
-
-**FAITHFULNESS AUDIT.**  *Not vacuous.*  An arbitrary injection
-`A(ℚ) ↪ ℤ^d` would satisfy `injective` and give a Northcott height, but
-`quasiParallelogram` forces that height to be a quadratic form up to
-`O(1)`, which pins the growth rate of the coordinates along every cyclic
-subgroup: for `A(ℚ) ≅ ℤ` a linear parametrisation fails outright, since
-`log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is unbounded.  It *is* cheap
-exactly when `A(ℚ)` is finite — any injection into `ℤ^1` works, with a
-constant absorbing the finitely many defects — and that is correct
-rather than a defect, since a finite group is finitely generated and the
-conclusion of the consumer holds for that reason.
-
-*The conclusion is `Nonempty`, not a chosen coordinate system*, because
-nothing downstream depends on WHICH one is used.
-
-**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist
-because `ℤ` is a PID with unit group `{±1}`; over a general number field
-the normalisation involves the class group and the unit group, and the
-elementary Northcott argument proven upstream would not apply.
-Mordell–Weil is only ever needed over `ℚ` in this development.
+**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist because
+`ℤ` is a PID with unit group `{±1}`; over a general number field the
+normalisation involves the class group and the unit group.  Mordell–Weil
+is only ever needed over `ℚ` in this development.
 
 **MISSING MACHINERY**, and it is the honest remaining cost: projectivity
-of an abelian variety, symmetric very ample line bundles, and the
-theorem of the cube.  None of these exists in `Mathlib`, in `~/cs/FLT`,
-or in this project — the check that would refute this is
-`grep -rn "TheoremOfTheCube\|VeryAmple\|NeronTate" Fermat/
-.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`. -/
+of an abelian variety, symmetric very ample line bundles, and the theorem
+of the cube.  The check that would refute this is
+`grep -rn "TheoremOfTheCube\|VeryAmple\|IsAmple" Fermat/
+.lake/packages/mathlib/Mathlib/ ~/cs/FLT/` — it was run on 2026-07-27 and
+returns nothing in mathlib, so this part of the old note stands.  **The
+rest of that note did NOT**: it also claimed the theory of heights was
+absent from the pin, and `Mathlib/NumberTheory/Height/` is exactly it,
+lower bound included.  That correction is what made this cut cheap; it is
+recorded in full in `SegreHeight.lean`. -/
+theorem exists_segreCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (SegreCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
+  sorry
+
+/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
+scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the geometric leaf above
+and the elementary leaf `nonempty_integralCoordinates_of_segreCoordinates`).
+
+**THE CUT, and what it corrects.**  This node used to be the single
+remaining leaf of the theory of heights, carrying the projective
+embedding, the theorem of the cube AND the passage from the projective
+height to `intHeight`, on the strength of a MISSING MACHINERY note
+saying the theory of heights was absent from `Mathlib`, `~/cs/FLT` and
+this project.  That note was stale: `Mathlib/NumberTheory/Height/` exists
+at this pin and carries `mulHeight`/`logHeight` on tuples, the
+`AdmissibleAbsValues` instance for number fields, Northcott, the
+comparison `Rat.logHeight_eq_max_abs_of_gcd_eq_one` for primitive integer
+tuples, and — the expensive half — the height machine for a family of
+homogeneous forms in BOTH directions, `Height.logHeight_eval_le'` and
+`Height.logHeight_eval_ge'`, the latter from a Nullstellensatz
+certificate supplied as a polynomial identity.
+
+So the cut is along geometry versus arithmetic-of-heights, and the second
+half is now a derivation from named mathlib lemmas rather than a theory
+to be built:
+
+* `exists_segreCoordinates_of_abelianScheme` above is the geometry;
+* `nonempty_integralCoordinates_of_segreCoordinates` is the height
+  machine, whose docstring lists the five steps and the lemma for each.
+
+The old audit's *check* is kept in the geometric leaf, because the part
+of it about ampleness and the cube is still correct.
+
+TRUE and classical (Silverman, *AEC* VIII.5–VIII.6; Hindry–Silverman,
+*Diophantine Geometry* Part B).
+
+**What this node NO LONGER carries.**  Northcott's theorem is proven
+(`Fermat.instNorthcottIntHeight`), the passage to `DescentHeight` is
+proven (`Fermat.WeilHeight.toDescentHeight`), and now the height machine
+has been separated from the geometry as well. -/
 theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
-  sorry
+    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨sc⟩ := exists_segreCoordinates_of_abelianScheme ab
+  exact nonempty_integralCoordinates_of_segreCoordinates sc
 
 /-- **A height function with the Northcott property exists on `A(ℚ)`,
 for every abelian scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the
@@ -19385,9 +19429,273 @@ theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ Spe
   obtain ⟨ic⟩ := exists_integralCoordinates_of_abelianScheme ab
   exact ⟨ic.toDescentHeight⟩
 
+/-! ### Weak Mordell–Weil at a prime: the Kummer cut
+
+Everything from here to `finite_quotient_psmul_of_abelianScheme` is the
+classical Kummer argument (Silverman, *AEC* VIII.1) written out.  The
+ASSEMBLY is proven; what it consumes is four named leaves, each a single
+classical theorem:
+
+* two halves of **Galois descent** for the points of `A` — that a
+  rational point is determined by its geometric point
+  (`injective_ratToGeom`), and that a Galois-invariant geometric point
+  is rational (`exists_ratPoint_of_galoisInvariant`);
+* finiteness of the **`n`-torsion** of `A(ℚ̄)`
+  (`finite_torsion_geomPt_of_abelianScheme`);
+* finiteness of the **Kummer field** `ℚ(p^{-1} A(ℚ))`
+  (`exists_finiteIndex_divisible_of_abelianScheme`) — the one deep
+  arithmetic input, carrying the class group and the unit theorem.
+
+**What the assembly is, and why it needs no group cohomology.**  Choose
+for each `P ∈ A(ℚ)` a `p`-division point `Q_P ∈ A(ℚ̄)` fixed by the
+finite-index subgroup `H` supplied by the Kummer leaf, and let
+
+  `Φ(P) : Γ_ℚ / H → A[p]`,   `Φ(P)(σ) = σ · Q_P − Q_P`.
+
+The value lies in `A[p]` because `p (σ Q_P − Q_P) = σ P − P = 0` — `P`
+is rational, so its geometric point is Galois-invariant — and it depends
+only on the coset of `σ` because `H` fixes `Q_P`.  The target is finite,
+being maps between two finite sets.  Finally `Φ` separates the classes
+of `A(ℚ) / p A(ℚ)`: if `Φ(P) = Φ(P')` then `R = Q_{P'} − Q_P` is fixed
+by all of `Γ_ℚ`, hence rational by descent, and `p R = P' − P`.
+
+`Φ` itself does NOT descend to `A(ℚ) / p A(ℚ)` — changing `Q_P` by a
+`p`-torsion point changes `Φ(P)` by a coboundary, which is exactly the
+ambiguity that group cohomology exists to quotient out.  The argument
+does not need it to: injectivity is applied to the CHOSEN representatives
+through `Quotient.out`, so the finite target bounds the number of
+classes without any `H¹` being formed.  That is what keeps this cut
+free of continuous cochain cohomology for the profinite `Γ_ℚ`. -/
+
+/-- **A `ℚ`-rational point of a scheme over `ℚ`, read as a geometric
+point**: base change along `Spec ℚ̄ ⟶ Spec ℚ`.
+
+This is `RelPoint.pre` at the one morphism that matters here, named
+because it is the map whose injectivity and whose Galois-invariant image
+are the two descent leaves below. -/
+noncomputable def ratToGeom {J : Scheme.{0}} (jstr : J ⟶ SpecQ)
+    (P : RelPoint jstr (𝟙 SpecQ)) : GeomFibrePt jstr (𝟙 SpecQ) :=
+  RelPoint.pre (specAlgClos ℚ) rfl P
+
+/-- `ratToGeom` is additive (PROVEN — naturality of the group law). -/
+theorem ratToGeom_add {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (P Q : RelPoint jstr (𝟙 SpecQ)) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    ratToGeom jstr (P + Q) = ratToGeom jstr P + ratToGeom jstr Q :=
+  ab.pre_add (specAlgClos ℚ) rfl P Q
+
+/-- `ratToGeom` sends `0` to `0` (PROVEN — naturality of the zero
+section). -/
+theorem ratToGeom_zero {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    ratToGeom jstr 0 = 0 :=
+  ab.pre_zero (specAlgClos ℚ) rfl
+
+/-- `ratToGeom`, bundled as an additive homomorphism — this is what gives
+`map_nsmul` and `map_neg` for it in the assembly below. -/
+noncomputable def ratToGeomHom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    RelPoint jstr (𝟙 SpecQ) →+ GeomFibrePt jstr (𝟙 SpecQ) :=
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  { toFun := ratToGeom jstr
+    map_zero' := ratToGeom_zero ab
+    map_add' := ratToGeom_add ab }
+
+/-- **The geometric point of a rational point is Galois-invariant**
+(PROVEN): the action is precomposition with `Spec σ`, and `σ` fixes
+`Spec ℚ̄ ⟶ Spec ℚ` (`specGal_comp_specAlgClos`).
+
+This is the half of Galois descent that is free.  The converse — an
+invariant geometric point is rational — is the leaf
+`exists_ratPoint_of_galoisInvariant`. -/
+theorem galSMul_ratToGeom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (σ : Field.absoluteGaloisGroup ℚ)
+    (P : RelPoint jstr (𝟙 SpecQ)) :
+    ab.galSMul (𝟙 SpecQ) σ (ratToGeom jstr P) = ratToGeom jstr P := by
+  apply Subtype.ext
+  show specGal σ ≫ specAlgClos ℚ ≫ P.1 = specAlgClos ℚ ≫ P.1
+  rw [← Category.assoc, specGal_comp_specAlgClos]
+
+/-- **The Galois action by one element, bundled as an additive
+homomorphism** — `pre_zero` and `pre_add` read at `Spec σ`. -/
+noncomputable def galSMulHom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (σ : Field.absoluteGaloisGroup ℚ) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    GeomFibrePt jstr (𝟙 SpecQ) →+ GeomFibrePt jstr (𝟙 SpecQ) :=
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  { toFun := fun w => ab.galSMul (𝟙 SpecQ) σ w
+    map_zero' := ab.pre_zero (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ)
+    map_add' := fun a b => ab.pre_add (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ) a b }
+
+/-- **Galois descent, injectivity half: a `ℚ`-point of a `ℚ`-scheme is
+determined by the geometric point it induces** (sorry node).
+
+TRUE and elementary: `ℚ → ℚ̄` is faithfully flat, so
+`specAlgClos ℚ : Spec ℚ̄ ⟶ Spec ℚ` is an fpqc cover and hence an
+epimorphism of schemes (`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` is
+already in this file's import cone), and `ratToGeom` is precomposition
+with it.
+
+**FAITHFULNESS AUDIT.**  *No abelian hypothesis is needed and none is
+taken*: the statement is about an arbitrary `jstr : J ⟶ SpecQ`, and
+stating it with an `AbelianSchemeStruct` in hand would hide that the
+content is descent along a field extension, not anything about group
+schemes.  *Not vacuous*: `RelPoint jstr (𝟙 SpecQ)` is empty for many
+`J` and then the statement is trivially true, but it is applied below to
+the points of an abelian scheme, where the source is a group that is
+usually infinite.
+
+**MISSING MACHINERY**: none is known to be.  The check that would refute
+"this needs new theory" is to look for an epimorphism/descent API on
+`Spec` of a faithfully flat ring map at this pin — `Sites/Fpqc.lean` and
+`AlgebraicGeometry/Morphisms/Flat.lean` are both imported here. -/
+theorem injective_ratToGeom {J : Scheme.{0}} (jstr : J ⟶ SpecQ) :
+    Function.Injective (ratToGeom jstr) :=
+  sorry
+
+/-- **Galois descent, invariants half: a Galois-invariant geometric point
+of an abelian scheme over `ℚ` is rational** (sorry node).
+
+TRUE and classical: for a scheme `X` locally of finite type over a field
+`k` with separable closure `kˢ`, `X(kˢ)^{Γ_k} = X(k)`.  Here `k = ℚ` is
+perfect, so `ℚ̄ = ℚˢᵉᵖ`, and `J` is locally of finite type over `ℚ`
+because `ab.smooth` makes `jstr` smooth, hence locally of finite
+presentation.
+
+`ab` is therefore load-bearing, but only through `ab.smooth`: the
+statement is FALSE for a general `ℚ`-scheme.  A prover may weaken the
+hypothesis to "`jstr` is locally of finite type" and should say so.
+
+**FAITHFULNESS AUDIT.**  *Not vacuous.*  The hypothesis `hy` is a genuine
+restriction — a geometric point of positive-dimensional `A` is almost
+never Galois-invariant — and the conclusion produces a rational point,
+which is exactly what the Kummer assembly needs in order to turn "the
+difference of two chosen division points is fixed" into "the difference
+of the two classes is `p`-divisible in `A(ℚ)`".  Together with
+`injective_ratToGeom` and the free half `galSMul_ratToGeom` this says
+`A(ℚ) = A(ℚ̄)^{Γ_ℚ}`.
+
+**MISSING MACHINERY**: Galois descent for points of a scheme.  The check
+that would refute this: `grep -rn "galoisDescent\|invariants.*Spec"` over
+`Fermat/`, `.lake/packages/mathlib/Mathlib/` and `~/cs/FLT/`.  Note that
+`Mathlib/RingTheory/Invariant/Basic.lean` and
+`Fermat/FLT/Mathlib/AlgebraicGeometry/InvariantQuotient.lean` are both in
+this file's cone and are the natural starting points; neither was checked
+against this statement when it was cut. -/
+theorem exists_ratPoint_of_galoisInvariant {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (y : GeomFibrePt jstr (𝟙 SpecQ))
+    (hy : ∀ σ : Field.absoluteGaloisGroup ℚ, ab.galSMul (𝟙 SpecQ) σ y = y) :
+    ∃ P : RelPoint jstr (𝟙 SpecQ), ratToGeom jstr P = y :=
+  sorry
+
+/-- **The `n`-torsion of `A(ℚ̄)` is finite, for every `n ≠ 0`** (sorry
+node).
+
+TRUE and classical: for an abelian variety `A` of dimension `g` over an
+algebraically closed field of characteristic `0`,
+`A[n] ≅ (ℤ/n)^{2g}`, of order `n^{2g}`.  The proof is that `[n]` is a
+finite flat isogeny of degree `n^{2g}` — `[n]` is finite because `A` is
+proper and `[n]` is quasi-finite (its kernel is a closed subgroup scheme
+of dimension `0`, since multiplication by `n` is an isogeny), and flat
+because `A` is smooth and the fibres are finite of constant length.
+
+**FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the set is all
+of `A(ℚ̄)`, which is infinite for every `A` of positive dimension, so the
+statement is FALSE there.  At `n = 1` it is the zero subgroup, true and
+uninteresting.  *Not vacuous*: this is the finiteness of the target of
+the Kummer cocycle, and it is the reason the coset space and the torsion
+group together make a FINITE type in the assembly.
+
+Stated for a general `n ≠ 0` rather than only at the prime `p` of the
+consumer because the classical proof is uniform in `n` and nothing is
+gained by narrowing.
+
+**MISSING MACHINERY**: the degree of the multiplication-by-`n` isogeny of
+an abelian scheme.  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is
+in this file's cone and is where such a statement belongs; the check that
+would refute this note is `grep -rn "torsion" ` over that file and over
+`Fermat/FLT/Modularity/AbelianScheme.lean`, whose `Mult.torsion` supplies
+the Galois-stable torsion SET but no finiteness. -/
+theorem finite_torsion_geomPt_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    Finite {y : GeomFibrePt jstr (𝟙 SpecQ) // n • y = 0} :=
+  sorry
+
+/-- **The Kummer field `ℚ(p^{-1} A(ℚ))` is finite over `ℚ`** (sorry node)
+— THE deep arithmetic input to weak Mordell–Weil, and the only one.
+
+Stated as: there is a finite-index subgroup `H ≤ Γ_ℚ` — take
+`H = Γ_L` for `L` the field below — such that every rational point of
+`A` becomes `p`-divisible over the fixed field of `H`, by a division
+point that `H` fixes.
+
+TRUE and classical (Silverman, *AEC* VIII.1.5 and VIII.1.6, verbatim for
+abelian varieties).  Let `K₀ = ℚ(A[p])`, a finite extension because
+`A[p]` is finite (the leaf above) and each of its points is defined over
+a finite extension; let `L = K₀(p^{-1} A(ℚ))`.  Then
+
+* `[p] : A(ℚ̄) → A(ℚ̄)` is surjective, because it is a finite flat
+  surjective isogeny and `ℚ̄` is algebraically closed — this is what
+  makes the division points exist at all;
+* `L / K₀` is abelian of exponent `p`, because the Kummer pairing
+  `A(ℚ) × Γ_{K₀} → A[p]` identifies `Gal(L/K₀)` with a subgroup of
+  `Hom(A(ℚ), A[p])`;
+* `L / K₀` is unramified outside the finite set `S` of places dividing
+  `p` together with the places of bad reduction of `A`;
+* there are only FINITELY many abelian extensions of `K₀` of exponent
+  `p` unramified outside `S` — this is where finiteness of the class
+  group of `K₀` and Dirichlet's unit theorem for its `S`-units enter,
+  through the `p`-Selmer group `K₀(S, p)`.
+
+Hence `L / ℚ` is finite and `H = Γ_L` has finite index.
+
+**WHY THIS IS NOT CIRCULAR.**  The argument does not assume `A(ℚ)` is
+finitely generated: `Gal(L/K₀) ↪ Hom(A(ℚ), A[p])` is used only to see
+that the extension is abelian of exponent `p`, and the finiteness comes
+from the arithmetic of `K₀`, not from the size of `A(ℚ)`.  That is
+exactly Silverman's order of argument, and it is why the descent can be
+run afterwards.
+
+**FAITHFULNESS AUDIT.**  *Not vacuous.*  The conclusion demands, for
+EVERY rational `P` at once, a `p`-division point fixed by ONE
+finite-index `H`; the two quantifiers in that order are the whole
+content.  Taking `H = ⊤` would demand a rational division point for
+every `P`, i.e. that `A(ℚ)` be `p`-divisible, which is false for a curve
+of positive rank; taking `H` to depend on `P` would be true and useless,
+since `Γ_ℚ / H` would then not be one finite index set.  *`hp` is not
+needed for truth* — the statement holds for every `n ≥ 1`, with the same
+proof — but it is retained because the consumer has it and because the
+Kummer-theoretic proof is written at a prime, where `A[p]` is an
+`𝔽_p`-vector space and `L/K₀` is an elementary abelian `p`-extension.
+
+**MISSING MACHINERY**, and it is the honest remaining cost of weak
+Mordell–Weil: surjectivity of `[p]` on geometric points; the Kummer
+pairing; ramification of `L/K₀` outside `S`; and the finiteness theorem
+for `S`-ramified abelian extensions of exponent `p`, i.e. the class
+group and unit theorem for `K₀`.  Mathlib has the last two ingredients
+in the form of `NumberField.classNumber` and the Dirichlet unit theorem;
+what is absent is the abelian-scheme side and the passage from a number
+field to `Γ_ℚ`. -/
+theorem exists_finiteIndex_divisible_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ),
+      Finite (Field.absoluteGaloisGroup ℚ ⧸ H) ∧
+      ∀ P : RelPoint jstr (𝟙 SpecQ), ∃ y : GeomFibrePt jstr (𝟙 SpecQ),
+        p • y = ratToGeom jstr P ∧
+        ∀ σ ∈ H, ab.galSMul (𝟙 SpecQ) σ y = y :=
+  sorry
+
 /-- **Weak Mordell–Weil at a PRIME: `A(ℚ) / p A(ℚ)` is finite, for every
-abelian scheme `A` over `ℚ` and every prime `p`** (sorry node) — the
-ARITHMETIC half of Mordell–Weil, and the whole of what is left of it.
+abelian scheme `A` over `ℚ` and every prime `p`** (PROVEN, 2026-07-27,
+over the four leaves cut above) — the ARITHMETIC half of Mordell–Weil.
 
 TRUE and classical (Silverman, *AEC* Theorem VIII.1.1 for elliptic
 curves; the abelian-variety case is the same argument).  Adjoin the
@@ -19419,10 +19727,25 @@ is exactly what the reduction
 because it says nothing about the rank.  There is no junk witness — the
 statement is about a specific quotient of a specific group.
 
-**MISSING MACHINERY:** Galois cohomology of the Kummer sequence for an
-abelian scheme, the `p`-Selmer group, and the two finiteness theorems of
-algebraic number theory (class group, unit group) applied to
-`ℚ(A[p])`.  `Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
+**THE CUT, 2026-07-27, and what it corrects.**  The docstring used to
+record the missing machinery as "Galois cohomology of the Kummer
+sequence, the `p`-Selmer group, and the two finiteness theorems of
+algebraic number theory applied to `ℚ(A[p])`", as one indivisible block.
+Two of those three are now *not* on the frontier of this node at all:
+
+* **no group cohomology is needed.**  The Kummer cocycle is used only to
+  separate the classes of `A(ℚ) / p A(ℚ)`, and injectivity applied to
+  chosen representatives does that without forming `H¹` — so the
+  profinite/continuous-cochain machinery for `Γ_ℚ`, which does not exist
+  at this pin, is not on the path.  The assembly below is compiler-checked
+  and mentions no cohomology.
+* **the finiteness theorems of algebraic number theory are not used
+  HERE.**  They sit inside one named leaf,
+  `exists_finiteIndex_divisible_of_abelianScheme`, which is the single
+  deep arithmetic statement left; the other three leaves are Galois
+  descent (twice) and finiteness of `A[p](ℚ̄)`.
+
+`Fermat/FLT/EllipticCurve/MordellWeil.lean` is still NOT a
 counterexample: despite its name it is an explicit `2`-descent for the
 two named curves `11a3` and `14a4`, with no general theory.
 
@@ -19447,8 +19770,97 @@ theorem finite_quotient_psmul_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ Sp
     (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
     letI := ab.addCommGroup (𝟙 SpecQ)
     Finite (RelPoint jstr (𝟙 SpecQ) ⧸
-      (nsmulAddMonoidHom p : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) :=
-  sorry
+      (nsmulAddMonoidHom p : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) := by
+  classical
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  letI act : DistribMulAction (Field.absoluteGaloisGroup ℚ) (GeomFibrePt jstr (𝟙 SpecQ)) :=
+    ab.geomFibreAction (𝟙 SpecQ)
+  haveI hT : Finite {y : GeomFibrePt jstr (𝟙 SpecQ) // p • y = 0} :=
+    finite_torsion_geomPt_of_abelianScheme ab p hp.ne_zero
+  obtain ⟨H, hHfin, hdiv⟩ := exists_finiteIndex_divisible_of_abelianScheme ab p hp
+  haveI := hHfin
+  -- `Q P` is the chosen `p`-division point of `P`, fixed by `H`
+  choose Q hQp hQfix using hdiv
+  -- the Kummer cocycle takes values in the `p`-torsion
+  have hval : ∀ (P : RelPoint jstr (𝟙 SpecQ)) (σ : Field.absoluteGaloisGroup ℚ),
+      p • (ab.galSMul (𝟙 SpecQ) σ (Q P) - Q P) = 0 := by
+    intro P σ
+    have h1 : ab.galSMul (𝟙 SpecQ) σ (p • Q P) = p • ab.galSMul (𝟙 SpecQ) σ (Q P) :=
+      map_nsmul (galSMulHom ab σ) p (Q P)
+    rw [smul_sub, ← h1, hQp P, galSMul_ratToGeom ab σ P, sub_self]
+  have hmul : ∀ (a b : Field.absoluteGaloisGroup ℚ) (y : GeomFibrePt jstr (𝟙 SpecQ)),
+      ab.galSMul (𝟙 SpecQ) (a * b) y
+        = ab.galSMul (𝟙 SpecQ) a (ab.galSMul (𝟙 SpecQ) b y) := by
+    intro a b y
+    exact mul_smul a b y
+  -- and depends only on the coset of `σ` modulo `H`
+  have hcoset : ∀ (P : RelPoint jstr (𝟙 SpecQ)) (a b : Field.absoluteGaloisGroup ℚ),
+      a⁻¹ * b ∈ H → ab.galSMul (𝟙 SpecQ) a (Q P) = ab.galSMul (𝟙 SpecQ) b (Q P) := by
+    intro P a b hab
+    have hb : a * (a⁻¹ * b) = b := by group
+    calc ab.galSMul (𝟙 SpecQ) a (Q P)
+        = ab.galSMul (𝟙 SpecQ) a (ab.galSMul (𝟙 SpecQ) (a⁻¹ * b) (Q P)) := by
+          rw [hQfix P _ hab]
+      _ = ab.galSMul (𝟙 SpecQ) (a * (a⁻¹ * b)) (Q P) := (hmul _ _ _).symm
+      _ = ab.galSMul (𝟙 SpecQ) b (Q P) := by rw [hb]
+  set T := {y : GeomFibrePt jstr (𝟙 SpecQ) // p • y = 0}
+  -- the Kummer cocycle of `P`, as a map on the FINITE coset space `Γ_ℚ / H`
+  set Φ : RelPoint jstr (𝟙 SpecQ) → ((Field.absoluteGaloisGroup ℚ ⧸ H) → T) :=
+    fun P c => Quotient.liftOn' c
+      (fun σ : Field.absoluteGaloisGroup ℚ =>
+        (⟨ab.galSMul (𝟙 SpecQ) σ (Q P) - Q P, hval P σ⟩ : T))
+      (by
+        intro a b hab
+        have hmem : a⁻¹ * b ∈ H := QuotientGroup.leftRel_apply.mp hab
+        apply Subtype.ext
+        show ab.galSMul (𝟙 SpecQ) a (Q P) - Q P = ab.galSMul (𝟙 SpecQ) b (Q P) - Q P
+        rw [hcoset P a b hmem])
+  have hΦapp : ∀ (P : RelPoint jstr (𝟙 SpecQ)) (σ : Field.absoluteGaloisGroup ℚ),
+      ((Φ P (QuotientGroup.mk σ) : T) : GeomFibrePt jstr (𝟙 SpecQ))
+        = ab.galSMul (𝟙 SpecQ) σ (Q P) - Q P := fun _ _ => rfl
+  -- equal cocycles force equal classes: the difference of the two chosen
+  -- division points is Galois-invariant, hence rational by descent
+  have hkey : ∀ P P' : RelPoint jstr (𝟙 SpecQ), Φ P = Φ P' →
+      -P + P' ∈
+        (nsmulAddMonoidHom p : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range := by
+    intro P P' hPP'
+    have hfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ab.galSMul (𝟙 SpecQ) σ (Q P' - Q P) = Q P' - Q P := by
+      intro σ
+      have h' : ab.galSMul (𝟙 SpecQ) σ (Q P) - Q P
+          = ab.galSMul (𝟙 SpecQ) σ (Q P') - Q P' := by
+        rw [← hΦapp P σ, ← hΦapp P' σ, hPP']
+      have h2 : ab.galSMul (𝟙 SpecQ) σ (Q P')
+          = ab.galSMul (𝟙 SpecQ) σ (Q P) - Q P + Q P' := by rw [h']; abel
+      have h3 : ab.galSMul (𝟙 SpecQ) σ (Q P' - Q P)
+          = ab.galSMul (𝟙 SpecQ) σ (Q P') - ab.galSMul (𝟙 SpecQ) σ (Q P) :=
+        map_sub (galSMulHom ab σ) (Q P') (Q P)
+      rw [h3, h2]; abel
+    obtain ⟨S, hS⟩ := exists_ratPoint_of_galoisInvariant ab (Q P' - Q P) hfix
+    refine ⟨S, ?_⟩
+    show p • S = -P + P'
+    apply injective_ratToGeom jstr
+    have e1 : ratToGeom jstr (p • S) = p • ratToGeom jstr S :=
+      map_nsmul (ratToGeomHom ab) p S
+    have e2 : ratToGeom jstr (-P + P') = -ratToGeom jstr P + ratToGeom jstr P' := by
+      have hsum := map_add (ratToGeomHom ab) (-P) P'
+      have hneg : ratToGeom jstr (-P) = -ratToGeom jstr P := map_neg (ratToGeomHom ab) P
+      rw [show ratToGeom jstr (-P + P') = ratToGeom jstr (-P) + ratToGeom jstr P' from hsum,
+        hneg]
+    rw [e1, e2, hS, smul_sub, hQp P', hQp P]
+    abel
+  -- a finite type, so finitely many classes
+  refine Finite.of_injective (fun c => Φ (Quotient.out c)) ?_
+  intro c c' hcc'
+  have h1 : ((Quotient.out c : RelPoint jstr (𝟙 SpecQ)) :
+      RelPoint jstr (𝟙 SpecQ) ⧸
+        (nsmulAddMonoidHom p : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range)
+      = ((Quotient.out c' : RelPoint jstr (𝟙 SpecQ)) : _) :=
+    QuotientAddGroup.eq.mpr (hkey _ _ hcc')
+  calc c = ((Quotient.out c : RelPoint jstr (𝟙 SpecQ)) : _) := (Quotient.out_eq c).symm
+    _ = ((Quotient.out c' : RelPoint jstr (𝟙 SpecQ)) : _) := h1
+    _ = c' := Quotient.out_eq c'
 
 /-- **Weak Mordell–Weil: `A(ℚ) / n A(ℚ)` is finite, for every abelian
 scheme `A` over `ℚ` and every `n ≥ 2`** (PROVEN, 2026-07-27, from the
@@ -19528,10 +19940,25 @@ now itself PROVEN, over one strictly smaller leaf:
   `finite_quotient_psmul_of_abelianScheme`, having shed the reduction
   from a general `n` to its prime factors (proven as group theory).
 
-So the two OPEN leaves under Mordell–Weil are now the prime case of weak
-Mordell–Weil and the existence of a projective embedding whose height
-obeys the theorem of the cube.  Everything else between here and them is
-compiler-checked.
+**THIRD SPLIT, 2026-07-27**: `finite_quotient_psmul_of_abelianScheme` is
+now PROVEN in turn, by the Kummer-cocycle assembly, over four leaves —
+the two halves of Galois descent (`injective_ratToGeom`,
+`exists_ratPoint_of_galoisInvariant`), finiteness of `A[n](ℚ̄)`
+(`finite_torsion_geomPt_of_abelianScheme`), and finiteness of the Kummer
+field `ℚ(p^{-1} A(ℚ))`
+(`exists_finiteIndex_divisible_of_abelianScheme`).  Only the last of
+those carries arithmetic; no group cohomology appears anywhere on the
+path.
+
+**FOURTH SPLIT, same day**: `exists_integralCoordinates_of_abelianScheme`
+is PROVEN in turn, over `exists_segreCoordinates_of_abelianScheme` (the
+geometry: a symmetric very ample bundle and the theorem of the cube, read
+through the Segre embedding as one family of degree-2 forms) and
+`nonempty_integralCoordinates_of_segreCoordinates` (the height machine,
+which mathlib supplies in both directions — see `SegreHeight.lean`).
+
+So the OPEN leaves under Mordell–Weil are now those four, together with
+those two.  Everything else between here and them is compiler-checked.
 
 The retired verdict, kept because its *check* is still the right one:
 "neither heights on abelian varieties, nor the weak Mordell–Weil
@@ -21450,8 +21877,12 @@ docstring).
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
-| `exists_integralCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
-| `finite_quotient_psmul_of_abelianScheme` | weak Mordell–Weil at a prime | no |
+| `exists_segreCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
+| `nonempty_integralCoordinates_of_segreCoordinates` (in `SegreHeight.lean`) | the height machine over mathlib's `Height` | no |
+| `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
+| `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
+| `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
+| `exists_finiteIndex_divisible_of_abelianScheme` | Kummer field / class group + units | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `exists_heckeIsotypicDecomposition` | Eichler-Shimura | no |
