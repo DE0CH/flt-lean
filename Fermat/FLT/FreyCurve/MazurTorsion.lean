@@ -11121,9 +11121,12 @@ into the two leaves consumed below:
   at `N = 32` over `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`, itself
   proven by a cusp count on `X_0(32)` against the four rational points that
   `QuarticDescent.rational_point_x0ThirtyTwo` allows. What is left open is
-  TWO leaves, `X0GenusOne.finite_jacobian` and
-  `X0GenusOne.card_relPoint_finiteField` (2026-07-27, second correction;
-  neither is vacuous or refutable).
+  TWO leaves, `X0GenusOne.isTorsion_jacobian` and
+  `X0GenusOne.card_relPoint_finiteField` (2026-07-27, third correction;
+  neither is vacuous or refutable).  `X0GenusOne.finite_jacobian`, which
+  this paragraph named until the third correction, is now PROVEN over
+  `isTorsion_jacobian` and `X0.lean`'s level-generic Mordell–Weil leaf
+  `Fermat.fg_relPoint_of_abelianScheme`.
 
   **DO NOT DISPATCH AT `MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` OR
   `MazurLevel32.exists_x0ThirtyTwo_mod_three`**, which is what this
@@ -14951,15 +14954,16 @@ merging the LISTS.
 What was done instead is the decomposition `X0.lean` had already performed
 on its own analogues, and it is strictly better than a merge would have
 been, because it turns out that **most of the content of both leaves is
-not level-specific at all**.  Five of the seven obligations are already
+not level-specific at all**.  Six of the eight obligations are already
 level-generic leaves in `X0.lean` and are reused verbatim
 (`exists_jacobianOf_x0`, `injective_aj_of_one_le_x0Genus`,
 `exists_rationalCusps`, `exists_x0Compactification_finiteField`,
-`finite_relPoint_of_x0Compactification_finiteField`); the genus and
-good-prime side conditions are CLOSED here by `decide` (`levels_spec`,
-`countTable_spec`); and exactly two genuinely level-specific leaves
-remain, `finite_jacobian` (Mordell–Weil rank `0`) and
-`card_relPoint_finiteField` (Eichler–Shimura).  So the count of open
+`finite_relPoint_of_x0Compactification_finiteField`, and — added by the
+second decomposition step, below — `fg_relPoint_of_abelianScheme`); the
+genus and good-prime side conditions are CLOSED here by `decide`
+(`levels_spec`, `countTable_spec`); and exactly two genuinely
+level-specific leaves remain, `isTorsion_jacobian` (Mordell–Weil rank `0`)
+and `card_relPoint_finiteField` (Eichler–Shimura).  So the count of open
 leaves in this section is unchanged at two, while the number of missing
 theories they require drops from seven to two, and those two are now the
 ONLY things standing between this section and closure.
@@ -14970,12 +14974,29 @@ behind is `nonempty_relPoint_equiv_modelPoint` — the identification of
 `X_0(N)_{𝔽_ℓ}` with the reduced Weierstrass model of `N a 1`.  The count
 itself is now a `decide` (`card_modelPoint`), so Eichler–Shimura is no
 longer among this section's missing theories at all; see the
-`#### The explicit plane models` subsection note.  The two open leaves are
-therefore `finite_jacobian` and `nonempty_relPoint_equiv_modelPoint`.
+`#### The explicit plane models` subsection note.
+
+**SECOND DECOMPOSITION STEP, 2026-07-27 (same day): `finite_jacobian` is
+now PROVEN too, and the leaf it left behind is `isTorsion_jacobian`.**  The
+finiteness statement bundled two unrelated missing theories — Mordell–Weil
+(`A(ℚ)` finitely generated for every abelian variety over `ℚ`, which
+mentions no curve and no level) and the rank computation.  `X0.lean` had
+already split its own Kenku-level analogue along that seam, so the general
+half was ALREADY an open leaf there, `Fermat.fg_relPoint_of_abelianScheme`,
+and reusing it costs nothing: the four genus-one levels now share the
+Mordell–Weil obligation with the thirteen Kenku levels instead of stating
+it a second time.  What is left here is the rank statement alone, in its
+honest form — `J_0(N)(ℚ)` is a torsion group — recombined with Mordell–Weil
+by `AddCommGroup.finite_of_fg_torsion`.  This is again SHARING A SHAPE
+rather than merging lists, which is the same move recorded above.
+
+**So the open leaves of this section are `isTorsion_jacobian`,
+`nonempty_relPoint_equiv_modelPoint` and the shared Mordell–Weil obligation
+`Fermat.fg_relPoint_of_abelianScheme` in `X0.lean`.**
 
 **The upward merge is still available and is now cheaper**, since the
 remaining pair are in verbatim the same shape as
-`Fermat.finite_jacobian_of_kenkuLevel` and
+`Fermat.isTorsion_jacobian_of_kenkuLevel` and
 `Fermat.card_relPoint_x0_finiteField`.  But it buys only table rows, not
 theories, so it is no longer the interesting move.
 
@@ -15085,16 +15106,30 @@ theorem countTable_spec {N ℓ m : ℕ} (h : (N, ℓ, m) ∈ countTable) :
     0 < N ∧ ℓ.Prime ∧ ¬ ℓ ∣ N := by
   fin_cases h <;> exact ⟨by decide, by decide, by decide⟩
 
-/-- **`rank J_0(N)(ℚ) = 0` at the four genus-one levels** (sorry leaf,
-introduced 2026-07-27) — the DEEP half of `hasRankZeroJacobian`, and after
-that decomposition the ONLY open content of it.
+/-- **`J_0(N)(ℚ)` is a TORSION group at the four genus-one levels** (sorry
+leaf, introduced 2026-07-27) — the DEEP half of `finite_jacobian`, and
+after that decomposition the ONLY open content of it.
 
-The exact analogue of `X0.lean`'s `Fermat.finite_jacobian_of_kenkuLevel`,
+The exact analogue of `X0.lean`'s `Fermat.isTorsion_jacobian_of_kenkuLevel`,
 and STRICTLY EASIER than it: there `J_0(N)` must be produced from a
 decomposition of `S_2(Γ_0(N))` into newform factors with `L(A, 1) ≠ 0` at
-each; here `X_0(N)` has genus exactly `1` (PROVEN in `levels_spec`), so
+each; here `x0Genus N = 1` (PROVEN by `decide` in `levels_spec`), so
 `J_0(N) = X_0(N)` is a single elliptic curve of conductor `N` and this is
 one Mordell–Weil rank computation.
+
+**Why TORSION and not FINITENESS — i.e. why this leaf is not
+`finite_jacobian` itself.**  Rank `0` and finiteness are the same statement
+only *given* Mordell–Weil, and Mordell–Weil — `A(ℚ)` finitely generated for
+every abelian variety `A` over `ℚ` — is a general theorem with nothing to do
+with modular curves, with these four levels, or with genus `1`.  Bundled,
+one leaf carried two unrelated missing theories.  Split, the general half is
+`Fermat.fg_relPoint_of_abelianScheme`, which is **already an open leaf of
+`X0.lean`**, consumed there by `Fermat.finite_jacobian_of_kenkuLevel` — so
+this decomposition adds NO new theory to the frontier, it only stops
+duplicating one — and this leaf holds exactly the rank statement, which for
+a finitely generated abelian group is literally "torsion".  The two are
+recombined by `AddCommGroup.finite_of_fg_torsion` in `finite_jacobian`
+below, which is now PROVEN.
 
 **TRUE**, re-derived rather than inherited (PARI/GP 2.17.4, 2026-07-27,
 untrusted searcher; models `11a1 = [0,-1,1,-10,-20]`,
@@ -15102,35 +15137,105 @@ untrusted searcher; models `11a1 = [0,-1,1,-10,-20]`,
 `ellglobalred` gives conductors `11, 17, 19, 32` — the check that each
 model really IS `X_0(N)` — and `ellrank` returns the INTERVAL `[0, 0]` at
 all four, i.e. rank proven `0` rather than merely bounded above, with
-`elltors = 5, 4, 3, 4`.  So `J_0(N)(ℚ)` is finite of order `5, 4, 3, 4`.
-Equivalently `S_2(Γ_0(N))` is one-dimensional at each level and
-`L(f, 1) ≠ 0`.
+`elltors = 5, 4, 3, 4`.  So `J_0(N)(ℚ)` is torsion, and (with Mordell–Weil)
+finite of order `5, 4, 3, 4`.  Equivalently `S_2(Γ_0(N))` is
+one-dimensional at each level and `L(f, 1) ≠ 0`.
 
 **The class does not extend**: the next prime levels `37, 43, 67, 163`
 have ranks `1, 1, 2, 6`, so this leaf is FALSE at every one of them and
-`levels` may not be widened without recomputing.
+`levels` may not be widened without recomputing.  **Not vacuous**:
+`Fermat.exists_x0Compactification N` supplies an `hX` at each of the four
+levels, and `Fermat.exists_jacobianOf_x0` the Jacobian.
 
-`jac` is load-bearing and may not be dropped or underscored in a
-successor's proof: the conclusion is FALSE for an arbitrary abelian scheme
-over `ℚ` receiving `X` — it is true only because `jac` pins `J` as the
-Jacobian of this particular curve.
+`_jac` is load-bearing and may not be dropped in a successor's proof: the
+conclusion is FALSE for an arbitrary abelian scheme over `ℚ` receiving `X`
+— it is true only because `_jac` pins `J` as the Jacobian of this
+particular curve.  `_hN` is likewise load-bearing.  (Both are
+underscore-prefixed only because the body is `sorry`; that is this
+section's convention for an open leaf and carries no vacuity claim.)
 
 IRREDUCIBLE at this mathlib pin, and this is where the depth of the
-original leaf now lives, ALONE.  AXIS SEARCHED: any rank computation, or
-Mordell–Weil theorem, for elliptic curves over `ℚ` in `Mathlib`, in this
-project, or in `~/cs/FLT` — there is none, and `~/cs/FLT` assumes Mazur's
-torsion theorem outright (`FLT/Assumptions/Mazur.lean`).  NOT searched:
-whether descent on an explicit Weierstrass model — the route
-`MazurLevel32.y0HasNoRationalPoint_thirtyTwo` takes at level `32` through
-`QuarticDescent`, which replaces the rank input entirely — reaches the
-three prime levels; that would need the `Scheme` ↔ `WeierstrassCurve`
-bridge, which does not exist. -/
-theorem finite_jacobian (N : ℕ) (_hN : N ∈ levels)
+original leaf now lives, ALONE.  **AXES SEARCHED**, with the refuting check
+for each, so the next reader need not redo them:
+
+* *the rank input* — any rank computation, or Mordell–Weil theorem, for
+  elliptic curves over `ℚ`.  Still empty: `grep -rn "MordellWeil\|ellrank\|
+  NeronTateHeight\|Selmer" Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+  finds no rank theory in any of the three trees, and `~/cs/FLT` assumes
+  Mazur's torsion theorem outright (`FLT/Assumptions/Mazur.lean`).
+  `Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a counterexample:
+  despite the name it is an explicit enumeration of `11a3(ℚ)` for one
+  curve, over `ℚ` in `WeierstrassCurve` coordinates, with no general
+  theory — and note its own header records that the general Mordell–Weil
+  leaf was DELETED there as not being on the critical path.
+* *the finiteness/torsion conjunction* — **this is the axis that worked**,
+  and it is the one the previous verdict did not search: `Finite` on a
+  group is `FG ∧ torsion`, and `X0.lean` had already split its Kenku-level
+  analogue along exactly that seam.  Refuting check for the claim that the
+  split is real: `Fermat.fg_relPoint_of_abelianScheme` must mention neither
+  `N`, nor `IsX0Compactification`, nor `IsJacobianOf` — and it mentions
+  none of them.
+* *the explicit-order axis* — stating `Nat.card (RelPoint jstr (𝟙 SpecQ)) =
+  5, 4, 3, 4` instead, which implies `Finite` via
+  `Nat.finite_of_card_ne_zero` and so needs no Mordell–Weil at all.  That
+  is the shape `WeierstrassCurve.curve11a3_points` uses, and it is
+  AVAILABLE but strictly stronger: it bundles the torsion computation into
+  the rank computation, and it can only be proven through an explicit
+  Weierstrass model, i.e. through a `Scheme` ↔ `WeierstrassCurve` bridge
+  that does not exist here.  Rejected as a net loss, not as impossible.
+* *the descent axis* — bounding the rank by a Selmer group (`5`-descent at
+  `11`, `2`-descent at `17` and `32`, `3`-descent at `19`; at `32` this is
+  Fermat's own descent, `32a1 : y² = x³ + 4x` being `2`-isogenous to
+  `y² = x³ − x`).  Needs Selmer groups of an abelian scheme over `ℚ`, hence
+  Galois cohomology with local conditions; refuting check
+  `grep -rn "Selmer" Fermat/` returns only Galois-representation modules
+  and `MordellWeil.lean`'s prose, no Selmer group of a curve.
+* *the level-`32` quartic-descent route* — `QuarticDescent` really does
+  replace the rank input at that one level
+  (`MazurLevel32.y0HasNoRationalPoint_thirtyTwo`), but reaching the three
+  prime levels through it needs the same missing `Scheme` ↔
+  `WeierstrassCurve` bridge. -/
+theorem isTorsion_jacobian (N : ℕ) (_hN : N ∈ levels)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (_h : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (_jac : IsJacobianOf strX ab o) : Finite (RelPoint jstr (𝟙 SpecQ)) :=
+    (_jac : IsJacobianOf strX ab o) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
   sorry
+
+/-- **`J_0(N)(ℚ)` is finite at the four genus-one levels** (PROVEN
+2026-07-27 by decomposition; was the sorry leaf that carried the whole
+depth of `hasRankZeroJacobian`, introduced the same day).
+
+The exact analogue of `X0.lean`'s `Fermat.finite_jacobian_of_kenkuLevel`,
+and proven the same way, from the same two halves:
+
+* Mordell–Weil, `Fermat.fg_relPoint_of_abelianScheme` — `A(ℚ)` is finitely
+  generated for EVERY abelian scheme `A` over `ℚ`.  Level-free,
+  curve-free, and shared verbatim with the thirteen Kenku levels, so this
+  assembly introduces no new obligation of its own;
+* rank `0`, `isTorsion_jacobian` above — the one genuinely level-specific
+  input, and the only thing this section still owes.
+
+`AddCommGroup.finite_of_fg_torsion` (the structure theorem for finitely
+generated abelian groups) recombines them.  The group structure used
+throughout is `ab.addCommGroup (𝟙 SpecQ)`, the functor of points of the
+abelian scheme evaluated at the base — the same instance the two inputs are
+stated against, which is why no transport is needed.
+
+**Both inputs are load-bearing.**  Finite generation alone never gives
+finiteness (`ℤ` is finitely generated), and torsion alone never gives it
+either (`⨁_ℕ ℤ/2`), so neither may be dropped; that is exactly the content
+of the structure theorem being invoked. -/
+theorem finite_jacobian (N : ℕ) (hN : N ∈ levels)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) : Finite (RelPoint jstr (𝟙 SpecQ)) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  haveI := fg_relPoint_of_abelianScheme ab
+  exact AddCommGroup.finite_of_fg_torsion _ (isTorsion_jacobian N hN h jac)
 
 /-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the four genus-one
 levels** (PROVEN 2026-07-27 by decomposition; was a sorry leaf introduced
@@ -15185,7 +15290,10 @@ are **not level-specific at all** and were therefore already sitting in
 Kenku levels.**  `x0Genus` is a computable function of `N` and `decide`
 evaluates it to `1` at all four levels (`levels_spec` below), so no leaf
 carries the assertion "these curves have genus `1`".  What remains open is
-the rank half ALONE, isolated in `finite_jacobian`.
+the rank half ALONE, isolated in `finite_jacobian` — and since a second
+decomposition step later the same day, in `isTorsion_jacobian`, with
+`finite_jacobian` itself now PROVEN from it and from `X0.lean`'s
+level-generic Mordell–Weil leaf `Fermat.fg_relPoint_of_abelianScheme`.
 
 Net effect: this statement needed four missing theories and now needs one.
 AXES SEARCHED: the rank input (empty, as before), the level-consolidation
