@@ -66,6 +66,7 @@ on `F̄`-points" is proven here once and for all.
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+public import Fermat.FLT.Modularity.AmpleSheaf
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
 public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyOpen
 public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
@@ -6457,8 +6458,66 @@ theorem isPullback_ker_baseChange (ab : AbelianSchemeStruct f) {T : Scheme.{u}} 
 
 end AbelianSchemeStruct
 
+/-- **AN ABELIAN VARIETY OVER AN ALGEBRAICALLY CLOSED FIELD CARRIES A SYMMETRIC
+AMPLE INVERTIBLE SHEAF SATISFYING THE CUBE IDENTITY `[n]^* L ≅ L^{⊗ n²}`**
+(sorry leaf, cut 2026-07-27 — this is Mumford *Abelian Varieties* §6,
+Application 2 of the THEOREM OF THE CUBE, together with the projectivity of an
+abelian variety, and it is the whole mathematical residue of
+`isQuasiAffine_ker_mulByNat_of_isAlgClosed` below).
+
+**What each conjunct is.**
+
+* `IsInvertibleSheaf L` — `L` is locally free of rank one.
+* `IsAmpleSheaf L` — `A` is PROJECTIVE.  Classically this is the theta
+  divisor: a symmetric ample `L` exists on any abelian variety over an
+  algebraically closed field.
+* `modPullback ab.zeroSection L ≅ modUnit _` — `L` is NORMALIZED along the
+  origin, `e^* L ≅ 𝒪_{Spec K}`.  This is free classically (`Pic(Spec K) = 0`
+  for a field `K`), and it is folded into this leaf rather than made a seventh
+  one because the classical construction produces a normalized `L` anyway.
+  The consumer uses it to identify `([p]^* L)|_{ker[p]}` with `𝒪`.
+* `modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)` — THE CUBE, in the
+  form Application 2 uses.  Note this form REQUIRES `L` symmetric: for a
+  general `L` the cube only gives
+  `[n]^* L ≅ L^{(n²+n)/2} ⊗ ([−1]^* L)^{(n²−n)/2}`.  Symmetry is therefore
+  asserted implicitly, by asserting the conclusion it buys; a prover
+  constructs `L := L₀ ⊗ [−1]^* L₀` from any ample `L₀`, which is symmetric and
+  still ample.
+
+**Why the statement is expressible at all** — and this is the change that made
+the cut available on 2026-07-27.  `Fermat.modTensor`
+(`ModularCurve/RelativePicard.lean`) is the object part of the tensor product
+of sheaves of modules, obtained by SHEAFIFYING the presheaf tensor product;
+`Fermat.modTensorPow`, `Fermat.IsAmpleSheaf` and the six sheaf-theoretic
+obligations live in `Modularity/AmpleSheaf.lean`.  Before that landed, the
+consumer's docstring recorded — correctly for mathlib, and incorrectly for
+this project after the fact — that `L^{⊗n}` "cannot even be WRITTEN".
+
+**`n` is arbitrary and no characteristic hypothesis appears.**  The cube is
+characteristic-blind; the consumer instantiates it at `n = p = ringChar K`.
+Do not add `hp`/`hchar` here — they would record a dependence that does not
+exist, and the Lie-algebra route's inability to reach `n = p` is a fact about
+the CONSUMER, not about this statement.
+
+**Do not attempt this leaf before reading
+`isQuasiAffine_ker_mulByNat_of_field_char` below**: nine cube-free routes are
+refuted there, each with the check that would refute the refutation, and the
+survey of what `Mathlib/AlgebraicGeometry/` does and does not have
+(`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY) is re-verified there.
+This is a mathlib-scale build: theta divisors need divisors, linear systems
+and cohomology, none of which exist at this pin. -/
+theorem exists_isAmpleSheaf_cube_of_isAlgClosed {X : Scheme.{u}}
+    (K : Type u) [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (ab : AbelianSchemeStruct fK) (n : ℕ) :
+    ∃ L : X.Modules, IsInvertibleSheaf L ∧ IsAmpleSheaf L ∧
+      Nonempty (modPullback ab.zeroSection L ≅ modUnit (Spec (CommRingCat.of K))) ∧
+      Nonempty (modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)) :=
+  sorry
+
 /-- **`ker[p]` is a QUASI-AFFINE SCHEME over an ALGEBRAICALLY CLOSED field of
-characteristic `p`** (sorry leaf — the theorem of the cube; cut 2026-07-27 out of
+characteristic `p`** (PROVEN 2026-07-27 over
+`exists_isAmpleSheaf_cube_of_isAlgClosed` above and the six sheaf-theoretic
+leaves of `Modularity/AmpleSheaf.lean`; cut 2026-07-27 out of
 `isQuasiAffine_ker_mulByNat_of_field_char` below by ROUTE 9, "WLOG `K`
 algebraically closed", which that leaf's docstring had recorded as the axis
 nobody had ranged over).
@@ -6479,15 +6538,33 @@ is written over an algebraically closed field, and two of them become
   classical argument expects only over a perfect — here algebraically closed —
   field.
 
-**The residue is still the theorem of the cube, and it is still hard.**  Nobody
-should read this cut as progress on the mathematics; it removes a genuine
-obstruction (the classical arguments were not even statable) without supplying
-any of the missing machinery.  In particular the blocker recorded at the
-consumer is UNCHANGED and is the thing to attack: at this pin there is **no
-monoidal structure on `SheafOfModules`**, so `L^{⊗n}` cannot be written at all,
-and ampleness, `Pic` and invertible sheaves are all absent.  Do not re-survey
-that; do not re-cut this leaf into `IsAffine` / `Finite` / `topologicalKrullDim
-≤ 0`, all of which are interchangeable with it here.
+**THIS DECLARATION IS NO LONGER A LEAF (2026-07-27, second revision).**  It is
+now PROVEN over Mumford's Application 2 itself, stated as
+`exists_isAmpleSheaf_cube_of_isAlgClosed` immediately above plus six
+sheaf-theoretic leaves in `Modularity/AmpleSheaf.lean`.  Everything from here
+down is the history of how it got here; read it for the refuted routes, not
+for the current state.
+
+**THE RECORDED BLOCKER WAS HALF-FALSE, AND THE CHECK THAT REFUTED IT IS ONE
+GREP.**  The paragraph that used to stand here said the blocker "is UNCHANGED
+and is the thing to attack: at this pin there is **no monoidal structure on
+`SheafOfModules`**, so `L^{⊗n}` cannot be written at all".  The first half is
+right about mathlib and WRONG about this project: `Fermat.modTensor`
+(`ModularCurve/RelativePicard.lean`, landed 2026-07-27) supplies the object
+part by sheafifying the presheaf tensor product, and with `Fermat.modPullback`
+and `Fermat.IsInvertibleSheaf` beside it, `L^{⊗n}` (`Fermat.modTensorPow`) and
+the cube's output `[n]^* L ≅ L^{⊗ n²}` are both WRITABLE — verified by
+elaborating them, 2026-07-27.  Ampleness was the one statement-level gap that
+really did remain; `Fermat.IsAmpleSheaf` closes it.
+
+So the standing rule applied here in the direction the old note denied: the cut
+needed the ample-sheaf theory only STATED, not proven.  What is NOT disputed is
+the old note's conclusion that PROVING it is a theory build — the six leaves in
+`AmpleSheaf.lean` are that theory, and each says what it is waiting on.
+
+Still true, and still worth obeying: do not re-cut this statement into
+`IsAffine` / `Finite` / `topologicalKrullDim ≤ 0`, all of which are
+interchangeable with it here.
 
 **Routes already refuted for the general-`K` form apply verbatim here**, with
 one exception worth naming: route 5 (quasi-finiteness at the origin, spread by
@@ -6504,9 +6581,50 @@ with the check that would refute the refutation. -/
 theorem isQuasiAffine_ker_mulByNat_of_isAlgClosed {X : Scheme.{u}}
     (K : Type u) [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)}
     (ab : AbelianSchemeStruct fK)
-    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
-    Scheme.IsQuasiAffine (pullback (ab.mulByNat p) ab.zeroSection) :=
-  sorry
+    (p : ℕ) (hp : p.Prime) (_hchar : ringChar K = p) :
+    Scheme.IsQuasiAffine (pullback (ab.mulByNat p) ab.zeroSection) := by
+  classical
+  -- 1.  `ker[p] ↪ A` is a CLOSED IMMERSION: it is a base change of the zero
+  --     section, which is a section of the separated `fK`.
+  haveI : IsProper fK := ab.proper
+  haveI : IsClosedImmersion ab.zeroSection := by
+    haveI : IsClosedImmersion (ab.zeroSection ≫ fK) := by
+      rw [show ab.zeroSection ≫ fK = 𝟙 _ from (ab.zero (𝟙 _)).2]; infer_instance
+    exact IsClosedImmersion.of_comp _ fK
+  haveI : IsClosedImmersion (pullback.fst (ab.mulByNat p) ab.zeroSection) :=
+    MorphismProperty.pullback_fst _ _ inferInstance
+  -- 2.  `ker[p]` is QUASI-COMPACT: `ker[p] ⟶ Spec K` is a base change of the
+  --     proper `[p]`, and `Spec K` is compact.
+  haveI : IsProper (ab.mulByNat p) := ab.isProper_mulByNat p
+  haveI : IsProper (pullback.snd (ab.mulByNat p) ab.zeroSection) :=
+    MorphismProperty.pullback_snd _ _ inferInstance
+  haveI : CompactSpace ↥(pullback (ab.mulByNat p) ab.zeroSection : Scheme.{u}) :=
+    QuasiCompact.compactSpace_of_compactSpace (pullback.snd (ab.mulByNat p) ab.zeroSection)
+  -- 3.  Mumford §6, Application 2: a normalized symmetric ample `L` with the cube.
+  obtain ⟨L, -, hLamp, ⟨htriv⟩, ⟨hcube⟩⟩ :=
+    exists_isAmpleSheaf_cube_of_isAlgClosed K ab p
+  set ι : (pullback (ab.mulByNat p) ab.zeroSection : Scheme.{u}) ⟶ X :=
+    pullback.fst (ab.mulByNat p) ab.zeroSection with hι
+  set st : (pullback (ab.mulByNat p) ab.zeroSection : Scheme.{u}) ⟶
+      Spec (CommRingCat.of K) := pullback.snd (ab.mulByNat p) ab.zeroSection with hst
+  obtain ⟨etens⟩ := nonempty_modPullback_modTensorPow ι L (p ^ 2)
+  obtain ⟨eunit⟩ := nonempty_modPullback_modUnit st
+  -- 4.  `[p]` is CONSTANT on `ker[p]` — that is `pullback.condition` — so
+  --     `(L|_{ker[p]})^{⊗ p²} ≅ ([p]^* L)|_{ker[p]} ≅ (str)^* (e^* L) ≅ 𝒪`.
+  have e : modTensorPow (modPullback ι L) (p ^ 2) ≅
+      modUnit (pullback (ab.mulByNat p) ab.zeroSection) :=
+    etens.symm ≪≫
+      modPullbackMapIso ι hcube.symm ≪≫
+      modPullbackCompIso ι (ab.mulByNat p) L ≪≫
+      modPullbackCongrIso pullback.condition L ≪≫
+      (modPullbackCompIso st ab.zeroSection L).symm ≪≫
+      modPullbackMapIso st htriv ≪≫
+      eunit
+  -- 5.  `L|_{ker[p]}` is ample, hence so is its `p²`-th power, hence so is
+  --     `𝒪_{ker[p]}` — and a scheme with ample structure sheaf is QUASI-AFFINE.
+  exact isQuasiAffine_of_isAmpleSheaf_modUnit _
+    (isAmpleSheaf_of_iso e (isAmpleSheaf_modTensorPow (pow_pos hp.pos 2)
+      (isAmpleSheaf_modPullback ι hLamp)))
 
 /-- **`ker[p]` is a QUASI-AFFINE SCHEME in characteristic `p`** (PROVEN
 2026-07-27 over `isQuasiAffine_ker_mulByNat_of_isAlgClosed` above, by ROUTE 9 —
