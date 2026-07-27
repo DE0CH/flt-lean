@@ -12317,6 +12317,92 @@ Taylor, plus Carayol / Taylor with level lowering — is IRREDUCIBLY a
 citation at this pin. What is reducible is the packaging, and all of it
 lives in `HilbertHeckeAlgebra`.
 
+## ATOMICITY AUDIT — WHICH AXES WERE SEARCHED (2026-07-27)
+
+The verdict above says "irreducibly a citation" without saying along WHICH
+axis a cut was looked for, and an irreducibility verdict is only as wide as
+the axis its auditor searched. Three axes were tried; here is each, with the
+check that would refute the finding.
+
+1. **FIELD / HECKE — the obvious cut, and it is UNSAFE.** Splitting into
+   (i) `∃ F` totally real, Galois, with `irreducibleF` and `residueCardTwo`,
+   and (ii) for every such `F`, `Nonempty (HilbertHeckeAlgebra ℓ F ρbar)`,
+   replaces an EXISTENTIAL over `F` by a UNIVERSAL one. Taylor's `F` is not
+   an arbitrary field with those four properties — it is the one over which
+   an abelian variety realising `ρbar|_{G_F}` exists — so (ii) asserts mod-`ℓ`
+   modularity of `ρbar|_{G_F}` over EVERY such `F`, which is Serre's
+   conjecture over totally real fields and is open. The cut therefore turns a
+   proved theorem into a conjecture; the merge recorded at the head of this
+   docstring is CORRECT and must not be "tidied up".
+     REFUTING CHECK: exhibit a proof of (ii) that does not first re-run
+     Moret–Bailly, or a hypothesis on `F` short of carrying the modularity
+     witness that makes (ii) provable.
+2. **FIELD / HECKE, WITNESS-CARRYING — safe, but it duplicates in-flight
+   work.** The cut becomes safe if (i) carries an automorphic witness, so
+   that (ii) is Carayol + level lowering applied to a given eigensystem
+   rather than to a bare field. The vocabulary for that witness exists and,
+   unlike everything else needed here, is NOT downstream:
+   `Fermat/FLT/AutomorphicForm/QuaternionAlgebra/**` imports only mathlib,
+   `Fermat.FLT.QuaternionAlgebra.NumberField` and its own subtree — no
+   `KhareWintenberger`, no `HilbertModularity` — so it can be imported here
+   without inverting any layering. It was NOT taken, because
+   `Modularity/KhareWintenberger.lean` already carries this decomposition
+   (`PotentialModularityWitness`, `heckePackage`,
+   `carayol_threeadic_realization_of_heckePackage`) and a second, upstream
+   copy of an in-flight interface is the most expensive object this fleet
+   produces. It becomes the right cut only after the Break-D hoist below,
+   when the two can be made the same interface rather than rivals.
+     REFUTING CHECK: `grep -rn 'heckePackage\|PotentialModularityWitness'
+     Fermat/` — if those have been hoisted out of `KhareWintenberger.lean`
+     into a KW-free module, take this cut immediately.
+3. **TAYLOR'S OWN PROOF (MB seed → abelian variety → residual dihedral
+   modularity → lifting) — blocked by layering, not by mathematics.** Every
+   step is stated in the twisted-Hilbert–Blumenthal vocabulary of
+   `KhareWintenberger.lean`, which imports this module. See Break D.
+
+MEASUREMENT SUPPORTING THE HOIST (2026-07-27). The hoist Break D asks for is
+a PURE relocation: the four source regions of the chain in
+`KhareWintenberger.lean` — `MoretBaillySeed` (~846), the Bertini block
+(~5300–5632), the Moret–Bailly curve block (~13500–13960) and
+`exists_moretBailly_seed_of_five_le` (~23359) — reference **no declaration of
+this module at all**, so nothing has to be untangled, only moved. What makes
+it expensive is that those regions are scattered across a 26k-line file with
+many concurrent owners, and that the chain's own helpers (`IsTotallySplitAt`,
+`HasRationalPoint`, the Chebotarev and Weil-bound lemmas) must travel with it.
+  REFUTING CHECK: strip comments from those four regions and grep them for
+  the top-level names of this file. A hit means the chain does depend on this
+  module and the relocation is not pure.
+
+## HYPOTHESIS AUDIT — `5 ≤ ℓ` IS LOAD-BEARING (2026-07-27)
+
+Re-checked because a numeric threshold in this development is sometimes a
+leftover from a replaced route. It is not one here; it carries three distinct
+loads, and the arithmetic behind each was re-verified in PARI/GP.
+
+* **It is (T)'s own standing hypothesis.** Taylor's Theorem B is stated for
+  `ℓ ≥ 5`; the leaf cites it, so it must carry it.
+* **It is `ℓ ∤ 3`, exactly.** For an ODD PRIME `ℓ` — which `hℓOdd` plus
+  `Fact ℓ.Prime` supply — `5 ≤ ℓ` and `¬ (ℓ ∣ 3)` are the same condition, the
+  only odd prime dividing `3` being `3` itself. That is the form the
+  consumers use: with `residueCardTwo` giving `N(w) = 2`, the `hqw` of
+  `isHilbertTameAtTwo_of_fibreProduct` reads `ℓ ∤ N(w)² − 1 = 3`.
+* **The two witnesses that pin `residueCardTwo` are correct as recorded.**
+  `ℚ(√5)`: discriminant `5`, signature `[2, 0]` (totally real), `2` INERT
+  with `[e, f] = [1, 2]`, `N(w) = 4`, `N(w)² − 1 = 15`, and `5 ∣ 15`.
+  `ℚ(μ₅)`: signature `[0, 2]` (CM, hence NOT a witness for independence from
+  `totallyReal`), `2` inert with `[e, f] = [1, 4]`, `N(w) = 16`,
+  `N(w)² − 1 = 255`, and `5 ∣ 255`. Both machine-checked again 2026-07-27.
+
+**But `5 ≤ ℓ` is NOT a truth boundary for this leaf, and the distinction
+matters.** At `ℓ = 3` the statement is not known to be FALSE — it is merely
+outside the cited route, since (T)'s argument needs `ℓ ≥ 5`. Nor may the
+`ℓ = 3` case be filled in from Langlands–Tunnell: that gives solvable
+projective image only for `k = 𝔽₃`, and for `k = 𝔽_{3^d}`, `d ≥ 2`, the
+projective image can be non-solvable; filling it in from Serre's conjecture
+instead is barred by the CIRCULARITY GUARD above. So `hℓ5` is
+route-bearing and consumer-bearing, not falsity-bearing, and nobody should
+read its presence as evidence that a counterexample at `ℓ = 3` exists.
+
 ## WHERE `residueCardTwo` WOULD HAVE TO COME FROM (audit 2026-07-27)
 
 ### STATUS AFTER THE 2026-07-27 REPAIRS — READ THIS BEFORE THE AUDIT BELOW
@@ -12401,6 +12487,17 @@ CONSEQUENCE FOR DISPATCH: an agent sent at `nonempty_potentialHeckeDatum_of_five
 before that hoist has nothing to consume and will report back the same fact. The
 next actionable pieces are (i) the hoist, and (ii) Break B, which is stated in
 `KhareWintenberger.lean` vocabulary and can be worked there independently.
+
+CONFIRMED 2026-07-27 by an agent dispatched at this leaf, which is the second
+such report: Break B is now REPAIRED (see the status block above, and the
+refuting checks were re-run, not merely read), Break E is the residual
+geometric obstruction, and Break D is unchanged and still the gate. The three
+cut axes that were searched, and why each was declined, are written out under
+ATOMICITY AUDIT above; the hoist was measured there and is a pure relocation.
+**Do not dispatch a prover here again until either the hoist has landed or
+`heckePackage`/`PotentialModularityWitness` have been hoisted out of
+`KhareWintenberger.lean`** — the leaf's remaining content is (T) and (C)+(LL)
+verbatim and there is nothing in this module to attack.
 
 Of this leaf's six obligations, five (`totallyReal`, `galoisF`,
 `irreducibleF`, and the two coefficient data) are already produced by the
