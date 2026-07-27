@@ -46,7 +46,11 @@ What replaced it is the classical argument, which is what Magma's `Chabauty0`
 on a rank-`0` Jacobian *is* — the Mazur–Tate decision procedure, involving no
 covering collection.  Each namespace now reads top-down:
 
-    exists_jacobianPackage        LEAF: Pic⁰, rank 0, torsion-free reduction kernel
+    exists_placeData              LEAF: the function field and its places
+    aj_injective_of_separable     LEAF: Abel–Jacobi injective (genus ≥ 1)
+    exists_reduction              LEAF: good reduction, compatible, torsion-free kernel
+    X18.finite_pic / X13.finite_pic  LEAF: Mordell–Weil and rank 0, one per curve
+      → exists_jacobianPackage    PROVEN: the four leaves assembled
       → affine_rational_points    `X(ℚ)` has exactly four affine points
       → exists_eq_sixPts          `X(ℚ)` is exactly the six cusps
       → redPt_injective_five/three  reduction is injective, via the explicit table
@@ -94,13 +98,22 @@ arithmetic inputs that people usually hand-wave are discharged by the kernel:
   kernel of reduction is torsion-free; hence the kernel is trivial; hence `aj`
   injective plus the compatibility square makes `redPt` injective.
 
-**The two remaining leaves are `X18.exists_jacobianPackage` and
-`X13.exists_jacobianPackage`**, one per level, of identical shape: they differ
-only in the sextic and the prime, so ONE genus-`2` Jacobian development closes
-both.  Read their docstrings for the Magma certificates (re-run from scratch
-2026-07-27: rank `0` sharp at both levels, `J(ℚ)_tors ≅ ℤ/21` and `ℤ/19`,
-`#J(𝔽₅) = 21`, `#J(𝔽₃) = #J(𝔽₅) = 19`, `Chabauty0` returning exactly six points
-at each level) and for the refutation of route 1.
+**The remaining leaves are the five listed in the tree above** (amended 2026-07-27, when
+`exists_jacobianPackage` was decomposed and PROVEN; see the `Picard` section docstring).
+Three of them — `exists_placeData`, `aj_injective_of_separable`, `exists_reduction` — are
+generic in the sextic and the prime, so ONE genus-`2` divisor-theory development closes
+them for both levels at once; only `X18.finite_pic` and `X13.finite_pic`, which are
+Mordell–Weil together with `rank J(ℚ) = 0`, are specific to the curves.  Read the
+`finite_pic` docstrings for the Magma certificates (re-run from scratch 2026-07-27: rank
+`0` sharp at both levels, `J(ℚ)_tors ≅ ℤ/21` and `ℤ/19`, `#J(𝔽₅) = 21`,
+`#J(𝔽₃) = #J(𝔽₅) = 19`, `Chabauty0` returning exactly six points at each level) and the
+`exists_jacobianPackage` docstrings for the refutation of route 1.
+
+The smoothness of the two curves, `Separable` of the sextic over `ℚ` and over `𝔽ₚ` — which
+over `𝔽ₚ` IS good reduction at `p` — is PROVEN at both levels by an explicit Bézout
+certificate (`X18.separable_sextPoly`, `X13.separable_sextPoly`), in the same spirit as the
+`decide`-checked point counts: `U·f + V·f' = 144` and `= 104` are identities over `ℤ`, so
+`ring` checks them and they specialise to every field where the constant is invertible.
 
 ## HONEST ACCOUNTING for the 2026-07-27 inversion
 
@@ -117,16 +130,24 @@ obligation is now "Mordell–Weil and rank `0` for `J₁(18)` / `J₁(13)`", whi
 a classical proof and a plug-in point in this file, instead of a sextic
 Diophantine equation whose only proposed attack had been refuted.
 
-**A caveat that must not be lost.**  `JacobianPackage` is stated as weakly as
-`redPt_injective` needs, and it is therefore EQUIVALENT to the injectivity, not
-stronger: it can be satisfied by the free `𝔽₂`-vector spaces on `X(ℚ)` and
-`X(𝔽ₚ)` with `red = Finsupp.mapDomain redPt`, with no divisor classes, no group
-law, no formal group and no Mordell–Weil, once that injectivity is known by any
-means.  (The retired `nonempty_jacobianPackage_of_redPt_injective` proved
-exactly this and is in the same recoverable commit.)  So closing a leaf by
-exhibiting a *structure* would not be progress on abelian varieties; what
-discharges it honestly is items 1–4, and the package is stated precisely so that
-an honest `Pic⁰` slots in with no consumer changing.
+**A caveat that must not be lost — and how the 2026-07-27 decomposition answers it.**
+`JacobianPackage` is stated as weakly as `redPt_injective` needs, and it is therefore
+EQUIVALENT to the injectivity, not stronger: it can be satisfied by the free `𝔽₂`-vector
+spaces on `X(ℚ)` and `X(𝔽ₚ)` with `red = Finsupp.mapDomain redPt`, with no divisor classes,
+no group law, no formal group and no Mordell–Weil, once that injectivity is known by any
+means.  (The retired `nonempty_jacobianPackage_of_redPt_injective` proved exactly this and
+is in the same recoverable commit.)  So closing a leaf by exhibiting a *structure* would
+not be progress on abelian varieties; what discharges it honestly is items 1–4, and the
+package is stated precisely so that an honest `Pic⁰` slots in with no consumer changing.
+
+That junk model is exactly why the package could not be decomposed field-by-field: any
+split of "a structure with items 1–3 exists" from "such a structure satisfies item 4" is
+either satisfied by the junk model or false for it.  The repair is to stop quantifying over
+structures: `PlaceData` pins the divisor theory of the function field, `PlaceData.Pic` is
+then a DEFINITION, and the four items become four statements about `Pic⁰` that no exhibited
+structure can discharge.  `exists_jacobianPackage` is their assembly, and the `J` it
+supplies is the honest `Pic⁰` — so the caveat now describes only what the interface
+`JacobianPackage` would permit, not what this file does.
 
 | field | item |
 |---|---|
@@ -182,6 +203,14 @@ public import Mathlib.RingTheory.Int.Basic
 public import Mathlib.RingTheory.Coprime.Lemmas
 public import Mathlib.Data.Nat.Prime.Int
 public import Mathlib.Tactic.Linarith
+-- the divisor-theoretic `Pic⁰` layer of the `Picard` section: polynomials and their
+-- derivatives (the sextic as a polynomial, and the separability certificates),
+-- `Transcendental` (the pinning of the function field) and quotient groups
+public import Mathlib.RingTheory.Algebraic.Defs
+public import Mathlib.Algebra.Polynomial.AlgebraMap
+public import Mathlib.Algebra.Polynomial.Derivative
+public import Mathlib.FieldTheory.Separable
+public import Mathlib.GroupTheory.QuotientGroup.Basic
 
 @[expose] public section
 
@@ -440,6 +469,290 @@ theorem redPt_injective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.
 
 end Package
 
+section Picard
+
+open Polynomial
+
+/-!
+## The honest `Pic⁰`, and the decomposition of `exists_jacobianPackage` (2026-07-27)
+
+`JacobianPackage` existentially quantifies over a *structure*, and the caveat recorded on
+it — and repeated on both `exists_jacobianPackage` docstrings — is that this makes
+`Nonempty (JacobianPackage …)` EQUIVALENT to `redPt_injective` rather than stronger: the
+free `𝔽₂`-vector spaces on `X(ℚ)` and `X(𝔽ₚ)` with `red = Finsupp.mapDomain redPt` satisfy
+every field once that injectivity is known by any means.  A leaf with a junk model cannot
+be honestly decomposed *by its fields*: any split into "a structure with items 1–3 exists"
+plus "such a structure has property 4" is either satisfied by the junk model (so vacuous)
+or false for it.  The content lives in the combination, not in the pieces.
+
+The way out is the one this development has used before (`exists_x0Sieve`, and
+`ModularCurve/RelativePicard.lean` for the scheme-theoretic Jacobian): **pin the object,
+then cut**.  `PlaceData` below pins the divisor theory of the hyperelliptic function field,
+and `PlaceData.Pic` is then a *definition*, not a field — so the four obligations of the
+module docstring become four statements ABOUT `Pic⁰` that no exhibited structure can
+discharge:
+
+| leaf | obligation |
+|---|---|
+| `exists_placeData` | 1 — the function field, its places, and the divisor theory exist |
+| `aj_injective_of_separable` | 2 — Abel–Jacobi is injective, because the genus is `2 ≥ 1` |
+| `exists_reduction` | 3 — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel |
+| `X18.finite_pic`, `X13.finite_pic` | 4 — Mordell–Weil together with `rank J(ℚ) = 0` |
+
+and `X18.exists_jacobianPackage` / `X13.exists_jacobianPackage` become PROVEN assemblies.
+
+### Why `Pic` is `Pic⁰` although no degree map appears
+
+`Pic` is `Div / (principal divisors + ℤ·[∞₊])`.  Since `deg [∞₊] = 1`, the degree map
+splits `Pic(X) ≅ ℤ ⊕ Pic⁰(X)` with `[∞₊]` a generator of the `ℤ`, so quotienting by
+`ℤ·[∞₊]` lands on `Pic⁰(X)` canonically.  That is what lets the whole layer be stated
+without constructing residue fields and degrees — the degree theory is needed to PROVE the
+leaves, not to STATE them.  And `X` has a rational point, so `Pic⁰(X_ℚ) = J(ℚ)`: the group
+being asked to be finite really is the Mordell–Weil group.
+
+### Why quantifying over an arbitrary `PlaceData` is safe
+
+`aj_injective_of_separable`, `exists_reduction` and `finite_pic` are `∀`-quantified over
+presentations, which is exactly the shape that made the naive field-wise cut unsound.  It
+is sound here because the axioms **pin the presentation up to isomorphism**:
+
+* `eqn`, `transcendental_xx` and `gen` say `(F, xx, yy)` IS the function field
+  `K(x)[y]/(y² − f(x))`, so any two presentations are `K`-isomorphic by `xx ↦ xx'`,
+  `yy ↦ yy'` (for a non-square `f`, which separability gives);
+* `ord_injective` and `ord_complete` say `Places` is EXACTLY the set of normalised
+  `K`-trivial discrete valuations of `F` — the closed points of the smooth projective
+  model — so an isomorphism of function fields transports places bijectively;
+* `ord_pt_affine` and `ord_pt_infinite` pin `pt` on the nose: a place with
+  `ord (x − a) > 0` and `ord (y − b) > 0` is the point `(a, b)`, and the two places with
+  `ord x = −1` are separated by the sign of `y/x³` at infinity (`−3 < ord (y ∓ x³)` holds
+  for exactly one of them once `2 ≠ 0`, since `y/x³ → ±1` there).
+
+Hence `Divisors`, `princ`, `picRel`, `Pic` and `aj` are carried along by any isomorphism of
+presentations, and the three `∀`-statements are model-independent facts about the curve.
+
+### What the axioms deliberately do NOT do
+
+Nothing here constructs a place, computes a degree, or proves the degree formula
+`deg (div g) = 0`; those are obligations of `exists_placeData` and of whoever proves
+`aj_injective_of_separable`.  `PlaceData` is an interface, in the sense the doctrine names:
+*stating* a theory is what makes the cut available, and is much weaker than proving it.
+-/
+
+/-- The monic sextic `x⁶ + c₅x⁵ + c₄x⁴ + c₃x³ + c₂x² + c₁x + c₀` as a POLYNOMIAL over `R`.
+
+`sext` evaluates it at a point; this is the polynomial itself, needed to say
+`Separable` — i.e. that the curve is smooth, which over `ZMod p` is exactly good
+reduction at `p`. -/
+noncomputable def sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (R : Type*) [CommRing R] : R[X] :=
+  X ^ 6 + (c₅ : R[X]) * X ^ 5 + (c₄ : R[X]) * X ^ 4 + (c₃ : R[X]) * X ^ 3
+    + (c₂ : R[X]) * X ^ 2 + (c₁ : R[X]) * X + (c₀ : R[X])
+
+/-- `sextPoly` evaluates to `sext` (PROVEN). -/
+lemma eval_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {R : Type*} [CommRing R] (x : R) :
+    (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ R).eval x = sext c₀ c₁ c₂ c₃ c₄ c₅ x := by
+  simp [sextPoly, sext]
+
+/-- `sextPoly` evaluates to `sext` in any algebra (PROVEN).  This is the form the curve
+equation takes inside the function field, where the abscissa is `xx : F` and the
+coefficients arrive through `algebraMap K F`. -/
+lemma aeval_sextPoly (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) {K F : Type*} [CommRing K] [CommRing F]
+    [Algebra K F] (x : F) :
+    aeval x (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K) = sext c₀ c₁ c₂ c₃ c₄ c₅ x := by
+  simp [sextPoly, sext]
+
+/-- **The divisor theory of the hyperelliptic curve `y² = sext x` over `K`.**
+
+This is the interface that pins `Pic⁰`; see the section docstring above for why each group
+of axioms is present and why quantifying over it is safe.  In one line: `F` is the function
+field, `Places` is its set of normalised `K`-trivial discrete valuations — the closed points
+of the smooth projective model — and `pt` is the place of a `K`-rational point.
+
+Nothing about degrees, residue fields or Riemann–Roch appears: `Pic⁰` is obtained below as
+`Div` modulo principal divisors and the class of the base point `∞₊`, which needs no degree
+map because `deg [∞₊] = 1` splits `Pic ≅ ℤ ⊕ Pic⁰`.
+
+The `Bool`-indexed conditions at infinity are the reason `2 ≠ 0` is a hypothesis of
+`exists_placeData`: in characteristic `2` the two points at infinity of a monic sextic
+collide and no injective `pt` exists. -/
+structure PlaceData (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K] where
+  /-- the function field `K(x)[y]/(y² − f(x))` -/
+  F : Type
+  [instField : Field F]
+  [instAlgebra : Algebra K F]
+  /-- the abscissa -/
+  xx : F
+  /-- the ordinate -/
+  yy : F
+  /-- the curve equation, in the function field -/
+  eqn : yy ^ 2 = sext c₀ c₁ c₂ c₃ c₄ c₅ xx
+  /-- the abscissa is transcendental: the curve is a curve, not a point -/
+  transcendental_xx : Transcendental K xx
+  /-- `F = K(xx, yy)`: every element is `(a(xx) + b(xx)·yy)/d(xx)`.  With `eqn` and
+  `transcendental_xx` this pins `F` as THE function field of the curve. -/
+  gen : ∀ z : F, ∃ a b d : K[X], aeval xx d ≠ 0 ∧
+      z * aeval xx d = aeval xx a + aeval xx b * yy
+  /-- the places, i.e. the closed points of the smooth projective model -/
+  Places : Type
+  /-- the normalised order of vanishing at a place; `ord v 0 = 0` is a junk convention,
+  which is why every axiom below carries a nonvanishing side condition -/
+  ord : Places → F → ℤ
+  ord_zero : ∀ v, ord v 0 = 0
+  ord_mul : ∀ (v : Places) (a b : F), a ≠ 0 → b ≠ 0 → ord v (a * b) = ord v a + ord v b
+  ord_add : ∀ (v : Places) (a b : F), a ≠ 0 → b ≠ 0 → a + b ≠ 0 →
+      min (ord v a) (ord v b) ≤ ord v (a + b)
+  ord_algebraMap : ∀ (v : Places) (a : K), a ≠ 0 → ord v (algebraMap K F a) = 0
+  /-- each place is normalised: its value group is all of `ℤ` -/
+  ord_surjective : ∀ v : Places, ∃ t : F, ord v t = 1
+  /-- distinct places are distinct valuations -/
+  ord_injective : Function.Injective ord
+  /-- **and every valuation is a place** — this is the axiom that pins `Places`, and
+  without it a presentation could omit points and make `Pic` anything at all -/
+  ord_complete : ∀ o : F → ℤ, o 0 = 0 →
+      (∀ a b : F, a ≠ 0 → b ≠ 0 → o (a * b) = o a + o b) →
+      (∀ a b : F, a ≠ 0 → b ≠ 0 → a + b ≠ 0 → min (o a) (o b) ≤ o (a + b)) →
+      (∀ a : K, a ≠ 0 → o (algebraMap K F a) = 0) → (∃ t : F, o t = 1) →
+      ∃ v, ord v = o
+  /-- a nonzero function has finitely many zeros and poles; this is what makes `divisor`
+  a finitely supported function, i.e. an honest divisor -/
+  ord_finite : ∀ g : F, g ≠ 0 → {v : Places | ord v g ≠ 0}.Finite
+  /-- the place of a `K`-rational point of the smooth model -/
+  pt : Pt c₀ c₁ c₂ c₃ c₄ c₅ K → Places
+  pt_injective : Function.Injective pt
+  /-- an affine point is the place where `x − a` and `y − b` both vanish -/
+  ord_pt_affine : ∀ q : AffPt c₀ c₁ c₂ c₃ c₄ c₅ K,
+      0 < ord (pt (Sum.inl q)) (xx - algebraMap K F q.1.1) ∧
+      0 < ord (pt (Sum.inl q)) (yy - algebraMap K F q.1.2)
+  /-- an infinite point is a pole of `x` of order one, and the `Bool` is the sign of
+  `y/x³` there: `ord (yy − ε·xx³) > −3` says `y/x³ − ε` vanishes, which holds for the
+  matching sign and fails (with value exactly `−3`) for the other -/
+  ord_pt_infinite : ∀ s : Bool,
+      ord (pt (Sum.inr s)) xx = -1 ∧
+      -3 < ord (pt (Sum.inr s)) (yy - (if s then 1 else -1) * xx ^ 3)
+
+namespace PlaceData
+
+attribute [instance] PlaceData.instField PlaceData.instAlgebra
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+
+/-- **Divisors**: finitely supported formal `ℤ`-combinations of places. -/
+abbrev Divisors (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : Type := D.Places →₀ ℤ
+
+open scoped Classical in
+/-- **The divisor of a function**, `div g = Σ_v ord_v(g)·v`.  Finitely supported by
+`ord_finite`; the value at `0` is junk (`0`), and is never used, `princ` being generated by
+the divisors of all elements and `div 0 = 0` contributing nothing. -/
+noncomputable def divisor (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (g : D.F) : D.Divisors :=
+  if h : g = 0 then 0
+  else Finsupp.onFinset (D.ord_finite g h).toFinset (fun v => D.ord v g)
+    (fun v hv => by simpa using hv)
+
+/-- **The subgroup of principal divisors.**  Taken as the subgroup GENERATED by the
+divisors of functions, which is the same subgroup as their image — `divisor` is a
+homomorphism by `ord_mul` — while needing no proof to be well defined. -/
+noncomputable def princ (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : AddSubgroup D.Divisors :=
+  AddSubgroup.closure (Set.range D.divisor)
+
+/-- The base point `∞₊`, the point at infinity on the branch `y/x³ = 1`.
+
+It is a rational point of degree `1`, which is what makes the quotient below `Pic⁰`, and
+it is fixed by reduction (`redPt` is `Sum.inr` on the infinite summand by definition), which
+is what makes `red_aj` a statement about the same base point on both sides. -/
+def infPlus : Pt c₀ c₁ c₂ c₃ c₄ c₅ K := Sum.inr true
+
+/-- Principal divisors together with the class of the base point.  Quotienting by this,
+rather than restricting to degree `0`, is what removes the need for a degree map: `deg`
+sends `[∞₊]` to `1`, so `Pic(X)/ℤ·[∞₊] ≅ Pic⁰(X)`. -/
+noncomputable def picRel (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : AddSubgroup D.Divisors :=
+  D.princ ⊔ AddSubgroup.zmultiples (Finsupp.single (D.pt infPlus) 1)
+
+/-- **`Pic⁰` of the curve** — the Mordell–Weil group `J(K)` when `K` is a number field,
+the curve having a rational point. -/
+def Pic (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : Type := D.Divisors ⧸ D.picRel
+
+noncomputable instance (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) : AddCommGroup D.Pic :=
+  inferInstanceAs (AddCommGroup (D.Divisors ⧸ D.picRel))
+
+/-- **Abel–Jacobi**, `P ↦ [P] = [P − ∞₊]`.  The base point is invisible because the class
+of `[∞₊]` has been quotiented away. -/
+noncomputable def aj (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ K) :
+    D.Pic :=
+  QuotientAddGroup.mk (Finsupp.single (D.pt P) 1)
+
+end PlaceData
+
+/-- **LEAF (obligation 1): the divisor theory of the hyperelliptic function field exists.**
+
+For a separable monic sextic over a field in which `2 ≠ 0`, the curve `y² = f(x)` is a
+smooth projective curve of genus `2`, and this asks for its function field together with
+its places — that is, a `PlaceData`.  What has to be built:
+
+* the function field `F = K(x)[y]/(y² − f(x))` (`AdjoinRoot` over `RatFunc K`, a field
+  because `f` is not a square in `K(x)`, which separability gives);
+* its places.  The finite ones are the height-one primes of the integral closure of `K[x]`
+  in `F`, a Dedekind domain by `IsIntegralClosure.isDedekindDomain` (`F/K(x)` is separable
+  because `2 ≠ 0`), with `ord` the `𝔭`-adic valuation; the two infinite ones come from the
+  chart `u = 1/x`, `v = y/x³`, where the equation becomes `v² = u⁶f(1/u)` with constant
+  term `1`, so that `v = ±1` are two rational points — this is the same fact about
+  `ℙ(1, 3, 1)` that makes `Pt` a `Sum` with a `Bool`, seen valuation-theoretically;
+* `ord_complete`: every `K`-trivial discrete valuation of a function field of one variable
+  is one of these.  This is the standard classification (a valuation either restricts
+  nontrivially to `K[x]`, giving a height-one prime, or is the one at infinity), and it is
+  the axiom that makes the interface pin anything;
+* `ord_finite`: a nonzero function has finitely many zeros and poles;
+* `pt` and its two specifications, which are the evaluation places of rational points.
+
+None of this needs Riemann–Roch, and none of it is specific to genus `2`. -/
+theorem exists_placeData (c₀ c₁ c₂ c₃ c₄ c₅ : ℤ) (K : Type) [Field K]
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) (h2 : (2 : K) ≠ 0) :
+    Nonempty (PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K) := sorry
+
+/-- **LEAF (obligation 2): Abel–Jacobi is injective, because the genus is `2 ≥ 1`.**
+
+`aj P = aj Q` says `(P) − (Q) = div g + n·(∞₊)` for some `g` and `n`.  Taking degrees kills
+`n` (`deg (div g) = 0` and `deg (∞₊) = 1`), so `(P) − (Q)` is principal; and a function with
+a single simple pole is an isomorphism to `ℙ¹`, which a curve of genus `2` does not admit.
+For a separable monic sextic the genus is exactly `2`, so `P = Q`.
+
+Separability is not decoration: for `f = g²` the "curve" is rational and `aj` is very far
+from injective, and for `f` merely non-separable the model is singular and two rational
+points can collide.  A prover needs the degree map (`deg v = [κ(v) : K]`) and the degree
+formula `deg (div g) = 0` — neither is in the interface, both are theorems about it. -/
+theorem aj_injective_of_separable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ K)
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ K).Separable) :
+    Function.Injective D.aj := sorry
+
+/-- **LEAF (obligation 3): good reduction — the reduction homomorphism, its compatibility
+with `redPt`, and torsion-freeness of its kernel.**
+
+The sextic is separable mod `p` and `p` is odd, so `y² = f(x)` is a smooth proper curve
+over `ℤ_p`, and:
+
+* specialisation of divisors along the smooth model gives `red : Pic⁰(X_ℚ) → Pic⁰(X_𝔽ₚ)`,
+  a homomorphism, sending `[∞₊]` to `[∞₊]` — which is why the two quotients match up;
+* on a rational point, specialisation is exactly the coordinate-wise reduction `redPt`
+  built earlier in this file, because the integral weighted-projective coordinates of
+  `exists_int_coords` ARE the `ℤ_p`-point of the model;
+* the kernel is contained in the kernel of `J(ℚ_p) → J(𝔽ₚ)`, which is the formal group
+  `Ĵ(pℤ_p)`, and a formal group over `ℤ_p` is torsion-free once `p > e + 1 = 2`.
+
+**Why the two halves are one leaf and not two.**  Torsion-freeness is a statement about
+`red`, which nothing pins until an integral model is written down: split off as
+`∀ red, compatible red → torsionFreeKernel red` it would be FALSE (a compatible `red` may
+be built by hand with junk on the rest of `Pic`), and split off as a second existential it
+would not compose with the first.  The honest split is to state the smooth proper model
+over `ℤ[1/N]` and define `red` from it, which is a further theory build; until then this
+leaf carries both halves, and that is deliberate rather than an oversight. -/
+theorem exists_reduction {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] (hp : p ≠ 2)
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
+    ∃ red : D.Pic →+ D'.Pic,
+      (∀ P, red (D.aj P) = D'.aj (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) ∧
+      (∀ z : D.Pic, red z = 0 → ∀ n : ℕ, n ≠ 0 → n • z = 0 → z = 0) := sorry
+
+end Picard
+
 namespace X18
 
 local instance factFive : Fact (Nat.Prime 5) := ⟨by norm_num⟩
@@ -461,31 +774,67 @@ points at infinity bring the total to `6`.  This count is the arithmetic input
 that the whole rank-`0` argument turns on, and the kernel verifies it. -/
 theorem card_X18_F5 : Fintype.card (Pt 1 (-2) 5 (-10) 10 (-4) (ZMod 5)) = 6 := by decide
 
-/-- **THE LEAF AT LEVEL `18`: `Pic⁰(X_1(18))` exists, has rank `0`, and reduces
-injectively at `5`.**  (Made the leaf on 2026-07-27, when the file's dependency
-direction was inverted; see the ROUTE-2 section below.)
+open Polynomial
 
-Unfolding `JacobianPackage`, the obligation is exactly the four-part project
-that the module docstring and
-`MazurLevel18.no_noncuspidal_point_on_smooth_model` both record, and nothing
-else:
+/-- The level-`18` sextic as a polynomial, in numeral form (PROVEN). -/
+lemma sextPoly_eq {K : Type*} [CommRing K] :
+    sextPoly 1 (-2) 5 (-10) 10 (-4) K
+      = X ^ 6 - 4 * X ^ 5 + 10 * X ^ 4 - 10 * X ^ 3 + 5 * X ^ 2 - 2 * X + 1 := by
+  simp only [sextPoly]
+  push_cast
+  ring
 
-1. `Pic⁰` of the genus-`2` hyperelliptic curve `y² = f(x)`, with the Mumford
-   representation and Cantor's group law — the group `J = J(ℚ)` and its
-   counterpart `J(𝔽₅)`;
-2. Abel–Jacobi `X(ℚ) → J` from a rational base point, INJECTIVE because the
-   genus is `≥ 1`;
-3. good reduction at `5`, the reduction homomorphism `J(ℚ) → J(𝔽₅)`, its
-   compatibility with the concrete point map `redPt`, and torsion-freeness of
-   its kernel — the kernel is the formal group over `ℤ₅`, torsion-free because
-   `5 > e + 1 = 2`;
-4. `rank J(ℚ) = 0`, which with Mordell–Weil is the field `fin : Finite J`.
+/-- Its derivative (PROVEN). -/
+lemma derivative_sextPoly_eq {K : Type*} [CommRing K] :
+    derivative (X ^ 6 - 4 * X ^ 5 + 10 * X ^ 4 - 10 * X ^ 3 + 5 * X ^ 2 - 2 * X + 1 : K[X])
+      = 6 * X ^ 5 - 20 * X ^ 4 + 40 * X ^ 3 - 30 * X ^ 2 + 10 * X - 2 := by
+  simp [derivative_pow, map_ofNat]
+  ring
 
-Only FINITENESS of `J(ℚ)` is asked for, not its order: `redPt_injective` needs
-nothing sharper, and `card_coprime` is deliberately absent for the reason given
-on `JacobianPackage`.
+/-- **The level-`18` sextic is separable over every field in which `144 ≠ 0`** (PROVEN, by
+an explicit Bézout certificate).
 
-## The arithmetic that makes the fields true (untrusted searchers, not proofs)
+`f` and `f'` satisfy `U·f + V·f' = 144` with
+
+    U = 60x⁴ − 80x³ + 150x² + 120x + 178,   V = −10x⁵ + 20x⁴ − 45x³ − 20x² − 33x + 17
+
+an identity of polynomials with INTEGER coefficients, so it holds over every commutative
+ring and `ring` checks it; dividing by `144` gives `IsCoprime f f'`.  (PARI/GP found the
+certificate — an untrusted searcher — and the kernel verifies it.  `144 = 2⁴·3²` and
+`disc f = −2¹⁵·3⁴`, which is why `5` is a good prime: `144` is a unit in `𝔽₅`.)
+
+This is the smoothness of the curve, and over `ZMod p` it is exactly good reduction at
+`p`; it is the hypothesis of `exists_placeData`, `aj_injective_of_separable` and
+`exists_reduction`. -/
+lemma separable_sextPoly {K : Type} [Field K] (h : (144 : K) ≠ 0) :
+    (sextPoly 1 (-2) 5 (-10) 10 (-4) K).Separable := by
+  rw [Polynomial.separable_def', sextPoly_eq, derivative_sextPoly_eq]
+  refine ⟨C (144 : K)⁻¹ * (60 * X ^ 4 - 80 * X ^ 3 + 150 * X ^ 2 + 120 * X + 178),
+    C (144 : K)⁻¹ * (-10 * X ^ 5 + 20 * X ^ 4 - 45 * X ^ 3 - 20 * X ^ 2 - 33 * X + 17), ?_⟩
+  have hc : (C (144 : K)⁻¹) * (144 : K[X]) = 1 := by
+    rw [show ((144 : K[X])) = C (144 : K) by simp [map_ofNat], ← C_mul, inv_mul_cancel₀ h, C_1]
+  calc C (144 : K)⁻¹ * (60 * X ^ 4 - 80 * X ^ 3 + 150 * X ^ 2 + 120 * X + 178)
+        * (X ^ 6 - 4 * X ^ 5 + 10 * X ^ 4 - 10 * X ^ 3 + 5 * X ^ 2 - 2 * X + 1)
+      + C (144 : K)⁻¹ * (-10 * X ^ 5 + 20 * X ^ 4 - 45 * X ^ 3 - 20 * X ^ 2 - 33 * X + 17)
+        * (6 * X ^ 5 - 20 * X ^ 4 + 40 * X ^ 3 - 30 * X ^ 2 + 10 * X - 2)
+      = C (144 : K)⁻¹ * (144 : K[X]) := by ring
+    _ = 1 := hc
+
+/-- **LEAF (obligation 4) AT LEVEL `18`: `J₁(18)(ℚ)` is FINITE**, i.e. Mordell–Weil
+together with `rank J(ℚ) = 0`.
+
+`D.Pic` is `Pic⁰` of the smooth projective model of
+`y² = x⁶ − 4x⁵ + 10x⁴ − 10x³ + 5x² − 2x + 1` over `ℚ`, which is `J₁(18)(ℚ)` because the
+curve has a rational point.  So this is the deepest of the four obligations, and the only
+one that is specific to the curve rather than generic: the other three hold for every
+separable monic sextic.
+
+Quantifying over an arbitrary `D` is safe because `PlaceData` pins the presentation up to
+isomorphism; see the `Picard` section docstring.  Only FINITENESS is asked for, not the
+order: `redPt_injective` needs nothing sharper, and `card_coprime` is deliberately absent
+for the reason given on `JacobianPackage`.
+
+## The arithmetic that makes this true (untrusted searchers, not proofs)
 
 Magma, re-run from scratch on 2026-07-27 — the third independent run, and it
 reproduces both earlier ones exactly:
@@ -505,8 +854,33 @@ newform orbit with `L(f, 1) ≈ 0.4103 − 0.0724i ≠ 0`, so Kolyvagin–Logach
 gives `rank J(ℚ) = 0` by a different route; the conductor of `J` is `324 = 18²`.
 
 Refuting checks: `RankBound(J)` returning a positive lower bound overturns
-item 4; `TorsionSubgroup(J) ≠ ℤ/21` or `#J(𝔽₅) ≠ 21` overturns the sharpness
-claims; a seventh point from `Chabauty0` overturns the conclusion downstream.
+this leaf; `TorsionSubgroup(J) ≠ ℤ/21` or `#J(𝔽₅) ≠ 21` overturns the sharpness
+claims; a seventh point from `Chabauty0` overturns the conclusion downstream. -/
+theorem finite_pic (D : PlaceData 1 (-2) 5 (-10) 10 (-4) ℚ) : Finite D.Pic := sorry
+
+/-- **`Pic⁰(X_1(18))` exists, has rank `0`, and reduces injectively at `5`** — a LEAF from
+its creation on 2026-07-27 until later the same day, now PROVEN by decomposition.
+
+The four obligations that unfolding `JacobianPackage` produces — the ones the module
+docstring and `MazurLevel18.no_noncuspidal_point_on_smooth_model` both record — are now
+four named leaves, three of them generic in the sextic and one specific to this curve:
+
+1. `Pic⁰` of the genus-`2` curve, as a group: `exists_placeData` (the function field, its
+   places, and the divisor theory) followed by the DEFINITION `PlaceData.Pic`;
+2. Abel–Jacobi injective because the genus is `≥ 1`: `aj_injective_of_separable`;
+3. good reduction at `5`, the reduction homomorphism, its compatibility with `redPt`, and
+   torsion-freeness of its kernel: `exists_reduction`;
+4. `rank J(ℚ) = 0`, i.e. Mordell–Weil plus rank zero: `finite_pic` above.
+
+The smoothness side conditions are discharged by `separable_sextPoly` from an explicit
+Bézout certificate, at `144 ≠ 0` in `ℚ` and in `𝔽₅`.
+
+**What the decomposition buys, in the terms of the caveat below.**  The caveat is that
+`Nonempty (JacobianPackage …)` is EQUIVALENT to `redPt_injective_five`, being satisfiable
+by a junk structure; that is a property of an existential over a STRUCTURE, and it does not
+survive the cut, because `PlaceData.Pic` is a definition.  There is no free `𝔽₂`-vector
+space to exhibit against `finite_pic`: it asks that the divisor class group of a specific
+curve be finite, and only Mordell–Weil and rank `0` can answer.
 
 ## ROUTE 1 (elliptic Chabauty over `ℚ(√−2)`) IS DEAD — why this file no longer
 carries it
@@ -563,9 +937,28 @@ spaces on `X(ℚ)` and `X(𝔽₅)` with `red = Finsupp.mapDomain redPt` (the re
 `nonempty_jacobianPackage_of_redPt_injective`, in the same recoverable commit).
 So closing this leaf by exhibiting a *structure* is not by itself progress on
 abelian varieties; what discharges it honestly is items 1–4, and the package is
-stated exactly so that an honest `Pic⁰` slots in with no consumer changing. -/
+stated exactly so that an honest `Pic⁰` slots in with no consumer changing.
+That is what the decomposition above does: `J` is now `PlaceData.Pic`, the honest
+`Pic⁰`, and the four items are the four leaves. -/
 theorem exists_jacobianPackage :
-    Nonempty (JacobianPackage 1 (-2) 5 (-10) 10 (-4) 5) := sorry
+    Nonempty (JacobianPackage 1 (-2) 5 (-10) 10 (-4) 5) := by
+  obtain ⟨D⟩ := exists_placeData 1 (-2) 5 (-10) 10 (-4) ℚ (separable_sextPoly (by norm_num))
+    (by norm_num)
+  obtain ⟨D'⟩ := exists_placeData 1 (-2) 5 (-10) 10 (-4) (ZMod 5)
+    (separable_sextPoly (by decide)) (by decide)
+  obtain ⟨red, hcompat, hker⟩ := exists_reduction (p := 5) (by norm_num) D D'
+    (separable_sextPoly (by decide))
+  exact ⟨{ J := D.Pic
+           addCommGroup := inferInstance
+           fin := finite_pic D
+           J' := D'.Pic
+           addCommGroup' := inferInstance
+           aj := D.aj
+           aj_injective := aj_injective_of_separable D (separable_sextPoly (by norm_num))
+           aj' := D'.aj
+           red := red
+           red_ker_torsionFree := hker
+           red_aj := hcompat }⟩
 
 /-- The six cusps of `X_1(18)`: `(0, ±1)`, `(1, ±1)`, and the two points at
 infinity.  Under the order-`3` automorphism `σ(x, y) = (1/(1 − x), y/(1 − x)³)`
@@ -795,23 +1188,60 @@ satisfies the formal-group hypothesis `p > e + 1 = 2` that
 `red_ker_torsionFree` needs. -/
 theorem card_X13_F3 : Fintype.card (Pt 1 4 6 2 1 2 (ZMod 3)) = 6 := by decide
 
-/-- **THE LEAF AT LEVEL `13`: `Pic⁰(X_1(13))` exists, has rank `0`, and reduces
-injectively at `3`.**  (Made the leaf on 2026-07-27, by the same inversion as at
-level `18`; the RECOMMENDED RE-CUT that the retired level-`13` audit asked for
-and could not perform from inside the leaf.)
+open Polynomial
 
-Unfolding `JacobianPackage`, the obligation is the four-part project of the
-module docstring, at `p = 3` instead of `p = 5`:
+/-- The level-`13` sextic as a polynomial, in numeral form (PROVEN). -/
+lemma sextPoly_eq {K : Type*} [CommRing K] :
+    sextPoly 1 4 6 2 1 2 K
+      = X ^ 6 + 2 * X ^ 5 + X ^ 4 + 2 * X ^ 3 + 6 * X ^ 2 + 4 * X + 1 := by
+  simp only [sextPoly]
+  push_cast
+  ring
 
-1. `Pic⁰` of `y² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`, with the Mumford
-   representation and Cantor's group law — `J = J(ℚ)` and `J(𝔽₃)`;
-2. Abel–Jacobi from a rational base point (`(0, 1)` will do), injective because
-   the genus is `≥ 1`;
-3. good reduction at `3`, the reduction homomorphism and its compatibility with
-   `redPt`, with torsion-free kernel — the formal group over `ℤ₃`;
-4. `rank J(ℚ) = 0`, i.e. `Finite J`.
+/-- Its derivative (PROVEN). -/
+lemma derivative_sextPoly_eq {K : Type*} [CommRing K] :
+    derivative (X ^ 6 + 2 * X ^ 5 + X ^ 4 + 2 * X ^ 3 + 6 * X ^ 2 + 4 * X + 1 : K[X])
+      = 6 * X ^ 5 + 10 * X ^ 4 + 4 * X ^ 3 + 6 * X ^ 2 + 12 * X + 4 := by
+  simp [derivative_pow, map_ofNat]
+  ring
 
-## The arithmetic that makes the fields true (untrusted searchers, not proofs)
+/-- **The level-`13` sextic is separable over every field in which `104 ≠ 0`** (PROVEN, by
+an explicit Bézout certificate).
+
+`f` and `f'` satisfy `U·f + V·f' = 104` with
+
+    U = 300x⁴ + 416x³ + 54x² + 252x + 548,   V = −50x⁵ − 86x⁴ − 21x³ − 87x² − 278x − 111
+
+an identity of polynomials with INTEGER coefficients, so it holds over every commutative
+ring and `ring` checks it; dividing by `104` gives `IsCoprime f f'`.  (PARI/GP found the
+certificate; the kernel verifies it.  `104 = 2³·13` and `disc f = −2¹²·13²`, which is why
+`3` is a good prime: `104` is a unit in `𝔽₃`.) -/
+lemma separable_sextPoly {K : Type} [Field K] (h : (104 : K) ≠ 0) :
+    (sextPoly 1 4 6 2 1 2 K).Separable := by
+  rw [Polynomial.separable_def', sextPoly_eq, derivative_sextPoly_eq]
+  refine ⟨C (104 : K)⁻¹ * (300 * X ^ 4 + 416 * X ^ 3 + 54 * X ^ 2 + 252 * X + 548),
+    C (104 : K)⁻¹ * (-50 * X ^ 5 - 86 * X ^ 4 - 21 * X ^ 3 - 87 * X ^ 2 - 278 * X - 111), ?_⟩
+  have hc : (C (104 : K)⁻¹) * (104 : K[X]) = 1 := by
+    rw [show ((104 : K[X])) = C (104 : K) by simp [map_ofNat], ← C_mul, inv_mul_cancel₀ h, C_1]
+  calc C (104 : K)⁻¹ * (300 * X ^ 4 + 416 * X ^ 3 + 54 * X ^ 2 + 252 * X + 548)
+        * (X ^ 6 + 2 * X ^ 5 + X ^ 4 + 2 * X ^ 3 + 6 * X ^ 2 + 4 * X + 1)
+      + C (104 : K)⁻¹ * (-50 * X ^ 5 - 86 * X ^ 4 - 21 * X ^ 3 - 87 * X ^ 2 - 278 * X - 111)
+        * (6 * X ^ 5 + 10 * X ^ 4 + 4 * X ^ 3 + 6 * X ^ 2 + 12 * X + 4)
+      = C (104 : K)⁻¹ * (104 : K[X]) := by ring
+    _ = 1 := hc
+
+/-- **LEAF (obligation 4) AT LEVEL `13`: `J₁(13)(ℚ)` is FINITE**, i.e. Mordell–Weil
+together with `rank J(ℚ) = 0`.
+
+`D.Pic` is `Pic⁰` of the smooth projective model of
+`y² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1` over `ℚ`, which is `J₁(13)(ℚ)`.  The classical
+proof is Mazur–Tate, *Points of order 13 on elliptic curves*, Invent. Math. 22 (1973),
+subsumed in Mazur, IHÉS 47 (1977), Thm 7.
+
+As at level `18`, this is the only one of the four obligations specific to the curve; the
+other three are generic in the sextic, so ONE development discharges both levels.
+
+## The arithmetic that makes this true (untrusted searchers, not proofs)
 
 Magma, re-run from scratch on 2026-07-27, reproducing the earlier runs exactly:
 
@@ -832,7 +1262,25 @@ gives `#C(𝔽₃) = 3 + 1 + 2 = 6` and whose value at `1` gives `#J(𝔽₃) = 
 
 Refuting checks: a positive lower bound from `RankBound(J)`; a torsion subgroup
 other than `ℤ/19`; `#Jacobian(ChangeRing(C, GF(3))) ≠ 19`; a seventh point from
-`Chabauty0`.
+`Chabauty0`. -/
+theorem finite_pic (D : PlaceData 1 4 6 2 1 2 ℚ) : Finite D.Pic := sorry
+
+/-- **`Pic⁰(X_1(13))` exists, has rank `0`, and reduces injectively at `3`** — a LEAF from
+its creation on 2026-07-27 until later the same day, now PROVEN by the same decomposition
+as at level `18`.
+
+The four obligations, at `p = 3` instead of `p = 5`:
+
+1. `Pic⁰` of `y² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`, as a group: `exists_placeData`
+   followed by the DEFINITION `PlaceData.Pic`;
+2. Abel–Jacobi injective because the genus is `≥ 1`: `aj_injective_of_separable`;
+3. good reduction at `3`, the reduction homomorphism, its compatibility with `redPt`, and
+   torsion-freeness of its kernel: `exists_reduction`;
+4. `rank J(ℚ) = 0`: `finite_pic` above.
+
+Leaves 1–3 are shared verbatim with level `18` — they are generic in the sextic and the
+prime — so the only level-`13`-specific obligations left are `finite_pic` and the
+smoothness certificate `separable_sextPoly`, the latter PROVEN.
 
 ## ROUTE 1 (elliptic Chabauty over `ℚ(i)`) IS DEAD HERE TOO
 
@@ -879,9 +1327,27 @@ progress on abelian varieties — items 1–4 are.
 
 **One genus-`2` Jacobian development discharges both levels**, since this leaf
 and `X18.exists_jacobianPackage` have the identical shape and differ only in the
-sextic and the prime. -/
+sextic and the prime.  That is now literally true of the code: leaves 1–3 are the same
+three declarations at both levels. -/
 theorem exists_jacobianPackage :
-    Nonempty (JacobianPackage 1 4 6 2 1 2 3) := sorry
+    Nonempty (JacobianPackage 1 4 6 2 1 2 3) := by
+  obtain ⟨D⟩ := exists_placeData 1 4 6 2 1 2 ℚ (separable_sextPoly (by norm_num))
+    (by norm_num)
+  obtain ⟨D'⟩ := exists_placeData 1 4 6 2 1 2 (ZMod 3)
+    (separable_sextPoly (by decide)) (by decide)
+  obtain ⟨red, hcompat, hker⟩ := exists_reduction (p := 3) (by norm_num) D D'
+    (separable_sextPoly (by decide))
+  exact ⟨{ J := D.Pic
+           addCommGroup := inferInstance
+           fin := finite_pic D
+           J' := D'.Pic
+           addCommGroup' := inferInstance
+           aj := D.aj
+           aj_injective := aj_injective_of_separable D (separable_sextPoly (by norm_num))
+           aj' := D'.aj
+           red := red
+           red_ker_torsionFree := hker
+           red_aj := hcompat }⟩
 
 /-- The six cusps of `X_1(13)`: `(0, ±1)`, `(−1, ±1)`, and the two points at
 infinity.  Under the order-`3` automorphism `σ(x, y) = (−1/(x + 1), y/(x + 1)³)`
