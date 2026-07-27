@@ -10358,7 +10358,10 @@ theorem exists_x0CurveModel_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬
        spX_nat := (fibreIdentPullback (SpecLoc.special toF) xstr).nat
        properX := bijective_pre_generic_of_isProper ℓ R toF hbase xstr hmodel.isProper }⟩⟩
 
-/-! ### The Jacobian half: three base-independent leaves
+/-! ### The Jacobian half: three base-independent statements
+
+`isSmoothProperCurve_of_fibreIdent` is now PROVEN, so two of the three
+are still open leaves; both are Grothendieck's relative Picard scheme.
 
 None of the three mentions `X_0(N)`, `ℚ` or `ℤ_(ℓ)`.  That is the point:
 the Jacobian half of a Néron datum is a statement about smooth proper
@@ -10389,7 +10392,33 @@ relative Jacobian in mathlib, `~/cs/FLT` or this project — mathlib's
 (`Mathlib/RingTheory/PicardGroup.lean`), and this project's
 `JacobianPackage` / `ModularJacobianPackage` are axiomatized interfaces,
 not constructions.  Producing a representing scheme for the relative
-`Pic⁰` functor refutes the claim. -/
+`Pic⁰` functor refutes the claim.
+
+That survey was re-run independently on 2026-07-27 over all three trees
+and CONFIRMED: `PicardScheme`, `RelativePicard`, `PicardFunctor`, `Pic⁰`
+and `relativeJacobian` have zero declaration hits in mathlib and in
+`~/cs/FLT`, and in this project only ever occur inside docstrings or on
+the axiomatized interfaces named above.
+
+**FAITHFULNESS NOTE on `IsJacobianOf.universal`, recorded because a
+future prover is likely to suspect it of being TOO STRONG and to
+"repair" it.**  Do not weaken it: the `∃!` is correct as stated, even
+though `u` is quantified over ARBITRARY `S`-morphisms `J ⟶ A` rather
+than over homomorphisms.  Existence is the Albanese property.  For
+uniqueness, note first that the point equation at the base point forces
+`u` to send the origin to the origin — `c (𝟙 S) o = ab'.zero` and
+`aj (𝟙 S) o = ab.zero` are the two hypotheses of `universal`, and they
+say exactly `0_A = 0_J ≫ u`.  A morphism of abelian schemes sending the
+origin to the origin is a HOMOMORPHISM — the rigidity theorem (Mumford,
+*Abelian Varieties* §4; BLR *Néron Models* 8.4 in the relative case) —
+so any two competitors are homomorphisms agreeing on the image of `aj`,
+i.e. on the curve, which generates `J` as a group scheme.  Hence they
+are equal.
+
+So rigidity is already built INTO this interface, which is worth knowing
+before proving anything against it: the interface is not weaker than the
+classical Jacobian, and a construction discharging this leaf must supply
+the full Albanese property, not merely a representing object. -/
 theorem exists_relativeJacobian {C S : Scheme.{0}} (f : C ⟶ S)
     (_hf : IsSmoothProperCurve f) (o : RelPoint f (𝟙 S)) :
     ∃ (J : Scheme.{0}) (jf : J ⟶ S) (ab : AbelianSchemeStruct jf),
@@ -10397,7 +10426,7 @@ theorem exists_relativeJacobian {C S : Scheme.{0}} (f : C ⟶ S)
   sorry
 
 /-- **A fibre of a smooth proper curve is a smooth proper curve**
-(sorry node).
+(PROVEN — Yoneda for the over-category presentation, then base change).
 
 TRUE, and it is pure base change: `IsFibreIdent s f f'` says by Yoneda in
 `Over S'` that `f'` is isomorphic to `f ×_S S'`, and `IsProper`,
@@ -10410,18 +10439,94 @@ carries `spX`/`spX_nat` and no geometric field about `strX'` — so
 `exists_relativeJacobian` cannot be applied to it until its geometry is
 recovered from the identification.
 
-IRREDUCIBLE at this pin ALONG THE YONEDA AXIS, and the CHECK THAT WOULD
-REFUTE THAT: mathlib has the three base-change stability results, so what
-is missing is only the passage from a natural equivalence of
-`RelPoint`-functors to an isomorphism of schemes over `S'`, i.e. Yoneda
-for the over-category presentation used in this file.  Producing that
-transport — from `IsFibreIdent s f f'` to `Arrow.mk f' ≅ Arrow.mk
-(Limits.pullback.snd f s)` — closes this leaf, and `fibreIdentPullback`
-supplies the other half of the comparison. -/
+**The previous audit here recorded this leaf as IRREDUCIBLE ALONG THE
+YONEDA AXIS, and named the check that would refute it: produce the
+transport from `IsFibreIdent s f f'` to an isomorphism over `S'` with
+`Limits.pullback.snd f s`.  That check has now been run, and the audit
+is REFUTED — no general Yoneda-in-`Over S'` machinery was needed.**  The
+transport is four elements and three naturality squares, written out
+directly:
+
+* `p := e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', _⟩ : RelPoint f (f' ≫ s)` — the
+  identity of `A'` read through the identification.  It is a map
+  `A' ⟶ A` over `s`, so `φ := pullback.lift p.1 f' p.2 : A' ⟶ A ×_S S'`,
+  with `φ ≫ snd = f'` by `pullback.lift_snd`.
+* `q : RelPoint f' (pullback.snd f s)` — the tautological point
+  `⟨pullback.fst f s, pullback.condition⟩` read BACKWARDS through the
+  identification.  It is a map `A ×_S S' ⟶ A'` over `S'`.
+* `q.1 ≫ p.1 = pullback.fst f s` is naturality along `q.1` at the
+  identity point (the only step needing `Category.comp_id` to see
+  `RelPoint.pre q.1 _ ⟨𝟙 A', _⟩` as `q`); with `q.1 ≫ f' = snd` it gives
+  `q.1 ≫ φ = 𝟙` by `pullback.hom_ext`.
+* `φ ≫ q.1 = 𝟙 A'` is naturality along `φ` at `q`, then INJECTIVITY of
+  `e.toEquiv f' (f' ≫ s) rfl` — the one place where the identification
+  being an `Equiv` rather than a map is used.
+
+So `φ` is an isomorphism with `φ ≫ pullback.snd f s = f'`, and the three
+fields follow from mathlib: `IsProper (pullback.snd f s)` and
+`GeometricallyConnected (pullback.snd f s)` are instances,
+`SmoothOfRelativeDimension 1 (pullback.snd f s)` is
+`smoothOfRelativeDimension_isStableUnderBaseChange`, and each property
+is `RespectsIso`, so `MorphismProperty.cancel_left_of_respectsIso`
+strips the `φ`.
+
+Note what this does NOT close: the identification is transported, not
+constructed.  `exists_jacobianFibreIdent` — which produces an
+`IsFibreIdent` for the Jacobian — remains a genuine base-change theorem
+for `Pic⁰` and is untouched by this. -/
 theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
-    {f : A ⟶ S} {f' : A' ⟶ S'} (_e : IsFibreIdent s f f')
-    (_hf : IsSmoothProperCurve f) : IsSmoothProperCurve f' :=
-  sorry
+    {f : A ⟶ S} {f' : A' ⟶ S'} (e : IsFibreIdent s f f')
+    (hf : IsSmoothProperCurve f) : IsSmoothProperCurve f' := by
+  haveI := hf.isProper
+  haveI := hf.smooth
+  haveI := hf.connected
+  -- the universal point of `A'`: the identity, read through the identification
+  obtain ⟨p, hp⟩ : ∃ p : RelPoint f (f' ≫ s),
+      e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩ = p := ⟨_, rfl⟩
+  -- the comparison morphism `A' ⟶ A ×_S S'`
+  obtain ⟨φ, hφf, hφs⟩ : ∃ φ : A' ⟶ Limits.pullback f s,
+      φ ≫ Limits.pullback.fst f s = p.1 ∧ φ ≫ Limits.pullback.snd f s = f' :=
+    ⟨Limits.pullback.lift p.1 f' p.2, Limits.pullback.lift_fst _ _ _,
+      Limits.pullback.lift_snd _ _ _⟩
+  -- the tautological point of the pullback, read backwards through the identification
+  obtain ⟨q, hq⟩ : ∃ q : RelPoint f' (Limits.pullback.snd f s),
+      e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl q
+        = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ :=
+    ⟨_, Equiv.apply_symm_apply _ _⟩
+  -- naturality along `q.1`, at the identity point: `q.1 ≫ p.1 = fst`
+  have key1 : q.1 ≫ p.1 = Limits.pullback.fst f s := by
+    have hnat := e.nat q.1 q.2 (rfl : f' ≫ s = f' ≫ s)
+      (rfl : Limits.pullback.snd f s ≫ s = Limits.pullback.snd f s ≫ s)
+      (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f')
+    rw [hp] at hnat
+    have hpre : RelPoint.pre q.1 q.2 (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f') = q :=
+      Subtype.ext (Category.comp_id q.1)
+    rw [hpre, hq] at hnat
+    exact (congrArg Subtype.val hnat).symm
+  -- naturality along `φ`, at the tautological point: `φ ≫ q.1 = 𝟙`
+  have key2 : φ ≫ q.1 = 𝟙 A' := by
+    have hnat := e.nat φ hφs
+      (rfl : Limits.pullback.snd f s ≫ s = Limits.pullback.snd f s ≫ s)
+      (rfl : f' ≫ s = f' ≫ s) q
+    rw [hq] at hnat
+    have h1 : e.toEquiv f' (f' ≫ s) rfl (RelPoint.pre φ hφs q)
+        = e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩ := by
+      rw [hnat, hp]; exact Subtype.ext hφf
+    exact congrArg Subtype.val ((e.toEquiv f' (f' ≫ s) rfl).injective h1)
+  have key3 : q.1 ≫ φ = 𝟙 (Limits.pullback f s) := by
+    refine Limits.pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hφf, key1, Category.id_comp]
+    · rw [Category.assoc, hφs, q.2, Category.id_comp]
+  haveI : IsIso φ := ⟨⟨q.1, key2, key3⟩⟩
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  rw [← hφs]
+  refine ⟨?_, ?_, ?_⟩
+  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @IsProper) φ
+      (Limits.pullback.snd f s)).mpr inferInstance
+  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @SmoothOfRelativeDimension 1) φ
+      (Limits.pullback.snd f s)).mpr (MorphismProperty.pullback_snd f s hf.smooth)
+  · exact (MorphismProperty.cancel_left_of_respectsIso (P := @GeometricallyConnected) φ
+      (Limits.pullback.snd f s)).mpr inferInstance
 
 /-- **Formation of the Jacobian commutes with base change** (sorry node).
 
@@ -10446,7 +10551,49 @@ uniqueness of the Jacobian as a separate obligation: the given `J/ℚ` of
 compared with a freshly constructed one.
 
 IRREDUCIBLE at this pin ALONG THE PICARD AXIS, for the same reason as
-`exists_relativeJacobian`, and with the same refuting check. -/
+`exists_relativeJacobian`, and with the same refuting check.  A second
+survey on 2026-07-27 adds a sharper obstruction, which is worth stating
+because it is NOT the same as the missing Picard scheme: the proof
+technique this leaf names — "cohomology and base change" — is itself
+absent from ALL THREE trees.  `CohomologyAndBaseChange`,
+`higherDirectImage`, a derived pushforward and `IsCohomologicallyFlat`
+have zero hits in this project, in mathlib at our pin, and in
+`~/cs/FLT`.  So this leaf is gated on two independent missing theories,
+not one, and mathlib is the blocker for the second.
+
+**A DECOMPOSITION ALONG THE CANONICAL-COMPARISON AXIS WAS SEARCHED AND
+REJECTED (2026-07-27).  Stating the axis, since an irreducibility
+verdict is only as wide as what its author looked at.**  The cut that
+suggests itself is to CONSTRUCT the comparison map rather than posit the
+identification, exactly as `fibreIdentPullback` did for the curve:
+
+1. transport `ab` along `fibreIdentPullback s jf` to an
+   `AbelianSchemeStruct (Limits.pullback.snd jf s)` — all thirteen
+   fields go through, the group data by the equivalence, `pre_add` /
+   `pre_zero` by `e.nat`, and `proper` / `smooth` / `connected` by the
+   same base-change-plus-iso argument now used in
+   `isSmoothProperCurve_of_fibreIdent`;
+2. push Abel–Jacobi across `eX` to a natural `c` from `C'` into it,
+   whose value at `o'` is the origin — this is precisely where `_ho` is
+   consumed;
+3. feed `c` to `jac'.universal`, obtaining a CANONICAL
+   `u : J' ⟶ J ×_S S'` over `S'`, unique with the `aj` equation.
+
+What is left after that is `IsIso u` plus additivity of `u`, and the
+conclusions of this leaf follow formally from those two.  **The reason
+this is not a reduction: it replaces ONE blocked obligation with TWO
+blocked obligations** — `IsIso u` is still base change for `Pic⁰`, and
+additivity of `u` is the rigidity theorem, which is likewise absent
+everywhere (see the FAITHFULNESS NOTE on `exists_relativeJacobian`) —
+**at a cost of roughly 250 lines of new glue.**  Splitting is worth it
+when the halves have disjoint literature AND at least one half becomes
+attackable; here neither does.
+
+THE CHECK THAT WOULD REFUTE THIS: formalize the relative rigidity lemma
+(a morphism of abelian schemes carrying the origin to the origin is a
+homomorphism).  If rigidity lands, additivity of `u` stops being a leaf,
+the cut becomes one blocked obligation plus proven glue, and it should
+then be made. -/
 theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
     {C C' J J' : Scheme.{0}} {f : C ⟶ S} {f' : C' ⟶ S'}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
@@ -10467,7 +10614,10 @@ theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
   sorry
 
 /-- **The relative JACOBIAN of a given integral curve model exists**
-(PROVEN, over the three base-independent leaves above).
+(PROVEN, over the three base-independent statements above — of which
+`isSmoothProperCurve_of_fibreIdent` is itself PROVEN, leaving
+`exists_relativeJacobian` and `exists_jacobianFibreIdent` as the only
+open inputs).
 
 The ten fields of `IsX0JacobianModel` come from exactly three inputs,
 none of which mentions a modular curve:
