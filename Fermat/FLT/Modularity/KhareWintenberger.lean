@@ -10362,7 +10362,12 @@ statements, in increasing order of expected cost:
   mathlib's own `IsIntegralHom f.fromNormalization` proof with `IsFinite`
   substituted throughout.
 * LEAF B-i `isReduced_of_smooth_over_rat` — smooth over a field ⟹ reduced.
-  Small statement, genuinely missing (mathlib has no scheme regularity).
+  **PROVEN 2026-07-27**, and the "mathlib has no scheme regularity" objection
+  recorded here turned out to be true but irrelevant: the proof goes
+  smooth ⟹ standard smooth locally ⟹ étale over a polynomial subring ⟹ (flat,
+  so `B` embeds in its generic fibre) reduced, never mentioning regularity.
+  One purely mechanical sub-leaf survives under it,
+  `exists_isDomain_etale_of_isStandardSmooth`.
 * LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` — the gluing
   step over one affine open of `P`, needed because `g ⁻¹ᵁ U` is not affine.
 * LEAF B-ii `module_finite_integralClosure_of_finiteType` — E. Noether's
@@ -10916,9 +10921,10 @@ PROVEN; only B and C are open), in decreasing order of expected cost:
   2026-07-27** and proven over three smaller leaves. Its scheme-theoretic half
   turned out to be free (`isFinite_fromNormalization_of_forall_affineOpens`,
   PROVEN, is mathlib's own `IsIntegralHom f.fromNormalization` argument with
-  `IsFinite` substituted throughout). What survives is
-  LEAF B-i `isReduced_of_smooth_over_rat` (smooth over a field ⟹ reduced —
-  small, and mathlib has no scheme regularity at all),
+  `IsFinite` substituted throughout). LEAF B-i `isReduced_of_smooth_over_rat`
+  is **PROVEN 2026-07-27** too, over one mechanical sub-leaf
+  (`exists_isDomain_etale_of_isStandardSmooth`); regularity theory, which the
+  audit called the blocker, is not on the route at all. What survives is
   LEAF B-iii `module_finite_integralClosure_sections_of_isReduced` (the gluing
   step over one affine open, needed because `g ⁻¹ᵁ U` is not affine), and
   LEAF B-ii `module_finite_integralClosure_of_finiteType` (E. Noether's
