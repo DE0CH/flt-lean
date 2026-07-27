@@ -1338,12 +1338,6 @@ structure IsEisensteinQuotientModel (N q : ℕ) (R : Subring ℚ) (toF : R →+*
   /-- the special fibre of the model is `A'`, functorially -/
   spA : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q) (g₀ : T ⟶ SpecLoc R),
     g ≫ SpecLoc.special toF = g₀ → RelPoint astr' g ≃ RelPoint astrZ g₀
-  /-- **the Néron mapping property**: every rational point of `J_e(N)`
-  extends uniquely to an integral point of the model.  Exactly the shape
-  `IsX0NeronDatum.neronJ` uses, and what makes `redA` definable -/
-  neronA : Function.Bijective
-    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
-      RelPoint astrZ (𝟙 (SpecLoc R)) → RelPoint astrZ (SpecLoc.generic R))
   /-- **`π ∘ aj_cusp` AS A MORPHISM of integral models** — Abel–Jacobi
   based at `cusp` followed by the optimal quotient `J_0(N) ↠ J_e(N)`,
   spread out over `ℤ_(q)`.  That this is a morphism and not merely a
@@ -1385,6 +1379,26 @@ variable {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
     {d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ}
     {cusp : RelPoint strX (𝟙 SpecQ)}
     (M : IsEisensteinQuotientModel N q R toF d cusp)
+
+/-- **The Néron mapping property, as a THEOREM** (PROVEN; was a FIELD
+until 2026-07-27).
+
+`𝒥_e(ℤ_(q)) ≅ J_e(ℚ)` is not an extra assumption on the model: an
+abelian scheme is PROPER over its base (`AbelianSchemeStruct.proper`),
+`d.base` makes `R` a local subring of `ℚ` with fraction field `ℚ`, and
+the valuative criterion then supplies a unique lift of every
+`ℚ`-point — which is exactly `bijective_pre_generic_of_isProper`, already
+PROVEN in `X0.lean` and cited there for the identical purpose
+(`IsX0JacobianModel.neronJ`).
+
+So `abZ` ALREADY implies it, and carrying it as a field asked a producer
+to supply something it could not fail to have.  Deleting it costs the
+consumers nothing — every use site writes `M.neronA`, which now resolves
+to this theorem rather than to a projection. -/
+theorem neronA : Function.Bijective
+    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+      RelPoint M.astrZ (𝟙 (SpecLoc R)) → RelPoint M.astrZ (SpecLoc.generic R)) :=
+  bijective_pre_generic_of_isProper q R toF d.base M.astrZ M.abZ.proper
 
 /-- **The integral point of `𝒥_e(N)` attached to a rational point**, by
 the Néron mapping property.  The exact analogue of
@@ -1535,52 +1549,293 @@ noncomputable def toEisensteinQuotientAt (hq2 : q ≠ 2) :
 
 end IsEisensteinQuotientModel
 
-/-- **Existence of Mazur's Eisenstein quotient as an integral model at
-`q`** (sorry node, new 2026-07-27) — what
-`exists_eisensteinQuotientAt_of_jNeronDatum` now reduces to, and the
-whole of the residual mathematical content of Mazur's IHÉS 47 in this
-development.
+/-! #### The cut of `exists_eisensteinQuotientModel_of_jNeronDatum`: the
+GOOD-REDUCTION axis (2026-07-27)
 
-Produces the cusp `∞` together with the Néron model `𝒥_e(N)/ℤ_(q)` of the
-Eisenstein quotient, its two fibres, the Néron mapping property, the
-morphism `fmor = π ∘ aj_∞` of integral models, the finiteness of
-`J_e(N)(ℚ)` (Thm 4), and the formal immersion at `∞` on `ℤ_(q)`-points.
+The node's own docstring below records two cuts that were considered and
+REFUTED — peeling off `finiteA` (rank `0`) and peeling off
+`formalImmersion`.  **Both refutations were re-run here and both stand**;
+the checks are recorded on the leaves, and two further axes were tried
+and also fail:
 
-**WHAT IS GENUINELY MISSING, RE-CHECKED BY NAME 2026-07-27.** Neither the
-Eisenstein ideal, nor the Eisenstein quotient, nor the formal-immersion
-criterion exists in this project, in mathlib, or in `~/cs/FLT` — the last
-carries only `FLT/Assumptions/Mazur.lean`, which assumes Mazur's torsion
-theorem outright and has no modular-curve, Jacobian or Eisenstein
-material.  There is nothing to vendor.  This project's Hecke-algebra side
-(`Fermat/FLT/Modularity/`) is `R = 𝕋` deformation theory and carries no
-Eisenstein ideal.
+* **`finiteA` over the rest** is FALSE, by `𝒥_e := 𝒥_0(N)`,
+  `fmor :=` Abel–Jacobi: `rank J_0(37)(ℚ) = 1`.  *Re-checked*: that
+  witness also satisfies `formalImmersion`, since `aj` is injective on
+  points for a curve of positive genus (`injective_aj_of_mono`, `X0.lean`),
+  so enlarging the package with the formal immersion does not rescue the
+  split.
+* **`formalImmersion` over the rest** is TRUE but no easier, by `𝒥_e`
+  trivial.  *Re-checked*: the trivial witness also satisfies `finiteA`
+  (`A = Spec ℚ` has one rational point), so enlarging the package with
+  rank `0` does not rescue that split either.
+* **The CUSP axis** — split off `∃ cusp, hX.IsCusp cusp`, which is
+  independently available (`nonempty_cuspIndexing_of_cuspLocus` +
+  `one_mem_rationalCuspDivisors`, both PROVEN in `X0.lean`) — makes the
+  RESIDUAL leaf strictly HARDER, because quantifying the model over an
+  ARBITRARY rational cusp demands `w_N`-equivariance of the Eisenstein
+  quotient to move Mazur's formal immersion off `∞`.  That is the
+  asymmetry the subsection docstring above `IsEisensteinQuotientAt`
+  records, and it is why the cusp is produced here rather than consumed.
+* **The HECKE axis**, i.e. the split the node's docstring names as
+  unblocked by "a Hecke action as endomorphisms of `IsX0JacobianModel`'s
+  abelian scheme": **half of that input has since LANDED and it is still
+  not enough.**  `IsHeckeIsotypicDecomposition` (`X0.lean`, 2026-07-27)
+  carries `T : ℕ → (J ⟶ J)` with `T_comp`, `T_add`, surjective quotient
+  maps `u i` with `u_add`/`u_surj`, a descended action `S` and the
+  equivariance `T n ≫ u i = u i ≫ S i n` — exactly the vocabulary in
+  which `𝒥_e = 𝒥/I𝒥` could be STATED.  But that structure's own docstring
+  records that `T` is **not pinned** to be the genuine Hecke
+  correspondences, and with an unpinned `T` the Eisenstein condition
+  `u ≫ T ℓ = (ℓ+1) • u` is discharged by `T ℓ := (ℓ+1) • 𝟙`, which
+  restores the `𝒥_e = 𝒥_0(37)` witness verbatim.  **So the rank-`0` split
+  remains unavailable, and the refuting check is now sharper than before:
+  it is not "a Hecke action" but "a PIN for `T`" — either elliptic-curve
+  isogenies (for the moduli description of `T_ℓ`) or the comparison of
+  `T_n` on `H⁰(J, Ω¹)` with `heckeOp N n`
+  (`Fermat/FLT/Modularity/HeckeOperator.lean`).**
 
-**WHAT IS NO LONGER MISSING, AND IS THE REASON FOR THE INTEGRAL SHAPE.**
-Everything on the reduction-theoretic side is already here: the integral
-model of `X_0(N)` at `q ∤ N` comes with `d`, and injectivity of reduction
-on the rational points of an abelian scheme over `ℤ_(q)` for `q` odd is
-`neronReduction_injective`.  A producer therefore does NOT have to
-re-derive either; it has to build the quotient.
+What DOES cut is an axis none of those audits searched: **`ℚ` against
+`ℤ_(q)`**.  Everything integral in `IsEisensteinQuotientModel` — the
+Néron model `𝒥_e/ℤ_(q)`, its two fibres, and `fmor` as a morphism of
+integral models — is a consequence of two classical facts that have
+nothing to do with Mazur:
 
-**WHY THE CUSP IS PRODUCED HERE.** Mazur's formal immersion is at `∞`
-specifically, so this leaf chooses its cusp; the Atkin–Lehner sibling
-`exists_atkinLehner_of_jNeronDatum` consumes it.  See the subsection
-docstring above `IsEisensteinQuotientAt` for the asymmetry.
+* an abelian variety over `ℚ` that is the SURJECTIVE image of one with
+  good reduction at `q` has good reduction at `q`
+  (Néron–Ogg–Šafarevič: the `ℓ`-adic Tate module of the image is a
+  Galois quotient of an unramified one, hence unramified);
+* a morphism from a SMOOTH `ℤ_(q)`-scheme to an abelian scheme is
+  determined by, and extends, its generic fibre (the Néron mapping
+  property, BLR §1.2, §7.4).
 
-**WHERE THE HYPOTHESES ENTER.** `19 < N` with `N` prime is what makes
-Mazur's Thm 4 give a NONTRIVIAL Eisenstein quotient, i.e. what makes
-`finiteA` a theorem about a quotient that `fmor` does not kill.  `q ≠ 2`
-is the formal immersion (in characteristic `2` the `a₁ ≠ 0` argument
-fails).  `q ≠ N` with both prime is `q ∤ N`, i.e. good reduction of
-`J_e(N)` at `q`, which is what `abZ` asserts.  None of the five is
-decoration; they are underscored only because a sorried body uses
-nothing.
+`J_0(N)` has good reduction at `q ∤ N` here already — that is
+`exists_x0JacobianModel_of_curveModel`, PROVEN in `X0.lean` over the
+curve model, and `x0CurveModel_of_jNeronDatum` below shows the datum `d`
+already IS such a curve model.  So the integral half needs no new modular
+input at all, and splitting it off leaves Mazur's leaf stated **entirely
+over `ℚ`**, with the single exception of `d.redX`, which the formal
+immersion cannot avoid mentioning.
 
-**NON-VACUITY.** `N = 37`, `q = 3` satisfies every hypothesis, and
+**THE REFUTING CHECK for "this is merely a repartition of fields"** — the
+same check `exists_x0NeronDatum`'s cut had to pass: the two halves have
+DISJOINT literature and can be dispatched to different specialists.
+`exists_eisensteinQuotientOverQ_of_jNeronDatum` is Mazur, IHÉS 47 (1977),
+§II / Thm 4 / §II.4, and mentions no integral model;
+`exists_abelianGoodReductionModel` is Serre–Tate and Bosch–Lütkebohmert–
+Raynaud, mentions no modular curve, and is reusable verbatim by
+`X1.lean`.  Neither consumes the other.
+
+**WHAT THE SPLIT DOES NOT DO.**  It does not make rank `0` a separate
+leaf, and it does not weaken the degenerate witness: `A := Spec ℚ`,
+`u := 0`, `fQ := ` the structure map still satisfies every field of the
+`ℚ`-side leaf (the zero map to a one-point scheme IS surjective) and
+collapses its formal immersion to Mazur's own conclusion.  That witness
+is inherited, documented above, and unchanged by this cut. -/
+
+/-- **A Néron-pinned `j`-datum IS an integral curve model** (PROVEN —
+pure field copying).
+
+`IsX0CurveModel`'s six fields — `model`, `genX`, `spX`, `genX_nat`,
+`spX_nat`, `properX` — are all fields of `IsX0JNeronDatum` already, so
+the Deligne–Rapoport model the `j`-datum carries is the very object
+`exists_x0JacobianModel_of_curveModel` wants.  This is what makes the
+integral Jacobian `𝒥_0(N)/ℤ_(q)` available to the assembly below without
+demanding a SECOND copy of Deligne–Rapoport.
+
+Written as a plain function rather than as `IsX0JNeronDatum.toCurveModel`
+deliberately: `IsX0JNeronDatum` lives in the `Fermat` namespace and this
+file is at the root, so a dotted declaration here would create a nested
+`Fermat` and break dot notation elsewhere — the failure mode the fleet
+doctrine records for `theorem Fermat.Mult.mem_torsion_iff`. -/
+def x0CurveModel_of_jNeronDatum {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ where
+  model := d.model
+  genX := d.genX
+  spX := d.spX
+  genX_nat := d.genX_nat
+  spX_nat := d.spX_nat
+  properX := d.properX
+
+/-- **The good-reduction model of an abelian quotient, together with the
+extension of a morphism into it** (new 2026-07-27) — the integral half of
+`exists_eisensteinQuotientModel_of_jNeronDatum`, carrying no modular
+content whatever.
+
+Read it as: *`A/ℚ` has good reduction at `q`, and `fQ : X ⟶ A` spreads
+out over `ℤ_(q)`.*  The two fibre identifications are equivalences of
+FUNCTORS of points, in the same "identified base" form the rest of this
+development uses, so by Yoneda they say `A ≅ 𝒜 ×_{ℤ_(q)} ℚ` and
+`A' ≅ 𝒜 ×_{ℤ_(q)} 𝔽_q`.
+
+`genA_fmor` is the field that makes the model an EXTENSION of `fQ` rather
+than an unrelated morphism, and it is what the consumer below reads the
+formal immersion through.  Note that no compatibility on the SPECIAL
+fibre is asked for: `red_f` is already a theorem about any morphism of
+integral models (see `IsEisensteinQuotientModel.red_f`), so demanding one
+would be redundant.
+
+**Why `genX` is a parameter rather than a field.**  The curve model is
+supplied by the caller — it is the Deligne–Rapoport model the `j`-datum
+already carries — and both this structure and the caller must speak about
+the SAME identification of `X` with the generic fibre, or `genA_fmor`
+would say nothing. -/
+structure IsAbelianGoodReductionModel (q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
+    {X XZ A : Scheme.{0}} {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R} {astr : A ⟶ SpecQ}
+    (genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+      g ≫ SpecLoc.generic R = g₀ → RelPoint strX g ≃ RelPoint xstr g₀)
+    (fQ : X ⟶ A) (hfQ : fQ ≫ astr = strX) where
+  /-- the integral model `𝒜/ℤ_(q)` of `A` -/
+  AZ : Scheme.{0}
+  /-- its structure morphism to `Spec ℤ_(q)` -/
+  astrZ : AZ ⟶ SpecLoc R
+  /-- **good reduction**: `𝒜` is an abelian scheme over the whole of
+  `ℤ_(q)`, not merely over `ℚ` -/
+  abZ : AbelianSchemeStruct astrZ
+  /-- the special fibre `A_{𝔽_q}` -/
+  A' : Scheme.{0}
+  /-- its structure morphism to `Spec 𝔽_q` -/
+  astr' : A' ⟶ SpecF q
+  /-- the special fibre is an abelian scheme over `𝔽_q` -/
+  ab' : AbelianSchemeStruct astr'
+  /-- the generic fibre of the model is `A`, functorially -/
+  genA : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.generic R = g₀ → RelPoint astr g ≃ RelPoint astrZ g₀
+  /-- the special fibre of the model is `A'`, functorially -/
+  spA : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.special toF = g₀ → RelPoint astr' g ≃ RelPoint astrZ g₀
+  /-- the spread-out of `fQ`, as a MORPHISM of integral models -/
+  fmor : XZ ⟶ AZ
+  /-- `fmor` is a morphism over `ℤ_(q)` -/
+  fmor_over : fmor ≫ astrZ = xstr
+  /-- **`fmor` really extends `fQ`**: on the generic fibre the two agree,
+  at every test scheme and every base point -/
+  genA_fmor : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (x : RelPoint strX g),
+    genA g g₀ h (RelPoint.post fQ hfQ x) = RelPoint.post fmor fmor_over (genX g g₀ h x)
+
+/-- **Good reduction propagates along a surjective homomorphism, and a
+morphism from a smooth model extends** (sorry node, new 2026-07-27) — the
+integral half of `exists_eisensteinQuotientModel_of_jNeronDatum`.
+
+TRUE, and classical in two independent steps.
+
+*Good reduction of `A`.*  `u : J ↠ A` is a surjective homomorphism of
+abelian varieties over `ℚ` and `J` has good reduction at `q` — that is
+what `abZ` together with `genJ` says.  For `ℓ ≠ q` the `ℓ`-adic Tate
+module `V_ℓ A` is then a quotient of `V_ℓ J` as a `Γ_ℚ`-module (surjective
+isogenies are surjective on Tate modules up to isogeny), `V_ℓ J` is
+unramified at `q` by Néron–Ogg–Šafarevič, hence so is `V_ℓ A`, hence `A`
+has good reduction at `q` by the converse half of the same criterion.
+Reference: Serre–Tate, *Good reduction of abelian varieties*, Ann. of
+Math. 88 (1968), Thm 1 and Cor. 2; Bosch–Lütkebohmert–Raynaud, *Néron
+Models*, §7.4.
+
+*Extension of `fQ`.*  An abelian scheme over a DVR is proper and smooth,
+hence IS the Néron model of its generic fibre, so
+`Hom_{ℤ_(q)}(𝒵, 𝒜) ≅ Hom_ℚ(Z_ℚ, A)` for every SMOOTH `𝒵/ℤ_(q)`
+(BLR §1.2, Def. 1 and §7.4/3).  Applied to `𝒵 = 𝒳`, which is smooth by
+`hsm`, this gives `fmor` and `genA_fmor`, and uniqueness is what makes
+the pair canonical.  `genA` and `spA` are the two base changes of `𝒜`,
+which exist for any model.
+
+**WHERE THE HYPOTHESES ENTER, and none is decoration.**  `hsm` is the
+smoothness of `𝒳` without which the Néron mapping property says nothing
+about morphisms out of it; `abZ` and `genJ` are "`J` has good reduction",
+the whole input to Néron–Ogg–Šafarevič; `hsurj` is what makes `V_ℓ A` a
+QUOTIENT rather than an arbitrary Galois module — drop it and the
+statement is **FALSE**, since any abelian variety at all admits the zero
+homomorphism from `J`, including ones with bad reduction at `q`; `hadd`
+is what makes `u` act on Tate modules at all.  They are underscored only
+because a sorried body uses nothing.
+
+**NON-VACUITY.**  `A := J`, `u := 𝟙`, `fQ := ` Abel–Jacobi satisfies every
+hypothesis, so no proof can discharge this by contradicting them.
+
+**WHAT IS GENUINELY MISSING, checked by name 2026-07-27.**  Néron models
+exist in neither mathlib nor `~/cs/FLT` nor this project — `grep -rn
+"NeronModel\|neronModel"` returns nothing — and neither does the
+Néron–Ogg–Šafarevič criterion.  What this project DOES have, and what
+makes the statement cheap to consume rather than cheap to prove, is
+`bijective_pre_generic_of_isProper` (`X0.lean`): the Néron mapping
+property for `𝒵 = Spec ℤ_(q)` itself, i.e. on POINTS.  The gap between
+that and this leaf is exactly the passage from a point to a general
+smooth `𝒵`. -/
+theorem exists_abelianGoodReductionModel (q : ℕ) (_hq : q.Prime)
+    (R : Subring ℚ) (toF : R →+* ZMod q) (_hbase : IsReductionBase q R toF)
+    {X XZ J JZ A : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
+    {jstr : J ⟶ SpecQ} {jstrZ : JZ ⟶ SpecLoc R} {astr : A ⟶ SpecQ}
+    (_hsm : Smooth xstr)
+    (ab : AbelianSchemeStruct jstr) (_abZ : AbelianSchemeStruct jstrZ)
+    (abA : AbelianSchemeStruct astr)
+    (genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+      g ≫ SpecLoc.generic R = g₀ → RelPoint strX g ≃ RelPoint xstr g₀)
+    (_genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+      g ≫ SpecLoc.generic R = g₀ → RelPoint jstr g ≃ RelPoint jstrZ g₀)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr)
+    (_hadd : IsAdditiveOn ab abA u hu) (_hsurj : AlgebraicGeometry.Surjective u)
+    (fQ : X ⟶ A) (hfQ : fQ ≫ astr = strX) :
+    Nonempty (IsAbelianGoodReductionModel q R toF genX fQ hfQ) :=
+  sorry
+
+/-- **Mazur's Eisenstein quotient, ENTIRELY OVER `ℚ`** (sorry node, new
+2026-07-27) — the modular half of
+`exists_eisensteinQuotientModel_of_jNeronDatum`, and the whole of the
+residual content of Mazur's IHÉS 47 in this development.
+
+Produces the cusp `∞`, the quotient `J_e(N)` as an abelian variety over
+`ℚ` receiving a surjective homomorphism `u : J_0(N) ↠ J_e(N)`, the
+finiteness of `J_e(N)(ℚ)` (Thm 4, i.e. rank `0`) and the formal immersion
+at `∞` read on RATIONAL points.  Nothing integral appears except
+`d.redX`, which the formal immersion cannot avoid mentioning — it is a
+statement about points congruent mod `q`.
+
+**REFERENCES.**  Mazur, *Modular curves and the Eisenstein ideal*, IHÉS
+47 (1977): §II for the Eisenstein ideal `I = (T_ℓ − ℓ − 1 : ℓ ∤ N)` and
+the quotient `J_e = J_0(N)/I J_0(N)`; Thm 4 for `rank J_e(N)(ℚ) = 0`;
+§II.4 for the `a₁ ≠ 0` computation behind the formal immersion.
+
+**WHY `u` IS CARRIED, AND WHAT IT IS FOR.**  `J_e` is an OPTIMAL QUOTIENT
+of `J_0(N)`, and `u` records that.  It is not decoration: the integral
+half (`exists_abelianGoodReductionModel`) derives good reduction of `J_e`
+at `q` from good reduction of `J_0(N)` THROUGH `u`, and would be FALSE
+without it.  Its additivity and surjectivity are what a producer gets for
+free from the construction and what the consumer needs.
+
+**THE JACOBIAN IS EXISTENTIALLY QUANTIFIED, and it has to be.**  `jac` is
+`IsJacobianOf strX ab cusp` — based at the cusp this leaf itself chooses
+— so it cannot be a hypothesis: the base point is not known until the
+cusp is produced.  Jacobians are unique up to unique isomorphism
+(`IsJacobianOf.universal`), so quantifying existentially costs nothing.
+
+**WHERE THE HYPOTHESES ENTER.**  `19 < N` with `N` prime is what makes
+Mazur's Thm 4 give a NONTRIVIAL Eisenstein quotient; `q ≠ 2` is the
+formal immersion (in characteristic `2` the `a₁ ≠ 0` argument fails);
+`q ≠ N` with both prime is `q ∤ N`, which is what makes `d.redX` the
+reduction at a prime of good reduction.  They are underscored only
+because a sorried body uses nothing.
+
+**NON-VACUITY.**  `N = 37`, `q = 3` satisfies every hypothesis, and
 `Y_0(37)(ℚ)` is nonempty (two rational `37`-isogeny `j`-invariants,
 `−9317` and `−162677523113838677`), so no proof can discharge this by
-contradicting its own hypotheses. -/
-theorem exists_eisensteinQuotientModel_of_jNeronDatum (N q : ℕ)
+contradicting its own hypotheses.
+
+**THE DEGENERATE WITNESS IS INHERITED, NOT INTRODUCED.**  `A := Spec ℚ`,
+`u := ` the structure map, `fQ := ` the structure map satisfies
+additivity, surjectivity (a map onto a one-point scheme) and finiteness,
+and collapses the formal immersion to *"a rational point congruent to the
+cusp mod `q` IS the cusp"* — Mazur's own conclusion, and exactly as hard.
+See the subsection docstring above for why no field split removes it. -/
+theorem exists_eisensteinQuotientOverQ_of_jNeronDatum (N q : ℕ)
     (_hN : N.Prime) (_hN19 : 19 < N) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
@@ -1592,8 +1847,144 @@ theorem exists_eisensteinQuotientModel_of_jNeronDatum (N q : ℕ)
     {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
     (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
     ∃ cusp : RelPoint strX (𝟙 SpecQ), hX.IsCusp cusp ∧
-      Nonempty (IsEisensteinQuotientModel N q R toF d cusp) :=
+      ∃ (J A : Scheme.{0}) (jstr : J ⟶ SpecQ) (astr : A ⟶ SpecQ)
+        (ab : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+        (jac : IsJacobianOf strX ab cusp) (u : J ⟶ A) (hu : u ≫ astr = jstr),
+        IsAdditiveOn ab abA u hu ∧ AlgebraicGeometry.Surjective u ∧
+          Finite (RelPoint astr (𝟙 SpecQ)) ∧
+          ∀ x : RelPoint strX (𝟙 SpecQ), d.redX x = d.redX cusp →
+            RelPoint.post u hu (jac.aj (𝟙 SpecQ) x)
+              = RelPoint.post u hu (jac.aj (𝟙 SpecQ) cusp) → x = cusp :=
   sorry
+
+/-- **Existence of Mazur's Eisenstein quotient as an integral model at
+`q`** (was a bare `sorry` when opened 2026-07-27; **PROVEN the same day**
+over `exists_eisensteinQuotientOverQ_of_jNeronDatum` and
+`exists_abelianGoodReductionModel`) — what
+`exists_eisensteinQuotientAt_of_jNeronDatum` reduces to.
+
+Produces the cusp `∞` together with the Néron model `𝒥_e(N)/ℤ_(q)` of the
+Eisenstein quotient, its two fibres, the morphism `fmor = π ∘ aj_∞` of
+integral models, the finiteness of `J_e(N)(ℚ)` (Thm 4), and the formal
+immersion at `∞` on `ℤ_(q)`-points.
+
+**THE CUT IS THE `ℚ`-versus-`ℤ_(q)` AXIS**; read the subsection docstring
+above `x0CurveModel_of_jNeronDatum` for why that axis, and for the four
+axes that were tried and fail (both field peelings, the cusp, and the
+Hecke pinning).  In one line: the two leaves below have disjoint
+literature — Mazur IHÉS 47 on one side, Serre–Tate / Bosch–Lütkebohmert–
+Raynaud on the other — and neither consumes the other.
+
+**WHAT THE ASSEMBLY BELOW PROVES, and it is not nothing.**  Three things,
+none of which either leaf is asked for:
+
+* **the integral Jacobian `𝒥_0(N)/ℤ_(q)` is not a new demand.**
+  `x0CurveModel_of_jNeronDatum` shows the datum `d` already IS an
+  `IsX0CurveModel`, so `exists_x0JacobianModel_of_curveModel` (PROVEN in
+  `X0.lean`) supplies `𝒥_0(N)`, its two fibres and its Néron property
+  from material already in the tree.  Without this step the good-reduction
+  leaf would have had to demand a second copy of Deligne–Rapoport;
+* **`fmor` is exhibited as the spread-out of `π ∘ aj_∞`.**  `hcomp` is
+  `IsJacobianOf.aj_val` — Yoneda for the Abel–Jacobi map — which says
+  postcomposing a point with `ajHom ≫ u` is `u` applied to `aj`;
+* **the formal immersion is transported from RATIONAL to INTEGRAL
+  points.**  Both directions are available because `properX` makes
+  `x ↦ d.intX x` a bijection onto the integral points, and `genA_fmor`
+  identifies the two readings of `f`.  This is the converse of
+  `IsEisensteinQuotientModel.formalImmersion_points`, and it is why the
+  `ℚ`-side leaf may state Mazur's criterion in the form Mazur states it.
+
+**WHERE THE HYPOTHESES ENTER.** `19 < N` with `N` prime is what makes
+Mazur's Thm 4 give a NONTRIVIAL Eisenstein quotient; `q ≠ 2` is the formal
+immersion (in characteristic `2` the `a₁ ≠ 0` argument fails); `q ≠ N`
+with both prime is `q ∤ N`, consumed twice here — once as
+`¬ q ∣ N` for the good reduction of `J_0(N)`, and once inside the `ℚ`-side
+leaf.  None of the five is decoration.
+
+**NON-VACUITY.** `N = 37`, `q = 3` satisfies every hypothesis, and
+`Y_0(37)(ℚ)` is nonempty (two rational `37`-isogeny `j`-invariants,
+`−9317` and `−162677523113838677`), so no proof can discharge this by
+contradicting its own hypotheses. -/
+theorem exists_eisensteinQuotientModel_of_jNeronDatum (N q : ℕ)
+    (hN : N.Prime) (hN19 : 19 < N) (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    ∃ cusp : RelPoint strX (𝟙 SpecQ), hX.IsCusp cusp ∧
+      Nonempty (IsEisensteinQuotientModel N q R toF d cusp) := by
+  obtain ⟨cusp, hcusp, J, A, jstr, astr, ab, abA, jac, u, hu, hadd, hsurj, hfin, hfi⟩ :=
+    exists_eisensteinQuotientOverQ_of_jNeronDatum N q hN hN19 hq hq2 hqN d
+  refine ⟨cusp, hcusp, ?_⟩
+  -- `q ∤ N`, from both being prime and distinct
+  have hqN' : ¬ q ∣ N := fun h => hqN ((Nat.prime_dvd_prime_iff_eq hq hN).mp h)
+  -- the integral Jacobian `𝒥_0(N)/ℤ_(q)`, over the curve model `d` already carries
+  obtain ⟨J', JZ, jstr', ab', o', jac', jstrZ, abZ, oZ, jacZ, ⟨jm⟩⟩ :=
+    exists_x0JacobianModel_of_curveModel N q hq hqN' R toF d.base
+      (x0CurveModel_of_jNeronDatum d) jac
+  -- `π ∘ aj_∞` as a morphism over `ℚ`
+  have hfQ : (jac.ajHom ≫ u) ≫ astr = strX := by
+    rw [Category.assoc, hu]
+    exact (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
+  have hsmX : Smooth xstr := by
+    haveI := d.model.smooth
+    exact SmoothOfRelativeDimension.smooth (n := 1) xstr
+  -- good reduction of the quotient, and the spread-out of `π ∘ aj_∞`
+  obtain ⟨G⟩ := exists_abelianGoodReductionModel q hq R toF d.base hsmX
+    ab abZ abA d.genX jm.genJ u hu hadd hsurj (jac.ajHom ≫ u) hfQ
+  -- Yoneda for Abel–Jacobi: postcomposing with `ajHom ≫ u` is `u` applied to `aj`
+  have hcomp : ∀ z : RelPoint strX (𝟙 SpecQ),
+      RelPoint.post (jac.ajHom ≫ u) hfQ z = RelPoint.post u hu (jac.aj (𝟙 SpecQ) z) := by
+    intro z
+    refine Subtype.ext ?_
+    show z.1 ≫ (jac.ajHom ≫ u) = (jac.aj (𝟙 SpecQ) z).1 ≫ u
+    rw [jac.aj_val, Category.assoc]
+  -- the generic-fibre equation of `genA_fmor`, read at a rational point
+  have key : ∀ z : RelPoint strX (𝟙 SpecQ),
+      G.genA (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)
+          (RelPoint.post (jac.ajHom ≫ u) hfQ z)
+        = RelPoint.pre (SpecLoc.generic R) (Category.comp_id _)
+            (RelPoint.post G.fmor G.fmor_over (d.intX z)) := by
+    intro z
+    rw [G.genA_fmor (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) z, ← d.pre_intX z,
+      RelPoint.post_pre]
+  refine ⟨{ AZ := G.AZ
+            astrZ := G.astrZ
+            abZ := G.abZ
+            A := A
+            astr := astr
+            ab := abA
+            A' := G.A'
+            astr' := G.astr'
+            ab' := G.ab'
+            genA := G.genA
+            spA := G.spA
+            fmor := G.fmor
+            fmor_over := G.fmor_over
+            finiteA := hfin
+            formalImmersion := ?_ }⟩
+  -- the formal immersion, transported from rational to integral points
+  intro xZ hsp hpost
+  obtain ⟨x, hint⟩ : ∃ x : RelPoint strX (𝟙 SpecQ), d.intX x = xZ := by
+    refine ⟨(d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+      (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) xZ), ?_⟩
+    show (Equiv.ofBijective _ d.properX).symm
+        (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) _) = xZ
+    rw [Equiv.apply_symm_apply]
+    exact (Equiv.ofBijective _ d.properX).symm_apply_apply xZ
+  have hred : d.redX x = d.redX cusp := by
+    rw [d.redX_def, d.redX_def, hint, hsp]
+  have hf : RelPoint.post u hu (jac.aj (𝟙 SpecQ) x)
+      = RelPoint.post u hu (jac.aj (𝟙 SpecQ) cusp) := by
+    simp only [← hcomp]
+    refine (G.genA (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective ?_
+    rw [key x, key cusp, hint, hpost]
+  rw [← hint, hfi x hred hf]
 
 /-- **Existence of the Eisenstein quotient and its formal immersion at
 `∞`** (PROVEN 2026-07-27 over `exists_eisensteinQuotientModel_of_jNeronDatum`;
