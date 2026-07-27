@@ -200,11 +200,18 @@ import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 -- bases, extension of subfield automorphisms through
 -- `IsAlgClosure.equivOfEquiv`, the relative algebraic closure
 -- `ℚ̄ ⊆ ℂ`, and conjugate-root embeddings.
-import Mathlib.Algebra.MvPolynomial.Equiv
+-- PUBLIC (2026-07-27, SIXTEENTH decomposition of
+-- `exists_const_norm_qCoeff_frobPowerSum_le`): `MvPolynomial`,
+-- `AlgebraicClosure` and `GaloisField` occur in SIGNATURE position in
+-- `exists_planeModel_frobEigenvalues_of_not_dvd` and
+-- `exists_const_natCard_zeroLocus_sub_le` below, which state the curve-level
+-- Weil bound over a plane model, so these three must be re-exported.
+public import Mathlib.Algebra.MvPolynomial.Equiv
 import Mathlib.RingTheory.AlgebraicIndependent.Transcendental
 import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
 import Mathlib.FieldTheory.IsAlgClosed.Basic
-import Mathlib.FieldTheory.AlgebraicClosure
+public import Mathlib.FieldTheory.AlgebraicClosure
+public import Mathlib.FieldTheory.Finite.GaloisField
 import Mathlib.FieldTheory.Extension
 import Mathlib.FieldTheory.Separable
 public import Mathlib.RingTheory.Etale.Field
@@ -40833,11 +40840,182 @@ theorem norm_le_sqrt_of_forall_norm_sum_pow_le {q : ℕ} (hq : 0 < q) {n : ℕ}
   rw [hterm0, htt, hsplit] at hsingle
   linarith
 
+/-- **The Weil bound for an absolutely irreducible plane curve over a finite
+field, in affine point-count form** (sorry node, SIXTEENTH decomposition
+2026-07-27 — the CURVE-LEVEL residue of
+`exists_frobEigenvalues_pointCount_of_not_dvd` below, which is now PROVEN over
+this leaf and `exists_planeModel_frobEigenvalues_of_not_dvd`).
+
+STATEMENT. For an absolutely irreducible `F ∈ 𝔽_q[X,Y]` there is a constant `C`
+depending on `F` and on NOTHING ELSE — in particular not on `s` — with
+
+  `| #{a ∈ 𝔽_{q^s}² : F(a) = 0} − q^s | ≤ C·q^{s/2}`   for every `s ≥ 1`.
+
+This is Weil's theorem for curves (equivalently the curve case of Lang–Weil) in
+exactly the shape Stepanov's method produces it: AFFINE points of a PLANE
+model, with no smooth projective model, no genus, no zeta function and no
+cohomology anywhere in the statement.
+
+WHY IT IS A SEPARATE LEAF. The parent below needs a `q^{s/2}` estimate for the
+point counts of the good reduction of `X₀(M)`. Its Igusa/Eichler–Shimura half
+(`exists_planeModel_frobEigenvalues_of_not_dvd` immediately below) supplies a
+plane model together with the uniformly bounded discrepancy between the smooth
+projective count and the affine plane count, so everything modular stays there.
+Nothing HERE mentions a modular form, a level, a Hecke operator or a Galois
+representation: this leaf can be owned and proven entirely inside the
+finite-field subtree, by someone who never reads the rest of this file.
+
+ROUTING — and this CORRECTS, in place, the note the FIFTEENTH cut left on the
+parent. Checked 2026-07-27 by grep; the old note's own stated refutation
+condition is what fired.
+
+* The Stepanov subtree does NOT live in `Modularity/KhareWintenberger.lean`. It
+  lives in `Fermat/FLT/Modularity/MoretBailly.lean`. It is reachable from here
+  all the same: `Interface.lean` imports `KhareWintenberger`, which
+  `public import`s `MoretBailly`.
+* The declaration the old note named,
+  `exists_zero_of_absolutelyIrreducible_plane`, NO LONGER EXISTS anywhere in
+  the tree. It was strengthened and renamed on 2026-07-27 to
+  `exists_count_of_absolutelyIrreducible_plane` (`MoretBailly.lean:10232`),
+  whose conclusion IS an inequality on a point count — precisely the refutation
+  condition the old note stated for itself.
+* The SUBSTANCE of the old note nevertheless survives, and a successor must not
+  misread the rename as making the estimate available:
+  `exists_count_of_absolutelyIrreducible_plane` proves `p ≤ 2·N`, a ONE-SIDED
+  LOWER bound, over the PRIME field `ZMod p` only, under `250·d⁵ < p`. That is
+  not the Weil estimate and cannot be massaged into it.
+
+WHAT IS ACTUALLY AVAILABLE TO BUILD ON, all in `MoretBailly.lean`, all PROVEN
+as of 2026-07-27: `stepanov_sum_le_natDegree` and
+`sum_le_natDegree_of_hasseDeriv_vanishing` (the zero-counting core),
+`exists_stepanovAuxiliary` (Schmidt's auxiliary polynomial, itself proven over
+its normalisation, discriminant and norm-polynomial sub-leaves), and
+`exists_count_of_absolutelyIrreducible_plane`. The route follows W. M. Schmidt,
+*Equations over Finite Fields: An Elementary Approach*, LNM 536, Chapter III.
+
+THE TWO GAPS BETWEEN THAT AND THIS LEAF, stated so nobody re-surveys them:
+
+1. *Prime powers.* Everything there is over `ZMod p`. This leaf needs
+   `𝔽_{q^s}` for every `s`, because the parent's Lefschetz clause runs over
+   all finite extensions. Schmidt's §§7 ff. remove the restriction to prime
+   `q` using valuations and hyperderivatives in function fields, and
+   `MoretBailly` records in as many words that it deliberately skips them.
+2. *The upper bound.* `p ≤ 2N` is the lower half only. The upper half
+   `N ≤ q + C·√q` is the SAME method applied to Schmidt's second auxiliary
+   function: the fibrewise identity `|𝔐₀(x)| + |𝔐₁(x)| = d` already inside
+   `exists_stepanovAuxiliary` converts a lower bound on `∑ mu1` into an upper
+   bound on `∑ mu0`. So it is a sibling of work already done, not a new theory.
+
+Schmidt's threshold `q > 250·d⁵` costs NOTHING here, and that is worth saying
+because it looks like an obstruction. `C` is existentially quantified and may
+depend on `F`; the finitely many `s` with `q^s ≤ 250·d⁵` each contribute the
+fixed finite number `|N_s − q^s|/q^{s/2}`, so enlarging `C` to their maximum
+absorbs them, and below the threshold any crude bound (`N_s ≤ d·q^s`, say)
+suffices.
+
+FAITHFULNESS. TRUE — this is Weil's theorem, and the `∃ C` form is strictly
+weaker than the classical `(d−1)(d−2)·√q + d²`. NOT vacuous: `C` is chosen
+BEFORE `s`, which is the entire content; a bound allowed to depend on `s` would
+be free. Absolute irreducibility is essential and not decoration — over `𝔽_q`
+with `q ≡ 3 (mod 4)` the polynomial `X² + 1` is irreducible but NOT absolutely
+irreducible and has `N_s = 0` for every odd `s`, so `|N_s − q^s| = q^s` and no
+`C` can exist; and `X·Y`, not irreducible at all, gives `N_s = 2·q^s − 1`. -/
+theorem exists_const_natCard_zeroLocus_sub_le {q : ℕ} [Fact q.Prime]
+    (F : MvPolynomial (Fin 2) (ZMod q))
+    (hirr : Irreducible (MvPolynomial.map
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F)) :
+    ∃ C : ℝ, ∀ s : ℕ, 0 < s →
+      |(Nat.card {a : Fin 2 → GaloisField q s //
+            MvPolynomial.eval a (MvPolynomial.map
+              (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)
+          - (q : ℝ) ^ s| ≤ C * Real.sqrt q ^ s :=
+  sorry
+
+/-- **Igusa, Lefschetz and Eichler–Shimura, packaged over a plane model**
+(sorry node, SIXTEENTH decomposition 2026-07-27 — the MODULAR residue of
+`exists_frobEigenvalues_pointCount_of_not_dvd` below).
+
+STATEMENT. At `q ∤ M` there are a plane curve `F ∈ 𝔽_q[X,Y]`, absolutely
+irreducible, finitely many complex numbers `γ₀, …, γ_{n−1}`, a sequence of
+natural numbers `Npt`, a constant `D` and two indices `i, j` with
+
+* `Σₖ γₖ^s = q^s + 1 − Npt s` for every `s ≥ 1`   (Lefschetz),
+* `|Npt s − #{a ∈ 𝔽_{q^s}² : F(a) = 0}| ≤ D` for every `s ≥ 1`   (`F` is a
+  plane model of the same curve), and
+* `γ_i + γ_j = a_q`, `γ_i·γ_j = q`   (Eichler–Shimura).
+
+WHAT IT PACKAGES, CLASSICALLY. `Npt s = #X₀(M)(𝔽_{q^s})` for the reduction mod
+`q` of an integral model of `X₀(M)`, which is smooth because `q ∤ M` (Igusa);
+the `γₖ` are the `n = 2·genus` eigenvalues of `Frob_q` on `H¹`; clause 1 is the
+Lefschetz trace formula; clause 2 says `F` is a plane model of that curve — any
+curve has one (primitive element for its function field, `𝔽_q` being perfect),
+and the discrepancy between the smooth projective count and the affine plane
+count is bounded by the points at infinity plus the branches over the finitely
+many singular points, a number depending on `F` alone and NOT on `s`; clause 3
+is the Eichler–Shimura relation `T_q = Frob + q·Frob^{−1}`, which puts the two
+roots of `X² − a_q·X + q` among the eigenvalues, `g` being a newform of level
+exactly `M`.
+
+NO ESTIMATE IS ASKED FOR HERE, and that is the point of this cut. The Weil
+bound has moved out to `exists_const_natCard_zeroLocus_sub_le` above, which
+knows nothing about modular curves. What remains here is the RATIONALITY side
+of the Weil conjectures — an eigenvalue system reproducing the counts — plus
+the modular input, and none of it needs the Riemann hypothesis for curves.
+
+WHY THE PLANE MODEL IS IN THE STATEMENT: it is the SHARED WITNESS, and without
+it the cut would be unsound rather than merely inelegant. The Weil bound cannot
+be stated about `Npt` alone, because a bare `ℕ`-sequence satisfying the
+Lefschetz clause carries no arithmetic and the bound is FALSE for it — take
+`n = 2`, `γ = (q, 0)`, `Npt s = 1`, which satisfies Lefschetz and violates
+every `B·q^{s/2}`. Handing over a plane model is the cheapest object that pins
+`Npt` to an actual curve while remaining stateable with no scheme theory at
+all, and it is exactly the object Stepanov's method consumes.
+
+FAITHFULNESS, AND WHY THIS IS NOT VACUOUS. TRUE, by the classical package. It
+is also Weil-strength ALREADY, before the sibling is consumed: clause 2 pins
+`Npt s` to within a constant of an absolutely irreducible plane curve's point
+count, hence — by Weil, i.e. by the sibling — to within `O(q^{s/2})` of `q^s`;
+clause 1 then makes every power sum `O(q^{s/2})`, so `‖γₖ‖ ≤ √q`, so
+`γ_i·γ_j = q` forces `‖γ_i‖ = ‖γ_j‖ = √q` and `|a_q| ≤ 2√q`. A junk witness is
+therefore unavailable: dropping in the line `F = Y`, whose count is exactly
+`q^s`, makes the power sums BOUNDED, which forces `‖γₖ‖ ≤ 1` and contradicts
+`γ_i·γ_j = q` for `q ≥ 2`.
+
+`Npt : ℕ → ℕ` integrality is load-bearing for the same reason it was on the
+parent, and `i = j` is deliberately PERMITTED — nothing downstream needs the
+two indices distinct, and the classical witness supplies distinct ones anyway.
+
+STILL MISSING FROM THE PIN, and this leaf is now where that debt sits: an
+integral model of `X₀(M)` with good reduction at `q ∤ M` (Igusa), the Lefschetz
+trace formula for its special fibre, and the Eichler–Shimura relation in its
+geometric form (Diamond–Shurman §8.7). `Fermat/FLT/ModularCurve/X0.lean`
+carries a scheme-theoretic `Y₀(N)` coarse-moduli layer (`Gamma0Datum`,
+`IsCoarseModuliY0`, `Gamma0Atlas`, `RigidifiedModuli`) and is the natural home
+for the integral model; note that THIS file does not currently import it, so
+wiring it in is part of the job. -/
+theorem exists_planeModel_frobEigenvalues_of_not_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} [Fact q.Prime] (hqM : ¬ q ∣ M) :
+    ∃ (F : MvPolynomial (Fin 2) (ZMod q)) (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ)
+      (D : ℝ) (i j : Fin n),
+      Irreducible (MvPolynomial.map
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F) ∧
+      (∀ s : ℕ, 0 < s → ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (Npt s : ℂ)) ∧
+      (∀ s : ℕ, 0 < s →
+        |(Npt s : ℝ) - (Nat.card {a : Fin 2 → GaloisField q s //
+            MvPolynomial.eval a (MvPolynomial.map
+              (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)| ≤ D) ∧
+      γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) :=
+  sorry
+
 /-- **Eichler–Shimura in point-count shape: the Frobenius eigenvalues of
 a modular curve with good reduction, two of them attached to a given
-newform** (sorry node, FIFTEENTH decomposition 2026-07-27 — the
+newform** (PROVEN 2026-07-27 by the SIXTEENTH decomposition, over
+`exists_planeModel_frobEigenvalues_of_not_dvd` and
+`exists_const_natCard_zeroLocus_sub_le` above; opened as a sorry node by
+the FIFTEENTH decomposition 2026-07-27 as the
 GEOMETRIC residue of `exists_const_norm_qCoeff_frobPowerSum_le` below,
-which is now PROVEN over it).
+which is PROVEN over it).
 
 STATEMENT. At `q ∤ M` there are finitely many complex numbers
 `γ₀, …, γ_{n−1}`, a sequence of natural numbers `Npt : ℕ → ℕ` and a
@@ -40880,36 +41058,91 @@ anyway (a repeated root occurs with multiplicity two in `H¹`). Leaving
 the weaker existential makes the leaf easier to discharge without
 costing the consumer anything.
 
-STILL MISSING FROM THE PIN, and this leaf is exactly the place where
-that debt is now concentrated: an integral model of `X₀(M)` with good
-reduction at `q ∤ M` (Igusa), the Eichler–Shimura relation in its
-geometric form (Diamond–Shurman §8.7), and the Weil bound for curves
-over `𝔽_q` in point-count form.
+WHERE THE DEBT NOW SITS (SIXTEENTH cut, 2026-07-27 — it is no longer
+here). The three classical inputs have been separated along the line
+"modular" / "curves over finite fields", which is the only line along
+which they can be separated soundly:
 
-ROUTING, CHECKED 2026-07-27 (and this corrects, in place, the advice a
-previous cut recorded). The Stepanov/Lang–Weil subtree of
-`Modularity/KhareWintenberger.lean` is importable from here
-(`Interface.lean` imports that file directly), but its curve-level output
-`exists_zero_of_absolutelyIrreducible_plane` deliberately produces only
-NONEMPTINESS — `∃ a, eval a g = 0` — and its parent states in as many
-words that the quantitative Lang–Weil estimate is not needed anywhere in
-this development. So there is no estimate there to consume, and the
-owner of this leaf must build the point-count bound itself. What IS
-genuinely shared sits one level lower: `exists_stepanovAuxiliary` (still
-OPEN there) and `stepanov_sum_le_natDegree` (PROVEN there) are precisely
-the inputs a Stepanov-method estimate needs. Build on those; a second
-independent Stepanov development is the most expensive duplication
-available in this tree. Refutable in one grep: if
-`exists_zero_of_absolutelyIrreducible_plane`'s conclusion ever becomes an
-inequality on a point count, this paragraph is stale. -/
+* an integral model of `X₀(M)` with good reduction at `q ∤ M` (Igusa),
+  the Lefschetz trace formula, and the Eichler–Shimura relation
+  (Diamond–Shurman §8.7) are all on
+  `exists_planeModel_frobEigenvalues_of_not_dvd` above;
+* the Weil bound for curves over `𝔽_q` in point-count form is on
+  `exists_const_natCard_zeroLocus_sub_le` above, which mentions no
+  modular form at all and is a target for the Stepanov subtree of
+  `Modularity/MoretBailly.lean`.
+
+The two are glued by a PLANE MODEL: the modular leaf hands over an
+absolutely irreducible `F ∈ 𝔽_q[X,Y]` whose affine counts differ from
+`Npt` by a constant, and the curve leaf bounds those affine counts. A
+shared witness of that kind is unavoidable — see the "WHY THE PLANE
+MODEL IS IN THE STATEMENT" paragraph on the modular leaf for the
+explicit counterexample showing that the estimate is FALSE for a bare
+`ℕ`-sequence satisfying only the Lefschetz clause, so a naive
+"geometry produces the system, analysis bounds it" split would have
+manufactured a false sub-leaf.
+
+The ROUTING note the FIFTEENTH cut recorded here has been rewritten and
+moved onto `exists_const_natCard_zeroLocus_sub_le`, the leaf it actually
+governs; it was stale in its file (the Stepanov subtree is in
+`MoretBailly.lean`, not `KhareWintenberger.lean`) and in its
+declaration name (`exists_zero_of_absolutelyIrreducible_plane` no longer
+exists; it is now `exists_count_of_absolutelyIrreducible_plane` and it
+IS a count). Read it there.
+
+PROOF (SIXTEENTH cut). Take the plane model `F`, the system `γ`, the
+counts `Npt`, the model discrepancy `D` and the pair `i, j` from the
+modular leaf, and the Weil constant `C` for `F` from the curve leaf.
+Writing `V s` for the affine count of `F` over `𝔽_{q^s}`,
+
+  `|Npt s − q^s − 1| ≤ |Npt s − V s| + |V s − q^s| + 1 ≤ D + C·q^{s/2} + 1`,
+
+and `q^{s/2} ≥ 1` absorbs the three constants into `B = |D| + |C| + 1`.
+The Lefschetz and Eichler–Shimura clauses are handed through unchanged. -/
 theorem exists_frobEigenvalues_pointCount_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
     ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (B : ℝ) (i j : Fin n),
       (∀ s : ℕ, 0 < s → ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (Npt s : ℂ)) ∧
       (∀ s : ℕ, 0 < s → |(Npt s : ℝ) - (q : ℝ) ^ s - 1| ≤ B * Real.sqrt q ^ s) ∧
-      γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) :=
-  sorry
+      γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  obtain ⟨F, n, γ, Npt, D, i, j, hirr, hlef, hcmp, hsum, hprod⟩ :=
+    exists_planeModel_frobEigenvalues_of_not_dvd hM g hg hqM
+  obtain ⟨C, hC⟩ := exists_const_natCard_zeroLocus_sub_le F hirr
+  refine ⟨n, γ, Npt, |D| + |C| + 1, i, j, hlef, ?_, hsum, hprod⟩
+  intro s hs
+  have h1 : (1 : ℝ) ≤ Real.sqrt q := by
+    have hq1 : (1 : ℝ) ≤ (q : ℝ) := by exact_mod_cast hq.one_lt.le
+    simpa using Real.sqrt_le_sqrt hq1
+  have ht : (1 : ℝ) ≤ Real.sqrt q ^ s := one_le_pow₀ h1
+  have htnn : (0 : ℝ) ≤ Real.sqrt q ^ s := le_trans zero_le_one ht
+  have hcmp' := hcmp s hs
+  have hC' := hC s hs
+  set V : ℝ := (Nat.card {a : Fin 2 → GaloisField q s //
+      MvPolynomial.eval a (MvPolynomial.map
+        (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)
+  have habs : |(Npt s : ℝ) - (q : ℝ) ^ s - 1|
+      ≤ |(Npt s : ℝ) - V| + |V - (q : ℝ) ^ s| + 1 := by
+    have hsplit : ((Npt s : ℝ) - (q : ℝ) ^ s - 1)
+        = ((Npt s : ℝ) - V) + (V - (q : ℝ) ^ s) + (-1) := by ring
+    rw [hsplit]
+    calc |((Npt s : ℝ) - V) + (V - (q : ℝ) ^ s) + (-1)|
+        ≤ |((Npt s : ℝ) - V) + (V - (q : ℝ) ^ s)| + |(-1 : ℝ)| := abs_add_le _ _
+      _ ≤ (|(Npt s : ℝ) - V| + |V - (q : ℝ) ^ s|) + |(-1 : ℝ)| := by
+          gcongr
+          exact abs_add_le _ _
+      _ = |(Npt s : ℝ) - V| + |V - (q : ℝ) ^ s| + 1 := by norm_num
+  have hDt : D ≤ |D| * Real.sqrt q ^ s :=
+    le_trans (le_abs_self D) (le_mul_of_one_le_right (abs_nonneg D) ht)
+  have hCt : C * Real.sqrt q ^ s ≤ |C| * Real.sqrt q ^ s :=
+    mul_le_mul_of_nonneg_right (le_abs_self C) htnn
+  have hexp : (|D| + |C| + 1) * Real.sqrt q ^ s
+      = |D| * Real.sqrt q ^ s + |C| * Real.sqrt q ^ s + 1 * Real.sqrt q ^ s := by
+    ring
+  rw [hexp]
+  have h1t : (1 : ℝ) ≤ 1 * Real.sqrt q ^ s := by simpa using ht
+  linarith
 
 /-- **The Frobenius power-sum bound at a good prime** (PROVEN 2026-07-27
 by the FIFTEENTH decomposition, over
