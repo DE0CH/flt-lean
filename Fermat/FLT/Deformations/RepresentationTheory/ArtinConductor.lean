@@ -407,14 +407,20 @@ ARITHMETIC half — and **only the arithmetic half is still open**:
   to a single prime and a single element, via finiteness of the quotient
   (compactness of `Γ Kᵥ` plus the second isomorphism theorem) and
   Cauchy's theorem.
-* `mem_of_pow_prime_mem_of_mem_wildInertiaGroup` — **the one open leaf**,
-  and the only piece of this block carrying any arithmetic: `P_v` is
-  pro-`ℓ`, in the element-level form "`σ ∈ P_v` and `σ ^ q ∈ U` force
-  `σ ∈ U`, for `q` prime to the residue characteristic". This is genuine
-  local field theory; its docstring records the KUMMER-THEORETIC route
-  (`Kᵥᵗᵃᵐᵉ` contains `μ_q` and has `q`-divisible multiplicative group, so
-  it admits no cyclic degree-`q` extension), which is the route that
-  AVOIDS Ostrowski's defect theorem.
+* `mem_of_pow_prime_mem_of_mem_wildInertiaGroup` — PROVEN 2026-07-27
+  along the recorded KUMMER route: `P_v` is pro-`ℓ` in the element-level
+  form "`σ ∈ P_v` and `σ ^ q ∈ U` force `σ ∈ U`". Its proof needed no
+  Sylow step and no maximal-tame-field object — see its docstring for the
+  LAGRANGE-RESOLVENT form of Kummer descent that replaced them.
+* `smul_eq_self_of_pow_eq_one_of_mem_tameFixingSubgroup` — PROVEN
+  2026-07-27, step 1 of that route (`μ_q ⊆ Kᵥᵗᵃᵐᵉ`), and immediate from
+  the definition of `tameFixingSubgroup` at `n := q`, `a := 1`.
+* `exists_pow_eq_of_smul_eq_self_of_mem_wildInertiaGroup` — **the one
+  open leaf**, and the only piece of this block carrying any arithmetic:
+  step 2 of that route, `q`-divisibility of the fixed field of `σ`. No
+  group, no subgroup and no topology occurs in its statement; what it
+  needs is the valuation theory of `Kᵥᵃˡᵍ` (value group `ℚ`, residue
+  field `𝔽̄_ℓ`, Hensel), which the pin does not have.
 -/
 
 open scoped Topology in
@@ -612,11 +618,144 @@ theorem isClosed_wildInertiaGroup
   rw [wildInertiaGroup, Subgroup.coe_inf]
   exact (isClosed_localInertiaGroup v).inter (isClosed_tameFixingSubgroup v)
 
-/-- **THE WILD INERTIA IS PRO-`ℓ`, IN ITS ELEMENT-LEVEL FORM** (SORRY
-LEAF; RE-CUT 2026-07-27 out of `coprime_card_quotient_wildInertiaGroup`
-below, which is now PROVEN from it). This is the ONLY thing still open in
-the `n`-th-root block, and the only piece of it that carries any
-arithmetic whatsoever.
+/-- **Bézout in a subgroup**: if two COPRIME powers of `σ` lie in `U`,
+then `σ` does. Pure group theory, stated for an arbitrary group — it is
+what turns "no `σ ^ m` with `0 < m < q` fixes the fixed field of `U`"
+into the distinctness of the `q` restrictions the Lagrange resolvent
+below is built from. -/
+theorem Subgroup.mem_of_coprime_pow_mem {G : Type*} [Group G] {U : Subgroup G} {σ : G}
+    {m n : ℕ} (hmn : Nat.Coprime m n) (hm : σ ^ m ∈ U) (hn : σ ^ n ∈ U) : σ ∈ U := by
+  have key : (m : ℤ) * Nat.gcdA m n + (n : ℤ) * Nat.gcdB m n = 1 := by
+    have h := Nat.gcd_eq_gcd_ab m n
+    rw [hmn] at h
+    exact_mod_cast h.symm
+  have hmem : σ ^ ((m : ℤ) * Nat.gcdA m n + (n : ℤ) * Nat.gcdB m n) ∈ U := by
+    rw [zpow_add, zpow_mul, zpow_mul, zpow_natCast, zpow_natCast]
+    exact mul_mem (zpow_mem hm _) (zpow_mem hn _)
+  rwa [key, zpow_one] at hmem
+
+/-- **`μ_n ⊆ Kᵥᵗᵃᵐᵉ` FOR `n` PRIME TO THE RESIDUE CHARACTERISTIC**
+(PROVEN 2026-07-27) — step 1 of the Kummer route recorded below, and
+immediate from the DEFINITION of `tameFixingSubgroup`, with no
+arithmetic at all: an `n`-th root of unity `ζ` is integral over `𝒪ᵥ`
+(it is a root of the monic `X ^ n - 1`) and satisfies `ζ ^ n = 1`, i.e.
+the defining condition of `tameFixingSubgroup` at `a := 1`. So every
+element of the wild inertia fixes it.
+
+This is what makes the Lagrange resolvent below transform correctly:
+`σ (ζ⁻¹ ^ i · σ ^ i x) = ζ⁻¹ ^ i · σ ^ (i+1) x` needs precisely
+`σ ζ = ζ`. -/
+theorem smul_eq_self_of_pow_eq_one_of_mem_tameFixingSubgroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
+    (hσ : σ ∈ tameFixingSubgroup v)
+    {ζ : AlgebraicClosure (v.adicCompletion K)} (hζ : ζ ^ n = 1) :
+    σ ζ = ζ := by
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    exact hn (by simp)
+  have hint : IsIntegral
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ζ :=
+    ⟨Polynomial.X ^ n - Polynomial.C 1, Polynomial.monic_X_pow_sub_C 1 hn0, by simp [hζ]⟩
+  set x : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)) := ⟨ζ, hint⟩ with hx
+  have hxn : x ^ n = algebraMap _ _
+      (1 : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) := by
+    rw [map_one]
+    apply Subtype.ext
+    show ζ ^ n = 1
+    exact hζ
+  have hfix : σ • x = x := hσ n hn x ⟨1, hxn⟩
+  have h2 : (σ • x).1 = x.1 := congrArg Subtype.val hfix
+  rw [IntegralClosure.coe_smul] at h2
+  exact h2
+
+/-- **`q`-DIVISIBILITY OF THE FIXED FIELD OF AN ELEMENT OF THE WILD
+INERTIA** (SORRY LEAF; CUT 2026-07-27 out of
+`mem_of_pow_prime_mem_of_mem_wildInertiaGroup` below, which is now
+PROVEN from it). This is step 2 — and ONLY step 2 — of the Kummer route
+that leaf's previous docstring recorded. Steps 1 and 3 are discharged
+(`smul_eq_self_of_pow_eq_one_of_mem_tameFixingSubgroup` above and the
+resolvent argument below), and what is left here is a single statement
+of local field ARITHMETIC in which no Galois group, no subgroup and no
+topology occurs.
+
+STATEMENT IN WORDS: if `σ` lies in the wild inertia `P_v` and fixes an
+element `a` of `Kᵥᵃˡᵍ`, then `a` has a `q`-th root that `σ` ALSO fixes,
+for every prime `q` other than the residue characteristic `ℓ`.
+
+WHY IT IS TRUE. Write `F` for the fixed field of the closed subgroup
+topologically generated by `σ`; then `a ∈ F`, and `F ⊇ Kᵥᵗᵃᵐᵉ =: T`,
+because `σ ∈ P_v = Gal(Kᵥᵃˡᵍ/T)`. So it suffices that `Fˣ` is
+`q`-divisible for EVERY algebraic extension `F/T` inside `Kᵥᵃˡᵍ`, and
+that splits along the valuation exactly as the route records:
+
+* THE VALUE GROUP. `Γ_T = ℤ[1/m : ℓ ∤ m] ⊆ ℚ` by construction (the
+  `m`-th roots of a uniformiser are adjoined for every `m` prime to
+  `ℓ`), and `Γ_{Kᵥᵃˡᵍ} = ℚ`, so `Γ_F/Γ_T` embeds in
+  `ℚ/Γ_T ≅ ℤ[1/ℓ]/ℤ`, the Prüfer `ℓ`-group. That quotient is
+  `q`-divisible and `q`-torsion-free for `q ≠ ℓ`, and `Γ_T` is itself
+  `q`-divisible, so `Γ_F` is `q`-divisible.
+* THE UNITS. `F` is henselian (an algebraic extension of a henselian
+  valued field is henselian) and its residue field is `𝔽̄_ℓ` — it
+  contains the residue field of `T`, which is already algebraically
+  closed. So `X ^ q - ū` has a root there, and `X ^ q - u` is separable
+  because `q ≠ ℓ`; Hensel lifts the root.
+
+Given both: write `val a = q · γ` with `γ ∈ Γ_F`, pick `c ∈ F` of value
+`γ`, and take a `q`-th root of the unit `a / c ^ q`. (For `a = 0` take
+`b = 0`; that case is why no `a ≠ 0` hypothesis is carried.)
+
+### WHY IT IS PHRASED THROUGH `σ` AND NOT THROUGH `Tˣ`
+
+The previous docstring flagged one gap in the sketch: Cauchy produces a
+cyclic degree-`q` extension of some INTERMEDIATE field `E/T`, not of `T`
+itself, and it proposed either proving step 2 for every finite extension
+of `T` or passing to a procyclic subgroup. Stating the leaf through `σ`
+removes the gap outright — it never needs `T` as an object, never needs
+a Sylow subgroup of a finite quotient, and never needs `q`-divisibility
+transported anywhere, because the consumer's Lagrange-resolvent argument
+only ever asks for a `q`-th root fixed by the SAME `σ`.
+
+### WHAT IS MISSING FROM THE PIN — checked 2026-07-27
+
+None of this is a group- or Galois-theoretic gap; it is the valuation
+theory of `Kᵥᵃˡᵍ`, which mathlib does not have in the form needed:
+
+* nothing in the pin puts a valuation on
+  `AlgebraicClosure (v.adicCompletion K)` beyond
+  `Mathlib/Analysis/Normed/Unbundled/SpectralNorm.lean` (already in this
+  file's import cone), and nothing computes its value group or its
+  residue field;
+* `grep -rn "DivisibleBy\|divisible" Mathlib/RingTheory/Valuation/` is
+  EMPTY — there is no divisible-value-group API at all;
+* `Mathlib/RingTheory/Henselian.lean` has henselian LOCAL RINGS but not
+  the statement that an algebraic extension of a henselian VALUED FIELD
+  is henselian.
+
+THE CHECK THAT WOULD REFUTE THIS: find, in the pin or in `~/cs/FLT`, a
+valuation on `AlgebraicClosure (v.adicCompletion K)` together with a
+computation of its residue field. If one exists, both bullets are
+ordinary applications of Hensel's lemma and this leaf is short.
+
+Every hypothesis is underscore-prefixed because the body is `sorry`;
+all three are genuinely needed and must be consumed by a real proof. -/
+theorem exists_pow_eq_of_smul_eq_self_of_mem_wildInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {q : ℕ} (_hq : q.Prime) (_hqv : (q : 𝓞 K) ∉ v.asIdeal)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
+    (_hσ : σ ∈ wildInertiaGroup v)
+    {a : AlgebraicClosure (v.adicCompletion K)} (_hfix : σ a = a) :
+    ∃ b : AlgebraicClosure (v.adicCompletion K), σ b = b ∧ b ^ q = a :=
+  sorry
+
+/-- **THE WILD INERTIA IS PRO-`ℓ`, IN ITS ELEMENT-LEVEL FORM** (PROVEN
+2026-07-27 from the single arithmetic leaf
+`exists_pow_eq_of_smul_eq_self_of_mem_wildInertiaGroup` above; everything
+else — the Galois correspondence, the Kummer descent, the group theory —
+is discharged here).
 
 STATEMENT IN WORDS: if `σ` lies in the wild inertia `P_v` and its `q`-th
 power already lies in the open normal subgroup `U`, then `σ` itself lies
@@ -627,89 +766,207 @@ ORDER `q`, for `q` any prime other than the residue characteristic `ℓ`
 This is EXACTLY the classical assertion that `P_v = Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)`
 is pro-`ℓ` — "every finite continuous quotient of `P_v` is an `ℓ`-group"
 — restated one prime and one element at a time, which is the only form
-the consumer needs. Everything that surrounded that assertion (the
-reduction from an arbitrary `n` to a single prime `q`, the finiteness of
-the quotient, Cauchy's theorem) is now DISCHARGED in
-`coprime_card_quotient_wildInertiaGroup`; what is left here is
-irreducibly local field theory.
+the consumer needs.
 
-### THE ROUTE TO PROVE IT — Kummer theory, NOT the defect theorem
+### THE PROOF — Kummer theory as a LAGRANGE RESOLVENT, not via `Kᵥᵗᵃᵐᵉ`
 
-Recorded because the obvious route runs into Ostrowski's lemma and this
-one does not. Write `T := Kᵥᵗᵃᵐᵉ` for the fixed field of `P_v` (mathlib's
-infinite Galois correspondence applies: `P_v` is closed, by
-`isClosed_wildInertiaGroup` above).
+The route the previous docstring recorded is the right one — Kummer
+theory, never Ostrowski's defect theorem — but it is carried out here in
+a form that needs neither the maximal tame field as an OBJECT, nor a
+Sylow subgroup, nor mathlib's `KummerExtension.lean`. That matters: the
+gap that sketch flagged (Cauchy gives a cyclic degree-`q` extension of
+some intermediate `E/T`, not of `T` itself, so `q`-divisibility has to be
+transported) simply does not arise, because the resolvent is built from
+`σ` and its `q`-th root is asked of `σ` again.
 
-1. `T` contains `μ_q`. This is IMMEDIATE FROM THE DEFINITION of
-   `tameFixingSubgroup` and needs no arithmetic: take `n := q` and
-   `a := 1` there, so every `x` with `x ^ q = 1` is fixed by `P_v`.
-2. `Tˣ` is `q`-DIVISIBLE. This is the arithmetic core, and it splits in
-   two along the valuation: the value group of `T` is
-   `ℤ[1/m : ℓ ∤ m] ⊆ ℚ`, which is `q`-divisible by construction (the
-   `m`-th roots of a uniformiser are adjoined); and the units are
-   `q`-divisible by HENSEL, because the residue field of `T` is the
-   algebraic closure of a finite field — so `X ^ q - ū` has a root there
-   — and `X ^ q - u` is separable since `q ≠ ℓ`.
-3. Therefore `Tˣ / (Tˣ) ^ q` is TRIVIAL, and by KUMMER THEORY (mathlib
-   has this: `Mathlib/FieldTheory/KummerExtension.lean`, using `μ_q ⊆ T`
-   from step 1) `T` admits NO cyclic extension of degree `q`. Hence
-   `P_v = Gal(Kᵥᵃˡᵍ / T)` has no open subgroup of index `q`, which is the
-   statement above.
+Suppose `σ ∉ U`, and let `E := IntermediateField.fixedField U`.
 
-**Why this route and not the textbook one.** The direct valuation-theoretic
-argument — "`e · f = [L : T]` with `f = 1` and `e` an `ℓ`-power" — needs
-the extension to be DEFECTLESS, and `T` is neither complete nor discretely
-valued, so that is Ostrowski's lemma (the defect of a finite extension of
-a henselian field is an `ℓ`-power). Step 2 above sidesteps it entirely:
-`q`-divisibility of `Tˣ` is elementary given Hensel, and Kummer theory
-then does the work that defectlessness would have done.
+1. **`σ ^ q` fixes `E` pointwise**, since `σ ^ q ∈ U`; and for
+   `0 < m < q` **no `σ ^ m` does**. Indeed `σ ^ m` fixing `E` pointwise
+   means `σ ^ m ∈ E.fixingSubgroup = U` — this is where the infinite
+   Galois correspondence enters, through
+   `InfiniteGalois.fixingSubgroup_fixedField` at the CLOSED (because
+   open) subgroup `U` — and then `Nat.Coprime m q` plus `σ ^ q ∈ U`
+   gives `σ ∈ U` by Bézout
+   (`Subgroup.mem_of_coprime_pow_mem` above), a contradiction.
+2. So the `q` monoid homomorphisms `E →* Kᵥᵃˡᵍ` given by
+   `y ↦ σ ^ i y`, `i < q`, are PAIRWISE DISTINCT, hence linearly
+   independent over `Kᵥᵃˡᵍ` by **Dedekind's independence of characters**
+   (`linearIndependent_monoidHom`). Therefore the LAGRANGE RESOLVENT
+   `α := ∑_{i<q} ζ⁻¹ ^ i · σ ^ i y` is nonzero for some `y ∈ E`, where
+   `ζ` is a primitive `q`-th root of unity in `Kᵥᵃˡᵍ` (it exists:
+   `Kᵥᵃˡᵍ` is algebraically closed of characteristic zero, so
+   `cyclotomic q` has a root).
+3. `σ α = ζ α`. Reindexing the sum costs exactly the two facts that
+   `σ ζ = ζ` (step 1 of the recorded route,
+   `smul_eq_self_of_pow_eq_one_of_mem_tameFixingSubgroup` above, which
+   is immediate from the DEFINITION of `tameFixingSubgroup`) and
+   `σ ^ q y = y` — the latter is what makes the wrapped-around term
+   `i = q` equal the `i = 0` term.
+4. Hence `σ (α ^ q) = ζ ^ q α ^ q = α ^ q`. The arithmetic leaf supplies
+   `b` with `σ b = b` and `b ^ q = α ^ q`; then `(α b⁻¹) ^ q = 1`, so
+   `σ` fixes `α b⁻¹` (step 1 again), i.e. `ζ (α b⁻¹) = α b⁻¹` with
+   `α b⁻¹ ≠ 0`. So `ζ = 1`, contradicting `q` prime.
 
-**What step 3 still needs care about**, and it is the one gap in the
-sketch: Cauchy gives an element of order `q` in `P_v ⧸ (U ∩ P_v)`, and
-turning that into a CYCLIC DEGREE-`q` EXTENSION OF `T` itself (rather
-than of some intermediate finite extension `E/T`, where the `q`-divisibility
-of step 2 is not directly available) is the step to get right. Passing to
-a Sylow-`q` subgroup of the finite quotient produces such an `E`; the fix
-is either to prove step 2 for every finite extension of `T` inside
-`Kᵥᵃˡᵍ` — the invariants are inherited — or to run the argument on the
-procyclic closed subgroup generated by `σ`, which is abelian and so needs
-no Sylow step at all. The second is probably the cheaper formalization.
+Steps 1–4 use `hqv` only through the two lemmas above, which is right:
+the residue characteristic is the ONLY arithmetic input, and it has been
+pushed entirely into the leaf.
 
-### ABSENCE RE-VERIFIED 2026-07-27 — and the check that would refute it
-
-`grep -rn "IsProP\|isProP\|ProfiniteGrp" Fermat/ .lake/packages/mathlib/`
-plus `~/cs/FLT`. Mathlib's `Topology/Algebra/Category/ProfiniteGrp/` has
-only `Basic`, `Completion` and `Limits` — no Sylow theory for topological
-groups and no pro-`ℓ` predicate — and mathlib's `RamificationGroup.lean`
-defines only `decompositionSubgroup`/`inertiaSubgroup` and ends in a TODO
-for the higher ramification groups. Neither this project nor `~/cs/FLT`
-defines "pro-`ℓ`" anywhere. NOTE this is an absence of the PREDICATE; the
-route above needs none of it, only Kummer theory and Hensel, both present.
-
-NOTE FOR THE NEXT OWNER: everything else on this route is already proven,
-so a proof of THIS statement closes
+NOTE FOR THE NEXT OWNER: with the leaf above proven, this closes
 `coprime_card_quotient_wildInertiaGroup` and
 `exists_pow_eq_of_mem_wildInertiaGroup` below, and with them step 3 — the
 last open step — of `isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` in
-`Fermat/FLT/Modularity/Interface.lean`. Nothing else is in the way.
-
-Every hypothesis is underscore-prefixed because the body is `sorry`; they
-are all genuinely needed and must be consumed by a real proof. -/
+`Fermat/FLT/Modularity/Interface.lean`. Nothing else is in the way. -/
 theorem mem_of_pow_prime_mem_of_mem_wildInertiaGroup
     (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
-    {q : ℕ} (_hq : q.Prime) (_hqv : (q : 𝓞 K) ∉ v.asIdeal)
+    {q : ℕ} (hq : q.Prime) (hqv : (q : 𝓞 K) ∉ v.asIdeal)
     (U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))) [U.Normal]
-    (_hU : IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
+    (hU : IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
     {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
-    (_hσ : σ ∈ wildInertiaGroup v) (_hpow : σ ^ q ∈ U) :
-    σ ∈ U :=
-  sorry
+    (hσ : σ ∈ wildInertiaGroup v) (hpow : σ ^ q ∈ U) :
+    σ ∈ U := by
+  classical
+  by_contra hσU
+  haveI : IsGalois (v.adicCompletion K) (AlgebraicClosure (v.adicCompletion K)) := ⟨⟩
+  have hσt : σ ∈ tameFixingSubgroup v := hσ.2
+  set E : IntermediateField (v.adicCompletion K) (AlgebraicClosure (v.adicCompletion K)) :=
+    IntermediateField.fixedField U with hEdef
+  have hfixsub : E.fixingSubgroup = U :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨U, Subgroup.isClosed_of_isOpen U hU⟩
+  -- STEP 1a. `σ ^ q` fixes `E` pointwise.
+  have hσqfix : ∀ y : E, (σ ^ q) (y : AlgebraicClosure (v.adicCompletion K)) = (y : _) := by
+    intro y
+    exact y.2 ⟨σ ^ q, hpow⟩
+  -- STEP 1b. No `σ ^ m` with `0 < m < q` fixes `E` pointwise.
+  have hkey : ∀ m : ℕ, 0 < m → m < q →
+      ∃ y : E, (σ ^ m) (y : AlgebraicClosure (v.adicCompletion K)) ≠ (y : _) := by
+    intro m hm0 hmq
+    by_contra hcon
+    have hcon' : ∀ y : E, (σ ^ m) (y : AlgebraicClosure (v.adicCompletion K)) = (y : _) := by
+      intro y
+      by_contra hy
+      exact hcon ⟨y, hy⟩
+    have hmemfix : σ ^ m ∈ E.fixingSubgroup := by
+      rw [IntermediateField.mem_fixingSubgroup_iff]
+      intro y hy
+      exact hcon' ⟨y, hy⟩
+    rw [hfixsub] at hmemfix
+    exact hσU (Subgroup.mem_of_coprime_pow_mem
+      (Nat.Coprime.symm ((Nat.Prime.coprime_iff_not_dvd hq).mpr
+        (Nat.not_dvd_of_pos_of_lt hm0 hmq))) hmemfix hpow)
+  -- STEP 2. the `q` restrictions `y ↦ σ ^ i y` are pairwise distinct monoid homs.
+  set F : Fin q → (E →* AlgebraicClosure (v.adicCompletion K)) := fun i =>
+    { toFun := fun y => (σ ^ (i : ℕ)) (y : AlgebraicClosure (v.adicCompletion K))
+      map_one' := by simp
+      map_mul' := fun a b => by simp } with hFdef
+  have hFinj : Function.Injective F := by
+    intro i j hij
+    by_contra hne
+    have hstep : ∀ i j : Fin q, F i = F j → (i : ℕ) < (j : ℕ) → False := by
+      intro i j hFij hlt
+      obtain ⟨y, hy⟩ := hkey ((j : ℕ) - (i : ℕ)) (by omega) (by omega)
+      apply hy
+      have h1 : (σ ^ (i : ℕ)) (y : AlgebraicClosure (v.adicCompletion K))
+          = (σ ^ (j : ℕ)) (y : AlgebraicClosure (v.adicCompletion K)) :=
+        congrFun (congrArg (fun f : E →* AlgebraicClosure (v.adicCompletion K) =>
+          (f : E → AlgebraicClosure (v.adicCompletion K))) hFij) y
+      have h2 : (σ ^ (j : ℕ)) (y : AlgebraicClosure (v.adicCompletion K))
+          = (σ ^ (i : ℕ)) ((σ ^ ((j : ℕ) - (i : ℕ)))
+            (y : AlgebraicClosure (v.adicCompletion K))) := by
+        rw [← AlgEquiv.mul_apply, ← pow_add]
+        congr 2
+        omega
+      exact ((σ ^ (i : ℕ)).injective (by rw [h1, h2])).symm
+    rcases lt_trichotomy (i : ℕ) (j : ℕ) with h | h | h
+    · exact hstep i j hij h
+    · exact hne (Fin.ext h)
+    · exact hstep j i hij.symm h
+  -- a primitive `q`-th root of unity in `Kᵥᵃˡᵍ`.
+  obtain ⟨ζ, hζ⟩ : ∃ ζ : AlgebraicClosure (v.adicCompletion K), IsPrimitiveRoot ζ q := by
+    obtain ⟨z, hz⟩ := IsAlgClosed.exists_root
+      (Polynomial.cyclotomic q (AlgebraicClosure (v.adicCompletion K)))
+      (Polynomial.degree_cyclotomic_pos q _ hq.pos).ne.symm
+    exact ⟨z, (Polynomial.isRoot_cyclotomic_iff_charZero hq.pos).mp hz⟩
+  have hζq : ζ ^ q = 1 := hζ.pow_eq_one
+  have hζ0 : ζ ≠ 0 := hζ.ne_zero hq.ne_zero
+  have hζ1 : ζ ≠ 1 := hζ.ne_one hq.one_lt
+  -- STEP 2 (continued). the Lagrange resolvent is not identically zero, by
+  -- Dedekind's linear independence of characters.
+  have hli : LinearIndependent (AlgebraicClosure (v.adicCompletion K))
+      (fun i : Fin q => (F i : E → AlgebraicClosure (v.adicCompletion K))) :=
+    (linearIndependent_monoidHom E (AlgebraicClosure (v.adicCompletion K))).comp F hFinj
+  obtain ⟨y, hy⟩ : ∃ y : E, ∑ i ∈ Finset.range q,
+      (ζ⁻¹) ^ i * (σ ^ i) (y : AlgebraicClosure (v.adicCompletion K)) ≠ 0 := by
+    by_contra hcon
+    have hcon' : ∀ y : E, ∑ i ∈ Finset.range q,
+        (ζ⁻¹) ^ i * (σ ^ i) (y : AlgebraicClosure (v.adicCompletion K)) = 0 := by
+      intro y
+      by_contra hyy
+      exact hcon ⟨y, hyy⟩
+    have hall : ∀ i : Fin q, (ζ⁻¹) ^ (i : ℕ) = 0 := by
+      refine Fintype.linearIndependent_iff.mp hli (fun i => (ζ⁻¹) ^ (i : ℕ)) ?_
+      funext y
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply, hFdef,
+        MonoidHom.coe_mk, OneHom.coe_mk]
+      rw [Fin.sum_univ_eq_sum_range
+        (fun i => (ζ⁻¹) ^ i * (σ ^ i) (y : AlgebraicClosure (v.adicCompletion K))) q]
+      exact hcon' y
+    have := hall ⟨0, hq.pos⟩
+    simp at this
+  set g : ℕ → AlgebraicClosure (v.adicCompletion K) := fun j =>
+    (ζ⁻¹) ^ j * (σ ^ j) (y : AlgebraicClosure (v.adicCompletion K)) with hgdef
+  set α : AlgebraicClosure (v.adicCompletion K) := ∑ i ∈ Finset.range q, g i with hαdef
+  have hσζ : σ ζ = ζ :=
+    smul_eq_self_of_pow_eq_one_of_mem_tameFixingSubgroup v hqv hσt hζq
+  -- STEP 3. `σ α = ζ α`: the `i = q` term wraps around onto the `i = 0` term.
+  have hshift : ∑ i ∈ Finset.range q, g (i + 1) = ∑ i ∈ Finset.range q, g i := by
+    have e1 := Finset.sum_range_succ' g q
+    have e2 := Finset.sum_range_succ g q
+    have h1 : (ζ⁻¹) ^ q = 1 := by rw [inv_pow, hζq, inv_one]
+    have h2 : (σ ^ q) (y : AlgebraicClosure (v.adicCompletion K)) = (y : _) := hσqfix y
+    have e3 : g q = g 0 := by
+      simp only [hgdef, h1, h2, one_mul, pow_zero, AlgEquiv.one_apply]
+    rw [e3] at e2
+    exact add_right_cancel (e1.symm.trans e2)
+  have hstep : ∀ i : ℕ, σ (g i) = ζ * g (i + 1) := by
+    intro i
+    have hs : σ ((σ ^ i) (y : AlgebraicClosure (v.adicCompletion K)))
+        = (σ ^ (i + 1)) (y : AlgebraicClosure (v.adicCompletion K)) := by
+      rw [← AlgEquiv.mul_apply, ← pow_succ']
+    have hc : ζ * ζ⁻¹ ^ (i + 1) = ζ⁻¹ ^ i := by
+      rw [pow_succ, ← mul_assoc, mul_comm ζ (ζ⁻¹ ^ i), mul_assoc, mul_inv_cancel₀ hζ0, mul_one]
+    simp only [hgdef, map_mul, map_pow, map_inv₀, hσζ, hs]
+    rw [← mul_assoc, hc]
+  have hσα : σ α = ζ * α := by
+    rw [hαdef, map_sum]
+    conv_rhs => rw [← hshift]
+    rw [Finset.mul_sum]
+    exact Finset.sum_congr rfl fun i _ => hstep i
+  -- STEP 4. `α ^ q` is `σ`-fixed, so the arithmetic leaf gives it a `σ`-fixed
+  -- `q`-th root, and `α` divided by that root is a `q`-th root of unity.
+  have hfixα : σ (α ^ q) = α ^ q := by rw [map_pow, hσα, mul_pow, hζq, one_mul]
+  obtain ⟨b, hb1, hb2⟩ :=
+    exists_pow_eq_of_smul_eq_self_of_mem_wildInertiaGroup v hq hqv hσ hfixα
+  have hb0 : b ≠ 0 := by
+    intro h
+    rw [h, zero_pow hq.ne_zero] at hb2
+    exact pow_ne_zero q hy hb2.symm
+  have hw0 : α * b⁻¹ ≠ 0 := mul_ne_zero hy (inv_ne_zero hb0)
+  have hwq : (α * b⁻¹) ^ q = 1 := by
+    rw [mul_pow, inv_pow, hb2, mul_inv_cancel₀ (pow_ne_zero q hy)]
+  have hσw : σ (α * b⁻¹) = α * b⁻¹ :=
+    smul_eq_self_of_pow_eq_one_of_mem_tameFixingSubgroup v hqv hσt hwq
+  rw [map_mul, map_inv₀, hb1, hσα] at hσw
+  refine hζ1 (mul_right_cancel₀ hw0 ?_)
+  rw [one_mul, ← mul_assoc]
+  exact hσw
 
 /-- **Every finite continuous quotient of the wild inertia has order
 coprime to `n`, for `n` prime to the residue characteristic** (PROVEN
-2026-07-27 from the single leaf
-`mem_of_pow_prime_mem_of_mem_wildInertiaGroup` above, which carries all
-the arithmetic; everything here is group theory and topology).
+2026-07-27 through `mem_of_pow_prime_mem_of_mem_wildInertiaGroup` above,
+which is itself PROVEN modulo the single arithmetic leaf
+`exists_pow_eq_of_smul_eq_self_of_mem_wildInertiaGroup`; everything here
+is group theory and topology).
 
 Quantifying over the open normal `U ≤ Γ Kᵥ` and taking `U.subgroupOf P_v`
 is exactly "every finite continuous quotient of `P_v`": `U` open makes
