@@ -14,6 +14,9 @@ public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.MvPolynomial.Ideal
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
+public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
+public import Mathlib.AlgebraicGeometry.Morphisms.Separated
+public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.RingTheory.RingHom.StandardSmooth
@@ -43,9 +46,15 @@ under "Why this is not in `X0.lean`" below.
 step is now fully reduced, and the Jacobian criterion it rests on
 (`jacobianSpan_eq_top`, over an arbitrary commutative ring) is proven here.
 
-The open leaves are therefore `exists_projMul` and `projMul_assoc` — the two
-halves into which `exists_projAdd` (all the remaining gluing work for the group
-law) was decomposed — `exists_projGeomFibreAddEquiv`,
+`projMul_assoc` is now PROVEN too, by the density route: mathlib's
+`ext_of_fromSpecResidueField_eq` reduces it to associativity at residue fields,
+and the two things left are `geometricallyReduced_projToSpec` (a general
+`Smooth → GeometricallyReduced` gap in MATHLIB, not elliptic-curve mathematics)
+and `projMul_assoc_pt` (associativity of the induced operation on `K`-points,
+which is where the Milne I.2.5 content sits).
+
+The open leaves are therefore `exists_projMul`, `geometricallyReduced_projToSpec`,
+`projMul_assoc_pt`, `exists_projGeomFibreAddEquiv`,
 `locally_isStandardSmooth_awayCoord` (all that is left of item 7a — and what it
 wants is a missing piece of MATHLIB, the dehomogenisation isomorphism for a chart
 of `Proj` of a polynomial quotient), and the interior of
@@ -297,143 +306,6 @@ theorem exists_projMul (E : WeierstrassCurve ℚ) [E.IsElliptic] :
               (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E :=
   sorry
 
-/-- **Associativity of any commutative unital multiplication with
-`projNeg`-inverses on the projective Weierstrass model** (sorry node —
-the ABSTRACT half of the old `exists_projAdd`).
-
-## FAITHFULNESS AUDIT: why this is TRUE for an arbitrary such `m`
-
-The hypotheses do not obviously pin `m` down, so the first question is
-whether the statement is false.  It is not, and the reason is Milne,
-*Abelian Varieties* I, Corollary 2.5: for complete varieties `V`, `W`
-with rational points and `A` an abelian variety, every morphism
-`h : V × W → A` with `h(v₀, w₀) = 0` is uniquely `f ∘ p + g ∘ q`.
-Applied to `V = W = A = E` over `ℚ̄` this says every morphism
-`E × E → E` has the form `(P, Q) ↦ φ(P) + ψ(Q) + c`.  The unit law
-`m(O, Q) = Q` forces `ψ = id` and `φ(O) + c = 0`; the unit law in the
-other argument — which follows here from `hcomm` — forces `φ = id` and
-`c = 0`.  So `m` *is* the classical group law on `ℚ̄`-points, hence
-associative.  `E` really is an abelian variety, so the appeal is sound.
-
-**But that argument is not available inside the formalization**, because
-it presupposes the group structure this node is constructing.  It settles
-faithfulness only; it is not a proof route.
-
-## ROUTE AUDIT (2026-07-27), correcting the previous one
-
-The previous audit named "a rigidity / theorem-of-the-cube route
-deriving `hassoc` from the other three axioms plus properness, without
-touching points at all" as the promising unsearched axis.  **That axis was
-searched and it does not close as stated.**  Milne I.2.1 (Rigidity) says:
-if `V` is complete and `f : V × W → U` is constant on `V × {w₀}` and on
-`{v₀} × W`, then `f` is constant.  Every corollary that turns this into a
-statement about a multiplication — I.2.2 (a morphism is a homomorphism up
-to translation), I.2.4 (commutativity), I.2.5 above — forms the
-*difference* of two morphisms and therefore **presupposes the group law
-on the target**.  To prove `hassoc` one would apply rigidity to
-`φ(x, y, z) = m(m(x, y), z) − m(x, m(y, z))`, and that subtraction is
-precisely what is not yet available.  So rigidity does not bootstrap
-associativity out of unitality; something else must pin `m` first.
-*Refuting check*: find a statement of the rigidity lemma, or of the
-theorem of the cube, whose target is a bare proper variety rather than a
-group object — Milne I.2, Mumford *AV* §II.4 and Debarre's notes all
-require the group.
-
-That leaves two routes, and the next owner should pick one deliberately:
-
-* **The density route.**  `A ×_ℚ A ×_ℚ A` is reduced and of finite type
-  over `ℚ` (characteristic `0`, and `Δ ≠ 0` makes the fibre a smooth
-  curve), so it suffices to prove the two composites agree on
-  `ℚ̄`-points, where the statement is `add_assoc` in mathlib's
-  `WeierstrassCurve.Affine.Point` — already an `AddCommGroup`.  The
-  missing input is a scheme-morphism ext lemma: *two morphisms from a
-  reduced finite-type `ℚ`-scheme into `proj E` that agree on `ℚ̄`-points
-  are equal*.  *Refuting check*: grep mathlib for a morphism ext lemma
-  over closed points of a Jacobson base.  This route needs the
-  `ℚ̄`-point description of `m`, which is the business of the sibling
-  leaf `exists_projGeomFibreAddEquiv` — so the two are naturally worked
-  together, and a prompt sending an owner here should say so.
-* **Chart-wise associativity.**  Verify the identity directly between the
-  bihomogeneous forms on the triple product cover.  This needs no new
-  theory at all, only a large `linear_combination` certificate modulo
-  `(W(P), W(Q), W(R))` obtainable from `Singular`/`Magma`, and it is
-  independent of the density statement.  It is the brute-force route and
-  it is probably the cheaper one.
-
-Note that this leaf is stated for an ARBITRARY `m` satisfying the three
-chart axioms rather than for the witness produced by `exists_projMul`.
-That is deliberate: it keeps the two halves independently dispatchable.
-An owner who finds the abstract form intractable may legitimately propose
-folding this back into `exists_projMul`, where the charts are in scope —
-that is a cut-level change and should be reported, not made silently. -/
-theorem projMul_assoc (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-      (Limits.pullback.fst (projToSpec E) (projToSpec E))
-      Limits.pullback.condition.symm ≫ m = m)
-    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
-    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E) :
-    AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
-      AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) :=
-  sorry
-
-/-- **The chord–tangent addition on the projective Weierstrass model**
-(PROVEN from `exists_projMul` and `projMul_assoc`) — what is left of
-items 5+6 once the inversion `i`, the unit section `e` and the three
-structure-morphism compatibilities have been discharged; see
-`nonempty_projGroupLaw` for the assembly.
-
-The cut is between the two halves that need completely different
-machinery, and it is why they are separate leaves: `exists_projMul` is
-scheme-theoretic gluing (an open cover of `A ×_ℚ A`, the two
-Bosma–Lenstra addition laws, and a missing congruence lemma for
-`Proj.fromOfGlobalSections`), while `projMul_assoc` is the one axiom that
-is not a chart identity and needs either a density statement about
-`ℚ̄`-points or a large polynomial certificate.  Nothing is lost or
-weakened by the split: the conjunction of the two is exactly this
-statement. -/
-theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
-      AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
-            AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) ∧
-          Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-              (Limits.pullback.fst (projToSpec E) (projToSpec E))
-              Limits.pullback.condition.symm ≫ m = m ∧
-        Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-              (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
-          Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E := by
-  obtain ⟨m, hcomm, hunit, hinv⟩ := exists_projMul E
-  exact ⟨m, projMul_assoc E m hcomm hunit hinv, hcomm, hunit, hinv⟩
-
-/-- **The chord–tangent law on the projective Weierstrass model, as
-morphisms of schemes** (PROVEN from `exists_projAdd`) — items 5+6 of
-the routable specification in `exists_ellipticScheme_of_weierstrass`'s
-docstring.
-
-The three data fields are supplied as follows.  `m` comes from
-`exists_projAdd`, which is where all the remaining gluing work lives.
-`e` and `i` are CONSTRUCTED rather than assumed: `projInfty E`, the point
-at infinity `[0 : 1 : 0]` via `Proj.fromOfGlobalSections`, and
-`projNeg E`, `Proj` of the graded automorphism `Y ↦ −Y − a₁X − a₃Z` of
-the homogeneous coordinate ring.  The three compatibility fields `hm`,
-`he`, `hi` are `hom_ext_spec_rat`, i.e. free over the base `Spec ℚ`. -/
-theorem nonempty_projGroupLaw (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    Nonempty (ProjGroupLaw E) := by
-  obtain ⟨m, hassoc, hcomm, hunit, hinv⟩ := exists_projAdd E
-  exact ⟨{ m := m
-           e := projInfty E
-           i := projNeg E
-           hm := hom_ext_spec_rat _ _
-           he := hom_ext_spec_rat _ _
-           hi := hom_ext_spec_rat _ _
-           hassoc := hassoc
-           hcomm := hcomm
-           hunit := hunit
-           hinv := hinv }⟩
-
 /-- **The projective Weierstrass model is proper over `Spec ℚ`** (PROVEN).
 
 `projToSpec` is `Proj.toSpecZero` FOLLOWED by
@@ -513,6 +385,452 @@ theorem isProper_projToSpec (E : WeierstrassCurve ℚ) [E.IsElliptic] :
   show IsProper (Proj.toSpecZero (projGrading E) ≫
     Spec.map (CommRingCat.ofHom (algebraMap ℚ (projGrading E 0))))
   infer_instance
+
+/-- **The operation `m` induces on `T`-points** (PROVEN, definitional).
+
+A pair of `T`-points `P, Q : T ⟶ proj E` automatically lies over the same
+base point (`hom_ext_spec_rat`, the base being `Spec ℚ`), so it lifts to a
+`T`-point of `A ×_ℚ A` and may be fed to `m`.  This is the operation whose
+associativity is the whole content of `projMul_assoc`, and stating it
+separately is what lets that content be written as a plain algebraic
+identity rather than as an equation between two composites out of a
+threefold fibre product. -/
+noncomputable def projMulPt (E : WeierstrassCurve ℚ)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    {T : Scheme.{0}} (P Q : T ⟶ proj E) : T ⟶ proj E :=
+  Limits.pullback.lift P Q (hom_ext_spec_rat _ _) ≫ m
+
+/-- **Naturality of `pullback.lift` into `A ×_ℚ A` in the source**
+(PROVEN, formal).
+
+Over the base `Spec ℚ` the pullback condition is automatic, so the two
+`lift`s below differ only in a proof argument and precomposition may be
+pushed inside.  This is the one piece of glue the residue-field reduction
+needs, and it is stated separately because it is used three times.
+
+*Implementation note*: the `rw` uses `Category.assoc` in the FORWARD
+direction.  `Limits.pullback.hom_ext` leaves its goals LEFT-associated —
+`(s ≫ lift P Q h) ≫ fst` — and neither `simp` nor `rw [← Category.assoc]`
+makes progress on that shape; `rw [Category.assoc]` followed by
+`lift_fst` does.  This cost a verification cycle, so it is recorded. -/
+theorem comp_lift_proj (E : WeierstrassCurve ℚ)
+    {T T' : Scheme.{0}} (s : T' ⟶ T) (P Q : T ⟶ proj E) (h h') :
+    s ≫ Limits.pullback.lift (f := projToSpec E) (g := projToSpec E) P Q h =
+      Limits.pullback.lift (s ≫ P) (s ≫ Q) h' := by
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, Limits.pullback.lift_fst, Limits.pullback.lift_fst]
+  · rw [Category.assoc, Limits.pullback.lift_snd, Limits.pullback.lift_snd]
+
+/-- **`triAddLeft` read at a `T`-point is `(P · Q) · R`** (PROVEN, formal). -/
+theorem comp_triAddLeft_proj (E : WeierstrassCurve ℚ)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    {T : Scheme.{0}} (s : T ⟶ AbelianSchemeStruct.triProd (projToSpec E)) :
+    s ≫ AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+      projMulPt E m
+        (projMulPt E m (s ≫ AbelianSchemeStruct.triFst (projToSpec E))
+          (s ≫ AbelianSchemeStruct.triSnd (projToSpec E)))
+        (s ≫ AbelianSchemeStruct.triThd (projToSpec E)) := by
+  rw [AbelianSchemeStruct.triAddLeft, ← Category.assoc,
+    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _), projMulPt, projMulPt, ← Category.assoc,
+    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _)]
+
+/-- **`triAddRight` read at a `T`-point is `P · (Q · R)`** (PROVEN, formal). -/
+theorem comp_triAddRight_proj (E : WeierstrassCurve ℚ)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    {T : Scheme.{0}} (s : T ⟶ AbelianSchemeStruct.triProd (projToSpec E)) :
+    s ≫ AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) =
+      projMulPt E m (s ≫ AbelianSchemeStruct.triFst (projToSpec E))
+        (projMulPt E m (s ≫ AbelianSchemeStruct.triSnd (projToSpec E))
+          (s ≫ AbelianSchemeStruct.triThd (projToSpec E))) := by
+  rw [AbelianSchemeStruct.triAddRight, ← Category.assoc,
+    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _), projMulPt, projMulPt, ← Category.assoc,
+    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _)]
+
+/-- **The projective Weierstrass model is geometrically reduced over `ℚ`**
+(sorry node — a small, general, mathlib-shaped gap).
+
+TRUE and standard: `projToSpec E` is smooth (`smoothOfRelativeDimension_projToSpec`),
+`SmoothOfRelativeDimension` is stable under base change, and a smooth scheme over
+a field is regular, hence reduced.  Every fibre `proj E ×_ℚ Spec K` is therefore
+reduced, which is the definition of `GeometricallyReduced`.
+
+## WHY THIS IS A SEPARATE LEAF: THE GAP IS IN MATHLIB, NOT HERE
+
+The statement that is actually missing is not about elliptic curves at all.
+It is
+
+    Smooth f → GeometricallyReduced f
+
+(equivalently, its fibrewise content: *a scheme smooth over a field is
+reduced*), and **it is absent from the pin**.  Verified by grep on
+2026-07-27, and the negative results are recorded so the next owner does
+not repeat them:
+
+* `AlgebraicGeometry/Morphisms/Smooth.lean` mentions `IsReduced` exactly
+  once, in the hypotheses of `Scheme.Hom.dense_smoothLocus_of_perfectField`
+  — never in a conclusion.
+* `RingTheory/Nilpotent/GeometricallyReduced.lean` defines
+  `IsGeometricallyReduced` and, outside its own file, **nothing in mathlib
+  ever instantiates it**.
+* `IsRegularLocalRing` is nowhere connected to smoothness or formal
+  smoothness: `grep -rn IsRegularLocalRing RingTheory/ | grep -i
+  'smooth\|etale\|formally'` is empty.  `RingTheory/Smooth/Local.lean`
+  contains only the three `FormallySmooth.iff_injective_*` cotangent
+  criteria, and `RingTheory/Smooth/StandardSmooth.lean` proves nothing
+  about domains, reducedness or regularity.
+* There is no perfect-field shortcut either — `PerfectField` does not
+  occur in `RingTheory/Nilpotent/GeometricallyReduced.lean` or in any
+  `AlgebraicGeometry/Geometrically/*.lean`, so the char-`0` identification
+  of "reduced" with "geometrically reduced" is also unavailable and cannot
+  be used to route around this.
+
+## TWO ROUTES
+
+1. *The general one, and the one worth writing*: prove `Smooth f →
+   GeometricallyReduced f` in `Fermat/FLT/Mathlib/`.  Base change reduces
+   it to: a scheme smooth over a field `K` is reduced.  This is a genuine
+   piece of mathlib-facing infrastructure and would be reusable
+   immediately — `GeometricallyReduced` already carries the base-change
+   instances (`AlgebraicGeometry/Geometrically/Reduced.lean`) that make
+   everything downstream of it automatic.
+2. *The parochial one*: show directly that `K[X, Y, Z] ⧸ (W)` is a domain
+   for every field `K ⊇ ℚ`, i.e. that the Weierstrass cubic is irreducible
+   — a cubic that factors has a linear factor, so the curve contains a
+   line and is singular, contradicting `Δ ≠ 0`.  This needs, in addition,
+   that `Proj` commutes with the base change `ℚ → K`, and that `Proj` of a
+   graded domain is reduced; **neither is in the pin either** (there is no
+   `IsReduced`/`IsIntegral` result anywhere in
+   `AlgebraicGeometry/ProjectiveSpectrum/`).  So route 1 is both more
+   general and strictly less work. -/
+theorem geometricallyReduced_projToSpec (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    GeometricallyReduced (projToSpec E) :=
+  sorry
+
+/-- **The threefold fibre product `A ×_ℚ A ×_ℚ A` is reduced** (PROVEN
+from `geometricallyReduced_projToSpec` and `isProper_projToSpec`).
+
+This is the `[IsReduced X]` side condition of
+`ext_of_fromSpecResidueField_eq`, and it is the reason the density route
+needs no hand-rolled irreducible-component argument: mathlib's
+
+    instance [GeometricallyReduced g] [Flat g] [IsReduced X]
+      [IsLocallyNoetherian X] : IsReduced (pullback f g)
+
+(`AlgebraicGeometry/Geometrically/Reduced.lean`) applies twice, once to
+build `A ×_ℚ A` from `A` and once to build `A ×_ℚ A ×_ℚ A` from that.  The
+four inputs it wants are supplied as follows, and all but the first are
+free:
+
+* `GeometricallyReduced (projToSpec E)` — the one open leaf;
+* `Flat (projToSpec E)` — **free, and this is worth knowing**: mathlib has
+  `instance (priority := low) [Subsingleton Y] [IsIntegral Y] : Flat f`
+  (`AlgebraicGeometry/Morphisms/Flat.lean`), and `Spec ℚ` is a one-point
+  integral scheme, so `infer_instance` discharges it.  An earlier version
+  of this proof routed flatness through smoothness instead; that made this
+  declaration depend on the still-open `locally_isStandardSmooth_awayCoord`
+  for no reason at all.  Over a field, EVERY morphism is flat;
+* `IsLocallyNoetherian` of `proj E` and of `A ×_ℚ A` —
+  `LocallyOfFiniteType.isLocallyNoetherian` applied to the structure
+  morphisms, `LocallyOfFiniteType` coming from `IsProper`;
+* `IsReduced (proj E)` — `isReduced_of_flat_of_isLocallyNoetherian`, i.e.
+  the same geometric reducedness descended along the reduced noetherian
+  base `Spec ℚ`. -/
+theorem isReduced_triProd_proj (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    IsReduced (AbelianSchemeStruct.triProd (projToSpec E)) := by
+  haveI := isProper_projToSpec E
+  haveI := geometricallyReduced_projToSpec E
+  haveI : IsLocallyNoetherian (proj E) :=
+    LocallyOfFiniteType.isLocallyNoetherian (projToSpec E)
+  haveI : IsReduced (proj E) :=
+    GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian (projToSpec E)
+  haveI : IsLocallyNoetherian (Limits.pullback (projToSpec E) (projToSpec E)) :=
+    LocallyOfFiniteType.isLocallyNoetherian
+      (Limits.pullback.fst (projToSpec E) (projToSpec E) ≫ projToSpec E)
+  haveI : IsReduced (Limits.pullback (projToSpec E) (projToSpec E)) := inferInstance
+  exact inferInstance
+
+/-- **Associativity of the operation `m` induces on `K`-points, `K` a
+field** (sorry node — this is where ALL the remaining mathematical content
+of `projMul_assoc` now sits).
+
+This is the density route's payload, and the restriction to `Spec` of a
+FIELD is essential rather than cosmetic: the same statement for an
+arbitrary test scheme `T` is `projMul_assoc` itself (take `T` to be the
+threefold product and the three projections), so nothing would have been
+gained.  What a field buys is that `proj E ×_ℚ Spec K` is a smooth
+projective genus-`1` curve over `K` with the rational point
+`projInfty E`, i.e. an honest elliptic curve, where mathlib's
+`WeierstrassCurve.Affine.Point` supplies a real `AddCommGroup`.
+
+## WHAT IT NEEDS: MILNE I.2.5, AND IT IS UNAVOIDABLE
+
+Over `K̄` the hypotheses say that `projMulPt E m` is a commutative loop
+operation with unit `projInfty E` and inverse `projNeg E`.  **A
+commutative loop with two-sided unit and inverses need not be
+associative** — that is not a gap in the write-up, it is why this leaf is
+hard: the conclusion is false for a general SET-level such operation, and
+it holds here only because `m` is a MORPHISM OF VARIETIES.
+
+The input that converts algebraicity into associativity is Milne,
+*Abelian Varieties* I.2.5: every morphism `E × E → E` of complete
+varieties into an abelian variety is `(P, Q) ↦ φ(P) + ψ(Q) + c`.  `hunit`
+then forces `ψ = id` and `φ(O) + c = 0`, and `hcomm` forces `φ = id` and
+`c = 0`, so `m` *is* the classical group law and associativity is
+`add_assoc`.  Note this is the same argument recorded above as settling
+FAITHFULNESS; the point of the present cut is that at a field it is no
+longer circular — the group law on the target is mathlib's group law on
+`E(K̄)`, which exists independently of the scheme-level `m` this cluster
+is constructing.
+
+Equivalently, and possibly cheaper in Lean, one may run the argument
+through Silverman *AEC* III.4.7 (every morphism of elliptic curves is a
+translation composed with an isogeny — proved via `Pic⁰` and Abel–Jacobi)
+applied to `P ↦ projMulPt E m P Q` for fixed `Q`, and then pin the
+resulting isogeny to `id` by connectedness of the family in `Q`, using
+`projMulPt E m P (projInfty E) = P`.  Neither `Pic⁰` for curves nor the
+rigidity lemma is in the pin or in `~/cs/FLT`, so either way this leaf
+carries a real theory-building obligation and should be dispatched as
+such, not as a proof exercise.
+
+## COORDINATE WITH `exists_projGeomFibreAddEquiv`
+
+That sibling leaf (`:583`, its own owner) is the `K̄`-point dictionary
+between `RelPoint (projToSpec E)` and `WeierstrassCurve.Affine.Point`,
+and it is exactly the interface this leaf wants for its last step.  It is
+currently existentially stated, so it cannot be consumed as an API; an
+owner taking this leaf should coordinate rather than build a second
+dictionary. -/
+theorem projMul_assoc_pt (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
+    (K : CommRingCat.{0}) [Field K] (P Q R : Spec K ⟶ proj E) :
+    projMulPt E m (projMulPt E m P Q) R = projMulPt E m P (projMulPt E m Q R) :=
+  sorry
+
+/-- **Associativity at the residue field of every point of the threefold
+product** (PROVEN from `projMul_assoc_pt`).
+
+This is the `H` hypothesis of `ext_of_fromSpecResidueField_eq`, read at
+`S = Set.univ`.  The residue field of a point of a `ℚ`-scheme is a field,
+so `projMul_assoc_pt` applies verbatim; the only work is
+`comp_triAddLeft_proj`/`comp_triAddRight_proj`, which say that the two
+composites are the two bracketings of the induced operation on the three
+projections. -/
+theorem projMul_assoc_residueField (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
+    (x : AbelianSchemeStruct.triProd (projToSpec E)) :
+    (AbelianSchemeStruct.triProd (projToSpec E)).fromSpecResidueField x ≫
+        AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+      (AbelianSchemeStruct.triProd (projToSpec E)).fromSpecResidueField x ≫
+        AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) := by
+  rw [comp_triAddLeft_proj, comp_triAddRight_proj]
+  exact projMul_assoc_pt E m hcomm hunit hinv _ _ _ _
+
+/-- **Associativity of any commutative unital multiplication with
+`projNeg`-inverses on the projective Weierstrass model** (PROVEN from
+`geometricallyReduced_projToSpec` and `projMul_assoc_pt` — the ABSTRACT
+half of the old `exists_projAdd`).
+
+## FAITHFULNESS AUDIT: why this is TRUE for an arbitrary such `m`
+
+The hypotheses do not obviously pin `m` down, so the first question is
+whether the statement is false.  It is not, and the reason is Milne,
+*Abelian Varieties* I, Corollary 2.5: for complete varieties `V`, `W`
+with rational points and `A` an abelian variety, every morphism
+`h : V × W → A` with `h(v₀, w₀) = 0` is uniquely `f ∘ p + g ∘ q`.
+Applied to `V = W = A = E` over `ℚ̄` this says every morphism
+`E × E → E` has the form `(P, Q) ↦ φ(P) + ψ(Q) + c`.  The unit law
+`m(O, Q) = Q` forces `ψ = id` and `φ(O) + c = 0`; the unit law in the
+other argument — which follows here from `hcomm` — forces `φ = id` and
+`c = 0`.  So `m` *is* the classical group law on `ℚ̄`-points, hence
+associative.  `E` really is an abelian variety, so the appeal is sound.
+
+**But that argument is not available inside the formalization**, because
+it presupposes the group structure this node is constructing.  It settles
+faithfulness only; it is not a proof route.
+
+## ROUTE AUDIT (2026-07-27), correcting the previous one
+
+The previous audit named "a rigidity / theorem-of-the-cube route
+deriving `hassoc` from the other three axioms plus properness, without
+touching points at all" as the promising unsearched axis.  **That axis was
+searched and it does not close as stated.**  Milne I.2.1 (Rigidity) says:
+if `V` is complete and `f : V × W → U` is constant on `V × {w₀}` and on
+`{v₀} × W`, then `f` is constant.  Every corollary that turns this into a
+statement about a multiplication — I.2.2 (a morphism is a homomorphism up
+to translation), I.2.4 (commutativity), I.2.5 above — forms the
+*difference* of two morphisms and therefore **presupposes the group law
+on the target**.  To prove `hassoc` one would apply rigidity to
+`φ(x, y, z) = m(m(x, y), z) − m(x, m(y, z))`, and that subtraction is
+precisely what is not yet available.  So rigidity does not bootstrap
+associativity out of unitality; something else must pin `m` first.
+*Refuting check*: find a statement of the rigidity lemma, or of the
+theorem of the cube, whose target is a bare proper variety rather than a
+group object — Milne I.2, Mumford *AV* §II.4 and Debarre's notes all
+require the group.
+
+That leaves two routes, and the next owner should pick one deliberately:
+
+* **The density route.**  `A ×_ℚ A ×_ℚ A` is reduced and of finite type
+  over `ℚ` (characteristic `0`, and `Δ ≠ 0` makes the fibre a smooth
+  curve), so it suffices to prove the two composites agree on
+  `ℚ̄`-points, where the statement is `add_assoc` in mathlib's
+  `WeierstrassCurve.Affine.Point` — already an `AddCommGroup`.  The
+  missing input is a scheme-morphism ext lemma: *two morphisms from a
+  reduced finite-type `ℚ`-scheme into `proj E` that agree on `ℚ̄`-points
+  are equal*.  *Refuting check*: grep mathlib for a morphism ext lemma
+  over closed points of a Jacobson base.  This route needs the
+  `ℚ̄`-point description of `m`, which is the business of the sibling
+  leaf `exists_projGeomFibreAddEquiv` — so the two are naturally worked
+  together, and a prompt sending an owner here should say so.
+* **Chart-wise associativity.**  Verify the identity directly between the
+  bihomogeneous forms on the triple product cover.  This needs no new
+  theory at all, only a large `linear_combination` certificate modulo
+  `(W(P), W(Q), W(R))` obtainable from `Singular`/`Magma`, and it is
+  independent of the density statement.  It is the brute-force route and
+  it is probably the cheaper one.
+
+Note that this leaf is stated for an ARBITRARY `m` satisfying the three
+chart axioms rather than for the witness produced by `exists_projMul`.
+That is deliberate: it keeps the two halves independently dispatchable.
+An owner who finds the abstract form intractable may legitimately propose
+folding this back into `exists_projMul`, where the charts are in scope —
+that is a cut-level change and should be reported, not made silently.
+
+## ROUTE AUDIT (2026-07-27, second correction): the CHART-WISE route does NOT
+## apply to this leaf, and the audit above is wrong about that
+
+The audit above offers "chart-wise associativity … a large
+`linear_combination` certificate modulo `(W(P), W(Q), W(R))`" as the
+cheap brute-force alternative, and calls it "probably the cheaper one".
+**It is not available here at all.**  `m` is universally quantified: it
+is an arbitrary morphism satisfying `hcomm`/`hunit`/`hinv`, and it comes
+with NO charts and NO polynomial forms.  There is nothing for a CAS to
+certify, because there are no polynomials in the hypotheses.  The
+chart-wise route is a route for `exists_projMul`'s specific witness, and
+it becomes available for this statement only under the cut-level change
+that folds the two halves back together.  *Refuting check*: read the
+binders of the statement below and look for any occurrence of `addX` /
+`addY` / `addZ`, or of any hypothesis that constrains `m` on a chart —
+there is none.
+
+So **exactly one route survives for the leaf as stated: density**, and
+this docstring's job is now to say how far it has been taken.
+
+## WHAT IS DONE HERE, AND WHAT IS LEFT (2026-07-27)
+
+The density route is no longer a plan; the assembly below is WRITTEN and
+compiles, and `projMul_assoc` is PROVEN from two named sub-leaves.  The
+ext lemma the previous audit listed as "the missing input" — *two
+morphisms from a reduced finite-type `ℚ`-scheme into `proj E` that agree
+on `ℚ̄`-points are equal* — **is already in mathlib**, as
+`AlgebraicGeometry.ext_of_fromSpecResidueField_eq`
+(`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`):
+
+    lemma ext_of_fromSpecResidueField_eq (f g : X ⟶ Y) (i : Y ⟶ Z)
+      [IsSeparated i] [IsReduced X] (S : Set X) (hS' : Dense S)
+      (H : ∀ x ∈ S, X.fromSpecResidueField x ≫ f = X.fromSpecResidueField x ≫ g)
+      (H' : f ≫ i = g ≫ i) : f = g
+
+That is a strictly better instrument than the one the audit asked for:
+it wants agreement at RESIDUE FIELDS of a dense set of points, which
+subsumes closed points and needs no Jacobson-base argument, and `S` may
+be taken to be `Set.univ`.  Its three side conditions all discharge here:
+
+* `IsSeparated (projToSpec E)` — free, since `IsProper` *extends*
+  `IsSeparated` and `isProper_projToSpec` is PROVEN above;
+* `H'` — free, by `hom_ext_spec_rat`, the target being `Spec ℚ`;
+* `IsReduced` of the threefold product — `isReduced_triProd_proj` below.
+
+What is left is therefore exactly two things, and they are disjoint:
+
+1. `geometricallyReduced_projToSpec` — a small, general, mathlib-shaped
+   gap (see its docstring);
+2. `projMul_assoc_pt` — the genuine Milne content, now stated as plain
+   associativity of the operation `m` induces on `K`-points. -/
+theorem projMul_assoc (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E) :
+    AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+      AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) := by
+  haveI := isProper_projToSpec E
+  haveI := isReduced_triProd_proj E
+  exact ext_of_fromSpecResidueField_eq _ _ (projToSpec E) Set.univ dense_univ
+    (fun x _ => projMul_assoc_residueField E m hcomm hunit hinv x) (hom_ext_spec_rat _ _)
+
+/-- **The chord–tangent addition on the projective Weierstrass model**
+(PROVEN from `exists_projMul` and `projMul_assoc`) — what is left of
+items 5+6 once the inversion `i`, the unit section `e` and the three
+structure-morphism compatibilities have been discharged; see
+`nonempty_projGroupLaw` for the assembly.
+
+The cut is between the two halves that need completely different
+machinery, and it is why they are separate leaves: `exists_projMul` is
+scheme-theoretic gluing (an open cover of `A ×_ℚ A`, the two
+Bosma–Lenstra addition laws, and a missing congruence lemma for
+`Proj.fromOfGlobalSections`), while `projMul_assoc` is the one axiom that
+is not a chart identity and needs either a density statement about
+`ℚ̄`-points or a large polynomial certificate.  Nothing is lost or
+weakened by the split: the conjunction of the two is exactly this
+statement. -/
+theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
+      AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+            AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) ∧
+          Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+              (Limits.pullback.fst (projToSpec E) (projToSpec E))
+              Limits.pullback.condition.symm ≫ m = m ∧
+        Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+              (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
+          Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E := by
+  obtain ⟨m, hcomm, hunit, hinv⟩ := exists_projMul E
+  exact ⟨m, projMul_assoc E m hcomm hunit hinv, hcomm, hunit, hinv⟩
+
+/-- **The chord–tangent law on the projective Weierstrass model, as
+morphisms of schemes** (PROVEN from `exists_projAdd`) — items 5+6 of
+the routable specification in `exists_ellipticScheme_of_weierstrass`'s
+docstring.
+
+The three data fields are supplied as follows.  `m` comes from
+`exists_projAdd`, which is where all the remaining gluing work lives.
+`e` and `i` are CONSTRUCTED rather than assumed: `projInfty E`, the point
+at infinity `[0 : 1 : 0]` via `Proj.fromOfGlobalSections`, and
+`projNeg E`, `Proj` of the graded automorphism `Y ↦ −Y − a₁X − a₃Z` of
+the homogeneous coordinate ring.  The three compatibility fields `hm`,
+`he`, `hi` are `hom_ext_spec_rat`, i.e. free over the base `Spec ℚ`. -/
+theorem nonempty_projGroupLaw (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    Nonempty (ProjGroupLaw E) := by
+  obtain ⟨m, hassoc, hcomm, hunit, hinv⟩ := exists_projAdd E
+  exact ⟨{ m := m
+           e := projInfty E
+           i := projNeg E
+           hm := hom_ext_spec_rat _ _
+           he := hom_ext_spec_rat _ _
+           hi := hom_ext_spec_rat _ _
+           hassoc := hassoc
+           hcomm := hcomm
+           hunit := hunit
+           hinv := hinv }⟩
 
 /-! ### The Jacobian criterion for a Weierstrass equation
 
