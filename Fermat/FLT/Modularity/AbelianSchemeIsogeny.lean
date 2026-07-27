@@ -143,6 +143,14 @@ public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 public import Mathlib.RingTheory.Ideal.AssociatedPrime.Basic
 public import Mathlib.RingTheory.Regular.IsSMulRegular
 public import Mathlib.RingTheory.Depth.Rees
+-- Ischebeck (`ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime_aux`)
+-- needs exactly three more mathlib modules: `ringKrullDim_quotient`
+-- (`Spec (R ⧸ I) ≃o V(I)`) from `KrullDimension/NonZeroDivisors`, Nakayama
+-- (`Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`) from `Nakayama`, and the
+-- colon ideal `(0 : p)` from `Ideal/Colon`.
+public import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
+public import Mathlib.RingTheory.Nakayama
+public import Mathlib.RingTheory.Ideal.Colon
 -- The going-down half of `ringKrullDim_stalk_eq_of_isFinite_endo` below.
 -- `Ideal.GoingDown` supplies `Algebra.HasGoingDown`, which occurs in the
 -- SIGNATURE of the leaf `hasGoingDown_stalkMap_of_isFinite_endo`, so it is
@@ -3666,11 +3674,205 @@ theorem exists_isWeaklyRegular_span_eq_maximalIdeal (R : Type u) [CommRing R]
   obtain ⟨rs, hspan, hlen, hreg⟩ := exists_isWeaklyRegular_span_eq_maximalIdeal_aux _ R rfl
   exact ⟨rs, hspan, by rw [hlen, IsRegularLocalRing.spanFinrank_maximalIdeal], hreg⟩
 
+/-- **THE DIMENSION OF `T ⧸ p` IS THE COHEIGHT OF `p` IN `Spec T`**
+(**PROVEN 2026-07-27**; pure order theory over `ringKrullDim_quotient`).
+
+`Spec (T ⧸ p) ≃o V(p)` (`ringKrullDim_quotient`), and for `p` PRIME the closed
+set `V(p)` is literally the up-set `Set.Ici ⟨p⟩`, whose Krull dimension is the
+coheight of `⟨p⟩` by `Order.coheight_eq_krullDim_Ici`.  Mathlib has no
+`Ideal.coheight`, so this bridge has to be written by hand; it is the only
+thing needed to get at `Order.coheight_add_one_le`, which is where the
+dimension drop below actually comes from. -/
+theorem ringKrullDim_quotient_eq_coheight {T : Type u} [CommRing T] (r : Ideal T)
+    (hr : r.IsPrime) :
+    ringKrullDim (T ⧸ r) = ((Order.coheight (⟨r, hr⟩ : PrimeSpectrum T) : ℕ∞) : WithBot ℕ∞) := by
+  have hset : PrimeSpectrum.zeroLocus (R := T) (r : Set T)
+      = Set.Ici (⟨r, hr⟩ : PrimeSpectrum T) := by
+    ext x
+    rw [PrimeSpectrum.mem_zeroLocus, Set.mem_Ici]
+    exact SetLike.coe_subset_coe
+  rw [ringKrullDim_quotient, hset]
+  exact (Order.coheight_eq_krullDim_Ici _).symm
+
+/-- **A STRICTLY LARGER PRIME DROPS THE DIMENSION OF THE QUOTIENT BY AT LEAST
+ONE** (**PROVEN 2026-07-27**).
+
+`dim (T ⧸ q) + 1 ≤ dim (T ⧸ p)` whenever `p < q` are primes: prepending `p` to
+a chain out of `q` lengthens it by one.  In coheight form that is exactly
+`Order.coheight_add_one_le`, which — unlike `Order.coheight_strictAnti` —
+carries NO finiteness side condition, so no Noetherian or local hypothesis is
+needed here. -/
+theorem ringKrullDim_quotient_succ_le_of_lt {T : Type u} [CommRing T] {p q : Ideal T}
+    (hp : p.IsPrime) (hq : q.IsPrime) (hlt : p < q) :
+    ringKrullDim (T ⧸ q) + 1 ≤ ringKrullDim (T ⧸ p) := by
+  rw [ringKrullDim_quotient_eq_coheight q hq, ringKrullDim_quotient_eq_coheight p hp]
+  have hlt' : (⟨p, hp⟩ : PrimeSpectrum T) < ⟨q, hq⟩ := hlt
+  exact_mod_cast Order.coheight_add_one_le hlt'
+
+/-- **ISCHEBECK'S INEQUALITY `depth T ≤ dim (T ⧸ p)`, BY INDUCTION ON THE LENGTH
+OF THE REGULAR SEQUENCE** (**PROVEN 2026-07-27**; this is the whole content of
+`ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime` below).
+
+The induction is over `n`, the length of a weakly regular sequence lying in
+`𝔪_T` — the RING varies, so `T` is universally quantified INSIDE the statement
+and the step instantiates it at `T ⧸ xT`.
+
+* `n = 0`: `T ⧸ p` is nontrivial because `p` is prime, so `0 ≤ dim (T ⧸ p)`.
+* `n + 1`, sequence `x :: rest`.  `x` is `T`-regular
+  (`isWeaklyRegular_cons_iff`), so `x ∉ p`: the union of the associated primes
+  is exactly the set of zerodivisors
+  (`biUnion_associatedPrimes_eq_compl_regular`).  Write `N = (0 : p)` for the
+  annihilator of `p`, i.e. `Submodule.colon ⊥ ↑p`.
+
+  **The one genuinely missing step was `Ass (T ⧸ xT) ∩ V(p + (x)) ≠ ∅`, and
+  NAKAYAMA is what supplies it.**  `N ≠ 0`, since `p = (0 : y)` for some `y`
+  (`isAssociatedPrime_iff`, using Noetherianness) and that `y` lies in `N`.  If
+  `N ⊆ (x)` then every `z = wx ∈ N` has `w ∈ N` — because `x(ws) = (wx)s = 0`
+  for `s ∈ p` and `x` is regular — so `N ⊆ (x) • N`, whence `N = 0` by
+  `Submodule.eq_bot_of_le_smul_of_le_jacobson_bot` (`x ∈ 𝔪 = jacobson ⊥`).
+  Contradiction.  So pick `z ∈ N \ (x)`; its image in `T ⧸ xT` is nonzero, and
+  `exists_le_isAssociatedPrime_of_isNoetherianRing` gives an associated prime
+  `P` of `T ⧸ xT` containing `(0 : z̄) ⊇ p·(T ⧸ xT)`.
+
+  Pull `P` back to `q ⊆ T`.  Then `p ≤ q` and `x ∈ q`, so `p < q`.  The
+  induction hypothesis at `T ⧸ xT` (Noetherian local, with the tail sequence
+  `rest.map (mk (x))` of length `n` inside its maximal ideal, by
+  `isWeaklyRegular_map_algebraMap_iff`) gives
+  `n ≤ dim ((T ⧸ xT) ⧸ P) = dim (T ⧸ q)` (`DoubleQuot.quotQuotEquivQuotOfLE`),
+  and `ringKrullDim_quotient_succ_le_of_lt` adds the missing `+ 1`. -/
+theorem ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime_aux (n : ℕ) :
+    ∀ (T : Type u) [CommRing T] [IsLocalRing T] [IsNoetherianRing T]
+    (zs : List T), zs.length = n → (∀ z ∈ zs, z ∈ IsLocalRing.maximalIdeal T) →
+    RingTheory.Sequence.IsWeaklyRegular T zs →
+    ∀ {p : Ideal T}, IsAssociatedPrime p T → (n : WithBot ℕ∞) ≤ ringKrullDim (T ⧸ p) := by
+  induction n with
+  | zero =>
+    intro T _ _ _ zs _ _ _ p hp
+    haveI : Nontrivial (T ⧸ p) := Ideal.Quotient.nontrivial_iff.mpr hp.isPrime.ne_top
+    simpa using ringKrullDim_nonneg_of_nontrivial (R := T ⧸ p)
+  | succ n ih =>
+    intro T _ _ _ zs hlen hmem hreg p hp
+    obtain ⟨x, rest, rfl⟩ : ∃ x rest, zs = x :: rest := by
+      cases zs with
+      | nil => simp at hlen
+      | cons a l => exact ⟨a, l, rfl⟩
+    have hlen' : rest.length = n := by simpa using hlen
+    obtain ⟨hxreg, hstep⟩ := (RingTheory.Sequence.isWeaklyRegular_cons_iff T x rest).1 hreg
+    have hxmem : x ∈ IsLocalRing.maximalIdeal T := hmem x (List.mem_cons_self)
+    haveI hpp : p.IsPrime := hp.isPrime
+    -- `x` is a nonzerodivisor, so it escapes every associated prime
+    have hxnp : x ∉ p := by
+      intro hxp
+      have hmem2 : x ∈ ⋃ P ∈ associatedPrimes T T, (P : Set T) := Set.mem_biUnion hp hxp
+      rw [biUnion_associatedPrimes_eq_compl_regular T T] at hmem2
+      exact hmem2 hxreg
+    have hspanle : Ideal.span {x} ≤ IsLocalRing.maximalIdeal T :=
+      (Ideal.span_singleton_le_iff_mem _).2 hxmem
+    have hIne : Ideal.span {x} ≠ ⊤ := fun h =>
+      (IsLocalRing.maximalIdeal.isMaximal T).ne_top (top_le_iff.1 (h ▸ hspanle))
+    -- `N = (0 : p)`, the annihilator of `p`
+    set N : Ideal T := Submodule.colon (⊥ : Submodule T T) (p : Set T) with hN
+    obtain ⟨y, hy⟩ : ∃ y : T, p = Submodule.colon (⊥ : Submodule T T) {y} :=
+      (isAssociatedPrime_iff.1 hp).2
+    have hy0 : y ≠ 0 := by
+      rintro rfl
+      exact hpp.ne_top (hy.trans Submodule.colon_singleton_zero)
+    have hyN : y ∈ N := by
+      rw [hN, Submodule.mem_colon]
+      intro s hs
+      rw [SetLike.mem_coe, hy, Submodule.mem_colon_singleton, Submodule.mem_bot] at hs
+      simpa [smul_eq_mul, mul_comm] using hs
+    -- NAKAYAMA: `N` is not contained in `(x)`
+    have hNnotle : ¬ N ≤ Ideal.span {x} := by
+      intro hsub
+      have hFG : N.FG := IsNoetherian.noetherian N
+      have hle : N ≤ Ideal.span {x} • N := by
+        intro z hz
+        obtain ⟨w, rfl⟩ := Ideal.mem_span_singleton'.1 (hsub hz)
+        have hwN : w ∈ N := by
+          rw [hN, Submodule.mem_colon]
+          intro s hs
+          rw [Submodule.mem_bot, smul_eq_mul]
+          have hzs : w * x * s = 0 := by
+            have h1 := (Submodule.mem_colon.1 hz) s hs
+            rw [Submodule.mem_bot, smul_eq_mul] at h1
+            exact h1
+          have h0 : x • (w * s) = x • (0 : T) := by
+            simp only [smul_eq_mul, mul_zero]
+            linear_combination hzs
+          exact hxreg h0
+        have hmul : x • w ∈ Ideal.span {x} • N :=
+          Submodule.smul_mem_smul (Ideal.mem_span_singleton_self x) hwN
+        simpa [smul_eq_mul, mul_comm] using hmul
+      have hjac : Ideal.span {x} ≤ Ideal.jacobson (⊥ : Ideal T) := by
+        rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal T) bot_ne_top]
+        exact hspanle
+      have hbot : N = ⊥ := Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ N hFG hle hjac
+      exact hy0 (by simpa [hbot] using hyN)
+    obtain ⟨z, hzN, hzI⟩ := SetLike.not_le_iff_exists.1 hNnotle
+    -- pass to `T ⧸ xT`
+    haveI : Nontrivial (T ⧸ Ideal.span {x}) := Ideal.Quotient.nontrivial_iff.mpr hIne
+    haveI : IsLocalRing (T ⧸ Ideal.span {x}) :=
+      IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+    have hzne : (Ideal.Quotient.mk (Ideal.span {x})) z ≠ 0 := fun h =>
+      hzI (Ideal.Quotient.eq_zero_iff_mem.1 h)
+    obtain ⟨P, hP, hPle⟩ := exists_le_isAssociatedPrime_of_isNoetherianRing
+      (T ⧸ Ideal.span {x}) ((Ideal.Quotient.mk (Ideal.span {x})) z) hzne
+    haveI hPp : P.IsPrime := hP.isPrime
+    have hpP : p.map (Ideal.Quotient.mk (Ideal.span {x})) ≤ P := by
+      refine le_trans ?_ hPle
+      rw [Ideal.map_le_iff_le_comap]
+      intro a ha
+      rw [Ideal.mem_comap, Submodule.mem_colon_singleton, Submodule.mem_bot,
+        smul_eq_mul, ← map_mul, Ideal.Quotient.eq_zero_iff_mem]
+      have haz := (Submodule.mem_colon.1 hzN) a ha
+      rw [Submodule.mem_bot, smul_eq_mul] at haz
+      rw [show a * z = z * a from mul_comm _ _, haz]
+      exact Ideal.zero_mem _
+    set q : Ideal T := P.comap (Ideal.Quotient.mk (Ideal.span {x})) with hq
+    haveI hqp : q.IsPrime := Ideal.IsPrime.comap _
+    have hpq : p ≤ q := Ideal.map_le_iff_le_comap.1 hpP
+    have hxq : x ∈ q := by
+      have hx0 : (Ideal.Quotient.mk (Ideal.span {x})) x = 0 :=
+        Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_span_singleton_self x)
+      rw [hq, Ideal.mem_comap, hx0]
+      exact P.zero_mem
+    have hpqlt : p < q := lt_of_le_of_ne hpq (fun h => hxnp (h ▸ hxq))
+    -- the tail is a weakly regular sequence inside `𝔪_{T ⧸ xT}`
+    have hstep' : RingTheory.Sequence.IsWeaklyRegular (R := T) (T ⧸ Ideal.span {x}) rest := by
+      have he : QuotSMulTop x T ≃ₗ[T] (T ⧸ Ideal.span {x}) :=
+        Submodule.quotEquivOfEq _ _ (by
+          rw [← Submodule.ideal_span_singleton_smul, Ideal.smul_eq_mul, Ideal.mul_top])
+      exact (he.isWeaklyRegular_congr rest).1 hstep
+    have hreg' : RingTheory.Sequence.IsWeaklyRegular (R := T ⧸ Ideal.span {x})
+        (T ⧸ Ideal.span {x}) (rest.map (algebraMap T (T ⧸ Ideal.span {x}))) :=
+      (RingTheory.Sequence.isWeaklyRegular_map_algebraMap_iff (T ⧸ Ideal.span {x})
+        (T ⧸ Ideal.span {x}) rest).2 hstep'
+    have hmem' : ∀ w ∈ rest.map (algebraMap T (T ⧸ Ideal.span {x})),
+        w ∈ IsLocalRing.maximalIdeal (T ⧸ Ideal.span {x}) := by
+      intro w hw
+      obtain ⟨v, hv, rfl⟩ := List.mem_map.1 hw
+      rw [← IsLocalRing.map_maximalIdeal_of_surjective (Ideal.Quotient.mk (Ideal.span {x}))
+        Ideal.Quotient.mk_surjective, Ideal.Quotient.algebraMap_eq]
+      exact Ideal.mem_map_of_mem _ (hmem v (List.mem_cons_of_mem _ hv))
+    have hIH := ih (T ⧸ Ideal.span {x}) (rest.map (algebraMap T (T ⧸ Ideal.span {x})))
+      (by simpa using hlen') hmem' hreg' hP
+    -- identify `(T ⧸ xT) ⧸ P` with `T ⧸ q`
+    have hPeq : P = q.map (Ideal.Quotient.mk (Ideal.span {x})) :=
+      (Ideal.map_comap_of_surjective _ Ideal.Quotient.mk_surjective P).symm
+    have hxle : Ideal.span {x} ≤ q := (Ideal.span_singleton_le_iff_mem _).2 hxq
+    have hiso : ringKrullDim ((T ⧸ Ideal.span {x}) ⧸ P) = ringKrullDim (T ⧸ q) := by
+      rw [hPeq]
+      exact ringKrullDim_eq_of_ringEquiv (DoubleQuot.quotQuotEquivQuotOfLE hxle)
+    rw [hiso] at hIH
+    calc ((n + 1 : ℕ) : WithBot ℕ∞) = (n : WithBot ℕ∞) + 1 := by push_cast; ring
+      _ ≤ ringKrullDim (T ⧸ q) + 1 := by gcongr
+      _ ≤ ringKrullDim (T ⧸ p) := ringKrullDim_quotient_succ_le_of_lt hpp hqp hpqlt
+
 /-- **ISCHEBECK: IN A COHEN–MACAULAY LOCAL RING EVERY ASSOCIATED PRIME HAS A
-FULL-DIMENSIONAL QUOTIENT** (sorry leaf — pure commutative algebra; Matsumura
-*Commutative Ring Theory* 17.2 (Ischebeck) together with 17.3, Bruns–Herzog
-1.2.13 / 2.1.2, Stacks 00N6.  **This is now the ONLY open statement under the
-unmixedness node**, and everything else below is proven over it.)
+FULL-DIMENSIONAL QUOTIENT** (**PROVEN 2026-07-27** — pure commutative algebra;
+Matsumura *Commutative Ring Theory* 17.2 (Ischebeck) together with 17.3,
+Bruns–Herzog 1.2.13 / 2.1.2, Stacks 00N6.)
 
 Read `depth T ≥ dim T` for the hypothesis: `hCM` says some weakly regular
 sequence of length `dim T` lies in `𝔪_T`.  The conclusion says every associated
@@ -3705,15 +3907,21 @@ previous version of this block asserted, see the correction in
   including `ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim` and
   `ringKrullDim_add_length_eq_ringKrullDim_of_isRegular`.
 
-What is genuinely missing is only the step "`Ass (T ⧸ xT)` meets
-`V(p + (x))`" together with the induction itself. -/
+The step that was recorded here as "genuinely missing" — "`Ass (T ⧸ xT)` meets
+`V(p + (x))`" — is supplied by NAKAYAMA applied to the annihilator `(0 : p)`;
+see `ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime_aux` above,
+which carries the whole induction.  All this wrapper does is feed it
+`n = dim T`. -/
 theorem ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime {T : Type u} [CommRing T]
     [IsLocalRing T] [IsNoetherianRing T]
     (hCM : ∃ zs : List T, (∀ z ∈ zs, z ∈ IsLocalRing.maximalIdeal T) ∧
       (zs.length : WithBot ℕ∞) = ringKrullDim T ∧ RingTheory.Sequence.IsWeaklyRegular T zs)
     {p : Ideal T} (hp : IsAssociatedPrime p T) :
-    ringKrullDim T ≤ ringKrullDim (T ⧸ p) :=
-  sorry
+    ringKrullDim T ≤ ringKrullDim (T ⧸ p) := by
+  obtain ⟨zs, hzm, hzlen, hzreg⟩ := hCM
+  rw [← hzlen]
+  exact ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime_aux zs.length T zs rfl
+    hzm hzreg hp
 
 /-- **THE HEAD OF A SYSTEM OF PARAMETERS OF A COHEN–MACAULAY LOCAL RING IS A
 NONZERODIVISOR** (**PROVEN 2026-07-27** over
