@@ -2041,6 +2041,10 @@ leaves it cuts the citation into are, in order: representability, then
 affineness, then a transport with **no citation in it at all** — the same
 citation-on-one-side-of-a-hypothesis principle used throughout this
 cluster, so that no leaf carries both a citation and a formalisation.
+
+Only the first two are open: the transport,
+`nonempty_rigidifiedModuli_of_isAffine`, was PROVEN the day the cut was
+made, so what remains of this node is Katz–Mazur and nothing else.
 -/
 
 /-- **The rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` as a FINE moduli
@@ -2183,81 +2187,313 @@ theorem isAffine_of_rigidifiedModuliScheme (N : ℕ) (hN : 0 < N) (n : ℕ) (hn 
     (R : RigidifiedModuliScheme N n) : IsAffine R.M :=
   sorry
 
-/-- **From an affine fine moduli scheme to `RigidifiedModuli`** (sorry
-leaf, opened 2026-07-27) — the pure FORMALISATION third of
-`exists_rigidifiedModuli`, with **no Katz–Mazur citation left in it**.
+/-! #### Transport bookkeeping: base points that agree only propositionally
 
-## What the prover of this node owes, and what it does NOT
+`RelPoint f g` is indexed by the base point `g`, but its *underlying
+morphism* is not: `(x : RelPoint f g).1 : U ⟶ E` whatever `g` is.  So two
+relative points over propositionally-equal base points can be compared on
+their `.1` even though they inhabit different types, and every step of the
+transport below is stated that way.  The three lemmas here are what turns
+such a comparison back into a statement about the group structure. -/
 
-Owes: transport of a fine moduli scheme along the isomorphism
-`R.M ≅ Spec Γ(R.M, ⊤)` supplied by `IsAffine`.  Nothing here is
-arithmetic; it is bookkeeping about base change, and every ingredient is
-already in this file or in the pin.
+/-- **Lying in a subscheme depends only on the underlying morphism**, not
+on the base point the relative point is indexed by. -/
+lemma RelPoint.liesIn_congr {E T C : Scheme.{u}} {f : E ⟶ T} (ι : C ⟶ E) {U : Scheme.{u}}
+    {g g' : U ⟶ T} {a : RelPoint f g} {b : RelPoint f g'} (hab : a.1 = b.1) :
+    RelPoint.LiesIn ι a ↔ RelPoint.LiesIn ι b := by
+  unfold RelPoint.LiesIn
+  rw [hab]
 
-Does NOT owe: any statement about elliptic curves, level structures or
-moduli.  Both citations are discharged by the hypotheses.
+namespace AbelianSchemeStruct
 
-## The route, which is complete and mechanical
+/-- **The zero section depends on its base point only up to that base
+point's identity** — read on underlying morphisms, where the index is
+invisible. -/
+lemma zero_val_congr {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {U : Scheme.{u}} {e e' : U ⟶ S} (he : e = e') : (ab.zero e).1 = (ab.zero e').1 := by
+  subst he; rfl
 
-Write `A := Γ(R.M, ⊤)` and `φ : Spec (CommRingCat.of A) ≅ R.M` for the
-inverse of `Scheme.isoSpec` (`hR` is exactly what makes that an
-isomorphism).  Then:
+/-- **Addition depends on its arguments only through their underlying
+morphisms**, once the two base points are identified. -/
+lemma add_val_congr {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {U : Scheme.{u}} {e e' : U ⟶ S} (he : e = e')
+    (x y : RelPoint f e) (x' y' : RelPoint f e') (hx : x.1 = x'.1) (hy : y.1 = y'.1) :
+    (ab.add x y).1 = (ab.add x' y').1 := by
+  subst he
+  rw [show x = x' from Subtype.ext hx, show y = y' from Subtype.ext hy]
 
-1. **The datum.** `dM' := Gamma0BaseChange.datumBC φ.hom R.dM`, with
-   `dbc := Gamma0BaseChange.isBaseChangeBC φ.hom R.dM :
-   IsBaseChangeOf φ.hom dM' R.dM`.  Nothing new is needed — this is the
-   construction `exists_gamma0Datum_baseChange` was split out to provide.
+end AbelianSchemeStruct
 
-2. **The level structure.**  `RelPoint.along dbc.map dbc.isPullback.w` is
-   a *bijection* onto the relative points over the shifted base point:
-   injective because `dbc.isPullback.hom_ext` (this is `along_inj` further
-   down the file), surjective with explicit inverse
-   `fun y => ⟨dbc.isPullback.lift g y.1 y.2.symm, dbc.isPullback.lift_fst _ _ _⟩`.
-   Set `P' := ` the preimage of `RelPoint.pre φ.hom (by simp) R.lvlM.P`,
-   and likewise `Q'`.  `geom_basis` transports across that bijection
-   because it is additive (`dbc.map_add`, `dbc.map_zero`), hence commutes
-   with `n • _`, and because
-   `RelPoint.along dbc.map _ (RelPoint.pre t _ P') = RelPoint.pre (t ≫ φ.hom) _ R.lvlM.P`
-   holds by construction of `P'` — check it on the underlying morphisms,
-   where it is `t ≫ P'.1 ≫ dbc.map = t ≫ φ.hom ≫ R.lvlM.P.1`.
+namespace IsBaseChangeOf
 
-3. **The universal property.**  Given `T`, `d`, `L`, let `m₀ : T ⟶ R.M` be
-   the unique map from `R.universal`, with `bc₀ : IsBaseChangeOf m₀ d R.dM`,
-   and put `m := m₀ ≫ φ.inv`.  Define
-   `bc.map := dbc.isPullback.lift (d.f ≫ m) bc₀.map _` — the side
-   condition is `(d.f ≫ m) ≫ φ.hom = bc₀.map ≫ R.dM.f`, which is
-   `bc₀.isPullback.w` after `m ≫ φ.hom = m₀`.  Cartesianness of the new
-   square is pullback pasting, in exactly the form already used for
-   `Gamma0BaseChange.isPullback_iota`:
+variable {N : ℕ} {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+  {d : Gamma0Datum N T}
 
-       IsPullback.of_bot bc₀.isPullback (lift_fst).symm dbc.isPullback
+/-- **The inverse of `RelPoint.along` at a cartesian square**: a relative
+point of `d` over the shifted base point `g ≫ h` comes from a unique
+relative point of `d'` over `g`, by the universal property of the
+pullback. -/
+noncomputable def alongInv (bc : IsBaseChangeOf h d' d) {U : Scheme.{u}} {g : U ⟶ T'}
+    (y : RelPoint d.f (g ≫ h)) : RelPoint d'.f g :=
+  ⟨bc.isPullback.lift g y.1 y.2.symm, bc.isPullback.lift_fst _ _ _⟩
 
-   and the three remaining fields (`map_zero`, `map_add`, `liesIn_iff`)
-   follow from those of `bc₀` and `dbc` by cancelling `dbc.map`, which is
-   legitimate because `RelPoint.along dbc.map _` is injective.  Uniqueness
-   of `m` is uniqueness of `m₀ = m ≫ φ.hom` and `φ` being an isomorphism.
+@[simp] lemma alongInv_val_comp (bc : IsBaseChangeOf h d' d) {U : Scheme.{u}} {g : U ⟶ T'}
+    (y : RelPoint d.f (g ≫ h)) : (bc.alongInv y).1 ≫ bc.map = y.1 :=
+  bc.isPullback.lift_snd _ _ _
 
-**One trap this route walks into and the way past it.**  The base points
-do not match *definitionally*: `along dbc.map` applied to a point over
-`g ≫ m` lands over `(g ≫ m) ≫ φ.hom`, while `along bc₀.map` lands over
-`g ≫ m₀`, and `(g ≫ m) ≫ φ.hom = g ≫ m₀` holds propositionally only.  So
-the two sides inhabit different types and no `rw` will bridge them.  State
-and prove every step of (3) on the **underlying morphisms** (`.1`), where
-the base index does not appear, and close with `Subtype.ext`; this is the
-same device the docstring of `RigidifiedModuli` records for its own two
-level equations, and for the same reason.
+/-- **`RelPoint.along` is injective at a cartesian square**, stated on the
+underlying morphisms so that no base-point transport is involved. -/
+lemma along_injective (bc : IsBaseChangeOf h d' d) {U : Scheme.{u}} {g : U ⟶ T'}
+    {a b : RelPoint d'.f g} (hab : a.1 ≫ bc.map = b.1 ≫ bc.map) : a = b :=
+  Subtype.ext (bc.isPullback.hom_ext (by rw [a.2, b.2]) hab)
+
+/-- **`RelPoint.along` as an additive equivalence.**  Bijectivity is
+`alongInv` plus `along_injective`; additivity is the `map_add` field. -/
+noncomputable def alongEquiv (bc : IsBaseChangeOf h d' d) {U : Scheme.{u}} (g : U ⟶ T') :
+    letI := d'.ab.addCommGroup g
+    letI := d.ab.addCommGroup (g ≫ h)
+    RelPoint d'.f g ≃+ RelPoint d.f (g ≫ h) :=
+  letI := d'.ab.addCommGroup g
+  letI := d.ab.addCommGroup (g ≫ h)
+  { toFun := RelPoint.along bc.map bc.isPullback.w
+    invFun := bc.alongInv
+    left_inv := fun x => bc.along_injective (by rw [bc.alongInv_val_comp]; rfl)
+    right_inv := fun y => Subtype.ext (bc.alongInv_val_comp y)
+    map_add' := bc.map_add }
+
+@[simp] lemma alongEquiv_val (bc : IsBaseChangeOf h d' d) {U : Scheme.{u}} (g : U ⟶ T')
+    (x : RelPoint d'.f g) : (bc.alongEquiv g x).1 = x.1 ≫ bc.map := rfl
+
+/-- **Base changes compose**: `d₁` a base change of `d₂` along `a` and
+`d₂` one of `d₃` along `b` make `d₁` one of `d₃` along `a ≫ b`.  The
+cartesian square is `IsPullback.paste_vert`; the three remaining fields are
+the two given ones chained, with the base-point associativity absorbed by
+`AbelianSchemeStruct.zero_val_congr` / `add_val_congr`. -/
+noncomputable def comp {T₁ T₂ T₃ : Scheme.{u}} {a : T₁ ⟶ T₂} {b : T₂ ⟶ T₃}
+    {d₁ : Gamma0Datum N T₁} {d₂ : Gamma0Datum N T₂} {d₃ : Gamma0Datum N T₃}
+    (bc₁ : IsBaseChangeOf a d₁ d₂) (bc₂ : IsBaseChangeOf b d₂ d₃) :
+    IsBaseChangeOf (a ≫ b) d₁ d₃ where
+  map := bc₁.map ≫ bc₂.map
+  isPullback := bc₁.isPullback.paste_vert bc₂.isPullback
+  map_zero := by
+    intro U g
+    refine Subtype.ext ?_
+    have h₁ : (d₁.ab.zero g).1 ≫ bc₁.map = (d₂.ab.zero (g ≫ a)).1 :=
+      congrArg Subtype.val (bc₁.map_zero g)
+    have h₂ : (d₂.ab.zero (g ≫ a)).1 ≫ bc₂.map = (d₃.ab.zero ((g ≫ a) ≫ b)).1 :=
+      congrArg Subtype.val (bc₂.map_zero (g ≫ a))
+    show (d₁.ab.zero g).1 ≫ bc₁.map ≫ bc₂.map = (d₃.ab.zero (g ≫ a ≫ b)).1
+    rw [← Category.assoc, h₁, h₂]
+    exact AbelianSchemeStruct.zero_val_congr d₃.ab (Category.assoc g a b)
+  map_add := by
+    intro U g x y
+    refine Subtype.ext ?_
+    have h₁ : (d₁.ab.add x y).1 ≫ bc₁.map
+        = (d₂.ab.add (RelPoint.along bc₁.map bc₁.isPullback.w x)
+            (RelPoint.along bc₁.map bc₁.isPullback.w y)).1 :=
+      congrArg Subtype.val (bc₁.map_add x y)
+    have h₂ : ∀ z w : RelPoint d₂.f (g ≫ a), (d₂.ab.add z w).1 ≫ bc₂.map
+        = (d₃.ab.add (RelPoint.along bc₂.map bc₂.isPullback.w z)
+            (RelPoint.along bc₂.map bc₂.isPullback.w w)).1 :=
+      fun z w => congrArg Subtype.val (bc₂.map_add z w)
+    show (d₁.ab.add x y).1 ≫ bc₁.map ≫ bc₂.map
+        = (d₃.ab.add (RelPoint.along (bc₁.map ≫ bc₂.map) (bc₁.isPullback.paste_vert
+              bc₂.isPullback).w x)
+            (RelPoint.along (bc₁.map ≫ bc₂.map) (bc₁.isPullback.paste_vert
+              bc₂.isPullback).w y)).1
+    rw [← Category.assoc, h₁, h₂]
+    exact AbelianSchemeStruct.add_val_congr d₃.ab (Category.assoc g a b) _ _ _ _
+      (Category.assoc _ _ _) (Category.assoc _ _ _)
+  liesIn_iff := by
+    intro U g x
+    rw [bc₁.liesIn_iff x, bc₂.liesIn_iff (RelPoint.along bc₁.map bc₁.isPullback.w x)]
+    exact RelPoint.liesIn_congr _ (Category.assoc x.1 bc₁.map bc₂.map)
+
+end IsBaseChangeOf
+
+/-- **From a fine moduli scheme with a chosen affine presentation to
+`RigidifiedModuli`** (PROVEN 2026-07-27) — the working form of
+`nonempty_rigidifiedModuli_of_isAffine` below, stated for a chosen
+isomorphism `φ` rather than for the bare `IsAffine`, so that the ring `A`
+is a plain `Type` and no `CommRingCat` carrier juggling enters the
+transport itself.
+
+## How it is proven
+
+`dM' := Gamma0BaseChange.datumBC φ.hom R.dM` is the datum on `Spec A`,
+with `dbc` its base-change relation to `R.dM`; this is exactly what
+`exists_gamma0Datum_baseChange` was split out to supply.  The level
+structure is `dbc.alongInv` applied to `RelPoint.pre φ.hom _ R.lvlM.P`
+(and `Q`), and `geom_basis` transports because `dbc.alongEquiv` is an
+*additive* bijection: `n • x = 0` and the `∃!` both cross it, the first by
+`map_nsmul` plus injectivity, the second by `existsUnique_congr`.
+
+The universal property is the substantial half.  Given `T, d, L` it takes
+the unique `m₀ : T ⟶ R.M` from `R.universal` and returns `m₀ ≫ φ.inv`; the
+base-change datum over `Spec A` is obtained by *cancelling* `dbc` out of
+`bc₀`, with `k := dbc.isPullback.lift (d.f ≫ m₀ ≫ φ.inv) bc₀.map _` and
+cartesianness by `IsPullback.of_bot` — the same pasting step already used
+for `Gamma0BaseChange.isPullback_iota`.  Uniqueness runs the other way,
+composing the given `bc₁` with `dbc` through `IsBaseChangeOf.comp` and
+feeding the result to `R.universal`'s uniqueness clause.
+
+**The one real obstacle, and how it is dealt with**, since it will recur in
+any transport of this shape: the base points do not match definitionally.
+`RelPoint.along dbc.map` sends a point over `g ≫ (m₀ ≫ φ.inv)` to one over
+`(g ≫ m₀ ≫ φ.inv) ≫ φ.hom`, while `RelPoint.along bc₀.map` lands over
+`g ≫ m₀`; the two agree propositionally and the relative points therefore
+inhabit *different types*, so no `rw` bridges them.  Every step of the
+universal property is instead stated on the **underlying morphisms**,
+where the base index does not appear at all, and the residual
+identifications are absorbed by `AbelianSchemeStruct.zero_val_congr`,
+`AbelianSchemeStruct.add_val_congr` and `RelPoint.liesIn_congr`.  Those
+three lemmas exist for no other purpose. -/
+theorem nonempty_rigidifiedModuli_of_iso {N n : ℕ} (R : RigidifiedModuliScheme N n)
+    {A : Type} [CommRing A] (φ : Spec (CommRingCat.of A) ≅ R.M) :
+    Nonempty (RigidifiedModuli N n) := by
+  classical
+  -- the transported datum, and its base-change relation to the universal one
+  let dM' : Gamma0Datum N (Spec (CommRingCat.of A)) := Gamma0BaseChange.datumBC φ.hom R.dM
+  let dbc : IsBaseChangeOf φ.hom dM' R.dM := Gamma0BaseChange.isBaseChangeBC φ.hom R.dM
+  -- the transported level structure, defined by pulling `R.lvlM` back through `dbc`
+  let P' : RelPoint dM'.f (𝟙 (Spec (CommRingCat.of A))) :=
+    dbc.alongInv (RelPoint.pre φ.hom (by simp) R.lvlM.P)
+  let Q' : RelPoint dM'.f (𝟙 (Spec (CommRingCat.of A))) :=
+    dbc.alongInv (RelPoint.pre φ.hom (by simp) R.lvlM.Q)
+  have hP' : P'.1 ≫ dbc.map = φ.hom ≫ R.lvlM.P.1 := dbc.alongInv_val_comp _
+  have hQ' : Q'.1 ≫ dbc.map = φ.hom ≫ R.lvlM.Q.1 := dbc.alongInv_val_comp _
+  -- the level structure transports because `along` is an additive bijection
+  have hpre : ∀ {K : Type} [Field K] [IsAlgClosed K]
+      (t : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of A))
+      (X : RelPoint dM'.f (𝟙 (Spec (CommRingCat.of A))))
+      (Y : RelPoint R.dM.f (𝟙 R.M)), X.1 ≫ dbc.map = φ.hom ≫ Y.1 →
+      dbc.alongEquiv t (RelPoint.pre t (Category.comp_id t) X)
+        = RelPoint.pre (t ≫ φ.hom) (Category.comp_id _) Y := by
+    intro K _ _ t X Y hXY
+    refine Subtype.ext ?_
+    show (t ≫ X.1) ≫ dbc.map = (t ≫ φ.hom) ≫ Y.1
+    rw [Category.assoc, hXY, Category.assoc]
+  let lvl : FullLevelStructure n dM' :=
+    { P := P'
+      Q := Q'
+      geom_basis := by
+        intro K _ _ t x
+        letI := dM'.ab.addCommGroup t
+        letI := R.dM.ab.addCommGroup (t ≫ φ.hom)
+        have hb := R.lvlM.geom_basis K (t ≫ φ.hom) (dbc.alongEquiv t x)
+        rw [show (n • x = 0) ↔ (n • dbc.alongEquiv t x = 0) by
+              rw [← map_nsmul (dbc.alongEquiv t) n x, ← (dbc.alongEquiv t).map_zero,
+                (dbc.alongEquiv t).injective.eq_iff], hb]
+        refine existsUnique_congr fun ab => ?_
+        rw [← hpre t P' R.lvlM.P hP', ← hpre t Q' R.lvlM.Q hQ',
+          ← map_nsmul (dbc.alongEquiv t), ← map_nsmul (dbc.alongEquiv t),
+          ← (dbc.alongEquiv t).map_add, (dbc.alongEquiv t).injective.eq_iff] }
+  refine ⟨{ A := A, strM := φ.hom ≫ R.strM, dM := dM', lvlM := lvl, universal := ?_ }⟩
+  intro T g d L
+  obtain ⟨m₀, ⟨bc₀, e₁, e₂⟩, huniq⟩ := R.universal g d L
+  refine ⟨m₀ ≫ φ.inv, ?_, ?_⟩
+  · -- existence: cancel `dbc` out of `bc₀`
+    have hmφ : (m₀ ≫ φ.inv) ≫ φ.hom = m₀ := by simp
+    have hw : (d.f ≫ m₀ ≫ φ.inv) ≫ φ.hom = bc₀.map ≫ R.dM.f := by
+      rw [Category.assoc, hmφ]; exact bc₀.isPullback.w
+    let k : d.E ⟶ dM'.E := dbc.isPullback.lift (d.f ≫ m₀ ≫ φ.inv) bc₀.map hw
+    have hk₁ : k ≫ dM'.f = d.f ≫ m₀ ≫ φ.inv := dbc.isPullback.lift_fst _ _ _
+    have hk₂ : k ≫ dbc.map = bc₀.map := dbc.isPullback.lift_snd _ _ _
+    have hsq : IsPullback d.f k (m₀ ≫ φ.inv) dM'.f := by
+      refine IsPullback.of_bot ?_ hk₁.symm dbc.isPullback
+      rw [hk₂, hmφ]; exact bc₀.isPullback
+    let bc : IsBaseChangeOf (m₀ ≫ φ.inv) d dM' :=
+      { map := k
+        isPullback := hsq
+        map_zero := by
+          intro U u
+          refine dbc.along_injective ?_
+          have z₁ : (d.ab.zero u).1 ≫ bc₀.map = (R.dM.ab.zero (u ≫ m₀)).1 :=
+            congrArg Subtype.val (bc₀.map_zero u)
+          have z₂ : (dM'.ab.zero (u ≫ m₀ ≫ φ.inv)).1 ≫ dbc.map
+              = (R.dM.ab.zero ((u ≫ m₀ ≫ φ.inv) ≫ φ.hom)).1 :=
+            congrArg Subtype.val (dbc.map_zero (u ≫ m₀ ≫ φ.inv))
+          show ((d.ab.zero u).1 ≫ k) ≫ dbc.map
+              = (dM'.ab.zero (u ≫ m₀ ≫ φ.inv)).1 ≫ dbc.map
+          rw [Category.assoc, hk₂, z₁, z₂]
+          exact AbelianSchemeStruct.zero_val_congr R.dM.ab
+            (by rw [Category.assoc, hmφ])
+        map_add := by
+          intro U u x y
+          refine dbc.along_injective ?_
+          have hx : x.1 ≫ bc₀.map = (x.1 ≫ k) ≫ dbc.map := by rw [Category.assoc, hk₂]
+          have hy : y.1 ≫ bc₀.map = (y.1 ≫ k) ≫ dbc.map := by rw [Category.assoc, hk₂]
+          have z₁ : (d.ab.add x y).1 ≫ bc₀.map
+              = (R.dM.ab.add (RelPoint.along bc₀.map bc₀.isPullback.w x)
+                  (RelPoint.along bc₀.map bc₀.isPullback.w y)).1 :=
+            congrArg Subtype.val (bc₀.map_add x y)
+          have z₂ : (dM'.ab.add (RelPoint.along k hsq.w x) (RelPoint.along k hsq.w y)).1
+                ≫ dbc.map
+              = (R.dM.ab.add
+                  (RelPoint.along dbc.map dbc.isPullback.w (RelPoint.along k hsq.w x))
+                  (RelPoint.along dbc.map dbc.isPullback.w (RelPoint.along k hsq.w y))).1 :=
+            congrArg Subtype.val (dbc.map_add (RelPoint.along k hsq.w x)
+              (RelPoint.along k hsq.w y))
+          show ((d.ab.add x y).1 ≫ k) ≫ dbc.map
+              = (dM'.ab.add (RelPoint.along k hsq.w x) (RelPoint.along k hsq.w y)).1 ≫ dbc.map
+          rw [Category.assoc, hk₂, z₁, z₂]
+          exact AbelianSchemeStruct.add_val_congr R.dM.ab (by rw [Category.assoc, hmφ]) _ _ _ _
+            hx hy
+        liesIn_iff := by
+          intro U u x
+          rw [bc₀.liesIn_iff x, dbc.liesIn_iff (RelPoint.along k hsq.w x)]
+          exact RelPoint.liesIn_congr _ (by
+            show x.1 ≫ bc₀.map = (x.1 ≫ k) ≫ dbc.map
+            rw [Category.assoc, hk₂]) }
+    refine ⟨bc, ?_, ?_⟩
+    · refine dbc.isPullback.hom_ext ?_ ?_
+      · show (L.P.1 ≫ k) ≫ dM'.f = ((m₀ ≫ φ.inv) ≫ P'.1) ≫ dM'.f
+        rw [Category.assoc, hk₁, ← Category.assoc, L.P.2, Category.id_comp,
+          Category.assoc, P'.2, Category.comp_id]
+      · show (L.P.1 ≫ k) ≫ dbc.map = ((m₀ ≫ φ.inv) ≫ P'.1) ≫ dbc.map
+        rw [Category.assoc, hk₂, e₁, Category.assoc, hP', ← Category.assoc, hmφ]
+    · refine dbc.isPullback.hom_ext ?_ ?_
+      · show (L.Q.1 ≫ k) ≫ dM'.f = ((m₀ ≫ φ.inv) ≫ Q'.1) ≫ dM'.f
+        rw [Category.assoc, hk₁, ← Category.assoc, L.Q.2, Category.id_comp,
+          Category.assoc, Q'.2, Category.comp_id]
+      · show (L.Q.1 ≫ k) ≫ dbc.map = ((m₀ ≫ φ.inv) ≫ Q'.1) ≫ dbc.map
+        rw [Category.assoc, hk₂, e₂, Category.assoc, hQ', ← Category.assoc, hmφ]
+  · -- uniqueness: compose with `dbc` and use uniqueness upstairs
+    rintro m₁ ⟨bc₁, f₁, f₂⟩
+    have := huniq (m₁ ≫ φ.hom) ⟨bc₁.comp dbc, ?_, ?_⟩
+    · rw [← this, Category.assoc, φ.hom_inv_id, Category.comp_id]
+    · show L.P.1 ≫ bc₁.map ≫ dbc.map = (m₁ ≫ φ.hom) ≫ R.lvlM.P.1
+      rw [← Category.assoc, f₁, Category.assoc, hP', ← Category.assoc]
+    · show L.Q.1 ≫ bc₁.map ≫ dbc.map = (m₁ ≫ φ.hom) ≫ R.lvlM.Q.1
+      rw [← Category.assoc, f₂, Category.assoc, hQ', ← Category.assoc]
+
+/-- **From an affine fine moduli scheme to `RigidifiedModuli`** (PROVEN
+2026-07-27) — the pure FORMALISATION third of `exists_rigidifiedModuli`,
+with **no Katz–Mazur citation left in it**, and the reason the two
+citation leaves above may forget about affine presentations entirely.
+
+It is `nonempty_rigidifiedModuli_of_iso` at the isomorphism
+`Scheme.isoSpec.symm`, with the coordinate ring taken to be the carrier of
+`Γ(R.M, ⊤)`.  Splitting the two is what keeps the `CommRingCat`-carrier
+step (`A : Type` versus `A : CommRingCat`) out of the transport proof,
+where it would have interacted with the base-point transports for no
+reason; see that theorem's docstring for the mathematics and for the
+base-point trap it walks around.
 
 ## Faithfulness
 
-No hypothesis is decorative: `hR` is what supplies `φ`, and without it
-there is no ring `A` at all.  Neither `hN` nor `hn` appears, and neither
-is needed — the statement is true for every `N` and `n` for which an
-inhabitant of `RigidifiedModuliScheme N n` exists, which is the honest
-generality. -/
+No hypothesis is decorative: `hR` is what supplies the isomorphism, and
+without it there is no ring `A` at all.  Neither `N` nor `n` is
+constrained, and neither needs to be — the statement holds for every `N`
+and `n` for which an inhabitant of `RigidifiedModuliScheme N n` exists,
+which is the honest generality; `hN` and `hn` live on the two citation
+leaves, where they are load-bearing. -/
 theorem nonempty_rigidifiedModuli_of_isAffine {N n : ℕ}
     (R : RigidifiedModuliScheme N n) (hR : IsAffine R.M) :
     Nonempty (RigidifiedModuli N n) :=
-  sorry
+  letI := hR
+  nonempty_rigidifiedModuli_of_iso R (A := (Γ(R.M, ⊤) : CommRingCat).carrier)
+    R.M.isoSpec.symm
 
 /-- **Katz–Mazur representability: the rigidified moduli scheme exists and
 is affine** (ASSEMBLED 2026-07-27; no longer a leaf) — the pure CITATION
@@ -2283,7 +2519,8 @@ split three ways along the line "representable" / "affine" / "transport":
   `R.M ≅ Spec Γ(R.M, ⊤)`.  **No citation at all**: it is the Lean work,
   put on the far side of a hypothesis from the mathematics exactly as
   `exists_gamma0GITPresentation_of_rigidified` is put on the far side of
-  this node.
+  this node.  **PROVEN 2026-07-27**, so it is a discharged hypothesis and
+  not an open leaf.
 
 The fine moduli property `universal` is still what "representable" means,
 and the affineness is still what `A : Type` with the moduli scheme spelled
@@ -17207,3 +17444,4 @@ theorem y0HasNoRationalPoint_seventyFive : Y0HasNoRationalPoint 75 :=
   y0HasNoRationalPoint_of_sieveLevel 75 (by decide) (by decide) (by decide)
 
 end Fermat
+
