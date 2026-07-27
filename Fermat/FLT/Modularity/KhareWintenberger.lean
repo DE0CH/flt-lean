@@ -29993,11 +29993,128 @@ theorem exists_heckeTrace_of_prime_cyclic_step
   · -- INERT half: the residual citation
     exact hSin w hwin (fun vL hvL hne => hsplit ⟨vL, hvL, hne⟩)
 
+/-- **Arthur–Clozel cyclic descent of a CUSPIDAL Hilbert eigensystem, prime
+degree, at the NON-SPLIT places, IN THE SHAPE THE REFERENCE ACTUALLY
+DELIVERS** — Arthur–Clozel, *Simple Algebras, Base Change, and the Advanced
+Theory of the Trace Formula*, Ann. of Math. Studies 120 (1989), Ch. 3
+Thm 4.2(d); Langlands, *Base Change for GL(2)*, Ann. of Math. Studies 96
+(1980).  SORRIED CITATION.
+
+**THIS IS THE CUSPIDAL ANALOGUE OF
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` ABOVE, AND IT
+IS THE 2026-07-27 CUT OF THE CONSUMER BELOW.**  Read that leaf's docstring
+first: everything it records about the `η`-TORSOR — why the reference
+returns the descended object only up to a character of `Gal(L/M)`, why the
+Hecke field must be existential (Dickson field growth), and the explicit
+counterexample refuting the a-priori pinning route — applies here verbatim
+and is not repeated.  The ONLY difference between the two statements is the
+fourth conjunct: this one additionally carries the RAMANUJAN–PETERSSON
+bound `‖φ(a w)‖ ≤ 2√(Nw)` on the descended eigenvalue, at every complex
+embedding of the descended Hecke field.
+
+WHY THE BOUND IS ON `a` AND NOT ON THE TWISTED VALUE.  Thm 4.2(d) returns
+a CUSPIDAL `π` over `M`; cuspidality is the theorem's OUTPUT, so the bound
+belongs to the object the reference produces — the untwisted eigensystem
+`a` — and NOT to `ζ w · ψM (a w)`, which is a bookkeeping artefact of the
+torsor.  Nothing is lost: `ζ w` is a `p`-th root of unity, the consumer
+proves it lies in `ψM(EM)`, and a root of unity has complex absolute value
+`1`, so the two bounds are equivalent once the twist is removed.  This is
+exactly why the split is faithful: it does NOT peel cuspidality off into a
+second citation (the route the consumer's ATOMICITY AUDIT rejects) — the
+one citation still returns a cuspidal object, and what is factored out of
+it is only the twist bookkeeping.
+
+FAITHFULNESS OF THE HYPOTHESES.  `hSL` is the `L`-side eigensystem in
+HILBERT-NEWFORM SHAPE (`X² − a_w·X + Nw`: parallel weight `2`, trivial
+nebentypus), `hcusp` is cuspidality of the `L`-side object as the
+Ramanujan bound — which excludes the Eisenstein eigensystem `a_w = 1 + Nw`,
+the one object for which Thm 4.2(d) fails — and `hinv` is invariance under
+`Aut(L/ℚ)`, which contains `Gal(L/M)` because `hCD`/`hnormal` make `L/M`
+Galois.  So the theorem's three classical inputs are all present among the
+binders, and none of them is decorative.
+
+CHECK THAT WOULD REFUTE THIS STATEMENT: exhibit a `Gal(L/M)`-invariant
+cuspidal Hilbert eigensystem over `L` of parallel weight `2` and trivial
+nebentypus whose descent along a cyclic degree-`p` extension either fails
+to exist, or exists only with eigenvalues generating a field of infinite
+degree over `EL`, or exists with a non-cuspidal (Eisenstein) descent while
+`hcusp` holds upstairs.
+
+SOUNDNESS AUDIT.  (i) Direct: the classical theorem, whose hypotheses are
+present among the binders.  (ii) Collapse: the arithmetic package (an
+irreducible hardly ramified mod-`ℓ` representation, `ℓ ≥ 5`) is
+classically unsatisfiable — the module headline — so the statement is
+classically true for every package.  Route (ii) is a soundness
+justification only, NOT an available Lean discharge: the headline CONSUMES
+this subtree (see the ROUTE AUDIT on `exists_heckeTrace_of_prime_cyclic_step`),
+so `absurd hirr …` is circular here.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (p : ℕ) (hp : p.Prime)
+    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
+    (EL : Type u) [Field EL] [NumberField EL]
+    (ψL : EL →+* AlgebraicClosure ℚ_[ℓ])
+    (SL : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C))))
+    (aL : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C)) → EL)
+    (hSL : ∀ w ∉ SL,
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w).map Wit.ιO =
+        (Polynomial.X ^ 2 - Polynomial.C (aL w) * Polynomial.X +
+          Polynomial.C ((Ideal.absNorm w.asIdeal : ℕ) : EL)).map ψL)
+    (hcusp : ∀ w ∉ SL, ∀ φ : EL →+* ℂ,
+      ‖φ (aL w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal))
+    (hinv : ∀ τ : IntermediateField.fixedField C ≃ₐ[ℚ] IntermediateField.fixedField C,
+      ∀ w ∉ SL, NumberField.finitePlaceEquiv τ.toRingEquiv w ∉ SL →
+        aL (NumberField.finitePlaceEquiv τ.toRingEquiv w) = aL w) :
+    ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
+      (ψM : EM →+* AlgebraicClosure ℚ_[ℓ]) (ιM : EL →+* EM),
+      (∀ x : EL, ψM (ιM x) = ψL x) ∧
+      ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D))))
+        (a δ : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D)) → EM)
+        (ζ : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField D)) → AlgebraicClosure ℚ_[ℓ]),
+        ∀ w ∉ S,
+          (∀ v ∉ SL, Ideal.absNorm v.asIdeal ≠ Ideal.absNorm w.asIdeal) →
+          ζ w ^ p = 1 ∧
+          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+            w).coeff 1) = ζ w * ψM (a w) ∧
+          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+            w).coeff 0) = ζ w ^ 2 * ψM (δ w) ∧
+          (∀ φ : EM →+* ℂ,
+            ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)) :=
+  sorry
+
 /-- **Cyclic descent of a CUSPIDAL Hilbert eigensystem, prime degree, at the
 NON-SPLIT places** — Arthur–Clozel, *Simple Algebras, Base Change, and the
 Advanced Theory of the Trace Formula*, Ann. of Math. Studies 120 (1989),
 Ch. 3 Thm 4.2(d); Langlands, *Base Change for GL(2)*, Ann. of Math. Studies
-96 (1980).  SORRIED CITATION.
+96 (1980).
+
+**PROVEN 2026-07-27 (SECOND OWNER)** over the torsor-shaped citation
+`exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert`
+immediately above — the same dévissage `exists_heckeTrace_of_prime_cyclic_step_of_inert`
+already makes over `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`,
+now carrying the cuspidality clause through it.  What is factored out of the
+citation and PROVEN here is the removal of the base-change character twist,
+together with the observation that a twist of absolute value `1` cannot move
+an archimedean bound.  See the ATOMICITY AUDIT below for why this axis is
+available while the cuspidality-peeling axis is not.
 
 **THIS IS THE REPAIRED FORM OF THE CITATION, AND THE POINT OF THE
 2026-07-27 CUT-LEVEL REPAIR.**  Thm 4.2(d) takes as input a CUSPIDAL
@@ -30086,14 +30203,58 @@ was NOT taken, for two reasons, in increasing order of importance:
   descended system's cuspidality rest on a Ramanujan statement about a form
   whose existence the first citation had just asserted.
 
-AXIS NOT SEARCHED: any route that first constructs the descended
-automorphic object.  That is the citation itself, and nothing short of it
-will do — in particular the coefficient field `EM` must be ONE number field
-serving ALL of the infinitely many places at once, which is an automorphic
-finiteness statement with no elementary substitute.
+AXIS NOT SEARCHED (recorded 2026-07-27 by the first auditor; TAKEN
+2026-07-27 by the second, and it is the axis this node is now cut along):
+any route that first constructs the descended automorphic object.  That is
+the citation itself, and nothing short of it will do — in particular the
+coefficient field `EM` must be ONE number field serving ALL of the
+infinitely many places at once, which is an automorphic finiteness
+statement with no elementary substitute.
 
-CONCLUSION: this leaf is IRREDUCIBLE at this pin and correctly stated.  Do
-not decompose it; it needs Arthur–Clozel.
+WHAT THE FIRST AUDIT MISSED, AND WHY THE VERDICT WAS ONLY AS WIDE AS ITS
+AXIS.  It ranged over cuts of the CONCLUSION — which clause to drop — and
+correctly found none.  It did not range over cuts of the CITATION'S SHAPE,
+even though this module had already made exactly such a cut one node up:
+`exists_heckeTrace_of_prime_cyclic_step_of_inert` is PROVEN over
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`, which states
+Thm 4.2(d) in the shape the reference actually delivers — descent only up
+to the torsor of characters of `Gal(L/M)` — and then removes the twist
+formally, using the cyclotomic determinant to force the `p`-th root of
+unity `ζ w` into `ψM(EM)`.  The counterexample to "irreducible" was
+therefore sitting in the same file, in the sibling that consumes this node.
+
+THE CUT, AND WHY IT IS NOT THE REJECTED ONE.  The rejected route peels the
+cuspidality clause OFF the conclusion and re-derives it from a SECOND
+citation (`weilBound_of_charFrob_baseChange` at `D`), which both fails to
+typecheck without absorbing the automorphy-free split half and replaces one
+honest citation by two.  This cut does neither: the citation
+`exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert` still
+RETURNS a cuspidal object — the Ramanujan bound is its fourth conjunct, on
+the untwisted eigenvalue `a`, exactly where Thm 4.2(d) puts it — and no
+second citation appears anywhere in this proof.  What is factored out is
+only the torsor bookkeeping, and that is PROVEN:
+
+* the cyclotomic determinant (`charFrob_baseChange_coeff_zero_eq_absNorm`)
+  identifies `(charFrob w).coeff 0` with `Nw`, so `ζ w ^ 2 = ψM (Nw / δ w)`
+  lies in `ψM(EM)`; a `p`-th root of unity whose square lies in a subfield
+  lies in it (`p = 2` by factoring `ζ² − 1`, `p` odd by
+  `ζ = (ζ²)^{(p+1)/2}`), giving `e : EM` with `ψM e = ζ w`;
+* `ψM` is injective, so `e ^ p = 1` in `EM` itself, hence `‖φ e‖ = 1` at
+  every complex embedding `φ` (`Complex.norm_eq_one_of_pow_eq_one`).  The
+  descended eigenvalue `aM w := −(e · a w)` therefore satisfies the value
+  identity by construction and inherits the Ramanujan bound from the
+  citation's `a` unchanged.
+
+The archimedean half is the load-bearing new observation: the twist is
+invisible to the bound because it is a root of unity, which is precisely
+why cuspidality can be carried THROUGH the torsor rather than peeled off
+it.  CHECK THAT WOULD REFUTE THIS CUT: exhibit a `ζ` with `ζ ^ p = 1`,
+`ζ ∈ ψM(EM)`, and a complex embedding `φ` of `EM` with `‖φ (ψM⁻¹ ζ)‖ ≠ 1`.
+
+CONCLUSION (superseding the first audit's): the RESIDUAL leaf
+`exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert` is
+irreducible at this pin and needs Arthur–Clozel; this node is not, and is
+now proven over it.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -30138,8 +30299,71 @@ theorem exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert
           ψM (aM w) = - Wit.ιO (((ρ.map (algebraMap ℚ
             (IntermediateField.fixedField D))).charFrob w).coeff 1) ∧
           (∀ φ : EM →+* ℂ,
-            ‖φ (aM w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)) :=
-  sorry
+            ‖φ (aM w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)) := by
+  classical
+  -- Arthur–Clozel Ch. 3 Thm 4.2(d), in the shape the reference delivers: the
+  -- descended CUSPIDAL eigensystem `a` over a Hecke field `EM ⊇ EL` (the field
+  -- GROWS across the step, by Dickson), together with the `Gal(L/M)`-character
+  -- twist `ζ` that the torsor leaves undetermined.
+  obtain ⟨EM, _, _, ψM, ιM, hψι, S₀, a, δ, ζ, hdata⟩ :=
+    exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert hℓodd hℓ5
+      hZinj hrank hρ Wit C D hCD hnormal p hp hcard EL ψL SL aL hSL hcusp hinv
+  -- the finitely many places over `ℓ`, where `ρ` is ramified and the
+  -- cyclotomic-determinant lemma does not apply
+  obtain ⟨Sℓ, hSℓ⟩ := exists_finset_forall_natCast_notMem_asIdeal
+    (IntermediateField.fixedField D) ℓ (Fact.out : ℓ.Prime).ne_zero
+  -- the untwisting element, chosen once for every place at which it exists
+  obtain ⟨e, he⟩ : ∃ e : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField D)) → EM,
+      ∀ w, (∃ x : EM, ψM x = ζ w) → ψM (e w) = ζ w := by
+    refine ⟨fun w => if h : ∃ x : EM, ψM x = ζ w then h.choose else 1, fun w h => ?_⟩
+    show ψM (if h : ∃ x : EM, ψM x = ζ w then h.choose else 1) = ζ w
+    rw [dif_pos h]
+    exact h.choose_spec
+  refine ⟨EM, inferInstance, inferInstance, ψM, ιM, hψι, S₀ ∪ Sℓ,
+    fun w => -(e w * a w), fun w hw hinert => ?_⟩
+  simp only [Finset.mem_union, not_or] at hw
+  obtain ⟨hw₀, hwℓ⟩ := hw
+  obtain ⟨hζp, hcoeff1, hcoeff0, hbound⟩ := hdata w hw₀ hinert
+  -- the constant coefficient is the rational integer `Nw` (cyclotomic determinant)
+  have hdet : ((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+      w).coeff 0 = (Ideal.absNorm w.asIdeal : O) :=
+    charFrob_baseChange_coeff_zero_eq_absNorm hℓodd hrank hρ _ w (hSℓ w hwℓ)
+  have hNw : (Ideal.absNorm w.asIdeal : EM) ≠ 0 :=
+    Nat.cast_ne_zero.mpr fun h => w.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
+  have hNψ : ψM ((Ideal.absNorm w.asIdeal : EM)) = ζ w ^ 2 * ψM (δ w) := by
+    rw [← hcoeff0, hdet, map_natCast, map_natCast]
+  have hδne : ψM (δ w) ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hNψ
+    exact (map_ne_zero_iff _ ψM.injective).mpr hNw hNψ
+  -- the SQUARE of the base-change twist is therefore forced into `ψM(EM)`
+  have hζsq : ζ w ^ 2 = ψM ((Ideal.absNorm w.asIdeal : EM) / δ w) := by
+    rw [map_div₀, hNψ, mul_div_assoc, div_self hδne, mul_one]
+  -- and a `p`-th root of unity whose square lies in a subfield lies in it
+  have hex : ∃ x : EM, ψM x = ζ w := by
+    rcases hp.eq_two_or_odd' with hp2 | hpodd
+    · rw [hp2] at hζp
+      have h1 : (ζ w - 1) * (ζ w + 1) = 0 := by linear_combination hζp
+      rcases mul_eq_zero.mp h1 with h | h
+      · exact ⟨1, by rw [map_one]; linear_combination -h⟩
+      · exact ⟨-1, by rw [map_neg, map_one]; linear_combination -h⟩
+    · obtain ⟨m, hm⟩ := hpodd
+      refine ⟨((Ideal.absNorm w.asIdeal : EM) / δ w) ^ (m + 1), ?_⟩
+      rw [map_pow, ← hζsq, ← pow_mul]
+      have h2 : 2 * (m + 1) = p + 1 := by omega
+      rw [h2, pow_succ, hζp, one_mul]
+  have hew : ψM (e w) = ζ w := he w hex
+  -- `ψM` is injective, so the untwisting element is a `p`-th root of unity in `EM`
+  have hep : e w ^ p = 1 := ψM.injective (by rw [map_pow, hew, hζp, map_one])
+  refine ⟨?_, fun φ => ?_⟩
+  · -- the value identity: the twist is removed exactly
+    rw [map_neg, map_mul, hew, hcoeff1]
+  · -- the Ramanujan bound survives the twist, a root of unity having modulus `1`
+    have h1 : ‖φ (e w)‖ = 1 :=
+      Complex.norm_eq_one_of_pow_eq_one (by rw [← map_pow, hep, map_one]) hp.ne_zero
+    rw [map_neg, norm_neg, map_mul, norm_mul, h1, one_mul]
+    exact hbound φ
 
 /-- **One PRIME-degree cyclic step of solvable base change** (PROVEN,
 2026-07-25, from the cuspidal-descent citation
