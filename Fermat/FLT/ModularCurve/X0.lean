@@ -5239,20 +5239,24 @@ Three things then stop being assumptions:
 `exists_x0JReductionAt` — moved here from the `j`-map subsection, since
 it now consumes `SpecLoc` — is PROVEN from `exists_x0JNeronDatum`.
 
-**What is left open, and it is genuinely smaller than what it replaced.**
+**Exactly ONE leaf is left open, and the net sorry count is unchanged.**
+`exists_x0JNeronDatum` — the Deligne–Rapoport / Igusa smooth model over
+`ℤ_(q)` for `q ∤ N`, together with its two fibres — is the same missing
+object as `exists_x0NeronDatum` above, and it is where all the arithmetic
+now sits.  Everything else this subsection needs is PROVEN here,
+including the two facts that would most naturally have been posited:
 
-* `exists_x0JNeronDatum` — the Deligne–Rapoport / Igusa smooth model over
-  `ℤ_(q)` for `q ∤ N`, together with its two fibres.  This is the same
-  missing object as `exists_x0NeronDatum` above and it is where all the
-  arithmetic now sits.
 * `exists_relSectionAlong_of_special` — an integral section of the proper
   model whose SPECIAL value lies in the open part `𝒴` lies in `𝒴`
-  throughout.  This is not modular at all: `jZ` is an open immersion, so
-  the section's preimage of `𝒴` is open in `Spec ℤ_(q)` and contains the
-  closed point, and the only open of the spectrum of a local ring
-  containing the closed point is the whole space
-  (`IsLocalRing.closedPoint_mem_iff`).  `IsOpenImmersion.lift` then
-  factors the section. -/
+  throughout.  Not modular at all: `jZ` is an open immersion, so the
+  section's preimage of `𝒴` is open in `Spec ℤ_(q)`; the image of the
+  closed point lies in it (`IsReductionBase.comap_eq_closedPoint`); and
+  the only open of the spectrum of a local ring containing the closed
+  point is the whole space.  `IsOpenImmersion.lift` then factors the
+  section.
+* `IsReductionBase.isLocalRing` and `IsReductionBase.nontrivialResidue` —
+  the two consequences of `IsReductionBase` its own docstring asserts
+  informally, now derived. -/
 
 /-- **`sectionAlong` at an arbitrary base point.**
 
@@ -5340,6 +5344,60 @@ theorem IsReductionBase.padicValRat_nonneg {q : ℕ} {R : Subring ℚ} {toF : R 
     padicValNat.eq_zero_of_not_dvd (h.not_dvd_den r)
   simp only [padicValRat, hz]
   simp
+
+/-- **The residue ring is nontrivial** (PROVEN).  Were `ZMod ℓ` trivial —
+i.e. `ℓ = 1` — then `toF 1 = 0`, and `ker_eq_nonunits` would make `1` a
+non-unit.  So `ℓ ≠ 1` is a consequence of `IsReductionBase`, not a
+hypothesis, exactly as its docstring claims. -/
+theorem IsReductionBase.nontrivialResidue {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) : Nontrivial (ZMod q) := by
+  rcases subsingleton_or_nontrivial (ZMod q) with _ | hn
+  · exact absurd isUnit_one ((h.ker_eq_nonunits 1).mp (Subsingleton.elim _ _))
+  · exact hn
+
+/-- **`R` is a LOCAL ring** (PROVEN), which is the half of
+`IsReductionBase` that `exists_relSectionAlong_of_special` needs: it is
+what makes `Spec R` have a unique closed point, so that an open
+containing that point is everything.
+
+`ker_eq_nonunits` is exactly "the non-units are an ideal", read
+backwards: if `a` is not a unit then `toF a = 0`, so `toF (1 - a) = 1`,
+which is nonzero because the residue ring is nontrivial, so `1 - a` IS a
+unit. -/
+theorem IsReductionBase.isLocalRing {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) : IsLocalRing R := by
+  haveI := h.nontrivialResidue
+  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self (fun a => ?_)
+  by_cases ha : IsUnit a
+  · exact Or.inl ha
+  · refine Or.inr ?_
+    by_contra hb
+    have h1 : toF a = 0 := (h.ker_eq_nonunits a).mpr ha
+    have h2 : toF (1 - a) = 0 := (h.ker_eq_nonunits _).mpr hb
+    rw [map_sub, map_one, h1, sub_zero] at h2
+    exact one_ne_zero h2
+
+/-- **`Spec 𝔽_ℓ ⟶ Spec R` hits the CLOSED point** (PROVEN).
+
+Every point of `Spec 𝔽_ℓ` pulls back to the maximal ideal of `R`: the
+pullback of a prime is prime, hence proper, hence contained in the
+maximal ideal; and it contains `ker toF`, which IS the maximal ideal by
+`ker_eq_nonunits`.  Note `ℓ` is not assumed prime anywhere — the
+statement is about an arbitrary point of `Spec (ZMod ℓ)`, and
+`nontrivialResidue` is what guarantees there is one. -/
+theorem IsReductionBase.comap_eq_closedPoint {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) (P : PrimeSpectrum (ZMod q)) :
+    letI := h.isLocalRing
+    PrimeSpectrum.comap toF P = IsLocalRing.closedPoint R := by
+  letI := h.isLocalRing
+  apply PrimeSpectrum.ext
+  apply le_antisymm
+  · exact IsLocalRing.le_maximalIdeal (PrimeSpectrum.comap toF P).2.ne_top
+  · intro x hx
+    have hx0 : toF x = 0 := (h.ker_eq_nonunits x).mpr (IsLocalRing.mem_maximalIdeal x |>.mp hx)
+    show toF x ∈ P.asIdeal
+    rw [hx0]
+    exact Ideal.zero_mem _
 
 /-- **A Néron-pinned `j`-reduction datum for `X_0(N)` at `q`.**
 
@@ -5473,40 +5531,58 @@ structure IsX0JNeronDatum (N q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
     hj.jm y = jmGen (genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)
 
 /-- **An integral section of the proper model whose special value lies in
-the open part lies in the open part throughout** (sorry node).
+the open part lies in the open part throughout** (PROVEN).
 
-TRUE, and it is pure topology of a local base — no modular input at all.
-`jZ` is an open immersion, so `Set.range jZ.base` is open; the preimage
-of it under the section `xZ.1 : Spec R ⟶ 𝒳` is therefore open in
-`Spec R`; the hypothesis says the CLOSED point of `Spec R` lies in that
-preimage (the image of `SpecLoc.special toF` is the closed point,
-because `ker toF` is the maximal ideal by `IsReductionBase`); and the
-only open subset of the spectrum of a LOCAL ring containing the closed
-point is the whole space (`IsLocalRing.closedPoint_mem_iff`).  So
-`Set.range xZ.1.base ⊆ Set.range jZ.base` and
+Pure topology of a local base — no modular input at all, and the reason
+`red_jm` needs no further geometric assumption.  `jZ` is an open
+immersion, so `jZ.opensRange` is open; the hypothesis puts the image of
+the CLOSED point of `Spec R` inside it (the image of
+`SpecLoc.special toF` is the closed point by
+`IsReductionBase.comap_eq_closedPoint`); and the only open subset of the
+spectrum of a LOCAL ring containing the closed point is the whole space
+(`Scheme.preimage_eq_top_of_closedPoint_mem`).  So
+`Set.range xZ.1.base ⊆ Set.range jZ.base`, and
 `AlgebraicGeometry.IsOpenImmersion.lift` factors the section through
 `𝒴`.
 
-`hbase` is load-bearing twice over and is underscored only because the
-body is `sorry`: it is what makes `R` local (so that "open and contains
-the closed point" implies "everything"), and it is what identifies the
-image of `SpecLoc.special toF` with the closed point.  Drop it and the
-statement is FALSE — over a base with two closed points, a section can
-meet `𝒴` at one of them and a cusp at the other.
+`hbase` is load-bearing twice over: it is what makes `R` local (so that
+"open and contains the closed point" implies "everything"), and it is
+what identifies the image of `SpecLoc.special toF` with the closed
+point.  Drop it and the statement is FALSE — over a base with two closed
+points, a section can meet `𝒴` at one of them and a cusp at the other.
 
 Only the factorisation is asserted.  That the lift restricts to `y'` on
 the special fibre is NOT a second conjunct because it is a consequence:
 `jZ` is a mono, so `relSectionAlong jZ` is injective
 (`relSectionAlong_injective`), and `red_jm` derives it that way. -/
 theorem exists_relSectionAlong_of_special {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
-    (_hbase : IsReductionBase q R toF)
+    (hbase : IsReductionBase q R toF)
     {YZ XZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
     (model : IsX0Compactification N xstr ystr jZ)
     (xZ : RelPoint xstr (𝟙 (SpecLoc R))) (y' : RelPoint ystr (SpecLoc.special toF))
-    (_h : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) xZ
+    (hh : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) xZ
         = relSectionAlong jZ model.comm y') :
-    ∃ yZ : RelPoint ystr (𝟙 (SpecLoc R)), relSectionAlong jZ model.comm yZ = xZ :=
-  sorry
+    ∃ yZ : RelPoint ystr (𝟙 (SpecLoc R)), relSectionAlong jZ model.comm yZ = xZ := by
+  haveI := model.isOpen
+  haveI := hbase.nontrivialResidue
+  haveI := hbase.isLocalRing
+  obtain ⟨P⟩ : Nonempty (PrimeSpectrum (ZMod q)) := inferInstance
+  have heq : SpecLoc.special toF ≫ xZ.1 = y'.1 ≫ jZ := congrArg Subtype.val hh
+  have hclosed : (SpecLoc.special toF).base P = IsLocalRing.closedPoint R :=
+    hbase.comap_eq_closedPoint P
+  have hmem : xZ.1.base (IsLocalRing.closedPoint R) ∈ jZ.opensRange := by
+    rw [← hclosed]
+    have hp := congrArg (fun (f : SpecF q ⟶ XZ) => f.base P) heq
+    simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at hp
+    exact ⟨y'.1.base P, hp.symm⟩
+  have hsub : Set.range xZ.1.base ⊆ Set.range jZ.base := by
+    rintro _ ⟨z, rfl⟩
+    have htop := Scheme.preimage_eq_top_of_closedPoint_mem xZ.1 hmem
+    have hz : z ∈ xZ.1 ⁻¹ᵁ jZ.opensRange := by rw [htop]; trivial
+    exact hz
+  refine ⟨⟨IsOpenImmersion.lift jZ xZ.1 hsub, ?_⟩, ?_⟩
+  · rw [← model.comm, ← Category.assoc, IsOpenImmersion.lift_fac, xZ.2]
+  · exact Subtype.ext (IsOpenImmersion.lift_fac _ _ _)
 
 namespace IsX0JNeronDatum
 
