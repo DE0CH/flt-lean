@@ -520,6 +520,15 @@ public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 -- imports suffice and the analytic cone does NOT propagate to `Patching.lean`.
 import Mathlib.NumberTheory.LSeries.PrimesInAP
 import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
+-- `WeierstrassCurve`, `WeierstrassCurve.IsElliptic`, the affine point group
+-- `(E⁄K).Point` and the Galois action `WeierstrassCurve.Affine.Point.map` on it.
+-- These appear in the SIGNATURES of the two archimedean leaves
+-- `exists_ellipticSchemeOverField` and
+-- `exists_realWeierstrassCurveWithConjTorsion`, so the import must be PUBLIC.
+-- Note the group law on `(E⁄K).Point` needs `DecidableEq K`; both statements
+-- supply it themselves with a `letI := Classical.typeDecidableEq _` rather than
+-- taking an instance argument, so nothing downstream has to carry it.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 @[expose] public section
 
@@ -22436,14 +22445,195 @@ theorem FibrePowerData.mult_act (D : Type u) [Field D] [NumberField D]
 end Assembly
 
 end ArchimedeanFibrePower
+open CategoryTheory in
+/-- **THE GEOMETRIC HALF of the elliptic-curve leaf** (sorry leaf, cut
+2026-07-27 out of `exists_realEllipticSchemeWithConjTorsion`): a Weierstrass
+curve with invertible discriminant over an ARBITRARY field `F : Type u` is an
+elliptic scheme over `Spec F` in `Scheme.{u}`, of relative dimension `1`,
+carrying a Galois-equivariant additive identification of `E(F̄)` with the
+geometric points of the fibre.
+
+Nothing archimedean appears here, and no `ℝ`: that is the point of the cut.
+All of the analysis sits in the sibling
+`exists_realWeierstrassCurveWithConjTorsion`, and everything geometric sits
+here.
+
+**THIS IS `Fermat.exists_ellipticScheme_of_weierstrass`
+(`Fermat/FLT/ModularCurve/X0.lean`) WITH THE BASE MADE VARIABLE.** That
+declaration is PROVEN — its own body is real code — over
+`exists_ellipticScheme_of_projModel` (`Fermat/FLT/ModularCurve/EllipticScheme.lean`),
+which genuinely CONSTRUCTS an `AbelianSchemeStruct` as
+`gl.toAbelianSchemeStruct` on the `Proj` of the projective Weierstrass model.
+Its statement is `E : WeierstrassCurve ℚ`, `Scheme.{0}`, `Spec ℚ`; the ONLY
+difference from the statement here is that `ℚ` has been replaced by a variable
+field `F : Type u` and `Scheme.{0}` by `Scheme.{u}`.
+
+So the intended discharge is NOT a new construction. It is to generalise the
+base of `EllipticScheme.lean`: `WeierstrassCurve.Projective.proj` and
+`projToSpec` are defined for a Weierstrass curve over any commutative ring, and
+none of that module's five open leaves — `nonempty_projGroupLaw`,
+`smoothOfRelativeDimension_projToSpec`, `geometricallyConnected_projToSpec`,
+`isProper_projToSpec`, `exists_projGeomFibreAddEquiv` — uses any property of `ℚ`
+beyond being a field. Generalising them in place discharges this leaf and
+`exists_ellipticScheme_of_weierstrass` at once, and is strictly better than
+adding a second construction. **Before writing anything here, re-read those five
+leaves: they have their own owners.**
+
+WHY A VARIABLE BASE AND NOT `ULift ℝ` DIRECTLY, which is the only base the
+consumer needs. At a CONCRETE base field a hand-written `algebraMap` never
+matches the one elaborated inside `specAlgClos`/`GeomFibrePt`: concrete
+elaboration picks the base-specific instance path and the generic definitions
+carry `Semifield.toCommSemiring`-style paths, which are propositionally but not
+definitionally equal, so `rw` fails and `exact` times out inside `isDefEq`. The
+fleet has lost whole tasks to that twice. Stating the helper over a variable
+field and instantiating at `ULift.{u} ℝ` makes the concrete instance path never
+arise.
+
+THE `DecidableEq` `letI` IS NOT DECORATION. `WeierstrassCurve.Affine.Point`'s
+`AddCommGroup` instance is declared under `[DecidableEq F]` (the chord–tangent
+law branches on `x₁ = x₂`), so `(E⁄F̄).Point` has no group structure at all
+without one. Supplying it inside the statement with `Classical.typeDecidableEq`
+— rather than as an instance argument — is what keeps the consumer
+`exists_realEllipticSchemeWithConjTorsion` free of a `DecidableEq` hypothesis it
+would then have to propagate; the two leaves and the assembly all name the same
+term, so the group structures match syntactically.
+
+FAITHFULNESS: true and classical — an elliptic curve is an abelian scheme of
+relative dimension one over any field, and the identification of `E(F̄)` with the
+`F̄`-points of the fibre is the definition of the functor of points. The
+`≃+` is asked to be Galois-EQUIVARIANT, which forbids a junk bijection.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be discharged
+by the independent construction — never through `Family.lean`, `Lift.lean`,
+or `Modularity/Interface.lean`. -/
+theorem exists_ellipticSchemeOverField (F : Type u) [Field F]
+    (E : WeierstrassCurve F) [E.IsElliptic] :
+    letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+    ∃ (A : AlgebraicGeometry.Scheme.{u})
+      (fA : A ⟶ AlgebraicGeometry.Spec (CommRingCat.of F))
+      (abA : Fermat.AbelianSchemeStruct fA),
+      AlgebraicGeometry.SmoothOfRelativeDimension 1 fA ∧
+      (letI := abA.addCommGroup (Fermat.specAlgClos F ≫
+          𝟙 (AlgebraicGeometry.Spec (CommRingCat.of F)))
+       ∃ e : (WeierstrassCurve.Affine.baseChange E (AlgebraicClosure F)).Point ≃+
+           Fermat.GeomFibrePt fA (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of F))),
+         ∀ (σ : Field.absoluteGaloisGroup F)
+           (x : (WeierstrassCurve.Affine.baseChange E (AlgebraicClosure F)).Point),
+           e (WeierstrassCurve.Affine.Point.map
+               (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom x)
+             = abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of F))) σ (e x)) :=
+  sorry
+
+/-- **THE ARCHIMEDEAN HALF of the elliptic-curve leaf** (sorry leaf, cut
+2026-07-27 out of `exists_realEllipticSchemeWithConjTorsion`): a real elliptic
+curve — a plain `WeierstrassCurve (ULift ℝ)` — whose geometric torsion is
+parametrised by `(ℚ/ℤ)²` in such a way that complex conjugation acts by
+`realConjAdd ε`.
+
+No scheme, no `AbelianSchemeStruct`, no category theory appears here: this leaf
+is a statement about the point group of a Weierstrass curve, and it carries ALL
+of the archimedean content of the node. The geometry is the sibling
+`exists_ellipticSchemeOverField`.
+
+THE INTENDED WITNESSES, which is why no real-analytic CONSTRUCTION of a curve is
+needed: both discriminant signs are realised by curves already defined over `ℚ`,
+so one only has to take `a₄ = ∓1`. For `y² = x³ + a₄x` one has `b₂ = b₆ = 0`,
+`b₄ = 2a₄`, `b₈ = -a₄²`, hence `Δ = -8b₄³ = -64a₄³`. So
+
+* `ε = false` → `a₄ = -1`, i.e. `y² = x³ - x`, `Δ = 64 > 0`;
+* `ε = true` → `a₄ = 1`, i.e. `y² = x³ + x`, `Δ = -64 < 0`.
+
+`IsElliptic` is `IsUnit Δ`, which over a field is `Δ ≠ 0` and is `norm_num`.
+The witness is left EXISTENTIAL rather than pinned so that a prover who prefers
+a different model is not forced into these two.
+
+CLASSICALLY (Silverman, *ATAEC* V.2; *AEC* VI): `E(ℂ) ≅ ℂ/Λ`, so the torsion is
+`(ℚΛ)/Λ ≅ (ℚ/ℤ)²` via any `ℤ`-basis of `Λ`, and complex conjugation is induced
+by `z ↦ z̄`, which preserves `Λ` because `E` is defined over `ℝ`. There are
+exactly two real forms:
+
+* `Δ > 0`: `Λ` is RECTANGULAR — a basis `(ω₁, ω₂)` with `ω₁` real and `ω₂`
+  purely imaginary — and `z̄` sends `aω₁ + bω₂ ↦ aω₁ - bω₂`, i.e. `diag(1,-1)`,
+  which is `realConjAdd _ false`;
+* `Δ < 0`: `Λ` has a basis `(ω₁, ω₂)` with `ω₁` real and `2ω₂ - ω₁` purely
+  imaginary, and `z̄` sends `(a,b) ↦ (a+b, -b)`, which is `realConjAdd _ true`.
+
+Recall `realConjAdd M ε v = ![v 0 + (if ε then v 1 else 0), -v 1]`, so those two
+matrices are exactly `ε = false` and `ε = true`.
+
+MISSING MACHINERY, and a route that may AVOID most of it. The Weierstrass
+uniformisation `E(ℂ) ≅ ℂ/Λ` is NOT in mathlib and building it is a large
+analytic project. But this leaf does not need the uniformisation — it needs only
+its consequences on TORSION, and those have an algebraic shadow:
+
+1. `E(F̄)[n] ≅ (ℤ/n)²` for `F̄` algebraically closed of characteristic `0`.
+   **Check `Fermat/FLT/EllipticCurve/Torsion.lean` before building this** — that
+   module already carries `n`-torsion structure results for elliptic curves over
+   an algebraically closed field, phrased against exactly the
+   `[DecidableEq (AlgebraicClosure K)]` instance used here. Colimiting over `n`
+   gives `E(F̄)_tors ≅ (ℚ/ℤ)²` as an abstract group.
+2. The conjugacy class of the conjugation involution. Complex conjugation `c`
+   acts on `E(ℂ)_tors ≅ (ℚ/ℤ)²` as an involution; on each `E[n]` it is an
+   involution of `(ℤ/n)²` of DETERMINANT `-1` (the Weil pairing is
+   antiholomorphic-twisted: `e(cx, cy) = e(x,y)⁻¹`). Over `ℤ` there are exactly
+   two conjugacy classes of such involutions, `diag(1,-1)` and `[[1,1],[0,-1]]`,
+   and they are separated by an elementary invariant: their FIXED subgroups on
+   `(ℚ/ℤ)²` are `ℚ/ℤ × (½ℤ/ℤ)` and `ℚ/ℤ` respectively. The fixed subgroup is
+   `E(ℝ)_tors`, and its `2`-torsion is the number of real roots of the cubic —
+   THREE when `Δ > 0`, ONE when `Δ < 0`. So the discriminating input is a
+   root-counting fact about `x³ ∓ x` over `ℝ`, not an analytic one.
+
+   That reduction is worth taking seriously before starting on uniformisation:
+   it replaces "construct `ℂ/Λ`" with "classify integral involutions of
+   determinant `-1` by their fixed lattice, then count real `2`-torsion".
+
+`σ ≠ 1` is not a weakening: `Gal(ℂ/ℝ)` has order two, so the clause pins the
+action of the unique nontrivial element. Stating it for all `σ ≠ 1` rather than
+for a chosen generator is what lets the consumer quote it without first
+producing that generator.
+
+FAITHFULNESS: `τ` is injective on the infinite group `(ℚ/ℤ)²` and must hit EVERY
+`n`-torsion point, so it really is a full torsion parametrisation and not merely
+some injection; and the conjugation clause is an equation, so no junk `τ` can
+satisfy it.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be discharged
+by the independent construction — never through `Family.lean`, `Lift.lean`,
+or `Modularity/Interface.lean`. -/
+theorem exists_realWeierstrassCurveWithConjTorsion (ε : Bool) :
+    letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+    ∃ (E : WeierstrassCurve (ULift.{u} ℝ)) (_ : E.IsElliptic)
+      (τ : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →
+        (WeierstrassCurve.Affine.baseChange E
+          (AlgebraicClosure (ULift.{u} ℝ))).Point),
+      (∀ v w, τ (v + w) = τ v + τ w) ∧
+      Function.Injective τ ∧
+      (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) v, σ ≠ 1 →
+        τ (realConjAdd _ ε v) =
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+              AlgebraicClosure (ULift.{u} ℝ)).toAlgHom (τ v)) ∧
+      (∀ (n : ℕ), n ≠ 0 → ∀ y, (n : ℤ) • y = 0 → ∃ v, τ v = y) :=
+  sorry
 
 open scoped TensorProduct in
 open CategoryTheory in
-/-- **THE ELLIPTIC-CURVE HALF of the archimedean node** (sorry leaf, cut
-2026-07-27 out of `exists_realAbelianSchemeWithTensorLevelStructure`): ONE real
+/-- **THE ELLIPTIC-CURVE HALF of the archimedean node** (PROVEN 2026-07-27 from
+the two leaves above; formerly itself a sorry leaf, cut out of
+`exists_realAbelianSchemeWithTensorLevelStructure`): ONE real
 elliptic scheme, of relative dimension `1` over `ℝ`, together with a full
 torsion level structure `(ℚ/ℤ)² → E(ℂ)` on which complex conjugation acts by
 `realConjAdd ε`.
+
+CUT 2026-07-27 into `exists_ellipticSchemeOverField` (all of the geometry, and
+nothing archimedean) and `exists_realWeierstrassCurveWithConjTorsion` (all of the
+archimedean analysis, and nothing geometric). The assembly below is real code:
+it takes the curve and its torsion parametrisation `τ` from the second, the
+scheme and the equivariant `≃+ e` from the first, and sets `t = e ∘ τ`. Every
+one of the five clauses then transports along `e`: additivity by `e.map_add`,
+injectivity by composition, the conjugation clause by the equivariance of `e`,
+and torsion coverage by pulling `y` back through `e.symm` (`map_zsmul` turns
+`(n : ℤ) • y = 0` into `(n : ℤ) • e.symm y = 0`).
 
 Nothing about `D` appears here.  That is the point of the cut: the class of the
 conjugation involution is a property of the elliptic curve ALONE, so it is
@@ -22463,18 +22653,21 @@ NEEDED — a base change of a rational curve along `ℚ → ULift ℝ`, plus a u
 lift, suffices.  This corrects the older docstring premise that a *real*
 elliptic curve had to be constructed.
 
-WHAT IS AVAILABLE, and it is the reason this leaf is attackable at all:
+WHERE THE TWO HALVES SIT relative to the tree, updated 2026-07-27 (the previous
+version of this paragraph listed three residual tasks; they are now distributed
+between the two leaves and are no longer work belonging to THIS declaration).
 `exists_ellipticScheme_of_weierstrass` (`Fermat/FLT/ModularCurve/X0.lean`) is
 PROVEN, over `exists_ellipticScheme_of_projModel`
 (`Fermat/FLT/ModularCurve/EllipticScheme.lean`), which genuinely CONSTRUCTS an
-`AbelianSchemeStruct` as `gl.toAbelianSchemeStruct`.  It is stated over `SpecQ`
-in `Scheme.{0}` and hands over a Galois-equivariant `≃+` from
-`(E⁄ℚᵃˡᵍ).Point`, so what remains here is (i) the base change `ℚ → ULift ℝ`
-with its `AbelianSchemeStruct` and the relative-dimension clause, (ii) the
-universe lift `Scheme.{0} → Scheme.{u}`, and (iii) the identification of the
-torsion of `(E⁄ℚᵃˡᵍ).Point` with `(ℚ/ℤ)²` carrying the conjugation action —
-which is the genuinely archimedean input and the only part not already stated
-somewhere in the tree.
+`AbelianSchemeStruct` as `gl.toAbelianSchemeStruct` — but it is stated over
+`SpecQ` in `Scheme.{0}`. Making its base a VARIABLE FIELD is exactly
+`exists_ellipticSchemeOverField` above, which is where the base change and the
+universe lift now live; note the base-change route through `ℚ` does not by
+itself suffice, because `E(ℚ̄)` is not `E(ℂ)` and the Galois groups differ, which
+is why that leaf is stated over `F` from the start rather than transported. The
+identification of the torsion with `(ℚ/ℤ)²` carrying the conjugation action —
+the genuinely archimedean input, and the only part not already stated somewhere
+in the tree — is `exists_realWeierstrassCurveWithConjTorsion`.
 
 FAITHFULNESS: the torsion-coverage clause is what forbids a junk witness.  `t`
 is injective on `(ℚ/ℤ)²`, which is infinite, so `A` cannot be a point; and `t`
@@ -22498,8 +22691,44 @@ theorem exists_realEllipticSchemeWithConjTorsion (ε : Bool) :
           abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (t v)) ∧
       (letI := abA.addCommGroup (Fermat.specAlgClos (ULift.{u} ℝ) ≫
           𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
-       ∀ (n : ℕ), n ≠ 0 → ∀ y, (n : ℤ) • y = 0 → ∃ v, t v = y) :=
-  sorry
+       ∀ (n : ℕ), n ≠ 0 → ∀ y, (n : ℤ) • y = 0 → ∃ v, t v = y) := by
+  -- Name the `DecidableEq` instance FIRST, and with the same term the two
+  -- leaves use: `(E⁄F̄).Point`'s group law is declared under `[DecidableEq F̄]`,
+  -- so a different instance here would give a different `Add` and the
+  -- `AddHomClass` needed by `e.map_add` / `map_zsmul` would not synthesize.
+  letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+  obtain ⟨E, hE, τ, hτadd, hτinj, hτconj, hτcov⟩ :=
+    exists_realWeierstrassCurveWithConjTorsion.{u} ε
+  haveI := hE
+  obtain ⟨A, fA, abA, hdim, e, he⟩ :=
+    exists_ellipticSchemeOverField.{u} (ULift.{u} ℝ) E
+  -- The `AddCommGroup` on the geometric fibre.  Load-bearing: the `letI` inside
+  -- the last conjunct scopes over that conjunct only.
+  letI := abA.addCommGroup (Fermat.specAlgClos (ULift.{u} ℝ) ≫
+    𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
+  refine ⟨A, fA, abA, fun v => e (τ v), hdim, ?_, ?_, ?_, ?_⟩
+  · -- additivity: `τ` is additive and `e` is an `≃+`
+    intro v w
+    show e (τ (v + w)) = _
+    rw [hτadd]
+    exact e.map_add (τ v) (τ w)
+  · -- injectivity: a composite of injections
+    intro v w h
+    exact hτinj (e.injective h)
+  · -- complex conjugation: `τ` intertwines `realConjAdd ε` with the action of
+    -- `σ` on `E(ℂ)`, and `e` intertwines that with `galSMul`
+    intro σ v hσ
+    show e (τ (realConjAdd _ ε v)) = _
+    rw [hτconj σ v hσ]
+    exact he σ (τ v)
+  · -- torsion coverage: pull `y` back through `e.symm`, which preserves `n`-torsion
+    intro n hn y hy
+    obtain ⟨v, hv⟩ := hτcov n hn (e.symm y) (by
+      rw [← map_zsmul e.symm, hy, map_zero])
+    refine ⟨v, ?_⟩
+    show e (τ v) = y
+    rw [hv]
+    exact e.apply_symm_apply y
 
 open scoped TensorProduct in
 open CategoryTheory in
