@@ -7146,19 +7146,205 @@ theorem stepanov_natDegree_norm_le (d p M : ℕ) (hd : 2 ≤ d) (hMd : d ∣ M)
   simp only [Nat.add_sub_cancel]
   exact le_of_eq (by ring)
 
-/-- **ITEM 2c: THE AUXILIARY FUNCTION AND ITS NORM** (SORRY LEAF, cut
-2026-07-27; its degree half CLOSED 2026-07-27, see `stepanov_natDegree_norm_le`)
+/-- **SCHMIDT LEMMA 4A, TOGETHER WITH THE REMARK AT THE END OF HIS §4** (SORRY
+LEAF, cut 2026-07-27 out of `exists_stepanovNormPolynomial`) — for the SECOND of
+his two algebraic functions, `λ = 2`, `ε₂ = d − 1`. **This is the dimension
+count, and it is the genuinely hard half of Schmidt's item 2c.**
+
+WHAT IT SAYS. There is a polynomial `c(X, Y)` over `𝔽_p` which
+
+* is NOT divisible by `F` — equivalently `c(X, η) ≠ 0` in `𝔽_p(X)[Y]/(F)`,
+  Schmidt's Lemma 4A(i) (`F` is monic, so divisibility in `𝔽_p[X][Y]` and in
+  `𝔽_p(X)[Y]` agree, by `Polynomial.map_dvd_map`);
+* has the WEIGHTED degree bound `deg_X (c_i) + i ≤ (d−1)pM/d + p(d−1)`, which is
+  Schmidt's total-degree bound `deg c ≤ (ε₂/d)qM + q(d−1)` of the §4 Remark(iii)
+  in the form `stepanov_natDegree_resultant_le` consumes it (a total-degree
+  bound implies the weighted one termwise);
+* **vanishes to order `M` along every irrational branch of the curve over every
+  `x` in `𝔄`** — this is Schmidt's Lemma 4A(ii) as amplified by his Remark(ii),
+  `D^ν c(x, y) = 0` for `0 ≤ ν < M`, `x ∈ 𝔄`, `y ∈ 𝔐₂(x)`.
+
+**HOW THE VANISHING CLAUSE IS RENDERED, and why this rendering is faithful.**
+Schmidt's `D` is differentiation with respect to `X` in the function field
+`𝔽_p(X, η)`; `D^ν c(x, y)` is the `ν`-th Taylor coefficient at `X = x` of the
+one-variable function `X ↦ c(X, η(X))`, where `η(X)` is the branch of the curve
+through `(x, y)`. Since `Δ(x) ≠ 0` the fibre is separable, so `y` is a SIMPLE
+root and that branch exists and is unique in `𝔽̄_p[[X − x]]`. Vanishing of the
+first `M` Taylor coefficients is exactly `(X − x)^M ∣ c(X, η(X))`, and — because
+only `η mod (X − x)^M` matters for that — it may be tested on POLYNOMIAL `η`,
+which is how it is written here: for every `η ∈ 𝔽̄_p[X]` that is a root of `F` to
+order `M` at `x` and whose value at `x` is irrational, `(X − x)^M ∣ c(X, η)`.
+
+Two remarks on faithfulness of that quantifier. It ranges over ALL polynomial
+approximate roots rather than over the `d` true branches, which is *stronger*
+than Schmidt's statement — but not strictly so: an `η` with
+`(X−x)^M ∣ F(X, η)` and `η(x) = y` a simple root agrees with the true branch
+through `y` modulo `(X − x)^M` (Newton, since `F_Y(x, y) ≠ 0` is a unit), so the
+two conditions define the same class of `η`. And the hypothesis
+`∀ z : ZMod p, η(x) ≠ z` is exactly `y ∈ 𝔐₂(x)`, i.e. `y ∉ 𝔽_p` — it is what
+makes this the `λ = 2` function; for `λ = 1` one would ask `y ∈ 𝔽_p` instead.
+
+**HOW IT IS PROVED (Schmidt III §4, pp. 109–113).** A DIMENSION COUNT. Write
+`a(X, Y) = ∑_{j + k ≤ K} b_{jk}(X, Y) X^{pj} Y^{pk}` with
+`b_{jk}(X,Y) = ∑_{i<d} a_{ijk}(X) Y^i`, `deg a_{ijk} ≤ p/d − d − i − j − k` and
+`K = (ε₂/d)M + d − 2`, all `a_{ijk}` undetermined. Because `X^p` and `Y^p` have
+zero derivative, `D^ν a = ∑ b_{jk}^{(ν)} X^{pj} Y^{pk}`, and Lemma 3A bounds
+`deg b_{jk}^{(ν)} ≤ deg b_{jk} + (2d−3)ν`. Reducing modulo `F` (using
+`Y^d = −g₁Y^{d−1} − ⋯ − g_d`) and modulo the relation `e₂(x, y, y^p) = 0` that
+CHARACTERISES `𝔐₂(x)` turns "`D^ν a` vanishes on all of `𝔄 × 𝔐₂`" into "a
+polynomial `d^{(ν)}(X, Y, Y')` is identically zero", a homogeneous linear system
+in the `a_{ijk}` with `B < ε₂pM + ε₂M²(2d²−3d)` equations and
+`A > ε₂pM + p(d² − ⅓d) − ½ε₂²M² − 6ε₂Md − 2ε₂Md²` unknowns. Schmidt's standing
+conditions `d ∣ M`, `M ≥ d²`, `2(d−1)(M+8)² ≤ p` — here `hMd`, `hMsq`, `hMq` —
+are exactly what gives `B < A`, hence a nonzero solution; Lemma 2D then gives
+`a(X, η) ≠ 0`. Finally the Remark sets `c := F_Y^{2M} · a`, which converts the
+hyperderivatives of `a` into those of `c` and costs `2Md` in the degree bound —
+absorbed by `2Md ≤ ½p` once `p > 250 d⁵`, which is `hp`.
+
+**WHAT IS MISSING AT THIS PIN** (grepped 2026-07-27 across `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT/`): no `[Ss]tepanov`, and no
+hyperderivative theory beyond `Polynomial.hasseDeriv` itself. Lemma 3A (the
+`(2d−3)ν` degree growth of the jets) and Lemma 2D (linear independence of
+`η^j X^{pk}`) have to be formalised here; **Lemma 3B does NOT**, and neither
+does any function-field norm — see `stepanov_natDegree_norm_le`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovAuxiliaryFunction (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (hp : 250 * d ^ 5 < p) (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))))
+    (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M) (hMq : 2 * (d - 1) * (M + 8) ^ 2 ≤ p)
+    (Δ : Polynomial (ZMod p)) (hΔ0 : Δ ≠ 0)
+    (hΔsep : ∀ x : ZMod p, Δ.eval x ≠ 0 →
+      (F.map (Polynomial.evalRingHom x)).Separable ∧
+      (F.map (Polynomial.evalRingHom x)).natDegree = d) :
+    ∃ c : Polynomial (Polynomial (ZMod p)),
+      ¬ (F ∣ c) ∧
+      (∀ i, c.coeff i = 0 ∨
+        (c.coeff i).natDegree + i ≤ (d - 1) * p * (M / d) + p * (d - 1)) ∧
+      (∀ x : ZMod p, Δ.eval x ≠ 0 →
+        ∀ η : Polynomial (AlgebraicClosure (ZMod p)),
+          (Polynomial.X -
+              Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
+            Polynomial.eval₂ (Polynomial.mapRingHom
+              (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η F →
+          (∀ z : ZMod p, η.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)
+            ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
+          (Polynomial.X -
+              Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
+            Polynomial.eval₂ (Polynomial.mapRingHom
+              (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η c) :=
+  sorry
+
+/-- **SCHMIDT LEMMA 5A(i): THE LEIBNIZ EXPANSION (5.1)** (SORRY LEAF, cut
+2026-07-27 out of `exists_stepanovNormPolynomial`).
+
+WHAT IT SAYS. `r(X) := Res_Y(F, c)` — which by `resultant_eq_prod_eval` IS
+Schmidt's norm `𝔑(c(X, η)) = ∏_j c(X, η_j)`, see `stepanov_natDegree_norm_le` —
+has a zero of multiplicity at least `M · |𝔐₂(x)|` at every `x ∈ 𝔄`. It is stated
+here as the DIVISIBILITY `(X − x)^{M|𝔐₂(x)|} ∣ r`; `pow_X_sub_C_dvd_iff_hasseDeriv`
+(item 1 above, already PROVEN) converts that into the vanishing of `D_j r(x)`
+for `j < M|𝔐₂(x)|` that Schmidt writes, and it is the divisibility form that his
+Theorem 1G (zeros counted with multiplicity) wants.
+
+`|𝔐₂(x)| = d − |𝔐₁(x)|` is written as `d − #{y ∈ 𝔽_p : F(x, y) = 0}`, correct on
+`𝔄` precisely because `hsep`/`hdegx` give `F(x, Y)` degree `d` with `d` distinct
+roots there.
+
+**HOW IT IS PROVED (Schmidt III §5, pp. 114–116), and the route in Lean.** His
+(5.1) is Leibniz for the `ν`-th hyperderivative of a `d`-fold product,
+`D_ℓ ∏_j c(X, η_j) = ∑_{u₁+⋯+u_d = ℓ} ∏_j D_{u_j} c(X, η_j)`; if `t = |𝔐₂(x)|`
+and `ℓ < Mt`, then in each summand the `t` indices belonging to `𝔐₂(x)` have
+`∑ u ≤ ℓ < Mt`, so SOME `u_s < M`, and Lemma 4A(ii) kills that factor. Hence
+every summand vanishes.
+
+In Lean the same argument is cheaper run through divisibility, which is why the
+conclusion is stated that way and why the hypothesis `hvan` is the
+power-series-order form of Lemma 4A(ii):
+
+1. Complete at `x`: map `𝔽_p[X] → 𝔽̄_p[[X − x]]` (Taylor-shift, then coefficient
+   extension, then `Polynomial.toPowerSeries`). This is injective, and
+   `T^k ∣ image` iff `(X − x)^k ∣ r` — so the conclusion may be proved there.
+2. `F` is monic of degree `d` and its reduction `F(x, Y)` is separable of degree
+   `d` over the residue field `𝔽̄_p`, hence splits with `d` distinct roots. The
+   power series ring is a complete local ring, so Hensel lifts that splitting:
+   `F = ∏_{j<d} (Y − η_j)` over `𝔽̄_p[[X − x]]` with `η_j(x) = y_j`. Peel one
+   root at a time with `HenselianLocalRing`/`IsAdicComplete`; the induction is
+   on `d` with `F` replaced by `F /ₘ (Y − η_j)`, which stays monic.
+3. `Polynomial.resultant_eq_prod_eval` (the ring is a domain, `F` monic and now
+   split, `c.natDegree ≤ n`) gives `Res_Y(F, c, d, n) = ∏_j c(X, η_j)`. The
+   explicit second size `n ≥ c.natDegree` is harmless: `resultant_add_right_deg`
+   with `F.coeff d = 1` shows it agrees with the default-size resultant.
+4. For each of the `t` indices with `y_j ∉ 𝔽_p`, apply `hvan` to the truncation
+   of `η_j` modulo `(X − x)^M`, a polynomial. It is a root of `F` to order `M`
+   and its value at `x` is `y_j`, irrational; so `(X − x)^M ∣ c(X, η_j)`.
+   Multiply the `t` of them.
+
+WHY THE STATEMENT IS TRUE AND NOT MERELY PLAUSIBLE: nothing here needs `p` to
+exceed anything. The `p`-dependence of Schmidt's argument is entirely in Lemma
+4A (the dimension count) and in §6 (`M|𝔐₂(x)| ≤ dM < p`, needed to READ the
+multiplicity off Theorem 1G); step (i) of Lemma 5A is characteristic-free.
+
+MISSING AT THIS PIN: mathlib has `HenselianLocalRing` and the completeness of
+`PowerSeries`, but no "monic + separable reduction ⟹ splits over a complete
+local ring" packaged as one lemma; step 2 is the part to budget for.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_pow_sub_dvd_resultant (d p M n : ℕ) [Fact p.Prime] (hd : 2 ≤ d)
+    (F c : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d) (hcn : c.natDegree ≤ n)
+    (x : ZMod p)
+    (hsep : (F.map (Polynomial.evalRingHom x)).Separable)
+    (hdegx : (F.map (Polynomial.evalRingHom x)).natDegree = d)
+    (hvan : ∀ η : Polynomial (AlgebraicClosure (ZMod p)),
+      (Polynomial.X -
+          Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
+        Polynomial.eval₂ (Polynomial.mapRingHom
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η F →
+      (∀ z : ZMod p, η.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)
+        ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
+      (Polynomial.X -
+          Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
+        Polynomial.eval₂ (Polynomial.mapRingHom
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η c) :
+    (Polynomial.X - Polynomial.C x) ^ (M * (d - (Finset.univ.filter
+        (fun y : ZMod p => (F.map (Polynomial.evalRingHom x)).eval y = 0)).card))
+      ∣ F.resultant c d n :=
+  sorry
+
+/-- **ITEM 2c: THE AUXILIARY FUNCTION AND ITS NORM** (PROVEN 2026-07-27 over the
+two sub-leaves `exists_stepanovAuxiliaryFunction` and
+`stepanov_pow_sub_dvd_resultant`; it was a sorry leaf from its cut earlier the
+same day, and its degree half closed first — see `stepanov_natDegree_norm_le`)
 — Schmidt III Lemma 4A together with Lemma 5A, for the SECOND of his
 two algebraic functions (`λ = 2`, `ε₂ = d − 1`). **This is the genuinely hard
 step of the whole route and the place the `√q` comes from.**
 
-**START HERE (2026-07-27).** Take `r := Polynomial.resultant F c d n` for the
-`c` that Lemma 4A produces. `Polynomial.resultant_eq_prod_eval` then makes `r`
-equal to Schmidt's norm `∏_j c(X, η_j)` because `F` is monic, and
-`stepanov_natDegree_norm_le` above already PROVES the degree clause of this
-leaf's conclusion. That removes Lemma 3B, `Algebra.norm`, and every symmetric
-function argument from the remaining work. Only two things are left: Lemma 4A's
-dimension count, and Lemma 5A(i)'s Leibniz expansion.
+**HOW THE ASSEMBLY GOES, now that it is written.** Take
+`r := Polynomial.resultant F c d n` with `n = (d−1)p(M/d) + p(d−1)` and `c` the
+polynomial that Lemma 4A produces (`exists_stepanovAuxiliaryFunction`). Because
+`F` is monic, `Polynomial.resultant_eq_prod_eval` makes `r` equal to Schmidt's
+norm `∏_j c(X, η_j)`. The three conjuncts then come from:
+
+* `r ≠ 0` — Lemma 4A(i), `¬(F ∣ c)`, transported: `F` monic means
+  `Polynomial.map_dvd_map` carries non-divisibility into `𝔽̄_p(X)[Y]`, where `F`
+  stays irreducible (Gauss, `Monic.irreducible_iff_irreducible_map_fraction_map`
+  applied to `hirrF`), so `Irreducible.coprime_iff_not_dvd` gives coprimality
+  and `Polynomial.resultant_ne_zero` gives the claim. The size mismatch between
+  the explicit `n` and `c.natDegree` is absorbed by
+  `Polynomial.resultant_add_right_deg`, since `F.coeff d = 1`.
+* the degree bound — `stepanov_natDegree_norm_le`, on the nose.
+* the vanishing — `stepanov_pow_sub_dvd_resultant` (Lemma 5A(i)) followed by
+  `pow_X_sub_C_dvd_iff_hasseDeriv`, the already-proven Taylor translation
+  between "zero of multiplicity `k`" and "the first `k` hyperderivatives
+  vanish".
+
+That removes Lemma 3B, `Algebra.norm`, and every symmetric function argument
+from the remaining work. **Exactly two things are left open, and they are the
+two sub-leaves above:** Lemma 4A's dimension count, and Lemma 5A(i)'s Leibniz
+expansion.
 
 Let `η` satisfy `F(X, η) = 0`, so `𝔽_p(X, η)/𝔽_p(X)` has degree `d`.
 
@@ -7225,8 +7411,68 @@ theorem exists_stepanovNormPolynomial (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p
       (∀ x : ZMod p, Δ.eval x ≠ 0 →
         ∀ j < M * (d - (Finset.univ.filter
             (fun y : ZMod p => (F.map (Polynomial.evalRingHom x)).eval y = 0)).card),
-          (Polynomial.hasseDeriv j r).eval x = 0) :=
-  sorry
+          (Polynomial.hasseDeriv j r).eval x = 0) := by
+  classical
+  -- Schmidt Lemma 4A and the Remark at the end of his §4.
+  obtain ⟨c, hcdvd, hcdeg, hcvan⟩ :=
+    exists_stepanovAuxiliaryFunction d hd p hp F hmon hdegY hcoeff hirrF M hMd hMsq hMq
+      Δ hΔ0 hΔsep
+  set n : ℕ := (d - 1) * p * (M / d) + p * (d - 1) with hn
+  -- `c` has `Y`-degree at most `n`, so the Sylvester size `n` is legitimate.
+  have hcn : c.natDegree ≤ n := by
+    rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+    intro m hm
+    rcases hcdeg m with h | h
+    · exact h
+    · omega
+  -- Schmidt (4.2): the weighted degree bounds on the coefficients of `F`.
+  have hcoeffF : ∀ i, F.coeff i = 0 ∨ (F.coeff i).natDegree + i ≤ d := by
+    intro i
+    by_cases hi : i ≤ d
+    · exact Or.inr (by have := hcoeff i; omega)
+    · exact Or.inl (Polynomial.coeff_eq_zero_of_natDegree_lt (by omega))
+  refine ⟨F.resultant c d n, ?_, stepanov_natDegree_norm_le d p M hd hMd F c hcoeffF hcdeg, ?_⟩
+  · -- `r ≠ 0`: Lemma 4A(i), `c(X, η) ≠ 0`, transported by the resultant-is-norm
+    -- identity.  `F` is monic, so `¬(F ∣ c)` survives the passage to `𝔽̄_p(X)`,
+    -- where `F` is irreducible; irreducible and non-dividing is coprime.
+    set A := AlgebraicClosure (ZMod p) with hA
+    set φ : Polynomial (ZMod p) →+* Polynomial A :=
+      Polynomial.mapRingHom (algebraMap (ZMod p) A) with hφ
+    have hφinj : Function.Injective φ :=
+      Polynomial.map_injective _ (algebraMap (ZMod p) A).injective
+    set L := FractionRing (Polynomial A) with hL
+    set ι : Polynomial A →+* L := algebraMap (Polynomial A) L with hι
+    have hιinj : Function.Injective ι := IsFractionRing.injective _ _
+    set ψ : Polynomial (ZMod p) →+* L := ι.comp φ with hψ
+    have hψinj : Function.Injective ψ := hιinj.comp hφinj
+    have hmonbar : (F.map φ).Monic := hmon.map φ
+    have hirrL : Irreducible ((F.map φ).map ι) :=
+      (Polynomial.Monic.irreducible_iff_irreducible_map_fraction_map hmonbar).mp hirrF
+    have hmapmap : (F.map φ).map ι = F.map ψ := by rw [Polynomial.map_map]
+    rw [hmapmap] at hirrL
+    have hmonL : (F.map ψ).Monic := hmon.map ψ
+    have hnd : ¬ ((F.map ψ) ∣ (c.map ψ)) := by
+      rw [Polynomial.map_dvd_map ψ hψinj hmon]
+      exact hcdvd
+    have hcop : IsCoprime (F.map ψ) (c.map ψ) := hirrL.coprime_iff_not_dvd.mpr hnd
+    have hres0 : (F.map ψ).resultant (c.map ψ) ≠ 0 := Polynomial.resultant_ne_zero _ _ hcop
+    have hdegL : (F.map ψ).natDegree = d := by rw [hmon.natDegree_map ψ, hdegY]
+    have hcdegL : (c.map ψ).natDegree ≤ n := le_trans Polynomial.natDegree_map_le hcn
+    have hcoeffd : (F.map ψ).coeff d = 1 := by rw [← hdegL]; exact hmonL.coeff_natDegree
+    have hsizes : (F.map ψ).resultant (c.map ψ) d n
+        = (F.map ψ).resultant (c.map ψ) (F.map ψ).natDegree (c.map ψ).natDegree := by
+      rw [hdegL]
+      conv_lhs => rw [show n = (c.map ψ).natDegree + (n - (c.map ψ).natDegree) from by omega]
+      rw [Polynomial.resultant_add_right_deg _ _ _ _ _ le_rfl, hcoeffd, one_pow, one_mul]
+    intro hcon
+    refine hres0 ?_
+    rw [← hsizes, Polynomial.resultant_map_map F c d n ψ, hcon, map_zero]
+  · -- Schmidt Lemma 5A(i), read as a zero of multiplicity `M|𝔐₂(x)|`.
+    intro x hx j hj
+    obtain ⟨hsep, hdegx⟩ := hΔsep x hx
+    exact (pow_X_sub_C_dvd_iff_hasseDeriv _ x _).mp
+      (stepanov_pow_sub_dvd_resultant d p M n hd F c hmon hdegY hcn x hsep hdegx
+        (hcvan x hx)) j hj
 
 /-- **ITEM 2: STEPANOV'S AUXILIARY CONSTRUCTION** (PROVEN 2026-07-27 over the
 three sub-leaves above; it was a bare sorry until then).
@@ -7720,8 +7966,19 @@ five-item route is realised in the file rather than merely described):
   `exists_stepanovNormPolynomial` as well, because
   `Polynomial.resultant_eq_prod_eval` identifies Schmidt's norm
   `∏_j c(X, η_j)` with `Res_Y(F, c)` for monic `F`; so Lemma 5A(ii) and Lemma 3B
-  are both done and only Lemma 4A's dimension count and Lemma 5A(i)'s Leibniz
-  expansion remain there. Proven glue landed with it:
+  are both done.
+  **`exists_stepanovNormPolynomial` is itself now PROVEN (2026-07-27)** over two
+  sub-leaves, and its `r ≠ 0` clause is proven glue too — `¬(F ∣ c)` transported
+  to `𝔽̄_p(X)[Y]` by `Polynomial.map_dvd_map`, where irreducibility plus
+  non-divisibility is coprimality and `Polynomial.resultant_ne_zero` applies. So
+  do not dispatch at it; dispatch at its two children instead:
+  `exists_stepanovAuxiliaryFunction` (Lemma 4A's dimension count together with
+  the §4 Remark — the genuinely hard one, and the place the `√q` comes from) and
+  `stepanov_pow_sub_dvd_resultant` (Lemma 5A(i)'s Leibniz expansion (5.1), whose
+  Lean route is Hensel-splitting `F` over `𝔽̄_p[[X − x]]` and then
+  `Polynomial.resultant_eq_prod_eval`). They are INDEPENDENT of each other — the
+  interface between them is fixed and compiles — so they take separate owners.
+  Proven glue landed with the earlier cut:
   `stepanov_M_le`/`stepanov_M_spec` (Schmidt's `M` may be taken to be `11d²`),
   `stepanov_card_rationalRoots_le`, `stepanov_card_nonvanishing_ge` ((4.5)) and
   `stepanov_derivative_ne_zero_of_monic` — the last of which removes Schmidt's
@@ -7741,7 +7998,8 @@ five-item route is realised in the file rather than merely described):
   Theorem 7A is asymptotic in the field extension rather than uniform in `p`.
 
 So after the 2026-07-27 work the remaining open leaves under this node are
-`exists_stepanovNormalisation`, `exists_stepanovNormPolynomial`,
+`exists_stepanovNormalisation`, `exists_stepanovAuxiliaryFunction`,
+`stepanov_pow_sub_dvd_resultant`,
 `exists_bound_forall_hypersurfaceCount_of_planeCurveCount` and
 `exists_bound_forall_zmodSolvable_of_hypersurfaceCount`; all the glue between
 them is written and compiles, and this leaf itself has nothing left to prove.
