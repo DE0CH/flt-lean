@@ -262,11 +262,11 @@ this pin:
 
 * the smooth compactification of a coarse moduli space, and the cusps
   of `X_0(N)` with their field of definition
-  (`exists_x0Compactification`, `nonempty_cuspLocus` — the latter is
-  what `exists_rationalCusps` was decomposed into on 2026-07-27, through
-  `nonempty_cuspIndexing`, and it needs only the EASY direction of the
-  cusp classification, stated as the cusp locus with its residue
-  degrees so that no Galois descent enters);
+  (`exists_x0Compactification`, `exists_cuspResidueIndexing` — the latter
+  is what `exists_rationalCusps` was decomposed into on 2026-07-27, through
+  `nonempty_cuspIndexing` and `nonempty_cuspLocus`, and it needs only the
+  EASY direction of the cusp classification, stated as the cusps with their
+  residue FIELDS so that no Galois descent enters);
 * `J_0(N)` as an actual abelian scheme, its Mordell–Weil group, and the
   reduction map with its formal-group kernel — `neronKernel_torsionFree`
   for the kernel, `exists_x0NeronDatum_of_base` for the models, and
@@ -466,6 +466,15 @@ public import Mathlib.FieldTheory.Perfect
 -- an unbundled `∃ (A : Type) (_ : CommRing A) (_ : Algebra R A), …` cannot be
 -- written, since the later binders need the earlier ones as instances.
 public import Mathlib.Algebra.Category.CommAlgCat.Basic
+-- `IsCyclotomicExtension.finrank` — `[ℚ(ζ_n) : ℚ] = φ(n)`, given
+-- `Polynomial.cyclotomic.irreducible_rat`.  This is the whole of the arithmetic
+-- in `residueQDegree_eq_totient`, which converts the cusp-locus leaf's
+-- statement (the residue field of the cusp above `d` IS `ℚ(ζ_{gcd(d, N/d)})`,
+-- as Deligne–Rapoport state it) into the residue DEGREE that
+-- `IsX0Compactification.CuspLocus.degree` records.  `Cyclotomic.Basic` — hence
+-- the class `IsCyclotomicExtension` itself — is already in the cone; only the
+-- degree theorem is new.
+public import Mathlib.NumberTheory.Cyclotomic.PrimitiveRoots
 
 @[expose] public section
 
@@ -10371,12 +10380,15 @@ the rational cusps, because a larger supply could simply be cut down
 — that the Galois action on the cusps above `d` is *exactly* the
 cyclotomic one, hence that no cusp with `φ(gcd(d, N/d)) > 1` is rational
 — is **not** an obligation of this development.  A prover of
-`nonempty_cuspLocus` (the leaf this reduces to since 2026-07-27) needs
-only the easy direction: for `d` with
+`exists_cuspResidueIndexing` (the leaf this reduces to since 2026-07-27,
+through `nonempty_cuspLocus`) needs only the easy direction: for `d` with
 `φ(gcd(d, N/d)) = 1` the unique cusp above `d` is `Γ_ℚ`-fixed, and cusps
 over distinct `d` are distinct.  That is a strictly smaller theorem than
 the cusp classification, and the previous "IRREDUCIBLE" note on
-`exists_rationalCusps` did not distinguish the two.
+`exists_rationalCusps` did not distinguish the two.  (The leaf as actually
+stated names the residue field above EVERY `d`, not only above the rational
+ones — that is the literature's statement, and it is free to a prover who
+computes the Galois action at all, but it is more than this consumer needs.)
 
 Stated over `Spec ℚ` rather than over the general base of
 `IsX0Compactification`, deliberately: the count is base-dependent, and
@@ -10430,8 +10442,8 @@ field `K d` of degree `φ(gcd(d, N/d))` over `ℚ`.  The genuine `K d` is
 degree is consumed.
 
 **ROUTE — what this cut avoids, and how.**  The obstruction recorded on
-`nonempty_cuspLocus` below is *Galois descent for rational points of a
-`ℚ`-scheme*.  Mathlib's `CuspOrbits (Gamma0 N)` (in
+the cusp-existence leaf before 2026-07-27 was *Galois descent for rational
+points of a `ℚ`-scheme*.  Mathlib's `CuspOrbits (Gamma0 N)` (in
 `Mathlib/NumberTheory/ModularForms/Cusps.lean`) does describe the cusps
 — but as a `Γ_0(N)`-set of points of `OnePoint ℝ`, and turning a
 `Γ_ℚ`-fixed geometric point into an element of `RelPoint strX (𝟙 SpecQ)`
@@ -10446,7 +10458,7 @@ the Deligne–Rapoport statement, which is where the literature proves it
 and where a formalisation would have to prove it anyway.
 
 **WHY `cover` IS A FIELD, and why this is not the unsafe
-"invariant-first" cut.**  Axis 4 on `nonempty_cuspLocus` records that
+"invariant-first" cut.**  Axis 4 on `exists_cuspResidueIndexing` records that
 peeling a divisor invariant off as a separate leaf is unsafe: quantified
 over an arbitrary invariant the existence half is FALSE, by the junk
 witness `dinv ≡ 1` — the same defect the FORMAL-CONTENT AUDIT records
@@ -10500,8 +10512,8 @@ attribute [instance] IsX0Compactification.CuspLocus.isField
 2026-07-27; axiom-audited `[propext, Classical.choice, Quot.sound]`).
 
 This is the sorry-free half of `nonempty_cuspIndexing_of_ne_zero`, and it
-is where the divisor bookkeeping happens, so that `nonempty_cuspLocus`
-carries only Deligne–Rapoport.  Three steps, one per field of
+is where the divisor bookkeeping happens, so that `nonempty_cuspLocus` — and
+below it `exists_cuspResidueIndexing` — carries only Deligne–Rapoport.  Three steps, one per field of
 `CuspIndexing`:
 
 * `cusp` — `d ∈ rationalCuspDivisors N` unfolds to `d ∈ N.divisors`
@@ -10560,8 +10572,185 @@ theorem nonempty_cuspIndexing_of_cuspLocus {N : ℕ} {X Y : Scheme.{0}}
       (C.disj ⟨d, (hmem d hd).1⟩ ⟨d', (hmem d' hd').1⟩
         (fun hh => hne (congrArg Subtype.val hh))) ⟨_, rfl⟩ ⟨_, hp.symm⟩
 
-/-- **The cusp locus of `X_0(N)` exists: `X ∖ Y` is `∐_{d ∣ N} Spec
-ℚ(ζ_{gcd(d, N/d)})`** (sorry node).
+/-! ### Residue fields of a `ℚ`-scheme, and the cusp locus as a set of points
+
+`IsX0Compactification.CuspLocus` presents the cusps as `Spec` of a residue
+ALGEBRA over `ℚ`.  Deligne–Rapoport, on the other hand, describe the cusp
+locus as what it is: the finite set of CLOSED POINTS `X ∖ Y`, one for each
+divisor `d ∣ N`, the point above `d` having residue field `ℚ(ζ_{gcd(d,
+N/d)})`.  The three definitions here are the dictionary between the two, and
+they are what makes `nonempty_cuspLocus` a *theorem* below rather than the
+leaf it used to be: four of the six fields of `CuspLocus` (`K`, `κ`, `comm`,
+`cover`, `disj` — five, in fact) fall out of mathlib's residue-field API
+applied to a bijection `N.divisors ≃ X ∖ Y`, and the sixth (`degree`) falls
+out of `IsCyclotomicExtension.finrank`.
+
+What is left open, `exists_cuspResidueIndexing`, is then exactly the
+Deligne–Rapoport sentence and nothing else. -/
+
+/-- **The `ℚ`-algebra structure on the residue field of a point of a
+`ℚ`-scheme.**
+
+`X.fromSpecResidueField x ≫ strX : Spec κ(x) ⟶ Spec ℚ` is a morphism of
+AFFINE schemes, and `Spec` is fully faithful (`Spec.preimage` /
+`Spec.map_preimage`), so it is `Spec.map` of a unique ring map `ℚ →+* κ(x)`.
+That map is the structure morphism's action on residue fields, and it is the
+`ℚ`-algebra structure every statement about "the residue degree of `x` over
+`ℚ`" means.
+
+Defining it through `Spec.preimage` rather than through
+`Scheme.Hom.residueFieldMap` is what makes `CuspLocus.comm` hold *by
+construction* — `comm` asks for `κ ≫ strX = Spec.map (algebraMap ℚ (K d))`,
+which is literally `Spec.map_preimage`.  Routing through `residueFieldMap`
+would instead leave the identification `κ_{Spec ℚ}(⊥) ≅ ℚ` to be discharged
+by hand at every use site.
+
+Marked `@[reducible]` because it is a definition of class type: consumers
+state `Module.finrank ℚ (X.residueField x)` under it, and instance search
+must see through it. -/
+@[reducible] noncomputable def residueQAlgebra {X : Scheme.{0}} (strX : X ⟶ SpecQ) (x : X) :
+    Algebra ℚ (X.residueField x) :=
+  (Spec.preimage (X.fromSpecResidueField x ≫ strX)).hom.toAlgebra
+
+/-- **The residue degree of a point of a `ℚ`-scheme over `ℚ`.**
+
+`[κ(x) : ℚ]` for the algebra structure `residueQAlgebra` induced by the
+structure morphism, with mathlib's convention that an infinite-dimensional
+extension has `finrank` zero.
+
+The `letI` idiom is mathlib's own, from `Scheme.Hom.residueDegree`; it exists
+so that the degree can be *stated* — in `exists_cuspResidueIndexing` and in
+`residueQDegree_eq_totient` — without carrying an `Algebra` instance through
+the binders of a `∀` or an `∃`. -/
+noncomputable def residueQDegree {X : Scheme.{0}} (strX : X ⟶ SpecQ) (x : X) : ℕ :=
+  letI := residueQAlgebra strX x
+  Module.finrank ℚ (X.residueField x)
+
+/-- **The residue field of `x` is the `n`-th cyclotomic field `ℚ(ζ_n)`.**
+
+`IsCyclotomicExtension {n} ℚ κ(x)` says exactly that `κ(x)` is generated over
+`ℚ` by the `n`-th roots of unity and contains a primitive one — i.e. that
+`κ(x) = ℚ(ζ_n)` — so this is the literature's description of a cusp of
+`X_0(N)`, not a numerical shadow of it.
+
+Stating the leaf below this way rather than through the degree alone is the
+same choice the `cover` field of `CuspLocus` records: it pins the cusp, and
+it costs a prover of Deligne–Rapoport nothing, because the cyclotomic
+identification is what the Galois computation `σ_t : a ↦ t⁻¹ a` produces in
+the first place.  The degree is then a *corollary*, proved once in
+`residueQDegree_eq_totient`.
+
+Not phrased as `Nonempty (κ(x) ≃ₐ[ℚ] CyclotomicField n ℚ)`, which is
+equivalent but unusable here: at the concrete base `ℚ` instance search finds
+`DivisionRing.toRatAlgebra` for `Algebra ℚ (CyclotomicField n ℚ)` rather than
+`CyclotomicField.algebra`, so `IsCyclotomicExtension {n} ℚ (CyclotomicField n
+ℚ)` fails to synthesize — a fresh instance of this development's recurring
+`ℚ`-algebra diamond.  Naming the property of `κ(x)` directly avoids ever
+forming the second cyclotomic object. -/
+def IsResidueCyclotomic {X : Scheme.{0}} (strX : X ⟶ SpecQ) (x : X) (n : ℕ) : Prop :=
+  letI := residueQAlgebra strX x
+  IsCyclotomicExtension {n} ℚ (X.residueField x)
+
+/-- **`[ℚ(ζ_n) : ℚ] = φ(n)`, read off a point whose residue field is
+`ℚ(ζ_n)`** (PROVEN; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+`IsCyclotomicExtension.finrank` together with
+`Polynomial.cyclotomic.irreducible_rat`.  This is the whole of the arithmetic
+that turns the Deligne–Rapoport description of the cusp locus into the
+residue DEGREES that `IsX0Compactification.CuspLocus.degree` records — and
+hence, through `exists_specSection_of_finrank_eq_one`, into `ℚ`-rational
+points.  `n ≠ 0` is needed for the irreducibility input; at a cusp of
+`X_0(N)` it holds because `d ∈ N.divisors` forces `d ≠ 0`, hence
+`gcd(d, N/d) ≠ 0`. -/
+theorem residueQDegree_eq_totient {X : Scheme.{0}} {strX : X ⟶ SpecQ} {x : X} {n : ℕ}
+    (hn : n ≠ 0) (hcyc : IsResidueCyclotomic strX x n) :
+    residueQDegree strX x = n.totient := by
+  letI := residueQAlgebra strX x
+  haveI : NeZero n := ⟨hn⟩
+  haveI : IsCyclotomicExtension {n} ℚ (X.residueField x) := hcyc
+  show Module.finrank ℚ (X.residueField x) = n.totient
+  exact IsCyclotomicExtension.finrank (n := n) (K := ℚ) (X.residueField x)
+    (Polynomial.cyclotomic.irreducible_rat (Nat.pos_of_ne_zero hn))
+
+/-- **The cusp locus, assembled from a divisor-indexing of the cusps by
+points** (PROVEN; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+The sorry-free half of `nonempty_cuspLocus`, in the same relation to it that
+`nonempty_cuspIndexing_of_cuspLocus` bears to `nonempty_cuspIndexing_of_ne_zero`:
+every field of `CuspLocus` is discharged here, so that the leaf below carries
+only Deligne–Rapoport.  Field by field, given a bijection
+`e : N.divisors ≃ X ∖ Y` whose value at `d` has residue field `ℚ(ζ_{gcd(d,
+N/d)})`:
+
+* `K d` — the residue field `κ(e d)` itself, with `isField` mathlib's
+  instance and `isAlgebra` the `residueQAlgebra` of the structure morphism.
+* `κ d` — `X.fromSpecResidueField (e d)`, mathlib's canonical
+  `Spec κ(x) ⟶ X`.
+* `comm` — `Spec.map_preimage`, definitionally: see `residueQAlgebra` for why
+  the algebra structure is *defined* to make this hold.
+* `degree` — `residueQDegree_eq_totient`.
+* `cover` — `Scheme.range_fromSpecResidueField` says the image of `κ d` is the
+  single point `e d`, so the union over `d` is the image of `e`, which is all
+  of `(Set.range j.base)ᶜ` because `e` is a bijection ONTO it.  This is where
+  surjectivity of `e` is used, and it is the only place; an injection would
+  give every field but this one.
+* `disj` — distinct singletons, from injectivity of `e`.
+
+Note that `d ≠ 0` for `d ∈ N.divisors` (`Nat.pos_of_mem_divisors`) is what
+supplies `residueQDegree_eq_totient`'s hypothesis; `hN : N ≠ 0` is not needed
+here at all, since `N = 0` makes `N.divisors` empty and every field vacuous. -/
+theorem nonempty_cuspLocus_of_residueIndexing {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j)
+    (e : N.divisors ≃ ((Set.range j.base)ᶜ : Set X))
+    (hcyc : ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1))) :
+    Nonempty h.CuspLocus := by
+  have hdvd : ∀ d : N.divisors, Nat.gcd d.1 (N / d.1) ≠ 0 := fun d hg =>
+    (Nat.pos_of_mem_divisors d.2).ne' (Nat.eq_zero_of_gcd_eq_zero_left hg)
+  have hr : ∀ d : N.divisors,
+      Set.range (X.fromSpecResidueField (e d).1).base = {((e d).1 : X)} := fun d =>
+    Scheme.range_fromSpecResidueField _
+  refine ⟨{ K := fun d => (X.residueField (e d).1 : Type)
+            isField := fun d => inferInstance
+            isAlgebra := fun d => residueQAlgebra strX (e d).1
+            degree := fun d => residueQDegree_eq_totient (hdvd d) (hcyc d)
+            κ := fun d => X.fromSpecResidueField (e d).1
+            comm := fun d => (Spec.map_preimage _).symm
+            cover := ?_
+            disj := ?_ }⟩
+  · simp only [hr]
+    ext p
+    simp only [Set.mem_iUnion, Set.mem_singleton_iff]
+    exact ⟨by rintro ⟨d, rfl⟩; exact (e d).2, fun hp => ⟨e.symm ⟨p, hp⟩, by simp⟩⟩
+  · intro d d' hne
+    rw [hr d, hr d']
+    exact Set.disjoint_singleton.mpr fun hc => hne (e.injective (Subtype.ext hc))
+
+/-- **The cusps of `X_0(N)` are indexed by the divisors of `N`, the cusp above
+`d` having residue field `ℚ(ζ_{gcd(d, N/d)})`** (sorry node).
+
+This is the sole remaining Deligne–Rapoport input of the whole cusp route:
+`nonempty_cuspLocus`, `nonempty_cuspIndexing_of_cuspLocus`,
+`nonempty_cuspIndexing_of_ne_zero` and `nonempty_cuspIndexing` are all proven
+over it, and `exists_rationalCusps` follows by
+`Finset.exists_subset_card_eq`.  Everything below the line "WHAT REMAINS"
+in the previous version of this note is now either proven or restated here.
+
+**What the statement says, and why it is in this form.**  `X ∖ Y` — a finite
+set of closed points of the curve `X`, by `finite_compl` — is in bijection
+with `N.divisors`, and the point corresponding to `d` has residue field
+`ℚ(ζ_{gcd(d, N/d)})`.  That is Deligne–Rapoport's cuspidal statement
+verbatim, as a statement about POINTS of the `ℚ`-scheme `X` and their residue
+fields; no Galois set, no descent, no `∐` to construct.  The passage from
+here to the `CuspLocus` datum — building `Spec κ(x) ⟶ X`, its
+`ℚ`-structure, the covering and the disjointness, and the residue DEGREE
+`φ(gcd(d, N/d))` — is `nonempty_cuspLocus_of_residueIndexing` together with
+`residueQDegree_eq_totient`, both sorry-free.
+
+Note which half of the bijection does the work: injectivity gives `disj`,
+SURJECTIVITY gives `cover`.  So the leaf is not weakenable to an injection
+`N.divisors ↪ X ∖ Y` without losing exactly the field that forbids junk
+witnesses — see the `cover` discussion on `IsX0Compactification.CuspLocus`.
 
 TRUE and classical (Ogg; Deligne–Rapoport VI.6, or Diamond–Im §9.3): the
 cusps of `X_0(N)` over `ℚ̄` are `Γ_0(N)\ℙ¹(ℚ)`, the cusp `a/d` with
@@ -10571,11 +10760,14 @@ N/d)`, and `σ_t ∈ Gal(ℚ(ζ_n)/ℚ)` sends the class of `a` to the class of
 is `ℚ`-rational; and cusps above distinct `d` are distinct because `d`
 is a `Γ_0(N)`-invariant of the cusp.
 
-WHAT REMAINS, precisely.  See `IsX0Compactification.CuspIndexing` for
-why only the *easy* direction of the classification is needed here.  The
-missing input is the identification of `X ∖ Y` with `Γ_0(N)\ℙ¹(ℚ)`
-compatibly with the `Γ_ℚ`-action, which is the cuspidal part of the
-Deligne–Rapoport model.  `IsX0Compactification` supplies only that the
+WHAT REMAINS, precisely.  The missing input is the identification of `X ∖ Y`
+with `Γ_0(N)\ℙ¹(ℚ)` compatibly with the `Γ_ℚ`-action, which is the cuspidal
+part of the Deligne–Rapoport model.  (Only the *easy* direction of the
+classification is needed even so — see `IsX0Compactification.CuspIndexing`,
+noting that the hard direction is not needed for
+`exists_rationalCusps`, though this leaf as stated does pin the residue field
+above every `d`, not only above the rational ones.)
+`IsX0Compactification` supplies only that the
 complement is finite, so nothing weaker than that identification can
 produce a single cusp: note that the structure's fields do not by
 themselves forbid `j` from being an isomorphism (with no cusps at all) —
@@ -10646,6 +10838,22 @@ is now CLOSED, negatively, and two more are added.
    `IsX0Compactification` whose cusps are not those of `X_0(N)` — `cover`
    is the field that is supposed to forbid it.
 
+7. *The SCHEME-THEORETIC-POINT axis* — TAKEN, and it is why this leaf now
+   carries the obstruction while `nonempty_cuspLocus` is proven.  Axis 6
+   changed the STATEMENT of the cusp locus from a Galois set to a
+   `ℚ`-scheme; it left the whole of that scheme — the disjoint union, its
+   `ℚ`-structure, the covering, the disjointness AND the degrees — inside
+   one leaf.  But `X ∖ Y` is already a set of points of a `ℚ`-scheme, so
+   none of that has to be constructed: mathlib's residue-field API
+   (`Scheme.residueField`, `Scheme.fromSpecResidueField`,
+   `Scheme.range_fromSpecResidueField`, `Spec.map_preimage`) manufactures
+   `Spec κ(x) ⟶ X` and its `ℚ`-structure from the point alone, and
+   `IsCyclotomicExtension.finrank` supplies the degree.  What is irreducibly
+   modular is only the INDEXING — which points, and which residue fields —
+   and that is all this leaf now says.  The axis is refuted by a field of
+   `CuspLocus` that cannot be recovered from `(e, hcyc)`;
+   `nonempty_cuspLocus_of_residueIndexing` shows there is none.
+
 CORRECTION to the first pass's refuting check (2026-07-27).  It claimed
 `grep` over `Fermat/`, `.lake/packages/mathlib/` and `~/cs/FLT/` finds
 neither a modular-curve cusp theory nor a `Γ_0(N)\ℙ¹(ℚ)` description "in
@@ -10681,27 +10889,50 @@ uniformisation and the `ℚ`-structure, and nothing else.
 `hN : N ≠ 0` is carried because every construction of a cusp needs it
 (`Nat.divisors 0 = ∅`, so there is nothing to index at `N = 0`), and
 because `N = 0` is a recurring trap in this module — see `exists_jMap`,
-where the same hypothesis IS load-bearing.  It is not needed for TRUTH:
-`IsX0Compactification 0` looks unsatisfiable (the `Γ₀(0)`-problem is
-supported on the empty scheme, so `coarse` forces `Y = ∅`, whence
-`finite_compl` asks a smooth proper geometrically connected curve to be
-finite), but nothing in this file proves that, and `N = 0` never reaches
-here — `nonempty_cuspIndexing` discharges it separately and vacuously. -/
+where the same hypothesis IS load-bearing.  Here it is load-bearing in a
+sharper way than the phrasing "nothing to index" suggests: at `N = 0` the
+bijection asserts that `X ∖ Y` is EMPTY — that `X_0(0)` has no cusps at all
+— which is not a vacuous claim about an empty index set but a substantive
+one about `X`, and is not derivable from `IsX0Compactification 0`.  (That
+structure looks unsatisfiable — the `Γ₀(0)`-problem is supported on the
+empty scheme, so `coarse` forces `Y = ∅`, whence `finite_compl` asks a
+smooth proper geometrically connected curve to be finite — but nothing in
+this file proves that.)  `N = 0` never reaches here in any case:
+`nonempty_cuspIndexing` discharges it separately and vacuously. -/
+theorem exists_cuspResidueIndexing (N : ℕ) (hN : N ≠ 0) {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) :
+    ∃ e : N.divisors ≃ ((Set.range j.base)ᶜ : Set X),
+      ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1)) :=
+  sorry
+
+/-- **The cusp locus of `X_0(N)` exists: `X ∖ Y` is `∐_{d ∣ N} Spec
+ℚ(ζ_{gcd(d, N/d)})`** (PROVEN 2026-07-27 over `exists_cuspResidueIndexing`).
+
+The former sorry leaf.  What was open here is now open one level down, in
+the form Deligne–Rapoport state it — the cusps as POINTS of `X` with named
+residue fields — and the step from there to the `CuspLocus` datum is
+`nonempty_cuspLocus_of_residueIndexing`, which is sorry-free.  See
+`exists_cuspResidueIndexing` for the seven axes searched and for the pin
+survey; see the section note above `residueQAlgebra` for why the scheme
+structure costs nothing once the points are given. -/
 theorem nonempty_cuspLocus (N : ℕ) (hN : N ≠ 0) {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) :
     Nonempty h.CuspLocus :=
-  sorry
+  let ⟨e, hcyc⟩ := exists_cuspResidueIndexing N hN h
+  nonempty_cuspLocus_of_residueIndexing h e hcyc
 
 /-- **`X_0(N)` has a `ℚ`-rational cusp above every divisor `d ∣ N` with
 `φ(gcd(d, N/d)) = 1`, and these are pairwise distinct** (PROVEN
 2026-07-27 over `nonempty_cuspLocus`).
 
 The former sorry leaf.  Everything that was open here is now open at
-`nonempty_cuspLocus`, in the form the literature states it — the cusp
-locus as a finite `ℚ`-scheme with prescribed residue degrees — and the
-step from there to this indexed family is `nonempty_cuspIndexing_of_cuspLocus`,
-which is sorry-free.
+`exists_cuspResidueIndexing`, in the form the literature states it — the
+cusps as points of `X` with named cyclotomic residue fields — and the two
+steps from there to this indexed family,
+`nonempty_cuspLocus_of_residueIndexing` and
+`nonempty_cuspIndexing_of_cuspLocus`, are both sorry-free.
 
 The cut is what removes GALOIS DESCENT from the route; see the ROUTE note
 on `IsX0Compactification.CuspLocus` for why the previously recorded
