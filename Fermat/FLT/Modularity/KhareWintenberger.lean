@@ -189,6 +189,11 @@ public import Mathlib.AlgebraicGeometry.Artinian
 -- `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` is proven with
 -- `IsClopen.eq_univ`; both must therefore be re-exported, not merely reachable.
 public import Mathlib.AlgebraicGeometry.Noetherian
+-- Residue fields of scheme points: `Scheme.residueField`,
+-- `Scheme.fromSpecResidueField`. Moret-Bailly's point entier is read off through
+-- its residue field (his Remarque 1.5), so `hasRationalPoint_residueField` and the
+-- §3 core leaf both need this.
+public import Mathlib.AlgebraicGeometry.ResidueField
 public import Mathlib.Topology.Connected.Clopen
 -- Base change of schemes: `IsFormOver` (the twisted-moduli form cut,
 -- 2026-07-25) is stated with `Limits.pullback`, so the `HasPullbacks`
@@ -15559,8 +15564,207 @@ theorem exists_projectiveCompactification_of_affine_curve
     nonempty_compl_range_of_isProper_of_isAffine fC fX j hjimm hjcomm hXpr hpos⟩
 
 open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly Remarque 1.5, the packaging half** (PROVEN): every point `x` of a
+scheme `X` over `Spec ℚ` carries a rational point of `X` over its OWN residue field
+`κ(x)`, namely the canonical morphism `Spec κ(x) ⟶ X`.
+
+WHY THIS IS THE RIGHT PACKAGING, from the primary source. Moret–Bailly's conclusion is
+a *point entier* `Y ⊆ X` — an irreducible closed subset finite and surjective over the
+base — and Remarque 1.5 reads it off verbatim: "sa fibre générique `Y_K` est alors
+spectre d'une extension finie `K'` de `K`, et l'inclusion `Y ⊆ X` définit un point
+`x ∈ X(K')`". So the number field the theorem produces is never abstract: it is the
+residue field at a point of the curve, and the rational point is the canonical
+`Spec κ(x) ⟶ X`. Stating the §3 core in residue-field form (the leaf
+`exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification`
+below) therefore does not strengthen the burden gratuitously — it is the shape the
+argument actually delivers, and it removes the "produce a field out of nowhere"
+existential from the geometric leaf.
+
+The compatibility square costs nothing: `hasRationalPoint_iff_nonempty` (proven above)
+says that over the base `Spec ℚ` an `F`-point is bare nonemptiness of `Spec F ⟶ X`,
+because `ULift.{u} ℚ →+* F` is a subsingleton.
+
+`CharZero κ(x)` is an explicit hypothesis rather than a consequence of `fX`: it is what
+`algebraRat` needs to give the `Algebra ℚ κ(x)` that `HasRationalPoint` is stated
+against, and at the sole call site it arrives for free inside `NumberField κ(x)`.
+Deriving it from `fX` instead would mean chasing the structure morphism into the stalk,
+which no consumer needs. -/
+theorem hasRationalPoint_residueField {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (x : ↥X)
+    [CharZero ↥(X.residueField x)] :
+    HasRationalPoint fX ↥(X.residueField x) :=
+  (hasRationalPoint_iff_nonempty fX ↥(X.residueField x)).mpr
+    ⟨X.fromSpecResidueField x⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.2–3.10 in residue-field form: the arithmetic core**
+(SORRY — the whole Picard-theoretic argument; the ONE residual leaf of
+`exists_totallySplitPoint_of_projectiveCompactification`).
+
+Given the §3.1 datum — `C` a dense affine open in a smooth proper geometrically
+irreducible curve `X̄/ℚ` with nonempty complement `Z` — and the local solvability of the
+Skolem datum (`hreal`, `hSpt`), Moret–Bailly produces a *point entier*: an irreducible
+closed `Y ⊆ C`, finite over the base, whose generic fibre `Spec F` is `L_v`-split and
+inside `Ω_v` at every `v ∈ Σ = {∞} ∪ S`. **This leaf states exactly that**, with `Y`
+named by the point `x : ↥C` it is the closure of and `F` by `κ(x)`; the consumer then
+packages it through `hasRationalPoint_residueField` above, which is Remarque 1.5.
+
+THE ARGUMENT, in Moret–Bailly's own numbering. The paper is *Groupes de Picard et
+problèmes de Skolem II*, Ann. Sci. ÉNS (4) **22** (1989), 181–194, and it is OPEN ACCESS
+on NUMDAM at `ASENS_1989_4_22_2_181_0` — the summary below was re-derived from the text
+itself (2026-07-27), not from memory, and the lemma numbers and hypotheses are the
+paper's.
+
+* **3.1** (the compactification, and the standing normalisations). `j : X ↪ X̄` dense
+  open with `X̄ → B` projective, `X̄` normal — hence regular, `f` being smooth — and
+  `Z = X̄ - X` with its reduced structure. Set `g = genus X̄_K` and `z = deg_K Z_K`;
+  MB arranges `z > 0` outright ("on peut toujours agrandir `Z`!"), which is `hZ` here.
+  The normalisations 3.1.2 — (i) `X̄` regular, (ii) fibres of `f` geometrically integral,
+  (iii) `Z` regular and `Z → B` finite flat surjective, so `Z` is a Cartier divisor —
+  are bought by shrinking `B` and enlarging `Σ` (his 1.10); over `B = Spec ℚ` there is
+  only one fibre and they are correspondingly cheap.
+* **3.2** `X̄^(d) := X̄^d / 𝔖_d` (fibre product over `B`), with `U_d ⊆ X̄^(d)` the image of
+  the complement of the diagonals. Because `X̄` is smooth over `B`, `X̄^(d)(S)` is
+  functorially the set of effective Cartier divisors `D ⊆ X̄_S` finite flat of degree `d`
+  over `S` (3.2.3), and `U_d(S)` the ones that are moreover étale. `Ω_v^[d] ⊆ U_d(K_v)`
+  is the set of such `D` that are `L_v`-split with `D(L_v) ⊆ Ω_v` (3.2.4).
+* **3.3** `Ω_v^[d]` is (i) open in `U_d(K_v)` for the `v`-topology, and (ii) NONEMPTY as
+  soon as `[L_v : K_v] ∣ d`. Here `L_v = K_v`, so (ii) holds for every `d ≥ 1`, and that
+  is precisely what `hreal` and `hSpt` supply.
+* **3.4** `PG(X̄, Z)(S)` = isomorphism classes of pairs `(ℒ, α)` with `ℒ` invertible on
+  `X̄_S` and `α` a trivialisation of `ℒ|_{Z_S}`; `PG_d` the degree-`d` part. The exact
+  sequence `1 → 𝔾_{m,B} → (π_Z)_* 𝔾_{m,Z} → PG(X̄,Z) → Pic_{X̄/B} → 1` (3.4.2) exhibits
+  `PG(X̄,Z)` as an extension of `Pic_{X̄/B}` by a smooth affine commutative `B`-group
+  scheme, whence representability by a smooth separated `B`-group scheme with `PG_0`
+  its neutral component (Serre's generalised Jacobian, *GACC* ch. V). MB notes he needs
+  only representability of the GENERIC fibre `PG(X̄,Z)_K`, which follows from Murre's
+  representability of `Pic_{X̄_K/K}` (SGA 6, XII.1.5) — a real reduction in cost for a
+  formalisation, since the base here IS a field.
+* **3.5** `φ_d : X̄^(d) → PG_d(X̄,Z)`, `D ↦ class of (𝒪(D), s_D|_Z)`, with fibres
+  described by `Γ(X̄_S, ℒ, α) = {s ∈ H⁰(X̄_S, ℒ) : s|_Z = α}` (3.5.3–3.5.4).
+* **3.6** For `d ≥ 2g + z - 1`, `φ_d` is a Zariski-locally trivial fibration in affine
+  spaces of dimension `d + 1 - g - z`. The proof is `R¹` vanishing (3.6.2) by duality,
+  using that `X̄` is regular hence Gorenstein and the fibres geometrically reduced, so
+  that the restriction `ℰ_d ↠ ℱ_d` is a surjection of locally free sheaves with kernel
+  the rank-`(d+1-g-z)` bundle `𝒩_d`; `U_d` is the torsor under `V(𝒩_d)` cut out by `α_d`.
+* **3.7** `W_v^d := φ_d(Ω_v^[d]) ⊆ P_d(K_v)` where `P_d = PG_d(X̄,Z)`. **3.7.2**: (i) for
+  `d ≥ 2g + z - 1` it is open, and nonempty when `[L_v:K_v] ∣ d`; (ii) for `d ≥ 2g + z`
+  and any `d' ≥ 0`, `W_v^d · W_v^{d'} ⊆ W_v^{d+d'}`. Note the two bounds DIFFER by one
+  and both are used.
+* **3.8** THE STEP THAT PRODUCES THE POINT. Let `ℒ` be invertible on `X̄` of degree
+  `d ≥ 2g + z - 1` and `α` a trivialisation of `ℒ|_Z`, giving `(ℒ,α) ∈ P_d(R)`, and
+  suppose its image in `P_d(K_v)` lies in `W_v^d` for every `v ∈ Σ`. If the Skolem datum
+  is INCOMPLETE there is `s ∈ Γ(X̄, ℒ, α)` with `div(s) ∈ Ω_v^[d]` for all `v`, and every
+  irreducible component of `div(s)` is a point entier. The engine is STRONG
+  APPROXIMATION: `A := Γ(X̄, ℒ, α)` is an `R`-affine space (a principal homogeneous space
+  under the finitely generated projective `R`-module `H⁰(X̄, ℒ(-Z))`), each
+  `U_v ⊆ A ⊗_R K_v` is open by 3.3(i) and nonempty by hypothesis, and incompleteness
+  makes `A` dense in `∏_{v ∈ Σ} (A ⊗_R K_v)` — Cassels–Fröhlich II §15 for `A ≅ R`,
+  extended componentwise.
+* **3.9** Such an `(ℒ, α)` exists. Take `ℒ₀` ample, replace it by a power so that
+  `d = deg ℒ₀` satisfies `d ≥ 2g + z`, `[L_v:K_v] ∣ d` for all `v`, and `ℒ₀|_Z ≅ 𝒪_Z`
+  (possible because `Pic(Z)` is finite); fix `α₀`, so that trivialisations of `ℒ₀^n|_Z`
+  are exactly `λ · α₀^n` with `λ ∈ Γ(Z, 𝒪_Z^×)`. With `K_Σ = ∏_{v∈Σ} K_v` and
+  `G = P₀(K_Σ) / im Γ(Z, 𝒪_Z^×)` given the quotient topology, **3.9.2** says `G` is
+  QUASI-COMPACT, so every `g ∈ G` has the identity as an accumulation point of `(gⁿ)`;
+  applied to the class of `p₀ q₀^{-1}` (`q₀ ∈ W^d` fixed, `p₀` the class of `(ℒ₀,α₀)`)
+  this yields `n ≥ 1` and `λ` with `(ℒ₀^n, λ α₀^n) ∈ W^{nd}`.
+* **3.10** Proof of 3.9.2: (3.4.2) gives an exact sequence of topological groups
+  `1 → ((π_Z)_* 𝔾_m / 𝔾_m)(K_Σ) → P₀(K_Σ) → Pic⁰_{X̄_K/K}(K_Σ)`, strict because `c` is
+  smooth hence open. So `G` is an extension of an OPEN subgroup of
+  `∏_{v ∈ Σ} Pic⁰(K_v)` by `(R' ⊗_R K_Σ)^× / (R'^× · K_Σ^×)`, where `R'` is the ring of
+  `Z`. The first factor is compact by **3.10.2** (Raynaud: for `F` local and `C/F` a
+  proper regular geometrically integral curve, `J(F)` is compact — `J` sits as an open
+  subscheme of the proper Altman–Kleiman scheme of rank-1 torsion-free sheaves, and
+  regularity makes torsion-free coherent sheaves locally free, so `J(F) = Y(F)` is
+  compact); the second is handled by the unit theorem together with incompleteness.
+
+MACHINERY SURVEY, RE-RUN ACROSS ALL THREE TREES (2026-07-27) and unchanged: **every one
+of §3's five inputs is absent from `Fermat/`, from the mathlib pin, and from
+`~/cs/FLT`.** These are the greps that would REFUTE it — run them rather than re-reading
+the paper:
+
+* `grep -rn "PicardScheme\|PicardFunctor\|Pic⁰\|picardGroupScheme" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+  — no Picard SCHEME or functor anywhere. Mathlib's `CommRing.Pic R`
+  (`Mathlib/RingTheory/PicardGroup.lean`) is the Picard *group of a ring* — invertible
+  modules up to isomorphism, a `CommGroup`, with `ClassGroup.equivPic` for a domain. It
+  has no relative version over a base, no neutral component, no smoothness, and none of
+  §3.4's exact sequence. A name collision, not a starting point.
+* `grep -rn "SymmetricPower" --include=*.lean .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`
+  — EMPTY: no symmetric power OF A SCHEME, so `X̄^(d)` of §3.2 cannot be written.
+  **Beware the near-miss**: mathlib DOES have `SymmetricPower`
+  (`Mathlib/LinearAlgebra/TensorPower/Symmetric.lean`), but it is the symmetric tensor
+  power of a MODULE — a quotient of `⨂[R] M` — with no scheme, no quotient by `𝔖_d`, and
+  nothing about effective Cartier divisors finite flat of degree `d`. Restricting the
+  grep to `AlgebraicGeometry/` is the check that discriminates.
+* `grep -rn "GeneralisedJacobian\|GeneralizedJacobian" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+  — no generalised Jacobian (Serre, *GACC* ch. V), the neutral component in §3.4.
+* `grep -rn "StrongApproximation\|strongApproximation" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+  — EMPTY in all three.
+* Raynaud's 3.10.2 and the Altman–Kleiman compactified Picard scheme it runs through:
+  absent, and downstream of the Picard scheme in any case.
+
+The `~/cs/FLT` hits on the bare word "Jacobian" are false positives — `Matrix`/derivative
+Jacobians in `ModuleTopology.lean`, `Determinant.lean` and `HaarChar/RealComplex.lean`,
+with no curve or Picard content.
+
+**THE ONE PIECE THAT IS BUILDABLE TODAY, and the recommended first sub-target.** §3.8's
+engine is strong approximation, and it is the only input of §3 that needs NEITHER a
+Picard scheme NOR a symmetric power: specialised to `K = ℚ`, `Σ = {∞} ∪ S` and
+`R = ℤ[1/N]`, it is the statement that the diagonal image of `R` is dense in
+`ℝ × ∏_{p ∈ S} ℚ_p` whenever some prime `q ∤ N` is omitted from `Σ` (Cassels–Fröhlich
+II §15), extended to a finitely generated projective `R`-module componentwise. Every
+object in that sentence — `ℝ`, `ℚ_[p]`, `ℤ[1/N]` — is at the pin today. It is NOT
+committed alongside this leaf only because the free-floating rule forbids a declaration
+with no consumer in the root cone, and its consumer is §3.8, which needs `Γ(X̄, ℒ, α)`.
+Whoever takes this leaf should write it first: it is separable, checkable, and it is the
+step that actually manufactures the point.
+
+CONSEQUENCE FOR DISPATCH: this leaf is NOT gated on any repair elsewhere in this file.
+Its dense-open dimension obligation is discharged (it CARRIES `hXdim`), its §3.1
+obligation is discharged (`hZ` is proven upstream), and the `residueCardTwo` layering
+break that gates its two sibling leaves does not touch it. What stands between it and a
+proof is the five absent chapters above, in the order §3.2 → §3.4 → §3.5 → §3.8 → §3.10.
+A prover dispatched here without at least the Picard scheme and the symmetric power in
+hand has nothing to write.
+
+FAITHFULNESS. Re-checked against the paper itself (2026-07-27), not a summary. `hdim`
+and `hXdim` are `dim = 1` ("`dim(X_K) = 1`", 3.1); `hZ` is `z > 0` (3.1, and it is what
+makes the fibre dimension `d + 1 - g - z` and the group `Γ(Z, 𝒪_Z^×)` do their work in
+3.6 and 3.9); `hjcomm` is what makes `Ω_v ⊆ C(K_v)` a set of conditions on divisors of
+`X̄` disjoint from `Z`; `hreal`/`hSpt` are the nonemptiness of `Ω_∞` and `Ω_p` feeding
+3.3(ii) with `L_v = K_v`. Incompleteness of the Skolem datum — consumed by 3.8 and by
+3.10 — is bought by inverting one prime `q ∉ S ∪ {∞}`, and is exactly why the conclusion
+is a `ℚ`-point of `C` rather than an integral point. The conclusion is asked on `C`, the
+affine part, which is what MB delivers (his `Y ⊆ X`, not `⊆ X̄`) and what the consumer
+needs. -/
+theorem exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification
+    {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hjcomm : j ≫ fX = fC)
+    (hXsmooth : AlgebraicGeometry.Smooth fX)
+    (hXproper : AlgebraicGeometry.IsProper fX)
+    (hXgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hZ : (Set.range j.base)ᶜ.Nonempty)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hXdim : topologicalKrullDim ↥Xbar ≤ 1)
+    (hreal : HasRationalPoint fC (ULift.{u} ℝ))
+    (S : Finset ℕ) (hSprime : ∀ p ∈ S, p.Prime)
+    (hSpt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S →
+      HasRationalPoint fC (ULift.{u} ℚ_[p])) :
+    ∃ (x : ↥C) (_ : NumberField ↥(C.residueField x))
+      (_ : NumberField.IsTotallyReal ↥(C.residueField x)),
+      ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.10: the arithmetic core, on the
-compactification** (SORRY — the whole Picard-theoretic argument).
+compactification** (**DECOMPOSED 2026-07-27** — an assembly over the single
+residue-field leaf
+`exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification`
+above, packaged by `hasRationalPoint_residueField`, which is Remarque 1.5).
 
 Given the §3.1 datum — `C` a dense affine open in a smooth proper
 geometrically irreducible curve `X̄/ℚ` with nonempty complement `Z` — and
@@ -15688,69 +15892,48 @@ leaf's burden in any case. `exists_projectiveCompactification_of_affine_curve`
 is now an assembly, and its complement-nonemptiness half — `hZ`, which this
 leaf consumes — is PROVEN.
 
-MACHINERY SURVEY, RE-RUN ACROSS ALL THREE TREES (2026-07-27), because the
-doctrine's "absent from the pin is often wrong" rule demands `Fermat/`, the
-mathlib pin AND `~/cs/FLT` be checked, not just mathlib. **The verdict is
-unchanged: every one of §3.2–3.10's five inputs is absent from all three.**
-These are the greps that would REFUTE it — a hit from any of them reopens the
-costing, and the next auditor should run them rather than re-reading the paper:
+THE DECOMPOSITION TAKEN HERE (2026-07-27), and why it is the only one available.
+This declaration is now an ASSEMBLY of two things:
 
-* `grep -rn "PicardScheme\|PicardFunctor\|Pic⁰\|picardGroupScheme" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
-  — no Picard SCHEME or functor anywhere.  What mathlib does have is
-  `CommRing.Pic R` (`Mathlib/RingTheory/PicardGroup.lean`), the Picard *group*
-  of a commutative RING — invertible modules up to isomorphism, with
-  `ClassGroup.equivPic` identifying it with the class group for a domain.  That
-  is a `CommGroup`, not a `B`-group scheme; it has no relative version over a
-  base, no neutral component, no smoothness, and none of §3.4's exact sequence
-  `1 → 𝔾_m,B → (π_Z)_* 𝔾_m,Z → PG(X̄,Z) → Pic_{X̄/B} → 1`.  So it is a name
-  collision, not a starting point — the two occurrences of "Picard" under
-  `AlgebraicGeometry/` are prose in `EllipticCurve/Weierstrass.lean` about rings
-  of trivial Picard group, not a construction.
-* `grep -rn "SymmetricPower" --include=*.lean .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`
-  — EMPTY: no symmetric power OF A SCHEME, so `X̄^(d)` of §3.2 cannot be written.
-  **Beware the near-miss that makes the naive grep useless here**: mathlib DOES
-  have `SymmetricPower` (`Mathlib/LinearAlgebra/TensorPower/Symmetric.lean`,
-  `SymmetricPower.Rel`, `SymmetricPower.module`), but it is the symmetric tensor
-  power of a MODULE — a quotient of `⨂[R] M` — with no scheme, no quotient by
-  `S_d`, and nothing about effective Cartier divisors finite flat of degree `d`.
-  It is not a foothold for §3.2; searching `AlgebraicGeometry/` is the check that
-  actually discriminates.
-* `grep -rn "GeneralisedJacobian\|GeneralizedJacobian" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
-  — no generalised Jacobian (Serre, *GACC* ch. V), the neutral component in §3.4.
-* `grep -rn "StrongApproximation\|strongApproximation" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
-  — EMPTY in all three. §3.8 is the step that actually produces the point, and
-  it is strong approximation in an affine space over a ring of `S`-integers.
-* Raynaud's compactness of `J(F)` for `F` local (§3.10.2), and the
-  Altman–Kleiman compactified Picard scheme it runs through: absent, and
-  downstream of the Picard scheme in any case.
+* `exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification`
+  — the §3.2–3.10 core, stated in the shape the argument actually delivers: a POINT
+  `x` of `C` whose own residue field `κ(x)` is a totally real number field, totally
+  split at every `p ∈ S`. That is Moret–Bailly's *point entier* read through his
+  Remarque 1.5. Its docstring carries the full §3 route, re-derived from the paper
+  itself, and the machinery survey that used to live here.
+* `hasRationalPoint_residueField` — PROVEN — which turns any point of a `ℚ`-scheme
+  into a rational point over its residue field, the compatibility square being free
+  by `hasRationalPoint_iff_nonempty`.
 
-The hits that a NAIVE grep produces in `~/cs/FLT` on the bare word "Jacobian"
-are false positives — they are `Matrix`/derivative Jacobians in
-`ModuleTopology.lean`, `Determinant.lean` and `HaarChar/RealComplex.lean`, with
-no curve or Picard content. Do not read them as a foothold; that is the specific
-mistake this paragraph exists to prevent.
+So the abstract "produce a field from nowhere" existential is gone: the field is
+always a residue field of the curve and the point is always the canonical
+`Spec κ(x) ⟶ C`.
 
-CONSEQUENCE FOR DISPATCH, stated so it is not mistaken for a smaller claim: this
-leaf is NOT gated on any repair elsewhere in this file. Its dense-open dimension
-obligation was discharged (it now CARRIES `hXdim`), its §3.1 obligation was
-discharged (`hZ` is proven), and the `residueCardTwo` layering break that gates
-its two sibling leaves does not touch it at all. What stands between it and a
-proof is five absent chapters of algebraic geometry, in the order §3.2 → §3.4 →
-§3.5 → §3.8 → §3.10. A prover dispatched here without at least the Picard scheme
-and the symmetric power in hand has nothing to write.
+**No further cut was attempted, deliberately.** Every remaining step of §3 is a
+statement ABOUT the objects `X̄^(d)` and `PG_d(X̄, Z)`, neither of which exists in
+any of the three trees, so cutting further would mean inventing an axiomatic
+interface for a relative Picard scheme and a symmetric power of a curve and then
+proving §3.7–3.9 against it. That interface cannot be validated against anything
+here, and an unvalidatable interface is exactly the "leaf that looks stronger than
+it is" this project treats as worse than an open sorry. The honest boundary is the
+one drawn above: everything expressible without those two objects is proven, and
+everything that needs them is one named leaf.
 
-FAITHFULNESS RE-CHECK (2026-07-27), since a leaf that will sit open a long time
-should be known to be TRUE: the statement is Moret–Bailly Thm 1.3 + Remarque 1.5
-read at `K = ℚ`, `Σ = {∞} ∪ S`, `L_v = K_v`, `Ω_∞ = C(ℝ)`, `Ω_p = C(ℚ_p)`, and
-each conjunct of the conclusion is the reading of a conjunct of his: `F` a number
-field and `F ⊗ ℝ ≅ ℝ^[F:ℚ]` is `NumberField.IsTotallyReal F`; `F ⊗ ℚ_p ≅ ℚ_p^[F:ℚ]`
-is `IsTotallySplitAt F p`; and the point entier `Y ⊆ C` — note `C`, the affine
-part, not `X̄` — gives `HasRationalPoint fC F`. The conclusion asks for the point
-on `C`, which is what MB delivers and what the consumer needs, so there is no
-gap of the kind that has bitten sibling leaves here. Incompleteness of the Skolem
-datum, which §3.8 and §3.10.3 both consume, is bought by inverting one prime
-`q ∉ S ∪ {∞}` and is why the conclusion is a `ℚ`-point rather than an integral
-point. -/
+FAITHFULNESS RE-CHECK (2026-07-27, against the paper and not a summary), since a
+leaf that will sit open a long time should be known to be TRUE: the statement is
+Moret–Bailly Thm 1.3 + Remarque 1.5 read at `K = ℚ`, `Σ = {∞} ∪ S`, `L_v = K_v`,
+`Ω_∞ = C(ℝ)`, `Ω_p = C(ℚ_p)`, and each conjunct of the conclusion is the reading of
+a conjunct of his: `F` a number field and `F ⊗ ℝ ≅ ℝ^[F:ℚ]` is
+`NumberField.IsTotallyReal F`; `F ⊗ ℚ_p ≅ ℚ_p^[F:ℚ]` is `IsTotallySplitAt F p`; and
+the point entier `Y ⊆ C` — note `C`, the affine part, not `X̄` — gives
+`HasRationalPoint fC F`. Remarque 1.5 verbatim: "sa fibre générique `Y_K` est alors
+spectre d'une extension finie `K'` de `K`, et l'inclusion `Y ⊆ X` définit un point
+`x ∈ X(K')` … Les conditions locales en `v ∈ Σ` signifient que `K'` se décompose sur
+`L_v`". The conclusion asks for the point on `C`, which is what MB delivers and what
+the consumer needs, so there is no gap of the kind that has bitten sibling leaves
+here. Incompleteness of the Skolem datum, which §3.8 and §3.10 both consume, is
+bought by inverting one prime `q ∉ S ∪ {∞}` and is why the conclusion is a `ℚ`-point
+rather than an integral point. -/
 theorem exists_totallySplitPoint_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -15770,8 +15953,13 @@ theorem exists_totallySplitPoint_of_projectiveCompactification
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F),
       (∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt F p) ∧
-      HasRationalPoint fC F :=
-  sorry
+      HasRationalPoint fC F := by
+  obtain ⟨x, hnf, htr, hsplit⟩ :=
+    exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification
+      fC fX j hjimm hjcomm hXsmooth hXproper hXgi hZ hdim hXdim hreal S hSprime hSpt
+  haveI := hnf
+  exact ⟨↥(C.residueField x), inferInstance, hnf, htr, hsplit,
+    hasRationalPoint_residueField fC x⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly's Théorème 1.3 on the curve, in its own form**
