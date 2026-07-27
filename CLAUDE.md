@@ -40,6 +40,28 @@ records for a reallocated worktree are history, not state); and
 A hit that fails any part is a stale note. `flt-lean-173` reached this conclusion
 correctly against a gate this file's rule had told it to trust, and was right.
 
+**The three-part test does NOT catch a stale claim in a COMMIT MESSAGE** (2026-07-27).
+Two `ModThree.lean` leaves sat in an "each owner says the other owns it" loop.
+`flt-lean-78`'s commit message ended `Still open in this cluster, owned elsewhere:
+aeval_minpoly_eq_prod_sub_integralClosureLE, smul_integralClosureLE` — **true when
+written, false by the time it merged**, because `flt-lean-77` closed both
+concurrently on a parallel branch (`bb97c541`, which is not an ancestor of
+`flt-lean-78`'s tip and reached main separately via `9269f17f`). Nobody was
+dispatched at them for a cycle, and when someone finally was, there was nothing
+to do.
+
+The note lived in git history, not in `~/.flt-inflight.jsonl`, so grepping records
+— however carefully — could not see it. **The only reliable ownership evidence is
+the compiler**: a green `lake build`'s `declaration uses 'sorry'` warning set says
+what is actually open, and it costs one build. Prefer it to any prose claim about
+what is "still open", including your own from an hour ago. A leaf named as open in
+a commit message, a docstring, or a report is a *hypothesis to check*, never a fact.
+
+Corollary for agents: **do not write "still open, owned elsewhere" lists into commit
+messages.** They are unmaintainable by construction — the commit is immutable and the
+frontier is not. Put such observations in the final report, where the orchestrator can
+act on them while they are fresh.
+
 **Check overlap by grepping the PROMPT, not the `targets` field** (2026-07-25).
 `~/.flt-inflight.jsonl`'s `targets` is harvested by a regex for bold
 `**\`name\`**`, so tasks not written in that style get junk targets (one batch
