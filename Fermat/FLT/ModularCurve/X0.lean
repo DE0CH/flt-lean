@@ -17981,6 +17981,256 @@ def IsFibreIdent.congrFibre {S S' A A' A'' : Scheme.{0}} {s : S' ⟶ S} {f : A �
       Subtype.ext (Category.assoc _ _ _)]
     exact hf.nat hmap hg h₀ h₀' _
 
+/-! ### Yoneda in the slice category: a fibre identification IS the pullback
+
+`IsX0CurveModel` pins the special fibre `X'` only through a natural
+equivalence of functors of points — `spX` together with `spX_nat` — so a
+consumer that needs an actual MORPHISM out of, or into, `X'` cannot read
+one off the structure directly.  Recovering one is Yoneda in `Over S'`,
+and it is PROVEN here from those two fields alone.
+
+The argument is the usual one, written out rather than invoked through
+the `Over`-category API so that no transport is needed at the use sites:
+a natural transformation of representable functors is composition with
+the image of the IDENTITY (`IsFibreIdent.apply_eq_comp`), and the two
+comparison morphisms built from that image are mutually inverse
+(`IsFibreIdent.compareIso`).  Only `nat` is ever used; `apply_eq_comp` is
+the single place it enters.
+
+This is what
+`exists_x0JOpenModel_of_curveModel`'s previous docstring named as the
+CHEAPER of the two attacks on it, and what
+`isSmoothProperCurve_of_fibreIdent`'s docstring names as the whole of its
+residue ("the passage from a natural equivalence of `RelPoint`-functors
+to an isomorphism of schemes over `S'`").
+
+**Possible duplication, and it is deliberate rather than overlooked.**
+`isSmoothProperCurve_of_fibreIdent` is owned concurrently and asks for
+the same transport in the `Arrow.mk f' ≅ Arrow.mk (pullback.snd f s)`
+form.  If both land, keep one — this one is a plain `Iso` of schemes plus
+the two identities that pin it over the base, which is the shape every
+consumer here wants. -/
+
+namespace IsFibreIdent
+
+variable {S S' A A' : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S} {f' : A' ⟶ S'}
+  (e : IsFibreIdent s f f')
+
+/-- **The universal relative point**: the identity of `A'`, read through
+the identification.  Yoneda's lemma, in one line. -/
+noncomputable def universalPoint : RelPoint f (f' ≫ s) :=
+  e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩
+
+/-- **Every value of a fibre identification is composition with the
+universal point** (PROVEN).
+
+This is Yoneda for the two representable functors involved, and it is the
+ONLY place `nat` is consumed: everything below is a corollary of it
+together with the universal property of the pullback. -/
+theorem apply_eq_comp {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
+    (x : RelPoint f' g) : (e.toEquiv g g₀ h x).1 = x.1 ≫ e.universalPoint.1 := by
+  have hx : RelPoint.pre x.1 x.2 (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f') = x :=
+    Subtype.ext (Category.comp_id _)
+  have hnat := e.nat x.1 x.2 (rfl : f' ≫ s = f' ≫ s) h
+    (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f')
+  rw [hx] at hnat
+  exact congrArg Subtype.val hnat
+
+/-- The comparison morphism `A' ⟶ A ×_S S'`, built from the universal
+point and `f'` by the universal property of the pullback. -/
+noncomputable def compareHom : A' ⟶ Limits.pullback f s :=
+  Limits.pullback.lift e.universalPoint.1 f' e.universalPoint.2
+
+theorem compareHom_fst : e.compareHom ≫ Limits.pullback.fst f s = e.universalPoint.1 :=
+  Limits.pullback.lift_fst _ _ _
+
+theorem compareHom_snd : e.compareHom ≫ Limits.pullback.snd f s = f' :=
+  Limits.pullback.lift_snd _ _ _
+
+/-- The inverse comparison, as a relative point of `A'`: the identification
+run backwards on the tautological point of the pullback. -/
+noncomputable def compareInvPt : RelPoint f' (Limits.pullback.snd f s) :=
+  (e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl).symm
+    ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩
+
+/-- The comparison morphism `A ×_S S' ⟶ A'`. -/
+noncomputable def compareInv : Limits.pullback f s ⟶ A' := e.compareInvPt.1
+
+theorem compareInv_comp : e.compareInv ≫ f' = Limits.pullback.snd f s := e.compareInvPt.2
+
+theorem compareInv_universalPoint :
+    e.compareInv ≫ e.universalPoint.1 = Limits.pullback.fst f s := by
+  have h := e.apply_eq_comp (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl
+    e.compareInvPt
+  rw [show e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl e.compareInvPt
+      = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ from
+    Equiv.apply_symm_apply _ _] at h
+  exact h.symm
+
+theorem compareInv_compareHom : e.compareInv ≫ e.compareHom = 𝟙 (Limits.pullback f s) := by
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, e.compareHom_fst, e.compareInv_universalPoint, Category.id_comp]
+  · rw [Category.assoc, e.compareHom_snd, e.compareInv_comp, Category.id_comp]
+
+theorem compareHom_compareInv : e.compareHom ≫ e.compareInv = 𝟙 A' := by
+  have hcomp : (e.compareHom ≫ e.compareInv) ≫ f' = f' := by
+    rw [Category.assoc, e.compareInv_comp, e.compareHom_snd]
+  have key := e.nat e.compareHom e.compareHom_snd
+    (rfl : Limits.pullback.snd f s ≫ s = Limits.pullback.snd f s ≫ s) (rfl : f' ≫ s = f' ≫ s)
+    e.compareInvPt
+  rw [show e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl e.compareInvPt
+      = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ from
+    Equiv.apply_symm_apply _ _] at key
+  have h1 : (⟨e.compareHom ≫ e.compareInv, hcomp⟩ : RelPoint f' f')
+      = RelPoint.pre e.compareHom e.compareHom_snd e.compareInvPt := rfl
+  have h2 : e.toEquiv f' (f' ≫ s) rfl ⟨e.compareHom ≫ e.compareInv, hcomp⟩
+      = e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩ := by
+    rw [h1, key]
+    exact Subtype.ext e.compareHom_fst
+  exact congrArg Subtype.val ((e.toEquiv f' (f' ≫ s) rfl).injective h2)
+
+/-- **Yoneda in the slice category** (PROVEN): a fibre identification of
+functors of points IS an isomorphism onto the pullback, over `S'`. -/
+noncomputable def compareIso : A' ≅ Limits.pullback f s where
+  hom := e.compareHom
+  inv := e.compareInv
+  hom_inv_id := e.compareHom_compareInv
+  inv_hom_id := e.compareInv_compareHom
+
+end IsFibreIdent
+
+/-- **The base change of an open immersion of models to a fibre**
+(PROVEN).
+
+`𝒴 ⊆ 𝒳` over `S` gives `𝒴 ×_S S' ⊆ 𝒳 ×_S S'`; the morphism is written as
+an explicit `Limits.pullback.lift` so that its two projections are
+definitional, and identified with `Limits.pullback.map` only where the
+open-immersion instance is needed. -/
+noncomputable def fibreBaseChangeMap {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    Limits.pullback fY s ⟶ Limits.pullback f s :=
+  Limits.pullback.lift (Limits.pullback.fst fY s ≫ jZ) (Limits.pullback.snd fY s)
+    (by rw [Category.assoc, hjZ]; exact Limits.pullback.condition)
+
+theorem fibreBaseChangeMap_fst {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    fibreBaseChangeMap hjZ s ≫ Limits.pullback.fst f s
+      = Limits.pullback.fst fY s ≫ jZ :=
+  Limits.pullback.lift_fst _ _ _
+
+theorem fibreBaseChangeMap_snd {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    fibreBaseChangeMap hjZ s ≫ Limits.pullback.snd f s = Limits.pullback.snd fY s :=
+  Limits.pullback.lift_snd _ _ _
+
+theorem isOpenImmersion_fibreBaseChangeMap {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} [IsOpenImmersion jZ] (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    IsOpenImmersion (fibreBaseChangeMap hjZ s) := by
+  have hmap : fibreBaseChangeMap hjZ s
+      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+          (by rw [Category.comp_id, hjZ]) (by simp) := by
+    apply Limits.pullback.hom_ext
+    · rw [fibreBaseChangeMap_fst]
+      exact (Limits.pullback.lift_fst _ _ _).symm
+    · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+            (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
+            = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
+        Category.comp_id]
+  rw [hmap]
+  infer_instance
+
+namespace IsFibreIdent
+
+variable {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S} {f' : A' ⟶ S'} {fY : B ⟶ S}
+  {jZ : B ⟶ A} (e : IsFibreIdent s f f') (hjZ : jZ ≫ f = fY)
+
+/-- **The inclusion of the open part into the fibre `A'`, reconstructed
+from the identification** (PROVEN).
+
+`A'` is pinned only as a functor, so this cannot be written down directly;
+it is `e.toEquiv` run BACKWARDS on the tautological open point of
+`B ×_S S'`.  Everything the consumers need about it —
+`openSection_comp`, `apply_openSection`, `isOpenImmersion_openSection` —
+follows from `apply_eq_comp` and the pullback's universal property. -/
+noncomputable def openSection : Limits.pullback fY s ⟶ A' :=
+  ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
+    ⟨Limits.pullback.fst fY s ≫ jZ, by
+      rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩).1
+
+theorem openSection_comp : openSection e hjZ ≫ f' = Limits.pullback.snd fY s :=
+  ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
+    ⟨Limits.pullback.fst fY s ≫ jZ, by
+      rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩).2
+
+theorem openSection_universalPoint :
+    openSection e hjZ ≫ e.universalPoint.1 = Limits.pullback.fst fY s ≫ jZ := by
+  have h := e.apply_eq_comp (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl
+    ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
+      ⟨Limits.pullback.fst fY s ≫ jZ, by
+        rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩)
+  rw [Equiv.apply_symm_apply] at h
+  exact h.symm
+
+/-- **The identification carries the open immersion** (PROVEN) — this is
+`spX_j`, in the generality in which it is true. -/
+theorem apply_openSection {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
+    (y : RelPoint (Limits.pullback.snd fY s) g) :
+    (e.toEquiv g g₀ h ⟨y.1 ≫ openSection e hjZ, by
+        rw [Category.assoc, openSection_comp e hjZ, y.2]⟩).1
+      = (y.1 ≫ Limits.pullback.fst fY s) ≫ jZ := by
+  rw [e.apply_eq_comp, Category.assoc, openSection_universalPoint e hjZ, Category.assoc]
+
+/-- **The reconstructed inclusion is an open immersion** (PROVEN): it is
+the base change of `jZ` composed with `compareIso.inv`. -/
+theorem isOpenImmersion_openSection [IsOpenImmersion jZ] :
+    IsOpenImmersion (openSection e hjZ) := by
+  have hfac : openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
+    apply Limits.pullback.hom_ext
+    · rw [Category.assoc, e.compareHom_fst, openSection_universalPoint e hjZ,
+        fibreBaseChangeMap_fst]
+    · rw [Category.assoc, e.compareHom_snd, openSection_comp e hjZ, fibreBaseChangeMap_snd]
+  have h : openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
+    rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
+  haveI := isOpenImmersion_fibreBaseChangeMap (f := f) hjZ s
+  haveI : IsIso e.compareInv := e.compareIso.isIso_inv
+  rw [h]
+  infer_instance
+
+end IsFibreIdent
+
+/-- **`openSection` is the base change of `jZ` followed by the comparison
+isomorphism** (PROVEN).
+
+Already established inside the proof of `isOpenImmersion_openSection`;
+exported here because the cusp-locus count needs the factorisation itself,
+not merely the open-immersion consequence. -/
+theorem IsFibreIdent.openSection_eq {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S}
+    {f' : A' ⟶ S'} {fY : B ⟶ S} {jZ : B ⟶ A} (e : IsFibreIdent s f f')
+    (hjZ : jZ ≫ f = fY) :
+    IsFibreIdent.openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
+  have hfac : IsFibreIdent.openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
+    apply Limits.pullback.hom_ext
+    · rw [Category.assoc, e.compareHom_fst, IsFibreIdent.openSection_universalPoint e hjZ,
+        fibreBaseChangeMap_fst]
+    · rw [Category.assoc, e.compareHom_snd, IsFibreIdent.openSection_comp e hjZ,
+        fibreBaseChangeMap_snd]
+  rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
+
+/-- **`fibreBaseChangeMap` is `Limits.pullback.map`** (PROVEN) — the form in
+which mathlib's `Scheme.Pullback.range_map` computes its range. -/
+theorem fibreBaseChangeMap_eq_map {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    fibreBaseChangeMap hjZ s
+      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+          (by rw [Category.comp_id, hjZ]) (by simp) := by
+  apply Limits.pullback.hom_ext
+  · rw [fibreBaseChangeMap_fst]
+    exact (Limits.pullback.lift_fst _ _ _).symm
+  · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+          (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
+          = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
+      Category.comp_id]
+
 /-! ### Uniqueness of `X_0(N)` over `ℚ`
 
 The docstring that used to sit on `exists_x0CompactificationModel` named
@@ -18135,8 +18385,106 @@ theorem exists_iso_of_isX0Compactification {N : ℕ} {X Y X₀ Y₀ : Scheme.{0}
 
 /-! ### The integral model, and its generic fibre -/
 
+/-- **`Y_0(N)` exists over `ℤ_(ℓ)`: the `Γ₀(N)`-problem has a coarse
+moduli space over the local base** (sorry leaf — the MODULI half of the
+integral model; Katz–Mazur ch. 8).
+
+This is the base-`ℤ_(ℓ)` form of `exists_coarseModuliY0`, and the exact
+analogue over a DISCRETE VALUATION base of what
+`exists_isCoarseModuliY0_isSmoothCurve_field` is over a field.  It asks
+for nothing but the coarse space: no compactification, no cusps, no
+geometry.  Katz–Mazur build the `[Γ₀(N)]`-moduli problem over `ℤ[1/N]`
+and show it is relatively representable and (for `ℓ ∤ N`) étale there, so
+it has a coarse space over `ℤ[1/N]`; `ℤ_(ℓ)` is a `ℤ[1/N]`-algebra once
+`ℓ ∤ N`, and the coarse space base changes to it.
+
+**No `N ≠ 0` hypothesis, and that is not an oversight.**  At `N = 0` the
+statement is TRUE with `YZ = ∅`: `exists_coarseModuliY0_zero` proves
+exactly that over `Spec ℚ`, from `isEmpty_of_gamma0Datum_zero` (every
+`Γ₀(0)`-datum is supported on the empty scheme) together with the
+initiality of `∅`, and neither step sees the base.  The degenerate level
+is ruled out only in the COMPANION leaf below, where it genuinely
+matters.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
+REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from
+mathlib entirely (zero hits), and no `DeligneRapoport` or integral model
+of a modular curve in mathlib, `~/cs/FLT` or this project.  Producing the
+`Γ₀(N)`-coarse space over `ℤ[1/N]` refutes the claim.  The nearest usable
+foothold in this file is `Gamma0Atlas` / `Gamma0GITPresentation` /
+`exists_coarseModuliY0_of_pos`, whose base was deliberately left general
+— extending that GIT construction from `Spec ℚ` to `Spec ℤ_(ℓ)` is the
+concrete attack, and it is the same attack that
+`exists_isCoarseModuliY0_isSmoothCurve_field`'s docstring names ("build
+that integral model once and obtain every base by pullback, which is how
+Katz–Mazur state it").  A prover of THIS leaf should expect to subsume
+that one as well. -/
+theorem exists_isCoarseModuliY0_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (_toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R _toF) :
+    ∃ (YZ : Scheme.{0}) (ystr : YZ ⟶ SpecLoc R), Nonempty (IsCoarseModuliY0 N ystr) :=
+  sorry
+
+/-- **The integral `Y_0(N)` has a smooth proper compactification over
+`ℤ_(ℓ)`** (sorry leaf — the COMPACTIFICATION half of the integral model;
+Deligne–Rapoport IV.3, Katz–Mazur 13.11, Igusa).
+
+Given ANY coarse moduli space `ystr` of the `Γ₀(N)`-problem over the
+local base, this produces the smooth proper `𝒳/ℤ_(ℓ)` containing it as a
+dense open with finite complement — i.e. every field of
+`IsX0Compactification` except `coarse`, which is the hypothesis.
+
+**Why no geometric hypothesis on `ystr` is needed, and why that is
+sound.**  One might expect this leaf to carry `IsIntegral`,
+`QuasiCompact`, `IsSeparated`, `SmoothOfRelativeDimension 1` and
+`GeometricallyConnected` on `ystr`, as
+`exists_isSmoothCompactification_field` does over a field.  It does not,
+and deliberately: over a field that theorem is a statement of GENERAL
+curve theory, applicable to an arbitrary smooth curve, so it must be told
+that its input is one.  Here the input is pinned to be the modular curve
+by `_hc` alone — `exists_iso_of_isCoarseModuliY0` was stated over an
+ARBITRARY base precisely so that it applies at `Spec ℤ_(ℓ)`, and it says
+that every coarse space of the `Γ₀(N)`-problem over the base is
+isomorphic *over the base* to the Deligne–Rapoport one.  So it suffices
+to compactify THAT one and transport, and the geometric properties come
+along with the isomorphism rather than being assumed.
+
+**Do NOT generalize this leaf by dropping `_hc`.**  The general form — "a
+smooth relative curve over a Dedekind base admits a smooth proper
+relative compactification with finite complement" — is a much stronger
+statement than the one used here, and this development does not know it
+to be true; the number of points at infinity is not obviously constant in
+such a family.  The truth of the leaf as stated rests on
+Deligne–Rapoport constructing the COMPACTIFIED moduli problem
+(generalised elliptic curves with `Γ₀(N)`-structure) directly over
+`ℤ[1/N]`, where the cusps form a finite étale scheme over the base.  That
+is a modular fact, not a curve-theoretic one, and it is why the base
+cannot be handed to general curve theory the way the field case is.
+
+`_hX` is retained only to keep the leaf no stronger than its consumer
+needs — it is what rules out the degenerate level `N = 0`, and here the
+degeneracy is REAL rather than notional: at `N = 0` the companion leaf
+above returns `YZ = ∅` (`isEmpty_of_isCoarseModuliY0_zero`), whose
+complement in `XZ` is all of `XZ`, so `finite_compl` would force `XZ`
+finite, while `isProper`, `smooth` and `connected` force a smooth proper
+geometrically connected relative curve, which is not.  So this leaf is
+FALSE at `N = 0` and the hypothesis is load-bearing.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, with the SAME refuting
+check as the leaf above: no modular curve, and no compactified
+`Γ₀(N)`-moduli problem, exists anywhere in the pin. -/
+theorem exists_isX0Compactification_of_isCoarseModuliY0_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (_toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R _toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (_hX : IsX0Compactification N strX strY j)
+    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (_hc : IsCoarseModuliY0 N ystr) :
+    ∃ (XZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsX0Compactification N xstr ystr jZ) :=
+  sorry
+
 /-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists**
-(sorry leaf — Deligne–Rapoport / Igusa).
+(PROVEN 2026-07-27 over the two leaves above; formerly a single sorry
+citation).
 
 This is the pure citation, with EVERY identification stripped off: no
 generic fibre is claimed, no comparison with the given `X/ℚ` is made.
@@ -18146,78 +18494,268 @@ elliptiques*, IV.3; Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*,
 ch. 8 for the moduli side and 13.11 for the compactification; Igusa for
 good reduction away from the level).
 
-`_hX` is retained only to keep the leaf no stronger than its consumer
+`hX` is retained only to keep the statement no stronger than its consumer
 needs — it is what rules out the degenerate level `N = 0`, where
-`Gamma0Datum 0` is supported on the empty scheme and the assertion would
-have to be discharged some other way.
+`Gamma0Datum 0` is supported on the empty scheme; it is passed straight
+through to the compactification leaf, which is where it is needed.
 
-IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
-REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from
-mathlib entirely (zero hits), and no `DeligneRapoport` or integral model
-of a modular curve in mathlib, `~/cs/FLT` or this project — mathlib's
-`integralModel` is only the Weierstrass-coefficient model of a single
-elliptic curve (`Mathlib/AlgebraicGeometry/EllipticCurve/Reduction.lean`).
-Producing a smooth proper `ℤ[1/N]`-model of the `Γ₀(N)` moduli problem
-refutes the claim.  The nearest usable foothold in this file is
-`Gamma0Atlas` / `exists_coarseModuliY0_of_pos`, whose base was
-deliberately left general — extending that construction from `Spec ℚ` to
-`Spec ℤ_(ℓ)` is the concrete attack. -/
-theorem exists_x0IntegralModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
-    (R : Subring ℚ) (_toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R _toF)
+**The cut (2026-07-27), and why it is the right one.**  The citation
+above names TWO chapters of Katz–Mazur, and they are two different
+theorems: ch. 8 builds the coarse space of the `Γ₀(N)`-problem over
+`ℤ[1/N]`, and 13.11 compactifies it.  Splitting them is exactly the split
+that `exists_x0Compactification_field` already takes over a FIELD base,
+between `exists_isCoarseModuliY0_isSmoothCurve_field` (modular) and
+`exists_isSmoothCompactification_field` (general curve theory) — with the
+one difference recorded on the second leaf above: over a discrete
+valuation base the compactification half cannot be handed to general
+curve theory, so it keeps its modular hypothesis instead of a geometric
+one. -/
+theorem exists_x0IntegralModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
-    (_hX : IsX0Compactification N strX strY j) :
+    (hX : IsX0Compactification N strX strY j) :
     ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
-      (jZ : YZ ⟶ XZ), Nonempty (IsX0Compactification N xstr ystr jZ) :=
-  sorry
+      (jZ : YZ ⟶ XZ), Nonempty (IsX0Compactification N xstr ystr jZ) := by
+  obtain ⟨YZ, ystr, ⟨hc⟩⟩ := exists_isCoarseModuliY0_loc N ℓ hℓ hℓN R toF hbase
+  obtain ⟨XZ, xstr, jZ, hmodel⟩ :=
+    exists_isX0Compactification_of_isCoarseModuliY0_loc N ℓ hℓ hℓN R toF hbase hX hc
+  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel⟩
 
-/-- **The generic fibre of an integral model carries the cuspidal open**
+/-! #### The generic fibre, cut down to initiality
+
+`exists_genericFibreOpen_of_x0IntegralModel` used to be one leaf asking
+for FOUR things at once: the coarse-moduli structure of the generic fibre
+(`classify`, `classify_natural`, `universal`) and the finiteness of its
+cusp locus.  Three of the four are formal and are PROVEN below; only
+`universal` is Katz–Mazur.  This is the exact mirror, on the GENERIC
+side, of the split already carried out at the closed point in
+`isX0CoarseModuli_specialOpen_of_curveModel`'s subsection further down
+this file, and the pieces are the same pieces:
+
+* `classify`/`classify_natural` are the universal property of the
+  PULLBACK.  A `Γ₀(N)`-datum over a `ℚ`-scheme `g : T ⟶ Spec ℚ` is in
+  particular a datum over the `ℤ_(ℓ)`-scheme `g ≫ SpecLoc.generic R`, so
+  the integral coarse space already classifies it; `RelPoint.baseChangeUp`
+  lands the resulting point in `𝒴 ×_{ℤ_(ℓ)} ℚ`.
+* the open immersion and its commutation with the structure morphisms are
+  `IsFibreIdent.openSection`, which reconstructs a MORPHISM into the
+  abstractly-presented generic fibre `X₀` by Yoneda in the slice category.
+* the finiteness of the cusp locus is PROVEN outright, and — unlike the
+  special fibre, where surjectivity of `toF` makes `SpecLoc.special` a
+  closed immersion — the input on this side is that `ℚ` is a LOCALIZATION
+  of `R`, hence `Spec ℚ ⟶ Spec R` is a monomorphism and therefore
+  universally injective.
+* what genuinely remains is `universal`, INITIALITY of the generic fibre,
+  which is the flat-base-change statement for the coarse space. -/
+
+/-- **`R ⊆ ℚ` is an epimorphism of rings** (PROVEN).
+
+Every subring of `ℚ` contains `ℤ`, and `ℤ → ℚ` is a localization hence an
+epimorphism (`IsLocalization.epi` at `nonZeroDivisors ℤ`, through
+`Rat.isFractionRing`); an epimorphism factoring through `R.subtype` makes
+that second factor an epimorphism.  The factorisation itself is free —
+there is only one ring map out of `ℤ` (`RingHom.ext_int`). -/
+theorem epi_ofHom_subringSubtypeQ (R : Subring ℚ) :
+    Epi (CommRingCat.ofHom (R.subtype : R →+* ℚ)) := by
+  have h1 : Epi (CommRingCat.ofHom (algebraMap ℤ ℚ)) :=
+    IsLocalization.epi (nonZeroDivisors ℤ) ℚ
+  have hfac : CommRingCat.ofHom (algebraMap ℤ ℚ)
+      = CommRingCat.ofHom (Int.castRingHom R) ≫ CommRingCat.ofHom (R.subtype : R →+* ℚ) := by
+    apply CommRingCat.hom_ext
+    exact RingHom.ext_int _ _
+  rw [hfac] at h1
+  exact epi_of_epi (CommRingCat.ofHom (Int.castRingHom R)) _
+
+/-- **The generic point `Spec ℚ ⟶ Spec R` is a monomorphism of schemes**
+(PROVEN) — `Spec` is a right adjoint, hence preserves monomorphisms, and
+the ring map is an epimorphism.
+
+This is the generic-side counterpart of `IsClosedImmersion.spec_of_surjective`
+on the special side: it is what makes the base change
+`𝒳 ×_{ℤ_(ℓ)} ℚ ⟶ 𝒳` injective on points, and hence what keeps the cusp
+locus finite in the generic fibre. -/
+instance mono_specLocGeneric (R : Subring ℚ) : Mono (SpecLoc.generic R) := by
+  haveI := epi_ofHom_subringSubtypeQ R
+  haveI : Mono (CommRingCat.ofHom (R.subtype : R →+* ℚ)).op := inferInstance
+  exact (inferInstance : Mono (Scheme.Spec.map (CommRingCat.ofHom (R.subtype : R →+* ℚ)).op))
+
+/-- **The cusp locus of the generic fibre is finite** (PROVEN).
+
+`SpecLoc.generic R` is a monomorphism (`mono_specLocGeneric`), hence
+universally injective, hence so is its base change `pullback.fst`, which
+is therefore injective on points.  `Scheme.Pullback.range_map` identifies
+the range of the base-changed open immersion with the preimage of
+`Set.range jZ.base` under that injection, and the complement of a
+preimage is the preimage of the complement — finite because the integral
+cusp locus is.
+
+Exactly the argument of `finite_compl_range_fibreBaseChangeMap_special`,
+with `UniversallyInjective` in place of `IsClosedImmersion`; note that no
+moduli input enters on either side. -/
+theorem finite_compl_range_fibreBaseChangeMap_generic {R : Subring ℚ} {XZ YZ : Scheme.{0}}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hcomm : jZ ≫ xstr = ystr) (hfin : (Set.range jZ.base)ᶜ.Finite) :
+    (Set.range (fibreBaseChangeMap hcomm (SpecLoc.generic R)).base)ᶜ.Finite := by
+  haveI : UniversallyInjective (Limits.pullback.fst xstr (SpecLoc.generic R)) :=
+    MorphismProperty.pullback_fst (P := @UniversallyInjective) xstr _ inferInstance
+  have hinj : Function.Injective (Limits.pullback.fst xstr (SpecLoc.generic R)).base :=
+    Scheme.Hom.injective _
+  have hrange : Set.range (fibreBaseChangeMap hcomm (SpecLoc.generic R)).base
+      = (Limits.pullback.fst xstr (SpecLoc.generic R)).base ⁻¹' Set.range jZ.base := by
+    rw [fibreBaseChangeMap_eq_map, Scheme.Pullback.range_map]
+    simp
+  rw [hrange, ← Set.preimage_compl]
+  exact hfin.preimage hinj.injOn
+
+/-- **The classifying map of the generic fibre** (PROVEN) — the universal
+property of the pullback, not moduli theory.
+
+A `Γ₀(N)`-datum over `g : T ⟶ Spec ℚ` is a datum over the `ℤ_(ℓ)`-scheme
+`g ≫ SpecLoc.generic R`, which the integral coarse space classifies;
+pairing that point with `g` is `RelPoint.baseChangeUp`. -/
+noncomputable def genericFibreClassify {N : ℕ} {R : Subring ℚ} {XZ YZ : Scheme.{0}}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX0Compactification N xstr ystr jZ)
+    {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T) :
+    RelPoint (Limits.pullback.snd ystr (SpecLoc.generic R)) g :=
+  RelPoint.baseChangeUp (SpecLoc.generic R)
+    (hmodel.coarse.classify (g ≫ SpecLoc.generic R) d)
+
+/-- **`genericFibreClassify` is natural** (PROVEN) — `baseChangeDown` is
+injective and carries both sides to the integral `classify_natural`. -/
+theorem genericFibreClassify_natural {N : ℕ} {R : Subring ℚ} {XZ YZ : Scheme.{0}}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX0Compactification N xstr ystr jZ)
+    {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hbc : IsBaseChangeOf h d' d) :
+    genericFibreClassify hmodel g' d'
+      = RelPoint.pre h hg (genericFibreClassify hmodel g d) := by
+  apply RelPoint.baseChangeDown_injective (SpecLoc.generic R)
+  rw [genericFibreClassify, RelPoint.baseChangeDown_baseChangeUp, genericFibreClassify,
+    RelPoint.baseChangeDown_pre, RelPoint.baseChangeDown_baseChangeUp]
+  exact hmodel.coarse.classify_natural h
+    (show h ≫ (g ≫ SpecLoc.generic R) = g' ≫ SpecLoc.generic R by
+      rw [← Category.assoc, hg]) hbc
+
+/-- **INITIALITY of the generic fibre of `Y_0(N)`'s integral model**
 (sorry leaf — formation of the coarse moduli space commutes with the flat
 base change `ℤ_(ℓ) → ℚ`).
 
-TRUE: the `Γ₀(N)`-moduli problem is defined over `ℤ[1/N]` and its coarse
-moduli space commutes with flat base change (Katz–Mazur 8.1; the
-`ℓ ∤ N` hypothesis is what makes the problem étale, so no inseparability
-correction arises), so the generic fibre `𝒴 ×_{ℤ_(ℓ)} ℚ` of the integral
-`Y_0(N)` is a coarse moduli space over `ℚ`.  The open immersion and the
-finiteness of the cusp locus base change too — an open immersion is
-stable under base change, and the cusp locus is finite over the base, so
-its generic fibre is finite.
+This is the entire residue of `exists_genericFibreOpen_of_x0IntegralModel`:
+`classify`, `classify_natural`, the open immersion and the cusp-locus
+count are PROVEN above, so what is left is the one clause that is
+genuinely Katz–Mazur.
 
-**What this leaf deliberately does NOT carry, because it is already
-PROVEN.**  The three GEOMETRIC fields of the generic fibre —
-`isProper`, `smooth`, `connected` — are not asked for here.  They are
-base change of the corresponding fields of `_hmodel` (the same three
-facts `isSmoothProperCurve_of_fibreIdent` assembles, inlined at the use
-site because that theorem is declared later in this file), which is why
-this leaf's conclusion mentions only `IsCoarseModuliY0`,
-`IsOpenImmersion` and `finite_compl`.  That is a genuine reduction: three
-of the seven fields of the generic-fibre `IsX0Compactification` are
-discharged by base-change instances already in the tree.
+TRUE, and NOT formal.  The `Γ₀(N)`-moduli problem is defined over
+`ℤ[1/N]` and its coarse moduli space commutes with FLAT base change
+(Katz–Mazur 8.1; the `ℓ ∤ N` hypothesis is what makes the problem étale,
+so no inseparability correction arises), and `ℤ_(ℓ) → ℚ` is flat.
+
+**Why no rearrangement of `hmodel.coarse.universal` proves it**, which is
+the first thing an attacker should check and the reason this is a leaf
+rather than a `have` — this is the same obstruction as on the special
+side, verbatim: `hmodel.coarse.universal` quantifies over cocones defined
+on ALL `ℤ_(ℓ)`-schemes, while `c` here is defined only on `ℚ`-schemes.
+There is no way to extend `c` — a `Γ₀(N)`-datum over a scheme lying over
+the CLOSED point has no `ℚ`-structure, so `c` assigns it nothing.  The
+integral initiality is therefore strictly weaker input than the
+conclusion.
+
+**FAITHFULNESS at `N = 0`, since no `hN` hypothesis is carried.**  The
+statement is still TRUE there, and vacuously so in a checkable way: at
+`N = 0`, `hmodel.coarse` forces `YZ` to be empty — that is
+`isEmpty_of_isCoarseModuliY0_zero`, whose proof (through
+`isEmpty_of_gamma0Datum_zero` and the initiality of `∅`) never sees the
+base and so applies over `SpecLoc R` — hence `𝒴 ×_{ℤ_(ℓ)} ℚ` is empty,
+hence initial, and the `∃!` holds for trivial reasons.  A prover may
+therefore split on `N = 0` and dispatch that half by
+`isInitialOfIsEmpty`.  Contrast the compactification leaf above, where
+`N = 0` is genuinely FALSE and the hypothesis `_hX` is load-bearing. -/
+theorem exists_unique_genericFibre_universal {N : ℕ} {R : Subring ℚ}
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (hmodel : IsX0Compactification N xstr ystr jZ)
+    {Y' : Scheme.{0}} (str' : Y' ⟶ SpecQ)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum N T → RelPoint str' g)
+    (_hc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+      (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+      IsBaseChangeOf h d' d → c g' d' = RelPoint.pre h hg (c g d)) :
+    ∃! u : Limits.pullback ystr (SpecLoc.generic R) ⟶ Y',
+      u ≫ str' = Limits.pullback.snd ystr (SpecLoc.generic R) ∧
+        ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
+          (c g d).1 = (genericFibreClassify hmodel g d).1 ≫ u :=
+  sorry
+
+/-- **The generic fibre of an integral model carries the cuspidal open**
+(PROVEN 2026-07-27 over the initiality leaf above; formerly a sorry leaf
+carrying four obligations).
+
+TRUE: the `Γ₀(N)`-moduli problem is defined over `ℤ[1/N]` and its coarse
+moduli space commutes with flat base change (Katz–Mazur 8.1), so the
+generic fibre `𝒴 ×_{ℤ_(ℓ)} ℚ` of the integral `Y_0(N)` is a coarse
+moduli space over `ℚ`.  The open immersion and the finiteness of the cusp
+locus base change too — an open immersion is stable under base change,
+and `Spec ℚ ⟶ Spec R` is a monomorphism, so the generic fibre of the
+finite cusp locus is finite.
+
+**The generic open part is CONSTRUCTED, not posited.**  `Y₀` is
+`𝒴 ×_{ℤ_(ℓ)} ℚ` and `j₀` is `IsFibreIdent.openSection` — the inclusion
+into the abstractly-presented `X₀` reconstructed by Yoneda in the slice
+category, exactly as `IsX0CurveModel.specialOpen` does at the closed
+point.  That is what makes `j₀ ≫ strX₀ = strY₀` and `IsOpenImmersion j₀`
+theorems rather than obligations.
+
+**What this statement deliberately does NOT carry, because it is already
+PROVEN.**  The three GEOMETRIC fields of the generic fibre — `isProper`,
+`smooth`, `connected` — are not asked for here.  They are base change of
+the corresponding fields of `hmodel` (the same three facts
+`isSmoothProperCurve_of_fibreIdent` assembles, inlined at the use site
+because that theorem is declared later in this file), which is why the
+conclusion mentions only `IsCoarseModuliY0`, `IsOpenImmersion` and
+`finite_compl`.
 
 **Why it is stated over an abstract `IsFibreIdent` rather than over the
-literal pullback.**  The consumer instantiates `_eGen` at
+literal pullback.**  The consumer instantiates `eGen` at
 `fibreIdentPullback`, so `X₀` really is `𝒳 ×_{ℤ_(ℓ)} ℚ` there; but
 stating it this way means a prover may work with ANY presentation of the
 generic fibre, and the statement is invariant under isomorphism over
-`Spec ℚ` by `IsFibreIdent.congrFibre`.
-
-IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and with the SAME refuting
-check as `exists_x0IntegralModel`: it is the moduli interpretation of the
-integral model that supplies `IsCoarseModuliY0` on the generic fibre, and
-nothing in this file's `Gamma0Atlas` development is stated over a base
-other than `Spec ℚ`. -/
+`Spec ℚ` by `IsFibreIdent.congrFibre`. -/
 theorem exists_genericFibreOpen_of_x0IntegralModel {N : ℕ} {R : Subring ℚ}
     {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (hmodel : IsX0Compactification N xstr ystr jZ)
     {X₀ : Scheme.{0}} {strX₀ : X₀ ⟶ SpecQ}
-    (_eGen : IsFibreIdent (SpecLoc.generic R) xstr strX₀) :
+    (eGen : IsFibreIdent (SpecLoc.generic R) xstr strX₀) :
     ∃ (Y₀ : Scheme.{0}) (strY₀ : Y₀ ⟶ SpecQ) (j₀ : Y₀ ⟶ X₀)
       (_ : IsCoarseModuliY0 N strY₀),
-      j₀ ≫ strX₀ = strY₀ ∧ IsOpenImmersion j₀ ∧ (Set.range j₀.base)ᶜ.Finite :=
-  sorry
+      j₀ ≫ strX₀ = strY₀ ∧ IsOpenImmersion j₀ ∧ (Set.range j₀.base)ᶜ.Finite := by
+  haveI : IsOpenImmersion jZ := hmodel.isOpen
+  refine ⟨Limits.pullback ystr (SpecLoc.generic R),
+    Limits.pullback.snd ystr (SpecLoc.generic R),
+    IsFibreIdent.openSection eGen hmodel.comm,
+    { classify := genericFibreClassify hmodel
+      classify_natural := by
+        intro T' T h g g' hg d' d hbc
+        exact genericFibreClassify_natural hmodel h hg hbc
+      universal := by
+        intro Y' str' c hc
+        exact exists_unique_genericFibre_universal hmodel str' c hc },
+    IsFibreIdent.openSection_comp eGen hmodel.comm,
+    IsFibreIdent.isOpenImmersion_openSection eGen hmodel.comm, ?_⟩
+  have hfin := finite_compl_range_fibreBaseChangeMap_generic
+    (R := R) hmodel.comm hmodel.finite_compl
+  have hrange : Set.range (IsFibreIdent.openSection eGen hmodel.comm).base
+      = ⇑(Scheme.homeoOfIso eGen.compareIso.symm) ''
+        Set.range (fibreBaseChangeMap hmodel.comm (SpecLoc.generic R)).base := by
+    rw [← Set.range_comp, IsFibreIdent.openSection_eq eGen hmodel.comm]
+    rfl
+  rw [hrange, ← Set.image_compl_eq (Scheme.homeoOfIso eGen.compareIso.symm).bijective]
+  exact hfin.image _
 
 /-- **The integral model exists, and its generic fibre is SOME
-`X_0(N)/ℚ`** (PROVEN, over the two leaves above).
+`X_0(N)/ℚ`** (PROVEN, over the two assemblies above — hence over the
+three leaves `exists_isCoarseModuliY0_loc`,
+`exists_isX0Compactification_of_isCoarseModuliY0_loc` and
+`exists_unique_genericFibre_universal`).
 
 The generic fibre is not posited: it is `Limits.pullback xstr
 (SpecLoc.generic R)`, i.e. literally `𝒳 ×_{ℤ_(ℓ)} ℚ`, and its
@@ -18288,19 +18826,27 @@ the two open parts, PROVEN from initiality alone;
 compactifications; and `IsFibreIdent.congrFibre` transports the
 identification along the resulting isomorphism.
 
-**What is left open, and it is three leaves rather than one:**
+**What is left open, and it is four leaves rather than one** (the count
+went UP on 2026-07-27, by decomposition rather than regression —
+`exists_x0IntegralModel` and `exists_genericFibreOpen_of_x0IntegralModel`
+are both PROVEN assemblies now):
 
-* `exists_x0IntegralModel` — the Deligne–Rapoport / Igusa construction,
-  with no identification attached;
-* `exists_genericFibreOpen_of_x0IntegralModel` — coarse moduli commutes
-  with the flat base change `ℤ_(ℓ) → ℚ`, carrying only the three fields
-  that are NOT base-change instances;
+* `exists_isCoarseModuliY0_loc` — the `Γ₀(N)`-coarse space exists over
+  `ℤ_(ℓ)` (Katz–Mazur ch. 8);
+* `exists_isX0Compactification_of_isCoarseModuliY0_loc` — it has a smooth
+  proper compactification with finite cusp locus there (Deligne–Rapoport
+  IV.3, Katz–Mazur 13.11);
+* `exists_unique_genericFibre_universal` — INITIALITY of the generic
+  fibre, i.e. coarse moduli commutes with the flat base change
+  `ℤ_(ℓ) → ℚ` (Katz–Mazur 8.1).  Its three companions —
+  `classify`, `classify_natural`, and the cusp-locus count — are PROVEN,
+  as are the open immersion and its commutation with the structure maps;
 * `exists_unique_extension_of_isX0Compactification` — a rational map
   from a smooth proper curve to a proper scheme is a morphism.
 
-The third is not modular at all: it is a general fact about curves, so
-it is reusable, and it is the only one of the three that does not depend
-on the missing moduli theory.  The first two remain IRREDUCIBLE ALONG
+The fourth is not modular at all: it is a general fact about curves, so
+it is reusable, and it is the only one of the four that does not depend
+on the missing moduli theory.  The first three remain IRREDUCIBLE ALONG
 THE MODULI AXIS, with the refuting check recorded on each. -/
 theorem exists_x0CompactificationModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
@@ -18330,8 +18876,9 @@ recorded the node as irreducible along the MODULI axis, citing the
 absence of a Deligne–Rapoport integral model from mathlib, `~/cs/FLT`
 and this project.  That citation is still correct, but it no longer sits
 on `exists_x0CompactificationModel`, which is now PROVEN: it has moved
-down to `exists_x0IntegralModel` and
-`exists_genericFibreOpen_of_x0IntegralModel`, the only two parts of this
+down to `exists_isCoarseModuliY0_loc`,
+`exists_isX0Compactification_of_isCoarseModuliY0_loc` and
+`exists_unique_genericFibre_universal`, the only parts of this
 statement that need it.  It covered three further obligations that
 need no moduli theory at all, and those are now discharged here:
 
@@ -21244,223 +21791,6 @@ def IsX0JOpenModel.toJNeronDatum
   jmSp_pre := om.jmSp_pre
   jm_gen := om.jm_gen
 
-/-! #### Yoneda in the slice category: a fibre identification IS the pullback
-
-`IsX0CurveModel` pins the special fibre `X'` only through a natural
-equivalence of functors of points — `spX` together with `spX_nat` — so a
-consumer that needs an actual MORPHISM out of, or into, `X'` cannot read
-one off the structure directly.  Recovering one is Yoneda in `Over S'`,
-and it is PROVEN here from those two fields alone.
-
-The argument is the usual one, written out rather than invoked through
-the `Over`-category API so that no transport is needed at the use sites:
-a natural transformation of representable functors is composition with
-the image of the IDENTITY (`IsFibreIdent.apply_eq_comp`), and the two
-comparison morphisms built from that image are mutually inverse
-(`IsFibreIdent.compareIso`).  Only `nat` is ever used; `apply_eq_comp` is
-the single place it enters.
-
-This is what
-`exists_x0JOpenModel_of_curveModel`'s previous docstring named as the
-CHEAPER of the two attacks on it, and what
-`isSmoothProperCurve_of_fibreIdent`'s docstring names as the whole of its
-residue ("the passage from a natural equivalence of `RelPoint`-functors
-to an isomorphism of schemes over `S'`").
-
-**Possible duplication, and it is deliberate rather than overlooked.**
-`isSmoothProperCurve_of_fibreIdent` is owned concurrently and asks for
-the same transport in the `Arrow.mk f' ≅ Arrow.mk (pullback.snd f s)`
-form.  If both land, keep one — this one is a plain `Iso` of schemes plus
-the two identities that pin it over the base, which is the shape every
-consumer here wants. -/
-
-namespace IsFibreIdent
-
-variable {S S' A A' : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S} {f' : A' ⟶ S'}
-  (e : IsFibreIdent s f f')
-
-/-- **The universal relative point**: the identity of `A'`, read through
-the identification.  Yoneda's lemma, in one line. -/
-noncomputable def universalPoint : RelPoint f (f' ≫ s) :=
-  e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩
-
-/-- **Every value of a fibre identification is composition with the
-universal point** (PROVEN).
-
-This is Yoneda for the two representable functors involved, and it is the
-ONLY place `nat` is consumed: everything below is a corollary of it
-together with the universal property of the pullback. -/
-theorem apply_eq_comp {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
-    (x : RelPoint f' g) : (e.toEquiv g g₀ h x).1 = x.1 ≫ e.universalPoint.1 := by
-  have hx : RelPoint.pre x.1 x.2 (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f') = x :=
-    Subtype.ext (Category.comp_id _)
-  have hnat := e.nat x.1 x.2 (rfl : f' ≫ s = f' ≫ s) h
-    (⟨𝟙 A', Category.id_comp f'⟩ : RelPoint f' f')
-  rw [hx] at hnat
-  exact congrArg Subtype.val hnat
-
-/-- The comparison morphism `A' ⟶ A ×_S S'`, built from the universal
-point and `f'` by the universal property of the pullback. -/
-noncomputable def compareHom : A' ⟶ Limits.pullback f s :=
-  Limits.pullback.lift e.universalPoint.1 f' e.universalPoint.2
-
-theorem compareHom_fst : e.compareHom ≫ Limits.pullback.fst f s = e.universalPoint.1 :=
-  Limits.pullback.lift_fst _ _ _
-
-theorem compareHom_snd : e.compareHom ≫ Limits.pullback.snd f s = f' :=
-  Limits.pullback.lift_snd _ _ _
-
-/-- The inverse comparison, as a relative point of `A'`: the identification
-run backwards on the tautological point of the pullback. -/
-noncomputable def compareInvPt : RelPoint f' (Limits.pullback.snd f s) :=
-  (e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl).symm
-    ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩
-
-/-- The comparison morphism `A ×_S S' ⟶ A'`. -/
-noncomputable def compareInv : Limits.pullback f s ⟶ A' := e.compareInvPt.1
-
-theorem compareInv_comp : e.compareInv ≫ f' = Limits.pullback.snd f s := e.compareInvPt.2
-
-theorem compareInv_universalPoint :
-    e.compareInv ≫ e.universalPoint.1 = Limits.pullback.fst f s := by
-  have h := e.apply_eq_comp (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl
-    e.compareInvPt
-  rw [show e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl e.compareInvPt
-      = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ from
-    Equiv.apply_symm_apply _ _] at h
-  exact h.symm
-
-theorem compareInv_compareHom : e.compareInv ≫ e.compareHom = 𝟙 (Limits.pullback f s) := by
-  apply Limits.pullback.hom_ext
-  · rw [Category.assoc, e.compareHom_fst, e.compareInv_universalPoint, Category.id_comp]
-  · rw [Category.assoc, e.compareHom_snd, e.compareInv_comp, Category.id_comp]
-
-theorem compareHom_compareInv : e.compareHom ≫ e.compareInv = 𝟙 A' := by
-  have hcomp : (e.compareHom ≫ e.compareInv) ≫ f' = f' := by
-    rw [Category.assoc, e.compareInv_comp, e.compareHom_snd]
-  have key := e.nat e.compareHom e.compareHom_snd
-    (rfl : Limits.pullback.snd f s ≫ s = Limits.pullback.snd f s ≫ s) (rfl : f' ≫ s = f' ≫ s)
-    e.compareInvPt
-  rw [show e.toEquiv (Limits.pullback.snd f s) (Limits.pullback.snd f s ≫ s) rfl e.compareInvPt
-      = ⟨Limits.pullback.fst f s, Limits.pullback.condition⟩ from
-    Equiv.apply_symm_apply _ _] at key
-  have h1 : (⟨e.compareHom ≫ e.compareInv, hcomp⟩ : RelPoint f' f')
-      = RelPoint.pre e.compareHom e.compareHom_snd e.compareInvPt := rfl
-  have h2 : e.toEquiv f' (f' ≫ s) rfl ⟨e.compareHom ≫ e.compareInv, hcomp⟩
-      = e.toEquiv f' (f' ≫ s) rfl ⟨𝟙 A', Category.id_comp f'⟩ := by
-    rw [h1, key]
-    exact Subtype.ext e.compareHom_fst
-  exact congrArg Subtype.val ((e.toEquiv f' (f' ≫ s) rfl).injective h2)
-
-/-- **Yoneda in the slice category** (PROVEN): a fibre identification of
-functors of points IS an isomorphism onto the pullback, over `S'`. -/
-noncomputable def compareIso : A' ≅ Limits.pullback f s where
-  hom := e.compareHom
-  inv := e.compareInv
-  hom_inv_id := e.compareHom_compareInv
-  inv_hom_id := e.compareInv_compareHom
-
-end IsFibreIdent
-
-/-- **The base change of an open immersion of models to a fibre**
-(PROVEN).
-
-`𝒴 ⊆ 𝒳` over `S` gives `𝒴 ×_S S' ⊆ 𝒳 ×_S S'`; the morphism is written as
-an explicit `Limits.pullback.lift` so that its two projections are
-definitional, and identified with `Limits.pullback.map` only where the
-open-immersion instance is needed. -/
-noncomputable def fibreBaseChangeMap {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    Limits.pullback fY s ⟶ Limits.pullback f s :=
-  Limits.pullback.lift (Limits.pullback.fst fY s ≫ jZ) (Limits.pullback.snd fY s)
-    (by rw [Category.assoc, hjZ]; exact Limits.pullback.condition)
-
-theorem fibreBaseChangeMap_fst {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    fibreBaseChangeMap hjZ s ≫ Limits.pullback.fst f s
-      = Limits.pullback.fst fY s ≫ jZ :=
-  Limits.pullback.lift_fst _ _ _
-
-theorem fibreBaseChangeMap_snd {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    fibreBaseChangeMap hjZ s ≫ Limits.pullback.snd f s = Limits.pullback.snd fY s :=
-  Limits.pullback.lift_snd _ _ _
-
-theorem isOpenImmersion_fibreBaseChangeMap {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} [IsOpenImmersion jZ] (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    IsOpenImmersion (fibreBaseChangeMap hjZ s) := by
-  have hmap : fibreBaseChangeMap hjZ s
-      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
-          (by rw [Category.comp_id, hjZ]) (by simp) := by
-    apply Limits.pullback.hom_ext
-    · rw [fibreBaseChangeMap_fst]
-      exact (Limits.pullback.lift_fst _ _ _).symm
-    · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
-            (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
-            = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
-        Category.comp_id]
-  rw [hmap]
-  infer_instance
-
-namespace IsFibreIdent
-
-variable {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S} {f' : A' ⟶ S'} {fY : B ⟶ S}
-  {jZ : B ⟶ A} (e : IsFibreIdent s f f') (hjZ : jZ ≫ f = fY)
-
-/-- **The inclusion of the open part into the fibre `A'`, reconstructed
-from the identification** (PROVEN).
-
-`A'` is pinned only as a functor, so this cannot be written down directly;
-it is `e.toEquiv` run BACKWARDS on the tautological open point of
-`B ×_S S'`.  Everything the consumers need about it —
-`openSection_comp`, `apply_openSection`, `isOpenImmersion_openSection` —
-follows from `apply_eq_comp` and the pullback's universal property. -/
-noncomputable def openSection : Limits.pullback fY s ⟶ A' :=
-  ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
-    ⟨Limits.pullback.fst fY s ≫ jZ, by
-      rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩).1
-
-theorem openSection_comp : openSection e hjZ ≫ f' = Limits.pullback.snd fY s :=
-  ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
-    ⟨Limits.pullback.fst fY s ≫ jZ, by
-      rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩).2
-
-theorem openSection_universalPoint :
-    openSection e hjZ ≫ e.universalPoint.1 = Limits.pullback.fst fY s ≫ jZ := by
-  have h := e.apply_eq_comp (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl
-    ((e.toEquiv (Limits.pullback.snd fY s) (Limits.pullback.snd fY s ≫ s) rfl).symm
-      ⟨Limits.pullback.fst fY s ≫ jZ, by
-        rw [Category.assoc, hjZ]; exact Limits.pullback.condition⟩)
-  rw [Equiv.apply_symm_apply] at h
-  exact h.symm
-
-/-- **The identification carries the open immersion** (PROVEN) — this is
-`spX_j`, in the generality in which it is true. -/
-theorem apply_openSection {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
-    (y : RelPoint (Limits.pullback.snd fY s) g) :
-    (e.toEquiv g g₀ h ⟨y.1 ≫ openSection e hjZ, by
-        rw [Category.assoc, openSection_comp e hjZ, y.2]⟩).1
-      = (y.1 ≫ Limits.pullback.fst fY s) ≫ jZ := by
-  rw [e.apply_eq_comp, Category.assoc, openSection_universalPoint e hjZ, Category.assoc]
-
-/-- **The reconstructed inclusion is an open immersion** (PROVEN): it is
-the base change of `jZ` composed with `compareIso.inv`. -/
-theorem isOpenImmersion_openSection [IsOpenImmersion jZ] :
-    IsOpenImmersion (openSection e hjZ) := by
-  have hfac : openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
-    apply Limits.pullback.hom_ext
-    · rw [Category.assoc, e.compareHom_fst, openSection_universalPoint e hjZ,
-        fibreBaseChangeMap_fst]
-    · rw [Category.assoc, e.compareHom_snd, openSection_comp e hjZ, fibreBaseChangeMap_snd]
-  have h : openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
-    rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
-  haveI := isOpenImmersion_fibreBaseChangeMap (f := f) hjZ s
-  haveI : IsIso e.compareInv := e.compareIso.isIso_inv
-  rw [h]
-  infer_instance
-
-end IsFibreIdent
-
 /-! #### The two residues of the open-and-`j` half
 
 With the Yoneda reconstruction above, the first bullet of the old
@@ -21572,39 +21902,6 @@ obligations are discharged here, leaving exactly one:
   `cm.model.coarse.universal`, which quantifies over ALL `ℤ_(q)`-schemes —
   a datum over the GENERIC fibre has no `𝔽_q`-structure — so no
   rearrangement of the integral initiality proves the special one. -/
-
-/-- **`openSection` is the base change of `jZ` followed by the comparison
-isomorphism** (PROVEN).
-
-Already established inside the proof of `isOpenImmersion_openSection`;
-exported here because the cusp-locus count needs the factorisation itself,
-not merely the open-immersion consequence. -/
-theorem IsFibreIdent.openSection_eq {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S}
-    {f' : A' ⟶ S'} {fY : B ⟶ S} {jZ : B ⟶ A} (e : IsFibreIdent s f f')
-    (hjZ : jZ ≫ f = fY) :
-    IsFibreIdent.openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
-  have hfac : IsFibreIdent.openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
-    apply Limits.pullback.hom_ext
-    · rw [Category.assoc, e.compareHom_fst, IsFibreIdent.openSection_universalPoint e hjZ,
-        fibreBaseChangeMap_fst]
-    · rw [Category.assoc, e.compareHom_snd, IsFibreIdent.openSection_comp e hjZ,
-        fibreBaseChangeMap_snd]
-  rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
-
-/-- **`fibreBaseChangeMap` is `Limits.pullback.map`** (PROVEN) — the form in
-which mathlib's `Scheme.Pullback.range_map` computes its range. -/
-theorem fibreBaseChangeMap_eq_map {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
-    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
-    fibreBaseChangeMap hjZ s
-      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
-          (by rw [Category.comp_id, hjZ]) (by simp) := by
-  apply Limits.pullback.hom_ext
-  · rw [fibreBaseChangeMap_fst]
-    exact (Limits.pullback.lift_fst _ _ _).symm
-  · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
-          (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
-          = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
-      Category.comp_id]
 
 /-- **The classifying map of the special fibre** (PROVEN) — the universal
 property of the pullback, not moduli theory.
