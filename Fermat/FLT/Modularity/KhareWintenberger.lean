@@ -12134,6 +12134,53 @@ theorem isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one
     ((tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain R).out 3 0).mp key
   infer_instance
 
+/-- **A REGULAR LOCAL RING OF DIMENSION `≤ 1` IS INTEGRALLY CLOSED**
+(**PROVEN 2026-07-27** — general commutative algebra, the exact CONVERSE of
+`isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one` immediately above).
+
+**WHY THIS IS STATED IN DIMENSION `≤ 1` AND NOT IN GENERAL.** The general
+theorem "a regular local ring is integrally closed" is genuinely ABSENT from
+this pin, in every form, and the greps that would refute that are:
+`grep -rn "AuslanderBuchsbaum\|auslander" .lake/packages/mathlib/` is **EMPTY**,
+so the classical route regular ⟹ UFD ⟹ integrally closed has no first step
+(its second step *is* present, as `UniqueFactorizationMonoid.instIsIntegrallyClosed`);
+`grep -rn "IsRegularLocalRing" .lake/packages/mathlib/Mathlib/` returns only
+`RegularLocalRing/{Defs,Polynomial}.lean`, neither of which mentions normality;
+and there is no Serre criterion and no `IsNormalRing`.
+
+In dimension `≤ 1`, by contrast, the theorem collapses to **"field or DVR"** and
+is four lines: `IsRegularLocalRing.iff_finrank_cotangentSpace` turns regularity
+into `finrank κ (m/m²) = ringKrullDim R`, `Ring.KrullDimLE 1` caps that at `1`,
+and the two surviving cases are mathlib's
+`IsLocalRing.finrank_cotangentSpace_eq_zero_iff` (`= 0` ⟺ `R` is a FIELD, and
+`Field.instIsIntegrallyClosed`) and `IsLocalRing.finrank_CotangentSpace_eq_one_iff`
+(`= 1` ⟺ `R` is a DVR, whence PID ⟹ UFD ⟹ `IsIntegrallyClosed`).
+`isDomain_of_isRegularLocalRing` (PROVEN above) supplies the `IsDomain` that both
+mathlib lemmas require.
+
+This is what makes the normality leaf below cheap: its consumer already carries
+`hdim : topologicalKrullDim ↥C ≤ 1`, so the dimension bound is free, and the
+general theorem is never needed anywhere in this development. -/
+theorem isIntegrallyClosed_of_isRegularLocalRing_of_krullDimLE_one
+    (R : Type u) [CommRing R] [IsRegularLocalRing R] [Ring.KrullDimLE 1 R] :
+    IsIntegrallyClosed R := by
+  haveI : IsDomain R := isDomain_of_isRegularLocalRing R
+  have hfr : (Module.finrank (IsLocalRing.ResidueField R) (IsLocalRing.CotangentSpace R) :
+      WithBot ℕ∞) = ringKrullDim R :=
+    (IsRegularLocalRing.iff_finrank_cotangentSpace R).mp ‹_›
+  have hle : ringKrullDim R ≤ 1 := Ring.krullDimLE_iff.mp ‹_›
+  have hfr1 : Module.finrank (IsLocalRing.ResidueField R) (IsLocalRing.CotangentSpace R) ≤ 1 := by
+    have := hfr ▸ hle
+    exact_mod_cast this
+  interval_cases h : Module.finrank (IsLocalRing.ResidueField R) (IsLocalRing.CotangentSpace R)
+  · haveI : IsField R := by
+      rwa [IsLocalRing.finrank_cotangentSpace_eq_zero_iff] at h
+    letI := this.toField
+    infer_instance
+  · haveI : IsDiscreteValuationRing R :=
+      IsLocalRing.finrank_CotangentSpace_eq_one_iff.mp h
+    infer_instance
+
 open CategoryTheory AlgebraicGeometry in
 /-- **OVER A FIELD BASE, LOCALLY OF FINITE TYPE UPGRADES TO LOCALLY OF FINITE
 PRESENTATION** (**PROVEN 2026-07-27**).
@@ -12318,8 +12365,204 @@ theorem smooth_of_isRegularLocalRing_stalk_of_perfectField {K : Type u} [Field K
     ((Spec (.of K)).presheaf.stalk (f.base z)) (Z.presheaf.stalk z)
 
 open CategoryTheory AlgebraicGeometry in
+/-- **THE STALKS OF A SMOOTH SCHEME OF DIMENSION `≤ 1` OVER A FIELD ARE
+INTEGRALLY CLOSED** (**PROVEN 2026-07-27**).
+
+Three PROVEN pieces composed: `isRegularLocalRing_stalk_of_smooth_over_field`
+makes each stalk regular, `krullDimLE_stalk_of_topologicalKrullDim_le` turns the
+bound on the SPACE into `Ring.KrullDimLE 1` on each stalk, and
+`isIntegrallyClosed_of_isRegularLocalRing_of_krullDimLE_one` (the field-or-DVR
+theorem above) converts the pair into normality.
+
+This is the normality input for the relative-normalization leaf below, and it is
+exactly where the `hdim` hypothesis earns its place: without a dimension bound
+the first two pieces would need the general "regular ⟹ normal", which is not at
+this pin. -/
+theorem isIntegrallyClosed_stalk_of_smooth_of_topologicalKrullDim_le_one
+    {K : Type u} [Field K] {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (hdim : topologicalKrullDim ↥Z ≤ 1) (z : Z) :
+    IsIntegrallyClosed (Z.presheaf.stalk z) := by
+  haveI := isRegularLocalRing_stalk_of_smooth_over_field f hf z
+  haveI := krullDimLE_stalk_of_topologicalKrullDim_le hdim z
+  exact isIntegrallyClosed_of_isRegularLocalRing_of_krullDimLE_one _
+
+open CategoryTheory AlgebraicGeometry TopologicalSpace in
+/-- **NORMALITY IS LOCAL ON AN INTEGRAL SCHEME: NORMAL STALKS GIVE NORMAL
+SECTIONS ON EVERY NONEMPTY OPEN** (**PROVEN 2026-07-27** — general scheme
+theory, reusable, nothing specific to curves or to this development).
+
+Mathlib has NO notion of a normal scheme (`grep -rn "IsIntegrallyClosed"
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is EMPTY, which is the check
+that would refute this), so this bridge has to be written here. It is the
+statement that makes stalk-level normality usable at the level of SECTIONS,
+which is where the relative normalization is computed.
+
+THE ARGUMENT, and note that it needs the open `W` to be arbitrary — `g ⁻¹ᵁ U`
+below is an open of `C` that is NOT affine, so `IsIntegrallyClosed`'s local-ring
+API (`IsIntegrallyClosed.of_localization_maximal`) does not apply:
+
+* `Γ(X, W)` embeds in the function field `K(X)` by
+  `Scheme.germToFunctionField_injective`, so it suffices to show it is
+  integrally closed IN `K(X)` (`IsIntegrallyClosed.of_isIntegrallyClosedIn`);
+* let `z ∈ K(X)` be integral over `Γ(X, W)`. For each `p ∈ W` the tower
+  `Γ(X, W) → 𝒪_{X,p} → K(X)` (`functionField_isScalarTower`) makes `z` integral
+  over the stalk, which is normal by hypothesis and has `K(X)` as its fraction
+  field (`instance [IsIntegral X] (x : X) : IsFractionRing (X.presheaf.stalk x)
+  X.functionField`), so `z` is the germ at `p` of a section on some open
+  neighbourhood, shrunk to sit inside `W`;
+* those local sections agree on overlaps because `X` is IRREDUCIBLE, so the
+  generic point lies in every nonempty open, and `germ_injective_of_isIntegral`
+  at the generic point turns "same image in `K(X)`" into equality of sections;
+* `TopCat.Sheaf.existsUnique_gluing'` glues them, and the glued section has
+  germ `z` at the generic point.
+
+Irreducibility is used twice and is essential: once to know every nonempty open
+meets every other (through the generic point), and once for the injectivity of
+germs. -/
+theorem isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk
+    {X : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsIntegral X]
+    (h : ∀ x : X, IsIntegrallyClosed (X.presheaf.stalk x))
+    (W : X.Opens) [hWne : Nonempty W] : IsIntegrallyClosed Γ(X, W) := by
+  haveI : IsDomain Γ(X, W) :=
+    @AlgebraicGeometry.IsIntegral.component_integral X ‹_› W hWne
+  have hinj : Function.Injective (algebraMap Γ(X, W) X.functionField) :=
+    X.germToFunctionField_injective W
+  haveI : FaithfulSMul Γ(X, W) X.functionField :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr hinj
+  haveI : IsIntegrallyClosedIn Γ(X, W) X.functionField := by
+    refine isIntegrallyClosedIn_iff.mpr ⟨hinj, ?_⟩
+    intro z hz
+    have hloc : ∀ p : ↥W, ∃ (V : X.Opens) (hpV : (p : X) ∈ V), V ≤ W ∧ ∃ s : Γ(X, V),
+        algebraMap (X.presheaf.stalk (p : X)) X.functionField
+          (X.presheaf.germ V (p : X) hpV s) = z := by
+      intro p
+      haveI := h (p : X)
+      have hzint : IsIntegral (X.presheaf.stalk (p : X)) z := hz.tower_top
+      obtain ⟨t, ht⟩ := IsIntegrallyClosed.isIntegral_iff.mp hzint
+      obtain ⟨V₀, hpV₀, s₀, hs₀⟩ := X.presheaf.exists_germ_eq t
+      refine ⟨V₀ ⊓ W, ⟨hpV₀, p.2⟩, inf_le_right,
+        X.presheaf.map (homOfLE (inf_le_left : V₀ ⊓ W ≤ V₀)).op s₀, ?_⟩
+      rw [X.presheaf.germ_res_apply (homOfLE (inf_le_left : V₀ ⊓ W ≤ V₀)) (p : X) ⟨hpV₀, p.2⟩ s₀,
+        hs₀, ht]
+    choose V hpV hVW s hs using hloc
+    -- the generic point lies in every `V p`
+    have hgen : ∀ p : ↥W, genericPoint ↥X ∈ V p := fun p =>
+      ((genericPoint_spec ↥X).mem_open_set_iff (V p).isOpen).mpr
+        ⟨(p : X), Set.mem_univ _, hpV p⟩
+    have hNE : ∀ p : ↥W, Nonempty (V p) := fun p => ⟨⟨(p : X), hpV p⟩⟩
+    have hgenW : genericPoint ↥X ∈ W :=
+      ((genericPoint_spec ↥X).mem_open_set_iff W.isOpen).mpr
+        ⟨hWne.some.1, Set.mem_univ _, hWne.some.2⟩
+    -- each `s p` has germ `z` at the generic point
+    have hsz : ∀ p : ↥W, X.presheaf.germ (V p) (genericPoint ↥X) (hgen p) (s p) = z := by
+      intro p
+      haveI := hNE p
+      exact (X.algebraMap_germ_eq_germToFunctionField (hpV p) (s p)).symm.trans (hs p)
+    -- compatibility
+    have hcompat : TopCat.Presheaf.IsCompatible X.presheaf V s := by
+      intro p q
+      apply germ_injective_of_isIntegral (X := X) (genericPoint ↥X)
+        (show genericPoint ↥X ∈ V p ⊓ V q from ⟨hgen p, hgen q⟩)
+      rw [X.presheaf.germ_res_apply (Opens.infLELeft (V p) (V q)) (genericPoint ↥X)
+            ⟨hgen p, hgen q⟩,
+          X.presheaf.germ_res_apply (Opens.infLERight (V p) (V q)) (genericPoint ↥X)
+            ⟨hgen p, hgen q⟩]
+      exact (hsz p).trans (hsz q).symm
+    have hcover : W ≤ iSup V := fun w hw => Opens.mem_iSup.mpr ⟨⟨w, hw⟩, hpV ⟨w, hw⟩⟩
+    obtain ⟨s₀, hs₀, -⟩ :=
+      X.sheaf.existsUnique_gluing' V W (fun p => homOfLE (hVW p)) hcover s hcompat
+    refine ⟨s₀, ?_⟩
+    have hres : X.presheaf.map (homOfLE (hVW hWne.some)).op s₀ = s hWne.some := hs₀ _
+    have hgerm : X.presheaf.germ W (genericPoint ↥X) hgenW s₀ = z := by
+      rw [← hsz hWne.some, ← hres,
+        X.presheaf.germ_res_apply (homOfLE (hVW hWne.some)) (genericPoint ↥X) (hgen hWne.some)]
+    exact hgerm
+  exact IsIntegrallyClosed.of_isIntegrallyClosedIn Γ(X, W) X.functionField
+
+open CategoryTheory AlgebraicGeometry in
+/-- **THE DESCENT (STACKS 035Q): NORMAL SECTIONS ON `C` GIVE NORMAL STALKS ON
+THE RELATIVE NORMALIZATION** (**PROVEN 2026-07-27** — no curve theory, no
+smoothness, no dimension bound; this is the "bookkeeping" half of the leaf
+below, and it really is bookkeeping once the right mathlib lemmas are named).
+
+THE CHAIN. Fix `x` in `X̄ = g.normalization` and an affine open `U ⊆ P` around
+its image under `g.fromNormalization`.
+
+* `W = g.fromNormalization ⁻¹ᵁ U` is AFFINE, because `IsIntegralHom
+  g.fromNormalization` (a mathlib instance on the relative normalization) gives
+  `IsAffineHom`, and `IsAffineOpen.preimage` transports affineness;
+* `IsAffineOpen.isLocalization_stalk` presents `𝒪_{X̄,x}` as a localization of
+  `Γ(X̄, W)` at a prime, and `isIntegrallyClosed_of_isLocalization` says a
+  localization of a normal domain at a submonoid of nonzerodivisors is normal —
+  so it suffices to normalise `Γ(X̄, W)`;
+* `Scheme.Hom.normalizationObjIso` identifies `Γ(X̄, W)` with
+  `integralClosure Γ(P, U) Γ(C, g ⁻¹ᵁ U)`, and `IsIntegrallyClosed.of_equiv`
+  transports normality across it;
+* the integral closure of `A` in a normal domain `B` is itself normal: mathlib
+  has `instance : IsIntegrallyClosedIn (integralClosure R A) A` and
+  `IsIntegrallyClosed.of_isIntegrallyClosed_of_isIntegrallyClosedIn`, which
+  together are exactly the classical transitivity-of-integrality argument.
+
+**THE ZARISKI-MAIN-THEOREM HYPOTHESES ARE NOT NEEDED, and that is a correction
+to the earlier route audit.** That audit routed the proof through "`g.toNormalization`
+is a dominant OPEN IMMERSION, so `X̄` and `C` share a function field", and
+concluded that `hgqf`/`hgsep`/`hgft`/`hgqc` were load-bearing. They are not:
+`Frac A' ⊆ Frac B` holds for the trivial reason that `A' ⊆ B` and `B` is a
+domain, so no identification of function fields is required. Dominance of
+`g.toNormalization` IS used, but only for the cheap fact that `g ⁻¹ᵁ U` is
+nonempty when `W` is (`Scheme.Hom.denseRange` plus
+`toNormalization_fromNormalization`). Only `QuasiCompact`/`QuasiSeparated`
+survive, and only because `Scheme.Hom.normalization` itself is defined under
+them. -/
+theorem isIntegrallyClosed_stalk_normalization_of_isIntegrallyClosed_sections
+    {C P : AlgebraicGeometry.Scheme.{u}} (g : C ⟶ P)
+    [AlgebraicGeometry.IsIntegral C] [AlgebraicGeometry.QuasiCompact g]
+    [AlgebraicGeometry.QuasiSeparated g]
+    (hB : ∀ (W : C.Opens), Nonempty W → IsIntegrallyClosed Γ(C, W))
+    (x : (g.normalization : AlgebraicGeometry.Scheme.{u})) :
+    IsIntegrallyClosed ((g.normalization).presheaf.stalk x) := by
+  haveI : AlgebraicGeometry.IsIntegral g.normalization := inferInstance
+  -- an affine open `U` of `P` around the image of `x`
+  obtain ⟨U, hyU⟩ : ∃ U : P.affineOpens, g.fromNormalization.base x ∈ U.1 := by
+    have hmem : g.fromNormalization.base x ∈ (⊤ : P.Opens) := trivial
+    rw [← iSup_affineOpens_eq_top P] at hmem
+    simpa using hmem
+  set W : (g.normalization).Opens := g.fromNormalization ⁻¹ᵁ U.1 with hW
+  have hxW : x ∈ W := hyU
+  have hWaff : IsAffineOpen W := U.2.preimage g.fromNormalization
+  -- `g ⁻¹ᵁ U` is nonempty, because `g.toNormalization` is dominant and `W` is a nonempty open
+  have hVne : Nonempty (g ⁻¹ᵁ U.1) := by
+    have hdense : DenseRange g.toNormalization.base := g.toNormalization.denseRange
+    obtain ⟨c, hc⟩ := hdense.exists_mem_open W.2 ⟨x, hxW⟩
+    refine ⟨⟨c, ?_⟩⟩
+    show g.base c ∈ U.1
+    have : (g.toNormalization ≫ g.fromNormalization).base c ∈ U.1 := hc
+    rwa [Scheme.Hom.toNormalization_fromNormalization] at this
+  haveI := hVne
+  haveI : IsDomain Γ(C, g ⁻¹ᵁ U.1) :=
+    @AlgebraicGeometry.IsIntegral.component_integral C ‹_› (g ⁻¹ᵁ U.1) hVne
+  haveI hWne : Nonempty W := ⟨⟨x, hxW⟩⟩
+  haveI : IsDomain Γ(g.normalization, W) :=
+    @AlgebraicGeometry.IsIntegral.component_integral g.normalization ‹_› W hWne
+  letI := (g.app U.1).hom.toAlgebra
+  haveI : IsIntegrallyClosed Γ(C, g ⁻¹ᵁ U.1) := hB _ hVne
+  haveI : IsIntegrallyClosed (integralClosure Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1)) :=
+    IsIntegrallyClosed.of_isIntegrallyClosed_of_isIntegrallyClosedIn
+      (integralClosure Γ(P, U.1) Γ(C, g ⁻¹ᵁ U.1)) Γ(C, g ⁻¹ᵁ U.1)
+  haveI : IsIntegrallyClosed Γ(g.normalization, W) :=
+    IsIntegrallyClosed.of_equiv
+      (g.normalizationObjIso U.2).symm.commRingCatIsoToRingEquiv
+  letI := (g.normalization).presheaf.algebra_section_stalk (U := W) ⟨x, hxW⟩
+  haveI := hWaff.isLocalization_stalk ⟨x, hxW⟩
+  exact isIntegrallyClosed_of_isLocalization
+    ((g.normalization).presheaf.stalk (⟨x, hxW⟩ : ↥W).1)
+    (hWaff.primeIdealOf ⟨x, hxW⟩).asIdeal.primeCompl
+    (Ideal.primeCompl_le_nonZeroDivisors _)
+
+open CategoryTheory AlgebraicGeometry in
 /-- **LEAF C1a — THE STALKS OF THE NORMALIZED MODEL ARE INTEGRALLY CLOSED**
-(SORRY LEAF; Stacks 035Q).
+(**PROVEN 2026-07-27**, over the cut described below; Stacks 035Q).
 
 This is the NORMALITY half of "the model is regular". The mathematics is the
 one-paragraph argument the parent docstring already records, and it is worth
@@ -12374,43 +12617,61 @@ is NOT at this pin in any form, and it is a genuine theorem, not glue:
 So whoever takes this leaf owes a real commutative-algebra theorem in addition to
 the descent, and should NOT expect to finish it with `IsLocalization` lemmas.
 
-**THE CHEAP REPAIR, AND IT IS A CUT-LEVEL ONE (not this prover's to make
-unilaterally, but it is the thing to do).** In dimension `≤ 1` the missing
-theorem is easy: a regular local ring of dimension `0` is a FIELD and of
-dimension `1` is a DVR, and mathlib takes DVR ⟹ PID ⟹ UFD ⟹
-`IsIntegrallyClosed` all the way. This file already carries the CONVERSE
-(`isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one`, PROVEN, just
-above `krullDimLE_stalk_of_topologicalKrullDim_le`), which is exactly the shape
-the forward direction would take. And the sole consumer,
-`smooth_normalizationModel_of_smooth_affine_curve` below, HAS the hypothesis
-`hdim : topologicalKrullDim ↥C ≤ 1` and simply does not pass it here. **Adding
-`hdim` to this statement and threading it through from the consumer converts
-this leaf from "needs Auslander–Buchsbaum or Serre's criterion" into "needs
-regular local of dimension ≤ 1 is a field or a DVR", which is a different order
-of difficulty.** The general form was presumably stated for reusability; nothing
-in this development consumes it in dimension `> 1`.
+**THE CHEAP REPAIR WAS TAKEN, AND IT CLOSED THE LEAF (2026-07-27).** In
+dimension `≤ 1` the missing theorem is easy: a regular local ring of dimension
+`0` is a FIELD and of dimension `1` is a DVR, and mathlib takes DVR ⟹ PID ⟹
+UFD ⟹ `IsIntegrallyClosed` all the way. That is now
+`isIntegrallyClosed_of_isRegularLocalRing_of_krullDimLE_one` (PROVEN, stated
+beside its converse `isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one`),
+and the enabling change is the CUT: the sole consumer,
+`smooth_normalizationModel_of_smooth_affine_curve` below, already had
+`hdim : topologicalKrullDim ↥C ≤ 1` and simply did not pass it here. It now does,
+which is the whole difference between "needs Auslander–Buchsbaum or Serre's
+criterion" and "needs field-or-DVR". The general regular ⟹ normal theorem is
+still absent from the pin and is still not needed anywhere in this development.
 
-`hsmooth` is what makes `B` normal and is therefore load-bearing; `hgqf`,
-`hgsep`, `hgft`, `hgqc` are the Zariski's-Main-Theorem hypotheses that make
-`g.toNormalization` an open immersion, which is what identifies the two
-function fields. `[IsIntegral C]` is an instance hypothesis rather than a
-derived fact only so that `IsDomain` of the stalk is available while the
-statement elaborates; the assembly below discharges it from `hsmooth` and
-`hgi`. -/
+`[AlgebraicGeometry.IsIntegral C]` was likewise added as an instance hypothesis
+— the previous version of this docstring already described it as one, but the
+signature did not carry it. The consumer discharges it from `hsmooth` and `hgi`
+before the call, exactly as that paragraph said.
+
+WHAT THE PROOF ACTUALLY USES, and this CORRECTS the hypothesis analysis above.
+It is two PROVEN pieces stated immediately above:
+`isIntegrallyClosed_stalk_of_smooth_of_topologicalKrullDim_le_one` (this is where
+`hsmooth` and `hdim` are consumed) composed through
+`isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk` (normality is local on
+an integral scheme) into
+`isIntegrallyClosed_stalk_normalization_of_isIntegrallyClosed_sections` (the
+Stacks 035Q descent). **The Zariski's-Main-Theorem hypotheses are NOT used**:
+`Frac A' ⊆ Frac B` holds because `A' ⊆ B` and `B` is a domain, so the two
+function fields never have to be identified. `_hft`, `_hPproper`, `_hcomm`,
+`_hgqf` and `_hgft` are therefore underscore-prefixed to make the non-use
+mechanically visible; they are kept in the signature because they are part of
+the stated cut and because the consumer passes them positionally. `hgsep` and
+`hgqc` survive only because `Scheme.Hom.normalization` is itself defined under
+`QuasiCompact`/`QuasiSeparated`. -/
 theorem isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve
     {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    [AlgebraicGeometry.IsIntegral C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
     (hsmooth : AlgebraicGeometry.Smooth fC)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hPproper : AlgebraicGeometry.IsProper fP) (hcomm : g ≫ fP = fC)
-    (hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
+    (_hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (_hPproper : AlgebraicGeometry.IsProper fP) (_hcomm : g ≫ fP = fC)
+    (_hgqf : AlgebraicGeometry.LocallyQuasiFinite g)
     (hgsep : AlgebraicGeometry.IsSeparated g)
-    (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (_hgft : AlgebraicGeometry.LocallyOfFiniteType g)
     (hgqc : AlgebraicGeometry.QuasiCompact g)
     (x : (g.normalization : AlgebraicGeometry.Scheme.{u})) :
-    IsIntegrallyClosed ((g.normalization).presheaf.stalk x) :=
-  sorry
+    IsIntegrallyClosed ((g.normalization).presheaf.stalk x) := by
+  haveI := hgqc
+  haveI := hgsep
+  haveI : AlgebraicGeometry.QuasiSeparated g := inferInstance
+  have hstalks : ∀ c : C, IsIntegrallyClosed (C.presheaf.stalk c) := fun c =>
+    isIntegrallyClosed_stalk_of_smooth_of_topologicalKrullDim_le_one fC hsmooth hdim c
+  exact isIntegrallyClosed_stalk_normalization_of_isIntegrallyClosed_sections g
+    (fun W hW => @isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk C _ hstalks W hW) x
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF C1b — THE NORMALIZED MODEL HAS DIMENSION `≤ 1`** (SORRY LEAF).
@@ -12572,15 +12833,22 @@ first entry is no longer one of them:
   its docstring — not this one — is where its status is maintained.
 * `topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve` — the
   model has dimension `≤ 1`; the content is "a dense open of an integral
-  finite-type scheme has the same dimension".
-* `isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve` — the
-  model is normal; Stacks 035Q, a transitivity-of-integrality argument with
-  no curve theory in it.
+  finite-type scheme has the same dimension". **This is now the only one left.**
+* ~~`isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve`~~ —
+  **PROVEN 2026-07-27**, once `hdim` was threaded through to it from here. In
+  dimension `≤ 1` "regular ⟹ integrally closed" is field-or-DVR
+  (`isIntegrallyClosed_of_isRegularLocalRing_of_krullDimLE_one`), and the rest is
+  the Stacks 035Q descent
+  (`isIntegrallyClosed_sections_of_isIntegrallyClosed_stalk` and
+  `isIntegrallyClosed_stalk_normalization_of_isIntegrallyClosed_sections`, both
+  PROVEN and both reusable general scheme theory).
 
 The earlier version of this docstring said the missing theory was the ONLY
 gap. That was optimistic: mathlib has **no notion of a normal scheme at all**
 (`grep -rn "IsIntegrallyClosed" Mathlib/AlgebraicGeometry/` is empty), so
-normality of the model is a separate obligation and not a free consequence.
+normality of the model was a separate obligation and not a free consequence —
+it just turned out to be a dischargeable one, because normality is LOCAL and
+the stalks of `C` are normal for dimension reasons.
 
 ONE CLAIM MADE IN THE FIRST VERSION OF THIS DECOMPOSITION IS RETRACTED, by
 its own author and within the same day. It said mathlib had no comparison
@@ -12637,7 +12905,7 @@ theorem smooth_normalizationModel_of_smooth_affine_curve
   haveI : CharZero (ULift.{u} ℚ) := charZero_uliftRat
   refine smooth_of_isRegularLocalRing_stalk_of_perfectField _ hfp (fun x => ?_)
   haveI := isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
-    hft hPproper hcomm hgqf hgsep hgft hgqc x
+    hft hdim hPproper hcomm hgqf hgsep hgft hgqc x
   haveI := krullDimLE_stalk_of_topologicalKrullDim_le
     (topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve fC fP g hsmooth
       hft hdim hPproper hcomm hgqf hgsep hgft hgqc hfin) x
