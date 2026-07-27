@@ -1642,6 +1642,36 @@ lemma velu_bc_Theta (S : Finset W.Point) :
   rw [veluTheta, veluTheta, Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_mul,
     Polynomial.map_pow, velu_bc_Psi, velu_bc_Xi, velu_bc_H, velu_bc_PhiNum]
 
+omit [CharZero F] [CharZero L] in
+/-- **PROVEN.** Base change of the Vélu `x`-coordinate. This is the one member of the
+base-change family that was missing, and it is what lets an argument needing MORE POINTS
+than `W(F)` supplies be run over `F̄` and descended: see `velu_coordX_add_eq_addX`. Pure
+reindexing of the two sums off `veluBaseChangePoint_pointX`. -/
+lemma velu_bc_coordX (S : Finset W.Point) (P : W.Point) :
+    (W⁄L : Affine L).veluCoordX (S.image (veluBaseChangePoint W L))
+        (veluBaseChangePoint W L P)
+      = algebraMap F L (W.veluCoordX S P) := by
+  rw [veluCoordX, veluCoordX, map_sub, map_sum, map_sum,
+    Finset.sum_image (fun a _ b _ h => veluBaseChangePoint_injective h),
+    Finset.sum_image (fun a _ b _ h => veluBaseChangePoint_injective h)]
+  refine congrArg₂ (· - ·) (Finset.sum_congr rfl fun Q _ => ?_)
+    (Finset.sum_congr rfl fun Q _ => veluBaseChangePoint_pointX Q)
+  rw [← map_add, veluBaseChangePoint_pointX]
+
+omit [CharZero F] [CharZero L] in
+/-- **PROVEN.** Base change of the Vélu `y`-coordinate, the companion of
+`velu_bc_coordX`. -/
+lemma velu_bc_coordY (S : Finset W.Point) (P : W.Point) :
+    (W⁄L : Affine L).veluCoordY (S.image (veluBaseChangePoint W L))
+        (veluBaseChangePoint W L P)
+      = algebraMap F L (W.veluCoordY S P) := by
+  rw [veluCoordY, veluCoordY, map_sub, map_sum, map_sum,
+    Finset.sum_image (fun a _ b _ h => veluBaseChangePoint_injective h),
+    Finset.sum_image (fun a _ b _ h => veluBaseChangePoint_injective h)]
+  refine congrArg₂ (· - ·) (Finset.sum_congr rfl fun Q _ => ?_)
+    (Finset.sum_congr rfl fun Q _ => veluBaseChangePoint_pointY Q)
+  rw [← map_add, veluBaseChangePoint_pointY]
+
 end PolePolyBaseChange
 
 /-- **PROVEN.** Translation invariance of the values of `veluTheta`. -/
@@ -4398,6 +4428,380 @@ theorem velu_norm_line_mul_neg_slope (S : Finset W.Point) (hS : IsPointSubgroup 
   refine velu_norm_line_mul_neg W S hS hodd hP (veluPointX A) (veluPointY A) _ hA hB hAB ?_
   rw [Affine.addPolynomial_slope heqA heqB hxy, hxAB]
 
+omit [DecidableEq F] in
+/-- Over an algebraically closed field `veluPointX` hits every value, so it avoids any
+prescribed FINITE set of values: complete the square and take a square root. -/
+lemma velu_exists_point_notMem [IsAlgClosed F] (Bad : Finset F) :
+    ∃ P : W.Point, veluPointX P ∉ Bad := by
+  obtain ⟨x, hx⟩ := Infinite.exists_notMem_finset Bad
+  obtain ⟨d, hd⟩ := IsAlgClosed.exists_pow_nat_eq
+      ((W.a₁ * x + W.a₃) ^ 2 + 4 * (x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆))
+      (n := 2) (by norm_num)
+  refine ⟨Affine.Point.some x ((d - (W.a₁ * x + W.a₃)) / 2) ?_, hx⟩
+  refine Affine.equation_iff_nonsingular.mp ?_
+  rw [Affine.equation_iff]
+  field_simp
+  linear_combination hd
+
+/-- **The fibres of the Vélu `x`-coordinate are small.** If two points outside `S` have the
+same Vélu `x`-coordinate then the second one's own `x`-coordinate is among the `|S|` values
+`x(P + Q)`: the two fibre polynomials of `velu_xNum_sub_eq_prod` coincide, and `x(P')` is a
+root of the second one through its `Q = 0` factor. -/
+lemma velu_pointX_mem_of_coordX_eq {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {P P' : W.Point} (hP : P ∉ S) (hP' : P' ∉ S)
+    (h : W.veluCoordX S P = W.veluCoordX S P') :
+    veluPointX P' ∈ S.image (fun Q => veluPointX (P + Q)) := by
+  classical
+  have hprod := velu_xNum_sub_eq_prod W S hS hodd hP
+  have hprod' := velu_xNum_sub_eq_prod W S hS hodd hP'
+  rw [← h] at hprod'
+  have heqprod : (∏ Q ∈ S, (Polynomial.X - Polynomial.C (veluPointX (P + Q))))
+      = ∏ Q ∈ S, (Polynomial.X - Polynomial.C (veluPointX (P' + Q))) := hprod.symm.trans hprod'
+  have hz : (∏ Q ∈ S, (Polynomial.X - Polynomial.C (veluPointX (P + Q)))).eval
+      (veluPointX P') = 0 := by
+    rw [heqprod, Polynomial.eval_prod]
+    exact Finset.prod_eq_zero hS.zero_mem (by simp)
+  rw [Polynomial.eval_prod] at hz
+  obtain ⟨Q, hQ, hQ0⟩ := Finset.prod_eq_zero_iff.mp hz
+  refine Finset.mem_image.mpr ⟨Q, hQ, ?_⟩
+  simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C] at hQ0
+  exact (sub_eq_zero.mp hQ0).symm
+
+/-- **PROVEN: three admissible points with pairwise distinct Vélu `x`-coordinates**, over an
+algebraically closed field.  This is the second ingredient of `velu_coordX_add_eq_addX`, and
+it is exactly what can FAIL over the ground field. -/
+lemma velu_exists_three_coordX [IsAlgClosed F] (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) :
+    ∃ P₀ P₁ P₂ : W.Point, P₀ ∉ S ∧ P₁ ∉ S ∧ P₂ ∉ S
+      ∧ W.veluCoordX S P₀ ≠ W.veluCoordX S P₁
+      ∧ W.veluCoordX S P₀ ≠ W.veluCoordX S P₂
+      ∧ W.veluCoordX S P₁ ≠ W.veluCoordX S P₂ := by
+  classical
+  have step : ∀ Bad : Finset F, ∃ P : W.Point, P ∉ S ∧ veluPointX P ∉ Bad := by
+    intro Bad
+    obtain ⟨P, hP⟩ := velu_exists_point_notMem W (Bad ∪ S.image veluPointX)
+    exact ⟨P, fun hc => hP (Finset.mem_union_right _ (Finset.mem_image_of_mem _ hc)),
+      fun hc => hP (Finset.mem_union_left _ hc)⟩
+  obtain ⟨P₀, hP₀, -⟩ := step ∅
+  obtain ⟨P₁, hP₁, h1⟩ := step (S.image (fun Q => veluPointX (P₀ + Q)))
+  obtain ⟨P₂, hP₂, h2⟩ := step ((S.image (fun Q => veluPointX (P₀ + Q)))
+      ∪ (S.image (fun Q => veluPointX (P₁ + Q))))
+  exact ⟨P₀, P₁, P₂, hP₀, hP₁, hP₂,
+    fun h => h1 (velu_pointX_mem_of_coordX_eq W hS hodd hP₀ hP₁ h),
+    fun h => h2 (Finset.mem_union_left _ (velu_pointX_mem_of_coordX_eq W hS hodd hP₀ hP₂ h)),
+    fun h => h2 (Finset.mem_union_right _
+      (velu_pointX_mem_of_coordX_eq W hS hodd hP₁ hP₂ h))⟩
+
+
+/-! ### From STAR to the `addX` identity: the assembly, and the base change it needs
+
+`velu_addX_eq_of_norm_line` below is the ~40-line finish the ROUTE MAP in the next
+docstring describes: substituting `HNORM` into `STAR` and applying `velu_line_pair` ON the
+quotient curve leaves two monic cubics, and their difference — of degree `≤ 2` — is killed
+by three distinct evaluation points.  It needs NO case split on collisions and no
+cubic-coefficient comparison beyond the two coefficients it reads off.
+
+`velu_coordX_add_eq_addX` then runs that over `AlgebraicClosure F` and descends, because the
+three evaluation points can genuinely fail to exist over `F` (take `A` of order `3` modulo
+`S`, `B ≡ A`, `W(F) = ⟨A⟩ + S`).  The descent is `velu_bc_coordX` / `velu_bc_coordY`
+together with the base-change family already in this file. -/
+
+omit [CharZero F] [W.IsElliptic] in
+/-- A point of `W` lying ON the line `y = ℓ(x − x₀) + y₀` makes the whole norm product
+vanish, through its `Q = 0` factor. -/
+lemma velu_norm_eq_zero_of_on_line {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {x₀ y₀ ℓ : F} {T : W.Point}
+    (hT : veluPointY T = ℓ * (veluPointX T - x₀) + y₀) :
+    ∏ Q ∈ S, (veluPointY (T + Q) - (ℓ * (veluPointX (T + Q) - x₀) + y₀)) = 0 :=
+  Finset.prod_eq_zero hS.zero_mem (by simp only [add_zero]; rw [hT]; ring)
+
+omit [CharZero F] [W.IsElliptic] in
+/-- **The second point of a secant lies on it.** For two points of `W` satisfying mathlib's
+nondegeneracy side condition, `(x₂, y₂)` lies on the line through `(x₁, y₁)` of slope
+`W.slope x₁ x₂ y₁ y₂`. -/
+lemma velu_slope_line_snd {x₁ x₂ y₁ y₂ : F} (h₁ : W.Equation x₁ y₁) (h₂ : W.Equation x₂ y₂)
+    (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    y₂ = W.slope x₁ x₂ y₁ y₂ * (x₂ - x₁) + y₁ := by
+  by_cases hx : x₁ = x₂
+  · have hy : y₁ ≠ W.negY x₂ y₂ := fun h => hxy ⟨hx, h⟩
+    have := Affine.Y_eq_of_Y_ne h₁ h₂ hx hy
+    rw [← hx, ← this]; ring
+  · rw [Affine.slope_of_X_ne hx]
+    field_simp [sub_ne_zero.mpr hx]
+    ring
+
+omit [DecidableEq F] [CharZero F] [W.IsElliptic] in
+lemma velu_point_equation {P : W.Point} (hP : P ≠ 0) :
+    W.Equation (veluPointX P) (veluPointY P) := by
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x y h => exact h.1
+
+omit [CharZero F] [W.IsElliptic] in
+/-- `A + B ∉ S` supplies mathlib's nondegeneracy side condition for the secant through
+`A` and `B`, since that condition says precisely `A = −B`. -/
+lemma velu_point_ne_negY {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {A B : W.Point} (hA : A ∉ S) (hB : B ∉ S) (hAB : A + B ∉ S) :
+    ¬(veluPointX A = veluPointX B
+      ∧ veluPointY A = W.negY (veluPointX B) (veluPointY B)) := by
+  have hA0 : A ≠ 0 := fun h => hA (h ▸ hS.zero_mem)
+  have hB0 : B ≠ 0 := fun h => hB (h ▸ hS.zero_mem)
+  have hAB0 : A + B ≠ 0 := fun h => hAB (h ▸ hS.zero_mem)
+  rintro ⟨hx, hy⟩
+  refine hAB0 ?_
+  have hAn : A = -B := by
+    cases A with
+    | zero => exact absurd rfl hA0
+    | some xa ya ha =>
+      cases B with
+      | zero => exact absurd rfl hB0
+      | some xb yb hb =>
+        rw [Affine.Point.neg_some]
+        exact velu_point_some_eq hx hy
+  rw [hAn, neg_add_cancel]
+
+omit [DecidableEq F] [CharZero F] [W.IsElliptic] in
+/-- Subtraction of `Cubic.toPoly`s, coefficientwise. -/
+lemma velu_cubic_toPoly_sub (P Q : Cubic F) :
+    P.toPoly - Q.toPoly
+      = (⟨P.a - Q.a, P.b - Q.b, P.c - Q.c, P.d - Q.d⟩ : Cubic F).toPoly := by
+  simp only [Cubic.toPoly, Polynomial.C_sub]
+  ring
+
+/-- **THE ASSEMBLY.** Given `HNORM` — the statement that the norm along `S` of the secant
+line function through `A` and `B` is again a line function `c·(Y − λX − μ)` with `c² = κ` —
+together with three points of `W ∖ S` whose Vélu `x`-coordinates are pairwise distinct, the
+`addX` identity for the Vélu map follows.  No case split on collisions is needed. -/
+theorem velu_addX_eq_of_norm_line (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {A B : W.Point} (hA : A ∉ S) (hB : B ∉ S) (hAB : A + B ∉ S)
+    {c lam mu : F}
+    (hc : c ^ 2 = (veluH S).eval (veluPointX A) * (veluH S).eval (veluPointX B)
+            * (veluH S).eval (veluPointX (A + B)))
+    (hN : ∀ P : W.Point, P ∉ S →
+      (∏ Q ∈ S, (veluPointY (P + Q)
+        - (W.slope (veluPointX A) (veluPointX B) (veluPointY A) (veluPointY B)
+            * (veluPointX (P + Q) - veluPointX A) + veluPointY A)))
+        = c * (W.veluCoordY S P - (lam * W.veluCoordX S P + mu)))
+    {P₀ P₁ P₂ : W.Point} (hP₀ : P₀ ∉ S) (hP₁ : P₁ ∉ S) (hP₂ : P₂ ∉ S)
+    (h01 : W.veluCoordX S P₀ ≠ W.veluCoordX S P₁)
+    (h02 : W.veluCoordX S P₀ ≠ W.veluCoordX S P₂)
+    (h12 : W.veluCoordX S P₁ ≠ W.veluCoordX S P₂) :
+    W.veluCoordX S (A + B)
+      = (W.veluCurve S).addX (W.veluCoordX S A) (W.veluCoordX S B)
+          ((W.veluCurve S).slope (W.veluCoordX S A) (W.veluCoordX S B)
+            (W.veluCoordY S A) (W.veluCoordY S B)) := by
+  classical
+  -- (1) `κ ≠ 0`, hence `c ≠ 0`.
+  have hκ : (veluH S).eval (veluPointX A) * (veluH S).eval (veluPointX B)
+              * (veluH S).eval (veluPointX (A + B)) ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (veluH_eval_ne_zero hS hA) (veluH_eval_ne_zero hS hB))
+      (veluH_eval_ne_zero hS hAB)
+  have hc0 : c ≠ 0 := by intro h; exact hκ (by rw [← hc, h]; ring)
+  -- (2) `N` vanishes at any point of `W ∖ S` lying on the line, so its Vélu image lies on
+  -- the line `η = λ ξ + μ` of the quotient.
+  have hline : ∀ T : W.Point, T ∉ S →
+      veluPointY T = W.slope (veluPointX A) (veluPointX B) (veluPointY A) (veluPointY B)
+          * (veluPointX T - veluPointX A) + veluPointY A →
+      W.veluCoordY S T = lam * W.veluCoordX S T + mu := by
+    intro T hT hTline
+    have h0 := (hN T hT).symm.trans (velu_norm_eq_zero_of_on_line W hS hTline)
+    exact sub_eq_zero.mp ((mul_eq_zero.mp h0).resolve_left hc0)
+  have hlineA : W.veluCoordY S A = lam * W.veluCoordX S A + mu := hline A hA (by ring)
+  have hlineB : W.veluCoordY S B = lam * W.veluCoordX S B + mu :=
+    hline B hB (velu_slope_line_snd W (velu_point_equation W (fun h => hA (h ▸ hS.zero_mem)))
+      (velu_point_equation W (fun h => hB (h ▸ hS.zero_mem)))
+      (velu_point_ne_negY W hS hA hB hAB))
+  -- Eliminate `μ`, which the line relation at `A` determines.
+  have hmu : mu = W.veluCoordY S A - lam * W.veluCoordX S A := by rw [hlineA]; ring
+  subst hmu
+  -- (3) STAR + HNORM give the pointwise cubic identity on the quotient curve.
+  have hcube : ∀ P : W.Point, P ∉ S →
+      ((W.veluCurve S).addPolynomial (W.veluCoordX S A) (W.veluCoordY S A) lam).eval
+          (W.veluCoordX S P)
+        = -((W.veluCoordX S P - W.veluCoordX S A) * (W.veluCoordX S P - W.veluCoordX S B)
+            * (W.veluCoordX S P - W.veluCoordX S (A + B))) := by
+    intro P hP
+    have hstar := velu_norm_line_mul_neg_slope W S hS hodd hA hB hAB hP
+    rw [hN P hP, hN (-P) (velu_neg_notMem W hS hP), veluCoordX_neg hS P,
+      veluCoordY_neg hS hP] at hstar
+    have heq := W.velu_equation S hS hodd hP
+    rw [Affine.equation_iff] at heq
+    simp only [Affine.negY] at hstar
+    have hkey : c ^ 2 * (((W.veluCurve S).addPolynomial (W.veluCoordX S A)
+          (W.veluCoordY S A) lam).eval (W.veluCoordX S P)
+        + (W.veluCoordX S P - W.veluCoordX S A) * (W.veluCoordX S P - W.veluCoordX S B)
+            * (W.veluCoordX S P - W.veluCoordX S (A + B))) = 0 := by
+      rw [velu_addPolynomial_eval]
+      linear_combination hstar + c ^ 2 * heq
+        + ((W.veluCoordX S P - W.veluCoordX S A) * (W.veluCoordX S P - W.veluCoordX S B)
+            * (W.veluCoordX S P - W.veluCoordX S (A + B))) * hc
+    linear_combination (mul_eq_zero.mp hkey).resolve_left (pow_ne_zero 2 hc0)
+  -- (4) Three distinct evaluation points upgrade it to an identity of POLYNOMIALS.
+  have hcard : ({W.veluCoordX S P₀, W.veluCoordX S P₁, W.veluCoordX S P₂} : Finset F).card
+      = 3 := by
+    rw [Finset.card_insert_of_notMem (by simp [h01, h02]),
+      Finset.card_insert_of_notMem (by simp [h12]), Finset.card_singleton]
+  have hdiff : (W.veluCurve S).addPolynomial (W.veluCoordX S A) (W.veluCoordY S A) lam
+      + (Polynomial.X - Polynomial.C (W.veluCoordX S A))
+        * (Polynomial.X - Polynomial.C (W.veluCoordX S B))
+        * (Polynomial.X - Polynomial.C (W.veluCoordX S (A + B))) = 0 := by
+    refine Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' _
+      {W.veluCoordX S P₀, W.veluCoordX S P₁, W.veluCoordX S P₂} ?_ ?_
+    · intro ξ hξ
+      simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+        Polynomial.eval_X, Polynomial.eval_C]
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hξ
+      rcases hξ with rfl | rfl | rfl
+      · linear_combination hcube P₀ hP₀
+      · linear_combination hcube P₁ hP₁
+      · linear_combination hcube P₂ hP₂
+    · rw [hcard, show (W.veluCurve S).addPolynomial (W.veluCoordX S A) (W.veluCoordY S A) lam
+          + (Polynomial.X - Polynomial.C (W.veluCoordX S A))
+            * (Polynomial.X - Polynomial.C (W.veluCoordX S B))
+            * (Polynomial.X - Polynomial.C (W.veluCoordX S (A + B)))
+          = (⟨(1 : F) - 1,
+              -(W.veluCoordX S A + W.veluCoordX S B + W.veluCoordX S (A + B))
+                - (-lam ^ 2 - (W.veluCurve S).a₁ * lam + (W.veluCurve S).a₂),
+              (W.veluCoordX S A * W.veluCoordX S B + W.veluCoordX S A * W.veluCoordX S (A + B)
+                  + W.veluCoordX S B * W.veluCoordX S (A + B))
+                - (2 * W.veluCoordX S A * lam ^ 2
+                  + ((W.veluCurve S).a₁ * W.veluCoordX S A - 2 * W.veluCoordY S A
+                      - (W.veluCurve S).a₃) * lam
+                  + (-(W.veluCurve S).a₁ * W.veluCoordY S A + (W.veluCurve S).a₄)),
+              -(W.veluCoordX S A * W.veluCoordX S B * W.veluCoordX S (A + B))
+                - (-W.veluCoordX S A ^ 2 * lam ^ 2
+                  + (2 * W.veluCoordX S A * W.veluCoordY S A
+                      + (W.veluCurve S).a₃ * W.veluCoordX S A) * lam
+                  - (W.veluCoordY S A ^ 2 + (W.veluCurve S).a₃ * W.veluCoordY S A
+                      - (W.veluCurve S).a₆))⟩ : Cubic F).toPoly from ?_]
+      · exact lt_of_le_of_lt (Cubic.natDegree_of_a_eq_zero (by ring)) (by norm_num)
+      · rw [Affine.addPolynomial_eq, Cubic.prod_X_sub_C_eq, neg_add_eq_sub,
+          velu_cubic_toPoly_sub]
+  have hpoly : (W.veluCurve S).addPolynomial (W.veluCoordX S A) (W.veluCoordY S A) lam
+      = -((Polynomial.X - Polynomial.C (W.veluCoordX S A))
+          * (Polynomial.X - Polynomial.C (W.veluCoordX S B))
+          * (Polynomial.X - Polynomial.C (W.veluCoordX S (A + B)))) :=
+    eq_neg_of_add_eq_zero_left hdiff
+  -- (5) Coefficient comparison.
+  rw [Affine.addPolynomial_eq, neg_inj, Cubic.prod_X_sub_C_eq] at hpoly
+  have hb := Cubic.b_of_eq hpoly
+  have hcc := Cubic.c_of_eq hpoly
+  simp only at hb hcc
+  -- (6) `λ` IS the slope on the quotient curve: the secant case from the line relations,
+  -- the tangent case from the `ξ`-coefficient.
+  have hxyV := W.velu_coord_ne_neg S hS hodd hA hB hAB
+  have hslope : lam = (W.veluCurve S).slope (W.veluCoordX S A) (W.veluCoordX S B)
+      (W.veluCoordY S A) (W.veluCoordY S B) := by
+    by_cases hab : W.veluCoordX S A = W.veluCoordX S B
+    · have hy : W.veluCoordY S A
+          ≠ (W.veluCurve S).negY (W.veluCoordX S B) (W.veluCoordY S B) := fun h => hxyV ⟨hab, h⟩
+      have hyy : W.veluCoordY S A = W.veluCoordY S B := by rw [hlineB, hab]; ring
+      have hnegeq : (W.veluCurve S).negY (W.veluCoordX S A) (W.veluCoordY S A)
+          = (W.veluCurve S).negY (W.veluCoordX S B) (W.veluCoordY S B) := by rw [hab, hyy]
+      have hy' : W.veluCoordY S A
+          ≠ (W.veluCurve S).negY (W.veluCoordX S A) (W.veluCoordY S A) := by
+        rw [hnegeq]; exact hy
+      rw [Affine.slope_of_Y_ne hab hy, eq_div_iff (sub_ne_zero.mpr hy')]
+      rw [← hab] at hb hcc
+      simp only [Affine.negY]
+      linear_combination (-1 : F) * hcc + (-2 * W.veluCoordX S A) * hb
+    · rw [Affine.slope_of_X_ne hab, eq_div_iff (sub_ne_zero.mpr hab)]
+      linear_combination hlineB
+  -- (7) The `ξ²`-coefficient IS the leaf.
+  rw [← hslope]
+  simp only [Affine.addX]
+  linear_combination hb
+
+/-- **THE ONE REMAINING LEAF OF THE ODD-ORDER VÉLU DEVELOPMENT**, and since 2026-07-27 it
+carries exactly ONE sorried step: `HNORM`.  Everything else is real, compiling code.
+
+`velu_addX_eq_of_norm_line` above is the finish — it consumes `STAR`
+(`velu_norm_line_mul_neg_slope`) and needs only `HNORM` plus three evaluation points.  This
+theorem runs it over `AlgebraicClosure F` and descends through `velu_bc_coordX` /
+`velu_bc_coordY` and the rest of the base-change family.
+
+**Why the algebraic closure is not optional.** Over `F` the three evaluation points can
+genuinely FAIL to exist: take `A` of order `3` modulo `S`, `B ≡ A`, and `W(F) = ⟨A⟩ + S`;
+then `A, B, A + B ∉ S` all hold, every admissible `P` has `X P = X A`, and the conclusion
+(`3·ψA = 0`, true because `3A ∈ S`) is invisible to the argument.  Over `F̄` they exist —
+that is `velu_exists_three_coordX`, PROVEN above off `velu_exists_point_notMem` (complete
+the square, take a square root, and the field is infinite) and
+`velu_pointX_mem_of_coordX_eq` (the fibres of the Vélu `x`-coordinate are contained in the
+`|S|` values `x(P + Q)`, read off `velu_xNum_sub_eq_prod`).
+
+**`HNORM`, the one sorried `obtain` below, is the irreducible core.** It says the norm
+`N(P) = ∏_{Q ∈ S} f(P+Q)` of the secant line function is again a LINE function
+`c·(Y − λX − μ)` on the quotient, with `c² = κ = H(x_A)H(x_B)H(x_C)` — i.e. exactly the
+invariant-function theorem for `F(W)` over `F(W)^S`, since `N` is `S`-invariant by
+construction.  `STAR` pins `N` only up to SIGN and supplying the sign IS this statement.
+Four routes to it are REFUTED; see the ROUTE MAP in `velu_map_add_of_notMem`'s docstring
+(`Ideal.relNorm`; the even/odd split of `N`; any pairing of `N` against `N ∘ [−1]`, every
+such identity being even; and `Affine.Point.toClass` / `ClassGroup`, which falls short by
+exactly the index `n`).  The refuting check for the "irreducible" verdict, if anyone
+believes otherwise: exhibit `Σ_{Q∈S} u(x(P+Q))·y(P+Q)` as an explicit expression in `X P`
+and `Y P` for a single `u` other than `u = 1`.  Vélu's `Y` is the `u = 1` case, and it is a
+DEFINITION, not a theorem. -/
+theorem velu_coordX_add_eq_addX (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {A B : W.Point} (hA : A ∉ S) (hB : B ∉ S) (hAB : A + B ∉ S) :
+    W.veluCoordX S (A + B)
+      = (W.veluCurve S).addX (W.veluCoordX S A) (W.veluCoordX S B)
+          ((W.veluCurve S).slope (W.veluCoordX S A) (W.veluCoordX S B)
+            (W.veluCoordY S A) (W.veluCoordY S B)) := by
+  classical
+  haveI : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).IsElliptic :=
+    inferInstanceAs (W.map (algebraMap F (AlgebraicClosure F))).IsElliptic
+  set A' := veluBaseChangePoint W (AlgebraicClosure F) A
+  set B' := veluBaseChangePoint W (AlgebraicClosure F) B
+  set S' : Finset (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Point :=
+    S.image (veluBaseChangePoint W (AlgebraicClosure F)) with hS'def
+  have hS' : IsPointSubgroup S' := velu_baseChange_isPointSubgroup hS
+  have hodd' : Odd S'.card := by
+    rw [hS'def, Finset.card_image_of_injective _ veluBaseChangePoint_injective]; exact hodd
+  have hmem : ∀ P : W.Point, P ∉ S →
+      veluBaseChangePoint W (AlgebraicClosure F) P ∉ S' := by
+    intro P hP hcon
+    rw [hS'def, Finset.mem_image] at hcon
+    obtain ⟨Q, hQ, hQeq⟩ := hcon
+    exact hP (veluBaseChangePoint_injective hQeq ▸ hQ)
+  have hsum : A' + B' = veluBaseChangePoint W (AlgebraicClosure F) (A + B) := (map_add _ _ _).symm
+  -- **HNORM**, the one piece of genuinely missing theory: the norm along `S` of a line
+  -- function on `W` is again a LINE function on the quotient curve, with `c² = κ`.
+  obtain ⟨c, lam, mu, hc, hN⟩ :
+      ∃ c lam mu : AlgebraicClosure F,
+        c ^ 2 = (veluH S').eval (veluPointX A') * (veluH S').eval (veluPointX B')
+            * (veluH S').eval (veluPointX (A' + B'))
+        ∧ ∀ P : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Point, P ∉ S' →
+            (∏ Q ∈ S', (veluPointY (P + Q)
+              - ((W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).slope
+                    (veluPointX A') (veluPointX B') (veluPointY A') (veluPointY B')
+                  * (veluPointX (P + Q) - veluPointX A') + veluPointY A')))
+              = c * ((W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).veluCoordY S' P
+                  - (lam * (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).veluCoordX S' P
+                      + mu)) := sorry
+  -- Three admissible points with pairwise distinct Vélu `x`-coordinates.  Over `F` this can
+  -- genuinely fail; over the algebraic closure it does not, which is why the whole argument
+  -- is run there and descended.
+  obtain ⟨P₀, P₁, P₂, hP₀, hP₁, hP₂, h01, h02, h12⟩ :
+      ∃ P₀ P₁ P₂ : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Point,
+        P₀ ∉ S' ∧ P₁ ∉ S' ∧ P₂ ∉ S'
+        ∧ (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).veluCoordX S' P₀
+            ≠ (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).veluCoordX S' P₁
+        ∧ (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).veluCoordX S' P₀
+            ≠ (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).veluCoordX S' P₂
+        ∧ (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).veluCoordX S' P₁
+            ≠ (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).veluCoordX S' P₂ :=
+    velu_exists_three_coordX (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)) S' hS' hodd'
+  have key := velu_addX_eq_of_norm_line
+    (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)) S' hS' hodd'
+    (hmem A hA) (hmem B hB) (hsum ▸ hmem (A + B) hAB) hc hN hP₀ hP₁ hP₂ h01 h02 h12
+  rw [hsum, velu_bc_coordX, velu_bc_coordX, velu_bc_coordX,
+    velu_bc_coordY, velu_bc_coordY, ← velu_baseChange_curve,
+    show ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F))
+        = (W.veluCurve S).map (algebraMap F (AlgebraicClosure F)) from rfl,
+    Affine.map_slope, Affine.map_addX] at key
+  exact (algebraMap F (AlgebraicClosure F)).injective key
+
+
 /-- **SORRY LEAF: the generic case of Vélu additivity**, cut 2026-07-26 out of
 `velu_map_add`: `P`, `Q` and `P + Q` all lie OUTSIDE the kernel, so all three Vélu images
 are affine points and the identity is the genuine addition law on the quotient curve.
@@ -4630,7 +5034,29 @@ theorem.
 `Affine/{AddSubMap,Basic,Formula,Point}`, `DivisionPolynomial`, `Jacobian`, `Projective`,
 `IsomOfJ`, `LFunction`, `ModelsWithJ`, `NormalForms`, `Reduction`, `VariableChange`,
 `Weierstrass`. So the norm/pushforward has to be built here; the Abel–Jacobi half
-(`toClass`, `FunctionField`, `CoordinateRing`) is the part mathlib does supply. -/
+(`toClass`, `FunctionField`, `CoordinateRing`) is the part mathlib does supply.
+
+## STATUS UPDATE 2026-07-27 — THIS DECLARATION NO LONGER CONTAINS A SORRY
+
+Everything above is the ROUTE MAP as it stood when this was a bare `sorry`. It has now been
+executed. The `have hX` below is discharged by `velu_coordX_add_eq_addX`, and the chain
+from here down to the one remaining gap is:
+
+* `velu_addX_eq_of_norm_line` — the ~40-line assembly the section "WITH STAR PROVEN"
+  above predicted, PROVEN. It consumes `STAR` (`velu_norm_line_mul_neg_slope`), which was
+  free-floating until now. Its steps 1–6 are exactly the ones listed above, with one
+  addition the sketch omitted: step 4 (`λ` IS `V.slope`) does NOT follow from the line
+  relations in the TANGENT case `X A = X B`; it is read off the `ξ`-COEFFICIENT of the
+  cubic identity instead, which is why the polynomial identity is taken first and the
+  coefficient comparison is not avoidable after all. Both needed coefficients come from
+  `Cubic.b_of_eq` / `Cubic.c_of_eq`.
+* `velu_coordX_add_eq_addX` — runs that over `AlgebraicClosure F` and descends. The
+  auxiliary-point gap flagged above ("the ONE that is missing is for `veluCoordX` itself")
+  is closed: `velu_bc_coordX` / `velu_bc_coordY` are PROVEN, and the three points
+  themselves are `velu_exists_three_coordX`, PROVEN.
+* **`HNORM` is all that is left**, as a single sorried `obtain` inside
+  `velu_coordX_add_eq_addX`. The four refutations recorded above still stand and should not
+  be re-attempted. -/
 theorem velu_map_add_of_notMem (S : Finset W.Point) (hS : IsPointSubgroup S)
     (hodd : Odd S.card) {P Q : W.Point} (hP : P ∉ S) (hQ : Q ∉ S) (hPQ : P + Q ∉ S) :
     W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q := by
@@ -4639,11 +5065,16 @@ theorem velu_map_add_of_notMem (S : Finset W.Point) (hS : IsPointSubgroup S)
   have hz : ∀ A B : W.Point, A ∉ S → B ∉ S → A + B ∉ S →
       W.veluMap S hS hodd A + W.veluMap S hS hodd B ≠ 0 := fun A B hA hB hAB =>
     velu_map_add_ne_zero W S hS hodd hA hB (W.velu_coord_ne_neg S hS hodd hA hB hAB)
-  -- Goal (2), the `addX` identity in point form: THE ONE REMAINING LEAF OF THIS FILE.
+  -- Goal (2), the `addX` identity in point form.  Since 2026-07-27 this is no longer a
+  -- bare `sorry`: it is `velu_coordX_add_eq_addX` above, whose own remaining content is
+  -- HNORM ALONE, stated over `AlgebraicClosure F`.
   have hX : ∀ A B : W.Point, A ∉ S → B ∉ S → A + B ∉ S →
       W.veluCoordX S (A + B)
         = veluPointX (W.veluMap S hS hodd A + W.veluMap S hS hodd B) := by
-    sorry
+    intro A B hA hB hAB
+    rw [W.veluMap_of_notMem hS hodd hA, W.veluMap_of_notMem hS hodd hB,
+      Affine.Point.add_some (W.velu_coord_ne_neg S hS hodd hA hB hAB)]
+    exact W.velu_coordX_add_eq_addX S hS hodd hA hB hAB
   -- Goal (3) is discharged by `velu_map_add_of_coordX`, not proved here.
   exact velu_map_add_of_coordX W S hS hodd hz hX hP hQ hPQ
 
