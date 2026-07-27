@@ -13582,6 +13582,15 @@ leaves in this section is unchanged at two, while the number of missing
 theories they require drops from seven to two, and those two are now the
 ONLY things standing between this section and closure.
 
+**STATUS 2026-07-27, LATER STILL: `card_relPoint_finiteField` is PROVEN**
+from the explicit plane models of the four curves, and the leaf it leaves
+behind is `nonempty_relPoint_equiv_modelPoint` — the identification of
+`X_0(N)_{𝔽_ℓ}` with the reduced Weierstrass model of `N a 1`.  The count
+itself is now a `decide` (`card_modelPoint`), so Eichler–Shimura is no
+longer among this section's missing theories at all; see the
+`#### The explicit plane models` subsection note.  The two open leaves are
+therefore `finite_jacobian` and `nonempty_relPoint_equiv_modelPoint`.
+
 **The upward merge is still available and is now cheaper**, since the
 remaining pair are in verbatim the same shape as
 `Fermat.finite_jacobian_of_kenkuLevel` and
@@ -13814,10 +13823,231 @@ theorem hasRankZeroJacobian (N : ℕ) (hN : N ∈ levels)
   exact ⟨J, jstr, ab, o, jac, finite_jacobian N hN hX jac,
     injective_aj_of_one_le_x0Genus N hg hX jac⟩
 
+/-! #### The explicit plane models, and the point count by computation
+
+**THE EICHLER–SHIMURA AXIS IS NOT THE ONLY ONE, AND AT GENUS `1` IT IS
+NOT THE CHEAPEST** (2026-07-27).  `card_relPoint_finiteField`'s previous
+docstring recorded the verdict "IRREDUCIBLE at this mathlib pin: it needs
+`S_2(Γ_0(N))`, the Hecke operator `T_ℓ` and the Eichler–Shimura
+congruence relation", and `X0.lean`'s analogue
+`Fermat.card_relPoint_x0_finiteField` records the same verdict together
+with the reason it cannot be acted on here — `Gamma0GL` and `heckeOp` are
+real definitions with no `opaque` constant in them, but they live in
+`Fermat/FLT/Modularity/Interface.lean` and
+
+    Interface → HardlyRamified/ModThree → FreyCurve/MazurTorsion
+
+so THIS module cannot import them either (re-verified 2026-07-27 by
+reading the import lines: `Interface.lean:303` imports `ModThree`, and
+`ModThree.lean:12` `public import`s `MazurTorsion`).  The hoist that
+would repair the cycle has not landed.
+
+That audit named the axis it had not searched: *"a route that counts
+`X_0(N)(𝔽_ℓ)` directly from the levels' explicit plane models, avoiding
+modular forms entirely"*.  **At these four levels that route works, and
+it discharges the arithmetic completely.**  `X_0(N)` has genus exactly
+`1` here (PROVEN in `levels_spec`, by `decide` on `x0Genus`) and carries
+a rational cusp, so it is the elliptic curve `N a 1`; each witness prime
+is a prime of good reduction for the minimal model; and counting the
+points of a plane Weierstrass cubic over `𝔽_3` or `𝔽_5` is a `9`- or
+`25`-case computation that the kernel does by `decide`.
+
+So the leaf splits into
+
+* `nonempty_relPoint_equiv_modelPoint` — **the model identification**:
+  the `𝔽_ℓ`-points of `X_0(N)_{𝔽_ℓ}` are the points of the reduced
+  Weierstrass model of `N a 1`.  Geometry, level-specific, still open;
+* `card_modelPoint` — **the count**, PROVEN by `decide`.
+
+Net effect: the theories this statement needs drop from three
+(`S_2(Γ_0(N))`, `T_ℓ`, the congruence relation — none of them reachable
+from this module) to one (an explicit model of `X_0(N)`), and the
+numerical content `ℓ + 1 − a_ℓ` is no longer assumed anywhere.
+
+**The decomposition is loss-free, not merely sufficient.**  Both sides
+are finite (`Fermat.finite_relPoint_of_x0Compactification_finiteField`),
+and for finite types `Nonempty (A ≃ B) ↔ Nat.card A = Nat.card B`, so
+`nonempty_relPoint_equiv_modelPoint` is EQUIVALENT to the old leaf rather
+than stronger than it: it cannot be false where the old one was true, and
+no faithfulness risk is introduced by the sharper shape.
+
+**What is NOT claimed here**: no integral model of `X_0(N)` and no
+reduction map appear, exactly as in `exists_mod_prime` — the special
+fibre is the coarse space of the `Γ₀(N)`-problem over `𝔽_ℓ` directly, and
+the Weierstrass model is compared with it over `𝔽_ℓ` alone.  The
+identification is presented as a bijection of POINT SETS rather than as
+an isomorphism of schemes, for the same reason `Fermat.IsX0ReductionAt`
+presents reduction as a bare function: the `Scheme` ↔ `WeierstrassCurve`
+bridge does not exist at this pin, and a point-set bijection is exactly
+what the count consumes. -/
+
+/-- **The minimal Weierstrass models of the four genus-one modular
+curves, their witness primes, and their point counts**, as rows
+`(N, ℓ, a₁, a₂, a₃, a₄, a₆, m)`.
+
+The `aᵢ` are the coefficients of `N a 1` in Cremona's tables, i.e. of
+`y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆`:
+
+| `N` | model of `X_0(N)` | `ℓ` | `disc` | `m` |
+|-----|-------------------|-----|--------|-----|
+| 11 | `[0, −1, 1, −10, −20]` | 3 | `−11⁵` | 5 |
+| 17 | `[1, −1, 1, −1, −14]`  | 3 | `−17⁴` | 4 |
+| 19 | `[0, 1, 1, −9, −15]`   | 5 | `−19³` | 3 |
+| 32 | `[0, 0, 0, 4, 0]`      | 3 | `−2¹²` | 4 |
+
+The discriminant column is the check that each row's `ℓ` is a prime of
+GOOD reduction for that model — it is prime to the discriminant in every
+row, so the reduction is again an elliptic curve and the plane model
+stays nonsingular mod `ℓ`.  It is also the check that the model is the
+right curve: `−11⁵`, `−17⁴`, `−19³`, `−2¹²` have conductors `11, 17, 19,
+32`, so these really are `X_0(11), X_0(17), X_0(19), X_0(32)` and not
+some other curve of the same shape.
+
+The `m` column agrees with `countTable` row by row, by construction and
+by `card_modelPoint`; `mem_modelTable_of_mem_countTable` is the formal
+statement that every row of `countTable` is refined by a row here.
+
+Kept as a separate table from `countTable` rather than widening that one,
+for the reason the section note gives for not widening
+`Fermat.x0WitnessTable`: `countTable` is the interface `exists_mod_prime`
+quantifies over and nothing downstream should have to carry Weierstrass
+coefficients. -/
+def modelTable : List (ℕ × ℕ × ℤ × ℤ × ℤ × ℤ × ℤ × ℕ) :=
+  [(11, 3, 0, -1, 1, -10, -20, 5),
+   (17, 3, 1, -1, 1, -1, -14, 4),
+   (19, 5, 0, 1, 1, -9, -15, 3),
+   (32, 3, 0, 0, 0, 4, 0, 4)]
+
+/-- **The `𝔽_ℓ`-points of a plane Weierstrass model**: the affine
+solutions of `y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆` over `ZMod ℓ`,
+together with the single point at infinity (the `none` of the `Option`).
+
+A projective Weierstrass cubic meets the line at infinity in the single
+point `[0 : 1 : 0]`, which is rational over every base, so this really is
+all of `E(𝔽_ℓ)` and not just its affine part — that is why the count
+below is `1 +` the number of affine solutions rather than a projective
+enumeration.
+
+An `abbrev` rather than a `def` deliberately: `decide` has to see the
+`Fintype` and `DecidableEq` instances of `Option` and of the subtype
+through it, which instance search will not do through an irreducible
+definition. -/
+abbrev ModelPoint (ℓ : ℕ) (a₁ a₂ a₃ a₄ a₆ : ℤ) : Type :=
+  Option {p : ZMod ℓ × ZMod ℓ //
+    p.2 ^ 2 + (a₁ : ZMod ℓ) * p.1 * p.2 + (a₃ : ZMod ℓ) * p.2
+      = p.1 ^ 3 + (a₂ : ZMod ℓ) * p.1 ^ 2 + (a₄ : ZMod ℓ) * p.1 + (a₆ : ZMod ℓ)}
+
+/-- **The plane model of row `(N, ℓ, …, m)` has exactly `m` points over
+`𝔽_ℓ`** (PROVEN 2026-07-27 by `decide`) — the whole arithmetic content of
+the Eichler–Shimura count at these four levels, discharged by
+computation.
+
+`fin_cases` on the row, then a kernel enumeration of `ZMod ℓ × ZMod ℓ`:
+`9` pairs at `ℓ = 3` and `25` at `ℓ = 5`.  The affine solutions found are
+
+* `N = 11`, `ℓ = 3`: `(1,0), (1,2), (2,0), (2,2)` — `4 + ∞ = 5`;
+* `N = 17`, `ℓ = 3`: `(1,0), (1,1), (2,0)` — `3 + ∞ = 4`;
+* `N = 19`, `ℓ = 5`: `(0,0), (0,4)` — `2 + ∞ = 3`;
+* `N = 32`, `ℓ = 3`: `(0,0), (2,1), (2,2)` — `3 + ∞ = 4`.
+
+**Both witness-prime traps are now MECHANICALLY visible rather than
+merely documented**, and each was re-derived here by the same `decide`
+before the table was written: at `N = 19` the model `[0, 1, 1, −9, −15]`
+over `𝔽_3` has `6` points, not `3`, so `ℓ = 3` would falsify the row; at
+`N = 32` the model `[0, 0, 0, 4, 0]` over `𝔽_5` has `8`, not `4`.  A
+wrong `ℓ` or a wrong `m` therefore fails this proof rather than passing
+silently — which is exactly what the previous, Hecke-shaped statement of
+the count could not offer.
+
+No `simp` anywhere in the proof, deliberately: this development's ambient
+simp set contains sorried lemmas, and a `decide`/`rw` proof cannot pick
+one up. -/
+theorem card_modelPoint {N ℓ m : ℕ} {a₁ a₂ a₃ a₄ a₆ : ℤ}
+    (h : (N, ℓ, a₁, a₂, a₃, a₄, a₆, m) ∈ modelTable) :
+    Nat.card (ModelPoint ℓ a₁ a₂ a₃ a₄ a₆) = m := by
+  fin_cases h <;> · rw [Nat.card_eq_fintype_card]; decide
+
+/-- **Every row of `countTable` is refined by a row of `modelTable`**
+(PROVEN 2026-07-27, `fin_cases` + `decide`): the level, the witness prime
+and the count agree, and the model supplies the five coefficients.
+
+This is the only place the two tables are tied together, so a future edit
+to either one that breaks the correspondence fails here rather than
+somewhere downstream. -/
+theorem mem_modelTable_of_mem_countTable {N ℓ m : ℕ} (h : (N, ℓ, m) ∈ countTable) :
+    ∃ a₁ a₂ a₃ a₄ a₆ : ℤ, (N, ℓ, a₁, a₂, a₃, a₄, a₆, m) ∈ modelTable := by
+  fin_cases h
+  · exact ⟨0, -1, 1, -10, -20, by decide⟩
+  · exact ⟨1, -1, 1, -1, -14, by decide⟩
+  · exact ⟨0, 1, 1, -9, -15, by decide⟩
+  · exact ⟨0, 0, 0, 4, 0, by decide⟩
+
+/-- **`X_0(N)_{𝔽_ℓ}` IS the reduced Weierstrass model of `N a 1`** (sorry
+leaf, introduced 2026-07-27) — the model identification, and after the
+`card_modelPoint` split the ONLY open content of the point count at these
+four levels.
+
+**TRUE.**  At `N ∈ {11, 17, 19, 32}` the modular curve `X_0(N)` has genus
+exactly `1` (PROVEN in `levels_spec`) and a rational cusp (likewise), so
+it is an elliptic curve over `ℚ` with origin the cusp `∞`, of conductor
+`N`; the tables identify it as `11a1, 17a1, 19a1, 32a1`, whose minimal
+models are the `modelTable` rows.  Each row's `ℓ` is prime to that row's
+discriminant (`−11⁵, −17⁴, −19³, −2¹²`; see `modelTable`), so the model
+reduces to an elliptic curve over `𝔽_ℓ` and the reduction is the good
+reduction `X_0(N)_{𝔽_ℓ}` that `IsX0Compactification` presents here.  A
+smooth projective Weierstrass cubic has `𝔽_ℓ`-points exactly the affine
+solutions plus `[0 : 1 : 0]`, which is `ModelPoint`.
+
+**Quantified over every compactification rather than over a chosen one**,
+exactly as `Fermat.card_relPoint_x0_finiteField` is, and safe for the same
+reason: `IsX0Compactification` pins `(X, Y, jY)` up to isomorphism and
+`RelPoint strX (𝟙 (SpecF ℓ))` is an isomorphism invariant.  **Not
+vacuous**: `Fermat.exists_x0Compactification_finiteField` supplies the
+model at each row, so this is not a statement about an empty class.
+
+**EQUIVALENT to the old `card_relPoint_finiteField`, not stronger.**  Both
+sides are finite — the left by
+`Fermat.finite_relPoint_of_x0Compactification_finiteField`, the right by
+inspection — and for finite types a bijection exists exactly when the
+cardinalities agree.  So replacing the count by the bijection introduces
+no new way to be false; it only relocates the content from "which number"
+to "which curve".
+
+The good-prime side conditions are not repeated as hypotheses; `ℓ ∤ N`
+and `ℓ.Prime` are consequences of the row through `countTable_spec`, and
+`ℓ ∤ disc` is visible in `modelTable`.
+
+**WHAT IT NEEDS, and it is ONE thing**: an explicit plane model of
+`X_0(N)`, i.e. the classical identification of the genus-one modular
+curves with the elliptic curves `N a 1`.  Classically this is the
+`q`-expansion computation `x = ∑ …`, `y = ∑ …` on `S_2(Γ_0(N))`, or
+equivalently a Riemann–Roch basis of `L(2·∞)` and `L(3·∞)` on `X_0(N)`.
+Neither exists at this pin, and neither does the `Scheme` ↔
+`WeierstrassCurve` bridge that would let the conclusion be stated as an
+isomorphism of schemes rather than a bijection of points.
+
+AXES SEARCHED, and this leaf is what is left of all of them: the
+Eichler–Shimura/Hecke axis (blocked by the module cycle recorded in the
+subsection note above, and by `Interface.lean` being downstream of this
+file — NOT by missing mathematics); the level-consolidation axis (refused,
+see the section note: `11, 17, 19, 32` are not Kenku levels); and the
+explicit-model axis, which is this cut and which discharged the
+arithmetic.  NOT searched: whether the genus-one identification can be
+obtained from `IsCoarseModuliY0` by a direct count of Frobenius-stable
+`Γ₀(N)`-structures over `𝔽̄_ℓ` (a Deuring/Eichler mass-formula argument),
+which would avoid the plane model as well. -/
+theorem nonempty_relPoint_equiv_modelPoint {N ℓ m : ℕ} {a₁ a₂ a₃ a₄ a₆ : ℤ}
+    (_h : (N, ℓ, a₁, a₂, a₃, a₄, a₆, m) ∈ modelTable)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (_hX : IsX0Compactification N strX strY jY) :
+    Nonempty (RelPoint strX (𝟙 (SpecF ℓ)) ≃ ModelPoint ℓ a₁ a₂ a₃ a₄ a₆) :=
+  sorry
+
 /-- **Eichler–Shimura: the special fibre has exactly `m` rational points,
-at the four genus-one witness rows** (sorry leaf, introduced 2026-07-27) —
-the arithmetic half of `exists_mod_prime`, and after that decomposition
-the only level-specific content of it.
+at the four genus-one witness rows** (PROVEN 2026-07-27 by decomposition;
+was a sorry leaf introduced the same day) — the arithmetic half of
+`exists_mod_prime`, and after that decomposition the only level-specific
+content of it.
 
 The exact analogue of `X0.lean`'s `Fermat.card_relPoint_x0_finiteField`,
 whose seven rows are `x0WitnessTable`; `countTable`'s four rows would be
@@ -13838,9 +14068,11 @@ elliptic curve `N a 1`:
 | 32  | 3   | `0`   | 4 |
 
 **Both witness-prime traps re-confirmed rather than taken on trust**, and
-each would make this leaf FALSE if the row were changed: at `N = 19` the
-smallest odd prime fails, `a_3 = −2` giving `3 + 1 − (−2) = 6 ≠ 3`; at
-`N = 32`, `a_5 = −2` gives `5 + 1 − (−2) = 8 ≠ 4`.
+each would make this statement FALSE if the row were changed: at `N = 19`
+the smallest odd prime fails, `a_3 = −2` giving `3 + 1 − (−2) = 6 ≠ 3`; at
+`N = 32`, `a_5 = −2` gives `5 + 1 − (−2) = 8 ≠ 4`.  **Both are now checked
+by the kernel** rather than by the docstring: `card_modelPoint` computes
+`6` and `8` for those two models, so a mistaken row cannot survive.
 
 **Quantified over every compactification rather than over a chosen one**,
 exactly as `Fermat.card_relPoint_x0_finiteField` is, and safe for the same
@@ -13853,17 +14085,30 @@ is not a statement about an empty class.
 The good-prime side conditions are not repeated as hypotheses; they are
 consequences of `_h` through `countTable_spec`.
 
-IRREDUCIBLE at this mathlib pin: it needs `S_2(Γ_0(N))`, the Hecke
-operator `T_ℓ` and the Eichler–Shimura congruence relation, none of which
-exist here.  AXIS SEARCHED: the three theories the old consolidated
-docstring named (integral model, reduction, Hecke) — of which the first
-two turned out to be separable and are now `X0.lean`'s level-generic
-leaves; only the third is genuinely level-specific and it is this. -/
-theorem card_relPoint_finiteField (N ℓ m : ℕ) (_h : (N, ℓ, m) ∈ countTable)
+**THE IRREDUCIBILITY VERDICT IS REFUTED** (2026-07-27).  The previous
+docstring said "IRREDUCIBLE at this mathlib pin: it needs `S_2(Γ_0(N))`,
+the Hecke operator `T_ℓ` and the Eichler–Shimura congruence relation, none
+of which exist here", having searched "the three theories the old
+consolidated docstring named (integral model, reduction, Hecke)".  Two of
+those three DO exist (`CuspForm (Gamma0GL N) 2` and `heckeOp`, with no
+`opaque` constant in either) — but they live in `Modularity/Interface.lean`,
+which is DOWNSTREAM of this module, so the verdict was right about the
+outcome for the wrong reason and, more importantly, **the axis it searched
+was the wrong one.**  The count at genus `1` does not need modular forms at
+all: `X_0(N)` is here an elliptic curve, the witness primes are primes of
+good reduction, and the point count of the reduced plane model is a
+`9`- or `25`-case kernel computation.  See the subsection note above.
+
+The remaining obligation is `nonempty_relPoint_equiv_modelPoint` — the
+identification of `X_0(N)_{𝔽_ℓ}` with the reduced model — and it carries
+no arithmetic. -/
+theorem card_relPoint_finiteField (N ℓ m : ℕ) (h : (N, ℓ, m) ∈ countTable)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification N strX strY jY) :
-    Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
-  sorry
+    (hX : IsX0Compactification N strX strY jY) :
+    Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m := by
+  obtain ⟨a₁, a₂, a₃, a₄, a₆, hm⟩ := mem_modelTable_of_mem_countTable h
+  obtain ⟨e⟩ := nonempty_relPoint_equiv_modelPoint hm hX
+  rw [Nat.card_congr e, card_modelPoint hm]
 
 /-- **The reduction `X_0(N)_{𝔽_ℓ}` and its point count, at the four
 genus-one witness primes** (PROVEN 2026-07-27 by decomposition; was a
@@ -13905,8 +14150,14 @@ leaves and are reused verbatim rather than restated here:
 * `Fermat.finite_relPoint_of_x0Compactification_finiteField` — a proper
   scheme over a finite field has finitely many rational points, which is
   not about modular curves at all;
-* `card_relPoint_finiteField` — Eichler–Shimura evaluates the count.  This
-  one IS level-specific, and it is the single new leaf.
+* `card_relPoint_finiteField` — the count.  This one IS level-specific,
+  and it was the single new leaf; it is now PROVEN in turn (2026-07-27)
+  from the explicit plane models, its arithmetic discharged by `decide`
+  in `card_modelPoint` and its geometry isolated in
+  `nonempty_relPoint_equiv_modelPoint`.  Note the count is NOT obtained
+  from Eichler–Shimura here — see the `#### The explicit plane models`
+  subsection note for why that axis is unavailable from this module and
+  why at genus `1` it is also unnecessary.
 
 Net effect: this statement needed three missing theories and now needs
 one, with the other two shared with the nine Kenku witness rows instead of
