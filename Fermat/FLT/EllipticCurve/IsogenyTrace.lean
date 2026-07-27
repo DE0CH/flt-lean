@@ -53,6 +53,21 @@ that replaces the descent by the bare isomorphism `E ≅ E/C`, i.e. by
 `j(E) = j(E/C)`, with the counterexample recalled under `himg`. The cut taken
 here is strictly stronger than that one — it retains the action on the
 `N`-torsion — and the counterexample does not satisfy it.
+
+## Characteristic zero is required, and that is a 2026-07-27 repair
+
+Everything in the trace layer carries `[CharZero F]`. This is not decoration and
+not inherited caution: the file's original single leaf, `End.exists_dual`, was
+stated without it and is **FALSE** that way — over `𝔽̄₂` the Frobenius of
+`y² + y = x³` is an endomorphism of `Isogeny.degree = 1` with no rational inverse,
+so no `D` with `D ψ ∘ ψ = [deg ψ]` can land in `End W`. The refutation is
+machine-checked in `NotExistsDual` below, with an axiom-clean `End`-free core.
+
+The repair also splits the leaf. In characteristic zero `Isogeny.dual` already
+supplies the dual *with* its `IsIsogeny` witness, so `End.dualEnd` can be defined
+outright and `End.exists_dual` becomes a theorem over the single remaining leaf
+`End.dualEnd_add` — the parallelogram law. Rationality of the dual is no longer
+bundled in here; it is `Isogeny.isRationalMap_dualHom`, owned in `Isogeny.lean`.
 -/
 
 @[expose] public section
@@ -160,43 +175,230 @@ theorem End.coe_add_apply [IsAlgClosed F] [W.IsElliptic] (f g : End W) (P : W.Po
 
 /-! ### The characteristic polynomial of an endomorphism -/
 
-/-- **LEAF — the one remaining input: the dual isogeny is ADDITIVE.**
+/-! ### FALSITY AUDIT: `End.exists_dual` was FALSE without `[CharZero F]`
 
-There is an additive map `D : End W →+ End W` with `D ψ ∘ ψ = [deg ψ]` for every
-`ψ`, including `ψ = 0` (where both sides are `0`).
+**Refuted 2026-07-27**, machine-checked below, with an axiom-clean core.
 
-This is Silverman *AEC* III.6.2, (a) and (b) together, and it is the whole of
-what `End.exists_charPoly` below still needs.
+As originally cut, this leaf carried only `[IsAlgClosed F]` and `[W.IsElliptic]`.
+It is false, and it fails for exactly the reason `Isogeny.isRationalMap_dualHom`
+fails — a reason already refuted and machine-checked in `Isogeny.lean`'s own
+`FALSITY AUDIT: the dual is not rational in characteristic p`, but not carried
+across when this file was cut. `Isogeny.dual` and `Isogeny.dual_comp` both carry
+`[CharZero F]`; the leaf asserted the very same content — its own docstring said
+"any such `D` IS the dual" — without it.
+
+The mechanism. `Isogeny.degree` is `Nat.card (ker ·)`, which counts kernel
+*points*, so a purely inseparable isogeny has degree `1` however large its
+scheme-theoretic degree. Over `K = 𝔽̄₂` the curve `E : y² + y = x³` is elliptic
+and its Frobenius `φ : (x, y) ↦ (x², y²)` is an isogeny of degree `1`
+(`Isogeny.NotIsRationalMapDualHom.frobIsog_degree`), hence an element `frobEnd`
+of `End E`. Any `D` as in the leaf gives `D frobEnd ∘ φ = [1] = id`, i.e. an
+element of `End E` — in particular a map given by rational functions — inverting
+Frobenius. A rational left inverse of `φ` forces the polynomial identity
+`X · B(X²) = A(X²)`, whose sides have `natDegree`s of opposite parity, so `B = 0`,
+contradicting `B ≠ 0`.
+
+**The `CharZero` repair costs the consumers nothing.** Both consumers of this
+cluster — `MazurTorsion.lean`'s level-`125` and level-`169` Atkin–Lehner nodes —
+work over `AlgebraicClosure ℚ`, where `CharZero` is found by instance synthesis,
+so the added binder is discharged at every call site with no edit.
+
+**The grep that would refute this audit**: a proof of
+`Isogeny.isRationalMap_dualHom` that does not need `[CharZero F]`, or any
+separability handle making `Isogeny.degree` the scheme-theoretic degree —
+
+    grep -rn 'isRationalMap_dualHom\|[Ii]nseparable\|separableDegree' Fermat/
+
+Neither exists at this pin. If one lands, the `CharZero` binders added here
+should be revisited rather than treated as permanent. -/
+
+namespace NotExistsDual
+
+open WeierstrassCurve.Isogeny.NotIsRationalMapDualHom
+
+noncomputable local instance : DecidableEq K := Classical.decEq _
+
+/-- Frobenius over `𝔽̄₂`, as an element of the endomorphism ring. -/
+noncomputable def frobEnd : End E := ⟨(frobPt : AddMonoid.End E.Point), isIsogeny_frobPt⟩
+
+theorem toIsogeny_frobEnd : End.toIsogeny frobEnd = frobIsog := rfl
+
+/-- **The `End`-free core of the refutation: no rational map inverts Frobenius.**
+
+Stated without mentioning `End` on purpose. Everything mentioning `End` reports
+`sorryAx` under `#print axioms` at carrier level — `endSubring`'s `add_mem'` field
+routes through the still-open `IsIsogeny.add`, so even a literal `rfl` such as
+`End.coe_add_apply` reports it. This statement therefore carries the mathematical
+content of the refutation in a form where `#print axioms` is informative, and it
+comes back `[propext, Classical.choice, Quot.sound]`.
+
+The argument is the one in `Isogeny.isRationalMap_dualHom_is_false`, run against
+an arbitrary rational left inverse rather than against `dualHom` specifically. -/
+theorem not_isRationalMap_leftInverse_frob :
+    ¬ ∃ g : E.Point →+ E.Point, IsRationalMap g ∧ ∀ P : E.Point, g (frobPt P) = P := by
+  rintro ⟨g, hgrat, hgfrob⟩
+  obtain ⟨A, B, C, Dp, Ee, hB, _hEe, hcert⟩ := hgrat
+  -- every `x₀ : K` satisfies `x₀ · B(x₀²) = A(x₀²)`
+  have key : ∀ x₀ : K, x₀ * B.eval (x₀ ^ 2) = A.eval (x₀ ^ 2) := by
+    intro x₀
+    obtain ⟨P, hP0, hPx⟩ := exists_point x₀
+    have hd := hgfrob P
+    have hne : g (frobPt P) ≠ 0 := by rw [hd]; exact hP0
+    have h1 := (hcert (frobPt P) hne).1
+    rw [hd, veluPointX_frobPt, hPx] at h1
+    exact h1
+  -- so `X · B(X²) − A(X²)` vanishes identically
+  have hpoly : X * B.comp (X ^ 2) = A.comp (X ^ 2) := by
+    have hz : X * B.comp (X ^ 2) - A.comp (X ^ 2) = 0 := by
+      refine Polynomial.eq_zero_of_infinite_isRoot _ (Set.infinite_of_injective_forall_mem
+        (f := fun x₀ : K => x₀) Function.injective_id ?_)
+      intro x₀
+      simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_sub,
+        Polynomial.eval_mul, Polynomial.eval_X, Polynomial.eval_comp, Polynomial.eval_pow]
+      linear_combination key x₀
+    linear_combination hz
+  -- but the two sides have `natDegree`s of opposite parity
+  have hBc : B.comp (X ^ 2) ≠ 0 := by
+    intro hc
+    refine hB (Polynomial.eq_zero_of_infinite_isRoot _ (Set.infinite_of_injective_forall_mem
+      (f := fun u : K => u) Function.injective_id ?_))
+    intro u
+    obtain ⟨s, rfl⟩ := IsAlgClosed.exists_pow_nat_eq (k := K) u (n := 2) two_pos
+    have := congrArg (fun p : K[X] => p.eval s) hc
+    simpa [Polynomial.eval_comp] using this
+  have hdegp := congrArg Polynomial.natDegree hpoly
+  rw [Polynomial.natDegree_mul Polynomial.X_ne_zero hBc, Polynomial.natDegree_X,
+    Polynomial.natDegree_comp, Polynomial.natDegree_comp, Polynomial.natDegree_X_pow] at hdegp
+  omega
+
+/-- **REFUTATION.** The old form of `End.exists_dual` fails over `𝔽̄₂`. -/
+theorem not_exists_dual :
+    ¬ ∃ D : End E →+ End E,
+        ∀ ψ : End E, D ψ * ψ = ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : End E) := by
+  rintro ⟨D, hD⟩
+  have hdeg : Isogeny.degree (End.toIsogeny frobEnd) = 1 := by
+    rw [toIsogeny_frobEnd]; exact frobIsog_degree
+  have hone := hD frobEnd
+  rw [hdeg] at hone
+  refine not_isRationalMap_leftInverse_frob
+    ⟨((D frobEnd : AddMonoid.End E.Point) : E.Point →+ E.Point),
+      ((D frobEnd).2 : IsIsogeny _).isRationalMap, fun P => ?_⟩
+  have h2 := congrArg (fun f : End E => (f : AddMonoid.End E.Point) P) hone
+  simp only [End.mul_apply, End.natCast_apply, one_smul] at h2
+  exact h2
+
+/-- **REFUTATION, in the shape of the leaf as it was stated.** `End.exists_dual`
+without `[CharZero F]` is false. -/
+theorem exists_dual_is_false :
+    ¬ ∀ {F : Type} [Field F] [DecidableEq F] [IsAlgClosed F] {W : Affine F} [W.IsElliptic],
+        ∃ D : End W →+ End W,
+          ∀ ψ : End W, D ψ * ψ = ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : End W) :=
+  fun h => not_exists_dual h
+
+end NotExistsDual
+
+/-! ### The dual as a map on `End W`, in characteristic zero -/
+
+open scoped Classical in
+/-- **The dual of an endomorphism, as an endomorphism.**
+
+In characteristic zero `Isogeny.dual` already packages `dualHom` together with its
+`IsIsogeny` witness, so no new geometry is needed to land back in `End W`: the
+only thing to add is the zero case, which `Isogeny.dual` excludes because a dual
+of the zero map has no defining property to satisfy.
+
+This is where the `[CharZero F]` of `Isogeny.dual` enters, and it is not
+removable — see the FALSITY AUDIT above. -/
+noncomputable def End.dualEnd [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : End W) : End W :=
+  if h : ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0 then 0
+  else ⟨((Isogeny.dual (End.toIsogeny ψ) h).toHom : AddMonoid.End W.Point),
+    (Isogeny.dual (End.toIsogeny ψ) h).isIsogeny⟩
+
+theorem End.dualEnd_of_eq_zero [IsAlgClosed F] [CharZero F] [W.IsElliptic] {ψ : End W}
+    (h : ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0) : End.dualEnd ψ = 0 := by
+  classical
+  rw [End.dualEnd, dif_pos h]
+
+theorem End.dualEnd_of_ne_zero [IsAlgClosed F] [CharZero F] [W.IsElliptic] {ψ : End W}
+    (h : ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) ≠ 0) :
+    ((End.dualEnd ψ : AddMonoid.End W.Point) : W.Point →+ W.Point)
+      = (End.toIsogeny ψ).dualHom h := by
+  classical
+  rw [End.dualEnd, dif_neg h]
+  rfl
+
+/-- **`ψ̂ ∘ ψ = [deg ψ]`** on `End W`, including at `ψ = 0` where both sides are `0`
+(`deg 0 = 0` by `Isogeny.degree_of_eq_zero`). Away from `0` this is
+`Isogeny.dualHom_comp` transported across the subring coercion. -/
+theorem End.dualEnd_comp [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : End W) :
+    End.dualEnd ψ * ψ = ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : End W) := by
+  by_cases h : ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0
+  · have hz : ψ = 0 := Subtype.ext h
+    have hd : Isogeny.degree (End.toIsogeny ψ) = 0 := Isogeny.degree_of_eq_zero h
+    rw [hd, Nat.cast_zero, hz, mul_zero]
+  · refine Subtype.ext (AddMonoidHom.ext fun P => ?_)
+    show ((End.dualEnd ψ : AddMonoid.End W.Point) : W.Point →+ W.Point)
+        (((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) P)
+        = Isogeny.degree (End.toIsogeny ψ) • P
+    rw [End.dualEnd_of_ne_zero h]
+    exact Isogeny.dualHom_comp (End.toIsogeny ψ) h P
+
+/-- **LEAF — the parallelogram law, and the only thing this cluster still needs.**
+
+`ψ ↦ ψ̂` is additive: Silverman *AEC* III.6.2(b).
+
+This is the residue of the old `End.exists_dual` after the two things it bundled
+were separated. Rationality of the dual is *not* here — it is
+`Isogeny.isRationalMap_dualHom`, a leaf of `Isogeny.lean` with its own owner, and
+it is consumed above through `Isogeny.dual`. What is left is exactly additivity.
+
+**What is missing at this pin, precisely.** Additivity of `φ ↦ φ̂` is equivalent to
+the parallelogram law for the degree,
+`deg (φ + ψ) + deg (φ − ψ) = 2 deg φ + 2 deg ψ`, i.e. to `deg` being a
+positive-definite quadratic form on `Hom(E, E')` (III.6.3). `Isogeny.degree` is
+`Nat.card (ker ·)` here, and nothing in the tree relates `ker (φ + ψ)` to `ker φ`
+and `ker ψ`. The classical route is divisor theory — `deg` is `Pic⁰`-functorial
+and the parallelogram law is the theorem of the cube — and the closest existing
+handle in this development is `Affine.Point.toClass` into
+`ClassGroup W.CoordinateRing`, the same handle named by
+`Isogeny.isRationalMap_dualHom`. Those two leaves are the divisor-theoretic
+frontier of this cluster and should be attacked together.
+
+**The grep that would refute this obstruction**: a statement of the parallelogram
+law, or any `Pic⁰`/divisor-pullback development for Weierstrass curves —
+
+    grep -rn 'parallelogram\|toClass\|ClassGroup\|Pic' Fermat/ ~/cs/FLT/FLT/
+
+**A correction to an earlier note that is still worth keeping.** A previous
+version said `Isogeny.degree_comp` wants the same input. It does not, and it is
+PROVEN: multiplicativity of the degree under composition is pure group theory
+(`Isogeny.card_ker_comp`, from `ker φ ↪ ker (ψ ∘ φ) ↠ ker ψ`) and needs nothing
+about quadratic forms. Only the parallelogram law is open. -/
+theorem End.dualEnd_add [IsAlgClosed F] [CharZero F] [W.IsElliptic] (φ ψ : End W) :
+    End.dualEnd (φ + ψ) = End.dualEnd φ + End.dualEnd ψ :=
+  sorry
+
+/-- **The dual isogeny is ADDITIVE** — Silverman *AEC* III.6.2, (a) and (b)
+together, and the whole of what `End.exists_charPoly` below needs.
+
+There is an additive `D : End W →+ End W` with `D ψ ∘ ψ = [deg ψ]` for every `ψ`,
+including `ψ = 0` (where both sides are `0`).
 
 **`D` is not an arbitrary choice: it is forced to be the dual.** For `ψ ≠ 0` the
 map `ψ` is surjective on points (`IsIsogeny.surjective`), so `D ψ (ψ P) = deg ψ • P`
-determines `D ψ` on every point; and `D 0 = 0` is forced by additivity. So this
-existential is exactly the assertion that `Isogeny.dual` — already constructed in
-`Isogeny.lean` with `dualHom_comp : ψ̂ (ψ P) = deg ψ • P`, which is the same
-defining property — is additive in `ψ`. Nothing weaker is being asserted, and the
-statement is not vacuous: a `D` satisfying it is unique.
+determines `D ψ` on every point; and `D 0 = 0` is forced by additivity. So the
+existential is exactly the assertion that `Isogeny.dual` is additive in `ψ`.
+Nothing weaker is being asserted, and the statement is not vacuous: a `D`
+satisfying it is unique.
 
-**What is missing at this pin, precisely.** Additivity of `φ ↦ φ̂` is equivalent
-to the parallelogram law for the degree,
-`deg (φ + ψ) + deg (φ − ψ) = 2 deg φ + 2 deg ψ`, i.e. to `deg` being a
-positive-definite quadratic form on `Hom(E, E')` (III.6.3). `Isogeny.degree` is
-defined here as `Nat.card (ker ·)`, and nothing in the tree yet relates the
-kernel of `φ + ψ` to those of `φ` and `ψ`. The classical route is divisor
-theory — `deg` is `Pic⁰`-functorial and the parallelogram law is the theorem of
-the cube — and the closest existing handle in this development is
-`Affine.Point.toClass` into `ClassGroup W.CoordinateRing`, the same handle named
-by `Isogeny.isRationalMap_dualHom`. Those two leaves are the divisor-theoretic
-frontier of this cluster and should probably be attacked together.
-
-**A correction to an earlier note.** A previous version of this docstring said
-that `Isogeny.degree_comp` wants the same input. It does not, and it is now
-PROVEN: multiplicativity of the degree under composition is pure group theory
-(`Isogeny.card_ker_comp`, from `ker φ ↪ ker (ψ ∘ φ) ↠ ker ψ`) and needs nothing
-about quadratic forms. Only the parallelogram law is still open. -/
-theorem End.exists_dual [IsAlgClosed F] [W.IsElliptic] :
+**PROVEN (2026-07-27) over the single leaf `End.dualEnd_add`**, by taking
+`D = End.dualEnd`: `End.dualEnd_comp` supplies the defining property outright, so
+the parallelogram law is all that remains. `[CharZero F]` is REQUIRED — without
+it the statement is false, refuted over `𝔽̄₂` in `NotExistsDual` above. -/
+theorem End.exists_dual [IsAlgClosed F] [CharZero F] [W.IsElliptic] :
     ∃ D : End W →+ End W,
       ∀ ψ : End W, D ψ * ψ = ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : End W) :=
-  sorry
+  ⟨AddMonoidHom.mk' End.dualEnd End.dualEnd_add, End.dualEnd_comp⟩
 
 /-- **LEAF.** Every endomorphism of an elliptic curve satisfies a monic quadratic
 over `ℤ` whose constant term is its degree and whose linear coefficient — the
@@ -213,9 +415,15 @@ non-negativity of the discriminant of the binary quadratic form
 Cauchy–Schwarz inequality for that form; it is the same computation that gives
 the Hasse bound for Frobenius, with Frobenius replaced by `ψ`.
 
-**PROVEN (2026-07-27) over the single leaf `End.exists_dual`** — additivity of
-the dual. Given an additive `D` with `D ψ ∘ ψ = [deg ψ]`, everything here is
-formal ring arithmetic in `End W`:
+**PROVEN (2026-07-27) over the single leaf `End.dualEnd_add`** — the
+parallelogram law, reached through `End.exists_dual`. Given an additive `D` with
+`D ψ ∘ ψ = [deg ψ]`, everything here is formal ring arithmetic in `End W`:
+
+`[CharZero F]` was added 2026-07-27 with the falsity repair of `End.exists_dual`:
+that leaf is FALSE in characteristic `p` (Frobenius has `Isogeny.degree = 1` and
+no rational inverse), so every consumer of it inherits the binder. Both consumers
+in `MazurTorsion.lean` work over `AlgebraicClosure ℚ` and discharge it by instance
+synthesis.
 
 * `D 1 = 1`, since `deg (id) = 1` (`Isogeny.degree_id`, whose side condition
   `∃ P ≠ 0` comes from `infinite_point`), and `D [m] = [m]` for every integer
@@ -240,7 +448,7 @@ formal ring arithmetic in `End W`:
 **The `4` is not decoration.** With only `∃ t, ψ² − tψ + deg ψ = 0` and no bound
 on `t`, the consumer below is FALSE: `ψ = [m]` satisfies `ψ² − 2mψ + m² = 0`
 with `t = 2m` unbounded. The Hasse bound is what forces `t = 0` there. -/
-theorem End.exists_charPoly [IsAlgClosed F] [W.IsElliptic] (ψ : End W) (n : ℕ)
+theorem End.exists_charPoly [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : End W) (n : ℕ)
     (hdeg : Nat.card (AddMonoidHom.ker ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point)) = n)
     (h0 : ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) ≠ 0) :
     ∃ t : ℤ,
@@ -363,8 +571,14 @@ onto `C` — which is exactly what it means for `(E, C)` to be a **fixed point o
 CM by the order of discriminant `−500` and `ψ = √−125` satisfies all of them at
 `N = 125` (`ker ψ` is cyclic of order `125` because `√−125` generates a
 non-invertible ideal of that order, and `ψ (E[125]) = ker ψ̂ = ker (−ψ) = ker ψ`).
-So this lemma is not discharged by its own hypotheses being empty. -/
-theorem End.sq_eq_neg_natCast_of_atkinLehner [IsAlgClosed F] [W.IsElliptic]
+So this lemma is not discharged by its own hypotheses being empty.
+
+**`[CharZero F]` added 2026-07-27**, inherited from `End.exists_charPoly` and
+ultimately from the falsity repair of `End.exists_dual` (see the FALSITY AUDIT
+above). It is discharged by synthesis at both call sites in `MazurTorsion.lean`,
+which work over `AlgebraicClosure ℚ`. The non-vacuity witness recalled just above
+is a CM curve over `ℚ̄`, so it is unaffected. -/
+theorem End.sq_eq_neg_natCast_of_atkinLehner [IsAlgClosed F] [CharZero F] [W.IsElliptic]
     (ψ : End W) (n : ℕ) (hn : 4 < n) (g : W.Point) (hg : addOrderOf g = n)
     (hker : AddMonoidHom.ker ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point)
       = AddSubgroup.zmultiples g)

@@ -10490,142 +10490,6 @@ theorem pow_comap_maximalIdeal_le {A : Type*} [CommRing A] [IsLocalRing A]
     exact Ideal.pow_right_mono Ideal.map_comap_le n
   exact h1 (Ideal.mem_map_of_mem _ hx)
 
-open Filter Topology in
-/-- **A closed subring of a complete local ring with FINITE residue
-field inverts its own units** (PROVEN 2026-07-25 — the engine of the
-soft half of Carayol's Théorème 1): if `A` is local, its topology is
-the `𝔪`-adic one, and `A/𝔪` is finite, then for a closed subring
-`C ⊆ A` every `x ∈ C` with `x ∉ 𝔪` is already a unit OF `C`.
-
-The classical argument writes `x⁻¹` as a limit of a geometric series in
-`1 − x/a` for a lift `a ∈ C` of the residue of `x`, and therefore needs
-`C ↠ A/𝔪`. FINITENESS of the residue field removes that hypothesis
-entirely: the residue of `x` is a nonzero element of the finite field
-`A/𝔪`, so `x^(q−1) ∈ 1 + 𝔪` for `q = |A/𝔪|`, and the geometric series
-`∑ (1 − x^(q−1))^n` — all of whose partial sums lie in `C`, the argument
-`y = 1 − x^(q−1)` lying in `𝔪 ∩ C` — converges in `A` to the inverse of
-`x^(q−1)`, because `y^N ∈ 𝔪^N → 0` for the adic topology. `C` is closed,
-so that inverse lies in `C`, and `x⁻¹ = x^(q−2) · (x^(q−1))⁻¹`.
-
-Note that no completeness of `A` is used: the limit is exhibited
-explicitly as the inverse that already exists in the LOCAL ring `A`;
-only closedness of `C` and the adic topology are consumed. -/
-theorem isUnit_of_isClosed_of_notMem_maximalIdeal {A : Type*} [CommRing A]
-    [TopologicalSpace A] [IsLocalRing A] [Finite (IsLocalRing.ResidueField A)]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
-    {C : Subring A} (hC : IsClosed (C : Set A)) (x : C)
-    (hx : (x : A) ∉ IsLocalRing.maximalIdeal A) : IsUnit x := by
-  classical
-  haveI : Fintype (IsLocalRing.ResidueField A) := Fintype.ofFinite _
-  set q := Fintype.card (IsLocalRing.ResidueField A)
-  have hq1 : 0 < q - 1 := Nat.sub_pos_of_lt Fintype.one_lt_card
-  -- `x ^ (q - 1) = 1 - y` with `y ∈ 𝔪 ∩ C`
-  have hres : IsLocalRing.residue A ((x : A) ^ (q - 1)) = 1 := by
-    rw [map_pow]
-    exact FiniteField.pow_card_sub_one_eq_one _
-      (fun hz => hx ((IsLocalRing.residue_eq_zero_iff _).mp hz))
-  set y : C := 1 - x ^ (q - 1) with hy
-  have hyc : ((y : C) : A) = 1 - (x : A) ^ (q - 1) := by rw [hy]; push_cast; ring
-  have hyR : (y : A) ∈ IsLocalRing.maximalIdeal A := by
-    rw [← IsLocalRing.residue_eq_zero_iff, hyc, map_sub, hres, map_one, sub_self]
-  have hone : (1 : A) - (y : A) = (x : A) ^ (q - 1) := by rw [hyc]; ring
-  -- the inverse of `1 - y` in `A`
-  have hu : IsUnit ((1 : A) - (y : A)) := by
-    rw [← IsLocalRing.notMem_maximalIdeal, hone]
-    intro hmem
-    exact hx ((Ideal.IsPrime.pow_mem_iff_mem
-      ((IsLocalRing.maximalIdeal.isMaximal A).isPrime) _ hq1).mp hmem)
-  set u := hu.unit
-  set L : A := ((u⁻¹ : Aˣ) : A) with hL
-  have huL : ((1 : A) - (y : A)) * L = 1 := by
-    rw [hL, show ((1 : A) - (y : A)) = (u : A) from (hu.unit_spec).symm]
-    exact u.mul_inv
-  -- the partial sums of the geometric series lie in `C`
-  set s : ℕ → C := fun N => ∑ i ∈ Finset.range N, y ^ i with hs
-  have hsc : ∀ N, ((s N : C) : A) = ∑ i ∈ Finset.range N, (y : A) ^ i := by
-    intro N
-    rw [hs]
-    push_cast
-    rfl
-  have hsL : ∀ N, L - ((s N : C) : A) = L * (y : A) ^ N := by
-    intro N
-    have h1 : ((1 : A) - (y : A)) * ((s N : C) : A) = 1 - (y : A) ^ N := by
-      rw [hsc]; exact mul_neg_geom_sum _ _
-    have h2 : ((s N : C) : A) = L * (1 - (y : A) ^ N) := by
-      calc ((s N : C) : A) = (L * ((1 : A) - (y : A))) * ((s N : C) : A) := by
-            rw [mul_comm L, huL, one_mul]
-        _ = L * (((1 : A) - (y : A)) * ((s N : C) : A)) := by ring
-        _ = L * (1 - (y : A) ^ N) := by rw [h1]
-    rw [h2]; ring
-  -- so their limit `L` lies in `C`
-  have htend : Tendsto (fun N => ((s N : C) : A)) atTop (𝓝 L) := by
-    rw [(hadic.hasBasis_nhds L).tendsto_right_iff]
-    intro n _
-    filter_upwards [eventually_ge_atTop n] with N hN
-    refine ⟨-(L * (y : A) ^ N), ?_, ?_⟩
-    · refine Ideal.pow_le_pow_right hN ?_
-      exact neg_mem (Ideal.mul_mem_left _ _ (Ideal.pow_mem_pow hyR N))
-    · rw [← hsL N]; ring
-  have hLC : L ∈ C := hC.mem_of_tendsto htend (.of_forall fun N => (s N).2)
-  -- hence `1 - y = x ^ (q - 1)` is a unit of `C`, and therefore so is `x`
-  have hunit : IsUnit (1 - y : C) := by
-    refine ⟨⟨1 - y, ⟨L, hLC⟩, ?_, ?_⟩, rfl⟩
-    · ext
-      push_cast
-      exact huL
-    · ext
-      push_cast
-      rw [mul_comm]
-      exact huL
-  have hxq : IsUnit (x ^ (q - 1) : C) := by
-    have hxy : (1 - y : C) = x ^ (q - 1) := by rw [hy]; ring
-    rwa [hxy] at hunit
-  refine isUnit_of_mul_isUnit_left (y := x ^ (q - 1 - 1)) ?_
-  have hpow : x * x ^ (q - 1 - 1) = x ^ (q - 1) := by
-    rw [← pow_succ']
-    congr 1
-    omega
-  rw [hpow]
-  exact hxq
-
-/-- **A closed subring of a local ring with finite residue field and
-adic topology is LOCAL** (PROVEN 2026-07-25): the nonunits of `C` are
-exactly `𝔪 ∩ C` by `isUnit_of_isClosed_of_notMem_maximalIdeal`, and that
-is an ideal. -/
-theorem isLocalRing_of_isClosed_subring {A : Type*} [CommRing A]
-    [TopologicalSpace A] [IsLocalRing A] [Finite (IsLocalRing.ResidueField A)]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
-    {C : Subring A} (hC : IsClosed (C : Set A)) : IsLocalRing C := by
-  haveI : Nontrivial C := ⟨⟨0, 1, fun hz => zero_ne_one (congrArg Subtype.val hz)⟩⟩
-  refine IsLocalRing.of_nonunits_add ?_
-  intro a b ha hb
-  have hmem : ∀ c : C, c ∈ nonunits C → (c : A) ∈ IsLocalRing.maximalIdeal A := by
-    intro c hc
-    by_contra hcm
-    exact hc (isUnit_of_isClosed_of_notMem_maximalIdeal hadic hC c hcm)
-  intro hab
-  have hsum : ((a : A) + (b : A)) ∈ IsLocalRing.maximalIdeal A :=
-    Ideal.add_mem _ (hmem a ha) (hmem b hb)
-  have hunit : IsUnit ((a : A) + (b : A)) := by simpa using hab.map C.subtype
-  exact IsLocalRing.notMem_maximalIdeal.mpr hunit hsum
-
-/-- **The maximal ideal of such a closed subring is `𝔪 ∩ C`** (PROVEN
-2026-07-25), the companion of `isLocalRing_of_isClosed_subring`. -/
-theorem maximalIdeal_eq_comap_of_isClosed_subring {A : Type*} [CommRing A]
-    [TopologicalSpace A] [IsLocalRing A] [Finite (IsLocalRing.ResidueField A)]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
-    {C : Subring A} (hC : IsClosed (C : Set A)) [IsLocalRing C] :
-    IsLocalRing.maximalIdeal C =
-      Ideal.comap C.subtype (IsLocalRing.maximalIdeal A) := by
-  ext a
-  rw [IsLocalRing.mem_maximalIdeal, Ideal.mem_comap]
-  constructor
-  · intro ha
-    by_contra hcm
-    exact ha (isUnit_of_isClosed_of_notMem_maximalIdeal hadic hC a hcm)
-  · intro ha hu
-    have hunit : IsUnit (a : A) := by simpa using hu.map C.subtype
-    exact IsLocalRing.notMem_maximalIdeal.mpr hunit ha
 
 open Filter Topology in
 /-- **Carayol's Lemme 1 gives the subring its adic topology** (PROVEN
@@ -11020,231 +10884,6 @@ theorem repr_mem_subring_of_trace_mem
   rw [show b.repr M i = ((cC i : C) : B) from congrFun hfinal i]
   exact (cC i).2
 
-/-- **The trace form of `Mₙ` separates points, in EVERY characteristic**
-(PROVEN 2026-07-26): pairing a matrix `X` against the elementary matrix
-`E_{b a}` reads off the entry `X a b`. This one line is the whole content
-of the nondegeneracy of `(X, Y) ↦ tr (X Y)`, and it consumes no
-hypothesis on the coefficient ring — in particular no separability and no
-restriction on the characteristic, which is why the Gram determinant
-below is a unit even for `ℓ ∣ n`. -/
-theorem trace_single_mul {R : Type*} [CommRing R] {n : Type*} [Fintype n]
-    [DecidableEq n] (a b : n) (X : Matrix n n R) :
-    Matrix.trace (Matrix.single b a 1 * X) = X a b := by
-  simp [Matrix.trace, Matrix.diag, Matrix.mul_apply, Matrix.single, ite_and,
-    Finset.sum_ite_eq]
-
-/-- **The trace Gram matrix of a basis of `Mₙ(K)` is nonsingular** (PROVEN
-2026-07-26, over a FIELD, in every characteristic): if
-`det (tr (cᵢ cⱼ)) = 0` then some nonzero vector `v` is killed by the Gram
-matrix (`Matrix.exists_mulVec_eq_zero_iff`), so `X = ∑ⱼ vⱼ cⱼ` is
-trace-orthogonal to every `cᵢ`, hence — the `cᵢ` spanning — to EVERY
-matrix, hence zero by `trace_single_mul`; and then `v = 0` by linear
-independence, a contradiction. -/
-theorem det_traceGram_ne_zero {K : Type*} [Field K] {n : Type*} [Fintype n]
-    [DecidableEq n] {ι : Type*} [Fintype ι] [DecidableEq ι]
-    (c : Module.Basis ι K (Matrix n n K)) :
-    (Matrix.of fun i j => Matrix.trace (c i * c j)).det ≠ 0 := by
-  intro hdet
-  obtain ⟨v, hv, hmul⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr hdet
-  set X : Matrix n n K := ∑ j, v j • c j with hX
-  have hrow : ∀ i, Matrix.trace (c i * X) = 0 := by
-    intro i
-    have h := congrFun hmul i
-    simp only [Matrix.mulVec, dotProduct, Matrix.of_apply, Pi.zero_apply] at h
-    rw [hX, Finset.mul_sum, Matrix.trace_sum, ← h]
-    exact Finset.sum_congr rfl fun j _ => by
-      rw [Matrix.mul_smul, Matrix.trace_smul, smul_eq_mul, mul_comm]
-  have hall : ∀ Y : Matrix n n K, Matrix.trace (Y * X) = 0 := by
-    intro Y
-    have hY : Y ∈ Submodule.span K (Set.range (c : ι → Matrix n n K)) := by
-      rw [c.span_eq]; trivial
-    induction hY using Submodule.span_induction with
-    | mem y hy => obtain ⟨i, rfl⟩ := hy; exact hrow i
-    | zero => simp
-    | add u w _ _ hu hw => rw [Matrix.add_mul, Matrix.trace_add, hu, hw, add_zero]
-    | smul a u _ hu => rw [Matrix.smul_mul, Matrix.trace_smul, hu, smul_zero]
-  have hX0 : X = 0 := by
-    ext a b
-    have h := hall (Matrix.single b a 1)
-    rw [trace_single_mul] at h
-    simpa using h
-  refine hv (funext fun i => ?_)
-  have hsum : ∑ j, v j • c j = 0 := by rw [← hX]; exact hX0
-  simpa using Fintype.linearIndependent_iff.mp c.linearIndependent v hsum i
-
-/-- The coordinates of a matrix against `Matrix.stdBasis` are its entries. -/
-theorem stdBasis_repr_apply {R : Type*} [CommRing R] {m n : Type*} [Fintype m]
-    [Fintype n] [DecidableEq m] [DecidableEq n] (M : Matrix m n R) (p : m × n) :
-    (Matrix.stdBasis R m n).repr M p = M p.1 p.2 := by
-  simp [Matrix.stdBasis]
-
-/-- **BURNSIDE'S THEOREM** (PROVEN 2026-07-26, in any dimension and any
-characteristic): if a monoid acts on a finite-dimensional `K`-vector space
-`W` with no proper nonzero stable subspace, and the commutant of the image
-is exactly the scalars, then the `K`-SPAN of the image is ALL of
-`End_K W`.
-
-Route: Jacobson density (mathlib's `jacobson_density`), applied over the
-`K`-subalgebra `A = K⟨τ(G)⟩` of `End_K W`, which acts on `W` by
-`Module.compHom` along `A.val`. Three things have to be checked and all
-three are exactly the hypotheses:
-
-* `W` is a SIMPLE `A`-module, because an `A`-submodule is in particular a
-  `K`-submodule (`K` acts through `c • 1 ∈ A`) stable under every `τ g`,
-  so `hirr` applies; the two lattices have literally the same carriers,
-  which is why the transfer is a `SetLike.ext`.
-* Every `φ ∈ End_A W` is `K`-linear (same reason) and commutes with every
-  `τ g` (that is `A`-linearity at the element `τ g ∈ A`), hence is a
-  scalar `c` by `hcomm`; so any `f ∈ End_K W` commutes with every
-  `φ ∈ End_A W`, which is precisely the hypothesis Jacobson density needs.
-* Density then gives, for a finite `K`-generating set `s` of `W`, an
-  element `b ∈ A` with `f = b` on `s`; both sides being `K`-linear, they
-  agree everywhere (`Submodule.span_induction`), so `f = b ∈ A`.
-
-Finally `A = ⊤` and `Algebra.adjoin K (range τ) = span K (range τ)`
-because `range τ` is already a SUBMONOID (`Submonoid.closure_eq` at
-`MonoidHom.mrange τ`), which is where the multiplicativity of `τ` is used
-and the only place it is used.
-
-Reference: Curtis–Reiner, *Methods of Representation Theory* §3.3
-(Burnside); Lam, *A First Course in Noncommutative Rings* §11. -/
-theorem span_range_eq_top_of_irreducible_of_commutant
-    {K : Type*} [Field K] {W : Type*} [AddCommGroup W] [Module K W]
-    [Module.Finite K W] [Nontrivial W]
-    {G : Type*} [Monoid G] (τ : G →* Module.End K W)
-    (hirr : ∀ p : Submodule K W, (∀ g : G, ∀ w ∈ p, τ g w ∈ p) → p = ⊥ ∨ p = ⊤)
-    (hcomm : ∀ f : Module.End K W, (∀ g : G, f * τ g = τ g * f) →
-      ∃ c : K, f = c • 1) :
-    Submodule.span K (Set.range (τ : G → Module.End K W)) = ⊤ := by
-  classical
-  set A : Subalgebra K (Module.End K W) :=
-    Algebra.adjoin K (Set.range (τ : G → Module.End K W)) with hAdef
-  letI : Module A W := Module.compHom W (A.val : A →+* Module.End K W)
-  have hsmul : ∀ (a : A) (w : W), a • w = (a : Module.End K W) w := fun a w => rfl
-  have hone : ∀ (c : K) (w : W), (c • (1 : A)) • w = c • w := by
-    intro c w
-    rw [hsmul]
-    simp
-  have hτmem : ∀ g : G, (τ g : Module.End K W) ∈ A := fun g =>
-    Algebra.subset_adjoin ⟨g, rfl⟩
-  -- `A`-submodules are exactly the `τ`-stable `K`-submodules, so `W` is `A`-simple
-  haveI hnt : Nontrivial (Submodule A W) := by
-    refine ⟨⊥, ⊤, ?_⟩
-    intro hcon
-    obtain ⟨w, hw⟩ := exists_ne (0 : W)
-    have hmem : w ∈ (⊥ : Submodule A W) := by rw [hcon]; trivial
-    exact hw (by simpa using hmem)
-  haveI hso : IsSimpleOrder (Submodule A W) := by
-    refine { eq_bot_or_eq_top := fun p => ?_ }
-    set q : Submodule K W :=
-      { carrier := (p : Set W)
-        add_mem' := fun {a b} ha hb => p.add_mem ha hb
-        zero_mem' := p.zero_mem
-        smul_mem' := fun c w hw => by
-          have h1 : (c • (1 : A)) • w ∈ p := p.smul_mem _ hw
-          rwa [hone] at h1 } with hq
-    have hmemq : ∀ w : W, w ∈ q ↔ w ∈ p := fun w => Iff.rfl
-    have hstab : ∀ g : G, ∀ w ∈ q, τ g w ∈ q := by
-      intro g w hw
-      have h1 : (⟨τ g, hτmem g⟩ : A) • w ∈ p := p.smul_mem _ ((hmemq w).mp hw)
-      exact (hmemq _).mpr h1
-    rcases hirr q hstab with h | h
-    · left
-      refine SetLike.ext fun w => ?_
-      constructor
-      · intro hw
-        have h2 : w ∈ q := (hmemq w).mpr hw
-        rw [h] at h2
-        simpa using h2
-      · intro hw
-        simp only [Submodule.mem_bot] at hw
-        rw [hw]; exact p.zero_mem
-    · right
-      refine SetLike.ext fun w => ?_
-      simp only [Submodule.mem_top, iff_true]
-      have h2 : w ∈ q := by rw [h]; trivial
-      exact (hmemq w).mp h2
-  haveI hsimple : IsSimpleModule A W := ⟨⟩
-  -- every `K`-endomorphism is realized by an element of `A` (Jacobson density)
-  have hsurj : ∀ f : Module.End K W, f ∈ A := by
-    intro f
-    have hf : ∀ (φ : Module.End A W) (x : W), f (φ x) = φ (f x) := by
-      intro φ x
-      have hK : ∀ (c : K) (y : W), φ (c • y) = c • φ y := by
-        intro c y
-        have h2 : φ ((c • (1 : A)) • y) = (c • (1 : A)) • φ y := map_smul φ _ _
-        rw [hone] at h2
-        rw [h2, hone]
-      set ψ : Module.End K W :=
-        { toFun := fun y => φ y
-          map_add' := fun y z => map_add φ y z
-          map_smul' := fun c y => by simpa using hK c y } with hψ
-      have hψcomm : ∀ g : G, ψ * τ g = τ g * ψ := by
-        intro g
-        refine LinearMap.ext fun y => ?_
-        show φ ((τ g : Module.End K W) y) = (τ g : Module.End K W) (φ y)
-        exact map_smul φ (⟨τ g, hτmem g⟩ : A) y
-      obtain ⟨c, hc⟩ := hcomm ψ hψcomm
-      have hφc : ∀ y, φ y = c • y := by
-        intro y
-        have h4 := congrArg (fun m : Module.End K W => m y) hc
-        simpa [hψ] using h4
-      rw [hφc x, hφc (f x), map_smul f c x]
-    set F : Module.End (Module.End A W) W :=
-      { toFun := fun y => f y
-        map_add' := fun y z => map_add f y z
-        map_smul' := fun φ y => by simpa [Module.End.smul_def] using hf φ y } with hF
-    obtain ⟨s, hs⟩ := Module.Finite.fg_top (R := K) (M := W)
-    obtain ⟨b, hb⟩ := jacobson_density (R := A) (M := W) F s
-    have hall : ∀ w : W, f w = (b : Module.End K W) w := by
-      intro w
-      have hw : w ∈ Submodule.span K (s : Set W) := by rw [hs]; trivial
-      induction hw using Submodule.span_induction with
-      | mem m hm => exact hb m hm
-      | zero => simp
-      | add u v _ _ hu hv => rw [map_add, map_add, hu, hv]
-      | smul c u _ hu => rw [map_smul, map_smul, hu]
-    have hfb : f = (b : Module.End K W) := LinearMap.ext hall
-    rw [hfb]
-    exact b.2
-  have hclosure : ((Submonoid.closure (Set.range (τ : G → Module.End K W)) :
-      Submonoid (Module.End K W)) : Set (Module.End K W))
-      = Set.range (τ : G → Module.End K W) := by
-    rw [show Set.range (τ : G → Module.End K W)
-        = ((MonoidHom.mrange τ : Submonoid (Module.End K W)) :
-          Set (Module.End K W)) from rfl]
-    rw [Submonoid.closure_eq]
-  refine eq_top_iff.mpr fun f _ => ?_
-  have hf : f ∈ A := hsurj f
-  rw [← Subalgebra.mem_toSubmodule, hAdef, Algebra.adjoin_eq_span, hclosure] at hf
-  exact hf
-
-/-- **A spanning family of a finite-dimensional space contains a basis,
-indexed by any type of the right cardinality** (PROVEN 2026-07-26): pure
-linear algebra over `exists_linearIndependent`, `Module.Basis.mk` and
-`Fintype.equivOfCardEq`. Stated in the "reindexed and pulled back to the
-index set" form the Burnside consumer below needs: it returns the
-selection function `w : κ → ι` as well as the basis. -/
-theorem exists_basis_of_span_range_eq_top
-    {K : Type*} [Field K] {W : Type*} [AddCommGroup W] [Module K W]
-    [Module.Finite K W] {ι : Type*} {κ : Type*} [Fintype κ]
-    (hcard : Module.finrank K W = Fintype.card κ)
-    (v : ι → W) (hv : Submodule.span K (Set.range v) = ⊤) :
-    ∃ w : κ → ι, ∃ c : Module.Basis κ K W, ∀ i, c i = v (w i) := by
-  classical
-  obtain ⟨t, hts, hspan, hli⟩ := exists_linearIndependent K (Set.range v)
-  have hsp : ⊤ ≤ Submodule.span K (Set.range (Subtype.val : t → W)) := by
-    rw [Subtype.range_val, hspan, hv]
-  set bt : Module.Basis t K W := Module.Basis.mk hli hsp with hbt
-  haveI hfin : Finite t := Module.Finite.finite_basis bt
-  haveI : Fintype t := Fintype.ofFinite _
-  have hct : Fintype.card t = Fintype.card κ := by
-    rw [← Module.finrank_eq_card_basis bt, hcard]
-  set e : κ ≃ t := (Fintype.equivOfCardEq hct).symm with he
-  choose w hw using fun i : κ => hts (e i).2
-  refine ⟨w, bt.reindex e.symm, fun i => ?_⟩
-  rw [Module.Basis.reindex_apply, Equiv.symm_symm, hbt, Module.Basis.mk_apply]
-  exact (hw i).symm
 
 /-- **Absolute irreducibility transports along a linear equivalence**
 (PROVEN 2026-07-26): if `τ' g = ε ∘ τ g ∘ ε⁻¹` for a `K`-linear
@@ -11775,1220 +11414,6 @@ theorem exists_basis_repr_mem_traceSubring (hℓ5 : 5 ≤ ℓ)
     (MonoidHom.mrange Φ) htrS b hbS hgram (LinearMap.toMatrix' (D.ρ g))
     ⟨g, rfl⟩ i
 
-/-- **Entrywise congruence of matrices modulo an ideal is multiplicative**
-(PROVEN 2026-07-26): `X ≡ X'` and `Y ≡ Y'` entrywise mod `I` imply
-`X Y ≡ X' Y'`, by the usual `XY − X'Y' = (X−X')Y + X'(Y−Y')`. -/
-theorem matrix_sub_mem_mul {B : Type*} [CommRing B] {n : Type*} [Fintype n]
-    (I : Ideal B) {X Y X' Y' : Matrix n n B}
-    (hX : ∀ i j, (X - X') i j ∈ I) (hY : ∀ i j, (Y - Y') i j ∈ I) :
-    ∀ i j, (X * Y - X' * Y') i j ∈ I := by
-  intro i j
-  have hEq : X * Y - X' * Y' = (X - X') * Y + X' * (Y - Y') := by noncomm_ring
-  rw [hEq, Matrix.add_apply, Matrix.mul_apply, Matrix.mul_apply]
-  exact Ideal.add_mem _
-    (Ideal.sum_mem _ fun m _ => Ideal.mul_mem_right _ _ (hX i m))
-    (Ideal.sum_mem _ fun m _ => Ideal.mul_mem_left _ _ (hY m j))
-
-/-- **The coordinates of a matrix against any basis are a fixed linear
-form in its ENTRIES** (PROVEN 2026-07-26): expanding `M` in the elementary
-matrices turns `b.repr M i` into `∑ₚ,q M p q · b.repr (E_{pq}) i`. This is
-what makes each coordinate map CONTINUOUS over a topological ring, which
-is how the `C`-order below is shown to be a closed subring. -/
-theorem basis_repr_eq_sum_entries {B : Type*} [CommRing B] {n : Type*}
-    [Fintype n] [DecidableEq n] {ι : Type*} [Fintype ι]
-    (b : Module.Basis ι B (Matrix n n B)) (M : Matrix n n B) (i : ι) :
-    b.repr M i = ∑ p : n, ∑ q : n, M p q * b.repr (Matrix.single p q 1) i := by
-  conv_lhs => rw [Matrix.matrix_eq_sum_single M]
-  rw [map_sum]
-  simp only [Finsupp.coe_finsetSum, Finset.sum_apply]
-  refine Finset.sum_congr rfl fun p _ => ?_
-  rw [map_sum]
-  simp only [Finsupp.coe_finsetSum, Finset.sum_apply]
-  refine Finset.sum_congr rfl fun q _ => ?_
-  rw [show Matrix.single p q (M p q) = M p q • Matrix.single p q (1 : B) by
-    ext a c; simp [Matrix.single]]
-  rw [map_smul]
-  simp
-
-/-- **Carayol's Théorème 1, step 2a: idempotent lifting inside a CLOSED
-subring of a complete matrix algebra** (PROVEN 2026-07-26; cut the same
-day out of `exists_conj_entries_mem_of_basis_repr_mem`; PURE
-ALGEBRA): over a local
-ring `B` carrying its `𝔪`-adic topology and `𝔪`-adically complete, an
-element `x` of a closed subring `A ⊆ Mₙ(B)` which is idempotent MODULO `𝔪`
-is congruent mod `𝔪` to a genuine idempotent OF `A`.
-
-Newton's iteration `f(z) = 3z² − 2z³ = z − (2z−1)(z² − z)` does it. The
-polynomial identity that makes it converge is
-
-    f(z)² − f(z) = (z² − z)² · ((2z−1)² − 4),
-
-so writing `t = x² − x` and `x₀ = x`, `x_{m+1} = f(x_m)`, one has
-`x_m² − x_m ∈ 𝔪^{2^m}` and `x_{m+1} − x_m ∈ 𝔪^{2^m}` entrywise. The
-sequence is therefore Cauchy for the `𝔪`-adic filtration in each of the
-`n²` entries; `IsAdicComplete` supplies the limit entrywise, the adic
-topology makes that limit a topological limit of the sequence, CLOSEDNESS
-of `A` puts it in `A`, and continuity of multiplication passes `x_m² −
-x_m → 0` to `u² = u`.
-
-BOTH TOPOLOGICAL HYPOTHESES ARE LOAD-BEARING and neither can be traded
-for the other: completeness produces the limit, closedness keeps it
-inside `A`. Without closedness the limit is an idempotent of `Mₙ(B)` with
-no reason to have coordinates in `C`, which is exactly what the caller
-needs. -/
-theorem exists_isIdempotentElem_mem_of_sq_sub_mem
-    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    [IsLocalRing B]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
-    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
-    {n : Type*} [Fintype n] [DecidableEq n]
-    (A : Subring (Matrix n n B))
-    (hA : IsClosed ((A : Subring (Matrix n n B)) : Set (Matrix n n B)))
-    {x : Matrix n n B} (hxA : x ∈ A)
-    (hx : ∀ i j, (x * x - x) i j ∈ IsLocalRing.maximalIdeal B) :
-    ∃ u ∈ A, u * u = u ∧ ∀ i j, (u - x) i j ∈ IsLocalRing.maximalIdeal B := by
-  classical
-  -- entrywise ideal membership is inherited through matrix products
-  have hmulL : ∀ (I : Ideal B) (X Y : Matrix n n B), (∀ i j, X i j ∈ I) →
-      ∀ i j, (X * Y) i j ∈ I := by
-    intro I X Y hX i j
-    rw [Matrix.mul_apply]
-    exact Ideal.sum_mem _ fun m _ => Ideal.mul_mem_right _ _ (hX i m)
-  have hmulR : ∀ (I : Ideal B) (X Y : Matrix n n B), (∀ i j, Y i j ∈ I) →
-      ∀ i j, (X * Y) i j ∈ I := by
-    intro I X Y hY i j
-    rw [Matrix.mul_apply]
-    exact Ideal.sum_mem _ fun m _ => Ideal.mul_mem_left _ _ (hY m j)
-  have hmulM : ∀ (I J : Ideal B) (X Y : Matrix n n B), (∀ i j, X i j ∈ I) →
-      (∀ i j, Y i j ∈ J) → ∀ i j, (X * Y) i j ∈ I * J := by
-    intro I J X Y hX hY i j
-    rw [Matrix.mul_apply]
-    exact Ideal.sum_mem _ fun m _ => Ideal.mul_mem_mul (hX i m) (hY m j)
-  -- Newton's map `f z = 3z² − 2z³`, written without numerals so that
-  -- membership in the subring `A` is immediate
-  set f : Matrix n n B → Matrix n n B :=
-    fun z => (z * z + z * z + z * z) - (z * z * z + z * z * z) with hf
-  have hfA : ∀ z ∈ A, f z ∈ A := by
-    intro z hz
-    simp only [hf]
-    exact A.sub_mem (A.add_mem (A.add_mem (A.mul_mem hz hz) (A.mul_mem hz hz))
-      (A.mul_mem hz hz))
-      (A.add_mem (A.mul_mem (A.mul_mem hz hz) hz) (A.mul_mem (A.mul_mem hz hz) hz))
-  -- the two polynomial identities: `f(z)² − f(z) = (z²−z)²((2z−1)²−4)` …
-  have hfsq : ∀ z : Matrix n n B, f z * f z - f z
-      = ((z * z - z) * (z * z - z)) * ((2 * z - 1) * (2 * z - 1) - 4) := by
-    intro z; simp only [hf]; noncomm_ring
-  -- … and `f(z) − z = −(2z−1)(z²−z)`
-  have hfdiff : ∀ z : Matrix n n B, f z - z = -((2 * z - 1) * (z * z - z)) := by
-    intro z; simp only [hf]; noncomm_ring
-  set seq : ℕ → Matrix n n B := fun m => f^[m] x with hseq
-  have hseq0 : seq 0 = x := rfl
-  have hseqS : ∀ m, seq (m + 1) = f (seq m) := fun m =>
-    Function.iterate_succ_apply' f m x
-  have hinvA : ∀ m, seq m ∈ A := by
-    intro m
-    induction m with
-    | zero => rw [hseq0]; exact hxA
-    | succ m ih => rw [hseqS]; exact hfA _ ih
-  -- quadratic convergence of the defect
-  have hinvP : ∀ m, ∀ p q, (seq m * seq m - seq m) p q ∈
-      IsLocalRing.maximalIdeal B ^ (2 ^ m) := by
-    intro m
-    induction m with
-    | zero => simpa [hseq0] using hx
-    | succ m ih =>
-      intro p q
-      rw [hseqS, hfsq]
-      refine hmulL _ _ _ (fun i j => ?_) p q
-      have h2 := hmulM _ _ _ _ ih ih i j
-      rwa [← pow_add, show 2 ^ m + 2 ^ m = 2 ^ (m + 1) by ring] at h2
-  have hdiff : ∀ m, ∀ p q, (seq (m + 1) - seq m) p q ∈
-      IsLocalRing.maximalIdeal B ^ (2 ^ m) := by
-    intro m p q
-    rw [hseqS, hfdiff]
-    have h1 := hmulR _ (2 * seq m - 1) (seq m * seq m - seq m) (hinvP m) p q
-    simpa using neg_mem h1
-  have hmono : ∀ m m', m ≤ m' → ∀ p q, (seq m' - seq m) p q ∈
-      IsLocalRing.maximalIdeal B ^ (2 ^ m) := by
-    intro m m' hle
-    induction m', hle using Nat.le_induction with
-    | base => intro p q; simp
-    | succ m' hle ih =>
-      intro p q
-      have hsplit : seq (m' + 1) - seq m
-          = (seq (m' + 1) - seq m') + (seq m' - seq m) := by noncomm_ring
-      rw [hsplit, Matrix.add_apply]
-      refine Ideal.add_mem _ ?_ (ih p q)
-      exact Ideal.pow_le_pow_right (Nat.pow_le_pow_right (by norm_num) hle)
-        (hdiff m' p q)
-  -- entrywise adic completeness produces the limit
-  have hprec : ∀ p q : n, ∃ L : B, ∀ m, seq m p q - L ∈
-      IsLocalRing.maximalIdeal B ^ m := by
-    intro p q
-    have hc : ∀ {a b : ℕ}, a ≤ b → seq a p q ≡ seq b p q
-        [SMOD (IsLocalRing.maximalIdeal B ^ a) • (⊤ : Submodule B B)] := by
-      intro a b hab
-      simp only [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
-      refine Ideal.pow_le_pow_right (le_of_lt Nat.lt_two_pow_self) ?_
-      have h2 := hmono a b hab p q
-      have h3 : seq a p q - seq b p q = -((seq b - seq a) p q) := by simp
-      rw [h3]
-      exact neg_mem h2
-    obtain ⟨L, hL⟩ := hcompl.toIsPrecomplete.prec hc
-    refine ⟨L, fun m => ?_⟩
-    have h4 := hL m
-    simpa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] using h4
-  choose L hL using hprec
-  set u : Matrix n n B := Matrix.of fun p q => L p q with hu
-  have hLu : ∀ m p q, (seq m - u) p q ∈ IsLocalRing.maximalIdeal B ^ m := by
-    intro m p q
-    simpa [hu] using hL p q m
-  -- the limit is topological, so CLOSEDNESS of `A` keeps it inside `A`
-  have htend : Filter.Tendsto seq Filter.atTop (nhds u) := by
-    refine tendsto_pi_nhds.mpr fun p => tendsto_pi_nhds.mpr fun q => ?_
-    rw [(hadic.hasBasis_nhds (u p q)).tendsto_right_iff]
-    intro i _
-    filter_upwards [Filter.eventually_ge_atTop i] with N hN
-    exact ⟨seq N p q - u p q, Ideal.pow_le_pow_right hN (hLu N p q), by ring⟩
-  have huA : u ∈ A := hA.mem_of_tendsto htend (.of_forall fun m => hinvA m)
-  -- and separatedness turns the vanishing defect into an exact identity
-  have huu : u * u = u := by
-    have hall : ∀ p q, (u * u - u) p q = 0 := by
-      intro p q
-      refine hcompl.toIsHausdorff.haus _ (fun m => ?_)
-      simp only [SModEq.zero, smul_eq_mul, Ideal.mul_top]
-      have hus : ∀ i j, (u - seq m) i j ∈ IsLocalRing.maximalIdeal B ^ m := by
-        intro i j
-        have h5 := hLu m i j
-        have h6 : (u - seq m) i j = -((seq m - u) i j) := by simp
-        rw [h6]
-        exact neg_mem h5
-      have hsplit : u * u - u
-          = (u * u - seq m * seq m) + ((seq m * seq m - seq m) + (seq m - u)) := by
-        noncomm_ring
-      rw [hsplit, Matrix.add_apply, Matrix.add_apply]
-      refine Ideal.add_mem _ (matrix_sub_mem_mul _ hus hus p q)
-        (Ideal.add_mem _ ?_ (hLu m p q))
-      exact Ideal.pow_le_pow_right (le_of_lt Nat.lt_two_pow_self) (hinvP m p q)
-    ext p q
-    have h7 := hall p q
-    rw [Matrix.sub_apply, sub_eq_zero] at h7
-    exact h7
-  refine ⟨u, huA, huu, ?_⟩
-  intro p q
-  have h1 : u - x = -(seq 1 - u) + (seq 1 - seq 0) := by rw [hseq0]; noncomm_ring
-  rw [h1, Matrix.add_apply]
-  refine Ideal.add_mem _ ?_ ?_
-  · have h8 := hLu 1 p q
-    rw [pow_one] at h8
-    have h9 : (-(seq 1 - u)) p q = -((seq 1 - u) p q) := by simp
-    rw [h9]
-    exact neg_mem h8
-  · have h10 := hdiff 0 p q
-    simpa using h10
-
-/-- **Carayol's Théorème 1, step 2b: an idempotent of `M₂(B)` congruent to
-`E₁₁` is CONJUGATE to `E₁₁`** (PROVEN 2026-07-26, elementary and with an
-explicit conjugating matrix): over a local ring `B`, if `u² = u` and
-`u ≡ E₁₁ mod 𝔪` entrywise then `E⁻¹ u E = E₁₁` for the invertible
-
-    E := u · E₁₁ + (1 − u) · E₂₂
-
-(whose columns are `u e₁` and `(1 − u) e₂` — the classical choice).
-
-Two computations, no analysis. First `u E = E E₁₁`: expanding and using
-`E₁₁² = E₁₁`, `E₂₂E₁₁ = 0` and `u² = u`, both sides equal `u E₁₁`.
-Second, `E` is invertible: writing `w := u − E₁₁` (entries in `𝔪`) and
-using `E₁₁ + E₂₂ = 1`, `E₁₁² = E₁₁`, `E₂₂² = E₂₂`, one gets exactly
-`E − 1 = w (E₁₁ − E₂₂)`, so `E ≡ 1` entrywise, so `det E ≡ 1 mod 𝔪` by
-`Matrix.det_fin_two`, so `det E ∉ 𝔪` — and `B` is local. Then
-`E⁻¹ u E = E⁻¹ (u E) = E⁻¹ (E E₁₁) = E₁₁`.
-
-Note what is NOT needed: no completeness, no topology, no finiteness of
-the residue field, and no hypothesis on the characteristic. -/
-theorem exists_conj_eq_single_of_mul_self
-    {B : Type*} [CommRing B] [IsLocalRing B]
-    {u : Matrix (Fin 2) (Fin 2) B} (hu : u * u = u)
-    (hures : ∀ i j, (u - (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B)) i j ∈
-      IsLocalRing.maximalIdeal B) :
-    ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
-      E⁻¹ * u * E = Matrix.single 0 0 1 := by
-  classical
-  set F₀ : Matrix (Fin 2) (Fin 2) B := Matrix.single 0 0 1 with hF₀
-  set F₁ : Matrix (Fin 2) (Fin 2) B := Matrix.single 1 1 1 with hF₁
-  have hF₀F₀ : F₀ * F₀ = F₀ := by rw [hF₀]; simp
-  have hF₁F₁ : F₁ * F₁ = F₁ := by rw [hF₁]; simp
-  have hF₁F₀ : F₁ * F₀ = 0 := by
-    rw [hF₀, hF₁]
-    ext p q
-    fin_cases p <;> fin_cases q <;> simp [Matrix.single, Matrix.mul_apply]
-  have hFsum : F₀ + F₁ = 1 := by
-    rw [hF₀, hF₁]
-    ext p q
-    fin_cases p <;> fin_cases q <;> simp [Matrix.single]
-  set E : Matrix (Fin 2) (Fin 2) B := u * F₀ + (1 - u) * F₁ with hE
-  have hkey : u * E = E * F₀ := by
-    rw [hE]
-    have h1 : u * (u * F₀ + (1 - u) * F₁) = (u * u) * F₀ + (u - u * u) * F₁ := by
-      noncomm_ring
-    have h2 : (u * F₀ + (1 - u) * F₁) * F₀ = u * (F₀ * F₀) + (1 - u) * (F₁ * F₀) := by
-      noncomm_ring
-    rw [h1, h2, hu, hF₀F₀, hF₁F₀, sub_self]
-    simp
-  set w : Matrix (Fin 2) (Fin 2) B := u - F₀ with hw
-  have hE1 : E - 1 = w * (F₀ - F₁) := by
-    have hu' : u = F₀ + w := by rw [hw]; abel
-    have h3 : E = F₀ * F₀ + w * F₀ + (F₁ * F₁ - w * F₁) := by
-      rw [hE, hu', ← hFsum]
-      noncomm_ring
-    rw [h3, hF₀F₀, hF₁F₁]
-    rw [show F₀ + w * F₀ + (F₁ - w * F₁) - 1 = (F₀ + F₁) - 1 + w * (F₀ - F₁) by
-      noncomm_ring, hFsum, sub_self, zero_add]
-  have hEres : ∀ p q, (E - 1) p q ∈ IsLocalRing.maximalIdeal B := by
-    intro p q
-    rw [hE1, Matrix.mul_apply]
-    exact Ideal.sum_mem _ fun m _ => Ideal.mul_mem_right _ _ (hures p m)
-  have hdet : IsUnit E.det := by
-    refine IsLocalRing.notMem_maximalIdeal.mp ?_
-    intro hmem
-    have h00 : E 0 0 - 1 ∈ IsLocalRing.maximalIdeal B := by
-      simpa [Matrix.one_apply] using hEres 0 0
-    have h11 : E 1 1 - 1 ∈ IsLocalRing.maximalIdeal B := by
-      simpa [Matrix.one_apply] using hEres 1 1
-    have h10 : E 1 0 ∈ IsLocalRing.maximalIdeal B := by
-      simpa [Matrix.one_apply] using hEres 1 0
-    have hd1 : E.det - 1 ∈ IsLocalRing.maximalIdeal B := by
-      rw [Matrix.det_fin_two]
-      rw [show E 0 0 * E 1 1 - E 0 1 * E 1 0 - 1
-          = (E 0 0 - 1) * E 1 1 + (E 1 1 - 1) - E 0 1 * E 1 0 by ring]
-      exact Ideal.sub_mem _ (Ideal.add_mem _ (Ideal.mul_mem_right _ _ h00) h11)
-        (Ideal.mul_mem_left _ _ h10)
-    have hone : (1 : B) ∈ IsLocalRing.maximalIdeal B := by
-      have hsub : E.det - (E.det - 1) ∈ IsLocalRing.maximalIdeal B :=
-        Ideal.sub_mem _ hmem hd1
-      rwa [sub_sub_cancel] at hsub
-    exact (IsLocalRing.maximalIdeal.isMaximal B).ne_top
-      (Ideal.eq_top_iff_one _ |>.mpr hone)
-  refine ⟨E, hdet, ?_⟩
-  rw [show E⁻¹ * u * E = E⁻¹ * (u * E) by noncomm_ring, hkey,
-    ← mul_assoc, Matrix.nonsing_inv_mul E hdet, one_mul]
-
-/-- **Peirce decomposition in coordinates** (PROVEN 2026-07-26): a subring
-`A ⊆ M₂(B)` containing the matrix unit `E₁₁` — hence also
-`E₂₂ = 1 − E₁₁` — contains a matrix `M` if and only if it contains each of
-the four "corner" matrices `Mᵢⱼ · Eᵢⱼ`.
-
-Forward is `Eᵢᵢ M Eⱼⱼ = Mᵢⱼ · Eᵢⱼ` (`Matrix.single_mul_mul_single`);
-backward is `M = ∑ᵢⱼ Mᵢⱼ · Eᵢⱼ` (`Matrix.matrix_eq_sum_single`) and
-closure under addition.
-
-WHAT THIS IS FOR. It converts the module-theoretic Peirce decomposition
-`A = ⨁ᵢⱼ Eᵢᵢ A Eⱼⱼ` into a statement about the four `C`-submodules
-`Iᵢⱼ := {x : B | x · Eᵢⱼ ∈ A}` of `B`: the lemma says exactly
-`A = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}`, and multiplicativity of `A` says
-`Iᵢⱼ · Iⱼₗ ⊆ Iᵢₗ`, with `1 ∈ I₁₁ ∩ I₂₂`. See the leaf below for how the
-rest of the argument runs from here. -/
-theorem mem_iff_smul_single_mem {B : Type*} [CommRing B]
-    (A : Subring (Matrix (Fin 2) (Fin 2) B))
-    (h11 : (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A)
-    (M : Matrix (Fin 2) (Fin 2) B) :
-    M ∈ A ↔ ∀ i j : Fin 2,
-      (M i j) • (Matrix.single i j 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
-  classical
-  have hdiag : ∀ i : Fin 2,
-      (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
-    intro i
-    fin_cases i
-    · exact h11
-    · have h1 : (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)
-          = 1 - Matrix.single 0 0 1 := by
-        ext p q
-        fin_cases p <;> fin_cases q <;> simp [Matrix.single]
-      simpa [h1] using A.sub_mem A.one_mem h11
-  have hsingle : ∀ (i j : Fin 2), (Matrix.single i j (M i j)
-      : Matrix (Fin 2) (Fin 2) B) = (M i j) • Matrix.single i j 1 := by
-    intro i j
-    ext a c
-    simp [Matrix.single]
-  constructor
-  · intro hM i j
-    have hprod : (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) * M
-        * Matrix.single j j 1 = Matrix.single i j (M i j) := by
-      rw [Matrix.single_mul_mul_single]
-      simp
-    rw [← hsingle, ← hprod]
-    exact A.mul_mem (A.mul_mem (hdiag i) hM) (hdiag j)
-  · intro hM
-    rw [Matrix.matrix_eq_sum_single M]
-    refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
-    rw [hsingle]
-    exact hM i j
-
-open scoped TensorProduct in
-/-- **A finite product of modules over a LOCAL ring, free with basis indexed
-by the index type itself and with every factor nonzero, has CYCLIC factors**
-(PROVEN 2026-07-26 — the module-theoretic engine of the Peirce corner
-analysis below; pure commutative algebra, nothing matrix-specific).
-
-The proof is the residue-field rank count plus Nakayama, in exactly the form
-`IsLocalRing.map_tensorProduct_mk_eq_top` packages it. Base-changing the
-basis gives `dim_k (k ⊗ ∏ᵢ Nᵢ) = |ι|`; `TensorProduct.piRight` splits that as
-`∑ᵢ dim_k (k ⊗ Nᵢ)`; each summand is nonzero by
-`IsLocalRing.subsingleton_tensorProduct` (this is where `Nontrivial (N i)`
-and finiteness of each `N i` are consumed), so each is exactly `1`; and a
-one-dimensional `k ⊗ Nᵢ` has a generator of the form `1 ⊗ a`, which by
-Nakayama generates `Nᵢ` itself.
-
-Note the hypothesis is a basis indexed by `ι` — i.e. the free rank equals the
-NUMBER OF FACTORS. That is the whole content: it is what forces every factor
-to have residual dimension exactly one, and it is why the Peirce argument
-needs `A'` to be `C`-free of rank `4` rather than merely finite. -/
-theorem exists_span_eq_top_of_pi_basis
-    {C : Type*} [CommRing C] [IsLocalRing C]
-    {ι : Type*} [Fintype ι] [DecidableEq ι]
-    {N : ι → Type*} [∀ i, AddCommGroup (N i)] [∀ i, Module C (N i)]
-    (b : Module.Basis ι C ((i : ι) → N i))
-    (hne : ∀ i, Nontrivial (N i)) (i : ι) :
-    ∃ a : N i, Submodule.span C {a} = ⊤ := by
-  classical
-  haveI hfin : Module.Finite C ((i : ι) → N i) := Module.Finite.of_basis b
-  haveI hfini : ∀ j, Module.Finite C (N j) := fun j =>
-    Module.Finite.of_surjective (LinearMap.proj j (R := C) (φ := N))
-      (fun x => ⟨Pi.single j x, by simp⟩)
-  set k := IsLocalRing.ResidueField C with hk
-  haveI : ∀ j, Module.Finite k (k ⊗[C] N j) := fun j => Module.Finite.base_change _ _ _
-  have hrank : Module.finrank k (k ⊗[C] ((j : ι) → N j)) = Fintype.card ι := by
-    rw [Module.finrank_eq_card_basis (b.baseChange k)]
-  have he : (k ⊗[C] ((j : ι) → N j)) ≃ₗ[k] ((j : ι) → k ⊗[C] N j) :=
-    TensorProduct.piRight C k k N
-  have h2 : Module.finrank k ((j : ι) → k ⊗[C] N j) = Fintype.card ι := by
-    rw [← he.finrank_eq]; exact hrank
-  rw [Module.finrank_pi_fintype] at h2
-  have hpos : ∀ j, 1 ≤ Module.finrank k (k ⊗[C] N j) := by
-    intro j
-    haveI : Nontrivial (k ⊗[C] N j) := by
-      rw [← not_subsingleton_iff_nontrivial, IsLocalRing.subsingleton_tensorProduct]
-      rw [not_subsingleton_iff_nontrivial]
-      exact hne j
-    exact Module.finrank_pos
-  have hone : ∀ j, Module.finrank k (k ⊗[C] N j) = 1 := by
-    intro j
-    by_contra hcon
-    have hp := hpos j
-    have h3 : 2 ≤ Module.finrank k (k ⊗[C] N j) := by omega
-    have hlt : ∑ _x : ι, (1 : ℕ) < ∑ x : ι, Module.finrank k (k ⊗[C] N x) :=
-      Finset.sum_lt_sum (fun x _ => hpos x) ⟨j, Finset.mem_univ j, by omega⟩
-    simp only [Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_one] at hlt
-    rw [h2] at hlt
-    exact lt_irrefl _ hlt
-  have hne1 : Nontrivial (k ⊗[C] N i) := by
-    rw [← not_subsingleton_iff_nontrivial, IsLocalRing.subsingleton_tensorProduct]
-    rw [not_subsingleton_iff_nontrivial]
-    exact hne i
-  obtain ⟨v, hv⟩ := exists_ne (0 : k ⊗[C] N i)
-  obtain ⟨a, ha⟩ : ∃ a : N i, (TensorProduct.mk C k (N i) 1) a = v :=
-    TensorProduct.mk_surjective C (N i) k Ideal.Quotient.mk_surjective v
-  refine ⟨a, ?_⟩
-  rw [← IsLocalRing.map_tensorProduct_mk_eq_top]
-  rw [Submodule.map_span]
-  have himg : (TensorProduct.mk C k (N i) 1) '' {a} = {v} := by
-    rw [Set.image_singleton, ha]
-  rw [himg]
-  rw [← Submodule.restrictScalars_span C k Ideal.Quotient.mk_surjective {v}]
-  have hspan : Submodule.span k {v} = ⊤ :=
-    (finrank_eq_one_iff_of_nonzero v hv).mp (hone i)
-  rw [hspan]
-  rfl
-
-open scoped Matrix in
-/-- **Each PEIRCE CORNER of a rank-`4` `C`-order in `M₂(B)` is a principal
-`C`-module generated by a UNIT of `B`** (PROVEN 2026-07-26 — steps 1 and 2 of
-Carayol's step 2c, in the coordinate form the file uses).
-
-`A` is the `C`-order, presented through `hA` as `{M | ∀ n, b.repr M n ∈ C}`
-so that no subring structure is needed here; `hpeirce` is the PROVEN
-`mem_iff_smul_single_mem` above, supplied as a hypothesis so that this lemma
-stays pure module theory. Writing `Iᵢⱼ = {x : B | x·Eᵢⱼ ∈ A}`, the four `Iᵢⱼ`
-assemble into a `C`-module isomorphic to `A` (that is `hpeirce`), and `A` is
-`C`-free of rank `4` on `b` (that is `hA`); so
-`exists_span_eq_top_of_pi_basis` applies verbatim with `ι = Fin 2 × Fin 2`.
-
-Nonvanishing of each corner — the remaining hypothesis of that lemma — comes
-from `hb`: expanding `Eᵢⱼ` in the `B`-basis `b` and reading off the `(i,j)`
-entry gives `1 = ∑ₙ (b.repr Eᵢⱼ n)·(bₙ)ᵢⱼ`, so some `(bₙ)ᵢⱼ` lies outside
-`𝔪_B`; it lies in `Iᵢⱼ` by `hpeirce`, and being a unit it is nonzero. The
-same element makes the generator `a` a unit, since `a` divides it.
-
-**The projectivity detour recorded in the older plan is NOT used**: no
-`Module.free_of_flat_of_isLocalRing`, no projective modules, no rank
-bookkeeping over a possibly non-domain `C`. Cyclic — which is all the
-conjugation step needs — comes straight out of Nakayama. -/
-theorem exists_peirceCornerGenerator
-    {B : Type*} [CommRing B] [IsLocalRing B]
-    (C : Subring B) [IsLocalRing C]
-    (A : Submodule C (Matrix (Fin 2) (Fin 2) B))
-    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
-    (hb : ∀ n, b n ∈ A)
-    (hA : ∀ M : Matrix (Fin 2) (Fin 2) B, M ∈ A ↔ ∀ n, b.repr M n ∈ C)
-    (hpeirce : ∀ M : Matrix (Fin 2) (Fin 2) B,
-      M ∈ A ↔ ∀ i j : Fin 2,
-        (M i j) • (Matrix.single i j 1 : Matrix (Fin 2) (Fin 2) B) ∈ A)
-    (p : Fin 2 × Fin 2) :
-    ∃ a : B, IsUnit a ∧ ∀ x : B,
-      x • (Matrix.single p.1 p.2 1 : Matrix (Fin 2) (Fin 2) B) ∈ A ↔
-        ∃ c : C, x = (c : B) * a := by
-  classical
-  -- entrywise expansion of a sum of corners
-  have hentry : ∀ (f : Fin 2 × Fin 2 → B) (i j : Fin 2),
-      (∑ q : Fin 2 × Fin 2,
-          f q • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B)) i j = f (i, j) := by
-    intro f i j
-    simp only [Matrix.sum_apply, Matrix.smul_apply, Matrix.single, Fintype.sum_prod_type,
-      smul_eq_mul, Matrix.of_apply]
-    fin_cases i <;> fin_cases j <;> simp
-  have hsum : ∀ N : Matrix (Fin 2) (Fin 2) B,
-      ∑ q : Fin 2 × Fin 2,
-        (N q.1 q.2) • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B) = N := by
-    intro N; ext i j; exact hentry (fun q => N q.1 q.2) i j
-  -- the four corner submodules
-  set I : Fin 2 × Fin 2 → Submodule C B := fun q =>
-    { carrier := {x : B | x • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B) ∈ A}
-      zero_mem' := by simp
-      add_mem' := by
-        intro x y hx hy
-        simp only [Set.mem_setOf_eq, add_smul]
-        exact A.add_mem hx hy
-      smul_mem' := by
-        intro c x hx
-        simp only [Set.mem_setOf_eq, smul_assoc]
-        exact A.smul_mem c hx } with hIdef
-  have hAmem : ∀ (M : Matrix (Fin 2) (Fin 2) B), M ∈ A → ∀ q : Fin 2 × Fin 2,
-      M q.1 q.2 ∈ I q := fun M hM q => (hpeirce M).mp hM q.1 q.2
-  -- the element of `A` assembled from prescribed corners
-  set F : ((q : Fin 2 × Fin 2) → I q) → Matrix (Fin 2) (Fin 2) B := fun x =>
-    ∑ q : Fin 2 × Fin 2,
-      ((x q : B)) • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B) with hFdef
-  have hFmem : ∀ x, F x ∈ A := fun x => Submodule.sum_mem _ fun q _ => (x q).2
-  have hFadd : ∀ x y, F (x + y) = F x + F y := by
-    intro x y
-    simp only [hFdef]
-    rw [← Finset.sum_add_distrib]
-    exact Finset.sum_congr rfl fun q _ => by rw [← add_smul]; rfl
-  have hFsmul : ∀ (c : C) x, F (c • x) = (c : B) • F x := by
-    intro c x
-    simp only [hFdef]
-    rw [Finset.smul_sum]
-    exact Finset.sum_congr rfl fun q _ => by rw [smul_smul]; rfl
-  have hFentry : ∀ x (q : Fin 2 × Fin 2), F x q.1 q.2 = (x q : B) := by
-    intro x q
-    have hq := hentry (fun q => (x q : B)) q.1 q.2
-    simp only [hFdef]
-    rw [hq]
-  -- the product of the corners is `C`-free of rank `4`
-  let φ : ((q : Fin 2 × Fin 2) → I q) ≃ₗ[C] (Fin 4 → C) :=
-    { toFun := fun x n => ⟨b.repr (F x) n, (hA _).mp (hFmem x) n⟩
-      map_add' := by
-        intro x y
-        funext n
-        apply Subtype.ext
-        show (b.repr (F (x + y))) n = (b.repr (F x)) n + (b.repr (F y)) n
-        rw [hFadd, map_add]
-        simp
-      map_smul' := by
-        intro c x
-        funext n
-        apply Subtype.ext
-        show (b.repr (F (c • x))) n = (c : B) * (b.repr (F x)) n
-        rw [hFsmul, map_smul]
-        simp
-      invFun := fun c q =>
-        ⟨(∑ n : Fin 4, ((c n : B)) • b n) q.1 q.2,
-          hAmem _ ((hA _).mpr (by
-            intro m
-            rw [b.repr_sum_self]
-            exact (c m).2)) q⟩
-      left_inv := by
-        intro x
-        funext q
-        apply Subtype.ext
-        show (∑ n : Fin 4, ((b.repr (F x) n : B)) • b n) q.1 q.2 = (x q : B)
-        rw [b.sum_repr]
-        exact hFentry x q
-      right_inv := by
-        intro c
-        funext n
-        apply Subtype.ext
-        show (b.repr (∑ q : Fin 2 × Fin 2,
-            (((∑ m : Fin 4, ((c m : B)) • b m) q.1 q.2))
-              • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B))) n = (c n : B)
-        rw [hsum, b.repr_sum_self] }
-  have e4 : Fin 4 ≃ (Fin 2 × Fin 2) :=
-    (Fintype.equivFinOfCardEq (α := Fin 2 × Fin 2) (by simp)).symm
-  have hbasis : Module.Basis (Fin 2 × Fin 2) C ((q : Fin 2 × Fin 2) → I q) :=
-    (Module.Basis.ofEquivFun φ).reindex e4
-  -- every corner contains an element outside the maximal ideal
-  have hunit : ∀ q : Fin 2 × Fin 2,
-      ∃ n : Fin 4, (b n) q.1 q.2 ∉ IsLocalRing.maximalIdeal B := by
-    intro q
-    by_contra hcon
-    push Not at hcon
-    have hE : (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B) q.1 q.2 = 1 := by
-      simp [Matrix.single]
-    have hrepr := b.sum_repr (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B)
-    have h1 : (1 : B)
-        = ∑ n : Fin 4, (b.repr (Matrix.single q.1 q.2 1
-            : Matrix (Fin 2) (Fin 2) B) n) * ((b n) q.1 q.2) := by
-      conv_lhs => rw [← hE, ← hrepr]
-      simp [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
-    have hone : (1 : B) ∈ IsLocalRing.maximalIdeal B := by
-      rw [h1]
-      exact Ideal.sum_mem _ fun n _ => Ideal.mul_mem_left _ _ (hcon n)
-    exact (IsLocalRing.maximalIdeal.isMaximal B).ne_top
-      (Ideal.eq_top_iff_one _ |>.mpr hone)
-  have hnt : ∀ q : Fin 2 × Fin 2, Nontrivial (I q) := by
-    intro q
-    obtain ⟨n, hn⟩ := hunit q
-    refine ⟨⟨⟨(b n) q.1 q.2, hAmem (b n) (hb n) q⟩, 0, ?_⟩⟩
-    intro hzero
-    exact hn (by rw [show (b n) q.1 q.2 = (0 : B) from congrArg Subtype.val hzero]; simp)
-  -- Nakayama: each corner is cyclic
-  obtain ⟨a₀, ha₀⟩ := exists_span_eq_top_of_pi_basis hbasis hnt p
-  refine ⟨(a₀ : B), ?_, ?_⟩
-  · obtain ⟨n, hn⟩ := hunit p
-    have hmem : (⟨(b n) p.1 p.2, hAmem (b n) (hb n) p⟩ : I p) ∈ Submodule.span C {a₀} := by
-      rw [ha₀]; trivial
-    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
-    have hval : (c : B) * (a₀ : B) = (b n) p.1 p.2 := congrArg Subtype.val hc
-    have hu : IsUnit ((b n) p.1 p.2) := by
-      rwa [← IsLocalRing.notMem_maximalIdeal]
-    rw [← hval] at hu
-    exact isUnit_of_mul_isUnit_right hu
-  · intro x
-    constructor
-    · intro hx
-      have hmem : (⟨x, hx⟩ : I p) ∈ Submodule.span C {a₀} := by rw [ha₀]; trivial
-      obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
-      exact ⟨c, (congrArg Subtype.val hc).symm⟩
-    · rintro ⟨c, rfl⟩
-      exact (I p).smul_mem c a₀.2
-
-open scoped Matrix in
-/-- **The PEIRCE CORNERS of a `C`-order containing `E₁₁` are principal, with
-unit off-diagonal generators** (**PROVEN 2026-07-26**; cut 2026-07-26 out of
-`exists_conj_entries_mem_of_single_mem` below — steps 1–4 of that leaf's
-grading argument; PURE MODULE THEORY, no matrices beyond the four corners
-and no topology beyond `hclosed`).
-
-PROOF, as carried out: steps 1 and 2 are the new
-`exists_peirceCornerGenerator` above, which runs the residue-field rank count
-of `exists_span_eq_top_of_pi_basis` on the four corners and returns each
-`Iᵢⱼ = C·aᵢⱼ` with `aᵢⱼ` a unit of `B`. Step 3 is the local `hdiag` below:
-`1 ∈ Iᵢᵢ` gives `1 = c·aᵢᵢ` with `c ∈ C`, so `c` is a unit of `B`, hence a
-unit of `C` by the PROVEN `isUnit_of_isClosed_of_notMem_maximalIdeal` — the
-ONLY place `hclosed` and the finiteness of the residue field are consumed —
-whence `aᵢᵢ = c⁻¹ ∈ C` and `Iᵢᵢ = C`. Step 4 is then one line: the product
-`(a₀₁·E₀₁)(a₁₀·E₁₀) = (a₀₁a₁₀)·E₀₀` lies in the SUBRING `Asub` (which has
-the same carrier as the submodule `A`), so `a₀₁a₁₀ ∈ I₀₀ = C`.
-
-`hcompl` and `hres` are genuinely UNUSED here — they are inherited from
-`exists_conj_entries_mem_of_single_mem`'s package, where `hres` is consumed
-by the idempotent-lifting reduction and `hcompl` upstream of it. They are
-kept so the two halves share one signature, exactly as the note below says.
-
-The hypotheses are verbatim those of `exists_conj_entries_mem_of_single_mem`,
-so that the two halves can be redistributed freely. Write
-`A' = {M | ∀ n, b.repr M n ∈ C}` for the order (this is `∑ᵢ C·bᵢ`; the
-`Subring` structure is built in the consumer) and
-
-    Iᵢⱼ = {x : B | x • Eᵢⱼ ∈ A'},
-
-which is what the four `↔`s below say, spelled out through
-`hmemA : M ∈ A' ↔ ∀ n, b.repr M n ∈ C` so that `A'` itself need not appear in
-the statement. The conclusion is exactly:
-
-* `I₀₁ = C·a₀₁` and `I₁₀ = C·a₁₀` are PRINCIPAL (step 1),
-* `a₀₁` is a UNIT of `B` (step 2),
-* `I₀₀ = I₁₁ = C` (step 3),
-* `a₀₁·a₁₀ ∈ C` (step 4).
-
-Step 5 — the conjugation by `diag(1, a₀₁⁻¹)` that turns these four facts
-into the conclusion of `exists_conj_entries_mem_of_single_mem` — is PROVEN
-in that consumer, so this is now the whole residual of Carayol's step 2c.
-
-THE ARGUMENT, and one simplification worth recording. The PROVEN
-`mem_iff_smul_single_mem` gives `A' = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}`, i.e. an
-isomorphism of `C`-modules `A' ≅ I₀₀ ⊕ I₀₁ ⊕ I₁₀ ⊕ I₁₁`, and `A'` is free
-of rank `4` over the local ring `C` (`isLocalRing_of_isClosed_subring`, `b`
-being `C`-linearly independent because it is `B`-linearly independent).
-
-The plan previously recorded here routed step 1 through PROJECTIVITY —
-each `Iᵢⱼ` is a direct summand of a free module, hence finitely generated
-projective, hence free over the local `C` by
-`Module.free_of_flat_of_isLocalRing`, with the four ranks summing to `4`.
-**That detour is unnecessary.** `Iᵢⱼ` is the image of the `C`-linear
-entry map `A' → B`, `M ↦ Mᵢⱼ`, so it is finitely generated; by
-`maximalIdeal_eq_comap_of_isClosed_subring` the residue field of `C` is
-`k`, so `A'/𝔪_C A'` has `k`-dimension `4` and splits as
-`⊕ᵢⱼ Iᵢⱼ/𝔪_C Iᵢⱼ`; each summand is nonzero because the `B`-span of `A'`
-is all of `M₂(B)`, forcing `B·Iᵢⱼ = B`; so each summand has dimension
-exactly `1`, and NAKAYAMA makes each `Iᵢⱼ` CYCLIC. Cyclic is all step 1
-needs — freeness is never used — which removes the projective-module
-theory from the critical path entirely.
-
-Steps 2–4 are then as before: `B·Iᵢⱼ = B` and `B` local give `a₀₁, a₁₀ ∉ 𝔪`;
-writing `1 = c·a₀₀` with `c ∈ C` makes `c` a unit of `B`, hence of `C` by the
-PROVEN `isUnit_of_isClosed_of_notMem_maximalIdeal` — the ONLY place
-closedness and the finite residue field are consumed — so `I₀₀ = C`, and
-likewise `I₁₁`; and `a₀₁·a₁₀ ∈ I₀₀ = C`.
-
-`hadic`, `hcompl` and `hres` are inherited from the consumer's signature.
-`hres` is what makes the residual algebra split (see the note on the
-consumer); `hcompl` is used only by the idempotent lifting that happens
-upstream of this leaf, and is kept here solely so the two halves share one
-hypothesis package.
-
-References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann.
-306; Auslander–Goldman, *The Brauer group of a commutative ring*. -/
-theorem exists_peirceGenerators_of_single_mem
-    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
-    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
-    (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
-    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
-    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
-    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
-    (hbS : ∀ i : Fin 4, b i ∈ S)
-    (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C)
-    (hone : ∀ i : Fin 4,
-      b.repr (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) i ∈ C) :
-    ∃ a01 a10 : B, IsUnit a01 ∧ (a01 * a10) ∈ C ∧
-      (∀ x : B, (∀ n : Fin 4,
-          b.repr (x • (Matrix.single 0 1 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
-        ∃ c : C, x = (c : B) * a01) ∧
-      (∀ x : B, (∀ n : Fin 4,
-          b.repr (x • (Matrix.single 1 0 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
-        ∃ c : C, x = (c : B) * a10) ∧
-      (∀ x : B, (∀ n : Fin 4,
-          b.repr (x • (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
-        x ∈ C) ∧
-      (∀ x : B, (∀ n : Fin 4,
-          b.repr (x • (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
-        x ∈ C) := by
-  classical
-  haveI hCloc : IsLocalRing C := isLocalRing_of_isClosed_subring hadic hclosed
-  -- the `C`-order, as a subring and as a `C`-submodule with the SAME carrier
-  set Asub : Subring (Matrix (Fin 2) (Fin 2) B) :=
-    { carrier := {M | ∀ i, b.repr M i ∈ C}
-      zero_mem' := by intro i; simp
-      one_mem' := fun i => hrepr 1 S.one_mem i
-      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
-      neg_mem' := fun {x} hx i => by simpa using C.neg_mem (hx i)
-      mul_mem' := by
-        intro x y hx hy n
-        have hxy : x * y = ∑ i, ∑ j, (b.repr x i * b.repr y j) • (b i * b j) := by
-          conv_lhs => rw [← b.sum_repr x, ← b.sum_repr y]
-          rw [Finset.sum_mul]
-          refine Finset.sum_congr rfl fun i _ => ?_
-          rw [Finset.mul_sum]
-          refine Finset.sum_congr rfl fun j _ => ?_
-          rw [smul_mul_assoc, mul_smul_comm, smul_smul]
-        rw [hxy]
-        simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
-          Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
-        refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
-        exact C.mul_mem (C.mul_mem (hx i) (hy j))
-          (hrepr _ (S.mul_mem (hbS i) (hbS j)) n) } with hAsubdef
-  set A : Submodule C (Matrix (Fin 2) (Fin 2) B) :=
-    { carrier := {M | ∀ i, b.repr M i ∈ C}
-      zero_mem' := by intro i; simp
-      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
-      smul_mem' := fun c x hx i => by
-        simpa [Subring.smul_def] using C.mul_mem c.2 (hx i) } with hAdef
-  have hAmemiff : ∀ M : Matrix (Fin 2) (Fin 2) B, M ∈ A ↔ ∀ n, b.repr M n ∈ C :=
-    fun _ => Iff.rfl
-  have hAAsub : ∀ M : Matrix (Fin 2) (Fin 2) B, M ∈ A ↔ M ∈ Asub := fun _ => Iff.rfl
-  have hbA : ∀ n, b n ∈ A := fun n => hrepr (b n) (hbS n)
-  have hE00 : (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := hone
-  have hpeirce : ∀ M : Matrix (Fin 2) (Fin 2) B,
-      M ∈ A ↔ ∀ i j : Fin 2,
-        (M i j) • (Matrix.single i j 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
-    intro M
-    exact mem_iff_smul_single_mem Asub hE00 M
-  obtain ⟨a01, hu01, hI01⟩ := exists_peirceCornerGenerator C A b hbA hAmemiff hpeirce (0, 1)
-  obtain ⟨a10, hu10, hI10⟩ := exists_peirceCornerGenerator C A b hbA hAmemiff hpeirce (1, 0)
-  obtain ⟨a00, hu00, hI00⟩ := exists_peirceCornerGenerator C A b hbA hAmemiff hpeirce (0, 0)
-  obtain ⟨a11, hu11, hI11⟩ := exists_peirceCornerGenerator C A b hbA hAmemiff hpeirce (1, 1)
-  -- `E₂₂ = 1 − E₁₁ ∈ A`
-  have hE11 : (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
-    have h1 : (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)
-        = 1 - Matrix.single 0 0 1 := by
-      ext p q
-      fin_cases p <;> fin_cases q <;> simp [Matrix.single]
-    rw [h1]
-    exact A.sub_mem (fun i => hrepr 1 S.one_mem i) hE00
-  -- STEP 3: a diagonal corner containing `1` is exactly `C`
-  have hdiag : ∀ (i : Fin 2) (a : B),
-      (∀ x : B, x • (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A ↔
-        ∃ c : C, x = (c : B) * a) →
-      (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A →
-      a ∈ C ∧ ∀ x : B,
-        (x • (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A ↔ x ∈ C) := by
-    intro i a hchar hmem
-    have h1mem : (1 : B) • (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
-      rw [one_smul]; exact hmem
-    obtain ⟨c, hc⟩ := (hchar 1).mp h1mem
-    have hcu : IsUnit c := by
-      refine isUnit_of_isClosed_of_notMem_maximalIdeal hadic hclosed c ?_
-      intro hcm
-      have hone' : (1 : B) ∈ IsLocalRing.maximalIdeal B := by
-        rw [hc]
-        exact Ideal.mul_mem_right _ _ hcm
-      exact (IsLocalRing.maximalIdeal.isMaximal B).ne_top
-        (Ideal.eq_top_iff_one _ |>.mpr hone')
-    obtain ⟨cu, hcu'⟩ := hcu
-    have haC : a ∈ C := by
-      have hinv : (((cu⁻¹ : Cˣ) : C) : B) * (((cu : Cˣ) : C) : B) = 1 := by
-        exact_mod_cast congrArg (fun z : C => (z : B)) cu.inv_mul
-      have hval : a = (((cu⁻¹ : Cˣ) : C) : B) := by
-        calc a = 1 * a := (one_mul a).symm
-        _ = ((((cu⁻¹ : Cˣ) : C) : B) * (((cu : Cˣ) : C) : B)) * a := by rw [hinv]
-        _ = (((cu⁻¹ : Cˣ) : C) : B) * ((((cu : Cˣ) : C) : B) * a) := by ring
-        _ = (((cu⁻¹ : Cˣ) : C) : B) * 1 := by rw [hcu', ← hc]
-        _ = (((cu⁻¹ : Cˣ) : C) : B) := by ring
-      rw [hval]
-      exact ((cu⁻¹ : Cˣ) : C).2
-    refine ⟨haC, fun x => ⟨?_, ?_⟩⟩
-    · intro hx
-      obtain ⟨c', hc'⟩ := (hchar x).mp hx
-      rw [hc']
-      exact C.mul_mem c'.2 haC
-    · intro hx
-      refine (hchar x).mpr ⟨⟨x, hx⟩ * c, ?_⟩
-      have hxc : ((⟨x, hx⟩ * c : C) : B) * a = x * ((c : B) * a) := by
-        push_cast; ring
-      rw [hxc, ← hc, mul_one]
-  obtain ⟨ha00C, hI00'⟩ := hdiag 0 a00 hI00 hE00
-  obtain ⟨ha11C, hI11'⟩ := hdiag 1 a11 hI11 hE11
-  -- STEP 4: `a₀₁·a₁₀ ∈ I₀₀ = C`
-  have hprod : (a01 * a10) ∈ C := by
-    refine (hI00' (a01 * a10)).mp ?_
-    have hx01 : a01 • (Matrix.single 0 1 1 : Matrix (Fin 2) (Fin 2) B) ∈ A :=
-      (hI01 a01).mpr ⟨1, by simp⟩
-    have hx10 : a10 • (Matrix.single 1 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A :=
-      (hI10 a10).mpr ⟨1, by simp⟩
-    have hmul : (a01 • (Matrix.single 0 1 1 : Matrix (Fin 2) (Fin 2) B))
-        * (a10 • (Matrix.single 1 0 1 : Matrix (Fin 2) (Fin 2) B))
-        = (a01 * a10) • (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) := by
-      ext p q
-      fin_cases p <;> fin_cases q <;>
-        simp [Matrix.single, Matrix.mul_apply, mul_comm]
-    rw [hAAsub] at hx01 hx10 ⊢
-    rw [← hmul]
-    exact Asub.mul_mem hx01 hx10
-  exact ⟨a01, a10, hu01, hprod, hI01, hI10, hI00', hI11'⟩
-
-open scoped Matrix in
-/-- **Carayol's Théorème 1, step 2c: a `C`-order CONTAINING `E₁₁` is
-conjugate into `M₂(C)`** (PROVEN 2026-07-26 over the single sub-leaf
-`exists_peirceGenerators_of_single_mem` above; cut 2026-07-26 out of
-`exists_conj_entries_mem_of_basis_repr_mem`; PURE ALGEBRA — this is the
-Peirce/grading core of the theorem and all that remains of it): the
-hypotheses are verbatim those of
-`exists_conj_entries_mem_of_basis_repr_mem` PLUS `hone`, which says that
-the matrix unit `E₁₁` already lies in the order `A' = ∑ᵢ C·bᵢ`. The
-reduction of the general case to this one is PROVEN below, by lifting an
-idempotent and conjugating it to `E₁₁`.
-
-THE GRADING ARGUMENT, IN THE COORDINATES THIS FILE ALREADY HAS. Work with
-the four `C`-submodules of `B`
-
-    Iᵢⱼ := {x : B | x · Eᵢⱼ ∈ A'},      A' = ∑ᵢ C·bᵢ.
-
-The PROVEN `mem_iff_smul_single_mem` above says exactly
-`A' = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}` — that is the Peirce decomposition, with no
-direct sums to construct — and multiplicativity of `A'` gives
-`Iᵢⱼ · Iⱼₗ ⊆ Iᵢₗ`, while `E₁₁, E₂₂ ∈ A'` gives `1 ∈ I₁₁ ∩ I₂₂`. Five steps
-were listed here; **steps 1–4 are now the sub-leaf
-`exists_peirceGenerators_of_single_mem` above, and step 5 is PROVEN below**,
-so this node is closed over that one leaf. The list is kept because it is
-the map of the remaining work:
-
-1. *Each `Iᵢⱼ` is a PRINCIPAL `C`-submodule* `Iᵢⱼ = C·aᵢⱼ`. This is the
-   one genuinely module-theoretic step: `A'` is free of rank `4` over the
-   local `C` (`isLocalRing_of_isClosed_subring`, `b` being `C`-linearly
-   independent because it is `B`-linearly independent), and the four
-   `Iᵢⱼ` are its `C`-module direct summands, hence finitely generated
-   projective, hence FREE over the local `C`, with ranks summing to `4`;
-   each is nonzero because `A'` contains a `B`-basis of `M₂(B)`, so each
-   rank is exactly `1`.
-2. *`a₁₂` and `a₂₁` are UNITS OF `B`.* The `B`-span of `A'` is
-   `{M | Mᵢⱼ ∈ B·Iᵢⱼ}` and equals `M₂(B)`, so `B·aᵢⱼ = B`; `B` is local,
-   so `aᵢⱼ ∉ 𝔪`.
-3. *`I₁₁ = I₂₂ = C`.* Write `1 = c·a₁₁` with `c ∈ C`. Then `c` is a unit
-   of `B`, so `c ∈ C^×` by the PROVEN
-   `isUnit_of_isClosed_of_notMem_maximalIdeal` — THIS is where closedness
-   and the finite residue field re-enter, and it is the only place — hence
-   `a₁₁ = c⁻¹ ∈ C` and `I₁₁ = C·a₁₁ = C`. Same for `I₂₂`.
-4. *`a₁₂·a₂₁ ∈ C^×`*: it lies in `I₁₁ = C` by step 1, and is a unit of `B`
-   by step 2, so again `isUnit_of_isClosed_of_notMem_maximalIdeal`.
-5. *Conjugate.* PROVEN below. The conjugator is `E = diag(1, a₁₂⁻¹)` —
-   **not** `diag(1, a₁₂)`, which is what this line used to say and which
-   conjugates the wrong way: with `E = diag(d₁, d₂)` one has
-   `(E⁻¹ M E)ᵢⱼ = dᵢ⁻¹ Mᵢⱼ dⱼ`, so it is `d₂ = a₁₂⁻¹` that sends
-   `I₁₂ = C·a₁₂` into `C`. (The rest of the old line was already computing
-   with `a₁₂⁻¹`, so only the displayed matrix was wrong.) The corners then
-   become `I'₁₂ = I₁₂·a₁₂⁻¹ = C`, `I'₂₁ = a₁₂·I₂₁ = C·a₁₂a₂₁ = C`, and
-   `I'₁₁ = I'₂₂ = C` unchanged — the last because `B` is COMMUTATIVE, so
-   the diagonal conjugation `x ↦ d x d⁻¹` is the identity. By
-   `mem_iff_smul_single_mem` again, the conjugate of `A'` is exactly
-   `M₂(C)`. Note `diag(1, a₁₂⁻¹)` fixes `E₁₁`, so it composes with the
-   caller's conjugation without disturbing step 2c's hypothesis.
-
-WHAT `hres` BUYS, AND WHY IT IS NOT DROPPABLE. `hres` is not used by the
-grading argument itself; it is what makes the CALLER able to produce an
-element of `A'` congruent to `E₁₁`, i.e. it is consumed in the reduction
-below. Kept in this signature because the reduction and this core are two
-halves of one theorem and a successor may wish to redistribute the work.
-Without `hres` the residual algebra `A'/𝔪_C A'` is only a `k'`-FORM of
-`M₂(k)` over the subfield `k' = C/𝔪_C ⊆ k` — a quaternion algebra — and
-one needs Wedderburn's little theorem (`k'` finite ⟹ split) to find a
-rank-one idempotent at all; over an INFINITE `k'` that form may be a
-DIVISION algebra, `A'` a maximal order in it, and the statement outright
-FALSE. That is the fallback route, recorded here deliberately.
-
-References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann.
-306; Auslander–Goldman, *The Brauer group of a commutative ring*. -/
-theorem exists_conj_entries_mem_of_single_mem
-    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
-    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
-    (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
-    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
-    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
-    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
-    (hbS : ∀ i : Fin 4, b i ∈ S)
-    (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C)
-    (hone : ∀ i : Fin 4,
-      b.repr (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) i ∈ C) :
-    ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
-      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C := by
-  classical
-  -- the `C`-order `A' = ∑ᵢ C·bᵢ`, as a subring of `M₂(B)`
-  set A : Subring (Matrix (Fin 2) (Fin 2) B) :=
-    { carrier := {M | ∀ i, b.repr M i ∈ C}
-      zero_mem' := by intro i; simp
-      one_mem' := fun i => hrepr 1 S.one_mem i
-      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
-      neg_mem' := fun {x} hx i => by simpa using C.neg_mem (hx i)
-      mul_mem' := by
-        intro x y hx hy n
-        have hxy : x * y = ∑ i, ∑ j, (b.repr x i * b.repr y j) • (b i * b j) := by
-          conv_lhs => rw [← b.sum_repr x, ← b.sum_repr y]
-          rw [Finset.sum_mul]
-          refine Finset.sum_congr rfl fun i _ => ?_
-          rw [Finset.mul_sum]
-          refine Finset.sum_congr rfl fun j _ => ?_
-          rw [smul_mul_assoc, mul_smul_comm, smul_smul]
-        rw [hxy]
-        simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
-          Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
-        refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
-        exact C.mul_mem (C.mul_mem (hx i) (hy j))
-          (hrepr _ (S.mul_mem (hbS i) (hbS j)) n) }
-  have hE11A : (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := hone
-  -- the Peirce corner generators, from the sub-leaf
-  obtain ⟨a01, a10, hu01, hprod, hI01, hI10, hI00, hI11⟩ :=
-    exists_peirceGenerators_of_single_mem hadic hcompl C hclosed hres S b hbS
-      hrepr hone
-  obtain ⟨v, hv⟩ := hu01
-  -- STEP 5: conjugate by `diag(1, a₀₁⁻¹)`
-  refine ⟨Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)], ?_, ?_⟩
-  · rw [Matrix.det_diagonal]
-    simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one,
-      one_mul]
-    exact (v⁻¹ : Bˣ).isUnit
-  · have hEinv : (Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)])⁻¹
-        = Matrix.diagonal ![1, ((v : Bˣ) : B)] := by
-      refine Matrix.inv_eq_right_inv ?_
-      have hfun : (fun i => ![1, ((v⁻¹ : Bˣ) : B)] i * ![1, ((v : Bˣ) : B)] i)
-          = (1 : Fin 2 → B) := by
-        funext i; fin_cases i <;> simp
-      rw [Matrix.diagonal_mul_diagonal, hfun]
-      exact Matrix.diagonal_one
-    intro M hM
-    have hMA : M ∈ A := fun n => hrepr M hM n
-    have hpeirce := (mem_iff_smul_single_mem A hE11A M).mp hMA
-    have hentry : ∀ i j : Fin 2,
-        ((Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)])⁻¹ * M
-          * Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)]) i j
-        = ![1, ((v : Bˣ) : B)] i * M i j * ![1, ((v⁻¹ : Bˣ) : B)] j := by
-      intro i j
-      rw [hEinv, Matrix.mul_diagonal, Matrix.diagonal_mul]
-    simp only [Fin.forall_fin_two, hentry, Matrix.cons_val_zero,
-      Matrix.cons_val_one, Matrix.head_cons, one_mul, mul_one]
-    refine ⟨⟨?_, ?_⟩, ?_, ?_⟩
-    · exact (hI00 (M 0 0)).mp (hpeirce 0 0)
-    · obtain ⟨c, hc⟩ := (hI01 (M 0 1)).mp (hpeirce 0 1)
-      have key : M 0 1 * ((v⁻¹ : Bˣ) : B) = (c : B) := by
-        rw [hc, ← hv, mul_assoc, Units.mul_inv, mul_one]
-      rw [key]
-      exact c.2
-    · obtain ⟨c, hc⟩ := (hI10 (M 1 0)).mp (hpeirce 1 0)
-      have key : ((v : Bˣ) : B) * M 1 0 = (c : B) * (a01 * a10) := by
-        rw [hc, hv]; ring
-      rw [key]
-      exact C.mul_mem c.2 hprod
-    · have h := (hI11 (M 1 1)).mp (hpeirce 1 1)
-      have key : ((v : Bˣ) : B) * M 1 1 * ((v⁻¹ : Bˣ) : B) = M 1 1 := by
-        rw [mul_comm ((v : Bˣ) : B) (M 1 1), mul_assoc, Units.mul_inv, mul_one]
-      rw [key]
-      exact h
-
-open scoped Matrix in
-/-- **Carayol's Théorème 1, step 2: a `C`-order in `M₂(B)` with split
-residual algebra is conjugate into `M₂(C)`** (PROVEN 2026-07-26 over the
-single sub-leaf `exists_conj_entries_mem_of_single_mem`, the two
-auxiliary nodes `exists_isIdempotentElem_mem_of_sq_sub_mem` and
-`exists_conj_eq_single_of_mul_self` being PROVEN; cut 2026-07-26
-out of `exists_framedGaloisRep_baseChange_traceSubring`; PURE ALGEBRA —
-no Galois representation and no arithmetic occurs in it): let `B` be a
-local topological ring whose topology is `𝔪`-adic, which is `𝔪`-adically
-complete and separated, and whose residue field is FINITE; let `C ⊆ B` be
-a CLOSED subring; and let `S` be a multiplicative set of matrices
-containing a `B`-basis `b` of `M₂(B)` and having all its `b`-coordinates
-in `C`. Then a single conjugation `M ↦ E⁻¹ M E` by an invertible
-`E ∈ M₂(B)` moves every member of `S` into `M₂(C)`.
-
-This is the SPLITTING of the order, and every hypothesis is load-bearing.
-
-Write `A' := ∑ᵢ C·bᵢ`. It is a subring of `M₂(B)` — it is the `C`-span of
-the multiplicative `S`, and `1 ∈ S` — free of rank `4` over `C`; and
-because `C` is closed, `𝔪_C = 𝔪 ∩ C`
-(`maximalIdeal_eq_comap_of_isClosed_subring`), so `A' / 𝔪_C A' ↪ M₂(k)`
-is a `k'`-subalgebra of `k'`-dimension `4`, where `k' = C/𝔪_C ⊆ k`.
-
-The hypothesis `hres` — `C` meets every residue class of `B`, i.e. `C`
-surjects onto the residue field — says exactly `k' = k`. So the image is
-a `k`-subspace of `M₂(k)` of `k`-dimension `4`, hence ALL of `M₂(k)`:
-`A'/𝔪_C A' ≅ M₂(k)` with nothing to prove. **`hres` is what makes this
-leaf elementary**, and it is why no Brauer-group input is needed — see
-the note below on what its absence would cost.
-
-WHAT THE PROOF BELOW ESTABLISHES, all of it verified: that `A'` really is
-a subring of `M₂(B)` (its `mul_mem'` is the expansion
-`(∑ cᵢbᵢ)(∑ dⱼbⱼ) = ∑ cᵢdⱼ (bᵢbⱼ)` together with `bᵢbⱼ ∈ S`); that `A'` is
-CLOSED, being the preimage of `C⁴` under the coordinate maps, which are
-continuous because each is a fixed linear form in the matrix ENTRIES
-(`basis_repr_eq_sum_entries`); that `A'` contains an element `x` with
-`x ≡ E₁₁ mod 𝔪` entrywise — this is the ONE place `hres` is consumed,
-each coordinate of `E₁₁` being replaced by a `C`-element congruent to it —
-hence with `x² ≡ x`; and, given the idempotent `u ∈ A'` produced by
-`exists_isIdempotentElem_mem_of_sq_sub_mem` and the conjugation `E₀`
-produced by `exists_conj_eq_single_of_mul_self`, that the WHOLE
-hypothesis package transports along `M ↦ E₀⁻¹ M E₀` (a monoid isomorphism
-and a `B`-linear automorphism at once) to an instance of
-`exists_conj_entries_mem_of_single_mem`, whose conjugation `E₁` composes
-with `E₀` into the required `E = E₀E₁`.
-
-What is left open is therefore exactly ONE thing, the Peirce/grading
-argument, which runs: after the
-conjugation `E₁₁, E₂₂ ∈ A'` and `A' = ⨁ᵢⱼ EᵢᵢA'Eⱼⱼ` with each summand a
-rank-one `C`-submodule `C·aᵢⱼ` of `B`. The diagonal ones contain `1` and
-are closed under multiplication, so `a₁₁, a₂₂ ∈ C^×` and `A₁₁ = A₂₂ = C`;
-then `a₁₂a₂₁` generates `A₁₁ = C`, so it is a unit of `C`, and the
-further conjugation by `diag(1, a₁₂⁻¹)` turns `A'` into exactly `M₂(C)`.
-
-WHY THE HYPOTHESES CANNOT BE DROPPED. Completeness and closedness are
-both needed to lift the idempotent INSIDE `A'`.
-
-WITHOUT `hres` THE LEAF IS STRICTLY HARDER, AND WITHOUT IT *AND*
-FINITENESS IT IS FALSE. If `k'` is a proper subfield of `k`, then
-`A'/𝔪_C A'` is only a `k'`-FORM of `M₂(k)` — a quaternion algebra over
-`k'` — and one needs Wedderburn's little theorem (`k'` finite ⟹ the form
-is split) to find the rank-one idempotent at all. Over an INFINITE `k'`
-that form may be a DIVISION algebra, and then `A'` is a maximal order in
-a division algebra, not `M₂(C)`, and the statement is FALSE. `hres`
-removes that entire branch of the argument, together with its
-missing-from-mathlib input (forms of `M₂` and Wedderburn); finiteness of
-the residue field is retained only because the surrounding subring API
-(`isUnit_of_isClosed_of_notMem_maximalIdeal`,
-`maximalIdeal_eq_comap_of_isClosed_subring`) is stated with it.
-
-`hres` is not an extra burden on the caller: for `C = traceSubring ℓ D.ρ`
-it is exactly the Teichmüller-root clause of the generating set — every
-residue class of `D.R` contains a Teichmüller root
-(`exists_mem_teichmullerRoots_map_eq`, Hensel), and every Teichmüller
-root lies in the trace subring
-(`mem_traceSubring_of_mem_teichmullerRoots`). This is the repair that
-also killed `subring_closure_charFrob_coeff_eq_top`; the residue field of
-`R'` is `k` ON THE NOSE, not the Frobenius-trace subfield, so no descent
-of `ρbar` to a trace field is needed anywhere in this cluster.
-
-References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann.
-306; Auslander–Goldman, *The Brauer group of a commutative ring*
-(Azumaya algebras over local rings are split when residually split) — the
-last needed only in the `hres`-free form of the statement. -/
-theorem exists_conj_entries_mem_of_basis_repr_mem
-    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
-    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
-    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
-    (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
-    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
-    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
-    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
-    (hbS : ∀ i : Fin 4, b i ∈ S)
-    (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C) :
-    ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
-      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C := by
-  classical
-  -- the `C`-order `A' = ∑ᵢ C·bᵢ`, as a subring of `M₂(B)`
-  set A : Subring (Matrix (Fin 2) (Fin 2) B) :=
-    { carrier := {M | ∀ i, b.repr M i ∈ C}
-      zero_mem' := by intro i; simp
-      one_mem' := fun i => hrepr 1 S.one_mem i
-      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
-      neg_mem' := fun {x} hx i => by simpa using C.neg_mem (hx i)
-      mul_mem' := by
-        intro x y hx hy n
-        have hxy : x * y = ∑ i, ∑ j, (b.repr x i * b.repr y j) • (b i * b j) := by
-          conv_lhs => rw [← b.sum_repr x, ← b.sum_repr y]
-          rw [Finset.sum_mul]
-          refine Finset.sum_congr rfl fun i _ => ?_
-          rw [Finset.mul_sum]
-          refine Finset.sum_congr rfl fun j _ => ?_
-          rw [smul_mul_assoc, mul_smul_comm, smul_smul]
-        rw [hxy]
-        simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
-          Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
-        refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
-        exact C.mul_mem (C.mul_mem (hx i) (hy j))
-          (hrepr _ (S.mul_mem (hbS i) (hbS j)) n) } with hAdef
-  have hmemA : ∀ M : Matrix (Fin 2) (Fin 2) B, M ∈ A ↔ ∀ i, b.repr M i ∈ C :=
-    fun M => Iff.rfl
-  -- each coordinate map is continuous, so the order is CLOSED
-  have hcont : ∀ i : Fin 4,
-      Continuous (fun M : Matrix (Fin 2) (Fin 2) B => b.repr M i) := by
-    intro i
-    have hEq : (fun M : Matrix (Fin 2) (Fin 2) B => b.repr M i) =
-        fun M => ∑ p : Fin 2, ∑ q : Fin 2, M p q * b.repr (Matrix.single p q 1) i := by
-      funext M
-      exact basis_repr_eq_sum_entries b M i
-    rw [hEq]
-    refine continuous_finsetSum _ fun p _ => continuous_finsetSum _ fun q _ => ?_
-    exact Continuous.mul (by fun_prop) continuous_const
-  have hAclosed : IsClosed ((A : Subring (Matrix (Fin 2) (Fin 2) B)) :
-      Set (Matrix (Fin 2) (Fin 2) B)) := by
-    have hEq : ((A : Subring (Matrix (Fin 2) (Fin 2) B)) :
-          Set (Matrix (Fin 2) (Fin 2) B))
-        = ⋂ i : Fin 4, (fun M : Matrix (Fin 2) (Fin 2) B => b.repr M i) ⁻¹'
-            (C : Set B) := by
-      ext M
-      simp [hmemA M, Set.mem_iInter]
-    rw [hEq]
-    exact isClosed_iInter fun i => hclosed.preimage (hcont i)
-  -- `hres` puts an element congruent to `E₁₁` into the order
-  set E11 : Matrix (Fin 2) (Fin 2) B := Matrix.single 0 0 1 with hE11
-  have hE11sq : E11 * E11 = E11 := by rw [hE11]; simp
-  choose cc hcc using fun i : Fin 4 => hres (b.repr E11 i)
-  set x : Matrix (Fin 2) (Fin 2) B := ∑ i, ((cc i : B)) • b i with hx
-  have hxA : x ∈ A := by
-    rw [hmemA]
-    intro n
-    rw [hx]
-    simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
-      Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
-    exact Subring.sum_mem _ fun i _ => C.mul_mem (cc i).2 (hrepr _ (hbS i) n)
-  have hxres : ∀ p q, (x - E11) p q ∈ IsLocalRing.maximalIdeal B := by
-    have hdiff : x - E11 = ∑ i, ((cc i : B) - b.repr E11 i) • b i := by
-      conv_lhs => rw [hx, ← b.sum_repr E11]
-      rw [← Finset.sum_sub_distrib]
-      exact Finset.sum_congr rfl fun i _ => (sub_smul _ _ _).symm
-    intro p q
-    rw [hdiff]
-    simp only [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
-    exact Ideal.sum_mem _ fun i _ => Ideal.mul_mem_right _ _ (hcc i)
-  have hxsq : ∀ p q, (x * x - x) p q ∈ IsLocalRing.maximalIdeal B := by
-    intro p q
-    have hsplit : x * x - x = (x * x - E11 * E11) + (E11 - x) := by
-      rw [hE11sq]; noncomm_ring
-    rw [hsplit, Matrix.add_apply]
-    refine Ideal.add_mem _ (matrix_sub_mem_mul _ hxres hxres p q) ?_
-    have hneg : (E11 - x) p q = -((x - E11) p q) := by simp
-    rw [hneg]
-    exact neg_mem (hxres p q)
-  -- lift it to a genuine idempotent of the order, and conjugate that to `E₁₁`
-  obtain ⟨u, huA, hu2, hures⟩ :=
-    exists_isIdempotentElem_mem_of_sq_sub_mem hadic hcompl A hAclosed hxA hxsq
-  have hures' : ∀ p q, (u - E11) p q ∈ IsLocalRing.maximalIdeal B := by
-    intro p q
-    have hsplit : u - E11 = (u - x) + (x - E11) := by noncomm_ring
-    rw [hsplit, Matrix.add_apply]
-    exact Ideal.add_mem _ (hures p q) (hxres p q)
-  obtain ⟨E₀, hE₀det, hE₀u⟩ := exists_conj_eq_single_of_mul_self hu2 hures'
-  have hinv1 : E₀⁻¹ * E₀ = 1 := Matrix.nonsing_inv_mul _ hE₀det
-  have hinv2 : E₀ * E₀⁻¹ = 1 := Matrix.mul_nonsing_inv _ hE₀det
-  -- transport the whole hypothesis package along `M ↦ E₀⁻¹ M E₀`
-  set Φ : Matrix (Fin 2) (Fin 2) B →* Matrix (Fin 2) (Fin 2) B :=
-    { toFun := fun M => E₀⁻¹ * M * E₀
-      map_one' := by simp only [mul_one]; exact hinv1
-      map_mul' := fun M N => by
-        show E₀⁻¹ * (M * N) * E₀ = (E₀⁻¹ * M * E₀) * (E₀⁻¹ * N * E₀)
-        have h1 : (E₀⁻¹ * M * E₀) * (E₀⁻¹ * N * E₀)
-            = E₀⁻¹ * M * (E₀ * E₀⁻¹) * N * E₀ := by noncomm_ring
-        rw [h1, hinv2, mul_one]
-        noncomm_ring } with hΦ
-  set Ψ : Matrix (Fin 2) (Fin 2) B ≃ₗ[B] Matrix (Fin 2) (Fin 2) B :=
-    { toFun := fun M => E₀⁻¹ * M * E₀
-      map_add' := fun M N => by noncomm_ring
-      map_smul' := fun c M => by simp [Matrix.smul_mul]
-      invFun := fun M => E₀ * M * E₀⁻¹
-      left_inv := fun M => by
-        show E₀ * (E₀⁻¹ * M * E₀) * E₀⁻¹ = M
-        have h1 : E₀ * (E₀⁻¹ * M * E₀) * E₀⁻¹ = (E₀ * E₀⁻¹) * M * (E₀ * E₀⁻¹) := by
-          noncomm_ring
-        rw [h1, hinv2, one_mul, mul_one]
-      right_inv := fun M => by
-        show E₀⁻¹ * (E₀ * M * E₀⁻¹) * E₀ = M
-        have h1 : E₀⁻¹ * (E₀ * M * E₀⁻¹) * E₀ = (E₀⁻¹ * E₀) * M * (E₀⁻¹ * E₀) := by
-          noncomm_ring
-        rw [h1, hinv1, one_mul, mul_one] } with hΨ
-  have hΨΦ : ∀ M, Ψ M = Φ M := fun M => rfl
-  have hreprmap : ∀ (M : Matrix (Fin 2) (Fin 2) B) (i : Fin 4),
-      (b.map Ψ).repr M i = b.repr (Ψ.symm M) i := by
-    intro M i
-    rw [Module.Basis.map_repr]
-    rfl
-  have hbS' : ∀ i : Fin 4, (b.map Ψ) i ∈ S.map Φ := by
-    intro i
-    rw [Module.Basis.map_apply]
-    exact ⟨b i, hbS i, (hΨΦ (b i)).symm⟩
-  have hrepr' : ∀ M ∈ S.map Φ, ∀ i : Fin 4, (b.map Ψ).repr M i ∈ C := by
-    rintro _ ⟨N, hN, rfl⟩ i
-    rw [hreprmap]
-    rw [show Ψ.symm (Φ N) = N from by rw [← hΨΦ N]; exact Ψ.symm_apply_apply N]
-    exact hrepr N hN i
-  have hone' : ∀ i : Fin 4, (b.map Ψ).repr E11 i ∈ C := by
-    intro i
-    rw [hreprmap]
-    rw [show Ψ.symm E11 = u from by
-      rw [hE11, ← hE₀u]
-      exact Ψ.symm_apply_apply u]
-    exact (hmemA u).mp huA i
-  obtain ⟨E₁, hE₁det, hE₁mem⟩ :=
-    exists_conj_entries_mem_of_single_mem hadic hcompl C hclosed hres (S.map Φ)
-      (b.map Ψ) hbS' hrepr' hone'
-  refine ⟨E₀ * E₁, ?_, ?_⟩
-  · rw [Matrix.det_mul]; exact hE₀det.mul hE₁det
-  · intro M hM i j
-    have hMS' : Φ M ∈ S.map Φ := ⟨M, hM, rfl⟩
-    have hres2 := hE₁mem (Φ M) hMS' i j
-    have heq : (E₀ * E₁)⁻¹ * M * (E₀ * E₁) = E₁⁻¹ * (E₀⁻¹ * M * E₀) * E₁ := by
-      rw [Matrix.mul_inv_rev]; noncomm_ring
-    rw [heq]
-    exact hres2
 
 open scoped TensorProduct in
 /-- **Carayol's Théorème 1, the conjugation proper** (PROVEN 2026-07-26
@@ -18525,10 +16950,282 @@ theorem rank_le_of_exists_injective_dual
   refine Cardinal.lift_le.{w}.mp (hinj.trans ?_)
   simpa using Cardinal.lift_le.{u}.mpr hW
 
-/-- **Böckle's obstruction injection** (sorry node, items (4)+(5) of the
-machinery audit on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
-below; cut out of `rank_relationSpace_le_of_rank_sha2_le` on 2026-07-27, which
-is now PROVEN over it):
+/-- **Minimality kills a section: the derivation argument** (PROVEN 2026-07-27;
+pure commutative algebra, no Galois representations and no cohomology).
+
+Let `S` be a local ring, `φ : S ↠ A` a ring map whose kernel is MINIMAL in the
+sense `ker φ ≤ 𝔪_S² ⊔ (n)` for a natural number `n` lying in `𝔪_S`, and let
+`K ⊆ S` be an ideal with `𝔪_S · ker φ ≤ K`. If the induced surjection
+`S ⧸ K ↠ A` admits a ring-theoretic SECTION `s`, then `ker φ ≤ K`.
+
+**This is the half of Böckle's injectivity argument that does not mention
+obstruction theory**, isolated here so that the remaining leaf carries only
+arithmetic. In the application `K` is the ideal cut out by a functional `ψ` on
+the relation space `ker φ/(𝔪_S · ker φ)`, so `ker φ ≤ K` says exactly `ψ = 0`;
+the section is what weak universality plus trace generation produce out of a
+lift of `D.ρ` along the small extension `0 → k → S ⧸ K → A → 0`.
+
+**The proof is the classical derivation computation.** Put
+`θ x := (x mod K) - s (φ x)`. Then:
+
+* `θ` lands in `ker φ · (S ⧸ K)` — because `s a` is represented by SOME
+  preimage of `a` (this is the exact content of the section hypothesis `hs`,
+  and it is why the hypothesis is phrased that way rather than through
+  `Ideal.Quotient.lift`);
+* `𝔪_S` annihilates that image, since `𝔪_S · ker φ ≤ K`. Hence also
+  `θ x · θ y = 0`, so `θ` is a DERIVATION:
+  `θ (x y) = x·θ y + y·θ x`;
+* `θ` is additive, and `θ (n) = 0` for free — a ring hom preserves `Nat.cast`,
+  so no `ℤ_ℓ`-algebra compatibility of `s` is needed anywhere;
+* therefore `θ` vanishes on `𝔪_S²` (each product `x y` with `x, y ∈ 𝔪_S` gives
+  two terms each killed by `𝔪_S`) and on `(n)` (as `n ∈ 𝔪_S`), hence on
+  `𝔪_S² ⊔ (n) ⊇ ker φ` by minimality;
+* on `ker φ` itself `θ j = (j mod K)`, since `φ j = 0`. So `j ∈ K`.
+
+Note what is NOT hypothesised: `K ≤ ker φ` is never used (the statement is
+true and slightly stronger without it), `A` need not be local, and `S` need
+not be Noetherian, complete or a power series ring. -/
+theorem ker_le_of_exists_section_of_ker_le_sq_sup
+    {S : Type*} [CommRing S] [IsLocalRing S] {A : Type*} [CommRing A]
+    (φ : S →+* A) (n : ℕ)
+    (hn : (n : S) ∈ IsLocalRing.maximalIdeal S)
+    (hmin : RingHom.ker φ ≤ IsLocalRing.maximalIdeal S ^ 2 ⊔ Ideal.span {(n : S)})
+    {K : Ideal S}
+    (hKm : IsLocalRing.maximalIdeal S * RingHom.ker φ ≤ K)
+    (s : A →+* S ⧸ K)
+    (hs : ∀ a : A, ∃ x : S, φ x = a ∧ s a = Ideal.Quotient.mk K x) :
+    RingHom.ker φ ≤ K := by
+  have hJm : RingHom.ker φ ≤ IsLocalRing.maximalIdeal S :=
+    hmin.trans (sup_le (Ideal.pow_le_self (by norm_num))
+      (by rw [Ideal.span_le]; simpa using hn))
+  set θ : S → S ⧸ K := fun x => Ideal.Quotient.mk K x - s (φ x) with hθ
+  have hmem : ∀ x : S, ∃ j ∈ RingHom.ker φ, θ x = Ideal.Quotient.mk K j := by
+    intro x
+    obtain ⟨y, hy, hsy⟩ := hs (φ x)
+    refine ⟨x - y, ?_, ?_⟩
+    · simp [RingHom.mem_ker, hy]
+    · simp [hθ, hsy, map_sub]
+  have hkill : ∀ x ∈ IsLocalRing.maximalIdeal S, ∀ y : S,
+      Ideal.Quotient.mk K x * θ y = 0 := by
+    intro x hx y
+    obtain ⟨j, hj, hjy⟩ := hmem y
+    rw [hjy, ← map_mul]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (hKm (Ideal.mul_mem_mul hx hj))
+  have hprod : ∀ x y : S, θ x * θ y = 0 := by
+    intro x y
+    obtain ⟨i, hi, hix⟩ := hmem x
+    rw [hix]
+    exact hkill i (hJm hi) y
+  have hadd : ∀ x y : S, θ (x + y) = θ x + θ y := by
+    intro x y
+    simp only [hθ, map_add]
+    ring
+  have hderiv : ∀ x y : S,
+      θ (x * y) = Ideal.Quotient.mk K x * θ y + Ideal.Quotient.mk K y * θ x := by
+    intro x y
+    have h0 := hprod x y
+    simp only [hθ, map_mul] at h0 ⊢
+    linear_combination -h0
+  have hnat : θ (n : S) = 0 := by
+    simp [hθ]
+  have hsq : ∀ a ∈ IsLocalRing.maximalIdeal S ^ 2, θ a = 0 := by
+    intro a ha
+    rw [pow_two] at ha
+    refine Submodule.mul_induction_on ha ?_ ?_
+    · intro x hx y hy
+      rw [hderiv, hkill x hx y, hkill y hy x, add_zero]
+    · intro x y hx hy
+      rw [hadd, hx, hy, add_zero]
+  have hspan : ∀ b ∈ Ideal.span ({(n : S)} : Set S), θ b = 0 := by
+    intro b hb
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hb
+    rw [hderiv, hnat, mul_zero, zero_add, hkill _ hn c]
+  intro j hj
+  have hzero : θ j = 0 := by
+    obtain ⟨a, ha, b, hb, rfl⟩ := Submodule.mem_sup.mp (hmin hj)
+    rw [hadd, hsq a ha, hspan b hb, add_zero]
+  have hφj : φ j = 0 := hj
+  have hmk : Ideal.Quotient.mk K j = 0 := by
+    simpa [hθ, hφj] using hzero
+  exact Ideal.Quotient.eq_zero_iff_mem.mp hmk
+
+/-- **Böckle's obstruction homomorphism, with its lifting criterion** (sorry
+node, cut out of `exists_injective_dual_relationSpace_to_sha2` below on
+2026-07-27, which is now PROVEN over it together with
+`ker_le_of_exists_section_of_ker_le_sq_sup` above; it carries items (4)+(5) of
+the machinery audit on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below):
+
+for a minimal, `ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the
+weakly universal, trace-generated hardly ramified deformation ring, there is a
+`k`-LINEAR map
+
+`ob : (ker φ/𝔪_S·ker φ)^∨ → Ш²_S(ad⁰)`
+
+whose vanishing at `ψ` is witnessed by an ideal `K = K_ψ` — the annihilator of
+`ψ` inside `ker φ`, pinned by the `↔` in the statement — for which the
+surjection `S ⧸ K_ψ ↠ D.R` admits a ring-theoretic section.
+
+**What each conjunct is.** `K ≤ ker φ` and `𝔪_S · ker φ ≤ K` say `K_ψ` sits
+between `𝔪_S·ker φ` and `ker φ`, so `S ⧸ K_ψ ↠ D.R` is a SMALL extension —
+its kernel `ker φ/K_ψ` is killed by `𝔪_S` and squares to zero. The `↔`
+identifies `K_ψ` as exactly `{j ∈ ker φ : ψ(j̄) = 0}`, which is what makes the
+statement Böckle's rather than a weaker existential: for `ψ ≠ 0` the kernel is
+the `k`-line `ker φ/K_ψ ≅ k`. The section is phrased as "`s a` is represented
+by some `φ`-preimage of `a`" rather than through `Ideal.Quotient.lift`, which
+says the same thing without carrying the lift's proof obligation inside the
+existential.
+
+**Why the DUAL, and why that is the literature statement rather than a
+convenience.** Obstruction theory produces no map out of the relation space; it
+produces a map out of its dual. Given a functional
+`ψ : ker φ/𝔪_S·ker φ → k`, push the tautological small extension
+
+`0 → ker φ/𝔪_S·ker φ → S/𝔪_S·ker φ → D.R → 0`
+
+out along `ψ` to a small extension `0 → k → E_ψ → D.R → 0` with square-zero
+kernel `k`. The obstruction to lifting the deformation `D.ρ` from `D.R` to
+`E_ψ` is a class `ob(ψ) ∈ H²(G_{ℚ,S}, ad⁰ ρbar)`, and `ψ ↦ ob(ψ)` is
+`k`-linear because pushout is. So the natural arrow is
+`(ker φ/𝔪_S·ker φ)^∨ → H²`, and the rank bound on the relation space itself is
+recovered downstream from `dim W ≤ dim W^∨` (`rank_le_rank_dual` above), which
+holds with no finiteness hypothesis. Writing the leaf the other way round —
+an injection OUT of the relation space — would be a strictly different and
+unjustified statement.
+
+**The pushout is a QUOTIENT OF `S`, which is why no new ring construction
+appears in the statement.** `E_ψ` is usually built as `(S/𝔪_S·ker φ ⊕ k)`
+modulo the graph of `−ψ`; but that ring is canonically `S ⧸ K_ψ` for
+`K_ψ = {j ∈ ker φ : ψ(j̄) = 0}`, an ideal of `S` because `ψ` is semilinear over
+`S ↠ S/𝔪_S ≅ k`. Stating the leaf through `K_ψ` therefore costs nothing and
+keeps the whole cut inside ordinary ideal theory.
+
+**The two halves this leaf asserts.**
+
+* *The obstruction map and its criterion* — the construction of `ob`, its
+  `k`-linearity, and the implication `ob(ψ) = 0 ⟹ D.ρ lifts to E_ψ`. The lift
+  makes `E_ψ` a hardly ramified deformation, so weak universality (`hw`)
+  supplies a compatible `D.R → E_ψ`, and trace generation (`ht`) forces its
+  composite with `E_ψ ↠ D.R` to be the identity — i.e. makes it the SECTION
+  this statement asks for. That last step is where `ht` is consumed: without
+  it the compatible map need not be unique, hence need not split.
+* *Landing in `Ш²`* is the local half: for `v ∈ S = {v ∣ 2, v ∣ ℓ}` the
+  restriction `loc_v(ob(ψ))` is the obstruction to lifting the LOCAL
+  deformation at `v`, which vanishes because each of the four hardly ramified
+  local conditions (tame at `2`, flat at `ℓ`, unramified outside `S`, fixed
+  determinant) is liftable along a small extension. The archimedean place
+  imposes nothing (`H²(ℝ, ad⁰) = 0` for `ℓ` odd), which is why
+  `hardlyRamifiedPlaces` is finite-only.
+
+**The `k`-module structure on the relation space** is not an extra choice: it
+is `residueRingEquivOfSurjective (D.π ∘ φ)`, i.e. the identification of
+`S ⧸ 𝔪_S` with `k` forced by the surjection `S ↠ D.R ↠ k`. Stating the leaf
+over `k` rather than over `S ⧸ 𝔪_S` is what makes it literally Böckle's
+statement, since `Ш²_S(ad⁰)` is a `k`-vector space.
+
+**MACHINERY AUDIT — what is missing, and the check that would refute each
+item** (surveyed 2026-07-27 across `Fermat/`, our mathlib pin and `~/cs/FLT`;
+this is the reason the leaf is stated rather than proven, and it is a survey
+of the whole tree, not of one file):
+
+1. *No small-extension API anywhere.* Nothing in `Fermat/` or `~/cs/FLT`
+   defines a small/square-zero extension of local rings together with the
+   lifting problem for a representation along it; mathlib has only generic
+   `I ^ 2 = ⊥` algebra (`RingTheory/Derivation/ToSquareZero.lean`,
+   `TrivSqZeroExt`) and the formal-smoothness lifting criteria. REFUTED BY:
+   `grep -rn "SmallExtension\|IsSmallExtension" Fermat/ ~/cs/FLT/FLT/` finding
+   a definition.
+2. *No obstruction class exists as a formal object.* Every `obstruction` hit
+   in the tree is docstring prose. REFUTED BY: a `def` whose value lies in
+   `continuousCohomology 2 _`.
+3. *No inhomogeneous cochains in our pin.* `continuousCohomology` is genuinely
+   computed (`Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`),
+   but through the HOMOGENEOUS resolution `C(G, C(G, …, X))` — there is no
+   `C(Gⁿ, X)` description, which is what one writes an explicit 2-cocycle
+   `c(σ,τ) = ρ̃(σ)ρ̃(τ)ρ̃(στ)⁻¹` in. Basic.lean's own TODO records this.
+   REFUTED BY: an inhomogeneous-cochain equivalence appearing in the pin.
+4. *No long exact sequence, no connecting map, no cup product* for continuous
+   cohomology in our pin; `~/cs/FLT` carries a richer private copy
+   (`FLT/Mathlib/…/ContCohomology/{Basic,CupProduct}.lean`, notably
+   `cohomologyIsoQuot`) which is the natural vendoring target and needs a
+   pin-drift audit. REFUTED BY: `ls` of the pin's `ContCohomology/` showing
+   more than `Basic`, `Functoriality`, `LowDegree`.
+5. *Liftability of the four hardly ramified local conditions along a small
+   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
+   being preserved under a square-zero surjection.
+
+Items 1–3 are the binding ones: 4 and 5 can be *stated* and cut further once
+1–3 exist, per the standing rule that stating a theory is not proving it.
+
+References: Böckle, *Presentations of universal deformation rings*; Mazur,
+*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
+*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII.
+
+**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF.** This leaf carries
+the same hypothesis package as
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below, which is
+the package this development ultimately refutes; so the EXPOSURE AUDIT AND
+CIRCULARITY GUARD in that node's docstring applies here VERBATIM and is not
+repeated. In particular the BANNED INPUTS clause binds: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) nor
+`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
+— nor anything proven over them — may be used to discharge this leaf, since
+their intended proofs run through modularity lifting, which is proven over the
+very bound this leaf supplies. A green build and an honest `#print axioms`
+would BOTH survive such a discharge; only a human reading catches it. (The
+guard has now been moved TWICE for the same reason — off
+`rank_relationSpace_le_of_rank_sha2_le` when that was proven on 2026-07-27,
+and off `exists_injective_dual_relationSpace_to_sha2` when THAT was proven
+later the same day. A guard left on a proven consumer guards nothing; it
+belongs on whichever declaration still contains the `sorry`.) -/
+theorem exists_obstructionHom_relationSpace_sha2
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+        (hsurj : Function.Surjective φ),
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        letI : Module k (↥(RingHom.ker φ) ⧸
+            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+          Module.compHom _
+            (residueRingEquivOfSurjective (D.π.comp φ)
+              (D.π_surjective.comp hsurj)).symm.toRingHom
+        ∃ ob : Module.Dual k (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
+            ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)),
+          ∀ ψ, ob ψ = 0 →
+            ∃ K : Ideal (MvPowerSeries (Fin g) Λ),
+              K ≤ RingHom.ker φ ∧
+              IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) *
+                  RingHom.ker φ ≤ K ∧
+              (∀ j : ↥(RingHom.ker φ),
+                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
+                  ψ (Submodule.Quotient.mk j) = 0) ∧
+              ∃ s : D.R →+* (MvPowerSeries (Fin g) Λ ⧸ K),
+                ∀ a : D.R, ∃ x : MvPowerSeries (Fin g) Λ,
+                  φ x = a ∧ s a = Ideal.Quotient.mk K x :=
+  sorry
+
+/-- **Böckle's obstruction injection** (PROVEN 2026-07-27 over the single
+arithmetic leaf `exists_obstructionHom_relationSpace_sha2` above, which carries
+items (4)+(5) of the machinery audit on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; this node
+was itself cut out of `rank_relationSpace_le_of_rank_sha2_le` on 2026-07-27,
+which is now PROVEN over it):
 
 for a minimal, `ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the
 weakly universal, trace-generated hardly ramified deformation ring, the `k`-DUAL
@@ -18552,48 +17249,49 @@ holds with no finiteness hypothesis. Writing the leaf the other way round —
 an injection OUT of the relation space — would be a strictly different and
 unjustified statement.
 
-**The two halves this leaf asserts.**
-
-* *Injectivity* is where weak universality and minimality enter. If
-  `ob(ψ) = 0` the deformation lifts to `E_ψ`, so `hw` supplies a compatible
-  `D.R → E_ψ` splitting `E_ψ ↠ D.R`; the splitting lifts `φ` to a `Λ`-algebra
-  map `S → E_ψ` killing `𝔪_S·ker φ`, and minimality of the presentation
-  (`ker φ ≤ 𝔪_S² ⊔ (ℓ)`) forces `ψ = 0`. Trace generation (`ht`) is what makes
-  the compatible map unique, hence canonical enough to be a splitting.
-* *Landing in `Ш²`* is the local half: for `v ∈ S = {v ∣ 2, v ∣ ℓ}` the
-  restriction `loc_v(ob(ψ))` is the obstruction to lifting the LOCAL
-  deformation at `v`, which vanishes because each of the four hardly ramified
-  local conditions (tame at `2`, flat at `ℓ`, unramified outside `S`, fixed
-  determinant) is liftable along a small extension. The archimedean place
-  imposes nothing (`H²(ℝ, ad⁰) = 0` for `ℓ` odd), which is why
-  `hardlyRamifiedPlaces` is finite-only.
-
 **The `k`-module structure on the relation space** is not an extra choice: it
 is `residueRingEquivOfSurjective (D.π ∘ φ)`, i.e. the identification of
 `S ⧸ 𝔪_S` with `k` forced by the surjection `S ↠ D.R ↠ k`. Stating the leaf
 over `k` rather than over `S ⧸ 𝔪_S` is what makes it literally Böckle's
 statement, since `Ш²_S(ad⁰)` is a `k`-vector space.
 
+**What the proof below contributes, and what it defers.** The injection is the
+obstruction map itself, so `f` IS the `ob` supplied by
+`exists_obstructionHom_relationSpace_sha2` above; the content proven here is
+its INJECTIVITY, which is exactly the classical minimality argument and which
+splits cleanly off the arithmetic:
+
+* `ob` is `k`-linear, so injectivity is the single implication
+  `ob(ψ) = 0 ⟹ ψ = 0` (`injective_iff_map_eq_zero`);
+* `ob(ψ) = 0` yields, from the leaf, the small extension `S ⧸ K_ψ ↠ D.R`
+  together with a ring-theoretic SECTION of it. That is the entire arithmetic
+  input: obstruction theory to produce `ob`, weak universality to lift `D.ρ`
+  along the extension, trace generation to make the resulting map a section;
+* `ker_le_of_exists_section_of_ker_le_sq_sup` above then converts the section
+  into `ker φ ≤ K_ψ` by the derivation argument, using MINIMALITY
+  (`ker φ ≤ 𝔪_S² ⊔ (ℓ)`) and nothing else — no cohomology, no deformation
+  theory, not even `ℤ_ℓ`-compatibility of the section, since a ring hom
+  preserves `Nat.cast` for free;
+* `ker φ ≤ K_ψ` is `ψ = 0`, because the leaf pins `K_ψ` as the annihilator of
+  `ψ` inside `ker φ` and `Submodule.Quotient.mk` is surjective onto the
+  relation space.
+
+So minimality is consumed HERE and weak universality plus trace generation are
+consumed in the leaf. The only step that needs `(ℓ : S) ∈ 𝔪_S` is the
+derivation argument's treatment of the `(ℓ)` summand of the minimality bound,
+and that comes from `hΛ` through `mem_maximalIdeal_mvPowerSeries_iff` above.
+
 References: Böckle, *Presentations of universal deformation rings*; Mazur,
 *Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
 *Fermat's Last Theorem*, §2.6–2.7.
 
-**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF.** This leaf carries
-the same hypothesis package as
-`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below, which is
-the package this development ultimately refutes; so the EXPOSURE AUDIT AND
-CIRCULARITY GUARD in that node's docstring applies here VERBATIM and is not
-repeated. In particular the BANNED INPUTS clause binds: neither
-`not_isIrreducible_of_isHardlyRamified_of_five_le`
-(`Modularity/KhareWintenberger.lean`) nor
-`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
-— nor anything proven over them — may be used to discharge this leaf, since
-their intended proofs run through modularity lifting, which is proven over the
-very bound this leaf supplies. A green build and an honest `#print axioms`
-would BOTH survive such a discharge; only a human reading catches it. (The
-guard was moved here when `rank_relationSpace_le_of_rank_sha2_le` was proven
-over this leaf, 2026-07-27: a guard left only on a now-proven consumer would
-have stopped guarding anything.) -/
+**CIRCULARITY GUARD — MOVED, NOT DROPPED.** The guard that used to sit on this
+node now sits on `exists_obstructionHom_relationSpace_sha2` above, which is
+where the arithmetic went; see it for the BANNED INPUTS clause (neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
+may be used). Nothing in the proof below touches either: it is pure ideal
+theory over the leaf. -/
 theorem exists_injective_dual_relationSpace_to_sha2
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -18622,8 +17320,30 @@ theorem exists_injective_dual_relationSpace_to_sha2
               (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
                 (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
             ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)),
-          Function.Injective f :=
-  sorry
+          Function.Injective f := by
+  letI := D.commRing
+  letI := D.algebra
+  intro Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin
+  letI : Module k (↥(RingHom.ker φ) ⧸
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+        (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+    Module.compHom _
+      (residueRingEquivOfSurjective (D.π.comp φ)
+        (D.π_surjective.comp hsurj)).symm.toRingHom
+  obtain ⟨ob, hob⟩ := exists_obstructionHom_relationSpace_sha2 hℓOdd hdim hℓ5 h hirr D hw ht
+    Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin
+  refine ⟨ob, (injective_iff_map_eq_zero ob).mpr fun ψ hψ => ?_⟩
+  obtain ⟨K, _hKle, hKm, hKiff, s, hs⟩ := hob ψ hψ
+  have hℓS : ((ℓ : ℕ) : MvPowerSeries (Fin g) Λ) ∈
+      IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) := by
+    rw [mem_maximalIdeal_mvPowerSeries_iff, map_natCast, hΛ]
+    exact Ideal.mem_span_singleton_self _
+  have hle : RingHom.ker φ ≤ K :=
+    ker_le_of_exists_section_of_ker_le_sq_sup φ ℓ hℓS hmin hKm s hs
+  refine LinearMap.ext fun w => ?_
+  obtain ⟨j, rfl⟩ := Submodule.Quotient.mk_surjective _ w
+  rw [LinearMap.zero_apply]
+  exact (hKiff j).mp (hle j.2)
 
 /-- **Böckle's obstruction bound** (PROVEN 2026-07-27 over the single leaf
 `exists_injective_dual_relationSpace_to_sha2` above, which carries items (4)+(5)
@@ -18783,8 +17503,321 @@ theorem exists_tangent_family_of_mvPowerSeries_presentation
       rw [← Set.range_comp]
       rfl
 
-/-- **`dim_k Ш²_S(ad⁰) ≤ (mod-`ℓ` tangent dimension of `D.R`)`** (sorry node,
-items (6)+(7) of the machinery audit on
+/-! ### The Tate twist `ad⁰(1)` and `Ш¹_S(ad⁰(1))`
+
+Added 2026-07-27 to make THE NEXT CUT that the docstring of
+`rank_sha2_le_of_tangent_span` below named for whoever owned that leaf: items
+(1) and (2) of that list — the twist `ad⁰(1)` and the degree-`1` analogue of
+`Sha2`. With those two DEFINITIONS written, the leaf splits along the
+Poitou–Tate seam into `rank_sha2_le_rank_sha1_twist` and
+`rank_sha1_twist_le_of_tangent_span`, and the leaf itself becomes a `le_trans`.
+
+**Items (3) and (4) of that list — `selmerGroup`/`dualSelmerGroup` and the
+local Tate pairing — are deliberately NOT written, and this is the point of
+cutting here rather than one step further.** The dual Selmer group `H¹_{L^⊥}`
+cannot even be STATED without the local Tate pairing, which is the single most
+expensive missing object in this subtree (see the porting audit on
+`rank_sha2_le_rank_sha1_twist` below). But it is needed only INSIDE the proof
+of `rank_sha1_twist_le_of_tangent_span`: the statement `dim Ш¹(ad⁰(1)) ≤ g`
+mentions no Selmer group at all, because `Ш¹` imposes the ZERO local condition
+and so needs no `⊥`. So the pairing is deferred into a leaf rather than
+promoted into an interface — which is the cheaper of the two, and it is what
+lets this cut be made today.
+
+A cut one step further was considered and REJECTED as unsafe. Introducing
+`selmerGroup L` for an arbitrary family of local conditions `L` is cheap (no
+pairing needed), but the resulting middle statement
+`dim Ш¹(ad⁰(1)) ≤ dim H¹_L(ad⁰)` is FALSE for arbitrary `L` — take `L_v = 0`
+for every `v` — so it would have to quantify over the specific hardly ramified
+family `L_HR`, whose condition at `ℓ` is FLATNESS. Writing `L_HR` therefore
+costs the finite-flat-group-scheme condition in cohomological form, which is
+strictly more than the pairing this cut defers. Existentially quantifying
+(`∃ L, … ∧ …`) does not rescue it: an existential does not split into two
+leaves, which is the whole purpose of a cut. -/
+
+variable (ℓ k) in
+/-- **The mod-`ℓ` cyclotomic character, valued in `kˣ`** — the character `χ`
+by which `ad⁰` is twisted below.
+
+It is DELIBERATELY built as mathlib's `ℓ`-adic `cyclotomicCharacter` pushed
+into `k` along `algebraMap ℤ_[ℓ] k`, rather than from
+`GaloisRepresentation.cyclotomicCharacterModL` (`Chebotarev.lean`, valued in
+`(ZMod ℓ)ˣ`), for one reason: this is the character `IsHardlyRamified.det`
+(`Defs.lean`) is stated with, VERBATIM —
+
+`det : ∀ g, ρ.det g = algebraMap ℤ_[ℓ] R (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ g.toRingEquiv)`
+
+— so `h.det` applies to it with no bridge lemma. `k` has characteristic `ℓ`,
+so `algebraMap ℤ_[ℓ] k` kills `ℓℤ_ℓ` and this genuinely is the MOD-`ℓ`
+cyclotomic character, notwithstanding that it is spelled `ℓ`-adically.
+(`cyclotomicCharacterModL_eq_toZMod` in `WeilPairing.lean` is the bridge if a
+future consumer needs the `ZMod ℓ` form; nothing here does.)
+
+The `Γ ℚ →* (ℚᵃˡᵍ ≃+* ℚᵃˡᵍ)` step is `AlgEquiv.toRingEquiv`, which mathlib
+does not package as a `MonoidHom`; both `map_one'` and `map_mul'` are `rfl`
+because the group structures on `AlgEquiv` and `RingEquiv` are both
+`trans`-with-arguments-swapped. -/
+noncomputable def adZeroCycloChar : Field.absoluteGaloisGroup ℚ →* kˣ :=
+  (Units.map (algebraMap ℤ_[ℓ] k : ℤ_[ℓ] →+* k).toMonoidHom).comp
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ).comp
+      ({ toFun := fun g => g.toRingEquiv
+         map_one' := rfl
+         map_mul' := fun _ _ => rfl } :
+        Field.absoluteGaloisGroup ℚ →*
+          (AlgebraicClosure ℚ ≃+* AlgebraicClosure ℚ)))
+
+variable (ℓ) in
+/-- **`ad⁰(1) = ad⁰ ⊗ χ`** as a continuous representation of `Γ ℚ` — item (1)
+of the cut named on `rank_sha2_le_of_tangent_span` below.
+
+**It is built BY HAND, on the same carrier `AdZero k V`, with each `ρ σ`
+rescaled by `χ σ`. That is not laziness: `TopRep` has no monoidal structure to
+tensor with.** Surveyed 2026-07-27 against both trees, and the greps that
+would refute this are:
+
+* `grep -rniE "tensor|⊗|dual|twist" Mathlib/RepresentationTheory/Continuous/ Mathlib/RepresentationTheory/Homological/ContCohomology/`
+  — exactly ONE hit, and it is a docstring. There is no `TopRep.tensor`, no
+  `TopRep.dual`, no twist by a character, and no `MonoidalCategory (TopRep k G)`.
+* `grep -rn "def linHom\|abbrev linHom" Mathlib/` — only
+  `Representation.linHom` (`RepresentationTheory/Basic.lean:659`), the
+  DISCRETE one. The continuous analogues `Representation.tprod`,
+  `Representation.dual` and `MonoidalCategory (Rep k G)` all exist for `Rep`
+  and none is mirrored for `TopRep`.
+* There is no `Fermat/FLT/Mathlib/RepresentationTheory/` in this project, so
+  nothing is patched in locally either.
+
+Twisting a 1-dimensional character is the one case where the missing monoidal
+structure costs nothing, since the carrier does not change — which is exactly
+why this cut is affordable and a cut needing `ad⁰ ⊗ ad⁰` would not be.
+Continuity is free throughout: `AdZero k V` carries the discrete topology by
+construction (see `AdZero.instTopologicalSpace` above). -/
+noncomputable def adZeroTwistRep (ρbar : GaloisRep ℚ k V) :
+    ContRepresentation k (Field.absoluteGaloisGroup ℚ) (AdZero k V) where
+  toMonoidHom :=
+  { toFun := fun σ => ((adZeroCycloChar ℓ k σ : k)) • (AdZero.rep ρbar σ)
+    map_one' := by simp
+    map_mul' := fun σ τ => by
+      simp only [map_mul, Units.val_mul, smul_mul_smul_comm] }
+
+variable (ℓ) in
+/-- `ad⁰(1)` as an object of `TopRep k (Γ ℚ)`, so that
+`continuousCohomology n (adZeroTwist ℓ ρbar)` is its continuous cohomology.
+The exact analogue of `adZeroTopRep` above.
+
+`ℓ` is EXPLICIT here and in everything below it, unlike in `adZeroTopRep`:
+the twist depends on `ℓ` through the character, and `ℓ` does not appear in the
+type `TopRep k (Γ ℚ)`, so it is not inferable from the result. (`adZeroTopRep`
+gets away with an implicit `ℓ` precisely because the untwisted adjoint
+representation does not mention it.) -/
+noncomputable def adZeroTwist (ρbar : GaloisRep ℚ k V) :
+    TopRep k (Field.absoluteGaloisGroup ℚ) :=
+  TopRep.of (adZeroTwistRep ℓ ρbar)
+
+variable (ℓ) in
+/-- `ad⁰(1)` restricted to the decomposition group at `v` — the analogue of
+`adZeroLocal` above, along the same `decompHom v`. -/
+noncomputable def adZeroTwistLocal (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep k (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  TopRep.res (decompHom v).toMonoidHom (adZeroTwist ℓ ρbar)
+
+variable (ℓ) in
+/-- The localisation map `H¹(ℚ, ad⁰(1)) → H¹(ℚ_v, ad⁰(1))` — the analogue of
+`locRes` above with `2` replaced by `1` and `ad⁰` by its twist. -/
+noncomputable def locResTwist1 (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    continuousCohomology 1 (adZeroTwist ℓ ρbar) ⟶
+      continuousCohomology 1 (adZeroTwistLocal ℓ ρbar v) :=
+  ContinuousCohomology.map (decompHom v)
+    (CategoryTheory.CategoryStruct.id (adZeroTwistLocal ℓ ρbar v)) 1
+
+variable (ℓ) in
+/-- **`Ш¹_S(ad⁰(1))`** — item (2) of the cut named on
+`rank_sha2_le_of_tangent_span` below: the classes in `H¹(ℚ, ad⁰(1))` that die
+in `H¹(ℚ_v, ad⁰(1))` for every `v ∈ S`.
+
+Written as the INTERSECTION of the kernels rather than the kernel of the map
+into `⨁_{v ∈ S}`, verbatim as `Sha2` above, and for the same reason — same
+submodule, no product object to build.
+
+**A CONVENTION THAT THIS DEFINITION INHERITS FROM `Sha2`, AND THAT A FUTURE
+OWNER OF EITHER LEAF MUST CHECK.** Both `Sha2` and this take cohomology of the
+FULL `Γ ℚ` (`adZeroTopRep`/`adZeroTwist` are representations of
+`Field.absoluteGaloisGroup ℚ`), whereas Poitou–Tate duality — NSW VIII.6.7,
+the theorem the leaf below invokes — is stated for the restricted group
+`G_{ℚ,S} = Gal(ℚ_S/ℚ)`. For a module unramified outside `S` the two agree in
+the degrees at issue, which is why the classical statement is quoted for
+`G_S`; but that agreement is a THEOREM, not a definitional identity, and it is
+not in this tree.
+
+This is deliberately matched rather than corrected: `Sha2` is another owner's
+declaration with a proven consumer above, so the two sides of
+`rank_sha2_le_rank_sha1_twist` use ONE convention and the leaf is at least
+internally coherent. If the `Γ ℚ` convention turns out to make that leaf false,
+the defect is in `Sha2`'s definition and the repair is a cut-level restatement
+of BOTH, not a proof attempt at either. The check that settles it:
+`grep -rn "G_S\|restrictedGaloisGroup\|ramifiedOutside" Fermat/` — currently no
+hit, i.e. `G_{ℚ,S}` does not exist in this development at all. -/
+noncomputable def Sha1Twist (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Submodule k (continuousCohomology 1 (adZeroTwist ℓ ρbar)) :=
+  ⨅ v ∈ S, LinearMap.ker (locResTwist1 ℓ ρbar v).hom.toLinearMap
+
+/-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (sorry leaf, cut
+out 2026-07-27 as the DUALITY half of `rank_sha2_le_of_tangent_span` below).
+
+The nine-term Poitou–Tate sequence gives a PERFECT pairing
+`Ш¹_S(M) × Ш²_S(M*) → ℚ/ℤ` for a finite `G_S`-module `M`, where
+`M* = Hom(M, μ)`; taking `M = ad⁰` this is `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`.
+
+Two identifications are folded in and both are cheap ONLY because `ℓ` is odd:
+
+* `ad⁰* = Hom(ad⁰, μ_ℓ) = (ad⁰)^∨(1) ≅ ad⁰(1)`, using that the trace form
+  `(X, Y) ↦ tr(XY)` on `sl₂` is nondegenerate, which holds exactly when
+  `char k ≠ 2`. `hℓOdd` is what supplies that, and it is why this leaf may not
+  be restated for `ℓ = 2`.
+* the passage from `≅ (−)^∨` to `≤` needs `Ш¹` to be FINITE-dimensional
+  (`dim W = dim W^∨` fails for infinite `W` by Erdős–Kaplansky, and note
+  `rank_le_rank_dual` above only gives the OTHER direction). Finiteness of
+  `H¹(G_{ℚ,S}, M)` for finite `M` is standard and is itself missing from this
+  tree; it is part of this leaf.
+
+**PORTING AUDIT for the local Tate pairing, which is what this leaf really
+needs** (2026-07-27; the earlier audit said only "`~/cs/FLT`'s
+`CupProduct.lean` is the one auditable source", which is true and understates
+the cost by about a factor of five):
+
+`/home/chend/cs/FLT/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/CupProduct.lean`
+is 582 lines and **sorry-free** (`grep -c sorry` → 0), culminating in
+`cup (f : ρ1 →ⁱL ρ2.linHom ρ3) (hp) (m n r) (hr : r = m + n) :
+continuousCohomology m (of ρ1) ⟶ TopModuleCat.linHom (continuousCohomology n (of ρ2)) (continuousCohomology r (of ρ3))`.
+It does NOT stand alone on our pin: `grep -rn "def linHom" Mathlib/` returns
+only the discrete `Representation.linHom`, and every one of its infrastructure
+dependencies is likewise absent and would have to be vendored with it —
+`ContRepresentation.linHom` and `continuous_pair_of_discrete`
+(`Continuous/Basic.lean:42,74`), `TopRep.iHom` (`Continuous/TopRep.lean:29`),
+`resolutionCLM`/`resolutionXCast`/`invariantsObjIHom`/`bdryKer`/
+`cohomologyIsoQuot` (`ContCohomology/Basic.lean`, 239 lines),
+`TopModuleCat.linHom`/`linHomMap`/`cokerDescBilinear`
+(`ModuleCat/Topology/{Basic,Homology}.lean`). It is also written against pin
+`81a5d2` and `public import Mathlib`s wholesale, so names such as
+`HomologicalComplex.cyclesIsoKer`, `TopModuleCat.isLimitKer` and
+`ContinuousMap.prodSwap` need re-checking against our `a3364fa` first.
+
+And the cup product is only the FIRST half: the pairing also needs the local
+invariant map `H²(ℚ_v, μ) ≅ ℚ/ℤ` (local class field theory), of which this tree
+and mathlib have nothing. `grep -rniE "invariantMap|localClassField|brauer" Mathlib/`
+is the check that would refute that.
+
+**CIRCULARITY GUARD — INHERITED VERBATIM from
+`rank_sha2_le_of_tangent_span` below, and it binds this leaf.** Neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
+may be used: their intended proofs run through modularity lifting, which is
+proven over the very bound this leaf feeds. A green build and an honest
+`#print axioms` would BOTH survive such a discharge; only a human reading
+catches it. `hℓ5 : 5 ≤ ℓ` is carried for the same reason it is carried below —
+it keeps `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to
+the prime `3`) inapplicable, so that route stays closed mathematically rather
+than merely by import scope.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
+(the nine-term sequence) and VII.2 (local duality); Darmon–Diamond–Taylor,
+§2.6–2.7. -/
+theorem rank_sha2_le_rank_sha1_twist
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤
+      Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) :=
+  sorry
+
+/-- **Greenberg–Wiles: `dim_k Ш¹_S(ad⁰(1)) ≤ g`** (sorry leaf, cut out
+2026-07-27 as the EULER-CHARACTERISTIC half of
+`rank_sha2_le_of_tangent_span` below).
+
+Given that `𝔪_{D.R}` is spanned by `g` of its own elements together with `ℓ` —
+i.e. that the mod-`ℓ` cotangent space `𝔪/(𝔪² + ℓ)` of the weakly universal,
+trace-generated hardly ramified deformation ring is spanned by `g` elements —
+the degree-`1` Tate–Šafarevič group of the TWIST has dimension at most `g`.
+
+The argument, in the order the pieces are needed:
+
+* `Ш¹_S(ad⁰(1)) ⊆ H¹_{L^⊥}(ad⁰(1))`. This is where the dual Selmer group
+  enters, and it enters ONLY here, inside the proof — `Ш¹` imposes the ZERO
+  local condition at each `v ∈ S`, and `0 ⊆ L_v^⊥` for any `L_v`, so the
+  containment is immediate ONCE `L^⊥` exists. That is the whole reason the
+  statement above mentions no Selmer group: see the section header for why
+  this is the affordable place to stop.
+* the Greenberg–Wiles Euler characteristic formula
+
+  `dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1)) + Σ_{v ∈ S} (dim L_v − h⁰(ℚ_v, ad⁰))`
+
+  with the local computations `0` at `2`, `+1` at `ℓ` and `−1` at `∞`, giving
+  `dim H¹_{L^⊥} ≤ dim H¹_L`. Absolute irreducibility (`hirr`) is what kills
+  `h⁰(ℚ, ad⁰)`; oddness (`hℓOdd`, and `ρbar` odd) is what makes the
+  archimedean term `−1`. Note `hardlyRamifiedPlaces ℓ` deliberately omits `∞`
+  — `#ad⁰` is a power of the odd prime `ℓ` and `Gal(ℂ/ℝ)` has order `2`, so
+  the archimedean place contributes to the FORMULA but imposes no condition on
+  `Ш`; see the docstring of `hardlyRamifiedPlaces` above.
+* the tangent identification `dim_k H¹_L = (mod-`ℓ` tangent dimension of D.R)`.
+  This is where `hw` and `ht` are consumed:
+  `isUniversal_of_isWeaklyUniversal_isTraceGenerated` above upgrades `D` to
+  UNIVERSAL, so `D.R` pro-represents the hardly ramified functor and its
+  mod-`ℓ` tangent space IS `H¹_L`. The hypothesis `hspan` then reads
+  `dim_k H¹_L ≤ g` by Nakayama.
+
+**WHAT IS MISSING, RE-CHECKED 2026-07-27 rather than inherited.** The six
+greps recorded on `rank_sha2_le_of_tangent_span` below were re-run against
+mathlib pin `a3364fa`, and they still return nothing: no `poitou`, no
+`tate.?duality`, no `shafarevich`, no `greenberg`; the only `selmer` hit is
+`Mathlib/RingTheory/DedekindDomain/SelmerGroup.lean`, the `K(S,n)` subgroup of
+`Kˣ/(Kˣ)ⁿ`, which is a UNIT-group statement and not a Galois-cohomology Selmer
+structure with local conditions `L_v ⊆ H¹(ℚ_v, M)`; and the only `euler.?char`
+hit is `Mathlib/Algebra/Homology/EulerCharacteristic.lean`, the alternating sum
+of a complex, which is a formal property of complexes and not an arithmetic
+theorem about `Hⁱ(G_{ℚ,S}, M)`. So Greenberg–Wiles must be BUILT.
+
+What it can be built ON is real, and is more than the earlier audit credited:
+our own pin supplies `continuousCohomology n X` in EVERY degree
+(`Mathlib/RepresentationTheory/Homological/ContCohomology/{Basic,Functoriality,LowDegree}.lean`)
+together with `ContinuousCohomology.map` and its functoriality lemmas, all
+proven — already consumed by `Sha2`, `locRes` and `Sha1Twist` above. **But
+note a real gap that the earlier audit did not record: `LowDegree.lean` is 89
+lines and stops at `H⁰`** (`zeroIso : continuousCohomology 0 A ≅ TopModuleCat.of k A.ρ.invariants`).
+There is NO `oneCocycles`, NO `oneCoboundaries`, and no cocycle description of
+`H¹` anywhere — so the very first step of any Greenberg–Wiles argument, writing
+a class in `H¹` as a cocycle, is itself missing. `grep -rn "oneCocycles" Mathlib/RepresentationTheory/Homological/ContCohomology/`
+is the check that would refute this. (The DISCRETE `groupCohomology` does have
+`oneCocycles`; it is the continuous theory that stops at `H⁰`.)
+
+**CIRCULARITY GUARD — INHERITED VERBATIM, and it binds this leaf** exactly as
+it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
+clause and for what `hℓ5` is doing.
+
+References: Washington's article in Cornell–Silverman–Stevens (the
+Greenberg–Wiles formula, and the local computations at `2`, `ℓ` and `∞`);
+Darmon–Diamond–Taylor, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII. -/
+theorem rank_sha1_twist_le_of_tangent_span
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.isLocalRing
+    ∀ (g : ℕ) (ts : Fin g → D.R),
+      (∀ i, ts i ∈ IsLocalRing.maximalIdeal D.R) →
+      IsLocalRing.maximalIdeal D.R ≤
+        Ideal.span (Set.range ts) ⊔ Ideal.span {(ℓ : D.R)} →
+      Module.rank k ↥(Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) :=
+  sorry
+
+/-- **`dim_k Ш²_S(ad⁰) ≤ (mod-`ℓ` tangent dimension of `D.R`)`**
+(**PROVEN 2026-07-27** over the two leaves `rank_sha2_le_rank_sha1_twist`
+(Poitou–Tate) and `rank_sha1_twist_le_of_tangent_span` (Greenberg–Wiles plus
+the tangent identification) immediately above — NOT a sorry node any more, see
+STATUS below; formerly items (6)+(7) of the machinery audit on
 `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; cut out
 2026-07-27 as the ARITHMETIC half of
 `rank_sha2_le_of_minimal_mvPowerSeries_presentation` below, whose
@@ -18819,71 +17852,53 @@ archimedean term `−1`. Finally weak universality plus trace generation makes
 `D.R` pro-represents the hardly ramified functor and its mod-`ℓ` tangent
 space IS `H¹_L`; the hypothesis then reads `dim_k H¹_L ≤ g`.
 
-**MACHINERY AUDIT REFRESHED 2026-07-27 — items (6) and (7) RE-CHECKED AND
-CONFIRMED ABSENT.** The audit below records item (1) as missing, and item (1)
-turned out to be PRESENT all along (see the STATUS note on the consumer). So
-items (6)+(7) were re-run rather than believed. They are genuinely absent, and
-here are the exact checks, so that the next owner can refute this note in
-minutes rather than redoing the survey:
+**STATUS 2026-07-27 (LATER THE SAME DAY): THIS NODE IS NO LONGER A LEAF, AND
+THE CUT THAT ITS OWN DOCSTRING PROPOSED HAS BEEN MADE.** The proposal was to
+write four definitions — the Tate twist `ad⁰(1)`, `Sha1`, `selmerGroup`/
+`dualSelmerGroup`, and the local Tate pairing — and then split along
+Poitou–Tate. Items (1) and (2) are now written, immediately above
+(`adZeroCycloChar`, `adZeroTwistRep`, `adZeroTwist`, `adZeroTwistLocal`,
+`locResTwist1`, `Sha1Twist`), and the node is `le_trans` through the two leaves
+they made statable:
 
-* `grep -rniE "poitou|nine.?term" Mathlib` — **no hits.**
-* `grep -rniE "tate.?duality|localduality" Mathlib` — **no hits.**
-* `grep -rniE "tateshafarevich|shafarevich" Mathlib` — **no hits.**
-* `grep -rniE "greenberg" Mathlib` — **no hits.**
-* `grep -rniE "selmer" Mathlib` — hits `Mathlib/RingTheory/DedekindDomain/SelmerGroup.lean`
-  ONLY, which is the `K(S,n)` subgroup of `Kˣ/(Kˣ)ⁿ` unramified outside `S` —
-  a unit-group statement, NOT a Galois-cohomology Selmer structure with local
-  conditions `L_v ⊆ H¹(ℚ_v, M)`. It cannot be used here.
-* `grep -rniE "euler.?char" Mathlib` — hits `Mathlib/Algebra/Homology/EulerCharacteristic.lean`
-  ONLY, the alternating sum of a homological complex. That is not the global
-  Euler characteristic formula, which is an arithmetic theorem about
-  `Hⁱ(G_{ℚ,S}, M)`, not a formal property of complexes.
-* The same six greps over `~/cs/FLT` — **no hits** beyond a passing mention of
-  global Tate duality in a `GLzero.lean` docstring and of the number theorist
-  Poitou in `Assumptions/Odlyzko.lean`. Its `Mathlib/` subtree carries
-  `ContCohomology/{Basic,CupProduct}.lean` and nothing else relevant, so it is
-  a source for the CUP PRODUCT only, not for duality.
+* `rank_sha2_le_rank_sha1_twist` — Poitou–Tate, `dim Ш²(ad⁰) ≤ dim Ш¹(ad⁰(1))`;
+* `rank_sha1_twist_le_of_tangent_span` — Greenberg–Wiles plus the tangent
+  identification, `dim Ш¹(ad⁰(1)) ≤ g` under the span hypothesis.
 
-So, in contrast to item (1): item (6) and item (7) must be BUILT. What exists
-to build them on is the continuous cochain theory in our own pin
-(`Mathlib/RepresentationTheory/Homological/ContCohomology/{Basic,Functoriality,LowDegree}.lean`),
-which supplies `continuousCohomology n X` in every degree and
-`ContinuousCohomology.map` — verified present, and already consumed by
-`Sha2`/`locRes` above.
+**Items (3) and (4) were deliberately NOT written**, and the section header
+above `adZeroCycloChar` records why at length: `Ш¹` imposes the ZERO local
+condition, so it needs no `L^⊥` and hence no pairing to STATE — the pairing is
+needed only inside the second leaf's proof. Cutting one step further would
+have required the hardly ramified Selmer family `L_HR` itself, whose condition
+at `ℓ` is FLATNESS, which is strictly more expensive than the pairing it would
+have bought. The refreshed machinery audit for what remains missing now lives
+on the two leaves: the Poitou–Tate/cup-product porting audit on
+`rank_sha2_le_rank_sha1_twist`, and the Greenberg–Wiles grep audit on
+`rank_sha1_twist_le_of_tangent_span` — including one correction to the earlier
+survey, that `ContCohomology/LowDegree.lean` stops at `H⁰` and supplies no
+`oneCocycles`, so the continuous theory is thinner than "every degree" suggests.
 
-**THE NEXT CUT, for whoever owns this leaf.** It cannot be made without new
-DEFINITIONS, but per the "stating a theory is not proving it" rule those
-definitions are cheap next to the theorems, and each is nameable now:
+Neither leaf mentions `MvPowerSeries`, which was the point of the recut this
+node came from.
 
-1. `adZeroTwist` — the Tate twist `ad⁰(1) = ad⁰ ⊗ χ` as a `TopRep k (Γ ℚ)`,
-   where `χ` is the mod-`ℓ` cyclotomic character. (`IsHardlyRamified.det`
-   already pins `det ρ` to the cyclotomic character, so a `χ` exists in this
-   development.)
-2. `Sha1` — the degree-`1` analogue of `Sha2` above, verbatim the same
-   `⨅ v ∈ S, ker (locRes …)` with `2` replaced by `1`. Trivial to write.
-3. `selmerGroup L` / `dualSelmerGroup` — `H¹_L` for a family of local
-   conditions `L : ∀ v ∈ S, Submodule k (continuousCohomology 1 (adZeroLocal ρbar v))`,
-   and the orthogonal complement `L^⊥` under the local Tate pairing.
-4. The local Tate pairing itself, which is where `~/cs/FLT`'s
-   `ContCohomology/CupProduct.lean` is worth auditing against our pin.
-
-With (1)–(4) merely STATED, this leaf splits into `rank_sha2_le_rank_sha1_dual`
-(Poitou–Tate) and `rank_sha1_dual_le_of_tangent_span` (Greenberg–Wiles plus the
-tangent identification) — neither of which mentions `MvPowerSeries` either.
-
-**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF**, exactly as for
-`rank_relationSpace_le_of_rank_sha2_le` above: see the EXPOSURE AUDIT AND
-CIRCULARITY GUARD on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
-below, whose BANNED INPUTS clause forbids discharging this leaf from
+**CIRCULARITY GUARD — INHERITED, AND IT NOW BINDS THE TWO LEAVES ABOVE**,
+exactly as for `rank_relationSpace_le_of_rank_sha2_le` above: see the EXPOSURE
+AUDIT AND CIRCULARITY GUARD on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
+below, whose BANNED INPUTS clause forbids discharging this subtree from
 `not_isIrreducible_of_isHardlyRamified_of_five_le`,
 `not_isIrreducible_of_isHardlyRamified_of_odd`, or anything proven over them:
 their intended proofs run through modularity lifting, which is proven over the
-very bound this leaf supplies, so a discharge from them would prove this leaf
+very bound this node supplies, so a discharge from them would prove it
 from its own consequence. A green build and an honest `#print axioms` would
 BOTH survive such a discharge; only a human reading catches it. `hℓ5 : 5 ≤ ℓ`
 also keeps `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired
 to the prime `3`) inapplicable, so that route stays closed mathematically
-rather than merely by import scope.
+rather than merely by import scope. The guard is restated on BOTH leaves rather
+than only referenced from them, since the split is exactly the point at which a
+future owner might read one leaf without ever reading this node. `hℓ5` is
+likewise carried on both leaves for that reason, even though neither proof is
+written yet.
 
 References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, ch. VIII
 (Poitou–Tate); Washington's article in Cornell–Silverman–Stevens (the
@@ -18899,8 +17914,12 @@ theorem rank_sha2_le_of_tangent_span
       (∀ i, ts i ∈ IsLocalRing.maximalIdeal D.R) →
       IsLocalRing.maximalIdeal D.R ≤
         Ideal.span (Set.range ts) ⊔ Ideal.span {(ℓ : D.R)} →
-      Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) :=
-  sorry
+      Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) := by
+  letI := D.commRing
+  letI := D.isLocalRing
+  intro g ts hts hspan
+  exact le_trans (rank_sha2_le_rank_sha1_twist hℓOdd hdim hℓ5 h hirr)
+    (rank_sha1_twist_le_of_tangent_span hℓOdd hdim hℓ5 h hirr D hw ht g ts hts hspan)
 
 /-- **`dim_k Ш²_S(ad⁰) ≤ g`** (**PROVEN 2026-07-27** over the two leaves
 `exists_tangent_family_of_mvPowerSeries_presentation` (commutative algebra,
