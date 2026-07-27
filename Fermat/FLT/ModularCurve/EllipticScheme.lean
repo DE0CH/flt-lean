@@ -6,6 +6,7 @@ Authors: Claude
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.ProjectiveModel
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 public import Fermat.FLT.EllipticCurve.Torsion
@@ -114,8 +115,10 @@ correct on its own branch and wrong once the others landed:
   node and is listed here only so that this count matches the compiler's:
   `exists_affineComplement_zeroSection`,
   `exists_weierstrassRingEquiv_of_affineComplement`,
-  `isElliptic_of_isOpenImmersion_coordinateRing`, `rigidityFactors` and
-  `exists_isIso_of_affineChart`.  Both
+  `isElliptic_of_isOpenImmersion_coordinateRing` and
+  `exists_isIso_of_affineChart` (`relPointPost_add` was a leaf here until
+  2026-07-27 and is now PROVEN over the project's existing rigidity lemma in
+  `ProperPushforward.lean`, adding no new leaf).  Both
   `exists_weierstrassModel_of_ellipticScheme` and
   `exists_geomFibreAddEquiv_of_weierstrassModel` were leaves here until
   2026-07-27 and are now PROVEN — the first from the affineness /
@@ -5112,9 +5115,11 @@ concrete projective model and TRANSPORT it — leaving
 below.
 
 **`relPointPost_add` in turn is now PROVEN** (2026-07-27) from
-`rigidityFactors`, Mumford's *rigidity lemma* itself — a pure statement
-about schemes, with no group structure in it — so the remaining leaves of
-this node are `exists_isIso_of_affineChart` and `rigidityFactors`. -/
+`AlgebraicGeometry.eq_comp_of_rigidity_axes` — the project's OWN rigidity
+corollary, already sitting in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — so it added
+no new leaf, and the only remaining leaf of this node is
+`exists_isIso_of_affineChart`. -/
 
 /-! #### The three leaves of `exists_weierstrassModel_of_ellipticScheme`
 
@@ -5405,19 +5410,20 @@ and `galSMul` IS `RelPoint.pre` (`AbelianSchemeStruct.galSMul_def` is
 this is the same observation that discharged the generator's Galois
 stability in `X0.lean`.  What is genuinely open is
 
-* `exists_isIso_of_affineChart` — that the two charts glue to an
-  isomorphism of the proper models, and
-* `rigidityFactors` — Mumford's RIGIDITY LEMMA: a morphism out of
-  `X ×_ℚ Z` that is constant on one fibre `X × {z₀}` of the second
-  projection factors through that projection.
+`exists_isIso_of_affineChart` — that the two charts glue to an isomorphism
+of the proper models — and nothing else.
 
 `relPointPost_add` — that a morphism of abelian schemes carrying zero to
-zero is a homomorphism — was the leaf here until 2026-07-27 and is now
-PROVEN from `rigidityFactors`: Yoneda collapses its `∀ T` to the single
-instance at the two projections of `A ×_ℚ A`, and rigidity applied to the
-defect `u(p + q) − u(p) − u(q)`, which vanishes on both axes by `hzero`,
-closes it.  What is left is a statement about SCHEMES with no group
-structure in it, which is why it is worth having separated.
+zero is a homomorphism — was the second leaf here until 2026-07-27 and is
+now PROVEN, over the project's EXISTING rigidity lemma
+(`AlgebraicGeometry.eq_comp_of_rigidity_axes`, over
+`exists_comp_snd_eq_of_slice_const`, in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`).  Yoneda
+collapses its `∀ T` to the single instance at the two projections of
+`A ×_ℚ A` — which eliminates the group structure entirely, leaving a bare
+morphism `A ×_ℚ A ⟶ B` — and rigidity applied to the defect
+`u(p + q) − u(p) − u(q)`, which vanishes on both axes by `hzero`, closes it.
+So the `GrpObj` bridge the old audit prescribed was never needed.
 
 The third input, `hom_specRat_eq_of_range_eq`, is PROVEN here: it is what
 turns "the isomorphism matches the two charts" into "it matches the two
@@ -5566,119 +5572,11 @@ theorem relPointPost_zero {A B S : Scheme.{u}} {fA : A ⟶ S} {fB : B ⟶ S}
   apply Subtype.ext
   rw [relPointPost_val, abA.zero_val_eq, abB.zero_val_eq, Category.assoc, hzero]
 
-/-- **THE RIGIDITY LEMMA** (sorry node, introduced 2026-07-27; this is the
-single remaining input of `relPointPost_add`).
-
-Mumford, *Abelian Varieties* §4, the *rigidity lemma* itself (Milne,
-*Abelian Varieties*, Thm 1.1 states the same thing for varieties):
-
-> Let `X` be a complete variety, `Z` and `Y` any varieties and
-> `φ : X × Z ⟶ Y` a morphism.  If `φ(X × {z₀})` is a single point for some
-> `z₀ ∈ Z`, then `φ` factors through the projection `X × Z ⟶ Z`.
-
-Here `X × Z` is the fibre product over `Spec ℚ`, `z₀` is the point named by
-the section `eZ`, `y₀` names the single point, and `h1` says exactly that
-`φ` restricted to `X × {z₀}` — i.e. precomposed with
-`x ↦ (x, z₀) = pullback.lift (𝟙 X) (fX ≫ eZ)` — is constant equal to `y₀`.
-
-**The classical proof, which a prover should follow.**  Pick an affine open
-`U ∋ y₀` of `Y`.  Since `fX` is proper, `pullback.snd` is a closed map, so
-`W := pullback.snd '' (φ⁻¹ (Y \ U))` is closed in `Z` and misses `z₀`.  For
-`z ∉ W` the fibre `X × {z}` maps into the affine `U`; it is proper and
-geometrically connected over `κ(z)`, so its image is proper AND affine,
-hence finite, hence — being connected — a single point.  Therefore `φ` and
-`pullback.snd ≫ ψ`, where `ψ := (z ↦ φ(x₀, z))` for any section `x₀`, agree
-on the dense open `pullback.snd ⁻¹ (Z \ W)`; `X ×_ℚ Z` is reduced and `Y` is
-separated, so they agree everywhere.
-
-**WHAT IS AVAILABLE AT THIS PIN — the standing verdict is HALF WRONG.**  The
-audit on `exists_projGroupLaw_geomFibreAddEquiv` records "the rigidity
-theorem is in neither mathlib nor `~/cs/FLT`".  That is true of the *theorem*
-and FALSE of the *argument*.  `Mathlib/AlgebraicGeometry/Group/Abelian.lean`
-(Andrew Yang, Christian Merten) proves
-`isCommMonObj_of_isProper_of_geometricallyIntegral` — a proper geometrically
-integral group scheme over a field is commutative, Stacks tag `0BFD` — and
-**its proof IS this argument**, run on the commutator map
-`γ : (x, y) ↦ xyx⁻¹y⁻¹` rather than on a defect map.  The pieces it
-exercises, all present at our pin, are
-
-* `subsingleton_image_closure_of_finite_of_isPreirreducible` — "the image of
-  an irreducible fibre is finite, hence a point";
-* `exists_finite_imageι_comp_morphismRestrict_of_finite_image_preimage` —
-  Zariski's main theorem in the form the argument needs;
-* `ext_of_apply_eq`, `ext_of_apply_closedPoint_eq`, `pointEquivClosedPoint`,
-  `pointOfClosedPoint` — the reduction to closed points;
-* the base change to `AlgebraicClosure ℚ` at the end of that file — the
-  reduction of the general case to the algebraically closed one.
-
-Adapting it needs `Mathlib.AlgebraicGeometry.Group.Abelian` (and
-`.ZariskisMainTheorem`, `.Geometrically.Integral`, `.AlgClosed.Basic`) added
-to this module's imports.  Note that the mathlib proof is written for
-`GrpObj (Over (Spec K))`; **that presentational gap does NOT arise here**,
-because this statement mentions no group structure at all — the group
-structure has already been eliminated by `relPointPost_add` below, which is
-what makes this leaf a pure statement about schemes.
-
-`_hXs`/`_hZs`/`_hZc` are stated but unused by the *statement*; they are what
-the *proof* needs, and they are exactly what an `AbelianSchemeStruct`
-supplies: smooth + geometrically connected over a field gives geometrically
-integral (smooth ⟹ geometrically normal and reduced; normal + connected ⟹
-irreducible), which is what makes `X ×_ℚ Z` integral and the density
-argument valid.  A prover may weaken them but must not need more.
-
-WHAT WOULD REFUTE THE "OPEN" DIAGNOSIS: a declaration anywhere producing a
-factorisation of a morphism out of a fibre product through one projection
-from constancy on a fibre of the other.  Searched 2026-07-27 over `Fermat/`,
-`.lake/packages/mathlib` and `~/cs/FLT`: `0BFD` above is the closest, and it
-concludes commutativity of ONE group scheme rather than a factorisation.
-
-NOT VACUOUS: dropping `h1` makes it FALSE — take `X = Z = Y = A` an elliptic
-curve and `φ = pullback.fst`, which does not factor through `pullback.snd`. -/
-theorem rigidityFactors {X Z Y : Scheme.{0}}
-    {fX : X ⟶ Spec (CommRingCat.of ℚ)} {fZ : Z ⟶ Spec (CommRingCat.of ℚ)}
-    {fY : Y ⟶ Spec (CommRingCat.of ℚ)}
-    (_hXp : IsProper fX) (_hXs : Smooth fX) (_hXc : GeometricallyConnected fX)
-    (_hZs : Smooth fZ) (_hZc : GeometricallyConnected fZ)
-    (_hY : IsSeparated fY)
-    (eZ : Spec (CommRingCat.of ℚ) ⟶ Z) (heZ : eZ ≫ fZ = 𝟙 _)
-    (φ : Limits.pullback fX fZ ⟶ Y)
-    (_hφ : φ ≫ fY = Limits.pullback.fst fX fZ ≫ fX)
-    (y₀ : Spec (CommRingCat.of ℚ) ⟶ Y)
-    (_h1 : Limits.pullback.lift (𝟙 X) (fX ≫ eZ)
-        (by rw [Category.id_comp, Category.assoc, heZ, Category.comp_id]) ≫ φ = fX ≫ y₀) :
-    ∃ ψ : Z ⟶ Y, φ = Limits.pullback.snd fX fZ ≫ ψ :=
-  sorry
-
-/-- **Rigidity, constant form** (PROVEN from `rigidityFactors`).
-
-If `φ : X ×_ℚ Z ⟶ Y` is constant equal to `y₀` on BOTH axes `X × {z₀}` and
-`{x₀} × Z`, it is constant equal to `y₀`.  The factorisation `φ = pr_Z ≫ ψ`
-supplied by the rigidity lemma is evaluated at the section `eX`, which
-identifies `ψ` with `fZ ≫ y₀`. -/
-theorem rigidityEqConst {X Z Y : Scheme.{0}}
-    {fX : X ⟶ Spec (CommRingCat.of ℚ)} {fZ : Z ⟶ Spec (CommRingCat.of ℚ)}
-    {fY : Y ⟶ Spec (CommRingCat.of ℚ)}
-    (hXp : IsProper fX) (hXs : Smooth fX) (hXc : GeometricallyConnected fX)
-    (hZs : Smooth fZ) (hZc : GeometricallyConnected fZ)
-    (hY : IsSeparated fY)
-    (eX : Spec (CommRingCat.of ℚ) ⟶ X) (heX : eX ≫ fX = 𝟙 _)
-    (eZ : Spec (CommRingCat.of ℚ) ⟶ Z) (heZ : eZ ≫ fZ = 𝟙 _)
-    (φ : Limits.pullback fX fZ ⟶ Y)
-    (hφ : φ ≫ fY = Limits.pullback.fst fX fZ ≫ fX)
-    (y₀ : Spec (CommRingCat.of ℚ) ⟶ Y)
-    (h1 : Limits.pullback.lift (𝟙 X) (fX ≫ eZ)
-        (by rw [Category.id_comp, Category.assoc, heZ, Category.comp_id]) ≫ φ = fX ≫ y₀)
-    (h2 : Limits.pullback.lift (fZ ≫ eX) (𝟙 Z)
-        (by rw [Category.id_comp, Category.assoc, heX, Category.comp_id]) ≫ φ = fZ ≫ y₀) :
-    φ = Limits.pullback.fst fX fZ ≫ fX ≫ y₀ := by
-  obtain ⟨ψ, hψ⟩ := rigidityFactors hXp hXs hXc hZs hZc hY eZ heZ φ hφ y₀ h1
-  have hψ2 : ψ = fZ ≫ y₀ := by
-    rw [hψ, ← Category.assoc, Limits.pullback.lift_snd, Category.id_comp] at h2
-    exact h2
-  rw [hψ, hψ2, ← Category.assoc, ← Limits.pullback.condition, Category.assoc]
-
 /-- **RIGIDITY: a morphism of abelian schemes over `Spec ℚ` carrying zero
-to zero is a homomorphism** (PROVEN 2026-07-27 over `rigidityFactors`).
+to zero is a homomorphism** (PROVEN 2026-07-27 over the project's EXISTING
+rigidity lemma, `AlgebraicGeometry.eq_comp_of_rigidity_axes` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — NO new leaf
+was introduced).
 
 This is Mumford, *Abelian Varieties* §4, Cor. 1 — the corollary of the
 rigidity lemma.  `abA` and `abB` make `fA` and `fB` proper, smooth and
@@ -5707,11 +5605,39 @@ equation between two morphisms `P ⟶ B`.
 **Half 2, rigidity: the defect vanishes.**  Form the defect
 `D := u∘(p+q) − (u∘p + u∘q) : RelPoint fB (pr₁ ≫ fA)` — a morphism
 `A ×_ℚ A ⟶ B` — using the group structure of `B`'s relative points.
-Restricting along the two axis maps `j₁ = (𝟙, 0)` and `j₂ = (0, 𝟙)` and
-using `hzero` (through `relPointPost_zero`) makes `D` vanish on both axes;
-`rigidityEqConst` then forces `D` to be the constant zero section, and
-cancellation in the group `RelPoint fB (pr₁ ≫ fA)` turns that into the
-required identity.
+Restricting along the two axis maps `j₁ = (𝟙, 0) = sliceIncl fA fA eA` and
+`j₂ = (0, 𝟙)` and using `hzero` (through `relPointPost_zero`) makes `D`
+vanish on both axes; `eq_comp_of_rigidity_axes` then forces `D` to be the
+constant zero section, and cancellation in the group
+`RelPoint fB (pr₁ ≫ fA)` turns that into the required identity.
+
+## WHAT THE PREVIOUS AUDIT GOT WRONG, and it is worth recording
+
+The audit that created this leaf said the obstruction was PRESENTATIONAL —
+mathlib states `0BFD` for `GrpObj (Over (Spec K))` while this tree says
+`AbelianSchemeStruct` — and prescribed building a bridge
+`AbelianSchemeStruct f → GrpObj (Over.mk f)`.  **No bridge is needed and
+none was built.**  Half 1 above eliminates the group structure entirely:
+what rigidity is applied to is a bare morphism `A ×_ℚ A ⟶ B`, and the
+project already had the rigidity lemma for exactly that, in
+`ProperPushforward.lean`, together with its axis corollary
+`eq_comp_of_rigidity_axes` — over an ARBITRARY base `S`, not just `Spec ℚ`.
+The audit's own search ("searched `Fermat/`, mathlib and `~/cs/FLT`") missed
+it because it searched for the abelian-scheme *corollary* by name rather
+than for the lemma.
+
+The hypotheses `eq_comp_of_rigidity_axes` needs are supplied here by the
+`AbelianSchemeStruct` fields directly: `IsProper fA`, `GeometricallyConnected
+fA` and `IsSeparated fB` (from `abB.proper`) are fields, and
+`HasUniversallyTrivialPushforward fA` is
+`hasUniversallyTrivialPushforward_of_isProper_of_smooth fA`, which is exactly
+the proper + smooth + geometrically connected package an
+`AbelianSchemeStruct` carries.
+
+So the leaves this node now rests on are the two already-known ones in
+`ProperPushforward.lean` — `exists_comp_snd_eq_of_slice_const` (the rigidity
+lemma) and `hasUniversallyTrivialPushforward_of_isProper_of_flat` — and
+nothing else.
 
 NOT VACUOUS: dropping `hzero` makes the statement FALSE — translation by a
 nonzero rational point of `A` is an isomorphism over `Spec ℚ` and is not
@@ -5751,14 +5677,13 @@ theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ
     set D : RelPoint fB (Limits.pullback.fst fA fA ≫ fA) :=
       abB.add (relPointPost u hu (abA.add p q))
         (abB.neg (abB.add (relPointPost u hu p) (relPointPost u hu q))) with hDdef
-    -- the two axis maps `(𝟙, 0)` and `(0, 𝟙)`
-    have hj1c : (𝟙 A) ≫ fA = (fA ≫ eA) ≫ fA := by
+    -- the two axis maps `(𝟙, 0)` and `(0, 𝟙)`, in the shape `eq_comp_of_rigidity_axes` wants
+    have hj2c : (fA ≫ eA) ≫ fA = (𝟙 A) ≫ fA := by
       rw [Category.id_comp, Category.assoc, heA, Category.comp_id]
-    have hj2c : (fA ≫ eA) ≫ fA = (𝟙 A) ≫ fA := hj1c.symm
-    set j₁ : A ⟶ Limits.pullback fA fA := Limits.pullback.lift (𝟙 A) (fA ≫ eA) hj1c with hj1def
+    set j₁ : A ⟶ Limits.pullback fA fA := sliceIncl fA fA eA heA with hj1def
     set j₂ : A ⟶ Limits.pullback fA fA := Limits.pullback.lift (fA ≫ eA) (𝟙 A) hj2c with hj2def
     have hj1b : j₁ ≫ (Limits.pullback.fst fA fA ≫ fA) = fA := by
-      rw [← Category.assoc, hj1def, Limits.pullback.lift_fst, Category.id_comp]
+      rw [← Category.assoc, hj1def, sliceIncl_fst, Category.id_comp]
     have hj2b : j₂ ≫ (Limits.pullback.fst fA fA ≫ fA) = fA := by
       rw [← Category.assoc, hj2def, Limits.pullback.lift_fst, Category.assoc, heA,
         Category.comp_id]
@@ -5766,11 +5691,11 @@ theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ
     have hp1 : RelPoint.pre j₁ hj1b p = idPt := by
       apply Subtype.ext
       show j₁ ≫ Limits.pullback.fst fA fA = 𝟙 A
-      rw [hj1def, Limits.pullback.lift_fst]
+      rw [hj1def, sliceIncl_fst]
     have hq1 : RelPoint.pre j₁ hj1b q = abA.zero fA := by
       apply Subtype.ext
       show j₁ ≫ Limits.pullback.snd fA fA = (abA.zero fA).1
-      rw [hj1def, Limits.pullback.lift_snd, abA.zero_val_eq]
+      rw [hj1def, sliceIncl_snd, abA.zero_val_eq]
     have hp2 : RelPoint.pre j₂ hj2b p = abA.zero fA := by
       apply Subtype.ext
       show j₂ ≫ Limits.pullback.fst fA fA = (abA.zero fA).1
@@ -5796,11 +5721,15 @@ theorem relPointPost_add {A B : Scheme.{0}} {fA : A ⟶ Spec (CommRingCat.of ℚ
       have h := congrArg Subtype.val hD2
       rw [abB.zero_val_eq] at h
       exact h
-    have hsepB : IsSeparated fB := by haveI := abB.proper; infer_instance
+    haveI := abA.proper
+    haveI := abA.smooth
+    haveI := abA.connected
+    haveI := abB.proper
+    haveI : IsSeparated fB := inferInstance
     -- rigidity forces the defect to be the constant zero section
     have hDconst : D.1 = Limits.pullback.fst fA fA ≫ fA ≫ eB :=
-      rigidityEqConst abA.proper abA.smooth abA.connected abA.smooth abA.connected hsepB
-        eA heA eA heA D.1 D.2 eB h1 h2
+      eq_comp_of_rigidity_axes
+        (hasUniversallyTrivialPushforward_of_isProper_of_smooth fA) eA heA eB D.2 h1 h2
     have hDzero : D = abB.zero (Limits.pullback.fst fA fA ≫ fA) := by
       apply Subtype.ext
       rw [hDconst, abB.zero_val_eq, Category.assoc]
@@ -5951,9 +5880,9 @@ taken here, and it decomposes the leaf into three:
   matching charts force matching zero SECTIONS (PROVEN here);
 * `relPointPost_add` — rigidity: a base-point-preserving morphism of
   abelian schemes is a homomorphism (PROVEN 2026-07-27 from
-  `rigidityFactors`, Mumford's rigidity lemma, which is the one leaf left
-  of that third — see its docstring: mathlib's `0BFD` proof is the same
-  argument and is reusable).
+  `AlgebraicGeometry.eq_comp_of_rigidity_axes`, the project's own rigidity
+  corollary in `ProperPushforward.lean` — so this third adds NO leaf of its
+  own; see its docstring).
 
 The Galois clause survives the cut for free, for the structural reason the
 consumer in `X0.lean` already exploits: `galSMul` IS precomposition, so it
