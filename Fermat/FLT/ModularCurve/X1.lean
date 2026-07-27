@@ -806,7 +806,7 @@ theorem finite_relPoint_of_x1Compactification_finiteField (N ℓ : ℕ) (hℓ : 
     Finite (RelPoint strX (𝟙 (SpecF ℓ))) := by
   haveI : NeZero ℓ := ⟨hℓ⟩
   haveI := h.isProper
-  exact finite_relPoint_of_isProper (R := ZMod ℓ) strX
+  exact finite_relPoint_of_isProper (R := ZMod ℓ) strX (𝟙 (SpecF ℓ))
 
 /-- **An `𝔽_ℓ`-point of the coarse space `Y_1(N)_{𝔽_ℓ}` comes from an
 actual `Γ₁(N)`-datum over `𝔽_ℓ`, for `N ≥ 4`** (sorry leaf — the
