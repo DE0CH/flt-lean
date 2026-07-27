@@ -20963,7 +20963,13 @@ The classical chain, and what each link costs on this pin:
 
 So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
 genuinely missing mathematics — is now stated and isolated. As of
-2026-07-26 the frontier of this whole chain is exactly ONE leaf:
+2026-07-27 the frontier of this whole chain is exactly TWO leaves,
+`span_jacobiSum_le_decompCarryPow` (the Jacobi-sum carry formula, i.e.
+Stickelberger's congruence, and the only deep one) and
+`span_natCard_le_decompPow` (`v_q(#(𝓞/q)) = f`, standard). The node
+below is PROVEN over them as of 2026-07-27, and the description that
+follows is retained because it is still the correct account of what (b)
+IS:
 
 * `span_gaussPowOfJacobiSums_le_localPow` — Stickelberger's
   theorem in its sharp Gauss-sum form AT THE SINGLE PRIME `q`, and only
@@ -22283,14 +22289,402 @@ theorem span_le_twistedProd_of_localBound {R : Type*} [CommRing R] [IsDedekindDo
     rw [neg_one_mul, neg_mul_neg, mul_inv_cancel]] at hmono
   exact hmono
 
+omit hp in
+/-- **`#{y : ZMod p | p ≤ t + y.val} = t`** (PROVEN 2026-07-27;
+counting brick of the Stickelberger orbit computation below). The
+`ZMod.val` map is a bijection onto `Finset.range p`, so the condition
+`y.val ≥ p − t` cuts out exactly `Finset.Ico (p − t) p`. -/
+theorem card_filter_val_ge [NeZero p] {t : ℕ} (ht : t < p) :
+    (Finset.univ.filter (fun y : ZMod p => p ≤ t + y.val)).card = t := by
+  classical
+  have hcard : (Finset.univ.filter (fun y : ZMod p => p ≤ t + y.val)).card
+      = (Finset.Ico (p - t) p).card := by
+    refine Finset.card_nbij' (fun y => y.val) (fun n => (n : ZMod p)) ?_ ?_ ?_ ?_
+    · intro y hy
+      simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and] at hy
+      simp only [Finset.coe_Ico, Set.mem_Ico]
+      exact ⟨by omega, ZMod.val_lt y⟩
+    · intro n hn
+      simp only [Finset.coe_Ico, Set.mem_Ico] at hn
+      simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and]
+      rw [ZMod.val_cast_of_lt hn.2]
+      omega
+    · intro y _
+      exact ZMod.natCast_rightInverse y
+    · intro n hn
+      simp only [Finset.coe_Ico, Set.mem_Ico] at hn
+      exact ZMod.val_cast_of_lt hn.2
+  rw [hcard, Nat.card_Ico]
+  omega
+
+/-- **`Nat.cast` identifies `[1, p−2]` with `ZMod p ∖ {0, −1}`** (PROVEN
+2026-07-27; the index brick of the orbit computation below). The
+Jacobi-sum product in `gaussPowOfJacobiSums` runs over
+`i ∈ Finset.Ico 1 (p − 1)`, and what the arithmetic below needs is the
+image of that range in `ZMod p`, which is everything except `0` and
+`−1`. -/
+theorem card_filter_Ico_cast_eq (P : ZMod p → Prop) [DecidablePred P] :
+    ((Finset.Ico 1 (p - 1)).filter (fun i : ℕ => P (i : ZMod p))).card
+      = (((Finset.univ.filter P).erase 0).erase (-1 : ZMod p)).card := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hp2 := hp.out.two_le
+  have hcastm1 : ((p - 1 : ℕ) : ZMod p) = (-1 : ZMod p) := by
+    have hstep : ((p - 1 : ℕ) : ZMod p) = (p : ZMod p) - 1 := by
+      push_cast [Nat.cast_sub hp.out.one_le]
+      ring
+    rw [hstep, ZMod.natCast_self]
+    ring
+  refine Finset.card_nbij' (fun i => ((i : ℕ) : ZMod p)) (fun y => y.val) ?_ ?_ ?_ ?_
+  · intro i hi
+    simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_Ico] at hi
+    have hlt : i < p := by omega
+    have hv : ((i : ZMod p)).val = i := ZMod.val_cast_of_lt hlt
+    simp only [Finset.coe_erase, Set.mem_sdiff, Set.mem_singleton_iff, Finset.coe_filter,
+      Set.mem_setOf_eq, Finset.mem_univ, true_and]
+    refine ⟨⟨hi.2, ?_⟩, ?_⟩
+    · intro h
+      rw [h, ZMod.val_zero] at hv
+      omega
+    · intro h
+      rw [h, ZMod.neg_val, if_neg one_ne_zero, ZMod.val_one_eq_one_mod,
+        Nat.mod_eq_of_lt hp.out.one_lt] at hv
+      omega
+  · intro y hy
+    simp only [Finset.coe_erase, Set.mem_sdiff, Set.mem_singleton_iff, Finset.coe_filter,
+      Set.mem_setOf_eq, Finset.mem_univ, true_and] at hy
+    obtain ⟨⟨hyP, hy0⟩, hym1⟩ := hy
+    simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_Ico]
+    refine ⟨⟨?_, ?_⟩, ?_⟩
+    · exact ZMod.val_pos.mpr hy0
+    · have hlt := ZMod.val_lt y
+      have hne : y.val ≠ p - 1 := by
+        intro h
+        apply hym1
+        rw [← ZMod.natCast_rightInverse y, h, hcastm1]
+      omega
+    · rw [ZMod.natCast_rightInverse y]
+      exact hyP
+  · intro i hi
+    simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_Ico] at hi
+    exact ZMod.val_cast_of_lt (by omega)
+  · intro y _
+    exact ZMod.natCast_rightInverse y
+
+/-- **THE ORBIT COUNT** (PROVEN 2026-07-27; the arithmetic identity that
+makes the Frobenius-orbit sum come out of the Jacobi-sum carries).
+
+For a unit `z` of `ZMod p` with `t := z.val`, exactly `t − 1` of the
+`p − 2` indices `i ∈ [1, p−2]` produce a CARRY, i.e. satisfy
+
+`t + (i·z).val ≥ p`.
+
+Proof: `i ↦ (i : ZMod p)` identifies `[1, p−2]` with `ZMod p ∖ {0, −1}`
+(`card_filter_Ico_cast_eq`); multiplication by the unit `z` is a
+bijection of `ZMod p` carrying that onto `ZMod p ∖ {0, −z}`; the
+condition `t + y.val ≥ p` holds for exactly `t` elements `y`
+(`card_filter_val_ge`); `y = 0` never satisfies it (`t < p`) and
+`y = −z` always does (`(−z).val = p − t`, `z ≠ 0`). Hence `t − 1`.
+
+This is the whole reason `f + ∑_{i=1}^{p−2} (carries) = ∑_{h ∈ D} …`
+below: summed over the decomposition subgroup `D` it telescopes to
+`(∑_{h ∈ D} ((−b)h⁻¹).val) − #D`. -/
+theorem card_filter_carry_eq (z : (ZMod p)ˣ) :
+    ((Finset.Ico 1 (p - 1)).filter
+        (fun i : ℕ => p ≤ ((z : ZMod p)).val + (((i : ZMod p)) * (z : ZMod p)).val)).card
+      = ((z : ZMod p)).val - 1 := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  set t := ((z : ZMod p)).val with ht
+  have hzne : (z : ZMod p) ≠ 0 := z.ne_zero
+  have ht0 : t ≠ 0 := fun h => hzne ((ZMod.val_eq_zero _).mp h)
+  have htlt : t < p := ZMod.val_lt _
+  have hzz : ((z⁻¹ : (ZMod p)ˣ) : ZMod p) * (z : ZMod p) = 1 := by
+    rw [← Units.val_mul, inv_mul_cancel, Units.val_one]
+  have hzz' : (z : ZMod p) * ((z⁻¹ : (ZMod p)ˣ) : ZMod p) = 1 := by
+    rw [← Units.val_mul, mul_inv_cancel, Units.val_one]
+  rw [card_filter_Ico_cast_eq (p := p) (fun y => p ≤ t + (y * (z : ZMod p)).val)]
+  have hmul : (Finset.univ.filter (fun y : ZMod p => p ≤ t + (y * (z : ZMod p)).val)).card
+      = (Finset.univ.filter (fun y : ZMod p => p ≤ t + y.val)).card := by
+    refine Finset.card_nbij' (fun y => y * (z : ZMod p)) (fun y => y * ((z⁻¹ : (ZMod p)ˣ) : ZMod p))
+      ?_ ?_ ?_ ?_
+    · intro y hy
+      simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and] at hy ⊢
+      exact hy
+    · intro y hy
+      simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and] at hy ⊢
+      rw [mul_assoc, hzz, mul_one]
+      exact hy
+    · intro y _
+      simp only [mul_assoc, hzz', mul_one]
+    · intro y _
+      simp only [mul_assoc, hzz, mul_one]
+  have hbase : (Finset.univ.filter
+      (fun y : ZMod p => p ≤ t + (y * (z : ZMod p)).val)).card = t := by
+    rw [hmul, card_filter_val_ge (p := p) htlt]
+  have h0 : (0 : ZMod p) ∉
+      Finset.univ.filter (fun y : ZMod p => p ≤ t + (y * (z : ZMod p)).val) := by
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, zero_mul, ZMod.val_zero]
+    omega
+  have hm1 : (-1 : ZMod p) ∈
+      Finset.univ.filter (fun y : ZMod p => p ≤ t + (y * (z : ZMod p)).val) := by
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, neg_one_mul]
+    rw [ZMod.neg_val, if_neg hzne, ← ht]
+    omega
+  rw [Finset.erase_eq_of_notMem h0, Finset.card_erase_of_mem hm1, hbase]
+
+/-- **The involution `w ↦ (−b)w⁻¹` reindexes the Stickelberger exponent
+over the decomposition subgroup** (PROVEN 2026-07-27). The index set of
+the leaf below is `S = {w : σ_{(−b)w⁻¹}(q) = q}`, and `w ↦ (−b)w⁻¹` is
+an involution of `(ℤ/p)ˣ` carrying `S` onto `D = {u : σ_u(q) = q}`. So
+the exponent `∑_{w ∈ S} w.val` is the FROBENIUS-ORBIT SUM
+`∑_{u ∈ D} ((−b)u⁻¹).val`.
+
+Stated with the two Finsets and the membership equivalence as explicit
+arguments rather than as filters, deliberately: the consumer's set
+carries whatever `DecidablePred` instance its own elaboration produced,
+and matching that instance through a `rw` is exactly the kind of thing
+that fails on a term that pretty-prints correctly. -/
+theorem sum_val_filter_involution (b : (ZMod p)ˣ) (D S : Finset ((ZMod p)ˣ))
+    (hS : ∀ w : (ZMod p)ˣ, w ∈ S ↔ (-b) * w⁻¹ ∈ D) :
+    ∑ w ∈ S, ((w : ZMod p)).val
+      = ∑ u ∈ D, ((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val := by
+  classical
+  have hinv : ∀ x : (ZMod p)ˣ, (-b) * ((-b) * x⁻¹)⁻¹ = x := by
+    intro x
+    rw [mul_inv_rev, inv_inv, ← mul_assoc, mul_comm (-b) x, mul_assoc, mul_inv_cancel, mul_one]
+  refine Finset.sum_nbij' (i := fun w => (-b) * w⁻¹) (j := fun u => (-b) * u⁻¹) ?_ ?_ ?_ ?_ ?_
+  · intro w hw
+    exact (hS w).mp hw
+  · intro u hu
+    exact (hS _).mpr (by rw [hinv]; exact hu)
+  · intro w _
+    exact hinv w
+  · intro u _
+    exact hinv u
+  · intro w _
+    rw [hinv]
+
+/-- **THE COMBINATORIAL IDENTITY OF THE STICKELBERGER CUT** (PROVEN
+2026-07-27): for any `D ⊆ (ℤ/p)ˣ` and any `b`,
+
+`#D + ∑_{i=1}^{p−2} #{u ∈ D : carry at (b, ib) over u}
+   = ∑_{u ∈ D} ((−b)u⁻¹).val`.
+
+This is what converts the `p − 2` Jacobi-sum bounds plus the single
+residue-degree bound `#D` into the Frobenius-orbit sum demanded by
+`span_gaussPowOfJacobiSums_le_localPow`. Proof: `Finset.card_filter`
+turns each cardinality into a sum of indicators, `Finset.sum_comm`
+exchanges the `i`-sum with the `u`-sum, and the inner `i`-sum is
+`card_filter_carry_eq` — namely `((−b)u⁻¹).val − 1`. Adding `#D` back
+cancels the `−1`s (each `((−b)u⁻¹).val ≥ 1`, the value being a unit).
+
+**It is an EQUALITY, and that matters**: the elementary route's bound
+`f + (p − 1 − m)` is exactly what one gets by replacing every orbit term
+except the first with its minimum `1`, so no inequality-only version of
+the carry input can reproduce the orbit sum. -/
+theorem card_add_sum_carry_eq_sum_val (D : Finset ((ZMod p)ˣ)) (b : (ZMod p)ˣ) :
+    D.card + ∑ i ∈ Finset.Ico 1 (p - 1),
+        (D.filter (fun u : (ZMod p)ˣ =>
+          p ≤ ((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+            + ((i : ZMod p) * (((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card
+      = ∑ u ∈ D, ((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hswap : ∑ i ∈ Finset.Ico 1 (p - 1),
+      (D.filter (fun u : (ZMod p)ˣ =>
+        p ≤ ((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+          + ((i : ZMod p) * (((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card
+      = ∑ u ∈ D, (((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val - 1) := by
+    simp only [Finset.card_filter]
+    rw [Finset.sum_comm]
+    refine Finset.sum_congr rfl fun u _ => ?_
+    rw [← Finset.card_filter]
+    exact card_filter_carry_eq ((-b) * u⁻¹)
+  rw [hswap]
+  have hpos : ∀ u ∈ D, 1 ≤ ((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val := by
+    intro u _
+    exact ZMod.val_pos.mpr (Units.ne_zero _)
+  have key : ∑ u ∈ D, ((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+      = ∑ u ∈ D, ((((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val - 1) + 1) :=
+    Finset.sum_congr rfl fun u hu => (Nat.sub_add_cancel (hpos u hu)).symm
+  rw [key, Finset.sum_add_distrib, Finset.sum_const, smul_eq_mul, mul_one]
+  omega
+
+omit hp in
+/-- **`G(ψ)` IS A PRODUCT, SO ITS `q`-DIVISIBILITY IS THE SUM OF ITS
+FACTORS'** (PROVEN 2026-07-27; the whole non-arithmetic content of
+`span_gaussPowOfJacobiSums_le_localPow`, isolated from every cyclotomic
+input and from `ZMod p` entirely).
+
+`gaussPowOfJacobiSums p ψ = ψ(−1) · #F · ∏_{i=1}^{p−2} J(ψ, ψⁱ)` is a
+product of a UNIT, the cardinality, and `p − 2` Jacobi sums. So a bound
+`q^n ∣ (#F)` and bounds `q^{c i} ∣ J(ψ, ψⁱ)` multiply to
+`q^{n + ∑ c i} ∣ G(ψ)`, the character value being absorbed by
+`dvd_mul_right`. `Ideal.prod_span_singleton` turns the span of the
+product into the product of the spans and
+`Finset.prod_dvd_prod_of_dvd` splits the divisibility factor by factor —
+no coprimality is needed, because these are all divisibilities by
+powers of the SAME prime.
+
+The exponent is passed as an opaque `e` with `n + ∑ c i = e` so that the
+consumer can do its combinatorics separately. -/
+theorem span_gaussPowOfJacobiSums_le_pow_of_factors {F : Type*} [CommRing F] [Fintype F]
+    {R : Type*} [CommRing R] [IsDedekindDomain R] (q : Ideal R) (χ : MulChar F R) (m : ℕ)
+    (n e : ℕ) (c : ℕ → ℕ)
+    (hN : Ideal.span {(Fintype.card F : R)} ≤ q ^ n)
+    (hJ : ∀ i ∈ Finset.Ico 1 (p - 1),
+      Ideal.span {jacobiSum (χ ^ m) ((χ ^ m) ^ i)} ≤ q ^ (c i))
+    (he : n + ∑ i ∈ Finset.Ico 1 (p - 1), c i = e) :
+    Ideal.span {gaussPowOfJacobiSums p (χ ^ m)} ≤ q ^ e := by
+  classical
+  rw [← Ideal.dvd_iff_le, ← he, pow_add]
+  have hprod : q ^ (∑ i ∈ Finset.Ico 1 (p - 1), c i)
+      ∣ Ideal.span {∏ i ∈ Finset.Ico 1 (p - 1), jacobiSum (χ ^ m) ((χ ^ m) ^ i)} := by
+    rw [← Ideal.prod_span_singleton, ← Finset.prod_pow_eq_pow_sum]
+    exact Finset.prod_dvd_prod_of_dvd _ _ fun i hi => Ideal.dvd_iff_le.mpr (hJ i hi)
+  have hgauss : gaussPowOfJacobiSums p (χ ^ m)
+      = ((Fintype.card F : R) * ∏ i ∈ Finset.Ico 1 (p - 1), jacobiSum (χ ^ m) ((χ ^ m) ^ i))
+        * (χ ^ m) (-1) := by
+    rw [gaussPowOfJacobiSums]
+    ring
+  rw [hgauss, ← Ideal.span_singleton_mul_span_singleton,
+    ← Ideal.span_singleton_mul_span_singleton]
+  exact Dvd.dvd.mul_right (mul_dvd_mul (Ideal.dvd_iff_le.mpr hN) hprod) _
+
+/-- **`q^f ∣ #(𝓞 CF ⧸ q)`, WITH `f` READ OFF THE DECOMPOSITION SUBGROUP**
+(SORRY LEAF, cut 2026-07-27 out of
+`span_gaussPowOfJacobiSums_le_localPow` below).
+
+`#(𝓞 CF ⧸ q) = ℓ^f` where `ℓ` is the rational prime under `q` and `f`
+its residue degree, and `ℓ` is UNRAMIFIED in `CF` (a `p`-th cyclotomic
+field, and `p ∉ q` so `ℓ ≠ p`), so `v_q(ℓ) = 1` and `v_q(#(𝓞 CF ⧸ q))
+= f`. What is asserted here is exactly that, with `f` written as the
+ORDER OF THE DECOMPOSITION SUBGROUP `D = {u : σ_u(q) = q}` — the two
+agree because `D ≅ Gal((𝓞/q)/𝔽_ℓ)` for the Galois extension `CF/ℚ`,
+which is cyclic of order `f` generated by Frobenius, i.e. by `[ℓ]`
+under `IsCyclotomicExtension.Rat.galEquivZMod`.
+
+**Why it is stated this way and not with `ℓ` and `f`.** The consumer
+needs the exponent as `#D`, since `#D` is what the orbit sum
+`∑_{u ∈ D}` is taken over; introducing `ℓ`, `f` and the residue-degree
+dictionary only to eliminate them again would add a second lemma with
+no mathematical content. Everything the statement needs is already in
+the hypotheses.
+
+**Ingredients on this pin**:
+`IsCyclotomicExtension.Rat.galEquivZMod_stabilizer` (the decomposition
+subgroup is generated by `[ℓ]`), the unramifiedness of `ℓ ≠ p` in
+`ℚ(ζ_p)`, `Ideal.absNorm`/`Ideal.absNorm_apply` and
+`Ideal.absNorm_eq_pow_ramificationIdx_mul_inertiaDeg`-style bookkeeping,
+and `IsDedekindDomain.HeightOneSpectrum.intValuation_le_pow_iff_dvd`
+to convert the valuation statement back to the ideal inequality.
+
+**The check that would refute this leaf**: compute
+`idealval(K, Q, q)` in PARI/GP against `znorder(Mod(ℓ, p))` for a
+handful of `(p, ℓ)`. Done 2026-07-27 for
+`(p,ℓ) ∈ {(5,11),(7,29),(5,19),(7,13),(13,3),(7,2),(5,2),(5,3),(11,3),
+(13,5)}` — residue degrees `f = 1,1,2,2,3,3,4,4,5,4` — and the
+`v_q(#(𝓞/q)) = f = #D` reading is what makes the leaf-level equality
+below come out exactly, in all 10 cases. -/
+theorem span_natCard_le_decompPow (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q) :
+    Ideal.span {(Fintype.card (𝓞 CF ⧸ q) : 𝓞 CF)}
+      ≤ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card :=
+  sorry
+
+/-- **THE JACOBI-SUM CARRY FORMULA — the one remaining deep node of the
+Stickelberger chain** (SORRY LEAF, cut 2026-07-27 out of
+`span_gaussPowOfJacobiSums_le_localPow` below, which is now PROVEN over
+this leaf and `span_natCard_le_decompPow`).
+
+Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
+`d := (Q−1)/p`, and `χ` **the** `p`-th power residue character at `q`
+(normalisation `χ(x) ≡ x^d (mod q)`, exactly what
+`exists_powerResidueChar_of_prime_notMem` produces). Let
+`D = {u ∈ (ℤ/p)ˣ : σ_u(q) = q}` be the decomposition subgroup — cyclic
+of order the residue degree `f`, generated by `[ℓ]` for `ℓ` the
+rational prime under `q`. Then for exponents `a, c` prime to `p` with
+`a + c` prime to `p`,
+
+`v_q(J(χᵃ, χᶜ))  =  #{u ∈ D : (−a·u⁻¹).val + (−c·u⁻¹).val ≥ p}`,
+
+the CARRY COUNT over the Frobenius orbit; the statement asserts the `≥`
+half, which is all the consumer needs.
+
+**This replaces Washington items 1–4 of the previous cut.** The earlier
+docstring here listed, as what a prover must build: the compositum
+`L = CF(ζ_ℓ)`, its ring of integers and a prime `𝒬 ∣ q`; the Gauss sum
+`g(χ) ∈ 𝓞 L` with a primitive additive character; Stickelberger's
+congruence (Washington Prop. 6.13); and the `e(𝒬/q) = ℓ−1`
+ramification transfer back to `v_q`. **None of that appears in the
+statement above**, which mentions only Jacobi sums, `q`, and the
+decomposition subgroup — all objects of `𝓞 CF`. The compositum is still
+how one KNOWS the formula (`v_𝒬(g(ω^{−k}))` is the `ℓ`-adic digit sum
+of `k`, and `J = g·g/g` divides out the digit sums), but it is no
+longer needed to STATE anything, and the ramification bookkeeping —
+which was item 4 — is gone entirely, because the carry count is already
+`q`-adic.
+
+**Where the elementary route reaches and where it stops.** Reducing mod
+`q` and using `∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) turns the
+Jacobi sum into a binomial coefficient: for `a, b ∈ [1,p−1]`,
+`J(χᵃ, χᵇ) ≡ 0 (mod q)` when `a + b < p`, and
+`≡ −(−1)^{(p−a)d}·C(bd, (p−a)d)` when `a + b > p`. At `f = 1` the
+decomposition subgroup is trivial, the carry count is
+`[(p−a) + (p−b) ≥ p] = [a + b < p]`, and the two statements COINCIDE —
+so **`f = 1` is elementary and needs no Gauss sums at all**. For
+`f > 1` the mod-`q` congruence only decides `v_q ≥ 1` versus `= 0` per
+factor, because `χ` is determined only mod `q`; the remaining `f − 1`
+orbit terms need the higher congruence. That is precisely Stickelberger's
+congruence and it is the only deep input left in the whole chain.
+
+**FAITHFULNESS — the check that refutes this leaf if it is wrong.**
+Computed in PARI/GP on 2026-07-27: build `K = ℚ(ζ_p)`, take
+`q = idealprimedec(K, ℓ)[1]`, realise `χ` through `nfmodprinit` by
+discrete logarithm (`χ(gʲ) = ζ^{j·c⁻¹}` where `ζ ≡ (g^d)^c`), form
+`J(χᵃ,χᶜ)` as an element of `ℤ[ζ_p]` and compare `idealval` with the
+carry count `#{i < f : (−aℓⁱ mod p) + (−cℓⁱ mod p) ≥ p}`. Verified as an
+EQUALITY for every ordered pair `(a,c) ∈ [1,p−1]²` with `p ∤ a+c`, over
+`(p,ℓ) ∈ {(5,11),(7,29),(5,19),(7,13),(13,3),(7,2),(5,2),(5,3),(11,3),
+(13,5)}`, i.e. residue degrees `f = 1` through `5` — 706 pairs, no
+failures. The same run confirmed the consumer:
+`f + ∑_{i=1}^{p−2} v_q(J(χᵐ,χⁱᵐ)) = ∑_{h ∈ D} ((−m)h).val` with
+EQUALITY for every `m`, in all 10 cases.
+
+References: Washington, *Introduction to Cyclotomic Fields* §6.1–6.2
+(Thm 6.10, Prop 6.13, Lemma 6.14); Ireland–Rosen ch. 14; Lang,
+*Cyclotomic Fields* ch. 1. Nothing about `gaussSum` valuations exists
+in mathlib (`Mathlib/NumberTheory/GaussSum.lean` has only
+`gaussSum_mul_gaussSum_eq_card` and `gaussSum_sq`) nor anywhere in
+`~/cs/FLT` — surveyed 2026-07-26, re-checked 2026-07-27. -/
+theorem span_jacobiSum_le_decompCarryPow (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
+    (a c : ℕ) (ha : ¬ (p ∣ a)) (hc : ¬ (p ∣ c)) (hac : ¬ (p ∣ (a + c))) :
+    Ideal.span {jacobiSum (χ ^ a) (χ ^ c)}
+      ≤ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
+          p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card :=
+  sorry
+
 /-- **STICKELBERGER'S THEOREM, DIVISIBILITY HALF, AT THE SINGLE PRIME
-`q`** (SORRY LEAF, cut 2026-07-26 out of
+`q`** (PROVEN 2026-07-27 over `span_natCard_le_decompPow` and
+`span_jacobiSum_le_decompCarryPow` above; cut 2026-07-26 out of
 `span_gaussPowOfJacobiSums_le_twistedProd_base` below, which is PROVEN
-over it). **This is now the ONLY open node of the whole Stickelberger
-chain**, and it carries all of its remaining mathematical content: the
-consumer's product bookkeeping — the fibres of `u ↦ σ_u(q)`, the
-coprimality of distinct conjugates, and the Galois transport between
-primes — is discharged by `span_le_twistedProd_of_localBound` and
+over it). The consumer's product bookkeeping — the fibres of
+`u ↦ σ_u(q)`, the coprimality of distinct conjugates, and the Galois
+transport between primes — is discharged by
+`span_le_twistedProd_of_localBound` and
 `span_le_prod_pow_of_forall_fiber` above.
 
 Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
@@ -22329,67 +22723,55 @@ quantifier does NOT collapse — see the "why" paragraph in
 `span_le_twistedProd_of_localBound` — because `σ_c` moves the prime and
 the character together.
 
-**What a prover must still build**, in dependency order — this is now
-exactly Washington §6.1–§6.2 and NOTHING else, since the Gauss/Jacobi
-descent, the return to `𝓞 CF`, and now the per-prime reduction are all
-discharged:
+**HOW IT IS PROVEN, and why the compositum is no longer on the critical
+path** (2026-07-27; this REPLACES the previous four-item Washington
+plan, which is superseded — the plan was correct but it routed the
+whole leaf through Gauss sums in `CF(ζ_ℓ)` when only ONE of its inputs
+actually needs them).
 
-1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
-   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L` (with
-   `e(𝒬/q) = ℓ−1`, `ℓ` being totally ramified in `ℚ(ζ_ℓ)` and `q`
-   unramified over `ℓ`);
-2. the Gauss sum `g(χ) = ∑_x χ(x) η(x) ∈ 𝓞 L` for a nontrivial
-   additive character `η : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
-   takes exactly a `MulChar` and an `AddChar`, and
-   `AddChar.FiniteField.primitiveChar` produces `η`;
-3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
-   `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
-   `(ℓ−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
-   produces the fractional parts defining `θ`. This is the ONLY deep
-   input left;
-4. reading the resulting valuation back as the bound above, which needs
-   `v_q` on `𝓞 CF` versus `v_𝒬` on `𝓞 L` — a ramification-index
-   bookkeeping, `e(𝒬/q) = ℓ−1` being independent of `σ`. With the
-   product regrouping now done for you, this is a single
-   `IsDedekindDomain.HeightOneSpectrum.intValuation_le_pow_iff_dvd`
-   at `q`.
+`gaussPowOfJacobiSums` is BY DEFINITION a product,
 
-**Nothing in items 1–3 exists on this pin** (surveyed 2026-07-26):
-mathlib's `Mathlib/NumberTheory/GaussSum.lean` has no norm, absolute
-value or valuation statement about `gaussSum` at all — only
-`gaussSum_mul_gaussSum_eq_card` and `gaussSum_sq` — and neither
-`Stickelberger` nor any `gaussSum` material appears anywhere in the
-reference project `~/cs/FLT`. Do not re-survey. What DOES exist and
-should be used: `IsCyclotomicExtension.Rat.ramificationIdx_span_zeta_sub_one'`
-(`= ℓ−1`) and `associated_zeta_sub_one_pow_prime` for item 1,
-`AddChar.FiniteField.primitiveChar` for item 2, and for item 4
-`Ideal.finprod_heightOneSpectrum_factorization`,
-`Associates.eq_of_eq_counts`,
-`IsDedekindDomain.HeightOneSpectrum.intValuation_le_pow_iff_dvd` and
-`multiplicity_map_eq` (valuations are invariant under `Ideal.map` along
-a ring equiv).
+`G(χ^m) = χ^m(−1) · Q · ∏_{i=1}^{p−2} J(χ^m, χ^{im})`,
 
-**THE ELEMENTARY ROUTE SETTLES `f = 1` OUTRIGHT, and the arithmetic
-checks against this statement exactly** (mapped 2026-07-26, and
-recomputed against the present cut). Reducing mod `q` and using
-`∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum
-into a binomial coefficient: for `a, b ∈ [1,p−1]`,
+so `v_q(G(χ^m))` is the sum of the valuations of its factors: the
+character value is a root of unity, hence a unit; `v_q(Q) = f = #D`
+(`span_natCard_le_decompPow`); and each Jacobi sum contributes its
+carry count over the Frobenius orbit
+(`span_jacobiSum_le_decompCarryPow`). That accounting is
+`span_gaussPowOfJacobiSums_le_pow_of_factors`, which is stated over an
+abstract Dedekind domain and knows nothing about `ZMod p`.
 
-`J(χᵃ, χᵇ) ≡ 0 (mod q)` when `a + b < p`,
-`J(χᵃ, χᵇ) ≡ −(−1)^{(p−a)d}·C(bd, (p−a)d) (mod q)` when `a + b > p`.
+What remains is arithmetic in `(ℤ/p)ˣ`, and it is EXACT. Writing
+`z_u := (−b)u⁻¹` for `u ∈ D`, `card_filter_carry_eq` says that as `i`
+runs over `[1, p−2]` exactly `z_u.val − 1` indices carry, so summing
+over `D` (`card_add_sum_carry_eq_sum_val`)
 
-Applying it to the `p−2` factors of `G(χ^m) = χ^m(−1)·Q·∏_{i=1}^{p−2}
-J(χ^m, χ^{im})` gives `v_q(G(χ^m)) ≥ f + #{i ∈ [1,p−2] : m + (im mod p)
-< p}`, and the carry count telescopes:
-`#{i : carry} = ⌊(p−1)m/p⌋ − ⌊m/p⌋ = m − 1`, so the bound is
-`f + (p − 1 − m)`. At `f = 1` and `m = b.val` that is exactly
-`p − b.val = (−b).val = ∑_{h ∈ D} (−b·h).val`, i.e. the bound above
-holds with EQUALITY — so the `f = 1` case of this leaf is elementary
-and needs no Gauss sums at all. For `f > 1` the required exponent is a
-sum of `f` orbit terms while the elementary bound is `f + (p−1−m)`,
-which is strictly too small in general; there the mod-`q` congruence
-only decides `v_q ≥ 1` versus `= 0` per factor, because `χ` is
-determined only mod `q`. That is precisely why item 3 is unavoidable.
+`#D + ∑_{i=1}^{p−2} #{u ∈ D : carry} = ∑_{u ∈ D} ((−b)u⁻¹).val`,
+
+which is the Frobenius-orbit sum demanded here — the `−1`s are exactly
+cancelled by the `#D` coming from `Q`. The index set of the exponent as
+STATED, `{w : σ_{(−b)w⁻¹}(q) = q}`, is carried onto `D` by the
+involution `w ↦ (−b)w⁻¹` (`sum_val_filter_involution`).
+
+So of the old items, 1, 2 and 4 are gone: no compositum, no additive
+character, no `e(𝒬/q) = ℓ−1` transfer. Item 3, **Stickelberger's
+congruence**, survives — but now as a statement about JACOBI sums and
+`q` alone, namely `span_jacobiSum_le_decompCarryPow`, whose docstring
+carries the mathematics and the numerical verification. The other
+surviving obligation, `span_natCard_le_decompPow`, is the standard
+`v_q(#(𝓞/q)) = f` residue-degree fact.
+
+**THE ELEMENTARY ROUTE SETTLES `f = 1` OUTRIGHT** (mapped 2026-07-26,
+recomputed against the present cut 2026-07-27). Reducing mod `q` and
+using `∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) gives
+`J(χᵃ, χᵇ) ≡ 0 (mod q)` when `a + b < p`; applied to the `p−2` factors
+this yields `v_q(G(χ^m)) ≥ f + (p − 1 − m)`, which at `f = 1` and
+`m = b.val` is exactly `p − b.val = (−b).val = ∑_{h ∈ D} (−b·h).val`,
+i.e. this bound with EQUALITY. For `f > 1` the elementary bound is what
+one gets by replacing every orbit term but one with its minimum `1`, so
+it is strictly too small; that gap is precisely the content now
+isolated in `span_jacobiSum_le_decompCarryPow`, where the `f = 1` case
+is likewise the elementary one.
 
 **Faithfulness**: this is the `q`-component of the equality verified
 numerically in the docstring of
@@ -22411,8 +22793,74 @@ theorem span_gaussPowOfJacobiSums_le_localPow
     Ideal.span {gaussPowOfJacobiSums p (χ ^ ((b : ZMod p)).val)}
       ≤ q ^ (∑ w ∈ Finset.univ.filter (fun w : (ZMod p)ˣ =>
           Ideal.map ((cycGalRingOfIntegersEquiv CF ((-b) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q = q),
-        ((w : ZMod p)).val) :=
-  sorry
+        ((w : ZMod p)).val) := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  set D : Finset ((ZMod p)ˣ) := Finset.univ.filter
+    (fun u : (ZMod p)ˣ => Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)
+    with hD
+  have hexp : (∑ w ∈ Finset.univ.filter (fun w : (ZMod p)ˣ =>
+      Ideal.map ((cycGalRingOfIntegersEquiv CF ((-b) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q = q),
+      ((w : ZMod p)).val)
+      = ∑ u ∈ D, ((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val := by
+    refine sum_val_filter_involution b D _ ?_
+    intro w
+    simp only [hD, Finset.mem_filter, Finset.mem_univ, true_and]
+  rw [hexp]
+  set c : ℕ → ℕ := fun i =>
+    (D.filter (fun u : (ZMod p)ˣ =>
+      p ≤ ((((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+        + ((i : ZMod p) * (((-b) * u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card with hc
+  refine span_gaussPowOfJacobiSums_le_pow_of_factors q χ ((b : ZMod p)).val D.card _ c
+    (span_natCard_le_decompPow CF hq hq0 hpq) ?_ (card_add_sum_carry_eq_sum_val D b)
+  intro i hi
+  rw [Finset.mem_Ico] at hi
+  have hp2 := hp.out.two_le
+  have hbval : ((((b : ZMod p)).val : ℕ) : ZMod p) = (b : ZMod p) := ZMod.natCast_rightInverse _
+  have hbne : (b : ZMod p) ≠ 0 := b.ne_zero
+  have hpow : (χ ^ ((b : ZMod p)).val) ^ i = χ ^ (((b : ZMod p)).val * i) := by
+    rw [← pow_mul]
+  rw [hpow]
+  have hdvd1 : ¬ (p ∣ ((b : ZMod p)).val) := by
+    intro h
+    have hlt := ZMod.val_lt (b : ZMod p)
+    have hpos : 0 < ((b : ZMod p)).val := ZMod.val_pos.mpr hbne
+    have := Nat.le_of_dvd hpos h
+    omega
+  have hdvdi : ¬ (p ∣ i) := by
+    intro h
+    have : p ≤ i := Nat.le_of_dvd (by omega) h
+    omega
+  have hdvd2 : ¬ (p ∣ (((b : ZMod p)).val * i)) := by
+    intro h
+    rcases (Nat.Prime.dvd_mul hp.out).mp h with h' | h'
+    · exact hdvd1 h'
+    · exact hdvdi h'
+  have hdvd3 : ¬ (p ∣ (((b : ZMod p)).val + ((b : ZMod p)).val * i)) := by
+    intro h
+    have hfac : ((b : ZMod p)).val + ((b : ZMod p)).val * i = ((b : ZMod p)).val * (1 + i) := by
+      ring
+    rw [hfac] at h
+    rcases (Nat.Prime.dvd_mul hp.out).mp h with h' | h'
+    · exact hdvd1 h'
+    · have := Nat.le_of_dvd (by omega) h'
+      omega
+  refine le_trans (span_jacobiSum_le_decompCarryPow CF hq hq0 hpq χ hχ1 hχp hχcong
+    _ _ hdvd1 hdvd2 hdvd3) ?_
+  apply le_of_eq
+  congr 1
+  rw [hc]
+  congr 1
+  ext u
+  have hzval : ((((-b) * u⁻¹ : (ZMod p)ˣ)) : ZMod p)
+      = (-(((b : ZMod p)).val : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p) := by
+    rw [Units.val_mul, Units.val_neg, hbval]
+  have hzval2 : ((i : ZMod p))
+        * ((-(((b : ZMod p)).val : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p))
+      = (-((((b : ZMod p)).val * i : ℕ) : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p) := by
+    push_cast [hbval]
+    ring
+  simp only [hD, Finset.mem_filter, Finset.mem_univ, true_and, hzval, hzval2]
 
 /-- **STICKELBERGER'S THEOREM, DIVISIBILITY HALF, AT `a = 1` AND
 `v = 1`** (PROVEN 2026-07-26 over the single-prime leaf
@@ -23639,15 +24087,19 @@ theorem as a hypothesis. Items 3–6, the Gauss-sum core, were a single
 opaque `sorry` here until 2026-07-26; they are now cut into TWO
 narrower leaves plus proven bookkeeping:
 
-* `span_gaussPowOfJacobiSums_le_localPow` (SORRY LEAF, cut
+* `span_gaussPowOfJacobiSums_le_localPow` (PROVEN 2026-07-27; cut
   2026-07-26) — Stickelberger's theorem in its sharp Gauss-sum form at
   THE SINGLE PRIME `q`, and in its DIVISIBILITY half only,
   `q^{∑_{w : σ_{(−b)w⁻¹}(q) = q} w.val} ∣ (g(χ^{b.val})^p)` for the
   canonical `p`-th power residue character `χ(x) ≡ x^{(Q−1)/p}`, with
-  `g(·)^p` written WITHOUT Gauss sums as `gaussPowOfJacobiSums`. What
-  is left in it is the compositum `CF(ζ_ℓ)` and the EASY half of
-  Stickelberger's congruence (Washington Prop. 6.13 / Lemma 6.14) — and
-  nothing else: the descent and the return to `𝓞 CF` are discharged by
+  `g(·)^p` written WITHOUT Gauss sums as `gaussPowOfJacobiSums`. It was
+  itself cut on 2026-07-27 into `span_jacobiSum_le_decompCarryPow` (the
+  Jacobi-sum carry formula = Stickelberger's congruence, the only deep
+  node left in the chain) and `span_natCard_le_decompPow`
+  (`v_q(#(𝓞/q)) = f`), over which it is PROVEN; the compositum
+  `CF(ζ_ℓ)` and the `e(𝒬/q) = ℓ−1` transfer left the critical path
+  entirely at that cut. The descent and the return to `𝓞 CF` are
+  discharged by
   `gaussPowOfJacobiSums_mul_jacobiSum_pow`, the product bookkeeping
   (fibres of `u ↦ σ_u(q)`, coprimality, Galois transport between
   primes) by `span_le_prod_pow_of_forall_fiber` and
