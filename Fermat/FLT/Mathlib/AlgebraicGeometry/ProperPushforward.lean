@@ -49,8 +49,24 @@ direct images of quasi-coherent sheaves at all.
   `p_*𝒪_X = 𝒪_S` that the rigidity lemma consumes, and it is pure `Γ ⊣ Spec` formalism.
 * `existsUnique_comp_snd_eq_of_spec` — **PROVEN**: the rigidity lemma for an AFFINE
   target, where it needs neither the contracted slice nor connectedness of `q`.
-* `exists_comp_snd_eq_of_slice_const` — **LEAF**: the RIGIDITY LEMMA (Mumford *AV* §4;
-  BLR *Néron Models* 8.4 in the relative case).
+* `pullbackMapComp` — the canonical `X ×_S V ⟶ X ×_S Y` induced by `g : V ⟶ Y`, with its
+  two projection lemmas.  This is the shape in which the local-to-global passage is
+  stated: it keeps every intermediate object a *pullback along a composite*, so that
+  `existsUnique_comp_snd_eq_of_spec` applies to it verbatim with `q := g ≫ q`, and no
+  identification of `(pullback.snd p q) ⁻¹ᵁ V` with `pullback p (V.ι ≫ q)` is needed.
+* `HasAffineFactorizationAt p q m y` — the local predicate the reduction turns on: near
+  `y`, `m` factors through an AFFINE scheme.
+* `hasAffineFactorizationAt_section` — **LEAF**: the predicate holds at every point of the
+  section `σ`.  Properness of `p` (through the closed image of `pullback.snd p q`) plus
+  the contracted slice; this is the one classical step that is genuinely local.
+* `hasAffineFactorizationAt_of_section` — **LEAF**: it then holds *everywhere*.  This is
+  the open-and-closed / connected-fibres spreading argument, and it is where
+  `GeometricallyConnected q` and `IsSeparated r` are consumed.
+* `exists_comp_snd_eq_of_forall_locallyFactors` — **LEAF**: gluing.  Needs neither
+  properness nor connectedness; its whole content is that `pullback.snd p q` is an
+  epimorphism against `S`-morphisms into a separated `Z`.
+* `exists_comp_snd_eq_of_slice_const` — **PROVEN** over those three: the RIGIDITY LEMMA
+  (Mumford *AV* §4; BLR *Néron Models* 8.4 in the relative case).
 
 ## `geometricallyReduced_of_smooth` WAS A DUPLICATE LEAF, and has been deleted (2026-07-27)
 
@@ -280,8 +296,154 @@ theorem sliceIncl_snd {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (σ : S �
     (hσ : σ ≫ q = 𝟙 S) : sliceIncl p q σ hσ ≫ pullback.snd p q = p ≫ σ :=
   pullback.lift_snd _ _ _
 
-/-- **THE RIGIDITY LEMMA** (sorry node — Mumford *Abelian Varieties* §4; BLR *Néron
-Models* 8.4 in the relative case; Mumford *GIT* Prop. 6.1 over a general base).
+/-! ### Restricting the second factor of a pullback -/
+
+/-- **The canonical morphism `X ×_S V ⟶ X ×_S Y` induced by `g : V ⟶ Y`.**
+
+This is the shape in which every local statement below is written, and the choice is
+load-bearing rather than cosmetic.  The alternative — restricting `pullback.snd p q` to the
+open `(pullback.snd p q) ⁻¹ᵁ g.opensRange` — forces an identification of that open
+subscheme with `pullback p (g ≫ q)` before `existsUnique_comp_snd_eq_of_spec` can be
+applied to it, and that identification is a pullback-pasting isomorphism whose transport
+across `Category.assoc` on the index morphism is dependent-type noise with no mathematical
+content.  Writing the piece as `pullback p (g ≫ q)` from the start means
+`existsUnique_comp_snd_eq_of_spec` applies to it *verbatim*, with `q := g ≫ q`. -/
+noncomputable def pullbackMapComp {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) : pullback p (g ≫ q) ⟶ pullback p q :=
+  pullback.lift (pullback.fst p (g ≫ q)) (pullback.snd p (g ≫ q) ≫ g)
+    (by rw [Category.assoc]; exact pullback.condition)
+
+@[reassoc (attr := simp)]
+theorem pullbackMapComp_fst {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    pullbackMapComp p q g ≫ pullback.fst p q = pullback.fst p (g ≫ q) :=
+  pullback.lift_fst _ _ _
+
+@[reassoc (attr := simp)]
+theorem pullbackMapComp_snd {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    pullbackMapComp p q g ≫ pullback.snd p q = pullback.snd p (g ≫ q) ≫ g :=
+  pullback.lift_snd _ _ _
+
+/-! ### The local predicate the rigidity lemma turns on -/
+
+/-- **`m` FACTORS THROUGH AN AFFINE SCHEME NEAR `y`**: there is an open immersion
+`g : V ⟶ Y` whose range contains `y`, a ring `R`, and a factorization of
+`X ×_S V ⟶ X ×_S Y ⟶ Z` through `Spec R`.
+
+Note this predicate is *manifestly open* in `y` — that is the point of phrasing it through
+an open immersion whose range contains `y` rather than through the point `y` alone — so
+the openness half of the classical open-and-closed argument is definitional here and only
+the closedness half is left to `hasAffineFactorizationAt_of_section`.
+
+It is also exactly the input `existsUnique_comp_snd_eq_of_spec` consumes: given the data
+above, that lemma descends `n` along `pullback.snd p (g ≫ q)` to a unique `V ⟶ Spec R`,
+and post-composing with `j` gives the local factorization of `m` through `V`.  That
+descent is carried out inside the proof of `exists_comp_snd_eq_of_slice_const` below, and
+it is the whole reason the affine target appears in this predicate at all. -/
+def HasAffineFactorizationAt {X Y Z S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    (m : pullback p q ⟶ Z) (y : Y) : Prop :=
+  ∃ (V : Scheme.{u}) (g : V ⟶ Y) (_ : IsOpenImmersion g), y ∈ Set.range g.base ∧
+    ∃ (R : CommRingCat.{u}) (j : Spec R ⟶ Z) (n : pullback p (g ≫ q) ⟶ Spec R),
+      pullbackMapComp p q g ≫ m = n ≫ j
+
+/-- **AT EVERY POINT OF THE SECTION, `m` FACTORS THROUGH AN AFFINE** (sorry node — the
+local half of the rigidity lemma).
+
+This is the one step that is genuinely local, and it is the only place properness of `p`
+is used.  The argument is classical and short:
+
+* `π := pullback.snd p q` is proper, being a base change of `p`, hence a CLOSED map;
+* the fibre `π ⁻¹ (σ.base s)` is the fibre `X_s` of the contracted slice — `σ` is a
+  section of `q`, hence an immersion, so the residue field of `σ.base s` in `Y` is the
+  residue field of `s` in `S` and the fibre of `π` over `σ.base s` is exactly the fibre of
+  `sliceIncl p q σ hσ` over `s`.  `hconst` therefore sends that whole fibre to the single
+  point `c.base s`;
+* choose an affine open `U ⊆ Z` containing `c.base s`.  Then `m ⁻¹ (Zᶜ ∖ U)` is closed and
+  misses `π ⁻¹ (σ.base s)`, so `V := Y ∖ π '' (m ⁻¹ (Z ∖ U))` is an open neighbourhood of
+  `σ.base s` over which `m` lands in `U`;
+* `U` affine gives `U ≅ Spec Γ(Z, U)`, and `IsOpenImmersion.lift` produces the required
+  `n : pullback p (V.ι ≫ q) ⟶ Spec Γ(Z, U)`.
+
+**What it needs that is not in this file**: the identification of `Set.range (sliceIncl …)`
+with `π ⁻¹ (Set.range σ)`, which is "the range of a base change is the preimage of the
+range" for the square exhibiting `sliceIncl` as the base change of `σ` along `π`.  Nothing
+here needs the pushforward theorem, connectedness, or separatedness. -/
+theorem hasAffineFactorizationAt_section {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    [IsProper p] (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S) {m : pullback p q ⟶ Z}
+    (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) (s : S) :
+    HasAffineFactorizationAt p q m (σ.base s) :=
+  sorry
+
+/-- **THE AFFINE FACTORIZATION SPREADS FROM THE SECTION TO ALL OF `Y`** (sorry node — the
+global half of the rigidity lemma).
+
+`HasAffineFactorizationAt` is open by construction, so what is left is that its locus is
+also CLOSED, after which `GeometricallyConnected q` — connected fibres for `q`, each met
+by the section `σ` — makes it everything.  Closedness is where `IsSeparated r` enters: the
+locus where the two `S`-morphisms `m` and `pullback.snd p q ≫ d` agree is closed because
+the diagonal of `r` is a closed immersion, and it is where the pushforward hypothesis
+enters, through `existsUnique_comp_snd_eq_of_spec`'s uniqueness clause, to see that the
+locally-constructed `d`s are forced.
+
+**FAITHFULNESS.** `GeometricallyConnected q` is not decoration: with `Y = Spec k ⊔ Spec k`
+the conclusion is false — see the FAITHFULNESS NOTE in the module docstring.  This leaf is
+where that hypothesis is consumed, and a proof of it that never uses `H`, `hσ` or
+`GeometricallyConnected q` is proving something false. -/
+theorem hasAffineFactorizationAt_of_section {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
+    {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
+    (hpush : HasUniversallyTrivialPushforward p)
+    (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
+    (H : ∀ s : S, HasAffineFactorizationAt p q m (σ.base s)) (y : Y) :
+    HasAffineFactorizationAt p q m y :=
+  sorry
+
+/-- **GLUING THE LOCAL FACTORIZATIONS** (sorry node — and this, not the pushforward
+theorem, is the piece that needs new machinery).
+
+Given a factorization of `m` over a neighbourhood of every point of `Y`, produce a global
+one.  Neither properness of `p`, nor a section, nor connectedness of `q` is used: this is
+purely the statement that the local pieces agree on overlaps and glue.
+
+**The content, stated so it can be checked rather than believed.**  Agreement on overlaps
+is `Scheme.OpenCover.glueMorphisms`' compatibility hypothesis, and it asks for equality of
+two morphisms into the possibly NON-affine `Z`, which
+`existsUnique_comp_eq_of_hasTrivialPushforward` does not give (it is affine-target only).
+What is wanted is:
+
+> if `d₁ d₂ : Y ⟶ Z` are `S`-morphisms (`dᵢ ≫ r = q`) with
+> `pullback.snd p q ≫ d₁ = pullback.snd p q ≫ d₂`, then `d₁ = d₂`
+
+i.e. that `pullback.snd p q` is an epimorphism against `S`-morphisms into a separated `Z`.
+That in turn has a short sheaf-theoretic proof from the hypotheses actually present here,
+and it does NOT need scheme-theoretic images (an earlier audit in this file said it did;
+that is corrected):
+
+* `E := equalizer of d₁, d₂` is the pullback of `Δ_r` along `(d₁, d₂) : Y ⟶ Z ×_S Z`, and
+  `IsSeparated r` makes `Δ_r` a closed immersion, so `E ⟶ Y` is a CLOSED IMMERSION;
+* `π := pullback.snd p q` equalizes `d₁` and `d₂`, so `π` factors through `E`;
+* therefore `𝒪_Y ↠ ι_* 𝒪_E ⟶ π_* 𝒪_W` composes to `π`'s unit, which is an ISOMORPHISM by
+  `hpush` (base-changed along `q`).  The first map is surjective and the composite
+  injective, so the first map is injective, hence an isomorphism, hence `E = Y`.
+
+So the only genuinely absent ingredient is the equalizer-as-closed-subscheme construction
+together with the sheaf-level statement of `HasTrivialPushforward`; the whole
+cohomology-and-base-change theory (`hasUniversallyTrivialPushforward_of_isProper_of_flat`)
+is NOT consumed anywhere in this cluster. -/
+theorem exists_comp_snd_eq_of_forall_locallyFactors {X Y Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : Y ⟶ S} {r : Z ⟶ S} [IsSeparated r]
+    (hpush : HasUniversallyTrivialPushforward p)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
+    (H : ∀ y : Y, ∃ (V : Scheme.{u}) (g : V ⟶ Y) (_ : IsOpenImmersion g),
+      y ∈ Set.range g.base ∧ ∃ dV : V ⟶ Z,
+        pullbackMapComp p q g ≫ m = pullback.snd p (g ≫ q) ≫ dV) :
+    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d :=
+  sorry
+
+/-- **THE RIGIDITY LEMMA** (PROVEN 2026-07-27, over the three leaves above — Mumford
+*Abelian Varieties* §4; BLR *Néron Models* 8.4 in the relative case; Mumford *GIT*
+Prop. 6.1 over a general base).
 
 Let `p : X ⟶ S` be proper with `𝒪_S = p_*𝒪_X` universally, let `q : Y ⟶ S` have
 geometrically connected fibres, and let `r : Z ⟶ S` be separated.  An `S`-morphism
@@ -320,31 +482,50 @@ obstruction here, and neither is the flat pushforward leaf: **this leaf does not
 reduction to an affine target, and it cannot be done globally: with `S = Spec k`,
 `X = Spec k`, `Y = Z = ℙ¹`, `q = r` the structure maps and `m = 𝟙`, every hypothesis
 holds, `d = 𝟙` is the factorization, and `m` factors through no affine scheme.  So the
-remaining work is genuinely local-to-global on `Y`, in three named pieces:
+remaining work is genuinely local-to-global on `Y`, and **it is now cut into three named
+leaves, with the assembly below PROVEN over them** (2026-07-27):
 
-1. *(local)* for `y` in a neighbourhood of `σ(S)`, the image of the slice over `y` lies in
-   an affine open `U ⊆ Z` — this is where properness of `pullback.fst p q` (closed image
-   in `Y`) and `hconst` are consumed;
-2. *(descent per piece)* over such a neighbourhood `V`, apply
-   `existsUnique_comp_snd_eq_of_spec` to the base change of `p` along `V ⟶ Y` — this step
-   is already available and needs nothing new;
-3. *(global)* glue the local factorizations with `Scheme.OpenCover.glueMorphisms` and
-   spread them over all of `Y` by `GeometricallyConnected q`.  **The gap here that is not
-   yet named anywhere**: the compatibility hypothesis of `glueMorphisms` asks for equality
-   of two morphisms into the possibly non-affine `Z`, and `existsUnique_comp_eq_of_…`
-   gives uniqueness only for affine targets.  What is wanted is that `pullback.snd p q` is
-   an EPIMORPHISM of schemes, which follows from `p_*𝒪 = 𝒪` plus separatedness of `r` via
-   the scheme-theoretic image — and scheme-theoretic image of a morphism is itself absent
-   from this project at this pin.  Whoever takes this leaf should expect that to be the
-   real new machinery, not the pushforward theorem. -/
+1. *(local)* `hasAffineFactorizationAt_section` — for `s : S`, `m` factors through an
+   affine near `σ.base s`.  This is where properness of `p` (closed image of
+   `pullback.snd p q` in `Y`) and `hconst` are consumed, and it uses nothing else;
+2. *(spreading)* `hasAffineFactorizationAt_of_section` — the affine-factorization locus,
+   open by construction, is also closed, so `GeometricallyConnected q` plus the section
+   makes it all of `Y`.  `IsSeparated r` is consumed here;
+3. *(descent per piece)* `existsUnique_comp_snd_eq_of_spec` applied to
+   `n : pullback p (g ≫ q) ⟶ Spec R` — **this step is done, right below**, and it is the
+   only step of the three that needed nothing new.  It is what turns each affine
+   factorization into an honest local factorization through `V`;
+4. *(glue)* `exists_comp_snd_eq_of_forall_locallyFactors` — assemble the local
+   factorizations into a global `d`.
+
+**THE PREVIOUS AUDIT'S LAST CLAIM IS CORRECTED.**  It said the gluing step needs the
+SCHEME-THEORETIC IMAGE, "absent from this project at this pin", and that this is the real
+new machinery.  The epimorphism statement it identified is right and is exactly the
+content of leaf 4 — but it does not need scheme-theoretic images: the equalizer of two
+`S`-morphisms into a separated `Z` is already a closed subscheme (pull back the diagonal),
+`pullback.snd p q` factors through it, and `𝒪_Y ↠ 𝒪_E ↪ π_*𝒪` with an isomorphism for the
+composite forces `E = Y`.  See `exists_comp_snd_eq_of_forall_locallyFactors` for the
+argument written out.  What that leaf actually needs is the equalizer construction and the
+sheaf-level reading of `HasTrivialPushforward`, both of which are small next to a
+scheme-theoretic image theory.
+
+**AND, UNCHANGED AND WORTH REPEATING**: no leaf in this cluster consumes
+`hasUniversallyTrivialPushforward_of_isProper_of_flat`.  Only the *hypothesis* `hpush` is
+used.  Do not go build cohomology and base change on account of this statement. -/
 theorem exists_comp_snd_eq_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
     (hpush : HasUniversallyTrivialPushforward p)
     (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
     {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
     (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) :
-    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d :=
-  sorry
+    ∃ d : Y ⟶ Z, m = pullback.snd p q ≫ d := by
+  refine exists_comp_snd_eq_of_forall_locallyFactors (r := r) hpush hm ?_
+  intro y
+  obtain ⟨V, g, hg, hy, R, j, n, hn⟩ :=
+    hasAffineFactorizationAt_of_section (r := r) hpush σ hσ hm
+      (fun s => hasAffineFactorizationAt_section σ hσ c hconst s) y
+  obtain ⟨d', hd', -⟩ := existsUnique_comp_snd_eq_of_spec hpush n
+  exact ⟨V, g, hg, hy, d' ≫ j, by rw [hn, hd', Category.assoc]⟩
 
 /-- **A morphism `A ×_S A ⟶ B` vanishing on BOTH AXES vanishes** (PROVEN, over the
 rigidity lemma).
