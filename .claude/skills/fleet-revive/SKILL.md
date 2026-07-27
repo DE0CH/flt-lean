@@ -62,6 +62,28 @@ python3 flt-owner.py --all      # worktree -> current agent id, from transcripts
 `flt-owner.py` reads the subagent transcripts and takes only the LATEST dispatch
 per worktree. Use it, not `~/.flt-inflight.jsonl`, and never dispatch order.
 
+**Corroborate the timestamp before you send.** `flt-owner.py` prints the dispatch
+time; `~/.flt-inflight.jsonl` records one independently. If they disagree, STOP —
+the resolver is reading a stale transcript and you are about to message a
+previous occupant. On 2026-07-27 the two disagreed by three and a half hours
+(02:49 vs 06:25), the disagreement was visible in the same terminal, and the
+message went out anyway. The resolver bug behind it is fixed, but the
+cross-check costs one line and catches the next one:
+
+```bash
+python3 flt-owner.py flt-lean-N          # transcript view
+grep -o '"worktree": "flt-lean-N"[^}]*' ~/.flt-inflight.jsonl | tail -1
+```
+
+**And never resume an agent whose completion you already integrated.** A finished
+agent's slot gets recycled within minutes. Resuming it wakes it inside a worktree
+that now belongs to someone else — where it may merge, build, or write over live
+work before it can tell that anything is wrong. In the incident above it merged a
+branch under another agent's 58-minute in-flight build. The agent behaved
+correctly and stopped; nothing protects you if it does not. So the question is
+not only "is this agent dead?" but "did I already batch its branch?" — if yes,
+it is finished, and finished agents are never revived.
+
 ## Reviving
 
 Two messages, in this order. Do not merge them into one.
