@@ -138,6 +138,14 @@ public import Mathlib.NumberTheory.Padics.PadicIntegers
 public import Mathlib.NumberTheory.RamificationInertia.Basic
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
 public import Mathlib.RingTheory.AdicCompletion.Basic
+public import Mathlib.RingTheory.AdicCompletion.Completeness
+-- `MvPowerSeries.instIsAdicComplete`: `O[[x_1,…,x_q]]` is complete for
+-- the ideal of variables when there are finitely many of them.  This is
+-- the whole limit half of `surjective_of_span_range_eq_maximalIdeal`
+-- (complete Nakayama).  The module was ALREADY in this file's transitive
+-- closure, so the import adds nothing to the cone — but it was reachable
+-- only privately, so the instance was invisible here: a scratch module
+-- importing `Patching` synthesised it while `Patching` itself could not.
 public import Mathlib.RingTheory.Noetherian.Basic
 public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
 -- `IsAdicComplete.of_finite_module`: the `p`-adic completeness of a
@@ -4045,7 +4053,7 @@ theorem exists_taylorWilesCoefficients_ringHom
   sorry
 
 /-- **Complete Nakayama: the substitution homomorphism is surjective**
-(sorry node, LEAF B1a-ii of the 2026-07-27 decomposition of
+(PROVEN 2026-07-27; was LEAF B1a-ii of the 2026-07-27 decomposition of
 `exists_taylorWilesCoefficientsPresentation`): if `ι : O →+* R` hits the
 residue field and `t : Fin q → R` spans `𝔪_R`, then ANY ring
 homomorphism `φ : O[[x_1, …, x_q]] →+* R` with `φ (C a) = ι a` and
@@ -4093,11 +4101,47 @@ mentions Witt vectors, so this leaf is independent of
 `exists_taylorWilesCoefficients_ringHom` and the two can be worked
 concurrently.
 
+# PROOF AS WRITTEN, and the one place it departs from the route above
+
+The whole `X`-degree apparatus of the ROUTE — "order `≥ n` is exactly
+`(X_1,…,X_q)^n`", the coefficientwise limit, the eventual constancy of
+the partial sums — turned out to be **entirely unnecessary**, and none
+of it is in the proof.  It is superseded by a single mathlib instance,
+
+    MvPowerSeries.instIsAdicComplete :
+      [Finite σ] → IsAdicComplete (.span (.range X)) (MvPowerSeries σ R)
+
+(`Mathlib/RingTheory/AdicCompletion/Completeness.lean`, and it is
+already in this module's import cone — no new `import` was needed).
+Its `IsPrecomplete` half hands over the limit `L` of the partial sums
+*abstractly*, together with `L - (f_0 + ⋯ + f_{n-1}) ∈ J^n` for
+`J := span (range X)`, which is precisely the membership the degree
+argument was going to establish by hand.  So a successor must NOT read
+the ROUTE above as recording missing machinery: the only genuinely
+load-bearing algebraic facts in the finished proof are
+
+* `Ideal.map φ J = 𝔪_R` (from `Ideal.map_span` and `hX`, `hspan`), hence
+  `Ideal.map φ (J^n) = 𝔪_R^n` by `Ideal.map_pow` — this is the
+  "continuity is automatic" observation in its usable form, and it gives
+  `φ '' J^n ⊆ 𝔪_R^n` for free;
+* step (a), proved by `Submodule.span_induction` over
+  `𝔪_R^n = Ideal.map φ (J^n) = span (φ '' J^n)`: the base case is `φ g`
+  itself, and the `R`-scalar case is where `hι` is consumed — a
+  coefficient `c` is replaced by `ι a` at the cost of
+  `(c - ι a) · φ g ∈ 𝔪_R · 𝔪_R^n = 𝔪_R^{n+1}`;
+* `IsHausdorff` (the other half of `hcomplete`) to finish from
+  `r - φ L ∈ 𝔪_R^n` for every `n`.
+
+The iteration itself is a `Nat.rec` over pairs `(partial sum, residue)`
+whose approximation step is `Classical.choice` applied to (a), guarded
+by a `dite` on the invariant so that the recursion is total.
+
 FAITHFULNESS.  `hπ` and `hι` are used only through their consequence
 "`ι` hits `R/𝔪_R`"; `k` being a field with `π` surjective is what forces
-`RingHom.ker π = 𝔪_R` (the kernel is maximal, and `R` is local).
-`[Finite k]` is deliberately NOT assumed — it plays no role in this
-half.
+`RingHom.ker π = 𝔪_R` (`IsLocalRing.ker_eq_maximalIdeal`: the kernel is
+maximal, and `R` is local).  `[Finite k]` is deliberately NOT assumed —
+it plays no role in this half.  Every hypothesis is consumed; `#print
+axioms` reports exactly `[propext, Classical.choice, Quot.sound]`.
 
 CIRCULARITY GUARD: none applies, as for the sibling. -/
 theorem surjective_of_span_range_eq_maximalIdeal
@@ -4111,8 +4155,118 @@ theorem surjective_of_span_range_eq_maximalIdeal
     {φ : MvPowerSeries (Fin q) O →+* R}
     (hC : ∀ a : O, φ (MvPowerSeries.C a) = ι a)
     (hX : ∀ i, φ (MvPowerSeries.X i) = t i) :
-    Function.Surjective φ :=
-  sorry
+    Function.Surjective φ := by
+  classical
+  set 𝔪 : Ideal R := _root_.IsLocalRing.maximalIdeal R
+  set J : Ideal (MvPowerSeries (Fin q) O) :=
+    Ideal.span (Set.range (MvPowerSeries.X : Fin q → MvPowerSeries (Fin q) O)) with hJ
+  -- `φ` carries the ideal of variables onto `𝔪_R`; this is the whole of
+  -- "continuity is automatic", in the form the proof actually uses.
+  have hmapJ : Ideal.map φ J = 𝔪 := by
+    rw [hJ, Ideal.map_span, ← hspan, ← Set.range_comp]
+    simp only [Function.comp_def, hX]
+  have hmapJn : ∀ n : ℕ, Ideal.map φ (J ^ n) = 𝔪 ^ n := fun n => by
+    rw [Ideal.map_pow, hmapJ]
+  -- `ι` hits every residue class, because `ker π = 𝔪_R`.
+  have hker : RingHom.ker π = 𝔪 := _root_.IsLocalRing.ker_eq_maximalIdeal π hπ
+  have hres : ∀ x : R, ∃ a : O, x - ι a ∈ 𝔪 := by
+    intro x
+    obtain ⟨a, ha⟩ := hι (π x)
+    refine ⟨a, ?_⟩
+    rw [← hker, RingHom.mem_ker, map_sub, sub_eq_zero]
+    simpa using ha.symm
+  -- (a) THE APPROXIMATION STEP.
+  have approx : ∀ (n : ℕ) (x : R), x ∈ 𝔪 ^ n →
+      ∃ g, g ∈ J ^ n ∧ x - φ g ∈ 𝔪 ^ (n + 1) := by
+    intro n x hx
+    rw [← hmapJn n] at hx
+    have hx' : x ∈ Ideal.span (⇑φ ''
+        ((J ^ n : Ideal (MvPowerSeries (Fin q) O)) : Set (MvPowerSeries (Fin q) O))) := hx
+    refine Submodule.span_induction
+      (p := fun y _ => ∃ g, g ∈ J ^ n ∧ y - φ g ∈ 𝔪 ^ (n + 1)) ?_ ?_ ?_ ?_ hx'
+    · rintro _ ⟨g, hg, rfl⟩
+      exact ⟨g, hg, by simp⟩
+    · exact ⟨0, Submodule.zero_mem _, by simp⟩
+    · rintro y z - - ⟨g₁, hg₁, h₁⟩ ⟨g₂, hg₂, h₂⟩
+      refine ⟨g₁ + g₂, add_mem hg₁ hg₂, ?_⟩
+      have hrw : y + z - φ (g₁ + g₂) = (y - φ g₁) + (z - φ g₂) := by rw [map_add]; ring
+      rw [hrw]; exact add_mem h₁ h₂
+    · rintro c y - ⟨g, hg, h⟩
+      obtain ⟨a, hca⟩ := hres c
+      refine ⟨MvPowerSeries.C a * g, Ideal.mul_mem_left _ _ hg, ?_⟩
+      have hφg : φ g ∈ 𝔪 ^ n := by
+        rw [← hmapJn n]; exact Ideal.mem_map_of_mem φ hg
+      have hrw : c • y - φ (MvPowerSeries.C a * g)
+          = c * (y - φ g) + φ g * (c - ι a) := by
+        rw [map_mul, hC, smul_eq_mul]; ring
+      rw [hrw]
+      refine add_mem (Ideal.mul_mem_left _ _ h) ?_
+      rw [pow_succ]
+      exact Ideal.mul_mem_mul hφg hca
+  intro r
+  -- (b) THE LIMIT: iterate (a), then use precompleteness of `O[[x_1,…,x_q]]`.
+  let A : ℕ → R → MvPowerSeries (Fin q) O := fun n x =>
+    if h : x ∈ 𝔪 ^ n then (approx n x h).choose else 0
+  have hA1 : ∀ (n : ℕ) (x : R) (h : x ∈ 𝔪 ^ n), A n x ∈ J ^ n := by
+    intro n x h; simp only [A, dif_pos h]; exact (approx n x h).choose_spec.1
+  have hA2 : ∀ (n : ℕ) (x : R) (h : x ∈ 𝔪 ^ n), x - φ (A n x) ∈ 𝔪 ^ (n + 1) := by
+    intro n x h; simp only [A, dif_pos h]; exact (approx n x h).choose_spec.2
+  -- `(P n).1` is the `n`-th partial sum, `(P n).2 = r - φ ((P n).1)` the residue.
+  let P : ℕ → MvPowerSeries (Fin q) O × R := fun n =>
+    Nat.rec ((0 : MvPowerSeries (Fin q) O), r)
+      (fun m p => (p.1 + A m p.2, p.2 - φ (A m p.2))) n
+  have hP0 : P 0 = ((0 : MvPowerSeries (Fin q) O), r) := rfl
+  have hPs : ∀ n, P (n + 1) = ((P n).1 + A n (P n).2, (P n).2 - φ (A n (P n).2)) :=
+    fun _ => rfl
+  have key : ∀ n, (P n).2 ∈ 𝔪 ^ n ∧ r - φ ((P n).1) = (P n).2 := by
+    intro n
+    induction n with
+    | zero => exact ⟨by simp [hP0], by simp [hP0]⟩
+    | succ m ih =>
+      obtain ⟨ih1, ih2⟩ := ih
+      rw [hPs m]
+      refine ⟨hA2 m _ ih1, ?_⟩
+      simp only [map_add]
+      rw [← ih2]; ring
+  have hstep : ∀ n, (P (n + 1)).1 - (P n).1 ∈ J ^ n := by
+    intro n
+    rw [hPs n]
+    simpa using hA1 n _ (key n).1
+  have hmono : ∀ m n, m ≤ n → (P n).1 - (P m).1 ∈ J ^ m := by
+    intro m n hmn
+    induction n, hmn using Nat.le_induction with
+    | base => simp
+    | succ n hn ih =>
+      have h1 : (P (n + 1)).1 - (P n).1 ∈ J ^ m :=
+        Ideal.pow_le_pow_right hn (hstep n)
+      have hrw : (P (n + 1)).1 - (P m).1
+          = ((P (n + 1)).1 - (P n).1) + ((P n).1 - (P m).1) := by ring
+      rw [hrw]; exact add_mem h1 ih
+  have hprec : IsPrecomplete J (MvPowerSeries (Fin q) O) := by rw [hJ]; infer_instance
+  obtain ⟨L, hL⟩ := hprec.prec (f := fun n => (P n).1) (by
+    intro m n hmn
+    rw [SModEq.sub_mem, Ideal.smul_eq_mul, Ideal.mul_top]
+    have := neg_mem (hmono m n hmn)
+    rwa [neg_sub] at this)
+  refine ⟨L, ?_⟩
+  have hfin : ∀ n : ℕ, r - φ L ∈ 𝔪 ^ n := by
+    intro n
+    have hLn : L - (P n).1 ∈ J ^ n := by
+      have h := hL n
+      rw [SModEq.sub_mem, Ideal.smul_eq_mul, Ideal.mul_top] at h
+      have h' := neg_mem h
+      rwa [neg_sub] at h'
+    have hφLn : φ L - φ ((P n).1) ∈ 𝔪 ^ n := by
+      rw [← map_sub, ← hmapJn n]
+      exact Ideal.mem_map_of_mem φ hLn
+    have hrw : r - φ L = (r - φ ((P n).1)) - (φ L - φ ((P n).1)) := by ring
+    rw [hrw, (key n).2]
+    exact sub_mem (key n).1 hφLn
+  have hzero : r - φ L = 0 :=
+    hcomplete.toIsHausdorff.haus (r - φ L) (fun n => by
+      rw [SModEq.sub_mem, Ideal.smul_eq_mul, Ideal.mul_top, sub_zero]
+      exact hfin n)
+  exact (sub_eq_zero.mp hzero).symm
 
 /-- **Cohen's structure theorem, in exactly the form the bottom ring leaf
 consumes** (PROVEN 2026-07-27 from the two leaves above; was the whole of
@@ -4169,8 +4323,10 @@ Three pieces, of which the first two are PROVEN:
   topology.  This needed no new theory.
 * `exists_taylorWilesCoefficients_ringHom` (LEAF) — the coefficient ring
   `W(k)` and its map into `R`.  The substantial half.
-* `surjective_of_span_range_eq_maximalIdeal` (LEAF) — complete
-  Nakayama. -/
+* `surjective_of_span_range_eq_maximalIdeal` (PROVEN 2026-07-27) —
+  complete Nakayama, from `MvPowerSeries.instIsAdicComplete` plus a
+  `Submodule.span_induction` approximation step; it needed no new
+  theory either. -/
 theorem exists_taylorWilesCoefficientsPresentation
     {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
     (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
