@@ -81,34 +81,26 @@ PROVEN:
   hypothesis is retained (and supplied there by `curve11a3_finite`) so that
   the consumer's call site does not have to change.
 
-THE TWO LEAVES — one unconditional plane-Diophantine statement per level,
-and nothing else. `mordellWeil` (the general Mordell–Weil theorem) and
+THE SHAPE OF THIS MODULE, after the 2026-07-27 reconciliation of the two
+parallel level-`14` cuts (`main`'s `curve14a4_rational_T` and `flt-lean-86`'s
+`MazurLevel14` descent — they are the SAME statement, so nothing was
+discarded). `mordellWeil` (the general Mordell–Weil theorem) and
 `curve11a3_isTorsion` are GONE: they were deleted, not proven, because
-neither level consumes them any longer.
+neither level consumes them any longer. Each level is now an unconditional
+plane-Diophantine statement, from which rank `0`, finiteness AND the point
+enumeration all follow; they are not independent facts, and none of the three
+implies the others. Finiteness is DERIVED from the enumeration rather than
+assumed for it, and that is what breaks the circle at each level. The scar
+`curve14a4_fg` — the single-curve Mordell–Weil leaf opened at integration only
+to repair a clean merge — is closed rather than carried.
 
-* `WeierstrassCurve.curve11a3_rational_points` — the four affine rational
-  points of `y² + y = x³ − x²`, unconditionally.
-* `WeierstrassCurve.curve14a4_rational_T` — the descent model
-  `W² = T³ − 11T² + 32T` has `T ∈ {0, 4, 8}`.
+The released consumer names are unchanged: `curve11a3_rational_points`,
+`curve11a3_finite`, `curve11a3_points`, `curve14a4_rational_T`,
+`curve14a4_affine_points`, `curve14a4_points`, `curve14a4_finite`,
+`curve14a4_isTorsion`. What changed is that both levels' plane statements are
+now PROVEN one level further down, over the leaves listed next.
 
-UPDATE 2026-07-26 (level `14`, merged from `flt-lean-162`): level `14` no
-longer consumes `mordellWeil` at all. Its three former leaves
-(`curve14a4_isTorsion`, `curve14a4_fg`, `curve14a4_points`) were replaced by
-the single plane-Diophantine leaf `curve14a4_rational_T`, from which rank
-`0`, finiteness AND the point enumeration all follow — they are not
-independent facts, and none of the three implied the others. In particular
-this removes `curve14a4_fg`, the single-curve Mordell–Weil leaf that was
-opened at integration only to repair a clean merge between a branch deleting
-`mordellWeil` and a branch adding a new consumer of it; that scar is now
-closed rather than carried.
-
-The same restructuring had already been carried out at `11a3` on main, so
-both levels now have the same shape: an unconditional enumeration is the
-leaf, and finiteness is DERIVED from it rather than assumed for it. That is
-what breaks the circle at each level.
-
-UPDATE 2026-07-26 (level `11`, merged from `flt-lean-86`): level `11`'s leaf
-moved ONE LEVEL DOWN, to `MazurLevel11.integral_leaf`.
+THE ONE LEAF AT LEVEL `11` (2026-07-26: now `MazurLevel11.integral_leaf`).
 `WeierstrassCurve.curve11a3_rational_points` — the four affine rational points
 of `y² + y = x³ − x²`, unconditionally — is PROVEN from it. The Weierstrass API
 and the rationals have been stripped off: with `U = 4x`, `W = 8y + 4` the curve
@@ -120,6 +112,27 @@ one, so what is left is the pure integer statement
 
 That is the whole arithmetic content of level `11` and nothing else. See the
 `MazurLevel11` section docstring for why no elementary descent reaches it.
+
+## LEVEL `14`, 2026-07-26: `curve14a4_isTorsion` is PROVEN, and the residue is
+## two elementary quartics
+
+`curve14a4_isTorsion` (rank `0` for `14a4`) was a leaf that appeared to need
+the Mordell–Weil theorem and a rank function. It does not. `14a4` has a
+rational point of order `2` — its `2`-division polynomial `4x³ + x² − 2x + 1`
+has the rational root `x = −1` — so the classical `2`-isogeny descent is
+available, and in its ELEMENTARY (Diophantine, no group law) form it is exactly
+the argument the conductor-`15` cluster `MazurLevel15` already runs in
+`MazurTorsion.lean`.
+
+The `MazurLevel14` section below carries that descent. Its `T_trichotomy` IS
+`curve14a4_rational_T` — the statement `main` carried as the single level-`14`
+leaf — so that leaf is now PROVEN, and with it `curve14a4_affine_points`,
+`curve14a4_points`, `curve14a4_finite` and `curve14a4_isTorsion`, all of which
+were already written over it. The whole level reduces to exactly two explicit
+integer statements:
+
+* `MazurLevel14.quartic_one`  — `Q² =  S⁴ − 11S²e² + 32e⁴` has only `(S,e) = (2,1)`;
+* `MazurLevel14.quartic_two`  — `Q² = 2S⁴ − 11S²e² + 16e⁴` has only `(S,e) = (2,1)`.
 
 **`11a3` gets no such route, and this is not a matter of effort.**
 `4x³ − 4x² + 1` is irreducible over `ℚ` (the candidates `±1, ±1/2, ±1/4` all
@@ -279,15 +292,15 @@ PROVEN: strip the Weierstrass API and the rationals off the statement. With
 one. So `curve11a3_rational_points` is now a corollary of the single integer
 statement `integral_leaf` below.
 
-WHAT REMAINS is the rank-`0` statement itself. The two candidate routes — the
-`5`-isogeny descent, whose dual side is `H¹(ℚ, ℤ/5)` and so needs class field
-theory, and a `2`-descent over the cubic `2`-division field
-`ℚ[s]/(s³ − 2s² + 2)` — are audited under `integral_leaf` below. That audit was
-redone on 2026-07-27 with the cubic field's arithmetic actually COMPUTED rather
-than guessed, and it CORRECTS the previous version of this paragraph in both
-directions: the class-group/unit-group half of route (ii) is *cheap* (one
-mathlib lemma, no ideal enumeration), and the genuinely expensive ingredient is
-one this docstring did not name. -/
+WHAT REMAINS, and it is unchanged in substance: the two routes are (i) the
+`5`-isogeny descent, whose descent map is `α(P) = f(P)` for
+`f = y + x² + xy` with `div(f) = 5(T) − 5(O)` — that side is trivial, but the
+DUAL side is `H¹(ℚ, ℤ/5)`, i.e. cyclic quintic extensions unramified outside
+`{5, 11}` cut out by local conditions, which needs class field theory; or
+(ii) a `2`-descent over the cubic field `ℚ[s]/(s³ − 2s² + 2)` — the `2`-division
+field, of discriminant `−44` — which needs that field's class group and unit
+group (unit rank `1`). Neither is in the pin, and neither is a `gcd` argument.
+Whoever takes `integral_leaf` should expect to build one of them. -/
 
 namespace MazurLevel11
 
@@ -309,104 +322,8 @@ CHECKED EXTERNALLY (PARI/GP, untrusted searcher — not a proof).
 bounds, i.e. it *proves* rank `0`; `elltors` returns `ℤ/5`; and
 `ellratpoints(E, 1000)` returns exactly the four affine points.
 
-## FAITHFULNESS: this leaf is EXACTLY rank `0`, neither weaker nor stronger
-
-Worth recording because a stripped-down restatement is where content usually
-leaks. Forwards is `U_dichotomy`. Backwards: given coprime `(p, e)` with
-`e > 0` and `n² = p³ − 4p²e² + 16e⁶`, the pair `U = p/e²`, `W = n/e³` is a
-rational point of `W² = U³ − 4U² + 16`; rank `0` gives `U ∈ {0, 4}`; `U = 0`
-forces `p = 0` and then `IsCoprime 0 e` forces `e = 1`, and `U = 4` forces
-`p = 4e²` and then `IsCoprime p e` again forces `e = 1`. So the two statements
-are equivalent, and no arithmetic was dropped in the reduction.
-
-## ROUTE AUDIT, 2026-07-27 — REPLACES the earlier one, which was wrong twice
-
-The previous audit said route (ii), the `2`-descent over the cubic `2`-division
-field `K = ℚ[s]/(s³ − 2s² + 2)`, "needs that field's class group and unit
-group … Neither is in the pin", and the dispatch built on it called route (ii)
-"likely the cheaper one". Both halves of that are now checked, and both are
-wrong — in opposite directions.
-
-**(a) The class-group half is CHEAP, and it IS in the pin.** `K` has
-`poldisc(s³ − 2s² + 2) = −44` and field discriminant `−44`, so the index
-`[𝓞_K : ℤ[s]]` is `1` and `ℤ[s] = 𝓞_K` on the nose. Mathlib then gives
-`h(K) = 1` in ONE lemma with no ideal enumeration at all:
-`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`
-(`Mathlib/NumberTheory/NumberField/ClassNumber.lean`) asks for
-`|discr K| < (2 * (π/4) ^ nrComplexPlaces K * (n ^ n / n !)) ^ 2`. Here `n = 3`
-and `nrComplexPlaces K = 1` (signature `(1, 1)`), so the bound is
-`(2 · (π/4) · (27/6))² = (9π/4)² = 81π²/16 ≈ 49.96`, and `44 < 49.96`. The
-inequality needs only `π > 2.949`, so it is a `norm_num`-with-`pi_gt_3141592`
-step. Equivalently: the Minkowski bound of `K` is `≈ 1.877 < 2`, so every ideal
-class contains an ideal of norm `1`.
-*Refuting check*: recompute `81π²/16` and compare with `44`; or evaluate
-`M K = (4/π)^{r₂} · (n!/n^n) · √|discr K|` and check it is `< 2`.
-
-Units are equally concrete: signature `(1,1)` gives unit rank `1`, torsion
-`{±1}`, and PARI's fundamental unit is `ε = −s² + s + 1`, with `N(ε) = −1` and
-`ε⁻¹ = s − 1` — i.e. the Lean-side certificate is the single `ring` identity
-`(−s² + s + 1)(s − 1) = 1` modulo `s³ − 2s² + 2`, which is not a class-group
-computation at all. Two more units drop out of `N(a − s) = f(a)`:
-`N(1 − s) = f(1) = 1` and `N(−1 − s) = f(−1) = −1`.
-
-Ramification, all `ring`-checkable rather than looked up: `N(s) = −2` and
-`s³ = 2(s² − 1)` with `s² − 1 = −(1 − s)(1 + s)` a unit, so `2 = s³/(s² − 1)`
-and `(2) = (s)³` is TOTALLY RAMIFIED with `𝔭₂ = (s)`; and
-`s³ − 2s² + 2 ≡ (s − 5)²(s − 3) (mod 11)`, so `(11) = 𝔭²𝔮`.
-
-**(b) The expensive ingredient is FINITE GENERATION, which this module
-deleted.** This is the correction that matters, and it applies to BOTH routes.
-A complete `2`-descent proves `E(ℚ)/2E(ℚ) = 0`; a complete `5`-isogeny descent
-proves `E(ℚ) = 5E(ℚ)`. Neither conclusion implies that `E(ℚ)` is finite. With
-`E(ℚ)[2] = 0` (the `2`-division polynomial `4x³ − 4x² + 1` is irreducible),
-`E(ℚ)/2E(ℚ) = 0` says exactly that `E(ℚ)` is uniquely `2`-divisible, which an
-infinite group can perfectly well be. Rank `0` follows only after
-`AddGroup.FG E(ℚ)` — or after an explicit height/descent argument that re-does
-that content by hand. The module docstring's FRONTIER RESTRUCTURE note is right
-that finite generation alone never yields rank `0`; the converse it did not
-state is that descent alone never yields it either. `mordellWeil` was deleted
-as "not on the critical path", and for `curve11a3_rational_points` that was
-true only because the leaf moved down; for `integral_leaf` itself, some form of
-descent-with-height is unavoidable. `MazurLevel14`/`MazurLevel15` supply that
-form elementarily via a well-founded recursion, and they can only do so because
-a rational `2`-isogeny is available; here the same recursion would have to run
-over `ℤ[s]`.
-*Refuting check*: exhibit an argument that concludes `Finite 11a3(ℚ)` from the
-triviality of a Selmer group without finite generation and without a height. If
-one exists, this audit is wrong and route (ii) really is short.
-
-**(c) Reconnaissance for whoever runs route (ii), so it need not be redone.**
-Write `β = p − 2s·e² ∈ ℤ[s]`; then `N(β) = p³ − 4p²e² + 16e⁶ = n²`, because
-`∏(p − θᵢq) = p³ − 4p²q + 16q³` for `θ³ − 4θ² + 16 = 0`, `θ = 2s`, `q = e²`.
-With `h(K) = 1` and unit group `⟨−1⟩ × ⟨ε⟩`, `β` is a unit times a square times
-a factor supported on `𝔭₂` and the primes over `11`. For the TRIVIAL square
-class, `γ = a + bs + cs²` and `s³ = 2s² − 2`, `s⁴ = 4s² − 2s − 4` give
-
-    γ² = (a² − 4c² − 4bc) + (2ab − 2c²)·s + (b² + 2ac + 4bc + 4c²)·s²,
-
-so `β = γ²` holds exactly when `b² + 2ac + 4bc + 4c² = 0`, and then
-`p = a² − 4c² − 4bc` and `e² = c² − ab`. BOTH known solutions live in this
-trivial class, with witnesses verified by `ring`:
-
-    (a,b,c) = (−2, 0, 1):  γ = s² − 2,   γ² = −2s      ↔ (p,e) = (0,1);
-    (a,b,c) = ( 0,−2, 1):  γ = s² − 2s,  γ² = 4 − 2s   ↔ (p,e) = (4,1).
-
-That is the structural reason (b) bites: the `2`-Selmer group is trivial, so
-every NONTRIVIAL square class dies to a local condition (a congruence), and the
-whole difficulty is concentrated in the trivial class — whose homogeneous space
-is `E` itself, mapped by `P ↦ 2P`. Killing it is precisely the height descent.
-*Refuting check*: find a coprime solution of the displayed system with
-`e² = c² − ab` a positive square other than the two above.
-
-CHECKED EXTERNALLY 2026-07-27 (PARI/GP, untrusted searcher — none of this is a
-proof): `bnfinit(s^3-2*s^2+2,1)` returns `disc = −44`, `no = 1`, `cyc = []`,
-`sign = [1,1]`, `fu = [-s^2+s+1]`, `tu = [2,-1]`, integral basis of index `1`;
-`ellrank(ellinit([0,-1,1,0,0]))` returns `[0,0,0,[]]`, matching bounds. Every
-identity quoted above (`ε(s−1) = 1`, `s³ = 2(s²−1)`, `(s²−2)² = −2s`,
-`(s²−2s)² = 4−2s`) is a polynomial identity modulo `s³ − 2s² + 2` and is
-therefore Lean-checkable by `ring`, independently of PARI.
-
-See the section docstring above for why no elementary descent reaches this. -/
+See the section docstring above for why no elementary descent reaches this and
+what the two genuine routes are. -/
 theorem integral_leaf {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6) :
     (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := sorry
@@ -588,9 +505,988 @@ instance instIsEllipticCurve14a4 : curve14a4.IsElliptic := by
     WeierstrassCurve.b₆, WeierstrassCurve.b₈]
   norm_num
 
-/-- **The rational points of the descent model of `14a4`** (sorry leaf,
-2026-07-26 — the SINGLE replacement for what were the two leaves
-`curve14a4_isTorsion` and `curve14a4_points`): the only rational points of
+/-! ### The level-`14` descent, in elementary form (2026-07-26)
+
+`MazurLevel14` is the arithmetic engine behind `curve14a4_isTorsion`: it proves
+the UNCONDITIONAL enumeration of `14a4(ℚ)` by a completely elementary
+Diophantine descent, with **no group law, no rank function, no Mordell–Weil
+theorem and no Selmer group** anywhere in it. It is modelled directly on the
+`MazurLevel15` cluster in `MazurTorsion.lean`, which closed the conductor-`15`
+curve `V² = X(X+1)(X+16)` the same way.
+
+**Why an elementary route exists here and NOT for `11a3`.** `14a4` has a
+rational point of order `2`, namely `(−1, 0)`: its `2`-division polynomial
+`4x³ + x² − 2x + 1` has the rational root `x = −1`. That single rational root
+is what lets the cubic be split off as a linear factor over `ℚ`, which is the
+whole content of a `2`-isogeny descent in elementary form. `11a3`'s
+`2`-division polynomial `4x³ − 4x² + 1` is irreducible over `ℚ` (no rational
+root: the candidates `±1, ±1/2, ±1/4` all fail), so `E[2]` is irreducible
+there, no `2`-isogeny exists anywhere in the isogeny class `11a`, and this
+route is simply unavailable — see `curve11a3_rational_points`.
+
+**The chain, completely explicit.** Let `(x, y)` be a rational point.
+
+* Completing the square with `Y = 2y + x + 1` gives `Y² = 4x³ + x² − 2x + 1`,
+  and then `T = 4x + 4`, `V = 4Y = 8y + 4x + 4` give the integral model
+
+      V² = T³ − 11T² + 32T = T · (T² − 11T + 32).
+
+  This is `14a4` moved so that its rational `2`-torsion point sits at the
+  origin; `4(T² − 11T + 32) = (2T − 11)² + 7`, so the quadratic factor is
+  positive for every real `T` and never has a rational root.
+* Hence `V² = T · (positive)`, so `T ≥ 0`, and `T = 0` is the `2`-torsion point
+  `(x, y) = (−1, 0)` itself.
+* For `T > 0`: writing `T = p/q` in lowest terms, `q` is coprime to
+  `p(p² − 11pq + 32q²)`, which forces `V.den² = q³` and hence `q = e²` a
+  perfect square (`exists_int_model`). So `T = p/e²`, `V = n/e³` and
+
+      n² = p · (p² − 11pe² + 32e⁴),   gcd(p, e) = 1,  p, e > 0.
+
+* Both factors are positive and their `gcd` `g` divides `32` (it divides `p`,
+  and `32e⁴` is an integer combination of the two, while `gcd(g, e) = 1`).
+  `split_gcd` then writes `p = g a²` and the second factor as `g b²`; absorbing
+  the square part of `g` into `a` leaves exactly the two square-free classes
+  `d ∈ {1, 2}` — `d` cannot be negative because `p > 0` — and the descent
+  equation `d S⁴ − 11 S²e² + (32/d) e⁴ = Q²` (`descent_step`).
+
+That leaves the two homogeneous spaces below. **Neither is
+congruence-obstructed** — each carries exactly one rational point, which is why
+each is a leaf rather than a `decide` — and they are the entire residual
+content of `curve14a4_isTorsion`.
+
+    d = 1 : Q² =  S⁴ − 11S²e² + 32e⁴      (`quartic_one`; solution `(S,e) = (2,1)`, `T = 4`)
+    d = 2 : Q² = 2S⁴ − 11S²e² + 16e⁴      (`quartic_two`; solution `(S,e) = (2,1)`, `T = 8`)
+
+Verified by exhaustive search (`1 ≤ S, e ≤ 700`, coprime): `(S, e) = (2, 1)` is
+the ONLY solution of each, so both statements are true as written and each is a
+genuine infinite descent in the style of `MazurLevel15.concordant_one` /
+`concordant_five`, `QuarticDescent.not_isSquare_form` (conductor `20`) and
+`MazurTwoTwelve.Quartic` (conductor `24`).
+
+RECONNAISSANCE FOR WHOEVER TAKES THE TWO QUARTICS. Both are norm forms for
+`ℚ(√−7)` — completing the square gives `4Q² = u² + 7e⁴` with `u = 2S² − 11e²`
+for `quartic_one`, and `8Q² = u² + 7e⁴` with `u = 4S² − 11e²` for
+`quartic_two`; `ℤ[(1 + √−7)/2]` is a PID, which is what makes the coprime
+factorisation available. Worked first step for `quartic_one` with `e` odd:
+`u` is then odd and `Q` even, `(2Q − u)(2Q + u) = 7e⁴` has coprime factors
+(a common factor would have to be `7`, which forces `7 ∣ e` against
+`gcd(u, e) = 1`), so `2Q − u = 7m⁴`, `2Q + u = n⁴` with `mn = e`,
+`gcd(m, n) = 1`, and substituting `u = 2S² − 11m²n²` gives
+
+    4S² = ± (n⁴ − 7m⁴) + 22m²n².
+
+The `−` branch is `4S² = 7m⁴ + 22m²n² − n⁴`, which **dies mod `7`**: squares
+and fourth powers mod `7` both lie in `{0, 1, 2, 4}`, so `4S² ≡ −n⁴` forces
+`7 ∣ S` and `7 ∣ n`, and then dividing through forces `7 ∣ m`, contradicting
+`gcd(m, n) = 1`. The `+` branch `4S² = n⁴ + 22m²n² − 7m⁴` carries the solution
+`m = n = 1` and is where the genuine descent continues; note
+`4S² = (n² + 11m²)² − 128m⁴`. The `e` even case of `quartic_one` splits
+further: `e ≡ 2 mod 4` dies mod `8` (the form is `≡ 5 mod 8`, not a square),
+while `e ≡ 0 mod 4` needs the descent again.
+
+These two forms are, in the classical language, the `d = 7` and `d = −1`
+homogeneous spaces of the `2`-isogenous curve `Y² = X³ + 22X² − 7X`
+(`a' = −2a = 22`, `b' = a² − 4b = −7`). That is the *reason* rank `0` is true
+here: `Im α ⊆ {1, 2}` automatically because `T > 0`, and `Im α' = {1, −7}`
+because the `d = 7` space dies mod `7`, so `2^rank = 2 · 2 / 4 = 1`.
+`RankBound(14a4) = 0` with proof flag `true` (Magma, untrusted searcher);
+`MordellWeilGroup` returns `ℤ/6`. -/
+namespace MazurLevel14
+
+/-- A nonnegative coprime factor of a square is a square. (Same statement as
+`MazurLevel15.sq_of_gcd_nonneg`, which lives in `MazurTorsion.lean` — that
+module imports THIS one, so it cannot be imported here.) -/
+theorem sq_of_gcd_nonneg {a b c : ℤ} (h : Int.gcd a b = 1) (heq : a * b = c ^ 2)
+    (ha : 0 ≤ a) : ∃ a0 : ℤ, a = a0 ^ 2 := by
+  obtain ⟨a0, ha0 | ha0⟩ := Int.sq_of_gcd_eq_one h heq
+  · exact ⟨a0, ha0⟩
+  · rw [ha0] at ha
+    have h1 : a0 ^ 2 = 0 := by linarith [sq_nonneg a0]
+    exact ⟨0, by rw [ha0, h1]; ring⟩
+
+/-- **Splitting a square along the `gcd`.** If `A · B = c²` with `A`, `B ≥ 0`
+and `A ≠ 0`, then writing `g = gcd(A, B)` both cofactors are `g` times a
+square. This is the workhorse of `descent_step`, where `g` is constrained to
+divide `32`. (Same statement as `MazurLevel15.split_gcd`; see
+`sq_of_gcd_nonneg` for why it is restated rather than imported.) -/
+theorem split_gcd {A B c : ℤ} (hAB : A * B = c ^ 2) (hA : 0 ≤ A) (hB : 0 ≤ B)
+    (hA0 : A ≠ 0) :
+    ∃ a b : ℤ, A = (Int.gcd A B : ℤ) * a ^ 2 ∧ B = (Int.gcd A B : ℤ) * b ^ 2 ∧
+      IsCoprime a b := by
+  obtain ⟨g, hgdef⟩ : ∃ g : ℕ, g = Int.gcd A B := ⟨_, rfl⟩
+  have hgpos : 0 < g := by rw [hgdef]; exact Int.gcd_pos_iff.mpr (Or.inl hA0)
+  have hgz : (g : ℤ) ≠ 0 := by exact_mod_cast hgpos.ne'
+  have hgp : (0 : ℤ) < (g : ℤ) := by exact_mod_cast hgpos
+  obtain ⟨A₁, hA₁⟩ : (g : ℤ) ∣ A := by rw [hgdef]; exact Int.gcd_dvd_left A B
+  obtain ⟨B₁, hB₁⟩ : (g : ℤ) ∣ B := by rw [hgdef]; exact Int.gcd_dvd_right A B
+  have hcop1 : Int.gcd A₁ B₁ = 1 := by
+    have h0 := Int.gcd_div_gcd_div_gcd (i := A) (j := B) (by rw [← hgdef]; exact hgpos)
+    rw [← hgdef] at h0
+    rwa [hA₁, hB₁, Int.mul_ediv_cancel_left _ hgz, Int.mul_ediv_cancel_left _ hgz] at h0
+  obtain ⟨c₁, hc₁⟩ : (g : ℤ) ∣ c := by
+    have h2 : ((g : ℤ)) ^ 2 ∣ c ^ 2 := ⟨A₁ * B₁, by rw [← hAB, hA₁, hB₁]; ring⟩
+    exact (Int.pow_dvd_pow_iff two_ne_zero).mp h2
+  have hpq : A₁ * B₁ = c₁ ^ 2 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 hgz) ?_
+    have h' : ((g : ℤ) * A₁) * ((g : ℤ) * B₁) = ((g : ℤ) * c₁) ^ 2 := by
+      rw [← hA₁, ← hB₁, ← hc₁]; exact hAB
+    linear_combination h'
+  have hA₁0 : 0 ≤ A₁ := by
+    by_contra hcon
+    have h' : A₁ < 0 := not_le.mp hcon
+    have hlt : A < 0 := by rw [hA₁]; exact mul_neg_of_pos_of_neg hgp h'
+    linarith
+  have hB₁0 : 0 ≤ B₁ := by
+    by_contra hcon
+    have h' : B₁ < 0 := not_le.mp hcon
+    have hlt : B < 0 := by rw [hB₁]; exact mul_neg_of_pos_of_neg hgp h'
+    linarith
+  obtain ⟨a, ha⟩ := sq_of_gcd_nonneg hcop1 hpq hA₁0
+  obtain ⟨b, hb⟩ := sq_of_gcd_nonneg (by rwa [Int.gcd_comm]) (by rw [mul_comm]; exact hpq) hB₁0
+  have hcop2 : IsCoprime a b := by
+    rw [ha, hb] at hcop1
+    have hc := Int.isCoprime_iff_gcd_eq_one.mpr hcop1
+    exact ((hc.of_isCoprime_of_dvd_left (dvd_pow_self a two_ne_zero)).symm.of_isCoprime_of_dvd_left
+      (dvd_pow_self b two_ne_zero)).symm
+  exact ⟨a, b, by rw [← hgdef, hA₁, ha], by rw [← hgdef, hB₁, hb], hcop2⟩
+
+/-- The divisors of `32`, which is where the descent `gcd` lives. -/
+theorem dvd_thirtytwo {n : ℕ} (h : n ∣ 32) :
+    n = 1 ∨ n = 2 ∨ n = 4 ∨ n = 8 ∨ n = 16 ∨ n = 32 := by
+  have hle : n ≤ 32 := Nat.le_of_dvd (by norm_num) h
+  interval_cases n <;> revert h <;> decide
+
+/-- A nonnegative coprime factor of a fourth power is a fourth power. -/
+theorem pow_four_of_coprime {A B C : ℤ} (hcop : IsCoprime A B) (h : A * B = C ^ 4)
+    (hA : 0 ≤ A) : ∃ a : ℤ, 0 ≤ a ∧ A = a ^ 4 := by
+  obtain ⟨d, hd⟩ := exists_associated_pow_of_mul_eq_pow' hcop h
+  rcases Int.associated_iff.mp hd with h1 | h1
+  · refine ⟨|d|, abs_nonneg d, ?_⟩
+    rw [← h1, show (4 : ℕ) = 2 * 2 from rfl, pow_mul, pow_mul, sq_abs]
+  · have hd0 : d ^ 4 ≤ 0 := by rw [h1]; omega
+    have hdz : d = 0 := by
+      by_contra hne
+      exact absurd hd0 (not_le.mpr (by positivity))
+    refine ⟨0, le_refl _, ?_⟩
+    rw [hdz] at h1
+    norm_num at h1
+    omega
+
+/-- `7` is prime in `ℤ`.  Stated by hand rather than by `norm_num` because this
+module does not import `Mathlib.Tactic.NormNum.Prime`, so `norm_num` reduces
+`Prime (7 : ℤ)` to `Nat.Prime 7` and then stalls. -/
+theorem prime_seven_int : Prime (7 : ℤ) := by
+  rw [show (7 : ℤ) = ((7 : ℕ) : ℤ) by norm_num]
+  exact Nat.prime_iff_prime_int.mp (by decide)
+
+theorem sq_eq_of_pow_four_eq {t s : ℤ} (h : t ^ 4 = s ^ 4) : t ^ 2 = s ^ 2 := by
+  have h1 : (t ^ 2 - s ^ 2) * (t ^ 2 + s ^ 2) = 0 := by linear_combination h
+  rcases mul_eq_zero.mp h1 with h2 | h2
+  · linarith
+  · nlinarith [sq_nonneg t, sq_nonneg s]
+
+/-- `x² + y² ≡ 0 (mod 4)` forces both `x` and `y` even. -/
+theorem two_dvd_of_four_dvd_sq_add_sq {x y : ℤ} (h : (4 : ℤ) ∣ x ^ 2 + y ^ 2) :
+    (2 : ℤ) ∣ x ∧ (2 : ℤ) ∣ y := by
+  obtain ⟨a, ha | ha⟩ := Int.even_or_odd' x <;> obtain ⟨b, hb | hb⟩ := Int.even_or_odd' y <;>
+      subst ha <;> subst hb <;> obtain ⟨k, hk⟩ := h
+  · exact ⟨⟨a, by ring⟩, ⟨b, by ring⟩⟩
+  · exfalso; have h1 : (4 : ℤ) ∣ 1 := ⟨k - (a ^ 2 + b ^ 2 + b), by linarith [hk]⟩; omega
+  · exfalso; have h1 : (4 : ℤ) ∣ 1 := ⟨k - (a ^ 2 + a + b ^ 2), by linarith [hk]⟩; omega
+  · exfalso; have h1 : (4 : ℤ) ∣ 2 := ⟨k - (a ^ 2 + a + b ^ 2 + b), by linarith [hk]⟩; omega
+
+/-- Splitting `A · B = p · C⁴` with `A`, `B` coprime and nonnegative and `p` prime. -/
+theorem split_prime_pow_four {A B C p : ℤ} (hp : Prime p) (hppos : 0 < p) (hcop : IsCoprime A B)
+    (h : A * B = p * C ^ 4) (hA : 0 ≤ A) (hB : 0 ≤ B) :
+    (∃ m n : ℤ, 0 ≤ m ∧ 0 ≤ n ∧ IsCoprime m n ∧ A = p * m ^ 4 ∧ B = n ^ 4 ∧
+        (m * n) ^ 2 = C ^ 2) ∨
+    (∃ m n : ℤ, 0 ≤ m ∧ 0 ≤ n ∧ IsCoprime m n ∧ A = n ^ 4 ∧ B = p * m ^ 4 ∧
+        (m * n) ^ 2 = C ^ 2) := by
+  have hpd : p ∣ A * B := ⟨C ^ 4, h⟩
+  rcases hp.dvd_or_dvd hpd with hpa | hpb
+  · left
+    obtain ⟨A', hA'⟩ := hpa
+    have hp0 : p ≠ 0 := hp.ne_zero
+    have hAB : A' * B = C ^ 4 := by
+      have : p * (A' * B) = p * C ^ 4 := by rw [← h, hA']; ring
+      exact mul_left_cancel₀ hp0 this
+    have hcop' : IsCoprime A' B := hcop.of_isCoprime_of_dvd_left ⟨p, by rw [hA']; ring⟩
+    have hA'0 : 0 ≤ A' := by
+      by_contra hcon
+      push Not at hcon
+      have hneg : p * A' < 0 := mul_neg_of_pos_of_neg hppos hcon
+      rw [← hA'] at hneg
+      omega
+    obtain ⟨m, hm0, hm⟩ := pow_four_of_coprime hcop' hAB hA'0
+    obtain ⟨n, hn0, hn⟩ := pow_four_of_coprime hcop'.symm (by rw [mul_comm]; exact hAB) hB
+    refine ⟨m, n, hm0, hn0, ?_, by rw [hA', hm], hn, ?_⟩
+    · exact (hcop'.of_isCoprime_of_dvd_left ⟨m ^ 3, by rw [hm]; ring⟩).symm.of_isCoprime_of_dvd_left
+        ⟨n ^ 3, by rw [hn]; ring⟩ |>.symm
+    · exact sq_eq_of_pow_four_eq (by rw [mul_pow, ← hm, ← hn, hAB])
+  · right
+    obtain ⟨B', hB'⟩ := hpb
+    have hp0 : p ≠ 0 := hp.ne_zero
+    have hAB : A * B' = C ^ 4 := by
+      have : p * (A * B') = p * C ^ 4 := by rw [← h, hB']; ring
+      exact mul_left_cancel₀ hp0 this
+    have hcop' : IsCoprime A B' := hcop.of_isCoprime_of_dvd_right ⟨p, by rw [hB']; ring⟩
+    have hB'0 : 0 ≤ B' := by
+      by_contra hcon
+      push Not at hcon
+      have hneg : p * B' < 0 := mul_neg_of_pos_of_neg hppos hcon
+      rw [← hB'] at hneg
+      omega
+    obtain ⟨n, hn0, hn⟩ := pow_four_of_coprime hcop' hAB hA
+    obtain ⟨m, hm0, hm⟩ := pow_four_of_coprime hcop'.symm (by rw [mul_comm]; exact hAB) hB'0
+    refine ⟨m, n, hm0, hn0, ?_, hn, by rw [hB', hm], ?_⟩
+    · exact ((hcop'.of_isCoprime_of_dvd_left ⟨n ^ 3, by rw [hn]; ring⟩).symm.of_isCoprime_of_dvd_left
+        ⟨m ^ 3, by rw [hm]; ring⟩)
+    · exact sq_eq_of_pow_four_eq (by rw [mul_pow, ← hm, ← hn, mul_comm, hAB])
+
+/-- The square of an odd integer is `8k + 1`. -/
+theorem odd_sq_eq {M : ℤ} (h : ¬ (2 : ℤ) ∣ M) : ∃ k : ℤ, M ^ 2 = 8 * k + 1 := by
+  obtain ⟨a, ha | ha⟩ := Int.even_or_odd' M
+  · exact absurd ⟨a, ha⟩ h
+  · obtain ⟨t, ht⟩ : ∃ t : ℤ, a ^ 2 + a = 2 * t := by
+      rcases Int.even_or_odd' a with ⟨c, hc | hc⟩
+      · exact ⟨2 * c ^ 2 + c, by rw [hc]; ring⟩
+      · exact ⟨2 * c ^ 2 + 3 * c + 1, by rw [hc]; ring⟩
+    exact ⟨t, by rw [ha]; linear_combination 4 * ht⟩
+
+/-- Squares modulo `8`, together with the parity each residue forces. -/
+theorem sq_form (x : ℤ) :
+    ((2 : ℤ) ∣ x ∧ ∃ k, x ^ 2 = 8 * k) ∨ ((2 : ℤ) ∣ x ∧ ∃ k, x ^ 2 = 8 * k + 4) ∨
+      (¬ (2 : ℤ) ∣ x ∧ ∃ k, x ^ 2 = 8 * k + 1) := by
+  rcases Int.even_or_odd' x with ⟨a, ha | ha⟩
+  · subst ha
+    rcases Int.even_or_odd' a with ⟨b, hb | hb⟩
+    · exact Or.inl ⟨⟨a, rfl⟩, 2 * b ^ 2, by rw [hb]; ring⟩
+    · exact Or.inr (Or.inl ⟨⟨a, rfl⟩, 2 * b ^ 2 + 2 * b, by rw [hb]; ring⟩)
+  · subst ha
+    obtain ⟨k, hk⟩ := odd_sq_eq (M := 2 * a + 1) (by omega)
+    exact Or.inr (Or.inr ⟨by omega, k, hk⟩)
+
+/-- `8 ∣ n² − 11m²` forces both `m` and `n` even. -/
+theorem eight_dvd_imp_even {m n : ℤ} (h : (8 : ℤ) ∣ n ^ 2 - 11 * m ^ 2) :
+    (2 : ℤ) ∣ m ∧ (2 : ℤ) ∣ n := by
+  obtain ⟨K, hK⟩ := h
+  rcases sq_form m with ⟨hm2, s, hs⟩ | ⟨hm2, s, hs⟩ | ⟨hm2, s, hs⟩ <;>
+    rcases sq_form n with ⟨hn2, t, ht⟩ | ⟨hn2, t, ht⟩ | ⟨hn2, t, ht⟩ <;>
+      rw [hs, ht] at hK <;>
+        first
+          | exact ⟨hm2, hn2⟩
+          | (exfalso; omega)
+
+/-- **The `d′ = 7` homogeneous space of the isogenous curve is empty.**
+`X² = 7m⁴ + 22m²n² − n⁴` has no coprime solution: completing the square the other
+way gives `X² + (n² − 11m²)² = 128m⁴`, three rounds of "a sum of two squares
+divisible by `4` has both terms even" force `8 ∣ n² − 11m²`, and that forces
+`m`, `n` both even. -/
+theorem h7_dead {m n X : ℤ} (hcop : IsCoprime m n)
+    (h : X ^ 2 = 7 * m ^ 4 + 22 * m ^ 2 * n ^ 2 - n ^ 4) : False := by
+  have key : X ^ 2 + (n ^ 2 - 11 * m ^ 2) ^ 2 = 128 * m ^ 4 := by linear_combination h
+  obtain ⟨⟨X1, hX1⟩, ⟨Y1, hY1⟩⟩ :=
+    two_dvd_of_four_dvd_sq_add_sq (x := X) (y := n ^ 2 - 11 * m ^ 2) ⟨32 * m ^ 4, by linarith⟩
+  rw [hX1, hY1] at key
+  have key1 : X1 ^ 2 + Y1 ^ 2 = 32 * m ^ 4 := by
+    have h' : 4 * (X1 ^ 2 + Y1 ^ 2) = 4 * (32 * m ^ 4) := by linear_combination key
+    linarith
+  obtain ⟨⟨X2, hX2⟩, ⟨Y2, hY2⟩⟩ :=
+    two_dvd_of_four_dvd_sq_add_sq (x := X1) (y := Y1) ⟨8 * m ^ 4, by linarith⟩
+  rw [hX2, hY2] at key1
+  have key2 : X2 ^ 2 + Y2 ^ 2 = 8 * m ^ 4 := by
+    have h' : 4 * (X2 ^ 2 + Y2 ^ 2) = 4 * (8 * m ^ 4) := by linear_combination key1
+    linarith
+  obtain ⟨-, ⟨Y3, hY3⟩⟩ :=
+    two_dvd_of_four_dvd_sq_add_sq (x := X2) (y := Y2) ⟨2 * m ^ 4, by linarith⟩
+  have h8 : (8 : ℤ) ∣ n ^ 2 - 11 * m ^ 2 := ⟨Y3, by rw [hY1, hY2, hY3]; ring⟩
+  obtain ⟨hm, hn⟩ := eight_dvd_imp_even h8
+  exact absurd (hcop.isUnit_of_dvd' hm hn) (by norm_num [Int.isUnit_iff])
+
+theorem isCoprime_of_no_common_prime {A B : ℤ}
+    (h : ∀ p : ℤ, Prime p → p ∣ A → p ∣ B → False) : IsCoprime A B := by
+  rw [Int.isCoprime_iff_gcd_eq_one]
+  by_contra hne
+  obtain ⟨p, hp, hpd⟩ := Nat.exists_prime_and_dvd hne
+  have hd : (p : ℤ) ∣ (Int.gcd A B : ℤ) := Int.natCast_dvd_natCast.mpr hpd
+  exact h p (Nat.prime_iff_prime_int.mp hp) (hd.trans (Int.gcd_dvd_left A B))
+    (hd.trans (Int.gcd_dvd_right A B))
+
+theorem two_dvd_of_prime_dvd_two {p : ℤ} (hp : Prime p) (h : p ∣ 2) : (2 : ℤ) ∣ p := by
+  have h1 : p.natAbs ∣ 2 := by simpa using Int.natAbs_dvd_natAbs.mpr h
+  rcases (Nat.dvd_prime Nat.prime_two).mp h1 with h2 | h2
+  · exact absurd (Int.isUnit_iff.mpr (by simpa using Int.natAbs_eq_iff.mp h2)) hp.not_unit
+  · rcases Int.natAbs_eq_iff.mp h2 with h3 | h3 <;> rw [h3] <;> norm_num
+
+/-- Two odd integers have even sum and even difference. -/
+theorem two_dvd_sub_add_of_odd {x y : ℤ} (hx : ¬ (2 : ℤ) ∣ x) (hy : ¬ (2 : ℤ) ∣ y) :
+    (2 : ℤ) ∣ (x - y) ∧ (2 : ℤ) ∣ (x + y) := by
+  obtain ⟨a, ha | ha⟩ := Int.even_or_odd' x
+  · exact absurd ⟨a, ha⟩ hx
+  · obtain ⟨b, hb | hb⟩ := Int.even_or_odd' y
+    · exact absurd ⟨b, hb⟩ hy
+    · exact ⟨⟨a - b, by rw [ha, hb]; ring⟩, ⟨a + b + 1, by rw [ha, hb]; ring⟩⟩
+
+theorem not_two_dvd_of_odd_form {x t : ℤ} (h : x = 2 * t + 1) : ¬ (2 : ℤ) ∣ x := by
+  rintro ⟨c, rfl⟩; omega
+
+theorem not_two_dvd_of_sq_odd_form {x t : ℤ} (h : x ^ 2 = 2 * t + 1) : ¬ (2 : ℤ) ∣ x := by
+  rintro ⟨c, rfl⟩
+  have h1 : (2 : ℤ) ∣ 1 := ⟨2 * c ^ 2 - t, by linarith [h]⟩
+  omega
+
+/-- **The shared coprimality step.** If `A · B = c · g⁴` with `c` prime, then any prime
+dividing both `A` and `B` also divides `g` — because it divides `c` only if `c` and it are
+associated, and then `c²  ∣ c g⁴` gives `c ∣ g⁴`. -/
+theorem isCoprime_split {A B c g : ℤ} (hcp : Prime c) (hAB : A * B = c * g ^ 4)
+    (hkey : ∀ p : ℤ, Prime p → ¬ p ∣ (2 : ℤ) → p ∣ A → p ∣ B → p ∣ g → False)
+    (hodd : ¬ ((2 : ℤ) ∣ A ∧ (2 : ℤ) ∣ B)) : IsCoprime A B := by
+  apply isCoprime_of_no_common_prime
+  intro p hp hpA hpB
+  have hp2 : ¬ p ∣ (2 : ℤ) := by
+    intro hd
+    have h2p := two_dvd_of_prime_dvd_two hp hd
+    exact hodd ⟨h2p.trans hpA, h2p.trans hpB⟩
+  refine hkey p hp hp2 hpA hpB ?_
+  have hdvd : p ∣ c * g ^ 4 := hAB ▸ hpA.mul_right _
+  rcases hp.dvd_or_dvd hdvd with h1 | h1
+  · obtain ⟨d, hd⟩ := h1
+    have hdu : IsUnit d := (hcp.irreducible.isUnit_or_isUnit hd).resolve_left hp.not_unit
+    have hpsq : p * p ∣ p * (d * g ^ 4) := by
+      rw [show p * (d * g ^ 4) = c * g ^ 4 by rw [hd]; ring, ← hAB]
+      exact mul_dvd_mul hpA hpB
+    have hpd : p ∣ d * g ^ 4 := (mul_dvd_mul_iff_left hp.ne_zero).mp hpsq
+    have hg4 : p ∣ g ^ 4 := by
+      rcases Int.isUnit_iff.mp hdu with h2 | h2 <;> rw [h2] at hpd <;> simpa using hpd
+    exact hp.dvd_of_dvd_pow hg4
+  · exact hp.dvd_of_dvd_pow h1
+
+/-- **`G₁` with `e` odd descends to `H₁`.**  From `Q² = S⁴ − 11S²e² + 32e⁴` and `2 ∤ e`,
+the coprime factorisation of `4Q² − (2S² − 11e²)² = 7e⁴` gives `mn = ±e` with
+`(2S)² = n⁴ + 22m²n² − 7m⁴`. -/
+theorem step_G1_oddE {S e Q : ℤ} (hcop : IsCoprime S e) (he : ¬ (2 : ℤ) ∣ e)
+    (h : Q ^ 2 = S ^ 4 - 11 * S ^ 2 * e ^ 2 + 32 * e ^ 4) :
+    ∃ m n : ℤ, IsCoprime m n ∧ (m * n) ^ 2 = e ^ 2 ∧
+      (2 * S) ^ 2 = n ^ 4 + 22 * m ^ 2 * n ^ 2 - 7 * m ^ 4 := by
+  have hq2 : |Q| ^ 2 = Q ^ 2 := sq_abs Q
+  have hq0 : 0 ≤ |Q| := abs_nonneg Q
+  have he0 : e ≠ 0 := by rintro rfl; exact he ⟨0, by ring⟩
+  have he4 : (0 : ℤ) < e ^ 4 := by positivity
+  set A := 2 * |Q| - (2 * S ^ 2 - 11 * e ^ 2) with hAdef
+  set B := 2 * |Q| + (2 * S ^ 2 - 11 * e ^ 2) with hBdef
+  have hsum : A + B = 4 * |Q| := by rw [hAdef, hBdef]; ring
+  have hdiff : B - A = 2 * (2 * S ^ 2 - 11 * e ^ 2) := by rw [hAdef, hBdef]; ring
+  have hprod : A * B = 7 * e ^ 4 := by rw [hAdef, hBdef]; linear_combination 4 * hq2 + 4 * h
+  have hAodd : ¬ (2 : ℤ) ∣ A := by
+    rw [hAdef]
+    rintro ⟨c, hc⟩
+    have h1 : (2 : ℤ) ∣ 11 * e ^ 2 := ⟨c - |Q| + S ^ 2, by linarith [hc]⟩
+    exact he (Int.prime_two.dvd_of_dvd_pow
+      ((Int.prime_two.dvd_or_dvd h1).resolve_left (by decide)))
+  have hABpos : 0 < A ∧ 0 < B := by
+    have hpos : 0 < A * B := by rw [hprod]; linarith
+    rcases mul_pos_iff.mp hpos with h1 | h1
+    · exact h1
+    · exact absurd hsum (by linarith [h1.1, h1.2, hq0])
+  have hcopAB : IsCoprime A B := by
+    refine isCoprime_split prime_seven_int hprod (fun p hp hp2 hpA hpB hpe => ?_)
+      (fun hc => hAodd hc.1)
+    have hpU : p ∣ 2 * S ^ 2 - 11 * e ^ 2 :=
+      (hp.dvd_or_dvd (hdiff ▸ dvd_sub hpB hpA)).resolve_left hp2
+    have hpS : p ∣ S := by
+      obtain ⟨c, hc⟩ := hpU
+      obtain ⟨d, hd⟩ := hpe
+      rw [hd] at hc
+      exact hp.dvd_of_dvd_pow ((hp.dvd_or_dvd
+        (⟨c + 11 * p * d ^ 2, by linear_combination hc⟩ : p ∣ 2 * S ^ 2)).resolve_left hp2)
+    exact hp.not_unit (hcop.isUnit_of_dvd' hpS hpe)
+  rcases split_prime_pow_four prime_seven_int (by norm_num) hcopAB hprod
+      hABpos.1.le hABpos.2.le with h1 | h1
+  · obtain ⟨m, n, -, -, hmn, hA7, hBn, hmne⟩ := h1
+    rw [hAdef] at hA7; rw [hBdef] at hBn
+    exact ⟨m, n, hmn, hmne, by linear_combination hBn - hA7 - 22 * hmne⟩
+  · obtain ⟨m, n, -, -, hmn, hAn, hB7, hmne⟩ := h1
+    rw [hAdef] at hAn; rw [hBdef] at hB7
+    exact (h7_dead hmn (X := 2 * S) (by linear_combination hB7 - hAn - 22 * hmne)).elim
+
+/-- **`G₁` with `e` even descends to `H₁`.**  Here `S` is odd, `e = 2f`, and the
+factorisation of `Q² − (S² − 22f²)² = 28f⁴` gives `mn = ±f` with
+`S² = n⁴ + 22m²n² − 7m⁴`. -/
+theorem step_G1_evenE {S e Q : ℤ} (hcop : IsCoprime S e) (he : (2 : ℤ) ∣ e) (he0 : e ≠ 0)
+    (h : Q ^ 2 = S ^ 4 - 11 * S ^ 2 * e ^ 2 + 32 * e ^ 4) :
+    ∃ m n : ℤ, IsCoprime m n ∧ (2 * (m * n)) ^ 2 = e ^ 2 ∧
+      S ^ 2 = n ^ 4 + 22 * m ^ 2 * n ^ 2 - 7 * m ^ 4 := by
+  have hS : ¬ (2 : ℤ) ∣ S := fun hd => Int.prime_two.not_unit (hcop.isUnit_of_dvd' hd he)
+  obtain ⟨f, hf⟩ : ∃ f, e = 2 * f := he
+  have hf0 : f ≠ 0 := by rintro rfl; exact he0 (by rw [hf]; ring)
+  have hf4 : (0 : ℤ) < f ^ 4 := by positivity
+  obtain ⟨k, hk⟩ := odd_sq_eq hS
+  have h' : Q ^ 2 = S ^ 4 - 44 * S ^ 2 * f ^ 2 + 512 * f ^ 4 := by rw [h, hf]; ring
+  have hQodd : ¬ (2 : ℤ) ∣ Q := not_two_dvd_of_sq_odd_form
+    (t := 32 * k ^ 2 + 8 * k - 176 * k * f ^ 2 - 22 * f ^ 2 + 256 * f ^ 4)
+    (by rw [h', show S ^ 4 = (S ^ 2) ^ 2 by ring, hk]; ring)
+  have hQaodd : ¬ (2 : ℤ) ∣ |Q| := fun hd => hQodd ((dvd_abs 2 Q).mp hd)
+  have hUodd : ¬ (2 : ℤ) ∣ (S ^ 2 - 22 * f ^ 2) :=
+    not_two_dvd_of_odd_form (t := 4 * k - 11 * f ^ 2) (by rw [hk]; ring)
+  obtain ⟨⟨A, hAdef⟩, ⟨B, hBdef⟩⟩ := two_dvd_sub_add_of_odd hQaodd hUodd
+  have hsum : A + B = |Q| := by linarith [hAdef, hBdef]
+  have hu1 : S ^ 2 - 22 * f ^ 2 = B - A := by linarith [hAdef, hBdef]
+  have hq0 : 0 ≤ |Q| := abs_nonneg Q
+  have hprod : A * B = 7 * f ^ 4 := by
+    have h4 : (2 * A) * (2 * B) = 28 * f ^ 4 := by
+      rw [← hAdef, ← hBdef]; linear_combination sq_abs Q + h'
+    linarith [h4]
+  have hABpos : 0 < A ∧ 0 < B := by
+    have hpos : 0 < A * B := by rw [hprod]; linarith
+    rcases mul_pos_iff.mp hpos with h1 | h1
+    · exact h1
+    · exact absurd hsum (by linarith [h1.1, h1.2, hq0])
+  have hnot2 : ¬ ((2 : ℤ) ∣ A ∧ (2 : ℤ) ∣ B) := by
+    rintro ⟨⟨c, hc⟩, ⟨d, hd⟩⟩
+    exact hQaodd ⟨c + d, by linarith [hsum, hc, hd]⟩
+  have hcopAB : IsCoprime A B := by
+    refine isCoprime_split prime_seven_int hprod (fun p hp hp2 hpA hpB hpf => ?_) hnot2
+    have hpU : p ∣ S ^ 2 - 22 * f ^ 2 := hu1 ▸ dvd_sub hpB hpA
+    have hpS : p ∣ S := by
+      obtain ⟨c, hc⟩ := hpU
+      obtain ⟨d, hd⟩ := hpf
+      rw [hd] at hc
+      exact hp.dvd_of_dvd_pow (⟨c + 22 * p * d ^ 2, by linear_combination hc⟩ : p ∣ S ^ 2)
+    exact hp.not_unit (hcop.isUnit_of_dvd' hpS (hf ▸ hpf.mul_left 2))
+  rcases split_prime_pow_four prime_seven_int (by norm_num) hcopAB hprod
+      hABpos.1.le hABpos.2.le with h1 | h1
+  · obtain ⟨m, n, -, -, hmn, hA7, hBn, hmnf⟩ := h1
+    exact ⟨m, n, hmn, by rw [hf]; linear_combination 4 * hmnf,
+      by linear_combination hu1 + hBn - hA7 - 22 * hmnf⟩
+  · obtain ⟨m, n, -, -, hmn, hAn, hB7, hmnf⟩ := h1
+    exact (h7_dead hmn (X := S) (by linear_combination hu1 + hB7 - hAn - 22 * hmnf)).elim
+
+/-- **`G₈` with `a` odd descends to `H₁`.**  `16q² − (8b² − 11a²)² = 7a⁴`. -/
+theorem step_G8_odd {a b q : ℤ} (hcop : IsCoprime a b) (ha : ¬ (2 : ℤ) ∣ a)
+    (h : q ^ 2 = 8 * a ^ 4 - 11 * a ^ 2 * b ^ 2 + 4 * b ^ 4) :
+    ∃ m n : ℤ, IsCoprime m n ∧ (m * n) ^ 2 = a ^ 2 ∧
+      (4 * b) ^ 2 = n ^ 4 + 22 * m ^ 2 * n ^ 2 - 7 * m ^ 4 := by
+  have hq2 : |q| ^ 2 = q ^ 2 := sq_abs q
+  have hq0 : 0 ≤ |q| := abs_nonneg q
+  have ha0 : a ≠ 0 := by rintro rfl; exact ha ⟨0, by ring⟩
+  have ha4 : (0 : ℤ) < a ^ 4 := by positivity
+  set A := 4 * |q| - (8 * b ^ 2 - 11 * a ^ 2) with hAdef
+  set B := 4 * |q| + (8 * b ^ 2 - 11 * a ^ 2) with hBdef
+  have hsum : A + B = 8 * |q| := by rw [hAdef, hBdef]; ring
+  have hdiff : B - A = 2 * (8 * b ^ 2 - 11 * a ^ 2) := by rw [hAdef, hBdef]; ring
+  have hprod : A * B = 7 * a ^ 4 := by rw [hAdef, hBdef]; linear_combination 16 * hq2 + 16 * h
+  have hAodd : ¬ (2 : ℤ) ∣ A := by
+    rw [hAdef]
+    rintro ⟨c, hc⟩
+    have h1 : (2 : ℤ) ∣ 11 * a ^ 2 := ⟨c - 2 * |q| + 4 * b ^ 2, by linarith [hc]⟩
+    exact ha (Int.prime_two.dvd_of_dvd_pow
+      ((Int.prime_two.dvd_or_dvd h1).resolve_left (by decide)))
+  have hABpos : 0 < A ∧ 0 < B := by
+    have hpos : 0 < A * B := by rw [hprod]; linarith
+    rcases mul_pos_iff.mp hpos with h1 | h1
+    · exact h1
+    · exact absurd hsum (by linarith [h1.1, h1.2, hq0])
+  have hcopAB : IsCoprime A B := by
+    refine isCoprime_split prime_seven_int hprod (fun p hp hp2 hpA hpB hpa => ?_)
+      (fun hc => hAodd hc.1)
+    have hpw : p ∣ 8 * b ^ 2 - 11 * a ^ 2 :=
+      (hp.dvd_or_dvd (hdiff ▸ dvd_sub hpB hpA)).resolve_left hp2
+    have hpb : p ∣ b := by
+      obtain ⟨c, hc⟩ := hpw
+      obtain ⟨d, hd⟩ := hpa
+      rw [hd] at hc
+      have h8 : p ∣ 8 * b ^ 2 := ⟨c + 11 * p * d ^ 2, by linear_combination hc⟩
+      rcases hp.dvd_or_dvd h8 with h9 | h9
+      · exact absurd (hp.dvd_of_dvd_pow (show p ∣ (2 : ℤ) ^ 3 by simpa using h9)) hp2
+      · exact hp.dvd_of_dvd_pow h9
+    exact hp.not_unit (hcop.isUnit_of_dvd' hpa hpb)
+  rcases split_prime_pow_four prime_seven_int (by norm_num) hcopAB hprod
+      hABpos.1.le hABpos.2.le with h1 | h1
+  · obtain ⟨m, n, -, -, hmn, hA7, hBn, hmna⟩ := h1
+    rw [hAdef] at hA7; rw [hBdef] at hBn
+    exact ⟨m, n, hmn, hmna, by linear_combination hBn - hA7 - 22 * hmna⟩
+  · obtain ⟨m, n, -, -, hmn, hAn, hB7, hmna⟩ := h1
+    rw [hAdef] at hAn; rw [hBdef] at hB7
+    exact (h7_dead hmn (X := 4 * b) (by linear_combination hB7 - hAn - 22 * hmna)).elim
+
+/-- **`H₁` with `M`, `N` both odd descends to `G₈`.**
+`(M² + 11N²)² − Z² = 128N⁴`; here `M² + 11N² = 4p′` with `p′` odd and `4 ∣ Z`, and the
+coprime split of `p′² − z² = 8N⁴` gives `ab = ±N` with `M² = 8a⁴ − 11a²b² + 4b⁴`. -/
+theorem step_H1_odd {M N Z : ℤ} (hcop : IsCoprime M N) (hM : ¬ (2 : ℤ) ∣ M)
+    (hN : ¬ (2 : ℤ) ∣ N) (hN0 : N ≠ 0)
+    (h : Z ^ 2 = M ^ 4 + 22 * M ^ 2 * N ^ 2 - 7 * N ^ 4) :
+    ∃ a b : ℤ, IsCoprime a b ∧ (a * b) ^ 2 = N ^ 2 ∧
+      M ^ 2 = 8 * a ^ 4 - 11 * a ^ 2 * b ^ 2 + 4 * b ^ 4 := by
+  obtain ⟨k, hk⟩ := odd_sq_eq hM
+  obtain ⟨l, hl⟩ := odd_sq_eq hN
+  have hN2 : (0 : ℤ) < N ^ 2 := by positivity
+  have hN4 : (0 : ℤ) < N ^ 4 := by positivity
+  have hP : M ^ 2 + 11 * N ^ 2 = 4 * (2 * k + 22 * l + 3) := by rw [hk, hl]; ring
+  have hp'odd : ¬ (2 : ℤ) ∣ (2 * k + 22 * l + 3) :=
+    not_two_dvd_of_odd_form (t := k + 11 * l + 1) (by ring)
+  have hZ16 : Z ^ 2 = 16 * (4 * k ^ 2 + 88 * k * l - 28 * l ^ 2 + 12 * k + 4 * l + 1) := by
+    rw [h, show M ^ 4 = (M ^ 2) ^ 2 by ring, show N ^ 4 = (N ^ 2) ^ 2 by ring, hk, hl]; ring
+  obtain ⟨z, hz⟩ : (4 : ℤ) ∣ Z := (Int.pow_dvd_pow_iff two_ne_zero).mp
+    ⟨4 * k ^ 2 + 88 * k * l - 28 * l ^ 2 + 12 * k + 4 * l + 1, by rw [hZ16]; ring⟩
+  have hz2 : z ^ 2 = 4 * k ^ 2 + 88 * k * l - 28 * l ^ 2 + 12 * k + 4 * l + 1 := by
+    have h16 : 16 * z ^ 2 = 16 * (4 * k ^ 2 + 88 * k * l - 28 * l ^ 2 + 12 * k + 4 * l + 1) := by
+      rw [← hZ16, hz]; ring
+    linarith
+  have hzodd : ¬ (2 : ℤ) ∣ z := not_two_dvd_of_sq_odd_form
+    (t := 2 * k ^ 2 + 44 * k * l - 14 * l ^ 2 + 6 * k + 2 * l) (by rw [hz2]; ring)
+  have hkey : (2 * k + 22 * l + 3) ^ 2 - z ^ 2 = 8 * N ^ 4 := by
+    have hPZ : (M ^ 2 + 11 * N ^ 2) ^ 2 - Z ^ 2 = 128 * N ^ 4 := by linear_combination -h
+    rw [hP, hz] at hPZ
+    have h16 : 16 * ((2 * k + 22 * l + 3) ^ 2 - z ^ 2) = 16 * (8 * N ^ 4) := by
+      linear_combination hPZ
+    linarith
+  obtain ⟨⟨A, hAdef⟩, ⟨B, hBdef⟩⟩ := two_dvd_sub_add_of_odd hp'odd hzodd
+  have hsum : A + B = 2 * k + 22 * l + 3 := by linarith [hAdef, hBdef]
+  have hprod : A * B = 2 * N ^ 4 := by
+    have h4 : (2 * A) * (2 * B) = 8 * N ^ 4 := by rw [← hAdef, ← hBdef]; linear_combination hkey
+    linarith [h4]
+  have hp'pos : 0 < 2 * k + 22 * l + 3 := by linarith [hP, sq_nonneg M, hN2]
+  have hABpos : 0 < A ∧ 0 < B := by
+    have hpos : 0 < A * B := by rw [hprod]; linarith
+    rcases mul_pos_iff.mp hpos with h1 | h1
+    · exact h1
+    · exact absurd hsum (by linarith [h1.1, h1.2, hp'pos])
+  have hnot2 : ¬ ((2 : ℤ) ∣ A ∧ (2 : ℤ) ∣ B) := by
+    rintro ⟨⟨c, hc⟩, ⟨d, hd⟩⟩
+    exact hp'odd ⟨c + d, by linarith [hsum, hc, hd]⟩
+  have hcopAB : IsCoprime A B := by
+    refine isCoprime_split Int.prime_two hprod (fun p hp _ hpA hpB hpN => ?_) hnot2
+    obtain ⟨c, hc⟩ : p ∣ (2 * k + 22 * l + 3) := hsum ▸ dvd_add hpA hpB
+    obtain ⟨d, hd⟩ := id hpN
+    rw [hd] at hP
+    exact hp.not_unit (hcop.isUnit_of_dvd'
+      (hp.dvd_of_dvd_pow (⟨4 * c - 11 * p * d ^ 2, by linear_combination hP + 4 * hc⟩ :
+        p ∣ M ^ 2)) hpN)
+  rcases split_prime_pow_four Int.prime_two (by norm_num) hcopAB hprod
+      hABpos.1.le hABpos.2.le with h1 | h1
+  · obtain ⟨a, b, -, -, hab, hA2, hBn, habN⟩ := h1
+    exact ⟨a, b, hab, habN, by linear_combination hP - 4 * hsum + 4 * hA2 + 4 * hBn + 11 * habN⟩
+  · obtain ⟨a, b, -, -, hab, hAn, hB2, habN⟩ := h1
+    exact ⟨a, b, hab, habN, by linear_combination hP - 4 * hsum + 4 * hAn + 4 * hB2 + 11 * habN⟩
+
+/-- **`H₁` with `M`, `N` of opposite parity descends to `G₁`.**
+Then `M² + 11N²` and `Z` are both odd, `A·B = 2·(2N)⁴` splits as `{32μ⁴, n⁴}` with `n`
+odd and `μn = ±N`, and `M² = n⁴ − 11n²μ² + 32μ⁴`. -/
+theorem step_H1_mixed {M N Z : ℤ} (hcop : IsCoprime M N) (hpar : (2 : ℤ) ∣ M ∨ (2 : ℤ) ∣ N)
+    (hN0 : N ≠ 0) (h : Z ^ 2 = M ^ 4 + 22 * M ^ 2 * N ^ 2 - 7 * N ^ 4) :
+    ∃ n mu : ℤ, IsCoprime n mu ∧ (n * mu) ^ 2 = N ^ 2 ∧ ¬ (2 : ℤ) ∣ n ∧
+      M ^ 2 = n ^ 4 - 11 * n ^ 2 * mu ^ 2 + 32 * mu ^ 4 := by
+  have hN2 : (0 : ℤ) < N ^ 2 := by positivity
+  have hodd : ¬ (2 : ℤ) ∣ (M ^ 2 + 11 * N ^ 2) ∧ ¬ (2 : ℤ) ∣ Z := by
+    rcases hpar with hM | hN
+    · have hNodd : ¬ (2 : ℤ) ∣ N := fun hd =>
+        Int.prime_two.not_unit (hcop.isUnit_of_dvd' hM hd)
+      obtain ⟨M', hM'⟩ := hM
+      obtain ⟨l, hl⟩ := odd_sq_eq hNodd
+      exact ⟨not_two_dvd_of_odd_form (t := 2 * M' ^ 2 + 44 * l + 5) (by rw [hM', hl]; ring),
+        not_two_dvd_of_sq_odd_form
+          (t := 8 * M' ^ 4 + 352 * M' ^ 2 * l + 44 * M' ^ 2 - 224 * l ^ 2 - 56 * l - 4)
+          (by rw [h, hM', show N ^ 4 = (N ^ 2) ^ 2 by ring, hl]; ring)⟩
+    · have hModd : ¬ (2 : ℤ) ∣ M := fun hd =>
+        Int.prime_two.not_unit (hcop.isUnit_of_dvd' hd hN)
+      obtain ⟨N', hN'⟩ := hN
+      obtain ⟨k, hk⟩ := odd_sq_eq hModd
+      exact ⟨not_two_dvd_of_odd_form (t := 4 * k + 22 * N' ^ 2) (by rw [hN', hk]; ring),
+        not_two_dvd_of_sq_odd_form
+          (t := 32 * k ^ 2 + 8 * k + 352 * k * N' ^ 2 + 44 * N' ^ 2 - 56 * N' ^ 4)
+          (by rw [h, hN', show M ^ 4 = (M ^ 2) ^ 2 by ring, hk]; ring)⟩
+  obtain ⟨⟨A, hAdef⟩, ⟨B, hBdef⟩⟩ := two_dvd_sub_add_of_odd hodd.1 hodd.2
+  have hsum : A + B = M ^ 2 + 11 * N ^ 2 := by linarith [hAdef, hBdef]
+  have hprod : A * B = 2 * (2 * N) ^ 4 := by
+    have h4 : (2 * A) * (2 * B) = 4 * (2 * (2 * N) ^ 4) := by
+      rw [← hAdef, ← hBdef]; linear_combination -h
+    linarith [h4]
+  have hgpos : (0 : ℤ) < 2 * (2 * N) ^ 4 := by positivity
+  have hABpos : 0 < A ∧ 0 < B := by
+    have hpos : 0 < A * B := by rw [hprod]; linarith
+    rcases mul_pos_iff.mp hpos with h1 | h1
+    · exact h1
+    · exact absurd hsum (by linarith [h1.1, h1.2, sq_nonneg M, hN2])
+  have hnot2 : ¬ ((2 : ℤ) ∣ A ∧ (2 : ℤ) ∣ B) := by
+    rintro ⟨⟨c, hc⟩, ⟨d, hd⟩⟩
+    exact hodd.1 ⟨c + d, by linarith [hsum, hc, hd]⟩
+  have hcopAB : IsCoprime A B := by
+    refine isCoprime_split Int.prime_two hprod (fun p hp hp2 hpA hpB hpg => ?_) hnot2
+    have hpN : p ∣ N := (hp.dvd_or_dvd hpg).resolve_left hp2
+    obtain ⟨c, hc⟩ : p ∣ (M ^ 2 + 11 * N ^ 2) := hsum ▸ dvd_add hpA hpB
+    obtain ⟨d, hd⟩ := id hpN
+    rw [hd] at hc
+    exact hp.not_unit (hcop.isUnit_of_dvd'
+      (hp.dvd_of_dvd_pow (⟨c - 11 * p * d ^ 2, by linear_combination hc⟩ : p ∣ M ^ 2)) hpN)
+  have hfin : ∀ m n : ℤ, IsCoprime m n → ¬ (2 : ℤ) ∣ n → (m * n) ^ 2 = (2 * N) ^ 2 →
+      ∃ mu : ℤ, m = 2 * mu ∧ (n * mu) ^ 2 = N ^ 2 ∧ IsCoprime n mu := by
+    intro m n hmn hnodd hmnN
+    have h2mn : (2 : ℤ) ∣ m * n := Int.prime_two.dvd_of_dvd_pow
+      (⟨2 * N ^ 2, by linear_combination hmnN⟩ : (2 : ℤ) ∣ (m * n) ^ 2)
+    obtain ⟨mu, hmu⟩ := (Int.prime_two.dvd_or_dvd h2mn).resolve_right hnodd
+    refine ⟨mu, hmu, ?_, (hmn.of_isCoprime_of_dvd_left ⟨2, by rw [hmu]; ring⟩).symm⟩
+    have h4 : 4 * (n * mu) ^ 2 = 4 * N ^ 2 := by rw [hmu] at hmnN; linear_combination hmnN
+    linarith
+  rcases split_prime_pow_four Int.prime_two (by norm_num) hcopAB hprod
+      hABpos.1.le hABpos.2.le with h1 | h1
+  · obtain ⟨m, n, -, -, hmn, hA2, hBn, hmnN⟩ := h1
+    have hnodd : ¬ (2 : ℤ) ∣ n := fun hd =>
+      hnot2 ⟨⟨m ^ 4, hA2⟩, hBn ▸ dvd_pow hd (by norm_num)⟩
+    obtain ⟨mu, hmu, hnmu, hcnmu⟩ := hfin m n hmn hnodd hmnN
+    have hA32 : A = 32 * mu ^ 4 := by rw [hA2, hmu]; ring
+    exact ⟨n, mu, hcnmu, hnmu, hnodd, by linear_combination -hsum + hA32 + hBn + 11 * hnmu⟩
+  · obtain ⟨m, n, -, -, hmn, hAn, hB2, hmnN⟩ := h1
+    have hnodd : ¬ (2 : ℤ) ∣ n := fun hd =>
+      hnot2 ⟨hAn ▸ dvd_pow hd (by norm_num), ⟨m ^ 4, hB2⟩⟩
+    obtain ⟨mu, hmu, hnmu, hcnmu⟩ := hfin m n hmn hnodd hmnN
+    have hB32 : B = 32 * mu ^ 4 := by rw [hB2, hmu]; ring
+    exact ⟨n, mu, hcnmu, hnmu, hnodd, by linear_combination -hsum + hAn + hB32 + 11 * hnmu⟩
+
+theorem one_le_sq {x : ℤ} (h : x ≠ 0) : 1 ≤ x ^ 2 := by
+  rcases lt_trichotomy x 0 with h1 | h1 | h1
+  · nlinarith
+  · exact absurd h1 h
+  · nlinarith
+
+theorem natAbs_lt_of_sq_lt {x y : ℤ} (h : x ^ 2 < y ^ 2) : x.natAbs < y.natAbs := by
+  by_contra hc
+  push Not at hc
+  have h1 : (y.natAbs : ℤ) ≤ (x.natAbs : ℤ) := by exact_mod_cast hc
+  rw [← Int.abs_eq_natAbs, ← Int.abs_eq_natAbs] at h1
+  nlinarith [sq_abs x, sq_abs y, abs_nonneg y]
+
+/-- **THE MASTER DESCENT.**  The only coprime solutions of the `d′ = 1` homogeneous space
+`Z² = M⁴ + 22M²N² − 7N⁴` of `Y² = X³ + 22X² − 7X` are `(M, N) = (±1, 0)` and `(±1, ±1)`.
+
+Proved by strong induction on `|N|`.  If `M` and `N` have opposite parity the space
+descends to `G₁` at `(n₁, μ)` with `n₁` odd, and `G₁` either dies mod `8` (`μ` odd) or
+descends again to a strictly smaller `H₁`; either way that branch is empty.  If `M` and
+`N` are both odd the space descends to `G₈` and then back to `H₁` at `(n, m)` with
+`|m| · |n| · |b| = |N|`, which is a strict decrease unless `|nb| = 1` — and in that case
+the equation itself forces `m² = 1`. -/
+theorem h1_classification : ∀ nn : ℕ, ∀ M N Z : ℤ, N.natAbs ≤ nn → IsCoprime M N →
+    Z ^ 2 = M ^ 4 + 22 * M ^ 2 * N ^ 2 - 7 * N ^ 4 → M ^ 2 = 1 ∧ N ^ 2 ≤ 1 := by
+  intro nn
+  induction nn using Nat.strong_induction_on with
+  | _ nn IH =>
+  intro M N Z hle hcop h
+  rcases eq_or_ne N 0 with rfl | hN0
+  · refine ⟨?_, by norm_num⟩
+    rcases Int.isUnit_iff.mp (hcop.isUnit_of_dvd' dvd_rfl (dvd_zero M)) with h1 | h1 <;>
+      rw [h1] <;> norm_num
+  by_cases hpar : (2 : ℤ) ∣ M ∨ (2 : ℤ) ∣ N
+  · exfalso
+    obtain ⟨n1, mu, hcnmu, hnmu, hn1odd, heq⟩ := step_H1_mixed hcop hpar hN0 h
+    have hn10 : n1 ≠ 0 := by rintro rfl; exact hn1odd ⟨0, by ring⟩
+    have hmu0 : mu ≠ 0 := by
+      rintro rfl
+      exact hN0 (by nlinarith [hnmu, sq_nonneg N])
+    by_cases hmu2 : (2 : ℤ) ∣ mu
+    · obtain ⟨m2, n2, hc2, he2, heq2⟩ := step_G1_evenE hcnmu hmu2 hmu0 heq
+      have hm20 : m2 ≠ 0 := by
+        rintro rfl
+        exact hmu0 (by nlinarith [he2, sq_nonneg mu])
+      have hn20 : n2 ≠ 0 := by
+        rintro rfl
+        exact hmu0 (by nlinarith [he2, sq_nonneg mu])
+      have hN2eq : N ^ 2 = 4 * (n1 ^ 2 * n2 ^ 2) * m2 ^ 2 := by
+        linear_combination -hnmu - n1 ^ 2 * he2
+      have hlt : m2.natAbs < N.natAbs := by
+        refine natAbs_lt_of_sq_lt ?_
+        rw [hN2eq]
+        nlinarith [one_le_sq hn10, one_le_sq hn20, one_le_sq hm20]
+      obtain ⟨hn2sq, hm2sq⟩ :=
+        IH m2.natAbs (lt_of_lt_of_le hlt hle) n2 m2 n1 le_rfl hc2.symm (by linear_combination heq2)
+      have hm2e : m2 ^ 2 = 1 := le_antisymm hm2sq (one_le_sq hm20)
+      rw [show n2 ^ 4 = (n2 ^ 2) ^ 2 by ring, show m2 ^ 4 = (m2 ^ 2) ^ 2 by ring,
+        hn2sq, hm2e] at heq2
+      obtain ⟨kk, hkk⟩ := odd_sq_eq hn1odd
+      omega
+    · obtain ⟨k, hk⟩ := odd_sq_eq hn1odd
+      obtain ⟨l, hl⟩ := odd_sq_eq hmu2
+      have h6 : M ^ 2 = 8 * (8 * k ^ 2 - 88 * k * l + 256 * l ^ 2 - 9 * k + 53 * l + 2) + 6 := by
+        rw [heq, show n1 ^ 4 = (n1 ^ 2) ^ 2 by ring, show mu ^ 4 = (mu ^ 2) ^ 2 by ring, hk, hl]
+        ring
+      rcases sq_form M with ⟨-, s, hs⟩ | ⟨-, s, hs⟩ | ⟨-, s, hs⟩ <;> omega
+  · push Not at hpar
+    obtain ⟨a, b, hab, habN, heq⟩ := step_H1_odd hcop hpar.1 hpar.2 hN0 h
+    have haodd : ¬ (2 : ℤ) ∣ a := fun hd => hpar.2 (Int.prime_two.dvd_of_dvd_pow
+      (habN ▸ (dvd_pow (hd.mul_right b) two_ne_zero) : (2 : ℤ) ∣ N ^ 2))
+    have hbodd : ¬ (2 : ℤ) ∣ b := fun hd => hpar.2 (Int.prime_two.dvd_of_dvd_pow
+      (habN ▸ (dvd_pow (Dvd.dvd.mul_left hd a) two_ne_zero) : (2 : ℤ) ∣ N ^ 2))
+    have ha0 : a ≠ 0 := by rintro rfl; exact haodd ⟨0, by ring⟩
+    have hb0 : b ≠ 0 := by rintro rfl; exact hbodd ⟨0, by ring⟩
+    obtain ⟨m, n, hmn, hmna, heq2⟩ := step_G8_odd hab haodd heq
+    have hm0 : m ≠ 0 := by rintro rfl; exact ha0 (by nlinarith [hmna, sq_nonneg a])
+    have hn0 : n ≠ 0 := by rintro rfl; exact ha0 (by nlinarith [hmna, sq_nonneg a])
+    have hNfact : N ^ 2 = m ^ 2 * (n ^ 2 * b ^ 2) := by
+      linear_combination -habN - b ^ 2 * hmna
+    have hcore : m ^ 2 = 1 ∧ n ^ 2 = 1 ∧ b ^ 2 = 1 := by
+      by_cases hnb : n ^ 2 * b ^ 2 = 1
+      · have hn2 : n ^ 2 = 1 := by nlinarith [one_le_sq hn0, one_le_sq hb0]
+        have hb2 : b ^ 2 = 1 := by nlinarith [one_le_sq hn0, one_le_sq hb0]
+        refine ⟨?_, hn2, hb2⟩
+        rw [show n ^ 4 = (n ^ 2) ^ 2 by ring, show m ^ 4 = (m ^ 2) ^ 2 by ring, hn2] at heq2
+        have hfac : (m ^ 2 - 1) * (7 * m ^ 2 - 15) = 0 := by
+          linear_combination heq2 - 16 * hb2
+        rcases mul_eq_zero.mp hfac with h8 | h8
+        · linarith
+        · obtain ⟨u, hu⟩ : ∃ u : ℤ, m ^ 2 = u := ⟨_, rfl⟩
+          rw [hu] at h8 ⊢
+          omega
+      · have h2le : 2 ≤ n ^ 2 * b ^ 2 := by
+          rcases lt_or_gt_of_ne hnb with h3 | h3
+          · nlinarith [one_le_sq hn0, one_le_sq hb0]
+          · omega
+        have hlt : m.natAbs < N.natAbs := by
+          refine natAbs_lt_of_sq_lt ?_
+          rw [hNfact]
+          nlinarith [one_le_sq hm0, h2le]
+        obtain ⟨hn2, hm2⟩ := IH m.natAbs (lt_of_lt_of_le hlt hle) n m (4 * b) le_rfl hmn.symm (by linear_combination heq2)
+        have hm2e : m ^ 2 = 1 := le_antisymm hm2 (one_le_sq hm0)
+        refine ⟨hm2e, hn2, ?_⟩
+        rw [show n ^ 4 = (n ^ 2) ^ 2 by ring, show m ^ 4 = (m ^ 2) ^ 2 by ring, hn2,
+          hm2e] at heq2
+        linarith
+    obtain ⟨hm2e, hn2e, hb2e⟩ := hcore
+    have hasq : a ^ 2 = 1 := by rw [← hmna]; nlinarith [hm2e, hn2e]
+    refine ⟨?_, ?_⟩
+    · rw [show a ^ 4 = (a ^ 2) ^ 2 by ring, show b ^ 4 = (b ^ 2) ^ 2 by ring, hasq,
+        hb2e] at heq
+      linarith
+    · rw [← habN]; nlinarith [hasq, hb2e]
+
+/-- **The `d = 1` homogeneous space of `14a4`** (PROVEN 2026-07-27): the only
+coprime positive solution of `Q² = S⁴ − 11S²e² + 32e⁴` is `(S, e) = (2, 1)`,
+which is the rational point `T = 4` of `V² = T³ − 11T² + 32T`, i.e. the pair of
+points `(x, y) = (0, 0)` and `(0, −1)` of `14a4`.
+
+Not congruence-obstructed — it carries that one point — so the proof is a genuine
+infinite descent, carried by `h1_classification` above. Both parities of `e` reduce
+to the SAME space `H₁`: for `e` odd through `4Q² = (2S² − 11e²)² + 7e⁴` and
+`step_G1_oddE`, for `e` even through `Q² = (S² − 22f²)² + 28f⁴` and
+`step_G1_evenE`. The `e` even branch then dies not by a congruence but because
+`H₁` forces `e = 2`, `S = 4`, contradicting `gcd(S, e) = 1`. -/
+theorem quartic_one {S e Q : ℤ} (hS : 0 < S) (he : 0 < e) (hcop : IsCoprime S e)
+    (h : S ^ 4 - 11 * S ^ 2 * e ^ 2 + 32 * e ^ 4 = Q ^ 2) : S = 2 ∧ e = 1 := by
+  have h' : Q ^ 2 = S ^ 4 - 11 * S ^ 2 * e ^ 2 + 32 * e ^ 4 := h.symm
+  by_cases heodd : (2 : ℤ) ∣ e
+  · exfalso
+    obtain ⟨m, n, hmn, hmne, heq⟩ := step_G1_evenE hcop heodd (by omega) h'
+    have hm0 : m ≠ 0 := by rintro rfl; nlinarith [hmne, he]
+    obtain ⟨hn2, hm2⟩ :=
+      h1_classification m.natAbs n m S le_rfl hmn.symm (by linear_combination heq)
+    have hm2e : m ^ 2 = 1 := le_antisymm hm2 (one_le_sq hm0)
+    have he2 : e ^ 2 = 4 := by nlinarith [hmne, hm2e, hn2]
+    have heval : e = 2 := by nlinarith [he2, he]
+    rw [show n ^ 4 = (n ^ 2) ^ 2 by ring, show m ^ 4 = (m ^ 2) ^ 2 by ring, hn2, hm2e] at heq
+    have hSval : S = 4 := by nlinarith [heq, hS]
+    exact Int.prime_two.not_unit
+      (hcop.isUnit_of_dvd' ⟨2, by omega⟩ ⟨1, by omega⟩)
+  · obtain ⟨m, n, hmn, hmne, heq⟩ := step_G1_oddE hcop heodd h'
+    have hm0 : m ≠ 0 := by rintro rfl; nlinarith [hmne, he]
+    obtain ⟨hn2, hm2⟩ :=
+      h1_classification m.natAbs n m (2 * S) le_rfl hmn.symm (by linear_combination heq)
+    have hm2e : m ^ 2 = 1 := le_antisymm hm2 (one_le_sq hm0)
+    have he2 : e ^ 2 = 1 := by nlinarith [hmne, hm2e, hn2]
+    rw [show n ^ 4 = (n ^ 2) ^ 2 by ring, show m ^ 4 = (m ^ 2) ^ 2 by ring, hn2, hm2e] at heq
+    exact ⟨by nlinarith [heq, hS], by nlinarith [he2, he]⟩
+
+/-- **The `d = 2` homogeneous space of `14a4`** (PROVEN 2026-07-27): the only
+coprime positive solution of `Q² = 2S⁴ − 11S²e² + 16e⁴` is `(S, e) = (2, 1)`,
+which is the rational point `T = 8`, i.e. the pair `(x, y) = (1, 0)` and
+`(1, −2)` of `14a4`.
+
+Here both parities are FORCED before any descent: `e` even gives `Q² ≡ 2 (mod 4)`
+and `S`, `e` both odd gives `Q² ≡ 7 (mod 8)`, so `S = 2s` is even and `e` is odd.
+Dividing by `4` lands on `q² = 8s⁴ − 11s²e² + 4e⁴`, the `d = 8` member of the same
+family, which for `s` odd descends to `H₁` by `step_G8_odd` and for `s` even
+reduces to `quartic_one` at `(e, s/2)` — and that forces `e = 2`, contradicting
+`e` odd. -/
+theorem quartic_two {S e Q : ℤ} (hS : 0 < S) (he : 0 < e) (hcop : IsCoprime S e)
+    (h : 2 * S ^ 4 - 11 * S ^ 2 * e ^ 2 + 16 * e ^ 4 = Q ^ 2) : S = 2 ∧ e = 1 := by
+  have heodd : ¬ (2 : ℤ) ∣ e := by
+    rintro ⟨f, hf⟩
+    have hSodd : ¬ (2 : ℤ) ∣ S := fun hd =>
+      Int.prime_two.not_unit (hcop.isUnit_of_dvd' hd ⟨f, hf⟩)
+    obtain ⟨k, hk⟩ := odd_sq_eq hSodd
+    have h4 : Q ^ 2 = 4 * (32 * k ^ 2 + 8 * k - 88 * k * f ^ 2 - 11 * f ^ 2 + 64 * f ^ 4) + 2 := by
+      rw [← h, hf, show S ^ 4 = (S ^ 2) ^ 2 by ring, hk]; ring
+    rcases sq_form Q with ⟨-, s, hs⟩ | ⟨-, s, hs⟩ | ⟨-, s, hs⟩ <;> omega
+  have hSeven : (2 : ℤ) ∣ S := by
+    by_contra hSodd
+    obtain ⟨k, hk⟩ := odd_sq_eq hSodd
+    obtain ⟨l, hl⟩ := odd_sq_eq heodd
+    have h8 : Q ^ 2 = 8 * (16 * k ^ 2 - 88 * k * l + 128 * l ^ 2 - 7 * k + 21 * l) + 7 := by
+      rw [← h, show S ^ 4 = (S ^ 2) ^ 2 by ring, show e ^ 4 = (e ^ 2) ^ 2 by ring, hk, hl]; ring
+    rcases sq_form Q with ⟨-, s, hs⟩ | ⟨-, s, hs⟩ | ⟨-, s, hs⟩ <;> omega
+  obtain ⟨s, hs⟩ := hSeven
+  have hs0 : 0 < s := by omega
+  have hcse : IsCoprime s e := hcop.of_isCoprime_of_dvd_left ⟨2, by rw [hs]; ring⟩
+  obtain ⟨q, hq⟩ : (2 : ℤ) ∣ Q := Int.prime_two.dvd_of_dvd_pow
+    (⟨2 * (8 * s ^ 4 - 11 * s ^ 2 * e ^ 2 + 4 * e ^ 4), by rw [← h, hs]; ring⟩ : (2 : ℤ) ∣ Q ^ 2)
+  have hG8 : q ^ 2 = 8 * s ^ 4 - 11 * s ^ 2 * e ^ 2 + 4 * e ^ 4 := by
+    have h4 : 4 * q ^ 2 = 4 * (8 * s ^ 4 - 11 * s ^ 2 * e ^ 2 + 4 * e ^ 4) := by
+      rw [hq, hs] at h; linear_combination -h
+    linarith
+  by_cases hsodd : (2 : ℤ) ∣ s
+  · exfalso
+    obtain ⟨sg, hsg⟩ := hsodd
+    have hsg0 : 0 < sg := by omega
+    have hcesg : IsCoprime e sg := (hcse.of_isCoprime_of_dvd_left ⟨2, by rw [hsg]; ring⟩).symm
+    obtain ⟨q', hq'⟩ : (2 : ℤ) ∣ q := Int.prime_two.dvd_of_dvd_pow
+      (⟨2 * (32 * sg ^ 4 - 11 * sg ^ 2 * e ^ 2 + e ^ 4), by rw [hG8, hsg]; ring⟩ :
+        (2 : ℤ) ∣ q ^ 2)
+    have hG1 : e ^ 4 - 11 * e ^ 2 * sg ^ 2 + 32 * sg ^ 4 = q' ^ 2 := by
+      have h4 : 4 * (e ^ 4 - 11 * e ^ 2 * sg ^ 2 + 32 * sg ^ 4) = 4 * q' ^ 2 := by
+        rw [hq', hsg] at hG8; linear_combination -hG8
+      linarith
+    have hev : e = 2 := (quartic_one he hsg0 hcesg hG1).1
+    exact heodd ⟨1, by omega⟩
+  · obtain ⟨m, n, hmn, hmns, heq2⟩ := step_G8_odd hcse hsodd hG8
+    have hm0 : m ≠ 0 := by rintro rfl; nlinarith [hmns, hs0]
+    obtain ⟨hn2, hm2⟩ :=
+      h1_classification m.natAbs n m (4 * e) le_rfl hmn.symm (by linear_combination heq2)
+    have hm2e : m ^ 2 = 1 := le_antisymm hm2 (one_le_sq hm0)
+    rw [show n ^ 4 = (n ^ 2) ^ 2 by ring, show m ^ 4 = (m ^ 2) ^ 2 by ring, hn2, hm2e] at heq2
+    exact ⟨by nlinarith [hmns, hm2e, hn2, hs0, hs], by nlinarith [heq2, he]⟩
+
+/-- The `d = 1` shape of the `gcd` split: `g = c²` is a square, so `p` is a
+square and the descent equation is `quartic_one`'s. -/
+theorem case_one {p e a b c : ℤ} (hc : 0 < c) (ha0 : a ≠ 0) (hcop : IsCoprime p e)
+    (ha : p = c ^ 2 * a ^ 2) (hb : p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4 = c ^ 2 * b ^ 2) :
+    ∃ S Q : ℤ, 0 < S ∧ IsCoprime S e ∧ p = S ^ 2 ∧
+      S ^ 4 - 11 * S ^ 2 * e ^ 2 + 32 * e ^ 4 = Q ^ 2 := by
+  have hS2 : (c * |a|) ^ 2 = c ^ 2 * a ^ 2 := by rw [mul_pow, sq_abs]
+  have hSp : p = (c * |a|) ^ 2 := by rw [hS2]; exact ha
+  refine ⟨c * |a|, c * b, mul_pos hc (abs_pos.mpr ha0),
+    hcop.of_isCoprime_of_dvd_left ⟨c * |a|, by rw [hSp]; ring⟩, hSp, ?_⟩
+  rw [ha] at hb
+  linear_combination hb + ((c * |a|) ^ 2 + c ^ 2 * a ^ 2 - 11 * e ^ 2) * hS2
+
+/-- The `d = 2` shape of the `gcd` split: `g = 2c²`, so `p = 2S²` and the
+descent equation is `quartic_two`'s. -/
+theorem case_two {p e a b c : ℤ} (hc : 0 < c) (ha0 : a ≠ 0) (hcop : IsCoprime p e)
+    (ha : p = 2 * (c ^ 2 * a ^ 2))
+    (hb : p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4 = 2 * (c ^ 2 * b ^ 2)) :
+    ∃ S Q : ℤ, 0 < S ∧ IsCoprime S e ∧ p = 2 * S ^ 2 ∧
+      2 * S ^ 4 - 11 * S ^ 2 * e ^ 2 + 16 * e ^ 4 = Q ^ 2 := by
+  have hS2 : (c * |a|) ^ 2 = c ^ 2 * a ^ 2 := by rw [mul_pow, sq_abs]
+  have hSp : p = 2 * (c * |a|) ^ 2 := by rw [hS2]; exact ha
+  refine ⟨c * |a|, c * b, mul_pos hc (abs_pos.mpr ha0),
+    hcop.of_isCoprime_of_dvd_left ⟨2 * (c * |a|), by rw [hSp]; ring⟩, hSp, ?_⟩
+  rw [ha] at hb
+  refine mul_left_cancel₀ (two_ne_zero (α := ℤ)) ?_
+  linear_combination hb + (4 * ((c * |a|) ^ 2 + c ^ 2 * a ^ 2) - 22 * e ^ 2) * hS2
+
+/-- **The `gcd` descent** (PROVEN 2026-07-26): an integral point
+`n² = p(p² − 11pe² + 32e⁴)` with `p, e > 0` coprime lies on one of the two
+homogeneous spaces `quartic_one` (`d = 1`) or `quartic_two` (`d = 2`).
+
+The `gcd` of the two factors divides `32`, and `p > 0` rules out the negative
+square-free classes, which is why only `d ∈ {1, 2}` survive rather than
+`d ∈ {±1, ±2}`. -/
+theorem descent_step {p e n : ℤ} (hp : 0 < p) (he : 0 < e) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p * (p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4)) :
+    ∃ S Q : ℤ, 0 < S ∧ IsCoprime S e ∧
+      ((p = S ^ 2 ∧ S ^ 4 - 11 * S ^ 2 * e ^ 2 + 32 * e ^ 4 = Q ^ 2) ∨
+        (p = 2 * S ^ 2 ∧ 2 * S ^ 4 - 11 * S ^ 2 * e ^ 2 + 16 * e ^ 4 = Q ^ 2)) := by
+  have he4 : (0 : ℤ) < e ^ 4 := by positivity
+  have hBpos : (0 : ℤ) < p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4 := by
+    nlinarith [sq_nonneg (2 * p - 11 * e ^ 2)]
+  obtain ⟨a, b, ha, hb, _hab⟩ := split_gcd (A := p)
+    (B := p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4) (c := n) h.symm hp.le hBpos.le hp.ne'
+  have hGp : ((Int.gcd p (p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4) : ℤ)) ∣ p := Int.gcd_dvd_left _ _
+  have hGB : ((Int.gcd p (p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4) : ℤ)) ∣
+      p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4 := Int.gcd_dvd_right _ _
+  have hGe : IsCoprime ((Int.gcd p (p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4) : ℤ)) e :=
+    hcop.of_isCoprime_of_dvd_left hGp
+  have hG32e : ((Int.gcd p (p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4) : ℤ)) ∣ 32 * e ^ 4 := by
+    have hd := dvd_sub hGB (hGp.mul_right (p - 11 * e ^ 2))
+    have hrw : (p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4) - p * (p - 11 * e ^ 2)
+        = 32 * e ^ 4 := by ring
+    rwa [hrw] at hd
+  have hG32 : Int.gcd p (p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4) ∣ 32 := by
+    have := (hGe.pow_right (n := 4)).dvd_of_dvd_mul_right hG32e
+    exact_mod_cast this
+  have ha0 : a ≠ 0 := by rintro rfl; rw [ha] at hp; simp at hp
+  rcases dvd_thirtytwo hG32 with hg | hg | hg | hg | hg | hg <;> rw [hg] at ha hb <;>
+    push_cast at ha hb
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_one (c := 1) one_pos ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inl ⟨h3, h4⟩⟩
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_two (c := 1) one_pos ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inr ⟨h3, h4⟩⟩
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_one (c := 2) two_pos ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inl ⟨h3, h4⟩⟩
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_two (c := 2) two_pos ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inr ⟨h3, h4⟩⟩
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_one (c := 4) (by norm_num) ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inl ⟨h3, h4⟩⟩
+  · obtain ⟨S, Q, h1, h2, h3, h4⟩ :=
+      case_two (c := 4) (by norm_num) ha0 hcop (by linarith) (by linarith)
+    exact ⟨S, Q, h1, h2, Or.inr ⟨h3, h4⟩⟩
+
+/-- **The integral model at level `14`** (PROVEN 2026-07-26): a rational
+solution of `V² = T³ − 11T² + 32T` with `T > 0` comes from an integral one,
+`T = p/e²` with `gcd(p, e) = 1` and `p, e > 0`, satisfying
+`n² = p(p² − 11pe² + 32e⁴)`.
+
+The denominator work is `RationalPointDescent.exists_int_model` (`A = −11`,
+`B = 32`, `C = 0`); all that is added here is `0 < p`, which comes from
+`T = p/e² > 0`, and the factored form of the cubic — the factor `p` being
+present is exactly the rational `2`-torsion point, and is what makes the
+`gcd` descent of `descent_step` possible. -/
+theorem exists_int_model {T V : ℚ} (hT : 0 < T) (h : V ^ 2 = T ^ 3 - 11 * T ^ 2 + 32 * T) :
+    ∃ p e n : ℤ, 0 < p ∧ 0 < e ∧ IsCoprime p e ∧ T = (p : ℚ) / (e : ℚ) ^ 2 ∧
+      n ^ 2 = p * (p ^ 2 - 11 * p * e ^ 2 + 32 * e ^ 4) := by
+  obtain ⟨p, e, n, he, hcop, hTeq, hn⟩ :=
+    RationalPointDescent.exists_int_model (A := -11) (B := 32) (C := 0) (T := T) (V := V)
+      (by push_cast; linear_combination h)
+  refine ⟨p, e, n, ?_, he, hcop, hTeq, by linear_combination hn⟩
+  have hene : ((e : ℚ)) ≠ 0 := by exact_mod_cast he.ne'
+  have hepos : (0 : ℚ) < ((e : ℚ)) ^ 2 := by positivity
+  rw [hTeq] at hT
+  rcases div_pos_iff.mp hT with ⟨h1, _⟩ | ⟨_, h2⟩
+  · exact_mod_cast h1
+  · linarith
+
+/-- **The three rational `T`-values of `V² = T³ − 11T² + 32T`** (PROVEN
+2026-07-26 from the two quartic leaves): `T ∈ {0, 4, 8}`.
+
+`T = 0` is the rational `2`-torsion point; `T = 4` and `T = 8` are the two
+`x`-fibres each carrying a pair of points. Together with the point at infinity
+that is `14a4(ℚ) ≅ ℤ/6`. -/
+theorem T_trichotomy {T V : ℚ} (h : V ^ 2 = T ^ 3 - 11 * T ^ 2 + 32 * T) :
+    T = 0 ∨ T = 4 ∨ T = 8 := by
+  rcases eq_or_ne T 0 with rfl | hT0
+  · exact Or.inl rfl
+  have hquad : (0 : ℚ) < T ^ 2 - 11 * T + 32 := by nlinarith [sq_nonneg (2 * T - 11)]
+  have hTpos : 0 < T := by
+    rcases lt_trichotomy T 0 with hlt | heq | hgt
+    · exfalso; nlinarith [sq_nonneg V]
+    · exact absurd heq hT0
+    · exact hgt
+  obtain ⟨p, e, n, hp, he, hcop, hTeq, hint⟩ := exists_int_model hTpos h
+  obtain ⟨S, Q, hS, hSe, hcase⟩ := descent_step hp he hcop hint
+  rcases hcase with ⟨hpS, hq⟩ | ⟨hpS, hq⟩
+  · obtain ⟨hS2, he1⟩ := quartic_one hS he hSe hq
+    right; left
+    rw [hTeq, hpS, hS2, he1]; norm_num
+  · obtain ⟨hS2, he1⟩ := quartic_two hS he hSe hq
+    right; right
+    rw [hTeq, hpS, hS2, he1]; norm_num
+
+end MazurLevel14
+
+/-- **The rational points of the descent model of `14a4`** (PROVEN 2026-07-27
+from `MazurLevel14.T_trichotomy`; this was the single level-`14` sorry leaf on
+`main`, and the whole `MazurLevel14` descent above exists to discharge it): the
+only rational points of
 
     W² = T³ − 11T² + 32T
 
@@ -671,7 +1567,7 @@ DOWNSTREAM of this file, so they have to be restated here (or hoisted) rather
 than imported. -/
 theorem curve14a4_rational_T (T W : ℚ) (h : W ^ 2 = T ^ 3 - 11 * T ^ 2 + 32 * T) :
     T = 0 ∨ T = 4 ∨ T = 8 :=
-  sorry
+  MazurLevel14.T_trichotomy h
 
 /-- **The five affine rational points of `14a4`, UNCONDITIONALLY** (PROVEN
 2026-07-26 over `curve14a4_rational_T`): the affine rational points of
