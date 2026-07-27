@@ -20323,6 +20323,227 @@ The local statement is decomposed here into three pieces, two of them PROVEN:
   continuous characters, and the second is unramified because the whole
   representation is. -/
 
+/-- **HENSEL: a `2 × 2` matrix over a complete local ring whose characteristic
+polynomial reduces to a SPLIT SEPARABLE quadratic is diagonalisable** (PROVEN —
+the commutative-algebra core of the split-torus clause; no arithmetic here).
+
+`π` presents `k` as the residue field of the maximal-adically complete local
+ring `R`, and `m.charpoly` reduces to `(X - α)(X - β)` with `α ≠ β`. Then there
+is `P ∈ GL₂(R)` and `a, b ∈ R` with `a - b` a unit and `m P = P · diag(a,b)`.
+
+PROOF, in four steps.
+
+1. *Hensel.* `R` is `IsAdicComplete` at its maximal ideal, hence Henselian
+   (`IsAdicComplete.henselianRing`). `α` is a SIMPLE root of the reduced
+   charpoly — the derivative of `(X-α)(X-β)` at `α` is `α - β ≠ 0`, a unit —
+   so it lifts to a root `a ∈ R` with `π a = α`; likewise `β` to `b`. Then
+   `π (a - b) = α - β ≠ 0`, and since `ker π` IS the maximal ideal (`π` is onto
+   a field and `R` is local), `a - b` is a UNIT.
+2. *Factorisation.* `m.charpoly` is monic of `natDegree 2` (the degree is read
+   off the REDUCTION, since a monic polynomial keeps its degree under `map`),
+   has `a` as a root, and the cofactor is monic of degree `1` with `b` as a
+   root because `b - a` is a unit. So `m.charpoly = (X - a)(X - b)`, and
+   Cayley–Hamilton gives `(m - a)(m - b) = 0` — in BOTH orders, since the two
+   factors commute already in `R[X]`.
+3. *Eigencolumns.* Put `p = m - a·b`… more precisely `p = m - b` and
+   `q = a - m`. Step 2 gives `m p = a p` and `m q = b q`, so EVERY column of
+   `p` is an `a`-eigenvector and every column of `q` a `b`-eigenvector. No
+   idempotents, no rank theory: the two eigen-equations are all that is used.
+4. *Which two columns.* Let `d₁ = det(p·e₀ | q·e₁)` and `d₂ = det(q·e₀ | p·e₁)`
+   read in `k`. Writing `m̄ = [[x,y],[z,t]]`, the reduced charpoly gives
+   `x + t = α + β` and `x t - y z = α β`, and then
+
+       d₁ + d₂ = (α + β)(x + t) - 4αβ = (α + β)² - 4αβ = (α - β)² ≠ 0,
+
+   a one-line `linear_combination`. So at least ONE of `d₁`, `d₂` is nonzero,
+   and the corresponding pair of columns has UNIT determinant over `R`. In the
+   second case the eigenvalues come out in the order `(b, a)`, which the
+   existential absorbs.
+
+This is the identity that replaces the usual "a nontrivial idempotent has rank
+one, so its image is a free line" argument; it needs neither projectivity nor
+Nakayama, and it is what makes the whole leaf elementary. -/
+theorem exists_matrix_eigenBasis_of_charpoly_map_eq
+    {R : Type u} [CommRing R] [IsLocalRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {k : Type u} [Field k] (π : R →+* k) (hπ : Function.Surjective π)
+    (m : Matrix (Fin 2) (Fin 2) R) (α β : k) (hαβ : α ≠ β)
+    (hchar : m.charpoly.map π = (X - C α) * (X - C β)) :
+    ∃ (P : Matrix (Fin 2) (Fin 2) R) (a b : R),
+      IsUnit P.det ∧ IsUnit (a - b) ∧ m * P = P * Matrix.diagonal ![a, b] := by
+  classical
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hπ
+  have hunit : ∀ x : R, π x ≠ 0 → IsUnit x := by
+    intro x hx
+    by_contra hnu
+    exact hx (by
+      have hmem : x ∈ IsLocalRing.maximalIdeal R :=
+        (IsLocalRing.mem_maximalIdeal x).mpr (mem_nonunits_iff.mpr hnu)
+      rw [← hker] at hmem
+      exact hmem)
+  have hmonic : m.charpoly.Monic := m.charpoly_monic
+  have hev : ∀ x : R, (m.charpoly.map π).eval (π x) = π (m.charpoly.eval x) := by
+    intro x
+    rw [Polynomial.eval_map, Polynomial.eval₂_at_apply]
+  have hevd : ∀ x : R,
+      (m.charpoly.map π).derivative.eval (π x) = π (m.charpoly.derivative.eval x) := by
+    intro x
+    rw [Polynomial.derivative_map, Polynomial.eval_map, Polynomial.eval₂_at_apply]
+  -- Step 1: Hensel lifts a simple residual root
+  have hroot : ∀ γ : k, (m.charpoly.map π).eval γ = 0 →
+      (m.charpoly.map π).derivative.eval γ ≠ 0 →
+      ∃ r : R, m.charpoly.IsRoot r ∧ π r = γ := by
+    intro γ h0 h1
+    obtain ⟨r₀, hr₀⟩ := hπ γ
+    subst hr₀
+    have hmem : m.charpoly.eval r₀ ∈ IsLocalRing.maximalIdeal R := by
+      rw [← hker]
+      show π (m.charpoly.eval r₀) = 0
+      rw [← hev r₀]; exact h0
+    have hdu : IsUnit (m.charpoly.derivative.eval r₀) := by
+      refine hunit _ ?_
+      rw [← hevd r₀]; exact h1
+    obtain ⟨r, hr1, hr2⟩ := HenselianRing.is_henselian (I := IsLocalRing.maximalIdeal R)
+      m.charpoly hmonic r₀ hmem (hdu.map (Ideal.Quotient.mk _))
+    refine ⟨r, hr1, ?_⟩
+    have hmemk : r - r₀ ∈ RingHom.ker π := by rw [hker]; exact hr2
+    have h := RingHom.mem_ker.mp hmemk
+    rw [map_sub, sub_eq_zero] at h
+    exact h
+  obtain ⟨a, ha_root, ha_pi⟩ := hroot α (by rw [hchar]; simp)
+    (by rw [hchar]; simp [Polynomial.derivative_mul, sub_ne_zero.mpr hαβ])
+  obtain ⟨b, hb_root, hb_pi⟩ := hroot β (by rw [hchar]; simp)
+    (by rw [hchar]; simp [Polynomial.derivative_mul, sub_ne_zero.mpr (Ne.symm hαβ)])
+  have hab : IsUnit (a - b) := by
+    refine hunit _ ?_
+    rw [map_sub, ha_pi, hb_pi]
+    exact sub_ne_zero.mpr hαβ
+  -- Step 2: the characteristic polynomial factors, and Cayley–Hamilton
+  have hdeg : m.charpoly.natDegree = 2 := by
+    have h := congrArg Polynomial.natDegree hchar
+    rw [hmonic.natDegree_map] at h
+    rw [h, Polynomial.natDegree_mul (Polynomial.X_sub_C_ne_zero α)
+      (Polynomial.X_sub_C_ne_zero β), Polynomial.natDegree_X_sub_C,
+      Polynomial.natDegree_X_sub_C]
+  obtain ⟨g, hg⟩ := Polynomial.dvd_iff_isRoot.mpr ha_root
+  have hXa : (X - C a).Monic := Polynomial.monic_X_sub_C a
+  have hgm : g.Monic := hXa.of_mul_monic_left (hg ▸ hmonic)
+  have hgdeg : g.natDegree = 1 := by
+    have h := hdeg
+    rw [hg, hXa.natDegree_mul' (by
+      intro h0; rw [h0, mul_zero] at hg
+      exact (hmonic.ne_zero) hg), Polynomial.natDegree_X_sub_C] at h
+    omega
+  have hba : IsUnit (b - a) := by
+    have h := hab.neg
+    rwa [neg_sub] at h
+  have hgb : g.eval b = 0 := by
+    have h := hb_root
+    rw [Polynomial.IsRoot, hg, Polynomial.eval_mul, Polynomial.eval_sub,
+      Polynomial.eval_X, Polynomial.eval_C] at h
+    exact hba.mul_right_eq_zero.mp h
+  have hgform : g = X - C b := by
+    have h1 : g = X + C (g.coeff 0) := hgm.eq_X_add_C hgdeg
+    have h2 : b + g.coeff 0 = 0 := by
+      have h := hgb
+      rw [h1, Polynomial.eval_add, Polynomial.eval_X, Polynomial.eval_C] at h
+      exact h
+    have hc0 : g.coeff 0 = -b := by linear_combination h2
+    rw [h1, hc0, map_neg]
+    ring
+  have hfac : m.charpoly = (X - C a) * (X - C b) := by rw [hg, hgform]
+  set A2 := algebraMap R (Matrix (Fin 2) (Fin 2) R) with hA2
+  have hCH : (m - A2 a) * (m - A2 b) = 0 := by
+    have h := m.aeval_self_charpoly
+    rw [hfac, map_mul, map_sub, map_sub, Polynomial.aeval_X, Polynomial.aeval_C,
+      Polynomial.aeval_C] at h
+    exact h
+  have hCH2 : (m - A2 b) * (m - A2 a) = 0 := by
+    have h := m.aeval_self_charpoly
+    rw [hfac, mul_comm (X - C a), map_mul, map_sub, map_sub, Polynomial.aeval_X,
+      Polynomial.aeval_C, Polynomial.aeval_C] at h
+    exact h
+  -- Step 3: the two eigen-equations
+  set p' : Matrix (Fin 2) (Fin 2) R := m - A2 b with hp'
+  set q' : Matrix (Fin 2) (Fin 2) R := A2 a - m with hq'
+  have hmp : m * p' = a • p' := by
+    have h : m * p' - A2 a * p' = 0 := by rw [← sub_mul]; exact hCH
+    have h2 : m * p' = A2 a * p' := by rwa [sub_eq_zero] at h
+    rw [h2, hA2, Algebra.algebraMap_eq_smul_one, smul_mul_assoc, one_mul]
+  have hmq : m * q' = b • q' := by
+    have h : (m - A2 b) * q' = 0 := by
+      rw [hq', ← neg_sub m (A2 a), mul_neg, hCH2, neg_zero]
+    have h2 : m * q' = A2 b * q' := by rwa [sub_mul, sub_eq_zero] at h
+    rw [h2, hA2, Algebra.algebraMap_eq_smul_one, smul_mul_assoc, one_mul]
+  have hent : ∀ (N : Matrix (Fin 2) (Fin 2) R) (c : R), m * N = c • N →
+      ∀ i j : Fin 2, m i 0 * N 0 j + m i 1 * N 1 j = c * N i j := by
+    intro N c hN i j
+    have h := congrFun (congrFun hN i) j
+    rwa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.smul_apply, smul_eq_mul] at h
+  have hA2apply : ∀ (r : R) (i j : Fin 2), A2 r i j = if i = j then r else 0 := by
+    intro r i j
+    simp [hA2, Matrix.algebraMap_matrix_apply]
+  have hp00 : p' 0 0 = m 0 0 - b := by rw [hp', Matrix.sub_apply, hA2apply]; simp
+  have hp10 : p' 1 0 = m 1 0 := by rw [hp', Matrix.sub_apply, hA2apply]; simp
+  have hp01 : p' 0 1 = m 0 1 := by rw [hp', Matrix.sub_apply, hA2apply]; simp
+  have hp11 : p' 1 1 = m 1 1 - b := by rw [hp', Matrix.sub_apply, hA2apply]; simp
+  have hq00 : q' 0 0 = a - m 0 0 := by rw [hq', Matrix.sub_apply, hA2apply]; simp
+  have hq10 : q' 1 0 = -m 1 0 := by rw [hq', Matrix.sub_apply, hA2apply]; simp
+  have hq01 : q' 0 1 = -m 0 1 := by rw [hq', Matrix.sub_apply, hA2apply]; simp
+  have hq11 : q' 1 1 = a - m 1 1 := by rw [hq', Matrix.sub_apply, hA2apply]; simp
+  -- Step 4: trace, determinant, and the `(α - β)²` identity
+  have hmapchar : (m.map π).charpoly = X ^ 2 - C (α + β) * X + C (α * β) := by
+    rw [Matrix.charpoly_map, hchar, map_add, map_mul]; ring
+  rw [Matrix.charpoly_fin_two] at hmapchar
+  have htr : π (m 0 0) + π (m 1 1) = α + β := by
+    have h := congrArg (fun f : k[X] => f.coeff 1) hmapchar
+    simp only [Polynomial.coeff_add, Polynomial.coeff_sub, Polynomial.coeff_X_pow,
+      Polynomial.coeff_C_mul, Polynomial.coeff_X_one, Polynomial.coeff_C] at h
+    rw [Matrix.trace_fin_two, Matrix.map_apply, Matrix.map_apply] at h
+    simpa using neg_injective (by simpa using h)
+  have hdet : π (m 0 0) * π (m 1 1) - π (m 0 1) * π (m 1 0) = α * β := by
+    have h := congrArg (fun f : k[X] => f.coeff 0) hmapchar
+    simp only [Polynomial.coeff_add, Polynomial.coeff_sub, Polynomial.coeff_X_pow,
+      Polynomial.coeff_C_mul, Polynomial.coeff_X_zero, Polynomial.coeff_C] at h
+    rw [Matrix.det_fin_two, Matrix.map_apply, Matrix.map_apply, Matrix.map_apply,
+      Matrix.map_apply] at h
+    simpa using h
+  set x := π (m 0 0); set y := π (m 0 1); set z := π (m 1 0); set t := π (m 1 1)
+  have hsum : ((x - β) * (α - t) + y * z) + ((α - x) * (t - β) + y * z)
+      = (α - β) ^ 2 := by
+    linear_combination (α + β) * htr - 2 * hdet
+  have hne : ((x - β) * (α - t) + y * z) ≠ 0 ∨ ((α - x) * (t - β) + y * z) ≠ 0 := by
+    by_contra h
+    push_neg at h
+    rw [h.1, h.2, add_zero] at hsum
+    exact (pow_ne_zero 2 (sub_ne_zero.mpr hαβ)) hsum.symm
+  rcases hne with hd | hd
+  · refine ⟨!![p' 0 0, q' 0 1; p' 1 0, q' 1 1], a, b, ?_, hab, ?_⟩
+    · refine hunit _ ?_
+      rw [Matrix.det_fin_two_of, map_sub, map_mul, map_mul, hp00, hq11, hq01, hp10,
+        map_sub, map_sub, map_neg, ha_pi, hb_pi]
+      convert hd using 1
+      ring
+    · ext i j
+      fin_cases i <;> fin_cases j <;>
+        simp [Matrix.mul_apply, Fin.sum_univ_two, Matrix.diagonal] <;>
+        first
+          | (rw [hent p' a hmp]; ring)
+          | (rw [hent q' b hmq]; ring)
+  · refine ⟨!![q' 0 0, p' 0 1; q' 1 0, p' 1 1], b, a, ?_, hba, ?_⟩
+    · refine hunit _ ?_
+      rw [Matrix.det_fin_two_of, map_sub, map_mul, map_mul, hq00, hp11, hp01, hq10,
+        map_sub, map_sub, map_neg, ha_pi, hb_pi]
+      convert hd using 1
+      ring
+    · ext i j
+      fin_cases i <;> fin_cases j <;>
+        simp [Matrix.mul_apply, Fin.sum_univ_two, Matrix.diagonal] <;>
+        first
+          | (rw [hent p' a hmp]; ring)
+          | (rw [hent q' b hmq]; ring)
+
 section HilbertAuxSplitTorus
 
 open scoped Pointwise
@@ -20445,29 +20666,24 @@ theorem commute_toLocal_adicArithFrob_of_isUnramifiedAt
       _ = ρ' σ * ρ' g := by rw [step1]
   exact congrFun (congrArg (fun t : Module.End R M => (t : M → M)) step2) x
 
+open scoped Matrix in
 /-- **The Frobenius eigenbasis over the complete local coefficient ring**
-(LEAF — new 2026-07-27; the ONE open piece of the split-torus clause).
+(PROVEN over `exists_matrix_eigenBasis_of_charpoly_map_eq`).
 
 `R` is local and maximal-adically complete, hence HENSELIAN, and `π` presents
 `k` as its residue field. The characteristic polynomial of `ρ(Frob_w)` reduces
-to `(X - α)(X - β)` with `α ≠ β`, so:
+to `(X - α)(X - β)` with `α ≠ β`, so `ρ(Frob_w)` is diagonalisable over `R`
+with eigenvalues lifting `α` and `β` — see the four-step proof recorded on the
+matrix theorem above.
 
-1. Hensel lifts `α` and `β` to roots `a`, `b` of the charpoly in `R`
-   (`HenselianLocalRing.is_henselian`, available from `IsAdicComplete` plus
-   `IsLocalRing`; the derivative of `(X-α)(X-β)` at `α` is `α - β`, a unit);
-2. `a - b` is a UNIT, because `π (a - b) = α - β ≠ 0` and `ker π` is the
-   maximal ideal (`π` is onto a field and `R` is local);
-3. the charpoly is therefore `(X - a)(X - b)` and Cayley–Hamilton makes
-   `e₁ = (a-b)⁻¹ (A - b)` and `e₂ = (b-a)⁻¹ (A - a)` orthogonal idempotents
-   summing to `1`, with `A e₁ = a e₁` and `A e₂ = b e₂`;
-4. one column of `e₁` and one column of `e₂` are nonzero MOD the maximal ideal
-   (otherwise `A` would be scalar mod `𝔪` and the reduced charpoly would be a
-   square, contradicting `α ≠ β`), and being eigenvectors for distinct
-   eigenvalues they are independent over `k`; so the `2 × 2` matrix they form
-   has unit determinant, and is the required change of basis.
+The bridge here is bookkeeping only: read `ρ(Frob_w)` as a matrix in the
+standard basis (`LinearMap.toMatrix'`, whose charpoly is the endomorphism's by
+`LinearMap.charpoly_toMatrix`), apply the matrix theorem, and turn the
+conjugating matrix into the required `(Fin 2 → R) ≃ₗ[R] R × R` through
+`Matrix.toLinearEquiv'` and `LinearEquiv.finTwoArrow`.
 
 Nothing here is arithmetic — it is commutative algebra over a Henselian local
-ring — and nothing here depends on `w` beyond naming the element `Frob_w`.
+ring — and nothing depends on `w` beyond naming the element `Frob_w`.
 
 References: any account of the local deformation problem at a Taylor–Wiles
 prime, e.g. Wiles, Ann. of Math. 141 (1995), ch. 3; Darmon–Diamond–Taylor
@@ -20480,8 +20696,33 @@ theorem exists_frobEigenBasis_of_charFrob_map_eq
     ∃ (e : (Fin 2 → R) ≃ₗ[R] R × R) (a b : R), IsUnit (a - b) ∧
       ∀ v : Fin 2 → R,
         e (ρ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w) v)
-          = (a * (e v).1, b * (e v).2) :=
-  sorry
+          = (a * (e v).1, b * (e v).2) := by
+  classical
+  set A := ρ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w) with hA
+  set m := LinearMap.toMatrix' A with hm
+  have hmA : ∀ v : Fin 2 → R, A v = m *ᵥ v := by
+    intro v; rw [hm, LinearMap.toMatrix'_mulVec]
+  have hmchar : m.charpoly = ρ.charFrob w := by
+    rw [hm]
+    exact LinearMap.charpoly_toMatrix A (Pi.basisFun R (Fin 2))
+  obtain ⟨P, a, b, hPdet, hab, hPD⟩ :=
+    exists_matrix_eigenBasis_of_charpoly_map_eq π hπ m α β hαβ
+      (by rw [hmchar]; exact hchar)
+  haveI : Invertible P := P.invertibleOfIsUnitDet hPdet
+  set Φ : (Fin 2 → R) ≃ₗ[R] (Fin 2 → R) := Matrix.toLinearEquiv' P inferInstance with hΦ
+  have hΦapp : ∀ x, Φ x = P *ᵥ x := by
+    intro x
+    rw [hΦ]
+    rfl
+  refine ⟨Φ.symm ≪≫ₗ LinearEquiv.finTwoArrow R R, a, b, hab, ?_⟩
+  intro v
+  have hkey : Φ.symm (A v) = Matrix.diagonal ![a, b] *ᵥ (Φ.symm v) := by
+    apply Φ.injective
+    rw [Φ.apply_symm_apply, hΦapp, Matrix.mulVec_mulVec, ← hPD,
+      ← Matrix.mulVec_mulVec, ← hΦapp, Φ.apply_symm_apply, hmA]
+  show ((Φ.symm (A v)) 0, (Φ.symm (A v)) 1) = _
+  rw [hkey]
+  simp [Matrix.mulVec_diagonal]
 
 /-- **From a Frobenius eigenbasis to the SPLIT TORUS** (PROVEN).
 
