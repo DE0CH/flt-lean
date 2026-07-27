@@ -10065,7 +10065,419 @@ theorem exists_stepanovJetSolution (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Pr
           (stepanovJet F M ℓ (stepanovAnsatz d p ((d - 1) * M / d + d - 2) A)) x y = 0) :=
   sorry
 
-/-- **SCHMIDT LEMMA 2D** (SORRY LEAF, cut 2026-07-27 out of
+/-! #### Schmidt Lemma 2D, cut along its own seams (2026-07-27)
+
+`stepanov_not_dvd_stepanovAnsatz` below is PROVEN from three sub-leaves, in the
+four-variable polynomial ring `𝔽_p[X][Y][Z][W]` (nesting order: `X` innermost,
+then `Y`, then `Z`, then `W`). The two new objects are Schmidt's `a(X,Y,Z,W)`
+and `f(Z,W)`; the bridge between them is the RESULTANT in `W`, which is exactly
+his product `â(X,Y,Z;U₁,…,U_d) = ∏_i a(X,Y,Z,U_i)` over the roots of `f(Z,·)`
+(`Polynomial.resultant_eq_prod_eval`, `f(Z,·)` being monic). So the whole
+symmetric-function apparatus of his pp. 101–102 — Chapter I Lemma 5A, the
+elementary symmetric polynomials `s₁,…,s_d`, the auxiliary `b` — is REPLACED by
+`Polynomial.resultant`, which is already in the pin and already used above.
+Nothing of the mathematics is lost: `b(X,Y,Z;g₁(Z),…,g_d(Z))` *is*
+`Res_W(f(Z,W), a(X,Y,Z,W))`.
+
+The chain, with `R(X,Y,Z) := Res_W(f(Z,W), a(X,Y,Z,W)) ∈ 𝔽_p[X,Y,Z]`:
+
+1. `stepanov_dvd_specZ_resultant` — **the norm step** (his p. 103, the display
+   `a(X,𝔶,X^q;𝔶^q,…) = 0`). `f ∣ a(X,Y,X^p,Y^p)` gives `f(X,Y) ∣ R(X,Y,X^p)`,
+   because `f(X^p, 𝔶^p) = f(X,𝔶)^p = 0` puts `W − 𝔶^p` inside `f(X^p,W)`, and
+   the corresponding factor of the resultant is `a(X,𝔶,X^p,𝔶^p) = 0`.
+2. `stepanov_dvd_resultant_of_dvd_specZ` — **the de-specialisation** (his
+   pp. 103–104). `f(X,Y) ∣ R(X,Y,X^p)` upgrades to `f(X,Y) ∣ R(X,Y,Z)` with `Z`
+   an INDEPENDENT variable.
+3. `stepanov_irreducible_stepanovFZ` — **Corollary 2C** (his p. 100, through
+   Lemmas 2A/2B): `f(Z,W)` stays irreducible over `𝔽_p(X,𝔶)(Z)`.
+
+and the glue `stepanov_dvd_of_dvd_resultant` (PROVEN below) turns 3 into what
+the assembly needs: `f ∣ Res_W(f(Z,W), q)` with `deg_W q < d` forces `f ∣ q`,
+by mapping to `𝔽_p(X,𝔶)(Z)` and using `Polynomial.isUnit_resultant_iff_isCoprime`
+together with `Irreducible.dvd_iff_not_isCoprime`. Extracting `A ≡ 0` from
+`f ∣ a(X,Y,Z,W)` is then `Polynomial.C_dvd_iff_dvd_coeff` twice plus the degree
+bound `deg_Y (∑_{i<d} A_{ijk} Y^i) < d = deg_Y f`.
+
+**A SIMPLIFICATION OF STEP 2 THAT REMOVES SCHMIDT'S `X = X₁ + X₂` TRICK
+ENTIRELY.** He substitutes `X = X₁ + X₂`, notes `X^q = X₁^q + X₂^q`, and uses
+`deg_X c < q` to kill the `X₂^q`-terms; the point of the manoeuvre is to show
+that `X` and `X^q` may be treated as independent. But once the reduction
+`c := R mod f` (`deg_Y c ≤ d − 1`, `deg_X c ≤ d·deg_X a + d(d−1) ≤ p − d < p`)
+has been made, `c(X,Y,X^p) = 0` reads `∑_j c_j(X,Y) X^{pj} = 0` with
+`deg_X c_j < p`, and that forces every `c_j = 0` **by uniqueness of the base-`p`
+expansion of an exponent**: the monomial `X^{pj+v}`, `v < p`, receives a
+contribution from `c_{j'}` only when `0 ≤ p(j − j') + v < p`, i.e. `j' = j`. So
+step 2 needs no substitution and no algebraic-independence argument — only the
+degree bound and a `Finset` computation on exponents. The degree bound is the
+part to budget for: it needs Schmidt's (2.3), `deg g_i^{(t)} ≤ t − 1 + i` for
+the reduction `𝔶^{d−1+t} = g₁^{(t)}𝔶^{d−1} + ⋯ + g_d^{(t)}`, by induction on `t`.
+
+**AND `f^{[p]} = f` HERE**, since the coefficients of `F` lie in `𝔽_p`. That
+deletes Schmidt's entire `[q]`-twisting bookkeeping, which is a large part of
+§2 as written: `g_i^{[p]}(Z)` is just `g_i(Z)`, and the `U_i` are roots of
+`f(Z,·)` itself.
+
+**Instance trap, measured 2026-07-27.** `Polynomial.resultant_map_map` will not
+`rw` against a goal whose ring hom was built with `Polynomial.mapRingHom`: the
+domain's `NonAssocSemiring` then comes from `Polynomial.semiring`, while the
+lemma's comes from `CommRing.toCommSemiring.toSemiring`, the two are defeq but
+not syntactically equal, and the module system refuses to unfold them (`Note:
+the following definitions were not unfolded because their definition is not
+exposed`). `set_option backward.isDefEq.respectTransparency false` does NOT
+help. What does: supply `(R := …) (S := …)` explicitly, so the instance is
+synthesised from a known type instead of being unified against a metavariable.
+-/
+
+/-- Schmidt's `f(Z, W)`: the polynomial `F`, whose two variables are `X` (inner)
+and `Y` (outer), re-expressed in a FRESH pair of variables `Z`, `W` inside
+`𝔽_p[X][Y][Z][W]`. `f^{[p]} = f` here — the coefficients of `F` lie in `𝔽_p` —
+so this single object serves for both `f` and Schmidt's twist `f^{[q]}`. -/
+noncomputable def stepanovFZ {p : ℕ} (F : Polynomial (Polynomial (ZMod p))) :
+    Polynomial (Polynomial (Polynomial (Polynomial (ZMod p)))) :=
+  F.map (Polynomial.eval₂RingHom
+    (((Polynomial.C : Polynomial (Polynomial (ZMod p)) →+*
+          Polynomial (Polynomial (Polynomial (ZMod p)))).comp
+        (Polynomial.C : Polynomial (ZMod p) →+* Polynomial (Polynomial (ZMod p)))).comp
+      (Polynomial.C : ZMod p →+* Polynomial (ZMod p)))
+    (Polynomial.X : Polynomial (Polynomial (Polynomial (ZMod p)))))
+
+/-- Schmidt's `a(X, Y, Z, W) = ∑ A_{ijk}(X) Y^i Z^j W^k`, the four-variable
+polynomial of which `stepanovAnsatz d p K A` is the specialisation
+`a(X, Y, X^p, Y^p)`. -/
+noncomputable def stepanovAnsatz4 (d p K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) :
+    Polynomial (Polynomial (Polynomial (Polynomial (ZMod p)))) :=
+  ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+    Polynomial.monomial k (Polynomial.monomial j (Polynomial.monomial i (A i j k)))
+
+/-- The specialisation `Z ↦ X^p` of `𝔽_p[X][Y][Z]` into `𝔽_p[X][Y]`. -/
+noncomputable def stepanovSpecZ (p : ℕ) :
+    Polynomial (Polynomial (Polynomial (ZMod p))) →+* Polynomial (Polynomial (ZMod p)) :=
+  Polynomial.eval₂RingHom (RingHom.id (Polynomial (Polynomial (ZMod p))))
+    (Polynomial.C (Polynomial.X ^ p))
+
+/-- The reduction `𝔽_p[X][Y][Z] → 𝔽_p(X, 𝔶)(Z)`, i.e. kill `F` and pass to the
+fraction field. `E` is kept ABSTRACT (`IsFractionRing`) rather than taken to be
+`FractionRing (Polynomial (AdjoinRoot F))`: at the concrete type the `Semiring`
+instance is `OreLocalization.instSemiring` while every lemma stated over a
+`CommRing` wants `CommRing.toCommSemiring.toSemiring`, and the module system
+will not unfold between them. -/
+noncomputable def stepanovResidueHom {p : ℕ} (F : Polynomial (Polynomial (ZMod p)))
+    (E : Type) [CommRing E] [Algebra (Polynomial (AdjoinRoot F)) E] :
+    Polynomial (Polynomial (Polynomial (ZMod p))) →+* E :=
+  (algebraMap (Polynomial (AdjoinRoot F)) E).comp (Polynomial.mapRingHom (AdjoinRoot.mk F))
+
+theorem stepanovFZ_monic {p : ℕ} {F : Polynomial (Polynomial (ZMod p))} (hmon : F.Monic) :
+    (stepanovFZ F).Monic :=
+  hmon.map _
+
+theorem stepanovFZ_natDegree {p : ℕ} [Fact p.Prime] {F : Polynomial (Polynomial (ZMod p))}
+    (hmon : F.Monic) : (stepanovFZ F).natDegree = F.natDegree :=
+  hmon.natDegree_map _
+
+/-- Lemma 2D's hypothesis (iii), `deg_W a ≤ d − 1`, read off the shape. -/
+theorem stepanovAnsatz4_natDegree_le (d p K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) :
+    (stepanovAnsatz4 d p K A).natDegree ≤ d - 1 := by
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun i hi => ?_
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun k hk => ?_
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun j hj => ?_
+  exact le_trans (Polynomial.natDegree_monomial_le _) (by
+    have := Finset.mem_range.mp hk; omega)
+
+/-- The `Z^j W^k`-coefficient of `a(X, Y, Z, W)` is `∑_{i<d} A_{ijk}(X) Y^i`. -/
+theorem stepanovAnsatz4_coeff (d p K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    {j k : ℕ} (hk : k < d) (hj : j ≤ K) :
+    ((stepanovAnsatz4 d p K A).coeff k).coeff j
+      = ∑ i ∈ Finset.range d, Polynomial.monomial i (A i j k) := by
+  classical
+  have h1 : (stepanovAnsatz4 d p K A).coeff k
+      = ∑ i ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+          Polynomial.monomial j (Polynomial.monomial i (A i j k)) := by
+    simp only [stepanovAnsatz4, Polynomial.finsetSum_coeff, Polynomial.coeff_monomial]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [Finset.sum_eq_single k]
+    · simp
+    · intro b _ hb; exact Finset.sum_eq_zero fun j _ => if_neg hb
+    · intro hb; exact absurd (Finset.mem_range.mpr hk) hb
+  rw [h1]
+  simp only [Polynomial.finsetSum_coeff, Polynomial.coeff_monomial]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Finset.sum_eq_single j]
+  · simp
+  · intro b _ hb; exact if_neg hb
+  · intro hb; exact absurd (Finset.mem_range.mpr (by omega)) hb
+
+/-- **ABSOLUTE IRREDUCIBILITY IMPLIES IRREDUCIBILITY** (PROVEN 2026-07-27) —
+the descent `𝔽̄_p[X][Y] → 𝔽_p[X][Y]` of `hirrF`, needed to make `AdjoinRoot F` a
+domain. A factorisation `F = G·H` maps to one over `𝔽̄_p[X][Y]`, whose units are
+the nonzero constants; so one factor has `Y`-degree `0`, and monicity of `F`
+makes its leading coefficient a unit of `𝔽_p[X]`. -/
+theorem stepanov_irreducible_of_absIrred {p : ℕ} [Fact p.Prime]
+    {F : Polynomial (Polynomial (ZMod p))} (hmon : F.Monic) (hdeg : 0 < F.natDegree)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))))) :
+    Irreducible F := by
+  have hinj : Function.Injective
+      (Polynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) :=
+    Polynomial.map_injective _ (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+  have key : ∀ G : Polynomial (Polynomial (ZMod p)),
+      IsUnit (G.map (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))) → G.natDegree = 0 := by
+    intro G hG
+    have h1 := Polynomial.natDegree_eq_zero_of_isUnit hG
+    rwa [Polynomial.natDegree_map_eq_of_injective hinj] at h1
+  refine ⟨fun hu => ?_, fun G H hGH => ?_⟩
+  · have := Polynomial.natDegree_eq_zero_of_isUnit hu
+    omega
+  · have hmapGH : F.map (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))
+        = G.map (Polynomial.mapRingHom
+            (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) *
+          H.map (Polynomial.mapRingHom
+            (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) := by
+      rw [hGH, Polynomial.map_mul]
+    have hlead : G.leadingCoeff * H.leadingCoeff = 1 := by
+      have h := hmon.leadingCoeff
+      rwa [hGH, Polynomial.leadingCoeff_mul] at h
+    rcases hirrF.isUnit_or_isUnit hmapGH with h | h
+    · left
+      have h0 := key G h
+      have hGC : G = Polynomial.C G.leadingCoeff := by
+        conv_lhs => rw [Polynomial.eq_C_of_natDegree_eq_zero h0]
+        rw [Polynomial.leadingCoeff, h0]
+      rw [hGC]
+      exact Polynomial.isUnit_C.mpr
+        ⟨⟨G.leadingCoeff, H.leadingCoeff, hlead, by rw [mul_comm]; exact hlead⟩, rfl⟩
+    · right
+      have h0 := key H h
+      have hHC : H = Polynomial.C H.leadingCoeff := by
+        conv_lhs => rw [Polynomial.eq_C_of_natDegree_eq_zero h0]
+        rw [Polynomial.leadingCoeff, h0]
+      rw [hHC]
+      exact Polynomial.isUnit_C.mpr
+        ⟨⟨H.leadingCoeff, G.leadingCoeff, by rw [mul_comm]; exact hlead, hlead⟩, rfl⟩
+
+/-- **SCHMIDT COROLLARY 2C** (SORRY LEAF, cut 2026-07-27 out of
+`stepanov_not_dvd_stepanovAnsatz`) — Chapter III §2, p. 100, through Lemmas 2A
+and 2B. THE ONLY GENUINELY FIELD-THEORETIC INPUT OF LEMMA 2D.
+
+WHAT IT SAYS, in Schmidt's language: `f(X,Y)` absolutely irreducible of degree
+`d > 0` in `Y`, `f(X,𝔶) = 0`, `f^{[q]}(Z,U) = 0` with `Z` an independent
+variable, then `[K(X,Z,𝔶,U) : K(X,Z)] = d²` — equivalently, `f(Z,W)` remains
+IRREDUCIBLE over `K(X,𝔶)(Z)`, which is the form stated here (`E` is that field,
+kept abstract as an `IsFractionRing` of `(AdjoinRoot F)[Z]`). Equivalently
+again: `𝔽_p[X,Y,Z,W]/(f(X,Y), f(Z,W))`, i.e. `𝒪(C) ⊗_{𝔽_p} 𝒪(C)`, is a domain —
+the standard characterisation of GEOMETRIC integrality, which is exactly what
+absolute irreducibility of `f` provides.
+
+HOW IT IS PROVED (Lemma 2A, p. 98). It suffices to show `f(Z,W)` stays
+irreducible over `K(X,𝔶)`. If `f(Z,W) = g₁(Z,W)·g₂(Z,W)` with the `gᵢ` of
+smaller `W`-degree and coefficients `r_{ijk}(X,𝔶)` in `K(X,𝔶)`, SPECIALISE:
+choose `x` with no denominator vanishing and `a₀(x) ≠ 0`, choose `y` with
+`f(x,y) = 0`; then `(x,y)` satisfies every equation `(X,𝔶)` satisfies, and the
+specialised `ĝᵢ` factor `f` over `K`, contradicting absolute irreducibility.
+
+**THE ONE GAP IN SCHMIDT'S PROOF AT OUR `K`, AND ITS REPAIR.** That
+specialisation needs INFINITELY many admissible `x`, and our `K = 𝔽_p` is
+FINITE. The repair is base change, not a different argument: the statement is a
+statement about degrees, `[K(X,Z,𝔶,U):K(X,Z)] ≤ d²` always, and
+`K(X,Z,𝔶,U) ⊗_{K(X,Z)} K̄(X,Z)` surjects onto `K̄(X,Z,𝔶,U)`, so
+`[K(X,Z,𝔶,U):K(X,Z)] ≥ [K̄(X,Z,𝔶,U):K̄(X,Z)]`. It therefore suffices to run
+Lemma 2A over `K̄ = AlgebraicClosure (ZMod p)`, which is infinite and over which
+`hirrF` is literally the hypothesis. Do NOT attempt the specialisation over
+`𝔽_p` itself.
+
+WHAT IS MISSING AT THIS PIN (grepped 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT/`): no `[Ss]tepanov`, and nothing
+naming geometric integrality of an affine curve or `A ⊗_k A` domain-ness. The
+`IsFractionRing`/`AdjoinRoot` scaffolding it needs is all present.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_irreducible_stepanovFZ (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p))) (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))))
+    (E : Type) [Field E] [Algebra (Polynomial (AdjoinRoot F)) E]
+    [IsFractionRing (Polynomial (AdjoinRoot F)) E] :
+    Irreducible ((stepanovFZ F).map (stepanovResidueHom F E)) :=
+  sorry
+
+/-- **COROLLARY 2C IN CONSUMABLE FORM** (PROVEN 2026-07-27) — the last step of
+Schmidt's p. 105, "the `d²` elements `𝔶^j U^k` are linearly independent over
+`K(X,Z)`, therefore `a` is identically zero".
+
+If the resultant `Res_W(f(Z,W), q)` vanishes modulo `f(X,Y)` and `q` has
+`W`-degree `< d`, then `q` itself vanishes modulo `f(X,Y)`. Over
+`E = 𝔽_p(X,𝔶)(Z)` the resultant of a monic `f(Z,·)` is a unit iff the two are
+coprime (`Polynomial.isUnit_resultant_iff_isCoprime`), and `E` is a field, so
+vanishing forces non-coprimality; `f(Z,·)` is irreducible there by Corollary 2C,
+so `Irreducible.dvd_iff_not_isCoprime` gives `f(Z,·) ∣ q`, and the degree bound
+collapses that to `q = 0`. The descent from `E` back to `𝔽_p[X][Y][Z][W]` is
+injectivity of `(AdjoinRoot F)[Z] → E` plus `AdjoinRoot.mk_eq_zero`. -/
+theorem stepanov_dvd_of_dvd_resultant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p))) (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))))
+    (E : Type) [Field E] [Algebra (Polynomial (AdjoinRoot F)) E]
+    [IsFractionRing (Polynomial (AdjoinRoot F)) E]
+    (q : Polynomial (Polynomial (Polynomial (Polynomial (ZMod p)))))
+    (hq : q.natDegree ≤ d - 1)
+    (hres : Polynomial.C F ∣ (stepanovFZ F).resultant q d (d - 1)) :
+    Polynomial.C (Polynomial.C F) ∣ q := by
+  have hirr : Irreducible F :=
+    stepanov_irreducible_of_absIrred hmon (by omega) hirrF
+  have hprime : Prime F := (UniqueFactorizationMonoid.irreducible_iff_prime).mp hirr
+  haveI : IsDomain (AdjoinRoot F) := AdjoinRoot.isDomain_of_prime hprime
+  have hθCF : stepanovResidueHom F E (Polynomial.C F) = 0 := by
+    simp [stepanovResidueHom, Polynomial.map_C, AdjoinRoot.mk_self]
+  obtain ⟨s, hs⟩ := hres
+  have hres0 : stepanovResidueHom F E ((stepanovFZ F).resultant q d (d - 1)) = 0 := by
+    rw [hs, map_mul, hθCF, zero_mul]
+  have hmapres : ((stepanovFZ F).map (stepanovResidueHom F E)).resultant
+      (q.map (stepanovResidueHom F E)) d (d - 1) = 0 := by
+    have h := Polynomial.resultant_map_map
+      (R := Polynomial (Polynomial (Polynomial (ZMod p)))) (S := E)
+      (stepanovFZ F) q d (d - 1) (stepanovResidueHom F E)
+    rw [h, hres0]
+  have hf'mon : ((stepanovFZ F).map (stepanovResidueHom F E)).Monic :=
+    (stepanovFZ_monic hmon).map _
+  have hf'nd : ((stepanovFZ F).map (stepanovResidueHom F E)).natDegree = d := by
+    rw [(stepanovFZ_monic hmon).natDegree_map, stepanovFZ_natDegree hmon, hdegY]
+  have hg'nd : (q.map (stepanovResidueHom F E)).natDegree ≤ d - 1 :=
+    le_trans (Polynomial.natDegree_map_le) hq
+  have hg'zero : q.map (stepanovResidueHom F E) = 0 := by
+    have hpad : ((stepanovFZ F).map (stepanovResidueHom F E)).resultant
+          (q.map (stepanovResidueHom F E)) d (d - 1)
+        = ((stepanovFZ F).map (stepanovResidueHom F E)).coeff d ^
+            (d - 1 - (q.map (stepanovResidueHom F E)).natDegree) *
+          ((stepanovFZ F).map (stepanovResidueHom F E)).resultant
+            (q.map (stepanovResidueHom F E)) d (q.map (stepanovResidueHom F E)).natDegree := by
+      conv_lhs => rw [show d - 1 = (q.map (stepanovResidueHom F E)).natDegree +
+        (d - 1 - (q.map (stepanovResidueHom F E)).natDegree) by omega]
+      exact Polynomial.resultant_add_right_deg _ _ _ _ _ le_rfl
+    have hcoeffd : ((stepanovFZ F).map (stepanovResidueHom F E)).coeff d = 1 := by
+      rw [← hf'nd]; exact hf'mon
+    rw [hpad, hcoeffd, one_pow, one_mul, ← hf'nd] at hmapres
+    have hnc : ¬ IsCoprime ((stepanovFZ F).map (stepanovResidueHom F E))
+        (q.map (stepanovResidueHom F E)) := by
+      intro hc
+      have h := (Polynomial.isUnit_resultant_iff_isCoprime hf'mon).mpr hc
+      rw [hmapres] at h
+      exact not_isUnit_zero h
+    have hdvd : ((stepanovFZ F).map (stepanovResidueHom F E)) ∣ q.map (stepanovResidueHom F E) :=
+      (stepanov_irreducible_stepanovFZ d hd p F hmon hdegY hirrF E).dvd_iff_not_isCoprime.mpr hnc
+    exact Polynomial.eq_zero_of_dvd_of_natDegree_lt hdvd (by omega)
+  have hmapinj : Function.Injective
+      (Polynomial.map (algebraMap (Polynomial (AdjoinRoot F)) E)) :=
+    Polynomial.map_injective _ (IsFractionRing.injective _ _)
+  have hq0 : q.map (Polynomial.mapRingHom (AdjoinRoot.mk F)) = 0 := by
+    apply hmapinj
+    rw [Polynomial.map_zero, Polynomial.map_map]
+    exact hg'zero
+  rw [Polynomial.C_dvd_iff_dvd_coeff]
+  intro k
+  rw [Polynomial.C_dvd_iff_dvd_coeff]
+  intro j
+  rw [← AdjoinRoot.mk_eq_zero]
+  have h1 : (Polynomial.mapRingHom (AdjoinRoot.mk F)) (q.coeff k) = 0 := by
+    have := congrArg (fun r => Polynomial.coeff r k) hq0
+    simpa [Polynomial.coeff_map] using this
+  have h2 := congrArg (fun r => Polynomial.coeff r j) h1
+  simpa [Polynomial.coeff_map] using h2
+
+/-- **SCHMIDT LEMMA 2D, THE NORM STEP** (SORRY LEAF, cut 2026-07-27 out of
+`stepanov_not_dvd_stepanovAnsatz`) — Chapter III §2, p. 103, the two displays
+`a(X,𝔶,X^q;𝔶₁^q,…,𝔶_d^q) = 0` and `b(X,𝔶,X^q; g^{[q]}(X^q)) = 0`.
+
+WHAT IT SAYS. If `F ∣ a(X,Y,X^p,Y^p)` then `F(X,Y)` divides the `Z ↦ X^p`
+specialisation of the resultant `R(X,Y,Z) = Res_W(f(Z,W), a(X,Y,Z,W))`.
+
+HOW IT IS PROVED, and it is short. Work in `T = AdjoinRoot F`, `𝔶 = root F`,
+`x = ` image of `X`. Two facts:
+
+* `f(x^p, 𝔶^p) = 0`. This is Frobenius plus `f^{[p]} = f`: writing
+  `F = ∑ c_n(X) Y^n` with `c_n ∈ 𝔽_p[X]`, in characteristic `p`
+  `F(X,Y)^p = ∑ c_n(X)^p Y^{np} = ∑ c_n(X^p) (Y^p)^n = F(X^p, Y^p)`, because
+  `c^p = c(X^p)` for `c ∈ 𝔽_p[X]` (`Polynomial.expand_char`, `frobenius` being
+  the identity on `𝔽_p`). Evaluate at `Y = 𝔶`.
+* `a(x, 𝔶, x^p, 𝔶^p) = 0`, which is the hypothesis `F ∣ stepanovAnsatz d p K A`
+  read through `AdjoinRoot.mk_eq_zero` and `AdjoinRoot.aeval_eq`.
+
+So `W − 𝔶^p` divides `f(x^p, W)` (`Polynomial.dvd_iff_isRoot`), write
+`f(x^p,W) = (W − 𝔶^p)·h`, and split the resultant with
+`Polynomial.resultant_mul_left`; the first factor is
+`Polynomial.resultant_X_sub_C_left`, i.e. the evaluation `a(x,𝔶,x^p,𝔶^p) = 0`.
+Hence the whole resultant vanishes in `T`, which is the claim.
+
+Degrees: `f(Z,·)` is monic of degree `d` in `W` and stays so after `Z ↦ X^p`, so
+the first degree argument `d` is `natDegree`; the second, `d − 1`, dominates
+`deg_W a` by `stepanovAnsatz4_natDegree_le`, and `Polynomial.resultant_add_right_deg`
+absorbs the slack against `f`'s leading coefficient `1`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_dvd_specZ_resultant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
+    (hdvd : F ∣ stepanovAnsatz d p K A) :
+    F ∣ stepanovSpecZ p ((stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1)) :=
+  sorry
+
+/-- **SCHMIDT LEMMA 2D, THE DE-SPECIALISATION** (SORRY LEAF, cut 2026-07-27 out
+of `stepanov_not_dvd_stepanovAnsatz`) — Chapter III §2, pp. 103–104, from
+"But since `deg c ≤ d − 1`" to "we may replace them by variables `X,Y,Z`".
+
+WHAT IT SAYS. `F(X,Y) ∣ R(X,Y,X^p)` upgrades to `F(X,Y) ∣ R(X,Y,Z)` with `Z`
+independent, where `R(X,Y,Z) = Res_W(f(Z,W), a(X,Y,Z,W))`. THIS IS WHERE THE
+DEGREE HYPOTHESIS `deg A_{ijk} + d ≤ p/d` IS CONSUMED, and it is the only place
+in Lemma 2D that consumes it — Schmidt's whole heuristic ("only one `d`-th of
+all possible exponents in `X` can occur") is about this step.
+
+HOW IT IS PROVED, in two halves.
+
+*(i) Reduce modulo `F` and bound the `X`-degree.* Divide `R` by the monic `F` in
+`Y`, coefficientwise in `Z`: `c := R mod F`, so `deg_Y c ≤ d − 1` and
+`F ∣ R ↔ c = 0`, and `F ∣ R(X,Y,X^p) ↔ c(X,Y,X^p) = 0` (the specialisation is a
+ring map and `deg_Y` is untouched by it, so the remainder specialises to the
+remainder). The bound is Schmidt's:
+
+  `deg_X R ≤ d·deg_X a`,  `deg_X c ≤ deg_X R + d(d−1) ≤ d(p/d − d) + d(d−1)`
+                                       `≤ p − d² + d² − d = p − d < p`.
+
+The `+ d(d−1)` is the cost of the reduction and needs his (2.3),
+`𝔶^{d−1+t} = g₁^{(t)}(X)𝔶^{d−1} + ⋯ + g_d^{(t)}(X)` with
+`deg g_i^{(t)} ≤ t − 1 + i`, proven by induction on `t` from `deg g_i ≤ i`
+(`hcoeff`). `deg_X R ≤ d·deg_X a` is `stepanov_natDegree_resultant_le`, already
+PROVEN above — use it, do not redo the Sylvester estimate.
+
+*(ii) Separate `X` from `X^p`.* With `deg_X c < p`, write `c = ∑_j c_j(X,Y) Z^j`
+and expand `c(X,Y,X^p) = ∑_j c_j(X,Y) X^{pj} = 0`. The monomial `X^{pj+v}`,
+`0 ≤ v < p`, receives a contribution from `c_{j'}` exactly when
+`0 ≤ p(j − j') + v < p`, i.e. only when `j' = j`; so its coefficient is
+`(c_j).coeff v`, and all of them vanish. Hence every `c_j = 0`, i.e. `c = 0`.
+
+**THIS REPLACES SCHMIDT'S `X = X₁ + X₂` SUBSTITUTION**, which is his way of
+proving exactly this separation and is not needed once the statement is phrased
+over `𝔽_p[X]` rather than over a field of rational functions. Do not formalise
+the substitution; formalise the base-`p` digit computation, which is a `Finset`
+argument over `Polynomial.coeff` and needs no new theory.
+
+`hAsupp` is used only through `stepanovAnsatz4`'s shape; `hAdeg` and `hcoeff`
+carry (i).
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_dvd_resultant_of_dvd_specZ (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d ≤ p / d)
+    (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
+    (hspec : F ∣ stepanovSpecZ p ((stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1))) :
+    Polynomial.C F ∣ (stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1) :=
+  sorry
+
+/-- **SCHMIDT LEMMA 2D** (PROVEN 2026-07-27 by decomposition; cut 2026-07-27 out of
 `exists_stepanovAuxiliaryFunction`) — Chapter III §2, pp. 100–105. This is
 Lemma 4A(i), the clause Schmidt discharges in one sentence, and it is a
 self-contained classical theorem INDEPENDENT of the other two sub-leaves.
@@ -10100,16 +10512,21 @@ enters, through his Lemmas 2A/2B — gives `[𝔽_p(X, Z, 𝔶, U) : 𝔽_p(X, Z
 the `d²` elements `𝔶^j U^k`, `0 ≤ j, k ≤ d − 1`, are linearly independent over
 `𝔽_p(X, Z)`, forcing `a ≡ 0`, a contradiction.
 
-MISSING AT THIS PIN: the symmetric-function step is `MvPolynomial.esymm` /
-`symmetricSubalgebra` material and exists; **Corollary 2C does not**, and it is
-the piece to budget for — "`f` absolutely irreducible of degree `d` in `Y`,
-`f^{[p]}(Z, U) = 0` ⟹ `[K(X,Z,𝔶,U) : K(X,Z)] = d²`", i.e. that `f` stays
-irreducible over `K(X, Z, U)`. Note `f^{[p]} = f` here, since the coefficients of
-`F` lie in `𝔽_p`, which removes Schmidt's `[q]`-twisting bookkeeping entirely.
+WHAT IS ACTUALLY OPEN, as of the 2026-07-27 decomposition (see the section note
+above): the symmetric-function step is GONE — `Polynomial.resultant` does its
+work — and what remains is the three sub-leaves
+`stepanov_dvd_specZ_resultant` (the Frobenius/norm step),
+`stepanov_dvd_resultant_of_dvd_specZ` (the degree bound and the base-`p`
+separation) and `stepanov_irreducible_stepanovFZ` (**Corollary 2C**, the only
+genuinely field-theoretic input, and the only one absent from the pin). Note
+`f^{[p]} = f` here, since the coefficients of `F` lie in `𝔽_p`, which removes
+Schmidt's `[q]`-twisting bookkeeping entirely.
 
 `hAsupp` is load-bearing in all three of its clauses: without the `K < j + k`
 half, a witness of `hAne` could sit outside the ansatz's `j`-range and the ansatz
-itself could be `0`.
+itself could be `0`. It is used here BOTH to push the witness of `hAne` into the
+range `i < d`, `k < d`, `j ≤ K` and, inside `stepanovAnsatz4`, to make that
+four-variable polynomial the right object.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem stepanov_not_dvd_stepanovAnsatz (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
@@ -10122,8 +10539,45 @@ theorem stepanov_not_dvd_stepanovAnsatz (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact
     (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d ≤ p / d)
     (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
     (hAne : ∃ i j k, A i j k ≠ 0) :
-    ¬ (F ∣ stepanovAnsatz d p K A) :=
-  sorry
+    ¬ (F ∣ stepanovAnsatz d p K A) := by
+  intro hdvd
+  have hirr : Irreducible F := stepanov_irreducible_of_absIrred hmon (by omega) hirrF
+  have hprime : Prime F := UniqueFactorizationMonoid.irreducible_iff_prime.mp hirr
+  haveI : IsDomain (AdjoinRoot F) := AdjoinRoot.isDomain_of_prime hprime
+  -- `f(X,Y) ∣ Res_W(f(Z,W), a(X,Y,Z,W))`, first at `Z = X^p`, then with `Z` independent
+  have hres := stepanov_dvd_resultant_of_dvd_specZ d hd p F hmon hdegY hcoeff K A hAdeg hAsupp
+    (stepanov_dvd_specZ_resultant d hd p F hmon hdegY K A hAsupp hdvd)
+  -- Corollary 2C then kills `a` itself
+  have hq := stepanov_dvd_of_dvd_resultant d hd p F hmon hdegY hirrF
+    (FractionRing (Polynomial (AdjoinRoot F))) (stepanovAnsatz4 d p K A)
+    (stepanovAnsatz4_natDegree_le d p K A) hres
+  -- and `f ∣ a` forces every `A_{ijk}` to vanish, contradicting `hAne`
+  obtain ⟨i, j, k, hA⟩ := hAne
+  apply hA
+  by_cases hi : d ≤ i
+  · exact hAsupp i j k (Or.inl hi)
+  by_cases hk : d ≤ k
+  · exact hAsupp i j k (Or.inr (Or.inl hk))
+  by_cases hjk : K < j + k
+  · exact hAsupp i j k (Or.inr (Or.inr hjk))
+  have h1 : Polynomial.C F ∣ (stepanovAnsatz4 d p K A).coeff k :=
+    (Polynomial.C_dvd_iff_dvd_coeff _ _).mp hq k
+  have h2 : F ∣ ((stepanovAnsatz4 d p K A).coeff k).coeff j :=
+    (Polynomial.C_dvd_iff_dvd_coeff _ _).mp h1 j
+  rw [stepanovAnsatz4_coeff d p K A (by omega) (by omega)] at h2
+  have h3 : (∑ i' ∈ Finset.range d, Polynomial.monomial i' (A i' j k) :
+      Polynomial (Polynomial (ZMod p))) = 0 := by
+    refine Polynomial.eq_zero_of_dvd_of_natDegree_lt h2 ?_
+    rw [hdegY]
+    refine lt_of_le_of_lt
+      (Polynomial.natDegree_sum_le_of_forall_le _ _ fun i' hi' => ?_) (by omega : d - 1 < d)
+    exact le_trans (Polynomial.natDegree_monomial_le _)
+      (by have := Finset.mem_range.mp hi'; omega)
+  have h4 := congrArg (fun r => Polynomial.coeff r i) h3
+  have h5 : i < d → A i j k = 0 := by
+    simpa [Polynomial.finsetSum_coeff, Polynomial.coeff_monomial, Finset.sum_ite_eq',
+      Finset.mem_range] using h4
+  exact h5 (by omega)
 
 /-- **THE JET/BRANCH BRIDGE** (SORRY LEAF, cut 2026-07-27 out of
 `exists_stepanovAuxiliaryFunction`) — Schmidt Chapter III §3 (3.1), read in the
