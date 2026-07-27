@@ -1384,16 +1384,130 @@ theorem differentIdeal_exponent_le_wild_of_residueDegreeOne
   exact differentIdeal_exponent_le_of_intEisenstein_approx K q hq v hmem e he x hgen hx hc0 c
     (d + 2 * e + 2) hc d le_rfl hd
 
+/-- **The trace witness for Serre's different bound** (SORRY LEAF, cut
+2026-07-27 out of `differentIdeal_exponent_le_wild_of_residueDegreeGtOne`
+below, which is PROVEN over it).
+
+With `k = v_q(e) + 1` and `J` the cofactor of `Q^{e·k}` in `q^k·𝓞_K`,
+there is an `x ∈ J` — i.e. an `x` divisible by `Q'^{e_{Q'}·k}` at every
+prime `Q' ∣ q` other than `Q`, with no condition at `Q` itself — whose
+trace has `v_q(Tr_{K/ℚ} x) ≤ v_q(e)`.
+
+## WHY THIS IS THE WHOLE CONTENT
+
+By mathlib's `not_dvd_differentIdeal_of_intTrace_not_mem` this leaf is
+EQUIVALENT to Serre's bound `d ≤ e − 1 + e·v_q(e)` at `Q` (see the
+consumer's docstring for the reduction, which is now proven).  It is
+stated with NO wildness and NO residue-degree hypothesis because it is
+true, and needed, in every case — the `f = 1` and tame cases of the
+bound are already proven above by other routes, but this statement
+covers them too.
+
+The equivalence also fixes the exact shape of any proof: the trace map
+`Tr : 𝓞_K → ℤ` composed with reduction mod `q^k` factors through
+`𝓞_K/q^k𝓞_K ≅ ∏_{Q'∣q} 𝓞_K/Q'^{e_{Q'}k}` (CRT), and `x ∈ J` says
+exactly that `x` is supported on the `Q`-factor.  So the leaf says:
+**the trace form of the finite ring `S = 𝓞_K/Q^{e·k}` over `ℤ/q^k` is
+not identically zero.**  There is no room for a cheaper reformulation.
+
+## THE PROOF TO WRITE: A FINITE-RING ARGUMENT, NO LOCAL FIELDS
+
+(Derived 2026-07-27.  This supersedes BOTH routes recorded on the
+consumer before that date — the trace-dual route's "hard case needs
+Serre's (M2) over the maximal unramified subring" and the base-change
+route to `ℚ(ζ_{q^f−1})`.  Neither is needed: no completions, no local
+fields, no Teichmüller theory beyond finite abelian groups, and — the
+point — no local monogenicity `𝓞_L = W[π]`.)
+
+Write `S = 𝓞_K/Q^{e·k}`, a finite local ring with residue field
+`k(Q) = 𝔽_{q^f}` and with `q^k = 0` in it; `|S| = q^{efk}`, so `S` is
+free of rank `e·f` over `ℤ/q^k` (it is a direct factor of the free
+module `𝓞_K/q^k𝓞_K`, hence projective, hence free over the local
+artinian ring `ℤ/q^k`, and the rank is forced by counting).
+
+1. *An unramified subring `A ⊆ S`.*  Let `h ∈ ℤ[X]` be monic of degree
+   `f` with `h mod q` the minimal polynomial of a generator `ω̄` of
+   `k(Q)` over `𝔽_q`.  `h mod q` is separable, so `h'(ω₀)` is a unit in
+   `S` for any lift `ω₀` of `ω̄`; `S` is local with NILPOTENT maximal
+   ideal, hence Henselian, so Newton iteration terminates and produces
+   `ω ∈ S` with `h(ω) = 0` and `ω ≡ ω₀`.  Put
+   `A = (ℤ/q^k)[X]/(h) → S`, `X ↦ ω`.
+2. *`A` is free of rank `f` over `ℤ/q^k` and the map is injective.*
+   Freeness is by construction (quotient by a monic of degree `f`).
+   For injectivity suppose `∑_{j<f} c_j ω^j = 0` with `c_j ∈ ℤ/q^k` not
+   all `0`; let `μ = min_j v_q(c_j) < k` and write `c_j = q^μ b_j`.
+   Then `∑ b_j ω^j` reduces to `∑ b̄_j ω̄^j ≠ 0` in `k(Q)` by
+   `𝔽_q`-independence of `1, ω̄, …, ω̄^{f−1}`, so it is a UNIT of `S`,
+   whence `q^μ = 0` in `S`, i.e. `e·μ ≥ e·k`, i.e. `μ ≥ k` —
+   contradiction.
+3. *`S` is free of rank `e` over `A`, BY COUNTING.*  `𝔪_A = qA` and
+   `S/qS = 𝓞_K/(Q^{e·k} + q𝓞_K) = 𝓞_K/Q^e`, of `k(Q)`-dimension `e`,
+   so Nakayama gives a surjection `A^e ↠ S`; and
+   `|A^e| = (q^{kf})^e = q^{efk} = |S|`, so it is bijective.  **This is
+   what replaces local monogenicity**: freeness is all the argument
+   ever used, and freeness is free.
+4. *The trace tower.*  `Tr_{S/(ℤ/q^k)} = Tr_{A/(ℤ/q^k)} ∘ Tr_{S/A}`
+   (`Algebra.trace_trace`), and for `a ∈ A` one has
+   `Tr_{S/A}(a) = e·a` (`Algebra.trace_algebraMap`, rank `e`).
+5. *A unit trace upstairs.*  `A` is free of rank `f` over `ℤ/q^k` with
+   `A/qA = k(Q)`, and a basis reduces to a basis, so
+   `Tr_{A/(ℤ/q^k)} mod q = Tr_{k(Q)/𝔽_q}`, which is surjective because
+   `k(Q)/𝔽_q` is separable.  Pick `a ∈ A` with `Tr_A(a)` a unit.
+6. *Conclusion.*  `Tr_{S/(ℤ/q^k)}(a) = e·Tr_A(a)` has `q`-adic
+   valuation exactly `v_q(e) = k − 1 < k`, so it is NONZERO in
+   `ℤ/q^k`.  Lift `a` to `x ∈ 𝓞_K` supported on the `Q`-factor (CRT),
+   and `v_q(Tr_{K/ℚ} x) = v_q(e)`.
+
+Step 6 is also the sanity check the old docstring was missing: the
+extremal witness is not `1` (whose trace is `e·f`, useless when
+`q ∣ f`) but an element of the unramified subring with unit residue
+trace, and the factor `e` comes from `Tr_{S/A}(1) = e` alone.  On the
+worked instance `K = ℚ(√2,√5)`, `q = 2`, `e = f = 2`, `k = 2`, one may
+take `x = (1+√5)/2`: it is a unit at the unique prime above `2`, and
+`Tr_{K/ℚ}((1+√5)/2) = 2`, so `v_2(Tr x) = 1 = v_2(e) < k` — matching
+`d = 3 = e − 1 + e·v_2(e)`, the sharp case.
+
+## MATHLIB INPUTS ALREADY LOCATED
+
+`not_dvd_differentIdeal_of_intTrace_not_mem` (the consumer),
+`Algebra.trace_trace`, `Algebra.trace_algebraMap`,
+`Module.basisQuotient` and `Algebra.trace_quotient_mk`
+(`Mathlib/RingTheory/LocalRing/Quotient.lean`, `Trace/Quotient.lean` —
+note the latter's `trace_quotient_eq_of_isDedekindDomain` needs `p`
+MAXIMAL and so does NOT apply to `p = (q^k)`; the reduction of
+`Algebra.intTrace ℤ 𝓞_K` mod `q^k` has to be done from a `ℤ`-basis with
+`Algebra.trace_eq_matrix_trace`, as in `trace_quotient_mk`'s proof),
+`HenselianLocalRing` (`Mathlib/RingTheory/Henselian.lean`),
+`Ideal.quotientInfRingEquivPiQuotient` for the CRT splitting. -/
+theorem exists_intTrace_not_mem_span_of_ramificationIdx
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (k : ℕ) (hk : k = e.factorization q + 1)
+    (J : Ideal (NumberField.RingOfIntegers K))
+    (hJ : Ideal.span {(q : NumberField.RingOfIntegers K) ^ k}
+      = v.asIdeal ^ (e * k) * J) :
+    ∃ x : NumberField.RingOfIntegers K, x ∈ J ∧
+      Algebra.intTrace ℤ (NumberField.RingOfIntegers K) x
+        ∉ Ideal.span {((q : ℤ) ^ k)} :=
+  sorry
+
+-- `hwild` and `hres` are unused: the leaf this is proven over is the
+-- general statement of Serre's bound.  See the docstring below.
+set_option linter.unusedVariables false in
 /-- **The different-exponent bound at a WILD prime of residue degree
-`> 1`** (SORRY LEAF; Serre, *Corps Locaux* III §6 Prop. 13 — the one
-case of that proposition still open in this development).
+`> 1`** (PROVEN 2026-07-27 over `exists_intTrace_not_mem_span_of_ramificationIdx`
+above; Serre, *Corps Locaux* III §6 Prop. 13).
 
 `Q^d ∣ 𝔡_{K/ℚ}` implies `d ≤ e − 1 + e·v_q(e)`, for a prime `Q` of
 `𝓞_K` above `q` with `q ∣ e` (wild) and `𝓞_K/Q ≠ 𝔽_q` (`f > 1`).
 
-This is the LAST arithmetic leaf of the Hermite–Minkowski cut of
-`finite_setOf_isHardlyRamified`.  Every other case of Serre's bound,
-and everything downstream of it, is proven:
+This was the LAST arithmetic leaf of the Hermite–Minkowski cut of
+`finite_setOf_isHardlyRamified`; since 2026-07-27 the cluster's single
+open node is instead `exists_intTrace_not_mem_span_of_ramificationIdx`
+above.  Every other case of Serre's bound, and everything downstream of
+it, is proven:
 
 * `q ∤ e` (tame, any `f`) — `ModThree.lean`'s
   `IsHardlyRamified.not_pow_ramificationIdx_dvd_differentIdeal`,
@@ -1484,80 +1598,51 @@ lifting, no precision loss.  Products leave `D`, which is why the RING
 genuinely needs the Teichmüller condition, and why the polynomial
 division of the `f = 1` route cannot be run inside `D`.
 
-## THE ROUTE TO TRY NEXT: THE TRACE DUAL, WHICH NEEDS NO (M1)
+## THE TRACE-DUAL ROUTE, CARRIED OUT (2026-07-27)
 
-(Recorded 2026-07-26.  This is the first route that does not require
-inventing "the different under localization": mathlib already has the
-handle, and it is global.)
+The route recorded here on 2026-07-26 as "to try next" turned out to
+need NO new theory whatsoever, because mathlib carries a sharper handle
+than `differentialIdeal_le_iff`:
+`not_dvd_differentIdeal_of_intTrace_not_mem` in
+`Mathlib/RingTheory/DedekindDomain/Different.lean`.  For ANY ideal `p`
+of `A` — **primality is not required, and that is exactly what makes
+`p = (q^k)` admissible** — and any factorization `P·J = p·B`, it says
 
-mathlib's `differentialIdeal_le_iff` in
-`Mathlib/RingTheory/DedekindDomain/Different.lean` states, for
-`A = ℤ`, `K = ℚ`, `B = 𝓞_K`, `L = K` and any nonzero ideal `I`,
+  `(∃ x ∈ J, Tr_{B/A}(x) ∉ p)  →  ¬ P ∣ 𝔡_{B/A}`.
 
-  `𝔡_{K/ℚ} ≤ I  ↔  Tr_{K/ℚ}(I⁻¹) ⊆ ℤ`,
+Take `A = ℤ`, `B = 𝓞_K`, `k = v_q(e) + 1`, `p = (q^k)`, `P = Q^{e·k}`,
+and `J` the cofactor of `Q^{e·k}` in `q^k·𝓞_K` (it exists because
+`ord_Q q = e`, by `intValuation_natCast_eq_exp_ramificationIdx` above).
+Then `¬ Q^{e·k} ∣ 𝔡` together with `hd : Q^d ∣ 𝔡` forces
+`d < e·k = e·v_q(e) + e`, i.e. exactly `d ≤ e − 1 + e·v_q(e)`.  No
+fractional ideals, no explicit `y = u/q^{v_q(e)+1}`, no
+`differentialIdeal_le_iff` bookkeeping — the mathlib lemma absorbs all
+of it.  What is left is the trace witness, which is now the sole leaf
+`exists_intTrace_not_mem_span_of_ramificationIdx` above; the elementary
+finite-ring proof of THAT is written out on its own docstring, and it
+needs neither local fields, nor Serre's (M2), nor local monogenicity.
 
-and `Ideal.dvd_iff_le` turns `Q^m ∣ 𝔡` into `𝔡 ≤ Q^m`.  Writing
-`B = e − 1 + e·v_q(e)` for the bound and `m = B + 1 = e·(v_q(e)+1)`,
-this leaf is therefore EQUIVALENT to
+**Two hypotheses of this theorem are unused, and that is not vacuity.**
+The leaf above is the general statement, so `hwild` and `hres` are
+never consumed here.  The conclusion is still the full classical bound;
+what has gone away is the CASE SPLIT, which was an artefact of the
+earlier generator/digit-expansion routes and not of the mathematics.
+`differentIdeal_exponent_le` below still assembles the three cases as
+before, so nothing downstream changes.
 
-  `Tr_{K/ℚ}((Q^m)⁻¹) ⊄ ℤ`,
+## THE SECOND ROUTE (BASE CHANGE TO `ℚ(ζ_{q^f−1})`) IS RETIRED
 
-i.e. to exhibiting ONE element of the fractional ideal `(Q^m)⁻¹` whose
-trace is not a rational integer.  Take
-
-  `y = u / q^(v_q(e)+1)`,  with `u ∈ 𝓞_K`,  `ord_Q u = 0`,  and
-  `ord_{Q'} u ≥ e_{Q'}·(v_q(e)+1)` for every other prime `Q' ∣ q`.
-
-Then `ord_Q y = −e·(v_q(e)+1) = −m` and `y` is integral at every other
-prime, so `y ∈ (Q^m)⁻¹`; and `Tr(y) = Tr(u)/q^(v_q(e)+1)`.  So the
-whole leaf reduces to a statement with no ideals in it at all:
-
-  **∃ `u ∈ 𝓞_K` with `ord_Q u = 0`, with
-  `ord_{Q'} u ≥ e_{Q'}·(v_q(e)+1)` at the other primes `Q' ∣ q`, and
-  with `v_q(Tr_{K/ℚ}(u)) ≤ v_q(e)`.**
-
-Two things are known about that reduced statement, and together they
-locate exactly where the content sits.
-
-* *A mod-`q` computation settles the TAME case, and only the tame
-  case.*  With `L₀ ⊆ K_Q` the maximal unramified subextension,
-  `Tr_{K_Q/L₀}(π^i) ∈ 𝔭_{L₀}` for `1 ≤ i ≤ e−1` (from
-  `Tr(𝔮^i) ⊆ 𝔭^(⌊(i+d)/e⌋)` and `d ≥ e−1`), so for `u ∈ 𝓞_{K_Q}`
-  one gets `Tr_{K_Q/ℚ_q}(u) ≡ e·Tr_{k(Q)/𝔽_q}(ū) (mod q)`.  The
-  residue trace is surjective, so choosing `ū` with
-  `Tr_{k(Q)/𝔽_q}(ū) ≠ 0` gives `v_q(Tr u) = v_q(e)` when `v_q(e) = 0`
-  — and only `≥ 1`, which is useless, when `v_q(e) ≥ 1`.
-* *The sub-case `q ∤ f` falls out by a purely GLOBAL argument, with no
-  completions at all.*  Choose `u` by CRT with `u ≡ 1 (mod Q^N)` and
-  `u ≡ 0 (mod Q'^N)` at the other `Q' ∣ q`, for `N ≥ k·e_{Q'}` with
-  `k = v_q(e)+1`.  Base-change the trace along `ℤ → ℤ/q^k` and
-  decompose `𝓞_K/q^k𝓞_K ≅ ∏_{Q'∣q} 𝓞_K/Q'^(k·e_{Q'})` by CRT: the
-  image of `u` is the idempotent `(1,0,…,0)`, whose trace is the
-  `ℤ/q^k`-rank of its own summand, namely `e·f`.  Hence
-  `Tr(u) ≡ e·f (mod q^k)` and `v_q(Tr u) = v_q(e) + v_q(f)`, which is
-  `≤ v_q(e)` exactly when `q ∤ f`.  The ingredients are CRT, freeness
-  of `𝓞_K/q^k` over `ℤ/q^k`, and additivity of the trace over a
-  product of algebras.
-
-What is left genuinely open is therefore `q ∣ e` AND `q ∣ f`, where
-the extremal `u` has to be drawn from the maximal unramified subring
-and the argument becomes Serre's (M2) again.
-
-## A SECOND ROUTE: BASE CHANGE TO `ℚ(ζ_{q^f−1})`
-
-Let `F₀ = ℚ(ζ_m)`, `m = q^f − 1`, in which `q` is unramified with
-residue degree `f`; let `E = K·F₀`, let `Q̃` be a prime of `E` over `Q`
-and `𝔓 = Q̃ ∩ 𝓞_{F₀}`.  Then `E/K` is unramified at `Q̃` (it is
-generated by a root of unity of order prime to `q`) and
-`k(Q̃) = k(Q)(ζ̄_m) = k(Q)` because `𝔽_{q^f}ˣ` already has order `m`;
-so `e(Q̃∣Q) = f(Q̃∣Q) = 1`, whence `e(Q̃∣𝔓) = e` and `f(Q̃∣𝔓) = 1`.
-Two applications of mathlib's tower formula
-`differentIdeal_eq_differentIdeal_mul_differentIdeal`, with
-`not_dvd_differentIdeal_iff` killing the two unramified factors, give
-`ord_{Q̃} 𝔡_{E/F₀} = ord_Q 𝔡_{K/ℚ} = d`, and the `f = 1` case applied
-to `E/F₀` yields the bound.  The price is generalizing the whole
-`f = 1` chain from base `ℤ` to base `𝓞_{F₀}`, where `𝔓` need not be
-principal, plus constructing the compositum.
+It was: let `F₀ = ℚ(ζ_m)`, `m = q^f − 1`, `E = K·F₀`, `Q̃ ∣ Q`,
+`𝔓 = Q̃ ∩ 𝓞_{F₀}`; then `e(Q̃∣Q) = f(Q̃∣Q) = 1`, so `e(Q̃∣𝔓) = e` and
+`f(Q̃∣𝔓) = 1`, and two applications of
+`differentIdeal_eq_differentIdeal_mul_differentIdeal` with
+`not_dvd_differentIdeal_iff` killing the unramified factors reduce to
+the `f = 1` case over `𝓞_{F₀}`.  The route is correct but its price —
+generalizing the whole `f = 1` chain from base `ℤ` to a base where `𝔓`
+need not be principal, plus constructing the compositum — is now
+strictly wasted work: the trace route above closes the leaf with a
+mathlib lemma and a finite-ring argument.  Recorded here so nobody
+re-derives it.
 
 Both-ways audit: an inequality between natural numbers, the wild
 `f > 1` instance of a classical theorem.  Not vacuous — the bound is
@@ -1574,14 +1659,57 @@ theorem differentIdeal_exponent_le_wild_of_residueDegreeGtOne
       ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
     (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
     (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
-    d ≤ e - 1 + e * e.factorization q :=
-  sorry
+    d ≤ e - 1 + e * e.factorization q := by
+  classical
+  set R := NumberField.RingOfIntegers K with hR
+  set Q := v.asIdeal with hQ
+  set k := e.factorization q + 1 with hkdef
+  -- `ord_Q (q) = e`, hence `e ≥ 1`
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : Q.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he1 : 1 ≤ e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver Q hspan0)
+  have hordq : v.intValuation ((q : ℕ) : R) = WithZero.exp (-(e : ℤ)) := by
+    have h1 := intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem q hq.ne_zero
+    rwa [hq.factorization_self, mul_one, ← he] at h1
+  -- `Q ^ (e·k) ∣ (q^k)`, giving the cofactor `J`
+  have hmemek : ((q : ℕ) : R) ^ k ∈ Q ^ (e * k) := by
+    have h1 : ((q : ℕ) : R) ∈ Q ^ e := by
+      rw [← v.intValuation_le_pow_iff_mem, hordq]
+    have h2 := Ideal.pow_mem_pow h1 k
+    rwa [← pow_mul] at h2
+  have hdvd : Q ^ (e * k) ∣ Ideal.span {((q : ℕ) : R) ^ k} := by
+    rw [Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff]
+    exact hmemek
+  obtain ⟨J, hJ⟩ := hdvd
+  obtain ⟨x, hxJ, hxtr⟩ :=
+    exists_intTrace_not_mem_span_of_ramificationIdx K q hq v hmem e he k hkdef J hJ
+  -- transport the factorization to the shape mathlib wants
+  have hmapeq : Q ^ (e * k) * J
+      = Ideal.map (algebraMap ℤ R) (Ideal.span {((q : ℤ) ^ k)}) := by
+    rw [← hJ, Ideal.map_span]
+    congr 1
+    simp
+  have hnd : ¬ Q ^ (e * k) ∣ differentIdeal ℤ R :=
+    not_dvd_differentIdeal_of_intTrace_not_mem ℤ (Q ^ (e * k)) J hmapeq x hxJ hxtr
+  by_contra hcon
+  rw [Nat.not_le] at hcon
+  refine hnd (dvd_trans (pow_dvd_pow Q ?_) hd)
+  have hek : e * k = e * e.factorization q + e := by rw [hkdef]; ring
+  omega
 
 /-- **The local Eisenstein presentation of the different at a wild
 prime of residue degree `> 1`** (PROVEN 2026-07-26 over
-`differentIdeal_exponent_le_wild_of_residueDegreeGtOne` above, which —
-after the reversion of the generator cut later the same day — is again
-the single sorry leaf of this cluster).
+`differentIdeal_exponent_le_wild_of_residueDegreeGtOne` above, which is
+itself PROVEN since 2026-07-27 over the trace-witness leaf
+`exists_intTrace_not_mem_span_of_ramificationIdx` — the cluster's only
+remaining sorry).
 Statement identical to `exists_eisensteinDerivative_dvd_of_wild` below,
 with the extra hypothesis `hres` that `𝓞_K/Q ≠ 𝔽_q`, i.e.
 `f(Q∣q) > 1`.
