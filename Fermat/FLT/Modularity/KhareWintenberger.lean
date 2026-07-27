@@ -12874,7 +12874,34 @@ free-floating sweep — which is exactly what the CONE STATUS note in
 `PolarizationStruct` namespace (`pairing_add_left`, `pairing_add_right`,
 `pairing_self`, `pairing_gal`, `pairing_act`, `galSMul_hom`) are NOT yet in
 the cone: they are consumed by PROOFS, and the proofs here are still
-`sorry`. -/
+`sorry`.
+
+SECOND-LEVEL CUT (2026-07-27, same day). Both halves have since been cut
+again, and the two subsections below record each in full. Neither
+re-litigates the interface argument above; both reuse its shape (a consumer
+whose conclusion is its target VERBATIM cannot be falsified by a defective
+hypothesis).
+
+* Leaf A splits along MODULE versus GEOMETRY: `exists_standardLevelModule`
+  (finite-field representation theory, no scheme in the statement) and
+  `exists_splitHilbertBlumenthalModuli_of_standardLevelModule` (Rapoport,
+  with the normalization handed to it). `IsStandardLevelModule` writes down
+  what `PolarizationStruct.pairing`'s axioms force on `(ρ₀, Λ)` — including
+  the cyclotomic-determinant condition, in the only shape this vocabulary
+  can express it, as `galRoot`-equivariance rather than as a pinned value.
+  Leaf A is now PROVEN from those two.
+* Leaf B splits along DESCENT versus SEAM:
+  `exists_twistedHilbertBlumenthalDescent_of_split` (Lemma 4.4, producing
+  `HasTwistedHilbertBlumenthalDescent`) and a PROVEN translation into
+  `IsTwistedHilbertBlumenthalModuli`. Leaf B is now PROVEN. The translation
+  is where `hdih` is consumed — its ONLY use in the whole descent half.
+
+The three remaining sorry nodes of this section are therefore
+`exists_standardLevelModule`,
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` and
+`exists_twistedHilbertBlumenthalDescent_of_split`. The `PolarizationStruct`
+lemmas listed above are still not in the cone, for the same reason: they are
+consumed by the proofs of leaf A2, which is still `sorry`. -/
 
 open CategoryTheory AlgebraicGeometry in
 /-- **A split, pairing-normalized level structure at the ideal `I`.**
@@ -12990,9 +13017,199 @@ def HasSplitHilbertBlumenthalModuli
     (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kp),
       v ≠ 0 → ∃ w, Λp F v w ≠ 1)
 
+/-! ##### The MODULE/GEOMETRY cut of leaf A (2026-07-27)
+
+Leaf A bundles two things that have nothing to do with each other: the
+STANDARD LEVEL MODULE (`ρ₀`, `Λ`) — pure Galois-representation theory over
+a finite field, no scheme anywhere in it — and RAPOPORT'S SPACE, which is
+algebraic geometry. The section docstring above put the module inside leaf
+A's existential precisely because it could not be constructed at the time;
+that made the leaf STATEABLE, and it left a prover facing both halves at
+once. This cut separates them.
+
+`IsStandardLevelModule` below is exactly the constraint the geometry
+imposes on the pair `(ρ₀, Λ)`, read off the axioms of
+`Fermat.PolarizationStruct.pairing` rather than guessed:
+
+* `pairing_add_left` / `pairing_add_right` force `Λ` BIMULTIPLICATIVE;
+* `pairing_self` forces `Λ` ALTERNATING;
+* `DualStruct.weil_nondegenerate` is what makes NONDEGENERACY of `Λ`
+  the faithful form of "the normalization is not empty";
+* `pairing_gal` — together with the `Γ_F`-equivariance of the level
+  structure `e` for `ρ₀` — forces `Λ (ρ₀ σ v) (ρ₀ σ w) = galRoot σ (Λ v w)`.
+  Composing with a nondegenerate `Λ` this says `det ρ₀ = χ̄_ℓ`, the mod-`ℓ`
+  cyclotomic character; it is the "standard module whose determinant is the
+  cyclotomic character" the section docstring names, now written down.
+
+A HYPOTHESIS THAT IS NOT DECORATION: `hchar : (n : kI) = 0`. Without it
+leaf A1 is FALSE. `Λ F v · : kI² → μ_n(F̄)` is a group homomorphism out of
+an `𝔽_q`-vector space (`q = char kI`) into a group of exponent `n`, so it
+is trivial unless `q ∣ n` — and then nondegeneracy fails. Concretely
+`kI = 𝔽₅`, `n = 3` satisfies every other hypothesis and admits no
+nondegenerate `Λ` at all. In leaf A the hypothesis is not an extra demand:
+it is DERIVED from `hlamℓ` and `hres` by
+`natCast_eq_zero_of_residueFieldEquiv` below, since `λ` is a prime above
+`ℓ` and `k` is its residue field.
+
+WHY THE CUT IS SAFE. `exists_splitHilbertBlumenthalModuli_of_standardLevelModule`
+concludes `HasSplitHilbertBlumenthalModuli` VERBATIM — it re-existentializes
+its own `ρ₀`, `ρ₀p`, `Λ`, `Λp` and never names the hypothesized ones. So it
+is leaf A weakened by two extra hypotheses, and no defect in leaf A1 can
+make it false; the check that would refute this sentence is to look for
+`hstd`/`hstdp` in its conclusion, and there is none. (This is the same
+structural argument the section docstring makes for leaf B, applied in the
+other direction.) What the hypotheses DO buy is that A2's prover may
+instantiate the existential with them instead of constructing a normalized
+module first — which is the obstruction the original ATOMICITY AUDIT
+recorded as unresolvable in this vocabulary.
+
+BOOKKEEPING NOTE: this raises the direct-sorry count of the section by one
+(leaf A becomes an assembly over A1 + A2). That is the intended trade — A1
+is a self-contained, finite-field representation-theory node that needs no
+algebraic geometry and can be owned separately, and A2 is Rapoport's
+construction with the normalization handed to it. -/
+
 open CategoryTheory in
-/-- **LEAF A — Rapoport's split moduli space** (sorry node, cut
-2026-07-27): for a totally real `D` and two maximal ideals `λ ∋ ℓ`,
+/-- **A standard (pairing-normalized) level module at `n`**: a rank-two
+`GaloisRep` over `kI` together with an alternating, nondegenerate,
+`Γ`-equivariant form into `μ_n`, uniformly in the base field.
+
+This is Taylor's `W_{b₀,0}` with its standard pairing. Every clause is
+forced by a `Fermat.PolarizationStruct` axiom — see the section docstring
+— and the last one is the cyclotomic-determinant condition in the only
+shape this vocabulary can express it: `Λ` cannot be pinned to a VALUE
+(`DualStruct.weil` is `μ_n(F̄)`-valued, so fixing `⟨e₀, e₁⟩ = ζ` is not a
+`ℚ`-rational condition), but its EQUIVARIANCE under `galRoot` can be, and
+that is exactly what cuts the split space down to one geometric component.
+
+`Λ` is indexed by the base field because its target is; the index ranges
+over `ℚ`-algebra fields because in characteristic `n` the target is
+trivial and nondegeneracy would be FALSE rather than merely vacuous. -/
+def IsStandardLevelModule
+    (n : ℕ) {kI : Type u} [Field kI] [TopologicalSpace kI]
+    (ρ : GaloisRep ℚ kI (Fin 2 → kI))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
+      rootsOfUnity n (AlgebraicClosure F)) : Prop :=
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
+      Λ F (u + v) w = Λ F u w * Λ F v w) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
+      Λ F u (v + w) = Λ F u v * Λ F u w) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI), Λ F v v = 1) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI),
+      v ≠ 0 → ∃ w, Λ F v w ≠ 1) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+      (σ : Field.absoluteGaloisGroup F) (v w : Fin 2 → kI),
+      Λ F (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
+          (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w)
+        = Fermat.galRoot σ (Λ F v w))
+
+open CategoryTheory in
+/-- **LEAF A1 — the standard level module exists** (sorry node, cut
+2026-07-27): over a finite field `kI` of residue characteristic dividing
+`n` there is a rank-two Galois representation of `Γ_ℚ` carrying a
+nondegenerate alternating `μ_n`-valued form on which it acts through
+`galRoot`.
+
+NO GEOMETRY OCCURS IN THIS STATEMENT. It is the one half of leaf A that
+mathlib's and this project's existing representation theory can reach:
+take `ρ = diag (1, χ̄_n)` for the mod-`n` cyclotomic character
+(`GaloisRepresentation.cyclotomicCharacterModL` in
+`GaloisRepresentation/Chebotarev.lean` is the mod-`ℓ` case) and
+`Λ F v w = ζ_F ^ φ (det (v, w))` for a primitive `ζ_F ∈ μ_n(F̄)` and any
+surjective additive `φ : kI → ℤ/n` (a nonzero `𝔽_q`-functional composed
+with the identification `𝔽_q ⊆ ℤ/n`, which is where `hchar` enters).
+Equivariance is then `det ρ σ = χ̄_n σ` and the `galRoot`-action on `μ_n`
+being the cyclotomic one; nondegeneracy is surjectivity of `det (v, ·)`
+for `v ≠ 0`.
+
+WHAT IS ACTUALLY MISSING, so the next owner does not re-survey: a bridge
+`galRoot σ ζ = ζ ^ χ̄_n σ` relating `Fermat.galRoot` (an action of `Γ_F` on
+`rootsOfUnity n (AlgebraicClosure F)`, defined in
+`Modularity/AbelianScheme.lean`) to the mod-`n` cyclotomic character over a
+VARIABLE base field `F`. Everything else is finite linear algebra.
+
+`hchar` is NOT optional — see the section docstring for the `𝔽₅`/`n = 3`
+counterexample that makes the statement false without it. -/
+theorem exists_standardLevelModule (n : ℕ) (hn : 1 < n)
+    (kI : Type u) [Field kI] [Finite kI] [TopologicalSpace kI] [DiscreteTopology kI]
+    (hchar : (n : kI) = 0) :
+    ∃ (ρ : GaloisRep ℚ kI (Fin 2 → kI))
+      (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
+        rootsOfUnity n (AlgebraicClosure F)),
+      IsStandardLevelModule n ρ Λ :=
+  sorry
+
+/-- **The residue characteristic of `λ` is visible in `k`** (PROVEN glue):
+if `n ∈ I` and `k` is isomorphic to `𝒪_D ⧸ I`, then `n = 0` in `k`.
+
+This is what turns `hlamℓ`/`hres` into the hypothesis `hchar` of
+`exists_standardLevelModule`, and it is the reason that hypothesis costs
+leaf A nothing. -/
+theorem natCast_eq_zero_of_residueFieldEquiv {D : Type u} [Field D] [NumberField D]
+    {I : Ideal (NumberField.RingOfIntegers D)} {n : ℕ}
+    (hn : (n : NumberField.RingOfIntegers D) ∈ I)
+    {kI : Type u} [Field kI] (h : Nonempty ((NumberField.RingOfIntegers D ⧸ I) ≃+* kI)) :
+    (n : kI) = 0 := by
+  obtain ⟨e⟩ := h
+  have h0 : ((n : ℕ) : NumberField.RingOfIntegers D ⧸ I) = 0 := by
+    rw [← map_natCast (Ideal.Quotient.mk I) n]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr hn
+  rw [← map_natCast e n, h0, map_zero]
+
+open CategoryTheory in
+/-- **LEAF A2 — Rapoport's split moduli space, given the standard level
+modules** (sorry node, cut 2026-07-27): the geometry half of leaf A, with
+the pairing normalization supplied rather than constructed.
+
+This is section 1 of Rapoport's *Compactifications de l'espace de modules
+de Hilbert–Blumenthal* (with Deligne–Pappas for the general `𝒪_D`):
+smoothness and geometric connectedness come from the analytic
+uniformization of the complex points by `𝔥^{[D:ℚ]}`, and FINENESS from the
+level being divisible by two primes of COPRIME residue characteristic —
+which is exactly what `hpℓ` together with `hlamℓ`, `hfrpp` and `hne`
+records, since a nontrivial automorphism of a polarized HBAV acting
+trivially on both `A[λ]` and `A[𝔭]` would have to be trivial.
+
+WHERE THE HYPOTHESES GO: `hres`/`hresp` are what make `A[λ]` and `A[𝔭]`
+two-dimensional over `k` and `kp` respectively (they are free of rank two
+over the residue fields of `λ` and `𝔭`), so that the level structures can
+have source `k²` and `kp²`; totally-realness of `D` is what makes the
+Rosati involution trivial on `𝒪_D`, hence what makes the induced pairing
+`𝒪_D`-bilinear (`Fermat.DualStruct.weil_act`).
+
+`hstd`/`hstdp` are the standard level modules. The INTENDED proof
+instantiates this leaf's existential with them; nothing forces that, which
+is exactly why the cut cannot introduce a falsity — the conclusion is leaf
+A's verbatim. See the section docstring.
+
+NOT CLAIMED HERE: uniqueness of the point in the fineness clause, and any
+comparison finer than an isomorphism of Galois modules of geometric
+points. See the SPLIT/DESCENT section docstring for why, and for what a
+later owner would have to carry in order to strengthen it. -/
+theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
+    {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal)
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (hne : lam ≠ frp)
+    (k : Type u) [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (hstd : ∃ (ρ₀ : GaloisRep ℚ k (Fin 2 → k))
+      (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+        rootsOfUnity ℓ (AlgebraicClosure F)), IsStandardLevelModule ℓ ρ₀ Λ)
+    (hstdp : ∃ (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+      (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+        rootsOfUnity p (AlgebraicClosure F)), IsStandardLevelModule p ρ₀p Λp) :
+    HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp :=
+  sorry
+
+open CategoryTheory in
+/-- **LEAF A — Rapoport's split moduli space** (PROVEN 2026-07-27 as an
+assembly over the MODULE/GEOMETRY cut; formerly the sorry node cut
 `𝔭 ∋ p` of `𝒪_D` with `p ≠ ℓ` and prescribed residue fields, the split
 Hilbert–Blumenthal moduli problem of level `λ𝔭` is represented by a
 smooth, separated, finite-type, quasi-compact, geometrically irreducible
@@ -13017,7 +13234,13 @@ pairing `𝒪_D`-bilinear (`Fermat.DualStruct.weil_act`).
 NOT CLAIMED HERE: uniqueness of the point in the fineness clause, and any
 comparison finer than an isomorphism of Galois modules of geometric
 points. See the section docstring above for why, and for what a later
-owner would have to carry in order to strengthen it. -/
+owner would have to carry in order to strengthen it.
+
+THE ONLY CONTENT OF THIS ASSEMBLY is the derivation of A1's residue-
+characteristic hypothesis from `hlamℓ`/`hres` and `hfrpp`/`hresp` — see
+`natCast_eq_zero_of_residueFieldEquiv`, and the section docstring for why
+that hypothesis cannot be dropped. Everything else is leaf A1 followed by
+leaf A2. -/
 theorem exists_splitHilbertBlumenthalModuli
     {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -13031,22 +13254,213 @@ theorem exists_splitHilbertBlumenthalModuli
     (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
     (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp)) :
     HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp :=
-  sorry
+  exists_splitHilbertBlumenthalModuli_of_standardLevelModule hp hpℓ D lam frp hlam hfrp
+    hlamℓ hfrpp hne k kp hres hresp
+    (exists_standardLevelModule ℓ (Fact.out : ℓ.Prime).one_lt k
+      (natCast_eq_zero_of_residueFieldEquiv hlamℓ hres))
+    (exists_standardLevelModule p hp.one_lt kp
+      (natCast_eq_zero_of_residueFieldEquiv hfrpp hresp))
+
+/-! ##### The DESCENT/SEAM cut of leaf B (2026-07-27)
+
+Leaf B as cut is Taylor's Lemma 4.4 plus a translation. The translation is
+mechanical and it was hiding the geometry:
+
+* the seam `IsTwistedHilbertBlumenthalModuli` quantifies over totally real
+  number fields `F` that are Galois over `ℚ` and satisfy an image-preservation
+  premise, and asks for an EXISTENTIAL `ρbarp` over `F` together with a
+  dihedral clause. None of that is geometry: the `ρbarp` is `ρbarp.map`, and
+  the dihedral clause is `hdih` applied at `F` — which is the ONLY place
+  `hdih` is used in the whole of leaf B;
+* the `IsFormOver` clause and the archimedean implication are produced by the
+  descent itself and merely carried through.
+
+`HasTwistedHilbertBlumenthalDescent` below states what the descent actually
+produces: one `X` with its geometry, its form structure, a TWISTED level
+structure at `λ` and at `𝔭` over EVERY `ℚ`-algebra field point, and fineness
+at `ℝ`. `IsTwistedLevelStructure` is `IsSplitLevelStructure` with the pairing
+clause dropped and `ρ₀` replaced by the twisting cocycle — which is precisely
+what "twist" means here, and the reason the two definitions sit side by side.
+
+WHY THE THREE CONCLUSIONS STAY TOGETHER, AND WHY THIS IS NOT THE REFUTED CUT.
+The FORM-cut docstring refutes splitting "the space exists" from "the space
+has a real point" by quantifying over an ARBITRARY `X` carrying a twisted
+family: an EVEN twist `X_R` has `X_R(ℝ) = ∅`, hence no totally real points,
+hence satisfies the seam VACUOUSLY while being smooth, separated, of finite
+type, quasi-compact and geometrically irreducible. That refutation applies to
+any cut that hands a bare `X` to a second leaf. It does NOT apply here,
+because `HasTwistedHilbertBlumenthalDescent` is an existential over ONE `X`
+carrying all three conclusions at once — nothing downstream ever receives an
+`X` it did not also receive the real-point clause for. Leaf B1 is therefore
+atomic in the "space versus real point" direction, and that is recorded here
+so nobody attempts that cut a fourth time.
+
+`hdih` IS DELIBERATELY KEPT ON LEAF B1 even though the descent construction
+does not consume it. Dropping it would strengthen B1, and the strengthening
+is not obviously true: B1's archimedean clause is the implication
+`HasRealHilbertBlumenthalObject → HasRationalPoint fX ℝ`, and what makes that
+implication safe is CONSEQUENCE 1 — `hdih` forces `ρbarp` odd, so the
+hypothesis is not satisfiable by an even `ρbarp` for which the conclusion
+would fail. `HasRealHilbertBlumenthalObject` is stated with
+`AbelianSchemeStruct`/`Mult` only, carrying no polarization, so that oddness
+cannot be recovered from inside it. Keeping `hdih` costs nothing and removes
+the risk; this is the one place where the two leaves' hypothesis lists were
+allowed to differ and the answer was "do not".
+
+BOOKKEEPING: leaf B becomes PROVEN and leaf B1 replaces it, so the direct
+sorry count of leaf B is unchanged. -/
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A twisted level structure at the ideal `I`.**
+
+An identification of `V` with the `I`-torsion of the geometric fibre at the
+point `x` — additive, injective, with image exactly `A[I]`, and
+`Γ_F`-equivariant for the representation `ρ` restricted along
+`Γ_F ⟶ Γ_ℚ`.
+
+This is `IsSplitLevelStructure` with two differences, and both are what
+"twisted" means. The Galois module on the source is the TWISTING COCYCLE
+(`ρbar` at `λ`, `ρbarp` at `𝔭`) rather than the standard module `ρ₀`; and
+there is NO pairing clause, because the seam
+`IsTwistedHilbertBlumenthalModuli` states none — the Weil-pairing
+normalization survives the twist only as the coupling recorded in the
+FAITHFULNESS NOTE of the DATUM cut, which belongs in
+`exists_totallyRealCoefficientDatum_of_residueField` and not here.
+
+The Galois action is written with `Field.absoluteGaloisGroup.map` rather
+than `GaloisRep.map` because `F` ranges over arbitrary `ℚ`-algebra fields
+here — `GaloisRep.map` demands a number field — and the two agree by
+`GaloisRep.map_apply`, which is `rfl`. That is what lets the seam consume
+this definition at a number field without any rewriting. -/
+def IsTwistedLevelStructure
+    {D : Type u} [Field D] [NumberField D]
+    (I : Ideal (NumberField.RingOfIntegers D))
+    {S A : Scheme.{u}} {fA : A ⟶ S}
+    {ab : Fermat.AbelianSchemeStruct fA}
+    (m : Fermat.Mult ab (NumberField.RingOfIntegers D))
+    {kI : Type u} [Field kI] [TopologicalSpace kI]
+    {V : Type w} [AddCommGroup V] [Module kI V]
+    (ρ : GaloisRep ℚ kI V)
+    {F : Type u} [Field F] [Algebra ℚ F] (x : Spec (CommRingCat.of F) ⟶ S) : Prop :=
+  ∃ e : V → Fermat.GeomFibrePt fA x,
+    (∀ w w' : V, e (w + w') = ab.add (e w) (e w')) ∧
+    Function.Injective e ∧
+    (∀ (σ : Field.absoluteGaloisGroup F) (w : V),
+      e (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w) = ab.galSMul x σ (e w)) ∧
+    (∀ y, y ∈ (m.torsion x I).1 ↔ ∃ w, e w = y)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **What Taylor's Galois descent produces**: the twist `X_{R,ψ}` of the
+split space along the cocycle `R = ρbar ⊕ ρbarp`, with everything the
+descent gives and nothing that has to be translated afterwards.
+
+The existential carries ONE `X`, and that is the point (see the section
+docstring): its geometry, the abelian family with real multiplication of the
+right relative dimension, the fact that it is a `K`-form of a geometrically
+irreducible `X₀` for an algebraically closed `K`, the twisted level
+structures at `λ` and at `𝔭` at EVERY `ℚ`-algebra field point, and fineness
+at the archimedean place. Splitting the last clause off would reproduce the
+even-twist counterexample the FORM-cut docstring records.
+
+The level-structure clause is stated at every `ℚ`-algebra field point rather
+than only at the totally real number fields the seam mentions: that is what
+the descent actually gives (Lemma 4.4 describes `X_{R,ψ}(F)` for every `F`),
+it is what makes the archimedean clause conceptually the same statement, and
+it costs the seam nothing to instantiate. -/
+def HasTwistedHilbertBlumenthalDescent
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {W : Type v} [AddCommGroup W] [Module k W]
+    (ρbar : GaloisRep ℚ k W)
+    (D : Type u) [Field D] [NumberField D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
+    (ρbarp : GaloisRep ℚ kp (Fin 2 → kp)) : Prop :=
+  ∃ (X : Scheme.{u}) (fX : X ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (A : Scheme.{u}) (fA : A ⟶ X) (ab : Fermat.AbelianSchemeStruct fA)
+    (m : Fermat.Mult ab (NumberField.RingOfIntegers D)),
+    AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsSeparated fX ∧
+    AlgebraicGeometry.LocallyOfFiniteType fX ∧ AlgebraicGeometry.QuasiCompact fX ∧
+    AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA ∧
+    (∃ (X₀ : Scheme.{u}) (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (K : Type u) (_ : Field K) (_ : Algebra ℚ K),
+      IsAlgClosed K ∧ AlgebraicGeometry.GeometricallyIrreducible fX₀ ∧
+      IsFormOver K fX fX₀) ∧
+    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+      (x : Spec (CommRingCat.of F) ⟶ X), x ≫ fX = specRatMap F →
+      IsTwistedLevelStructure lam m ρbar x ∧ IsTwistedLevelStructure frp m ρbarp x) ∧
+    (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
+      HasRationalPoint fX (ULift.{u} ℝ))
 
 open CategoryTheory in
-/-- **LEAF B — Taylor's descent along the cocycle** (sorry node, cut
-2026-07-27): GIVEN the split moduli space of leaf A, the twist of it by
-`R = ρbar ⊕ ρbarp` satisfies the seam and is fine at the archimedean
-place.
+/-- **LEAF B1 — Taylor's Galois descent** (sorry node, cut 2026-07-27):
+GIVEN the split moduli space of leaf A, the twist of it by
+`R = ρbar ⊕ ρbarp` exists, is a form of a geometrically irreducible space,
+carries the twisted level structures at every field point, and is fine at
+the archimedean place.
 
 This is Taylor, *On the meromorphic continuation of degree two
 `L`-functions*, §4 pp. 759–762: `Γ` acts faithfully on the split space,
-`H¹(G_ℚ, Γ)` classifies the twists, Lemma 4.4 describes the `F`-points of
-`X_{R,ψ}` — which is exactly `IsTwistedHilbertBlumenthalModuli` — and
-Lemma 4.5 produces the real point by transporting the CM point of `X_Dih`
-along the isomorphism of the two twists over `ℝ`, which exists because
-`hdih` forces both cocycles to be odd (CONSEQUENCE 1 of the target's
-docstring below).
+`H¹(G_ℚ, Γ)` classifies the twists, and Lemma 4.4 describes the `F`-points
+of `X_{R,ψ}` — which is exactly the level-structure clause of
+`HasTwistedHilbertBlumenthalDescent`. The archimedean clause is Lemma 4.4
+read at `F = ℝ` (fineness in the objects-to-points direction), NOT Lemma
+4.5: the CM point of `X_Dih` is not needed, because the real object is
+handed over as the hypothesis of the implication.
+
+FAITHFULNESS — WHY A DEFECTIVE `hsplit` CANNOT MAKE THIS FALSE. The
+conclusion re-existentializes its own `X`, `X₀` and `K`; nothing in it names
+the space supplied by `hsplit`. So this leaf is
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum` weakened by extra
+hypotheses and a WEAKER conclusion (the seam is not asked for; the level
+structures it is built from are), and is true whenever that target is. The
+ATOMICITY AUDIT's counterexample `X₀ = Spec ℚ` carrying `E ⊗ 𝒪_D` was a
+counterexample to a descent leaf whose conclusion named the given `X₀`; it
+does not touch this one. The check that would refute this paragraph is a
+one-line one: look for `X₀` from `hsplit` in the conclusion.
+
+WHAT THE PROVER ACTUALLY HAS TO DO, since the hypothesis is deliberately not
+maximal (see the SPLIT/DESCENT section docstring): build the `Γ`-action on
+`X₀` — for which leaf A's fineness clause, being stated at field points only,
+is NOT by itself enough, so the descent will need either a functorial
+strengthening of leaf A or a direct construction — then descend, then read
+the level structures and the archimedean point off Lemma 4.4. The
+translation into the seam is already done and is not this leaf's problem. -/
+theorem exists_twistedHilbertBlumenthalDescent_of_split
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (p : ℕ) (hp : p.Prime) (hpℓ : p ≠ ℓ)
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal)
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (hne : lam ≠ frp)
+    (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
+    {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp]
+    [DiscreteTopology kp] (ρbarp : GaloisRep ℚ kp (Fin 2 → kp))
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (hdih : ∀ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F),
+      (ρbarp.map (algebraMap ℚ F)).IsIrreducible ∧
+      ∃ (L : Type u) (_ : Field L) (_ : Algebra F L),
+        Module.finrank F L = 2 ∧
+        ¬ ((ρbarp.map (algebraMap ℚ F)).map (algebraMap F L)).IsIrreducible)
+    (hsplit : HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp) :
+    HasTwistedHilbertBlumenthalDescent ρbar D lam frp ρbarp :=
+  sorry
+
+open CategoryTheory in
+/-- **LEAF B — Taylor's descent along the cocycle** (PROVEN 2026-07-27 as
+an assembly over the DESCENT/SEAM cut; formerly the sorry node cut
+2026-07-27): GIVEN the split moduli space of leaf A, the twist of it by
+`R = ρbar ⊕ ρbarp` satisfies the seam and is fine at the archimedean
+place.
 
 FAITHFULNESS — WHY A DEFECTIVE HYPOTHESIS CANNOT MAKE THIS FALSE. The
 conclusion is the conclusion of
@@ -13058,14 +13472,31 @@ The previous ATOMICITY AUDIT's counterexample to the split/descent cut —
 `X₀ = Spec ℚ` carrying `E ⊗ 𝒪_D` — was a counterexample to a differently
 shaped descent leaf, one whose conclusion named the given `X₀`; it does not
 touch this one. The check that would refute this paragraph is a one-line
-one: look for `X₀` from `hsplit` in the conclusion.
+one: look for `X₀` from `hsplit` in the conclusion. (VERIFIED 2026-07-27
+while performing the DESCENT/SEAM cut: the two conclusions are literally
+identical text, and neither mentions `hsplit`.)
 
-WHAT THE PROVER ACTUALLY HAS TO DO, since the hypothesis is deliberately
-not maximal (see the section docstring): build the `Γ`-action on `X₀` — for
-which the fineness clause supplied here, being stated at field points only,
-is NOT by itself enough, so the descent will need either a functorial
-strengthening of leaf A or a direct construction — then descend, then read
-the seam off Lemma 4.4, then transport the CM point. -/
+WHAT THIS ASSEMBLY DOES, now that leaf B1 carries the geometry. Everything
+here is translation, and it is worth listing because it is exactly what a
+prover no longer has to think about:
+
+* the seam's existential auxiliary datum is `(D, m, p, λ, 𝔭)` from the
+  hypotheses and from B1;
+* the seam's FIRST moduli condition is the `λ`-twisted level structure of
+  B1, unchanged — `GaloisRep.map_apply` is `rfl`, so the two spellings of
+  the Galois action are definitionally equal and no rewriting occurs;
+* the seam's SECOND moduli condition takes `ρbarp.map (algebraMap ℚ F)` as
+  its existential representation over `F`, the `𝔭`-twisted level structure
+  of B1 as its identification, and its irreducibility and quadratic-descent
+  clauses from `hdih F` — this is the ONLY use of `hdih` in leaf B, which
+  is why B1 does not need it for the descent (it keeps it only as the
+  safety pin described in the section docstring);
+* the seam's image-preservation premise is NOT consumed: B1 supplies the
+  level structures at every field point, so the premise is inert here. It
+  remains load-bearing for the seam's CONSUMERS, which use it through
+  `exists_totallyReal_point_of_geometricallyIrreducible`;
+* the `IsFormOver` clause and the archimedean implication pass through
+  unchanged. -/
 theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -13107,8 +13538,23 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split
         IsAlgClosed K ∧ AlgebraicGeometry.GeometricallyIrreducible fX₀ ∧
         IsFormOver K fX fX₀) ∧
       (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
-        HasRationalPoint fX (ULift.{u} ℝ)) :=
-  sorry
+        HasRationalPoint fX (ULift.{u} ℝ)) := by
+  obtain ⟨X, fX, A, fA, ab, m, hsm, hsep, hlft, hqc, hrel, hform, hlev, hreal⟩ :=
+    exists_twistedHilbertBlumenthalDescent_of_split hℓodd hℓ5 hW hρbar hirr D p hp hpℓ
+      lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hdih hsplit
+  refine ⟨X, fX, A, fA, ab, hsm, hsep, hlft, hqc, ?_, hform, hreal⟩
+  refine ⟨D, inferInstance, inferInstance, inferInstance, m, p, lam, frp,
+    hp, hpℓ, hlam, hfrp, hlamℓ, hfrpp, hrel, ?_⟩
+  intro F _ _ _ _ _ x hx
+  obtain ⟨hlamlev, hfrplev⟩ := hlev F inferInstance inferInstance x hx
+  obtain ⟨e, hadd, hinj, hgal, htor⟩ := hlamlev
+  obtain ⟨ep, hadd', hinj', hgal', htor'⟩ := hfrplev
+  obtain ⟨hirrp, L, hLf, hLalg, hLrank, hLred⟩ :=
+    hdih F inferInstance inferInstance inferInstance
+  exact ⟨⟨e, hadd, hinj, hgal, htor⟩,
+    kp, inferInstance, inferInstance, inferInstance, inferInstance,
+    ρbarp.map (algebraMap ℚ F), ep, hadd', hinj', hgal', htor', hirrp,
+    L, hLf, hLalg, hLrank, hLred⟩
 
 
 open CategoryTheory in
@@ -13364,6 +13810,16 @@ descent), joined here by a one-line assembly. Read that section's docstring
 before working on either leaf; it records how each half of the ATOMICITY
 AUDIT's interface objection is answered, and — more importantly — exactly
 what the cut does NOT claim, so that leaf B's prover is not surprised.
+
+AUDIT UPDATE III (2026-07-27, later the same day) — BOTH HALVES HAVE BEEN
+CUT AGAIN, so neither `exists_splitHilbertBlumenthalModuli` nor
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split` is a sorry
+node any more. The live leaves under this declaration are
+`exists_standardLevelModule` (finite-field representation theory),
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` (Rapoport) and
+`exists_twistedHilbertBlumenthalDescent_of_split` (Taylor Lemma 4.4). The
+SECOND-LEVEL CUT paragraph of the SPLIT/DESCENT section docstring records
+the reasoning; dispatch at those three names, not at these two.
 
 One correction to the AUDIT UPDATE above, worth stating because it was
 load-bearing for the cut and is not quite what that paragraph says. The new
