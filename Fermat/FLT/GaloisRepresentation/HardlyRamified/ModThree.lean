@@ -9018,7 +9018,6 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **PASSAGE TO THE LIMIT** (PROVEN 2026-07-27; created the same day as the SECOND
-/-- **PASSAGE TO THE LIMIT** (sorry node, created 2026-07-27 as the SECOND
 of the two leaves of the decomposition of
 `existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` below): if a
 finite `𝒪₃ᵥ`-algebra `A` admits, at EVERY truncation level `N ≥ j`, an
