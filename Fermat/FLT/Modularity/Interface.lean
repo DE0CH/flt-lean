@@ -26556,15 +26556,21 @@ everything from those facts to the attachment statement is PROVEN:
   multiplicity one in `S₂(Γ₀(M))` in idempotent form (the newform's
   local factor of the complex Hecke algebra is a LINE), now an assembly
   over `heckeOp_mul_comm` (PROVEN: the complex Hecke operators commute)
-  and the one remaining analytic leaf of the seam,
-  `exists_smul_of_heckeOp_generalizedEigen_of_newform` — SORRY: the
-  joint GENERALIZED eigenspace at a newform's eigensystem is the line
-  `ℂ·g`.
-* `nonempty_modularHeckeComparisonPackage` — SORRY: the residual
-  GEOMETRIC leaf, inhabitation of the fifth-level carrier, whose one
-  non-geometric field is the `ℂ → ℚ̄_p` comparison itself (see its
-  docstring for the classical construction and citations, field by
-  field).
+  and the analytic leaf of the seam,
+  `exists_smul_of_heckeOp_generalizedEigen_of_newform` — **PROVEN**
+  (label corrected 2026-07-27; it had been recorded here as SORRY long
+  after it closed): the joint GENERALIZED eigenspace at a newform's
+  eigensystem is the line `ℂ·g`. It is proven over
+  `exists_peterssonProduct_selfAdjoint_heckeOp` (a definite,
+  conjugate-symmetric form with every good `T_q` self-adjoint), which
+  is itself PROVEN over the constructed `Γ₀(M)` Petersson domain.
+* `nonempty_modularHeckeComparisonPackage` — **PROVEN** (label
+  corrected 2026-07-27, same stale-label sweep): a direct assembly over
+  `nonempty_modularRationalHeckePackage`. It was the residual GEOMETRIC
+  leaf of the fifth level when this overview was written; the geometry
+  has since been pushed all the way down to
+  `nonempty_modularTateGaloisData` at the end of the file, which is now
+  the ONLY sorried inhabitation node in the package tower.
 * `nonempty_modularHeckeSpectrumPackage` — now a PROVEN assembly over
   those two: the complex étale idempotent transported by `comparison`
   gives `spectrum_occurs` outright and `spectrum_reduced` by
@@ -35235,7 +35241,31 @@ into two leaves that share nothing:
 
 Neither needs anything from the list above, which is why the split is
 worth its extra leaf: the three theories now block on three disjoint
-bodies of mathematics instead of on one entangled node. -/
+bodies of mathematics instead of on one entangled node.
+
+THE TWELFTH CUT, EXECUTED (2026-07-27). `nonempty_modularTateGaloisData`
+below is now PROVEN, as glue over two leaves that split THIS structure's
+nine fields along the line between its pairing side and its Galois side:
+
+* `exists_frobeniusForm_modularTateFrame` — `pair`, `pair_self`,
+  `pair_nondeg`, `pair_hecke`. These four are equivalent to a single
+  Frobenius functional on `𝕋_ℚ ⊗ ℚ̄_p` (`frameSymplectic` in
+  `Modularity/HeckeFrame.lean` builds the form from it; the section note
+  there proves the converse, that every alternating `𝕋`-self-adjoint form
+  on the frame has that shape). So they are **item 7 alone** — the
+  Gorenstein/multiplicity-one property of the Hecke algebra — with no
+  Galois action and no modular curve in the statement.
+* `exists_galoisRep_modularTateSpace` — `τJ`, `S`, `hecke_comm`,
+  `congruence`, `pair_frob`: **items 4 and 6 alone**, Hecke
+  correspondences over `ℚ` and the Eichler–Shimura congruence. Its
+  docstring shows `pair_frob` is equivalent to `det τJ(Frob_q) = q`,
+  independently of which admissible pairing is supplied, which is why
+  taking the pairing as a hypothesis there does not strengthen it.
+
+So of the seven theories listed above, item 7 is now a separate node
+from items 4 and 6, and items 1, 2, 3 and 5 are inputs to the latter.
+Nothing above this cut changed: the structure's fields are untouched and
+every consumer sees the same interface. -/
 structure ModularTateGaloisData (M : ℕ) where
   /-- The continuous Galois action on the concrete Tate space. -/
   τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M)
@@ -35273,14 +35303,209 @@ structure ModularTateGaloisData (M : ℕ) where
           (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
         (q : AlgebraicClosure ℚ_[p]) * pair x y
 
-/-- **Inhabitation of the residual arithmetic** (sorry node — THE
-residual modular-curve leaf of the whole modularity subtree, over a
-CONCRETE Tate space, and after the NINTH cut carrying GEOMETRY only:
-Ribet irreducibility is no longer one of its fields). See
-`ModularTateGaloisData` for the missing theories. -/
-theorem nonempty_modularTateGaloisData {M : ℕ} (hM : 0 < M) :
-    Nonempty (ModularTateGaloisData (p := p) M) :=
+/-- **The rational Hecke algebra is a FROBENIUS algebra** (sorry leaf,
+the TWELFTH decomposition, 2026-07-27): `𝕋_ℚ ⊗ ℚ̄_p` carries a `ℚ̄_p`-linear
+functional `θ` whose trace form `(a, b) ↦ θ(ab)` is nondegenerate.
+
+THIS IS THE WHOLE OF THE PAIRING SIDE OF `ModularTateGaloisData`, AND IT
+CONTAINS NO GALOIS THEORY AND NO MODULAR CURVE. The four fields `pair`,
+`pair_self`, `pair_nondeg`, `pair_hecke` of that structure are, by
+`frameSymplectic` and its lemmas in `Modularity/HeckeFrame.lean`, exactly
+equivalent to this one functional — see the section note there for the
+converse direction (an alternating `A`-self-adjoint form on `A²` is
+`θ(x₀y₁ − x₁y₀)` for a unique `θ`, and it is nondegenerate iff `θ` is a
+Frobenius form). So the cut below loses nothing: it does not weaken the
+geometric leaf, it *relocates* four of its nine fields into a statement
+about a finite-dimensional commutative algebra.
+
+CLASSICAL CONTENT, and which of the geometric leaf's seven missing
+theories this is. Writing `A := 𝕋_ℚ ⊗ ℚ̄_p`, a Frobenius form exists iff
+`A ≅ A^∨` as `A`-modules. The `q`-expansion pairing `𝕋 × S₂ → ℚ`,
+`(T, f) ↦ a₁(Tf)`, is perfect (Diamond–Shurman §5.5), so `A^∨ ≅ S₂ ⊗ ℚ̄_p`
+and the statement is precisely
+
+  **`S₂(Γ₀(M))` is FREE OF RANK ONE over `𝕋`**
+
+— the Gorenstein/multiplicity-one property of the Hecke algebra (Mazur,
+*Modular curves and the Eisenstein ideal*, ch. II §15; Ribet, *Invent.
+Math.* 100 (1990), §2). That is **item 7** of the list in
+`ModularTateGaloisData` ("freeness of `H₁(X₀(M); ℚ)` of rank two over
+`𝕋_ℚ`"): over `ℚ̄_p`, `H₁ ⊗ ℚ̄_p` free of rank two over `A` and `S₂ ⊗ ℚ̄_p`
+free of rank one are the same statement, since `H₁ ⊗ ℂ ≅ S₂ ⊕ S̄₂` as
+Hecke modules. It is **not** items 4 or 6 — no Hecke correspondence over
+`ℚ`, and no Eichler–Shimura isomorphism, is needed to state or to prove
+it. Splitting it off is the entire point of this decomposition: items 4
+and 6 are the geometry of `X₀(M)`, item 7 is commutative algebra plus
+the classical `q`-expansion pairing, and until now the three were fused
+in one node.
+
+WHY IT IS TRUE, in a form a successor can follow. `A` is a
+finite-dimensional commutative `ℚ̄_p`-algebra
+(`finiteDimensional_modularHeckeAlgebraQ`), hence a product of local
+artinian factors. By Atkin–Lehner, `S₂(Γ₀(M)) ⊗ ℂ` decomposes into
+oldform blocks, one per newform `f` of level `N ∣ M`, spanned by the
+`f(dz)`, `d ∣ M/N`. On such a block the image of `𝕋` is generated by the
+`U_q`, `q ∣ M/N`, and the block is a CYCLIC module over that image with
+generator `f((M/N)z)` — for a single prime power `M = Nq^r` this is the
+computation `U_q·f(q^jz) = f(q^{j−1}z)` (and `U_q f = a_qf − qf(qz)`),
+whose iterates on `f(q^rz)` are a basis. So each block is free of rank
+one over its factor of `𝕋`, and the factors are separated by the `T_n`
+with `(n, M) = 1` (strong multiplicity one). Summing over blocks gives
+`S₂ ≅ 𝕋` and hence `θ`.
+
+NON-VACUITY. `θ = 0` fails at once, and so does any `θ` vanishing on a
+nonzero ideal: the hypothesis is nondegeneracy of the TRACE form, not
+mere nonzero-ness of `θ`. If `A` had a non-Gorenstein local factor there
+would be no such `θ` at all, so this leaf carries genuine arithmetic —
+it is exactly the input that fails for the mod-`p` Hecke algebra in the
+cases where multiplicity one is known to fail.
+
+NOT A DUPLICATE OF `exists_heckeSubring_zForm` (far above, and under a
+live separate owner as of 2026-07-27). That leaf is about the `ℤ`-module
+structure of `heckeSubring N ⊆ End_ℂ(S₂)`, and its consumer is
+`integralCuspForms_span_eq_top`; this one is about a `ℚ̄_p`-bilinear form
+on the base-changed `modularHeckeAlgebraQ M`. They cite adjacent
+classical facts and neither implies the other as stated: an integral
+spanning set says nothing about nondegeneracy of a trace form, and a
+Frobenius form over `ℚ̄_p` says nothing about a `ℤ`-lattice. **The check
+that would refute this separation**: exhibit a term of one from the
+other without new input. -/
+theorem exists_frobeniusForm_modularTateFrame {M : ℕ} (hM : 0 < M) :
+    ∃ θ : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M) →ₗ[AlgebraicClosure ℚ_[p]]
+        AlgebraicClosure ℚ_[p],
+      ∀ a : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M),
+        (∀ b : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M),
+          θ (a * b) = 0) → a = 0 :=
   sorry
+
+/-- **The Galois residue of the geometric leaf** (sorry leaf, the
+TWELFTH decomposition, 2026-07-27): given the pairing, the Galois action
+on the concrete Tate space with the Eichler–Shimura congruence and the
+Frobenius multiplier.
+
+This is what is left of `ModularTateGaloisData` once the pairing side is
+removed, and it is EXACTLY items **4** and **6** of that structure's
+missing-theory list — Hecke correspondences with `ℚ`-models
+(Diamond–Shurman §7.9, §8.5) and the Eichler–Shimura congruence
+(Igusa; D–S Theorems 8.6.1 and 8.7.2) — together with the fact that the
+Weil pairing multiplier at `Frob_q` is `q`. Item 7 has left, to
+`exists_frobeniusForm_modularTateFrame` above; items 1, 2, 3 and 5 are
+the geometric inputs those two theorems are proven from.
+
+FAITHFULNESS: TAKING `pair` AS A HYPOTHESIS DOES NOT STRENGTHEN THE
+LEAF, and here is the computation that shows it — this is the one place
+where a `∀`-quantified auxiliary datum could have made a true statement
+false, so it is checked rather than asserted.
+
+Write `A := 𝕋_ℚ ⊗ ℚ̄_p`. `hhecke` plus `adjoin_modularTateGen_eq_top`
+makes the form `A`-self-adjoint, so by the converse direction proved in
+the section note of `Modularity/HeckeFrame.lean` every `pair` satisfying
+the three hypotheses is `θ(x₀y₁ − x₁y₀)` for a Frobenius functional `θ`.
+Now `hcomm` says `τJ γ` is `A`-linear, so on the free rank-two module
+`A²` it is a matrix `(a b; c d)` over `A`, and
+
+  `pair (τJ γ x) (τJ γ y) = θ ((ad − bc) · (x₀y₁ − x₁y₀))`.
+
+The map `(x, y) ↦ x₀y₁ − x₁y₀` is ONTO `A` (take `x = (z, 0)`,
+`y = (0, 1)`), so `pair_frob` at `q` says `θ((det − q)·z) = 0` for every
+`z ∈ A`, which by nondegeneracy of `θ` is
+
+  **`det (τJ (Frob_q)) = q` in `A`**
+
+— a condition on `τJ` alone, with `θ` eliminated. So the conclusion does
+not depend on WHICH admissible `pair` is supplied, and the `∀`-form
+below is equivalent to the `∃`-form that `ModularTateGaloisData`
+packages. (Concretely: any two Frobenius functionals differ by a unit,
+`θ' = θ(u · −)` with `u ∈ Aˣ` — `u` is a non-zero-divisor by
+nondegeneracy of `θ'`, hence a unit in an artinian ring — and the unit
+cancels from the displayed identity.)
+
+**The check that would refute this**: produce a `pair` satisfying
+`hself`, `hnondeg`, `hhecke` that is NOT of the form
+`θ(x₀y₁ − x₁y₀)`; the argument above fails immediately for it.
+
+A successor should attack the determinant form, not this statement: it
+is smaller, it is what the geometry actually produces (the Weil pairing
+of `J₀(M)` has multiplier the cyclotomic character), and it is the same
+shape as the PROVEN `det_galoisRep_eq_cyclotomic` for elliptic curves in
+`Fermat/FLT/EllipticCurve/WeilPairing.lean`. -/
+theorem exists_galoisRep_modularTateSpace {M : ℕ} (hM : 0 < M)
+    (pair : modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
+      modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p])
+    (_hself : ∀ x : modularTateSpace (p := p) M, pair x x = 0)
+    (_hnondeg : ∀ x : modularTateSpace (p := p) M,
+      (∀ y : modularTateSpace (p := p) M, pair x y = 0) → x = 0)
+    (_hhecke : ∀ q : ℕ, q.Prime →
+      ∀ x y : modularTateSpace (p := p) M,
+        pair (modularTatePadic (p := p) M (modularTateGen M q) x) y =
+          pair x (modularTatePadic (p := p) M (modularTateGen M q) y)) :
+    ∃ (τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M))
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      (∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+        modularTatePadic (p := p) M (modularTateGen M m) * τJ γ =
+          τJ γ * modularTatePadic (p := p) M (modularTateGen M m)) ∧
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+          - modularTatePadic (p := p) M (modularTateGen M q) *
+            τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + (q : AlgebraicClosure ℚ_[p]) • 1 = 0) ∧
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        ∀ x y : modularTateSpace (p := p) M,
+          pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+              (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+            (q : AlgebraicClosure ℚ_[p]) * pair x y) :=
+  sorry
+
+/-- **Inhabitation of the residual arithmetic** (PROVEN 2026-07-27 as
+glue over the two leaves of the TWELFTH decomposition; until then it was
+itself THE residual modular-curve leaf of the whole modularity subtree).
+
+The cut separates the two disjoint bodies of mathematics that were fused
+in this node:
+
+* `exists_frobeniusForm_modularTateFrame` — item 7, the Hecke algebra is
+  FROBENIUS (equivalently `S₂(Γ₀(M))` is free of rank one over `𝕋`).
+  Commutative algebra plus the `q`-expansion pairing; no Galois action,
+  no modular curve. It discharges `pair`, `pair_self`, `pair_nondeg` and
+  `pair_hecke` through `frameSymplectic` and its lemmas in
+  `Modularity/HeckeFrame.lean`, which are PROVEN.
+* `exists_galoisRep_modularTateSpace` — items 4 and 6, Hecke
+  correspondences over `ℚ` and the Eichler–Shimura congruence. It
+  discharges `τJ`, `S`, `hecke_comm`, `congruence` and `pair_frob`.
+
+Commutativity of `𝕋_ℚ ⊗ ℚ̄_p` — needed for the form to be alternating and
+Hecke-self-adjoint — is `mul_comm_tensor` applied to the PROVEN
+`modularHeckeAlgebraQ_mul_comm`, and is passed as a hypothesis rather
+than as a `CommRing` instance so that no instance diamond enters the
+type of `pair`.
+
+See `ModularTateGaloisData` for the missing theories, and the two leaves'
+docstrings for what each of them is and is not. -/
+theorem nonempty_modularTateGaloisData {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularTateGaloisData (p := p) M) := by
+  classical
+  have hcomm : ∀ x y : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M),
+      x * y = y * x :=
+    mul_comm_tensor fun a b =>
+      Subtype.ext (modularHeckeAlgebraQ_mul_comm hM a.1 a.2 b.1 b.2)
+  obtain ⟨θ, hθ⟩ := exists_frobeniusForm_modularTateFrame (p := p) hM
+  obtain ⟨τJ, S, hheckecomm, hcong, hfrob⟩ :=
+    exists_galoisRep_modularTateSpace (p := p) hM (frameSymplectic θ)
+      (frameSymplectic_self hcomm θ)
+      (frameSymplectic_nondegenerate θ hθ)
+      (fun q _ x y => frameSymplectic_frameAction hcomm θ (modularTateGen M q) x y)
+  exact ⟨{ τJ := τJ
+           S := S
+           hecke_comm := hheckecomm
+           congruence := hcong
+           pair := frameSymplectic θ
+           pair_self := frameSymplectic_self hcomm θ
+           pair_nondeg := frameSymplectic_nondegenerate θ hθ
+           pair_hecke := fun q _ x y =>
+             frameSymplectic_frameAction hcomm θ (modularTateGen M q) x y
+           pair_frob := hfrob }⟩
 
 /-- **Inhabitation of the geometric carrier** (PROVEN 2026-07-26 — an
 ASSEMBLY over the two leaves of the EIGHTH decomposition; until then it
