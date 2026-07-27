@@ -2923,11 +2923,19 @@ the grep "matches only docstrings" is STALE.**
 Cartier duality for finite flat commutative group schemes, sorry-free
 (biduality, the dual Hopf structure, `finrank_cartierDual`), and
 `.../HopfAlgebra/ShortExact.lean` adds `CartierDual.map`,
-`HopfAlgebra.IsShortExact` and `etale_of_isShortExact`. The one open
-leaf on that route is `HopfAlgebra.IsShortExact.cartierDual` (exactness
-of duality), which has its own owner. Re-run
-`grep -rn 'cartierDual' Fermat/` before believing any statement in this
-paragraph.
+`HopfAlgebra.IsShortExact` and `etale_of_isShortExact`. **UPDATED
+2026-07-27: `HopfAlgebra.IsShortExact.cartierDual` — which this
+paragraph used to call the one open leaf on that route, "which has its
+own owner" — IS ITSELF PROVEN**, and it never had an owner; both
+clauses were wrong. What is open sits one level below it: four leaves
+in `ShortExact.lean`, at `:238`
+(`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`),
+`:564` (`exists_linearRetraction`), `:628` (`ker_cartierDual_le`) and
+`:648` (`faithfullyFlat_cartierDual`). Do not assert ownership in prose
+here — that is a phantom-NON-dispatch generator, and this note was one.
+The authority is a green build's `declaration uses 'sorry'` warning set;
+re-run it, or `grep -rn 'cartierDual' Fermat/`, before believing any
+statement in this paragraph.
 
 WHAT ELSE IS ALREADY BUILT AND SHOULD BE READ FIRST. In
 `ConnectedEtale.lean`'s `OortTate` namespace, all PROVEN:
@@ -3228,10 +3236,13 @@ duality for finite flat commutative group schemes, sorry-free, and
 `.../HopfAlgebra/ShortExact.lean` adds its functoriality
 (`CartierDual.map`) plus the short-exactness definition
 (`HopfAlgebra.IsShortExact`) the transport needs.  The duality route is
-therefore no longer ABSENT; it is available in principle and blocked on
-ONE named open leaf, `HopfAlgebra.IsShortExact.cartierDual` (exactness of
-duality) — a different and much smaller obstruction than the one recorded
-here.  If it lands it would most likely close
+therefore no longer ABSENT.  **UPDATED 2026-07-27: it is no longer blocked
+on `HopfAlgebra.IsShortExact.cartierDual` either — that theorem is PROVEN.**
+What remains open is one level below it, four leaves in `ShortExact.lean`
+(`:238`, `:564` `exists_linearRetraction`, `:628` `ker_cartierDual_le`,
+`:648` `faithfullyFlat_cartierDual`) — still a different and much smaller
+obstruction than the one recorded here.  If they land it would most likely
+close
 `wildInertia_fixes_connected_threeTorsion_of_hopf_package` directly,
 since the duality argument for the connected case is written out there.
 
@@ -3487,11 +3498,16 @@ duality for finite flat commutative group schemes, sorry-free, and
 `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` adds its
 functoriality (`CartierDual.map`) together with the definition of a short
 exact sequence (`HopfAlgebra.IsShortExact`) that the transport needs. So the
-duality route is no longer ABSENT; it is available in principle and blocked
-on ONE named open leaf, `HopfAlgebra.IsShortExact.cartierDual` (exactness of
-duality). That is a different — and much smaller — obstruction than the one
-recorded here, and the next owner of this leaf should weigh it afresh rather
-than treating the duality route as nonexistent.
+duality route is no longer ABSENT. **UPDATED 2026-07-27: nor is it blocked
+on `HopfAlgebra.IsShortExact.cartierDual` — that theorem is PROVEN.** The
+open leaves are one level below it, four of them in `ShortExact.lean`:
+`:238`
+(`Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`),
+`:564` (`exists_linearRetraction`), `:628` (`ker_cartierDual_le`), `:648`
+(`faithfullyFlat_cartierDual`). That is a different — and much smaller —
+obstruction than the one recorded here, and the next owner of this leaf
+should weigh it afresh rather than treating the duality route as
+nonexistent.
 
 `hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
 idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
