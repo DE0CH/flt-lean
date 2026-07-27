@@ -466,6 +466,12 @@ public import Mathlib.FieldTheory.Perfect
 -- an unbundled `∃ (A : Type) (_ : CommRing A) (_ : Algebra R A), …` cannot be
 -- written, since the later binders need the earlier ones as instances.
 public import Mathlib.Algebra.Category.CommAlgCat.Basic
+-- `Fermat.DescentHeight` and `Fermat.fg_of_descentHeight`: Silverman's descent
+-- theorem (AEC VIII.3.1), PROVEN there for an arbitrary `AddCommGroup`.  It is
+-- the whole proof of `fg_relPoint_of_abelianScheme` — Mordell–Weil — from its
+-- two leaves `exists_descentHeight_of_abelianScheme` (heights) and
+-- `finite_quotient_nsmul_of_abelianScheme` (weak Mordell–Weil).
+public import Fermat.FLT.Mathlib.GroupTheory.Descent
 
 @[expose] public section
 
@@ -11642,9 +11648,112 @@ theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
       Nonempty (IsJacobianOf strX ab o) :=
   sorry
 
+/-- **A height function with the Northcott property exists on `A(ℚ)`,
+for every abelian scheme `A` over `ℚ`** (sorry node) — the GEOMETRIC
+half of Mordell–Weil, and the only half that needs a theory of heights.
+
+TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
+case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
+varieties in general).  `ab.proper` and `ab.smooth` make `A` an abelian
+variety over `ℚ`, so it is projective and carries a symmetric ample line
+bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀`.  Let
+`height` be the associated Weil height `h_L`.  The three fields of
+`DescentHeight` are then three standard theorems about `h_L`:
+
+* `translate` is the **quasi-parallelogram law**
+  `h_L(P + Q) + h_L(P − Q) = 2 h_L(P) + 2 h_L(Q) + O(1)`, which gives
+  `h_L(P + Q) ≤ 2 h_L(P) + C(Q)` because `h_L` is bounded below for `L`
+  ample;
+* `double` is **quadraticity**, `h_L(m • P) = m² h_L(P) + O(1)` for
+  symmetric `L`, of which only the `≥` direction is used;
+* `northcott` is **Northcott's theorem**: a projective variety over a
+  number field has only finitely many rational points of bounded height.
+
+`m` may be taken to be any integer `≥ 2`, and the descent theorem uses
+whichever one this leaf supplies — which is why the sibling leaf
+`finite_quotient_nsmul_of_abelianScheme` is stated for every `n ≥ 2`
+rather than for one fixed `n`.
+
+**FAITHFULNESS AUDIT.**  *Not vacuous in general.*  `DescentHeight`
+cannot be met by a junk height when `A(ℚ)` is infinite: `northcott`
+alone forces every level set to be finite, so a constant or bounded
+`height` is immediately excluded.  It *is* cheap exactly when `A(ℚ)` is
+finite — `height = 0`, `m = 2` works — and that is correct rather than a
+defect, since a finite group is finitely generated and the conclusion of
+the consumer holds for that reason.  So the leaf carries content exactly
+where the theorem it feeds needs content.
+
+*The conclusion is `Nonempty`, not a chosen height*, because nothing
+downstream depends on WHICH height is used; only its existence is
+consumed.  A prover may pick any `m ≥ 2`.
+
+**MISSING MACHINERY**, and it is the honest cost of this leaf: Weil
+heights on projective space, functoriality of heights along morphisms,
+the theory of the canonical (Néron–Tate) height, and Northcott's
+theorem.  None of these exists in `Mathlib`, in `~/cs/FLT`, or in this
+project — the check that refutes this is
+`grep -rn "Northcott\|WeilHeight\|NeronTate" Fermat/
+.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`, whose only hit is
+`Mathlib/Order/Northcott.lean`, the *class* `Northcott` (a function all
+of whose level sets are finite) with no instance for any height.  That
+class is precisely the `northcott` field below, so the statement of this
+leaf is pin-available even though its proof is not. -/
+theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) :=
+  sorry
+
+/-- **Weak Mordell–Weil: `A(ℚ) / n A(ℚ)` is finite, for every abelian
+scheme `A` over `ℚ` and every `n ≥ 2`** (sorry node) — the ARITHMETIC
+half of Mordell–Weil.
+
+TRUE and classical (Silverman, *AEC* Theorem VIII.1.1 for elliptic
+curves; the abelian-variety case is the same argument).  Adjoin the
+`n`-torsion to get `L = ℚ(A[n])`, a finite extension; the Kummer
+sequence `0 → A[n] → A →[n] A → 0` embeds `A(ℚ)/nA(ℚ)` into
+`H¹(Gal(ℚ̄/ℚ), A[n])`, and the image consists of classes unramified
+outside the finite set `S` of places dividing `n` and the places of bad
+reduction.  Finiteness of `H¹_S` is then finiteness of the class group
+of `L` together with Dirichlet's unit theorem (finite generation of the
+`S`-units), via the `n`-Selmer group of `L`.
+
+The subgroup `n A(ℚ)` is written as the range of the
+multiplication-by-`n` endomorphism `nsmulAddMonoidHom n`, which is the
+form `Fermat.exists_finset_nsmul_repr` — the coset-representative step
+inside the descent theorem — consumes.
+
+**FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the range of
+`nsmulAddMonoidHom 0` is the trivial subgroup, the quotient is `A(ℚ)`
+itself, and the statement is FALSE for every abelian scheme with
+infinitely many rational points (an elliptic curve of positive rank, for
+instance).  At `n = 1` the quotient is trivial and the statement is
+vacuously true, so `2 ≤ n` — rather than `0 < n` — is the honest
+hypothesis, and it is exactly what `DescentHeight.two_le` supplies at
+the one call site.
+
+*Not vacuous.*  This is the whole arithmetic content of Mordell–Weil:
+`A(ℚ)` finitely generated implies this, and it is strictly weaker only
+because it says nothing about the rank.  There is no junk witness — the
+statement is about a specific quotient of a specific group.
+
+**MISSING MACHINERY:** Galois cohomology of the Kummer sequence for an
+abelian scheme, the `n`-Selmer group, and the two finiteness theorems of
+algebraic number theory (class group, unit group) applied to
+`ℚ(A[n])`.  `Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
+counterexample: despite its name it is an explicit `2`-descent for the
+two named curves `11a3` and `14a4`, with no general theory. -/
+theorem finite_quotient_nsmul_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : 2 ≤ n) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Finite (RelPoint jstr (𝟙 SpecQ) ⧸
+      (nsmulAddMonoidHom n : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) :=
+  sorry
+
 /-- **Mordell–Weil: `A(ℚ)` is finitely generated, for EVERY abelian
-scheme `A` over `ℚ`** (sorry node) — LEVEL-FREE, CURVE-FREE, and not
-about Jacobians at all.
+scheme `A` over `ℚ`** (PROVEN, from the two leaves above plus the
+descent theorem) — LEVEL-FREE, CURVE-FREE, and not about Jacobians at
+all.
 
 TRUE: this is the Mordell–Weil theorem in its abelian-variety form
 (Weil, 1929) — for an abelian variety `A` over a number field `K` the
@@ -11661,19 +11770,38 @@ no level.  That is the point of splitting it out — every consumer of
 `AbelianSchemeStruct` over `ℚ` in this development can use it, and it
 carries none of the modular content.
 
-IRREDUCIBLE at this pin, along the axis searched: neither heights on
-abelian varieties, nor the weak Mordell–Weil theorem, nor the descent
-lemma exists in `Mathlib`, in `~/cs/FLT`, or in this project.  The check
-that would refute this: `grep -rn "MordellWeil\|NeronTateHeight" ` over
-the three trees.  (`Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
-counterexample — despite the name it contains no Mordell–Weil theorem and
-no descent machinery; it is an explicit `2`-descent computation for the
-two named curves `11a3` and `14a4`, done by hand over `ℤ`.) -/
+**SPLIT, 2026-07-27, and the IRREDUCIBILITY VERDICT BELOW IS RETIRED.**
+The verdict was correct about the pin — heights, weak Mordell–Weil and
+the descent lemma were all genuinely absent — but it searched only the
+"is the theorem available?" axis and never asked which of the three
+pieces needs *arithmetic* and which is pure group theory.  The descent
+lemma is pure group theory: it holds for an arbitrary `AddCommGroup`
+carrying a height function, and it is now PROVEN, in
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`
+(`Fermat.fg_of_descentHeight`, Silverman *AEC* Theorem VIII.3.1).  So
+this node is now a two-line assembly over the two leaves above —
+`exists_descentHeight_of_abelianScheme` and
+`finite_quotient_nsmul_of_abelianScheme` — and neither of them is the
+descent argument.
+
+The retired verdict, kept because its *check* is still the right one:
+"neither heights on abelian varieties, nor the weak Mordell–Weil
+theorem, nor the descent lemma exists in `Mathlib`, in `~/cs/FLT`, or in
+this project.  The check that would refute this:
+`grep -rn "MordellWeil\|NeronTateHeight"` over the three trees.
+(`Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a counterexample —
+despite the name it contains no Mordell–Weil theorem and no descent
+machinery; it is an explicit `2`-descent computation for the two named
+curves `11a3` and `14a4`, done by hand over `ℤ`.)"  Two of the three are
+still absent, and they are exactly the two leaves above. -/
 theorem fg_relPoint_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    AddGroup.FG (RelPoint jstr (𝟙 SpecQ)) :=
-  sorry
+    AddGroup.FG (RelPoint jstr (𝟙 SpecQ)) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨dh⟩ := exists_descentHeight_of_abelianScheme ab
+  exact fg_of_descentHeight dh
+    (finite_quotient_nsmul_of_abelianScheme ab dh.m dh.two_le)
 
 /-- **`rank J_0(N)(ℚ) = 0` at the thirteen Kenku levels** (sorry node) —
 the DEEP half of `hasRankZeroJacobian_of_kenkuLevel`, and now stated as
@@ -12044,18 +12172,29 @@ separated:
 each still carrying two unrelated theories, and both have been split
 along the seam their own statements expose; `finite_jacobian_of_kenkuLevel`
 and `injective_aj_of_one_le_x0Genus` are now PROVEN assemblies rather
-than leaves.  The five open leaves under this node, and the single
-theory each one needs, are:
+than leaves.
+
+**Third round (2026-07-27).**  `fg_relPoint_of_abelianScheme` —
+Mordell–Weil — was itself carrying three theories, one of which is pure
+group theory.  That one, the DESCENT LEMMA, is now PROVEN for an
+arbitrary `AddCommGroup` in
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`
+(`Fermat.fg_of_descentHeight`, Silverman *AEC* VIII.3.1), and
+`fg_relPoint_of_abelianScheme` is a PROVEN assembly over the other two.
+
+The six open leaves under this node, and the single theory each one
+needs, are:
 
 | leaf | theory | level-specific? |
 |---|---|---|
 | `exists_jacobianOf_x0` | Albanese / `Pic⁰` | no |
-| `fg_relPoint_of_abelianScheme` | Mordell–Weil | no |
+| `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
+| `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `isTorsion_jacobian_of_kenkuLevel` | Kolyvagin–Logachev | **yes** |
 | `ajMor_eq_const_of_not_injective` | Riemann–Roch | no |
 | `not_isIso_jacobian_of_one_le_x0Genus` | genus formula | **yes** |
 
-Only two of the five mention `N` at all, and each of the other three is
+Only two of the six mention `N` at all, and each of the other four is
 a named classical theorem stated for an arbitrary object — which is what
 makes them dispatchable independently, and reusable by the rest of the
 modular-curve subtree. -/
