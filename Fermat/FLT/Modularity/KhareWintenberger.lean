@@ -36984,9 +36984,250 @@ theorem heckePoly_transport {E : Type*} [Field E] {Lℓ : Type*}
     Polynomial.map_injective ψℓ ψℓ.injective (hPv.symm.trans hP)
   rw [hτ, hEq]
 
+/-- **Splitting a surjection `A² ↠ A` over a local ring** (PROVEN
+2026-07-27; pure commutative algebra): if `πq : A² →ₗ[A] A` is
+surjective and `A` is local, there is an `A`-basis `b` of `A²` whose
+FIRST vector spans `ker πq`.
+
+Concretely: writing `πq v = v 0 * a + v 1 * c` with `a = πq (1,0)` and
+`c = πq (0,1)`, surjectivity forces the ideal `(a, c)` to be everything,
+so — `A` being local — one of `a`, `c` is a unit. In either case an
+explicit `2 × 2` matrix of determinant `1` has first column in the
+kernel and second column mapping to `1`; its columns are the basis, and
+membership of the kernel is read off from the second coordinate.
+
+This is the formal half of the "stable line" reading of the local shape
+at `2`: it converts the FUNCTIONAL form of tameness at `2` — a
+surjective `Γ_{ℚ_2}`-equivariant quotient functional, which is the form
+`IsHardlyRamified.isTameAtTwo` uses and the form the literature
+produces — into the BASIS form that
+`blggt_threeadicBrauerSum_of_witness`'s clause (3) asks for. The
+converse direction (basis form ⟹ functional form) is
+`threeadicRealization_isTameAtTwo_of_witness` below, so after this lemma
+the two forms are interderivable and the citation is free to state
+whichever is closer to its source. -/
+theorem exists_basis_finTwo_span_eq_ker
+    {A : Type*} [CommRing A] [IsLocalRing A]
+    (πq : (Fin 2 → A) →ₗ[A] A) (hsurj : Function.Surjective πq) :
+    ∃ b : Module.Basis (Fin 2) A (Fin 2 → A),
+      Submodule.span A {b 0} = LinearMap.ker πq := by
+  classical
+  set a : A := πq ![1, 0] with ha
+  set c : A := πq ![0, 1] with hc
+  have hexp : ∀ v : Fin 2 → A, πq v = v 0 * a + v 1 * c := by
+    intro v
+    have hv : v = v 0 • ![(1 : A), 0] + v 1 • ![(0 : A), 1] := by
+      ext i; fin_cases i <;> simp
+    conv_lhs => rw [hv]
+    rw [map_add, map_smul, map_smul, ← ha, ← hc, smul_eq_mul, smul_eq_mul]
+  -- one of the two coordinates of `πq` is a unit
+  have hunit : IsUnit a ∨ IsUnit c := by
+    by_contra hcon
+    push Not at hcon
+    obtain ⟨w, hw⟩ := hsurj 1
+    have h1 : (1 : A) ∈ IsLocalRing.maximalIdeal A := by
+      rw [← hw, hexp]
+      exact Ideal.add_mem _
+        (Ideal.mul_mem_left _ _
+          ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hcon.1)))
+        (Ideal.mul_mem_left _ _
+          ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hcon.2)))
+    exact (IsLocalRing.maximalIdeal.isMaximal A).ne_top
+      ((Ideal.eq_top_iff_one _).mpr h1)
+  -- the transition matrix: unit determinant, first column spanning the kernel
+  obtain ⟨M, hdet, hM0, hM1⟩ :
+      ∃ M : Matrix (Fin 2) (Fin 2) A, M.det = 1 ∧
+        πq (fun j => M j 0) = 0 ∧ πq (fun j => M j 1) = 1 := by
+    rcases hunit with h | h
+    · obtain ⟨u, hu⟩ := h
+      refine ⟨!![c, ↑u⁻¹; -a, 0], ?_, ?_, ?_⟩
+      · rw [Matrix.det_fin_two_of, ← hu]; simp
+      · rw [hexp]; simp; ring
+      · rw [hexp]; simp; exact hu
+    · obtain ⟨u, hu⟩ := h
+      refine ⟨!![c, 0; -a, ↑u⁻¹], ?_, ?_, ?_⟩
+      · rw [Matrix.det_fin_two_of, ← hu]; simp
+      · rw [hexp]; simp; ring
+      · rw [hexp]; simp; exact hu
+  haveI : Invertible M.det := hdet ▸ invertibleOne
+  haveI : Invertible M := Matrix.invertibleOfDetInvertible M
+  set b : Module.Basis (Fin 2) A (Fin 2 → A) :=
+    (Pi.basisFun A (Fin 2)).map (M.toLinearEquiv' inferInstance) with hbdef
+  have hb : ∀ i : Fin 2, b i = fun j => M j i := by
+    intro i
+    ext j
+    fin_cases i <;>
+      simp [hbdef, Module.Basis.map_apply, Matrix.toLinearEquiv', Matrix.mulVec,
+        dotProduct, Pi.basisFun_apply, Pi.single_apply]
+  refine ⟨b, le_antisymm ?_ ?_⟩
+  · rw [Submodule.span_le, Set.singleton_subset_iff]
+    simp only [SetLike.mem_coe, LinearMap.mem_ker, hb 0]
+    exact hM0
+  · intro v hv
+    have hrepr : v = b.repr v 0 • b 0 + b.repr v 1 • b 1 := by
+      have h := b.sum_repr v
+      rw [Fin.sum_univ_two] at h
+      exact h.symm
+    have h1 : b.repr v 1 = 0 := by
+      have hker := LinearMap.mem_ker.mp hv
+      conv_lhs at hker => rw [hrepr]
+      rw [map_add, map_smul, map_smul, hb 0, hb 1, hM0, hM1, smul_zero,
+        zero_add, smul_eq_mul, mul_one] at hker
+      exact hker
+    rw [hrepr, h1, zero_smul, add_zero]
+    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+
 /-- **Brauer descent, `3`-adic side — the geometric core of the Brauer
-sum** (sorry node — BLGGT §5.3; THE single citation sub-leaf of the
-`3`-adic realization): given the descended
+sum, in the tree's CANONICAL local vocabulary** (sorry node — BLGGT
+§5.3; DECOMPOSITION 2026-07-27 of
+`blggt_threeadicBrauerSum_of_witness` below, which is now a PROVEN
+assembly over this node).
+
+Same hypotheses, same package `(S₁, A, τ, ιA)`, same clauses (1) and
+(2). What changes is the *shape* in which the local data at `2` and the
+ramification locus are asserted, and the change is in the direction of
+what the SOURCE actually produces:
+
+* clause (3') — tameness at `2` is asserted in the FUNCTIONAL form
+  (a surjective `Γ_{ℚ_2}`-equivariant quotient functional `πq` onto `A`
+  with unramified square-trivial character `δ`) rather than in the
+  basis/stable-line form. This is verbatim the shape of
+  `IsHardlyRamified.isTameAtTwo` (`HardlyRamified/Defs.lean`), i.e. the
+  shape the whole rest of this development speaks, and it is the shape
+  the literature states ("a one-dimensional unramified quotient of
+  order dividing 2"). The basis form is recovered by the PROVEN
+  local-ring splitting `exists_basis_finTwo_span_eq_ker` above;
+* clauses (4) and (5) are replaced by (4') `τ` is unramified OUTSIDE
+  `{2, 3}` — the canonical conductor statement, again verbatim
+  `IsHardlyRamified.isUnramified` at `3` — together with (5') the
+  single residual strict-compatibility transfer AT `2`.
+
+**Equivalence audit (2026-07-27, both directions, so this is a
+faithful cut and not a weakening).** Write (4), (5) for the old clauses
+and (4'), (5') for the new ones, under the standing hypothesis `hρ`.
+
+* (4') ⟹ (4): `ℓ ≠ 2` (from `hℓodd`) and `ℓ ≠ 3` (from `hℓ5`), so
+  (4') applies at `ℓ` directly.
+* (4') ∧ (5') ⟹ (5): given `p ≠ 3`, `p ≠ ℓ` with `ρ` unramified at
+  `p`, either `p = 2` — and then (5') is exactly the conclusion — or
+  `p ∉ {2, 3}` and (4') gives it outright, with the hypothesis on `ρ`
+  unused. This is the assembly proven below.
+* (4) ∧ (5) ⟹ (4'): at `p ∉ {2, 3}`, either `p = ℓ` and (4) applies,
+  or `p ∉ {2, 3, ℓ}`, in which case `hρ.isUnramified p` supplies the
+  hypothesis of (5) — a hardly ramified `ρ` is unramified away from
+  `{2, ℓ}` — and (5) concludes.
+* (5) ⟹ (5') trivially (`2 ≠ 3` and `2 ≠ ℓ`, the latter from
+  `hℓodd`).
+
+So the two statements carry exactly the same information, and nothing
+here is proven that was previously assumed: what the cut buys is that
+the citation now asserts its clauses in the same vocabulary as
+`IsHardlyRamified`, which is what the assemblies downstream
+(`exists_threeadic_member_of_witness`) ultimately rebuild — the four
+`threeadicRealization_*` condition transfers are re-deriving, from the
+old shapes, exactly what the source hands over in the new ones.
+
+**What this does NOT buy** (so nobody re-scopes it as cheap): this is
+still ONE citation of BLGGT §5.3 / Theorem 5.5.1, and the four theories
+audited absent at the parent node — Weil–Deligne representations, the
+higher-ramification filtration, `B_cris`/Fontaine–Laffaille, and
+smooth/admissible `GL₂` — are still absent from `Mathlib/`, from
+`~/cs/FLT/FLT` and from `Fermat/`. Clauses (1) and (2) are untouched.
+The decomposition moves the basis-construction and the
+ramification-locus bookkeeping out of the citation and into proven
+Lean; it does not shorten the literature input.
+
+Literature: Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and
+change of weight*, Ann. of Math. 179 (2014), §5.3 and Theorem 5.5.1;
+Khare–Wintenberger, *Serre's modularity conjecture (I)*, Invent. Math.
+178 (2009), §5; Carayol, Ann. Sci. ÉNS 19 (1986); Fontaine–Laffaille,
+Ann. Sci. ÉNS 15 (1982); Serre, *Abelian ℓ-adic Representations*, I.1
+(stable lattices for continuous representations of compact groups).
+
+CIRCULARITY GUARD (inherited, load-bearing): no discharge through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. Note in
+particular that `Family.lean`'s `IsInHardlyRamifiedFamily` asserts, for
+every odd prime and every coefficient embedding, a hardly ramified
+member with exactly these local shapes — this node is deliberately its
+`Family`-free twin, and `Family.lean` `public import`s
+`Modularity/Interface.lean`, which imports THIS module, so the
+duplication cannot be removed by importing it. -/
+theorem blggt_threeadicHardlyRamifiedMember_of_witness
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) →
+      Polynomial Wit.E)
+    (hPv : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ →
+      q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
+        (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ) :
+    ∃ (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (A : Type u) (_ : CommRing A) (_ : IsDomain A)
+      (_ : Algebra ℤ_[3] A) (_ : Module.Finite ℤ_[3] A),
+      letI : TopologicalSpace A := moduleTopology ℤ_[3] A
+      letI : IsTopologicalRing A :=
+        isTopologicalRing_moduleTopology_of_finite 3 A
+      ∃ (τ : GaloisRep ℚ A (Fin 2 → A))
+        (ιA : A →+* AlgebraicClosure ℚ_[3]),
+        -- (1) Frobenius compatibility away from `S₁` (Carayol)
+        (∀ (q : ℕ) (hq : q.Prime),
+          hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
+          q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+          (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
+            (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃) ∧
+        -- (2) the local shape at `3`: Fontaine–Laffaille on the
+        -- `3`-power levels of the stable lattice
+        (∀ m : ℕ, 1 ≤ m →
+          (τ.baseChange (A ⧸ Ideal.span {(3 : A) ^ m})).HasFlatProlongationAt
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+              (Fact.out : Nat.Prime 3))) ∧
+        -- (3') the local shape at `2`, in the FUNCTIONAL form of
+        -- `IsHardlyRamified.isTameAtTwo`
+        (∃ (πq : (Fin 2 → A) →ₗ[A] A) (_ : Function.Surjective πq)
+          (δ : GaloisRep ℚ_[2] A A),
+          (AddSubgroup.inertia
+              ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+                AddSubgroup Z2bar)
+              (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+          (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
+          ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
+            πq (τ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (πq v)) ∧
+        -- (4') the conductor statement: unramified outside `{2, 3}`
+        (∀ p (hp : p.Prime), p ≠ 2 → p ≠ 3 →
+          τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat) ∧
+        -- (5') the residual strict-compatibility transfer, at `2` only
+        (∀ hp2 : Nat.Prime 2,
+          ρ.IsUnramifiedAt hp2.toHeightOneSpectrumRingOfIntegersRat →
+          τ.IsUnramifiedAt hp2.toHeightOneSpectrumRingOfIntegersRat) :=
+  sorry
+
+/-- **Brauer descent, `3`-adic side — the geometric core of the Brauer
+sum** (PROVEN assembly since 2026-07-27 over
+`blggt_threeadicHardlyRamifiedMember_of_witness` immediately above,
+which is now THE single citation sub-leaf of the `3`-adic realization;
+see the DECOMPOSITION note at the very end of this docstring — the rest
+of the docstring describes the mathematics of the citation and is
+unchanged): given the descended
 rational Hecke system `(S₀, Pv)` produced on the `ℓ`-adic side
 (`exists_heckeField_system_of_witness`), the SAME system is realized
 `3`-adically — there are a finite exceptional set `S₁`, a coefficient
@@ -37564,7 +37805,38 @@ Fontaine–Laffaille; clauses (3) and (5) need strict compatibility, i.e.
 `WD_v(−)`. Both are in the CONFIRMED-ABSENT list above and neither is
 reachable from Hecke algebras. The vendoring changes the twin Carayol
 node's outlook (see the block on that leaf), not this one's.
--/
+
+## DECOMPOSITION 2026-07-27: this node is now PROVEN
+
+The five clauses are no longer all cited. This node is a PROVEN
+assembly over `blggt_threeadicHardlyRamifiedMember_of_witness` (above),
+which states the SAME package with clauses (1) and (2) verbatim and
+with the local data at `2` and the ramification locus written in the
+tree's canonical vocabulary — the functional form of
+`IsHardlyRamified.isTameAtTwo`, "unramified outside `{2, 3}`", and the
+single residual transfer at `2`. Two things are now proven here that
+used to sit inside the citation:
+
+* clause (3), the STABLE LINE at `2`, is derived from the functional
+  form by `exists_basis_finTwo_span_eq_ker` (PROVEN, above): over the
+  local ring `A` a surjection `A² ↠ A` splits, so `ker πq` is a free
+  rank-one direct summand, and `Γ_{ℚ_2}`-equivariance of `πq` says
+  precisely that `τ g v − δ g 1 • v` lies in it. Nothing about the
+  representation is used; this is the commutative algebra that the
+  citation used to be asked to supply along with the mathematics;
+* clauses (4) and (5), the RAMIFICATION LOCUS, are derived from the
+  conductor clause together with the transfer at `2` — the case split
+  is `p = 2` versus `p ∉ {2, 3}`, and in the second case the
+  hypothesis "`ρ` unramified at `p`" is not used at all. The reverse
+  derivation is recorded in the equivalence audit on the new node, so
+  the cut is information-preserving in both directions.
+
+What did NOT change: clause (1) (Carayol Frobenius compatibility) and
+clause (2) (Fontaine–Laffaille at `3`) are carried through verbatim,
+and the four theories audited absent above are still absent. The
+MACHINERY RE-AUDIT of 2026-07-27 recorded immediately above applies
+unchanged to the new node, which is where the literature input now
+lives. -/
 theorem blggt_threeadicBrauerSum_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -37640,8 +37912,39 @@ theorem blggt_threeadicBrauerSum_of_witness
         -- every `p ∤ 3` agree with those of the `ℓ`-adic member)
         (∀ p (hp : p.Prime), p ≠ 3 → p ≠ ℓ →
           ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat →
-          τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat) :=
-  sorry
+          τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat) := by
+  classical
+  -- the citation, in the canonical vocabulary
+  obtain ⟨S₁, A, hCR, hDom, hAlg, hFin, τ, ιA, hmatch, hflat, htame,
+      hunrOut, htwo⟩ :=
+    blggt_threeadicHardlyRamifiedMember_of_witness hℓodd hℓ5 hZinj hrank hρ
+      hW hρbar hirr π hπsurj hπ Wit S₀ Pv hPv
+  haveI hLR : IsLocalRing A := isLocalRing_of_finite_padicInt 3 A
+  have hℓ2 : ℓ ≠ 2 := by rintro rfl; simp [Nat.odd_iff] at hℓodd
+  have hℓ3 : ℓ ≠ 3 := by omega
+  refine ⟨S₁, A, hCR, hDom, hAlg, hFin, τ, ιA, hmatch, hflat, ?_,
+    hunrOut ℓ Fact.out hℓ2 hℓ3, ?_⟩
+  · -- (3): the stable line, from the surjective quotient functional.
+    -- The kernel of `πq` is a free rank-one direct summand of the
+    -- lattice (`exists_basis_finTwo_span_eq_ker`), and equivariance of
+    -- `πq` says exactly that `τ g v - δ g 1 • v` lies in it.
+    obtain ⟨πq, hsurj, δ, hδur, hδsq, hcomm⟩ := htame
+    obtain ⟨b, hspan⟩ := exists_basis_finTwo_span_eq_ker πq hsurj
+    refine ⟨b, δ, hδur, hδsq, fun g v => ?_⟩
+    rw [hspan, LinearMap.mem_ker, map_sub, hcomm g v, map_smul, smul_eq_mul]
+    -- an `A`-endomorphism of `A` is multiplication by its value at `1`
+    have hscal : δ g (πq v) = πq v * δ g 1 := by
+      conv_lhs => rw [show (πq v : A) = πq v • (1 : A) by
+        rw [smul_eq_mul, mul_one]]
+      rw [map_smul, smul_eq_mul]
+    rw [hscal, mul_comm, sub_self]
+  · -- (5): the ramification-locus transfer — the conductor clause
+    -- covers every `p ∉ {2, 3}`, and `p = 2` is the residual transfer
+    intro p hp hp3 hpℓ hρp
+    by_cases hp2 : p = 2
+    · subst hp2
+      exact htwo hp hρp
+    · exact hunrOut p hp hp2 hp3
 
 /-- **Brauer descent, `3`-adic side — the virtual sum is a true
 representation on a stable lattice** (PROVEN assembly, 2026-07-25 —
