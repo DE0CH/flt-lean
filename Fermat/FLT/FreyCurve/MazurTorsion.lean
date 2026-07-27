@@ -81,6 +81,12 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 -- SIGNATURE of `MazurLevelSeven.exists_kernelCoords_of_isShortNF` below, and a
 -- bare `import` is not re-exported.
 public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+-- `exists_variableChange_of_j_eq`: over a separably closed field, two elliptic
+-- curves with the same `j`-invariant differ by an admissible change of
+-- variables. This is what turns `j(E'') = j(E)` into a `ℚ̄`-isomorphism
+-- `E'' ≅ E`, hence a SELF-isogeny of `E_ℚ̄`, in
+-- `MazurLevelFortyNine.exists_selfIsogeny_of_j_eq` below.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.IsomOfJ
 public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 -- Vélu's construction of the quotient of an elliptic curve by a finite
 -- Galois-stable subgroup of odd order (`exists_velu_quotient_isogeny`), which
@@ -20860,15 +20866,309 @@ lemma ker_comp_eq_seven (φ : G →+ H) (ψ : H →+ I) (h : G)
 
 end Groups
 
+/-! ### The level-`49` CM step, cut 2026-07-27
+
+`not_stableCyclicFortyNine_of_j_eq` below is PROVEN over the two leaves
+`trace_eq_zero_of_stable_cyclic` and `not_sq_eq_negFortyNine_of_stable` at the end
+of this section; everything else here is closed outright.
+
+**Correction to the MISSING MACHINERY note that this cut was dispatched from.**
+That note said steps 2 and 4 of the argument need "`End(E_ℚ̄) = ℤ` for non-CM
+curves" and "the normalizer-of-Cartan description of the mod-`p` image". The first
+half is STALE and the cut below does not use it: `IsogenyTrace.lean` supplies
+`WeierstrassCurve.End.exists_charPoly`, which gives every endomorphism a monic
+quadratic `ψ² − [t]ψ + [deg ψ] = 0` over `ℤ` together with the Hasse bound
+`t² ≤ 4 deg ψ`. That is strictly more useful here than the `End = ℤ` dichotomy,
+because it applies to the CM case as well and it is what pins the trace. What the
+`End = ℤ` clause was really being asked for — "`Ψ` is not an integer" — is proven
+outright below as `not_intMul_of_cyclic_ker`, from the torsion count
+`TorsionCard.card_torsionBy` alone, with no endomorphism theory at all. -/
+
+/-- **An admissible change of variables is a rational map on points** (PROVEN
+2026-07-27).
+
+`(x, y) ↦ (u²x + r, u³y + u²sx + t)` is visibly given by polynomials in the
+coordinates, so the witnesses of `IsRationalMap` are read off:
+`A = u²X + r`, `B = 1`, `C = u³`, `D = u²sX + t`, `E = 1`. Combined with the
+PROVEN `IsRationalMap.isIsogeny` over an algebraically closed field, this is what
+makes a `ℚ̄`-isomorphism of Weierstrass curves an ISOGENY, and it is the one piece
+of geometry that `exists_selfIsogeny_of_j_eq` below needs. -/
+theorem isRationalMap_variableChangeEquiv {F : Type*} [Field F] [DecidableEq F]
+    (W V : WeierstrassCurve F) [W.IsElliptic] (C : VariableChange F) (hC : V = C • W) :
+    WeierstrassCurve.IsRationalMap
+      (((Point.equivOfEq hC).trans (Point.equivVariableChange W C)).toAddMonoidHom) := by
+  refine ⟨Polynomial.C ((C.u : F) ^ 2) * Polynomial.X + Polynomial.C C.r, 1,
+    Polynomial.C ((C.u : F) ^ 3),
+    Polynomial.C ((C.u : F) ^ 2 * C.s) * Polynomial.X + Polynomial.C C.t, 1,
+    one_ne_zero, one_ne_zero, ?_⟩
+  rintro (_ | ⟨x, y, hns⟩) hP
+  · exact absurd (map_zero _) hP
+  · refine ⟨?_, ?_⟩ <;>
+    · simp only [AddEquiv.toAddMonoidHom_eq_coe, AddMonoidHom.coe_coe, AddEquiv.trans_apply,
+        Point.equivOfEq_some, Point.equivVariableChange_some, veluPointX_some, veluPointY_some,
+        Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X,
+        Polynomial.eval_one, mul_one]
+      try ring
+
+/-- **Step 1 of the level-`49` argument: `j(E'') = j(E)` turns an isogeny
+`E → E''` into a SELF-isogeny of `E` over `ℚ̄`** (PROVEN 2026-07-27).
+
+This is the step that the ROUTE AUDIT of `not_stableCyclicFortyNine_of_j_eq`
+identified as secretly demanding **Faltings' isogeny theorem** when `Φ` was
+hypothesised only as a Galois-equivariant `AddMonoidHom`. With `Φ` carrying its
+`IsIsogeny` certificate the step is elementary: over the separably closed `ℚ̄`,
+equal `j`-invariants give an admissible change of variables
+(`exists_variableChange_of_j_eq`), that change of variables is an isomorphism of
+point groups (`Point.equivVariableChange`), it is rational
+(`isRationalMap_variableChangeEquiv` above) hence an isogeny
+(`IsRationalMap.isIsogeny`), and isogenies compose (`IsIsogeny.comp`).
+
+The kernel is unchanged because the transporting map is an equivalence — which is
+the conjunct returned, and it is what lets the consumer keep speaking about the
+cyclic subgroup `⟨h⟩` after the transport.
+
+Note the transporting isomorphism is **not** claimed to be Galois-equivariant, and
+it is not: `E''` may be a nontrivial twist of `E`. Nothing below needs it to be —
+the Galois input used downstream is the stability of `⟨h⟩` inside `E(ℚ̄)`, which is
+a hypothesis of the consumer. -/
+theorem exists_selfIsogeny_of_j_eq (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
+    (hj : E''.j = E.j)
+    (Φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hΦiso : WeierstrassCurve.IsIsogeny Φ) :
+    ∃ Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point,
+      WeierstrassCurve.IsIsogeny Ψ ∧
+        ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, (Ψ Pt = 0 ↔ Φ Pt = 0) := by
+  classical
+  haveI hEell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  haveI hE''ell : ((E''⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E''.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  have hjj : (E⁄(AlgebraicClosure ℚ)).j = (E''⁄(AlgebraicClosure ℚ)).j := by
+    show (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).j
+      = (E''.map (algebraMap ℚ (AlgebraicClosure ℚ))).j
+    rw [WeierstrassCurve.map_j, WeierstrassCurve.map_j, hj]
+  obtain ⟨C, hC⟩ := WeierstrassCurve.exists_variableChange_of_j_eq
+    (E := E⁄(AlgebraicClosure ℚ)) (E' := E''⁄(AlgebraicClosure ℚ)) hjj
+  set ι : ((E''⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point ≃+
+      ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point :=
+    (Point.equivOfEq hC.symm).trans (Point.equivVariableChange (E⁄(AlgebraicClosure ℚ)) C)
+    with hιdef
+  have hιiso : WeierstrassCurve.IsIsogeny (ι.toAddMonoidHom) := by
+    rw [hιdef]
+    exact (isRationalMap_variableChangeEquiv _ _ C hC.symm).isIsogeny
+  refine ⟨ι.toAddMonoidHom.comp Φ, WeierstrassCurve.IsIsogeny.comp hΦiso hιiso, fun Pt => ?_⟩
+  show ι (Φ Pt) = 0 ↔ Φ Pt = 0
+  exact ⟨fun hz => by simpa using congrArg ι.symm hz, fun hz => by rw [hz, map_zero]⟩
+
+/-- **Step 2: a self-isogeny of `E_ℚ̄` with CYCLIC kernel of order `49` is not
+multiplication by an integer** (PROVEN 2026-07-27).
+
+This is the honest content of the "`End(E_ℚ̄) = ℤ` for non-CM curves" clause of the
+MISSING MACHINERY note, and it costs no endomorphism theory whatsoever: if
+`Ψ = [n]` then `ker Ψ` is the full `n`-torsion, whose cardinality is `n²`
+(`TorsionCard.card_torsionBy`), while `ker Ψ = ⟨h⟩` has cardinality
+`addOrderOf h = 49`. Hence `|n| = 7`. But `h ∈ ker Ψ` forces `49 ∣ n`, and
+`49 ∤ 7`.
+
+The degenerate case `n = 0` is excluded separately: it would make `⟨h⟩` the whole
+of `E(ℚ̄)`, contradicting `WeierstrassCurve.infinite_point`.
+
+Downstream this is what tells the CM leaves below that `ℤ[Ψ]` is a genuine
+imaginary quadratic order and that Galois cannot act trivially on it. -/
+theorem not_intMul_of_cyclic_ker (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (h49 : (49 : ℕ) • h = 0) (h7 : (7 : ℕ) • h ≠ 0)
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h) (n : ℤ) :
+    ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt := by
+  haveI hEell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  haveI hinf : Infinite ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point :=
+    WeierstrassCurve.infinite_point _
+  by_contra hcon0
+  have hcon : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt = n • Pt :=
+    fun Pt => not_not.mp fun hne => hcon0 ⟨Pt, hne⟩
+  have hord : addOrderOf h = 49 := by
+    have hd : addOrderOf h ∣ 7 ^ 2 := by
+      have := addOrderOf_dvd_of_nsmul_eq_zero h49
+      simpa using this
+    obtain ⟨k, hk, hkk⟩ := (Nat.dvd_prime_pow (p := 7) (by norm_num)).mp hd
+    interval_cases k
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · simpa using hkk
+  have hcard : Nat.card (AddSubgroup.zmultiples h) = 49 := by rw [Nat.card_zmultiples, hord]
+  have hnh : n • h = 0 := by
+    rw [← hcon h]
+    exact (hker h).mpr (AddSubgroup.mem_zmultiples h)
+  have hdvd : (49 : ℤ) ∣ n := by
+    have := addOrderOf_dvd_iff_zsmul_eq_zero.mpr hnh
+    rwa [hord] at this
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    have htop : AddSubgroup.zmultiples h = ⊤ := by
+      refine eq_top_iff.mpr fun P _ => (hker P).mp ?_
+      rw [hcon P, zero_zsmul]
+    have hpt : Nat.card ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point = 49 := by
+      rw [← hcard, htop]
+      exact (Nat.card_congr (AddSubgroup.topEquiv).toEquiv).symm
+    rw [Nat.card_eq_zero_of_infinite] at hpt
+    exact absurd hpt (by norm_num)
+  set m : ℕ := n.natAbs with hm
+  have hm0 : m ≠ 0 := by simpa [hm] using hn0
+  have hsm : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, n • P = 0 ↔ (m : ℤ) • P = 0 := by
+    intro P
+    rcases Int.natAbs_eq n with hh | hh
+    · rw [← hm] at hh; rw [← hh]
+    · rw [← hm] at hh
+      constructor
+      · intro hz; rw [hh, neg_zsmul, neg_eq_zero] at hz; exact hz
+      · intro hz; rw [hh, neg_zsmul, hz, neg_zero]
+  have hequiv : Nat.card (AddSubgroup.zmultiples h)
+      = Nat.card (Submodule.torsionBy ℤ ((E⁄(AlgebraicClosure ℚ)).Point) (m : ℤ)) := by
+    refine Nat.card_congr (Equiv.subtypeEquivRight fun P => ?_)
+    rw [← hker P, hcon P, Submodule.mem_torsionBy_iff, hsm P]
+  have hmcard : Nat.card (Submodule.torsionBy ℤ ((E⁄(AlgebraicClosure ℚ)).Point) (m : ℤ))
+      = m ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) m
+      (by exact_mod_cast Nat.cast_ne_zero.mpr hm0)
+  have hm7 : m = 7 := by
+    have hsq : m ^ 2 = 7 ^ 2 := by rw [← hmcard, ← hequiv, hcard]; norm_num
+    exact Nat.pow_left_injective (by norm_num) hsq
+  have hdm : (49 : ℕ) ∣ m := by rw [hm]; exact Int.natAbs_dvd_natAbs.mpr hdvd
+  rw [hm7] at hdm
+  omega
+
+/-- **LEAF (cut 2026-07-27): the trace of a `Gal`-stable cyclic `49`-endomorphism
+vanishes.**
+
+`Ψ` is a self-isogeny of `E_ℚ̄` (`E` over `ℚ`) whose kernel is the
+`Gal(ℚ̄/ℚ)`-stable cyclic group `⟨h⟩` of order `49`; `t` is its trace, supplied
+with the Hasse bound by the PROVEN `WeierstrassCurve.End.exists_charPoly`. The
+claim is `t = 0`, i.e. `Ψ² = [−49]`.
+
+**THE ARGUMENT.** By `not_intMul_of_cyclic_ker` — which is the hypothesis
+`hnotint` — `Ψ ∉ ℤ`, so `ℤ[Ψ]` is an order in an imaginary quadratic field `K`
+(`t² − 4·49 < 0`, the Hasse bound being strict here because equality would force
+`(Ψ ∓ [7])² = 0`, impossible for a nonzero isogeny, which is surjective). The
+absolute Galois group acts on `End(E_ℚ̄)` by `Ψ ↦ σ ∘ Ψ ∘ σ⁻¹`, through ring
+automorphisms fixing `ℤ`, so each `σ` sends `Ψ` to `Ψ` or to `[t] − Ψ`.
+
+* If every `σ` fixes `Ψ`, then `Ψ ∈ End_ℚ(E)`, which is `ℤ` for a curve over `ℚ`:
+  the CM field `K` is imaginary quadratic and cannot embed in the base field.
+  That contradicts `hnotint`.
+* Otherwise some `σ` gives `σΨσ⁻¹ = [t] − Ψ`. Then
+  `ker([t] − Ψ) = σ(ker Ψ) = ker Ψ` by `hstable`, so `h` is killed by both `Ψ` and
+  `[t] − Ψ`, hence by `[t]`. As `addOrderOf h = 49` this gives `49 ∣ t`, and
+  `t² ≤ 196` forces `t = 0`.
+
+**MISSING MACHINERY, precisely.** Two things, and neither is in the mathlib pin,
+in `~/cs/FLT`, or elsewhere in `Fermat/` (re-checked 2026-07-27 by grepping for
+`Cartan`, for `ComplexMultiplication`/`HasCM`, and over `WeierstrassCurve.End`):
+
+1. the Galois action on `End(E_ℚ̄)` — that `σ ∘ Ψ ∘ σ⁻¹` is again an isogeny (its
+   defining rational functions are the `σ`-conjugates of `Ψ`'s), and that the
+   action is by ring automorphisms;
+2. `End_ℚ(E) = ℤ` for `E/ℚ`, equivalently that a curve over `ℚ` has no
+   `ℚ`-rational complex multiplication.
+
+Reference: Silverman *AEC* III.9 and *ATAEC* II.2; Serre, *Propriétés galoisiennes
+des points d'ordre fini*, Invent. Math. 15 (1972), §4.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ`, a
+`Gal`-stable cyclic `⟨h⟩` of order `49`, and an isogeny with that kernel whose
+trace is nonzero. -/
+theorem trace_eq_zero_of_stable_cyclic (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (h49 : (49 : ℕ) • h = 0) (h7 : (7 : ℕ) • h ≠ 0)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt)
+    (t : ℤ)
+    (hchar : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = t • Ψ P)
+    (hbound : t ^ 2 ≤ 4 * 49) :
+    t = 0 :=
+  sorry
+
+/-- **LEAF (cut 2026-07-27): no curve over `ℚ` carries a `Gal`-stable cyclic
+`49`-endomorphism with `Ψ² = [−49]`.**
+
+This is the CM half of the level-`49` argument, and it is where the
+normalizer-of-Cartan input genuinely lives.
+
+**THE ARGUMENT.** `Ψ² = [−49]` and `Ψ ∉ ℤ` make `ℚ(Ψ) = ℚ(i)`, and `ker Ψ = ⟨h⟩`
+cyclic of order `49` says `Ψ` is not `[7]` times a unit, so the CM order is
+`ℤ[7i]`. Restrict `Ψ` to `E[7]`: it is nilpotent there (`Ψ² = −49 ≡ 0`) with
+kernel `⟨7h⟩` of order `7`, hence of rank exactly `1`, with image `⟨7h⟩` as well.
+
+`⟨7h⟩` is `Gal`-stable, so the mod-`7` representation is upper triangular in a
+basis `(7h, e)`: `ρ(σ) = [[a(σ), b(σ)], [0, d(σ)]]`. Writing `σΨσ⁻¹ = ε(σ)Ψ` with
+`ε` the quadratic character of `ℚ(i)`, conjugating the nilpotent matrix gives
+`a(σ) = ε(σ)·d(σ)`. Hence
+`χ₇(σ) = det ρ(σ) = a(σ)d(σ) = ε(σ)·d(σ)²`, and applying the unique surjection
+`𝔽₇ˣ → {±1}` (`x ↦ x³`) kills the square and leaves `χ₇³ = ε`. But `χ₇³` is the
+quadratic character of `ℚ(√−7)` — the quadratic subfield of `ℚ(ζ₇)` — while `ε`
+cuts out `ℚ(i)`, and `ℚ(√−7) ≠ ℚ(i)`. Contradiction.
+
+Concretely, this is the `7`-split branch of the classification: `7` splits in the
+CM orders of discriminant `−3, −12, −19, −27` and ramifies for `−7, −28`, and the
+present branch is the one where the mod-`7` image lies in the normalizer of a
+split Cartan but not in the Cartan.
+
+**MISSING MACHINERY, precisely** — the same absences as in
+`trace_eq_zero_of_stable_cyclic` above, plus:
+
+3. `det ρ̄_ℓ = ` the mod-`ℓ` cyclotomic character (the Weil-pairing determinant);
+   `GaloisRepresentation.cyclotomicCharacterModL` exists in this tree and the
+   Weil-pairing files are here, but the determinant identity itself is not;
+4. the identification of `ε` with the quadratic character of the CM field — i.e.
+   that `End(E_ℚ̄)` is defined exactly over `K` (*ATAEC* II.2.2).
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` with an
+endomorphism `Ψ` of `E_ℚ̄` satisfying `Ψ² = [−49]` whose kernel is cyclic of order
+`49` and `Gal(ℚ̄/ℚ)`-stable. Equivalently, a curve over `ℚ` with CM by the order
+of discriminant `−196` and a rational `7`-isogeny; `−196` is not among the
+thirteen rational CM discriminants, which is a second, independent reason the leaf
+is true (and a heavier one, since it needs the class-number-one classification —
+the Galois argument above deliberately avoids it). -/
+theorem not_sq_eq_negFortyNine_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (h49 : (49 : ℕ) • h = 0) (h7 : (7 : ℕ) • h ≠ 0)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt)
+    (hsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = 0) :
+    False :=
+  sorry
+
 end MazurLevelFortyNine
 
 /-- **No `Gal(ℚ̄/ℚ)`-stable cyclic `49`-isogeny returns to its own
-`j`-invariant** (SORRY LEAF, cut 2026-07-27 out of `x0Seven_param_mul_ne_49`
-below, which is now PROVEN over it together with the PROVEN
-`MazurLevelFortyNine.j_eq_of_backtrack` and
-`MazurLevelFortyNine.ker_comp_eq_seven`): there is no elliptic curve `E/ℚ`
-carrying a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup `⟨h⟩` of order `49` whose quotient
-`E''` satisfies `j(E'') = j(E)`.
+`j`-invariant** (cut 2026-07-27 out of `x0Seven_param_mul_ne_49` below, which is
+PROVEN over it together with the PROVEN `MazurLevelFortyNine.j_eq_of_backtrack`
+and `MazurLevelFortyNine.ker_comp_eq_seven`; **PROVEN here, later the same day,
+over the two CM leaves `MazurLevelFortyNine.trace_eq_zero_of_stable_cyclic` and
+`MazurLevelFortyNine.not_sq_eq_negFortyNine_of_stable`**): there is no elliptic
+curve `E/ℚ` carrying a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup `⟨h⟩` of order `49`
+whose quotient `E''` satisfies `j(E'') = j(E)`.
+
+**The hypothesis `hΦgal` is NOT used by the proof and is underscore-prefixed to
+make that mechanically visible.** The Galois input the argument actually consumes
+is `hhstable` — stability of `⟨h⟩` inside `E(ℚ̄)` — and `hΦgal` is redundant given
+it, since `⟨h⟩ = ker Φ`. The binder is kept so the statement is unchanged for the
+consumer below, which applies it positionally.
 
 **THIS IS STRICTLY WEAKER THAN THE LEVEL-`49` THEOREM IT SERVES, and saying why
 is the point of the cut.**  `not_cyclicIsogeny_fortyNine` asserts that no such
@@ -20911,13 +21211,24 @@ which `j(E/C) = j(E)` — equivalently a rational point of `X_0(49)` lying on th
 locus `j₁ = j₂`.  A weaker but still fatal refutation would be a non-CM `E_ℚ̄`
 admitting a cyclic degree-`49` self-isogeny, which would break step 2.
 
-**MISSING MACHINERY, so the next owner knows what is being asked for.**  Steps 2
-and 4 need a CM theory this tree does not yet have: `End(E_ℚ̄) = ℤ` for non-CM
-curves, and the normalizer-of-Cartan description of the mod-`p` image for a CM
-curve over `ℚ` at a split `p`.  Neither is in the mathlib pin, in `~/cs/FLT`, or
-in `Fermat/FLT/` — that claim is refutable in one grep for `Cartan` and for
-`End`/`ringOfIntegers` over `WeierstrassCurve`, and should be re-run before
-building anything, since docstrings of this kind go stale.
+**MISSING MACHINERY — SUPERSEDED 2026-07-27, and the correction halved the ask.**
+The earlier version of this section said steps 2 and 4 need "`End(E_ℚ̄) = ℤ` for
+non-CM curves" and "the normalizer-of-Cartan description of the mod-`p` image for
+a CM curve over `ℚ` at a split `p`". The first of those is NOT needed and is not
+used: `IsogenyTrace.lean` already supplies
+`WeierstrassCurve.End.exists_charPoly`, giving every endomorphism its monic
+quadratic `ψ² − [t]ψ + [deg ψ] = 0` over `ℤ` with the Hasse bound `t² ≤ 4 deg ψ`,
+which is what steps 2–4 really wanted. And the working content of the `End = ℤ`
+clause — "a self-isogeny with cyclic kernel of order `49` is not `[n]`" — is now
+PROVEN outright as `MazurLevelFortyNine.not_intMul_of_cyclic_ker`, from the
+torsion count `TorsionCard.card_torsionBy` alone.
+
+What is genuinely absent, re-checked 2026-07-27 against the mathlib pin,
+`~/cs/FLT` and all of `Fermat/` (grep `Cartan`, `ComplexMultiplication`, `HasCM`,
+and over `WeierstrassCurve.End`), is recorded at the two leaves themselves — the
+Galois action on `End(E_ℚ̄)`, `End_ℚ(E) = ℤ`, `det ρ̄_ℓ = χ_ℓ`, and the CM field as
+the field of definition of the endomorphisms. Those four are what the two open
+leaves ask for; nothing else here is open.
 
 **ROUTE AUDIT, 2026-07-27 — RAISED, AND NOW CARRIED OUT.  The `hΦiso`
 hypothesis in the statement above IS the repair; steps 2–5 are back on.**
@@ -20977,15 +21288,29 @@ stands as originally written.
 would be a non-CM `E_ℚ̄` admitting a cyclic degree-`49` self-isogeny, which
 would break step 2.
 
-**WHAT REMAINS OPEN HERE, unchanged by the repair.**  Steps 2 and 4 still need
-the CM theory named under MISSING MACHINERY above: `End(E_ℚ̄) = ℤ` for non-CM
-curves, and the normalizer-of-Cartan description of the mod-`p` image of a CM
-curve over `ℚ` at a split `p`.  That absence was re-checked on 2026-07-27 and is
-accurate: neither is in the mathlib pin, in `~/cs/FLT`, or in `Fermat/FLT/`. -/
+**WHAT REMAINS OPEN — the cut carried out 2026-07-27, later the same day.**
+Nothing remains open *here*: the declaration below is now PROVEN, over exactly two
+leaves, both in `namespace MazurLevelFortyNine` just above.
+
+The proof is the five steps above, mechanised as:
+
+1. `exists_selfIsogeny_of_j_eq` (PROVEN) — `j(E'') = j(E)` plus `hΦiso` gives a
+   self-isogeny `Ψ` of `E_ℚ̄` with `ker Ψ = ker Φ = ⟨h⟩`. This is where the
+   Faltings gap used to be, and `hΦiso` is what closes it;
+2. `not_intMul_of_cyclic_ker` (PROVEN) — `Ψ` is not `[n]` for any integer `n`;
+3. `WeierstrassCurve.End.exists_charPoly` (PROVEN, `IsogenyTrace.lean`) — the
+   trace `t` of `Ψ` with `t² ≤ 4·49`;
+4. `trace_eq_zero_of_stable_cyclic` (**OPEN LEAF**) — Galois stability of `⟨h⟩`
+   forces `t = 0`;
+5. `not_sq_eq_negFortyNine_of_stable` (**OPEN LEAF**) — and `Ψ² = [−49]` with
+   `⟨h⟩` stable is impossible.
+
+Steps 4 and 5 are where the CM theory lives; their docstrings state exactly which
+four pieces of it are missing, and the refuting check for each. -/
 theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
     (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
     (Φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
-    (hΦgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+    (_hΦgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
         (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
         Φ (Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
@@ -21002,11 +21327,60 @@ theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
     (hΦker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       Φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
     (hj : E''.j = E.j) :
-    False :=
-  sorry
+    False := by
+  classical
+  haveI hEell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  -- Step 1: `j(E'') = j(E)` turns `Φ` into a self-isogeny of `E` over `ℚ̄`.
+  obtain ⟨Ψ, hΨiso, hΨΦ⟩ :=
+    MazurLevelFortyNine.exists_selfIsogeny_of_j_eq E E'' hj Φ hΦiso
+  have hΨker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h := fun Pt => (hΨΦ Pt).trans (hΦker Pt)
+  -- Step 2: `Ψ` is not multiplication by an integer.
+  have hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt :=
+    MazurLevelFortyNine.not_intMul_of_cyclic_ker E Ψ h h49 h7 hΨker
+  -- the order of `h`, hence the degree of `Ψ`
+  have hord : addOrderOf h = 49 := by
+    have hd : addOrderOf h ∣ 7 ^ 2 := by
+      have := addOrderOf_dvd_of_nsmul_eq_zero h49
+      simpa using this
+    obtain ⟨k, hk, hkk⟩ := (Nat.dvd_prime_pow (p := 7) (by norm_num)).mp hd
+    interval_cases k
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · simpa using hkk
+  have hkereq : AddMonoidHom.ker Ψ = AddSubgroup.zmultiples h := by
+    ext P
+    rw [AddMonoidHom.mem_ker]
+    exact hΨker P
+  have hkercard : Nat.card (AddMonoidHom.ker Ψ) = 49 := by
+    rw [hkereq, Nat.card_zmultiples, hord]
+  have hΨ0 : Ψ ≠ 0 := by
+    obtain ⟨Pt, hPt⟩ := hnotint 0
+    intro hc
+    exact hPt (by rw [hc]; simp)
+  -- Step 3: the characteristic polynomial of `Ψ`, with the Hasse bound on its trace.
+  obtain ⟨t, hchar, hbound⟩ :=
+    WeierstrassCurve.End.exists_charPoly
+      (W := (E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)))
+      ⟨(Ψ : AddMonoid.End _), hΨiso⟩ 49 hkercard hΨ0
+  -- Step 4: Galois stability of `⟨h⟩` forces the trace to vanish.
+  have ht0 : t = 0 :=
+    MazurLevelFortyNine.trace_eq_zero_of_stable_cyclic E Ψ hΨiso h h49 h7 hhstable hΨker
+      hnotint t hchar hbound
+  -- Step 5: and `Ψ² = [-49]` is impossible for a curve over `ℚ` with `⟨h⟩` stable.
+  exact MazurLevelFortyNine.not_sq_eq_negFortyNine_of_stable E Ψ hΨiso h h49 h7 hhstable
+    hΨker hnotint
+    (fun P => by
+      have hP := hchar P
+      rw [ht0, zero_zsmul] at hP
+      exact hP)
 
-/-- **Non-backtracking at level `7`** (PROVEN 2026-07-27 over the single leaf
-`not_stableCyclicFortyNine_of_j_eq` just above; introduced 2026-07-26):
+/-- **Non-backtracking at level `7`** (PROVEN 2026-07-27 over
+`not_stableCyclicFortyNine_of_j_eq` just above — which was itself a leaf when this
+was written and is now PROVEN in turn, over the two CM leaves
+`MazurLevelFortyNine.trace_eq_zero_of_stable_cyclic` and
+`MazurLevelFortyNine.not_sq_eq_negFortyNine_of_stable`; introduced 2026-07-26):
 for a chain `E --φ--> E' --ψ--> E''` of two rational `7`-isogenies whose
 composite has CYCLIC kernel `⟨h⟩` of order `49`, the two `X_0(7)` parameters
 satisfy `uv ≠ 49`.
@@ -21040,8 +21414,9 @@ What `uv = 49` DOES give, exactly and by pure algebra, is `j(E'') = j(E)` — th
 is `MazurLevelFortyNine.j_eq_of_backtrack`, and note it consumes only `hju` and
 `hjv'`, leaving `hju'` and `hjv` unused.  Composing the two isogenies then gives
 a single Galois-equivariant map with kernel exactly `⟨h⟩`
-(`MazurLevelFortyNine.ker_comp_eq_seven`), and the contradiction is the CM leaf
-`not_stableCyclicFortyNine_of_j_eq`: a `j`-preserving cyclic `49`-isogeny forces
+(`MazurLevelFortyNine.ker_comp_eq_seven`), and the contradiction is the CM node
+`not_stableCyclicFortyNine_of_j_eq` (a leaf when this was written; PROVEN
+2026-07-27 over two smaller CM leaves): a `j`-preserving cyclic `49`-isogeny forces
 complex multiplication, and for a CM curve over `ℚ` at a split `7` complex
 conjugation swaps the two eigenlines of `E[7]`, so the stable line `⟨7h⟩` cannot
 exist.  That is "close it group-theoretically rather than modularly" carried out,

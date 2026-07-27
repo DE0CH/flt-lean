@@ -4229,13 +4229,21 @@ theorem finite_ker_of_ker_eq {S : Finset W.Point} {φ : W.Point →+ W'.Point}
 /-- **The payoff: the Vélu quotient map is an `IsIsogeny`**, hence composes with
 any other isogeny through the proven `IsIsogeny.comp`.
 
-**This declaration consumes the open leaf `IsRationalMap.isIsogeny`** and is the
-only one in this section that does; the three above are closed outright. The
-dependence is exactly on the `surjective` field, as `finite_ker_of_ker_eq` records.
-`[IsAlgClosed F]` and `[W.IsElliptic]` are inherited verbatim from that leaf, both
-of which were established as necessary by the refutations earlier in this file; the
-consumers of interest work over `AlgebraicClosure ℚ` with `E` elliptic, so neither
-costs anything downstream. -/
+**BOOKKEEPING CORRECTION, 2026-07-27.** An earlier version of this docstring said
+"this declaration consumes the open leaf `IsRationalMap.isIsogeny`". That is
+STALE: `IsRationalMap.isIsogeny` has been PROVEN and axiom-clean since
+2026-07-27 (see it above, and the module header at the top of this file, which
+already recorded it). Nothing in this section is open; the note is corrected in
+place because leaf lists get harvested from docstrings for dispatch, and this one
+would have manufactured phantom work at a proven declaration.
+
+What remains true of the old note is the *dependence structure*: this lemma
+reaches the geometry only through `IsRationalMap.isIsogeny`, and exactly through
+its `surjective` field, as `finite_ker_of_ker_eq` records. `[IsAlgClosed F]` and
+`[W.IsElliptic]` are inherited verbatim from that theorem, both of which were
+established as necessary by the refutations earlier in this file; the consumers of
+interest work over `AlgebraicClosure ℚ` with `E` elliptic, so neither costs
+anything downstream. -/
 theorem isIsogeny_of_veluMap [CharZero F] [IsAlgClosed F] [W.IsElliptic]
     {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
     {φ : W.Point →+ (W.veluCurve S).Point}
