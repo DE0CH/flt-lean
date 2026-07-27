@@ -9309,9 +9309,28 @@ lemma velu_norm_line_mul_neg_all (S : Finset W.Point) (hS : IsPointSubgroup S)
     * ((W.veluCoordX S P - W.veluCoordX S T₁) * (W.veluCoordX S P - W.veluCoordX S T₂)
         * (W.veluCoordX S P - W.veluCoordX S T₃))) * he4
 
+/- INTEGRATION NOTE (2026-07-27).  The three lemmas that follow were proven
+independently of, and in the same release as, the same-named trio far above
+(`velu_CPXAll_degree_lt`, `veluXNumAll_monic`, `veluXNumAll_degree`).  Both
+branches landed in DISJOINT regions of this file, so the merge was textually
+clean and produced three DUPLICATE declarations — a hard "already declared"
+error that no frontier scan can see.
+
+They are NOT interchangeable, which is why both are kept rather than one
+deleted: the copies here `omit [CharZero F] [W.IsElliptic]` and so are
+strictly more general, and their consumer `veluGenFibrePolyAll_monic` omits
+those instances too, so it cannot call the earlier versions.  The earlier
+versions in turn cannot be deleted, because their own consumers sit ~1000
+lines ABOVE these and `velu_PXAll_natDegree_le` — which the proofs here
+need — is not declared until line ~8874.
+
+Renamed with a `_charFree` suffix at integration.  CONSOLIDATION IS OWED:
+the right end state is one trio, stated in the `omit`ed form, hoisted above
+the earliest consumer, with `velu_PXAll_natDegree_le` hoisted with it.  That
+is a single-owner reordering task in this file. -/
 omit [CharZero F] [W.IsElliptic] in
 open _root_.Polynomial in
-lemma velu_CPXAll_degree_lt {S : Finset W.Point} (hS : IsPointSubgroup S) :
+lemma velu_CPXAll_degree_lt_charFree {S : Finset W.Point} (hS : IsPointSubgroup S) :
     (C ((2 : F)⁻¹) * veluPXAll S).degree < (X * veluH S : Polynomial F).degree := by
   have hcard : 1 ≤ S.card := Finset.card_pos.mpr ⟨0, hS.zero_mem⟩
   refine lt_of_le_of_lt degree_le_natDegree ?_
@@ -9321,15 +9340,15 @@ lemma velu_CPXAll_degree_lt {S : Finset W.Point} (hS : IsPointSubgroup S) :
   exact_mod_cast lt_of_le_of_lt h1 (by omega)
 
 omit [CharZero F] [W.IsElliptic] in
-lemma veluXNumAll_monic {S : Finset W.Point} (hS : IsPointSubgroup S) :
+lemma veluXNumAll_monic_charFree {S : Finset W.Point} (hS : IsPointSubgroup S) :
     (veluXNumAll S).Monic := by
   rw [veluXNumAll]
-  exact ((Polynomial.monic_X).mul (veluH_monic S)).add_of_left (velu_CPXAll_degree_lt W hS)
+  exact ((Polynomial.monic_X).mul (veluH_monic S)).add_of_left (velu_CPXAll_degree_lt_charFree W hS)
 
 omit [CharZero F] [W.IsElliptic] in
-lemma veluXNumAll_degree {S : Finset W.Point} (hS : IsPointSubgroup S) :
+lemma veluXNumAll_degree_charFree {S : Finset W.Point} (hS : IsPointSubgroup S) :
     (veluXNumAll S).degree = ((S.card : ℕ) : WithBot ℕ) := by
-  rw [veluXNumAll, Polynomial.degree_add_eq_left_of_degree_lt (velu_CPXAll_degree_lt W hS),
+  rw [veluXNumAll, Polynomial.degree_add_eq_left_of_degree_lt (velu_CPXAll_degree_lt_charFree W hS),
     velu_XH_degree hS]
 
 omit [W.IsElliptic] in
@@ -9472,9 +9491,9 @@ lemma veluGenFibrePolyAll_monic {S : Finset W.Point} (hS : IsPointSubgroup S) :
   have hCinj : Function.Injective (Polynomial.C : F →+* Polynomial F) :=
     fun _ _ h => Polynomial.C_inj.mp h
   have hcard : 0 < S.card := Finset.card_pos.mpr ⟨0, hS.zero_mem⟩
-  have hXNmon : ((veluXNumAll S).map Polynomial.C).Monic := (veluXNumAll_monic W hS).map _
+  have hXNmon : ((veluXNumAll S).map Polynomial.C).Monic := (veluXNumAll_monic_charFree W hS).map _
   have hXNdeg : ((veluXNumAll S).map Polynomial.C).degree = ((S.card : ℕ) : WithBot ℕ) := by
-    rw [Polynomial.degree_map_eq_of_injective hCinj, veluXNumAll_degree W hS]
+    rw [Polynomial.degree_map_eq_of_injective hCinj, veluXNumAll_degree_charFree W hS]
   have hHdeg : ((veluH S).map Polynomial.C).degree = (((S.card - 1 : ℕ)) : WithBot ℕ) := by
     rw [Polynomial.degree_map_eq_of_injective hCinj,
       Polynomial.degree_eq_natDegree (veluH_monic S).ne_zero, veluH_natDegree hS]
