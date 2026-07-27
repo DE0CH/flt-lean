@@ -317,6 +317,12 @@ public import Mathlib.AlgebraicGeometry.Morphisms.FormallyUnramified
 -- `isIso_iff_isOpenImmersion_and_surjective`, used to turn the clopen
 -- equalizer of two sections into an isomorphism.
 public import Mathlib.AlgebraicGeometry.Morphisms.IsIso
+-- `UniversallyInjective` and `UniversallyInjective.iff_diagonal`: the second
+-- half of the diagonal criterion for a monomorphism used by
+-- `mono_iff_formallyUnramified_and_universallyInjective`, together with
+-- `tfae_universallyInjective` (Stacks 01S4), which identifies it with
+-- injectivity on `K`-points for every field `K`.
+public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyInjective
 -- `PrimeSpectrum.irreducibleSpace` for a domain, which is how `Spec ℤ_(ℓ)`
 -- is seen to be connected in the rigidity argument.
 public import Mathlib.RingTheory.Spectrum.Prime.Topology
@@ -21963,8 +21969,168 @@ def HasNoFibreAffineLine {X S : Scheme.{0}} (strX : X ⟶ S) : Prop :=
     ∃ s : Spec (CommRingCat.of K) ⟶ X,
       u = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s
 
+/-- **THE DIAGONAL CRITERION: for a morphism locally of finite type, being
+a MONOMORPHISM is exactly being UNRAMIFIED and UNIVERSALLY INJECTIVE**
+(PROVEN 2026-07-27, from `Mathlib` alone — general scheme theory, nothing
+about curves, Jacobians or this development enters).
+
+All three properties are properties of the diagonal `Δ_f : X ⟶ X ×_Y X`,
+which is why they fit together with no geometry at all:
+
+* `Mono f ↔ IsIso Δ_f` (`Limits.pullback.isIso_diagonal_iff`);
+* `UniversallyInjective f ↔ Surjective Δ_f`
+  (`UniversallyInjective.iff_diagonal`);
+* `FormallyUnramified f` together with `LocallyOfFiniteType f` gives
+  `IsOpenImmersion Δ_f` (`FormallyUnramified.isOpenImmersion_diagonal`),
+  and conversely an open-immersion diagonal *is* formal unramifiedness;
+* an open immersion that is surjective is an isomorphism
+  (`isIso_iff_isOpenImmersion_and_surjective`).
+
+**WHY THIS IS THE CUT THE ABEL–JACOBI NODE WANTED.**  `Mono ajHom` is
+`aj` injective at EVERY test object (`IsJacobianOf.injective_aj_of_mono`),
+including non-reduced ones, and the docstring of `HasNoFibreAffineLine`
+records the reason that is not a statement about points: over
+`T = Spec K[ε]` two distinct `T`-points can have the same image while
+agreeing on every field-valued point, so the `Spec K[ε]` direction is
+*unramifiedness*, not injectivity.  This iff separates the two exactly —
+`UniversallyInjective` is, by `tfae_universallyInjective` (Stacks 01S4),
+precisely injectivity on `K`-points for every field `K`, i.e. the
+fibrewise-over-a-field statement the literature proves; `FormallyUnramified`
+is precisely the infinitesimal remainder.
+
+It is an **iff**, so neither half is stronger than the target: a proof of
+`Mono` gives both back.  That is what makes the split of
+`mono_ajHom_of_hasNoFibreAffineLine` below faithful rather than merely
+convenient. -/
+theorem mono_iff_formallyUnramified_and_universallyInjective {X Y : Scheme.{u}} (f : X ⟶ Y)
+    (hft : LocallyOfFiniteType f) :
+    Mono f ↔ FormallyUnramified f ∧ UniversallyInjective f := by
+  haveI := hft
+  constructor
+  · intro h
+    haveI := h
+    haveI : IsIso (Limits.pullback.diagonal f) := (Limits.pullback.isIso_diagonal_iff f).mpr h
+    exact ⟨inferInstance, inferInstance⟩
+  · rintro ⟨hur, hui⟩
+    haveI := hur
+    rw [← Limits.pullback.isIso_diagonal_iff f, isIso_iff_isOpenImmersion_and_surjective]
+    exact ⟨inferInstance, (UniversallyInjective.iff_diagonal f).mp hui⟩
+
+/-- **The Abel–Jacobi morphism is locally of finite type** (PROVEN
+2026-07-27, formally, from properness of the curve alone).
+
+`ajHom ≫ jstr = strX` — that equation is the `.2` component of the
+relative point `aj strX ⟨𝟙 X, _⟩` that DEFINES `ajHom` — and `strX` is
+locally of finite type because it is proper.  Cancellation
+(`locallyOfFiniteType_of_comp`, Stacks 01T8) then gives it for the first
+factor.  No hypothesis on `J`, on the genus or on the base is used.
+
+This is the side condition of `mono_iff_formallyUnramified_and_universallyInjective`,
+discharged once so that the two Riemann–Roch leaves below need not carry
+it. -/
+theorem locallyOfFiniteType_ajHom {X J S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) : LocallyOfFiniteType jac.ajHom := by
+  haveI := hproper
+  have h : jac.ajHom ≫ jstr = strX := (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
+  haveI : LocallyOfFiniteType (jac.ajHom ≫ jstr) := by rw [h]; infer_instance
+  exact locallyOfFiniteType_of_comp jac.ajHom jstr
+
+/-- **RIEMANN–ROCH, FIBREWISE OVER A FIELD: Abel–Jacobi is injective on
+`K`-points, for every field `K`** (sorry leaf, 2026-07-27) — the
+point-set half of `mono_ajHom_of_hasNoFibreAffineLine`, and the form the
+literature actually proves.
+
+TRUE and classical.  `UniversallyInjective f` is, by
+`tfae_universallyInjective` (Stacks 01S4), exactly
+
+> for every field `K`, the map `(u : Spec K ⟶ X) ↦ u ≫ ajHom` is
+> injective,
+
+so this leaf mentions no base scheme and no test object: it is a family
+of statements about the FIBRES of `strX` over field-valued points of `S`,
+which is why `HasNoFibreAffineLine` — itself quantified over `∀ (K : Type)
+[Field K]` — is the exactly matching hypothesis.
+
+The argument, over one such `K`.  If `u₁ ≠ u₂` are `K`-points of `X` with
+`aj u₁ = aj u₂`, then `[u₁] = [u₂]` in `Pic(X_K)`, so `[u₁] − [u₂]` is
+principal and a rational function on `X_K` has a single simple pole; that
+function is a degree-`1` morphism `X_K ⟶ ℙ¹_K`, hence an isomorphism, and
+deleting the pole exhibits `𝔸¹_K ⟶ X_K ⟶ X` as a nonconstant morphism
+over the `K`-point `u₁ ≫ strX` of `S` — contradicting `hnr`.  This is
+Abel's theorem plus Riemann–Roch in degree `1`, the same gap
+`exists_affineLine_of_not_injective_aj` records at `S = Spec ℚ`.
+
+**Universal injectivity is stable under base change** (mathlib instance),
+so nothing here has to be re-proved fibre by fibre once it is known over
+the "generic" fields; that stability is the reason the fibrewise form is
+adequate and no separate descent step is needed.  What it does NOT see is
+the infinitesimal direction — see the sibling leaf.
+
+All four hypotheses are load-bearing, with the counterexamples recorded on
+`exists_affineLine_of_not_injective_aj` (`ℙ¹ × E` for `hcurve`,
+`ℙ¹ ⊔ ℙ¹` for `hconn`, `𝔾ₘ` for `hproper`) and `X_0(1) = ℙ¹` for `hnr`. -/
+theorem universallyInjective_ajHom_of_hasNoFibreAffineLine {X J S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) (hnr : HasNoFibreAffineLine strX) :
+    UniversallyInjective jac.ajHom :=
+  sorry
+
+/-- **RIEMANN–ROCH, INFINITESIMALLY: Abel–Jacobi is UNRAMIFIED** (sorry
+leaf, 2026-07-27) — the other half of `mono_ajHom_of_hasNoFibreAffineLine`,
+and the half that no statement about points can carry.
+
+TRUE and classical: for a smooth proper geometrically connected curve of
+genus `≥ 1` with a section, `x ↦ [x] − [o]` is a CLOSED IMMERSION into the
+Jacobian, and a closed immersion is unramified.
+
+**THIS IS EXACTLY THE `Spec K[ε]` DIRECTION THE SEAM'S DOCSTRING WARNS
+ABOUT, ISOLATED.**  `HasNoFibreAffineLine` is deliberately quantified over
+`Spec K` for a FIELD `K`, because over `Spec K[ε]` the analogous statement
+is FALSE in every genus (a `t`-dependent tangent vector gives a nonconstant
+`𝔸¹_T ⟶ X_T` on any curve).  That does not make `Mono ajHom` weaker than a
+statement about field-valued points — it makes the infinitesimal part a
+SEPARATE obligation, which is this leaf.  Stating it as
+`FormallyUnramified` rather than smuggling it into the predicate is what
+keeps `HasNoFibreAffineLine` true.
+
+The mathematics, fibrewise over a field `K` at a `K`-point `x`: the
+differential of `aj` at `x` is the natural map
+`T_x X ⟶ H¹(𝒪_{X_K}) = T_0 J`, dual to `H⁰(Ω¹) ⟶ Ω¹_x`, which is
+injective exactly when `x` is not a base point of the canonical system —
+equivalently `h⁰(𝒪(2x)) = 1`, i.e. `x` is not a Weierstrass point of a
+`g¹₂`.  For genus `≥ 2` this needs the curve to be non-hyperelliptic ONLY
+for the canonical map, not for Abel–Jacobi: injectivity of
+`T_x X ⟶ H¹(𝒪)` holds for every `x` on every curve of genus `≥ 1`, since
+`h⁰(𝒪(x)) = 1` there and Riemann–Roch gives
+`h⁰(𝒪(2x)) − h⁰(𝒪(x)) ≤ 1` with equality iff `2x` moves.  So the input is
+again Riemann–Roch in low degree, over a field — the same theory the
+sibling leaf needs, which is why the two are worth closing together.
+
+Note the leaf is NOT implied by the sibling: universal injectivity is a
+statement about field-valued points and is blind to `K[ε]`.  Nor is it
+stronger than the target: `Mono ajHom` gives it back, by
+`mono_iff_formallyUnramified_and_universallyInjective`.
+
+`hnr` is load-bearing: at `X_0(1) = ℙ¹` the Jacobian is trivial and
+`ajHom` is the constant map, which is ramified everywhere. -/
+theorem formallyUnramified_ajHom_of_hasNoFibreAffineLine {X J S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) (hnr : HasNoFibreAffineLine strX) :
+    FormallyUnramified jac.ajHom :=
+  sorry
+
 /-- **RIEMANN–ROCH, base-general and LEVEL-FREE: a curve with no rational
-fibre has a MONOMORPHIC Abel–Jacobi morphism** (sorry leaf, 2026-07-27) —
+fibre has a MONOMORPHIC Abel–Jacobi morphism** (PROVEN 2026-07-27 by
+decomposition along the diagonal criterion, over the two leaves
+`universallyInjective_ajHom_of_hasNoFibreAffineLine` and
+`formallyUnramified_ajHom_of_hasNoFibreAffineLine`; introduced as a sorry
+leaf earlier the same day) —
 the geometric half of `mono_ajHom_of_one_le_x0Genus`, and the exact
 base-general analogue of `injective_aj_of_not_isIso_jacobian`.  It
 mentions neither `N` nor `x0Genus` nor `IsX0Compactification`.
@@ -22005,24 +22171,49 @@ statement — `IsJacobianOf.aj_val` presents `aj g` as precomposition with
 — and `IsJacobianOf.injective_aj_of_mono` is the conversion.  The
 morphism form is the one the geometry is about.
 
-IRREDUCIBLE at this pin along the geometric axis: Riemann–Roch, the genus
-of a scheme and `Pic⁰` are absent from `Mathlib`, from `~/cs/FLT` and from
-this development.  **The axis a successor should prefer is the DESCENT
-one**: step 1 above is not Riemann–Roch at all, it is "a proper morphism
-that is a monomorphism on every fibre is a monomorphism", and splitting it
-off would leave a purely fibrewise Riemann–Roch statement over a FIELD —
-which is the form the literature proves.  Making that cut needs the base
-change `X ×_S Spec κ(s)` written down, which `ModularCurve/RelativePicard.
-lean` now supplies as `curveBaseChange`.  **The check that would refute
-this verdict**: an `h⁰`, a genus, or a Riemann–Roch statement appearing in
-any of the three trees. -/
+**THE DESCENT AXIS HAS NOW BEEN TAKEN, AND IT COST NO GEOMETRY AT ALL**
+(2026-07-27; this replaces the IRREDUCIBILITY verdict the previous version
+of this docstring recorded, which said the cut needed the base change
+`X ×_S Spec κ(s)`).  It does not.  The previous audit was right that step 1
+is not Riemann–Roch, and wrong about what it *is*: the descent from fibres
+to the total space is not a geometric argument over `curveBaseChange` but
+the **diagonal criterion**, and mathlib already has all three of its
+ingredients.  `Mono f`, `UniversallyInjective f` and (for `f` locally of
+finite type) `FormallyUnramified f` are the statements that `Δ_f` is an
+isomorphism, is surjective, and is an open immersion; an open immersion
+that is surjective is an isomorphism.  That is
+`mono_iff_formallyUnramified_and_universallyInjective` above — PROVEN, from
+`Mathlib` alone — and it splits this node into
+
+* `universallyInjective_ajHom_of_hasNoFibreAffineLine`, which by
+  `tfae_universallyInjective` (Stacks 01S4) is *exactly* injectivity on
+  `K`-points for every field `K` — the purely fibrewise-over-a-field
+  Riemann–Roch statement the audit asked for, and the one the literature
+  proves;
+* `formallyUnramified_ajHom_of_hasNoFibreAffineLine`, the infinitesimal
+  remainder — the `Spec K[ε]` direction that the `HasNoFibreAffineLine`
+  docstring warns must NOT be smuggled into the predicate, here carried by
+  a leaf of its own instead.
+
+The side condition `LocallyOfFiniteType ajHom` is discharged outright by
+`locallyOfFiniteType_ajHom` from properness of the curve.
+
+**The split is an IFF, so it is faithful**: neither half is stronger than
+this node, and a proof of `Mono` returns both.  What remains open is
+therefore Riemann–Roch over a FIELD in degree `1`, twice — once on points
+and once on tangent vectors — with no relative geometry left anywhere in
+it.  **The check that would refute this note**: a diagonal-free route, or
+either half turning out to need the base `S` after all. -/
 theorem mono_ajHom_of_hasNoFibreAffineLine {X J S : Scheme.{0}} {strX : X ⟶ S}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ S}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
     (jac : IsJacobianOf strX ab o) (hnr : HasNoFibreAffineLine strX) :
     Mono jac.ajHom :=
-  sorry
+  (mono_iff_formallyUnramified_and_universallyInjective _
+      (locallyOfFiniteType_ajHom hproper jac)).mpr
+    ⟨formallyUnramified_ajHom_of_hasNoFibreAffineLine hproper hcurve hconn jac hnr,
+      universallyInjective_ajHom_of_hasNoFibreAffineLine hproper hcurve hconn jac hnr⟩
 
 /-- **The genus formula, fibrewise: `genus X_0(N) ≥ 1` puts no rational
 curve in any fibre of `X_0(N)`** (sorry leaf, 2026-07-27) — the
@@ -33374,11 +33565,169 @@ theorem exists_atkinLehnerPrym_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶
       (fun a b hab => hinj (congrArg Subtype.val hab))
   exact ⟨A, astr, abA, ι, hι, c, hcnat, hfin, hfac⟩
 
+/-- **A curve carrying a DOUBLE COVER OF THE LINE** — "hyperelliptic or
+rational over `ℚ`", in the only form this pin can state it, and the
+degree-`2` analogue of `HasNoFibreAffineLine`.
+
+Concretely: a dense open `U ⊆ X` and a FINITE morphism `φ : U ⟶ 𝔸¹_ℚ`
+over `ℚ` no fibre of which has three points valued in one field.
+
+**WHY `𝔸¹` AND NOT `ℙ¹`, and why a dense open.**  Exactly as for
+`exists_affineLine_of_not_injective_aj`, which records the same choice in
+degree `1`: mathlib at this pin has `Proj` but no projective space, and
+`Mathlib.AlgebraicGeometry.AffineSpace` supplies `𝔸(n; S)`.  A degree-`2`
+morphism `X ⟶ ℙ¹_ℚ` is the same datum as its restriction over
+`𝔸¹ = ℙ¹ ∖ {∞}` for a rational `∞`, because `X` is a smooth proper curve
+and is therefore recovered from any dense open; and the fibre over `∞`
+being finite, `φ⁻¹(𝔸¹)` is a dense open.  So nothing about the
+mathematics changes — it just had to be phrased affinely.
+
+**WHY THE THREE-POINT CLAUSE, and why it is not decoration.**  Without a
+degree bound the predicate is satisfied by EVERY curve — any nonconstant
+rational function gives a finite map from a dense open to `𝔸¹` — and the
+level leaf below would be FALSE.  "No fibre has three `K`-points, for any
+field `K`" is the degree bound in a form that needs neither flatness nor
+locally-free rank: for a finite dominant `φ` of degree `d` from a curve
+in characteristic `0`, the fibre over the generic point, taken over an
+algebraic closure `K` of `ℚ(t)`, has exactly `d` `K`-points.  So the
+clause holds iff `d ≤ 2`, which is "hyperelliptic or rational".
+
+**Not vacuous, and refutable.**  It HOLDS for `X = ℙ¹_ℚ` (take `U = 𝔸¹`,
+`φ = 𝟙`, `d = 1`) and for every elliptic curve (`d = 2`), and FAILS for
+any curve of gonality `≥ 3` — which is what the level leaf below asserts
+for `X_0(169)`. -/
+def HasDoubleCoverOfAffineLine {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
+  ∃ (U : Scheme.{0}) (ι : U ⟶ X) (φ : U ⟶ 𝔸(Unit; SpecQ)),
+    IsOpenImmersion ι ∧ IsDominant ι ∧ IsFinite φ ∧
+    φ ≫ (𝔸(Unit; SpecQ) ↘ SpecQ) = ι ≫ strX ∧
+    ∀ (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ 𝔸(Unit; SpecQ))
+      (u₁ u₂ u₃ : Spec (CommRingCat.of K) ⟶ U),
+      u₁ ≫ φ = k → u₂ ≫ φ = k → u₃ ≫ φ = k → u₁ = u₂ ∨ u₁ = u₃ ∨ u₂ = u₃
+
+/-- **RIEMANN–ROCH IN DEGREE `2`, LEVEL-FREE: two disjoint effective
+degree-`2` divisors in one class make the curve hyperelliptic or
+rational** (sorry leaf, 2026-07-27) — the geometric half of
+`ajPair_ne_of_disjoint_x0OneSixtyNine`, and the exact degree-`2` analogue
+of `exists_affineLine_of_not_injective_aj`.  It mentions neither `169`
+nor `IsX0Compactification`.
+
+TRUE and classical.  `aj x = [x] − [o]`, so the hypothesis `heq` says
+`[x₁] + [x₂] = [y₁] + [y₂]` in `Pic` — the base point cancels, both sides
+having degree `2`.  The two divisors are DISTINCT (`h₁₁`, `h₁₂` put `x₁`
+outside the support of `y₁ + y₂`), so `h⁰` of that class is `≥ 2` and the
+pencil they span is a `g¹₂`.  It is BASE-POINT-FREE precisely because the
+four hypotheses make the two divisors disjoint — that is what disjointness
+is for, and without it the pencil could have a base point and the
+statement would collapse to the degree-`1` case
+(`mono_ajHom_of_hasNoFibreAffineLine`, needing only `g ≥ 1`).  A
+base-point-free `g¹₂` is a finite morphism `φ : X ⟶ ℙ¹_ℚ` of degree
+exactly `2`, whose fibre over the point cut out by `y₁ + y₂` is
+`{y₁, y₂}`; deleting that point gives `U = X ∖ {y₁, y₂}`, a dense open,
+and `φ|U : U ⟶ 𝔸¹_ℚ` finite of degree `2`, so no fibre has three points
+over any field.
+
+Note that `x₁ = x₂` and `y₁ = y₂` are ALLOWED — a doubled point is still
+an effective degree-`2` divisor and the argument is unchanged; only the
+disjointness of the two supports is used.
+
+**ALL THREE CURVE HYPOTHESES ARE LOAD-BEARING**, with the counterexamples
+already recorded on `exists_affineLine_of_not_injective_aj` (`ℙ¹ × E` for
+`hcurve`, `ℙ¹ ⊔ ℙ¹` for `hconn`, `𝔾ₘ` for `hproper`): on each of them the
+conclusion fails while `aj` collapses points, for the reasons recorded
+there.
+
+**Not vacuous**: the hypothesis is satisfiable — on any hyperelliptic
+curve, two distinct fibres of the degree-`2` map are disjoint, effective,
+of degree `2`, and linearly equivalent — and the conclusion is then
+exactly what this leaf produces.
+
+IRREDUCIBLE at this pin along the geometric axis: Riemann–Roch, linear
+systems and `h⁰` are absent from `Mathlib`, from `~/cs/FLT` and from this
+development.  What mathlib *does* have, and where a prover should start,
+is the same list `exists_affineLine_of_not_injective_aj` records —
+`Mathlib/AlgebraicGeometry/AlgebraicCycle`, `.../OrderOfVanishing.lean`,
+`.../FunctionField.lean`, `.../Birational/RationalMap.lean`.  **The check
+that would refute this verdict**: an `h⁰`, a genus, or a Riemann–Roch
+statement appearing in any of the three trees. -/
+theorem hasDoubleCoverOfAffineLine_of_ajPair_eq {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (x₁ x₂ y₁ y₂ : RelPoint strX (𝟙 SpecQ))
+    (h₁₁ : x₁ ≠ y₁) (h₁₂ : x₁ ≠ y₂) (h₂₁ : x₂ ≠ y₁) (h₂₂ : x₂ ≠ y₂)
+    (heq : ab.add (jac.aj (𝟙 SpecQ) x₁) (jac.aj (𝟙 SpecQ) x₂) =
+      ab.add (jac.aj (𝟙 SpecQ) y₁) (jac.aj (𝟙 SpecQ) y₂)) :
+    HasDoubleCoverOfAffineLine strX :=
+  sorry
+
+/-- **`X_0(169)` HAS GONALITY `≥ 3` — it is neither rational nor
+hyperelliptic** (sorry leaf, 2026-07-27) — the arithmetic half of
+`ajPair_ne_of_disjoint_x0OneSixtyNine`, and the ONLY half that mentions
+the level.  The degree-`2` analogue of
+`hasNoFibreAffineLine_of_one_le_x0Genus`.
+
+TRUE.  `X_0(169)` has genus `8`, and `169` is not in Ogg's list of the
+nineteen hyperelliptic levels (Ogg, *Hyperelliptic modular curves*, 1974:
+`N ∈ {22, 23, 26, 28, 29, 30, 31, 33, 35, 37, 39, 40, 41, 46, 47, 48, 50,
+59, 71}`).  Genus `8 ≥ 1` also rules out rationality.  So no degree-`≤ 2`
+morphism `X_0(169) ⟶ ℙ¹` exists over `ℚ` — a fortiori none over `ℚ̄`,
+which is how Ogg's list is stated — and `HasDoubleCoverOfAffineLine`
+fails.
+
+**Why the affine phrasing loses nothing.**  A finite `φ : U ⟶ 𝔸¹_ℚ` from
+a dense open of the smooth proper curve `X` extends uniquely to
+`X ⟶ ℙ¹_ℚ` (`exists_unique_extension_of_isSmoothProperCurve`, PROVEN in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` and already in
+this file's cone), and the three-point clause bounds its degree by `2` as
+recorded on `HasDoubleCoverOfAffineLine`.  So refuting the predicate is
+exactly refuting gonality `≤ 2`.
+
+**The check that refutes it**: a hyperelliptic model of `X_0(169)`, or
+`169` turning up in Ogg's list, or a degree-`2` linear system on
+`X_0(169)` of projective dimension `≥ 1`.
+
+**What proving it needs**: the genus of `X_0(169)`, hence the same missing
+theory as `hasNoFibreAffineLine_of_one_le_x0Genus` (a genus of a scheme,
+`h¹(𝒪_X)`, or Riemann–Hurwitz for the degree-`μ(169)` map to the
+`j`-line), PLUS the hyperelliptic classification.  **The axis a successor
+should prefer, and it is the same one recorded on
+`hasNonconstantAbelianMap_of_one_le_x0Genus`: the MODULAR one** — Ogg's
+proof is a count of fixed points of the hyperelliptic involution against
+the Atkin–Lehner involutions and a reduction mod `ℓ` (`X_0(N)(𝔽_ℓ)`
+having more points than a hyperelliptic curve of that genus can), which
+never mentions the genus of a scheme.  At `N = p²` with `p = 13` the
+cheapest form is the reduction bound at `ℓ = 3`.  **The check that would
+refute this verdict**: a genus, an `h¹`, or a gonality statement appearing
+in any of the three trees. -/
+theorem not_hasDoubleCoverOfAffineLine_x0OneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification 169 strX strY jY) :
+    ¬ HasDoubleCoverOfAffineLine strX :=
+  sorry
+
 /-- **`X_0(169)` IS NOT HYPERELLIPTIC**, in the only form this pin can
 state it: two DISJOINT effective degree-`2` divisors supported on
-rational points are never linearly equivalent (sorry leaf, 2026-07-27) —
+rational points are never linearly equivalent (PROVEN 2026-07-27 by
+decomposition, over the two leaves
+`hasDoubleCoverOfAffineLine_of_ajPair_eq` and
+`not_hasDoubleCoverOfAffineLine_x0OneSixtyNine`; introduced as a sorry
+leaf earlier the same day) —
 the geometric residue of `injective_ajMinus_x0OneSixtyNine`, with the
 Atkin–Lehner bookkeeping stripped out.
+
+**THE SPLIT (2026-07-27), and it is the degree-`2` copy of the one taken
+at `mono_ajHom_of_hasNoFibreAffineLine`.**  This node bundled two
+different theories: linear systems on a curve (level-free) and the
+hyperelliptic classification of modular curves (level-specific, Ogg).
+`HasDoubleCoverOfAffineLine` — "hyperelliptic or rational", phrased
+affinely because this pin has no `ℙ¹` — is the seam between them, and it
+is the exact degree-`2` analogue of `HasNoFibreAffineLine`.  So the four
+leaves of the two nodes now line up:
+
+| degree | level-free (Riemann–Roch) | level-specific (arithmetic) |
+|---|---|---|
+| `1` | `exists_affineLine_of_not_injective_aj` | `hasNoFibreAffineLine_of_one_le_x0Genus` |
+| `2` | `hasDoubleCoverOfAffineLine_of_ajPair_eq` | `not_hasDoubleCoverOfAffineLine_x0OneSixtyNine` |
 
 `aj x = [x] − [o]`, so `aj x₁ + aj x₂ = aj y₁ + aj y₂` says exactly
 `[x₁] + [x₂] = [y₁] + [y₂]` in `Pic` — the base point cancels, both sides
@@ -33405,11 +33754,14 @@ classical fact and lose nothing.
 **The check that refutes it**: a hyperelliptic model of `X_0(169)`, or a
 degree-`2` linear system on it of projective dimension `≥ 1`.
 
-**What proving it needs**: linear equivalence of divisors on a curve and
-the hyperelliptic dichotomy for degree-`2` classes — i.e. Riemann–Roch,
-the same gap `mono_ajHom_of_hasNoFibreAffineLine` records at degree `1`.
-The two are worth closing together: both are "a degree-`d` class on a
-curve of genus `g` has the expected `h⁰`", at `d = 1` and `d = 2`.
+**What proving it needs, now that it is split**: linear equivalence of
+divisors on a curve, i.e. Riemann–Roch in degree `2` over a FIELD, which
+is `hasDoubleCoverOfAffineLine_of_ajPair_eq`; and the hyperelliptic
+dichotomy for `X_0(169)` itself, which is
+`not_hasDoubleCoverOfAffineLine_x0OneSixtyNine`.  The first is the same
+theory the degree-`1` leaves need and is worth closing with them — both
+are "a degree-`d` class on a curve of genus `g` has the expected `h⁰`",
+at `d = 1` and `d = 2`; the second is Ogg, and is independent of it.
 
 `o` and `jY` are inert here; they are carried only because `jac` and the
 level pin `hX` mention them. -/
@@ -33421,7 +33773,9 @@ theorem ajPair_ne_of_disjoint_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶ 
     (h₁₁ : x₁ ≠ y₁) (h₁₂ : x₁ ≠ y₂) (h₂₁ : x₂ ≠ y₁) (h₂₂ : x₂ ≠ y₂) :
     ab.add (jac.aj (𝟙 SpecQ) x₁) (jac.aj (𝟙 SpecQ) x₂) ≠
       ab.add (jac.aj (𝟙 SpecQ) y₁) (jac.aj (𝟙 SpecQ) y₂) :=
-  sorry
+  fun heq => not_hasDoubleCoverOfAffineLine_x0OneSixtyNine hX
+    (hasDoubleCoverOfAffineLine_of_ajPair_eq hX.isProper hX.smooth hX.connected jac
+      x₁ x₂ y₁ y₂ h₁₁ h₁₂ h₂₁ h₂₂ heq)
 
 /-- **`x ↦ [x] − [w x]` is injective on `X_0(169)(ℚ)`** (PROVEN
 2026-07-27 by decomposition, over the single leaf
