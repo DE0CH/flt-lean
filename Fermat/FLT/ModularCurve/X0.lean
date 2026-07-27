@@ -10854,6 +10854,22 @@ is now CLOSED, negatively, and two more are added.
    `CuspLocus` that cannot be recovered from `(e, hcyc)`;
    `nonempty_cuspLocus_of_residueIndexing` shows there is none.
 
+REFERENCES A PROVER CAN ACTUALLY OPEN (checked 2026-07-27).  The two halves
+of this leaf are in two different places, and only one of them is downloaded:
+
+* the ORBIT structure — that the cusps of `Γ_0(N)` fall into one class per
+  divisor `d ∣ N`, of size `φ(gcd(d, N/d))` — is Diamond–Shurman §3.8, in
+  `sources/diamondshurman2005mf.txt` around line 5630, derived there from
+  Prop. 3.8.3: two vectors `(a, c)`, `(a', c')` represent the same cusp iff
+  `gcd(c, N) = gcd(c', N) =: d` and `a' ≡ y₀ a (mod gcd(d, N/d))`, whence
+  `ε_∞(Γ_0(N)) = ∑_{d ∣ N} φ(gcd(d, N/d))`.  That reference does NOT supply
+  the `ℚ`-structure: it is a statement about `Γ_0(N)∖ℙ¹(ℚ)` as a set.
+* the `ℚ`-STRUCTURE — that the class above `d` is a single closed point of
+  the `ℚ`-scheme `X` with residue field `ℚ(ζ_{gcd(d, N/d)})`, i.e. that
+  `σ_t` acts by `a ↦ t⁻¹ a` — is Ogg / Deligne–Rapoport VI.6, and is in
+  none of the downloaded sources; `SOURCES.md` has no Deligne–Rapoport.
+  Obtaining it is the first concrete step for a successor.
+
 CORRECTION to the first pass's refuting check (2026-07-27).  It claimed
 `grep` over `Fermat/`, `.lake/packages/mathlib/` and `~/cs/FLT/` finds
 neither a modular-curve cusp theory nor a `Γ_0(N)\ℙ¹(ℚ)` description "in
@@ -10876,6 +10892,16 @@ Galois-category/fundamental-group theory, not this.  So the refuting check
 is re-stated: this note falls to a bridge from `CuspOrbits (Gamma0 N)` to
 the cusp locus of `X`, i.e. to the uniformisation together with its
 `ℚ`-structure.
+
+RE-CHECK of that correction (2026-07-27, after axis 7).  Both halves still
+hold, and the survey is now sharper.  In `Cusps.lean` the ONLY occurrences
+of `Gamma0` are `strictPeriods_Gamma0` and `strictWidthInfty_Gamma0` — cusp
+WIDTHS — and the file contains no `divisors` and no `totient` anywhere, so
+the `(d, a)` classification really is absent from the pin rather than merely
+unlocated.  `grep -rl 'ModularCurve\|Cusp\|cusp' ~/cs/FLT/FLT` returns
+NOTHING, so the reference project has no cusp material of any kind either.
+Refute this by exhibiting, in any of the three trees, a statement relating
+`CuspOrbits (Gamma0 N)` to `Nat.divisors N` or to `Nat.totient`.
 
 AMENDMENT (2026-07-27, axis 6).  That correction also said the alternative
 was "Galois descent for rational points of a `ℚ`-scheme".  **Descent is no
