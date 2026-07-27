@@ -20986,6 +20986,511 @@ end Level
 
 end ArchimedeanTensorLevel
 
+/-! ### The `g`-fold fibre power, and `B = A ⊗_ℤ 𝒪_D` as pure geometry
+
+This section discharges `exists_tensorAbelianSchemeByRingOfIntegers` below.
+It is entirely GEOMETRY plus the `ℤ`-basis retraction of the previous section;
+no level structure, no torsion and no `ε` occur anywhere in it.
+
+THE CONSTRUCTION is the `g`-fold fibre power `B = A ×_S ⋯ ×_S A`, built by
+induction on `g` from `B₀ = S` and `B_{k+1} = A ×_S B_k`.  `FibrePowerData`
+below packages one such power together with the coordinate bijection
+`pt`/`pack` between `RelPoint (B ⟶ S) g` and functions `κ → RelPoint (A ⟶ S) g`,
+NATURAL in the test object (`pt_pre`) — which is exactly the data the
+functor-of-points presentation of `AbelianSchemeStruct` consumes, so the group
+law, the real multiplication and the tensor identification are then all
+COORDINATEWISE and carry no further geometry.
+
+WHY `pt`/`pack` AND NOT AN `Equiv`.  The two maps quantify over the test object
+`T` and its base point `g`, so bundling them would force those into the type;
+kept as two fields with `pt_pack`/`pack_pt` they instantiate at each `g`
+without any transport.
+
+THE GEOMETRY IS THE INDUCTION, and mathlib supplies all of it but two facts:
+`IsProper`, `Smooth` and `SmoothOfRelativeDimension n` are stable under base
+change and composition (so the relative dimension of the `g`-fold power is
+`g · 1 = Module.finrank ℚ D`, which is where the degree of `D` enters), and
+`GeometricallyConnected` is stable under base change.  The two facts mathlib
+does NOT have are proven here:
+
+* `geometricallyConnected_id` — the identity is geometrically connected,
+  because a base change of an iso is an iso and `Spec` of a field is connected;
+* `geometricallyConnected_fibreStep` — `A ×_S B ⟶ S` is geometrically connected
+  when `A ⟶ S` is geometrically connected and smooth and `B ⟶ S` is
+  geometrically connected.  This is the one place smoothness of `A ⟶ S` is
+  used, and only through `Smooth ⟹ UniversallyOpen`: the geometric fibre of
+  the composite is `(A ×_S B) ×_S Spec K ≅ A ×_S (B ×_S Spec K)`, and mathlib's
+  `ConnectedSpace ↥(pullback f g)` instance turns a geometrically connected,
+  universally open `f` over a connected base into a connected total space.
+
+THE `𝒪_D`-ACTION is the regular representation of `𝒪_D` on its own `ℤ`-basis:
+`tensorMulLeft a` is multiplication by `a` on the LEFT tensor factor of
+`𝒪_D ⊗_ℤ N`, which is `ℤ`-linear and therefore needs NO `Module (𝒪_D)`
+instance on the tensor product, and `tensorCoordAct` reads it in coordinates
+through `tensorBasisTheta`/`tensorBasisCoordAt`.  The `Mult` axioms are then
+the ring axioms of `𝒪_D` transported through the retraction, and the tensor
+identification `ι` is literally "take coordinates", so its bijectivity is
+`tensorBasisTheta_coord` and `tensorBasisCoordAt_theta`.
+
+The two instance hazards recorded in the previous section's docstring apply
+verbatim here: every generic binder is `[AddCommGroup N]` WITHOUT
+`[Module ℤ N]`, and coordinate maps are taken one index at a time. -/
+
+section ArchimedeanFibrePower
+
+open CategoryTheory CategoryTheory.Limits AlgebraicGeometry
+open scoped TensorProduct
+
+section FibrePowerGeometry
+
+variable {A B S : Scheme.{u}}
+
+theorem geometricallyConnected_id (S : Scheme.{u}) : GeometricallyConnected (𝟙 S) := by
+  constructor
+  intro K _ y Z fst snd h
+  haveI : IsIso snd :=
+    MorphismProperty.IsStableUnderBaseChange.of_isPullback
+      (P := MorphismProperty.isomorphisms Scheme.{u}) h (MorphismProperty.id_mem _ _)
+  exact ((asIso snd).schemeIsoToHomeo).connectedSpace_iff.mpr inferInstance
+
+theorem geometricallyConnected_fibreStep (fA : A ⟶ S) (fB : B ⟶ S)
+    [GeometricallyConnected fA] [Smooth fA] [GeometricallyConnected fB] :
+    GeometricallyConnected (pullback.snd fA fB ≫ fB) := by
+  constructor
+  intro K _ y Z fst snd h
+  haveI : ConnectedSpace ↥(pullback fB y) :=
+    pullback_of_geometrically
+      (‹GeometricallyConnected fB›.geometrically_connectedSpace) K y
+  haveI : ConnectedSpace ↥(pullback (pullback.snd fA fB) (pullback.fst fB y)) := inferInstance
+  have e1 : pullback (pullback.snd fA fB) (pullback.fst fB y) ≅
+      pullback (pullback.snd fA fB ≫ fB) y :=
+    pullbackRightPullbackFstIso fB y (pullback.snd fA fB)
+  exact ((h.isoPullback.trans e1.symm).schemeIsoToHomeo).connectedSpace_iff.mpr inferInstance
+
+end FibrePowerGeometry
+
+section FibrePower
+
+variable {A B S : Scheme.{u}}
+
+/-! ### The two projections of one step of the fibre power -/
+
+section Step
+
+variable {fA : A ⟶ S} {fB : B ⟶ S} {T : Scheme.{u}} {g : T ⟶ S}
+
+/-- The `A`-coordinate of a relative point of `A ×_S B`. -/
+noncomputable def stepFst (x : Fermat.RelPoint (pullback.snd fA fB ≫ fB) g) : Fermat.RelPoint fA g :=
+  ⟨x.1 ≫ pullback.fst fA fB, by
+    have hx := x.2
+    simp only [Category.assoc] at hx ⊢
+    rw [pullback.condition]
+    exact hx⟩
+
+/-- The `B`-coordinate of a relative point of `A ×_S B`. -/
+noncomputable def stepSnd (x : Fermat.RelPoint (pullback.snd fA fB ≫ fB) g) : Fermat.RelPoint fB g :=
+  ⟨x.1 ≫ pullback.snd fA fB, by simp only [Category.assoc]; exact x.2⟩
+
+/-- Assembling a relative point of `A ×_S B` from its two coordinates. -/
+noncomputable def stepPack (a : Fermat.RelPoint fA g) (b : Fermat.RelPoint fB g) :
+    Fermat.RelPoint (pullback.snd fA fB ≫ fB) g :=
+  ⟨pullback.lift a.1 b.1 (by rw [a.2, b.2]), by
+    rw [← Category.assoc, pullback.lift_snd]; exact b.2⟩
+
+@[simp] theorem stepFst_pack (a : Fermat.RelPoint fA g) (b : Fermat.RelPoint fB g) :
+    stepFst (stepPack a b) = a :=
+  Subtype.ext (pullback.lift_fst _ _ _)
+
+@[simp] theorem stepSnd_pack (a : Fermat.RelPoint fA g) (b : Fermat.RelPoint fB g) :
+    stepSnd (stepPack a b) = b :=
+  Subtype.ext (pullback.lift_snd _ _ _)
+
+@[simp] theorem stepPack_fst_snd (x : Fermat.RelPoint (pullback.snd fA fB ≫ fB) g) :
+    stepPack (stepFst x) (stepSnd x) = x :=
+  Subtype.ext (pullback.hom_ext (pullback.lift_fst _ _ _) (pullback.lift_snd _ _ _))
+
+theorem stepFst_pre {T' : Scheme.{u}} (h : T' ⟶ T) {g' : T' ⟶ S} (hg : h ≫ g = g')
+    (x : Fermat.RelPoint (pullback.snd fA fB ≫ fB) g) :
+    stepFst (Fermat.RelPoint.pre h hg x) = Fermat.RelPoint.pre h hg (stepFst x) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+theorem stepSnd_pre {T' : Scheme.{u}} (h : T' ⟶ T) {g' : T' ⟶ S} (hg : h ≫ g = g')
+    (x : Fermat.RelPoint (pullback.snd fA fB ≫ fB) g) :
+    stepSnd (Fermat.RelPoint.pre h hg x) = Fermat.RelPoint.pre h hg (stepSnd x) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+end Step
+
+/-- Data presenting a fibre power of `fA : A ⟶ S`, indexed by `κ`. -/
+structure FibrePowerData {A S : Scheme.{u}} (fA : A ⟶ S) (κ : Type*) where
+  /-- the total space -/
+  B : Scheme.{u}
+  /-- its structure morphism -/
+  hom : B ⟶ S
+  /-- the relative dimension over `S` -/
+  relDim : ℕ
+  /-- coordinates of a relative point -/
+  pt : ∀ {T : Scheme.{u}} {g : T ⟶ S}, Fermat.RelPoint hom g → κ → Fermat.RelPoint fA g
+  /-- assembling a relative point from coordinates -/
+  pack : ∀ {T : Scheme.{u}} {g : T ⟶ S}, (κ → Fermat.RelPoint fA g) → Fermat.RelPoint hom g
+  pt_pack : ∀ {T : Scheme.{u}} {g : T ⟶ S} (v : κ → Fermat.RelPoint fA g), pt (pack v) = v
+  pack_pt : ∀ {T : Scheme.{u}} {g : T ⟶ S} (x : Fermat.RelPoint hom g), pack (pt x) = x
+  pt_pre : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g')
+    (x : Fermat.RelPoint hom g) (i : κ),
+    pt (Fermat.RelPoint.pre h hg x) i = Fermat.RelPoint.pre h hg (pt x i)
+  proper : IsProper hom
+  smooth : Smooth hom
+  connected : GeometricallyConnected hom
+  dim : SmoothOfRelativeDimension relDim hom
+
+namespace FibrePowerData
+
+variable {fA : A ⟶ S} {κ : Type*}
+
+theorem pt_injective (F : FibrePowerData fA κ) {T : Scheme.{u}} {g : T ⟶ S} :
+    Function.Injective (F.pt (T := T) (g := g)) := by
+  intro x y h
+  rw [← F.pack_pt x, ← F.pack_pt y, h]
+
+theorem pre_pack (F : FibrePowerData fA κ) {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S}
+    {g' : T' ⟶ S} (hg : h ≫ g = g') (v : κ → Fermat.RelPoint fA g) :
+    Fermat.RelPoint.pre h hg (F.pack v) = F.pack (fun i => Fermat.RelPoint.pre h hg (v i)) := by
+  apply F.pt_injective
+  funext i
+  rw [F.pt_pre, F.pt_pack, F.pt_pack]
+
+/-- Reindexing a fibre power along an equivalence of index types. -/
+def reindex (F : FibrePowerData fA κ) {κ' : Type*} (e : κ ≃ κ') : FibrePowerData fA κ' where
+  B := F.B
+  hom := F.hom
+  relDim := F.relDim
+  pt := fun {_ _} x i => F.pt x (e.symm i)
+  pack := fun {_ _} v => F.pack (fun j => v (e j))
+  pt_pack := fun {_ _} v => by funext i; rw [F.pt_pack]; simp
+  pack_pt := fun {_ _} x => by
+    rw [show (fun j => F.pt x (e.symm (e j))) = F.pt x by funext j; rw [e.symm_apply_apply]]
+    exact F.pack_pt x
+  pt_pre := fun {_ _} h {_ _} hg x i => F.pt_pre h hg x _
+  proper := F.proper
+  smooth := F.smooth
+  connected := F.connected
+  dim := F.dim
+
+/-- The empty fibre power: `S` itself. -/
+def zero (fA : A ⟶ S) : FibrePowerData fA (Fin 0) where
+  B := S
+  hom := 𝟙 S
+  relDim := 0
+  pt := fun {_ _} _ i => i.elim0
+  pack := fun {_ g} _ => ⟨g, Category.comp_id g⟩
+  pt_pack := fun {_ _} _ => by funext i; exact i.elim0
+  pack_pt := fun {_ _} x => Subtype.ext (by simpa using x.2.symm)
+  pt_pre := fun {_ _} _ {_ _} _ _ i => i.elim0
+  proper := MorphismProperty.id_mem _ _
+  smooth := inferInstance
+  connected := geometricallyConnected_id S
+  dim := inferInstance
+
+/-- The inductive step: `A ×_S B` from `B`. -/
+noncomputable def succ (fA : A ⟶ S) [IsProper fA] [Smooth fA] [GeometricallyConnected fA]
+    [SmoothOfRelativeDimension 1 fA] {n : ℕ} (F : FibrePowerData fA (Fin n)) :
+    FibrePowerData fA (Fin (n + 1)) :=
+  haveI := F.proper
+  haveI := F.smooth
+  haveI := F.connected
+  haveI := F.dim
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  haveI hsnd : SmoothOfRelativeDimension 1 (pullback.snd fA F.hom) :=
+    MorphismProperty.pullback_snd (P := @SmoothOfRelativeDimension 1) fA F.hom inferInstance
+  { B := pullback fA F.hom
+    hom := pullback.snd fA F.hom ≫ F.hom
+    relDim := F.relDim + 1
+    pt := fun {_ _} x => Fin.cons (stepFst x) (F.pt (stepSnd x))
+    pack := fun {_ _} v => stepPack (v 0) (F.pack (Fin.tail v))
+    pt_pack := fun {_ _} v => by
+      rw [show stepFst (stepPack (v 0) (F.pack (Fin.tail v))) = v 0 from stepFst_pack _ _,
+        show stepSnd (stepPack (v 0) (F.pack (Fin.tail v))) = F.pack (Fin.tail v) from
+          stepSnd_pack _ _, F.pt_pack, Fin.cons_self_tail]
+    pack_pt := fun {_ _} x => by
+      simp only [Fin.cons_zero, Fin.tail_cons]
+      rw [F.pack_pt, stepPack_fst_snd]
+    pt_pre := fun {_ _} h {_ _} hg x i => by
+      refine Fin.cases ?_ ?_ i
+      · simp only [Fin.cons_zero]
+        exact stepFst_pre h hg x
+      · intro j
+        simp only [Fin.cons_succ]
+        rw [stepSnd_pre h hg x]
+        exact F.pt_pre h hg _ j
+    proper := inferInstance
+    smooth := inferInstance
+    connected := geometricallyConnected_fibreStep fA F.hom
+    dim := by
+      have h : SmoothOfRelativeDimension (1 + F.relDim) (pullback.snd fA F.hom ≫ F.hom) :=
+        inferInstance
+      rwa [Nat.add_comm] at h }
+
+/-- Every finite fibre power exists. -/
+noncomputable def ofFin (fA : A ⟶ S) [IsProper fA] [Smooth fA] [GeometricallyConnected fA]
+    [SmoothOfRelativeDimension 1 fA] : ∀ n : ℕ, FibrePowerData fA (Fin n)
+  | 0 => FibrePowerData.zero fA
+  | (n + 1) => FibrePowerData.succ fA (ofFin fA n)
+
+theorem ofFin_relDim (fA : A ⟶ S) [IsProper fA] [Smooth fA] [GeometricallyConnected fA]
+    [SmoothOfRelativeDimension 1 fA] (n : ℕ) : (ofFin fA n).relDim = n := by
+  induction n with
+  | zero => rfl
+  | succ n ih => exact congrArg (fun k => k + 1) ih
+
+/-- **The abelian-scheme structure on a fibre power**: the group law read
+coordinatewise through `pt`/`pack`. -/
+noncomputable def abelianStruct (ab : Fermat.AbelianSchemeStruct fA)
+    (F : FibrePowerData fA κ) : Fermat.AbelianSchemeStruct F.hom where
+  add := fun {_ _} x y => F.pack (fun i => ab.add (F.pt x i) (F.pt y i))
+  zero := fun g => F.pack (fun _ => ab.zero g)
+  neg := fun {_ _} x => F.pack (fun i => ab.neg (F.pt x i))
+  add_assoc := fun x y z => by
+    simp only [F.pt_pack]
+    exact congrArg F.pack (funext fun i => ab.add_assoc _ _ _)
+  add_comm := fun x y => congrArg F.pack (funext fun i => ab.add_comm _ _)
+  zero_add := fun x => by
+    simp only [F.pt_pack]
+    rw [show (fun i => ab.add (ab.zero _) (F.pt x i)) = F.pt x from
+      funext fun i => ab.zero_add _]
+    exact F.pack_pt x
+  neg_add := fun x => by
+    simp only [F.pt_pack]
+    exact congrArg F.pack (funext fun i => ab.neg_add _)
+  pre_add := fun {_ _} h {_ _} hg x y => by
+    rw [F.pre_pack]
+    exact congrArg F.pack (funext fun i => by rw [ab.pre_add, F.pt_pre, F.pt_pre])
+  pre_zero := fun {_ _} h {_ _} hg => by
+    rw [F.pre_pack]
+    exact congrArg F.pack (funext fun _ => ab.pre_zero h hg)
+  proper := F.proper
+  smooth := F.smooth
+  connected := F.connected
+
+@[simp] theorem abelianStruct_add (ab : Fermat.AbelianSchemeStruct fA) (F : FibrePowerData fA κ)
+    {T : Scheme.{u}} {g : T ⟶ S} (x y : Fermat.RelPoint F.hom g) :
+    (abelianStruct ab F).add x y = F.pack (fun i => ab.add (F.pt x i) (F.pt y i)) := rfl
+
+/-- `RelPoint.pre` as a `ℤ`-linear map between relative point groups. -/
+noncomputable def preLinear (ab : Fermat.AbelianSchemeStruct fA) {T' T : Scheme.{u}} (h : T' ⟶ T)
+    {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g') :
+    letI := ab.addCommGroup g
+    letI := ab.addCommGroup g'
+    Fermat.RelPoint fA g →ₗ[ℤ] Fermat.RelPoint fA g' :=
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  AddMonoidHom.toIntLinearMap
+    (AddMonoidHom.mk' (Fermat.RelPoint.pre h hg) (ab.pre_add h hg))
+
+end FibrePowerData
+
+end FibrePower
+
+/-! ### The `𝒪_D`-action in the `ℤ`-basis coordinates -/
+
+section TensorAct
+
+open scoped TensorProduct
+
+variable (D : Type u) [Field D] [NumberField D]
+variable (N : Type*) [AddCommGroup N]
+
+/-- Multiplication by `a` on the LEFT tensor factor of `𝒪_D ⊗_ℤ N`.  Only
+`ℤ`-linearity is used, so no `Module (𝒪_D)` instance on the tensor is needed. -/
+noncomputable def tensorMulLeft (a : NumberField.RingOfIntegers D) :
+    (NumberField.RingOfIntegers D ⊗[ℤ] N) →ₗ[ℤ] (NumberField.RingOfIntegers D ⊗[ℤ] N) :=
+  LinearMap.rTensor N (LinearMap.mulLeft ℤ a)
+
+omit [NumberField D] in
+@[simp] theorem tensorMulLeft_tmul (a b : NumberField.RingOfIntegers D) (y : N) :
+    tensorMulLeft D N a (b ⊗ₜ[ℤ] y) = (a * b) ⊗ₜ[ℤ] y := rfl
+
+omit [NumberField D] in
+theorem tensorMulLeft_one (x : NumberField.RingOfIntegers D ⊗[ℤ] N) :
+    tensorMulLeft D N 1 x = x := by
+  induction x with
+  | zero => simp
+  | tmul b n => simp
+  | add x y hx hy => simp [hx, hy]
+
+omit [NumberField D] in
+theorem tensorMulLeft_mul (a b : NumberField.RingOfIntegers D)
+    (x : NumberField.RingOfIntegers D ⊗[ℤ] N) :
+    tensorMulLeft D N (a * b) x = tensorMulLeft D N a (tensorMulLeft D N b x) := by
+  induction x with
+  | zero => simp
+  | tmul c n => simp [mul_assoc]
+  | add x y hx hy => simp [hx, hy]
+
+omit [NumberField D] in
+theorem tensorMulLeft_add_left (a b : NumberField.RingOfIntegers D)
+    (x : NumberField.RingOfIntegers D ⊗[ℤ] N) :
+    tensorMulLeft D N (a + b) x = tensorMulLeft D N a x + tensorMulLeft D N b x := by
+  induction x with
+  | zero => simp
+  | tmul c n => simp [add_mul, TensorProduct.add_tmul]
+  | add x y hx hy => simp only [map_add, hx, hy]; abel
+
+omit [NumberField D] in
+theorem tensorMulLeft_lTensor {N' : Type*} [AddCommGroup N'] (s : N →ₗ[ℤ] N')
+    (a : NumberField.RingOfIntegers D) (x : NumberField.RingOfIntegers D ⊗[ℤ] N) :
+    LinearMap.lTensor _ s (tensorMulLeft D N a x)
+      = tensorMulLeft D N' a (LinearMap.lTensor _ s x) := by
+  induction x with
+  | zero => simp
+  | tmul b n => simp
+  | add x y hx hy => simp [hx, hy]
+
+theorem tensorBasisCoordAt_lTensor {N' : Type*} [AddCommGroup N'] (s : N →ₗ[ℤ] N')
+    (x : NumberField.RingOfIntegers D ⊗[ℤ] N)
+    (j : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    tensorBasisCoordAt D N' j (LinearMap.lTensor _ s x) = s (tensorBasisCoordAt D N j x) := by
+  induction x with
+  | zero => simp
+  | tmul a n => simp
+  | add x y hx hy => simp [hx, hy]
+
+/-- **The `𝒪_D`-action read in the `ℤ`-basis**: coordinates of `a · θ(v)`. -/
+noncomputable def tensorCoordAct (a : NumberField.RingOfIntegers D)
+    (v : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N)
+    (i : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) : N :=
+  tensorBasisCoordAt D N i (tensorMulLeft D N a (tensorBasisTheta D N v))
+
+theorem tensorCoordAct_one
+    (v : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N) :
+    tensorCoordAct D N 1 v = v := by
+  funext i
+  rw [tensorCoordAct, tensorMulLeft_one, tensorBasisCoordAt_theta]
+
+/-- The coordinates of `a · x` for `x` given by its own coordinates. -/
+theorem tensorCoordAct_coord (a : NumberField.RingOfIntegers D)
+    (x : NumberField.RingOfIntegers D ⊗[ℤ] N)
+    (i : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    tensorCoordAct D N a (fun j => tensorBasisCoordAt D N j x) i
+      = tensorBasisCoordAt D N i (tensorMulLeft D N a x) := by
+  rw [tensorCoordAct, tensorBasisTheta_coord]
+
+/-- `θ` retracts the coordinates of the action. -/
+theorem tensorBasisTheta_coordAct (a : NumberField.RingOfIntegers D)
+    (v : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N) :
+    tensorBasisTheta D N (tensorCoordAct D N a v)
+      = tensorMulLeft D N a (tensorBasisTheta D N v) :=
+  tensorBasisTheta_coord D N _
+
+theorem tensorCoordAct_mul (a b : NumberField.RingOfIntegers D)
+    (v : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N) :
+    tensorCoordAct D N (a * b) v = tensorCoordAct D N a (tensorCoordAct D N b v) := by
+  funext i
+  simp only [tensorCoordAct]
+  rw [tensorBasisTheta_coordAct, tensorMulLeft_mul]
+
+theorem tensorCoordAct_add_left (a b : NumberField.RingOfIntegers D)
+    (v : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N)
+    (i : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    tensorCoordAct D N (a + b) v i = tensorCoordAct D N a v i + tensorCoordAct D N b v i := by
+  rw [tensorCoordAct, tensorCoordAct, tensorCoordAct, tensorMulLeft_add_left, map_add]
+
+theorem tensorCoordAct_add_right (a : NumberField.RingOfIntegers D)
+    (v w : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N)
+    (i : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    tensorCoordAct D N a (v + w) i = tensorCoordAct D N a v i + tensorCoordAct D N a w i := by
+  rw [tensorCoordAct, tensorCoordAct, tensorCoordAct, tensorBasisTheta_add, map_add, map_add]
+
+theorem tensorCoordAct_map {N' : Type*} [AddCommGroup N'] (s : N →ₗ[ℤ] N')
+    (a : NumberField.RingOfIntegers D)
+    (v : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D) → N)
+    (i : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    s (tensorCoordAct D N a v i) = tensorCoordAct D N' a (fun j => s (v j)) i := by
+  rw [tensorCoordAct, tensorCoordAct, ← tensorBasisTheta_lTensor, ← tensorMulLeft_lTensor,
+    tensorBasisCoordAt_lTensor]
+
+end TensorAct
+
+/-! ### Real multiplication on the fibre power, and the tensor identification -/
+
+section Assembly
+
+open scoped TensorProduct
+
+variable {A S : Scheme.{u}} {fA : A ⟶ S}
+
+/-- **Multiplication by `𝒪_D` on the `[D:ℚ]`-fold fibre power**: the regular
+representation of `𝒪_D` on its own `ℤ`-basis, read on relative points. -/
+noncomputable def FibrePowerData.mult (D : Type u) [Field D] [NumberField D]
+    (ab : Fermat.AbelianSchemeStruct fA)
+    (F : FibrePowerData fA (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D))) :
+    Fermat.Mult (FibrePowerData.abelianStruct ab F) (NumberField.RingOfIntegers D) where
+  act := fun {_ g} a x =>
+    letI := ab.addCommGroup g
+    F.pack (tensorCoordAct D (Fermat.RelPoint fA g) a (F.pt x))
+  act_add := fun {_ g} a b y => by
+    letI := ab.addCommGroup g
+    apply F.pt_injective
+    funext i
+    simp only [FibrePowerData.abelianStruct_add, F.pt_pack]
+    exact tensorCoordAct_add_left D _ a b (F.pt y) i
+  act_mul := fun {_ g} a b y => by
+    letI := ab.addCommGroup g
+    apply F.pt_injective
+    funext i
+    simp only [F.pt_pack]
+    rw [tensorCoordAct_mul]
+  act_one := fun {_ g} y => by
+    letI := ab.addCommGroup g
+    show F.pack (tensorCoordAct D (Fermat.RelPoint fA g) 1 (F.pt y)) = y
+    rw [tensorCoordAct_one, F.pack_pt]
+  act_addPt := fun {_ g} a y z => by
+    letI := ab.addCommGroup g
+    apply F.pt_injective
+    funext i
+    simp only [FibrePowerData.abelianStruct_add, F.pt_pack]
+    exact tensorCoordAct_add_right D _ a (F.pt y) (F.pt z) i
+  pre_act := fun {_ _} h {g g'} hg a y => by
+    letI := ab.addCommGroup g
+    letI := ab.addCommGroup g'
+    rw [F.pre_pack]
+    apply F.pt_injective
+    funext i
+    simp only [F.pt_pack]
+    rw [show F.pt (Fermat.RelPoint.pre h hg y) = fun j => Fermat.RelPoint.pre h hg (F.pt y j) from
+      funext fun j => F.pt_pre h hg y j]
+    exact tensorCoordAct_map D (Fermat.RelPoint fA g) (FibrePowerData.preLinear ab h hg) a
+      (F.pt y) i
+
+/-- **The tensor identification `𝒪_D ⊗_ℤ A(T) → B(T)`**: read off the
+coordinates in the chosen `ℤ`-basis of `𝒪_D`. -/
+noncomputable def FibrePowerData.tensorIota (D : Type u) [Field D] [NumberField D]
+    (F : FibrePowerData fA (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)))
+    {T : Scheme.{u}} {g : T ⟶ S} [AddCommGroup (Fermat.RelPoint fA g)]
+    (x : NumberField.RingOfIntegers D ⊗[ℤ] Fermat.RelPoint fA g) : Fermat.RelPoint F.hom g :=
+  F.pack (fun i => tensorBasisCoordAt D (Fermat.RelPoint fA g) i x)
+
+@[simp] theorem FibrePowerData.pt_tensorIota (D : Type u) [Field D] [NumberField D]
+    (F : FibrePowerData fA (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)))
+    {T : Scheme.{u}} {g : T ⟶ S} [AddCommGroup (Fermat.RelPoint fA g)]
+    (x : NumberField.RingOfIntegers D ⊗[ℤ] Fermat.RelPoint fA g)
+    (i : Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :
+    F.pt (FibrePowerData.tensorIota D F x) i
+      = tensorBasisCoordAt D (Fermat.RelPoint fA g) i x :=
+  congrFun (F.pt_pack _) i
+
+theorem FibrePowerData.mult_act (D : Type u) [Field D] [NumberField D]
+    (ab : Fermat.AbelianSchemeStruct fA)
+    (F : FibrePowerData fA (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)))
+    {T : Scheme.{u}} {g : T ⟶ S} (a : NumberField.RingOfIntegers D)
+    (x : Fermat.RelPoint F.hom g) :
+    letI := ab.addCommGroup g
+    (FibrePowerData.mult D ab F).act a x
+      = F.pack (tensorCoordAct D (Fermat.RelPoint fA g) a (F.pt x)) := rfl
+
+end Assembly
+
+end ArchimedeanFibrePower
+
 open scoped TensorProduct in
 open CategoryTheory in
 /-- **THE ELLIPTIC-CURVE HALF of the archimedean node** (sorry leaf, cut
@@ -21052,10 +21557,20 @@ theorem exists_realEllipticSchemeWithConjTorsion (ε : Bool) :
 
 open scoped TensorProduct in
 open CategoryTheory in
-/-- **THE TENSOR HALF of the archimedean node** (sorry leaf, cut 2026-07-27 out
-of `exists_realAbelianSchemeWithTensorLevelStructure`): `B = A ⊗_ℤ 𝒪_D` for an
-abelian scheme `A` of relative dimension `1`, with its real multiplication by
-`𝒪_D` and the induced identification of geometric fibre points.
+/-- **THE TENSOR HALF of the archimedean node** (PROVEN 2026-07-27; cut the
+same day out of `exists_realAbelianSchemeWithTensorLevelStructure`):
+`B = A ⊗_ℤ 𝒪_D` for an abelian scheme `A` of relative dimension `1`, with its
+real multiplication by `𝒪_D` and the induced identification of geometric fibre
+points.
+
+PROOF: `ArchimedeanFibrePower` above, in one line — take the `g`-fold fibre
+power indexed by the chosen `ℤ`-basis of `𝒪_D`
+(`FibrePowerData.ofFin` reindexed along `Fintype.equivFin`), its coordinatewise
+group law (`FibrePowerData.abelianStruct`), the regular representation as its
+real multiplication (`FibrePowerData.mult`), and "take coordinates" as `ι`
+(`FibrePowerData.tensorIota`).  The relative dimension is `F.relDim`, which the
+induction pins to `Fintype.card (ChooseBasisIndex ℤ 𝒪_D) = finrank ℤ 𝒪_D =
+finrank ℚ D` by `NumberField.RingOfIntegers.rank`.
 
 Nothing about level structures, torsion, `ε` or complex conjugation appears
 here.  That is the point of the cut: this leaf is pure geometry, and everything
@@ -21070,13 +21585,20 @@ power is the power of `RelPoint` by the universal property of the limit, and
 BIJECTION rather than merely a map: as abelian groups
 `𝒪_D ⊗_ℤ A(ℂ) ≅ A(ℂ)^g` because `𝒪_D` is `ℤ`-free of rank `g`.
 
-WHAT IS NOT FREE, and is the whole content of this leaf: the geometry.
+WHAT WAS NOT FREE, and was the whole content of this leaf: the geometry.
 Stability of `IsProper`, `Smooth` and `GeometricallyConnected` under fibre
 product over the base, and ADDITIVITY of `SmoothOfRelativeDimension` — the
 relative dimension of the `g`-fold power is `g · 1 = Module.finrank ℚ D`, which
-is where the degree of `D` enters.  `AbelianSchemeStruct.ofMorphisms`
-(`Modularity/AbelianScheme.lean`) is the intended bridge: it accepts the group
-law as equations of MORPHISMS, which is what a fibre power supplies.
+is where the degree of `D` enters.  Mathlib has ALL of these except two facts
+about `GeometricallyConnected`, which are proven above as
+`geometricallyConnected_id` and `geometricallyConnected_fibreStep`.
+
+`AbelianSchemeStruct.ofMorphisms` (`Modularity/AbelianScheme.lean`) was
+recorded here as the intended bridge and turned out NOT to be needed: a fibre
+power has a functor-of-points description directly (`RelPoint` is a Hom-set and
+the universal property of the pullback computes it), so the group law is
+written on points and never as equations of morphisms.  `ofMorphisms` remains
+the right bridge for producers with no such description, e.g. a `Proj`.
 
 WHY THE EQUIVARIANCE CLAUSES ARE STATED ON PURE TENSORS.  Both `act` and
 `galSMul` are additive in the tensor argument, so the pure-tensor form implies
@@ -21120,8 +21642,62 @@ theorem exists_tensorAbelianSchemeByRingOfIntegers
           (a : NumberField.RingOfIntegers D) y,
         ι (a ⊗ₜ abA.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ y)
           = abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ
-              (ι (a ⊗ₜ y))) :=
-  sorry
+              (ι (a ⊗ₜ y))) := by
+  classical
+  haveI := abA.proper
+  haveI := abA.smooth
+  haveI := abA.connected
+  haveI := hdimA
+  letI := abA.addCommGroup (Fermat.specAlgClos (ULift.{u} ℝ) ≫
+    𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
+  let F : FibrePowerData fA (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)) :=
+    (FibrePowerData.ofFin fA
+        (Fintype.card (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D)))).reindex
+      (Fintype.equivFin
+        (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers D))).symm
+  refine ⟨F.B, F.hom, FibrePowerData.abelianStruct abA F, FibrePowerData.mult D abA F,
+    FibrePowerData.tensorIota D F, ?_, ?_, ?_, ?_, ?_⟩
+  · have hd : F.relDim = Module.finrank ℚ D := by
+      show (FibrePowerData.ofFin fA _).relDim = _
+      rw [FibrePowerData.ofFin_relDim, ← NumberField.RingOfIntegers.rank D,
+        Module.finrank_eq_card_chooseBasisIndex]
+    exact hd ▸ F.dim
+  · intro x y
+    apply F.pt_injective
+    funext i
+    simp only [FibrePowerData.abelianStruct_add, FibrePowerData.pt_tensorIota, F.pt_pack]
+    exact map_add (tensorBasisCoordAt D _ i) x y
+  · constructor
+    · intro x y hxy
+      have h : (fun i => tensorBasisCoordAt D _ i x) = (fun i => tensorBasisCoordAt D _ i y) := by
+        funext i
+        rw [← FibrePowerData.pt_tensorIota D F x i, ← FibrePowerData.pt_tensorIota D F y i, hxy]
+      calc x = tensorBasisTheta D _ (fun i => tensorBasisCoordAt D _ i x) :=
+            (tensorBasisTheta_coord D _ x).symm
+        _ = tensorBasisTheta D _ (fun i => tensorBasisCoordAt D _ i y) := by rw [h]
+        _ = y := tensorBasisTheta_coord D _ y
+    · intro z
+      refine ⟨tensorBasisTheta D _ (F.pt z), ?_⟩
+      apply F.pt_injective
+      funext i
+      rw [FibrePowerData.pt_tensorIota, tensorBasisCoordAt_theta]
+  · intro a b y
+    apply F.pt_injective
+    funext i
+    rw [FibrePowerData.mult_act, FibrePowerData.pt_tensorIota, F.pt_pack]
+    rw [show F.pt (FibrePowerData.tensorIota D F (b ⊗ₜ y))
+        = fun j => tensorBasisCoordAt D _ j (b ⊗ₜ y) from
+      funext fun j => FibrePowerData.pt_tensorIota D F _ j]
+    rw [tensorCoordAct_coord]
+    rfl
+  · intro σ a y
+    apply F.pt_injective
+    funext i
+    simp only [Fermat.AbelianSchemeStruct.galSMul_def]
+    rw [FibrePowerData.pt_tensorIota, F.pt_pre, FibrePowerData.pt_tensorIota,
+      tensorBasisCoordAt_tmul, tensorBasisCoordAt_tmul]
+    exact (map_zsmul (FibrePowerData.preLinear abA (Fermat.specGal σ)
+      (Fermat.specGal_comp_base _ σ)) _ y).symm
 
 open scoped TensorProduct in
 open CategoryTheory in
