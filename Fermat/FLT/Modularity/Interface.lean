@@ -24860,11 +24860,244 @@ noncomputable def localSplitSubgroup {kk' : Type u} [Field kk']
     {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
       a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure
 
+/-- **The Frobenius-to-ideal dictionary for `ℚ(μ_p)`, with its
+cyclotomic equivariance** (E3c support leaf (ii-a-1-i-A); SORRY NODE,
+cut 2026-07-27 out of `exists_artinMap_classGroup_frobeniusIdeal`
+below): for `χ` the mod-`p` cyclotomic character `ω` of `Γℚ` and any
+model `CF` of `ℚ(μ_p)`, there are an embedding
+`ι : CF →ₐ[ℚ] ℚ̄` and a family `frobIdeal g v` of nonzero ideals of
+`𝓞 CF` such that
+
+* (A) whenever the conjugate `g · Frob_v · g⁻¹` lies in `ker χ`, it IS
+  the arithmetic Frobenius at `frobIdeal g v`, checked at every finite
+  normal level: for every finite normal `M/ℚ` inside `ℚ̄` and every
+  `ι`-compatible embedding `jj : CF →ₐ[ℚ] M`, there is a prime `Q` of
+  `𝓞 M` with `AlgEquiv.restrictNormalHom M (g · Frob_v · g⁻¹)` an
+  arithmetic Frobenius at `Q` and with `Q` contracting to
+  `frobIdeal g v` along `jj`;
+* (B) `frobIdeal` is equivariant for the cyclotomic action:
+  `frobIdeal (σ g) v = σ_u (frobIdeal g v)` when `ω(σ) = u`, with NO
+  side condition.
+
+**WHY THIS CUT EXISTS, AND WHY IT IS NOT THE CUT THAT WAS REFUSED ON
+2026-07-27.** The note on `exists_artinMap_classGroup_frobeniusIdeal`
+below records a deliberate decision NOT to decompose, on the ground
+that the natural cut — "write a Hilbert-class-field/Artin-package
+interface and prove the six clauses over it" — would duplicate the
+interface that the three live ray-class efforts
+(`ModThree.lean`'s `exists_artinPackage_ray_class` cluster;
+`KhareWintenberger.lean`'s `exists_anticyclotomicDihedralCocycle`)
+will themselves produce. That reasoning is accepted here and is
+untouched: **this cut introduces no interface at all** — no `structure`,
+no `def`, no class, only two existential theorems — so there is nothing
+for a later ray-class Artin map to be a rival of, and the re-cut that
+the note asks for (consume a base-field-general ray-class Artin map
+once one lands) remains available verbatim at
+`exists_artinMap_classGroup_of_frobeniusIdeal` just below.
+
+**The axis the refusal did not search** was not "which interface", but
+"which HALF". The audit's own dependency list names five missing
+pieces, and its piece (2) — "the dictionary between a Frobenius element
+of `Γℚ` and the prime of `𝓞 CF` it determines" — **contains no class
+field theory whatsoever.** It is Galois theory of finite extensions,
+and the tree already has its main ingredient PROVEN. So this leaf is
+workable NOW by an owner who knows no CFT, while
+`exists_artinMap_classGroup_of_frobeniusIdeal` retains the entire
+class-field-theoretic obligation in one place. Peeling a CFT-free piece
+off a leaf that was otherwise wholly blocked is the gain; the check
+that would refute it is below.
+
+**WHAT IS ALREADY AVAILABLE (each claim refutable by one `grep`).**
+* `GaloisRepresentation.exists_isArithFrobAt_restrictNormalHom_globalFrob`
+  (`Fermat/FLT/GaloisRepresentation/Chebotarev.lean:12351`) is PROVEN
+  and is precisely clause (A) at `g = 1`: for finite normal
+  `L/K` inside `AlgebraicClosure K` it produces a prime `Q` of `𝓞 L`
+  lying over `v` with `restrictNormalHom L (globalFrob v)` an
+  arithmetic Frobenius at `Q`.
+* `IsArithFrobAt.conj` (`Mathlib/RingTheory/Frobenius.lean`) upgrades
+  that from `globalFrob v` to `g · Frob_v · g⁻¹`, moving the prime to
+  `restrictNormalHom L g • Q`; `restrictNormalHom` is a `MonoidHom`, so
+  the conjugate restricts to the conjugate of the restriction.
+* Clause (B) is then formal: `frobIdeal g v := (restrictNormalHom L g)
+  • Q_v` transported through `ι`, so `frobIdeal (σ g) v =
+  restrictNormalHom L σ • frobIdeal g v` holds for ALL `σ, g, v` by
+  functoriality alone. Identifying `restrictNormalHom L σ` with
+  `cycGalRingOfIntegersEquiv CF u` under `ω(σ) = u` is the cyclotomic
+  dictionary: `IsCyclotomicExtension.Rat.galEquivZMod_apply_of_pow_eq`
+  (mathlib `NumberTheory/NumberField/Cyclotomic/Galois.lean:63`) against
+  the defining property of `cyclotomicCharacter` on `μ_p`, plus
+  injectivity of `ZMod.castHom (dvd_refl p) kk'` (`ZMod p` is a field
+  and `kk'` has characteristic `p`), which is what pins `u` uniquely
+  from `χ σ`.
+
+**THE ONE GENUINELY MISSING SUB-LEMMA, named so it can be attacked
+directly:** clause (A) quantifies over EVERY finite normal `M`, whereas
+`exists_isArithFrobAt_restrictNormalHom_globalFrob` chooses its prime
+independently at each `M`, and those choices need not be compatible.
+What closes the gap is *"an arithmetic Frobenius restricts to an
+arithmetic Frobenius"*: for `L ≤ M` both finite normal over `ℚ` and `Q`
+a prime of `𝓞 M`, `IsArithFrobAt (𝓞 ℚ) (restrictNormalHom M x) Q`
+implies `IsArithFrobAt (𝓞 ℚ) (restrictNormalHom L x) (Q ∩ 𝓞 L)`.
+Neither mathlib's `Frobenius.lean` nor this project states it; it is
+small, purely local-at-a-prime, and it is the natural first step for
+whoever takes this leaf. **The check that would refute this obstruction:
+`grep -rn 'IsArithFrobAt' Fermat/ .lake/packages/mathlib/Mathlib/RingTheory/`
+turning up a restriction/comap lemma — the axis searched here was
+`IsArithFrobAt`'s own API plus `Ideal.under`/`LiesOver`, and NOT the
+`Ideal.primesOver` transitivity route, which may give it more cheaply.**
+
+Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
+cyclotomic field) and the conclusion holds for every inhabitant, by the
+construction just displayed — `ι` any embedding of `CF` in `ℚ̄`
+(`IsAlgClosed.lift`, `CF/ℚ` being algebraic), `frobIdeal` the transport
+of `restrictNormalHom L g • Q_v`. Nothing here asserts surjectivity of
+anything onto `Cl(𝓞 CF)`, which is the deliberate point of the cut. -/
+theorem exists_frobeniusIdeal_cyclotomic
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] :
+    ∃ (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+      (frobIdeal : Field.absoluteGaloisGroup ℚ →
+        IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰),
+      (∀ (g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+        ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+          [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+          (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+          ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+            IsArithFrobAt (𝓞 ℚ)
+              (AlgEquiv.restrictNormalHom M
+                (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+            Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+              (frobIdeal g v : Ideal (𝓞 CF))) ∧
+      (∀ (u : (ZMod p)ˣ) (σ g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) →
+        (frobIdeal (σ * g) v : Ideal (𝓞 CF)) =
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF))
+            (frobIdeal g v : Ideal (𝓞 CF))) :=
+  sorry
+
+/-- **The Hilbert class field of `ℚ(μ_p)` EXISTS: the Artin map, over a
+given Frobenius-to-ideal dictionary** (E3c support leaf (ii-a-1-i-B);
+SORRY NODE, cut 2026-07-27 out of
+`exists_artinMap_classGroup_frobeniusIdeal` below): given `ι` and
+`frobIdeal` as produced by `exists_frobeniusIdeal_cyclotomic` above —
+i.e. given that `g · Frob_v · g⁻¹` is the arithmetic Frobenius at
+`frobIdeal g v` at every finite normal level — there is a map
+`art : Γℚ → Cl(𝓞 CF)` that is a homomorphism on `ker χ`, SURJECTIVE
+onto the class group, trivial on an open normal subgroup of `Γℚ`, sends
+each Frobenius conjugate to the class of its ideal, and whose kernel is
+contained in `localSplitSubgroup χ p`.
+
+**THIS IS THE LOAD-BEARING CLASS-FIELD-THEORETIC GAP, AND IT IS NOW THE
+ONLY ONE.** Clause (ii) demands SURJECTIVITY onto `Cl(𝓞 CF)`: an
+unramified abelian extension whose group IS the class group. That is
+the EXISTENCE theorem for the Hilbert class field, and nothing in the
+pin, in `~/cs/FLT`, or in this project supplies it (see the pin audit
+on `exists_artinMap_classGroup_frobeniusIdeal` below, and the audit
+correction there about `ModThree.lean`, both of which now attach to
+THIS declaration rather than to that one). Reciprocity does not produce
+it. The kernel clause (v) is the other half of the same theorem — that
+`ker(art)` is generated by inertia and commutators — and it is stated
+here in the weak containment form that is all the consumer needs:
+`localSplitSubgroup χ p` is generated by the `Γℚ`-conjugates of inertia
+at every `ℓ ∉ {2, p}` together with the FULL decomposition groups at
+`p` and at `2`, plus commutators, so it is strictly larger than
+`ker(art)` and no equality is demanded.
+
+**WHY THE DICTIONARY IS A HYPOTHESIS AND NOT AN OBLIGATION HERE.** It
+is exactly piece (2) of the audit below, it contains no class field
+theory, and it is now the separate leaf
+`exists_frobeniusIdeal_cyclotomic` above. Splitting it off is what
+makes this declaration a statement of ONE theorem rather than two: the
+remaining obligation is "the Hilbert class field exists and its Artin
+map is computed on Frobenius elements by the class of the underlying
+prime", with the Frobenius-to-prime bookkeeping already discharged.
+
+**HOW THE HYPOTHESIS IS CONSUMED, and why it is strong enough.** Let
+`H` be the Hilbert class field of `ι(CF)` and take `M` any finite
+normal extension of `ℚ` containing both `H` and `ι(CF)` — `H/ℚ` is
+normal because `H` is canonical and `ℚ(μ_p)/ℚ` is Galois, which is also
+what makes the open subgroup of clause (iii) normal in `Γℚ` rather than
+merely in `ker χ`. Applying `hfrob` at that `M` yields a prime `Q` of
+`𝓞 M` over `frobIdeal g v` at which `g · Frob_v · g⁻¹` is an arithmetic
+Frobenius over `ℚ`. Since `χ (g · Frob_v · g⁻¹) = 1` the element fixes
+`ι(CF)` pointwise, so `ι(CF)` lies inside the decomposition field and
+the residue degree of `frobIdeal g v` over `v` is `1`; hence the same
+element is the arithmetic Frobenius of `Gal(M/ι(CF))` at `Q`, and its
+image in `Gal(H/ι(CF)) ≅ Cl(𝓞 CF)` is `[frobIdeal g v]`. That is
+clause (iv-a). **The check that would refute this reading:** exhibit
+`g, v` with `χ (g · Frob_v · g⁻¹) = 1` whose residue degree over `v` is
+not `1` — impossible, since fixing `ι(CF)` pointwise forces the
+decomposition field to contain it.
+
+**RE-CUT INSTRUCTION (inherited verbatim from the note below).** Once
+any of the live ray-class efforts lands a base-field-general Artin map
+for a ray class group — `ModThree.lean`'s development is currently
+RECIPROCITY only, and hardwired to `Dickson.K 3` as its value group —
+this declaration should be re-cut to consume it directly, and that cut
+is then cheap. Nothing above this line needs to change when that
+happens: the dictionary leaf is independent of it.
+
+Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
+cyclotomic field, `ι` any embedding, `frobIdeal` as constructed in
+`exists_frobeniusIdeal_cyclotomic`) and the conclusion holds for every
+inhabitant, `art` being the Artin map of the Hilbert class field of
+`ℚ(μ_p)` composed with `Γ_{ℚ(μ_p)} ↠ Gal(H/ℚ(μ_p)) ≅ Cl(ℚ(μ_p))`
+(Neukirch VI (6.8), (6.9)). For `p = 2` the model is `CF = ℚ`,
+`Cl(ℤ) = 1`, and `art ≡ 1` with `H = ⊤` inhabits every clause. -/
+theorem exists_artinMap_classGroup_of_frobeniusIdeal
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF))) :
+    ∃ art : Field.absoluteGaloisGroup ℚ → ClassGroup (𝓞 CF),
+      (∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+        art (g * h) = art g * art h) ∧
+      (∀ c : ClassGroup (𝓞 CF), ∃ n : Field.absoluteGaloisGroup ℚ,
+        χ n = 1 ∧ art n = c) ∧
+      (∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.Normal ∧
+        IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+        ∀ x ∈ H, χ x = 1 ∧ art x = 1) ∧
+      (∀ (g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+        art (g * GaloisRepresentation.globalFrob v * g⁻¹) =
+          ClassGroup.mk0 (frobIdeal g v)) ∧
+      (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) :=
+  sorry
+
 /-- **Global class field theory: the Artin map of the Hilbert class
 field of `ℚ(μ_p)`, together with its FROBENIUS-TO-IDEAL dictionary**
-(E3c support leaf (ii-a-1-i); SORRY NODE — the class-field-theoretic
-core, re-cut 2026-07-26 out of `exists_artinMap_classGroup_frobenius`
-below, which is now PROVEN over it): for `χ` the mod-`p` cyclotomic
+(E3c support leaf (ii-a-1-i); **PROVEN 2026-07-27** over the two leaves
+`exists_frobeniusIdeal_cyclotomic` and
+`exists_artinMap_classGroup_of_frobeniusIdeal` above, which split it
+into its CFT-free half and its class-field-theoretic half; itself
+re-cut 2026-07-26 out of `exists_artinMap_classGroup_frobenius`
+below, which is PROVEN over it): for `χ` the mod-`p` cyclotomic
 character `ω` of `Γℚ` (`hχcyc`, so `ker χ = Γ_{ℚ(μ_p)}`) and any model
 `CF` of `ℚ(μ_p)`, there are a map `art : Γℚ → Cl(𝓞 CF)` AND a family
 `frobIdeal g v` of nonzero ideals of `𝓞 CF` — "the prime of `𝓞 CF`
@@ -25017,6 +25250,25 @@ generalizing `ModThree.lean`'s value group before building reciprocity
 again from scratch. A second, independent reciprocity development is
 the most expensive object this fleet can produce.
 
+**DECOMPOSED 2026-07-27 — the note below is retained because its
+reasoning still holds, but it no longer describes this leaf.** The
+refusal recorded below was specifically of the "write an
+Artin-package INTERFACE and prove the six clauses over it" cut, and
+that refusal stands. The cut actually taken is a different one, along
+an axis the note did not consider: not *which interface*, but *which
+HALF*. Piece (2) of the pin audit above — the Frobenius-to-ideal
+dictionary — contains no class field theory at all, and it is now
+`exists_frobeniusIdeal_cyclotomic` above, workable immediately by an
+owner who needs no CFT; the entire class-field-theoretic obligation
+stays undivided in `exists_artinMap_classGroup_of_frobeniusIdeal`.
+Neither leaf introduces a `structure`, a `def` or a class — they are
+existential statements only — so the rival-API hazard the note names
+does not arise, and the re-cut it asks for (consume a ray-class Artin
+map once one lands) applies verbatim to
+`exists_artinMap_classGroup_of_frobeniusIdeal`. **The pin audit and
+the `ModThree.lean` audit correction above should be read as attaching
+to that leaf now, not to this one.**
+
 **Why this leaf was NOT decomposed on 2026-07-27** (recorded so the
 decision can be overturned deliberately). The natural cut — write a
 Hilbert-class-field/Artin-package interface and prove the six clauses
@@ -25062,8 +25314,12 @@ theorem exists_artinMap_classGroup_frobeniusIdeal
           Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF))
             (frobIdeal g v : Ideal (𝓞 CF))) ∧
       (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
-        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) :=
-  sorry
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) := by
+  obtain ⟨ι, frobIdeal, hfrob, hequiv⟩ :=
+    exists_frobeniusIdeal_cyclotomic χ hχcyc CF
+  obtain ⟨art, hhom, hsurj, hH, hfrobclass, hker⟩ :=
+    exists_artinMap_classGroup_of_frobeniusIdeal χ hχcyc CF ι frobIdeal hfrob
+  exact ⟨art, frobIdeal, hhom, hsurj, hH, hfrobclass, hequiv, hker⟩
 
 /-- **Global class field theory: the Artin map of the Hilbert class
 field of `ℚ(μ_p)`, with equivariance checked only on FROBENIUS
