@@ -1507,7 +1507,15 @@ other — so that neither of the four leaves below carries both:
   moduli scheme) and `exists_fullLevelStructure_cover_of_baseChange`
   (the finite étale `GL₂(ℤ/n)`-torsor), which receives the former as a
   hypothesis.  **The first of those is PROVEN**, the same day it was
-  opened — so item 2 is now exactly the torsor and nothing else;
+  opened — and the second was then split again the same day, into the
+  fibre citation `exists_torsionBasis_geomPoint` (Silverman *AEC*
+  III.6.4: `E[n] ≅ (ℤ/n)²` over an algebraically closed field of
+  characteristic `0`), the torsor proper
+  `exists_torsionBasis_cover_of_geomPoint` (Katz–Mazur 2.3.1 and 8.1.1,
+  and NO fibre computation), and the PROVEN transport
+  `nonempty_fullLevelStructure_of_geomBasis`.  Both surviving leaves are
+  stated for a bare abelian scheme of relative dimension one, with no
+  `Γ₀(N)`-datum in sight;
 * item 1 became `exists_rigidifiedModuli` (Katz–Mazur 4.7, 5.1.1, 6.6.1
   and the affineness parenthesis of 8.1.1, and NOTHING else) and
   `exists_gamma0GITPresentation_of_rigidified` (deck group, invariants,
@@ -1849,25 +1857,336 @@ theorem exists_gamma0Datum_baseChange {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ 
     ∃ d' : Gamma0Datum N T', Nonempty (IsBaseChangeOf h d' d) :=
   ⟨Gamma0BaseChange.datumBC h d, ⟨Gamma0BaseChange.isBaseChangeBC h d⟩⟩
 
-/-- **The level-`n` torsor** (sorry leaf, opened 2026-07-27) — what
-remains of `exists_fullLevelStructure_cover` once base change is supplied
-as the hypothesis `hbc`.
+/-! #### Relative points across a base change
 
-## What the prover of this node owes, and what it does NOT
+`IsBaseChangeOf` records that the square on total spaces is CARTESIAN, so
+`RelPoint.along bc.map bc.isPullback.w` sends a relative point of `d'`
+over `u : U ⟶ T'` to a relative point of `d` over `u ≫ p`, and
+`map_zero` / `map_add` say that map is additive.  That is packaged as
+`IsBaseChangeOf.toRelPoint` below.
 
-Owes: that over a `ℚ`-scheme the full level-`n` structures on an elliptic
-scheme form a finite étale `GL₂(ℤ/n)`-torsor.  Concretely — `n` is
-invertible on a `ℚ`-scheme, so `E[n] ⟶ T` is finite étale of rank `n²`
-(Katz–Mazur 2.3.1; Silverman *AEC* III.6.4 for the fibres, plus flatness
-of the multiplication-by-`n` kernel), hence the sheaf
-`Isom_T((ℤ/n)²_T, E[n])` is representable by a finite étale
-`GL₂(ℤ/n)`-torsor `T' ⟶ T`, in particular flat, surjective and
-quasi-compact; and the tautological isomorphism over `T'` is a full
-level-`n` structure on the pulled-back datum.  Katz–Mazur (8.1.1) is the
-citation for rigidifying by `[Γ(n)]`-structures at `n ≥ 3`.
+Only **injectivity** of it is used anywhere in this file — surjectivity
+never is — and injectivity is one application of `IsPullback.hom_ext`:
+two relative points of `d'` over the same `u` agree after `d'.f` (both
+give `u`) and agree after `bc.map` (that is the hypothesis), so they are
+equal.  This is deliberately weaker than the `baseChangeDown` /
+`baseChangeUp` bijection of `AbelianSchemeIsogeny.lean`, which is
+available only at the *canonical* pullback square; `IsBaseChangeOf`
+carries an abstract cartesian square, and `hom_ext` is what it supports.
+-/
 
-Does NOT owe: the production of `d'` itself.  That is `hbc`, and it is a
-hypothesis here — apply it to the `p : T' ⟶ T` this node builds.
+namespace IsBaseChangeOf
+
+variable {N : ℕ} {T' T : Scheme.{u}} {p : T' ⟶ T}
+  {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+
+/-- **A relative point of `d'`, read as a relative point of `d`**: compose
+with the morphism on total spaces.  The base point moves from `u : U ⟶ T'`
+to `u ≫ p`. -/
+def toRelPoint (bc : IsBaseChangeOf p d' d) {U : Scheme.{u}} {u : U ⟶ T'}
+    (x : RelPoint d'.f u) : RelPoint d.f (u ≫ p) :=
+  RelPoint.along bc.map bc.isPullback.w x
+
+/-- **`toRelPoint` is injective**, because the square is cartesian: the
+two points already agree after `d'.f`. -/
+theorem toRelPoint_injective (bc : IsBaseChangeOf p d' d) {U : Scheme.{u}} {u : U ⟶ T'} :
+    Function.Injective (bc.toRelPoint (U := U) (u := u)) := by
+  intro x y hxy
+  refine Subtype.ext (bc.isPullback.hom_ext ?_ ?_)
+  · rw [x.2, y.2]
+  · exact congrArg Subtype.val hxy
+
+/-- `toRelPoint` preserves the zero section — this is `map_zero`, read
+through the `AddCommGroup` instances on relative points. -/
+theorem toRelPoint_zero (bc : IsBaseChangeOf p d' d) {U : Scheme.{u}} (u : U ⟶ T') :
+    letI := d'.ab.addCommGroup u
+    letI := d.ab.addCommGroup (u ≫ p)
+    bc.toRelPoint (0 : RelPoint d'.f u) = 0 :=
+  bc.map_zero u
+
+/-- `toRelPoint` is additive — this is `map_add`, read through the
+`AddCommGroup` instances on relative points. -/
+theorem toRelPoint_add (bc : IsBaseChangeOf p d' d) {U : Scheme.{u}} {u : U ⟶ T'}
+    (x y : RelPoint d'.f u) :
+    letI := d'.ab.addCommGroup u
+    letI := d.ab.addCommGroup (u ≫ p)
+    bc.toRelPoint (x + y) = bc.toRelPoint x + bc.toRelPoint y :=
+  bc.map_add x y
+
+/-- Hence `toRelPoint` commutes with the `ℕ`-action, which is what carries
+the `n`-torsion condition across the base change. -/
+theorem toRelPoint_nsmul (bc : IsBaseChangeOf p d' d) {U : Scheme.{u}} {u : U ⟶ T'}
+    (k : ℕ) (x : RelPoint d'.f u) :
+    letI := d'.ab.addCommGroup u
+    letI := d.ab.addCommGroup (u ≫ p)
+    bc.toRelPoint (k • x) = k • bc.toRelPoint x := by
+  letI := d'.ab.addCommGroup u
+  letI := d.ab.addCommGroup (u ≫ p)
+  induction k with
+  | zero => rw [zero_nsmul, zero_nsmul]; exact bc.toRelPoint_zero u
+  | succ k ih => rw [succ_nsmul, succ_nsmul, bc.toRelPoint_add, ih]
+
+end IsBaseChangeOf
+
+/-! #### The level-`n` torsor, split into its fibre input and its descent
+
+`exists_fullLevelStructure_cover_of_baseChange` — the node that remained
+after base change was split off as `exists_gamma0Datum_baseChange` — is
+itself decomposed here (2026-07-27) into three declarations, on the same
+citation-versus-formalisation principle the rest of this section uses:
+
+* `exists_torsionBasis_geomPoint` — the **fibre citation**: over an
+  algebraically closed field of characteristic `0` the `n`-torsion of an
+  elliptic curve is free of rank `2` over `ℤ/n`.  Silverman *AEC* III.6.4.
+  Nothing about covers, sheaves or descent appears in it.
+* `exists_torsionBasis_cover_of_geomPoint` — the **torsor**: given that
+  fibre statement as a hypothesis, the `Isom`-sheaf is representable by a
+  finite étale `GL₂(ℤ/n)`-torsor, which is flat, surjective and
+  quasi-compact and carries a tautological pair of sections.
+  Katz–Mazur 2.3.1 and 8.1.1.
+* `nonempty_fullLevelStructure_of_geomBasis` — the **transport**, which
+  is PROVEN: a pair of sections of `d.f` over `p` with the fibrewise
+  basis property is, through the cartesian square of *any* base change of
+  `d` along `p`, a `FullLevelStructure` on that base change.
+
+Two things are worth recording about the shape of the cut.
+
+**The torsor half never mentions the `Γ₀(N)`-datum.**  Both leaves are
+stated for a bare `AbelianSchemeStruct f` with
+`SmoothOfRelativeDimension 1 f` over a `ℚ`-scheme; `N`, `cyc` and
+`Gamma0Datum` do not occur.  That is faithful — the level-`n` torsor of
+an elliptic scheme has nothing to do with the `Γ₀(N)`-structure riding
+along beside it — and it makes both leaves reusable.
+
+**`hfib` is exactly what makes the cover SURJECTIVE.**  A reader may
+wonder why the fibre statement is worth separating when the torsor half
+could derive it.  It is the surjectivity hypothesis in disguise: the
+`Isom`-scheme is finite and flat over `T` for formal reasons, and it is
+*surjective* precisely because every geometric fibre of `E[n]` admits a
+basis.  Handing that in as `hfib` is what leaves the torsor half with a
+purely scheme-theoretic obligation.
+-/
+
+/-- **The `n`-torsion at a geometric point is free of rank two over
+`ℤ/n`** (sorry leaf, opened 2026-07-27) — the fibre input to the
+level-`n` torsor, and the only citation in it.
+
+## What the prover of this node owes
+
+That for an elliptic curve over an algebraically closed field `K` of
+characteristic `0`, `E(K)[n] ≅ (ℤ/n)²`: Silverman *AEC* III.6.4 (`E[m] ≅
+ℤ/m × ℤ/m` whenever `m` is invertible in `K`).  Here `E(K)` is spelled
+`RelPoint f t`, the `Spec K`-points of `f` over the geometric point `t`,
+with the group law `ab.addCommGroup t`; the fibre `E ×_T Spec K` is an
+elliptic curve because `ab` makes `f` proper, smooth and geometrically
+connected and `hdim` makes the fibres curves, so the fibre is a smooth
+proper geometrically connected genus-one curve with the origin `ab.zero t`.
+
+## What it does NOT owe
+
+Nothing scheme-theoretic: no `E[n]` as a subscheme, no finiteness, no
+flatness, no étaleness, no `Isom`-sheaf.  All of that is
+`exists_torsionBasis_cover_of_geomPoint`, which receives this statement
+as a hypothesis.
+
+## Faithfulness
+
+`g` is **load-bearing for TRUTH and cannot be dropped**: it is the only
+route by which `K` is known to have characteristic `0`.  Over
+`K = 𝔽̄_p` with `p ∣ n` the statement is FALSE — `E(K)[p] ` is `ℤ/p` for
+an ordinary curve and trivial for a supersingular one, so no pair
+`(y, z)` can satisfy the `∃!` clause.
+
+`hn` is load-bearing at `n = 0`, exactly as on the parent: `Fin 0` is
+empty while `0 • x = 0` holds for every `x`, so the right-hand side is
+unsatisfiable and the left-hand side is universally true.  At `n = 1, 2`
+the statement is true and `hn` is merely inherited.
+
+`hdim` is load-bearing: without it `f` is an abelian scheme of arbitrary
+relative dimension `d`, whose `n`-torsion is `(ℤ/n)^{2d}` and admits no
+two-element basis for `d ≥ 2`. -/
+theorem exists_torsionBasis_geomPoint (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ)
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T) :
+    letI := ab.addCommGroup t
+    ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
+      ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z :=
+  sorry
+
+/-- **The level-`n` torsor** (sorry leaf, opened 2026-07-27) — the
+scheme-theoretic half of `exists_fullLevelStructure_cover_of_baseChange`,
+with the fibre computation discharged by the hypothesis `hfib`.
+
+## What the prover of this node owes
+
+That over a `ℚ`-scheme the bases of the `n`-torsion of an elliptic scheme
+form a finite étale `GL₂(ℤ/n)`-torsor.  Concretely: `n` is invertible on
+a `ℚ`-scheme, so the kernel `E[n] ⟶ T` of multiplication by `n` is finite
+locally free of rank `n²` and étale (Katz–Mazur 2.3.1, plus flatness of
+the multiplication-by-`n` kernel); hence the sheaf
+`Isom_T((ℤ/n)²_T, E[n])` is representable by a finite étale scheme
+`T' ⟶ T`, which is a `GL₂(ℤ/n)`-torsor, and the tautological isomorphism
+over `T'` is a pair of sections `P, Q : RelPoint f p` that is a basis at
+every geometric point of `T'`.  Katz–Mazur (8.1.1) is the citation for
+rigidifying by `[Γ(n)]`-structures at `n ≥ 3`.
+
+Finite étale gives the three properties asked for: `Flat` because étale
+is flat, `QuasiCompact` because finite morphisms are affine, and
+`Surjective` because **`hfib`** says every geometric fibre of `E[n]` has
+a basis, so the `Isom`-scheme is nonempty over every geometric point.
+That last implication is the whole reason `hfib` is a hypothesis rather
+than an internal step: it is the surjectivity input.
+
+## What it does NOT owe
+
+* the production of the base-changed datum `d'` — that is the parent's
+  `hbc`, i.e. `exists_gamma0Datum_baseChange`;
+* the fibrewise structure of `E[n]` — that is `hfib`, i.e.
+  `exists_torsionBasis_geomPoint`;
+* anything about `Γ₀(N)`: the statement is about a bare abelian scheme of
+  relative dimension one, and the level structure `d.cyc` plays no part.
+
+## What this project does not have, and would have to be built
+
+There is no theory of finite locally free group schemes, no `Isom`-sheaf,
+and no representability criterion for it at this pin, in
+`Fermat/FLT/Mathlib/`, or in `~/cs/FLT`.  *The check that would refute
+this*: `grep -rn 'Isom\|IsFiniteEtale\|torsionSubscheme' Fermat/
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/ ~/cs/FLT/FLT/`.  What
+does exist and is directly usable is `AbelianSchemeStruct.mulByNat`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), which gives `[n]` as
+a morphism of schemes, so `E[n]` is constructible as the fibre product of
+`[n]` and the zero section; the missing content is its finiteness and
+flatness, and then the representability of the `Isom`-functor.
+
+## Faithfulness
+
+`hfib` is a Prop-valued hypothesis, not an under-determined structure, so
+this node cannot be false for the junk-witness reason discussed in the
+section comment above; and it is not vacuous, because `hfib` is TRUE (it
+is the statement of `exists_torsionBasis_geomPoint`).
+
+`g` is load-bearing: over a base of characteristic `p ∣ n` the kernel
+`E[n]` is not étale and the torsor does not exist.  `hdim` is
+load-bearing for the *rank* (a `2`-element basis needs relative dimension
+one).  `hn` is inherited from the parent, where it is load-bearing at
+`n = 0`. -/
+theorem exists_torsionBasis_cover_of_geomPoint (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ)
+    (hfib : ∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+      letI := ab.addCommGroup t
+      ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
+        ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      ∃ P Q : RelPoint f p,
+        ∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+          letI := ab.addCommGroup (t ≫ p)
+          ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
+            ∃! c : Fin n × Fin n,
+              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q :=
+  sorry
+
+/-- **A fibrewise basis over the cover IS a full level structure on the
+base-changed datum** (PROVEN 2026-07-27) — the transport half of the
+level-`n` torsor, and the reason the two leaves above may be stated
+without any reference to `Gamma0Datum`.
+
+`P` and `Q` are sections of `d.f` over `p`, i.e. relative points of the
+ORIGINAL datum at the base point `p : T' ⟶ T`.  The cartesian square of
+`bc` lifts each of them to a section of `d'.f` over `𝟙 T'`
+(`IsPullback.lift (𝟙 T') P.1`), which is what `FullLevelStructure` asks
+for, and `IsPullback.lift_snd` says the lift maps back to `P`.
+
+The `geom_basis` field then transports along `bc.toRelPoint`, using only
+that it is INJECTIVE and additive:
+
+* `n • x = 0 ↔ n • toRelPoint x = 0` — injectivity plus
+  `toRelPoint_nsmul` and `toRelPoint_zero`;
+* the `∃!` clauses correspond because `toRelPoint` carries
+  `c.1 • pre t _ P' + c.2 • pre t _ Q'` to
+  `c.1 • pre t rfl P + c.2 • pre t rfl Q`, the two `hP` / `hQ` steps
+  below being `Category.assoc` followed by `IsPullback.lift_snd`.
+
+Note that no *type* transport occurs anywhere: the identification
+`𝟙 T' ≫ p = p` is never needed, because the statement is phrased through
+`RelPoint.pre t rfl` on the `d`-side and `RelPoint.pre t (comp_id t)` on
+the `d'`-side, and `toRelPoint` moves the base point from `t` to `t ≫ p`
+on the nose. -/
+theorem nonempty_fullLevelStructure_of_geomBasis {N n : ℕ} {T' T : Scheme.{u}}
+    {p : T' ⟶ T} {d : Gamma0Datum N T} {d' : Gamma0Datum N T'}
+    (bc : IsBaseChangeOf p d' d) (P Q : RelPoint d.f p)
+    (hb : ∀ (K : Type u) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+        letI := d.ab.addCommGroup (t ≫ p)
+        ∀ x : RelPoint d.f (t ≫ p), n • x = 0 ↔
+          ∃! c : Fin n × Fin n,
+            x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) :
+    Nonempty (FullLevelStructure n d') := by
+  refine ⟨{ P := ⟨bc.isPullback.lift (𝟙 T') P.1 (by rw [Category.id_comp, P.2]),
+              bc.isPullback.lift_fst _ _ _⟩
+            Q := ⟨bc.isPullback.lift (𝟙 T') Q.1 (by rw [Category.id_comp, Q.2]),
+              bc.isPullback.lift_fst _ _ _⟩
+            geom_basis := ?_ }⟩
+  intro K _ _ t
+  letI := d'.ab.addCommGroup t
+  letI := d.ab.addCommGroup (t ≫ p)
+  have hP : bc.toRelPoint (RelPoint.pre t (Category.comp_id t)
+      (⟨bc.isPullback.lift (𝟙 T') P.1 (by rw [Category.id_comp, P.2]),
+        bc.isPullback.lift_fst _ _ _⟩ : RelPoint d'.f (𝟙 T')))
+      = RelPoint.pre t (rfl : t ≫ p = t ≫ p) P := by
+    refine Subtype.ext ?_
+    show (t ≫ bc.isPullback.lift (𝟙 T') P.1 _) ≫ bc.map = t ≫ P.1
+    rw [Category.assoc, bc.isPullback.lift_snd]
+  have hQ : bc.toRelPoint (RelPoint.pre t (Category.comp_id t)
+      (⟨bc.isPullback.lift (𝟙 T') Q.1 (by rw [Category.id_comp, Q.2]),
+        bc.isPullback.lift_fst _ _ _⟩ : RelPoint d'.f (𝟙 T')))
+      = RelPoint.pre t (rfl : t ≫ p = t ≫ p) Q := by
+    refine Subtype.ext ?_
+    show (t ≫ bc.isPullback.lift (𝟙 T') Q.1 _) ≫ bc.map = t ≫ Q.1
+    rw [Category.assoc, bc.isPullback.lift_snd]
+  intro x
+  have hinj := bc.toRelPoint_injective (U := Spec (CommRingCat.of K)) (u := t)
+  rw [← hinj.eq_iff, bc.toRelPoint_nsmul, bc.toRelPoint_zero t]
+  rw [hb K t (bc.toRelPoint x)]
+  constructor
+  · rintro ⟨c, hc, huniq⟩
+    refine ⟨c, ?_, ?_⟩
+    · refine hinj ?_
+      rw [bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
+      exact hc
+    · intro c' hc'
+      refine huniq c' ?_
+      rw [hc', bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
+  · rintro ⟨c, hc, huniq⟩
+    refine ⟨c, ?_, ?_⟩
+    · rw [hc, bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
+    · intro c' hc'
+      refine huniq c' (hinj ?_)
+      rw [bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
+      exact hc'
+
+/-- **The level-`n` torsor, assembled** (PROVEN 2026-07-27 from the three
+declarations above; it was a single `sorry` leaf for a few hours on the
+day it was opened) — what remains of `exists_fullLevelStructure_cover`
+once base change is supplied as the hypothesis `hbc`.
+
+## How it is proven
+
+`exists_torsionBasis_cover_of_geomPoint`, fed with
+`exists_torsionBasis_geomPoint`, produces the flat surjective
+quasi-compact `p : T' ⟶ T` and the two sections `P, Q` of `d.f` over `p`
+that are a basis of the `n`-torsion at every geometric point of `T'`.
+`hbc` — applied to that very `p` — produces `d'` together with a base
+change `bc`, and `nonempty_fullLevelStructure_of_geomBasis` turns
+`(P, Q)` into a `FullLevelStructure n d'` across `bc`.
+
+Note the order: the cover is built from `d` ALONE, and only then is `hbc`
+applied to it.  That is what makes the split legitimate — nothing in the
+torsor half needs to know which base-changed datum will eventually be
+chosen, and the transport half works for an ARBITRARY one, so no
+canonicity of `d'` is assumed anywhere.
 
 ## Faithfulness
 
@@ -1885,8 +2204,13 @@ theorem exists_fullLevelStructure_cover_of_baseChange {N : ℕ} (n : ℕ) (hn : 
     {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T) :
     ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
       AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
-      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d') :=
-  sorry
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d') := by
+  obtain ⟨T', p, hflat, hsurj, hqc, P, Q, hb⟩ :=
+    exists_torsionBasis_cover_of_geomPoint n hn d.ab d.relativeDimensionOne g
+      (fun K _ _ t => exists_torsionBasis_geomPoint n hn d.ab d.relativeDimensionOne g K t)
+  obtain ⟨d', ⟨bc⟩⟩ := hbc p d
+  exact ⟨T', p, d', hflat, hsurj, hqc, ⟨bc⟩,
+    nonempty_fullLevelStructure_of_geomBasis bc P Q hb⟩
 
 /-- **Every `Γ₀(N)`-datum over a `ℚ`-scheme acquires a full level-`n`
 structure after a faithfully flat quasi-compact base change** (sorry
