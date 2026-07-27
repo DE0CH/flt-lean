@@ -33653,7 +33653,238 @@ theorem exists_real_qCoeff_of_not_dvd {M : ℕ} (hM : 0 < M)
     (ne_zero_of_isWeightTwoEigenform hg.toIsWeightTwoEigenform)
     (heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hq)
 
-/-- **The Hasse–Weil bound at a good prime** (sorry node, ELEVENTH
+/-- **The recursion amplification lemma** (PROVEN 2026-07-27,
+THIRTEENTH decomposition): a sequence obeying the weight-two Hecke
+recursion at a good prime `q`,
+
+  `a₀ = 1`,   `a₁ = t`   (`t` REAL),   `a_{r+2} = t·a_{r+1} − q·aᵣ`,
+
+and growing no faster than `(r+1)·q^{r/2}` — with an ARBITRARY constant
+`C`, which is the entire point — satisfies `|t| ≤ 2√q`.
+
+WHY THIS IS THE USEFUL SHAPE. The TWELFTH-cut audit recorded on
+`norm_qCoeff_le_two_mul_sqrt_of_not_dvd` below rejected the recursion
+route, because the only growth bound then in hand was the TRIVIAL one
+`|aₙ| ≤ C·n`: feeding exponent `1` into the recursion gives
+`|a_q| ≤ q + 1` and stalls, since `2√q < q + 1`. That is correct about
+the trivial bound and wrong about the method — the stall is an artifact
+of the EXPONENT of the input, not of the recursion. At exponent `1/2`
+the same recursion is exactly sharp, and it is sharp with an arbitrary
+constant AND an arbitrary linear factor. So the geometric input no
+longer has to deliver the extremal constant `2` at `r = 1`, which is the
+whole difficulty of the bound as originally stated.
+
+THE ARGUMENT. Let `α, β` be the roots of `X² − tX + q`. If `|t| > 2√q`
+the discriminant is positive, so `α, β` are REAL with `αβ = q > 0` —
+hence of one sign — and `u := max(|α|,|β|) > √q`, `v := min(|α|,|β|) > 0`
+with `u + v = |t|` and `uv = q`. Normalising the sign by `ε := sign t`,
+the sequence `dᵣ := ε^r·aᵣ` is positive and obeys
+`d_{r+2} = |t|·d_{r+1} − q·dᵣ`, whence `d_{r+1} ≥ u·dᵣ` by induction —
+the step is the identity `d_{r+2} − u·d_{r+1} = v·(d_{r+1} − u·dᵣ)`,
+which is exactly where `uv = q` and `u + v = |t|` are consumed. Hence
+`‖aᵣ‖ = dᵣ ≥ u^r`, so `(u/√q)^r ≤ C·(r+1)` for every `r` with
+`u/√q > 1`: an exponential dominated by a linear function, contradiction
+(taken here at `r = 2N` via Bernoulli, so that a quadratic beats a
+linear term and no limit argument is needed).
+
+THE `(r+1)` FACTOR IS NOT DECORATION — it is what keeps the input leaf
+TRUE. When `α = β = ±√q` the exact value is `a_{q^r} = (r+1)·(±√q)^r`,
+so NO bound of the form `C·q^{r/2}` with `C` independent of `r` can hold
+in general. Stating the input without the linear factor would have made
+it a FALSE leaf; that was checked before this cut was written. -/
+theorem abs_le_two_mul_sqrt_of_forall_norm_pow_le
+    {q : ℕ} (hq0 : 0 < q) (t : ℝ) (a : ℕ → ℂ)
+    (ha0 : a 0 = 1) (ha1 : a 1 = (t : ℂ))
+    (harec : ∀ r : ℕ, a (r + 2) = (t : ℂ) * a (r + 1) - (q : ℂ) * a r)
+    (C : ℝ) (hC : ∀ r : ℕ, ‖a r‖ ≤ C * (r + 1) * Real.sqrt q ^ r) :
+    |t| ≤ 2 * Real.sqrt q := by
+  by_contra hcon
+  rw [not_le] at hcon
+  have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq0
+  have hsqpos : 0 < Real.sqrt q := Real.sqrt_pos.mpr hqR
+  have hsq2 : Real.sqrt q ^ 2 = (q : ℝ) := Real.sq_sqrt hqR.le
+  have habs0 : 0 < |t| := lt_of_le_of_lt (by positivity) hcon
+  -- the discriminant is positive
+  have hdisc : 0 < t ^ 2 - 4 * (q : ℝ) := by nlinarith [sq_abs t, hsq2, hsqpos, hcon]
+  set s : ℝ := Real.sqrt (t ^ 2 - 4 * (q : ℝ)) with hsdef
+  have hs0 : 0 < s := Real.sqrt_pos.mpr hdisc
+  have hs2 : s ^ 2 = t ^ 2 - 4 * (q : ℝ) := Real.sq_sqrt hdisc.le
+  set u : ℝ := (|t| + s) / 2 with hudef
+  set v : ℝ := (|t| - s) / 2 with hvdef
+  have huv_add : u + v = |t| := by rw [hudef, hvdef]; ring
+  have huv_mul : u * v = (q : ℝ) := by
+    rw [hudef, hvdef]; nlinarith [hs2, sq_abs t]
+  -- `s < |t|` since `|t|² − s² = 4q > 0`
+  have hslt : s < |t| := by nlinarith [hs2, sq_abs t, hs0, habs0]
+  have hv0 : 0 < v := by rw [hvdef]; linarith
+  have hu0 : 0 < u := by rw [hudef]; linarith
+  -- `u > √q`: otherwise `(u − √q)(v − √q) ≥ 0` contradicts `u + v > 2√q`
+  have hugt : Real.sqrt q < u := by
+    nlinarith [huv_mul, huv_add, hcon, hsq2, hv0, hu0, hs0]
+  -- the sign normalisation
+  set ε : ℝ := if 0 ≤ t then 1 else -1 with hepsdef
+  have heps_sq : ε * ε = 1 := by
+    rw [hepsdef]; split <;> norm_num
+  have heps_abs : ε * |t| = t := by
+    rw [hepsdef]; split <;> rename_i h
+    · rw [abs_of_nonneg h]; ring
+    · rw [abs_of_neg (not_le.mp h)]; ring
+  have heps_norm : |ε| = 1 := by rw [hepsdef]; split <;> norm_num
+  -- the two-step induction: `dᵣ > 0`, `dᵣ ≥ uʳ` and `d_{r+1} ≥ u·dᵣ`
+  have key : ∀ r : ℕ, ∃ x y : ℝ, 0 < x ∧ u ^ r ≤ x ∧ u * x ≤ y ∧
+      a r = ((ε ^ r * x : ℝ) : ℂ) ∧ a (r + 1) = ((ε ^ (r + 1) * y : ℝ) : ℂ) := by
+    intro r
+    induction r with
+    | zero =>
+        refine ⟨1, |t|, one_pos, by simp, by simpa using by linarith, ?_, ?_⟩
+        · simpa using ha0
+        · rw [show (ε ^ (0 + 1) * |t| : ℝ) = t by rw [zero_add, pow_one, heps_abs]]
+          exact ha1
+    | succ n ih =>
+        obtain ⟨x, y, hx0, hxu, hxy, hax, hay⟩ := ih
+        have hy0 : 0 < y := lt_of_lt_of_le (by positivity) hxy
+        refine ⟨y, |t| * y - (q : ℝ) * x, hy0, ?_, ?_, hay, ?_⟩
+        · calc u ^ (n + 1) = u * u ^ n := by ring
+            _ ≤ u * x := by nlinarith [hu0, hxu]
+            _ ≤ y := hxy
+        · have hid : |t| * y - (q : ℝ) * x - u * y = v * (y - u * x) := by
+            rw [← huv_add, ← huv_mul]; ring
+          nlinarith [hv0, hxy, hid]
+        · have hεn : ε ^ (n + 1 + 1) = ε ^ n := by
+            rw [pow_succ, pow_succ, mul_assoc, heps_sq, mul_one]
+          have hεn1 : ε ^ (n + 1 + 1) * |t| = ε ^ (n + 1) * t := by
+            rw [pow_succ, mul_assoc, heps_abs]
+          have hreal : (ε ^ (n + 1 + 1) * (|t| * y - (q : ℝ) * x) : ℝ)
+              = t * (ε ^ (n + 1) * y) - (q : ℝ) * (ε ^ n * x) := by
+            calc (ε ^ (n + 1 + 1) * (|t| * y - (q : ℝ) * x) : ℝ)
+                = (ε ^ (n + 1 + 1) * |t|) * y
+                    - ε ^ (n + 1 + 1) * ((q : ℝ) * x) := by ring
+              _ = (ε ^ (n + 1) * t) * y - ε ^ n * ((q : ℝ) * x) := by rw [hεn1, hεn]
+              _ = t * (ε ^ (n + 1) * y) - (q : ℝ) * (ε ^ n * x) := by ring
+          rw [harec n, hax, hay, hreal]
+          push_cast
+          ring
+  -- extract `uʳ ≤ ‖aᵣ‖`
+  have hlow : ∀ r : ℕ, u ^ r ≤ ‖a r‖ := by
+    intro r
+    obtain ⟨x, _, hx0, hxu, _, hax, _⟩ := key r
+    rw [hax, Complex.norm_real, Real.norm_eq_abs, abs_mul, abs_pow, heps_norm,
+      one_pow, one_mul, abs_of_pos hx0]
+    exact hxu
+  -- geometric growth beats the linear factor `C·(r+1)`
+  have hne : Real.sqrt q ≠ 0 := ne_of_gt hsqpos
+  set c : ℝ := u / Real.sqrt q with hcdef
+  have hratio : 1 < c := (one_lt_div hsqpos).mpr hugt
+  set d : ℝ := c - 1 with hddef
+  have hd0 : 0 < d := by rw [hddef]; linarith
+  -- `C ≥ 1`, read off at `r = 0`
+  have hCge1 : 1 ≤ C := by
+    have h0 := hC 0
+    rw [ha0, norm_one, Nat.cast_zero, zero_add, mul_one, pow_zero, mul_one] at h0
+    exact h0
+  have hcr : ∀ r : ℕ, c ^ r ≤ C * (r + 1) := by
+    intro r
+    have h3 : (0 : ℝ) < Real.sqrt q ^ r := by positivity
+    have h5 : c ^ r * Real.sqrt q ^ r = u ^ r := by
+      rw [hcdef, ← mul_pow]; congr 1; field_simp
+    refine le_of_mul_le_mul_right ?_ h3
+    rw [h5]
+    exact le_trans (hlow r) (hC r)
+  -- pick `N` so large that the quadratic beats the linear term
+  obtain ⟨N, hN⟩ := exists_nat_ge (3 * C / d ^ 2 + 1)
+  have hd2 : (0 : ℝ) < d ^ 2 := by positivity
+  have hfrac : (0 : ℝ) ≤ 3 * C / d ^ 2 := div_nonneg (by linarith) hd2.le
+  have hN1 : (1 : ℝ) ≤ (N : ℝ) := le_trans (by linarith) hN
+  have hNd : 3 * C ≤ (N : ℝ) * d ^ 2 := by
+    have h := mul_le_mul_of_nonneg_right hN hd2.le
+    rw [show (3 * C / d ^ 2 + 1) * d ^ 2 = 3 * C + d ^ 2 by field_simp] at h
+    linarith
+  have hbern : 1 + (N : ℝ) * d ≤ c ^ N := by
+    have h := one_add_mul_le_pow (a := d) (by linarith) N
+    rwa [show (1 : ℝ) + d = c by rw [hddef]; ring] at h
+  have hApos : (0 : ℝ) ≤ 1 + (N : ℝ) * d := by positivity
+  have hsq : (1 + (N : ℝ) * d) ^ 2 ≤ (c ^ N) ^ 2 := by
+    rw [pow_two, pow_two]
+    exact mul_self_le_mul_self hApos hbern
+  have h2N : (c ^ N) ^ 2 = c ^ (2 * N) := by rw [← pow_mul, mul_comm]
+  have hup : c ^ (2 * N) ≤ C * (2 * (N : ℝ) + 1) := by
+    have h := hcr (2 * N)
+    push_cast at h
+    linarith
+  have hchain : (1 + (N : ℝ) * d) ^ 2 ≤ C * (2 * (N : ℝ) + 1) := by
+    rw [h2N] at hsq; linarith
+  have hexp : (1 + (N : ℝ) * d) ^ 2 = 1 + 2 * ((N : ℝ) * d) + ((N : ℝ) * d) ^ 2 := by
+    ring
+  have hexp2 : C * (2 * (N : ℝ) + 1) = 2 * (C * (N : ℝ)) + C := by ring
+  have hA : 3 * (C * (N : ℝ)) ≤ ((N : ℝ) * d) ^ 2 := by
+    have h := mul_le_mul_of_nonneg_left hNd (by linarith : (0 : ℝ) ≤ (N : ℝ))
+    calc 3 * (C * (N : ℝ)) = (N : ℝ) * (3 * C) := by ring
+      _ ≤ (N : ℝ) * ((N : ℝ) * d ^ 2) := h
+      _ = ((N : ℝ) * d) ^ 2 := by ring
+  have hCN : C ≤ C * (N : ℝ) := by
+    calc C = C * 1 := by ring
+      _ ≤ C * (N : ℝ) := mul_le_mul_of_nonneg_left hN1 (by linarith)
+  have hNdpos : (0 : ℝ) < (N : ℝ) * d := mul_pos (by linarith) hd0
+  linarith [hchain, hexp, hexp2, hA, hCN, hNdpos]
+
+/-- **The crude Weil bound along the powers of a good prime** (sorry
+node, THIRTEENTH decomposition 2026-07-27 — the geometric residue of
+`norm_qCoeff_le_two_mul_sqrt_of_not_dvd` below, which is now PROVEN over
+it): at `q ∤ M` the coefficients `a_{q^r}` of a weight-two newform grow
+no faster than `q^{r/2}`, up to an arbitrary constant and a linear
+factor.
+
+WHAT THIS BUYS, AND WHY THE CUT IS NOT CIRCULAR. The consumer is the
+SHARP inequality `|a_q| ≤ 2√q`, which is this statement at `r = 1` with
+the extremal constant. This leaf is a GROWTH RATE, and it is strictly
+weaker at every single `r` — at `r = 1` it asserts only
+`|a_q| ≤ 2C√q`, which for `C > 1` says less than the consumer. The sharp
+constant is recovered from the growth rate by
+`abs_le_two_mul_sqrt_of_forall_norm_pow_le` above, which is elementary
+and PROVEN. So the geometry is no longer asked for an extremal constant
+at one prime; it is asked for an exponent, which is what a point count
+actually produces.
+
+WHY THAT IS THE RIGHT TARGET FOR THE GEOMETRY. Classically the input is
+Eichler–Shimura plus Weil: `a_{q^r} = Σ_{j≤r} αʲ·β^{r−j}` with
+`|α| = |β| = √q`, which gives this bound with `C = 1` immediately. The
+Stepanov–Bombieri route, however, reaches the Weil bound through point
+counts `|#X(𝔽_{q^s}) − q^s − 1| ≤ 2g·q^{s/2}`, whose natural output is a
+growth rate carrying the constant `2g` — NOT a sharp constant at a
+single prime. This leaf is deliberately stated in the shape that route
+produces.
+
+STILL MISSING, and this leaf does not pretend otherwise: an integral
+model of `X₀(M)` with good reduction at `q ∤ M` (Igusa), the
+Eichler–Shimura relation in its geometric form, and the Weil bound for
+curves over `𝔽_q`. The THIRTEENTH cut does not touch any of those; it
+removes only the extremal-constant extraction from the geometric
+obligation.
+
+WHERE THE WEIL BOUND IS BEING BUILT, AND THAT IT IS REACHABLE FROM HERE
+(checked 2026-07-27; this is the load-bearing coordination fact). A
+Stepanov–Bombieri development is in flight in
+`Modularity/KhareWintenberger.lean`, beneath
+`exists_bound_forall_zmodSolvable_of_irreducibleFibre`, for the
+Lang–Weil needs of Khare–Wintenberger. **That file is UPSTREAM of this
+one** — `Interface.lean` imports it directly — so whatever curve-level
+Weil bound lands there is usable at this leaf with no shared module
+above the two, and no second Weil development is needed. The refutable
+form of that claim, which costs one grep: if
+`grep -n 'import Fermat.FLT.Modularity.KhareWintenberger'
+Fermat/FLT/Modularity/Interface.lean` ever returns empty, this paragraph
+is wrong. Two independent Weil developments are the most expensive
+duplication available in this tree; the owner of this leaf should
+consume that one rather than start over. -/
+theorem exists_const_norm_qCoeff_prime_pow_le {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
+    ∃ C : ℝ, ∀ r : ℕ,
+      ‖qCoeff M g (q ^ r)‖ ≤ C * (r + 1) * Real.sqrt q ^ r :=
+  sorry
+
+/-- **The Hasse–Weil bound at a good prime** (PROVEN 2026-07-27 over
+`exists_const_norm_qCoeff_prime_pow_le`; ELEVENTH
 decomposition 2026-07-26 — the other half of
 `exists_frobRoots_qCoeff_of_not_dvd` below, and the genuinely DEEP one):
 at a prime `q ∤ M` the `q`-th coefficient of a normalized weight-two
@@ -33669,13 +33900,29 @@ the Hasse–Weil bound `|#X₀(M)(𝔽_q) − q − 1| ≤ 2g√q`. For weight t
 is a THEOREM, not the Ramanujan–Petersson conjecture — Deligne is needed
 only for `k > 2`.
 
-This is the irreducible citation of the good case. Everything else in
+This bound is the deep input of the good case. Everything else in
 `exists_frobRoots_qCoeff_of_not_dvd` — that the splitting exists at all,
 that the two roots are conjugate, and that their product is `q` — is
 elementary algebra over this bound plus realness, and is PROVEN below.
 
 Missing from the pin: Weil RH for curves, the good reduction of `X₀(M)`
 at `q ∤ M` (Igusa), and the Eichler–Shimura relation.
+
+THE TWELFTH-CUT AUDIT BELOW IS SUPERSEDED (2026-07-27, THIRTEENTH cut).
+It is retained because its Route-1 analysis is still correct and still
+worth reading, and because the way its Route-2 analysis fails is
+instructive. **Route 2 does close**, and this leaf is now PROVEN over
+`exists_const_norm_qCoeff_prime_pow_le` above by the elementary
+`abs_le_two_mul_sqrt_of_forall_norm_pow_le`. The audit rejected the
+recursion route after feeding it the TRIVIAL coefficient bound
+`|a_n| ≤ C·n`, which indeed stalls at `|a_q| ≤ q + 1`; but the stall is
+an artifact of the EXPONENT of the input, not of the recursion. Fed a
+bound of exponent `1/2` — with an arbitrary constant and an arbitrary
+linear factor, so strictly weaker than this leaf at every `r` — the same
+recursion is exactly sharp. The AXIS the audit searched was "what can be
+derived from the coefficient bounds already in hand"; the axis it did
+not search was "what is the WEAKEST growth input from which the sharp
+constant can be recovered". See the two declarations above.
 
 WHY A FURTHER CUT IS NOT AVAILABLE HERE (2026-07-26, TWELFTH cut, after
 the sibling `exists_real_qCoeff_of_not_dvd` was closed and this one was
@@ -33741,8 +33988,20 @@ that reason. -/
 theorem norm_qCoeff_le_two_mul_sqrt_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
-    ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q :=
-  sorry
+    ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q := by
+  obtain ⟨t, ht⟩ := exists_real_qCoeff_of_not_dvd hM g hg hq hqM
+  obtain ⟨C, hCbd⟩ := exists_const_norm_qCoeff_prime_pow_le hM g hg hq hqM
+  have hbound : |t| ≤ 2 * Real.sqrt q := by
+    refine abs_le_two_mul_sqrt_of_forall_norm_pow_le hq.pos t
+      (fun r => qCoeff M g (q ^ r)) ?_ ?_ ?_ C hCbd
+    · rw [pow_zero]
+      exact hg.toIsWeightTwoEigenform.qCoeff_one
+    · rw [pow_one]
+      exact ht
+    · intro r
+      rw [hg.toIsWeightTwoEigenform.qCoeff_prime_pow_of_not_dvd q hq hqM r, ht]
+  rw [ht, Complex.norm_real, Real.norm_eq_abs]
+  exact hbound
 
 /-- **The conjugate splitting, as pure algebra** (PROVEN 2026-07-26,
 ELEVENTH decomposition): a REAL number `r` with `|r| ≤ 2√q` is the sum of
