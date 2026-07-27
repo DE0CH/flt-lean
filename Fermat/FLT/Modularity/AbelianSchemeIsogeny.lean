@@ -74,6 +74,14 @@ public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
 public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.AlgebraicGeometry.Pullbacks
+-- `IsFinite`, `LocallyQuasiFinite` and `IsFinite.of_isProper_of_locallyQuasiFinite`
+-- (Zariski's main theorem), for the shearing reduction below.  These add NOTHING to
+-- any downstream cone: the module's only consumer, `Modularity/TateModule.lean`,
+-- already `public import`s all three (checked 2026-07-27,
+-- `grep -rn "import Fermat.FLT.Modularity.AbelianSchemeIsogeny" Fermat/`).
+public import Mathlib.AlgebraicGeometry.Morphisms.Finite
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import Mathlib.Topology.Connected.Clopen
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
@@ -967,58 +975,437 @@ theorem finite_preimage_mulByNat_of_field_prime_to_char {X : Scheme.{u}}
     (n : ℕ) (hn : (n : K) ≠ 0) (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
   sorry
 
-/-- **`[p]` has finite fibres in characteristic `p`** (sorry leaf — the
-theorem of the cube; this is the irreducible residue).
+section ShearReduction
 
-The other half of the old `finite_preimage_mulByNat_of_field`, split out
-2026-07-27, and the ONLY place in this file where ample line bundles are
-genuinely needed.
+-- `_root_.` is not optional: a bare `open Limits` inside `namespace Fermat` would
+-- bind to a nested `Fermat.Limits` if one is ever declared.  The file already
+-- opens `Limits` this way in its two earlier sections.
+open _root_.CategoryTheory.Limits
 
-**Why the cheap route dies here.**  The Lie-algebra argument that proves
-`finite_preimage_mulByNat_of_field_prime_to_char` computes `d[n] = n · id`;
-at `n = p = ringChar K` that is ZERO, so `[p]` is not unramified and the
-argument says nothing.  `[p]` really is inseparable — its kernel contains
-`ker F` for the relative Frobenius `F`, an infinitesimal group scheme — so
-this is a limitation of the mathematics, not of the write-up.
+/-! ### The shearing reduction: ALL fibres of `[n]` from the ONE fibre `ker[n]`
 
-**What a prover has to supply.**  Fibrewise this is "`ker[p]` is a finite
-group scheme", classically "`[p]` is an isogeny", of degree `p^{2g}`.  Two
-classical proofs, both blocked at this pin:
+(Added 2026-07-27, while proving `finite_preimage_mulByNat_of_field_char`.)
+
+Everything in this block is PROVEN and **cube-free**, and it is stated for an
+arbitrary base `S` — there is no field, no characteristic and no smoothness in
+it.  It replaces the "all fibres of `[n]`" problem by the ONE statement the
+literature actually proves, namely that `[n]` is an ISOGENY:
+
+  `ker[n] ⟶ S` is a FINITE morphism.
+
+The argument is the classical one, and it is worth recording because it is
+*not* the theorem of the cube:
+
+1. `finite_preimage_of_finite_preimage_pullback_fst` — pure scheme theory.
+   For ANY `h : X ⟶ Y`, finite fibres of `pullback.fst h h` give finite fibres
+   of `h`.  Reason: given `u, v` with `h u = h v`, `Scheme.Pullback.exists_preimage_pullback`
+   produces a point of `X ×_Y X` over the pair `(u, v)` — the map from the
+   carrier of a fibre product ONTO the set-theoretic fibre product is
+   surjective, because `κ(u) ⊗_{κ(h u)} κ(v)` is a nonzero ring.  So
+   `pullback.snd` maps the (finite) fibre of `pullback.fst` over `u` ONTO
+   `h ⁻¹' {h u}`.
+
+2. `kerShear` — the shearing morphism `A ×_{[n], A, [n]} A ⟶ A ×_S ker[n]`,
+   `(u, v) ↦ (u, v - u)`, written directly on relative points: `v - u` is a
+   relative point of `f` over `A ×_{[n]} A`, and `nsmul_val` turns
+   `[n] ∘ v = [n] ∘ u` into `n • (v - u) = 0`, i.e. `v - u` factors through
+   `ker[n]`.  `kerUnshear` is `(u, k) ↦ (u, u + k)` and
+   `kerShear_unshear` says `kerShear ≫ kerUnshear = 𝟙`, so `kerShear` is
+   injective on points — which is all that is needed.  Only ONE round trip is
+   proven; the other is not required and is not claimed.
+
+3. `pullback.fst f (ker[n] ⟶ S)` is the base change of `ker[n] ⟶ S`, hence
+   finite when that is, hence has finite fibres.  Composing (2) and (1) gives
+   `finite_preimage_mulByNat_of_isFinite_ker`.
+
+`isFinite_ker_mulByNat_of_finite_preimage` is a convenience bridge in the other
+direction: since `[n]` is proper (`isProper_mulByNat`) and locally of finite
+type (`locallyOfFiniteType_mulByNat`), so is `ker[n] ⟶ S`, and Zariski's main
+theorem (`IsFinite.of_isProper_of_locallyQuasiFinite`) upgrades "every fibre of
+`ker[n] ⟶ S` is a finite SET" to "`ker[n] ⟶ S` is a finite MORPHISM".  A prover
+of the residual leaf therefore only ever has to exhibit a finite point set —
+over a field, a single one.
+
+**This block is `n`-generic and characteristic-blind.**  It applies verbatim to
+the prime-to-characteristic sibling `finite_preimage_mulByNat_of_field_prime_to_char`
+and to the arbitrary-base `finite_preimage_mulByNat`.  Those have their own
+owners and are deliberately NOT touched here; this note is so the next owner
+sees the shared route.
+-/
+
+/-- **Finite fibres descend from `pullback.fst h h` to `h`** (PROVEN
+2026-07-27).  General scheme theory, no group structure and no hypotheses on
+`h` whatever.
+
+The point is that the carrier of `X ×_Y X` surjects onto the set-theoretic
+fibre product of the carriers (`Scheme.Pullback.exists_preimage_pullback`,
+which is where the nonvanishing of `κ(u) ⊗_{κ(s)} κ(v)` is used).  So for `u`
+in the fibre of `h` over `y`, the whole fibre `h ⁻¹' {y}` is the image under
+`pullback.snd h h` of the fibre of `pullback.fst h h` over `u`. -/
+theorem finite_preimage_of_finite_preimage_pullback_fst {X Y : Scheme.{u}} (h : X ⟶ Y)
+    (H : ∀ x : X, (⇑(pullback.fst h h) ⁻¹' {x}).Finite) (y : Y) :
+    (⇑h ⁻¹' {y}).Finite := by
+  rcases Set.eq_empty_or_nonempty (⇑h ⁻¹' {y}) with he | ⟨u, hu⟩
+  · rw [he]; exact Set.finite_empty
+  · refine ((H u).image ⇑(pullback.snd h h)).subset ?_
+    intro v hv
+    simp only [Set.mem_preimage, Set.mem_singleton_iff] at hu hv
+    obtain ⟨z, hz1, hz2⟩ :=
+      Scheme.Pullback.exists_preimage_pullback (f := h) (g := h) u v (hu.trans hv.symm)
+    exact ⟨z, by simpa using hz1, hz2⟩
+
+namespace AbelianSchemeStruct
+
+variable (ab : AbelianSchemeStruct f) (n : ℕ)
+
+/-- Both projections of `A ×_{[n], A, [n]} A` lie over the same point of `S`,
+because `[n]` is a morphism over `S`. -/
+theorem pullbackSnd_comp_structure :
+    pullback.snd (ab.mulByNat n) (ab.mulByNat n) ≫ f
+      = pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f := by
+  calc pullback.snd (ab.mulByNat n) (ab.mulByNat n) ≫ f
+      = pullback.snd (ab.mulByNat n) (ab.mulByNat n) ≫ (ab.mulByNat n ≫ f) := by
+        rw [ab.mulByNat_comp]
+    _ = (pullback.snd (ab.mulByNat n) (ab.mulByNat n) ≫ ab.mulByNat n) ≫ f :=
+        (Category.assoc _ _ _).symm
+    _ = (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ ab.mulByNat n) ≫ f := by
+        rw [pullback.condition]
+    _ = pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ (ab.mulByNat n ≫ f) :=
+        Category.assoc _ _ _
+    _ = pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f := by rw [ab.mulByNat_comp]
+
+/-- **The structure morphism of `ker[n] = A ×_{[n], A, e} S`**: the inclusion
+`ker[n] ⟶ A` followed by `f` is the second projection.  Uses only
+`mulByNat_comp` and `zeroSection_comp`. -/
+theorem kerι_comp_structure :
+    pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f
+      = pullback.snd (ab.mulByNat n) ab.zeroSection := by
+  calc pullback.fst (ab.mulByNat n) ab.zeroSection ≫ f
+      = pullback.fst (ab.mulByNat n) ab.zeroSection ≫ (ab.mulByNat n ≫ f) := by
+        rw [ab.mulByNat_comp]
+    _ = (pullback.fst (ab.mulByNat n) ab.zeroSection ≫ ab.mulByNat n) ≫ f :=
+        (Category.assoc _ _ _).symm
+    _ = (pullback.snd (ab.mulByNat n) ab.zeroSection ≫ ab.zeroSection) ≫ f := by
+        rw [pullback.condition]
+    _ = pullback.snd (ab.mulByNat n) ab.zeroSection ≫ (ab.zeroSection ≫ f) :=
+        Category.assoc _ _ _
+    _ = pullback.snd (ab.mulByNat n) ab.zeroSection := by
+        rw [ab.zeroSection_comp, Category.comp_id]
+
+/-- The first projection of `A ×_{[n], A, [n]} A`, read as a relative point. -/
+noncomputable def shearFst :
+    RelPoint f (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f) :=
+  ⟨pullback.fst (ab.mulByNat n) (ab.mulByNat n), rfl⟩
+
+/-- The second projection of `A ×_{[n], A, [n]} A`, read as a relative point. -/
+noncomputable def shearSnd :
+    RelPoint f (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f) :=
+  ⟨pullback.snd (ab.mulByNat n) (ab.mulByNat n), ab.pullbackSnd_comp_structure n⟩
+
+/-- The difference `q₂ - q₁` of the two projections, as a relative point.
+Written with `ab.add`/`ab.neg` rather than `-` so that the definition carries
+no `letI`. -/
+noncomputable def shearDiff :
+    RelPoint f (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f) :=
+  ab.add (ab.shearSnd n) (ab.neg (ab.shearFst n))
+
+theorem shearDiff_eq_sub :
+    letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+    ab.shearDiff n = ab.shearSnd n - ab.shearFst n := rfl
+
+/-- **`n • (q₂ - q₁) = 0`**: this is `pullback.condition` read through
+`nsmul_val`, and it is the whole reason the shearing lands in `ker[n]`. -/
+theorem nsmul_shearDiff_eq_zero :
+    letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+    n • ab.shearDiff n = 0 := by
+  letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+  rw [ab.shearDiff_eq_sub n, smul_sub, sub_eq_zero]
+  refine Subtype.ext ?_
+  rw [ab.nsmul_val, ab.nsmul_val]
+  exact pullback.condition.symm
+
+/-- `(q₂ - q₁) ≫ [n]` is the zero section: the difference factors through
+`ker[n]`. -/
+theorem shearDiff_comp_mulByNat :
+    (ab.shearDiff n).1 ≫ ab.mulByNat n
+      = (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f) ≫ ab.zeroSection := by
+  letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+  rw [← ab.nsmul_val n (ab.shearDiff n), ab.nsmul_shearDiff_eq_zero n]
+  exact ab.zero_val _
+
+/-- **The shearing morphism** `A ×_{[n], A, [n]} A ⟶ A ×_S ker[n]`,
+`(u, v) ↦ (u, v - u)`. -/
+noncomputable def kerShear :
+    pullback (ab.mulByNat n) (ab.mulByNat n) ⟶
+      pullback f (pullback.snd (ab.mulByNat n) ab.zeroSection) :=
+  pullback.lift (pullback.fst (ab.mulByNat n) (ab.mulByNat n))
+    (pullback.lift (ab.shearDiff n).1 (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+      (ab.shearDiff_comp_mulByNat n))
+    (pullback.lift_snd _ _ _).symm
+
+/-- The shearing is the identity in the `A`-coordinate — the fact that makes
+it useful for comparing fibres of the two first projections. -/
+theorem kerShear_fst :
+    ab.kerShear n ≫ pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+      = pullback.fst (ab.mulByNat n) (ab.mulByNat n) := by
+  simp only [kerShear]
+  exact pullback.lift_fst _ _ _
+
+theorem kerShear_snd_fst :
+    ab.kerShear n ≫ pullback.snd f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+        ≫ pullback.fst (ab.mulByNat n) ab.zeroSection
+      = (ab.shearDiff n).1 := by
+  rw [← Category.assoc]
+  simp only [kerShear]
+  rw [pullback.lift_snd]
+  exact pullback.lift_fst _ _ _
+
+/-- The first projection of `A ×_S ker[n]`, as a relative point. -/
+noncomputable def unshearFst :
+    RelPoint f (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f) :=
+  ⟨pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection), rfl⟩
+
+/-- The `ker[n]`-component of `A ×_S ker[n]`, read as a relative point of `A`. -/
+noncomputable def unshearSnd :
+    RelPoint f (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f) :=
+  ⟨pullback.snd f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+      ≫ pullback.fst (ab.mulByNat n) ab.zeroSection, by
+    rw [Category.assoc, ab.kerι_comp_structure n]
+    exact pullback.condition.symm⟩
+
+/-- **A point of `ker[n]` is killed by `n`** — by construction, but this is
+the form the shearing needs. -/
+theorem nsmul_unshearSnd_eq_zero :
+    letI := ab.addCommGroup (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f)
+    n • ab.unshearSnd n = 0 := by
+  letI := ab.addCommGroup (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f)
+  refine Subtype.ext ?_
+  rw [ab.nsmul_val]
+  have hz : ((0 : RelPoint f
+      (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f))).1
+      = (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f) ≫ ab.zeroSection :=
+    ab.zero_val _
+  rw [hz]
+  show (pullback.snd f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+      ≫ pullback.fst (ab.mulByNat n) ab.zeroSection) ≫ ab.mulByNat n = _
+  rw [Category.assoc, pullback.condition (f := ab.mulByNat n) (g := ab.zeroSection),
+    ← Category.assoc, ← pullback.condition, Category.assoc]
+
+/-- **The inverse shearing** `A ×_S ker[n] ⟶ A ×_{[n], A, [n]} A`,
+`(u, k) ↦ (u, u + k)`.  It lands in the fibre product because `n • k = 0`. -/
+noncomputable def kerUnshear :
+    pullback f (pullback.snd (ab.mulByNat n) ab.zeroSection) ⟶
+      pullback (ab.mulByNat n) (ab.mulByNat n) :=
+  pullback.lift (ab.unshearFst n).1 (ab.add (ab.unshearFst n) (ab.unshearSnd n)).1 (by
+    letI := ab.addCommGroup (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f)
+    have h : n • (ab.unshearFst n) = n • (ab.unshearFst n + ab.unshearSnd n) := by
+      rw [smul_add, ab.nsmul_unshearSnd_eq_zero, add_zero]
+    have h2 := congrArg Subtype.val h
+    rwa [ab.nsmul_val, ab.nsmul_val] at h2)
+
+theorem kerUnshear_fst :
+    ab.kerUnshear n ≫ pullback.fst (ab.mulByNat n) (ab.mulByNat n) = (ab.unshearFst n).1 := by
+  simp only [kerUnshear]
+  exact pullback.lift_fst _ _ _
+
+theorem kerUnshear_snd :
+    ab.kerUnshear n ≫ pullback.snd (ab.mulByNat n) (ab.mulByNat n)
+      = (ab.add (ab.unshearFst n) (ab.unshearSnd n)).1 := by
+  simp only [kerUnshear]
+  exact pullback.lift_snd _ _ _
+
+/-- **`kerShear` is a split monomorphism**: `(u, v) ↦ (u, v - u) ↦ (u, u + (v - u))`
+is the identity.  Only this round trip is proven — injectivity on points is all
+the fibre comparison needs — and the naturality axiom `pre_add` is what turns
+the computation into the group identity `u + (v - u) = v`. -/
+theorem kerShear_kerUnshear : ab.kerShear n ≫ ab.kerUnshear n = 𝟙 _ := by
+  letI := ab.addCommGroup (pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f)
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, ab.kerUnshear_fst n, Category.id_comp]
+    show ab.kerShear n ≫ pullback.fst f _ = _
+    exact ab.kerShear_fst n
+  · rw [Category.assoc, ab.kerUnshear_snd n, Category.id_comp]
+    have hg : ab.kerShear n ≫ (pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection) ≫ f)
+        = pullback.fst (ab.mulByNat n) (ab.mulByNat n) ≫ f := by
+      rw [← Category.assoc, ab.kerShear_fst n]
+    have key := ab.pre_add (ab.kerShear n) hg (ab.unshearFst n) (ab.unshearSnd n)
+    have h1 : RelPoint.pre (ab.kerShear n) hg (ab.unshearFst n) = ab.shearFst n :=
+      Subtype.ext (ab.kerShear_fst n)
+    have h2 : RelPoint.pre (ab.kerShear n) hg (ab.unshearSnd n) = ab.shearDiff n :=
+      Subtype.ext (by
+        show ab.kerShear n ≫ (pullback.snd f (pullback.snd (ab.mulByNat n) ab.zeroSection)
+            ≫ pullback.fst (ab.mulByNat n) ab.zeroSection) = _
+        exact ab.kerShear_snd_fst n)
+    rw [h1, h2] at key
+    have h3 : ab.add (ab.shearFst n) (ab.shearDiff n) = ab.shearSnd n := by
+      show ab.shearFst n + ab.shearDiff n = ab.shearSnd n
+      rw [ab.shearDiff_eq_sub n, add_sub_cancel]
+    exact congrArg Subtype.val (key.trans h3)
+
+/-- **ZMT bridge**: `ker[n] ⟶ S` is a FINITE MORPHISM as soon as each of its
+fibres is a finite SET (PROVEN 2026-07-27).
+
+`[n]` is proper and locally of finite type, hence so is its base change
+`ker[n] ⟶ S`; `LocallyQuasiFinite.of_finite_preimage_singleton` then gives
+quasi-finiteness and `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's
+main theorem) upgrades it.  Over a field the hypothesis is a single finite
+point set — the classical "`ker[n]` is zero-dimensional". -/
+theorem isFinite_ker_mulByNat_of_finite_preimage
+    (H : ∀ s : S, (⇑(pullback.snd (ab.mulByNat n) ab.zeroSection) ⁻¹' {s}).Finite) :
+    IsFinite (pullback.snd (ab.mulByNat n) ab.zeroSection) := by
+  haveI : IsProper (ab.mulByNat n) := ab.isProper_mulByNat n
+  haveI : LocallyOfFiniteType (ab.mulByNat n) := ab.locallyOfFiniteType_mulByNat n
+  haveI : LocallyQuasiFinite (pullback.snd (ab.mulByNat n) ab.zeroSection) :=
+    LocallyQuasiFinite.of_finite_preimage_singleton _ H
+  exact IsFinite.of_isProper_of_locallyQuasiFinite _
+
+/-- **EVERY fibre of `[n]` is finite as soon as `ker[n] ⟶ S` is a finite
+morphism** (PROVEN 2026-07-27) — i.e. as soon as `[n]` is an ISOGENY.
+
+Cube-free, `n`-generic, characteristic-blind, and stated over an ARBITRARY
+base `S`.  This is the reduction described in the section header: shear
+`A ×_{[n], A, [n]} A` onto `A ×_S ker[n]`, note that the first projection of
+the latter is a base change of `ker[n] ⟶ S` and so has finite fibres, and then
+descend along `finite_preimage_of_finite_preimage_pullback_fst`. -/
+theorem finite_preimage_mulByNat_of_isFinite_ker
+    (hker : IsFinite (pullback.snd (ab.mulByNat n) ab.zeroSection)) (a : A) :
+    (⇑(ab.mulByNat n) ⁻¹' {a}).Finite := by
+  haveI := hker
+  refine finite_preimage_of_finite_preimage_pullback_fst (ab.mulByNat n) (fun x => ?_) a
+  have hQ : (⇑(pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection)) ⁻¹' {x}).Finite :=
+    Scheme.Hom.finite_preimage_singleton _ x
+  have hinj : Function.Injective ⇑(ab.kerShear n) := by
+    intro c d hcd
+    have h1 : (ab.kerShear n ≫ ab.kerUnshear n) c = (ab.kerShear n ≫ ab.kerUnshear n) d := by
+      rw [Scheme.Hom.comp_apply, Scheme.Hom.comp_apply, hcd]
+    rw [ab.kerShear_kerUnshear n] at h1
+    simpa using h1
+  have hset : (⇑(pullback.fst (ab.mulByNat n) (ab.mulByNat n)) ⁻¹' {x})
+      = ⇑(ab.kerShear n) ⁻¹'
+        (⇑(pullback.fst f (pullback.snd (ab.mulByNat n) ab.zeroSection)) ⁻¹' {x}) := by
+    ext z
+    simp only [Set.mem_preimage, Set.mem_singleton_iff]
+    rw [← ab.kerShear_fst n, Scheme.Hom.comp_apply]
+  rw [hset]
+  exact hQ.preimage hinj.injOn
+
+end AbelianSchemeStruct
+
+/-- **`ker[p]` has FINITELY MANY POINTS in characteristic `p`** (sorry leaf —
+the theorem of the cube; this is the irreducible residue, cut down 2026-07-27
+from `finite_preimage_mulByNat_of_field_char`).
+
+`Spec K` has a single point, so this is one finite set: the underlying space of
+`ker[p]` is finite, i.e. `ker[p]` is zero-dimensional.  That is the weakest
+form the residue can be put in, and it is deliberately the form the leaf is
+stated in — everything else on the route (properness, Zariski's main theorem,
+the shearing) is proven above, so a prover here owes ONLY the dimension
+statement.
+
+For the mathematics — why `d[p] = 0` kills the cheap route, the two classical
+cube proofs, and the verified survey of what is missing from the pin — see
+`isFinite_ker_mulByNat_of_field_char` just below, which is the consumer. -/
+theorem finite_ker_mulByNat_of_field_char {X : Scheme.{u}}
+    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
+    ∀ s : Spec K, (⇑(pullback.snd (ab.mulByNat p) ab.zeroSection) ⁻¹' {s}).Finite :=
+  sorry
+
+/-- **`ker[p]` is a finite group scheme in characteristic `p`** — equivalently,
+`[p]` is an ISOGENY (PROVEN 2026-07-27 over `finite_ker_mulByNat_of_field_char`,
+through the Zariski's-main-theorem bridge `isFinite_ker_mulByNat_of_finite_preimage`).
+
+**What changed.**  The old leaf asked for finiteness of EVERY fibre of `[p]`.
+The shearing block above proves — cube-free and over an arbitrary base — that
+all fibres are finite as soon as this ONE fibre is
+(`finite_preimage_mulByNat_of_isFinite_ker`).  So the whole residue became the
+single statement every textbook actually proves: `ker[p]` is finite, of order
+`p^{2g}`; and by `isFinite_ker_mulByNat_of_finite_preimage` even that is
+reduced to a bare POINT SET being finite, which is the leaf
+`finite_ker_mulByNat_of_field_char` above.  The chain from there to
+`finite_preimage_mulByNat_of_field_char` is entirely proven.
+
+**So the honest remaining content is "`ker[p]` is zero-dimensional"** —
+properness, Zariski's main theorem and the shearing supply everything else.
+
+**Why this is still the cube, and why the cheap route dies here.**  The
+Lie-algebra argument that proves the sibling
+`finite_preimage_mulByNat_of_field_prime_to_char` computes `d[n] = n · id`; at
+`n = p = ringChar K` that is ZERO, so `[p]` is not unramified and the argument
+says nothing.  `[p]` really is inseparable — its kernel contains `ker F` for the
+relative Frobenius `F`, an infinitesimal group scheme — so this is a limitation
+of the mathematics, not of the write-up.  Two classical proofs, both blocked at
+this pin:
 
 * Mumford *Abelian Varieties* §6, Application 2 of the theorem of the cube:
-  take a symmetric ample `L`, use `[p]^* L ≅ L^{p²}`, again ample for
-  `p ≠ 0`, and conclude that a morphism pulling an ample bundle back to an
-  ample bundle is quasi-finite.
-* `[p] = V ∘ F`, with `F` the relative Frobenius (finite, and a
-  homeomorphism on underlying spaces) and `V` the Verschiebung.  `V` is
-  constructed by duality, so this route needs `Pic⁰` and the dual abelian
-  variety.
+  take a symmetric ample `L`, use `[p]^* L ≅ L^{p²}`, again ample for `p ≠ 0`;
+  then `[p]^* L` is ample and trivial on `ker[p]`, which forces `ker[p]` to be
+  zero-dimensional.
+* `[p] = V ∘ F`, with `F` the relative Frobenius (finite, and a homeomorphism
+  on underlying spaces) and `V` the Verschiebung.  `V` is constructed by
+  duality, so this route needs `Pic⁰` and the dual abelian variety.
 
-**MISSING MACHINERY at this pin, each claim refutable by one grep.**
-`grep -rl Ample Mathlib/AlgebraicGeometry/` returns NOTHING: there are no
-ample line bundles (the only `Ample` in mathlib is
-`Analysis/Convex/AmpleSet.lean`), no Picard scheme or functor
-(`grep -rli picard Mathlib/AlgebraicGeometry/` is empty — the only `Picard`
-in mathlib is `RingTheory/PicardGroup.lean`, which is about modules), and no
-theorem of the cube.  There is also no Cohen–Macaulay theory
-(`grep -rl CohenMacaulay Mathlib/` is empty), which is what blocks the
-miracle-flatness route used by the sibling `flat_mulByNat`.  The claim that
-mathlib has "no notion of the dimension of a scheme" is STALE in one
-respect: `topologicalKrullDim` applies to a scheme's space and
-`Mathlib/AlgebraicGeometry/Artinian.lean` carries
-`IsLocallyArtinian.of_topologicalKrullDim_le_zero`, so "`ker[p]` is
-zero-dimensional" IS expressible; what is missing is any way to PROVE it.
+**MISSING MACHINERY at this pin, each claim refutable by one grep** (re-verified
+2026-07-27 against the worktree's own `.lake/packages/mathlib`).
+`grep -rl Ample Mathlib/AlgebraicGeometry/` returns NOTHING: there are no ample
+line bundles (the only `Ample` in mathlib is `Analysis/Convex/AmpleSet.lean`).
+`grep -rli picard Mathlib/AlgebraicGeometry/` returns only
+`EllipticCurve/Weierstrass.lean`: there is no Picard scheme or functor
+(`RingTheory/PicardGroup.lean` is about modules).
+`grep -rlie "line bundle\|invertible sheaf\|InvertibleSheaf" Mathlib/AlgebraicGeometry/`
+returns NOTHING, and `Mathlib/AlgebraicGeometry/Modules/` contains only
+`Presheaf.lean`, `Sheaf.lean`, `Tilde.lean` — so there is no invertible-sheaf
+theory to build `Pic` on.  There is no theorem of the cube
+(`grep -rli "theoremOfTheCube" Mathlib/` is empty), no relative Frobenius
+(`grep -rli frobenius Mathlib/AlgebraicGeometry/` is empty) and no
+Cohen–Macaulay theory (`grep -rl CohenMacaulay Mathlib/` is empty).
+`~/cs/FLT` has none of it either: its only `Ample`/`Picard` matches are
+`import Mathlib.RingTheory.PicardGroup`.
+What mathlib HAS started is abelian varieties themselves —
+`Mathlib/AlgebraicGeometry/Group/{Abelian,Smooth}.lean`, carrying
+`isCommMonObj_of_isProper_of_isIntegral_tensorObj_of_isAlgClosed`,
+`isCommMonObj_of_isProper_of_geometricallyIntegral` and `smooth_of_grpObj`.
+Re-check that directory at every pin bump.
 
-**`hchar` is deliberately carried even though the statement is true without
-it** — `[p]` has finite fibres for every `p` — because without it this leaf
-would silently duplicate `finite_preimage_mulByNat_of_field_prime_to_char`.
-Carrying it records that this leaf is exactly the residue the Lie-algebra
-route cannot reach, and makes the leaf VACUOUS in characteristic zero. -/
+**`hp` and `hchar` are deliberately carried even though the statement is true
+without them** — `ker[n]` is finite for every `n ≠ 0` — because without them
+this leaf would silently duplicate the content the sibling needs.  Carrying
+them records that this is exactly the residue the Lie-algebra route cannot
+reach, and makes the leaf VACUOUS in characteristic zero. -/
+theorem isFinite_ker_mulByNat_of_field_char {X : Scheme.{u}}
+    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
+    IsFinite (pullback.snd (ab.mulByNat p) ab.zeroSection) :=
+  ab.isFinite_ker_mulByNat_of_finite_preimage p
+    (finite_ker_mulByNat_of_field_char K ab p hp hchar)
+
+end ShearReduction
+
+/-- **`[p]` has finite fibres in characteristic `p`** (PROVEN 2026-07-27 over
+`isFinite_ker_mulByNat_of_field_char`, via the cube-free shearing reduction).
+
+The other half of the old `finite_preimage_mulByNat_of_field`, split out
+2026-07-27.  **It is no longer a leaf**: the shearing block above reduces it,
+cube-free, to the single fibre `ker[p]`, and the residue now lives in
+`isFinite_ker_mulByNat_of_field_char`.
+
+The statement is UNCHANGED — same name, same hypotheses, same conclusion — so
+every consumer (`finite_preimage_mulByNat_of_field` below) resolves exactly as
+before.  `hp` and `hchar` are not used by this assembly; they are passed
+through to the residual leaf, which is where they are recorded as marking the
+Lie-algebra route's blind spot.  The leaf remains VACUOUS in characteristic
+zero, and so does this theorem's route through it.
+
+For the mathematics — why `d[p] = 0` kills the cheap route, the two classical
+cube proofs, and the verified survey of what is missing from the pin — see
+`isFinite_ker_mulByNat_of_field_char` above.  It is not repeated here, so that
+there is exactly one place to update when mathlib grows ample bundles. -/
 theorem finite_preimage_mulByNat_of_field_char {X : Scheme.{u}}
     (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
     (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) (a : X) :
     (⇑(ab.mulByNat p) ⁻¹' {a}).Finite :=
-  sorry
+  ab.finite_preimage_mulByNat_of_isFinite_ker p
+    (isFinite_ker_mulByNat_of_field_char K ab p hp hchar) a
 
 /-- **The fibres of `[n]` on an abelian VARIETY are FINITE** (PROVEN
 2026-07-27 over the two leaves just above).
