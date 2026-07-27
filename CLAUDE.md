@@ -187,10 +187,21 @@ interchangeable:
 
 - *Direct*: the declaration's own body contains `sorry`. This is what
   Lean's `declaration uses 'sorry'` warning reports, and it is the set of
-  leaves that can be WORKED ON. Currently 85.
+  leaves that can be WORKED ON. **175** as of `0a976e16` (2026-07-27).
 - *Transitive*: the declaration's proof term reaches `sorryAx`, i.e. it is
   sorried **or consumes something sorried**. This is what
-  `ProgressCensus.lean`'s census reports. Currently 86.
+  `ProgressCensus.lean`'s census reports. **175** at the same commit
+  (332 declarations are compiler-certified `sorryAx`-free).
+
+**Do not trust a frontier number in this file — regenerate it.** The figures
+above were 85/86 for a single day and were wrong by a factor of two by the next
+morning: the tree grows leaves faster than prose records them, and six releases
+landed during one bookkeeping run (the frontier moved 138 → 156 → 157 → 174 →
+175 *while it was being counted*). Any count is stamped to a commit and stale
+immediately. `flt-frontier.py`'s source scan **is** validated against the
+compiler — at `a18c5c4d` it matched the build's `declaration uses 'sorry'`
+warning set exactly, 157 = 157, zero difference in both directions — so run it
+rather than quoting a number.
 
 A consumer of a sorried leaf is transitively sorried but has NOTHING to
 prove — dispatching an agent at it wastes a worker. Two whole clusters were
@@ -262,6 +273,26 @@ per-file `diagnostics` reveals. Treat any hard error as an immediate defect
 with a named owner (CLAUDE.md's sorry-gate rule (b)), and do not assume a
 clean direct-sorry scan means a clean tree.** A proof that verified in one
 worktree can error on main; resource-limit `set_option`s are the usual fix.
+
+**Fourth category, invisible to ALL THREE: a module UNREACHABLE from
+`Fermat.lean` is never compiled at all** (2026-07-27). `lake build` builds the
+root's import closure. A module no module in that closure imports is simply not
+built — so it is invisible to `lake build`, invisible to the
+`declaration uses 'sorry'` warning set, and invisible to the transitive census.
+It can contain anything, including code that does not compile, and nothing will
+say so.
+
+At `a18c5c4d` there were **99** such modules — the whole vendored
+automorphic-form / adele / Haar closure, 1690 floating declarations. It is also
+a hard blocker for the census, which imports *every* module under `Fermat/`:
+one unreachable module that fails to build takes the census down with it. A
+release has since wired almost all of them in.
+
+**So a fourth standing check belongs in every bookkeeping cycle: enumerate
+modules under `Fermat/` and subtract the root's import closure.** A newly
+vendored subtree is the usual way modules land here — vendoring a directory
+does not wire it to anything, and the tree looks green precisely because the
+new code is not being compiled.
 
 Second trap, same day: a naive `grep sorry` over sources counts the word
 inside DOCSTRINGS, and this development's docstrings discuss sorried leaves
