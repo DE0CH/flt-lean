@@ -127,8 +127,16 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   `ProjCoords.exists_of_specField` remains open, and so — since the 2026-07-27
   second-law cut — do `exists_projMulOfCoordsTwo` (the gluing, now characterised
   by BOTH Bosma–Lenstra laws), while `projMulCoords_unit` and
-  `projMulCoords_inv` (the two axioms, each a finite case analysis over a field)
-  are **PROVEN**.  `exists_projMulOfCoords` itself is PROVEN from those three.
+  `projMulCoords_inv` (the two axioms) are **PROVEN as of 2026-07-27**, over the
+  two NEW leaves `ProjCoords.toHom_infty` and `ProjCoords.toHom_negC` — the two
+  missing `Proj.fromOfGlobalSections` congruences, naturality in the SCHEME
+  argument and compatibility with `Proj.map`.  `exists_projMulOfCoords` itself is
+  PROVEN from `exists_projMulOfCoordsTwo` plus those two axioms.
+  **`projMulCoords_inv` gained `[E.IsElliptic]` at the same time, and it is
+  NECESSARY**: the `dblZ` / `add2Y` dichotomy it needs has elimination ideal
+  exactly `⟨Δ²⟩`, so it is false-shaped for a singular Weierstrass equation —
+  see its docstring, and the certificate on
+  `WeierstrassCurve.Projective.add2Y_neg_left_ne_zero_of_dblZ_eq_zero`.
   `Fermat/FLT/Mathlib/.../ProjectiveAddition.lean` now also carries the second
   law `add2XYZ` — DEFINED there, with `equation_add2XYZ` and the two
   proportionality lemmas as its own leaves.  **The `[Field K]` binder on the
@@ -1007,6 +1015,128 @@ theorem toHom_eq_of_addXYZ_not_span {K : CommRingCat.{0}} (hK : _root_.IsField �
   have hd : smul u c = d := ProjCoords.ext (by rw [smul_coord]; exact hu)
   rw [← toHom_smul u c, hd]
 
+/-! ### The unit section and the involution AS COORDINATE DATA
+
+**This is the missing bridge, and it is one shape of missing MATHLIB work, not
+two** (2026-07-27, found while proving `projMulCoords_unit` / `projMulCoords_inv`).
+
+Those two leaves are statements about the morphisms `projInfty E` and
+`projNeg E`; the two Bosma–Lenstra laws are statements about coordinate TRIPLES.
+Everything in between is a finite case analysis over a field and is proven below
+— but the two ends only meet through a congruence for
+`Proj.fromOfGlobalSections` that does not exist at this pin.  Re-checked
+2026-07-27 against `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean`,
+which carries exactly four lemmas about it — `_preimage_basicOpen`,
+`_morphismRestrict`, `_resLE`, `_toSpecZero` — and **no naturality in `X`, and
+nothing relating it to `Proj.map`**.
+
+So `toHom_infty` and `toHom_negC` below are those two absent congruences,
+specialised to the data this cluster uses:
+
+| leaf | the general statement it instantiates |
+|---|---|
+| `toHom_infty` | `g ≫ fromOfGlobalSections 𝒜 f hf = fromOfGlobalSections 𝒜 (Γ(g) ∘ f) _` |
+| `toHom_negC` | `fromOfGlobalSections 𝒜 f hf ≫ Proj.map φ hφ = fromOfGlobalSections _ (f ∘ φ) _` |
+
+They are the same CLASS as `toBasicOpenOfGlobalSections_eq_of_gradedSmul` above
+— a chart computation in `HomogeneousLocalization` — and an owner should expect
+to copy that lemma's shape: `Scheme.Cover.hom_ext` over the `X.basicOpen (f r)`
+cover, then `Proj.basicOpenIsoSpec` to reduce each piece to a map of `Away`
+rings, where both sides become the same `IsLocalization.map`.
+
+For `toHom_infty` there is a shortcut worth trying first, which the general
+statement does not have: the infinity datum has `coord 1 = 1`, a UNIT, so
+`X.basicOpen (f Ȳ) = ⊤` and `fromOfGlobalSections_morphismRestrict` at `r = Ȳ`
+already exhibits BOTH sides as factoring through the single chart
+`Proj.awayι 𝒜 Ȳ`, which is an open immersion and hence a monomorphism.  The
+statement then reduces to an equality of two morphisms of AFFINE schemes, i.e.
+of two ring maps out of `Away 𝒜 Ȳ` — no gluing at all.  The same shortcut does
+not apply to `toHom_negC`, whose datum has no distinguished unit coordinate. -/
+
+/-- **The point at infinity `[0 : 1 : 0]` as a coordinate datum** (PROVEN).
+
+Its `equation` is mathlib's `equation_zero` and its `span_coord` holds because
+the middle coordinate is `1`. -/
+noncomputable def infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
+    ProjCoords E X where
+  base := base
+  coord := ![0, 1, 0]
+  equation := equation_zero
+  span_coord := by
+    refine Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span ⟨1, rfl⟩) ?_
+    simp
+
+@[simp] theorem infty_coord (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
+    (infty E base).coord = ![0, 1, 0] := rfl
+
+@[simp] theorem infty_base (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤)) :
+    (infty E base).base = base := rfl
+
+/-- **The Weierstrass involution of a coordinate datum** (PROVEN) —
+`[X : Y : Z] ↦ [X : negY : Z]`, mathlib's `neg` triple.
+
+`equation` is `equation_neg` (proved over an arbitrary ring in
+`Fermat/FLT/Mathlib/.../ProjectiveAddition.lean`; mathlib has only the affine
+and the over-a-field forms).  `span_coord` holds because the involution is its
+own inverse on the span: `c.coord 1 = -negY c - a₁ * c.coord 0 - a₃ * c.coord 2`
+lies in the span of the negated triple. -/
+noncomputable def negC (c : ProjCoords E X) : ProjCoords E X where
+  base := c.base
+  coord := neg (E.map c.base) c.coord
+  equation := equation_neg c.equation
+  span_coord := by
+    refine top_le_iff.mp ?_
+    rw [← c.span_coord, Ideal.span_le]
+    have h0 : c.coord 0 ∈ Ideal.span (Set.range (neg (E.map c.base) c.coord)) :=
+      Ideal.subset_span ⟨0, rfl⟩
+    have h2 : c.coord 2 ∈ Ideal.span (Set.range (neg (E.map c.base) c.coord)) :=
+      Ideal.subset_span ⟨2, rfl⟩
+    have h1 : negY (E.map c.base) c.coord ∈
+        Ideal.span (Set.range (neg (E.map c.base) c.coord)) := Ideal.subset_span ⟨1, rfl⟩
+    rintro _ ⟨i, rfl⟩
+    fin_cases i
+    · exact h0
+    · have hrw : c.coord 1 = -(negY (E.map c.base) c.coord) - (E.map c.base).a₁ * c.coord 0
+          - (E.map c.base).a₃ * c.coord 2 := by
+        simp only [negY]
+        ring1
+      show c.coord 1 ∈ _
+      rw [hrw]
+      exact sub_mem (sub_mem (neg_mem h1) (Ideal.mul_mem_left _ _ h0))
+        (Ideal.mul_mem_left _ _ h2)
+    · exact h2
+
+@[simp] theorem negC_coord (c : ProjCoords E X) :
+    (negC c).coord = neg (E.map c.base) c.coord := rfl
+
+@[simp] theorem negC_base (c : ProjCoords E X) : (negC c).base = c.base := rfl
+
+/-- **The infinity datum computes `projInfty`** (sorry node — naturality of
+`Proj.fromOfGlobalSections` in its SCHEME argument, absent from the pin; see the
+section docstring above, including the `awayι` shortcut that applies to this
+leaf and not to `toHom_negC`).
+
+The `s` is unconstrained because `hom_ext_spec_rat` makes `X ⟶ Spec ℚ` a
+subsingleton, so this really is the statement "`[0 : 1 : 0]` over `X` IS the
+base change of the unit section", with no choice involved. -/
+theorem toHom_infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤))
+    (s : X ⟶ Spec (CommRingCat.of ℚ)) :
+    (infty E base).toHom = s ≫ projInfty E :=
+  sorry
+
+/-- **The negated datum computes `projNeg`** (sorry node — compatibility of
+`Proj.fromOfGlobalSections` with `Proj.map`, absent from the pin; see the section
+docstring above).
+
+`projNeg E` is `Proj.map (negGradedHom E) _`, and `negC` is the same involution
+read on coordinates, so this says that the two descriptions of the Weierstrass
+involution agree — the ring map `negQuot` composed with `c.ringHom` is
+`(negC c).ringHom`, which is itself a one-line `MvPolynomial` computation; what
+is missing is only that `fromOfGlobalSections` turns that ring-level identity
+into the identity of morphisms. -/
+theorem toHom_negC (c : ProjCoords E X) : (negC c).toHom = c.toHom ≫ projNeg E :=
+  sorry
+
 end ProjCoords
 
 /-- **The chord–tangent multiplication morphism, characterised on coordinate
@@ -1164,35 +1294,35 @@ theorem projMulCoords_comm (E : WeierstrassCurve ℚ)
     rw [← hEq, ProjCoords.toHom_smul]
   · rw [ProjCoords.toHom_eq_of_addXYZ_not_span hK c d h]
 
-/-- **The UNIT law on `K`-points, `K` a field** (sorry node — a finite case
-analysis over a field, needing BOTH addition laws and nothing else).
+/-- **The UNIT law on `K`-points, `K` a field** (**PROVEN 2026-07-27** from
+`ProjCoords.toHom_infty`, `ProjCoords.exists_of_specField`,
+`ProjCoords.toHom_smul` and the ring-level dichotomy
+`WeierstrassCurve.Projective.exists_units_smul_infty_left`).
 
 This is `m(O, a) = a` read at a single `K`-point, and it is where the second
-Bosma–Lenstra law earns its keep for `hunit`.  Both halves of the argument are
-already available as `ring`-proved value lemmas in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`;
-what is left is only the transport across `Spec.ΓSpecIso`, i.e. turning "`K` is
-a field" into a dichotomy for elements of `Γ(Spec K, ⊤)`.
+Bosma–Lenstra law earns its keep for `hunit`.
 
 *The route, in full.*  Take `c` with `c.toHom = a`
-(`ProjCoords.exists_of_specField`) and let `o : ProjCoords E (Spec K)` be the
-datum `![0, 1, 0]` with `o.base = c.base` (its `equation` is `ring`, its
-`span_coord` holds because the second coordinate is `1`).  Then:
+(`ProjCoords.exists_of_specField`) and let `ProjCoords.infty E c.base` be the
+datum `![0, 1, 0]`.  `ProjCoords.toHom_infty` identifies its morphism with
+`a ≫ projToSpec E ≫ projInfty E`, and then:
 
-* where `c.coord 2` is a UNIT, mathlib's `addXYZ_of_Z_eq_zero_left` gives
-  `addXYZ o.coord c.coord = c.coord 2 • c.coord`, whose span is `⊤` by
+* where `c.coord 2` is a UNIT, `addXYZ_of_infty_left` gives
+  `addXYZ ![0,1,0] c.coord = c.coord 2 • c.coord`, whose span is `⊤` by
   `span_range_smul_unit`, so `hlaw` applies and `ProjCoords.toHom_smul`
   finishes;
 * where `c.coord 2 = 0`, `X_eq_zero_of_Z_eq_zero` forces `c.coord 0 = 0`, so
   `span_coord` makes `c.coord 1` a unit, and
   `WeierstrassCurve.Projective.add2XYZ_of_infty_left` gives
-  `add2XYZ o.coord c.coord = negY c.coord • c.coord = (-c.coord 1) • c.coord`,
+  `add2XYZ ![0,1,0] c.coord = negY c.coord • c.coord = (-c.coord 1) • c.coord`,
   again a unit rescaling, so `hlaw2` applies.
 
 Neither branch can be dropped: at `Q = O` the standard law's triple vanishes
 identically, and at the three points of `E ∩ {Y = 0}` the second law's does.
-That is exactly the completeness of the two-law system specialised to
-`P = O`. -/
+That is exactly the completeness of the two-law system specialised to `P = O`.
+
+**No discriminant hypothesis is needed here**, unlike in `projMulCoords_inv`
+below — see that leaf's docstring, where `[E.IsElliptic]` is forced. -/
 theorem projMulCoords_unit (E : WeierstrassCurve ℚ)
     (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
     (hlaw : ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
@@ -1202,37 +1332,85 @@ theorem projMulCoords_unit (E : WeierstrassCurve ℚ)
       (h : Ideal.span (Set.range (add2XYZ (E.map c.base) c.coord d.coord)) = ⊤),
       Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m = (c.add2 d h).toHom)
     (K : CommRingCat.{0}) (hK : _root_.IsField ↥K) (a : Spec K ⟶ proj E) :
-    Limits.pullback.lift (a ≫ projToSpec E ≫ projInfty E) a (hom_ext_spec_rat _ _) ≫ m = a :=
-  sorry
+    Limits.pullback.lift (a ≫ projToSpec E ≫ projInfty E) a (hom_ext_spec_rat _ _) ≫ m = a := by
+  have hR : _root_.IsField Γ(Spec K, ⊤) :=
+    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField hK
+  obtain ⟨c, rfl⟩ := ProjCoords.exists_of_specField E K hK a
+  have ho : c.toHom ≫ projToSpec E ≫ projInfty E
+      = (ProjCoords.infty E (X := Spec K) c.base).toHom := by
+    rw [← Category.assoc]
+    exact (ProjCoords.toHom_infty E c.base _).symm
+  rw [ho]
+  rcases exists_units_smul_infty_left hR c.equation c.span_coord with ⟨u, hu⟩ | ⟨u, hu⟩
+  · have hspan : Ideal.span (Set.range (addXYZ
+        (E.map (ProjCoords.infty E (X := Spec K) c.base).base)
+        (ProjCoords.infty E (X := Spec K) c.base).coord c.coord)) = ⊤ := by
+      have h : addXYZ (E.map (ProjCoords.infty E (X := Spec K) c.base).base)
+          (ProjCoords.infty E (X := Spec K) c.base).coord c.coord
+          = (u : Γ(Spec K, ⊤)) • c.coord := hu
+      rw [h, span_range_smul_unit]
+      exact c.span_coord
+    rw [hlaw _ (ProjCoords.infty E (X := Spec K) c.base) c hspan]
+    have heq : ProjCoords.smul u c
+        = (ProjCoords.infty E (X := Spec K) c.base).add c hspan := ProjCoords.ext hu.symm
+    rw [← heq, ProjCoords.toHom_smul]
+  · have hspan : Ideal.span (Set.range (add2XYZ
+        (E.map (ProjCoords.infty E (X := Spec K) c.base).base)
+        (ProjCoords.infty E (X := Spec K) c.base).coord c.coord)) = ⊤ := by
+      have h : add2XYZ (E.map (ProjCoords.infty E (X := Spec K) c.base).base)
+          (ProjCoords.infty E (X := Spec K) c.base).coord c.coord
+          = (u : Γ(Spec K, ⊤)) • c.coord := hu
+      rw [h, span_range_smul_unit]
+      exact c.span_coord
+    rw [hlaw2 _ (ProjCoords.infty E (X := Spec K) c.base) c hspan]
+    have heq : ProjCoords.smul u c
+        = (ProjCoords.infty E (X := Spec K) c.base).add2 c hspan := ProjCoords.ext hu.symm
+    rw [← heq, ProjCoords.toHom_smul]
 
-/-- **The INVERSE law on `K`-points, `K` a field** (sorry node — the same shape
-as `projMulCoords_unit`, and again needing both addition laws).
+/-- **The INVERSE law on `K`-points, `K` a field** (**PROVEN 2026-07-27** from
+`ProjCoords.toHom_infty`, `ProjCoords.toHom_negC`, `ProjCoords.exists_of_specField`,
+`ProjCoords.toHom_smul` and the ring-level dichotomy
+`WeierstrassCurve.Projective.exists_units_smul_neg_left`).
 
 This is `m(-a, a) = O` read at a single `K`-point.  The two value lemmas are
 
-* mathlib's `addXYZ_neg`: `addXYZ P (neg P) = -dblZ P • ![0, 1, 0]` with
+* `addXYZ_neg_left`: `addXYZ (neg P) P = dblZ P • ![0, 1, 0]` with
   `dblZ P = P z * (P y - negY P) ^ 3`, so the standard law is usable exactly
   where `P z` and `P y - negY P` are units — i.e. away from the `2`-torsion and
   away from the point at infinity;
-* `WeierstrassCurve.Projective.add2XYZ_neg`:
-  `add2XYZ P (neg P) = add2Y P (neg P) • ![0, 1, 0]`, whose two vanishing
-  coordinates vanish IDENTICALLY (no curve equation used), and whose scalar is
-  a unit exactly where `dblZ` is not.
+* `add2XYZ_neg_left`: `add2XYZ (neg P) P = add2Y (neg P) P • ![0, 1, 0]`, whose
+  two vanishing coordinates vanish IDENTICALLY (no curve equation used), and
+  whose scalar is a unit exactly where `dblZ` is not.
 
-Both scalars multiply `![0, 1, 0]`, which is the datum whose `toHom` is
-`projToSpec E ≫ projInfty E`, so either branch closes the goal through
-`ProjCoords.toHom_smul`.
+Both scalars multiply `![0, 1, 0]`, which is `ProjCoords.infty E c.base`, so
+either branch closes the goal through `ProjCoords.toHom_smul` and
+`ProjCoords.toHom_infty`.
 
-**The one genuinely open point** is the dichotomy: that `dblZ P` and
-`add2Y P (neg P)` cannot both vanish at a `K`-point of the curve.  Geometrically
-it is immediate — the first says `2P = O`, the second says `2P ∈ E ∩ {Y = 0}`,
-and `O = [0 : 1 : 0]` has `Y = 1 ≠ 0` — but it is NOT a short polynomial
-certificate: the ideal `(dblZ P, add2Y P (neg P), W(P))` was checked in
-`Singular` to cut out only the irrelevant cone (`dim` is right), yet
-`(X, Y, Z) ^ n` is not contained in it for any `n ≤ 8`.  So the proof should
-follow the geometry — split on `P z = 0` first, where `X_eq_zero_of_Z_eq_zero`
-collapses everything — rather than hunt for a `linear_combination`. -/
-theorem projMulCoords_inv (E : WeierstrassCurve ℚ)
+## FAITHFULNESS REPAIR, 2026-07-27: `[E.IsElliptic]` was MISSING and is NECESSARY
+
+The dichotomy — that `dblZ P` and `add2Y (neg P) P` cannot both vanish at a
+`K`-point — was recorded here as needing only "the geometry, split on `P z = 0`
+first".  That is right on the branch `P z = 0`, and **false on the other one**.
+At `P z ≠ 0` the vanishing of `dblZ` says `P` is `2`-torsion, and the residual
+question is whether `add2Y (−P) P` can then vanish.  Computed in `Singular`: the
+elimination ideal of `(W, 2Y + a₁X + a₃Z, add2Y (−P) P) : Z^∞` down to the
+coefficient space is **exactly `⟨Δ²⟩`**.  So for every SINGULAR Weierstrass
+curve over `ℚ` there is such a point over some extension, and the statement as it
+stood — for an arbitrary `E : WeierstrassCurve ℚ` — is not provable by any local
+argument.  `[E.IsElliptic]` was added, which the sole consumer
+`exists_projMulOfCoords` already carries, so nothing downstream changes; and the
+`Singular` verdict is recorded with its regeneration recipe on
+`WeierstrassCurve.Projective.add2Y_neg_left_ne_zero_of_dblZ_eq_zero`.
+
+The earlier note that `(X, Y, Z) ^ n` is not in `(dblZ P, add2Y P (neg P), W(P))`
+for any `n ≤ 8` was correct and is now explained: the obstruction is `Δ`, so no
+power of the irrelevant ideal can ever lie in that ideal.  With `Δ` inverted the
+certificate exists and is short — `Δ² · Z⁶`, minimal in `Z`, with 252- and
+79-monomial cofactors after eliminating `Y`.
+
+`projMulCoords_unit` needs no such hypothesis: at `(O, Q)` the two scalars are
+`Q z` and `negY Q`, and one of them is a unit on any Weierstrass curve. -/
+theorem projMulCoords_inv (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
     (hlaw : ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
       (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤),
@@ -1242,8 +1420,43 @@ theorem projMulCoords_inv (E : WeierstrassCurve ℚ)
       Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m = (c.add2 d h).toHom)
     (K : CommRingCat.{0}) (hK : _root_.IsField ↥K) (a : Spec K ⟶ proj E) :
     Limits.pullback.lift (a ≫ projNeg E) a (hom_ext_spec_rat _ _) ≫ m =
-      a ≫ (projToSpec E ≫ projInfty E) :=
-  sorry
+      a ≫ (projToSpec E ≫ projInfty E) := by
+  have hR : _root_.IsField Γ(Spec K, ⊤) :=
+    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField hK
+  obtain ⟨c, rfl⟩ := ProjCoords.exists_of_specField E K hK a
+  have h2 : IsUnit (2 : Γ(Spec K, ⊤)) := by
+    have h := RingHom.isUnit_map c.base (isUnit_iff_ne_zero.mpr (two_ne_zero (α := ℚ)))
+    rwa [map_ofNat] at h
+  have hΔ : IsUnit (E.map c.base).Δ := by
+    rw [WeierstrassCurve.map_Δ]
+    exact RingHom.isUnit_map c.base E.isUnit_Δ
+  have ho : c.toHom ≫ projToSpec E ≫ projInfty E
+      = (ProjCoords.infty E (X := Spec K) c.base).toHom := by
+    rw [← Category.assoc]
+    exact (ProjCoords.toHom_infty E c.base _).symm
+  have hn : c.toHom ≫ projNeg E = (ProjCoords.negC c).toHom := (ProjCoords.toHom_negC c).symm
+  rw [hn, ho]
+  rcases exists_units_smul_neg_left hR h2 hΔ c.equation c.span_coord with ⟨u, hu⟩ | ⟨u, hu⟩
+  · have hspan : Ideal.span (Set.range (addXYZ (E.map (ProjCoords.negC c).base)
+        (ProjCoords.negC c).coord c.coord)) = ⊤ := by
+      have h : addXYZ (E.map (ProjCoords.negC c).base) (ProjCoords.negC c).coord c.coord
+          = (u : Γ(Spec K, ⊤)) • ![0, 1, 0] := hu
+      rw [h, span_range_smul_unit]
+      exact (ProjCoords.infty E (X := Spec K) c.base).span_coord
+    rw [hlaw _ (ProjCoords.negC c) c hspan]
+    have heq : ProjCoords.smul u (ProjCoords.infty E (X := Spec K) c.base)
+        = (ProjCoords.negC c).add c hspan := ProjCoords.ext hu.symm
+    rw [← heq, ProjCoords.toHom_smul]
+  · have hspan : Ideal.span (Set.range (add2XYZ (E.map (ProjCoords.negC c).base)
+        (ProjCoords.negC c).coord c.coord)) = ⊤ := by
+      have h : add2XYZ (E.map (ProjCoords.negC c).base) (ProjCoords.negC c).coord c.coord
+          = (u : Γ(Spec K, ⊤)) • ![0, 1, 0] := hu
+      rw [h, span_range_smul_unit]
+      exact (ProjCoords.infty E (X := Spec K) c.base).span_coord
+    rw [hlaw2 _ (ProjCoords.negC c) c hspan]
+    have heq : ProjCoords.smul u (ProjCoords.infty E (X := Spec K) c.base)
+        = (ProjCoords.negC c).add2 c hspan := ProjCoords.ext hu.symm
+    rw [← heq, ProjCoords.toHom_smul]
 
 /-- **The projective Weierstrass model is proper over `Spec ℚ`** (PROVEN).
 
