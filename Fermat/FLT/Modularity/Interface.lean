@@ -260,6 +260,30 @@ public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 -- edge. Getting this wrong is exactly the "Unknown identifier" this import
 -- was added to fix.
 public import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
+-- Tate's uniformisation over a separable closure
+-- (`WeierstrassCurve.exists_tateCurveEquivSepClosure`: the
+-- Galois-equivariant `Ωˣ ⧸ q ^ ℤ ≅ E_q(Ω)`), added 2026-07-27 for the
+-- TATE-CURVE CUT of
+-- `exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew`.
+-- PUBLIC because the sorry leaf that cut produces states its conclusion
+-- about the torsion of `WeierstrassCurve.tateCurve q` over
+-- `AlgebraicClosure ℚᵖᵥ`, i.e. the names occur in SIGNATURE position,
+-- where a merely transitive `import` does not re-export them.
+-- Cone cost, measured before adding it: 45 modules, 16 of them project
+-- modules (the `KnownIn1980s/EllipticCurves` Tate cluster and its
+-- `Mathlib/AlgebraicGeometry/EllipticCurve` shims); no import cycle —
+-- `Interface` is not in `TateSepClosure`'s closure.
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure
+-- the `ValuativeRel` / `IsNonarchimedeanLocalField` structure on the adic
+-- completions of `ℚ` (`valuativeRelAdicCompletionRat`,
+-- `isNonarchimedeanLocalFieldAdicCompletionRat`) — the gateway that lets the
+-- Tate-curve framework be instantiated at `k = ℚᵖᵥ`.
+-- PUBLIC and imported HERE rather than relied on transitively: this module is
+-- in the closure already, but only through non-`public` edges, so its
+-- INSTANCES do not arrive — `ValuativeRel ℚᵖᵥ` failed to synthesize until this
+-- line was added, which is the "private import upstream" trap, not a missing
+-- module.
+public import Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField
 -- `integralClosureInclusion`, used in the STATEMENT (not merely the proof)
 -- of `mem_maximalIdeal_of_integralClosureInclusion` below, which serves the
 -- at-`2` tame-Frobenius leaf.  It reached this file only transitively and
@@ -42964,53 +42988,323 @@ theorem eq_of_kummerClass_of_valuation_ne_one
     exact (mul_eq_zero.mp h5).resolve_right hN'
   rw [hb, hb0, zpow_zero, mul_one]
 
+section TateBridgeAtP
+
+-- `_root_.`-qualified: this file lives inside `namespace
+-- GaloisRepresentation.Modularity`, where a bare `open X` can bind to a
+-- nested, nearly-empty `X` instead of the root one.
+open scoped _root_.WeierstrassCurve.Affine
+
+/-- **A classical `DecidableEq` on `ℚ̄ᵖᵥ`** (bookkeeping for the
+TATE-CURVE CUT below). The group law on a Weierstrass curve is defined
+by cases on equality of coordinates, so `((E⁄Ω)).Point` carries an
+`AddCommGroup` — and hence the `ℤ`-action in which "`P` is `N`-torsion"
+is spelled — only in the presence of a `DecidableEq Ω`.
+
+Registered as a **LOCAL** instance deliberately. `Semistable.lean`
+already declares a global `instDecidableEqAlgClosureAdicCompletionRat`
+for this very type; a second global one would put two propositionally
+equal, syntactically distinct instances in any cone importing both,
+which is precisely the "duplicate instances that print identically"
+trap that makes a `rw` fail against a goal it visually matches. Keeping
+this one local means the name is exported but the INSTANCE is not, so no
+downstream cone can see two. -/
+@[reducible] noncomputable def decEqAlgClosureAdicCompletionRatPv :
+    DecidableEq (AlgebraicClosure ℚᵖᵥ) :=
+  Classical.typeDecidableEq _
+
+attribute [local instance] decEqAlgClosureAdicCompletionRatPv
+
+/-- **`Valued.v` and the `ValuativeRel` valuation agree on "`< 1`"**
+(PROVEN 2026-07-27). The modularity leaves in this file spell the
+valuation of `ℚᵖᵥ` as `Valued.v`; the Tate-curve framework of
+`TateSepClosure.lean` reaches it through `IsNonarchimedeanLocalField`,
+i.e. as `ValuativeRel.valuation`. The two are equivalent valuations
+(`ValuativeRel.isEquiv`), and equivalent valuations have the same open
+unit ball, which is the only comparison either side needs. Without this
+translation the two spellings do not meet: they are different terms of
+different types, not merely different notations. -/
+theorem valuativeRel_valuation_lt_one_of_valued_lt_one {x : ℚᵖᵥ}
+    (hx : (Valued.v x : WithZero (Multiplicative ℤ)) < 1) :
+    ValuativeRel.valuation ℚᵖᵥ x < 1 := by
+  have h := ValuativeRel.isEquiv (ValuativeRel.valuation ℚᵖᵥ)
+    (Valued.v : Valuation ℚᵖᵥ (WithZero (Multiplicative ℤ)))
+  exact h.lt_one_iff_lt_one.mpr hx
+
+/-- **From "`σ` fixes the `N`-torsion of the Tate curve `E_q`" to "`σ`
+fixes the Kummer class of `q`"** (PROVEN 2026-07-27 — the geometric
+half of the TATE-CURVE CUT, and the step that makes the cut worth
+taking, since it is a THEOREM of this repository rather than an appeal
+to the literature).
+
+Stated over a VARIABLE nonarchimedean local base field `k` and
+instantiated at `k = ℚᵖᵥ` below, per the standing rule in this
+development: at the concrete base the instance paths that
+`exists_tateCurveEquivSepClosure` carries (generic in `k`) and the ones
+concrete elaboration picks are propositionally but not definitionally
+equal, and `rw`/`exact` then fail on terms that pretty-print
+identically.
+
+THE MATHEMATICS. Tate's uniformisation over a separable closure —
+`WeierstrassCurve.exists_tateCurveEquivSepClosure`, PROVEN in
+`Fermat/FLT/KnownIn1980s/EllipticCurves/TateSepClosure.lean` — is a
+`Gal(Ω/k)`-equivariant isomorphism
+
+    Ωˣ ⧸ q ^ ℤ  ≅  E_q(Ω),        `|q| < 1`.
+
+Let `r ^ N = q`. Then the class of `r` is an `N`-torsion point of the
+left-hand side, because `r ^ N = q ∈ q ^ ℤ`; so it corresponds to an
+`N`-torsion point `P` of `E_q(Ω)`. If `σ` fixes every `N`-torsion point
+of `E_q(Ω)` it fixes `P`, and equivariance plus injectivity of the
+uniformisation carry that back to the class of `r`:
+
+    σ r · r⁻¹ ∈ q ^ ℤ,   i.e.   σ r = r · q ^ b   for some `b : ℤ`.
+
+WHY THIS IS THE RIGHT PLACE TO CUT. The `p`-adic geometry that is
+genuinely missing from this pin (Deligne–Rapoport models of `X₀(Mp)`,
+Tilouine's toric-reduction computation at the `p`-new part of
+`J₀(Mp)`, Saito's local–global compatibility) delivers its answer as a
+statement about the TORSION OF A CURVE with toric reduction — that is
+the object those theorems are about. Serre's Kummer-class criterion
+consumes a statement about a RADICAL. The passage between the two is
+exactly Tate's theorem, and it is proven here, so it does not belong
+inside the citation. -/
+theorem exists_zpow_of_pow_eq_of_tateTorsion_fixed
+    {k : Type*} [Field k] [ValuativeRel k] [TopologicalSpace k]
+    [IsNonarchimedeanLocalField k] [CharZero k]
+    (Ω : Type*) [Field Ω] [Algebra k Ω] [Algebra.IsSeparable k Ω]
+    [DecidableEq Ω]
+    (q : kˣ) (hq : ValuativeRel.valuation k (q : k) < 1) {N : ℕ} (hN : 0 < N)
+    (σ : Ω ≃ₐ[k] Ω)
+    (hfix : ∀ P : (((WeierstrassCurve.tateCurve ((q : k) : k))⁄Ω)).Point,
+      (N : ℤ) • P = 0 →
+      WeierstrassCurve.Affine.Point.map
+        (W' := WeierstrassCurve.tateCurve ((q : k) : k)) σ.toAlgHom P = P)
+    (r : Ω) (hr : r ^ N = algebraMap k Ω (q : k)) :
+    ∃ b : ℤ, σ r = r * (algebraMap k Ω (q : k)) ^ b := by
+  have hQ0 : algebraMap k Ω (q : k) ≠ 0 := by
+    rw [Ne, map_eq_zero]
+    exact Units.ne_zero q
+  have hr0 : r ≠ 0 := by
+    intro h
+    rw [h, zero_pow hN.ne'] at hr
+    exact hQ0 hr.symm
+  -- the image of the Tate parameter, and `r`, as units of `Ω`
+  set Qu : Ωˣ := Units.map (algebraMap k Ω).toMonoidHom q with hQu
+  set ru : Ωˣ := Units.mk0 r hr0 with hru
+  have hruN : ru ^ N = Qu := by
+    apply Units.ext
+    simpa [hru, hQu] using hr
+  -- Tate's uniformisation of `E_q` over `Ω`
+  obtain ⟨e, he⟩ :=
+    WeierstrassCurve.exists_tateCurveEquivSepClosure (k := k) Ω q hq
+  -- the class of `ru` is an `N`-torsion point of `E_q`, since `ru ^ N = Qu`
+  have htors : (N : ℤ) • e (Additive.ofMul ((ru : Ωˣ ⧸ Subgroup.zpowers Qu)))
+      = 0 := by
+    rw [← map_zsmul e]
+    have h1 : (N : ℤ) • Additive.ofMul ((ru : Ωˣ ⧸ Subgroup.zpowers Qu)) =
+        Additive.ofMul (((ru ^ N : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers Qu)) := by
+      rw [← ofMul_zpow, zpow_natCast, QuotientGroup.mk_pow]
+    rw [h1, hruN, show ((Qu : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers Qu) = 1 from
+      (QuotientGroup.eq_one_iff _).mpr (Subgroup.mem_zpowers _), ofMul_one,
+      map_zero]
+  -- the hypothesis fixes it; equivariance moves that back to the class of `ru`
+  have hPfix := hfix _ htors
+  rw [he σ ru] at hPfix
+  have hclass : ((Units.map σ.toAlgHom.toRingHom.toMonoidHom ru : Ωˣ) :
+      Ωˣ ⧸ Subgroup.zpowers Qu) = ((ru : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers Qu) :=
+    Additive.ofMul.injective (e.injective hPfix)
+  obtain ⟨b, hb⟩ := Subgroup.mem_zpowers_iff.mp (QuotientGroup.eq.mp hclass)
+  refine ⟨-b, ?_⟩
+  have hmain : Units.map σ.toAlgHom.toRingHom.toMonoidHom ru =
+      ru * Qu ^ (-b) := by
+    rw [zpow_neg, hb]
+    group
+  have hval := congrArg (Units.val) hmain
+  simpa [hru, hQu] using hval
+
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
-OF THE TOWER, IN KUMMER-CLASS FORM** (sorry leaf — the residual
-AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-26 KUMMER-CLASS CUT;
+OF THE TOWER, IN TORIC-CURVE FORM** (sorry leaf — THE residual
+AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-27 TATE-CURVE CUT of the
+tenth owner; Tilouine, *Hecke algebras and the Gorenstein property*, in
+Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
+local–global compatibility at `p` in general; Deligne–Rapoport for the
+models of `X₀(Mp)`).
+
+THIS IS THE STATEMENT THE CITED GEOMETRY ACTUALLY PROVES. Under the
+consumer's hypotheses the restriction of `τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the
+Tate module of a curve `E_q` with purely TORIC reduction, so what the
+`p`-adic geometry delivers is an assertion about `E_q`'S TORSION: an
+element `σ` that acts trivially at level `k` of the `𝔪`-adic tower acts
+trivially on `E_q[p ^ n]`, where `p ^ n` is the exact characteristic of
+`R ⧸ 𝔪 ^ k`. The leaf says exactly that and nothing else.
+
+WHAT THE TATE-CURVE CUT MOVED OUT OF THE CITATION. The previous form of
+this leaf (`…_kummerClass_…`, now PROVEN below) concluded with a
+statement about the RADICAL — for every `p ^ n`-th root `r` of `q`,
+`σ r = r * q ^ b`. Getting from the torsion of `E_q` to that is Tate's
+uniformisation
+
+    Ωˣ ⧸ q ^ ℤ  ≅  E_q(Ω),           `Ω = ℚ̄ᵖᵥ`,
+
+which is NOT missing: it is
+`WeierstrassCurve.exists_tateCurveEquivSepClosure`, proven in
+`Fermat/FLT/KnownIn1980s/EllipticCurves/TateSepClosure.lean`, and the
+passage is now the proof term
+`exists_zpow_of_pow_eq_of_tateTorsion_fixed` just above rather than
+prose inside a citation. So this leaf is strictly smaller than its
+predecessor: it has been relieved of Tate's theorem.
+
+WHY `Valued.v q < 1` AND NOT `≠ 1`. `< 1` is the standard
+normalisation of the Tate parameter (Silverman, *ATAEC* V.3.1: `E_q` is
+defined for `|q| < 1`, and `v(q) = -v(j) > 0` for a curve with
+multiplicative reduction), and it is what the Tate-curve framework
+consumes. It is not an extra assumption in any substantive sense —
+`q ^ ℤ` is unchanged by `q ↦ q⁻¹`, so the class statement is
+insensitive to the choice — but it IS formally stronger than the `≠ 1`
+the consumer needs, and recording that here is the honest accounting:
+the consumer's `≠ 1` is derived from it by `ne_of_lt`.
+
+WHAT IS STILL MISSING, AND WHAT CANNOT SUPPLY IT. The geometry itself:
+Deligne–Rapoport models of `X₀(Mp)` and the toric-reduction computation
+at the `p`-new part of `J₀(Mp)`, absent from this pin and from
+`~/cs/FLT`. `nonempty_modularTateGaloisData` above does NOT supply it,
+and this was checked rather than assumed: that leaf is about `J₀(M)` at
+GOOD primes — its `congruence` field is the Eichler–Shimura relation
+OFF the level — whereas what is needed here is the fibre at `p` itself,
+where the reduction is toric.
+
+THE GREP THAT WOULD REFUTE THIS OBSTRUCTION:
+`grep -rn 'DeligneRapoport\|deligneRapoport\|toricReduction\|IsToricAt'
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — a hit in signature
+position would mean the models are present after all and this leaf
+should be decomposed over them rather than cited.
+
+WHY THE HYPOTHESIS IS `CharP … (p ^ n)` AND NOT `(p ^ n) = 0`
+(unchanged from the predecessor, and the point that makes this leaf
+FAITHFUL rather than convenient). The consumer's tower is indexed by
+the IDEALS `𝔪 ^ k`, but Serre's criterion is indexed by the EXPONENT
+`p ^ n` of the module, and the two are NOT interchangeable when
+`R ≠ ℤ_p`: demanding both `p ^ n ∈ 𝔪 ^ k` and `𝔪 ^ k ⊆ p ^ n R` would
+force `𝔪 ^ k = p ^ n R`, which holds only for `R = ℤ_p`. What is true
+is that `n` may be taken to be the EXACT exponent of `R ⧸ 𝔪 ^ k`, so
+that the level ring is a FAITHFUL `ℤ ⧸ p ^ n`-module and the field it
+cuts out is `ℚ_p(E[p ^ n]) = ℚ_p(μ_{p ^ n}, q^{1/p ^ n})` on the nose.
+Weakening `CharP` to "killed by `p ^ n`" would make the statement
+FALSE, since every `n` beyond the exact exponent also kills while its
+field is strictly larger.
+
+SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
+weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
+`v_p(q) = 1 ≠ 0`, so `E_q[p ^ n]` is a genuine rank-2 module and the
+torsion statement is not vacuous.
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged, as at the predecessor: they are exactly what
+the cited automorphic theory assumes about its coefficient ring. -/
+theorem exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ q : (ℚᵖᵥ)ˣ,
+      (Valued.v (q : ℚᵖᵥ) : WithZero (Multiplicative ℤ)) < 1 ∧
+      ∀ k n : ℕ, CharP (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) (p ^ n) →
+        ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+          (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
+            ∀ P : (((WeierstrassCurve.tateCurve ((q : ℚᵖᵥ) : ℚᵖᵥ))⁄
+                (AlgebraicClosure ℚᵖᵥ))).Point,
+              ((p ^ n : ℕ) : ℤ) • P = 0 →
+              WeierstrassCurve.Affine.Point.map
+                (W' := WeierstrassCurve.tateCurve ((q : ℚᵖᵥ) : ℚᵖᵥ))
+                (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ]
+                  AlgebraicClosure ℚᵖᵥ).toAlgHom P = P :=
+  sorry
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
+OF THE TOWER, IN KUMMER-CLASS FORM** (PROVEN 2026-07-27 by the
+TATE-CURVE CUT of the tenth owner — an assembly over the restated
+automorphic leaf
+`exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew` and the
+proven `exists_zpow_of_pow_eq_of_tateTorsion_fixed`, both just above.
+Formerly the residual AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-26
+KUMMER-CLASS CUT;
 Tilouine, *Hecke algebras and the Gorenstein property*, in
 Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
 forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
 local–global compatibility at `p` in general).
 
-THIS IS THE STATEMENT THE TATE UNIFORMISATION ACTUALLY PRODUCES, which
-is why the cut was worth taking. Under the consumer's hypotheses the
-restriction of `τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the Tate module of a curve
-`E_q` with purely TORIC reduction, and Tate's uniformisation is an
-isomorphism of `G_p`-modules
+THE TATE-CURVE CUT (2026-07-27, TENTH owner — what this node now IS).
+The node is PROVEN, as a two-step assembly:
 
-    Ωˣ ⧸ q ^ ℤ  ≅  E_q(Ω),           `Ω = ℚ̄_p`
+1. `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew` (sorry
+   leaf, just above): the automorphic-to-Galois bridge in the form the
+   `p`-adic geometry actually proves it — an assertion about the TORSION
+   OF THE TORIC CURVE `E_q`. Under the consumer's hypotheses the
+   restriction of `τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the Tate module of a curve
+   with purely toric reduction, so what Deligne–Rapoport, Tilouine and
+   Saito deliver about an element `σ` acting trivially at level `k` is
+   that it acts trivially on `E_q[p ^ n]`.
+2. `exists_zpow_of_pow_eq_of_tateTorsion_fixed` (PROVEN, just above):
+   Tate's uniformisation is a `G_p`-equivariant isomorphism
 
-(this repository's `TateSepClosure.lean` builds exactly that object:
-`WeierstrassCurve.exists_tateCurveEquivSepClosure` delivers the
-equivalence together with its Galois-equivariance hypothesis `he`, and
-`WeierstrassCurve.exists_tateTorsionQuotient` reads the torsion off it).
-So what the bridge delivers about an element `σ` acting trivially on the
-level-`k` torsion is a statement MODULO `q ^ ℤ` — the classes are what
-the curve's points are — namely: for every `p ^ n`-th root `r` of `q`,
+       Ωˣ ⧸ q ^ ℤ  ≅  E_q(Ω),           `Ω = ℚ̄ᵖᵥ`,
 
-    σ r = r * q ^ b   for some `b : ℤ`,
+   and this repository PROVES it —
+   `WeierstrassCurve.exists_tateCurveEquivSepClosure` in
+   `Fermat/FLT/KnownIn1980s/EllipticCurves/TateSepClosure.lean`. A
+   `p ^ n`-th root `r` of `q` has `r ^ p ^ n = q ∈ q ^ ℤ`, so its class
+   IS a `p ^ n`-torsion point; `σ` fixes that point, and equivariance
+   plus injectivity carry the conclusion back to `r`:
+   `σ r = r * q ^ b`.
 
-which is precisely "`σ` fixes the class of `r` in `Ωˣ ⧸ q ^ ℤ`". It does
-NOT deliver `σ r = r` directly; that last step is arithmetic about the
-valuation of `q` and is now the PROVEN
-`eq_of_kummerClass_of_valuation_ne_one` just above.
+WHAT THE TATE-CURVE CUT BUYS. Tate's theorem itself. Before the cut,
+"the classes are what the curve's points are" was PROSE inside the
+citation — the leaf asserted the Kummer-class conclusion directly, so a
+reader could not tell that the passage from the curve to the radical is
+a theorem this development already owns, nor that the residual leaf was
+carrying it. Now the passage is a proof term over
+`exists_tateCurveEquivSepClosure`, and the residual leaf is strictly
+smaller: it has been relieved of Tate's uniformisation and speaks only
+about torsion, which is the language the missing geometry speaks.
 
-WHAT THE KUMMER-CLASS CUT BUYS. Three things, all of them now proof
-terms in the consumer rather than prose inside the citation:
-
-1. the EXISTENCE of the `p ^ n`-th root `r` in `ℚ̄_p`, which is
-   `IsAlgClosed.exists_pow_nat_eq` and has no automorphic content at all
-   — the previous statement of this leaf asked the automorphic theory to
-   produce it;
-2. the passage from the class statement to `σ r = r`, i.e. the fact that
-   the Tate parameter is not a root of unity;
-3. and consequently the hypothesis `Valued.v q ≠ 1` becomes LOAD-BEARING
-   at this node. Before the cut it was asserted by this leaf and then
-   consumed only much further downstream; a reader could not tell from
-   the statement alone that the toric condition was doing any work here.
-   Now it is exactly what `eq_of_kummerClass_of_valuation_ne_one`
-   consumes.
+The cost of the cut, stated plainly: the residual leaf asserts
+`Valued.v q < 1` where this node needs only `≠ 1`. That is the standard
+normalisation of the Tate parameter (Silverman, *ATAEC* V.3.1) and is
+what the Tate-curve framework consumes; `≠ 1` is recovered here by
+`ne_of_lt`. It is formally a strengthening of the leaf and is recorded
+as such rather than passed over.
 
 WHAT IT DOES NOT BUY. The automorphic-to-Galois bridge itself is
 untouched and no part of it is proven here. What remains is still the
@@ -43103,8 +43397,23 @@ theorem exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew
           ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
             (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
               ∃ b : ℤ,
-                σ r = r * algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ^ b :=
-  sorry
+                σ r = r * algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ^ b := by
+  -- `ℚᵖᵥ` has characteristic zero, which the Tate-curve framework needs
+  haveI : CharZero ℚᵖᵥ :=
+    charZero_of_injective_algebraMap ((algebraMap ℚ ℚᵖᵥ).injective)
+  -- the automorphic-to-Galois bridge, in the form the `p`-adic geometry
+  -- produces it: a statement about the torsion of the toric curve `E_q`
+  obtain ⟨q, hq, htor⟩ :=
+    exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew hpodd hM hpM hg
+      hpnew κ hτ hirr e he hdet hpne hpmem hkfin hlat
+  refine ⟨q, ne_of_lt hq, fun k n hchar r hr σ hσ => ?_⟩
+  -- and Tate's uniformisation turns that into the Kummer class of `q`
+  exact exists_zpow_of_pow_eq_of_tateTorsion_fixed _ q
+    (valuativeRel_valuation_lt_one_of_valued_lt_one hq) (pow_pos hp.out.pos n)
+    (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ)
+    (htor k n hchar σ hσ) r hr
+
+end TateBridgeAtP
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
@@ -43195,8 +43504,12 @@ of `τ`" a statement about a genuine lattice.
 THE KUMMER-CLASS CUT (2026-07-26, NINTH owner — what this node now IS).
 The node is PROVEN, as a two-step assembly:
 
-1. `exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew` (sorry
-   leaf, above): the automorphic-to-Galois bridge in the form Tate's
+1. `exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew` (itself
+   PROVEN 2026-07-27 by the TENTH owner's TATE-CURVE CUT, over the sorry
+   leaf `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew`;
+   it was a sorry leaf when this docstring was first written, and the
+   label is corrected rather than left to mislead the next dispatch):
+   the automorphic-to-Galois bridge in the form Tate's
    uniformisation actually produces — a statement about classes modulo
    `q ^ ℤ`, since `Ωˣ ⧸ q ^ ℤ` is what the uniformisation identifies with
    the points of the curve. For every `p ^ n`-th root `r` of `q` and every
